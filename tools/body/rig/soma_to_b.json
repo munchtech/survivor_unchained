@@ -1,0 +1,723 @@
+{
+ "about": "SOMA (Kimodo / MotionBricks, 77 joints) -> B's keyed bones. tools/body/rig_map.py; see its docstring.",
+ "soma_source": "C:/Users/munch/Tools/mocap/kimodo/bow_0.bvh",
+ "map": {
+  "spine_01": {
+   "slerp": [
+    "Hips",
+    "Spine1",
+    0.1844
+   ],
+   "frac": 0.0786,
+   "aim_b": [
+    "spine_01",
+    "spine_02"
+   ]
+  },
+  "spine_02": {
+   "slerp": [
+    "Spine1",
+    "Spine2",
+    0.4154
+   ],
+   "frac": 0.2525,
+   "aim_b": [
+    "spine_02",
+    "spine_03"
+   ]
+  },
+  "spine_03": {
+   "slerp": [
+    "Spine2",
+    "Chest",
+    0.3172
+   ],
+   "frac": 0.4627,
+   "aim_b": [
+    "spine_03",
+    "spine_04"
+   ]
+  },
+  "spine_04": {
+   "slerp": [
+    "Chest",
+    "Chest",
+    0.0
+   ],
+   "frac": 0.7742,
+   "aim_b": [
+    "spine_04",
+    "spine_05"
+   ]
+  },
+  "spine_05": {
+   "slerp": [
+    "Chest",
+    "Chest",
+    0.0
+   ],
+   "frac": 0.9853,
+   "aim_b": [
+    "spine_05",
+    "neck_01"
+   ]
+  },
+  "root": {
+   "joint": "Root",
+   "aim_b": [
+    "root",
+    "pelvis"
+   ],
+   "aim_soma": [
+    "Root",
+    "Hips"
+   ]
+  },
+  "pelvis": {
+   "joint": "Hips",
+   "aim_b": [
+    "pelvis",
+    "spine_01"
+   ],
+   "aim_soma": [
+    "Hips",
+    "Spine1"
+   ]
+  },
+  "neck_01": {
+   "joint": "Neck1",
+   "aim_b": [
+    "neck_01",
+    "neck_02"
+   ],
+   "aim_soma": [
+    "Neck1",
+    "Neck2"
+   ]
+  },
+  "neck_02": {
+   "joint": "Neck2",
+   "aim_b": [
+    "neck_02",
+    "Head"
+   ],
+   "aim_soma": [
+    "Neck2",
+    "Head"
+   ]
+  },
+  "Head": {
+   "joint": "Head",
+   "aim_b": [
+    "Head",
+    null
+   ],
+   "aim_soma": [
+    "Head",
+    "HeadEnd"
+   ]
+  },
+  "clavicle_l": {
+   "joint": "LeftShoulder",
+   "note": "law-driven: the girdle law sets it from the arm; a clip's own turn here is not played",
+   "aim_b": [
+    "clavicle_l",
+    "upperarm_l"
+   ],
+   "aim_soma": [
+    "LeftShoulder",
+    "LeftArm"
+   ]
+  },
+  "upperarm_l": {
+   "joint": "LeftArm",
+   "aim_b": [
+    "upperarm_l",
+    "lowerarm_l"
+   ],
+   "aim_soma": [
+    "LeftArm",
+    "LeftForeArm"
+   ]
+  },
+  "lowerarm_l": {
+   "joint": "LeftForeArm",
+   "aim_b": [
+    "lowerarm_l",
+    "hand_l"
+   ],
+   "aim_soma": [
+    "LeftForeArm",
+    "LeftHand"
+   ]
+  },
+  "hand_l": {
+   "joint": "LeftHand",
+   "aim_b": [
+    "hand_l",
+    "middle_metacarpal_l"
+   ],
+   "aim_soma": [
+    "LeftHand",
+    "LeftHandThumb1"
+   ]
+  },
+  "thigh_l": {
+   "joint": "LeftLeg",
+   "aim_b": [
+    "thigh_l",
+    "calf_l"
+   ],
+   "aim_soma": [
+    "LeftLeg",
+    "LeftShin"
+   ]
+  },
+  "calf_l": {
+   "joint": "LeftShin",
+   "aim_b": [
+    "calf_l",
+    "foot_l"
+   ],
+   "aim_soma": [
+    "LeftShin",
+    "LeftFoot"
+   ]
+  },
+  "foot_l": {
+   "joint": "LeftFoot",
+   "aim_b": [
+    "foot_l",
+    "ball_l"
+   ],
+   "aim_soma": [
+    "LeftFoot",
+    "LeftToeBase"
+   ]
+  },
+  "ball_l": {
+   "joint": "LeftToeBase",
+   "aim_b": [
+    "ball_l",
+    null
+   ],
+   "aim_soma": [
+    "LeftToeBase",
+    "LeftToeEnd"
+   ]
+  },
+  "index_metacarpal_l": {
+   "joint": "LeftHandIndex1",
+   "aim_b": [
+    "index_metacarpal_l",
+    "index_01_l"
+   ],
+   "aim_soma": [
+    "LeftHandIndex1",
+    "LeftHandIndex2"
+   ]
+  },
+  "index_01_l": {
+   "joint": "LeftHandIndex2",
+   "aim_b": [
+    "index_01_l",
+    "index_02_l"
+   ],
+   "aim_soma": [
+    "LeftHandIndex2",
+    "LeftHandIndex3"
+   ]
+  },
+  "index_02_l": {
+   "joint": "LeftHandIndex3",
+   "aim_b": [
+    "index_02_l",
+    "index_03_l"
+   ],
+   "aim_soma": [
+    "LeftHandIndex3",
+    "LeftHandIndex4"
+   ]
+  },
+  "index_03_l": {
+   "joint": "LeftHandIndex4",
+   "aim_b": [
+    "index_03_l",
+    null
+   ],
+   "aim_soma": [
+    "LeftHandIndex4",
+    "LeftHandIndexEnd"
+   ]
+  },
+  "middle_metacarpal_l": {
+   "joint": "LeftHandMiddle1",
+   "aim_b": [
+    "middle_metacarpal_l",
+    "middle_01_l"
+   ],
+   "aim_soma": [
+    "LeftHandMiddle1",
+    "LeftHandMiddle2"
+   ]
+  },
+  "middle_01_l": {
+   "joint": "LeftHandMiddle2",
+   "aim_b": [
+    "middle_01_l",
+    "middle_02_l"
+   ],
+   "aim_soma": [
+    "LeftHandMiddle2",
+    "LeftHandMiddle3"
+   ]
+  },
+  "middle_02_l": {
+   "joint": "LeftHandMiddle3",
+   "aim_b": [
+    "middle_02_l",
+    "middle_03_l"
+   ],
+   "aim_soma": [
+    "LeftHandMiddle3",
+    "LeftHandMiddle4"
+   ]
+  },
+  "middle_03_l": {
+   "joint": "LeftHandMiddle4",
+   "aim_b": [
+    "middle_03_l",
+    null
+   ],
+   "aim_soma": [
+    "LeftHandMiddle4",
+    "LeftHandMiddleEnd"
+   ]
+  },
+  "ring_metacarpal_l": {
+   "joint": "LeftHandRing1",
+   "aim_b": [
+    "ring_metacarpal_l",
+    "ring_01_l"
+   ],
+   "aim_soma": [
+    "LeftHandRing1",
+    "LeftHandRing2"
+   ]
+  },
+  "ring_01_l": {
+   "joint": "LeftHandRing2",
+   "aim_b": [
+    "ring_01_l",
+    "ring_02_l"
+   ],
+   "aim_soma": [
+    "LeftHandRing2",
+    "LeftHandRing3"
+   ]
+  },
+  "ring_02_l": {
+   "joint": "LeftHandRing3",
+   "aim_b": [
+    "ring_02_l",
+    "ring_03_l"
+   ],
+   "aim_soma": [
+    "LeftHandRing3",
+    "LeftHandRing4"
+   ]
+  },
+  "ring_03_l": {
+   "joint": "LeftHandRing4",
+   "aim_b": [
+    "ring_03_l",
+    null
+   ],
+   "aim_soma": [
+    "LeftHandRing4",
+    "LeftHandRingEnd"
+   ]
+  },
+  "pinky_metacarpal_l": {
+   "joint": "LeftHandPinky1",
+   "aim_b": [
+    "pinky_metacarpal_l",
+    "pinky_01_l"
+   ],
+   "aim_soma": [
+    "LeftHandPinky1",
+    "LeftHandPinky2"
+   ]
+  },
+  "pinky_01_l": {
+   "joint": "LeftHandPinky2",
+   "aim_b": [
+    "pinky_01_l",
+    "pinky_02_l"
+   ],
+   "aim_soma": [
+    "LeftHandPinky2",
+    "LeftHandPinky3"
+   ]
+  },
+  "pinky_02_l": {
+   "joint": "LeftHandPinky3",
+   "aim_b": [
+    "pinky_02_l",
+    "pinky_03_l"
+   ],
+   "aim_soma": [
+    "LeftHandPinky3",
+    "LeftHandPinky4"
+   ]
+  },
+  "pinky_03_l": {
+   "joint": "LeftHandPinky4",
+   "aim_b": [
+    "pinky_03_l",
+    null
+   ],
+   "aim_soma": [
+    "LeftHandPinky4",
+    "LeftHandPinkyEnd"
+   ]
+  },
+  "thumb_01_l": {
+   "joint": "LeftHandThumb1",
+   "aim_b": [
+    "thumb_01_l",
+    "thumb_02_l"
+   ],
+   "aim_soma": [
+    "LeftHandThumb1",
+    "LeftHandThumb2"
+   ]
+  },
+  "thumb_02_l": {
+   "joint": "LeftHandThumb2",
+   "aim_b": [
+    "thumb_02_l",
+    "thumb_03_l"
+   ],
+   "aim_soma": [
+    "LeftHandThumb2",
+    "LeftHandThumb3"
+   ]
+  },
+  "thumb_03_l": {
+   "joint": "LeftHandThumb3",
+   "aim_b": [
+    "thumb_03_l",
+    null
+   ],
+   "aim_soma": [
+    "LeftHandThumb3",
+    "LeftHandThumbEnd"
+   ]
+  },
+  "clavicle_r": {
+   "joint": "RightShoulder",
+   "note": "law-driven: the girdle law sets it from the arm; a clip's own turn here is not played",
+   "aim_b": [
+    "clavicle_r",
+    "upperarm_r"
+   ],
+   "aim_soma": [
+    "RightShoulder",
+    "RightArm"
+   ]
+  },
+  "upperarm_r": {
+   "joint": "RightArm",
+   "aim_b": [
+    "upperarm_r",
+    "lowerarm_r"
+   ],
+   "aim_soma": [
+    "RightArm",
+    "RightForeArm"
+   ]
+  },
+  "lowerarm_r": {
+   "joint": "RightForeArm",
+   "aim_b": [
+    "lowerarm_r",
+    "hand_r"
+   ],
+   "aim_soma": [
+    "RightForeArm",
+    "RightHand"
+   ]
+  },
+  "hand_r": {
+   "joint": "RightHand",
+   "aim_b": [
+    "hand_r",
+    "middle_metacarpal_r"
+   ],
+   "aim_soma": [
+    "RightHand",
+    "RightHandThumb1"
+   ]
+  },
+  "thigh_r": {
+   "joint": "RightLeg",
+   "aim_b": [
+    "thigh_r",
+    "calf_r"
+   ],
+   "aim_soma": [
+    "RightLeg",
+    "RightShin"
+   ]
+  },
+  "calf_r": {
+   "joint": "RightShin",
+   "aim_b": [
+    "calf_r",
+    "foot_r"
+   ],
+   "aim_soma": [
+    "RightShin",
+    "RightFoot"
+   ]
+  },
+  "foot_r": {
+   "joint": "RightFoot",
+   "aim_b": [
+    "foot_r",
+    "ball_r"
+   ],
+   "aim_soma": [
+    "RightFoot",
+    "RightToeBase"
+   ]
+  },
+  "ball_r": {
+   "joint": "RightToeBase",
+   "aim_b": [
+    "ball_r",
+    null
+   ],
+   "aim_soma": [
+    "RightToeBase",
+    "RightToeEnd"
+   ]
+  },
+  "index_metacarpal_r": {
+   "joint": "RightHandIndex1",
+   "aim_b": [
+    "index_metacarpal_r",
+    "index_01_r"
+   ],
+   "aim_soma": [
+    "RightHandIndex1",
+    "RightHandIndex2"
+   ]
+  },
+  "index_01_r": {
+   "joint": "RightHandIndex2",
+   "aim_b": [
+    "index_01_r",
+    "index_02_r"
+   ],
+   "aim_soma": [
+    "RightHandIndex2",
+    "RightHandIndex3"
+   ]
+  },
+  "index_02_r": {
+   "joint": "RightHandIndex3",
+   "aim_b": [
+    "index_02_r",
+    "index_03_r"
+   ],
+   "aim_soma": [
+    "RightHandIndex3",
+    "RightHandIndex4"
+   ]
+  },
+  "index_03_r": {
+   "joint": "RightHandIndex4",
+   "aim_b": [
+    "index_03_r",
+    null
+   ],
+   "aim_soma": [
+    "RightHandIndex4",
+    "RightHandIndexEnd"
+   ]
+  },
+  "middle_metacarpal_r": {
+   "joint": "RightHandMiddle1",
+   "aim_b": [
+    "middle_metacarpal_r",
+    "middle_01_r"
+   ],
+   "aim_soma": [
+    "RightHandMiddle1",
+    "RightHandMiddle2"
+   ]
+  },
+  "middle_01_r": {
+   "joint": "RightHandMiddle2",
+   "aim_b": [
+    "middle_01_r",
+    "middle_02_r"
+   ],
+   "aim_soma": [
+    "RightHandMiddle2",
+    "RightHandMiddle3"
+   ]
+  },
+  "middle_02_r": {
+   "joint": "RightHandMiddle3",
+   "aim_b": [
+    "middle_02_r",
+    "middle_03_r"
+   ],
+   "aim_soma": [
+    "RightHandMiddle3",
+    "RightHandMiddle4"
+   ]
+  },
+  "middle_03_r": {
+   "joint": "RightHandMiddle4",
+   "aim_b": [
+    "middle_03_r",
+    null
+   ],
+   "aim_soma": [
+    "RightHandMiddle4",
+    "RightHandMiddleEnd"
+   ]
+  },
+  "ring_metacarpal_r": {
+   "joint": "RightHandRing1",
+   "aim_b": [
+    "ring_metacarpal_r",
+    "ring_01_r"
+   ],
+   "aim_soma": [
+    "RightHandRing1",
+    "RightHandRing2"
+   ]
+  },
+  "ring_01_r": {
+   "joint": "RightHandRing2",
+   "aim_b": [
+    "ring_01_r",
+    "ring_02_r"
+   ],
+   "aim_soma": [
+    "RightHandRing2",
+    "RightHandRing3"
+   ]
+  },
+  "ring_02_r": {
+   "joint": "RightHandRing3",
+   "aim_b": [
+    "ring_02_r",
+    "ring_03_r"
+   ],
+   "aim_soma": [
+    "RightHandRing3",
+    "RightHandRing4"
+   ]
+  },
+  "ring_03_r": {
+   "joint": "RightHandRing4",
+   "aim_b": [
+    "ring_03_r",
+    null
+   ],
+   "aim_soma": [
+    "RightHandRing4",
+    "RightHandRingEnd"
+   ]
+  },
+  "pinky_metacarpal_r": {
+   "joint": "RightHandPinky1",
+   "aim_b": [
+    "pinky_metacarpal_r",
+    "pinky_01_r"
+   ],
+   "aim_soma": [
+    "RightHandPinky1",
+    "RightHandPinky2"
+   ]
+  },
+  "pinky_01_r": {
+   "joint": "RightHandPinky2",
+   "aim_b": [
+    "pinky_01_r",
+    "pinky_02_r"
+   ],
+   "aim_soma": [
+    "RightHandPinky2",
+    "RightHandPinky3"
+   ]
+  },
+  "pinky_02_r": {
+   "joint": "RightHandPinky3",
+   "aim_b": [
+    "pinky_02_r",
+    "pinky_03_r"
+   ],
+   "aim_soma": [
+    "RightHandPinky3",
+    "RightHandPinky4"
+   ]
+  },
+  "pinky_03_r": {
+   "joint": "RightHandPinky4",
+   "aim_b": [
+    "pinky_03_r",
+    null
+   ],
+   "aim_soma": [
+    "RightHandPinky4",
+    "RightHandPinkyEnd"
+   ]
+  },
+  "thumb_01_r": {
+   "joint": "RightHandThumb1",
+   "aim_b": [
+    "thumb_01_r",
+    "thumb_02_r"
+   ],
+   "aim_soma": [
+    "RightHandThumb1",
+    "RightHandThumb2"
+   ]
+  },
+  "thumb_02_r": {
+   "joint": "RightHandThumb2",
+   "aim_b": [
+    "thumb_02_r",
+    "thumb_03_r"
+   ],
+   "aim_soma": [
+    "RightHandThumb2",
+    "RightHandThumb3"
+   ]
+  },
+  "thumb_03_r": {
+   "joint": "RightHandThumb3",
+   "aim_b": [
+    "thumb_03_r",
+    null
+   ],
+   "aim_soma": [
+    "RightHandThumb3",
+    "RightHandThumbEnd"
+   ]
+  }
+ },
+ "b_keyed_unmapped": [],
+ "soma_unused": [
+  "Jaw",
+  "LeftEye",
+  "RightEye"
+ ]
+}
