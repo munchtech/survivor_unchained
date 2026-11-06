@@ -1112,10 +1112,14 @@ def solve_chain(mesh, st, jc, cf):
                 x = S_.X0.copy()
             fx = S_.held_pos(X, M, G)
             dfix = fx[S_.fixed] - x[S_.fixed]
-            lu0 = S_.factor((), np.zeros(len(S_.free)))
-            rhs = -(S_.Afd @ dfix)
             x = x.copy()
-            x[S_.free] += np.stack([lu0.solve(rhs[:, c]) for c in range(3)], 1)
+            if cf.get("init_prev") != 2:
+                lu0 = S_.factor((), np.zeros(len(S_.free)))
+                rhs = -(S_.Afd @ dfix)
+                x[S_.free] += np.stack([lu0.solve(rhs[:, c]) for c in range(3)], 1)
+            # init_prev 2 (R5 lead 3, with `ccd`): the free nodes start where the last step left them and only the
+            # held ones move (the cut bands and the femur, far from the crease): the linear carry crossed the crease's
+            # skin through itself before the solve began (176 crossing edges at 112), which the guard can only keep
             x[S_.fixed] = fx[S_.fixed]
             xs = x
         elif x is not None:
