@@ -1,0 +1,13 @@
+{
+ "about": "P1 R1 breast route (a): her_r1 with the MakeHuman cup sliders and bust_lift at 0, the chest wall and the designed breast_a (a profile-curve height field, tools/body/breast_form.py)",
+ "base": "tools/body/specs/her_r1.json",
+ "sliders": {
+  "arm_girth": 0.3, "belly": -0.2, "build": 0.2,
+  "bust_firmness": 0.0, "bust_lift": 0.0, "bust_point": 0.0, "bust_set": 0.0, "bust_size": 0.0, "bust_spacing": 0.0,
+  "calves": 0.5, "foot_size": -0.5207, "forearm_girth": 0.666, "forearm_length": -0.4374, "glute_lift": 1.0,
+  "glutes": 0.5, "hand_size": -0.1764, "height": 0.0953, "hips": 0.4, "leg_length": 0.4416, "neck_girth": 1.0,
+  "neck_length": 1.0, "shoulder_width": 0.3, "thigh_length": -0.01, "thighs": 0.8, "torso_length": -0.5041,
+  "trap_drop": 1.0, "underbust": 0.15, "upperarm_length": -0.4525, "waist": -0.6, "weight": -0.2762,
+  "chest_wall": 1.0, "breast_a": 1.0
+ }
+}

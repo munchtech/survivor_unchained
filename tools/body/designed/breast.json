@@ -1,0 +1,73 @@
+{
+ "about": "P1 R1 form library: HER BREASTS (OURS, designed; replacing the MakeHuman cup sliders bust_size / bust_firmness / bust_set / bust_point / bust_spacing and bust_lift, which a spec sets to 0 when it uses these). chest_wall is the base every designed breast sits on; breast_a (route a, a field set by profile curves, evaluated live) and breast_b (route b, a target sculpted once by tools/body/sculpt/breast_b.py) are the two candidate forms; support_lift / support_press / support_fill are the armor support fields (rule field: linear blend shapes an armor piece sets as data). Code: tools/body/breast_form.py.",
+ "sliders": {
+  "chest_wall": {
+   "range": [0, 1],
+   "rule": "py:breast_form.chest_wall",
+   "order": 20,
+   "region": [{"on": "ell", "c": [0.088, 1.428, 0.075], "r": [0.085, 0.105, 0.09], "full": 0.99}],
+   "blend": [{"on": "ell", "c": [0.088, 1.428, 0.075], "r": [0.083, 0.102, 0.09], "full": 0.8}],
+   "why": "the base: the MakeHuman base mesh carries a small mound and a nipple (8.8 mm tip over its smoothed chest) that every designed breast would carry on its apex; the region is refilled as a smooth chest wall (biharmonic fill, rim held, a C2 blend), so the breast sliders over it are pure added volumes, clean at any value"
+  },
+  "breast_a": {
+   "range": [0, 1],
+   "rule": "py:breast_form.dome",
+   "order": 21,
+   "c_off": [0.004, -0.010, 0.0],
+   "axis": {"yaw_deg": 14.0, "pitch_deg": 0.0, "fan_deg_per_m": 120.0},
+   "h_m": 0.105,
+   "r": {"up": 0.14, "low": 0.125, "med": 0.086, "lat": 0.115},
+   "r_blend_m": 0.03,
+   "profiles": {
+    "up": {"s": 0.25, "beta": 0.2, "fold": 0.5},
+    "low": {"s": 0.45, "beta": 2.2, "fold": 0.3},
+    "med": {"s": 0.35, "beta": 1.8, "fold": 0.25},
+    "lat": {"s": 0.4, "beta": 0.8, "fold": 0.4}
+   },
+   "cap_rho": 0.25,
+   "midline_fade_m": 0.025,
+   "dir_reg": 0.15,
+   "why": "ROUTE (a): the breast as a height field over the chest wall along its axis, set by profile curves (see breast_form.dome)"
+  },
+  "breast_b": {
+   "range": [0, 1],
+   "rule": "target",
+   "order": 22,
+   "file": "tools/body/base/targets/breast_b_{tier}.npz",
+   "made_by": "tools/body/sculpt/breast_b.py",
+   "why": "ROUTE (b): the breast sculpted once: a round-cone solid (a big sphere for the round lower pole and the apex cap, a small one up and back inside the chest, the cone between them the upper pole) smoothly unioned with the chest wall, the region carried onto it and relaxed (see the generator)"
+  },
+  "support_lift": {
+   "range": [-1, 1],
+   "rule": "field",
+   "order": 30,
+   "moves": [
+    {"translate": [0.0, 0.014, 0.0],
+     "mask": [{"on": "ell", "c": [0.09, 1.40, 0.07], "r": [0.13, 0.17, 0.14], "full": 0.0},
+              {"on": "y", "full": [null, 1.37], "fade": [0, 0.16]}]}
+   ],
+   "why": "ARMOR SUPPORT, the lift (an underwire, a corset top, a plate cup): the breast carried up 16 mm at v = 1, full under the apex and easing out over the upper pole (so the upper pole gathers and fills) and over the rim (the fold rises with it); linear (a blend shape the armor piece sets)"
+  },
+  "support_press": {
+   "range": [-1, 1],
+   "rule": "field",
+   "order": 31,
+   "moves": [
+    {"translate": [-0.014, 0.0, 0.004],
+     "mask": [{"on": "ell", "c": [0.10, 1.41, 0.07], "r": [0.13, 0.15, 0.13], "full": 0.0},
+              {"on": "ax", "full": [0.035, null], "fade": [0.03, 0]}]}
+   ],
+   "why": "ARMOR SUPPORT, the press (the side padding of a plunge cup): the breast pushed 14 mm toward the midline and 4 mm forward at v = 1, easing to 0 at the midline (the sternum holds; the inner side gathers: a deeper cleavage, the gradient 0.47 so nothing crosses); linear"
+  },
+  "support_fill": {
+   "range": [-1, 1],
+   "rule": "field",
+   "order": 32,
+   "moves": [
+    {"translate": [0.0, 0.003, 0.009],
+     "mask": [{"on": "ell", "c": [0.09, 1.465, 0.08], "r": [0.095, 0.075, 0.12], "full": 0.0}]}
+   ],
+   "why": "ARMOR SUPPORT, the fill (the mass a cup displaces rising over its edge): the upper pole 9 mm forward and 3 mm up at v = 1, a smooth bell over the upper pole between the apex and the root (round and full above a cup edge); negative values flatten it (a wrap); linear"
+  }
+ }
+}
