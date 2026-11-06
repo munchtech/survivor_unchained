@@ -404,6 +404,77 @@ def root_blend(V, T, Vref, b):
     return out
 
 
+def upper_turn(V, T, Vref, b, rnd, sig=3.0, above=0.040, band_deg=10.0):
+    """P1 R1c round 5 (the game's Look camera: a thin LIT RIM arcs over each breast top, the shade just above it): how
+    the UPPER POLE turns, left breast, rest body, on root_blend's three paths (psi -28 inner, 0 centre, +28 outer), from
+    `above` (40 mm) over the root (3 mm off the chest-wall reference) down to the apex, 1 mm steps, smoothed sig mm
+    (3 mm: under half our ~8 mm quads, the facet ripple ~10 % of the globe's 1/R). Per path:
+      turn_max_deg_per_mm: the most the outline turns, either sign (deg/mm), over the path's upper part (down to where
+        the normal is 30 deg above level: the globe's front below it is an ellipsoid's, a / b^2, tighter than its side
+        circle and no part of the rim); turn_max_over_globe: that / the globe's own 1/R (breast_round's side circle);
+      convex_peak_mm: the main convex peak's width at half its height (mm along the path; a broad crest: wide);
+      summit_deg: the normal's highest elevation above level (90 = a shelf facing straight up);
+      crest_band_mm: how tall the band within band_deg of the summit stands seen from the front (level camera:
+        sum of cos(elevation) ds): the lit rim's height in the picture (the key and the lamps behind her light what
+        faces up; a summit that faces up, foreshortened to a few mm, is the thin bright line).
+    Reported per path and as the worst over the three."""
+    import breast_measure as bm
+    from scipy.spatial import cKDTree
+    out = {}
+    p = np.asarray(b["apex_mm"]) / 1000.0
+    invR = math.degrees(1.0 / max(float(rnd["side_radius_mm"]), 1.0))       # deg per mm
+    worst = {"turn_max_over_globe": 0.0, "convex_peak_mm": 1e9, "summit_deg": 0.0, "crest_band_mm": 1e9}
+    for name, psi in (("inner", -28.0), ("centre", 0.0), ("outer", 28.0)):
+        Ps = bm.resample(_path(V, T, p, psi))
+        dref = cKDTree(bm.resample(_path(Vref, T, p, psi))).query(Ps)[0]
+        ia = len(Ps) - 1
+        root = next((j for j in range(ia, -1, -1) if dref[j] < 0.003), 0)
+        Pg = bm.gsmooth(Ps, sig)
+        k = np.degrees(bm.curvature2(Pg)) / 1000.0
+        d1 = np.gradient(Pg, axis=0)
+        el = np.degrees(np.arctan2(d1[:, 1], -d1[:, 0]))      # (s down, z forward): the normal's elevation above level
+        j0 = max(root - int(round(above * 1000)), int(3 * sig))
+        j1 = ia - int(3 * sig)
+        low = np.nonzero(el[root:j1] < 30.0)[0]
+        jt = root + int(low[0]) if len(low) else j1                # the upper part: down to elevation 30 deg
+        kk = k[j0:jt]
+        r = {"root_s_mm": round(float(Ps[root, 0]) * 1000, 1)}
+        jm = int(np.argmax(np.abs(kk)))
+        r["turn_max_deg_per_mm"] = round(float(abs(kk[jm])), 2)
+        r["turn_max_at_mm"] = j0 + jm - root
+        r["turn_max_over_globe"] = round(float(abs(kk[jm])) / invR, 2)
+        jc = int(np.argmax(kk))
+        h = kk[jc] / 2.0
+        a, e = jc, jc
+        while a > 0 and kk[a - 1] >= h:
+            a -= 1
+        while e < len(kk) - 1 and kk[e + 1] >= h:
+            e += 1
+        r["convex_peak_mm"] = int(e - a + 1)
+        r["convex_peak_at_mm"] = j0 + jc - root
+        ew = el[j0:j1]
+        js = int(np.argmax(ew))
+        r["summit_deg"] = round(float(ew[js]), 1)
+        r["summit_at_mm"] = j0 + js - root
+        cb = ew >= ew[js] - band_deg
+        lo, hi = js, js
+        while lo > 0 and cb[lo - 1]:
+            lo -= 1
+        while hi < len(cb) - 1 and cb[hi + 1]:
+            hi += 1
+        r["crest_band_mm"] = round(float(np.cos(np.radians(ew[lo:hi + 1])).sum()), 1)
+        out["upper_turn_" + name] = r
+        worst["turn_max_over_globe"] = max(worst["turn_max_over_globe"], r["turn_max_over_globe"])
+        worst["convex_peak_mm"] = min(worst["convex_peak_mm"], r["convex_peak_mm"])
+        worst["summit_deg"] = max(worst["summit_deg"], r["summit_deg"])
+        worst["crest_band_mm"] = min(worst["crest_band_mm"], r["crest_band_mm"])
+    out["upper_turn_max_over_globe"] = worst["turn_max_over_globe"]
+    out["upper_turn_convex_peak_mm"] = worst["convex_peak_mm"]
+    out["upper_summit_deg"] = worst["summit_deg"]
+    out["upper_crest_band_mm"] = worst["crest_band_mm"]
+    return out
+
+
 def spec_measures(spec_path, body_glb):
     """Breast and glute numbers on the spec's own body (formview.body): sections "breast" and "glutes"."""
     import tempfile
@@ -424,6 +495,7 @@ def spec_measures(spec_path, body_glb):
     b = bm.measure(V, T, Vb, Vref, H, HT, "spec")
     b.update(breast_round(V, T, Vref, b))
     b.update(root_blend(V, T, Vref, b))
+    b.update(upper_turn(V, T, Vref, b, b))
     b = {k: v for k, v in b.items() if not k.startswith("_")}
     g = gm.measure(spec_path, V=V, z=z, skel_glb=body_glb)
     g = {k: v for k, v in g.items() if not k.startswith("_")}

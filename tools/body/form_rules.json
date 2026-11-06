@@ -286,6 +286,27 @@
       2.2
      ],
      "why": "P1 R1c round 3: the crease detector, the most the root outline turns concave within any 6 mm (/ 6), worst of three paths: the cel band and the baked cavity draw a line where it is high; round_2 2.98 / 2.46 / 2.30 (inner / centre / outer), round_3 1.97 / 1.38 / 1.24 (the inner value is a pre-existing kink in the chest 20 mm above the root)"
+    },
+    "upper_turn_max_over_globe": {
+     "band": [
+      null,
+      1.3
+     ],
+     "why": "P1 R1c round 5 (the game's Look camera: a thin lit rim over each breast top, the shade just above it; formrules.upper_turn): on the 3 upper paths from 40 mm over the root down the upper pole (to where the normal is 30 deg above level), the most the outline turns either sign (3 mm smoothing, deg/mm) over the globe's own 1/R (side circle): the pole turns no faster than ~1.3x its own round curve anywhere (no crease, no tight crest); round_2 4.57 (inner root crease 2.81 deg/mm), round_4 3.63 (inner 2.22: the chest's own concave kink 5-10 mm over the root, -1.1 deg/mm on the bare wall, plus the root's turn; centre 1.61: a ridge on the wall 20 mm over the root). The game ranks round_4 softer than round_2 and both outlined: both out, round_4 nearer"
+    },
+    "upper_turn_convex_peak_mm": {
+     "band": [
+      20,
+      null
+     ],
+     "why": "P1 R1c round 5: the main convex peak on the worst upper path at least 20 mm wide at half its height (a broad crest, not a ridge a cel band or a lamp draws as a line); round_2 6, round_4 7 (both the centre path's wall ridge 20-28 mm over the root)"
+    },
+    "upper_crest_band_mm": {
+     "band": [
+      15,
+      null
+     ],
+     "why": "P1 R1c round 5 (the lit rim's cause, measured): the band of the upper pole within 10 deg of its highest normal (the summit, what faces the high body key and the lamps behind her most) stands at least 15 mm tall seen from the front by a level camera (sum of cos(elevation) ds, worst path): a summit facing straight up is foreshortened to a few mm, the thin bright line at the Look (~1 px/mm there); round_2 3.1 mm (summit 90 deg), round_4 6.3 (86.8 deg). The game ranks them the same way; >= 15 mm reads as a broad highlight on the pole"
     }
    }
   },
