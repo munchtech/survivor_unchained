@@ -87,7 +87,7 @@
    180
   ]
  },
- "notes": "",
+ "notes": " Round 4 finish: no foot roll on the walks (it slid the planted ball 2-5 mm; the walks had no stance pop).",
  "source": "src/walk_warden_town.npz",
  "bvh": "walk_warden_town__p1_1.bvh",
  "sha1": "cd63cac437003c118ad254e90225f220ba6aa7a2",
@@ -110,12 +110,6 @@
    "x": 4,
    "span": 4,
    "cap": {}
-  },
-  "roll": {
-   "heel": 0.3,
-   "toe": 0.5,
-   "ease": 6,
-   "reach": 0.985
   },
   "wrist": {
    "hand_l": {

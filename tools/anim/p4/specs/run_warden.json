@@ -123,7 +123,7 @@
    140
   ]
  },
- "notes": "Cadence gated (gate: steps_min, 160-176): Kimodo's prompted runs mostly step 180-200/min at 5 m/s; the 'long strides' prompts reach 164-172 but bounce more (pelvis vertical 8-11 cm). duty 0.27 (a 5 m/s run's ~0.2 s contact over a 0.73 s stride): the stance lock at 0.35 pinned the foot past the leg's reach (5-7 mm slide); at 0.27 slide 0. Pops (foot_r ~28 deg/frame) are the source's toe-off.",
+ "notes": "Cadence gated (gate: steps_min, 160-176): Kimodo's prompted runs mostly step 180-200/min at 5 m/s; the 'long strides' prompts reach 164-172 but bounce more (pelvis vertical 8-11 cm). duty 0.27 (a 5 m/s run's ~0.2 s contact over a 0.73 s stride): the stance lock at 0.35 pinned the foot past the leg's reach (5-7 mm slide); at 0.27 slide 0. Pops (foot_r ~28 deg/frame) are the source's toe-off. Round 4 finish: ONE shield carry for the armed walk and run (the blend keeps it): at her left side, the face out to her left, the top edge 5 deg out, the boss 34 cm left / 6 up / 8 forward of the pelvis head, placed whole by fit.shield solve (elbow ~70, upper arm 22-31 off vertical, the wrist straight). The bible's low-in-front carry (boss at the navel 15-25 cm ahead) cannot clear her with this mount on B's 23 cm upper arm: every bent-arm solution cuts 58-80 mm into her (round 4 search); the straight arm reached it only with the shield in her.",
  "source": "src/run_warden.npz",
  "bvh": "run_warden__p4_4.bvh",
  "sha1": "99b4bbf8d837c07dcc3b446a54738000e5571961",
@@ -176,18 +176,15 @@
    "keep": 0.5
   },
   "shield": {
+   "solve": true,
    "boss": [
-    0.08,
-    0.08,
-    0.36
+    0.34,
+    0.06,
+    0.08
    ],
-   "pole": [
-    1,
-    0.5,
-    -0.3
-   ],
-   "open_deg": 12,
-   "tilt_deg": 15
+   "open_deg": 90,
+   "tilt_deg": 5,
+   "branch": -1
   },
   "roll": {
    "heel": 0.7,
@@ -212,10 +209,7 @@
   },
   "clear": {
    "target_mm": 12,
-   "passes": 6,
-   "target_by": {
-    "shield": 20
-   }
+   "passes": 6
   }
  },
  "held": [

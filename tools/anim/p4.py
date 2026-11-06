@@ -456,6 +456,7 @@ class _Pose:
 def steps(r):
     """The worst one-frame local turn (deg) of each foot and knee (calf) over the loop, and the wrists' worst bends."""
     from motion import fit as FIT
+    from motion import quat as Q
     rig, G = r.rig, r.G
     out = {}
     for b in ("foot_l", "foot_r", "calf_l", "calf_r"):
@@ -468,6 +469,12 @@ def steps(r):
         fl, de = FIT.wrist_of(F, s)
         out[f"wrist_{s}_flex_deg"] = round(float(np.abs(fl[:r.m]).max()), 1)
         out[f"wrist_{s}_dev_deg"] = round(float(np.abs(de[:r.m]).max()), 1)
+        # (the hand's roll on the forearm, from B's rest: a candy-wrapper wrist the flex/dev cap cannot see)
+        la, ha = rig.index[f"lowerarm_{s}"], rig.index[f"hand_{s}"]
+        D = np.swapaxes(rig.Lr0[ha], -1, -2)[None] @ (np.swapaxes(G[:, la], -1, -2) @ G[:, ha])
+        q = Q.from_mat(D)
+        tw = np.degrees((2 * np.arctan2(q[:, 1], q[:, 3]) + np.pi) % (2 * np.pi) - np.pi)
+        out[f"wrist_{s}_twist_deg"] = round(float(np.abs(tw[:r.m]).max()), 1)
     return out
 
 if __name__ == "__main__":
