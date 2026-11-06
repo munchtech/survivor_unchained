@@ -237,7 +237,7 @@ def project(F):
     return R, S
 
 
-def _closest(Y, Tc, Q, P0c, Q0, far_m, k=48, Nq=None, facing=None):
+def _closest(Y, Tc, Q, P0c, Q0, far_m, k=48, Nq=None, facing=None, faces=False):
     """Closest points on the posed faces Tc to Q among faces whose rest centre is over far_m from Q's rest place
     and, given the nodes' normals Nq, whose own normal faces the node's (n_face . n_node < facing: a fold's two lips
     face each other; the node's own sheet round it does not, so a small far_m is enough)."""
@@ -249,16 +249,46 @@ def _closest(Y, Tc, Q, P0c, Q0, far_m, k=48, Nq=None, facing=None):
     cand = cand.reshape(len(Q), -1)
     best = np.full(len(Q), np.inf)
     qb, fb = np.zeros_like(Q), np.zeros(len(Q), np.int64)
+    bb = np.zeros_like(Q)
     for j in range(cand.shape[1]):
         t = cand[:, j]
-        q, _ = closest_on_tris(Q, A[t], B[t], C[t])
+        q, bc = closest_on_tris(Q, A[t], B[t], C[t])
         d = np.linalg.norm(Q - q, axis=1)
         m = (d < best) & (np.linalg.norm(P0c[t] - Q0, axis=1) > far_m)
         if facing is not None:
             m &= np.einsum("ij,ij->i", nf[t], Nq) < facing
-        best[m], qb[m], fb[m] = d[m], q[m], t[m]
+        best[m], qb[m], fb[m], bb[m] = d[m], q[m], t[m], bc[m]
     n = np.cross(B[fb] - A[fb], C[fb] - A[fb])
-    return qb, n / np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-12), np.isfinite(best)
+    n = n / np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-12)
+    if faces:
+        return qb, n, np.isfinite(best), fb, bb
+    return qb, n, np.isfinite(best)
+
+
+def _pair_search(Y, Tc, Q, qi, ins, P0c, Q0, far_m, k, prism, reach_out):
+    """Self-contact partners of any orientation (`pair_any`, R5 solver 2): past 100 deg every node the parity test put
+    inside had a facing partner it sat OUTSIDE of (0-4.5 mm); each had gone under a face of its own sheet oriented its
+    own way (n_face . n_node 0.6-1.0, rest 7-15 mm off: the crease apex tucked under its lips, a pleat), which the
+    `facing` filter never sees. So: faces not touching the node with rest centre over far_m; an inside node takes the
+    nearest face it is behind (the one it crossed), an outside node the nearest it is in front of within reach_out and
+    inside the face's normal prism (sg >= prism * distance: a neighbour in the sheet's own plane is never a contact).
+    Returns q, n, ok, face, barycentrics, sg."""
+    A, B, C = Y[Tc[:, 0]], Y[Tc[:, 1]], Y[Tc[:, 2]]
+    nf = np.cross(B - A, C - A)
+    nf /= np.maximum(np.linalg.norm(nf, axis=1, keepdims=True), 1e-18)
+    _, cand = cKDTree((A + B + C) / 3).query(Q, k=min(k, len(Tc)))
+    cand = cand.reshape(len(Q), -1)
+    best = np.full(len(Q), np.inf)
+    qb, fb, bb, sb = np.zeros_like(Q), np.zeros(len(Q), np.int64), np.zeros_like(Q), np.zeros(len(Q))
+    for j in range(cand.shape[1]):
+        t = cand[:, j]
+        q, bc = closest_on_tris(Q, A[t], B[t], C[t])
+        d = np.linalg.norm(Q - q, axis=1)
+        sg = np.einsum("ij,ij->i", Q - q, nf[t])
+        m = (d < best) & (np.linalg.norm(P0c[t] - Q0, axis=1) > far_m) & ~(Tc[t] == qi[:, None]).any(1)
+        m &= np.where(ins, sg < 0, (sg >= prism * d) & (sg < reach_out))
+        best[m], qb[m], fb[m], bb[m], sb[m] = d[m], q[m], t[m], bc[m], sg[m]
+    return qb, nf[fb], np.isfinite(best), fb, bb, sb
 
 
 class Solve:
@@ -664,6 +694,68 @@ class Solve:
         P = F + (lam * (J - a))[:, None, None] * np.stack([c0, c1, c2], 2)      # dPsi/dF (the cofactor is dJ/dF)
         return E, self.tets.rhs(w, P), J
 
+    def pairs(self, x):
+        """`contact_model` "pair" (method "nh"): node-face pairs, the energy's own. Every skin node with a facing
+        partner face (far_m, facing as contacts()) either inside the region and behind that face, or outside and within
+        `c_reach` of it, is paired with the face's closest point (its barycentrics) and the face's normal, both frozen
+        till the next refresh. The gap s(x) = (x_i - sum_k b_k x_tk) . n is linear in x, so the penalty
+        1/2 k min(s - c_gap, 0)^2 is one C1 convex energy over BOTH sides (the node and the face's three nodes share the
+        push by their own stiffness; no target re-found from a moving partner, no `share`), evaluated at every
+        line-search point. Why (R5 solver 2, 6 Nov): the plane targets were re-found from the partner's last place and
+        only for nodes already inside, so past 100 deg the active set chattered (40-50 refreshes, dx 0.4-1.25 mm) and
+        6 nodes stayed inside with no plane at 90 deg. Returns dict(i, tri, b, n, k) or None."""
+        cf = self.cf
+        ns = self.ns
+        Q = x[:ns]
+        N = bends.normals(Q, self.skinF)
+        ins = ray.inside(ray.scene(x, self.F), Q + 3e-4 * N)
+        allq = np.arange(ns)
+        # `c_k` face candidates per node: a node deep in a fold has its own sheet's faces nearest; 48 (contacts())
+        # found no partner at all for most of the inside nodes
+        if cf.get("pair_any"):
+            q, nq, ok, fb, bc, sg = _pair_search(x, self.skinF, Q, allq, ins, self.P0c, self.X0[:ns],
+                                                 cf.get("pair_far_m", 0.004), int(cf.get("c_k", 64)),
+                                                 cf.get("prism", 0.8), cf.get("c_reach", 0.004))
+        else:
+            q, nq, ok, fb, bc = _closest(x, self.skinF, Q, self.P0c, self.X0[:ns], cf["far_m"], k=int(cf.get("c_k", 48)),
+                                         Nq=N, facing=cf.get("facing"), faces=True)
+            sg = np.einsum("ij,ij->i", Q - q, nq)
+        d = np.linalg.norm(Q - q, axis=1)
+        keep = ok & (d < cf["reach"]) & ((ins & (sg < 0)) | (~ins & (sg >= 0) & (sg < cf.get("c_reach", 0.004))))
+        tri = self.skinF[fb[keep]]
+        i = allq[keep]
+        anyfree = (self.hold[i] == 0) | (self.hold[tri] == 0).any(1)
+        i, tri, b, n = i[anyfree], tri[anyfree], bc[keep][anyfree], nq[keep][anyfree]
+        k = cf["contact"] * np.maximum(self.diag_h0[i], (b * b * self.diag_h0[tri]).sum(1))
+        fz = self.hold[:ns] == 0
+        self._pairs_log = {"pairs": int(len(i)), "pairs_inside": int((ins[i]).sum()), "ins": int(ins.sum()),
+                           "ins_nopart": int((ins & ~ok).sum()), "ins_out": int((ins & ok & (sg >= 0)).sum()),
+                           "ins_far": int((ins & ok & (sg < 0) & (d >= cf["reach"])).sum()),
+                           "ins_held": int((ins & ~fz).sum())}
+        return dict(i=i, tri=tri, b=b, n=n, k=k)
+
+    @staticmethod
+    def pair_gap(xv, PR):
+        p = np.einsum("kj,kjc->kc", PR["b"], xv[PR["tri"]])
+        return np.einsum("kc,kc->k", xv[PR["i"]] - p, PR["n"])
+
+    def pair_phi(self, xv, PR):
+        """Each skin node's deepest pair penalty displacement min(s - c_gap, 0) (0 with no pair)."""
+        ph = np.zeros(self.ns)
+        if PR is not None and len(PR["i"]):
+            np.minimum.at(ph, PR["i"], np.minimum(self.pair_gap(xv, PR) - self.cf.get("c_gap", 0.0005), 0.0))
+        return ph
+
+    def pair_h0(self, PR, n):
+        """The pairs' active terms as a scalar matrix (k a a^T, a = e_i - sum b_k e_tk), the H0's contact part."""
+        if PR is None or not len(PR["i"]):
+            return sp.csr_matrix((n, n))
+        idx = np.concatenate([PR["i"][:, None], PR["tri"]], 1)
+        c = np.concatenate([np.ones((len(idx), 1)), -PR["b"]], 1)
+        v = PR["k"][:, None, None] * c[:, :, None] * c[:, None, :]
+        r = np.repeat(idx[:, :, None], 4, 2)
+        return sp.coo_matrix((v.ravel(), (r.ravel(), np.transpose(r, (0, 2, 1)).ravel())), shape=(n, n)).tocsr()
+
     def step_nh(self, x, X, M, G, log):
         """The pose's hyperelastic rest: min over the free nodes of nh_energy + the skin's smoothness against the
         skinning (1/2 smooth_w h |L x - L X|^2 over the skin's Laplacian: the solve's offset from LBS stays smooth, so
@@ -693,6 +785,10 @@ class Solve:
             self._h0 = (A[fr][:, fr].tocsc(), A.diagonal())
             self._h0_key, self._h0_lu = None, None
         Hff, Hd = self._h0
+        self.diag_h0 = Hd
+        pair = cf.get("contact_model") == "pair"
+        c_gap = cf.get("c_gap", 0.0005)
+        PR, pid, Hc = None, 0, None
 
         def total(xv, cn, tgt, wc):
             E, g, J = self.nh_energy(xv)
@@ -707,6 +803,13 @@ class Solve:
                 ph = np.minimum(np.einsum("ij,ij->i", xv[cn] - tgt, nq), 0.0)
                 E += 0.5 * float((wc[pos[cn]] * ph * ph).sum())
                 g[cn] += (wc[pos[cn]] * ph)[:, None] * nq
+            if PR is not None and len(PR["i"]):
+                ph = np.minimum(self.pair_gap(xv, PR) - c_gap, 0.0)
+                E += 0.5 * float((PR["k"] * ph * ph).sum())
+                f = (PR["k"] * ph)[:, None] * PR["n"]
+                np.add.at(g, PR["i"], f)
+                for c_ in range(3):
+                    np.add.at(g, PR["tri"][:, c_], -PR["b"][:, c_, None] * f)
             return E, g[fr], J
 
         prev = np.zeros(self.ns, bool)
@@ -722,7 +825,31 @@ class Solve:
         settle = bool(cf.get("settle", 0))
         refresh, t0_, nref = False, None, 0
         for it in range(int(cf["iters"])):
-            if it % int(cf["contact_every"]) == 0 or refresh:
+            if pair and (it % int(cf["contact_every"]) == 0 or refresh):
+                PR0 = PR
+                PR = self.pairs(x)
+                nref += 1
+                pid += 1
+                ph0 = self.pair_phi(x, PR0)
+                ph1 = self.pair_phi(x, PR)
+                if E is None or ((ph0 < 0) != (ph1 < 0)).any():
+                    Sh, Yh = [], []
+                E, g, J = total(x, cn, tgt, wc)
+                # active-only H0 part (a pair at rest out of reach adds no stiffness)
+                PA = None
+                if len(PR["i"]):
+                    a_ = self.pair_gap(x, PR) < c_gap + cf.get("h0_reach", 0.001)
+                    PA = {k_: v_[a_] for k_, v_ in PR.items()}
+                Hc = self.pair_h0(PA, len(x))[fr][:, fr]
+                if refresh:
+                    # settled: re-paired at the solve's rest, every node's penalty displacement within settle_mm
+                    refresh = False
+                    dph = float(np.abs(ph1 - ph0).max()) if len(ph0) else 0.0
+                    log["dph_mm"] = round(dph * 1000, 3)
+                    if dph < cf.get("settle_mm", 0.05) * 1e-3:
+                        log["settled"] = it
+                        break
+            elif not pair and (it % int(cf["contact_every"]) == 0 or refresh):
                 cn0, tgt0 = cn, tgt
                 cn, tgt, ins = self.contacts(x, prev)
                 nref += 1
@@ -745,9 +872,9 @@ class Solve:
                     if same:
                         log["settled"] = it
                         break
-            key = tuple(cn.tolist())
+            key = ("pair", id(self), pid) if pair else tuple(cn.tolist())
             if self._h0_key != key:
-                self._h0_lu = splu((Hff + sp.diags(wc)).tocsc())
+                self._h0_lu = splu((Hff + Hc).tocsc() if pair else (Hff + sp.diags(wc)).tocsc())
                 self._h0_key = key
             lu = self._h0_lu
             q = g.copy()
@@ -802,6 +929,10 @@ class Solve:
                 if not settle:
                     break
                 refresh = True                       # settled on these planes: re-find them, stop if they hold
+        if pair:
+            ph = self.pair_phi(x, PR)
+            log.update(getattr(self, "_pairs_log", {}), pen_max_mm=round(-float(ph.min()) * 1000, 3) if len(ph) else 0.0)
+            self._h0_key = None                      # the next step's first pairing refactors
         cn, tgt, ins = self.contacts(x, np.zeros(self.ns, bool))
         J = np.linalg.det(self.tets.F(x))
         vl = self.tets.vol
