@@ -33,5 +33,9 @@
   "waist": -0.6,
   "weight": -0.2762
  },
- "bake": null
+ "bake": null,
+ "seam": {
+  "rows_m": 0.05,
+  "why": "the throat seam as one surface (build_topo.seam_g1): seam angle mean 36.5 -> 2.9 deg"
+ }
 }

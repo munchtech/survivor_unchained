@@ -193,11 +193,74 @@ def stage_place(spec, z, V, A, baked, rep):
     zone[ring] = False
     V = V + st.harmonic(L, ring, D, np.where(zone)[0])
     V[ring] = tgt
+    V = seam_g1(spec, Q, V, ring, hv, baked["HeroineHead"]["P"], A.mesh("HeroineHead").T, L, rep)
     rep["place"] = {"ring_points": int(len(ring)), "ring_move_max_mm": round(float(np.linalg.norm(D, axis=1).max()) * 1e3, 2),
                     "ring_move_mean_mm": round(float(np.linalg.norm(D, axis=1).mean()) * 1e3, 2),
                     "ease_points": int(zone.sum()), "fit_ease_m": spec["fit_ease_m"],
                     "feet_lowest_m": round(float(V[:, 1].min()), 4)}
     return V, ring, hv
+
+
+def seam_g1(spec, Q, V, ring, hv, HP, HT, L, rep):
+    """P1 R1: the throat seam as ONE surface (spec "seam": {"rows_m": d}): the body leaves the head's ring along the
+    head's own surface direction (G1), so no crease line runs round the throat under a cel terminator. Each ring
+    point's way out of the head (its position less the mean of its head neighbours off the ring: the head surface's
+    direction across the seam) carries the body's first row (each point set at its own distance from its ring
+    neighbours along that direction), and that move eases harmonically to 0 at d from the ring. Measured by the seam
+    angle (each ring point's body normal against its head normal; formrules "seam"): her_sliders 36.5 deg mean,
+    her_topo (A's copy) 6.8."""
+    s = spec.get("seam")
+    if not s:
+        return V
+    w = np.asarray(weld(HP, 1e-7))            # the head's UV-split copies as one point
+    hs = set(int(w[h]) for h in hv)
+    he = w[np.concatenate([HT[:, [0, 1]], HT[:, [1, 2]], HT[:, [2, 0]]])]
+    first = {}
+    for i_, r_ in enumerate(w):
+        first.setdefault(int(r_), i_)
+    nb = {}
+    for a_, b_ in he:
+        for x, y in ((int(a_), int(b_)), (int(b_), int(a_))):
+            if x in hs and y not in hs:
+                nb.setdefault(x, set()).add(y)
+    tdir = np.zeros((len(ring), 3))
+    for i, h in enumerate(hv):
+        inner = [first[k] for k in sorted(nb.get(int(w[h]), ()))]
+        if not inner:                         # a corner point whose triangles touch only the ring: its ring
+            ring_nb = {int(y) for x, y in he if int(x) == int(w[h]) and int(y) in hs}   # neighbours' way out
+            inner = [first[k] for r_ in sorted(ring_nb) for k in sorted(nb.get(r_, ()))]
+        t = HP[int(h)] - HP[inner].mean(0)
+        tdir[i] = t / max(np.linalg.norm(t), 1e-12)
+    # the head's ring rows are uneven (corner triangles): each way out is smoothed along the ring with its two ring
+    # neighbours, twice, and kept tangent to the body side (it must point away from the head: down the neck)
+    rv = V[ring]
+    nbr = cKDTree(rv).query(rv, k=3)[1][:, 1:]
+    for _ in range(2):
+        tdir = 0.5 * tdir + 0.25 * (tdir[nbr[:, 0]] + tdir[nbr[:, 1]])
+        tdir /= np.maximum(np.linalg.norm(tdir, axis=1, keepdims=True), 1e-12)
+    rep.setdefault("seam_dirs", {})["min_down"] = round(float(-tdir[:, 1].max()), 3)
+    pos = {int(r): i for i, r in enumerate(ring)}
+    be = np.concatenate([Q[:, [0, 1]], Q[:, [1, 2]], Q[:, [2, 3]], Q[:, [3, 0]]])
+    rows = {}
+    for a_, b_ in be:
+        for x, y in ((int(a_), int(b_)), (int(b_), int(a_))):
+            if x in pos and y not in pos:
+                rows.setdefault(y, set()).add(x)
+    F = np.array(sorted(rows))
+    tgt = np.zeros((len(F), 3))
+    for k, f in enumerate(F):
+        tgt[k] = np.mean([V[r] + np.linalg.norm(V[f] - V[r]) * tdir[pos[r]] for r in rows[f]], 0)
+    Df = (tgt - V[F]) * float(s.get("k", 1.0))
+    dr, _ = cKDTree(V[ring]).query(V)
+    zone = dr < float(s["rows_m"])
+    zone[ring] = False
+    zone[F] = False
+    known = np.concatenate([ring, F])
+    vals = np.concatenate([np.zeros((len(ring), 3)), Df])
+    X = st.harmonic(L, known, vals, np.where(zone)[0])
+    rep["seam"] = {"rows_m": s["rows_m"], "first_row": int(len(F)), "first_row_move_mm_max": round(float(np.linalg.norm(Df, axis=1).max()) * 1e3, 2),
+                   "first_row_move_mm_mean": round(float(np.linalg.norm(Df, axis=1).mean()) * 1e3, 2)}
+    return V + X
 
 
 # ----------------------------------------------------------------------------------------------- 2b forms --

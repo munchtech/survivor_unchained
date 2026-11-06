@@ -35,7 +35,17 @@ def body(spec_path, tier="close"):
     return V, T, H, HT, z, rep
 
 
-def vnormals(V, T):
+def vnormals(V, T, weld_tol=2e-5):
+    """Smooth vertex normals with coincident points welded (UV splits and the head/body ring share one normal, as
+    the game's export gives the ring the head's normals)."""
+    from gl import weld
+    w = np.asarray(weld(V, weld_tol))
+    Vw = np.zeros((w.max() + 1, 3))
+    Vw[w] = V
+    return _vn(Vw, w[T])[w]
+
+
+def _vn(V, T):
     fn = np.cross(V[T[:, 1]] - V[T[:, 0]], V[T[:, 2]] - V[T[:, 0]])
     N = np.zeros_like(V)
     for k in range(3):
