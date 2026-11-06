@@ -51,12 +51,33 @@ import scipy.sparse as sp
 import weights as wt
 from stages import harmonic, laplacian
 
-VERSION = "v1"  # written into each built glb's extras (build_topo.py stage_export); bump with the rules
+VERSION = "v2"  # (v2: P1 R2 girdle skin CLAV, BLADE) written into each built glb's extras (build_topo.py stage_export); bump with the rules
 
 SPINE = ["pelvis", "spine_01", "spine_02", "spine_03", "spine_04", "spine_05", "neck_01", "neck_02", "Head"]
 FINGERS = ["index", "middle", "ring", "pinky"]
 HMAX = 0.04
 HAND_SMOOTH = 12
+# the girdle's skin (P1 R2: B's own girdle law moves the clavicle and the blade with the arm, so their skin must ride
+# them; v1 held the trapezius with spine_05 and a clip's dropped shoulder left it standing: the dome). Anatomy: the
+# trapezius runs from the neck's side to the acromion, above the clavicle at the front and over the scapular spine at
+# the back; the deltoid's cap sits on the acromion.
+#   CLAV  the trunk's clavicle share k = s01((t - t[0]) / (t[1] - t[0])) * fade(dy) * s01((d_seam - neck[0]) / neck[1]):
+#         t along the clavicle (head 0, tail 1); dy off its line: above it full to above[0], gone by +above[1]
+#         (the trapezius' top, 9-10 cm over the line at the neck's side), below it the v1 5 + 6 cm (the pec line and the
+#         breasts keep the trunk's); d_seam the distance to the neck's open ring: within neck[0] the spine's (the
+#         neck's own skin holds), all the clavicle's past neck[0] + neck[1]. (v1: t 0.25..0.75, |dy| 5 + 6 cm, no neck.)
+#   CAP   (off: cap_deg 0) the shoulder's girdle fill may take as trunk seeds (the limb's share 0) the band's points above
+#         the joint within cap_deg of up from it (medial: only those medial of the joint + lateral_m). Measured raw LBS on
+#         the R2 law, her left: cap 35 the shoulder top follows a hanging arm (top drop / joint drop at 5 deg -0.54 ->
+#         0.88) but abduction 90's outer outline 8.5/39.6 -> 13.9/57.8 mm (mean/max) and its d0.25 girth 1.00 -> 0.79;
+#         cap 10 / 20, medial 35 / 50, medial 45 past -15 mm: the same 0.88 at 0.84-0.92 girth and 12-15 mm outlines;
+#         the cap on the scapula (BLADE cap_amount 1): 16.3 mm. The share's cap is what lifts the top over a raised arm
+#   BLADE the scapula takes `amount` of the clavicle's weight behind the clavicle head's coronal plane (eased over
+#         `ease` m): the trapezius over the scapular spine and the blade ride the blade (the scap muscle's ball, kept,
+#         is its own); cap_amount (off) the same share over CAP's cone (cap_deg, fading) lateral of the scap's head
+CLAV = {"t": (0.1, 0.6), "above": (0.11, 0.05), "below": (0.05, 0.06), "neck": (0.03, 0.03)}
+CAP = {"cap_deg": 0.0, "medial": False, "lateral_m": 0.0}
+BLADE = {"amount": 0.6, "ease": 0.03, "cap_amount": 0.0, "cap_deg": (35.0, 65.0)}
 
 
 def s01(x):
@@ -192,13 +213,24 @@ def trunk(c):
     Hs = hats(y, knots, h)
     for i, b in enumerate(SPINE):
         W[:, c.idx[b]] = Hs[:, i]
+    # the girdle's skin (P1 R2, CLAV above): the clavicle owns the trapezius from the neck's side out to the acromion
+    # and the skin just above the clavicle at the front; the neck's own skin by the seam holds the spine's
+    E = np.sort(np.concatenate([c.Q[:, [0, 1]], c.Q[:, [1, 2]], c.Q[:, [2, 3]], c.Q[:, [3, 0]]]), 1)
+    u, cnt = np.unique(E, axis=0, return_counts=True)
+    from scipy.spatial import cKDTree
+    seam = np.unique(u[cnt == 1].ravel())
+    seam = seam[P[seam, 1] > c.head("spine_05")[1]]            # the neck's open ring (the body's only boundary up there)
+    dn, _ = cKDTree(P[seam]).query(P)
+    t0, t1 = CLAV["t"]
     for s, sx in (("l", 1.0), ("r", -1.0)):
         a, b = c.head(f"clavicle_{s}"), c.tail(f"clavicle_{s}")
         t = wt.seg_t(P, a, b)
         line = a[None] + np.clip(t, 0, 1)[:, None] * (b - a)[None]
         dy = P[:, 1] - line[:, 1]
         own = (P[:, 0] * sx > 0).astype(float)
-        k = s01((t - 0.25) / 0.5) * (1 - s01((np.abs(dy) - 0.05) / 0.06)) * own
+        fade = np.where(dy > 0, 1 - s01((dy - CLAV["above"][0]) / CLAV["above"][1]),
+                        1 - s01((-dy - CLAV["below"][0]) / CLAV["below"][1]))
+        k = s01((t - t0) / (t1 - t0)) * fade * s01((dn - CLAV["neck"][0]) / CLAV["neck"][1]) * own
         W *= (1 - k)[:, None]
         W[:, c.idx[f"clavicle_{s}"]] += k
     # breast: its part only, by distance from the hole's rim (trunk points on a quad with a breast point)
@@ -418,7 +450,12 @@ def limbs(c, W):
         free[np.where(m)[0]] = (c.part[m] == sh) | (ia & (st - st[ia].min() < GIRDLE["shoulder"]["limb_m"]))
         Gs = GIRDLE["shoulder"]
         free |= own & (c.part == c.pid("trunk")[0]) & (np.linalg.norm(P - c.head(f"upperarm_{s}"), axis=1) < Gs["trunk_m"])
-        g = girdle_fill(c, s, "shoulder", own, m, free)
+        r = P - c.head(f"upperarm_{s}")
+        cap = free & (r[:, 1] > np.cos(np.radians(CAP["cap_deg"])) * np.linalg.norm(r, axis=1))
+        if CAP.get("medial"):
+            cap &= r[:, 0] * sx < CAP.get("lateral_m", 0.0)
+        free &= ~cap
+        g = girdle_fill(c, s, "shoulder", own, m & ~cap, free)
         Af = np.zeros((c.n, len(c.names)))
         Af[:, c.idx[f"upperarm_{s}"]] = 1.0
         Af[m] = A
@@ -463,6 +500,22 @@ def limbs(c, W):
         W[ids] = (1 - g[ids])[:, None] * W[ids] + g[ids, None] * Af[ids]
         rep[f"knee_blend_{s}_m"] = [round(float(lo), 4), round(float(hi), 4)]
     return W, rep
+
+
+def blade(W, P, c, s):
+    """BLADE: the scapula's share of the clavicle's weight at the back."""
+    sx = 1.0 if s == "l" else -1.0
+    cl, sc = c.idx[f"clavicle_{s}"], c.idx[f"scap_{s}"]
+    back = s01((c.head(f"clavicle_{s}")[2] - P[:, 2]) / BLADE["ease"])
+    r = P - c.head(f"upperarm_{s}")
+    ang = np.degrees(np.arccos(np.clip(r[:, 1] / np.maximum(np.linalg.norm(r, axis=1), 1e-9), -1, 1)))
+    a0, a1 = BLADE["cap_deg"]
+    cap = (1 - s01((ang - a0) / (a1 - a0))) * s01((P[:, 0] * sx - c.head(f"scap_{s}")[0] * sx) / BLADE["ease"])
+    share = np.maximum(BLADE["amount"] * back, BLADE["cap_amount"] * cap)
+    t = share * (P[:, 0] * sx > 0) * W[:, cl]
+    W[:, cl] -= t
+    W[:, sc] += t
+    return W
 
 
 def smooth_part(W, Q, sel, iters):
@@ -510,6 +563,7 @@ def body(P, topo, sk):
             W = hip_trunk_side(W, names, side, r_hip, Pg, frames)
         W = wt.points(W, Pg, names, frames, side)
         W = wt.muscles(W, Pg, names, par, tails, side)
+        W = blade(W, Pg, c, side)
         W = wt.breast(W, Pg, names, sk["ends"], side)
     W = np.maximum(W, 0)
     W /= np.maximum(W.sum(1, keepdims=True), 1e-12)

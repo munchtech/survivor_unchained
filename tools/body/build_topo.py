@@ -23,7 +23,9 @@ Stages (each a function, no hand steps):
   2b forms    the spec's "forms_topo" (a path pattern with {tier}: wrap_topo.py's R per our vertex, 0 on the ring)
               added to the placed body; the npz names our topology's hash (stage_forms asserts it);
   3 skeleton  tools/body/skeleton.json placed from OUR vertices alone (skeleton.place_skeleton_ours,
-              base/landmarks.json "tiers"[tier]) on the placed body;
+              base/landmarks.json "tiers"["close"]) on the placed close body; the play tier takes the close tier's
+              (P1 R2: one skeleton for both tiers; stage/close_skeleton.json when play is built alone; build.json
+              "skeleton_play_vs_close" asserted 0, "skeleton_vs_published" the close against the published body.glb);
   4 weights   weights_topo.py (its VERSION in the glb extras; v1: seeds by rule + a bounded biharmonic fill, then
               weights.py's rules 2 and 4-10), and the head's: its ring = the body ring's weights, Head above, harmonic between;
   5 export    glbwrite.py: our skeleton (no rest scale, plain binds), the body (our quads as triangle pairs, normals
@@ -376,7 +378,18 @@ def stage_export(spec, tier, z, V, ring, hv, sk, wts, A, baked, out, rep, uv=Non
              **({"src": uv["src"], "T": uv["T"]} if uv is not None else {}))
 
 
-def run_tier(spec, tier, A, baked, out, rep, correct=True):
+def skeleton_diff(a, b):
+    """Two glbs' skeletons: names and parents equal, and the worst rest-world gap (mm, deg)."""
+    sa, sb = Glb(a).skeleton(), Glb(b).skeleton()
+    if list(sa.names) != list(sb.names) or list(sa.parent) != list(sb.parent):
+        return {"same_names_parents": False}
+    dm = float(np.abs(sa.rest[:, :3, 3] - sb.rest[:, :3, 3]).max()) * 1e3
+    R = np.einsum("nji,njk->nik", sa.rest[:, :3, :3], sb.rest[:, :3, :3])
+    dd = float(np.degrees(np.arccos(np.clip((np.trace(R, axis1=1, axis2=2) - 1) / 2, -1, 1))).max())
+    return {"same_names_parents": True, "max_mm": round(dm, 6), "max_deg": round(dd, 6)}
+
+
+def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
     t = time.time()
     tim = rep["timings_s"]
     z, V = stage_base(spec, tier, rep)
@@ -388,7 +401,21 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True):
     V = stage_forms(spec, tier, z, V, ring, rep)
     tim["forms"] = round(time.time() - t, 2)
     t = time.time()
-    sk = stage_skeleton(V, tier, rep, baked["HeroineHead"]["P"])
+    if tier == "play":
+        # P1 R2: one skeleton for both tiers. The play tier takes the close tier's placed skeleton (names, parents,
+        # worlds, ends) so a clip baked on the close rest drives play identically; play's weights are computed on it
+        if sk_close is None:
+            with open(os.path.join(out, "stage", "close_skeleton.json")) as f:
+                sk_close = json.load(f)
+            sk_close["worlds"] = np.asarray(sk_close["worlds"], float)
+            sk_close["ends"] = {k: tuple(np.asarray(x, float) for x in v) for k, v in sk_close["ends"].items()}
+        sk = {k: sk_close[k] for k in ("skel", "names", "parents", "worlds", "ends")}
+        rep["skeleton"] = {"from": "close (build_topo P1 R2: one skeleton for both tiers)"}
+    else:
+        sk = stage_skeleton(V, tier, rep, baked["HeroineHead"]["P"])
+        with open(os.path.join(out, "stage", "close_skeleton.json"), "w") as f:
+            json.dump({k: sk[k] for k in ("skel", "names", "parents", "worlds", "ends")}, f,
+                      default=lambda x: np.asarray(x).tolist())
     tim["skeleton"] = round(time.time() - t, 2)
     t = time.time()
     wts = stage_weights(z, V, ring, hv, sk, A, baked, rep)
@@ -408,6 +435,14 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True):
         tim["bake"] = round(time.time() - t, 2)
     with open(os.path.join(out, GLB[tier][0]), "rb") as f:
         rep["glb_sha256"] = hashlib.sha256(f.read()).hexdigest()
+    pub = os.path.join(REPO, "godot", "art", "people", "body_p1", "body.glb")
+    if tier == "close" and os.path.exists(pub):
+        rep["skeleton_vs_published"] = skeleton_diff(os.path.join(out, "body.glb"), pub)
+    if tier == "play" and os.path.exists(os.path.join(out, "body.glb")):
+        d = skeleton_diff(os.path.join(out, "play.glb"), os.path.join(out, "body.glb"))
+        rep["skeleton_play_vs_close"] = d
+        assert d.get("same_names_parents") and d["max_mm"] < 1e-3 and d["max_deg"] < 1e-3, f"play skeleton != close: {d}"
+    return sk
 
 
 def main():
@@ -424,9 +459,12 @@ def main():
     t0 = time.time()
     baked = headbake.bake(A, HEADS)
     full = {"spec": os.path.relpath(os.path.abspath(a.spec), REPO).replace("\\", "/"), "tiers": {}}
+    sk_close = None
     for tier in a.tiers.split(","):
         rep = {"spec": full["spec"], "timings_s": {}}
-        run_tier(spec, tier, A, baked, out, rep, correct=not a.no_correctives)
+        sk = run_tier(spec, tier, A, baked, out, rep, correct=not a.no_correctives, sk_close=sk_close)
+        if tier == "close":
+            sk_close = sk
         full["tiers"][tier] = rep
         print("BUILD", tier, os.path.join(out, GLB[tier][0]), rep["glb_sha256"][:16], rep["timings_s"])
     full["total_s"] = round(time.time() - t0, 2)

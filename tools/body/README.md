@@ -68,6 +68,12 @@ Tests: `python -m pytest tools/body` (or `python tools/body/test_check.py`).
   - `outline_mm`: the outline itself, per segment and side, (s, mm out from the bone line);
   - `poser`: the shapes the poser drove and, for the game poser, the game's own bend/flexion readings.
   Sheets: clay at 9.4 px/cm, orange the model's outline, cyan the reference; both sides when under 700 px tall.
+  - `arm_hang` (P1 R2, the town idle's arms): the upper arm at 5 and 15 deg of frontal elevation, the forearm
+    straight, the rest at rest (`strip_arm_hang.png`); each row's `shoulder` (bends.shoulder_panel): the joint's drop,
+    the shoulder top's drop (the highest skin within 3 cm of the joint's lateral position) and its ratio, the dome
+    (the frontal top profile from the neck seam's side to the joint: its greatest rise above the chord, mm; at rest
+    and posed), the neck seam's side points' move, the deltoid's lateral point's move. Targets: dome <= rest + 2 mm,
+    ratio >= 0.6, neck base < 2 mm, 0 inside.
 - **silhouette** (with --ref): rest-pose front, side, back masks of every mesh at the close-up (9.4 px/cm) and the
   Look (`look_px_per_cm`, 30 by the brief's fallback): XOR pixels and the max outline distance (px, both ways).
 - **topology** (any body built on our topology; `topo_check.py`, limits imported from `topo_gates.py`): the build's topology
@@ -85,7 +91,10 @@ Tests: `python -m pytest tools/body` (or `python tools/body/test_check.py`).
   Chosen by default when the body's bones are all in tools/anim/data/heroine_skeleton.json and no --rig is given.
 - `lbs`: linear blend skinning from the glb's own skin, shapes driven by the rig.json `"poser"` module
   (`tools.body.rig_drive` by default: the `"correctives"` table). A rig build plugs in its own module with
-  `drive(poser, G, rig) -> (G, {shape: weight})`.
+  `drive(poser, G, rig) -> (G, {shape: weight})`. Its girdle (P1 R2, base_drive.json "girdle", the game's
+  Play/P1Rig.cs line for line): the clavicle and scapula ONLY from the arm, by tables of the elevation (Ludewig 2009,
+  Inman 1944; monotone C1, rest-relative, nearly flat between hanging and the A-pose rest) plus forward reach; for
+  native B the lbs poser IS the game's drive (the clip pose on B's skeleton, then rig_drive).
 
 rig.json keys: `poser`, `body_mesh`, `close_meshes` (pieces posed with the body to close it: the head), `roles`
 (`{"upperarm": "upperarm_{s}", "lowerarm", "hand", "thigh", "calf", "foot"}`; common MakeHuman/Blender names are
@@ -98,6 +107,9 @@ and only the joint's anatomy is authored (each file's `why` and `grammar`). Not 
 axillary fold at shoulder abduction (the A-pose hides the trunk side), the trunk under the arm.
 
 ## Skeleton: joint derivation (skeleton.json, skeleton.py ANAT_RULES)
+
+One skeleton for both tiers (P1 R2): the close tier places it; the play tier takes it as is (names, parents, worlds,
+ends) and weights against it; build.json asserts `skeleton_play_vs_close` 0 and reports `skeleton_vs_published`.
 
 Most joints are placed by MakeHuman CC0 landmarks fitted onto our vertices (landmarks_fit.py, (c) inherited). Where
 that put a joint off its anatomy, the landmark is undone (inherited from MakeHuman) and a rule runs on OUR body (and

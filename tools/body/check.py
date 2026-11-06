@@ -340,7 +340,8 @@ def main(argv=None):
             # both sides in one sheet when they fit under 700 px, else her left
             h = int(round(2 * draws[0][0].half * bends.PX_CLOSE))
             size = bends.sheet(draws if 2 * h + 20 <= 700 else draws[:1], out / f"strip_{mo}.png",
-                               f"{mo} | {kind} poser | rest, 90, 135 | 9.4 px/cm | orange: outline, cyan: reference")
+                               f"{mo} | {kind} poser | rest, " + ", ".join(str(x) for x in bends.ANGLES_OF.get(mo, bends.ANGLES)[1:])
+                               + " | 9.4 px/cm | orange: outline, cyan: reference")
             res["bends"]["strips"][f"{mo}_l"]["sheet"] = str(out / f"strip_{mo}.png")
             res["bends"]["strips"][f"{mo}_l"]["sheet_size"] = list(size)
             if a.hide_far and mo == "hip_flex":
@@ -417,6 +418,10 @@ def summary(res, spec):
                             f"{r['crease_end'].get('in', {}).get('gain_mm')} (<{r['crease_end']['limit_mm']})"
                             if r.get("crease_end") else "")
                          + (f" | slit {r['slit'].get('slit_mm')}" if r.get("slit") else "")
+                         + (" | joint drop {joint_drop_mm} top drop {top_drop_mm} (ratio {top_ratio}) dome {d} "
+                            "(rest {d0}) neck {neck_base_mm} delt out {delt_out_mm} down {delt_down_mm}".format(
+                                d=r["shoulder"]["dome"]["dome_mm"], d0=r["shoulder"]["dome_rest"]["dome_mm"],
+                                **r["shoulder"]) if r.get("shoulder") else "")
                          + (" | kink " + " ".join(f"{k} {v['turn_deg']}@{v['at_mm']} (rest {v['rest_deg']})"
                                                   for k, v in r["kink"].items()) if r.get("kink") else ""))
     for deg, r in res.get("bends", {}).get("both_hips", {}).items():

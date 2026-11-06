@@ -46,11 +46,17 @@ MOTIONS = {
     "shoulder_abd": ("upperarm", None, "lowerarm", [("d", 0.25), ("d", 0.4), ("d", 0.55), ("d", 0.75)]),
     "shoulder_flex": ("upperarm", None, "lowerarm", [("d", 0.25), ("d", 0.4), ("d", 0.55), ("d", 0.75)]),
     "hip_flex":     ("thigh", None, "calf", [("d", 0.25), ("d", 0.4), ("d", 0.55), ("d", 0.75)]),
+    "arm_hang":     ("upperarm", None, "lowerarm", [("d", 0.25), ("d", 0.4), ("d", 0.55), ("d", 0.75)]),
 }
+# arm_hang (P1 R2): the town idle's arms. The upper arm at 5 and 15 deg of elevation in the frontal plane (the shoulder
+# abduction's axis and measure), the forearm straightened onto it, everything else at rest; the shoulder panel
+# (shoulder_panel below) reads the joint's drop, the shoulder top's, the dome over the trapezius, the neck base and the
+# deltoid's lateral point against rest
+ANGLES_OF = {"arm_hang": (0, 5, 15)}
 # the inside test's sphere about the joint (m). P1 ek (5 Nov): the elbow's and the knee's reach the whole contact at
 # 135 (crease_fold.skins_surface's reach on her: elbow 0.116, knee 0.239, + 15 mm): at 0.10 the knee's test stopped
 # 10 cm along a contact that runs 24 cm, and the skinned calf sat up to 36 mm inside the thigh past it, unread
-NEAR_M = {"elbow": 0.13, "knee": 0.255, "shoulder_abd": 0.12, "shoulder_flex": 0.12, "hip_flex": 0.14}
+NEAR_M = {"elbow": 0.13, "knee": 0.255, "shoulder_abd": 0.12, "shoulder_flex": 0.12, "hip_flex": 0.14, "arm_hang": 0.12}
 
 
 def unit(v):
@@ -130,7 +136,7 @@ class Strip:
                 a = x * np.sign(x @ a)
             self.axis = unit(a)
             self.meas = lambda d, u=u: _ang3(u, d)
-        elif motion == "shoulder_abd":
+        elif motion in ("shoulder_abd", "arm_hang"):
             self.prox, self.Lp = None, self.Ld
             self.p3 = -up
             self.b = out
@@ -155,7 +161,7 @@ class Strip:
         # limb's side of her body
         v = self.axis
         ey = perp(self.p3, v)
-        if motion.startswith("shoulder"):
+        if motion.startswith("shoulder") or motion == "arm_hang":
             ey = -ey
         ex = perp(self.b, v)
         ex = unit(ex - ey * (ex @ ey))
@@ -174,7 +180,7 @@ class Strip:
             # the distal side by the rest geometry: the bisector plane at the joint
             self.seg_d = rend & (((poser.P0 - self.O) @ unit(-self.u_prox - self.u_d0)) < 0)
             self.seg_p = rend & ~self.seg_d
-        elif motion.startswith("shoulder"):
+        elif motion.startswith("shoulder") or motion == "arm_hang":
             legs = chain(bone(poser, rig, "thigh", "l")) + chain(bone(poser, rig, "thigh", "r"))
             rend = body & (chain(bone(poser, rig, "upperarm", other)) < 0.5) & (legs < 0.5)
             self.seg_d = rend & (chain(self.bone) >= 0.5)
@@ -232,7 +238,16 @@ class Strip:
         return self.solved[deg]
 
     def turns(self, deg):
-        return [] if deg == 0 else [(self.bone, rot(self.axis, self.turn(deg)))]
+        return [] if deg == 0 else self.turns_at(self.turn(deg))
+
+    def turns_at(self, t):
+        R = rot(self.axis, t)
+        out = [(self.bone, R)]
+        if self.motion == "arm_hang":       # the forearm straight: its rest direction onto the upper arm's
+            I, G0 = self.poser.index, self.poser.rest
+            fd = unit(G0[I[bone(self.poser, self.rig, "hand", self.s)]][:3, 3] - G0[self.je][:3, 3])
+            out.append((self.end, R @ _arc3(fd, self.u_d0) @ R.T))
+        return out
 
     def achieved(self, G):
         d = self.d3(G)
@@ -248,7 +263,7 @@ class Strip:
                     if abs(err) < 0.1:
                         break
                     aim -= err
-                    V, G, info = self.poser.pose([(self.bone, rot(self.axis, self.turn(aim)))])
+                    V, G, info = self.poser.pose(self.turns_at(self.turn(aim)))
             self.cache[deg] = (V, G, info)
         return self.cache[deg]
 
@@ -424,6 +439,87 @@ def true_depth(strip, V, T_all, q):
 
 
 # ------------------------------------------------------------------ outlines --
+def _arc3(a, b):
+    """The shortest turn taking unit a to unit b (3x3)."""
+    v = np.cross(a, b)
+    sn, c = np.linalg.norm(v), float(np.clip(a @ b, -1, 1))
+    return np.eye(3) if sn < 1e-12 else rot(v / sn, math.degrees(math.atan2(sn, c)))
+
+
+# ------------------------------------------------------- the shoulder panel (P1 R2) --
+# Per side, against rest, in her frame (out = her side, up): (a) joint_drop_mm: the upper arm's head down;
+# (b) top_drop_mm: the highest skin point above the joint within TOP_X of the joint's lateral position (the acromion /
+# trapezius top) down, top_ratio = b / a; (c) dome: the frontal silhouette's shoulder-top profile (body only) from the
+# neck seam's side point to the joint's lateral position, its greatest rise above the straight line between its ends
+# (+ a bulge, a yoke; - a sloping trapezius), at_mm its distance out from the seam's side; (d) neck_base_mm: the neck
+# seam's side points (the body's open ring at the neck, own side, the outer 30% of its half-width) moved, max;
+# (e) delt_out_mm / delt_down_mm: the deltoid's lateral point (the outermost body point within 3 cm of the joint's
+# height at rest) moved out / down.
+TOP_X = 0.03
+
+
+def _neck_ring(poser):
+    if getattr(poser, "_neck_ring", None) is None:
+        body = np.where(poser.piece == "body")[0]
+        _, inv = np.unique(np.round(poser.P0[body], 6), axis=0, return_inverse=True)
+        inv = inv.ravel()
+        loc = np.full(len(poser.piece), -1)
+        loc[body] = np.arange(len(body))
+        Tw = inv[loc[poser.T[(poser.piece[poser.T] == "body").all(1)]]]
+        E = np.sort(np.concatenate([Tw[:, [0, 1]], Tw[:, [1, 2]], Tw[:, [2, 0]]]), 1)
+        u, c = np.unique(E, axis=0, return_counts=True)
+        idx = body[np.isin(inv, np.unique(u[c == 1].ravel()))]
+        sh = 0.5 * (poser.rest[poser.index["upperarm_l"]][1, 3] + poser.rest[poser.index["upperarm_r"]][1, 3])
+        poser._neck_ring = idx[poser.P0[idx, 1] > sh]
+    return poser._neck_ring
+
+
+def shoulder_panel(strip, V, G):
+    poser, fr = strip.poser, strip.fr
+    out, up = fr.lat * (1 if strip.s == "l" else -1), fr.up
+    V0, G0 = poser.P0, poser.rest
+    body = poser.piece == "body"
+    Tb = poser.T[body[poser.T].all(1)]
+    O0, O = G0[strip.j][:3, 3], G[strip.j][:3, 3]
+    res = {"joint_drop_mm": round(float((O0 - O) @ up) * 1e3, 2)}
+
+    def top(Vx, Ox):
+        r = Vx - Ox
+        sel = body & (np.abs(r @ out) < TOP_X) & (r @ up > 0) & (np.abs(r @ fr.front) < 0.10)
+        return float((r[sel] @ up).max() + Ox @ up)
+    res["top_drop_mm"] = round((top(V0, O0) - top(V, O)) * 1e3, 2)
+    res["top_ratio"] = round(res["top_drop_mm"] / res["joint_drop_mm"], 3) if abs(res["joint_drop_mm"]) > 0.05 else None
+    ring = _neck_ring(poser)
+    ring = ring[(V0[ring] - fr.center) @ out > 0]
+    ro = (V0[ring] - fr.center) @ out
+    side = ring[ro > 0.7 * ro.max()]
+    res["neck_base_mm"] = round(float(np.linalg.norm(V[side] - V0[side], axis=1).max()) * 1e3, 2)
+
+    def dome(Vx, Ox):
+        xn = float(((Vx[side] - fr.center) @ out).max())
+        xa = float((Ox - fr.center) @ out)
+        ya = float((Ox - fr.center) @ up)
+        vw = ray.View(fr.center, out, up, np.cross(out, up), 2 * PX_CLOSE, xn - 0.005, xa + 0.005, ya - 0.03, ya + 0.20)
+        m = ray.mask(Vx, Tb, vw)
+        x = vw.x0 + (np.arange(vw.w) + 0.5) / vw.px
+        y = vw.y1 - (np.argmax(m, 0) + 0.5) / vw.px
+        k = m.any(0) & (x >= xn) & (x <= xa)
+        x, y = x[k], y[k]
+        line = y[0] + (y[-1] - y[0]) * (x - x[0]) / max(x[-1] - x[0], 1e-9)
+        i = int(np.argmax(y - line))
+        return {"dome_mm": round(float(y[i] - line[i]) * 1e3, 2), "at_mm": round(float(x[i] - xn) * 1e3, 1),
+                "span_mm": round((xa - xn) * 1e3, 1), "seam_up_mm": round(float(y[0]) * 1e3, 1),
+                "acromion_up_mm": round(float(y[-1]) * 1e3, 1)}
+    res["dome"] = dome(V, O)
+    res["dome_rest"] = dome(V0, O0)
+    r0 = V0 - O0
+    cand = np.where(body & (np.abs(r0 @ up) < 0.03) & (np.abs(r0 @ fr.front) < 0.08))[0]
+    dv = cand[np.argmax(r0[cand] @ out)]
+    res["delt_out_mm"] = round(float((V[dv] - V0[dv]) @ out) * 1e3, 2)
+    res["delt_down_mm"] = round(float((V0[dv] - V[dv]) @ up) * 1e3, 2)
+    return res
+
+
 def rot2(v, deg):
     t = math.radians(deg)
     return np.array([v[0] * math.cos(t) - v[1] * math.sin(t), v[0] * math.sin(t) + v[1] * math.cos(t)])
@@ -690,8 +786,9 @@ def pit(strip, V, r=0.025, reach=0.22):
 
 
 # ------------------------------------------------------------------ the run --
-def run_strip(strip, angles=ANGLES, ref_dir=HERE / "ref", T_all=None):
+def run_strip(strip, angles=None, ref_dir=HERE / "ref", T_all=None):
     """Every number of one strip, and what its sheet draws."""
+    angles = ANGLES_OF.get(strip.motion, ANGLES) if angles is None else angles
     poser = strip.poser
     T_all = poser.T if T_all is None else T_all
     vw_hi = strip.view(2 * PX_CLOSE)
@@ -718,11 +815,13 @@ def run_strip(strip, angles=ANGLES, ref_dir=HERE / "ref", T_all=None):
         row["penetration"] = penetration(strip, V, T_all)
         if strip.motion == "hip_flex":
             row["pit"] = pit(strip, V)
-        if strip.motion.startswith("shoulder") and deg:
+        if (strip.motion.startswith("shoulder") or strip.motion == "arm_hang") and deg:
             # P1 ek2, measure only: the judge's shoulder-135 marks (the V notch at the deltoid's top, the trapezius
             # pinch, the cap's ring, the fan folds down the trunk's side) as the hip's rest-curvature gain by region
             # round the joint (front / side = out / back / medial = the trunk), at the hip's scale; no threshold yet
             row["pit"] = pit(strip, V, reach=0.16)
+        if strip.motion == "arm_hang":
+            row["shoulder"] = shoulder_panel(strip, V, G)
         if strip.motion in ("elbow", "knee") and deg:
             row["crease_end"] = crease_end(strip, V, G)
             row["slit"] = slit(strip, V, R, Plane2(strip, G))
