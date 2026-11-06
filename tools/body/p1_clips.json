@@ -1,0 +1,155 @@
+{
+ "why": "B's hand clean of the baked clips (tools_scenes/P1BakeRun.cs applies it after the girdle hold; tools/body/README.md 'B native'). Schema: clips: { clip name (as in its library, no 'her/' prefix): { why: text, turns: { B bone: [x, y, z] (a rotation vector in degrees, in the bone's own frame, laid after the baked local: L = L * exp(v)) }, hold: [B bones set to B's rest local] } }. Empty entries list the milestone clips (the Look's town idle, the play idle, the run, the core attacks) for the first clean.",
+ "clips": {
+  "idle_reaver_town": {
+   "why": "the Look's town idle (reaver: GameFront idle_{calling}_town) and the close town camera",
+   "turns": {},
+   "hold": []
+  },
+  "idle_reaver": {
+   "why": "the play idle (reaver: PlayerView's stance idle)",
+   "turns": {},
+   "hold": []
+  },
+  "run_reaver": {
+   "why": "the run in play (reaver)",
+   "turns": {},
+   "hold": []
+  },
+  "run_reaver_town": {
+   "why": "the run in town (reaver)",
+   "turns": {},
+   "hold": []
+  },
+  "idle_warden_town": {
+   "why": "the Look's town idle (warden: GameFront idle_{calling}_town) and the close town camera",
+   "turns": {},
+   "hold": []
+  },
+  "idle_warden": {
+   "why": "the play idle (warden: PlayerView's stance idle)",
+   "turns": {},
+   "hold": []
+  },
+  "run_warden": {
+   "why": "the run in play (warden)",
+   "turns": {},
+   "hold": []
+  },
+  "run_warden_town": {
+   "why": "the run in town (warden)",
+   "turns": {},
+   "hold": []
+  },
+  "idle_stalker_town": {
+   "why": "the Look's town idle (stalker: GameFront idle_{calling}_town) and the close town camera",
+   "turns": {},
+   "hold": []
+  },
+  "idle_stalker": {
+   "why": "the play idle (stalker: PlayerView's stance idle)",
+   "turns": {},
+   "hold": []
+  },
+  "run_stalker": {
+   "why": "the run in play (stalker)",
+   "turns": {},
+   "hold": []
+  },
+  "run_stalker_town": {
+   "why": "the run in town (stalker)",
+   "turns": {},
+   "hold": []
+  },
+  "idle_arcanist_town": {
+   "why": "the Look's town idle (arcanist: GameFront idle_{calling}_town) and the close town camera",
+   "turns": {},
+   "hold": []
+  },
+  "idle_arcanist": {
+   "why": "the play idle (arcanist: PlayerView's stance idle)",
+   "turns": {},
+   "hold": []
+  },
+  "run_arcanist": {
+   "why": "the run in play (arcanist)",
+   "turns": {},
+   "hold": []
+  },
+  "run_arcanist_town": {
+   "why": "the run in town (arcanist)",
+   "turns": {},
+   "hold": []
+  },
+  "Jog_Fwd_Loop": {
+   "why": "the library run (PlayerView's fallback gait, Running_A)",
+   "turns": {},
+   "hold": []
+  },
+  "Idle_Loop": {
+   "why": "the library idle (Idle alias)",
+   "turns": {},
+   "hold": []
+  },
+  "sword_fore": {
+   "why": "a core attack (her own clips, OwnClips.For by calling and kind)",
+   "turns": {},
+   "hold": []
+  },
+  "sword_back": {
+   "why": "a core attack (her own clips, OwnClips.For by calling and kind)",
+   "turns": {},
+   "hold": []
+  },
+  "sword_heavy": {
+   "why": "a core attack (her own clips, OwnClips.For by calling and kind)",
+   "turns": {},
+   "hold": []
+  },
+  "axe_fore": {
+   "why": "a core attack (her own clips, OwnClips.For by calling and kind)",
+   "turns": {},
+   "hold": []
+  },
+  "axe_back": {
+   "why": "a core attack (her own clips, OwnClips.For by calling and kind)",
+   "turns": {},
+   "hold": []
+  },
+  "axe_heavy": {
+   "why": "a core attack (her own clips, OwnClips.For by calling and kind)",
+   "turns": {},
+   "hold": []
+  },
+  "daggers_fore": {
+   "why": "a core attack (her own clips, OwnClips.For by calling and kind)",
+   "turns": {},
+   "hold": []
+  },
+  "daggers_back": {
+   "why": "a core attack (her own clips, OwnClips.For by calling and kind)",
+   "turns": {},
+   "hold": []
+  },
+  "daggers_heavy": {
+   "why": "a core attack (her own clips, OwnClips.For by calling and kind)",
+   "turns": {},
+   "hold": []
+  },
+  "cast_bolt": {
+   "why": "a core attack (her own clips, OwnClips.For by calling and kind)",
+   "turns": {},
+   "hold": []
+  },
+  "cast_flick": {
+   "why": "a core attack (her own clips, OwnClips.For by calling and kind)",
+   "turns": {},
+   "hold": []
+  },
+  "crossbow_shoot": {
+   "why": "a core attack (her own clips, OwnClips.For by calling and kind)",
+   "turns": {},
+   "hold": []
+  }
+ }
+}

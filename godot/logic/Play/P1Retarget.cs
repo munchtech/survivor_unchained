@@ -132,6 +132,55 @@ public sealed class P1Retarget
         }
     }
 
+    /// <summary>B bone j's source (the bake's key rule): 0 carried (no source: a helper, B's own bones A lacks), 1 by
+    /// name (A bone s0), 2 the spine-to-head chain (slerped between A bones s0 and s1).</summary>
+    public (int Kind, int S0, int S1) Source(int j) => ((int)kind[j], kind[j] == Kind.Carried ? -1 : src0[j], kind[j] == Kind.Chain ? src1[j] : -1);
+
+    /// <summary>The role map (systems keyed to A's bone names, on B): by name off the spine-to-head chain; on the chain
+    /// (A's spine_01..03, neck_01) the B bone that carries what A's carries, i.e. the B parent of A's next chain bone
+    /// (A's spine_03, her chest, carries neck_01 and the clavicles: on B, spine_05; B's spine_03 is mid-back), BFor
+    /// where B lacks that bone; where B has no bone (panel_front), its nearest A ancestor's role; -1 only if none maps.</summary>
+    public int Role(int a)
+    {
+        while (a >= 0)
+        {
+            int k = Array.IndexOf(aChainB, a);
+            if (k > 0 && k < aChainB.Length - 1 && b.Index.TryGetValue(aNames[aChainB[k + 1]], out int next) && b.Parent[next] >= 0) return b.Parent[next];
+            if (BFor[a] >= 0) return BFor[a];
+            a = aParent[a];
+        }
+        return -1;
+    }
+
+    /// <summary>A share of a turn laid on A's chain bones (spine_01, neck_01 ..), spread over B's: each A bone's share
+    /// split evenly among the B chain bones whose segment midpoint lies in its A segment (none: on its role bone), so
+    /// the total kept.</summary>
+    public List<(int B, double Share)> Spread(IEnumerable<(string A, double Share)> shares)
+    {
+        var o = new List<(int, double)>();
+        var aMid = Mids(aChainB, aRest);
+        var aCum = Cum(aChainB, aRest); var bMid = Mids(bChainB, b.Rest);
+        foreach (var (name, share) in shares)
+        {
+            if (!aIndexB.TryGetValue(name, out int a)) continue;
+            int k = Array.IndexOf(aChainB, a);
+            var mine = new List<int>();
+            if (k >= 0 && k < aChainB.Length - 1)
+                for (int q = 1; q < bChainB.Length - 1; q++)
+                    if (bMid[q] >= aCum[k] && bMid[q] < aCum[k + 1]) mine.Add(bChainB[q]);
+            if (mine.Count == 0) { int r = Role(a); if (r >= 0) mine.Add(r); }
+            foreach (int j in mine) o.Add((j, share / mine.Count));
+        }
+        return o;
+    }
+
+    static double[] Cum(int[] chain, P1M4[] rest)
+    {
+        var cum = new double[chain.Length];
+        for (int k = 1; k < chain.Length; k++) cum[k] = cum[k - 1] + Len(rest, chain[k - 1], chain[k]);
+        return cum.Select(x => x / cum[^1]).ToArray();
+    }
+
     /// <summary>pelvis .. Head (inclusive), walking up from Head.</summary>
     static int[] Chain(string[] names, int[] parent, P1M4[] rest, Dictionary<string, int> index)
     {
