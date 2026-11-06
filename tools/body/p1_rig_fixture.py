@@ -76,6 +76,9 @@ def main():
         # the hanging branch (A below the rest's ~43): both upper arms turned down toward the torso, one reaching
         # forward (protraction and glide)
         "arms_hang": {I["upperarm_l"]: rot([0, 0, 1], -38), I["upperarm_r"]: rot([0, 0, 1], 30) @ rot([1, 0, 0], 25)},
+        # the retraction-by-plane fade (elevation past 95): her left raised forward (flexion, reach), her right
+        # raised out to the side (abduction)
+        "arms_raised": {I["upperarm_l"]: rot([1, 0, 0], 100) @ rot([0, 0, 1], 60), I["upperarm_r"]: rot([0, 0, 1], -62) @ rot([1, 0, 0], 30)},
         "hips": {I["thigh_l"]: rot([1, 0, 0], -50), I["thigh_r"]: rot([0, 0, 1], 25), I["calf_l"]: rot([1, 0, 0], 100),
                  I["foot_r"]: rot([0, 1, 0], 40)},
     }

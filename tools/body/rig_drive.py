@@ -9,7 +9,8 @@ Order (rig.json "helpers" rows run in list order, after "girdle"):
   girdle        per side, the scapulohumeral rhythm from the arm's elevation A (the humerus' angle from the torso's
                 down axis, deg) and its forward reach f (its direction . the torso's front), by tables (monotone C1
                 cubics, flat past the ends), all relative to the rest (A0 ~43, f0): the clavicle's elevation and
-                retraction (less a protraction per unit of reach) about its head, the scapula's upward rotation and
+                retraction (scaled by the plane, retract_plane: by forward reach above 95-120 deg of elevation;
+                less a protraction per unit of reach) about its head, the scapula's upward rotation and
                 posterior tilt about its head and its forward glide; the upper arm keeps its world turn (the clip's
                 aim), riding the moved clavicle. girdle() has the formulas.
   unroll        the bone's own roll about its line (beyond its parent's) handed to its child: forearm (ulna on a
@@ -20,7 +21,9 @@ Order (rig.json "helpers" rows run in list order, after "girdle"):
                 hand's roll as the radius rolls; the calf's of the foot's).
   share         `amount` of the follow bone's turn beyond its parent, about a PIVOT `pivot` m toward the crease
                 (the follow bone's rest Z times `crease`), stretched across the bend (along the crease axis) by
-                k = min(1 + bulge (1 - cos(b / 2)), bulge_max), b the bend from rest (deg).
+                k = min(1 + bulge (1 - cos(b / 2)), bulge_max), b the bend from rest (deg). With "below"
+                {"amount", "band"} the amount follows the girdle's arm elevation A (share_amount): `amount` above the
+                rest A0, below.amount under it, smoothstep over A0 -+ band (the hanging cap rides the girdle).
   point         a share whose result is pushed away from the crease by push * smoothstep((F - from) / (to - from)),
                 F the joint's absolute flexion (deg, the angle between the bones): the olecranon, the patella.
   aim           a muscle helper (delt, trap, pec, lat, glute): g = smoothstep over `A` of the `on` bone's
@@ -194,12 +197,41 @@ def table(x, T):
             + (t3 - t2) * h[i] * m[i + 1])
 
 
+def retract_plane(A, reach, gd):
+    """The retraction table's scale by the arm's elevation plane (gd "retract_plane", absent: 1): its forward reach
+    beyond the rest (reach = d . front - d0 . front, the torso's frame; 0 in the frontal plane, abduction; ~0.5-0.7
+    in flexion; up to ~0.4 at 135 in the scapular plane) read by the table "by_reach" [[reach, scale]] (monotone C1,
+    flat ends), faded in over the arm's elevation A in "fade" [from, to] (smoothstep; under `from` the scale is 1:
+    the hanging arm and the rest, where the plane is undefined, and flexion to 90, which keeps the full table). An
+    azimuth (atan2 of forward and lateral) cannot serve: the check's flexion 135 from her A-pose sits at azimuth 35,
+    the scapular plane, and its 90 at 47; the swing axis d0 x d reads 25 and 45."""
+    rp = gd.get("retract_plane")
+    if not rp:
+        return 1.0
+    g = smooth((A - rp["fade"][0]) / (rp["fade"][1] - rp["fade"][0]))
+    if g <= 0:
+        return 1.0
+    return 1.0 + g * (table(reach, rp["by_reach"]) - 1.0)
+
+
+def share_amount(h, A, A0):
+    """A share's amount by the arm's elevation (h "below": {"amount", "band"}, absent: h "amount"): `amount` above the
+    rest elevation A0, below["amount"] under it, smoothstep-blended over A0 -+ band (deg): no pop through the rest."""
+    a = float(h.get("amount", 0.0))
+    b = h.get("below")
+    if not b or A is None:
+        return a
+    t = smooth((A - (A0 - b["band"])) / (2.0 * b["band"]))
+    return float(b["amount"]) + t * (a - float(b["amount"]))
+
+
 def girdle(poser, G, rig, s):
     """The scapulohumeral rhythm (rig.json "girdle", base_drive.json has the tables and their sources): per side, from
     the arm's elevation A and its forward reach f = d . front (d the upper arm's direction, front the torso's), all
     relative to the rest (A0, f0: the rest is exactly neutral):
       clavicle  elevation e = clav_elev(A) - clav_elev(A0)                    about the torso's front (per-side sign)
-                retraction r = clav_retract(A) - clav_retract(A0) - protract_per_reach (f - f0)   about its up (+ back)
+                retraction r = k (clav_retract(A) - clav_retract(A0)) - protract_per_reach (f - f0)  about its up (+ back),
+                k = retract_plane(A, f - f0) (1 without "retract_plane")
                 (both about the clavicle's head); the upper arm then keeps its world turn (the clip's aim)
       scapula   upward rotation u = scap_up(A) - scap_up(A0)                  about scap_axis (mirrored per side)
                 posterior tilt p = scap_tilt(A) - scap_tilt(A0)               about the torso's side (+ top back)
@@ -219,7 +251,8 @@ def girdle(poser, G, rig, s):
     d0 = _n(head(poser.rest, end) - head(poser.rest, arm))
     reach = float(d @ front - (Rt @ d0) @ front)
     th_e = table(A, gd["clav_elev"]) - table(A0, gd["clav_elev"])
-    th_r = table(A, gd["clav_retract"]) - table(A0, gd["clav_retract"]) - gd["protract_per_reach"] * reach
+    th_r = (retract_plane(A, reach, gd) * (table(A, gd["clav_retract"]) - table(A0, gd["clav_retract"]))
+            - gd["protract_per_reach"] * reach)
     arm_old = G[arm].copy()
     if abs(th_e) > 1e-9 or abs(th_r) > 1e-9:
         Rc = _expm(up * sg * math.radians(th_r)) @ _expm(front * sg * math.radians(th_e))
@@ -239,7 +272,7 @@ def girdle(poser, G, rig, s):
         T = np.eye(4)
         T[:3, 3] = front * glide
         _apply(poser, G, sc, T)
-    return {"A": A, "clav_elev_deg": th_e, "clav_retract_deg": th_r, "scap_up_deg": th_u, "scap_tilt_deg": th_p}
+    return {"A": A, "A0": A0, "clav_elev_deg": th_e, "clav_retract_deg": th_r, "scap_up_deg": th_u, "scap_tilt_deg": th_p}
 
 
 def _rel(G, R0, j, p):
@@ -294,7 +327,7 @@ def helper(poser, G, h, s, info):
         return
     f = I[h["follow"].replace("{s}", s)]
     p = poser.parent[j]
-    a = float(h.get("amount", 0.0))
+    a = share_amount(h, info.get(("A", s)), info.get(("A0", s))) if "below" in h else float(h.get("amount", 0.0))
     if kind in ("counter_twist", "twist"):
         y = _unit(G[j])[:, 1]
         if kind == "counter_twist":
@@ -475,6 +508,7 @@ def drive_helpers(poser, G, rig):
         for s in ("l", "r"):
             r = girdle(poser, G, rig, s)
             info[("A", s)] = r["A"]
+            info[("A0", s)] = r["A0"]
     for h in rig.get("helpers", []):
         for s in (("l", "r") if "{s}" in h["name"] else ("",)):
             helper(poser, G, h, s, info)

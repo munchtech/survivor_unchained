@@ -174,6 +174,28 @@ public sealed class P1Rig
             + (t3 - t2) * h[i] * m[i + 1];
     }
 
+    /// <summary>rig_drive.retract_plane: the retraction table's scale by the arm's forward reach beyond the rest
+    /// ("by_reach" table), faded in over the elevation band "fade" (1 below it).</summary>
+    public static double RetractPlane(double A, double reach, JsonElement gd)
+    {
+        if (!gd.TryGetProperty("retract_plane", out var rp)) return 1.0;
+        var fd = rp.GetProperty("fade");
+        double g = Smooth((A - fd[0].GetDouble()) / (fd[1].GetDouble() - fd[0].GetDouble()));
+        if (g <= 0) return 1.0;
+        return 1.0 + g * (Table(reach, rp.GetProperty("by_reach")) - 1.0);
+    }
+
+    /// <summary>rig_drive.share_amount: `amount` above the rest elevation, below.amount under it, smoothstep-blended
+    /// over A0 -+ band.</summary>
+    public static double ShareAmount(JsonElement h, double? A, double? A0)
+    {
+        double a = Num(h, "amount", 0);
+        if (!h.TryGetProperty("below", out var b) || A is not double av || A0 is not double a0) return a;
+        double band = b.GetProperty("band").GetDouble(), ab = b.GetProperty("amount").GetDouble();
+        double t = Smooth((av - (a0 - band)) / (2.0 * band));
+        return ab + t * (a - ab);
+    }
+
     /// <summary>rig_drive.girdle: the scapulohumeral rhythm by tables of the arm's elevation and its forward reach,
     /// relative to the rest.</summary>
     double Girdle(P1M4[] G, string s)
@@ -192,7 +214,7 @@ public sealed class P1Rig
         var d0 = N(Head(R0, end) - Head(R0, arm));
         double reach = P1V.Dot(d, front) - P1V.Dot(Rt * d0, front);
         double the = Table(A, gd.GetProperty("clav_elev")) - Table(A0, gd.GetProperty("clav_elev"));
-        double thr = Table(A, gd.GetProperty("clav_retract")) - Table(A0, gd.GetProperty("clav_retract"))
+        double thr = RetractPlane(A, reach, gd) * (Table(A, gd.GetProperty("clav_retract")) - Table(A0, gd.GetProperty("clav_retract")))
             - gd.GetProperty("protract_per_reach").GetDouble() * reach;
         var armOld = G[arm];
         if (Math.Abs(the) > 1e-9 || Math.Abs(thr) > 1e-9)
@@ -270,7 +292,9 @@ public sealed class P1Rig
         }
         int f = Index[Sub(h.GetProperty("follow"), s)];
         int pj = Parent[j];
-        double amt = Num(h, "amount", 0);
+        double amt = h.TryGetProperty("below", out _)
+            ? ShareAmount(h, info.TryGetValue("A" + s, out var shA) ? shA : null, info.TryGetValue("A0" + s, out var shA0) ? shA0 : null)
+            : Num(h, "amount", 0);
         if (kind is "counter_twist" or "twist")
         {
             var y = Unit(G[j]).Col(1);
@@ -464,7 +488,7 @@ public sealed class P1Rig
         var G = (P1M4[])input.Clone();
         var info = new Dictionary<string, double>();
         if (rig.TryGetProperty("girdle", out _))
-            foreach (var s in new[] { "l", "r" }) info["A" + s] = Girdle(G, s);
+            foreach (var s in new[] { "l", "r" }) { info["A" + s] = Girdle(G, s); info["A0" + s] = Elevation(Rest, s); }
         if (rig.TryGetProperty("helpers", out var hs))
             foreach (var h in hs.EnumerateArray())
                 foreach (var s in Sides(h.GetProperty("name").GetString()!))
