@@ -699,10 +699,33 @@ class Solve:
             kb = self.cf.get("j_k", 10.0) * lam
             E += float((w * 0.5 * kb * u * u).sum())
             dJ = dJ - kb * u
+        fr_ = getattr(self, "_flip_r", None)
+        if fr_ is not None:
+            # `flip_k` (R5 lead 3): the skin's fold-over barrier. Each skin face's area vector a_f = (b - a) x (c - a)
+            # against its rest normal turned by the skinning (r_f, the blend of its corners' matrices): s = a_f . r_f /
+            # |a0_f| is its projected area ratio, and s < flip_c costs 1/2 k |a0| h (flip_c - s)^2. A crease's lips turn
+            # at most half the flex from the blend (cos 67 deg = 0.4 at 135), so a true fold costs nothing; the
+            # crease apex's element-scale overfold (its own faces turned against its normal, ndot -0.9: the check's
+            # deep 'inside' row at 135, sitting 0.3 mm under its own 2-ring) does. Linear in each corner: exact gradient
+            Fs = self.skinF
+            A_, B_, C_ = x[Fs[:, 0]], x[Fs[:, 1]], x[Fs[:, 2]]
+            sv_ = np.einsum("fc,fc->f", np.cross(B_ - A_, C_ - A_), fr_) / self._flip_a0
+            u = np.maximum(self.cf.get("flip_c", 0.0) - sv_, 0.0)
+            kf = self._flip_w
+            E += float((0.5 * kf * u * u).sum())
+            if grad:
+                gs = (-kf * u / self._flip_a0)[:, None]                  # dE/ds / |a0|
+                gb = np.cross(C_ - A_, fr_) * gs
+                gc = np.cross(fr_, B_ - A_) * gs
+                gf = np.zeros_like(x)
+                np.add.at(gf, Fs[:, 1], gb)
+                np.add.at(gf, Fs[:, 2], gc)
+                np.add.at(gf, Fs[:, 0], -(gb + gc))
         if not grad:
             return E, None, J
         P = F + dJ[:, None, None] * np.stack([c0, c1, c2], 2)      # dPsi/dF (the cofactor is dJ/dF)
-        return E, self.tets.rhs(w, P), J
+        gt = self.tets.rhs(w, P)
+        return E, (gt + gf if fr_ is not None else gt), J
 
     def pairs(self, x):
         """`contact_model` "pair" (method "nh"): node-face pairs, the energy's own. Every skin node with a facing
@@ -794,6 +817,18 @@ class Solve:
                 d0 = np.asarray(self.d0)[:self.ns]
                 dref = np.einsum("nij,nj->ni", Mb[:self.ns, :3, :3], d0)
             wb = cf.get("smooth_w", self.bend_w) * self.wb / self.bend_w
+        self._flip_r = None
+        if cf.get("flip_k", 0) > 0:
+            Fs = self.skinF
+            n0 = np.cross(self.X0[Fs[:, 1]] - self.X0[Fs[:, 0]], self.X0[Fs[:, 2]] - self.X0[Fs[:, 0]])
+            a0 = np.linalg.norm(n0, axis=1)
+            Mb, _ = self.skinned(M)
+            Rf = Mb[Fs, :3, :3].mean(1)
+            r = np.einsum("fij,fj->fi", Rf, n0 / a0[:, None])
+            self._flip_r = r / np.linalg.norm(r, axis=1, keepdims=True)
+            self._flip_a0 = a0
+            h = np.sqrt(a0)
+            self._flip_w = cf["flip_k"] * float(np.mean(self.mu)) * 0.5 * a0 * h
         if getattr(self, "_h0", None) is None:
             A = self.tets.matrix(self.tets.vol * self.mu * cf.get("h0_k", 1.0 + lam / 3.0))
             if wb is not None:
