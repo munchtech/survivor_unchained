@@ -1,5 +1,51 @@
 # Handoff: her body (rig, mesh, weights)
 
+## R1 LEAD 4 -> R1 LEAD 5 (6 Nov, wind-down at the subscription limit): ROUNDS 3-5b RUN; round_4 PUBLISHED; the Look's lit rim diagnosed, a ROUTE CHOICE on the fix; armpit still open; no judge 3 yet
+Report to the P1 rebuild coordinator. Scratch `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_body_p1\r1c\` (round3, round4, round5, round5b: each has `brief.md`; round 3's `report.md`; rounds 4-5b were subagents, their reports are summarized here). No solver is running.
+
+**Published now:** `tools/body/out/round_4` (publish --import done). Clips NOT re-baked: no joint moved more than 0.05 mm since round 2, so the round 2 bake stands. rig_map and spring_samples not rerun; the `tools/body/rig/*.json` diffs are lead 3's leftovers, unchecked. Only 3 stills are reshot on it: `r1c\round4\game_r4\` (look_look_day, look_neck_day, close_town_night) against `game_r2\`, with 1:1 crops `r1c\round4\crop_{look,neck,close}_r2_r4.png`. The milestone folder's other shots are still round 2's. `tools/body/out/round_5` is tail trial t4, which did nothing visible: do NOT publish it.
+
+**Done (committed):**
+- **Round 3** (b2ce78ade, API $8.43): the `globe.root` band refill, the `formrules.root_blend` rules, and support_press now fades over 15 mm (support 1 folds now 0).
+- **Round 4** (020250c0a, a subagent; the API died at $0.45 with "Credit balance is too low"):
+  - The breast region is now a C2 smooth SDF UNION: `breast_form.py` smin_c2/chest_field/union_field/union_delta, and `breast.json` `globe.union` with k by direction 6-65 mm. `globe.root` is retired.
+  - Apex fraction 0.550 (item 3 met). Crease centre/outer 1.28/1.12 deg/mm, inner 2.46. Side error 0.0549 (no margin). Volume 1530. formrules 51/56 (the 3 known + 2 root rules). check.py 2/42/15.
+  - In GAME: clearly softer, and the close-up line is mostly gone. But at the LOOK a thin LIT RIM still arcs over each top, and the armpit notch is a little smaller but still there.
+- **Round 5a** (6e0fe3eda):
+  - The `formrules.upper_turn` rules (r2 / r4):
+    - `upper_turn_max_over_globe` <= 1.3: 4.57 / 3.63
+    - `upper_turn_convex_peak_mm` >= 20: 6 / 7
+    - `upper_crest_band_mm` >= 15: 3.1 / 6.3 (the one that tracks the picture)
+  - A Look-light proxy render, `r1c\round5\gamelike.py`, which reproduces the game rim; probes `runp.sh`/`probe5.py` (~10 s each).
+- **Round 5b** (ae25dab87): opt-in options in `breast_form.py`, all OFF (cot_weights, `wall_delta` "lap": "cot", `chest_wall` "passes"). breast.json unchanged. Files: `r1c\round5b\armpit_hang_r4_r5_half.jpg`, `pb.py`, `wallsrc2.py`, `col.py`.
+
+**The diagnosis (5a + 5b):**
+- The rim is the globe top facing straight up (87-90 deg) about 40 mm under the root. The Look key and the two back lamps light it (the lamps light only skin facing more than 50-55 deg up), and the level camera squashes it to 3-6 mm.
+- The chest under the upper pole leans back 43 deg, and the globe stands about 62 mm proud of it. So NO union width fixes it: k 100-150, R.up 75, shear and a taller dome all stall at 81-84 deg and break roundness or volume.
+- A top at 72 deg or less (crest band >= 15 mm) needs the upper pole to start about 35 mm higher (root about 25 mm under the collarbone). Then the apex fraction drops from 0.55 to about 0.48, unless the fold goes 17 mm lower (more volume).
+- Also: a ridge in the bare chest 10-20 mm over the root. It is the base mesh's step under the collarbone, made 4-5 deg worse by `neck.json` `neck_side_low` smoothing after the head join, and `chest_wall` can't fix it. There is an inner kink at the same region edge.
+
+**Next (in order):**
+1. DECIDE the rim route:
+   - (a) Re-band the apex fraction to about 0.46-0.50 and let the upper pole start high and thin. The lead's lean: it matches the owner's "set high, full upper pole".
+   - (b) Shrink only the top: about 80 deg and a 10 mm band.
+   - (c) Call the rest lighting: dim the Look's back lamps on up-facing skin. Cheap; a rendering/L1 call.
+   - A judge can rule (a) vs (c) on gamelike renders.
+2. The chest ridge: keep `neck_side_low`'s fade off the band in `neck.json` (or add a chest pass after the join).
+3. Armpit tail: t4 is center [0.066,0.058,-0.032] in the globe frame, axis [0.7,0.6,-0.4], radii 36x16x16 mm, k 20 mm. It is in band but invisible: lengthen it along its axis and toward the back, then check the hanging gap. The pocket rule needs the hang poser.
+4. Retune the root width rule (it falls as the turn shrinks).
+5. The full chain, in order:
+   - `publish --import`; `bake_clips.sh` only if joints move; rig_map; spring_samples; clipcheck idle_reaver_town.
+   - `milestone1/shoot.sh all`.
+   - The stalker every-frame strip judge 2 asked for: `r1c\jiggle\run.sh every jig_fight_stalker 0 movie`, then `strip.py raw/every_jig_fight_stalker_s0 280 45 OUT label`.
+   - Turntables: `formview_hang.py turntable_b.png BUILD --both --views 0,30,...,330 --y0 0 --y1 1.8 --x 0.21 --px 700`.
+   - `breast_row_clay.png` (= the solver's chest_close_before_after.png) and `sheet\breast_numbers.txt`, then `make_sheet.py`.
+   - dotnet test.
+   - Judge 3: `r1c\judge2\brief.md` updated to "since round 2".
+   - Glutes (item 6) and the shoulder-kink recheck are not started.
+
+**Spend (R1 lead 4):** API $8.88 (round 3 $8.43, round 4's failed run $0.45). Subagents: solvers r4 0.24M, r5a 0.21M, r5b 0.23M, runner 0.04M. Lead about 0.1M.
+
 ## R1 LEAD 3 -> R1 LEAD 4 (6 Nov): MILESTONE JUDGED TWICE (FIX, closing in); next: round 3 on the breast ROOT + the ARMPIT pocket, then judge 3
 Report to the P1 rebuild coordinator. Scratch `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_body_p1\r1c\` (armpit, pops, judge, forms, jiggle, round, judge2, sheet). Milestone folder `...\body_p1\milestone1\` (`shoot.sh [stills|clips|all] [KEY_REGEX]`, builds first and takes the godot turn; `r1c\sheet\make_sheet.py` -> sheet_half.jpg with a BREAST ROW (`sheet\breast_numbers.txt` + `milestone1\breast_row_clay.png`: update both when the breast changes), strip_*/dense_* 1:1 crops). Owner: no round cap while rounds move closer.
 **Published now:** `tools/body/out/round_2` (all of the below), clips re-baked (digest 8C54567A02B43DEF), rig_map + spring samples current, every milestone shot reshot on it. dotnet test 1585/0/10. `godot/art/people/body_p1/*` UNCOMMITTED (rebuild from the spec).
