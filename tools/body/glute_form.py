@@ -293,6 +293,19 @@ def glutes(sl, c, v, V, values):
     ax (|x| over the joints' |x|), y and z (over the joints): bump_on. No x move: nothing crosses the midline.
     "even": the moved region's quads evened after the move (tangential; not sliders.relax, which is post-join only)."""
     D = glute_delta(sl, c, V)
+    ms = c.get("move_smooth")
+    if ms:
+        # P1 R1c (milestone judge: vertical ripples on the cheeks from behind, the cleft reading only in its lower
+        # third): the move itself low-passed over the mesh graph (Jacobi steps of the umbrella average, the move's
+        # own field, not the surface): the 44 mm push carried vertex-scale content (the cheeks' quad columns shaded as
+        # vertical streaks: 0.4-0.9 mm high-pass relief vs 0.1 on the base) and its narrow cleft fill flattened the
+        # cleft's V; the smoothed move keeps the masses (wavelengths over ~5 edges) and lets the base's own V through
+        # (D has no x part, so nothing crosses the midline; the parts mask is laid again after)
+        A, deg = _graph(sl)
+        a = float(ms.get("step", 0.5))
+        for _ in range(int(ms.get("iters", 30))):
+            D = (1.0 - a) * D + a * (A @ D) / deg[:, None]
+        D = D * parts_mask(sl, c.get("parts", ["trunk", "crotch", "thigh"]))[:, None]
     out = V + v * D
     fa = c.get("fair")
     if fa:

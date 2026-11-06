@@ -309,6 +309,11 @@
     "full_m": 0.008,
     "iters": 12,
     "step": 0.5
+   },
+   "move_smooth": {
+    "iters": 8,
+    "step": 0.5,
+    "why": "P1 R1c (milestone judge: vertical ripples on the cheeks from behind, turntable 180/210; the cleft reading only in its lower third): the move low-passed over the mesh graph before it is laid (glute_form.glutes): the ripples were vertex-scale content riding on the 44 mm push (0.4-0.9 mm high-pass relief across the cheeks vs 0.1 on the base), and the narrow cleft fill had flattened the cleft's V above the hip joints; see the numbers in the R1c forms report"
    }
   },
   "glute_sculpt": {

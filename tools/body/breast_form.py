@@ -202,7 +202,22 @@ def dome_height(c, u, w):
         # height comes in (the hanging arm's inner side meets a clean gap) and the side below the armpit keeps its reach
         lu = r["lat_up"]
         r_lat = smooth_r(w - lu.get("w0_m", 0.0), r["lat"], lu["r"], lu.get("bw_m", bw))
-    xi = u / smooth_r(u, r["med"], r_lat, bw)
+    r_med = r["med"]
+    if "med_up" in r:
+        # P1 R1c (milestone judge: the cleavage opened into a V notch at its top): the upper INNER quadrant's own medial
+        # radius, switched by the direction from the apex like lat_up (psi 0 medial, 90 up; quintic ramp, C2): the
+        # inner flank reaches further toward the midline on the rays that climb toward the sternum, so the two inner
+        # walls stay full (the midline fade still holds the floor) and the cleavage line starts higher; pure medial
+        # rays (psi <= p0) keep r["med"], so the apex and the gap at apex height are unchanged by it
+        mu = r["med_up"]
+        p0, p1 = mu["psi_deg"]
+        psi_m = np.degrees(np.arctan2(w / r["up"], np.abs(u) / r["med"]))
+        g = smoother((psi_m - p0) / (p1 - p0))
+        if mu.get("ease_rho"):
+            # eased in from the apex (C2): the cap keeps its own shape, so the apex normal does not tip up and in
+            g = g * smoother(np.hypot(u / r["med"], w / r["up"]) / mu["ease_rho"])
+        r_med = r["med"] + (mu["r"] - r["med"]) * g
+    xi = u / smooth_r(u, r_med, r_lat, bw)
     eta = w / smooth_r(w, r["low"], r["up"], bw)
     rho = np.sqrt(xi * xi + eta * eta)
     reg = c.get("dir_reg", 0.15)
