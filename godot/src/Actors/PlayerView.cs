@@ -289,9 +289,14 @@ public partial class PlayerView : Node3D
             person.Skeleton.AddChild(carriage);
             person.Skeleton.MoveChild(carriage, 0);
             // First of all, on the tree's own pose (before her carriage, her pose layer and the helpers).
-            armMod = new HerArmHold();
-            person.Skeleton.AddChild(armMod);
-            person.Skeleton.MoveChild(armMod, 0);
+            // Not on B (--body p1): the arm-hold crossfade is retired for B (the owner, 5 Nov); B's arms play the bridge
+            // clips' own blend until Stage B rebuilds the holds as clip data. (armMod null -> armNow false.)
+            if (!P1Body.IsB(person.Skeleton))
+            {
+                armMod = new HerArmHold();
+                person.Skeleton.AddChild(armMod);
+                person.Skeleton.MoveChild(armMod, 0);
+            }
         }
         else
         {

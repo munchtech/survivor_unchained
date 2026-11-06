@@ -147,8 +147,7 @@
    "hold": []
   },
   "sword_heavy": {
-   "why": "a core attack (her own clips, OwnClips.For by calling and kind) | lock_ease 8: the foot lock's ease-in popped twice (thigh_l 14.5, foot_r 18.2 deg in one frame); a C2 ease over 8 frames",
-   "lock_ease": 8,
+   "why": "a core attack (her own clips, OwnClips.For by calling and kind) | no clean (P1 R1 lead 3): clipcheck's 16 local pops are all the source clip's. B's GLOBAL steps follow A's (pelvis 13.9 = 13.9 @3; chest spine_05 31.3 vs A's top spine 33.3 @4; thigh_l 9.0 vs 10.4; foot_r 13.2 = 13.2); the B-only local entries (spine_04/05, thigh_l @3, foot_r @20) are the same whip and foot turn written in B's bones' frames. lock_ease 8 (an earlier guess) moved nothing (14.49/18.17 before and after) and is dropped. Stage B rebuilds the clip",
    "turns": {},
    "hold": []
   },

@@ -594,7 +594,7 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
                       default=lambda x: np.asarray(x).tolist())
     tim["skeleton"] = round(time.time() - t, 2)
     t = time.time()
-    wts = stage_weights(z, V, ring, hv, sk, A, baked, rep)
+    wts = stage_weights(z, weights_body(spec, tier, z, V, A, baked, rep), ring, hv, sk, A, baked, rep)
     tim["weights"] = round(time.time() - t, 2)
     t = time.time()
     uv = stage_uv(z, tier, rep) if spec.get("uv", True) else None
@@ -625,6 +625,48 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
     return sk
 
 
+def weights_body(spec, tier, z, V, A, baked, rep):
+    """P1 R1c: the body the skin weights are read on: this spec's body with every designed slider flagged
+    "rides_skin": true at 0 (designed/armpit.json's fill: a few mm of soft tissue laid on the skin, which must move
+    with the skin it sits on; read on the filled body, the girdle's bounded biharmonic fill and its distance rules
+    re-solved across 3848 trunk/shoulder/arm points, up to 0.15, and the hanging arm re-opened the gap it fills).
+    None set: V itself (byte-identical)."""
+    sv = {k: v for k, v in spec.get("sliders", {}).items() if v}
+    des = {}
+    for f in sorted(os.listdir(os.path.join(HERE, "designed"))):
+        if f.endswith(".json"):
+            with open(os.path.join(HERE, "designed", f)) as fh:
+                des.update(json.load(fh).get("sliders", {}))
+    rides = sorted(k for k in sv if des.get(k, {}).get("rides_skin"))
+    if not rides:
+        return V
+    s2 = dict(spec)
+    s2["sliders"] = {k: v for k, v in sv.items() if k not in rides}
+    r2 = {}
+    _, Vw = stage_base(s2, tier, r2)
+    Vw, ring_w, _ = stage_place(s2, z, Vw, A, baked, r2)
+    Vw = stage_forms(s2, tier, z, Vw, ring_w, r2)
+    rep["weights_body"] = {"rides_skin_off": rides, "max_mm": round(float(np.linalg.norm(Vw - V, axis=1).max()) * 1e3, 2)}
+    return Vw
+
+
+def with_defaults(spec):
+    """P1 R1c: a designed slider with a "default" (designed/armpit.json's armpit_fill: the body's own armpit) is laid
+    on every body at that value unless the spec names it (0 = off), so NPCs and the male body get it free. The value
+    joins spec["sliders"] here, before every stage, so bone_body (its "soft" flag) and the shapes see the same body."""
+    des = {}
+    for f in sorted(os.listdir(os.path.join(HERE, "designed"))):
+        if f.endswith(".json"):
+            with open(os.path.join(HERE, "designed", f)) as fh:
+                des.update(json.load(fh).get("sliders", {}))
+    add = {k: c["default"] for k, c in des.items() if c.get("default") and k not in spec.get("sliders", {})}
+    if not add:
+        return spec
+    spec = dict(spec)
+    spec["sliders"] = {**spec.get("sliders", {}), **add}
+    return spec
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("spec")
@@ -635,6 +677,7 @@ def main():
     out = os.path.abspath(a.out)
     os.makedirs(os.path.join(out, "stage"), exist_ok=True)
     spec = load_spec(a.spec)
+    spec = with_defaults(spec)
     A = Glb(os.path.join(REPO, spec["ref"]))
     t0 = time.time()
     baked = headbake.bake(A, HEADS)
