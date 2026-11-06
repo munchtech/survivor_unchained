@@ -31,6 +31,9 @@ public sealed partial class Battle
         public double Scale = 1;
         /// <summary>A pull's reach (m) and drag (m/s), centered on the blow; 0 for every other kind.</summary>
         public double Reach, Pull;
+        /// <summary>Its blows' damage over the kit's, and whether its slam knocks her down (Tell's).</summary>
+        public double DamageMul = 1;
+        public bool Knocks;
         /// <summary>Landed: only a charger's run is left.</summary>
         public bool Landed;
         internal Telegraphs.Kind K = null!;
@@ -86,15 +89,17 @@ public sealed partial class Battle
     /// root, the charger held, the pull's drag) and its landing (damage as a share of her max life, the charger's run).
     /// `scale` multiplies its sizes (a boss's bigger version). Null: a kind the kit does not have, or a charge with no foe.
     /// </summary>
-    public EnemyBlow? Tell(string kind, Enemy? from, double x, double z, double scale = 1)
+    /// `reach`: a pull's reach in metres over its scaled radius (its heart keeps the scale: Corvane's wide drag to a small
+    /// slam); `damageMul`: its blows' damage over the kit's; `knocks`: a pull's slam knocks her down as a caught charge does.
+    public EnemyBlow? Tell(string kind, Enemy? from, double x, double z, double scale = 1, double reach = 0, double damageMul = 1, bool knocks = false)
     {
         var k = Telegraphs.Get(kind);
         if (k == null || Over != null || (k.Length > 0 && from == null)) return null;
         var b = new EnemyBlow
         {
-            Tell = kind, From = from, Source = from?.Def.Name ?? kind, Label = null, Delay = k.Windup, Damage = k.Damage * MaxHp * KitDamageMul,
+            Tell = kind, From = from, Source = from?.Def.Name ?? kind, Label = null, Delay = k.Windup, Damage = k.Damage * MaxHp * KitDamageMul * damageMul,
         };
-        var t = new TellOn { Kind = kind, Blow = b, Scale = scale, K = k, From = from, FromSeed = from?.Seed ?? 0 };
+        var t = new TellOn { Kind = kind, Blow = b, Scale = scale, K = k, From = from, FromSeed = from?.Seed ?? 0, DamageMul = damageMul, Knocks = knocks };
         if (k.Length > 0)
         {
             // The lane: from the foe through the point, its full length (a point on the foe: the way it faces).
@@ -136,7 +141,7 @@ public sealed partial class Battle
             b.Shape = TelegraphShape.Circle;
             b.X = x; b.Z = z; b.Radius = (k.Core > 0 ? k.Core : k.Radius) * scale;
         }
-        if (k.Pull > 0) { t.Reach = k.Radius * scale; t.Pull = k.Pull; }
+        if (k.Pull > 0) { t.Reach = reach > 0 ? reach : k.Radius * scale; t.Pull = k.Pull; }
         b.After = bt => bt.TellLands(t);
         Blow(b);
         landings.Add((Time + k.Windup, b));
@@ -366,8 +371,10 @@ public sealed partial class Battle
             var f = new EnemyBlow
             {
                 Tell = t.Kind, From = t.From != null && Same(t.From, t.FromSeed) ? t.From : null, Source = bl.Source, Label = null,
-                Shape = TelegraphShape.Circle, X = bl.X, Z = bl.Z, Radius = bl.Radius, Delay = t.K.Follow, Damage = t.K.FollowDamage * MaxHp * KitDamageMul,
+                Shape = TelegraphShape.Circle, X = bl.X, Z = bl.Z, Radius = bl.Radius, Delay = t.K.Follow, Damage = t.K.FollowDamage * MaxHp * KitDamageMul * t.DamageMul,
             };
+            // (a slam that knocks: caught, she is knocked down as by a caught charge, the charge's time and its get-up grace)
+            if (t.Knocks) f.After = bt => { if (f.Dealt > 0 && bt.Player.Alive) bt.KnockPlayer(Telegraphs.Get("charge")?.Knock ?? 0.9, f); };
             Blow(f);
             landings.Add((Time + t.K.Follow, f));
         }

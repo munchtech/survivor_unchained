@@ -52,6 +52,8 @@ public partial class CrowdView : Node3D
     sealed class Gait
     {
         public double Seed, Phase, Facing;
+        /// <summary>When a body still in the fight's hands was laid down by its story (EnemyAnim.Die while alive), or -1.</summary>
+        public double LieAt = -1, LieFrom, LieTo;
         public bool Walking;
         public bool Seen;
         /// <summary>How it falls, chosen at its first dying frame and kept for its body.</summary>
@@ -314,6 +316,8 @@ public partial class CrowdView : Node3D
     int living;
 
     public CrowdView() { Name = "Crowd"; Placed = DrawnAt; }
+    /// <summary>A carried lamp's glass in the world as last drawn (a foe's id: where, whose seed, the process frame).</summary>
+    public static readonly Dictionary<int, (Vector3 At, double Seed, ulong Frame)> GlassOn = new();
 
     /// <summary>The live crowd's DrawnAt (the fx that sit on a body: its stun glint; the beats' throw log).</summary>
     public static Func<Enemy, (double X, double Z)>? Placed;
@@ -338,6 +342,13 @@ public partial class CrowdView : Node3D
     /// <summary>A body's hit-kit struck look this frame (BattleFx.HitKit): (flash blend 0-0.5, gold rim 0-1); X &lt; 0 none.
     /// It replaces the sim's flash on the body (her auto-attacks' struck: no cream wash, no chalk ghosts by night).</summary>
     public static Func<int, Vector2>? StruckRim;
+    /// <summary>H7: a marked foe's rim in the Flare's school (FlareFx.MarkRim; the hue is flare_mark_rim): 0 none.</summary>
+    public static Func<int, float>? FlareMarkRim;
+    /// <summary>H7 r2: a struck body's rim for 2 frames as the Flare's band crosses it (FlareFx.BandRim): 0 none. Over the
+    /// marks' rim, under the hit kit's.</summary>
+    public static Func<int, float>? FlareBandRim;
+    /// <summary>H7 r3: how high a held body is knocked up off the Long Cut's crack as the band crosses it (FlareFx.StatueLift, m).</summary>
+    public static Func<int, float>? FlareStatueLift;
     /// <summary>The view's own struck flash for a body whose blow it draws later than the sim lands it (the Warden's
     /// heave: the flinch waits for the heave); null for the sim's.</summary>
     public static Func<int, float?>? FlashHeld;
@@ -727,6 +738,27 @@ public partial class CrowdView : Node3D
                 t = time * 1.8 + e.Seed * 5;
                 break;
             default:
+                // Laid down by its story, still in the fight's hands (Corvane down in the doorway, CorvaneStory.Lie: alive at
+                // one, through gets_up and gone until the door's Close lets him go): his fall played once and held on its last
+                // pose where he lies. (Drawn standing in his idle, or not at all, he read as gone or getting up: P6 r4.)
+                if ((e.Laid || e.Anim == EnemyAnim.Die) && asset.Clips.ContainsKey("die"))
+                {
+                    role = g.Death ??= "die";
+                    // Laid across the play camera's frame (its yaw is 0: east-west is the screen's width), turned to it over
+                    // the fall's first half second: lying along the view, head away and feet to the lens, he read as
+                    // standing from thirty metres up (P6 r5/r6).
+                    if (g.LieAt < 0)
+                    {
+                        g.LieAt = time;
+                        double h = g.Facing + (asset.FallOff?.GetValueOrDefault(role, Math.PI) ?? Math.PI);
+                        g.LieFrom = g.Facing;
+                        g.LieTo = g.Facing + Wrap((Math.Cos(h) >= 0 ? 0 : Math.PI) - h);
+                    }
+                    g.Facing = g.LieFrom + (g.LieTo - g.LieFrom) * Smooth(time - g.LieAt, 0, 0.5);
+                    t = Math.Min((time - g.LieAt) * Math.Max(1, asset.Duration(role) / (Ai.DieTime * 0.62)), asset.Duration(role) * 0.999);
+                    break;
+                }
+                g.LieAt = -1;
                 // After a slam, the rest of it: the blow held on the ground, then the get-up (its
                 // clock runs on until a strike starts it again).
                 if (g.Slam > 0 && e.Anim != EnemyAnim.Attack && SlamImpact + e.AnimT - g.Slam < asset.Duration("slam"))
@@ -773,7 +805,7 @@ public partial class CrowdView : Node3D
         double aim = !(g.Walking && free) ? e.Facing
             : speed >= 0.2 || g.DrawnSpeed < 0.2 ? (speed > 1e-6 ? Math.Atan2(e.Vz, e.Vx) : e.Facing)
             : g.Back ? e.Facing : Math.Atan2(g.DVz, g.DVx);
-        if (e.State != EnemyState.Dying)
+        if (e.State != EnemyState.Dying && g.LieAt < 0)
         {
             double turn = Math.Atan2(Math.Sin(aim - g.Facing), Math.Cos(aim - g.Facing));
             g.Facing += turn * Math.Min(1, dt * (free ? 9 : 18));
@@ -827,8 +859,14 @@ public partial class CrowdView : Node3D
         g.LastState = e.State; g.LastX = ex; g.LastZ = ez; g.HasLast = true;
         if (fallBurn.W > 0 || fallBurn.Z > 0) { dissolve = Math.Max(dissolve, fallBurn.Z); burning = fallBurn.W; frozen = fallBurn.X; }
         var hk = StruckRim?.Invoke(e.Id) ?? new Vector2(-1, 0);
+        // (r3, judge r2 fix 6: the band's rim is edge only: no flash blend under it, the flat lilac-white fill)
+        if (hk.X < 0 && FlareBandRim?.Invoke(e.Id) is > 0 and var brm) hk = new Vector2(0, brm);
+        if (hk.X < 0 && FlareMarkRim?.Invoke(e.Id) is > 0 and var mrk) hk = new Vector2(flare, mrk);
         if (hk.X >= 0) flare = hk.X;
-        crowd.Push(KeyOf(e), new Transform3D(basis, at), role, t, flare, dissolve, frozen, burning, tint, glow, e.LastCrit && !e.LastDot && hk.X < 0, hk.X >= 0 ? Math.Max(hk.Y, 0.001f) : 0);
+        var xf = new Transform3D(basis, at);
+        crowd.Push(KeyOf(e), xf, role, t, flare, dissolve, frozen, burning, tint, glow, e.LastCrit && !e.LastDot && hk.X < 0, hk.X >= 0 ? Math.Max(hk.Y, 0.001f) : 0);
+        // (a carried lamp's glass where this frame draws it: BattleFx.Auras sets his light and its glow on it)
+        if (e.Def.CarriedLight != null && asset.GlassAt(role, t) is Vector3 gl) GlassOn[e.Id] = (xf * gl, e.Seed, Engine.GetProcessFrames());
         living++;
     }
 
@@ -880,7 +918,8 @@ public partial class CrowdView : Node3D
             Audit(st.X, st.Z, 0, 1);
             censusStatue++;
             var lk = FlareStatueLook?.Invoke(st.Id) ?? new Godot.Vector4(1, 0, 0, 0);
-            Crowd(st.Visual).Push(st.Key, new Transform3D(basis, new Vector3(st.X, (float)heightAt(st.X, st.Z), st.Z)), st.Role, st.T, FlareStatueFlash?.Invoke(st.Id) ?? 0, lk.Z, lk.X, lk.W, Charred(st.Tint, lk.Y), st.Glow);
+            float brim = FlareBandRim?.Invoke(st.Id) ?? 0, lift = FlareStatueLift?.Invoke(st.Id) ?? 0;
+            Crowd(st.Visual).Push(st.Key, new Transform3D(basis, new Vector3(st.X, (float)heightAt(st.X, st.Z) + lift, st.Z)), st.Role, st.T, FlareStatueFlash?.Invoke(st.Id) ?? 0, lk.Z, lk.X, lk.W, Charred(st.Tint, lk.Y), st.Glow, false, brim, brim > 0 ? 0 : -1);
 
         }
         if (gone != null) foreach (var k in gone) statues.Remove(k);

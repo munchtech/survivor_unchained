@@ -44,6 +44,9 @@ public partial class Voices : Node3D
         public bool Boss;
         /// <summary>Stood in the fight's fallback band above the HUD (H6 r1 fix 7): it stays there.</summary>
         public bool InBand;
+        /// <summary>A boss's signature line (Ev.Bark.Signature): over the speaker for its whole tell, its own (danger)
+        /// mark and her nearness no reason to move it to the band; lifted clear of a danger mark's rim (RimPts).</summary>
+        public bool Signature;
     }
     static int barkTipShots;
 
@@ -51,6 +54,8 @@ public partial class Voices : Node3D
     /// the screen (px) and points along every live kit mark's outline and lines (px). Read only while FightFrame is fresh.</summary>
     public Vector2? HerScreen;
     public readonly List<Vector2> MarkPts = new();
+    /// <summary>The same for the danger marks (a boss's or an elite's blow), and those marks' rims and edges alone.</summary>
+    public readonly List<Vector2> DangerPts = new(), RimPts = new();
     public ulong FightFrame;
     /// <summary>No bark nearer her on the screen than this (1080p px), nor across a live mark.</summary>
     const float HerClear = 250;
@@ -59,7 +64,7 @@ public partial class Voices : Node3D
     Said? inBand;
 
     /// <summary>A line waiting for its speaker's last to finish.</summary>
-    sealed record Waiting(string Text, Vector3 At, string? Speaker, bool Alert, string? Voice, Func<double>? Shown, bool Boss = false);
+    sealed record Waiting(string Text, Vector3 At, string? Speaker, bool Alert, string? Voice, Func<double>? Shown, bool Boss = false, bool Signature = false);
 
     readonly List<Said> barks = new();
     /// <summary>Combat's floaters standing now (a "blocked"), where they stand on the screen and until when:
@@ -182,7 +187,15 @@ public partial class Voices : Node3D
     /// <summary>Most lines standing within 3 m of one another at once.</summary>
     public int NearCap = 2;
 
-    public void Bark(string text, Vector3 at, string? speaker = null, bool alert = false, string? voice = null, Func<double>? shown = null, bool boss = false)
+    /// <summary>A speaker's line taken down now (fading over a quarter second), and anything of theirs still waiting
+    /// dropped (Ev.Hush: Corvane's "Lie down." as its slam lands).</summary>
+    public void Hush(string speaker)
+    {
+        waiting.Remove(speaker);
+        foreach (var b in barks) if (b.Key == speaker) b.Life = Math.Min(b.Life, b.T + 0.25);
+    }
+
+    public void Bark(string text, Vector3 at, string? speaker = null, bool alert = false, string? voice = null, Func<double>? shown = null, bool boss = false, bool signature = false)
     {
         // Whose turn it is: a named speaker's own; else whatever stands there.
         string key = speaker ?? $"@{Mathf.RoundToInt(at.X / 3)},{Mathf.RoundToInt(at.Z / 3)}";
@@ -194,12 +207,12 @@ public partial class Voices : Node3D
             now.Life = Math.Max(now.T + 0.25, Math.Min(now.Life, alert ? 0 : 1.0 + now.Text.Length * 0.045));
             if (!waiting.TryGetValue(key, out var q)) waiting[key] = q = new();
             if (q.Any(w => w.Text == text)) return;
-            q.Enqueue(new Waiting(text, at, speaker, alert, voice, shown, boss));
+            q.Enqueue(new Waiting(text, at, speaker, alert, voice, shown, boss, signature));
             // (a speaker who says too much drops what is oldest unsaid, not what is newest)
             while (q.Count > 3) q.Dequeue();
             return;
         }
-        Show(key, new Waiting(text, at, speaker, alert, voice, shown, boss));
+        Show(key, new Waiting(text, at, speaker, alert, voice, shown, boss, signature));
     }
 
     /// <summary>A bark's width: one line if it fits 460 px; else the narrowest width giving the same number of
@@ -233,7 +246,7 @@ public partial class Voices : Node3D
         box.MouseFilter = Control.MouseFilterEnum.Ignore;
         // A named speaker's name over their words, small and gold; the words in the hand.
         if (w.Speaker != null)
-            box.AddChild(Style.Label(w.Speaker.ToUpperInvariant(), Style.UiHeavy, 15, new Color("#e0b868"), false, HorizontalAlignment.Center));
+            box.AddChild(Style.Label((SurvivorUnchained.World.Lore.Person(w.Speaker)?.Name is { Length: > 0 } nm ? nm : w.Speaker).ToUpperInvariant(), Style.UiHeavy, 15, new Color("#e0b868"), false, HorizontalAlignment.Center));
         var words = Style.Label(w.Text, Style.Ui, w.Alert ? 26 : 23, w.Alert ? new Color("#ffd07a") : new Color("#f0e6d2"), true, HorizontalAlignment.Center);
         words.AddThemeConstantOverride("outline_size", 7);
         words.AddThemeColorOverride("font_outline_color", new Color(0.02f, 0.015f, 0.01f, 0.92f));
@@ -251,7 +264,7 @@ public partial class Voices : Node3D
         // a new one drops the oldest within 3 m. (--barks shows three on purpose.)
         var near = barks.Where(b => new Vector2(b.At.X - w.At.X, b.At.Z - w.At.Z).Length() <= 3f).ToList();
         for (int n = 0; n <= near.Count - NearCap; n++) { near[n].Box.QueueFree(); barks.Remove(near[n]); }
-        barks.Add(new Said { Box = box, Key = key, At = w.At, Text = w.Text, Life = life, Boss = w.Boss });
+        barks.Add(new Said { Box = box, Key = key, At = w.At, Text = w.Text, Life = life, Boss = w.Boss, Signature = w.Signature });
         // Not too many at once: the oldest go first.
         while (barks.Count > 6) { barks[0].Box.QueueFree(); barks.RemoveAt(0); }
     }
@@ -460,13 +473,21 @@ public partial class Voices : Node3D
             bool Fouls(Rect2 r)
             {
                 if (!fight) return false;
-                if (HerScreen is Vector2 hs)
+                if (HerScreen is Vector2 hs && !b.Signature)
                 {
                     float dx = Math.Max(0, Math.Max(r.Position.X - hs.X, hs.X - r.End.X)), dy = Math.Max(0, Math.Max(r.Position.Y - hs.Y, hs.Y - r.End.Y));
                     if (dx * dx + dy * dy < HerClear * hk * HerClear * hk) return true;
                 }
                 foreach (var mp in MarkPts) if (r.HasPoint(mp)) return true;
+                if (!b.Signature) foreach (var mp in DangerPts) if (r.HasPoint(mp)) return true;
                 return false;
+            }
+            // (a signature line: raised up to 90 px off a danger mark's rim it would sit across, never into the band)
+            if (fight && b.Signature && RimPts.Count > 0)
+            {
+                float up = 0;
+                while (up < 90 * hk && RimPts.Any(mp => new Rect2(at.X, at.Y - up, size.X, size.Y).Grow(4).HasPoint(mp))) up += 6 * hk;
+                if (up < 90 * hk) at.Y -= up;
             }
             bool Clear(float y) { var r = new Rect2(at.X, y, size.X, size.Y).Grow(6); return y >= lo - 0.5f && y + size.Y <= low + 0.5f && !placed.Any(p => p.Intersects(r)) && !Fouls(r); }
             float pick = at.Y;
@@ -485,7 +506,7 @@ public partial class Voices : Node3D
             }
             // Nowhere clear near the speaker in a fight (or only far from him): the band above the HUD, centred, the newest
             // line in it (an older one there goes at once).
-            if (fight && !b.InBand && (!Clear(pick) || Math.Abs(pick - at.Y) > 220 * hk))
+            if (fight && !b.InBand && !b.Signature && (!Clear(pick) || Math.Abs(pick - at.Y) > 220 * hk))
             {
                 b.InBand = true;
                 if (inBand != null && inBand != b && inBand.T < inBand.Life) { inBand.Life = inBand.T; inBand.Box.Visible = false; }

@@ -26,7 +26,13 @@ namespace SurvivorUnchained.View;
 public static class MotionClock
 {
     static readonly StringName Then = "motion_then", FrameName = "motion_frame";
-    static double time, rollover = 3600;
+    static readonly StringName WorldName = "world_time", WorldWasName = "world_time_was";
+    static double time, world, rollover = 3600;
+
+    /// <summary>The world's rate for the world materials' clock (shaders/world_clock.gdshaderinc):
+    /// FlareFx.WorldRate in a Flare, 1 outside one; set each frame by the world (WorldScene).
+    /// In the stop the world's ground, grass, water and fire truly hold, she and the marks alive.</summary>
+    public static double WorldRate = 1;
     static int frame;
     static Node? clockOf;
 
@@ -48,6 +54,10 @@ public static class MotionClock
         // Halfway back to the look back's TIME; with no step there is no telling them apart
         // (and nothing moved), so every run is this frame's.
         RenderingServer.GlobalShaderParameterSet(Then, step > 0 ? (float)(time - step * 0.5) : -1e9f);
+        // The world's clock: last draw's for the look back, then this draw's step at the world's rate.
+        RenderingServer.GlobalShaderParameterSet(WorldWasName, (float)world);
+        world = (world + step * Mathf.Clamp(WorldRate, 0, 1)) % rollover;
+        RenderingServer.GlobalShaderParameterSet(WorldName, (float)world);
         // The frames drawn (wrapping), for what is cut by a threshold moved every frame
         // (shaders/coverage.gdshaderinc).
         frame = (frame + 1) % 256;

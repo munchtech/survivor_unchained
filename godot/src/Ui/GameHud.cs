@@ -478,8 +478,33 @@ public partial class GameHud : CanvasLayer
     /// <summary>How far the play HUD is shown (0 hidden, 1 in), for the cut log.</summary>
     public float PlayAlpha => play.Visible ? play.Modulate.A : 0;
 
+    bool held, heldWant = true;
+    int subtitleAt;
+    /// <summary>A story beat held in play (Corvane's fall): the play HUD away at once, but its captions, which step out
+    /// to the HUD's root for the hold; given back with a short fade in to what play had asked for meanwhile.</summary>
+    public void Held(bool on)
+    {
+        if (on == held) return;
+        if (on)
+        {
+            heldWant = play.Visible;
+            subtitleAt = subtitle.GetIndex();
+            subtitle.Reparent(root, true);
+            ShowPlay(false);
+            held = true;
+        }
+        else
+        {
+            held = false;
+            subtitle.Reparent(play, true);
+            play.MoveChild(subtitle, Mathf.Min(subtitleAt, play.GetChildCount() - 1));
+            ShowPlay(heldWant, heldWant ? 0.4f : 0);
+        }
+    }
+
     public void ShowPlay(bool on, float fade = 0)
     {
+        if (held) { heldWant = on; return; }
         playFade?.Kill();
         playFade = null;
         if (!on || fade <= 0 || play.Visible)
@@ -720,11 +745,13 @@ public partial class GameHud : CanvasLayer
         int m = (int)(shown / 60), s = (int)(shown % 60);
         tallyTime.Text = arenaLeft is double l2 && l2 <= 0 ? $"+{m}:{s:00}" : $"{m}:{s:00}";
         tallyTime.AddThemeColorOverride(FontColor, arenaLeft is double l3 && l3 > 0 && l3 < 60 ? Style.EmberHi : Hex("#efe3c8"));
-        tallyKills.Text = b.KillCount.ToString();
+        // (H7 r2: a Flare's kills count as its band reaches each, not at the press: FlareFx.KillsHeld)
+        int kills = Math.Max(0, b.KillCount - SurvivorUnchained.View.FlareFx.KillsHeld);
+        tallyKills.Text = kills.ToString();
         // The count pops when it climbs, at most ten times a second.
-        if (b.KillCount > killsShown) lastKillMs = Time.GetTicksMsec();
-        if (b.KillCount > killsShown && killPop <= 0.05) killPop = 0.15;
-        killsShown = b.KillCount;
+        if (kills > killsShown) lastKillMs = Time.GetTicksMsec();
+        if (kills > killsShown && killPop <= 0.05) killPop = 0.15;
+        killsShown = kills;
         tallyGold.Text = $"{Math.Floor(gold + b.GoldGained - b.GoldBanked)}";
     }
     // The chips over the globe and in the boons' row, as last built. They were

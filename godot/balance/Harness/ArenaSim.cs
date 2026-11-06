@@ -18,11 +18,12 @@ namespace SurvivorUnchained.Balance;
 /// player who knows the fight does: a death is then the game's, not the bot's).</summary>
 public sealed record RunSpec(int Seed, string Calling, string Policy, int Tier = 1, string People = "pack", string[]? Oaths = null,
     double Cap = 40, double Beyond = 0, int Weapon = 0, int Art = 0, int Level = 1, bool Deft = false, double Minutes = 30,
-    string Type = "", string Lamps = "empty", string For = "", string Flare = "", string Bot = "")
+    string Type = "", string Lamps = "empty", string For = "", string Flare = "", string Bot = "",
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)] bool OneBuild = false)
 {
     public string Key => $"{Calling}/{Policy}/t{Tier}/{People}/s{Seed}/w{Weapon}" + (Level > 1 ? $"/L{Level}" : "") + (Deft ? "/deft" : "") +
         (Oaths is { Length: > 0 } ? $"/{string.Join("+", Oaths)}" : "") + (Minutes != 30 ? $"/m{Minutes:0}" : "") +
-        (Type != "" ? $"/{Type}" : "") + (Lamps != "empty" ? $"/lamps-{Lamps}" : "") + (For != "" ? $"/for-{For}" : "") + (Flare != "" ? $"/flare-{Flare}" : "") + (Bot != "" ? $"/{Bot}" : "");
+        (Type != "" ? $"/{Type}" : "") + (Lamps != "empty" ? $"/lamps-{Lamps}" : "") + (For != "" ? $"/for-{For}" : "") + (Flare != "" ? $"/flare-{Flare}" : "") + (Bot != "" ? $"/{Bot}" : "") + (OneBuild ? "/onebuild" : "");
 }
 
 /// <summary>A minute of the fight, as the harness saw it.</summary>
@@ -92,6 +93,10 @@ public sealed class RunResult
     /// <summary>The survivor's type (road) and the lamps lit (free ones too) at the start.</summary>
     public string Road = "";
     public int LampsLit;
+    /// <summary>--onebuild: the skills carried from minute 0 (docs/design/ONE_BUILD.md). Null, and left out of the line, without the flag,
+    /// so a run without it writes the same bytes as before the switch.</summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public string[]? Kit;
     /// <summary>The lit lamp ids (a measuring aid: which lamps a board carries).</summary>
     public string LampIds = "";
     /// <summary>The Flare: casts, the first cast's minute, the mean gap between casts (s), casts while a boss was up,
@@ -282,6 +287,7 @@ public static class ArenaSim
         var host = new HeadlessHost(j, spec.Seed);
         var zone = new ArenaRun(host, map, arena);
         var at = zone.ArrivalFrom(null);
+        string[]? onebuildKit = null;
         var b = j.StartBattle(true, map.Meta.Collision(), map.Ground.HeightAt, at.X, at.Z, at.Facing, (uint)spec.Seed, arena: true);
         if (fx?.Hand is bool handOn) b.HandsOn = handOn;
         if (fx is { NoWicks: true }) { b.WickPaths.Clear(); foreach (var w in b.Weapons) w.Wick = null; }
@@ -294,6 +300,32 @@ public static class ArenaSim
             if (b.Weapons.Find(w => w.Id == forced) is null && b.AddWeapon(forced, fx.SkillRank) is null)
                 throw new InvalidOperationException($"{spec.Key}: can't add {forced}");
             while (b.Weapons.Find(w => w.Id == forced) is { } fw && fw.Rank < fx.SkillRank) b.RankWeapon(forced);
+        }
+        if (spec.OneBuild)
+        {
+            // docs/design/ONE_BUILD.md 1-2, approximated: the whole build at full power from minute 0, sizes in full, and the
+            // draft offering only ranks and hones on the skills carried.
+            string[] order = spec.Calling switch
+            {
+                "warden" => ["grip", "sunder", "groundbreaker", "dawnpulse", "rebuke", "watch_bell", "oathblade", "judgement_disc"],
+                "reaver" => ["grip", "axe_gyre", "cleaver", "iron_palms", "reaving_arc", "umbral_bolt", "arcweb"],
+                "arcanist" => ["grip", "cinderfall", "rimeshard", "hoarfrost", "seeking_motes", "firepot", "dawnpulse"],
+                _ => ["grip", "knifestorm", "volley", "gale_chakram", "firepot", "judgement_disc", "thornbloom"],
+            };
+            string grip = b.Weapons.Count > 0 ? b.Weapons[0].Id : "";
+            var kit = order.Select(id => id == "grip" ? grip : id).Where(id => id != "").Distinct()
+                .Where(id => SurvivorUnchained.Content.Weapons.CanCarry(spec.Calling, id)).Take(SkillBook.SlotsAt(spec.Level)).ToList();
+            int kr = Math.Min(8, 1 + (spec.Level - 1) / 3);
+            foreach (var id in kit)
+            {
+                if (b.Weapons.Find(w => w.Id == id) is null && b.AddWeapon(id, kr) is null)
+                    throw new InvalidOperationException($"{spec.Key}: can't add {id}");
+                while (b.Weapons.Find(w => w.Id == id) is { } kw && kw.Rank < kr) b.RankWeapon(id);
+            }
+            foreach (var id in SurvivorUnchained.Content.Boons.All.Keys) b.BannedCards.Add(id);
+            foreach (var id in SurvivorUnchained.Content.Weapons.All.Keys) if (!kit.Contains(id)) b.BannedCards.Add(id);
+            b.Lamps.Night = false;
+            onebuildKit = kit.ToArray();
         }
         if (fx?.Replay != null) b.ChestsInert = true;
         if (fx is { DamageMore: > 0 }) b.AddBuff("calibration", Stat.Damage, fx.DamageMore, ModKind.More, 1e9, 1);
@@ -528,6 +560,7 @@ public static class ArenaSim
         r.HitsFodder = hitsFodder.Count == 0 ? double.NaN : Median(hitsFodder);
         r.HitsElite = hitsElite.Count == 0 ? double.NaN : Median(hitsElite);
         r.Build = Describe(b);
+        r.Kit = onebuildKit;
         r.Road = LampBook.Now(j.Ch).Type;
         r.LampsLit = LampBook.Now(j.Ch).Lit.Count;
         r.LampIds = string.Join(",", LampBook.Now(j.Ch).Lit);

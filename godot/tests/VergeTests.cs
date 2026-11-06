@@ -324,14 +324,14 @@ public class VergeTests
         Assert.Contains("Nobody makes a C like that any more", p.Text);
         p = r.Choose(p.Choices.Single(c => c.Text == "What's at the end?").Index).Next!;
         Assert.Contains("Somebody answering", p.Text);
-        Assert.Null(r.Choose(p.Choices.Single(c => c.Text == "Thank you, Chid.").Index).Next);
+        Assert.Null(r.Choose(p.Choices.Single(c => c.Text == "Thank you, Corvane.").Index).Next);
         // Given once: one book, no mark, and he is himself again.
         Assert.Null(Dialogue.MarkerOf(chid, m.J.Ctx));
         Assert.NotEqual("office", new DialogueRunner(chid, m.J.Ctx).Start()!.Node.Id);
         Assert.Equal(1, m.J.Ch.Satchel.Count(i => i.Def == "keepers_office"));
 
         // Or she went out before she saw him, and lost: he gives it at the waking, either way out of it.
-        foreach (var ask in new[] { "Thank you, Chid.", "Who brought me in?" })
+        foreach (var ask in new[] { "Thank you, Corvane.", "Who brought me in?" })
         {
             var s = Make();
             s.J.World.Npc("chid").Flags["met"] = true;

@@ -228,7 +228,7 @@
       "when": {
        "history": "ford_warden_slain"
       },
-      "text": "Well. The one who walked up from the Low Ford at dawn. Chid came in babbling about blue lights going out at the crossing, and here you are, bleeding on my step. I'm Rook. This is the Last Lamp. Sit down before you fall down."
+      "text": "Well. The one who walked up from the Low Ford at dawn. Corvane came in babbling about blue lights going out at the crossing, and here you are, bleeding on my step. I'm Rook. This is the Last Lamp. Sit down before you fall down."
      },
      {
       "text": "Another one off the Low Ford road. I'm Rook, and this is the Last Lamp: bed, bread, a bath if you ask nicely, and a strongroom for what you'd rather not carry about."
@@ -599,7 +599,7 @@
    },
    "lamp": {
     "id": "lamp",
-    "text": "It is. My mother carried it up from the chapel the year the Order left, and it's not gone out since. You've one too, I see. Go and see Chid. He needs somebody who knows what the light's for. Lord knows he doesn't.",
+    "text": "It is. My mother carried it up from the chapel the year the Order left, and it's not gone out since. You've one too, I see. Go and see Corvane. He needs somebody who knows what the light's for. Lord knows he doesn't.",
     "effects": [
      {
       "rel": {
@@ -676,7 +676,7 @@
    },
    "cb_shrine_lit": {
     "id": "cb_shrine_lit",
-    "text": "Chid came running in this morning without his shoes on. The shrine lamp, he says. My mother's lamp's got a sister again. ...Your bowl's on the house tonight. Don't make a habit of it.",
+    "text": "Corvane came running in this morning without his shoes on. The shrine lamp, he says. My mother's lamp's got a sister again. ...Your bowl's on the house tonight. Don't make a habit of it.",
     "effects": [
      {
       "npcFlag": {
@@ -739,7 +739,7 @@
    },
    "cb_opened_vault": {
     "id": "cb_opened_vault",
-    "text": "You smell of cold stone. Don't tell me where you've been. Chid'll tell me anyway, and get it wrong.",
+    "text": "You smell of cold stone. Don't tell me where you've been. Corvane'll tell me anyway, and get it wrong.",
     "effects": [
      {
       "npcFlag": {
@@ -856,7 +856,7 @@
    },
    "mother2": {
     "id": "mother2",
-    "text": "She went in her sleep, pet. A week since. (She sets the cup down.) Chid brought her down and saw to her. I sat with her, after.",
+    "text": "She went in her sleep, pet. A week since. (She sets the cup down.) Corvane brought her down and saw to her. I sat with her, after.",
     "next": "mother_word"
    },
    "mother_word": {
@@ -879,7 +879,7 @@
    },
    "mother_where": {
     "id": "mother_where",
-    "text": "Quiet Garden, behind the shrine. There's a marker. No name on it yet; you can tell Chid what to cut.",
+    "text": "Quiet Garden, behind the shrine. There's a marker. No name on it yet; you can tell Corvane what to cut.",
     "next": "mother_room"
    },
    "mother_short": {
@@ -5543,6 +5543,29 @@
     "when": {
      "all": [
       {
+       "fact": "chain.two",
+       "eq": true
+      },
+      {
+       "met": "wenna"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "wenna",
+         "key": "cb:clean",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_clean"
+   },
+   {
+    "when": {
+     "all": [
+      {
        "met": "wenna"
       },
       {
@@ -5760,6 +5783,13 @@
    "hub": {
     "id": "hub",
     "text": [
+     {
+      "when": {
+       "fact": "chain.two",
+       "eq": true
+      },
+      "text": "I've the masks out again. Don't ask me why."
+     },
      {
       "when": {
        "fact": "beasts.outcome",
@@ -6250,7 +6280,7 @@
    },
    "cb_shrine_lit": {
     "id": "cb_shrine_lit",
-    "text": "Chid's lamp's lit. He came to tell me with his shoes on the wrong feet.",
+    "text": "Corvane's lamp's lit. He came to tell me with his shoes on the wrong feet.",
     "effects": [
      {
       "npcFlag": {
@@ -6306,7 +6336,7 @@
    },
    "say_woman": {
     "id": "say_woman",
-    "text": "If you're ever carrying, child, there's a tea for keeping it and a tea for not. I don't ask which, and I don't tell Chid.",
+    "text": "If you're ever carrying, child, there's a tea for keeping it and a tea for not. I don't ask which, and I don't tell Corvane.",
     "effects": [
      {
       "npcFlag": {
@@ -6345,6 +6375,38 @@
       "end": true
      }
     ]
+   },
+   "cb_clean": {
+    "id": "cb_clean",
+    "text": [
+     {
+      "when": {
+       "fact": "beasts.outcome",
+       "eq": "cured"
+      },
+      "text": "It's cleaner than I made it. I don't know why."
+     },
+     {
+      "when": {
+       "fact": "hollow.healed",
+       "eq": "scar"
+      },
+      "text": "It's cleaner than it was. I don't know why."
+     },
+     {
+      "text": "It's clean. I don't know why it's clean."
+     }
+    ],
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "wenna",
+       "key": "cb:clean",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -6408,6 +6470,29 @@
      ]
     },
     "node": "cb_killed_greymuzzle"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "fact": "chain.two",
+       "eq": true
+      },
+      {
+       "met": "tam"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "tam",
+         "key": "cb:knock",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_knock"
    },
    {
     "node": "again"
@@ -6774,6 +6859,20 @@
       "end": true
      }
     ]
+   },
+   "cb_knock": {
+    "id": "cb_knock",
+    "text": "It knocked. Louder. Pa says it's the ground settling. Things don't settle UP.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "tam",
+       "key": "cb:knock",
+       "value": true
+      }
+     }
+    ],
+    "next": "again"
    }
   }
  },
@@ -11810,10 +11909,10 @@
       "when": {
        "bg": "devout"
       },
-      "text": "Oh! A lantern of the Order! Lit! (He looks from the lantern to you, a moment longer than people do.) Oh, sit down, sit, sit. I'm Chid. They call me the Fool, which is fair. This is the shrine of the Morning Light. It used to work."
+      "text": "Oh! A lantern of the Order! Lit! (He looks from the lantern to you, a moment longer than people do.) Oh, sit down, sit, sit. I'm Corvane. They call me the Fool, which is fair. This is the shrine of the Morning Light. It used to work."
      },
      {
-      "text": "Oh! A visitor. Hello! (He looks at you a moment longer than people do.) I'm Chid. They call me the Fool, which is fair. This is the shrine of the Morning Light. It used to work."
+      "text": "Oh! A visitor. Hello! (He looks at you a moment longer than people do.) I'm Corvane. They call me the Fool, which is fair. This is the shrine of the Morning Light. It used to work."
      }
     ],
     "choices": [
@@ -11843,7 +11942,7 @@
       "goto": "relight"
      },
      {
-      "text": "Bless me, Chid.",
+      "text": "Bless me, Corvane.",
       "when": {
        "fact": "shrine.lit",
        "eq": true
@@ -11956,7 +12055,7 @@
       "goto": "relight"
      },
      {
-      "text": "Bless me, Chid.",
+      "text": "Bless me, Corvane.",
       "when": {
        "fact": "shrine.lit",
        "eq": true
@@ -12080,7 +12179,7 @@
     ],
     "choices": [
      {
-      "text": "Thank you, Chid.",
+      "text": "Thank you, Corvane.",
       "effects": [
        {
         "rel": {
@@ -12092,7 +12191,7 @@
       "end": true
      },
      {
-      "text": "Which carter, Chid?",
+      "text": "Which carter, Corvane?",
       "show": {
        "fact": "player.deaths",
        "gte": 3
@@ -12148,7 +12247,7 @@
    "relight": {
     "id": "relight",
     "speaker": "narrator",
-    "text": "You open your lantern and say the words you learned at seven, the ones about the dark being only the part of the day that hasn't happened yet. The shrine takes the flame as if it had been waiting for it. Chid makes a sound like a kettle.",
+    "text": "You open your lantern and say the words you learned at seven, the ones about the dark being only the part of the day that hasn't happened yet. The shrine takes the flame as if it had been waiting for it. Corvane makes a sound like a kettle.",
     "effects": [
      {
       "set": {
@@ -12216,7 +12315,7 @@
       "goto": "relight"
      },
      {
-      "text": "Bless me, Chid.",
+      "text": "Bless me, Corvane.",
       "when": {
        "fact": "shrine.lit",
        "eq": true
@@ -12375,7 +12474,7 @@
    },
    "cb_opened_vault": {
     "id": "cb_opened_vault",
-    "text": "You went through the door! You went through— what was on the stair? No, don't tell me. Yes, tell me. No.",
+    "text": "(The kettle is on. There is a line across his throat, pale and closed, a week old by the look of it, and it was not there yesterday. He sees you see it.) Sit. The good stool. ...You'll have slept badly. I did.",
     "effects": [
      {
       "npcFlag": {
@@ -12387,8 +12486,12 @@
     ],
     "choices": [
      {
-      "text": "A stair going down. And the dead, coming up it.",
+      "text": "Which carter, Corvane?",
       "goto": "cb_vault2"
+     },
+     {
+      "text": "You got up.",
+      "goto": "cb_vault_up"
      },
      {
       "text": "I'd rather not say.",
@@ -12398,15 +12501,14 @@
    },
    "cb_vault2": {
     "id": "cb_vault2",
-    "text": "Then they're still keeping it. Good. Good, I think. ...I'm going to light every candle I've got.",
+    "text": "(He pours.) ...Don't.",
     "choices": [
      {
       "text": "Something else.",
       "goto": "hub"
      },
      {
-      "text": "Goodbye.",
-      "end": true
+      "text": "Goodbye."
      }
     ]
    },
@@ -12571,7 +12673,7 @@
     "text": "...You know, I never asked his name. I should ask his name. Next time. (He puts a cup in your hands.) Drink that. It's only hot water. There's nothing in it but hot.",
     "choices": [
      {
-      "text": "Thank you, Chid.",
+      "text": "Thank you, Corvane.",
       "end": true
      },
      {
@@ -12610,31 +12712,31 @@
        "fact": "arena.last.people",
        "eq": "pack"
       },
-      "text": "You wake on the bench in Chid's shrine, and it is morning. Your collar is stiff with a wolf's spit, dried. Nothing ate you. Something carried you out of the Hollow, and somebody else carried you home."
+      "text": "You wake on the bench in Corvane's shrine, and it is morning. Your collar is stiff with a wolf's spit, dried. Nothing ate you. Something carried you out of the Hollow, and somebody else carried you home."
      },
      {
       "when": {
        "fact": "arena.last.people",
        "eq": "kerchiefs"
       },
-      "text": "You wake on the bench in Chid's shrine, and it is morning. Your hands are crossed on your chest, the way the Kerchiefs lay out their dead. You do not remember crossing them."
+      "text": "You wake on the bench in Corvane's shrine, and it is morning. Your hands are crossed on your chest, the way the Kerchiefs lay out their dead. You do not remember crossing them."
      },
      {
       "when": {
        "fact": "arena.last.people",
        "eq": "lamplings"
       },
-      "text": "You wake on the bench in Chid's shrine, and it is morning. There is lamp-soot all over your coat in small handprints, where a great many little hands lifted you, and then put you down."
+      "text": "You wake on the bench in Corvane's shrine, and it is morning. There is lamp-soot all over your coat in small handprints, where a great many little hands lifted you, and then put you down."
      },
      {
       "when": {
        "fact": "arena.last.people",
        "eq": "dead"
       },
-      "text": "You wake on the bench in Chid's shrine, and it is morning. Over your breastbone, faint as an old bruise, is the print of a mailed hand."
+      "text": "You wake on the bench in Corvane's shrine, and it is morning. Over your breastbone, faint as an old bruise, is the print of a mailed hand."
      },
      {
-      "text": "You wake on the bench in Chid's shrine, and it is morning."
+      "text": "You wake on the bench in Corvane's shrine, and it is morning."
      }
     ],
     "effects": [
@@ -12650,6 +12752,33 @@
    "carried_chid": {
     "id": "carried_chid",
     "text": [
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "arena.last.people",
+         "eq": "dead"
+        },
+        {
+         "any": [
+          {
+           "fact": "corvane.rose",
+           "eq": true
+          },
+          {
+           "fact": "corvane.carried",
+           "eq": true
+          }
+         ]
+        },
+        {
+         "fact": "arena.last.ago",
+         "eq": 0
+        }
+       ]
+      },
+      "text": "You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and that's all it's cost you: a night. (He doesn't look at you. His collar is buttoned to the top, badly, over something.) Somebody brought you in from the old door. A carter, I expect. ...Sit. The good stool. Don't ask me anything this morning. Please."
+     },
      {
       "when": {
        "all": [
@@ -12772,7 +12901,7 @@
     ],
     "choices": [
      {
-      "text": "Thank you, Chid.",
+      "text": "Thank you, Corvane.",
       "effects": [
        {
         "rel": {
@@ -12859,7 +12988,7 @@
     "text": "Oh, somebody kind. There are more of them about at night than you'd think. (He busies himself with the kettle.) ...Eat something. The day's yours.",
     "choices": [
      {
-      "text": "Thank you, Chid.",
+      "text": "Thank you, Corvane.",
       "effects": [
        {
         "rel": {
@@ -12899,7 +13028,7 @@
       "goto": "office_who"
      },
      {
-      "text": "Thank you, Chid.",
+      "text": "Thank you, Corvane.",
       "effects": [
        {
         "rel": {
@@ -12922,7 +13051,7 @@
       "goto": "office_who"
      },
      {
-      "text": "Thank you, Chid.",
+      "text": "Thank you, Corvane.",
       "effects": [
        {
         "rel": {
@@ -12945,7 +13074,7 @@
       "goto": "office_end"
      },
      {
-      "text": "Thank you, Chid.",
+      "text": "Thank you, Corvane.",
       "effects": [
        {
         "rel": {
@@ -13076,6 +13205,19 @@
     "id": "cut_still",
     "text": "(He waits, and puts it away again.) It'll keep.",
     "next": "hub"
+   },
+   "cb_vault_up": {
+    "id": "cb_vault_up",
+    "text": "(He puts the cup in your hands.) So did you, once. I didn't ask you how. ...Drink that. It's only hot water.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye."
+     }
+    ]
    }
   }
  },
@@ -13164,6 +13306,36 @@
      ]
     },
     "node": "cb_exposed_pell"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "fact": "vonnra.sent",
+       "eq": true
+      },
+      {
+       "not": {
+        "fact": "vonnra.told",
+        "eq": true
+       }
+      },
+      {
+       "met": "vonnra"
+      },
+      {
+       "any": [
+        {
+         "time": "dusk"
+        },
+        {
+         "time": "night"
+        }
+       ]
+      }
+     ]
+    },
+    "node": "chains"
    },
    {
     "when": {
@@ -13408,6 +13580,23 @@
    "hub": {
     "id": "hub",
     "text": [
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "vonnra.sent",
+         "eq": true
+        },
+        {
+         "not": {
+          "fact": "vonnra.told",
+          "eq": true
+         }
+        }
+       ]
+      },
+      "text": "(The ledger is open, and she does not look up from it.) After dark, traveler. I do not say this one by daylight. Payment, always."
+     },
      {
       "when": {
        "all": [
@@ -13918,7 +14107,32 @@
    },
    "vault": {
     "id": "vault",
-    "text": "Not for any price. That is the only thing I will ever say to you without charging for it.",
+    "text": [
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "vonnra.told",
+         "eq": true
+        },
+        {
+         "hasItem": "sigil_fragment"
+        }
+       ]
+      },
+      "text": "(She does not look up.) I have told you what is behind it, and the key to it is in your coat. After dark, traveler."
+     },
+     {
+      "when": {
+       "fact": "vonnra.told",
+       "eq": true
+      },
+      "text": "(She does not look up.) I have told you what is behind it. Go and look in the dead man's hand, and come back through my gate."
+     },
+     {
+      "text": "Not for any price. That is the only thing I will ever say to you without charging for it."
+     }
+    ],
     "effects": [
      {
       "quest": {
@@ -14598,7 +14812,7 @@
    },
    "cb_opened_vault": {
     "id": "cb_opened_vault",
-    "text": "You opened it. ...Do not sit, traveler. I would rather you stood. What did you see on the stair?",
+    "text": "(She is standing, and the ledger is open at a page with one line on it. You cannot read it from the door.) You opened it. ...Do not sit, traveler. I would rather you stood. What stood in the door?",
     "effects": [
      {
       "npcFlag": {
@@ -14610,7 +14824,7 @@
     ],
     "choices": [
      {
-      "text": "A stair going down. The dead coming up it.",
+      "text": "Corvane. With a lamp.",
       "goto": "cb_vault2"
      },
      {
@@ -14621,7 +14835,18 @@
    },
    "cb_vault2": {
     "id": "cb_vault2",
-    "text": "Then it is still there. That is all. I will say it again, because it bears repeating: that is all.",
+    "text": [
+     {
+      "when": {
+       "fact": "chain.two",
+       "eq": true
+      },
+      "text": "(She writes nothing down.) His kind live off the leak. He will do that again. ...Did it reach for you? (She does not wait for the answer. She has it from your face.) Two. Five, and the valley sleeps. Go and eat something, {name}."
+     },
+     {
+      "text": "(She writes nothing down.) His kind live off the leak. He will do that again. ...Go and eat something, {name}."
+     }
+    ],
     "choices": [
      {
       "text": "Goodbye.",
@@ -14734,7 +14959,7 @@
    },
    "risen": {
     "id": "risen",
-    "text": "You came back. Most do not, the first time. ...Do not thank Chid. Do not thank anyone. Payment, always, traveler, and for that above all; you will find out who holds the note.",
+    "text": "You came back. Most do not, the first time. ...Do not thank Corvane. Do not thank anyone. Payment, always, traveler, and for that above all; you will find out who holds the note.",
     "effects": [
      {
       "npcFlag": {
@@ -14983,6 +15208,359 @@
     "id": "f_did",
     "text": "When the lamp went into the water, his heart came up out of it, and a little lamp-person was waiting to carry it away down a hole. The ground has turned over every night since. The Dig digs faster. The Penhale boy's floor knocks. (She lays her hand flat on the cup.) You stopped the drowning, traveler. You also did this.",
     "next": "f_below"
+   },
+   "chains": {
+    "id": "chains",
+    "text": "(Two cups on the table, and the ledger shut. You have never seen it shut.) Sit. ...No. Sit, {name}. The toll is paid tonight; I paid it. (She pours, and the second cup is for you.) Everyone in this town has told you who to thank for the quiet at the ford. Not one of them has told you what you did there. I am going to.",
+    "choices": [
+     {
+      "text": "I put the Warden down.",
+      "goto": "keeper"
+     },
+     {
+      "text": "Go on, then.",
+      "goto": "keeper"
+     }
+    ]
+   },
+   "keeper": {
+    "id": "keeper",
+    "text": "You put down a guard. (She says it the way she says a price.) The thing under these hills is not what the tale told you. The Order of the Morning Light knew what it was, and prayed to it, and called it the morning: the light under the ground that keeps the dead, and would wake them kindly if it were let. The Seventh Legion came up this valley and found a thing it could not kill, and did what soldiers do with what they do not understand. They chained it. Seven chains, one at every crossing. A heart-stone to hold each chain. A guard on every heart. Then they carved words over the door that said they had buried a monster, and marched home, and the valley has believed the door for a thousand years.",
+    "choices": [
+     {
+      "text": "And what does a chain do to a thing like that?",
+      "goto": "bleed"
+     },
+     {
+      "text": "The dead. Why do they get up?",
+      "goto": "bleed"
+     }
+    ]
+   },
+   "bleed": {
+    "id": "bleed",
+    "text": "It bleeds. A chain holds the morning by cutting it, and what runs out of the cut runs up through the ground. You have a word for that, traveler. The valley burns it in its lamps and cooks it in the Dig and sells it by the sack, and where it lies thick the dead get up at night with nothing behind their faces. (She does not look at the lamp-iron at your belt. She has already looked.) You have burned it every night since the ford. You know what it smells like.",
+    "choices": [
+     {
+      "text": "The ford.",
+      "goto": "ford_tale"
+     }
+    ]
+   },
+   "ford_tale": {
+    "id": "ford_tale",
+    "text": [
+     {
+      "when": {
+       "fact": "warden.answer",
+       "eq": "silent"
+      },
+      "text": "The ford. Tobin kept it. A man of the Order, once; they made him a guard and bound him in, and for two hundred years he stood in the river with a lamp held out of the water, and every dusk he got up and held it again. You asked him nothing. You did not even answer him. He let go of it anyway, and his heart came up out of the river, and the road has been quiet every night since. (She turns the shut ledger a quarter turn, the way she turns a cup.) No drowned in the ditch. No lamps. The first carter in a month went over it singing. That is what one chain out of seven buys, and nobody in this town has done the sum but me."
+     },
+     {
+      "text": "The ford. Tobin kept it. A man of the Order, once; they made him a guard and bound him in, and for two hundred years he stood in the river with a lamp held out of the water, and every dusk he got up and held it again. You nodded to him. He let go, and his heart came up out of the river, and the road has been quiet every night since. (She turns the shut ledger a quarter turn, the way she turns a cup.) No drowned in the ditch. No lamps. The first carter in a month went over it singing. That is what one chain out of seven buys, and nobody in this town has done the sum but me."
+     }
+    ],
+    "choices": [
+     {
+      "text": "Seven. One is out.",
+      "goto": "six"
+     },
+     {
+      "text": "The words over the door say the Legion buried what it could not burn.",
+      "show": {
+       "any": [
+        {
+         "knows": "arcana"
+        },
+        {
+         "hasTag": "scholar_lens"
+        },
+        {
+         "quest": {
+          "id": "vault",
+          "entry": "script"
+         }
+        }
+       ]
+      },
+      "once": "burn",
+      "goto": "burn"
+     },
+     {
+      "text": "Corvane says the Watch was founded to keep it done.",
+      "show": {
+       "quest": {
+        "id": "vault",
+        "entry": "chid_empire"
+       }
+      },
+      "once": "order",
+      "goto": "order"
+     }
+    ]
+   },
+   "burn": {
+    "id": "burn",
+    "text": "Read it again. Not what it could not kill: what it could not burn. (She lays one finger flat on the table, like a word.) Fire was the only thing the Legion trusted, and the morning would not take it, because the morning is what fire is for. So they bled it, and called the bleeding a burial. Soldiers write a very honest kind of lie, traveler. They tell you what they did, and let you supply the monster.",
+    "choices": [
+     {
+      "text": "Seven. One is out.",
+      "goto": "six"
+     },
+     {
+      "text": "Corvane says the Watch was founded to keep it done.",
+      "show": {
+       "quest": {
+        "id": "vault",
+        "entry": "chid_empire"
+       }
+      },
+      "once": "order",
+      "goto": "order"
+     }
+    ]
+   },
+   "order": {
+    "id": "order",
+    "text": "Corvane. (For a moment she almost smiles, and it is worse than the ledger.) The Order made the guards. The Order kept the chains. And the Order lit its lamps off what ran out of the cut, and called the smell a prayer. They lived off the leak. Of course the Watch was founded to keep it done; the Watch is the Order with its collar off. Ask him what his lamps burned, traveler, and watch him light a candle.",
+    "choices": [
+     {
+      "text": "Seven. One is out.",
+      "goto": "six"
+     },
+     {
+      "text": "The words over the door say the Legion buried what it could not burn.",
+      "show": {
+       "any": [
+        {
+         "knows": "arcana"
+        },
+        {
+         "hasTag": "scholar_lens"
+        },
+        {
+         "quest": {
+          "id": "vault",
+          "entry": "script"
+         }
+        }
+       ]
+      },
+      "once": "burn",
+      "goto": "burn"
+     }
+    ]
+   },
+   "six": {
+    "id": "six",
+    "text": "Seven. One is out. When the six are out, it stops. The dead lie down where they fell, and stay down. The ground stops turning over under the Dig. The Penhale boy's floor stops knocking. And what is under us wakes the way the Order prayed it would: kindly, with the whole valley's dead in its keeping, and nothing left to bleed for. I have read every book my family kept, and my family kept the books. I am not guessing, {name}. I have had forty years to be wrong, and the ford says I am not.",
+    "choices": [
+     {
+      "text": "How do you know it stops?",
+      "goto": "office"
+     },
+     {
+      "text": "Why tell me? Payment, always.",
+      "goto": "cost"
+     },
+     {
+      "text": "Why me?",
+      "goto": "why"
+     }
+    ]
+   },
+   "office": {
+    "id": "office",
+    "text": "Because the people who made the guards wrote down when it would be over, and I can read. (She says it without looking at anything, the way you say a thing learned as a child.) \"Is it morning?\" \"Not yet.\" \"When the seven are loosed, and a lamp lit at dark still burns at first light, it is morning.\" The end of the Order's office. The keepers said it every night for a thousand years to a thing they had chained, and meant it as a promise. A lamp lit at dark that still burns at first light. You have watched what you carry go out at every dawn, traveler. One morning it will not. That is the whole of the prophecy, and it is kinder than the tale.",
+    "choices": [
+     {
+      "text": "Is that all of it?",
+      "goto": "office_more"
+     },
+     {
+      "text": "Why tell me? Payment, always.",
+      "goto": "cost"
+     },
+     {
+      "text": "Why me?",
+      "goto": "why"
+     }
+    ]
+   },
+   "office_more": {
+    "id": "office_more",
+    "text": "There is a little after. It concerns the keeper, and it is in the keepers' words, and I will not stand in a dead man's mouth tonight. Corvane has the book. He will show you the end when he thinks you are ready, which is never. ...Ask him anyway. I should like to see his face.",
+    "choices": [
+     {
+      "text": "Why tell me? Payment, always.",
+      "goto": "cost"
+     },
+     {
+      "text": "Why me?",
+      "goto": "why"
+     }
+    ]
+   },
+   "cost": {
+    "id": "cost",
+    "text": "(She looks at the two cups.) That would be everything I have. This once, no charge. ...Do not make that face. I know what I said. It is the second thing I have given you, and I am keeping count.",
+    "choices": [
+     {
+      "text": "Why me?",
+      "goto": "why"
+     }
+    ]
+   },
+   "why": {
+    "id": "why",
+    "text": "Because only a thing's own light can lift its heart. The Legion could not; they could only bury. My family could not; we kept the keys, and watched. A living hand goes up to a heart-stone and comes away empty. (She turns her palm up on the table, and leaves it there.) You can lift one. I watched the first reach for you. A light going out at the crossing, and a little after, another one coming on: I told you it is not often the second thing happens. I did not tell you what it meant.",
+    "choices": [
+     {
+      "text": "And if I don't?",
+      "goto": "dont"
+     },
+     {
+      "text": "The door in the Verge.",
+      "show": {
+       "quest": {
+        "id": "vault",
+        "entry": "seen"
+       }
+      },
+      "goto": "key"
+     },
+     {
+      "text": "Where do I start?",
+      "show": {
+       "not": {
+        "quest": {
+         "id": "vault",
+         "entry": "seen"
+        }
+       }
+      },
+      "goto": "key"
+     }
+    ]
+   },
+   "dont": {
+    "id": "dont",
+    "text": [
+     {
+      "when": {
+       "fact": "warden.answer",
+       "eq": "silent"
+      },
+      "text": "Then the ford stays quiet, and nowhere else does. (She does not raise her voice. She never has.) The boy's floor goes on knocking, and one night it opens. You will do it, {name}. Not for me. You began it at the ford, before anyone had told you what it was; you only did not know it was a beginning."
+     },
+     {
+      "text": "Then the ford stays quiet, and nowhere else does. (She does not raise her voice. She never has.) The boy's floor goes on knocking, and one night it opens. You will do it, {name}. Not for me. You began it with a nod, before anyone had told you what it was; you only did not know it was a beginning."
+     }
+    ],
+    "choices": [
+     {
+      "text": "The door in the Verge.",
+      "show": {
+       "quest": {
+        "id": "vault",
+        "entry": "seen"
+       }
+      },
+      "goto": "key"
+     },
+     {
+      "text": "Where do I start?",
+      "show": {
+       "not": {
+        "quest": {
+         "id": "vault",
+         "entry": "seen"
+        }
+       }
+      },
+      "goto": "key"
+     }
+    ]
+   },
+   "key": {
+    "id": "key",
+    "text": [
+     {
+      "when": {
+       "any": [
+        {
+         "hasItem": "sigil_fragment"
+        },
+        {
+         "quest": {
+          "id": "vault",
+          "entry": "fragment"
+         }
+        }
+       ]
+      },
+      "text": "The door in the Verge takes a key: a wedge of black stone, cut to one notch of seven. The Legion cut them. My family kept them, and lost them one at a time to people who wanted to see. You have the last. I thought you might. (She does not ask where you found it.) Set it after dark. The sigil wakes to it, and the door lets in what it has been waiting for. Behind it, a hall; at the end of the hall, a stair; on the stair, a guard; under the guard, a heart in its notch. Put him down, and it will reach for you. Let it."
+     },
+     {
+      "text": "The door in the Verge takes a key: a wedge of black stone, cut to one notch of seven. The Legion cut them. My family kept them, and lost them one at a time to people who wanted to see. The last man who carried one did not come out. He is at the door still, what the birds left of him. Look in his hand. (A beat.) Set it after dark. The sigil wakes to it, and the door lets in what it has been waiting for. Behind it, a hall; at the end of the hall, a stair; on the stair, a guard; under the guard, a heart in its notch. Put him down, and it will reach for you. Let it."
+     }
+    ],
+    "choices": [
+     {
+      "text": "Jessop went in.",
+      "show": {
+       "fact": "vonnra.asked_jessop",
+       "eq": true
+      },
+      "once": "jessop_in",
+      "goto": "jessop_in"
+     },
+     {
+      "text": "Then I'll go.",
+      "goto": "tale_end"
+     }
+    ]
+   },
+   "jessop_in": {
+    "id": "jessop_in",
+    "text": "He did. (The ledger stays shut.) He had a key. He did not have what you have. ...In my book he went south, traveler. Let him.",
+    "choices": [
+     {
+      "text": "Then I'll go.",
+      "goto": "tale_end"
+     }
+    ]
+   },
+   "tale_end": {
+    "id": "tale_end",
+    "text": "Go, then. (She picks up the cup you did not drink from, and drinks it herself.) Come back through my gate, {name}. ...That is not a toll. I have never said it to anyone, and I find I do not know the price.",
+    "effects": [
+     {
+      "set": {
+       "vonnra.told": true
+      }
+     },
+     {
+      "quest": {
+       "id": "vault",
+       "status": "active",
+       "entry": "vonnra_told"
+      }
+     },
+     {
+      "rel": {
+       "npc": "vonnra",
+       "trust": 10,
+       "affection": 10
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Goodnight, Vonnra."
+     }
+    ]
    }
   }
  },
@@ -21537,7 +22115,7 @@
    "chained": {
     "id": "chained",
     "speaker": "watchman",
-    "text": "and chained it there, in the dark.",
+    "text": "and bound it there with seven chains, in the dark.",
     "next": "ember"
    },
    "ember": {
@@ -21586,6 +22164,163 @@
       "end": true
      }
     ]
+   }
+  }
+ },
+ "door_night": {
+  "npc": "door_night",
+  "entry": [
+   {
+    "node": "go_home"
+   },
+   {
+    "node": "gets_up"
+   },
+   {
+    "node": "gone"
+   },
+   {
+    "node": "heart"
+   },
+   {
+    "node": "ranks"
+   }
+  ],
+  "nodes": {
+   "go_home": {
+    "id": "go_home",
+    "text": "(He is standing in front of the door with a lamp of the old make held up, violet glass in it, and for once his shoes are on the right feet.) Go home, {name}. ...I can't tell you. I've been wrong before.",
+    "choices": [
+     {
+      "text": "Get out of the door, Corvane.",
+      "goto": "wrong"
+     },
+     {
+      "text": "What are you?",
+      "goto": "wrong"
+     },
+     {
+      "text": "Vonnra told me what's behind it.",
+      "goto": "ask_her"
+     }
+    ],
+    "speaker": "chid"
+   },
+   "wrong": {
+    "id": "wrong",
+    "text": "(The lamp doesn't shake. His voice does, a little, and then it stops.) Ask her what the Legion couldn't burn. Ask her why they tried.",
+    "next": "lie_down",
+    "speaker": "chid"
+   },
+   "ask_her": {
+    "id": "ask_her",
+    "text": "Did she. (He doesn't ask what.) Ask her what the Legion couldn't burn. Ask her why they tried. ...I can't tell you. I've been wrong before.",
+    "next": "lie_down",
+    "speaker": "chid"
+   },
+   "lie_down": {
+    "id": "lie_down",
+    "text": "(He says it the way the Warden said it in the water: the keepers' word, kindly.) Lie down.",
+    "choices": [
+     {
+      "text": "(Raise your weapon.)"
+     },
+     {
+      "text": "(Lower your weapon, and go.)",
+      "goto": "go"
+     }
+    ],
+    "speaker": "chid"
+   },
+   "go": {
+    "id": "go",
+    "text": "Good. ...Good. Go on. I'll see you in the morning. I always do.",
+    "choices": [
+     {
+      "text": "(Go.)"
+     }
+    ],
+    "speaker": "chid"
+   },
+   "gets_up": {
+    "id": "gets_up",
+    "text": "He gets up.",
+    "choices": [
+     {
+      "text": "(Continue.)"
+     }
+    ],
+    "speaker": "narrator"
+   },
+   "gone": {
+    "id": "gone",
+    "text": "When you turn back from the door, he is gone. The lamp is where he stood, and it is still lit.",
+    "choices": [
+     {
+      "text": "(Continue.)"
+     }
+    ],
+    "speaker": "narrator"
+   },
+   "heart": {
+    "id": "heart",
+    "text": "The guard goes down, and stays down, and the stair is quiet. Under him, in its notch, a stone the size of a heart comes up violet, and lifts, and comes to your hand. It is warm, and then it is not. Whatever was in it goes down through your hand, the way the first one went down the hole, and the stone is only a stone.",
+    "choices": [
+     {
+      "text": "(Continue.)"
+     }
+    ],
+    "speaker": "narrator"
+   },
+   "ranks": {
+    "id": "ranks",
+    "text": "The dead step back onto the stair, all together, rank by rank, and stand.",
+    "choices": [
+     {
+      "text": "(Continue.)"
+     }
+    ],
+    "speaker": "narrator"
+   }
+  }
+ },
+ "scene_bed": {
+  "npc": "scene_bed",
+  "entry": [
+   {
+    "node": "gate"
+   }
+  ],
+  "nodes": {
+   "gate": {
+    "id": "gate",
+    "text": "For the first time since you came, the south gate stands open at dusk, and nobody is putting a shoulder to it. Holloway is on his stool against the post, his cup in one hand and the other hand empty: no tally, no stick. He is looking down the road, the way he does.",
+    "next": "count",
+    "speaker": "narrator"
+   },
+   "count": {
+    "id": "count",
+    "text": "Eleven in. Nobody out. Night after night. (He turns the cup in his hands, and doesn't drink.) ...I'd had it down I'd go on this stool. (He looks at the gatehouse cot.) Might go in a bed.",
+    "next": "cup",
+    "speaker": "holloway"
+   },
+   "cup": {
+    "id": "cup",
+    "text": "Maeca comes down the street without her crossbow, and fills his cup from her flask, and says nothing. She stands a while with a hand on his shoulder, and then she goes back up the street, and the gate stays open behind her.",
+    "effects": [
+     {
+      "set": {
+       "holloway.bed_seen": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "(Leave them be.)",
+      "end": true
+     }
+    ],
+    "speaker": "narrator"
    }
   }
  }

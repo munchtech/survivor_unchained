@@ -463,6 +463,8 @@ public sealed partial class Battle
         UpdatePickups(dt);
         UpdateBuffs(dt);
         if (Graves.Count > 40) Graves.RemoveRange(0, Graves.Count - 40);
+        // The Flare's marks the view shows until the next tick, from where things stand now (FlareMarks.cs).
+        FlareMarksTick(dt);
     }
 
     void RebuildSpatial()
@@ -1692,6 +1694,8 @@ public sealed partial class Battle
         e.Burst = false; e.LastBlow = 0; e.LastCrit = false; e.LastDot = false;
         e.Status.Clear();
         e.Flash = 0;
+        e.Laid = false;
+        e.LightMul = 1; e.LightLift = 0;
         e.Anim = o.Style == SpawnStyle.Rise ? EnemyAnim.Rise : EnemyAnim.Move;
         e.AnimT = 0;
         e.DieT = 0;

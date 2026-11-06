@@ -161,7 +161,7 @@
    "text": "Is that blood? Don't tell me."
   },
   {
-   "text": "Chid rang the bell twice this morning. Nobody's told him once does it.",
+   "text": "Corvane rang the bell twice this morning. Nobody's told him once does it.",
    "night": false,
    "when": {
     "fact": "shrine.lit",
@@ -548,7 +548,7 @@
    }
   },
   {
-   "text": "Chid says you died. You look well on it.",
+   "text": "Corvane says you died. You look well on it.",
    "died": true
   },
   {
@@ -637,7 +637,7 @@
    "text": "Pack tore Tam's farm to bits. His Pa was in town, thank God. Somebody fetched him in."
   },
   {
-   "text": "Chid's not aged a day since my mam was a girl. Says it's clean living. Have you SEEN where he lives?"
+   "text": "Corvane's not aged a day since my mam was a girl. Says it's clean living. Have you SEEN where he lives?"
   },
   {
    "when": {
@@ -767,7 +767,7 @@
    }
   },
   {
-   "text": "They buried Brannoc's girl behind the shrine. Chid sang. Chid can't sing. Nobody minded.",
+   "text": "They buried Brannoc's girl behind the shrine. Corvane sang. Corvane can't sing. Nobody minded.",
    "when": {
     "fact": "nell.buried",
     "eq": true

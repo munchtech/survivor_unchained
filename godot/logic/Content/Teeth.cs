@@ -114,10 +114,30 @@ public static class Teeth
         public FordWarden? FordWarden;
     }
 
+    /// <summary>Corvane in the doorway (vault_opened's first stage, Play/Story/Corvane.cs): a lesson the Ford-Warden's
+    /// length under H1's boss rules (one signature behind a 0.7 s tell). Each number's meaning is in the file's "about".</summary>
+    public sealed class Corvane
+    {
+        public double HpMul = 30, Teeth = 0.3, CuffMul = 0.4, CuffEvery = 1.6;
+        public double Tether = 4, TalkAfter = 1.5, HoldAfterRaise = 2.5, FirstAfter = 4;
+        public double Every = 6.5, EveryLow = 4.5, LowAt = 0.5;
+        public double Reach = 7, ReachLow = 8, Slam = 2.5, PullDamage = 1;
+        public double Floor = 30, MinSeconds = 60, Backstop = 0.05;
+        public double LampEnergy = 1.2, LampEnergyLow = 2.1, Glow = 0.05, GlowLow = 0.05, TellLight = 3, TellLift = 0.7;
+        public double HaloLow = 1.5, PoolLow = 1.5, CoreLow = 0.75;
+        public int EmberFloor = 4;
+    }
+
+    public sealed class StoryTeeth
+    {
+        public Corvane? Corvane;
+    }
+
     sealed class File
     {
         public Dictionary<string, Tier> Tiers = new();
         public PrologueTeeth? Prologue;
+        public StoryTeeth? Story;
     }
 
     static File? file;
@@ -128,6 +148,9 @@ public static class Teeth
 
     /// <summary>The Ford-Warden's teeth, or null (as it was: the ward alone).</summary>
     public static FordWarden? Ford => F.Prologue?.FordWarden;
+
+    /// <summary>Corvane's (the file's story.corvane; its defaults where the file has none).</summary>
+    public static Corvane OfCorvane => F.Story?.Corvane ?? new();
 
     // SU_TEETH=<path>: a variant of the file for a measuring run (the harness tunes several at once).
     /// <summary>Read the file again (a test or a variant that changed it).</summary>

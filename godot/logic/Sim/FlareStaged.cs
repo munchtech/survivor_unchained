@@ -78,6 +78,7 @@ public sealed partial class Battle
         if (e.Boss && !flareStruckBoss) { flareStruckBoss = true; FlareCastsOnBoss++; }
         // A staged Flare's measure on a boss ("bossMul"): its blows can gather on a boss as the plain form's never did.
         if (e.Boss) share *= Flare!.Arg("bossMul", 1);
+        FlareMarkHit(e);
         return HitEnemy(e, flarePower * share, school, Flare!.Tags, new HitOpts { Credit = "flare", BossDamage = vsBig, Knockback = e.Boss ? 0 : knockback, DirX = dx / d, DirZ = dz / d });
     }
 
@@ -164,6 +165,7 @@ public sealed partial class Battle
     void FlareAim()
     {
         var f = Flare!;
+        MarksRecompute(false);
         flareAim++;
         if (f.Id == "the_butchers_bill") { BillAim(f); return; }
         if (f.Id != "burns_twice") return;
@@ -177,7 +179,13 @@ public sealed partial class Battle
 
     /// <summary>Where an ember falls: on the boss when it is one of the boss's own (four of twelve, evenly), on Called
     /// Down's target, else on the thickest frozen pack not yet struck or aimed at; with nothing near, on open ground.</summary>
-    (double X, double Z, Enemy? Target) EmberPick(FlareDef f, int ember, int embers, double r)
+    (double X, double Z, Enemy? Target) EmberPick(FlareDef f, int ember, int embers, double r) =>
+        EmberPickFrom(f, ember, embers, r, emberFell, emberAims, flareBlow, ref calledDown, null);
+
+    /// <summary>EmberPick on the state it is given (what has fallen, what is aimed, the blows done, Called Down's target),
+    /// so the marks (FlareMarks.cs) can run the picks ahead on copies; "iceAhead" stands in for the ice before the frost.</summary>
+    (double X, double Z, Enemy? Target) EmberPickFrom(FlareDef f, int ember, int embers, double r, List<(double X, double Z)> emberFell,
+        List<(double X, double Z, int Target)> emberAims, int flareBlow, ref int calledDown, Func<Enemy, bool>? iceAhead)
     {
         var p = Player;
         var near = HostilesInRadius(p.X, p.Z, flareReach).Where(e => e.Alive && e.State != EnemyState.Dying).ToList();
@@ -202,7 +210,7 @@ public sealed partial class Battle
             // An ember already falling will shatter the ice round its aim: aimed ahead, count that ice as broken, as it
             // was when each ember chose at landing (without this a press killed 5 points fewer, 13 October).
             var falling = emberAims.Skip(Math.Max(0, flareBlow - (f.Beat.ContainsKey("frost") ? 1 : 0))).ToList();
-            bool Iced(Enemy e) => e.Status.Has(StatusKind.Frozen) && !falling.Any(q => Dist(q.X, q.Z, e.X, e.Z) < r);
+            bool Iced(Enemy e) => (iceAhead?.Invoke(e) ?? e.Status.Has(StatusKind.Frozen)) && !falling.Any(q => Dist(q.X, q.Z, e.X, e.Z) < r);
             int Pack(Enemy e) => near.Count(o => Iced(o) && Dist(o.X, o.Z, e.X, e.Z) < r);
             var frozen = near.Where(e => !e.Boss && Iced(e)).ToList();
             target = frozen.Where(e => !Struck(e)).OrderByDescending(Pack).FirstOrDefault()
@@ -253,6 +261,8 @@ public sealed partial class Battle
             {
                 var near = HostilesInRadius(ax, az, r + f.Arg("aimBend", 3)).Where(e => e.Alive && e.State != EnemyState.Dying && !e.Boss).ToList();
                 target = near.OrderByDescending(e => near.Count(o => Dist(o.X, o.Z, e.X, e.Z) < r)).ThenBy(e => Dist(e.X, e.Z, ax, az)).FirstOrDefault();
+                // (the marks: bent at the landing itself, what no earlier tick could show is marked at this decision)
+                if (target != null) { var bent = target; FlareDecideAround(bent.X, bent.Z, r, o => !o.Boss || o == bent); }
             }
             tx = target?.X ?? ax;
             tz = target?.Z ?? az;
@@ -336,7 +346,13 @@ public sealed partial class Battle
     {
         var p = Player;
         int n = flareAt.Length;
-        if (flareBlow == 1) PlanToll(f, n);
+        if (flareBlow == 1)
+        {
+            PlanToll(f, n);
+            // (the marks: the plan is made at the first cut; one no earlier tick foresaw, a pick freed by a death in this
+            // very tick, is marked at this decision)
+            foreach (int id in tollPlan) if (id >= 0 && id < Enemies.Items.Length) FlareDecide(Enemies.Items[id]);
+        }
         int slot = flareBlow - 1 < tollPlan.Count ? tollPlan[flareBlow - 1] : -1;
         Enemy? e = slot >= 0 && slot < Enemies.Items.Length ? Enemies.Items[slot] : null;
         if (e == null || !e.Alive || e.State == EnemyState.Dying || !Targetable(e) || !FlareCanHurt(e))
@@ -346,6 +362,8 @@ public sealed partial class Battle
             // goes to the boss last: the plan already gave it its worth.
             e = (near.Any(FlareCanHurt) ? near.Where(FlareCanHurt) : near)
                 .OrderBy(x => x.Boss).ThenByDescending(x => x.Elite).ThenByDescending(x => x.Hp).FirstOrDefault();
+            // (the marks: a re-pick at the cut itself, when no earlier tick could show it)
+            FlareDecide(e);
         }
         if (e != null)
         {
@@ -410,11 +428,15 @@ public sealed partial class Battle
         credit = was;
     }
 
-    void PlanToll(FlareDef f, int n)
+    void PlanToll(FlareDef f, int n) => tollBossShare = PlanTollInto(f, n, flareReach, tollPlan);
+
+    /// <summary>PlanToll into the list it is given, within reach r; returns the boss cuts' share (the marks plan on a copy,
+    /// finding what stands round her as the next tick's grid will list it).</summary>
+    double PlanTollInto(FlareDef f, int n, double r, List<int> tollPlan, Func<double, double, double, List<Enemy>>? find = null)
     {
         tollPlan.Clear();
         var p = Player;
-        var near = HostilesInRadius(p.X, p.Z, flareReach).Where(e => e.Alive && e.State != EnemyState.Dying).ToList();
+        var near = (find ?? HostilesInRadius)(p.X, p.Z, r).Where(e => e.Alive && e.State != EnemyState.Dying).ToList();
         var boss = near.Where(e => e.Boss && FlareCanHurt(e)).OrderByDescending(e => e.Hp).FirstOrDefault();
         // The strongest near, weakest first: champions above the rest, then by health.
         var others = near.Where(e => !e.Boss).OrderByDescending(e => e.Elite).ThenByDescending(e => e.Hp).ToList();
@@ -427,7 +449,7 @@ public sealed partial class Battle
         for (int i = 0; i < bossCuts; i++) tollPlan.Add(boss!.Id);
         // The boss's cuts carry a fixed worth between them ("bossWorth" blows, grown with Toll Doubled), however many.
         // Four cuts' worth: at 2100 a cut, what the plain form's twelve 700s gave everything in reach.
-        tollBossShare = bossCuts > 0 ? f.Arg("bossWorth", f.Arg("onBoss", 4)) * n / Math.Max(1.0, f.Blows) / bossCuts : 1;
+        return bossCuts > 0 ? f.Arg("bossWorth", f.Arg("onBoss", 4)) * n / Math.Max(1.0, f.Blows) / bossCuts : 1;
     }
 
     /* --------------------------------------------------------- Butcher's Hour -- */

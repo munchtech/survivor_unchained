@@ -45,6 +45,8 @@ public sealed class Autopilot
     public readonly List<string> Log = new();
     string lastStage = "";
     double lineT;
+    int answered;
+    double standDiag;
 
     public Autopilot(Game game) { g = game; }
 
@@ -83,7 +85,24 @@ public sealed class Autopilot
         if (g.Overlay == "draft" && draftFor < DraftHold) return;
         if (g.Overlay == "draft" && g.Battle is { } db) { g.Pick(Math.Clamp(picker.Choose(db, g.Offers.ToList(), rng), 0, Math.Max(0, g.Offers.Count - 1))); return; }
         // A line is read at a reader's pace (pictures of conversations need the line on screen).
-        if (g.Overlay == "dialogue") { if ((lineT += dt) > 2.4) { lineT = 0; g.Advance(); } return; }
+        // A line with choices is answered (Advance would end the talk): --answers 0,1 picks among the enabled ones in turn, else the first.
+        if (g.Overlay == "dialogue")
+        {
+            if ((lineT += dt) > 2.4)
+            {
+                lineT = 0;
+                var opts = g.LineChoices;
+                if (opts.Count == 0) g.Advance();
+                else
+                {
+                    var said = (Args.Get("answers") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    int k = answered < said.Length && int.TryParse(said[answered], out var ai) ? ai : 0;
+                    answered++;
+                    g.Choose(opts[Math.Clamp(k, 0, opts.Count - 1)].Index);
+                }
+            }
+            return;
+        }
         lineT = 0;
         // A chest opening is watched to its end (pictures of it).
         if (g.Overlay == "chest") return;
@@ -122,6 +141,19 @@ public sealed class Autopilot
         // (never during a film: j08 r2's walked her to the road's boars under C04 A, and its hand-back cut on a fight's pose)
         // (idle in the Prologue walks the road like the pilot until the Ambush's trap springs, then stands:
         // the worst player in its first real fight, MR5 item 11); under --spots (pictures of fixed places) it stands where it is set down)
+        // --stand-at-boss (with --auto idle): she walks up to a hostile boss and stands in reach of him, as a standing player does
+        // (the court clip: Corvane is tuned for a player in his reach; idle far off simply dies).
+        if (Idle && Args.Has("stand-at-boss") && b != null && b.Player.Alive && !g.InTransit && !g.InCinematic
+            && b.Enemies.Living().FirstOrDefault(e => e.Boss && e.Disposition == Disposition.Hostile) is { } boss)
+        {
+            double bx = boss.X - b.Player.X, bz = boss.Z - b.Player.Z;
+            if ((standDiag += dt) > 2) { standDiag = 0; Godot.GD.Print($"stand t={b.Time:0.0} her ({b.Player.X:0.0},{b.Player.Z:0.0}) hp {b.Player.Hp:0}/{b.MaxHp:0} him ({boss.X:0.0},{boss.Z:0.0}) hp {boss.Hp:0}/{boss.MaxHp:0} d {Math.Sqrt(bx * bx + bz * bz):0.0}"); }
+            if (Math.Sqrt(bx * bx + bz * bz) > 2.0) Move = (Math.Abs(bx) < 0.3 ? 0 : Math.Sign(bx), Math.Abs(bz) < 0.3 ? 0 : Math.Sign(bz));
+            return;
+        }
+        // (the court clip: she holds where the ember set her down until Corvane has talked and she has raised her weapon, so
+        // the arrival's frame is the court as a player first sees it, P6 r7)
+        if (Args.Has("clip") && z is Zones.StoryNight { Beat: Story.Doorway { Raised: false } }) return;
         if (b == null || z == null || !b.Player.Alive || g.InTransit || g.InCinematic || Idle && (spots || !(z is Zones.Prologue { Sprung: false }))) return;
         if (Talk && !z.Combat) { WalkUp(dt, b, z); return; }
         if (GoalsOn && GoalWalk(dt, b, z)) return;

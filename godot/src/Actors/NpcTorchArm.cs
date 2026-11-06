@@ -14,35 +14,88 @@ namespace SurvivorUnchained.View;
 /// </summary>
 public partial class NpcTorchArm : SkeletonModifier3D
 {
-    int up = -1, lo = -1, hand = -1, spine = -1, neck = -1, ur = -1;
+    /// <summary>The right arm carries (Corvane's lamp, in the hand his cast clip raises: P6 judge r1 fix 4); else the left.</summary>
+    public bool Right;
+    int up = -1, lo = -1, hand = -1, spine = -1, neck = -1, other = -1;
     Skeleton3D? found;
 
     public NpcTorchArm() { Name = "NpcTorchArm"; }
 
-    void Find(Skeleton3D sk)
+    void Find(Skeleton3D sk) { found = sk; (up, lo, hand, other, spine, neck) = Bones(sk, Right); }
+
+    static (int Up, int Lo, int Hand, int Other, int Spine, int Neck) Bones(Skeleton3D sk, bool right)
     {
-        found = sk;
-        up = sk.FindBone("upperarm_l"); lo = sk.FindBone("lowerarm_l"); hand = sk.FindBone("hand_l");
-        ur = sk.FindBone("upperarm_r"); spine = sk.FindBone("spine_01"); neck = sk.FindBone("neck_01");
+        string s = right ? "r" : "l", o = right ? "l" : "r";
+        return (sk.FindBone($"upperarm_{s}"), sk.FindBone($"lowerarm_{s}"), sk.FindBone($"hand_{s}"), sk.FindBone($"upperarm_{o}"),
+            sk.FindBone("spine_01"), sk.FindBone("neck_01"));
     }
 
-    /// <summary>The directions the arm is laid along, in the chest's frame (up, right, forward): the upper arm, the
-    /// forearm, and the fist's fingers.</summary>
+    /// <summary>The directions the arm is laid along, in the chest's frame (up, `r` toward the body's middle from the carrying
+    /// shoulder: the chest's right for the left arm, its left for the right; forward): the upper arm, the forearm, and the
+    /// fist's fingers.</summary>
     public static (Vector3 Upper, Vector3 Fore, Vector3 Fist) Lay(Vector3 u, Vector3 r, Vector3 f) =>
         ((-u * 1.0f - r * 0.21f).Normalized(), (f * 0.57f - u * 0.82f - r * 0.12f).Normalized(), (f * 0.9f - u * 0.2f - r * 0.3f).Normalized());
+
+    /// <summary>The arm raised overhead (the clip's own raise of that hand: Corvane's cast lifting the lamp): the upper arm
+    /// up, a little forward and out, the forearm on up; the fist's frame is Lay's, so what it holds hangs as it does in the carry.</summary>
+    public static (Vector3 Upper, Vector3 Fore) Raised(Vector3 u, Vector3 r, Vector3 f) =>
+        ((u * 0.86f + f * 0.3f - r * 0.4f).Normalized(), (u * 0.95f + f * 0.28f - r * 0.1f).Normalized());
 
     public override void _ProcessModificationWithDelta(double delta)
     {
         var sk = GetSkeleton();
         if (sk == null) return;
         if (sk != found) Find(sk);
-        if (up < 0 || lo < 0 || hand < 0 || spine < 0 || neck < 0 || ur < 0) return;
+        if (up < 0 || lo < 0 || hand < 0 || spine < 0 || neck < 0 || other < 0) return;
+        Lift(sk, up, lo, hand, spine, neck, other, Right);
+    }
+
+    /// <summary>The same arm laid on a skeleton as posed now, outside the modifier pass (Vat's bake of a crowd body that
+    /// carries a lamp: the bake seeks the clip and reads the bones, so no modifier runs there).</summary>
+    public static bool Lift(Skeleton3D sk, bool right = false)
+    {
+        var (up, lo, hand, other, spine, neck) = Bones(sk, right);
+        if (up < 0 || lo < 0 || hand < 0 || spine < 0 || neck < 0 || other < 0) return false;
+        Lift(sk, up, lo, hand, spine, neck, other, right);
+        return true;
+    }
+
+    /// <summary>The fist's frame in the chest's (up, `r` toward the middle, forward): fingers along Lay's fist line, the palm
+    /// toward the body. A thing held in it is turned by this frame's inverse to stand upright in the chest's frame.</summary>
+    public static Basis FistIn(Vector3 u, Vector3 r, Vector3 f)
+    {
+        var dH = Lay(u, r, f).Fist;
+        var palm = (r - dH * r.Dot(dH)).Normalized();
+        return new Basis(dH.Cross(palm).Normalized(), dH, palm);
+    }
+
+    /// <summary>How far the clip has raised the carrying hand (0: at or below the shoulder; 1: most of an arm above it).</summary>
+    static float Raise(Skeleton3D sk, int up, int lo, int hand, Vector3 u)
+    {
+        var s = sk.GetBoneGlobalPose(up).Origin;
+        float len = sk.GetBonePose(lo).Origin.Length() + sk.GetBonePose(hand).Origin.Length();
+        float h = (sk.GetBoneGlobalPose(hand).Origin - s).Dot(u);
+        float w = Mathf.Clamp(h / Mathf.Max(1e-4f, 0.7f * len), 0, 1);
+        return w * w * (3 - 2 * w);
+    }
+
+    static void Lift(Skeleton3D sk, int up, int lo, int hand, int spine, int neck, int other, bool right)
+    {
         var gU = sk.GetBoneGlobalPose(up);
         var u = (sk.GetBoneGlobalPose(neck).Origin - sk.GetBoneGlobalPose(spine).Origin).Normalized();
-        var across = sk.GetBoneGlobalPose(ur).Origin - gU.Origin;
+        // (toward the body's middle from the carrying shoulder; the chest's right, from the left arm)
+        var across = sk.GetBoneGlobalPose(other).Origin - gU.Origin;
         var r = (across - u * u.Dot(across)).Normalized();
-        var f = u.Cross(r).Normalized();
+        // (the chest's forward: its right crossed with up; from the right arm `r` is the chest's left, so flip it)
+        var f = (right ? r.Cross(u) : u.Cross(r)).Normalized();
         var (dU, dF, dH) = Lay(u, r, f);
+        float w = Raise(sk, up, lo, hand, u);
+        if (w > 0)
+        {
+            var (rU, rF) = Raised(u, r, f);
+            dU = dU.Slerp(rU, w).Normalized();
+            dF = dF.Slerp(rF, w).Normalized();
+        }
 
         // The upper arm: its line (shoulder to elbow) turned onto dU, the least turn.
         int pu = sk.GetBoneParent(up);

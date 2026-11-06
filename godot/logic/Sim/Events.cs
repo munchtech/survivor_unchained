@@ -155,11 +155,22 @@ public static class Ev
     /// State: Lit (it catches at its minute), Dousing (snuffers at it: once as it starts, then once a second while it
     /// goes on), Out (its life gone; its light off), Relit (she cupped the wick). Life: its life left, 0 to 1.</summary>
     public sealed class BoardLamp : CombatEvent { public double X, Z; public BoardLampState State; public double Life; }
+    /// <summary>A speaker's line taken down now (Corvane's "Lie down." as its slam lands: the bark is the tell, not a caption).</summary>
+    public sealed class Hush : CombatEvent { public string Speaker = ""; }
     public sealed class Bark : CombatEvent { public double X, Z; public string Text = ""; public string? Speaker;
         /// <summary>A boss's (IBossArena.Bark): shown in a fixed slot under the boss's bar, wherever the boss is.</summary>
-        public bool Boss; }
+        public bool Boss;
+        /// <summary>A boss's signature line naming its own next mark (ArenaBoss.Signature): it keeps its slot over the speaker
+        /// while that mark is live (not sent to the fight's band above the HUD), lifted a little clear of the mark's rim.</summary>
+        public bool Signature; }
     public sealed class Announce : CombatEvent { public string Title = ""; public string? Subtitle, Kicker; public Tone? Tone; }
     public sealed class Shake : CombatEvent { public double Amount; }
+    /// <summary>A story beat's cue for the set (the films lead's: "door_sigil" lights the door's sigil as Corvane's
+    /// body gets up and goes): a name the set reads, nothing more.</summary>
+    public sealed class Cue : CombatEvent { public string Id = ""; }
+    /// <summary>A cut through black (a story beat's fallback for a film: Corvane's body taken away under it): the view
+    /// fades to black over Seconds, holds it Hold seconds, and fades back over Seconds.</summary>
+    public sealed class Fade : CombatEvent { public double Seconds = 0.25, Hold = 0.5; }
     /// <summary>The camera turned to something for a moment (a boss's arrival, its fall).</summary>
     public sealed class Focus : CombatEvent { public double X, Z, Duration; }
     /// <summary>What ruled the night has fallen where it stood: the night's peak (the view

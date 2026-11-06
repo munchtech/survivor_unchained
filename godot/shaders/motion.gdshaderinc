@@ -1,3 +1,5 @@
+#ifndef MOTION_INC
+#define MOTION_INC
 // Where a point was last frame, for the motion vectors the temporal smoothing
 // follows. Godot runs a material's vertex stage a second time to know how each
 // point moved, with last frame's TIME, transform and skinning, but with this
@@ -10,3 +12,4 @@ global uniform float motion_then;
 bool last_frame(float time) {
 	return time < motion_then;
 }
+#endif

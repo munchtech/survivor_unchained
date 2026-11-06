@@ -89,12 +89,16 @@ public static class SoundBank
     public static Banked PlayFirstFor(double? len, Sfx.Where w, params string[] ids) =>
         FirstBanked(ids) is { } id ? Play(id, w, len: len) : Banked.None;
 
+    /// <summary>The first banked event of these, each layer's LAST len seconds (Clip.Tail: a swell ends on its crest).</summary>
+    public static Banked PlayTailFor(double len, Sfx.Where w, params string[] ids) =>
+        FirstBanked(ids) is { } id ? Play(id, w, len: len, tail: true) : Banked.None;
+
     static readonly Bus[] Buses = [Bus.Sfx, Bus.Music, Bus.Amb, Bus.Ui, Bus.Flare];
 
     /// <param name="at">Absolute mixer time to start at (like Clip.T), null for now.</param>
     /// <param name="gated">False skips the event's own gate, for recipes that have gated already.</param>
     /// <param name="len">Cut every layer after this many seconds, with a short fade (null: whole takes).</param>
-    public static Banked Play(string id, Sfx.Where w = default, double gain = 1, double? at = null, double pitch = 1, bool gated = true, double? len = null)
+    public static Banked Play(string id, Sfx.Where w = default, double gain = 1, double? at = null, double pitch = 1, bool gated = true, double? len = null, bool tail = false)
     {
         if (Synth.Instance is not { Live: true } s || !Has(id)) return Banked.None;
         var e = Data.Events[id];
@@ -112,7 +116,7 @@ public static class SoundBank
                 Of = l.Take, G = gl, Pitch = p, Lp = l.Lp, Verb = l.Verb, Bus = Buses[bi],
                 T = at != null || l.Delay > 0 ? t0 + l.Delay : null,
                 Pan = l.Stereo ? 0 : w.Pan + (l.Pan ?? 0), Stereo = l.Stereo,
-                Len = len is double n ? Math.Max(0.05, n - l.Delay) : null,
+                Len = len is double n ? Math.Max(0.05, n - l.Delay) : null, Tail = tail,
             });
         }
         if (e.Duck is { } d) s.DuckSfx((float)d.Sfx, d.Seconds);

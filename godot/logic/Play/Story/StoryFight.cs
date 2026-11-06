@@ -57,8 +57,12 @@ public interface IStoryArena : IBossArena
     /// answer on its own key, until she answers or it is taken back (Unask).</summary>
     void Ask(string who, string title, double x, double z, params ChoiceAnswer[] answers);
     void Unask();
-    /// <summary>The narrator's words (the story lead's), or someone's, said aloud.</summary>
-    void Line(string text, string? speaker = null);
+    /// <summary>The narrator's words (the story lead's), or someone's, said aloud: the lower-third caption, up at least
+    /// `seconds` (and as long as the voice, or the words' reading).</summary>
+    void Line(string text, string? speaker = null, double seconds = 4);
+    /// <summary>The play held on a spot (his body where it fell): the camera on it, her controls held, the HUD away
+    /// (captions stay); null gives it back (IZoneHost.HoldOn).</summary>
+    void HoldOn((double X, double Z)? at);
     /// <summary>A spared ending can be chosen in this fight (its outcome is in the spec).</summary>
     bool CanSpare { get; }
     /// <summary>The prompt beside "Finish it" ("Let him go", "Spare him").</summary>
@@ -69,6 +73,23 @@ public interface IStoryArena : IBossArena
     IOrb Piece(string id, double scale);
     /// <summary>The ground's height (to set a piece on it).</summary>
     double HeightAt(double x, double z);
+    /// <summary>Her calling's own health at her level (Character.OwnHealth): what a story boss's Teeth are a share of.</summary>
+    double OwnHealth { get; }
+    /// <summary>A story boss's health eased as the tiers climb (StoryNight.BossEase).</summary>
+    double BossEase { get; }
+    /// <summary>The zone's look (a light set down where a lamp was left).</summary>
+    IZoneLook Look { get; }
+    /// <summary>The arrival's black has lifted and no title banner is up: a scene may open over the place.</summary>
+    bool Settled { get; }
+    /// <summary>A conversation opened at one of its nodes, the night held while it runs (IZoneHost.Converse): `ended`
+    /// is told the last node shown.</summary>
+    void Converse(string convo, string node, Action<string?> ended);
+    /// <summary>The fight's cinematic part ({Cinematic}_{part}) played with its marks where things are, `done` when it
+    /// hands back: true if it plays; false where none can (the stage says its own lines instead).</summary>
+    bool Cinematic(string part, Action done, IReadOnlyDictionary<string, double[]>? marks);
+    /// <summary>The night ends neither won nor fallen: she walked away. The effects told, the field stood down, and the
+    /// result's last line is `words` (no lost outcome is told: she was not beaten).</summary>
+    void LetNightGo(string? effectsJson, string words);
 }
 
 /// <summary>Dead wood (or a brazier) that the ember in her lights: she stands at it for two
@@ -154,6 +175,15 @@ public abstract class StoryBeat
     public double T { get; private set; }
     /// <summary>The bar while it is fought (its named foe's).</summary>
     public virtual BossBar? Bar => null;
+    /// <summary>A night lost in this stage tells the story this in place of the spec's OnLose (and its last line,
+    /// EndLost): a stage that is its own ending (Corvane in the doorway carries her home). Null: the spec's.</summary>
+    public virtual string? OnLose => null;
+    public virtual string? EndLost => null;
+    /// <summary>The boss script the stage runs, if it is one (the harness's hands read its marks).</summary>
+    public virtual ArenaBoss? Script => null;
+    /// <summary>What the play camera keeps in frame with her while the stage runs (FollowCamera.Toward, as a story
+    /// boss's): its named one where he stands or lies. Null: her alone.</summary>
+    public virtual (double X, double Z)? Focus => null;
 
     public void Begin(IStoryArena a)
     {
@@ -191,6 +221,9 @@ public abstract class StoryFight
     public abstract Func<StoryBeat>[] Beats { get; }
     /// <summary>The pull, and the sight after each stage (docs/WRITING_PASS.md §21, §23).</summary>
     public abstract string Pull { get; }
+    /// <summary>The pull is said as the night opens (false: a first stage that opens on a scene of its own says it
+    /// later, as its Between sight).</summary>
+    public virtual bool PullAtStart => true;
     public abstract string[] Between { get; }
     /// <summary>The sight after a stage, where it reads the world (who is in the cages); by default, Between's.</summary>
     public virtual string? BetweenSight(IStoryArena a, int stage) => stage < Between.Length ? Between[stage] : null;

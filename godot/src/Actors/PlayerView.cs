@@ -123,6 +123,8 @@ public partial class PlayerView : Node3D
     /// <summary>The pool light's share (1: as built): ducked with the folk light inside a town lamp's reach by night (the
     /// lantern's wall and ground blown under both, judge j2 D4).</summary>
     public float PoolScale = 1;
+    /// <summary>The Flare's recovery (H7, FlareFx.Blow): her ember's pool x this after the main blow.</summary>
+    public float FlarePool = 1;
     /// <summary>Her own render layer (11): the close view by night moves her meshes off people's layer (2) onto it, so the
     /// camp's fire, which stood behind the lens and filled her face flat from the front, can be kept off her alone (E1 judge 3).</summary>
     public const uint HerLayer = 1u << 10;
@@ -1104,7 +1106,7 @@ public partial class PlayerView : Node3D
         lamp = Mathf.Lerp(lamp, LampScale, 1 - Mathf.Exp(-3 * (float)dt));
         // (Rendering 1: the flare's burst keeps the gain it was tuned under: Low Ford's ember went 2.2 to 8 for its pool, and at 8
         // a level-up's flash washed the frame to p50 45. --ember-flare-cap G.)
-        Light.LightEnergy = (float)(((LightBase * (0.7 + 0.3 * hp) + flicker) * Atmosphere.EmberGain * EmberK + flare * 20 * Mathf.Min(Atmosphere.EmberGain, EmberFlareCap)) / Mathf.Pi) * lamp * PoolScale;
+        Light.LightEnergy = (float)(((LightBase * (0.7 + 0.3 * hp) + flicker) * Atmosphere.EmberGain * EmberK * FlarePool + flare * 20 * Mathf.Min(Atmosphere.EmberGain, EmberFlareCap)) / Mathf.Pi) * lamp * PoolScale;
         // A lantern carries further; under the Oath of the Moonless, not far at all.
         Light.OmniRange = (float)((11 + flare * 6) * b.Stats.Get(Stat.LightRadius) * b.Rules.Light) * EmberRangeK * Atmosphere.EmberReach;
         Light.LightColor = EmberArg ?? Atmosphere.EmberColor ?? EmberOwn;   // (H2 R1: the air's, the arena's paler gold)

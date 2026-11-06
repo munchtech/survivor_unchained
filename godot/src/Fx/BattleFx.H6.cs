@@ -109,13 +109,16 @@ public partial class BattleFx
     {
         if (Lines == null || GetViewport()?.GetCamera3D() is not { } cam) return;
         Lines.FightFrame = Engine.GetProcessFrames();
-        var pts = Lines.MarkPts;
-        pts.Clear();
+        Lines.MarkPts.Clear();
+        Lines.DangerPts.Clear();
+        Lines.RimPts.Clear();
         var her = PlayerPos + Vector3.Up * 1.0f;
         Lines.HerScreen = cam.IsPositionBehind(her) ? null : cam.UnprojectPosition(her);
         foreach (var m in marks)
         {
             if (!m.Active || !(m.Danger || m.Amber || m.Color == ClosingRed)) continue;
+            var pts = m.Danger ? Lines.DangerPts : Lines.MarkPts;
+            var rim = m.Danger ? Lines.RimPts : null;
             var d = m.Decal;
             Vector3 c = d.Position, ax = d.Basis.X.Normalized(), az = d.Basis.Z.Normalized();
             float hx = d.Size.X / 2, hz = d.Size.Z / 2;
@@ -127,7 +130,11 @@ public partial class BattleFx
                 for (int j = 0; j <= n; j++)
                 {
                     float t = -1 + 2f * j / n;
-                    foreach (float s in (float[])[-0.9f, 0, 0.9f]) Pt(cam, c + ax * (hx * s) + az * (hz * t), pts);
+                    foreach (float s in (float[])[-0.9f, 0, 0.9f])
+                    {
+                        Pt(cam, c + ax * (hx * s) + az * (hz * t), pts);
+                        if (rim != null && s != 0) Pt(cam, c + ax * (hx * s) + az * (hz * t), rim);
+                    }
                 }
             }
             else
@@ -140,6 +147,7 @@ public partial class BattleFx
                     {
                         float a = Mathf.Tau * j / n;
                         Pt(cam, c + new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)) * (r * k), pts);
+                        if (rim != null && k > 0.9f) Pt(cam, c + new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)) * (r * k), rim);
                     }
             }
         }
@@ -193,6 +201,7 @@ public partial class BattleFx
                 Mesh = curtainBox ??= new BoxMesh { Size = Vector3.One },
                 MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Layers = 1,
             };
+            m.Curtain.AddToGroup(DangerGroup);
             AddChild(m.Curtain);
         }
         ((ShaderMaterial)m.Curtain.MaterialOverride).SetShaderParameter("col", Palette.TeleSafe * CurtainK);
