@@ -1,25 +1,25 @@
 {
- "about": "P1 R1: her body from OUR form library (tools/body/designed/*.json) over her_sliders.json. The neck and trapezius first (R2's dome finding).",
+ "about": "P1 R1 FINAL: her body from OUR form library (tools/body/designed/*.json) over her_sliders.json: the neck and trapezius (neck_length, trap_drop, neck_girth, neck_fair), shoulder_span, the designed breast (chest_wall + breast_a, route a picked by the clay judge) and the hourglass + glute_form (route a) in place of MakeHuman's bust, buttock, waist and hips targets. bone_sliders keep her skeleton (the retired MakeHuman soft targets it was fitted with) until it is refit. shapes: the armor's breast support as blend shapes (form_support_*; P1Jiggle.SetSupport). The bake is on (inherited from her_sliders).",
  "base": "tools/body/specs/her_sliders.json",
  "sliders": {
   "arm_girth": 0.3,
   "belly": -0.2,
   "build": 0.2,
-  "bust_firmness": 1.0,
-  "bust_lift": 1.0,
-  "bust_point": -0.2,
-  "bust_set": 1.0,
-  "bust_size": 1.0,
-  "bust_spacing": -0.25,
+  "bust_firmness": 0.0,
+  "bust_lift": 0.0,
+  "bust_point": 0.0,
+  "bust_set": 0.0,
+  "bust_size": 0.0,
+  "bust_spacing": 0.0,
   "calves": 0.5,
   "foot_size": -0.5207,
   "forearm_girth": 0.666,
   "forearm_length": -0.4374,
-  "glute_lift": 1.0,
-  "glutes": 0.5,
+  "glute_lift": 0.0,
+  "glutes": 0.0,
   "hand_size": -0.1764,
   "height": 0.0953,
-  "hips": 0.4,
+  "hips": 0.0,
   "leg_length": 0.4416,
   "neck_girth": 1.0,
   "neck_length": 1.0,
@@ -30,13 +30,34 @@
   "trap_drop": 1.0,
   "underbust": 0.15,
   "upperarm_length": -0.4525,
-  "waist": -0.6,
+  "waist": 0.0,
   "weight": -0.2762,
-  "shoulder_span": 0.3
+  "shoulder_span": 0.3,
+  "chest_wall": 1.0,
+  "breast_a": 1.0,
+  "hourglass": 1.0,
+  "glute_form": 1.0,
+  "neck_fair": 1.0
  },
- "bake": null,
  "seam": {
   "rows_m": 0.05,
   "why": "the throat seam as one surface (build_topo.seam_g1): seam angle mean 36.5 -> 2.9 deg"
+ },
+ "bone_sliders": {
+  "bust_firmness": 1.0,
+  "bust_lift": 1.0,
+  "bust_point": -0.2,
+  "bust_set": 1.0,
+  "bust_size": 1.0,
+  "bust_spacing": -0.25,
+  "glutes": 0.5,
+  "glute_lift": 1.0,
+  "waist": -0.6,
+  "hips": 0.4
+ },
+ "shapes": {
+  "support_lift": 1.0,
+  "support_press": 1.0,
+  "support_fill": 1.0
  }
 }
