@@ -266,6 +266,8 @@ nor sits in `body_p1/` (never committed).
 | dash landing | 0 | 37.8 | 3.2 | 0.75 | 23.9 | 4.0 | 0.35 | 0 / 0 |
 | dash landing | 1 | 20.2 | 4.3 | 0.32 | 23.9 | 4.0 | 0.35 | 0 / 0 |
 
+- **Support drives the shape too.** `SetSupport` also sets the blend shapes `form_support_lift`, `form_support_press`, `form_support_fill` (build_topo stage 8, spec `"shapes": {"support_lift": 1, ...}`) on every mesh skinned to B's skeleton that has them (absent: skipped silently), each defaulting to the support value (push-up 1/1/1). An armor row's `"hold": {"support": x, "lift": .., "press": .., "fill": ..}` sets them per piece (missing ones = support). Shot flag `--p1-support X` (0..1) starts the support at X for springs and shapes and stops armor gear from overriding it.
+
 ## Form rules (the design sheet as numbers)
 
 `tools/body/form_rules.json` holds each form rule as a number with a band; `formrules.py` measures them (`check.py --only forms`). Sections: `neck` and `seam` (read from the built glb), and `breast` and `glutes`, measured on the spec's own body (`sculpt/breast_measure.py` against the spec with every breast slider at 0, `sculpt/glute_measure.py`). They need the spec: `python tools/body/formrules.py BODY.glb --spec SPEC.json` (default: `spec` in the `build.json` beside the glb; without one the two sections are skipped and the summary says so). In `check.py` the flag is `--body-spec` (`--spec` there is the check config).

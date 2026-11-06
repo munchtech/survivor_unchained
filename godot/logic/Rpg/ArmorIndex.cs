@@ -18,6 +18,13 @@ public sealed class ArmorHold
     /// is 1; 1 is 0).</summary>
     [JsonPropertyName("support")] public double? Support { get; set; }
     [JsonIgnore] public double SupportValue => Support ?? Math.Clamp((1 - Amount) / 0.45, 0, 1);
+    /// <summary>Per-piece shape drivers for B's body (blend shapes form_support_lift / _press / _fill): each null = the support value (push-up 1/1/1).</summary>
+    [JsonPropertyName("lift")] public double? Lift { get; set; }
+    [JsonPropertyName("press")] public double? Press { get; set; }
+    [JsonPropertyName("fill")] public double? Fill { get; set; }
+    [JsonIgnore] public double LiftValue => Lift ?? SupportValue;
+    [JsonIgnore] public double PressValue => Press ?? SupportValue;
+    [JsonIgnore] public double FillValue => Fill ?? SupportValue;
 }
 
 /// <summary>One wearable piece (docs/handoff/armor.md items 1 and 6): a row of art/people/armor_index.json (her callings'

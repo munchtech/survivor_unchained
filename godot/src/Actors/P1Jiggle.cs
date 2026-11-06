@@ -13,11 +13,20 @@ namespace SurvivorUnchained.View;
 /// landing and an attack's twist all reach the springs, each side on its own.
 /// Armor: Support (0 bare .. 1 push-up) is the worn top's (HerWear sets it from ArmorHold.support, or derived from its
 /// hold amount); SupportBottom the worn bottom's (TODO P2 gear: no bottom carries a hold yet, so it stays 0).
+/// Support also drives B's shape: blend shapes form_support_lift / _press / _fill (build_topo stage 8) on every mesh
+/// skinned to this skeleton that has them (absent: skipped silently); each defaults to the support value, a hold row
+/// may set "lift"/"press"/"fill" per piece. Shot flag --p1-support X (0..1): the support starts at X (springs and
+/// shapes) and armor gear does not override it.
 /// </summary>
 public partial class P1Jiggle : SkeletonModifier3D
 {
     /// <summary>The worn top's support: 0 bare .. 1 push-up (stiffer, better damped, shorter reach; still moves).</summary>
-    public float Support { get => (float)(springs?.Support["top"] ?? support); set { support = value; if (springs != null) springs.Support["top"] = value; } }
+    public float Support { get => (float)(springs?.Support["top"] ?? support); set { if (Flag != null) return; SetTop(value); } }
+    void SetTop(float value) { support = value; if (springs != null) springs.Support["top"] = value; }
+    /// <summary>The --p1-support shot flag (0..1), null when not given; pins the support against armor gear.</summary>
+    public static readonly float? Flag = float.TryParse(SurvivorUnchained.Args.Get("p1-support"), System.Globalization.NumberStyles.Float,
+        System.Globalization.CultureInfo.InvariantCulture, out var fl) ? Mathf.Clamp(fl, 0f, 1f) : null;
+    float lift, press, fill;
     /// <summary>The worn bottom's support for the glutes (TODO P2 gear: set where bottoms are equipped).</summary>
     public float SupportBottom { get => (float)(springs?.Support["bottom"] ?? supportBottom); set { supportBottom = value; if (springs != null) springs.Support["bottom"] = value; } }
     /// <summary>Overall strength (1 as tuned) and the squash and stretch along the bone (0 under formed plate).</summary>
@@ -31,11 +40,29 @@ public partial class P1Jiggle : SkeletonModifier3D
     public P1Jiggle() { Name = "P1Jiggle"; }
 
     /// <summary>One call for the armor code: the support on her skeleton's springs, if B's springs are there.</summary>
-    public static void SetSupport(Skeleton3D sk, float top, float? bottom = null)
+    public static void SetSupport(Skeleton3D sk, float top, float? bottom = null) => SetSupport(sk, top, bottom, top, top, top);
+
+    /// <summary>Same, with the shape drivers apart from the springs' support (a piece's lift, press, fill; push-up 1/1/1).</summary>
+    public static void SetSupport(Skeleton3D sk, float top, float? bottom, float lift, float press, float fill)
     {
-        if (sk.GetNodeOrNull<P1Jiggle>("P1Jiggle") is not P1Jiggle j) return;
+        if (sk.GetNodeOrNull<P1Jiggle>("P1Jiggle") is not P1Jiggle j || Flag != null) return;
         j.Support = top;
         if (bottom is float b) j.SupportBottom = b;
+        j.lift = lift; j.press = press; j.fill = fill;
+        j.ApplyShapes(sk);
+    }
+
+    /// <summary>Set form_support_lift/_press/_fill on every mesh skinned to sk that has them.</summary>
+    void ApplyShapes(Skeleton3D sk)
+    {
+        foreach (var mi in sk.GetParent()?.FindChildren("*", "MeshInstance3D", true, false).OfType<MeshInstance3D>() ?? Enumerable.Empty<MeshInstance3D>())
+        {
+            if (mi.Mesh == null || mi.GetNodeOrNull<Skeleton3D>(mi.Skeleton) != sk) continue;
+            int l = mi.FindBlendShapeByName("form_support_lift"), p = mi.FindBlendShapeByName("form_support_press"), f = mi.FindBlendShapeByName("form_support_fill");
+            if (l >= 0) mi.SetBlendShapeValue(l, lift);
+            if (p >= 0) mi.SetBlendShapeValue(p, press);
+            if (f >= 0) mi.SetBlendShapeValue(f, fill);
+        }
     }
 
     void Build(Skeleton3D sk)
@@ -52,7 +79,9 @@ public partial class P1Jiggle : SkeletonModifier3D
                 Enumerable.Range(0, n).Select(i => sk.GetBoneName(i).ToString()).ToArray(),
                 Enumerable.Range(0, n).Select(i => sk.GetBoneParent(i)).ToArray(),
                 Enumerable.Range(0, n).Select(i => P1Body.M(sk.GetBoneGlobalRest(i))).ToArray());
+            if (Flag is float fx) { SetTop(fx); SupportBottom = supportBottom; lift = press = fill = fx; }
             springs.Support["top"] = support; springs.Support["bottom"] = supportBottom;
+            ApplyShapes(sk);
             g = Enumerable.Range(0, n).Select(_ => P1M4.Id).ToArray();
             if (Args.Has("p1-probe")) GD.Print($"p1: springs {string.Join(" ", springs.Springs.Select(s => $"{s.Name} {s.Freq:F2}Hz z{s.Zeta:F2} reach {s.Reach * 1000:F0}mm"))}; samples {(samples != null ? "on" : "off")}");
         }

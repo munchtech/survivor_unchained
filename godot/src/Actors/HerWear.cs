@@ -320,7 +320,8 @@ public static class HerWear
         // hold yet (TODO P2 gear: P1Jiggle.SetSupport(skeleton, top, bottom) where a bottom is equipped)
         if (p.Skeleton.GetNodeOrNull<P1Jiggle>("P1Jiggle") is P1Jiggle pj)
         {
-            pj.Support = (float)(hold?.SupportValue ?? 0);
+            P1Jiggle.SetSupport(p.Skeleton, (float)(hold?.SupportValue ?? 0), null,
+                (float)(hold?.LiftValue ?? 0), (float)(hold?.PressValue ?? 0), (float)(hold?.FillValue ?? 0));
             pj.Squash = (float)(hold?.Squash ?? 1);
         }
 
