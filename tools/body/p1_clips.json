@@ -2,8 +2,19 @@
  "why": "B's hand clean of the baked clips (tools_scenes/P1BakeRun.cs applies it after the girdle hold; tools/body/README.md 'B native'). Schema: clips: { clip name (as in its library, no 'her/' prefix): { why: text, turns: { B bone: [x, y, z] (a rotation vector in degrees, in the bone's own frame, laid after the baked local: L = L * exp(v)) }, hold: [B bones set to B's rest local] } }. Empty entries list the milestone clips (the Look's town idle, the play idle, the run, the core attacks) for the first clean.",
  "clips": {
   "idle_reaver_town": {
-   "why": "the Look's town idle (reaver: GameFront idle_{calling}_town) and the close town camera",
-   "turns": {},
+   "why": "the Look's town idle (reaver: GameFront idle_{calling}_town) and the close town camera | clean: upperarm_l turned 2.7 deg out (clipcheck: the left hand rested 16.4-18.1 mm inside B's fuller hip, A's 12-17 mm off it; after: on the skin, gap 2-3.5 mm); upperarm_r 1.2 deg out (the hanging arm's upper arm 2.1-2.2 mm into the side chest below the armpit; after: under 1 mm)",
+   "turns": {
+    "upperarm_l": [
+     0,
+     -2.3,
+     1.35
+    ],
+    "upperarm_r": [
+     0,
+     0,
+     -1.2
+    ]
+   },
    "hold": []
   },
   "idle_reaver": {
@@ -22,8 +33,14 @@
    "hold": []
   },
   "idle_warden_town": {
-   "why": "the Look's town idle (warden: GameFront idle_{calling}_town) and the close town camera",
-   "turns": {},
+   "why": "the Look's town idle (warden: GameFront idle_{calling}_town) and the close town camera | clean: upperarm_r 1.9 deg out (the right hand 18.8 mm into the thigh, A's 0.5; after: 2.3 mm, the hand travels 24 mm along the thigh over the clip)",
+   "turns": {
+    "upperarm_r": [
+     -0.01,
+     0.54,
+     -1.82
+    ]
+   },
    "hold": []
   },
   "idle_warden": {
@@ -42,8 +59,19 @@
    "hold": []
   },
   "idle_stalker_town": {
-   "why": "the Look's town idle (stalker: GameFront idle_{calling}_town) and the close town camera",
-   "turns": {},
+   "why": "the Look's town idle (stalker: GameFront idle_{calling}_town) and the close town camera | clean: upperarm_l 0.9 deg out (the left hand 7.7 mm inside the hip, the forearm 11.9; after: hand gap 2.6, forearm 5.8 mm: the hand moves 15 mm against the hip over the clip, a constant turn cannot hold both); upperarm_r 0.4 deg (the right hand 1.5 mm into the hip; after: gap 2.5-7.4 mm)",
+   "turns": {
+    "upperarm_l": [
+     -0.37,
+     -0.11,
+     0.83
+    ],
+    "upperarm_r": [
+     0.21,
+     0.27,
+     -0.26
+    ]
+   },
    "hold": []
   },
   "idle_stalker": {
@@ -62,13 +90,30 @@
    "hold": []
   },
   "idle_arcanist_town": {
-   "why": "the Look's town idle (arcanist: GameFront idle_{calling}_town) and the close town camera",
-   "turns": {},
+   "why": "the Look's town idle (arcanist: GameFront idle_{calling}_town) and the close town camera | clean: upperarm_l 2.4 deg (the resting left hand 10.9-12.4 mm inside, A's 5.4 off; after: gap 2.5-3.5 mm); upperarm_r 0.4 deg out (forearm 2.0 mm into the thigh; after: 0)",
+   "turns": {
+    "upperarm_l": [
+     -1.77,
+     1.55,
+     -0.61
+    ],
+    "upperarm_r": [
+     -0.2,
+     0.05,
+     -0.36
+    ]
+   },
    "hold": []
   },
   "idle_arcanist": {
-   "why": "the play idle (arcanist: PlayerView's stance idle)",
-   "turns": {},
+   "why": "the play idle (arcanist: PlayerView's stance idle) | clean: upperarm_r 2.7 deg (upper arm 3.7 mm into the side chest below the armpit; after: 0)",
+   "turns": {
+    "upperarm_r": [
+     2.21,
+     -0.14,
+     -1.57
+    ]
+   },
    "hold": []
   },
   "run_arcanist": {
@@ -81,7 +126,7 @@
    "turns": {},
    "hold": []
   },
-  "Jog_Fwd_Loop": {
+  "Jog_Fwd": {
    "why": "the library run (PlayerView's fallback gait, Running_A)",
    "turns": {},
    "hold": []

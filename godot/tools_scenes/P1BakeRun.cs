@@ -17,6 +17,9 @@ namespace SurvivorUnchained.Tools;
 /// neck sliders or cine curls), sampled at 30 fps from 0 to the clip's length inclusive, the modifiers advanced by hand
 /// (HerPose's pass called directly, the engine's off; checked once against a normal process frame); each frame taken onto B by P1Bake (the map, the girdle hold, p1_clips.json's clean)
 /// and keyed on B's bones. Writes art/people/body_p1/clips.res, her_clips.res and a_skeleton.json.
+/// The clips with a tools/body/p1_clips.json entry also dump A's and B's posed globals per frame to tools/body/out/clips/
+/// NAME.json (git-ignored; tools/body/clipcheck.py measures them); --p1-bake-only dumps too.
+/// --p1-bake-raw (with --p1-bake-only) skips the clean and the foot lock: clipcheck's baseline.
 /// --p1-bake-only TEXT bakes only the clips whose names hold TEXT and writes nothing (a check).
 /// </summary>
 public partial class P1BakeRun : Node
@@ -111,6 +114,8 @@ public partial class P1BakeRun : Node
                 }
                 var keyed = bake.Keyed(aKeyed).OrderBy(j => j).ToList();
                 cleans.TryGetValue(nm, out var clean);
+                bool raw = Args.Has("p1-bake-raw");   // (a measuring baseline: the map and the girdle hold only, no clean, no foot lock)
+                var cleanUsed = raw && clean != null ? new P1Bake.Clean() : clean;
                 var rotTrack = new Dictionary<int, int>(); var posTrack = new Dictionary<int, int>();
                 foreach (int j in keyed)
                 {
@@ -124,15 +129,33 @@ public partial class P1BakeRun : Node
                 int frames = (int)Math.Floor(src.Length * Fps + 1e-6) + 1;
                 if (src.Length - (frames - 1) / Fps > 1e-4) frames++;   // (the clip's last instant keyed too)
                 double sumL = 0, sumR = 0, mapL = 0, mapR = 0;
+                // the keys dump (tools/body/clipcheck.py): the clips with a p1_clips.json entry, A's and B's globals per frame
+                var dump = clean != null ? new StringBuilder() : null;
+                dump?.Append($"{{\"name\": \"{nm}\", \"fps\": {F(Fps)}, \"length\": {F(src.Length)}, \"loop\": {(src.LoopMode != Animation.LoopModeEnum.None ? "true" : "false")}, \"frames\": {frames},\n" +
+                    $"\"b_names\": [{string.Join(", ", rig.Names.Select(x => $"\"{x}\""))}],\n\"b_parent\": [{string.Join(", ", rig.Parent)}],\n\"b_rest\": {Mats(rig.Rest)},\n" +
+                    $"\"keyed\": [{string.Join(", ", keyed.Select(j => $"\"{rig.Names[j]}\""))}],\n\"a_names\": [{string.Join(", ", aNames.Select(x => $"\"{x}\""))}],\n\"a_parent\": [{string.Join(", ", aParent)}],\n\"a_rest\": {Mats(aRest)},\n\"A\": [");
+                var dumpB = new StringBuilder();
+                var Ls = new List<P1M4[]>(); var Gs = new List<P1M4[]>();
+                var aBall = new[] { new List<P1V>(), new List<P1V>() }; var aFoot = new[] { new List<P1V>(), new List<P1V>() };
                 for (int f = 0; f < frames; f++)
                 {
                     double time = Math.Min(f / Fps, src.Length);
                     var g = Sample(a, ap, pose, time);
-                    var (L, G) = bake.Frame(g, clean);
+                    var (L, G) = bake.Frame(g, cleanUsed);
                     var (dl, dr) = bake.ShoulderDrop(G);
                     sumL += dl; sumR += dr;
                     var (ml, mr) = bake.ShoulderDrop(bake.Map.Map(g));   // (the map alone: the clip's clavicle kept)
                     mapL += ml; mapR += mr;
+                    if (dump != null) dump.Append((f > 0 ? ",\n" : "\n") + Mats(g));
+                    Ls.Add(L); Gs.Add(G);
+                    if (aIndex.TryGetValue("ball_l", out int bl) && aIndex.TryGetValue("ball_r", out int br)) { aBall[0].Add(g[bl].T()); aBall[1].Add(g[br].T()); aFoot[0].Add(g[aIndex["foot_l"]].T()); aFoot[1].Add(g[aIndex["foot_r"]].T()); }
+                }
+                var locks = !raw && aBall[0].Count == frames ? bake.FootLock(Ls, Gs, aBall, aFoot, src.LoopMode != Animation.LoopModeEnum.None, Fps, new HashSet<int>(keyed)) : new int[2];
+                for (int f = 0; f < frames; f++)
+                {
+                    double time = Math.Min(f / Fps, src.Length);
+                    var L = Ls[f];
+                    dumpB.Append((f > 0 ? ",\n" : "\n") + (dump != null ? Mats(Gs[f]) : ""));
                     foreach (var (j, tr) in rotTrack)
                     {
                         var q = P1Body.T(P1M4.From(P1Retarget.Rot(L[j]), new P1V(0, 0, 0))).Basis.GetRotationQuaternion().Normalized();
@@ -143,13 +166,20 @@ public partial class P1BakeRun : Node
                     foreach (var (j, tp) in posTrack)
                         dst.PositionTrackInsertKey(tp, time, new Vector3((float)L[j][0, 3], (float)L[j][1, 3], (float)L[j][2, 3]));
                 }
+                if (dump != null)
+                {
+                    dump.Append("],\n\"B\": [").Append(dumpB).Append("]}\n");
+                    var dir = ProjectSettings.GlobalizePath("res://") + "../tools/body/out/clips/";
+                    System.IO.Directory.CreateDirectory(dir);
+                    System.IO.File.WriteAllText(dir + nm + ".json", dump.ToString());
+                }
                 outLib.AddAnimation(nm, dst);
                 totalFrames += frames; clips++;
                 bool town = nm.StartsWith("idle_") || nm == "Idle_Loop" || nm == "Idle";
-                GD.Print($"p1-bake: {key}: {frames} frames, {keyed.Count} keyed bones ({aKeyed.Count} on A){(clean != null ? ", cleaned" : "")}" +
+                GD.Print($"p1-bake: {key}: {frames} frames, {keyed.Count} keyed bones ({aKeyed.Count} on A){(clean != null ? ", cleaned" : "")}{(locks.Sum() > 0 ? $", feet locked {locks[0]}/{locks[1]}" : "")}" +
                          (town ? $"; shoulder joint over pelvis vs B rest, mean L {sumL / frames * 1000:F1} R {sumR / frames * 1000:F1} mm (map alone, the clip's clavicle: L {mapL / frames * 1000:F1} R {mapR / frames * 1000:F1})" : ""));
             }
-            if (only != "") continue;
+            if (only != "" || Args.Has("p1-bake-raw")) continue;   // (a check or the raw baseline: nothing written)
             var err = ResourceSaver.Save(outLib, Out + outFile, ResourceSaver.SaverFlags.Compress);
             GD.Print($"p1-bake: wrote {outFile} ({outLib.GetAnimationList().Count} clips): {err}");
         }
@@ -183,6 +213,9 @@ public partial class P1BakeRun : Node
         for (int i = 0; i < g.Length; i++) g[i] = P1Body.M(a.GetBoneGlobalPose(i));
         return g;
     }
+
+    /// <summary>Matrices as JSON: [[12 floats: the 3x4 rows]...], 5 decimals.</summary>
+    static string Mats(P1M4[] m) => "[" + string.Join(",", m.Select(x => "[" + string.Join(",", Enumerable.Range(0, 12).Select(k => x[k / 4, k % 4].ToString("0.#####", CultureInfo.InvariantCulture))) + "]")) + "]";
 
     static void WriteSkeleton(string[] names, int[] parent, P1M4[] rest)
     {

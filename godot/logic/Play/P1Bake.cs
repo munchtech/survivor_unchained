@@ -88,6 +88,164 @@ public sealed class P1Bake
 
     static P1M4 Compose(P1M4? parent, P1M4 local) => parent == null ? local : parent * local;
 
+    /// <summary>The foot lock's contact rule: a foot is planted where A's ball is within this of A's lowest ball in the clip, m.</summary>
+    public const double ContactBand = 0.02;
+    /// <summary>A window counts only if A's own ball holds in it (belt out) within this, m: A's clip really planted there.</summary>
+    public const double SourceHold = 0.01;
+    /// <summary>A belt under this (m/s) is a standing clip's noise: the ground held still.</summary>
+    public const double StillBelt = 0.05;
+    /// <summary>Frames the lock's correction eases out over on each side of a window.</summary>
+    public const int LockEase = 3;
+
+    /// <summary>The foot lock (every clip that keys a leg): B's legs are not A's (B's run stride swept 729 mm in
+    /// contact against A's 692, the planted ball drifting 45 mm against A's 22, belt out), so in A's contact windows
+    /// (ball within ContactBand of its clip floor, A's own hold under SourceHold) B's ball is pinned horizontally to its
+    /// least-squares anchor riding the belt (A's median planted velocity: the in-place cycle's ground speed), by
+    /// two-bone IK on thigh and calf (the knee bends in its own plane, the foot keeps its world turn), the correction
+    /// eased out over LockEase frames either side. Heights stay the clip's. For cycles frame n-1 is frame 0 (windows wrap).
+    /// L and G are B's locals and globals per frame (changed in place); aBall/aFoot[side][frame] A's ball and foot heads.
+    /// Returns per side the windows locked.</summary>
+    public int[] FootLock(IList<P1M4[]> L, IList<P1M4[]> G, IList<P1V>[] aBall, IList<P1V>[] aFoot, bool loop, double fps, ISet<int>? keyed = null)
+    {
+        int n = L.Count, m = loop && n > 2 ? n - 1 : n;
+        var sides = new[] { "l", "r" };
+        var locked = new int[2];
+        if (n < 3) return locked;
+        double floor = aBall.Min(b => b.Take(m).Min(p => p.Y));
+        // the belt: A's median planted velocity
+        var vel = new List<P1V>();
+        var planted = aBall.Select(b => Enumerable.Range(0, m).Select(f => b[f].Y < floor + ContactBand).ToArray()).ToArray();
+        for (int s = 0; s < 2; s++)
+            for (int f = 0; f + 1 < m || loop && f < m; f++)
+            {
+                int g = (f + 1) % m;
+                if (planted[s][f] && planted[s][g]) vel.Add((aBall[s][g] - aBall[s][f]) * fps);
+            }
+        double Med(Func<P1V, double> c) { var v = vel.Select(c).OrderBy(x => x).ToArray(); return v.Length == 0 ? 0 : v[v.Length / 2]; }
+        var belt = new P1V(Med(v => v.X), 0, Med(v => v.Z));
+        if (belt.Len() < StillBelt) belt = new P1V(0, 0, 0);   // (a standing clip: the ground does not move)
+        for (int s = 0; s < 2; s++)
+        {
+            if (!B.Index.TryGetValue("thigh_" + sides[s], out int th) || !B.Index.TryGetValue("calf_" + sides[s], out int ca)
+                || !B.Index.TryGetValue("foot_" + sides[s], out int fo) || !B.Index.TryGetValue("ball_" + sides[s], out int ba)) continue;
+            if (keyed != null && !(keyed.Contains(th) && keyed.Contains(ca) && keyed.Contains(fo))) continue;
+            var c = planted[s];
+            if (c.All(x => x) && belt.Len() > 0) continue;
+            // windows as runs of planted frames (wrapping for cycles), start index and length
+            var wins = new List<(int S, int Len)>();
+            int start0 = 0;
+            if (loop && c.All(x => x)) wins.Add((0, m));
+            else
+            {
+                if (loop) { start0 = Array.IndexOf(c, false); }
+                for (int k = 0; k < m; k++)
+                {
+                    int f = (start0 + k) % m;
+                    if (!c[f] || k > 0 && c[(f - 1 + m) % m]) continue;
+                    int len = 0;
+                    while (len < m && c[(f + len) % m] && (loop || f + len < m)) len++;
+                    wins.Add((f, len));
+                }
+            }
+            var corr = new P1V?[m];
+            var weight = new double[m];
+            foreach (var win in wins)
+            {
+                var (ws, len) = win;
+                if (len < 2) continue;
+                int F(int k) => (ws + k) % m;
+                // A's own hold in the window, by the ball or the ankle (whichever A plants: a heel-to-toe roll pivots the
+                // ball), the window's ends trimmed while A's point leaves it (the lift-off still inside the band)
+                int bestS = 0, bestLen = 0, bestPt = 0;
+                for (int pt = 0; pt < 2; pt++)
+                {
+                    var src = pt == 0 ? aBall[s] : aFoot[s];
+                    int s0 = 0, l0 = len;
+                    double Hold(int a0, int n0) => Enumerable.Range(0, n0).Max(k => Flat(src[F(a0 + k)] - src[F(a0)] - belt * (k / fps)).Len());
+                    while (l0 >= 2 && Hold(s0, l0) > SourceHold)
+                    {
+                        if (Hold(s0 + 1, l0 - 1) <= Hold(s0, l0 - 1)) s0++;
+                        l0--;
+                    }
+                    if (l0 >= 2 && l0 > bestLen) { bestS = s0; bestLen = l0; bestPt = pt; }
+                }
+                if (bestLen < 2) continue;
+                ws = F(bestS); len = bestLen;
+                int pj = bestPt == 0 ? ba : fo;
+                double mid = (len - 1) / 2.0;
+                var anchor = new P1V(0, 0, 0);
+                for (int k = 0; k < len; k++) anchor = anchor + Flat(G[F(k)][pj].T() - belt * ((k - mid) / fps));
+                anchor = anchor / len;
+                for (int k = 0; k < len; k++)
+                {
+                    corr[F(k)] = Flat(anchor + belt * ((k - mid) / fps) - G[F(k)][pj].T());
+                    weight[F(k)] = 1;
+                }
+                for (int e = 1; e <= LockEase; e++)
+                {
+                    double w = 1 - e / (LockEase + 1.0);
+                    foreach (var (f, from) in new[] { (ws - e, F(0)), (ws + len - 1 + e, F(len - 1)) })
+                    {
+                        if (!loop && (f < 0 || f >= m)) continue;
+                        int g = (f % m + m) % m;
+                        if (weight[g] >= w) continue;
+                        weight[g] = w; corr[g] = corr[from]! * w;
+                    }
+                }
+                locked[s]++;
+            }
+            for (int f = 0; f < m; f++)
+                if (corr[f] is P1V d && d.Len() > 1e-7) LegTo(L[f], G[f], th, ca, fo, G[f][fo].T() + d);
+        }
+        if (m < n) for (int j = 0; j < B.Names.Length; j++) { L[n - 1][j] = L[0][j]; G[n - 1][j] = G[0][j]; }
+        return locked;
+    }
+
+    static P1V Flat(P1V v) => new(v.X, 0, v.Z);
+
+    static P1M3 Arc(P1V a, P1V b)
+    {
+        a = a / a.Len(); b = b / b.Len();
+        var v = P1V.Cross(a, b);
+        double s = v.Len(), c = Math.Clamp(P1V.Dot(a, b), -1, 1);
+        return s < 1e-12 ? P1M3.Id : P1Rig.Expm(v / s * Math.Atan2(s, c));
+    }
+
+    /// <summary>Two-bone IK: thigh and calf turned so the foot's head reaches target (clamped to the leg's reach), the
+    /// knee bending about its own current axis, the foot keeping its world turn; L and G of the leg's subtree updated.</summary>
+    public void LegTo(P1M4[] L, P1M4[] G, int th, int ca, int fo, P1V target)
+    {
+        var H = G[th].T(); var K = G[ca].T(); var Fp = G[fo].T();
+        double a = (K - H).Len(), b = (Fp - K).Len();
+        double d = Math.Clamp((target - H).Len(), Math.Abs(a - b) + 1e-4, a + b - 1e-4);
+        var footRot = G[fo].Lin();
+        var axis = P1V.Cross(K - H, Fp - K);
+        if (axis.Len() < 1e-9) axis = G[th].Lin().Col(0);
+        axis = axis / axis.Len();
+        // the knee's interior angle for reach d
+        double cur = Math.Acos(Math.Clamp(P1V.Dot(H - K, Fp - K) / (a * b), -1, 1));
+        double want = Math.Acos(Math.Clamp((a * a + b * b - d * d) / (2 * a * b), -1, 1));
+        var Rk = P1Rig.Expm(axis * (cur - want));
+        var calfG = P1M4.From(Rk * G[ca].Lin(), K);
+        var Fn = K + Rk * (Fp - K);
+        var Rt = Arc(Fn - H, target - H);
+        var thighG = P1M4.From(Rt * G[th].Lin(), H);
+        calfG = P1M4.From(Rt * calfG.Lin(), H + Rt * (K - H));
+        // each set as a world pose under its (possibly helper-carried) parent, the subtree recomposed after each
+        L[th] = G[B.Parent[th]].Inverse() * thighG; Recompose(L, G, th);
+        L[ca] = G[B.Parent[ca]].Inverse() * calfG; Recompose(L, G, ca);
+        L[fo] = G[B.Parent[fo]].Inverse() * P1M4.From(footRot, G[fo].T()); Recompose(L, G, fo);
+    }
+
+    void Recompose(P1M4[] L, P1M4[] G, int top)
+    {
+        G[top] = B.Parent[top] < 0 ? L[top] : G[B.Parent[top]] * L[top];
+        foreach (int j in order)
+            if (B.Parent[j] >= 0 && IsUnder(j, top)) G[j] = G[B.Parent[j]] * L[j];
+    }
+
+    bool IsUnder(int j, int anc) { for (int k = B.Parent[j]; k >= 0; k = B.Parent[k]) if (k == anc) return true; return false; }
+
     /// <summary>The key rule: the B bones keyed in a clip whose keyed A bones are aKeyed.</summary>
     public HashSet<int> Keyed(ICollection<int> aKeyed)
     {

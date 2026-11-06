@@ -94,6 +94,37 @@ public class P1BakeTests
     }
 
     [Fact]
+    public void FootLockPinsThePlantedFootAndClosesTheLoop()
+    {
+        var (names, parent, rest, rig) = B();
+        var bake = new P1Bake(rig, new P1Retarget(names, parent, rest, rig));
+        int th = rig.Index["thigh_l"], fo = rig.Index["foot_l"], ba = rig.Index["ball_l"], bar = rig.Index["ball_r"];
+        // B's left foot sweeps 6 deg of thigh over the clip while A's ball holds (planted, belt 0); A's right ball is lifted
+        var L = new List<P1M4[]>(); var G = new List<P1M4[]>();
+        var aBall = new[] { new List<P1V>(), new List<P1V>() };
+        int n = 11;
+        for (int f = 0; f < n; f++)
+        {
+            double k = f == n - 1 ? 0 : f;   // (a cycle: the last key is the first)
+            var (l, g) = bake.Frame(Pose(names, parent, rest, new() { ["thigh_l"] = new(D(0.6 * k), 0, 0), ["calf_l"] = new(D(1.0 * k), 0, 0) }));
+            L.Add(l); G.Add(g);
+            aBall[0].Add(new P1V(0.1, 0.03, 0.1)); aBall[1].Add(new P1V(-0.1, 0.03 + P1Bake.ContactBand * 3, 0.1));
+        }
+        var foot0 = G.Select(g => g[fo].Lin()).ToArray();
+        double Spread(int j) => G.Max(g => G.Max(h => Math.Sqrt(Math.Pow(g[j][0, 3] - h[j][0, 3], 2) + Math.Pow(g[j][2, 3] - h[j][2, 3], 2))));
+        double before = Spread(ba), rBefore = Spread(bar);
+        var locks = bake.FootLock(L, G, aBall, aBall, true, 30);
+        Assert.Equal(1, locks[0]); Assert.Equal(0, locks[1]);
+        Assert.True(before > 0.01, $"the fixture slides {before * 1000:F1} mm");
+        Assert.True(Spread(ba) < 1e-4, $"locked ball drifts {Spread(ba) * 1000:F2} mm (was {before * 1000:F1})");
+        Assert.True(Math.Abs(Spread(bar) - rBefore) < 1e-9, "the lifted foot moved");
+        for (int f = 0; f < n; f++) Assert.True(Ang(foot0[f], G[f][fo].Lin()) < 1e-3, $"the foot's world turn changed {Ang(foot0[f], G[f][fo].Lin()):F5} deg at {f}");
+        // locals and globals agree after the IK; the loop's last key is its first
+        for (int f = 0; f < n; f++) Assert.True(Diff(G[f][parent[th]] * L[f][th], G[f][th]) < 1e-9);
+        Assert.True(Enumerable.Range(0, names.Length).All(j => Diff(L[n - 1][j], L[0][j]) < 1e-12));
+    }
+
+    [Fact]
     public void CleaningDataIsApplied()
     {
         var (names, parent, rest, rig) = B();

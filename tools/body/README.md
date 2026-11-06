@@ -205,6 +205,17 @@ A (`heroine.glb`) is not loaded; A without the flag is untouched.
   keeps its world turn) and the clean, then is keyed. Deterministic (identical bytes on a rerun); prints frames, keyed
   bones and the idles' shoulder height against B's rest; writes `a_skeleton.json` (A's names, parents, rests).
   `--p1-bake-only TEXT` bakes matching clips without writing. Re-run after any B skeleton change.
+- **The foot lock** (P1Bake.FootLock, every clip keying a leg): in A's contact windows (ball within 2 cm of the clip's
+  floor, trimmed while A's ball or ankle leaves its belt-riding anchor by > 10 mm) B's ball/ankle is pinned
+  horizontally to its least-squares anchor riding the belt (A's median planted velocity; under 0.05 m/s: still) by
+  two-bone IK (the foot keeps its world turn), eased over 3 frames; a cycle's last key is its first. Why: B's legs are
+  not A's (the reaver run's planted ball drifted 41 mm on B, A's 2 mm; attacks 10-34 mm on B, A's 0).
+- **clipcheck** (`python tools/body/clipcheck.py CLIP... [--dump DIR]`): the bake dumps A's and B's posed globals
+  per key for every clip with a p1_clips.json entry to `tools/body/out/clips/NAME.json` (git-ignored);
+  `--p1-bake-raw` (with `--p1-bake-only`, writes nothing) dumps the map + girdle hold only, the baseline. Numbers per
+  clip: pops (spikes > 4x median and > 3 deg, A's same bone beside), loop seam, foot drift in contact (A/B), arm
+  vertices inside the torso/hips/thighs on B posed by the lbs poser + rig_drive (the armpit fold, the upper arm's
+  first 40%, counted apart as `axilla`), each hand's gap to the torso, the arm read (elevation, elbow to skin, B/A).
 - **p1_clips.json** (`tools/body/`): per clip `{"why", "turns": {bone: [x, y, z] deg rotation vector in the bone's own
   frame, laid after the baked local}, "hold": [bones set to B's rest local]}`; applied after the girdle hold.
 - **The role map.** Systems keyed to A's names ask `P1Body.Bone(skel, "spine_03")` (identity on A): by name off the
