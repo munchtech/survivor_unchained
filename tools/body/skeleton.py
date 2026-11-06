@@ -206,6 +206,9 @@ def _midline_profile(V, sign, y0, y1, step=0.002):
 
 C7_BAND_BELOW_TOP_M = (0.22, 0.12)   # C7's allowed height: 120-220 mm below the body's top (the head ring); her C7 is 170 mm
                                      # below it (ANSUR II cervicale/stature ~0.857). The skull base is far above this band.
+C7_FLAT_TOL_M = 0.001                # no-knee nape: C7 = the centre of the stretch within 1 mm of its deepest z (the raw
+                                     # minimum wanders 10+ mm along her flat nape under 0.2 mm of noise; the centre moves < 2 mm)
+C7_KNEE_MIN_M = 0.002                # a knee counts only if it sits 2 mm or more in front of the chord (else the nape is flat)
 
 
 def cervical_joint(V, r):
@@ -217,10 +220,11 @@ def cervical_joint(V, r):
     the C7 body: r["depth"] of the horizontal midline depth (throat skin - nape skin) forward of the back skin (the
     cervical bodies sit just behind the neck's middle: the airway and larynx fill its front). Cross-check: ANSUR II
     women's cervicale height / stature ~0.857 (README "skeleton").
-    Bounded: the knee is only accepted inside the band C7_BAND_BELOW_TOP_M (120-220 mm under the top). Where the
-    curve has no clear knee (the chord-distance maximum falls outside the band, as on her smooth nape, where a 0.1 mm
-    wobble near the neck's top moved it 16 cm) or the throat sampling at the knee would be empty, the joint takes the
-    nape's deepest point (minimum z) inside the band, and info["cervical_fallback"] names the reason."""
+    Bounded and robust: a knee counts only if it is >= C7_KNEE_MIN_M off the chord and inside the band
+    C7_BAND_BELOW_TOP_M (120-220 mm under the top). Her nape has none (flat), so C7 = the centre of the stretch of
+    the band's profile within C7_FLAT_TOL_M of its deepest z (a stable pick; the raw minimum wandered 16 cm). If the
+    knee's throat sample would be empty, or the band is missing, the band's deepest point is used.
+    info["cervical_fallback"] names which rule fired (absent for a real knee)."""
     top = V[:, 1].max()
     yb, zb = _midline_profile(V, -1, top - 0.30, top - 0.004)
     i0 = int(np.argmin(zb))
@@ -228,14 +232,16 @@ def cervical_joint(V, r):
     c6 = np.polyfit(yb[i0:] - y0, zb[i0:], 6)
     g = np.arange(y0, yb[-1], 0.0005)
     f = np.polyval(c6, g - y0)
-    j = int(np.argmax(f - (f[0] + (g - g[0]) / (g[-1] - g[0]) * (f[-1] - f[0]))))
+    sc = f - (f[0] + (g - g[0]) / (g[-1] - g[0]) * (f[-1] - f[0]))
+    j = int(np.argmax(sc))
+    flat = sc[j] < C7_KNEE_MIN_M
     band = (g >= top - C7_BAND_BELOW_TOP_M[0]) & (g <= top - C7_BAND_BELOW_TOP_M[1])
     why = None
     if not band.any():
         why = "band_outside_profile"
     elif not band[j]:
         why = "no_knee_in_band"
-    if why is None:
+    if why is None and not flat:
         y = float(g[j])
         if not _throat_has_points(V, y):
             why = "empty_throat_sample"
@@ -246,6 +252,11 @@ def cervical_joint(V, r):
         else:
             j = int(np.argmin(np.abs(g - (top - 0.17))))
     y, zback = float(g[j]), float(f[j])
+    if flat and band.any():                                   # flat nape: the centre of the near-deepest stretch
+        bb = (yb >= top - C7_BAND_BELOW_TOP_M[0]) & (yb <= top - C7_BAND_BELOW_TOP_M[1])
+        y = float(yb[bb][zb[bb] <= zb[bb].min() + C7_FLAT_TOL_M].mean())
+        zback = float(np.interp(y, yb, zb))
+        why = why or "flat_nape_centre"
     yf, zf = _midline_profile(V, 1, y - 0.008, y + 0.008)
     zfront = float(np.interp(y, yf, zf))
     p = np.array([0.0, y, zback + r["depth"] * (zfront - zback)])
