@@ -150,6 +150,26 @@
     "ball_l": 10,
     "ball_r": 10
    }
+  },
+  "roll": {
+   "heel": 0.7,
+   "toe": 0.7,
+   "ease": 7,
+   "reach": 0.92
+  },
+  "wrist": {
+   "hand_l": {
+    "flex": 25,
+    "dev": 15,
+    "mode": "hold",
+    "swivel": 0
+   },
+   "hand_r": {
+    "flex": 25,
+    "dev": 15,
+    "mode": "hold",
+    "swivel": 0
+   }
   }
  }
 }

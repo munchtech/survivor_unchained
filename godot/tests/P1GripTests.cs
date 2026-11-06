@@ -68,8 +68,18 @@ public class P1GripTests
     public void SheathedHiltOnB_AtTheHipBone_12To15cmLower()
     {
         var a = WeaponSockets.PommelAt(WeaponSockets.HipBladeAtA);
-        var b = WeaponSockets.PommelAt(WeaponSockets.HipBladeAtB);
-        Assert.True(b.Y <= WeaponSockets.HipBoneYB + 0.005f, $"pommel {b.Y:F3} above B's hip bone");
+        var b = WeaponSockets.PommelAtB();
+        Assert.InRange(b.Y, WeaponSockets.HipBoneYB - 0.01f, WeaponSockets.HipBoneYB + 0.005f);
         Assert.InRange(a.Y - b.Y, 0.12f, 0.15f + 1e-4f);
+    }
+
+    [Fact]
+    public void SheathOnB_BeltCarry_HiltForwardAndUp_30To40OffVertical()
+    {
+        var s = Vector3.Normalize(WeaponSockets.HipBladeShaftB);
+        double off = Math.Acos(-s.Y) * 180 / Math.PI;
+        Assert.InRange(off, 30, 40);
+        Assert.True(s.Z < 0, "the scabbard runs back, so the hilt points forward");
+        Assert.True(WeaponSockets.PommelAtB().Z > WeaponSockets.HipBladeAtB.Z + 0.08f, "the pommel forward of her hip");
     }
 }

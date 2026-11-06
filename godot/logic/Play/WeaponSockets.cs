@@ -238,8 +238,12 @@ public static class WeaponSockets
     /// s11, the Warden's town idle: her pommel arm rests long), its pommel at B's hip bone (HipBoneYB), and 2 cm further
     /// out, so the scabbard's axis clears B's wider hip and thigh by 3.4 cm at rest (B's mesh, A1 round 3).</summary>
     public static readonly Vector3 HipBladeAtA = new(0.21f, 1.20f, 0.10f);
-    public static readonly Vector3 HipBladeAtB = new(0.23f, 1.05f, 0.10f);
+    public static readonly Vector3 HipBladeAtB = new(0.23f, 1.067f, 0.10f);
     public static readonly Vector3 HipBladeShaft = new(0.08f, -0.87f, -0.50f);
+    /// <summary>B's scabbard axis (sheath point toward the tip): a belt carry 38.6 deg off vertical, the hilt forward and up
+    /// (A's hangs 30 deg off), so the pommel sits 10.5 cm forward of the sheath point at her hip bone's height and her
+    /// pommel arm reaches it with the upper arm hanging and the forearm forward (A1 round 4, the lead's ruling).</summary>
+    public static readonly Vector3 HipBladeShaftB = new(0.08f, -0.78f, -0.62f);
     /// <summary>The pommel's distance up the hilt from the sheath point (the chevalier sword), m.</summary>
     public const float HiltToPommel = 0.17f;
     /// <summary>B's hip bone (iliac crest) height at rest: where B's waist (11.7 cm half-width at 1.25 m) starts to flare to
@@ -248,6 +252,9 @@ public static class WeaponSockets
 
     /// <summary>The sheathed blade's pommel at rest (skeleton space) for a socket point.</summary>
     public static Vector3 PommelAt(Vector3 at) => at - Vector3.Normalize(HipBladeShaft) * HiltToPommel;
+
+    /// <summary>B's sheathed pommel at rest (B's sheath point and B's scabbard axis).</summary>
+    public static Vector3 PommelAtB() => HipBladeAtB - Vector3.Normalize(HipBladeShaftB) * HiltToPommel;
 
     /// <summary>The fitted pocket of a fist by its bone (hand_r: PocketR, hand_l: PocketL), else none.</summary>
     public static (Vector3 At, Vector3 Dir)? Pocket(WeaponKind kind, string bone) => bone switch

@@ -1,6 +1,6 @@
 """B's walk/run blend as the move graph plays it once the arm-hold layer is retired (ArmHold.Layered): every bone's
 local rotation slerped between the walk and the run at the shared stride phase (both seek phase*length; phase 0 = the
-left foot down). For each weight in 0, .25, .5, .75, 1 across one cycle:
+left foot down). For each weight in 0 .. 1 by .125 across one cycle:
   - the piece's deviation: hand_r (the sword) and lowerarm_l (the shield) global turn against the straight path
     (the slerp between the two holds' own turns at that phase), deg; the old per-bone mix read 43-54 deg at 0.5;
   - the piece against her body: the warden set's pieces (tools/anim/data/arms_local.json, A's hand space, laid on B's
@@ -23,7 +23,7 @@ from motion import quat as Q  # noqa: E402
 from motion.rig import Rig  # noqa: E402
 
 REPO = p4.REPO
-WEIGHTS = (0, 0.25, 0.5, 0.75, 1)
+WEIGHTS = tuple(k / 8 for k in range(9))      # (0 .. 1 in steps of .125)
 
 
 def locals_at(c, rig, u):
@@ -101,9 +101,9 @@ def main(argv):
                 Pw = pts[k] @ G[j].T + P[j]
                 Pg = (np.c_[Pw, np.ones(len(Pw))] @ body.X.T)[:, :3]
                 s, d, _ = CC.signed(Vb, Nb, tr, body.tidx, Pg)
-                inside = s[(s < 0) & (d < 0.03)]
+                inside = s[(s < 0) & (d < 0.08)]      # (as p4.body_field: a nearest-vertex sign holds within 8 cm)
                 depth[k] = max(depth[k], float(-inside.min() * 1000) if len(inside) else 0.0)
-                near = s[d < 0.10]
+                near = s[d < 0.08]
                 clear[k] = min(clear[k], float(near.min() * 1000) if len(near) else 1e9)   # (the nearest gap, mm: + outside)
         rows.append({"w": w, "sword_dev_deg": round(dev["sword"], 2), "shield_dev_deg": round(dev["shield"], 2),
                      "sword_in_mm": round(depth["sword"], 1), "shield_in_mm": round(depth["shield"], 1),

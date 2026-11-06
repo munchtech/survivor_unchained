@@ -104,24 +104,62 @@
   },
   "blade": {
    "dir": [
-    -0.2078,
-    -0.9777,
-    0.03
+    -0.0995,
+    -0.9611,
+    -0.2575
    ],
-   "keep": 1.0
+   "fist": [
+    0.0,
+    -0.3,
+    1.0
+   ],
+   "keep": 0.5
   },
   "pop": {
    "x": 4,
    "span": 4,
    "cap": {}
   },
-  "limbs": {
+  "roll": {
+   "heel": 0.3,
+   "toe": 0.5,
+   "ease": 6,
+   "reach": 0.985
+  },
+  "shield": {
+   "boss": [
+    0.12,
+    0.06,
+    0.33
+   ],
+   "pole": [
+    1,
+    0.5,
+    -0.3
+   ],
+   "open_deg": 22,
+   "tilt_deg": 15
+  },
+  "wrist": {
    "hand_r": {
-    "by": [
-     -0.05,
-     0,
-     0
-    ]
+    "flex": 25,
+    "dev": 15,
+    "mode": "turn",
+    "swivel": 0
+   },
+   "hand_l": {
+    "flex": 25,
+    "dev": 15,
+    "mode": "hold",
+    "swivel": 0,
+    "twist": false
+   }
+  },
+  "clear": {
+   "target_mm": 12,
+   "passes": 6,
+   "target_by": {
+    "shield": 20
    }
   }
  },

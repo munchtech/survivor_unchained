@@ -47,8 +47,8 @@
    30
   ],
   "boss_up_cm": [
-   10,
-   16
+   -5,
+   10
   ],
   "shield_open_deg": [
    15,
@@ -57,6 +57,10 @@
   "hip_out_cm": [
    4,
    7
+  ],
+  "shield_top_cm": [
+   135,
+   145
   ]
  },
  "gen": {
@@ -144,7 +148,7 @@
    260
   ]
  },
- "notes": "Prompted + hand keys (shield wrist across the chest, sword wrist low by the right hip) from our own take p2 s75 #4; path scale searched 0.75-0.9 (bimodal like the town idle). Breath not built.",
+ "notes": "Prompted + hand keys (shield wrist across the chest, sword wrist low by the right hip) from our own take p2 s75 #4; path scale searched 0.75-0.9 (bimodal like the town idle). Breath not built. Round 4 (the lead's ruling): a 70 cm shield cannot have its boss at the navel and its top at the breast line; the top edge at the breast line (1.35-1.45 m), the boss where that puts it (by the hip), the top leaning out 10-20 deg (fit.shield tilt_deg), turned 15-25 open.",
  "source": "src/idle_warden.npz",
  "bvh": "idle_warden__ka2s78_1.bvh",
  "sha1": "dc730148d7306457be5b2ab3336cc6dd99d1b933",
@@ -176,7 +180,7 @@
    "hand_r": {
     "at": [
      -0.29,
-     -0.12,
+     -0.17,
      0.09
     ],
     "pole": [
@@ -189,28 +193,49 @@
   "blade": {
    "dir": [
     -0.2425,
-    -0.6739,
-    0.6979
+    -0.7071,
+    0.6646
    ],
    "keep": 0
   },
   "shield": {
    "boss": [
-    0.1,
-    0.13,
-    0.37
+    0.14,
+    0.02,
+    0.26
    ],
-   "open_deg": 16,
+   "open_deg": 18,
+   "tilt_deg": 15,
    "pole": [
     1,
-    0.5,
-    -0.3
-   ]
+    -0.3,
+    -0.5
+   ],
+   "swivel": 60.0
   },
   "pop": {
    "x": 4,
    "span": 4,
    "cap": {}
+  },
+  "wrist": {
+   "hand_r": {
+    "flex": 25,
+    "dev": 15,
+    "mode": "turn",
+    "swivel": 30
+   },
+   "hand_l": {
+    "flex": 25,
+    "dev": 15,
+    "mode": "hold",
+    "swivel": 0,
+    "twist": false
+   }
+  },
+  "clear": {
+   "target_mm": 12,
+   "passes": 6
   }
  },
  "held": [

@@ -106,6 +106,13 @@ def fit_of(spec):
         f["blade"]["pocket"] = pieces()["blade"]
     if "shield" in f:
         f["shield"]["pocket"] = pieces()["shieldp"]
+    if "clear" in f:
+        # (the game's mount on B: the pieces' points in their bones' spaces, a fixed sample)
+        pc, bones = pieces(), {"sword": ("hand_r", "r"), "shield": ("lowerarm_l", "l")}
+        rng = np.random.default_rng(1)
+        f["clear"]["pieces"] = {k: {"bone": bones[k][0], "side": bones[k][1],
+                                    "pts": pc[k][rng.choice(len(pc[k]), min(len(pc[k]), 800), replace=False)].tolist()}
+                                for k in f["clear"].get("held", spec.get("held", []))}
     return f
 
 
@@ -116,7 +123,8 @@ def run_post(src, spec, name):
     return MC.run(src, RIG, loop=po.get("loop", spec.get("loop", False)), inplace=po.get("inplace", spec.get("inplace", False)),
                   name=name, gait=po.get("gait", False), duty=po.get("duty"),
                   cycle=(int(round(cyc[0] * KFPS)), int(round(cyc[1] * KFPS))) if cyc else None,
-                  crop=tuple(po["crop"]) if po.get("crop") else None, fit=fit_of(spec))
+                  crop=tuple(po["crop"]) if po.get("crop") else None, fit=fit_of(spec),
+                  body=body_field() if "clear" in spec.get("fit", {}) else None)
 
 
 def build_one(p):
@@ -130,10 +138,12 @@ def measure(r, spec):
     if spec.get("kind") == "gait":
         m = measures.gait(r.P, r.rig, fps, r.clip.get("speed_mps"), loop=r.clip["loop"])
         m.update(held(r, spec))
+        m.update(steps(r))
         return m
     m = measures.idle(r.P, r.rig, fps, loop=r.clip["loop"])
     m.update(hand_targets(r, spec))
     m.update(held(r, spec))
+    m.update(steps(r))
     return m
 
 
@@ -168,6 +178,8 @@ def held(r, spec):
         out["shield_top_cm"] = round(100 * float(pts[:, :, 1].max(1).mean()), 1)
         f = local(np.einsum("fij,j->fi", G[:n, la], pc["shieldp"]["face"]))
         out["shield_open_deg"] = round(float(np.degrees(np.arctan2(f[:, 0], f[:, 2])).mean()), 1)
+        # (the face tipped down = the top edge leaning out from her, deg)
+        out["shield_tilt_deg"] = round(float(np.degrees(np.arctan2(-f[:, 1], np.hypot(f[:, 0], f[:, 2]))).mean()), 1)
     return out
 
 
@@ -313,6 +325,8 @@ def cmd_build(a):
             m = measure(r, sp)
             ok = measures.passes(m, sp["bands"])
             print(f"  {p.stem}: " + ", ".join(f"{k} {m.get(k)}{'' if ok[k] else ' MISS'}" for k in sp["bands"]))
+            print(f"  {p.stem} more: " + ", ".join(f"{k} {v}" for k, v in m.items() if k not in sp["bands"] and
+                                                     k.startswith(("step_", "wrist_", "blade_", "shield_", "boss_"))))
         for L in r.fitlog or []:
             print(f"  fit {L['layer']}: " + ", ".join(f"{k} {v}" for k, v in L.items() if k != "layer"))
         print(f"{p.stem}: {r.clip['frames']} frames, source crop {r.prep.crop}, yaw {r.prep.yaw_deg:.1f} deg, "
@@ -396,6 +410,65 @@ def main():
     a = ap.parse_args()
     {"import": cmd_import, "build": cmd_build, "check": cmd_check, "gen": cmd_gen, "takes": cmd_takes}[a.cmd](a)
 
+
+
+def body_field():
+    """Her skin as the fit's `clear` layer reads it (clipcheck's posed B, torso: the arms left out): body(G, P) -> a
+    field: world points -> (signed distance m, + outside; outward normals). Far points (over 8 cm from the nearest
+    vertex, where a nearest-vertex sign can flip) read as outside."""
+    if "_bf" in globals():
+        return _bf
+    sys.path.insert(0, str(REPO / "tools/body"))
+    import clipcheck as CC
+    from motion.rig import Rig
+    rig = Rig(RIG)
+    P1 = REPO / "godot/art/people/body_p1"
+    B = CC.Body(str(P1 / "body.glb"), json.loads((P1 / "rig.json").read_text()), rig.names, m44(rig.R0, rig.head), True)
+    Xi = np.linalg.inv(B.X)
+    keyed = set(rig.keyed)
+
+    def body(G, P):
+        B.cache.clear()
+        V, _, N, tr = B.pose(m44(G, P), keyed, 0)
+
+        def field(pts):
+            Pg = (np.c_[pts, np.ones(len(pts))] @ B.X.T)[:, :3]
+            s, d, q = CC.signed(V, N, tr, B.tidx, Pg)
+            far = (s < 0) & (d >= 0.08)
+            s = np.where(far, d, s)
+            nrm = N[q] @ Xi[:3, :3].T
+            nrm = nrm / (np.linalg.norm(nrm, axis=1, keepdims=True) + 1e-12)
+            return s, nrm
+        return field
+    globals()["_bf"] = body
+    return body
+
+
+class _Pose:
+    """A built result as the fit's measures read it (fit.wrist_of)."""
+    def __init__(self, r):
+        self.rig, self.G, self.P = r.rig, r.G, r.P
+
+    def j(self, n):
+        return self.rig.index[n]
+
+
+def steps(r):
+    """The worst one-frame local turn (deg) of each foot and knee (calf) over the loop, and the wrists' worst bends."""
+    from motion import fit as FIT
+    rig, G = r.rig, r.G
+    out = {}
+    for b in ("foot_l", "foot_r", "calf_l", "calf_r"):
+        j = rig.index[b]
+        L = np.swapaxes(G[:, rig.parent[j]], -1, -2) @ G[:, j]
+        a = np.degrees(np.arccos(np.clip((np.trace(np.swapaxes(L[:-1], -1, -2) @ L[1:], axis1=1, axis2=2) - 1) / 2, -1, 1)))
+        out[f"step_{b}_deg"] = round(float(a.max()), 1)
+    F = _Pose(r)
+    for s in "lr":
+        fl, de = FIT.wrist_of(F, s)
+        out[f"wrist_{s}_flex_deg"] = round(float(np.abs(fl[:r.m]).max()), 1)
+        out[f"wrist_{s}_dev_deg"] = round(float(np.abs(de[:r.m]).max()), 1)
+    return out
 
 if __name__ == "__main__":
     main()

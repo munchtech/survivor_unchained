@@ -489,6 +489,14 @@ public static class Arms
                 var shift = skeleton.GetBoneGlobalRest(bb).Basis.Inverse() * new Vector3(left ? -d.X : d.X, d.Y, d.Z);
                 at.Origin += shift;
                 if (pivotAt is { } pv2) pivotAt = pv2 + shift;
+                // (and B's own scabbard tilt, WeaponSockets.HipBladeShaftB: turned about the sheath point in skeleton space)
+                Vector3 sa = G(WeaponSockets.HipBladeShaft).Normalized(), sb = G(WeaponSockets.HipBladeShaftB).Normalized();
+                if (left) { sa.X = -sa.X; sb.X = -sb.X; }
+                var rest = skeleton.GetBoneGlobalRest(bb);
+                var ts = rest * at;
+                var turn = new Basis(new Quaternion(sa, sb));
+                ts.Basis = turn * ts.Basis;
+                at = rest.AffineInverse() * ts;
             }
             bone = skeleton.GetBoneName(bb);
         }
