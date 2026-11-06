@@ -7,6 +7,7 @@
     1
    ],
    "rule": "py:glute_form.hourglass",
+   "soft": true,
    "order": 20,
    "zc": 0.02,
    "parts": [
@@ -30,7 +31,8 @@
      -0.2,
      -0.25,
      -0.3,
-     -0.35
+     -0.35,
+     -0.4
     ],
     "w": [
      1.4059,
@@ -41,19 +43,20 @@
      1.802,
      2.0099,
      2.0099,
-     1.9802,
-     1.9703,
-     1.9802,
      2.0,
-     1.9901,
-     1.9802
+     2.015,
+     2.02,
+     2.02,
+     2.015,
+     2.0,
+     1.985
     ],
     "full": [
-     -0.28,
+     -0.33,
      0.26
     ],
     "fade": [
-     0.08,
+     0.07,
      0.06
     ]
    },
@@ -67,7 +70,7 @@
      "sz": -0.1
     }
    ],
-   "why": "OURS (P1 R1, replaces MakeHuman's waist -0.6 / hips 0.4): the front-view outer line designed directly (half-widths in units of the hip joints' |x| at 5 cm steps over the joints, a natural cubic spline; x scaled per height to meet it, eased out over 8/6 cm past h -0.28..+0.26) and the waist's depth (z scale -10% at h +0.21 about zc). Her rest numbers at v 1: waist 231 mm wide / 144 deep / 617 round at 1228-1240 (navel 1210), hips widest 411 at 1010 (408 at the joints, 1033), the line straight into the thighs (about 400-404 to 0.75 m), waist/hip 0.56 (width) 0.55 (round)."
+   "why": "OURS (P1 R1, replaces MakeHuman's waist -0.6 / hips 0.4): the front-view outer line designed directly (half-widths in units of the hip joints' |x| at 5 cm steps over the joints, a natural cubic spline; x scaled per height to meet it, eased out over 8/6 cm past h -0.28..+0.26) and the waist's depth (z scale -10% at h +0.21 about zc). Her rest numbers at v 1: waist 231 mm wide / 144 deep / 617 round at 1228-1240 (navel 1210), hips widest 411 at 1010 (408 at the joints, 1033), the line straight into the thighs (about 400-404 to 0.75 m), waist/hip 0.56 (width) 0.55 (round). R1b: 'soft': true (build_topo.bone_body: the skeleton's landmarks are read without it, so the hip joint stays her_r1's). The line's lower end redrawn to meet her own thigh (2.0-2.02 hip_x from h -0.10 to -0.30, 1.985 at -0.40, full to -0.33, eased out over 7 cm where the line and her thigh agree within ~2%): the outer thigh now runs 201 -> 205 mm (half-width) from the knee's top to the hip with no ring at 0.70-0.75 (was a 207.7 bump at 0.72 dropping to 202), 2-5 mm fuller mid-thigh than R1."
   },
   "glute_form": {
    "range": [
@@ -75,6 +78,7 @@
     1
    ],
    "rule": "py:glute_form.glutes",
+   "soft": true,
    "order": 21,
    "axis": [
     0.0,
@@ -266,6 +270,7 @@
     1
    ],
    "rule": "target",
+   "soft": true,
    "order": 22,
    "file": "tools/body/base/targets/glute_sculpt_{tier}.npz",
    "made_by": "tools/body/sculpt/glute_sculpt.py",

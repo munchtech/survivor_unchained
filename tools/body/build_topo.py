@@ -289,6 +289,33 @@ def stage_forms(spec, tier, z, V, ring, rep):
 
 
 # --------------------------------------------------------------------------------------------- 3 skeleton --
+def bone_body(spec, tier, z, V, A, baked, rep):
+    """P1 R1b: soft tissue does not move bones. The body the skeleton's landmarks are read on: this spec's body with
+    every designed slider flagged "soft": true at 0 (fat outline, glutes, breasts: their fields would drag the
+    landmarks' vertex fits, e.g. the hourglass pulled the hip joint 11 mm in), stages 1, 2, 2b again. A spec may
+    also set "bone_sliders" {name: value}: values used for the bones only (her specs: the retired MakeHuman soft
+    targets her skeleton was fitted with). No soft slider set and no bone_sliders: V itself (byte-identical)."""
+    sv = {k: v for k, v in spec.get("sliders", {}).items() if v}
+    designed = {}
+    for f in sorted(os.listdir(os.path.join(HERE, "designed"))):
+        if f.endswith(".json"):
+            with open(os.path.join(HERE, "designed", f)) as fh:
+                designed.update(json.load(fh).get("sliders", {}))
+    soft = sorted(k for k in sv if designed.get(k, {}).get("soft"))
+    over = spec.get("bone_sliders") or {}
+    if not soft and not over:
+        return V
+    s2 = dict(spec)
+    s2["sliders"] = {**{k: v for k, v in sv.items() if k not in soft}, **over}
+    r2 = {}
+    _, Vb = stage_base(s2, tier, r2)
+    Vb, ring, _ = stage_place(s2, z, Vb, A, baked, r2)
+    Vb = stage_forms(s2, tier, z, Vb, ring, r2)
+    rep["bone_body"] = {"soft_off": soft, "bone_sliders": over,
+                        "max_mm": round(float(np.linalg.norm(Vb - V, axis=1).max()) * 1e3, 2)}
+    return Vb
+
+
 def stage_skeleton(V, tier, rep, head=None):
     import skeleton as sk
     with open(os.path.join(HERE, "skeleton.json")) as f:
@@ -511,7 +538,7 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
         sk = {k: sk_close[k] for k in ("skel", "names", "parents", "worlds", "ends")}
         rep["skeleton"] = {"from": "close (build_topo P1 R2: one skeleton for both tiers)"}
     else:
-        sk = stage_skeleton(V, tier, rep, baked["HeroineHead"]["P"])
+        sk = stage_skeleton(bone_body(spec, tier, z, V, A, baked, rep), tier, rep, baked["HeroineHead"]["P"])
         with open(os.path.join(out, "stage", "close_skeleton.json"), "w") as f:
             json.dump({k: sk[k] for k in ("skel", "names", "parents", "worlds", "ends")}, f,
                       default=lambda x: np.asarray(x).tolist())

@@ -35,5 +35,12 @@
   "shoulder_span": 0.3,
   "hourglass": 1.0,
   "glute_sculpt": 1.0
- }
+ },
+ "bone_sliders": {
+  "waist": -0.6,
+  "hips": 0.4,
+  "glutes": 0.5,
+  "glute_lift": 1.0
+ },
+ "bone_sliders_why": "P1 R1b: the skeleton's landmarks are read on the body without the soft sliders (hourglass, glute_form/glute_sculpt: designed 'soft': true) and with the retired MakeHuman/legacy soft targets at her_r1's values (her skeleton was fitted with them; the Harrington hip reads the pelvis section): so her bones stay her_r1's. Drop this when her skeleton is refit."
 }
