@@ -195,9 +195,27 @@
        ]
       }
      ]
+    },
+    {
+     "normal": 0.006,
+     "mask": [
+      {
+       "on": "ell",
+       "c": [
+        0.0,
+        1.31,
+        -0.09
+       ],
+       "r": [
+        0.13,
+        0.13,
+        0.1
+       ]
+      }
+     ]
     }
    ],
-   "why": "the trapezius height and slope: its top near the neck carried down (26 mm at 5.5-8.5 cm out; the back and top only: z under -2 cm, easing over 7 cm) over an 8 mm drop of the whole shoulder top (7-22 cm out), the ring held (0 within 0.5 cm, full from 3 cm): the neck side wall rises clean out of a sloped trapezius instead of a mound at the jaw. R1b (judge fixes 2-4): the 26 mm drop eases in from 1.2 cm out (was 2: the held neck column's edges stood as two hard cords with a groove at the back of the neck) and out over 6 cm (was 3: the trapezius line met the shoulder cap in a square corner with knobs: twice the blend radius); the acromion corner 5 mm lower (15-19 cm out, the shoulder top only); the spine between the shoulder blades filled 4.5 mm along the normal (a C2 bell, 6.5 x 8.5 cm: the dip that left an isolated dark cel patch; it stays in front of the nape's deepest point, so skeleton.cervical_joint does not move).",
+   "why": "the trapezius height and slope: its top near the neck carried down (26 mm at 5.5-8.5 cm out; the back and top only: z under -2 cm, easing over 7 cm) over an 8 mm drop of the whole shoulder top (7-22 cm out), the ring held (0 within 0.5 cm, full from 3 cm): the neck side wall rises clean out of a sloped trapezius instead of a mound at the jaw. R1b (judge fixes 2-4): the 26 mm drop eases in from 1.2 cm out (was 2: the held neck column's edges stood as two hard cords with a groove at the back of the neck) and out over 6 cm (was 3: the trapezius line met the shoulder cap in a square corner with knobs: twice the blend radius); the acromion corner 5 mm lower (15-19 cm out, the shoulder top only); the spine between the shoulder blades filled 4.5 mm along the normal (a C2 bell, 6.5 x 8.5 cm: the dip that left an isolated dark cel patch; it stays in front of the nape's deepest point, so skeleton.cervical_joint does not move). R1b round 3: the spine fill widened by a second normal fill, 6 mm in a 13 x 13 cm bell centred 9.5 cm lower (V0 y 1.31): its upper slope tilts the gray patch's surface up into the light (the back between the shoulder blades sits near the cel terminator, lambert 0.33-0.35 under the sheet light; now 0.37-0.47); a single wider or flat-topped bell put its own rim dip higher or moved C7 (1477 -> 1451 mm), so the round-2 bell stays as it was.",
    "relax": {
     "mask": [
      {
@@ -311,9 +329,47 @@
       }
      ],
      "k": 0.3
+    },
+    {
+     "name": "neck_side_low",
+     "after_join": true,
+     "blend": [
+      {
+       "on": "ell",
+       "c": [
+        0.07,
+        1.585,
+        -0.01
+       ],
+       "r": [
+        0.075,
+        0.07,
+        0.08
+       ],
+       "full": 0.4
+      },
+      {
+       "on": "ring",
+       "full": [
+        0.012,
+        null
+       ],
+       "fade": [
+        0.009,
+        0
+       ]
+      }
+     ],
+     "k": 1.0,
+     "taubin": {
+      "iters": 160,
+      "lam": 0.5,
+      "mu": -0.53
+     },
+     "why": "R1b round 3 (judge fix 1): the side of the neck's lower half on the built body is the reference's points 1-4 cm under the ring (stretched there by neck_length and trap_drop), all held by the join, so the pre-join refill never reached it: a low-pass (Taubin, 160 steps) laid after the join takes the cords' 1-3 cm relief out (along the normal) and keeps the neck's round, so the shadow side reads as one band to the trapezius. A thin-plate refill here (k 0.5-0.85) flattened the side and broke the band worse."
     }
    ],
-   "why": "R1b judge fix 5: the side-of-neck cords (MakeHuman's reference sternocleidomastoid relief: a thin dark cel stripe from jaw to collarbone) softened 30% (neck_form.fair: the region's thin-plate refill, along the normal, k = the share of the relief taken away), so the side of the neck reads as one clean shadow band. Laid before the join (a py rule): its top 1.5 cm under the ring is held."
+   "why": "R1b judge fix 5: the side-of-neck cords (MakeHuman's reference sternocleidomastoid relief: a thin dark cel stripe from jaw to collarbone) softened 30% (neck_form.fair: the region's thin-plate refill, along the normal, k = the share of the relief taken away), so the side of the neck reads as one clean shadow band. Laid before the join (a py rule): its top 1.5 cm under the ring is held. R1b round 3: the region \"neck_side_low\" (after_join) softens the lower half further; see its why."
   }
  }
 }

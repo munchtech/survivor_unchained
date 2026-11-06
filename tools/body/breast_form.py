@@ -24,6 +24,8 @@ leave a ledge across the upper pole, a deep flat shelf under it and faceted poin
                              fade stretches. R1b round 2: r["lat_up"] (optional) gives the upper outer quadrant
                              its own lateral radius above a height w0 (C-inf switch): the outer side at armpit
                              height comes in where the hanging arm meets it, the side below keeps its reach.
+                             R1b round 3: lat_up {"psi_deg": [p0, p1]} switches that radius by the direction from
+                             the apex instead (each ray keeps its profile: no concave band, convex contours).
   (route (b) is a stored target: tools/body/sculpt/breast_b.py; the support fields are rule "field" in the JSON)
 
 Coordinates: glTF metres, x her left (+), y up, z front (+); the right side is the left side mirrored (topology
@@ -179,7 +181,22 @@ def dome_height(c, u, w):
     r = c["r"]
     bw = c.get("r_blend_m", 0.03)
     r_lat = r["lat"]
-    if "lat_up" in r:
+    if "lat_up" in r and "psi_deg" in r["lat_up"]:
+        # P1 R1b round 3: the upper outer quadrant's own lateral radius switched by the DIRECTION from the apex, not by
+        # height: psi = the polar angle of (|u| / lat, w / up) (0 lateral, 90 up), r["lat"] below psi0 -> lat_up["r"]
+        # above psi1 by a quintic ramp (C2). Along every ray from the apex the radius is one number, so each ray keeps
+        # the profile's own shape (round 2's switch by height compressed the rays crossing it: a concave band between
+        # the apex and the armpit, a pleat at the outer edge); a wide psi0..psi1 keeps every contour convex (the
+        # footprint r(psi) has r^2 + 2 r'^2 - r r'' > 0). (Optional "ease_rho": eased in from the apex; off by default,
+        # an ease is itself a squeeze along the rays.)
+        lu = r["lat_up"]
+        p0, p1 = lu["psi_deg"]
+        psi = np.degrees(np.arctan2(w / r["up"], np.abs(u) / r["lat"]))
+        g = smoother((psi - p0) / (p1 - p0))
+        if lu.get("ease_rho"):
+            g = g * smoother(np.hypot(u / r["lat"], w / r["up"]) / lu["ease_rho"])
+        r_lat = r["lat"] + (lu["r"] - r["lat"]) * g
+    elif "lat_up" in r:
         # P1 R1b round 2: the upper outer quadrant (armpit height) has its own lateral radius, switched smoothly (C-inf,
         # like the radii) from r["lat"] below to r["lat_up"] above the height w0 over +-bw: the outer side at armpit
         # height comes in (the hanging arm's inner side meets a clean gap) and the side below the armpit keeps its reach

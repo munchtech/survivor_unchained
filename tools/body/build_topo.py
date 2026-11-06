@@ -170,6 +170,10 @@ def stage_base(spec, tier, rep, pre=None):
         info["post_join"] = sorted(n for n in sliders if sl.designed.get(n, {}).get("post_join"))
         from sliders import relax
         V = relax(sl, V, sliders)
+        # R1b round 3: neck_form.fair's "after_join" regions (a fairing is not a linear field, so post_delta cannot
+        # carry it): the side of the neck the join holds, faired on the joined body
+        import neck_form
+        V = neck_form.after_join(sl, V, sliders)
         info["post_join_ring_move_mm"] = [round(float(x) * 1e3, 2) for x in post[boundary_ring(z["Q"], len(V0))].mean(0)]
     if spec.get("forms"):
         info["forms"] = f"NOT applied ({spec['forms']}: per MakeHuman point; ours are \"forms_topo\", stage 2b)"

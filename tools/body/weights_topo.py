@@ -51,7 +51,7 @@ import scipy.sparse as sp
 import weights as wt
 from stages import harmonic, laplacian
 
-VERSION = "v3"  # (v2: P1 R2 girdle skin CLAV, BLADE; v3: P1 R1b SPINE_FRONT) written into each built glb's extras (build_topo.py stage_export); bump with the rules
+VERSION = "v4"  # (v2: P1 R2 girdle skin CLAV, BLADE; v3: P1 R1b SPINE_FRONT; v4: P1 R1b BREAST clav_fade_m) written into each built glb's extras (build_topo.py stage_export); bump with the rules
 
 SPINE = ["pelvis", "spine_01", "spine_02", "spine_03", "spine_04", "spine_05", "neck_01", "neck_02", "Head"]
 FINGERS = ["index", "middle", "ring", "pinky"]
@@ -90,7 +90,13 @@ SPINE_FRONT = {"parts": ("trunk", "breast")}
 #   trunk's weights fade out under it). v2's 5 cm held the clavicle's 0.9 share at the outer upper rim and dropped it in
 #   3 cm into the breast: a hanging arm (the clavicle turns 2.7 deg) slid that rim 7 mm in against a still breast, a fold
 #   (+30-47 deg) at armpit height. The longer fade spreads the slide over the whole outer breast (a soft mass).
-BREAST = {"fade_m": 0.09}
+#   v4 (round 3): the CLAVICLE's share fades over its own clav_fade_m (the rest of the trunk's over fade_m, so the
+#   breast bone keeps its hold). A hanging arm swings the clavicle 2.8 deg and its skin 7-12 mm toward the midline:
+#   on the outer flank (facing the arm) that is a push along the normal, largest where the share was largest, at the
+#   upper outer rim (-7 mm against -3..-5 round it): a dent, a cloud on the cel terminator. Spread over 15 cm the
+#   share is nearly even across the upper outer breast, which then slides as one piece (terminator turning at 3/4
+#   743 -> 304 deg). Shorter fades made it worse (6 cm; a cut-off 7 cm from the armpit fold creased the upper pole).
+BREAST = {"fade_m": 0.09, "clav_fade_m": 0.15}
 
 
 def s01(x):
@@ -256,7 +262,16 @@ def trunk(c):
     d, _ = cKDTree(P[rim]).query(P[inb])
     b = s01(d / BREAST["fade_m"])
     ids = np.where(inb)[0]
-    W[ids] *= (1 - b)[:, None]
+    if BREAST.get("clav_fade_m"):
+        # v4: the clavicle's share fades over its own (longer) distance, the rest of the trunk's over fade_m
+        cl = [c.idx["clavicle_l"], c.idx["clavicle_r"]]
+        bc = s01(d / BREAST["clav_fade_m"])
+        Wc = W[np.ix_(ids, cl)]
+        W[ids] *= (1 - b)[:, None]
+        W[np.ix_(ids, cl)] = Wc * (1 - bc)[:, None]
+        b = b * (1 - Wc.sum(1)) + bc * Wc.sum(1)          # the breast bone takes what the two fades give up
+    else:
+        W[ids] *= (1 - b)[:, None]
     for s, sx in (("l", 1.0), ("r", -1.0)):
         m = P[ids, 0] * sx > 0
         W[ids[m], c.idx[f"breast_{s}"]] += b[m]
