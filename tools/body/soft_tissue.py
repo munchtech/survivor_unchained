@@ -626,7 +626,7 @@ class Solve:
                 k_ = self.free[int(np.argmax(d_))]
                 print(f"      it {it} E {E:.6e} dx {dx*1000:.3f} p99 {np.percentile(d_, 99)*1000:.3f} at node {k_} "
                       f"skin {k_ < self.ns} rej {n_rej}", flush=True)
-            if it > cf["contact_every"] and dx < cf["tol"]:
+            if (it > (2 if pair and inc else cf["contact_every"])) and dx < cf["tol"]:
                 x[self.free] = g
                 break
             if am:
@@ -732,7 +732,7 @@ class Solve:
                            "ins_nopart": int((ins & ~ok).sum()), "ins_out": int((ins & ok & (sg >= 0)).sum()),
                            "ins_far": int((ins & ok & (sg < 0) & (d >= cf["reach"])).sum()),
                            "ins_held": int((ins & ~fz).sum())}
-        return dict(i=i, tri=tri, b=b, n=n, k=k)
+        return dict(i=i, tri=tri, b=b, n=n, k=k, f=fb[keep][anyfree], ins=ins[i])
 
     @staticmethod
     def pair_gap(xv, PR):
@@ -788,7 +788,10 @@ class Solve:
         self.diag_h0 = Hd
         pair = cf.get("contact_model") == "pair"
         c_gap = cf.get("c_gap", 0.0005)
-        PR, pid, Hc = None, 0, None
+        PR, Hc, x_pr = None, None, None
+        inc = bool(cf.get("pair_inc", 0))
+        pid = getattr(self, "_pid", 0)
+        self._akey = None
 
         def total(xv, cn, tgt, wc):
             E, g, J = self.nh_energy(xv)
@@ -825,22 +828,46 @@ class Solve:
         settle = bool(cf.get("settle", 0))
         refresh, t0_, nref = False, None, 0
         for it in range(int(cf["iters"])):
-            if pair and (it % int(cf["contact_every"]) == 0 or refresh):
+            moved = pair and x_pr is not None and cf.get("c_move") and                 float(np.abs(x[:self.ns] - x_pr).max()) > cf["c_move"]
+            if pair and (PR is None or refresh or moved or (not inc and it % int(cf["contact_every"]) == 0)):
+                # `c_move`: pairs looked for again whenever a skin node moved over c_move since the last look (a node
+                # crosses a face it is not paired with only by moving further than c_reach: with a refresh every 30
+                # iterations, nodes crossed unpaired faces between and came back inside 7 mm deep, 101 deg never
+                # settled). `pair_inc` (R5 solver 2): those looks only ADD the outside nodes' new pairs (zero or
+                # near-zero energy where found, so the energy never jumps), and the full re-pair at the solve's rest
+                # keeps each inside node's last pair while it is still behind that face (hysteresis): re-pairing
+                # every node at every look (c_move alone) chattered, dx at the 2 mm cap after 600 iterations at 94 deg
                 PR0 = PR
-                PR = self.pairs(x)
+                new_ = self.pairs(x)
+                if PR is None or not inc:
+                    PR = new_
+                elif not refresh:
+                    have = set(zip(PR["i"].tolist(), PR["f"].tolist()))
+                    m_ = ~new_["ins"] & np.array([(a_, b_) not in have for a_, b_ in
+                                                  zip(new_["i"].tolist(), new_["f"].tolist())], bool)
+                    PR = {k_: np.concatenate([PR[k_], new_[k_][m_]]) for k_ in PR}
+                else:
+                    ko = PR0["ins"] & (self.pair_gap(x, PR0) < 0)
+                    m_ = ~(new_["ins"] & np.isin(new_["i"], PR0["i"][ko]))
+                    PR = {k_: np.concatenate([PR0[k_][ko], new_[k_][m_]]) for k_ in PR0}
+                x_pr = x[:self.ns].copy()
                 nref += 1
-                pid += 1
                 ph0 = self.pair_phi(x, PR0)
                 ph1 = self.pair_phi(x, PR)
                 if E is None or ((ph0 < 0) != (ph1 < 0)).any():
                     Sh, Yh = [], []
                 E, g, J = total(x, cn, tgt, wc)
-                # active-only H0 part (a pair at rest out of reach adds no stiffness)
+                # active-only H0 part (a pair at rest out of reach adds no stiffness); refactored only when that
+                # active set changes
                 PA = None
                 if len(PR["i"]):
                     a_ = self.pair_gap(x, PR) < c_gap + cf.get("h0_reach", 0.001)
                     PA = {k_: v_[a_] for k_, v_ in PR.items()}
-                Hc = self.pair_h0(PA, len(x))[fr][:, fr]
+                akey = (PA["i"] * 10_000_000 + PA["f"]).tobytes() if PA is not None else b""
+                if akey != getattr(self, "_akey", None):
+                    self._akey = akey
+                    pid += 1
+                    Hc = self.pair_h0(PA, len(x))[fr][:, fr]
                 if refresh:
                     # settled: re-paired at the solve's rest, every node's penalty displacement within settle_mm
                     refresh = False
@@ -932,7 +959,7 @@ class Solve:
         if pair:
             ph = self.pair_phi(x, PR)
             log.update(getattr(self, "_pairs_log", {}), pen_max_mm=round(-float(ph.min()) * 1000, 3) if len(ph) else 0.0)
-            self._h0_key = None                      # the next step's first pairing refactors
+            self._pid = pid + 1                      # the next step's first pairing refactors
         cn, tgt, ins = self.contacts(x, np.zeros(self.ns, bool))
         J = np.linalg.det(self.tets.F(x))
         vl = self.tets.vol
