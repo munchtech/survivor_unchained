@@ -44,9 +44,9 @@ public partial class CineBreath : SkeletonModifier3D
     void Find(Skeleton3D sk)
     {
         found = true;
-        spine2 = Bone(sk, "spine_02", "Spine1", "spine.002");
-        spine3 = Bone(sk, "spine_03", "Chest", "Spine2", "spine.003");
-        neck = Bone(sk, "neck_01", "Neck");
+        spine2 = P1Body.IsB(sk) ? P1Body.Bone(sk, "spine_02") : Bone(sk, "spine_02", "Spine1", "spine.002");
+        spine3 = P1Body.IsB(sk) ? P1Body.Bone(sk, "spine_03") : Bone(sk, "spine_03", "Chest", "Spine2", "spine.003");
+        neck = P1Body.IsB(sk) ? P1Body.Bone(sk, "neck_01") : Bone(sk, "neck_01", "Neck");
         head = Bone(sk, "Head", "head");
         clavL = Bone(sk, "clavicle_l", "Shoulder.L", "LeftShoulder");
         clavR = Bone(sk, "clavicle_r", "Shoulder.R", "RightShoulder");

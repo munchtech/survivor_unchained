@@ -471,13 +471,23 @@ public static class Arms
     {
         if (Sheathed(id, left, calling ?? "") is not { } sock) return null;
         var (bone, at) = sock;
+        var pivotAt = HangPoint(id, left, calling ?? "");
+        if (P1Body.IsB(skeleton) && skeleton.FindBone(P1Body.BoneName(skeleton, bone)) is int bb and >= 0)
+        {
+            // (P1's B: the socket kept at its rest-world point (A's rest coordinates, RestOf), on the B bone that plays the
+            // A bone's part (B's spine_03 is mid-back; A's chest is B's spine_05))
+            var toB = skeleton.GetBoneGlobalRest(bb).AffineInverse() * RestOf(bone);
+            at = toB * at;
+            if (pivotAt is { } pv) pivotAt = toB * pv;
+            bone = skeleton.GetBoneName(bb);
+        }
         var att = new BoneAttachment3D { BoneName = bone };
         skeleton.AddChild(att);
         var mount = new Node3D { Name = GripSlide.SheathPrefix + bone };
         att.AddChild(mount);
         mount.Transform = at;
         mount.AddChild(MakeSheathed(id, left));
-        if (HangPoint(id, left, calling ?? "") is { } pivot)
+        if (pivotAt is { } pivot)
             SheathSway.Attach(skeleton, mount, bone, pivot, hilt: WeaponSockets.SocketOf(KindOf(id)) == WeaponSockets.HipBlade);
         return mount;
     }

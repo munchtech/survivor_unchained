@@ -174,8 +174,8 @@ public static class People
         if (body == SurvivorUnchained.Play.Loadouts.HerBody && Args.Get("body") != "woman" && ResourceLoader.Exists("res://art/people/heroine.glb")) body = "heroine";
         if (body == "heroine")
         {
-            yield return "res://art/people/heroine.glb";
             if (P1Body.On) { yield return P1Body.Dir + "body.glb"; yield return P1Body.Dir + "play.glb"; }
+            else yield return "res://art/people/heroine.glb";
             if (look.Outfit.FirstOrDefault(o => o.StartsWith("her:")) is string her) yield return $"res://art/people/heroine_outfit_{her[4..]}.gltf";
             yield return $"res://art/people/heroine_hair_{(HerHairs.Contains(look.Hair) ? look.Hair! : HerHairs[0])}.gltf";
             yield break;
@@ -189,7 +189,7 @@ public static class People
 
     // Getting up ends in an idle but is not one: looped, a risen (or the Warden)
     // would lie down and get up again.
-    static bool IsCycle(string n) =>
+    public static bool IsCycle(string n) =>
         (n.Contains("Idle") && !n.StartsWith("LayTo")) || n.Contains("Walk") || n.Contains("Jog") || n.Contains("Sprint") || n.Contains("Fwd") || n == "Dance";
 
     public sealed class Person
@@ -367,33 +367,50 @@ public static class People
     {
         // Kept for the session: read again at every place entered, her body
         // (73 MB imported, its paint inside it) cost 0.3-0.5 s each time.
-        heroineScene ??= GD.Load<PackedScene>("res://art/people/heroine.glb");
-        Perf.Lap("play: her body: loaded");
-        var root = heroineScene.Instantiate<Node3D>();
+        // --body p1: P1's body B is the actor (P1Body): body.glb's scene her root, its own skeleton playing the clips
+        // baked onto it (tools/body/bake_clips.sh), B's own laws (P1Laws) its only deformation layers; A not loaded.
+        bool p1 = P1Body.On;
+        Node3D root; Skeleton3D skel;
+        if (p1) root = P1Body.Load(out skel);
+        else
+        {
+            heroineScene ??= GD.Load<PackedScene>("res://art/people/heroine.glb");
+            Perf.Lap("play: her body: loaded");
+            root = heroineScene.Instantiate<Node3D>();
+            skel = (Skeleton3D)root.FindChildren("*", "Skeleton3D", true, false)[0];
+        }
         Perf.Lap("play: her body: instanced");
-        var skel = (Skeleton3D)root.FindChildren("*", "Skeleton3D", true, false)[0];
         var person = new Person { Root = root, Skeleton = skel, Anim = new AnimationPlayer(), Body = "heroine" };
-        person.Pose = new HerPose();
+        // (on B her clips are baked with her library carriage: HerPose keeps only the runtime parts, Baked)
+        person.Pose = new HerPose { Baked = p1 };
         skel.AddChild(person.Pose);
         person.Gestures = new Gestures();
         skel.AddChild(person.Gestures);
         int headBone = skel.FindBone("Head");
         if (headBone >= 0) skel.SkeletonUpdated += () => person.HeadPose = skel.GetBoneGlobalPose(headBone);
-        // Her clavicle lift as an arm rises above level (the hands kept), before the shapes and twists read the arm.
-        skel.AddChild(new HerShrug());
-        // The pectoral's pull on her breasts as an arm rises, before the springs follow it.
-        skel.AddChild(new HerRaise());
-        // Her scapulae turned up as each arm rises (only a body built with them: scap_rig_post.py).
-        skel.AddChild(new HerScap());
-        skel.AddChild(new HerJiggle());
-        skel.AddChild(new HerFaceLife());
-        // Her twist and share bones, from the pose every layer above has made.
-        skel.AddChild(new HerJoints());
-        // Her shoulder's muscle helpers (delt, trap, pec, lat) from the arm's angle, after the scapulae and the twist
-        // bones (the delt is twist_02's child; shoulder_rig_post.py).
-        skel.AddChild(new HerShoulder());
-        // --body p1: P1's body B drawn in her place, A's skeleton still playing everything and B's following it (P1Body).
-        if (P1Body.On) P1Body.Swap(skel);
+        if (p1)
+        {
+            // B's laws after every pose-writing modifier (P1Laws keeps itself there as more are added), then the springs and her face
+            skel.AddChild(new P1Laws());
+            skel.AddChild(new HerJiggle());
+            skel.AddChild(new HerFaceLife());
+        }
+        else
+        {
+            // Her clavicle lift as an arm rises above level (the hands kept), before the shapes and twists read the arm.
+            skel.AddChild(new HerShrug());
+            // The pectoral's pull on her breasts as an arm rises, before the springs follow it.
+            skel.AddChild(new HerRaise());
+            // Her scapulae turned up as each arm rises (only a body built with them: scap_rig_post.py).
+            skel.AddChild(new HerScap());
+            skel.AddChild(new HerJiggle());
+            skel.AddChild(new HerFaceLife());
+            // Her twist and share bones, from the pose every layer above has made.
+            skel.AddChild(new HerJoints());
+            // Her shoulder's muscle helpers (delt, trap, pec, lat) from the arm's angle, after the scapulae and the twist
+            // bones (the delt is twist_02's child; shoulder_rig_post.py).
+            skel.AddChild(new HerShoulder());
+        }
         foreach (var mi in skel.GetChildren().OfType<MeshInstance3D>())
         {
             person.Meshes.Add(mi);
@@ -405,12 +422,12 @@ public static class People
         Perf.Lap("play: her body: her materials");
         root.AddChild(person.Anim);
         person.Anim.RootNode = "..";
-        person.Anim.AddAnimationLibrary("", Clips());
-        // Her own clips beside the library's (tools/anim).
+        person.Anim.AddAnimationLibrary("", p1 ? P1Body.Clips() : Clips());
+        // Her own clips beside the library's (tools/anim; on B, baked onto B: their meta stays OwnClips.Her's).
         if (OwnClips.Her.Library() is AnimationLibrary her)
         {
             person.Own = OwnClips.Her;
-            person.Anim.AddAnimationLibrary(OwnClips.Her.Name, her);
+            person.Anim.AddAnimationLibrary(OwnClips.Her.Name, p1 ? P1Body.HerClips() ?? her : her);
         }
         Perf.Lap("play: her body: her clips");
         return person;

@@ -26,7 +26,7 @@ public partial class GazeCarry : SkeletonModifier3D
         {
             head = sk.FindBone("Head");
             neck = sk.FindBone("Neck");
-            if (neck < 0) neck = sk.FindBone("neck_01");
+            if (neck < 0) neck = P1Body.Bone(sk, "neck_01");
             if (head < 0) return;
             // (her body's up and left at rest, in each bone's own frame: at rest every body here faces +Z, up +Y, her left +X)
             var hr = sk.GetBoneGlobalRest(head).Basis.Orthonormalized().Inverse();

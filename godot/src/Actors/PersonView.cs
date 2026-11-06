@@ -552,7 +552,7 @@ public partial class PersonView : Node3D, INpcView
     {
         var sk = person.Skeleton;
         string side = right ? "r" : "l";
-        int ul = sk.FindBone("upperarm_l"), ur = sk.FindBone("upperarm_r"), sp = sk.FindBone("spine_01"), nk = sk.FindBone("neck_01");
+        int ul = sk.FindBone("upperarm_l"), ur = sk.FindBone("upperarm_r"), sp = P1Body.Bone(sk, "spine_01"), nk = P1Body.Bone(sk, "neck_01");
         if (ul < 0 || ur < 0 || sp < 0 || nk < 0 || sk.FindBone($"hand_{side}") < 0) return null;
         if (sk.GetNodeOrNull<NpcTorchArm>("NpcTorchArm") == null)
         {
