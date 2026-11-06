@@ -185,14 +185,42 @@ def rotation_fit(F, R, iters=3):
     return R
 
 
-def project_fast(F, R):
-    """project() without the SVD: R by rotation_fit; S = F / cbrt(det F) (the det-1 target on F's own axes, which is
-    U diag(s / cbrt(prod s)) V^T exactly), R itself where F is inverted or flat."""
-    R = rotation_fit(F, R, iters=2)
+def sl3(s, iters=6):
+    """The nearest det-1 singular values to s (min |s' - s|^2 with prod s' = 1; Newton on the constraint's linearization,
+    the PD volume projection of Bouaziz et al. 2014). F / cbrt(det F) is NOT that: a near-flat tet's F scaled by up to 10x
+    on every axis, a wild target that kept PD from settling (the energy rose and fell, a few nodes jumping 4-5 mm)."""
+    D = np.zeros_like(s)
+    for _ in range(iters):
+        z = s + D
+        C = z.prod(1) - 1.0
+        g = np.stack([z[:, 1] * z[:, 2], z[:, 0] * z[:, 2], z[:, 0] * z[:, 1]], 1)
+        D = (((g * D).sum(1) - C) / np.maximum((g * g).sum(1), 1e-12))[:, None] * g
+    return s + D
+
+
+def project_iso(F, R, cap=2.0):
+    """The volume target as F grown or shrunk evenly to det 1 (S = F det^-1/3, the scale capped at `cap`), the sl3
+    target where F is inverted. Not the nearest det-1 matrix (that one squeezes the crushed axis alone open, which in
+    linear tets locks: a stiffer volume turned MORE tets over), but a pressure: a crushed tet pushes out on every side,
+    so the tissue the thigh presses swells round the contact (the roll) instead of folding inside."""
+    R, S = project_fast(F, R)
     d = np.linalg.det(F)
-    ok = d > 1e-3
-    S = R.copy()
-    S[ok] = F[ok] / np.cbrt(d[ok])[:, None, None]
+    ok = d > 0
+    sc = np.minimum(np.cbrt(1.0 / np.maximum(d[ok], 1e-12)), cap)
+    S[ok] = F[ok] * sc[:, None, None]
+    return R, S
+
+
+def project_fast(F, R):
+    """The co-rotational target R (rotation_fit, warm-started: no SVD) and the volume target S: F's stretch R^T F on
+    its own axes (eigh), singular values clamped to [0.05, 20] (an inverted or flat tet aims to open) then projected to
+    det 1 (sl3)."""
+    R = rotation_fit(F, R, iters=2)
+    Sy = np.einsum("tji,tjk->tik", R, F)
+    Sy = 0.5 * (Sy + np.transpose(Sy, (0, 2, 1)))
+    w, Q = np.linalg.eigh(Sy)
+    sp_ = sl3(np.clip(w, 0.05, 20.0))
+    S = np.einsum("tij,tjk,tj,tlk->til", R, Q, sp_, Q)
     return R, S
 
 
@@ -285,17 +313,30 @@ class Solve:
         joint = np.zeros(n, bool)
         for s_, (o, u, L) in sides.items():
             joint |= np.linalg.norm(X0 - o, axis=1) < cf.get("joint_r", 0.06)
+        # `core_front`: the bony pelvis lies behind the lower belly; the abdomen in front of the hip joints' coronal plane
+        # + core_front is soft (its viscera move), so the tissue the thigh presses there has somewhere to go
+        fz = (X0 - mid) @ st.fr.front
         core = (hold == 0) & (np.arange(n) >= self.ns) & ~joint & (h < cf["core_hi"]) & \
-            ((trunk & (depth > cf["core_m"]) & (h > cf.get("core_from", 0.04))) | floor)
+            ((trunk & (depth > cf["core_m"]) & (h > cf.get("core_from", 0.04)) & (fz < cf.get("core_front", 9.0)))
+             | floor)
         hold[core] = 3
         bone_of[core] = I[jc["proximal"].replace("{s}", st.s)]
         self.hold, self.bone_of = hold, bone_of
         self.free = np.nonzero(hold == 0)[0]
         self.fixed = np.nonzero(hold > 0)[0]
-        # materials: one tissue for now (cf "mu" 1, "vol_w" the volume's weight over it)
+        # materials: the trunk's tissue mu 1, the thighs' `mu_thigh` (the thigh's muscle presses, the belly gives), by
+        # each tet's rest centre on the thigh's side of the bisector plane between the trunk's up and that thigh's axis
+        # (the check's seg_g rule); "vol_w" the volume's weight over the shape's
         vol = self.tets.vol
-        self.w_s = vol * cf.get("mu", 1.0)
-        self.w_v = vol * cf.get("mu", 1.0) * cf["vol_w"]
+        cen = X0[self.tets.T].mean(1)
+        mu = np.full(len(cen), cf.get("mu", 1.0))
+        xc = (cen - mid) @ st.fr.lat
+        for s_, (o, u, L) in sides.items():
+            on = (xc > 0) if s_ == "l" else (xc < 0)
+            mu[on & (((cen - o) @ bends.unit(up - u)) < 0)] = cf.get("mu_thigh", cf.get("mu", 1.0))
+        self.mu = mu
+        self.w_s = vol * mu
+        self.w_v = vol * mu * cf["vol_w"]
         A = self.tets.matrix(self.w_s + self.w_v)
         # the skin's bending: each skin node's uniform Laplacian (over the skin's own edges) held to its rest one turned
         # by the tissue's local rotation (|L x - R_i L X0|^2, a PD bending term; Bouaziz et al. 2014): wrinkles at the
@@ -325,13 +366,51 @@ class Solve:
             m_ = tn < ns
             cnt = np.bincount(tn[m_], minlength=ns).astype(float)
             self.avgR = sp.csr_matrix((1.0 / cnt[tn[m_]], (tn[m_], ti[m_])), shape=(ns, len(T)))
-        self.Aff = A[self.free][:, self.free].tocsc()
-        self.Afd = A[self.free][:, self.fixed].tocsc()
+        self.A_bend = (A - self.tets.matrix(self.w_s + self.w_v)).tocsr() if self.bend_w > 0 else None
+        # the patch volume (`cvol_w`): linear tets lock when each must keep its own volume (a stiffer per-tet volume
+        # turned MORE of them over), so the tissue's volume is also kept per patch: the tets binned by rest centre in
+        # `cvol_cell` cubes, each patch's nodes held to their own spread about the patch's centre scaled evenly by
+        # (V0 / V)^(1/3) (a crushed patch swells on every side: the displaced tissue goes where the skin is free, the
+        # roll). PD form: w |P x - s P x|^2 per patch, P the centring projector (a clique in the matrix)
+        self.cvol_w = cf.get("cvol_w", 0.0)
+        if self.cvol_w > 0:
+            cell = cf.get("cvol_cell", 0.03)
+            key = np.floor(cen / cell).astype(np.int64)
+            _, cl = np.unique(key, axis=0, return_inverse=True)
+            cl = cl.ravel()
+            self.cl_tet = cl
+            nC = int(cl.max()) + 1
+            pr = np.unique(np.stack([np.repeat(cl, 4), self.tets.T.ravel()], 1), axis=0)   # (patch, node) pairs
+            self.cl_c, self.cl_n = pr[:, 0], pr[:, 1]
+            cnt = np.bincount(self.cl_c, minlength=nC).astype(float)
+            V0c = np.bincount(cl, weights=vol, minlength=nC)
+            self.cl_V0 = V0c
+            xb = np.stack([np.bincount(self.cl_c, weights=X0[self.cl_n, k], minlength=nC) for k in range(3)], 1) / cnt[:, None]
+            r2 = np.bincount(self.cl_c, weights=((X0[self.cl_n] - xb[self.cl_c]) ** 2).sum(1), minlength=nC) / cnt
+            wC = self.cvol_w * V0c / np.maximum(cnt * r2, 1e-12)            # per node: the tissue's vol / h^2 scale
+            self.cl_w, self.cl_cnt = wC, cnt
+            # the matrix: w (I - 11^T / n) on each patch's nodes
+            rows, cols, vals = [], [], []
+            order = np.argsort(self.cl_c, kind="stable")
+            starts = np.r_[0, np.cumsum(cnt.astype(int))]
+            for c in range(nC):
+                nn = self.cl_n[order[starts[c]:starts[c + 1]]]
+                m = len(nn)
+                rows.append(np.repeat(nn, m))
+                cols.append(np.tile(nn, m))
+                vals.append(wC[c] * (np.eye(m) - 1.0 / m).ravel())
+            Ac = sp.coo_matrix((np.concatenate(vals), (np.concatenate(rows), np.concatenate(cols))), shape=(n, n)).tocsr()
+            A = (A + Ac).tocsr()
+            self.A_bend = (self.A_bend + Ac).tocsr() if self.A_bend is not None else Ac
+            self.log_cl = {"patches": nC, "patch_nodes_mean": round(float(cnt.mean()), 1)}
+        self.w_v0 = self.w_v.copy()
+        self.boost = np.zeros(len(T), bool)
         self.diag = A.diagonal()
-        self.lu_key, self.lu = None, None
+        self._build(A)
         self.log = {"skin_nodes": int(self.ns), "nodes": int(n), "tets": int(len(T)), "free": int(len(self.free)),
                     "femur": int((hold == 2).sum()), "core": int((hold == 3).sum()), "band": int((hold == 1).sum()),
-                    "min_vol_mm3": round(float(vol.min() * 1e9), 4), "setup_s": round(time.time() - t0, 1)}
+                    "min_vol_mm3": round(float(vol.min() * 1e9), 4), "setup_s": round(time.time() - t0, 1),
+                    **getattr(self, "log_cl", {})}
 
     def held_pos(self, X, M, G):
         """Where the held nodes are at this pose: the skin's pose at the bands (X on the skin, the nearest skin
@@ -365,6 +444,17 @@ class Solve:
         Mb = np.einsum("nk,nkij->nij", self._iw, M[self._ik])
         return Mb, np.einsum("nij,nj->ni", Mb[:, :3, :3], self.X0) + Mb[:, :3, 3]
 
+    def _build(self, A=None):
+        """The global matrix's free and free-fixed blocks; the volume weight `inv_k` times over on the boosted tets."""
+        if A is None:
+            self.w_v = self.w_v0 * (1.0 + self.cf.get("inv_k", 0.0) * self.boost)
+            A = self.tets.matrix(self.w_s + self.w_v)
+            if self.A_bend is not None:
+                A = (A + self.A_bend).tocsr()
+        self.Aff = A[self.free][:, self.free].tocsc()
+        self.Afd = A[self.free][:, self.fixed].tocsc()
+        self.lu_key, self.lu = None, None
+
     def factor(self, key, wc):
         if self.lu_key != key:
             self.lu = splu((self.Aff + sp.diags(wc)).tocsc())
@@ -394,62 +484,155 @@ class Solve:
         sh = np.where(s < 0, cf.get("share", 0.5), 1.0)[:, None]
         return cand, Q[cand] + sh * (q - Q[cand]) + cf["margin"] * nq, ins
 
+    def local(self, x, cn, tgt, wc):
+        """The local step at x: the per-tet targets P, the right-hand side (free rows), and the energy at x."""
+        F = self.tets.F(x)
+        if self.cf.get("svd"):
+            R, S = project(F)
+        elif self.cf.get("iso"):
+            R, S = project_iso(F, self.R, self.cf["iso"])
+            self.R = R
+        else:
+            R, S = project_fast(F, self.R)
+            self.R = R
+        ws, wv = self.w_s, self.w_v
+        E = float((ws * ((F - R) ** 2).sum((1, 2))).sum() + (wv * ((F - S) ** 2).sum((1, 2))).sum())
+        wsum = ws + wv
+        P = (ws[:, None, None] * R + wv[:, None, None] * S) / wsum[:, None, None]
+        b = self.tets.rhs(wsum, P)
+        if self.bend_w > 0:
+            Ri = (self.avgR @ R.reshape(len(R), 9)).reshape(-1, 3, 3)
+            U_, _, Vt_ = np.linalg.svd(Ri)
+            Ri = U_ @ Vt_
+            t = np.einsum("nij,nj->ni", Ri, self.d0)
+            E += float((self.wb * ((self.Ls @ x - t) ** 2).sum(1)).sum())
+            b = b + self.Ls.T @ (self.wb[:, None] * t)
+        if self.cvol_w > 0:
+            vt = np.linalg.det(F) * self.tets.vol
+            nC = len(self.cl_V0)
+            Vc = np.bincount(self.cl_tet, weights=vt, minlength=nC)
+            sc = np.cbrt(np.clip(self.cl_V0 / np.maximum(Vc, 1e-12 * self.cl_V0), *self.cf.get("cvol_clamp", (0.8, 1.25))))
+            xb = np.stack([np.bincount(self.cl_c, weights=x[self.cl_n, k], minlength=nC) for k in range(3)], 1) / self.cl_cnt[:, None]
+            d = x[self.cl_n] - xb[self.cl_c]
+            pc = (sc[self.cl_c] * self.cl_w[self.cl_c])[:, None] * d
+            b = b + np.stack([np.bincount(self.cl_n, weights=pc[:, k], minlength=len(x)) for k in range(3)], 1)
+            E += float((self.cl_w[self.cl_c] * (((1 - sc[self.cl_c])[:, None] * d) ** 2).sum(1)).sum())
+            self.vol_ratio = float(Vc.sum() / self.cl_V0.sum())
+        b = b[self.free] - self._bd
+        if len(cn):
+            pc = self._pos[cn]
+            b[pc] += wc[pc, None] * tgt
+            E += float((wc[pc] * ((x[cn] - tgt) ** 2).sum(1)).sum())
+        return b, E
+
     def step(self, x, X, M, G, log):
+        """Projective dynamics to rest at this pose, Anderson-accelerated (Peng et al. 2018, "Anderson acceleration for
+        geometry optimization and physics simulation": AA(m) on the local-global map, an AA iterate kept only if it
+        lowers the energy, else the plain PD step taken and the history cleared). `aa` 0: plain PD (+ Chebyshev rho)."""
         cf = self.cf
         fx = self.held_pos(X, M, G)
         x = x.copy()
         x[self.fixed] = fx[self.fixed]
-        bd = self.Afd @ x[self.fixed]
+        self._bd = self.Afd @ x[self.fixed]
         pos = -np.ones(len(x), np.int64)
         pos[self.free] = np.arange(len(self.free))
+        self._pos = pos
         prev = np.zeros(self.ns, bool)
         cn, tgt = np.zeros(0, np.int64), np.zeros((0, 3))
-        ws, wv = self.w_s, self.w_v
-        wsum = ws + wv
+        wc = np.zeros(len(self.free))
         dx = 0.0
         rho = cf.get("rho", 0.0)
+        am = int(cf.get("aa", 0))
         xm1, om, k_ch = None, 1.0, 0
+        Gh, Fh = [], []                                          # AA history: the map's values and residuals
+        E_acc, g_acc, n_rej = np.inf, None, 0
+        it = 0
         for it in range(int(cf["iters"])):
-            if it % cf["contact_every"] == 0:
+            if it % int(cf["contact_every"]) == 0:
                 cn0 = cn
                 cn, tgt, ins = self.contacts(x, prev)
                 prev = np.zeros(self.ns, bool)
                 prev[cn] = True
-                if len(cn) != len(cn0) or (cn != cn0).any():
+                wc = np.zeros(len(self.free))
+                if len(cn):
+                    wc[pos[cn]] = cf["contact"] * self.diag[cn]
+                changed = False
+                if cf.get("inv_k", 0) > 0:
+                    # tets crushed or turned inside out get a stiffer volume (refactored when the set grows): ARAP's
+                    # energy is finite through inversion, so a compressed groin turned its tets over (3.4k at 135 deg,
+                    # 2 L lost) instead of pushing the tissue out; the set only grows over the march
+                    J = np.linalg.det(self.tets.F(x))
+                    nb = self.boost | (J < cf.get("inv_j", 0.5))
+                    if nb.sum() > self.boost.sum():
+                        self.boost = nb
+                        self._build()
+                        self._bd = self.Afd @ x[self.fixed]
+                        changed = True
+                if changed or len(cn) != len(cn0) or (cn != cn0).any() or it == 0:
                     xm1, om, k_ch = None, 1.0, 0            # the problem changed: restart the acceleration
-            if cf.get("svd"):
-                R, S = project(self.tets.F(x))
-            else:
-                R, S = project_fast(self.tets.F(x), self.R)
-                self.R = R
-            P = (ws[:, None, None] * R + wv[:, None, None] * S) / wsum[:, None, None]
-            b = self.tets.rhs(wsum, P)
-            if self.bend_w > 0:
-                Ri = (self.avgR @ R.reshape(len(R), 9)).reshape(-1, 3, 3)
-                U_, _, Vt_ = np.linalg.svd(Ri)
-                Ri = U_ @ Vt_
-                b = b + self.Ls.T @ (self.wb[:, None] * np.einsum("nij,nj->ni", Ri, self.d0))
-            b = b[self.free] - bd
-            wc = np.zeros(len(self.free))
-            if len(cn):
-                wc[pos[cn]] = cf["contact"] * self.diag[cn]
-                b[pos[cn]] += wc[pos[cn], None] * tgt
+                    Gh, Fh, E_acc, g_acc = [], [], np.inf, None
+            b, E = self.local(x, cn, tgt, wc)
+            if it == 0:
+                log["inv0"] = int((np.linalg.det(self.tets.F(x)) < 0).sum())
+            if am and g_acc is not None and E > E_acc:
+                # the AA iterate raised the energy: take the plain PD step from the last accepted point instead
+                n_rej += 1
+                x[self.free] = g_acc
+                Gh, Fh = [], []
+                b, E = self.local(x, cn, tgt, wc)
+            E_acc = E
             lu = self.factor(tuple(cn.tolist()), wc)
-            xf = np.stack([lu.solve(b[:, c]) for c in range(3)], 1)
-            # Chebyshev semi-iterative acceleration (Wang 2015, "A Chebyshev semi-iterative approach for
-            # accelerating projective and position-based dynamics"): rho the local-global map's spectral radius
             cur = x[self.free].copy()
-            if rho > 0 and k_ch >= cf.get("cheb_delay", 3) and xm1 is not None:
-                om = 2.0 / (2.0 - rho * rho) if k_ch == cf.get("cheb_delay", 3) else 4.0 / (4.0 - rho * rho * om)
-                xf = om * (xf - xm1) + xm1
-            xm1 = cur
-            k_ch += 1
-            dx = float(np.abs(xf - cur).max())
-            x[self.free] = xf
+            g = np.stack([lu.solve(b[:, c]) for c in range(3)], 1)
+            dx = float(np.abs(g - cur).max())
+            if cf.get("trace") and log.get("deg", 0) >= cf["trace"] and it % 5 == 4:
+                d_ = np.abs(g - cur).max(1)
+                k_ = self.free[int(np.argmax(d_))]
+                print(f"      it {it} E {E:.6e} dx {dx*1000:.3f} p99 {np.percentile(d_, 99)*1000:.3f} at node {k_} "
+                      f"skin {k_ < self.ns} rej {n_rej}", flush=True)
             if it > cf["contact_every"] and dx < cf["tol"]:
+                x[self.free] = g
                 break
+            if am:
+                f = (g - cur).ravel()
+                Gh.append(g.ravel().copy())
+                Fh.append(f)
+                if len(Gh) > am + 1:
+                    Gh.pop(0)
+                    Fh.pop(0)
+                g_acc = g
+                if len(Fh) > 1:
+                    dF = np.stack([Fh[i + 1] - Fh[i] for i in range(len(Fh) - 1)], 1)
+                    dG = np.stack([Gh[i + 1] - Gh[i] for i in range(len(Gh) - 1)], 1)
+                    gam = np.linalg.lstsq(dF, f, rcond=None)[0]
+                    xf = (g.ravel() - dG @ gam).reshape(-1, 3)
+                else:
+                    xf = g
+            else:
+                xf = g
+                # Chebyshev semi-iterative acceleration (Wang 2015): rho the local-global map's spectral radius
+                if rho > 0 and k_ch >= cf.get("cheb_delay", 3) and xm1 is not None:
+                    om = 2.0 / (2.0 - rho * rho) if k_ch == cf.get("cheb_delay", 3) else 4.0 / (4.0 - rho * rho * om)
+                    xf = om * (xf - xm1) + xm1
+                xm1 = cur
+                k_ch += 1
+            x[self.free] = xf
         cn, tgt, ins = self.contacts(x, np.zeros(self.ns, bool))
-        log.update(iters=it + 1, last_dx_mm=round(dx * 1000, 3), contacts=int(len(cn)), inside=int(ins.sum()))
+        J = np.linalg.det(self.tets.F(x))
+        vl = self.tets.vol
+        log.update(iters=it + 1, last_dx_mm=round(dx * 1000, 3), contacts=int(len(cn)), inside=int(ins.sum()),
+                   aa_rejects=n_rej, dvol_cm3=round(float(((J - 1) * vl).sum() * 1e6)),
+                   dvol_neg_cm3=round(float((np.minimum(J - 1, 0) * vl).sum() * 1e6)), inverted=int((J < 0).sum()),
+                   J_p1=round(float(np.percentile(J, 1)), 3), boosted=int(self.boost.sum()))
+        if self.cf.get("diag") and (J < 0).any():
+            fr = self.st.fr
+            Bf = np.stack([fr.up, fr.front, fr.lat]).T
+            iv = J < 0
+            c = (self.X0[self.tets.T[iv]].mean(1) - self.st.O) @ Bf * 1000
+            log.update(inv_at=np.round(np.percentile(c, [10, 50, 90], 0)).astype(int).tolist(),
+                       inv_held=round(float((self.hold[self.tets.T[iv]] > 0).any(1).mean()), 2),
+                       inv_skin=round(float((self.tets.T[iv] < self.ns).any(1).mean()), 2),
+                       inv_thigh=round(float((self.mu[iv] != 1.0).mean()), 2))
         return x
 
 
@@ -471,7 +654,21 @@ def solve_chain(mesh, st, jc, cf):
         # each step starts from the skinning carried into the volume plus the last step's own offset from it, carried
         # through the change of each node's blended matrix (a quasi-static march: the held nodes never jump alone)
         Mb, xs = S_.skinned(M)
-        if x is not None:
+        if cf.get("init_prev"):
+            # the last step's own result, the held nodes' move carried into the free ones by the tissue's own matrix
+            # (one linear solve: x_f += -Aff^-1 Afd dx_held). The skinning carried in (below) starts the crease's tets
+            # turned over (187 at 18 deg, 4k at 135), and ARAP keeps a tet it is given inverted
+            if x is None:
+                x = S_.X0.copy()
+            fx = S_.held_pos(X, M, G)
+            dfix = fx[S_.fixed] - x[S_.fixed]
+            lu0 = S_.factor((), np.zeros(len(S_.free)))
+            rhs = -(S_.Afd @ dfix)
+            x = x.copy()
+            x[S_.free] += np.stack([lu0.solve(rhs[:, c]) for c in range(3)], 1)
+            x[S_.fixed] = fx[S_.fixed]
+            xs = x
+        elif x is not None:
             dev = np.einsum("nji,nj->ni", Mb0[:, :3, :3], x - xs0)          # into rest space (rotation part)
             xs = xs + np.einsum("nij,nj->ni", Mb[:, :3, :3], dev)
         x = xs
