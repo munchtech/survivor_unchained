@@ -1,0 +1,188 @@
+{
+ "about": "P1 R1 form library: the neck and the trapezius (OURS, designed; sliders.py rule \"field\", laid after the head join: post_join). R2 measured the yoke in B's rest shape: MakeHuman's reference under her head is a shrug (its shoulder top 25 mm under the chin at 17 cm out, 0-2 mm at 5-9 cm), the sliders' and stance's drop reach the outer shoulder but the join holds the neck's base at the reference. These fields set the neck by design: its length (the head placed higher on it), the trapezius' height and slope, the neck's girth.",
+ "sliders": {
+  "neck_length": {
+   "range": [
+    -1,
+    1
+   ],
+   "rule": "field",
+   "post_join": true,
+   "order": 10,
+   "head_move": [
+    0.0,
+    0.012,
+    0.0
+   ],
+   "moves": [
+    {
+     "translate": [
+      0.0,
+      0.012,
+      0.0
+     ],
+     "mask": [
+      {
+       "on": "ring",
+       "full": [
+        null,
+        0.0
+       ],
+       "fade": [
+        0,
+        0.07
+       ]
+      }
+     ]
+    }
+   ],
+   "why": "the neck's length: the head lifts 12 mm at v = 1 (head_move: the whole baked head, the Head joint placed from it) and the neck under it stretches to meet it (1 at the ring, easing to 0 by 7 cm from it): a long neck reads elegant and confident"
+  },
+  "trap_drop": {
+   "range": [
+    -1,
+    1
+   ],
+   "rule": "field",
+   "post_join": true,
+   "order": 11,
+   "moves": [
+    {
+     "translate": [
+      0,
+      -0.026,
+      0
+     ],
+     "mask": [
+      {
+       "on": "ax",
+       "full": [
+        0.055,
+        0.085
+       ],
+       "fade": [
+        0.035,
+        0.03
+       ]
+      },
+      {
+       "on": "z",
+       "full": [
+        null,
+        -0.02
+       ],
+       "fade": 0.07
+      },
+      {
+       "on": "y",
+       "full": [
+        1.575,
+        null
+       ],
+       "fade": [
+        0.12,
+        0
+       ]
+      },
+      {
+       "on": "ring",
+       "full": [
+        0.03,
+        null
+       ],
+       "fade": [
+        0.025,
+        0
+       ]
+      }
+     ]
+    },
+    {
+     "translate": [
+      0,
+      -0.008,
+      0
+     ],
+     "mask": [
+      {
+       "on": "ax",
+       "full": [
+        0.07,
+        0.22
+       ],
+       "fade": [
+        0.04,
+        0.05
+       ]
+      },
+      {
+       "on": "y",
+       "full": [
+        1.565,
+        null
+       ],
+       "fade": [
+        0.12,
+        0
+       ]
+      },
+      {
+       "on": "ring",
+       "full": [
+        0.025,
+        null
+       ],
+       "fade": [
+        0.02,
+        0
+       ]
+      }
+     ]
+    }
+   ],
+   "why": "the trapezius height and slope: its top near the neck carried down (26 mm at 5.5-8.5 cm out, easing to 0 at 2 cm and 11.5 cm; the back and top only: z under -2 cm, easing over 7 cm) over an 8 mm drop of the whole shoulder top (7-22 cm out), the ring held (0 within 0.5 cm, full from 3 cm): the neck side wall rises clean out of a sloped trapezius instead of a mound at the jaw. Rest profile at v = 1 (her_r1, the shoulder top under the chin at 7/9/11/13/15/17 cm): -33/-60/-66/-78/-82/-88 mm (was -6/-19/-44/-58/-62/-68)"
+  },
+  "neck_girth": {
+   "range": [
+    -1,
+    1
+   ],
+   "rule": "field",
+   "post_join": true,
+   "order": 12,
+   "moves": [
+    {
+     "radial": {
+      "c": "ring",
+      "m": -0.006
+     },
+     "mask": [
+      {
+       "on": "ring",
+       "full": [
+        0.014,
+        0.04
+       ],
+       "fade": [
+        0.012,
+        0.03
+       ]
+      },
+      {
+       "on": "y",
+       "full": [
+        1.56,
+        null
+       ],
+       "fade": [
+        0.04,
+        0
+       ]
+      }
+     ]
+    }
+   ],
+   "why": "the neck girth under the ring: in 6 mm a side at v = 1 between 1.4 and 4 cm from the ring (easing to 0 at the ring and 7 cm down), above the shoulder line: a slim neck that waists a little under the jaw and flares into the trapezius"
+  }
+ }
+}

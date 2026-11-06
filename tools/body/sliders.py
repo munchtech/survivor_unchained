@@ -30,11 +30,52 @@ def catalogue():
         return json.load(f)["sliders"]
 
 
+DESIGNED_DIR = os.path.join(HERE, "designed")
+
+
 def designed():
-    """catalogue.json "designed": OUR targets (no MakeHuman, no bake), rules on our vertices evaluated after the
-    sampled sliders on the current body (see OurSliders._designed)."""
+    """OUR targets (no MakeHuman, no bake): catalogue.json "designed" (the first two rules, 5 Nov) and then every
+    tools/body/designed/*.json form file's "sliders" (P1 R1: the form library), in each entry's "order" (then name).
+    Rules on our vertices, evaluated after the sampled sliders (see OurSliders._designed); rule "field" is the form
+    library's: moves under smooth (C2) region masks on our topology's reference surface (OurSliders.field_delta)."""
     with open(os.path.join(HERE, "catalogue.json")) as f:
-        return json.load(f).get("designed", {})
+        out = dict(json.load(f).get("designed", {}))
+    more = []
+    if os.path.isdir(DESIGNED_DIR):
+        for fn in sorted(os.listdir(DESIGNED_DIR)):
+            if fn.endswith(".json"):
+                with open(os.path.join(DESIGNED_DIR, fn)) as f:
+                    for n, c in json.load(f).get("sliders", {}).items():
+                        assert n not in out and n not in dict(more), ("designed slider twice", n, fn)
+                        c = dict(c)
+                        c["_file"] = fn
+                        more.append((n, c))
+    more.sort(key=lambda nc: (nc[1].get("order", 100), nc[0]))
+    out.update(more)
+    return out
+
+
+def head_move(values, des=None):
+    """The head's placement (m, glTF): the sum over the designed sliders of "head_move" [dx, dy, dz] times the slider's
+    value (clipped to its range). build_topo moves the baked head by it before the ring is placed, so a neck slider
+    that lifts the ring lifts the head the same (the ring stays the head's, one to one)."""
+    des = designed() if des is None else des
+    m = [0.0, 0.0, 0.0]
+    for n, c in des.items():
+        v = float(values.get(n, 0.0) or 0.0)
+        if v and "head_move" in c:
+            lo, hi = c["range"]
+            v = min(max(v, lo), hi)
+            m = [a + v * float(b) for a, b in zip(m, c["head_move"])]
+    return m
+
+
+def smoother(t):
+    """C2 ramp 0..1 (quintic smootherstep): the form library's mask edge (smoothstep is only C1: its curvature jumps
+    at the ends, which a painted-cel terminator shows as a kink)."""
+    import numpy as np
+    t = np.clip(t, 0.0, 1.0)
+    return t * t * t * (t * (6.0 * t - 15.0) + 10.0)
 
 
 def resolve(spec, cat=None):
@@ -78,6 +119,30 @@ class OurSliders:
         self.designed = designed()
         self.names += [n for n in self.designed if n not in self.names]
         self._fields = {}
+        self._fd = {}
+        self._topo = None
+        self.path = path
+
+    def topo(self):
+        """Our topology for this bake (out/topo/<tier>.npz, the tier from the bake's file name): quads, the open neck
+        ring, the reference V0's vertex normals. Asserted to be the bake's V0."""
+        np = self.np
+        if self._topo is None:
+            tier = os.path.splitext(os.path.basename(self.path))[0].split("_")[-1]
+            z = np.load(os.path.join(HERE, "out", "topo", f"{tier}.npz"))
+            Q = z["Q"].astype(np.int64)
+            assert np.abs(z["V"] - self.V0).max() < 1e-6, "the topology is not the bake's"
+            e = np.sort(np.concatenate([Q[:, [0, 1]], Q[:, [1, 2]], Q[:, [2, 3]], Q[:, [3, 0]]]), 1)
+            u, c = np.unique(e, axis=0, return_counts=True)
+            ring = np.unique(u[c == 1])
+            V = self.V0
+            fn = np.cross(V[Q[:, 2]] - V[Q[:, 0]], V[Q[:, 3]] - V[Q[:, 1]])
+            N = np.zeros_like(V)
+            for k in range(4):
+                np.add.at(N, Q[:, k], fn)
+            N /= np.maximum(np.linalg.norm(N, axis=1, keepdims=True), 1e-12)
+            self._topo = {"Q": Q, "ring": ring, "N": N, "tier": tier}
+        return self._topo
 
     def delta(self, name, v):
         np = self.np
@@ -87,17 +152,120 @@ class OurSliders:
         t = (v - x[i]) / (x[i + 1] - x[i])
         return (1 - t) * self.D[name][i] + t * self.D[name][i + 1]
 
-    def evaluate(self, values):
+    def evaluate(self, values, post=None):
+        """The body at these slider values. post=None: every slider; False: all but the designed "post_join" ones
+        (build_topo stage 1 lays those after the head join: post_delta); True: V0 + post_delta alone."""
         V = self.V0.copy()
+        if post is True:
+            return V + self.post_delta(values)
         for n, v in values.items():
             if v and n not in self.designed:
                 V += self.delta(n, v)
         for n, c in self.designed.items():     # catalogue order: each rule on the body the ones before it made
             v = values.get(n, 0.0)
-            if v:
+            if v and not (post is False and c.get("post_join")):
                 lo, hi = c["range"]
                 V = self._designed(c, min(max(float(v), lo), hi), V, values)
         return V
+
+    def post_delta(self, values):
+        """The designed "post_join" sliders' move (rule "field" only: linear in v), laid by build_topo after the slider
+        join and the stance, so the neck's own fields reach the ring (the join holds every other move off it) and move
+        it with the head (head_move)."""
+        D = self.np.zeros_like(self.V0)
+        for n, c in self.designed.items():
+            v = values.get(n, 0.0)
+            if v and c.get("post_join"):
+                assert c["rule"] == "field", ("post_join needs a linear field", n)
+                lo, hi = c["range"]
+                D += min(max(float(v), lo), hi) * self.field_delta(n)
+        return D
+
+    # ---------------------------------------------------------------------------- rule "field": the form library --
+    def coord(self, on, P):
+        """A mask's coordinate on the reference V0 (glTF m: x left+, y up, z front+): "x", "ax" (|x|: both sides
+        alike), "y", "z", "ring" (the distance to the open neck ring's nearest point), "ring_y" (the height above the
+        ring's lowest point), "neck_r" (the horizontal distance to the ring centroid's vertical axis)."""
+        np = self.np
+        if on == "x":
+            return P[:, 0]
+        if on == "ax":
+            return np.abs(P[:, 0])
+        if on in ("y", "z"):
+            return P[:, "xyz".index(on)]
+        R = self.V0[self.topo()["ring"]]
+        if on == "ring":
+            from scipy.spatial import cKDTree
+            return cKDTree(R).query(P)[0]
+        if on == "ring_y":
+            return P[:, 1] - R[:, 1].min()
+        if on == "neck_r":
+            c = R.mean(0)
+            return np.hypot(P[:, 0] - c[0], P[:, 2] - c[2])
+        raise KeyError(on)
+
+    def mask(self, terms, P):
+        """A region mask 0..1, the product of its terms, each a C2 window on one coordinate:
+        {"on": coord, "full": [a, b], "fade": f | [f_lo, f_hi]}: 1 on [a, b], easing (smoother) to 0 at a - f_lo and
+        at b + f_hi (a null end is open); or {"on": "ell", "c": [x, y, z], "r": [rx, ry, rz], "full": k}: 1 inside
+        the ellipsoid scaled by k, easing to 0 at its surface (x mirrored: |x| against c's x)."""
+        np = self.np
+        m = np.ones(len(P))
+        for t in terms:
+            if t["on"] == "ell":
+                c, r = np.asarray(t["c"], float), np.asarray(t["r"], float)
+                Q = P.copy()
+                Q[:, 0] = np.abs(Q[:, 0])
+                rho = np.linalg.norm((Q - c) / r, axis=1)
+                k = t.get("full", 0.0)
+                m *= 1.0 - smoother((rho - k) / max(1.0 - k, 1e-9))
+                continue
+            x = self.coord(t["on"], P)
+            a, b = t["full"]
+            f = t.get("fade", 0.0)
+            flo, fhi = (f, f) if not isinstance(f, (list, tuple)) else f
+            if a is not None:
+                m *= smoother((x - (a - flo)) / flo) if flo > 0 else (x >= a)
+            if b is not None:
+                m *= smoother(((b + fhi) - x) / fhi) if fhi > 0 else (x <= b)
+        return m
+
+    def centre(self, c):
+        np = self.np
+        if c == "ring":
+            return self.V0[self.topo()["ring"]].mean(0) * np.array([0.0, 1.0, 1.0])
+        return np.asarray(c, float)
+
+    def field_delta(self, name):
+        """Rule "field" (P1 R1, the form library): the slider's move at v = 1, a sum of moves, each its own C2 mask
+        (mask()) on the reference V0 times a move: "translate" [dx, dy, dz] (dx away from the midline on each side),
+        "scale" {"c": [cx, cy, cz] | "ring", "k": [kx, ky, kz]} (about the centre per axis; cx 0 keeps the mirror),
+        "radial" {"c": ..., "m": m} (horizontally away from the centre's vertical axis), "normal" m (along V0's
+        normal). Linear in v: a designed blend target on our topology, the same rule on every body and both tiers (the
+        masks live on the reference surface both tiers share)."""
+        np = self.np
+        if name not in self._fd:
+            c = self.designed[name]
+            P = self.V0
+            sx = np.where(P[:, 0] >= 0, 1.0, -1.0)
+            D = np.zeros_like(P)
+            for mv in c["moves"]:
+                w = self.mask(mv["mask"], P)
+                d = np.zeros_like(P)
+                if "translate" in mv:
+                    d += np.asarray(mv["translate"], float)[None, :] * np.stack([sx, np.ones_like(sx), np.ones_like(sx)], 1)
+                if "scale" in mv:
+                    d += (P - self.centre(mv["scale"]["c"])) * (np.asarray(mv["scale"]["k"], float) - 1.0)[None, :]
+                if "radial" in mv:
+                    h = P - self.centre(mv["radial"]["c"])
+                    h[:, 1] = 0.0
+                    h /= np.maximum(np.linalg.norm(h, axis=1, keepdims=True), 1e-9)
+                    d += h * float(mv["radial"]["m"])
+                if "normal" in mv:
+                    d += self.topo()["N"] * float(mv["normal"])
+                D += w[:, None] * d
+            self._fd[name] = D
+        return self._fd[name]
 
     def field(self, c):
         """A designed rule's mass field per side: the |move| of its source slider at the source value, 0..1 (the
@@ -112,6 +280,8 @@ class OurSliders:
         return self._fields[key]
 
     def _designed(self, c, v, V, values=None):
+        if c["rule"] == "field":
+            return V + v * self.field_delta(next(k for k, x in self.designed.items() if x is c))
         if c["rule"] == "growth_turn":
             return V + v * self._growth_turn(c, float((values or {}).get(c["field"], 0.0)))
         """rule "mass_lift": each side's mass (the field) is carried up toward its root, more the lower it sits (0 at

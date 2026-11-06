@@ -59,7 +59,7 @@ import headmatch as hm  # noqa: E402
 import stages as st  # noqa: E402
 import weights_topo as wtp  # noqa: E402
 from gl import Glb, weld  # noqa: E402
-from sliders import OurSliders, load_spec  # noqa: E402
+from sliders import OurSliders, load_spec, head_move as sliders_head_move  # noqa: E402
 
 HEADS = ["HeroineEyes", "HeroineHead", "HeroineLashes", "HeroineTeeth", "HeroineTongue"]
 HOLD_M, EASE_M = 0.015, 0.06          # forms.py's join
@@ -142,7 +142,7 @@ def stage_base(spec, tier, rep, pre=None):
     if sliders:
         unknown = sorted(set(sliders) - set(sl.names))
         assert not unknown, ("sliders not in the bake", unknown)
-        d = sl.evaluate(sliders) - V0
+        d = sl.evaluate(sliders, post=False) - V0
         dep = split_depth(V0)
         t = d[(dep > 0) & (dep < 0.04)].mean(0)
         t[0] = 0.0
@@ -163,6 +163,12 @@ def stage_base(spec, tier, rep, pre=None):
         to = (B - cb) @ Rb.T + cb + np.asarray(s_.get("move_m", [0, 0, 0]), float)
         V = V + jw * (hm.to_gltf(to) - V)
         info["stance"] = s_
+    post = sl.post_delta(sliders) if sliders else None
+    if post is not None and np.abs(post).max() > 0:
+        # P1 R1: the form library's post-join fields (the neck: its length lifts the ring with the head, head_move)
+        V = V + post
+        info["post_join"] = sorted(n for n in sliders if sl.designed.get(n, {}).get("post_join"))
+        info["post_join_ring_move_mm"] = [round(float(x) * 1e3, 2) for x in post[boundary_ring(z["Q"], len(V0))].mean(0)]
     if spec.get("forms"):
         info["forms"] = f"NOT applied ({spec['forms']}: per MakeHuman point; ours are \"forms_topo\", stage 2b)"
     rep["base"] = info
@@ -458,7 +464,14 @@ def main():
     A = Glb(os.path.join(REPO, spec["ref"]))
     t0 = time.time()
     baked = headbake.bake(A, HEADS)
+    hmove = np.asarray(sliders_head_move(spec.get("sliders", {})), float)
+    if np.abs(hmove).max() > 0:
+        # P1 R1: the head's placement on the new neck (the designed neck sliders' head_move): the whole baked head
+        # (every head mesh; the skeleton's Head joint is placed from it) moves rigidly; the ring moves with it
+        for h in baked:
+            baked[h]["P"] = baked[h]["P"] + hmove[None, :]
     full = {"spec": os.path.relpath(os.path.abspath(a.spec), REPO).replace("\\", "/"), "tiers": {}}
+    full["head_move_m"] = [round(float(x), 5) for x in hmove]
     sk_close = None
     for tier in a.tiers.split(","):
         rep = {"spec": full["spec"], "timings_s": {}}

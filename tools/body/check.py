@@ -71,6 +71,11 @@ def contract(B: Glb, A: Glb, same_head, heads):
             if ma.P.shape == mb.P.shape:
                 wa, ca = rest_world(ma, skA)
                 wb, cb = rest_world(mb, skB)
+                # P1 R1: the head may be PLACED (the designed neck's head_move, a rigid move): the same head moved as
+                # one; the move is reported (head_move_m) and the shape compared with it taken off
+                off = (wb - wa).mean(0)
+                r["head_move_m"] = [round(float(x), 6) for x in off]
+                wb = wb - off
                 r["world_rest_max_diff_m"] = float(np.linalg.norm(wa - wb, axis=1).max())
                 r["world_rest"] = r["world_rest_max_diff_m"] <= tol
                 tg = set(ma.targets) == set(mb.targets)
