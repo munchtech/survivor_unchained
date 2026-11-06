@@ -449,6 +449,34 @@ def stage_export(spec, tier, z, V, ring, hv, sk, wts, A, baked, out, rep, uv=Non
              **({"src": uv["src"], "T": uv["T"]} if uv is not None else {}))
 
 
+def stage_shapes(spec, tier, z, V, A, baked, out, rep):
+    """8 (P1 R1) form shapes: designed sliders the GAME sets at run time, written as blend shapes on the body (after
+    the correctives' shapes, kept): spec "shapes" {slider: value} -> a shape "form_<slider>" = the body built with
+    that slider raised by value less this body (stages 1, 2, 2b again: the same join and seam). The first use: the
+    armor's support (breast_support...): each armor piece sets its shape's weight as data, so the body under a
+    push-up piece is shaped by design, never per piece. Normals' deltas by correctives.normal_delta."""
+    import glbwrite
+    from correctives import normal_delta
+    glb = os.path.join(out, GLB[tier][0])
+    st_ = np.load(os.path.join(out, "stage", f"{tier}.npz"))
+    src = st_["src"] if "src" in st_.files else np.arange(len(V))
+    Tg = st_["T"] if "T" in st_.files else np.concatenate([z["Q"][:, [0, 1, 2]], z["Q"][:, [0, 2, 3]]])
+    tg, info = {}, {}
+    for name, val in spec["shapes"].items():
+        s2 = dict(spec)
+        s2["sliders"] = dict(spec.get("sliders", {}))
+        s2["sliders"][name] = float(s2["sliders"].get(name, 0.0)) + float(val)
+        r2 = {}
+        _, V2 = stage_base(s2, tier, r2)
+        V2, ring, _ = stage_place(s2, z, V2, A, baked, r2)
+        V2 = stage_forms(s2, tier, z, V2, ring, r2)
+        D = (V2 - V)[src]
+        tg["form_" + name] = (D.astype(np.float32), normal_delta(V[src], Tg, D).astype(np.float32))
+        info["form_" + name] = {"value": val, "max_mm": round(float(np.linalg.norm(D, axis=1).max()) * 1e3, 2)}
+    glbwrite.add_targets(glb, "Heroine", tg)
+    rep["shapes"] = info
+
+
 def skeleton_diff(a, b):
     """Two glbs' skeletons: names and parents equal, and the worst rest-world gap (mm, deg)."""
     sa, sb = Glb(a).skeleton(), Glb(b).skeleton()
@@ -500,6 +528,10 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
         import correctives
         rep["correctives"] = correctives.run(out, tier=tier, fresh=True)
         tim["correctives"] = round(time.time() - t, 2)
+    if spec.get("shapes"):
+        t = time.time()
+        stage_shapes(spec, tier, z, V, A, baked, out, rep)
+        tim["shapes"] = round(time.time() - t, 2)
     if uv is not None and spec.get("bake"):
         t = time.time()
         stage_bake(spec, tier, out, rep)

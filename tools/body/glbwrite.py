@@ -349,3 +349,29 @@ def attach_maps(path, node, maps, out_path=None):
             + j + struct.pack("<II", len(out.bin), 0x004E4942) + bytes(out.bin))
     with open(out_path or path, "wb") as f:
         f.write(blob)
+
+
+def get_targets(path, node):
+    """The blend shapes on one mesh's primitive 0 of a glb we wrote: {name: (dP [V,3], dN [V,3])} in order."""
+    js, b = _read_glb(path)
+    mi = next(n["mesh"] for n in js["nodes"] if n.get("name") == node and "mesh" in n)
+    m = js["meshes"][mi]
+    pr = m["primitives"][0]
+    names = m.get("extras", {}).get("targetNames", [])
+    out = {}
+
+    def arr(ai):
+        a = js["accessors"][ai]
+        v = js["bufferViews"][a["bufferView"]]
+        off = v.get("byteOffset", 0) + a.get("byteOffset", 0)
+        return np.frombuffer(b, np.float32, a["count"] * 3, off).reshape(-1, 3).copy()
+    for nm, t in zip(names, pr.get("targets", [])):
+        out[nm] = (arr(t["POSITION"]), arr(t["NORMAL"]) if "NORMAL" in t else np.zeros((js["accessors"][t["POSITION"]]["count"], 3), np.float32))
+    return out
+
+
+def add_targets(path, node, targets):
+    """set_targets with the mesh's present shapes kept (new names after them; a name already there is replaced)."""
+    have = get_targets(path, node)
+    have.update(targets)
+    set_targets(path, node, have)
