@@ -169,3 +169,38 @@ spec's `maps` (`godot/art/people/body_p1/`) only when its gates pass. Alone: `py
   point), seam step dE00 p95 <= 4 (the two sides of every UV seam), 0 inverted tangent frames.
 - The triangulation mirrors: a right quad splits on its left mirror's diagonal (`topo_uv.mirror_diag`), checked in
   build.json `uv.tri_mirror.share` (1.0, asserted).
+
+## B native: the rig and the clip bridge (P1 R2)
+
+Behind `--body p1` B is the actor: `art/people/body_p1/body.glb` is her root (`Armature/Skeleton3D`, A's path, so every
+track and filter path holds), its skeleton plays clips baked onto it offline, and B's laws are its only deformation.
+A (`heroine.glb`) is not loaded; A without the flag is untouched.
+
+- **B's bones.** Keyed by clips: `root`, `pelvis` (the only position tracks), `spine_01..05`, `neck_01..02`, `Head`,
+  the limbs, hands, fingers and face bones by A's names. Law-driven, never keyed: `clavicle_{s}`, `scap_{s}` (the
+  girdle law, from the arm) and the helpers in rig.json `helpers` (twists, shares, points, delt/trap/pec/lat/glute,
+  breast tips: `P1Rig.Helpers`). B's own metacarpals ride their parent. No scale tracks.
+- **The clip format the game plays.** Godot `AnimationLibrary` resources: `body_p1/clips.res` (the library clips,
+  `People.Clips()` names, played as `Name`) and `body_p1/her_clips.res` (her own, `heroine_clips.json` names, played as
+  `her/Name`; their meta stays heroine_clips.json). Rotation tracks `Armature/Skeleton3D:<bone>` (local, B's rest
+  frames), 30 fps, keys from 0 to the length inclusive, loop modes as the sources; blend-shape and method tracks copied.
+  A clip keys only the bones its source keys (partial clips stay partial for the game's filtered blends). A new clip
+  made directly on B (MotionBricks, Kimodo) just has to follow this: local rotations on the keyed bones, never the
+  girdle or helpers, pelvis/root positions in B's rest space; drop it into a library under the same name.
+- **The bake.** `bash tools/body/bake_clips.sh` (takes and gives back the godot turn; log in `tools/body/out/
+  bake_clips.log`): A plays each clip under HerPose alone (her library carriage baked: Native 0 for library clips, 1
+  for hers), each frame goes through `P1Retarget.Map`, the girdle hold (clavicle/scap at B's rest local, the upper arm
+  keeps its world turn) and the clean, then is keyed. Deterministic (identical bytes on a rerun); prints frames, keyed
+  bones and the idles' shoulder height against B's rest; writes `a_skeleton.json` (A's names, parents, rests).
+  `--p1-bake-only TEXT` bakes matching clips without writing. Re-run after any B skeleton change.
+- **p1_clips.json** (`tools/body/`): per clip `{"why", "turns": {bone: [x, y, z] deg rotation vector in the bone's own
+  frame, laid after the baked local}, "hold": [bones set to B's rest local]}`; applied after the girdle hold.
+- **The role map.** Systems keyed to A's names ask `P1Body.Bone(skel, "spine_03")` (identity on A): by name off the
+  chain; on the chain the B parent of A's next chain bone (A's chest `spine_03` -> B `spine_05`; B's `spine_03` is
+  mid-back); `panel_front` -> its ancestor's. `P1Body.Spread` spreads chain turn shares over B's chain, the total
+  kept. Hair and head pieces skinned to A are rebound once (`P1Body.Rebind`, meta `p1_rebound`).
+- **B's layer order** (children of her skeleton): HerPose (Baked: only LookArms, CineCurl, neck sliders, chin, head
+  tries), Gestures, whatever PlayerView adds (HerCarriage, HerArmHold, HeadTurn, GazeCarry...), **P1Laws** (helpers at
+  rest, `P1Rig.Drive` with rig.json, correctives; the play body's by play_rig.json; it re-sorts itself last on every
+  added modifier), HerJiggle, HerFaceLife. Not on B: HerShrug, HerRaise, HerScap, HerJoints, HerShoulder.
+  `--p1-probe` prints the shoulder/clavicle/scap/trap numbers every 120 frames.
