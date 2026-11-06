@@ -217,7 +217,7 @@ A (`heroine.glb`) is not loaded; A without the flag is untouched.
   vertices inside the torso/hips/thighs on B posed by the lbs poser + rig_drive (the armpit fold, the upper arm's
   first 40%, counted apart as `axilla`), each hand's gap to the torso, the arm read (elevation, elbow to skin, B/A).
 - **p1_clips.json** (`tools/body/`): per clip `{"why", "turns": {bone: [x, y, z] deg rotation vector in the bone's own
-  frame, laid after the baked local}, "hold": [bones set to B's rest local]}`; applied after the girdle hold.
+  frame, laid after the baked local}, "hold": [bones set to B's rest local], "lock_ease": optional frames the foot lock eases over (default 3)}`; applied after the girdle hold.
 - **The role map.** Systems keyed to A's names ask `P1Body.Bone(skel, "spine_03")` (identity on A): by name off the
   chain; on the chain the B parent of A's next chain bone (A's chest `spine_03` -> B `spine_05`; B's `spine_03` is
   mid-back); `panel_front` -> its ancestor's. `P1Body.Spread` spreads chain turn shares over B's chain, the total

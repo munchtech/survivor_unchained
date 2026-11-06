@@ -125,6 +125,18 @@ public class P1BakeTests
     }
 
     [Fact]
+    public void LockEaseWeightIsSmoothAndPerClip()
+    {
+        foreach (int ease in new[] { 3, 8 })
+        {
+            Assert.True(P1Bake.EaseWeight(1, ease) > 0.85, "near 1 at the window edge");
+            Assert.True(P1Bake.EaseWeight(ease, ease) < 0.15, "near 0 at the far end");
+            for (int e = 2; e <= ease; e++) Assert.True(P1Bake.EaseWeight(e, ease) < P1Bake.EaseWeight(e - 1, ease));
+        }
+        Assert.Equal(8, P1Bake.ParseCleans("{\"clips\": {\"x\": {\"lock_ease\": 8}}}")["x"].LockEase);
+    }
+
+    [Fact]
     public void CleaningDataIsApplied()
     {
         var (names, parent, rest, rig) = B();

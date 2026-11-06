@@ -150,7 +150,7 @@ public partial class P1BakeRun : Node
                     Ls.Add(L); Gs.Add(G);
                     if (aIndex.TryGetValue("ball_l", out int bl) && aIndex.TryGetValue("ball_r", out int br)) { aBall[0].Add(g[bl].T()); aBall[1].Add(g[br].T()); aFoot[0].Add(g[aIndex["foot_l"]].T()); aFoot[1].Add(g[aIndex["foot_r"]].T()); }
                 }
-                var locks = !raw && aBall[0].Count == frames ? bake.FootLock(Ls, Gs, aBall, aFoot, src.LoopMode != Animation.LoopModeEnum.None, Fps, new HashSet<int>(keyed)) : new int[2];
+                var locks = !raw && aBall[0].Count == frames ? bake.FootLock(Ls, Gs, aBall, aFoot, src.LoopMode != Animation.LoopModeEnum.None, Fps, new HashSet<int>(keyed), clean?.LockEase ?? P1Bake.LockEase) : new int[2];
                 for (int f = 0; f < frames; f++)
                 {
                     double time = Math.Min(f / Fps, src.Length);

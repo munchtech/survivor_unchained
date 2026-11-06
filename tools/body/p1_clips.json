@@ -1,5 +1,5 @@
 {
- "why": "B's hand clean of the baked clips (tools_scenes/P1BakeRun.cs applies it after the girdle hold; tools/body/README.md 'B native'). Schema: clips: { clip name (as in its library, no 'her/' prefix): { why: text, turns: { B bone: [x, y, z] (a rotation vector in degrees, in the bone's own frame, laid after the baked local: L = L * exp(v)) }, hold: [B bones set to B's rest local] } }. Empty entries list the milestone clips (the Look's town idle, the play idle, the run, the core attacks) for the first clean.",
+ "why": "B's hand clean of the baked clips (tools_scenes/P1BakeRun.cs applies it after the girdle hold; tools/body/README.md 'B native'). Schema: clips: { clip name (as in its library, no 'her/' prefix): { why: text, turns: { B bone: [x, y, z] (a rotation vector in degrees, in the bone's own frame, laid after the baked local: L = L * exp(v)) }, hold: [B bones set to B's rest local], lock_ease: optional frames the foot lock eases over (default 3) } }. Empty entries list the milestone clips (the Look's town idle, the play idle, the run, the core attacks) for the first clean.",
  "clips": {
   "idle_reaver_town": {
    "why": "the Look's town idle (reaver: GameFront idle_{calling}_town) and the close town camera | clean: upperarm_l turned 2.7 deg out (clipcheck: the left hand rested 16.4-18.1 mm inside B's fuller hip, A's 12-17 mm off it; after: on the skin, gap 2-3.5 mm); upperarm_r 1.2 deg out (the hanging arm's upper arm 2.1-2.2 mm into the side chest below the armpit; after: under 1 mm)",
@@ -147,7 +147,8 @@
    "hold": []
   },
   "sword_heavy": {
-   "why": "a core attack (her own clips, OwnClips.For by calling and kind)",
+   "why": "a core attack (her own clips, OwnClips.For by calling and kind) | lock_ease 8: the foot lock's ease-in popped twice (thigh_l 14.5, foot_r 18.2 deg in one frame); a C2 ease over 8 frames",
+   "lock_ease": 8,
    "turns": {},
    "hold": []
   },

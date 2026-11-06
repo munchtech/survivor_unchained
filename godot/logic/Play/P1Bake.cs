@@ -97,15 +97,22 @@ public sealed class P1Bake
     /// <summary>Frames the lock's correction eases out over on each side of a window.</summary>
     public const int LockEase = 3;
 
+    /// <summary>The lock's ease weight at step e (1..ease) of an ease frames fade: quintic smootherstep of 1 - e/(ease+1).</summary>
+    public static double EaseWeight(int e, int ease)
+    {
+        double t = 1 - e / (ease + 1.0);
+        return t * t * t * (t * (6 * t - 15) + 10);
+    }
+
     /// <summary>The foot lock (every clip that keys a leg): B's legs are not A's (B's run stride swept 729 mm in
     /// contact against A's 692, the planted ball drifting 45 mm against A's 22, belt out), so in A's contact windows
     /// (ball within ContactBand of its clip floor, A's own hold under SourceHold) B's ball is pinned horizontally to its
     /// least-squares anchor riding the belt (A's median planted velocity: the in-place cycle's ground speed), by
     /// two-bone IK on thigh and calf (the knee bends in its own plane, the foot keeps its world turn), the correction
-    /// eased out over LockEase frames either side. Heights stay the clip's. For cycles frame n-1 is frame 0 (windows wrap).
+    /// eased out over `ease` frames (default LockEase) either side with a quintic smootherstep weight (C2: no velocity or acceleration step at either end). Heights stay the clip's. For cycles frame n-1 is frame 0 (windows wrap).
     /// L and G are B's locals and globals per frame (changed in place); aBall/aFoot[side][frame] A's ball and foot heads.
     /// Returns per side the windows locked.</summary>
-    public int[] FootLock(IList<P1M4[]> L, IList<P1M4[]> G, IList<P1V>[] aBall, IList<P1V>[] aFoot, bool loop, double fps, ISet<int>? keyed = null)
+    public int[] FootLock(IList<P1M4[]> L, IList<P1M4[]> G, IList<P1V>[] aBall, IList<P1V>[] aFoot, bool loop, double fps, ISet<int>? keyed = null, int ease = LockEase)
     {
         int n = L.Count, m = loop && n > 2 ? n - 1 : n;
         var sides = new[] { "l", "r" };
@@ -181,9 +188,9 @@ public sealed class P1Bake
                     corr[F(k)] = Flat(anchor + belt * ((k - mid) / fps) - G[F(k)][pj].T());
                     weight[F(k)] = 1;
                 }
-                for (int e = 1; e <= LockEase; e++)
+                for (int e = 1; e <= ease; e++)
                 {
-                    double w = 1 - e / (LockEase + 1.0);
+                    double w = EaseWeight(e, ease);
                     foreach (var (f, from) in new[] { (ws - e, F(0)), (ws + len - 1 + e, F(len - 1)) })
                     {
                         if (!loop && (f < 0 || f >= m)) continue;
@@ -273,9 +280,11 @@ public sealed class P1Bake
     {
         public Dictionary<string, P1V> Turns = new();
         public HashSet<string> Hold = new();
+        /// <summary>Per-clip foot-lock ease frames ("lock_ease"); null = LockEase.</summary>
+        public int? LockEase;
     }
 
-    /// <summary>p1_clips.json's "clips": { name: { "why": .., "turns": { bone: [x, y, z] }, "hold": [bones] } }.</summary>
+    /// <summary>p1_clips.json's "clips": { name: { "why": .., "turns": { bone: [x, y, z] }, "hold": [bones], "lock_ease": frames (optional) } }.</summary>
     public static Dictionary<string, Clean> ParseCleans(string json)
     {
         var o = new Dictionary<string, Clean>();
@@ -292,6 +301,7 @@ public sealed class P1Bake
                 }
             if (c.Value.TryGetProperty("hold", out var h))
                 foreach (var b in h.EnumerateArray()) cl.Hold.Add(b.GetString()!);
+            if (c.Value.TryGetProperty("lock_ease", out var le)) cl.LockEase = le.GetInt32();
             o[c.Name] = cl;
         }
         return o;
