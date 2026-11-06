@@ -82,7 +82,8 @@ def publish(src):
 
 
 def godot_import():
-    if subprocess.call([sys.executable, TURN, "take", "godot", "body-p1: import", "--wait", "90"]) != 0:
+    # --stale-ok: this run IS the fix freshness asks for (the import of the glbs just published), so it must not be refused for them
+    if subprocess.call([sys.executable, TURN, "take", "godot", "body-p1: import", "--wait", "90", "--stale-ok"]) != 0:
         raise SystemExit("publish_p1: no godot turn")
     try:
         r = subprocess.call([GODOT, "--headless", "--path", os.path.join(ROOT, "godot"), "--import"],
