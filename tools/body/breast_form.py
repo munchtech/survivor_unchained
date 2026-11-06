@@ -81,22 +81,55 @@ def vnormals(V, Q):
 
 
 # ------------------------------------------------------------------------------------------------ the wall --
+def cot_weights(V, Q):
+    """P1 R1c round 5b: the cotangent edge weights of the quad mesh (each quad split both ways, half weight each),
+    computed on the body V itself: a GEOMETRIC Laplacian (linear precision), so a fill follows the surface, not the
+    graph. Negative weights (obtuse corners) are clamped to a small positive share. Returns a sparse symmetric W."""
+    import scipy.sparse as sp
+    n = len(V)
+    rows, cols, vals = [], [], []
+    for tri in ((0, 1, 2), (0, 2, 3), (0, 1, 3), (1, 2, 3)):
+        I = Q[:, tri]
+        for a, b, o in ((0, 1, 2), (1, 2, 0), (2, 0, 1)):
+            ea, eb = V[I[:, a]] - V[I[:, o]], V[I[:, b]] - V[I[:, o]]
+            cr = np.linalg.norm(np.cross(ea, eb), axis=1)
+            ct = (ea * eb).sum(1) / np.maximum(cr, 1e-12)
+            rows += [I[:, a], I[:, b]]
+            cols += [I[:, b], I[:, a]]
+            vals += [0.25 * ct, 0.25 * ct]
+    W = sp.coo_matrix((np.concatenate(vals), (np.concatenate(rows), np.concatenate(cols))), shape=(n, n)).tocsr()
+    W.sum_duplicates()
+    floor = 0.02 * float(np.abs(W.data).mean())
+    W.data = np.maximum(W.data, floor)
+    return W
+
+
 def wall_delta(sl, c, V):
     """The chest wall move on body V (v = 1): the region (mask c["region"] on V0, both sides) refilled by the
     biharmonic (thin-plate) surface of the uniform graph Laplacian with everything outside held (two rings: C1 at
-    the rim), times the C2 blend mask c["blend"] (1 over the mound, 0 well inside the region rim)."""
+    the rim), times the C2 blend mask c["blend"] (1 over the mound, 0 well inside the region rim).
+    P1 R1c round 5b: c["lap"] = "cot" uses the GEOMETRIC (cotangent) Laplacian of V instead (cot_weights): the
+    uniform one has no linear precision, so where our quad rows bunch (the upper chest under the clavicle, ~10-20 mm
+    over the breast's root) its fill rebuilt the base mesh's own 12-15 mm band facing ~10 deg more upward (a ridge
+    the Look's high key and back lamps draw as a shade line over each breast top)."""
     import scipy.sparse as sp
     from scipy.sparse.linalg import splu
     X = extra(sl)
-    key = ("wall", sl.path, json.dumps(c["region"], sort_keys=True))
+    free = sl.mask(c["region"], sl.V0) > 1e-9
+    cot = c.get("lap") == "cot"
+    key = ("wall", sl.path, json.dumps(c["region"], sort_keys=True)) + ((float(np.round(V[free].sum(), 9)),) if cot else ())
     if key not in _C:
         n = len(sl.V0)
-        free = sl.mask(c["region"], sl.V0) > 1e-9
-        A = X["A"]
+        if cot:
+            # only the free region and its two held rings enter the solve: the weights of that patch
+            A = cot_weights(V, X["Q"])
+        else:
+            A = X["A"]
         deg = np.asarray(A.sum(1)).ravel()
-        L = sp.identity(n, format="csr") - sp.diags(1.0 / deg) @ A
+        L = sp.identity(n, format="csr") - sp.diags(1.0 / np.maximum(deg, 1e-12)) @ A
         M = (L.T @ L).tocsr()
         f, k = np.nonzero(free)[0], np.nonzero(~free)[0]
+        _C.clear() if len(_C) > 64 else None
         _C[key] = (f, k, splu(M[f][:, f].tocsc()), M[f][:, k].tocsr())
     f, k, lu, Mfk = _C[key]
     W = V.copy()
@@ -106,7 +139,13 @@ def wall_delta(sl, c, V):
 
 
 def chest_wall(sl, c, v, V, values):
-    return V + v * wall_delta(sl, c, V)
+    """The wall: the first fill (c["region"] / c["blend"]), then each later pass in c["passes"] (P1 R1c round 5b:
+    a fill of its own region on the result: the upper chest band between the clavicle and the breast's root, so
+    the slope from the collarbone runs into the root as one smooth turn), all with the same Laplacian."""
+    D = wall_delta(sl, c, V)
+    for p in c.get("passes", []):
+        D = D + wall_delta(sl, dict(p, lap=c.get("lap")), V + D)
+    return V + v * D
 
 
 # ------------------------------------------------------------------------------------------ route (a) dome --
