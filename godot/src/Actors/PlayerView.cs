@@ -343,10 +343,12 @@ public partial class PlayerView : Node3D
         bt.ConnectNode("fullShot", 1, "fullX");
         bt.ConnectNode("output", 0, "fullShot");
         tree = new AnimationTree { TreeRoot = bt, RootNode = "..", Active = true };
-        tree.AddAnimationLibrary("", People.Clips());
+        // (P1's B plays the clips baked onto it: the same names, B's bones)
+        bool p1 = P1Body.IsB(person.Skeleton);
+        tree.AddAnimationLibrary("", p1 ? P1Body.Clips() : People.Clips());
         if (mine)
         {
-            tree.AddAnimationLibrary(own.Name, own.Library());
+            tree.AddAnimationLibrary(own.Name, p1 && own == OwnClips.Her ? P1Body.HerClips() ?? own.Library() : own.Library());
             // Her clips run on the fight's clock (Update advances them), so a
             // hit-stop or a perfect dodge's slow motion holds her as well.
             tree.CallbackModeProcess = AnimationMixer.AnimationCallbackModeProcess.Manual;

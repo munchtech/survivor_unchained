@@ -1,0 +1,90 @@
+{
+ "joint": "hip_flex",
+ "angle": 90,
+ "why": "Hip flexed 90 degrees (thigh forward, the trunk upright: seated), side view. Inner (front): the belly's line down into a crisp groin crease (the inguinal fold deepens in flexion) and the thigh's top line out of it, 5 percent compressed next to the crease. Outer (back): the buttock wraps the corner as one smooth arc (gluteus maximus stretched over the ischium, o 0.95), the gluteal fold gone (it shows only near extension), the hamstrings' line beyond.",
+ "grammar": "Control points in the strip's side view (tools/body/bends.py build_ref): seg p|d, s = fraction of that segment's rest length from the joint, side in|out, o = multiple of the body's OWN rest half-width there (measured on its rest strip), mm = added millimetres; line = the half-width extrapolated straight from two stations; arc = the outer corner swept from the proximal to the distal outer normal (fraction), corner = the two offset lines' meeting point (mm_bisect pushes it into the open sector: a web), tip = a bony point carried with the distal bone, sharp = a corner the smoothing keeps. Away from the joint o=1: the limb keeps its rest shape (a rigid bend); only the joint's own anatomy is authored.",
+ "curves": {
+  "inner": [
+   {
+    "seg": "p",
+    "side": "in",
+    "s": 0.35,
+    "o": 1.0
+   },
+   {
+    "seg": "p",
+    "side": "in",
+    "s": 0.2,
+    "o": 1.0
+   },
+   {
+    "corner": "in",
+    "s": 0.12,
+    "o": 0.97,
+    "sharp": true
+   },
+   {
+    "seg": "d",
+    "side": "in",
+    "s": 0.2,
+    "o": 0.95
+   },
+   {
+    "seg": "d",
+    "side": "in",
+    "s": 0.35,
+    "o": 1.0
+   },
+   {
+    "seg": "d",
+    "side": "in",
+    "s": 0.55,
+    "o": 1.0
+   }
+  ],
+  "outer": [
+   {
+    "seg": "p",
+    "side": "out",
+    "s": 0.3,
+    "o": 1.0
+   },
+   {
+    "seg": "p",
+    "side": "out",
+    "s": 0.15,
+    "o": 1.0
+   },
+   {
+    "arc": 0.3,
+    "o": 0.95
+   },
+   {
+    "arc": 0.6,
+    "o": 0.95
+   },
+   {
+    "arc": 0.9,
+    "o": 0.97
+   },
+   {
+    "seg": "d",
+    "side": "out",
+    "s": 0.25,
+    "o": 1.0
+   },
+   {
+    "seg": "d",
+    "side": "out",
+    "s": 0.4,
+    "o": 1.0
+   },
+   {
+    "seg": "d",
+    "side": "out",
+    "s": 0.55,
+    "o": 1.0
+   }
+  ]
+ }
+}

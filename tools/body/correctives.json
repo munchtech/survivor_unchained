@@ -1,0 +1,579 @@
+{
+ "about": "Stage 7's data (tools/body/correctives.py). keys: [motion, absolute deg] posed as the check poses them (bends.Strip; hip_abd: the hip turned about her front). Regions: spheres round the joint's rest head, full within r_in, none past r_out (m). pull: the reference curves (tools/body/ref) the outline is pulled to (the joint's own anatomy: olecranon, patella plane, deltoid cap, folds); cap: the farthest an outline point is pulled (m); outline: that term's weight multiplier. Elbow keys within 8 deg of the rest angle (MakeHuman's 39.7) are dropped: a 45 key there would be a null shape. v1 (4 Nov): the shoulder's solve is held back (it lost area and outline against LBS: see the P1 report), as are knee 135 and hip 135 (the last key holds past it). The hip's shapes are held back too (hip_abd45 solved a 143 mm shape; the right hip at 90 read 52 inside against the left's 12: the midline mirror is not yet right).",
+ "solve": {
+  "iters": 12,
+  "arap": 8,
+  "data": 1.0,
+  "floor": 0.0005,
+  "contact": 200,
+  "margin": 0.0015,
+  "depth_max": 0.04,
+  "lat_max": 0.006,
+  "outline": 3.0,
+  "volume": 0,
+  "kap_step": 0.05,
+  "kap_max": 1.0,
+  "band_in": 0.01,
+  "band_w": 0.03,
+  "rim": 0.015,
+  "band_r": [
+   0.02,
+   0.06
+  ],
+  "area_relax": 0.6,
+  "area_kmax": 1.25,
+  "area_fade": 0.015,
+  "parity": 1,
+  "parity_give": 0,
+  "wedge": 0.0,
+  "crease_wd": 0.0
+ },
+ "joints": [
+  {
+   "name": "elbow",
+   "law": "flex",
+   "bones": [
+    "upperarm_{s}",
+    "lowerarm_{s}",
+    "hand_{s}"
+   ],
+   "center": "lowerarm_{s}",
+   "keys": [
+    [
+     "elbow",
+     90
+    ],
+    [
+     "elbow",
+     135
+    ]
+   ],
+   "r_in": 0.06,
+   "r_out": 0.13,
+   "pull": [
+    "outer"
+   ],
+   "cap": 0.03,
+   "proximal": "upperarm_{s}",
+   "distal": "lowerarm_{s}",
+   "distal_end": "hand_{s}",
+   "helpers": [
+    "lowerarm_share_{s}",
+    "lowerarm_point_{s}"
+   ],
+   "area": {
+    "p": [
+     0.01,
+     0.02,
+     0.03,
+     0.045
+    ],
+    "d": [
+     0.01,
+     0.02,
+     0.03,
+     0.045
+    ]
+   },
+   "part_cut": [
+    0.1,
+    0.9
+   ],
+   "fold": "flatten",
+   "side": "geom",
+   "clamp": 1,
+   "pressure": 3.0,
+   "pressure_to": {
+    "p": 1.0,
+    "d": 0.88
+   },
+   "solve": {
+    "outline": 10,
+    "pressure_band": 0.01
+   },
+   "per_key": {
+    "90": {
+     "pull": [
+      "outer",
+      "inner"
+     ],
+     "pressure": 0.0,
+     "solve": {
+      "rot_prior": 10
+     }
+    },
+    "135": {
+     "surface": "skins",
+     "skins": {
+      "share": 0.5,
+      "sigma": 0.006,
+      "rim": 0.04,
+      "close": 0.0,
+      "hold": 0.01,
+      "area_step": 0.015,
+      "ramp": 0.04
+     },
+     "pressure_to": {
+      "p": 1.0,
+      "d": 1.0
+     },
+     "solve": {
+      "margin": 0.00035,
+      "rot_prior": 3
+     },
+     "prior_off_contact": 1
+    }
+   },
+   "why": "P1 D (5 Nov), on OUR topology and weights v1 (wide crease band, 4b off). Keys 90 and 135 only: the 5 key (straightening from her 40.4 rest) is dropped, LBS there already holds (inside 0, girth .99-1.05, area .98-1.09), so below the rest the law holds the null. side 'geom': each node's side of the plane by the REST bisector plane (the check's seg_d), not the 0.5 distal weight: with the wide band the 0.5 line sits off the crease and the fold pinned 286 rounded-corner nodes to the wrong side (175 inside at 90 against LBS's 0). 90: the inner and outer curves pulled (cap 30 mm: the inner corner sits up to 27 px off, the sharpening the wide band needs), no pressure. 135: pressure, the section swell as a push along the skin normal (the edge-scaling swell grew girth to 1.2 for area .79: scaling stretches the skin round a pinned face), restoring the rest area per station to p 1.0 / d 0.88 of the rest (the forearm's girth is the bound: d 0.94 pushed d0.1 to 1.09), faded to none within 10 mm of the contact (the corner's normals converge: pushing there folded the skin, 11 inside); clamp: the plane as a hard wall after the last round.",
+   "why_ek2": "P1 ek2 (5 Nov): the knee's rule carried to the elbow (the judge's polish: 'the crease ends in a pinch of about 2 cm with a bright streak'): the ARAP's local turns tied to the skin's (rot_prior 90: 10; 135: 3 off the skins' footprint) and the 135 footprint's rim 20 -> 40 mm. bends.py crease_end out/in 3.4/2.9 -> 0.2/0.6 mm at 90, 4.3/4.1 -> 0.6/0.8 at 135; inside by true depth (bends.true_depth) 90: 12 over 2 mm (6.4) -> 0 (1.3), 135: 23 (8.2) -> 2 (2.14); area at 135 .987 -> .952 (the turns held to the skin's keep its LBS thinning near the joint)."
+  },
+  {
+   "name": "knee",
+   "law": "flex",
+   "bones": [
+    "thigh_{s}",
+    "calf_{s}",
+    "foot_{s}"
+   ],
+   "center": "calf_{s}",
+   "keys": [
+    [
+     "knee",
+     90
+    ],
+    [
+     "knee",
+     135
+    ]
+   ],
+   "r_in": 0.08,
+   "r_out": 0.16,
+   "pull": [
+    "outer"
+   ],
+   "cap": 0.03,
+   "proximal": "thigh_{s}",
+   "distal": "calf_{s}",
+   "distal_end": "foot_{s}",
+   "helpers": [
+    "calf_share_{s}",
+    "calf_point_{s}"
+   ],
+   "area": {
+    "p": [
+     0.01,
+     0.02,
+     0.03,
+     0.045
+    ],
+    "d": [
+     0.01,
+     0.02,
+     0.03,
+     0.045
+    ]
+   },
+   "part_cut": [
+    0.1,
+    0.9
+   ],
+   "fold": "flatten",
+   "side": "geom",
+   "clamp": 1,
+   "solve": {
+    "outline": 10,
+    "pressure_band": 0.01
+   },
+   "per_key": {
+    "90": {
+     "pull": [
+      "outer",
+      "inner"
+     ],
+     "plane_at": "corner",
+     "corner_ramp": 0.02,
+     "bow": -0.6,
+     "solve": {
+      "margin": 0.0005,
+      "rot_prior": 10
+     },
+     "pressure": 3.0,
+     "pressure_to": {
+      "p": 0.97,
+      "d": 1.0
+     },
+     "area": {
+      "p": [
+       0.07,
+       0.095,
+       0.12,
+       0.145
+      ],
+      "d": [
+       0.01,
+       0.02,
+       0.03,
+       0.045
+      ]
+     }
+    },
+    "135": {
+     "pressure": 3.0,
+     "pressure_to": {
+      "p": 1.0,
+      "d": 1.0
+     },
+     "surface": "skins",
+     "skins": {
+      "share": 0.5,
+      "sigma": 0.006,
+      "rim": 0.04,
+      "close": 0.0,
+      "hold": 0.01,
+      "area_step": 0.015,
+      "ramp": 0.04
+     },
+     "solve": {
+      "margin": 0.00035,
+      "rot_prior": 3
+     },
+     "prior_off_contact": 1
+    }
+   },
+   "why": "P1 D (5 Nov), on OUR topology and weights v1. The flatten fold (crease_fold.py) now, not v1's 'plane' solve; keys 90 and 135 (the 45 key dropped: LBS holds there and the 90 key's hat starts at the rest 4.8). side 'geom' as the elbow's. 90: LBS has no crossing but the back of the knee caves to the joint (the inner outline 35 px off the reference corner); the inner and outer curves pulled (cap 30 mm), the contact held through the reference's inner corner, not the joint (corner_shift: a thin back of the thigh against a full calf puts the corner 13 mm toward the thigh; a fold held on the joint's plane dented the crease there), the shift eased in over 20 mm from the joint's axis (a full shift at the axis drove the thigh's skin into the calf beside the joint: 11 inside), margin 0.5 mm (1.5 mm left a 3 mm see-through slit 18 mm deep in the side view) and the contact sagged 1.5 mm at 5 cm across the limb (bow -0.6/m: a flat contact seen edge-on still shows its 1 mm gap as a slit, 19 px; a soft contact is not flat). 135: the elbow's pressure (p 1.0, d 0.88), the outer curve only.",
+   "why_ek2": "P1 ek2 (5 Nov), judge on her_ek_final: the crease's end hooked (90: a 3 cm curl at its lower outer end; 135: a 6 cm 'smile' pinched where it turns). Measured (bends.py crease_end: the side's concavity gain over rest at r 15 mm, the contact excluded): 90 out 3.9 mm, 135 out 4.6 mm at the curl's tip (plain LBS 2.1-2.5 there: no fold). The ARAP's free local turns made it: the compressed back-of-knee skin keeps its rest lengths and buckles where the contact ends (local 0: 0.6/0.9 mm). So the turns are tied to the skin's own (rot_prior: 90 at 10, the shape a smoothed LBS; 135 at 3, kept off the skins' footprint by prior_off_contact so the pressed skins still slide and turn in the contact: with the prior on the contact too, 113 inside). The 135 footprint's rim 20 -> 40 mm (the contact's edge eased out along the sides: the inner side's gain 3.0 -> 0.9, inside 102 -> 61, true depth 2.9 -> 2.3 mm). 90's section at p0.25 (118 mm up the thigh) was .935 (LBS .921: the crease band's calf share up the back of the thigh): pressure 3.0 to 0.97 of rest at stations 70-145 mm up the thigh only (stations at 10-45 mm pushed the back of the thigh into the calf: 10 inside, 3.2 mm), .935 -> .960, 6 inside, true depth <= 1.7 mm."
+  },
+  {
+   "name": "hip",
+   "law": "arc",
+   "bone": "thigh_{s}",
+   "end": "calf_{s}",
+   "frame": "pelvis",
+   "gate_deg": [
+    20.0,
+    60.0
+   ],
+   "center": "thigh_{s}",
+   "keys": [
+    [
+     "hip_flex",
+     90
+    ],
+    [
+     "hip_flex",
+     105
+    ],
+    [
+     "hip_flex",
+     120
+    ],
+    [
+     "hip_flex",
+     135
+    ]
+   ],
+   "r_in": 0.12,
+   "r_out": 0.25,
+   "proximal": "pelvis",
+   "distal": "thigh_{s}",
+   "distal_end": "calf_{s}",
+   "fold": "field",
+   "solve": {
+    "step": 7.5,
+    "rounds": 12,
+    "data": 1.0,
+    "op": "membrane",
+    "anchor_m": 0.05,
+    "bend_m": 0.008,
+    "contact": 600,
+    "margin": 0.0008,
+    "release": 0.002,
+    "reach": 0.05,
+    "far_m": 0.025,
+    "share_trunk": 0.75,
+    "share_trunk_low": 0.1,
+    "share_w": 0.02,
+    "volume": 0,
+    "rim_in": 0.002,
+    "vol_r": 0.12
+   },
+   "one_side": false,
+   "why_r4": "P1 hip r4 (5 Nov): SHIPPED as the best-known (short of the 2 mm gate at close 112/135 and play 112; see the r4 report), the field fold (contact_field.py) on the skel2 base with: op 'membrane' (the offset's energy the membrane's Dirichlet sum over edges + bend_m 8 mm of |LU|^2 + anchor_m 50 mm of |U|^2, in metres over the local edge length: (c) the check's pit is ~ (r^2/4) lap(u_n), a harmonic offset reads 0 off the contacts where r3's bi-Laplacian rang concave; (a) soft tissue round a contact stays convex, the membrane's obstacle problem leaves the other skin tangentially); far_m 25 mm (a node's partner face must be over 25 mm from it at rest: the skin it is joined to across the crease is the same sheet folding, not the other body); the trunk's give by what is under it, share_trunk_low 0.1 below the joint's transverse plane (the mons and groin on the pubic bone, the pubic tubercle at the hip joint centre's level) and 0.75 above (the abdominal wall), smoothstep +-20 mm, a thigh node the rest of its partner's; one_side false (each thigh's shape crosses the midline: the cut left a 22-50 mm step there at 135, the front pit 17 mm at x -14 mm; both hips flexed sum the two, linear superposition); volume 0 (the roll's response with the contacts held dug a moat round them: the flank pit F13.6 S10.3 at 135 with it, F8.2 S5.4 without); rounds 12 (8: depth 21.7/30.8 mm close 135/112; 24: an 83 mm runaway at close 112). The depth is now the true surface distance (bends.surface_depth). Not shipped from r4: partners on any sheet (contact_field.partner_any: close 135 depth 63 mm), a 3.75 deg march (S 10.8 at 135).",
+   "rbf_r2": {
+    "law": "rbf",
+    "bone": "thigh_{s}",
+    "end": "calf_{s}",
+    "frame": "pelvis",
+    "sigma_deg": 40.0,
+    "center": "thigh_{s}",
+    "keys": [
+     [
+      "hip_flex",
+      90
+     ]
+    ],
+    "r_in": 0.12,
+    "r_out": 0.25,
+    "proximal": "pelvis",
+    "distal": "thigh_{s}",
+    "distal_end": "calf_{s}",
+    "helpers": [
+     "thigh_share_{s}",
+     "glute_{s}"
+    ],
+    "fold": "contact",
+    "pull": [
+     "outer",
+     "inner"
+    ],
+    "free_rend": 1,
+    "cap": 0.03,
+    "solve": {
+     "outline": 10
+    },
+    "hold_mid": [
+     0.04,
+     1.0,
+     "pelvis"
+    ]
+   },
+   "why": "P1 hip r2 (5 Nov): HELD (no hip shape ships). On the r2 weights (the perineum pin, the trunk side) raw skinning passes hip 90 but for the front pit: 0 inside, girth 1.057 (the geometric selection), pits F7.3 S1.9 B6.9 M7.5 mm; this 90 key, re-solved on them, made the judge's side pit back (S 1.9 -> 7.0, F 8.2, M 14.6) while 0 inside, so it is held; its spillover helped 112 (no key 386 inside / 44 mm, key 173 / 31) and not 135 (644 / 66 either way). 112-135 need the two-body contact (pair_trial below: contact_pair.py, fold 'pair', law 'arc', keys 90-135, not shipped: at 105 it leaves ~90 belly nodes inside although each sits on the thigh's surface + 0.8 mm, so the gap itself tests inside: the draped belly does not yet separate the two bodies; cause open). Earlier: P1 D (5 Nov), SHORT of the acceptance (see the P1 D report). Key flex 90 only, by direction (rbf over the thigh's direction in the pelvis frame, sigma 40: the rest key no shape, so 0 at rest). The hinge's flatten fold does not carry to the hip: the bisector plane through the joint (8-10 cm behind the groin) cut the belly, through the reference corner it still flattened the whole lower trunk across the midline (180 inside), so the pairwise contact (solve_key: the rigid parts' signed distances + ray parity) with the strip's body only (free_rend: the other leg and the arms are held as posed), the inner and outer curves pulled, and the midline held to the pelvis within 4 cm (hold_mid: LBS swings the perineum's left half with the left thigh through the right half; held, its depth fell 87 -> 24 mm). Flex 135 is held back: the thigh meets the belly there (652 inside under LBS) and this solve left 502 with girth 1.13; it needs a two-body contact solve, not a hinge fold. D2 (5 Nov): the rebuild the D verdict asks for (contact_fold.py, fold 'stepped', law 'arc') was tried and is NOT shipped: its trial settings are kept under 'd2_trial' (held). Findings: the smooth-skin ARAP over a 25 cm sphere drifts off the skeleton's pivot (p95 4.9 mm, -75 cm3 at 7.5 deg flexion, no contact; the rest-umbrella and full-matrix Laplacian targets the same: 12.7 mm p95 at 45 deg), so the correction must be U = Y - X on the skinned surface (min |L U|^2 + an anchor >= 0.3: a 0.0016 anchor spread one 2 cm push over 10+ cm, +372 cm3); a rigid capped thigh solid as the obstacle pushes the buttock (behind) and the root's blend, and the posed-surface contacts leave 220 points at ~100 mm (check depth) at 135 against LBS's 652 at 75 mm: neither beats D's 90 key (14 at 24 mm). The 15 deg in-between keys need the 'arc' law (rig_drive.py): the Gaussian rbf rings with dense keys (5 keys 15 deg apart summed to 2.0 at 45).",
+   "d2_trial": {
+    "name": "hip",
+    "law": "arc",
+    "bone": "thigh_{s}",
+    "end": "calf_{s}",
+    "frame": "pelvis",
+    "gate_deg": [
+     20.0,
+     60.0
+    ],
+    "center": "thigh_{s}",
+    "keys": [
+     [
+      "hip_flex",
+      45
+     ],
+     [
+      "hip_flex",
+      90
+     ],
+     [
+      "hip_flex",
+      105
+     ],
+     [
+      "hip_flex",
+      120
+     ],
+     [
+      "hip_flex",
+      135
+     ]
+    ],
+    "r_in": 0.12,
+    "r_out": 0.25,
+    "proximal": "pelvis",
+    "distal": "thigh_{s}",
+    "distal_end": "calf_{s}",
+    "fold": "stepped",
+    "free_rend": 1,
+    "soft": {
+     "p": 1.0,
+     "d": 0.2,
+     "mid": [
+      0.1,
+      0.025,
+      0.015,
+      0.03
+     ]
+    },
+    "solve": {
+     "step": 7.5,
+     "start": 0.0,
+     "rounds": 4,
+     "far_m": 0.015,
+     "release": 0.002,
+     "margin": 0.0005,
+     "contact": 200,
+     "volume": 1,
+     "kap_step": 0.002,
+     "kap_max": 0.015,
+     "rim_in": 0.01,
+     "vol_r": 0.06,
+     "anchor": 0.3,
+     "vol_w": 2.0,
+     "firm": 0,
+     "firm_r": 0.03,
+     "root_m": 0.03,
+     "obstacle": "posed",
+     "probe": 0.0
+    }
+   },
+   "pair_trial": {
+    "name": "hip",
+    "law": "arc",
+    "bone": "thigh_{s}",
+    "end": "calf_{s}",
+    "frame": "pelvis",
+    "gate_deg": [
+     20.0,
+     60.0
+    ],
+    "center": "thigh_{s}",
+    "keys": [
+     [
+      "hip_flex",
+      90
+     ],
+     [
+      "hip_flex",
+      105
+     ],
+     [
+      "hip_flex",
+      120
+     ],
+     [
+      "hip_flex",
+      135
+     ]
+    ],
+    "r_in": 0.12,
+    "r_out": 0.25,
+    "proximal": "pelvis",
+    "distal": "thigh_{s}",
+    "distal_end": "calf_{s}",
+    "fold": "pair",
+    "solve": {
+     "step": 7.5,
+     "rounds": 6,
+     "data": 1.0,
+     "anchor": 0.05,
+     "firm": 2.0,
+     "give_d": 0.2,
+     "contact": 200,
+     "margin": 0.0008,
+     "release": 0.002,
+     "volume": 1,
+     "rim_in": 0.01,
+     "vol_r": 0.06
+    }
+   },
+   "field_trial": {
+    "name": "hip",
+    "law": "arc",
+    "bone": "thigh_{s}",
+    "end": "calf_{s}",
+    "frame": "pelvis",
+    "gate_deg": [
+     20.0,
+     60.0
+    ],
+    "center": "thigh_{s}",
+    "keys": [
+     [
+      "hip_flex",
+      90
+     ],
+     [
+      "hip_flex",
+      105
+     ],
+     [
+      "hip_flex",
+      120
+     ],
+     [
+      "hip_flex",
+      135
+     ]
+    ],
+    "r_in": 0.12,
+    "r_out": 0.25,
+    "proximal": "pelvis",
+    "distal": "thigh_{s}",
+    "distal_end": "calf_{s}",
+    "fold": "field",
+    "solve": {
+     "step": 7.5,
+     "rounds": 8,
+     "data": 1.0,
+     "anchor": 0.05,
+     "contact": 600,
+     "margin": 0.0008,
+     "release": 0.002,
+     "reach": 0.05,
+     "share_trunk": 0.75,
+     "volume": 1,
+     "rim_in": 0.002,
+     "vol_r": 0.12
+    }
+   },
+   "why_r3": "P1 hip r3 (5 Nov): HELD still. field_trial (contact_field.py: both sides pushed out of each other, the belly 0.75 / the thigh 0.25 of the way, each march angle started from the last one's result re-skinned, the roll's band above the joint, the contacts held in the roll's solve) on her close: inside depth 105/112/120/135 = 2.8/4.4/4.6/5.1 mm (raw 35/44.5/53/66), but the gate is 2 mm and the 135 pits F16 S15 (gate 10; F11 S11 without the roll): ~150-200 nodes per key stay parity-inside within 1 mm of the other skin (the check's depth reads its triangle samples, 3-5 mm off), and the dent's rim on the flank (4-5 cm out, 10-12 cm up, 4-9 cm front of the joint) is concave past the gate. The pivot (Harrington 2007 on her skin ASIS/PSIS) sits 25-35 mm behind the regression, but moving it forward 15/25/35 mm (weights by their rules) made raw 135 deeper (78/81/88 mm), so it is not this fix."
+  },
+  {
+   "name": "shoulder",
+   "law": "rbf",
+   "bone": "upperarm_{s}",
+   "end": "lowerarm_{s}",
+   "frame": "clavicle_{s}",
+   "sigma_deg": 40.0,
+   "center": "upperarm_{s}",
+   "keys": [
+    [
+     "shoulder_abd",
+     90
+    ],
+    [
+     "shoulder_abd",
+     135
+    ],
+    [
+     "shoulder_flex",
+     90
+    ],
+    [
+     "shoulder_flex",
+     135
+    ]
+   ],
+   "r_in": 0.1,
+   "r_out": 0.22,
+   "proximal": "spine_05",
+   "distal": "upperarm_{s}",
+   "distal_end": "lowerarm_{s}",
+   "helpers": [
+    "upperarm_share_{s}",
+    "clavicle_{s}",
+    "scap_{s}",
+    "delt_{s}",
+    "trap_{s}",
+    "pec_{s}",
+    "lat_{s}"
+   ],
+   "fold": "contact",
+   "free_rend": 1,
+   "pull": [
+    "outer"
+   ],
+   "cap": 0.03,
+   "solve": {
+    "outline": 10
+   },
+   "area": {
+    "d": [
+     0.03,
+     0.05,
+     0.07
+    ]
+   },
+   "part_cut": [
+    0.1,
+    0.9
+   ],
+   "held": true,
+   "why": "P1 D (5 Nov): held (no shapes). On weights v1 with the girdle helpers, LBS already meets the shoulder acceptance (abd 90/135 inside 0/7 at 0 mm, girth <= 1.006; flex 90/135 inside 0/0 left, 0/2 right, girth <= 0.999) and this solve regressed it: girth to 1.08-1.10 at abd 90 and flex 90, 91 inside at flex 135 (the ARAP's blended rotations on the helper-driven girdle). The rbf law (rig_drive.py) is ready for shapes when a girdle solve beats LBS."
+  }
+ ]
+}

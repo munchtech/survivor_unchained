@@ -35,6 +35,8 @@ public partial class HerCarriage : SkeletonModifier3D
     public HerCarriage() { Name = "HerCarriage"; }
 
     int head = -2, neck = -2;
+    /// <summary>Spine's shares as bones (on P1's B spread over its chain by role, the total kept).</summary>
+    (int Bone, float Share)[]? spread;
     Vector3 headForward;
 
     /// <summary>Her head brought up: the droop of her face's forward below the
@@ -44,7 +46,7 @@ public partial class HerCarriage : SkeletonModifier3D
         if (head == -2)
         {
             head = sk.FindBone("Head");
-            neck = sk.FindBone("neck_01");
+            neck = P1Body.Bone(sk, "neck_01");
             // (at rest every body here faces +Z: the face's forward in the head's own frame)
             if (head >= 0) headForward = (sk.GetBoneGlobalRest(head).Basis.Orthonormalized().Inverse() * Vector3.Back).Normalized();
         }
@@ -86,9 +88,8 @@ public partial class HerCarriage : SkeletonModifier3D
             }
         }
         if (Mathf.Abs(Aim) > 0.01f)
-            foreach (var (bone, share) in Spine)
+            foreach (var (b, share) in spread ??= P1Body.Spread(sk, Spine))
             {
-                int b = sk.FindBone(bone);
                 if (b < 0) continue;
                 // About the skeleton's up, from the bone's head.
                 var g = sk.GetBoneGlobalPose(b);

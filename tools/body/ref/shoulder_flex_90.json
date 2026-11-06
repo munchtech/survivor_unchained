@@ -1,0 +1,90 @@
+{
+ "joint": "shoulder_flex",
+ "angle": 90,
+ "why": "Shoulder flexed 90 degrees (arm straight forward, from hung), side view. Outer: the arm's top line into the anterior and middle deltoid cap, one convex curve without a ledge, round the top of the shoulder to the back (posterior deltoid over the scapula), the back below unchanged. Inner: the arm's underside meets the upper chest (pectoral) through the front axillary fold, a web that fills the corner (18 mm out from the lines' meeting point), not a crease.",
+ "grammar": "Control points in the strip's side view (tools/body/bends.py build_ref): seg p|d, s = fraction of that segment's rest length from the joint, side in|out, o = multiple of the body's OWN rest half-width there (measured on its rest strip), mm = added millimetres; line = the half-width extrapolated straight from two stations; arc = the outer corner swept from the proximal to the distal outer normal (fraction), corner = the two offset lines' meeting point (mm_bisect pushes it into the open sector: a web), tip = a bony point carried with the distal bone, sharp = a corner the smoothing keeps. Away from the joint o=1: the limb keeps its rest shape (a rigid bend); only the joint's own anatomy is authored.",
+ "curves": {
+  "outer": [
+   {
+    "seg": "d",
+    "side": "out",
+    "s": 0.6,
+    "o": 1.0
+   },
+   {
+    "seg": "d",
+    "side": "out",
+    "s": 0.4,
+    "o": 1.0
+   },
+   {
+    "seg": "d",
+    "side": "out",
+    "s": 0.2,
+    "o": 1.0
+   },
+   {
+    "arc": 0.15,
+    "o": 1.02
+   },
+   {
+    "arc": 0.5,
+    "o": 1.0
+   },
+   {
+    "arc": 0.85,
+    "o": 1.0
+   },
+   {
+    "seg": "p",
+    "side": "out",
+    "s": 0.15,
+    "o": 1.0
+   },
+   {
+    "seg": "p",
+    "side": "out",
+    "s": 0.3,
+    "o": 1.0
+   }
+  ],
+  "inner": [
+   {
+    "seg": "d",
+    "side": "in",
+    "s": 0.6,
+    "o": 1.0
+   },
+   {
+    "seg": "d",
+    "side": "in",
+    "s": 0.4,
+    "o": 1.0
+   },
+   {
+    "seg": "d",
+    "side": "in",
+    "s": 0.25,
+    "o": 1.0
+   },
+   {
+    "corner": "in",
+    "s": 0.15,
+    "o": 1.0,
+    "mm_bisect": 18
+   },
+   {
+    "seg": "p",
+    "side": "in",
+    "s": 0.15,
+    "o": 1.0
+   },
+   {
+    "seg": "p",
+    "side": "in",
+    "s": 0.25,
+    "o": 1.0
+   }
+  ]
+ }
+}

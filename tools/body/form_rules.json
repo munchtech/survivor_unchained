@@ -1,0 +1,305 @@
+{
+ "about": "P1 R1 design sheet: her forms as rules, each a number on the built body at rest with a band (tools/body/formrules.py; check.py --only forms). The bar (the owner, 5 Nov): sexy and confident in painted cel, clean readable forms, a strong silhouette; A is information only. Distances in mm, angles in degrees, glTF axes (x her left, y up, z front). Sections breast and glutes (5 Nov) measure on the spec's body (formrules.py --spec, else build.json beside the glb).",
+ "sections": {
+  "neck": {
+   "why": "A long elegant neck rising clean out of a sloped trapezius reads confident; MakeHuman's shrug under her head (the trapezius up at the jaw, a 20 cm wide neck base) read as a yoke at the Look and close-up (R2).",
+   "rules": {
+    "top_7cm_mm": {
+     "band": [
+      -60,
+      -35
+     ],
+     "why": "the trapezius 7 cm out sits well under the chin: the neck's side wall shows (B before R1: -6)"
+    },
+    "top_9cm_mm": {
+     "band": [
+      -80,
+      -50
+     ],
+     "why": "the trapezius slope well under way at 9 cm (B before: -19)"
+    },
+    "top_17cm_mm": {
+     "band": [
+      -105,
+      -75
+     ],
+     "why": "the shoulder's top (acromion) about a third of a head under the chin (head 228 mm)"
+    },
+    "width_max_2_4cm_mm": {
+     "band": [
+      95,
+      135
+     ],
+     "why": "a slim neck 2-4 cm under the chin (B before: 176-212)"
+    },
+    "trap_slope_7_13_deg": {
+     "band": [
+      18,
+      40
+     ],
+     "why": "a sloped trapezius, neither a shelf nor a drop"
+    },
+    "profile_worst_rise_mm": {
+     "band": [
+      null,
+      2
+     ],
+     "why": "the shoulder line only falls going out: no knob or shelf on it"
+    }
+   }
+  },
+  "seam": {
+   "why": "the throat seam is ONE surface: a crease there is a line round the throat under a cel terminator (build_topo.seam_g1)",
+   "rules": {
+    "angle_mean_deg": {
+     "band": [
+      null,
+      5
+     ],
+     "why": "body and head normals agree along the ring (B before R1: 36.5)"
+    },
+    "angle_max_deg": {
+     "band": [
+      null,
+      15
+     ],
+     "why": "no single point kinks"
+    }
+   }
+  },
+  "breast": {
+   "why": "very busty, high, full and round, deep cleavage; must look great bare and in push-up armor",
+   "rules": {
+    "vol_added_mL_per_side": {
+     "band": [
+      1350,
+      1450
+     ],
+     "why": "very busty: volume each side adds over the bare chest"
+    },
+    "apex_y_mm": {
+     "band": [
+      1395,
+      1415
+     ],
+     "why": "the nipple point sits high on the chest"
+    },
+    "apex_z_mm": {
+     "band": [
+      165,
+      180
+     ],
+     "why": "the apex stands well forward"
+    },
+    "apex_normal_yaw_out_deg": {
+     "band": [
+      10,
+      15
+     ],
+     "why": "the breast's axis aims slightly outward"
+    },
+    "apex_normal_pitch_up_deg": {
+     "band": [
+      -3,
+      3
+     ],
+     "why": "the axis aims level, neither drooping nor skyward"
+    },
+    "apex_height_fraction_from_fold": {
+     "band": [
+      0.5,
+      0.62
+     ],
+     "why": "the apex mid-height: full, not bottom-heavy"
+    },
+    "upper_pole_slope_deg_from_vertical": {
+     "band": [
+      52,
+      62
+     ],
+     "why": "a full push-up upper slope, not a shelf or a cliff"
+    },
+    "upper_pole_curv_sign_changes": {
+     "band": [
+      1,
+      1
+     ],
+     "why": "one S in the upper pole: concave into the chest, then convex"
+    },
+    "upper_pole_min_curv_past_root_per_m": {
+     "band": [
+      -3,
+      null
+     ],
+     "why": "no pinched concave dent past the root"
+    },
+    "lower_pole_radius_mm": {
+     "band": [
+      100,
+      140
+     ],
+     "why": "a round full lower pole: under 100 reads as a sphere or implant, over 140 reads flat (R1b solver)"
+    },
+    "fold_min_radius_mm": {
+     "band": [
+      18,
+      null
+     ],
+     "why": "the underbust fold is soft, not a crease"
+    },
+    "fold_notch_depth_mm": {
+     "band": [
+      null,
+      22
+     ],
+     "why": "the underbust notch is shallow"
+    },
+    "gap_at_apex_z_minus_40mm": {
+     "band": [
+      50,
+      80
+     ],
+     "why": "deep cleavage: the gap 4 cm behind the apex"
+    },
+    "inside_at_rest_chest": {
+     "band": [
+      null,
+      0
+     ],
+     "why": "no chest vertex inside the body or head at rest"
+    },
+    "cleavage_floor_over60": {
+     "band": [
+      null,
+      0
+     ],
+     "why": "no fold over 60 deg on the cleavage floor"
+    }
+   }
+  },
+  "glutes": {
+   "why": "a full, high, round mass and an hourglass",
+   "rules": {
+    "apex_minus_hip_mm": {
+     "band": [
+      0,
+      20
+     ],
+     "why": "the fullest point sits at or just above the hip joint"
+    },
+    "proj_back_mm": {
+     "band": [
+      100,
+      120
+     ],
+     "why": "projection past the lumbar"
+    },
+    "proj_thigh_mm": {
+     "band": [
+      100,
+      120
+     ],
+     "why": "projection past the thigh"
+    },
+    "fold_min_radius_mm": {
+     "band": [
+      20,
+      null
+     ],
+     "why": "the glute-thigh fold is soft"
+    },
+    "fold_below_hip_mm": {
+     "band": [
+      110,
+      140
+     ],
+     "why": "the fold sits just below the hip joint"
+    },
+    "cleft_floor_over_60": {
+     "band": [
+      0,
+      0
+     ],
+     "why": "no fold over 60 deg on the cleft floor"
+    },
+    "cleft_floor_max_deg": {
+     "band": [
+      null,
+      35
+     ],
+     "why": "the cleft floor stays smooth"
+    },
+    "inside_glute_region": {
+     "band": [
+      0,
+      0
+     ],
+     "why": "no self-intersection in the glutes"
+    },
+    "cleft_depth_at_apex_mm": {
+     "band": [
+      20,
+      30
+     ],
+     "why": "a readable but shallow cleft"
+    },
+    "waist_over_navel_mm": {
+     "band": [
+      15,
+      35
+     ],
+     "why": "the waist narrowest just above the navel"
+    },
+    "whr_w": {
+     "band": [
+      0.54,
+      0.58
+     ],
+     "why": "hourglass, front width ratio"
+    },
+    "whr_circ": {
+     "band": [
+      0.53,
+      0.58
+     ],
+     "why": "hourglass, girth ratio"
+    },
+    "hip_widest_vs_joint_mm": {
+     "band": [
+      -30,
+      30
+     ],
+     "why": "widest hips about at the hip joint"
+    },
+    "saddle_mm": {
+     "band": [
+      null,
+      3
+     ],
+     "why": "the width only falls going down from the hips: no saddlebag"
+    },
+    "fold_over_60": {
+     "band": [
+      null,
+      20
+     ],
+     "why": "few sharp folds on the mesh"
+    },
+    "aspect_over_4": {
+     "band": [
+      null,
+      40
+     ],
+     "why": "few stretched quads"
+    },
+    "edges_under_2mm": {
+     "band": [
+      null,
+      13
+     ],
+     "why": "few tiny edges"
+    }
+   }
+  }
+ }
+}

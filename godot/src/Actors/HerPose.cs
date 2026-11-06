@@ -30,6 +30,10 @@ public partial class HerPose : SkeletonModifier3D
     public float Lower, Upper;
     /// <summary>Both halves at once.</summary>
     public float Native { set { Lower = Upper = value; } }
+    /// <summary>P1's B (--body p1): every clip is baked onto B with her library carriage in it (the clip bridge,
+    /// P1BakeRun), so the library correction (the pelvis shift, finger ease, ArmsIn, NeckPitch, HipTilt) is skipped
+    /// whatever Native says; the runtime parts (LookArms, CineCurl, the neck sliders, chin up, head tries) stay.</summary>
+    public bool Baked;
     /// <summary>Her neck as her face's sliders shape it (People.HerFace),
     /// each -1 to 1: longer or shorter (her head carried up or down along
     /// her neck) and slimmer or stronger (her neck bone scaled across it,
@@ -127,8 +131,8 @@ public partial class HerPose : SkeletonModifier3D
             for (int k = 1; k <= 3; k++) fr.Add(sk.FindBone($"{f}_0{k}_r"));
         fingR = fr.Contains(-1) ? System.Array.Empty<int>() : fr.ToArray();
         thumb1R = sk.FindBone("thumb_01_r");
-        spine3 = sk.FindBone("spine_03");
-        neck = sk.FindBone("neck_01");
+        spine3 = P1Body.Bone(sk, "spine_03");
+        neck = P1Body.Bone(sk, "neck_01");
         head = sk.FindBone("Head");
         var list = new System.Collections.Generic.List<int>();
         for (int b = 0; b < sk.GetBoneCount(); b++)
@@ -149,7 +153,7 @@ public partial class HerPose : SkeletonModifier3D
         // higher (longer legs): the clip's motion kept, measured from hers.
         // (Her own clips are made at her height already: the shift fades
         // with them.)
-        float lib = 1 - Mathf.Clamp(Lower, 0, 1), arms = 1 - Mathf.Clamp(Upper, 0, 1);
+        float lib = Baked ? 0 : 1 - Mathf.Clamp(Lower, 0, 1), arms = Baked ? 0 : 1 - Mathf.Clamp(Upper, 0, 1);
         int pel = pelvis;
         if (pel >= 0 && lib > 0) sk.SetBonePosePosition(pel, sk.GetBonePosePosition(pel) + (sk.GetBoneRest(pel).Origin - LibraryPelvis) * lib);
         if (arms > 0)

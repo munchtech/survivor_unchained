@@ -1,0 +1,28 @@
+{
+  "about": "Her soft-tissue springs per body, as data (P1 R1 jiggle; P1Springs.cs runs them, P1Jiggle drives them on B after P1Laws). Each spring is a mass at a point of its bone (turn: the bone turned toward the mass; shift: the bone moved by it), following that point in the WORLD (root motion, her turns and the clip all move it), on a spring of natural frequency freq_hz (mass-normalised stiffness k = (2 pi f)^2, 1/s^2) and damping ratio zeta, its offset held inside reach (m) and per-axis limits (m, in her chest's frame: in = toward her midline, out, up, down, fwd, back). At rest the mass sits at sag (m, along world gravity: the weight the rest pose shows), press (m, toward the midline) and tilt (m per unit change of the gravity direction in the parent's frame: she leans, it hangs). Sized by the body: freq * (size_ref_m / len)^size_exp and reach, limits, sag * (len / size_ref_m), len = the bone to its tip at rest (a smaller bust is stiffer and moves less). support (0 bare .. 1 push-up, the worn piece's: ArmorHold.support, P1Jiggle.Support) scales stiffness, damping, reach/limits, sag and press by the 'support' factors (lerp 1 -> factor); group 'top' answers the top's support, 'bottom' the bottom's. Colliders: the breast samples (p1_spring_samples.json, the skinned surface) kept out of each upper arm's capsule and off the other breast (cleavage plane) beyond what the clip's own pose already has.",
+  "bodies": {
+    "p1": {
+      "substep_hz": 240,
+      "samples": "p1_spring_samples.json",
+      "colliders": { "samples": 96, "arm_extra_m": 0.0, "cleavage_gap_m": 0.0, "iterations": 3 },
+      "support": {
+        "top": { "stiff": 2.6, "zeta": 2.0, "reach": 0.55, "sag": -0.4, "press": 1.8 },
+        "bottom": { "stiff": 1.8, "zeta": 1.2, "reach": 0.6, "sag": 0.5, "press": 1.0 }
+      },
+      "springs": [
+        { "name": "breast_{s}", "bone": "breast_{s}", "mode": "turn", "tip": "breast_tip_{s}", "group": "top", "collide": true,
+          "freq_hz": 2.6, "zeta": 0.2, "size_ref_m": 0.0611, "size_exp": 0.75,
+          "reach": 0.036, "sag": 0.006, "press": 0.002, "tilt": 0.02, "stretch": 0.10,
+          "limits": { "in": 0.012, "out": 0.03, "up": 0.03, "down": 0.036, "fwd": 0.03, "back": 0.012 } },
+        { "name": "breast_tip_{s}", "bone": "breast_tip_{s}", "mode": "shift", "group": "top",
+          "freq_hz": 4.6, "zeta": 0.26, "size_ref_m": 0.0611, "size_exp": 0.75, "size_of": "breast_{s}",
+          "reach": 0.012, "sag": 0.002, "press": 0.0, "tilt": 0.006, "stretch": 0.0,
+          "limits": { "in": 0.006, "out": 0.01, "up": 0.01, "down": 0.012, "fwd": 0.008, "back": 0.006 } },
+        { "name": "glute_{s}", "bone": "glute_{s}", "mode": "turn", "len_m": 0.09, "group": "bottom",
+          "freq_hz": 3.6, "zeta": 0.38, "size_ref_m": 0.09, "size_exp": 0.0,
+          "reach": 0.022, "sag": 0.003, "press": 0.0, "tilt": 0.008, "stretch": 0.08,
+          "limits": { "in": 0.01, "out": 0.015, "up": 0.018, "down": 0.022, "fwd": 0.01, "back": 0.018 } }
+      ]
+    }
+  }
+}

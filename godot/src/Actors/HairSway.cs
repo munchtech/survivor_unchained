@@ -133,6 +133,8 @@ public partial class HairSway : Node
         mesh = GetParent() as MeshInstance3D;
         sk = mesh?.GetParent() as Skeleton3D;
         if (sk == null) return;
+        // (on P1's B: her hair, skinned to A's bones, taken onto B before its binds are read here)
+        if (P1Body.IsB(sk)) P1Body.Rebind(sk, mesh!);
         // Stepped once her skeleton's final pose is made (SkeletonUpdated: her modifiers' corrections in it, HerCarriage's
         // lift of her chest and head and the rest), as she is drawn. (18 October, face 30: stepped in _Process, it read
         // her pose before them, so the chain's rest and her balls stood where her head and back were before the lift,
@@ -168,7 +170,7 @@ public partial class HairSway : Node
         {
             var b = bs[i].AsGodotDictionary();
             var name = (string)b["bone"];
-            list.Add(new Ball { Bone = sk.FindBone(name), At = Vec(b["at"]), R = (float)b["r"], Behind = name.StartsWith("neck") || name.StartsWith("spine") });
+            list.Add(new Ball { Bone = P1Body.Bone(sk, name), At = Vec(b["at"]), R = (float)b["r"], Behind = name.StartsWith("neck") || name.StartsWith("spine") });
             // Her back is wide and flat: those down her spine are stretched 6 cm each way across it (as far back as at her
             // spine to 6 cm out, and reaching her sides), so a braid that swings over her shoulder as she throws and then
             // bends forward lies on her back, not 2-4 cm into it beside her spine, hidden (hair judge hj2).
@@ -490,7 +492,7 @@ public partial class HairSway : Node
             if (OS.HasEnvironment("HAIRBODY"))
             {
                 // (each point in her body's rest space, by spine_03: to check against her torso's shape)
-                var inv = (world * Moved(sk.FindBone("spine_03"))).AffineInverse();
+                var inv = (world * Moved(P1Body.Bone(sk, "spine_03"))).AffineInverse();
                 var line = $"HAIRBODY f{Engine.GetProcessFrames()}";
                 for (int i = 0; i < 8; i++) { var q = inv * x[i]; line += $" {q.X:F3},{q.Y:F3},{q.Z:F3}"; }
                 GD.Print(line);

@@ -1,0 +1,579 @@
+{
+ "about": "P1 B1 step 2 (slider_bake.py): catalogue.json's sliders as targets on OUR topology; per slider its stored sample values (piecewise-linear, 0 at value 0). sliders.py OurSliders evaluates them.",
+ "sliders": {
+  "arm_girth": {
+   "range": [
+    -1,
+    1
+   ],
+   "samples": [
+    -1.0,
+    -0.5,
+    0.5,
+    1.0
+   ]
+  },
+  "arm_length": {
+   "range": [
+    -1,
+    1
+   ],
+   "samples": [
+    -1.0,
+    -0.5,
+    0.5,
+    1.0
+   ]
+  },
+  "belly": {
+   "range": [
+    -1,
+    0.4
+   ],
+   "samples": [
+    -1.0,
+    -0.5,
+    0.2,
+    0.4
+   ]
+  },
+  "build": {
+   "range": [
+    -1,
+    1
+   ],
+   "samples": [
+    -1.0,
+    -0.75,
+    -0.5,
+    -0.25,
+    0.25,
+    0.5,
+    0.75,
+    1.0
+   ]
+  },
+  "bust_firmness": {
+   "range": [
+    -1,
+    1
+   ],
+   "samples": [
+    -1.0,
+    -0.75,
+    -0.5,
+    -0.25,
+    0.25,
+    0.5,
+    0.75,
+    1.0
+   ]
+  },
+  "bust_point": {
+   "range": [
+    -1,
+    1
+   ],
+   "samples": [
+    -1.0,
+    -0.5,
+    0.5,
+    1.0
+   ]
+  },
+  "bust_set": {
+   "range": [
+    -1,
+    1
+   ],
+   "samples": [
+    -1.0,
+    -0.5,
+    0.5,
+    1.0
+   ]
+  },
+  "bust_size": {
+   "range": [
+    -1,
+    1
+   ],
+   "samples": [
+    -1.0,
+    -0.75,
+    -0.5,
+    -0.25,
+    0.25,
+    0.5,
+    0.75,
+    1.0
+   ]
+  },
+  "bust_spacing": {
+   "range": [
+    -1,
+    1
+   ],
+   "samples": [
+    -1.0,
+    -0.5,
+    0.5,
+    1.0
+   ]
+  },
+  "calves": {
+   "range": [
+    -1,
+    1
+   ],
+   "samples": [
+    -1.0,
+    -0.5,
+    0.5,
+    1.0
+   ]
+  },
+  "foot_size": {
+   "range": [
+    -1,
+    1
+   ],
+   "samples": [
+    -1.0,
+    -0.5,
+    0.5,
+    1.0
+   ]
+  },
+  "forearm_girth": {
+   "range": [
+    -1,
+    1
+   ],
+   "samples": [
+    -1.0,
+    -0.5,
+    0.5,
+    1.0
+   ]
+  },
+  "forearm_length": {
+   "range": [
+    -1,
+    1
+   ],
+   "samples": [
+    -1.0,
+    -0.5,
+    0.5,
+    1.0
+   ]
+  },
+  "glutes": {
+   "range": [
+    -1,
+    1
+   ],
+   "samples": [
+    -1.0,
+    -0.5,
+    0.5,
+    1.0
+   ]
+  },
+  "hand_size": {
+   "range": [
+    -1,
+    1
+   ],
+   "samples": [
+    -1.0,
+    -0.5,
+    0.5,
+    1.0
+   ]
+  },
+  "heavy": {
+   "range": [
+    0,
+    1
+   ],
+   "samples": [
+    0.125,
+    0.25,
+    0.375,
+    0.5,
+    0.625,
+    0.75,
+    0.875,
+    1.0
+   ]
+  },
+  "height": {
+   "range": [
+    -1,
+    1
+   ],
+   "samples": [
+    -1.0,
+    -0.75,
+    -0.5,
+    -0.25,
+    -0.02,
+    0.02,
+    0.25,
+    0.5,
+    0.75,
+    1.0
+   ]
+  },
+  "hips": {
+   "range": [
+    -1,
+    1
+   ],
+   "samples": [
+    -1.0,
+    -0.5,
+    0.5,
+    1.0
+   ]
+  },
+  "leg_length": {
+   "range": [
+    -1,
+    1
+   ],
+   "samples": [
+    -1.0,
+    -0.5,
+    0.5,
+    1.0
+   ]
+  },
+  "male": {
+   "range": [
+    0,
+    1
+   ],
+   "samples": [
+    0.125,
+    0.25,
+    0.375,
+    0.5,
+    0.625,
+    0.75,
+    0.875,
+    1.0
+   ]
+  },
+  "shoulder_width": {
+   "range": [
+    -1,
+    1
+   ],
+   "samples": [
+    -1.0,
+    -0.5,
+    0.5,
+    1.0
+   ]
+  },
+  "thigh_length": {
+   "range": [
+    -1,
+    1
+   ],
+   "samples": [
+    -1.0,
+    -0.5,
+    0.5,
+    1.0
+   ]
+  },
+  "thighs": {
+   "range": [
+    -1,
+    1
+   ],
+   "samples": [
+    -1.0,
+    -0.5,
+    0.5,
+    1.0
+   ]
+  },
+  "torso_length": {
+   "range": [
+    -1,
+    1
+   ],
+   "samples": [
+    -1.0,
+    -0.5,
+    0.5,
+    1.0
+   ]
+  },
+  "underbust": {
+   "range": [
+    -1,
+    1
+   ],
+   "samples": [
+    -1.0,
+    -0.5,
+    0.5,
+    1.0
+   ]
+  },
+  "upperarm_length": {
+   "range": [
+    -1,
+    1
+   ],
+   "samples": [
+    -1.0,
+    -0.5,
+    0.5,
+    1.0
+   ]
+  },
+  "waist": {
+   "range": [
+    -1,
+    1
+   ],
+   "samples": [
+    -1.0,
+    -0.5,
+    0.5,
+    1.0
+   ]
+  },
+  "weight": {
+   "range": [
+    -1,
+    1
+   ],
+   "samples": [
+    -1.0,
+    -0.75,
+    -0.5,
+    -0.25,
+    0.25,
+    0.5,
+    0.75,
+    1.0
+   ]
+  }
+ },
+ "check": {
+  "close": {
+   "sample": {
+    "n": 142,
+    "p95_worst": 0.0069,
+    "max_worst": 0.0086
+   },
+   "check": {
+    "n": 142,
+    "p95_worst": 0.6543,
+    "max_worst": 0.9694
+   },
+   "mix": {
+    "n": 6,
+    "p95_worst": 0.6025,
+    "max_worst": 0.8914
+   },
+   "detail": {
+    "sample_worst": {
+     "id": "height@+0.5000",
+     "p95": 0.0069,
+     "max": 0.0086
+    },
+    "check_worst": {
+     "id": "glutes@+0.7500",
+     "p95": 0.0033,
+     "max": 0.9694
+    },
+    "mix0": {
+     "sliders": {
+      "bust_size": -0.3918,
+      "heavy": 0.7945,
+      "hips": 0.4321,
+      "torso_length": 0.517,
+      "upperarm_length": -0.1275,
+      "waist": 0.7577
+     },
+     "p95": 0.0694,
+     "max": 0.8132
+    },
+    "mix1": {
+     "sliders": {
+      "arm_girth": 0.0953,
+      "arm_length": 0.5285,
+      "build": -0.8269,
+      "bust_spacing": -0.5249,
+      "leg_length": 0.9408,
+      "waist": 0.1305
+     },
+     "p95": 0.0081,
+     "max": 0.1077
+    },
+    "mix2": {
+     "sliders": {
+      "arm_length": 0.0671,
+      "belly": -0.659,
+      "bust_spacing": -0.5751,
+      "calves": -0.0557,
+      "hand_size": 0.8254,
+      "male": 0.401
+     },
+     "p95": 0.014,
+     "max": 0.1879
+    },
+    "mix3": {
+     "sliders": {
+      "arm_length": 0.6357,
+      "belly": -0.2696,
+      "build": -0.1598,
+      "calves": 0.4028,
+      "glutes": 0.4537,
+      "leg_length": -0.1484
+     },
+     "p95": 0.0072,
+     "max": 0.1183
+    },
+    "mix4": {
+     "sliders": {
+      "bust_firmness": -0.9304,
+      "bust_set": 0.1966,
+      "forearm_girth": 0.6561,
+      "glutes": 0.1672,
+      "heavy": 0.956,
+      "underbust": 0.6795
+     },
+     "p95": 0.0087,
+     "max": 0.8914
+    },
+    "mix5": {
+     "sliders": {
+      "arm_girth": -0.5194,
+      "forearm_girth": 0.3967,
+      "hand_size": -0.3207,
+      "hips": 0.2776,
+      "underbust": -0.2234,
+      "weight": -0.9795
+     },
+     "p95": 0.6025,
+     "max": 0.7823
+    }
+   },
+   "pass": true,
+   "file_mb": 10.52
+  },
+  "play": {
+   "sample": {
+    "n": 142,
+    "p95_worst": 0.0069,
+    "max_worst": 0.0085
+   },
+   "check": {
+    "n": 142,
+    "p95_worst": 0.6593,
+    "max_worst": 0.705
+   },
+   "mix": {
+    "n": 6,
+    "p95_worst": 0.6035,
+    "max_worst": 0.8918
+   },
+   "detail": {
+    "sample_worst": {
+     "id": "shoulder_width@+1.0000",
+     "p95": 0.0043,
+     "max": 0.0085
+    },
+    "check_worst": {
+     "id": "male@+0.0625",
+     "p95": 0.6593,
+     "max": 0.705
+    },
+    "mix0": {
+     "sliders": {
+      "bust_size": -0.3918,
+      "heavy": 0.7945,
+      "hips": 0.4321,
+      "torso_length": 0.517,
+      "upperarm_length": -0.1275,
+      "waist": 0.7577
+     },
+     "p95": 0.0635,
+     "max": 0.8113
+    },
+    "mix1": {
+     "sliders": {
+      "arm_girth": 0.0953,
+      "arm_length": 0.5285,
+      "build": -0.8269,
+      "bust_spacing": -0.5249,
+      "leg_length": 0.9408,
+      "waist": 0.1305
+     },
+     "p95": 0.008,
+     "max": 0.1174
+    },
+    "mix2": {
+     "sliders": {
+      "arm_length": 0.0671,
+      "belly": -0.659,
+      "bust_spacing": -0.5751,
+      "calves": -0.0557,
+      "hand_size": 0.8254,
+      "male": 0.401
+     },
+     "p95": 0.0147,
+     "max": 0.1453
+    },
+    "mix3": {
+     "sliders": {
+      "arm_length": 0.6357,
+      "belly": -0.2696,
+      "build": -0.1598,
+      "calves": 0.4028,
+      "glutes": 0.4537,
+      "leg_length": -0.1484
+     },
+     "p95": 0.0075,
+     "max": 0.0838
+    },
+    "mix4": {
+     "sliders": {
+      "bust_firmness": -0.9304,
+      "bust_set": 0.1966,
+      "forearm_girth": 0.6561,
+      "glutes": 0.1672,
+      "heavy": 0.956,
+      "underbust": 0.6795
+     },
+     "p95": 0.0134,
+     "max": 0.8918
+    },
+    "mix5": {
+     "sliders": {
+      "arm_girth": -0.5194,
+      "forearm_girth": 0.3967,
+      "hand_size": -0.3207,
+      "hips": 0.2776,
+      "underbust": -0.2234,
+      "weight": -0.9795
+     },
+     "p95": 0.6035,
+     "max": 0.7748
+    }
+   },
+   "pass": true,
+   "file_mb": 3.03
+  }
+ }
+}

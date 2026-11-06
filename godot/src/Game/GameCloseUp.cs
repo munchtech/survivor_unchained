@@ -8,11 +8,15 @@ namespace SurvivorUnchained.Play;
 /// The close view of her in play (logic/Play/CloseUp.cs decides how near; FollowCamera.Close frames it): the wheel
 /// or the right stick in town, and the idle view anywhere quiet. The wheel only brings the view nearer, her back
 /// still to it; in the idle view she turns to it (CloseUp.PoseFor), her head to the lens. Close, by day her carried
-/// light comes down so the sun models her face. --close C: the wheel's level set (pictures); --idle-after S: the idle view after S seconds.
+/// light comes down so the sun models her face. --close C: the wheel's level set (pictures); --idle-after S: the idle view after S seconds;
+/// --close-hold [C]: the close view held at C in every zone, running and fighting (pictures).
 /// </summary>
 public partial class Game
 {
     readonly CloseUp closeUp = new();
+    /// <summary>--close-hold [C] (pictures): the close view held at level C every frame, in any zone, moving or fighting, over the wheel,
+    /// the idle view and `held`; C is the flag's value, else --close's, else 1. Her back stays to the lens (no idle turn, no drift).</summary>
+    static readonly float? CloseHold = Args.Has("close-hold") ? Args.Num("close-hold", Args.Num("close", 1)) : null;
     static readonly float CloseTurn = Args.Has("close-turn") ? (float)Args.Num("close-turn", 0.6f) : 0.6f;
     double closeDrift;
     bool closeDrives;
@@ -126,11 +130,12 @@ public partial class Game
         closeUp.Wheel(notches, cam.CloseShown, sit);
         float target = (float)closeUp.Update(dt, sit);
         if (spotClose is float tc) { target = tc; taken = true; }
+        if (CloseHold is float ch) target = ch;
         cam.Close = target;
         cam.CloseRate = (float)closeUp.Rate(target, cam.CloseShown);
         // The idle view drifts slowly round her, between three-quarters and her front.
         closeDrift = closeUp.Idling ? closeDrift + dt : 0;
-        cam.Orbit = closeUp.Idling ? 0.3f * Mathf.Sin((float)closeDrift * 0.1f) : 0;
+        cam.Orbit = closeUp.Idling && CloseHold == null ? 0.3f * Mathf.Sin((float)closeDrift * 0.1f) : 0;
         if (taken) cam.SnapClose();
         HerToTheView(dt, held);
         // The idle view is a picture: the HUD steps away (back at once on any input). Near, by the wheel or idle,
@@ -161,7 +166,7 @@ public partial class Game
             return;
         }
         float near = cam.CloseShown;
-        bool turn = !held && closeUp.PoseFor(false, false, false) == CloseUp.Pose.ToTheView;
+        bool turn = !held && CloseHold == null && closeUp.PoseFor(false, false, false) == CloseUp.Pose.ToTheView;
         if (turn)
         {
             // (three-quarters to the lens, her shield side away: square on, the shield hid her waist and hips)
