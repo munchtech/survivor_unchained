@@ -36,7 +36,7 @@ Primary weights (each a partition of one; smooth01 = smoothstep):
  fill       min sum M (L x)^2 (L the edge Laplacian weighted 1 / length^2, M the points' areas) with the seeds fixed:
             C1 into the seeds round the band (no kink where a band ends), even in arc length, clipped to [0, 1].
 Then weights.py: 4 chains (twists), 5 shares, 6 points, 7 muscles, 8 breast tip,
-9 islands (on our quads), 10 cap; and 2 mirror exactly, by OUR topology's mirror_of (each right point the left's,
+9 islands (on our quads; the spine chain's cut-off front band held: SPINE_FRONT), 10 cap; and 2 mirror exactly, by OUR topology's mirror_of (each right point the left's,
 sides swapped; the midline the mean of itself and its swap).
 Head (the approved undo (ii)): its open ring's points take the body ring's final weights exactly (a seam with no
 step); points over 3.5 cm from the ring are Head; between, harmonic on the head's own mesh (the face is rigid on
@@ -51,7 +51,7 @@ import scipy.sparse as sp
 import weights as wt
 from stages import harmonic, laplacian
 
-VERSION = "v2"  # (v2: P1 R2 girdle skin CLAV, BLADE) written into each built glb's extras (build_topo.py stage_export); bump with the rules
+VERSION = "v3"  # (v2: P1 R2 girdle skin CLAV, BLADE; v3: P1 R1b SPINE_FRONT) written into each built glb's extras (build_topo.py stage_export); bump with the rules
 
 SPINE = ["pelvis", "spine_01", "spine_02", "spine_03", "spine_04", "spine_05", "neck_01", "neck_02", "Head"]
 FINGERS = ["index", "middle", "ring", "pinky"]
@@ -78,6 +78,19 @@ HAND_SMOOTH = 12
 CLAV = {"t": (0.1, 0.6), "above": (0.11, 0.05), "below": (0.05, 0.06), "neck": (0.03, 0.03)}
 CAP = {"cap_deg": 0.0, "medial": False, "lateral_m": 0.0}
 BLADE = {"amount": 0.6, "ease": 0.03, "cap_amount": 0.0, "cap_deg": (35.0, 65.0)}
+# SPINE_FRONT (v3, P1 R1b round 2): the spine chain's height band (T) is the trunk's own skin all round the torso. CLAV
+#   and the breasts cut spine_05's band at the sides, so its front part (the sternum and the breasts' top inner edge, 378
+#   points on her) was a second component, and the island step (weights.py 9) handed it point by point to the largest
+#   OTHER bone: neck_01 / spine_04 / clavicle / breast / pec patches a centimetre apart (clavicle 0.93 beside breast
+#   0.97 8 mm away). A hanging arm turns the clavicle 2.7 deg about its head and its patch slid 5.6 mm: the crease at
+#   the top of the cleavage (edges 1-9 -> 50-100 deg). Such a component (every point of it in these parts) is the
+#   island step's keep_fixed: it keeps the smooth weights rules 1-8 gave it. Every other point's weights are unchanged.
+SPINE_FRONT = {"parts": ("trunk", "breast")}
+# BREAST (v3): the breast part takes the breast bone's share b = s01(d / fade_m), d its distance from the part's rim (the
+#   trunk's weights fade out under it). v2's 5 cm held the clavicle's 0.9 share at the outer upper rim and dropped it in
+#   3 cm into the breast: a hanging arm (the clavicle turns 2.7 deg) slid that rim 7 mm in against a still breast, a fold
+#   (+30-47 deg) at armpit height. The longer fade spreads the slide over the whole outer breast (a soft mass).
+BREAST = {"fade_m": 0.09}
 
 
 def s01(x):
@@ -241,7 +254,7 @@ def trunk(c):
     rim = rim[c.part[rim] == tr]
     from scipy.spatial import cKDTree
     d, _ = cKDTree(P[rim]).query(P[inb])
-    b = s01(d / 0.05)
+    b = s01(d / BREAST["fade_m"])
     ids = np.where(inb)[0]
     W[ids] *= (1 - b)[:, None]
     for s, sx in (("l", 1.0), ("r", -1.0)):
@@ -533,6 +546,30 @@ def smooth_part(W, Q, sel, iters):
     return W
 
 
+def spine_front(W, c, thr):
+    """SPINE_FRONT: the points of each spine chain bone's components past its largest (W > thr, joined by quad edges as
+    weights.py's island step joins them) that lie wholly in SPINE_FRONT's parts: held (keep_fixed) by the island step."""
+    from scipy.sparse.csgraph import connected_components
+    e = np.concatenate([c.Q[:, [i, (i + 1) % 4]] for i in range(4)])
+    ok = np.isin(c.part, c.pid(*SPINE_FRONT["parts"]))
+    keep = np.zeros(c.n, bool)
+    for b in SPINE:
+        on = W[:, c.idx[b]] > thr
+        if on.sum() < 2:
+            continue
+        m = on[e[:, 0]] & on[e[:, 1]]
+        G = sp.coo_matrix((np.ones(int(m.sum())), (e[m, 0], e[m, 1])), shape=(c.n, c.n))
+        _, lab = connected_components(G, directed=False)
+        ids, cnt = np.unique(lab[on], return_counts=True)
+        big = ids[np.argmax(cnt)]
+        for i in ids:
+            pts = on & (lab == i)
+            if i != big and ok[pts].all():
+                keep |= pts
+    c.rep["spine_front_held"] = int(keep.sum())
+    return keep
+
+
 def mirror(W, topo, names):
     sw = np.array([names.index(wt.swap_side(n)) for n in names])
     mo = topo["mirror_of"]
@@ -568,9 +605,11 @@ def body(P, topo, sk):
     W = np.maximum(W, 0)
     W /= np.maximum(W.sum(1, keepdims=True), 1e-12)
     W = mirror(W, topo, names)
-    fixed = np.zeros(len(W), bool)
     moved_all = {}
     J, Wk = wt.cap(W, wt.RULES["cap"])
+    Wd = np.zeros_like(W)
+    np.put_along_axis(Wd, J, Wk, 1)
+    fixed = spine_front(Wd, c, wt.RULES["island"])       # SPINE_FRONT (v3): the spine's own cut-off band is no stray
     for _ in range(6):
         Wd = np.zeros_like(W)
         np.put_along_axis(Wd, J, Wk, 1)

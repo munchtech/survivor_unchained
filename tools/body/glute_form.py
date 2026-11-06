@@ -170,6 +170,30 @@ def bump_on(q, b):
     return g
 
 
+def smile_y(qy, ax, b, sm):
+    """The y profile of a move whose LOWER side follows a smile (back view): from |x| sm["x"][0] to sm["x"][1] (a
+    quintic, C2 ramp s) the lower foot rises by sm["dy"] * s and its fade lengthens upward by (1 + (fade_k - 1) * s) (a
+    "c" bump: its centre rises, its lower width lengthens), so the
+    under-curve lifts toward the outer hip and its fold eases out there (fade_k > 1: the fold flattens); the upper
+    side is untouched. b: {"full": [a, b], "fade": [lo, hi]} or {"c": c, "w": [below, above]} as bump_on."""
+    s = smoother((ax - float(sm["x"][0])) / (float(sm["x"][1]) - float(sm["x"][0])))
+    k = 1.0 + (float(sm.get("fade_k", 1.0)) - 1.0) * s
+    lift = float(sm["dy"]) * s
+    if "full" in b:
+        f = b["fade"] if isinstance(b["fade"], (list, tuple)) else [b["fade"], b["fade"]]
+        a, hi = b["full"]
+        lo = None if a is None else float(a) + lift
+        m = np.ones_like(qy)
+        if lo is not None:
+            m = m * smoother((qy - (lo - float(f[0]))) / (float(f[0]) * k))   # its foot lifts, its fade grows up
+        if hi is not None:
+            m = m * smoother(((float(hi) + float(f[1])) - qy) / float(f[1]))
+        return m
+    w = b["w"] if isinstance(b["w"], (list, tuple)) else [b["w"], b["w"]]
+    d = qy - (float(b["c"]) + lift)
+    return bump(np.where(d < 0, d / (float(w[0]) * k), d / float(w[1])))
+
+
 def glute_delta(sl, c, V):
     """The cheeks' move at v = 1 (see glutes): a sum of moves in each side plane (dx = 0)."""
     H = hip_frame(sl, V)
@@ -183,7 +207,10 @@ def glute_delta(sl, c, V):
         g = np.ones(len(V))
         for on in ("ax", "axa", "y", "z"):
             if on in mv:
-                g = g * bump_on(q[on], mv[on])
+                if on == "y" and "smile" in mv:
+                    g = g * smile_y(q["y"], ax, mv["y"], mv["smile"])
+                else:
+                    g = g * bump_on(q[on], mv[on])
         d = mv["dir"]
         if d == "radial":                                   # away from the solid's axis in the side plane
             vy, vz = dy / r, dz / r

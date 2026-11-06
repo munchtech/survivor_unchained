@@ -13,10 +13,10 @@
    "range": [0, 1],
    "rule": "py:breast_form.dome",
    "order": 21, "soft": true,
-   "c_off": [0.004, -0.010, 0.0],
-   "axis": {"yaw_deg": 14.0, "pitch_deg": 0.0, "pitch_low_deg": -6.0, "fan_deg_per_m": 120.0},
-   "h_m": 0.101,
-   "r": {"up": 0.14, "low": 0.14, "med": 0.086, "lat": 0.115},
+   "c_off": [0.004, -0.013, 0.0],
+   "axis": {"yaw_deg": 10.0, "pitch_deg": 1.0, "pitch_low_deg": -6.0, "fan_deg_per_m": 100.0},
+   "h_m": 0.104,
+   "r": {"up": 0.14, "low": 0.15, "med": 0.09, "lat": 0.115, "lat_up": {"r": 0.092, "w0_m": 0.015, "bw_m": 0.025}},
    "r_blend_m": 0.03,
    "profiles": {
     "up": {"s": 0.8, "beta": 0.2, "fold": 0.45},
@@ -29,7 +29,7 @@
    "midline_fade_m": 0.025,
    "dir_reg": 0.15,
    "relax": {"mask": [{"on": "ell", "c": [0.025, 1.44, 0.087], "r": [0.02, 0.06, 0.05], "full": 0.3}], "iters": 20, "step": 0.5},
-   "why": "ROUTE (a): the breast as a height field over the chest wall along its axis, set by profile curves (see breast_form.dome). P1 R1b: the lower pole is the ROUND law (an arc of R_m 90 mm from the apex into a soft fold the law solves to fit h_m over r.low; measured on the body ~127 mm, the wall's slope shears it), its move turned down with the receding wall (pitch_low_deg), the cap keeps each pole's own curvature (cap axes: the upper pole's soft s 0.8 cap, so the apex reads round, not a cone point); relax evens the medial column the midline fade stretches (V0 mask off the midline: the cleavage floor untouched)"
+   "why": "ROUTE (a): the breast as a height field over the chest wall along its axis, set by profile curves (see breast_form.dome). P1 R1b: the lower pole is the ROUND law (an arc of R_m 90 mm from the apex into a soft fold the law solves to fit h_m over r.low; measured on the body ~127 mm, the wall's slope shears it), its move turned down with the receding wall (pitch_low_deg), the cap keeps each pole's own curvature (cap axes: the upper pole's soft s 0.8 cap, so the apex reads round, not a cone point); relax evens the medial column the midline fade stretches (V0 mask off the midline: the cleavage floor untouched). R1b round 2 (judge fix 2-3): the outer side at armpit height comes in 12-18 mm (r.lat_up: the upper outer quadrant's own lateral radius 92 mm above w0, the hanging arm meets a clean gap); the axis turned forward (yaw 14 -> 10, fan 120 -> 100) and the volume put forward and in (h_m 0.104, r.med 0.09; apex 7 mm in, 5 mm forward); the base point 3 mm lower and the move pitched up 1 deg (the apex normal is the chest wall's at the base: there it faces level, pitch 3.6 -> 1.5, apex height kept); r.low 0.15 keeps the fold soft"
   },
   "breast_b": {
    "range": [0, 1],

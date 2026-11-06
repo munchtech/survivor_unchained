@@ -201,6 +201,18 @@ def stage_place(spec, z, V, A, baked, rep):
     return V, ring, hv
 
 
+def biharmonic(L, known, vals, free):
+    """Values on `free` points biharmonic (L^2 x = 0) given `vals` on `known` and 0 on every other point (seam_g1)."""
+    import scipy.sparse.linalg as spl
+    M = (L @ L).tocsr()
+    x = np.zeros((L.shape[0], vals.shape[1]))
+    x[known] = vals
+    solve = spl.factorized(M[free][:, free].tocsc())
+    rhs = -(M[free] @ x)
+    x[free] = np.stack([solve(np.ascontiguousarray(rhs[:, k])) for k in range(vals.shape[1])], 1)
+    return x
+
+
 def seam_g1(spec, Q, V, ring, hv, HP, HT, L, rep):
     """P1 R1: the throat seam as ONE surface (spec "seam": {"rows_m": d}): the body leaves the head's ring along the
     head's own surface direction (G1), so no crease line runs round the throat under a cel terminator. Each ring
@@ -257,7 +269,41 @@ def seam_g1(spec, Q, V, ring, hv, HP, HT, L, rep):
     zone[F] = False
     known = np.concatenate([ring, F])
     vals = np.concatenate([np.zeros((len(ring), 3)), Df])
+    q5 = lambda u: u ** 3 * (10 - 15 * u + 6 * u * u)         # C2 quintic ramp 0 -> 1
+    # R1b: the front of the ring (full within front_deg[0] deg of the front about the ring's middle, 0 past
+    # front_deg[1], C2): the throat under the head's under-chin plane. The back keeps R1's seam exactly (the nape's
+    # line sets the C7 joint, skeleton.cervical_joint: a moved nape moves the skeleton and needs the clip bake again)
+    a0, a1 = s.get("front_deg", [55.0, 95.0])
+    c = V[ring].mean(0)
+    az = np.degrees(np.abs(np.arctan2(V[:, 0] - c[0], V[:, 2] - c[2])))
+    front = 1 - q5(np.clip((az - a0) / (a1 - a0), 0, 1))
     X = st.harmonic(L, known, vals, np.where(zone)[0])
+    if s.get("solve", "biharmonic") == "biharmonic":
+        # R1b: the harmonic ease is a membrane: its slope breaks at the first row (the move falls off linearly from
+        # it), so the second row sat a ledge in from the first (a 5-7 mm notch across the throat front under the
+        # head's under-chin plane: the dark zigzag band of the R1 judge). The biharmonic ease (L^2 x = 0, the ring and
+        # the first row known: the head's slope carried; 0 with zero slope outside the zone) bends with no kink.
+        Xb = biharmonic(L, known, vals, np.where(zone)[0])
+        X = X + front[:, None] * (Xb - X)
+    fill = s.get("fill_m", 0.045)
+    if fill:
+        # the body's own surface under the ring is a groove (MakeHuman's throat sits 12-14 mm in behind the head's
+        # ring at the front: 26 -> 12 mm forward over the first 2 rows): an ease of a move keeps that curvature.
+        # Within fill_m of the ring the surface itself is laid biharmonic (positions: the ring and the moved first
+        # row hold the head's slope, the body outside holds its own), so the throat leaves the head in one fair
+        # curve; the fill fades over its outer half (C2 in the distance) and round the side (front) to no line.
+        Vx = V + X
+        fz = dr < float(fill)
+        fz[ring] = False
+        fz[F] = False
+        kn = np.where(~fz)[0]
+        Pf = biharmonic(L, kn, Vx[kn], np.where(fz)[0])
+        k0 = float(s.get("fill_core", 0.25))
+        w = (1 - q5(np.clip((dr / float(fill) - k0) / (1 - k0), 0, 1))) * front * fz
+        Dfill = w[:, None] * (Pf - Vx)
+        X = X + Dfill
+        rep["seam_fill"] = {"fill_m": fill, "front_deg": [a0, a1],
+                            "move_mm_max": round(float(np.linalg.norm(Dfill, axis=1).max()) * 1e3, 2)}
     rep["seam"] = {"rows_m": s["rows_m"], "first_row": int(len(F)), "first_row_move_mm_max": round(float(np.linalg.norm(Df, axis=1).max()) * 1e3, 2),
                    "first_row_move_mm_mean": round(float(np.linalg.norm(Df, axis=1).mean()) * 1e3, 2)}
     return V + X

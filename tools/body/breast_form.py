@@ -21,7 +21,9 @@ leave a ledge across the upper pole, a deep flat shelf under it and faceted poin
                              round lower pole and a soft upper turn meet at a C2 apex), and the lower pole's move
                              may turn down with the receding chest wall (axis "pitch_low_deg", C2 ramp from 0 at
                              the apex). The JSON's "relax" (sliders.relax) evens the medial column the midline
-                             fade stretches.
+                             fade stretches. R1b round 2: r["lat_up"] (optional) gives the upper outer quadrant
+                             its own lateral radius above a height w0 (C-inf switch): the outer side at armpit
+                             height comes in where the hanging arm meets it, the side below keeps its reach.
   (route (b) is a stored target: tools/body/sculpt/breast_b.py; the support fields are rule "field" in the JSON)
 
 Coordinates: glTF metres, x her left (+), y up, z front (+); the right side is the left side mirrored (topology
@@ -176,7 +178,14 @@ def dome_height(c, u, w):
     """h(u, w) (m) over the base plane: the four profiles blended by direction, one shared cap near the apex."""
     r = c["r"]
     bw = c.get("r_blend_m", 0.03)
-    xi = u / smooth_r(u, r["med"], r["lat"], bw)
+    r_lat = r["lat"]
+    if "lat_up" in r:
+        # P1 R1b round 2: the upper outer quadrant (armpit height) has its own lateral radius, switched smoothly (C-inf,
+        # like the radii) from r["lat"] below to r["lat_up"] above the height w0 over +-bw: the outer side at armpit
+        # height comes in (the hanging arm's inner side meets a clean gap) and the side below the armpit keeps its reach
+        lu = r["lat_up"]
+        r_lat = smooth_r(w - lu.get("w0_m", 0.0), r["lat"], lu["r"], lu.get("bw_m", bw))
+    xi = u / smooth_r(u, r["med"], r_lat, bw)
     eta = w / smooth_r(w, r["low"], r["up"], bw)
     rho = np.sqrt(xi * xi + eta * eta)
     reg = c.get("dir_reg", 0.15)

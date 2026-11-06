@@ -36,7 +36,8 @@
   "chest_wall": 1.0,
   "breast_a": 1.0,
   "hourglass": 1.0,
-  "glute_form": 1.0
+  "glute_form": 1.0,
+  "neck_fair": 1.0
  },
  "bone_sliders": {
   "bust_firmness": 1.0,

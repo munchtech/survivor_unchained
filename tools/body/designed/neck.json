@@ -61,8 +61,8 @@
         0.085
        ],
        "fade": [
-        0.035,
-        0.03
+        0.043,
+        0.06
        ]
       },
       {
@@ -138,9 +138,66 @@
        ]
       }
      ]
+    },
+    {
+     "translate": [
+      0,
+      -0.005,
+      0
+     ],
+     "mask": [
+      {
+       "on": "ax",
+       "full": [
+        0.15,
+        0.19
+       ],
+       "fade": [
+        0.04,
+        0.04
+       ]
+      },
+      {
+       "on": "y",
+       "full": [
+        1.565,
+        null
+       ],
+       "fade": [
+        0.08,
+        0
+       ]
+      },
+      {
+       "on": "z",
+       "full": [
+        -0.085,
+        0.0
+       ],
+       "fade": 0.04
+      }
+     ]
+    },
+    {
+     "normal": 0.0045,
+     "mask": [
+      {
+       "on": "ell",
+       "c": [
+        0.0,
+        1.405,
+        -0.1
+       ],
+       "r": [
+        0.065,
+        0.085,
+        0.07
+       ]
+      }
+     ]
     }
    ],
-   "why": "the trapezius height and slope: its top near the neck carried down (26 mm at 5.5-8.5 cm out, easing to 0 at 2 cm and 11.5 cm; the back and top only: z under -2 cm, easing over 7 cm) over an 8 mm drop of the whole shoulder top (7-22 cm out), the ring held (0 within 0.5 cm, full from 3 cm): the neck side wall rises clean out of a sloped trapezius instead of a mound at the jaw. Rest profile at v = 1 (her_r1, the shoulder top under the chin at 7/9/11/13/15/17 cm): -33/-60/-66/-78/-82/-88 mm (was -6/-19/-44/-58/-62/-68)",
+   "why": "the trapezius height and slope: its top near the neck carried down (26 mm at 5.5-8.5 cm out; the back and top only: z under -2 cm, easing over 7 cm) over an 8 mm drop of the whole shoulder top (7-22 cm out), the ring held (0 within 0.5 cm, full from 3 cm): the neck side wall rises clean out of a sloped trapezius instead of a mound at the jaw. R1b (judge fixes 2-4): the 26 mm drop eases in from 1.2 cm out (was 2: the held neck column's edges stood as two hard cords with a groove at the back of the neck) and out over 6 cm (was 3: the trapezius line met the shoulder cap in a square corner with knobs: twice the blend radius); the acromion corner 5 mm lower (15-19 cm out, the shoulder top only); the spine between the shoulder blades filled 4.5 mm along the normal (a C2 bell, 6.5 x 8.5 cm: the dip that left an isolated dark cel patch; it stays in front of the nape's deepest point, so skeleton.cervical_joint does not move).",
    "relax": {
     "mask": [
      {
@@ -211,6 +268,52 @@
     }
    ],
    "why": "the neck girth under the ring: in 6 mm a side at v = 1 between 1.4 and 4 cm from the ring (easing to 0 at the ring and 7 cm down), above the shoulder line: a slim neck that waists a little under the jaw and flares into the trapezius"
+  },
+  "neck_fair": {
+   "range": [
+    0,
+    1
+   ],
+   "rule": "py:neck_form.fair",
+   "order": 60,
+   "regions": [
+    {
+     "name": "neck_side",
+     "region": [
+      {
+       "on": "ell",
+       "c": [
+        0.035,
+        1.555,
+        0.025
+       ],
+       "r": [
+        0.042,
+        0.075,
+        0.05
+       ]
+      }
+     ],
+     "blend": [
+      {
+       "on": "ell",
+       "c": [
+        0.035,
+        1.555,
+        0.025
+       ],
+       "r": [
+        0.042,
+        0.075,
+        0.05
+       ],
+       "full": 0.4
+      }
+     ],
+     "k": 0.3
+    }
+   ],
+   "why": "R1b judge fix 5: the side-of-neck cords (MakeHuman's reference sternocleidomastoid relief: a thin dark cel stripe from jaw to collarbone) softened 30% (neck_form.fair: the region's thin-plate refill, along the normal, k = the share of the relief taken away), so the side of the neck reads as one clean shadow band. Laid before the join (a py rule): its top 1.5 cm under the ring is held."
   }
  }
 }

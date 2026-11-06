@@ -38,13 +38,13 @@
      1.4059,
      1.2376,
      1.1386,
-     1.2277,
-     1.5347,
-     1.802,
-     2.0099,
-     2.0099,
-     2.0,
-     2.015,
+     1.25,
+     1.6,
+     1.895,
+     2.03,
+     2.03,
+     2.02,
+     2.02,
      2.02,
      2.02,
      2.015,
@@ -70,7 +70,7 @@
      "sz": -0.1
     }
    ],
-   "why": "OURS (P1 R1, replaces MakeHuman's waist -0.6 / hips 0.4): the front-view outer line designed directly (half-widths in units of the hip joints' |x| at 5 cm steps over the joints, a natural cubic spline; x scaled per height to meet it, eased out over 8/6 cm past h -0.28..+0.26) and the waist's depth (z scale -10% at h +0.21 about zc). Her rest numbers at v 1: waist 231 mm wide / 144 deep / 617 round at 1228-1240 (navel 1210), hips widest 411 at 1010 (408 at the joints, 1033), the line straight into the thighs (about 400-404 to 0.75 m), waist/hip 0.56 (width) 0.55 (round). R1b: 'soft': true (build_topo.bone_body: the skeleton's landmarks are read without it, so the hip joint stays her_r1's). The line's lower end redrawn to meet her own thigh (2.0-2.02 hip_x from h -0.10 to -0.30, 1.985 at -0.40, full to -0.33, eased out over 7 cm where the line and her thigh agree within ~2%): the outer thigh now runs 201 -> 205 mm (half-width) from the knee's top to the hip with no ring at 0.70-0.75 (was a 207.7 bump at 0.72 dropping to 202), 2-5 mm fuller mid-thigh than R1."
+   "why": "OURS (P1 R1, replaces MakeHuman's waist -0.6 / hips 0.4): the front-view outer line designed directly (half-widths in units of the hip joints' |x| at 5 cm steps over the joints, a natural cubic spline; x scaled per height to meet it, eased out over 8/6 cm past h -0.28..+0.26) and the waist's depth (z scale -10% at h +0.21 about zc). Her rest numbers at v 1: waist 231 mm wide / 144 deep / 617 round at 1228-1240 (navel 1210), hips widest 411 at 1010 (408 at the joints, 1033), the line straight into the thighs (about 400-404 to 0.75 m), waist/hip 0.56 (width) 0.55 (round). R1b: 'soft': true (build_topo.bone_body: the skeleton's landmarks are read without it, so the hip joint stays her_r1's). The line's lower end redrawn to meet her own thigh (2.0-2.02 hip_x from h -0.10 to -0.30, 1.985 at -0.40, full to -0.33, eased out over 7 cm where the line and her thigh agree within ~2%): the outer thigh now runs 201 -> 205 mm (half-width) from the knee's top to the hip with no ring at 0.70-0.75 (was a 207.7 bump at 0.72 dropping to 202), 2-5 mm fuller mid-thigh than R1. R2 (judge: the hip corner sharp from behind): the waist-to-hip run pushed out (w 1.25/1.60/1.895 at h +0.16/+0.10/+0.05: half-width +6.6 mm at +0.10, +9.4 at +0.05) and the turn into the outer thigh made a flat-topped round (2.03 at 0 and -0.05, 2.02 to -0.15): the back-view outline's tightest radius from waist to thigh 87 -> 149 mm (Gaussian 5 mm), hips widest 414 at 19 mm under the joint (form rule band +-30), no saddle (0.0), waist/hip 0.558."
   },
   "glute_form": {
    "range": [
@@ -123,6 +123,14 @@
        0.13
       ],
       "mid": 0.55
+     },
+     "smile": {
+      "x": [
+       0.03,
+       0.18
+      ],
+      "dy": 0.032,
+      "fade_k": 3.5
      }
     },
     {
@@ -189,6 +197,14 @@
        0.11
       ],
       "mid": 0.3
+     },
+     "smile": {
+      "x": [
+       0.03,
+       0.18
+      ],
+      "dy": 0.032,
+      "fade_k": 2.0
      }
     },
     {
@@ -220,9 +236,40 @@
        0.05
       ]
      }
+    },
+    {
+     "dir": [
+      0,
+      1
+     ],
+     "m": 0.007,
+     "axa": {
+      "c": 0.0,
+      "w": [
+       0.03,
+       0.03
+      ]
+     },
+     "y": {
+      "c": 0.075,
+      "w": [
+       0.06,
+       0.06
+      ]
+     },
+     "z": {
+      "full": [
+       null,
+       -0.03
+      ],
+      "fade": [
+       0,
+       0.05
+      ]
+     }
     }
    ],
-   "why": "OURS route (a) (P1 R1, replaces MakeHuman's buttock target and glute_lift): moves in the side planes only (no x: nothing crosses the midline): the mass 44 mm straight back (full at |x| 75 mm, 55% held at the midline, 0 by |x| 205 mm; full from 85 mm under to 60 mm over the hip joints, eased to 0 at 140 mm under and 190 over; back half only), the cleft's soft valley (+16 mm at the midline), the under-curve lifted 10 mm, the cleft's V rounded (a 5 mm tent over 2 cm), a 20-step Taubin fairing and a 12-step quad evening. Her rest numbers at v 1: apex 9 mm over the hip joint, 115 mm behind the small of the back, 113 behind the thigh; cleft floor 0 folds over 60 deg (max 22); 0 points inside.",
+   "why": "OURS route (a) (P1 R1, replaces MakeHuman's buttock target and glute_lift): moves in the side planes only (no x: nothing crosses the midline): the mass 44 mm straight back (full at |x| 75 mm, 55% held at the midline, 0 by |x| 205 mm; full from 85 mm under to 60 mm over the hip joints, eased to 0 at 140 mm under and 190 over; back half only), the cleft's soft valley (+16 mm at the midline), the under-curve lifted 10 mm, the cleft's V rounded (a 5 mm tent over 2 cm), a 20-step Taubin fairing and a 12-step quad evening. Her rest numbers at v 1: apex 9 mm over the hip joint, 115 mm behind the small of the back, 113 behind the thigh; cleft floor 0 folds over 60 deg (max 22); 0 points inside. R2 (judge: the pair boxy from behind): the mass's and the under-curve lift's lower side follow a smile (move key 'smile', glute_form.smile_y): from |x| 30 to 180 mm the foot rises 32 mm and the mass's fade grows 3.5x upward (the lift's 2x), so the under-curve climbs toward the outer hip (fold 129 mm under the joint at |x| 60 -> 107 at |x| 120-140; was 133-137, a frown) and eases out there (its tightest radius 27 mm inside -> 57 at |x| 120, 94 at 140; was 29, 39); the lower outer quarter rounds into the hip. A fifth move deepens the cleft's top third (7 mm forward at the midline, centred 75 mm over the joint, over |x| < 30 mm): cleft depth 60 mm over the apex 15.9 -> 22.4 mm, 90 mm over 11.4 -> 14.4, at the apex unchanged 24.3; cleft floor still 0 folds over 60.",
    "fair": {
     "mask": {
      "axa": {
