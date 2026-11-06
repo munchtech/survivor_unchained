@@ -870,6 +870,45 @@ class Solve:
         prev = np.zeros(self.ns, bool)
         cn, tgt = np.zeros(0, np.int64), np.zeros((0, 3))
         wc = np.zeros(len(fr))
+        ccd = bool(cf.get("ccd", 0))
+        if ccd:
+            # `ccd` (R5 lead 3): the skin never passes through itself. The 135 deep rows of every run so far were a
+            # LOCAL self-crossing: the crease apex's sheet pushed through its own 2-3 rings (4-14 mm at rest, facing
+            # the same way: no pair or plane sees it), its patch then enclosed (+N runs 66-150 mm inside the body).
+            # A line-search step is accepted only if it adds no skin edge-through-face crossing (each skin edge a
+            # ray, its hits on faces that share no corner with it), so the march, crossing-free at 60 deg, can lower
+            # the count and never raise it
+            Fs_ = self.skinF
+            if not hasattr(self, "_ccd_e"):
+                e_ = np.concatenate([Fs_[:, [0, 1]], Fs_[:, [1, 2]], Fs_[:, [2, 0]]])
+                self._ccd_e = np.unique(np.sort(e_, 1), axis=0)
+            Es = self._ccd_e
+
+            def crossings(xv):
+                Q = xv[:self.ns]
+                sc_ = ray.scene(Q, Fs_)
+                a_, b_ = Q[Es[:, 0]], Q[Es[:, 1]]
+                L_ = np.linalg.norm(b_ - a_, axis=1)
+                d_ = (b_ - a_) / np.maximum(L_, 1e-12)[:, None]
+                eps_ = 1e-5
+                n_ = 0
+                o_ = a_ + eps_ * d_
+                for _ in range(3):                       # past an incident face's hit, up to 3 hits along the edge
+                    pid_, tf_ = ray.hits(sc_, o_, d_)
+                    hit = (pid_ >= 0) & (tf_ < L_ - 2 * eps_)
+                    if not hit.any():
+                        break
+                    f_ = Fs_[np.maximum(pid_, 0)]
+                    inc = (f_ == Es[:, :1]).any(1) | (f_ == Es[:, 1:]).any(1)
+                    n_ += int((hit & ~inc).sum())
+                    go = hit & inc
+                    if not go.any():
+                        break
+                    o_ = np.where(go[:, None], o_ + (tf_[:, None] + eps_) * d_, o_)
+                    L_ = np.where(go, L_ - tf_ - eps_, 0.0)
+                return n_
+            c_cur = crossings(x)
+            log["cross0"] = c_cur
         nq = np.zeros((0, 3))
         Sh, Yh = [], []
         m_h = int(cf.get("lbfgs_m", 8))
@@ -978,7 +1017,13 @@ class Solve:
                 x[fr] = x0f + t * d
                 E1, g1, J1 = total(x, cn, tgt, wc)
                 if E1 <= E + 1e-4 * t * gd:
-                    break
+                    if not ccd:
+                        break
+                    c_new = crossings(x)
+                    if c_new <= c_cur:
+                        c_cur = c_new
+                        break
+                    E1 = np.inf                      # a step that crosses the skin through itself: shorter
                 t *= 0.5
                 nls += 1
                 if t < 1e-5:
@@ -1011,7 +1056,9 @@ class Solve:
         if pair:
             ph = self.pair_phi(x, PR)
             log.update(getattr(self, "_pairs_log", {}), pen_max_mm=round(-float(ph.min()) * 1000, 3) if len(ph) else 0.0)
-            self._pid = pid + 1                      # the next step's first pairing refactors
+            self._pid = pid + 1
+        if ccd:
+            log["cross"] = c_cur                      # the next step's first pairing refactors
         cn, tgt, ins = self.contacts(x, np.zeros(self.ns, bool))
         J = np.linalg.det(self.tets.F(x))
         vl = self.tets.vol
