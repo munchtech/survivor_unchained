@@ -13,8 +13,9 @@ by her_target world=True; TIGHT p95 about 1.8 mm), the topology's hash asserted.
 body = this spec's stage 1 at her_a = 0 and t = spec "her_a" "arm_move_m" (dx away from the midline on each side): the
 arm and deltoid keep OUR form and only ride to A's shoulder line. D is 0 on the head's ring.
 
-M, spec "her_a" (a function of the topology's parts and rings and these numbers; no paint): 0 on arm, elbow, forearm and hand
-and on the shoulder band's rings from "zero_ring" out, 1 farther than "band_m" along the surface (reference surface, edge
+M, spec "her_a" (a function of the topology's parts and rings and these numbers; no paint): 0 on "zero_parts" (default arm,
+elbow, forearm and hand; round 11: the hand only, the fit's arm taken) and on the shoulder band's rings from "zero_ring" out
+(null: none), 1 farther than "band_m" along the surface (reference surface, edge
 lengths), biharmonic between (L^2 M = 0 on an inverse-edge-length Laplacian, the known sets thick enough that the slope
 leaves them at 0), mirror-averaged. Play takes close's M through the shared reference surface. Derivation: (a) the owner,
 6 Nov: A is the quality floor, B's job is one topology and sliders; (b) A; (c) the arm is ours: A's arm surface was the
@@ -62,8 +63,8 @@ def mask(z, cfg):
     V, Q = z["V"].astype(np.float64), z["Q"]
     parts = list(map(str, z["parts"]))
     part, ring = z["part"], z["ring"]
-    arm = np.isin(part, [parts.index(p) for p in ("arm", "elbow", "forearm", "hand")])
-    zero = arm | ((part == parts.index("shoulder")) & (ring >= cfg["zero_ring"]))
+    arm = np.isin(part, [parts.index(p) for p in cfg.get("zero_parts", ("arm", "elbow", "forearm", "hand"))])
+    zero = arm | ((part == parts.index("shoulder")) & (ring >= cfg["zero_ring"])) if cfg.get("zero_ring") is not None else arm
     e = edges(Q)
     ln = np.linalg.norm(V[e[:, 0]] - V[e[:, 1]], axis=1)
     n = len(V)
@@ -120,7 +121,7 @@ def make(spec_path, tiers):
         assert ring_max < 1e-4, ("the fit is not the head's on the ring", ring_max)
         D[ring] = 0.0
         about = (f"made_by: python tools/body/her_a_target.py {os.path.relpath(os.path.abspath(spec_path), REPO)}".replace("\\", "/") +
-                 f" (fit {cfg['fit_spec']}, band_m {cfg['band_m']}, zero_ring {cfg['zero_ring']}, arm_move_m {list(t)})")
+                 f" (fit {cfg['fit_spec']}, band_m {cfg['band_m']}, zero_parts {cfg.get('zero_parts', 'arm..hand')}, zero_ring {cfg.get('zero_ring')}, arm_move_m {list(t)})")
         np.savez_compressed(os.path.join(TARGETS, OUT_FILE.format(tier=tier)), D=D.astype(np.float32), M=M.astype(np.float32),
                             topology=np.array(bt.topo_sha(z)), about=np.array(about))
         print(tier, "D max mm", round(float(np.linalg.norm(D, axis=1).max()) * 1e3, 1), "M<1", int((M < 1).sum()), "of", len(M), flush=True)

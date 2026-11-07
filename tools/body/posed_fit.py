@@ -71,8 +71,22 @@ def skin(glb, node, probe, bones=None):
     return (X[:3, :3] @ out.T).T + X[:3, 3], m.T
 
 
-def carry_pose(glb_from, glb_to, probe):
-    """The probe's pose (on glb_from's rest) on glb_to's rest: each bone's rotation relative to its parent kept, joints at the new rest's offsets."""
+def _swing(u, v):
+    """The shortest rotation (3x3) taking direction u onto v."""
+    u, v = u / np.linalg.norm(u), v / np.linalg.norm(v)
+    c, w = float(u @ v), np.cross(u, v)
+    s = np.linalg.norm(w)
+    if s < 1e-9:
+        return np.eye(3)
+    k = w / s
+    K = np.array([[0, -k[2], k[1]], [k[2], 0, -k[0]], [-k[1], k[0], 0]])
+    return np.eye(3) + s * K + (1 - c) * K @ K
+
+
+def carry_pose(glb_from, glb_to, probe, lines=()):
+    """The probe's pose (on glb_from's rest) on glb_to's rest: each bone's rotation relative to its parent kept, joints at the new rest's offsets.
+    lines: bones (name -> its tail child) whose posed head->tail LINE is kept instead (swung onto the probe's): what a re-bake that lands the
+    same lines does when the rest's bone angle changed (the clips are baked on the old rest)."""
     a, b = glb_from.skeleton(0), glb_to.skeleton(0)
     G0 = {n: m12(probe["bones"][n]) for n in a.names}
     out = np.zeros((len(b.names), 4, 4))
@@ -89,6 +103,11 @@ def carry_pose(glb_from, glb_to, probe):
         lb = rb @ (np.linalg.inv(ra) @ la)      # the same rest-relative turn
         lb[:3, 3] = rb[:3, :3] @ (np.linalg.inv(ra[:3, :3]) @ la[:3, 3]) if pa >= 0 and np.linalg.norm(la[:3, 3] - ra[:3, 3]) > 1e-3 else rb[:3, 3]
         out[j] = (out[p] if p >= 0 else np.eye(4)) @ lb
+        if n in dict(lines) and dict(lines)[n] in G0:
+            c = dict(lines)[n]
+            src = G0[c][:3, 3] - G0[n][:3, 3]
+            tail = out[j] @ (np.linalg.inv(b.rest[j]) @ b.rest[b.index[c]])[:, 3]
+            out[j][:3, :3] = _swing(tail[:3] - out[j][:3, 3], src) @ out[j][:3, :3]
     return out
 
 
@@ -257,6 +276,7 @@ def main():
     ap.add_argument("--px", type=float, default=1.0)
     ap.add_argument("--pose-from")
     ap.add_argument("--no-image", action="store_true")
+    ap.add_argument("--carry-lines", action="store_true", help="with --pose-from: the arm chain's posed lines kept (a re-bake's preview)")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     GA = Glb(a.a_glb)
@@ -265,7 +285,8 @@ def main():
     ca, cb = Cam(pa["camera"]), Cam(pb["camera"])
     bones = None
     if a.pose_from:
-        bones = carry_pose(Glb(os.path.join(a.pose_from, "body.glb")), GB, pb)
+        lines = [(f"{x}_{s_}", f"{y}_{s_}") for s_ in "lr" for x, y in (("clavicle", "upperarm"), ("upperarm", "lowerarm"), ("lowerarm", "hand"))] if a.carry_lines else ()
+        bones = carry_pose(Glb(os.path.join(a.pose_from, "body.glb")), GB, pb, lines)
     Va, Ta = skin(GA, BODY, pa)
     Vb, Tb = skin(GB, BODY, pb, bones)
     Ha, Tha = skin(GA, HEAD, pa)

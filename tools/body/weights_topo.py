@@ -51,7 +51,7 @@ import scipy.sparse as sp
 import weights as wt
 from stages import harmonic, laplacian
 
-VERSION = "v4"  # (v2: P1 R2 girdle skin CLAV, BLADE; v3: P1 R1b SPINE_FRONT; v4: P1 R1b BREAST clav_fade_m) written into each built glb's extras (build_topo.py stage_export); bump with the rules
+VERSION = "v5"  # (v2: P1 R2 girdle skin CLAV, BLADE; v3: P1 R1b SPINE_FRONT; v4: P1 R1b BREAST clav_fade_m; v5: P1 A shape CLAV front_below) written into each built glb's extras (build_topo.py stage_export); bump with the rules
 
 SPINE = ["pelvis", "spine_01", "spine_02", "spine_03", "spine_04", "spine_05", "neck_01", "neck_02", "Head"]
 FINGERS = ["index", "middle", "ring", "pinky"]
@@ -75,7 +75,15 @@ HAND_SMOOTH = 12
 #   BLADE the scapula takes `amount` of the clavicle's weight behind the clavicle head's coronal plane (eased over
 #         `ease` m): the trapezius over the scapular spine and the blade ride the blade (the scap muscle's ball, kept,
 #         is its own); cap_amount (off) the same share over CAP's cone (cap_deg, fading) lateral of the scap's head
-CLAV = {"t": (0.1, 0.6), "above": (0.11, 0.05), "below": (0.05, 0.06), "neck": (0.03, 0.03)}
+#   front (v5, P1 A shape round 11): in front of the clavicle head's coronal plane (eased over front_ease m) the share below
+#         the line fades over front_below instead (full to 1 cm, gone 5 cm under the line): under the clavicle at the front
+#         lies the pectoralis' clavicular head's narrow strip, then the sternocostal head and the breast on the ribcage.
+#         v4's 5 + 6 cm held 0.56-0.65 of the clavicle 2-6 cm under the line at the front (0.36 at 8 cm, into the breast),
+#         and the clip's clavicle (11.7 deg off rest at her idle, A's line) dragged the upper chest and the breasts' tops
+#         with it: the posed breasts p95 23 mm from A's at the Look (A, read as a check, not a source: 0.17 / 0.10 / 0.07
+#         at 2 / 4 / 6 cm). The back keeps the v4 band (BLADE hands most of it to the scapula).
+CLAV = {"t": (0.1, 0.6), "above": (0.11, 0.05), "below": (0.05, 0.06), "neck": (0.03, 0.03),
+        "front_below": (0.01, 0.04), "front_ease": 0.03}
 CAP = {"cap_deg": 0.0, "medial": False, "lateral_m": 0.0}
 BLADE = {"amount": 0.6, "ease": 0.03, "cap_amount": 0.0, "cap_deg": (35.0, 65.0)}
 # SPINE_FRONT (v3, P1 R1b round 2): the spine chain's height band (T) is the trunk's own skin all round the torso. CLAV
@@ -247,8 +255,11 @@ def trunk(c):
         line = a[None] + np.clip(t, 0, 1)[:, None] * (b - a)[None]
         dy = P[:, 1] - line[:, 1]
         own = (P[:, 0] * sx > 0).astype(float)
-        fade = np.where(dy > 0, 1 - s01((dy - CLAV["above"][0]) / CLAV["above"][1]),
-                        1 - s01((-dy - CLAV["below"][0]) / CLAV["below"][1]))
+        below = 1 - s01((-dy - CLAV["below"][0]) / CLAV["below"][1])
+        if CLAV.get("front_below"):
+            fr = s01((P[:, 2] - a[2]) / CLAV["front_ease"])
+            below = (1 - fr) * below + fr * (1 - s01((-dy - CLAV["front_below"][0]) / CLAV["front_below"][1]))
+        fade = np.where(dy > 0, 1 - s01((dy - CLAV["above"][0]) / CLAV["above"][1]), below)
         k = s01((t - t0) / (t1 - t0)) * fade * s01((dn - CLAV["neck"][0]) / CLAV["neck"][1]) * own
         W *= (1 - k)[:, None]
         W[:, c.idx[f"clavicle_{s}"]] += k
