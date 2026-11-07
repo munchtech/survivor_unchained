@@ -93,7 +93,7 @@ def seam(V, T, H, HT):
             "angle_p90_deg": round(float(np.percentile(ang, 90)), 1), "angle_max_deg": round(float(ang.max()), 1)}
 
 
-MEASURES = {"neck": lambda ctx: neck(ctx["V"], ctx["H"]), "seam": lambda ctx: seam(ctx["V"], ctx["T"], ctx["H"], ctx["HT"])}
+MEASURES = {"hanging": lambda ctx: hanging(ctx), "neck": lambda ctx: neck(ctx["V"], ctx["H"]), "seam": lambda ctx: seam(ctx["V"], ctx["T"], ctx["H"], ctx["HT"])}
 
 
 BREAST_SLIDERS = ["bust_firmness", "bust_lift", "bust_point", "bust_set", "bust_size", "bust_spacing", "chest_wall",
@@ -523,6 +523,61 @@ def spec_measures(spec_path, body_glb):
     return {"breast": b, "glutes": g}
 
 
+def hanging(ctx):
+    """P1 R1c round 7, on the build's own rig (lbs + its correctives) with the arms hanging 8 deg (the Look): the pocket
+    on the breast's outer base and the shoulder line. pocket_slot_depth_mm: the front envelope z(x) at y from the apex's
+    height up, x from 13 to 22 cm: the deepest drop between a crest on the breast side and one on the arm side, worst
+    height (the pit); shoulder_line_concave_per_m and _sign_changes: the front silhouette's top from 12.5 to 20.5 cm out,
+    10 mm smoothed: its largest concave curvature and its sign changes past +-4 /m."""
+    import check, rig_drive as rd
+    glb = ctx["glb"]
+    P = check.make_poser("lbs", str(glb), json.loads((Path(glb).parent / "rig.json").read_text()))
+    h = lambda G, n: G[P.index[n]][:3, 3]
+    _, G, _ = P.pose([])
+    t = []
+    for s, sg in (("l", 1), ("r", -1)):
+        d = rd._n(h(G, "lowerarm_" + s) - h(G, "upperarm_" + s))
+        e = math.radians(8.0)
+        t.append(("upperarm_" + s, rd._arc(d, rd._n(np.array([sg * math.sin(e), -math.cos(e), 0.03])))))
+    V = P.pose(t)[0][P.piece == "body"]
+    Tb = P.T[np.all(P.piece[P.T] == "body", axis=1)]
+    gs = lambda a, sd: np.convolve(np.pad(a, 3 * sd, mode="edge"), np.exp(-0.5 * (np.arange(-3 * sd, 3 * sd + 1) / sd) ** 2) / (sd * math.sqrt(2 * math.pi)), "valid")
+    xs = np.arange(0.13, 0.22, 0.001)
+    worst = 0.0
+    E = V[np.concatenate([Tb[:, [0, 1]], Tb[:, [1, 2]], Tb[:, [2, 0]]])]
+    for y in np.arange(1.40, 1.45, 0.005):
+        m = (E[:, 0, 1] - y) * (E[:, 1, 1] - y) < 0
+        a, b = E[m, 0], E[m, 1]
+        q = a + (b - a) * ((y - a[:, 1]) / (b[:, 1] - a[:, 1]))[:, None]
+        zf = np.full(len(xs), -9.0)
+        i = np.round((q[:, 0] - xs[0]) / 0.001).astype(int)
+        ok = (i >= 0) & (i < len(xs))
+        np.maximum.at(zf, i[ok], q[ok, 2])
+        g = zf > -5
+        if g.sum() < 20:
+            continue
+        zs = gs(np.interp(xs, xs[g], zf[g]), 1)
+        for j in range(5, len(xs) - 5):
+            worst = max(worst, min(zs[:j].max() - zs[j], zs[j + 1:].max() - zs[j]))
+    xt = np.arange(0.10, 0.22, 0.002)
+    top = np.full(len(xt), -9.0)
+    m = E[:, :, 1].min(1) > 1.3
+    for a, b in E[m]:
+        n = max(2, int(np.linalg.norm(a - b) / 0.001))
+        pp = a + (b - a) * np.linspace(0, 1, n)[:, None]
+        i = np.round((pp[:, 0] - xt[0]) / 0.002).astype(int)
+        ok = (i >= 0) & (i < len(xt))
+        np.maximum.at(top, i[ok], pp[ok, 1])
+    ys = gs(top, 3)
+    d1 = np.gradient(ys, xt)
+    k = np.gradient(d1, xt) / (1 + d1 * d1) ** 1.5
+    kk = k[(xt >= 0.125) & (xt <= 0.205)]
+    sg = np.sign(kk) * (np.abs(kk) > 4)
+    sg = sg[sg != 0]
+    return {"pocket_slot_depth_mm": round(worst * 1000, 1), "shoulder_line_concave_per_m": round(float(kk.max()), 1),
+            "shoulder_line_sign_changes": int((sg[1:] != sg[:-1]).sum())}
+
+
 def measure(body_glb, rules=None, spec=None):
     rules = rules or json.loads(RULES.read_text())
     if spec is None and (Path(body_glb).parent / "build.json").exists():
@@ -533,11 +588,14 @@ def measure(body_glb, rules=None, spec=None):
     from posers import guess_body
     V, T = rest(B, guess_body(B))
     H, HT = rest(B, "HeroineHead")
-    ctx = {"V": V, "T": T, "H": H, "HT": HT, "B": B}
+    ctx = {"V": V, "T": T, "H": H, "HT": HT, "B": B, "glb": body_glb}
     out, miss, n, skipped = {}, [], 0, []
     extra = spec_measures(spec, body_glb) if spec else {}
     for sec, rs in rules["sections"].items():
         if sec in ("breast", "glutes") and not spec:
+            skipped.append(sec)
+            continue
+        if sec == "hanging" and not (Path(body_glb).parent / "rig.json").exists():
             skipped.append(sec)
             continue
         if sec not in MEASURES and sec not in extra:

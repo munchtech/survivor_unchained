@@ -1,6 +1,14 @@
 {
  "about": "P1 R1 design sheet: her forms as rules, each a number on the built body at rest with a band (tools/body/formrules.py; check.py --only forms). The bar (the owner, 5 Nov): sexy and confident in painted cel, clean readable forms, a strong silhouette; A is information only. Distances in mm, angles in degrees, glTF axes (x her left, y up, z front). Sections breast and glutes (5 Nov) measure on the spec's body (formrules.py --spec, else build.json beside the glb).",
  "sections": {
+  "hanging": {
+   "why": "P1 R1c round 7: what the Look shows with the arms hanging, on the build's own rig",
+   "rules": {
+    "pocket_slot_depth_mm": {"band": [null, 30], "why": "the pocket where the breast's outer base dies into the arm: the deepest drop of the front envelope between a crest on each side, 14-45 mm above the apex (the Look's dark pit, 50 mm deep on the bare rig): a soft cove, not a hole"},
+    "shoulder_line_concave_per_m": {"band": [null, 4], "why": "the front silhouette from the trapezius to the deltoid is one convex curve, 12.5 to 20.5 cm out: no step where trap_rise meets the shoulder (round 6: +8 /m at 15-17 cm)"},
+    "shoulder_line_sign_changes": {"band": [null, 0], "why": "no inflection on that curve"}
+   }
+  },
   "neck": {
    "why": "A long elegant neck rising clean out of a sloped trapezius reads confident; MakeHuman's shrug under her head (the trapezius up at the jaw, a 20 cm wide neck base) read as a yoke at the Look and close-up (R2).",
    "rules": {

@@ -169,6 +169,28 @@ def prox_dir(st, G):
     return st.p3
 
 
+def fair_key(mesh, st, V, G, jc):
+    """P1 R1c round 7: the key pose's surface FAIRED under a C2 mask (jc["fair"]: c = the centre from the center bone's
+    rest head, r = semi-axes, full, iters): the armpit's pocket with the arms hanging. The vault's skin rides the arm
+    (upperarm 0.97-1.0) and swings 24-50 mm into the trunk wall: a pit 50 mm deep and a pinched web, a lit fold on it. No
+    rest shape fills it (a move at rest comes out as a lump there); an umbrella fairing of the POSED surface shrinks the
+    vault to its rim, and rest_delta turns it into a shape that only the pose wears. Any body: the mask rides the joint."""
+    p = mesh.p
+    fa = jc["fair"]
+    c = p.rest[p.index[jc["center"].replace("{s}", st.s)]][:3, 3] + np.asarray(fa["c"], float)
+    X = V[mesh.first].copy()
+    d = np.linalg.norm((X - c) / np.asarray(fa["r"], float), axis=1)
+    f = 1 - smooth01((d - fa["full"]) / (1 - fa["full"]))
+    free = (f > 1e-3) & ~mesh.held
+    f = np.where(free, f, 0.0)
+    deg = np.maximum(mesh.Lg.diagonal(), 1.0)
+    Y = X.copy()
+    for _ in range(int(fa["iters"])):
+        Y = Y - (0.5 * f / deg)[:, None] * (mesh.Lg @ Y)
+    mv = np.linalg.norm(Y - X, axis=1)
+    return Y, f, free, mesh.skin_mats(G), {"iters": [{"moved_max_mm": round(float(mv.max() * 1000), 1)}]}
+
+
 def solve_key(mesh, st, V, G, jc, cf, ref):
     """The desired posed surface Y (welded) for one key pose, and its log."""
     p = mesh.p
@@ -547,6 +569,8 @@ def run(out, only=None, tier="close", fresh=False):
             if chain:
                 Y, f, free, M, _, lg = chain[float(deg)]
                 lg = dict(lg, iters=[{"inside_parity": lg["march"]["inside"]}])
+            elif jk.get("fold") == "fair":
+                Y, f, free, M, lg = fair_key(mesh, st, V, G, jk)
             elif jk.get("fold") == "flatten":
                 import crease_fold
                 Y, f, free, M, lg = crease_fold.solve_key(mesh, st, V, G, jk, cfk, ref)

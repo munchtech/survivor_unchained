@@ -15,7 +15,10 @@
    "relax": {"mask": [{"on": "ell", "c": [0.143, 1.602, -0.067], "r": [0.03, 0.03, 0.035], "full": 0.3}], "iters": 40, "step": 0.5},
    "moves": [
     {"normal": -0.013,
-     "mask": [{"on": "ell", "c": [0.232, 1.528, -0.038], "r": [0.075, 0.075, 0.09], "full": 0.0}]}
+     "mask": [{"on": "ell", "c": [0.232, 1.528, -0.038], "r": [0.075, 0.075, 0.09], "full": 0.0}]},
+    {"translate": [0.0, 0.009, 0.0], "mask": [{"on": "ell", "c": [0.168, 1.58, -0.03], "r": [0.06, 0.06, 0.1], "full": 0.0}],
+     "why": "P1 R1c round 7: the Look's silhouette step where trap_rise's fade meets the deltoid: hanging, the line went concave at 15-17 cm out (+8 /m); filled so it stays convex from 12.5 cm to the deltoid (rule shoulder_line_concave_per_m); height only, no width"},
+    {"translate": [0.0, 0.003, 0.0], "mask": [{"on": "ell", "c": [0.115, 1.615, -0.03], "r": [0.04, 0.04, 0.1], "full": 0.0}]}
    ],
    "why": "the deltoid cap cut in: 11 mm along the inward normal at v = 1 at the cap's middle (V0 (23.2, 152.8, -3.8) cm: the outer top of the shoulder over the humeral head), a C2 bell easing to 0 over 7.5 cm sideways and up, 9 cm front to back (the front, outer and back heads together). Her cap stood 64 mm off the humerus axis over a 43-47 mm upper arm (a 17-20 mm ball: \"shoulder pads\"); this takes about 20% off the cap's radius and blends it into the arm and the trapezius as one slope. Soft (build_topo.bone_body): soft tissue, the joints do not move. P1 R1c round 3: its relax evens the one stretched quad a side where the cap's back meets trap_rise (V0 (14.3, 160.2, -6.7) cm, aspect 4.09: a 3 mm edge against a 12 mm one), shape kept (tangential). trap_rise is now soft too (no joint follows it)."}
  }

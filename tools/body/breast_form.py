@@ -425,8 +425,7 @@ def globe_delta(sl, c, V, Va=None):
             dxi = dx
         sat = -room * np.tanh(-dxi / np.maximum(room, 1e-6))
         mv[:, 0] = np.where(inw, sat, dx)
-        ve = pr.get("vee")
-        if ve:
+        for ve in ([pr["vee"]] if isinstance(pr.get("vee"), dict) else pr.get("vee", [])):
             # P1 R1c round 7: the slot's floor as a soft V: the floor's first columns rise along the axis so a narrow slot
             # turns up over them in folds under 60 deg (a flat floor between walls 6 mm apart turns 90 deg in one quad):
             # x0, z, x = columns on V0 and their offsets (m, C2 cubic), over the slot's height band y (V0: full y[1]..y[2])
