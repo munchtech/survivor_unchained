@@ -513,7 +513,7 @@ def stage_bake(spec, tier, out, rep):
     rep["maps"] = {"dir": spec["bake"]["maps"], "files": sorted(os.listdir(maps)), "attached_to": done}
 
 
-def her_a_normals(spec, tier, V, N, rep):
+def her_a_normals(spec, tier, V, N, rep, ring=None):
     """(P1 R1 bake round 2; spec "her_a" "normals", the her_a target's "N", "NG", "NW", "P": her_a_target.a_normals)
     The export's normals where B lies on A are A's, as A's file stores them (what the game shades A with), each half
     its own: A's normal turned by however the built body's own normal stands off the target's (NG -> N: 0 where the
@@ -534,6 +534,14 @@ def her_a_normals(spec, tier, V, N, rep):
     d0, d1 = nc["dev_mm"]
     x = np.clip((dev - d0) / (d1 - d0), 0.0, 1.0)
     w = v * NW * (1.0 - x * x * (3 - 2 * x))
+    if ring is not None and nc.get("ring_mm"):
+        # (ring_mm [a, b]: B's own normals within a of the head's ring, A's from b: seam_g1 made B's rows there meet
+        # the head's normals (the ring takes the head's); A's file normals on the next row stood p90 10.3 deg off the
+        # ring's head normal against B's own 6.8, close tier)
+        r0, r1 = nc["ring_mm"]
+        dr = cKDTree(V[ring]).query(V)[0] * 1e3
+        y = np.clip((dr - r0) / (r1 - r0), 0.0, 1.0)
+        w = w * y * y * (3 - 2 * y)
     from bends import turn_onto
     Nt = turn_onto(NA, NG, N)
     out = w[:, None] * Nt + (1.0 - w[:, None]) * N
@@ -552,7 +560,7 @@ def stage_export(spec, tier, z, V, ring, hv, sk, wts, A, baked, out, rep, uv=Non
     Q = z["Q"]
     T = np.concatenate([Q[:, [0, 1, 2]], Q[:, [0, 2, 3]]])
     N = st.vertex_normals(V, T)
-    N, _ = her_a_normals(spec, tier, V, N, rep)
+    N, _ = her_a_normals(spec, tier, V, N, rep, ring)
     head = A.mesh("HeroineHead")
     N[ring] = head.N[hv]
     vol = float(np.einsum("ij,ij->i", V[T[:, 0]], np.cross(V[T[:, 1]], V[T[:, 2]])).sum() / 6)

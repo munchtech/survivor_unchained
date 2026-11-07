@@ -125,7 +125,11 @@
     1.0,
     4.0
    ],
-   "why": "P1 R1 bake round 2 (round_16): B's export normals are A's FILE normals (posed as Godot skins them: what the game shades A with) where B lies on A, each half its own, least-squares fit over our triangles (the blend the game interpolates; point samples left p90 1.57 deg, the fit 1.29); B's own area-weighted normals there are B's facets over A's, p90 14 / p99 35 deg off on the upper chest, and the map that carried that correction from one half lit the other half wrong (round 1's lumps). near_mm = maps_bake form_near's (B on A); agree_cos keeps the other sheet out; dev_mm: where the built body leaves the target (the seam's rows) B's own. Measured (s/nmetric.py, texels both halves): vertex normal vs A's file p90 upper chest 5.14 -> 1.17, torso front 5.40 -> 2.35."
+   "ring_mm": [
+    15.0,
+    45.0
+   ],
+   "why": "P1 R1 bake round 2 (round_16): B's export normals are A's FILE normals (posed as Godot skins them: what the game shades A with) where B lies on A, each half its own, least-squares fit over our triangles (the blend the game interpolates; point samples left p90 1.57 deg, the fit 1.29); B's own area-weighted normals there are B's facets over A's, p90 14 / p99 35 deg off on the upper chest, and the map that carried that correction from one half lit the other half wrong (round 1's lumps). near_mm = maps_bake form_near's (B on A); agree_cos keeps the other sheet out; dev_mm: where the built body leaves the target (the seam's rows) B's own. Measured (s/nmetric.py, texels both halves): vertex normal vs A's file p90 upper chest 5.14 -> 1.17, torso front 5.40 -> 2.35. ring_mm: B's own normals within 15 mm of the head's ring, A's from 45 (A's on the seam's rows stood the next row p90 10.3 deg off the ring's head normal, B's own 6.8)."
   }
  },
  "bake": {
