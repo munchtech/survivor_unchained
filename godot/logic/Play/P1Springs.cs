@@ -25,6 +25,10 @@ public sealed class P1Springs
         public bool Shift, Collide;
         public double Side;                                  // +1 her left (+X), -1 her right
         public double Freq, Zeta, Reach, Sag, Press, Tilt, Stretch, Q = 1;
+        /// <summary>rest_shows (0..1): the share of the bare, upright rest offset (sag down, press in) the bind surface
+        /// already shows; that much is taken off the offset, so bare and upright sits AT the bind (a body sculpted standing,
+        /// A's, carries its own weight: P1 A shape, round 11). Support and lean still move it from there.</summary>
+        public double RestShows;
         /// <summary>Squash and stretch across the bone (r2): its local axis nearest her chest's up (0 X, 2 Z) scaled by
         /// 1 - SquashAmt * u, u the offset from rest up (+) or down (-) over that limit: the upper pole flattens on the
         /// lift, the lower pole stretches on the drop; the other two axes take the volume back.</summary>
@@ -116,6 +120,7 @@ public sealed class P1Springs
                 sp.Sag = row.GetProperty("sag").GetDouble() * q;
                 sp.Press = row.GetProperty("press").GetDouble() * q;
                 sp.Tilt = row.GetProperty("tilt").GetDouble() * q;
+                sp.RestShows = row.TryGetProperty("rest_shows", out var rs) ? rs.GetDouble() : 0;
                 var lim = row.GetProperty("limits");
                 sp.Lim = new[] { "in", "out", "up", "down", "fwd", "back" }.Select(k => lim.GetProperty(k).GetDouble() * q).ToArray();
                 Springs.Add(sp);
@@ -195,7 +200,8 @@ public sealed class P1Springs
         var Tw = W * (s.In * s.Tip);
         var Fm = Frame(s, Wl);
         var inward = Fm * new P1V(-s.Side, 0, 0);
-        s.Eq = inward * (s.Press * F(s.Group, "press")) + Down * (s.Sag * F(s.Group, "sag")) + (Down - Fm * Down) * (s.Tilt * F(s.Group, "reach"));
+        s.Eq = inward * (s.Press * F(s.Group, "press")) + Down * (s.Sag * F(s.Group, "sag")) + (Down - Fm * Down) * (s.Tilt * F(s.Group, "reach"))
+             - Fm * new P1V(-s.Side * s.Press * s.RestShows, -s.Sag * s.RestShows, 0);   // the bind's own weight (rest_shows)
         bool jump = !s.Live || (Tw - s.LastT).Len() > 0.5;
         if (Frozen)
         {

@@ -9,7 +9,8 @@ skeleton-space pose at the shot's last frame. Each glb is skinned with its own w
 poses and binds; B's corrective keys are its active blend shapes). Both surfaces go to their OWN camera's space (the two cameras aim at
 each body's eyes, so that is what the player compares).
 
-Reports, per region on B's topology (stage/close.npz + out/topo/close.npz parts, each side): |d| p50, p95, max (mm) from B's vertices to A's
+Reports (twice: in the frame as the player sees it, then with B's torso registered rigidly onto A's over back and belly, which
+separates shape and skinning from where the pose put the torso), per region on B's topology (stage/close.npz + out/topo/close.npz parts, each side): |d| p50, p95, max (mm) from B's vertices to A's
 surface and the signed mean (+ = B outside A). Silhouette: neck to deltoid top line per side (mm, B - A, + = B higher), the armpit's apex
 (mm), the far shoulder-to-breast notch depth. Writes DIR/clay_<tag>.png (A | B | B's distance to A: cool inside, warm outside, +-10 mm) and
 with --shot-* DIR/check_<tag>.png (each shot with its surface's outline: the ruler checked against the game).
@@ -285,6 +286,25 @@ def main():
         dd = d[v] * 1e3
         table[k] = [int(v.sum()), float(np.percentile(dd, 50)), float(np.percentile(dd, 95)), float(dd.max()), float(sd[v].mean() * 1e3)]
         print(f"{k:14} {v.sum():6d} {table[k][1]:7.1f} {table[k][2]:7.1f} {table[k][3]:7.1f} {table[k][4]:+7.1f}")
+    # the same after B's torso is registered to A's (rigid, closest points over back and belly, 6 rounds): what is shape and
+    # skinning, not where the clip and the eye-aimed camera put her torso in the frame (that part is the pose's)
+    reg = R["back"] | R["belly_ctl"]
+    Cr = Cb.copy()
+    for _ in range(6):
+        qq, _, _, _ = S.closest(Cr[reg], k=16)
+        pc, qc = Cr[reg].mean(0), qq.mean(0)
+        U, _, Vt = np.linalg.svd((Cr[reg] - pc).T @ (qq - qc))
+        Rm = Vt.T @ np.diag([1, 1, np.sign(np.linalg.det(Vt.T @ U.T))]) @ U.T
+        Cr = (Rm @ (Cr - pc).T).T + qc
+    q2, n2, _, d2 = S.closest(Cr, k=16)
+    sd2 = d2 * np.sign(((Cr - q2) * n2).sum(1)) * (1 if vol > 0 else -1)
+    off = (Cr - Cb)[reg].mean(0) * 1e3
+    print(f"#### {a.tag}: torso-registered (B moved {off.round(1).tolist()} mm, cam axes): region, p50, p95, max, signed mean")
+    table_r = {}
+    for k, v in R.items():
+        dd = d2[v] * 1e3
+        table_r[k] = [float(np.percentile(dd, 50)), float(np.percentile(dd, 95)), float(dd.max()), float(sd2[v].mean() * 1e3)]
+        print(f"{k:14} {table_r[k][0]:7.1f} {table_r[k][1]:7.1f} {table_r[k][2]:7.1f} {table_r[k][3]:+7.1f}")
     # the silhouettes at the camera, each at its own (crop from the two bodies)
     both = np.r_[ca.px(Ca), cb.px(Cb), ca.px(CHa), cb.px(CHb)]
     lo, hi = np.floor(both.min(0)) - 30, np.ceil(both.max(0)) + 30
@@ -342,7 +362,7 @@ def main():
             sil[s_]["armpit_gap_rowcol_A_B"] = [ga, gb]
         print("silhouette", s_, json.dumps(sil[s_]))
     with open(os.path.join(a.out, f"fit_{a.tag}.json"), "w") as f:
-        json.dump({"regions": table, "silhouette": sil, "crop": crop, "mm_per_px": float(mmpx)}, f, indent=1, default=float)
+        json.dump({"regions": table, "regions_torso_registered": table_r, "torso_shift_mm": off.tolist(), "silhouette": sil, "crop": crop, "mm_per_px": float(mmpx)}, f, indent=1, default=float)
     if a.no_image:
         return
     heat = np.ones(sb.shape + (3,))
