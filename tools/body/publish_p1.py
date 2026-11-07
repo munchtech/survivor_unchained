@@ -52,6 +52,46 @@ def body_material(p, node="Heroine"):
     return g["materials"][g["meshes"][mi]["primitives"][0]["material"]]
 
 
+# B's glbs import as A's does (godot/art/people/heroine.glb.import), read from that file, not set here: the mesh kept whole
+# (no generated LODs: Godot's LOD at the Look and close cameras drew her outline as a polygon, the shoulder and outer
+# breast sawtoothed) and uncompressed (16-bit normals and tangents), and the images she carries inside her mipmapped by
+# the same post-import script (tools_scenes/import_mipmaps.gd: without it her 2K relief and paint were read texel by
+# texel, the arm's and shoulder's relief streaked where A's same map reads smooth). P1 A round 14.
+A_IMPORT = os.path.join(ROOT, "godot", "art", "people", "heroine.glb.import")
+IMPORT_KEYS = ("meshes/ensure_tangents", "meshes/generate_lods", "meshes/create_shadow_meshes", "meshes/force_disable_compression",
+               "import_script/path", "gltf/embedded_image_handling")
+
+
+def import_params(a_import=A_IMPORT):
+    """{key: value text} of A's glb import for IMPORT_KEYS."""
+    out = {}
+    for line in open(a_import, encoding="utf-8"):
+        k, _, v = line.rstrip("\n").partition("=")
+        if k in IMPORT_KEYS:
+            out[k] = v
+    missing = [k for k in IMPORT_KEYS if k not in out]
+    if missing:
+        raise SystemExit(f"publish_p1: {a_import} lacks {missing}")
+    return out
+
+
+def write_import(glb_import, params):
+    """Set params in an existing <glb>.import's [params] (Godot keeps the rest); returns the keys changed."""
+    if not os.path.exists(glb_import):
+        return []  # first import: Godot writes the file; the next publish sets it
+    lines = open(glb_import, encoding="utf-8").read().split("\n")
+    changed = []
+    for i, line in enumerate(lines):
+        k, _, v = line.partition("=")
+        if k in params and v != params[k]:
+            lines[i] = f"{k}={params[k]}"
+            changed.append(k)
+    if changed:
+        with open(glb_import, "w", encoding="utf-8", newline="\n") as f:
+            f.write("\n".join(lines))
+    return changed
+
+
 def publish(src):
     for f in FILES:
         if not os.path.exists(os.path.join(src, f)):
@@ -80,6 +120,12 @@ def publish(src):
         sp = os.path.join(ROOT, out["spec"]) if out["spec"] else None
         if sp and os.path.exists(sp) and json.load(open(sp)).get("skin"):
             out["skin"] = json.load(open(sp))["skin"]
+    params = import_params()
+    out["import"] = {"from": "godot/art/people/heroine.glb.import", "params": params, "changed": {}}
+    for f in ("body.glb", "play.glb"):
+        ch = write_import(os.path.join(PUB, f + ".import"), params)
+        if ch:
+            out["import"]["changed"][f] = ch
     with open(os.path.join(PUB, "publish.json"), "w") as f:
         json.dump(out, f, indent=1)
     print(f"published {out['source']} -> godot/art/people/body_p1 ({len(out['files'])} files)")
