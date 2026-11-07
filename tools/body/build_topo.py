@@ -688,7 +688,8 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
     if correct:
         t = time.time()
         import correctives
-        rep["correctives"] = correctives.run(out, tier=tier, fresh=True, turn_normals=bool(rep.get("normals")))
+        rep["correctives"] = correctives.run(out, tier=tier, fresh=True, turn_normals=bool(rep.get("normals")),
+                                             conf_path=spec.get("correctives_conf"))
         tim["correctives"] = round(time.time() - t, 2)
     if spec.get("shapes"):
         t = time.time()

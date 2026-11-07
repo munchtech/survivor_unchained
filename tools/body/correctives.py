@@ -197,6 +197,54 @@ def fair_key(mesh, st, V, G, jc):
     return Y, f, free, mesh.skin_mats(G), {"iters": [{"moved_max_mm": round(float(mv.max() * 1000), 1)}]}
 
 
+_A = {}
+
+
+def posed_a_key(mesh, st, V, G, jc):
+    """P1 R1 weights round 17: the key pose's surface laid on A's (heroine.glb) in the SAME pose under a C2 mask (jc["posed_a"]:
+    c, r, full as fair_key's; valid_mm [full, none]: the rest twin's distance to A's surface): A's skeleton takes B's key pose
+    (posed_fit.carry_pose, the girdle and arm lines kept), A skins itself, and each B point goes to its rest twin on A
+    (barycentric on A's rest surface) as A posed it. Where B's rest lies on A (her_a, a_tight) this is A's own deformation:
+    the fair key flattened the cap (a square corner, cap p95 +12 mm against A in the game's idle) and pinched the armpit."""
+    import posed_fit as pf
+    from gl import Glb
+    from surfdist import Surface
+    p = mesh.p
+    pa = jc["posed_a"]
+    I3 = [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]
+    if "A" not in _A:
+        A = Glb(os.path.join(REPO, pa.get("glb", "godot/art/people/heroine.glb")))
+        Par, Ta = pf.skin(A, "Heroine", {"bones": {}, "skeleton": I3, "meshes": {}})
+        q, _, tri, d0 = Surface(Par, Ta).closest(mesh.P0, k=16)
+        T = Ta[tri]
+        x0, x1, x2 = Par[T[:, 0]], Par[T[:, 1]], Par[T[:, 2]]
+        v0, v1, v2 = x1 - x0, x2 - x0, q - x0
+        d00, d01, d11, d20, d21 = (v0 * v0).sum(1), (v0 * v1).sum(1), (v1 * v1).sum(1), (v2 * v0).sum(1), (v2 * v1).sum(1)
+        den = np.maximum(d00 * d11 - d01 * d01, 1e-20)
+        bv, bw = (d11 * d20 - d01 * d21) / den, (d00 * d21 - d01 * d20) / den
+        _A.update(A=A, T=T, bc=np.stack([1 - bv - bw, bv, bw], 1), d0=d0)
+    A, T, bc, d0 = _A["A"], _A["T"], _A["bc"], _A["d0"]
+    sk = p.glb.skeleton(0)
+    m = lambda M: list(M[:3, 0]) + list(M[:3, 1]) + list(M[:3, 2]) + list(M[:3, 3])
+    probe = {"bones": {n: m(G[i]) for i, n in enumerate(sk.names)}, "skeleton": I3, "meshes": {}}
+    lines = [(f"{x}_{s_}", f"{y}_{s_}") for s_ in "lr" for x, y in (("clavicle", "upperarm"), ("upperarm", "lowerarm"), ("lowerarm", "hand"))]
+    GA = pf.carry_pose(p.glb, A, probe, lines)
+    Va, _ = pf.skin(A, "Heroine", probe, bones=GA)
+    Yt = (Va[T] * bc[:, :, None]).sum(1)
+    X = V[mesh.first].copy()
+    c = p.rest[p.index[jc["center"].replace("{s}", st.s)]][:3, 3] + np.asarray(pa["c"], float)
+    d = np.linalg.norm((X - c) / np.asarray(pa["r"], float), axis=1)
+    f = 1 - smooth01((d - pa["full"]) / (1 - pa["full"]))
+    v0_, v1_ = pa.get("valid_mm", [2.0, 4.0])
+    f = f * (1 - smooth01((d0 * 1e3 - v0_) / (v1_ - v0_)))
+    f = np.where(~mesh.held & (X[:, 0] > -1e-6 if st.s == "l" else X[:, 0] < 1e-6), f, 0.0)
+    Y = X + f[:, None] * (Yt - X)
+    free = f > 1e-3
+    mv = np.linalg.norm(Y - X, axis=1)
+    return Y, f, free, mesh.skin_mats(G), {"iters": [{"moved_max_mm": round(float(mv.max() * 1000), 1),
+                                                     "moved_p95_mm": round(float(np.percentile(mv[free], 95) * 1000), 1) if free.any() else 0.0}]}
+
+
 def solve_key(mesh, st, V, G, jc, cf, ref):
     """The desired posed surface Y (welded) for one key pose, and its log."""
     p = mesh.p
@@ -511,12 +559,12 @@ TIERS = {"close": ("body.glb", "rig.json", "body_lbs.glb", "shapes.npz", "correc
          "play": ("play.glb", "play_rig.json", "play_lbs.glb", "play_shapes.npz", "play_correctives.json")}
 
 
-def run(out, only=None, tier="close", fresh=False, turn_normals=False):
+def run(out, only=None, tier="close", fresh=False, turn_normals=False, conf_path=None):
     """`fresh`: the export was just written (build_topo's stage 6): it becomes the shapeless base. `turn_normals` (P1 R1
     bake round 2: the export's normals are not its geometric ones, build_topo.her_a_normals): each shape's NORMAL
     delta turns the base's own normals (normal_delta N)."""
     t0 = time.time()
-    conf = json.load(open(CONF))
+    conf = json.load(open(os.path.join(REPO, conf_path) if conf_path else CONF))   # (a spec's "correctives_conf": its own data)
     cf = conf["solve"]
     f_glb, f_rig, f_base, f_shapes, f_rep = TIERS[tier]
     base = os.path.join(out, "stage", f_base)
@@ -586,6 +634,8 @@ def run(out, only=None, tier="close", fresh=False, turn_normals=False):
                 lg = dict(lg, iters=[{"inside_parity": lg["march"]["inside"]}])
             elif jk.get("fold") == "fair":
                 Y, f, free, M, lg = fair_key(mesh, st, V, G, jk)
+            elif jk.get("fold") == "posed_a":
+                Y, f, free, M, lg = posed_a_key(mesh, st, V, G, jk)
             elif jk.get("fold") == "flatten":
                 import crease_fold
                 Y, f, free, M, lg = crease_fold.solve_key(mesh, st, V, G, jk, cfk, ref)
