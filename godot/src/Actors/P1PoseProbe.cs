@@ -11,6 +11,8 @@ namespace SurvivorUnchained.View;
 /// role name (A's names; on B through P1Body.BoneName), each one's rest-relative turn applied to the skeleton's axes
 /// (fwd: +Z at rest, up: +Y at rest), the actor's ground height and the crown (the body mesh's top vertex carried by Head).
 /// tools/body/pose_probe.py reads two such files and prints the table.
+/// --pose-probe-full FILE: the posed-fit ruler (tools/body/posed_fit.py): the same sampled frames, one JSON line each: the skeleton's world
+/// transform, the camera, the meshes' nonzero blend-shape weights, every bone's skeleton-space pose as 12 numbers (basis columns, origin).
 /// </summary>
 public partial class P1PoseProbe : Node
 {
@@ -23,6 +25,7 @@ public partial class P1PoseProbe : Node
     readonly Node3D root;
     readonly string path = Args.Get("pose-probe") ?? "";
     readonly int every = (int)Args.Num("pose-probe-every", 5);
+    readonly string fullPath = Args.Get("pose-probe-full") ?? "";
     int[] bones = System.Array.Empty<int>();
     Basis[] restInv = System.Array.Empty<Basis>();
     Vector3 crown;
@@ -33,7 +36,12 @@ public partial class P1PoseProbe : Node
 
     public override void _Ready()
     {
-        if (!truncated) { truncated = true; System.IO.File.WriteAllText(path, ""); }
+        if (!truncated)
+        {
+            truncated = true;
+            System.IO.File.WriteAllText(path, "");
+            if (fullPath != "") System.IO.File.WriteAllText(fullPath, "");
+        }
         sk.SkeletonUpdated += Sample;
     }
 
@@ -88,5 +96,41 @@ public partial class P1PoseProbe : Node
         }
         sb.Append("}}\n");
         System.IO.File.AppendAllText(path, sb.ToString());
+        if (fullPath != "") Full(f);
+    }
+
+    static string X(Transform3D t) => string.Format(CultureInfo.InvariantCulture, "[{0:0.######},{1:0.######},{2:0.######},{3:0.######},{4:0.######},{5:0.######},{6:0.######},{7:0.######},{8:0.######},{9:0.######},{10:0.######},{11:0.######}]",
+        t.Basis.Column0.X, t.Basis.Column0.Y, t.Basis.Column0.Z, t.Basis.Column1.X, t.Basis.Column1.Y, t.Basis.Column1.Z, t.Basis.Column2.X, t.Basis.Column2.Y, t.Basis.Column2.Z, t.Origin.X, t.Origin.Y, t.Origin.Z);
+
+    void Full(long f)
+    {
+        var sb = new StringBuilder();
+        var cam = sk.GetViewport().GetCamera3D();
+        var size = sk.GetViewport().GetVisibleRect().Size;
+        sb.Append($"{{\"frame\":{f},\"skeleton\":{X(sk.GlobalTransform)}");
+        if (cam != null)
+            sb.Append($",\"camera\":{{\"x\":{X(cam.GlobalTransform)},\"fov\":{cam.Fov.ToString("0.####", CultureInfo.InvariantCulture)},\"size\":[{size.X.ToString("0", CultureInfo.InvariantCulture)},{size.Y.ToString("0", CultureInfo.InvariantCulture)}]}}");
+        sb.Append(",\"meshes\":{");
+        bool first = true;
+        foreach (var mi in sk.GetChildren().OfType<MeshInstance3D>().Where(m => m.Mesh is ArrayMesh))
+        {
+            sb.Append($"{(first ? "" : ",")}\"{mi.Name}\":{{\"visible\":{(mi.IsVisibleInTree() ? "true" : "false")},\"shapes\":{{");
+            first = false;
+            var am = (ArrayMesh)mi.Mesh;
+            bool f2 = true;
+            for (int i = 0; i < am.GetBlendShapeCount(); i++)
+            {
+                float v = mi.GetBlendShapeValue(i);
+                if (Mathf.Abs(v) < 1e-5f) continue;
+                sb.Append($"{(f2 ? "" : ",")}\"{am.GetBlendShapeName(i)}\":{v.ToString("0.######", CultureInfo.InvariantCulture)}");
+                f2 = false;
+            }
+            sb.Append("}}");
+        }
+        sb.Append("},\"bones\":{");
+        for (int i = 0; i < sk.GetBoneCount(); i++)
+            sb.Append($"{(i > 0 ? "," : "")}\"{sk.GetBoneName(i)}\":{X(sk.GetBoneGlobalPose(i))}");
+        sb.Append("}}" + (char)10);
+        System.IO.File.AppendAllText(fullPath, sb.ToString());
     }
 }
