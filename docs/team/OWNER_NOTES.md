@@ -4,6 +4,7 @@ Every lead reads this after RESUME.md. When you take a note into your work, mark
 
 ## 6 November 2026, night (P1 coordinator): P1 milestone NOT picked: "JUDGE SAID THEMSELVES, CLOSE. ITS NOT RIGHT"
 Sent as READY at body-p1@4ddda641a, with three max judges rating the shape "close" and skin, head and light set aside. For every area: a judge's only pass is "right, nothing to change at the game cameras", whole frame, no carve-outs. "Close", READY, PASS WITH KNOWN and open lists go back to the lead, and moved numbers close nothing. Show the owner only what passes, or say plainly that it can't pass yet and which missing piece blocks it. R1 lead 6 runs on this; A1 keeps waiting; R3 is still the owner's call.
+Then, the same night: **"Our original body was really good. this was to make it easier to have armor and clothes that could be used on anyone in the game. but we need to at least come close".** A is the quality floor, which replaces "A is only a reference" (5 Nov). B's job is one shared topology and sliders so armor and clothes fit anyone, without losing A's look. Coordinator's call: her shape and skin come from A, stored once as a source target on our topology (a slider; the build never reads `heroine.glb`), with the copy's known faults fixed at source and the round note applied on top only where it helps. The gate is A|B pairs at the 4 cameras: is anything of B's visibly worse than A? A stays in the game until B passes, and R3 isn't needed for this.
 
 ## 5 November 2026, night (P1 rebuild coordinator 3bede919): P1 REBUILD PLAN: "Go, with your changes"
 
