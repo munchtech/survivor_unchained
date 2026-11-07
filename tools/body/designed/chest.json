@@ -1,0 +1,17 @@
+{
+ "about": "P1 R1 form library: the upper chest under the collarbone (OURS, designed; sliders.py rule \"field\", before the breast's chest wall and globe, so the union's chest field and every body stand on it).",
+ "sliders": {
+  "chest_step": {
+   "range": [0, 1],
+   "rule": "field",
+   "order": 19,
+   "moves": [
+    {
+     "normal": 0.004,
+     "mask": [{"on": "ell", "c": [0.045, 1.545, 0.03], "r": [0.05, 0.03, 0.09], "full": 0.25}]
+    }
+   ],
+   "why": "P1 R1c round 6: the base mesh's step across the upper chest (at 3-5 cm out a concave kink 14 -> 36 deg down the chest over 30 mm, the inner crease's source, a mark at the top of the cleavage): the hollow above it filled along the normal in a C2 bell (masks on V0, about 43 mm above the built rest body there)"
+  }
+ }
+}

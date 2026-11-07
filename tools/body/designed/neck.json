@@ -358,6 +358,17 @@
         0.009,
         0
        ]
+      },
+      {
+       "on": "y",
+       "full": [
+        1.6,
+        null
+       ],
+       "fade": [
+        0.03,
+        0
+       ]
       }
      ],
      "k": 1.0,
@@ -366,7 +377,7 @@
       "lam": 0.5,
       "mu": -0.53
      },
-     "why": "R1b round 3 (judge fix 1): the side of the neck's lower half on the built body is the reference's points 1-4 cm under the ring (stretched there by neck_length and trap_drop), all held by the join, so the pre-join refill never reached it: a low-pass (Taubin, 160 steps) laid after the join takes the cords' 1-3 cm relief out (along the normal) and keeps the neck's round, so the shadow side reads as one band to the trapezius. A thin-plate refill here (k 0.5-0.85) flattened the side and broke the band worse."
+     "why": "R1b round 3 (judge fix 1): the side of the neck's lower half on the built body is the reference's points 1-4 cm under the ring (stretched there by neck_length and trap_drop), all held by the join, so the pre-join refill never reached it: a low-pass (Taubin, 160 steps) laid after the join takes the cords' 1-3 cm relief out (along the normal) and keeps the neck's round, so the shadow side reads as one band to the trapezius. A thin-plate refill here (k 0.5-0.85) flattened the side and broke the band worse. P1 R1c round 6: faded off the upper chest under V0 y 1.60 (it reached the breast's upper band, 4-5 deg worse on the chest step)."
     }
    ],
    "why": "R1b judge fix 5: the side-of-neck cords (MakeHuman's reference sternocleidomastoid relief: a thin dark cel stripe from jaw to collarbone) softened 30% (neck_form.fair: the region's thin-plate refill, along the normal, k = the share of the relief taken away), so the side of the neck reads as one clean shadow band. Laid before the join (a py rule): its top 1.5 cm under the ring is held. R1b round 3: the region \"neck_side_low\" (after_join) softens the lower half further; see its why."

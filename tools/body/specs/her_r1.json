@@ -5,6 +5,7 @@
   "arm_girth": 0.15,
   "belly": -0.2,
   "build": 0.2,
+  "chest_step": 1.0,
   "bust_firmness": 0.0,
   "bust_lift": 0.0,
   "bust_point": 0.0,

@@ -622,8 +622,7 @@ def union_field(sl, c, Va, chest, bias):
     if pl:
         # P1 R1c round 6: the upper pole's hull (see globe)
         Pq = np.asarray(pl["P"], float)
-        Pn = Pq / np.array([float(smooth_r(Pq[0], R["med"], R["lat"], bw)), float(smooth_r(Pq[1], R["low"], R["up"], bw)),
-                            float(smooth_r(Pq[2], R.get("a_back", R["a"]), R["a"], bw))])
+        Pn = Pq / np.array([float(smooth_r(Pq[0], R["med"], R["lat"], bw)), float(smooth_r(Pq[1], R["low"], R["up"], bw)), float(R["a"])])
         PL = float(np.linalg.norm(Pn))
         Pn = Pn / PL
         th_c, x0 = math.acos(1.0 / PL), math.radians(float(pl.get("x0_deg", 12.0)))
@@ -646,12 +645,17 @@ def union_field(sl, c, Va, chest, bias):
             # eases from the globe's to the generator's: a cel terminator draws no line there.
             nq = np.stack([u / Ru, w / Rw, d / Ra], 1)
             r0 = np.maximum(np.linalg.norm(nq, axis=1), 1e-9)
-            nw = nq * pl_s                                 # a lateral squeeze: the cone's axis a soft ridge, not a point
+            # the hull's own unit coordinates: one radius along the axis (R.a), so the generators stay straight across
+            # the ellipsoid's front / back switch (a_back at d < 0 would bend them over the top: a band still facing 80 deg)
+            nf = np.stack([u / Ru, w / Rw, d / float(R["a"])], 1)
+            rf = np.maximum(np.linalg.norm(nf, axis=1), 1e-9)
+            nw = nf * pl_s                                 # a lateral squeeze: the cone's axis a soft ridge, not a point
             th = np.arccos(np.clip(nw @ Pn / np.maximum(np.linalg.norm(nw, axis=1), 1e-9), -1.0, 1.0))
             th = np.sqrt(th * th + tip * tip)              # the tip rounded (r flat at the axis, no point in the chest)
             xs = x0 * ramp((th_c - th) / x0)
             rp = 1.0 / np.cos(xs)
-            k0 = r0 / rp
+            mix = smoother((th_c - th + x0) / (2.0 * x0))  # the ellipsoid past the contact circle, the hull inside it
+            k0 = (r0 ** (1.0 - mix)) * (rf ** mix) / rp
             k1 = np.sqrt((nq[:, 0] / Ru) ** 2 + (nq[:, 1] / Rw) ** 2 + (nq[:, 2] / Ra) ** 2) / rp
             return k0 * (k0 - 1.0) / np.maximum(k1, 1e-12), np.degrees(np.arctan2(w / Rw, u / Ru))
         return ell_sdf(u, w, d, Ru, Rw, Ra), np.degrees(np.arctan2(w / Rw, u / Ru))
