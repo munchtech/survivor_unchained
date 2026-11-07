@@ -240,6 +240,11 @@ def breast_round(V, T, Vref, b):
     k = bm.curvature2(bm.gsmooth(Ps, 5.0))[root:ia + 1]
     cv = np.nonzero(k > 2.0)[0]
     out["upper_pole_concave_mm_past_fillet"] = int((k[cv[0]:] < -2.0).sum()) if len(cv) else len(k)
+    # P1 R1c round 7: the root's own concave stretch (from 60 mm above the root to the first convex run)
+    k0 = bm.curvature2(bm.gsmooth(Ps, 5.0))[max(0, root - 60):ia + 1]
+    cv0 = np.nonzero(k0[60 if root >= 60 else root:] > 2.0)[0]
+    end = (60 if root >= 60 else root) + (int(cv0[0]) if len(cv0) else 0)
+    out["upper_pole_root_concave_mm"] = int((k0[:end] < -2.0).sum())
     # -- front (transverse at apex height)
     Lb, Lr = _loop(V, T, p[1]), _loop(Vref, T, p[1])
     if Lb is not None and Lr is not None:

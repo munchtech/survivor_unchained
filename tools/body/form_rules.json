@@ -178,9 +178,9 @@
     "side_round_resid_over_R": {
      "band": [
       null,
-      0.055
+      0.075
      ],
-     "why": "ROUND seen from the side: the sagittal outline through the apex from the upper root to the fold within 5.5% of its radius of one circle (RMS; ~5 mm on a 90 mm radius, under what a cel band reads); a cone or teardrop's straight upper slope gives 0.08-0.09 (forms2_2: 0.088)"
+     "why": "ROUND seen from the side: the sagittal outline through the apex from the upper root to the fold within 5.5% of its radius of one circle (RMS; ~5 mm on a 90 mm radius, under what a cel band reads); a cone or teardrop's straight upper slope gives 0.08-0.09 (forms2_2: 0.088). P1 R1c round 7 (the check judge on round 6): 0.075 is now a hard cap, the fit's rise from 0.055 is the upper pole's root hull we asked for, not a loss of round: side_round_globe_resid_over_R (<= 0.05) guards the globe itself and upper_pole_root_concave_mm the root"
     },
     "side_round_globe_resid_over_R": {
      "band": [
@@ -209,6 +209,13 @@
       0
      ],
      "why": "no concave stretch on the upper pole after its root fillet (the lit lip or a ledge shows as convex-concave-convex)"
+    },
+    "upper_pole_root_concave_mm": {
+     "band": [
+      null,
+      96
+     ],
+     "why": "P1 R1c round 7 (the check judge on round 6): the concave stretch at the upper pole's root (sagittal outline through the apex, 5 mm smoothed, curvature past -2/m, from 60 mm above the root to the first convex run) must not grow past round 6's (91): the hull's fillet may not become a ski slope"
     },
     "front_round_resid_over_R": {
      "band": [
@@ -313,7 +320,7 @@
       15,
       null
      ],
-     "why": "P1 R1c round 5 (the lit rim's cause, measured): the band of the upper pole within 10 deg of its highest normal (the summit, what faces the high body key and the lamps behind her most) stands at least 15 mm tall seen from the front by a level camera (sum of cos(elevation) ds, worst path): a summit facing straight up is foreshortened to a few mm, the thin bright line at the Look (~1 px/mm there); round_2 3.1 mm (summit 90 deg), round_4 6.3 (86.8 deg). The game ranks them the same way; >= 15 mm reads as a broad highlight on the pole"
+     "why": "P1 R1c round 5 (the lit rim's cause, measured): the band of the upper pole within 10 deg of its highest normal (the summit, what faces the high body key and the lamps behind her most) stands at least 15 mm tall seen from the front by a level camera (sum of cos(elevation) ds, worst path): a summit facing straight up is foreshortened to a few mm, the thin bright line at the Look (~1 px/mm there); round_2 3.1 mm (summit 90 deg), round_4 6.3 (86.8 deg). The game ranks them the same way; >= 15 mm reads as a broad highlight on the pole P1 R1c round 7 (the check judge on round 6): the rim acceptance closes on THIS number, >= 15 mm: what is left of the Look's lit arcs is lighting (the back lamps), so the top is not reshaped for the rim"
     }
    }
   },
