@@ -52,6 +52,8 @@ public sealed class P1Retarget
     // the arm rode it down while the neck and trapezius held: the dome over her shoulders at the Look and close-up
     // cameras. The clip's clavicle turns still apply, from B's own rest; the upper arm's own stand aims her arm as A's.)
     static bool Limb(string n) => new[] { "upperarm", "lowerarm", "hand", "index", "middle", "ring", "pinky", "thumb", "thigh", "calf", "foot", "ball" }.Any(n.StartsWith);
+    /// <summary>Limb bones whose rest roll is matched to A's as well as their direction (the hand and the four fingers).</summary>
+    static bool RollAligned(string n) => new[] { "hand_", "index_0", "middle_0", "ring_0", "pinky_0" }.Any(n.StartsWith);
 
     static P1M3 Arc(P1V a, P1V c)
     {
@@ -161,6 +163,22 @@ public sealed class P1Retarget
             var db = tb - b.Rest[j].T(); var da = ta - aRest[src0[j]].T();
             if (db.Len() < 1e-6 || da.Len() < 1e-6) continue;
             align[j] = Arc(db / db.Len(), da / da.Len());
+            // the hand and the four fingers rolled too (P1 weights round 5): about A's direction, so B's bone x (both rigs' bend
+            // axis, square to the bone) lands on A's. The shortest turn alone left B's finger bones rolled 6-24 deg off A's
+            // (her left: index -9/-21/-22, pinky -20/-24/-24), each segment's twist and its crease turned against the next.
+            // (Not the thumb: its x is not one convention across the rigs, 61-69 deg apart.)
+            if (RollAligned(b.Names[j]))
+            {
+                var u = da / da.Len();
+                var xb = align[j] * Rot(b.Rest[j]).Col(0); var xa = aRestRot[src0[j]].Col(0);
+                xb = xb - u * P1V.Dot(u, xb); xa = xa - u * P1V.Dot(u, xa);
+                if (xb.Len() > 1e-6 && xa.Len() > 1e-6)
+                {
+                    xb = xb / xb.Len(); xa = xa / xa.Len();
+                    double roll = Math.Atan2(P1V.Dot(P1V.Cross(xb, xa), u), P1V.Dot(xb, xa));
+                    align[j] = P1Rig.Expm(u * roll) * align[j];
+                }
+            }
         }
         aRoot = aIndex.GetValueOrDefault("root", -1); aPelvis = aIndex["pelvis"];
         bRoot = b.Index.GetValueOrDefault("root", -1); bPelvis = b.Index["pelvis"];
