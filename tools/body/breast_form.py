@@ -399,7 +399,13 @@ def globe_delta(sl, c, V, Va=None):
         # the cleavage floor: held within midline_hold_m of the midline, then the C2 fade (the floor's first quads
         # stay low, so the pressed walls turn up off the floor over three quads, each fold under 60 deg)
         hold = float(g.get("midline_hold_m", 0.0))
-        mv *= smoother((np.abs(sl.V0[cand, 0]) - hold) / (c["midline_fade_m"] - hold))[:, None]
+        fade_m = c["midline_fade_m"]
+        fu = g.get("midline_fade_up")
+        if fu:
+            # P1 R1c round 7: a narrower fade from fu.y up (V0, C2): the walls close to a line at and over the apex, the
+            # slot's foot keeps its width (a floor there has no room to turn in)
+            fade_m = fade_m + (float(fu["m"]) - fade_m) * smoother((sl.V0[cand, 1] - fu["y"][0]) / (fu["y"][1] - fu["y"][0]))
+        mv *= smoother((np.abs(sl.V0[cand, 0]) - hold) / (fade_m - hold))[:, None]
     pr = g.get("press")
     if pr:
         # the pressed inner face: the inward x move saturates (C-inf) at x_m from the midline (room = how far a point
@@ -408,8 +414,32 @@ def globe_delta(sl, c, V, Va=None):
         room = np.maximum(xc - float(pr.get("x_m", 0.003)), 0.0)
         dx = mv[:, 0]
         inw = dx < 0
-        sat = -room * np.tanh(-dx / np.maximum(room, 1e-6))
+        cl = pr.get("close")
+        if cl:
+            # P1 R1c round 7: the wall in front of the floor closes on its mirror (the visible line) while the floor's own
+            # columns keep their fade (no new fold on the floor): the inward move is scaled by gain from column x0[0] to
+            # x0[1] on V0 (C2), the walls lean in over a floor kept wide enough to turn up in folds under 60 deg
+            x0 = np.abs(sl.V0[cand, 0])
+            dxi = dx * (1.0 + (float(cl["gain"]) - 1.0) * smoother((x0 - cl["x0"][0]) / (cl["x0"][1] - cl["x0"][0])))
+        else:
+            dxi = dx
+        sat = -room * np.tanh(-dxi / np.maximum(room, 1e-6))
         mv[:, 0] = np.where(inw, sat, dx)
+        ve = pr.get("vee")
+        if ve:
+            # P1 R1c round 7: the slot's floor as a soft V: the floor's first columns rise along the axis so a narrow slot
+            # turns up over them in folds under 60 deg (a flat floor between walls 6 mm apart turns 90 deg in one quad):
+            # x0, z, x = columns on V0 and their offsets (m, C2 cubic), over the slot's height band y (V0: full y[1]..y[2])
+            from scipy.interpolate import CubicSpline
+            cs = CubicSpline(ve["x0"], ve["z"], bc_type="clamped")
+            x0 = np.abs(sl.V0[cand, 0])
+            y0 = sl.V0[cand, 1]
+            yb = ve["y"]
+            ybd = smoother((y0 - yb[0]) / (yb[1] - yb[0])) * (1.0 - smoother((y0 - yb[2]) / (yb[3] - yb[2])))
+            mv[:, 2] += np.where(x0 < ve["x0"][-1], cs(np.minimum(x0, ve["x0"][-1])), 0.0) * ybd
+            if ve.get("x"):
+                cx = CubicSpline(ve["x0"], ve["x"], bc_type="clamped")
+                mv[:, 0] += np.where(x0 < ve["x0"][-1], cx(np.minimum(x0, ve["x0"][-1])), 0.0) * ybd
     D[cand] = mv
     return mirror_left(sl, D)
 
