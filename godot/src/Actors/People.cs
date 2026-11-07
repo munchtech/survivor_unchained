@@ -718,8 +718,11 @@ public static class People
         // her neck 3 cm shorter, 18 October 2026, lowered the joint; at 1.748 m fixed the Look aimed over her eyes)
         // (on P1's B the Head joint sits elsewhere in her skull, 58 mm higher: read from her eyes' mesh, or the Look and the
         // close view aim over them and she drops in frame)
-        return p.Skeleton.GlobalTransform * (moved * (rest.Origin + (P1Body.IsB(p.Skeleton) ? P1Body.EyesFromHead(p.Skeleton) : new Vector3(0, 0.082f, 0.111f))));
+        return p.Skeleton.GlobalTransform * (moved * (rest.Origin + (P1Body.IsB(p.Skeleton) ? P1Body.EyesFromHead(p.Skeleton) : HerEyesOffset)));
     }
+
+    /// <summary>The cameras' aim on her head (A's): this far from A's Head joint at rest, skeleton axes.</summary>
+    public static readonly Vector3 HerEyesOffset = new(0, 0.082f, 0.111f);
 
     /// <summary>Her eyes' colour (shaders/heroine_eye.gdshader): the iris's
     /// paint keeps its fibres and crypts, its light and dark, and takes the

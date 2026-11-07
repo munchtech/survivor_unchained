@@ -91,11 +91,15 @@ public static class P1Body
     public static bool IsB(Skeleton3D? sk) => sk != null && sk.HasMeta("p1_b");
 
     static Vector3? eyesFromHead;
-    /// <summary>Between B's eyes at rest, from her Head joint (skeleton space): the HeroineEyes mesh's box centre, once.</summary>
+    /// <summary>Where the cameras aim on B's head at rest, from her Head joint (skeleton space), once: the point A's
+    /// cameras aim at on A's (People.HerEyesOffset over A's Head rest, a_skeleton.json), since B's head IS A's head at
+    /// A's world rest; the HeroineEyes mesh's box centre only without A's rest. (P1 A round 14: the eyes' box centre
+    /// sits 7.8 mm over and 7.3 mm in front of A's aim, so the Look framed B 7.8 mm lower than A, breasts and all.)</summary>
     public static Vector3 EyesFromHead(Skeleton3D sk)
     {
         if (eyesFromHead is Vector3 e) return e;
         var head = sk.GetBoneGlobalRest(sk.FindBone("Head")).Origin;
+        if (ARest("Head") is Transform3D aHead) { eyesFromHead = aHead.Origin + People.HerEyesOffset - head; return eyesFromHead.Value; }
         foreach (var mi in sk.GetChildren().OfType<MeshInstance3D>())
             if (mi.Name == "HeroineEyes" && mi.Mesh != null) { var c = mi.Mesh.GetAabb().GetCenter(); eyesFromHead = c - head; return c - head; }
         return new Vector3(0, 0.082f, 0.111f);
