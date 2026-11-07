@@ -176,17 +176,23 @@ def fair_key(mesh, st, V, G, jc):
     rest shape fills it (a move at rest comes out as a lump there); an umbrella fairing of the POSED surface shrinks the
     vault to its rim, and rest_delta turns it into a shape that only the pose wears. Any body: the mask rides the joint."""
     p = mesh.p
-    fa = jc["fair"]
-    c = p.rest[p.index[jc["center"].replace("{s}", st.s)]][:3, 3] + np.asarray(fa["c"], float)
     X = V[mesh.first].copy()
-    d = np.linalg.norm((X - c) / np.asarray(fa["r"], float), axis=1)
-    f = 1 - smooth01((d - fa["full"]) / (1 - fa["full"]))
+    Y = X.copy()
+    deg = np.maximum(mesh.Lg.diagonal(), 1.0)
+    fall = np.zeros(len(X))
+    # round 8: "fair" may be a list of masks, each faired in turn on what the last left (a wide mask ends the cel
+    # edge's bulb; a shallow one irons the deltoid's skinning ripples)
+    for fa in (jc["fair"] if isinstance(jc["fair"], list) else [jc["fair"]]):
+        c = p.rest[p.index[jc["center"].replace("{s}", st.s)]][:3, 3] + np.asarray(fa["c"], float)
+        d = np.linalg.norm((X - c) / np.asarray(fa["r"], float), axis=1)
+        f = 1 - smooth01((d - fa["full"]) / (1 - fa["full"]))
+        f = np.where(~mesh.held, f, 0.0)
+        for _ in range(int(fa["iters"])):
+            Y = Y - (0.5 * f / deg)[:, None] * (mesh.Lg @ Y)
+        fall = np.maximum(fall, f)
+    f = fall
     free = (f > 1e-3) & ~mesh.held
     f = np.where(free, f, 0.0)
-    deg = np.maximum(mesh.Lg.diagonal(), 1.0)
-    Y = X.copy()
-    for _ in range(int(fa["iters"])):
-        Y = Y - (0.5 * f / deg)[:, None] * (mesh.Lg @ Y)
     mv = np.linalg.norm(Y - X, axis=1)
     return Y, f, free, mesh.skin_mats(G), {"iters": [{"moved_max_mm": round(float(mv.max() * 1000), 1)}]}
 

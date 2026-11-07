@@ -232,6 +232,20 @@
      ],
      "why": "ROUND seen from the front: the horizontal outline at apex height from the cleavage to the outer root within 5.5% of its radius of a circle (forms2_2: 0.135, a flat-faced cone)"
     },
+    "lower_third_off_mm": {
+     "band": [
+      15,
+      24
+     ],
+     "why": "P1 R1 round 8 (soft weight; the judge on round 7: balloons, not flesh): the lower third of the apex-to-fold outline against the circle fitted on the upper globe alone: how far the lower curve sits outside what the upper pole promises. Round 7 13.2; settle 1 17.4; 1.6 20.6. Over 24 the bottom boxes off"
+    },
+    "fold_lean_deg": {
+     "band": [
+      null,
+      118
+     ],
+     "why": "P1 R1 round 8 (it RESTS on the ribcage): the outline's direction 12 mm above the fold, smaller = lying down on the ribs as it comes in rather than turning on as a floating globe. Round 7 123.5; settle 1 113.7"
+    },
     "lateral_wrap_mm": {
      "band": [
       6,
