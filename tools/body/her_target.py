@@ -42,10 +42,13 @@ def weld(P, tol=1e-6):
     return first, inv.ravel()
 
 
-def target(base_glb, a_path=A_PATH, world=False, want=None):
+def target(base_glb, a_path=A_PATH, world=False, want=None, normals=None):
     """(want: the chain bones {name: (head, tail)} to pose A to, instead of base_glb's rest; only their directions
     are used, so a target's own posed bones ("bones") re-pose A to that target exactly; a None entry leaves that
-    bone at A's own rest turn)"""
+    bone at A's own rest turn)
+    (normals: A's rest normals as its file stores them, [V, 3] in the body's point order (unwelded): returned posed as
+    "N_file", each turned by its point's blended skinning matrix with the corrective shapes' normals in, as Godot
+    skins them. "N" stays the welded mesh's area-weighted normals.)"""
     if ANIM not in sys.path:
         sys.path.insert(0, ANIM)
     import skin
@@ -100,6 +103,17 @@ def target(base_glb, a_path=A_PATH, world=False, want=None):
         for a, b in CHAIN:
             bones[f"{a}_{s}"] = (G[sk.index[f"{a}_{s}"]][:3, 3].copy(), G[sk.index[f"{b}_{s}"]][:3, 3].copy())
     want = {k: v for k, v in want.items() if v is not None}
-    return {"P": P, "T": T, "N": N, "bones": bones, "turns": turns, "rest_bones": want,
+    extra = {}
+    if normals is not None:
+        assert normals.shape == body.P.shape, ("the normals are not the body's points", normals.shape, body.P.shape)
+        Nr = body.rest_normals(np.asarray(normals, np.float64), G)
+        S = body.skin_mats(G)
+        M = np.zeros((len(Nr), 3, 3))
+        for k in range(body.Jv.shape[1]):
+            M += body.W[:, k, None, None] * S[body.Jv[:, k], :3, :3]
+        Nf = np.einsum("nij,nj->ni", M, Nr)
+        extra["N_file"] = Nf / np.maximum(np.linalg.norm(Nf, axis=1, keepdims=True), 1e-12)
+        extra["P_file"] = body.P            # (the rest points in that order, for the caller's check)
+    return {**extra, "P": P, "T": T, "N": N, "bones": bones, "turns": turns, "rest_bones": want,
             "rest_P": body.P[first], "shapes": body.shape_weights(G), "J": body.Jv[first], "W": body.W[first],
             "names": list(sk.names)}

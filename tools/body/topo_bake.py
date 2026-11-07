@@ -87,7 +87,7 @@ def tangent_frames(P, N, UV, T):
 class Source:
     """A's body posed into our build's rest, unwelded (its UVs), with its textures and frames."""
 
-    def __init__(self, build_glb, pose=None, a_rest=None):
+    def __init__(self, build_glb, pose=None, a_rest=None, a_normals=None):
         import her_target
         # (pose: the fit's posed bones (forms/her_topo_target_bones.json): A on the surface our points were wrapped
         # onto. The built body's own skeleton (landmarks on the fitted points) poses A up to 4 cm off it: the bake read
@@ -100,9 +100,16 @@ class Source:
             for b in a_rest or ():
                 for sd in "lr":
                     want[f"{b}_{sd}"] = None
-        t = her_target.target(build_glb, A_PATH, world=True, want=want)
         A = Glb(A_PATH)
         m = A.mesh("Heroine")
+        # (a_normals "file", P1 R1 round 15: A's form is the normals A's file stores, posed as Godot skins them, which is
+        # what the game shades A with; None: the welded mesh's area-weighted normals (rounds 10-14). A's file normals
+        # are not its mesh's: over the upper chest and breasts they lie p50 2 deg, p90 15-20 deg off the area-weighted
+        # ones (y 1.30-1.40 m), a smooth slope over a faceted mesh (edges 6-10 mm); B carried the faceted field there
+        # (form_near: A's whole form), lumps 20-40 mm across between the collarbone and the breast's top that A never shows)
+        assert a_normals in (None, "file"), a_normals
+        t = her_target.target(build_glb, A_PATH, world=True, want=want,
+                              normals=m.N.astype(np.float64) if a_normals == "file" else None)
         first, inv = her_target.weld(m.P.astype(np.float64))   # (float64 as skin.Body reads it: a float32 P / tol rounds 183 tris' keys apart)
         Tw = inv[m.T]
         Tw = Tw[(Tw[:, 0] != Tw[:, 1]) & (Tw[:, 1] != Tw[:, 2]) & (Tw[:, 0] != Tw[:, 2])]
@@ -112,7 +119,11 @@ class Source:
         self.UV = m.UV.astype(np.float64)
         self.prim = m.prim_of
         fn = np.cross(self.P[self.T[:, 1]] - self.P[self.T[:, 0]], self.P[self.T[:, 2]] - self.P[self.T[:, 0]])
-        self.N = t["N"][inv]                            # welded (smooth across A's UV seams)
+        if a_normals == "file":
+            assert np.abs(t["P_file"] - m.P).max() < 1e-5, "A's file points are not her_target's body order"
+            self.N = t["N_file"]                        # per file vertex, as A's file splits them
+        else:
+            self.N = t["N"][inv]                        # welded (smooth across A's UV seams)
         self.Tan, self.w = tangent_frames(self.P, self.N, self.UV, self.T)
         self.scene = ray.scene(self.P, self.T)
         import surfdist
@@ -404,7 +415,7 @@ SOURCE_MAPS = ("albedo", "normal", "form_normal", "roughness", "freckles")
 
 
 def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None, pose=None, carrier=None, carry=None,
-        source_maps=None, form_deg=FORM_DEG, mirror="avg", dump=None, a_rest=None, form_near=None):
+        source_maps=None, form_deg=FORM_DEG, mirror="avg", dump=None, a_rest=None, form_near=None, a_normals=None):
     """source_maps (P1 round 10): a directory of SOURCE_MAPS on our UVs, already carried once (her_a_target.py, its own
     bake.json holds the carry's gates): copied as they are, so the build reads neither A nor a carrier for the skin; only
     this body's own maps (AO, thickness, curvature, zones) are computed.
@@ -479,7 +490,8 @@ def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None,
         # (the right half's frame is the left's mirrored: x flipped, so its tangent-space values equal the left's)
         TtR, BtR = Tt * MIRROR, Bt * MIRROR
         print("BAKE texels", len(tix), round(time.time() - t0, 1), flush=True)
-        A = Source(os.path.join(src_out, "body.glb"), pose, a_rest)
+        A = Source(os.path.join(src_out, "body.glb"), pose, a_rest, a_normals)
+        rep["a_normals"] = a_normals or "area"
         res = {}
         covered0 = np.zeros(size * size, bool)
         covered0[tix] = True
