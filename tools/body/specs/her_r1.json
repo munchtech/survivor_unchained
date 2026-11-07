@@ -58,6 +58,8 @@
   "waist": -0.6,
   "hips": 0.4
  },
+ "skin": {"rim": 0.0, "edge_rough": 0.9, "shine": 0.15},
+ "skin_why": "the placeholder skin on her body (not her head) until R4: the skin's own rim term and glancing sheen drew the lit arcs at the Look over the breast tops, the cleavage and the armpit fold, with the rig's back lamps on or off (P1 R1 round 7, game test shots r1c/round7/lamp)",
  "shapes": {
   "support_lift": 1.0,
   "support_press": 1.0,

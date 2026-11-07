@@ -34,6 +34,13 @@ public static class P1Body
         return d.RootElement;
     }
 
+    /// <summary>The published spec's "skin" block (publish.json): B's placeholder skin settings on its body material, her head left alone. The skin's rim and its glancing sheen drew a lit line round every form at the Look, whatever the shape (P1 R1 round 7, measured with --skin-set).</summary>
+    public static void ApplySkin(ShaderMaterial m)
+    {
+        if (!Rig("publish.json").TryGetProperty("skin", out var skin)) return;
+        foreach (var kv in skin.EnumerateObject()) m.SetShaderParameter(kv.Name, kv.Value.GetSingle());
+    }
+
     /// <summary>The library clips baked onto B (People.Clips' names, loops as set there).</summary>
     public static AnimationLibrary Clips()
     {

@@ -76,6 +76,10 @@ def publish(src):
     bj = os.path.join(src, "build.json")
     if os.path.exists(bj):
         out["spec"] = json.load(open(bj)).get("spec")
+        # the spec's "skin" (the placeholder skin's shader settings for this body, not a tool's number): P1Body.ApplySkin reads it
+        sp = os.path.join(ROOT, out["spec"]) if out["spec"] else None
+        if sp and os.path.exists(sp) and json.load(open(sp)).get("skin"):
+            out["skin"] = json.load(open(sp))["skin"]
     with open(os.path.join(PUB, "publish.json"), "w") as f:
         json.dump(out, f, indent=1)
     print(f"published {out['source']} -> godot/art/people/body_p1 ({len(out['files'])} files)")

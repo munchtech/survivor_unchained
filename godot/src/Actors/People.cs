@@ -1934,6 +1934,7 @@ public static class People
     /// in Skin() and again after her look's own tones and shade (HerShade), so it wins over them.</summary>
     static void SkinSet(ShaderMaterial m, string name)
     {
+        if (P1Body.On && name != "skin_head") P1Body.ApplySkin(m);
         if (SurvivorUnchained.Args.Get("skin-set") is string ss)
             foreach (var part in ss.Split(';'))
                 if (part.Split(':') is [var who2, var kvs] && (who2 == "*" || who2 == name))
