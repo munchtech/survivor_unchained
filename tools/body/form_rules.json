@@ -182,6 +182,13 @@
      ],
      "why": "ROUND seen from the side: the sagittal outline through the apex from the upper root to the fold within 5.5% of its radius of one circle (RMS; ~5 mm on a 90 mm radius, under what a cel band reads); a cone or teardrop's straight upper slope gives 0.08-0.09 (forms2_2: 0.088)"
     },
+    "side_round_globe_resid_over_R": {
+     "band": [
+      null,
+      0.08
+     ],
+     "why": "P1 R1c round 6: the side circle fit over the globe proper, from where the normal falls to 60 deg above level to the fold, so the upper pole's thin straight hull cannot hide a globe going out of round; held at round_4's level (measured on round_4 and round_6 in the round's report)"
+    },
     "side_arc_deg": {
      "band": [
       180,
@@ -266,12 +273,12 @@
      ],
      "why": "P1 R1c round 3 (judge 2): the full upper pole measured BELOW the root blend (from the centre path's blend end, 95 % of its concave turn, to the apex): 0 = a straight slope, 1 = round; round_2 0.90, round_3 1.04"
     },
-    "root_blend_width_mm_centre": {
+    "root_blend_peak_deg_per_mm_centre": {
      "band": [
-      20,
-      null
+      null,
+      1.8
      ],
-     "why": "P1 R1c round 3 (judge 2: 'two spheres stuck onto a flat chest', a crisp line over each breast top): the root's concave turn on the centre path (the apex up to the clavicle) spread over this many mm (the turn / its peak curvature, 2 mm smoothing); round_2 15.6 (the turn 37 deg within ~12 mm: the line), round_3 21.4; the judge's 25-35 is the next step (band floor at what holds the line off)"
+     "why": "P1 R1c round 6, replaces root_blend_width_mm_centre (>= 20), which fell as the turn shrank and so punished a better root (r4 18.3 mm for a 22 deg turn, r6 15.7 for less): the root's concave turn on the centre path at its fastest (turn / width, deg/mm, 2 mm smoothing), the thing the cel band and the cavity draw; judge 2's line round_2 37 deg / 15.6 mm = 2.37, round_4 1.20"
     },
     "root_blend_depth_mm": {
      "band": [

@@ -214,6 +214,14 @@ def breast_round(V, T, Vref, b):
     out["side_radius_mm"] = round(R * 1000, 1)
     out["side_round_resid_over_R"] = round(rms / R, 4)
     out["side_arc_deg"] = round(_arc_deg(S, c), 1)
+    # P1 R1c round 6: the same fit over the globe proper: from where the outline's normal falls to 60 deg above level
+    # to the fold (the upper pole's thin hull above it is straight by design)
+    Pg = bm.gsmooth(Ps, 3.0)
+    d1 = np.gradient(Pg, axis=0)
+    el = np.degrees(np.arctan2(d1[:, 1], -d1[:, 0]))
+    up60 = [j for j in range(root, ia) if el[j] >= 60.0]
+    _, Rg, rg = _circle(Ps[(up60[-1] if up60 else root):fold + 1])
+    out["side_round_globe_resid_over_R"] = round(rg / Rg, 4)
     # -- upper-pole fill
     U = Ps[root:ia + 1]
     a0, a1 = U[0], U[-1]
@@ -378,6 +386,10 @@ def root_blend(V, T, Vref, b):
         worst["crease_deg_per_mm"] = max(worst["crease_deg_per_mm"], r["crease_deg_per_mm"])
     out["root_blend_width_mm"] = worst["width_mm"] if worst["width_mm"] < 1e8 else None
     out["root_blend_width_mm_centre"] = out["root_blend_centre"]["width_mm"]
+    # P1 R1c round 6: the width alone punishes a smaller turn (width = turn / peak; a pole that hardly turns has a short
+    # lobe): what a cel band reads is how fast it turns, the lobe's peak (turn / width, 2 mm smoothing)
+    rc = out["root_blend_centre"]
+    out["root_blend_peak_deg_per_mm_centre"] = round(rc["turn_deg"] / max(rc["width_mm"], 1e-6), 2) if rc["width_mm"] else 0.0
     out["root_blend_depth_mm"] = worst["depth_mm"]
     out["root_crease_deg_per_mm"] = worst["crease_deg_per_mm"]
     # the upper-pole fill below the blend (as breast_round's, from the blend's end on the centre path)
