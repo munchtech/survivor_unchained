@@ -1,5 +1,29 @@
 # Handoff: her body (rig, mesh, weights)
 
+## R1 LEAD 5 -> COORDINATOR (6 Nov): MILESTONE READY on round_9; judges 3, 4, 5 all READY, distance "close" on the shape; the Look and close-up frames stay NO until skin, head join and light
+Scratch `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_body_p1\r1c\` (round6-9, judge3-5: each has `brief.md`; `roundN\chain.sh` is the full chain). Milestone folder `...\body_p1\milestone1\`, every shot on round_9.
+
+**Published now:** `tools/body/out/round_9`, clips baked (digest 9C2945342966E239), rig_map and spring samples current, dotnet 1585/0/10, formrules 63/70. `godot/art/people/body_p1/*` UNCOMMITTED until the owner picks. `tools/body/out/round_8` kept for comparison; rounds 6 and 7 are in the Recycle Bin.
+
+**Done (committed):**
+- Round 6: the upper pole as a C2 hull (`union.pole` in `breast_form.union_field`): crest band 6.3 -> 22 mm; `designed/chest.json` `chest_step`; `neck_side_low` off the band; `root_blend_peak_deg_per_mm_centre` replaces the width rule.
+- Round 7: cleavage (`midline_fade_up`, `press.vee`: gap 15.5/18.6 -> 7.9/8.7 mm); hanging corrective `arm_hang_hang8_{s}` (`fair_key`: pocket 29 -> 8.3 mm; a pose matter, not rest shape); `deltoid_cap` height fills.
+- The spec's `skin` block (`her_r1.json` -> `publish.json` -> `P1Body.ApplySkin`, body only, head untouched): rim 0, edge_rough 0.9, shine 0.15. **The Look's residual lit arcs were the skin's rim term and glancing sheen, not the shape and not the back lamps:** in-game shots with the back lamps off (`--rig 1.3,0.22,0,0 --look-body-rim 0`) kept the arcs, `--skin-set *:rim=0` removed them. The offline proxy and a check judge had said lamps: the proxy has no rim term. Pictures: `round7\lamp\lamps_crop.png`, `skin_crop.png`, `r0_crop.png`. Side effect: a flatter body and a louder head join. R4 owns these numbers from here.
+- Round 8: `breast_settle` (soft weight, default 1.0; armor's `form_support_lift` undoes it through `shapes_with`), `upper_belly` in `designed/torso.json`, the armpit corrective's mask widened (pocket 4.5 mm). Rule rebands by judge 4.
+- Round 9: glutes (cleft 0.525 -> 0.70 of lobe height, one groove in place of three stacked midline moves, `depth_blend`, `smile.top`), deltoid cap -9 mm, `waist_over_pelvis_mm` replaces the navel rule.
+
+**Against the coordinator's route (a) acceptance:** crest band met (22.7 mm). Top angle 71/78/77 deg missed (<= 72 on the inner path only). The root rose 6 mm, not 35. Apex fraction 0.536: no re-band needed. Side fit root to fold 0.0653 against 0.055: a check judge's ruling, cap 0.075 with globe-only <= 0.05 as guard. More hull cost roundness for 2 deg, so route (a) stopped there.
+
+**Open, after the owner's pick:**
+1. Under-fold from behind: outer end in about 30 mm, outer third up 10-15 mm, 30% shallower, until the 210 deg cel shadow stops short of the silhouette (judge 5; estimates).
+2. Upper back: a tone line from the upper arm to a V on the spine at the Look turned to her back (`round9\lamp\back_pixie_crop.png`, 1:1). The mid-back ripples are clay only, not in that frame. Look again on the cel step.
+3. Neck: slim beside the narrow old head: 5 mm a side at mid-column if the head stays.
+4. Clay's jagged cel edges (mid-back, neck, armpit fringe) before painted cel.
+
+**Knowns:** the neck band blotch (head join, skin); arena light and ground, arena day = night; the shoulder corner at the close-up in bridge-clip arm holds (Stage B); arm and breast merging in one fight frame (bridge clip + fight lamp); no navel at the close-up (skin); `idle_reaver_town` hand 1.5 mm and twist bone 1.9 mm inside (Stage B); `low_back_blend_mm` 36 (target 60-80, the trade kept by judge 5); `upper_turn_max_over_globe` 2.57, `upper_turn_convex_peak_mm` 1, `inside_at_rest_chest` 1, shoulder line 4.4 /m, the glute section's aspect and edges counts (no camera shows them).
+
+**Spend (R1 lead 5):** API $0. Subagents about 1.17M (solvers r6 0.20, r7 0.22, r8 0.18, r9 0.13; check 0.06; judges 3/4/5 0.19, 0.12, 0.08). Lead about 0.25M.
+
 ## R1 LEAD 4 -> R1 LEAD 5 (6 Nov, wind-down at the subscription limit): ROUNDS 3-5b RUN; round_4 PUBLISHED; the Look's lit rim diagnosed, a ROUTE CHOICE on the fix; armpit still open; no judge 3 yet
 Report to the P1 rebuild coordinator. Scratch `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_body_p1\r1c\` (round3, round4, round5, round5b: each has `brief.md`; round 3's `report.md`; rounds 4-5b were subagents, their reports are summarized here). No solver is running.
 
