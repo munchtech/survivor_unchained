@@ -1,5 +1,5 @@
 {
- "about": "P1 R1 round 10: B with A's look. Her torso, breasts, hips and legs are A's, stored once on our topology as the designed slider her_a (tools/body/her_a_target.py -> base/targets/her_a_{tier}.npz; designed/her.json); arms and deltoids are the slider body's, weights, rig, correctives, clips and springs ours; the form library's r1 trunk sliders are off.",
+ "about": "P1 R1 round 10: B with A's look. Her torso, breasts, hips and legs are A's, stored once on our topology as the designed slider her_a (tools/body/her_a_target.py -> base/targets/her_a_{tier}.npz; designed/her.json); arms and deltoids are the slider body's, weights, rig, correctives, clips and springs ours; the form library's r1 trunk sliders are off; round 12: the girdle and upper arm at A's own rest (her_a a_rest, a_tight).",
  "base": "tools/body/specs/her_r1.json",
  "sliders": {
   "arm_girth": 0.15,
@@ -57,13 +57,35 @@
   "fit_spec": "tools/body/specs/her_topo.json",
   "carrier": "tools/body/out/her_ek2_final",
   "band_m": 0.06,
-  "zero_ring": 6,
-  "arm_move_m": [
-   0.024,
-   0.0,
-   0.01
+  "zero_ring": null,
+  "zero_parts": [
+   "hand"
   ],
-  "arm_move_why": "The arm and deltoid keep our form and ride to A shoulder line: 24 mm out, 10 mm forward, fitted against A top and front/back silhouette over x 12-28 cm (B top within 3.5 mm mean); the slider body stood 24 mm narrower than A from shoulder_span -0.35."
+  "a_rest": [
+   "clavicle",
+   "upperarm"
+  ],
+  "a_tight": {
+   "parts": [
+    "shoulder",
+    "arm",
+    "elbow"
+   ],
+   "fade_parts": [
+    "forearm"
+   ],
+   "lam": [
+    30,
+    10,
+    3,
+    1,
+    0.3,
+    0.1,
+    0.03
+   ],
+   "iters": 2
+  },
+  "a_rest_why": "P1 A shoulder (round 12): B's rest girdle and upper arm ARE A's (clavicle -14.9 deg, shoulder 41.5 mm under its head, arm -51.8 deg; A's joints from the target), so the game turns B from where A turns from. Measured: A's own skin taken through the old round trip (the fit's pose by A's weights, back by B's) alone gave cap p95 17-23 mm, armpit 13-28. The shoulder, upper arm and elbow are laid on A's skin (a_tight; the fit's arm is LOOSE, 10-23 mm off), fading to the fit's forearm (A girth, our flow) over the forearm (fading over the elbow alone left a step); the hand ours, riding rigidly. Forearm and hand keep the fit's direction: A's rest elbow bend is its carrying angle, which would make the hinge point forward."
  },
  "bake": {
   "maps": "godot/art/people/body_p1",
