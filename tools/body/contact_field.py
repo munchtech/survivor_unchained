@@ -205,6 +205,12 @@ def solve_chain(mesh, st, jc, cf):
         Y = X + carried(mesh, D, M) * free[:, None]
         lg = {"deg": th, "rounds": []}
         lam = 0.0
+        if cf.get("seam"):
+            # the seam's contacts: the strip's test nodes inside the other part's skinned skin (the check's test on X)
+            scx = ray.scene(X[mesh.rep], p.T)
+            Nx = bends.normals(X[mesh.rep], p.T)[mesh.first]
+            tix = np.nonzero(test)[0]
+            contacts[tix[ray.inside(scx, X[tix] + 3e-4 * Nx[tix])]] = True
         for rd in range(cf["rounds"]):
             sc = ray.scene(Y[mesh.rep], p.T)
             N = bends.normals(Y[mesh.rep], p.T)[mesh.first]
@@ -253,6 +259,25 @@ def solve_chain(mesh, st, jc, cf):
                 s = np.einsum("ij,ij->i", Y[c_] - q, nq)
                 dist = np.linalg.norm(Y[c_] - q, axis=1)
                 act = ok & (s < cf["release"]) & (dist < cf["reach"])
+                sm = np.zeros(len(c_), bool)
+                if cf.get("seam") and bool(side_d) == (cf["seam"] == 1):   # 1: the thigh's give fixed, 2: the trunk's
+                    # R5 lead 4, the seam (implicit skinning's contact, Vaillant 2013: each part's field from its own
+                    # skinned skin; the contact where they meet). r4 moved each node its share of the way to the
+                    # other part's SOLVED skin Y, so the share compounded round on round (half, then half the rest)
+                    # until the belly lay on an uncompressed thigh (share 0.5 or 0.75: sink -45 vs -49 mm). Here a
+                    # thigh node inside the trunk's SKINNED skin X gives its fixed share of that overlap (the trunk's
+                    # give at its partner face), measured on X, so per angle it never compounds; the trunk then
+                    # lies on the compressed thigh as before: the two parts meet at the seam, each compressed by its
+                    # share (both sides fixed on X disagree node to node: 135 680 inside)
+                    qx, nx, fx, okx = partner(X, Tc, X[c_], mesh.P0, mesh.P0[c_], cf.get("far_m", 0.0))
+                    sx = np.einsum("ij,ij->i", X[c_] - qx, nx)
+                    sm = okx & (sx < 0)
+                    act |= sm
+                    if side_d:
+                        gx = (1.0 - give(mesh.P0[Tc[fx]].mean(1))) if give is not None else 1.0 - share[c_]
+                    else:
+                        gx = share[c_]
+                    seam_t = gx[:, None] * (qx - X[c_])
                 far += int((ok & (s < cf["release"]) & (dist >= cf["reach"])).sum())
                 contacts[c_[~act]] = False
                 c_, q, nq, s = c_[act], q[act], nq[act], s[act]
@@ -265,6 +290,9 @@ def solve_chain(mesh, st, jc, cf):
                 mv = np.where(s < 0, shr, 1.0)[:, None] * (q - Y[c_]) + cf["margin"] * nq
                 wc[k] = cf["contact"]
                 tgt[k] = Y[c_] + mv - X[c_]
+                if sm.any():
+                    sm, seam_t = sm[act], seam_t[act]
+                    tgt[k[sm]] = seam_t[sm]
             A = (LtL + sp.diags(base_w + wc)).tocsc()
             lu = splu(A)
             U = np.stack([lu.solve(wc * tgt[:, c]) for c in range(3)], 1)
