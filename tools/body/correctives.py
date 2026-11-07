@@ -573,13 +573,42 @@ def mirror_map(P, tol=1e-5):
     return np.where(d < tol, i, -1)
 
 
-def normal_delta(P, T, D, N=None):
+def smooth_field(X, P, T, iters):
+    """Unit vectors X averaged `iters` times with their mesh neighbours (uniform weights, points welded by position, so a
+    UV seam's copies stay one), renormalized."""
+    if not iters:
+        return X
+    import scipy.sparse as sp
+    _, w = np.unique(np.round(P, 6), axis=0, return_inverse=True)
+    w = w.ravel()
+    E = np.unique(np.sort(w[np.r_[T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]]], 1), axis=0)
+    E = E[E[:, 0] != E[:, 1]]
+    m = int(w.max()) + 1
+    A = sp.coo_matrix((np.ones(2 * len(E)), (np.r_[E[:, 0], E[:, 1]], np.r_[E[:, 1], E[:, 0]])), shape=(m, m)).tocsr()
+    deg = np.asarray(A.sum(1)).ravel()
+    Y = np.zeros((m, 3))
+    np.add.at(Y, w, X)
+    Y /= np.maximum(np.linalg.norm(Y, axis=1, keepdims=True), 1e-12)
+    for _ in range(int(iters)):
+        Y = (Y + A @ Y) / (1.0 + deg)[:, None]
+        Y /= np.maximum(np.linalg.norm(Y, axis=1, keepdims=True), 1e-12)
+    return Y[w]
+
+
+def normal_delta(P, T, D, N=None, smooth=0):
     """A shape's NORMAL delta: the geometric normals' change (N None), or (P1 R1 bake round 2) the export's own normals
     N turned by the rotation the shape gives the geometric normal, less N: where N is not the mesh's geometric normal
     (B's export carries A's file normals over her_a, up to 35 deg off its facets) the shape turns that normal as it
-    turns the surface, instead of adding a difference made for another vector."""
+    turns the surface, instead of adding a difference made for another vector.
+    `smooth` (the correctives data's solve "normal_smooth", 0 = as before): the turn read from the geometric normals
+    averaged that many times over the mesh (smooth_field), so it carries the shape's turn of the form, not its facets':
+    a key laid on A's posed surface (game_a, posed_a) snaps B's points onto A's facets, whose turn, carried point by
+    point, drew a lit line and blotches down the front of her right deltoid at the close and Look cameras (P1 R1 bake
+    round 3: arm_hang_look_r's turn p99 39 deg, edge angle p99 53 -> 69 deg; the same with her relief off)."""
     n0 = bends.normals(P, T)
     n1 = bends.normals(P + D, T)
+    if smooth:
+        n0, n1 = smooth_field(n0, P, T, smooth), smooth_field(n1, P + D, T, smooth)
     if N is None:
         return n1 - n0
     N = N / np.maximum(np.linalg.norm(N, axis=1, keepdims=True), 1e-12)
@@ -802,7 +831,9 @@ def run(out, only=None, tier="close", fresh=False, turn_normals=False, conf_path
         mb = poser.glb.mesh(rig.get("body_mesh", "Heroine"))
         assert np.abs(mb.P.astype(float) - Pb).max() < 1e-6, "the body mesh's points are not the poser's"
         Nb = mb.N.astype(np.float64)
-    tg = {n: (shapes[n].astype(np.float32), normal_delta(Pb, Tb, shapes[n], Nb).astype(np.float32)) for n in order}
+    ns = int(cf.get("normal_smooth", 0))
+    tg = {n: (shapes[n].astype(np.float32), normal_delta(Pb, Tb, shapes[n], Nb, ns).astype(np.float32)) for n in order}
+    rep["normal_smooth"] = ns
     glbwrite.set_targets(base, rig.get("body_mesh", "Heroine"), tg, os.path.join(out, f_glb))
     np.savez_compressed(os.path.join(out, "stage", f_shapes), **shapes)
     with open(rig_path, "w") as fh:
