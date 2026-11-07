@@ -36,6 +36,7 @@ mirror_of), so both are exactly symmetric.
 """
 import os
 import json
+import math
 import numpy as np
 from sliders import smoother, HERE
 
@@ -617,6 +618,16 @@ def union_field(sl, c, Va, chest, bias):
         e2 /= np.linalg.norm(e2)
         e3 = np.cross(ax, e2)
         TR = np.asarray(tl["R"], float)
+    pl = un.get("pole")
+    if pl:
+        # P1 R1c round 6: the upper pole's hull (see globe)
+        Pq = np.asarray(pl["P"], float)
+        Pn = Pq / np.array([float(smooth_r(Pq[0], R["med"], R["lat"], bw)), float(smooth_r(Pq[1], R["low"], R["up"], bw)),
+                            float(smooth_r(Pq[2], R.get("a_back", R["a"]), R["a"], bw))])
+        PL = float(np.linalg.norm(Pn))
+        Pn = Pn / PL
+        th_c, x0 = math.acos(1.0 / PL), math.radians(float(pl.get("x0_deg", 12.0)))
+        tip, pl_s = math.radians(float(pl.get("tip_deg", 0.0))), np.array([float(pl.get("lat_s", 1.0)), 1.0, 1.0])
 
     def globe(Xq):
         q = Xq - O
@@ -625,6 +636,24 @@ def union_field(sl, c, Va, chest, bias):
         Ru = smooth_r(u, R["med"], R["lat"], bw)
         Rw = smooth_r(w, R["low"], R["up"], bw)
         Ra = smooth_r(d, R.get("a_back", R["a"]), R["a"], bw)
+        if pl:
+            # The upper pole's thin mass (the Look's lit rim: the ellipsoid's top faces 87 deg up, a shelf no blend width
+            # can turn): the HULL of the ellipsoid and a point P on the upper chest (pole.P from O, m; lateral, up, axis):
+            # affine, so in the ellipsoid's unit coordinates it is the unit sphere's tangent cone from P: at an angle
+            # theta from P's direction the radius is 1 / cos(theta_c - theta), cos theta_c = 1 / |P| (1 past the contact
+            # circle). Tangent to the globe all round the contact circle (no seam, no shelf at its sides), the top rolls
+            # off at the generator's elevation, and theta_c - theta goes through the C2 ramp (+-x0_deg) so the curvature
+            # eases from the globe's to the generator's: a cel terminator draws no line there.
+            nq = np.stack([u / Ru, w / Rw, d / Ra], 1)
+            r0 = np.maximum(np.linalg.norm(nq, axis=1), 1e-9)
+            nw = nq * pl_s                                 # a lateral squeeze: the cone's axis a soft ridge, not a point
+            th = np.arccos(np.clip(nw @ Pn / np.maximum(np.linalg.norm(nw, axis=1), 1e-9), -1.0, 1.0))
+            th = np.sqrt(th * th + tip * tip)              # the tip rounded (r flat at the axis, no point in the chest)
+            xs = x0 * ramp((th_c - th) / x0)
+            rp = 1.0 / np.cos(xs)
+            k0 = r0 / rp
+            k1 = np.sqrt((nq[:, 0] / Ru) ** 2 + (nq[:, 1] / Rw) ** 2 + (nq[:, 2] / Ra) ** 2) / rp
+            return k0 * (k0 - 1.0) / np.maximum(k1, 1e-12), np.degrees(np.arctan2(w / Rw, u / Ru))
         return ell_sdf(u, w, d, Ru, Rw, Ra), np.degrees(np.arctan2(w / Rw, u / Ru))
 
     def F(Xq, bi):
