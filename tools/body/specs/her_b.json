@@ -85,6 +85,13 @@
    ],
    "iters": 2
   },
+  "maps_bake": {
+   "carrier": "tools/body/out/round_12",
+   "a_rest": ["clavicle", "upperarm"],
+   "mirror": "left",
+   "form_near": {"near_mm": [2.5, 6.0], "wide_deg": [60.0, 90.0]},
+   "why": "P1 R1 round 13 (skin): A's paint carried on round_12's surface (A's torso and, at A's rest, A's girdle and arm: projection p50 0.2-0.9 mm there, against 18-25 mm on the arms from her_ek2_final); one half's carry for both halves (averaging A's two halves halved its detail: the abs' slopes p50 1.84 -> 1.08 deg); A's whole form where we lie on A (A's navel is A's geometry, walls to 77 deg, which the 8-16 deg rule dropped), the old rule off A (hands, feet)"
+  },
   "a_rest_why": "P1 A shoulder (round 12): B's rest girdle and upper arm ARE A's (clavicle -14.9 deg, shoulder 41.5 mm under its head, arm -51.8 deg; A's joints from the target), so the game turns B from where A turns from. Measured: A's own skin taken through the old round trip (the fit's pose by A's weights, back by B's) alone gave cap p95 17-23 mm, armpit 13-28. The shoulder, upper arm and elbow are laid on A's skin (a_tight; the fit's arm is LOOSE, 10-23 mm off), fading to the fit's forearm (A girth, our flow) over the forearm (fading over the elbow alone left a step); the hand ours, riding rigidly. Forearm and hand keep the fit's direction: A's rest elbow bend is its carrying angle, which would make the hinge point forward."
  },
  "bake": {

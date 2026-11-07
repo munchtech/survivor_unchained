@@ -87,7 +87,7 @@ def tangent_frames(P, N, UV, T):
 class Source:
     """A's body posed into our build's rest, unwelded (its UVs), with its textures and frames."""
 
-    def __init__(self, build_glb, pose=None):
+    def __init__(self, build_glb, pose=None, a_rest=None):
         import her_target
         # (pose: the fit's posed bones (forms/her_topo_target_bones.json): A on the surface our points were wrapped
         # onto. The built body's own skeleton (landmarks on the fitted points) poses A up to 4 cm off it: the bake read
@@ -96,6 +96,10 @@ class Source:
         if pose:
             with open(pose if os.path.isabs(pose) else os.path.join(REPO, pose)) as f:
                 want = {k: (np.asarray(v[0], float), np.asarray(v[1], float)) for k, v in json.load(f)["bones"].items()}
+            # (a_rest: these chain bones at A's own rest turn, as her_a_target's "a_rest" lays B's girdle and upper arm)
+            for b in a_rest or ():
+                for sd in "lr":
+                    want[f"{b}_{sd}"] = None
         t = her_target.target(build_glb, A_PATH, world=True, want=want)
         A = Glb(A_PATH)
         m = A.mesh("Heroine")
@@ -400,7 +404,7 @@ SOURCE_MAPS = ("albedo", "normal", "form_normal", "roughness", "freckles")
 
 
 def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None, pose=None, carrier=None, carry=None,
-        source_maps=None):
+        source_maps=None, form_deg=FORM_DEG, mirror="avg", dump=None, a_rest=None, form_near=None):
     """source_maps (P1 round 10): a directory of SOURCE_MAPS on our UVs, already carried once (her_a_target.py, its own
     bake.json holds the carry's gates): copied as they are, so the build reads neither A nor a carrier for the skin; only
     this body's own maps (AO, thickness, curvature, zones) are computed.
@@ -475,13 +479,30 @@ def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None,
         # (the right half's frame is the left's mirrored: x flipped, so its tangent-space values equal the left's)
         TtR, BtR = Tt * MIRROR, Bt * MIRROR
         print("BAKE texels", len(tix), round(time.time() - t0, 1), flush=True)
-        A = Source(os.path.join(src_out, "body.glb"), pose)
+        A = Source(os.path.join(src_out, "body.glb"), pose, a_rest)
         res = {}
+        covered0 = np.zeros(size * size, bool)
+        covered0[tix] = True
+        covered0 = covered0.reshape(size, size)
         for side, X, Nn, Tf, Bf in (("l", Cl, CNl, Tt, Bt), ("r", Cr, CNr, TtR, BtR)):
             t, bw, d, miss = A.project(X, Nn)
             s = A.sample(t, bw)
             ts = lambda v: np.stack([(v * Tf).sum(1), (v * Bf).sum(1), (v * Nn).sum(1)], 1)     # noqa: E731
-            res[side] = {"albedo": s["albedo"], "normal": U(ts(carry_normal(s["normal"], s["form"], Nn))),
+            deg = form_deg
+            if form_near is not None:
+                # (P1 R1 round 13: where our surface lies ON A (the her_a target: within near_mm[0] of A along the ray,
+                # smoothed over ~2 texels so the rule has no texel noise), A's form is carried whole up to wide_deg: A's
+                # navel (walls to 77 deg on A's own mesh, a dip of ours) and its folds are A's geometry, which the
+                # 8-16 deg rule dropped; off A (hands, feet: 7-25 mm) the old rule)
+                lo_mm, hi_mm = form_near["near_mm"]
+                dimg = np.zeros(size * size)
+                dimg[tix] = d * 1e3
+                dimg = ndimage.gaussian_filter(fill_gutters(dimg.reshape(size, size, 1), covered0)[:, :, 0], 2.0).ravel()[tix]
+                k = 1 - np.clip((dimg - lo_mm) / (hi_mm - lo_mm), 0, 1)
+                k = k * k * (3 - 2 * k)
+                w0, w1 = form_near["wide_deg"]
+                deg = (form_deg[0] + k * (w0 - form_deg[0]), form_deg[1] + k * (w1 - form_deg[1]))
+            res[side] = {"albedo": s["albedo"], "normal": U(ts(carry_normal(s["normal"], s["form"], Nn, deg))),
                          "form": U(ts(s["form"])),
                          "rough": s["rough"], "freckles": s["freckles"], "dist": d, "miss": miss}
         print("BAKE carried", round(time.time() - t0, 1), flush=True)
@@ -501,7 +522,15 @@ def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None,
     nq = len(z["Q"])
     tri_q = np.nonzero(~uvd["is_right"][uvd["T"]].all(1))[0][tri] % nq
     if not source_maps:
-        avg = lambda k: 0.5 * (res["l"][k] + res["r"][k])          # noqa: E731
+        if dump:
+            np.savez_compressed(dump, tix=tix, Xl=Cl, Xr=Cr, **{f"{k}_{sd}": res[sd][k] for sd in ("l", "r")
+                                                             for k in ("albedo", "normal", "form", "dist")})
+        # (mirror "left", P1 R1 round 13: one texel serves both halves; the two halves' carries averaged halved A's
+        # detail where A is not symmetric to the texel (torso: the L-R shading normals p50 2.4 deg apart against a
+        # detail of 1.8: the abs' slopes p50 1.84 -> 1.08 deg, the sternum 3.26 -> 2.09): "left" takes A's left half
+        # for both, its detail whole and mirrored)
+        avg = ((lambda k: 0.5 * (res["l"][k] + res["r"][k])) if mirror == "avg" else (lambda k: res["l"][k]))   # noqa: E731
+        rep["mirror"] = mirror
         a_alb, a_nrm, a_rgh, a_frk = avg("albedo"), avg("normal"), avg("rough"), avg("freckles")
         keep_fn = None
         if carry:
@@ -523,7 +552,8 @@ def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None,
         save(os.path.join(maps_dir, "albedo.png"), alb, "RGB")
         nrm = U(a_nrm)
         rep["normal_inverted_texels"] = int((nrm[:, 2] <= 0).sum())
-        rep["normal_form"] = {"full_below_deg": FORM_DEG[0], "detail_only_above_deg": FORM_DEG[1]}
+        rep["normal_form"] = {"full_below_deg": form_deg[0], "detail_only_above_deg": form_deg[1],
+                              **({"near_a": form_near} if form_near is not None else {})}
         save(os.path.join(maps_dir, "normal.png"), img(nrm * 0.5 + 0.5, 3), "RGB")
         fnm = U(avg("form"))
         save(os.path.join(maps_dir, "form_normal.png"), img(fnm * 0.5 + 0.5, 3), "RGB")

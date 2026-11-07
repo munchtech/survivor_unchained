@@ -298,13 +298,20 @@ def maps(spec_path):
     cfg = spec["her_a"]
     fit = load_spec(os.path.join(REPO, cfg["fit_spec"]))
     work = os.path.join(HERE, "out", "her_a_maps_work")
-    r, _ = topo_bake.run(os.path.join(REPO, cfg["carrier"]), work, size=int(fit["bake"].get("size", 2048)), pose=fit["bake"].get("pose"))
+    # (spec her_a "maps_bake", P1 R1 round 13: "carrier" a build whose surface is the target's (a published round: the
+    # girdle and arm at A's rest are A's), "a_rest" A posed so (default her_a's a_rest), "mirror" and "form_near" as
+    # topo_bake.run has them; without it the round 10 carry)
+    mb = cfg.get("maps_bake", {})
+    carrier = mb.get("carrier", cfg["carrier"])
+    r, _ = topo_bake.run(os.path.join(REPO, carrier), work, size=int(fit["bake"].get("size", 2048)), pose=fit["bake"].get("pose"),
+                         a_rest=mb.get("a_rest", cfg.get("a_rest")) if mb else None, mirror=mb.get("mirror", "avg"),
+                         form_near=mb.get("form_near"))
     dest = os.path.join(TARGETS, "her_a_maps")
     os.makedirs(dest, exist_ok=True)
     for k in topo_bake.SOURCE_MAPS:
         shutil.copy2(os.path.join(work, f"{k}.png"), os.path.join(dest, f"{k}.png"))
-    r = {k: r[k] for k in ("version", "size", "covered", "projection", "normal_inverted_texels", "normal_form", "gates") if k in r}
-    r["made_by"] = "tools/body/her_a_target.py --maps, from " + cfg["carrier"]
+    r = {k: r[k] for k in ("version", "size", "covered", "projection", "normal_inverted_texels", "normal_form", "mirror", "gates") if k in r}
+    r["made_by"] = "tools/body/her_a_target.py --maps, from " + carrier + (" (her_a maps_bake " + json.dumps(mb) + ")" if mb else "")
     with open(os.path.join(dest, "bake.json"), "w") as f:
         json.dump(r, f, indent=1, default=float)
     print("maps", r["gates"]["pass"], r["projection"])
