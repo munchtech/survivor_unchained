@@ -245,6 +245,70 @@ def posed_a_key(mesh, st, V, G, jc):
                                                      "moved_p95_mm": round(float(np.percentile(mv[free], 95) * 1000), 1) if free.any() else 0.0}]}
 
 
+_GK = {}
+
+
+def _a_twins(mesh, glb):
+    """Each welded B rest point's rest twin on A's rest surface (A's triangles, barycentric) and its distance, cached."""
+    from gl import Glb
+    from surfdist import Surface
+    import posed_fit as pf
+    key = (glb, len(mesh.P0), float(mesh.P0[:, 1].sum()))
+    if key not in _GK:
+        A = Glb(os.path.join(REPO, glb))
+        I3 = [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]
+        Par, Ta = pf.skin(A, "Heroine", {"bones": {}, "skeleton": I3, "meshes": {}})
+        q, _, tri, d0 = Surface(Par, Ta).closest(mesh.P0, k=16)
+        T = Ta[tri]
+        x0, x1, x2 = Par[T[:, 0]], Par[T[:, 1]], Par[T[:, 2]]
+        v0, v1, v2 = x1 - x0, x2 - x0, q - x0
+        d00, d01, d11, d20, d21 = (v0 * v0).sum(1), (v0 * v1).sum(1), (v1 * v1).sum(1), (v2 * v0).sum(1), (v2 * v1).sum(1)
+        den = np.maximum(d00 * d11 - d01 * d01, 1e-20)
+        bv, bw = (d11 * d20 - d01 * d21) / den, (d00 * d21 - d01 * d20) / den
+        _GK[key] = dict(A=A, T=T, bc=np.stack([1 - bv - bw, bv, bw], 1), d0=d0)
+    return _GK[key]
+
+
+def game_pose(poser, kp):
+    """A game key's B skeleton (game_keys.py "b": skeleton-space worlds; a bone the dump lacks keeps its rest) [n,4,4]."""
+    import posed_fit as pf
+    return np.stack([pf.m12(kp["b"][n]) if n in kp["b"] else poser.rest[i] for i, n in enumerate(poser.names)])
+
+
+def game_a_key(mesh, V, G, jc, kp, s):
+    """P1 R1 weights round 19: a key AT THE GAME POSE. B's skeleton as the game posed it in a shot (kp = a game_keys.py key:
+    "b" B's bones), the target A's surface as the game posed A in the same shot ("a", "a_shapes": A skins itself with its own
+    weights, helpers and shapes), each B point at its rest twin on A (barycentric on A's rest surface). Both skeletons stand in
+    one skeleton space (B's rest girdle is A's; chain v2 lands B's clavicle heads, shoulders and arms on A's: 0-2 mm), so the
+    target needs no registration. The strip keys (fair_key, posed_a_key at 8 deg) posed a trunk at rest and an arm the game
+    never holds: past the key the RBF clamped at 1 and the fair shape squared the cap; here the key is the game's own arm.
+    Mask jc["game_a"]: c (m, from the center bone's REST head, x mirrored on the right), r (semi-axes), full (C2 ramp),
+    valid_mm [full, none] (the rest twin's distance: only where B's rest lies on A), on side s only, the head held."""
+    ga = jc["game_a"]
+    tw = _a_twins(mesh, ga.get("glb", "godot/art/people/heroine.glb"))
+    import posed_fit as pf
+    I3 = [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]
+    Va, _ = pf.skin(tw["A"], "Heroine", {"bones": kp["a"], "skeleton": I3, "meshes": {"Heroine": {"shapes": kp.get("a_shapes", {})}}})
+    Yt = (Va[tw["T"]] * tw["bc"][:, :, None]).sum(1)
+    p = mesh.p
+    X = V[mesh.first].copy()
+    sx = np.array([1.0 if s == "l" else -1.0, 1.0, 1.0])
+    c = p.rest[p.index[jc["center"].replace("{s}", s)]][:3, 3] + np.asarray(ga["c"], float) * sx
+    d = np.linalg.norm((mesh.P0 - c) / np.asarray(ga["r"], float), axis=1)
+    f = 1 - smooth01((d - ga["full"]) / (1 - ga["full"]))
+    v0_, v1_ = ga.get("valid_mm", [2.0, 4.0])
+    f = f * (1 - smooth01((tw["d0"] * 1e3 - v0_) / (v1_ - v0_)))
+    side = mesh.P0[:, 0] > 1e-6 if s == "l" else mesh.P0[:, 0] < -1e-6
+    f = np.where(~mesh.held & side, f, 0.0)
+    Y = X + f[:, None] * (Yt - X)
+    free = f > 1e-3
+    mv = np.linalg.norm(Y - X, axis=1)
+    full = f > 0.999
+    return Y, f, free, mesh.skin_mats(G), {"iters": [{"moved_max_mm": round(float(mv.max() * 1000), 1),
+                                                     "moved_p95_mm": round(float(np.percentile(mv[free], 95) * 1000), 1) if free.any() else 0.0,
+                                                     "full_n": int(full.sum()), "free_n": int(free.sum())}]}
+
+
 def solve_key(mesh, st, V, G, jc, cf, ref):
     """The desired posed surface Y (welded) for one key pose, and its log."""
     p = mesh.p
@@ -550,6 +614,8 @@ def topo_mirror(mo, Pb, stage_npz=None):
 
 # ----------------------------------------------------------------------- run --
 def shape_name(jc, motion, deg):
+    if motion == "game":                    # a game key: its shot's name (arm_hang_close_l)
+        return f"{jc['name']}_{deg}_{{s}}"
     tag = {"arm_hang": "hang", "shoulder_abd": "abd", "shoulder_flex": "flex" if deg >= 0 else "ext", "hip_flex": "flex",
            "hip_abd": "abd", "elbow": "flex", "knee": "flex"}[motion]
     return f"{jc['name']}_{tag}{int(round(abs(deg)))}_{{s}}"
@@ -613,6 +679,35 @@ def run(out, only=None, tier="close", fresh=False, turn_normals=False, conf_path
                 chain[k_] = (Y, f, free, M, G, lg)
             print(f"  {jc['name']} march {round(time.time() - t, 1)} s", flush=True)
         for motion, deg in jc["keys"]:
+            if motion == "game":                       # a game key (game_a_key): B's pose from a shot, A's surface in it
+                ga = jc["game_a"]
+                kp = json.load(open(os.path.join(REPO, ga["poses"])))["keys"][deg]
+                s_ = ga.get("side", "r")
+                nm = shape_name(jc, motion, deg)
+                G = game_pose(poser, kp)
+                V = poser._skin(G, {})
+                t = time.time()
+                Y, f, free, M, lg = game_a_key(mesh, V, G, jc, kp, s_)
+                D = rest_delta(mesh, Y, f, free, M)
+                D[(Pb[:, 0] > 1e-6) if s_ == "r" else (Pb[:, 0] < -1e-6)] = 0.0   # the key side's shape only
+                mx_ = np.array([-1.0, 1, 1])
+                Dk = np.zeros_like(D)                  # as the left's (the right is its mirror, below)
+                ok = mir >= 0
+                Dk[ok] = D[mir[ok]] * mx_ if s_ == "r" else D[ok]
+                DR = np.zeros_like(Dk)
+                DR[ok] = Dk[mir[ok]] * mx_
+                shapes[nm.replace("{s}", "l")] = Dk
+                shapes[nm.replace("{s}", "r")] = DR
+                lg.update(key=deg, motion=motion, side=s_, max_mm=round(float(np.linalg.norm(D, axis=1).max() * 1000), 2),
+                          moved=int((np.linalg.norm(D, axis=1) > 1e-4).sum()), s=round(time.time() - t, 1),
+                          mirror_mm=round(float(np.abs(DR - D).max() * 1000), 3) if s_ == "r" else 0.0)
+                row.setdefault("keys", []).append(lg)
+                names.append(nm)
+                dk = rig_drive.direction(poser, G, jc["bone"].replace("{s}", s_), jc["end"].replace("{s}", s_),
+                                         jc["frame"].replace("{s}", s_))
+                dirs.append(dk * mx_ if s_ == "r" else dk)
+                print(f"  {nm} {deg}: {lg['iters'][-1]} max {lg['max_mm']} mm, {lg['s']} s", flush=True)
+                continue
             st = strips.get(motion) or key_strip(poser, rig, frame, motion, "l")
             strips[motion] = st
             nm = shape_name(jc, motion, deg)
