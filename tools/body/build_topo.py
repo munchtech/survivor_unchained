@@ -131,6 +131,9 @@ def load_tier(tier):
 
 def stage_base(spec, tier, rep, pre=None):
     z, sl = pre or load_tier(tier)
+    for n, f in (spec.get("target_files") or {}).items():
+        # a trial's target (a scratch spec names it; the designed slider's own "file" otherwise), e.g. her_a_target.py --out-dir
+        sl.designed[n] = {**sl.designed[n], "file": f}
     V0 = sl.V0.copy()
     assert np.abs(V0 - z["V"]).max() < 1e-6, "the sliders' reference is not this topology"
     info = {"topology": f"tools/body/out/topo/{tier}.npz", "vertices": int(len(V0)), "quads": int(len(z["Q"]))}
@@ -366,13 +369,44 @@ def bone_body(spec, tier, z, V, A, baked, rep):
     return Vb
 
 
-def stage_skeleton(V, tier, rep, head=None, moves=None):
+def bone_values(spec):
+    """The slider values the bones are read at (bone_body's): every non-soft slider, then the spec's bone_sliders."""
+    sv = {k: v for k, v in spec.get("sliders", {}).items() if v}
+    designed = {}
+    for f in sorted(os.listdir(os.path.join(HERE, "designed"))):
+        if f.endswith(".json"):
+            with open(os.path.join(HERE, "designed", f)) as fh:
+                designed.update(json.load(fh).get("sliders", {}))
+    return {**{k: v for k, v in sv.items() if not designed.get(k, {}).get("soft")}, **(spec.get("bone_sliders") or {})}, designed
+
+
+def target_joints(spec):
+    """P1 R1 round 12: a designed "target" slider's own joints ({cube: [x, y, z]} glTF m, her left, the npz's "joints"
+    json; her_a_target.py's a_rest: A's clavicle head, shoulder, elbow and wrist at the pose its skin was taken in), at
+    the bone body's value v: {cube: (point, v)} for stage_skeleton. The close tier's file (one skeleton for both)."""
+    vals, designed = bone_values(spec)
+    over = spec.get("target_files") or {}
+    out = {}
+    for n, v in vals.items():
+        c = designed.get(n, {})
+        if c.get("rule") != "target" or not v:
+            continue
+        z = np.load(os.path.join(REPO, over.get(n, c["file"]).format(tier="close")))
+        if "joints" in z.files:
+            for cube, p in json.loads(str(z["joints"])).items():
+                out[cube] = (np.asarray(p, float), float(v))
+    return out
+
+
+def stage_skeleton(V, tier, rep, head=None, moves=None, joints=None):
     import skeleton as sk
     with open(os.path.join(HERE, "skeleton.json")) as f:
         skel = json.load(f)
     with open(os.path.join(HERE, "base", "landmarks.json")) as f:
         table = json.load(f)["tiers"][tier]
-    names, par, worlds, ends, info = sk.place_skeleton_ours(skel, V, table, head, moves)   # head: her baked head (Head joint)
+    names, par, worlds, ends, info = sk.place_skeleton_ours(skel, V, table, head, moves, joints)   # head: her baked head (Head joint)
+    if joints:
+        info["target_joints"] = {k: [round(float(x) * 1e3, 1) for x in p] + [v] for k, (p, v) in joints.items()}
     rep["skeleton"] = info
     return {"skel": skel, "names": names, "parents": par, "worlds": worlds, "ends": ends}
 
@@ -593,7 +627,8 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
         sk = {k: sk_close[k] for k in ("skel", "names", "parents", "worlds", "ends")}
         rep["skeleton"] = {"from": "close (build_topo P1 R2: one skeleton for both tiers)"}
     else:
-        sk = stage_skeleton(bone_body(spec, tier, z, V, A, baked, rep), tier, rep, baked["HeroineHead"]["P"], spec.get("joint_moves"))
+        sk = stage_skeleton(bone_body(spec, tier, z, V, A, baked, rep), tier, rep, baked["HeroineHead"]["P"], spec.get("joint_moves"),
+                            target_joints(spec))
         with open(os.path.join(out, "stage", "close_skeleton.json"), "w") as f:
             json.dump({k: sk[k] for k in ("skel", "names", "parents", "worlds", "ends")}, f,
                       default=lambda x: np.asarray(x).tolist())

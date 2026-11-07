@@ -44,7 +44,8 @@ def weld(P, tol=1e-6):
 
 def target(base_glb, a_path=A_PATH, world=False, want=None):
     """(want: the chain bones {name: (head, tail)} to pose A to, instead of base_glb's rest; only their directions
-    are used, so a target's own posed bones ("bones") re-pose A to that target exactly)"""
+    are used, so a target's own posed bones ("bones") re-pose A to that target exactly; a None entry leaves that
+    bone at A's own rest turn)"""
     if ANIM not in sys.path:
         sys.path.insert(0, ANIM)
     import skin
@@ -65,6 +66,9 @@ def target(base_glb, a_path=A_PATH, world=False, want=None):
     for s in "lr":
         for a, b in CHAIN:
             j, k = sk.index[f"{a}_{s}"], sk.index[f"{b}_{s}"]
+            if want.get(f"{a}_{s}", ()) is None:     # None: the bone keeps A's own rest turn (her_a_target "a_rest")
+                turns[f"{a}_{s}"] = 0.0
+                continue
             grot, gpos = sk.fk(rot[None])
             cur = gpos[0, k] - gpos[0, j]
             h, t = want[f"{a}_{s}"]
@@ -95,6 +99,7 @@ def target(base_glb, a_path=A_PATH, world=False, want=None):
     for s in "lr":
         for a, b in CHAIN:
             bones[f"{a}_{s}"] = (G[sk.index[f"{a}_{s}"]][:3, 3].copy(), G[sk.index[f"{b}_{s}"]][:3, 3].copy())
+    want = {k: v for k, v in want.items() if v is not None}
     return {"P": P, "T": T, "N": N, "bones": bones, "turns": turns, "rest_bones": want,
             "rest_P": body.P[first], "shapes": body.shape_weights(G), "J": body.Jv[first], "W": body.W[first],
             "names": list(sk.names)}

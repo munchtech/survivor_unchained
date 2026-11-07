@@ -38,6 +38,7 @@ import build_topo as bt  # noqa: E402
 import headbake  # noqa: E402
 from gl import Glb  # noqa: E402
 from sliders import load_spec, carry_to_tier  # noqa: E402
+from surfdist import Surface  # noqa: E402
 
 TARGETS = os.path.join(HERE, "base", "targets")
 OUT_FILE = "her_a_{tier}.npz"
@@ -56,6 +57,16 @@ def mirror(z):
     pr[r] = mo[r]
     pr[mo[r]] = r
     return pr
+
+
+def quad_normals(V, Q):
+    """Area-weighted vertex normals of a quad mesh (each quad as two triangles)."""
+    N = np.zeros_like(V)
+    for T in (Q[:, [0, 1, 2]], Q[:, [0, 2, 3]]):
+        fn = np.cross(V[T[:, 1]] - V[T[:, 0]], V[T[:, 2]] - V[T[:, 0]])
+        for c in range(3):
+            np.add.at(N, T[:, c], fn)
+    return N / np.maximum(np.linalg.norm(N, axis=1, keepdims=True), 1e-15)
 
 
 def mask(z, cfg):
@@ -101,7 +112,133 @@ def bodies(spec, fit_spec, tier, A, baked):
     return V0, Vf, z
 
 
-def make(spec_path, tiers):
+def kabsch(P, Q):
+    """The rigid motion (R, t) taking points P onto Q (least squares)."""
+    pc, qc = P.mean(0), Q.mean(0)
+    U, _, Vt = np.linalg.svd((P - pc).T @ (Q - qc))
+    R = Vt.T @ np.diag([1.0, 1.0, np.sign(np.linalg.det(Vt.T @ U.T))]) @ U.T
+    return R, qc - R @ pc
+
+
+class ARest:
+    """her_a "a_rest" (round 12): the chain bones that stay at A's OWN rest in the target, e.g. ["clavicle", "upperarm"].
+    The fit was solved on A posed into the slider stage's rest (forms/her_topo_target_bones.json); here A is posed
+    twice through her_target (the fit's pose, and the same with those bones unturned) and each fit point rides A's
+    surface from the first to the second: its closest point's triangle and barycentrics, the offset turned with the
+    triangle's frame. Exact on A's own surface (no weights: both poses are A's game stack). B's rest girdle and arm
+    then ARE A's, so the game turns B from where A turns from, and the target needs no skinning round trip there.
+    The hand (a zero part: ours) rides rigidly: onto the fit's hand in the fit's pose, then with A's hand points."""
+
+    def __init__(self, cfg):
+        import her_target as ht
+        with open(os.path.join(HERE, "forms", "her_topo_target_bones.json")) as f:
+            fb = {k: (np.asarray(v[0], float), np.asarray(v[1], float)) for k, v in json.load(f)["bones"].items()}
+        keep = [f"{b}_{s}" for b in cfg["a_rest"] for s in "lr"]
+        self.t0 = ht.target(None, world=True, want=fb)
+        self.t1 = ht.target(None, world=True, want={k: (None if k in keep else v) for k, v in fb.items()})
+        T = self.t0["T"]
+        self.S0 = Surface(self.t0["P"], T)
+        names = self.t0["names"]
+        self.hand = {}
+        for s in "lr":
+            hb = [i for i, n in enumerate(names) if n.endswith(f"_{s}") and n.split("_")[0] in ("hand", "thumb", "index", "middle", "ring", "pinky")]
+            share = (self.t0["W"] * np.isin(self.t0["J"], hb)).sum(1)
+            sel = share > 0.999
+            self.hand[s] = kabsch(self.t0["P"][sel], self.t1["P"][sel])
+        self.turns = self.t1["turns"]
+
+    @staticmethod
+    def frames(P, T):
+        e1 = P[T[:, 1]] - P[T[:, 0]]
+        e2 = P[T[:, 2]] - P[T[:, 0]]
+        n = np.cross(e1, e2)
+        n /= np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-15)
+        e1 = e1 / np.maximum(np.linalg.norm(e1, axis=1, keepdims=True), 1e-15)
+        return np.stack([e1, np.cross(n, e1), n], 2)       # columns: edge, in-plane, normal
+
+    def carry(self, V):
+        """Points on (near) A in the fit's pose -> the same surface points on A at the a_rest pose."""
+        T = self.t0["T"]
+        q, _, tri, d = self.S0.closest(V, k=16)
+        a, b, c = (self.t0["P"][T[tri, i]] for i in range(3))
+        v0, v1, v2 = b - a, c - a, q - a
+        d00, d01, d11 = (v0 * v0).sum(1), (v0 * v1).sum(1), (v1 * v1).sum(1)
+        d20, d21 = (v2 * v0).sum(1), (v2 * v1).sum(1)
+        den = np.maximum(d00 * d11 - d01 * d01, 1e-30)
+        wb = (d11 * d20 - d01 * d21) / den
+        wc = (d00 * d21 - d01 * d20) / den
+        wa = 1.0 - wb - wc
+        P1 = self.t1["P"]
+        q1 = wa[:, None] * P1[T[tri, 0]] + wb[:, None] * P1[T[tri, 1]] + wc[:, None] * P1[T[tri, 2]]
+        F0, F1 = self.frames(self.t0["P"], T)[tri], self.frames(P1, T)[tri]
+        off = np.einsum("nji,nj->ni", F0, V - q)               # the offset in the fit-pose triangle's frame
+        return q1 + np.einsum("nij,nj->ni", F1, off), d
+
+    def tight(self, V, z, cfg):
+        """her_a "a_tight" {"parts": [...], "fade_parts": [...], "lam": [...], "iters": k}: the fit's LOOSE arm (wrap_topo:
+        her girth over our loops, 10-23 mm off her skin) laid ON A's skin over those parts (the shoulder and upper arm:
+        the cap, the armpit and the arm's top are A's surface, as the trunk's already is), fading to the fit's own over
+        fade_parts (biharmonic). Non-rigid ICP as wrap_topo's TIGHT (point-to-plane + 0.1 point-to-point + lam |L U|^2,
+        lam stepped down), closest points on A at this pose whose normal agrees (> 0.5) within 40 mm, mirror-averaged."""
+        import scipy.sparse.linalg as spl
+        Q = z["Q"]
+        parts = list(map(str, z["parts"]))
+        part = z["part"]
+        on = np.isin(part, [parts.index(p) for p in cfg["parts"]])
+        off = ~(on | np.isin(part, [parts.index(p) for p in cfg.get("fade_parts", ())]))
+        e = edges(Q)
+        n = len(V)
+        W = sp.coo_matrix((np.ones(2 * len(e)), (np.r_[e[:, 0], e[:, 1]], np.r_[e[:, 1], e[:, 0]])), shape=(n, n)).tocsr()
+        L = (sp.diags(np.asarray(W.sum(1)).ravel()) - W).tocsr()
+        known = np.where(on | off)[0]
+        w = bt.biharmonic(L, known, on[known][:, None].astype(float), np.where(~(on | off))[0])[:, 0]
+        pr = mirror(z)
+        w = np.clip(0.5 * (w + w[pr]), 0.0, 1.0)
+        free = np.where(w > 1e-4)[0]
+        Lf = L[free][:, free]
+        LtL = (Lf.T @ Lf).tocsr()
+        P1, T = self.t1["P"], self.t0["T"]
+        S1 = Surface(P1, T)
+        U = np.zeros((len(free), 3))
+        X0 = V[free]
+        stats = []
+        n3 = 3 * len(free)
+        ii = np.repeat(np.arange(len(free)) * 3, 9) + np.tile(np.repeat(np.arange(3), 3), len(free))
+        jj = np.repeat(np.arange(len(free)) * 3, 9) + np.tile(np.tile(np.arange(3), 3), len(free))
+        K = sp.kron(LtL, sp.eye(3)).tocsr()
+        for lam in cfg["lam"]:
+            for _ in range(int(cfg.get("iters", 4))):
+                X = X0 + U
+                q, nA, _, d = S1.closest(X, k=16)
+                Vc = V.copy()
+                Vc[free] = X
+                ok = (d < 0.04) & ((nA * quad_normals(Vc, Q)[free]).sum(1) > 0.5)
+                Bw = (w[free] * ok)[:, None, None] * (np.einsum("ni,nj->nij", nA, nA) + 0.1 * np.eye(3)[None])
+                Am = sp.coo_matrix((Bw.ravel(), (ii, jj)), shape=(n3, n3)).tocsr() + lam * K
+                U = spl.spsolve(Am.tocsc(), np.einsum("nij,nj->ni", Bw, q - X0).ravel()).reshape(-1, 3)
+                Uf = np.zeros((n, 3))
+                Uf[free] = U
+                U = (0.5 * (Uf + Uf[pr] * np.array([-1.0, 1.0, 1.0])))[free]
+            core = w[free] > 0.99
+            stats.append((lam, round(float(np.percentile(d[core] * 1e3, 50)), 2), round(float(np.percentile(d[core] * 1e3, 95)), 2), int((~ok).sum())))
+        out = V.copy()
+        out[free] = X0 + U
+        return out, w, stats
+
+    def hand_field(self, V0, Vf, zero_hand, x):
+        """Every point moved as our hand rides: rigidly onto the fit's hand (fit pose), then with A's hand (per side by x)."""
+        out = V0.copy()
+        for s, sgn in (("l", 1.0), ("r", -1.0)):
+            side = x * sgn > 0
+            h = zero_hand & side
+            R0, t0 = kabsch(V0[h], Vf[h])
+            R1, t1 = self.hand[s]
+            P = V0[side] @ R0.T + t0
+            out[side] = P @ R1.T + t1
+        return out
+
+
+def make(spec_path, tiers, out_dir=TARGETS):
     spec = bt.with_defaults(load_spec(spec_path))
     cfg = spec["her_a"]
     fit_spec = load_spec(os.path.join(REPO, cfg["fit_spec"]))
@@ -110,20 +247,47 @@ def make(spec_path, tiers):
     zc = dict(np.load(os.path.join(HERE, "out", "topo", "close.npz")))
     Mc, _, _ = mask(zc, cfg)
     t = np.asarray(cfg.get("arm_move_m", [0, 0, 0]), float)
+    ar = ARest(cfg) if cfg.get("a_rest") else None
+    tight_d = None
+    if ar is not None:
+        assert list(cfg.get("zero_parts", ())) == ["hand"] and cfg.get("zero_ring") is None and not np.any(t), \
+            "a_rest: the arm and shoulder are the fit's (zero_parts [hand], zero_ring null, no arm_move_m)"
+        print("a_rest", cfg["a_rest"], "A's turns", {k: v for k, v in ar.turns.items() if "arm" in k or "clav" in k or "hand" in k}, flush=True)
     for tier in tiers:
         V0, Vf, z = bodies(spec, fit_spec, tier, A, baked)
         ring = bt.boundary_ring(z["Q"], len(V0))
         M = Mc if tier == "close" else np.clip(carry_to_tier(Mc[:, None], "close", tier)[:, 0], 0.0, 1.0)
         M = np.where(M < 1e-3, 0.0, np.where(M > 1 - 1e-3, 1.0, M))
-        ts = t[None, :] * np.stack([np.where(z["V"][:, 0] >= 0, 1.0, -1.0), np.ones(len(V0)), np.ones(len(V0))], 1)
+        if ar is None:
+            ts = t[None, :] * np.stack([np.where(z["V"][:, 0] >= 0, 1.0, -1.0), np.ones(len(V0)), np.ones(len(V0))], 1)
+        else:
+            parts = list(map(str, z["parts"]))
+            Vh = ar.hand_field(V0, Vf, z["part"] == parts.index("hand"), z["V"][:, 0])
+            Vf, dist = ar.carry(Vf)
+            ts = Vh - V0
+            print(tier, "a_rest carry: fit to A p50/p95/max mm", np.round(np.percentile(dist, [50, 95, 100]) * 1e3, 2).tolist(), flush=True)
+            if cfg.get("a_tight"):
+                if tier == "close":
+                    Vt, wt, stats = ar.tight(Vf, z, cfg["a_tight"])
+                    tight_d = Vt - Vf
+                    print(tier, "a_tight (lam, core p50, p95 mm, rejected):", stats, "points", int((wt > 1e-4).sum()), flush=True)
+                else:
+                    assert tight_d is not None, "a_tight: close first (play takes close's move)"
+                    tight_d = carry_to_tier(tight_d, "close", tier)
+                Vf = Vf + tight_d
         D = M[:, None] * (Vf - V0) + (1.0 - M[:, None]) * ts
         ring_max = float(np.abs(D[ring]).max())
         assert ring_max < 1e-4, ("the fit is not the head's on the ring", ring_max)
         D[ring] = 0.0
         about = (f"made_by: python tools/body/her_a_target.py {os.path.relpath(os.path.abspath(spec_path), REPO)}".replace("\\", "/") +
-                 f" (fit {cfg['fit_spec']}, band_m {cfg['band_m']}, zero_parts {cfg.get('zero_parts', 'arm..hand')}, zero_ring {cfg.get('zero_ring')}, arm_move_m {list(t)})")
-        np.savez_compressed(os.path.join(TARGETS, OUT_FILE.format(tier=tier)), D=D.astype(np.float32), M=M.astype(np.float32),
-                            topology=np.array(bt.topo_sha(z)), about=np.array(about))
+                 f" (fit {cfg['fit_spec']}, band_m {cfg['band_m']}, zero_parts {cfg.get('zero_parts', 'arm..hand')}, zero_ring {cfg.get('zero_ring')}, arm_move_m {list(t)}, a_rest {cfg.get('a_rest')})")
+        extra = {}
+        if ar is not None:
+            # A's own joints at this pose (her left; the skeleton mirrors): the girdle and arm skin are A's, so are they
+            extra["joints"] = np.array(json.dumps({c: [round(float(x), 6) for x in ar.t1["bones"][b][0]] for c, b in (
+                ("joint-l-clavicle", "clavicle_l"), ("joint-l-shoulder", "upperarm_l"), ("joint-l-elbow", "lowerarm_l"), ("joint-l-hand", "hand_l"))}))
+        np.savez_compressed(os.path.join(out_dir, OUT_FILE.format(tier=tier)), D=D.astype(np.float32), M=M.astype(np.float32),
+                            topology=np.array(bt.topo_sha(z)), about=np.array(about), **extra)
         print(tier, "D max mm", round(float(np.linalg.norm(D, axis=1).max()) * 1e3, 1), "M<1", int((M < 1).sum()), "of", len(M), flush=True)
 
 
@@ -151,8 +315,10 @@ def main():
     ap.add_argument("spec")
     ap.add_argument("--maps", action="store_true")
     ap.add_argument("--tiers", default="close,play")
+    ap.add_argument("--out-dir", default=TARGETS, help="a trial's folder (the spec's \"target_files\" reads it); default the shipped base/targets")
     a = ap.parse_args()
-    make(a.spec, a.tiers.split(","))
+    os.makedirs(a.out_dir, exist_ok=True)
+    make(a.spec, a.tiers.split(","), a.out_dir)
     if a.maps:
         maps(a.spec)
 

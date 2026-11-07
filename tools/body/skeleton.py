@@ -350,9 +350,10 @@ class OurLandmarks:
     run on our skin (its inner point from the table); mean and lerp compose them in our frame (glTF); origin is none.
     No MakeHuman data at placement time."""
 
-    def __init__(self, V, table, head=None, moves=None):
+    def __init__(self, V, table, head=None, moves=None, joints=None):
         self.V, self.t, self.head = np.asarray(V, float), table, head
         self.moves = moves or {}
+        self.joints = joints or {}
         self.info = {}
 
     def _head(self):
@@ -361,10 +362,16 @@ class OurLandmarks:
     def point(self, p):
         if "origin" in p:
             return None
-        if "cube" in p and p["cube"] in self.moves:      # a spec's joint move (glTF m, her left; the right mirrors)
-            q = self._point(p)
-            return None if q is None else q + np.asarray(self.moves[p["cube"]], float)
-        return self._point(p)
+        q = self._point(p)
+        if q is not None and "cube" in p and p["cube"] in self.joints:
+            # a designed target's own joint (its source's, where the target IS the source's surface: her_a's girdle
+            # and arm are A's skin at A's rest, so A's joints, not the landmark rules' guess on a skin they were not
+            # fitted on), at the slider's value v: (1 - v) landmark + v joint
+            J, v = self.joints[p["cube"]]
+            q = (1.0 - v) * q + v * np.asarray(J, float)
+        if q is not None and "cube" in p and p["cube"] in self.moves:      # a spec's joint move (glTF m, her left; the right mirrors)
+            q = q + np.asarray(self.moves[p["cube"]], float)
+        return q
 
     def _point(self, p):
         if any(k in p for k in ANAT_RULES):              # each anatomical rule once per placement
@@ -427,13 +434,14 @@ class OurLandmarks:
         return np.asarray(r["w"]) @ self.V[r["ids"]]
 
 
-def place_skeleton_ours(skel, V, table, head=None, moves=None):
+def place_skeleton_ours(skel, V, table, head=None, moves=None, joints=None):
     """place_skeleton on OUR vertices V (glTF, our topology's order) with landmarks.json's table for that tier
     (tools/body/base/landmarks.json "tiers"[tier]); the same returns; info["anatomy"] = the anatomical rules' points.
     head: her baked head mesh's points (glTF m; default: headbake.py on heroine.glb). moves: {cube name: [dx, dy, dz]} (a
     spec's "joint_moves": a joint the landmarks place and the body wants elsewhere, e.g. her clavicle's medial end; left
-    side cubes, the right mirrors with the placement)."""
-    lm = OurLandmarks(V, table, head, moves)
+    side cubes, the right mirrors with the placement). joints: {cube name: (point, v)} a designed target's own joints
+    (build_topo.target_joints), laid before the moves."""
+    lm = OurLandmarks(V, table, head, moves, joints)
     defs = skel["bones"]
     W = {}
     for d in defs:
