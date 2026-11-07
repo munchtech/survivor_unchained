@@ -2,6 +2,9 @@
 
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
+## 6 November 2026, night (P1 coordinator): P1 milestone NOT picked: "JUDGE SAID THEMSELVES, CLOSE. ITS NOT RIGHT"
+Sent as READY at body-p1@4ddda641a, with three max judges rating the shape "close" and skin, head and light set aside. For every area: a judge's only pass is "right, nothing to change at the game cameras", whole frame, no carve-outs. "Close", READY, PASS WITH KNOWN and open lists go back to the lead, and moved numbers close nothing. Show the owner only what passes, or say plainly that it can't pass yet and which missing piece blocks it. R1 lead 6 runs on this; A1 keeps waiting; R3 is still the owner's call.
+
 ## 5 November 2026, night (P1 rebuild coordinator 3bede919): P1 REBUILD PLAN: "Go, with your changes"
 
 - P1 breasts: **(Owner, 6 Nov) "our tests so far are not round"**, with a board: Erza Scarlet (Fairy Tail), "good shape size and physics and often wears armor" (`body_p1\refs\owner_board_round_shape_erza.webp`, a board only). The BARE shape is now round globes through the whole volume, a full upper pole, large with a wide base wrapping to the side, set high, pressing to a deep cleavage line, soft weight on the ribcage over a slim waist. The push-up proxy stays the armor test. Roundness becomes a forms-rule number. Relayed to R1 lead 3.
