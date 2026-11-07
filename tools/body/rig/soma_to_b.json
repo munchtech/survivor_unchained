@@ -6,9 +6,9 @@
    "slerp": [
     "Hips",
     "Spine1",
-    0.1732
+    0.355
    ],
-   "frac": 0.0772,
+   "frac": 0.1011,
    "aim_b": [
     "spine_01",
     "spine_02"
@@ -18,9 +18,9 @@
    "slerp": [
     "Spine1",
     "Spine2",
-    0.3939
+    0.6866
    ],
-   "frac": 0.249,
+   "frac": 0.2958,
    "aim_b": [
     "spine_02",
     "spine_03"
@@ -30,9 +30,9 @@
    "slerp": [
     "Spine2",
     "Chest",
-    0.2815
+    0.3711
    ],
-   "frac": 0.4496,
+   "frac": 0.4826,
    "aim_b": [
     "spine_03",
     "spine_04"
@@ -44,7 +44,7 @@
     "Chest",
     0.0
    ],
-   "frac": 0.7274,
+   "frac": 0.7743,
    "aim_b": [
     "spine_04",
     "spine_05"
@@ -56,7 +56,7 @@
     "Chest",
     0.0
    ],
-   "frac": 0.9497,
+   "frac": 0.9864,
    "aim_b": [
     "spine_05",
     "neck_01"
