@@ -350,8 +350,9 @@ class OurLandmarks:
     run on our skin (its inner point from the table); mean and lerp compose them in our frame (glTF); origin is none.
     No MakeHuman data at placement time."""
 
-    def __init__(self, V, table, head=None):
+    def __init__(self, V, table, head=None, moves=None):
         self.V, self.t, self.head = np.asarray(V, float), table, head
+        self.moves = moves or {}
         self.info = {}
 
     def _head(self):
@@ -360,6 +361,12 @@ class OurLandmarks:
     def point(self, p):
         if "origin" in p:
             return None
+        if "cube" in p and p["cube"] in self.moves:      # a spec's joint move (glTF m, her left; the right mirrors)
+            q = self._point(p)
+            return None if q is None else q + np.asarray(self.moves[p["cube"]], float)
+        return self._point(p)
+
+    def _point(self, p):
         if any(k in p for k in ANAT_RULES):              # each anatomical rule once per placement
             import json
             kk = json.dumps(p, sort_keys=True)
@@ -420,11 +427,13 @@ class OurLandmarks:
         return np.asarray(r["w"]) @ self.V[r["ids"]]
 
 
-def place_skeleton_ours(skel, V, table, head=None):
+def place_skeleton_ours(skel, V, table, head=None, moves=None):
     """place_skeleton on OUR vertices V (glTF, our topology's order) with landmarks.json's table for that tier
     (tools/body/base/landmarks.json "tiers"[tier]); the same returns; info["anatomy"] = the anatomical rules' points.
-    head: her baked head mesh's points (glTF m; default: headbake.py on heroine.glb)."""
-    lm = OurLandmarks(V, table, head)
+    head: her baked head mesh's points (glTF m; default: headbake.py on heroine.glb). moves: {cube name: [dx, dy, dz]} (a
+    spec's "joint_moves": a joint the landmarks place and the body wants elsewhere, e.g. her clavicle's medial end; left
+    side cubes, the right mirrors with the placement)."""
+    lm = OurLandmarks(V, table, head, moves)
     defs = skel["bones"]
     W = {}
     for d in defs:

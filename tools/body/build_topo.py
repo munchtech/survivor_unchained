@@ -366,13 +366,13 @@ def bone_body(spec, tier, z, V, A, baked, rep):
     return Vb
 
 
-def stage_skeleton(V, tier, rep, head=None):
+def stage_skeleton(V, tier, rep, head=None, moves=None):
     import skeleton as sk
     with open(os.path.join(HERE, "skeleton.json")) as f:
         skel = json.load(f)
     with open(os.path.join(HERE, "base", "landmarks.json")) as f:
         table = json.load(f)["tiers"][tier]
-    names, par, worlds, ends, info = sk.place_skeleton_ours(skel, V, table, head)   # head: her baked head (Head joint)
+    names, par, worlds, ends, info = sk.place_skeleton_ours(skel, V, table, head, moves)   # head: her baked head (Head joint)
     rep["skeleton"] = info
     return {"skel": skel, "names": names, "parents": par, "worlds": worlds, "ends": ends}
 
@@ -593,7 +593,7 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
         sk = {k: sk_close[k] for k in ("skel", "names", "parents", "worlds", "ends")}
         rep["skeleton"] = {"from": "close (build_topo P1 R2: one skeleton for both tiers)"}
     else:
-        sk = stage_skeleton(bone_body(spec, tier, z, V, A, baked, rep), tier, rep, baked["HeroineHead"]["P"])
+        sk = stage_skeleton(bone_body(spec, tier, z, V, A, baked, rep), tier, rep, baked["HeroineHead"]["P"], spec.get("joint_moves"))
         with open(os.path.join(out, "stage", "close_skeleton.json"), "w") as f:
             json.dump({k: sk[k] for k in ("skel", "names", "parents", "worlds", "ends")}, f,
                       default=lambda x: np.asarray(x).tolist())
