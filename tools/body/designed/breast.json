@@ -45,6 +45,21 @@
    "made_by": "tools/body/sculpt/breast_b.py",
    "why": "ROUTE (b): the breast sculpted once: a round-cone solid (a big sphere for the round lower pole and the apex cap, a small one up and back inside the chest, the cone between them the upper pole) smoothly unioned with the chest wall, the region carried onto it and relaxed (see the generator)"
   },
+  "breast_settle": {
+   "range": [-1, 2.5],
+   "rule": "py:breast_form.settle",
+   "order": 25,
+   "soft": true,
+   "o_off": [0.0, -0.02, -0.045],
+   "back": [-0.6, -0.1],
+   "drop": {"m": 0.0055, "top": 0.2, "full": -0.7, "end0": -0.85, "end1": -1.3},
+   "fill": {"m": 0.0045, "el": -44.0, "width": 20.0},
+   "take": {"m": 0.0035, "el": 0.0, "width": 70.0},
+   "contact": {"m": 0.008, "nw": -0.98, "width": 0.2, "d0": -0.2, "d1": 0.1},
+   "side": {"m": 0.003, "m_down": 0.0, "nw": -0.2, "width": 0.45, "u0": 0.1, "u1": 0.9},
+   "mid": [0.025, 0.06],
+   "why": "P1 R1 round 8 (the judge on round 7: at rest firm and inflated, balloons not flesh): soft weight on the ribcage as a field after the union, linear; breast_form.settle says what each term does. Drop and fill sit the lower third outside the circle the upper pole promises; take pays for it over the whole globe (a wide bump keeps the curvature: a narrow take at the front flattened it and squared the cel terminator); contact lies the curve on the ribs; side is small and high with no extra outer drop (more, or lower, boxed the outer corner: round wins). Armor: the spec's shapes_with has form_support_lift carry the settle's undoing, so the push-up is round 7's"
+  },
   "support_lift": {
    "range": [-1, 1],
    "rule": "field",

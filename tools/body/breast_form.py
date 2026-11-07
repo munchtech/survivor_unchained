@@ -743,6 +743,72 @@ def union_delta(sl, c, P, Vb, Va):
     return mirror_left(sl, D)
 
 
+def settle(sl, c, v, V, values):
+    """P1 R1 round 8 (the owner's "soft weight on the ribcage"; the judge: round but inflated at rest, balloons not
+    flesh): the breast's weight as a designed field, laid after the union on the breast's own form (its frame and
+    semi-axes are breast_a's, its origin the breast part's centroid on this body, so any NPC's breast gets the same
+    settle at its own scale). Smooth functions of the point's place in the globe's normalized coordinates, so nothing
+    follows the quads; linear in v (a spec, an armor piece's support or an NPC sets it). c holds the numbers:
+      "o_off": the origin from the centroid [lateral, up, along the axis] (m);
+      "drop": {"m", "top", "full", "end0", "end1", "outer"}: the lower half stretched down: 0 above nw top, m by nw
+              full, fading out from nw end0 to end1 under the fold (the ribs under it take the fold's small move and
+              go flat: contact), "outer": the extra share at the outer side (the fold's line lower there);
+      "fill": {"m", "el", "width"}: the lower third out along the radius (a bump in elevation, deg): the widest part
+              sits lower;
+      "take": {"m", "el", "width"}: the middle in along the radius by what the lower third gained (weight moves, it is
+              not added; the inflated front eases);
+      "contact": {"m", "nw", "width", "d0", "d1"}: the last of the lower curve back toward the ribs (a bump in nw over
+              the wall's depth band): the curve meets the ribs lying on them, not floating over them;
+      "side": {"m", "m_down", "nw", "width", "u0", "u1"}: the outer lower side out and down: the mass settling to the
+              side, so the 3/4 outline is not a circle;
+      "mid": [m0, m1]: held at the midline (|x| on V0): the pressed cleavage stays; "lat_end": [n0, n1]: faded out past
+              the outer side; "back": [nd0, nd1]: faded out behind the chest wall."""
+    X = extra(sl)
+    bc = sl.designed["breast_a"]
+    g = bc["globe"]
+    a, up, lat = frame(bc, 1.0)
+    bp = (X["part"] == X["parts"].index("breast")) & (sl.V0[:, 0] > 0)
+    o = np.asarray(c.get("o_off", [0.0, 0.0, 0.0]), float)
+    O = V[bp].mean(0) + o[0] * lat + o[1] * up + o[2] * a
+    R = g["R"]
+    bw = bc.get("r_blend_m", 0.03)
+    q = V - O
+    u, w, d = q @ lat, q @ up, q @ a
+    nu = u / smooth_r(u, R["med"], R["lat"], bw)
+    nw = w / smooth_r(w, R["low"], R["up"], bw)
+    nd = d / smooth_r(d, R.get("a_back", R["a"]), R["a"], bw)
+    keep = [X["parts"].index(p) for p in ("trunk", "breast", "shoulder")]
+    cand = (np.isin(X["part"], keep) & (sl.V0[:, 0] >= 0)).astype(float)
+    bump = lambda x, x0, s: np.exp(-0.5 * ((x - x0) / s) ** 2)
+    rise = lambda x, x0, x1: smoother((x - x0) / (x1 - x0))
+    m0, m1 = c.get("mid", [0.025, 0.06])
+    hold = rise(np.abs(sl.V0[:, 0]), m0, m1)
+    hold = hold * (1.0 - rise(nu, *c.get("lat_end", [1.15, 1.6]))) * rise(nd, *c.get("back", [-0.1, 0.25])) * cand
+    D = np.zeros_like(V)
+    p = c.get("drop")
+    if p:
+        wd = rise(-nw, -p["top"], -p["full"]) * (1.0 - rise(-nw, -p["end0"], -p["end1"]))
+        D += -(p["m"] * wd * (1.0 + p.get("outer", 0.0) * np.clip(nu, 0.0, 1.0)))[:, None] * up
+    p = c.get("fill")
+    if p:
+        el = np.degrees(np.arctan2(nw, np.sqrt(nu * nu + nd * nd)))
+        n = q / np.maximum(np.linalg.norm(q, axis=1, keepdims=True), 1e-6)
+        D += (p["m"] * bump(el, p["el"], p["width"]))[:, None] * n
+    p = c.get("take")
+    if p:
+        el = np.degrees(np.arctan2(nw, np.sqrt(nu * nu + nd * nd)))
+        n = q / np.maximum(np.linalg.norm(q, axis=1, keepdims=True), 1e-6)
+        D -= (p["m"] * bump(el, p["el"], p["width"]))[:, None] * n
+    p = c.get("contact")
+    if p:
+        D += -(p["m"] * bump(nw, p["nw"], p["width"]) * rise(nd, p["d0"], p["d1"]))[:, None] * a
+    p = c.get("side")
+    if p:
+        ws = bump(nw, p["nw"], p["width"]) * rise(nu, p["u0"], p["u1"])
+        D += (p["m"] * ws)[:, None] * lat - (p["m_down"] * ws)[:, None] * up
+    return V + v * mirror_left(sl, D * hold[:, None])
+
+
 def dome(sl, c, v, V, values):
     if c.get("globe"):
         # P1 R1c: the profile dome (h_m > 0) is the globe's soft BASE (a mound on the chest wall: the wide base that

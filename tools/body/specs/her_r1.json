@@ -38,6 +38,8 @@
   "deltoid_cap": 1.0,
   "chest_wall": 1.0,
   "breast_a": 1.0,
+  "breast_settle": 1.0,
+  "upper_belly": 1.0,
   "hourglass": 1.0,
   "glute_form": 1.0,
   "neck_fair": 1.0
@@ -60,6 +62,8 @@
  },
  "skin": {"rim": 0.0, "edge_rough": 0.9, "shine": 0.15},
  "skin_why": "the placeholder skin on her body (not her head) until R4: the skin's own rim term and glancing sheen drew the lit arcs at the Look over the breast tops, the cleavage and the armpit fold, with the rig's back lamps on or off (P1 R1 round 7, game test shots r1c/round7/lamp)",
+ "shapes_with": {"support_lift": {"breast_settle": 0.0}},
+ "shapes_with_why": "P1 R1 round 8: the settle is the bare body's rest under gravity; a supporting piece carries that weight, so its lift undoes it (the shape is exactly the settle-free body plus the lift: the push-up is round 7's)",
  "shapes": {
   "support_lift": 1.0,
   "support_press": 1.0,

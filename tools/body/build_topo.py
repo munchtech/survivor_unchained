@@ -529,7 +529,8 @@ def stage_export(spec, tier, z, V, ring, hv, sk, wts, A, baked, out, rep, uv=Non
 def stage_shapes(spec, tier, z, V, A, baked, out, rep):
     """8 (P1 R1) form shapes: designed sliders the GAME sets at run time, written as blend shapes on the body (after
     the correctives' shapes, kept): spec "shapes" {slider: value} -> a shape "form_<slider>" = the body built with
-    that slider raised by value less this body (stages 1, 2, 2b again: the same join and seam). The first use: the
+    that slider raised by value less this body (stages 1, 2, 2b again: the same join and seam); spec "shapes_with"
+    {slider: {other: value}}: that shape's body also has these others at these values (a support undoes the settle). The first use: the
     armor's support (breast_support...): each armor piece sets its shape's weight as data, so the body under a
     push-up piece is shaped by design, never per piece. Normals' deltas by correctives.normal_delta."""
     import glbwrite
@@ -543,6 +544,7 @@ def stage_shapes(spec, tier, z, V, A, baked, out, rep):
         s2 = dict(spec)
         s2["sliders"] = dict(spec.get("sliders", {}))
         s2["sliders"][name] = float(s2["sliders"].get(name, 0.0)) + float(val)
+        s2["sliders"].update(spec.get("shapes_with", {}).get(name, {}))    # the shape also takes these sliders to these values
         r2 = {}
         _, V2 = stage_base(s2, tier, r2)
         V2, ring, _ = stage_place(s2, z, V2, A, baked, r2)

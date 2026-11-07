@@ -97,7 +97,7 @@ MEASURES = {"hanging": lambda ctx: hanging(ctx), "neck": lambda ctx: neck(ctx["V
 
 
 BREAST_SLIDERS = ["bust_firmness", "bust_lift", "bust_point", "bust_set", "bust_size", "bust_spacing", "chest_wall",
-                  "breast_a", "breast_b", "support_lift", "support_press", "support_fill"]
+                  "breast_a", "breast_b", "breast_settle", "support_lift", "support_press", "support_fill"]
 
 
 def _derived(spec_path, zero, keep, tmp):
@@ -222,6 +222,18 @@ def breast_round(V, T, Vref, b):
     up60 = [j for j in range(root, ia) if el[j] >= 60.0]
     _, Rg, rg = _circle(Ps[(up60[-1] if up60 else root):fold + 1])
     out["side_round_globe_resid_over_R"] = round(rg / Rg, 4)
+    # P1 R1 round 8 (breast_settle): the weight's numbers. lower_third_off_mm: the lower third of the apex-to-fold outline
+    # against the circle fitted on the upper globe alone (normal 60 deg above level to the apex): how far the lower curve
+    # sits outside the circle the upper pole promises (+: the mass has settled; a balloon reads near 0 or under).
+    # fold_lean_deg: the outline's tilt from vertical 12 mm above the fold, at the rib contact (the lower curve lies down
+    # on the ribs as it comes in: a floating globe keeps turning).
+    i0 = up60[-1] if up60 else root
+    cu, Ru, _ = _circle(Ps[i0:ia + 1])
+    n3 = max(1, (fold - ia) // 3)
+    lo3 = Ps[fold - 2 * n3:fold - n3 + 1]
+    out["lower_third_off_mm"] = round(float(np.mean(np.linalg.norm(lo3 - cu, axis=1) - Ru)) * 1000, 1)
+    j12 = max(ia, fold - 12)
+    out["fold_lean_deg"] = round(float(abs(math.degrees(math.atan2(d1[j12, 1], d1[j12, 0])))), 1)
     # -- upper-pole fill
     U = Ps[root:ia + 1]
     a0, a1 = U[0], U[-1]
