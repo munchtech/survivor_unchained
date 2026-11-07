@@ -196,6 +196,28 @@ public sealed class P1Rig
         return ab + t * (a - ab);
     }
 
+    /// <summary>The world turn the girdle law lays on clavicle_{s} about its head for this pose (null: none). Read from the
+    /// torso's turn and the upper arm's direction only, so the clavicle's own pose doesn't change it (the clip bridge
+    /// keys the clavicle under it: P1Bake.Hold).</summary>
+    public P1M3? ClavicleTurn(P1M4[] G, string s)
+    {
+        var gd = rig.GetProperty("girdle");
+        double sg = s == "l" ? 1 : -1;
+        int arm = Index[Sub(gd.GetProperty("arm"), s)], end = Index[Sub(gd.GetProperty("arm_end"), s)];
+        double A = Elevation(G, s), A0 = Elevation(Rest, s);
+        var Rt = Turn(G, Index[gd.GetProperty("torso").GetString()!]);
+        var front = Rt * Vec(gd.GetProperty("front"));
+        var up = Rt * Vec(gd.GetProperty("up"));
+        var d = N(Head(G, end) - Head(G, arm));
+        var d0 = N(Head(Rest, end) - Head(Rest, arm));
+        double reach = P1V.Dot(d, front) - P1V.Dot(Rt * d0, front);
+        double the = Table(A, gd.GetProperty("clav_elev")) - Table(A0, gd.GetProperty("clav_elev"));
+        double thr = RetractPlane(A, reach, gd) * (Table(A, gd.GetProperty("clav_retract")) - Table(A0, gd.GetProperty("clav_retract")))
+            - gd.GetProperty("protract_per_reach").GetDouble() * reach;
+        if (Math.Abs(the) <= 1e-9 && Math.Abs(thr) <= 1e-9) return null;
+        return Expm(up * (sg * Rad(thr))) * Expm(front * (sg * Rad(the)));
+    }
+
     /// <summary>rig_drive.girdle: the scapulohumeral rhythm by tables of the arm's elevation and its forward reach,
     /// relative to the rest.</summary>
     double Girdle(P1M4[] G, string s)
@@ -208,18 +230,13 @@ public sealed class P1Rig
         double A = Elevation(G, s), A0 = Elevation(R0, s);
         var Rt = Turn(G, Index[gd.GetProperty("torso").GetString()!]);
         var front = Rt * Vec(gd.GetProperty("front"));
-        var up = Rt * Vec(gd.GetProperty("up"));
         var side = Rt * Vec(gd.GetProperty("side"));
         var d = N(Head(G, end) - Head(G, arm));
         var d0 = N(Head(R0, end) - Head(R0, arm));
         double reach = P1V.Dot(d, front) - P1V.Dot(Rt * d0, front);
-        double the = Table(A, gd.GetProperty("clav_elev")) - Table(A0, gd.GetProperty("clav_elev"));
-        double thr = RetractPlane(A, reach, gd) * (Table(A, gd.GetProperty("clav_retract")) - Table(A0, gd.GetProperty("clav_retract")))
-            - gd.GetProperty("protract_per_reach").GetDouble() * reach;
         var armOld = G[arm];
-        if (Math.Abs(the) > 1e-9 || Math.Abs(thr) > 1e-9)
+        if (ClavicleTurn(G, s) is P1M3 Rc)
         {
-            var Rc = Expm(up * (sg * Rad(thr))) * Expm(front * (sg * Rad(the)));
             Apply(G, cl, About(Head(G, cl), Rc));
             // the upper arm keeps its world turn (the clip's aim), riding the moved clavicle
             var nw = armOld.WithT(G[arm].T());

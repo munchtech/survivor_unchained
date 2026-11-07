@@ -257,7 +257,7 @@ public static class People
             return p.Folk && FolkClips.For(p.Woman, name) is string folk ? folk : Resolve(name);
         }
         // (One of their own asked for by its own name.)
-        if (own.Owns(name)) return own.Has(name[own.Prefix.Length..]) ? name : Resolve("Idle");
+        if (own.Owns(name)) return own.Has(name[own.Prefix.Length..]) || P1Body.IsB(p.Skeleton) && p.Anim.HasAnimation(name) ? name : Resolve("Idle");
         return own.For(p.Calling, kind ?? p.Kind, name, sheathed) is string mine ? mine : Resolve(name);
     }
 
@@ -388,6 +388,7 @@ public static class People
         skel.AddChild(person.Gestures);
         int headBone = skel.FindBone("Head");
         if (headBone >= 0) skel.SkeletonUpdated += () => person.HeadPose = skel.GetBoneGlobalPose(headBone);
+        if (Args.Has("pose-probe")) root.AddChild(new P1PoseProbe(skel, root));   // (the pose ruler: nothing without the flag)
         if (p1)
         {
             // B's laws after every pose-writing modifier (P1Laws keeps itself there as more are added), then B's springs (P1Jiggle:
@@ -715,7 +716,9 @@ public static class People
         var moved = (p.HeadPose ?? p.Skeleton.GetBoneGlobalPose(hb)) * rest.AffineInverse();
         // (between her eyes at rest: 8.2 cm over and 11.1 cm in front of her Head joint, so they ride with its rest:
         // her neck 3 cm shorter, 18 October 2026, lowered the joint; at 1.748 m fixed the Look aimed over her eyes)
-        return p.Skeleton.GlobalTransform * (moved * (rest.Origin + new Vector3(0, 0.082f, 0.111f)));
+        // (on P1's B the Head joint sits elsewhere in her skull, 58 mm higher: read from her eyes' mesh, or the Look and the
+        // close view aim over them and she drops in frame)
+        return p.Skeleton.GlobalTransform * (moved * (rest.Origin + (P1Body.IsB(p.Skeleton) ? P1Body.EyesFromHead(p.Skeleton) : new Vector3(0, 0.082f, 0.111f))));
     }
 
     /// <summary>Her eyes' colour (shaders/heroine_eye.gdshader): the iris's

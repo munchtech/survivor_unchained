@@ -224,6 +224,9 @@ public sealed class P1Retarget
 
     static P1M3 Slerp(P1M3 r0, P1M3 r1, double t) => t <= 0 ? r0 : r0 * P1Rig.Expm(P1Rig.RotVec(r0.T() * r1) * t);
 
+    /// <summary>A's clavicle line on side s in this pose: its clavicle head to its upper arm head (skeleton space).</summary>
+    public P1V ClavicleLine(P1M4[] aPose, string s) => aPose[aIndexB["upperarm_" + s]].T() - aPose[aIndexB["clavicle_" + s]].T();
+
     /// <summary>B's bone worlds (helpers carried at rest) from A's posed bone worlds (skeleton space).</summary>
     public P1M4[] Map(P1M4[] aPose)
     {

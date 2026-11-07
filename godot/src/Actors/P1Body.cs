@@ -90,6 +90,17 @@ public static class P1Body
     /// <summary>B's skeleton (body.glb's, under the flag).</summary>
     public static bool IsB(Skeleton3D? sk) => sk != null && sk.HasMeta("p1_b");
 
+    static Vector3? eyesFromHead;
+    /// <summary>Between B's eyes at rest, from her Head joint (skeleton space): the HeroineEyes mesh's box centre, once.</summary>
+    public static Vector3 EyesFromHead(Skeleton3D sk)
+    {
+        if (eyesFromHead is Vector3 e) return e;
+        var head = sk.GetBoneGlobalRest(sk.FindBone("Head")).Origin;
+        foreach (var mi in sk.GetChildren().OfType<MeshInstance3D>())
+            if (mi.Name == "HeroineEyes" && mi.Mesh != null) { var c = mi.Mesh.GetAabb().GetCenter(); eyesFromHead = c - head; return c - head; }
+        return new Vector3(0, 0.082f, 0.111f);
+    }
+
     /// <summary>The bone that plays A bone aName's part on this skeleton: FindBone on A (and anyone else); on B the role
     /// map (spine_03 -> B's chest, spine_05; neck_01 -> its B bone; limbs by name; panel_front -> its nearest ancestor's).</summary>
     public static int Bone(Skeleton3D sk, string aName)

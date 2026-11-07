@@ -10,12 +10,14 @@ namespace SurvivorUnchained.Play;
 /// A's posed skeleton (heroine.glb playing a clip under HerPose alone) taken onto B's own skeleton as local poses B
 /// plays natively. The rules, each derived:
 ///  - the map is P1Retarget's (global, rest-relative, by name and by role);
-///  - the girdle hold: clavicle_{l,r} and scap_{l,r} stand at B's rest local (B's girdle law, P1Rig.Drive, turns them
-///    at runtime from the arm; A's clip clavicle turn dropped B's shoulder joint 22-32 mm in the town idle: the dome),
-///    the upper arm keeps its mapped world turn (its head rides the held clavicle), all below follow by their locals;
+///  - the girdle: A's final clavicle line is B's (world direction, the rests differ: A's shoulder sits 41 mm under its
+///    clavicle head, B's 14 mm, so a turn from rest left B's shoulders high under her neck), reached after B's girdle law:
+///    the clavicle is keyed so that P1Rig.ClavicleTurn laid on it at runtime lands on A's line (the law stays for what
+///    clips don't author, nothing doubles); scap_{l,r} stand at B's rest local and turn by the law alone. The upper arm
+///    keeps its mapped world turn (its head rides the clavicle), all below follow by their locals;
 ///  - positions: B's rest offsets but for root and pelvis (P1Retarget's LegScale rule);
 ///  - keys: a B bone is keyed only if its source A bone(s) are keyed in the clip (by name, or either chain bracket);
-///    the girdle and B's helpers never (partial clips stay partial, the game's filtered blends behave as on A);
+///    scap and B's helpers never (partial clips stay partial, the game's filtered blends behave as on A);
 ///  - the hand clean (tools/body/p1_clips.json) after the hold: per bone additive local turns, and a hold list.
 /// Derivation: (a) the owner's rebuild ("B is the actor", 5 Nov) and the brief; (c) inherited: P1Retarget's map.
 /// </summary>
@@ -49,10 +51,11 @@ public sealed class P1Bake
     public P1M4 RestLocal(int j) => restLocal[j];
 
     /// <summary>One frame: A's posed globals (skeleton space) to B's locals and globals, girdle held, the clean applied.</summary>
-    public (P1M4[] Local, P1M4[] G) Frame(P1M4[] aPose, Clean? clean = null) => Hold(Map.Map(aPose), clean);
+    public (P1M4[] Local, P1M4[] G) Frame(P1M4[] aPose, Clean? clean = null) => Hold(Map.Map(aPose), clean, aPose);
 
-    /// <summary>The girdle hold and the clean on mapped B globals.</summary>
-    public (P1M4[] Local, P1M4[] G) Hold(P1M4[] mapped, Clean? clean = null)
+    /// <summary>The girdle and the clean on mapped B globals. aPose: A's final pose, its clavicle lines B's (null: the
+    /// clavicles held at B's rest).</summary>
+    public (P1M4[] Local, P1M4[] G) Hold(P1M4[] mapped, Clean? clean = null, P1M4[]? aPose = null)
     {
         int n = B.Names.Length;
         var L = new P1M4[n];
@@ -68,6 +71,13 @@ public sealed class P1Bake
         foreach (int j in order)
         {
             int p = B.Parent[j];
+            if (aPose != null && p >= 0 && Side(j) is string cs)
+            {
+                // A's line from B's neutral (its rest local under the chest), by the least turn
+                var neutral = G[p] * restLocal[j];
+                var line = neutral.Lin() * restLocal[B.Index["upperarm_" + cs]].T();
+                L[j] = G[p].Inverse() * P1M4.From(Arc(line, Map.ClavicleLine(aPose, cs)) * P1Retarget.Rot(neutral), neutral.T());
+            }
             if (Array.IndexOf(uppers, j) >= 0 && p >= 0)
             {
                 // the upper arm's mapped world turn kept, its head where the held parent carries it
@@ -83,7 +93,24 @@ public sealed class P1Bake
             }
             G[j] = Compose(p < 0 ? null : G[p], L[j]);
         }
+        if (aPose != null)
+            foreach (var s in new[] { "l", "r" })
+            {
+                // Keyed under the law: at runtime P1Rig.Girdle lays Rc on this and lands on A's line, the upper arm's world turn kept.
+                if (!B.Index.TryGetValue("clavicle_" + s, out int c) || !B.Index.TryGetValue("upperarm_" + s, out int u) || B.ClavicleTurn(G, s) is not P1M3 rc) continue;
+                var keyed = P1M4.From(rc.T() * P1Retarget.Rot(G[c]), G[c].T());
+                var arm = P1Retarget.Rot(G[u]);
+                L[c] = G[B.Parent[c]].Inverse() * keyed;
+                L[u] = keyed.Inverse() * P1M4.From(arm, keyed * restLocal[u].T());
+                Recompose(L, G, c);
+            }
         return (L, G);
+    }
+
+    string? Side(int j)
+    {
+        var n = B.Names[j];
+        return n == "clavicle_l" ? "l" : n == "clavicle_r" ? "r" : null;
     }
 
     static P1M4 Compose(P1M4? parent, P1M4 local) => parent == null ? local : parent * local;
@@ -259,7 +286,7 @@ public sealed class P1Bake
         var o = new HashSet<int>();
         for (int j = 0; j < B.Names.Length; j++)
         {
-            if (Girdle.Contains(j) || B.Helpers.Contains(j)) continue;
+            if (Girdle.Contains(j) && Side(j) == null || B.Helpers.Contains(j)) continue;
             var (k, s0, s1) = Map.Source(j);
             if (k == 1 && aKeyed.Contains(s0) || k == 2 && (aKeyed.Contains(s0) || aKeyed.Contains(s1))) o.Add(j);
         }

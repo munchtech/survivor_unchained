@@ -56,7 +56,7 @@ public class P1BakeTests
         var bake = new P1Bake(rig, new P1Retarget(names, parent, rest, rig));
         var a = Pose(names, parent, rest, new() { ["clavicle_l"] = new(0, 0, D(25)), ["scap_l"] = new(D(10), 0, 0), ["upperarm_l"] = new(D(30), D(20), D(-40)), ["lowerarm_l"] = new(D(70), 0, 0), ["spine_03"] = new(D(8), 0, D(5)) });
         var mapped = bake.Map.Map(a);
-        var (L, G) = bake.Frame(a);
+        var (L, G) = bake.Hold(mapped);
         foreach (var g in new[] { "clavicle_l", "scap_l", "clavicle_r", "scap_r" })
             Assert.True(Diff(L[rig.Index[g]], bake.RestLocal(rig.Index[g])) < 1e-9, $"{g} not at B's rest local");
         foreach (var n in new[] { "upperarm_l", "lowerarm_l", "hand_l" })
@@ -69,8 +69,27 @@ public class P1BakeTests
         Assert.True((G[u].T() - G[c] * bake.RestLocal(u).T()).Len() < 1e-9);
         // a source with no girdle turn: the hold changes nothing
         var a0 = Pose(names, parent, rest, new() { ["upperarm_l"] = new(D(30), 0, 0) });
-        var (_, G0) = bake.Frame(a0);
+        var (_, G0) = bake.Hold(bake.Map.Map(a0));
         Assert.True((G0[rig.Index["hand_l"]].T() - a0[rig.Index["hand_l"]].T()).Len() < 1e-6);
+    }
+
+    [Fact]
+    public void ClavicleLandsOnALineAfterTheLaw()
+    {
+        var (names, parent, rest, rig) = B();
+        var bake = new P1Bake(rig, new P1Retarget(names, parent, rest, rig));
+        // (the arm high: the law turns the clavicle, and the bake keys under it)
+        var a = Pose(names, parent, rest, new() { ["clavicle_l"] = new(0, 0, D(25)), ["upperarm_l"] = new(D(30), D(20), D(-70)), ["lowerarm_l"] = new(D(70), 0, 0), ["spine_03"] = new(D(8), 0, D(5)) });
+        var (_, G) = bake.Frame(a);
+        Assert.NotNull(rig.ClavicleTurn(G, "l"));
+        var (D2, _) = rig.Drive(G);
+        int c = rig.Index["clavicle_l"], u = rig.Index["upperarm_l"];
+        var want = bake.Map.ClavicleLine(a, "l");
+        var got = D2[u].T() - D2[c].T();
+        double deg = Math.Acos(Math.Clamp(P1V.Dot(want, got) / (want.Len() * got.Len()), -1, 1)) * 180 / Math.PI;
+        Assert.True(deg < 1e-4, $"clavicle line {deg:F4} deg off A's after the law");
+        Assert.True(Ang(P1Retarget.Rot(D2[u]), P1Retarget.Rot(bake.Map.Map(a)[u])) < 1e-4, "the upper arm's world turn moved");
+        Assert.True(Diff(bake.Frame(a).Local[rig.Index["scap_l"]], bake.RestLocal(rig.Index["scap_l"])) < 1e-9);
     }
 
     [Fact]
@@ -83,7 +102,7 @@ public class P1BakeTests
         var k = bake.Keyed(new HashSet<int> { I("upperarm_l"), I("lowerarm_l"), I("clavicle_l"), I("upperarm_twist_01_l") });
         Assert.Contains(rig.Index["upperarm_l"], k);
         Assert.Contains(rig.Index["lowerarm_l"], k);
-        Assert.DoesNotContain(rig.Index["clavicle_l"], k);              // the girdle: held, never keyed
+        Assert.Contains(rig.Index["clavicle_l"], k);                    // the clavicle: A's, keyed under the law (the scapula never)
         Assert.DoesNotContain(rig.Index["upperarm_twist_01_l"], k);     // a helper: B's laws
         Assert.DoesNotContain(rig.Index["upperarm_r"], k);
         Assert.DoesNotContain(rig.Index["pelvis"], k);

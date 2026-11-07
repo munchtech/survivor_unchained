@@ -189,7 +189,7 @@ track and filter path holds), its skeleton plays clips baked onto it offline, an
 A (`heroine.glb`) is not loaded; A without the flag is untouched.
 
 - **B's bones.** Keyed by clips: `root`, `pelvis` (the only position tracks), `spine_01..05`, `neck_01..02`, `Head`,
-  the limbs, hands, fingers and face bones by A's names. Law-driven, never keyed: `clavicle_{s}`, `scap_{s}` (the
+  the limbs, hands, fingers and face bones by A's names. `clavicle_{s}` keyed under the girdle law. Law-driven, never keyed: `scap_{s}` (the
   girdle law, from the arm) and the helpers in rig.json `helpers` (twists, shares, points, delt/trap/pec/lat/glute,
   breast tips: `P1Rig.Helpers`). B's own metacarpals ride their parent. No scale tracks.
 - **The clip format the game plays.** Godot `AnimationLibrary` resources: `body_p1/clips.res` (the library clips,
@@ -200,9 +200,9 @@ A (`heroine.glb`) is not loaded; A without the flag is untouched.
   made directly on B (MotionBricks, Kimodo) just has to follow this: local rotations on the keyed bones, never the
   girdle or helpers, pelvis/root positions in B's rest space; drop it into a library under the same name.
 - **The bake.** `bash tools/body/bake_clips.sh` (takes and gives back the godot turn; log in `tools/body/out/
-  bake_clips.log`): A plays each clip under HerPose alone (her library carriage baked: Native 0 for library clips, 1
-  for hers), each frame goes through `P1Retarget.Map`, the girdle hold (clavicle/scap at B's rest local, the upper arm
-  keeps its world turn) and the clean, then is keyed. Deterministic (identical bytes on a rerun); prints frames, keyed
+  bake_clips.log`): A plays each clip under HerPose and HerShrug, the layers that make her final role-bone pose (her library carriage baked: Native 0 for library clips, 1
+  for hers), each frame goes through `P1Retarget.Map`, the girdle (the clavicle keyed so that the girdle law at runtime lands on A's world clavicle line, `P1Rig.ClavicleTurn`; scap at B's rest local; the upper arm
+  keeps its world turn) and the clean, then is keyed. Each her `idle_{calling}_town` is baked again as `idle_{calling}_look`: the Look's arms as clip data (HerPose's Look fields are off on B; LookOn only feeds the camera's pan). Deterministic (identical bytes on a rerun); prints frames, keyed
   bones and the idles' shoulder height against B's rest; writes `a_skeleton.json` (A's names, parents, rests).
   `--p1-bake-only TEXT` bakes matching clips without writing. Re-run after any B skeleton change.
 - **The foot lock** (P1Bake.FootLock, every clip keying a leg): in A's contact windows (ball within 2 cm of the clip's
@@ -228,6 +228,7 @@ A (`heroine.glb`) is not loaded; A without the flag is untouched.
   added modifier), **P1Jiggle** (B's springs, below; HerJiggle stays A's), HerFaceLife. Not on B: HerShrug, HerRaise, HerScap,
   HerJoints, HerShoulder.
   `--p1-probe` prints the shoulder/clavicle/scap/trap numbers every 120 frames.
+- **The pose ruler** (`--pose-probe FILE`, A or B, `P1PoseProbe.cs`; `python tools/body/pose_probe.py A.jsonl B.jsonl [--frame N] [--match]`): role bones after every layer, heights over ground, A against B. Compare limbs by joint-line direction and the chest and head by rest-relative turn: the rests differ (B's Head joint sits 58 mm over A's, its spine joints elsewhere), so the other columns carry the rest difference. The cameras aim at `P1Body.EyesFromHead` on B (A's fixed offset from Head aimed 58 mm over her eyes).
 
 ## Springs (P1 R1 jiggle)
 

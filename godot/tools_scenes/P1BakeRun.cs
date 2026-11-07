@@ -13,10 +13,12 @@ namespace SurvivorUnchained.Tools;
 /// <summary>
 /// The clip bridge (tools/body/bake_clips.sh runs tools_scenes/p1_bake.gd, which runs this): A (heroine.glb, as
 /// People.Heroine builds it without --body p1) plays every library clip (People.Clips) and her own (OwnClips.Her)
-/// under HerPose alone (her library carriage baked in: Native 1 on her own clips, 0 on the library's; no Look, chin,
-/// neck sliders or cine curls), sampled at 30 fps from 0 to the clip's length inclusive, the modifiers advanced by hand
-/// (HerPose's pass called directly, the engine's off; checked once against a normal process frame); each frame taken onto B by P1Bake (the map, the girdle hold, p1_clips.json's clean)
+/// under the layers that make A's final role-bone pose in the game (HerPose: her library carriage baked in, Native 1 on her
+/// own clips, 0 on the library's, no chin, neck sliders or cine curls; then HerShrug, her clavicle lift over 60 deg),
+/// sampled at 30 fps from 0 to the clip's length inclusive, the modifiers advanced by hand
+/// (their passes called directly, the engine's off; checked once against a normal process frame); each frame taken onto B by P1Bake (the map, the girdle, p1_clips.json's clean)
 /// and keyed on B's bones. Writes art/people/body_p1/clips.res, her_clips.res and a_skeleton.json.
+/// Each her idle_{calling}_town is baked a second time as idle_{calling}_look: A's Look, HerPose's Look arms at full weight as GameFront sets them.
 /// The clips with a tools/body/p1_clips.json entry also dump A's and B's posed globals per frame to tools/body/out/clips/
 /// NAME.json (git-ignored; tools/body/clipcheck.py measures them); --p1-bake-only dumps too.
 /// --p1-bake-raw (with --p1-bake-only) skips the clean and the foot lock: clipcheck's baseline.
@@ -52,7 +54,9 @@ public partial class P1BakeRun : Node
         a.AddChild(pose);
         var grab = new Grab();
         a.AddChild(grab);
-        pose.Active = grab.Active = false;
+        var shrug = new HerShrug();
+        a.AddChild(shrug);
+        pose.Active = shrug.Active = grab.Active = false;
         var ap = new AnimationPlayer();
         aRoot.AddChild(ap);
         ap.RootNode = "..";
@@ -88,13 +92,20 @@ public partial class P1BakeRun : Node
         {
             if (lib == null) continue;
             var outLib = new AnimationLibrary();
-            foreach (var name in lib.GetAnimationList())
+            // (name, source clip, the Look's arms)
+            var jobs = lib.GetAnimationList().Select(x => ((string)x, (string)x, false)).ToList();
+            jobs.AddRange(jobs.Where(x => libName != "" && x.Item1.StartsWith("idle_") && x.Item1.EndsWith("_town")).Select(x => (x.Item1[..^5] + "_look", x.Item1, true)).ToList());
+            foreach (var (nm, srcName, lookArms) in jobs)
             {
-                string nm = name;
                 if (only != "" && !nm.Contains(only)) continue;
-                var src = lib.GetAnimation(nm);
-                var key = libName == "" ? nm : $"{libName}/{nm}";
+                var src = lib.GetAnimation(srcName);
+                var key = libName == "" ? srcName : $"{libName}/{srcName}";
                 pose.Native = native;
+                pose.LookOn = lookArms;
+                pose.LookArmsDownR = lookArms ? HerPose.LookDownR : 0;
+                pose.LookSwivelL = lookArms ? HerPose.LookSwivel : 0;
+                a.ResetBonePoses();
+                pose._ProcessModificationWithDelta(10);   // (the Look's weight straight to its end, or back to none)
                 // A's keyed bones (rotation or position tracks on her skeleton), and the root/pelvis position tracks
                 var aKeyed = new HashSet<int>(); var aPos = new HashSet<int>();
                 string skelPath = "Armature/Skeleton3D";
@@ -140,7 +151,7 @@ public partial class P1BakeRun : Node
                 for (int f = 0; f < frames; f++)
                 {
                     double time = Math.Min(f / Fps, src.Length);
-                    var g = Sample(a, ap, pose, time);
+                    var g = Sample(a, ap, pose, shrug, time);
                     var (L, G) = bake.Frame(g, cleanUsed);
                     var (dl, dr) = bake.ShoulderDrop(G);
                     sumL += dl; sumR += dr;
@@ -190,8 +201,11 @@ public partial class P1BakeRun : Node
         var test = OwnClips.Her.Has("idle_reaver_town") ? "her/idle_reaver_town" : "Idle_Loop";
         pose.Native = test.StartsWith("her/") ? 1 : 0;
         ap.Play(test);
-        var manual = Sample(a, ap, pose, 0.5);
-        pose.Active = grab.Active = true;
+        pose.LookOn = false; pose.LookArmsDownR = pose.LookSwivelL = 0;
+        a.ResetBonePoses();
+        pose._ProcessModificationWithDelta(10);
+        var manual = Sample(a, ap, pose, shrug, 0.5);
+        pose.Active = shrug.Active = grab.Active = true;
         a.ResetBonePoses();
         ap.Seek(0.5, true, true);
         int before = grab.Count;
@@ -202,13 +216,14 @@ public partial class P1BakeRun : Node
         GetTree().Quit();
     }
 
-    /// <summary>A at a clip's instant: her bones reset, the clip applied, HerPose run by hand (the engine's modifier pass off:
+    /// <summary>A at a clip's instant: her bones reset, the clip applied, HerPose and HerShrug run by hand (the engine's modifier pass off:
     /// Skeleton3D's Manual mode with Advance ran none here), her bones' globals read.</summary>
-    static P1M4[] Sample(Skeleton3D a, AnimationPlayer ap, HerPose pose, double time)
+    static P1M4[] Sample(Skeleton3D a, AnimationPlayer ap, HerPose pose, HerShrug shrug, double time)
     {
         a.ResetBonePoses();
         ap.Seek(time, true, true);
         pose._ProcessModificationWithDelta(1 / Fps);
+        shrug._ProcessModificationWithDelta(1 / Fps);
         var g = new P1M4[a.GetBoneCount()];
         for (int i = 0; i < g.Length; i++) g[i] = P1Body.M(a.GetBoneGlobalPose(i));
         return g;
