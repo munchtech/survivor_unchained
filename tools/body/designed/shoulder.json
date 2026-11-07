@@ -16,7 +16,7 @@
    "moves": [
     {"normal": -0.013,
      "mask": [{"on": "ell", "c": [0.232, 1.528, -0.038], "r": [0.075, 0.075, 0.09], "full": 0.0}]},
-    {"translate": [0.0, 0.009, 0.0], "mask": [{"on": "ell", "c": [0.168, 1.58, -0.03], "r": [0.06, 0.06, 0.1], "full": 0.0}],
+    {"translate": [0.0, 0.012, 0.0], "mask": [{"on": "ell", "c": [0.168, 1.58, -0.03], "r": [0.06, 0.06, 0.1], "full": 0.0}],
      "why": "P1 R1c round 7: the Look's silhouette step where trap_rise's fade meets the deltoid: hanging, the line went concave at 15-17 cm out (+8 /m); filled so it stays convex from 12.5 cm to the deltoid (rule shoulder_line_concave_per_m); height only, no width"},
     {"translate": [0.0, 0.003, 0.0], "mask": [{"on": "ell", "c": [0.115, 1.615, -0.03], "r": [0.04, 0.04, 0.1], "full": 0.0}]}
    ],

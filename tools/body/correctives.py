@@ -489,7 +489,7 @@ def topo_mirror(mo, Pb, stage_npz=None):
 
 # ----------------------------------------------------------------------- run --
 def shape_name(jc, motion, deg):
-    tag = {"shoulder_abd": "abd", "shoulder_flex": "flex" if deg >= 0 else "ext", "hip_flex": "flex",
+    tag = {"arm_hang": "hang", "shoulder_abd": "abd", "shoulder_flex": "flex" if deg >= 0 else "ext", "hip_flex": "flex",
            "hip_abd": "abd", "elbow": "flex", "knee": "flex"}[motion]
     return f"{jc['name']}_{tag}{int(round(abs(deg)))}_{{s}}"
 

@@ -4,7 +4,7 @@
   "hanging": {
    "why": "P1 R1c round 7: what the Look shows with the arms hanging, on the build's own rig",
    "rules": {
-    "pocket_slot_depth_mm": {"band": [null, 30], "why": "the pocket where the breast's outer base dies into the arm: the deepest drop of the front envelope between a crest on each side, 14-45 mm above the apex (the Look's dark pit, 50 mm deep on the bare rig): a soft cove, not a hole"},
+    "pocket_slot_depth_mm": {"band": [null, 15], "why": "the pocket where the breast's outer base dies into the arm: the deepest drop of the front envelope between a crest on each side, on the worn arm_hang corrective (round_6 29.0, the Look's dark pit; round 7 8.8, a soft crescent): a soft cove, not a hole"},
     "shoulder_line_concave_per_m": {"band": [null, 4], "why": "the front silhouette from the trapezius to the deltoid is one convex curve, 12.5 to 20.5 cm out: no step where trap_rise meets the shoulder (round 6: +8 /m at 15-17 cm)"},
     "shoulder_line_sign_changes": {"band": [null, 0], "why": "no inflection on that curve"}
    }

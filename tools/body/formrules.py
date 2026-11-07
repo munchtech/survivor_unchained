@@ -546,9 +546,21 @@ def hanging(ctx):
     worst = 0.0
     E = V[np.concatenate([Tb[:, [0, 1]], Tb[:, [1, 2]], Tb[:, [2, 0]]])]
     for y in np.arange(1.40, 1.45, 0.005):
-        m = (E[:, 0, 1] - y) * (E[:, 1, 1] - y) < 0
-        a, b = E[m, 0], E[m, 1]
-        q = a + (b - a) * ((y - a[:, 1]) / (b[:, 1] - a[:, 1]))[:, None]
+        Vt = V[Tb]
+        sg_ = np.sign(Vt[:, :, 1] - y)
+        Vt = Vt[(sg_.max(1) > 0) & (sg_.min(1) < 0)]
+        ed = []
+        for u, v in ((0, 1), (1, 2), (2, 0)):
+            du, dv = Vt[:, u, 1] - y, Vt[:, v, 1] - y
+            cr = du * dv < 0
+            pt = np.full((len(Vt), 3), np.nan)
+            pt[cr] = Vt[cr, u] + (Vt[cr, v] - Vt[cr, u]) * (du[cr] / (du[cr] - dv[cr]))[:, None]
+            ed.append(pt)
+        ed = np.stack(ed, 1)                                 # each triangle's cut segment, sampled along it
+        ok_ = ~np.isnan(ed[:, :, 0])
+        s0 = ed[np.arange(len(ed)), ok_.argmax(1)]
+        s1 = ed[np.arange(len(ed)), 2 - ok_[:, ::-1].argmax(1)]
+        q = np.concatenate([s0 + (s1 - s0) * f_ for f_ in np.linspace(0, 1, 9)])
         zf = np.full(len(xs), -9.0)
         i = np.round((q[:, 0] - xs[0]) / 0.001).astype(int)
         ok = (i >= 0) & (i < len(xs))
@@ -574,7 +586,7 @@ def hanging(ctx):
     kk = k[(xt >= 0.125) & (xt <= 0.205)]
     sg = np.sign(kk) * (np.abs(kk) > 4)
     sg = sg[sg != 0]
-    return {"pocket_slot_depth_mm": round(worst * 1000, 1), "shoulder_line_concave_per_m": round(float(kk.max()), 1),
+    return {"pocket_slot_depth_mm": round(float(worst) * 1000, 1), "shoulder_line_concave_per_m": round(float(kk.max()), 1),
             "shoulder_line_sign_changes": int((sg[1:] != sg[:-1]).sum())}
 
 
