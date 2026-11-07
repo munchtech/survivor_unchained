@@ -185,7 +185,11 @@ class Source:
         Ba = np.cross(Ng, Ta) * wa[:, None]
         nts = U(nts)
         Ns = U(nts[:, :1] * Ta + nts[:, 1:2] * Ba + nts[:, 2:] * Ng)
+        # off the graft: as the game reads a part with no map (hint_default_black: 0,0,0 and ALPHA 1). Alpha is 1 less her
+        # sky mask (heroine_skin.gdshader sky_w): 0 here gave the whole torso her neck's sky share under the Look's rig, so
+        # it lost the sky's cool light and read pinker than her head (P1 R1 round 10), with a step at the graft's edge
         fr = np.zeros((len(t), 4))
+        fr[:, 3] = 1.0
         if self.freckles is not None:
             g = pr == 1
             fr[g] = bilinear(self.freckles, uv[g])
@@ -392,8 +396,15 @@ def mirror_vertex(z, i):
 
 
 # ------------------------------------------------------------------------------------------------------ run --
-def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None, pose=None, carrier=None, carry=None):
-    """carry (None = A's paint, relief and roughness as carried; {"mode": "neutral", "band_m": [a, b],
+SOURCE_MAPS = ("albedo", "normal", "form_normal", "roughness", "freckles")
+
+
+def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None, pose=None, carrier=None, carry=None,
+        source_maps=None):
+    """source_maps (P1 round 10): a directory of SOURCE_MAPS on our UVs, already carried once (her_a_target.py, its own
+    bake.json holds the carry's gates): copied as they are, so the build reads neither A nor a carrier for the skin; only
+    this body's own maps (AO, thickness, curvature, zones) are computed.
+    carry (None = A's paint, relief and roughness as carried; {"mode": "neutral", "band_m": [a, b],
     "keep_regions": [names]}: a neutral placeholder skin, A's carried maps kept only within a of the open neck ring
     (eased out to 0 at b: the head seam) and on the keep_regions' texels (hands, feet: the nails); see neutral_keep).
     carrier (slider route, 5 Nov): a build of the SAME topology whose surface lies on A (her_topo.json's fit,
@@ -429,42 +440,54 @@ def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None,
     Xr = (w[:, :, None] * Pv[vr]).sum(1)
     Nl = U((w[:, :, None] * Nv[vl]).sum(1))
     Nr = U((w[:, :, None] * Nv[vr]).sum(1))
-    src_out, Vc, Nvc, Tan_c, wsg_c = build_out, Vb, Nv, Tan, wsg
-    if carrier:
-        src_out = carrier if os.path.isabs(carrier) else os.path.join(REPO, carrier)
-        Vc = np.load(os.path.join(src_out, "stage", f"{tier}.npz"))["V"].astype(np.float64)
-        assert Vc.shape == Vb.shape, "the carrier is not this topology"
-        _, mc, _ = body_of(src_out, tier)
-        assert len(mc.P) == len(src), "the carrier's glb is not this UV split"
-        Nvc = np.zeros_like(Vc)
-        Nvc[src] = mc.N.astype(np.float64)
-        Tan_c, wsg_c = tangent_frames(mc.P.astype(np.float64), mc.N.astype(np.float64), uvd["UV"], Tg)
-        rep["carrier"] = os.path.relpath(src_out, REPO).replace("\\", "/")
-    Cl = (w[:, :, None] * Vc[vl]).sum(1)
-    Cr = (w[:, :, None] * Vc[vr]).sum(1)
-    CNl = U((w[:, :, None] * Nvc[vl]).sum(1))
-    CNr = U((w[:, :, None] * Nvc[vr]).sum(1))
-    gl_ = Tl[tri]
-    Tt = U((w[:, :, None] * Tan_c[gl_]).sum(1))
-    Tt = U(Tt - CNl * (Tt * CNl).sum(1, keepdims=True))
-    wl = np.sign((w * wsg_c[gl_]).sum(1))
-    Bt = np.cross(CNl, Tt) * wl[:, None]
-    # (the right half's frame is the left's mirrored: x flipped, so its tangent-space values equal the left's)
-    TtR, BtR = Tt * MIRROR, Bt * MIRROR
-    print("BAKE texels", len(tix), round(time.time() - t0, 1), flush=True)
-    A = Source(os.path.join(src_out, "body.glb"), pose)
-    res = {}
-    for side, X, Nn, Tf, Bf in (("l", Cl, CNl, Tt, Bt), ("r", Cr, CNr, TtR, BtR)):
-        t, bw, d, miss = A.project(X, Nn)
-        s = A.sample(t, bw)
-        ts = lambda v: np.stack([(v * Tf).sum(1), (v * Bf).sum(1), (v * Nn).sum(1)], 1)     # noqa: E731
-        res[side] = {"albedo": s["albedo"], "normal": U(ts(carry_normal(s["normal"], s["form"], Nn))),
-                     "form": U(ts(s["form"])),
-                     "rough": s["rough"], "freckles": s["freckles"], "dist": d, "miss": miss}
-    print("BAKE carried", round(time.time() - t0, 1), flush=True)
-    rep["projection"] = {"dist_p95_mm": round(float(np.percentile(np.r_[res["l"]["dist"], res["r"]["dist"]], 95)) * 1e3, 2),
-                         "dist_max_mm": round(float(max(res["l"]["dist"].max(), res["r"]["dist"].max())) * 1e3, 2),
-                         "closest_point_fallback": int(res["l"]["miss"].sum() + res["r"]["miss"].sum())}
+    keep_fn, A, Vc, Nvc, alb = None, None, Vb, Nv, None
+    if source_maps:
+        # the paint as stored source maps (made once, by the target's generator): no read of A or of a carrier at build
+        sm = source_maps if os.path.isabs(source_maps) else os.path.join(REPO, source_maps)
+        import shutil
+        for k in SOURCE_MAPS:
+            shutil.copy2(os.path.join(sm, f"{k}.png"), os.path.join(maps_dir, f"{k}.png"))
+        with open(os.path.join(sm, "bake.json")) as f:
+            made = json.load(f)
+        rep["source_maps"] = source_maps.replace("\\", "/")
+        rep["projection"] = made.get("projection")
+    else:
+        src_out, Vc, Nvc, Tan_c, wsg_c = build_out, Vb, Nv, Tan, wsg
+        if carrier:
+            src_out = carrier if os.path.isabs(carrier) else os.path.join(REPO, carrier)
+            Vc = np.load(os.path.join(src_out, "stage", f"{tier}.npz"))["V"].astype(np.float64)
+            assert Vc.shape == Vb.shape, "the carrier is not this topology"
+            _, mc, _ = body_of(src_out, tier)
+            assert len(mc.P) == len(src), "the carrier's glb is not this UV split"
+            Nvc = np.zeros_like(Vc)
+            Nvc[src] = mc.N.astype(np.float64)
+            Tan_c, wsg_c = tangent_frames(mc.P.astype(np.float64), mc.N.astype(np.float64), uvd["UV"], Tg)
+            rep["carrier"] = os.path.relpath(src_out, REPO).replace("\\", "/")
+        Cl = (w[:, :, None] * Vc[vl]).sum(1)
+        Cr = (w[:, :, None] * Vc[vr]).sum(1)
+        CNl = U((w[:, :, None] * Nvc[vl]).sum(1))
+        CNr = U((w[:, :, None] * Nvc[vr]).sum(1))
+        gl_ = Tl[tri]
+        Tt = U((w[:, :, None] * Tan_c[gl_]).sum(1))
+        Tt = U(Tt - CNl * (Tt * CNl).sum(1, keepdims=True))
+        wl = np.sign((w * wsg_c[gl_]).sum(1))
+        Bt = np.cross(CNl, Tt) * wl[:, None]
+        # (the right half's frame is the left's mirrored: x flipped, so its tangent-space values equal the left's)
+        TtR, BtR = Tt * MIRROR, Bt * MIRROR
+        print("BAKE texels", len(tix), round(time.time() - t0, 1), flush=True)
+        A = Source(os.path.join(src_out, "body.glb"), pose)
+        res = {}
+        for side, X, Nn, Tf, Bf in (("l", Cl, CNl, Tt, Bt), ("r", Cr, CNr, TtR, BtR)):
+            t, bw, d, miss = A.project(X, Nn)
+            s = A.sample(t, bw)
+            ts = lambda v: np.stack([(v * Tf).sum(1), (v * Bf).sum(1), (v * Nn).sum(1)], 1)     # noqa: E731
+            res[side] = {"albedo": s["albedo"], "normal": U(ts(carry_normal(s["normal"], s["form"], Nn))),
+                         "form": U(ts(s["form"])),
+                         "rough": s["rough"], "freckles": s["freckles"], "dist": d, "miss": miss}
+        print("BAKE carried", round(time.time() - t0, 1), flush=True)
+        rep["projection"] = {"dist_p95_mm": round(float(np.percentile(np.r_[res["l"]["dist"], res["r"]["dist"]], 95)) * 1e3, 2),
+                             "dist_max_mm": round(float(max(res["l"]["dist"].max(), res["r"]["dist"].max())) * 1e3, 2),
+                             "closest_point_fallback": int(res["l"]["miss"].sum() + res["r"]["miss"].sum())}
     covered = np.zeros(size * size, bool)
     covered[tix] = True
     covered = covered.reshape(size, size)
@@ -473,39 +496,40 @@ def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None,
         a = np.zeros((size * size, ch))
         a[tix] = vals.reshape(len(tix), ch)
         return fill_gutters(a.reshape(size, size, ch), covered)
-    avg = lambda k: 0.5 * (res["l"][k] + res["r"][k])          # noqa: E731
     files = {}
     rq = tu.region_of_quads(z, uvd["isl"])
     nq = len(z["Q"])
     tri_q = np.nonzero(~uvd["is_right"][uvd["T"]].all(1))[0][tri] % nq
-    a_alb, a_nrm, a_rgh, a_frk = avg("albedo"), avg("normal"), avg("rough"), avg("freckles")
-    keep_fn = None
-    if carry:
-        assert carry.get("mode") == "neutral", carry
-        keep_fn = neutral_keep(z, Vb, rq, carry)
-        k_ring, k = keep_fn(Xl, tri_q)
-        mid = (k_ring >= 0.5) & (k_ring < 1)
-        assert mid.any(), "no texel in the neck band"
-        n_alb = np.median(a_alb[mid], axis=0)
-        n_rgh = float(np.median(a_rgh))
-        a_alb = k[:, None] * a_alb + (1 - k[:, None]) * n_alb
-        a_rgh = k * a_rgh + (1 - k) * n_rgh
-        a_nrm = k[:, None] * a_nrm + (1 - k[:, None]) * np.array([0.0, 0.0, 1.0])
-        a_frk = k[:, None] * a_frk
-        rep["carry"] = {"mode": "neutral", "band_m": list(carry["band_m"]), "keep_regions": list(carry["keep_regions"]),
-                        "albedo_rgb": [round(float(x), 5) for x in n_alb], "roughness": round(n_rgh, 5),
-                        "kept_fraction": round(float((k > 0.5).mean()), 4)}
-    alb = img(a_alb, 3)
-    save(os.path.join(maps_dir, "albedo.png"), alb, "RGB")
-    nrm = U(a_nrm)
-    rep["normal_inverted_texels"] = int((nrm[:, 2] <= 0).sum())
-    rep["normal_form"] = {"full_below_deg": FORM_DEG[0], "detail_only_above_deg": FORM_DEG[1]}
-    save(os.path.join(maps_dir, "normal.png"), img(nrm * 0.5 + 0.5, 3), "RGB")
-    fnm = U(avg("form"))
-    save(os.path.join(maps_dir, "form_normal.png"), img(fnm * 0.5 + 0.5, 3), "RGB")
-    rgh = np.stack([np.zeros(len(tix)), a_rgh, np.zeros(len(tix))], 1)
-    save(os.path.join(maps_dir, "roughness.png"), img(rgh, 3), "RGB")
-    save(os.path.join(maps_dir, "freckles.png"), img(a_frk, 4), "RGBA")
+    if not source_maps:
+        avg = lambda k: 0.5 * (res["l"][k] + res["r"][k])          # noqa: E731
+        a_alb, a_nrm, a_rgh, a_frk = avg("albedo"), avg("normal"), avg("rough"), avg("freckles")
+        keep_fn = None
+        if carry:
+            assert carry.get("mode") == "neutral", carry
+            keep_fn = neutral_keep(z, Vb, rq, carry)
+            k_ring, k = keep_fn(Xl, tri_q)
+            mid = (k_ring >= 0.5) & (k_ring < 1)
+            assert mid.any(), "no texel in the neck band"
+            n_alb = np.median(a_alb[mid], axis=0)
+            n_rgh = float(np.median(a_rgh))
+            a_alb = k[:, None] * a_alb + (1 - k[:, None]) * n_alb
+            a_rgh = k * a_rgh + (1 - k) * n_rgh
+            a_nrm = k[:, None] * a_nrm + (1 - k[:, None]) * np.array([0.0, 0.0, 1.0])
+            a_frk = k[:, None] * a_frk
+            rep["carry"] = {"mode": "neutral", "band_m": list(carry["band_m"]), "keep_regions": list(carry["keep_regions"]),
+                            "albedo_rgb": [round(float(x), 5) for x in n_alb], "roughness": round(n_rgh, 5),
+                            "kept_fraction": round(float((k > 0.5).mean()), 4)}
+        alb = img(a_alb, 3)
+        save(os.path.join(maps_dir, "albedo.png"), alb, "RGB")
+        nrm = U(a_nrm)
+        rep["normal_inverted_texels"] = int((nrm[:, 2] <= 0).sum())
+        rep["normal_form"] = {"full_below_deg": FORM_DEG[0], "detail_only_above_deg": FORM_DEG[1]}
+        save(os.path.join(maps_dir, "normal.png"), img(nrm * 0.5 + 0.5, 3), "RGB")
+        fnm = U(avg("form"))
+        save(os.path.join(maps_dir, "form_normal.png"), img(fnm * 0.5 + 0.5, 3), "RGB")
+        rgh = np.stack([np.zeros(len(tix)), a_rgh, np.zeros(len(tix))], 1)
+        save(os.path.join(maps_dir, "roughness.png"), img(rgh, 3), "RGB")
+        save(os.path.join(maps_dir, "freckles.png"), img(a_frk, 4), "RGBA")
     # regions
     rid = np.zeros((size * size, 1))
     rid[tix, 0] = rq[tri_q]
@@ -543,7 +567,12 @@ def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None,
         files[k] = os.path.relpath(os.path.join(maps_dir, f"{k}.png"), REPO).replace("\\", "/")
     rep["files"] = files
     rep["frames"] = {"tangent_w_mismatch": int(frame_mismatch(uvd["UV"], Tg, wsg))}
-    rep["gates"] = gates(z, uvd, Vc, Nvc, A, alb, covered, keep_fn=keep_fn, Vown=Vb, rq=rq)
+    if source_maps:
+        rep["gates"] = {**made["gates"], "from": "the source maps' own bake.json (the carry's gates)"}
+        rep["gates"]["frame_mismatch"] = rep["frames"]["tangent_w_mismatch"]
+        rep["gates"]["pass"] = bool(made["gates"]["pass"]) and rep["frames"]["tangent_w_mismatch"] == 0
+    else:
+        rep["gates"] = gates(z, uvd, Vc, Nvc, A, alb, covered, keep_fn=keep_fn, Vown=Vb, rq=rq)
     print("BAKE gates", rep["gates"]["pass"], round(time.time() - t0, 1), flush=True)
     rep["sheet"] = os.path.relpath(uv_sheet(maps_dir, uvd, os.path.join(build_out, "uv_sheet.png")), REPO).replace("\\", "/")
     rep["s"] = round(time.time() - t0, 1)

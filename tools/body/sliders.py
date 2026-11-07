@@ -169,16 +169,16 @@ class OurSliders:
         return V
 
     def post_delta(self, values):
-        """The designed "post_join" sliders' move (rule "field" only: linear in v), laid by build_topo after the slider
-        join and the stance, so the neck's own fields reach the ring (the join holds every other move off it) and move
-        it with the head (head_move)."""
+        """The designed "post_join" sliders' move (rules "field" and "target": both linear in v), laid by build_topo after
+        the slider join and the stance, so the neck's own fields reach the ring (the join holds every other move off it)
+        and move it with the head (head_move), and a sculpted target (her_a) lands on the joined body it was made from."""
         D = self.np.zeros_like(self.V0)
         for n, c in self.designed.items():
             v = values.get(n, 0.0)
             if v and c.get("post_join"):
-                assert c["rule"] == "field", ("post_join needs a linear field", n)
+                assert c["rule"] in ("field", "target"), ("post_join needs a linear rule", n)
                 lo, hi = c["range"]
-                D += min(max(float(v), lo), hi) * self.field_delta(n)
+                D += min(max(float(v), lo), hi) * (self.field_delta(n) if c["rule"] == "field" else self.target_delta(c))
         return D
 
     # ---------------------------------------------------------------------------- rule "field": the form library --

@@ -1,0 +1,76 @@
+{
+ "about": "P1 R1 round 10: B with A's look. Her torso, breasts, hips and legs are A's, stored once on our topology as the designed slider her_a (tools/body/her_a_target.py -> base/targets/her_a_{tier}.npz; designed/her.json); arms and deltoids are the slider body's, weights, rig, correctives, clips and springs ours; the form library's r1 trunk sliders are off.",
+ "base": "tools/body/specs/her_r1.json",
+ "sliders": {
+  "arm_girth": 0.15,
+  "belly": -0.2,
+  "build": 0.2,
+  "bust_firmness": 0.0,
+  "bust_lift": 0.0,
+  "bust_point": 0.0,
+  "bust_set": 0.0,
+  "bust_size": 0.0,
+  "bust_spacing": 0.0,
+  "calves": 0.5,
+  "foot_size": -0.5207,
+  "forearm_girth": 0.666,
+  "forearm_length": -0.4374,
+  "glute_lift": 0.0,
+  "glutes": 0.0,
+  "hand_size": -0.1764,
+  "height": 0.0953,
+  "hips": 0.0,
+  "leg_length": 0.4416,
+  "shoulder_width": 0.0,
+  "thigh_length": -0.01,
+  "thighs": 0.8,
+  "torso_length": -0.5041,
+  "underbust": 0.15,
+  "upperarm_length": -0.4525,
+  "waist": 0.0,
+  "weight": -0.2762,
+  "shoulder_span": -0.35,
+  "deltoid_cap": 1.0,
+  "her_a": 1.0
+ },
+ "shapes_with": {},
+ "shapes": {
+  "support_lift": 1.0,
+  "support_press": 1.0,
+  "support_fill": 1.0
+ },
+ "skin": null,
+ "seam": {
+  "rows_m": 0.05,
+  "k": 0.7,
+  "front_deg": [
+   120,
+   170
+  ],
+  "why": "seam_g1 on A's tightly stripped neck rows: k 1 folded the first row over the second at the sides (14 folds, 177 deg); k 0.7 with the biharmonic ease round the sides: 0 folds, seam angle mean 3.0 (6.8 without), p95 6.4"
+ },
+ "bone_sliders": {
+  "her_a": 1.0
+ },
+ "bone_sliders_why": "Soft tissue does not move bones, but A legs and trunk must hold their joints: read on the slider body the hip joint stood 12 mm wide of the fit and the knee 33 mm (x 154 against 121), so the bones are read on the body with her_a on. The r1 bone_sliders (the retired MakeHuman soft targets) are gone with the r1 trunk.",
+ "her_a": {
+  "fit_spec": "tools/body/specs/her_topo.json",
+  "carrier": "tools/body/out/her_ek2_final",
+  "band_m": 0.06,
+  "zero_ring": 6,
+  "arm_move_m": [
+   0.024,
+   0.0,
+   0.01
+  ],
+  "arm_move_why": "The arm and deltoid keep our form and ride to A shoulder line: 24 mm out, 10 mm forward, fitted against A top and front/back silhouette over x 12-28 cm (B top within 3.5 mm mean); the slider body stood 24 mm narrower than A from shoulder_span -0.35."
+ },
+ "bake": {
+  "maps": "godot/art/people/body_p1",
+  "publish_maps": false,
+  "size": 2048,
+  "pose": "tools/body/forms/her_topo_target_bones.json",
+  "carry": null,
+  "source_maps": "tools/body/base/targets/her_a_maps"
+ }
+}

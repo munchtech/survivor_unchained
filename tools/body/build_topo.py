@@ -452,12 +452,15 @@ def stage_bake(spec, tier, out, rep):
     maps = os.path.join(out, "maps")
     pub = os.path.join(REPO, b["maps"])
     if tier == "close" or not os.path.exists(os.path.join(maps, "albedo.png")):
-        r, _ = topo_bake.run(out, maps, size=int(b.get("size", 2048)), pose=b.get("pose"), carrier=b.get("carrier"), carry=b.get("carry"))
+        r, _ = topo_bake.run(out, maps, size=int(b.get("size", 2048)), pose=b.get("pose"), carrier=b.get("carrier"), carry=b.get("carry"),
+                              source_maps=b.get("source_maps"))
         r["files"] = sorted(f for f in os.listdir(maps) if f.endswith((".png", ".json")))
         with open(os.path.join(maps, "bake.json"), "w") as f:
             json.dump(r, f, indent=1, default=float)
         rep["bake"] = {k: v for k, v in r.items() if k != "files"}
-        if r["gates"]["pass"]:
+        if r["gates"]["pass"] and not b.get("publish_maps", True):
+            rep["bake"]["published"] = None     # (publish_p1.py copies <out>/maps with the glbs: the game's maps and bodies stay one set)
+        elif r["gates"]["pass"]:
             os.makedirs(pub, exist_ok=True)
             for f in os.listdir(maps):
                 shutil.copy2(os.path.join(maps, f), os.path.join(pub, f))

@@ -514,6 +514,8 @@ def spec_measures(spec_path, body_glb):
     from sliders import load_spec
     V, T, H, HT, z, rep = formview.body(spec_path)
     sl = load_spec(spec_path).get("sliders", {})
+    if sl.get("her_a"):     # (her breasts and glutes are A's, from a target: no designed slider to take off for a bare body)
+        return {}
     with tempfile.TemporaryDirectory() as tmp:
         bare = _derived(spec_path, BREAST_SLIDERS, (), tmp)
         Vb = formview.body(bare)[0]

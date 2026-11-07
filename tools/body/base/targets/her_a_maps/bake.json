@@ -1,0 +1,39 @@
+{
+ "version": "bake2",
+ "size": 2048,
+ "covered": 0.5786,
+ "projection": {
+  "dist_p95_mm": 16.37,
+  "dist_max_mm": 31.72,
+  "closest_point_fallback": 116916
+ },
+ "normal_inverted_texels": 0,
+ "normal_form": {
+  "full_below_deg": 8.0,
+  "detail_only_above_deg": 16.0
+ },
+ "gates": {
+  "what": "dE = CIEDE2000 on the saved 8-bit albedo (sRGB -> Lab D65)",
+  "albedo_dE_p95": 1.126,
+  "albedo_dE_p50": 0.471,
+  "albedo_dE_p99": 1.583,
+  "albedo_points_away": 773648,
+  "away_px": 4,
+  "albedo_dE_p95_near_seams": 1.317,
+  "mirror_part_dE_p95": 2.089,
+  "mirror_part_dE_p50": 0.902,
+  "seam_step_dE_p95": 1.228,
+  "seam_step_dE_p99": 3.173,
+  "seam_step_dE_max": 7.253,
+  "seam_edges": 1212,
+  "seam_samples": 8008,
+  "frame_mismatch": 0,
+  "limits": {
+   "albedo_dE_p95": 3.0,
+   "seam_step_dE_p95": 4.0,
+   "frame_mismatch": 0
+  },
+  "pass": true
+ },
+ "made_by": "tools/body/her_a_target.py --maps, from tools/body/out/her_ek2_final"
+}

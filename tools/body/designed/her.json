@@ -1,0 +1,18 @@
+{
+ "about": "Her own forms as source files on our topology.",
+ "sliders": {
+  "her_a": {
+   "range": [
+    0,
+    1
+   ],
+   "rule": "target",
+   "soft": true,
+   "post_join": true,
+   "order": 90,
+   "file": "tools/body/base/targets/her_a_{tier}.npz",
+   "made_by": "python tools/body/her_a_target.py tools/body/specs/her_b.json",
+   "why": "P1 R1 round 10 (owner: 'our original body was really good ... we need to at least come close'): A's torso, breasts, hips and legs on our topology, under a smooth mask (1 on the trunk and legs, 0 on arms from the deltoid down); laid after the join and the stance, before seam_g1, so the seam stays one surface. Other bodies leave it at 0."
+  }
+ }
+}
