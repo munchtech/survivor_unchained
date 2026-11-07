@@ -613,12 +613,25 @@ def topo_mirror(mo, Pb, stage_npz=None):
 
 
 # ----------------------------------------------------------------------- run --
-def shape_name(jc, motion, deg):
-    if motion == "game":                    # a game key: its shot's name (arm_hang_close_l)
-        return f"{jc['name']}_{deg}_{{s}}"
+def shape_name(jc, motion, deg, arm=None):
+    if motion == "game":                    # a game key: its shot's name (arm_hang_close_l); a key that names its arm
+        return f"{jc['name']}_{deg}_{arm}arm_{{s}}" if arm else f"{jc['name']}_{deg}_{{s}}"   # (arm_hang_look_larm_r)
     tag = {"arm_hang": "hang", "shoulder_abd": "abd", "shoulder_flex": "flex" if deg >= 0 else "ext", "hip_flex": "flex",
            "hip_abd": "abd", "elbow": "flex", "knee": "flex"}[motion]
     return f"{jc['name']}_{tag}{int(round(abs(deg)))}_{{s}}"
+
+
+def load_conf(conf_path=None):
+    """The correctives data: tools/body/correctives.json, or a spec's own file (its "correctives_conf"). A spec's file may
+    "extends" another (a repo path): its "joints" replace the base's by name (a new name is added), its "solve" keys
+    override, so a body's own keys (her game keys, laid on A) never fork the shared data."""
+    conf = json.load(open(os.path.join(REPO, conf_path) if conf_path else CONF))
+    if conf.get("extends"):
+        base = load_conf(conf["extends"])
+        over = {j["name"]: j for j in conf.get("joints", [])}
+        joints = [over.pop(j["name"], j) for j in base["joints"]] + list(over.values())
+        conf = dict(base, joints=joints, solve={**base["solve"], **conf.get("solve", {})})
+    return conf
 
 
 TIERS = {"close": ("body.glb", "rig.json", "body_lbs.glb", "shapes.npz", "correctives.json"),
@@ -630,7 +643,7 @@ def run(out, only=None, tier="close", fresh=False, turn_normals=False, conf_path
     bake round 2: the export's normals are not its geometric ones, build_topo.her_a_normals): each shape's NORMAL
     delta turns the base's own normals (normal_delta N)."""
     t0 = time.time()
-    conf = json.load(open(os.path.join(REPO, conf_path) if conf_path else CONF))   # (a spec's "correctives_conf": its own data)
+    conf = load_conf(conf_path)                 # (a spec's "correctives_conf": its own data)
     cf = conf["solve"]
     f_glb, f_rig, f_base, f_shapes, f_rep = TIERS[tier]
     base = os.path.join(out, "stage", f_base)
@@ -678,12 +691,13 @@ def run(out, only=None, tier="close", fresh=False, turn_normals=False, conf_path
             for k_, Y, f, free, M, G, lg in chain_mod.solve_chain(mesh, st, jc, {**cf, **jc.get("solve", {})}):
                 chain[k_] = (Y, f, free, M, G, lg)
             print(f"  {jc['name']} march {round(time.time() - t, 1)} s", flush=True)
-        for motion, deg in jc["keys"]:
+        for key in jc["keys"]:
+            motion, deg = key[0], key[1]
             if motion == "game":                       # a game key (game_a_key): B's pose from a shot, A's surface in it
-                ga = jc["game_a"]
-                kp = json.load(open(os.path.join(REPO, ga["poses"])))["keys"][deg]
-                s_ = ga.get("side", "r")
-                nm = shape_name(jc, motion, deg)
+                ga = jc["game_a"]                      # ([game, shot] keys the default arm, game_a "side"; [game, shot,
+                kp = json.load(open(os.path.join(REPO, ga["poses"])))["keys"][deg]   # l|r] that arm, its own shapes)
+                s_ = key[2] if len(key) > 2 else ga.get("side", "r")
+                nm = shape_name(jc, motion, deg, key[2] if len(key) > 2 else None)
                 G = game_pose(poser, kp)
                 V = poser._skin(G, {})
                 t = time.time()

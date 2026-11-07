@@ -40,6 +40,7 @@
   "support_fill": 1.0
  },
  "skin": null,
+ "correctives_conf": "tools/body/specs/her_b_correctives.json",
  "seam": {
   "rows_m": 0.05,
   "k": 0.7,
