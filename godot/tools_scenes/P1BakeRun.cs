@@ -133,13 +133,15 @@ public partial class P1BakeRun : Node
                     int tr = dst.AddTrack(Animation.TrackType.Rotation3D);
                     dst.TrackSetPath(tr, $"{skelPath}:{rig.Names[j]}");
                     rotTrack[j] = tr;
-                    bool pos = j == bake.Pelvis && aPos.Contains(aIndex["pelvis"]) || j == bake.Root && aIndex.ContainsKey("root") && aPos.Contains(aIndex["root"]);
+                    bool pos = j == bake.Pelvis && aPos.Contains(aIndex["pelvis"]) || j == bake.Root && aIndex.ContainsKey("root") && aPos.Contains(aIndex["root"])
+                        || bake.Map.Stretches(j);   // (the chain v2's stretched joints)
                     if (pos) { int tp = dst.AddTrack(Animation.TrackType.Position3D); dst.TrackSetPath(tp, $"{skelPath}:{rig.Names[j]}"); posTrack[j] = tp; }
                 }
                 ap.Play(key);
                 int frames = (int)Math.Floor(src.Length * Fps + 1e-6) + 1;
                 if (src.Length - (frames - 1) / Fps > 1e-4) frames++;   // (the clip's last instant keyed too)
                 double sumL = 0, sumR = 0, mapL = 0, mapR = 0;
+                var stretch = new[] { (Lo: double.MaxValue, Hi: double.MinValue, N: 0), (Lo: double.MaxValue, Hi: double.MinValue, N: 0) };
                 // the keys dump (tools/body/clipcheck.py): the clips with a p1_clips.json entry, A's and B's globals per frame
                 var dump = clean != null ? new StringBuilder() : null;
                 dump?.Append($"{{\"name\": \"{nm}\", \"fps\": {F(Fps)}, \"length\": {F(src.Length)}, \"loop\": {(src.LoopMode != Animation.LoopModeEnum.None ? "true" : "false")}, \"frames\": {frames},\n" +
@@ -152,7 +154,10 @@ public partial class P1BakeRun : Node
                 {
                     double time = Math.Min(f / Fps, src.Length);
                     var g = Sample(a, ap, pose, shrug, time);
-                    var (L, G) = bake.Frame(g, cleanUsed);
+                    var (L, G) = bake.Frame(g, cleanUsed, aKeyed);
+                    for (int s = 0; s < 2; s++)
+                        if (!double.IsNaN(bake.Map.LastStretch[s]))
+                            stretch[s] = (Math.Min(stretch[s].Lo, bake.Map.LastStretch[s]), Math.Max(stretch[s].Hi, bake.Map.LastStretch[s]), stretch[s].N + 1);
                     var (dl, dr) = bake.ShoulderDrop(G);
                     sumL += dl; sumR += dr;
                     var (ml, mr) = bake.ShoulderDrop(bake.Map.Map(g));   // (the map alone: the clip's clavicle kept)
@@ -187,7 +192,8 @@ public partial class P1BakeRun : Node
                 outLib.AddAnimation(nm, dst);
                 totalFrames += frames; clips++;
                 bool town = nm.StartsWith("idle_") || nm == "Idle_Loop" || nm == "Idle";
-                GD.Print($"p1-bake: {key}: {frames} frames, {keyed.Count} keyed bones ({aKeyed.Count} on A){(clean != null ? ", cleaned" : "")}{(locks.Sum() > 0 ? $", feet locked {locks[0]}/{locks[1]}" : "")}" +
+                string St(int s) => stretch[s].N == 0 ? "-" : $"{stretch[s].Lo:F3}..{stretch[s].Hi:F3}{(stretch[s].N < frames ? $" ({stretch[s].N}/{frames})" : "")}";
+                GD.Print($"p1-bake: {key}: {frames} frames, {keyed.Count} keyed bones ({aKeyed.Count} on A){(clean != null ? ", cleaned" : "")}{(locks.Sum() > 0 ? $", feet locked {locks[0]}/{locks[1]}" : "")}; chain stretch spine {St(0)} neck {St(1)}" +
                          (town ? $"; shoulder joint over pelvis vs B rest, mean L {sumL / frames * 1000:F1} R {sumR / frames * 1000:F1} mm (map alone, the clip's clavicle: L {mapL / frames * 1000:F1} R {mapR / frames * 1000:F1})" : ""));
             }
             if (only != "" || Args.Has("p1-bake-raw")) continue;   // (a check or the raw baseline: nothing written)

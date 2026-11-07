@@ -15,7 +15,8 @@ namespace SurvivorUnchained.Play;
 ///    the clavicle is keyed so that P1Rig.ClavicleTurn laid on it at runtime lands on A's line (the law stays for what
 ///    clips don't author, nothing doubles); scap_{l,r} stand at B's rest local and turn by the law alone. The upper arm
 ///    keeps its mapped world turn (its head rides the clavicle), all below follow by their locals;
-///  - positions: B's rest offsets but for root and pelvis (P1Retarget's LegScale rule);
+///  - positions: B's rest offsets but for root and pelvis (P1Retarget's LegScale rule) and the chain v2's stretched
+///    joints (P1Retarget.Stretches: spine_02..05, neck_02, Head, a ratio near 1 per frame), keyed as position tracks;
 ///  - keys: a B bone is keyed only if its source A bone(s) are keyed in the clip (by name, or either chain bracket);
 ///    scap and B's helpers never (partial clips stay partial, the game's filtered blends behave as on A);
 ///  - the hand clean (tools/body/p1_clips.json) after the hold: per bone additive local turns, and a hold list.
@@ -50,8 +51,9 @@ public sealed class P1Bake
     /// <summary>B's rest local of bone j (relative to its parent).</summary>
     public P1M4 RestLocal(int j) => restLocal[j];
 
-    /// <summary>One frame: A's posed globals (skeleton space) to B's locals and globals, girdle held, the clean applied.</summary>
-    public (P1M4[] Local, P1M4[] G) Frame(P1M4[] aPose, Clean? clean = null) => Hold(Map.Map(aPose), clean, aPose);
+    /// <summary>One frame: A's posed globals (skeleton space) to B's locals and globals, girdle held, the clean applied.
+    /// aKeyed: the A bones the clip keys (the map lands a chain segment only when all it reads are keyed; null: all).</summary>
+    public (P1M4[] Local, P1M4[] G) Frame(P1M4[] aPose, Clean? clean = null, ICollection<int>? aKeyed = null) => Hold(Map.Map(aPose, aKeyed), clean, aPose);
 
     /// <summary>The girdle and the clean on mapped B globals. aPose: A's final pose, its clavicle lines B's (null: the
     /// clavicles held at B's rest).</summary>
@@ -63,8 +65,8 @@ public sealed class P1Bake
         {
             int p = B.Parent[j];
             L[j] = p < 0 ? mapped[j] : mapped[p].Inverse() * mapped[j];
-            // (only root and pelvis move from B's own offsets)
-            if (j != Pelvis && j != Root) L[j] = L[j].WithT(restLocal[j].T());
+            // (only root and pelvis move from B's own offsets, and the chain v2's stretched joints: P1Retarget.Stretches)
+            if (j != Pelvis && j != Root && !Map.Stretches(j)) L[j] = L[j].WithT(restLocal[j].T());
         }
         foreach (int j in Girdle) L[j] = restLocal[j];
         var G = new P1M4[n];

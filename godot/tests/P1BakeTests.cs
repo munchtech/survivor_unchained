@@ -194,4 +194,39 @@ public class P1BakeTests
         var spread = map.Spread(new[] { ("spine_01", 0.2), ("spine_02", 0.3), ("spine_03", 0.35), ("neck_01", 0.15) });
         Assert.True(Math.Abs(spread.Sum(s => s.Share) - 1.0) < 1e-9);
     }
+
+    [Fact]
+    public void ChainLandsTheChestAndTheHeadWhereACarriesThem()
+    {
+        // A (a_skeleton.json) bent up its spine and neck; B (the fixture) mapped: B's chest (spine_05) takes A's chest turn
+        // whole, and its joint and the Head's land where A's chest and Head carry B's rest points, through the bake too
+        var r = JsonDocument.Parse(File.ReadAllText(Path.Combine(Root(), "art", "people", "body_p1", "a_skeleton.json"))).RootElement;
+        var an = r.GetProperty("names").EnumerateArray().Select(x => x.GetString()!).ToArray();
+        var ap = r.GetProperty("parent").EnumerateArray().Select(x => x.GetInt32()).ToArray();
+        var ar = r.GetProperty("rest").EnumerateArray().Select(M).ToArray();
+        var (names, _, rest, rig) = B();
+        var map = new P1Retarget(an, ap, ar, rig);
+        Assert.Equal("spine_05", names[map.BChest]);
+        Assert.Equal("spine_03", an[map.AChest]);
+        var a = Pose(an, ap, ar, new() { ["pelvis"] = new(D(3), D(-4), D(2)), ["spine_01"] = new(D(6), 0, D(-3)), ["spine_02"] = new(D(-5), D(4), D(4)),
+            ["spine_03"] = new(D(8), D(-6), D(5)), ["neck_01"] = new(D(-7), D(10), 0), ["Head"] = new(D(12), D(-15), D(4)) });
+        P1M3 Turn(P1M4 posed, P1M4 rest0) => P1Retarget.Rot(posed) * P1Retarget.Rot(rest0).T();
+        P1V Carry(int ai, P1V p) => a[ai].T() + Turn(a[ai], ar[ai]) * (p - ar[ai].T());
+        int bc = map.BChest, ac = map.AChest, bh = rig.Index["Head"], ah = Array.IndexOf(an, "Head");
+        var mapped = map.Map(a);
+        var (_, G) = new P1Bake(rig, map).Frame(a);
+        foreach (var g in new[] { mapped, G })
+        {
+            Assert.True(Ang(Turn(g[bc], rest[bc]), Turn(a[ac], ar[ac])) < 1e-4, "B's chest is not A's chest turn");
+            Assert.True((g[bc].T() - Carry(ac, rest[bc].T())).Len() < 1e-9, $"chest joint {(g[bc].T() - Carry(ac, rest[bc].T())).Len() * 1000:F3} mm off A's carried");
+            Assert.True((g[bh].T() - Carry(ah, rest[bh].T())).Len() < 1e-9, $"Head joint {(g[bh].T() - Carry(ah, rest[bh].T())).Len() * 1000:F3} mm off A's carried");
+            Assert.True(Ang(Turn(g[bh], rest[bh]), Turn(a[ah], ar[ah])) < 1e-4, "B's Head is not A's Head turn");
+        }
+        // a partial clip (A's spine unkeyed): nothing lands, the length-fraction map alone
+        map.Map(a, new HashSet<int> { ah });
+        Assert.True(double.IsNaN(map.LastStretch[0]) && double.IsNaN(map.LastStretch[1]));
+        map.Map(a);
+        Assert.InRange(map.LastStretch[0], 0.9, 1.1);
+        Assert.InRange(map.LastStretch[1], 0.9, 1.1);
+    }
 }
