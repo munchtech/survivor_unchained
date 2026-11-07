@@ -202,12 +202,16 @@ public sealed class P1Retarget
 
     /// <summary>A share of a turn laid on A's chain bones (spine_01, neck_01 ..), spread over B's: each A bone's share
     /// split evenly among the B chain bones whose segment midpoint lies in its A segment (none: on its role bone), so
-    /// the total kept.</summary>
+    /// the total kept; and the chest's kept (chain v2's roles): a share from A's chest or below stays on B's chest or
+    /// below, one from above it above B's, so B's chest turns by A's chest's total. (P1 weights round 3: A's spine_03
+    /// segment, her chest to the neck's root, holds B's spine_04, spine_05 AND neck_01's midpoints; HerCarriage's Aim
+    /// turned B's chest 0.73 of the turn against A's 0.85, 9-10 deg off A's in fight_stalker's strikes, the head 4-6.)</summary>
     public List<(int B, double Share)> Spread(IEnumerable<(string A, double Share)> shares)
     {
         var o = new List<(int, double)>();
         var aMid = Mids(aChainB, aRest);
         var aCum = Cum(aChainB, aRest); var bMid = Mids(bChainB, b.Rest);
+        int aChestK = AChest >= 0 ? Array.IndexOf(aChainB, AChest) : -1, bChestK = BChest >= 0 ? Array.IndexOf(bChainB, BChest) : -1;
         foreach (var (name, share) in shares)
         {
             if (!aIndexB.TryGetValue(name, out int a)) continue;
@@ -215,7 +219,8 @@ public sealed class P1Retarget
             var mine = new List<int>();
             if (k >= 0 && k < aChainB.Length - 1)
                 for (int q = 1; q < bChainB.Length - 1; q++)
-                    if (bMid[q] >= aCum[k] && bMid[q] < aCum[k + 1]) mine.Add(bChainB[q]);
+                    if (bMid[q] >= aCum[k] && bMid[q] < aCum[k + 1] && (aChestK < 0 || bChestK < 0 || (k <= aChestK) == (q <= bChestK)))
+                        mine.Add(bChainB[q]);
             if (mine.Count == 0) { int r = Role(a); if (r >= 0) mine.Add(r); }
             foreach (int j in mine) o.Add((j, share / mine.Count));
         }

@@ -15,6 +15,9 @@ public partial class GazeCarry : SkeletonModifier3D
     public float Yaw, Pitch;
     int head = -1, neck = -1;
     Vector3 headUp, headLeft, neckUp, neckLeft;
+    // (P1's body B: the shared head turns about A's Head and neck_01 joints, as HeadTurn's do: B's Head joint sits 58 mm
+    // over and 24 mm in front of A's, so a look's nod swung B's face a few mm off A's; P1 weights round 3)
+    Vector3 headPivot, neckPivot;
 
     public GazeCarry() { Name = "GazeCarry"; }
 
@@ -38,19 +41,37 @@ public partial class GazeCarry : SkeletonModifier3D
                 neckUp = (nr * Vector3.Up).Normalized();
                 neckLeft = (nr * Vector3.Right).Normalized();
             }
+            if (P1Body.IsB(sk) && P1Body.ARest("Head") is Transform3D ah)
+            {
+                var br = sk.GetBoneGlobalRest(head);
+                headPivot = br.Basis.Orthonormalized().Inverse() * (ah.Origin - br.Origin);
+                if (neck >= 0 && P1Body.ARest("neck_01") is Transform3D an)
+                {
+                    var nr0 = sk.GetBoneGlobalRest(neck);
+                    neckPivot = nr0.Basis.Orthonormalized().Inverse() * (an.Origin - nr0.Origin);
+                }
+            }
         }
-        if (neck >= 0) Turn(sk, neck, neckUp, neckLeft, 0.4f);
-        Turn(sk, head, headUp, headLeft, neck >= 0 ? 0.6f : 1f);
+        if (neck >= 0) Turn(sk, neck, neckUp, neckLeft, 0.4f, neckPivot);
+        Turn(sk, head, headUp, headLeft, neck >= 0 ? 0.6f : 1f, headPivot);
     }
 
-    void Turn(Skeleton3D sk, int bone, Vector3 up, Vector3 left, float k)
+    /// <summary>pivot: the turn's centre in the bone's own frame (zero: its joint).</summary>
+    void Turn(Skeleton3D sk, int bone, Vector3 up, Vector3 left, float k, Vector3 pivot)
     {
-        var basis = sk.GetBoneGlobalPose(bone).Basis.Orthonormalized();
+        var g = sk.GetBoneGlobalPose(bone);
+        var basis = g.Basis.Orthonormalized();
         Vector3 u = (basis * up).Normalized(), l = (basis * left).Normalized();
         // (pitch about the head's left tips its forward down; yaw about its up turns it toward her left)
         var turned = new Basis(u, Mathf.DegToRad(Yaw * k)) * new Basis(l, Mathf.DegToRad(Pitch * k)) * basis;
         int parent = sk.GetBoneParent(bone);
         var parentBasis = parent >= 0 ? sk.GetBoneGlobalPose(parent).Basis.Orthonormalized() : Basis.Identity;
         sk.SetBonePoseRotation(bone, (parentBasis.Inverse() * turned).GetRotationQuaternion());
+        if (pivot != Vector3.Zero)
+        {
+            var centre = g.Origin + basis * pivot;
+            var pg = parent >= 0 ? sk.GetBoneGlobalPose(parent) : Transform3D.Identity;
+            sk.SetBonePosePosition(bone, pg.AffineInverse() * (centre - turned * pivot));
+        }
     }
 }

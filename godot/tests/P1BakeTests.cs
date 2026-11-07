@@ -193,6 +193,11 @@ public class P1BakeTests
         // the carriage's spine shares spread over B's chain keep their total
         var spread = map.Spread(new[] { ("spine_01", 0.2), ("spine_02", 0.3), ("spine_03", 0.35), ("neck_01", 0.15) });
         Assert.True(Math.Abs(spread.Sum(s => s.Share) - 1.0) < 1e-9);
+        // and B's chest (spine_05) turns by A's chest's total (spine_01..03): the shares at or below it sum to 0.85
+        int chest = Array.IndexOf(names, "spine_05");
+        bool ChestOrAbove(int j) { for (; j >= 0; j = rig.Parent[j]) if (j == chest) return true; return false; }
+        double low = spread.Where(s => !ChestOrAbove(s.B) || s.B == chest).Sum(s => s.Share);
+        Assert.True(Math.Abs(low - 0.85) < 1e-9, $"B's chest takes {low:0.000} of the turn, A's 0.85");
     }
 
     [Fact]
