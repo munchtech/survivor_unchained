@@ -4,9 +4,27 @@
   "hanging": {
    "why": "P1 R1c round 7: what the Look shows with the arms hanging, on the build's own rig",
    "rules": {
-    "pocket_slot_depth_mm": {"band": [null, 15], "why": "the pocket where the breast's outer base dies into the arm: the deepest drop of the front envelope between a crest on each side, on the worn arm_hang corrective (round_6 29.0, the Look's dark pit; round 7 8.8, a soft crescent): a soft cove, not a hole"},
-    "shoulder_line_concave_per_m": {"band": [null, 4], "why": "the front silhouette from the trapezius to the deltoid is one convex curve, 12.5 to 20.5 cm out: no step where trap_rise meets the shoulder (round 6: +8 /m at 15-17 cm)"},
-    "shoulder_line_sign_changes": {"band": [null, 0], "why": "no inflection on that curve"}
+    "pocket_slot_depth_mm": {
+     "band": [
+      null,
+      15
+     ],
+     "why": "the pocket where the breast's outer base dies into the arm: the deepest drop of the front envelope between a crest on each side, on the worn arm_hang corrective (round_6 29.0, the Look's dark pit; round 7 8.8, a soft crescent): a soft cove, not a hole"
+    },
+    "shoulder_line_concave_per_m": {
+     "band": [
+      null,
+      4
+     ],
+     "why": "the front silhouette from the trapezius to the deltoid is one convex curve, 12.5 to 20.5 cm out: no step where trap_rise meets the shoulder (round 6: +8 /m at 15-17 cm)"
+    },
+    "shoulder_line_sign_changes": {
+     "band": [
+      null,
+      0
+     ],
+     "why": "no inflection on that curve"
+    }
    }
   },
   "neck": {
@@ -143,10 +161,10 @@
     },
     "lower_pole_radius_mm": {
      "band": [
-      100,
-      140
+      80,
+      115
      ],
-     "why": "a round full lower pole: under 100 reads as a sphere or implant, over 140 reads flat (R1b solver)"
+     "why": "a round full lower pole: under 100 reads as a sphere or implant, over 140 reads flat (R1b solver). Round 8, judge's ruling: band 80-115: the picture contradicted the old rule (110.7 read more like a sphere than 85.9); lower_third_off_mm carries the sphere check"
     },
     "fold_min_radius_mm": {
      "band": [
@@ -412,13 +430,6 @@
      ],
      "why": "a readable but shallow cleft"
     },
-    "waist_over_navel_mm": {
-     "band": [
-      15,
-      35
-     ],
-     "why": "the waist narrowest just above the navel"
-    },
     "whr_w": {
      "band": [
       0.54,
@@ -467,6 +478,41 @@
       13
      ],
      "why": "few tiny edges"
+    },
+    "waist_over_pelvis_mm": {
+     "band": [
+      165,
+      195
+     ],
+     "why": "the waist's height against the pelvis joint, a stable landmark (round 9: it replaces waist_over_navel_mm, whose 'navel' was the profile's deepest point and dropped when the belly hollow was filled: 56 mm over that without the waist moving). Her narrowest sits above the pelvis at the height it was designed: r8 179"
+    },
+    "cleft_over_lobe": {
+     "band": [
+      0.68,
+      0.85
+     ],
+     "why": "from behind two round lobes, not one slab with a smile under it: the cleft (midline at least 8 mm forward of the column 26 mm out) runs this share of the lobe from the under-fold to the small of the back (r8 0.54, the judge's 'short cleft')"
+    },
+    "cleft_narrow_at_60_mm": {
+     "band": [
+      9,
+      16
+     ],
+     "why": "60 mm over the joint the cleft is a narrow valley, not a wide shallow V (r8 7.6)"
+    },
+    "low_back_blend_mm": {
+     "band": [
+      34,
+      null
+     ],
+     "why": "the low back's turn isn't a straight edge from behind: height span of the slope's fall from 75% to 25% (r8 32 at the worst column; the base's corner there is one row)"
+    },
+    "cheek_ripple_mm": {
+     "band": [
+      null,
+      1.0
+     ],
+     "why": "no vertical ripples across the cheek in cel: Gaussian band 4-16 mm in x, |x| 50-110 mm, a cubic per row taken off"
     }
    }
   }

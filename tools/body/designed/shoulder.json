@@ -16,6 +16,9 @@
    "moves": [
     {"normal": -0.013,
      "mask": [{"on": "ell", "c": [0.232, 1.528, -0.038], "r": [0.075, 0.075, 0.09], "full": 0.0}]},
+    {"normal": -0.009,
+     "mask": [{"on": "ell", "c": [0.215, 1.575, -0.035], "r": [0.05, 0.05, 0.08], "full": 0.0}],
+     "why": "P1 R1 round 9 (judge: square corners at the Look make the torso a block, more armored than feminine): about 9 mm off the deltoid's top-outer corner along its normal, a C2 bell over 5 cm: a rounder, softer cap; soft, no joint follows"},
     {"translate": [0.0, 0.012, 0.0], "mask": [{"on": "ell", "c": [0.168, 1.58, -0.03], "r": [0.06, 0.06, 0.1], "full": 0.0}],
      "why": "P1 R1c round 7: the Look's silhouette step where trap_rise's fade meets the deltoid: hanging, the line went concave at 15-17 cm out (+8 /m); filled so it stays convex from 12.5 cm to the deltoid (rule shoulder_line_concave_per_m); height only, no width"},
     {"translate": [0.0, 0.003, 0.0], "mask": [{"on": "ell", "c": [0.115, 1.615, -0.03], "r": [0.04, 0.04, 0.1], "full": 0.0}]}

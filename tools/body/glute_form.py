@@ -187,7 +187,11 @@ def smile_y(qy, ax, b, sm):
         if lo is not None:
             m = m * smoother((qy - (lo - float(f[0]))) / (float(f[0]) * k))   # its foot lifts, its fade grows up
         if hi is not None:
-            m = m * smoother(((float(hi) + float(f[1])) - qy) / float(f[1]))
+            top = sm.get("top")                             # the upper side follows an arch (back view): each lobe's
+            if top:                                         # top falls toward the outer hip, no straight line across
+                st = smoother((ax - float(top["x"][0])) / (float(top["x"][1]) - float(top["x"][0])))
+                hi = float(hi) + float(top["dy"]) * st
+            m = m * smoother(((hi + float(f[1])) - qy) / float(f[1]))
         return m
     w = b["w"] if isinstance(b["w"], (list, tuple)) else [b["w"], b["w"]]
     d = qy - (float(b["c"]) + lift)
@@ -312,6 +316,19 @@ def glutes(sl, c, v, V, values):
         H = hip_frame(sl, V)
         w = region(sl, fa["mask"], V, H) * parts_mask(sl, c.get("parts", ["trunk", "crotch", "thigh"]))
         out = fair(sl, out, w * min(1.0, v), fa.get("iters", 10), fa.get("lambda", 0.5), fa.get("mu", -0.53))
+    bl = c.get("depth_blend")
+    if bl:
+        # P1 R1 round 9 (judge: from behind a straight line across the low back): her base turns from the sacrum's slope
+        # to the small of the back inside one row (a corner, 24 mm, every column, with or without the glutes). A masked
+        # low-pass of the depth only (z; x and y keep their rows): wavelengths under the blend's width go, the masses stay
+        A, deg = _graph(sl)
+        H = hip_frame(sl, V)
+        w = region(sl, bl["mask"], V, H) * parts_mask(sl, c.get("parts", ["trunk", "crotch", "thigh"])) * min(1.0, v)
+        w[sl.topo()["ring"]] = 0.0
+        out = out.copy()
+        a = float(bl.get("step", 0.5))
+        for _ in range(int(bl.get("iters", 20))):
+            out[:, 2] += a * w * ((A @ out[:, 2]) / deg - out[:, 2])
     rx = c.get("even")
     if rx:
         m = np.clip(np.linalg.norm(D, axis=1) / float(rx.get("full_m", 0.01)), 0.0, 1.0)
