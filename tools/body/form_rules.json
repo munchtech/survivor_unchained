@@ -185,9 +185,9 @@
     "side_round_globe_resid_over_R": {
      "band": [
       null,
-      0.08
+      0.05
      ],
-     "why": "P1 R1c round 6: the side circle fit over the globe proper, from where the normal falls to 60 deg above level to the fold, so the upper pole's thin straight hull cannot hide a globe going out of round; held at round_4's level (measured on round_4 and round_6 in the round's report)"
+     "why": "P1 R1c round 6: the side circle fit over the globe proper, from where the normal falls to 60 deg above level to the fold, so the upper pole's thin straight hull cannot hide a globe going out of round; round_4 0.0425, round_6 0.0445 (root to fold on the same bodies: 0.0549, 0.0706)"
     },
     "side_arc_deg": {
      "band": [
