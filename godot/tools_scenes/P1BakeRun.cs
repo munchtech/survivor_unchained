@@ -192,7 +192,8 @@ public partial class P1BakeRun : Node
                 outLib.AddAnimation(nm, dst);
                 totalFrames += frames; clips++;
                 bool town = nm.StartsWith("idle_") || nm == "Idle_Loop" || nm == "Idle";
-                string St(int s) => stretch[s].N == 0 ? "-" : $"{stretch[s].Lo:F3}..{stretch[s].Hi:F3}{(stretch[s].N < frames ? $" ({stretch[s].N}/{frames})" : "")}";
+                var unkeyed = string.Join(",", bake.Map.Unkeyed(aKeyed));
+                string St(int s) => stretch[s].N == 0 ? $"- (unkeyed {unkeyed})" : $"{stretch[s].Lo:F3}..{stretch[s].Hi:F3}{(stretch[s].N < frames ? $" ({stretch[s].N}/{frames})" : "")}";
                 GD.Print($"p1-bake: {key}: {frames} frames, {keyed.Count} keyed bones ({aKeyed.Count} on A){(clean != null ? ", cleaned" : "")}{(locks.Sum() > 0 ? $", feet locked {locks[0]}/{locks[1]}" : "")}; chain stretch spine {St(0)} neck {St(1)}" +
                          (town ? $"; shoulder joint over pelvis vs B rest, mean L {sumL / frames * 1000:F1} R {sumR / frames * 1000:F1} mm (map alone, the clip's clavicle: L {mapL / frames * 1000:F1} R {mapR / frames * 1000:F1})" : ""));
             }

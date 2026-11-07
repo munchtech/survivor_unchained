@@ -222,9 +222,13 @@ public class P1BakeTests
             Assert.True((g[bh].T() - Carry(ah, rest[bh].T())).Len() < 1e-9, $"Head joint {(g[bh].T() - Carry(ah, rest[bh].T())).Len() * 1000:F3} mm off A's carried");
             Assert.True(Ang(Turn(g[bh], rest[bh]), Turn(a[ah], ar[ah])) < 1e-4, "B's Head is not A's Head turn");
         }
-        // a partial clip (A's spine unkeyed): nothing lands, the length-fraction map alone
+        // a partial clip (A's Head only: B's spine and neck unkeyed): nothing lands, the length-fraction map alone
         map.Map(a, new HashSet<int> { ah });
         Assert.True(double.IsNaN(map.LastStretch[0]) && double.IsNaN(map.LastStretch[1]));
+        // a full clip whose spine_01 holds (the stock clips drop its constant track): B's chain is still all keyed, both land
+        var chainA = new[] { "pelvis", "spine_02", "spine_03", "neck_01", "Head" }.Select(x => Array.IndexOf(an, x)).ToHashSet();
+        map.Map(a, chainA);
+        Assert.False(double.IsNaN(map.LastStretch[0]) || double.IsNaN(map.LastStretch[1]));
         map.Map(a);
         Assert.InRange(map.LastStretch[0], 0.9, 1.1);
         Assert.InRange(map.LastStretch[1], 0.9, 1.1);

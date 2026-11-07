@@ -25,7 +25,9 @@ namespace SurvivorUnchained.Play;
 ///    few mm closer or apart: the Look's lower spine 1.2%, the neck 1%, which no turn of B's straight neck can take). By
 ///    length fraction alone the chest's joint missed A's by 10 mm sideways and 5 high in the game's own Look, the Head's
 ///    by 8 and 7, the torso 1.3 deg off A's; landed, the clavicle heads (B's rest on A's) and the shared head sit on A's.
-///    A segment lands only when the clip keys every A chain bone its landing reads (Map's aKeyed).
+///    A segment lands only when the clip keys every B bone it writes (the key rule, Keys: a partial clip's unkeyed
+///    bones are the base clip's in the game, so a swing laid on some of them only would be wrong; a full clip's unkeyed
+///    A bone holds its rest there as here: the stock clips drop spine_01's constant track).
 /// Derivation: (a) the gate's need (the brief: "global match, rest-relative, by name and by role"; weights round 2:
 /// "spine_05 takes A's spine_03 turn exactly, its head joint lands on A's carried position"); (c) inherited: the clips'
 /// own A skeleton. A is only read, never written.
@@ -67,13 +69,18 @@ public sealed class P1Retarget
     /// <summary>The chain v2's chest: B's bone carrying the clavicles (spine_05) and A's (spine_03); -1 if either lacks one.</summary>
     public readonly int BChest = -1, AChest = -1;
     // the landed segments: [0] pelvis .. chest, [1] chest .. Head: the B bones whose turns place the end's joint (base
-    // first), the end bone, its A bone, and the A chain bones the landing reads
-    readonly List<(int Slot, int[] Bones, int End, int A, int[] Reads)> segs = new();
+    // first), the end bone and its A bone
+    readonly List<(int Slot, int[] Bones, int End, int A)> segs = new();
     readonly HashSet<int> stretched = new();
     /// <summary>Per landed segment (0 lower spine, 1 neck), the last Map's stretch ratio (1 = B's rest offsets; NaN: not landed).</summary>
     public readonly double[] LastStretch = { double.NaN, double.NaN };
     /// <summary>The bones whose joint offsets the chain v2 stretches (the bake keys their positions).</summary>
     public bool Stretches(int j) => stretched.Contains(j);
+    /// <summary>The key rule on B (the bake's P1Bake.Keyed): bone j is keyed when its source A bone (by name), or either
+    /// of its chain brackets, is keyed; carried bones never.</summary>
+    public bool Keys(int j, ICollection<int> aKeyed) => kind[j] == Kind.Direct ? aKeyed.Contains(src0[j]) : kind[j] == Kind.Chain && (aKeyed.Contains(src0[j]) || aKeyed.Contains(src1[j]));
+    /// <summary>The B bones of the chain v2's segments a clip does not key (why a segment did not land; the bake's log).</summary>
+    public IEnumerable<string> Unkeyed(ICollection<int> aKeyed) => segs.SelectMany(s => s.Bones.Append(s.End)).Distinct().Where(j => !Keys(j, aKeyed)).Select(j => b.Names[j]);
 
     public P1Retarget(string[] aNames, int[] aParent, P1M4[] aRest, P1Rig b)
     {
@@ -121,16 +128,16 @@ public sealed class P1Retarget
             {
                 AChest = aChain[ai]; BChest = bChain[bi];
                 kind[BChest] = Kind.Direct; src0[BChest] = AChest; src1[BChest] = -1; frac[BChest] = 0;
-                void Seg(int slot, int lo, int hi, int end, int aEnd, int aLo, int aHi)
+                void Seg(int slot, int lo, int hi, int end, int aEnd)
                 {
                     if (hi < lo) return;
                     var bones = bChain[lo..(hi + 1)];
-                    segs.Add((slot, bones, end, aEnd, aChain[aLo..(aHi + 1)]));
+                    segs.Add((slot, bones, end, aEnd));
                     foreach (var k in bones.Skip(1)) stretched.Add(k);
                     stretched.Add(end);
                 }
-                Seg(0, 1, bi - 1, BChest, AChest, 0, ai);
-                Seg(1, bi + 1, bChain.Length - 2, bChain[^1], aChain[^1], ai, aChain.Length - 1);
+                Seg(0, 1, bi - 1, BChest, AChest);
+                Seg(1, bi + 1, bChain.Length - 2, bChain[^1], aChain[^1]);
             }
         }
         // B's limbs (from the upper arm and the thigh down) stood in A's rest first: each limb bone's rest direction turned (the shortest turn, in the world)
@@ -269,8 +276,7 @@ public sealed class P1Retarget
     public P1V ClavicleLine(P1M4[] aPose, string s) => aPose[aIndexB["upperarm_" + s]].T() - aPose[aIndexB["clavicle_" + s]].T();
 
     /// <summary>B's bone worlds (helpers carried at rest) from A's posed bone worlds (skeleton space). aKeyed: the A bones
-    /// the clip keys (null: all); a chain v2 segment lands only if every A chain bone it reads is keyed (a partial clip's
-    /// unkeyed bones are A's rest here but the base clip's in the game).</summary>
+    /// the clip keys (null: all); a chain v2 segment lands only if the clip keys every B bone it writes (Keys).</summary>
     public P1M4[] Map(P1M4[] aPose, ICollection<int>? aKeyed = null)
     {
         int n = b.Names.Length;
@@ -290,9 +296,9 @@ public sealed class P1Retarget
             if (j == bPelvis) pos = b.Rest[j].T() + (aPose[aPelvis].T() - aRest[aPelvis].T()) * LegScale;
             else if (j == bRoot && aRoot >= 0) pos = b.Rest[j].T() + (aPose[aRoot].T() - aRest[aRoot].T()) * LegScale;
             G[j] = P1M4.From(Turn(j) * align[j] * Rot(b.Rest[j]), pos);
-            foreach (var (slot, bones, end, a, reads) in segs)
+            foreach (var (slot, bones, end, a) in segs)
             {
-                if (bones[0] != j || aKeyed != null && !reads.All(aKeyed.Contains)) continue;
+                if (bones[0] != j || aKeyed != null && !(bones.All(k => Keys(k, aKeyed)) && Keys(end, aKeyed))) continue;
                 // the segment by its slerped turns (as v1), then swung about its base joint and stretched along it so the
                 // end's joint lands on A's carried point; the end takes its A bone's turn whole
                 for (int q = 1; q < bones.Length; q++) { int k = bones[q]; G[k] = P1M4.From(Turn(k) * align[k] * Rot(b.Rest[k]), (G[b.Parent[k]] * bLocal[k]).T()); }
