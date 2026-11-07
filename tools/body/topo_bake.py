@@ -415,7 +415,8 @@ SOURCE_MAPS = ("albedo", "normal", "form_normal", "roughness", "freckles")
 
 
 def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None, pose=None, carrier=None, carry=None,
-        source_maps=None, form_deg=FORM_DEG, mirror="avg", dump=None, a_rest=None, form_near=None, a_normals=None):
+        source_maps=None, form_deg=FORM_DEG, mirror="avg", dump=None, a_rest=None, form_near=None, a_normals=None,
+        mirror_normal=None):
     """source_maps (P1 round 10): a directory of SOURCE_MAPS on our UVs, already carried once (her_a_target.py, its own
     bake.json holds the carry's gates): copied as they are, so the build reads neither A nor a carrier for the skin; only
     this body's own maps (AO, thickness, curvature, zones) are computed.
@@ -487,8 +488,13 @@ def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None,
         Tt = U(Tt - CNl * (Tt * CNl).sum(1, keepdims=True))
         wl = np.sign((w * wsg_c[gl_]).sum(1))
         Bt = np.cross(CNl, Tt) * wl[:, None]
-        # (the right half's frame is the left's mirrored: x flipped, so its tangent-space values equal the left's)
-        TtR, BtR = Tt * MIRROR, Bt * MIRROR
+        # (the right half's frame is the left's mirrored: x flipped, so its tangent-space values equal the left's; made
+        # normal to the right's OWN normal, the handedness flipped (a mirror turns cross(N, T) w into cross(N', T') (-w)),
+        # as the glb's TANGENT is there (tangent_frames on that half). The same as Tt, Bt mirrored when CNr is CNl
+        # mirrored; skewed by their difference otherwise (P1 R1 bake round 2: B's halves carry A's own normals, which
+        # are not mirror images: p90 4-7 deg apart on the trunk)
+        TtR = U(Tt * MIRROR - CNr * ((Tt * MIRROR) * CNr).sum(1, keepdims=True))
+        BtR = np.cross(CNr, TtR) * (-wl)[:, None]
         print("BAKE texels", len(tix), round(time.time() - t0, 1), flush=True)
         A = Source(os.path.join(src_out, "body.glb"), pose, a_rest, a_normals)
         rep["a_normals"] = a_normals or "area"
@@ -544,6 +550,13 @@ def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None,
         avg = ((lambda k: 0.5 * (res["l"][k] + res["r"][k])) if mirror == "avg" else (lambda k: res["l"][k]))   # noqa: E731
         rep["mirror"] = mirror
         a_alb, a_nrm, a_rgh, a_frk = avg("albedo"), avg("normal"), avg("rough"), avg("freckles")
+        if mirror_normal is not None:
+            # (mirror_normal, P1 R1 bake round 2: the normal map's own rule. Once B's vertex normals are A's, each half
+            # its own (her_a "normals"), a texel's two halves need values apart only by what B's interpolation misses of
+            # A's field (p90 1.6-3.1 deg, each half its own) and A's detail's asymmetry (p90 0.5-0.9): "avg" splits that
+            # between the halves (each p90 1.0-1.6) where "left" gave the right half all of it; the paint stays mirror's)
+            a_nrm = 0.5 * (res["l"]["normal"] + res["r"]["normal"]) if mirror_normal == "avg" else res["l"]["normal"]
+            rep["mirror_normal"] = mirror_normal
         keep_fn = None
         if carry:
             assert carry.get("mode") == "neutral", carry

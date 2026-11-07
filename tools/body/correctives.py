@@ -461,10 +461,17 @@ def mirror_map(P, tol=1e-5):
     return np.where(d < tol, i, -1)
 
 
-def normal_delta(P, T, D):
+def normal_delta(P, T, D, N=None):
+    """A shape's NORMAL delta: the geometric normals' change (N None), or (P1 R1 bake round 2) the export's own normals
+    N turned by the rotation the shape gives the geometric normal, less N: where N is not the mesh's geometric normal
+    (B's export carries A's file normals over her_a, up to 35 deg off its facets) the shape turns that normal as it
+    turns the surface, instead of adding a difference made for another vector."""
     n0 = bends.normals(P, T)
     n1 = bends.normals(P + D, T)
-    return n1 - n0
+    if N is None:
+        return n1 - n0
+    N = N / np.maximum(np.linalg.norm(N, axis=1, keepdims=True), 1e-12)
+    return bends.turn_onto(N, n0, n1) - N
 
 
 def topo_mirror(mo, Pb, stage_npz=None):
@@ -504,8 +511,10 @@ TIERS = {"close": ("body.glb", "rig.json", "body_lbs.glb", "shapes.npz", "correc
          "play": ("play.glb", "play_rig.json", "play_lbs.glb", "play_shapes.npz", "play_correctives.json")}
 
 
-def run(out, only=None, tier="close", fresh=False):
-    """`fresh`: the export was just written (build_topo's stage 6): it becomes the shapeless base."""
+def run(out, only=None, tier="close", fresh=False, turn_normals=False):
+    """`fresh`: the export was just written (build_topo's stage 6): it becomes the shapeless base. `turn_normals` (P1 R1
+    bake round 2: the export's normals are not its geometric ones, build_topo.her_a_normals): each shape's NORMAL
+    delta turns the base's own normals (normal_delta N)."""
     t0 = time.time()
     conf = json.load(open(CONF))
     cf = conf["solve"]
@@ -629,7 +638,12 @@ def run(out, only=None, tier="close", fresh=False):
     for c in rig["correctives"]:
         for s in ("l", "r"):
             order += [n.replace("{s}", s) for n in c.get("shapes", []) if n]
-    tg = {n: (shapes[n].astype(np.float32), normal_delta(Pb, Tb, shapes[n]).astype(np.float32)) for n in order}
+    Nb = None
+    if turn_normals:
+        mb = poser.glb.mesh(rig.get("body_mesh", "Heroine"))
+        assert np.abs(mb.P.astype(float) - Pb).max() < 1e-6, "the body mesh's points are not the poser's"
+        Nb = mb.N.astype(np.float64)
+    tg = {n: (shapes[n].astype(np.float32), normal_delta(Pb, Tb, shapes[n], Nb).astype(np.float32)) for n in order}
     glbwrite.set_targets(base, rig.get("body_mesh", "Heroine"), tg, os.path.join(out, f_glb))
     np.savez_compressed(os.path.join(out, "stage", f_shapes), **shapes)
     with open(rig_path, "w") as fh:

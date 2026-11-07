@@ -238,6 +238,112 @@ class ARest:
         return out
 
 
+def smoothstep(x):
+    x = np.clip(x, 0.0, 1.0)
+    return x * x * (3 - 2 * x)
+
+
+def a_source(cfg, fit_spec):
+    """A posed as the maps carry poses it (the fit's bones, her_a's a_rest chain at A's own rest), its normals the ones
+    A's file stores, posed as Godot skins them (topo_bake.Source a_normals "file")."""
+    import topo_bake
+    mb = cfg.get("maps_bake", {})
+    return topo_bake.Source(None, pose=fit_spec["bake"].get("pose"), a_rest=mb.get("a_rest", cfg.get("a_rest")),
+                            a_normals="file")
+
+
+def a_normals(cfg, z, Vt, M, src):
+    """her_a "normals" (P1 R1 bake round 2): A's normals as its FILE stores them, at each of our vertices on the target
+    surface Vt, so B's exported vertex normals can be A's where B lies on A (build_topo.her_a_normals) and the carried
+    map holds only A's own detail. Why: B's points lie on A (p50 0.2-0.6 mm over the trunk and breasts) but B's own
+    area-weighted normals there are B's facets over A's (edges 7 mm on both): against A's file normals they are p90 14,
+    p99 35 deg off on the upper chest (73 where B's quads stand steep under the breast), and a map that carried that
+    correction from one half lit the other half's different facets wrong (round 1: lumps, L/R p90 4.5-6.4 deg).
+    Each vertex its own half's closest point on A (not a ray along B's normal: that normal is what is wrong), A's file
+    normal interpolated there; the midline (z "side" 0, one vertex for both walls) the two walls' mean (x taken off).
+    NW, the weight B's export gives A's normal: M (the her_a mask) * near (1 within near_mm[0] of A, 0 beyond
+    near_mm[1]) * agree (cos(A's, B's) from agree_cos[0] to [1]: never the other sheet, e.g. the inner thigh's
+    neighbour), relaxed over smooth_iters rings, mirror-averaged. NG: B's own normals of Vt (stages.vertex_normals on
+    the quads' triangles, as the build's), the frame the build turns A's normal from when the built body is not Vt."""
+    import stages as st
+    import topo_uv as tu
+    nc = cfg["normals"]
+    Q = z["Q"]
+    T = np.concatenate([Q[:, [0, 1, 2]], Q[:, [0, 2, 3]]])
+    NG = st.vertex_normals(Vt, T)
+    q, _, tri, d = src.surf.closest(Vt, k=16)
+    a, b, c = (src.P[src.T[tri, k]] for k in range(3))
+    w = np.clip(tu.bary(q, a, b, c), 0, None)
+    w /= w.sum(1, keepdims=True)
+    NA = src.sample(tri, w)["form"]
+    fit = nc.get("fit")
+    fit_stats = None
+    if fit:
+        # (fit {"sub": k, "lam": l}: the vertex normals whose linear blend over each of OUR triangles (what the game
+        # interpolates) best matches A's file normal field there, least squares over k*k points per triangle (the
+        # centroids of its k-fold subdivision, area-weighted), held to the point samples by lam (a share of the mean
+        # diagonal). Point samples alone leave B's interpolation p90 1.4-2.6 deg off A's field over the chest and
+        # torso, each half differently, and that per-half residual is what one shared texel cannot serve)
+        k = int(fit["sub"])
+        bc = np.array([((i + 1 / 3) / k, (j + 1 / 3) / k) for i in range(k) for j in range(k - i)] +
+                      [((i + 2 / 3) / k, (j + 2 / 3) / k) for i in range(k) for j in range(k - i - 1)])
+        bw = np.stack([1 - bc.sum(1), bc[:, 0], bc[:, 1]], 1)               # [s,3] barycentrics on (v0, v1, v2)
+        ns = len(bw)
+        X = np.einsum("sk,tkd->tsd", bw, Vt[T]).reshape(-1, 3)
+        Nx = np.einsum("sk,tkd->tsd", bw, NG[T]).reshape(-1, 3)
+        qs, _, ts_, ds = src.surf.closest(X, k=16)
+        a2, b2, c2 = (src.P[src.T[ts_, j]] for j in range(3))
+        ws = np.clip(tu.bary(qs, a2, b2, c2), 0, None)
+        ws /= ws.sum(1, keepdims=True)
+        As = src.sample(ts_, ws)["form"]
+        area = 0.5 * np.linalg.norm(np.cross(Vt[T[:, 1]] - Vt[T[:, 0]], Vt[T[:, 2]] - Vt[T[:, 0]]), axis=1)
+        sw = np.repeat(area / ns, ns) * ((As * Nx).sum(1) > 0)                 # (no sample from the other sheet)
+        rows = np.repeat(np.arange(len(X)), 3)
+        cols = np.repeat(T, ns, axis=0).ravel()
+        Bm = sp.coo_matrix((np.tile(bw, (len(T), 1)).ravel(), (rows, cols)), shape=(len(X), len(Vt))).tocsr()
+        BtB = (Bm.T @ sp.diags(sw) @ Bm).tocsr()
+        lam = float(fit["lam"]) * float(BtB.diagonal().mean())
+        import scipy.sparse.linalg as spl
+        Am = (BtB + lam * sp.eye(len(Vt))).tocsc()
+        rhs = Bm.T @ (sw[:, None] * As) + lam * NA
+        lu = spl.splu(Am)
+        NF = np.stack([lu.solve(rhs[:, j]) for j in range(3)], 1)
+        NF /= np.maximum(np.linalg.norm(NF, axis=1, keepdims=True), 1e-12)
+        def res(Nv):
+            Ni = np.einsum("sk,tkd->tsd", bw, Nv[T]).reshape(-1, 3)
+            Ni /= np.maximum(np.linalg.norm(Ni, axis=1, keepdims=True), 1e-12)
+            return np.degrees(np.arccos(np.clip((Ni * As).sum(1), -1, 1)))
+        r0, r1 = res(NA), res(NF)
+        on_s = (sw > 0) & (ds < nc["near_mm"][0] * 1e-3)
+        fit_stats = {"interp_vs_A_deg_p50_p90_p99_points": [round(float(x), 2) for x in np.percentile(r0[on_s], [50, 90, 99])],
+                     "interp_vs_A_deg_p50_p90_p99_fit": [round(float(x), 2) for x in np.percentile(r1[on_s], [50, 90, 99])]}
+        NA = NF
+    mid = z["side"] == 0
+    NA[mid, 0] = 0.0
+    NA /= np.maximum(np.linalg.norm(NA, axis=1, keepdims=True), 1e-12)
+    lo, hi = nc["near_mm"]
+    near = 1.0 - smoothstep((d * 1e3 - lo) / (hi - lo))
+    c0, c1 = nc["agree_cos"]
+    agree = smoothstep(((NA * NG).sum(1) - c0) / (c1 - c0))
+    NW = M * near * agree
+    e = edges(Q)
+    n = len(Vt)
+    W = sp.coo_matrix((np.ones(2 * len(e)), (np.r_[e[:, 0], e[:, 1]], np.r_[e[:, 1], e[:, 0]])), shape=(n, n)).tocsr()
+    deg = np.asarray(W.sum(1)).ravel()
+    for _ in range(int(nc.get("smooth_iters", 2))):
+        NW = np.minimum(NW, 0.5 * NW + 0.5 * (W @ NW) / np.maximum(deg, 1))     # (only eases down: no A normal off A)
+    pr = mirror(z)
+    NW = np.clip(0.5 * (NW + NW[pr]), 0.0, 1.0)
+    ang = np.degrees(np.arccos(np.clip((NA * NG).sum(1), -1, 1)))
+    on = NW > 0.99
+    stats = {"on_A": int(on.sum()), "some": int((NW > 1e-3).sum()), "of": int(n),
+             "dist_mm_p50_p90_on": [round(float(x), 2) for x in np.percentile(d[on] * 1e3, [50, 90])],
+             "A_vs_B_deg_p50_p90_p99_on": [round(float(x), 2) for x in np.percentile(ang[on], [50, 90, 99])],
+             **(fit_stats or {})}
+    return {"N": NA.astype(np.float32), "NG": NG.astype(np.float32), "NW": NW.astype(np.float32),
+            "P": Vt.astype(np.float32)}, stats
+
+
 def make(spec_path, tiers, out_dir=TARGETS):
     spec = bt.with_defaults(load_spec(spec_path))
     cfg = spec["her_a"]
@@ -248,6 +354,7 @@ def make(spec_path, tiers, out_dir=TARGETS):
     Mc, _, _ = mask(zc, cfg)
     t = np.asarray(cfg.get("arm_move_m", [0, 0, 0]), float)
     ar = ARest(cfg) if cfg.get("a_rest") else None
+    src = a_source(cfg, fit_spec) if cfg.get("normals") else None
     tight_d = None
     if ar is not None:
         assert list(cfg.get("zero_parts", ())) == ["hand"] and cfg.get("zero_ring") is None and not np.any(t), \
@@ -286,6 +393,13 @@ def make(spec_path, tiers, out_dir=TARGETS):
             # A's own joints at this pose (her left; the skeleton mirrors): the girdle and arm skin are A's, so are they
             extra["joints"] = np.array(json.dumps({c: [round(float(x), 6) for x in ar.t1["bones"][b][0]] for c, b in (
                 ("joint-l-clavicle", "clavicle_l"), ("joint-l-shoulder", "upperarm_l"), ("joint-l-elbow", "lowerarm_l"), ("joint-l-hand", "hand_l"))}))
+        if src is not None:
+            # (her_a "normals": A's file normals at the target surface, for the build's export; see a_normals)
+            nrm, stats = a_normals(cfg, z, V0 + D, M, src)
+            extra.update(nrm)
+            extra["normals_about"] = np.array(json.dumps({"normals": cfg["normals"], **stats}))
+            about += f" normals {json.dumps({k: v for k, v in cfg['normals'].items() if k != 'why'})}"
+            print(tier, "normals", stats, flush=True)
         np.savez_compressed(os.path.join(out_dir, OUT_FILE.format(tier=tier)), D=D.astype(np.float32), M=M.astype(np.float32),
                             topology=np.array(bt.topo_sha(z)), about=np.array(about), **extra)
         print(tier, "D max mm", round(float(np.linalg.norm(D, axis=1).max()) * 1e3, 1), "M<1", int((M < 1).sum()), "of", len(M), flush=True)
@@ -305,12 +419,12 @@ def maps(spec_path):
     carrier = mb.get("carrier", cfg["carrier"])
     r, _ = topo_bake.run(os.path.join(REPO, carrier), work, size=int(fit["bake"].get("size", 2048)), pose=fit["bake"].get("pose"),
                          a_rest=mb.get("a_rest", cfg.get("a_rest")) if mb else None, mirror=mb.get("mirror", "avg"),
-                         form_near=mb.get("form_near"), a_normals=mb.get("a_normals"))
+                         form_near=mb.get("form_near"), a_normals=mb.get("a_normals"), mirror_normal=mb.get("mirror_normal"))
     dest = os.path.join(TARGETS, "her_a_maps")
     os.makedirs(dest, exist_ok=True)
     for k in topo_bake.SOURCE_MAPS:
         shutil.copy2(os.path.join(work, f"{k}.png"), os.path.join(dest, f"{k}.png"))
-    r = {k: r[k] for k in ("version", "size", "covered", "projection", "normal_inverted_texels", "normal_form", "mirror", "a_normals", "gates") if k in r}
+    r = {k: r[k] for k in ("version", "size", "covered", "projection", "normal_inverted_texels", "normal_form", "mirror", "mirror_normal", "a_normals", "gates") if k in r}
     r["made_by"] = "tools/body/her_a_target.py --maps, from " + carrier + (" (her_a maps_bake " + json.dumps(mb) + ")" if mb else "")
     with open(os.path.join(dest, "bake.json"), "w") as f:
         json.dump(r, f, indent=1, default=float)

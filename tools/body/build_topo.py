@@ -513,11 +513,46 @@ def stage_bake(spec, tier, out, rep):
     rep["maps"] = {"dir": spec["bake"]["maps"], "files": sorted(os.listdir(maps)), "attached_to": done}
 
 
+def her_a_normals(spec, tier, V, N, rep):
+    """(P1 R1 bake round 2; spec "her_a" "normals", the her_a target's "N", "NG", "NW", "P": her_a_target.a_normals)
+    The export's normals where B lies on A are A's, as A's file stores them (what the game shades A with), each half
+    its own: A's normal turned by however the built body's own normal stands off the target's (NG -> N: 0 where the
+    build is the target, as on her trunk; the seam's rows and any other slider then carry A's normal with them), and
+    weighted v(her_a) * NW * (1 within dev_mm[0] of the target's point, 0 beyond dev_mm[1]); B's own elsewhere.
+    The ring is set to the head's after this. Bodies at her_a 0, or a target without "N", keep B's normals exactly."""
+    v = float(spec.get("sliders", {}).get("her_a", 0.0))
+    nc = (spec.get("her_a") or {}).get("normals")
+    if not v or not nc:
+        return N, None
+    from sliders import designed
+    f = (spec.get("target_files") or {}).get("her_a") or designed()["her_a"]["file"]
+    zt = np.load(os.path.join(REPO, f.format(tier=tier)))
+    assert "N" in zt.files, ("her_a normals: the target has no A normals (her_a_target.py with her_a \"normals\")", f)
+    NA, NG, NW, P = (zt[k].astype(np.float64) for k in ("N", "NG", "NW", "P"))
+    assert NA.shape == N.shape, ("her_a normals: the target is not this tier", f, NA.shape, N.shape)
+    dev = np.linalg.norm(V - P, axis=1) * 1e3
+    d0, d1 = nc["dev_mm"]
+    x = np.clip((dev - d0) / (d1 - d0), 0.0, 1.0)
+    w = v * NW * (1.0 - x * x * (3 - 2 * x))
+    from bends import turn_onto
+    Nt = turn_onto(NA, NG, N)
+    out = w[:, None] * Nt + (1.0 - w[:, None]) * N
+    out /= np.maximum(np.linalg.norm(out, axis=1, keepdims=True), 1e-12)
+    ang = np.degrees(np.arccos(np.clip((out * N).sum(1), -1, 1)))
+    on = w > 0.99
+    info = {"file": f, "a_normals_vertices": int(on.sum()), "blended": int(((w > 1e-3) & ~on).sum()), "of": int(len(N)),
+            "dev_mm_p99_on": round(float(np.percentile(dev[on], 99)), 3) if on.any() else None,
+            "turn_from_B_deg_p50_p90_p99_on": [round(float(q), 2) for q in np.percentile(ang[on], [50, 90, 99])] if on.any() else None}
+    rep["normals"] = info
+    return out, info
+
+
 def stage_export(spec, tier, z, V, ring, hv, sk, wts, A, baked, out, rep, uv=None):
     import glbwrite
     Q = z["Q"]
     T = np.concatenate([Q[:, [0, 1, 2]], Q[:, [0, 2, 3]]])
     N = st.vertex_normals(V, T)
+    N, _ = her_a_normals(spec, tier, V, N, rep)
     head = A.mesh("HeroineHead")
     N[ring] = head.N[hv]
     vol = float(np.einsum("ij,ij->i", V[T[:, 0]], np.cross(V[T[:, 1]], V[T[:, 2]])).sum() / 6)
@@ -577,6 +612,8 @@ def stage_shapes(spec, tier, z, V, A, baked, out, rep):
     src = st_["src"] if "src" in st_.files else np.arange(len(V))
     Tg = st_["T"] if "T" in st_.files else np.concatenate([z["Q"][:, [0, 1, 2]], z["Q"][:, [0, 2, 3]]])
     tg, info = {}, {}
+    # (her_a normals: the shapes turn the export's own normals, correctives.normal_delta N; else the geometric delta)
+    Nx = Glb(glb).mesh("Heroine").N.astype(np.float64) if rep.get("normals") else None
     for name, val in spec["shapes"].items():
         s2 = dict(spec)
         s2["sliders"] = dict(spec.get("sliders", {}))
@@ -587,7 +624,7 @@ def stage_shapes(spec, tier, z, V, A, baked, out, rep):
         V2, ring, _ = stage_place(s2, z, V2, A, baked, r2)
         V2 = stage_forms(s2, tier, z, V2, ring, r2)
         D = (V2 - V)[src]
-        tg["form_" + name] = (D.astype(np.float32), normal_delta(V[src], Tg, D).astype(np.float32))
+        tg["form_" + name] = (D.astype(np.float32), normal_delta(V[src], Tg, D, Nx).astype(np.float32))
         info["form_" + name] = {"value": val, "max_mm": round(float(np.linalg.norm(D, axis=1).max()) * 1e3, 2)}
     glbwrite.add_targets(glb, "Heroine", tg)
     rep["shapes"] = info
@@ -643,7 +680,7 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
     if correct:
         t = time.time()
         import correctives
-        rep["correctives"] = correctives.run(out, tier=tier, fresh=True)
+        rep["correctives"] = correctives.run(out, tier=tier, fresh=True, turn_normals=bool(rep.get("normals")))
         tim["correctives"] = round(time.time() - t, 2)
     if spec.get("shapes"):
         t = time.time()

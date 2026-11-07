@@ -343,6 +343,16 @@ def section(V, T, sel, c, n, rmax=0.15, rend=None):
     return per, (abs(area) if closed else float("nan"))
 
 
+def turn_onto(X, a, b):
+    """X [n,3] turned by the rotation taking unit a onto unit b (per row; the shortest arc)."""
+    ax = np.cross(a, b)
+    s = np.linalg.norm(ax, axis=1)
+    c = np.clip((a * b).sum(1), -1.0, 1.0)
+    k = ax / np.maximum(s, 1e-12)[:, None]
+    th = np.arctan2(s, c)[:, None]
+    return X * np.cos(th) + np.cross(k, X) * np.sin(th) + k * (k * X).sum(1, keepdims=True) * (1 - np.cos(th))
+
+
 def normals(P, T):
     """Area-weighted point normals, welded by place (seams share one)."""
     _, inv = np.unique(np.round(P, 6), axis=0, return_inverse=True)
