@@ -106,6 +106,11 @@ public class P1BakeTests
         Assert.DoesNotContain(rig.Index["upperarm_twist_01_l"], k);     // a helper: B's laws
         Assert.DoesNotContain(rig.Index["upperarm_r"], k);
         Assert.DoesNotContain(rig.Index["pelvis"], k);
+        // a clip keying the arm and not the clavicle (her blows): B's clavicle keyed with its arm (Hold sets it), not the scapula
+        var arm = bake.Keyed(new HashSet<int> { I("upperarm_r"), I("lowerarm_r") });
+        Assert.Contains(rig.Index["clavicle_r"], arm);
+        Assert.DoesNotContain(rig.Index["clavicle_l"], arm);
+        if (rig.Index.TryGetValue("scap_r", out int scr)) Assert.DoesNotContain(scr, arm);
         // the chain: a bone between pelvis and Head is keyed when either bracket is
         var spine = bake.Keyed(new HashSet<int> { I("spine_03") });
         Assert.NotEmpty(spine);

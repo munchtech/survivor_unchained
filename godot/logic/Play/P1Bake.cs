@@ -292,6 +292,13 @@ public sealed class P1Bake
             var (k, s0, s1) = Map.Source(j);
             if (k == 1 && aKeyed.Contains(s0) || k == 2 && (aKeyed.Contains(s0) || aKeyed.Contains(s1))) o.Add(j);
         }
+        // the clavicle keyed with its arm (P1 pose round 1): Hold always sets it (A's final line under B's law: A's shrug
+        // lifts it even where the clip leaves A's clavicle at rest), and the upper arm is keyed under it. A clip that keys
+        // the arm and not the clavicle (her sword, dagger and axe blows) left B's clavicle at B's rest local in the game
+        // (the deterministic blend's init: a track the shot lacks), not the bake's: the clavicle line 4-6 deg off A's, the
+        // upper arm 3-4, the hands 25-48 mm off in fight_close's strikes.
+        foreach (var s in new[] { "l", "r" })
+            if (B.Index.TryGetValue("upperarm_" + s, out int u) && o.Contains(u) && B.Index.TryGetValue("clavicle_" + s, out int c)) o.Add(c);
         return o;
     }
 
