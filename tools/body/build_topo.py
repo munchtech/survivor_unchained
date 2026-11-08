@@ -432,7 +432,7 @@ def stage_weights(z, V, ring, hv, sk, A, baked, rep, rules=None):
         J, W = wt_.cap(D, wt_.RULES["cap"])
         D = np.zeros((len(V), nb))
         np.put_along_axis(D, J, W, 1)
-    for key in ("a_elbow", "a_thigh", "a_neck"):
+    for key in ("a_elbow", "a_thigh", "a_neck", "a_axilla"):
         # (P1 R1 round 32: A's own skin weights over the upper arm's lower end, the thigh's top and the neck,
         # weights_topo.a_elbow, a_thigh, a_neck; the neck's seam is the head's ring)
         if (rules or {}).get(key):

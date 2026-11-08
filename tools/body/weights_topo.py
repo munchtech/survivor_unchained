@@ -865,6 +865,65 @@ def a_neck(W, P, topo, sk, A, cfg, ring=None):
                "cover_p5": round(float(np.percentile(cover[k[ids] > 1e-4], 5)), 3)}
 
 
+def a_axilla(W, P, topo, sk, A, cfg):
+    """A spec's "weights" "a_axilla" (P1 R1 round 35, her body: her armpit and the folds before and behind it ARE A's
+    surface at the rest, her_a, B's rest twin 0.1-1.6 mm off A's there): A's own skin weights about the armpit, mapped
+    onto B's bones by ROLE (cfg "map", A bone: B bone; "{s}" per side): A's rigid passengers onto the bone they ride
+    (A's lat, pec and scap never turn off A's spine_03, so B's spine_04, not B's lat/pec aim helpers or its girdle-driven
+    scap; A's delt rides A's upperarm_twist_02 rigidly; A's clavicle's turn is B's trap's, a_shoulder_top). The zone:
+    cfg "parts" within r_full_m of the armpit's apex (the shoulder part's lowest points, B's rest, each side), eased out
+    over r_ease_m; if "cap_y_m" is given, the shoulder part's points over the apex by more than it are eased out over
+    cap_ease_m (the cap kept). Only where A's mapped bones hold cover_min of A's weight. Her left's taken, mirrored.
+    Why (gate judge 3 fault 1, the front armpit fold a bright pinched lip over a dark notch at the close-up, Look and
+    idle; fault 2, the back-armpit pinch at fight_close 375-377): B's front fold rode its spine (spine_04 0.44, the
+    share 0.02) where A's rides the upper arm's share and its twist (lat/spine 0.39, share 0.18, twist_02 0.26), and
+    B's pit and back fold rode its share (0.31-0.40, A 0.20-0.21); B's share lags A's by 20 deg on a hanging arm (its
+    hanging branch, rig girdle), so the folds' skin turned off A's: posed export normals in the pit 28-43 deg (median)
+    off B's own surface, A's 18-30."""
+    import topo_uv as tu
+    from surfdist import Surface
+    names = sk["names"]
+    m = A.mesh("Heroine")
+    na = A.skeleton(0).names
+    PA = m.P.astype(float)
+    WA = np.zeros((len(PA), len(na)))
+    np.put_along_axis(WA, m.J.astype(int), m.W.astype(float), 1)
+    parts = list(map(str, topo["parts"]))
+    part = topo["part"]
+    zone = np.isin(part, [parts.index(p) for p in cfg.get("parts", ["shoulder", "trunk", "arm"])])
+    sh = np.where((part == parts.index("shoulder")) & (P[:, 0] > 0))[0]
+    apex = P[sh[np.argsort(P[sh, 1])[:6]]].mean(0)
+    k = zone * (1 - s01((np.linalg.norm(P - apex, axis=1) - float(cfg["r_full_m"])) / float(cfg["r_ease_m"])))
+    if "cap_y_m" in cfg:
+        k *= 1 - (part == parts.index("shoulder")) * s01((P[:, 1] - apex[1] - float(cfg["cap_y_m"])) / float(cfg["cap_ease_m"]))
+    ids = np.where((k > 1e-4) & (P[:, 0] > 0))[0]
+    q, _, tri, d = Surface(PA, m.T).closest(P[ids], k=16)
+    a, b, c = (PA[m.T[tri, i]] for i in range(3))
+    w = np.clip(tu.bary(q, a, b, c), 0, None)
+    w /= w.sum(1, keepdims=True)
+    Wq = sum(w[:, i:i + 1] * WA[m.T[tri, i]] for i in range(3))
+    Wt = np.zeros((len(ids), len(names)))
+    for an, bn in cfg["map"].items():
+        an, bn = an.replace("{s}", "l"), bn.replace("{s}", "l")
+        if an in na:
+            Wt[:, names.index(bn)] += Wq[:, na.index(an)]
+    cover = Wt.sum(1)
+    Wt /= np.maximum(cover[:, None], 1e-12)
+    if "breast_l" in names and "breast_tip_l" in names:      # the breast's share split onto its tip by B's own rule
+        ib, it = names.index("breast_l"), names.index("breast_tip_l")
+        h, tip = sk["ends"]["breast_l"][0], sk["ends"]["breast_tip_l"][1]
+        lo, hi = wt.RULES["breast_tip"]
+        kt = s01((wt.seg_t(P[ids], h, tip) - lo) / (hi - lo))
+        Wt[:, it] += Wt[:, ib] * kt
+        Wt[:, ib] *= 1 - kt
+    kk = k[ids] * (cover >= float(cfg["cover_min"]))
+    W = W.copy()
+    W[ids] = (1 - kk[:, None]) * W[ids] + kk[:, None] * Wt
+    W = mirror(W, topo, names)
+    return W, {"points_left": int((kk > 1e-4).sum()), "A_dist_mm_p95": round(float(np.percentile(d[kk > 1e-4] * 1e3, 95)), 2),
+               "cover_p5": round(float(np.percentile(cover[k[ids] > 1e-4], 5)), 3), "apex_m": [round(float(x), 4) for x in apex]}
+
+
 def mirror(W, topo, names):
     sw = np.array([names.index(wt.swap_side(n)) for n in names])
     mo = topo["mirror_of"]
