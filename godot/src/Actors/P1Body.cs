@@ -56,6 +56,22 @@ public static class P1Body
     }
 
     /// <summary>Her own clips baked onto B (OwnClips.Her's names; its meta stays heroine_clips.json).</summary>
+    static (string Bone, Quaternion Turn)[]? blendBase;
+    /// <summary>B's blend base (blend_base.json, the clip bridge's; P1BlendBase lays it): per bone some clip keys, the turn
+    /// from B's mixer's base to B's map of A's rest (none without the file: a bake from before it).</summary>
+    public static (string Bone, Quaternion Turn)[] BlendBase()
+    {
+        if (blendBase != null) return blendBase;
+        var list = new List<(string, Quaternion)>();
+        if (FileAccess.FileExists(Dir + "blend_base.json"))
+            foreach (var kv in JsonDocument.Parse(FileAccess.GetFileAsString(Dir + "blend_base.json")).RootElement.GetProperty("bones").EnumerateObject())
+            {
+                var v = kv.Value.EnumerateArray().Select(x => x.GetSingle()).ToArray();
+                list.Add((kv.Name, new Quaternion(v[0], v[1], v[2], v[3]).Normalized()));
+            }
+        return blendBase = list.ToArray();
+    }
+
     public static AnimationLibrary? HerClips() => herClips ??= ResourceLoader.Exists(Dir + "her_clips.res") ? GD.Load<AnimationLibrary>(Dir + "her_clips.res") : null;
 
     // ------------------------------------------------------------------ A's skeleton and the role map --
@@ -400,6 +416,7 @@ public partial class P1Laws : SkeletonModifier3D
         reorderQueued = false;
         if (sk == null || GetParent() != sk) return;
         sk.MoveChild(this, -1);
+        foreach (var m in sk.GetChildren().OfType<P1BlendBase>().ToList()) sk.MoveChild(m, 0);   // (and B's blend base before all)
         foreach (var m in sk.GetChildren().OfType<HerJiggle>().ToList()) sk.MoveChild(m, -1);
         foreach (var m in sk.GetChildren().OfType<P1Jiggle>().ToList()) sk.MoveChild(m, -1);
         foreach (var m in sk.GetChildren().OfType<HerFaceLife>().ToList()) sk.MoveChild(m, -1);
@@ -581,5 +598,27 @@ public partial class P1Laws : SkeletonModifier3D
             }
             GD.Print($"p1: offset {mi.Name}: rest centroid from B's Head joint {(sum / v.Length - head) * 1000} mm (box {aabb.Size * 1000} mm)");
         }
+    }
+}
+
+/// <summary>B's blend base (P1 R1 pose 4), first of B's modifiers: each bone some clip keys turned by M R_B^-1 on the
+/// mixer's pose (P1Body.BlendBase), the clips' keys being R_B M^-1 q (P1BakeRun): Godot's mixer blends from the
+/// skeleton's rest R_B, and from there a blend of B's keys was not B's map of A's blend; from M (B's map of A's rest)
+/// it is. A clip alone plays as baked; a bone a clip leaves unkeyed lands on M, where A's lands on A's rest.</summary>
+public partial class P1BlendBase : SkeletonModifier3D
+{
+    (int Bone, Quaternion Turn)[] fix = System.Array.Empty<(int, Quaternion)>();
+    public P1BlendBase() { Name = "P1BlendBase"; }
+
+    public override void _Ready()
+    {
+        if ((GetSkeleton() ?? GetParent() as Skeleton3D) is not Skeleton3D sk) return;
+        fix = P1Body.BlendBase().Select(x => (sk.FindBone(x.Bone), x.Turn)).Where(x => x.Item1 >= 0).ToArray();
+    }
+
+    public override void _ProcessModificationWithDelta(double delta)
+    {
+        if (GetSkeleton() is not Skeleton3D sk) return;
+        foreach (var (b, t) in fix) sk.SetBonePoseRotation(b, (t * sk.GetBonePoseRotation(b)).Normalized());
     }
 }
