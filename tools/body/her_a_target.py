@@ -652,12 +652,13 @@ def maps(spec_path):
     carrier = mb.get("carrier", cfg["carrier"])
     r, _ = topo_bake.run(os.path.join(REPO, carrier), work, size=int(fit["bake"].get("size", 2048)), pose=fit["bake"].get("pose"),
                          a_rest=mb.get("a_rest", cfg.get("a_rest")) if mb else None, mirror=mb.get("mirror", "avg"),
-                         form_near=mb.get("form_near"), a_normals=mb.get("a_normals"), mirror_normal=mb.get("mirror_normal"))
+                         form_near=mb.get("form_near"), a_normals=mb.get("a_normals"), mirror_normal=mb.get("mirror_normal"),
+                         ring_flat=mb.get("ring_flat_mm"))
     dest = os.path.join(TARGETS, "her_a_maps")
     os.makedirs(dest, exist_ok=True)
     for k in topo_bake.SOURCE_MAPS:
         shutil.copy2(os.path.join(work, f"{k}.png"), os.path.join(dest, f"{k}.png"))
-    r = {k: r[k] for k in ("version", "size", "covered", "projection", "normal_inverted_texels", "normal_form", "mirror", "mirror_normal", "a_normals", "gates") if k in r}
+    r = {k: r[k] for k in ("version", "size", "covered", "projection", "normal_inverted_texels", "normal_form", "mirror", "mirror_normal", "a_normals", "ring_flat_mm", "gates") if k in r}
     r["made_by"] = "tools/body/her_a_target.py --maps, from " + carrier + (" (her_a maps_bake " + json.dumps(mb) + ")" if mb else "")
     with open(os.path.join(dest, "bake.json"), "w") as f:
         json.dump(r, f, indent=1, default=float)

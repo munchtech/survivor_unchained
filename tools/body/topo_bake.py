@@ -416,7 +416,7 @@ SOURCE_MAPS = ("albedo", "normal", "form_normal", "roughness", "freckles")
 
 def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None, pose=None, carrier=None, carry=None,
         source_maps=None, form_deg=FORM_DEG, mirror="avg", dump=None, a_rest=None, form_near=None, a_normals=None,
-        mirror_normal=None):
+        mirror_normal=None, ring_flat=None):
     """source_maps (P1 round 10): a directory of SOURCE_MAPS on our UVs, already carried once (her_a_target.py, its own
     bake.json holds the carry's gates): copied as they are, so the build reads neither A nor a carrier for the skin; only
     this body's own maps (AO, thickness, curvature, zones) are computed.
@@ -573,6 +573,15 @@ def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None,
             rep["carry"] = {"mode": "neutral", "band_m": list(carry["band_m"]), "keep_regions": list(carry["keep_regions"]),
                             "albedo_rgb": [round(float(x), 5) for x in n_alb], "roughness": round(n_rgh, 5),
                             "kept_fraction": round(float((k > 0.5).mean()), 4)}
+        if ring_flat is not None:
+            # (ring_flat [a, b] mm, P1 R1 round 29, S2: the relief is B's own (flat) within a of the open neck ring,
+            # A's carry from b, smoothstep between: as her_a "normals" ring_mm does for the export normals. A's file
+            # normals bend 16-18 deg off A's own surface over the seam's rows (toward the head ring's); carried as relief
+            # onto B's rows they drew a ridge 5-20 mm under the seam, the thin dark line round her neck when she turns)
+            kf = neutral_keep(z, Vb, rq, {"band_m": [ring_flat[0] / 1e3, ring_flat[1] / 1e3], "keep_regions": []})
+            k_ring, _ = kf(Xl, tri_q)
+            a_nrm = (1 - k_ring)[:, None] * U(a_nrm) + k_ring[:, None] * np.array([0.0, 0.0, 1.0])
+            rep["ring_flat_mm"] = list(ring_flat)
         alb = img(a_alb, 3)
         save(os.path.join(maps_dir, "albedo.png"), alb, "RGB")
         nrm = U(a_nrm)

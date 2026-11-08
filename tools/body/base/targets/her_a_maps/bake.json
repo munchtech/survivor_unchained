@@ -25,6 +25,10 @@
  "mirror": "left",
  "mirror_normal": "avg",
  "a_normals": "file",
+ "ring_flat_mm": [
+  20.0,
+  45.0
+ ],
  "gates": {
   "what": "dE = CIEDE2000 on the saved 8-bit albedo (sRGB -> Lab D65)",
   "albedo_dE_p95": 1.771,
@@ -48,5 +52,5 @@
   },
   "pass": true
  },
- "made_by": "tools/body/her_a_target.py --maps, from tools/body/out/round_28 (her_a maps_bake {\"carrier\": \"tools/body/out/round_28\", \"a_rest\": [\"clavicle\", \"upperarm\"], \"mirror\": \"left\", \"form_near\": {\"near_mm\": [2.5, 6.0], \"wide_deg\": [60.0, 90.0]}, \"why\": \"P1 R1 round 13 (skin): A's paint carried on round_12's surface (A's torso and, at A's rest, A's girdle and arm: projection p50 0.2-0.9 mm there, against 18-25 mm on the arms from her_ek2_final); one half's carry for both halves (averaging A's two halves halved its detail: the abs' slopes p50 1.84 -> 1.08 deg); A's whole form where we lie on A (A's navel is A's geometry, walls to 77 deg, which the 8-16 deg rule dropped), the old rule off A (hands, feet) Round 16 (bake round 2): carried on round_16 (B's normals A's file normals: the map holds A's own detail plus what B's interpolation misses), A's form = its file normals, the normal map's two halves averaged (each half's error vs A's shading p90 upper chest 1.88 -> 0.97, torso front 3.12 -> 1.58 against 'left'; A's detail is mirror-alike there, p90 0.5-0.9 apart), the paint one half's as before.\", \"a_normals\": \"file\", \"mirror_normal\": \"avg\", \"carrier_why\": \"Round 28: the carrier is round_28 (its hand on A's, a_hand): A's hand paint and nails carried onto the hand B now has; round_16 elsewhere\"})"
+ "made_by": "tools/body/her_a_target.py --maps, from tools/body/out/round_28 (her_a maps_bake {\"carrier\": \"tools/body/out/round_28\", \"a_rest\": [\"clavicle\", \"upperarm\"], \"mirror\": \"left\", \"form_near\": {\"near_mm\": [2.5, 6.0], \"wide_deg\": [60.0, 90.0]}, \"why\": \"P1 R1 round 13 (skin): A's paint carried on round_12's surface (A's torso and, at A's rest, A's girdle and arm: projection p50 0.2-0.9 mm there, against 18-25 mm on the arms from her_ek2_final); one half's carry for both halves (averaging A's two halves halved its detail: the abs' slopes p50 1.84 -> 1.08 deg); A's whole form where we lie on A (A's navel is A's geometry, walls to 77 deg, which the 8-16 deg rule dropped), the old rule off A (hands, feet) Round 16 (bake round 2): carried on round_16 (B's normals A's file normals: the map holds A's own detail plus what B's interpolation misses), A's form = its file normals, the normal map's two halves averaged (each half's error vs A's shading p90 upper chest 1.88 -> 0.97, torso front 3.12 -> 1.58 against 'left'; A's detail is mirror-alike there, p90 0.5-0.9 apart), the paint one half's as before.\", \"a_normals\": \"file\", \"mirror_normal\": \"avg\", \"ring_flat_mm\": [20.0, 45.0], \"ring_flat_why\": \"P1 R1 round 29 (S2, the thin dark line round her neck in the fights): the relief is B's own (flat) within 20 mm of the open neck ring, A's carry from 45 (topo_bake ring_flat). A's file normals bend 16-18 deg off A's surface over the seam's rows; carried as relief they drew a ridge 5-20 mm under the seam that read as a choker line when she turns her head (fight_close 353: gone with the body's relief off, there with head relief, shadows, SSAO, zones, SSS or paint off). The export normals already ease so (normals ring_mm).\", \"carrier_why\": \"Round 28: the carrier is round_28 (its hand on A's, a_hand): A's hand paint and nails carried onto the hand B now has; round_16 elsewhere\"})"
 }
