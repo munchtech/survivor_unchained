@@ -316,7 +316,12 @@ public sealed class P1Retarget
             var carried = p < 0 ? bLocal[j] : G[p] * bLocal[j];
             if (kind[j] == Kind.Carried) { G[j] = carried; continue; }
             var pos = carried.T();
-            if (j == bPelvis) pos = b.Rest[j].T() + (aPose[aPelvis].T() - aRest[aPelvis].T()) * LegScale;
+            // (the pelvis: its move from rest scaled by the legs, and its rest offset from A's pelvis joint carried by A's
+            // pelvis turn, so B's pelvis frame rides A's rigidly. Moved alone, B's joint (27 mm from A's: 22.7 low, 14.8
+            // back) turned about A's: a blow played over another clip's pelvis (the game's "upper" shot keeps the idle's)
+            // put B's chest (I - D)(b - a) off A's, up to 9 mm at the 20 deg between an idle's pelvis and a blow's; P1
+            // pose round 2)
+            if (j == bPelvis) pos = b.Rest[j].T() + (aPose[aPelvis].T() - aRest[aPelvis].T()) * LegScale + D(aPelvis) * (b.Rest[j].T() - aRest[aPelvis].T()) - (b.Rest[j].T() - aRest[aPelvis].T());
             else if (j == bRoot && aRoot >= 0) pos = b.Rest[j].T() + (aPose[aRoot].T() - aRest[aRoot].T()) * LegScale;
             G[j] = P1M4.From(Turn(j) * align[j] * Rot(b.Rest[j]), pos);
             foreach (var (slot, bones, end, a) in segs)
