@@ -29,6 +29,13 @@
   20.0,
   45.0
  ],
+ "crease_flat": {
+  "band_mm": [
+   8.0,
+   22.0
+  ],
+  "flat_texels": 6400
+ },
  "gates": {
   "what": "dE = CIEDE2000 on the saved 8-bit albedo (sRGB -> Lab D65)",
   "albedo_dE_p95": 1.771,

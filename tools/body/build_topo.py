@@ -556,6 +556,11 @@ def her_a_normals(spec, tier, V, N, rep, ring=None):
         dr = cKDTree(V[ring]).query(V)[0] * 1e3
         y = np.clip((dr - r0) / (r1 - r0), 0.0, 1.0)
         w = w * y * y * (3 - 2 * y)
+    cf = (spec.get("her_a") or {}).get("crease_flat")
+    if cf:
+        # (crease_flat, P1 R1 round 31, S1: B's own normals over A's fold on the shoulder cap; topo_bake.crease_keep)
+        import topo_bake
+        w = w * topo_bake.crease_keep(V, cf)
     from bends import turn_onto
     Nt = turn_onto(NA, NG, N)
     out = w[:, None] * Nt + (1.0 - w[:, None]) * N

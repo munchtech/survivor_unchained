@@ -416,7 +416,7 @@ SOURCE_MAPS = ("albedo", "normal", "form_normal", "roughness", "freckles")
 
 def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None, pose=None, carrier=None, carry=None,
         source_maps=None, form_deg=FORM_DEG, mirror="avg", dump=None, a_rest=None, form_near=None, a_normals=None,
-        mirror_normal=None, ring_flat=None):
+        mirror_normal=None, ring_flat=None, crease_flat=None):
     """source_maps (P1 round 10): a directory of SOURCE_MAPS on our UVs, already carried once (her_a_target.py, its own
     bake.json holds the carry's gates): copied as they are, so the build reads neither A nor a carrier for the skin; only
     this body's own maps (AO, thickness, curvature, zones) are computed.
@@ -582,6 +582,15 @@ def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None,
             k_ring, _ = kf(Xl, tri_q)
             a_nrm = (1 - k_ring)[:, None] * U(a_nrm) + k_ring[:, None] * np.array([0.0, 0.0, 1.0])
             rep["ring_flat_mm"] = list(ring_flat)
+        if crease_flat is not None:
+            # (crease_flat, P1 R1 round 31, S1: the deltoid crease. A's file normals and A's relief carry A's fold over the top
+            # of the shoulder cap, sculpted for the hanging arm: as the arm lifts it lies on stretched skin and drew a dark
+            # line over the deltoid in the fights (fight_stalker 359/371, fight_close 353; A shows it too). B's own surface
+            # is smooth there (its geometric normals), so the relief is B's own (flat) within band_mm[0] of the fold's line,
+            # A's from band_mm[1], smoothstep between; build_topo her_a_normals lays B's own export normals over the same band)
+            kc = crease_keep(Xl, crease_flat)
+            a_nrm = kc[:, None] * U(a_nrm) + (1 - kc)[:, None] * np.array([0.0, 0.0, 1.0])
+            rep["crease_flat"] = {"band_mm": list(crease_flat["band_mm"]), "flat_texels": int((kc < 0.5).sum())}
         alb = img(a_alb, 3)
         save(os.path.join(maps_dir, "albedo.png"), alb, "RGB")
         nrm = U(a_nrm)
@@ -641,6 +650,22 @@ def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None,
     rep["sheet"] = os.path.relpath(uv_sheet(maps_dir, uvd, os.path.join(build_out, "uv_sheet.png")), REPO).replace("\\", "/")
     rep["s"] = round(time.time() - t0, 1)
     return rep, {"alb": alb, "covered": covered, "A": A, "Vb": Vb}
+
+
+def crease_keep(X, cf):
+    """1 off a crease band, 0 on it (her_a "crease_flat": "line_m" a polyline on her left at A's rest (m), mirrored onto
+    her right by x; "band_mm" [a, b]: 0 within a of the line, 1 from b, smoothstep between)."""
+    L = np.asarray(cf["line_m"], np.float64)
+    Q = np.asarray(X, np.float64).copy()
+    Q[:, 0] = np.abs(Q[:, 0])
+    d = np.full(len(Q), np.inf)
+    for a, b in zip(L[:-1], L[1:]):
+        ab = b - a
+        t = np.clip(((Q - a) @ ab) / max(ab @ ab, 1e-12), 0.0, 1.0)
+        d = np.minimum(d, np.linalg.norm(Q - (a + t[:, None] * ab), axis=1))
+    a0, a1 = cf["band_mm"]
+    x = np.clip((d * 1e3 - a0) / (a1 - a0), 0.0, 1.0)
+    return x * x * (3 - 2 * x)
 
 
 def neutral_keep(z, Vb, rq, carry):
