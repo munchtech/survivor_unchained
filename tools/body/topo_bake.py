@@ -416,7 +416,7 @@ SOURCE_MAPS = ("albedo", "normal", "form_normal", "roughness", "freckles")
 
 def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None, pose=None, carrier=None, carry=None,
         source_maps=None, form_deg=FORM_DEG, mirror="avg", dump=None, a_rest=None, form_near=None, a_normals=None,
-        mirror_normal=None, ring_flat=None, crease_flat=None):
+        mirror_normal=None, ring_flat=None, crease_flat=None, cavity=None):
     """source_maps (P1 round 10): a directory of SOURCE_MAPS on our UVs, already carried once (her_a_target.py, its own
     bake.json holds the carry's gates): copied as they are, so the build reads neither A nor a carrier for the skin; only
     this body's own maps (AO, thickness, curvature, zones) are computed.
@@ -618,6 +618,14 @@ def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None,
     cone = U(cone)
     ao = 0.5 * (occlusion(scene, Xl, Nl, hd, 0.25) + occlusion(scene, Xr, Nr, hd, 0.25))
     save(os.path.join(maps_dir, "ao.png"), img(ao, 1)[:, :, 0], "L")
+    if cavity is not None:
+        # (cavity.png, P1 R1 round 33, S3: the armpit blot. B's AO within the spec's radius of her armpit's apex (mirrored),
+        # white beyond: the skin shader's cavity_map (cavity_bounce, P1Body.ApplySkin), so only her armpit's hollow takes
+        # her own skin's bounce. Over all of B's AO it also lifted the shade under her breasts, her cleavage and her
+        # inner elbow at the Look, where it is her form.)
+        cav = 1.0 - (1.0 - ao) * cavity_keep(Xl, cavity)
+        save(os.path.join(maps_dir, "cavity.png"), img(cav, 1)[:, :, 0], "L")
+        rep["cavity"] = {k: cavity[k] for k in ("line_m", "radius_mm")}
     th = 0.5 * (through(scene, Xl, Nl, cone, 0.06) + through(scene, Xr, Nr, cone, 0.06))
     save(os.path.join(maps_dir, "thickness.png"), img(1 - th / 0.06, 1)[:, :, 0], "L")
     Tq = np.concatenate([z["Q"][:, [0, 1, 2]], z["Q"][:, [0, 2, 3]]])
@@ -636,7 +644,7 @@ def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None,
                        "map": "zones.png: R warm, G cool (0..1, smoothstep over the radius), B unused",
                        "zones": ztab}, f, indent=1)
     for k in ("albedo", "normal", "roughness", "freckles", "region_id", "ao", "thickness", "curvature", "form_normal",
-              "zones"):
+              "zones") + (("cavity",) if cavity is not None else ()):
         files[k] = os.path.relpath(os.path.join(maps_dir, f"{k}.png"), REPO).replace("\\", "/")
     rep["files"] = files
     rep["frames"] = {"tangent_w_mismatch": int(frame_mismatch(uvd["UV"], Tg, wsg))}
@@ -650,6 +658,12 @@ def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None,
     rep["sheet"] = os.path.relpath(uv_sheet(maps_dir, uvd, os.path.join(build_out, "uv_sheet.png")), REPO).replace("\\", "/")
     rep["s"] = round(time.time() - t0, 1)
     return rep, {"alb": alb, "covered": covered, "A": A, "Vb": Vb}
+
+
+def cavity_keep(X, cv):
+    """1 within radius_mm[0] of cv["line_m"] (a polyline on her left at B's rest (m), mirrored onto her right by x), 0 from
+    radius_mm[1], smoothstep between (crease_keep's distance, the other way round)."""
+    return 1.0 - crease_keep(X, {"line_m": cv["line_m"], "band_mm": cv["radius_mm"]})
 
 
 def crease_keep(X, cf):

@@ -37,7 +37,11 @@ public static class P1Body
     /// <summary>The published spec's "skin" block (publish.json): B's placeholder skin settings on its body material, her head left alone. The skin's rim and its glancing sheen drew a lit line round every form at the Look, whatever the shape (P1 R1 round 7, measured with --skin-set).</summary>
     public static void ApplySkin(ShaderMaterial m)
     {
-        if (!Rig("publish.json").TryGetProperty("skin", out var skin)) return;
+        // (B's cavity map (its own baked AO about her armpits, topo_bake cavity_keep) as the skin's cavity_map: there it takes
+        // a bounce of the lamps' light where they can't reach (heroine_skin.gdshader's cavity_bounce, the spec's "skin");
+        // P1 R1 round 33, S3, the armpit blot)
+        if (ResourceLoader.Exists(Dir + "cavity.png")) m.SetShaderParameter("cavity_map", GD.Load<Texture2D>(Dir + "cavity.png"));
+        if (!Rig("publish.json").TryGetProperty("skin", out var skin) || skin.ValueKind != JsonValueKind.Object) return;
         foreach (var kv in skin.EnumerateObject()) m.SetShaderParameter(kv.Name, kv.Value.GetSingle());
     }
 

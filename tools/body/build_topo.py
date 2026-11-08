@@ -510,7 +510,7 @@ def stage_bake(spec, tier, out, rep):
     pub = os.path.join(REPO, b["maps"])
     if tier == "close" or not os.path.exists(os.path.join(maps, "albedo.png")):
         r, _ = topo_bake.run(out, maps, size=int(b.get("size", 2048)), pose=b.get("pose"), carrier=b.get("carrier"), carry=b.get("carry"),
-                              source_maps=b.get("source_maps"))
+                              source_maps=b.get("source_maps"), cavity=b.get("cavity"))
         r["files"] = sorted(f for f in os.listdir(maps) if f.endswith((".png", ".json")))
         with open(os.path.join(maps, "bake.json"), "w") as f:
             json.dump(r, f, indent=1, default=float)

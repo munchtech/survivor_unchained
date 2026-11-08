@@ -123,6 +123,12 @@ def publish(src):
             out["files"][f] = sha1(os.path.join(PUB, f))
     else:
         out["maps"] = "not copied (no passing bake.json in the build)"
+        # (B's own cavity map (topo_bake cavity_keep: its own AO about her armpits, P1 R1 round 33) is this build's surface,
+        # not the carry the gates judge (the albedo's dE, the normal map's tangent frames): published with the glbs)
+        for f in ("cavity.png",):
+            if os.path.exists(os.path.join(maps, f)):
+                shutil.copy2(os.path.join(maps, f), os.path.join(PUB, f))
+                out["files"][f] = sha1(os.path.join(PUB, f))
     bj = os.path.join(src, "build.json")
     if os.path.exists(bj):
         out["spec"] = json.load(open(bj)).get("spec")

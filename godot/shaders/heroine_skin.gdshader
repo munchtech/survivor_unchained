@@ -91,6 +91,18 @@ uniform sampler2D features : hint_default_black, filter_linear_mipmap;
 // on the light round her and on some of her lights' too (as a soft shadow).
 uniform sampler2D ao_map : hint_default_white, filter_linear_mipmap;
 uniform float ao_light = 0.0;
+// Her own skin's light bounced into her hollows (P1 R1 round 33, gate judge 2 S3, the armpit blot): where a lamp
+// can't reach (n.l under cavity_ndl), cavity_bounce of its light, by cavity_map's shade (her body's own baked AO, red:
+// 1 open, under cavity_ao.y; all of it at cavity_ao.x). As her arm lifts, the hollow under it faces away from every
+// lamp and the sky's ground gives nothing: it went black and Godot's skin scattering painted it a dark red-brown blot
+// (fight_stalker 359, Oklab L .32 C .098; with scattering off L .06). A directional lamp's bounce takes no shadow
+// (the hollow under her raised arm is in her arm's own shadow; what lights it is her lit skin round it), cavity_shadow
+// of it does. 0: none (A, her head, everyone else).
+uniform sampler2D cavity_map : hint_default_white, filter_linear_mipmap;
+uniform float cavity_bounce = 0.0;
+uniform vec2 cavity_ao = vec2(0.35, 0.9);
+uniform vec2 cavity_ndl = vec2(-0.25, 0.25);
+uniform float cavity_shadow = 0.0;
 // (her lips parted (HerFaceLife.MouthShade, 0 shut to 1 by mouth_open 0.3): the shade ao_map bakes where her lips
 // meet, right for them shut, is eased up to lip_ao_open on her lips (features' green): opened, the inner faces of her
 // lips came out of that bake near black, her lower lip's top a black band under her teeth (c04a A5, judge F1, face 29))
@@ -401,7 +413,10 @@ varying float shade_w;
 varying float lift_w;
 varying float soft_w;
 varying float edge_w;
-varying float back_ao;
+// (back_ao and cav_w share one varying: 32 at most, P1 R1 round 33)
+varying vec2 back_cav;
+#define back_ao back_cav.x
+#define cav_w back_cav.y
 // The inside of her mouth (heroine_mouth.py: her head's vertex colour's alpha, 1 outside, falling to 0 deep in her
 // mouth): her paint there (a lilac-grey island, an orange-brown cheek wall) and every lamp's light, unshadowed at
 // this scale, showed it as a lit box with an orange glow (judge rj3). There it takes mouth_colour, a wet dark red,
@@ -758,6 +773,7 @@ void fragment() {
 	AO = ao;
 	AO_LIGHT_AFFECT = mix(ao_light, ear_light, smoothstep(0.0, 0.15, 1.0 - ea));
 	back_ao = mix(1.0, ao, back_occ);
+	cav_w = cavity_bounce > 0.0 ? cavity_bounce * (1.0 - smoothstep(cavity_ao.x, cavity_ao.y, texture(cavity_map, UV).r)) : 0.0;
 	SSS_STRENGTH = scatter * mix(1.0, paint_scatter, pa);
 	BACKLIGHT = ALBEDO * backlight_colour * backlight * mix(1.0, aot.b, thin_map * rig_w);
 	float wd = (INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).y;
@@ -897,6 +913,10 @@ void light() {
 	kt = mix(kt, vec3(1.0), paint_w);
 	DIFFUSE_LIGHT += mouth_lit * lc * diffuse * ATTENUATION * un * rich * kt * mix(1.0, body_lift, key_w * lift_w * (1.0 - behind)) * mix(1.0, back_ao, behind)
 		* mix(vec3(1.0), soft_tone, (1.0 - key_w) * soft_w * shade_by_soft * neck_w * (1.0 - paint_w));
+	// (her hollows' bounce: cavity_bounce above)
+	if (cav_w > 0.0)
+		DIFFUSE_LIGHT += cav_w * (1.0 - smoothstep(cavity_ndl.x, cavity_ndl.y, ndl)) * lc
+			* mix(LIGHT_IS_DIRECTIONAL ? 1.0 : ATTENUATION, ATTENUATION, cavity_shadow) * un / PI;
 	// the fine down at her edges, against a light from behind her only (lit
 	// from the front, it brightened every edge of her: a pale ribbon down her
 	// cheek where her dark hair met it, her temples white)
