@@ -450,9 +450,34 @@ def place_skeleton_ours(skel, V, table, head=None, moves=None, joints=None):
         e = expand(d, "l", "l", "L")
         h = lm.point(e["head"])
         W[e["name"]] = [np.zeros(3) if h is None else h, lm.point(e["tail"])]
+    _bone_heads(defs, W, joints)
     out = _place_from_world(defs, W)
     out[4]["anatomy"] = {k: v for k, v in lm.info.items() if k != "_memo"}
     return out
+
+
+def _bone_heads(defs, W, joints):
+    """A designed target's bone joints (keys "head:<bone>", her_a "a_joints": B's trunk joints at A's, P1 R1 rig root): the
+    bone's head at the slider's value v ((1 - v) landmark + v joint), and so every head and tail placed by the same rule
+    (the parent's tail, spine_01's head at the pelvis's), so the bones stay joined. Middle bones only (x 0)."""
+    import json
+    rule = {}
+    for d in defs:
+        if not d.get("leaf"):
+            e = expand(d, "l", "l", "L")
+            rule[e["name"]] = (json.dumps(e["head"], sort_keys=True), json.dumps(e["tail"], sort_keys=True))
+    for k, (J, v) in (joints or {}).items():
+        if not k.startswith("head:"):
+            continue
+        b = k[5:]
+        assert b in rule and not b.endswith(("_l", "_r")), ("a head joint names no middle bone", k)
+        key = rule[b][0]
+        q = (1.0 - v) * np.asarray(W[b][0], float) + v * np.asarray(J, float)
+        for n, (hk, tk) in rule.items():
+            if hk == key:
+                W[n][0] = q.copy()
+            if tk == key:
+                W[n][1] = q.copy()
 
 
 def _place_from_world(defs, W):

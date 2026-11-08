@@ -9,8 +9,11 @@ bone owns the skin, a bounded biharmonic fill across each joint's band: F, G bel
 Primary weights (each a partition of one; smooth01 = smoothstep):
  T trunk    (every part; the limbs blend from it) the spine chain pelvis, spine_01..05, neck_01, neck_02, Head by
             HEIGHT: at each chain joint the bone above takes over by smoothstep across +-h about the joint's height,
-            h = min(half the height to either neighbouring joint, 4 cm) (so the steps never overlap: a partition
-            of one; the lowest joint, spine_01's head = the pelvis's, has 8 cm below it);
+            h = HMAX (4 cm) at every joint, each piece the difference of its two steps (a partition of one where steps
+            overlap too: the steps keep their joints' order). (v6, P1 R1 rig root: B's trunk joints are A's, and A's
+            spine_01 and spine_02 joints stand 47 mm apart, so v5's h = min(half the height to either neighbouring
+            joint, 4 cm) narrowed the bends there to +-23.6 mm against B's own +-37-40; where no two steps overlap
+            the pieces are v5's, value for value);
             clavicle: of that, k = smooth01((t - 0.25) / 0.5) * (1 - smooth01((|dy| - 5 cm) / 6 cm)) on its own side,
             t the point's parameter along the clavicle (head 0, tail 1), dy its height off the clavicle's line;
             breast (the breast part only): b = smooth01(d / 5 cm), d its distance from the breast hole's rim.
@@ -51,7 +54,7 @@ import scipy.sparse as sp
 import weights as wt
 from stages import harmonic, laplacian
 
-VERSION = "v5"  # (v2: P1 R2 girdle skin CLAV, BLADE; v3: P1 R1b SPINE_FRONT; v4: P1 R1b BREAST clav_fade_m; v5: P1 A shape CLAV front_below) written into each built glb's extras (build_topo.py stage_export); bump with the rules
+VERSION = "v6"  # (v2: P1 R2 girdle skin CLAV, BLADE; v3: P1 R1b SPINE_FRONT; v4: P1 R1b BREAST clav_fade_m; v5: P1 A shape CLAV front_below; v6: P1 R1 rig root, T's steps +-HMAX at every joint, overlapping) written into each built glb's extras (build_topo.py stage_export); bump with the rules
 
 SPINE = ["pelvis", "spine_01", "spine_02", "spine_03", "spine_04", "spine_05", "neck_01", "neck_02", "Head"]
 FINGERS = ["index", "middle", "ring", "pinky"]
@@ -137,6 +140,14 @@ def hats(u, knots, h):
     """Partition of one over len(knots)+1 pieces: piece i from knot i-1 to knot i, smoothstep +-h[i] at knot i."""
     c = [np.ones(len(u))] + [s01((u - (k - hh)) / (2 * hh)) for k, hh in zip(knots, h)] + [np.zeros(len(u))]
     return np.stack([c[i] * (1 - c[i + 1]) for i in range(len(knots) + 1)], 1)
+
+
+def steps(u, knots, h):
+    """Partition of one over len(knots)+1 pieces: piece i from knot i-1 to knot i, smoothstep +-h at each knot (one h,
+    so the steps keep their knots' order and each piece, the difference of its two steps, is never negative). Where no
+    two steps overlap it is hats' value for value (one of each piece's steps is 0 or 1 there)."""
+    c = [np.ones(len(u))] + [s01((u - (k - h)) / (2 * h)) for k in knots] + [np.zeros(len(u))]
+    return np.stack([c[i] - c[i + 1] for i in range(len(knots) + 1)], 1)
 
 
 def ring_station(X, part, ring, side, pts, parts_sel):
@@ -230,14 +241,9 @@ def trunk(c):
     W = np.zeros((n, len(c.names)))
     y = P[:, 1]
     ys = [c.head(b)[1] for b in SPINE]
-    lens = [np.linalg.norm(c.tail(b) - c.head(b)) for b in SPINE]
     knots = ys[1:]                       # (spine_01's head is the pelvis's: the pelvis owns all below it)
-    h = []
-    for k in range(len(knots)):
-        below = knots[k] - knots[k - 1] if k > 0 else 2 * HMAX
-        above = knots[k + 1] - knots[k] if k + 1 < len(knots) else lens[-1]
-        h.append(min(0.5 * below, 0.5 * above, HMAX))
-    Hs = hats(y, knots, h)
+    assert all(b > a for a, b in zip(knots, knots[1:])), ("the spine chain's joints do not rise", knots)
+    Hs = steps(y, knots, HMAX)
     for i, b in enumerate(SPINE):
         W[:, c.idx[b]] = Hs[:, i]
     # the girdle's skin (P1 R2, CLAV above): the clavicle owns the trapezius from the neck's side out to the acromion

@@ -66,6 +66,15 @@
    "clavicle",
    "upperarm"
   ],
+  "a_joints": {
+   "pelvis": "pelvis",
+   "spine_02": "spine_01",
+   "spine_03": "spine_02",
+   "spine_04": "spine_03",
+   "neck_02": "neck_01",
+   "Head": "Head",
+   "why": "P1 R1 rig root (round 24): B's trunk joints ARE A's (B's trunk is A's surface at A's rest), so the game turns B about A's points. Each B joint took its nearest A joint: B pelvis (with spine_01, which starts there) A's pelvis (B's was 22.7 mm lower, 14.8 back), spine_02 A's spine_01 (32 low), spine_03 A's spine_02, spine_04 A's spine_03 (47 low, 30 behind), neck_02 A's neck_01, Head A's Head (58 over, 24 in front); B's spine_05 (the clavicles' parent) and neck_01 stay where B's rules put them, inside A's spine_03 segment, and take its turn (P1Retarget: trunk turns as identities where joints coincide). Runtime layers turned B about other points: the fights' hands 16-36 mm off A's after three pose rounds of pivot patches, the head point at close 5.6 mm, the neck stretched to 0.826."
+  },
   "a_tight": {
    "parts": [
     "shoulder",

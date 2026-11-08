@@ -15,8 +15,8 @@ namespace SurvivorUnchained.Play;
 ///    the clavicle is keyed so that P1Rig.ClavicleTurn laid on it at runtime lands on A's line (the law stays for what
 ///    clips don't author, nothing doubles); scap_{l,r} stand at B's rest local and turn by the law alone. The upper arm
 ///    keeps its mapped world turn (its head rides the clavicle), all below follow by their locals;
-///  - positions: B's rest offsets but for root and pelvis (P1Retarget's LegScale rule) and the chain v2's stretched
-///    joints (P1Retarget.Stretches: spine_02..05, neck_02, Head, a ratio near 1 per frame), keyed as position tracks;
+///  - positions: B's rest offsets but for root and pelvis (P1Retarget's LegScale rule), keyed as position tracks (B's
+///    trunk joints are A's, so A's pose carries them where A's are: P1Retarget's matched trunk);
 ///  - keys: a B bone is keyed only if its source A bone(s) are keyed in the clip (by name, or either chain bracket);
 ///    scap and B's helpers never (partial clips stay partial, the game's filtered blends behave as on A);
 ///  - the hand clean (tools/body/p1_clips.json) after the hold: per bone additive local turns, and a hold list.
@@ -65,8 +65,8 @@ public sealed class P1Bake
         {
             int p = B.Parent[j];
             L[j] = p < 0 ? mapped[j] : mapped[p].Inverse() * mapped[j];
-            // (only root and pelvis move from B's own offsets, and the chain v2's stretched joints: P1Retarget.Stretches)
-            if (j != Pelvis && j != Root && !Map.Stretches(j)) L[j] = L[j].WithT(restLocal[j].T());
+            // (only root and pelvis move from B's own offsets)
+            if (j != Pelvis && j != Root) L[j] = L[j].WithT(restLocal[j].T());
         }
         foreach (int j in Girdle) L[j] = restLocal[j];
         var G = new P1M4[n];

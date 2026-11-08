@@ -17,20 +17,18 @@ namespace SurvivorUnchained.Play;
 ///    (global turns vary smoothly up a spine; the chain's two ends, pelvis and Head, are matched exactly);
 ///  - B's own bones A lacks (the metacarpals, breast tips) ride their parent (carried at rest), and B's helper bones
 ///    (rig.json "helpers": twists, shares, points, muscles) are carried at rest for P1Rig.Drive to set by B's laws.
-///  - the chain v2 (P1 weights round 2, 7 Nov): the chest (the bone carrying the clavicles: B's spine_05, A's spine_03)
-///    takes A's chest turn whole, and the chest's and the Head's joints land where A's chest and Head carry them (B's rest
-///    joint point laid rigidly on A's posed bone): the B bones between (spine_01..04; neck_01..02) keep their slerped
-///    turns, swung together about their segment's base joint onto the target, and the segment's joint offsets stretched
-///    along it by one ratio (B's joints sit at the back of the spine, A's in front, so A's pose brings B's joint points a
-///    few mm closer or apart: the Look's lower spine 1.2%, the neck 1%, which no turn of B's straight neck can take). By
-///    length fraction alone the chest's joint missed A's by 10 mm sideways and 5 high in the game's own Look, the Head's
-///    by 8 and 7, the torso 1.3 deg off A's; landed, the clavicle heads (B's rest on A's) and the shared head sit on A's.
-///    A segment lands only when the clip keys every B bone it writes (the key rule, Keys: a partial clip's unkeyed
-///    bones are the base clip's in the game, so a swing laid on some of them only would be wrong; a full clip's unkeyed
-///    A bone holds its rest there as here: the stock clips drop spine_01's constant track).
-/// Derivation: (a) the gate's need (the brief: "global match, rest-relative, by name and by role"; weights round 2:
-/// "spine_05 takes A's spine_03 turn exactly, its head joint lands on A's carried position"); (c) inherited: the clips'
-/// own A skeleton. A is only read, never written.
+///  - JOINTS MATCHED (P1 R1 rig root, round 24): where B's rest puts a chain joint on each of A's (pelvis, spine_01..03,
+///    neck_01, Head: specs/her_b.json her_a "a_joints"; B's 5-bone spine carries A's 3 joints as a subset), each B chain
+///    bone takes its A segment's turn whole: the A bone whose joint is the last at or under its own (B's spine_02 A's
+///    spine_01, spine_04 A's spine_03, neck_02 A's neck_01; B's spare bones, spine_01, spine_05 and neck_01, ride the A
+///    segment they lie in). An identity where joints coincide: B's joints are carried exactly where A's are (A never
+///    translates its trunk bones), so every layer that turns a trunk bone turns B about A's points. (Before: B's trunk
+///    joints sat 30-50 mm behind A's, and three pose rounds of pivot and stretch patches, the chain v2, still left the
+///    fights' hands 16-36 mm off A's and the neck stretched to 0.826.) The length-fraction rule above only for a rig
+///    whose joints are not A's (its chest still takes A's chest turn whole).
+/// Derivation: (a) the gate's need (the brief: "global match, rest-relative, by name and by role"; rig root: "B's trunk
+/// joints at A's joint points, trunk turns as identities where joints coincide"); (c) inherited: the clips' own A
+/// skeleton. A is only read, never written.
 /// </summary>
 public sealed class P1Retarget
 {
@@ -46,6 +44,12 @@ public sealed class P1Retarget
     readonly P1M4[] bLocal;
     readonly int aRoot, aPelvis, bRoot, bPelvis;
     readonly P1M3[] align;
+    /// <summary>Joint coincidence for the matched trunk (m): B's rests are written to 1e-6.</summary>
+    public const double JointTol = 5e-4;
+    /// <summary>True when every A chain joint has a B chain joint on it, in order (the matched trunk, above).</summary>
+    public readonly bool JointsMatched;
+    // (matched) for each A chain bone (by A index), the B chain bone whose joint is its; -1 otherwise
+    readonly int[] bAt;
 
     // (not the clavicle: its rest slope is each body's own anatomy, B's sternoclavicular-to-acromion line about 3 deg
     // down, A's game-rig convention 15 deg; standing B's clavicle in A's dropped B's shoulder joint 31 mm in every pose,
@@ -68,21 +72,13 @@ public sealed class P1Retarget
     readonly string[] aNames;
     readonly int[] aParent, aChainB, bChainB;
     readonly Dictionary<string, int> aIndexB;
-    /// <summary>The chain v2's chest: B's bone carrying the clavicles (spine_05) and A's (spine_03); -1 if either lacks one.</summary>
+    /// <summary>The chest: B's bone carrying the clavicles (spine_05) and A's (spine_03); -1 if either lacks one.</summary>
     public readonly int BChest = -1, AChest = -1;
-    // the landed segments: [0] pelvis .. chest, [1] chest .. Head: the B bones whose turns place the end's joint (base
-    // first), the end bone and its A bone
-    readonly List<(int Slot, int[] Bones, int End, int A)> segs = new();
-    readonly HashSet<int> stretched = new();
-    /// <summary>Per landed segment (0 lower spine, 1 neck), the last Map's stretch ratio (1 = B's rest offsets; NaN: not landed).</summary>
-    public readonly double[] LastStretch = { double.NaN, double.NaN };
-    /// <summary>The bones whose joint offsets the chain v2 stretches (the bake keys their positions).</summary>
-    public bool Stretches(int j) => stretched.Contains(j);
-    /// <summary>The key rule on B (the bake's P1Bake.Keyed): bone j is keyed when its source A bone (by name), or either
-    /// of its chain brackets, is keyed; carried bones never.</summary>
+    /// <summary>The key rule on B (the bake's P1Bake.Keyed): bone j is keyed when its source A bone (by name, or its A
+    /// segment's on the matched trunk), or either of its chain brackets, is keyed; carried bones never.</summary>
     public bool Keys(int j, ICollection<int> aKeyed) => kind[j] == Kind.Direct ? aKeyed.Contains(src0[j]) : kind[j] == Kind.Chain && (aKeyed.Contains(src0[j]) || aKeyed.Contains(src1[j]));
-    /// <summary>The B bones of the chain v2's segments a clip does not key (why a segment did not land; the bake's log).</summary>
-    public IEnumerable<string> Unkeyed(ICollection<int> aKeyed) => segs.SelectMany(s => s.Bones.Append(s.End)).Distinct().Where(j => !Keys(j, aKeyed)).Select(j => b.Names[j]);
+    /// <summary>The B chain bones a clip does not key (the bake's log).</summary>
+    public IEnumerable<string> Unkeyed(ICollection<int> aKeyed) => bChainB.Where(j => kind[j] != Kind.Carried && !Keys(j, aKeyed)).Select(j => b.Names[j]);
 
     public P1Retarget(string[] aNames, int[] aParent, P1M4[] aRest, P1Rig b)
     {
@@ -104,10 +100,29 @@ public sealed class P1Retarget
         var aChainSet = new HashSet<int>(aChain);
         var aMid = Mids(aChain, aRest);
         var bMid = Mids(bChain, b.Rest);
+        // the matched trunk: each A chain joint's B joint, walking up both chains (B's pelvis and spine_01 share A's pelvis
+        // point: the first, the pelvis, is its)
+        bAt = Enumerable.Repeat(-1, aNames.Length).ToArray();
+        var at = new int[aChain.Length];
+        int q = 0;
+        JointsMatched = true;
+        for (int k = 0; k < aChain.Length && JointsMatched; k++)
+        {
+            while (q < bChain.Length && (b.Rest[bChain[q]].T() - aRest[aChain[k]].T()).Len() > JointTol) q++;
+            if (q == bChain.Length) JointsMatched = false; else at[k] = bChain[q++];
+        }
+        if (JointsMatched) for (int k = 0; k < aChain.Length; k++) bAt[aChain[k]] = at[k];
         for (int j = 0; j < n; j++)
         {
             int ci = Array.IndexOf(bChain, j);
-            if (ci > 0 && ci < bChain.Length - 1)
+            if (JointsMatched && ci >= 0)
+            {
+                // its A segment: the A chain bone whose joint is the last at or under its own
+                int seg = aChain[0];
+                for (int k = 0; k < aChain.Length; k++) if (Array.IndexOf(bChain, at[k]) <= ci) seg = aChain[k];
+                kind[j] = Kind.Direct; src0[j] = seg; src1[j] = -1;
+            }
+            else if (ci > 0 && ci < bChain.Length - 1)
             {
                 double t = bMid[ci];
                 // bracketed over the whole chain, its ends too (the pelvis's midpoint low, the Head's at 1): B's bones below
@@ -121,25 +136,15 @@ public sealed class P1Retarget
             else if (!b.Helpers.Contains(j) && aIndex.TryGetValue(b.Names[j], out int a)) { kind[j] = Kind.Direct; src0[j] = a; }
             else kind[j] = Kind.Carried;
         }
-        // the chain v2's chest and segments (each needs a bone between its base and its end on B, and the chest strictly
-        // inside both chains; otherwise the length-fraction map alone)
+        // the chest (the clavicles' parent on each, strictly inside both chains): off the matched trunk it takes A's chest
+        // turn whole (P1 weights round 2); on it, its A segment's is A's chest's already
         if (aIndex.TryGetValue("clavicle_l", out int acl) && b.Index.TryGetValue("clavicle_l", out int bcl) && aParent[acl] >= 0 && b.Parent[bcl] >= 0)
         {
             int ai = Array.IndexOf(aChain, aParent[acl]), bi = Array.IndexOf(bChain, b.Parent[bcl]);
             if (ai > 0 && ai < aChain.Length - 1 && bi > 0 && bi < bChain.Length - 1)
             {
                 AChest = aChain[ai]; BChest = bChain[bi];
-                kind[BChest] = Kind.Direct; src0[BChest] = AChest; src1[BChest] = -1; frac[BChest] = 0;
-                void Seg(int slot, int lo, int hi, int end, int aEnd)
-                {
-                    if (hi < lo) return;
-                    var bones = bChain[lo..(hi + 1)];
-                    segs.Add((slot, bones, end, aEnd));
-                    foreach (var k in bones.Skip(1)) stretched.Add(k);
-                    stretched.Add(end);
-                }
-                Seg(0, 1, bi - 1, BChest, AChest);
-                Seg(1, bi + 1, bChain.Length - 2, bChain[^1], aChain[^1]);
+                if (!JointsMatched) { kind[BChest] = Kind.Direct; src0[BChest] = AChest; src1[BChest] = -1; frac[BChest] = 0; }
             }
         }
         // B's limbs (from the upper arm and the thigh down) stood in A's rest first: each limb bone's rest direction turned (the shortest turn, in the world)
@@ -187,7 +192,8 @@ public sealed class P1Retarget
         for (int i = 0; i < aNames.Length; i++)
         {
             int ci = Array.IndexOf(aChain, i);
-            if (ci > 0 && ci < aChain.Length - 1)
+            if (JointsMatched && ci >= 0) BFor[i] = bAt[i];
+            else if (ci > 0 && ci < aChain.Length - 1)
             {
                 // the B chain bone whose segment holds A's midpoint
                 int best = bChain[1];
@@ -202,14 +208,16 @@ public sealed class P1Retarget
     /// name (A bone s0), 2 the spine-to-head chain (slerped between A bones s0 and s1).</summary>
     public (int Kind, int S0, int S1) Source(int j) => ((int)kind[j], kind[j] == Kind.Carried ? -1 : src0[j], kind[j] == Kind.Chain ? src1[j] : -1);
 
-    /// <summary>The role map (systems keyed to A's bone names, on B): by name off the spine-to-head chain; on the chain
-    /// (A's spine_01..03, neck_01) the B bone that carries what A's carries, i.e. the B parent of A's next chain bone
-    /// (A's spine_03, her chest, carries neck_01 and the clavicles: on B, spine_05; B's spine_03 is mid-back), BFor
-    /// where B lacks that bone; where B has no bone (panel_front), its nearest A ancestor's role; -1 only if none maps.</summary>
+    /// <summary>The role map (systems keyed to A's bone names, on B): by name off the spine-to-head chain; on the matched
+    /// trunk the B bone whose joint is A's (A's spine_03 -> B's spine_04, neck_01 -> neck_02: a layer turning it turns
+    /// everything A's bone carries, about A's joint); off it, on the chain (A's spine_01..03, neck_01) the B bone that
+    /// carries what A's carries, i.e. the B parent of A's next chain bone, BFor where B lacks that bone; where B has no
+    /// bone (panel_front), its nearest A ancestor's role; -1 only if none maps.</summary>
     public int Role(int a)
     {
         while (a >= 0)
         {
+            if (JointsMatched && bAt[a] >= 0) return bAt[a];
             int k = Array.IndexOf(aChainB, a);
             if (k > 0 && k < aChainB.Length - 1 && b.Index.TryGetValue(aNames[aChainB[k + 1]], out int next) && b.Parent[next] >= 0) return b.Parent[next];
             if (BFor[a] >= 0) return BFor[a];
@@ -218,15 +226,20 @@ public sealed class P1Retarget
         return -1;
     }
 
-    /// <summary>A share of a turn laid on A's chain bones (spine_01, neck_01 ..), spread over B's: each A bone's share
-    /// split evenly among the B chain bones whose segment midpoint lies in its A segment (none: on its role bone), so
-    /// the total kept; and the chest's kept (chain v2's roles): a share from A's chest or below stays on B's chest or
-    /// below, one from above it above B's, so B's chest turns by A's chest's total. (P1 weights round 3: A's spine_03
-    /// segment, her chest to the neck's root, holds B's spine_04, spine_05 AND neck_01's midpoints; HerCarriage's Aim
-    /// turned B's chest 0.73 of the turn against A's 0.85, 9-10 deg off A's in fight_stalker's strikes, the head 4-6.)</summary>
+    /// <summary>A share of a turn laid on A's chain bones (spine_01, neck_01 ..), spread over B's: on the matched trunk
+    /// each on the B bone whose joint is its A bone's (Role: turned about A's joint, it carries what A's carries). Off it,
+    /// each A bone's share split evenly among the B chain bones whose segment midpoint lies in its A segment (none: on its
+    /// role bone), so the total kept; and the chest's kept: a share from A's chest or below stays on B's chest or below,
+    /// one from above it above B's, so B's chest turns by A's chest's total (P1 weights round 3).</summary>
     public List<(int B, double Share)> Spread(IEnumerable<(string A, double Share)> shares)
     {
         var o = new List<(int, double)>();
+        if (JointsMatched)
+        {
+            foreach (var (name, share) in shares)
+                if (aIndexB.TryGetValue(name, out int a) && Role(a) is int r and >= 0) o.Add((r, share));
+            return o;
+        }
         var aMid = Mids(aChainB, aRest);
         var aCum = Cum(aChainB, aRest); var bMid = Mids(bChainB, b.Rest);
         int aChestK = AChest >= 0 ? Array.IndexOf(aChainB, AChest) : -1, bChestK = BChest >= 0 ? Array.IndexOf(bChainB, BChest) : -1;
@@ -299,7 +312,7 @@ public sealed class P1Retarget
     public P1V ClavicleLine(P1M4[] aPose, string s) => aPose[aIndexB["upperarm_" + s]].T() - aPose[aIndexB["clavicle_" + s]].T();
 
     /// <summary>B's bone worlds (helpers carried at rest) from A's posed bone worlds (skeleton space). aKeyed: the A bones
-    /// the clip keys (null: all); a chain v2 segment lands only if the clip keys every B bone it writes (Keys).</summary>
+    /// the clip keys (null: all; kept for the bake's key rule, Keys: the map itself is the same either way).</summary>
     public P1M4[] Map(P1M4[] aPose, ICollection<int>? aKeyed = null)
     {
         int n = b.Names.Length;
@@ -307,11 +320,8 @@ public sealed class P1Retarget
         P1M3 D(int a) => delta[a] ??= Rot(aPose[a]) * aRestRot[a].T();
         P1M3 Turn(int j) => kind[j] == Kind.Direct ? D(src0[j]) : Slerp(D(src0[j]), D(src1[j]), frac[j]);
         var G = new P1M4[n];
-        var done = new bool[n];
-        LastStretch[0] = LastStretch[1] = double.NaN;
         foreach (int j in order)
         {
-            if (done[j]) continue;
             int p = b.Parent[j];
             var carried = p < 0 ? bLocal[j] : G[p] * bLocal[j];
             if (kind[j] == Kind.Carried) { G[j] = carried; continue; }
@@ -324,23 +334,6 @@ public sealed class P1Retarget
             if (j == bPelvis) pos = b.Rest[j].T() + (aPose[aPelvis].T() - aRest[aPelvis].T()) * LegScale + D(aPelvis) * (b.Rest[j].T() - aRest[aPelvis].T()) - (b.Rest[j].T() - aRest[aPelvis].T());
             else if (j == bRoot && aRoot >= 0) pos = b.Rest[j].T() + (aPose[aRoot].T() - aRest[aRoot].T()) * LegScale;
             G[j] = P1M4.From(Turn(j) * align[j] * Rot(b.Rest[j]), pos);
-            foreach (var (slot, bones, end, a) in segs)
-            {
-                if (bones[0] != j || aKeyed != null && !(bones.All(k => Keys(k, aKeyed)) && Keys(end, aKeyed))) continue;
-                // the segment by its slerped turns (as v1), then swung about its base joint and stretched along it so the
-                // end's joint lands on A's carried point; the end takes its A bone's turn whole
-                for (int q = 1; q < bones.Length; q++) { int k = bones[q]; G[k] = P1M4.From(Turn(k) * align[k] * Rot(b.Rest[k]), (G[b.Parent[k]] * bLocal[k]).T()); }
-                var o = G[bones[0]].T();
-                var at = (G[bones[^1]] * bLocal[end]).T() - o;
-                var want = aPose[a].T() + D(a) * (b.Rest[end].T() - aRest[a].T()) - o;
-                if (at.Len() < 1e-9 || want.Len() < 1e-9) continue;
-                var swing = Arc(at / at.Len(), want / want.Len());
-                double k1 = want.Len() / at.Len();
-                foreach (int k in bones) { G[k] = P1M4.From(swing * Rot(G[k]), o + swing * (G[k].T() - o) * k1); done[k] = true; }
-                G[end] = P1M4.From(Turn(end) * align[end] * Rot(b.Rest[end]), o + want);
-                done[end] = true;
-                LastStretch[slot] = k1;
-            }
         }
         return G;
     }
@@ -373,10 +366,10 @@ public sealed class P1Retarget
             double t = fb[k] > fb[k - 1] ? (f - fb[k - 1]) / (fb[k] - fb[k - 1]) : 0;
             return g[bChainB[k - 1]].T() * (1 - t) + g[bChainB[k]].T() * t;
         }
-        var bRestSeg = new P1V[aChainB.Length];
-        for (int k = 0; k < aChainB.Length - 1; k++) bRestSeg[k] = At(fa[k + 1], b.Rest) - At(fa[k], b.Rest);
+        // (the matched trunk: A's segment k is B's, from the B joint on A's joint k to the one on A's k + 1)
+        P1V Seg(int k, P1M4[] g) => JointsMatched ? g[bAt[aChainB[k + 1]]].T() - g[bAt[aChainB[k]]].T() : At(fa[k + 1], g) - At(fa[k], g);
         for (int k = 0; k < aChainB.Length - 1; k++)
-            o.Add((aNames[aChainB[k]], "chain", Ang(Rot(aPose[aChainB[k]]) * aRestRot[aChainB[k]].T() * bRestSeg[k], At(fa[k + 1], bG) - At(fa[k], bG))));
+            o.Add((aNames[aChainB[k]], "chain", Ang(Rot(aPose[aChainB[k]]) * aRestRot[aChainB[k]].T() * Seg(k, b.Rest), Seg(k, bG))));
         int ah = aIndexB["Head"], bh = b.Index["Head"];
         var dA = Rot(aPose[ah]) * aRestRot[ah].T(); var dB = Rot(bG[bh]) * Rot(b.Rest[bh]).T();
         o.Add(("Head", "chain", P1Rig.RotVec(dA.T() * dB).Len() * 180 / Math.PI));

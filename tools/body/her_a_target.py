@@ -344,6 +344,35 @@ def a_normals(cfg, z, Vt, M, src):
             "P": Vt.astype(np.float32)}, stats
 
 
+def a_joints(cfg, ar):
+    """The target's "joints" json: A's own joints at the pose its skin was taken in (her left; the skeleton mirrors). The
+    girdle and arm skin are A's, so are their joints (keyed by landmark cube); and (her_a "a_joints", P1 R1 rig root) the
+    trunk: B bone b's head at A bone a's ({b: a}, keyed "head:b"), where B's trunk is A's surface at A's rest (the target
+    pose turns no trunk bone), so B's trunk joints are A's and the game turns B about A's points."""
+    j = {c: [round(float(x), 6) for x in ar.t1["bones"][b][0]] for c, b in (
+        ("joint-l-clavicle", "clavicle_l"), ("joint-l-shoulder", "upperarm_l"), ("joint-l-elbow", "lowerarm_l"), ("joint-l-hand", "hand_l"))}
+    for b, a in (cfg.get("a_joints") or {}).items():
+        if b != "why":
+            j["head:" + b] = [round(float(x), 6) for x in ar.t1["heads"][a]]
+    return np.array(json.dumps(j))
+
+
+def joints_only(spec_path, tiers, out_dir, from_dir=None):
+    """Re-writes only the targets' "joints" (a_joints above) from A posed as make() poses it: every other array is the
+    file's own, unchanged (from_dir: the files read; default the designed slider's)."""
+    spec = bt.with_defaults(load_spec(spec_path))
+    cfg = spec["her_a"]
+    ar = ARest(cfg)
+    j = a_joints(cfg, ar)
+    for tier in tiers:
+        src = os.path.join(from_dir or TARGETS, OUT_FILE.format(tier=tier))
+        z = dict(np.load(src))
+        z["joints"] = j
+        z["about"] = np.array(str(z["about"]) + f" | joints: python tools/body/her_a_target.py --joints-only (a_joints {json.dumps({k: v for k, v in (cfg.get('a_joints') or {}).items() if k != 'why'})})")
+        np.savez_compressed(os.path.join(out_dir, OUT_FILE.format(tier=tier)), **z)
+        print(tier, "joints", json.loads(str(j)), flush=True)
+
+
 def make(spec_path, tiers, out_dir=TARGETS):
     spec = bt.with_defaults(load_spec(spec_path))
     cfg = spec["her_a"]
@@ -390,9 +419,7 @@ def make(spec_path, tiers, out_dir=TARGETS):
                  f" (fit {cfg['fit_spec']}, band_m {cfg['band_m']}, zero_parts {cfg.get('zero_parts', 'arm..hand')}, zero_ring {cfg.get('zero_ring')}, arm_move_m {list(t)}, a_rest {cfg.get('a_rest')})")
         extra = {}
         if ar is not None:
-            # A's own joints at this pose (her left; the skeleton mirrors): the girdle and arm skin are A's, so are they
-            extra["joints"] = np.array(json.dumps({c: [round(float(x), 6) for x in ar.t1["bones"][b][0]] for c, b in (
-                ("joint-l-clavicle", "clavicle_l"), ("joint-l-shoulder", "upperarm_l"), ("joint-l-elbow", "lowerarm_l"), ("joint-l-hand", "hand_l"))}))
+            extra["joints"] = a_joints(cfg, ar)
         if src is not None:
             # (her_a "normals": A's file normals at the target surface, for the build's export; see a_normals)
             nrm, stats = a_normals(cfg, z, V0 + D, M, src)
@@ -437,8 +464,13 @@ def main():
     ap.add_argument("--maps", action="store_true")
     ap.add_argument("--tiers", default="close,play")
     ap.add_argument("--out-dir", default=TARGETS, help="a trial's folder (the spec's \"target_files\" reads it); default the shipped base/targets")
+    ap.add_argument("--joints-only", action="store_true", help="re-write only the targets' joints (her_a a_joints), every other array kept")
+    ap.add_argument("--from-dir", default=None, help="--joints-only: the target files read (default the shipped base/targets)")
     a = ap.parse_args()
     os.makedirs(a.out_dir, exist_ok=True)
+    if a.joints_only:
+        joints_only(a.spec, a.tiers.split(","), a.out_dir, a.from_dir)
+        return
     make(a.spec, a.tiers.split(","), a.out_dir)
     if a.maps:
         maps(a.spec)
