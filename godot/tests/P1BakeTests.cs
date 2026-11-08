@@ -228,11 +228,12 @@ public class P1BakeTests
         int bc = map.BChest, ac = map.AChest, bh = rig.Index["Head"], ah = Array.IndexOf(an, "Head");
         var mapped = map.Map(a);
         var (_, G) = new P1Bake(rig, map).Frame(a);
+        const double Tol = 1e-5;   // (B's rest joints are A's to the glb's 1e-6 m: a carried point ~1e-7 m off)
         foreach (var g in new[] { mapped, G })
         {
             Assert.True(Ang(Turn(g[bc], rest[bc]), Turn(a[ac], ar[ac])) < 1e-4, "B's chest is not A's chest turn");
-            Assert.True((g[bc].T() - Carry(ac, rest[bc].T())).Len() < 1e-9, $"chest joint {(g[bc].T() - Carry(ac, rest[bc].T())).Len() * 1000:F3} mm off A's carried");
-            Assert.True((g[bh].T() - Carry(ah, rest[bh].T())).Len() < 1e-9, $"Head joint {(g[bh].T() - Carry(ah, rest[bh].T())).Len() * 1000:F3} mm off A's carried");
+            Assert.True((g[bc].T() - Carry(ac, rest[bc].T())).Len() < Tol, $"chest joint {(g[bc].T() - Carry(ac, rest[bc].T())).Len() * 1000:F3} mm off A's carried");
+            Assert.True((g[bh].T() - Carry(ah, rest[bh].T())).Len() < Tol, $"Head joint {(g[bh].T() - Carry(ah, rest[bh].T())).Len() * 1000:F3} mm off A's carried");
             Assert.True(Ang(Turn(g[bh], rest[bh]), Turn(a[ah], ar[ah])) < 1e-4, "B's Head is not A's Head turn");
         }
         // the matched trunk (P1 R1 rig root): every B chain joint where its A segment's bone carries it, at that bone's turn
@@ -241,7 +242,7 @@ public class P1BakeTests
         foreach (var bn in new[] { "pelvis", "spine_01", "spine_02", "spine_03", "spine_04", "spine_05", "neck_01", "neck_02", "Head" })
         {
             int bj = rig.Index[bn], src = map.Source(bj).S0;
-            Assert.True((mapped[bj].T() - Carry(src, rest[bj].T())).Len() < 1e-9, $"{bn} joint {(mapped[bj].T() - Carry(src, rest[bj].T())).Len() * 1000:F3} mm off A's carried");
+            Assert.True((mapped[bj].T() - Carry(src, rest[bj].T())).Len() < Tol, $"{bn} joint {(mapped[bj].T() - Carry(src, rest[bj].T())).Len() * 1000:F3} mm off A's carried");
             Assert.True(Ang(Turn(mapped[bj], rest[bj]), Turn(a[src], ar[src])) < 1e-4, $"{bn} is not its A segment's turn");
             Assert.True((partial[bj].T() - mapped[bj].T()).Len() < 1e-12);
         }
