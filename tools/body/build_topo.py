@@ -412,8 +412,8 @@ def stage_skeleton(V, tier, rep, head=None, moves=None, joints=None):
 
 
 # ---------------------------------------------------------------------------------------------- 4 weights --
-def stage_weights(z, V, ring, hv, sk, A, baked, rep):
-    J, W, info = wtp.body(V, z, sk)
+def stage_weights(z, V, ring, hv, sk, A, baked, rep, rules=None):
+    J, W, info = wtp.body(V, z, sk, rules)      # (rules: the spec's "weights", P1 R1 round 30)
     names = sk["names"]
     nb = len(names)
     D = np.zeros((len(V), nb))
@@ -685,7 +685,7 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
                       default=lambda x: np.asarray(x).tolist())
     tim["skeleton"] = round(time.time() - t, 2)
     t = time.time()
-    wts = stage_weights(z, weights_body(spec, tier, z, V, A, baked, rep), ring, hv, sk, A, baked, rep)
+    wts = stage_weights(z, weights_body(spec, tier, z, V, A, baked, rep), ring, hv, sk, A, baked, rep, spec.get("weights"))
     tim["weights"] = round(time.time() - t, 2)
     t = time.time()
     uv = stage_uv(z, tier, rep) if spec.get("uv", True) else None

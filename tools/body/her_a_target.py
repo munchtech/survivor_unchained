@@ -343,6 +343,35 @@ class ARest:
         stats["wrist_edge_mm_from_hand_joint"] = round(float(np.median(np.linalg.norm(Vh[edge_v[z["V"][edge_v, 0] > 0]] - np.asarray(ends["hand_l"][0]), axis=1))) * 1e3, 1)
         return out, ease, joints, stats
 
+    def toe_stretch(self, V, z, cfg):
+        """her_a "a_foot" "toe_hinge_m" (P1 R1 round 30): before a_foot's ICP, B's toes carried forward along A's toe line
+        (A's ball head -> its leaf, at the a_rest pose) so B's toe tip reaches A's: each foot point's station s along the
+        line from the ball's head moved by (k - 1) h(s), h a C1 hinge (0 behind -w, s past +w, a parabola between), k = A's
+        tip station over B's. The ICP's closest points alone cannot stretch a shape (round_30 trial: B's toes stopped
+        27 mm short of A's, A's toe points 4-27 mm off B). Her left; the right is the left's move mirrored."""
+        parts = list(map(str, z["parts"]))
+        foot = z["part"] == parts.index("foot")
+        L = np.where(foot & (z["V"][:, 0] > 0))[0]
+        names = self.t1["names"]
+        hb = [names.index(n) for n in ("foot_l", "ball_l")]
+        PA = self.t1["P"]
+        a_on = ((self.t1["W"] * np.isin(self.t1["J"], hb)).sum(1) > 0.3) & (PA[:, 0] > 0)
+        b0 = np.asarray(self.t1["heads"]["ball_l"], float)
+        u = np.asarray(self.t1["heads"]["ball_leaf_l"], float) - b0
+        u /= np.linalg.norm(u)
+        sa = float(((PA[a_on] - b0) @ u).max())
+        sB = (V[L] - b0) @ u
+        sb = float(sB.max())
+        k = sa / sb
+        w = float(cfg["toe_hinge_m"])
+        h = np.where(sB > w, sB, np.where(sB < -w, 0.0, (sB + w) ** 2 / (4 * w)))
+        out = V.copy()
+        dl = (k - 1.0) * h[:, None] * u[None]
+        out[L] = V[L] + dl
+        pr = mirror(z)
+        out[pr[L]] = V[pr[L]] + dl * np.array([-1.0, 1.0, 1.0])
+        return out, {"tip_station_A_B_mm": [round(sa * 1e3, 1), round(sb * 1e3, 1)], "k": round(k, 4)}
+
     def hand_field(self, V0, Vf, zero_hand, x):
         """Every point moved as our hand rides: rigidly onto the fit's hand (fit pose), then with A's hand (per side by x)."""
         out = V0.copy()
@@ -546,6 +575,17 @@ def a_joints(cfg, ar, hand=None):
         if b != "why":
             j["head:" + b] = [round(float(x), 6) for x in ar.t1["heads"][a]]
     j.update(hand or {})          # (her_a "a_hand": the hand's and fingers' ends, ARest.hand_wrap)
+    if (cfg.get("a_foot") or {}).get("joints"):
+        # (her_a "a_foot", P1 R1 round 30: B's foot IS A's foot surface at the a_rest pose, so B's ankle, foot and toe
+        # joints are A's there: the ankle cube (the calf's tail, the foot's head, the calf helpers' lerps), the foot's and
+        # ball's ends and x axes; the clips' foot and toe turns, aligned onto A's rest by the identity, then carry A's foot)
+        H, Rt = ar.t1["heads"], ar.t1["rots"]
+        r6 = lambda v: [round(float(x), 6) for x in v]          # noqa: E731
+        j["joint-l-ankle"] = r6(H["foot_l"])
+        j["ends:foot_l"] = [r6(H["foot_l"]), r6(H["ball_l"])]
+        j["ends:ball_l"] = [r6(H["ball_l"]), r6(H["ball_leaf_l"])]
+        j["x:foot_l"] = r6(Rt["foot_l"][:, 0])
+        j["x:ball_l"] = r6(Rt["ball_l"][:, 0])
     return np.array(json.dumps(j))
 
 
@@ -559,7 +599,7 @@ def joints_only(spec_path, tiers, out_dir, from_dir=None):
         src = os.path.join(from_dir or TARGETS, OUT_FILE.format(tier=tier))
         z = dict(np.load(src))
         old = json.loads(str(z["joints"])) if "joints" in z else {}
-        j = a_joints(cfg, ar, {k: v for k, v in old.items() if k.startswith(("ends:", "x:"))})   # (the hand's ends kept)
+        j = a_joints(cfg, ar, {k: v for k, v in old.items() if k.startswith(("ends:", "x:")) and not k.endswith(("foot_l", "ball_l"))})   # (the hand's ends kept)
         z["joints"] = j
         z["about"] = np.array(str(z["about"]) + f" | joints: python tools/body/her_a_target.py --joints-only (a_joints {json.dumps({k: v for k, v in (cfg.get('a_joints') or {}).items() if k != 'why'})})")
         np.savez_compressed(os.path.join(out_dir, OUT_FILE.format(tier=tier)), **z)
@@ -577,7 +617,7 @@ def make(spec_path, tiers, out_dir=TARGETS):
     t = np.asarray(cfg.get("arm_move_m", [0, 0, 0]), float)
     ar = ARest(cfg) if cfg.get("a_rest") else None
     src = a_source(cfg, fit_spec) if cfg.get("normals") else None
-    tight_d = None
+    tight_d, foot_d = None, None
     hand_d, hand_j, hand_ease = None, None, None
     if ar is not None:
         assert list(cfg.get("zero_parts", ())) == ["hand"] and cfg.get("zero_ring") is None and not np.any(t), \
@@ -616,6 +656,22 @@ def make(spec_path, tiers, out_dir=TARGETS):
                     assert tight_d is not None, "a_tight: close first (play takes close's move)"
                     tight_d = carry_to_tier(tight_d, "close", tier)
                 Vf = Vf + tight_d
+            if cfg.get("a_foot"):
+                # (her_a "a_foot", P1 R1 round 30: the fit's foot (10.8/24.4 mm p50/p95 off A's at the a_rest pose; the
+                # ankle's lowest shin rows to 21) laid ON A's foot as a_tight lays the arm, fading up the shin; close
+                # first, play takes close's move)
+                if tier == "close":
+                    Vs = Vf
+                    if cfg["a_foot"].get("toe_hinge_m"):
+                        Vs, tstats = ar.toe_stretch(Vf, z, cfg["a_foot"])
+                        print(tier, "a_foot toe_stretch", json.dumps(tstats), flush=True)
+                    Vt2, wf, stats = ar.tight(Vs, z, cfg["a_foot"])
+                    foot_d = Vt2 - Vf
+                    print(tier, "a_foot (lam, core p50, p95 mm, rejected):", stats, "points", int((wf > 1e-4).sum()), flush=True)
+                else:
+                    assert foot_d is not None, "a_foot: close first (play takes close's move)"
+                    foot_d = carry_to_tier(foot_d, "close", tier)
+                Vf = Vf + foot_d
         D = M[:, None] * (Vf - V0) + (1.0 - M[:, None]) * ts
         ring_max = float(np.abs(D[ring]).max())
         assert ring_max < 1e-4, ("the fit is not the head's on the ring", ring_max)

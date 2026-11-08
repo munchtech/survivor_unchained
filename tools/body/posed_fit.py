@@ -214,6 +214,18 @@ def regions(build):
     belly = tr & (y < bot) & (zz > cz)
     out = {"breasts": breasts, "chest": chest, "cap": sh & ~pit, "armpit": pit, "upper_arm": arm & ~pit, "forearm": fa, "back": back, "belly_ctl": belly, "neck": part == ip["neck"],
            "hand": part == ip["hand"]}       # (P1 R1 round 28: the hand and fingers, each side)
+    # (P1 R1 round 30: the foot and the ankle (the shin's lowest 80 mm above the foot part), each side; the upper arm's
+    # back half (each ring's points behind the ring's centre, -z at the rest), what a 3/4-back camera sees of it)
+    ft = part == ip["foot"]
+    out["foot"] = ft
+    out["ankle"] = (part == ip["shin"]) & (y < y[ft].max() + 0.08)
+    ab = np.zeros(len(V), bool)
+    for sgn in (1, -1):
+        for r_ in np.unique(ring[arm]):
+            sel = arm & (ring == r_) & (x * sgn > 0)
+            if sel.any():
+                ab |= sel & (zz < zz[sel].mean())
+    out["upper_arm_back"] = ab & ~pit
     res = {}
     for k, v in out.items():
         if k in ("neck", "belly_ctl", "back", "breasts", "chest"):
@@ -327,6 +339,47 @@ def main():
         dd = d2[v] * 1e3
         table_r[k] = [float(np.percentile(dd, 50)), float(np.percentile(dd, 95)), float(dd.max()), float(sd2[v].mean() * 1e3)]
         print(f"{k:14} {table_r[k][0]:7.1f} {table_r[k][1]:7.1f} {table_r[k][2]:7.1f} {table_r[k][3]:+7.1f}")
+    # (P1 R1 round 30) the leg's end bones' posed directions, B against A, in the torso-registered frame (deg): the shin
+    # (calf -> foot), the foot (foot -> ball), the toes (ball -> ball_leaf); and each foot's surface registered rigidly
+    # onto A's foot (its own shape, not where the leg put it), p50/p95 mm
+    def bdir(probe, cam, a_, b_, Rr=None):
+        X = m12(probe["skeleton"])
+        h = cam.space(((X @ m12(probe["bones"][a_]))[:3, 3])[None])[0]
+        t = cam.space(((X @ m12(probe["bones"][b_]))[:3, 3])[None])[0]
+        u = (t - h) / max(np.linalg.norm(t - h), 1e-12)
+        return u if Rr is None else Rr @ u, np.linalg.norm(t - h)
+    # the registration's whole rotation (the six rounds composed), from B's points
+    Pb = Cb[reg] - Cb[reg].mean(0)
+    Pr = Cr[reg] - Cr[reg].mean(0)
+    U_, _, Vt_ = np.linalg.svd(Pb.T @ Pr)
+    Rreg = Vt_.T @ np.diag([1, 1, np.sign(np.linalg.det(Vt_.T @ U_.T))]) @ U_.T
+    legs = {}
+    for s_ in "lr":
+        for lab, (b0, b1) in (("shin", ("calf", "foot")), ("foot", ("foot", "ball")), ("toes", ("ball", "ball_leaf"))):
+            n0, n1 = f"{b0}_{s_}", f"{b1}_{s_}"
+            if all(n in pa["bones"] and n in pb["bones"] for n in (n0, n1)):
+                ua_, la_ = bdir(pa, ca, n0, n1)
+                ub_, lb_ = bdir(pb, cb, n0, n1, Rreg)
+                legs[f"{lab}_{s_}"] = {"deg": round(float(np.degrees(np.arccos(np.clip(ua_ @ ub_, -1, 1)))), 2),
+                                       "pitch_A_B_deg": [round(float(np.degrees(np.arcsin(np.clip(u[1], -1, 1)))), 1) for u in (ua_, ub_)],
+                                       "len_A_B_mm": [round(la_ * 1e3, 1), round(lb_ * 1e3, 1)]}
+        fv = R["foot_" + s_]
+        if fv.any():
+            Cf = Cr.copy()
+            for _ in range(8):
+                qq, _, _, _ = S.closest(Cf[fv], k=16)
+                pc, qc = Cf[fv].mean(0), qq.mean(0)
+                U, _, Vt = np.linalg.svd((Cf[fv] - pc).T @ (qq - qc))
+                Rm = Vt.T @ np.diag([1, 1, np.sign(np.linalg.det(Vt.T @ U.T))]) @ U.T
+                Cf = (Rm @ (Cf - pc).T).T + qc
+            _, _, _, d3 = S.closest(Cf[fv], k=16)
+            legs[f"foot_{s_}_registered_mm"] = [round(float(np.percentile(d3 * 1e3, 50)), 2), round(float(np.percentile(d3 * 1e3, 95)), 2)]
+            P0, P1_ = Cr[fv] - Cr[fv].mean(0), Cf[fv] - Cf[fv].mean(0)
+            U, _, Vt = np.linalg.svd(P0.T @ P1_)
+            Rf = Vt.T @ np.diag([1, 1, np.sign(np.linalg.det(Vt.T @ U.T))]) @ U.T
+            legs[f"foot_{s_}_registration_deg_mm"] = [round(float(np.degrees(np.arccos(np.clip((np.trace(Rf) - 1) / 2, -1, 1)))), 2),
+                                                     round(float(np.linalg.norm((Cf - Cr)[fv].mean(0)) * 1e3), 1)]
+    print("legs", json.dumps(legs))
     # the silhouettes at the camera, each at its own (crop from the two bodies)
     both = np.r_[ca.px(Ca), cb.px(Cb), ca.px(CHa), cb.px(CHb)]
     lo, hi = np.floor(both.min(0)) - 30, np.ceil(both.max(0)) + 30
@@ -384,7 +437,7 @@ def main():
             sil[s_]["armpit_gap_rowcol_A_B"] = [ga, gb]
         print("silhouette", s_, json.dumps(sil[s_]))
     with open(os.path.join(a.out, f"fit_{a.tag}.json"), "w") as f:
-        json.dump({"regions": table, "regions_torso_registered": table_r, "torso_shift_mm": off.tolist(), "silhouette": sil, "crop": crop, "mm_per_px": float(mmpx)}, f, indent=1, default=float)
+        json.dump({"regions": table, "regions_torso_registered": table_r, "torso_shift_mm": off.tolist(), "silhouette": sil, "legs": legs, "crop": crop, "mm_per_px": float(mmpx)}, f, indent=1, default=float)
     if a.no_image:
         return
     heat = np.ones(sb.shape + (3,))

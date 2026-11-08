@@ -30,7 +30,9 @@ Primary weights (each a partition of one; smooth01 = smoothstep):
  L leg      (thigh, knee, shin, foot; the crotch strip is the trunk's) the station along thigh -> calf: trunk -> thigh by
             the girdle fill G, thigh -> calf by the hinge fill F;
             calf -> foot by height over the ankle (all foot 2 cm under the ankle joint, all calf 3 cm over it, along
-            the calf); foot -> ball along the foot bone (t 0.85 -> 1.15).
+            the calf); foot -> ball along the foot bone (t 0.85 -> 1.15). A spec's "weights" "leg" (P1 R1 round 30, her
+            body: B's ankle and foot ARE A's, her_a a_foot) sets the two ramps instead: "ankle_m" [lo, span] (all foot
+            at lo, all calf at lo + span, along the calf from the ankle joint) and "ball_t" [t0, span].
  F hinge    (elbow, knee: hinge_fill) seeds by the rest bisector plane, the band's width by the angle a round the joint
             from the crease, w_c at the crease (the crease skins' crossing distance at the design flexion), w_o on the
             outer side (the joint part's designed loops), (1 +- ASYM) up / down; the fill between.
@@ -467,7 +469,7 @@ def girdle_fill(c, s, joint, own, limb, free):
     return g
 
 
-def limbs(c, W):
+def limbs(c, W, rules=None):
     P = c.P
     arm_parts = c.pid("shoulder", "arm", "elbow", "forearm", "hand")
     leg_parts = c.pid("thigh", "knee", "shin", "foot")
@@ -519,9 +521,12 @@ def limbs(c, W):
         up = c.head(f"calf_{s}") - ank
         up /= np.linalg.norm(up)
         dz = (P[m] - ank) @ up
-        ca = 1 - s01((dz + 0.02) / 0.05)
+        leg = (rules or {}).get("leg") or {}
+        a0, aw = leg.get("ankle_m", (-0.02, 0.05))
+        ca = 1 - s01((dz - a0) / aw)
         tf = wt.seg_t(P[m], c.head(f"foot_{s}"), c.tail(f"foot_{s}"))
-        cb = s01((tf - 0.85) / 0.3)
+        b0, bw = leg.get("ball_t", (0.85, 0.3))
+        cb = s01((tf - b0) / bw)
         Lg = np.zeros((m.sum(), len(c.names)))
         Lg[:, c.idx[f"thigh_{s}"]] = 1 - ck
         Lg[:, c.idx[f"calf_{s}"]] = ck * (1 - ca)
@@ -613,11 +618,11 @@ def mirror(W, topo, names):
     return W
 
 
-def body(P, topo, sk):
+def body(P, topo, sk, rules=None):
     c = Ctx(P, topo, sk)
     names, par = sk["names"], sk["parents"]
     W = trunk(c)
-    W, rep = limbs(c, W)
+    W, rep = limbs(c, W, rules)
     W = smooth_part(W, c.Q, np.isin(c.part, c.pid("hand")), HAND_SMOOTH)
     frames = {n: sk["worlds"][i] for i, n in enumerate(names)}
     tails = {n: sk["ends"][n][1] for n in names}
