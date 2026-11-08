@@ -30,6 +30,8 @@ from scipy.spatial import cKDTree
 
 BAND = 0.02          # (metres above SPLIT over which a key's normals are eased in)
 SHARED = 2e-4        # (her head's points within this of the graft's are the ones they share)
+FEATHER_MM = 0.009    # (metres either side of SPLIT over which feather eases her rows into one surface)
+FEATHER_ITER = 3
 
 _CT = {5120: np.int8, 5121: np.uint8, 5122: np.int16, 5123: np.uint16, 5125: np.uint32, 5126: np.float32}
 _NC = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4, "MAT4": 16}
@@ -247,9 +249,28 @@ def feather(path, out=None):
         HN[hw == hw[i]] = n
         GN[gw == gw[gi[i]]] = n
         done += 1
+    # (then the rows either side eased toward their neighbours' over FEATHER_MM, the ring held: the ring alone left
+    # a fainter line at the Look, p50 3.8 -> 1.7 levels, p90 8.1 -> 5.9; round 36)
+    rp = HV[shared]
+    for V, N, w, adj, ring_ in ((HV, HN, hw, hadj, hring), (GV, GN, gw, gadj, gring)):
+        nn = w.max() + 1
+        rep = np.zeros(nn, np.int64)
+        rep[w[::-1]] = np.arange(len(w))[::-1]
+        dist = cKDTree(rp).query(V[rep])[0]
+        a = 0.5 * (1.0 - _smooth01(dist / FEATHER_MM))
+        Nw = unit(N[rep].copy())
+        band = [k for k in range(nn) if a[k] > 1e-3 and k not in ring_]
+        for _ in range(FEATHER_ITER):
+            new = Nw.copy()
+            for k in band:
+                nb = list(adj.get(k, ()))
+                if nb:
+                    new[k] = unit((1.0 - a[k]) * Nw[k] + a[k] * unit(Nw[nb].mean(0)))
+            Nw = new
+        N[:] = Nw[w]
     _set_dense(js, chunks, hp["attributes"]["NORMAL"], HN.astype(np.float32))
     _set_dense(js, chunks, gp["attributes"]["NORMAL"], GN.astype(np.float32))
-    hm.setdefault("extras", {})["seam_feather"] = 1
+    hm.setdefault("extras", {})["seam_feather"] = 2
     _save(out or path, js, chunks)
     t = np.array(turn) if turn else np.zeros(1)
     print("FEATHER: %d of %d shared points given their rows' normal (turned p50 %.1f, p90 %.1f, max %.1f deg); written %s"
