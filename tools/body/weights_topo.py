@@ -663,6 +663,56 @@ def a_lower_breast(W, P, topo, sk, A, cfg):
                "cover_p5": round(float(np.percentile(cover[k[ids] > 1e-4], 5)), 3)}
 
 
+def a_shoulder_top(W, P, topo, sk, A, cfg):
+    """A spec's "weights" "a_shoulder_top" (P1 R1 round 30, her body: the top of the shoulders, the trapezius' slope from
+    the neck to the acromion, is A's surface at the rest, her_a): A's own skin weights there, mapped onto B's bones by role
+    (cfg "map", A bone: B bone; "{s}" per side), over the trunk and shoulder parts: eased in from the neck part
+    (s01((d - neck_d_m) / neck_ease_m), the head seam kept B's), up from y_lo_m (s01((y - y_lo_m) / y_ease_m)) and out
+    to the acromion (1 - s01((|x| - x_full_m) / x_ease_m), then a partial share lat_share out to x_full2_m); only where
+    A's mapped bones hold cover_min of A's weight. Her left's taken, mirrored. Why (gate judge 2 fault 5, the left cap
+    wider at the front Look): B gave the slope to the upper arm's share bone (0.67; A: clavicle 0.33, upper chest 0.26,
+    trapezius 0.23), and its clavicle skin never takes A's roll (girdle clavicle_roll neutral) where A's slope rides
+    it: at the Look B's slope stood 19-28 px out of A's silhouette; with A's weights onto B's trapezius helper, which
+    keeps the clip's roll (girdle clavicle_roll_keep), 0-9 px."""
+    import topo_uv as tu
+    from scipy.spatial import cKDTree
+    from surfdist import Surface
+    names = sk["names"]
+    m = A.mesh("Heroine")
+    na = A.skeleton(0).names
+    PA = m.P.astype(float)
+    WA = np.zeros((len(PA), len(na)))
+    np.put_along_axis(WA, m.J.astype(int), m.W.astype(float), 1)
+    parts = list(map(str, topo["parts"]))
+    part = topo["part"]
+    zone = (part == parts.index("trunk")) | (part == parts.index("shoulder"))
+    dN, _ = cKDTree(P[part == parts.index("neck")]).query(P)
+    ax = np.abs(P[:, 0])
+    lat = 1 - s01((ax - float(cfg["x_full_m"])) / float(cfg["x_ease_m"]))
+    lat2 = 1 - s01((ax - float(cfg["x_full2_m"])) / float(cfg["x_ease_m"]))
+    lat = lat + float(cfg["lat_share"]) * (lat2 - lat)
+    k = zone * s01((dN - float(cfg["neck_d_m"])) / float(cfg["neck_ease_m"])) * lat * s01((P[:, 1] - float(cfg["y_lo_m"])) / float(cfg["y_ease_m"]))
+    ids = np.where((k > 1e-4) & (P[:, 0] > 0))[0]
+    q, _, tri, d = Surface(PA, m.T).closest(P[ids], k=16)
+    a, b, c = (PA[m.T[tri, i]] for i in range(3))
+    w = np.clip(tu.bary(q, a, b, c), 0, None)
+    w /= w.sum(1, keepdims=True)
+    Wq = sum(w[:, i:i + 1] * WA[m.T[tri, i]] for i in range(3))
+    Wt = np.zeros((len(ids), len(names)))
+    for an, bn in cfg["map"].items():
+        an, bn = an.replace("{s}", "l"), bn.replace("{s}", "l")
+        if an in na:
+            Wt[:, names.index(bn)] += Wq[:, na.index(an)]
+    cover = Wt.sum(1)
+    Wt /= np.maximum(cover[:, None], 1e-12)
+    kk = k[ids] * (cover >= float(cfg["cover_min"]))
+    W = W.copy()
+    W[ids] = (1 - kk[:, None]) * W[ids] + kk[:, None] * Wt
+    W = mirror(W, topo, names)
+    return W, {"points_left": int((kk > 1e-4).sum()), "A_dist_mm_p95": round(float(np.percentile(d[kk > 1e-4] * 1e3, 95)), 2),
+               "cover_p5": round(float(np.percentile(cover[k[ids] > 1e-4], 5)), 3)}
+
+
 def mirror(W, topo, names):
     sw = np.array([names.index(wt.swap_side(n)) for n in names])
     mo = topo["mirror_of"]

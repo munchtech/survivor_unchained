@@ -264,6 +264,11 @@ public sealed class P1Rig
             if (Math.Abs(ang) >= 1e-12)
             {
                 var keep = subtree[arm].ToDictionary(k => k, k => G[k]);
+                // (P1 R1 round 30) girdle "clavicle_roll_keep": helpers under the clavicle that keep the clip's roll
+                // (their world kept): the trapezius, A's top of the shoulder riding A's clavicle roll (rig_drive.girdle)
+                if (gd.TryGetProperty("clavicle_roll_keep", out var rk))
+                    foreach (var e in rk.EnumerateArray())
+                        if (Index.TryGetValue(e.GetString()!.Replace("{s}", s), out var j)) keep[j] = G[j];
                 Apply(G, cl, About(Head(G, cl), Expm(y * -ang)));
                 foreach (var kv in keep) G[kv.Key] = kv.Value;
             }

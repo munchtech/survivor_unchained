@@ -226,6 +226,17 @@ def regions(build):
             if sel.any():
                 ab |= sel & (zz < zz[sel].mean())
     out["upper_arm_back"] = ab & ~pit
+    # (P1 R1 round 30: the butt, the front hip and the thigh, each side, so a change at her hip or knee is measured where
+    # A's shape is the floor: the butt = trunk/thigh/crotch behind the pelvis' mid-depth from the gluteal fold (the
+    # thigh's top 220 mm) up to 170 mm over the trunk's bottom; the front hip the same band in front; the thigh below it)
+    th = part == ip["thigh"]
+    pel = tr | th | (part == ip["crotch"])
+    y_lo, y_hi = y[th].max() - 0.22, y[tr].min() + 0.17
+    band = pel & (y > y_lo) & (y < y_hi)
+    cz_p = zz[band].mean()
+    out["butt"] = band & (zz < cz_p)
+    out["hip_front"] = band & (zz >= cz_p)
+    out["thigh"] = th & (y <= y_lo)
     res = {}
     for k, v in out.items():
         if k in ("neck", "belly_ctl", "back", "breasts", "chest"):

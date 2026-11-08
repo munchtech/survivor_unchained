@@ -270,6 +270,12 @@ def girdle(poser, G, rig, s):
         ang = _roll(_turn(G, poser.rest, cl) @ _turn(G, poser.rest, poser.parent[cl]).T, y)
         if abs(ang) >= 1e-12:
             keep = {k: G[k].copy() for k in poser.subtree(arm)}
+            # (P1 R1 round 30) "clavicle_roll_keep": helpers under the clavicle that keep the clip's roll (their world
+            # kept): the trapezius (A's top of the shoulder rides A's clavicle roll; weights_topo.a_shoulder_top)
+            for nm in gd.get("clavicle_roll_keep", []):
+                j = I.get(nm.replace("{s}", s))
+                if j is not None:
+                    keep[j] = G[j].copy()
             _apply(poser, G, cl, _about(head(G, cl), _expm(-y * ang)))
             for k, M in keep.items():
                 G[k] = M

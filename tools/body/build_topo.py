@@ -425,6 +425,13 @@ def stage_weights(z, V, ring, hv, sk, A, baked, rep, rules=None):
         J, W = wt_.cap(D, wt_.RULES["cap"])
         D = np.zeros((len(V), nb))
         np.put_along_axis(D, J, W, 1)
+    if (rules or {}).get("a_shoulder_top"):
+        # (P1 R1 round 30: A's own skin weights over the top of the shoulders, weights_topo.a_shoulder_top)
+        import weights as wt_
+        D, info["a_shoulder_top"] = wtp.a_shoulder_top(D, V, z, sk, A, rules["a_shoulder_top"])
+        J, W = wt_.cap(D, wt_.RULES["cap"])
+        D = np.zeros((len(V), nb))
+        np.put_along_axis(D, J, W, 1)
     # the head: welded points, the ring's from the body's ring, one to one
     head = A.mesh("HeroineHead")
     PH = baked["HeroineHead"]["P"]
