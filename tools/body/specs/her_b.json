@@ -166,6 +166,11 @@
   "carry": null,
   "source_maps": "tools/body/base/targets/her_a_maps"
  },
+ "pieces": {
+  "slots": ["ink"],
+  "play": true,
+  "why": "P1 R1 round 29 (gate judge 1 item 6): A's zigzag tattoos are an outfit piece, reaver.ink (the ink slot, navy cloth 1.2-1.4 mm off A's skin), which B could not wear (P1Laws leaves A's outfit meshes off B). Every ink-slot piece of every heroine outfit (and its outfit's gameplay lod_ink, onto play.glb's body) is carried by its surface point onto B's rest and skinned with B's weights and shapes there (tools/body/skin_pieces.py); P1Body.Piece wears B's carry on A's node, so the slot's rules and A's material hold."
+ },
  "rig_girdle": {
   "clavicle_by": "shrug",
   "clavicle_roll": "neutral",

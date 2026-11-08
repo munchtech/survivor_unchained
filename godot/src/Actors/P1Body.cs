@@ -241,6 +241,56 @@ public static class P1Body
                  $"centroid from B's Head joint {(sum / v.Length - head) * 1000} mm");
     }
 
+    // ------------------------------------------------------------------ skin-tight pieces --
+    record struct PieceB(Mesh Mesh, Skin Skin, string Tier, int Verts);
+    static Dictionary<string, List<PieceB>>? pieces;
+
+    /// <summary>B's carries of A's skin-tight pieces (pieces.glb + pieces.json: tools/body/skin_pieces.py, the ink slot),
+    /// by the A node's name as Godot imports it; their skins' binds named by B's bones.</summary>
+    static Dictionary<string, List<PieceB>> Pieces()
+    {
+        if (pieces != null) return pieces;
+        pieces = new();
+        if (!ResourceLoader.Exists(Dir + "pieces.glb") || !FileAccess.FileExists(Dir + "pieces.json")) return pieces;
+        var doc = Rig("pieces.json").GetProperty("pieces");
+        var scene = GD.Load<PackedScene>(Dir + "pieces.glb").Instantiate<Node3D>();
+        foreach (var mi in scene.FindChildren("*", "MeshInstance3D", true, false).OfType<MeshInstance3D>())
+        {
+            if (!doc.TryGetProperty(mi.Name.ToString(), out var r) || r.TryGetProperty("missing", out _) || mi.Skin == null || mi.Mesh == null) continue;
+            var ps = mi.GetNode<Skeleton3D>(mi.Skeleton);
+            var skin = new Skin();
+            for (int i = 0; i < mi.Skin.GetBindCount(); i++)
+            {
+                string nm = mi.Skin.GetBindName(i);
+                skin.AddNamedBind(nm != "" ? nm : ps.GetBoneName(mi.Skin.GetBindBone(i)), mi.Skin.GetBindPose(i));
+            }
+            string a = r.GetProperty("a_godot_name").GetString()!;
+            if (!pieces.TryGetValue(a, out var l)) pieces[a] = l = new List<PieceB>();
+            l.Add(new PieceB(mi.Mesh, skin, r.GetProperty("tier").GetString()!, r.GetProperty("verts").GetInt32()));
+        }
+        scene.Free();
+        GD.Print($"p1: {pieces.Values.Sum(l => l.Count)} skin-tight pieces carried onto B ({string.Join(", ", pieces.Keys)})");
+        return pieces;
+    }
+
+    /// <summary>A's skin-tight piece (an ink-slot mesh laid on her skeleton by HerWear or HerLod) made B's: the node,
+    /// its slot rules, its material overrides and its mesh's surface materials kept; its mesh and skin B's carry
+    /// (P1Laws keeps its blend shapes at its body's). Null if B carries no such piece.</summary>
+    public static string? Piece(Skeleton3D b, MeshInstance3D mi)
+    {
+        if (!IsB(b) || mi.Mesh == null || !Pieces().TryGetValue(mi.Name.ToString(), out var list)) return null;
+        int nv = mi.Mesh is ArrayMesh am && am.GetSurfaceCount() > 0 ? am.SurfaceGetArrayLen(0) : (mi.Mesh.GetSurfaceCount() > 0 ? mi.Mesh.SurfaceGetArrays(0)[(int)Mesh.ArrayType.Vertex].AsVector3Array().Length : -1);
+        var c = list.FirstOrDefault(x => x.Verts == nv);
+        if (c.Mesh == null) { if (list.Count != 1) return null; c = list[0]; }
+        var m = (Mesh)c.Mesh.Duplicate();
+        for (int s = 0; s < m.GetSurfaceCount() && s < mi.Mesh.GetSurfaceCount(); s++) m.SurfaceSetMaterial(s, mi.Mesh.SurfaceGetMaterial(s));
+        mi.Mesh = m;
+        mi.Skin = c.Skin;
+        mi.SetMeta("p1_piece", c.Tier);
+        if (Args.Has("p1-probe")) GD.Print($"p1: {mi.Name} (A's, {nv} verts) worn as B's carry ({c.Tier} tier, {m.GetSurfaceCount()} surfaces)");
+        return c.Tier;
+    }
+
     public static P1M4 M(Transform3D t)
     {
         var m = P1M4.Id;
@@ -272,6 +322,9 @@ public partial class P1Laws : SkeletonModifier3D
     P1M4[] restLocal = System.Array.Empty<P1M4>();
     MeshInstance3D? body, lod;
     readonly List<MeshInstance3D> closeMeshes = new();
+    /// <summary>A's skin-tight pieces worn as B's carries (P1Body.Piece): the mesh set, its tier, and each blend shape's
+    /// index on its body (close: Heroine, play: lod_p1_body) beside its own, so it rides its body's shapes.</summary>
+    readonly List<(MeshInstance3D Mi, Mesh Set, bool Play, (int Body, int Own)[] Shapes)> worn = new();
     bool? playOn;
     static readonly string LodMode = Args.Get("lod") ?? "auto";
     P1M4[]? lastG;
@@ -360,6 +413,13 @@ public partial class P1Laws : SkeletonModifier3D
             sk.SetBonePoseScale(j, sc);
         }
         lastG = G2; weights = w;
+        for (int i = worn.Count - 1; i >= 0; i--)
+        {
+            var p = worn[i];
+            var on = p.Play ? lod : body;
+            if (!GodotObject.IsInstanceValid(p.Mi) || on == null) { worn.RemoveAt(i); continue; }
+            foreach (var (bk, ok) in p.Shapes) p.Mi.SetBlendShapeValue(ok, on.GetBlendShapeValue(bk));
+        }
         foreach (var mi in closeMeshes)
             foreach (var kv in w)
                 if (mi.FindBlendShapeByName(kv.Key) is int k and >= 0) mi.SetBlendShapeValue(k, (float)kv.Value);
@@ -371,16 +431,34 @@ public partial class P1Laws : SkeletonModifier3D
     public override void _Process(double delta)
     {
         if (sk == null) return;
+        // (a piece worn as B's whose mesh was set again since, e.g. a garment tuck laid it anew: carried again)
+        foreach (var p in worn.Where(p => GodotObject.IsInstanceValid(p.Mi) && p.Mi.Mesh != p.Set).ToList())
+        {
+            worn.Remove(p);
+            p.Mi.RemoveMeta("p1_piece");
+        }
         foreach (var mi in sk.GetChildren().OfType<MeshInstance3D>())
         {
-            if (mi.HasMeta("p1_b") || mi.HasMeta("p1_rebound") || mi.Skin == null) continue;
-            // (only her hair and a head piece: A's outfit pieces are cut from A's surface and stay off B till P1's refit)
+            if (mi.HasMeta("p1_b") || mi.HasMeta("p1_rebound") || mi.HasMeta("p1_piece") || mi.Skin == null) continue;
+            // (her hair and a head piece rebound; A's skin-tight pieces (the ink slot) worn as B's carries of them; A's
+            // other outfit pieces are cut from A's surface and stay off B till P1's refit)
             bool hair = mi.GetChildren().OfType<HairSway>().Any(), head = mi.Name.ToString().Contains("_head_");
             if (hair || head) P1Body.Rebind(sk, mi);
+            else if (P1Body.Piece(sk, mi) is string tier) Wear(mi, tier == "play");
             else if (mi.Visible) { mi.Visible = false; if (Args.Has("p1-probe")) GD.Print($"p1: {mi.Name} (A's) left off B"); }
         }
         PlaySwitch();
         if (Args.Has("p1-probe") && lastG != null && Engine.GetProcessFrames() % 120 == 0) Probe(lastG);
+    }
+
+    void Wear(MeshInstance3D mi, bool play)
+    {
+        var on = play ? lod : body;
+        var sh = new List<(int, int)>();
+        if (on?.Mesh is ArrayMesh bm && mi.Mesh is ArrayMesh pm)
+            for (int k = 0; k < pm.GetBlendShapeCount(); k++)
+                if (on.FindBlendShapeByName(pm.GetBlendShapeName(k)) is int j and >= 0) sh.Add((j, k));
+        worn.Add((mi, mi.Mesh, play, sh.ToArray()));
     }
 
     /// <summary>HerLod's rule for the play tier: in play (no held camera) beyond Far, back within Near; --lod on|off.</summary>

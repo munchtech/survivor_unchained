@@ -789,6 +789,13 @@ def main():
             sk_close = sk
         full["tiers"][tier] = rep
         print("BUILD", tier, os.path.join(out, GLB[tier][0]), rep["glb_sha256"][:16], rep["timings_s"])
+    if spec.get("pieces") and "close" in a.tiers.split(","):
+        # (P1 R1 round 29: A's skin-tight slot pieces carried onto this build's bodies, skin_pieces.py -> pieces.glb)
+        import skin_pieces
+        t = time.time()
+        pr = skin_pieces.run(out, spec)
+        full["pieces"] = {k: {x: v[x] for x in v if x != "shapes"} for k, v in pr["pieces"].items()}
+        print("PIECES", {k: v.get("b_offset_mm_p5_50_95_max") for k, v in pr["pieces"].items()}, round(time.time() - t, 1), "s")
     full["total_s"] = round(time.time() - t0, 2)
     with open(os.path.join(out, "build.json"), "w") as f:
         json.dump(full, f, indent=1, default=float)

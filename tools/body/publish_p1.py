@@ -27,6 +27,10 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 PUB = os.path.join(ROOT, "godot", "art", "people", "body_p1")
 FILES = ("body.glb", "play.glb", "rig.json", "play_rig.json")
+# (skin_pieces.py, a build's spec "pieces": A's skin-tight pieces carried onto B, P1Body.Piece; a build without them
+# leaves the published ones as they were, said)
+OPTIONAL = ("pieces.glb", "pieces.json")
+GLBS = ("body.glb", "play.glb", "pieces.glb")
 GODOT = r"C:\Users\munch\Desktop\Godot_v4.5.1-stable_mono_win64\Godot_v4.5.1-stable_mono_win64_console.exe"
 TURN = r"C:\Users\munch\Desktop\survivorsunchained\tools\turn.py"
 
@@ -105,6 +109,12 @@ def publish(src):
     for f in FILES:
         shutil.copy2(os.path.join(src, f), os.path.join(PUB, f))
         out["files"][f] = sha1(os.path.join(PUB, f))
+    for f in OPTIONAL:
+        if os.path.exists(os.path.join(src, f)):
+            shutil.copy2(os.path.join(src, f), os.path.join(PUB, f))
+            out["files"][f] = sha1(os.path.join(PUB, f))
+        elif os.path.exists(os.path.join(PUB, f)):
+            print(f"publish_p1: {src} has no {f}; the published one is an earlier build's")
     maps = os.path.join(src, "maps")
     bake = os.path.join(maps, "bake.json")
     if os.path.exists(bake) and json.load(open(bake)).get("gates", {}).get("pass"):
@@ -122,7 +132,7 @@ def publish(src):
             out["skin"] = json.load(open(sp))["skin"]
     params = import_params()
     out["import"] = {"from": "godot/art/people/heroine.glb.import", "params": params, "changed": {}}
-    for f in ("body.glb", "play.glb"):
+    for f in (g for g in GLBS if g in out["files"]):
         ch = write_import(os.path.join(PUB, f + ".import"), params)
         if ch:
             out["import"]["changed"][f] = ch
