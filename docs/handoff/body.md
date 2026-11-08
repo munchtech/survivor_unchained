@@ -1,5 +1,8 @@
 # Handoff: her body (rig, mesh, weights)
 
+## R1 LEAD 8, running state (8 Nov): round 26 = round_25 mesh + e2b87598a's bake, PUBLISHED, the new base
+Look/close rulers back at round_24's (breasts 4.3/5.7, caps 3.1,0.8 / 1.6,1.3, armpits 2.4,3.6 / 1.1,2.8 mm p95). Fights (armcmp from frame 20, hand p95/max mm, upper deg): fclose r 4.3/26.7 (0.4), l 11.0/20.4; stalker r 12.8/30.6 (1.7), l 9.3/25.6 (1.3): half of round 25's stalker gain given back (B's clavicle roll kept). Scratch r1c\round26\ (step1.out, p\). Next: arm chain solver round 2 (brief r1c\round27\brief.md: both at once + (5)); gate2\shoot.sh now has look_full_day, look_back34_day, look_back_day, look_back34_close (A not yet shot).
+
 ## R1 LEAD 7 -> R1 LEAD 8 (8 Nov): round_25 PUBLISHED but NOT GATE-FIT (breasts regressed); round_24 = last good; next: build the committed clavicle-roll fix, then (5), hand, tattoo, gate judge 2
 **Brief:** the coordinator's lead-7 brief stands (A is the floor; one max gate judge on A|B pairs + motion strips: "Is anything of B's visibly worse than A? Would a player call B a step down? Sexy and confident?"; no carve-outs; save verdicts verbatim; last line RIGHT / BLOCKED / HANDOFF READY).
 **Last good: round_24 (published state is round_25, see its line)** (`tools/body/out/round_24`; specs/her_b.json + specs/her_b_correctives.json; rig data and spring samples committed with this block). What it carries, by round (scratch `scratch_body_p1\r1c\roundN\brief.md` + each solver's scripts in `s\`):
