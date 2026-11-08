@@ -225,6 +225,124 @@ class ARest:
         out[free] = X0 + U
         return out, w, stats
 
+    def hand_wrap(self, Vh, z, cfg, head):
+        """her_a "a_hand" (P1 R1 round 28): B's hand ON A's hand surface at the a_rest pose, as B's trunk, girdle and upper
+        arm already are, and B's hand and finger joints A's, so A's hand and its curl in every clip are carried. Her left
+        hand: (1) each of our hand points mapped by its segment (hand_segments: B's own joints, landmarks on Vh, onto A's;
+        seg_maps), blended over the nearest segments (exp(-(d - dmin) / blend_m)); (2) laid on A's skin by non-rigid ICP
+        as a_tight's (point-to-plane + 0.1 point-to-point + lam |L U|^2, lam stepped down), each point's closest point on
+        A's own part of the hand (its digit or the palm: never a neighbour finger), normals agreeing; (3) eased in from
+        the hand part's open edge over ease_m along the surface (0 there: the forearm's points are the fit's). The right
+        hand is the left's move mirrored on its own points. Returns (V, ease, joints {"ends:<bone>": [head, tail]}, stats).
+        Derivation: (a) gate judge 1 (3): B's hand 27% thinner and 13% shorter than A's, stiff and splayed at the Look
+        and close-up; the lead's route: A's hand into her_a; (b) A."""
+        import scipy.sparse.linalg as spl
+        import skeleton as skm
+        with open(os.path.join(HERE, "skeleton.json")) as f:
+            skel = json.load(f)
+        with open(os.path.join(HERE, "base", "landmarks.json")) as f:
+            table = json.load(f)["tiers"]["close"]
+        _, _, _, ends, _ = skm.place_skeleton_ours(skel, Vh, table, head)
+        Q = z["Q"]
+        parts = list(map(str, z["parts"]))
+        part = z["part"]
+        n = len(Vh)
+        hand = part == parts.index("hand")
+        Lh = np.where(hand & (z["V"][:, 0] > 0))[0]
+        # A's left hand at the a_rest pose: its points weighted to the hand's bones
+        P1, T = self.t1["P"], self.t0["T"]
+        hb = [i for i, nm in enumerate(self.t1["names"]) if nm.endswith("_l") and nm.split("_")[0] in ("hand",) + HAND_FINGERS]
+        a_on = (self.t1["W"] * np.isin(self.t1["J"], hb)).sum(1) > 0.5
+        ia = np.where(a_on)[0]
+        seg = hand_segments(ends, self.t1["heads"])
+        PB = Vh[Lh].astype(np.float64)
+        maps, own_a = seg_maps(seg, PB, P1[ia])
+        Db = np.stack([seg_dist(PB, s[1], s[2])[0] for s in seg], 1)
+        wb = np.exp(-(Db - Db.min(1, keepdims=True)) / float(cfg["blend_m"]))
+        wb[wb < 0.01] = 0.0
+        wb /= wb.sum(1, keepdims=True)
+        Pm = sum(wb[:, k:k + 1] * seg_apply(maps[k], PB) for k in range(len(seg)))
+        # the ease from the hand part's open edge (geodesic over our edges)
+        e = edges(Q)
+        ln = np.linalg.norm(Vh[e[:, 0]] - Vh[e[:, 1]], axis=1)
+        edge_v = np.unique(np.r_[e[hand[e[:, 0]] & ~hand[e[:, 1]], 0], e[hand[e[:, 1]] & ~hand[e[:, 0]], 1]])
+        inside = hand[e[:, 0]] & hand[e[:, 1]]
+        r = np.r_[e[inside, 0], e[inside, 1], np.full(len(edge_v), n)]
+        c = np.r_[e[inside, 1], e[inside, 0], edge_v]
+        G = sp.coo_matrix((np.r_[ln[inside], ln[inside], np.full(len(edge_v), 1e-9)], (r, c)), shape=(n + 1, n + 1)).tocsr()
+        dg = dijkstra(G, indices=n)[:n]
+        ease = np.zeros(n)
+        ease[Lh] = smoothstep(dg[Lh] / float(cfg["ease_m"]))
+        el = ease[Lh]
+        X0 = PB + el[:, None] * (Pm - PB)
+        # each digit's own part of A's hand (A's points by their nearest A segment; a triangle by its points' majority)
+        lab = np.array([s[0].split("_")[1] if s[0].startswith("palm") else s[0].split("_")[0] for s in seg])
+        is_palm = np.array([s[0].startswith("palm") for s in seg])
+        a_lab = np.full(len(P1), "", dtype=object)
+        a_lab[ia] = np.where(is_palm[own_a], "palm", lab[own_a])
+        tl = a_lab[T]
+        tri_on = np.all(tl != "", 1)
+        tmaj = np.where(tl[:, 0] == tl[:, 1], tl[:, 0], np.where(tl[:, 1] == tl[:, 2], tl[:, 1], tl[:, 2]))
+        own_b = Db.argmin(1)
+        b_grp = np.where(is_palm[own_b], "palm", lab[own_b])
+        groups = {}
+        for g in ("palm",) + HAND_FINGERS:
+            keep = tri_on & ((tmaj == g) | (tmaj == "palm")) if g != "palm" else tri_on
+            groups[g] = (Surface(P1, T[keep]), np.where(b_grp == g)[0])
+        # ICP
+        pr = mirror(z)
+        free = Lh
+        W1 = sp.coo_matrix((np.ones(2 * len(e)), (np.r_[e[:, 0], e[:, 1]], np.r_[e[:, 1], e[:, 0]])), shape=(n, n)).tocsr()
+        Lap = (sp.diags(np.asarray(W1.sum(1)).ravel()) - W1).tocsr()
+        Lf = Lap[free][:, free]
+        K = sp.kron((Lf.T @ Lf).tocsr(), sp.eye(3)).tocsr()
+        m = len(free)
+        ii = np.repeat(np.arange(m) * 3, 9) + np.tile(np.repeat(np.arange(3), 3), m)
+        jj = np.repeat(np.arange(m) * 3, 9) + np.tile(np.tile(np.arange(3), 3), m)
+        U = np.zeros((m, 3))
+        stats = {"segments": {mp["label"]: [round(mp["la"] / mp["lb"], 3), round(mp["g"], 3)] for mp in maps}}
+        icp = []
+        Vc = Vh.astype(np.float64).copy()
+        for lam in cfg["lam"]:
+            for _ in range(int(cfg.get("iters", 2))):
+                X = X0 + U
+                q = np.zeros_like(X)
+                nA = np.zeros_like(X)
+                d = np.full(len(X), np.inf)
+                for g, (S, ids) in groups.items():
+                    if len(ids):
+                        q[ids], nA[ids], _, d[ids] = S.closest(X[ids], k=16)
+                Vc[free] = X
+                ok = (d < 0.03) & ((nA * quad_normals(Vc, Q)[free]).sum(1) > 0.3)
+                Bw = (el * ok)[:, None, None] * (np.einsum("ni,nj->nij", nA, nA) + 0.1 * np.eye(3)[None])
+                Am = sp.coo_matrix((Bw.ravel(), (ii, jj)), shape=(3 * m, 3 * m)).tocsr() + lam * K
+                U = spl.spsolve(Am.tocsc(), np.einsum("nij,nj->ni", Bw, q - X0).ravel()).reshape(-1, 3)
+            core = el > 0.99
+            icp.append((lam, round(float(np.percentile(d[core] * 1e3, 50)), 2), round(float(np.percentile(d[core] * 1e3, 95)), 2), int((~ok).sum())))
+        stats["icp (lam, core p50, p95 mm, rejected)"] = icp
+        X = X0 + U
+        out = Vh.astype(np.float64).copy()
+        out[Lh] = X
+        Mx = np.array([-1.0, 1.0, 1.0])
+        out[pr[Lh]] = Vh[pr[Lh]] + (X - PB) * Mx
+        ease[pr[Lh]] = el
+        # the joints: A's where B's map them (01-03 heads and the tips: A's own; a metacarpal's head by its palm segment)
+        mp = {x["label"]: x for x in maps}
+        H = self.t1["heads"]
+        joints = {"x:hand_l": [round(float(v), 6) for v in self.t1["rots"]["hand_l"][:, 0]]}
+        for f in HAND_FINGERS:
+            for k in (1, 2, 3):
+                nb = f"{f}_0{k}_l"
+                joints["ends:" + nb] = [[round(float(v), 6) for v in H[nb]],
+                                        [round(float(v), 6) for v in (H[f"{f}_0{k + 1}_l"] if k < 3 else H[f"{f}_04_leaf_l"])]]
+                joints["x:" + nb] = [round(float(v), 6) for v in self.t1["rots"][nb][:, 0]]
+            if f != "thumb":
+                mh = seg_apply(mp[f"palm_{f}"], np.asarray(ends[f"{f}_metacarpal_l"][0], float)[None])[0]
+                joints["ends:" + f"{f}_metacarpal_l"] = [[round(float(v), 6) for v in mh], [round(float(v), 6) for v in H[f"{f}_01_l"]]]
+        stats["ease_points"] = int((el > 1e-4).sum())
+        stats["wrist_edge_mm_from_hand_joint"] = round(float(np.median(np.linalg.norm(Vh[edge_v[z["V"][edge_v, 0] > 0]] - np.asarray(ends["hand_l"][0]), axis=1))) * 1e3, 1)
+        return out, ease, joints, stats
+
     def hand_field(self, V0, Vf, zero_hand, x):
         """Every point moved as our hand rides: rigidly onto the fit's hand (fit pose), then with A's hand (per side by x)."""
         out = V0.copy()
@@ -241,6 +359,79 @@ class ARest:
 def smoothstep(x):
     x = np.clip(x, 0.0, 1.0)
     return x * x * (3 - 2 * x)
+
+
+HAND_FINGERS = ("thumb", "index", "middle", "ring", "pinky")
+
+
+def hand_segments(ends_b, heads_a):
+    """Her left hand's segments, one list for B and A: (label, B head, B tail, A head, A tail). The palm: the hand joint to
+    each digit's 01 head (both rigs: A has no metacarpals); each digit's 01, 02, 03 head to the next head, the 03 to its
+    tip (B: the 03's own tail; A: its 04 leaf's head)."""
+    hb = lambda n: np.asarray(ends_b[n][0], float)        # noqa: E731
+    tb = lambda n: np.asarray(ends_b[n][1], float)        # noqa: E731
+    ha = lambda n: np.asarray(heads_a[n], float)          # noqa: E731
+    seg = []
+    for f in HAND_FINGERS:
+        seg.append((f"palm_{f}", hb("hand_l"), hb(f"{f}_01_l"), ha("hand_l"), ha(f"{f}_01_l")))
+        for k in (1, 2, 3):
+            nb = f"{f}_0{k}_l"
+            seg.append((nb, hb(nb), hb(f"{f}_0{k + 1}_l") if k < 3 else tb(nb), ha(nb),
+                        ha(f"{f}_0{k + 1}_l") if k < 3 else ha(f"{f}_04_leaf_l")))
+    return seg
+
+
+def seg_dist(P, h, t):
+    """(distance to the segment h-t, the fraction along it, unclamped)."""
+    d = t - h
+    s = ((P - h) @ d) / max(float(d @ d), 1e-12)
+    q = h + np.clip(s, 0.0, 1.0)[:, None] * d
+    return np.linalg.norm(P - q, axis=1), s
+
+
+def seg_maps(seg, PB, PA):
+    """Each segment's map, B onto A: B's head on A's, B's axis turned onto A's (the least turn after the hand's own turn,
+    so the digits keep the hand's roll), lengths by A's over B's; across the axis by A's girth over B's (the median
+    distance of each rig's own points off its segment, its middle half; the palm's 1: a palm is not round)."""
+    J_b = np.array([s[1] for s in seg] + [s[2] for s in seg])
+    J_a = np.array([s[3] for s in seg] + [s[4] for s in seg])
+    Rg, _ = kabsch(J_b, J_a)
+    db = np.stack([seg_dist(PB, s[1], s[2])[0] for s in seg], 1)
+    da = np.stack([seg_dist(PA, s[3], s[4])[0] for s in seg], 1)
+    own_b, own_a = db.argmin(1), da.argmin(1)
+    maps = []
+    for k, (lab, bh, bt, ah, at) in enumerate(seg):
+        ub, ua = bt - bh, at - ah
+        lb, la = np.linalg.norm(ub), np.linalg.norm(ua)
+        ub, ua = ub / lb, ua / la
+        v = Rg @ ub
+        ax = np.cross(v, ua)
+        sn, cs = np.linalg.norm(ax), float(np.clip(v @ ua, -1, 1))
+        if sn > 1e-9:
+            ax /= sn
+            K = np.array([[0, -ax[2], ax[1]], [ax[2], 0, -ax[0]], [-ax[1], ax[0], 0]])
+            R = np.eye(3) + sn * K + (1 - cs) * (K @ K)
+        else:
+            R = np.eye(3)
+        R = R @ Rg
+        g = 1.0
+        if not lab.startswith("palm"):
+            _, sb = seg_dist(PB, bh, bt)
+            _, sa = seg_dist(PA, ah, at)
+            mb = (own_b == k) & (sb > 0.25) & (sb < 0.75)
+            ma = (own_a == k) & (sa > 0.25) & (sa < 0.75)
+            if mb.sum() > 8 and ma.sum() > 8:
+                g = float(np.median(da[ma, k]) / np.median(db[mb, k]))
+        maps.append({"label": lab, "bh": bh, "ub": ub, "lb": lb, "ah": ah, "ua": ua, "la": la, "R": R, "g": g})
+    return maps, own_a
+
+
+def seg_apply(mp, P):
+    """One segment's map on points P (see seg_maps)."""
+    r = P - mp["bh"]
+    along = r @ mp["ub"]
+    radial = r - along[:, None] * mp["ub"]
+    return mp["ah"] + (along * mp["la"] / mp["lb"])[:, None] * mp["ua"] + mp["g"] * (radial @ mp["R"].T)
 
 
 def a_source(cfg, fit_spec):
@@ -344,7 +535,7 @@ def a_normals(cfg, z, Vt, M, src):
             "P": Vt.astype(np.float32)}, stats
 
 
-def a_joints(cfg, ar):
+def a_joints(cfg, ar, hand=None):
     """The target's "joints" json: A's own joints at the pose its skin was taken in (her left; the skeleton mirrors). The
     girdle and arm skin are A's, so are their joints (keyed by landmark cube); and (her_a "a_joints", P1 R1 rig root) the
     trunk: B bone b's head at A bone a's ({b: a}, keyed "head:b"), where B's trunk is A's surface at A's rest (the target
@@ -354,6 +545,7 @@ def a_joints(cfg, ar):
     for b, a in (cfg.get("a_joints") or {}).items():
         if b != "why":
             j["head:" + b] = [round(float(x), 6) for x in ar.t1["heads"][a]]
+    j.update(hand or {})          # (her_a "a_hand": the hand's and fingers' ends, ARest.hand_wrap)
     return np.array(json.dumps(j))
 
 
@@ -363,10 +555,11 @@ def joints_only(spec_path, tiers, out_dir, from_dir=None):
     spec = bt.with_defaults(load_spec(spec_path))
     cfg = spec["her_a"]
     ar = ARest(cfg)
-    j = a_joints(cfg, ar)
     for tier in tiers:
         src = os.path.join(from_dir or TARGETS, OUT_FILE.format(tier=tier))
         z = dict(np.load(src))
+        old = json.loads(str(z["joints"])) if "joints" in z else {}
+        j = a_joints(cfg, ar, {k: v for k, v in old.items() if k.startswith(("ends:", "x:"))})   # (the hand's ends kept)
         z["joints"] = j
         z["about"] = np.array(str(z["about"]) + f" | joints: python tools/body/her_a_target.py --joints-only (a_joints {json.dumps({k: v for k, v in (cfg.get('a_joints') or {}).items() if k != 'why'})})")
         np.savez_compressed(os.path.join(out_dir, OUT_FILE.format(tier=tier)), **z)
@@ -385,6 +578,7 @@ def make(spec_path, tiers, out_dir=TARGETS):
     ar = ARest(cfg) if cfg.get("a_rest") else None
     src = a_source(cfg, fit_spec) if cfg.get("normals") else None
     tight_d = None
+    hand_d, hand_j, hand_ease = None, None, None
     if ar is not None:
         assert list(cfg.get("zero_parts", ())) == ["hand"] and cfg.get("zero_ring") is None and not np.any(t), \
             "a_rest: the arm and shoulder are the fit's (zero_parts [hand], zero_ring null, no arm_move_m)"
@@ -402,6 +596,17 @@ def make(spec_path, tiers, out_dir=TARGETS):
             Vf, dist = ar.carry(Vf)
             ts = Vh - V0
             print(tier, "a_rest carry: fit to A p50/p95/max mm", np.round(np.percentile(dist, [50, 95, 100]) * 1e3, 2).tolist(), flush=True)
+            if cfg.get("a_hand"):
+                # (her_a "a_hand", P1 R1 round 28: our hand laid on A's, close first; play takes close's move)
+                if tier == "close":
+                    Vw, hand_ease, hand_j, hstats = ar.hand_wrap(Vh, z, cfg["a_hand"], baked["HeroineHead"]["P"])
+                    hand_d = Vw - Vh
+                    print(tier, "a_hand", json.dumps(hstats), flush=True)
+                else:
+                    assert hand_d is not None, "a_hand: close first (play takes close's move)"
+                    hand_d = carry_to_tier(hand_d, "close", tier)
+                    hand_ease = np.clip(carry_to_tier(hand_ease[:, None], "close", tier)[:, 0], 0.0, 1.0)
+                ts = ts + hand_d
             if cfg.get("a_tight"):
                 if tier == "close":
                     Vt, wt, stats = ar.tight(Vf, z, cfg["a_tight"])
@@ -419,10 +624,11 @@ def make(spec_path, tiers, out_dir=TARGETS):
                  f" (fit {cfg['fit_spec']}, band_m {cfg['band_m']}, zero_parts {cfg.get('zero_parts', 'arm..hand')}, zero_ring {cfg.get('zero_ring')}, arm_move_m {list(t)}, a_rest {cfg.get('a_rest')})")
         extra = {}
         if ar is not None:
-            extra["joints"] = a_joints(cfg, ar)
+            extra["joints"] = a_joints(cfg, ar, hand_j)
         if src is not None:
             # (her_a "normals": A's file normals at the target surface, for the build's export; see a_normals)
-            nrm, stats = a_normals(cfg, z, V0 + D, M, src)
+            # (a_hand: the hand lies on A too, so A's normals there as on the trunk)
+            nrm, stats = a_normals(cfg, z, V0 + D, M if hand_ease is None else np.maximum(M, hand_ease), src)
             extra.update(nrm)
             extra["normals_about"] = np.array(json.dumps({"normals": cfg["normals"], **stats}))
             about += f" normals {json.dumps({k: v for k, v in cfg['normals'].items() if k != 'why'})}"

@@ -406,7 +406,7 @@ def stage_skeleton(V, tier, rep, head=None, moves=None, joints=None):
         table = json.load(f)["tiers"][tier]
     names, par, worlds, ends, info = sk.place_skeleton_ours(skel, V, table, head, moves, joints)   # head: her baked head (Head joint)
     if joints:
-        info["target_joints"] = {k: [round(float(x) * 1e3, 1) for x in p] + [v] for k, (p, v) in joints.items()}
+        info["target_joints"] = {k: [round(float(x) * 1e3, 1) for x in np.ravel(p)] + [v] for k, (p, v) in joints.items()}
     rep["skeleton"] = info
     return {"skel": skel, "names": names, "parents": par, "worlds": worlds, "ends": ends}
 

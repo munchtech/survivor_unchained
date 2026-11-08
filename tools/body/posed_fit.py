@@ -212,7 +212,8 @@ def regions(build):
     fa = (part == ip["elbow"]) | (part == ip["forearm"])
     back = tr & (zz < cz) & (y > 1.2)
     belly = tr & (y < bot) & (zz > cz)
-    out = {"breasts": breasts, "chest": chest, "cap": sh & ~pit, "armpit": pit, "upper_arm": arm & ~pit, "forearm": fa, "back": back, "belly_ctl": belly, "neck": part == ip["neck"]}
+    out = {"breasts": breasts, "chest": chest, "cap": sh & ~pit, "armpit": pit, "upper_arm": arm & ~pit, "forearm": fa, "back": back, "belly_ctl": belly, "neck": part == ip["neck"],
+           "hand": part == ip["hand"]}       # (P1 R1 round 28: the hand and fingers, each side)
     res = {}
     for k, v in out.items():
         if k in ("neck", "belly_ctl", "back", "breasts", "chest"):

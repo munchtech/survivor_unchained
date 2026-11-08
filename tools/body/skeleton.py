@@ -451,7 +451,8 @@ def place_skeleton_ours(skel, V, table, head=None, moves=None, joints=None):
         h = lm.point(e["head"])
         W[e["name"]] = [np.zeros(3) if h is None else h, lm.point(e["tail"])]
     _bone_heads(defs, W, joints)
-    out = _place_from_world(defs, W)
+    _bone_ends(W, joints)
+    out = _place_from_world(defs, W, {k[2:]: np.asarray(J, float) for k, (J, v) in (joints or {}).items() if k.startswith("x:") and v > 0.5})
     out[4]["anatomy"] = {k: v for k, v in lm.info.items() if k != "_memo"}
     return out
 
@@ -480,8 +481,24 @@ def _bone_heads(defs, W, joints):
                 W[n][1] = q.copy()
 
 
-def _place_from_world(defs, W):
-    """The left side's (and the middle's) bone ends in the world (glTF) -> the skeleton: leaves, frames, mirror."""
+def _bone_ends(W, joints):
+    """A designed target's bone ends (keys "ends:<bone>", her left, [head, tail]; her_a "a_hand", P1 R1 round 28: B's
+    hand and finger bones where A's are, as B's hand IS A's hand surface at A's rest): the bone's head and tail at the
+    slider's value v ((1 - v) landmark + v joint). Left-side bones only (the right mirrors)."""
+    for k, (J, v) in (joints or {}).items():
+        if not k.startswith("ends:"):
+            continue
+        b = k[5:]
+        assert b in W and b.endswith("_l"), ("an ends joint names no left bone", k)
+        J = np.asarray(J, float).reshape(2, 3)
+        W[b] = [(1.0 - v) * np.asarray(W[b][0], float) + v * J[0], (1.0 - v) * np.asarray(W[b][1], float) + v * J[1]]
+
+
+def _place_from_world(defs, W, xs=None):
+    """The left side's (and the middle's) bone ends in the world (glTF) -> the skeleton: leaves, frames, mirror. xs: {left
+    bone: x axis} a designed target's own bone frames (keys "x:<bone>", her_a "a_hand": B's hand and fingers rolled as
+    A's at the pose B's hand was taken in, so the clips' finger turns, matched by roll to A's, carry A's hand whole), the
+    rule's frame otherwise."""
     for n, (hw, tw) in W.items():
         hw, tw = np.array(hw, float), np.array(tw, float)
         W[n] = [hw, tw]
@@ -544,6 +561,9 @@ def _place_from_world(defs, W):
             ends_out[e["name"]] = (M @ h, M @ t) if s == "r" else (h.copy(), t.copy())
             Y = unit(t - h)
             X, Z = frame(d, Y)
+            if xs and nl in xs:
+                X = perp(xs[nl], Y)
+                Z = np.cross(X, Y)
             G = np.eye(4)
             if s == "r":
                 Y, Z, h = M @ Y, M @ Z, M @ h

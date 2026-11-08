@@ -115,6 +115,8 @@ def target(base_glb, a_path=A_PATH, world=False, want=None, normals=None):
         extra["N_file"] = Nf / np.maximum(np.linalg.norm(Nf, axis=1, keepdims=True), 1e-12)
         extra["P_file"] = body.P            # (the rest points in that order, for the caller's check)
     heads = {n: G[j][:3, 3].copy() for j, n in enumerate(sk.names)}   # every bone's head in this pose (her_a's trunk joints)
-    return {**extra, "P": P, "T": T, "N": N, "bones": bones, "heads": heads, "turns": turns, "rest_bones": want,
+    # (every bone's frame in this pose, its axes unit: her_a "a_hand" lays B's hand and finger frames on A's)
+    rots = {n: G[j][:3, :3] / np.maximum(np.linalg.norm(G[j][:3, :3], axis=0, keepdims=True), 1e-12) for j, n in enumerate(sk.names)}
+    return {**extra, "P": P, "T": T, "N": N, "bones": bones, "heads": heads, "rots": rots, "turns": turns, "rest_bones": want,
             "rest_P": body.P[first], "shapes": body.shape_weights(G), "J": body.Jv[first], "W": body.W[first],
             "names": list(sk.names)}
