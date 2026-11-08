@@ -42,7 +42,16 @@ public static class P1Body
         // P1 R1 round 33, S3, the armpit blot)
         if (ResourceLoader.Exists(Dir + "cavity.png")) m.SetShaderParameter("cavity_map", GD.Load<Texture2D>(Dir + "cavity.png"));
         if (!Rig("publish.json").TryGetProperty("skin", out var skin) || skin.ValueKind != JsonValueKind.Object) return;
-        foreach (var kv in skin.EnumerateObject()) m.SetShaderParameter(kv.Name, kv.Value.GetSingle());
+        // (a number, or a list of 2-4 for a vec2-vec4: round 36 set the bounce's down-gate, cavity_down, from the spec)
+        foreach (var kv in skin.EnumerateObject())
+        {
+            if (kv.Value.ValueKind == JsonValueKind.Number) { m.SetShaderParameter(kv.Name, kv.Value.GetSingle()); continue; }
+            if (kv.Value.ValueKind != JsonValueKind.Array) continue;
+            var v = kv.Value.EnumerateArray().Select(x => x.GetSingle()).ToArray();
+            if (v.Length == 2) m.SetShaderParameter(kv.Name, new Vector2(v[0], v[1]));
+            else if (v.Length == 3) m.SetShaderParameter(kv.Name, new Vector3(v[0], v[1], v[2]));
+            else if (v.Length == 4) m.SetShaderParameter(kv.Name, new Vector4(v[0], v[1], v[2], v[3]));
+        }
     }
 
     /// <summary>The library clips baked onto B (People.Clips' names, loops as set there).</summary>

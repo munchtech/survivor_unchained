@@ -574,6 +574,27 @@ def her_a_normals(spec, tier, V, N, rep, ring=None):
     Nt = turn_onto(NA, NG, N)
     out = w[:, None] * Nt + (1.0 - w[:, None]) * N
     out /= np.maximum(np.linalg.norm(out, axis=1, keepdims=True), 1e-12)
+    sa = nc.get("seam_a")
+    if ring is not None and sa:
+        # (seam_a {"mm": [a, b]}, P1 R1 round 36: A's file normals as they are, not turned by B's own, within a of the
+        # head's ring, eased out by b. Under the seam B's rows leave A's surface 2-4 mm (seam_g1's ease) and stand
+        # 8-10 deg off A's, so B's own and A's turned by B's tilt both shaded her throat as A's isn't (fight_close 353,
+        # a darker cool patch 10-13 mm under the ring); A's own there meet the head's ring as A's do.)
+        a0, a1 = sa["mm"]
+        dr = cKDTree(V[ring]).query(V)[0] * 1e3
+        y = np.clip((dr - a0) / max(a1 - a0, 1e-6), 0.0, 1.0)
+        s = (1.0 - y * y * (3 - 2 * y)) * v * NW
+        # (A's normal where B's point lies on A: the target's points are A's surface, so the nearest of them to B's
+        # point (inverse-distance over k) and not B's own target point, which the seam's rows left 2-8 mm away)
+        q = np.where(s > 1e-4)[0]
+        dk, ik = cKDTree(P).query(V[q], k=int(sa.get("k", 6)))
+        wk = 1.0 / np.maximum(dk, 1e-5) ** 2
+        Nq = (wk[..., None] * NA[ik]).sum(1)
+        Nq /= np.maximum(np.linalg.norm(Nq, axis=1, keepdims=True), 1e-12)
+        Ns = NA.copy()
+        Ns[q] = Nq
+        out = s[:, None] * Ns + (1.0 - s[:, None]) * out
+        out /= np.maximum(np.linalg.norm(out, axis=1, keepdims=True), 1e-12)
     ang = np.degrees(np.arccos(np.clip((out * N).sum(1), -1, 1)))
     on = w > 0.99
     info = {"file": f, "a_normals_vertices": int(on.sum()), "blended": int(((w > 1e-3) & ~on).sum()), "of": int(len(N)),

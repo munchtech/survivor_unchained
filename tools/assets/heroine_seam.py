@@ -184,7 +184,84 @@ def _lip_step(path, out=None):
     heroine_lipsculpt.run(path, out)
 
 
+def feather(path, out=None):
+    """Her neck's seam feathered: the points her head shares with the graft given the normal of the rows either side
+    of them (the mean of her head's next row's normals and the graft's, each its own mean), once (marker
+    seam_feather). The shared points' normals were the two surfaces' joined at the seam itself, where the two meet
+    at a slight crease: on the front of her throat they pitched down from both rows by up to 10.6 deg (p90 8.5), and
+    the game drew a 2-3 px dark ring round her neck at the Look and the close-up, 5-10 levels deeper than the skin
+    either side (P1 R1 round 36; A and B alike, B's ring is A's). Her keys' normals are held to these at SPLIT (seam)."""
+    js, binc = _load(path)
+    chunks = {i: binc[bv.get("byteOffset", 0):bv.get("byteOffset", 0) + bv["byteLength"]] for i, bv in enumerate(js["bufferViews"])}
+    mats = [m.get("name") for m in js.get("materials", [])]
+    hp = gp = hm = None
+    for m in js["meshes"]:
+        for p in m["primitives"]:
+            if "material" in p and mats[p["material"]] == "skin_head":
+                hm, hp = m, p
+            if "material" in p and mats[p["material"]] == "skin_graft":
+                gp = p
+    if hp is None or gp is None:
+        print("FEATHER: no head and graft in", path, "- nothing done")
+        return
+    if "seam_feather" in hm.get("extras", {}):
+        print("FEATHER: already done in", path, "- nothing done")
+        return
+    HV = _read(js, binc, hp["attributes"]["POSITION"]).astype(np.float64)
+    GV = _read(js, binc, gp["attributes"]["POSITION"]).astype(np.float64)
+    HN = _read(js, binc, hp["attributes"]["NORMAL"]).astype(np.float64)
+    GN = _read(js, binc, gp["attributes"]["NORMAL"]).astype(np.float64)
+
+    def welded_adj(V, prim):
+        T = _read(js, binc, prim["indices"]).astype(np.int64).reshape(-1, 3)
+        _, w = np.unique(np.round(V * 1e5).astype(np.int64), axis=0, return_inverse=True)
+        w = w.ravel()
+        E = w[np.concatenate([T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]])]
+        adj = {}
+        for a, b in E:
+            adj.setdefault(a, set()).add(b)
+            adj.setdefault(b, set()).add(a)
+        return w, adj
+
+    def unit(x):
+        return x / np.maximum(np.linalg.norm(x, axis=-1, keepdims=True), 1e-12)
+
+    hw, hadj = welded_adj(HV, hp)
+    gw, gadj = welded_adj(GV, gp)
+    d, gi = cKDTree(GV).query(HV)
+    shared = np.where(d < SHARED)[0]
+    hring, gring = set(hw[shared]), set(gw[gi[shared]])
+    # (each welded point's normal: its first copy's; copies share it)
+    hrep = np.zeros(hw.max() + 1, np.int64)
+    hrep[hw[::-1]] = np.arange(len(hw))[::-1]
+    grep_ = np.zeros(gw.max() + 1, np.int64)
+    grep_[gw[::-1]] = np.arange(len(gw))[::-1]
+    done, turn = 0, []
+    for i in shared:
+        hn = [hrep[j] for j in hadj.get(hw[i], ()) if j not in hring]
+        gn = [grep_[j] for j in gadj.get(gw[gi[i]], ()) if j not in gring]
+        if not hn or not gn:
+            continue
+        n = unit(unit(unit(HN[hn]).mean(0)) + unit(unit(GN[gn]).mean(0)))
+        turn.append(np.degrees(np.arccos(np.clip(unit(HN[i]) @ n, -1, 1))))
+        HN[hw == hw[i]] = n
+        GN[gw == gw[gi[i]]] = n
+        done += 1
+    _set_dense(js, chunks, hp["attributes"]["NORMAL"], HN.astype(np.float32))
+    _set_dense(js, chunks, gp["attributes"]["NORMAL"], GN.astype(np.float32))
+    hm.setdefault("extras", {})["seam_feather"] = 1
+    _save(out or path, js, chunks)
+    t = np.array(turn) if turn else np.zeros(1)
+    print("FEATHER: %d of %d shared points given their rows' normal (turned p50 %.1f, p90 %.1f, max %.1f deg); written %s"
+          % (done, len(shared), np.median(t), np.percentile(t, 90), t.max(), out or path))
+
+
 def seam(path, out=None, band=BAND):
+    _seam(path, out, band)
+    feather(out if out and os.path.exists(out) else path, out)
+
+
+def _seam(path, out=None, band=BAND):
     js, binc = _load(path)
     chunks = {i: binc[bv.get("byteOffset", 0):bv.get("byteOffset", 0) + bv["byteLength"]] for i, bv in enumerate(js["bufferViews"])}
     mats = [m.get("name") for m in js.get("materials", [])]
