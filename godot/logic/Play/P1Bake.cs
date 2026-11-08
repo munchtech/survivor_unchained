@@ -76,6 +76,16 @@ public sealed class P1Bake
         foreach (int j in order)
         {
             int p = B.Parent[j];
+            if (aPose != null && p >= 0 && Side(j) is string cs)
+            {
+                // the mapped clavicle's line (A's) from B's neutral by the least turn, so B's clavicle keeps its own roll:
+                // A's clavicle roll laid on B's clavicle (whose skin is B's upper chest and trapezius) moved B's breasts
+                // 10 mm p95 off A's at the Look (round 25 trial: 4.3 -> 10.3)
+                var neutral = G[p] * restLocal[j];
+                var line = neutral.Lin() * restLocal[B.Index["upperarm_" + cs]].T();
+                var want = mapped[B.Index["upperarm_" + cs]].T() - mapped[j].T();
+                L[j] = G[p].Inverse() * P1M4.From(Arc(line, want) * P1Retarget.Rot(neutral), neutral.T());
+            }
             if (Array.IndexOf(uppers, j) >= 0 && p >= 0)
             {
                 // the upper arm's mapped world turn kept, its head where the held parent carries it
