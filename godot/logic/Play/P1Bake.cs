@@ -76,11 +76,14 @@ public sealed class P1Bake
         foreach (int j in order)
         {
             int p = B.Parent[j];
-            if (aPose != null && p >= 0 && Side(j) is string cs)
+            if (aPose != null && p >= 0 && !B.ClavicleRollNeutral && Side(j) is string cs)
             {
                 // the mapped clavicle's line (A's) from B's neutral by the least turn, so B's clavicle keeps its own roll:
                 // A's clavicle roll laid on B's clavicle (whose skin is B's upper chest and trapezius) moved B's breasts
-                // 10 mm p95 off A's at the Look (round 25 trial: 4.3 -> 10.3)
+                // 10 mm p95 off A's at the Look (round 25 trial: 4.3 -> 10.3). Not on a rig whose girdle lays that roll
+                // at runtime (P1Rig.ClavicleRollNeutral, round 27): there the clip keys A's clavicle as mapped, so the
+                // game's local blends of clavicle and upper arm run as A's (baked here, the fights' upper arms ran 1-3 deg
+                // off A's through blends: round 26)
                 var neutral = G[p] * restLocal[j];
                 var line = neutral.Lin() * restLocal[B.Index["upperarm_" + cs]].T();
                 var want = mapped[B.Index["upperarm_" + cs]].T() - mapped[j].T();

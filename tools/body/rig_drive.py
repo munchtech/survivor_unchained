@@ -263,7 +263,17 @@ def girdle(poser, G, rig, s):
         new = arm_old.copy()
         new[:3, 3] = G[arm][:3, 3]
         _apply(poser, G, arm, new @ np.linalg.inv(G[arm]))
-    th_u = table(A, gd["scap_up"]) - table(A0, gd["scap_up"])
+    if gd.get("clavicle_roll") == "neutral":  # (P1 R1 arm chain round 27: the clips key A's clavicle, so the game's blends
+        # and A's HerShrug run as A's; its roll about its own line beyond its neutral goes to the upper arm, which keeps
+        # its world, so B's clavicle skin never takes A's roll. P1Rig.ClavicleRollNeutral)
+        y = _unit(G[cl])[:, 1]
+        ang = _roll(_turn(G, poser.rest, cl) @ _turn(G, poser.rest, poser.parent[cl]).T, y)
+        if abs(ang) >= 1e-12:
+            keep = {k: G[k].copy() for k in poser.subtree(arm)}
+            _apply(poser, G, cl, _about(head(G, cl), _expm(-y * ang)))
+            for k, M in keep.items():
+                G[k] = M
+    th_u =table(A, gd["scap_up"]) - table(A0, gd["scap_up"])
     th_p = table(A, gd["scap_tilt"]) - table(A0, gd["scap_tilt"])
     if abs(th_u) > 1e-9 or abs(th_p) > 1e-9:
         n = Rt @ _n(np.asarray(gd["scap_axis"], float) * np.array([sg, 1.0, 1.0]))

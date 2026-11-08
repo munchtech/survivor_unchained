@@ -27,11 +27,18 @@ public sealed class P1Rig
     /// the clip's (the map of A's, B's clavicle head and shoulder being A's) lifted at runtime by A's own HerShrug (run on
     /// B by role, where A runs it), so B's arm follows A's through every blend. The scapula's rows still run.</summary>
     public readonly bool ShrugDriven;
+    /// <summary>rig.json girdle "clavicle_roll": "neutral" (P1 R1 arm chain round 27): before the scapula's rows the
+    /// clavicle is laid on its own line by the least turn from its neutral (its parent's carried rest), the clip's roll
+    /// about that line handed to the upper arm, which keeps its world. The clips key A's clavicle (the plain map, so the
+    /// game's local-space blends run as A's do and A's HerShrug lifts it as A's) and B's clavicle skin (upper chest,
+    /// trapezius) still never takes A's roll.</summary>
+    public readonly bool ClavicleRollNeutral;
 
     public P1Rig(string[] names, int[] parent, P1M4[] rest, JsonElement rig)
     {
         Names = names; Parent = parent; Rest = rest; this.rig = rig;
         ShrugDriven = rig.TryGetProperty("girdle", out var g0) && g0.TryGetProperty("clavicle_by", out var cb) && cb.GetString() == "shrug";
+        ClavicleRollNeutral = rig.TryGetProperty("girdle", out var g1) && g1.TryGetProperty("clavicle_roll", out var cr) && cr.GetString() == "neutral";
         Index = new Dictionary<string, int>();
         for (int i = 0; i < names.Length; i++) Index[names[i]] = i;
         var children = Enumerable.Range(0, names.Length).Select(j => Enumerable.Range(0, names.Length).Where(k => parent[k] == j).ToArray()).ToArray();
@@ -247,6 +254,19 @@ public sealed class P1Rig
             // the upper arm keeps its world turn (the clip's aim), riding the moved clavicle
             var nw = armOld.WithT(G[arm].T());
             Apply(G, arm, nw * G[arm].Inverse());
+        }
+        if (ClavicleRollNeutral)
+        {
+            // the clavicle's roll about its own line (y, its head to the shoulder) beyond its neutral handed to the upper
+            // arm: the line is kept, the upper arm's subtree keeps its world, the scapula and the share helper ride it
+            var y = Unit(G[cl]).Col(1);
+            double ang = Roll(Turn(G, cl) * Turn(G, Parent[cl]).T(), y);
+            if (Math.Abs(ang) >= 1e-12)
+            {
+                var keep = subtree[arm].ToDictionary(k => k, k => G[k]);
+                Apply(G, cl, About(Head(G, cl), Expm(y * -ang)));
+                foreach (var kv in keep) G[kv.Key] = kv.Value;
+            }
         }
         double thu = Table(A, gd.GetProperty("scap_up")) - Table(A0, gd.GetProperty("scap_up"));
         double thp = Table(A, gd.GetProperty("scap_tilt")) - Table(A0, gd.GetProperty("scap_tilt"));

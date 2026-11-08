@@ -152,6 +152,7 @@
  },
  "rig_girdle": {
   "clavicle_by": "shrug",
-  "why": "P1 R1 arm chain: B's clavicle is the clip's (P1Retarget's map of A's, with align; B's clavicle head and shoulder are A's) and A's own HerShrug lifts it at runtime where A runs it (People.Heroine, on B by role), instead of the girdle law's clavicle turn: A blends her clips and then shrugs, so B baked A's shrug and laid its own law on top, and the fights' arms ran 1-3 deg off A's (hands 11-19 mm p95). The scapula's rows stay B's."
+  "clavicle_roll": "neutral",
+  "why": "Round 27 (clavicle_roll neutral): the clips key A's clavicle as mapped, roll and all, so the game's local-space blends of clavicle and upper arm run as A's (round 26 baked B's own roll into the keys and the fights' upper arms ran 1-3 deg off A's through blends); B's laws (rig_drive.girdle, P1Rig) then lay the clavicle on its line by the least turn from its neutral, handing the roll to the upper arm (its world kept), so B's clavicle skin never takes A's roll (round 25: breasts 4.3 -> 10.3 mm p95 at the Look).P1 R1 arm chain: B's clavicle is the clip's (P1Retarget's map of A's, with align; B's clavicle head and shoulder are A's) and A's own HerShrug lifts it at runtime where A runs it (People.Heroine, on B by role), instead of the girdle law's clavicle turn: A blends her clips and then shrugs, so B baked A's shrug and laid its own law on top, and the fights' arms ran 1-3 deg off A's (hands 11-19 mm p95). The scapula's rows stay B's."
  }
 }
