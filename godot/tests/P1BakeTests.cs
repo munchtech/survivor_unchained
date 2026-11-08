@@ -189,8 +189,11 @@ public class P1BakeTests
         var (names, _, _, rig) = B();
         var map = new P1Retarget(an, ap, ar, rig);
         string Role(string a) { int j = map.Role(Array.IndexOf(an, a)); return j < 0 ? "-" : names[j]; }
-        Assert.Equal("spine_05", Role("spine_03"));
-        Assert.StartsWith("neck_0", Role("neck_01"));
+        // (B's trunk joints are A's, P1 R1 rig root: each A chain bone's role is the B bone on its joint)
+        Assert.True(map.JointsMatched, "B's trunk joints are not A's");
+        Assert.Equal("spine_04", Role("spine_03"));
+        Assert.Equal("spine_02", Role("spine_01"));
+        Assert.Equal("neck_02", Role("neck_01"));
         foreach (var n in new[] { "upperarm_l", "hand_r", "thigh_l", "foot_r", "clavicle_l", "Head", "pelvis" }) Assert.Equal(n, Role(n));
         int pf = Array.IndexOf(an, "panel_front");
         Assert.True(pf >= 0);
@@ -232,15 +235,15 @@ public class P1BakeTests
             Assert.True((g[bh].T() - Carry(ah, rest[bh].T())).Len() < 1e-9, $"Head joint {(g[bh].T() - Carry(ah, rest[bh].T())).Len() * 1000:F3} mm off A's carried");
             Assert.True(Ang(Turn(g[bh], rest[bh]), Turn(a[ah], ar[ah])) < 1e-4, "B's Head is not A's Head turn");
         }
-        // a partial clip (A's Head only: B's spine and neck unkeyed): nothing lands, the length-fraction map alone
-        map.Map(a, new HashSet<int> { ah });
-        Assert.True(double.IsNaN(map.LastStretch[0]) && double.IsNaN(map.LastStretch[1]));
-        // a full clip whose spine_01 holds (the stock clips drop its constant track): B's chain is still all keyed, both land
-        var chainA = new[] { "pelvis", "spine_02", "spine_03", "neck_01", "Head" }.Select(x => Array.IndexOf(an, x)).ToHashSet();
-        map.Map(a, chainA);
-        Assert.False(double.IsNaN(map.LastStretch[0]) || double.IsNaN(map.LastStretch[1]));
-        map.Map(a);
-        Assert.InRange(map.LastStretch[0], 0.9, 1.1);
-        Assert.InRange(map.LastStretch[1], 0.9, 1.1);
+        // the matched trunk (P1 R1 rig root): every B chain joint where its A segment's bone carries it, at that bone's turn
+        // (B's spare bones, spine_01, spine_05, neck_01, too), and a partial clip's map the same (no landing to skip)
+        var partial = map.Map(a, new HashSet<int> { ah });
+        foreach (var bn in new[] { "pelvis", "spine_01", "spine_02", "spine_03", "spine_04", "spine_05", "neck_01", "neck_02", "Head" })
+        {
+            int bj = rig.Index[bn], src = map.Source(bj).S0;
+            Assert.True((mapped[bj].T() - Carry(src, rest[bj].T())).Len() < 1e-9, $"{bn} joint {(mapped[bj].T() - Carry(src, rest[bj].T())).Len() * 1000:F3} mm off A's carried");
+            Assert.True(Ang(Turn(mapped[bj], rest[bj]), Turn(a[src], ar[src])) < 1e-4, $"{bn} is not its A segment's turn");
+            Assert.True((partial[bj].T() - mapped[bj].T()).Len() < 1e-12);
+        }
     }
 }
