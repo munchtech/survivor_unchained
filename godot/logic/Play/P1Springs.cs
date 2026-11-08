@@ -29,6 +29,12 @@ public sealed class P1Springs
         /// already shows; that much is taken off the offset, so bare and upright sits AT the bind (a body sculpted standing,
         /// A's, carries its own weight: P1 A shape, round 11). Support and lean still move it from there.</summary>
         public double RestShows;
+        /// <summary>rest_down (P1 R1 round 35): the down, in the spring's parent's rest frame, under which the bind shows its
+        /// weight: her stance turns her chest 6-8 deg back and 6 deg to the side (idle, close, Look: the parent's rest-frame
+        /// down (0.10, -0.99, -0.12)), and with the bind's weight read upright the spring's rest sat 2.5-3.5 deg off the bind
+        /// there (sag and tilt pulled the breast back and aside), the right lower pole 4-6 mm inside A's at idle_close
+        /// 114-150 (gate judge 3 fault 4). The tilt term and the bind's weight are read about it (absent: upright, as before).</summary>
+        public P1V RestDown = new(0, -1, 0);
         /// <summary>Squash and stretch across the bone (r2): its local axis nearest her chest's up (0 X, 2 Z) scaled by
         /// 1 - SquashAmt * u, u the offset from rest up (+) or down (-) over that limit: the upper pole flattens on the
         /// lift, the lower pole stretches on the drop; the other two axes take the volume back.</summary>
@@ -121,6 +127,11 @@ public sealed class P1Springs
                 sp.Press = row.GetProperty("press").GetDouble() * q;
                 sp.Tilt = row.GetProperty("tilt").GetDouble() * q;
                 sp.RestShows = row.TryGetProperty("rest_shows", out var rs) ? rs.GetDouble() : 0;
+                if (row.TryGetProperty("rest_down", out var rd))
+                {
+                    var d = new P1V(rd[0].GetDouble(), rd[1].GetDouble(), rd[2].GetDouble());
+                    sp.RestDown = d / d.Len();
+                }
                 var lim = row.GetProperty("limits");
                 sp.Lim = new[] { "in", "out", "up", "down", "fwd", "back" }.Select(k => lim.GetProperty(k).GetDouble() * q).ToArray();
                 Springs.Add(sp);
@@ -200,8 +211,8 @@ public sealed class P1Springs
         var Tw = W * (s.In * s.Tip);
         var Fm = Frame(s, Wl);
         var inward = Fm * new P1V(-s.Side, 0, 0);
-        s.Eq = inward * (s.Press * F(s.Group, "press")) + Down * (s.Sag * F(s.Group, "sag")) + (Down - Fm * Down) * (s.Tilt * F(s.Group, "reach"))
-             - Fm * new P1V(-s.Side * s.Press * s.RestShows, -s.Sag * s.RestShows, 0);   // the bind's own weight (rest_shows)
+        s.Eq = inward * (s.Press * F(s.Group, "press")) + Down * (s.Sag * F(s.Group, "sag")) + (Down - Fm * s.RestDown) * (s.Tilt * F(s.Group, "reach"))
+             - Fm * (new P1V(-s.Side * s.Press * s.RestShows, 0, 0) + s.RestDown * (s.Sag * s.RestShows));   // the bind's own weight (rest_shows), under rest_down
         bool jump = !s.Live || (Tw - s.LastT).Len() > 0.5;
         if (Frozen)
         {
