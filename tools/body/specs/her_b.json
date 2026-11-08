@@ -204,6 +204,37 @@
    "cover_min": 0.97,
    "why": "P1 R1 shape round 30 (gate judge 2 fault 5: the left cap about 4 px wider at the front Look). Measured on round_30 build5 (r1c/round30/s/sil2.py, trx2.py): the cap and upper arm edges sit on A's within 1-2 px; the difference is the trapezius' slope from the neck to the acromion, B 19-28 px out of A's silhouette at the Look (left; right 29 px), trapezius box p95 8.7/5.4 mm. B gave the slope to upperarm_share (0.67; A: clavicle 0.33, upper chest spine_03 0.26, trap 0.23) and B's clavicle skin never takes A's roll (girdle clavicle_roll neutral; at the Look B's clavicle skin turns the slope's points 11 mm off A's). A's weights mapped by role, A's clavicle and trapezius onto B's trapezius helper, which keeps the clip's roll (rig_girdle clavicle_roll_keep): trapezius p95 Look 8.7/5.4 -> 4.7/1.0, close 4.4/8.9 -> 3.1/2.3, chest 8.6/5.4 -> 5.7/3.5, close chest_r 10.3 -> 5.9; silhouette 19-28 px -> 0-9 px; caps held (Look 3.1 -> 2.7, close 1.6 -> 1.5). neck_d/ease: the neck part (the head seam) kept B's; x_full 145 mm then 35% of A's out to 200 mm (A's in full to the acromion pulls the lateral slope 12-16 px under A's and the close cap 1.6 -> 3.8 mm)."
   },
+  "a_elbow": {
+   "map": {"upperarm_{s}": "upperarm_{s}", "upperarm_share_{s}": "upperarm_share_{s}", "upperarm_twist_01_{s}": "upperarm_twist_01_{s}", "upperarm_twist_02_{s}": "upperarm_twist_02_{s}", "upperarm_twist_03_{s}": "upperarm_twist_03_{s}", "upperarm_twist_04_{s}": "upperarm_twist_04_{s}", "delt_{s}": "delt_{s}", "lowerarm_{s}": "lowerarm_{s}", "lowerarm_share_{s}": "lowerarm_share_{s}", "lowerarm_point_{s}": "lowerarm_point_{s}", "lowerarm_twist_01_{s}": "lowerarm_twist_01_{s}", "lowerarm_twist_02_{s}": "lowerarm_twist_02_{s}"},
+   "parts": ["arm", "elbow"],
+   "t_lo_m": 0.02,
+   "t_ease_m": 0.02,
+   "t_hi_m": 0.12,
+   "cover_min": 0.97,
+   "why": "P1 R1 round 32 (gate judge 2 fault 3: the armband ink about 1.5 times A's width, the lower band most, the zigzag uneven). Measured on round_31 (r1c/round32/s/band.py, bandpose.py, elbprof.py): the carry keeps the band at rest (edge ratio p50 1.000, p95 1.01); posed at the Look B's lower band's edges stretch p50 1.14-1.22, p95 1.45-1.51 of rest (A's 1.04, its bone scale), the skinning alone (the shapes add nothing): B's elbow blend reaches 15-30 mm further up the upper arm than A's (the lower chain's share at 40-50 mm over the joint B 0.29, A 0.01; 50% at B 33 mm, A 21 mm; zero by A 50 mm, B 90 mm), so the Look's 20-30 degree elbow bend drags the band's lower edge. A's weights mapped by name from 20-40 mm over the joint (the elbow's own crease and point kept B's) to 120 mm, eased out by 140."
+  },
+  "a_neck": {
+   "map": {"Head": "Head", "neck_01": "neck_02", "spine_03": "spine_04", "spine_02": "spine_03", "spine_01": "spine_02", "clavicle_{s}": "trap_{s}", "trap_{s}": "trap_{s}", "scap_{s}": "scap_{s}", "upperarm_share_{s}": "upperarm_share_{s}", "upperarm_{s}": "upperarm_{s}", "breast_{s}": "breast_{s}"},
+   "parts": ["neck"],
+   "h_full_m": 0.05,
+   "h_ease_m": 0.03,
+   "cover_min": 0.97,
+   "why": "P1 R1 round 32 (gate judge 2 fault 6: the throat blot at fight_close 353, a purple bruise-like spot under the head's seam, B's stronger than A's faint line). Measured on round_31 (r1c/round32/s/throat.py, neckw.py; d/fc_B*.png): the spot survives noao, flathead and (fainter) flatbody: it is the surface, not the maps; posed at 353 B's throat 10-40 mm under the seam sits 6-9 mm inside A's with its normals 11-19 degrees off, at rest on A's (p50/p95 0.9/2.5 mm). A's neck rides the head (Head 0.74-0.80 at the seam, 0.5-0.6 at 30-45 mm, 0.2 at 50-80 mm), B's rode neck_02 / neck_01 (Head 0.00-0.19), so the fight's head turn left B's throat behind and dented it at the seam. A's weights mapped by role over the neck part (A's neck_01 = B's neck_02, the spine one up, A's clavicle onto B's trapezius helper as a_shoulder_top), full to 50 mm under the seam, eased out by 80; the head's weights are the ring's, so both sides of the seam take A's turn."
+  },
+  "a_thigh": {
+   "map": {"pelvis": "pelvis", "spine_01": "spine_02", "glute_{s}": "glute_{s}", "thigh_{s}": "thigh_{s}", "thigh_{o}": "thigh_{o}", "calf_{s}": "calf_{s}", "calf_share_{s}": "calf_share_{s}"},
+   "parts": ["thigh", "trunk", "crotch"],
+   "crotch_d_m": 0.0,
+   "crotch_ease_m": 0.015,
+   "depth_m": 0.26,
+   "depth_ease_m": 0.06,
+   "x_full_m": 0.07,
+   "x_ease_m": 0.03,
+   "back_z_m": 0.01,
+   "back_ease_m": 0.02,
+   "cover_min": 0.97,
+   "why": "P1 R1 round 32 (the butt ruler, butt the priority: B's left inner lower butt by the gluteal cleft up to 35 mm inside A's at the stance, p95 Look 26.1, close 29.0, right 9.2). Measured on round_31 (r1c/round32/s/butt.py, buttw.py, buttloc.py, hipang.py): at rest B is on A there (p50/p95 1.4/2.1 mm); the points 5-40 mm off are the thigh part's inner top behind, 110-240 mm under the hip joint, 20-120 mm off the crotch strip, where the hip pin's fill gives B pelvis 0.48-0.59 and thigh_share 0.39-0.50 against A's thigh 0.87-0.94; the stance turns B's left thigh 13 degrees in and the right 7 out, so B's inner thigh stays with the pelvis (left -24 mm mean, inside; right +9, outside). A's weights mapped by role over the thigh's inner top (to 260 mm under the joint, eased out by 320; the crotch strip's 15 mm and the hip's side past x 70 mm kept B's)."
+  },
   "why": "P1 R1 shape round 30 (gate judge 2 fault 1, the ankle's sharp crease): B's calf -> foot ramp was 50 mm (all foot 20 mm under the ankle joint, all calf 30 over); A's own, measured on heroine.glb's bind (foot + ball share by height over A's ankle along the calf, her left, 10 mm bands): 0.93 at -55 mm, 0.72 at -5, 0.50 at +15, 0.26 at +45, 0.13 at +75, a 195 mm ramp from -80 (least squares, smoothstep: residual 0.015 over 15 bands). The ball's: A 0.17 at t 0.55, 0.53 at 0.95, 0.92 at 1.35 along the foot bone -> [0.23, 1.4] (residual 0.003). B's foot and its joints are A's (her_a a_foot), so A's ramps are A's skinning there."
  },
  "bake": {
