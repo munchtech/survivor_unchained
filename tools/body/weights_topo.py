@@ -607,6 +607,62 @@ def spine_front(W, c, thr):
     return keep
 
 
+def a_lower_breast(W, P, topo, sk, A, cfg):
+    """A spec's "weights" "a_lower_breast" (P1 R1 round 30, her body: her breasts and the trunk round them ARE A's surface,
+    her_a): A's own skin weights over the breasts' lower half and the skirt under and beside them, mapped onto B's bones
+    by role (cfg "map", A bone: B bone; the breast's share split onto breast_tip by B's own rule, weights.breast), eased
+    out over the trunk by the distance from the breast part (1 - s01(d / fade_m), front only: z > front_z) and up the
+    breast by height (1 - s01((y - y_frac's height) / y_ease_m)); only where A's mapped bones hold cover_min of A's
+    weight. Her left's taken, mirrored. Why (gate judge 2 fault 4, the right breast's lower curve to a point at the
+    close-up and in idle_close): B's height steps hand the lower pole to the spine under the breast (B spine_03, A's
+    spine_02: 0.55 at the bottom eighth, A 0.20) and its skirt's upper-chest share falls 0.44 -> 0 within 40 mm (A's 0.72
+    -> 0.14 over 70 mm), so where the chest turns on the waist B's lower pole lags: posed bottom-middle vs A p95 4.8 mm
+    at the close (round_29), 1.6 with A's weights. A: the game's own heroine.glb skin (its bind, B's points' closest
+    points there, barycentric)."""
+    from scipy.spatial import cKDTree
+    import topo_uv as tu
+    from surfdist import Surface
+    names = sk["names"]
+    m = A.mesh("Heroine")
+    na = A.skeleton(0).names
+    PA = m.P.astype(float)
+    WA = np.zeros((len(PA), len(na)))
+    np.put_along_axis(WA, m.J.astype(int), m.W.astype(float), 1)
+    parts = list(map(str, topo["parts"]))
+    part = topo["part"]
+    br, tr = part == parts.index("breast"), part == parts.index("trunk")
+    left = P[:, 0] > 0
+    dB, _ = cKDTree(P[br]).query(P)
+    ylo, yhi = P[br, 1].min(), P[br, 1].max()
+    yc = ylo + float(cfg["y_frac"]) * (yhi - ylo)
+    k = np.where(br, 1.0, np.where(tr & (P[:, 2] > float(cfg.get("front_z", 0.0))), 1 - s01(dB / float(cfg["fade_m"])), 0.0))
+    k *= 1 - s01((P[:, 1] - yc) / float(cfg["y_ease_m"]))
+    ids = np.where((k > 1e-4) & left)[0]
+    q, _, tri, d = Surface(PA, m.T).closest(P[ids], k=16)
+    a, b, c = (PA[m.T[tri, i]] for i in range(3))
+    w = np.clip(tu.bary(q, a, b, c), 0, None)
+    w /= w.sum(1, keepdims=True)
+    Wq = sum(w[:, i:i + 1] * WA[m.T[tri, i]] for i in range(3))
+    Wt = np.zeros((len(ids), len(names)))
+    for an, bn in cfg["map"].items():
+        Wt[:, names.index(bn)] += Wq[:, na.index(an)]
+    cover = Wt.sum(1)
+    Wt /= np.maximum(cover[:, None], 1e-12)
+    for s in ("l", "r"):
+        ib, it = names.index(f"breast_{s}"), names.index(f"breast_tip_{s}")
+        h, tip = sk["ends"][f"breast_{s}"][0], sk["ends"][f"breast_tip_{s}"][1]
+        lo, hi = wt.RULES["breast_tip"]
+        kt = s01((wt.seg_t(P[ids], h, tip) - lo) / (hi - lo))
+        Wt[:, it] += Wt[:, ib] * kt
+        Wt[:, ib] *= 1 - kt
+    kk = k[ids] * (cover >= float(cfg["cover_min"]))
+    W = W.copy()
+    W[ids] = (1 - kk[:, None]) * W[ids] + kk[:, None] * Wt
+    W = mirror(W, topo, names)
+    return W, {"points_left": int((kk > 1e-4).sum()), "A_dist_mm_p95": round(float(np.percentile(d[kk > 1e-4] * 1e3, 95)), 2),
+               "cover_p5": round(float(np.percentile(cover[k[ids] > 1e-4], 5)), 3)}
+
+
 def mirror(W, topo, names):
     sw = np.array([names.index(wt.swap_side(n)) for n in names])
     mo = topo["mirror_of"]

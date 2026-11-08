@@ -174,6 +174,15 @@
    "ankle_m": [-0.08, 0.195],
    "ball_t": [0.23, 1.4]
   },
+  "a_lower_breast": {
+   "map": {"pelvis": "pelvis", "spine_01": "spine_02", "spine_02": "spine_03", "spine_03": "spine_04", "breast_l": "breast_l", "breast_r": "breast_r", "clavicle_l": "clavicle_l", "clavicle_r": "clavicle_r", "upperarm_l": "upperarm_l", "upperarm_r": "upperarm_r"},
+   "fade_m": 0.08,
+   "front_z": 0.0,
+   "y_frac": 0.5,
+   "y_ease_m": 0.04,
+   "cover_min": 0.97,
+   "why": "P1 R1 shape round 30 (gate judge 2 fault 4: the right breast's lower curve comes to a point at the close-up and in idle_close). Measured on round_29 at the close (s/brpole.py, brw.py): B at rest on A (lower pole p95 1.5 mm), the correctives and the springs change it < 0.3 mm; the cause is the skinning: B's height steps hand the lower pole to the spine under the breast (B spine_03 = A's spine_02: 0.55 at the bottom eighth, A 0.20) and the skirt's upper-chest share falls 0.44 -> 0 within 40 mm (A 0.72 -> 0.14 over 70 mm). A's weights there (round_29 re-skinned, s/brx.py): close bottom-middle p95 r 4.8 -> 1.6, l 2.0 -> 1.1 mm, breasts 5.7 -> 5.2, Look 4.3 -> 3.8. map: A's trunk bones onto B's by the matched joints (her_a a_joints), the breast and the girdle by name; y_frac 0.5 (the lower half; the upper breast and its clavicle share kept), fade_m 80 mm (A's skirt share at 70 mm 0.14)."
+  },
   "why": "P1 R1 shape round 30 (gate judge 2 fault 1, the ankle's sharp crease): B's calf -> foot ramp was 50 mm (all foot 20 mm under the ankle joint, all calf 30 over); A's own, measured on heroine.glb's bind (foot + ball share by height over A's ankle along the calf, her left, 10 mm bands): 0.93 at -55 mm, 0.72 at -5, 0.50 at +15, 0.26 at +45, 0.13 at +75, a 195 mm ramp from -80 (least squares, smoothstep: residual 0.015 over 15 bands). The ball's: A 0.17 at t 0.55, 0.53 at 0.95, 0.92 at 1.35 along the foot bone -> [0.23, 1.4] (residual 0.003). B's foot and its joints are A's (her_a a_foot), so A's ramps are A's skinning there."
  },
  "bake": {

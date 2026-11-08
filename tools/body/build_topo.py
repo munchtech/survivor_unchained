@@ -418,6 +418,13 @@ def stage_weights(z, V, ring, hv, sk, A, baked, rep, rules=None):
     nb = len(names)
     D = np.zeros((len(V), nb))
     np.put_along_axis(D, J, W, 1)
+    if (rules or {}).get("a_lower_breast"):
+        # (P1 R1 round 30: A's own skin weights over the lower breasts and their skirt, weights_topo.a_lower_breast)
+        import weights as wt_
+        D, info["a_lower_breast"] = wtp.a_lower_breast(D, V, z, sk, A, rules["a_lower_breast"])
+        J, W = wt_.cap(D, wt_.RULES["cap"])
+        D = np.zeros((len(V), nb))
+        np.put_along_axis(D, J, W, 1)
     # the head: welded points, the ring's from the body's ring, one to one
     head = A.mesh("HeroineHead")
     PH = baked["HeroineHead"]["P"]
