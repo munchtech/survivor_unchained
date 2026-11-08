@@ -254,6 +254,8 @@ def girdle(poser, G, rig, s):
     th_r = (retract_plane(A, reach, gd) * (table(A, gd["clav_retract"]) - table(A0, gd["clav_retract"]))
             - gd["protract_per_reach"] * reach)
     arm_old = G[arm].copy()
+    if gd.get("clavicle_by") == "shrug":     # (P1 R1 arm chain: the clavicle is the clip's, lifted by A's HerShrug at runtime)
+        th_e = th_r = 0.0
     if abs(th_e) > 1e-9 or abs(th_r) > 1e-9:
         Rc = _expm(up * sg * math.radians(th_r)) @ _expm(front * sg * math.radians(th_e))
         _apply(poser, G, cl, _about(head(G, cl), Rc))

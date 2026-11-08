@@ -597,6 +597,12 @@ def stage_export(spec, tier, z, V, ring, hv, sk, wts, A, baked, out, rep, uv=Non
     tmp = os.path.join(out, "stage", tier)
     os.makedirs(tmp, exist_ok=True)
     st.write_rig(sk, tmp)
+    if spec.get("rig_girdle"):          # (a spec's own girdle fields over base_drive.json's: P1 R1 arm chain "clavicle_by")
+        with open(os.path.join(tmp, "rig.json")) as f:
+            rj = json.load(f)
+        rj["girdle"].update({k: v for k, v in spec["rig_girdle"].items() if k != "why"})
+        with open(os.path.join(tmp, "rig.json"), "w") as f:
+            json.dump(rj, f, indent=1)
     os.replace(os.path.join(tmp, "rig.json"), os.path.join(out, rig))
     ht = int(sum(len(A.mesh(h).T) for h in HEADS))
     rep["export"] = {"file": glb, "body_vertices": int(len(V)), "tris_body": int(len(T)), "head_tris": ht,

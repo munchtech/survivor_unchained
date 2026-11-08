@@ -55,7 +55,9 @@ public sealed class P1Retarget
     // down, A's game-rig convention 15 deg; standing B's clavicle in A's dropped B's shoulder joint 31 mm in every pose,
     // the arm rode it down while the neck and trapezius held: the dome over her shoulders at the Look and close-up
     // cameras. The clip's clavicle turns still apply, from B's own rest; the upper arm's own stand aims her arm as A's.)
-    static bool Limb(string n) => new[] { "upperarm", "lowerarm", "hand", "index", "middle", "ring", "pinky", "thumb", "thigh", "calf", "foot", "ball" }.Any(n.StartsWith);
+    // (P1 R1 arm chain: the clavicle aligned too, its direction only, now that B's clavicle head and shoulder are A's
+    // (her_a's stored joints): the align is the identity there, and the map lays B's clavicle line on A's in any rig)
+    static bool Limb(string n) => new[] { "clavicle", "upperarm", "lowerarm", "hand", "index", "middle", "ring", "pinky", "thumb", "thigh", "calf", "foot", "ball" }.Any(n.StartsWith);
     /// <summary>Limb bones whose rest roll is matched to A's as well as their direction (the hand and the four fingers).</summary>
     static bool RollAligned(string n) => new[] { "hand_", "index_0", "middle_0", "ring_0", "pinky_0" }.Any(n.StartsWith);
 

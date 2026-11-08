@@ -57,8 +57,12 @@ public class P1BakeTests
         var a = Pose(names, parent, rest, new() { ["clavicle_l"] = new(0, 0, D(25)), ["scap_l"] = new(D(10), 0, 0), ["upperarm_l"] = new(D(30), D(20), D(-40)), ["lowerarm_l"] = new(D(70), 0, 0), ["spine_03"] = new(D(8), 0, D(5)) });
         var mapped = bake.Map.Map(a);
         var (L, G) = bake.Hold(mapped);
-        foreach (var g in new[] { "clavicle_l", "scap_l", "clavicle_r", "scap_r" })
+        foreach (var g in new[] { "scap_l", "scap_r" })
             Assert.True(Diff(L[rig.Index[g]], bake.RestLocal(rig.Index[g])) < 1e-9, $"{g} not at B's rest local");
+        // the clavicle as mapped (P1 R1 arm chain: the plain map with align; the law leaves it to A's HerShrug)
+        Assert.True(rig.ShrugDriven, "the published rig drives the clavicle by the shrug");
+        foreach (var g in new[] { "clavicle_l", "clavicle_r" })
+            Assert.True(Ang(P1Retarget.Rot(G[rig.Index[g]]), P1Retarget.Rot(mapped[rig.Index[g]])) < 1e-6, $"{g} not as mapped");
         foreach (var n in new[] { "upperarm_l", "lowerarm_l", "hand_l" })
         {
             double deg = Ang(P1Retarget.Rot(G[rig.Index[n]]), P1Retarget.Rot(mapped[rig.Index[n]]));
@@ -81,13 +85,13 @@ public class P1BakeTests
         // (the arm high: the law turns the clavicle, and the bake keys under it)
         var a = Pose(names, parent, rest, new() { ["clavicle_l"] = new(0, 0, D(25)), ["upperarm_l"] = new(D(30), D(20), D(-70)), ["lowerarm_l"] = new(D(70), 0, 0), ["spine_03"] = new(D(8), 0, D(5)) });
         var (_, G) = bake.Frame(a);
-        Assert.NotNull(rig.ClavicleTurn(G, "l"));
+        Assert.Null(rig.ClavicleTurn(G, "l"));     // (shrug-driven: the law leaves the clavicle as the map lays it)
         var (D2, _) = rig.Drive(G);
         int c = rig.Index["clavicle_l"], u = rig.Index["upperarm_l"];
         var want = bake.Map.ClavicleLine(a, "l");
         var got = D2[u].T() - D2[c].T();
         double deg = Math.Acos(Math.Clamp(P1V.Dot(want, got) / (want.Len() * got.Len()), -1, 1)) * 180 / Math.PI;
-        Assert.True(deg < 1e-4, $"clavicle line {deg:F4} deg off A's after the law");
+        Assert.True(deg < 1e-4, $"clavicle line {deg:F4} deg off A's after the laws");
         Assert.True(Ang(P1Retarget.Rot(D2[u]), P1Retarget.Rot(bake.Map.Map(a)[u])) < 1e-4, "the upper arm's world turn moved");
         Assert.True(Diff(bake.Frame(a).Local[rig.Index["scap_l"]], bake.RestLocal(rig.Index["scap_l"])) < 1e-9);
     }
@@ -102,13 +106,14 @@ public class P1BakeTests
         var k = bake.Keyed(new HashSet<int> { I("upperarm_l"), I("lowerarm_l"), I("clavicle_l"), I("upperarm_twist_01_l") });
         Assert.Contains(rig.Index["upperarm_l"], k);
         Assert.Contains(rig.Index["lowerarm_l"], k);
-        Assert.Contains(rig.Index["clavicle_l"], k);                    // the clavicle: A's, keyed under the law (the scapula never)
+        Assert.Contains(rig.Index["clavicle_l"], k);                    // the clavicle: A's, keyed where A keys it (the scapula never)
         Assert.DoesNotContain(rig.Index["upperarm_twist_01_l"], k);     // a helper: B's laws
         Assert.DoesNotContain(rig.Index["upperarm_r"], k);
         Assert.DoesNotContain(rig.Index["pelvis"], k);
-        // a clip keying the arm and not the clavicle (her blows): B's clavicle keyed with its arm (Hold sets it), not the scapula
+        // a clip keying the arm and not the clavicle (her blows): on the shrug-driven rig B's clavicle stays unkeyed as A's
+        // (its init, the map of A's rest, as A's is), not the scapula
         var arm = bake.Keyed(new HashSet<int> { I("upperarm_r"), I("lowerarm_r") });
-        Assert.Contains(rig.Index["clavicle_r"], arm);
+        Assert.DoesNotContain(rig.Index["clavicle_r"], arm);
         Assert.DoesNotContain(rig.Index["clavicle_l"], arm);
         if (rig.Index.TryGetValue("scap_r", out int scr)) Assert.DoesNotContain(scr, arm);
         // the chain: a bone between pelvis and Head is keyed when either bracket is

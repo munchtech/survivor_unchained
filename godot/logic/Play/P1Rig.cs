@@ -23,10 +23,15 @@ public sealed class P1Rig
     /// <summary>The bones the rig's helper rows set (never keyed: carried at rest before Drive). Not the "unroll" rows'
     /// bones (lowerarm, calf): those are keyed limb bones whose roll the rig moves on to the child.</summary>
     public readonly HashSet<int> Helpers = new();
+    /// <summary>rig.json girdle "clavicle_by": "shrug" (P1 R1 arm chain): the girdle law leaves the clavicle alone; it is
+    /// the clip's (the map of A's, B's clavicle head and shoulder being A's) lifted at runtime by A's own HerShrug (run on
+    /// B by role, where A runs it), so B's arm follows A's through every blend. The scapula's rows still run.</summary>
+    public readonly bool ShrugDriven;
 
     public P1Rig(string[] names, int[] parent, P1M4[] rest, JsonElement rig)
     {
         Names = names; Parent = parent; Rest = rest; this.rig = rig;
+        ShrugDriven = rig.TryGetProperty("girdle", out var g0) && g0.TryGetProperty("clavicle_by", out var cb) && cb.GetString() == "shrug";
         Index = new Dictionary<string, int>();
         for (int i = 0; i < names.Length; i++) Index[names[i]] = i;
         var children = Enumerable.Range(0, names.Length).Select(j => Enumerable.Range(0, names.Length).Where(k => parent[k] == j).ToArray()).ToArray();
@@ -201,6 +206,7 @@ public sealed class P1Rig
     /// keys the clavicle under it: P1Bake.Hold).</summary>
     public P1M3? ClavicleTurn(P1M4[] G, string s)
     {
+        if (ShrugDriven) return null;
         var gd = rig.GetProperty("girdle");
         double sg = s == "l" ? 1 : -1;
         int arm = Index[Sub(gd.GetProperty("arm"), s)], end = Index[Sub(gd.GetProperty("arm_end"), s)];

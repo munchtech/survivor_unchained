@@ -151,7 +151,8 @@ public partial class P1BakeRun : Node
                 for (int f = 0; f < frames; f++)
                 {
                     double time = Math.Min(f / Fps, src.Length);
-                    var g = Sample(a, ap, pose, shrug, time);
+                    // (a shrug-driven B: A sampled before her HerShrug, which B runs at runtime as A does: P1 R1 arm chain)
+                    var g = Sample(a, ap, pose, rig.ShrugDriven ? null : shrug, time);
                     var (L, G) = bake.Frame(g, cleanUsed, aKeyed);
                     var (dl, dr) = bake.ShoulderDrop(G);
                     sumL += dl; sumR += dr;
@@ -219,12 +220,12 @@ public partial class P1BakeRun : Node
 
     /// <summary>A at a clip's instant: her bones reset, the clip applied, HerPose and HerShrug run by hand (the engine's modifier pass off:
     /// Skeleton3D's Manual mode with Advance ran none here), her bones' globals read.</summary>
-    static P1M4[] Sample(Skeleton3D a, AnimationPlayer ap, HerPose pose, HerShrug shrug, double time)
+    static P1M4[] Sample(Skeleton3D a, AnimationPlayer ap, HerPose pose, HerShrug? shrug, double time)
     {
         a.ResetBonePoses();
         ap.Seek(time, true, true);
         pose._ProcessModificationWithDelta(1 / Fps);
-        shrug._ProcessModificationWithDelta(1 / Fps);
+        shrug?._ProcessModificationWithDelta(1 / Fps);
         var g = new P1M4[a.GetBoneCount()];
         for (int i = 0; i < g.Length; i++) g[i] = P1Body.M(a.GetBoneGlobalPose(i));
         return g;

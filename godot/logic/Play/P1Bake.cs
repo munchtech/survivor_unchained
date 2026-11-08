@@ -68,18 +68,14 @@ public sealed class P1Bake
             // (only root and pelvis move from B's own offsets)
             if (j != Pelvis && j != Root) L[j] = L[j].WithT(restLocal[j].T());
         }
-        foreach (int j in Girdle) L[j] = restLocal[j];
+        // the scapulae at B's rest local (B's law turns them); the clavicle as mapped (P1 R1 arm chain: the plain map with
+        // align, B's clavicle head and shoulder being A's, so its line is A's line; before, A's final line was laid from B's
+        // neutral by the least turn, the shrug baked in)
+        foreach (int j in Girdle) if (Side(j) == null) L[j] = restLocal[j];
         var G = new P1M4[n];
         foreach (int j in order)
         {
             int p = B.Parent[j];
-            if (aPose != null && p >= 0 && Side(j) is string cs)
-            {
-                // A's line from B's neutral (its rest local under the chest), by the least turn
-                var neutral = G[p] * restLocal[j];
-                var line = neutral.Lin() * restLocal[B.Index["upperarm_" + cs]].T();
-                L[j] = G[p].Inverse() * P1M4.From(Arc(line, Map.ClavicleLine(aPose, cs)) * P1Retarget.Rot(neutral), neutral.T());
-            }
             if (Array.IndexOf(uppers, j) >= 0 && p >= 0)
             {
                 // the upper arm's mapped world turn kept, its head where the held parent carries it
@@ -297,8 +293,11 @@ public sealed class P1Bake
         // the arm and not the clavicle (her sword, dagger and axe blows) left B's clavicle at B's rest local in the game
         // (the deterministic blend's init: a track the shot lacks), not the bake's: the clavicle line 4-6 deg off A's, the
         // upper arm 3-4, the hands 25-48 mm off in fight_close's strikes.
-        foreach (var s in new[] { "l", "r" })
-            if (B.Index.TryGetValue("upperarm_" + s, out int u) && o.Contains(u) && B.Index.TryGetValue("clavicle_" + s, out int c)) o.Add(c);
+        // (not on a shrug-driven rig, P1 R1 arm chain: there the clavicle is the map of A's, keyed where A keys it, and a
+        // blow that leaves A's clavicle unkeyed leaves B's at its init as A's is; A's HerShrug lifts both at runtime)
+        if (!B.ShrugDriven)
+            foreach (var s in new[] { "l", "r" })
+                if (B.Index.TryGetValue("upperarm_" + s, out int u) && o.Contains(u) && B.Index.TryGetValue("clavicle_" + s, out int c)) o.Add(c);
         return o;
     }
 

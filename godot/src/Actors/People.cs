@@ -391,6 +391,9 @@ public static class People
         if (Args.Has("pose-probe")) root.AddChild(new P1PoseProbe(skel, root));   // (the pose ruler: nothing without the flag)
         if (p1)
         {
+            // A's clavicle lift where A runs it (P1 R1 arm chain: B's clips are A's before the shrug, mapped; B's girdle law
+            // leaves the clavicle to it, rig.json girdle "clavicle_by": "shrug"), so blends and layers lift B as A
+            if (P1Body.RigOf(skel).ShrugDriven) skel.AddChild(new HerShrug());
             // B's laws after every pose-writing modifier (P1Laws keeps itself there as more are added), then B's springs (P1Jiggle:
             // data/body/springs.json; HerJiggle stays A's) and her face
             skel.AddChild(new P1Laws());

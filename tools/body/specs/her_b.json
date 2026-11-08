@@ -149,5 +149,9 @@
   "pose": "tools/body/forms/her_topo_target_bones.json",
   "carry": null,
   "source_maps": "tools/body/base/targets/her_a_maps"
+ },
+ "rig_girdle": {
+  "clavicle_by": "shrug",
+  "why": "P1 R1 arm chain: B's clavicle is the clip's (P1Retarget's map of A's, with align; B's clavicle head and shoulder are A's) and A's own HerShrug lifts it at runtime where A runs it (People.Heroine, on B by role), instead of the girdle law's clavicle turn: A blends her clips and then shrugs, so B baked A's shrug and laid its own law on top, and the fights' arms ran 1-3 deg off A's (hands 11-19 mm p95). The scapula's rows stay B's."
  }
 }
