@@ -212,7 +212,7 @@ class ARest:
                 q, nA, _, d = S1.closest(X, k=16)
                 Vc = V.copy()
                 Vc[free] = X
-                ok = (d < 0.04) & ((nA * quad_normals(Vc, Q)[free]).sum(1) > 0.5)
+                ok = (d < float(cfg.get("near_m", 0.04))) & ((nA * quad_normals(Vc, Q)[free]).sum(1) > float(cfg.get("agree_cos", 0.5)))
                 Bw = (w[free] * ok)[:, None, None] * (np.einsum("ni,nj->nij", nA, nA) + 0.1 * np.eye(3)[None])
                 Am = sp.coo_matrix((Bw.ravel(), (ii, jj)), shape=(n3, n3)).tocsr() + lam * K
                 U = spl.spsolve(Am.tocsc(), np.einsum("nij,nj->ni", Bw, q - X0).ravel()).reshape(-1, 3)
@@ -586,6 +586,11 @@ def a_joints(cfg, ar, hand=None):
         j["ends:ball_l"] = [r6(H["ball_l"]), r6(H["ball_leaf_l"])]
         j["x:foot_l"] = r6(Rt["foot_l"][:, 0])
         j["x:ball_l"] = r6(Rt["ball_l"][:, 0])
+        if cfg["a_foot"].get("leg_joints"):
+            # (and her hip and knee: B's thigh and shin are A's skin there too; with B's own (the hip 32 mm off A's, the knee
+            # 16) the clips' leg lines, laid on A's, carried B's foot by the hip's offset, 19-26 mm off A's at the Look)
+            j["rule:harrington"] = r6(H["thigh_l"])
+            j["rule:knee_tea"] = r6(H["calf_l"])
     return np.array(json.dumps(j))
 
 

@@ -369,6 +369,13 @@ class OurLandmarks:
             # fitted on), at the slider's value v: (1 - v) landmark + v joint
             J, v = self.joints[p["cube"]]
             q = (1.0 - v) * q + v * np.asarray(J, float)
+        for rk in ("harrington", "knee_tea"):
+            if q is not None and rk in p and "rule:" + rk in self.joints:
+                # (P1 R1 round 30, her_a "a_foot" "leg_joints": an anatomical rule's point is the target's own joint, her
+                # hip and knee A's where her leg IS A's skin; every bone placed by the rule or a lerp of it follows, the
+                # twist and share helpers and the knee rule's own hip input with them)
+                J, v = self.joints["rule:" + rk]
+                q = (1.0 - v) * q + v * np.asarray(J, float)
         if q is not None and "cube" in p and p["cube"] in self.moves:      # a spec's joint move (glTF m, her left; the right mirrors)
             q = q + np.asarray(self.moves[p["cube"]], float)
         return q

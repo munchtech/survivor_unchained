@@ -289,12 +289,13 @@ def main():
     ap.add_argument("--px", type=float, default=1.0)
     ap.add_argument("--pose-from")
     ap.add_argument("--no-image", action="store_true")
+    ap.add_argument("--frame", type=int, default=None, help="the probes' row nearest this frame (default: the last; --pose-probe-every rows)")
     ap.add_argument("--carry-lines", action="store_true", help="with --pose-from: the arm chain's posed lines kept (a re-bake's preview)")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     GA = Glb(a.a_glb)
     GB = Glb(os.path.join(a.b_build, "body.glb"))
-    pa, pb = read_probe(a.a_probe), read_probe(a.b_probe)
+    pa, pb = read_probe(a.a_probe, a.frame), read_probe(a.b_probe, a.frame)
     ca, cb = Cam(pa["camera"]), Cam(pb["camera"])
     bones = None
     if a.pose_from:
