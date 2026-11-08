@@ -96,7 +96,7 @@
    "iters": 2
   },
   "maps_bake": {
-   "carrier": "tools/body/out/round_16",
+   "carrier": "tools/body/out/round_28",
    "a_rest": [
     "clavicle",
     "upperarm"
@@ -114,7 +114,8 @@
    },
    "why": "P1 R1 round 13 (skin): A's paint carried on round_12's surface (A's torso and, at A's rest, A's girdle and arm: projection p50 0.2-0.9 mm there, against 18-25 mm on the arms from her_ek2_final); one half's carry for both halves (averaging A's two halves halved its detail: the abs' slopes p50 1.84 -> 1.08 deg); A's whole form where we lie on A (A's navel is A's geometry, walls to 77 deg, which the 8-16 deg rule dropped), the old rule off A (hands, feet) Round 16 (bake round 2): carried on round_16 (B's normals A's file normals: the map holds A's own detail plus what B's interpolation misses), A's form = its file normals, the normal map's two halves averaged (each half's error vs A's shading p90 upper chest 1.88 -> 0.97, torso front 3.12 -> 1.58 against 'left'; A's detail is mirror-alike there, p90 0.5-0.9 apart), the paint one half's as before.",
    "a_normals": "file",
-   "mirror_normal": "avg"
+   "mirror_normal": "avg",
+   "carrier_why": "Round 28: the carrier is round_28 (its hand on A's, a_hand): A's hand paint and nails carried onto the hand B now has; round_16 elsewhere"
   },
   "a_rest_why": "P1 A shoulder (round 12): B's rest girdle and upper arm ARE A's (clavicle -14.9 deg, shoulder 41.5 mm under its head, arm -51.8 deg; A's joints from the target), so the game turns B from where A turns from. Measured: A's own skin taken through the old round trip (the fit's pose by A's weights, back by B's) alone gave cap p95 17-23 mm, armpit 13-28. The shoulder, upper arm and elbow are laid on A's skin (a_tight; the fit's arm is LOOSE, 10-23 mm off), fading to the fit's forearm (A girth, our flow) over the forearm (fading over the elbow alone left a step); the hand ours, riding rigidly. Forearm and hand keep the fit's direction: A's rest elbow bend is its carrying angle, which would make the hinge point forward.",
   "normals": {
@@ -140,6 +141,21 @@
     45.0
    ],
    "why": "P1 R1 bake round 2 (round_16): B's export normals are A's FILE normals (posed as Godot skins them: what the game shades A with) where B lies on A, each half its own, least-squares fit over our triangles (the blend the game interpolates; point samples left p90 1.57 deg, the fit 1.29); B's own area-weighted normals there are B's facets over A's, p90 14 / p99 35 deg off on the upper chest, and the map that carried that correction from one half lit the other half wrong (round 1's lumps). near_mm = maps_bake form_near's (B on A); agree_cos keeps the other sheet out; dev_mm: where the built body leaves the target (the seam's rows) B's own. Measured (s/nmetric.py, texels both halves): vertex normal vs A's file p90 upper chest 5.14 -> 1.17, torso front 5.40 -> 2.35. ring_mm: B's own normals within 15 mm of the head's ring, A's from 45 (A's on the seam's rows stood the next row p90 10.3 deg off the ring's head normal, B's own 6.8)."
+  },
+  "a_hand": {
+   "blend_m": 0.003,
+   "ease_m": 0.02,
+   "lam": [
+    30,
+    10,
+    3,
+    1,
+    0.3,
+    0.1,
+    0.03
+   ],
+   "iters": 2,
+   "why": "P1 R1 shape round 28 (gate judge 1 item 3): B's hand was ours (27% thinner, 13-20% shorter than A's; stiff and splayed at the Look and close-up). Our hand is laid on A's hand surface at the a_rest pose (her_a_target.ARest.hand_wrap) and B's hand and finger ends and x axes are A's (skeleton ends:/x:), so the clips' finger turns, rolled onto A's, carry A's hand whole. blend_m: the segments' blend (3 mm, ~ a joint's crease); ease_m: from the hand part's open edge (20 mm; the edge sits 21 mm from the wrist joint); lam as a_tight's. Posed hand vs A, round_27 -> trial: Look l/r 14.3/17.0 -> 1.6/5.2, close 12.1/18.2 -> 9.6/5.2 mm p95"
   }
  },
  "bake": {
