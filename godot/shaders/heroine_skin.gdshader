@@ -103,6 +103,10 @@ uniform float cavity_bounce = 0.0;
 uniform vec2 cavity_ao = vec2(0.35, 0.9);
 uniform vec2 cavity_ndl = vec2(-0.25, 0.25);
 uniform float cavity_shadow = 0.0;
+// (and only where she faces down (world normal y under -cavity_down.x, all of it under -.y): the hollow under her
+// raised arm faces the ground; at rest her armpit's front fold faces sideways and is her form, and the bounce over it
+// took its shade to a pale patch at the Look: at (0.1, 0.35) 2454 px changed there, max 79 levels; at (0.35, 0.7) 1367, the crease kept; the pit at fight_stalker 359 L .42)
+uniform vec2 cavity_down = vec2(0.35, 0.7);
 // (her lips parted (HerFaceLife.MouthShade, 0 shut to 1 by mouth_open 0.3): the shade ao_map bakes where her lips
 // meet, right for them shut, is eased up to lip_ao_open on her lips (features' green): opened, the inner faces of her
 // lips came out of that bake near black, her lower lip's top a black band under her teeth (c04a A5, judge F1, face 29))
@@ -773,10 +777,11 @@ void fragment() {
 	AO = ao;
 	AO_LIGHT_AFFECT = mix(ao_light, ear_light, smoothstep(0.0, 0.15, 1.0 - ea));
 	back_ao = mix(1.0, ao, back_occ);
-	cav_w = cavity_bounce > 0.0 ? cavity_bounce * (1.0 - smoothstep(cavity_ao.x, cavity_ao.y, texture(cavity_map, UV).r)) : 0.0;
 	SSS_STRENGTH = scatter * mix(1.0, paint_scatter, pa);
 	BACKLIGHT = ALBEDO * backlight_colour * backlight * mix(1.0, aot.b, thin_map * rig_w);
 	float wd = (INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).y;
+	cav_w = cavity_bounce > 0.0 ? cavity_bounce * (1.0 - smoothstep(cavity_ao.x, cavity_ao.y, texture(cavity_map, UV).r))
+		* smoothstep(cavity_down.x, cavity_down.y, -wd) : 0.0;
 	front_rim = seam_ease ? aot.g * (1.0 - rig_w) : 0.0;
 	rim_dn = rim_down * smoothstep(rim_down_from, rim_down_to, -wd);
 	shade_w = mix(1.0, smoothstep(down_from, down_to, -wd), shade_down) * mix(1.0, aot.a, shade_zone)
