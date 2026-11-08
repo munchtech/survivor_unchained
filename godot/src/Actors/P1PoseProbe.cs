@@ -102,6 +102,31 @@ public partial class P1PoseProbe : Node
     static string X(Transform3D t) => string.Format(CultureInfo.InvariantCulture, "[{0:0.######},{1:0.######},{2:0.######},{3:0.######},{4:0.######},{5:0.######},{6:0.######},{7:0.######},{8:0.######},{9:0.######},{10:0.######},{11:0.######}]",
         t.Basis.Column0.X, t.Basis.Column0.Y, t.Basis.Column0.Z, t.Basis.Column1.X, t.Basis.Column1.Y, t.Basis.Column1.Z, t.Basis.Column2.X, t.Basis.Column2.Y, t.Basis.Column2.Z, t.Origin.X, t.Origin.Y, t.Origin.Z);
 
+    static readonly System.Collections.Generic.Dictionary<Node3D, string> boxes = new();
+
+    /// <summary>The piece's meshes' bounding box in the piece's own space, [min..., max...] (cached per piece).</summary>
+    static string Box(Node3D piece)
+    {
+        if (boxes.TryGetValue(piece, out var s)) return s;
+        var inv = piece.GlobalTransform.AffineInverse();
+        Aabb? box = null;
+        foreach (var mi in Walk(piece).OfType<MeshInstance3D>().Where(m => m.Mesh != null))
+        {
+            var a = (inv * mi.GlobalTransform) * mi.Mesh.GetAabb();
+            box = box is { } bb ? bb.Merge(a) : a;
+        }
+        var x = box ?? new Aabb();
+        s = $"[{V(x.Position)[1..^1]},{V(x.End)[1..^1]}]";
+        boxes[piece] = s;
+        return s;
+    }
+
+    static System.Collections.Generic.IEnumerable<Node> Walk(Node n)
+    {
+        yield return n;
+        foreach (var c in n.GetChildren()) foreach (var d in Walk(c)) yield return d;
+    }
+
     void Full(long f)
     {
         var sb = new StringBuilder();
@@ -130,6 +155,23 @@ public partial class P1PoseProbe : Node
         sb.Append("},\"bones\":{");
         for (int i = 0; i < sk.GetBoneCount(); i++)
             sb.Append($"{(i > 0 ? "," : "")}\"{sk.GetBoneName(i)}\":{X(sk.GetBoneGlobalPose(i))}");
+        sb.Append('}');
+        // Held pieces (Arms.Hold's mounts on BoneAttachment3Ds): each piece's skeleton-space transform (its bone's pose, the mount,
+        // the piece) and its meshes' box in the piece's space, keyed by the mount's name and the piece's.
+        sb.Append(",\"pieces\":{");
+        bool fp = true;
+        foreach (var att in sk.GetChildren().OfType<BoneAttachment3D>())
+        {
+            int b = sk.FindBone(att.BoneName);
+            if (b < 0) continue;
+            foreach (var mount in att.GetChildren().OfType<Node3D>().Where(m => m.Name.ToString().StartsWith(Play.GripSlide.MountPrefix)))
+                foreach (var piece in mount.GetChildren().OfType<Node3D>())
+                {
+                    var t = sk.GetBoneGlobalPose(b) * mount.Transform * piece.Transform;
+                    sb.Append($"{(fp ? "" : ",")}\"{mount.Name}/{piece.Name}\":{{\"x\":{X(t)},\"box\":{Box(piece)}}}");
+                    fp = false;
+                }
+        }
         sb.Append("}}" + (char)10);
         System.IO.File.AppendAllText(fullPath, sb.ToString());
     }

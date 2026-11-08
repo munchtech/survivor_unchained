@@ -210,6 +210,13 @@ public sealed class P1Retarget
     /// name (A bone s0), 2 the spine-to-head chain (slerped between A bones s0 and s1).</summary>
     public (int Kind, int S0, int S1) Source(int j) => ((int)kind[j], kind[j] == Kind.Carried ? -1 : src0[j], kind[j] == Kind.Chain ? src1[j] : -1);
 
+    /// <summary>A by-name B bone j's turn onto its A bone's frame, in j's own space: Map lays B's turn as D·align·R_B (D, A's
+    /// turn from A's rest R_A), so A's posed frame is B's posed one times R_B^T·align^T·R_A, the same in every pose. A piece
+    /// mounted in A's bone frame (Arms.Hold: a sword in the hand, a shield on the forearm) rides on B through it as on A: the
+    /// align lays B's bone direction (to its children's heads) on A's, but the two rigs' bone axes sit off those directions
+    /// differently (B's hands 6.7 deg about their x, the forearms 1-4 deg about their length). Null off a by-name bone.</summary>
+    public P1M3? AFrame(int j) => j >= 0 && j < kind.Length && kind[j] == Kind.Direct ? Rot(b.Rest[j]).T() * align[j].T() * aRestRot[src0[j]] : null;
+
     /// <summary>The role map (systems keyed to A's bone names, on B): by name off the spine-to-head chain; on the matched
     /// trunk the B bone whose joint is A's (A's spine_03 -> B's spine_04, neck_01 -> neck_02: a layer turning it turns
     /// everything A's bone carries, about A's joint); off it, on the chain (A's spine_01..03, neck_01) the B bone that
