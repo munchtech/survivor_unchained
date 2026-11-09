@@ -586,7 +586,7 @@ public partial class P1Laws : SkeletonModifier3D
             if (mi.HasMeta(P1Body.GearMeta))
             {
                 string n = mi.Name.ToString();
-                bool playTier = n.StartsWith("lod_") || n.Contains("_lod1_") || n.EndsWith("_shadow");
+                bool playTier = n.StartsWith("lod_") || n.StartsWith("her_merge") || n.Contains("_lod1_") || n.EndsWith("_shadow");
                 Wear(mi, playTier);
                 mi.SetMeta("p1_piece", playTier ? "play" : "close");
                 continue;
