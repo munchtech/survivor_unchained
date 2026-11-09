@@ -166,6 +166,12 @@ public sealed record AtmospherePreset(
     /// share of the moon's key, fill and rim given up at the pool's heart, the share of the sky's light, and where the giving
     /// starts to fade and where it is gone (metres from her light; S2b-N2). Null: none (the rig's rigs.json "ember_give").</summary>
     public double[]? EmberGive { get; init; }
+    /// <summary>(L1 lead 9, NIGHT2) How the moon gives way to the zone's fires and lamps (the nearest few lit warm lights,
+    /// ZoneView.CelFires; cel.gdshaderinc cel_fires_at), as to her light (bible rule 3, T01/T05/T06: each lamp and the camp
+    /// fire throws its own warm pool, the moon giving way inside it): the share of the moon's key, fill and rim given up at a
+    /// source's foot, the share of the sky's light, and where the giving starts to fade and where it is gone (shares of the
+    /// source's own range, on the ground). Null: none (the rig's rigs.json "fire_give").</summary>
+    public double[]? FireGive { get; init; }
     /// <summary>(L1 lead 9, B1) Her pool as light, a ramp in metres from her light's foot (cel.gdshaderinc cel_pool_paint;
     /// Atmosphere.PoolRamp): [how much of the canopy's dapple stays in it at its edge and at its core (target 09: the leaf shapes
     /// cut its edge, its core whole), then stops of r (m, rising), level (over her light's

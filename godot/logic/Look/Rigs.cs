@@ -36,7 +36,7 @@ public sealed record RigDapple(double? Cover = null, double? Strength = null, do
 public sealed record LightRig(string Id, string From, bool Camera, RigKey Key, RigFill Fill, RigRim Rim, double[]? Ink,
     double? Hardness, string? Grade, double? Exposure, double? Ember, RigDapple Dapple, double? Fires = null,
     double? EmberReach = null, string? EmberColor = null, double[]? Curve = null, double? WarmKeep = null, double[]? EmberGive = null, double? SceneColor = null, double? SceneMoon = null,
-    double[]? EmberPool = null, string? EmberEdge = null)
+    double[]? EmberPool = null, string? EmberEdge = null, double[]? FireGive = null)
 {
     /// <summary>(B4r2) The fires' light under this rig, a share of their own (1: as built; rule 3, one warm light a scene:
     /// by day the sun is it, and a fire burning by day is a glow at its flames, not a light on her across the square).</summary>
@@ -119,7 +119,7 @@ public sealed class RigSet
             new RigDapple(D(d, "cover", b?.Dapple.Cover), D(d, "strength", b?.Dapple.Strength), D(d, "height", b?.Dapple.Height), D(d, "size", b?.Dapple.Size), D(d, "floor", b?.Dapple.Floor)),
             D(e, "fires", b?.Fires), D(e, "ember_reach", b?.EmberReach), S(e, "ember_color", b?.EmberColor),
             A(e, "grade_curve", b?.Curve), D(e, "warm_keep", b?.WarmKeep), A(e, "ember_give", b?.EmberGive), D(e, "scene_color", b?.SceneColor), D(e, "scene_moon", b?.SceneMoon),
-            A(e, "ember_pool", b?.EmberPool), S(e, "ember_edge", b?.EmberEdge));
+            A(e, "ember_pool", b?.EmberPool), S(e, "ember_edge", b?.EmberEdge), A(e, "fire_give", b?.FireGive));
     }
 }
 
@@ -148,7 +148,7 @@ public static class Rigs
             CelRimColor = m.Color ?? p.CelRimColor, CelRim = m.Strength ?? p.CelRim, CelRimWidth = m.Width ?? p.CelRimWidth,
             CelInk = r.Ink is { } ink ? ink : p.CelInk, CelShadow = r.Hardness ?? p.CelShadow,
             Grade = Graded(r.Grade is { } g ? Atmospheres.GradeNamed(g) ?? p.Grade : p.Grade, r),
-            EmberGive = r.EmberGive ?? p.EmberGive,
+            EmberGive = r.EmberGive ?? p.EmberGive, FireGive = r.FireGive ?? p.FireGive,
             EmberPool = r.EmberPool ?? p.EmberPool, EmberEdge = r.EmberEdge ?? p.EmberEdge,
             Exposure = r.Exposure ?? p.Exposure, Ember = r.Ember ?? p.Ember,
             EmberReach = r.EmberReach ?? p.EmberReach, EmberColor = r.EmberColor ?? p.EmberColor,

@@ -397,6 +397,22 @@ cel_give={
 "type": "vec4",
 "value": Vector4(0, 0, 0.25, 0.6)
 }
+cel_fire_give={
+"type": "vec4",
+"value": Vector4(0, 0, 0.2, 0.5)
+}
+cel_fire0={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+cel_fire1={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+cel_fire2={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 cel_pool={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)

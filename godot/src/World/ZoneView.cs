@@ -137,9 +137,10 @@ public partial class ZoneView : Node3D
 
         var meta = z.Meta;
         specs = new List<ZoneData.LightSpec>(z.Lights);
+        var zatt = ZoneLightTune(specs);
         lightRoot = new Node3D { Name = "Lights" };
         AddChild(lightRoot);
-        for (int i = 0; i < meta.Lights.Count; i++) { MakeLight(z.Lights[i]); yield return null; }
+        for (int i = 0; i < meta.Lights.Count; i++) { MakeLight(specs[i]); if (zatt.TryGetValue(i, out var za)) lights[i].OmniAttenuation = za; yield return null; }
         for (int i = 0; i < meta.Lights.Count; i++) if (meta.Lights[i].Core > 0) Core(i, meta.Lights[i]);
         var fx = new Node3D { Name = "Fires" };
         AddChild(fx);
@@ -213,6 +214,23 @@ public partial class ZoneView : Node3D
             if (d < bd) { bd = d; best = lights[i]; }
         }
         return best;
+    }
+
+    /// <summary>(L1 lead 9, NIGHT2; pictures) --zlight I=#color/intensity/distance[/attenuation][,...]: a zone light's spec
+    /// as tuned, for a sweep in one build. Returns the attenuations given.</summary>
+    static Dictionary<int, float> ZoneLightTune(List<ZoneData.LightSpec> specs)
+    {
+        var att = new Dictionary<int, float>();
+        if (SurvivorUnchained.Args.Get("zlight") is not { } zl) return att;
+        var ic = System.Globalization.CultureInfo.InvariantCulture;
+        foreach (var e in zl.Split(','))
+        {
+            var kv = e.Split('='); if (kv.Length != 2 || !int.TryParse(kv[0], out int i) || i < 0 || i >= specs.Count) continue;
+            var f = kv[1].Split('/');
+            specs[i] = specs[i] with { Color = new Color(f[0]), Intensity = f.Length > 1 ? float.Parse(f[1], ic) : specs[i].Intensity, Distance = f.Length > 2 ? float.Parse(f[2], ic) : specs[i].Distance };
+            if (f.Length > 3) att[i] = float.Parse(f[3], ic);
+        }
+        return att;
     }
 
     OmniLight3D MakeLight(ZoneData.LightSpec l)
@@ -661,6 +679,39 @@ public partial class ZoneView : Node3D
         if (bakery != null) bakery.LightEnergy = BakeryEnergy * shareShown;
     }
 
+    /// <summary>(L1 lead 9, NIGHT2) The nearest three lit warm lights (the camp fire, the lamps and lanterns) to where the
+    /// camera looks, for the cel model: within each one's reach the moon gives way to it (cel.gdshaderinc cel_fires_at; how
+    /// much: the rig's fire_give), so a lamp throws its own warm pool instead of adding orange over the moon (bible rule 3;
+    /// T01, T05, T06). Each frame; a light out, hidden or dark is skipped.</summary>
+    void CelFires()
+    {
+        var cam = GetViewport()?.GetCamera3D();
+        Vector3 at = Vector3.Zero;
+        if (cam != null)
+        {
+            var o = cam.GlobalPosition; var f = -cam.GlobalBasis.Z;
+            at = f.Y < -0.05f ? o + f * (o.Y / -f.Y) : o + f * 10f;
+        }
+        System.Span<int> best = stackalloc int[3] { -1, -1, -1 };
+        System.Span<float> bd = stackalloc float[3] { float.MaxValue, float.MaxValue, float.MaxValue };
+        for (int i = 0; i < lights.Count && i < lit.Count; i++)
+        {
+            var l = lights[i];
+            if (!lit[i] || l.LightEnergy <= 0 || !l.IsVisibleInTree() || l.LightColor.R <= l.LightColor.B) continue;
+            var lp = l.GlobalPosition;
+            float d = new Vector2(lp.X - at.X, lp.Z - at.Z).LengthSquared();
+            for (int k = 0; k < 3; k++)
+                if (d < bd[k]) { for (int j = 2; j > k; j--) { bd[j] = bd[j - 1]; best[j] = best[j - 1]; } bd[k] = d; best[k] = i; break; }
+        }
+        for (int k = 0; k < 3; k++)
+        {
+            var v = Vector4.Zero;
+            if (best[k] >= 0) { var l = lights[best[k]]; var lp = l.GlobalPosition; v = new Vector4(lp.X, lp.Y, lp.Z, l.OmniRange); }
+            RenderingServer.GlobalShaderParameterSet(CelFireKeys[k], v);
+        }
+    }
+    static readonly StringName[] CelFireKeys = { "cel_fire0", "cel_fire1", "cel_fire2" };
+
     /// <summary>After dark or not: night-only pieces show, moths come to the
     /// lamps, chimney smoke goes dark.</summary>
     public void SetNight(bool on)
@@ -711,6 +762,7 @@ public partial class ZoneView : Node3D
     public override void _ExitTree()
     {
         foreach (var l in lights) ShadowLamp.Withdraw(l);
+        foreach (var k in CelFireKeys) RenderingServer.GlobalShaderParameterSet(k, Vector4.Zero);
     }
 
     /// <summary>How far the blight has drawn back (0..1): the ground's veins
@@ -834,6 +886,7 @@ public partial class ZoneView : Node3D
         time += delta;
         float t = (float)time;
         if (shareShown != FireShare) ShareFires();
+        CelFires();
         TownTick();
         if (SurvivorUnchained.Args.Has("lamp-debug") && (lampDebugAt ??= new Queue<float>(System.Array.ConvertAll((SurvivorUnchained.Args.Get("lamp-debug-at") ?? "9").Split(','), x => float.Parse(x, System.Globalization.CultureInfo.InvariantCulture)))).Count > 0 && t > lampDebugAt.Peek())
         {

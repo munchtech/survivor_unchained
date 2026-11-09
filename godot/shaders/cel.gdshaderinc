@@ -105,6 +105,9 @@ uniform float cel_rim_k : hint_range(0.0, 1.0) = 1.0;   // (the stepped rim's sh
 // (L1 W2, B2) the class's albedo control (materials.json "albedo"; never a repaint): x a target Oklab L and y how far the
 // albedo's L is pulled to it (0 none), z a cap on its L, w its chroma's scale. (0, 0, 1, 1): the albedo as painted.
 uniform vec4 cel_alb = vec4(0.0, 0.0, 1.0, 1.0);
+// (L1 l9 PACK2, B2) and its hue (materials.json albedo_ctl "hue": [h, C, pull]): xy the target's Oklab a, b (C at h), z how far
+// the albedo's a, b (after w's scale) are pulled to it (0 none): the pack's fur cold neutral FROM target 09, whatever its paint.
+uniform vec4 cel_alb_hue = vec4(0.0);
 group_uniforms;
 
 global uniform float cel_on;
@@ -132,6 +135,15 @@ global uniform sampler2D cel_canopy : filter_linear, repeat_disable;
 // (rigs.json "ember_give"; Atmosphere.SetCel) and her light (PlayerView, each frame). A shader may define CEL_NO_GIVE.
 global uniform vec4 cel_ember;
 global uniform vec4 cel_give;
+// (L1 lead 9, NIGHT2) The zone's fires and lamps over the moon (bible rule 3; T01, T05, T06: each throws its own warm pool and
+// the moon gives way inside it, as to her light): cel_fire0-2 the nearest lit warm lights' world points, w their range (m;
+// 0: none; ZoneView.CelFires, each frame); cel_fire_give x the share of the moon's key, fill and rim given up at a source's
+// foot, y the sky's, z and w where the giving starts to fade and where it is gone (shares of the range, on the ground).
+// Set by the rig (rigs.json "fire_give"; Atmosphere.SetCel). A shader with CEL_NO_GIVE skips it with her light's.
+global uniform vec4 cel_fire_give;
+global uniform vec4 cel_fire0;
+global uniform vec4 cel_fire1;
+global uniform vec4 cel_fire2;
 // (L1 lead 9, B1) Her pool as light, a ramp in metres from her light's foot (judge 1, verdict section 3, FROM targets 09 and
 // 12: no plateau, no step, no ring; L falling from 0.5 m on, chroma peaking at the gold core and dying outward through
 // orange and dusk into the moon's ground): an omni light of her color whose level and color at a distance r on the ground
@@ -159,13 +171,13 @@ varying vec2 cel_cc;   // (CLEARCOAT, CLEARCOAT_ROUGHNESS)
 
 // (L1 W2) The class's albedo control on a linear albedo (cel_alb), in Oklab; at cel_on 0 the albedo as it is.
 vec3 cel_alb_apply(vec3 c_c) {
-	if (cel_on <= 0.0 || (cel_alb.y <= 0.0 && cel_alb.z >= 1.0 && cel_alb.w == 1.0)) return c_c;
+	if (cel_on <= 0.0 || (cel_alb.y <= 0.0 && cel_alb.z >= 1.0 && cel_alb.w == 1.0 && cel_alb_hue.z <= 0.0)) return c_c;
 	vec3 c_lms = pow(max(mat3(vec3(0.4122214708, 0.2119034982, 0.0883024619), vec3(0.5363325363, 0.6806995451, 0.2817188376),
 		vec3(0.0514459929, 0.1073969566, 0.6299787005)) * max(c_c, vec3(0.0)), vec3(0.0)), vec3(1.0 / 3.0));
 	vec3 c_o = mat3(vec3(0.2104542553, 1.9779984951, 0.0259040371), vec3(0.7936177850, -2.4285922050, 0.7827717662),
 		vec3(-0.0040720468, 0.4505937099, -0.8086757660)) * c_lms;
 	float c_l = min(mix(c_o.x, cel_alb.x, cel_alb.y), cel_alb.z);
-	vec2 c_ab = c_o.yz * cel_alb.w;
+	vec2 c_ab = mix(c_o.yz * cel_alb.w, cel_alb_hue.xy, cel_alb_hue.z);
 	vec3 c_m = mat3(vec3(1.0, 1.0, 1.0), vec3(0.3963377774, -0.1055613458, -0.0894841775), vec3(0.2158037573, -0.0638541728, -1.2914855480))
 		* vec3(c_l, c_ab);
 	c_m = c_m * c_m * c_m;
@@ -225,8 +237,22 @@ float cel_give_at(vec3 c_wp, float c_k) {
 	return 1.0 - c_k * cel_on * (1.0 - smoothstep(cel_give.z, max(cel_give.w, cel_give.z + 1e-3), c_d));
 #endif
 }
-float cel_pack(vec3 c_wp) { return 1.01 + 0.98 * cel_dapple_at(c_wp) + 2.0 * round(1000.0 * cel_give_at(c_wp, cel_give.x)); }
-#define CEL_FRAGMENT cel_gn = normalize(NORMAL) * cel_pack((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz); AO *= cel_give_at((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz, cel_give.y); CEL_FRAG_ALB; CEL_FRAG_MAT; ROUGHNESS = cel_tag(ROUGHNESS, cel_ink); if (cel_dbg > 0.5) { EMISSION = cel_dbg > 2.5 ? vec3(CEL_SKIN_V) : cel_dbg > 1.5 ? cel_ink_rgb(cel_ink) : vec3(0.0); ALBEDO = vec3(0.0); SPECULAR = 0.0; METALLIC = 0.0; }
+// (L1 lead 9, NIGHT2) The moon's share at a world point under the zone's fires and lamps (the least of the nearest three).
+float cel_fire_one(vec2 c_p, vec4 c_f, float c_k) {
+	if (c_f.w <= 0.0) return 1.0;
+	float c_d = length(c_p - c_f.xz) / c_f.w;
+	return 1.0 - c_k * (1.0 - smoothstep(cel_fire_give.z, max(cel_fire_give.w, cel_fire_give.z + 1e-3), c_d));
+}
+float cel_fires_at(vec3 c_wp, float c_k) {
+#ifdef CEL_NO_GIVE
+	return 1.0;
+#else
+	if (c_k <= 0.0 || cel_on <= 0.0) return 1.0;
+	return min(cel_fire_one(c_wp.xz, cel_fire0, c_k * cel_on), min(cel_fire_one(c_wp.xz, cel_fire1, c_k * cel_on), cel_fire_one(c_wp.xz, cel_fire2, c_k * cel_on)));
+#endif
+}
+float cel_pack(vec3 c_wp) { return 1.01 + 0.98 * cel_dapple_at(c_wp) + 2.0 * round(1000.0 * cel_give_at(c_wp, cel_give.x) * cel_fires_at(c_wp, cel_fire_give.x)); }
+#define CEL_FRAGMENT cel_gn = normalize(NORMAL) * cel_pack((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz); AO *= cel_give_at((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz, cel_give.y) * cel_fires_at((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz, cel_fire_give.y); CEL_FRAG_ALB; CEL_FRAG_MAT; ROUGHNESS = cel_tag(ROUGHNESS, cel_ink); if (cel_dbg > 0.5) { EMISSION = cel_dbg > 2.5 ? vec3(CEL_SKIN_V) : cel_dbg > 1.5 ? cel_ink_rgb(cel_ink) : vec3(0.0); ALBEDO = vec3(0.0); SPECULAR = 0.0; METALLIC = 0.0; }
 
 float cel_lum(vec3 c_c) { return dot(c_c, vec3(0.2126, 0.7152, 0.0722)); }
 float cel_schlick(float c_u) { float c_m = 1.0 - c_u; float c_m2 = c_m * c_m; return c_m2 * c_m2 * c_m; }

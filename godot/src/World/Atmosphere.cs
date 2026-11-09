@@ -333,6 +333,7 @@ public partial class Atmosphere : Node3D
                 RiverSky = T("riversky", p.RiverSky), RiverBend = T("bend", p.RiverBend),
                 // (S2b-N3: her pool, the moon's give, and the canopy's dapple, for a sweep in one build: pool=a/b/..., give=a/b/c/d)
                 EmberPool = V("pool", p.EmberPool ?? []) is { Length: > 0 } tp ? tp : p.EmberPool, EmberGive = V("give", p.EmberGive ?? []) is { Length: > 0 } tg ? tg : p.EmberGive,
+                FireGive = V("fgive", p.FireGive ?? []) is { Length: > 0 } tf ? tf : p.FireGive,   // (L1 lead 9, NIGHT2: fgive=key/sky/start/gone)
                 EmberEdge = H("edge", p.EmberEdge), DappleCover = T("dcover", p.DappleCover), DappleStrength = T("dstr", p.DappleStrength), DappleSize = T("dsize", p.DappleSize), DappleFloor = T("dfloor", p.DappleFloor),
                 Grade = p.Grade with
                 {
@@ -521,6 +522,9 @@ public partial class Atmosphere : Node3D
         // (L1 W2) how the moon gives way to her light (the rig's ember_give; her light's point and reach are PlayerView's); not under a camera rig: at the close view by night her lamp is off her, so the moon is her light (r1: night close Lp95 0.49 to 0.34 with it)
         var give = CelRigs && cam == null && p.EmberGive is [var gk, var gs, var g0, var g1] ? new Vector4((float)gk, (float)gs, (float)g0, (float)g1) : Vector4.Zero;
         RenderingServer.GlobalShaderParameterSet("cel_give", give);
+        // (L1 lead 9, NIGHT2) how the moon gives way to the zone's fires and lamps (the rig's fire_give; their points: ZoneView.CelFires)
+        var fgive = CelRigs && cam == null && p.FireGive is [var fk, var fs, var f0, var f1] ? new Vector4((float)fk, (float)fs, (float)f0, (float)f1) : Vector4.Zero;
+        RenderingServer.GlobalShaderParameterSet("cel_fire_give", fgive);
         // (L1 lead 9, B1) her pool as light, a ramp in metres from her light's foot (the rig's ember_pool; cel.gdshaderinc
         // cel_pool_paint, cel_pool_ramp): [the canopy's dapple kept at its edge and at its core, then stops of r (m), level (over her light's energy),
         // color (sRGB 0-255)], FROM targets 09 and 12. Not under a camera rig (the close view's own light).
