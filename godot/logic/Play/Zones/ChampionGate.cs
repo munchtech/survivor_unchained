@@ -48,6 +48,8 @@ public static class ChampionGate
     /// she is within `close` of its waking distance whatever her pace.</summary>
     public static bool Waking(Battle b, double ahead, double close = Close)
     {
+        // (a champion the zone has scheduled: a ring's second wave)
+        if (!double.IsNaN(b.ChampionDueAt) && b.ChampionDueAt >= b.Time && b.ChampionDueAt - b.Time <= ahead) return true;
         var p = b.Player;
         var foes = Hostile(b).ToList();
         var homes = new List<(double X, double Z)>();

@@ -352,6 +352,8 @@ public sealed class Encounters
         foreach (var bt in Of("ring"))
         {
             // (r3: the rest of the pack after a breath, FollowAfter s once the ring's own foes are down: two pulses, not one press)
+            // (M5 r4: a champion in the second wave is due then: ChampionGate's window holds the band and the banners for it)
+            if (RingAt >= 0 && !followed && bt.Champion != null && bt.FollowElite != null && DownAt.TryGetValue(bt.Id, out var cd)) b.ChampionDueAt = cd + bt.FollowAfter;
             if (RingAt >= 0 && !followed && DownAt.TryGetValue(bt.Id, out var rd) && b.Time - rd >= bt.FollowAfter && (bt.Follow.Count > 0 || bt.FollowElite != null)) { followed = true; Follow(bt); }
             if (Done(bt.Id) || RingAt >= 0) continue;
             // (armed on the road south of its line; off the road it disarms, so she comes back to the road to spring it,
@@ -523,18 +525,24 @@ public sealed class Encounters
     (double X, double Z) side, lastW;
     double sideUntil = -1, stuckSince, lastD = 1e9;
 
+    /// <summary>(M5 r4) A ring's champion comes out this far ahead of her (m): in the play camera's view, under its top band.</summary>
+    public const double FrontD = 8;
+
     /// <summary>The rest of the ring's pack: out of the trees 12 m on toward the gate, hunting her.</summary>
     void Follow(Beat bt)
     {
         var p = b.Player;
         int lv = Level(level, day, bt);
         var list = Packs.TryGetValue(bt.Id, out var l) ? l : Packs[bt.Id] = new();
-        Enemy? One(string def, bool elite, int i, int n)
+        Enemy? One(string def, bool elite, int i, int n, bool front = false)
         {
             for (int t = 0; t < 16; t++)
             {
                 // (r3: on this side of the wall, never in it: j08's harness had four stuck in the stones, holding the gate)
                 double a = -Math.PI / 2 + (n <= 1 ? 0 : (i / (double)(n - 1) - 0.5) * (1.6 + t * 0.12)) + (b.Rng.Next() - 0.5) * 0.4, d = Math.Max(7, 11 + b.Rng.Next() * 3 - t * 0.3);
+                // (M5 r4: a champion comes out straight ahead of her, FrontD m up the road, in the play camera's view: Ashjaw woke
+                // at the right edge under the tracker, the last of the fan)
+                if (front) { a = -Math.PI / 2 + (t % 2 == 1 ? 1 : -1) * ((t + 1) / 2) * 0.2; d = FrontD; }
                 double x = p.X + Math.Cos(a) * d, z = p.Z + Math.Sin(a) * d;
                 if (b.Collision.Blocked(x, z, 0.6) || z < S.GateZ - 6) continue;
                 var e = b.SpawnEnemy(def, x, z, new Battle.SpawnOpts { Level = elite ? lv + 1 : lv, Elite = elite, Style = SpawnStyle.Walk, Tag = Phase + ":" + bt.Id });
@@ -545,7 +553,7 @@ public sealed class Encounters
         }
         int all = bt.Follow.Sum(f => f.N) + (bt.FollowElite != null ? 1 : 0), k = 0;
         foreach (var f in bt.Follow) for (int i = 0; i < f.N; i++) One(f.Def, false, k++, all);
-        if (bt.FollowElite != null && One(bt.FollowElite, true, k++, all) is { } c)
+        if (bt.FollowElite != null && One(bt.FollowElite, true, k++, all, bt.Champion is { } fc && (fc.Def == null || fc.Def == bt.FollowElite)) is { } c)
         {
             Captains[bt.Id] = (c, c.Seed);
             if (bt.Champion is { } ch && (ch.Def == null || ch.Def == bt.FollowElite)) Crown(c, bt.Id);

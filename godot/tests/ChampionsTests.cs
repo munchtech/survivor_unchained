@@ -248,5 +248,25 @@ public class ChampionsTests
         Assert.Equal(1, c.Rank);
         Assert.InRange(c.RankScale, 1.05, 1.15);
         Assert.True(c.RankScale < e.RankScale);
+        // (M5 r4: the first affix's rim; a champion with none takes the champion's own, a captain none)
+        Assert.Equal(Champions.Get("ironhide")!.Body!.Rim!.Value, e.RankRim, 3);
+        var bare = b.SpawnEnemy("risen_warrior", b.Player.X + 7, b.Player.Z + 5, new Battle.SpawnOpts { Level = 1 })!;
+        Champions.Look(bare, 2, System.Array.Empty<Champions.Affix>());
+        Assert.True(bare.RankRim >= 0, "Ashjaw, no affixes, still has a champion's rim");
+        Assert.True(c.RankRim < 0);
+    }
+
+    [Fact]
+    public void A_scheduled_champion_holds_the_gate_from_two_seconds_before_it_comes()
+    {
+        // (M5 r4: a ring's second wave, Ashjaw; Battle.ChampionDueAt)
+        var b = Road(7);
+        Assert.False(ChampionGate.Waking(b, 2));
+        b.ChampionDueAt = b.Time + 3;
+        Assert.False(ChampionGate.Waking(b, 2));
+        b.ChampionDueAt = b.Time + 1.5;
+        Assert.True(ChampionGate.Waking(b, 2));
+        b.ChampionDueAt = b.Time - 0.5;
+        Assert.False(ChampionGate.Waking(b, 2));
     }
 }

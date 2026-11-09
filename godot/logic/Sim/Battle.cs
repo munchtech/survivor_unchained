@@ -1836,6 +1836,8 @@ public sealed partial class Battle
     /// <summary>(M5 r4) The breather's end besides a lamp's lighting (game seconds): a lamp menu open (MenuQuiet after it
     /// closes), her rise (RiseQuiet). The judge, round 3: n_post woke 0.3 s into the first lamp's menu, n_road3 as she rose.</summary>
     public double HushUntil = double.NegativeInfinity;
+    /// <summary>(M5 r4) When a scheduled champion comes (a ring's second wave, game seconds; NaN: none): ChampionGate.Waking.</summary>
+    public double ChampionDueAt = double.NaN;
     public const double MenuQuiet = 2, RiseQuiet = 4;
     /// <summary>(M5 r4) No pack wakes for `seconds` from now (LampHush).</summary>
     public void Breather(double seconds) => HushUntil = Math.Max(HushUntil, Time + seconds);

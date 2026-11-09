@@ -985,6 +985,10 @@ public partial class Game : Node, IZoneHost
         if (!a.Through && Now < bannerHold) { After(bannerHold - Now + 0.1, () => Announce(a)); return; }
         // (M5 r4: not over a screen: a level-up held for the Legendary's moment came up over its item card)
         if (!a.Through && Overlay != null) { After(0.5, () => Announce(a)); return; }
+        // (M5 r4: a level's title is not on a champion's wake: from 2 s before it (ChampionGate) to 3 s after; LEVEL 5 came
+        // 2 s before Ashjaw)
+        if (!a.Through && Battle is { } cb && (Now - champWokeAt < Play.StoryText.WakeHold || Play.Zones.ChampionGate.Waking(cb, Play.StoryText.WakeAhead, 2)))
+        { After(0.3, () => Announce(a)); return; }
         if (!a.Through) { lastAnn = a; lastAnnAt = Now; }
         if (scene?.Fx.Flare.HoldsFrame == true) { After(0.25, () => Announce(a)); return; }
         // (a zone's banner asked for during a film waits for play: "The ember goes out" under C04a's bars; a film's own titles go straight to the HUD)
@@ -1758,6 +1762,7 @@ public partial class Game : Node, IZoneHost
     /// off-screen skull pointers stand down (championOn); each one's wake holds the narration band StoryText.WakeHold.</summary>
     bool championOn;
     readonly HashSet<(int, double)> championsWoke = new();
+    double champWokeAt = double.NegativeInfinity;
 
     void ChampionWatch(Battle b)
     {
@@ -1767,7 +1772,7 @@ public partial class Game : Node, IZoneHost
         foreach (var e in b.Enemies.Living())
         {
             if (e.Named == null || e.Boss || !e.Roused || e.State == EnemyState.Dying) continue;
-            if (championsWoke.Add((e.Id, e.Seed))) StoryLine.HoldNarration(Play.StoryText.WakeHold);
+            if (championsWoke.Add((e.Id, e.Seed))) { StoryLine.HoldNarration(Play.StoryText.WakeHold); champWokeAt = Now; }
             var w = new Vector3((float)e.X, (float)scene.HeightAt(e.X, e.Z) + 1, (float)e.Z);
             if (!camera.IsPositionBehind(w) && view.HasPoint(camera.UnprojectPosition(w))) championOn = true;
         }

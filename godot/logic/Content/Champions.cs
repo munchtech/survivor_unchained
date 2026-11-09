@@ -114,6 +114,8 @@ public static class Champions
                 if (b != d) tinted = true;
             }
         }
+        // (M5 r4: a champion with no affix rim takes the champion's own: Ashjaw, no affixes, read as a plain wolf)
+        if (rank >= 2 && e.RankRim < 0 && d?.Rim is { } dr) e.RankRim = ((dr % 360) + 360) % 360;
     }
 
     /// <summary>A rolled title: "Hob Marrow the Drowned", "Ketch, Who Keeps the Ford".</summary>
