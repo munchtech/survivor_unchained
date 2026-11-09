@@ -12,4 +12,4 @@ Area: L1 the look (PIPELINE row P12). Worktree `C:\Users\munch\Desktop\survivors
 
 **The ARPG pivot (`docs/design/ARPG_DIRECTION.md`):** the look does not change with the loop; shoot the 13 frames as they are. Two things for you: (a) the skills lead (worktree skills-p7) builds a Heroic Leap and a Cyclone/Bladestorm now and needs the FX band language's rules for spells (colors by school, the ink under effects, what a cast, a travel and a hit look like in cel): write them as a short page `docs/design/FX_LANGUAGE.md` from Stage B's FX band work early in your run (within your first few turns, ~1 hour) and tell main; (b) "vibrant" applies to spells most of all: a Flare or a skill is the most saturated thing in the frame.
 
-Report shape: "P12: the app can now X; cost Y." Budget from the wrap: ~1.0M + $12-17 to G2. GPU: take turns through `tools/turn.py`; the P1 lead shoots too. Hand off at ~300k.
+Report shape: "P12: the app can now X; cost Y." Budget from the wrap: ~1.0M + $12-17 to G2. GPU: take turns through `tools/turn.py`; the P1 lead shoots too. hand off at ~200k.

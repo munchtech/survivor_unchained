@@ -1,6 +1,6 @@
 # The shared lead brief (the coordinator pastes this, then adds: the area and its worktree and branch, where the predecessor stopped, and the steps)
 
-Context budget: 300k
+Context budget: 200k
 
 You are a fresh successor. The coordinator is the main session: report to it with SendMessage to "main". Read in this order, by section, not whole files: docs/team/README.md ("Working lean", Safety), docs/team/RESUME.md top section, then your handoff's top section in YOUR worktree. Merge the latest `origin/claude/vigilant-galileo-l6jqyx` into your branch first.
 
@@ -18,7 +18,7 @@ The owner's rules for this stretch (17 October; README "Effort by kind of work" 
 - Never kill processes by name; never bare `git stash`, `git reset --hard` or `git checkout .` in your worktree; commit as you go (WIP commits are fine). In a junction worktree, remove the `godotssets` link (`cmd /c rmdir`) before merging integration and remake it after: a failed merge wiped env-4's assets on 20 Oct (README, junction DANGER).
 - No legal gate in merge requests (retired 18 Oct, `docs/team/legal.md`).
 - **Scrap what is far behind (the owner, 21 Oct: "thats an absurd amount of effort into the villager. we need to prevent that again - if something is just so far behind we should scrap it").** After the FIRST failed judge on an asset, ask the judge for its distance to the bar. If it says "medium" or "far", or the fixes are about the asset's source (its sculpt, its generated paint, its concept) rather than a few marks, STOP fixing: scrap it and regenerate or rebuild from a better source, or cut it, and tell main in one line. Patching stays for "close" assets with a short list. Report the cost (solvers, tokens, API dollars) with every failed round, so main can stop it early.
-- Hand off at about 300k: update your handoff's top section and send "HANDOFF READY <branch>@<commit>".
+- hand off at about 200k: update your handoff's top section and send "HANDOFF READY <branch>@<commit>".
 
 First report, once you're oriented (within your first few turns): your fixed list with each item's state, and an honest estimate of how much is left until your area is DONE and merged (items, rounds, rough hours), so the owner can plan which areas start next.
 - **Pictures are your biggest context cost (19 Oct: three leads filled 250k with images in one afternoon).** Never open full-size frames yourself: half-size copies or contact sheets (`python tools/half.py`) only, and only when a decision needs your eye. Numbers, runners and the judge do the rest.

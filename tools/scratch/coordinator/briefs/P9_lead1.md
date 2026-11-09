@@ -1,5 +1,5 @@
 Spawning: allowed
-Context budget: 300k
+Context budget: 200k
 
 ## Your area: P9 two films from S1, C13 reworked and C15 "The Stream Runs Clear" (cinematics lead)
 
@@ -13,6 +13,6 @@ The job (the story lead's brief, binding). (1) C13 reworked, two phases on the b
 
 Rules that bind: the narrator never says what it means; never re-record a locked line; game text in American spelling; the 18+ tone; cutscene face motion minimal; remake over patch; cost reported with every judge round. The suite green before every commit (`dotnet test` in `godot/tests`; last green 1565/0/10). The P6 combat lead (combat-p6) builds the Corvane fight on the same `door_night` nodes at the same time: it owns the fight, `corvane.rose` and the enemy data; you own the cues and the films. Agree the hook (the kill -> hold -> `gets_up` -> the sigil wakes) with it in one SendMessage through main if you need to; do not edit `teeth.json`, `boards.json` or `Enemies.cs`. Until the fight lands, stage C13's doorway on a scripted kill (the existing story-fight path), so your film does not wait on it.
 
-Done looks like: both films play from data in a headless run, `cut_check.py` clean, each judge PASS (or PASS WITH KNOWN with the list), the reckoning words changed, locks green, integration merged in (the junction rule), pushed, `MR READY films-p9@<sha>` in your handoff top and to main with the judges' two lines each and your cost. Hand off at ~300k with `HANDOFF READY films-p9@<sha>`. Scratch: `scratchpad\films_p9\` only; back it up to `survivorsunchained_inputs\scratch_films_p9\` and clear only that subfolder at the end; sheets for the owner in `survivorsunchained_inputs\films_p9\`.
+Done looks like: both films play from data in a headless run, `cut_check.py` clean, each judge PASS (or PASS WITH KNOWN with the list), the reckoning words changed, locks green, integration merged in (the junction rule), pushed, `MR READY films-p9@<sha>` in your handoff top and to main with the judges' two lines each and your cost. hand off at ~200k with `HANDOFF READY films-p9@<sha>`. Scratch: `scratchpad\films_p9\` only; back it up to `survivorsunchained_inputs\scratch_films_p9\` and clear only that subfolder at the end; sheets for the owner in `survivorsunchained_inputs\films_p9\`.
 
 Worktrees on disk: main + 6 (body-p1, look-l1, motion-a1, classes-c2, combat-p6, films-p9; cap 8): helpers work in YOUR worktree, never `isolation: "worktree"`. Four other leads share the machine: take and give Godot or GPU turns through `python tools/turn.py` (`take godot "P9: <job>" --wait 90`, give it back the moment the job ends).
