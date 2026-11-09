@@ -252,3 +252,30 @@ if __name__ == "__main__":
         if k.startswith("test_"):
             f()
             print(k, "ok")
+
+
+def test_stale_detection(tmp_path, monkeypatch):
+    import json as _json
+    src = tmp_path / "a.gltf"
+    src.write_text("x")
+    monkeypatch.setattr(gf, "REPO", str(tmp_path))
+    class B:
+        hash = "h"
+    bodies = {t: B() for t in gf.TIERS}
+    us = [{"id": "u1", "src": "a.gltf"}, {"id": "u2", "src": "a.gltf"}]
+    bd = tmp_path / "bind"
+    bd.mkdir()
+
+    def write(uid, **kw):
+        meta = {"bind_version": gf.BIND_VERSION, "src_sha1": gf.sha1(str(src)), "bind_hash": {t: "h" for t in gf.TIERS}}
+        meta.update(kw)
+        np.savez(bd / f"{uid}.npz", meta=np.frombuffer(_json.dumps(meta).encode(), np.uint8))
+
+    write("u1")
+    write("orph")
+    bad, orph = gf.stale_units(bodies, str(bd), us)
+    assert [b[0] for b in bad] == ["u2"] and orph == ["orph"]  # u2 missing, u1 current
+    write("u2", src_sha1="0" * 40)
+    assert dict(gf.stale_units(bodies, str(bd), us)[0]) == {"u2": "source changed"}
+    write("u2", bind_version=0)
+    assert "bind_version" in gf.stale_units(bodies, str(bd), us)[0][0][1]

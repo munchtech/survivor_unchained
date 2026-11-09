@@ -71,6 +71,7 @@ PEOPLE = os.path.join(REPO, "godot", "art", "people")
 ARMOR = os.path.join(REPO, "godot", "art", "armor")
 GEAR = os.path.join(REPO, "godot", "art", "gear")
 BIND = os.path.join(GEAR, "bind")
+BIND_VERSION = 1  # bump when the bind step changes what it writes; `stale` then rebinds everything
 OUT = os.path.join(GEAR, "out")
 BIND_BODY = os.path.join(PEOPLE, "body_p1")
 A_PATH = os.path.join(PEOPLE, "heroine.glb")
@@ -696,7 +697,7 @@ def bind_unit(u, car, bodies):
         arrays[f"lead_{tier}"] = lead.astype(np.int32)
     if aux:
         bind_aux(u, aux, car, bodies["close"], by_tier.get("close", []), arrays, metas)
-    meta = {"id": u["id"], "kind": u["kind"], "src": u["src"], "src_sha1": sha1(os.path.join(REPO, u["src"])),
+    meta = {"id": u["id"], "kind": u["kind"], "bind_version": BIND_VERSION, "src": u["src"], "src_sha1": sha1(os.path.join(REPO, u["src"])),
             "bind_body": rel(BIND_BODY), "bind_hash": {t: bodies[t].hash for t in TIERS},
             "meshes": metas, "sockets": u.get("sockets"), "aux": aux and {"keys": aux["keys"]},
             "row": u["row"], "rigid_row": u.get("rigid_row", False)}
@@ -1489,11 +1490,61 @@ def ncomp(E, n):
     return connected_components(adjacency(E, n), directed=False)[0] if len(E) else n
 
 
+def stale_units(bodies=None, bind_dir=None, unit_list=None):
+    """[(unit id, reason)] for every unit `bind` would make whose npz is missing or out of date; plus orphan npz ids."""
+    bind_dir = bind_dir or BIND
+    unit_list = units() if unit_list is None else unit_list
+    if bodies is None:
+        bodies = {t: Body.load(BIND_BODY, t) for t in TIERS}
+    out, ids = [], set()
+    for u in unit_list:
+        ids.add(u["id"])
+        p = os.path.join(bind_dir, f"{u['id']}.npz")
+        if not os.path.exists(p):
+            out.append((u["id"], "missing"))
+            continue
+        try:
+            meta = json.loads(bytes(np.load(p)["meta"]).decode())
+        except Exception as e:  # noqa: BLE001
+            out.append((u["id"], f"unreadable ({e})"))
+            continue
+        if meta.get("bind_version") != BIND_VERSION:
+            out.append((u["id"], f"bind_version {meta.get('bind_version')} != {BIND_VERSION}"))
+        elif meta.get("src_sha1") != sha1(os.path.join(REPO, u["src"])):
+            out.append((u["id"], "source changed"))
+        elif any(meta.get("bind_hash", {}).get(t) != bodies[t].hash for t in TIERS):
+            out.append((u["id"], "bind body changed"))
+    orphans = sorted(f[:-4] for f in os.listdir(bind_dir) if f.endswith(".npz") and f[:-4] not in ids) if os.path.isdir(bind_dir) else []
+    return out, orphans
+
+
+def bind_units(only=None):
+    car = Carrier()
+    bodies = {t: Body.load(BIND_BODY, t) for t in TIERS}
+    reps = {}
+    for u in units():
+        if only and u["id"] not in only:
+            continue
+        reps[u["id"]] = r = bind_unit(u, car, bodies)
+        print(u["id"], r["secs"], "s")
+        for k, v in r["meshes"].items():
+            print("   ", k, v)
+    os.makedirs(OUT, exist_ok=True)
+    rp = os.path.join(OUT, "_bindref", "bind_report.json")
+    old = json.load(open(rp)) if os.path.exists(rp) else {}
+    old.update(reps)
+    os.makedirs(os.path.dirname(rp), exist_ok=True)
+    with open(rp, "w") as f:
+        json.dump(old, f, indent=1)
+
+
 def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
     b = sub.add_parser("bind")
     b.add_argument("--only", default="")
+    st = sub.add_parser("stale")
+    st.add_argument("--json", default="")
     for name in ("build", "check"):
         p = sub.add_parser(name)
         p.add_argument("--body", default=rel(BIND_BODY))
@@ -1502,29 +1553,34 @@ def main():
         p.add_argument("--synthetic", action="store_true")
         p.add_argument("--field", default="", help="check: the follow field's test bodies (all, or names: synthetic,weight+1,...)")
         p.add_argument("--json", default="")
+        if name == "build":
+            p.add_argument("--no-bind", action="store_true", help="skip the stale check and rebind")
     a = ap.parse_args()
     only = [x for x in a.only.split(",") if x]
     if a.cmd == "bind":
-        car = Carrier()
-        bodies = {t: Body.load(BIND_BODY, t) for t in TIERS}
-        reps = {}
-        for u in units():
-            if only and u["id"] not in only:
-                continue
-            reps[u["id"]] = r = bind_unit(u, car, bodies)
-            print(u["id"], r["secs"], "s")
-            for k, v in r["meshes"].items():
-                print("   ", k, v)
-        os.makedirs(OUT, exist_ok=True)
-        rp = os.path.join(OUT, "_bindref", "bind_report.json")
-        old = json.load(open(rp)) if os.path.exists(rp) else {}
-        old.update(reps)
-        with open(rp, "w") as f:
-            json.dump(old, f, indent=1)
+        bind_units(only)
         return
+    if a.cmd == "stale":
+        bad, orphans = stale_units()
+        for uid, why in bad:
+            print(f"STALE {uid}: {why}")
+        for o in orphans:
+            print(f"warning: orphan binding {o}.npz (no unit makes it)")
+        print(f"gear_fit stale: {len(bad)} stale of {len(units())} units, {len(orphans)} orphans")
+        if a.json:
+            with open(a.json, "w") as f:
+                json.dump({"stale": dict(bad), "orphans": orphans}, f, indent=1)
+        sys.exit(1 if bad else 0)
     body_dir = os.path.join(REPO, a.body) if not os.path.isabs(a.body) else a.body
     if a.cmd == "build":
         t0 = time.time()
+        if not a.no_bind:
+            bad = [uid for uid, _ in stale_units()[0] if not only or uid in only]
+            if bad:
+                print(f"gear_fit build: rebinding {len(bad)} stale units: {', '.join(bad)}")
+                bind_units(bad)
+            else:
+                print("gear_fit build: bindings current, rebound nothing")
         bodies = load_bodies(body_dir)
         name = bodies["close"].name
         out_dir = a.out or os.path.join(OUT, name)
