@@ -1,7 +1,7 @@
 {
  "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
  "painted": 2,
- "inputs": "d01738980aed",
+ "inputs": "32442839e3d6",
  "from": "(c) the Ruts' layers (verge, churn, ruts, wet, camp, metal, face); (b) MB4 road, targets 04 and 05",
  "layers": [
   {
@@ -11,9 +11,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 grass and road (the verge: golden-green clumps, worn); targets 04 and 05",
    "mean": [
-    0.06321,
-    0.09849,
-    0.02995
+    0.05802,
+    0.09768,
+    0.02849
    ]
   },
   {

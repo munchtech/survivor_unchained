@@ -108,8 +108,10 @@
                  "cool": ["#101812", "#1e2d22", "#2d4232", "#3f5944", "#567259"],
                  "flowers": ["#a39c7e", "#857c95"], "flower_cells": 2, "flower_share": 0.01,
                  "_l9": "L1 l9 grass (judge 1 fix 6, FROM MB4 grass and target 07's tufts): big flat clumps, fewer and bigger (a 0.95 x 0.48 m low tuft in three values on a ~0.7 m grid at high, clustered), never a field of blades; the one preset for every terrain meadow (the Low Ford's own kind removed)",
-                 "card": [0.95, 0.48], "cell": 2.4, "yaw": 25, "drift": [0.42, 0.56],
-                 "shader": {"warm": [1.0, 1.0, 0.94], "cool": [0.94, 1.0, 1.02], "night": [0.6, 0.86, 0.8], "night_sat": 0.6, "base": 0.55, "tone": 1.0, "sat": 0.85, "density": 1.0, "tilt": 0.3, "clear": 5.0, "sun_tip": [1.0, 1.0, 1.0], "sun_body": [1.0, 1.0, 1.0], "size_var": 0.3, "cluster": 0.35, "cluster_cell": 2.2, "big_share": 0.15, "small_share": 0.2, "tilt_var": 0.3, "val_spread": 0.08}}
+                 "_l10": "L1 l10 grass (judge 1 fix 6 rebuilt: lead 9's tufts read as a carpet of agave rosettes): the lawn is the painted ground (ground.json meadow); tufts are sparse ACCENTS placed by rule (grass_own.gdshader accent: road fringes, lawn borders, round anything standing, a few percent of an open lawn), 0.3-0.5 m (near things up to ~0.7 m), one side-on card facing the camera (a crossed or flat tuft reads as a star from the 50-60 degree play camera; a side-on card keeps the upright blades' silhouette)",
+                 "card": [0.42, 0.32], "cell": 2.4, "yaw": 20, "drift": [0.42, 0.56],
+                 "shader": {"warm": [1.0, 1.0, 0.94], "cool": [0.94, 1.0, 1.02], "night": [0.6, 0.86, 0.8], "night_sat": 0.6, "base": 0.85, "tone": 1.0, "sat": 0.85, "density": 1.0, "tilt": 0.25, "clear": 5.0, "sun_tip": [1.0, 1.0, 1.0], "sun_body": [1.0, 1.0, 1.0], "size_var": 0.25, "cluster": 0.15, "cluster_cell": 1.2, "big_share": 0.1, "small_share": 0.25, "tilt_var": 0.3, "val_spread": 0.05,
+                            "accent": 1.0, "accent_open": 0.1, "accent_road": 0.5, "accent_hard": 0.4, "accent_near": 0.6, "accent_reach": 0.9, "near_size": 1.5}}
     }
   }
 }

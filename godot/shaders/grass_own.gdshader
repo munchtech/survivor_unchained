@@ -75,6 +75,20 @@ uniform float meadow_bare = 0.0;
 uniform float trod_floor = 0.4;
 uniform int debug_view = 0;
 uniform vec4 bare_at[4];
+// (L1 l10 grass, judge 1 fix 6 rebuilt, FROM targets 04 and 07: the lawn is the painted ground; tufts are sparse accents
+// placed by rule, never a carpet.) accent 1: a cell grows a tuft by where it is, not by the drifts: accent_open across an
+// open lawn (a few percent), accent_road along the fringe of a made way (the paint's trodden earth rising sp.r 0.03-0.4),
+// accent_hard along the border of setts, mud or blight, accent_near round anything standing (trunks, props, fences,
+// walls: GroundPaint's Near G within accent_reach m), each broken into twos and threes by a 1-2 m field; near things and
+// at the wild edges they grow up to near_size times. 0: the drifts as lead 9 left them.
+uniform sampler2D near_tex : filter_linear, repeat_disable, hint_default_white;
+uniform float accent = 0.0;
+uniform float accent_open = 0.06;
+uniform float accent_road = 0.5;
+uniform float accent_hard = 0.4;
+uniform float accent_near = 0.6;
+uniform float accent_reach = 0.9;
+uniform float near_size = 1.4;
 
 varying float v_t;
 varying vec3 v_tint;
@@ -172,12 +186,24 @@ void vertex() {
 	// contrast, 4 m blobs and 6 m swells; lo-hi 0.46-0.54 covers 48% of an open meadow, 39% bare: env10's drift_sim.py)
 	float clump = (nM.r * 0.45 + nM.g * 0.35 + nF.r * 0.2) * 0.5 + (nM.r * 0.55 + nC.g * 0.3 + nF.r * 0.15) * 0.5;
 	float cover = smoothstep(drift.x, drift.y, clump) * (1.0 - bare_p);
-	dens *= mix(1.0, cover, meadow_amt);
+	float e_near = 0.0;
+	if (accent > 0.0) {
+		vec4 nr = textureLod(near_tex, zuv, 0.0);
+		float e_road = smoothstep(0.03, 0.1, sp.r) * (1.0 - smoothstep(0.3, 0.45, sp.r));
+		float e_hard = smoothstep(0.02, 0.07, hard) * (1.0 - smoothstep(0.18, 0.3, hard));
+		e_near = (1.0 - smoothstep(accent_reach * 0.5, accent_reach, nr.g * 2.0 + (nF.b - 0.5) * 0.3)) * step(nr.g, 0.99);
+		float brk = smoothstep(0.35, 0.6, nM.a * 0.55 + nF.g * 0.45);
+		float p_ac = max(accent_open * (0.4 + 1.2 * nF.r), max(accent_road * e_road, max(accent_hard * e_hard, accent_near * e_near)) * (0.35 + 0.65 * brk));
+		dens *= mix(1.0, p_ac, accent);
+		cover = mix(cover, 1.0, accent);
+	} else {
+		dens *= mix(1.0, cover, meadow_amt);
+	}
 	vec4 pm = textureLod(paint_mask, zuv, 0.0);
 	dens *= max(1.0 - smoothstep(0.5, 0.75, pm.r), smoothstep(0.86, 0.97, pm.r) * 0.6) * (1.0 - smoothstep(0.1, 0.4, pm.g));
 	float leafy = smoothstep(0.42, 0.78, nL.g * 0.7 + nM.a * 0.3 + leaves - 0.5);
 	dens *= 1.0 - leafy * 0.5;
-	dens *= mix(1.0, 0.3, smoothstep(0.82, 0.42, textureLod(expo_tex, zuv, 0.0).r));
+	dens *= mix(1.0, mix(0.3, 0.8, accent), smoothstep(0.82, 0.42, textureLod(expo_tex, zuv, 0.0).r));
 	float tr = 0.0;
 	if (trod > 0.0) {
 		float tn = texture(noise_tex, wp * 0.13 + 0.53).r * 0.7 + nF.a * 0.3;
@@ -193,7 +219,7 @@ void vertex() {
 	// thins out to its own w times its radius)
 	for (int i = 0; i < 4; i++) keep *= step(h4, smoothstep(bare_at[i].z, bare_at[i].z * (bare_at[i].w > 0.0 ? bare_at[i].w : clear), length(wp - bare_at[i].xy)));
 	// Size: smaller at a drift's edge, each clump its own.
-	float sz = mix(0.5, 1.15, smoothstep(0.0, 0.8, cover)) * (1.0 + size_var * (2.0 * (0.6 * gh(wp * 6.3 + 1.0) + 0.4 * nF.a) - 1.0) * 1.3) * keep;
+	float sz = mix(0.5, 1.15, smoothstep(0.0, 0.8, cover)) * mix(1.0, (1.0 + (near_size - 1.0) * e_near) / 1.15, accent) * (1.0 + size_var * (2.0 * (0.6 * gh(wp * 6.3 + 1.0) + 0.4 * nF.a) - 1.0) * 1.3) * keep;
 	{
 		float hb = gh(wp * 6.9 + 13.0);
 		sz *= hb < big_share ? mix(1.3, 1.65, hb / max(big_share, 1e-4)) : (hb > 1.0 - small_share ? mix(0.78, 0.5, (hb - 1.0 + small_share) / max(small_share, 1e-4)) : 1.0);

@@ -325,9 +325,48 @@ def mounds(cv, st, rng):
         mound_fan(cv, c + L * r * 0.2, r * 0.7, g, L, max(nl - 2, 3), 1.2, 1.0, 0.2, shift(cols[2], dL), st["height"])
 
 
+def shift_rgb(rgb, dL):
+    """An 8-bit sRGB color moved dL in Oklab L (its hue and chroma kept)."""
+    o = lin_to_oklab(srgb_to_lin(np.array(rgb[:3], float) / 255.0))
+    return rgb8([o[0] + dL, o[1], o[2]])
+
+
+def brushes(cv, st, rng):
+    """The lawn as a painted surface (L1 l10 grass, FROM targets 04 and 07: a golden-green ground in two or three close
+    values with a soft brush texture): dabs of 6-10 cm, each a soft oval laid across the light with its edge toward the
+    light broken into short points (grass tips), in the paint under it moved a small step down (dark) or up (lit), so
+    the masses keep their values and the brush only gives them a grain. Never a star or a fan: no dab has a centre."""
+    T = cv.metres
+    count = int(round(st["per_m2"] * T * T))
+    lo, hi = st["size_cm"]
+    L = cv.light
+    perp = np.array([-L[1], L[0]])
+    W = cv.W
+    k = 18
+    ang = np.linspace(0, 2 * math.pi, k, endpoint=False)
+    for _ in range(count):
+        c = rng.uniform(0, W, 2)
+        r = cv.px(rng.uniform(lo, hi)) * 0.5
+        under = tuple(int(round(v * 255)) for v in cv.col[int(c[1]) % W, int(c[0]) % W])  # (the masses, never a dab before it)
+        lit = rng.random() < st.get("lit_share", 0.5)
+        dL = (st["lit_dL"] if lit else st["dark_dL"]) * rng.uniform(0.7, 1.15)
+        tw = rng.uniform(-0.35, 0.35)
+        ax = perp * math.cos(tw) + L * math.sin(tw)
+        ay = np.array([-ax[1], ax[0]]) if float(np.array([-ax[1], ax[0]]) @ L) > 0 else np.array([ax[1], -ax[0]])
+        jit = rng.uniform(0.85, 1.1, k)
+        pts = []
+        for i, (a_, j) in enumerate(zip(ang, jit)):
+            u, v = math.cos(a_), math.sin(a_)
+            rr = j * (1.0 + (st.get("tips", 0.6) if (v > 0.25 and i % 2 == 0) else 0.0) * v)
+            pts.append(c + ax * u * r * rr + ay * v * r * st.get("squash", 0.5) * rr)
+        cv.poly(pts, shift_rgb(under, dL), st["height"] + (0.05 if lit else -0.05))
+
+
 def stamps(cv, st, rng):
     if st["shape"] == "mound":
         return mounds(cv, st, rng)
+    if st["shape"] == "brush":
+        return brushes(cv, st, rng)
     T = cv.metres
     count = int(round(st["per_m2"] * T * T))
     lo, hi = st["size_cm"]
@@ -571,6 +610,59 @@ def atlas_tuft(rng, col, flowers, nfl, ah):
     return a.reshape(ah, S, GC, S, 4).mean((1, 3))
 
 
+def atlas_tuft2(rng, col, flowers, nfl, ah):
+    """One tuft as an accent (L1 l10 grass, FROM targets 04 and 07's road-edge tufts): side-on on a GC x ah cell, at 2x,
+    11-15 narrow blades rising from a root a third of the cell wide, upright and fanning to +-40 degrees, three close
+    values by depth: the back blades the cool base ('under'), the middle the body (the ground's own mid), the front ones
+    lit along their upper half ('lit'). No dark mass at the root and no wide fan of broad leaves (lead 9's tuft read as
+    agave rosettes at the play camera); the root's last part takes the ground's colour in the shader."""
+    W, H = GC * S, ah * S
+    im = Image.new("RGBA", (W, H), rgb8(lab(col["body"])) + (0,))
+    d = ImageDraw.Draw(im)
+    cx = W * 0.5 + rng.uniform(-0.04, 0.04) * W
+    lean = rng.uniform(-0.15, 0.15)
+
+    def blade(x0, ang, ln, w0, color, lit_c):
+        p0 = np.array([x0, H * 0.998])
+        tip = p0 + np.array([math.sin(ang) * ln, -math.cos(ang) * ln])
+        p1 = p0 + np.array([math.sin(ang) * ln * 0.15, -math.cos(ang) * ln * 0.6])
+        s_ = np.linspace(0, 1, 12)[:, None]
+        cl = (1 - s_) ** 2 * p0 + 2 * (1 - s_) * s_ * p1 + s_ ** 2 * tip
+        tg = np.gradient(cl, axis=0); tg /= np.linalg.norm(tg, axis=1, keepdims=True) + 1e-9
+        nr = np.stack([-tg[:, 1], tg[:, 0]], 1)
+        wd = w0 * (1 - s_[:, 0]) ** 0.8
+        d.polygon([tuple(p) for p in np.concatenate([cl + nr * wd[:, None], (cl - nr * wd[:, None])[::-1]])], fill=color + (255,))
+        if lit_c is not None:  # (the upper half lit: the light catches a tuft's tips)
+            m = 5
+            d.polygon([tuple(p) for p in np.concatenate([cl[m:] + nr[m:] * wd[m:, None], (cl[m:] - nr[m:] * wd[m:, None])[::-1]])], fill=lit_c + (255,))
+
+    nb = int(rng.integers(11, 16))
+    order = list(range(nb)); rng.shuffle(order)
+    for rank, i in enumerate(order):
+        depth = rank / nb  # (0 back .. 1 front)
+        u = (i + rng.uniform(0.25, 0.75)) / nb * 2 - 1
+        a_ = u * 0.7 + lean + rng.uniform(-0.12, 0.12)
+        ln = H * rng.uniform(0.55, 0.97) * (1.0 - 0.35 * u * u)
+        w0 = W * rng.uniform(0.026, 0.038)
+        x0 = cx + u * W * 0.15 + rng.uniform(-0.02, 0.02) * W
+        dL = rng.uniform(-1, 1) * 0.015
+        if depth < 0.4:
+            blade(x0, a_, ln * 0.9, w0, shift(col["under"], dL), None)
+        elif depth < 0.75:
+            blade(x0, a_, ln, w0, shift(col["body"], dL), None)
+        else:
+            blade(x0, a_, ln, w0, shift(col["body"], dL), shift(col["lit"], dL))
+    for _ in range(nfl):
+        hx = cx + rng.uniform(-0.22, 0.22) * W
+        hy = H * rng.uniform(0.08, 0.22)
+        d.line([(hx, hy), (cx + (hx - cx) * 0.4, H * 0.95)], fill=shift(col["body"], -0.02) + (255,), width=max(int(W * 0.012), 1))
+        r = W * rng.uniform(0.018, 0.024)
+        fc = flowers[int(rng.integers(len(flowers)))]
+        d.ellipse([hx - r, hy - r, hx + r, hy + r], fill=shift(fc, 0) + (255,))
+    a = np.asarray(im, np.float32) / 255
+    return a.reshape(ah, S, GC, S, 4).mean((1, 3))
+
+
 def build_atlas(data, out=None):
     g = data["grass_atlas"]
     rng = np.random.default_rng(seed_of("grass_atlas", g["kind"], VERSION))
@@ -578,7 +670,8 @@ def build_atlas(data, out=None):
     atlas = np.zeros((ah * 2, GC * 4, 4), np.float32)
     for j in range(8):
         nfl = 3 if j >= 8 - g["flower_cells"] else 0
-        c = atlas_tuft(rng, g["colors"], g["flowers"], nfl, ah) if g.get("form") == "tuft" else atlas_clump(rng, g["colors"], g["flowers"], nfl)
+        form = g.get("form")
+        c = (atlas_tuft2 if form == "tuft2" else atlas_tuft)(rng, g["colors"], g["flowers"], nfl, ah) if form in ("tuft", "tuft2")             else atlas_clump(rng, g["colors"], g["flowers"], nfl)
         r, k = j // 4, j % 4
         atlas[r * ah:(r + 1) * ah, k * GC:(k + 1) * GC] = c
     # (the edges' color carried into the clear, so the mips never darken a clump's outline)

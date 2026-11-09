@@ -1,7 +1,7 @@
 {
  "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
  "painted": 2,
- "inputs": "7f9f881e63e9",
+ "inputs": "dd4b25468cdb",
  "from": "(c) the town's setts arrays (terrain.gdshader s_alb/s_nor/s_arh, three variants of 4 m: Ground.cs and the terrain manifest's 'setts' entry); L1 W2 town replaces the photo setts (env_ground.py)",
  "layers": [
   {

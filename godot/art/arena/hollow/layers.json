@@ -1,7 +1,7 @@
 {
  "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
  "painted": 2,
- "inputs": "4fb4f25613ad",
+ "inputs": "cbb84e14a2b3",
  "from": "(c) the Deep Shaw's layers (ArenaGround.cs order: litter, rot, roots, mud, bed, needles, face); (b) targets 09, 10, 12 and MB4 night",
  "layers": [
   {

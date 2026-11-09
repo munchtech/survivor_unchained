@@ -183,19 +183,22 @@ public static class ArenaGround
 
     static readonly Dictionary<string, GrassLook> Grasses = new()
     {
+        // (L1 l10 grass, FROM targets 09 and 12: the arena's ground is leafy ground with a few low bushes and no blades, so the
+        // tussocks are accents at about a third of their old density where a place keeps grass at all, and none in the
+        // Hollow, whose shaw floor is litter.)
         // (L1 C1, MB4 'grass as big flat clumps': each tussock 8-11 broad blades, 8-9 cm across at the root, where
         // 12-26 blades of 3-4 cm read as a carpet of scratches at the play camera; arena_grass.gdshader steps them.)
         // The barrow field's long dead grass, olive-brown and its tips gone
         // to pale straw under the moon: the field's whole face.
         // (Its tips warm and mid-toned: pale straw tips under a blue moon read from above as a
         // field of grey stars, one sticker per tussock.)
-        ["barrow"] = new(1f, 11, 0.042f, 0.42f, new(0.4f, 0.9f), 1.3f, "#0c0a07", "#4e3e26", "#8c7448", "#3e462a", 0.3f),
+        ["barrow"] = new(0.3f, 11, 0.042f, 0.42f, new(0.4f, 0.9f), 1.3f, "#0c0a07", "#4e3e26", "#8c7448", "#3e462a", 0.3f),
         // Sparse and low where the canopy opens.
-        ["hollow"] = new(0.5f, 8, 0.045f, 0.55f, new(0.2f, 0.45f), 0.8f, "#0a0b07", "#38402a", "#6c7048", "#2e4626", 0.6f),
+        ["hollow"] = new(0f, 8, 0.045f, 0.55f, new(0.2f, 0.45f), 0.8f, "#0a0b07", "#38402a", "#6c7048", "#2e4626", 0.6f),
         // The verges: greener, trodden shorter toward the road.
-        ["ruts"] = new(1f, 10, 0.042f, 0.45f, new(0.3f, 0.7f), 1.2f, "#0a0b07", "#40482a", "#8e8a5c", "#34502a", 0.55f),
+        ["ruts"] = new(0.3f, 10, 0.042f, 0.45f, new(0.3f, 0.7f), 1.2f, "#0a0b07", "#40482a", "#8e8a5c", "#34502a", 0.55f),
         // Dry yellow tufts on the working's spoil and edges, where nobody walks.
-        ["dig"] = new(0.8f, 8, 0.045f, 0.55f, new(0.25f, 0.6f), 0.9f, "#0e0a06", "#6a5632", "#c4a466", "#4a4a2a", 0.1f),
+        ["dig"] = new(0.25f, 8, 0.045f, 0.55f, new(0.25f, 0.6f), 0.9f, "#0e0a06", "#6a5632", "#c4a466", "#4a4a2a", 0.1f),
     };
 
     public static GrassLook GrassOf(string place) => Grasses[place];

@@ -143,6 +143,8 @@ public static class Grass
         mat.SetShaderParameter("splat", ImageTexture.CreateFromImage(paint.Splat));
         mat.SetShaderParameter("paint_mask", ImageTexture.CreateFromImage(paint.Mask));
         mat.SetShaderParameter("expo_tex", paint.Exposure);
+        // (L1 l10 grass: the distance to anything standing, for grass_own's accent tufts round trunks, props and walls)
+        mat.SetShaderParameter("near_tex", paint.Near);
         mat.SetShaderParameter("frost_tone", SurvivorUnchained.Args.Num("frost-tone", 1.7f));
         mat.SetShaderParameter("frost_cap", SurvivorUnchained.Args.Num("frost-cap", 0.1f));
         mat.SetShaderParameter("debug_view", (int)SurvivorUnchained.Args.Num("ground-debug", 0f));

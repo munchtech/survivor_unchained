@@ -274,36 +274,36 @@
    "from": "MB4 grass (day) and target 07's lawn: golden-green big flat clumps in three values (a cool dark under-mass, the body, a lit spiky crown toward the light), overlapping like scales over three soft masses; olive, never lime (rule 4)",
    "masses": {
     "colors": [
-     "#2d442d",
-     "#364f34",
-     "#405b3b"
+     "#3a5334",
+     "#405937",
+     "#47603b"
     ],
     "split": [
-     0.35,
-     0.7
+     0.33,
+     0.68
     ],
     "scale_m": 2.2
    },
    "stamps": [
     {
-     "shape": "mound",
-     "per_m2": 0.9,
+     "shape": "brush",
+     "per_m2": 260,
      "size_cm": [
-      80,
-      160
+      6,
+      10
      ],
-     "leaves": 9,
-     "colors": [
-      "#2a402b",
-      "#3a5437",
-      "#4a6540"
-     ],
-     "height": 0.85
+     "lit_share": 0.5,
+     "lit_dL": 0.022,
+     "dark_dL": -0.026,
+     "tips": 0.6,
+     "squash": 0.5,
+     "height": 0.5
     }
    ],
    "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.602, 0.716, 0.972] per channel (linear) = the terrain grass anchor 'grass' target / its mean [0.106, 0.1244, 0.0373]; target = MB4_grass_day paint [0.2114, 0.2035, 0.0381] / the day key (day_play grass) [3.313, 2.284, 1.051] = [0.0638, 0.0891, 0.0362]. Replaces C1's r1 calib (a lift read off frames).",
    "c6": "L1 W2 C6 (the color chain): x[1.024, 0.924, 0.36] per channel (linear) = the grass class's chain albedo / its old mid (materials.json).",
-   "l9": "L1 l9 grass (9 Nov, judge 1 fix 6): the star stamps (4.5/m2, 26-48 cm) replaced by mounds (ground_paint.py mounds); hue turned from 135 to 141-145 so the lit lawn lands at h 106-112 under the boards' sun (T04 110, T07 109)"
+   "l9": "L1 l9 grass (9 Nov, judge 1 fix 6): the star stamps (4.5/m2, 26-48 cm) replaced by mounds (ground_paint.py mounds); hue turned from 135 to 141-145 so the lit lawn lands at h 106-112 under the boards' sun (T04 110, T07 109)",
+   "l10": "L1 l10 grass (judge 1 fix 6 again, FAR: a rebuild): the lawn IS the ground, FROM targets 04 and 07 (a golden-green painted surface in close values with a soft brush): three masses 0.02-0.025 L apart, a 6-10 cm brush (ground_paint brushes: a dab in the mass under it moved -0.026 or +0.022 L, its light side broken into grass points), no mounds or stars; the tufts are sparse accents placed by rule (grass_own.gdshader accent)"
   },
   "litter_day": {
    "class": "soil",
@@ -720,9 +720,9 @@
    "from": "MB4 grass and road (the verge: golden-green clumps, worn); targets 04 and 05",
    "masses": {
     "colors": [
-     "#384629",
+     "#3d512c",
      "#44582f",
-     "#506035"
+     "#4b5f32"
     ],
     "split": [
      0.35,
@@ -732,26 +732,23 @@
    },
    "stamps": [
     {
-     "shape": "clump",
-     "per_m2": 4.5,
+     "shape": "brush",
+     "per_m2": 260,
      "size_cm": [
-      26,
-      48
+      6,
+      10
      ],
-     "blades": [
-      7,
-      11
-     ],
-     "colors": [
-      "#4c6032",
-      "#60763c"
-     ],
-     "under": "#2f3e29",
-     "height": 0.85
+     "lit_share": 0.5,
+     "lit_dL": 0.022,
+     "dark_dL": -0.026,
+     "tips": 0.6,
+     "squash": 0.5,
+     "height": 0.5
     }
    ],
    "calib": "r1 (L1 C1, 5 Nov): +0.04 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)",
-   "c6": "L1 W2 C6 (the color chain): x[1.024, 0.924, 0.36] per channel (linear) = the grass class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.024, 0.924, 0.36] per channel (linear) = the grass class's chain albedo / its old mid (materials.json).",
+   "l10": "L1 l10 grass (judge 1 fix 6 again, FAR: a rebuild): the lawn IS the ground, FROM targets 04 and 07 (a golden-green painted surface in close values with a soft brush): three masses 0.02-0.025 L apart, a 6-10 cm brush (ground_paint brushes: a dab in the mass under it moved -0.026 or +0.022 L, its light side broken into grass points), no mounds or stars; the tufts are sparse accents placed by rule (grass_own.gdshader accent) (the same preset as the meadow: this class's own mid kept)"
   },
   "churn": {
    "class": "road",
@@ -926,9 +923,9 @@
    "from": "MB4 grass (night: the barrow's grey-green turf as flat clumps)",
    "masses": {
     "colors": [
-     "#323c2b",
+     "#34412e",
      "#3b4733",
-     "#435139"
+     "#424d38"
     ],
     "split": [
      0.35,
@@ -938,25 +935,22 @@
    },
    "stamps": [
     {
-     "shape": "clump",
-     "per_m2": 4.5,
+     "shape": "brush",
+     "per_m2": 260,
      "size_cm": [
-      26,
-      48
+      6,
+      10
      ],
-     "blades": [
-      7,
-      11
-     ],
-     "colors": [
-      "#424f35",
-      "#4f5c40"
-     ],
-     "under": "#293427",
-     "height": 0.85
+     "lit_share": 0.5,
+     "lit_dL": 0.022,
+     "dark_dL": -0.026,
+     "tips": 0.6,
+     "squash": 0.5,
+     "height": 0.5
     }
    ],
-   "c6": "L1 W2 C6 (the color chain): x[1.024, 0.924, 0.36] per channel (linear) = the grass class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.024, 0.924, 0.36] per channel (linear) = the grass class's chain albedo / its old mid (materials.json).",
+   "l10": "L1 l10 grass (judge 1 fix 6 again, FAR: a rebuild): the lawn IS the ground, FROM targets 04 and 07 (a golden-green painted surface in close values with a soft brush): three masses 0.02-0.025 L apart, a 6-10 cm brush (ground_paint brushes: a dab in the mass under it moved -0.026 or +0.022 L, its light side broken into grass points), no mounds or stars; the tufts are sparse accents placed by rule (grass_own.gdshader accent) (the same preset as the meadow: this class's own mid kept)"
   },
   "bare": {
    "class": "soil",
@@ -1316,9 +1310,9 @@
   "out": "godot/art/world/flora/grass_meadow_atlas.png",
   "from": "MB4 grass ('grass as big flat clumps': broad blades massed into a mound, a lit top and a cool underside, three flat values); rule 4 (olive and worn, never lime); replaces env_trees.py's thin-blade grass atlas (L1 C1)",
   "colors": {
-   "under": "#192e23",
-   "body": "#395636",
-   "lit": "#617f4e"
+   "under": "#314b33",
+   "body": "#405936",
+   "lit": "#586d39"
   },
   "flowers": [
    "#a39c7e",
@@ -1326,8 +1320,9 @@
   ],
   "flower_cells": 2,
   "c6": "L7 S1d (the color chain): the clump's body FROM the grass class's mid #3c5133, the lit top and the underside at their ratios to it.",
-  "form": "tuft",
-  "aspect": 0.5,
-  "l9": "L1 l9 grass: low wide tufts (cells 256 x 128, twice as wide as tall) in three flat values by depth, FROM target 07's tufts: a dark mass behind, the body, a lit crown in front; replaces the 7-11 tall blades"
+  "form": "tuft2",
+  "aspect": 0.75,
+  "l9": "L1 l9 grass: low wide tufts (cells 256 x 128, twice as wide as tall) in three flat values by depth, FROM target 07's tufts: a dark mass behind, the body, a lit crown in front; replaces the 7-11 tall blades",
+  "l10": "L1 l10 grass: the tuft as an accent (atlas_tuft2, cells 256 x 192): 11-15 narrow upright blades in three close values (a cool base, the body at the lawn's mid L 0.40, lit upper halves L 0.47), no dark root mass and no wide fan (lead 9's 'tuft' read as agave rosettes at the play camera)"
  }
 }
