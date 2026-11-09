@@ -157,9 +157,11 @@ void p7_frag(vec2 uv, vec3 n, vec3 v, out vec3 albedo, out float alpha) {
 	else if (p7_mode == 5) c = p7_shove(p);
 	else if (p7_mode == 6) c = p7_storm(p);
 	else if (p7_mode == 7) c = p7_scar(uv);
-	else if (p7_mode == 8) c = p7_shell(p);
+	else if (p7_mode == 8) c = p7_shell(n, v);
 	else if (p7_mode == 9) c = p7_store(p);
 	else if (p7_mode == 11) c = p7_pulse(n, v);
+	else if (p7_mode == 16) c = p7_bring(p);
+	else if (p7_mode == 17) c = p7_bstar(p);
 	else c = p7_streak(p);
 	if (c.a < 0.004) discard;
 	albedo = fx_out(c.rgb, c.a);
