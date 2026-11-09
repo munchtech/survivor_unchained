@@ -28,7 +28,9 @@ public partial class PostScreen : Overlay
         col.AddChild(new Title(post.Name, 30, false));
         var w = G.Journey.World;
         var tier = WorldTiers.Get(WorldTiers.Of(w));
-        col.AddChild(Style.Label($"{PostMenu.ZoneName(post.Zone)}  ·  World tier {tier.Name}", Style.TextItalic, 17, Kit.HeadInk, false, HorizontalAlignment.Center, false));
+        // (M5 r4: the tier only once the tier rows are offered, PostMenu.FullMenu: "World tier II" at 2.7 minutes meant nothing)
+        string sub = PostMenu.FullMenu(w) ? $"{PostMenu.ZoneName(post.Zone)}  ·  World tier {tier.Name}" : PostMenu.ZoneName(post.Zone);
+        col.AddChild(Style.Label(sub, Style.TextItalic, 17, Kit.HeadInk, false, HorizontalAlignment.Center, false));
         col.AddChild(Kit.RuleH());
         menu.Items.Clear();
         if (page == "travel")
