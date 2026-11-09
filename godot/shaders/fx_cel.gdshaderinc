@@ -88,3 +88,78 @@ float fx_sparks(vec2 p, vec2 flow, float cell, float density, float len, float a
 		}
 	return cov;
 }
+
+// (L1 lead 7) The painted stroke: the one shared shape every skill's light is drawn in (FX_LANGUAGE §4: a crescent, a
+// ribbon, a streak, a ring are all strokes). P7's signature:
+//   across: -1..1 across the stroke's width (0 its centerline); along: 0 at the tail, 1 at the head; life: 0 born, 1 dead.
+// Three bands of the school's family across the width (fx_edge outside, fx_mid, fx_core inside: on the steel a feathered
+// amber edge, gold, a thin white-gold core), hard steps with a narrow soft edge (LOOK_BIBLE rule 13), and fx_cel's glow
+// past the edge. The head is hottest: the core widens toward it, the width thins toward the tail and with life, and
+// death steps the bands out core, then mid, then edge (FX_LANGUAGE §4, never an alpha fade). What makes it painted
+// (rule 5, one brush): a dry-brush edge. A small bristle field in stroke space (fine across, long streaks along) breaks
+// the feathered edge and the tail into bristle streaks, wavers every band boundary like a loaded brush and puts a little
+// value inside each band. Everything is in stroke space, so nothing crawls as the stroke moves.
+// The stroke's shape: half-width (share of across's 1 at the head), feather (the edge's dry-brush zone, a share of the
+// half-width), the tail's width (share of the head's), the head's round cap (a share of along).
+uniform vec4 fx_stroke_shape = vec4(0.72, 0.3, 0.12, 0.08);
+// The brush: bristles across the full width, streak length (bristle cycles over along 0..1), the dryness (how far the
+// paint runs out toward the tail and with life), the boundaries' waver (a share of the half-width).
+uniform vec4 fx_bristle = vec4(28.0, 12.0, 0.55, 0.2);
+// Each stroke's own brush marks (set it per instance so two strokes never share bristles).
+uniform float fx_stroke_seed = 0.0;
+
+// a hard step with a narrow soft edge: one pixel of x's own slope plus `soft`
+float fx_hard(float edge, float x, float soft) {
+	float aa = max(fwidth(x) * 0.75, 1e-4) + soft;
+	return smoothstep(edge - aa, edge + aa, x);
+}
+
+vec4 fx_stroke(float across, float along, float life) {
+	// (clamped into locals: Godot 4.5 resolves an assigned argument to a same-named uniform of the including shader)
+	float al = clamp(along, 0.0, 1.0);
+	float lf = clamp(life, 0.0, 1.0);
+	vec2 sp = vec2(across * fx_bristle.x * 0.5, al * fx_bristle.y);
+	// the bristle field: gradient noise stretched along the stroke (each bristle a streak, its dry end a curved tip,
+	// not value noise's lattice square), two octaves, about 0..1
+	float b = clamp(0.5 + 0.42 * (fx_gnoise(sp + vec2(fx_stroke_seed * 17.3, fx_stroke_seed * 5.1)) * 0.65
+		+ fx_gnoise(sp * vec2(2.3, 1.7) + vec2(3.7, fx_stroke_seed * 9.3)) * 0.35), 0.0, 1.0);
+	// the brush's slow wander: the whole stroke's boundaries swell and pinch along its length
+	float wander = fx_gnoise(vec2(al * 4.0 + fx_stroke_seed * 3.1, 0.5 + fx_stroke_seed));
+
+	// the width: thins toward the tail and with life; a round cap at the head
+	float w = fx_stroke_shape.x * mix(fx_stroke_shape.z, 1.0, pow(al, 0.7)) * (1.0 - 0.45 * lf);
+	float cap = clamp((al - (1.0 - fx_stroke_shape.w)) / max(fx_stroke_shape.w, 1e-3), 0.0, 1.0);
+	w *= sqrt(1.0 - cap * cap);
+	w = max(w, 1e-4);
+	// the distance from the centerline in half-widths, wavered by the bristles and the wander (a loaded brush's edge)
+	float d = abs(across) / w;
+	float dv = d + fx_bristle.w * ((b - 0.5) * 1.6 + wander * 0.6);
+
+	// the bands' starts (in half-widths from the edge inward): the core widens toward the head; death steps them out,
+	// the core by life 0.3, the mid by 0.6, the edge by 1 (the caller steps life per sample: the bands go in steps)
+	float hot = smoothstep(0.15, 1.0, al);
+	float k_core = 0.24 * hot * (1.0 - smoothstep(0.18, 0.3, lf));
+	float k_mid = mix(0.48, 0.66, hot) * (1.0 - smoothstep(0.45, 0.6, lf));
+	float soft = 0.02;
+	float mid = fx_hard(1.0 - k_mid, 1.0 - dv, soft);
+	float core = fx_hard(1.0 - k_core, 1.0 - dv, soft) * step(1e-3, k_core);
+
+	// the dry-brush coverage: inside the feather zone (and toward the tail, and with life) a bristle holds paint only if
+	// it is loaded enough: streaks of uneven length, never a smooth gradient
+	float edge_in = clamp((dv - (1.0 - fx_stroke_shape.y)) / max(fx_stroke_shape.y, 1e-3), 0.0, 1.0);
+	float dry = max(edge_in, fx_bristle.z * (1.0 - smoothstep(0.0, 0.35, al)));
+	dry = max(dry, fx_bristle.z * smoothstep(0.55, 1.0, lf) * 1.4);
+	float body = fx_hard(dry, b * 0.98 + 0.01, 0.0) * fx_hard(-1.0, -dv, 0.0) * step(lf, 0.999);
+
+	vec3 c = mix(fx_edge, fx_mid, mid);
+	c = mix(c, fx_core, core);
+	// a little value inside each band: the paint's own load, along the bristles
+	float load = fx_gnoise(sp * vec2(0.37, 0.53) + vec2(11.3, fx_stroke_seed * 2.3)) + 0.5 * fx_gnoise(sp * vec2(0.9, 1.3) + vec2(4.1, 7.7));
+	c *= 1.0 + 0.06 * load;
+
+	// fx_cel's glow past the edge (and in the dry brush's gaps: the light under the paint), fading with life
+	float out_d = max(0.0, (abs(across) - w) / max(fx_stroke_shape.x, 1e-3));
+	float g = mix(fx_glow.w, fx_glow.z, al) * (1.0 - lf) * exp(-out_d / max(fx_glow.x, 1e-3))
+		* (1.0 - smoothstep(fx_glow.y * 0.6, fx_glow.y, out_d));
+	return vec4(mix(fx_glow_color, c, body), max(body, g * (1.0 - body)));
+}

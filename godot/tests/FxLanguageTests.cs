@@ -96,4 +96,54 @@ public class FxLanguageTests
         Assert.InRange(u.Panel.FrameWidth, 20f, 24f);
         Assert.InRange(u.Line, 1.5f, 4f);
     }
+
+    /// <summary>The body of a shader function in <paramref name="src"/>, from its signature to its closing brace.</summary>
+    static string FunctionBody(string src, string signature)
+    {
+        int i = src.IndexOf(signature, StringComparison.Ordinal);
+        Assert.True(i >= 0, $"{signature} is missing");
+        int open = src.IndexOf('{', i), depth = 0;
+        for (int k = open; k < src.Length; k++)
+        {
+            if (src[k] == '{') depth++;
+            else if (src[k] == '}' && --depth == 0) return src.Substring(open, k - open + 1);
+        }
+        throw new InvalidOperationException("unclosed " + signature);
+    }
+
+    [Fact]
+    public void TheStrokeIsP7sSignatureInTheSchoolsThreeBandsWithABrush()
+    {
+        // (L1 lead 7) fx_stroke(across, along, life), the one painted-stroke primitive every skill shape uses: its colors are
+        // the school's family only (edge, mid, core, the glow), never a color of its own; its edge is a brush (the bristles)
+        var src = File.ReadAllText(Path.Combine(Root(), "shaders", "fx_cel.gdshaderinc"));
+        var body = FunctionBody(src, "vec4 fx_stroke(float across, float along, float life)");
+        foreach (var u in new[] { "fx_edge", "fx_mid", "fx_core", "fx_glow_color", "fx_stroke_shape", "fx_bristle", "fx_stroke_seed" })
+            Assert.Contains(u, body);
+        foreach (var u in new[] { "uniform vec4 fx_stroke_shape", "uniform vec4 fx_bristle", "uniform float fx_stroke_seed" })
+            Assert.Contains(u, src);
+        Assert.DoesNotMatch(@"vec3\(\s*[0-9.]+\s*,", body);
+        Assert.DoesNotContain("ALPHA", body);
+    }
+
+    [Fact]
+    public void DangerMarksSitOverEveryAfterGradeLight()
+    {
+        // (L1 lead 7, FLARE_LOOK 1.6) MarkPass writes the marks' coverage into a mask; FxAfter's composite lays the
+        // after-grade layer under it (x (1 - mask)), so whatever goes through FxAfter.Adopt sits under every danger mark
+        var fx = Path.Combine(Root(), "src", "Fx");
+        var mark = File.ReadAllText(Path.Combine(fx, "MarkPass.cs"));
+        Assert.Contains("public static Rid Mask;", mark);
+        Assert.Contains("uniform writeonly image2D mask;", mark);
+        Assert.Contains("imageStore(mask, p, vec4(0.0))", mark);
+        Assert.Contains("U(RenderingDevice.UniformType.Image, 8, Mask)", mark);
+        var after = File.ReadAllText(Path.Combine(fx, "FxAfter.cs"));
+        Assert.Contains("texture(marks, SCREEN_UV)", after);
+        Assert.Contains("COLOR = c * (1.0 - m);", after);
+        Assert.Contains("Material = comp,", after);
+        Assert.Contains("MarkPass.Mask", after);
+        // (B) the world's depth behind the layer: the copy on the play camera, the write on the after-grade camera
+        Assert.Contains("new FxWorldDepthWrite()", after);
+        Assert.Contains("HookWorldDepth(main)", after);
+    }
 }

@@ -141,6 +141,17 @@ public partial class MarkPass : CompositorEffect
 
     RenderingDevice? rd;
     Rid shader, pipe, sampler, linSampler, ubo, markBuf, hBuf, idLut, tiles;
+    /// <summary>(L1 lead 7, FLARE_LOOK 1.6) The marks' coverage this frame (R8, the frame's internal size: the fill's tint, the
+    /// rims' and the pattern's light over the fold's red), read by FxAfter's composite, which lays the after-grade light
+    /// under it (x (1 - mask)): every danger mark shows over every after-grade light. 0 wherever no mark is. A resized
+    /// mask's old texture is freed a few frames later (the composite may still hold it).</summary>
+    public static Rid Mask;
+    /// <summary>Marks were drawn this frame (FxAfter reads the mask only then: with none up, the pass does not run).</summary>
+    public static bool MaskLive;
+    /// <summary>The first mark's center this frame (FxAfter's lookdev stroke lies across it).</summary>
+    public static Vector3? FirstMark;
+    static readonly List<(Rid rid, long frame)> maskOld = new();
+    Vector2I maskSize;
     Vector2I tileSize;
     bool failed;
 
@@ -158,6 +169,9 @@ public partial class MarkPass : CompositorEffect
     {
         marks = m; count = n; waterOn = water.HasValue; waterY = water ?? 0;
         Enabled = n > 0;
+        MaskLive = n > 0;
+        if (n == 0) FirstMark = null;
+        if (n > 0) FirstMark = new Vector3(m[0], m[1], m[2]);
     }
 
     /// <summary>How the frame will be seen (the pass works in the scene's light, before the tonemap: the bed's value and
@@ -270,6 +284,18 @@ public partial class MarkPass : CompositorEffect
                 UsageBits = RenderingDevice.TextureUsageBits.StorageBit | RenderingDevice.TextureUsageBits.CanCopyFromBit,
             }, new RDTextureView());
         }
+        for (int k = maskOld.Count - 1; k >= 0; k--)
+            if ((long)Engine.GetFramesDrawn() > maskOld[k].frame + 8) { if (maskOld[k].rid.IsValid) rd.FreeRid(maskOld[k].rid); maskOld.RemoveAt(k); }
+        if (!Mask.IsValid || size != maskSize)
+        {
+            if (Mask.IsValid) maskOld.Add((Mask, (long)Engine.GetFramesDrawn()));
+            maskSize = size;
+            Mask = rd.TextureCreate(new RDTextureFormat
+            {
+                Width = (uint)size.X, Height = (uint)size.Y, Format = RenderingDevice.DataFormat.R8Unorm,
+                UsageBits = RenderingDevice.TextureUsageBits.StorageBit | RenderingDevice.TextureUsageBits.SamplingBit,
+            }, new RDTextureView());
+        }
         Rid lut = lutOn && lutTex.IsValid ? lutTex : idLut;
         var pb = MemoryMarshal.AsBytes(push.AsSpan()).ToArray();
         push[29] = 0;
@@ -288,6 +314,7 @@ public partial class MarkPass : CompositorEffect
                 U(RenderingDevice.UniformType.StorageBuffer, 5, hBuf),
                 U(RenderingDevice.UniformType.SamplerWithTexture, 6, linSampler, lut),
                 U(RenderingDevice.UniformType.Image, 7, tiles),
+                U(RenderingDevice.UniformType.Image, 8, Mask),
             });
             long l0 = rd.ComputeListBegin();
             rd.ComputeListBindComputePipeline(l0, pipe);
@@ -310,6 +337,9 @@ public partial class MarkPass : CompositorEffect
         if (what != NotificationPredelete || rd == null) return;
         foreach (var r in new[] { idLut, shader, sampler, linSampler, ubo, markBuf, hBuf, tiles })
             if (r.IsValid) rd.FreeRid(r);
+        foreach (var (r, _) in maskOld) if (r.IsValid) rd.FreeRid(r);
+        maskOld.Clear();
+        if (Mask.IsValid) { rd.FreeRid(Mask); Mask = default; MaskLive = false; }
     }
 
     /// <summary>One mark's floats: centre (x, y, z), shape (0 lane, 1 ring, 2 cone, 3 band); its local X and Z axes in
@@ -346,6 +376,7 @@ public partial class MarkPass : CompositorEffect
         layout(set = 0, binding = 5, std430) readonly buffer Hts { float h[]; } ht;
         layout(set = 0, binding = 6) uniform sampler3D lut;
         layout(set = 0, binding = 7, rgba16f) uniform image2D tiles;
+        layout(set = 0, binding = 8, r8) uniform writeonly image2D mask;
 
         // How a scene colour will be seen: Godot 4.5's AgX (its own approximation, verbatim), sRGB, the adjustments,
         // the grade's table (the tonemap pass's order).
@@ -764,7 +795,7 @@ public partial class MarkPass : CompositorEffect
                 plight += pl_ * gate;
                 ptint += pcol(pid_) * pl_ * gate;
             }
-            if (tint <= 0.0 && light <= 0.0 && plight <= 0.0) return;
+            if (tint <= 0.0 && light <= 0.0 && plight <= 0.0) { imageStore(mask, p, vec4(0.0)); return; }
             vec4 col = imageLoad(colour, p);
             // the fold: the last step that is still scarlet (the steps below it are)
             int fi = 0;
@@ -804,6 +835,9 @@ public partial class MarkPass : CompositorEffect
             }
             col.rgb = base + add * lc + pa * pcl;
             imageStore(colour, p, col);
+            // the mark's coverage, for the after-grade layer laid under it: the fill's tint, the rims' and the pattern's
+            // light as a share of the fold's red
+            imageStore(mask, p, vec4(clamp(max(tint, (add + pa) / max(rf, 1e-6)), 0.0, 1.0)));
         }
         """;
 }
