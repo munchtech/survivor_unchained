@@ -129,6 +129,68 @@ def test_field_two_cylinders():
     assert np.abs(Xi - Xb).max() < 1e-12                    # no move: the bind geometry
 
 
+def test_similarity_fit_scales():
+    """A rigid component made to measure: a known rotation + translation + per-axis scale (along its own principal
+    axes) comes back, the clamp holds, and the identity is exact."""
+    import gear_field as gfl
+    g = np.linspace(-1, 1, 7)
+    A = np.stack(np.meshgrid(g, g, g, indexing="ij"), -1).reshape(-1, 3) * [0.15, 0.08, 0.03]  # principal axes x, y, z
+    M, ca, cb, s, P = gfl.similarity_fit(A, A)
+    assert np.abs((A - ca) @ M.T + cb - A).max() < 1e-12 and np.abs(s - 1).max() < 1e-12
+    th = 0.3
+    R = np.array([[math.cos(th), -math.sin(th), 0], [math.sin(th), math.cos(th), 0], [0, 0, 1]])
+    B = (A * [1.1, 0.95, 1.0]) @ R.T + [0.01, 0.02, -0.03]
+    M, ca, cb, s, P = gfl.similarity_fit(A, B)
+    assert np.abs((A - ca) @ M.T + cb - B).max() < 1e-3
+    assert np.abs(np.sort(s) - np.sort([1.1, 0.95, 1.0])).max() < 0.005
+    _, _, _, s2, _ = gfl.similarity_fit(A, A * [1.5, 1, 1])
+    assert s2.max() <= 1.25 + 1e-12                        # clamped
+
+
+def test_rigid_fit_clear_wrapping_plate():
+    """A half-shell plate around a cylinder that grows 8% in girth: no single translation clears both its sides; the
+    made-to-measure clear (translation + scales) does, and on the same body nothing moves."""
+    import gear_field as gfl
+    P, T = cylinder(0.05, 0.3, 64, 30)
+    b = body(P, T)
+    a = np.linspace(-0.6 * math.pi, 0.6 * math.pi, 40)
+    A = np.array([[0.053 * math.sin(t), y, 0.053 * math.cos(t)] for y in np.linspace(0.08, 0.22, 12) for t in a])
+    c_req, _ = gfl.signed_clear(b, A, k=16)
+    M, ca, cb, info = gfl.rigid_fit_clear(b, A, A, A, c_req)
+    assert np.abs((A - ca) @ M.T + cb - A).max() < 1e-12 and info["clear_mm"] == 0.0
+    b2 = b.with_points(b.V * [1.08, 1, 1.08], "grown")
+    t = gfl.rigid_clear(b2, A, c_req)
+    c_t, _ = gfl.signed_clear(b2, A + t, k=16)
+    M, ca, cb, info = gfl.rigid_fit_clear(b2, A, A, A, c_req)
+    c, _ = gfl.signed_clear(b2, (A - ca) @ M.T + cb, k=16)
+    assert c_t.min() < -1e-3                                # one translation leaves a side inside
+    assert c.min() > -5e-5, (c.min(), info)
+    assert max(info["scale"]) <= 1.25 and min(info["scale"]) >= 0.85
+
+
+def test_hold_clear_two_sided():
+    """The tight set holds its bind clearance in and out; past in_m + fade_m nothing is held."""
+    import gear_field as gfl
+    P, T = cylinder(0.05, 0.3, 64, 30)
+    b = body(P, T)
+    a = np.linspace(0, 2 * math.pi, 50, endpoint=False)
+    X = np.array([[r * math.cos(t), 0.15, r * math.sin(t)] for r in (0.051, 0.0535, 0.07) for t in a])
+    c0, _ = gfl.signed_clear(b, X, k=16)
+    b2 = b.with_points(b.V * [1.04, 1, 1.04], "grown")
+    Xh, st = gfl.hold_clear(b2, X, c0, np.ones(len(X), bool))
+    c, _ = gfl.signed_clear(b2, Xh, k=16)
+    near = np.abs(c0) < gfl.HOLD["in_m"]
+    assert np.abs(c - c0)[near].max() < 1e-4
+    far = np.abs(c0) > gfl.HOLD["in_m"] + gfl.HOLD["fade_m"]
+    assert np.abs(Xh - X)[far].max() == 0.0
+
+
+def test_fit_verdict():
+    m = {"a": {"fail": [], "nan": 0}, "b": {"fail": ["inside"], "why": {"inside": 3, "inside_mm_max": 1.2}}}
+    assert gf.fit_verdict(m) == ("flagged", {"b": {"inside": 3, "inside_mm_max": 1.2}})
+    assert gf.fit_verdict({"a": {"fail": []}}) == ("ok", None)
+
+
 if __name__ == "__main__":
     for k, f in list(globals().items()):
         if k.startswith("test_"):

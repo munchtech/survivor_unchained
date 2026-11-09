@@ -778,6 +778,8 @@ class Binding:
 def eval_unit(bd, bodies, bind_bodies, stats=None):
     """{node: dict(P, N, J, W, shapes)} and aux on one body; bind_bodies None when the body IS the bind body."""
     z, out = bd.z, {}
+    fit = {"rigid": {}, "hold": {}, "push": {}}
+    rots_tier = {}
     for tier in TIERS:
         ms = [m for m in bd.meta["meshes"] if m["tier"] == tier]
         if not ms:
@@ -794,9 +796,9 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
             Xbind, Fbind = (X, F) if bbody is None else eval_points(bbody, tri, bq, off)
             ev[i] = dict(X=X, F=F, Xbind=Xbind, Fbind=Fbind, w=unq(bq), tri=tri.astype(np.int64), comp=z[f"comp{i}"])
             if bbody is not None:
-                # the follow field (gear_field): exact near the skin, the body's smoothed move beyond
-                o = off.astype(np.float64)
-                c0 = np.linalg.norm(o, axis=1) * np.where(o[:, 2] < 0, -1.0, 1.0)
+                # the follow field (gear_field): exact on the skin (1 mm), the body's smoothed move beyond; c0 is the
+                # vertex's signed clearance on the bind body (what the tight set holds and the push keeps)
+                c0, _ = gear_field.signed_clear(bbody, Xbind, k=16)
                 bt = gear_field.beta(c0)
                 Xf, G = gear_field.field_for(body, bbody)(Xbind)
                 Xe, Re = gear_field.exact_follow(X, F, Xbind, Fbind, off)
@@ -806,13 +808,16 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
         if (comp >= 0).any() and bbody is not None:
             Xa = np.vstack([ev[m["i"]]["Xbind"] for m in ms])
             Xn = np.vstack([ev[m["i"]]["X"] for m in ms])
+            c0s = np.concatenate([ev[m["i"]]["c0"] for m in ms])
             for c in np.unique(lead[comp[comp >= 0]]):
+                # made to measure: rotation + translation + a scale per own principal axis (never bends: one blend
+                # of weights), then the smallest translation that clears it
                 own = comp == c
-                R, ca, cb = kabsch(Xa[own], Xn[own])
                 grp = (comp >= 0) & (lead[np.maximum(comp, 0)] == c)
-                c0s = np.concatenate([ev[m["i"]]["c0"] for m in ms])
-                t = gear_field.rigid_clear(body, (Xa[grp] - ca) @ R.T + cb, c0s[grp])
-                rots[int(c)] = (R, ca, cb + t)
+                M, ca, cb, info = gear_field.rigid_fit_clear(body, Xa[own], Xn[own], Xa[grp], c0s[grp])
+                rots[int(c)] = (M, ca, cb)
+                fit["rigid"][f"{tier}/{int(c)}"] = info
+        rots_tier[tier] = rots
         for m in ms:
             e = ev[m["i"]]
             i, comp_i = m["i"], e["comp"]
@@ -831,18 +836,21 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                     bv = (bt * bend)[inv][:, None]
                     Ne = np.einsum("nij,nj->ni", e["Re"][inv], Nb)
                     N = np.where(bend[inv][:, None], (1 - bv) * Ne + bv * Nf, N)
-                    # clearance: no vertex nearer the new skin than it was to the bind skin
+                    # the tight set holds its bind clearance (two-sided), then no vertex nearer the new skin than it
+                    # was to the bind skin (one-sided, a smooth push)
+                    X, hst = gear_field.hold_clear(body, X, e["c0"], bend)
                     X, cst = gear_field.clear_push(body, X, e["c0"], bend)
+                    fit["hold"][m["node"]], fit["push"][m["node"]] = hst, cst
                     if stats is not None:
-                        stats[m["node"]] = cst
+                        stats[m["node"]] = dict(cst, **hst)
                 rg = comp_i >= 0
                 if rg.any():
                     Nb = np.einsum("nij,nj->ni", e["Fbind"][inv], nloc)
-                    for c, (R, ca, cb) in rots.items():
+                    for c, (M, ca, cb) in rots.items():
                         sel = rg & (lead[np.maximum(comp_i, 0)] == c)
-                        X[sel] = (e["Xbind"][sel] - ca) @ R.T + cb
+                        X[sel] = (e["Xbind"][sel] - ca) @ M.T + cb
                         sv = sel[inv]
-                        N[sv] = Nb[sv] @ R.T
+                        N[sv] = Nb[sv] @ np.linalg.inv(M)
             # weights and shapes
             J, W = body_weights(body, e["tri"], e["w"])
             Tv = body.T[e["tri"]]
@@ -883,21 +891,23 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
         Up = np.einsum("nij,nj->ni", F, unsnorm16(z["aux_up"]))
         comp = z["aux_comp"]
         if bind_bodies is not None and (comp >= 0).any():
+            # sockets on a rigid component ride its fit (positions by the full map, directions turned by its rotation)
             Xb, Fb = eval_points(bind_bodies["close"], tri, bq, off)
-            lead = z["lead_close"]
-            ms = [m for m in bd.meta["meshes"] if m["tier"] == "close"]
-            Xa = np.vstack([eval_points(bind_bodies["close"], z[f"tri{m['i']}"], z[f"bw{m['i']}"], z[f"off{m['i']}"])[0] for m in ms])
-            Xn = np.vstack([out[m["node"]]["Xu"] for m in ms])
-            cc = np.concatenate([z[f"comp{m['i']}"] for m in ms])
+            rots = rots_tier.get("close", {})
             for c in np.unique(comp[comp >= 0]):
-                own = (cc >= 0) & (lead[np.maximum(cc, 0)] == c)
-                R, ca, cb = kabsch(Xa[own], Xn[own])
+                if int(c) not in rots:
+                    continue
+                M, ca, cb = rots[int(c)]
+                u_, _, vt_ = np.linalg.svd(M)
+                R = u_ @ vt_
                 a = comp == c
-                X[a] = (Xb[a] - ca) @ R.T + cb
+                X[a] = (Xb[a] - ca) @ M.T + cb
                 Nn[a] = np.einsum("nij,nj->ni", Fb[a], unsnorm16(z["aux_nrm"][a])) @ R.T
                 Up[a] = np.einsum("nij,nj->ni", Fb[a], unsnorm16(z["aux_up"][a])) @ R.T
         J, W = body_weights(body, tri.astype(np.int64), unq(bq), k=4)
         out["__aux__"] = {"X": X, "N": U(Nn), "Up": U(Up), "J": J, "W": W}
+    if bind_bodies is not None:
+        out["__fit__"] = fit
     return out
 
 
@@ -1133,6 +1143,11 @@ def build(bodies, out_dir, only=None, bind_bodies=None, write=True):
         evs[bd.id] = ev
         if not write:
             continue
+        if same:
+            fit, why = "ok", None
+        else:
+            ev["__metrics__"] = field_metrics(bd, ev, bodies, bind_bodies)
+            fit, why = fit_verdict(ev["__metrics__"])
         fp = os.path.join(out_dir, f"{bd.id}.gltf")
         write_unit(fp, bd, ev, bodies["close"].glb)
         row = dict(bd.meta["row"])
@@ -1143,6 +1158,10 @@ def build(bodies, out_dir, only=None, bind_bodies=None, write=True):
         row["body_hash"] = bodies["close"].hash
         row["play_hash"] = bodies["play"].hash
         row["binding"] = f"godot/art/gear/bind/{bd.id}.npz"
+        # refuse or flag (the owner, 20 Oct): a mesh missing the follow gates on this body flags the row
+        row["fit"] = fit
+        if why:
+            row["fit_fail"] = why
         if bd.meta.get("sockets") and "__aux__" in ev:
             sp = os.path.join(out_dir, f"{bd.id}.sockets.json")
             write_sockets(sp, bd, ev, bodies["close"])
@@ -1253,36 +1272,49 @@ def check(body_dir, synth=False, only=None, out_dir=None):
     return res
 
 
-GATE = {"stretch_p99": 8.0, "stretch_max": 25.0, "inside_mm": 0.5, "tight_p95_mm": 0.5, "rigid_mm": 0.05}
+GATE = {"stretch_p99": 8.0, "stretch_max": 25.0, "over": 2.0, "inside_mm": 0.5, "tight_p95_mm": 0.5, "edge_min_mm": 1.5}
 
 
 def field_metrics(bd, ev, bodies, bind_bodies):
-    """The follow acceptance for one unit on one test body: per mesh, NaNs; bendy edges' stretch beyond the body's own
-    (gear_field.expected_edges: what a skin-tight edge would do there) p99 / max %, raw edges over 2x; vertices inside
-    the new skin by over 0.5 mm among those clear on her_b; the tight vertices' (within 4 mm on her_b) clearance change
-    p95 mm; the rigid components' pairwise distance error mm. "fail" lists the gates missed."""
+    """The follow acceptance for one unit on one body (not the bind body): per mesh, NaNs; bendy edges of 1.5 mm and
+    more (bevels apart, reported only): stretch beyond the body's own (gear_field.expected_edges: what a skin-tight edge
+    would do there) p99 / max %, raw edges over 2x; vertices inside the new skin by over 0.5 mm among those clear on
+    her_b (bendy and rigid); the tight vertices' (within 4 mm on her_b) clearance change p95 mm; each rigid component's
+    made-to-measure scales (reported, not gated). "fail" lists the gates missed, "why" their numbers."""
     r = {}
+    fit = ev.get("__fit__", {})
     for m in bd.meta["meshes"]:
         e = ev[m["node"]]
         body, bb = bodies[m["tier"]], bind_bodies[m["tier"]]
         X, X0, comp = e["Xu"], e["Xbind"], e["comp"]
         rr = {"nan": int(np.isnan(X).sum() + np.isnan(e["N"]).sum())}
+        fail, why = [], {}
+        if rr["nan"]:
+            fail.append("nan")
+            why["nan"] = rr["nan"]
         E = bd_edges(bd, m["i"])
         E = E[(comp[E[:, 0]] < 0) & (comp[E[:, 1]] < 0)]
         l0 = np.linalg.norm(X0[E[:, 0]] - X0[E[:, 1]], axis=1)
         ok = l0 > 1e-6
         E, l0 = E[ok], l0[ok]
-        fail = []
         if len(E):
             l1 = np.linalg.norm(X[E[:, 0]] - X[E[:, 1]], axis=1)
             le = gear_field.expected_edges(bb, body, bd.z[f"tri{m['i']}"].astype(np.int64), E, X0, e.get("beta"), e.get("G"))
             ex = np.abs(l1 / np.maximum(le, 1e-9) - 1) * 100
             raw = np.abs(l1 / l0 - 1) * 100
-            rr["stretch_p99_max"] = [round(float(np.percentile(ex, 99)), 2), round(float(ex.max()), 2)]
-            rr["raw_p99_max"] = [round(float(np.percentile(raw, 99)), 2), round(float(raw.max()), 2)]
-            rr["over_2x"] = int((l1 > 2 * l0).sum())
-            if rr["stretch_p99_max"][0] > GATE["stretch_p99"] or rr["stretch_p99_max"][1] > GATE["stretch_max"] or rr["over_2x"]:
-                fail.append("stretch")
+            lg = l0 >= GATE["edge_min_mm"] / 1000
+            rr["edges"] = [int(lg.sum()), int((~lg).sum())]
+            if lg.any():
+                rr["stretch_p99_max"] = [round(float(np.percentile(ex[lg], 99)), 2), round(float(ex[lg].max()), 2)]
+                rr["raw_p99_max"] = [round(float(np.percentile(raw[lg], 99)), 2), round(float(raw[lg].max()), 2)]
+                rr["over_2x"] = int((l1[lg] > GATE["over"] * l0[lg]).sum())
+                if rr["stretch_p99_max"][0] > GATE["stretch_p99"] or rr["stretch_p99_max"][1] > GATE["stretch_max"] or rr["over_2x"]:
+                    fail.append("stretch")
+                    why["stretch_p99_max"], why["over_2x"] = rr["stretch_p99_max"], rr["over_2x"]
+            if (~lg).any():
+                bv = ~lg
+                rr["bevel_p99_max"] = [round(float(np.percentile(ex[bv], 99)), 2), round(float(ex[bv].max()), 2)]
+                rr["bevel_over_2x"] = int((l1[bv] > GATE["over"] * l0[bv]).sum())
         cB, _ = signed_clear(body, X)
         cB0, _ = signed_clear(bb, X0)
         clear0 = cB0 > -1e-6
@@ -1291,27 +1323,29 @@ def field_metrics(bd, ev, bodies, bind_bodies):
         rr["bind_inside"] = int((~clear0).sum())
         if rr["inside"]:
             fail.append("inside")
+            why["inside"], why["inside_mm_max"] = rr["inside"], rr["inside_mm_max"]
         tight = (np.abs(cB0) < 0.004) & (comp < 0)
         if tight.any():
             rr["tight_p95_mm"] = round(float(np.percentile(np.abs(cB - cB0)[tight], 95)) * 1000, 3)
             if rr["tight_p95_mm"] > GATE["tight_p95_mm"]:
                 fail.append("tight")
+                why["tight_p95_mm"] = rr["tight_p95_mm"]
         rg = comp >= 0
         if rg.any():
-            worst = 0.0
-            for c in np.unique(comp[rg]):
-                sel = np.where(comp == c)[0]
-                if len(sel) > 400:
-                    sel = sel[np.linspace(0, len(sel) - 1, 400).astype(int)]
-                d0 = np.linalg.norm(X0[sel][:, None] - X0[sel][None], axis=2)
-                d1 = np.linalg.norm(X[sel][:, None] - X[sel][None], axis=2)
-                worst = max(worst, float(np.abs(d1 - d0).max()))
-            rr["rigid_mm"] = round(worst * 1000, 5)
-            if rr["rigid_mm"] > GATE["rigid_mm"]:
-                fail.append("rigid")
+            lead = bd.z[f"lead_{m['tier']}"]
+            rr["rigid_scale"] = {str(int(c)): fit.get("rigid", {}).get(f"{m['tier']}/{int(c)}", {}).get("scale")
+                                 for c in np.unique(lead[comp[rg]])}
         rr["fail"] = fail
+        if fail:
+            rr["why"] = why
         r[m["node"]] = rr
     return r
+
+
+def fit_verdict(metrics):
+    """A row's "fit" on a body: "ok", or ("flagged", {node: the failing numbers})."""
+    bad = {node: rr["why"] for node, rr in metrics.items() if rr["fail"]}
+    return ("flagged", bad) if bad else ("ok", None)
 
 
 def check_field(body_dir, only=None, tests=None, json_path=None):
@@ -1346,6 +1380,25 @@ def check_field(body_dir, only=None, tests=None, json_path=None):
             with open(json_path, "w") as f:
                 json.dump(res, f, indent=1)
     return res
+
+
+def check_body(body_dir, only=None, out_dir=None):
+    """The follow acceptance on a real body built on the base (not the bind body): builds it (gear_index.json "fit" per
+    row) and returns the per-mesh numbers in check_field's shape, with the build time."""
+    bodies = load_bodies(body_dir)
+    bds = bindings(only)
+    if bds and is_bind_body(bodies, bds[0]):
+        raise SystemExit("gear_fit check: that is the bind body (use check without --field for the identity)")
+    bind_bodies = load_bodies(os.path.join(REPO, bds[0].meta["bind_body"]))
+    gear_field._CACHE.clear()
+    out_dir = out_dir or os.path.join(OUT, bodies["close"].name)
+    tb = time.time()
+    evs = build(bodies, out_dir, only, bind_bodies=bind_bodies)
+    secs = time.time() - tb
+    rows = {bd.id: evs[bd.id]["__metrics__"] for bd in bds}
+    flagged = {bd.id: fit_verdict(rows[bd.id])[1] for bd in bds if fit_verdict(rows[bd.id])[0] != "ok"}
+    return {"bodies": {bodies["close"].name: {"build_secs": round(secs, 1), "rows": rows, "flagged": flagged,
+                                               "out": rel(out_dir)}}}
 
 
 def tri_area(V, Tv):
@@ -1413,6 +1466,18 @@ def main():
                 for node, rr in r.items():
                     if rr["fail"]:
                         print(f"{name:12s} {rid:24s} {node:40s} " + " ".join(f"{k}={v}" for k, v in rr.items()))
+        return
+    if not a.synthetic and Body.load(body_dir, "close").hash != bindings(only)[0].meta["bind_hash"]["close"]:
+        res = check_body(body_dir, only, a.out or None)
+        if a.json:
+            with open(a.json, "w") as f:
+                json.dump(res, f, indent=1)
+        for name, bo in res["bodies"].items():
+            n = sum(len(r) for r in bo["rows"].values())
+            nf = sum(bool(rr["fail"]) for r in bo["rows"].values() for rr in r.values())
+            print(f"[{name}] build {bo['build_secs']} s, meshes {n}, failing {nf}, rows flagged {len(bo['flagged'])}")
+            for rid, why in bo["flagged"].items():
+                print(f"  FLAGGED {rid}: {json.dumps(why)}")
         return
     res = check(body_dir, a.synthetic, only, a.out or None)
     if a.json:

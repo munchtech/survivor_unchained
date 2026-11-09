@@ -25,8 +25,8 @@ import numpy as np
 from scipy.spatial import cKDTree
 
 FIELD = {
-    "near_m": 0.004,        # within: the exact bound evaluation
-    "blend_m": 0.008,       # over this band: exact -> field
+    "near_m": 0.001,        # within: the exact bound evaluation (round 2: the band narrowed from 4 mm; see HOLD)
+    "blend_m": 0.002,       # over this band: exact -> field
     "r_min_edges": 2.5,     # the kernel's smallest radius, in body edge lengths (close ~19 mm, play ~37 mm)
     "r_gain": 1.2,          # radius growth per metre of stand-off
     "r_max_m": 0.06,
@@ -39,6 +39,17 @@ FIELD = {
     "push_slope": 15.0,       # a push's radius is at least this times its depth (the lean: ~1.6 / 15 = 11% at most)
     "push_max_m": 0.06,
 }
+
+
+# the tight set holds its bind clearance (two-sided, along the new skin's normal): full within in_m, fading to none over
+# fade_m beyond it (the exact binding is not used for that: it jumps where the binding changes body part at a crease)
+HOLD = {"in_m": 0.004, "fade_m": 0.004, "rounds": 2}
+# a rigid component's made-to-measure fit: rotation + translation + a scale per principal axis of its own (no shear)
+RIGID = {"scale": (0.85, 1.25), "iters": 30, "reg": 0.02,
+         "clear_m": 0.0003,   # a point clear on the bind body ends at least min(its bind clearance, this) out
+         "near_m": 0.003,     # points within this of their target join the LP (so the change pushes no other in)
+         "clear_w": 0.1,      # LP cost of a unit scale change, in metres of translation (1% ~ 1 mm)
+         "clear_rounds": 4}
 
 
 def U(v):
@@ -318,6 +329,62 @@ def clear_push(body, X, c_req, sel, rounds=4, tol=2e-4):
     return X, st
 
 
+def hold_clear(body, X, c_req, sel):
+    """X with each selected vertex near the bind skin moved along the new skin's normal to its bind clearance c_req (in
+    or out: the tight set keeps its offset), by the weight 1 within HOLD in_m of the skin, 0 past in_m + fade_m."""
+    X = X.copy()
+    w = 1.0 - smoothstep((np.abs(c_req) - HOLD["in_m"]) / HOLD["fade_m"])
+    idx = np.where(sel & (w > 0))[0]
+    st = {"held": int(len(idx)), "hold_max_mm": 0.0}
+    if not len(idx):
+        return X, st
+    total = np.zeros(len(idx))
+    for r in range(HOLD["rounds"]):
+        c, n = signed_clear(body, X[idx])
+        # (the later rounds refine only the full-weight vertices: a partial weight is applied once)
+        wr = w[idx] if r == 0 else (w[idx] >= 1.0).astype(np.float64)
+        dlt = wr * (c_req[idx] - c)
+        X[idx] += dlt[:, None] * n
+        total += dlt
+    st["hold_max_mm"] = round(float(np.abs(total).max()) * 1000, 3)
+    return X, st
+
+
+def similarity_fit(A, B, wt=None):
+    """(M [3,3], ca, cb, s, P): the best X -> M (X - ca) + cb taking points A onto B with M = R P diag(s) P^T, P the
+    principal axes of A (no shear), each scale s clamped to RIGID "scale" and pulled lightly toward 1 where A barely
+    spans that axis (a plate's thickness). Alternating: Kabsch for R at the scales, then each axis' least squares."""
+    w = np.ones(len(A)) if wt is None else wt
+    ca = (w[:, None] * A).sum(0) / w.sum()
+    cb = (w[:, None] * B).sum(0) / w.sum()
+    a, b = A - ca, B - cb
+    C = (w[:, None] * a).T @ a
+    ev_, P = np.linalg.eigh(C)
+    P = P[:, ::-1]
+    if np.linalg.det(P) < 0:
+        P[:, 2] *= -1
+    lo, hi = RIGID["scale"]
+    x = a @ P
+    sxx = (w[:, None] * x * x).sum(0)
+    lam = RIGID["reg"] * sxx.max()
+    s = np.ones(3)
+    R = np.eye(3)
+    for _ in range(RIGID["iters"]):
+        S = P @ np.diag(s) @ P.T
+        H = (w[:, None] * (a @ S.T)).T @ b
+        u, _, vt = np.linalg.svd(H)
+        d = np.sign(np.linalg.det(vt.T @ u.T))
+        R = vt.T @ np.diag([1, 1, d]) @ u.T
+        y = b @ R @ P
+        s_new = np.clip(((w[:, None] * y * x).sum(0) + lam) / (sxx + lam), lo, hi)
+        if np.abs(s_new - s).max() < 1e-7:
+            s = s_new
+            break
+        s = s_new
+    M = R @ P @ np.diag(s) @ P.T
+    return M, ca, cb, s, P
+
+
 def min_translation(fn, short, iters=400):
     """A small translation t with fn_i . t >= short_i for all i (cyclic projections onto the violated half-spaces)."""
     t = np.zeros(3)
@@ -332,14 +399,61 @@ def min_translation(fn, short, iters=400):
 
 def rigid_clear(body, Xs, c_req):
     """One translation for a rigid group (its placed points Xs, their bind clearances): the smallest that keeps every
-    point that was clear on the bind body out of the new skin (a rigid plate cannot grow, so a deficit against its bind
-    clearance is not asked: only no point inside)."""
+    point that was clear on the bind body out of the new skin. (Kept for a group without a fit; rigid_fit_clear is the
+    made-to-measure path.)"""
     c, fn = signed_clear(body, Xs)
     need = np.where(c_req >= 0, np.maximum(0.0, -c) + 1e-4, 0.0)
     m = need > 1e-4 + 1e-9
     if not m.any():
         return np.zeros(3)
     return min_translation(fn[m], need[m])
+
+
+def rigid_fit_clear(body, A, B, Ag, c_req):
+    """A rigid group made to measure and cleared: the similarity fit of its leader's bind points A onto their followed
+    points B (similarity_fit), then the smallest change of translation and per-axis scales (an LP: L1 of the translation
+    + RIGID "clear_w" x the scales' change, the scales kept in their clamp) that puts every point of the group Ag that was
+    clear on the bind body at least min(its bind clearance, RIGID "clear_m") out of the new skin, linearized and
+    re-measured over a few rounds. A plate that wraps the body (front, sides) cannot clear by one translation; a scale can.
+    Returns (M, ca, cb, info)."""
+    from scipy.optimize import linprog
+    M, ca, cb, s, P = similarity_fit(A, B)
+    R = M @ P @ np.diag(1.0 / s) @ P.T
+    lo, hi = RIGID["scale"]
+    t = np.zeros(3)
+    x = (Ag - ca) @ P
+    ok_req = c_req >= 0
+    tgt = np.minimum(c_req, RIGID["clear_m"])
+    info = {"scale_fit": [round(float(v), 4) for v in s], "rounds": 0, "left_mm": 0.0}
+    for r in range(RIGID["clear_rounds"] + 1):
+        Mr = R @ P @ np.diag(s) @ P.T
+        Y = (Ag - ca) @ Mr.T + cb + t
+        c, fn = signed_clear(body, Y)
+        need = tgt - c
+        info["left_mm"] = round(float(max(0.0, need[ok_req].max() if ok_req.any() else 0.0)) * 1000, 3)
+        m = ok_req & (need > -RIGID["near_m"])
+        if not (need[m] > 1e-5).any() or r == RIGID["clear_rounds"]:
+            break
+        gs = x[m] * (fn[m] @ R @ P)          # d(fn . Y) / d s_k
+        G = np.hstack([fn[m], gs])
+        cw = np.r_[np.ones(3), RIGID["clear_w"] * np.ones(3)]
+        # v = v+ - v-, both >= 0; G v >= need  ->  -G v+ + G v- <= -need
+        res = linprog(np.r_[cw, cw], A_ub=np.hstack([-G, G]), b_ub=-(need[m] + 2e-5),
+                      bounds=[(0, None)] * 3 + [(0, max(0.0, hi - v)) for v in s] + [(0, None)] * 3
+                      + [(0, max(0.0, v - lo)) for v in s], method="highs")
+        if res.status != 0:
+            # infeasible within the clamp: the translation alone (cyclic projections), the row is flagged by its numbers
+            bad = m & (need > 0)
+            t = t + min_translation(fn[bad], need[bad])
+            info["lp"] = "infeasible"
+            continue
+        v = res.x[:6] - res.x[6:]
+        t = t + v[:3]
+        s = np.clip(s + v[3:], lo, hi)
+        info["rounds"] = r + 1
+    M = R @ P @ np.diag(s) @ P.T
+    info.update(scale=[round(float(v), 4) for v in s], clear_mm=round(float(np.linalg.norm(t)) * 1000, 2))
+    return M, ca, cb + t, info
 
 
 # ---------------------------------------------------------------------- test bodies
