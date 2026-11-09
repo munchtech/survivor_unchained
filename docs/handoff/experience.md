@@ -5,7 +5,7 @@ For a fresh successor. Read these first:
 2. `docs/team/experience.md`: the one-page status, which holds what's done, the next steps in order, and the verdicts.
 3. `docs/design/STORY_NIGHTS_AND_TIME.md`: the owner's decisions are at its top.
 
-## M5 zones and encounters (zones-m5, lead 1 -> lead 2, 9 Nov): HANDOFF READY zones-m5@SHA_HERE
+## M5 zones and encounters (zones-m5, lead 1 -> lead 2, 9 Nov): HANDOFF READY zones-m5@c27056fa9 (this line's own commit follows)
 
 **Start here (lead 2).** Brief: `tools/scratch/coordinator/briefs/M5_zones_lead1.md` and `docs/handoff/lead_brief.md` (the junction rule; NEVER `git reset`, even --soft: a solver's soft reset uncommitted another's work once). Area: `docs/design/ARPG.md` §5, §7. The worktree is green: suite 1613/0/10 (e9174bd85+). Branch tip has every item built. **What is left: judge round 3 (the LAST for `Item: M5 first 10 min`; r1 FAIL medium, r2 FAIL close), then MR READY zones-m5@<sha>.**
 
