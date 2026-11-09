@@ -158,8 +158,11 @@ class OurSliders:
         V = self.V0.copy()
         if post is True:
             return V + self.post_delta(values)
+        cat = catalogue()
         for n, v in values.items():
-            if v and n not in self.designed:
+            # (P1 R1 sliders round 4: a "shrink" with "replaces_macros" owns its slider's minus side, so bust_size < 0 is
+            # our breast rule alone (breast_form.shrink) and MakeHuman's cup macro no longer moves the chest round it)
+            if v and n not in self.designed and not (v < 0 and cat.get(n, {}).get("shrink", {}).get("replaces_macros")):
                 V += self.delta(n, v)
         for n, c in self.designed.items():     # catalogue order: each rule on the body the ones before it made
             v = values.get(n, 0.0)

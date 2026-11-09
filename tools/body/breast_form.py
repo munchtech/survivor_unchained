@@ -172,52 +172,78 @@ def shrink(sl, V, values):
     return V, rep
 
 
+def fill_free(sl, V, free):
+    """V with the points in mask `free` refilled by the biharmonic surface of the GEOMETRIC (cotangent) Laplacian of V,
+    everything else held (two rings: C1 at the rim): the bare surface under whatever stood inside `free`."""
+    import scipy.sparse as sp
+    from scipy.sparse.linalg import splu
+    A = cot_weights(V, extra(sl)["Q"])
+    deg = np.asarray(A.sum(1)).ravel()
+    L = sp.identity(len(V), format="csr") - sp.diags(1.0 / np.maximum(deg, 1e-12)) @ A
+    M = (L.T @ L).tocsr()
+    f, k = np.nonzero(free)[0], np.nonzero(~free)[0]
+    W = V.copy()
+    W[f] = splu(M[f][:, f].tocsc()).solve(-(M[f][:, k] @ V[k]))
+    return W
+
+
 def shrink_move(sl, sh, V):
-    """The full shrink's move on body V (left side, mirrored): the chest wall W = V + wall_delta (the wall rule's fill)
-    is the breast's base surface, the breast its offset H = V - W. A base frame per side: n the breast's mass direction
-    (the |H|-weighted mean of H), u across, w up the base; the centre c the |H|-weighted mean of the wall points in
-    (u, w). Each point's wall point slides ON the wall toward c by (1 - a m) (the wall as a smooth height field g(u, w)
-    along n, Clough-Tocher C1 over the region's wall points): the base and the fold come in with the volume; its offset
-    H scales by a m along the base and b m along n. m is the wall rule's C2 blend (1 over the mound, 0 well inside the
-    rim): the rim is feathered, the midline and the wall outside hold. With a ~ b the breast keeps its own shape
-    smaller (the round lower pole, the convex upper pole, its point where it was on the profile)."""
+    """The full shrink's move on body V (left side, mirrored). P1 R1 sliders round 4 (round 3's wall slide over the
+    whole chest_wall blend smeared the upper chest toward the breast; the chest_wall fill lies deep under the whole
+    chest, so its offset is not the breast alone): the breast's FOOTPRINT is where the height over the chest wall
+    (sh["wall"]'s fill) is above sh["foot"] of its peak; the bare chest under it, W2, is the body refilled over the
+    footprint alone (fill_free: the upper chest, the clavicle, the armpit, the sternum and the fold below held, C1 at
+    the rim), and the breast is its offset H = V - W2 (0 outside the footprint). The breast is resampled as itself
+    scaled about its apex's point on W2 (the apex: its most forward point, the nipple; shifted by sh["cen_u_mm"],
+    sh["cen_w_mm"]) in W2's own parameter (u across: arc length round the trunk's vertical axis, w up), each point
+    keeps ITS OWN place on W2 and takes the offset the breast had at q = cen + (uw - cen) / (a, aw) (C1
+    Clough-Tocher over W2's points, the rim held at 0), its parts scaled (a, aw, b) along (across, up, out).
+    So the base narrows by a (aw up the base: the fold rises with it), the height by b, the shape (the convex upper
+    pole, the round lower pole, the apex on its profile) is the breast's own, no point slides, and every point
+    outside the footprint holds exactly."""
     from scipy.interpolate import CloughTocher2DInterpolator
-    from sliders import smoother
     c = sl.designed[sh["wall"]]
-    A, B = float(sh["across"]), float(sh["height"])
-    D = wall_delta(sl, c, V)
-    W = V + D
-    H = -D
-    m = sl.mask(c["blend"], sl.V0)
+    A, AW, B = float(sh["across"]), float(sh.get("up", sh["across"])), float(sh["height"])
+    hw = np.linalg.norm(wall_delta(sl, c, V), axis=1)
     reg = sl.mask(c["region"], sl.V0) > 1e-9
     left = sl.V0[:, 0] > 1e-4
-    hw = np.linalg.norm(H, axis=1)
-    if sh.get("full_h"):
-        # (optional feather: the blend times the breast's own height ramp, full from "full_h" of its peak height. Tried
-        # in round 3 at 0.2: the base did not come in vertically and the fold notch deepened; not used)
-        m = m * smoother(hw / (float(sh["full_h"]) * hw[left & (m > 0)].max()))
-    sel = left & (m > 0)
-    n = (H[sel] * hw[sel, None]).sum(0)
-    n /= np.linalg.norm(n)
-    eu = np.array([1.0, 0.0, 0.0]) - n[0] * n
-    eu /= np.linalg.norm(eu)
-    ew = np.cross(n, eu)
-    F = np.stack([eu, ew, n], 1)                      # world -> (u, w, z): X @ F
-    cloud = left & reg
-    Wc = W[cloud] @ F
-    g = CloughTocher2DInterpolator(Wc[:, :2], Wc[:, 2])
-    Ws = W[sel] @ F
-    cen = (Ws[:, :2] * hw[sel, None]).sum(0) / hw[sel].sum()
-    ms = m[sel][:, None]
-    a, b = 1.0 - (1.0 - A) * ms, 1.0 - (1.0 - B) * ms
-    uw = cen + (Ws[:, :2] - cen) * a
-    z = g(uw)
-    ok = np.isfinite(z)
-    Wn = np.concatenate([uw, np.where(ok, z, Ws[:, 2])[:, None]], 1) @ F.T
-    Hs = H[sel] @ F
-    Hn = np.concatenate([Hs[:, :2] * a, Hs[:, 2:] * b], 1) @ F.T
+    fp = reg & (hw > float(sh.get("foot", 0.15)) * hw[reg].max())
+    W = fill_free(sl, V, fp)
+    H = V - W
+    h = np.linalg.norm(H, axis=1)
+    cloud = left & fp
+    ia = np.nonzero(cloud)[0][np.argmax(V[cloud, 2])]     # the apex: the breast's most forward point (the nipple)
+    # the base parameter: cylindrical about the trunk's vertical axis (x = 0, z = the trunk's mean z at the apex's
+    # height), arc length at the apex's radius across and height up: one-to-one where the bare chest wraps round the
+    # side under the breast's outer flank (a flat frame folds there); per point the frame (across, up, out)
+    band = (np.abs(V[:, 1] - V[ia, 1]) < 0.03) & (np.abs(V[:, 0]) < 0.2)
+    zc = float(V[band, 2].mean())
+    def cyl(X):
+        t = np.arctan2(X[:, 0], X[:, 2] - zc)
+        E = np.stack([np.stack([np.cos(t), 0 * t, -np.sin(t)], 1), np.tile([0.0, 1.0, 0.0], (len(t), 1)),
+                      np.stack([np.sin(t), 0 * t, np.cos(t)], 1)], 2)      # columns: across, up, out
+        return t, E
+    R = float(np.hypot(W[ia, 0], W[ia, 2] - zc))
+    ring = left & ~fp & (np.linalg.norm(V - V[cloud].mean(0), axis=1) < 0.2)
+    tc, Ec = cyl(W[cloud])
+    tr, _ = cyl(W[ring])
+    Hc = np.einsum("nij,ni->nj", Ec, H[cloud])                       # the offset in each point's (across, up, out)
+    P = np.concatenate([np.stack([tc * R, W[cloud, 1]], 1), np.stack([tr * R, W[ring, 1]], 1)])
+    Q = np.concatenate([Hc, np.zeros((ring.sum(), 3))])               # the held points around the rim: offset 0
+    ta, _ = cyl(W[ia:ia + 1])
+    cen = np.array([ta[0] * R, W[ia, 1]]) + np.array([float(sh.get("cen_u_mm", 0.0)), float(sh.get("cen_w_mm", 0.0))]) * 1e-3
+    d = P[:len(tc)] - cen
+    if "low" in sh:
+        # (the lower half's own scale up the base, switched smoothly (C-inf) about the apex's height over +-"low_bw_mm":
+        # the fold rises by its own share while the upper pole keeps its line to the upper chest)
+        aw = smooth_r(d[:, 1], float(sh["low"]), AW, float(sh.get("low_bw_mm", 20.0)) * 1e-3)
+    else:
+        aw = np.full(len(d), AW)
+    q = cen + d / np.stack([np.full(len(d), A), aw], 1)
+    Hn = CloughTocher2DInterpolator(P, Q)(q)
+    Hn = np.where(np.isfinite(Hn), Hn, 0.0) * np.stack([np.full(len(d), A), aw, np.full(len(d), B)], 1)
     Mv = np.zeros_like(V)
-    Mv[sel] = np.where(ok[:, None], (Wn + Hn) - V[sel], 0.0)
+    Mv[cloud] = np.einsum("nij,nj->ni", Ec, Hn - Hc)
     return mirror_left(sl, Mv)
 
 
