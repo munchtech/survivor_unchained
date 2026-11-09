@@ -2193,6 +2193,7 @@ public partial class Game : Node, IZoneHost
         CloseOverlay();
         var next = list[tourI++];
         if (next.StartsWith("talk:")) TalkTo(next[5..]);
+        else if (next.StartsWith("post:")) OpenPost(next[5..]);
         else if (next == "draft" && Battle is { } b) { b.GainEmber(b.EmberNext); }
         // A won arena's end, with a sample tally (pictures of the result screen; in an arena).
         else if (next == "result" && World.Arena is { } spec && Battle is { } rb)
