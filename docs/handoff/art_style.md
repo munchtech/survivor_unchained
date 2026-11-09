@@ -1,21 +1,43 @@
 # Handoff: the signature art style (style frames)
 
-## L1 lead 7 (9 Nov, coordinator ad002ada): IN PROGRESS, the day's color at its root (this block is rewritten at handoff)
-- **Done:**
-  - **S1 and S1b** (a299c344): the grade's `scene_color` (by day the grade gives lightness only; AgX and the chroma terms had pushed a neutral card to R/B 2.95). `color_chain.py all` wired and ending with the Godot import; the setts follow their class (12ba2aa0a).
-  - **S1c** (a79803f4): ONE SUN, the boards' own #ffc296. The picked G1 07 setts read 0.027 from it; rule 3 is moved, and dawn keeps #f3d9a0. `board_sun` is the identity. Cloth is no longer her navy. The ground check passes (f673c21b9..24bcf6bfc).
-  - **The worker:** every shoot re-imports stale textures first (796e39e07). S1's first frames were shot on stale .ctex.
-  - **Bible rule 4:** the day midC band is 0.05-0.08, FROM the picked targets (fc3bfa553).
-- **Running: S1c round 2.**
-  - The class mids are calibrated in closed loop on the lookdev stage against the G1 targets (the boards' p70 plus the kits' lit strokes counted the light twice: lime grass, pale setts, Lp50 high).
-  - The town-day sun moves to the camera side (az 330 backlit 13's fronts; G1 07's house shadows point up).
-  - Cloth becomes undyed tan, and rock by day stays neutral.
+## L1 lead 7 (9 Nov, coordinator ad002ada): the day's color fixed at its root; S2 and FXM running; the shoot, the judge, Stage D and G2 next (HANDOFF READY look-l1, the commit that adds this section)
+The owner, 8 Nov: "visually stunning cel shading painterly with vibrant colors". Briefs and results are in `survivorsunchained_inputs\look_l1\work\` (`brief_l7_*`). Report to main only at the judge's verdict and at GATE G2 READY, plus the fx-lang shas.
+
+- **Done (P12: the app can now light the day from one sun, with the grade giving lightness only, and calibrate every class in closed loop against the picked targets):**
+  - **The grade's `scene_color`** (S1): by day, AgX's channel pull and the chroma terms no longer bend color. A neutral card had read R/B 2.95 against the sun's 2.55.
+  - **One sun, the boards' own #ffc296** (S1c). The picked G1 07's setts sit 0.027 from it. Bible rule 3 is moved; dawn keeps #f3d9a0. `board_sun` is the identity.
+  - **The town-day sun at az 120, behind the camera's left shoulder** (S1c r2). G1 07's house shadows point up the screen and G1 13's fronts are lit. Rule 5 is edited.
+  - **`calibration.json`, Oklab per class** (S1c, S1d). The boards' p70 plus the kits' lit strokes had counted the light twice.
+    - Grass, setts, plaster and road are within accept on both day targets.
+    - The grass cards' atlas follows its class.
+    - `day_wild` is solved from the same sun.
+  - **08's `look_day` rig** keys her in book screens (S1d).
+  - **Cloth** is undyed tan (#917f68).
+  - **Rock by day** stays neutral (rule 9).
+  - **The ground check passes.**
+  - **`color_chain.py all`** ends with the Godot import, and every shoot re-imports stale textures (`freshness.reimport_if_stale`, 796e39e07).
+  - **Bible bands FROM the picked targets:** day key 1.35+, Lp50 0.35-0.55, midC 0.05-0.08.
+  - **The steel's chroma and the fair vibrance rule:** fx-lang@48391c087, look-l1@9c48999bd. A pixel counts as saturated at C ≥ 0.15 or at 90% of the sRGB ceiling.
+  - Commits f673c21b9..66693e01f, all pushed. Suite 1600/0/10.
+- **Left in the day (for the judge to rank):**
+  - spruce shade green h 130, not blue (the fill under the foliage; medium);
+  - no roof reference (rule 1 excludes 07's amber; medium);
+  - 07's shade share 0.56 against about 0.40 (el 32-35 untried);
+  - 04's busy camo meadow structure (B3; the judge's);
+  - `close_day` still has the old gold key.
+  - Pairs: `c\l7\s1d\pairs\`.
+- **Running when lead 7 handed off** (each hands back to lead 7; main resumes lead 7 or relays):
+  - **S2, the night** (`brief_l6_s2_night.md` plus `brief_l7_s2_addendum.md`): the pool from brown to ember, likely through `scene_color` at night; the broken night solve; dawn; her skin shade at h 325; the pack's fur and rim; the skills judge's pool notes.
+  - **FXM, in its own worktree** `.claude\worktrees\fx-lang` (`brief_l7_fx_marks.md`), on fx-lang:
+    - (A) `fx_stroke(across, along, life)`, painted, in `fx_cel.gdshaderinc`. FXM tells main its sha directly; P7 lead 2 waits on it.
+    - (B) after-grade light hidden by the world's depth;
+    - (C) danger marks over every after-grade light (FLARE_LOOK §1.6).
 - **Next:**
-  1. S2: `look_l1\work\brief_l6_s2_night.md`, plus S1's numbers. Point S2 at `scene_color` for the night: AgX pulls a bright ember's channels together, the likely root of the brown pool. The chain's night solve is broken (sky #fff9f2, orange ground) and `all` writes the day only.
-  2. The 13-frame shoot, then one max judge.
-  3. FXM in the judge's window: `look_l1\work\brief_l7_fx_marks.md`. The danger marks go over every after-grade light (FLARE_LOOK §1.6). Main approved it; send main the fx-lang sha.
-  4. Stage D, then G2.
-- **Sent to main:** the Low Ford pockets' cost line (a P5 lead after G2; about 0.6-1.0M).
+  1. Merge fx-lang into look-l1 by the junction rule: rmdir the link, merge, mklink, assume-unchanged. Then remove the fx-lang worktree with `wt_remove.ps1` once P7 has merged it, and send main every fx-lang sha.
+  2. The 13-frame shoot (`brief_l7_shoot.md`, a su-runner).
+  3. One max judge (`judge_l7_c13.md`; fill its "What changed" from this block): the whole-frame question first, all 13 as one game against G1, the notes to the blocks.
+  4. Stage D, then GATE G2 READY with the A (r0) | B half-size pairs in `look_l1\g2\`.
+- **Cost, lead 7:** about 280k. Solvers: S1+S1b 223k, S1c 209k, S1d 189k, workers 35k and 47k. $0 API.
 
 ## L1 lead 6 (9 Nov, coordinator ad002ada): FX language out, fx-lang published, her depth twin; the color chain NOT started (HANDOFF READY look-l1, the commit that adds this section)
 The owner, 8 Nov: "visually stunning cel shading painterly with vibrant colors". Brief: `tools/scratch/coordinator/briefs/L1_lead6.md`. The coordinator accepted ~1.4-1.9M to G2 ("cost does not matter for the art, building blocks do") and wants reports only at the judge's verdict and at GATE G2 READY. Lead 6 ran out of context at onboarding plus the skills lead's needs, so steps 1-4 of the brief are all still ahead.
