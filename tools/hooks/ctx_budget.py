@@ -14,9 +14,9 @@ import re
 import sys
 
 DEFAULTS = {  # README "Working lean"
-    None: 250_000,              # the main session (coordinator)
-    "su-lead-high": 300_000,
-    "su-lead-sonnet": 300_000,
+    None: 180_000,              # the main session (coordinator); 9 Nov: under the 200k long-context premium
+    "su-lead-high": 200_000,    # 9 Nov: leads hand off at 200k (premium above it); briefs may still say 300k until rewritten
+    "su-lead-sonnet": 200_000,
     "su-lead-max": 180_000,     # judges and solvers (150k to 180k, 12 October); story leads set their own in the brief
     "su-worker": 150_000,
     "su-worker-medium": 150_000,
