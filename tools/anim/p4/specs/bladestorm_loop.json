@@ -259,19 +259,19 @@
    "seconds": 1.3333,
    "stretch": true,
    "derotate_tps": 2.25,
-   "pivot": "LeftFoot",
+   "pivot": "LeftToeBase",
    "planted": {
     "foot_l": [
      [
       "start",
       "end",
-      "ankle"
+      "ball"
      ]
     ]
    }
   }
  },
- "notes": "A1 actions (solver B): three turns to her left in 40 frames. Made at 1.0 turn/s (Kimodo holds about that; asked for 2.25 it turns at 1.4 at most and hovers) by a Root2D heading track with the root orbiting the planted left foot, the same stance pose keyed every half turn (the right foot steps around the pivot), then stretched x2.25 onto 1.3333 s and de-rotated at 2.25 turns/s about the pivot.",
+ "notes": "A1 actions (solver B): three turns to her left in 40 frames. Made at 1.0 turn/s (Kimodo holds about that; asked for 2.25 it turns at 1.4 at most and hovers) by a Root2D heading track with the root orbiting the planted left foot, the same stance pose keyed every half turn (the right foot steps around the pivot), then stretched x2.25 onto 1.3333 s and de-rotated at 2.25 turns/s about the pivot. Fit (solver F2): pivot on the left ball (derotate pivot LeftToeBase, planted ball; the core puts B's pivot on the turn axis), the pelvis 5 cm up (knees in band), lean 17 (lean_of) = 10.8 band, sword hand held in the turning frame [-0.66, 0.20, 0.10] by arm_solve (hinge rest), blade level 50 deg ahead of out in the clip frame (leading), shield on the chest frame at its left front (open 50) and cleared 11 mm; pops eased on the head, neck and the stepping ball.",
  "bands": {
   "yaw_resid_deg@loop": [
    0,
@@ -291,15 +291,15 @@
   ],
   "lean_deg@loop:mean": [
    5,
-   12
+   15
   ],
   "knee_l_deg@loop:mean": [
-   15,
-   35
+   20,
+   40
   ],
   "knee_r_deg@loop:mean": [
-   15,
-   35
+   20,
+   40
   ],
   "blade_below_deg@loop:max": [
    -15,
@@ -322,5 +322,75 @@
  "source": "src/bladestorm_loop.npz",
  "bvh": "bladestorm_loop__qs0s802_4.bvh",
  "sha1": "616babcc244c0a21ea2c9fdd3d3ae5325065fd49",
- "take_score": 3.67
+ "take_score": 3.67,
+ "fit": {
+  "stance": {
+   "drop_cm": -5
+  },
+  "lean": {
+   "deg": 17
+  },
+  "limbs": {
+   "hand_r": {
+    "at": [
+     -0.66,
+     0.2,
+     0.1
+    ],
+    "pole": [
+     0,
+     -1,
+     -1
+    ],
+    "solve": true,
+    "hinge": "rest",
+    "frame": "clip",
+    "soft": 0.9
+   }
+  },
+  "blade": {
+   "dir": [
+    -0.64,
+    0,
+    0.77
+   ],
+   "keys": [
+    [
+     0,
+     [
+      -0.64,
+      0,
+      0.77
+     ]
+    ]
+   ],
+   "frame": "clip",
+   "twist_smooth": 4
+  },
+  "shield": {
+   "solve": true,
+   "frame": "chest",
+   "boss": [
+    0.2,
+    0.0,
+    0.17
+   ],
+   "open_deg": 50,
+   "tilt_deg": 0,
+   "branch": -1
+  },
+  "clear": {
+   "target_mm": 11,
+   "passes": 10
+  },
+  "pop": {
+   "cap": {
+    "Head": 7,
+    "neck_02": 5,
+    "ball_r": 10,
+    "ball_l": 6
+   },
+   "span": 4
+  }
+ }
 }
