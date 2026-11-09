@@ -1,0 +1,561 @@
+{
+ "about": "P1's loop plan: our own base topology as data (tools/body/topo.py builds it). Every number says what it is derived FROM: (a) the game's need, (b) a reference, (c) inherited. Lengths in metres, angles in degrees, counts in edges. The trunk lattice counts are tied: K_top = c_f + n_t + c_k (the neck half ring), K = c_f + n_b + c_k (the trunk's half ring below the arm), N_arm = 2 n_f + n_t + n_b (the arm root = the wrist template's ring), N_leg = K - 2 + b (the leg root = the ankle template's ring); topo.py checks them.",
+ "reference": {
+  "close": "tools/body/out/run_a/stage/close.npz",
+  "base": "tools/body/out/run_a/stage/base.npz",
+  "skeleton": "tools/body/out/run_a/body.glb",
+  "head": "godot/art/people/heroine.glb",
+  "head_mesh": "HeroineHead",
+  "head_tris": 33696,
+  "neck_carry_m": 0.06,
+  "why_neck_carry": "(c) P1 N: the reference was made against the head's stored ring; the build draws the head at its baked world rest (headbake.rest_world: 25 mm lower, 6% larger), so the reference neck is carried onto it (topo.neck_carry: each point the ring's own move at its angle, 1 above the ring, smooth01 over 0.06 m of distance under it) and the topology's ring IS the baked ring: stage_place moves 0.0 mm. (a) 0.06 m = the ring to the clavicle heads at the front (b: 1.552); 0.10 (the build's fit_ease_m) reached the trapezius and shoulder rim and changed the plan's counts (n_t 25 -> 23)",
+  "why": "(b) the base woman's close surface (MakeHuman hm08, CC0) only as the shape; (a) OUR skeleton's bones place every station; (c) her approved head's open ring (94 points) is the neck's top, kept vertex for vertex"
+ },
+ "tiers": {
+  "close": {
+   "neck": "all",
+   "spacing": 0.0085,
+   "c_f": 19,
+   "n_t": 12,
+   "n_b": 6,
+   "n_f": 13,
+   "b": 5,
+   "template": "sub",
+   "k_shoulder": 2,
+   "k_hip": 2,
+   "breast": {
+    "w": 8,
+    "h": 10,
+    "k": 3
+   },
+   "joint_loops": 3,
+   "neck_ease_rows": 4,
+   "why": "(a) the close-up: the cel terminator a smooth curve across breasts, shoulders, buttocks, thighs and calves (L1); 8.5 mm keeps a thigh's facet under 0.4 px at 9.4 px/cm; arm and leg 44 = the subdivided templates' wrist and ankle"
+  },
+  "play": {
+   "neck": 24,
+   "spacing": 0.017,
+   "c_f": 10,
+   "n_t": 6,
+   "n_b": 2,
+   "n_f": 7,
+   "b": 4,
+   "template": "base",
+   "k_shoulder": 1,
+   "k_hip": 1,
+   "breast": {
+    "w": 4,
+    "h": 5,
+    "k": 1
+   },
+   "joint_loops": 3,
+   "neck_ease_rows": 2,
+   "why": "(a) the play camera (her 40-60 px tall) at ~25k: arm and leg 22 = the templates' rings; the neck keeps 25 of the head ring's 48 points a side (a head LOD's ring)"
+  },
+  "far": {
+   "neck": 16,
+   "spacing": 0.034,
+   "c_f": 7,
+   "n_t": 6,
+   "n_b": 2,
+   "n_f": 7,
+   "b": 4,
+   "template": "base",
+   "k_shoulder": 1,
+   "k_hip": 0,
+   "breast": null,
+   "joint_loops": 1,
+   "neck_ease_rows": 1,
+   "why": "(a) crowds at ~8k; v1 still carries the base templates (generated far hands and feet are open)"
+  }
+ },
+ "canvas": {
+  "h_lo": 1.04,
+  "h_hi": 1.5,
+  "R_lo": 0.1,
+  "R_hi": 0.11,
+  "why": "(a) a capsule chart for the trunk: horizontal rays from the trunk's middle, tilting up over the shoulders and neck and down under the hips, so every trunk point is hit once"
+ },
+ "trunk": {
+  "waist_y": 1.2,
+  "underbust_y": 1.375,
+  "hip_line_row": 0.55,
+  "decollete_y": 1.53,
+  "small_of_back_row": 0.62,
+  "why": "(b) heights read off the reference's midline and the skeleton (spine_02 1.155, the breast's fold 1.37)",
+  "hip_y": [
+   1.06,
+   1.1
+  ]
+ },
+ "shoulder": {
+  "root_tilt": 0.5,
+  "root_through": "armpit",
+  "why": "(a) the arm root ring through the armpit's saddle (the dome) and over the deltoid (tilted half-way from the arm's axis to lateral); the trunk's hole is the root ring's canvas footprint plus one band of loops (~1.5-2 cm: 6 deg front and back, 1.5 cm under the saddle, 0.012 canvas-t over the shoulder top) so the loops between run evenly; its four corners (front fold, back fold, front and back of the shoulder top) are the shoulder's only poles",
+  "hole": {
+   "front_deg": 6,
+   "back_deg": 6,
+   "below": 0.015,
+   "above": 0.012
+  }
+ },
+ "hip": {
+  "y_c": 0.995,
+  "beta": 30,
+  "gamma": 9,
+  "why": "(b) the leg crease plane: through the crotch's midline at y_c, rising 30 deg laterally (the groin crease to the hip's side) and 9 deg toward the front (the groin above the glute fold)",
+  "root": {
+   "front": [
+    [
+     0,
+     1.035
+    ],
+    [
+     28,
+     1.035
+    ],
+    [
+     40,
+     1.05
+    ]
+   ],
+   "side_y": 1.05,
+   "back": [
+    [
+     120,
+     950,
+     -101
+    ],
+    [
+     100,
+     945,
+     -100
+    ],
+    [
+     80,
+     945,
+     -98
+    ],
+    [
+     60,
+     950,
+     -94
+    ],
+    [
+     40,
+     950,
+     -81
+    ],
+    [
+     0,
+     988,
+     -75
+    ]
+   ],
+   "lobe_top_rise": 0.03,
+   "why": "(a) the judge (pass 3b item 4): the leg's root a CURVE, not a plane: front = the groin crease, read off the reference's front profiles (b: the concave minimum, x 37-70 mm: (37, 0.99) (60, 1.02) (70, 1.05); [theta deg, y] on the trunk canvas) from the pubic mound's lower edge (b: the midline 1.0); side_y = over the hip bone at the greater trochanter (b: our skeleton's hip joint thigh_l 1.067, the trochanter's top just under it), level from the crease to the shoulder band's back edge BB (115 deg); back = down the gluteus' lateral edge to the gluteal fold (b: the back profiles' kink at 0.945-0.95 for x 40-120 mm) and along it into the perineum (b: the cleft's bottom 0.988 on the midline). The buttock above the fold stays trunk: a lobe of the B band whose rows end on the rise (lobe_top_rise: its top climbs 30 mm to the midline so the cleft's column (b: 0.988 -> 1.08 up the floor, ~115 mm) matches the buttock's (0.95 -> 1.05 under the bulge)); the reference is relabelled by the same curve",
+   "why_back": "(b) the gluteal fold as reference landmarks [x, y, z] mm (projected onto the reference, then the canvas's inverse): the back profiles' kink at y 945-950 for x 40-120 mm (faded by x 120: the fold's lateral end, the lobe's miter) and the cleft's bottom (0, 988, -75); given in 3D because the canvas's steep rays under h_lo pass under the buttock and hit the inner thigh (a meridian-and-height lookup put the miter at (4, 983, -39))",
+   "blend": {
+    "step_lo": 0.4,
+    "step_hi": 1.15,
+    "why": "(a) the curve root stands up to ~35 mm off its best-fit plane (the rise's top and the cleft above, the fold below), so the thigh's first rings are blend rings column by column from the root to the first planar station fully under it: n rings at steps within [step_lo, step_hi] x the limb spacing (lo: no edge under ~3 mm close, aspect under 2.5 at the fold; hi: no step over ~8.6 mm, the trunk's spacing); every column continues, so the blend adds no poles",
+    "support_step": 0
+   },
+   "why_front": "(b) the front of the root at the groin crease's top: the reference's concave line per height (rays from the front) runs (20, 990, -4) (25, 1000, 14) (30, 1010, 23) (35, 1020, 30) (40, 1035, 38) mm: near-vertical on the canvas (theta 26-31 deg), which a row profile t(theta) cannot carry (the rows above would collapse onto it), so the crotch strip climbs the mons to y 1.035 at the midline and its outer line takes the crease's lower course; the row is level at 1.035 to theta 28 (the crease's top) and rises to side_y by theta 40 [theta deg, y]",
+   "crotch": {
+    "m": 3,
+    "line": [
+     [
+      29.6,
+      1007.0,
+      20.9,
+      0
+     ],
+     [
+      25.5,
+      999.3,
+      12.7,
+      1
+     ],
+     [
+      22.2,
+      993.8,
+      3.8,
+      1
+     ],
+     [
+      19.3,
+      989.3,
+      -5.6,
+      1
+     ],
+     [
+      13.8,
+      985.0,
+      -17.2,
+      0
+     ],
+     [
+      14,
+      975,
+      -40,
+      0
+     ]
+    ],
+    "why": "(b) the strip's outer line in the groin crease: the reference's own crease edges (hm08 vertices, dihedral 40-78 deg: (29.6, 1007, 20.9) (25.5, 999.3, 12.7) (22.2, 993.8, 3.8) (19.3, 989.3, -5.6) (13.8, 985, -17.2)) then the perineum's lateral edge (rays from below: where the flat perineum drops onto the inner thigh, x 14 at z -40), [x, y, z, h] mm, between R0[m] and the fold's inner end R0[K - m]; (a) m = 3 quads a side: the strip's front edge (F row 0's first m edges, ~10.5 mm) reaches toward the crease's top and the perineum (15-17 mm a side) keeps ~5 mm across; the stopgap crotch_half_width is retired",
+    "fracs": [
+     0.45,
+     0.8
+    ],
+    "why_fracs": "(a) the strip's two inner lines at 0.45 and 0.8 of the way from the midline to the outer line: the outer one the crease's support loop on the strip side (3-6 mm from the crease)",
+    "hold": true,
+    "why_offset": "(b) the reference's crease is a polygon edge at its lower course (hm08 dihedral 77.6 deg (19.3, 989.3, -5.6)-(22.2, 993.8, 3.8) and 75.5 deg on to (25.5, 999.3, 12.7); <= 48 deg elsewhere on the groin and perineum; the line's 4th value marks those points, interpolated along it): a loop on that edge carries the whole turn, so there the outer line steps h onto the perineum and the thigh's first ring h down the inner thigh's face, both held through the relax: the edge lies mid-quad, its turn shared by two edges; h = the tier's crotch_h x its limb spacing"
+   },
+   "thigh_band_y": 0.8,
+   "why_thigh_band": "(a) the judge (pass 3b item 4): the thigh's reduction band (the kite strips, centred here) at the inner mid-thigh, y 780-820, clear of the hip zone's 40 mm and of the knee's bend zone (from y ~725)",
+   "lobe_support_step": 0.5,
+   "why_lobe_support": "(a) the judge's support loop for the buttock: the lobe's row 1 at half a row's spacing over the gluteal fold (row 0), so the fold reads as a crease"
+  }
+ },
+ "breast": {
+  "cap_ratio": 0.42,
+  "why": "(b) the window read off the reference: the inframammary fold (1.365) to the upper slope's end (1.49) at the apex's theta, 10-60 deg across; (a) concentric loops about the apex, a small grid cap",
+  "y": [
+   1.365,
+   1.49
+  ],
+  "theta": [
+   10,
+   60
+  ]
+ },
+ "limbs": {
+  "elbow": {
+   "fan_deg": 14,
+   "offset": 0.009,
+   "why": "(a) three loops on the bend's bisector planes: the crease loop on the bisector, two fanned 14 deg about the hinge so they meet the crease on the flexor side and spread over the olecranon"
+  },
+  "knee": {
+   "fan_deg": 14,
+   "offset": 0.011,
+   "why": "(a) the same at the knee: spread over the patella, met in the popliteal crease"
+  },
+  "root_blend": 0.4,
+  "wrist_cut": 0.004,
+  "ankle_cut": 0.03,
+  "why": "(a) rings at the tier's spacing along each bone, perpendicular to it; the arm's first rings turn from the tilted root to the bone over 40% of the upper arm"
+ },
+ "build": {
+  "about": "Pass 2 (density by edge length): every count is a length over these spacings, rounded to the parity the junctions need (topo_build.py trunk_plan). Spacings in metres.",
+  "tiers": {
+   "close": {
+    "spacing": 0.0078,
+    "row_scale": 1.0,
+    "glute_scale": 1.0,
+    "bust_scale": 0.95,
+    "neck_spacing": 0.0045,
+    "shoulder_spacing": 0.006,
+    "root_even": 0.6,
+    "breast_loops": 2,
+    "breast_cap": 0.8,
+    "breast_centre_pull": 0.0,
+    "limb_spacing": 0.0075,
+    "bend_spacing": 0.0055,
+    "ring_spacing": 0.0072,
+    "root_blend": 0.4,
+    "kite_sector": 200,
+    "bands": {
+     "strips": 3,
+     "min_per_strip": 2,
+     "at": 0.5
+    },
+    "hidden": [
+     -1.0,
+     0.0,
+     -1.0
+    ],
+    "elbow": {
+     "bend": 0.04,
+     "end_bend": 0.025
+    },
+    "knee": {
+     "bend": 0.05,
+     "end_bend": 0.03,
+     "limb_spacing": 0.0085,
+     "even_gap": true,
+     "root_plane": "bone",
+     "lower_spacing": 0.0088
+    },
+    "relax_iters": 12,
+    "relax_lambda": 0.5,
+    "why": "(a) the close-up at 9.4 px/cm: 7-8 mm on trunk and limbs (a 7 px chord), 5-6 mm over the breasts, shoulder caps, glutes and each joint's bend zone, so the cel terminator stays a curve (the old arm's 12 px chords failed); the neck graded to the head ring's ~4 mm; kites (reduction poles) on the inner/back side, mid-segment",
+    "collar_f": 0.3,
+    "shoulder_gap": 0.045,
+    "arm_root_n": 40,
+    "upper_arm_band": false,
+    "why_pass3": "(a) shoulder_gap: the rim the root ring offset 45 mm along the trunk, so the loops between run evenly (gap ratio <= 1.5); shoulder_spacing: the loops radial step; arm_root_n: the arm root after the trunk-side corner chains (the judge: ~40 close); upper_arm_band false: the shoulder zone (armpit + 110 mm) and the elbow zone leave no 40 mm-clear window for poles on the upper arm, so the elbow keeps the root count and the forearm reduces",
+    "neck_meet_rows": 8,
+    "neck_ring_smooth": 4,
+    "neck_step_ease": 3,
+    "neck_untwist_rows": 3,
+    "why_neck_untwist_n": "(a) P1 N: with the neck carried onto the baked ring (reference.why_neck_carry) the meet span is 25 mm shorter; the untwist search over the top 3 rows (was 2) takes the last short edge (close 1.8 mm at the front, row 86) and the last aspect (play 4.23) out; every other neck_meet number swept (step_ease 2/4, ring_smooth 8, meet_rows 4-7) left one",
+    "why_pass3b_neck": "(a) the neck meets her head ring one to one without folds: the reference front neck turns forward under the jaw where the canvas rays cannot follow (the rows bunched 15-28 mm below the ring) and the head ring (c: her approved head, kept) has 3-6 mm steps where its own rows end, some stepping back along the ring; neck_meet_rows: the top rows re-placed per side between the base row and the side own ring points (rows at even arc length on surface curves; neck_ring_smooth: the rail toward the ring smoothed by that many umbrella steps and sampled at the ring own arc fractions, so every row runs forward under a back-step; neck_step_ease: the steps rise eased into the rows by s^p); neck_untwist_rows: the top rows placed by a deterministic fold-lowering search in the tangent plane (the ring steps leave no quad under them convex otherwise). The midline columns carry the head own 2-3 mm midline offset and ease it to zero at the base row: the field is continuous through the midline, nothing crosses it (replaces the right-side-only snap + ease)",
+    "breast_cap_on_loop": true,
+    "F_L_heights": [
+     1.42
+    ],
+    "collar_F_y": 1.5,
+    "why_pass3b_breast": "(a) breast_cap_on_loop: the cap Coons boundary is the last loop itself (the old 0.55-scale boundary inside a 0.66 loop stretched the cap outer quads); breast_loops 2 + breast_cap 0.8: the cap corners out on the chest wall (the judge: corners within 20 mm of the apex or out to the chest wall; a 20 mm cap would put the rim 76+ points on a 125 mm loop, edges under 2 mm); F_L_heights [1.42]: the front columns counted on the bust own row through the apex (b: the reference apex at 1.42), so the window columns run <= 7.5 mm across the mound (p95 9.0 -> 7.2 mm); collar_F_y 1.50: the front collar kites on the upper chest, >= 40 mm under the neck base zone (b: the clavicle heads at 1.552)",
+    "thigh_band_strips": 6,
+    "why_thigh_band_strips": "(a) the curve root s longer ring (94 points close) leaves 22 kites to the knee s 50: 6 strips centred at y 0.82 (y 767-852: clear of the hip zone s 40 mm and of the knee zone) with the thigh s own kite sector 230 deg (still the inner / back side) keep every band quad under aspect 4 (5 strips at 0.80: 4.49; 6 at 0.80 put kites inside the knee zone; 6 at 0.82 with 200 deg: 4.26)",
+    "crotch_h": 0.5,
+    "why_crotch_h": "(a) half a quad (3.75 mm): crotch and groin folds 74 -> under 30 deg (0.47-0.53 measured clean, 0.4 and 0.6 not)",
+    "why_glute": "(a) the judge (pass 3b item 4): glute density = the torso front's (the lobe's rows at the trunk spacing; was 0.9)",
+    "hand_fit": {
+     "trim": true
+    },
+    "foot_fit": {
+     "trim": true,
+     "level": true,
+     "points": 28,
+     "rise": 0.0072,
+     "kite_cost": 8,
+     "split_max": 0.009,
+     "split_rim_max": 26,
+     "split_share": 0.3,
+     "split_winding": false
+    },
+    "shin_band_y": 0.33,
+    "thigh_band_y": 0.81,
+    "thigh_kite_sector": 230,
+    "why_pass3b_rims": "(a) the judge (pass 3b items 5 + 9): hand_fit / foot_fit re-fit the templates (c: base/*.obj, our source files) at build time. trim: the plane cut that made them (topo.make_templates) left stair steps on the rim (2-valent rim vertices: the 1.79 mm wrist edge and the forearm / shin slivers, aspect 5.7-8.5); the protruding quads go until the rim is one clean edge loop (hand 22 -> 20). level (foot): the trimmed ankle rim still steps down a whole row over the back between two risers (hm08 poles); one generated row lifts that stretch to the risers tops (strip height 7-26 mm -> 7-11 mm). points 28 (the judge: 26-28 at the ankle): a ring of 28 on the reference, rise 7.2 mm (= ring_spacing) above the levelled rim, bridged by the minimum-cost walk of quads and kites (rim_bridge; kite_cost 8 keeps it to 4 kites, all on the medial / back side, flagged TEMPLATE: they are the foot s rim, the sole and toes unchanged)",
+    "why_shin_band": "(a) the judge (pass 3b item 5): the shin reduction band at the inner lower shin; shin_band_y 0.325 centres its 3 strips at y 307-346 (b: the judge s 280-350), the lowest strip held 40 mm clear of the ankle zone (0.315 put 4 poles inside it). knee.limb_spacing 0.0085: the leg s ring step along the bone (thigh and shin, bend zones keep bend_spacing) 7.5 -> 8.5 mm, -1.4k tris (a: the close tri budget; 9.5 put kites inside the knee zone); the arm keeps 7.5 (the brief: coarser arm spacing added folds and elbow poles)",
+    "why_thigh_band": "(a) see why_thigh_band_strips; P1 N: 0.80 was tried (check.py found the band's top 3-pole at (83, 848, -84) 39.4 mm from its hip zone): the poles sit on the thigh stations (8.5 mm), so 0.808-0.80 drops the band one station and its bottom poles land 25-39 mm from the knee zone (6-12 poles, both gates); 0.81-0.815 is the one station that clears the knee, the hip pole stays 39.4 (check) / 42.9 (topo_gates)",
+    "rim": {
+     "sides": 0.0062,
+     "top": 0.0072
+    },
+    "arm_root_spacing": 0.0065,
+    "loop_even": 0.6,
+    "rows_arc": true,
+    "low_spacing": 0.0088,
+    "density_gates": {
+     "tri_cap": 78000,
+     "why_tri_cap": "(a) the 3c judge (verdict_3c): 76.7k accepted; the arm root's 60 columns run unchanged to the elbow and reduce ONLY at the elbow's designed poles (armpit to elbow crease 202 mm against 230 mm of pole-free zones): never add poles to the upper arm to save triangles; cap = current + ~1.5%",
+     "part_p50_mm": {
+      "neck": [
+       4.0,
+       6.5
+      ],
+      "trunk": [
+       6.0,
+       8.5
+      ],
+      "breast": [
+       4.5,
+       6.5
+      ],
+      "shoulder": [
+       5.0,
+       7.0
+      ],
+      "arm": [
+       5.0,
+       8.0
+      ],
+      "elbow": [
+       3.5,
+       7.0
+      ],
+      "forearm": [
+       5.5,
+       8.5
+      ],
+      "hand": [
+       3.0,
+       6.0
+      ],
+      "crotch": [
+       6.0,
+       8.5
+      ],
+      "thigh": [
+       6.0,
+       8.5
+      ],
+      "knee": [
+       5.0,
+       7.5
+      ],
+      "shin": [
+       6.0,
+       8.5
+      ],
+      "foot": [
+       3.0,
+       6.0
+      ]
+     },
+     "shoulder_over_arm_p95": 1.05,
+     "thigh_p95_max_mm": 9.0,
+     "thigh_p95_over_p50": 1.35
+    },
+    "why_pass3c": "(pass 3c, the xhigh re-judge of 3b, fixes 1-5) rim {sides, top}: the shoulder hole's front/back and top arcs at their own spacings (a: the judge: the deltoid patch at the trunk's density; the rim's 8.1 mm edges capped the patch; the bottom arc stays at the trunk spacing, since its columns run down the side into the thigh); arm_root_spacing: the arm root ring's count from its length (388 mm / 6.5 = 60; a: every count a length over a spacing); loop_even: the loops blended 60% to even arc length (the corner chains left 13 mm edges); shoulder_spacing 6 mm: 7 loops; rows_arc + low_spacing: the trunk rows by arc length down each meridian (a: the waist bunching, 5.3 mm at the small of the back against 7.6 at the front), root to underbust at 8.8 mm (a: the judge ruling (b): the belly and the lower back are gentle); knee.root_plane bone + even_gap: the thigh's stations square to the bone, the root's 38 deg tilt taken by the column blend alone, then spaced by the max surface gap (a: fix 2, the front/outer columns ran 13 mm against 6.5 at the back); knee.limb_spacing 8.5 / lower_spacing 8.8: mid-thigh and mid-shin along the limb (a: the judge, ~8.5 mm); thigh_band_y 0.81 / shin_band_y 0.33: the bands 5 mm down / up so their poles keep 40 mm off the hip and ankle zones after the re-spacing (a: the zones gate); foot_fit split_*: the foot template re-stripped by loop cuts where its top/side rungs run over 9 mm (a: fix 5; b: the MakeHuman base foot, low-poly over the heel and instep), strips through mostly short quads (the toes) and strips winding through a quad twice skipped (cost), the rim to 26; density_gates: per-part p50 bands and the tri cap (a: the judge, fix 3: the total gate replaced)"
+   },
+   "play": {
+    "spacing": 0.017,
+    "row_scale": 1.0,
+    "glute_scale": 1.0,
+    "bust_scale": 1.0,
+    "neck_spacing": 0.0045,
+    "shoulder_spacing": 0.009,
+    "root_even": 0.6,
+    "breast_loops": 2,
+    "breast_cap": 0.8,
+    "breast_centre_pull": 0.0,
+    "limb_spacing": 0.017,
+    "bend_spacing": 0.013,
+    "ring_spacing": 0.017,
+    "root_blend": 0.4,
+    "kite_sector": 200,
+    "bands": {
+     "strips": 2,
+     "min_per_strip": 1,
+     "at": 0.5
+    },
+    "hidden": [
+     -1.0,
+     0.0,
+     -1.0
+    ],
+    "elbow": {
+     "bend": 0.04,
+     "end_bend": 0.025
+    },
+    "knee": {
+     "bend": 0.05,
+     "end_bend": 0.03,
+     "even_gap": true,
+     "limb_spacing": 0.0155
+    },
+    "relax_iters": 8,
+    "relax_lambda": 0.5,
+    "why": "(a) the play camera (her 40-60 px tall) at ~25k: the same plan at 17 mm; the full 94-point neck ring kept (her head is drawn full at every tier), reduced just below the collarbones",
+    "collar_f": 0.2,
+    "shoulder_gap": 0.045,
+    "arm_root_n": 22,
+    "upper_arm_band": false,
+    "why_pass3": "(a) shoulder_gap: the rim the root ring offset 45 mm along the trunk, so the loops between run evenly (gap ratio <= 1.5); shoulder_spacing: the loops radial step; arm_root_n: the arm root after the trunk-side corner chains (the judge: ~40 close); upper_arm_band false: the shoulder zone (armpit + 110 mm) and the elbow zone leave no 40 mm-clear window for poles on the upper arm, so the elbow keeps the root count and the forearm reduces",
+    "neck_meet_rows": 5,
+    "neck_ring_smooth": 4,
+    "neck_step_ease": 3,
+    "neck_untwist_rows": 3,
+    "why_neck_untwist_n": "(a) P1 N: with the neck carried onto the baked ring (reference.why_neck_carry) the meet span is 25 mm shorter; the untwist search over the top 3 rows (was 2) takes the last short edge (close 1.8 mm at the front, row 86) and the last aspect (play 4.23) out; every other neck_meet number swept (step_ease 2/4, ring_smooth 8, meet_rows 4-7) left one",
+    "why_pass3b_neck": "(a) the neck meets her head ring one to one without folds: the reference front neck turns forward under the jaw where the canvas rays cannot follow (the rows bunched 15-28 mm below the ring) and the head ring (c: her approved head, kept) has 3-6 mm steps where its own rows end, some stepping back along the ring; neck_meet_rows: the top rows re-placed per side between the base row and the side own ring points (rows at even arc length on surface curves; neck_ring_smooth: the rail toward the ring smoothed by that many umbrella steps and sampled at the ring own arc fractions, so every row runs forward under a back-step; neck_step_ease: the steps rise eased into the rows by s^p); neck_untwist_rows: the top rows placed by a deterministic fold-lowering search in the tangent plane (the ring steps leave no quad under them convex otherwise). The midline columns carry the head own 2-3 mm midline offset and ease it to zero at the base row: the field is continuous through the midline, nothing crosses it (replaces the right-side-only snap + ease)",
+    "collar_F_y": 1.52,
+    "why_pass3b_collar": "(a) collar_F_y: the front collar kites on the upper chest, under the neck base zone (b: the clavicle heads at 1.552); 1.52 is the lowest row above the play breast window",
+    "crotch_m": 2,
+    "why_crotch_m": "(a) the crotch strip 2 quads a side at play with crotch_h 0.5 (half a quad, as close): the crotch folds 4 at 63-65 deg -> 2 at 61.5 (m 1: 4-6 at 62-64 for h 0-0.65; m 2, h 0.35-0.8: 2-4 at 61-63); close keeps hip.root.crotch.m = 3",
+    "crotch_h": 0.5,
+    "why_crotch_h": "(a) see why_crotch_m",
+    "thigh_band_y": 0.82,
+    "thigh_band_strips": 3,
+    "why_thigh_band": "(a) play's 17 mm stations: 3 strips centred at y 0.82 (0.80 with 2 strips put a strip's kites within 40 mm of the knee's bend zone; 0.82 x 3 keeps the aspect at the baseline's)",
+    "hand_fit": {
+     "trim": true,
+     "reduce": 0.4,
+     "rim_points": 14,
+     "max_aspect": 4.0
+    },
+    "foot_fit": {
+     "trim": true,
+     "level": true,
+     "reduce": 0.4,
+     "rim_points": 16,
+     "max_aspect": 5.0
+    },
+    "knee_points": 32,
+    "ankle_points": [
+     16,
+     18
+    ],
+    "F_L_heights": [
+     1.42
+    ],
+    "why_pass3b_templates": "(a) the judge (pass 3b item 9): play s own hand and foot, generated from ours (c: base/*.obj) at build time: trim / level as close (why_pass3b_rims), then quad_reduce: whole quad strips collapsed (each rung merged at its midpoint, put back on the source surface), the open strips first until the rim is at rim_points, then the densest strip first, each collapse kept only if the patch stays a manifold disk of true quads with no new quad over max_aspect: hand 1618 -> 635 quads (39%), foot 1052 -> 472 (45%; its last strips are toe rings whose collapse goes over aspect 5); rim_points: wrist 14 (12 would stop the reduction first), ankle 16 (= the close range 26-28 x sqrt(0.4), the templates linear scale)",
+    "why_pass3b_legs": "(a) the judge (pass 3b item 9): thighs ~32 around at play: the thigh band takes the root s 42 to 32 (y 793-860), and knee_points 32 carries it through the knee (the thigh window between the hip zone and the knee zone, y 0.77-0.83, holds one band only; the knee at 32 = 11.6 mm round it), the shin s band (y 410-443) takes 32 to the ankle s 16. ankle_points [16, 18]: the ankle gate s range at play (see why_pass3b_templates)",
+    "why_pass3b_gates": "(a) play passing the tier-scaled gates: breast_loops 2, breast_cap 0.8, F_L_heights [1.42] (close s, why_pass3b_breast): breast edge p95 21.0 -> 14.6 mm (gate 16.35 = 7.5 mm x 17/7.8), aspect p95 2.53 -> 1.87; shoulder_spacing 0.009 (5 loops in the 45 mm gap, was 2): the 6 shoulder folds (65-75 deg) -> 0; neck_spacing 0.0045 (close s): the 15 neck quads over aspect 4 (the 94-point ring s 3-4 mm steps over 7 mm rows) -> 0; collar_f 0.2: the side / back collar kites one row lower, out of the neck base zone s 40 mm (2 -> 0)",
+    "rows_arc": true,
+    "low_spacing": 0.019,
+    "rim": {
+     "sides": 0.0125,
+     "top": 0.017
+    },
+    "arm_root_spacing": 0.0145,
+    "density_gates": {
+     "tri_cap": 22000,
+     "part_p50_mm": {
+      "neck": [
+       4.5,
+       8.5
+      ],
+      "trunk": [
+       11.0,
+       17.0
+      ],
+      "breast": [
+       8.5,
+       13.0
+      ],
+      "shoulder": [
+       10.0,
+       15.0
+      ],
+      "arm": [
+       10.0,
+       16.0
+      ],
+      "elbow": [
+       7.0,
+       13.0
+      ],
+      "forearm": [
+       10.0,
+       16.0
+      ],
+      "hand": [
+       5.0,
+       9.0
+      ],
+      "crotch": [
+       11.0,
+       17.0
+      ],
+      "thigh": [
+       11.0,
+       17.0
+      ],
+      "knee": [
+       9.0,
+       15.0
+      ],
+      "shin": [
+       11.0,
+       17.0
+      ],
+      "foot": [
+       6.0,
+       11.0
+      ]
+     },
+     "shoulder_over_arm_p95": 1.05,
+     "thigh_p95_max_mm": 17.0,
+     "thigh_p95_over_p50": 1.35
+    },
+    "why_pass3c": "(pass 3c) the close tier's 3c rules at play's spacing: rim sides 12.5 mm (top at the trunk spacing: a finer top arc left a 4.3 aspect quad at the neck), arm root 14.5 mm (26: a finer root folded the armpit at 60.4 deg), trunk rows by arc length with the root-underbust run at 19 mm, the thigh stations by the max gap at 15.5 mm (the bone-square planes put a thigh band pole 27 mm off the hip zone at play); density bands scaled from close by the spacing ratio (a: the play camera)"
+   }
+  },
+  "rest_tris": 11300,
+  "rest_why": "(c) her eyes, teeth, tongue and lashes (~11.3k triangles), counted in the whole"
+ }
+}

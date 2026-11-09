@@ -1,0 +1,106 @@
+{
+ "joint": "elbow",
+ "angle": 135,
+ "why": "Elbow flexed 135 degrees. Outer: the same flat triceps line, the olecranon carried with the ulna (placed as at 90, turned a further 45 degrees: it now points down past the joint, the outline wraps it), the forearm's back beyond. Inner: the biceps bulges more (o 1.07) and the flexor mass meets it at a crisp crease, both compressed 8 percent where they press (soft tissue flattens into a contact line, it does not interpenetrate; the contact plane itself is inside and not outline).",
+ "grammar": "Control points in the strip's side view (tools/body/bends.py build_ref): seg p|d, s = fraction of that segment's rest length from the joint, side in|out, o = multiple of the body's OWN rest half-width there (measured on its rest strip), mm = added millimetres; line = the half-width extrapolated straight from two stations; arc = the outer corner swept from the proximal to the distal outer normal (fraction), corner = the two offset lines' meeting point (mm_bisect pushes it into the open sector: a web), tip = a bony point carried with the distal bone, sharp = a corner the smoothing keeps. Away from the joint o=1: the limb keeps its rest shape (a rigid bend); only the joint's own anatomy is authored.",
+ "curves": {
+  "outer": [
+   {
+    "seg": "p",
+    "side": "out",
+    "s": 0.45,
+    "o": 1.0
+   },
+   {
+    "seg": "p",
+    "side": "out",
+    "s": 0.24,
+    "o": 1.0,
+    "line": [
+     0.12,
+     0.24
+    ]
+   },
+   {
+    "seg": "p",
+    "side": "out",
+    "s": 0.12,
+    "o": 1.0,
+    "line": [
+     0.12,
+     0.24
+    ]
+   },
+   {
+    "seg": "p",
+    "side": "out",
+    "s": 0.03,
+    "o": 1.0,
+    "line": [
+     0.12,
+     0.24
+    ]
+   },
+   {
+    "tip": true,
+    "proud_mm": 5,
+    "past_mm": 20,
+    "line": [
+     0.12,
+     0.24
+    ],
+    "sharp": true
+   },
+   {
+    "seg": "d",
+    "side": "out",
+    "s": 0.12,
+    "o": 1.0
+   },
+   {
+    "seg": "d",
+    "side": "out",
+    "s": 0.25,
+    "o": 1.0
+   },
+   {
+    "seg": "d",
+    "side": "out",
+    "s": 0.45,
+    "o": 1.0
+   }
+  ],
+  "inner": [
+   {
+    "seg": "p",
+    "side": "in",
+    "s": 0.45,
+    "o": 1.0
+   },
+   {
+    "seg": "p",
+    "side": "in",
+    "s": 0.3,
+    "o": 1.07
+   },
+   {
+    "corner": "in",
+    "s": 0.2,
+    "o": 0.92,
+    "sharp": true
+   },
+   {
+    "seg": "d",
+    "side": "in",
+    "s": 0.3,
+    "o": 0.97
+   },
+   {
+    "seg": "d",
+    "side": "in",
+    "s": 0.45,
+    "o": 1.0
+   }
+  ]
+ }
+}

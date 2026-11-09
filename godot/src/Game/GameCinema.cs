@@ -583,7 +583,7 @@ public partial class Game
                 if (bone != null)
                 {
                     var sk = v.Person.Skeleton;
-                    int i = sk.FindBone(bone switch { "head" or "eyes" => "Head", "hand_r" => "hand_r", "hand_l" => "hand_l", "chest" => "spine_03", _ => bone });
+                    int i = sk.FindBone(bone switch { "head" or "eyes" => "Head", "hand_r" => "hand_r", "hand_l" => "hand_l", "chest" => P1Body.BoneName(sk, "spine_03"), _ => bone });
                     if (i >= 0) p = sk.GlobalTransform * sk.GetBoneGlobalPose(i).Origin;
                     if (bone == "eyes") p += new Vector3(0, 0.07f, 0);
                 }

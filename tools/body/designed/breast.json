@@ -1,0 +1,96 @@
+{
+ "about": "P1 R1 form library: HER BREASTS (OURS, designed; replacing the MakeHuman cup sliders bust_size / bust_firmness / bust_set / bust_point / bust_spacing and bust_lift, which a spec sets to 0 when it uses these). chest_wall is the base every designed breast sits on; breast_a (route a, a field set by profile curves, evaluated live) and breast_b (route b, a target sculpted once by tools/body/sculpt/breast_b.py) are the two candidate forms; support_lift / support_press / support_fill are the armor support fields (rule field: linear blend shapes an armor piece sets as data). Code: tools/body/breast_form.py.",
+ "sliders": {
+  "chest_wall": {
+   "range": [0, 1],
+   "rule": "py:breast_form.chest_wall",
+   "order": 20, "soft": true,
+   "region": [{"on": "ell", "c": [0.090, 1.452, 0.075], "r": [0.092, 0.129, 0.09], "full": 0.99}],
+   "blend": [{"on": "ell", "c": [0.090, 1.452, 0.075], "r": [0.090, 0.126, 0.09], "full": 0.8}],
+   "why": "the base: the MakeHuman base mesh carries a small mound and a nipple (8.8 mm tip over its smoothed chest) that every designed breast would carry on its apex; the region is refilled as a smooth chest wall (biharmonic fill, rim held, a C2 blend), so the breast sliders over it are pure added volumes, clean at any value. P1 R1c (milestone judge: a lit lip along both upper poles, a V across the upper chest): the region carried up to the collarbone hollow (V0 centre y 1.428 -> 1.452, radii 85 x 105 -> 92 x 129 mm, bottom kept): its old top rim sat where the breast's upper pole meets the wall, and the rim's convex turn between the clavicle hollow and the breast's root fold read as a lip (curvature on the apex path concave -> +7/m -> concave -> convex); now the slope from the collarbone is one concave-to-convex turn"
+  },
+  "breast_a": {
+   "range": [0, 1],
+   "rule": "py:breast_form.dome",
+   "order": 21, "soft": true,
+   "c_off": [0.004, -0.013, 0.0],
+   "axis": {"yaw_deg": 7.0, "pitch_deg": 1.0, "pitch_low_deg": -6.0, "fan_deg_per_m": 100.0},
+   "h_m": 0.04,
+   "r": {"up": 0.10, "low": 0.13, "med": 0.09, "lat": 0.07, "lat_up": {"r": 0.06, "psi_deg": [-20, 60]}, "med_up": {"r": 0.125, "psi_deg": [0, 55], "ease_rho": 0.5}},
+   "r_blend_m": 0.03,
+   "profiles": {
+    "up": {"s": 0.8, "beta": 0.2, "fold": 0.45},
+    "low": {"s": 0.3, "beta": 1.5, "fold": 0.4},
+    "med": {"s": 0.35, "beta": 1.8, "fold": 0.25},
+    "lat": {"s": 0.4, "beta": 0.8, "fold": 0.4}
+   },
+   "cap": "axes",
+   "cap_rho": 0.35,
+   "globe": {"o_off": [-0.006, 0.004, -0.006], "R": {"a": 0.108, "a_back": 0.07, "up": 0.078, "low": 0.095, "med": 0.1005, "lat": 0.08}, "midline_fade_up": {"m": 0.022, "y": [1.365, 1.405], "why": "P1 R1c round 7: the owner's deep cleavage LINE: the walls had stood 15 mm apart with a 35-40 mm V at +60 mm. A narrower fade over the apex, R.med 0.102 and union.mid to 30 mm close them to about 7 mm at the apex and +30 and 8-13 at +45; press.vee shapes the floor's columns so it turns up in folds under 60 deg (6 mm columns)"}, "back_m": 0.1,
+             "k_m": {"up": 0.08, "lat": 0.035, "low": 0.07, "med": 0.025}, "press": {"x_m": 0.003, "vee": [{"x0": [0, 0.006, 0.012, 0.018, 0.024, 0.03], "y": [1.365, 1.40, 1.45, 1.48], "z": [0, -0.0003, -0.004, -0.002, 0, 0], "x": [0, -0.0005, 0.001, 0, 0, 0]}]},
+             "union": {"chest": "base", "imls_h_m": 0.007, "k_mid_m": 0.006,
+                       "k": [[-90, -45, 0, 45, 90, 135, 180, 225], [0.045, 0.025, 0.018, 0.05, 0.055, 0.075, 0.006, 0.012]],
+                       "pole": {"P": [0.02, 0.115, -0.05], "x0_deg": 12.0, "tip_deg": 15.0, "lat_s": 0.4},
+                       "w": [[-90, -45, 0, 45, 90, 135, 180, 225], [1.5, 1.5, 1.5, 1.5, 1.5, 1.2, -0.8, -0.5]], "mid": [0.012, 0.03]}},
+   "midline_fade_m": 0.029,
+   "dir_reg": 0.15,
+   "relax": {"mask": [{"on": "ell", "c": [0.129, 1.482, 0.068], "r": [0.035, 0.035, 0.045], "full": 0.3}], "iters": 35, "step": 0.5},
+   "why": "ROUTE (a): the breast as a height field over the chest wall along its axis, set by profile curves (see breast_form.dome). P1 R1b: the lower pole is the ROUND law (an arc of R_m 90 mm from the apex into a soft fold the law solves to fit h_m over r.low; measured on the body ~127 mm, the wall's slope shears it), its move turned down with the receding wall (pitch_low_deg), the cap keeps each pole's own curvature (cap axes: the upper pole's soft s 0.8 cap, so the apex reads round, not a cone point); relax evens the medial column the midline fade stretches (V0 mask off the midline: the cleavage floor untouched). R1b round 2 (judge fix 2-3): the outer side at armpit height comes in 12-18 mm (r.lat_up: the upper outer quadrant's own lateral radius 92 mm above w0, the hanging arm meets a clean gap); the axis turned forward (yaw 14 -> 10, fan 120 -> 100) and the volume put forward and in (h_m 0.104, r.med 0.09; apex 7 mm in, 5 mm forward); the base point 3 mm lower and the move pitched up 1 deg (the apex normal is the chest wall's at the base: there it faces level, pitch 3.6 -> 1.5, apex height kept); r.low 0.15 keeps the fold soft. R1b round 3 (judge fix 1): lat_up is switched by the direction from the apex (psi_deg -20..60, 0 lateral, 90 up), not by height: round 2's height switch squeezed every ray that crossed it, a concave band between the apex and the armpit (a cloud on the cel terminator, a pleat at the outer edge); by direction each ray keeps the profile's own shape and every contour stays convex, the edge at armpit height still 7-11 mm in (the clavicle weights do the rest: weights_topo v4); h_m 0.104 -> 0.1035 keeps the volume in band (the wider upper outer quadrant gave +21 mL). P1 R1c (milestone judge: the cleavage opened into a V notch at its top; a lit lip along both upper poles): r.med_up (the upper INNER quadrant's own medial radius 0.125 by direction, psi 0..55 deg, eased in from the apex over half the radius: the inner walls stay full higher, the cleavage line starts ~3 cm higher); the axis yaw 10 -> 7 (the breasts turned in: apex 3 mm in by formrules, 8 mm on the hanging body, the inner flanks pressed toward the midline; moving the base point instead tipped the apex normal up 5 deg: the apex normal is the wall's at the base); midline_fade 0.025 -> 0.032 and the medial relax taller (to V0 y 1.555, 35 steps): the pressed inner column's quads stay under aspect 4 with no fold on the cleavage floor; h_m 0.1035 -> 0.1008 keeps the volume in band (med_up and the taller relax gave +45 mL). P1 R1c ROUND (the owner, 6 Nov: \"our tests so far are not round\"; board: round globes, a full upper pole rolling into the curve, large with a wide base wrapping past the chest wall, set high and pressed into a deep narrow cleavage even bare): the breast is now a GLOBE (breast_form.globe_delta): an ellipsoid round O (behind the wall: o_off from the base point; R: a 108 forward, up 85, low 95, medial 97, lateral 80 mm) unioned with the chest wall by RADIAL moves from O (so the outer side can wrap past the wall's side line), C2 fillets of half-width k_m by direction (up 80 mm: the upper pole rolls into the chest, no ball-on-a-wall rim; low 70: the round lower curve sits on the ribcage; lateral 35; medial 25); the two globes overlap the midline and their inward x move saturates (press.x_m 3 mm): pressed inner faces, a slot-shaped cleavage line (~16 mm, parallel walls 45 mm deep at apex height); midline_fade 0.032 -> 0.041 keeps the slot's floor folds under 60 deg on our 6 mm midline columns. The profile dome (h_m 0.1008 -> 0.04, r.up 0.10, r.low 0.13 with a plain soft law, r.lat 0.07 / lat_up 0.06) is now the globe's soft BASE (a low mound the globe sits on: the root and fold meet it at a shallow angle). Roundness (formrules.breast_round, rest): side residual/R 0.088 -> 0.050, upper-pole fill 0.31 -> 0.65, front residual/R 0.135 -> 0.052, lateral wrap 4.8 -> 7.9 mm, cleavage gap at the apex 29 -> 16 mm. The relax now evens the upper outer rim's dense quads (V0 (12.9, 148.2, 6.8) cm: a 1.9 mm edge from the radial move), the old medial column relax is not needed by the globe. P1 R1c round 3 (milestone judge 2: \"two spheres stuck onto a flat chest\": a crisp dark line over a lit rim arcing over each breast top; the outer base dying in a pocket at the armpit): globe.root (breast_form.root_delta): the upper ROOT band (root_band: the globe frame's footprint f 0.85..1.95, elevation e under 0.2..0.5, directions above the horizontal through O, the midline held within 2..16 mm) refilled by the BRIDGE, the biharmonic (thin-plate) surface with the rest held, blended by the band weight^0.5: the least-bending surface from the globe's upper side to the chest replaces the corner (the root's concave turn, 35-40 deg within ~12 mm on round_2, spread over ~20 mm: centre crease 2.46 -> 1.4 deg/mm, the turn 37 -> 30 deg; formrules.root_blend); the globe's front and the pressed cleavage untouched. (globe.root.tail, an axillary tail along the normals, is in the code but OFF: 7 mm filled the pocket at rest but in the hanging pose the arm met it in a darker notch). P1 R1c round 4 (the lead: build the junction into the form): globe.root RETIRED (its band refill patched the edge of a globe that meets the chest at a level 50 mm shelf: radial rays from O graze the upper chest, so no radial fillet can fill that corner); globe.union (breast_form.union_delta): the region's points projected (Newton steps along grad F) onto F = 0, F = the C2 (cubic) smooth union of the chest (an IMLS field of the body under the globe, h 7 mm, bias-held per point), the globe and its mirror (k_mid 6 mm: the pressed line) with the chest blend radius k by the direction psi from O (periodic C2 spline: up 65, upper outer 55, upper inner 45, lateral 18, lower outer 25, low 45 (the fold, kept soft: notch 21.8 mm), medial 6, lower inner 12 mm); w(psi) keeps the radial globe in the pressed slot (psi 160-250 deg) and the move is held within 12 mm of the midline, easing in by 41 mm (the globe's own midline fade: a narrower hold folded the cleavage floor, 5 quads over 60 deg). The centre path's turn 30 -> 23 deg, crease 1.38 -> 1.28 deg/mm; the apex fraction 0.563 -> 0.550 P1 R1c round 6: union.pole: the upper pole as a C2 hull of the globe toward a point on the upper chest (breast_form.union_field; the Look's lit rim: the top faced 87 deg up); R.up 85 -> 78 mm pays its volume; union.k inner widened to 75 mm (inner crease 2.46 -> 1.69 deg/mm)."
+  },
+  "breast_b": {
+   "range": [0, 1],
+   "rule": "target",
+   "order": 22, "soft": true,
+   "file": "tools/body/base/targets/breast_b_{tier}.npz",
+   "made_by": "tools/body/sculpt/breast_b.py",
+   "why": "ROUTE (b): the breast sculpted once: a round-cone solid (a big sphere for the round lower pole and the apex cap, a small one up and back inside the chest, the cone between them the upper pole) smoothly unioned with the chest wall, the region carried onto it and relaxed (see the generator)"
+  },
+  "breast_settle": {
+   "range": [-1, 2.5],
+   "rule": "py:breast_form.settle",
+   "order": 25,
+   "soft": true,
+   "o_off": [0.0, -0.02, -0.045],
+   "back": [-0.6, -0.1],
+   "drop": {"m": 0.0055, "top": 0.2, "full": -0.7, "end0": -0.85, "end1": -1.3},
+   "fill": {"m": 0.0045, "el": -44.0, "width": 20.0},
+   "take": {"m": 0.0035, "el": 0.0, "width": 70.0},
+   "contact": {"m": 0.008, "nw": -0.98, "width": 0.2, "d0": -0.2, "d1": 0.1},
+   "side": {"m": 0.003, "m_down": 0.0, "nw": -0.2, "width": 0.45, "u0": 0.1, "u1": 0.9},
+   "mid": [0.025, 0.06],
+   "why": "P1 R1 round 8 (the judge on round 7: at rest firm and inflated, balloons not flesh): soft weight on the ribcage as a field after the union, linear; breast_form.settle says what each term does. Drop and fill sit the lower third outside the circle the upper pole promises; take pays for it over the whole globe (a wide bump keeps the curvature: a narrow take at the front flattened it and squared the cel terminator); contact lies the curve on the ribs; side is small and high with no extra outer drop (more, or lower, boxed the outer corner: round wins). Armor: the spec's shapes_with has form_support_lift carry the settle's undoing, so the push-up is round 7's"
+  },
+  "support_lift": {
+   "range": [-1, 1],
+   "rule": "field",
+   "order": 30, "soft": true,
+   "moves": [
+    {"translate": [0.0, 0.014, 0.0],
+     "mask": [{"on": "ell", "c": [0.09, 1.40, 0.07], "r": [0.13, 0.17, 0.14], "full": 0.0},
+              {"on": "y", "full": [null, 1.37], "fade": [0, 0.16]}]}
+   ],
+   "why": "ARMOR SUPPORT, the lift (an underwire, a corset top, a plate cup): the breast carried up 16 mm at v = 1, full under the apex and easing out over the upper pole (so the upper pole gathers and fills) and over the rim (the fold rises with it); linear (a blend shape the armor piece sets)"
+  },
+  "support_press": {
+   "range": [-1, 1],
+   "rule": "field",
+   "order": 31, "soft": true,
+   "moves": [
+    {"translate": [-0.014, 0.0, 0.004],
+     "mask": [{"on": "ell", "c": [0.10, 1.41, 0.07], "r": [0.13, 0.15, 0.13], "full": 0.0},
+              {"on": "ax", "full": [0.045, null], "fade": [0.03, 0]}]}
+   ],
+   "why": "ARMOR SUPPORT, the press (the side padding of a plunge cup): the breast pushed 14 mm toward the midline and 4 mm forward at v = 1, easing to 0 at the midline (the sternum holds; the inner side gathers: a deeper cleavage, the gradient 0.47 so nothing crosses); linear. P1 R1c round 3: the fade now ends 15 mm from the midline, not 5 (full from 45 mm): at v = 1 the 5 mm fade folded 4 quads past 60 deg at the cleavage bottom"
+  },
+  "support_fill": {
+   "range": [-1, 1],
+   "rule": "field",
+   "order": 32, "soft": true,
+   "moves": [
+    {"translate": [0.0, 0.003, 0.009],
+     "mask": [{"on": "ell", "c": [0.09, 1.465, 0.08], "r": [0.095, 0.075, 0.12], "full": 0.0}]}
+   ],
+   "why": "ARMOR SUPPORT, the fill (the mass a cup displaces rising over its edge): the upper pole 9 mm forward and 3 mm up at v = 1, a smooth bell over the upper pole between the apex and the root (round and full above a cup edge); negative values flatten it (a wrap); linear"
+  }
+ }
+}

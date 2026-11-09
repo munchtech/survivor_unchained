@@ -132,7 +132,9 @@ public partial class Game
         {
             onLook = look;
             figure.Sheathe(look);
-            figure.Loop(look ? figure.Person.Own!.Prefix + $"idle_{figure.Person.Calling}_town" : guardIdle, 0.3);
+            // (on B the Look's arms are baked into a clip of their own: P1BakeRun, HerPose.Baked)
+            string lookClip = figure.Person.Own?.Prefix + (P1Body.IsB(figure.Person.Skeleton) ? $"idle_{figure.Person.Calling}_look" : $"idle_{figure.Person.Calling}_town");
+            figure.Loop(look ? lookClip : guardIdle, 0.3);
             // (her arms nearer her body on the Look, eased with the crossfade: HerPose.LookArms. Measured on the town
             // idle, Body 5, 24 October 2026: upper arms 10.7 and 13.3 deg from her chest's line (were 20.8 and 43.6),
             // every skin gap 24 mm or more. Her left hand stays on her hip as the idle shaped it (roll 0): rolled out 8
@@ -141,7 +143,7 @@ public partial class Game
             if (figure.Person.Pose is HerPose hp)
             {
                 hp.LookOn = look;
-                if (look) { hp.LookArmsDownR = 10f; hp.LookSwivelL = 31f; hp.LookRollL = 0f; hp.LookFanL = 0f; hp.LookCurlL = 0f; hp.LookThumbL = 0f; }
+                if (look) { hp.LookArmsDownR = HerPose.LookDownR; hp.LookSwivelL = HerPose.LookSwivel; hp.LookRollL = 0f; hp.LookFanL = 0f; hp.LookCurlL = 0f; hp.LookThumbL = 0f; }
             }
         }
         figure.ShowHeld(shown);

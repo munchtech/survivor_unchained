@@ -1378,6 +1378,9 @@ public partial class Game : Node, IZoneHost
         }
     }
 
+    static readonly int SimLogN = (int)Args.Num("simlog", 0);
+    int simLogF;
+
     public override void _Process(double delta)
     {
         PumpAhead();
@@ -1434,6 +1437,13 @@ public partial class Game : Node, IZoneHost
             Perf.Begin(Perf.Part.Zone);
             zone.Frame(dt);
             Perf.End(Perf.Part.Zone);
+            // (--simlog N: the fight's state every N frames, so two shots can be checked in step: P1's A|B strips)
+            if (SimLogN > 0 && Battle is { } slb && ++simLogF % SimLogN == 0)
+            {
+                double ex = 0;
+                foreach (var e in slb.Enemies.Items) if (e.Alive) ex += e.X * 1.3 + e.Z;
+                GD.Print($"SIMLOG f={simLogF} t={slb.Time:0.000} dt={dt:0.0000} rng={slb.Rng.State} her=({slb.Player.X:0.000},{slb.Player.Z:0.000}) face={slb.Player.Facing:0.000} hp={slb.Player.Hp:0.0} ember={slb.EmberLevel}/{slb.EmberXp:0.0} en={slb.Enemies.Count} ex={ex:0.00} pr={slb.Projectiles.Count}");
+            }
             // An arena's camera breathes with its night (unless a conversation has it, or --cam fixed it).
             if (zone is ArenaRun ar && hudMode == null && camSaved == null && !Args.Has("cam")) cam.TargetDistance = (float)ar.CameraDistance;
             if (zone is StoryNight sn && hudMode == null && camSaved == null && !Args.Has("cam")) cam.TargetDistance = (float)sn.CameraDistance;
@@ -1640,6 +1650,8 @@ public partial class Game : Node, IZoneHost
         if (b.Priority >= 0 && (b.Priority >= b.Enemies.Items.Length || !b.Targetable(b.Enemies.Items[b.Priority]))) b.Priority = -1;
         if (controls.Captured) return;
         if (auto != null && Args.Get("pick") == "champion") return; // --pick champion: the autopilot holds it (no pointer to move it)
+        // --no-pointer (pictures only): the desktop's real mouse never picks her target, so two shots of one fight stay in step
+        if (Args.Has("no-pointer")) return;
         Enemy? hit = null;
         if (controls.UsingPad)
         {

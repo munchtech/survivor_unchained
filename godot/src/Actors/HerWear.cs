@@ -316,6 +316,14 @@ public static class HerWear
             jig.Amount = (float)(hold?.Amount ?? 1);
             jig.Squash = (float)(hold?.Squash ?? 1);
         }
+        // B's springs (P1Jiggle, --body p1): the top's support (ArmorHold.support, else from its hold); bottoms carry no
+        // hold yet (TODO P2 gear: P1Jiggle.SetSupport(skeleton, top, bottom) where a bottom is equipped)
+        if (p.Skeleton.GetNodeOrNull<P1Jiggle>("P1Jiggle") is P1Jiggle pj)
+        {
+            P1Jiggle.SetSupport(p.Skeleton, (float)(hold?.SupportValue ?? 0), null,
+                (float)(hold?.LiftValue ?? 0), (float)(hold?.PressValue ?? 0), (float)(hold?.FillValue ?? 0));
+            pj.Squash = (float)(hold?.Squash ?? 1);
+        }
 
         bool full = Wear.IsCallingSet(look, calling, ix);
         bool lodFile = full && ResourceLoader.Exists($"res://art/people/heroine_outfit_{calling}_lod.gltf");
