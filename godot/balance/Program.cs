@@ -448,7 +448,7 @@ void ZoneRuns()
         try { r = ZoneSim.Play(spec); }
         catch (Exception e) { Console.Error.WriteLine($"{spec.Key}: {e}"); return; }
         results.Add(r);
-        lock (gate) Console.WriteLine($"[{++done}/{specs.Count} {sw.Elapsed:mm\\:ss}] {spec.Key}: {(r.Reached ? "through" : r.Stuck ? "STUCK " + r.StuckAt : "capped")} {r.PlaySeconds / 60:0.0} min kills {r.Kills} packs {r.Packs} champs {r.Champions} falls {r.Falls} rises {r.Rises} shown {r.GearShown} L{r.LevelAtWarden}/{r.LevelAtGate}");
+        lock (gate) Console.WriteLine($"[{++done}/{specs.Count} {sw.Elapsed:mm\\:ss}] {spec.Key}: {(r.Reached ? "through" : r.Stuck ? "STUCK " + r.StuckAt : "capped")} {r.PlaySeconds / 60:0.0} min kills {r.Kills} packs {r.Packs} champs {r.Champions} falls {r.Falls} rises {r.Rises} shown {r.GearShown} L{r.LevelAtWarden}/{r.LevelAtGate} presses {string.Join(",", r.Hands?.Presses.Select(kv => kv.Key + ":" + kv.Value) ?? [])} flare {r.FlareCasts}@{r.FlareFirst:0} rfull {r.ResolveFullSec:0}s dmg {string.Join(",", r.DamageBy.OrderByDescending(kv => kv.Value).Take(5).Select(kv => kv.Key + ":" + (100 * kv.Value / Math.Max(1, r.DamageBy.Values.Sum())).ToString("0")))}");
     });
     var all = results.OrderBy(r => r.Spec.Key).ToList();
     var md = ZoneSim.Report(all, opt.Get("cmd", "dotnet run -c Release --project godot/balance -- zone " + string.Join(" ", args.Skip(1))));

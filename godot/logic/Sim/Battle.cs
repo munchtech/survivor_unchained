@@ -16,7 +16,9 @@ namespace SurvivorUnchained.Sim;
  * town the same Battle runs with combat off, so walking, colliding and the
  * camera are one system everywhere. */
 
-public sealed record AttackAnim(string Weapon, double Angle, double T, bool Heavy);
+/// <summary>Her swing for the view: the skill, its angle, when it started, heavy; and (a campaign blow that lands on its
+/// contact, Sim/Contact.cs) the clip she swings and its rate, which the view plays as given.</summary>
+public sealed record AttackAnim(string Weapon, double Angle, double T, bool Heavy, string? Clip = null, double Rate = 1);
 /// <summary>A leap through the air (the art's, a Vault's, or a leap skill's: Weapon set, it lands in a ring of Radius, heavy
 /// if its cast was).</summary>
 public sealed class Leap { public double T, Dur, X0, Z0, X1, Z1; public AbilityKind Kind = AbilityKind.Leap; public WeaponInst? Weapon; public double Radius; public bool Heavy; }
@@ -465,6 +467,7 @@ public sealed partial class Battle
         if (Combat)
         {
             RunOnKills();
+            if (pendingBlows.Count > 0) LandBlows();
             foreach (var w in Weapons.ToArray()) Firing.Tick(this, w, dt);
             TickVow(dt);
             Resolve.Tick(dt);

@@ -418,7 +418,7 @@ public static partial class Firing
     /// firing now) if ready and not already running. True when it went off.</summary>
     public static bool Press(Battle b, WeaponInst w)
     {
-        if (!w.Pressed || w.DisabledT > 0 || w.Timer > 0 || w.Channeling) return false;
+        if (!w.Pressed || w.DisabledT > 0 || w.Timer > 0 || w.Channeling || b.BlowPending(w)) return false;
         // A spender (campaign, Resolve) fires only with its whole cost, and spends it on firing.
         double cost = b.CostOf(w);
         if (cost > 0 && b.Resolve.Value < cost) return false;
@@ -442,8 +442,16 @@ public static partial class Firing
         var aim0 = b.CastAt;
         b.CastAt = b.AimFor(w);
         bool fired;
-        try { fired = CastOnce(b, w); }
+        // (campaign: a blow with a clip lands on its contact, Sim/Contact.cs; the press spends and poses her now)
+        bool later = false;
+        try { later = b.DeferBlow(w); fired = later || CastOnce(b, w); }
         finally { b.CastAt = aim0; }
+        if (later)
+        {
+            if (cost > 0) b.Resolve.Spend(cost);
+            b.CastPose(w);
+            return true;
+        }
         // (A press that found nothing stays ready: the buffer tries again for a breath.)
         if (fired)
         {
@@ -937,7 +945,7 @@ public static partial class Firing
             if (zn != null) { zn.Tags = w.Tags; zn.Art = w.Art + "_ground"; zn.Weapon = w.Id; }
         }
         w.Swing++;
-        if (!b.Refiring) b.Player.AttackAnim = new AttackAnim(w.Id, a, b.Time, arc > 3);
+        if (!b.Refiring && !b.Landing) b.Player.AttackAnim = new AttackAnim(w.Id, a, b.Time, arc > 3);
         // Oathkeeper: every swing throws a crescent onward.
         if (w.Evolution?.Id == "oathkeeper")
         {

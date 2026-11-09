@@ -1,0 +1,17 @@
+{
+  "_doc": "The one press plan (M3): what every pressing bot and the game's autopilot press in a campaign fight, and when. Read by logic/Sim/PressPlan.cs. Generic rules: the grip held at the hover target (the nearest foe within its reach + gripPad); a spender pressed when its condition holds and Resolve pays, and always once Resolve is at spendFullAt of its cap (spend when full); a wait skill pressed when ready and its condition holds. Per skill: priority (lower first), when (KindleDef shape: crowd/windup/hurt/block, count, radius, within, big, any), aim (hover: nearest foe in reach; pack: the center of the densest pack, packRadius/packMin; line: the line through the most, line/lineHalf/lineMin; self). Bladestorm (aim storm): started on its when (or full), broken once breakLines lines are pending, breakLate s before its cap, or with thinBelow foes left in 3.5 m and a line down.",
+  "spendFullAt": 0.9,
+  "gripPad": 1.5,
+  "default": { "priority": 9, "aim": "hover" },
+  "skills": {
+    "iron_vow": { "priority": 1, "aim": "self", "when": { "any": [ { "when": "windup", "big": true, "radius": 0.3, "within": 0.6 }, { "when": "crowd", "count": 3, "radius": 3 } ] } },
+    "rebuke": { "priority": 1, "aim": "self", "when": { "when": "windup", "radius": 0.3, "within": 0.5 } },
+    "bladestorm": { "priority": 2, "aim": "storm", "when": { "when": "crowd", "count": 4, "radius": 3.5 }, "breakLines": 2, "breakLate": 0.5, "thinBelow": 4 },
+    "heroic_leap": { "priority": 3, "aim": "pack", "packRadius": 3.5, "packMin": 5, "reach": 9, "when": { "when": "crowd", "count": 5, "radius": 9 } },
+    "shield_charge": { "priority": 4, "aim": "line", "line": 8, "lineHalf": 1.2, "lineMin": 4 },
+    "groundbreaker": { "priority": 5, "aim": "pack", "packRadius": 3, "packMin": 3, "when": { "when": "crowd", "count": 3, "radius": 4 } },
+    "dawnpulse": { "priority": 5, "aim": "self", "when": { "when": "crowd", "count": 3, "radius": 4 } },
+    "watch_bell": { "priority": 6, "aim": "self", "when": { "when": "crowd", "count": 4, "radius": 8 } },
+    "cleaver": { "priority": 7, "aim": "hover" }
+  }
+}

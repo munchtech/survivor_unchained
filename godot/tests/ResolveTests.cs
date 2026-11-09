@@ -13,6 +13,8 @@ namespace SurvivorUnchained.Tests;
 public sealed class ResolveTests
 {
     const double Dt = 1 / 60.0;
+    /// <summary>Long enough for a press's blow to land on its clip's contact (M3, Sim/Contact.cs: at most 0.07 s today).</summary>
+    const double Land = 0.12;
 
     /// <summary>A campaign fight, the warden's calling (Resolve on), every skill ready.</summary>
     static Battle Campaign(string calling = "warden", params (string Id, int Rank)[] skills)
@@ -73,7 +75,7 @@ public sealed class ResolveTests
         Pin(b, es, at);
         // Held at the pack: one swing, three struck: 12 + 3 + 3.
         b.HoldSkill(w.Slot, true, 2, 0);
-        var evs = Run(b, Dt, () => Pin(b, es, at));
+        var evs = Run(b, Land, () => Pin(b, es, at));
         Assert.Equal(18, b.Resolve.Value, 6);
         Assert.Equal(ResolveReason.Landed, b.Resolve.LastReason);
         Assert.Contains(evs.OfType<Ev.Resolve>(), e => e.Value == 18 && e.Reason == ResolveReason.Landed);
@@ -81,7 +83,7 @@ public sealed class ResolveTests
         b.HoldSkill(w.Slot, false);
         w.Timer = 0;
         b.HoldSkill(w.Slot, true, -2, 0);
-        var air = Run(b, Dt, () => Pin(b, es, at));
+        var air = Run(b, Land, () => Pin(b, es, at));
         Assert.Single(air.OfType<Ev.Slash>());
         Assert.Equal(18, b.Resolve.Value, 6);
     }
@@ -154,6 +156,7 @@ public sealed class ResolveTests
         Assert.Equal(ResolveReason.Spent, b.Resolve.LastReason);
         // Its campaign wait (0.5 s), not its old 5 s cooldown.
         Assert.InRange(w.Timer, 0.08, 0.5 + 1e-9);
+        Run(b, Land, () => Pin(b, [e], [(6, 0)]));
         Assert.True(e.Hp < e.MaxHp);
     }
 
@@ -230,6 +233,7 @@ public sealed class ResolveTests
         Pin(b, [e], at);
         Assert.False(Firing.InStorm(b, w));
         Assert.True(b.PressSkill(w.Slot2, 2, 0));
+        Run(b, Land, () => Pin(b, [e], at));
         Assert.Equal(12, b.Resolve.Value, 6);
         Assert.True(e.Hp < e.MaxHp);
     }
@@ -424,6 +428,7 @@ public sealed class ResolveTests
         double hp0 = es[0].Hp;
         Assert.True(b.PressSkill(w.Slot, 6, 0));
         Assert.Equal(0, b.Resolve.Value, 9);
+        Run(b, Land, () => Pin(b, es, at));
         Assert.True(es[0].Hp < hp0);
         // Under half its cost the key does nothing.
         w.Timer = 0;

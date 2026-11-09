@@ -32,6 +32,11 @@ public sealed class ZoneRunResult
     public int PocketPacks, PocketFoes, PocketBlocked, PocketDown, PocketLeft;
     public bool WardenLegendary;
     public int LevelAtWarden, LevelAtGate, PostsLit;
+    /// <summary>(M3) The hands on the press plan (their presses by skill), and her damage by source.</summary>
+    public PressHands? Hands;
+    public Dictionary<string, double> DamageBy = new();
+    public double ResolveSpent, ResolveFullSec, FlareFirst = -1, MarkGapMax;
+    public int FlareCasts;
     public readonly List<string> FallsAt = new(), RisesAt = new(), WardenDrops = new();
     /// <summary>Each beat put down: its seconds (woke to down) and her level then.</summary>
     public readonly Dictionary<string, (double Seconds, int Level)> Beats = new();
@@ -101,9 +106,21 @@ public static class ZoneSim
         host.Battle = b;
         zone.Begin(b);
 
-        var human = spec.Bot is "human" or "careless" ? new Human(spec.Seed, spec.Bot == "careless") : null;
+        var human = spec.Bot is "human" or "careless" or "idler" ? new Human(spec.Seed, spec.Bot == "careless") { Idle = spec.Bot == "idler" } : null;
         bool deft = spec.Bot == "deft", standing = spec.Bot == "standing";
         if (human == null && !standing && spec.Bot is not ("deft" or "plain")) throw new ArgumentException($"zone sim: unknown bot {spec.Bot}");
+        // (M3: the bots on the one press plan; plain keeps the old hands)
+        uint hs = (uint)spec.Seed;
+        var hands = spec.Bot switch
+        {
+            "deft" => PressHands.Deft(hs),
+            "human" => PressHands.Human(hs, human!.React),
+            "careless" => PressHands.Careless(hs, human!.React),
+            "standing" or "idler" => PressHands.Grip(hs),
+            _ => null,
+        };
+        if (human != null) human.Hands = hands;
+        r.Hands = hands;
         var road = meta.Paths.GetValueOrDefault("ROAD") ?? Array.Empty<double[]>();
         int wp = 0;
         var ford = meta.Place("LOWFORD", "ford");
@@ -213,9 +230,9 @@ public static class ZoneSim
                     double reach = Math.Max(1.5, Pilot.Reach(b));
                     bool inReach = b.Enemies.Living().Any(e => e.Disposition == Disposition.Hostile && e.State != EnemyState.Dying && Dist(e.X, e.Z, p.X, p.Z) < reach);
                     if (!inReach) (mx, mz) = Pilot.Steer(b, false, null, goal: to, naive: true);
-                    Bots.Act("standing", b, j, mx, mz, null);
+                    Pilot.Act(b, j, mx, mz, null, lunges: false, aimsFlare: true, rooted: false, crush: false, hands: hands);
                 }
-                else { (mx, mz) = Pilot.Steer(b, deft, null, onward: to); Pilot.Act(b, j, mx, mz); }
+                else { (mx, mz) = Pilot.Steer(b, deft, null, onward: to); Pilot.Act(b, j, mx, mz, hands: hands); }
             }
 
             if (Dist(p.X, p.Z, anchorX, anchorZ) > 2.5 || held) { anchorX = p.X; anchorZ = p.Z; anchorAt = tt; }
@@ -261,6 +278,7 @@ public static class ZoneSim
             if (step < 2) { r.Meters += step; if (zone.Now >= Prologue.Stage.Dawn) r.MetersDay += step; else r.MetersNight += step; }
             lastX = p.X; lastZ = p.Z;
             if (fight) r.Fighting += dt;
+            if (b.Resolve.On && b.Resolve.Value >= b.Resolve.Max) r.ResolveFullSec += dt;
             if (!wasAlive && p.Alive) { r.Rises++; r.RisesAt.Add($"{zone.Now}@({p.X:0},{p.Z:0}) {LampBook.LastPost(j.World, "lowford")?.Id ?? "checkpoint"}"); }
             wasAlive = p.Alive;
             if (zone.Now != stage)
@@ -333,6 +351,8 @@ public static class ZoneSim
         r.Stages[stage.ToString()] = r.Stages.GetValueOrDefault(stage.ToString()) + (tt - stageAt);
         if (!r.Reached && stage is Prologue.Stage.Intro or Prologue.Stage.Victory) r.FilmFallback += tt - stageAt;
         r.Seconds = tt;
+        foreach (var (k, v) in b.DamageBy) r.DamageBy[k] = v;
+        r.FlareCasts = b.FlareCasts; if (b.FlareTimes.Count > 0) r.FlareFirst = b.FlareTimes[0];
         if (spec.Features != null)
             foreach (var enc in new[] { zone.Night, zone.Day })
                 if (enc != null)
@@ -386,7 +406,7 @@ public static class ZoneSim
         sb.AppendLine();
         sb.AppendLine("Kills are hers (fodder / elite / champion / boss). Packs: night and day beats put down (pack, ambush, ring). Gear: ground drops (all of it rolled: carriers, champions, the strongbox, the Warden), by tier; shown = not Hidden by the Default preset (LootFilter.Judge with the toggles on; first sightings not counted). Upgrade: a drop better than the best of its slot so far (Drops.Power over the worn piece by the upgrade margin), not worn. Fighting: a roused foe within 24 m.");
         sb.AppendLine();
-        string[] order = ["human", "careless", "deft", "plain", "standing"];
+        string[] order = ["human", "careless", "deft", "plain", "standing", "idler"];
         var groups = rs.GroupBy(r => (r.Spec.Tier, r.Spec.Bot)).OrderByDescending(g => g.Key.Tier).ThenBy(g => Array.IndexOf(order, g.Key.Bot)).ToList();
 
         sb.AppendLine("## Per bot (medians; worst case in brackets)");
