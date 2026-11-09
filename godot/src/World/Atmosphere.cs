@@ -515,8 +515,8 @@ public partial class Atmosphere : Node3D
         // (L1 lead 8, S2b-N2) her pool as light (the rig's ember_pool, ember_edge; cel.gdshaderinc cel_pool_band, cel_pool_lv): three
         // steps in metres from her light, their edges moved by painted patches, the outer step's tint over her light's color at the
         // same luminance (redder; its level makes it dark): [core, middle, outer, patch push (m), core fall kept, middle level,
-        // outer level, patch size (m), edge half-width (m)].
-        var ep = CelRigs && cam == null && p.EmberPool is { Length: 9 } e9 ? e9 : null;
+        // outer level, patch size (m), edge half-width (m), the outer edge's own half-width (m), the pool's gain (absent: 1)].
+        var ep = CelRigs && cam == null && p.EmberPool is { Length: >= 10 } e10 ? e10 : null;
         var pool = ep != null ? new Vector4((float)ep[0], (float)ep[1], (float)ep[2], (float)ep[3]) : Vector4.Zero;
         var lv = ep != null ? new Vector4((float)ep[5], (float)ep[6], (float)ep[7], (float)ep[8]) : Vector4.Zero;
         var tint = new Vector4(1, 1, 1, ep != null ? (float)ep[4] : 1);
@@ -530,6 +530,7 @@ public partial class Atmosphere : Node3D
         RenderingServer.GlobalShaderParameterSet("cel_pool_band", pool);
         RenderingServer.GlobalShaderParameterSet("cel_pool_tint", tint);
         RenderingServer.GlobalShaderParameterSet("cel_pool_lv", lv);
+        RenderingServer.GlobalShaderParameterSet("cel_pool_out", new Vector4(ep != null ? (float)ep[9] : 0, ep is { Length: >= 11 } ? (float)ep[10] : 1, 0, 0));
     }
 
     /* ---------------------------------------------------- the grade's glide (H4) -- */

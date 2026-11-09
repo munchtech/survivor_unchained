@@ -142,6 +142,9 @@ global uniform vec4 cel_pool;
 global uniform vec4 cel_pool_band;
 global uniform vec4 cel_pool_tint;
 global uniform vec4 cel_pool_lv;
+// (S2b-N2) cel_pool_out x the outer step's own half-width (m): the pool's last edge fades into the dark, never a cut rim;
+// y the pool's gain over her light (0: 1), so the core is the frame's brightest without her light lifting her and the crowd.
+global uniform vec4 cel_pool_out;
 
 // (fragment() to light(): the geometric normal, and x SPECULAR, y RIM, z RIM_TINT, w ROUGHNESS before the tag)
 // (L1 B4r2) cel_gn's length is 1 + the key's share through the canopy here (cel_dap(): 1 open sky): packed, not a varying
@@ -389,9 +392,10 @@ void cel_pool_paint(inout vec3 c_lc, inout float c_att, vec3 c_lw) {
 	float c_ref = c_q1 * c_q1 * pow(max(c_r1, 1e-4), -c_dec);
 	float c_core = 1.0 - smoothstep(cel_pool_band.x - c_w, cel_pool_band.x + c_w, c_dp);
 	float c_mid = 1.0 - smoothstep(cel_pool_band.y - c_w, cel_pool_band.y + c_w, c_dp);
-	float c_out = 1.0 - smoothstep(cel_pool_band.z - c_w, cel_pool_band.z + c_w, c_dp);
+	float c_wo = max(cel_pool_out.x, c_w);
+	float c_out = 1.0 - smoothstep(cel_pool_band.z - c_wo, cel_pool_band.z + c_wo, c_dp);
 	float c_in = c_ref * pow(max(c_att, 1e-6) / c_ref, cel_pool_tint.w);
-	c_att = c_in * c_core + c_ref * (cel_pool_lv.x * (c_mid - c_core) + cel_pool_lv.y * (c_out - c_mid));
+	c_att = (c_in * c_core + c_ref * (cel_pool_lv.x * (c_mid - c_core) + cel_pool_lv.y * (c_out - c_mid))) * (cel_pool_out.y > 0.0 ? cel_pool_out.y : 1.0);
 	c_lc *= mix(cel_pool_tint.rgb, vec3(1.0), clamp(c_mid, 0.0, 1.0));
 }
 

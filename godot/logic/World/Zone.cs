@@ -164,7 +164,7 @@ public sealed record AtmospherePreset(
     /// <summary>(L1 lead 8, S2b-N2) Her pool as light (cel.gdshaderinc cel_pool_paint): [core, middle, outer] step edges in metres
     /// from her light (3D), how far painted patches move each edge in and out (m), how much of the light's own fall stays in
     /// the core (0 flat, 1 as Godot's), the middle and outer steps' levels (shares of the core's edge), the patches' size (m)
-    /// and the edges' half-width (m). Null: her light as Godot falls it. FROM the picked night targets 05/09/10: a hot core at
+    /// the edges' half-width (m) and the outer edge's own (m, so the pool fades into the dark), and the pool's gain over her light (absent: 1). Null: her light as Godot falls it. FROM the picked night targets 05/09/10: a hot core at
     /// her feet falling off wide through orange to a dark red-brown, each edge broken by painted patches, never a ring.</summary>
     public double[]? EmberPool { get; init; }
     /// <summary>(L1 lead 8, S2b) The pool's outer step's color (sRGB hex; "": the ember's own): the targets' edge, h 34-40.</summary>

@@ -409,3 +409,7 @@ cel_pool_lv={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+cel_pool_out={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
