@@ -20,6 +20,9 @@ public interface IBossArena
     bool CanStand(double x, double z);
     void Say(string title, string? sub, string tone);
     void Bark(double x, double z, string text, string? speaker = null);
+    /// <summary>A boss's signature line, naming the mark it is about to lay (Corvane's "Lie down."): kept over the speaker
+    /// through its tell, its own mark no reason to move it (Ev.Bark.Signature).</summary>
+    void SignatureBark(double x, double z, string text, string? speaker = null) => Bark(x, z, text, speaker);
     /// <summary>The share of its number the horde is kept at while the boss lives.</summary>
     double HordeShare { set; }
     /// <summary>The horde comes back when the boss grows wild (the table's); a map or a story night keeps it off,
@@ -318,7 +321,7 @@ public abstract class ArenaBoss
         E.Cast = CastKind.None;
         E.Anim = EnemyAnim.Cast;
         E.AnimT = 0;
-        if (bark.Length > 0) A.Bark(E.X, E.Z, bark, speaker);
+        if (bark.Length > 0) A.SignatureBark(E.X, E.Z, bark, speaker);
         SignatureCasts++;
         E.SignatureUntil = B.Time + lead;
         Hold(lead, cast, _ =>

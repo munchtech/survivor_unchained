@@ -394,10 +394,38 @@ public partial class Game
         ShowLine(p);
     }
 
+    /// <summary>A conversation opened at one of its nodes over a story night (IZoneHost.Converse: door_night at
+    /// go_home), on Talk's machinery: the sim held, the HUD in dialogue; `ended` is told the last node shown.</summary>
+    public void Converse(string convo, string node, Action<string?> ended)
+    {
+        var c = SurvivorUnchained.World.Dialogue.Find(convo);
+        if (c == null || scene == null || runner != null) { ended(SurvivorUnchained.World.SceneTalk.Run(Journey.Ctx, convo, node)); return; }
+        var r = new DialogueRunner(c, Journey.Ctx);
+        var p = r.StartAt(node);
+        if (p == null) { ended(null); return; }
+        runner = r;
+        talkNpc = convo;
+        conversed = ended;
+        hudMode = "dialogue";
+        scene.SimPaused = true;
+        hud.Prompt(promptShown = null);
+        lastLine = null;
+        before = null;
+        ShowLine(p);
+    }
+
+    /// <summary>A Converse's hand-back, while it runs.</summary>
+    Action<string?>? conversed;
+
+    /// <summary>Who a line shows: in a scene's conversation (no person of its own: door_night, scene_bed) a line a
+    /// person speaks shows that person, name and face; otherwise the conversation's own.</summary>
+    string ShownAs(Presented p) =>
+        Lore.Person(talkNpc!) == null && p.Speaker is not ("player" or "narrator") && Lore.Person(p.Speaker) != null ? p.Speaker : talkNpc!;
+
     void ShowLine(Presented p)
     {
         sound.Line();
-        var id = talkNpc!;
+        var id = ShownAs(p);
         var d = Lore.Person(id);
         Lore.Speakers.TryGetValue(id, out var sp);
         var s = World.Npc(id);
@@ -426,11 +454,14 @@ public partial class Game
         else EndDialogue();
     }
 
+    /// <summary>The choices the line on screen offers (the autopilot answers them), none on a plain line.</summary>
+    public List<PresentedChoice> LineChoices => lastLine?.Choices.Where(c => c.Enabled).ToList() ?? new();
+
     public void Advance()
     {
         var r = runner;
         if (r == null) return;
-        if (lastLine != null) before = lastLine.Speaker == "narrator" ? Short(lastLine.Text) : $"{(lastLine.Speaker == "player" ? "You" : Lore.NameOf(talkNpc ?? ""))}: \u201c{Short(lastLine.Text)}\u201d";
+        if (lastLine != null) before = lastLine.Speaker == "narrator" ? Short(lastLine.Text) : $"{(lastLine.Speaker == "player" ? "You" : Lore.NameOf(talkNpc == null ? "" : ShownAs(lastLine)))}: \u201c{Short(lastLine.Text)}\u201d";
         var p = r.Advance();
         if (p != null) ShowLine(p); else EndDialogue();
     }
@@ -442,6 +473,9 @@ public partial class Game
     void EndDialogue()
     {
         if (talkNpc != null && zone?.Actors.TryGetValue(talkNpc, out var actor) == true) actor.Talking = false;
+        var handBack = conversed;
+        string? lastNode = lastLine?.Node.Id;
+        conversed = null;
         // What it changed shows over people's heads at once (their markers).
         zone?.Touched();
         cam.FocusOverride = null;
@@ -453,6 +487,8 @@ public partial class Game
         hudMode = null;
         if (scene != null) scene.SimPaused = false;
         controls.ClearLatches();
+        // (a story night's scene is not saved over: the night is the save's, and it hands back to the night)
+        if (handBack != null) { handBack(lastNode); return; }
         Save("talk");
         // A conversation that opened a shop, the storeroom, a bed.
         if (afterTalk is string next) { afterTalk = null; Open(next); }

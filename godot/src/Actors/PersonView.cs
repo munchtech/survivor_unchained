@@ -30,14 +30,19 @@ public partial class PersonView : Node3D, INpcView
     public PersonView(PersonSpec spec, Held? arms, double scale)
     {
         person = People.Build(spec);
-        person.Kind = HerClips.Kind(arms?.Right, arms?.Left, arms?.Forearm);
+        // (a carried lamp is not a weapon: it names no swings)
+        person.Kind = HerClips.Kind(arms?.Right is Lamp ? null : arms?.Right, arms?.Left, arms?.Forearm);
         person.Folk = (person.Kit || person.Package != null) && arms?.Right == null && arms?.Left == null && arms?.Forearm == null;
         person.Root.Scale = Vector3.One * (float)(scale / 0.8 * 1.04) * person.Jitter;
         AddChild(person.Root);
         // (a Marionette package's own walk, when its manifest names one: the risen's lurch)
         if (person.Package is string pkg && NpcPackage.WalkClip(pkg, person.Woman) is string walk) WalkClip = walk;
-        if (arms?.Right is string r && Arms.All.ContainsKey(r)) { held["handslot.r"] = Arms.Hold(person, r, "hand_r"); pieces["handslot.r"] = r; }
-        if (arms?.Left is string l && Arms.All.ContainsKey(l)) { held["handslot.l"] = Arms.Hold(person, l, "hand_l"); pieces["handslot.l"] = l; }
+        // (a package's carried lamp goes by Hold: the carry's arm (NpcTorchArm) and the lamp upright in its fist, which the
+        // crowd's bake lays over every clip; by Arms.Hold it hung stiff from the hand at his hip, P6 judge r1)
+        if (arms?.Right is Lamp && person.Package != null) Hold("handslot.r", null, Lamp);
+        else if (arms?.Right is string r && Arms.All.ContainsKey(r)) { held["handslot.r"] = Arms.Hold(person, r, "hand_r"); pieces["handslot.r"] = r; }
+        if (arms?.Left is Lamp && person.Package != null) Hold("handslot.l", null, Lamp);
+        else if (arms?.Left is string l && Arms.All.ContainsKey(l)) { held["handslot.l"] = Arms.Hold(person, l, "hand_l"); pieces["handslot.l"] = l; }
         if (arms?.Forearm is string f && Arms.All.ContainsKey(f)) { held["forearm.l"] = Arms.Hold(person, f, "lowerarm_l"); pieces["forearm.l"] = f; }
     }
 
@@ -470,6 +475,14 @@ public partial class PersonView : Node3D, INpcView
         pieces.Remove(slot);
         if (piece == null) return;
         var bone = BoneOf(slot);
+        // A package's fist holding a lamp up (Corvane's keeper's lamp, in his right: the hand his cast raises): the torch's
+        // carry (NpcTorchArm) on that arm, the lamp hanging straight down from the fist ahead of the shoulder, lifted
+        // overhead as the clip raises the hand.
+        if (piece == "keeper_lamp" && person.Package != null && slot is "handslot.l" or "handslot.r" && LampFist(piece, slot == "handslot.r") is { } lampAt)
+        {
+            held[slot] = lampAt; pieces[slot] = piece;
+            return;
+        }
         if (Arms.All.ContainsKey(piece)) { held[slot] = Arms.Hold(person, piece, bone); pieces[slot] = piece; return; }
         // A package's left fist round a lit torch, the arm brought up to carry it (NpcTorchArm), the torch kept upright.
         if (piece == "torch_lit" && person.Package != null && slot == "handslot.l" && Carried(piece) is Node3D torch)
@@ -528,6 +541,44 @@ public partial class PersonView : Node3D, INpcView
         foreach (var c in at.GetChildren()) if (c is UprightNode u) host = u;
         var p = host.GlobalTransform * new Vector3(0, TorchFlameY, 0);
         return (p.X, p.Y, p.Z);
+    }
+
+    const string Lamp = "keeper_lamp";
+
+    /// <summary>A held lamp in the carrying fist (NpcTorchArm), turned in the fist so it hangs upright when the chest is
+    /// (the arm's lay is fixed in the chest's frame: NpcTorchArm.FistIn), its grip in the fist's pocket. Fixed in the hand,
+    /// not kept upright each frame (UprightNode), so a crowd bake (Vat: rigid with the hand bone) holds it the same.</summary>
+    Node3D? LampFist(string piece, bool right = false)
+    {
+        var sk = person.Skeleton;
+        string side = right ? "r" : "l";
+        int ul = sk.FindBone("upperarm_l"), ur = sk.FindBone("upperarm_r"), sp = sk.FindBone("spine_01"), nk = sk.FindBone("neck_01");
+        if (ul < 0 || ur < 0 || sp < 0 || nk < 0 || sk.FindBone($"hand_{side}") < 0) return null;
+        if (sk.GetNodeOrNull<NpcTorchArm>("NpcTorchArm") == null)
+        {
+            var arm = new NpcTorchArm { Right = right };
+            sk.AddChild(arm);
+            if (sk.GetNodeOrNull("HerJoints") is Node hj) sk.MoveChild(arm, hj.GetIndex());
+        }
+        if (sk.GetNodeOrNull<NpcHands>("NpcHands") is { } hands) { if (right) hands.FistR = true; else hands.FistL = true; }
+        // The chest's frame at rest (the skeleton's own space), the fist's frame in it, and the lamp upright in it (`r`
+        // toward the middle from the carrying shoulder, as NpcTorchArm lays it).
+        var u = (sk.GetBoneGlobalRest(nk).Origin - sk.GetBoneGlobalRest(sp).Origin).Normalized();
+        var across = sk.GetBoneGlobalRest(ur).Origin - sk.GetBoneGlobalRest(ul).Origin;
+        var rr = (across - u * u.Dot(across)).Normalized();
+        var f = u.Cross(rr).Normalized();
+        var fist = NpcTorchArm.FistIn(u, right ? -rr : rr, f);
+        var upright = new Basis(u.Cross(f).Normalized(), u, f);
+        var at = new BoneAttachment3D { BoneName = $"hand_{side}" };
+        sk.AddChild(at);
+        int mid = sk.FindBone($"middle_01_{side}");
+        var knuckle = mid >= 0 ? sk.GetBoneRest(mid).Origin : new Vector3(0, 0.1f, 0);
+        var grip = new Node3D { Name = "LampGrip", Position = knuckle * 0.72f + new Vector3(0, 0, knuckle.Length() * 0.35f) };
+        grip.Basis = fist.Inverse() * upright;
+        at.AddChild(grip);
+        var lamp = Arms.Make(piece);
+        grip.AddChild(lamp);
+        return at;
     }
 
     Node3D TorchFist(Node3D torch)

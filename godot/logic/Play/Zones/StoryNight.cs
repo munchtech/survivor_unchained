@@ -173,7 +173,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         // The first great blessing, before anything moves (another as the boss's ground opens).
         b.GreatOwed = 1;
         G.Announce(new Announcement(Spec.Name, Region, "zone", 3.4, "Story night"));
-        G.Say(Fight.Pull);
+        if (Fight.PullAtStart) G.Say(Fight.Pull);
         StartBeat(0);
     }
 
@@ -364,6 +364,14 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     void Cinematic(string part)
     {
         if (Fight.Cinematic is { } c && G.CanCinematic($"{c}_{part}")) G.Cinematic($"{c}_{part}");
+    }
+
+    /// <summary>The app can now play any fight's cinematic part from a stage, with its marks where things really are
+    /// and `done` when it hands back: true if it plays, false where none can (the stage then says its own lines).</summary>
+    public bool Cinematic(string part, Action done, IReadOnlyDictionary<string, double[]>? marks)
+    {
+        if (Fight.Cinematic is not { } c || !G.CanCinematic($"{c}_{part}")) return false;
+        return G.Cinematic($"{c}_{part}", done, marks);
     }
 
     /* ------------------------------------------------------------- each step -- */
@@ -608,8 +616,26 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         if (B == null || over) return;
         falling = false;
         StageEnded(atBoss ? "boss" : $"stage {beatIx + 1}");
+        // A stage that is its own ending tells the story its own loss (Corvane carries her home, carefully).
+        if (!atBoss && beat?.OnLose is { } lose) Spec.OnLose = lose;
+        if (!atBoss && beat?.EndLost is { } words) Spec.EndLost = words;
         StandDown();
         Finish(by);
+    }
+
+    /// <summary>The app can now end a story night neither won nor fallen: she walked away (she lowered her weapon at
+    /// the door and went home). The effects told, the field stood down, no lost outcome told, and `words` the result's
+    /// last line.</summary>
+    public void LetNightGo(string? effectsJson, string words)
+    {
+        if (B == null || over || won) return;
+        falling = false;
+        if (effectsJson != null) Apply(effectsJson);
+        StageEnded(atBoss ? "boss" : $"stage {beatIx + 1}");
+        Spec.WalkedAway = true;
+        Spec.EndLost = words;
+        StandDown();
+        Finish();
     }
 
     /// <summary>The fight stands down where it is (UI design's finding: let go, the fight ran on under the
@@ -751,7 +777,8 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     public bool Fact(string key) => F(key).Truthy;
     public (double X, double Z)? Goal { get; set; }
     public void Script(Enemy e, Func<Enemy, double, bool> tick) { e.Scripted = true; scripted[e.Id] = (e.Seed, tick); }
-    public void Line(string text, string? speaker = null) => G.Say(text, speaker);
+    public void Line(string text, string? speaker = null, double seconds = 4) => G.Say(text, speaker, seconds);
+    public void HoldOn((double X, double Z)? at) => G.HoldOn(at);
     public Fact FactOf(string key) => F(key);
     public void Apply(string effectsJson) => G.Apply(effectsJson);
     /// <summary>The spared ending is chosen in the fight when the story's spec carries both outcomes
@@ -837,6 +864,12 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     public void Mark(string key) => marks.Add(key);
     public bool Marked(string key) => marks.Contains(key);
     public IOrb Piece(string id, double scale) => G.Look.Piece(id, scale);
+    public IZoneLook Look => G.Look;
+    public double OwnHealth => Character.OwnHealth(G.Journey.Ch);
+    public bool Settled => G.Arrived && !G.BannerUp;
+    public void Converse(string convo, string node, Action<string?> ended) => G.Converse(convo, node, ended);
+    /// <summary>The stage's own boss script (Corvane in the doorway), for the harness's hands.</summary>
+    public ArenaBoss? StageScript => Now == Stage.Beat ? beat?.Script : null;
     public double HeightAt(double x, double z) => G.Look.HeightAt(x, z);
     public bool Test(Cond cond) => Rules.Test(cond, C);
     bool IStoryArena.Knows(string key) => Knows(key);
@@ -878,6 +911,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         if (Choice == null) G.Announce(new Announcement(title, sub ?? "", tone, 2.4));
     }
     public void Bark(double x, double z, string text, string? speaker) => B?.Events.Emit(new Ev.Bark { X = x, Z = z, Text = text, Speaker = speaker });
+    public void SignatureBark(double x, double z, string text, string? speaker) => B?.Events.Emit(new Ev.Bark { X = x, Z = z, Text = text, Speaker = speaker, Signature = true });
     double IBossArena.HordeShare { set { } }
     bool IBossArena.HordeReturns => false;
     void IBossArena.Won(double x, double z) => Victory(x, z, spared: false);
@@ -904,7 +938,8 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         var steps = new List<Step>();
         switch (Now)
         {
-            case Stage.Beat: steps.Add(new Step(beat!.Goal)); break;
+            // (an empty goal: none shown, a beat's last moments after its end is told: Corvane's gone line)
+            case Stage.Beat: if (beat!.Goal != "") steps.Add(new Step(beat.Goal)); break;
             case Stage.Between: steps.Add(new Step("Go on")); break;
             case Stage.Boss: steps.Add(new Step($"{BossName} has come: end it")); break;
             default: steps.Add(new Step(won ? $"{BossName}: it is over" : "The night is lost", Done: won)); break;

@@ -44,7 +44,7 @@ public partial class ArenaResultScreen : TellingScreen
     {
         Retell();
         bool fell = G.Battle?.Player.Alive == false;
-        var v = ResultPanel(!r.Won ? "The ember gutters" : fell ? "Won, and held to the last" : "The night is held", r.Won ? new Color("#ffe6b8") : Style.BloodHi, r.Spec.Name);
+        var v = ResultPanel(!r.Won ? r.Spec.WalkedAway ? "The night let go" : "The ember gutters" : fell ? "Won, and held to the last" : "The night is held", r.Won ? new Color("#ffe6b8") : Style.BloodHi, r.Spec.Name);
         double beyond = r.Seconds - r.Spec.Minutes * 60;
         // Beat one: the night's numbers, counting up one after another.
         var stats = new System.Collections.Generic.List<(double, Func<double, string>, string, double, bool)>

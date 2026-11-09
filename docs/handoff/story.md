@@ -3,6 +3,13 @@
 You are the writer (su-lead-max). You own the canon, every word the game says,
 the story data and the cinematic scripts, and you sign off voice packets.
 
+**For the next writer (P6 combat, 5 Nov):**
+- A loss to Corvane in the door night's phase 1 now sets the new fact `corvane.carried`. It sets no `corvane.rose` (that still means he got up after she killed him) and no vault `shut`.
+- `chid.carried_chid`'s first variant now keys on `corvane.rose` OR `corvane.carried` (the condition only; no text changed).
+- Two unvoiced result-screen lines are the combat lead's drafts, in `logic/Play/Story/Corvane.cs` (`Doorway.WalkAway`, `Doorway.Carried`). Amend them at will:
+  - the walk away: "You go back down the hill the way you came. Behind you the violet lamp does not move."
+  - the phase-1 loss: "The last thing you know is violet light, held low, and being carried, carefully, a long way."
+
 ## Now (5 November, S1 the story rework, branch `story-s1`): Act 1 in data, beats 5-14 in; MR READY story-s1@88f52de28 (writer 3)
 
 **The pick (the owner, 5 Nov:

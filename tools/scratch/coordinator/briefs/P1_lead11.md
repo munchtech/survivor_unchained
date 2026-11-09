@@ -1,0 +1,16 @@
+# P1 her body, R1 lead 11 (9 Nov, coordinator ad002ada): to RIGHT, then the A|B to the owner, then the merge
+
+Area: P1 her body (PIPELINE row P1). Worktree `C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\body-p1`, branch `body-p1`, now at d9b4000f8. Handoff: `docs/handoff/body.md` top block ("R1 LEAD 9 -> R1 LEAD 10"), in your worktree. Role `su-lead-high`.
+
+**Standing:** `docs/handoff/lead_brief.md` (all of it), OWNER_NOTES top three blocks (8 Nov ARPG pivot: P1 is unchanged and first, "finish body first"; 6 Nov: A is the floor, a judge's only pass is right, whole frame, no carve-outs; the ease-of-change proof is part of the gate). Judges as `su-lead-max` subagents in the foreground, verdicts saved verbatim.
+
+**The worktree holds 49 uncommitted files on purpose:** the published round_36 body (`godot/art/people/body_p1/*`, `godot/data/body/p1_spring_samples.json`, `godot/art/people/heroine.glb` with A's seam feather) waits for the owner's pick. Never reset or checkout them. Merge `origin/claude/vigilant-galileo-l6jqyx` into `body-p1` first (commit the published files as WIP on the branch before the merge if the merge touches them; a WIP commit is allowed, the pick decides what ships).
+
+**Steps, in the handoff's order:**
+1. Slider fixes: the braid carried with the head on height variants (P1Body.Rebind: publish head_move_m and carry the head-chain pieces), the ink checked in game on height, the hand-clearance law in P1Rig from body width (the left hand inside the thigh in idle_reaver_look, 6.2 mm); reshoot height and hips (run_town strips for hips/glutes/height); one xhigh check judge on the 7 slider sheets.
+2. The second body: her_a 0, no A patches, the designed sliders as another woman; bar: no breaks, reads as a real body at the play cameras and in motion; one xhigh check judge.
+3. Report **RIGHT body-p1@<sha>** to main (SendMessage "main") with: the A|B pairs folder (`survivorsunchained_inputs\body_p1\gate2\pairs\`, sheet_half.jpg), the slider sheets at half size (`python tools/half.py`), the second body's sheet, and the one-line "MakeHuman-derived vs ours" from the handoff. Main shows the owner. Do not wait idle: start step 4 while the owner looks.
+4. On the pick (main relays it): commit body_p1/* + heroine.glb; finish F (the `--body p1` default, drivers, the gate clips' retarget); retune the form bands with her_a on; the inventory's A patches promoted to rule defaults where the handoff plans it; remove the caches it lists; the suite green (`dotnet test` in godot/tests, last 1587/0/10); then **MR READY body-p1@<sha>** in the handoff top and to main, with the merge notes for A's shared changes (shader, People.cs, Atmosphere/Grade).
+5. Write the inventory line the siege design will need later, in one paragraph in the handoff, build nothing: NPCs on the shared base at LODs (close/play/far), how a second and third body costs.
+
+Report shape (PIPELINE rule 3): "P1: the app can now X; this cost Y; the next body costs about Z." First report within a few turns: the list with states and an honest estimate. Hand off at ~300k with HANDOFF READY. Costs: API $0 unless the owner's cap has room (tools/ai/api_agent.cjs is allowed for judges at the owner's "use api credits when available").
