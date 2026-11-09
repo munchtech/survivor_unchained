@@ -11,16 +11,17 @@ The ARPG design lead, 9 November 2026, from the owner's words of 8 November (`AR
 - the ember the dead spill is how she grows;
 - Groundbreaker on the right button;
 - the first pack and its captain;
+- her first level, and a lamp lit where she stands (*Third Blow*: every third swing lands heavy);
 - a Rare's beam, and the filter;
 - a charger's lane, crossed with the dash;
 - the Barrow Knight, with his bar and his name;
-- a lamp-post relit: her checkpoint; her first level's lamp, lit where she stands (*Third Blow*: every third swing now lands heavy).
+- a lamp-post relit: her checkpoint and a waypoint.
 
 At the water the Ford-Warden waits, and the ember lends her the Flare to break his lamps. First light takes the Flare back on one storybook page; she keeps everything else, and a Legendary from him. By day the same road runs on: boars, the Kerchiefs, a strongbox, Heroic Leap at level 4, the wolves' ring at the gate, then the Waystation, where the Flare is lit for good. About 45 minutes, five levels, four skills. All six keys are hers by the Barrow, at Act 1's end.
 
 **A veteran's hour.** Level 30, on the hardest difficulty open to her, six keys:
 - Sunder held to swing, building her Resolve;
-- Cleaver's key held to spin: Bladestorm, a Union of the two, and Sunder pressed mid-storm breaks it and splits the ground;
+- Cleaver's key held to spin, burning the Resolve Sunder built: Bladestorm, a Union of the two, and a fresh press of Sunder mid-storm breaks it and splits the ground;
 - Heroic Leap into the thick of it;
 - Shield Charge to cross to the next pack;
 - the Watch Bell to drag it onto her shield;
@@ -61,10 +62,10 @@ She runs four or five endgame maps: generated ground, twists that test her build
 |---|---|---|---|
 | The 39 self-firing skills | **REWORK** | Each gets a pressed form (a kind, a cost or wait, an aim) and keeps its own rule for the arena | M3 (most of its ~3.3M) for the warden; each later calling in its wave |
 | The night's ember cards (`LevelUp.Draft`) | **MOVE TO ARENA** | Try-before-you-buy is the arena's identity; a draft freezing a Diablo fight every minute is not | M7-M8, ~0.3M |
-| Lamps and Wicks | **KEEP**, rework the point rate | The board stays the passives and the Wicks the skill trees. Points come only from levels now, so the rate rises (section 3.5) | M7, ~2M |
+| Lamps and Wicks | **KEEP**, rework the point rate | The board stays the passives and the Wicks the skill trees. Points no longer come from the ember, so the rate rises (section 3.5) | M7, ~2M |
 | Lamp-posts and *Light my way* | **KEEP**, more jobs | A lamp-post is now her checkpoint, a waypoint, the respec bench and the safe light at night; relit posts give board points; *Light my way* lights what she leaves at each level | M5 and M7 |
 | The Flare | **KEEP** | The BOOM stays outside the six slots. The prologue lends it once (section 5); its fill is re-measured under pressed combat | part of M3 |
-| The tiers and the endless | **MOVE TO ARENA** | They are the arena's difficulty and its long night; the campaign uses world tiers | M8 |
+| The tiers and the endless | **MOVE TO ARENA** | They are the arena's difficulty and its long night; the campaign uses world tiers | M8; world tiers in M5 |
 | The Wayfinder's table | **REWORK** | It becomes the door to the arena, the daily and the atlas (charts): the endgame's hub | M8, M11 |
 | The day stretch | **KEEP** as the template | Its eight beats (packs, ambushes, a strongbox, a lamp-post, a gated ring) are an ARPG zone already. `DayStretch.cs` becomes every zone's encounter list | M5 |
 | The director and the telegraph kit | **KEEP** | The director runs the arena as it is and is the siege's seed (section 8). The kit becomes champion affixes and boss blows in every zone | M5, ~0.8M for affixes |
@@ -132,6 +133,8 @@ Every skill keeps its self-firing rule for the arena, so an assist setting ("the
 | **Shield Charge** (Bull Rush, reworked) | pressed, aimed | a wait | She charges to the cursor shield-first and knocks lesser things aside. Its wick takes the four facets the skills lead wrote (Iron Hide, Unbroken, Gore, and Pile Driver as its Turn) |
 | Iron Vow | pressed | a wait | A 2 s brace: blows on her are halved, and what she stored bursts |
 | Rebuke | kindled | on a block | Smites the blocker and three near it |
+| Cleaver (shared with the reaver) | pressed | Resolve | The heavy chop across her front; it opens wounds |
+| **Bladestorm** (Cleaver + Sunder) | channeled | drains Resolve while held, no wait | The spin. A fresh press of Sunder's key breaks it, and the break grows with what the storm spent; a grip held into the storm doesn't break it |
 
 ### 3.3 Unions: one skill on two keys
 
@@ -184,7 +187,7 @@ Access follows CLASS_IDENTITY's circles; The Barrow Host (built) stays open to t
 ### 3.5 Where the lamp offer lives (the owner's call 4; my pick)
 
 **Levels light lamps, lamp-posts change them, and the cards are the arena's.**
-- **Slots (call 13):** 2/3/4/5/6 at levels 1/3/5/7/9, so all six keys are hers by the Barrow at Act 1's end. Today's 1/4/8/14/20 would leave six keys for Act 3; Diablo III's six come two or three hours in. Heroic Leap opens at level 4.
+- **Slots (call 13):** 2/3/4/5/6 at levels 1/4/5/7/9, so all six keys are hers by the Barrow at Act 1's end. Today's 1/4/8/14/20 would leave six keys for Act 3; Diablo III's six come two or three hours in. Heroic Leap opens at level 4 with the third slot, and Shield Charge at 5 with the fourth.
 - **What a level gives:** each level is a board point. Each carried skill has its own wick points: one at level 1, then one every second level, to 8 at level 15 (today one every third, 8 at level 22).
   - The night's ember used to light lamps for free; without it, the old rate would bring the first Turn at level 13, deep in Act 2. At the new rate the first Turn lands at level 9, on Act 1's last boss, as CLASS_IDENTITY §5.1 planned.
   - Gear's new "+1 to <skill>" affixes add up to three more points: a chase, and Diablo's oldest good affix.
@@ -236,14 +239,15 @@ Access follows CLASS_IDENTITY's circles; The Barrow Host (built) stays open to t
 | 3 | The ember it spills | the ember is the dead's light: it fills her bar and rises into a level | the ember bar |
 | 4 | Three on the road | a skill: Groundbreaker; Resolve pays for it | RMB and the Resolve bar |
 | 5 | The first pack and its captain | a pack; the captain carries gear | the captain's lantern |
+| 5a | Her first level, on the road | a lamp: the level-up's flash offers *Third Blow* (every third swing lands heavy), lit where she stands with the wick point she has held since level 1 | Sunder's wick, before and after |
 | 6 | The captain's Rare | loot: the beam, the label; the filter hides the rest | the label, then the filter's key |
 | 7 | The ambush's charger | the dash through a telegraph | the lane, then Space |
 | 8 | The Barrow Knight at the post | the first elite: a bar, a name, an affix | the bar and the affix |
-| 9 | The post relit | a lamp-post: her checkpoint; her first level's lamp, lit where she stands | *Third Blow* on Sunder's wick, before and after |
+| 9 | The post relit | a lamp-post: her checkpoint and a waypoint | the post's light on the map |
 | 10 | The barrow's Grave-Caller | a raiser: kill it first | the hover target |
 | 11 | C02, the Ford-Warden | the first boss: his three lamps; the ember lends her the Flare | the Flare's key |
 | 12 | C03, then first light | one storybook page: first light takes back what it lent (the Flare); she keeps the rest | none |
-| 13 | C04 A, then the day stretch | the zone by day: packs, a strongbox, ambushes, Heroic Leap at level 4, taught at the wolves' ring holding the gate; the third and fourth slots at levels 3 and 5 | the Leap's key, then each new slot |
+| 13 | C04 A, then the day stretch | the zone by day: packs, a strongbox, ambushes, Heroic Leap at level 4 with the third slot, taught at the wolves' ring holding the gate; Shield Charge at 5 with the fourth | each new key |
 | 14 | The Waystation, C04 B | the town; the Flare lit for good at the square's lamp | none |
 
 - **Films:** C01, C02, C03 (and their warden variants), C04 A and C04 B all stay. The prologue's night stays as setting and story ("None cross after dark"). What goes is the night's mechanics: the rising's draft, waves and the dawn card as a system.
@@ -265,15 +269,15 @@ Access follows CLASS_IDENTITY's circles; The Barrow Host (built) stays open to t
 |---|---|---|---|
 | The Low Ford | the prologue night and the day stretch | zone 1: the tutorial and the road to town; the Ford-Warden | 1-4 |
 | The Waystation | the town | Act 1's hub: shops, the forge, the shrine, the stash, the Wayfinder's table | none |
-| Thornhollow Verge | 290 m, placed packs, the dead at night, four story spots | zone 2, grown into three zones: the Verge's fields, the Deep Shaw, the Old Road's ravine | 4-10 |
-| The Deep Shaw | a name the table generates | the real wood between the Verge and Wolf Hollow (the arena keeps its board) | 5-7 |
+| Thornhollow Verge | 290 m, placed packs, the dead at night, four story spots | zone 2, grown into three zones (its fields, the Deep Shaw, the ravine) | 4-10 |
+| The Deep Shaw | a name the table generates | one of the three: the real wood between the Verge's fields and Wolf Hollow (the arena keeps its board) | 5-7 |
 | Wolf Hollow | a story night (Greymuzzle) | dungeon 1, the den | 5-6 |
 | The Roost | a story night (Redcowl) | dungeon 2, up the ravine | 6-7 |
 | The Dig | a story night (Grimtunnel) | dungeon 3, the tunnels | 7-8 |
 | The Barrow, behind the sealed door | a story night (Corvane's doorway, the Barrow Lord) | Act 1's last dungeon: chain 2, the first Turn | 9-10 |
 | barrow, hollow, ruts, dig | the table's place kinds | the arena's boards, unchanged | none |
 
-- **The honest size:** an ARPG Act 1 is about five hours. The Verge crosses in under a minute, so Act 1 needs new ground: three Verge zones of about 30 minutes each and four dungeons of 20-30 minutes. It is the long pole (section 9, M10).
+- **The honest size:** Act 1's sum is the Low Ford (45 minutes), three Verge zones of about 30 minutes, four dungeons of 20-30 minutes and about an hour of town and story: about 4.5-5.5 hours. The Verge crosses in under a minute, so that needs new ground. It is the long pole (section 9, M10).
 - **Time of day (the owner's call 9):** it follows the story. Each quest step sets the hour, dusk plays the town's evening call, the inn's sleep stays, and the running 12-minute clock and "Answer the night" retire. Waypoints (lamp-posts) take her to a fight, and the story's night fights stay at night.
 
 **The endgame:**
@@ -297,7 +301,7 @@ LOOT_DESIGN's Act 1 run (215 gear drops and 3.5 Legendaries over about five hour
 | Champions (named elites with affixes) | 4-6 | 10-12 | 20-30 |
 | Gear shown (the Default filter) | ~25 | ~40 | ~60 |
 | An upgrade worth wearing | every ~8 min | every ~15 min | a better roll every ~45 min |
-| Legendaries | 1, certain, from the Ford-Warden | ~0.7 | ~1.5 (atlas weights and homes) |
+| Legendaries | 1, certain, from the Ford-Warden | ~0.7 | ~2-4 (tiers III-IV, atlas weights and homes) |
 
 **The rules that change:**
 - In zones, loot falls on the ground, with no tally. The captain is each pack's carrier (gear at about 40%), so "only what visibly carries gear" holds.
@@ -313,7 +317,7 @@ LOOT_DESIGN's Act 1 run (215 gear drops and 3.5 Legendaries over about five hour
   - Foes she killed stay dead; champions and bosses heal.
   - No experience, gear or gold is lost.
   - The narrator's "You get up. It takes less than it did." plays, and the story's toll counts each rise. That cost is canon (PLAN.md: every rising costs a life, revealed at C41).
-- **Maps:** three rises each (PoE's portals); the third fall closes the map and spills half (today's rule, as the last resort).
+- **Maps:** two rises each (PoE's portals); the third fall closes the map and spills half (today's rule, as the last resort).
 - **What retires:** "a lost story fight wakes her in town a day on" (4 October). An ARPG boss is retried from its door in a minute; the toll carries the weight that the lost day did.
 
 ### 7.3 Difficulty (the owner's call 8)
@@ -349,22 +353,22 @@ Act 3's war at the gate (PLAN.md §3, chain 6) is the story's natural first sieg
 
 | # | Lead | Builds | Cost | Stops doing |
 |---|---|---|---|---|
-| M1 | Skills (skills-p7, running) | Heroic Leap; Shield Charge with its four facets on its wick; Bladestorm on two keys, the WIP's union split so each key drives its half (today either key holds one channel); the dash's four steps and pips | ~1.5-2M, 2-3 judged clip rounds | facets on the dash |
+| M1 | Skills (skills-p7, running) | Heroic Leap; Shield Charge with its four facets on its wick; Bladestorm on two keys, the WIP's union split so each key drives its half (today either key holds one channel); the spin paid from Resolve once M3 lands it; wicks for the Leap, Cleaver and Iron Vow (12 lamps, a Turn each) and Shield Charge's other two strands; the dash's four steps and pips | ~2-2.5M, 2-3 judged clip rounds | facets on the dash |
 | M2 | The owner | picks on this page | none | none |
 | M3 | Combat systems (the held C2 build lead, re-briefed) | the press path for every warden skill (kind, aim, hold to repeat), Resolve, the kindled rules, the bots that press, the Low Ford's curve re-measured | ~3.3M (the bots and the Flare's fill included), 3-4 number rounds | tuning the night's draft as the game; the ×1.25 night lean |
 | M4 | UI (design and art) | six keys with waits and costs, the Resolve bar, the dash pips under her life, the level-up flash with before and after | ~1.2M, 2 judged rounds | campaign draft screens |
-| M5 | Zones and encounters (new, su-lead-high) | the Low Ford as the first ARPG zone: packs with captains, champions with affixes from the telegraph kit, lamp-posts as checkpoints and waypoints, `zone_resets.json` per zone, a lamp-post at every boss door, the day's clock off in the Low Ford, the zone sim | ~2M, 3 rounds | arena boards as campaign ground |
+| M5 | Zones and encounters (new, su-lead-high) | the Low Ford as the first ARPG zone: packs with captains, champions with affixes from the telegraph kit, lamp-posts as checkpoints and waypoints, `zone_resets.json` per zone, a lamp-post at every boss door, the day's clock off in the Low Ford, world tiers I-IV picked at a lamp-post with section 7.3's multipliers, the zone sim. It counts the Low Ford's packs from section 5's beats, and if the first hour's do not fit its 260 m, adds ground (with L1's cost) before the demo | ~2M, 3 rounds | arena boards as campaign ground |
 | M6 | Experience with story | section 5's tutorial: the callouts, the cuts, the one dawn page, the lent Flare | ~1.4M, 2 rounds | night tutorial copy |
 | A1 | Animation (Stage B, re-cut) | the warden's cast clips on an upper and lower split, so she walks while she swings and casts, judged in motion at the play camera | A1 sizes it | clips made for a self-firing game |
 | M7a | Classes build | Sunder's and Groundbreaker's wicks lit by level at the new rate, with the level-up flash | ~0.5M, 1 round | none |
 | M9 | Loot (su-lead-sonnet) | captains as carriers, ground loot, world-tier weights, "+1 to a skill", the Ford-Warden's Legendary | ~0.6M, 1-2 rounds | the night's-end tally outside the arena |
-| **demo-arpg1** | the owner plays | the first 45 minutes as an ARPG (the warden), plus a second start: the veteran's hour on a level-30 warden through the WIP's dev grants, so he plays the Leap and Bladestorm before M10 is spent | **~11M plus A1 to here** | none |
+| **demo-arpg1** | the owner plays | the first 45 minutes as an ARPG (the warden), plus a second start: the veteran's hour on a level-30 warden through the WIP's dev grants, on today's MapGen maps (the atlas and the daily come later, M11 and M8), so he plays the Leap and Bladestorm before M10 is spent | **~11.5M plus A1 to here** | none |
 | M7 | Classes build (the rest) | every wick in `skill_lamps.json` lit by points at the new rate; *Light my way* at each level; Unions joined at lamp-posts; tomes out (ONE_BUILD §5: 1, 3, 5, 6, 15, 16) | ~2M, 2-3 rounds | wiring the cards into the campaign |
 | M8 | Arena | the ember-cast rule, the daily (seed, rule deck, loaned builds, local board, cache), the dawn card and offer kept here | ~1.5M, 2 rounds | the night as the game's gate |
-| M10 | Act 1's ground (L1's look pipeline, zones, combat) | the Verge's three zones, the Deep Shaw, the four story dungeons (rooms and boss scripts reused, waves turned into placed packs), time by the story | ~10-15M plus GPU: the long pole; L1 sizes it after G2 | story nights as drafts from nothing |
+| M10 | Act 1's ground (L1's look pipeline, zones, combat) | the Verge's three zones (the Deep Shaw among them), the four story dungeons (rooms and boss scripts reused, waves turned into placed packs), time by the story | ~10-15M plus GPU: the long pole; L1 sizes it after G2 | story nights as drafts from nothing |
 | M11 | Later | the atlas on world tiers (~1.5M), the dead's nights, the other callings' pressed waves, then sieges | | |
 
-Act 1 as an ARPG totals about 26M plus A1's re-cut (ONE_BUILD's C2 build of ~0.5M is folded into M3 and M7). The character pipeline (P1, P2, P3) and L1's G2 run beside it unchanged.
+Act 1 as an ARPG totals about 26.5M plus A1's re-cut (ONE_BUILD's C2 build of ~0.5M is folded into M3 and M7). The character pipeline (P1, P2, P3) and L1's G2 run beside it unchanged.
 
 ---
 
@@ -382,4 +386,4 @@ Act 1 as an ARPG totals about 26M plus A1's re-cut (ONE_BUILD's C2 build of ~0.5
 10. **The prologue's dawn:** the ember lends the Flare for the Warden and first light takes it back on one page, so Act 4 has its rule; or no dawn loss at all.
 11. **Ember is her experience:** the dead's light is how she grows, which sharpens Act 4; or plain experience on a kill.
 12. **The daily:** one seed, one rule and one loaned build for everyone; or her own build.
-13. **Slots:** all six keys by level 9 (2/3/4/5/6 at 1/3/5/7/9), Heroic Leap at level 4, the first Union about level 11; or today's 1/4/8/14/20, six keys from Act 3.
+13. **Slots:** all six keys by level 9 (2/3/4/5/6 at 1/4/5/7/9), Heroic Leap at level 4 and Shield Charge at 5, the first Union about level 11; or today's 1/4/8/14/20, six keys from Act 3.
