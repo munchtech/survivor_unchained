@@ -345,6 +345,7 @@ public sealed class Encounters
             }
         }
         ChampionsTick();
+        Standing(dt);
         foreach (var bt in Of("ambush"))
             if (!Done(bt.Id) && !Packs.ContainsKey(bt.Id) && (bt.Guard == null || Done(bt.Guard)) && !Fighting && Held?.Invoke() != true
                 && Dist(p.X, p.Z, bt.X, bt.Z) < bt.R)
@@ -365,6 +366,51 @@ public sealed class Encounters
             if (!(armed || p.Z < bt.Z - 1) || p.Z > bt.Z || Math.Abs(p.X - bt.X) > bt.HalfWidth || Fighting || Held?.Invoke() == true) continue;
             Ring(bt);
         }
+    }
+
+    /* --------------------------------------------- packs close on a stander -- */
+
+    readonly Queue<(double T, double X, double Z)> herTrail = new();
+    double trailT, standReady;
+    /// <summary>The second charger, held its kit's spacing as the arena's Cast holds it (then cast at her).</summary>
+    (Enemy E, double Seed, double At)? standSecond;
+    /// <summary>(M3) Stand charges cast this run (the harness's tally).</summary>
+    public int StandCharges { get; private set; }
+
+    /// <summary>(M3) The stand clock (H6's rule, StandClock, the arena director's): with the campaign on and the world tier's
+    /// `stand` numbers (Battle.StoryStand), a woken pack's foe within StandNear charges her (the kit's charge, marked,
+    /// at StandScale; a second from another side with StandPair 2) when she has not moved StandMoved in StandFor s, at most
+    /// once each StandCooldown. Champions, bosses and the scripted never do. Off (no numbers, or the campaign off): as it was.</summary>
+    void Standing(double dt)
+    {
+        if (!b.Campaign || b.StoryStand is not { Stand: true } d) return;
+        var p = b.Player;
+        if ((trailT -= dt) <= 0) { trailT = 0.25; StandClock.Sample(herTrail, b.Time, p.X, p.Z, d.StandFor); }
+        if (standSecond is var (se, ss, sat) && b.Time >= sat && Held?.Invoke() != true)
+        {
+            if (!se.Alive || se.Seed != ss || se.State != EnemyState.Active || !p.Alive) standSecond = null;
+            else if (b.KitWait("charge", se) is var sw && sw > 0) standSecond = (se, ss, b.Time + sw);
+            else { standSecond = null; b.Tell("charge", se, p.X, p.Z, d.StandScale, damageMul: d.StandDamage); }
+        }
+        if (b.Time < standReady || !p.Alive || Held?.Invoke() == true) return;
+        // Held where she is (knocked down, rooted) is not standing: the clock starts again once she can move.
+        if (p.RootT > 0) { standReady = b.Time + d.StandFor; return; }
+        if (!StandClock.Still(herTrail, b.Time, p.X, p.Z, d)) return;
+        var awake = new HashSet<Enemy>();
+        foreach (var (id, list) in Packs)
+            if (WokeAt.ContainsKey(id) && !DownAt.ContainsKey(id))
+                foreach (var f in list) if (Live(f)) awake.Add(f.E);
+        if (awake.Count == 0) return;
+        Func<Enemy, bool> may = awake.Contains;
+        var near = StandClock.First(b, d, may);
+        if (near == null) return;
+        // (spaced as the packs' tells are: the kit's own wait, then the clock tries again)
+        double wait = b.KitWait("charge", near);
+        if (wait > 0) { standReady = b.Time + Math.Min(wait, 0.5); return; }
+        standReady = b.Time + d.StandCooldown;
+        StandCharges++;
+        b.Tell("charge", near, p.X, p.Z, d.StandScale, damageMul: d.StandDamage);
+        if (StandClock.Second(b, d, near, may) is { } other) standSecond = (other, other.Seed, b.Time);
     }
 
     /// <summary>The way out is open: every ring sprung, and its second wave come and down (the wolves hold the gate;

@@ -182,7 +182,7 @@ public sealed partial class Journey
         if (WorldTierOn)
         {
             var wt = Content.WorldTiers.Get(Content.WorldTiers.Of(World));
-            b.WorldHealth = wt.Health; b.WorldDamage = wt.Damage; b.KitDamageMul = wt.Kit; b.KitEveryMul = wt.KitEvery;
+            b.WorldHealth = wt.Health; b.WorldDamage = wt.Damage; b.KitDamageMul = wt.Kit; b.KitEveryMul = wt.KitEvery; b.StoryStand = wt.Stand;
         }
         b.EmberOn = combat && (arena || ember);
         EmberLit = b.EmberOn && !arena;

@@ -89,6 +89,14 @@ public sealed partial class Battle
     public const double FlareLampGlow = 0.02;
     public const double FillHurt = 0.40, FillAnswer = 35, FillPerfect = 10, FillBlock = 6, FillBoss = 1.8,
         FillChampion = 2, FillChampionRate = 0.6, FillKill = 0.1, FillKillRate = 0.65;
+    /// <summary>(M3 round 3) The campaign's own (Battle.Campaign; nights and maps keep the table above): hurt fills at
+    /// StoryFillHurt for each 1% (a stander filled it first, 5-6 meters a Low Ford run from hurt alone), and one Flare
+    /// takes at most StoryBossCut of a story boss's max life (its blows share it; the ember's level made one Long Cut
+    /// 1700 a blow on the Ford-Warden's 3250, so it was the finisher, 16-41% of his damage; the owner's band: AoE 10-15%,
+    /// single-target 15-20% of a boss).</summary>
+    public const double StoryFillHurt = 0.25, StoryBossCut = 0.10;
+    /// <summary>What is left of this cast's StoryBossCut (-1: not struck a boss yet).</summary>
+    double flareBossBudget = -1;
     bool answeredTwice;
 
     public int FlareCharges => Lamp("flare.banked") ? (int)Lamps.Full("flare.banked", "charges", 2) : 1;
@@ -135,7 +143,7 @@ public sealed partial class Battle
         if (source == "always bleeding") return;
         var p = Player;
         double pct = dmg / MaxHp * 100;
-        double fill = FillHurt * pct * (p.Hp < MaxHp / 3 ? 2 : 1);
+        double fill = (Campaign ? StoryFillHurt : FillHurt) * pct * (p.Hp < MaxHp / 3 ? 2 : 1);
         if (Lamp("flare.hurt_fill")) fill *= 1 + Lamps.Full("flare.hurt_fill", "more", 0.2);
         FillFlare(fill, "hurt");
         if (hpBefore >= MaxHp * FlareClutch && p.Hp < MaxHp * FlareClutch && p.Hp > 0)
@@ -227,6 +235,7 @@ public sealed partial class Battle
         flareAimAt = FlareAimSchedule(f);
         flareAim = 0;
         flareStruckBoss = false;
+        flareBossBudget = -1;
         flareKilledBoss = false;
         flareReleased = false;
         flareKey = f.BeatAt("key", flareAt.Length > 0 ? flareAt[0] : 0);
