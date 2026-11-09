@@ -109,6 +109,10 @@ def _derived(spec_path, zero, keep, tmp):
     for k in zero:
         sl[k] = sp.get("sliders", {}).get(k, 0.0) if k in keep else 0.0
     sp["sliders"] = sl
+    # (P1 R1 sliders: a measuring copy stands where its spec's body stands: the spec's own ground move, not one of its
+    # own (her_a at 0 takes A's feet off, so its soles differ: the bare chest was grounded 1-2 cm off the body))
+    import build_topo as bt
+    sp["_ground_m"] = bt.ground_offset(bt.with_defaults(load_spec(spec_path))) or [0.0, 0.0, 0.0]
     p = Path(tmp) / f"derived_{abs(hash((tuple(sorted(sl.items())), spec_path)))}.json"
     p.write_text(json.dumps(sp))
     return str(p)
