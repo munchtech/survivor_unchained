@@ -106,7 +106,9 @@ public sealed class Autopilot
         }
         lineT = 0;
         // A chest opening is watched to its end (pictures of it).
-        if (g.Overlay == "chest") return;
+        if (g.Overlay == "chest") { if (legendSeen && !cardShot) { cardShot = true; Frame("legendary_card", 1.2); } return; }
+        // (M5 r2: the watch-post's menu, opened once, framed, then closed)
+        if (g.Overlay == "post" && menuT >= 0) { if ((menuT += dt) > 2.2 && !Shots.Pending("post_menu_watch")) { menuT = -1; g.CloseOverlay(); } return; }
         // A night's result is read, then left as a player leaves it (closing it as a screen
         // stranded the survivor on the empty field).
         if (g.Overlay == "arena")
@@ -134,6 +136,7 @@ public sealed class Autopilot
         var b = g.Battle;
         var z = g.Zone;
         if (GoalsOn) Track(dt, b, z);
+        if (b != null && z != null) Hooks(b, z);
         // (--auto toward: walking down the screen, toward the camera, her face
         // to it: pictures of her face at play zoom)
         if (Toward && b != null && b.Player.Alive && !g.InTransit) { Move = (0, 1); return; }
@@ -223,6 +226,15 @@ public sealed class Autopilot
                 if (Math.Sqrt((p.X - tx) * (p.X - tx) + (p.Z - tz) * (p.Z - tz)) < 1.0 && g.Prompted == "chest") Controls.Instance.Press(Act.Interact);
                 break;
             }
+            // (M5 r2) The watch-post's lamp once the Knight is down (its prompt offered then): walked to and lit, as a player
+            // does, foes near it or not (Locked waits them out; the blows land as she stands there).
+            case "Post" or "Barrow" when !Idle && WatchLamp(z) is { } wl && watchT < 40:
+            {
+                watchT += dt;
+                tx = wl.X + 1.0; tz = wl.Z + 1.0;
+                LightAt(wl, p);
+                break;
+            }
             case "Barrow" when b.Enemies.Living().FirstOrDefault(e => e.Tag == "caller") is { } caller:
             {
                 // The Grave-Caller holds the stage until it falls: close on it (it stood off down the road before).
@@ -252,6 +264,11 @@ public sealed class Autopilot
                 break;
             }
             case "Victory":
+                break;
+            // (M5 r2) The Warden's Legendary is taken before the day's road (it lay at the ford all day).
+            case "Dawn" or "Exit" when !Idle && b.Pickups.Living().FirstOrDefault(k => k.Loot is (int)Rpg.LootTier.Legendary or (int)Rpg.LootTier.Storied) is { } lg && legendWalkT < 25:
+                legendWalkT += dt;
+                tx = lg.X; tz = lg.Z;
                 break;
             case "Dawn" or "Exit" when z is Zones.Prologue pd && pd.DayGoal() is { } dg:
             {
@@ -304,7 +321,7 @@ public sealed class Autopilot
                         double since = lampTried.TryGetValue(i.Id, out var pt) ? pt : lampTried[i.Id] = t;
                         if (t - since >= 20) continue;
                         tx = i.X; tz = i.Z;
-                        if (di < i.R && g.Prompted == i.Id && interactT <= 0) { interactT = 1.5; Controls.Instance.Press(Act.Interact); }
+                        LightAt(i, p);
                         break;
                     }
         }
@@ -481,6 +498,70 @@ public sealed class Autopilot
     int nightsEnded, arenasEntered, backFor;
     double tableT, wonT = -1, leaveT, interactT, printT;
     string lastZone = "";
+
+    /* ---- (M5 r2) capture hooks for the judge: named frames at the moments that matter, a line or two each ---- */
+    readonly HashSet<double> woke = new();
+    readonly Dictionary<double, int> tells = new();
+    readonly HashSet<object> blowsSeen = new();
+    readonly HashSet<string> lampShots = new();
+    double watchT, legendWalkT, menuT = -1, litAt = -1;
+    bool legendSeen, cardShot, menuDone, fell, wasDown;
+    static readonly bool FallOnce = Args.Has("fall-once");
+
+    static string Slug(Enemy e) => new string((e.Named?.Title ?? e.Def.Id).Split(',')[0].Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
+
+    Interactable? WatchLamp(ZoneRuntime z) => z.Interactables.FirstOrDefault(i => i.Id == "lamppost:lowford.watch" && (i.When?.Invoke() ?? true));
+
+    /// <summary>At a post's Light prompt: its frame first, then the key; a frame after the lighting.</summary>
+    void LightAt(Interactable i, PlayerState p)
+    {
+        if (Math.Sqrt((i.X - p.X) * (i.X - p.X) + (i.Z - p.Z) * (i.Z - p.Z)) >= i.R || g.Prompted != i.Id || interactT > 0) return;
+        string id = i.Id[9..].Replace('.', '_');
+        if (lampShots.Add("p" + id)) { Frame($"light_prompt_{id}", 0.2); interactT = 0.6; return; }
+        if (Shots.Pending($"light_prompt_{id}")) return;
+        interactT = 1.5;
+        Controls.Instance.Press(Act.Interact);
+        if (lampShots.Add("l" + id)) { Frame($"light_lit_{id}", 0.5); Frame($"light_lit_{id}_b", 1.6); }
+    }
+
+    void Hooks(Battle b, ZoneRuntime z)
+    {
+        foreach (var e in b.Enemies.Living())
+        {
+            if (e.Rank == 0 || e.State == EnemyState.Dying) continue;
+            if (e.Roused && woke.Add(e.Seed)) Frame($"wake_{(e.Rank == 2 ? "champ" : "capt")}_{Slug(e)}", 1.5);
+        }
+        foreach (var bl in b.Blows)
+            if (bl.From is { Rank: 2 } ch && blowsSeen.Add(bl) && tells.GetValueOrDefault(ch.Seed) < 3)
+            {
+                int n = tells[ch.Seed] = tells.GetValueOrDefault(ch.Seed) + 1;
+                Frame($"tell_{Slug(ch)}_{n}", Math.Min(0.4, bl.Delay * 0.5));
+            }
+        if (blowsSeen.Count > 512) blowsSeen.Clear();
+        if (!legendSeen && b.Pickups.Living().FirstOrDefault(k => k.Loot is (int)Rpg.LootTier.Legendary or (int)Rpg.LootTier.Storied) is { } lg)
+        {
+            legendSeen = true;
+            Frame("legendary_ground", 0.6); Frame("legendary_ground_b", 2.0);
+        }
+        if (litAt < 0 && z.Id == "lowford" && Rpg.LampBook.PostLit(g.Journey.World, "lowford.watch")) litAt = t;
+        // The post's menu, once, 3 s after the watch-post burns, while she stands by it.
+        if (litAt >= 0 && !menuDone && t - litAt > 3)
+        {
+            menuDone = true; menuT = 0;
+            g.OpenPost("lowford.watch");
+            Frame("post_menu_watch", 0.8);
+        }
+        // --fall-once: her life to nothing once, after the watch-post burns and its menu is closed; the fall and the rise framed.
+        if (FallOnce && !fell && menuDone && menuT < 0 && b.Player.Alive && t - litAt > 8)
+        {
+            fell = true;
+            Godot.GD.Print($"auto: fall-once t={b.Time:0.0}");
+            b.HurtPlayerRaw(b.Player.Hp + b.MaxHp * 10, School.Physical, "fall-once", null);
+            Frame("fall", 0.8);
+        }
+        if (fell && !b.Player.Alive) wasDown = true;
+        if (wasDown && b.Player.Alive) { wasDown = false; Frame("rise", 0.4); Frame("rise_b", 2.0); }
+    }
 
     void Frame(string tag, double seconds)
     {

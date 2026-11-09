@@ -47,7 +47,16 @@ public static class LampPosts
 
     public sealed class Move { public string Needs = "", About = ""; public double X, Z; public int Light = -1; }
 
-    sealed class File { public List<Post> Posts = new(); }
+    /// <summary>(M5 r2) A lit post's lantern, set apart from her ember pool: a cooler, whiter gold and brighter (its level over
+    /// the zone light as built), and the flare it gives as it kindles (that level, falling back over flareSeconds).
+    /// Functional; L1 owns the final light.</summary>
+    public sealed class LitLook { public string Color = "#ffe6b8"; public double Level = 1.6, Flare = 4, FlareSeconds = 0.9; }
+
+    sealed class File { public List<Post> Posts = new(); public LitLook Lit = new(); }
+
+    /// <summary>(M5 r2) A lit post's light (lamp_posts.json "lit").</summary>
+    public static LitLook Lit { get { _ = F; return lit!; } }
+    static LitLook? lit;
 
     static List<Post>? all;
     static List<Post> F => all ??= Load();
@@ -55,6 +64,7 @@ public static class LampPosts
     static List<Post> Load()
     {
         var f = Json.Parse<File>(Json.ReadContent("lamp_posts.json"));
+        lit = f.Lit;
         var ids = new HashSet<string>();
         foreach (var p in f.Posts)
         {

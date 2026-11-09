@@ -122,6 +122,8 @@ public sealed class DropCtx
     /// <summary>In the night's arenas the materials go to the night's end tally, not the ground
     /// (crafting decision 7: no confetti, the tally is the moment).</summary>
     public bool Tally;
+    /// <summary>(M5 r2) A Legendary's line is not said here: the caller stages it (the Warden's first, Prologue).</summary>
+    public bool Hush;
     /// <summary>The scars: minutes past the half hour.</summary>
     public double Depth;
     /// <summary>The arena's tier (a hoard's extra rolls from the third).</summary>

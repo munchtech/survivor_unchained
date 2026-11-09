@@ -81,6 +81,11 @@ public interface IZoneHost
     void Say(string text, string? who = null, double seconds = 4);
     void Toast(Toast t);
     void Announce(Announcement a);
+    /// <summary>(M5 r2) Banners asked for in the next seconds (a level-up) wait till then, and one shown just now is shown
+    /// again after; an Announcement marked Through still shows (the staging's own).</summary>
+    void HoldBanners(double seconds) { }
+    /// <summary>(M5 r2) No interact prompt for the next seconds (under a banner that must read alone).</summary>
+    void HushPrompts(double seconds) { }
     /// <summary>A chest opened in a fight: the game stages it (ChestCeremony); a host without a
     /// stage says what came out in a line.</summary>
     void Chest(ChestOpened c) => Announce(new Announcement(c.Hoard ?? "A chest", string.Join(" · ", c.Items.Select(i => i.Name)), "reward", 2.8));
@@ -177,6 +182,8 @@ public interface IZoneLook
 {
     /// <summary>A light on or off, its glowing bits and its fire with it.</summary>
     void SetLit(int light, bool on);
+    /// <summary>(M5 r2) A light's level over its built brightness, and its color when given (a lit lamp-post's own light).</summary>
+    void LightLevel(int light, double level, string? color = null) { }
     bool IsLit(int light);
     /// <summary>Show or hide a named piece of the landmarks.</summary>
     void Show(string node, bool visible);

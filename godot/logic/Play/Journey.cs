@@ -22,7 +22,8 @@ public enum ToastKind { Loot, Gold, Relation, Quest, World, Lore, Level, Warning
 public sealed record Toast(ToastKind Kind, string Text, string? Sub = null, string? Icon = null, int? Rarity = null, double? Life = null);
 
 /// <summary>A heading for the interface: a new level, a place.</summary>
-public sealed record Announcement(string Title, string? Sub, string Kind, double Seconds, string? Kicker = null);
+/// <param name="Through">(M5 r2) Shown even while banners are held (IZoneHost.HoldBanners): the staging's own.</param>
+public sealed record Announcement(string Title, string? Sub, string Kind, double Seconds, string? Kicker = null, bool Through = false);
 
 /// <summary>What the road has taken out of the survivor, carried between
 /// zones until they rest (the ember is an arena's, and stays in it).</summary>

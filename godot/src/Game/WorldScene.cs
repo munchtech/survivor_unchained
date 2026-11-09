@@ -472,6 +472,7 @@ public partial class WorldScene : Node3D, IZoneLook
     /* ------------------------------------------------ what a zone reaches -- */
 
     public void SetLit(int light, bool on) => View.SetLit(light, on);
+    public void LightLevel(int light, double level, string? color = null) => View.SetLevel(light, (float)level, color != null ? new Color(color) : null);
     public bool IsLit(int light) => View.IsLit(light);
 
     public void Show(string node, bool visible)

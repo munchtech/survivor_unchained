@@ -1332,14 +1332,12 @@ public sealed partial class Prologue : ZoneRuntime
         wardenPos = (e.X, e.Z, Math.PI / 2 - e.Facing);
         Bar(null);
         B.Events.Emit(new Ev.Shake { Amount = 0.9 });
-        G.Announce(new Announcement("The Ford-Warden falls", null, "boon", 3.2));
+        G.Announce(new Announcement("The Ford-Warden falls", null, "boon", 2.2, Through: true));
         for (int i = 0; i < pylons.Count; i++) if (litPylons[i]) { litPylons[i] = false; G.Look.SetLit(pylons[i].Light, false); }
         ClearAround(e.X, e.Z, 40);
-        // What it leaves.
-        B.SpawnPickup(PickupKind.Item, e.X + 1.5, e.Z + 1, 1, "wardens_lampiron");
-        B.SpawnPickup(PickupKind.Item, e.X - 1.2, e.Z + 1.6, 3, "ember_shard");
-        for (int i = 0; i < 12; i++) B.SpawnPickup(PickupKind.Gold, e.X + (B.Rng.Next() - 0.5) * 4, e.Z + (B.Rng.Next() - 0.5) * 4, 4);
-        WardenLegendary(e);
+        // What it leaves: by the film, all at once; in play, staged (Legendary, RunVictory).
+        legendFrom = (e.Level, e.Def.Family, e.X, e.Z);
+        vicT = 0; legendAt = -1; legendName = null;
         Go(Stage.Victory);
         cutT = 0;
         Objective([("Cross at the Low Ford", true, false)]);
@@ -1348,25 +1346,76 @@ public sealed partial class Prologue : ZoneRuntime
         // blow. What it sets is set at the hand-back, so a skip sets it too.
         var marks = new Dictionary<string, double[]> { ["w"] = [e.X, e.Z, 0], ["her"] = [e.X, e.Z + 4, Math.PI] };
         if (G.Cinematic("c03", HeartGone, marks)) { victoryByCine = true; wardenInCine = true; }
+        if (victoryByCine) { WardenSpoils(); Legendary(false); }
+        else G.HoldBanners(LegendNarrate + 0.6);
+    }
+
+    /// <summary>The Warden's plain spoils (its lamp-iron, the shards, the coin), on the corpse's east side: the west is the
+    /// Legendary's own ground (M5 r2).</summary>
+    void WardenSpoils()
+    {
+        if (B == null) return;
+        var (_, _, x, z) = legendFrom;
+        B.SpawnPickup(PickupKind.Item, x + 1.5, z + 1, 1, "wardens_lampiron");
+        B.SpawnPickup(PickupKind.Item, x + 0.6, z + 1.9, 3, "ember_shard");
+        for (int i = 0; i < 12; i++) B.SpawnPickup(PickupKind.Gold, x + 0.6 + B.Rng.Next() * 3, z - 0.8 + B.Rng.Next() * 3.2, 4);
+    }
+
+    // (M5 r2, the first Legendary's moment, judge frame 56: ten texts piled in the centre.) In order: the dying line; the
+    // Legendary's beam and label alone (LegendAt); its banner (LegendBanner, the Rest/Light prompt hushed under it); the
+    // narration and the rest of the spoils (LegendNarrate). Banners asked for meanwhile (a level-up) wait (HoldBanners).
+    const double LegendAt = 1.6, LegendBanner = 3.7, LegendNarrate = 7.2, LegendBannerSecs = 3.2;
+    (int Level, Family Family, double X, double Z) legendFrom;
+    double vicT, legendAt = -1;
+    string? legendName;
+
+    void StageLegendary(double dt)
+    {
+        vicT += dt;
+        if (vicT >= LegendAt && legendAt < 0) { legendAt = vicT; legendName = Legendary(true); }
+        if (vicT >= LegendBanner && shown.Add("legend.banner") && legendName != null)
+        {
+            // PLACEHOLDER copy for the story lead (Drops.NamedFalls over the item's name, its rarity under it).
+            G.HushPrompts(LegendBannerSecs + 0.2);
+            G.Announce(new Announcement(legendName, "Legendary", "reward", LegendBannerSecs, Drops.NamedFalls, Through: true));
+        }
+        if (vicT >= LegendNarrate && shown.Add("legend.spoils")) WardenSpoils();
+    }
+
+    /// <summary>The Warden's drop roll at its corpse (WardenLegendary); hush: its Legendary's line is said by the staging.</summary>
+    string? Legendary(bool hush)
+    {
+        var (lv, fam, x, z) = legendFrom;
+        return WardenLegendary(lv, fam, x, z, hush);
     }
 
     /// <summary>ARPG 7.1: the first time she kills the Ford-Warden he leaves one Legendary for certain (a world fact);
     /// later kills roll the plain Boss source.</summary>
-    public void WardenLegendary(Enemy e)
+    public void WardenLegendary(Enemy e) => WardenLegendary(e.Level, e.Def.Family, e.X, e.Z, false);
+
+    /// <summary>(M5 r2) The roll at (x, z): a Legendary 2.8 m west of the corpse on its own ground, the rest on the east
+    /// side with the plain spoils. Its Legendary's name (null: none fell); hush: the HUD's line is left to the caller.</summary>
+    public string? WardenLegendary(int level, Family family, double x, double z, bool hush)
     {
-        if (B == null) return;
+        if (B == null) return null;
         bool first = !W.Fact(WardenLegendaryFact).Truthy;
         var loot = G.Journey.Drops(new DropCtx
         {
-            Source = DropSource.Boss, Level = e.Level, People = Drops.PeopleOf(e.Def.Family), Floor = first ? (int)LootTier.Legendary : 0,
-            Luck = B.Stats.Get(Stat.Luck), R = B.Rng.Next,
+            Source = DropSource.Boss, Level = level, People = Drops.PeopleOf(family), Floor = first ? (int)LootTier.Legendary : 0,
+            Luck = B.Stats.Get(Stat.Luck), R = B.Rng.Next, Hush = hush,
         });
         if (first) W.Facts[WardenLegendaryFact] = true;
+        string? name = null;
+        int west = 0;
         foreach (var l in loot)
         {
-            double a = B.Rng.Next() * Math.Tau, d = 1.5 + B.Rng.Next() * 1.5;
-            B.Spill(l with { Persistent = true }, e.X + Math.Cos(a) * d, e.Z + Math.Sin(a) * d);
+            bool legend = l.Tier is int t && (LootTier)t is LootTier.Legendary or LootTier.Storied;
+            double a, d;
+            if (legend) { a = Math.PI + west++ * 0.5; d = 2.8; name ??= (l.Payload as ItemInstance)?.Name ?? Items.Find(l.Ref ?? "")?.Name ?? "A Legendary"; }
+            else { a = (B.Rng.Next() - 0.5) * 1.6; d = 1.5 + B.Rng.Next() * 1.5; }
+            B.Spill(l with { Persistent = true }, x + Math.Cos(a) * d, z + Math.Sin(a) * d);
         }
+        return name;
     }
 
     public const string WardenLegendaryFact = "lowford.warden_legendary";
@@ -1422,7 +1471,10 @@ public sealed partial class Prologue : ZoneRuntime
     void RunVictory(double dt)
     {
         if (B == null || victoryByCine) return;
+        StageLegendary(dt);
         cutT += dt;
+        // (the narration waits for the Legendary's beat: the dying line stays at 0.3)
+        if (vicT < LegendNarrate) cutT = Math.Min(cutT, 1.5);
         double cx = wardenPos.X, cz = wardenPos.Z;
         // C03 (cin_heart_goes_down): a tired man's voice, the Order's question at the end of a watch.
         if (cutT > 0.3 && shown.Add("morning")) B.Events.Emit(new Ev.Bark { X = cx, Z = cz, Text = "Is it morning?", Speaker = "The Ford-Warden" });

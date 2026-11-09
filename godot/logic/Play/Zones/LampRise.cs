@@ -59,7 +59,28 @@ public static class LampRise
     public static void ShowLamps(IZoneHost g, string zone)
     {
         foreach (var p in LampPosts.In(zone))
-            if (p.Light >= 0) g.Look.SetLit(p.Light, LampBook.PostLit(g.Journey.World, p.Id));
+        {
+            if (p.Light < 0) continue;
+            bool on = LampBook.PostLit(g.Journey.World, p.Id);
+            g.Look.SetLit(p.Light, on);
+            if (on && !p.Town) Shine(g, p.Light, LampPosts.Lit.Level);
+        }
+    }
+
+    /// <summary>(M5 r2) A lit post's own light (lamp_posts.json "lit"): a cooler, whiter gold than her ember, brighter.</summary>
+    static void Shine(IZoneHost g, int light, double level) => g.Look.LightLevel(light, level, LampPosts.Lit.Color);
+
+    /// <summary>(M5 r2) Its kindling: the light flares to "flare" and falls back to its lit level over flareSeconds.</summary>
+    static void Flare(IZoneHost g, int light)
+    {
+        var l = LampPosts.Lit;
+        const int Steps = 6;
+        Shine(g, light, l.Flare);
+        for (int i = 1; i <= Steps; i++)
+        {
+            double k = i / (double)Steps, lv = l.Flare + (l.Level - l.Flare) * k;
+            g.After(l.FlareSeconds * k, () => Shine(g, light, lv));
+        }
     }
 
     /// <summary>The zone's checkpoint posts (not its towns' posts, lit from the start, nor its dark posts, which the zone
@@ -109,8 +130,10 @@ public static class LampRise
     public static bool Light(IZoneHost g, Battle? b, LampPosts.Post p)
     {
         if (!LampBook.LightPost(g.Journey.World, p.Id)) return false;
-        if (p.Light >= 0) g.Look.SetLit(p.Light, true);
+        if (p.Light >= 0) { g.Look.SetLit(p.Light, true); Flare(g, p.Light); }
         b?.Events.Emit(new Ev.Nova { X = p.X, Z = p.Z, Radius = 2.2, School = School.Fire, Duration = 0.9 });
+        // (M5 r2: the kindling read as nothing at play distance: a second, wider ring after the first)
+        b?.Events.Emit(new Ev.Nova { X = p.X, Z = p.Z, Radius = 4.5, School = School.Fire, Duration = 1.2, Rings = 2 });
         g.Toast(p.Door
             ? new Toast(ToastKind.World, $"{p.Name} kindles as you come", "Whatever waits past it, you will rise here.", Life: 4)
             : new Toast(ToastKind.World, $"{p.Name} burns again", "If you fall, you will rise here.", Life: 5));

@@ -952,9 +952,21 @@ public partial class Game : Node, IZoneHost
         hud.Say(text, who, up);
     }
     public void Toast(Toast t) { hud.Toast(t); sound.Toast(t); }
+    double bannerHold, promptHush, lastAnnAt = -1;
+    Announcement? lastAnn;
+    static double Now => Godot.Time.GetTicksMsec() / 1000.0;
+    public void HoldBanners(double seconds)
+    {
+        bannerHold = Now + seconds;
+        // (one shown a moment ago, a level-up in the same blow, is shown again once the hold is over)
+        if (lastAnn is { Through: false } la && Now - lastAnnAt < 0.6) { lastAnn = null; After(seconds + 0.1, () => Announce(la)); }
+    }
+    public void HushPrompts(double seconds) => promptHush = Now + seconds;
     public void Announce(Announcement a)
     {
         if (Args.Has("no-banners")) return; // (dev: pictures of a skill without the level and zone cards over it)
+        if (!a.Through && Now < bannerHold) { After(bannerHold - Now + 0.1, () => Announce(a)); return; }
+        if (!a.Through) { lastAnn = a; lastAnnAt = Now; }
         if (scene?.Fx.Flare.HoldsFrame == true) { After(0.25, () => Announce(a)); return; }
         // (a zone's banner asked for during a film waits for play: "The ember goes out" under C04a's bars; a film's own titles go straight to the HUD)
         if (InCinematic) { After(0.3, () => Announce(a)); return; }
@@ -1069,7 +1081,7 @@ public partial class Game : Node, IZoneHost
     {
         var b = Battle;
         // (a story's choice waiting has the keys: no prompt beside it)
-        if (b == null || zone == null || Overlay != null || !b.Player.Alive || inTransit || cine != null || zone.Choice != null)
+        if (b == null || zone == null || Overlay != null || !b.Player.Alive || inTransit || cine != null || zone.Choice != null || Now < promptHush)
         {
             near = null;
             if (promptShown != null) hud.Prompt(promptShown = null);
@@ -1689,10 +1701,16 @@ public partial class Game : Node, IZoneHost
         foreach (var p in b.Pickups.Living().Where(p => p.Kind == PickupKind.Chest).OrderBy(p => (p.X - px) * (p.X - px) + (p.Z - pz) * (p.Z - pz)).Take(2))
             Add(p.X, p.Z, "relic", Style.GoldHi);
         // A Legendary lying untaken: the screen's edge points to it, in its amber (docs/design/LOOT_DESIGN.md §8.2).
-        foreach (var p in b.Pickups.Living().Where(p => p.Loot is (int)LootTier.Legendary or (int)LootTier.Storied && p.Look != Verdict.Hidden))
+        // (M5 r2: within LegendReach only: the Warden's, left at the ford, pulled her back south from the north bank all day
+        // against the objective, the judge's "gold chevron")
+        foreach (var p in b.Pickups.Living().Where(p => p.Loot is (int)LootTier.Legendary or (int)LootTier.Storied && p.Look != Verdict.Hidden
+            && (p.X - px) * (p.X - px) + (p.Z - pz) * (p.Z - pz) < LegendReach * LegendReach))
             Add(p.X, p.Z, "legendary", p.Loot == (int)LootTier.Storied ? ItemViews.TierColour(LootTier.Storied) : ItemViews.TierColour(LootTier.Legendary));
         return o;
     }
+
+    /// <summary>(M5 r2) An untaken Legendary's edge pointer shows within this of her (m).</summary>
+    const double LegendReach = 40;
 
     /// <summary>Loot's names on the ground (docs/design/LOOT_DESIGN.md §8.1): what the filter shows, Rare
     /// and up wherever it lies on screen, the rest only near her, so a horde's floor is not a page of text.</summary>

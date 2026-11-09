@@ -29,7 +29,7 @@ public sealed partial class Journey
         var rolled = Rpg.Drops.Roll(x);
         // A Legendary falling is said under the HUD, once (docs/design/LOOT_DESIGN.md §8.2); the debt's
         // paying is said in its own words.
-        if (rolled.Any(r => r.Tier is LootTier.Legendary or LootTier.Storied))
+        if (!x.Hush && rolled.Any(r => r.Tier is LootTier.Legendary or LootTier.Storied))
             OnAnnounce(new Announcement(owed ? Rpg.Drops.DebtPaid : Rpg.Drops.NamedFalls, "", "reward", 3.2));
         // In the night's arenas the materials are the night's end tally, not the ground's (crafting decision 7).
         if (x.Tally)
