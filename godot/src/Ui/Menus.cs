@@ -248,7 +248,7 @@ public partial class PauseScreen : Overlay
         if (G.Zone is { } z)
         {
             where.AddChild(Style.Label(z.Name, Style.Display, 22, Kit.Ink, false, HorizontalAlignment.Center, false));
-            where.AddChild(Style.Label($"Day {w.Day}{(z.Region != null ? $"  ·  {z.Region}" : "")}", Style.TextItalic, 17, Kit.HeadInk, false, HorizontalAlignment.Center, false));
+            where.AddChild(Style.Label($"Day {w.Day}{(z.Region != null ? $"  ·  {z.Region}" : "")}  ·  World tier {Content.WorldTiers.Get(Content.WorldTiers.Of(w)).Name}", Style.TextItalic, 17, Kit.HeadInk, false, HorizontalAlignment.Center, false));
         }
         var doing = w.Quests.Values.Where(q => q.Status == QuestStatus.Active && Lore.Quests.ContainsKey(q.Id)).OrderBy(q => Lore.Quests[q.Id].Mystery).FirstOrDefault();
         if (doing != null)
