@@ -361,6 +361,10 @@ uniform float backlight_behind = 0.0;
 // turned from a lamp, as they are her body's; without them, by the overhead lantern at night, her lower face, jaw
 // and nostrils fell to the night sky's blue-black under a lit neck (judge rj2v, 12 October 2026).)
 uniform float thin_map = 0.0;
+// (and eased out over the 3 cm above her neck's seam, by ao_map's green, thin_ease of it: her body below the seam takes
+// the light through her unmasked, her head's neck above it took none, so the seam under her jaw at the Look was a
+// darker step on the head's side, 9-12 levels at 1:1 (P1 R1 seam 2, 8 November 2026); 0: as before)
+uniform float thin_ease = 0.0;
 // (her head's rim from every lamp, as her paint's light through her: her head outside the rig, eased out over the
 // 3 cm above SPLIT (ao_map's green); her body keeps it to lamps behind)
 varying float front_rim;
@@ -460,6 +464,13 @@ uniform float metal_cap = 0.8;
 // Directional lamps (sun, moon) and cool lamps untouched. 0: as before.)
 uniform float skin_hold = 0.0;
 uniform vec3 hold_tint = vec3(1.0, 0.85, 0.55);
+// A cool lamp behind her lights her skin at its own lightness, its blue taken out (back_neutral of it: 0 none, 1 all;
+// People.HerBackNeutral). The Look's cool rim (0.72, 0.82, 1) and the close view's night rim (#a9c4ff) reach the far side
+// of her neck under her jaw, where neither key nor fill does: blue light on red-rich skin came out lavender (P1 R1 seam 2,
+// 8 Nov 2026: the Look's far neck Oklab hue -10 against 30-36 round it, its diffuse and its sheen alike; the rim's colour
+// 0.85 grey: 33.5, her face, chest and shade within 1 deg). Her hair, gear and the scene keep the rims' colour; warm
+// lamps (the fires, the edge lamp) and directional ones (sun, moon) untouched.
+uniform float back_neutral = 0.0;
 uniform float hold_chroma = 0.0;
 uniform float hold_gain = 1.0;
 // (deep skin's sheen: on a dark albedo a lamp's sheen held at spec_cap outshone the skin's own light and lay along her
@@ -778,7 +789,7 @@ void fragment() {
 	AO_LIGHT_AFFECT = mix(ao_light, ear_light, smoothstep(0.0, 0.15, 1.0 - ea));
 	back_ao = mix(1.0, ao, back_occ);
 	SSS_STRENGTH = scatter * mix(1.0, paint_scatter, pa);
-	BACKLIGHT = ALBEDO * backlight_colour * backlight * mix(1.0, aot.b, thin_map * rig_w);
+	BACKLIGHT = ALBEDO * backlight_colour * backlight * mix(1.0, mix(aot.b, 1.0, thin_ease * (1.0 - aot.g)), thin_map * rig_w);
 	float wd = (INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).y;
 	cav_w = cavity_bounce > 0.0 ? cavity_bounce * (1.0 - smoothstep(cavity_ao.x, cavity_ao.y, texture(cavity_map, UV).r))
 		* smoothstep(cavity_down.x, cavity_down.y, -wd) : 0.0;
@@ -864,7 +875,13 @@ void light() {
 			: dbg_gate * ATTENUATION * c_ndl * vec3(kw * (1.0 - bh), 1.0 - kw, kw * bh));
 	} else {
 	vec3 cool_d0 = DIFFUSE_LIGHT;
-	vec3 lc = LIGHT_COLOR;
+	vec3 lcol = LIGHT_COLOR;
+	if (back_neutral > 0.0 && !LIGHT_IS_DIRECTIONAL) {
+		float bl = dot(LIGHT_COLOR, vec3(0.2126, 0.7152, 0.0722));
+		float bw = back_neutral * smoothstep(-0.1, 0.6, dot(-LIGHT, VIEW)) * smoothstep(0.0, 0.1, (LIGHT_COLOR.b - LIGHT_COLOR.r) / max(bl, 1e-4));
+		lcol = mix(LIGHT_COLOR, vec3(bl), bw);
+	}
+	vec3 lc = lcol;
 	if (skin_hold > 0.0 && !LIGHT_IS_DIRECTIONAL && LIGHT_COLOR.r > LIGHT_COLOR.b) {
 		vec3 hlw = vec3(0.2126, 0.7152, 0.0722);
 		float ly = max(dot(LIGHT_COLOR, hlw), 1e-5);
@@ -960,7 +977,7 @@ void light() {
 			float k2 = a2 / (1.0 - c_ndh * c_ndh + da2 * da2);
 			lobes += oil_w * (k2 * k2 / PI) * (0.5 / mix(2.0 * s_ndl * s_ndv, s_ndl + s_ndv, a2));
 		}
-		vec3 spec = mouth_lit * s_ndl * lobes * f * LIGHT_COLOR * ATTENUATION * SPECULAR_AMOUNT * mix(1.0, back_spec, behind);
+		vec3 spec = mouth_lit * s_ndl * lobes * f * lcol * ATTENUATION * SPECULAR_AMOUNT * mix(1.0, back_spec, behind);
 		// (each lamp's sheen held under spec_cap, its colour kept: a lamp held a hand from her cheek (c02 s8) blew it white)
 		float alum = dot(ALBEDO, vec3(0.2126, 0.7152, 0.0722));
 		float dk = (1.0 - smoothstep(deep_lum.x, deep_lum.y, alum)) * (1.0 - METALLIC);

@@ -1856,6 +1856,7 @@ public static class People
             m.SetShaderParameter("neck_pull", NeckPull(look));
             m.SetShaderParameter("scatter", HerScatter);
             m.SetShaderParameter("back_spec", HerBackSpec);
+            m.SetShaderParameter("back_neutral", HerBackNeutral);
         }
         // A body's relief baked from its sculpt (the hero's), under the pores.
         // (--relief-map PATH: her graft's relief from a file, tried before it is laid in the glb; face 37)
@@ -2010,6 +2011,13 @@ public static class People
     /// against her skin's 54° round it, 0.06 lighter; judge n2, 11 October 2026). At 0.3: hue 46°, 0.02 lighter
     /// (Highborn), her lit cheek as it was. Every part of her alike, so no step at her neck's seam.</summary>
     const float HerBackSpec = 0.3f;
+
+    /// <summary>A cool lamp behind her on her skin at its own lightness, its blue taken out (the skin shader's
+    /// back_neutral): the Look's cool rim and the close view's night rim light the far side of her neck under her jaw,
+    /// where neither key nor fill reaches, and blue light on her red-rich skin came out a lavender patch there, by day
+    /// and night, A and B alike (gate judge 4, P1 R1 seam 2, 8 November 2026: Oklab hue -10 against 30-36 round it).
+    /// Her hair, gear and the scene keep the rims' colour. (--back-neutral X: another, for judging it; 0 as before.)</summary>
+    static float HerBackNeutral => (float)SurvivorUnchained.Args.Num("back-neutral", 1f);
 
     /// <summary>Her skin in the sky's light against the lamps' (the skin shader's ambient_tint): light from all
     /// round goes deeper into skin and comes out redder. Without it, under her jaw, in the key's shadow, the night
