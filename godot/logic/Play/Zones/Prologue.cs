@@ -1414,7 +1414,9 @@ public sealed partial class Prologue : ZoneRuntime
         if (vicT >= LegendBanner + LegendBannerSecs && legendWait < LegendWaitMax && LegendLies())
         {
             legendWait += dt;
-            vicT = Math.Min(vicT, LegendNarrate - 0.8);
+            // (held AT the wait's own threshold, so the wait counts every frame: held below it, it counted one frame in
+            // fifteen and a player who left the coat on the ground stood ~5 min at the ford; the zone sim stuck there)
+            vicT = Math.Min(vicT, LegendBanner + LegendBannerSecs);
             G.HoldBanners(1.0);
         }
         if (vicT >= LegendNarrate && shown.Add("legend.spoils")) WardenSpoils();
