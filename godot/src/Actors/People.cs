@@ -2049,10 +2049,22 @@ public static class People
     /// the shader's shade_tint, its lightness kept. Her body's tone is set for lit skin (her portraits' lit necks are
     /// pale); applied in her shade too, it greyed the shade under her jaw (chroma 0.014 against her portrait's 0.051,
     /// own; skin in shade keeps its colour, the light coming back out of it).</summary>
+    /// <summary>The skin shader's throat_terminator for her (P1 R1 round 38): each channel's reach past her lit side over her
+    /// neck's column, against the skin's 0.32/0.15/0.1. Her throat's fold in the fight close-ups went from Oklab hue 48 to
+    /// 44.5 against her jaw shade's 40 (gate judge 5 fault 1). (-1: off.)</summary>
+    static readonly Vector3 HerThroatTerminator = SurvivorUnchained.Args.Get("throat-term") is string tt
+        ? tt == "off" ? new Vector3(-1, -1, -1) : tt.Split(',') is [var t0, var t1, var t2]
+            ? new Vector3(float.Parse(t0, System.Globalization.CultureInfo.InvariantCulture), float.Parse(t1, System.Globalization.CultureInfo.InvariantCulture), float.Parse(t2, System.Globalization.CultureInfo.InvariantCulture))
+            : new Vector3(0.6f, 0.15f, 0.08f)
+        : new Vector3(0.6f, 0.15f, 0.08f);
+
     static void HerShade(ShaderMaterial m, Look look)
     {
         m.SetShaderParameter("ambient_tint", HerAmbient(look));
         m.SetShaderParameter("body_tone", BodyTone(look));
+        // (her throat's fold: red reaching further past her lit side over her neck's column, heroine_skin.gdshader's
+        // throat_terminator; P1 R1 round 38. --throat-term off: none, as before; --throat-term R,G,B: another)
+        m.SetShaderParameter("throat_terminator", HerThroatTerminator);
         m.SetShaderParameter("body_gate", BodyGate ? 1f : 0f);
         // Her soft lamps (the Look's fill and bounce, their sheen 0.1 and 0: SPECULAR_AMOUNT 0.2 and 0) show her paint's
         // own colour, all of her; the key, the fire and the sun her body's tone. (Tried 11 October 2026 (r6a): held

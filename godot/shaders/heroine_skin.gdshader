@@ -47,6 +47,15 @@ uniform float rim = 0.25;
 // line; Godot's screen-space scattering spreads a few pixels at a close-up,
 // and spread wider it blurred away her skin's grain.)
 uniform vec3 terminator = vec3(0.32, 0.15, 0.1);
+// The same reach on her throat (P1 R1 round 38, gate judge 5 fault 1): when her head turns, the fold of her throat
+// faces away from the key (its n.l about a third of her neck's beside it, H1DBG 1), and with red reaching only 0.32 past
+// her lit side the fold darkened nearly grey-proportionally (linear crease/neck R .55 G .38 B .35): a grey-mauve band
+// (Oklab hue 48, chroma .097) under a warm brown jaw shade (hue 40, .108). Neither the sky (ambient), the fill, the
+// head's AO, the scattering nor the grade moved its hue 0.3 deg (round 38 toggles). Red reaching further in the fold,
+// as a pre-integrated skin's falloff does in tight curves, takes it to hue 44.5, chroma .110. Over her neck's column
+// (her freckles' map's blue on her body; her head under neck_pull_y) only: all over her it moved the Look's and the
+// close view's shade 3-5 deg. x < 0: none (everyone else).
+uniform vec3 throat_terminator = vec3(-1.0);
 // Her skin's colour in the sky's light (the ambient) against the lamps': her colour times this there, the lamps'
 // light on her as before (light() divides it back out). Light from all round goes deeper into skin and comes out
 // redder than a lamp's from one side; without it, the night sky's blue in her jaw's shadow, the only light there,
@@ -367,8 +376,11 @@ uniform float thin_map = 0.0;
 uniform float thin_ease = 0.0;
 // (her head's rim from every lamp, as her paint's light through her: her head outside the rig, eased out over the
 // 3 cm above SPLIT (ao_map's green); her body keeps it to lamps behind)
-varying float front_rim;
-varying float rim_dn;
+// (front_rim and rim_dn share one varying, so the throat's weight has one: 32 at most, P1 R1 round 38)
+varying vec3 rim_throat;
+#define front_rim rim_throat.x
+#define rim_dn rim_throat.y
+#define throat_w rim_throat.z
 // Her shade richer (a lamp's light where it reaches her at a low angle, ndl shade_from to shade_to, times shade_tint,
 // its lightness kept): where she faces down (shade_down, world normal's -y from down_from to down_to) and where
 // ao_map's alpha says (shade_zone). (Tried 11 October 2026: ungated it misses the shade under her jaw, lit there
@@ -797,6 +809,7 @@ void fragment() {
 	cav_w = cavity_bounce > 0.0 ? cavity_bounce * (1.0 - smoothstep(cavity_ao.x, cavity_ao.y, texture(cavity_map, UV).r))
 		* smoothstep(cavity_down.x, cavity_down.y, -wd) : 0.0;
 	front_rim = seam_ease ? aot.g * (1.0 - rig_w) : 0.0;
+	throat_w = throat_terminator.x < 0.0 ? 0.0 : (seam_ease ? 1.0 - smoothstep(neck_pull_y.x, neck_pull_y.y, model_y) : fk.b);
 	rim_dn = rim_down * smoothstep(rim_down_from, rim_down_to, -wd);
 	shade_w = mix(1.0, smoothstep(down_from, down_to, -wd), shade_down) * mix(1.0, aot.a, shade_zone)
 		* (1.0 - shade_thin * smoothstep(thin_from, thin_to, -wd));
@@ -899,7 +912,7 @@ void light() {
 	float c_ldh = clamp(dot(LIGHT, h), 0.0, 1.0);
 	// (the edge eased over each channel's reach, C1 with the light either side:
 	// (n + w)^2 / 4w from -w to w, n itself beyond)
-	vec3 w = max(terminator, vec3(1e-4));
+	vec3 w = max(mix(terminator, throat_terminator, throat_w), vec3(1e-4));
 	vec3 n = vec3(ndl);
 	vec3 t = clamp(n + w, vec3(0.0), 2.0 * w);
 	vec3 soft = mix(t * t / (4.0 * w), n, step(w, n));
