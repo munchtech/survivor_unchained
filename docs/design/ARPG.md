@@ -63,7 +63,7 @@ She runs four or five endgame maps: generated ground, twists that test her build
 | The 39 self-firing skills | **REWORK** | Each gets a pressed form (a kind, a cost or wait, an aim) and keeps its own rule for the arena | M3 (most of its ~3.3M) for the warden; each later calling in its wave |
 | The night's ember cards (`LevelUp.Draft`) | **MOVE TO ARENA** | Try-before-you-buy is the arena's identity; a draft freezing a Diablo fight every minute is not | M7-M8, ~0.3M |
 | Lamps and Wicks | **KEEP**, rework the point rate | The board stays the passives and the Wicks the skill trees. Points no longer come from the ember, so the rate rises (section 3.5) | M7, ~2M |
-| Lamp-posts and *Light my way* | **KEEP**, more jobs | A lamp-post is now her checkpoint, a waypoint, the respec bench and the safe light at night; relit posts give board points; *Light my way* lights what she leaves at each level | M5 and M7 |
+| Lamp-posts and *Light my way* | **KEEP**, more jobs | A lamp-post is now her checkpoint, a waypoint, the respec bench and the safe light at night; the act's four dark posts off the road (CLASS_IDENTITY, 12 in all) give a board point when relit, and checkpoint posts give none; *Light my way* lights what she leaves at each level | M5 and M7 |
 | The Flare | **KEEP** | The BOOM stays outside the six slots. The prologue lends it once (section 5); its fill is re-measured under pressed combat | part of M3 |
 | The tiers and the endless | **MOVE TO ARENA** | They are the arena's difficulty and its long night; the campaign uses world tiers | M8; world tiers in M5 |
 | The Wayfinder's table | **REWORK** | It becomes the door to the arena, the daily and the atlas (charts): the endgame's hub | M8, M11 |
@@ -188,7 +188,7 @@ Access follows CLASS_IDENTITY's circles; The Barrow Host (built) stays open to t
 
 **Levels light lamps, lamp-posts change them, and the cards are the arena's.**
 - **Slots (call 13):** 2/3/4/5/6 at levels 1/4/5/7/9, so all six keys are hers by the Barrow at Act 1's end. Today's 1/4/8/14/20 would leave six keys for Act 3; Diablo III's six come two or three hours in. Heroic Leap opens at level 4 with the third slot, and Shield Charge at 5 with the fourth.
-- **What a level gives:** each level is a board point. Each carried skill has its own wick points: one at level 1, then one every second level, to 8 at level 15 (today one every third, 8 at level 22).
+- **What a level gives:** each level is a board point, plus the act's four dark posts off the road. Each carried skill has its own wick points: one at level 1, then one every second level, to 8 at level 15 (today one every third, 8 at level 22).
   - The night's ember used to light lamps for free; without it, the old rate would bring the first Turn at level 13, deep in Act 2. At the new rate the first Turn lands at level 9, on Act 1's last boss, as CLASS_IDENTITY §5.1 planned.
   - Gear's new "+1 to <skill>" affixes add up to three more points: a chase, and Diablo's oldest good affix.
 - **Lighting:** anywhere out of a fight. The level-up flash shows the suggested lamp with the skill's hit before and after; one press lights it, or *Light my way* does it for her.
@@ -317,7 +317,7 @@ LOOT_DESIGN's Act 1 run (215 gear drops and 3.5 Legendaries over about five hour
   - Foes she killed stay dead; champions and bosses heal.
   - No experience, gear or gold is lost.
   - The narrator's "You get up. It takes less than it did." plays, and the story's toll counts each rise. That cost is canon (PLAN.md: every rising costs a life, revealed at C41).
-- **Maps:** two rises each (PoE's portals); the third fall closes the map and spills half (today's rule, as the last resort).
+- **Maps:** two rises each (PoE's portals), at the map's entry post, never in place; champions and the ruler heal. The third fall closes the map and spills half. This bends the owner's rule recorded in `MapRun.cs` ("getting up and fighting on is rare, or it is a balancing nightmare"): a rise at the entry post is a walk back, not fighting on where she fell. The rises are built with the atlas (M11); until then a fall closes today's maps.
 - **What retires:** "a lost story fight wakes her in town a day on" (4 October). An ARPG boss is retried from its door in a minute; the toll carries the weight that the lost day did.
 
 ### 7.3 Difficulty (the owner's call 8)
@@ -353,7 +353,7 @@ Act 3's war at the gate (PLAN.md §3, chain 6) is the story's natural first sieg
 
 | # | Lead | Builds | Cost | Stops doing |
 |---|---|---|---|---|
-| M1 | Skills (skills-p7, running) | Heroic Leap; Shield Charge with its four facets on its wick; Bladestorm on two keys, the WIP's union split so each key drives its half (today either key holds one channel); the spin paid from Resolve once M3 lands it; wicks for the Leap, Cleaver and Iron Vow (12 lamps, a Turn each) and Shield Charge's other two strands; the dash's four steps and pips | ~2-2.5M, 2-3 judged clip rounds | facets on the dash |
+| M1 | Skills (skills-p7, running) | Heroic Leap; Shield Charge with its four facets on its wick; Bladestorm on two keys, the WIP's union split so each key drives its half (today either key holds one channel); the spin paid from Resolve once M3 lands it (the WIP's 6 s cooldown and 3 s channel cap go then); Iron Vow as a pressed skill (the 2 s brace, 20% stored, the 5 m burst); wicks for the Leap, Cleaver and Iron Vow (12 lamps each: three strands of four, the fourth a Turn) and Shield Charge's other two strands; the dash's four steps and pips | ~2.3-2.8M, 2-3 judged clip rounds | facets on the dash |
 | M2 | The owner | picks on this page | none | none |
 | M3 | Combat systems (the held C2 build lead, re-briefed) | the press path for every warden skill (kind, aim, hold to repeat), Resolve, the kindled rules, the bots that press, the Low Ford's curve re-measured | ~3.3M (the bots and the Flare's fill included), 3-4 number rounds | tuning the night's draft as the game; the ×1.25 night lean |
 | M4 | UI (design and art) | six keys with waits and costs, the Resolve bar, the dash pips under her life, the level-up flash with before and after | ~1.2M, 2 judged rounds | campaign draft screens |
@@ -362,13 +362,13 @@ Act 3's war at the gate (PLAN.md §3, chain 6) is the story's natural first sieg
 | A1 | Animation (Stage B, re-cut) | the warden's cast clips on an upper and lower split, so she walks while she swings and casts, judged in motion at the play camera | A1 sizes it | clips made for a self-firing game |
 | M7a | Classes build | Sunder's and Groundbreaker's wicks lit by level at the new rate, with the level-up flash | ~0.5M, 1 round | none |
 | M9 | Loot (su-lead-sonnet) | captains as carriers, ground loot, world-tier weights, "+1 to a skill", the Ford-Warden's Legendary | ~0.6M, 1-2 rounds | the night's-end tally outside the arena |
-| **demo-arpg1** | the owner plays | the first 45 minutes as an ARPG (the warden), plus a second start: the veteran's hour on a level-30 warden through the WIP's dev grants, on today's MapGen maps (the atlas and the daily come later, M11 and M8), so he plays the Leap and Bladestorm before M10 is spent | **~11.5M plus A1 to here** | none |
+| **demo-arpg1** | the owner plays | the first 45 minutes as an ARPG (the warden), plus a second start: the veteran's hour on a level-30 warden through the WIP's dev grants, on today's MapGen maps, where one fall closes the map (the atlas, its rises and the daily come later, M11 and M8), so he plays the Leap and Bladestorm before M10 is spent | **~12M plus A1 to here** | none |
 | M7 | Classes build (the rest) | every wick in `skill_lamps.json` lit by points at the new rate; *Light my way* at each level; Unions joined at lamp-posts; tomes out (ONE_BUILD §5: 1, 3, 5, 6, 15, 16) | ~2M, 2-3 rounds | wiring the cards into the campaign |
 | M8 | Arena | the ember-cast rule, the daily (seed, rule deck, loaned builds, local board, cache), the dawn card and offer kept here | ~1.5M, 2 rounds | the night as the game's gate |
 | M10 | Act 1's ground (L1's look pipeline, zones, combat) | the Verge's three zones (the Deep Shaw among them), the four story dungeons (rooms and boss scripts reused, waves turned into placed packs), time by the story | ~10-15M plus GPU: the long pole; L1 sizes it after G2 | story nights as drafts from nothing |
-| M11 | Later | the atlas on world tiers (~1.5M), the dead's nights, the other callings' pressed waves, then sieges | | |
+| M11 | Later | the atlas on world tiers, with its two rises a map (~1.5M), the dead's nights, the other callings' pressed waves, then sieges | | |
 
-Act 1 as an ARPG totals about 26.5M plus A1's re-cut (ONE_BUILD's C2 build of ~0.5M is folded into M3 and M7). The character pipeline (P1, P2, P3) and L1's G2 run beside it unchanged.
+Act 1 as an ARPG totals about 25-30M plus A1's re-cut (M10's range) (ONE_BUILD's C2 build of ~0.5M is folded into M3 and M7). The character pipeline (P1, P2, P3) and L1's G2 run beside it unchanged.
 
 ---
 
@@ -380,7 +380,7 @@ Act 1 as an ARPG totals about 26.5M plus A1's re-cut (ONE_BUILD's C2 build of ~0
 4. **The lamp offer:** levels light lamps anywhere out of a fight, lamp-posts change them, and the ember's cards are the arena's; or lamp-posts only, or cards in the campaign too.
 5. **Zones:** handcrafted acts and dungeons, generated endgame maps; or generated acts too.
 6. **Loot:** about 40 gear drops an hour, an upgrade every 8-15 minutes in Act 1, the first Legendary from the Ford-Warden; or Diablo IV's showers.
-7. **Death:** she rises at the last lamp-post with nothing lost, a boss heals, and the toll counts in the story; or 4 October's "wake in town a day on".
+7. **Death:** she rises at the last lamp-post with nothing lost, a boss heals, and the toll counts in the story; or 4 October's "wake in town a day on"; in maps, two rises at the entry post, or today's: a fall closes the map.
 8. **Difficulty:** four world tiers at any lamp-post; or tiers per act.
 9. **Time of day:** it follows the story, and the 12-minute clock retires; or keep the clock.
 10. **The prologue's dawn:** the ember lends the Flare for the Warden and first light takes it back on one page, so Act 4 has its rule; or no dawn loss at all.
