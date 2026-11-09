@@ -81,7 +81,7 @@ public class SkillTests
         Assert.True(SkillBook.Knows(j.Ch, taught!));
         Assert.Contains(Weapons.All[taught!].Tags, Callings.Archetype("stalker").Favours.Contains);
         while (j.Ch.Level < 8) Character.GainXp(j.Ch, Character.XpForLevel(j.Ch.Level) - j.Ch.Xp + 1);
-        Assert.Equal(4, SkillBook.Slots(j.Ch));
+        Assert.Equal(5, SkillBook.Slots(j.Ch));
         Assert.Equal(3, SkillBook.Rank(j.Ch));
     }
 

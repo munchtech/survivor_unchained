@@ -107,7 +107,13 @@ public sealed class WeaponInst
 
     public WeaponBehavior Behavior => evolution?.Behavior ?? Def.Behavior;
     /// <summary>How it is set off: the evolution's own, else its skill's (a union's weapon is its own skill).</summary>
-    public CastMode Cast => evolution?.Cast ?? Def.Cast;
+    public CastMode Cast => CastSet ?? evolution?.Cast ?? Def.Cast;
+    /// <summary>Set by hand over data (a test, later a toggle): press or kindle this one regardless of its skill.</summary>
+    public CastMode? CastSet;
+    /// <summary>An auto skill's kindle condition (the evolution's, else the skill's): null fires on the wait alone.</summary>
+    public KindleDef? Kindle => Unkindled ? null : evolution?.Kindle ?? Def.Kindle;
+    /// <summary>Fires on its wait alone whatever its data says (tests that fire a skill by hand).</summary>
+    public bool Unkindled;
     /// <summary>Waits for a press (or a hold) instead of firing itself.</summary>
     public bool Pressed => Cast != CastMode.Auto;
     /// <summary>A channel's longest hold, and the seconds between its firings while held.</summary>
@@ -273,6 +279,8 @@ public static partial class Firing
         // A pressed skill counts its wait down and never fires on its own (Battle.PressSkill sets it off).
         if (w.Pressed) { TickPressed(b, w, dt); return; }
         if (w.Timer > 0) return;
+        // Kindled: wait over is not enough; look again in a tenth of a second (read only when ready, so a crowd costs nothing).
+        if (w.Kindle is { } kd && !b.Kindled(kd)) { w.Timer = 0.1; return; }
         int kills0 = w.Kills;
         bool fired = CastOnce(b, w);
         // Nothing in range: look again soon rather than waiting a whole cooldown.

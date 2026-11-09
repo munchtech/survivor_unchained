@@ -550,7 +550,7 @@ The owner: "an 'oh shit' button. a planned 'BOOM' button. a 'clear the whole roo
 | The Wicks | `WickBook` per skill per layout; the Turn library (about 24 behaviors built once: shape, school, bind); night rank lights the wick | new `Rpg/WickBook.cs`, `Sim/Turns.cs`; `Sim/Weapons.cs` firing |
 | Lamps v2 | Regenerate from `lamps_build.py` / `lamps_quarters.py`: skill lamps out (to wicks), rites, links, Hand lamps, 2 diagonal crossings, the Ford, the Old Roads, **positions in data** (the screen needs them), depth gates 4/8/16, 3 layouts, points from lamp-posts and the atlas (30) | `tools/classes/*`, `Content/Lamps.cs`, `Rpg/LampBook.cs:60-244` |
 | Creation | The type pick (approved 11 October, never built) | `Rpg/Character.cs:181`, creation screen |
-| Day slots | 2/3/4/5/6 at 1/4/8/14/20 | `Rpg/SkillBook.cs:64` |
+| Day slots | 2/3/4/5/6 at 1/4/5/7/9 | `Rpg/SkillBook.cs:64` |
 | Save | v6 migration: a full refund of lamps, wicks laid on the suggested strands, skills she can no longer carry moved to the storeroom as tomes | `World/Save.cs:108` |
 | `bossMul` | Retired; visible numbers and boss health only | `lamps.json`, `Sim/Flare*.cs` (5 reads) |
 | Harness | Access, Hands, wicks, the new skills, `--offcalling` now means "valley and kindred only"; acceptance below | `balance/Harness/*` |

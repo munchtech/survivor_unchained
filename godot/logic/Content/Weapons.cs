@@ -105,6 +105,19 @@ public sealed class EvoMods
     public int? Projectiles, Pierce, Bounces, Chains, Strikes;
 }
 
+/// <summary>When a kindled (auto) skill fires itself, beside its wait being over (skills.json "kindle"). `when` is
+/// windup (a telegraphed blow or an enemy windup lands on her or within `radius` m within `within` s; a brute's or elite's
+/// only when `big`), crowd (`count` hostiles within `radius` m), hurt (her life below `below`, a share) or block (she
+/// blocked in the last 0.2 s); or `any` lists several, the first that holds. Sim/Kindle.cs reads it.</summary>
+public sealed class KindleDef
+{
+    public string? When;
+    public bool? Big;
+    public double? Radius, Within, Below;
+    public int? Count;
+    public KindleDef[]? Any;
+}
+
 public sealed class Evolution
 {
     public string Id = "", Name = "", Description = "";
@@ -118,6 +131,8 @@ public sealed class Evolution
     public string? Art;
     /// <summary>How it is set off, if not as its skill is.</summary>
     public CastMode? Cast;
+    /// <summary>Its kindle condition, if it has its own (else its skill's).</summary>
+    public KindleDef? Kindle;
     /// <summary>Rules it adds to the fight, the weapon's own (what it does
     /// beyond numbers: an execute, a bolt from the sky, a raised dead).</summary>
     public TriggerDef[] Triggers = System.Array.Empty<TriggerDef>();
@@ -130,6 +145,8 @@ public sealed class WeaponDef
     public WeaponBehavior Behavior;
     /// <summary>How it is set off: by itself (auto, the default), on a press, or held as a channel.</summary>
     public CastMode Cast;
+    /// <summary>An auto skill fires itself only when this holds too (absent: on its wait alone).</summary>
+    public KindleDef? Kindle;
     public Tag[] Tags = System.Array.Empty<Tag>();
     /// <summary>The callings that may carry it (a kindred pair); absent, everyone
     /// (the valley's). A union's is never set: it is its parts' in common.</summary>

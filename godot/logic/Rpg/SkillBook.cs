@@ -63,10 +63,10 @@ public static class SkillBook
     }
 
     /// <summary>How many learned skills can be carried by day: two from the start (her grip and her
-    /// type's first), three from the fourth level, four from the eighth, five from the fourteenth and
-    /// six from the twentieth, so a map build has room (CLASS_IDENTITY_AND_TALENTS.md §3.7).</summary>
+    /// type's first), three from the fourth level, four from the fifth, five from the seventh and
+    /// six from the ninth (a build is 2-3 pressed, the rest kindled), so a map build has room (CLASS_IDENTITY_AND_TALENTS.md §3.7).</summary>
     public static int Slots(CharacterData ch) => SlotsAt(ch.Level);
-    public static int SlotsAt(int level) => level >= 20 ? 6 : level >= 14 ? 5 : level >= 8 ? 4 : level >= 4 ? 3 : 2;
+    public static int SlotsAt(int level) => level >= 9 ? 6 : level >= 7 ? 5 : level >= 5 ? 4 : level >= 4 ? 3 : 2;
 
     /// <summary>A learned skill's rank by day: it grows with the survivor.</summary>
     public static int Rank(CharacterData ch) => Math.Min(Weapons.MaxRank, 1 + (ch.Level - 1) / 3);

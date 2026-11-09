@@ -432,6 +432,7 @@ public sealed class WardenPressedTests(ITestOutputHelper output)
     {
         var b = Fight(("iron_vow", 1));
         var w = b.Weapons.Single(x => x.Id == "iron_vow");
+        w.CastSet = CastMode.Press;
         var p = b.Player;
         Assert.Equal(CastMode.Press, w.Cast);
         Assert.Equal(WeaponBehavior.Brace, w.Behavior);
@@ -466,6 +467,7 @@ public sealed class WardenPressedTests(ITestOutputHelper output)
     {
         var b = Fight(("iron_vow", 1));
         var w = b.Weapons.Single(x => x.Id == "iron_vow");
+        w.CastSet = CastMode.Press;
         var p = b.Player;
         var at = new List<(double, double)> { (p.X + 1, p.Z), (p.X, p.Z - 4.5), (p.X - 3, p.Z + 3), (p.X + 6, p.Z), (p.X, p.Z + 8) };
         var es = at.Select(a => Dummy(b, a.Item1, a.Item2)).ToList();

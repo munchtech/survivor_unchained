@@ -36,8 +36,8 @@ public static class SkillsJson
 
     /* Reading order for a skill's and an evolution's keys; anything not named
      * keeps its place after these. */
-    static readonly string[] SkillKeys = ["id", "name", "school", "behavior", "cast", "tags", "access", "findable", "growth", "bossDamage", "art", "description", "_doc", "base", "triggers", "evolutions"];
-    static readonly string[] EvoKeys = ["id", "name", "catalysts", "description", "behavior", "cast", "school", "addTags", "art", "mods", "set", "triggers"];
+    static readonly string[] SkillKeys = ["id", "name", "school", "behavior", "cast", "kindle", "tags", "access", "findable", "growth", "bossDamage", "art", "description", "_doc", "base", "triggers", "evolutions"];
+    static readonly string[] EvoKeys = ["id", "name", "catalysts", "description", "behavior", "cast", "kindle", "school", "addTags", "art", "mods", "set", "triggers"];
     static readonly string[] UnionKeys = ["id", "name", "a", "b", "into", "description"];
 
     public static string Write(SkillsFile f)
