@@ -397,7 +397,11 @@ public class PrologueTests
         Assert.NotEmpty(legends);
         Assert.DoesNotContain(s.B.Pickups.Living(), k => k.Ref == "wardens_lampiron");
         foreach (var l in legends) s.B.Pickups.Release(l);
-        Run(s, 13.5);
+        // (M5 r5: the heart line shows first and Grimtunnel takes the stone only after it closes: 5 s later than before)
+        Run(s, 7);
+        Assert.Contains(s.Host.Said, l => l.Contains("heart is still burning"));
+        Assert.Equal(Prologue.Stage.Victory, s.Zone.Now);
+        Run(s, 10.5);
         Assert.Equal(Prologue.Stage.Dawn, s.Zone.Now);
         Assert.Equal(TimeOfDay.Dawn, s.J.World.Time);
         Assert.Contains(s.J.World.History, h => h.Id == "ford_warden_slain");

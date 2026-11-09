@@ -39,6 +39,7 @@ sealed class FakeHost : IZoneHost
     double sayLeft;
     /// <summary>A line is up for its seconds, as on the screen (the Prologue's road words wait for it).</summary>
     public bool Saying => sayLeft > 0;
+    public bool StoryClear => sayLeft <= 0;
     public void Toast(Toast t) => Toasts.Add(t);
     public void Announce(Announcement a) => Announced.Add(a);
     /// <summary>The dawn's cards shown (each clicked through at once).</summary>

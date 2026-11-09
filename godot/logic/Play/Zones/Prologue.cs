@@ -103,7 +103,7 @@ public sealed partial class Prologue : ZoneRuntime
     /// and the walk in (the play camera sees about 11 m past her unleaned).</summary>
     public (double X, double Z)? GateInFrame => Now == Stage.Exit && !finished && B?.Player is { Alive: true } p
         && L("gate") is var g && p.Z < g.Z + 28 && Math.Abs(p.X - g.X) < 22 ? (g.X, g.Z) : null;
-    bool wardenGone, chestOpened, finished, coreShown, doused;
+    bool wardenGone, chestOpened, finished, coreShown, heartClosed, doused;
     /// <summary>A cinematic is playing the Warden with its own body (C02, C03): ours waits, hidden.</summary>
     bool wardenInCine;
     readonly XZ wardenHome;
@@ -1364,7 +1364,7 @@ public sealed partial class Prologue : ZoneRuntime
         ClearAround(e.X, e.Z, 40);
         // What it leaves: by the film, all at once; in play, staged (Legendary, RunVictory).
         legendFrom = (e.Level, e.Def.Family, e.X, e.Z);
-        vicT = 0; legendAt = -1; legendName = null; legendWait = 0;
+        vicT = 0; legendAt = -1; legendName = null; legendWait = 0; coreShown = heartClosed = false;
         Go(Stage.Victory);
         cutT = 0;
         Objective([("Cross at the Low Ford", true, false)]);
@@ -1563,6 +1563,10 @@ public sealed partial class Prologue : ZoneRuntime
         // C03 (cin_heart_goes_down): a tired man's voice, the Order's question at the end of a watch.
         if (cutT > 0.3 && shown.Add("morning")) B.Events.Emit(new Ev.Bark { X = cx, Z = cz, Text = "Is it morning?", Speaker = "The Ford-Warden" });
         double cy = Math.Max(G.Look.HeightAt(cx, cz), waterY);
+        // (M5 r5: Grimtunnel takes the stone only after the heart line has shown and closed: the clock stands at 3.6, just
+        // before he surfaces (4.2), until the story text is clear again)
+        if (coreShown && !heartClosed && G.StoryClear) heartClosed = true;
+        if (!heartClosed && cutT > 3.6) cutT = 3.6;
         if (cutT > 1.6 && !coreShown)
         {
             coreShown = true;

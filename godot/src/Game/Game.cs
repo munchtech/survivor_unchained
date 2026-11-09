@@ -978,6 +978,7 @@ public partial class Game : Node, IZoneHost
         // (one shown a moment ago, a level-up in the same blow, is shown again once the hold is over)
         if (lastAnn is { Through: false } la && Now - lastAnnAt < 0.6) { lastAnn = null; After(seconds + 0.1, () => Announce(la)); }
     }
+    public bool StoryClear => storyLine == null || (storyLine.Waiting == 0 && !hud.SayUp && scene?.Voices.SpeakerUp != true);
     public void HushPrompts(double seconds) => promptHush = Now + seconds;
     public void Announce(Announcement a)
     {
@@ -1411,6 +1412,8 @@ public partial class Game : Node, IZoneHost
     {
         PumpAhead();
         storyLine?.Tick();
+        // (M5 r5: a level's title waits while a screen/card is open and 0.6 s after it closes: LEVEL 4 printed into the Legendary's card)
+        if (Overlay != null) hud.XpHoldUntil = Math.Max(hud.XpHoldUntil, Now + 0.6);
         // Something over the game has the buttons: pad buttons mean their menu meaning first.
         controls.MenuMode = screens.Current != null || hudMode != null;
         // --pad (pictures of pad play): the pad stays in hand whatever the window's mouse does.

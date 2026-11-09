@@ -84,6 +84,8 @@ public interface IZoneHost
     /// <summary>(M5 r2) Banners asked for in the next seconds (a level-up) wait till then, and one shown just now is shown
     /// again after; an Announcement marked Through still shows (the staging's own).</summary>
     void HoldBanners(double seconds) { }
+    /// <summary>(M5 r5) No story text (narration or speaker card) is up or waiting; a zone that must follow a line waits on it.</summary>
+    bool StoryClear => true;
     /// <summary>(M5 r2) No interact prompt for the next seconds (under a banner that must read alone).</summary>
     void HushPrompts(double seconds) { }
     /// <summary>A chest opened in a fight: the game stages it (ChestCeremony); a host without a
