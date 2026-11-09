@@ -1608,6 +1608,8 @@ public partial class Game : Node, IZoneHost
             else hud.PromptAt(null);
             Perf.Begin(Perf.Part.Labels);
             ChampionWatch(fb2);
+            // (M5 r4: no pack wakes while a lamp's menu is open, nor MenuQuiet after it)
+            if (screens.Current is PostScreen) fb2.Breather(Battle.MenuQuiet);
             hud.Beyond(Overlay == null ? Offscreen(fb2) : new());
             hud.Goals(Overlay == null ? GoalScreen() : new());
             hud.Posts(Overlay == null ? PostPointers() : new());

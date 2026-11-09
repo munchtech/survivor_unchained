@@ -55,6 +55,32 @@ public class EncountersTests
     }
 
     [Fact]
+    public void A_rise_or_a_lamp_menu_holds_every_resting_pack_and_her_weapons_leave_it_be()
+    {
+        // (M5 r4, the judge: n_road3 woke as she rose; n_post 0.3 s into the lamp's menu; the boars 1.5 s after the bank lamp)
+        var s = Encounters.For("lowford")!;
+        var b = new Battle(new BattleSetup
+        {
+            Seed = 5, Collision = new CollisionWorld(260), Combat = true, Stats = BattleTests.BaseStats(), Weapons = [("oathblade", 1)], Ability = AbilityKind.ShieldBash,
+            StartX = -7.5, StartZ = 87.5,
+        });
+        var n = new Encounters(s, b, new Dictionary<string, Fact>(), 1, 0, "night");
+        n.Place();
+        var lone = n.Standing("n_lone");
+        Assert.NotEmpty(lone);
+        void Stay(double secs) { for (double t = 0; t < secs; t += Dt) { b.Player.Hp = b.MaxHp; b.Player.X = lone[0].X + 3; b.Player.Z = lone[0].Z; b.Tick(Dt, 0, 0); n.Tick(Dt); b.Events.Drain(); } }
+        b.Breather(Battle.RiseQuiet);
+        Assert.True(b.LampHush);
+        Assert.False(b.Targetable(lone[0]));
+        Stay(3.8);
+        Assert.DoesNotContain(lone, e => e.Roused);
+        Stay(0.6);
+        Assert.Contains(lone, e => e.Roused);
+        Assert.True(!lone[0].Alive || lone[0].State == EnemyState.Dying || b.Targetable(lone[0]));
+        Assert.False(b.LampHush);
+    }
+
+    [Fact]
     public void The_road_resets_when_she_comes_back_from_another_zone()
     {
         // (ARPG 7.3: the Low Ford's rule is "leave", zone_resets.json; a reload keeps it)

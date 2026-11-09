@@ -63,7 +63,19 @@ public static class LampRise
     {
         if (LampBook.LastPost(w, zone) is not { } p) return fallback;
         var way = p.Rise is { Length: 2 } r ? (r[0], r[1]) : (fallback.X - p.X, fallback.Z - p.Z);
-        return RiseSpot(p.X, p.Z, way, (x, z) => !b.Collision.Blocked(x, z, 0.5) && (b.Collision.Bound <= 0 || Math.Abs(x) < b.Collision.Bound - 1 && Math.Abs(z) < b.Collision.Bound - 1));
+        Func<double, double, bool> free = (x, z) => !b.Collision.Blocked(x, z, 0.5) && (b.Collision.Bound <= 0 || Math.Abs(x) < b.Collision.Bound - 1 && Math.Abs(z) < b.Collision.Bound - 1);
+        // (M5 r4: a bearing outside every resting pack's waking distance first, when there is one)
+        var calm = RiseSpot(p.X, p.Z, way, (x, z) => free(x, z) && !InWake(b, x, z));
+        return calm != (p.X, p.Z) ? calm : RiseSpot(p.X, p.Z, way, free);
+    }
+
+    /// <summary>(M5 r4) (x, z) is within a resting foe's waking distance (plus a metre).</summary>
+    public static bool InWake(Battle b, double x, double z)
+    {
+        foreach (var e in b.Enemies.Living())
+            if (e.Wake > 0 && !e.Roused && e.State != EnemyState.Dying && (e.X - x) * (e.X - x) + (e.Z - z) * (e.Z - z) < (e.Wake + 1) * (e.Wake + 1))
+                return true;
+        return false;
     }
 
     /// <summary>Hostile foes on their feet within r of a spot.</summary>
@@ -81,6 +93,8 @@ public static class LampRise
         p.X = x; p.Z = z;
         // (M5 r3: no post prompt over her as she gets up)
         g.HushPrompts(RisePromptHush);
+        // (M5 r4: no pack wakes as she gets up: n_road3 charged her mid-rise)
+        b.Breather(Battle.RiseQuiet);
         foreach (var e in b.Enemies.Living())
             if ((e.Elite || e.Boss || e.Named != null) && e.State != EnemyState.Dying) e.Hp = e.MaxHp;
         g.Revived(x, z);

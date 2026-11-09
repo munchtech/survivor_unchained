@@ -691,9 +691,10 @@ public sealed partial class Battle
     }
 
     /// <summary>Targetable by weapons: hostile, or neutral and provoked.</summary>
+    /// (M5 r4: not a resting pack in a lamp's breather, LampHush: her weapons woke the dawn boars 1.5 s after the bank lamp)
     public bool Targetable(Enemy e) =>
         e.Alive && e.State != EnemyState.Dying && e.State != EnemyState.Burrowed && e.Disposition != Disposition.Ally &&
-        (e.Disposition == Disposition.Hostile || e.Provoked);
+        (e.Disposition == Disposition.Hostile || e.Provoked) && !(e.Wake > 0 && !e.Roused && LampHush);
 
     public bool FactionsAtWar(Faction a, Faction b)
     {
@@ -1831,7 +1832,13 @@ public sealed partial class Battle
     public double LampLitAt = double.NegativeInfinity;
     public const double LampQuiet = 4;
     /// <summary>(M5 r3) A lamp lit under LampQuiet ago: resting packs stay down (Ai) and gated packs wait (Encounters).</summary>
-    public bool LampHush => Time - LampLitAt < LampQuiet;
+    public bool LampHush => Time - LampLitAt < LampQuiet || Time < HushUntil;
+    /// <summary>(M5 r4) The breather's end besides a lamp's lighting (game seconds): a lamp menu open (MenuQuiet after it
+    /// closes), her rise (RiseQuiet). The judge, round 3: n_post woke 0.3 s into the first lamp's menu, n_road3 as she rose.</summary>
+    public double HushUntil = double.NegativeInfinity;
+    public const double MenuQuiet = 2, RiseQuiet = 4;
+    /// <summary>(M5 r4) No pack wakes for `seconds` from now (LampHush).</summary>
+    public void Breather(double seconds) => HushUntil = Math.Max(HushUntil, Time + seconds);
 
     /// <summary>The most stones left lying before the rest are gathered into one, the night's hoard
     /// stone (the genre's red gem): a late night left thousands carpeting the field, and once the
