@@ -1857,6 +1857,7 @@ public static class People
             m.SetShaderParameter("scatter", HerScatter);
             m.SetShaderParameter("back_spec", HerBackSpec);
             m.SetShaderParameter("back_neutral", HerBackNeutral);
+            m.SetShaderParameter("back_neutral_sky", HerBackNeutralSky);
         }
         // A body's relief baked from its sculpt (the hero's), under the pores.
         // (--relief-map PATH: her graft's relief from a file, tried before it is laid in the glb; face 37)
@@ -1899,6 +1900,9 @@ public static class People
                 m.SetShaderParameter("seam_ease", true);
                 // (the light through her kept to her ears and her nose's wings: the map's blue, heroine_thin.py)
                 m.SetShaderParameter("thin_map", 1f);
+                // (eased out over the seam's 3 cm, as her body takes it unmasked: the seam under her jaw at the Look read as a
+                // grey wedge on the head's side, P1 R1 seam 2; --thin-ease X: another, 0 as before)
+                m.SetShaderParameter("thin_ease", (float)Args.Num("thin-ease", 1f));
             }
             // (her ears' hollows, a shade of their own that dims the lamps there and warms: tools/assets/heroine_ear_ao.py;
             // --ear-ao off: without it, for judging it)
@@ -2018,6 +2022,10 @@ public static class People
     /// and night, A and B alike (gate judge 4, P1 R1 seam 2, 8 November 2026: Oklab hue -10 against 30-36 round it).
     /// Her hair, gear and the scene keep the rims' colour. (--back-neutral X: another, for judging it; 0 as before.)</summary>
     static float HerBackNeutral => (float)SurvivorUnchained.Args.Num("back-neutral", 1f);
+    /// <summary>The same for the sun and moon behind her (the skin shader's back_neutral_sky): in the close view's fights the
+    /// end of her throat's crease by her outline took a pink-grey from a directional lamp behind her (hue 44 against 51
+    /// beside it, 47 with this). (--back-neutral-sky X: another; 0 as before.)</summary>
+    static float HerBackNeutralSky => (float)SurvivorUnchained.Args.Num("back-neutral-sky", 1f);
 
     /// <summary>Her skin in the sky's light against the lamps' (the skin shader's ambient_tint): light from all
     /// round goes deeper into skin and comes out redder. Without it, under her jaw, in the key's shadow, the night

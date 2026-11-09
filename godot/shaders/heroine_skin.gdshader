@@ -469,8 +469,11 @@ uniform vec3 hold_tint = vec3(1.0, 0.85, 0.55);
 // of her neck under her jaw, where neither key nor fill does: blue light on red-rich skin came out lavender (P1 R1 seam 2,
 // 8 Nov 2026: the Look's far neck Oklab hue -10 against 30-36 round it, its diffuse and its sheen alike; the rim's colour
 // 0.85 grey: 33.5, her face, chest and shade within 1 deg). Her hair, gear and the scene keep the rims' colour; warm
-// lamps (the fires, the edge lamp) and directional ones (sun, moon) untouched.
+// lamps (the fires, the edge lamp) untouched.
 uniform float back_neutral = 0.0;
+// (and the sun and moon behind her, back_neutral_sky of it: the close view's fights, a directional lamp behind her lit the
+// end of her throat's crease by her outline pink-grey, Oklab hue 44 against 51 at its lightness beside it; 47 with it)
+uniform float back_neutral_sky = 0.0;
 uniform float hold_chroma = 0.0;
 uniform float hold_gain = 1.0;
 // (deep skin's sheen: on a dark albedo a lamp's sheen held at spec_cap outshone the skin's own light and lay along her
@@ -876,10 +879,10 @@ void light() {
 	} else {
 	vec3 cool_d0 = DIFFUSE_LIGHT;
 	vec3 lcol = LIGHT_COLOR;
-	if (back_neutral > 0.0 && !LIGHT_IS_DIRECTIONAL) {
+	if (back_neutral > 0.0 && (!LIGHT_IS_DIRECTIONAL || back_neutral_sky > 0.0)) {
 		float bl = dot(LIGHT_COLOR, vec3(0.2126, 0.7152, 0.0722));
 		float bw = back_neutral * smoothstep(-0.1, 0.6, dot(-LIGHT, VIEW)) * smoothstep(0.0, 0.1, (LIGHT_COLOR.b - LIGHT_COLOR.r) / max(bl, 1e-4));
-		lcol = mix(LIGHT_COLOR, vec3(bl), bw);
+		lcol = mix(LIGHT_COLOR, vec3(bl), bw * (LIGHT_IS_DIRECTIONAL ? back_neutral_sky : 1.0));
 	}
 	vec3 lc = lcol;
 	if (skin_hold > 0.0 && !LIGHT_IS_DIRECTIONAL && LIGHT_COLOR.r > LIGHT_COLOR.b) {
