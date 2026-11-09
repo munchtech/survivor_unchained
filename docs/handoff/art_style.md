@@ -1,6 +1,6 @@
 # Handoff: the signature art style (style frames)
 
-## L1 lead 7 (9 Nov, coordinator ad002ada): the day's color fixed at its root; S2 and FXM running; the shoot, the judge, Stage D and G2 next (HANDOFF READY look-l1, the commit that adds this section)
+## L1 lead 7 (9 Nov, coordinator ad002ada): the day's color fixed at its root; S2 partial, FXM landed unverified; verify FXM, S2b, the shoot, the judge, Stage D and G2 next (HANDOFF READY look-l1, the commit that adds this section)
 The owner, 8 Nov: "visually stunning cel shading painterly with vibrant colors". Briefs and results are in `survivorsunchained_inputs\look_l1\work\` (`brief_l7_*`). Report to main only at the judge's verdict and at GATE G2 READY, plus the fx-lang shas.
 
 - **Done (P12: the app can now light the day from one sun, with the grade giving lightness only, and calibrate every class in closed loop against the picked targets):**
@@ -26,18 +26,32 @@ The owner, 8 Nov: "visually stunning cel shading painterly with vibrant colors".
   - 04's busy camo meadow structure (B3; the judge's);
   - `close_day` still has the old gold key.
   - Pairs: `c\l7\s1d\pairs\`.
-- **Running when lead 7 handed off** (each hands back to lead 7; main resumes lead 7 or relays):
-  - **S2, the night** (`brief_l6_s2_night.md` plus `brief_l7_s2_addendum.md`): the pool from brown to ember, likely through `scene_color` at night; the broken night solve; dawn; her skin shade at h 325; the pack's fur and rim; the skills judge's pool notes.
-  - **FXM, in its own worktree** `.claude\worktrees\fx-lang` (`brief_l7_fx_marks.md`), on fx-lang:
-    - (A) `fx_stroke(across, along, life)`, painted, in `fx_cel.gdshaderinc`. FXM tells main its sha directly; P7 lead 2 waits on it.
-    - (B) after-grade light hidden by the world's depth;
-    - (C) danger marks over every after-grade light (FLARE_LOOK §1.6).
-- **Next:**
-  1. Merge fx-lang into look-l1 by the junction rule: rmdir the link, merge, mklink, assume-unchanged. Then remove the fx-lang worktree with `wt_remove.ps1` once P7 has merged it, and send main every fx-lang sha.
-  2. The 13-frame shoot (`brief_l7_shoot.md`, a su-runner).
-  3. One max judge (`judge_l7_c13.md`; fill its "What changed" from this block): the whole-frame question first, all 13 as one game against G1, the notes to the blocks.
-  4. Stage D, then GATE G2 READY with the A (r0) | B half-size pairs in `look_l1\g2\`.
-- **Cost, lead 7:** about 280k. Solvers: S1+S1b 223k, S1c 209k, S1d 189k, workers 35k and 47k. $0 API.
+- **S2, the night (c1f187e89, fd54a720b, pushed; partial, unjudged, pairs not yet looked at: `c\l7\s2\pairs\`):**
+  - **The brown's root, fixed:** AgX plus the night grade's chroma terms. Night and dawn now run `scene_color`, plus one grade term after it, `scene_moon` (the Moon step).
+    - FROM: the boards paint everything the moon lights blue, whatever its albedo.
+    - The moon re-solved: key #6ca1ff, fill #6694ff, sky #b5d9ff. `ember_reach` 1.0.
+    - `color_chain.py` gained `night` and `apply_dawn`, and `all` writes the night again. `NIGHT_LEVEL_HOLD`: the boards give the night its colors, not its level.
+  - **05 is in band:** key 1.96, pool 0.30, the pool core L 0.67 C 0.157. The shade sits at h 248-253 on every frame.
+  - **Left:**
+    - **The arena night (09, 12): far.** Lp50 0.42-0.46 and warm 22-27%, against the targets' 0.24 and 8-11%. The cause is unknown: torches or braziers under `scene_color`, or the arena's moon. 09's last run crashed (exit 3221225477).
+    - **The pool's edge** is yellow-brown, against the targets' h 34-40. S2's proposal: a two-step redder outer band in `cel_shade`'s omni. This also answers the skills judge's "dither reads as a dirt stamp".
+    - `ember_give` for torches and lamps.
+    - **Dawn: medium-far.** MoonTop 0.62 is unmeasured. LB DAWN implies an orange sun (h 56) against rule 3's gold: lead 8's call.
+    - **Not started:** the pack's fur, and her skin shade at h 325. For the fur, the likely lift is `vat.gdshaderinc`'s emission (`crowd_fill`/`crowd_top`, around lines 227 and 395-421).
+- **FXM, on fx-lang** (worktree `.claude\worktrees\fx-lang`, left in place: its own junction, assume-unchanged):
+  - **A, a278b6482:** `fx_stroke(across, along, life)`, painted, with bristle uniforms `fx_stroke_shape`, `fx_bristle`, `fx_stroke_seed`. FXM told main.
+  - **B, aca1da040:** after-grade light behind the world's depth, through FxWorldDepthCopy and FxWorldDepthWrite. `--fx-after-world off`. A one-frame lag, so her twins stay.
+  - **C, e552685b6:** the danger marks' mask, so after-grade light sits under them. `--fx-marks-over off`, plus a debug stroke `--fx-debug-stroke 1`.
+  - Suite 1580/0/10 on fx-lang. 05 and 09 are unchanged off against on.
+  - **NOT VERIFIED ON SCREEN:** none of B's or C's runtime paths has rendered yet, and the overlap A|B is a null result. First thing after merging fx-lang into look-l1: shoot with `--fx-debug-stroke 1` against `--fx-marks-over off --fx-after-world off`, at a moment with a mark up, a tree and a foe.
+- **Next, in order:**
+  1. Merge fx-lang into look-l1 by the junction rule, and verify B and C on screen (a runner, then your own half-size look). Send main B's and C's shas once they work.
+  2. **S2b:** the arena night's level, the pool's two-step edge, `ember_give`, dawn, the fur and rim, her skin.
+  3. The 13-frame shoot (`brief_l7_shoot.md`).
+  4. The max judge (`judge_l7_c13.md`; fill its "What changed" from this block).
+  5. Stage D, then GATE G2 READY.
+  6. Remove the fx-lang worktree (`wt_remove.ps1`) once P7 and look-l1 have both merged it.
+- **Cost, lead 7:** about 285k. Solvers: S1+S1b 223k, S1c 209k, S1d 189k, S2 198k, FXM 186k, workers 35k and 47k. $0 API.
 
 ## L1 lead 6 (9 Nov, coordinator ad002ada): FX language out, fx-lang published, her depth twin; the color chain NOT started (HANDOFF READY look-l1, the commit that adds this section)
 The owner, 8 Nov: "visually stunning cel shading painterly with vibrant colors". Brief: `tools/scratch/coordinator/briefs/L1_lead6.md`. The coordinator accepted ~1.4-1.9M to G2 ("cost does not matter for the art, building blocks do") and wants reports only at the judge's verdict and at GATE G2 READY. Lead 6 ran out of context at onboarding plus the skills lead's needs, so steps 1-4 of the brief are all still ahead.
