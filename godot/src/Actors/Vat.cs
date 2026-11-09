@@ -1281,7 +1281,7 @@ public partial class VatCrowd : MultiMeshInstance3D
     }
 
     /// <summary>One body this frame (`key`: who it is, the same every frame), `t` seconds into its role's clip.</summary>
-    public void Push(long key, Transform3D at, string role, double t, float flash, float dissolve, float frozen, float burning, Color tint, float glow, bool crit = false, float rim = 0, float rimFlash = -1)
+    public void Push(long key, Transform3D at, string role, double t, float flash, float dissolve, float frozen, float burning, Color tint, float glow, bool crit = false, float rim = 0, float rimFlash = -1, float champRim = -1)
     {
         if (!slotOf.TryGetValue(key, out int s))
         {
@@ -1313,7 +1313,8 @@ public partial class VatCrowd : MultiMeshInstance3D
         buf[o] = b.X.X; buf[o + 1] = b.Y.X; buf[o + 2] = b.Z.X; buf[o + 3] = at.Origin.X;
         buf[o + 4] = b.X.Y; buf[o + 5] = b.Y.Y; buf[o + 6] = b.Z.Y; buf[o + 7] = at.Origin.Y;
         buf[o + 8] = b.X.Z; buf[o + 9] = b.Y.Z; buf[o + 10] = b.Z.Z; buf[o + 11] = at.Origin.Z;
-        buf[o + 12] = tint.R; buf[o + 13] = tint.G; buf[o + 14] = tint.B; buf[o + 15] = glow;
+        buf[o + 12] = tint.R; buf[o + 13] = tint.G; buf[o + 14] = tint.B; // (M5 r3: a champion's affix rim rides in the glow's whole part: 1 + its hue (degrees) in 64ths; vat.gdshaderinc)
+        buf[o + 15] = Math.Clamp(glow, 0, 0.99f) + (champRim >= 0 ? 1 + (int)Math.Round(champRim / 360f * 64) % 64 : 0);
         // The pace rides in the first frame's fraction (the shader rounds the frame).
         buf[o + 16] = f0 + 0.45f * pace; buf[o + 17] = f1 + 0.45f * Math.Clamp(rim, 0, 1); buf[o + 18] = blend; buf[o + 19] = word;
         // The dark under it: flat on the ground at its feet, as wide as it is tall by its scale, a hand over the

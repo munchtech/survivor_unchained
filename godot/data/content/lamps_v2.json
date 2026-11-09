@@ -6,40 +6,6 @@
   "dig_boils",
   "vault_opened"
  ],
- "posts": [
-  {
-   "id": "act1.post1",
-   "act": 1,
-   "zone": "lowford",
-   "x": -0.99,
-   "z": -86,
-   "draft": false
-  },
-  {
-   "id": "act1.post2",
-   "act": 1,
-   "zone": "verge",
-   "x": 0,
-   "z": 0,
-   "draft": true
-  },
-  {
-   "id": "act1.post3",
-   "act": 1,
-   "zone": "waystation",
-   "x": 0,
-   "z": 0,
-   "draft": true
-  },
-  {
-   "id": "act1.post4",
-   "act": 1,
-   "zone": "lowford",
-   "x": 0,
-   "z": 0,
-   "draft": true
-  }
- ],
  "roads": [
   {
    "id": "sunderer",

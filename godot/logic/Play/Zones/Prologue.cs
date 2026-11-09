@@ -38,8 +38,21 @@ public sealed partial class Prologue : ZoneRuntime
     public override string Name => "The Low Ford Road";
     public override string? Region => "Thornhollow, south";
     public override bool Combat => true;
-    /// <summary>The night's: the ember burns until the dawn puts it out.</summary>
-    public override bool Ember => !F("prologue.done").Truthy;
+    /// <summary>The night's: the ember burns until the dawn puts it out (only while the draft runs: with it off, the
+    /// night's kills teach plain experience, as the day's do, ARPG.md 5).</summary>
+    public override bool Ember => Draft && !F("prologue.done").Truthy;
+    /// <summary>(M5) The ember-card draft in the night: encounters.json's lowford "draft" (false since the ARPG pick,
+    /// ARPG.md 5). Off: no cards, no great blessing, no draft tip, and the dawn takes and pays nothing the night did
+    /// not lend (the callouts that only speak of the draft, F2-F5 and F12, are skipped). Set before the battle starts.</summary>
+    public bool Draft { get; set; } = Encounters.For("lowford")?.Draft ?? true;
+    /// <summary>(M5) The night's placed beats (encounters.json, when: night), from the fire to the ford.</summary>
+    Encounters? night;
+    public Encounters? Night => night;
+    /// <summary>The Barrow Knight, placed at the post at nightfall on its escort's ground (n_post), and its seed: it is
+    /// the Post's knight once she reaches the post.</summary>
+    Enemy? knightRest;
+    double knightRestSeed;
+    bool wagonQueued;
     public override IReadOnlyList<string> Creatures { get; } = ["risen", "risen_warrior", "risen_archer", "barrow_knight", "grave_caller", "grimtunnel", "ford_warden", "boar", "footpad", "pillager", "kerchief_captain", "wolf"];
 
     sealed class WardenAI
@@ -50,10 +63,10 @@ public sealed partial class Prologue : ZoneRuntime
     }
 
     static readonly double[] Ward = [1, 0.7, 0.55, 0.4];
-    const string Draft = "Each time the ember rises, choose one: a combat skill (they fire on their own) or a passive skill. A combat skill at rank 8, with one rank of the passive it names, evolves.";
+    const string DraftTip = "Each time the ember rises, choose one: a combat skill (they fire on their own) or a passive skill. A combat skill at rank 8, with one rank of the passive it names, evolves.";
 
     public Stage Now { get; private set; } = Stage.Wake;
-    double stageT, spawnT = 2, cutT, dawnK, envT, deadT = -1;
+    double stageT, cutT, dawnK, envT, deadT = -1;
     XZ checkpoint;
     readonly HashSet<string> shown = new();
     /// <summary>Combat skills held at the start (the first one more is the first drafted).</summary>
@@ -90,7 +103,7 @@ public sealed partial class Prologue : ZoneRuntime
     /// and the walk in (the play camera sees about 11 m past her unleaned).</summary>
     public (double X, double Z)? GateInFrame => Now == Stage.Exit && !finished && B?.Player is { Alive: true } p
         && L("gate") is var g && p.Z < g.Z + 28 && Math.Abs(p.X - g.X) < 22 ? (g.X, g.Z) : null;
-    bool wardenGone, chestOpened, finished, coreShown, doused;
+    bool wardenGone, chestOpened, finished, coreShown, heartClosed, doused;
     /// <summary>A cinematic is playing the Warden with its own body (C02, C03): ours waits, hidden.</summary>
     bool wardenInCine;
     readonly XZ wardenHome;
@@ -115,6 +128,8 @@ public sealed partial class Prologue : ZoneRuntime
 
     public Prologue(IZoneHost host, ZoneMeta meta) : base(host, meta)
     {
+        SurvivorUnchained.Content.LampPosts.Resolve(meta.Id, meta.Features);
+        if (Encounters.For(meta.Id) is { } es) Encounters.SyncPosts(es);
         foreach (var p in meta.Refs.GetProperty("pylons").EnumerateArray())
             pylons.Add((p.GetProperty("x").GetDouble(), p.GetProperty("z").GetDouble(), p.GetProperty("light").GetInt32(), p.GetProperty("flame").GetString()!));
         litPylons = pylons.Select(_ => true).ToArray();
@@ -133,6 +148,8 @@ public sealed partial class Prologue : ZoneRuntime
         {
             BossTick = (e, dt) => e.Tag == "warden" && WardenTick(e, dt),
             OnKill = OnKill,
+            // (M5-B, ARPG 7.1: a pack's captain is its carrier, a champion carries more; Encounters.Carried)
+            OnLoot = e => [.. night?.Carried(e, G.Journey.Drops) ?? [], .. day?.Carried(e, G.Journey.Drops) ?? []],
             OnPickup = OnDayPickup,
             OnHitProp = (tag, _, _, dmg, _, _) =>
             {
@@ -180,6 +197,7 @@ public sealed partial class Prologue : ZoneRuntime
             Act = () => G.Say("The fire is almost out. It will not hold them back.", null, 3.5),
         });
         AddDay();
+        AddPosts();
     }
 
     /* ------------------------------------------------------------- helpers -- */
@@ -199,14 +217,40 @@ public sealed partial class Prologue : ZoneRuntime
                 G.After(1.5 - (B.Time - lampEventAt) + 0.02, () => { lampTipWaiting.Remove(id); Tip(id, title, text, keys, life); });
             return;
         }
+        // (M5 r3: no card on a champion's wake: it waits while one is awake near her or its pack is about to wake)
+        if (B != null && !shown.Contains(id) && ChampionGate.Due(B))
+        {
+            if (champTipWaiting.Add(id)) G.After(0.5, () => { champTipWaiting.Remove(id); Tip(id, title, text, keys, life); });
+            return;
+        }
         if (!shown.Add(id)) return;
+        tipUp = (id, title, text, keys, life, B?.Time ?? 0);
         if (id == "pack") packAt = B?.Time ?? 0;
         if (id == "elite") eliteAt = B?.Time ?? 0;
         G.SetHint(new Hint(id, title, text, keys ?? new()));
-        if (life > 0) G.After(life, () => { if (G.CurrentHint?.Id == id) G.SetHint(null); });
+        double at = B?.Time ?? 0;
+        if (life > 0) G.After(life, () => { if (G.CurrentHint?.Id == id && (tipUp == null || tipUp.Value.At == at)) G.SetHint(null); });
     }
 
     string Key(string action) => G.KeyLabel(action);
+
+    readonly HashSet<string> champTipWaiting = new();
+    /// <summary>(M5 r3) The card Tip last put up, and when.</summary>
+    (string Id, string Title, string Text, List<string>? Keys, double Life, double At)? tipUp;
+    /// <summary>A card up for less than this when a champion wakes is shown again after the fight; longer, it was read.</summary>
+    const double TipRead = 5;
+
+    /// <summary>(M5 r3) A card up as a champion comes awake (or its pack 1.5 s from waking) is taken down; asked again
+    /// (after the fight, ChampionGate) if it was up less than TipRead.</summary>
+    void ChampionTipWatch()
+    {
+        if (B == null || tipUp is not { } t) return;
+        if (G.CurrentHint?.Id != t.Id) { tipUp = null; return; }
+        if (!ChampionGate.Due(B, 1.5)) return;
+        G.SetHint(null);
+        tipUp = null;
+        if (B.Time - t.At < TipRead) { shown.Remove(t.Id); Tip(t.Id, t.Title, t.Text, t.Keys, t.Life); }
+    }
 
     /* The road's words in a line (au i15): the narration and the tips between the Rising and the ford, each
      * read before the next. One comes once no line is being narrated and no callout is up, and 4 s of play
@@ -447,7 +491,7 @@ public sealed partial class Prologue : ZoneRuntime
         if (Now == Stage.Rising && B.EmbersLying > 0 && !G.Taught("ember_bar") && NearEmbers().Count > 0)
             Teach("ember_ground", CalloutKind.Freeze, "Ember", "The light the dead carry. Come close and it comes to you.", new Aim { World = NearEmbers, Safe = true });
         // F2: straight after F1 (before the first rise); without F1 only once the Rising is 30 s old.
-        if (G.Taught("ember_ground") || (B.EmberXp > 0 || B.EmberLevel > 1) && (Now != Stage.Rising || stageT > 30))
+        if (Draft && (G.Taught("ember_ground") || (B.EmberXp > 0 || B.EmberLevel > 1) && (Now != Stage.Rising || stageT > 30)))
             Teach("ember_bar", CalloutKind.Arrow, "Rising", "Ember fills this. When it's full, the ember rises.", Aim.At("chain_fill"), after: "ember_ground", gap: 0.6, overHint: true);
         // (and the journal remembers what the valley believes, once an ember is gathered)
         if (B.EmberXp > 0 || B.EmberLevel > 1)
@@ -457,10 +501,10 @@ public sealed partial class Prologue : ZoneRuntime
                 G.Apply("""[{ "learn": "lore.ember", "text": "Ember: light that seeps up from under the valley. After dark the dead get up full of it, and it spills when they fall. At first light, what's in them sinks back into the ground." }]""");
         }
         // F4: the first skill draft, the ember's first rise (on the panel, at the first combat-skill card).
-        if (B.EmberLevel >= 2 && B.DraftOwed && B.GreatOwed == 0)
+        if (Draft && B.EmberLevel >= 2 && B.DraftOwed && B.GreatOwed == 0)
             Teach("first_draft", CalloutKind.Panel, "A skill", "The ember lends you skills as it rises. Choose one.", Aim.At("cards"));
         // F5: the first combat skill on the console.
-        if (startWeapons >= 0 && B.Weapons.Count > startWeapons)
+        if (Draft && startWeapons >= 0 && B.Weapons.Count > startWeapons)
         {
             var w = B.Weapons[startWeapons];
             Teach("first_skill", CalloutKind.Arrow, w.Def.Name, "It fires on its own, like your weapon. First light takes it back.", Aim.At("socket:" + w.Id), after: "first_draft");
@@ -469,7 +513,7 @@ public sealed partial class Prologue : ZoneRuntime
         // has risen a second time (level 3) and that draft is picked and closed, in the Rising or the Road,
         // 4 s clear of anything else (Experience 9: no crowd gate; the Rising stays crowded after the 2nd rise, so
         // v6 never asked it until the Road; the arrow sits on the HUD, off the fight). Dropped unseen ("passed") once the Ambush begins.
-        if (B.EmberLevel >= 3 && !B.DraftOwed && Now is Stage.Rising or Stage.Road)
+        if (Draft && B.EmberLevel >= 3 && !B.DraftOwed && Now is Stage.Rising or Stage.Road)
             G.Teach(new Callout("ember_lock", CalloutKind.Arrow, "The ember's count", $"Hold {Key("experience")} to see the ember's level, and how far it is to the next.", Aim.At("card"))
                 { Quiet = LessonQuiet, Mark = "level", Patience = 30, Still = () => Now is Stage.Rising or Stage.Road });
         // The tally (the slain and the gold): with the first gold in hand (the wagon's spilled coins), before
@@ -598,27 +642,17 @@ public sealed partial class Prologue : ZoneRuntime
         sprungAt = stageT;
         takenAtSpring = B.DamageTaken;
         Objective([("Follow the road north", true, false), ("Survive the ambush at the wagon", false, false)]);
-        // (MR5 item 11, i15's "no stakes early": an idle player lost 7-10% in the trap's first 15 s, the pilot
-        // nothing. The ditch's own dead rise closer and hit harder than the road's (this fight's spawns only,
-        // never the shared defs): idle should lose 25-40% through the volley and the rise, the pilot ~10% or less.)
-        for (int i = 0; i < AmbushRing; i++) SpawnAround(i % 4 == 0 ? "risen_warrior" : "risen", 1, AmbushNear, AmbushNear + 4, 0, 2, AmbushHit);
-        var p = B.Player;
-        for (int i = 0; i < 5; i++)
-            for (int tries = 0; tries < 10; tries++)
-            {
-                double a = -Math.PI / 2 + (i - 2) * 0.32 + (B.Rng.Next() - 0.5) * 0.2 + (tries > 4 ? Math.PI : 0);
-                double d = 7.5 + B.Rng.Next() * 1;
-                double x = p.X + Math.Cos(a) * d, z = p.Z + Math.Sin(a) * d;
-                if (!OpenGround(x, z) || B.Collision.Raycast(x, z, p.X, p.Z, 0.1) != null) continue;
-                if (B.SpawnEnemy("risen_archer", x, z, new Battle.SpawnOpts { Style = SpawnStyle.Rise, Level = 2 }) is { } e)
-                {
-                    // (all at once, a second after they stand: one volley, not a patter)
-                    e.RangedT = 1.0;
-                    e.Damage *= AmbushBolt;
-                    bowmen.Add(e);
-                }
-                break;
-            }
+        // (M5: the wagon's ditch is the night's n_cart beat, sprung round her; its bowmen loose one volley together, a
+        // second after they stand, their first bolts AmbushBolt harder, and its risen_warrior's charge is the dash's lane)
+        if (night?.S.Get("n_cart") is not { } nc) return;
+        night.Spring(nc);
+        foreach (var e in night.Standing("n_cart"))
+        {
+            if (e.Def.Id != "risen_archer") continue;
+            e.RangedT = 1.0;
+            e.Damage *= AmbushBolt;
+            bowmen.Add(e);
+        }
     }
 
     /// <summary>What the calling's art does when it rides the dash, in F6b's words (none: no callout).</summary>
@@ -655,73 +689,20 @@ public sealed partial class Prologue : ZoneRuntime
         return Math.Abs(x) < 72 && Math.Abs(z) < 122;
     }
 
-    /// <summary>Some of the dead, somewhere around the survivor. `ahead` biases north.</summary>
-    /// <summary>The ditch's opening: how many of the dead rise round her, how near, how much harder they and
-    /// the bowmen's bolts hit than the road's.</summary>
-    const int AmbushRing = 12;
-    const double AmbushNear = 3.5, AmbushHit = 1.3, AmbushBolt = 1.5;
-    /// <summary>The Ambush's opening (s from the spring: the push on a still player) and the field its top-up keeps.</summary>
-    const double AmbushOpen = 30, AmbushField = 24;
-    /// <summary>The Ambush's curve (MR5 item 11 round 2): what she may have taken by f s from the spring, of her
-    /// health (36% at 30 s, a 48 s fight's end at 58%), and how hard the dead hit once she's past it.</summary>
-    const double AmbushCurve = 0.012, AmbushPulled = 0.25;
-    /// <summary>And the floor for one who stands still in it (27% at 30 s): below it, through the opening, while she
-    /// has stood 3 s, the dead hit this much harder. The ditch punishes standing; a moving player is never pushed.</summary>
-    const double AmbushFloor = 0.009, AmbushStill = 2.5;
+    /// <summary>The ditch's bowmen's opening volley: how much harder its bolts hit than the road's.</summary>
+    const double AmbushBolt = 1.5;
+    /// <summary>Seconds into the wagon's fight after which its last two stragglers no longer hold the road.</summary>
+    const double AmbushStragglers = 30;
     /// <summary>What she had taken when the trap sprang (Battle.DamageTaken).</summary>
     double takenAtSpring;
-    /// <summary>How long she has stood (under 0.8 m/s), and where she was last frame.</summary>
-    double stillT;
-    XZ lastAt;
-    /// <summary>The dead's blows in the Ambush (MR5 item 11 round 2): full between the floor and the curve of the
-    /// health she's lost since the spring; pulled above the curve; harder below the floor while she stands. (Idle runs lost
-    /// 78% by 28 s (amb5), 84% (amb9), 26% (amb7), 9% (amb10): her drafts' dodge, block and armor, her kills and
-    /// whether her dash cleared the volley swing it. A dodging player never meets the curve.) Full everywhere else.</summary>
     /// <summary>The Knight is winding up or lunging, or did within 1.5 s (the draught lesson waits).</summary>
     // (Experience 9, v8: also while F7 is still to come, above 40% HP: the draught freeze landed 1.5 s before F7's.)
     bool KnightHolds() => knight is { Alive: true } k && (k.State is EnemyState.Windup or EnemyState.Lunging || B != null && B.Time - knightBusyAt < 1.5
         || !G.Taught("red_line") && B != null && B.Player.Hp >= B.MaxHp * 0.4);
     double knightBusyAt = -99;
-    int lastDraughts = -1;
-    /// <summary>She drank a draught in the Ambush: the x2.5 push is off for the rest of it.</summary>
-    bool drankInAmbush;
 
-    double AmbushMul(double dt)
-    {
-        if (B == null) return 1;
-        var p = B.Player;
-        int dr = G.Journey.Draughts;
-        if (lastDraughts >= 0 && dr < lastDraughts && Now == Stage.Ambush) drankInAmbush = true;
-        lastDraughts = dr;
-        if (dt > 0) { stillT = Dist(p.X, p.Z, lastAt.X, lastAt.Z) < 0.8 * dt ? stillT + dt : 0; lastAt = new XZ(p.X, p.Z); }
-        if (Now != Stage.Ambush || sprungAt < 0) return 1;
-        // (on the health she shows, not the damage taken: amb12-14 took 37-38% by 30 s and showed 10-25% lost, the
-        // ember's levels and her drafts' mending put the rest back)
-        double lost = B.MaxHp - p.Hp, f = stageT - sprungAt;
-        if (lost > B.MaxHp * AmbushCurve * f) return AmbushPulled;
-        // (the push only through the opening, and on 3 s of standing: the pilot pauses in the fight's last seconds,
-        // and n6 and n8 lost 23% and 22% there under it)
-        return f < AmbushOpen && stillT > 3 && !drankInAmbush && lost < B.MaxHp * AmbushFloor * f ? AmbushStill : 1;
-    }
     /// <summary>The bowmen who have loosed their opening volley (their bolts back to the road's).</summary>
     readonly HashSet<int> boltsSpent = new();
-
-    void SpawnAround(string def, int n, double rMin, double rMax, double ahead = 0, int level = 1, double hit = 1)
-    {
-        if (B == null) return;
-        var p = B.Player;
-        for (int i = 0; i < n; i++)
-            for (int tries = 0; tries < 8; tries++)
-            {
-                double a = B.Rng.Next() * Math.PI * 2;
-                if (ahead > 0 && B.Rng.Next() < ahead) a = -Math.PI / 2 + (B.Rng.Next() - 0.5) * 1.8;
-                double d = rMin + B.Rng.Next() * (rMax - rMin);
-                double x = p.X + Math.Cos(a) * d, z = p.Z + Math.Sin(a) * d;
-                if (!OpenGround(x, z)) continue;
-                if (B.SpawnEnemy(def, x, z, new Battle.SpawnOpts { Style = def is "risen" or "risen_warrior" ? SpawnStyle.Rise : SpawnStyle.Walk, Level = level }) is { } e) e.Damage *= hit;
-                break;
-            }
-    }
 
     int Hostiles() => B?.Enemies.Living().Count(e => e.State != EnemyState.Dying && e.Disposition == Disposition.Hostile) ?? 0;
 
@@ -1022,40 +1003,30 @@ public sealed partial class Prologue : ZoneRuntime
         if (B == null) return;
         var p = B.Player;
         stageT += dt;
-        spawnT -= dt;
-        int n = Hostiles();
-        B.FoeHitMul = AmbushMul(dt);
+        // (M5: the night's placed packs, from the fire to the ford; no top-ups: the stages advance on its beats)
+        if (night != null && Now < Stage.Intro) { night.Tick(dt); Ranks(night); }
+        if (Draft) GreatBlessing();
         Callouts();
+        ChampionTipWatch();
         PaceWords();
         if (Now is Stage.Dawn or Stage.Exit) DayTick(dt);
         switch (Now)
         {
             case Stage.Wake:
                 if (stageT > 1.2) Tip("move", "Move", "Keep *moving*. Your weapon strikes on its own.", ["W", "A", "S", "D"], 11);
-                if (stageT > 3) { Go(Stage.Rising); spawnT = 0; }
+                if (stageT > 3) { Go(Stage.Rising); risingAt = B.Time; }
                 break;
             case Stage.Rising:
             {
-                // Keep the clearing full: more of them the longer it goes on.
-                double want = Math.Min(40, 16 + stageT * 0.3);
-                if (spawnT <= 0 && n < want) { SpawnAround("risen", 2 + (stageT > 40 ? 1 : 0), 9, 14); spawnT = stageT > 30 ? 0.8 : 1.1; }
-                // A great blessing on its own panel, half a minute after the first skill (au1 item 2: it came
-                // with the first card, two picks and six lessons in 12 s); never on top of a level's draft.
-                if (B.EmberLevel >= 2 && stageT > 40 && !B.DraftOwed && (G.Taught("first_draft") || stageT > 60) && shown.Add("great"))
-                {
-                    B.GreatOwed++;
-                    // F3 says it on the panel (the general draft tip waits for the panels after it).
-                    Teach("great_blessing", CalloutKind.Panel, "A great blessing", "The ember lends you a blessing. It changes how you fight until dawn.", Aim.At("cards"));
-                }
-                if ((B.EmberLevel >= 4 && stageT > 70) || stageT > 110)
+                // (M5: the Rising is over once the lone one and the three on the road are down, or she is 20 m up the road)
+                if (night == null || night.Done("n_lone") && night.Done("n_three") || p.Z < L("camp").Z - 1.5 - RisingRoad)
                 {
                     Go(Stage.Road);
                     checkpoint = new XZ(p.X, p.Z);
                     G.Say("The ground goes still. For now. The road runs north, toward the Waystation.", null, 5);
                     Objective([("Survive the night", true, false), ("Follow the road north", false, false)]);
-                    // The Road's beat (au i15): the Rising's leftover dead fall quietly away, and what spilled
-                    // from the wagon lies in the road at its tail, bait she walks to before the trap.
-                    ClearAround(p.X, p.Z, 40);
+                    // The Road's beat (au i15): what spilled from the wagon lies in the road at its tail, bait she walks
+                    // to before the trap (M5: the placed packs stay where they rest; nothing is cleared).
                     var wag = L("cart");
                     for (int i = 0; i < 3; i++)
                         B.SpawnPickup(PickupKind.Gold, wag.X - 1.5 + i * 1.4 + (B.Rng.Next() - 0.5), wag.Z + B.Rng.Next() * 1.5, 2 + i);
@@ -1067,31 +1038,27 @@ public sealed partial class Prologue : ZoneRuntime
             case Stage.Road:
             case Stage.Road2:
             {
-                // (none in the Road, and none for 6 s of Road2: the dead stay down while its line is read)
-                if (Now == Stage.Road2 && spawnT <= 0 && n < 24)
-                {
-                    var def = Now == Stage.Road2 && B.Rng.Next() < 0.2 ? "risen_warrior" : B.Rng.Next() < 0.12 ? "risen_archer" : "risen";
-                    SpawnAround(def, 1 + (B.Rng.Next() < 0.5 ? 1 : 0), 10, 15, 0.55, Now == Stage.Road2 ? 2 : 1);
-                    spawnT = 1.3;
-                }
                 var cart = L("cart"); var post = L("post");
                 if (Now == Stage.Road && p.Z < cart.Z + 7)
                 {
                     Go(Stage.Ambush);
                     checkpoint = new XZ(cart.X - 3, cart.Z + 8);
-                    Words(() => { G.Say("A wagon on its side, and the ditch beside it full of the drowned. One of them is still holding the reins. They were waiting.", null, 5); wagonSaid = true; });
-                    // (the wagon is quiet while its line is read; the ditch rises after, Spring, and the objective with it)
+                    // (the wagon is quiet while its line is read; the ditch rises after, Spring, and the objective with it;
+                    // M5: the line waits for the first pack at the wagon's approach to be down, Stage.Ambush)
                 }
                 if (Now == Stage.Road2 && Dist(p.X, p.Z, post.X, post.Z) < 18)
                 {
                     Go(Stage.Post);
                     checkpoint = new XZ(post.X - 6, post.Z + 4);
-                    knight = B.SpawnEnemy("barrow_knight", post.X - 1, post.Z - 1.5, new Battle.SpawnOpts { Level = 1, Tag = "knight", Style = SpawnStyle.Rise });
+                    // (M5: placed at nightfall, resting with its escort, n_post, until she comes near)
+                    knight = knightRest is { Alive: true } kr && kr.Seed == knightRestSeed && kr.State != EnemyState.Dying ? kr : null;
                     // Its first red line comes once the narrator's line is over (F7 freezes on it), and it
                     // does not go down before it has run one: the elite shows what it does first.
-                    knight.RangedT = 8;
-                    knight.HpFloor = knight.MaxHp * 0.2;
-                    for (int i = 0; i < 4; i++) SpawnAround("risen", 1, 5, 9, 0, 2);
+                    if (knight != null)
+                    {
+                        knight.RangedT = 8;
+                        knight.HpFloor = knight.MaxHp * 0.2;
+                    }
                     Words(() => G.Say("Something in old armor is standing guard over the dead watchman. It turns to look at you.", null, 5));
                     Objective([("Survive the ambush at the wagon", true, false), ("Put down the Barrow Knight", false, false), ("Search the old Watch-post", false, false)]);
                 }
@@ -1102,10 +1069,16 @@ public sealed partial class Prologue : ZoneRuntime
                 if (sprungAt < 0)
                 {
                     // (the ditch rises once the wagon's line is read)
+                    // (M5: the wagon's line once the first pack is down, or calm, or 20 s on)
+                    if (!wagonQueued && (night == null || night.Done("n_first") || !night.Fighting || stageT > 20))
+                    {
+                        wagonQueued = true;
+                        Words(() => { G.Say("A wagon on its side, and the ditch beside it full of the drowned. One of them is still holding the reins. They were waiting.", null, 5); wagonSaid = true; });
+                    }
                     if (wagonSaid && !G.Saying && wagonDoneAt < 0) wagonDoneAt = stageT;
                     // (and the tally's lesson, if the coins were taken, 2 s gone: i14)
                     if (G.Teaching?.Id == "tally" || G.TeachWaiting("tally")) tallyHeldAt = stageT;
-                    if ((wagonDoneAt >= 0 && stageT - wagonDoneAt >= 0.8 && stageT - tallyHeldAt >= 2) || stageT > 30) Spring();
+                    if ((wagonDoneAt >= 0 && stageT - wagonDoneAt >= 0.8 && stageT - tallyHeldAt >= 2 && night?.Fighting != true) || stageT > 40) Spring();
                     break;
                 }
                 double fought = stageT - sprungAt;
@@ -1113,7 +1086,7 @@ public sealed partial class Prologue : ZoneRuntime
                 if (fought < 50 && B.Time - ambDiagAt >= 1)
                 {
                     ambDiagAt = B.Time;
-                    PaceNotes.Enqueue($"pace amb t={B.Time:0.0} fought={fought:0.0} hp={p.Hp:0}/{B.MaxHp:0} ember={B.EmberLevel} foes={Hostiles()} bowmen={bowmen.Count(e => e.Alive)} taken={B.DamageTaken - takenAtSpring:0} mul={B.FoeHitMul:0.##}");
+                    PaceNotes.Enqueue($"pace amb t={B.Time:0.0} fought={fought:0.0} hp={p.Hp:0}/{B.MaxHp:0} ember={B.EmberLevel} foes={Hostiles()} bowmen={bowmen.Count(e => e.Alive)} taken={B.DamageTaken - takenAtSpring:0}");
                 }
                 // (MR5 item 11 round 2: the bolts are doubled for the opening volley only. A bowman who has loosed it
                 // (his reload is up again) shoots the road's bolts after: amb5, five bowmen never killed, kept loosing
@@ -1122,22 +1095,15 @@ public sealed partial class Prologue : ZoneRuntime
                     if (bw.Alive && bw.Def.Id == "risen_archer" && bw.RangedT > 1.5 && boltsSpent.Add(bw.Id)) bw.Damage /= AmbushBolt;
                 // (the shield tip lands when shieldmen first stand, ~20 s into the fight)
                 if (fought > 18) PacedTip("shield", "Shieldmen", "Their *raised shields* stop your shots. Strike from the side, or up close.");
-                // (and the top-up only keeps the field at AmbushField: amb5, idle, killing little, let it climb 17 -> 38
-                // by 20 s; and the pilot, who lost 0-8% in the opening at this field, lost 10-20% more in the last 15 s
-                // once it grew to 30-35 (n6, n9, n12))
-                double want = AmbushField;
-                if (spawnT <= 0 && n < want)
-                {
-                    double r = B.Rng.Next();
-                    SpawnAround(r < 0.22 ? "risen_warrior" : r < 0.32 ? "risen_archer" : "risen", 3 + (B.Rng.Next() < 0.5 ? 1 : 0), 8, 14, 0, 2);
-                    spawnT = 1.05;
-                }
-                if (fought > 48)
+                // (M5: over when the ditch's dead are down, n_cart; or, AmbushStragglers s into the fight, when no more
+                // than two of them stand: they go back into the ditch, as the line says. m5 clip r1: two bowmen kept their
+                // range off her for good, and the night stood at the wagon for nine minutes.)
+                if (night != null && !night.Done("n_cart") && fought > AmbushStragglers && night.Standing("n_cart") is { Count: <= 2 } left)
+                    foreach (var e in left) B.KillEnemy(e, false, null);
+                if (night == null || night.Done("n_cart") || night.S.Get("n_cart") == null)
                 {
                     Go(Stage.Road2);
                     checkpoint = new XZ(p.X, p.Z);
-                    ClearAround(p.X, p.Z, 40);
-                    spawnT = 6;
                     Words(() => G.Say("The last of them falls back into the ditch and stays there. The one with the reins was a girl, twelve at most: red hair under the weed, and new boots.", null, 5));
                     Objective([("Survive the ambush at the wagon", true, false), ("Follow the road north", false, false)]);
                 }
@@ -1159,7 +1125,6 @@ public sealed partial class Prologue : ZoneRuntime
                     knightWinding = winding;
                     if (knightWindups >= 2 || stageT > 48) { knightRan = true; kn.HpFloor = 0; }
                 }
-                if (stageT > 8 && spawnT <= 0 && n < 16) { SpawnAround("risen", 1, 12, 16, 0.3, 2); spawnT = 2.5; }
                 // (the chest tip comes 4 s after the elite one; the E belongs to the prompt)
                 if (knight == null && !chestOpened && eliteAt >= 0 && B.Time - eliteAt >= 4)
                     PacedTip("chest", "The Watch-post", "The *watchman's chest* is unguarded now.", null, 9, still: () => !chestOpened);
@@ -1182,11 +1147,9 @@ public sealed partial class Prologue : ZoneRuntime
                     Words(() => G.Say("Past the fence, a figure in a tall hat is talking to the graves. The graves are listening.", null, 6));
                 }
                 if (caller is { HpFloor: > 0 } cf && (G.Taught("art") || B.Time - callerAt > 30)) cf.HpFloor = 0;
-                if (caller != null)
-                {
-                    if (spawnT <= 0 && n < 16 && stageT > 8) { SpawnAround("risen", 1, 11, 15, 0, 2); spawnT = 2.5; }
-                }
-                else if (stageT > 1)
+                // (M5: no top-up; its own Raise does the raising. It rests till she comes, and its F8 hold counts from then.)
+                if (caller is { Roused: false }) callerAt = B.Time;
+                if (caller == null && stageT > 1)
                 {
                     Go(Stage.ToFord);
                     var barrow = L("barrow");
@@ -1233,7 +1196,7 @@ public sealed partial class Prologue : ZoneRuntime
             }
             case Stage.Exit:
                 MorningClimbs();
-                // (and not while the wolf ring's second wave holds it, DayStretch.GateOpen)
+                // (and not while the wolf ring's second wave holds it, Encounters.GateOpen)
                 // (through the gate, not anywhere along the wall's line: the day stretch runs 44 m either side of the road)
                 // (H8 N22: and the portcullis all the way up: she may wait at it beyond the exit line, and sees it rise)
                 if (p.Z < ExitZ && Math.Abs(p.X - L("gate").X) < 9 && day?.GateOpen != false && gateBar == null && gateDown <= 0 && !finished) { finished = true; Finish(); }
@@ -1241,18 +1204,66 @@ public sealed partial class Prologue : ZoneRuntime
         }
     }
 
+    const double BarrowWake = 12, RisingRoad = 20;
+    double risingAt;
+
+    /// <summary>A great blessing on its own panel, half a minute after the first skill (au1 item 2: it came with the
+    /// first card, two picks and six lessons in 12 s); never on top of a level's draft. (M5: on the night's clock from
+    /// the Rising, in the Rising or the road after it, so a short Rising does not lose it; the draft's only.)</summary>
+    void GreatBlessing()
+    {
+        if (B == null || Now is not (Stage.Rising or Stage.Road or Stage.Road2)) return;
+        double t = B.Time - risingAt;
+        if (B.EmberLevel >= 2 && t > 40 && !B.DraftOwed && (G.Taught("first_draft") || t > 60) && shown.Add("great"))
+        {
+            B.GreatOwed++;
+            // F3 says it on the panel (the general draft tip waits for the panels after it).
+            Teach("great_blessing", CalloutKind.Panel, "A great blessing", "The ember lends you a blessing. It changes how you fight until dawn.", Aim.At("cards"));
+        }
+    }
+
+    /// <summary>(M5) Each pack's captain wears its rank's body (Champions.Look: a step below a champion's) and its
+    /// plate (FoeMarks); a crowned captain is a champion already.</summary>
+    static void Ranks(Encounters enc)
+    {
+        foreach (var (e, seed) in enc.Captains.Values)
+            if (e.Alive && e.Seed == seed && e.Rank == 0 && e.Named == null) Content.Champions.Look(e, 1);
+    }
+
+    /// <summary>The night laid out at nightfall (M5, encounters.json when: night): its packs resting on the road, the
+    /// Barrow Knight at the post on its escort's ground.</summary>
+    void StartNight(Battle b)
+    {
+        if (night != null || Encounters.For(Id) is not { } spec) return;
+        night = new Encounters(spec, b, new Dictionary<string, Fact>(), G.Journey.Ch.Level, W.Day, "night", Meta.Features) { Held = () => G.Teaching != null, Tier = WorldTiers.Of(W) };
+        night.Woke = bt => PaceNotes.Enqueue($"night woke {bt.Id} t={b.Time:0.0} hp={b.Player.Hp:0}/{b.MaxHp:0} at=({b.Player.X:0.0},{b.Player.Z:0.0})");
+        night.Down = bt => PaceNotes.Enqueue($"night down {bt.Id} t={b.Time:0.0} hp={b.Player.Hp:0}/{b.MaxHp:0}");
+        night.Place();
+        var post = L("post");
+        var np = spec.Get("n_post");
+        knightRest = b.SpawnEnemy("barrow_knight", post.X - 1, post.Z - 1.5, new Battle.SpawnOpts
+        {
+            Level = 1, Tag = "knight", Style = SpawnStyle.Walk,
+            Home = np != null ? (np.X, np.Z, np.Leash) : null, Wake = np?.Wake ?? 8,
+        });
+        if (knightRest != null) { knightRestSeed = knightRest.Seed; knightRest.Facing = Math.PI / 2; night.Crown(knightRest, "knight"); }
+    }
+
     void StartBarrow()
     {
         if (B == null) return;
         Objective([("Search the old Watch-post", true, false), ("Put down the Grave-Caller", false, false)]);
         var barrow = L("barrow");
-        caller = B.SpawnEnemy("grave_caller", barrow.X - 3, barrow.Z, new Battle.SpawnOpts { Level = 2, Tag = "caller", Elite = true });
+        // (M5: it and its dead rest at the barrow till she comes, BarrowWake: the road's packs lie between)
+        var home = (barrow.X, barrow.Z, 20.0);
+        caller = B.SpawnEnemy("grave_caller", barrow.X - 3, barrow.Z, new Battle.SpawnOpts { Level = 2, Tag = "caller", Elite = true, Home = home, Wake = BarrowWake });
+        if (caller != null) night?.Crown(caller, "caller");
         // It can't fall before F8 has pointed at it (or a while has passed): the art is taught on it.
         if (!G.Taught("art")) { caller.HpFloor = caller.MaxHp * 0.2; callerAt = B.Time; }
         for (int i = 0; i < 5; i++)
         {
             double a = i / 5.0 * Math.PI * 2;
-            B.SpawnEnemy(i % 3 == 0 ? "risen_warrior" : "risen", barrow.X + Math.Cos(a) * 4, barrow.Z + Math.Sin(a) * 4, new Battle.SpawnOpts { Style = SpawnStyle.Rise, Level = 2 });
+            B.SpawnEnemy(i % 3 == 0 ? "risen_warrior" : "risen", barrow.X + Math.Cos(a) * 4, barrow.Z + Math.Sin(a) * 4, new Battle.SpawnOpts { Style = SpawnStyle.Rise, Level = 2, Home = home, Wake = BarrowWake });
         }
     }
 
@@ -1348,13 +1359,12 @@ public sealed partial class Prologue : ZoneRuntime
         wardenPos = (e.X, e.Z, Math.PI / 2 - e.Facing);
         Bar(null);
         B.Events.Emit(new Ev.Shake { Amount = 0.9 });
-        G.Announce(new Announcement("The Ford-Warden falls", null, "boon", 3.2));
+        G.Announce(new Announcement("The Ford-Warden falls", null, "boon", 2.2, Through: true));
         for (int i = 0; i < pylons.Count; i++) if (litPylons[i]) { litPylons[i] = false; G.Look.SetLit(pylons[i].Light, false); }
         ClearAround(e.X, e.Z, 40);
-        // What it leaves.
-        B.SpawnPickup(PickupKind.Item, e.X + 1.5, e.Z + 1, 1, "wardens_lampiron");
-        B.SpawnPickup(PickupKind.Item, e.X - 1.2, e.Z + 1.6, 3, "ember_shard");
-        for (int i = 0; i < 12; i++) B.SpawnPickup(PickupKind.Gold, e.X + (B.Rng.Next() - 0.5) * 4, e.Z + (B.Rng.Next() - 0.5) * 4, 4);
+        // What it leaves: by the film, all at once; in play, staged (Legendary, RunVictory).
+        legendFrom = (e.Level, e.Def.Family, e.X, e.Z);
+        vicT = 0; legendAt = -1; legendName = null; legendWait = 0; coreShown = heartClosed = false;
         Go(Stage.Victory);
         cutT = 0;
         Objective([("Cross at the Low Ford", true, false)]);
@@ -1363,7 +1373,138 @@ public sealed partial class Prologue : ZoneRuntime
         // blow. What it sets is set at the hand-back, so a skip sets it too.
         var marks = new Dictionary<string, double[]> { ["w"] = [e.X, e.Z, 0], ["her"] = [e.X, e.Z + 4, Math.PI] };
         if (G.Cinematic("c03", HeartGone, marks)) { victoryByCine = true; wardenInCine = true; }
+        if (victoryByCine) { WardenSpoils(); Legendary(false); }
+        else G.HoldBanners(LegendNarrate + 0.6);
     }
+
+    /// <summary>The Warden's plain spoils (its lamp-iron, the shards, the coin), on the corpse's east side: the west is the
+    /// Legendary's own ground (M5 r2).</summary>
+    void WardenSpoils()
+    {
+        if (B == null) return;
+        var (_, _, x, z) = legendFrom;
+        B.SpawnPickup(PickupKind.Item, x + 1.5, z + 1, 1, "wardens_lampiron");
+        B.SpawnPickup(PickupKind.Item, x + 0.6, z + 1.9, 3, "ember_shard");
+        for (int i = 0; i < 12; i++) B.SpawnPickup(PickupKind.Gold, x + 0.6 + B.Rng.Next() * 3, z - 0.8 + B.Rng.Next() * 3.2, 4);
+        foreach (var (l, hx, hz) in heldSpoils) B.Spill(l with { Persistent = true }, hx, hz);
+        heldSpoils.Clear();
+    }
+
+    // (M5 r2, the first Legendary's moment, judge frame 56: ten texts piled in the centre.) In order: the dying line; the
+    // Legendary's beam and label alone (LegendAt); its banner (LegendBanner, the Rest/Light prompt hushed under it); the
+    // narration and the rest of the spoils (LegendNarrate). Banners asked for meanwhile (a level-up) wait (HoldBanners).
+    const double LegendAt = 1.6, LegendBanner = 3.7, LegendNarrate = 7.2, LegendBannerSecs = 3.2;
+    (int Level, Family Family, double X, double Z) legendFrom;
+    double vicT, legendAt = -1;
+    string? legendName;
+
+    void StageLegendary(double dt)
+    {
+        vicT += dt;
+        if (vicT >= LegendAt && legendAt < 0) { legendAt = vicT; legendName = Legendary(true); }
+        if (vicT >= LegendBanner && shown.Add("legend.banner") && legendName != null)
+        {
+            // PLACEHOLDER copy for the story lead (Drops.NamedFalls over the item's name, its rarity under it).
+            G.HushPrompts(LegendBannerSecs + 0.2);
+            G.Announce(new Announcement(legendName, "Legendary", "reward", LegendBannerSecs, Drops.NamedFalls, Through: true));
+        }
+        // (M5 r4: the rest waits for her to take it: the judge, round 3, the push-in put the Ford's lamp column over its beam,
+        // its name on her head, and LEVEL 4, four labels, the narration and Grimtunnel's line came before its card. So the
+        // heart's beat (spoils, LEVEL, narration, push-in, Grimtunnel) starts once it is taken, or after LegendWaitMax.)
+        if (vicT >= LegendBanner + LegendBannerSecs && legendWait < LegendWaitMax && LegendLies())
+        {
+            legendWait += dt;
+            // (held AT the wait's own threshold, so the wait counts every frame: held below it, it counted one frame in
+            // fifteen and a player who left the coat on the ground stood ~5 min at the ford; the zone sim stuck there)
+            vicT = Math.Min(vicT, LegendBanner + LegendBannerSecs);
+            G.HoldBanners(1.0);
+        }
+        if (vicT >= LegendNarrate && shown.Add("legend.spoils")) WardenSpoils();
+    }
+
+    /// <summary>(M5 r4) Seconds the heart's beat waits for her to take the Warden's Legendary (then it goes on without).</summary>
+    public const double LegendWaitMax = 20;
+    double legendWait;
+
+    /// <summary>The Warden's Legendary still lies at the ford (by its corpse).</summary>
+    bool LegendLies() => B != null && legendName != null
+        && B.Pickups.Living().Any(k => k.Loot is (int)LootTier.Legendary or (int)LootTier.Storied
+            && Math.Abs(k.X - legendFrom.X) + Math.Abs(k.Z - legendFrom.Z) < 8);
+
+    /// <summary>The Warden's drop roll at its corpse (WardenLegendary); hush: its Legendary's line is said by the staging.</summary>
+    string? Legendary(bool hush)
+    {
+        var (lv, fam, x, z) = legendFrom;
+        return WardenLegendary(lv, fam, x, z, hush);
+    }
+
+    /// <summary>ARPG 7.1: the first time she kills the Ford-Warden he leaves one Legendary for certain (a world fact);
+    /// later kills roll the plain Boss source.</summary>
+    public void WardenLegendary(Enemy e) => WardenLegendary(e.Level, e.Def.Family, e.X, e.Z, false);
+
+    /// <summary>(M5 r2) The roll at (x, z): a Legendary 2.8 m west of the corpse on its own ground, the rest on the east
+    /// side with the plain spoils. Its Legendary's name (null: none fell); hush: the HUD's line is left to the caller.</summary>
+    public string? WardenLegendary(int level, Family family, double x, double z, bool hush)
+    {
+        if (B == null) return null;
+        bool first = !W.Fact(WardenLegendaryFact).Truthy;
+        var loot = G.Journey.Drops(new DropCtx
+        {
+            Source = DropSource.Boss, Level = level, People = Drops.PeopleOf(family), Floor = first ? (int)LootTier.Legendary : 0,
+            Luck = B.Stats.Get(Stat.Luck), R = B.Rng.Next, Hush = hush,
+        });
+        if (first) W.Facts[WardenLegendaryFact] = true;
+        string? name = null;
+        int west = 0;
+        var b = B;
+        foreach (var l in loot)
+        {
+            bool legend = l.Tier is int t && (LootTier)t is LootTier.Legendary or LootTier.Storied;
+            if (legend)
+            {
+                name ??= (l.Payload as ItemInstance)?.Name ?? Items.Find(l.Ref ?? "")?.Name ?? "A Legendary";
+                // (M5 r3: its own ground, off her feet and the corpse, on the screen: LegendSpot)
+                var at = LegendSpot((x, z), (b.Player.X, b.Player.Z), west++, (px, pz) => !b.Collision.Blocked(px, pz, 0.6));
+                B.Spill(l with { Persistent = true }, at.X, at.Z);
+                continue;
+            }
+            double a = (B.Rng.Next() - 0.5) * 1.6, d = 1.5 + B.Rng.Next() * 1.5;
+            // (M5 r3, staged: the rest of the roll lands with the plain spoils, after the Legendary's banner)
+            if (hush) heldSpoils.Add((l, x + Math.Cos(a) * d, z + Math.Sin(a) * d));
+            else B.Spill(l with { Persistent = true }, x + Math.Cos(a) * d, z + Math.Sin(a) * d);
+        }
+        return name;
+    }
+
+    readonly List<(Loot L, double X, double Z)> heldSpoils = new();
+
+    /// <summary>(M5 r3) The play camera's safe box round her (m): a Legendary lands inside it, so its beam and name are on
+    /// the screen with margin (x across, z down the screen, which is south).</summary>
+    public const double LegendSafeX = 6, LegendSafeZ = 3.5;
+    /// <summary>(M5 r3) A Legendary lands at least this far from her (m) and from the corpse (m).</summary>
+    public const double LegendFromHer = 2.5, LegendFromCorpse = 2.8;
+
+    /// <summary>(M5 r3) Where the Warden's nth Legendary lands: the judge saw the beam land on her, the item under her feet,
+    /// its name on her head. LegendFromCorpse-4.4 m from the corpse, west first; at least LegendFromHer from her; inside the
+    /// safe box round her; on free ground. None qualifies: the free spot farthest from her within the box.</summary>
+    public static (double X, double Z) LegendSpot((double X, double Z) corpse, (double X, double Z) her, int n, Func<double, double, bool> free)
+    {
+        (double X, double Z)? best = null;
+        double bestD = -1;
+        foreach (var d in new[] { LegendFromCorpse, 3.2, 3.6, 4.0, 4.4 })
+            for (int i = 0; i < 16; i++)
+            {
+                double a = Math.PI + n * 0.5 + (i % 2 == 1 ? 1 : -1) * ((i + 1) / 2) * Math.PI / 8;
+                double cx = corpse.X + Math.Cos(a) * d, cz = corpse.Z + Math.Sin(a) * d;
+                if (Math.Abs(cx - her.X) > LegendSafeX || Math.Abs(cz - her.Z) > LegendSafeZ || !free(cx, cz)) continue;
+                double dh = Math.Sqrt((cx - her.X) * (cx - her.X) + (cz - her.Z) * (cz - her.Z));
+                if (dh >= LegendFromHer) return (cx, cz);
+                if (dh > bestD) { bestD = dh; best = (cx, cz); }
+            }
+        return best ?? (corpse.X + Math.Cos(Math.PI + n * 0.5) * LegendFromCorpse, corpse.Z + Math.Sin(Math.PI + n * 0.5) * LegendFromCorpse);
+    }
+
+    public const string WardenLegendaryFact = "lowford.warden_legendary";
 
     bool victoryByCine;
 
@@ -1416,11 +1557,18 @@ public sealed partial class Prologue : ZoneRuntime
     void RunVictory(double dt)
     {
         if (B == null || victoryByCine) return;
+        StageLegendary(dt);
         cutT += dt;
+        // (the narration waits for the Legendary's beat: the dying line stays at 0.3)
+        if (vicT < LegendNarrate) cutT = Math.Min(cutT, 1.5);
         double cx = wardenPos.X, cz = wardenPos.Z;
         // C03 (cin_heart_goes_down): a tired man's voice, the Order's question at the end of a watch.
         if (cutT > 0.3 && shown.Add("morning")) B.Events.Emit(new Ev.Bark { X = cx, Z = cz, Text = "Is it morning?", Speaker = "The Ford-Warden" });
         double cy = Math.Max(G.Look.HeightAt(cx, cz), waterY);
+        // (M5 r5: Grimtunnel takes the stone only after the heart line has shown and closed: the clock stands at 3.6, just
+        // before he surfaces (4.2), until the story text is clear again)
+        if (coreShown && !heartClosed && G.StoryClear) heartClosed = true;
+        if (!heartClosed && cutT > 3.6) cutT = 3.6;
         if (cutT > 1.6 && !coreShown)
         {
             coreShown = true;
@@ -1568,6 +1716,13 @@ public sealed partial class Prologue : ZoneRuntime
     void Douse(bool card = true)
     {
         if (B == null) return;
+        // (M5: the draft off, the night lent nothing: nothing is stripped or paid, and no card says so; the day's tip follows)
+        if (!Draft)
+        {
+            dawnTaught = 0;
+            if (card) G.After(1.2, DawnCardClosed);
+            return;
+        }
         var p = B.Player;
         B.Events.Emit(new Ev.Nova { X = p.X, Z = p.Z, Radius = 3.4, School = School.Fire, Duration = 1.4 });
         B.Events.Emit(new Ev.Shake { Amount = 0.25 });
@@ -1609,7 +1764,15 @@ public sealed partial class Prologue : ZoneRuntime
             });
         // F12 just after, and the day's tip after that.
         if (taught > 0) G.After(5.2, () => levelDue = true);
-        G.After(18.5, () => PacedTip("day", "By day", $"By day the ember sleeps: you fight with what you carry, your art and your feet, and every fight teaches you ({Key("character")}). The ember is for the night.", [Key("character")], 14));
+        // (M5 r3: in the dawn's breather before the boars, once the level's callout is answered; it came 2.5 s before
+        // Red Tolly's wake at 18.5 s; ChampionGate holds it off any champion's wake)
+        G.After(taught > 0 ? 5.6 : 1.0, () => DayTip(taught > 0, 0));
+    }
+
+    void DayTip(bool afterLevel, int tries)
+    {
+        if (afterLevel && !G.Taught("level") && tries < 40) { G.After(0.5, () => DayTip(afterLevel, tries + 1)); return; }
+        PacedTip("day", "By day", $"By day the ember sleeps: you fight with what you carry, your art and your feet, and every fight teaches you ({Key("character")}). The ember is for the night.", [Key("character")], 14);
     }
 
     void Finish()
@@ -1638,6 +1801,7 @@ public sealed partial class Prologue : ZoneRuntime
 
     public override Arrival ArrivalFrom(string? from)
     {
+        cameFrom = from;
         var gate = L("gate"); var camp = L("camp");
         // Back down the road from the Waystation: arrive at the north end, by the gate.
         return from == "waystation" ? new(gate.X + 0.5, ExitZ + 9, 0) : new(camp.X + 1.5, camp.Z - 1.5, Math.PI);
@@ -1665,6 +1829,7 @@ public sealed partial class Prologue : ZoneRuntime
     public override void Begin(Battle b)
     {
         base.Begin(b);
+        LampRise.ShowLamps(G, Id);
         // (the ford's risen come close and many: each its own pace and weave, not a file of clones, NPC 17)
         b.VaryPacks = true;
         // (and they steer round the camp: the fire and its ring of logs, not walked through or stood on, judge r2)
@@ -1681,7 +1846,7 @@ public sealed partial class Prologue : ZoneRuntime
             Sex = Sex.Male, Outfit = Lore.OutfitFor(Sex.Male, "ranger", true, true), Beard = true, HairColor = "#4a3a2a", Skin = "#c8b0a0",
             Dye = new Dye { Cloth = "#4a5064" },
         }, new Held { Forearm = "shield_round" }, man.X, man.Z, 2.2, "Death_A");
-        G.SetDraftTip(Draft);
+        if (Draft) G.SetDraftTip(DraftTip);
         startWeapons = b.Weapons.Count;
         // (no great blessing offers to grow a Flare she hasn't met: F8 teaches it, au1 item 3)
         b.FlareGreatsHeld = !G.Taught("art");
@@ -1705,6 +1870,14 @@ public sealed partial class Prologue : ZoneRuntime
             return;
         }
         G.SetAtmosphere(Atmospheres.LowFordNight);
+        // (M5) The night's placed beats, resting on the road from nightfall. With the draft off the ember lends no cards:
+        // she fights the night as the day, under the night's rules, the Flare at half as a story fight starts it.
+        if (!Draft)
+        {
+            b.Night = true;
+            if (b.Flare != null) b.FlareMeter = Math.Max(b.FlareMeter, Battle.FlareFull / 2);
+        }
+        StartNight(b);
         // C01, the opening (docs/cinematics/shoot/c01.md), once a journey: it
         // wakes her by the fire and hands back as the dead come up. Where no
         // cinematic can play (the tests, a quick start), its lines are captions.
@@ -1754,23 +1927,20 @@ public sealed partial class Prologue : ZoneRuntime
 
     public override bool OnDeath(string killer)
     {
-        // The ember is not done with you. Up again where you were last safe.
+        // The ember is not done with you (ARPG 7.2): up again at the last lamp-post she lit here, else where she was last
+        // safe (the stage's checkpoint, before the first post). What she killed stays dead; champions and the Warden heal.
         if (B == null) return true;
         var battle = B;
+        int toll = LampRise.CountRise(W);
+        string line = day == null && nightRises++ == 0 ? "The ember will not let you go so easily." : LampRise.Line(toll);
         G.After(2.6, () =>
         {
-            G.Say(day != null ? "You come to on the road, bruised, with the sun higher." : "The ember will not let you go so easily.", null, 3.5);
-            battle.Over = null;
-            var p = battle.Player;
-            p.Alive = true;
-            p.Hp = battle.MaxHp;
-            p.Iframes = 3;
-            p.X = checkpoint.X; p.Z = checkpoint.Z;
-            ClearAround(p.X, p.Z, 16);
-            G.Revived(p.X, p.Z);
+            G.Say(line, null, 3.5);
+            var at = LampRise.RiseAt(W, Id, battle, (checkpoint.X, checkpoint.Z));
+            LampRise.Stand(G, battle, at.X, at.Z);
             if (warden is { Alive: true } && Now == Stage.Boss)
             {
-                warden.Hp = Math.Min(warden.MaxHp, warden.Hp + warden.MaxHp * 0.25);
+                warden.Hp = warden.MaxHp;
                 warden.X = wardenHome.X; warden.Z = wardenHome.Z;
                 ai.Mode = "walk";
                 if (bar != null) Bar(bar with { Channel = null });
@@ -1805,7 +1975,9 @@ public sealed partial class Prologue : ZoneRuntime
     {
         ["infire"] = B == null ? 0 : B.Enemies.Living().Count(e => Dist(e.X, e.Z, L("fire").X, L("fire").Z) < 1.2),
         ["stage"] = Now.ToString(), ["stageT"] = stageT, ["chestOpened"] = chestOpened, ["lit"] = LitCount, ["wardenHp"] = warden?.Hp,
-        ["wardenMode"] = ai.Mode, ["day"] = day == null ? null : string.Join(",", day.S.Beats.Select(bt => $"{bt.Id}:{(day.Done(bt.Id) || bt.Kind == "post" && LampBook.PostLit(W, bt.Post!) ? "done" : day.WokeAt.ContainsKey(bt.Id) ? "on" : "-")}")), ["checkpoint"] = $"{checkpoint.X:0.0},{checkpoint.Z:0.0}",
+        ["wardenMode"] = ai.Mode, ["day"] = day == null ? null : string.Join(",", day.S.In("day", day.Features).Select(bt => $"{bt.Id}:{(day.Done(bt.Id) || bt.Kind == "post" && LampBook.PostLit(W, bt.Post!) ? "done" : day.WokeAt.ContainsKey(bt.Id) ? "on" : "-")}")), ["checkpoint"] = $"{checkpoint.X:0.0},{checkpoint.Z:0.0}",
+        ["night"] = night == null || B == null ? null : $"sprung={sprungAt:0.0} wq={wagonQueued} ws={wagonSaid} wd={wagonDoneAt:0.0} th={tallyHeldAt:0.0} fight={night.Fighting} saying={G.Saying} teach={G.Teaching?.Id} words={words.Count} wf={wordsFree:0.0} | "
+            + string.Join(" ", night.Packs.Select(kv => $"{kv.Key}:{(night.DownAt.ContainsKey(kv.Key) ? "down" : night.WokeAt.ContainsKey(kv.Key) ? "on" : "-")}[" + string.Join(",", night.Standing(kv.Key).Select(e => $"{e.Def.Id}@{e.X:0},{e.Z:0}/{e.State}")) + "]")),
     };
 
     public override void Dispose()
