@@ -243,6 +243,27 @@ public class PrologueTests
     }
 
     [Fact]
+    public void Two_bowmen_who_keep_their_range_do_not_hold_the_wagon_for_good()
+    {
+        // (m5 clip r1: the game's autopilot circled the wagon, two of its bowmen kept off her, and the night stood at
+        // the Ambush for nine minutes; a player who will not chase them is not held there either)
+        var s = Make();
+        ToTheCart(s);
+        for (int i = 0; i < 400 && !s.Zone.Sprung; i++) Run(s, 0.1);
+        Assert.True(s.Zone.Sprung);
+        var left = s.Zone.Night!.Standing("n_cart").Where(e => e.Def.Id == "risen_archer").Take(2).ToList();
+        Assert.Equal(2, left.Count);
+        foreach (var e in s.Zone.Night.Standing("n_cart").Except(left)) s.B.KillEnemy(e, true, null);
+        foreach (var e in left) e.Hp = e.MaxHp = 1e9;
+        Run(s, 10);
+        Assert.Equal(Prologue.Stage.Ambush, s.Zone.Now);
+        Run(s, 25);
+        Assert.Equal(Prologue.Stage.Road2, s.Zone.Now);
+        Assert.True(s.Zone.Night.Done("n_cart"));
+        Assert.All(left, e => Assert.False(e.Alive && e.State != EnemyState.Dying));
+    }
+
+    [Fact]
     public void The_road_runs_from_the_clearing_to_the_ford()
     {
         var s = Make();

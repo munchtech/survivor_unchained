@@ -172,7 +172,8 @@ public sealed class Autopilot
         {
             diagT = 0;
             var kn = b.Enemies.Living().FirstOrDefault(e => e.Tag == "knight");
-            Godot.GD.Print($"autodiag t={b.Time:0.0} stage={stage} p=({p.X:0.0},{p.Z:0.0}) wp={wp} postT={postT:0.0} knight={(kn == null ? "-" : $"({kn.X:0.0},{kn.Z:0.0}) {kn.State} hp={kn.Hp:0}/{kn.HpFloor:0}")}");
+            var nightDiag = d.GetValueOrDefault("night");
+            Godot.GD.Print($"autodiag t={b.Time:0.0} stage={stage} p=({p.X:0.0},{p.Z:0.0}) wp={wp} postT={postT:0.0} knight={(kn == null ? "-" : $"({kn.X:0.0},{kn.Z:0.0}) {kn.State} hp={kn.Hp:0}/{kn.HpFloor:0}")} night={nightDiag}");
         }
         var meta = g.Scene!.Data.Meta;
         XZ Place(string n) => meta.Place("LOWFORD", n);
@@ -180,7 +181,9 @@ public sealed class Autopilot
         switch (stage)
         {
             // (M5: the Rising is placed beats now, n_lone and n_three up the road; it walks to them as the default does)
-            case "Wake" or "Ambush" or "Rising" when Idle || stage != "Rising":
+            // (the Ambush, once its trap has sprung, is fought as the default does: its nearest foe, where it stands; orbiting
+            // the wagon kept her off its bowmen for good, m5 clip r1)
+            case "Wake" or "Ambush" or "Rising" when Idle || stage == "Wake" || stage == "Ambush" && z is not Zones.Prologue { Sprung: true }:
             {
                 var c = stage == "Ambush" ? Place("cart") : Place("camp");
                 orbit += dt * 0.35;

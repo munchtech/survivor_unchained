@@ -665,6 +665,8 @@ public sealed partial class Prologue : ZoneRuntime
 
     /// <summary>The ditch's bowmen's opening volley: how much harder its bolts hit than the road's.</summary>
     const double AmbushBolt = 1.5;
+    /// <summary>Seconds into the wagon's fight after which its last two stragglers no longer hold the road.</summary>
+    const double AmbushStragglers = 30;
     /// <summary>What she had taken when the trap sprang (Battle.DamageTaken).</summary>
     double takenAtSpring;
     /// <summary>The Knight is winding up or lunging, or did within 1.5 s (the draught lesson waits).</summary>
@@ -1066,8 +1068,12 @@ public sealed partial class Prologue : ZoneRuntime
                     if (bw.Alive && bw.Def.Id == "risen_archer" && bw.RangedT > 1.5 && boltsSpent.Add(bw.Id)) bw.Damage /= AmbushBolt;
                 // (the shield tip lands when shieldmen first stand, ~20 s into the fight)
                 if (fought > 18) PacedTip("shield", "Shieldmen", "Their *raised shields* stop your shots. Strike from the side, or up close.");
-                // (M5: over when the ditch's dead are down, n_cart)
-                if (night == null || night.Done("n_cart"))
+                // (M5: over when the ditch's dead are down, n_cart; or, AmbushStragglers s into the fight, when no more
+                // than two of them stand: they go back into the ditch, as the line says. m5 clip r1: two bowmen kept their
+                // range off her for good, and the night stood at the wagon for nine minutes.)
+                if (night != null && !night.Done("n_cart") && fought > AmbushStragglers && night.Standing("n_cart") is { Count: <= 2 } left)
+                    foreach (var e in left) B.KillEnemy(e, false, null);
+                if (night == null || night.Done("n_cart") || night.S.Get("n_cart") == null)
                 {
                     Go(Stage.Road2);
                     checkpoint = new XZ(p.X, p.Z);
@@ -1812,6 +1818,8 @@ public sealed partial class Prologue : ZoneRuntime
         ["infire"] = B == null ? 0 : B.Enemies.Living().Count(e => Dist(e.X, e.Z, L("fire").X, L("fire").Z) < 1.2),
         ["stage"] = Now.ToString(), ["stageT"] = stageT, ["chestOpened"] = chestOpened, ["lit"] = LitCount, ["wardenHp"] = warden?.Hp,
         ["wardenMode"] = ai.Mode, ["day"] = day == null ? null : string.Join(",", day.S.In("day", day.Features).Select(bt => $"{bt.Id}:{(day.Done(bt.Id) || bt.Kind == "post" && LampBook.PostLit(W, bt.Post!) ? "done" : day.WokeAt.ContainsKey(bt.Id) ? "on" : "-")}")), ["checkpoint"] = $"{checkpoint.X:0.0},{checkpoint.Z:0.0}",
+        ["night"] = night == null || B == null ? null : $"sprung={sprungAt:0.0} wq={wagonQueued} ws={wagonSaid} wd={wagonDoneAt:0.0} th={tallyHeldAt:0.0} fight={night.Fighting} saying={G.Saying} teach={G.Teaching?.Id} words={words.Count} wf={wordsFree:0.0} | "
+            + string.Join(" ", night.Packs.Select(kv => $"{kv.Key}:{(night.DownAt.ContainsKey(kv.Key) ? "down" : night.WokeAt.ContainsKey(kv.Key) ? "on" : "-")}[" + string.Join(",", night.Standing(kv.Key).Select(e => $"{e.Def.Id}@{e.X:0},{e.Z:0}/{e.State}")) + "]")),
     };
 
     public override void Dispose()
