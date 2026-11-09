@@ -9,8 +9,11 @@ bone owns the skin, a bounded biharmonic fill across each joint's band: F, G bel
 Primary weights (each a partition of one; smooth01 = smoothstep):
  T trunk    (every part; the limbs blend from it) the spine chain pelvis, spine_01..05, neck_01, neck_02, Head by
             HEIGHT: at each chain joint the bone above takes over by smoothstep across +-h about the joint's height,
-            h = min(half the height to either neighbouring joint, 4 cm) (so the steps never overlap: a partition
-            of one; the lowest joint, spine_01's head = the pelvis's, has 8 cm below it);
+            h = HMAX (4 cm) at every joint, each piece the difference of its two steps (a partition of one where steps
+            overlap too: the steps keep their joints' order). (v6, P1 R1 rig root: B's trunk joints are A's, and A's
+            spine_01 and spine_02 joints stand 47 mm apart, so v5's h = min(half the height to either neighbouring
+            joint, 4 cm) narrowed the bends there to +-23.6 mm against B's own +-37-40; where no two steps overlap
+            the pieces are v5's, value for value);
             clavicle: of that, k = smooth01((t - 0.25) / 0.5) * (1 - smooth01((|dy| - 5 cm) / 6 cm)) on its own side,
             t the point's parameter along the clavicle (head 0, tail 1), dy its height off the clavicle's line;
             breast (the breast part only): b = smooth01(d / 5 cm), d its distance from the breast hole's rim.
@@ -27,7 +30,9 @@ Primary weights (each a partition of one; smooth01 = smoothstep):
  L leg      (thigh, knee, shin, foot; the crotch strip is the trunk's) the station along thigh -> calf: trunk -> thigh by
             the girdle fill G, thigh -> calf by the hinge fill F;
             calf -> foot by height over the ankle (all foot 2 cm under the ankle joint, all calf 3 cm over it, along
-            the calf); foot -> ball along the foot bone (t 0.85 -> 1.15).
+            the calf); foot -> ball along the foot bone (t 0.85 -> 1.15). A spec's "weights" "leg" (P1 R1 round 30, her
+            body: B's ankle and foot ARE A's, her_a a_foot) sets the two ramps instead: "ankle_m" [lo, span] (all foot
+            at lo, all calf at lo + span, along the calf from the ankle joint) and "ball_t" [t0, span].
  F hinge    (elbow, knee: hinge_fill) seeds by the rest bisector plane, the band's width by the angle a round the joint
             from the crease, w_c at the crease (the crease skins' crossing distance at the design flexion), w_o on the
             outer side (the joint part's designed loops), (1 +- ASYM) up / down; the fill between.
@@ -51,7 +56,7 @@ import scipy.sparse as sp
 import weights as wt
 from stages import harmonic, laplacian
 
-VERSION = "v4"  # (v2: P1 R2 girdle skin CLAV, BLADE; v3: P1 R1b SPINE_FRONT; v4: P1 R1b BREAST clav_fade_m) written into each built glb's extras (build_topo.py stage_export); bump with the rules
+VERSION = "v6"  # (v2: P1 R2 girdle skin CLAV, BLADE; v3: P1 R1b SPINE_FRONT; v4: P1 R1b BREAST clav_fade_m; v5: P1 A shape CLAV front_below; v6: P1 R1 rig root, T's steps +-HMAX at every joint, overlapping) written into each built glb's extras (build_topo.py stage_export); bump with the rules
 
 SPINE = ["pelvis", "spine_01", "spine_02", "spine_03", "spine_04", "spine_05", "neck_01", "neck_02", "Head"]
 FINGERS = ["index", "middle", "ring", "pinky"]
@@ -75,7 +80,15 @@ HAND_SMOOTH = 12
 #   BLADE the scapula takes `amount` of the clavicle's weight behind the clavicle head's coronal plane (eased over
 #         `ease` m): the trapezius over the scapular spine and the blade ride the blade (the scap muscle's ball, kept,
 #         is its own); cap_amount (off) the same share over CAP's cone (cap_deg, fading) lateral of the scap's head
-CLAV = {"t": (0.1, 0.6), "above": (0.11, 0.05), "below": (0.05, 0.06), "neck": (0.03, 0.03)}
+#   front (v5, P1 A shape round 11): in front of the clavicle head's coronal plane (eased over front_ease m) the share below
+#         the line fades over front_below instead (full to 1 cm, gone 5 cm under the line): under the clavicle at the front
+#         lies the pectoralis' clavicular head's narrow strip, then the sternocostal head and the breast on the ribcage.
+#         v4's 5 + 6 cm held 0.56-0.65 of the clavicle 2-6 cm under the line at the front (0.36 at 8 cm, into the breast),
+#         and the clip's clavicle (11.7 deg off rest at her idle, A's line) dragged the upper chest and the breasts' tops
+#         with it: the posed breasts p95 23 mm from A's at the Look (A, read as a check, not a source: 0.17 / 0.10 / 0.07
+#         at 2 / 4 / 6 cm). The back keeps the v4 band (BLADE hands most of it to the scapula).
+CLAV = {"t": (0.1, 0.6), "above": (0.11, 0.05), "below": (0.05, 0.06), "neck": (0.03, 0.03),
+        "front_below": (0.01, 0.04), "front_ease": 0.03}
 CAP = {"cap_deg": 0.0, "medial": False, "lateral_m": 0.0}
 BLADE = {"amount": 0.6, "ease": 0.03, "cap_amount": 0.0, "cap_deg": (35.0, 65.0)}
 # SPINE_FRONT (v3, P1 R1b round 2): the spine chain's height band (T) is the trunk's own skin all round the torso. CLAV
@@ -129,6 +142,14 @@ def hats(u, knots, h):
     """Partition of one over len(knots)+1 pieces: piece i from knot i-1 to knot i, smoothstep +-h[i] at knot i."""
     c = [np.ones(len(u))] + [s01((u - (k - hh)) / (2 * hh)) for k, hh in zip(knots, h)] + [np.zeros(len(u))]
     return np.stack([c[i] * (1 - c[i + 1]) for i in range(len(knots) + 1)], 1)
+
+
+def steps(u, knots, h):
+    """Partition of one over len(knots)+1 pieces: piece i from knot i-1 to knot i, smoothstep +-h at each knot (one h,
+    so the steps keep their knots' order and each piece, the difference of its two steps, is never negative). Where no
+    two steps overlap it is hats' value for value (one of each piece's steps is 0 or 1 there)."""
+    c = [np.ones(len(u))] + [s01((u - (k - h)) / (2 * h)) for k in knots] + [np.zeros(len(u))]
+    return np.stack([c[i] - c[i + 1] for i in range(len(knots) + 1)], 1)
 
 
 def ring_station(X, part, ring, side, pts, parts_sel):
@@ -222,14 +243,9 @@ def trunk(c):
     W = np.zeros((n, len(c.names)))
     y = P[:, 1]
     ys = [c.head(b)[1] for b in SPINE]
-    lens = [np.linalg.norm(c.tail(b) - c.head(b)) for b in SPINE]
     knots = ys[1:]                       # (spine_01's head is the pelvis's: the pelvis owns all below it)
-    h = []
-    for k in range(len(knots)):
-        below = knots[k] - knots[k - 1] if k > 0 else 2 * HMAX
-        above = knots[k + 1] - knots[k] if k + 1 < len(knots) else lens[-1]
-        h.append(min(0.5 * below, 0.5 * above, HMAX))
-    Hs = hats(y, knots, h)
+    assert all(b > a for a, b in zip(knots, knots[1:])), ("the spine chain's joints do not rise", knots)
+    Hs = steps(y, knots, HMAX)
     for i, b in enumerate(SPINE):
         W[:, c.idx[b]] = Hs[:, i]
     # the girdle's skin (P1 R2, CLAV above): the clavicle owns the trapezius from the neck's side out to the acromion
@@ -247,8 +263,11 @@ def trunk(c):
         line = a[None] + np.clip(t, 0, 1)[:, None] * (b - a)[None]
         dy = P[:, 1] - line[:, 1]
         own = (P[:, 0] * sx > 0).astype(float)
-        fade = np.where(dy > 0, 1 - s01((dy - CLAV["above"][0]) / CLAV["above"][1]),
-                        1 - s01((-dy - CLAV["below"][0]) / CLAV["below"][1]))
+        below = 1 - s01((-dy - CLAV["below"][0]) / CLAV["below"][1])
+        if CLAV.get("front_below"):
+            fr = s01((P[:, 2] - a[2]) / CLAV["front_ease"])
+            below = (1 - fr) * below + fr * (1 - s01((-dy - CLAV["front_below"][0]) / CLAV["front_below"][1]))
+        fade = np.where(dy > 0, 1 - s01((dy - CLAV["above"][0]) / CLAV["above"][1]), below)
         k = s01((t - t0) / (t1 - t0)) * fade * s01((dn - CLAV["neck"][0]) / CLAV["neck"][1]) * own
         W *= (1 - k)[:, None]
         W[:, c.idx[f"clavicle_{s}"]] += k
@@ -450,7 +469,7 @@ def girdle_fill(c, s, joint, own, limb, free):
     return g
 
 
-def limbs(c, W):
+def limbs(c, W, rules=None):
     P = c.P
     arm_parts = c.pid("shoulder", "arm", "elbow", "forearm", "hand")
     leg_parts = c.pid("thigh", "knee", "shin", "foot")
@@ -502,9 +521,12 @@ def limbs(c, W):
         up = c.head(f"calf_{s}") - ank
         up /= np.linalg.norm(up)
         dz = (P[m] - ank) @ up
-        ca = 1 - s01((dz + 0.02) / 0.05)
+        leg = (rules or {}).get("leg") or {}
+        a0, aw = leg.get("ankle_m", (-0.02, 0.05))
+        ca = 1 - s01((dz - a0) / aw)
         tf = wt.seg_t(P[m], c.head(f"foot_{s}"), c.tail(f"foot_{s}"))
-        cb = s01((tf - 0.85) / 0.3)
+        b0, bw = leg.get("ball_t", (0.85, 0.3))
+        cb = s01((tf - b0) / bw)
         Lg = np.zeros((m.sum(), len(c.names)))
         Lg[:, c.idx[f"thigh_{s}"]] = 1 - ck
         Lg[:, c.idx[f"calf_{s}"]] = ck * (1 - ca)
@@ -585,6 +607,331 @@ def spine_front(W, c, thr):
     return keep
 
 
+def a_lookup(P, cfg):
+    """The points the A-copied patches look A up by (P1 R1 sliders): cfg "_P_ref" (build_topo, with target_joints_ref:
+    the target's own body, same topology) when the body carries other sliders, so a vertex takes the A point it lies on
+    in her_b (her_a's surface IS A's there) wherever a slider moved it; else this body's points."""
+    R = cfg.get("_P_ref") if isinstance(cfg, dict) else None
+    return P if R is None else R
+
+
+def a_lower_breast(W, P, topo, sk, A, cfg):
+    """A spec's "weights" "a_lower_breast" (P1 R1 round 30, her body: her breasts and the trunk round them ARE A's surface,
+    her_a): A's own skin weights over the breasts' lower half and the skirt under and beside them, mapped onto B's bones
+    by role (cfg "map", A bone: B bone; the breast's share split onto breast_tip by B's own rule, weights.breast), eased
+    out over the trunk by the distance from the breast part (1 - s01(d / fade_m), front only: z > front_z) and up the
+    breast by height (1 - s01((y - y_frac's height) / y_ease_m)); only where A's mapped bones hold cover_min of A's
+    weight. Her left's taken, mirrored. Why (gate judge 2 fault 4, the right breast's lower curve to a point at the
+    close-up and in idle_close): B's height steps hand the lower pole to the spine under the breast (B spine_03, A's
+    spine_02: 0.55 at the bottom eighth, A 0.20) and its skirt's upper-chest share falls 0.44 -> 0 within 40 mm (A's 0.72
+    -> 0.14 over 70 mm), so where the chest turns on the waist B's lower pole lags: posed bottom-middle vs A p95 4.8 mm
+    at the close (round_29), 1.6 with A's weights. A: the game's own heroine.glb skin (its bind, B's points' closest
+    points there, barycentric)."""
+    from scipy.spatial import cKDTree
+    import topo_uv as tu
+    from surfdist import Surface
+    names = sk["names"]
+    m = A.mesh("Heroine")
+    na = A.skeleton(0).names
+    PA = m.P.astype(float)
+    WA = np.zeros((len(PA), len(na)))
+    np.put_along_axis(WA, m.J.astype(int), m.W.astype(float), 1)
+    parts = list(map(str, topo["parts"]))
+    part = topo["part"]
+    br, tr = part == parts.index("breast"), part == parts.index("trunk")
+    left = P[:, 0] > 0
+    dB, _ = cKDTree(P[br]).query(P)
+    ylo, yhi = P[br, 1].min(), P[br, 1].max()
+    yc = ylo + float(cfg["y_frac"]) * (yhi - ylo)
+    k = np.where(br, 1.0, np.where(tr & (P[:, 2] > float(cfg.get("front_z", 0.0))), 1 - s01(dB / float(cfg["fade_m"])), 0.0))
+    k *= 1 - s01((P[:, 1] - yc) / float(cfg["y_ease_m"]))
+    ids = np.where((k > 1e-4) & left)[0]
+    q, _, tri, d = Surface(PA, m.T).closest(a_lookup(P, cfg)[ids], k=16)
+    a, b, c = (PA[m.T[tri, i]] for i in range(3))
+    w = np.clip(tu.bary(q, a, b, c), 0, None)
+    w /= w.sum(1, keepdims=True)
+    Wq = sum(w[:, i:i + 1] * WA[m.T[tri, i]] for i in range(3))
+    Wt = np.zeros((len(ids), len(names)))
+    for an, bn in cfg["map"].items():
+        Wt[:, names.index(bn)] += Wq[:, na.index(an)]
+    cover = Wt.sum(1)
+    Wt /= np.maximum(cover[:, None], 1e-12)
+    for s in ("l", "r"):
+        ib, it = names.index(f"breast_{s}"), names.index(f"breast_tip_{s}")
+        h, tip = sk["ends"][f"breast_{s}"][0], sk["ends"][f"breast_tip_{s}"][1]
+        lo, hi = wt.RULES["breast_tip"]
+        kt = s01((wt.seg_t(P[ids], h, tip) - lo) / (hi - lo))
+        Wt[:, it] += Wt[:, ib] * kt
+        Wt[:, ib] *= 1 - kt
+    kk = k[ids] * (cover >= float(cfg["cover_min"]))
+    W = W.copy()
+    W[ids] = (1 - kk[:, None]) * W[ids] + kk[:, None] * Wt
+    W = mirror(W, topo, names)
+    return W, {"points_left": int((kk > 1e-4).sum()), "A_dist_mm_p95": round(float(np.percentile(d[kk > 1e-4] * 1e3, 95)), 2),
+               "cover_p5": round(float(np.percentile(cover[k[ids] > 1e-4], 5)), 3)}
+
+
+def a_shoulder_top(W, P, topo, sk, A, cfg):
+    """A spec's "weights" "a_shoulder_top" (P1 R1 round 30, her body: the top of the shoulders, the trapezius' slope from
+    the neck to the acromion, is A's surface at the rest, her_a): A's own skin weights there, mapped onto B's bones by role
+    (cfg "map", A bone: B bone; "{s}" per side), over the trunk and shoulder parts: eased in from the neck part
+    (s01((d - neck_d_m) / neck_ease_m), the head seam kept B's), up from y_lo_m (s01((y - y_lo_m) / y_ease_m)) and out
+    to the acromion (1 - s01((|x| - x_full_m) / x_ease_m), then a partial share lat_share out to x_full2_m); only where
+    A's mapped bones hold cover_min of A's weight. Her left's taken, mirrored. Why (gate judge 2 fault 5, the left cap
+    wider at the front Look): B gave the slope to the upper arm's share bone (0.67; A: clavicle 0.33, upper chest 0.26,
+    trapezius 0.23), and its clavicle skin never takes A's roll (girdle clavicle_roll neutral) where A's slope rides
+    it: at the Look B's slope stood 19-28 px out of A's silhouette; with A's weights onto B's trapezius helper, which
+    keeps the clip's roll (girdle clavicle_roll_keep), 0-9 px."""
+    import topo_uv as tu
+    from scipy.spatial import cKDTree
+    from surfdist import Surface
+    names = sk["names"]
+    m = A.mesh("Heroine")
+    na = A.skeleton(0).names
+    PA = m.P.astype(float)
+    WA = np.zeros((len(PA), len(na)))
+    np.put_along_axis(WA, m.J.astype(int), m.W.astype(float), 1)
+    parts = list(map(str, topo["parts"]))
+    part = topo["part"]
+    zone = (part == parts.index("trunk")) | (part == parts.index("shoulder"))
+    dN, _ = cKDTree(P[part == parts.index("neck")]).query(P)
+    ax = np.abs(P[:, 0])
+    lat = 1 - s01((ax - float(cfg["x_full_m"])) / float(cfg["x_ease_m"]))
+    lat2 = 1 - s01((ax - float(cfg["x_full2_m"])) / float(cfg["x_ease_m"]))
+    lat = lat + float(cfg["lat_share"]) * (lat2 - lat)
+    k = zone * s01((dN - float(cfg["neck_d_m"])) / float(cfg["neck_ease_m"])) * lat * s01((P[:, 1] - float(cfg["y_lo_m"])) / float(cfg["y_ease_m"]))
+    ids = np.where((k > 1e-4) & (P[:, 0] > 0))[0]
+    q, _, tri, d = Surface(PA, m.T).closest(a_lookup(P, cfg)[ids], k=16)
+    a, b, c = (PA[m.T[tri, i]] for i in range(3))
+    w = np.clip(tu.bary(q, a, b, c), 0, None)
+    w /= w.sum(1, keepdims=True)
+    Wq = sum(w[:, i:i + 1] * WA[m.T[tri, i]] for i in range(3))
+    Wt = np.zeros((len(ids), len(names)))
+    for an, bn in cfg["map"].items():
+        an, bn = an.replace("{s}", "l"), bn.replace("{s}", "l")
+        if an in na:
+            Wt[:, names.index(bn)] += Wq[:, na.index(an)]
+    cover = Wt.sum(1)
+    Wt /= np.maximum(cover[:, None], 1e-12)
+    kk = k[ids] * (cover >= float(cfg["cover_min"]))
+    W = W.copy()
+    W[ids] = (1 - kk[:, None]) * W[ids] + kk[:, None] * Wt
+    W = mirror(W, topo, names)
+    return W, {"points_left": int((kk > 1e-4).sum()), "A_dist_mm_p95": round(float(np.percentile(d[kk > 1e-4] * 1e3, 95)), 2),
+               "cover_p5": round(float(np.percentile(cover[k[ids] > 1e-4], 5)), 3)}
+
+
+def a_elbow(W, P, topo, sk, A, cfg):
+    """A spec's "weights" "a_elbow" (P1 R1 round 32, her body: her upper arm IS A's surface at the rest, her_a): A's own
+    skin weights over the upper arm's lower end, mapped onto B's bones by role (cfg "map", A bone: B bone; "{s}" per
+    side), on the arm and elbow parts by the height t over the elbow joint along the upper arm (B's lowerarm head to its
+    upperarm head): eased in from t_lo_m over t_ease_m (the elbow's crease and point next to the joint kept B's, its
+    correctives are built on them) and out past t_hi_m; only where A's mapped bones hold cover_min of A's weight. Her
+    left's taken, mirrored. Why (gate judge 2 fault 3, the armband ink about 1.5 times A's width, the lower band most):
+    B's elbow blend reaches 15-30 mm further up the upper arm than A's (the lower chain's share at 40-50 mm over the
+    joint B 0.29, A 0.01; 50% at B 33 mm, A 21 mm; zero by A 50 mm, B 90 mm), so the Look's 20-30 degree elbow bend
+    stretches the skin under the lower band along the arm (the carried band's edges posed p50 1.14-1.22, p95 1.45-1.51
+    of its rest, A's 1.04: its bone scale), where A's band rides the upper arm whole."""
+    import topo_uv as tu
+    from surfdist import Surface
+    names = sk["names"]
+    m = A.mesh("Heroine")
+    na = A.skeleton(0).names
+    PA = m.P.astype(float)
+    WA = np.zeros((len(PA), len(na)))
+    np.put_along_axis(WA, m.J.astype(int), m.W.astype(float), 1)
+    parts = list(map(str, topo["parts"]))
+    part = topo["part"]
+    zone = np.isin(part, [parts.index(p) for p in cfg.get("parts", ["arm", "elbow"])])
+    E = np.asarray(sk["worlds"][names.index("lowerarm_l")])[:3, 3]
+    S = np.asarray(sk["worlds"][names.index("upperarm_l")])[:3, 3]
+    ax = (S - E) / np.linalg.norm(S - E)
+    t = (P - E) @ ax
+    k = zone * s01((t - float(cfg["t_lo_m"])) / float(cfg["t_ease_m"])) * (1 - s01((t - float(cfg["t_hi_m"])) / float(cfg["t_ease_m"])))
+    ids = np.where((k > 1e-4) & (P[:, 0] > 0))[0]
+    q, _, tri, d = Surface(PA, m.T).closest(a_lookup(P, cfg)[ids], k=16)
+    a, b, c = (PA[m.T[tri, i]] for i in range(3))
+    w = np.clip(tu.bary(q, a, b, c), 0, None)
+    w /= w.sum(1, keepdims=True)
+    Wq = sum(w[:, i:i + 1] * WA[m.T[tri, i]] for i in range(3))
+    Wt = np.zeros((len(ids), len(names)))
+    for an, bn in cfg["map"].items():
+        an, bn = an.replace("{s}", "l"), bn.replace("{s}", "l")
+        if an in na:
+            Wt[:, names.index(bn)] += Wq[:, na.index(an)]
+    cover = Wt.sum(1)
+    Wt /= np.maximum(cover[:, None], 1e-12)
+    kk = k[ids] * (cover >= float(cfg["cover_min"]))
+    W = W.copy()
+    W[ids] = (1 - kk[:, None]) * W[ids] + kk[:, None] * Wt
+    W = mirror(W, topo, names)
+    return W, {"points_left": int((kk > 1e-4).sum()), "A_dist_mm_p95": round(float(np.percentile(d[kk > 1e-4] * 1e3, 95)), 2),
+               "cover_p5": round(float(np.percentile(cover[k[ids] > 1e-4], 5)), 3)}
+
+
+def a_thigh(W, P, topo, sk, A, cfg):
+    """A spec's "weights" "a_thigh" (P1 R1 round 32, her body: her thigh IS A's surface at the rest, her_a): A's own
+    skin weights over the thigh's top, mapped onto B's bones by role (cfg "map", A bone: B bone; "{s}" this side, "{o}"
+    the other), on cfg "parts" from the thigh joint down to depth_m under it (eased out over depth_ease_m), eased in from
+    the crotch strip (s01((d - crotch_d_m) / crotch_ease_m): the hip pin's seeds and their reach next to the strip kept
+    B's, weights_topo GIRDLE hip) and on the thigh's inner side (1 - s01((|x| - x_full_m) / x_ease_m): the hip's side
+    and its glute lobe kept B's); only where A's mapped bones hold cover_min of A's weight. Her left's taken, mirrored.
+    Why (P1 R1 round 32, the butt ruler: B's left inner lower butt by the gluteal cleft up to 35 mm inside A's at the
+    stance, p95 Look 26.1, close 29.0 mm; right 9.2, outside): the hip pin's fill hands the inner thigh's top to the
+    pelvis (B pelvis 0.48-0.59, thigh_share 0.39-0.50, 110-240 mm under the hip joint, 20-120 mm off the crotch strip;
+    A thigh 0.87-0.94), so where the stance turns the thigh 7-13 degrees (her left in, her right out) B's inner thigh
+    stays with the pelvis: inside A's on the left, outside on the right."""
+    import topo_uv as tu
+    from scipy.spatial import cKDTree
+    from surfdist import Surface
+    names = sk["names"]
+    m = A.mesh("Heroine")
+    na = A.skeleton(0).names
+    PA = m.P.astype(float)
+    WA = np.zeros((len(PA), len(na)))
+    np.put_along_axis(WA, m.J.astype(int), m.W.astype(float), 1)
+    parts = list(map(str, topo["parts"]))
+    part = topo["part"]
+    zone = np.isin(part, [parts.index(p) for p in cfg.get("parts", ["thigh"])])
+    dc, _ = cKDTree(P[part == parts.index("crotch")]).query(P)
+    H = np.asarray(sk["worlds"][names.index("thigh_l")])[:3, 3]
+    dep = H[1] - P[:, 1]
+    k = zone * s01((dc - float(cfg["crotch_d_m"])) / float(cfg["crotch_ease_m"])) * (1 - s01((dep - float(cfg["depth_m"])) / float(cfg["depth_ease_m"])))
+    k *= 1 - s01((np.abs(P[:, 0]) - float(cfg["x_full_m"])) / float(cfg["x_ease_m"]))     # the thigh's inner side
+    if "back_z_m" in cfg:                                                                   # its back (the crease side kept B's)
+        k *= 1 - s01((P[:, 2] - H[2] - float(cfg["back_z_m"])) / float(cfg["back_ease_m"]))
+    ids = np.where((k > 1e-4) & (P[:, 0] > 0))[0]
+    q, _, tri, d = Surface(PA, m.T).closest(a_lookup(P, cfg)[ids], k=16)
+    a, b, c = (PA[m.T[tri, i]] for i in range(3))
+    w = np.clip(tu.bary(q, a, b, c), 0, None)
+    w /= w.sum(1, keepdims=True)
+    Wq = sum(w[:, i:i + 1] * WA[m.T[tri, i]] for i in range(3))
+    Wt = np.zeros((len(ids), len(names)))
+    for an, bn in cfg["map"].items():
+        an, bn = (x.replace("{s}", "l").replace("{o}", "r") for x in (an, bn))
+        if an in na:
+            Wt[:, names.index(bn)] += Wq[:, na.index(an)]
+    cover = Wt.sum(1)
+    Wt /= np.maximum(cover[:, None], 1e-12)
+    kk = k[ids] * (cover >= float(cfg["cover_min"]))
+    W = W.copy()
+    W[ids] = (1 - kk[:, None]) * W[ids] + kk[:, None] * Wt
+    W = mirror(W, topo, names)
+    return W, {"points_left": int((kk > 1e-4).sum()), "A_dist_mm_p95": round(float(np.percentile(d[kk > 1e-4] * 1e3, 95)), 2),
+               "cover_p5": round(float(np.percentile(cover[k[ids] > 1e-4], 5)), 3)}
+
+
+def a_neck(W, P, topo, sk, A, cfg, ring=None):
+    """A spec's "weights" "a_neck" (P1 R1 round 32, her body: her neck IS A's surface at the rest, her_a): A's own skin
+    weights over the neck part, mapped onto B's bones by role (cfg "map", A bone: B bone; "{s}" per side), full from the
+    head's seam (the ring, `ring`: the body's points the head is welded to) down to h_full_m under it, eased out over
+    h_ease_m; only where A's mapped bones hold cover_min of A's weight. Her left's taken (the midline averaged by mirror).
+    The head's own weights are the ring's (head() below), so the seam carries A's turn on both sides. Why (gate judge 2
+    fault 6, the throat blot at fight_close, B's reads stronger than A's line): A's neck rides the head (Head 0.74-0.80
+    at the seam, 0.5-0.6 at 30-45 mm under it, 0.2 at 50-80 mm), B's rode neck_02 / neck_01 (Head 0.00-0.19), so where
+    the fight turns her head B's throat stayed with the neck: 6-9 mm inside A's 10-40 mm under the seam, its normals 11-19
+    degrees off, a dent the light reads as a purple shade at the seam."""
+    import topo_uv as tu
+    from surfdist import Surface
+    names = sk["names"]
+    m = A.mesh("Heroine")
+    na = A.skeleton(0).names
+    PA = m.P.astype(float)
+    WA = np.zeros((len(PA), len(na)))
+    np.put_along_axis(WA, m.J.astype(int), m.W.astype(float), 1)
+    parts = list(map(str, topo["parts"]))
+    part = topo["part"]
+    zone = np.isin(part, [parts.index(p) for p in cfg.get("parts", ["neck"])])
+    R = P[ring]
+    c = R.mean(0)
+    ang = np.arctan2(P[:, 0] - c[0], P[:, 2] - c[2])
+    ra = np.arctan2(R[:, 0] - c[0], R[:, 2] - c[2])
+    o = np.argsort(ra)
+    dy = np.interp(ang, ra[o], R[o, 1], period=2 * np.pi) - P[:, 1]          # height under the seam at its angle
+    k = zone * (1 - s01((dy - float(cfg["h_full_m"])) / float(cfg["h_ease_m"])))
+    ids = np.where((k > 1e-4) & (P[:, 0] >= 0))[0]
+    q, _, tri, d = Surface(PA, m.T).closest(a_lookup(P, cfg)[ids], k=16)
+    a, b, c_ = (PA[m.T[tri, i]] for i in range(3))
+    w = np.clip(tu.bary(q, a, b, c_), 0, None)
+    w /= w.sum(1, keepdims=True)
+    Wq = sum(w[:, i:i + 1] * WA[m.T[tri, i]] for i in range(3))
+    Wt = np.zeros((len(ids), len(names)))
+    for s in ("l", "r"):
+        for an, bn in cfg["map"].items():
+            if "{s}" not in an and s == "r":
+                continue
+            an, bn = an.replace("{s}", s), bn.replace("{s}", s)
+            if an in na:
+                Wt[:, names.index(bn)] += Wq[:, na.index(an)]
+    cover = Wt.sum(1)
+    Wt /= np.maximum(cover[:, None], 1e-12)
+    kk = k[ids] * (cover >= float(cfg["cover_min"]))
+    W = W.copy()
+    W[ids] = (1 - kk[:, None]) * W[ids] + kk[:, None] * Wt
+    W = mirror(W, topo, names)
+    return W, {"points_left": int((kk > 1e-4).sum()), "A_dist_mm_p95": round(float(np.percentile(d[kk > 1e-4] * 1e3, 95)), 2),
+               "cover_p5": round(float(np.percentile(cover[k[ids] > 1e-4], 5)), 3)}
+
+
+def a_axilla(W, P, topo, sk, A, cfg):
+    """A spec's "weights" "a_axilla" (P1 R1 round 35, her body: her armpit and the folds before and behind it ARE A's
+    surface at the rest, her_a, B's rest twin 0.1-1.6 mm off A's there): A's own skin weights about the armpit, mapped
+    onto B's bones by ROLE (cfg "map", A bone: B bone; "{s}" per side): A's rigid passengers onto the bone they ride
+    (A's lat, pec and scap never turn off A's spine_03, so B's spine_04, not B's lat/pec aim helpers or its girdle-driven
+    scap; A's delt rides A's upperarm_twist_02 rigidly; A's clavicle's turn is B's trap's, a_shoulder_top). The zone:
+    cfg "parts" within r_full_m of the armpit's apex (the shoulder part's lowest points, B's rest, each side), eased out
+    over r_ease_m; if "cap_y_m" is given, the shoulder part's points over the apex by more than it are eased out over
+    cap_ease_m (the cap kept). Only where A's mapped bones hold cover_min of A's weight. Her left's taken, mirrored.
+    Why (gate judge 3 fault 1, the front armpit fold a bright pinched lip over a dark notch at the close-up, Look and
+    idle; fault 2, the back-armpit pinch at fight_close 375-377): B's front fold rode its spine (spine_04 0.44, the
+    share 0.02) where A's rides the upper arm's share and its twist (lat/spine 0.39, share 0.18, twist_02 0.26), and
+    B's pit and back fold rode its share (0.31-0.40, A 0.20-0.21); B's share lags A's by 20 deg on a hanging arm (its
+    hanging branch, rig girdle), so the folds' skin turned off A's: posed export normals in the pit 28-43 deg (median)
+    off B's own surface, A's 18-30."""
+    import topo_uv as tu
+    from surfdist import Surface
+    names = sk["names"]
+    m = A.mesh("Heroine")
+    na = A.skeleton(0).names
+    PA = m.P.astype(float)
+    WA = np.zeros((len(PA), len(na)))
+    np.put_along_axis(WA, m.J.astype(int), m.W.astype(float), 1)
+    parts = list(map(str, topo["parts"]))
+    part = topo["part"]
+    zone = np.isin(part, [parts.index(p) for p in cfg.get("parts", ["shoulder", "trunk", "arm"])])
+    sh = np.where((part == parts.index("shoulder")) & (P[:, 0] > 0))[0]
+    apex = P[sh[np.argsort(P[sh, 1])[:6]]].mean(0)
+    k = zone * (1 - s01((np.linalg.norm(P - apex, axis=1) - float(cfg["r_full_m"])) / float(cfg["r_ease_m"])))
+    if "cap_y_m" in cfg:
+        k *= 1 - (part == parts.index("shoulder")) * s01((P[:, 1] - apex[1] - float(cfg["cap_y_m"])) / float(cfg["cap_ease_m"]))
+    ids = np.where((k > 1e-4) & (P[:, 0] > 0))[0]
+    q, _, tri, d = Surface(PA, m.T).closest(a_lookup(P, cfg)[ids], k=16)
+    a, b, c = (PA[m.T[tri, i]] for i in range(3))
+    w = np.clip(tu.bary(q, a, b, c), 0, None)
+    w /= w.sum(1, keepdims=True)
+    Wq = sum(w[:, i:i + 1] * WA[m.T[tri, i]] for i in range(3))
+    Wt = np.zeros((len(ids), len(names)))
+    for an, bn in cfg["map"].items():
+        an, bn = an.replace("{s}", "l"), bn.replace("{s}", "l")
+        if an in na:
+            Wt[:, names.index(bn)] += Wq[:, na.index(an)]
+    cover = Wt.sum(1)
+    Wt /= np.maximum(cover[:, None], 1e-12)
+    if "breast_l" in names and "breast_tip_l" in names:      # the breast's share split onto its tip by B's own rule
+        ib, it = names.index("breast_l"), names.index("breast_tip_l")
+        h, tip = sk["ends"]["breast_l"][0], sk["ends"]["breast_tip_l"][1]
+        lo, hi = wt.RULES["breast_tip"]
+        kt = s01((wt.seg_t(P[ids], h, tip) - lo) / (hi - lo))
+        Wt[:, it] += Wt[:, ib] * kt
+        Wt[:, ib] *= 1 - kt
+    kk = k[ids] * (cover >= float(cfg["cover_min"]))
+    W = W.copy()
+    W[ids] = (1 - kk[:, None]) * W[ids] + kk[:, None] * Wt
+    W = mirror(W, topo, names)
+    return W, {"points_left": int((kk > 1e-4).sum()), "A_dist_mm_p95": round(float(np.percentile(d[kk > 1e-4] * 1e3, 95)), 2),
+               "cover_p5": round(float(np.percentile(cover[k[ids] > 1e-4], 5)), 3), "apex_m": [round(float(x), 4) for x in apex]}
+
+
 def mirror(W, topo, names):
     sw = np.array([names.index(wt.swap_side(n)) for n in names])
     mo = topo["mirror_of"]
@@ -596,11 +943,11 @@ def mirror(W, topo, names):
     return W
 
 
-def body(P, topo, sk):
+def body(P, topo, sk, rules=None):
     c = Ctx(P, topo, sk)
     names, par = sk["names"], sk["parents"]
     W = trunk(c)
-    W, rep = limbs(c, W)
+    W, rep = limbs(c, W, rules)
     W = smooth_part(W, c.Q, np.isin(c.part, c.pid("hand")), HAND_SMOOTH)
     frames = {n: sk["worlds"][i] for i, n in enumerate(names)}
     tails = {n: sk["ends"][n][1] for n in names}

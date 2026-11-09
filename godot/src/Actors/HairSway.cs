@@ -183,6 +183,9 @@ public partial class HairSway : Node
             // to 4 cm off her middle, where her shoulder blades rise (her middle, as the hair hangs, is as it was). Only
             // toward her back: sideways and in front they are as they were. Env NOBACKWIDE=1 leaves it out, to compare.
             if (name.StartsWith("spine")) { list[^1].WB = Lerp3(BackY, BackW, list[^1].At.Y); list[^1].Bulge = Lerp3(BackY, BackOut, list[^1].At.Y); }
+            // (P1 R1 sliders: the ball, laid in A's rest, carried by its B bone's move against the ref body (P1Body.OnB: a
+            // height slider's head and back 70-98 mm down); its back profile read at A's height above; nothing on A or her_b)
+            list[^1].At = P1Body.OnB(sk, list[^1].Bone, list[^1].At);
         }
         // (her shoulders and upper arms only: her forearm and fist sweeping past her head as she threw kicked the chain
         // up over her head, hair judge hj1; the shader keeps her hair out of her forearms)

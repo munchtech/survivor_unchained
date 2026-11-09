@@ -37,6 +37,7 @@ P1 = REPO / "godot/art/people/body_p1"
 DUMP = HERE / "out/clips"
 ARM = ("upperarm", "lowerarm", "hand", "thumb", "index", "middle", "ring", "pinky")
 TORSO = ("pelvis", "spine", "thigh", "glute", "breast", "pec", "lat", "belly", "butt")
+GIRDLE = ("clavicle", "scap", "trap", "delt", "upperarm")
 SPIKE_X, SPIKE_DEG = 4.0, 3.0
 AXILLA = 0.4   # the upper arm's first 40% along its axis: the armpit fold (skin/weights, not the clip), reported apart
 
@@ -65,7 +66,12 @@ def classes(p):
     body = p.piece == "body"
     arm = {s: body & np.array([d.startswith(ARM) and d.endswith("_" + s) for d in dom]) for s in "lr"}
     hand = {s: body & np.array([d.startswith(ARM[2:]) and d.endswith("_" + s) for d in dom]) for s in "lr"}
-    torso = body & np.array([d.startswith(TORSO) for d in dom])
+    # the torso: dominant torso bone AND under a third girdle/arm share. Weights v5 (CLAV front_below) left ~100 of
+    # the shoulder part's front points dominant spine_04 while the girdle still moves them: as "torso" they put the
+    # armpit fold's own skin inside it (axilla 50 -> 173-200 points at the 30 mm cap) and flipped the elbow's sign
+    # (-91 against A's 219), a reading, not a penetration (P1 A shoulder, round 12)
+    gi = [k for k, n in enumerate(p.names) if n.startswith(GIRDLE)]
+    torso = body & np.array([d.startswith(TORSO) for d in dom]) & (p.D[:, gi].sum(1) < 1.0 / 3.0)
     return arm, hand, torso
 
 
@@ -285,8 +291,10 @@ def main():
     ap.add_argument("--out", default=str(HERE / "out"))
     ap.add_argument("--step", type=int, default=0, help="pose every Nth key (default: about 30 poses per clip)")
     ap.add_argument("--dump", default=str(DUMP), help="the keys dump folder (default tools/body/out/clips)")
+    ap.add_argument("--p1", default=None, help="B's published folder (default godot/art/people/body_p1; a slider variant's body_p1_var/NAME)")
     ap.add_argument("--no-a", action="store_true", help="skip A's arm read")
     a = ap.parse_args()
+    P1 = Path(a.p1) if a.p1 else globals()["P1"]
     rig = json.loads((P1 / "rig.json").read_text())
     B = A = None
     report = {}

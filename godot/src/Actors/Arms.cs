@@ -232,15 +232,26 @@ public static class Arms
     /// space the fingers run +Y and the thumb side is +Z.</summary>
     public static Node3D Hold(People.Person person, string id, string bone = "hand_r")
     {
-        var att = new BoneAttachment3D { BoneName = bone };
+        var att = new BoneAttachment3D { BoneName = P1Body.BoneName(person.Skeleton, bone) };
         person.Skeleton.AddChild(att);
         var mount = new Node3D { Name = GripSlide.MountPrefix + bone };
         att.AddChild(mount);
-        mount.Transform = MountTransform(id, bone, person.Own != null);
+        mount.Transform = InAFrame(person.Skeleton, bone) * MountTransform(id, bone, person.Own != null);
+        if (P1Body.IsB(person.Skeleton)) P1Laws.Follow(person.Skeleton, mount, bone, MountTransform(id, bone, person.Own != null));
         var w = Make(id);
         w.Transform = Seat(w, id, bone, person.Own != null, P1Body.IsB(person.Skeleton));
         mount.AddChild(w);
         return mount;
+    }
+
+    /// <summary>A held mount's frame: on A (and anyone but P1's B) the bone's own; on B the A bone's frame in the B bone's space
+    /// (P1Retarget.AFrame, a turn about the joint; B's hand and forearm joints ride A's path), so the mount, keyed in A's hand
+    /// and forearm frames, rides as on A. In B's own frame (its hands 6.7 degrees about their x off A's, the forearms 1-4
+    /// about their length) the sword's tip sat 113 mm and the shield's rim 30 mm off A's (P1 R1 round 31, gate judge 2's fault 2).</summary>
+    public static Transform3D InAFrame(Skeleton3D sk, string bone)
+    {
+        if (!P1Body.IsB(sk) || P1Body.RoleMap(sk).AFrame(P1Body.Bone(sk, bone)) is not { } r) return Transform3D.Identity;
+        return P1Body.T(P1M4.From(r, new P1V(0, 0, 0)));
     }
 
     /// <summary>A held piece's place inside its mount (Hold's and ArmsDump's): PieceTransform, and in her right hand, for a
@@ -478,8 +489,12 @@ public static class Arms
         if (P1Body.IsB(skeleton) && skeleton.FindBone(P1Body.BoneName(skeleton, bone)) is int bb and >= 0)
         {
             // (P1's B: the socket kept at its rest-world point (A's rest coordinates, RestOf), on the B bone that plays the
-            // A bone's part (B's spine_03 is mid-back; A's chest is B's spine_05))
-            var toB = skeleton.GetBoneGlobalRest(bb).AffineInverse() * RestOf(bone);
+            // A bone's part (B's spine_03 is mid-back; A's chest is B's spine_05); P1 R1 sliders: on a slider body carried
+            // by that B bone's move against the ref body (P1Body.OnB, as the hair's pivots are), so it keeps its place on
+            // her: at A's rest point the height -0.15 body's hip axe rode 69 mm over her hip, at her elbow; the ref body: 0)
+            var restA = RestOf(bone);
+            restA.Origin = P1Body.OnB(skeleton, bb, restA.Origin);
+            var toB = skeleton.GetBoneGlobalRest(bb).AffineInverse() * restA;
             at = toB * at;
             if (pivotAt is { } pv) pivotAt = toB * pv;
             if (WeaponSockets.SocketOf(KindOf(id)) == WeaponSockets.HipBlade)

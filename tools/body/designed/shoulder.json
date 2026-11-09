@@ -1,0 +1,28 @@
+{
+ "about": "P1 R1c form library: HER SHOULDERS (OURS, designed; rule \"field\"). The milestone judge (in game, close-up camera): \"a tube-like neck flaring into shoulders as wide as the hips, with deltoids that look like shoulder pads\". With torso.json's shoulder_span (the span itself, a skeletal width: it moves the arm joints), these set the shoulder's soft forms: the trapezius' rise up the side of the neck (the neck flows into the shoulder line) and the deltoid cap. Masks on the reference V0 (glTF m, x her left +, y up, z front +; the A-pose rest, the shrug reference: its shoulder top at y 1.60-1.62 between 5 and 13 cm out).",
+ "sliders": {
+  "trap_rise": {"range": [-1, 1], "rule": "field", "post_join": true, "order": 13, "soft": true,
+   "moves": [
+    {"translate": [0.0, 0.018, 0.0],
+     "mask": [{"on": "ax", "full": [0.10, 0.10], "fade": [0.025, 0.085]},
+              {"on": "z", "full": [null, -0.01], "fade": 0.06},
+              {"on": "y", "full": [1.57, null], "fade": [0.08, 0]},
+              {"on": "ring", "full": [0.03, null], "fade": [0.02, 0]}]}
+   ],
+   "relax": {"mask": [{"on": "ell", "c": [0.145, 1.39, -0.005], "r": [0.04, 0.075, 0.06], "full": 0.3}], "iters": 40, "step": 0.5},
+   "why": "the trapezius carried up the side of the neck: 16 mm up at v = 1, full 9.5-11.5 cm out (5 mm at 7 cm, 13 mm at 13 cm, 0 by 16.5 cm), the back and top only (z under -1 cm, easing over 6 cm), the back below the shoulder top easing over 8 cm, the ring and the neck column within 1 cm of it held (C2): trap_drop's 26 mm cut at 5.5-8.5 cm left a level yoke from 9 to 17 cm out (the shoulder top 71-90 mm under the chin) that met the neck column in a corner (a tube on a flat yoke); this lifts the yoke's inner half into one slope from the neck to the acromion (the shoulder top 7 -> 17 cm: about -40 -> -90 mm). Off the back midline: the nape (and skeleton.cervical_joint) does not move."},
+  "deltoid_cap": {"range": [-1, 1], "rule": "field", "order": 25, "soft": true,
+   "relax": {"mask": [{"on": "ell", "c": [0.143, 1.602, -0.067], "r": [0.03, 0.03, 0.035], "full": 0.3}], "iters": 40, "step": 0.5},
+   "moves": [
+    {"normal": -0.013,
+     "mask": [{"on": "ell", "c": [0.232, 1.528, -0.038], "r": [0.075, 0.075, 0.09], "full": 0.0}]},
+    {"normal": -0.009,
+     "mask": [{"on": "ell", "c": [0.238, 1.565, -0.035], "r": [0.045, 0.05, 0.08], "full": 0.0}],
+     "why": "P1 R1 round 9 (judge: square corners at the Look make the torso a block, more armored than feminine): about 9 mm off the deltoid's top-outer corner along its normal, a C2 bell over 4.5-5 cm, kept outboard of the 12.5-20.5 cm line's inner fill: a rounder, softer cap; soft, no joint follows"},
+    {"translate": [0.0, 0.012, 0.0], "mask": [{"on": "ell", "c": [0.168, 1.58, -0.03], "r": [0.06, 0.06, 0.1], "full": 0.0}],
+     "why": "P1 R1c round 7: the Look's silhouette step where trap_rise's fade meets the deltoid: hanging, the line went concave at 15-17 cm out (+8 /m); filled so it stays convex from 12.5 cm to the deltoid (rule shoulder_line_concave_per_m); height only, no width"},
+    {"translate": [0.0, 0.003, 0.0], "mask": [{"on": "ell", "c": [0.115, 1.615, -0.03], "r": [0.04, 0.04, 0.1], "full": 0.0}]}
+   ],
+   "why": "the deltoid cap cut in: 11 mm along the inward normal at v = 1 at the cap's middle (V0 (23.2, 152.8, -3.8) cm: the outer top of the shoulder over the humeral head), a C2 bell easing to 0 over 7.5 cm sideways and up, 9 cm front to back (the front, outer and back heads together). Her cap stood 64 mm off the humerus axis over a 43-47 mm upper arm (a 17-20 mm ball: \"shoulder pads\"); this takes about 20% off the cap's radius and blends it into the arm and the trapezius as one slope. Soft (build_topo.bone_body): soft tissue, the joints do not move. P1 R1c round 3: its relax evens the one stretched quad a side where the cap's back meets trap_rise (V0 (14.3, 160.2, -6.7) cm, aspect 4.09: a 3 mm edge against a 12 mm one), shape kept (tangential). trap_rise is now soft too (no joint follows it)."}
+ }
+}

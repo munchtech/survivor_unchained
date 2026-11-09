@@ -56,9 +56,13 @@ public class P1BakeTests
         var bake = new P1Bake(rig, new P1Retarget(names, parent, rest, rig));
         var a = Pose(names, parent, rest, new() { ["clavicle_l"] = new(0, 0, D(25)), ["scap_l"] = new(D(10), 0, 0), ["upperarm_l"] = new(D(30), D(20), D(-40)), ["lowerarm_l"] = new(D(70), 0, 0), ["spine_03"] = new(D(8), 0, D(5)) });
         var mapped = bake.Map.Map(a);
-        var (L, G) = bake.Frame(a);
-        foreach (var g in new[] { "clavicle_l", "scap_l", "clavicle_r", "scap_r" })
+        var (L, G) = bake.Hold(mapped);
+        foreach (var g in new[] { "scap_l", "scap_r" })
             Assert.True(Diff(L[rig.Index[g]], bake.RestLocal(rig.Index[g])) < 1e-9, $"{g} not at B's rest local");
+        // the clavicle as mapped (P1 R1 arm chain: the plain map with align; the law leaves it to A's HerShrug)
+        Assert.True(rig.ShrugDriven, "the published rig drives the clavicle by the shrug");
+        foreach (var g in new[] { "clavicle_l", "clavicle_r" })
+            Assert.True(Ang(P1Retarget.Rot(G[rig.Index[g]]), P1Retarget.Rot(mapped[rig.Index[g]])) < 1e-6, $"{g} not as mapped");
         foreach (var n in new[] { "upperarm_l", "lowerarm_l", "hand_l" })
         {
             double deg = Ang(P1Retarget.Rot(G[rig.Index[n]]), P1Retarget.Rot(mapped[rig.Index[n]]));
@@ -69,8 +73,27 @@ public class P1BakeTests
         Assert.True((G[u].T() - G[c] * bake.RestLocal(u).T()).Len() < 1e-9);
         // a source with no girdle turn: the hold changes nothing
         var a0 = Pose(names, parent, rest, new() { ["upperarm_l"] = new(D(30), 0, 0) });
-        var (_, G0) = bake.Frame(a0);
+        var (_, G0) = bake.Hold(bake.Map.Map(a0));
         Assert.True((G0[rig.Index["hand_l"]].T() - a0[rig.Index["hand_l"]].T()).Len() < 1e-6);
+    }
+
+    [Fact]
+    public void ClavicleLandsOnALineAfterTheLaw()
+    {
+        var (names, parent, rest, rig) = B();
+        var bake = new P1Bake(rig, new P1Retarget(names, parent, rest, rig));
+        // (the arm high: the law turns the clavicle, and the bake keys under it)
+        var a = Pose(names, parent, rest, new() { ["clavicle_l"] = new(0, 0, D(25)), ["upperarm_l"] = new(D(30), D(20), D(-70)), ["lowerarm_l"] = new(D(70), 0, 0), ["spine_03"] = new(D(8), 0, D(5)) });
+        var (_, G) = bake.Frame(a);
+        Assert.Null(rig.ClavicleTurn(G, "l"));     // (shrug-driven: the law leaves the clavicle as the map lays it)
+        var (D2, _) = rig.Drive(G);
+        int c = rig.Index["clavicle_l"], u = rig.Index["upperarm_l"];
+        var want = bake.Map.ClavicleLine(a, "l");
+        var got = D2[u].T() - D2[c].T();
+        double deg = Math.Acos(Math.Clamp(P1V.Dot(want, got) / (want.Len() * got.Len()), -1, 1)) * 180 / Math.PI;
+        Assert.True(deg < 1e-4, $"clavicle line {deg:F4} deg off A's after the laws");
+        Assert.True(Ang(P1Retarget.Rot(D2[u]), P1Retarget.Rot(bake.Map.Map(a)[u])) < 1e-4, "the upper arm's world turn moved");
+        Assert.True(Diff(bake.Frame(a).Local[rig.Index["scap_l"]], bake.RestLocal(rig.Index["scap_l"])) < 1e-9);
     }
 
     [Fact]
@@ -83,10 +106,16 @@ public class P1BakeTests
         var k = bake.Keyed(new HashSet<int> { I("upperarm_l"), I("lowerarm_l"), I("clavicle_l"), I("upperarm_twist_01_l") });
         Assert.Contains(rig.Index["upperarm_l"], k);
         Assert.Contains(rig.Index["lowerarm_l"], k);
-        Assert.DoesNotContain(rig.Index["clavicle_l"], k);              // the girdle: held, never keyed
+        Assert.Contains(rig.Index["clavicle_l"], k);                    // the clavicle: A's, keyed where A keys it (the scapula never)
         Assert.DoesNotContain(rig.Index["upperarm_twist_01_l"], k);     // a helper: B's laws
         Assert.DoesNotContain(rig.Index["upperarm_r"], k);
         Assert.DoesNotContain(rig.Index["pelvis"], k);
+        // a clip keying the arm and not the clavicle (her blows): on the shrug-driven rig B's clavicle stays unkeyed as A's
+        // (its init, the map of A's rest, as A's is), not the scapula
+        var arm = bake.Keyed(new HashSet<int> { I("upperarm_r"), I("lowerarm_r") });
+        Assert.DoesNotContain(rig.Index["clavicle_r"], arm);
+        Assert.DoesNotContain(rig.Index["clavicle_l"], arm);
+        if (rig.Index.TryGetValue("scap_r", out int scr)) Assert.DoesNotContain(scr, arm);
         // the chain: a bone between pelvis and Head is keyed when either bracket is
         var spine = bake.Keyed(new HashSet<int> { I("spine_03") });
         Assert.NotEmpty(spine);
@@ -165,8 +194,11 @@ public class P1BakeTests
         var (names, _, _, rig) = B();
         var map = new P1Retarget(an, ap, ar, rig);
         string Role(string a) { int j = map.Role(Array.IndexOf(an, a)); return j < 0 ? "-" : names[j]; }
-        Assert.Equal("spine_05", Role("spine_03"));
-        Assert.StartsWith("neck_0", Role("neck_01"));
+        // (B's trunk joints are A's, P1 R1 rig root: each A chain bone's role is the B bone on its joint)
+        Assert.True(map.JointsMatched, "B's trunk joints are not A's");
+        Assert.Equal("spine_04", Role("spine_03"));
+        Assert.Equal("spine_02", Role("spine_01"));
+        Assert.Equal("neck_02", Role("neck_01"));
         foreach (var n in new[] { "upperarm_l", "hand_r", "thigh_l", "foot_r", "clavicle_l", "Head", "pelvis" }) Assert.Equal(n, Role(n));
         int pf = Array.IndexOf(an, "panel_front");
         Assert.True(pf >= 0);
@@ -174,5 +206,50 @@ public class P1BakeTests
         // the carriage's spine shares spread over B's chain keep their total
         var spread = map.Spread(new[] { ("spine_01", 0.2), ("spine_02", 0.3), ("spine_03", 0.35), ("neck_01", 0.15) });
         Assert.True(Math.Abs(spread.Sum(s => s.Share) - 1.0) < 1e-9);
+        // and B's chest (spine_05) turns by A's chest's total (spine_01..03): the shares at or below it sum to 0.85
+        int chest = Array.IndexOf(names, "spine_05");
+        bool ChestOrAbove(int j) { for (; j >= 0; j = rig.Parent[j]) if (j == chest) return true; return false; }
+        double low = spread.Where(s => !ChestOrAbove(s.B) || s.B == chest).Sum(s => s.Share);
+        Assert.True(Math.Abs(low - 0.85) < 1e-9, $"B's chest takes {low:0.000} of the turn, A's 0.85");
+    }
+
+    [Fact]
+    public void ChainLandsTheChestAndTheHeadWhereACarriesThem()
+    {
+        // A (a_skeleton.json) bent up its spine and neck; B (the fixture) mapped: B's chest (spine_05) takes A's chest turn
+        // whole, and its joint and the Head's land where A's chest and Head carry B's rest points, through the bake too
+        var r = JsonDocument.Parse(File.ReadAllText(Path.Combine(Root(), "art", "people", "body_p1", "a_skeleton.json"))).RootElement;
+        var an = r.GetProperty("names").EnumerateArray().Select(x => x.GetString()!).ToArray();
+        var ap = r.GetProperty("parent").EnumerateArray().Select(x => x.GetInt32()).ToArray();
+        var ar = r.GetProperty("rest").EnumerateArray().Select(M).ToArray();
+        var (names, _, rest, rig) = B();
+        var map = new P1Retarget(an, ap, ar, rig);
+        Assert.Equal("spine_05", names[map.BChest]);
+        Assert.Equal("spine_03", an[map.AChest]);
+        var a = Pose(an, ap, ar, new() { ["pelvis"] = new(D(3), D(-4), D(2)), ["spine_01"] = new(D(6), 0, D(-3)), ["spine_02"] = new(D(-5), D(4), D(4)),
+            ["spine_03"] = new(D(8), D(-6), D(5)), ["neck_01"] = new(D(-7), D(10), 0), ["Head"] = new(D(12), D(-15), D(4)) });
+        P1M3 Turn(P1M4 posed, P1M4 rest0) => P1Retarget.Rot(posed) * P1Retarget.Rot(rest0).T();
+        P1V Carry(int ai, P1V p) => a[ai].T() + Turn(a[ai], ar[ai]) * (p - ar[ai].T());
+        int bc = map.BChest, ac = map.AChest, bh = rig.Index["Head"], ah = Array.IndexOf(an, "Head");
+        var mapped = map.Map(a);
+        var (_, G) = new P1Bake(rig, map).Frame(a);
+        const double Tol = 1e-5;   // (B's rest joints are A's to the glb's 1e-6 m: a carried point ~1e-7 m off)
+        foreach (var g in new[] { mapped, G })
+        {
+            Assert.True(Ang(Turn(g[bc], rest[bc]), Turn(a[ac], ar[ac])) < 1e-4, "B's chest is not A's chest turn");
+            Assert.True((g[bc].T() - Carry(ac, rest[bc].T())).Len() < Tol, $"chest joint {(g[bc].T() - Carry(ac, rest[bc].T())).Len() * 1000:F3} mm off A's carried");
+            Assert.True((g[bh].T() - Carry(ah, rest[bh].T())).Len() < Tol, $"Head joint {(g[bh].T() - Carry(ah, rest[bh].T())).Len() * 1000:F3} mm off A's carried");
+            Assert.True(Ang(Turn(g[bh], rest[bh]), Turn(a[ah], ar[ah])) < 1e-4, "B's Head is not A's Head turn");
+        }
+        // the matched trunk (P1 R1 rig root): every B chain joint where its A segment's bone carries it, at that bone's turn
+        // (B's spare bones, spine_01, spine_05, neck_01, too), and a partial clip's map the same (no landing to skip)
+        var partial = map.Map(a, new HashSet<int> { ah });
+        foreach (var bn in new[] { "pelvis", "spine_01", "spine_02", "spine_03", "spine_04", "spine_05", "neck_01", "neck_02", "Head" })
+        {
+            int bj = rig.Index[bn], src = map.Source(bj).S0;
+            Assert.True((mapped[bj].T() - Carry(src, rest[bj].T())).Len() < Tol, $"{bn} joint {(mapped[bj].T() - Carry(src, rest[bj].T())).Len() * 1000:F3} mm off A's carried");
+            Assert.True(Ang(Turn(mapped[bj], rest[bj]), Turn(a[src], ar[src])) < 1e-4, $"{bn} is not its A segment's turn");
+            Assert.True((partial[bj].T() - mapped[bj].T()).Len() < 1e-12);
+        }
     }
 }

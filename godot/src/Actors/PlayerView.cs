@@ -194,6 +194,8 @@ public partial class PlayerView : Node3D
     // What Carry asked of the fade this frame, handed to HerArmHold after the tree's next Advance (the frame it shows).
     (bool Fading, float E, Animation? Walk, Animation? Run, Animation? Sprint, double WalkT, double RunT, float Fast) armFade;
     static readonly bool ArmBlendOff = SurvivorUnchained.Args.Get("arm-blend") == "off";
+    // --anim-log: per frame, her move weights, the arm-hold switch and the shots (the pose ruler's frames: P1PoseProbe).
+    static readonly bool AnimLog = SurvivorUnchained.Args.Has("anim-log");
     // Her gait (animation 51): the walk's and run's ground speeds and lengths, the shared stride phase (0 = left heel down), and how long she has stood.
     float walkSpeed, walkLen, runLen, stride, standT;
     bool hasWalk;
@@ -307,6 +309,8 @@ public partial class PlayerView : Node3D
             person.Skeleton.AddChild(carriage);
             person.Skeleton.MoveChild(carriage, 0);
             // First of all, on the tree's own pose (before her carriage, her pose layer and the helpers).
+            // Not on B (ArmHold.Layered; the owner, 5 Nov: the arm-hold crossfade is retired for B): B's holds are clip
+            // data (P4), so B has no HerArmHold and no arms' copy. (armMod null -> armNow false.)
             if (layered)
             {
                 armMod = new HerArmHold();
@@ -1371,10 +1375,15 @@ public partial class PlayerView : Node3D
         tree.Set("parameters/move/runSeek/seek_request", stride * runLen);
         // Her arms in one hold or the other (Play/ArmHold): only where the walk and the run carry a piece in hand
         // (her walk for this calling and kind, armed, not sheathed); elsewhere today's per-bone mix. --arm-blend off: the mix.
-        bool armNow = !ArmBlendOff && armMod != null && hasWalk && !sheath.Sheathed && (!string.IsNullOrEmpty(loadout.Arms.Right) || loadout.Arms.Left != null);
+        // On P1's B there is no arm-hold layer at all (ArmHold.Layered: no HerArmHold, no arms' copy; the owner, 5 Nov):
+        // B's holds are clip data (P4) and her arms play the main move graph. (P1 R1 pose 4's arms' copy for B's bridge
+        // clips, B to A within 2.7 deg / 9 mm at the elbow, is retired with it: Stage B rebuilds those clips on B.)
+        bool armCopy = !ArmBlendOff && hasWalk && !sheath.Sheathed && (!string.IsNullOrEmpty(loadout.Arms.Right) || loadout.Arms.Left != null);
+        bool armNow = armCopy && armMod != null;
         if (armNow && !armOn) armHold.Reset(w);
         if (armNow) armHold.Step(w, dt);
         armOn = armNow;
+        if (AnimLog) GD.Print($"animlog f {Engine.GetProcessFrames()} w {w:0.000} wWalk {wWalk:0.000} armNow {armNow} run {armHold.Run} E {armHold.E:0.00} fading {armHold.Fading} upper {(bool)tree.Get("parameters/upperShot/active")} full {(bool)tree.Get("parameters/fullShot/active")}");
         // Mid-fade (and nothing laid over her arms: a blow, a roll), HerArmHold lays her arms between the two holds.
         bool fadeNow = armNow && armHold.Fading && !(bool)tree.Get("parameters/fullShot/active") && !(bool)tree.Get("parameters/upperShot/active");
         if (fadeNow && armMod != null)

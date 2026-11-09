@@ -158,7 +158,60 @@ def measure(spec, V=None, z=None, skel_glb=None):
     out["cleft_floor_max_deg"] = t["floors"]["gluteal_cleft"]["max_deg"]
     out["cleavage_floor_over60"] = t["floors"]["cleavage"]["over_60"] if "cleavage" in t["floors"] else None
     out["fold_below_hip_mm"] = round(out["hip_joint_mm"][1] - out["fold_y_mm"])
-    out["waist_over_navel_mm"] = round(out["waist_y_mm"] - out["navel_y_mm"])
+    out["waist_over_pelvis_mm"] = round(out["waist_y_mm"] - pel[1] * 1e3)
+    # P1 R1 round 9 (the butt from behind): the numbers that say two round lobes and a long soft cleft, on the back's
+    # own height map (2 mm grid, zb). cleft_narrow_mm: how far the midline sits forward of the column 26 mm out (a
+    # wide shallow V doesn't read as a cleft, a narrow one does); the cleft's top is where that falls under 8 mm going
+    # up from the apex; the lobe runs from the under-fold to the small of the back
+    j26 = int(round(0.026 / 0.002))
+    nar = (zmid - zb[:, j26]) * 1e3
+    top = i
+    while top + 1 < len(ys) and np.isfinite(nar[top + 1]) and nar[top + 1] >= 8.0:
+        top += 1
+    out["cleft_top_over_hip_mm"] = round((ys[top] - hipL[1]) * 1e3)
+    out["cleft_over_lobe"] = round(float((ys[top] - out["fold_y_mm"] / 1e3) / (out["lumbar_y_mm"] / 1e3 - out["fold_y_mm"] / 1e3)), 3)
+    imid = int(np.argmin(np.abs(ys - (hipL[1] + 0.06))))
+    out["cleft_narrow_at_60_mm"] = round(float(nar[imid]), 1)
+    # the low back's turn at the crest's column: the height span over which the slope falls from 75% to 25% of its
+    # steepest on the way up to the small of the back (a short span is the straight edge the judge saw from behind)
+    def turn(jc):
+        pr = np.array([np.nan if not np.isfinite(v) else v for v in zb[:, jc]])
+        k1 = (ys > hipL[1] + 0.05) & (ys < hipL[1] + 0.30) & np.isfinite(pr)
+        yy, zz2 = ys[k1], np.convolve(np.pad(pr[k1], 5, mode="edge"), np.ones(11) / 11, "valid")
+        sl = np.gradient(zz2, yy)
+        ks = int(np.argmax(sl))
+        hi = next((q for q in range(ks, len(sl)) if sl[q] <= 0.25 * sl[ks]), len(sl) - 1)
+        lo = next((q for q in range(ks, len(sl)) if sl[q] <= 0.75 * sl[ks]), ks)
+        return (yy[hi] - yy[lo]) * 1e3, (yy[lo] + yy[hi]) / 2 * 1e3
+    tb = [turn(int(round(xc / 0.002))) for xc in (0.03, 0.06, 0.09, 0.12)]
+    out["low_back_blend_mm"] = round(min(t0[0] for t0 in tb[:3]), 1)
+    out["low_back_line_drop_mm"] = round(tb[0][1] - tb[3][1], 1)
+    # the under-curve toward the outer hip: how much higher the fold sits at |x| 120 than at |x| 60 (a smile with no lift
+    # reads as one slab over a crease)
+    def fold_at(xc):
+        pr = zb[:, int(round(xc / 0.002))]
+        k1 = (ys >= hipL[1] - 0.30) & (ys <= ya) & np.isfinite(pr)
+        dd = hull_dev(ys[k1], -pr[k1])
+        return ys[k1][int(np.argmax(dd))] * 1e3, float(dd.max()) * 1e3
+    f60, f120 = fold_at(0.06), fold_at(0.12)
+    out["fold_outer_lift_mm"] = round(f120[0] - f60[0], 1)
+    out["fold_outer_depth_mm"] = round(f120[1], 1)
+    # mid-band relief across the cheek: what the eye reads as vertical ripples (the Gaussian band 4-16 mm in x, the
+    # lobes' columns |x| 25-140 mm, apex-60 to apex+90 mm, on the 2 mm grid)
+    from scipy.ndimage import gaussian_filter1d
+    xok = (xs >= 0.0) & (xs < 0.17)
+    band2 = (ys > ya - 0.06) & (ys < ya + 0.09)
+    Zb = np.where(np.isfinite(zb), zb, -0.03)[np.ix_(band2, xok)]
+    Zf = np.concatenate([Zb[:, ::-1], Zb], 1)
+    hp = gaussian_filter1d(Zf, 2.0, axis=1) - gaussian_filter1d(Zf, 8.0, axis=1)
+    hp = hp[:, Zb.shape[1]:]
+    xk = (xs[xok] >= 0.05) & (xs[xok] <= 0.11)
+    # the second x-derivative of a smooth lobe is not a ripple: take off a cubic in x per row
+    resid = []
+    for r0, r1 in zip(Zb, hp):
+        c0 = np.polyfit(xs[xok][xk], r1[xk], 3)
+        resid.append(r1[xk] - np.polyval(c0, xs[xok][xk]))
+    out["cheek_ripple_mm"] = round(float(np.abs(np.array(resid)).max()) * 1e3, 2)
     sa = ray.scene(V, Tall)
     reg = (V[:, 1] > 0.75) & (V[:, 1] < 1.30) & (V[:, 2] < 0.0) & (np.abs(V[:, 0]) < 0.22)
     Nv = fv.vnormals(V, Tall)

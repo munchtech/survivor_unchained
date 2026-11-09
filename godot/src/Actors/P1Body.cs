@@ -20,7 +20,17 @@ namespace SurvivorUnchained.View;
 /// </summary>
 public static class P1Body
 {
-    public const string Dir = "res://art/people/body_p1/";
+    /// <summary>B's published folder. Pictures-only switch `--p1-dir res://art/people/body_p1_var/<name>/` (P1 R1 sliders): a slider
+    /// variant's build, published by tools/body/publish_p1.py --dest, loads from its own folder (body, play, rigs, clips, blend base,
+    /// pieces, cavity, freckles, spring samples); default the gate body's.</summary>
+    public static readonly string Dir = PickDir();
+    public const string DefaultDir = "res://art/people/body_p1/";
+    static string PickDir()
+    {
+        var d = Args.Get("p1-dir");
+        if (string.IsNullOrEmpty(d)) return DefaultDir;
+        return d.EndsWith("/") ? d : d + "/";
+    }
     /// <summary>--body p1, and a published B (with its baked clips) to load.</summary>
     public static bool On => Args.Get("body") == "p1" && ResourceLoader.Exists(Dir + "body.glb") && ResourceLoader.Exists(Dir + "clips.res");
     static PackedScene? close, play;
@@ -34,6 +44,26 @@ public static class P1Body
         return d.RootElement;
     }
 
+    /// <summary>The published spec's "skin" block (publish.json): B's placeholder skin settings on its body material, her head left alone. The skin's rim and its glancing sheen drew a lit line round every form at the Look, whatever the shape (P1 R1 round 7, measured with --skin-set).</summary>
+    public static void ApplySkin(ShaderMaterial m)
+    {
+        // (B's cavity map (its own baked AO about her armpits, topo_bake cavity_keep) as the skin's cavity_map: there it takes
+        // a bounce of the lamps' light where they can't reach (heroine_skin.gdshader's cavity_bounce, the spec's "skin");
+        // P1 R1 round 33, S3, the armpit blot)
+        if (ResourceLoader.Exists(Dir + "cavity.png")) m.SetShaderParameter("cavity_map", GD.Load<Texture2D>(Dir + "cavity.png"));
+        if (!Rig("publish.json").TryGetProperty("skin", out var skin) || skin.ValueKind != JsonValueKind.Object) return;
+        // (a number, or a list of 2-4 for a vec2-vec4: round 36 set the bounce's down-gate, cavity_down, from the spec)
+        foreach (var kv in skin.EnumerateObject())
+        {
+            if (kv.Value.ValueKind == JsonValueKind.Number) { m.SetShaderParameter(kv.Name, kv.Value.GetSingle()); continue; }
+            if (kv.Value.ValueKind != JsonValueKind.Array) continue;
+            var v = kv.Value.EnumerateArray().Select(x => x.GetSingle()).ToArray();
+            if (v.Length == 2) m.SetShaderParameter(kv.Name, new Vector2(v[0], v[1]));
+            else if (v.Length == 3) m.SetShaderParameter(kv.Name, new Vector3(v[0], v[1], v[2]));
+            else if (v.Length == 4) m.SetShaderParameter(kv.Name, new Vector4(v[0], v[1], v[2], v[3]));
+        }
+    }
+
     /// <summary>The library clips baked onto B (People.Clips' names, loops as set there).</summary>
     public static AnimationLibrary Clips()
     {
@@ -42,6 +72,22 @@ public static class P1Body
         foreach (var name in clips.GetAnimationList())
             if (People.IsCycle(name)) clips.GetAnimation(name).LoopMode = Animation.LoopModeEnum.Linear;
         return clips;
+    }
+
+    static (string Bone, Quaternion Turn)[]? blendBase;
+    /// <summary>B's blend base (blend_base.json, the clip bridge's; P1BlendBase lays it): per bone some clip keys, the turn
+    /// from B's mixer's base to B's map of A's rest (none without the file: a bake from before it).</summary>
+    public static (string Bone, Quaternion Turn)[] BlendBase()
+    {
+        if (blendBase != null) return blendBase;
+        var list = new List<(string, Quaternion)>();
+        if (FileAccess.FileExists(Dir + "blend_base.json"))
+            foreach (var kv in JsonDocument.Parse(FileAccess.GetFileAsString(Dir + "blend_base.json")).RootElement.GetProperty("bones").EnumerateObject())
+            {
+                var v = kv.Value.EnumerateArray().Select(x => x.GetSingle()).ToArray();
+                list.Add((kv.Name, new Quaternion(v[0], v[1], v[2], v[3]).Normalized()));
+            }
+        return blendBase = list.ToArray();
     }
 
     /// <summary>Her own clips baked onto B (OwnClips.Her's names; its meta stays heroine_clips.json).</summary>
@@ -110,6 +156,21 @@ public static class P1Body
     /// <summary>B's skeleton (body.glb's, under the flag).</summary>
     public static bool IsB(Skeleton3D? sk) => sk != null && sk.HasMeta("p1_b");
 
+    static Vector3? eyesFromHead;
+    /// <summary>Where the cameras aim on B's head at rest, from her Head joint (skeleton space), once: the point A's
+    /// cameras aim at on A's (People.HerEyesOffset over A's Head rest, a_skeleton.json), since B's head IS A's head at
+    /// A's world rest; the HeroineEyes mesh's box centre only without A's rest. (P1 A round 14: the eyes' box centre
+    /// sits 7.8 mm over and 7.3 mm in front of A's aim, so the Look framed B 7.8 mm lower than A, breasts and all.)</summary>
+    public static Vector3 EyesFromHead(Skeleton3D sk)
+    {
+        if (eyesFromHead is Vector3 e) return e;
+        var head = sk.GetBoneGlobalRest(sk.FindBone("Head")).Origin;
+        if (ARestOn(sk, "Head") is Transform3D aHead) { eyesFromHead = aHead.Origin + People.HerEyesOffset - head; return eyesFromHead.Value; }
+        foreach (var mi in sk.GetChildren().OfType<MeshInstance3D>())
+            if (mi.Name == "HeroineEyes" && mi.Mesh != null) { var c = mi.Mesh.GetAabb().GetCenter(); eyesFromHead = c - head; return c - head; }
+        return new Vector3(0, 0.082f, 0.111f);
+    }
+
     /// <summary>The bone that plays A bone aName's part on this skeleton: FindBone on A (and anyone else); on B the role
     /// map (spine_03 -> B's chest, spine_05; neck_01 -> its B bone; limbs by name; panel_front -> its nearest ancestor's).</summary>
     public static int Bone(Skeleton3D sk, string aName)
@@ -126,6 +187,41 @@ public static class P1Body
     {
         if (!IsB(sk)) return shares.Select(s => (sk.FindBone(s.Bone), s.Share)).ToArray();
         return RoleMap(sk).Spread(shares.Select(s => (s.Bone, (double)s.Share))).Select(s => (s.B, (float)s.Share)).ToArray();
+    }
+
+    // ------------------------------------------------------------- a body's carry from its ref --
+    static Vector3? headMove;
+    static Dictionary<string, Vector3>? refMove;
+    static Vector3 V3(JsonElement e) => new((float)e[0].GetDouble(), (float)e[1].GetDouble(), (float)e[2].GetDouble());
+    static JsonElement? Carry() => FileAccess.FileExists(Dir + "publish.json") && Rig("publish.json").TryGetProperty("carry", out var c) ? c : null;
+
+    /// <summary>publish.json "carry" head_move_m (tools/body/publish_p1.py body_laws; P1 R1 sliders): the build's rigid move
+    /// of the baked head (the neck sliders' head_move + the ground: a height slider's whole head 98 mm down). Zero when
+    /// absent (the gate body, her_b: its head is A's at A's rest).</summary>
+    public static Vector3 HeadMove => headMove ??= Carry() is JsonElement c && c.TryGetProperty("head_move_m", out var h) ? V3(h) : Vector3.Zero;
+
+    /// <summary>publish.json "carry" ref_move_m: B bone's rest joint move against the ref body's (zero when absent).</summary>
+    public static Vector3 RefMove(string bName)
+    {
+        if (refMove == null)
+        {
+            refMove = new();
+            if (Carry() is JsonElement c && c.TryGetProperty("ref_move_m", out var m))
+                foreach (var kv in m.EnumerateObject()) refMove[kv.Name] = V3(kv.Value);
+        }
+        return refMove.TryGetValue(bName, out var v) ? v : Vector3.Zero;
+    }
+
+    /// <summary>An A-space point laid on B bone b (a pivot, a hair collision ball) carried by b's move against the ref
+    /// body (RefMove), so on a slider body it keeps the place against b it has on the ref body; unchanged on the ref body.</summary>
+    public static Vector3 OnB(Skeleton3D sk, int b, Vector3 aPoint) => IsB(sk) && b >= 0 ? aPoint + RefMove(sk.GetBoneName(b)) : aPoint;
+
+    /// <summary>A bone's A rest carried onto this body as OnB carries it, by the move of the B bone playing its part.</summary>
+    public static Transform3D? ARestOn(Skeleton3D sk, string aName)
+    {
+        if (ARest(aName) is not Transform3D t) return null;
+        t.Origin = OnB(sk, Bone(sk, aName), t.Origin);
+        return t;
     }
 
     /// <summary>A bone's A rest (skeleton space) as a_skeleton.json has it; null if A has none.</summary>
@@ -191,6 +287,9 @@ public static class P1Body
         if (!IsB(b) || mi.HasMeta("p1_b") || mi.HasMeta("p1_rebound") || mi.Skin is not Skin skin) return;
         mi.SetMeta("p1_rebound", true);
         var rig = RigOf(b); var map = RoleMap(b);
+        // (P1 R1 sliders: on a body whose baked head moved (HeadMove: a height slider's 98 mm), the mesh is laid where A
+        // draws it moved as the head moved, rigidly: inverse(B rest) move A rest bind; zero on the gate body)
+        var mv = P1M4.Id; var hm = HeadMove; mv[0, 3] = hm.X; mv[1, 3] = hm.Y; mv[2, 3] = hm.Z;
         var nw = new Skin();
         for (int i = 0; i < skin.GetBindCount(); i++)
         {
@@ -198,15 +297,15 @@ public static class P1Body
             int ai = nm != "" ? (A.Index.TryGetValue(nm, out int k) ? k : -1) : skin.GetBindBone(i);
             int bi = ai >= 0 && ai < A.Names.Length ? map.Role(ai) : (nm != "" ? b.FindBone(nm) : -1);
             if (ai < 0 || ai >= A.Names.Length || bi < 0) { nw.AddNamedBind(bi >= 0 ? b.GetBoneName(bi) : b.GetBoneName(0), skin.GetBindPose(i)); continue; }
-            nw.AddNamedBind(b.GetBoneName(bi), T(rig.Rest[bi].Inverse() * A.Rest[ai] * M(skin.GetBindPose(i))));
+            nw.AddNamedBind(b.GetBoneName(bi), T(rig.Rest[bi].Inverse() * mv * A.Rest[ai] * M(skin.GetBindPose(i))));
         }
         if (Args.Has("p1-probe")) HairFit(b, mi, skin, nw);
         mi.Skin = nw;
         if (Args.Has("p1-probe")) GD.Print($"p1: {mi.Name} rebound to B ({skin.GetBindCount()} binds)");
     }
 
-    /// <summary>(--p1-probe) A mesh's rest world as A draws it (old skin, A's rest) against B (new skin, B's rest): the
-    /// bounding boxes' corners and the worst vertex, mm; and its centroid from B's Head joint.</summary>
+    /// <summary>(--p1-probe) A mesh's rest world as A draws it (old skin, A's rest; moved by HeadMove) against B (new skin,
+    /// B's rest): the bounding boxes' corners and the worst vertex, mm; and its centroid from B's Head joint.</summary>
     static void HairFit(Skeleton3D b, MeshInstance3D mi, Skin was, Skin now)
     {
         var arr = mi.Mesh.SurfaceGetArrays(0);
@@ -225,7 +324,7 @@ public static class P1Body
                 int bind = bo[i * per + k];
                 string nm = sk.GetBindName(bind);
                 Transform3D rest;
-                if (onA) { int a = nm != "" && A.Index.TryGetValue(nm, out int q) ? q : sk.GetBindBone(bind); rest = a >= 0 && a < A.Names.Length ? T(A.Rest[a]) : Transform3D.Identity; }
+                if (onA) { int a = nm != "" && A.Index.TryGetValue(nm, out int q) ? q : sk.GetBindBone(bind); rest = a >= 0 && a < A.Names.Length ? new Transform3D(Basis.Identity, HeadMove) * T(A.Rest[a]) : Transform3D.Identity; }
                 else { int j = b.FindBone(nm); rest = j >= 0 ? b.GetBoneGlobalRest(j) : Transform3D.Identity; }
                 acc += wk * (rest * sk.GetBindPose(bind) * v[i]);
             }
@@ -243,7 +342,57 @@ public static class P1Body
         float box = Mathf.Max(Mathf.Max(dl.X, Mathf.Max(dl.Y, dl.Z)), Mathf.Max(dh.X, Mathf.Max(dh.Y, dh.Z)));
         var head = b.GetBoneGlobalRest(b.FindBone("Head")).Origin;
         GD.Print($"p1: hair fit {mi.Name}: {v.Length} verts, A box {hi1 - lo1} m, bbox corners off {box * 1000:F4} mm, worst vertex {worst * 1000:F4} mm; " +
-                 $"centroid from B's Head joint {(sum / v.Length - head) * 1000} mm");
+                 $"centroid from B's Head joint {(sum / v.Length - head) * 1000} mm (head move {HeadMove * 1000} mm)");
+    }
+
+    // ------------------------------------------------------------------ skin-tight pieces --
+    record struct PieceB(Mesh Mesh, Skin Skin, string Tier, int Verts);
+    static Dictionary<string, List<PieceB>>? pieces;
+
+    /// <summary>B's carries of A's skin-tight pieces (pieces.glb + pieces.json: tools/body/skin_pieces.py, the ink slot),
+    /// by the A node's name as Godot imports it; their skins' binds named by B's bones.</summary>
+    static Dictionary<string, List<PieceB>> Pieces()
+    {
+        if (pieces != null) return pieces;
+        pieces = new();
+        if (!ResourceLoader.Exists(Dir + "pieces.glb") || !FileAccess.FileExists(Dir + "pieces.json")) return pieces;
+        var doc = Rig("pieces.json").GetProperty("pieces");
+        var scene = GD.Load<PackedScene>(Dir + "pieces.glb").Instantiate<Node3D>();
+        foreach (var mi in scene.FindChildren("*", "MeshInstance3D", true, false).OfType<MeshInstance3D>())
+        {
+            if (!doc.TryGetProperty(mi.Name.ToString(), out var r) || r.TryGetProperty("missing", out _) || mi.Skin == null || mi.Mesh == null) continue;
+            var ps = mi.GetNode<Skeleton3D>(mi.Skeleton);
+            var skin = new Skin();
+            for (int i = 0; i < mi.Skin.GetBindCount(); i++)
+            {
+                string nm = mi.Skin.GetBindName(i);
+                skin.AddNamedBind(nm != "" ? nm : ps.GetBoneName(mi.Skin.GetBindBone(i)), mi.Skin.GetBindPose(i));
+            }
+            string a = r.GetProperty("a_godot_name").GetString()!;
+            if (!pieces.TryGetValue(a, out var l)) pieces[a] = l = new List<PieceB>();
+            l.Add(new PieceB(mi.Mesh, skin, r.GetProperty("tier").GetString()!, r.GetProperty("verts").GetInt32()));
+        }
+        scene.Free();
+        GD.Print($"p1: {pieces.Values.Sum(l => l.Count)} skin-tight pieces carried onto B ({string.Join(", ", pieces.Keys)})");
+        return pieces;
+    }
+
+    /// <summary>A's skin-tight piece (an ink-slot mesh laid on her skeleton by HerWear or HerLod) made B's: the node,
+    /// its slot rules, its material overrides and its mesh's surface materials kept; its mesh and skin B's carry
+    /// (P1Laws keeps its blend shapes at its body's). Null if B carries no such piece.</summary>
+    public static string? Piece(Skeleton3D b, MeshInstance3D mi)
+    {
+        if (!IsB(b) || mi.Mesh == null || !Pieces().TryGetValue(mi.Name.ToString(), out var list)) return null;
+        int nv = mi.Mesh is ArrayMesh am && am.GetSurfaceCount() > 0 ? am.SurfaceGetArrayLen(0) : (mi.Mesh.GetSurfaceCount() > 0 ? mi.Mesh.SurfaceGetArrays(0)[(int)Mesh.ArrayType.Vertex].AsVector3Array().Length : -1);
+        var c = list.FirstOrDefault(x => x.Verts == nv);
+        if (c.Mesh == null) { if (list.Count != 1) return null; c = list[0]; }
+        var m = (Mesh)c.Mesh.Duplicate();
+        for (int s = 0; s < m.GetSurfaceCount() && s < mi.Mesh.GetSurfaceCount(); s++) m.SurfaceSetMaterial(s, mi.Mesh.SurfaceGetMaterial(s));
+        mi.Mesh = m;
+        mi.Skin = c.Skin;
+        mi.SetMeta("p1_piece", c.Tier);
+        if (Args.Has("p1-probe")) GD.Print($"p1: {mi.Name} (A's, {nv} verts) worn as B's carry ({c.Tier} tier, {m.GetSurfaceCount()} surfaces)");
+        return c.Tier;
     }
 
     public static P1M4 M(Transform3D t)
@@ -277,6 +426,9 @@ public partial class P1Laws : SkeletonModifier3D
     P1M4[] restLocal = System.Array.Empty<P1M4>();
     MeshInstance3D? body, lod;
     readonly List<MeshInstance3D> closeMeshes = new();
+    /// <summary>A's skin-tight pieces worn as B's carries (P1Body.Piece): the mesh set, its tier, and each blend shape's
+    /// index on its body (close: Heroine, play: lod_p1_body) beside its own, so it rides its body's shapes.</summary>
+    readonly List<(MeshInstance3D Mi, Mesh Set, bool Play, (int Body, int Own)[] Shapes)> worn = new();
     bool? playOn;
     static readonly string LodMode = Args.Get("lod") ?? "auto";
     P1M4[]? lastG;
@@ -284,6 +436,32 @@ public partial class P1Laws : SkeletonModifier3D
     bool reorderQueued, offsetsPrinted, driveFailed;
 
     public P1Laws() { Name = "P1Laws"; }
+
+    sealed record Held(Skeleton3D Sk, Node3D Mount, int Bone, Quaternion AFrame, Transform3D At, int Upper, Quaternion UpperAFrame, Quaternion ARestLocal);
+    static readonly List<Held> follow = new();
+
+    /// <summary>A held piece's mount on B (Arms.Hold; `at` its transform in A's bone frame), laid each frame where A's bone
+    /// frame is: B's bone as the clip and the layers left it (before the laws), times its A frame (P1Retarget.AFrame). On a
+    /// forearm A's own hinge rule then (HerJoints: the swing from A's rest local kept, its twist about y on the hand), which
+    /// differs from B's law (the roll about the bone's posed line relative to its parent's turn): B's shield, on B's unrolled
+    /// forearm, sat 3 deg off A's in the guard and 16-20 deg off through fight_close's blow (358-366).</summary>
+    public static void Follow(Skeleton3D sk, Node3D mount, string aBone, Transform3D at)
+    {
+        int j = P1Body.Bone(sk, aBone);
+        var map = P1Body.RoleMap(sk);
+        if (j < 0 || map.AFrame(j) is not { } af) return;
+        static Quaternion Q(P1M3 r) => P1Body.T(P1M4.From(r, new P1V(0, 0, 0))).Basis.GetRotationQuaternion();
+        int u = -1; var uf = Quaternion.Identity; var rl = Quaternion.Identity;
+        if (aBone.StartsWith("lowerarm_") && P1Body.A.Index.TryGetValue(aBone, out int a) && P1Body.A.Parent[a] is int ap and >= 0
+            && P1Body.Bone(sk, P1Body.A.Names[ap]) is int bu and >= 0 && map.AFrame(bu) is { } ufm)
+        {
+            u = bu; uf = Q(ufm);
+            rl = Q(P1Retarget.Rot(P1Body.A.Rest[ap]).T() * P1Retarget.Rot(P1Body.A.Rest[a]));
+        }
+        follow.Add(new Held(sk, mount, j, Q(af), at, u, uf, rl));
+    }
+
+    static Quaternion Q4(P1M4 m) => P1Body.T(P1M4.From(P1Retarget.Rot(m), new P1V(0, 0, 0))).Basis.GetRotationQuaternion();
 
     public override void _Ready()
     {
@@ -322,6 +500,7 @@ public partial class P1Laws : SkeletonModifier3D
         reorderQueued = false;
         if (sk == null || GetParent() != sk) return;
         sk.MoveChild(this, -1);
+        foreach (var m in sk.GetChildren().OfType<P1BlendBase>().ToList()) sk.MoveChild(m, 0);   // (and B's blend base before all)
         foreach (var m in sk.GetChildren().OfType<HerJiggle>().ToList()) sk.MoveChild(m, -1);
         foreach (var m in sk.GetChildren().OfType<P1Jiggle>().ToList()) sk.MoveChild(m, -1);
         foreach (var m in sk.GetChildren().OfType<HerFaceLife>().ToList()) sk.MoveChild(m, -1);
@@ -365,6 +544,32 @@ public partial class P1Laws : SkeletonModifier3D
             sk.SetBonePoseScale(j, sc);
         }
         lastG = G2; weights = w;
+        // held mounts laid in A's bone frame (Follow)
+        for (int i = follow.Count - 1; i >= 0; i--)
+        {
+            var h = follow[i];
+            if (!GodotObject.IsInstanceValid(h.Mount) || !GodotObject.IsInstanceValid(h.Sk)) { follow.RemoveAt(i); continue; }
+            if (h.Sk != sk) continue;
+            var a = (Q4(G[h.Bone]) * h.AFrame).Normalized();
+            if (h.Upper >= 0)
+            {
+                // A's forearm on its hinge (HerJoints.TwistY): local = rest local * swing * twist, the twist about y dropped
+                var au = (Q4(G[h.Upper]) * h.UpperAFrame).Normalized();
+                var d = (h.ARestLocal.Inverse() * au.Inverse() * a).Normalized();
+                var t = new Quaternion(0, d.Y, 0, d.W);
+                t = t.Length() > 1e-9f ? t.Normalized() : Quaternion.Identity;
+                a = (au * h.ARestLocal * d * t.Inverse()).Normalized();
+            }
+            var local = (Q4(G2[h.Bone]).Inverse() * a).Normalized();
+            h.Mount.Transform = new Transform3D(new Basis(local), Vector3.Zero) * h.At;
+        }
+        for (int i = worn.Count - 1; i >= 0; i--)
+        {
+            var p = worn[i];
+            var on = p.Play ? lod : body;
+            if (!GodotObject.IsInstanceValid(p.Mi) || on == null) { worn.RemoveAt(i); continue; }
+            foreach (var (bk, ok) in p.Shapes) p.Mi.SetBlendShapeValue(ok, on.GetBlendShapeValue(bk));
+        }
         foreach (var mi in closeMeshes)
             foreach (var kv in w)
                 if (mi.FindBlendShapeByName(kv.Key) is int k and >= 0) mi.SetBlendShapeValue(k, (float)kv.Value);
@@ -376,16 +581,34 @@ public partial class P1Laws : SkeletonModifier3D
     public override void _Process(double delta)
     {
         if (sk == null) return;
+        // (a piece worn as B's whose mesh was set again since, e.g. a garment tuck laid it anew: carried again)
+        foreach (var p in worn.Where(p => GodotObject.IsInstanceValid(p.Mi) && p.Mi.Mesh != p.Set).ToList())
+        {
+            worn.Remove(p);
+            p.Mi.RemoveMeta("p1_piece");
+        }
         foreach (var mi in sk.GetChildren().OfType<MeshInstance3D>())
         {
-            if (mi.HasMeta("p1_b") || mi.HasMeta("p1_rebound") || mi.Skin == null) continue;
-            // (only her hair and a head piece: A's outfit pieces are cut from A's surface and stay off B till P1's refit)
+            if (mi.HasMeta("p1_b") || mi.HasMeta("p1_rebound") || mi.HasMeta("p1_piece") || mi.Skin == null) continue;
+            // (her hair and a head piece rebound; A's skin-tight pieces (the ink slot) worn as B's carries of them; A's
+            // other outfit pieces are cut from A's surface and stay off B till P1's refit)
             bool hair = mi.GetChildren().OfType<HairSway>().Any(), head = mi.Name.ToString().Contains("_head_");
             if (hair || head) P1Body.Rebind(sk, mi);
+            else if (P1Body.Piece(sk, mi) is string tier) Wear(mi, tier == "play");
             else if (mi.Visible) { mi.Visible = false; if (Args.Has("p1-probe")) GD.Print($"p1: {mi.Name} (A's) left off B"); }
         }
         PlaySwitch();
         if (Args.Has("p1-probe") && lastG != null && Engine.GetProcessFrames() % 120 == 0) Probe(lastG);
+    }
+
+    void Wear(MeshInstance3D mi, bool play)
+    {
+        var on = play ? lod : body;
+        var sh = new List<(int, int)>();
+        if (on?.Mesh is ArrayMesh bm && mi.Mesh is ArrayMesh pm)
+            for (int k = 0; k < pm.GetBlendShapeCount(); k++)
+                if (on.FindBlendShapeByName(pm.GetBlendShapeName(k)) is int j and >= 0) sh.Add((j, k));
+        worn.Add((mi, mi.Mesh, play, sh.ToArray()));
     }
 
     /// <summary>HerLod's rule for the play tier: in play (no held camera) beyond Far, back within Near; --lod on|off.</summary>
@@ -459,5 +682,27 @@ public partial class P1Laws : SkeletonModifier3D
             }
             GD.Print($"p1: offset {mi.Name}: rest centroid from B's Head joint {(sum / v.Length - head) * 1000} mm (box {aabb.Size * 1000} mm)");
         }
+    }
+}
+
+/// <summary>B's blend base (P1 R1 pose 4), first of B's modifiers: each bone some clip keys turned by M R_B^-1 on the
+/// mixer's pose (P1Body.BlendBase), the clips' keys being R_B M^-1 q (P1BakeRun): Godot's mixer blends from the
+/// skeleton's rest R_B, and from there a blend of B's keys was not B's map of A's blend; from M (B's map of A's rest)
+/// it is. A clip alone plays as baked; a bone a clip leaves unkeyed lands on M, where A's lands on A's rest.</summary>
+public partial class P1BlendBase : SkeletonModifier3D
+{
+    (int Bone, Quaternion Turn)[] fix = System.Array.Empty<(int, Quaternion)>();
+    public P1BlendBase() { Name = "P1BlendBase"; }
+
+    public override void _Ready()
+    {
+        if ((GetSkeleton() ?? GetParent() as Skeleton3D) is not Skeleton3D sk) return;
+        fix = P1Body.BlendBase().Select(x => (sk.FindBone(x.Bone), x.Turn)).Where(x => x.Item1 >= 0).ToArray();
+    }
+
+    public override void _ProcessModificationWithDelta(double delta)
+    {
+        if (GetSkeleton() is not Skeleton3D sk) return;
+        foreach (var (b, t) in fix) sk.SetBonePoseRotation(b, (t * sk.GetBonePoseRotation(b)).Normalized());
     }
 }

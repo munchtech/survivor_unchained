@@ -112,6 +112,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--glb", default=os.path.join(REPO, "godot/art/people/body_p1/body.glb"))
     ap.add_argument("--rig", default=os.path.join(REPO, "godot/art/people/body_p1/rig.json"))
+    ap.add_argument("--out-dir", default=None, help="where b_skeleton.json and the SOMA map go (default tools/body/rig; a slider variant its own)")
     ap.add_argument("--soma", default=r"C:/Users/munch/Tools/mocap/kimodo/bow_0.bvh")
     a = ap.parse_args(argv)
     names, parent, worlds = b_rest(a.glb)
@@ -160,7 +161,8 @@ def main(argv=None):
                       "length": round(float(np.linalg.norm(worlds[idx[ch]][:3, 3] - M[:3, 3])), 5) if ch else None,
                       "along": along})
     hinge = rig.get("hinge", {})
-    out_dir = os.path.join(HERE, "rig")
+    out_dir = a.out_dir or os.path.join(HERE, "rig")
+    os.makedirs(out_dir, exist_ok=True)
     os.makedirs(out_dir, exist_ok=True)
     doc = {"about": __doc__.split("\n\n")[0], "space": "skeleton space, glTF: +Y up, +Z her front, +X her left, meters; "
            "axes rows = the bone's local x, y, z in skeleton space",

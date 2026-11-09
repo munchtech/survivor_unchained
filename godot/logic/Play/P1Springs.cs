@@ -25,6 +25,22 @@ public sealed class P1Springs
         public bool Shift, Collide;
         public double Side;                                  // +1 her left (+X), -1 her right
         public double Freq, Zeta, Reach, Sag, Press, Tilt, Stretch, Q = 1;
+        /// <summary>rest_shows (0..1): the share of the bare, upright rest offset (sag down, press in) the bind surface
+        /// already shows; that much is taken off the offset, so bare and upright sits AT the bind (a body sculpted standing,
+        /// A's, carries its own weight: P1 A shape, round 11). Support and lean still move it from there.</summary>
+        public double RestShows;
+        /// <summary>rest_down (P1 R1 round 35): the down, in the spring's parent's rest frame, under which the bind shows its
+        /// weight: her stance turns her chest 6-8 deg back and 6 deg to the side (idle, close, Look: the parent's rest-frame
+        /// down (0.10, -0.99, -0.12)), and with the bind's weight read upright the spring's rest sat 2.5-3.5 deg off the bind
+        /// there (sag and tilt pulled the breast back and aside), the right lower pole 4-6 mm inside A's at idle_close
+        /// 114-150 (gate judge 3 fault 4). The tilt term and the bind's weight are read about it (absent: upright, as before).</summary>
+        public P1V RestDown = new(0, -1, 0);
+        /// <summary>Squash and stretch across the bone (r2): its local axis nearest her chest's up (0 X, 2 Z) scaled by
+        /// 1 - SquashAmt * u, u the offset from rest up (+) or down (-) over that limit: the upper pole flattens on the
+        /// lift, the lower pole stretches on the drop; the other two axes take the volume back.</summary>
+        public double SquashAmt; public int SqAxis = 2;
+        /// <summary>The offset from rest in her chest frame (x out, y up, z forward; m), after the last step.</summary>
+        public P1V Rel;
         public double[] Lim = new double[6];                 // in, out, up, down, fwd, back (m, sized)
         public P1V Tip;                                      // the mass's point in the bone's local frame
         // state (world)
@@ -42,6 +58,12 @@ public sealed class P1Springs
     /// <summary>Support per group: "top" (the worn top's, ArmorHold.support) and "bottom"; 0 bare .. 1 push-up.</summary>
     public readonly Dictionary<string, double> Support = new() { ["top"] = 0, ["bottom"] = 0 };
     public double Amount = 1, Squash = 1;
+    /// <summary>Held at rest (--p1-springs off, diagnostic shots): each mass sits at its rest offset (sag, press, tilt
+    /// as the support has them), no swing, no squash, no colliders.</summary>
+    public bool Frozen;
+    /// <summary>Where the soft stop starts, as a share of each travel limit and of the reach (stiffer and damped beyond,
+    /// so the approach to a limit eases in rather than snapping).</summary>
+    public double SoftStart = 0.6;
     public readonly int[] Needed;
     readonly int[] parent;
     readonly P1M4[] rest, restInv;
@@ -52,8 +74,8 @@ public sealed class P1Springs
     readonly int sampleN, iterations;
     readonly double armExtra, cleavageGap;
     static readonly P1V Down = new(0, -1, 0);
-    /// <summary>The extra damping (times its own) on the swing outward past three quarters of the reach.</summary>
-    public double Cushion = 4;
+    /// <summary>The soft stop's stiffness (times the spring's own) on the overshoot past SoftStart.</summary>
+    public double SoftK = 40;
 
     public P1Springs(JsonElement springsDoc, string body, JsonElement? samplesDoc, string[] names, int[] parentOf, P1M4[] restG)
     {
@@ -82,7 +104,13 @@ public sealed class P1Springs
                     Collide = row.TryGetProperty("collide", out var c) && c.GetBoolean(),
                     Side = restG[bone][0, 3] >= 0 ? 1 : -1,
                     Stretch = row.GetProperty("stretch").GetDouble(),
+                    SquashAmt = row.TryGetProperty("squash", out var sq) ? sq.GetDouble() : 0,
                 };
+                {
+                    // (the bone's local axis across it that stands nearest her chest's up at rest: skeleton +Y)
+                    var rl = Ortho(restG[bone].Lin());
+                    sp.SqAxis = Math.Abs(rl.Col(0).Y) > Math.Abs(rl.Col(2).Y) ? 0 : 2;
+                }
                 double len;
                 if (sp.Shift) { sp.Tip = new P1V(0, 0, 0); len = 0; }
                 else if (row.TryGetProperty("tip", out _) && index.TryGetValue(N("tip"), out int tip))
@@ -98,6 +126,12 @@ public sealed class P1Springs
                 sp.Sag = row.GetProperty("sag").GetDouble() * q;
                 sp.Press = row.GetProperty("press").GetDouble() * q;
                 sp.Tilt = row.GetProperty("tilt").GetDouble() * q;
+                sp.RestShows = row.TryGetProperty("rest_shows", out var rs) ? rs.GetDouble() : 0;
+                if (row.TryGetProperty("rest_down", out var rd))
+                {
+                    var d = new P1V(rd[0].GetDouble(), rd[1].GetDouble(), rd[2].GetDouble());
+                    sp.RestDown = d / d.Len();
+                }
                 var lim = row.GetProperty("limits");
                 sp.Lim = new[] { "in", "out", "up", "down", "fwd", "back" }.Select(k => lim.GetProperty(k).GetDouble() * q).ToArray();
                 Springs.Add(sp);
@@ -166,7 +200,7 @@ public sealed class P1Springs
                 Integrate(s, W, Wl, dt);
                 Finish(s, WlT);
             }
-            if (collide && samples.Count > 0) Collide(Wl, G, WlT, pass);
+            if (collide && !Frozen && samples.Count > 0) Collide(Wl, G, WlT, pass);
         }
     }
 
@@ -177,8 +211,14 @@ public sealed class P1Springs
         var Tw = W * (s.In * s.Tip);
         var Fm = Frame(s, Wl);
         var inward = Fm * new P1V(-s.Side, 0, 0);
-        s.Eq = inward * (s.Press * F(s.Group, "press")) + Down * (s.Sag * F(s.Group, "sag")) + (Down - Fm * Down) * (s.Tilt * F(s.Group, "reach"));
+        s.Eq = inward * (s.Press * F(s.Group, "press")) + Down * (s.Sag * F(s.Group, "sag")) + (Down - Fm * s.RestDown) * (s.Tilt * F(s.Group, "reach"))
+             - Fm * (new P1V(-s.Side * s.Press * s.RestShows, 0, 0) + s.RestDown * (s.Sag * s.RestShows));   // the bind's own weight (rest_shows), under rest_down
         bool jump = !s.Live || (Tw - s.LastT).Len() > 0.5;
+        if (Frozen)
+        {
+            s.P = Tw + s.Eq; s.V = new P1V(0, 0, 0); s.Tv = s.V; s.Live = true; s.LastT = Tw; s.X = s.Eq; s.Rel = new P1V(0, 0, 0);
+            return;
+        }
         if (jump || dt <= 0)
         {
             if (jump) { s.P = Tw + s.Eq; s.V = new P1V(0, 0, 0); s.Tv = s.V; s.Live = true; }
@@ -194,17 +234,22 @@ public sealed class P1Springs
             var Ti = s.LastT + (Tw - s.LastT) * ((i + 1.0) / n);
             var x = s.P - Ti;
             var a = (x - s.Eq) * -s.K - (s.V - s.Tv) * s.C;
-            double over = x.Len() - s.ReachE * 0.75;
+            // the travel, about the rest offset, in her chest frame (x out from her midline, y up, z forward): past
+            // SoftStart of a limit or of the reach the skin and ligament take up, stiffer and the swing out soaked up,
+            // so it eases into the stop (no snap); up is the short limit (a lean-back keeps two rounds, not one shelf)
+            var lr = FmT * (x - s.Eq); var vl = FmT * (s.V - s.Tv);
+            var push = new P1V(Soft(lr.X * s.Side, vl.X * s.Side, s.LimE[1], s.LimE[0], s) * s.Side,
+                               Soft(lr.Y, vl.Y, s.LimE[2], s.LimE[3], s), Soft(lr.Z, vl.Z, s.LimE[4], s.LimE[5], s));
+            a += Fm * push;
+            double rl = lr.Len(), over = rl - s.ReachE * SoftStart;
             if (over > 0)
             {
-                // past three quarters of its reach the skin and ligament take up: stiffer, and the swing out soaked up
-                // (a cushioned stop, not a slam into the limit)
-                var u = x / x.Len(); double vo = P1V.Dot(s.V - s.Tv, u);
-                a -= u * (over * s.K * 6 + (vo > 0 ? vo * s.C * Cushion : 0));
+                var u = (x - s.Eq) / rl; double vo = P1V.Dot(s.V - s.Tv, u);
+                a -= u * (over * s.K * SoftK * (1 + 4 * over / Math.Max(s.ReachE * (1 - SoftStart), 1e-6)) + (vo > 0 ? vo * Math.Sqrt(s.K * SoftK) : 0));
             }
             s.V += a * h; s.P += s.V * h;
-            // the limits, in her chest frame (in: toward her midline): a hard stop with a little rebound
-            var l = FmT * (s.P - Ti); var vr = FmT * (s.V - s.Tv);
+            // the hard stops past the soft ones (rarely met): a stop with a little rebound
+            var l = FmT * (s.P - Ti - s.Eq); var vr = FmT * (s.V - s.Tv);
             double lx = l.X * s.Side, vx = vr.X * s.Side, ly = l.Y, vy = vr.Y, lz = l.Z, vz = vr.Z;
             Clamp(ref lx, ref vx, -s.LimE[0], s.LimE[1]);
             Clamp(ref ly, ref vy, -s.LimE[3], s.LimE[2]);
@@ -212,9 +257,22 @@ public sealed class P1Springs
             var lc = new P1V(lx * s.Side, ly, lz); var vc = new P1V(vx * s.Side, vy, vz);
             double len = lc.Len();
             if (len > s.ReachE) { var u = lc / len; lc = u * s.ReachE; double vu = P1V.Dot(vc, u); if (vu > 0) vc -= u * (vu * 1.2); }
-            s.P = Ti + Fm * lc; s.V = s.Tv + Fm * vc;
+            s.P = Ti + s.Eq + Fm * lc; s.V = s.Tv + Fm * vc;
+            s.Rel = new P1V(lc.X * s.Side, lc.Y, lc.Z);
         }
         s.LastT = Tw; s.X = s.P - Tw;
+    }
+
+    /// <summary>The soft stop's acceleration along one chest axis (o the offset from rest, v its velocity, both signed
+    /// with hi the + limit and lo the - one): past SoftStart of the limit, SoftK times the stiffness on the overshoot (growing to
+    /// five times that at the limit: progressive, so a hard run eases in short of the stop)
+    /// and that stiffer spring's half-critical damping on the swing outward (soaked up, no rebound).</summary>
+    double Soft(double o, double v, double hi, double lo, Spring s)
+    {
+        double lim = o >= 0 ? hi : lo, d = Math.Abs(o) - lim * SoftStart;
+        if (d <= 0 || lim <= 0) return 0;
+        double sg = Math.Sign(o), vOut = v * sg;
+        return -sg * (d * s.K * SoftK * (1 + 4 * d / (lim * (1 - SoftStart))) + (vOut > 0 ? vOut * Math.Sqrt(s.K * SoftK) : 0));
     }
 
     static void Clamp(ref double l, ref double v, double lo, double hi)
@@ -231,7 +289,14 @@ public sealed class P1Springs
         var R = Between(from, to);
         double k = 1 + Math.Clamp((to.Len() - from.Len()) / Math.Max(s.ReachE, 1e-4), -1, 1) * s.Stretch * Squash;
         double side = 1 / Math.Sqrt(Math.Max(k, 0.5));
-        var D = new P1M3(side, 0, 0, 0, k, 0, 0, 0, side);
+        // squash and stretch across the bone (r2): the offset up (+) or down (-) from rest over that limit; firmer
+        // support, less (its "squash" factor)
+        double amt = s.SquashAmt * F(s.Group, "squash") * Squash * Amount;
+        double lim = s.Rel.Y >= 0 ? s.LimE[2] : s.LimE[3];
+        double u = Frozen || lim <= 0 ? 0 : Math.Clamp(s.Rel.Y / lim, -1, 1);
+        double qz = 1 - amt * u, qs = 1 / Math.Sqrt(qz);
+        var D = s.SqAxis == 0 ? new P1M3(side * qz, 0, 0, 0, k * qs, 0, 0, 0, side * qs)
+                              : new P1M3(side * qs, 0, 0, 0, k * qs, 0, 0, 0, side * qz);
         s.G = P1M4.From(R * s.In.Lin() * D, s.In.T());
     }
 
@@ -283,6 +348,23 @@ public sealed class P1Springs
     }
 
     public IEnumerable<double> Arms => arms.Keys;
+
+    /// <summary>Probe (r2): one breast's skinned samples (all) in either upper arm's capsule, with the springs' poses and
+    /// with the clip's own: the deepest (m), the count deeper than 0.5 mm, and the deepest the springs add.</summary>
+    public (double Depth, int N, double Own, int OwnN, double Added) ArmClip(double side, P1M4[] G)
+    {
+        var pts = Skin(side, G, true); var bas = Skin(side, G, false);
+        double dep = -1, own = -1, add = 0; int n = 0, on = 0;
+        for (int i = 0; i < pts.Length; i++)
+        {
+            double d = -1, o = -1;
+            foreach (double a in arms.Keys) { d = Math.Max(d, ArmDepth(pts[i], a, G, out _)); o = Math.Max(o, ArmDepth(bas[i], a, G, out _)); }
+            dep = Math.Max(dep, d); own = Math.Max(own, o); add = Math.Max(add, d - Math.Max(o, 0));
+            if (d > 5e-4) n++;
+            if (o > 5e-4) on++;
+        }
+        return (dep, n, own, on, add);
+    }
 
     /// <summary>The breasts (tips false: their roots, turned; true: their tips, shifted) moved out of the upper arms and
     /// back from her midline by the worst sample's added depth over its lever, the velocity into it taken out.</summary>

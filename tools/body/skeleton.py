@@ -350,9 +350,25 @@ class OurLandmarks:
     run on our skin (its inner point from the table); mean and lerp compose them in our frame (glTF); origin is none.
     No MakeHuman data at placement time."""
 
-    def __init__(self, V, table, head=None):
+    def __init__(self, V, table, head=None, moves=None, joints=None, record=None):
         self.V, self.t, self.head = np.asarray(V, float), table, head
+        self.moves = moves or {}
+        self.joints = joints or {}
+        self.record = record      # (P1 R1 sliders: each target joint's landmark before it is laid, by key: the reference run)
         self.info = {}
+
+    def lay(self, key, q):
+        """A designed target's joint laid on the landmark q (keys as in joints). (point, v): (1 - v) q + v point, the
+        target's absolute joint (the body it was made on). (point, v, ref) (P1 R1 sliders, build_topo target_joints_ref):
+        q + v (point - ref), ref the landmark on the target's own body: the target's correction rides the rules, so a
+        slider that moves the skin (height, hips) moves the joint with it; on the target's own body q = ref, the same."""
+        e = self.joints[key]
+        if self.record is not None:
+            self.record[key] = np.asarray(q, float).copy()
+        J, v = np.asarray(e[0], float), float(e[1])
+        if len(e) > 2 and e[2] is not None:
+            return np.asarray(q, float) + v * (J - np.asarray(e[2], float).reshape(J.shape))
+        return (1.0 - v) * np.asarray(q, float) + v * J
 
     def _head(self):
         return head_points() if self.head is None else np.asarray(self.head, float)
@@ -360,6 +376,23 @@ class OurLandmarks:
     def point(self, p):
         if "origin" in p:
             return None
+        q = self._point(p)
+        if q is not None and "cube" in p and p["cube"] in self.joints:
+            # a designed target's own joint (its source's, where the target IS the source's surface: her_a's girdle
+            # and arm are A's skin at A's rest, so A's joints, not the landmark rules' guess on a skin they were not
+            # fitted on), at the slider's value v: (1 - v) landmark + v joint
+            q = self.lay(p["cube"], q)
+        for rk in ("harrington", "knee_tea"):
+            if q is not None and rk in p and "rule:" + rk in self.joints:
+                # (P1 R1 round 30, her_a "a_foot" "leg_joints": an anatomical rule's point is the target's own joint, her
+                # hip and knee A's where her leg IS A's skin; every bone placed by the rule or a lerp of it follows, the
+                # twist and share helpers and the knee rule's own hip input with them)
+                q = self.lay("rule:" + rk, q)
+        if q is not None and "cube" in p and p["cube"] in self.moves:      # a spec's joint move (glTF m, her left; the right mirrors)
+            q = q + np.asarray(self.moves[p["cube"]], float)
+        return q
+
+    def _point(self, p):
         if any(k in p for k in ANAT_RULES):              # each anatomical rule once per placement
             import json
             kk = json.dumps(p, sort_keys=True)
@@ -420,11 +453,14 @@ class OurLandmarks:
         return np.asarray(r["w"]) @ self.V[r["ids"]]
 
 
-def place_skeleton_ours(skel, V, table, head=None):
+def place_skeleton_ours(skel, V, table, head=None, moves=None, joints=None, record=None):
     """place_skeleton on OUR vertices V (glTF, our topology's order) with landmarks.json's table for that tier
     (tools/body/base/landmarks.json "tiers"[tier]); the same returns; info["anatomy"] = the anatomical rules' points.
-    head: her baked head mesh's points (glTF m; default: headbake.py on heroine.glb)."""
-    lm = OurLandmarks(V, table, head)
+    head: her baked head mesh's points (glTF m; default: headbake.py on heroine.glb). moves: {cube name: [dx, dy, dz]} (a
+    spec's "joint_moves": a joint the landmarks place and the body wants elsewhere, e.g. her clavicle's medial end; left
+    side cubes, the right mirrors with the placement). joints: {cube name: (point, v)} a designed target's own joints
+    (build_topo.target_joints), laid before the moves."""
+    lm = OurLandmarks(V, table, head, moves, joints, record)
     defs = skel["bones"]
     W = {}
     for d in defs:
@@ -433,13 +469,57 @@ def place_skeleton_ours(skel, V, table, head=None):
         e = expand(d, "l", "l", "L")
         h = lm.point(e["head"])
         W[e["name"]] = [np.zeros(3) if h is None else h, lm.point(e["tail"])]
-    out = _place_from_world(defs, W)
+    _bone_heads(defs, W, joints, lm)
+    _bone_ends(W, joints, lm)
+    out = _place_from_world(defs, W, {k[2:]: np.asarray(e[0], float) for k, e in (joints or {}).items() if k.startswith("x:") and e[1] > 0.5})
     out[4]["anatomy"] = {k: v for k, v in lm.info.items() if k != "_memo"}
     return out
 
 
-def _place_from_world(defs, W):
-    """The left side's (and the middle's) bone ends in the world (glTF) -> the skeleton: leaves, frames, mirror."""
+def _bone_heads(defs, W, joints, lm):
+    """A designed target's bone joints (keys "head:<bone>", her_a "a_joints": B's trunk joints at A's, P1 R1 rig root): the
+    bone's head at the slider's value v ((1 - v) landmark + v joint), and so every head and tail placed by the same rule
+    (the parent's tail, spine_01's head at the pelvis's), so the bones stay joined. Middle bones only (x 0)."""
+    import json
+    rule = {}
+    for d in defs:
+        if not d.get("leaf"):
+            e = expand(d, "l", "l", "L")
+            rule[e["name"]] = (json.dumps(e["head"], sort_keys=True), json.dumps(e["tail"], sort_keys=True))
+    for k in (joints or {}):
+        if not k.startswith("head:"):
+            continue
+        b = k[5:]
+        assert b in rule and not b.endswith(("_l", "_r")), ("a head joint names no middle bone", k)
+        key = rule[b][0]
+        q = lm.lay(k, W[b][0])
+        for n, (hk, tk) in rule.items():
+            if hk == key:
+                W[n][0] = q.copy()
+            if tk == key:
+                W[n][1] = q.copy()
+
+
+def _bone_ends(W, joints, lm):
+    """A designed target's bone ends (keys "ends:<bone>", her left, [head, tail]; her_a "a_hand", P1 R1 round 28: B's
+    hand and finger bones where A's are, as B's hand IS A's hand surface at A's rest): the bone's head and tail at the
+    slider's value v ((1 - v) landmark + v joint). Left-side bones only (the right mirrors)."""
+    for k in (joints or {}):
+        if not k.startswith("ends:"):
+            continue
+        b = k[5:]
+        assert b in W and b.endswith("_l"), ("an ends joint names no left bone", k)
+        e = joints[k]
+        joints[k] = (np.asarray(e[0], float).reshape(2, 3),) + tuple(e[1:])
+        q = lm.lay(k, np.stack([np.asarray(W[b][0], float), np.asarray(W[b][1], float)]))
+        W[b] = [q[0], q[1]]
+
+
+def _place_from_world(defs, W, xs=None):
+    """The left side's (and the middle's) bone ends in the world (glTF) -> the skeleton: leaves, frames, mirror. xs: {left
+    bone: x axis} a designed target's own bone frames (keys "x:<bone>", her_a "a_hand": B's hand and fingers rolled as
+    A's at the pose B's hand was taken in, so the clips' finger turns, matched by roll to A's, carry A's hand whole), the
+    rule's frame otherwise."""
     for n, (hw, tw) in W.items():
         hw, tw = np.array(hw, float), np.array(tw, float)
         W[n] = [hw, tw]
@@ -502,6 +582,9 @@ def _place_from_world(defs, W):
             ends_out[e["name"]] = (M @ h, M @ t) if s == "r" else (h.copy(), t.copy())
             Y = unit(t - h)
             X, Z = frame(d, Y)
+            if xs and nl in xs:
+                X = perp(xs[nl], Y)
+                Z = np.cross(X, Y)
             G = np.eye(4)
             if s == "r":
                 Y, Z, h = M @ Y, M @ Z, M @ h

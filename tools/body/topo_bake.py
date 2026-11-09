@@ -63,9 +63,16 @@ def U(v):
 
 
 # --------------------------------------------------------------------------------------------- frames --
-def tangent_frames(P, N, UV, T):
+def tangent_frames(P, N, UV, T, w_from="uv"):
     """Per vertex (tangent xyz, w) from the UVs (glTF: v down): T along +u, the bitangent up the texture (-v); w the
-    handedness so that cross(N, T) * w is that bitangent (glTF's TANGENT rule). Per-face gradients summed by area."""
+    handedness so that cross(N, T) * w is that bitangent (glTF's TANGENT rule). Per-face gradients summed by area.
+    w_from "uv" (default; P1 R1 sliders round 5): w is the UV map's own orientation at the vertex, the area-weighted
+    winding of its triangles (the sign frame_mismatch checks; the 3D test below where the winding sums to 0). The 3D
+    test (sign of cross(N, Tt) . the summed bitangent) is the same on a sane fan but noise on a crumpled one: on every
+    her_a body 8 toe vertices (A's toes laid on B's: quads folded past 90 deg, a face standing against its vertex
+    normal) got the flipped sign, 39 triangles lit inside out in the normal map, and every her_a bake failed its
+    frames gate (frame_mismatch 39), so a variant shipped the gate body's shape maps. "geom": the 3D test (A's side:
+    its maps were decoded in those frames)."""
     e1, e2 = P[T[:, 1]] - P[T[:, 0]], P[T[:, 2]] - P[T[:, 0]]
     d1, d2 = UV[T[:, 1]] - UV[T[:, 0]], UV[T[:, 2]] - UV[T[:, 0]]
     det = d1[:, 0] * d2[:, 1] - d1[:, 1] * d2[:, 0]
@@ -80,14 +87,26 @@ def tangent_frames(P, N, UV, T):
         np.add.at(Bv, T[:, k], U(-dPv) * area)
     Tt = U(Tu - N * (Tu * N).sum(1, keepdims=True))
     w = np.where((np.cross(N, Tt) * Bv).sum(1) < 0, -1.0, 1.0)
+    if w_from == "uv":
+        sw = np.zeros(len(P))
+        fs = np.where(det < 0, 1.0, -1.0) * area[:, 0]   # (frame_mismatch's sign: glTF v down)
+        for k in range(3):
+            np.add.at(sw, T[:, k], fs)
+        w = np.where(sw > 0, 1.0, np.where(sw < 0, -1.0, w))
     return Tt, w
+
+
+def frames_crumpled(P, N, UV, T):
+    """Vertices where the 3D handedness test disagrees with the UV winding (a crumpled fan: folded quads, a face
+    against its vertex normal). Not a fault of the frames (tangent_frames takes the winding); a shape to look at."""
+    return int((tangent_frames(P, N, UV, T, "uv")[1] != tangent_frames(P, N, UV, T, "geom")[1]).sum())
 
 
 # ----------------------------------------------------------------------------------------------- A side --
 class Source:
     """A's body posed into our build's rest, unwelded (its UVs), with its textures and frames."""
 
-    def __init__(self, build_glb, pose=None):
+    def __init__(self, build_glb, pose=None, a_rest=None, a_normals=None):
         import her_target
         # (pose: the fit's posed bones (forms/her_topo_target_bones.json): A on the surface our points were wrapped
         # onto. The built body's own skeleton (landmarks on the fitted points) poses A up to 4 cm off it: the bake read
@@ -96,9 +115,20 @@ class Source:
         if pose:
             with open(pose if os.path.isabs(pose) else os.path.join(REPO, pose)) as f:
                 want = {k: (np.asarray(v[0], float), np.asarray(v[1], float)) for k, v in json.load(f)["bones"].items()}
-        t = her_target.target(build_glb, A_PATH, world=True, want=want)
+            # (a_rest: these chain bones at A's own rest turn, as her_a_target's "a_rest" lays B's girdle and upper arm)
+            for b in a_rest or ():
+                for sd in "lr":
+                    want[f"{b}_{sd}"] = None
         A = Glb(A_PATH)
         m = A.mesh("Heroine")
+        # (a_normals "file", P1 R1 round 15: A's form is the normals A's file stores, posed as Godot skins them, which is
+        # what the game shades A with; None: the welded mesh's area-weighted normals (rounds 10-14). A's file normals
+        # are not its mesh's: over the upper chest and breasts they lie p50 2 deg, p90 15-20 deg off the area-weighted
+        # ones (y 1.30-1.40 m), a smooth slope over a faceted mesh (edges 6-10 mm); B carried the faceted field there
+        # (form_near: A's whole form), lumps 20-40 mm across between the collarbone and the breast's top that A never shows)
+        assert a_normals in (None, "file"), a_normals
+        t = her_target.target(build_glb, A_PATH, world=True, want=want,
+                              normals=m.N.astype(np.float64) if a_normals == "file" else None)
         first, inv = her_target.weld(m.P.astype(np.float64))   # (float64 as skin.Body reads it: a float32 P / tol rounds 183 tris' keys apart)
         Tw = inv[m.T]
         Tw = Tw[(Tw[:, 0] != Tw[:, 1]) & (Tw[:, 1] != Tw[:, 2]) & (Tw[:, 0] != Tw[:, 2])]
@@ -108,8 +138,12 @@ class Source:
         self.UV = m.UV.astype(np.float64)
         self.prim = m.prim_of
         fn = np.cross(self.P[self.T[:, 1]] - self.P[self.T[:, 0]], self.P[self.T[:, 2]] - self.P[self.T[:, 0]])
-        self.N = t["N"][inv]                            # welded (smooth across A's UV seams)
-        self.Tan, self.w = tangent_frames(self.P, self.N, self.UV, self.T)
+        if a_normals == "file":
+            assert np.abs(t["P_file"] - m.P).max() < 1e-5, "A's file points are not her_target's body order"
+            self.N = t["N_file"]                        # per file vertex, as A's file splits them
+        else:
+            self.N = t["N"][inv]                        # welded (smooth across A's UV seams)
+        self.Tan, self.w = tangent_frames(self.P, self.N, self.UV, self.T, "geom")
         self.scene = ray.scene(self.P, self.T)
         import surfdist
         self.surf = surfdist.Surface(self.P, self.T)
@@ -185,7 +219,11 @@ class Source:
         Ba = np.cross(Ng, Ta) * wa[:, None]
         nts = U(nts)
         Ns = U(nts[:, :1] * Ta + nts[:, 1:2] * Ba + nts[:, 2:] * Ng)
+        # off the graft: as the game reads a part with no map (hint_default_black: 0,0,0 and ALPHA 1). Alpha is 1 less her
+        # sky mask (heroine_skin.gdshader sky_w): 0 here gave the whole torso her neck's sky share under the Look's rig, so
+        # it lost the sky's cool light and read pinker than her head (P1 R1 round 10), with a step at the graft's edge
         fr = np.zeros((len(t), 4))
+        fr[:, 3] = 1.0
         if self.freckles is not None:
             g = pr == 1
             fr[g] = bilinear(self.freckles, uv[g])
@@ -392,8 +430,19 @@ def mirror_vertex(z, i):
 
 
 # ------------------------------------------------------------------------------------------------------ run --
-def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None, pose=None, carrier=None):
-    """carrier (slider route, 5 Nov): a build of the SAME topology whose surface lies on A (her_topo.json's fit,
+SOURCE_MAPS = ("albedo", "normal", "form_normal", "roughness", "freckles")
+
+
+def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None, pose=None, carrier=None, carry=None,
+        source_maps=None, form_deg=FORM_DEG, mirror="avg", dump=None, a_rest=None, form_near=None, a_normals=None,
+        mirror_normal=None, ring_flat=None, crease_flat=None, cavity=None):
+    """source_maps (P1 round 10): a directory of SOURCE_MAPS on our UVs, already carried once (her_a_target.py, its own
+    bake.json holds the carry's gates): copied as they are, so the build reads neither A nor a carrier for the skin; only
+    this body's own maps (AO, thickness, curvature, zones) are computed.
+    carry (None = A's paint, relief and roughness as carried; {"mode": "neutral", "band_m": [a, b],
+    "keep_regions": [names]}: a neutral placeholder skin, A's carried maps kept only within a of the open neck ring
+    (eased out to 0 at b: the head seam) and on the keep_regions' texels (hands, feet: the nails); see neutral_keep).
+    carrier (slider route, 5 Nov): a build of the SAME topology whose surface lies on A (her_topo.json's fit,
     built): A's paint, relief, roughness and freckles are read at each texel's point on the CARRIER, so every texel
     keeps the anatomical point it was painted at whatever shape the sliders give this body (our UVs are shared; the
     maps are a per-UV asset); B's own maps (AO, thickness, curvature, zones) are this build's surface. Without it a
@@ -426,42 +475,77 @@ def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None,
     Xr = (w[:, :, None] * Pv[vr]).sum(1)
     Nl = U((w[:, :, None] * Nv[vl]).sum(1))
     Nr = U((w[:, :, None] * Nv[vr]).sum(1))
-    src_out, Vc, Nvc, Tan_c, wsg_c = build_out, Vb, Nv, Tan, wsg
-    if carrier:
-        src_out = carrier if os.path.isabs(carrier) else os.path.join(REPO, carrier)
-        Vc = np.load(os.path.join(src_out, "stage", f"{tier}.npz"))["V"].astype(np.float64)
-        assert Vc.shape == Vb.shape, "the carrier is not this topology"
-        _, mc, _ = body_of(src_out, tier)
-        assert len(mc.P) == len(src), "the carrier's glb is not this UV split"
-        Nvc = np.zeros_like(Vc)
-        Nvc[src] = mc.N.astype(np.float64)
-        Tan_c, wsg_c = tangent_frames(mc.P.astype(np.float64), mc.N.astype(np.float64), uvd["UV"], Tg)
-        rep["carrier"] = os.path.relpath(src_out, REPO).replace("\\", "/")
-    Cl = (w[:, :, None] * Vc[vl]).sum(1)
-    Cr = (w[:, :, None] * Vc[vr]).sum(1)
-    CNl = U((w[:, :, None] * Nvc[vl]).sum(1))
-    CNr = U((w[:, :, None] * Nvc[vr]).sum(1))
-    gl_ = Tl[tri]
-    Tt = U((w[:, :, None] * Tan_c[gl_]).sum(1))
-    Tt = U(Tt - CNl * (Tt * CNl).sum(1, keepdims=True))
-    wl = np.sign((w * wsg_c[gl_]).sum(1))
-    Bt = np.cross(CNl, Tt) * wl[:, None]
-    # (the right half's frame is the left's mirrored: x flipped, so its tangent-space values equal the left's)
-    TtR, BtR = Tt * MIRROR, Bt * MIRROR
-    print("BAKE texels", len(tix), round(time.time() - t0, 1), flush=True)
-    A = Source(os.path.join(src_out, "body.glb"), pose)
-    res = {}
-    for side, X, Nn, Tf, Bf in (("l", Cl, CNl, Tt, Bt), ("r", Cr, CNr, TtR, BtR)):
-        t, bw, d, miss = A.project(X, Nn)
-        s = A.sample(t, bw)
-        ts = lambda v: np.stack([(v * Tf).sum(1), (v * Bf).sum(1), (v * Nn).sum(1)], 1)     # noqa: E731
-        res[side] = {"albedo": s["albedo"], "normal": U(ts(carry_normal(s["normal"], s["form"], Nn))),
-                     "form": U(ts(s["form"])),
-                     "rough": s["rough"], "freckles": s["freckles"], "dist": d, "miss": miss}
-    print("BAKE carried", round(time.time() - t0, 1), flush=True)
-    rep["projection"] = {"dist_p95_mm": round(float(np.percentile(np.r_[res["l"]["dist"], res["r"]["dist"]], 95)) * 1e3, 2),
-                         "dist_max_mm": round(float(max(res["l"]["dist"].max(), res["r"]["dist"].max())) * 1e3, 2),
-                         "closest_point_fallback": int(res["l"]["miss"].sum() + res["r"]["miss"].sum())}
+    keep_fn, A, Vc, Nvc, alb = None, None, Vb, Nv, None
+    if source_maps:
+        # the paint as stored source maps (made once, by the target's generator): no read of A or of a carrier at build
+        sm = source_maps if os.path.isabs(source_maps) else os.path.join(REPO, source_maps)
+        import shutil
+        for k in SOURCE_MAPS:
+            shutil.copy2(os.path.join(sm, f"{k}.png"), os.path.join(maps_dir, f"{k}.png"))
+        with open(os.path.join(sm, "bake.json")) as f:
+            made = json.load(f)
+        rep["source_maps"] = source_maps.replace("\\", "/")
+        rep["projection"] = made.get("projection")
+    else:
+        src_out, Vc, Nvc, Tan_c, wsg_c = build_out, Vb, Nv, Tan, wsg
+        if carrier:
+            src_out = carrier if os.path.isabs(carrier) else os.path.join(REPO, carrier)
+            Vc = np.load(os.path.join(src_out, "stage", f"{tier}.npz"))["V"].astype(np.float64)
+            assert Vc.shape == Vb.shape, "the carrier is not this topology"
+            _, mc, _ = body_of(src_out, tier)
+            assert len(mc.P) == len(src), "the carrier's glb is not this UV split"
+            Nvc = np.zeros_like(Vc)
+            Nvc[src] = mc.N.astype(np.float64)
+            Tan_c, wsg_c = tangent_frames(mc.P.astype(np.float64), mc.N.astype(np.float64), uvd["UV"], Tg)
+            rep["carrier"] = os.path.relpath(src_out, REPO).replace("\\", "/")
+        Cl = (w[:, :, None] * Vc[vl]).sum(1)
+        Cr = (w[:, :, None] * Vc[vr]).sum(1)
+        CNl = U((w[:, :, None] * Nvc[vl]).sum(1))
+        CNr = U((w[:, :, None] * Nvc[vr]).sum(1))
+        gl_ = Tl[tri]
+        Tt = U((w[:, :, None] * Tan_c[gl_]).sum(1))
+        Tt = U(Tt - CNl * (Tt * CNl).sum(1, keepdims=True))
+        wl = np.sign((w * wsg_c[gl_]).sum(1))
+        Bt = np.cross(CNl, Tt) * wl[:, None]
+        # (the right half's frame is the left's mirrored: x flipped, so its tangent-space values equal the left's; made
+        # normal to the right's OWN normal, the handedness flipped (a mirror turns cross(N, T) w into cross(N', T') (-w)),
+        # as the glb's TANGENT is there (tangent_frames on that half). The same as Tt, Bt mirrored when CNr is CNl
+        # mirrored; skewed by their difference otherwise (P1 R1 bake round 2: B's halves carry A's own normals, which
+        # are not mirror images: p90 4-7 deg apart on the trunk)
+        TtR = U(Tt * MIRROR - CNr * ((Tt * MIRROR) * CNr).sum(1, keepdims=True))
+        BtR = np.cross(CNr, TtR) * (-wl)[:, None]
+        print("BAKE texels", len(tix), round(time.time() - t0, 1), flush=True)
+        A = Source(os.path.join(src_out, "body.glb"), pose, a_rest, a_normals)
+        rep["a_normals"] = a_normals or "area"
+        res = {}
+        covered0 = np.zeros(size * size, bool)
+        covered0[tix] = True
+        covered0 = covered0.reshape(size, size)
+        for side, X, Nn, Tf, Bf in (("l", Cl, CNl, Tt, Bt), ("r", Cr, CNr, TtR, BtR)):
+            t, bw, d, miss = A.project(X, Nn)
+            s = A.sample(t, bw)
+            ts = lambda v: np.stack([(v * Tf).sum(1), (v * Bf).sum(1), (v * Nn).sum(1)], 1)     # noqa: E731
+            deg = form_deg
+            if form_near is not None:
+                # (P1 R1 round 13: where our surface lies ON A (the her_a target: within near_mm[0] of A along the ray,
+                # smoothed over ~2 texels so the rule has no texel noise), A's form is carried whole up to wide_deg: A's
+                # navel (walls to 77 deg on A's own mesh, a dip of ours) and its folds are A's geometry, which the
+                # 8-16 deg rule dropped; off A (hands, feet: 7-25 mm) the old rule)
+                lo_mm, hi_mm = form_near["near_mm"]
+                dimg = np.zeros(size * size)
+                dimg[tix] = d * 1e3
+                dimg = ndimage.gaussian_filter(fill_gutters(dimg.reshape(size, size, 1), covered0)[:, :, 0], 2.0).ravel()[tix]
+                k = 1 - np.clip((dimg - lo_mm) / (hi_mm - lo_mm), 0, 1)
+                k = k * k * (3 - 2 * k)
+                w0, w1 = form_near["wide_deg"]
+                deg = (form_deg[0] + k * (w0 - form_deg[0]), form_deg[1] + k * (w1 - form_deg[1]))
+            res[side] = {"albedo": s["albedo"], "normal": U(ts(carry_normal(s["normal"], s["form"], Nn, deg))),
+                         "form": U(ts(s["form"])),
+                         "rough": s["rough"], "freckles": s["freckles"], "dist": d, "miss": miss}
+        print("BAKE carried", round(time.time() - t0, 1), flush=True)
+        rep["projection"] = {"dist_p95_mm": round(float(np.percentile(np.r_[res["l"]["dist"], res["r"]["dist"]], 95)) * 1e3, 2),
+                             "dist_max_mm": round(float(max(res["l"]["dist"].max(), res["r"]["dist"].max())) * 1e3, 2),
+                             "closest_point_fallback": int(res["l"]["miss"].sum() + res["r"]["miss"].sum())}
     covered = np.zeros(size * size, bool)
     covered[tix] = True
     covered = covered.reshape(size, size)
@@ -470,23 +554,75 @@ def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None,
         a = np.zeros((size * size, ch))
         a[tix] = vals.reshape(len(tix), ch)
         return fill_gutters(a.reshape(size, size, ch), covered)
-    avg = lambda k: 0.5 * (res["l"][k] + res["r"][k])          # noqa: E731
     files = {}
-    alb = img(avg("albedo"), 3)
-    save(os.path.join(maps_dir, "albedo.png"), alb, "RGB")
-    nrm = U(avg("normal"))
-    rep["normal_inverted_texels"] = int((nrm[:, 2] <= 0).sum())
-    rep["normal_form"] = {"full_below_deg": FORM_DEG[0], "detail_only_above_deg": FORM_DEG[1]}
-    save(os.path.join(maps_dir, "normal.png"), img(nrm * 0.5 + 0.5, 3), "RGB")
-    fnm = U(avg("form"))
-    save(os.path.join(maps_dir, "form_normal.png"), img(fnm * 0.5 + 0.5, 3), "RGB")
-    rgh = np.stack([np.zeros(len(tix)), avg("rough"), np.zeros(len(tix))], 1)
-    save(os.path.join(maps_dir, "roughness.png"), img(rgh, 3), "RGB")
-    save(os.path.join(maps_dir, "freckles.png"), img(avg("freckles"), 4), "RGBA")
-    # regions
     rq = tu.region_of_quads(z, uvd["isl"])
     nq = len(z["Q"])
     tri_q = np.nonzero(~uvd["is_right"][uvd["T"]].all(1))[0][tri] % nq
+    if not source_maps:
+        if dump:
+            np.savez_compressed(dump, tix=tix, Xl=Cl, Xr=Cr, **{f"{k}_{sd}": res[sd][k] for sd in ("l", "r")
+                                                             for k in ("albedo", "normal", "form", "dist")})
+        # (mirror "left", P1 R1 round 13: one texel serves both halves; the two halves' carries averaged halved A's
+        # detail where A is not symmetric to the texel (torso: the L-R shading normals p50 2.4 deg apart against a
+        # detail of 1.8: the abs' slopes p50 1.84 -> 1.08 deg, the sternum 3.26 -> 2.09): "left" takes A's left half
+        # for both, its detail whole and mirrored)
+        avg = ((lambda k: 0.5 * (res["l"][k] + res["r"][k])) if mirror == "avg" else (lambda k: res["l"][k]))   # noqa: E731
+        rep["mirror"] = mirror
+        a_alb, a_nrm, a_rgh, a_frk = avg("albedo"), avg("normal"), avg("rough"), avg("freckles")
+        if mirror_normal is not None:
+            # (mirror_normal, P1 R1 bake round 2: the normal map's own rule. Once B's vertex normals are A's, each half
+            # its own (her_a "normals"), a texel's two halves need values apart only by what B's interpolation misses of
+            # A's field (p90 1.6-3.1 deg, each half its own) and A's detail's asymmetry (p90 0.5-0.9): "avg" splits that
+            # between the halves (each p90 1.0-1.6) where "left" gave the right half all of it; the paint stays mirror's)
+            a_nrm = 0.5 * (res["l"]["normal"] + res["r"]["normal"]) if mirror_normal == "avg" else res["l"]["normal"]
+            rep["mirror_normal"] = mirror_normal
+        keep_fn = None
+        if carry:
+            assert carry.get("mode") == "neutral", carry
+            keep_fn = neutral_keep(z, Vb, rq, carry)
+            k_ring, k = keep_fn(Xl, tri_q)
+            mid = (k_ring >= 0.5) & (k_ring < 1)
+            assert mid.any(), "no texel in the neck band"
+            n_alb = np.median(a_alb[mid], axis=0)
+            n_rgh = float(np.median(a_rgh))
+            a_alb = k[:, None] * a_alb + (1 - k[:, None]) * n_alb
+            a_rgh = k * a_rgh + (1 - k) * n_rgh
+            a_nrm = k[:, None] * a_nrm + (1 - k[:, None]) * np.array([0.0, 0.0, 1.0])
+            a_frk = k[:, None] * a_frk
+            rep["carry"] = {"mode": "neutral", "band_m": list(carry["band_m"]), "keep_regions": list(carry["keep_regions"]),
+                            "albedo_rgb": [round(float(x), 5) for x in n_alb], "roughness": round(n_rgh, 5),
+                            "kept_fraction": round(float((k > 0.5).mean()), 4)}
+        if ring_flat is not None:
+            # (ring_flat [a, b] mm, P1 R1 round 29, S2: the relief is B's own (flat) within a of the open neck ring,
+            # A's carry from b, smoothstep between: as her_a "normals" ring_mm does for the export normals. A's file
+            # normals bend 16-18 deg off A's own surface over the seam's rows (toward the head ring's); carried as relief
+            # onto B's rows they drew a ridge 5-20 mm under the seam, the thin dark line round her neck when she turns)
+            kf = neutral_keep(z, Vb, rq, {"band_m": [ring_flat[0] / 1e3, ring_flat[1] / 1e3], "keep_regions": []})
+            k_ring, _ = kf(Xl, tri_q)
+            a_nrm = (1 - k_ring)[:, None] * U(a_nrm) + k_ring[:, None] * np.array([0.0, 0.0, 1.0])
+            rep["ring_flat_mm"] = list(ring_flat)
+        if crease_flat is not None:
+            # (crease_flat, P1 R1 round 31, S1: the deltoid crease. A's file normals and A's relief carry A's fold over the top
+            # of the shoulder cap, sculpted for the hanging arm: as the arm lifts it lies on stretched skin and drew a dark
+            # line over the deltoid in the fights (fight_stalker 359/371, fight_close 353; A shows it too). B's own surface
+            # is smooth there (its geometric normals), so the relief is B's own (flat) within band_mm[0] of the fold's line,
+            # A's from band_mm[1], smoothstep between; build_topo her_a_normals lays B's own export normals over the same band)
+            kc = crease_keep(Xl, crease_flat)
+            a_nrm = kc[:, None] * U(a_nrm) + (1 - kc)[:, None] * np.array([0.0, 0.0, 1.0])
+            rep["crease_flat"] = {"band_mm": list(crease_flat["band_mm"]), "flat_texels": int((kc < 0.5).sum())}
+        alb = img(a_alb, 3)
+        save(os.path.join(maps_dir, "albedo.png"), alb, "RGB")
+        nrm = U(a_nrm)
+        rep["normal_inverted_texels"] = int((nrm[:, 2] <= 0).sum())
+        rep["normal_form"] = {"full_below_deg": form_deg[0], "detail_only_above_deg": form_deg[1],
+                              **({"near_a": form_near} if form_near is not None else {})}
+        save(os.path.join(maps_dir, "normal.png"), img(nrm * 0.5 + 0.5, 3), "RGB")
+        fnm = U(avg("form"))
+        save(os.path.join(maps_dir, "form_normal.png"), img(fnm * 0.5 + 0.5, 3), "RGB")
+        rgh = np.stack([np.zeros(len(tix)), a_rgh, np.zeros(len(tix))], 1)
+        save(os.path.join(maps_dir, "roughness.png"), img(rgh, 3), "RGB")
+        save(os.path.join(maps_dir, "freckles.png"), img(a_frk, 4), "RGBA")
+    # regions
     rid = np.zeros((size * size, 1))
     rid[tix, 0] = rq[tri_q]
     rid = fill_gutters(rid.reshape(size, size, 1), covered)[:, :, 0]
@@ -501,6 +637,14 @@ def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None,
     cone = U(cone)
     ao = 0.5 * (occlusion(scene, Xl, Nl, hd, 0.25) + occlusion(scene, Xr, Nr, hd, 0.25))
     save(os.path.join(maps_dir, "ao.png"), img(ao, 1)[:, :, 0], "L")
+    if cavity is not None:
+        # (cavity.png, P1 R1 round 33, S3: the armpit blot. B's AO within the spec's radius of her armpit's apex (mirrored),
+        # white beyond: the skin shader's cavity_map (cavity_bounce, P1Body.ApplySkin), so only her armpit's hollow takes
+        # her own skin's bounce. Over all of B's AO it also lifted the shade under her breasts, her cleavage and her
+        # inner elbow at the Look, where it is her form.)
+        cav = 1.0 - (1.0 - ao) * cavity_keep(Xl, cavity)
+        save(os.path.join(maps_dir, "cavity.png"), img(cav, 1)[:, :, 0], "L")
+        rep["cavity"] = {k: cavity[k] for k in ("line_m", "radius_mm")}
     th = 0.5 * (through(scene, Xl, Nl, cone, 0.06) + through(scene, Xr, Nr, cone, 0.06))
     save(os.path.join(maps_dir, "thickness.png"), img(1 - th / 0.06, 1)[:, :, 0], "L")
     Tq = np.concatenate([z["Q"][:, [0, 1, 2]], z["Q"][:, [0, 2, 3]]])
@@ -519,15 +663,63 @@ def run(build_out, maps_dir, size=2048, tier="close", z=None, uvd=None, sk=None,
                        "map": "zones.png: R warm, G cool (0..1, smoothstep over the radius), B unused",
                        "zones": ztab}, f, indent=1)
     for k in ("albedo", "normal", "roughness", "freckles", "region_id", "ao", "thickness", "curvature", "form_normal",
-              "zones"):
+              "zones") + (("cavity",) if cavity is not None else ()):
         files[k] = os.path.relpath(os.path.join(maps_dir, f"{k}.png"), REPO).replace("\\", "/")
     rep["files"] = files
     rep["frames"] = {"tangent_w_mismatch": int(frame_mismatch(uvd["UV"], Tg, wsg))}
-    rep["gates"] = gates(z, uvd, Vc, Nvc, A, alb, covered)
+    if source_maps:
+        rep["gates"] = {**made["gates"], "from": "the source maps' own bake.json (the carry's gates)"}
+        rep["gates"]["frame_mismatch"] = rep["frames"]["tangent_w_mismatch"]
+        rep["gates"]["pass"] = bool(made["gates"]["pass"]) and rep["frames"]["tangent_w_mismatch"] == 0
+    else:
+        rep["gates"] = gates(z, uvd, Vc, Nvc, A, alb, covered, keep_fn=keep_fn, Vown=Vb, rq=rq)
     print("BAKE gates", rep["gates"]["pass"], round(time.time() - t0, 1), flush=True)
     rep["sheet"] = os.path.relpath(uv_sheet(maps_dir, uvd, os.path.join(build_out, "uv_sheet.png")), REPO).replace("\\", "/")
     rep["s"] = round(time.time() - t0, 1)
     return rep, {"alb": alb, "covered": covered, "A": A, "Vb": Vb}
+
+
+def cavity_keep(X, cv):
+    """1 within radius_mm[0] of cv["line_m"] (a polyline on her left at B's rest (m), mirrored onto her right by x), 0 from
+    radius_mm[1], smoothstep between (crease_keep's distance, the other way round)."""
+    return 1.0 - crease_keep(X, {"line_m": cv["line_m"], "band_mm": cv["radius_mm"]})
+
+
+def crease_keep(X, cf):
+    """1 off a crease band, 0 on it (her_a "crease_flat": "line_m" a polyline on her left at A's rest (m), mirrored onto
+    her right by x; "band_mm" [a, b]: 0 within a of the line, 1 from b, smoothstep between)."""
+    L = np.asarray(cf["line_m"], np.float64)
+    Q = np.asarray(X, np.float64).copy()
+    Q[:, 0] = np.abs(Q[:, 0])
+    d = np.full(len(Q), np.inf)
+    for a, b in zip(L[:-1], L[1:]):
+        ab = b - a
+        t = np.clip(((Q - a) @ ab) / max(ab @ ab, 1e-12), 0.0, 1.0)
+        d = np.minimum(d, np.linalg.norm(Q - (a + t[:, None] * ab), axis=1))
+    a0, a1 = cf["band_mm"]
+    x = np.clip((d * 1e3 - a0) / (a1 - a0), 0.0, 1.0)
+    return x * x * (3 - 2 * x)
+
+
+def neutral_keep(z, Vb, rq, carry):
+    """(carry neutral) f(X, q) -> (k_ring, k): X the points on B, q their quads. k_ring: 1 within band_m[0] of B's open
+    neck ring (the boundary vertices of the topology, build_topo.boundary_ring: the baked head's ring), smoothstep to 0
+    at band_m[1]; k: max(k_ring, 1 on the keep_regions' quads, regions named in base/her_paint_regions.json)."""
+    Q = z["Q"]
+    e = np.sort(np.concatenate([Q[:, [0, 1]], Q[:, [1, 2]], Q[:, [2, 3]], Q[:, [3, 0]]]), 1)
+    u, c = np.unique(e, axis=0, return_counts=True)
+    ring = np.unique(u[c == 1])
+    tree = cKDTree(Vb[ring])
+    a, b = carry["band_m"]
+    ids = {r["name"]: r["id"] for r in tu.regions_json()["regions"]}
+    keep_ids = [ids[n] for n in carry["keep_regions"]]
+
+    def f(X, q):
+        d, _ = tree.query(X)
+        t = np.clip((b - d) / (b - a), 0, 1)
+        kr = t * t * (3 - 2 * t)
+        return kr, np.where(np.isin(rq[q], keep_ids), 1.0, kr)
+    return f
 
 
 def frame_mismatch(UV, T, w):
@@ -605,7 +797,7 @@ def uv_seams(T, src, n, left):
     return lo[i1], hi[i1], lo[i2], hi[i2]
 
 
-def gates(z, uvd, Vb, Nv, A, alb, covered, n=400_000, seed=11):
+def gates(z, uvd, Vb, Nv, A, alb, covered, n=400_000, seed=11, keep_fn=None, Vown=None, rq=None):
     """The bake's three gate numbers, measured on the SAVED albedo (8-bit, gutters filled, as the game reads it):
     albedo: random points on our left triangles (area-weighted on our body) and their mirrors; ours = the albedo at
       the point's UV (bilinear), A's = A's paint at the point's own projection (Source.project); dE00 per side (the
@@ -641,6 +833,12 @@ def gates(z, uvd, Vb, Nv, A, alb, covered, n=400_000, seed=11):
         t, bw, _, _ = A.project(X, Nn)
         sides[nm] = srgb_lab(A.sample(t, bw)["albedo"])
     dl, dr = de2000(ours, sides["l"]), de2000(ours, sides["r"])
+    kept = np.ones(n, bool)
+    if keep_fn is not None:           # carry neutral: A's paint is kept (and must match A) only where k == 1
+        qi = np.nonzero(left)[0][ti] % len(z["Q"])
+        _, k = keep_fn((w[:, :, None] * Vown[vl]).sum(1), qi)
+        kept = k >= 1.0
+    away = away & kept
     de = np.r_[dl[away], dr[away]]
     mirror_part = de2000(sides["l"], sides["r"])[away]
     a1, b1, a2, b2 = uv_seams(T, src, len(Vb), left)
@@ -659,6 +857,8 @@ def gates(z, uvd, Vb, Nv, A, alb, covered, n=400_000, seed=11):
            "seam_step_dE_p95": _pct(step[moved]), "seam_step_dE_p99": _pct(step[moved], 99),
            "seam_step_dE_max": round(float(step[moved].max()), 3) if moved.any() else 0.0,
            "seam_edges": int(len(a1)), "seam_samples": int(moved.sum()), "frame_mismatch": fm, "limits": GATES}
+    if keep_fn is not None:
+        res["albedo_dE_scope"] = "kept"
     res["pass"] = bool(res["albedo_dE_p95"] <= GATES["albedo_dE_p95"]
                        and res["seam_step_dE_p95"] <= GATES["seam_step_dE_p95"] and fm <= GATES["frame_mismatch"])
     return res

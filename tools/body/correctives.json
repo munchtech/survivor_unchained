@@ -29,6 +29,8 @@
   "crease_wd": 0.0
  },
  "joints": [
+  {"name": "arm_hang", "law": "rbf", "bone": "upperarm_{s}", "end": "lowerarm_{s}", "frame": "clavicle_{s}", "sigma_deg": 40.0, "center": "upperarm_{s}", "keys": [["arm_hang", 8]], "fold": "fair", "fair": {"c": [-0.002, -0.04, 0.041], "r": [0.075, 0.075, 0.11], "full": 0.3, "iters": 500},
+   "why": "P1 R1c round 7: the Look's armpit pocket (a dark pit over a lit fold) is the POSE, not the rest shape: see fair_key. Worn only near the hanging arm (rbf: 1 at the key, 0 at rest), nothing changes on a raised arm, and it costs no joint. Round 8 (the judge on round 7: toothed edges and a lit crescent under cel): r 5/6/9 -> 7.5/7.5/11 cm over a softer ramp (full 0.3), 500 steps, centre 1.4 cm higher: the narrow mask ended across the fold and on the deltoid (teeth and vertical ripples, which the same fairing irons); lower or taller opens a see-through gap between the breast and the arm. The mask's centre and radii are from the upper arm's head, so any body has it"},
   {
    "name": "elbow",
    "law": "flex",

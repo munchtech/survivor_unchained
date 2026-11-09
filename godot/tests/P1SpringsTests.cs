@@ -73,6 +73,54 @@ public class P1SpringsTests
         }
     }
 
+    /// <summary>R2: on the toy chest, a drop (the chest jerked down 6 cm, the mass lags up) and a rise (jerked up): the
+    /// up travel from rest stays under the data's up limit and eases in (peaks below the hard stop), the down travel
+    /// goes further than the up; the breast's across-axis squashes on the lift and stretches on the drop by up to the
+    /// data's squash, volume kept; support 1 squashes less; Frozen holds the mass at rest.</summary>
+    [Fact]
+    public void TravelSquashFreeze()
+    {
+        var names = new[] { "root", "spine_04", "breast_l", "breast_tip_l" };
+        var parent = new[] { -1, 0, 1, 2 };
+        var rest = new[] { P1M4.Id, Tr(0, 1.3, 0), Tr(0.1, 1.3, 0.04), Tr(0.1, 1.3, 0.1011) };
+        var doc = Doc("data/body/springs.json");
+        var row = doc.GetProperty("bodies").GetProperty("p1").GetProperty("springs")[0];
+        double squash = row.GetProperty("squash").GetDouble();
+        var sp = new P1Springs(doc, "p1", null, names, parent, rest);
+        var b = sp.Springs.First(s => s.Name == "breast_l");
+        double dt = 1 / 60.0;
+        (double Up, double Down, double SqMin, double SqMax, double Det) Run(double dir, double sup, bool frozen)
+        {
+            sp.Support["top"] = sup; sp.Frozen = frozen; sp.Reset();
+            double y = 0, up = 0, down = 0, qmin = double.MaxValue, qmax = 0, det = 0;
+            for (int i = 0; i < 240; i++)
+            {
+                if (i >= 30 && i < 36) y += dir * 0.01;           // 6 cm in 0.1 s, then held
+                sp.Step(Tr(0, y, 0), rest, dt, collide: false);
+                if (frozen) Assert.True((b.X - b.Eq).Len() < 1e-9, "frozen: off rest");
+                up = Math.Max(up, b.Rel.Y); down = Math.Min(down, b.Rel.Y);
+                var lin = b.G.Lin(); double q = lin.Col(2).Len();
+                qmin = Math.Min(qmin, q); qmax = Math.Max(qmax, q);
+                det = Math.Max(det, Math.Abs(lin.Col(0).Len() * lin.Col(1).Len() * q - 1));
+            }
+            return (up, down, qmin, qmax, det);
+        }
+        var drop = Run(-1, 0, false); var rise = Run(1, 0, false);
+        double upLim = b.LimE[2];
+        log.WriteLine($"bare: up {drop.Up * 1000:F1} mm (limit {upLim * 1000:F1}), down {rise.Down * 1000:F1} mm; across scale {drop.SqMin:F3} .. {rise.SqMax:F3}; volume off {Math.Max(drop.Det, rise.Det):E1}");
+        Assert.True(drop.Up > 0.004, "the drop lifts it");
+        Assert.True(drop.Up < upLim * 0.97, "up eases in under its limit");
+        Assert.True(-rise.Down > drop.Up, "down travels further than up");
+        Assert.InRange(drop.SqMin, 1 - squash - 1e-6, 1 - squash * 0.3);   // the lift flattens
+        Assert.InRange(rise.SqMax, 1 + squash * 0.3, 1 + squash + 1e-6);   // the drop stretches
+        Assert.True(Math.Max(drop.Det, rise.Det) < 1e-6, "volume kept");
+        var firm = Run(-1, 1, false);
+        log.WriteLine($"support 1: up {firm.Up * 1000:F1} mm, across scale min {firm.SqMin:F3}");
+        Assert.True(1 - firm.SqMin < 1 - drop.SqMin, "support 1 squashes less");
+        var held = Run(-1, 0, true);
+        Assert.True(held.SqMax - held.SqMin < 1e-9, "frozen: the shape as at rest");
+    }
+
     // ------------------------------------------------------------------ the harness on B's baked clips --
     sealed class Clip
     {

@@ -169,6 +169,166 @@ def prox_dir(st, G):
     return st.p3
 
 
+def fair_key(mesh, st, V, G, jc):
+    """P1 R1c round 7: the key pose's surface FAIRED under a C2 mask (jc["fair"]: c = the centre from the center bone's
+    rest head, r = semi-axes, full, iters): the armpit's pocket with the arms hanging. The vault's skin rides the arm
+    (upperarm 0.97-1.0) and swings 24-50 mm into the trunk wall: a pit 50 mm deep and a pinched web, a lit fold on it. No
+    rest shape fills it (a move at rest comes out as a lump there); an umbrella fairing of the POSED surface shrinks the
+    vault to its rim, and rest_delta turns it into a shape that only the pose wears. Any body: the mask rides the joint."""
+    p = mesh.p
+    X = V[mesh.first].copy()
+    Y = X.copy()
+    deg = np.maximum(mesh.Lg.diagonal(), 1.0)
+    fall = np.zeros(len(X))
+    # round 8: "fair" may be a list of masks, each faired in turn on what the last left (a wide mask ends the cel
+    # edge's bulb; a shallow one irons the deltoid's skinning ripples)
+    for fa in (jc["fair"] if isinstance(jc["fair"], list) else [jc["fair"]]):
+        c = p.rest[p.index[jc["center"].replace("{s}", st.s)]][:3, 3] + np.asarray(fa["c"], float)
+        d = np.linalg.norm((X - c) / np.asarray(fa["r"], float), axis=1)
+        f = 1 - smooth01((d - fa["full"]) / (1 - fa["full"]))
+        f = np.where(~mesh.held, f, 0.0)
+        for _ in range(int(fa["iters"])):
+            Y = Y - (0.5 * f / deg)[:, None] * (mesh.Lg @ Y)
+        fall = np.maximum(fall, f)
+    f = fall
+    free = (f > 1e-3) & ~mesh.held
+    f = np.where(free, f, 0.0)
+    mv = np.linalg.norm(Y - X, axis=1)
+    return Y, f, free, mesh.skin_mats(G), {"iters": [{"moved_max_mm": round(float(mv.max() * 1000), 1)}]}
+
+
+_A = {}
+# (P1 R1 sliders: the ref body's rest for this build's welded points, run() from stage/ref_rest_<tier>.npy; empty: none)
+_REF = {}
+
+
+def posed_a_key(mesh, st, V, G, jc):
+    """P1 R1 weights round 17: the key pose's surface laid on A's (heroine.glb) in the SAME pose under a C2 mask (jc["posed_a"]:
+    c, r, full as fair_key's; valid_mm [full, none]: the rest twin's distance to A's surface): A's skeleton takes B's key pose
+    (posed_fit.carry_pose, the girdle and arm lines kept), A skins itself, and each B point goes to its rest twin on A
+    (barycentric on A's rest surface) as A posed it. Where B's rest lies on A (her_a, a_tight) this is A's own deformation:
+    the fair key flattened the cap (a square corner, cap p95 +12 mm against A in the game's idle) and pinched the armpit."""
+    import posed_fit as pf
+    from gl import Glb
+    from surfdist import Surface
+    p = mesh.p
+    pa = jc["posed_a"]
+    I3 = [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]
+    # (P1 R1 sliders: a slider body's twin on A is its ref body's (her_b's, which lies on A), and the key is A's posed twin
+    # carried by the rest offset s = rest - ref rest (exact for a rigid move, height's grounding; first order for a local
+    # one): the height -0.15 body, 98 mm under A, kept 5 of the 75 full points; her_b itself: s = 0, the same key)
+    P0r = _REF.get("P0", mesh.P0)
+    s_off = mesh.P0 - P0r
+    if "A" not in _A or _A.get("ref") is not _REF.get("P0"):
+        A = Glb(os.path.join(REPO, pa.get("glb", "godot/art/people/heroine.glb")))
+        Par, Ta = pf.skin(A, "Heroine", {"bones": {}, "skeleton": I3, "meshes": {}})
+        q, _, tri, d0 = Surface(Par, Ta).closest(P0r, k=16)
+        T = Ta[tri]
+        x0, x1, x2 = Par[T[:, 0]], Par[T[:, 1]], Par[T[:, 2]]
+        v0, v1, v2 = x1 - x0, x2 - x0, q - x0
+        d00, d01, d11, d20, d21 = (v0 * v0).sum(1), (v0 * v1).sum(1), (v1 * v1).sum(1), (v2 * v0).sum(1), (v2 * v1).sum(1)
+        den = np.maximum(d00 * d11 - d01 * d01, 1e-20)
+        bv, bw = (d11 * d20 - d01 * d21) / den, (d00 * d21 - d01 * d20) / den
+        _A.update(A=A, T=T, bc=np.stack([1 - bv - bw, bv, bw], 1), d0=d0, ref=_REF.get("P0"))
+    A, T, bc, d0 = _A["A"], _A["T"], _A["bc"], _A["d0"]
+    sk = p.glb.skeleton(0)
+    m = lambda M: list(M[:3, 0]) + list(M[:3, 1]) + list(M[:3, 2]) + list(M[:3, 3])
+    probe = {"bones": {n: m(G[i]) for i, n in enumerate(sk.names)}, "skeleton": I3, "meshes": {}}
+    lines = [(f"{x}_{s_}", f"{y}_{s_}") for s_ in "lr" for x, y in (("clavicle", "upperarm"), ("upperarm", "lowerarm"), ("lowerarm", "hand"))]
+    GA = pf.carry_pose(p.glb, A, probe, lines)
+    Va, _ = pf.skin(A, "Heroine", probe, bones=GA)
+    Yt = (Va[T] * bc[:, :, None]).sum(1) + s_off
+    X = V[mesh.first].copy()
+    c = p.rest[p.index[jc["center"].replace("{s}", st.s)]][:3, 3] + np.asarray(pa["c"], float)
+    d = np.linalg.norm((X - c) / np.asarray(pa["r"], float), axis=1)
+    f = 1 - smooth01((d - pa["full"]) / (1 - pa["full"]))
+    v0_, v1_ = pa.get("valid_mm", [2.0, 4.0])
+    f = f * (1 - smooth01((d0 * 1e3 - v0_) / (v1_ - v0_)))
+    f = np.where(~mesh.held & (X[:, 0] > -1e-6 if st.s == "l" else X[:, 0] < 1e-6), f, 0.0)
+    Y = X + f[:, None] * (Yt - X)
+    free = f > 1e-3
+    mv = np.linalg.norm(Y - X, axis=1)
+    return Y, f, free, mesh.skin_mats(G), {"iters": [{"moved_max_mm": round(float(mv.max() * 1000), 1),
+                                                     "moved_p95_mm": round(float(np.percentile(mv[free], 95) * 1000), 1) if free.any() else 0.0}]}
+
+
+_GK = {}
+
+
+def _a_twins(mesh, glb):
+    """Each welded B rest point's rest twin on A's rest surface (A's triangles, barycentric) and its distance, cached."""
+    from gl import Glb
+    from surfdist import Surface
+    import posed_fit as pf
+    P0r = _REF.get("P0", mesh.P0)          # (P1 R1 sliders: a slider body's twins are its ref body's, which lies on A)
+    key = (glb, len(P0r), float(P0r[:, 1].sum()))
+    if key not in _GK:
+        A = Glb(os.path.join(REPO, glb))
+        I3 = [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]
+        Par, Ta = pf.skin(A, "Heroine", {"bones": {}, "skeleton": I3, "meshes": {}})
+        q, _, tri, d0 = Surface(Par, Ta).closest(P0r, k=16)
+        T = Ta[tri]
+        x0, x1, x2 = Par[T[:, 0]], Par[T[:, 1]], Par[T[:, 2]]
+        v0, v1, v2 = x1 - x0, x2 - x0, q - x0
+        d00, d01, d11, d20, d21 = (v0 * v0).sum(1), (v0 * v1).sum(1), (v1 * v1).sum(1), (v2 * v0).sum(1), (v2 * v1).sum(1)
+        den = np.maximum(d00 * d11 - d01 * d01, 1e-20)
+        bv, bw = (d11 * d20 - d01 * d21) / den, (d00 * d21 - d01 * d20) / den
+        _GK[key] = dict(A=A, T=T, bc=np.stack([1 - bv - bw, bv, bw], 1), d0=d0)
+    return _GK[key]
+
+
+def game_pose(poser, kp):
+    """A game key's B skeleton (game_keys.py "b": skeleton-space worlds; a bone the dump lacks keeps its rest) [n,4,4]."""
+    import posed_fit as pf
+    return np.stack([pf.m12(kp["b"][n]) if n in kp["b"] else poser.rest[i] for i, n in enumerate(poser.names)])
+
+
+def game_a_key(mesh, V, G, jc, kp, s):
+    """P1 R1 weights round 19: a key AT THE GAME POSE. B's skeleton as the game posed it in a shot (kp = a game_keys.py key:
+    "b" B's bones), the target A's surface as the game posed A in the same shot ("a", "a_shapes": A skins itself with its own
+    weights, helpers and shapes), each B point at its rest twin on A (barycentric on A's rest surface). Both skeletons stand in
+    one skeleton space (B's rest girdle is A's; chain v2 lands B's clavicle heads, shoulders and arms on A's: 0-2 mm), so the
+    target needs no registration. The strip keys (fair_key, posed_a_key at 8 deg) posed a trunk at rest and an arm the game
+    never holds: past the key the RBF clamped at 1 and the fair shape squared the cap; here the key is the game's own arm.
+    Mask jc["game_a"]: c (m, from the center bone's REST head, x mirrored on the right), r (semi-axes), full (C2 ramp),
+    valid_mm [full, none] (the rest twin's distance: only where B's rest lies on A), on side s only, the head held."""
+    ga = jc["game_a"]
+    tw = _a_twins(mesh, ga.get("glb", "godot/art/people/heroine.glb"))
+    import posed_fit as pf
+    I3 = [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]
+    Va, _ = pf.skin(tw["A"], "Heroine", {"bones": kp["a"], "skeleton": I3, "meshes": {"Heroine": {"shapes": kp.get("a_shapes", {})}}})
+    Yt = (Va[tw["T"]] * tw["bc"][:, :, None]).sum(1)
+    p = mesh.p
+    X = V[mesh.first].copy()
+    sx = np.array([1.0 if s == "l" else -1.0, 1.0, 1.0])
+    c = p.rest[p.index[jc["center"].replace("{s}", s)]][:3, 3] + np.asarray(ga["c"], float) * sx
+    d = np.linalg.norm((mesh.P0 - c) / np.asarray(ga["r"], float), axis=1)
+    f = 1 - smooth01((d - ga["full"]) / (1 - ga["full"]))
+    v0_, v1_ = ga.get("valid_mm", [2.0, 4.0])
+    f = f * (1 - smooth01((tw["d0"] * 1e3 - v0_) / (v1_ - v0_)))
+    side = mesh.P0[:, 0] > 1e-6 if s == "l" else mesh.P0[:, 0] < -1e-6
+    f = np.where(~mesh.held & side, f, 0.0)
+    if _REF.get("ibm") is not None:
+        # (P1 R1 sliders: A's correction is the residual over the REF body's own skinning, the ref point posed by this pose
+        # with the ref's binds, laid on this body's own skinned point; her_b itself never reaches here: Xp = X there)
+        S = G @ _REF["ibm"]
+        M = np.zeros((len(p.Pb), 4, 4))
+        for k in range(p.J.shape[1]):
+            M += p.W[:, k, None, None] * S[p.J[:, k]]
+        M = M[mesh.first]
+        P0r = _REF["P0"]
+        Xp = (M[:, :3, :3] @ P0r[:, :, None])[:, :, 0] + M[:, :3, 3]
+        Y = X + f[:, None] * (Yt - Xp)
+    else:
+        Y = X + f[:, None] * (Yt - X)
+    free = f > 1e-3
+    mv = np.linalg.norm(Y - X, axis=1)
+    full = f > 0.999
+    return Y, f, free, mesh.skin_mats(G), {"iters": [{"moved_max_mm": round(float(mv.max() * 1000), 1),
+                                                     "moved_p95_mm": round(float(np.percentile(mv[free], 95) * 1000), 1) if free.any() else 0.0,
+                                                     "full_n": int(full.sum()), "free_n": int(free.sum())}]}
+
+
 def solve_key(mesh, st, V, G, jc, cf, ref):
     """The desired posed surface Y (welded) for one key pose, and its log."""
     p = mesh.p
@@ -433,10 +593,46 @@ def mirror_map(P, tol=1e-5):
     return np.where(d < tol, i, -1)
 
 
-def normal_delta(P, T, D):
+def smooth_field(X, P, T, iters):
+    """Unit vectors X averaged `iters` times with their mesh neighbours (uniform weights, points welded by position, so a
+    UV seam's copies stay one), renormalized."""
+    if not iters:
+        return X
+    import scipy.sparse as sp
+    _, w = np.unique(np.round(P, 6), axis=0, return_inverse=True)
+    w = w.ravel()
+    E = np.unique(np.sort(w[np.r_[T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]]], 1), axis=0)
+    E = E[E[:, 0] != E[:, 1]]
+    m = int(w.max()) + 1
+    A = sp.coo_matrix((np.ones(2 * len(E)), (np.r_[E[:, 0], E[:, 1]], np.r_[E[:, 1], E[:, 0]])), shape=(m, m)).tocsr()
+    deg = np.asarray(A.sum(1)).ravel()
+    Y = np.zeros((m, 3))
+    np.add.at(Y, w, X)
+    Y /= np.maximum(np.linalg.norm(Y, axis=1, keepdims=True), 1e-12)
+    for _ in range(int(iters)):
+        Y = (Y + A @ Y) / (1.0 + deg)[:, None]
+        Y /= np.maximum(np.linalg.norm(Y, axis=1, keepdims=True), 1e-12)
+    return Y[w]
+
+
+def normal_delta(P, T, D, N=None, smooth=0):
+    """A shape's NORMAL delta: the geometric normals' change (N None), or (P1 R1 bake round 2) the export's own normals
+    N turned by the rotation the shape gives the geometric normal, less N: where N is not the mesh's geometric normal
+    (B's export carries A's file normals over her_a, up to 35 deg off its facets) the shape turns that normal as it
+    turns the surface, instead of adding a difference made for another vector.
+    `smooth` (the correctives data's solve "normal_smooth", 0 = as before): the turn read from the geometric normals
+    averaged that many times over the mesh (smooth_field), so it carries the shape's turn of the form, not its facets':
+    a key laid on A's posed surface (game_a, posed_a) snaps B's points onto A's facets, whose turn, carried point by
+    point, drew a lit line and blotches down the front of her right deltoid at the close and Look cameras (P1 R1 bake
+    round 3: arm_hang_look_r's turn p99 39 deg, edge angle p99 53 -> 69 deg; the same with her relief off)."""
     n0 = bends.normals(P, T)
     n1 = bends.normals(P + D, T)
-    return n1 - n0
+    if smooth:
+        n0, n1 = smooth_field(n0, P, T, smooth), smooth_field(n1, P + D, T, smooth)
+    if N is None:
+        return n1 - n0
+    N = N / np.maximum(np.linalg.norm(N, axis=1, keepdims=True), 1e-12)
+    return bends.turn_onto(N, n0, n1) - N
 
 
 def topo_mirror(mo, Pb, stage_npz=None):
@@ -466,20 +662,37 @@ def topo_mirror(mo, Pb, stage_npz=None):
 
 
 # ----------------------------------------------------------------------- run --
-def shape_name(jc, motion, deg):
-    tag = {"shoulder_abd": "abd", "shoulder_flex": "flex" if deg >= 0 else "ext", "hip_flex": "flex",
+def shape_name(jc, motion, deg, arm=None):
+    if motion == "game":                    # a game key: its shot's name (arm_hang_close_l); a key that names its arm
+        return f"{jc['name']}_{deg}_{arm}arm_{{s}}" if arm else f"{jc['name']}_{deg}_{{s}}"   # (arm_hang_look_larm_r)
+    tag = {"arm_hang": "hang", "shoulder_abd": "abd", "shoulder_flex": "flex" if deg >= 0 else "ext", "hip_flex": "flex",
            "hip_abd": "abd", "elbow": "flex", "knee": "flex"}[motion]
     return f"{jc['name']}_{tag}{int(round(abs(deg)))}_{{s}}"
+
+
+def load_conf(conf_path=None):
+    """The correctives data: tools/body/correctives.json, or a spec's own file (its "correctives_conf"). A spec's file may
+    "extends" another (a repo path): its "joints" replace the base's by name (a new name is added), its "solve" keys
+    override, so a body's own keys (her game keys, laid on A) never fork the shared data."""
+    conf = json.load(open(os.path.join(REPO, conf_path) if conf_path else CONF))
+    if conf.get("extends"):
+        base = load_conf(conf["extends"])
+        over = {j["name"]: j for j in conf.get("joints", [])}
+        joints = [over.pop(j["name"], j) for j in base["joints"]] + list(over.values())
+        conf = dict(base, joints=joints, solve={**base["solve"], **conf.get("solve", {})})
+    return conf
 
 
 TIERS = {"close": ("body.glb", "rig.json", "body_lbs.glb", "shapes.npz", "correctives.json"),
          "play": ("play.glb", "play_rig.json", "play_lbs.glb", "play_shapes.npz", "play_correctives.json")}
 
 
-def run(out, only=None, tier="close", fresh=False):
-    """`fresh`: the export was just written (build_topo's stage 6): it becomes the shapeless base."""
+def run(out, only=None, tier="close", fresh=False, turn_normals=False, conf_path=None):
+    """`fresh`: the export was just written (build_topo's stage 6): it becomes the shapeless base. `turn_normals` (P1 R1
+    bake round 2: the export's normals are not its geometric ones, build_topo.her_a_normals): each shape's NORMAL
+    delta turns the base's own normals (normal_delta N)."""
     t0 = time.time()
-    conf = json.load(open(CONF))
+    conf = load_conf(conf_path)                 # (a spec's "correctives_conf": its own data)
     cf = conf["solve"]
     f_glb, f_rig, f_base, f_shapes, f_rep = TIERS[tier]
     base = os.path.join(out, "stage", f_base)
@@ -490,6 +703,23 @@ def run(out, only=None, tier="close", fresh=False):
     rig["correctives"] = [c for c in rig.get("correctives", []) if only and c.get("joint") not in only]
     poser = LbsPoser(base, dict(rig, correctives=[]))
     mesh = Mesh(poser)
+    _REF.clear()
+    rp, sp = os.path.join(out, "stage", f"ref_rest_{tier}.npy"), os.path.join(out, "stage", f"{tier}.npz")
+    if os.path.exists(rp) and os.path.exists(sp):
+        from scipy.spatial import cKDTree as _KD
+        Vv, Vr = np.load(sp)["V"], np.load(rp)
+        d_, i_ = _KD(Vv).query(mesh.P0)
+        _REF["P0"] = np.where((d_ < 1e-5)[:, None], Vr[i_], mesh.P0)
+        rk = os.path.join(out, "stage", "ref_skeleton.json")
+        if os.path.exists(rk):
+            skr = json.load(open(rk))
+            Wr = np.asarray(skr["worlds"], float)
+            ibm = np.stack([np.linalg.inv(Wr[skr["names"].index(n)]) for n in poser.names])
+            own = json.load(open(os.path.join(out, "stage", "close_skeleton.json")))
+            Wo = np.asarray(own["worlds"], float)
+            chk = np.stack([np.linalg.inv(Wo[own["names"].index(n)]) for n in poser.names])
+            assert np.abs(chk - poser.skel.ibm).max() < 1e-4, ("ref binds: the skeleton json's worlds are not the glb's binds", np.abs(chk - poser.skel.ibm).max())
+            _REF["ibm"] = ibm
     frame = bends.Frame(poser, rig)
     body = np.nonzero(poser.piece == "body")[0]
     Pb, Tb = poser.Pb[body], poser.T[(poser.piece[poser.T] == "body").all(1)]
@@ -527,7 +757,37 @@ def run(out, only=None, tier="close", fresh=False):
             for k_, Y, f, free, M, G, lg in chain_mod.solve_chain(mesh, st, jc, {**cf, **jc.get("solve", {})}):
                 chain[k_] = (Y, f, free, M, G, lg)
             print(f"  {jc['name']} march {round(time.time() - t, 1)} s", flush=True)
-        for motion, deg in jc["keys"]:
+        for key in jc["keys"]:
+            motion, deg = key[0], key[1]
+            if motion == "game":                       # a game key (game_a_key): B's pose from a shot, A's surface in it
+                ga = jc["game_a"]                      # ([game, shot] keys the default arm, game_a "side"; [game, shot,
+                kp = json.load(open(os.path.join(REPO, ga["poses"])))["keys"][deg]   # l|r] that arm, its own shapes)
+                s_ = key[2] if len(key) > 2 else ga.get("side", "r")
+                nm = shape_name(jc, motion, deg, key[2] if len(key) > 2 else None)
+                G = game_pose(poser, kp)
+                V = poser._skin(G, {})
+                t = time.time()
+                Y, f, free, M, lg = game_a_key(mesh, V, G, jc, kp, s_)
+                D = rest_delta(mesh, Y, f, free, M)
+                D[(Pb[:, 0] > 1e-6) if s_ == "r" else (Pb[:, 0] < -1e-6)] = 0.0   # the key side's shape only
+                mx_ = np.array([-1.0, 1, 1])
+                Dk = np.zeros_like(D)                  # as the left's (the right is its mirror, below)
+                ok = mir >= 0
+                Dk[ok] = D[mir[ok]] * mx_ if s_ == "r" else D[ok]
+                DR = np.zeros_like(Dk)
+                DR[ok] = Dk[mir[ok]] * mx_
+                shapes[nm.replace("{s}", "l")] = Dk
+                shapes[nm.replace("{s}", "r")] = DR
+                lg.update(key=deg, motion=motion, side=s_, max_mm=round(float(np.linalg.norm(D, axis=1).max() * 1000), 2),
+                          moved=int((np.linalg.norm(D, axis=1) > 1e-4).sum()), s=round(time.time() - t, 1),
+                          mirror_mm=round(float(np.abs(DR - D).max() * 1000), 3) if s_ == "r" else 0.0)
+                row.setdefault("keys", []).append(lg)
+                names.append(nm)
+                dk = rig_drive.direction(poser, G, jc["bone"].replace("{s}", s_), jc["end"].replace("{s}", s_),
+                                         jc["frame"].replace("{s}", s_))
+                dirs.append(dk * mx_ if s_ == "r" else dk)
+                print(f"  {nm} {deg}: {lg['iters'][-1]} max {lg['max_mm']} mm, {lg['s']} s", flush=True)
+                continue
             st = strips.get(motion) or key_strip(poser, rig, frame, motion, "l")
             strips[motion] = st
             nm = shape_name(jc, motion, deg)
@@ -547,6 +807,10 @@ def run(out, only=None, tier="close", fresh=False):
             if chain:
                 Y, f, free, M, _, lg = chain[float(deg)]
                 lg = dict(lg, iters=[{"inside_parity": lg["march"]["inside"]}])
+            elif jk.get("fold") == "fair":
+                Y, f, free, M, lg = fair_key(mesh, st, V, G, jk)
+            elif jk.get("fold") == "posed_a":
+                Y, f, free, M, lg = posed_a_key(mesh, st, V, G, jk)
             elif jk.get("fold") == "flatten":
                 import crease_fold
                 Y, f, free, M, lg = crease_fold.solve_key(mesh, st, V, G, jk, cfk, ref)
@@ -599,7 +863,14 @@ def run(out, only=None, tier="close", fresh=False):
     for c in rig["correctives"]:
         for s in ("l", "r"):
             order += [n.replace("{s}", s) for n in c.get("shapes", []) if n]
-    tg = {n: (shapes[n].astype(np.float32), normal_delta(Pb, Tb, shapes[n]).astype(np.float32)) for n in order}
+    Nb = None
+    if turn_normals:
+        mb = poser.glb.mesh(rig.get("body_mesh", "Heroine"))
+        assert np.abs(mb.P.astype(float) - Pb).max() < 1e-6, "the body mesh's points are not the poser's"
+        Nb = mb.N.astype(np.float64)
+    ns = int(cf.get("normal_smooth", 0))
+    tg = {n: (shapes[n].astype(np.float32), normal_delta(Pb, Tb, shapes[n], Nb, ns).astype(np.float32)) for n in order}
+    rep["normal_smooth"] = ns
     glbwrite.set_targets(base, rig.get("body_mesh", "Heroine"), tg, os.path.join(out, f_glb))
     np.savez_compressed(os.path.join(out, "stage", f_shapes), **shapes)
     with open(rig_path, "w") as fh:

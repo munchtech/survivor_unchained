@@ -44,6 +44,9 @@ public partial class HeadTurn : SkeletonModifier3D
     float weight;
     int head = -1, neck = -1, spine = -1;
     Vector3 headForward, neckForward, headUp, neckUp, spineUp;
+    // (P1's body B: the shared head turns about A's Head joint, where A's own look turns it: B's Head joint sits 58 mm
+    // over and 24 mm in front of A's, so the close camera's 28 deg look put B's face 10 mm off A's; P1 weights round 2)
+    Vector3 headPivot, neckPivot;
 
     public HeadTurn() { Name = "HeadTurn"; }
 
@@ -62,6 +65,16 @@ public partial class HeadTurn : SkeletonModifier3D
             var hr = sk.GetBoneGlobalRest(head).Basis.Orthonormalized().Inverse();
             headForward = (hr * Vector3.Back).Normalized();
             headUp = (hr * Vector3.Up).Normalized();
+            if (P1Body.IsB(sk) && P1Body.ARestOn(sk, "Head") is Transform3D ah)
+            {
+                var br = sk.GetBoneGlobalRest(head);
+                headPivot = br.Basis.Orthonormalized().Inverse() * (ah.Origin - br.Origin);
+                if (neck >= 0 && P1Body.ARestOn(sk, "neck_01") is Transform3D an)
+                {
+                    var nr0 = sk.GetBoneGlobalRest(neck);
+                    neckPivot = nr0.Basis.Orthonormalized().Inverse() * (an.Origin - nr0.Origin);
+                }
+            }
             if (neck >= 0)
             {
                 var nr = sk.GetBoneGlobalRest(neck).Basis.Orthonormalized().Inverse();
@@ -79,15 +92,17 @@ public partial class HeadTurn : SkeletonModifier3D
         // tipped toward the coals): it is levelled only as far as the body under it stands upright.
         float level = spine >= 0 ? Mathf.SmoothStep(0.35f, 0.7f, (sk.GetBoneGlobalPose(spine).Basis.Orthonormalized() * spineUp).Dot(Vector3.Up)) : 1;
         // The neck takes two fifths of the turn, the head the rest.
-        if (neck >= 0) Turn(sk, neck, neckForward, neckUp, local, weight * 0.4f, Limit * 0.4f, level);
-        Turn(sk, head, headForward, headUp, local, weight, Limit, level);
+        if (neck >= 0) Turn(sk, neck, neckForward, neckUp, local, weight * 0.4f, Limit * 0.4f, level, neckPivot);
+        Turn(sk, head, headForward, headUp, local, weight, Limit, level, headPivot);
     }
 
-    static void Turn(Skeleton3D sk, int bone, Vector3 forward, Vector3 up, Vector3 target, float k, float limit, float level)
+    /// <summary>pivot: the turn's centre in the bone's own frame (zero: its joint).</summary>
+    static void Turn(Skeleton3D sk, int bone, Vector3 forward, Vector3 up, Vector3 target, float k, float limit, float level, Vector3 pivot)
     {
         var g = sk.GetBoneGlobalPose(bone);
         var basis = g.Basis.Orthonormalized();
-        Vector3 now = (basis * forward).Normalized(), want = (target - g.Origin).Normalized();
+        var centre = g.Origin + basis * pivot;
+        Vector3 now = (basis * forward).Normalized(), want = (target - centre).Normalized();
         float angle = now.AngleTo(want);
         if (angle < 1e-4f) return;
         var axis = now.Cross(want);
@@ -108,5 +123,10 @@ public partial class HeadTurn : SkeletonModifier3D
         int parent = sk.GetBoneParent(bone);
         var parentBasis = parent >= 0 ? sk.GetBoneGlobalPose(parent).Basis.Orthonormalized() : Basis.Identity;
         sk.SetBonePoseRotation(bone, (parentBasis.Inverse() * newBasis).GetRotationQuaternion());
+        if (pivot != Vector3.Zero)
+        {
+            var pg = parent >= 0 ? sk.GetBoneGlobalPose(parent) : Transform3D.Identity;
+            sk.SetBonePosePosition(bone, pg.AffineInverse() * (centre - newBasis * pivot));
+        }
     }
 }

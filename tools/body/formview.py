@@ -22,7 +22,10 @@ def body(spec_path, tier="close"):
         _A["A"] = Glb(os.path.join(bt.REPO, spec["ref"]))
         _A["baked0"] = headbake.bake(_A["A"], bt.HEADS)
     A = _A["A"]
-    hm = np.asarray(head_move(spec.get("sliders", {})), float)
+    g = spec["_ground_m"] if "_ground_m" in spec else bt.ground_offset(bt.with_defaults(spec))     # (P1 R1 sliders: grounded as the build is)
+    if g:
+        spec = {**spec, "_ground_m": g}
+    hm = np.asarray(head_move(spec.get("sliders", {})), float) + np.asarray(g or [0.0, 0.0, 0.0], float)
     baked = {h: dict(v, P=v["P"] + hm[None, :]) for h, v in _A["baked0"].items()}
     rep = {}
     z, V = bt.stage_base(spec, tier, rep)

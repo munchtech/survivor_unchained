@@ -10,12 +10,15 @@ namespace SurvivorUnchained.Play;
 /// A's posed skeleton (heroine.glb playing a clip under HerPose alone) taken onto B's own skeleton as local poses B
 /// plays natively. The rules, each derived:
 ///  - the map is P1Retarget's (global, rest-relative, by name and by role);
-///  - the girdle hold: clavicle_{l,r} and scap_{l,r} stand at B's rest local (B's girdle law, P1Rig.Drive, turns them
-///    at runtime from the arm; A's clip clavicle turn dropped B's shoulder joint 22-32 mm in the town idle: the dome),
-///    the upper arm keeps its mapped world turn (its head rides the held clavicle), all below follow by their locals;
-///  - positions: B's rest offsets but for root and pelvis (P1Retarget's LegScale rule);
+///  - the girdle: A's final clavicle line is B's (world direction, the rests differ: A's shoulder sits 41 mm under its
+///    clavicle head, B's 14 mm, so a turn from rest left B's shoulders high under her neck), reached after B's girdle law:
+///    the clavicle is keyed so that P1Rig.ClavicleTurn laid on it at runtime lands on A's line (the law stays for what
+///    clips don't author, nothing doubles); scap_{l,r} stand at B's rest local and turn by the law alone. The upper arm
+///    keeps its mapped world turn (its head rides the clavicle), all below follow by their locals;
+///  - positions: B's rest offsets but for root and pelvis (P1Retarget's LegScale rule), keyed as position tracks (B's
+///    trunk joints are A's, so A's pose carries them where A's are: P1Retarget's matched trunk);
 ///  - keys: a B bone is keyed only if its source A bone(s) are keyed in the clip (by name, or either chain bracket);
-///    the girdle and B's helpers never (partial clips stay partial, the game's filtered blends behave as on A);
+///    scap and B's helpers never (partial clips stay partial, the game's filtered blends behave as on A);
 ///  - the hand clean (tools/body/p1_clips.json) after the hold: per bone additive local turns, and a hold list.
 /// Derivation: (a) the owner's rebuild ("B is the actor", 5 Nov) and the brief; (c) inherited: P1Retarget's map.
 /// </summary>
@@ -48,11 +51,13 @@ public sealed class P1Bake
     /// <summary>B's rest local of bone j (relative to its parent).</summary>
     public P1M4 RestLocal(int j) => restLocal[j];
 
-    /// <summary>One frame: A's posed globals (skeleton space) to B's locals and globals, girdle held, the clean applied.</summary>
-    public (P1M4[] Local, P1M4[] G) Frame(P1M4[] aPose, Clean? clean = null) => Hold(Map.Map(aPose), clean);
+    /// <summary>One frame: A's posed globals (skeleton space) to B's locals and globals, girdle held, the clean applied.
+    /// aKeyed: the A bones the clip keys (the map lands a chain segment only when all it reads are keyed; null: all).</summary>
+    public (P1M4[] Local, P1M4[] G) Frame(P1M4[] aPose, Clean? clean = null, ICollection<int>? aKeyed = null) => Hold(Map.Map(aPose, aKeyed), clean, aPose);
 
-    /// <summary>The girdle hold and the clean on mapped B globals.</summary>
-    public (P1M4[] Local, P1M4[] G) Hold(P1M4[] mapped, Clean? clean = null)
+    /// <summary>The girdle and the clean on mapped B globals. aPose: A's final pose, its clavicle lines B's (null: the
+    /// clavicles held at B's rest).</summary>
+    public (P1M4[] Local, P1M4[] G) Hold(P1M4[] mapped, Clean? clean = null, P1M4[]? aPose = null)
     {
         int n = B.Names.Length;
         var L = new P1M4[n];
@@ -63,11 +68,27 @@ public sealed class P1Bake
             // (only root and pelvis move from B's own offsets)
             if (j != Pelvis && j != Root) L[j] = L[j].WithT(restLocal[j].T());
         }
-        foreach (int j in Girdle) L[j] = restLocal[j];
+        // the scapulae at B's rest local (B's law turns them); the clavicle as mapped (P1 R1 arm chain: the plain map with
+        // align, B's clavicle head and shoulder being A's, so its line is A's line; before, A's final line was laid from B's
+        // neutral by the least turn, the shrug baked in)
+        foreach (int j in Girdle) if (Side(j) == null) L[j] = restLocal[j];
         var G = new P1M4[n];
         foreach (int j in order)
         {
             int p = B.Parent[j];
+            if (aPose != null && p >= 0 && !B.ClavicleRollNeutral && Side(j) is string cs)
+            {
+                // the mapped clavicle's line (A's) from B's neutral by the least turn, so B's clavicle keeps its own roll:
+                // A's clavicle roll laid on B's clavicle (whose skin is B's upper chest and trapezius) moved B's breasts
+                // 10 mm p95 off A's at the Look (round 25 trial: 4.3 -> 10.3). Not on a rig whose girdle lays that roll
+                // at runtime (P1Rig.ClavicleRollNeutral, round 27): there the clip keys A's clavicle as mapped, so the
+                // game's local blends of clavicle and upper arm run as A's (baked here, the fights' upper arms ran 1-3 deg
+                // off A's through blends: round 26)
+                var neutral = G[p] * restLocal[j];
+                var line = neutral.Lin() * restLocal[B.Index["upperarm_" + cs]].T();
+                var want = mapped[B.Index["upperarm_" + cs]].T() - mapped[j].T();
+                L[j] = G[p].Inverse() * P1M4.From(Arc(line, want) * P1Retarget.Rot(neutral), neutral.T());
+            }
             if (Array.IndexOf(uppers, j) >= 0 && p >= 0)
             {
                 // the upper arm's mapped world turn kept, its head where the held parent carries it
@@ -83,7 +104,24 @@ public sealed class P1Bake
             }
             G[j] = Compose(p < 0 ? null : G[p], L[j]);
         }
+        if (aPose != null)
+            foreach (var s in new[] { "l", "r" })
+            {
+                // Keyed under the law: at runtime P1Rig.Girdle lays Rc on this and lands on A's line, the upper arm's world turn kept.
+                if (!B.Index.TryGetValue("clavicle_" + s, out int c) || !B.Index.TryGetValue("upperarm_" + s, out int u) || B.ClavicleTurn(G, s) is not P1M3 rc) continue;
+                var keyed = P1M4.From(rc.T() * P1Retarget.Rot(G[c]), G[c].T());
+                var arm = P1Retarget.Rot(G[u]);
+                L[c] = G[B.Parent[c]].Inverse() * keyed;
+                L[u] = keyed.Inverse() * P1M4.From(arm, keyed * restLocal[u].T());
+                Recompose(L, G, c);
+            }
         return (L, G);
+    }
+
+    string? Side(int j)
+    {
+        var n = B.Names[j];
+        return n == "clavicle_l" ? "l" : n == "clavicle_r" ? "r" : null;
     }
 
     static P1M4 Compose(P1M4? parent, P1M4 local) => parent == null ? local : parent * local;
@@ -259,10 +297,20 @@ public sealed class P1Bake
         var o = new HashSet<int>();
         for (int j = 0; j < B.Names.Length; j++)
         {
-            if (Girdle.Contains(j) || B.Helpers.Contains(j)) continue;
+            if (Girdle.Contains(j) && Side(j) == null || B.Helpers.Contains(j)) continue;
             var (k, s0, s1) = Map.Source(j);
             if (k == 1 && aKeyed.Contains(s0) || k == 2 && (aKeyed.Contains(s0) || aKeyed.Contains(s1))) o.Add(j);
         }
+        // the clavicle keyed with its arm (P1 pose round 1): Hold always sets it (A's final line under B's law: A's shrug
+        // lifts it even where the clip leaves A's clavicle at rest), and the upper arm is keyed under it. A clip that keys
+        // the arm and not the clavicle (her sword, dagger and axe blows) left B's clavicle at B's rest local in the game
+        // (the deterministic blend's init: a track the shot lacks), not the bake's: the clavicle line 4-6 deg off A's, the
+        // upper arm 3-4, the hands 25-48 mm off in fight_close's strikes.
+        // (not on a shrug-driven rig, P1 R1 arm chain: there the clavicle is the map of A's, keyed where A keys it, and a
+        // blow that leaves A's clavicle unkeyed leaves B's at its init as A's is; A's HerShrug lifts both at runtime)
+        if (!B.ShrugDriven)
+            foreach (var s in new[] { "l", "r" })
+                if (B.Index.TryGetValue("upperarm_" + s, out int u) && o.Contains(u) && B.Index.TryGetValue("clavicle_" + s, out int c)) o.Add(c);
         return o;
     }
 

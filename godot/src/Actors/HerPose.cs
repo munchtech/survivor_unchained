@@ -31,8 +31,8 @@ public partial class HerPose : SkeletonModifier3D
     /// <summary>Both halves at once.</summary>
     public float Native { set { Lower = Upper = value; } }
     /// <summary>P1's B (--body p1): every clip is baked onto B with her library carriage in it (the clip bridge,
-    /// P1BakeRun), so the library correction (the pelvis shift, finger ease, ArmsIn, NeckPitch, HipTilt) is skipped
-    /// whatever Native says; the runtime parts (LookArms, CineCurl, the neck sliders, chin up, head tries) stay.</summary>
+    /// P1BakeRun), so the library correction (the pelvis shift, finger ease, ArmsIn, NeckPitch, HipTilt) and the Look's arms
+    /// are skipped whatever Native and LookOn say; the runtime parts (CineCurl, the neck sliders, chin up, head tries) stay.</summary>
     public bool Baked;
     /// <summary>Her neck as her face's sliders shape it (People.HerFace),
     /// each -1 to 1: longer or shorter (her head carried up or down along
@@ -68,6 +68,8 @@ public partial class HerPose : SkeletonModifier3D
     /// the shoulder-to-wrist line, the hand's place and turn kept (her left hand stays at her hip). Eased in and
     /// out over LookEase seconds with the idle's crossfade; off the Look nothing here moves.</summary>
     public float LookArmsDownL, LookArmsDownR, LookRollL, LookRollR, LookSwivelL, LookSwivelR;
+    /// <summary>The Look's arms as GameFront sets them; the clip bridge bakes the same into B's idle_{calling}_look (P1BakeRun).</summary>
+    public const float LookDownR = 10f, LookSwivel = 31f;
     public bool LookOn;
     public const float LookEase = 0.3f;
     float lookW;
@@ -170,7 +172,8 @@ public partial class HerPose : SkeletonModifier3D
             if (NeckPitch != 0) Turn(sk, neck, Vector3.Right, NeckPitch * arms);
         }
         lookW = Mathf.MoveToward(lookW, LookOn ? 1 : 0, (float)delta / LookEase);
-        if (lookW > 0) LookArms(sk, LookWeight);
+        // (on B the Look's arms are in her idle_{calling}_look clip: LookOn only keeps the weight GameFront's pan rides)
+        if (lookW > 0 && !Baked) LookArms(sk, LookWeight);
         if (CineCurlL != 0 && fingL.Length == 12 && handL >= 0) CurlHand(sk, fingL, handL, thumb1L, CineCurlL, false);
         if (CineCurlR != 0 && fingR.Length == 12 && handR >= 0) CurlHand(sk, fingR, handR, thumb1R, CineCurlR, true);
         if (lib > 0)

@@ -131,6 +131,9 @@ def load_tier(tier):
 
 def stage_base(spec, tier, rep, pre=None):
     z, sl = pre or load_tier(tier)
+    for n, f in (spec.get("target_files") or {}).items():
+        # a trial's target (a scratch spec names it; the designed slider's own "file" otherwise), e.g. her_a_target.py --out-dir
+        sl.designed[n] = {**sl.designed[n], "file": f}
     V0 = sl.V0.copy()
     assert np.abs(V0 - z["V"]).max() < 1e-6, "the sliders' reference is not this topology"
     info = {"topology": f"tools/body/out/topo/{tier}.npz", "vertices": int(len(V0)), "quads": int(len(z["Q"]))}
@@ -175,10 +178,43 @@ def stage_base(spec, tier, rep, pre=None):
         import neck_form
         V = neck_form.after_join(sl, V, sliders)
         info["post_join_ring_move_mm"] = [round(float(x) * 1e3, 2) for x in post[boundary_ring(z["Q"], len(V0))].mean(0)]
+    if sliders:
+        # P1 R1 sliders round 2: a catalogue slider's own "shrink" (bust_size's minus side: the breast toward the chest
+        # wall), laid on the finished rest body so it shrinks the breast the body has (a post-join target's too)
+        import breast_form
+        V, sh = breast_form.shrink(sl, V, sliders)
+        if sh:
+            info["shrink"] = sh
     if spec.get("forms"):
         info["forms"] = f"NOT applied ({spec['forms']}: per MakeHuman point; ours are \"forms_topo\", stage 2b)"
+    if spec.get("_ground_m"):
+        # (P1 R1 sliders, ground_offset: the whole build moved rigidly, the baked head with it, so the soles stand where
+        # the ground ref's do)
+        V = V + np.asarray(spec["_ground_m"], float)[None, :]
+        info["ground_m"] = spec["_ground_m"]
     rep["base"] = info
     return z, V
+
+
+def ground_offset(spec):
+    """P1 R1 sliders: the join holds the neck ring where the head is (A's head, fixed), so a slider that changes her
+    length (height, legs, torso) moved her soles instead: height -0.15 stood her 98 mm over the floor. spec "ground_ref"
+    (a spec path): the rigid move [0, dy, 0] that puts this body's soles (its lowest skin point after stage 1) at the ref
+    spec's; laid on the body in stage_base and on the baked head in main (head_move), so the build moves as one. The ref
+    itself, and a body with the ref's sliders: 0 (identical bytes)."""
+    ref = spec.get("ground_ref")
+    if not ref:
+        return None
+    rs = with_defaults(load_spec(os.path.join(REPO, ref)))
+    if rs.get("sliders", {}) == spec.get("sliders", {}):
+        return None
+    lo = []
+    for sp in (spec, rs):
+        s2 = {k: v for k, v in sp.items() if k != "_ground_m"}
+        _, V = stage_base(s2, "close", {})
+        lo.append(float(V[:, 1].min()))
+    dy = lo[1] - lo[0]
+    return [0.0, round(dy, 6), 0.0] if abs(dy) > 1e-6 else None
 
 
 # ------------------------------------------------------------------------------------------------ 2 place --
@@ -366,24 +402,147 @@ def bone_body(spec, tier, z, V, A, baked, rep):
     return Vb
 
 
-def stage_skeleton(V, tier, rep, head=None):
+def bone_values(spec):
+    """The slider values the bones are read at (bone_body's): every non-soft slider, then the spec's bone_sliders."""
+    sv = {k: v for k, v in spec.get("sliders", {}).items() if v}
+    designed = {}
+    for f in sorted(os.listdir(os.path.join(HERE, "designed"))):
+        if f.endswith(".json"):
+            with open(os.path.join(HERE, "designed", f)) as fh:
+                designed.update(json.load(fh).get("sliders", {}))
+    return {**{k: v for k, v in sv.items() if not designed.get(k, {}).get("soft")}, **(spec.get("bone_sliders") or {})}, designed
+
+
+def target_joints(spec):
+    """P1 R1 round 12: a designed "target" slider's own joints ({cube: [x, y, z]} glTF m, her left, the npz's "joints"
+    json; her_a_target.py's a_rest: A's clavicle head, shoulder, elbow and wrist at the pose its skin was taken in), at
+    the bone body's value v: {cube: (point, v)} for stage_skeleton. The close tier's file (one skeleton for both)."""
+    vals, designed = bone_values(spec)
+    over = spec.get("target_files") or {}
+    out = {}
+    for n, v in vals.items():
+        c = designed.get(n, {})
+        if c.get("rule") != "target" or not v:
+            continue
+        z = np.load(os.path.join(REPO, over.get(n, c["file"]).format(tier="close")))
+        if "joints" in z.files:
+            for cube, p in json.loads(str(z["joints"])).items():
+                out[cube] = (np.asarray(p, float), float(v))
+    return out
+
+
+def unground(spec, baked, ref=None):
+    """The baked head where the ref spec has it (ground_offset's move taken off): a ref body is built in A's frame.
+    ref (the ref spec, P1 R1 second body): the designed neck's head_move too, this spec's off and the ref's on (a body
+    whose neck sliders differ from the ref's lifts the head by its own; her_b's variants share her neck: no change)."""
+    g = np.asarray(spec.get("_ground_m") or [0.0, 0.0, 0.0], float)
+    if ref is not None:
+        g = (np.asarray(sliders_head_move(spec.get("sliders", {})), float)
+             - np.asarray(sliders_head_move(ref.get("sliders", {})), float)) + g
+    if not np.any(g):
+        return baked
+    return {h: dict(v, P=v["P"] - g[None, :]) for h, v in baked.items()}
+
+
+def target_joints_ref(spec, tier, z, A, baked, joints):
+    """P1 R1 sliders: a designed target's joints are absolute points on the body the target was made on (her_a: A's joints
+    on her_b's body), so a slider laid on top (height, hips, legs) moved the skin and left those joints where A's are.
+    spec "target_joints_ref" {target: ref spec path}: when this spec's sliders differ from the ref spec's, the skeleton
+    is placed once on the ref spec's bone body recording each target joint's landmark there, and the target's joint is
+    laid as landmark + v (joint - ref landmark) on this body (skeleton.OurLandmarks.lay). The ref spec itself (and any
+    spec with the same sliders) keeps the absolute joints: identical bytes.
+    spec "ref_body" (a spec path; P1 R1 second body): a body with no target joints (her_a 0) still built against the body
+    the clips, the head and the hair were made on (her_b: A's joints), so the ref body and skeleton are written
+    (stage/ref_rest_close.npy, ref_skeleton.json) for the runtime laws that read them (publish_p1.body_laws: hand_clear,
+    carry ref_move_m); no joint of the ref is laid on this body. Absent (every spec before it): unchanged."""
+    refs = dict(spec.get("target_joints_ref") or {})
+    if not refs and spec.get("ref_body"):
+        refs = {"ref_body": spec["ref_body"]}
+    if not refs or (not joints and not spec.get("ref_body")):
+        return joints, None
+    out = dict(joints or {})
+    info = {}
+    baked0 = baked
+    for tgt, ref_path in refs.items():
+        if tgt == "why":
+            continue
+        rs = with_defaults(load_spec(os.path.join(REPO, ref_path)))
+        baked = unground(spec, baked0, rs)
+        if rs.get("sliders", {}) == spec.get("sliders", {}) and (rs.get("bone_sliders") or {}) == (spec.get("bone_sliders") or {}):
+            info[tgt] = f"{ref_path}: the same sliders (absolute joints)"
+            continue
+        r2 = {}
+        _, Vr = stage_base(rs, tier, r2, pre=load_tier(tier))
+        Vr, ring_r, _ = stage_place(rs, z, Vr, A, baked, r2)
+        Vr = stage_forms(rs, tier, z, Vr, ring_r, r2)
+        rec = {}
+        skr = stage_skeleton(bone_body(rs, tier, z, Vr, A, baked, r2), tier, r2, baked["HeroineHead"]["P"], rs.get("joint_moves"),
+                             target_joints(rs), rec)
+        info["_sk_ref"] = {k: skr[k] for k in ("skel", "names", "parents", "worlds", "ends")}
+        info["_weights_ref"] = weights_body(rs, tier, z, Vr, A, baked, r2)
+        info["_rest_ref"] = Vr
+        for k in out:
+            if k in rec and not k.startswith("x:"):
+                out[k] = (out[k][0], out[k][1], rec[k])
+        info[tgt] = f"{ref_path}: relative ({sum(1 for k in out if len(out[k]) > 2)} joints)"
+    return out, info
+
+
+def stage_skeleton(V, tier, rep, head=None, moves=None, joints=None, record=None):
     import skeleton as sk
     with open(os.path.join(HERE, "skeleton.json")) as f:
         skel = json.load(f)
     with open(os.path.join(HERE, "base", "landmarks.json")) as f:
         table = json.load(f)["tiers"][tier]
-    names, par, worlds, ends, info = sk.place_skeleton_ours(skel, V, table, head)   # head: her baked head (Head joint)
+    names, par, worlds, ends, info = sk.place_skeleton_ours(skel, V, table, head, moves, joints, record)   # head: her baked head (Head joint)
+    if joints:
+        info["target_joints"] = {k: [round(float(x) * 1e3, 1) for x in np.ravel(e[0])] + [e[1]] for k, e in joints.items()}
+        rel = {k: round(float(np.abs(np.asarray(e[0], float).ravel() - np.asarray(e[2], float).ravel()).max()) * 1e3, 1)
+               for k, e in joints.items() if len(e) > 2}
+        if rel:
+            info["target_joints_rel_mm"] = rel
     rep["skeleton"] = info
     return {"skel": skel, "names": names, "parents": par, "worlds": worlds, "ends": ends}
 
 
 # ---------------------------------------------------------------------------------------------- 4 weights --
-def stage_weights(z, V, ring, hv, sk, A, baked, rep):
-    J, W, info = wtp.body(V, z, sk)
+def stage_weights(z, V, ring, hv, sk, A, baked, rep, rules=None):
+    J, W, info = wtp.body(V, z, sk, rules)      # (rules: the spec's "weights", P1 R1 round 30)
     names = sk["names"]
+    # (P1 R1 sliders: with a ref body (build_topo target_joints_ref), A's patches are laid out on the REF body and skeleton,
+    # where her_a's surface IS A's, and ride the vertices onto this one: their masks were absolute (a_shoulter_top's
+    # y_lo_m 1.5 found no point on the grounded height -0.15 body) and their A lookup closest-point)
+    Pa, ska = V, sk
+    ref = next((c for c in (rules or {}).values() if isinstance(c, dict) and c.get("_P_ref") is not None), None)
+    if ref is not None and ref.get("_sk_ref") is not None:
+        Pa, ska = ref["_P_ref"], ref["_sk_ref"]
+        assert ska["names"] == names, "the ref skeleton's bones are not this body's"
     nb = len(names)
     D = np.zeros((len(V), nb))
     np.put_along_axis(D, J, W, 1)
+    if (rules or {}).get("a_lower_breast"):
+        # (P1 R1 round 30: A's own skin weights over the lower breasts and their skirt, weights_topo.a_lower_breast)
+        import weights as wt_
+        D, info["a_lower_breast"] = wtp.a_lower_breast(D, Pa, z, ska, A, rules["a_lower_breast"])
+        J, W = wt_.cap(D, wt_.RULES["cap"])
+        D = np.zeros((len(V), nb))
+        np.put_along_axis(D, J, W, 1)
+    if (rules or {}).get("a_shoulder_top"):
+        # (P1 R1 round 30: A's own skin weights over the top of the shoulders, weights_topo.a_shoulder_top)
+        import weights as wt_
+        D, info["a_shoulder_top"] = wtp.a_shoulder_top(D, Pa, z, ska, A, rules["a_shoulder_top"])
+        J, W = wt_.cap(D, wt_.RULES["cap"])
+        D = np.zeros((len(V), nb))
+        np.put_along_axis(D, J, W, 1)
+    for key in ("a_elbow", "a_thigh", "a_neck", "a_axilla"):
+        # (P1 R1 round 32: A's own skin weights over the upper arm's lower end, the thigh's top and the neck,
+        # weights_topo.a_elbow, a_thigh, a_neck; the neck's seam is the head's ring)
+        if (rules or {}).get(key):
+            import weights as wt_
+            D, info[key] = getattr(wtp, key)(D, Pa, z, ska, A, rules[key], **({"ring": ring} if key == "a_neck" else {}))
+            J, W = wt_.cap(D, wt_.RULES["cap"])
+            D = np.zeros((len(V), nb))
+            np.put_along_axis(D, J, W, 1)
     # the head: welded points, the ring's from the body's ring, one to one
     head = A.mesh("HeroineHead")
     PH = baked["HeroineHead"]["P"]
@@ -452,12 +611,15 @@ def stage_bake(spec, tier, out, rep):
     maps = os.path.join(out, "maps")
     pub = os.path.join(REPO, b["maps"])
     if tier == "close" or not os.path.exists(os.path.join(maps, "albedo.png")):
-        r, _ = topo_bake.run(out, maps, size=int(b.get("size", 2048)), pose=b.get("pose"), carrier=b.get("carrier"))
+        r, _ = topo_bake.run(out, maps, size=int(b.get("size", 2048)), pose=b.get("pose"), carrier=b.get("carrier"), carry=b.get("carry"),
+                              source_maps=b.get("source_maps"), cavity=b.get("cavity"))
         r["files"] = sorted(f for f in os.listdir(maps) if f.endswith((".png", ".json")))
         with open(os.path.join(maps, "bake.json"), "w") as f:
             json.dump(r, f, indent=1, default=float)
         rep["bake"] = {k: v for k, v in r.items() if k != "files"}
-        if r["gates"]["pass"]:
+        if r["gates"]["pass"] and not b.get("publish_maps", True):
+            rep["bake"]["published"] = None     # (publish_p1.py copies <out>/maps with the glbs: the game's maps and bodies stay one set)
+        elif r["gates"]["pass"]:
             os.makedirs(pub, exist_ok=True)
             for f in os.listdir(maps):
                 shutil.copy2(os.path.join(maps, f), os.path.join(pub, f))
@@ -476,11 +638,80 @@ def stage_bake(spec, tier, out, rep):
     rep["maps"] = {"dir": spec["bake"]["maps"], "files": sorted(os.listdir(maps)), "attached_to": done}
 
 
+def her_a_normals(spec, tier, V, N, rep, ring=None):
+    """(P1 R1 bake round 2; spec "her_a" "normals", the her_a target's "N", "NG", "NW", "P": her_a_target.a_normals)
+    The export's normals where B lies on A are A's, as A's file stores them (what the game shades A with), each half
+    its own: A's normal turned by however the built body's own normal stands off the target's (NG -> N: 0 where the
+    build is the target, as on her trunk; the seam's rows and any other slider then carry A's normal with them), and
+    weighted v(her_a) * NW * (1 within dev_mm[0] of the target's point, 0 beyond dev_mm[1]); B's own elsewhere.
+    The ring is set to the head's after this. Bodies at her_a 0, or a target without "N", keep B's normals exactly."""
+    v = float(spec.get("sliders", {}).get("her_a", 0.0))
+    nc = (spec.get("her_a") or {}).get("normals")
+    if not v or not nc:
+        return N, None
+    from sliders import designed
+    f = (spec.get("target_files") or {}).get("her_a") or designed()["her_a"]["file"]
+    zt = np.load(os.path.join(REPO, f.format(tier=tier)))
+    assert "N" in zt.files, ("her_a normals: the target has no A normals (her_a_target.py with her_a \"normals\")", f)
+    NA, NG, NW, P = (zt[k].astype(np.float64) for k in ("N", "NG", "NW", "P"))
+    assert NA.shape == N.shape, ("her_a normals: the target is not this tier", f, NA.shape, N.shape)
+    dev = np.linalg.norm(V - P, axis=1) * 1e3
+    d0, d1 = nc["dev_mm"]
+    x = np.clip((dev - d0) / (d1 - d0), 0.0, 1.0)
+    w = v * NW * (1.0 - x * x * (3 - 2 * x))
+    if ring is not None and nc.get("ring_mm"):
+        # (ring_mm [a, b]: B's own normals within a of the head's ring, A's from b: seam_g1 made B's rows there meet
+        # the head's normals (the ring takes the head's); A's file normals on the next row stood p90 10.3 deg off the
+        # ring's head normal against B's own 6.8, close tier)
+        r0, r1 = nc["ring_mm"]
+        dr = cKDTree(V[ring]).query(V)[0] * 1e3
+        y = np.clip((dr - r0) / (r1 - r0), 0.0, 1.0)
+        w = w * y * y * (3 - 2 * y)
+    cf = (spec.get("her_a") or {}).get("crease_flat")
+    if cf:
+        # (crease_flat, P1 R1 round 31, S1: B's own normals over A's fold on the shoulder cap; topo_bake.crease_keep)
+        import topo_bake
+        w = w * topo_bake.crease_keep(V, cf)
+    from bends import turn_onto
+    Nt = turn_onto(NA, NG, N)
+    out = w[:, None] * Nt + (1.0 - w[:, None]) * N
+    out /= np.maximum(np.linalg.norm(out, axis=1, keepdims=True), 1e-12)
+    sa = nc.get("seam_a")
+    if ring is not None and sa:
+        # (seam_a {"mm": [a, b]}, P1 R1 round 36: A's file normals as they are, not turned by B's own, within a of the
+        # head's ring, eased out by b. Under the seam B's rows leave A's surface 2-4 mm (seam_g1's ease) and stand
+        # 8-10 deg off A's, so B's own and A's turned by B's tilt both shaded her throat as A's isn't (fight_close 353,
+        # a darker cool patch 10-13 mm under the ring); A's own there meet the head's ring as A's do.)
+        a0, a1 = sa["mm"]
+        dr = cKDTree(V[ring]).query(V)[0] * 1e3
+        y = np.clip((dr - a0) / max(a1 - a0, 1e-6), 0.0, 1.0)
+        s = (1.0 - y * y * (3 - 2 * y)) * v * NW
+        # (A's normal where B's point lies on A: the target's points are A's surface, so the nearest of them to B's
+        # point (inverse-distance over k) and not B's own target point, which the seam's rows left 2-8 mm away)
+        q = np.where(s > 1e-4)[0]
+        dk, ik = cKDTree(P).query(V[q], k=int(sa.get("k", 6)))
+        wk = 1.0 / np.maximum(dk, 1e-5) ** 2
+        Nq = (wk[..., None] * NA[ik]).sum(1)
+        Nq /= np.maximum(np.linalg.norm(Nq, axis=1, keepdims=True), 1e-12)
+        Ns = NA.copy()
+        Ns[q] = Nq
+        out = s[:, None] * Ns + (1.0 - s[:, None]) * out
+        out /= np.maximum(np.linalg.norm(out, axis=1, keepdims=True), 1e-12)
+    ang = np.degrees(np.arccos(np.clip((out * N).sum(1), -1, 1)))
+    on = w > 0.99
+    info = {"file": f, "a_normals_vertices": int(on.sum()), "blended": int(((w > 1e-3) & ~on).sum()), "of": int(len(N)),
+            "dev_mm_p99_on": round(float(np.percentile(dev[on], 99)), 3) if on.any() else None,
+            "turn_from_B_deg_p50_p90_p99_on": [round(float(q), 2) for q in np.percentile(ang[on], [50, 90, 99])] if on.any() else None}
+    rep["normals"] = info
+    return out, info
+
+
 def stage_export(spec, tier, z, V, ring, hv, sk, wts, A, baked, out, rep, uv=None):
     import glbwrite
     Q = z["Q"]
     T = np.concatenate([Q[:, [0, 1, 2]], Q[:, [0, 2, 3]]])
     N = st.vertex_normals(V, T)
+    N, _ = her_a_normals(spec, tier, V, N, rep, ring)
     head = A.mesh("HeroineHead")
     N[ring] = head.N[hv]
     vol = float(np.einsum("ij,ij->i", V[T[:, 0]], np.cross(V[T[:, 1]], V[T[:, 2]])).sum() / 6)
@@ -501,6 +732,8 @@ def stage_export(spec, tier, z, V, ring, hv, sk, wts, A, baked, out, rep, uv=Non
         Pv, N, Jp, Wp, T, UV = Pv[src], N[src], Jp[src], Wp[src], uv["T"], uv["UV"]
         tan, tw = topo_bake.tangent_frames(Pv.astype(np.float64), N, UV, T)
         split = {"Tan": np.concatenate([tan, tw[:, None]], 1).astype(np.float32)}
+        # (the handedness is the UV winding's; where the 3D test would have flipped it the fan is crumpled: a shape note)
+        rep["frames_crumpled_vertices"] = topo_bake.frames_crumpled(Pv.astype(np.float64), N, UV, T)
     body = {"node": "Heroine", "material": spec["body_material"], "P": Pv, "N": N, "UV": UV, "T": T,
             "J": Jp, "W": Wp, **split}
     skel = {"names": sk["names"], "parents": sk["parents"], "worlds": sk["worlds"], "scale": {}}
@@ -517,6 +750,12 @@ def stage_export(spec, tier, z, V, ring, hv, sk, wts, A, baked, out, rep, uv=Non
     tmp = os.path.join(out, "stage", tier)
     os.makedirs(tmp, exist_ok=True)
     st.write_rig(sk, tmp)
+    if spec.get("rig_girdle"):          # (a spec's own girdle fields over base_drive.json's: P1 R1 arm chain "clavicle_by")
+        with open(os.path.join(tmp, "rig.json")) as f:
+            rj = json.load(f)
+        rj["girdle"].update({k: v for k, v in spec["rig_girdle"].items() if k != "why"})
+        with open(os.path.join(tmp, "rig.json"), "w") as f:
+            json.dump(rj, f, indent=1)
     os.replace(os.path.join(tmp, "rig.json"), os.path.join(out, rig))
     ht = int(sum(len(A.mesh(h).T) for h in HEADS))
     rep["export"] = {"file": glb, "body_vertices": int(len(V)), "tris_body": int(len(T)), "head_tris": ht,
@@ -529,7 +768,8 @@ def stage_export(spec, tier, z, V, ring, hv, sk, wts, A, baked, out, rep, uv=Non
 def stage_shapes(spec, tier, z, V, A, baked, out, rep):
     """8 (P1 R1) form shapes: designed sliders the GAME sets at run time, written as blend shapes on the body (after
     the correctives' shapes, kept): spec "shapes" {slider: value} -> a shape "form_<slider>" = the body built with
-    that slider raised by value less this body (stages 1, 2, 2b again: the same join and seam). The first use: the
+    that slider raised by value less this body (stages 1, 2, 2b again: the same join and seam); spec "shapes_with"
+    {slider: {other: value}}: that shape's body also has these others at these values (a support undoes the settle). The first use: the
     armor's support (breast_support...): each armor piece sets its shape's weight as data, so the body under a
     push-up piece is shaped by design, never per piece. Normals' deltas by correctives.normal_delta."""
     import glbwrite
@@ -539,16 +779,19 @@ def stage_shapes(spec, tier, z, V, A, baked, out, rep):
     src = st_["src"] if "src" in st_.files else np.arange(len(V))
     Tg = st_["T"] if "T" in st_.files else np.concatenate([z["Q"][:, [0, 1, 2]], z["Q"][:, [0, 2, 3]]])
     tg, info = {}, {}
+    # (her_a normals: the shapes turn the export's own normals, correctives.normal_delta N; else the geometric delta)
+    Nx = Glb(glb).mesh("Heroine").N.astype(np.float64) if rep.get("normals") else None
     for name, val in spec["shapes"].items():
         s2 = dict(spec)
         s2["sliders"] = dict(spec.get("sliders", {}))
         s2["sliders"][name] = float(s2["sliders"].get(name, 0.0)) + float(val)
+        s2["sliders"].update(spec.get("shapes_with", {}).get(name, {}))    # the shape also takes these sliders to these values
         r2 = {}
         _, V2 = stage_base(s2, tier, r2)
         V2, ring, _ = stage_place(s2, z, V2, A, baked, r2)
         V2 = stage_forms(s2, tier, z, V2, ring, r2)
         D = (V2 - V)[src]
-        tg["form_" + name] = (D.astype(np.float32), normal_delta(V[src], Tg, D).astype(np.float32))
+        tg["form_" + name] = (D.astype(np.float32), normal_delta(V[src], Tg, D, Nx).astype(np.float32))
         info["form_" + name] = {"value": val, "max_mm": round(float(np.linalg.norm(D, axis=1).max()) * 1e3, 2)}
     glbwrite.add_targets(glb, "Heroine", tg)
     rep["shapes"] = info
@@ -588,13 +831,58 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
         sk = {k: sk_close[k] for k in ("skel", "names", "parents", "worlds", "ends")}
         rep["skeleton"] = {"from": "close (build_topo P1 R2: one skeleton for both tiers)"}
     else:
-        sk = stage_skeleton(bone_body(spec, tier, z, V, A, baked, rep), tier, rep, baked["HeroineHead"]["P"])
+        tj, tj_info = target_joints_ref(spec, tier, z, A, baked, target_joints(spec))
+        sk = stage_skeleton(bone_body(spec, tier, z, V, A, baked, rep), tier, rep, baked["HeroineHead"]["P"], spec.get("joint_moves"),
+                            tj)
+        if tj_info:
+            P_ref = tj_info.pop("_weights_ref", None)
+            skr = tj_info.pop("_sk_ref", None)
+            Vr_ = tj_info.pop("_rest_ref", None)
+            if Vr_ is not None:
+                np.save(os.path.join(out, "stage", "ref_rest_close.npy"), Vr_)      # (correctives' posed_a twins, _REF)
+            if skr is not None:
+                with open(os.path.join(out, "stage", "ref_skeleton.json"), "w") as f:
+                    json.dump(skr, f, default=lambda x: np.asarray(x).tolist())
+            rep["skeleton"]["target_joints_ref"] = tj_info
+            if P_ref is not None:
+                # (P1 R1 sliders: the A-copied weight patches look A up by the ref body's points, weights_topo.a_lookup)
+                np.save(os.path.join(out, "stage", "weights_ref_close.npy"), P_ref)
         with open(os.path.join(out, "stage", "close_skeleton.json"), "w") as f:
             json.dump({k: sk[k] for k in ("skel", "names", "parents", "worlds", "ends")}, f,
                       default=lambda x: np.asarray(x).tolist())
     tim["skeleton"] = round(time.time() - t, 2)
     t = time.time()
-    wts = stage_weights(z, V, ring, hv, sk, A, baked, rep)
+    wrules = spec.get("weights")
+    pref = os.path.join(out, "stage", f"weights_ref_{tier}.npy")
+    if tier == "play" and spec.get("target_joints_ref") and os.path.exists(os.path.join(out, "stage", "weights_ref_close.npy")):
+        # (play: its own ref body, the ref spec's play tier)
+        refs = {k: v for k, v in spec["target_joints_ref"].items() if k != "why"}
+        rs = with_defaults(load_spec(os.path.join(REPO, next(iter(refs.values())))))
+        if rs.get("sliders", {}) != spec.get("sliders", {}):
+            r2 = {}
+            bu = unground(spec, baked, rs)
+            _, Vr = stage_base(rs, tier, r2)
+            Vr, ring_r, _ = stage_place(rs, z, Vr, A, bu, r2)
+            Vr = stage_forms(rs, tier, z, Vr, ring_r, r2)
+            np.save(pref, weights_body(rs, tier, z, Vr, A, bu, r2))
+            np.save(os.path.join(out, "stage", f"ref_rest_{tier}.npy"), Vr)
+    if wrules and os.path.exists(pref) and spec.get("target_joints_ref"):
+        P_ref = np.load(pref)
+        with open(os.path.join(out, "stage", "ref_skeleton.json")) as f:
+            skr = json.load(f)
+        skr["worlds"] = np.asarray(skr["worlds"], float)
+        skr["ends"] = {k: tuple(np.asarray(x, float) for x in v) for k, v in skr["ends"].items()}
+        wrules = {k: ({**v, "_P_ref": P_ref, "_sk_ref": skr} if isinstance(v, dict) and k.startswith("a_") else v) for k, v in wrules.items()}
+        rep["weights_ref"] = f"stage/weights_ref_{tier}.npy (A looked up by the ref body's points)"
+    wr, roles = weight_roles(spec)
+    if roles:
+        # (P1 R1 step 4: A's role patches as rule defaults, weight_roles: the ref body's patches carried by vertex)
+        rs, ref_path = wr
+        assert not any(isinstance(v, dict) and v.get("_P_ref") is not None for v in (wrules or {}).values()),             "weight_roles with a target_joints_ref spec's own carried patches: one ref only"
+        P_r, sk_r = role_ref(spec, rs, ref_path, tier, A, baked)
+        wrules = {**(wrules or {}), **{r: {**rs["weights"][r], "_P_ref": P_r, "_sk_ref": sk_r} for r in roles}}
+        rep["weight_roles"] = {"ref": ref_path, "roles": roles}
+    wts = stage_weights(z, weights_body(spec, tier, z, V, A, baked, rep), ring, hv, sk, A, baked, rep, wrules)
     tim["weights"] = round(time.time() - t, 2)
     t = time.time()
     uv = stage_uv(z, tier, rep) if spec.get("uv", True) else None
@@ -603,7 +891,8 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
     if correct:
         t = time.time()
         import correctives
-        rep["correctives"] = correctives.run(out, tier=tier, fresh=True)
+        rep["correctives"] = correctives.run(out, tier=tier, fresh=True, turn_normals=bool(rep.get("normals")),
+                                             conf_path=spec.get("correctives_conf"))
         tim["correctives"] = round(time.time() - t, 2)
     if spec.get("shapes"):
         t = time.time()
@@ -625,6 +914,108 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
     return sk
 
 
+ROLE_DEFAULTS = ("a_lower_breast", "a_elbow", "a_neck", "a_axilla")
+ROLE_REF = "tools/body/specs/her_b.json"
+_ROLE_SK = {}
+
+
+def weight_roles(spec):
+    """P1 R1 step 4: A's weight patches' ROLE mappings as rule defaults for every body on the shared topology.
+    The general form chosen: the patches are carried BY VERTEX from a ref body (spec "weight_roles" {"ref", "roles"};
+    ref default: the spec's "ref_body", else her_b; roles default ROLE_DEFAULTS: a_lower_breast, a_elbow, a_neck,
+    a_axilla, each only where the spec's own "weights" lacks it). Why this form: every body shares one topology, so a
+    vertex IS the same anatomical point on every body (the breast's lower pole, the elbow's upper band, the throat, the
+    armpit's folds), and the patch is a per-vertex statement ("this skin follows these bones in A's ratios"), not a
+    shape. Laid out on the ref body (her_b, where her_a's surface IS A's, so A's skin weights are read where they
+    were authored) with the ref's skeleton, each patch is a function of the vertex alone: its mask k, its A lookup
+    and its role map (A bone -> our bone) are evaluated once on the ref and ride the vertex onto any body, exactly as
+    the slider variants already carry them (weights_topo.a_lookup, _P_ref). A role-frame fit (a parametric rule per
+    region fitted to A's patch) would re-derive the same numbers less faithfully and needs per-region fitting; a
+    stored per-vertex table would duplicate a build output as source and go stale when the ref spec changes. Derived
+    live from the ref spec (source) + heroine.glb (source), the defaults stay one rule. The bone ratios transfer
+    because LBS weights are per-vertex partitions over the same bone names; the patch's blend (1 - k) W + k Wt keeps
+    this body's own rule weights outside the mask. "weight_roles": null turns it off; a spec that names a role in
+    its "weights" (her_b and her variants: all four) keeps its own: no change. Returns ((ref spec, ref path), roles)."""
+    conf = spec.get("weight_roles", {})      # default on; "weight_roles": null opts out
+    if not isinstance(conf, dict):
+        return None, []
+    w = spec.get("weights") or {}
+    todo = [r for r in conf.get("roles", ROLE_DEFAULTS) if not w.get(r)]
+    if not todo:
+        return None, []
+    ref = conf.get("ref") or spec.get("ref_body") or ROLE_REF
+    rs = with_defaults(load_spec(os.path.join(REPO, ref)))
+    rw = rs.get("weights") or {}
+    roles = [r for r in todo if rw.get(r)]
+    return ((rs, ref), roles) if roles else (None, [])
+
+
+def role_ref(spec, rs, ref_path, tier, A, baked):
+    """The ref body for weight_roles: its weights body on this tier (the points the patches are laid out on) and its
+    skeleton (placed on the close tier, as target_joints_ref places it; one skeleton for both tiers)."""
+    bu = unground(spec, baked, rs)
+    key = (ref_path, json.dumps(spec.get("sliders", {}), sort_keys=True))
+    if key not in _ROLE_SK:
+        r2 = {}
+        zc, Vc = stage_base(rs, "close", r2)
+        Vc, ring_c, _ = stage_place(rs, zc, Vc, A, bu, r2)
+        Vc = stage_forms(rs, "close", zc, Vc, ring_c, r2)
+        skr = stage_skeleton(bone_body(rs, "close", zc, Vc, A, bu, r2), "close", r2, bu["HeroineHead"]["P"],
+                             rs.get("joint_moves"), target_joints(rs), {})
+        _ROLE_SK[key] = ({k: skr[k] for k in ("skel", "names", "parents", "worlds", "ends")},
+                         weights_body(rs, "close", zc, Vc, A, bu, r2))
+    sk_r, P_c = _ROLE_SK[key]
+    if tier == "close":
+        return P_c, sk_r
+    r2 = {}
+    zt, Vt = stage_base(rs, tier, r2)
+    Vt, ring_t, _ = stage_place(rs, zt, Vt, A, bu, r2)
+    Vt = stage_forms(rs, tier, zt, Vt, ring_t, r2)
+    return weights_body(rs, tier, zt, Vt, A, bu, r2), sk_r
+
+
+def weights_body(spec, tier, z, V, A, baked, rep):
+    """P1 R1c: the body the skin weights are read on: this spec's body with every designed slider flagged
+    "rides_skin": true at 0 (designed/armpit.json's fill: a few mm of soft tissue laid on the skin, which must move
+    with the skin it sits on; read on the filled body, the girdle's bounded biharmonic fill and its distance rules
+    re-solved across 3848 trunk/shoulder/arm points, up to 0.15, and the hanging arm re-opened the gap it fills).
+    None set: V itself (byte-identical)."""
+    sv = {k: v for k, v in spec.get("sliders", {}).items() if v}
+    des = {}
+    for f in sorted(os.listdir(os.path.join(HERE, "designed"))):
+        if f.endswith(".json"):
+            with open(os.path.join(HERE, "designed", f)) as fh:
+                des.update(json.load(fh).get("sliders", {}))
+    rides = sorted(k for k in sv if des.get(k, {}).get("rides_skin"))
+    if not rides:
+        return V
+    s2 = dict(spec)
+    s2["sliders"] = {k: v for k, v in sv.items() if k not in rides}
+    r2 = {}
+    _, Vw = stage_base(s2, tier, r2)
+    Vw, ring_w, _ = stage_place(s2, z, Vw, A, baked, r2)
+    Vw = stage_forms(s2, tier, z, Vw, ring_w, r2)
+    rep["weights_body"] = {"rides_skin_off": rides, "max_mm": round(float(np.linalg.norm(Vw - V, axis=1).max()) * 1e3, 2)}
+    return Vw
+
+
+def with_defaults(spec):
+    """P1 R1c: a designed slider with a "default" (designed/armpit.json's armpit_fill: the body's own armpit) is laid
+    on every body at that value unless the spec names it (0 = off), so NPCs and the male body get it free. The value
+    joins spec["sliders"] here, before every stage, so bone_body (its "soft" flag) and the shapes see the same body."""
+    des = {}
+    for f in sorted(os.listdir(os.path.join(HERE, "designed"))):
+        if f.endswith(".json"):
+            with open(os.path.join(HERE, "designed", f)) as fh:
+                des.update(json.load(fh).get("sliders", {}))
+    add = {k: c["default"] for k, c in des.items() if c.get("default") and k not in spec.get("sliders", {})}
+    if not add:
+        return spec
+    spec = dict(spec)
+    spec["sliders"] = {**spec.get("sliders", {}), **add}
+    return spec
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("spec")
@@ -635,10 +1026,14 @@ def main():
     out = os.path.abspath(a.out)
     os.makedirs(os.path.join(out, "stage"), exist_ok=True)
     spec = load_spec(a.spec)
+    spec = with_defaults(spec)
+    g = ground_offset(spec)
+    if g:
+        spec["_ground_m"] = g
     A = Glb(os.path.join(REPO, spec["ref"]))
     t0 = time.time()
     baked = headbake.bake(A, HEADS)
-    hmove = np.asarray(sliders_head_move(spec.get("sliders", {})), float)
+    hmove = np.asarray(sliders_head_move(spec.get("sliders", {})), float) + np.asarray(g or [0.0, 0.0, 0.0], float)
     if np.abs(hmove).max() > 0:
         # P1 R1: the head's placement on the new neck (the designed neck sliders' head_move): the whole baked head
         # (every head mesh; the skeleton's Head joint is placed from it) moves rigidly; the ring moves with it
@@ -646,6 +1041,8 @@ def main():
             baked[h]["P"] = baked[h]["P"] + hmove[None, :]
     full = {"spec": os.path.relpath(os.path.abspath(a.spec), REPO).replace("\\", "/"), "tiers": {}}
     full["head_move_m"] = [round(float(x), 5) for x in hmove]
+    if g:
+        full["ground_m"] = g
     sk_close = None
     for tier in a.tiers.split(","):
         rep = {"spec": full["spec"], "timings_s": {}}
@@ -654,6 +1051,13 @@ def main():
             sk_close = sk
         full["tiers"][tier] = rep
         print("BUILD", tier, os.path.join(out, GLB[tier][0]), rep["glb_sha256"][:16], rep["timings_s"])
+    if spec.get("pieces") and "close" in a.tiers.split(","):
+        # (P1 R1 round 29: A's skin-tight slot pieces carried onto this build's bodies, skin_pieces.py -> pieces.glb)
+        import skin_pieces
+        t = time.time()
+        pr = skin_pieces.run(out, spec)
+        full["pieces"] = {k: {x: v[x] for x in v if x != "shapes"} for k, v in pr["pieces"].items()}
+        print("PIECES", {k: v.get("b_offset_mm_p5_50_95_max") for k, v in pr["pieces"].items()}, round(time.time() - t, 1), "s")
     full["total_s"] = round(time.time() - t0, 2)
     with open(os.path.join(out, "build.json"), "w") as f:
         json.dump(full, f, indent=1, default=float)

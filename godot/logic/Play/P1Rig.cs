@@ -23,10 +23,22 @@ public sealed class P1Rig
     /// <summary>The bones the rig's helper rows set (never keyed: carried at rest before Drive). Not the "unroll" rows'
     /// bones (lowerarm, calf): those are keyed limb bones whose roll the rig moves on to the child.</summary>
     public readonly HashSet<int> Helpers = new();
+    /// <summary>rig.json girdle "clavicle_by": "shrug" (P1 R1 arm chain): the girdle law leaves the clavicle alone; it is
+    /// the clip's (the map of A's, B's clavicle head and shoulder being A's) lifted at runtime by A's own HerShrug (run on
+    /// B by role, where A runs it), so B's arm follows A's through every blend. The scapula's rows still run.</summary>
+    public readonly bool ShrugDriven;
+    /// <summary>rig.json girdle "clavicle_roll": "neutral" (P1 R1 arm chain round 27): before the scapula's rows the
+    /// clavicle is laid on its own line by the least turn from its neutral (its parent's carried rest), the clip's roll
+    /// about that line handed to the upper arm, which keeps its world. The clips key A's clavicle (the plain map, so the
+    /// game's local-space blends run as A's do and A's HerShrug lifts it as A's) and B's clavicle skin (upper chest,
+    /// trapezius) still never takes A's roll.</summary>
+    public readonly bool ClavicleRollNeutral;
 
     public P1Rig(string[] names, int[] parent, P1M4[] rest, JsonElement rig)
     {
         Names = names; Parent = parent; Rest = rest; this.rig = rig;
+        ShrugDriven = rig.TryGetProperty("girdle", out var g0) && g0.TryGetProperty("clavicle_by", out var cb) && cb.GetString() == "shrug";
+        ClavicleRollNeutral = rig.TryGetProperty("girdle", out var g1) && g1.TryGetProperty("clavicle_roll", out var cr) && cr.GetString() == "neutral";
         Index = new Dictionary<string, int>();
         for (int i = 0; i < names.Length; i++) Index[names[i]] = i;
         var children = Enumerable.Range(0, names.Length).Select(j => Enumerable.Range(0, names.Length).Where(k => parent[k] == j).ToArray()).ToArray();
@@ -196,6 +208,29 @@ public sealed class P1Rig
         return ab + t * (a - ab);
     }
 
+    /// <summary>The world turn the girdle law lays on clavicle_{s} about its head for this pose (null: none). Read from the
+    /// torso's turn and the upper arm's direction only, so the clavicle's own pose doesn't change it (the clip bridge
+    /// keys the clavicle under it: P1Bake.Hold).</summary>
+    public P1M3? ClavicleTurn(P1M4[] G, string s)
+    {
+        if (ShrugDriven) return null;
+        var gd = rig.GetProperty("girdle");
+        double sg = s == "l" ? 1 : -1;
+        int arm = Index[Sub(gd.GetProperty("arm"), s)], end = Index[Sub(gd.GetProperty("arm_end"), s)];
+        double A = Elevation(G, s), A0 = Elevation(Rest, s);
+        var Rt = Turn(G, Index[gd.GetProperty("torso").GetString()!]);
+        var front = Rt * Vec(gd.GetProperty("front"));
+        var up = Rt * Vec(gd.GetProperty("up"));
+        var d = N(Head(G, end) - Head(G, arm));
+        var d0 = N(Head(Rest, end) - Head(Rest, arm));
+        double reach = P1V.Dot(d, front) - P1V.Dot(Rt * d0, front);
+        double the = Table(A, gd.GetProperty("clav_elev")) - Table(A0, gd.GetProperty("clav_elev"));
+        double thr = RetractPlane(A, reach, gd) * (Table(A, gd.GetProperty("clav_retract")) - Table(A0, gd.GetProperty("clav_retract")))
+            - gd.GetProperty("protract_per_reach").GetDouble() * reach;
+        if (Math.Abs(the) <= 1e-9 && Math.Abs(thr) <= 1e-9) return null;
+        return Expm(up * (sg * Rad(thr))) * Expm(front * (sg * Rad(the)));
+    }
+
     /// <summary>rig_drive.girdle: the scapulohumeral rhythm by tables of the arm's elevation and its forward reach,
     /// relative to the rest.</summary>
     double Girdle(P1M4[] G, string s)
@@ -208,22 +243,35 @@ public sealed class P1Rig
         double A = Elevation(G, s), A0 = Elevation(R0, s);
         var Rt = Turn(G, Index[gd.GetProperty("torso").GetString()!]);
         var front = Rt * Vec(gd.GetProperty("front"));
-        var up = Rt * Vec(gd.GetProperty("up"));
         var side = Rt * Vec(gd.GetProperty("side"));
         var d = N(Head(G, end) - Head(G, arm));
         var d0 = N(Head(R0, end) - Head(R0, arm));
         double reach = P1V.Dot(d, front) - P1V.Dot(Rt * d0, front);
-        double the = Table(A, gd.GetProperty("clav_elev")) - Table(A0, gd.GetProperty("clav_elev"));
-        double thr = RetractPlane(A, reach, gd) * (Table(A, gd.GetProperty("clav_retract")) - Table(A0, gd.GetProperty("clav_retract")))
-            - gd.GetProperty("protract_per_reach").GetDouble() * reach;
         var armOld = G[arm];
-        if (Math.Abs(the) > 1e-9 || Math.Abs(thr) > 1e-9)
+        if (ClavicleTurn(G, s) is P1M3 Rc)
         {
-            var Rc = Expm(up * (sg * Rad(thr))) * Expm(front * (sg * Rad(the)));
             Apply(G, cl, About(Head(G, cl), Rc));
             // the upper arm keeps its world turn (the clip's aim), riding the moved clavicle
             var nw = armOld.WithT(G[arm].T());
             Apply(G, arm, nw * G[arm].Inverse());
+        }
+        if (ClavicleRollNeutral)
+        {
+            // the clavicle's roll about its own line (y, its head to the shoulder) beyond its neutral handed to the upper
+            // arm: the line is kept, the upper arm's subtree keeps its world, the scapula and the share helper ride it
+            var y = Unit(G[cl]).Col(1);
+            double ang = Roll(Turn(G, cl) * Turn(G, Parent[cl]).T(), y);
+            if (Math.Abs(ang) >= 1e-12)
+            {
+                var keep = subtree[arm].ToDictionary(k => k, k => G[k]);
+                // (P1 R1 round 30) girdle "clavicle_roll_keep": helpers under the clavicle that keep the clip's roll
+                // (their world kept): the trapezius, A's top of the shoulder riding A's clavicle roll (rig_drive.girdle)
+                if (gd.TryGetProperty("clavicle_roll_keep", out var rk))
+                    foreach (var e in rk.EnumerateArray())
+                        if (Index.TryGetValue(e.GetString()!.Replace("{s}", s), out var j)) keep[j] = G[j];
+                Apply(G, cl, About(Head(G, cl), Expm(y * -ang)));
+                foreach (var kv in keep) G[kv.Key] = kv.Value;
+            }
         }
         double thu = Table(A, gd.GetProperty("scap_up")) - Table(A0, gd.GetProperty("scap_up"));
         double thp = Table(A, gd.GetProperty("scap_tilt")) - Table(A0, gd.GetProperty("scap_tilt"));
@@ -480,8 +528,84 @@ public sealed class P1Rig
         return sm ? t * t * (3 - 2 * t) : t;
     }
 
+    // ------------------------------------------------------- hand clearance --
+    /// <summary>rig_drive.grid_at: a [t][theta] table, bilinear; t rows at t0 + i dt (held at the ends), theta bins
+    /// centred at -pi + (j + 0.5) 2 pi / n (periodic).</summary>
+    public static double GridAt(double[][] D, double t, double th, double t0, double dt)
+    {
+        int nt = D.Length, nth = D[0].Length;
+        double x = Math.Min(Math.Max((t - t0) / dt, 0.0), nt - 1.0);
+        int i = Math.Min((int)Math.Floor(x), nt - 2);
+        double fx = x - i;
+        double y = (th + Math.PI) / (2 * Math.PI) * nth - 0.5;
+        int j = (int)Math.Floor(y);
+        double fy = y - j;
+        int j0 = ((j % nth) + nth) % nth, j1 = (((j + 1) % nth) + nth) % nth;
+        return (1 - fx) * ((1 - fy) * D[i][j0] + fy * D[i][j1]) + fx * ((1 - fy) * D[i + 1][j0] + fy * D[i + 1][j1]);
+    }
+
+    sealed record HandSide(int Thigh, int Arm, int[] Palm, int[] Points, P1V Axis, P1V E1, P1V E2, double Length, double[][] R, double[][] Dr);
+    HandSide?[]? hands;
+
+    static double[][] Grid(JsonElement e) => e.EnumerateArray().Select(r => r.EnumerateArray().Select(x => x.GetDouble()).ToArray()).ToArray();
+
+    HandSide? HandOf(JsonElement hc, string s)
+    {
+        if (!hc.GetProperty("sides").TryGetProperty(s, out var sd)) return null;
+        int[] Bones(string key) => hc.GetProperty(key).EnumerateArray().Select(n => n.GetString()!.Replace("{s}", s))
+            .Where(Index.ContainsKey).Select(n => Index[n]).ToArray();
+        return new HandSide(Index[Sub(hc.GetProperty("thigh"), s)], Index[Sub(hc.GetProperty("arm"), s)], Bones("palm"), Bones("points"),
+            Vec(sd.GetProperty("axis")), Vec(sd.GetProperty("e1")), Vec(sd.GetProperty("e2")), sd.GetProperty("length_m").GetDouble(),
+            Grid(sd.GetProperty("r")), Grid(sd.GetProperty("dr")));
+    }
+
+    /// <summary>rig_drive.hand_clear (rig.json "hand_clear", tools/body/hand_clear.py; absent on the ref body: no
+    /// change): the arm opened by the least turn about its head so the palm moves k dr out from the thigh, dr this
+    /// body's thigh surface beyond the ref body's, k the hand's proximity to it (the points' soft-minimum gap).</summary>
+    void HandClear(P1M4[] G, JsonElement hc, int side)
+    {
+        hands ??= new[] { HandOf(hc, "l"), HandOf(hc, "r") };
+        var h = hands[side];
+        if (h == null || h.Palm.Length == 0) return;
+        var R = Unit(G[h.Thigh]); var o = Head(G, h.Thigh);
+        double t0 = hc.GetProperty("t0").GetDouble(), dt = hc.GetProperty("dt").GetDouble();
+        var palm = new P1V(0, 0, 0);
+        foreach (var k in h.Palm) palm += Head(G, k);
+        palm /= h.Palm.Length;
+        var P = h.Points.Select(k => Head(G, k)).Append(palm);
+        var gs = new List<double>(); var drs = new List<double>(); var dirs = new List<P1V>();
+        foreach (var p in P)
+        {
+            var q = R.T() * (p - o);
+            var rho = q - h.Axis * P1V.Dot(q, h.Axis);
+            double d = rho.Len();
+            if (d < 1e-9) continue;
+            double t = P1V.Dot(q, h.Axis) / h.Length, ang = Math.Atan2(P1V.Dot(rho, h.E2), P1V.Dot(rho, h.E1));
+            double dr = GridAt(h.Dr, t, ang, t0, dt);
+            gs.Add(d - (GridAt(h.R, t, ang, t0, dt) - dr));
+            drs.Add(dr);
+            dirs.Add(R * (rho / d));
+        }
+        if (gs.Count == 0) return;
+        double soft = hc.GetProperty("soft_m").GetDouble(), near = hc.GetProperty("near_m").GetDouble(), far = hc.GetProperty("far_m").GetDouble();
+        double gm = gs.Min();
+        var w = gs.Select(g => Math.Exp(-(g - gm) / soft)).ToArray();
+        double sw = 0; foreach (var x in w) sw += x;
+        double gsoft = gm - soft * Math.Log(sw);
+        double kp = 1.0 - Smooth((gsoft - near) / (far - near));
+        if (kp <= 0.0) return;
+        double drm = 0; var dir = new P1V(0, 0, 0);
+        for (int i = 0; i < w.Length; i++) { drm += w[i] * drs[i]; dir += dirs[i] * w[i]; }
+        drm /= sw;
+        var v = N(dir) * (kp * drm);
+        if (v.Len() < 1e-9) return;
+        var c = Head(G, h.Arm);
+        var a = palm - c;
+        Apply(G, h.Arm, About(c, Arc(N(a), N(a + v))));
+    }
+
     // --------------------------------------------------------------- drive --
-    /// <summary>rig_drive.drive: the girdle (per side), the helper rows in order, then the correctives' weights. The
+    /// <summary>rig_drive.drive: the girdle (per side), the hand clearance (per side, with "hand_clear"), the helper rows in order, then the correctives' weights. The
     /// input array is left as it was.</summary>
     public (P1M4[] G, Dictionary<string, double> Weights) Drive(P1M4[] input)
     {
@@ -489,6 +613,8 @@ public sealed class P1Rig
         var info = new Dictionary<string, double>();
         if (rig.TryGetProperty("girdle", out _))
             foreach (var s in new[] { "l", "r" }) { info["A" + s] = Girdle(G, s); info["A0" + s] = Elevation(Rest, s); }
+        if (rig.TryGetProperty("hand_clear", out var hc))   // (P1 R1 sliders: after the girdle, before the rows; absent on the ref body)
+            for (int side = 0; side < 2; side++) HandClear(G, hc, side);
         if (rig.TryGetProperty("helpers", out var hs))
             foreach (var h in hs.EnumerateArray())
                 foreach (var s in Sides(h.GetProperty("name").GetString()!))

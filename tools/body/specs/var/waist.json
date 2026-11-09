@@ -1,0 +1,63 @@
+{
+ "about": "P1 R1 sliders (slider proof): her_b with waist 0.0 -> 0.75; pictures only, published to godot/art/people/body_p1_var/waist/ (publish_p1.py --dest waist); never the gate body.",
+ "base": "tools/body/specs/her_b.json",
+ "sliders": {
+  "arm_girth": 0.15,
+  "belly": -0.2,
+  "build": 0.2,
+  "bust_firmness": 0.0,
+  "bust_lift": 0.0,
+  "bust_point": 0.0,
+  "bust_set": 0.0,
+  "bust_size": 0.0,
+  "bust_spacing": 0.0,
+  "calves": 0.5,
+  "foot_size": -0.5207,
+  "forearm_girth": 0.666,
+  "forearm_length": -0.4374,
+  "glute_lift": 0.0,
+  "glutes": 0.0,
+  "hand_size": -0.1764,
+  "height": 0.0953,
+  "hips": 0.0,
+  "leg_length": 0.4416,
+  "shoulder_width": 0.0,
+  "thigh_length": -0.01,
+  "thighs": 0.8,
+  "torso_length": -0.5041,
+  "underbust": 0.15,
+  "upperarm_length": -0.4525,
+  "waist": 0.75,
+  "weight": -0.2762,
+  "shoulder_span": -0.35,
+  "deltoid_cap": 1.0,
+  "her_a": 1.0
+ },
+ "bake": {
+  "maps": "godot/art/people/body_p1_var/waist",
+  "cavity": {
+   "line_m": [
+    [
+     0.177,
+     1.393,
+     -0.033
+    ],
+    [
+     0.159,
+     1.461,
+     0.039
+    ]
+   ],
+   "radius_mm": [
+    40.0,
+    80.0
+   ],
+   "why": "P1 R1 round 33 (S3): cavity.png, B's AO kept within radius_mm of line_m (B's rest, mirrored): from her armpit's apex (the shoulder part's lowest point; r1c/round32/s/pitmaps.py: AO .38 there) to the hollow the blot showed in at fight_stalker 358 (its pixels mapped to B's rest: 89-112 mm from the apex, AO .65-.89), white beyond; the skin's cavity_bounce reads it. Over all of B's AO the bounce lifted the shade under her breasts, her cleavage and inner elbows at the Look (r1c/round33/v/cav_diff.png)."
+  },
+  "publish_maps": false,
+  "size": 2048,
+  "pose": "tools/body/forms/her_topo_target_bones.json",
+  "carry": null,
+  "source_maps": "tools/body/base/targets/her_a_maps"
+ }
+}

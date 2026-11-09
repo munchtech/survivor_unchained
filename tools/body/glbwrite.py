@@ -270,9 +270,75 @@ def write(path, ref_path, skeleton, body, heads, head_joint_map, extras=None, he
         f.write(blob)
 
 
+def _compact(js, b):
+    """(P1 R1 round 30) Drop the accessors and bufferViews nothing references and repack the binary chunk: set_targets
+    replaces a mesh's shapes, and the old ones' bytes were left in the file (round_30's body.glb carried 29 MB of
+    them in 60 dead accessors, play.glb 17 MB). Returns the new bin; `js` is rewritten in place."""
+    accs, views = js.get("accessors", []), js.get("bufferViews", [])
+    used = set()
+    for m in js.get("meshes", []):
+        for pr in m["primitives"]:
+            used.update(pr["attributes"].values())
+            if "indices" in pr:
+                used.add(pr["indices"])
+            for t in pr.get("targets", []):
+                used.update(t.values())
+    for s in js.get("skins", []):
+        if "inverseBindMatrices" in s:
+            used.add(s["inverseBindMatrices"])
+    for an in js.get("animations", []):
+        for sm in an["samplers"]:
+            used.update((sm["input"], sm["output"]))
+    amap = {o: n for n, o in enumerate(sorted(used))}
+    for m in js.get("meshes", []):
+        for pr in m["primitives"]:
+            pr["attributes"] = {k: amap[v] for k, v in pr["attributes"].items()}
+            if "indices" in pr:
+                pr["indices"] = amap[pr["indices"]]
+            if "targets" in pr:
+                pr["targets"] = [{k: amap[v] for k, v in t.items()} for t in pr["targets"]]
+    for s in js.get("skins", []):
+        if "inverseBindMatrices" in s:
+            s["inverseBindMatrices"] = amap[s["inverseBindMatrices"]]
+    for an in js.get("animations", []):
+        for sm in an["samplers"]:
+            sm["input"], sm["output"] = amap[sm["input"]], amap[sm["output"]]
+    accs = [accs[o] for o in sorted(used)]
+    vused = set()
+    for a in accs:
+        if "bufferView" in a:
+            vused.add(a["bufferView"])
+        if "sparse" in a:
+            vused.update((a["sparse"]["indices"]["bufferView"], a["sparse"]["values"]["bufferView"]))
+    for im in js.get("images", []):
+        if "bufferView" in im:
+            vused.add(im["bufferView"])
+    vmap, nb, nviews = {}, bytearray(), []
+    for o in sorted(vused):
+        while len(nb) % 4:
+            nb += b"\0"
+        v = dict(views[o])
+        off = v.get("byteOffset", 0)
+        nb += b[off:off + v["byteLength"]]
+        v["byteOffset"] = len(nb) - v["byteLength"]
+        vmap[o] = len(nviews)
+        nviews.append(v)
+    for a in accs:
+        if "bufferView" in a:
+            a["bufferView"] = vmap[a["bufferView"]]
+        if "sparse" in a:
+            for k in ("indices", "values"):
+                a["sparse"][k]["bufferView"] = vmap[a["sparse"][k]["bufferView"]]
+    for im in js.get("images", []):
+        if "bufferView" in im:
+            im["bufferView"] = vmap[im["bufferView"]]
+    js["accessors"], js["bufferViews"] = accs, nviews
+    return nb
+
+
 def set_targets(path, node, targets, out_path=None):
     """Write blend shapes onto one mesh of a glb we wrote (its primitive 0): `targets` {name: (dP [V,3], dN [V,3])},
-    in order; any targets the mesh had are replaced (their old bytes stay as unused views: harmless). The mesh gets
+    in order; any targets the mesh had are replaced (their old bytes dropped: _compact). The mesh gets
     extras.targetNames and default weights 0."""
     js, b = _read_glb(path)
     out = _Out()
@@ -294,6 +360,7 @@ def set_targets(path, node, targets, out_path=None):
         m.pop("weights", None)
         if "extras" in m:
             m["extras"].pop("targetNames", None)
+    out.bin = _compact(js, bytes(out.bin))
     while len(out.bin) % 4:
         out.bin += b"\0"
     js["buffers"][0]["byteLength"] = len(out.bin)

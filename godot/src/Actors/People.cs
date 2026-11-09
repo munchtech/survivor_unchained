@@ -257,7 +257,7 @@ public static class People
             return p.Folk && FolkClips.For(p.Woman, name) is string folk ? folk : Resolve(name);
         }
         // (One of their own asked for by its own name.)
-        if (own.Owns(name)) return own.Has(name[own.Prefix.Length..]) ? name : Resolve("Idle");
+        if (own.Owns(name)) return own.Has(name[own.Prefix.Length..]) || P1Body.IsB(p.Skeleton) && p.Anim.HasAnimation(name) ? name : Resolve("Idle");
         return own.For(p.Calling, kind ?? p.Kind, name, sheathed) is string mine ? mine : Resolve(name);
     }
 
@@ -388,8 +388,15 @@ public static class People
         skel.AddChild(person.Gestures);
         int headBone = skel.FindBone("Head");
         if (headBone >= 0) skel.SkeletonUpdated += () => person.HeadPose = skel.GetBoneGlobalPose(headBone);
+        if (Args.Has("pose-probe")) root.AddChild(new P1PoseProbe(skel, root));   // (the pose ruler: nothing without the flag)
         if (p1)
         {
+            // A's clavicle lift where A runs it (P1 R1 arm chain: B's clips are A's before the shrug, mapped; B's girdle law
+            // leaves the clavicle to it, rig.json girdle "clavicle_by": "shrug"), so blends and layers lift B as A
+            // B's blend base first of all (P1BlendBase: the mixer's blends from B's map of A's rest; P1Laws keeps it first)
+            skel.AddChild(new P1BlendBase());
+            skel.MoveChild(skel.GetChildren().OfType<P1BlendBase>().First(), 0);
+            if (P1Body.RigOf(skel).ShrugDriven) skel.AddChild(new HerShrug());
             // B's laws after every pose-writing modifier (P1Laws keeps itself there as more are added), then B's springs (P1Jiggle:
             // data/body/springs.json; HerJiggle stays A's) and her face
             skel.AddChild(new P1Laws());
@@ -715,8 +722,13 @@ public static class People
         var moved = (p.HeadPose ?? p.Skeleton.GetBoneGlobalPose(hb)) * rest.AffineInverse();
         // (between her eyes at rest: 8.2 cm over and 11.1 cm in front of her Head joint, so they ride with its rest:
         // her neck 3 cm shorter, 18 October 2026, lowered the joint; at 1.748 m fixed the Look aimed over her eyes)
-        return p.Skeleton.GlobalTransform * (moved * (rest.Origin + new Vector3(0, 0.082f, 0.111f)));
+        // (on P1's B the Head joint sits elsewhere in her skull, 58 mm higher: read from her eyes' mesh, or the Look and the
+        // close view aim over them and she drops in frame)
+        return p.Skeleton.GlobalTransform * (moved * (rest.Origin + (P1Body.IsB(p.Skeleton) ? P1Body.EyesFromHead(p.Skeleton) : HerEyesOffset)));
     }
+
+    /// <summary>The cameras' aim on her head (A's): this far from A's Head joint at rest, skeleton axes.</summary>
+    public static readonly Vector3 HerEyesOffset = new(0, 0.082f, 0.111f);
 
     /// <summary>Her eyes' colour (shaders/heroine_eye.gdshader): the iris's
     /// paint keeps its fibres and crypts, its light and dark, and takes the
@@ -1844,6 +1856,8 @@ public static class People
             m.SetShaderParameter("neck_pull", NeckPull(look));
             m.SetShaderParameter("scatter", HerScatter);
             m.SetShaderParameter("back_spec", HerBackSpec);
+            m.SetShaderParameter("back_neutral", HerBackNeutral);
+            m.SetShaderParameter("back_neutral_sky", HerBackNeutralSky);
         }
         // A body's relief baked from its sculpt (the hero's), under the pores.
         // (--relief-map PATH: her graft's relief from a file, tried before it is laid in the glb; face 37)
@@ -1886,6 +1900,9 @@ public static class People
                 m.SetShaderParameter("seam_ease", true);
                 // (the light through her kept to her ears and her nose's wings: the map's blue, heroine_thin.py)
                 m.SetShaderParameter("thin_map", 1f);
+                // (eased out over the seam's 3 cm, as her body takes it unmasked: the seam under her jaw at the Look read as a
+                // grey wedge on the head's side, P1 R1 seam 2; --thin-ease X: another, 0 as before)
+                m.SetShaderParameter("thin_ease", (float)Args.Num("thin-ease", 1f));
             }
             // (her ears' hollows, a shade of their own that dims the lamps there and warms: tools/assets/heroine_ear_ao.py;
             // --ear-ao off: without it, for judging it)
@@ -1934,6 +1951,7 @@ public static class People
     /// in Skin() and again after her look's own tones and shade (HerShade), so it wins over them.</summary>
     static void SkinSet(ShaderMaterial m, string name)
     {
+        if (P1Body.On && name != "skin_head") P1Body.ApplySkin(m);
         if (SurvivorUnchained.Args.Get("skin-set") is string ss)
             foreach (var part in ss.Split(';'))
                 if (part.Split(':') is [var who2, var kvs] && (who2 == "*" || who2 == name))
@@ -1998,6 +2016,17 @@ public static class People
     /// (Highborn), her lit cheek as it was. Every part of her alike, so no step at her neck's seam.</summary>
     const float HerBackSpec = 0.3f;
 
+    /// <summary>A cool lamp behind her on her skin at its own lightness, its blue taken out (the skin shader's
+    /// back_neutral): the Look's cool rim and the close view's night rim light the far side of her neck under her jaw,
+    /// where neither key nor fill reaches, and blue light on her red-rich skin came out a lavender patch there, by day
+    /// and night, A and B alike (gate judge 4, P1 R1 seam 2, 8 November 2026: Oklab hue -10 against 30-36 round it).
+    /// Her hair, gear and the scene keep the rims' colour. (--back-neutral X: another, for judging it; 0 as before.)</summary>
+    static float HerBackNeutral => (float)SurvivorUnchained.Args.Num("back-neutral", 1f);
+    /// <summary>The same for the sun and moon behind her (the skin shader's back_neutral_sky): in the close view's fights the
+    /// end of her throat's crease by her outline took a pink-grey from a directional lamp behind her (hue 44 against 51
+    /// beside it, 47 with this). (--back-neutral-sky X: another; 0 as before.)</summary>
+    static float HerBackNeutralSky => (float)SurvivorUnchained.Args.Num("back-neutral-sky", 1f);
+
     /// <summary>Her skin in the sky's light against the lamps' (the skin shader's ambient_tint): light from all
     /// round goes deeper into skin and comes out redder. Without it, under her jaw, in the key's shadow, the night
     /// sky's blue made her neck grey-violet on every face (the owner, 10 October 2026: Oklab hue 31° against her
@@ -2020,10 +2049,22 @@ public static class People
     /// the shader's shade_tint, its lightness kept. Her body's tone is set for lit skin (her portraits' lit necks are
     /// pale); applied in her shade too, it greyed the shade under her jaw (chroma 0.014 against her portrait's 0.051,
     /// own; skin in shade keeps its colour, the light coming back out of it).</summary>
+    /// <summary>The skin shader's throat_terminator for her (P1 R1 round 38): each channel's reach past her lit side over her
+    /// neck's column, against the skin's 0.32/0.15/0.1. Her throat's fold in the fight close-ups went from Oklab hue 48 to
+    /// 44.5 against her jaw shade's 40 (gate judge 5 fault 1). (-1: off.)</summary>
+    static readonly Vector3 HerThroatTerminator = SurvivorUnchained.Args.Get("throat-term") is string tt
+        ? tt == "off" ? new Vector3(-1, -1, -1) : tt.Split(',') is [var t0, var t1, var t2]
+            ? new Vector3(float.Parse(t0, System.Globalization.CultureInfo.InvariantCulture), float.Parse(t1, System.Globalization.CultureInfo.InvariantCulture), float.Parse(t2, System.Globalization.CultureInfo.InvariantCulture))
+            : new Vector3(0.6f, 0.15f, 0.08f)
+        : new Vector3(0.6f, 0.15f, 0.08f);
+
     static void HerShade(ShaderMaterial m, Look look)
     {
         m.SetShaderParameter("ambient_tint", HerAmbient(look));
         m.SetShaderParameter("body_tone", BodyTone(look));
+        // (her throat's fold: red reaching further past her lit side over her neck's column, heroine_skin.gdshader's
+        // throat_terminator; P1 R1 round 38. --throat-term off: none, as before; --throat-term R,G,B: another)
+        m.SetShaderParameter("throat_terminator", HerThroatTerminator);
         m.SetShaderParameter("body_gate", BodyGate ? 1f : 0f);
         // Her soft lamps (the Look's fill and bounce, their sheen 0.1 and 0: SPECULAR_AMOUNT 0.2 and 0) show her paint's
         // own colour, all of her; the key, the fire and the sun her body's tone. (Tried 11 October 2026 (r6a): held
