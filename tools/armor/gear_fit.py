@@ -21,9 +21,10 @@ mesh extras are read from A's file at build time.
 `build --body <dir>` evaluates every binding on a body (its body.glb / play.glb and its stage npz for topology order):
     bendy vertices: the bound triangle's point + the offset in this body's frame there; B's skin weights at the point
       (barycentric, top 8); B's blend shapes at the point (every Heroine shape that moves the piece; HeroineHead's face
-      shapes are not carried). On a body other than the bind body the displacement (evaluated minus bind-body result)
-      is smoothed over the piece's own edges, weighted toward vertices far from the skin, so a stand-off part bound to
-      two surfaces follows as one surface; on the bind body nothing is smoothed (built == bind geometry).
+      shapes are not carried). On a body other than the bind body a piece follows by gear_field: within 4 mm of the
+      skin its bound evaluation (made continuous across triangles), beyond it the body's move as a spatially smooth
+      field (so a stand-off part bound to two surfaces follows as one surface), then a smooth clearance push; on the
+      bind body none of it runs (built == bind geometry).
     rigid components (rows "rigid": true and the plate_* / mar_her_* styles, their metal meshes): one rigid transform
       per component (Procrustes of its bendy evaluation onto its bind-body points), one blend of weights (the mean of
       B's weights over its bound points, top 8), its blend shapes as their mean delta (a pure translation). Small
@@ -56,6 +57,7 @@ sys.path.insert(0, os.path.join(REPO, "tools", "anim"))
 
 from surfdist import Surface  # noqa: E402
 from skin import Gltf  # noqa: E402
+import gear_field  # noqa: E402
 
 PEOPLE = os.path.join(REPO, "godot", "art", "people")
 ARMOR = os.path.join(REPO, "godot", "art", "armor")
@@ -791,6 +793,14 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
             X, F = eval_points(body, tri, bq, off)
             Xbind, Fbind = (X, F) if bbody is None else eval_points(bbody, tri, bq, off)
             ev[i] = dict(X=X, F=F, Xbind=Xbind, Fbind=Fbind, w=unq(bq), tri=tri.astype(np.int64), comp=z[f"comp{i}"])
+            if bbody is not None:
+                # the follow field (gear_field): exact near the skin, the body's smoothed move beyond
+                o = off.astype(np.float64)
+                c0 = np.linalg.norm(o, axis=1) * np.where(o[:, 2] < 0, -1.0, 1.0)
+                bt = gear_field.beta(c0)
+                Xf, G = gear_field.field_for(body, bbody)(Xbind)
+                Xe, Re = gear_field.exact_follow(X, F, Xbind, Fbind, off)
+                ev[i].update(c0=c0, beta=bt, G=G, Re=Re, X=Xe + bt[:, None] * (Xf - Xe))
         # rigid components: transforms from all rigid uniques of the tier
         comp = np.concatenate([ev[m["i"]]["comp"] for m in ms])
         if (comp >= 0).any() and bbody is not None:
@@ -799,7 +809,10 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
             for c in np.unique(lead[comp[comp >= 0]]):
                 own = comp == c
                 R, ca, cb = kabsch(Xa[own], Xn[own])
-                rots[int(c)] = (R, ca, cb)
+                grp = (comp >= 0) & (lead[np.maximum(comp, 0)] == c)
+                c0s = np.concatenate([ev[m["i"]]["c0"] for m in ms])
+                t = gear_field.rigid_clear(body, (Xa[grp] - ca) @ R.T + cb, c0s[grp])
+                rots[int(c)] = (R, ca, cb + t)
         for m in ms:
             e = ev[m["i"]]
             i, comp_i = m["i"], e["comp"]
@@ -810,14 +823,18 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
             if bbody is not None:
                 bend = comp_i < 0
                 if bend.any():
-                    D = X - e["Xbind"]
-                    Tm = None
-                    E = bd_edges(bd, i)
-                    h = np.abs(z[f"off{i}"][:, 2].astype(np.float64))
-                    alpha = np.clip((h - SMOOTH["near_m"]) / (SMOOTH["far_m"] - SMOOTH["near_m"]), 0, 1) * bend
-                    D = smooth_field(D, E, len(X), alpha, SMOOTH["rounds"])
-                    X = np.where(bend[:, None], e["Xbind"] + D, X)
-                    del Tm
+                    # normals: the exact frame's near the skin, the field's (J^-T of the bind normal) beyond
+                    bt = e["beta"]
+                    Nb = np.einsum("nij,nj->ni", e["Fbind"][inv], nloc)
+                    Ji = np.linalg.inv(np.eye(3)[None] + bt[:, None, None] * (e["G"] - np.eye(3)[None]))
+                    Nf = U(np.einsum("nji,nj->ni", Ji[inv], Nb))
+                    bv = (bt * bend)[inv][:, None]
+                    Ne = np.einsum("nij,nj->ni", e["Re"][inv], Nb)
+                    N = np.where(bend[inv][:, None], (1 - bv) * Ne + bv * Nf, N)
+                    # clearance: no vertex nearer the new skin than it was to the bind skin
+                    X, cst = gear_field.clear_push(body, X, e["c0"], bend)
+                    if stats is not None:
+                        stats[m["node"]] = cst
                 rg = comp_i >= 0
                 if rg.any():
                     Nb = np.einsum("nij,nj->ni", e["Fbind"][inv], nloc)
@@ -856,6 +873,8 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
             out[m["node"]] = {"Xu": X, "inv": inv, "N": U(N), "J": J[inv], "W": W[inv],
                               "shapes": {k: v[inv] for k, v in shapes.items()}, "tier": tier, "comp": comp_i,
                               "Xbind": e["Xbind"], "h": z[f"off{i}"][:, 2]}
+            if "beta" in e:
+                out[m["node"]].update(beta=e["beta"], G=e["G"])
     if "aux_tri" in z:
         body = bodies["close"]
         tri, bq, off = z["aux_tri"], z["aux_bw"], z["aux_off"]
@@ -1234,13 +1253,107 @@ def check(body_dir, synth=False, only=None, out_dir=None):
     return res
 
 
+GATE = {"stretch_p99": 8.0, "stretch_max": 25.0, "inside_mm": 0.5, "tight_p95_mm": 0.5, "rigid_mm": 0.05}
+
+
+def field_metrics(bd, ev, bodies, bind_bodies):
+    """The follow acceptance for one unit on one test body: per mesh, NaNs; bendy edges' stretch beyond the body's own
+    (gear_field.expected_edges: what a skin-tight edge would do there) p99 / max %, raw edges over 2x; vertices inside
+    the new skin by over 0.5 mm among those clear on her_b; the tight vertices' (within 4 mm on her_b) clearance change
+    p95 mm; the rigid components' pairwise distance error mm. "fail" lists the gates missed."""
+    r = {}
+    for m in bd.meta["meshes"]:
+        e = ev[m["node"]]
+        body, bb = bodies[m["tier"]], bind_bodies[m["tier"]]
+        X, X0, comp = e["Xu"], e["Xbind"], e["comp"]
+        rr = {"nan": int(np.isnan(X).sum() + np.isnan(e["N"]).sum())}
+        E = bd_edges(bd, m["i"])
+        E = E[(comp[E[:, 0]] < 0) & (comp[E[:, 1]] < 0)]
+        l0 = np.linalg.norm(X0[E[:, 0]] - X0[E[:, 1]], axis=1)
+        ok = l0 > 1e-6
+        E, l0 = E[ok], l0[ok]
+        fail = []
+        if len(E):
+            l1 = np.linalg.norm(X[E[:, 0]] - X[E[:, 1]], axis=1)
+            le = gear_field.expected_edges(bb, body, bd.z[f"tri{m['i']}"].astype(np.int64), E, X0, e.get("beta"), e.get("G"))
+            ex = np.abs(l1 / np.maximum(le, 1e-9) - 1) * 100
+            raw = np.abs(l1 / l0 - 1) * 100
+            rr["stretch_p99_max"] = [round(float(np.percentile(ex, 99)), 2), round(float(ex.max()), 2)]
+            rr["raw_p99_max"] = [round(float(np.percentile(raw, 99)), 2), round(float(raw.max()), 2)]
+            rr["over_2x"] = int((l1 > 2 * l0).sum())
+            if rr["stretch_p99_max"][0] > GATE["stretch_p99"] or rr["stretch_p99_max"][1] > GATE["stretch_max"] or rr["over_2x"]:
+                fail.append("stretch")
+        cB, _ = signed_clear(body, X)
+        cB0, _ = signed_clear(bb, X0)
+        clear0 = cB0 > -1e-6
+        rr["inside"] = int(((cB < -GATE["inside_mm"] / 1000) & clear0).sum())
+        rr["inside_mm_max"] = round(float(max(0.0, -cB[clear0].min() if clear0.any() else 0.0)) * 1000, 2)
+        rr["bind_inside"] = int((~clear0).sum())
+        if rr["inside"]:
+            fail.append("inside")
+        tight = (np.abs(cB0) < 0.004) & (comp < 0)
+        if tight.any():
+            rr["tight_p95_mm"] = round(float(np.percentile(np.abs(cB - cB0)[tight], 95)) * 1000, 3)
+            if rr["tight_p95_mm"] > GATE["tight_p95_mm"]:
+                fail.append("tight")
+        rg = comp >= 0
+        if rg.any():
+            worst = 0.0
+            for c in np.unique(comp[rg]):
+                sel = np.where(comp == c)[0]
+                if len(sel) > 400:
+                    sel = sel[np.linspace(0, len(sel) - 1, 400).astype(int)]
+                d0 = np.linalg.norm(X0[sel][:, None] - X0[sel][None], axis=2)
+                d1 = np.linalg.norm(X[sel][:, None] - X[sel][None], axis=2)
+                worst = max(worst, float(np.abs(d1 - d0).max()))
+            rr["rigid_mm"] = round(worst * 1000, 5)
+            if rr["rigid_mm"] > GATE["rigid_mm"]:
+                fail.append("rigid")
+        rr["fail"] = fail
+        r[m["node"]] = rr
+    return r
+
+
+def check_field(body_dir, only=None, tests=None, json_path=None):
+    """The follow field's acceptance on the test bodies: the synthetic one and her_b with one slider at a strong setting
+    (gear_field.SLIDER_TESTS); her_b itself for the identity (built == bind geometry)."""
+    bind_bodies = load_bodies(body_dir)
+    res = {"bodies": {}}
+    t0 = time.time()
+    ident = {}
+    for bd in bindings(only):
+        ev = eval_unit(bd, bind_bodies, None)
+        for m in bd.meta["meshes"]:
+            Xb, _ = eval_points(bind_bodies[m["tier"]], bd.z[f"tri{m['i']}"], bd.z[f"bw{m['i']}"], bd.z[f"off{m['i']}"])
+            ident[f"{bd.id}/{m['node']}"] = float(np.abs(ev[m["node"]]["Xu"] - Xb).max() * 1000)
+    res["her_b_identity_mm_max"] = round(max(ident.values()), 6)
+    res["her_b_build_secs"] = round(time.time() - t0, 1)
+    makers = [("synthetic", lambda: synthetic(bind_bodies))]
+    makers += [(f"{n}{v:+g}", (lambda n=n, v=v: gear_field.slider_body(bind_bodies, n, v))) for n, v in gear_field.SLIDER_TESTS]
+    for name, mk in makers:
+        if tests and name not in tests:
+            continue
+        bodies = mk()
+        gear_field._CACHE.clear()
+        tb = time.time()
+        evs = build(bodies, os.path.join(OUT, "_check"), only, bind_bodies=bind_bodies, write=False)
+        secs = time.time() - tb
+        rows = {bd.id: field_metrics(bd, evs[bd.id], bodies, bind_bodies) for bd in bindings(only)}
+        res["bodies"][name] = {"build_secs": round(secs, 1), "rows": rows}
+        nf = sum(bool(rr["fail"]) for r in rows.values() for rr in r.values())
+        print(f"[{name}] build {secs:.1f} s, meshes failing: {nf}", flush=True)
+        if json_path:
+            with open(json_path, "w") as f:
+                json.dump(res, f, indent=1)
+    return res
+
+
 def tri_area(V, Tv):
     return 0.5 * np.linalg.norm(np.cross(V[Tv[:, 1]] - V[Tv[:, 0]], V[Tv[:, 2]] - V[Tv[:, 0]]), axis=1)
 
 
 def signed_clear(body, X):
-    q, fn, _, d = body.surf.closest(X, k=16)
-    return d * np.sign(((X - q) * fn).sum(1) + 1e-15), fn
+    return gear_field.signed_clear(body, X, k=16)
 
 
 def ncomp(E, n):
@@ -1258,6 +1371,7 @@ def main():
         p.add_argument("--out", default="")
         p.add_argument("--only", default="")
         p.add_argument("--synthetic", action="store_true")
+        p.add_argument("--field", default="", help="check: the follow field's test bodies (all, or names: synthetic,weight+1,...)")
         p.add_argument("--json", default="")
     a = ap.parse_args()
     only = [x for x in a.only.split(",") if x]
@@ -1287,6 +1401,18 @@ def main():
         out_dir = a.out or os.path.join(OUT, name)
         build(bodies, out_dir, only)
         print(f"gear_fit build: {len(bindings(only))} units on {name} -> {rel(out_dir)} in {time.time() - t0:.1f} s")
+        return
+    if a.field:
+        res = check_field(body_dir, only, None if a.field == "all" else a.field.split(","), a.json or None)
+        if a.json:
+            with open(a.json, "w") as f:
+                json.dump(res, f, indent=1)
+        print(json.dumps({k: v for k, v in res.items() if k != "bodies"}))
+        for name, bo in res["bodies"].items():
+            for rid, r in bo["rows"].items():
+                for node, rr in r.items():
+                    if rr["fail"]:
+                        print(f"{name:12s} {rid:24s} {node:40s} " + " ".join(f"{k}={v}" for k, v in rr.items()))
         return
     res = check(body_dir, a.synthetic, only, a.out or None)
     if a.json:
