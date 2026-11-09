@@ -219,7 +219,10 @@ public class PrologueTests
         Run(s, 4);
         double xp = s.J.Ch.Xp;
         s.B.GainEmber(s.B.EmberNext);
-        foreach (var e in s.Zone.Night!.Standing("n_lone")) { s.B.KillEnemy(e, true, null); s.J.Killed(e, true); }
+        // (her own fire takes the lone one in the first seconds; the three rise out of the road 4 s after it)
+        for (int i = 0; i < 60 && (s.Zone.Night!.Pending("n_three") || s.Zone.Night.Standing("n_three").Count == 0); i++) Run(s, 0.5);
+        Assert.NotEmpty(s.Zone.Night!.Standing("n_three"));
+        foreach (var e in s.Zone.Night.Standing("n_three")) { s.B.KillEnemy(e, true, null); s.J.Killed(e, true); }
         Run(s, 0.1);
         Assert.True(s.B.DraftOwed);
         Assert.Equal(xp, s.J.Ch.Xp);

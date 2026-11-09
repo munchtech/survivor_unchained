@@ -225,7 +225,7 @@ public class ChampionsTests
         // Another night captain has no floor.
         var b2 = Road(9);
         var n2 = new Encounters(Encounters.For("lowford")!, b2, new Dictionary<string, Fact>(), 1, 0, "night");
-        n2.Place();
+        n2.Place(); n2.LayGated();  // (n_road2 waits on n_road1)
         DropCtx? got = null;
         n2.Carried(n2.Captain("n_road2")!, x => { got = x; return []; });
         Assert.Equal(0, got!.Floor);
