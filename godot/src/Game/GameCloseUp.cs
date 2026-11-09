@@ -348,7 +348,9 @@ public partial class Game
         float en = lit && night ? day : 0;
         if (en != 0 || eyesNight != 0) { eyesNight = en; SurvivorUnchained.View.People.HerEyesNight(pv.Person, en); SurvivorUnchained.View.People.HerSkinHold(pv.Person, en); }
         // (Rendering 1: at dawn and dusk (Atmosphere.TownLit) the close view stops down CloseExposureDusk: the low sun left her face waxy at 185-189.)
-        air.SetViewExposure(lit ? Mathf.Lerp(1, night ? CloseExposureNight : SurvivorUnchained.View.Atmosphere.TownLit > 0.5f ? CloseExposureDusk : 1, day) : 1);
+        // (L1 lead 10 DAY: by day under cel the close view's own exposure, rigs.json close_day "exposure", FROM G1 13's two ground values;
+        // 1 left the town's day exposure on the close view: lit ground L 0.69, T13 0.64)
+        air.SetViewExposure(lit ? Mathf.Lerp(1, night ? CloseExposureNight : SurvivorUnchained.View.Atmosphere.TownLit > 0.5f ? CloseExposureDusk : CloseExposureDay, day) : 1);
         // (Face 48: in a cinematic its own light on her owns the highlight grade and the skin guard, GameCinemaHer.)
         if (!InCinematic) air.SetViewHighlights(lit ? (night ? day : CloseGradeDay * day) : 0, !night && CloseDayHiTint);
         // (Rendering 2: the grade's skin guard (Atmosphere.SkinGuard) by night, dawn and dusk, where warm keys turned deep skin copper.)
@@ -560,6 +562,9 @@ public partial class Game
     // --close-key-sun-hold D: by day (and by moonlight) the key keeps to within D degrees of the lens on the sun's side.
     // --close-exp-dusk X: the close view's exposure at dawn and dusk against play's.
     static float CloseExposureDusk => Args.Num("close-exp-dusk", 0.85f);
+    // --close-exp-day X: the close view's exposure by day against play's (default: under cel rigs the close_day rig's exposure, else 1).
+    static float CloseExposureDay => Args.Has("close-exp-day") ? Args.Num("close-exp-day", 1f)
+        : SurvivorUnchained.View.Atmosphere.CelRigs && SurvivorUnchained.Look.Rigs.Current["close_day"] is { Exposure: double e } ? (float)e : 1f;
     static float CloseKeySunHold => Args.Num("close-key-sun-hold", 70f);
     // --close-fire-to-key K: the fire's colour on her toward the key's (0: the fire's own orange).
     static float CloseFireToKey => Args.Num("close-fire-to-key", 1f);
