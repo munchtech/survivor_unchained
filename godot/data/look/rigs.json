@@ -37,7 +37,7 @@
       },
       "ember_give": [1.0, 0.9, 2.8, 4.5],
       "fire_give": [1.0, 0.9, 0.15, 0.35],
-      "ember_pool": [0.85, 0.3, 0, 0.54, 255, 136, 6, 0.5, 0.53, 255, 135, 8, 0.75, 0.40, 255, 132, 14, 1.0, 0.27, 255, 130, 20, 1.25, 0.20, 255, 128, 25, 1.5, 0.155, 255, 126, 32, 1.75, 0.13, 250, 122, 45, 2.0, 0.12, 240, 118, 64, 2.5, 0.085, 200, 120, 135, 3.0, 0.03, 170, 130, 180, 3.4, 0, 170, 130, 180],
+      "ember_pool": [1.0, 0.3, 0, 0.54, 255, 136, 6, 0.5, 0.53, 255, 135, 8, 0.75, 0.40, 255, 132, 14, 1.0, 0.27, 255, 130, 20, 1.25, 0.20, 255, 128, 25, 1.5, 0.155, 255, 126, 32, 1.75, 0.13, 250, 122, 45, 2.0, 0.12, 240, 118, 64, 2.5, 0.085, 200, 120, 135, 3.0, 0.03, 170, 130, 180, 3.4, 0, 170, 130, 180],
       "warm_keep": 0.85,
       "scene_color": 1,
       "scene_moon": 1
@@ -94,21 +94,21 @@
         "color": "#7a92ff",
         "intensity": null,
         "shadow": 0.6,
-        "scale": 0.40
+        "scale": 0.617
       },
       "fill": {
         "sky": "#b5d9ff",
         "ground": null,
         "hemi": null,
         "env": null,
-        "sky_scale": 1.5
+        "sky_scale": 2.55
       },
       "grade": "rig_arena_night",
       "exposure": 1.15,
       "dapple": {
         "cover": 1.0,
         "strength": 0.85,
-        "size": 80,
+        "size": 35,
         "floor": 1.0
       },
       "ember": 8.0,
@@ -297,10 +297,10 @@
     },
     "look_day": {
       "base": "look",
-      "from": "rule 11 at the Look by day (--look-time day) and MB1 (the face board, the Look camera's law): the close-up's day key (#f3d9a0, 35, 40) and a fill of its own, so her skin's shade band reads MB1's mauve (h about 325). B4r3: the day rig's fill (#6a5ce0, h 283, at 0.12) left her shade h 275 here (the close view h 322): the Look's day is the open-sky Day (the Verge's air, not the town's) and its camp fire is culled off her at the portrait (GameFront: the stand-in fades to 0), so no warm source reaches her shade and the sky's cold light is most of it (her shade L 0.46 to the lit 0.71); by toggles the grade (waystation_day), the sky share (hemi 0.7, env 0.55, ground #605245) and the sky reflections each moved that hue under 1 degree; only the fill's own hue moves it. A magenta-mauve fill (#c848b8, h 333) at 0.08, and the key at 1.15 so the band holds 0.25 L over the cold sky light: shade h 315, C 0.034, dL 0.262 (at 0.12-0.18 the fill reached the hue but lifted the shade to dL 0.20-0.23). L7 S1d (one sun, lead 7; rule 3 now the boards' #ffc296): the key's color the town key's (#ffbd78, day_town, which draws the boards' sun on the neutral card) for #f3d9a0. A book screen that frames her by day (the Lamps, G1 08; GameCloseUp.HerToTheView) takes this rig's key only, the world keeping the town rig. L1 l9 DAY (judge 1 fix 2): one day: the key the boards' sun #ffc296 and the fill day_town's violet #d2beff for the magenta #c848b8 (08's chalky skin and the magenta disc on her cup); was ('#ffbd78', '#c848b8', 0.08). L1 l9 DAY: the key 1.15 -> 0.6: at 08 her lit skin sat in AgX's shoulder (q80 0.86-0.88, C50 0.047-0.058, chalky; T08 0.71, 0.139); a sweep 0.85/0.70/0.55 gave q80 0.86/0.83/0.79, C50 0.055/0.065/0.080.",
+      "from": "rule 11 at the Look by day (--look-time day) and MB1 (the face board, the Look camera's law): the close-up's day key (#f3d9a0, 35, 40) and a fill of its own, so her skin's shade band reads MB1's mauve (h about 325). B4r3: the day rig's fill (#6a5ce0, h 283, at 0.12) left her shade h 275 here (the close view h 322): the Look's day is the open-sky Day (the Verge's air, not the town's) and its camp fire is culled off her at the portrait (GameFront: the stand-in fades to 0), so no warm source reaches her shade and the sky's cold light is most of it (her shade L 0.46 to the lit 0.71); by toggles the grade (waystation_day), the sky share (hemi 0.7, env 0.55, ground #605245) and the sky reflections each moved that hue under 1 degree; only the fill's own hue moves it. A magenta-mauve fill (#c848b8, h 333) at 0.08, and the key at 1.15 so the band holds 0.25 L over the cold sky light: shade h 315, C 0.034, dL 0.262 (at 0.12-0.18 the fill reached the hue but lifted the shade to dL 0.20-0.23). L7 S1d (one sun, lead 7; rule 3 now the boards' #ffc296): the key's color the town key's (#ffbd78, day_town, which draws the boards' sun on the neutral card) for #f3d9a0. A book screen that frames her by day (the Lamps, G1 08; GameCloseUp.HerToTheView) takes this rig's key only, the world keeping the town rig. L1 l9 DAY (judge 1 fix 2): one day: the key the boards' sun #ffc296 and the fill day_town's violet #d2beff for the magenta #c848b8 (08's chalky skin and the magenta disc on her cup); was ('#ffbd78', '#c848b8', 0.08). L1 l9 DAY: the key 1.15 -> 0.6: at 08 her lit skin sat in AgX's shoulder (q80 0.86-0.88, C50 0.047-0.058, chalky; T08 0.71, 0.139); a sweep 0.85/0.70/0.55 gave q80 0.86/0.83/0.79, C50 0.055/0.065/0.080. L1 l9 SKIN: her skin's chalk was her albedo's chroma (the skin shader's cel_tone, People.HerCelTone, FROM MB1's lit chip and T08) and her lit band in the grade's shoulder (q80 0.80-0.83 flat, R pegged): the key 0.6 to 0.35 with cel_tone (08 skin L50 0.54 to 0.62, q80 0.80 to 0.73, C50 0.070 to 0.097, h 58 to 52; key 0.45: 0.57/0.78/0.081). The fill's strength here moved nothing (0.08 and 0.16 identical).",
       "key": {
         "color": "#ffc296",
-        "intensity": 0.6
+        "intensity": 0.35
       },
       "fill": {
         "color": "#d2beff",

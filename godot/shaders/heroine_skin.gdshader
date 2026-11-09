@@ -30,6 +30,10 @@ uniform float scatter_cel : hint_range(0.0, 1.0) = 0.25;
 
 uniform sampler2D paint : source_color, filter_linear_mipmap_anisotropic;
 uniform vec3 tone : source_color = vec3(1.0, 0.86, 0.74);
+// Her skin's color under the cel model (L1 l9 skin, linear, on tone; luminance kept): her paint and tone, fitted to the
+// old soft rigs, came out a pale beige under the cel day rigs (08 lit skin C .09 h 63 against MB1's lit chip #ee9962,
+// C .127 h 45, and T08's C .143 h 48); People.HerCelTone. 1: as before (cel off, or --cel-tone 1,1,1).
+uniform vec3 cel_tone = vec3(1.0);
 // Her pores' tile (RGB its normals, A how rough), and how many tiles to a
 // UV unit (People.cs works it out from the mesh: one tile every 9 mm; at
 // 1.5 cm they read as large and even on her hands).
@@ -655,7 +659,7 @@ void fragment() {
 	vec4 aot = texture(ao_map, UV);
 	float hw = seam_ease ? aot.g : 1.0;
 	float rig_w = clamp(look_rig, 0.0, 1.0);
-	ALBEDO = texture(paint, UV).rgb * tone * mix(vec3(1.0), mix(face_world, face_tone, rig_w), fm.b);
+	ALBEDO = texture(paint, UV).rgb * tone * mix(vec3(1.0), cel_tone, cel_on) * mix(vec3(1.0), mix(face_world, face_tone, rig_w), fm.b);
 	float lip_w = lip_gain > 1.0 ? lips_apart * lips_narrow * smoothstep(lip_zone, lip_zone + 0.25, textureLod(features, UV, lip_mip).g) : 0.0;
 	if (lip_w > 0.0) {
 		float lum0 = max(dot(ALBEDO, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
