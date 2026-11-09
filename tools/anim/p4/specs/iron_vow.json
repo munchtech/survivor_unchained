@@ -319,7 +319,7 @@
    }
   }
  },
- "notes": "A1 actions (solver B): keyed beats from native takes: the fight-ready start (rdpose, hands on idle_warden's), the brace (vwpose_brace pick 1 f37, the sword hand drawn back by IK) keyed through the loop, the shove (vwpose_shove pick 4 f32, feet on the brace's) at the burst and the hold, fight-ready at 2.0 s. Job frames = clip frames + 6 (crop). Fit (solver F2): loop 2.0 s by retime (pairs: the loop's end on the take's last brace key f39), the brace frozen with one breath (brace layer: the trunk 1.2 cm up on the legs, 2 deg extension), the sword drawn back low point forward (blade keys, heading frame), the sword hand held back at the hip through the burst (limbs keys), the end onto idle_warden anchored on the left foot, both pieces cleared 11 mm.",
+ "notes": "A1 actions (solver B): keyed beats from native takes: the fight-ready start (rdpose, hands on idle_warden's), the brace (vwpose_brace pick 1 f37, the sword hand drawn back by IK) keyed through the loop, the shove (vwpose_shove pick 4 f32, feet on the brace's) at the burst and the hold, fight-ready at 2.0 s. Job frames = clip frames + 6 (crop). Fit (solver F2): loop 2.0 s by retime (pairs: the loop's end on the take's last brace key f39), the brace frozen with one breath (brace layer: the trunk 1.2 cm up on the legs, 2 deg extension), the sword drawn back low point forward (blade keys, heading frame), the sword hand held back at the hip through the burst (limbs keys), the end onto idle_warden anchored on the left foot, both pieces cleared 11 mm. Solver F4: the shield seated by keys through the brace (boss [0.16, 0.30, 0.36] pelvis frame, 15 deg open, 5 tilt; shoved to [0.08, 0.30, 0.44] at the burst and held into the end blend), the shield hand on idle's hand (hand: end); the sword hand out at [-0.28, 0.08, 0.15] and the blade aimed outward ([-0.25, -0.2, 0.95] braced, [-0.7, -0.5, 0.5] low): both pieces 17+ mm clear through the brace before the clear layer, which then only works the start (f0-6) and the recovery (f80-86). pelvis_cm@3.0 retired for end_deg.",
  "bands": {
   "pelvis_cm@plant": [
    -15,
@@ -357,10 +357,6 @@
    0,
    1
   ],
-  "pelvis_cm@3.0": [
-   -6,
-   3
-  ],
   "blade_below_deg@loop:max": [
    0,
    30
@@ -374,7 +370,7 @@
   "pelvis_cm@plant",
   "stance_cm@plant",
   "pelvis_cm@loop:ptp",
-  "pelvis_cm@3.0"
+  "end_deg@3.0"
  ],
  "source": "src/iron_vow.npz",
  "bvh": "iron_vow__qv0s812_2.bvh",
@@ -383,36 +379,36 @@
  "fit": {
   "blade": {
    "dir": [
-    -0.2425,
-    -0.7071,
-    0.6646
+    -0.7,
+    -0.5,
+    0.5
    ],
    "keep": 0,
    "keys": [
     [
      0.0,
      [
-      -0.2425,
-      -0.7071,
-      0.6646
+      -0.7,
+      -0.5,
+      0.5
      ],
      "still"
     ],
     [
      0.3,
      [
-      0.0,
-      -0.15,
-      1.0
+      -0.25,
+      -0.2,
+      0.95
      ],
      "still"
     ],
     [
      2.3,
      [
-      0.0,
-      -0.15,
-      1.0
+      -0.25,
+      -0.2,
+      0.95
      ],
      "still"
     ],
@@ -437,18 +433,18 @@
     [
      2.95,
      [
-      -0.2425,
-      -0.7071,
-      0.6646
+      -0.7,
+      -0.5,
+      0.5
      ],
      "still"
     ],
     [
      3.0,
      [
-      -0.2425,
-      -0.7071,
-      0.6646
+      -0.7,
+      -0.5,
+      0.5
      ]
     ]
    ],
@@ -484,28 +480,97 @@
      [
       0.3,
       [
-       -0.24,
-       0.0,
-       0.0
+       -0.28,
+       0.08,
+       0.15
       ],
       "still"
      ],
      [
       2.4667,
       [
-       -0.24,
-       0.0,
-       0.0
+       -0.28,
+       0.08,
+       0.15
       ],
       "still"
      ],
      [
-      2.9,
-      null,
-      "still"
+      3.0,
+      [
+       -0.28,
+       0.08,
+       0.15
+      ]
      ]
     ]
    }
+  },
+  "shield": {
+   "solve": true,
+   "branch": -1,
+   "hand": "end",
+   "keys": [
+    [
+     0.0,
+     null
+    ],
+    [
+     0.3,
+     [
+      0.16,
+      0.3,
+      0.36
+     ],
+     15,
+     5,
+     "still"
+    ],
+    [
+     2.3,
+     [
+      0.16,
+      0.3,
+      0.36
+     ],
+     15,
+     5,
+     "still"
+    ],
+    [
+     2.4,
+     [
+      0.08,
+      0.3,
+      0.44
+     ],
+     15,
+     5,
+     "still"
+    ],
+    [
+     2.4667,
+     [
+      0.08,
+      0.3,
+      0.44
+     ],
+     15,
+     5,
+     "still"
+    ],
+    [
+     3.0,
+     [
+      0.08,
+      0.3,
+      0.44
+     ],
+     15,
+     5,
+     "still"
+    ]
+   ]
   },
   "clear": {
    "target_mm": 11,

@@ -1,4 +1,5 @@
-"""clipcheck's spike rule after a frozen hold (A1 Stage B, solver F4): the median over the moving steps only.
+"""clipcheck's spike rule after a frozen hold (A1 Stage B, solver F4): the median over the moving steps only, and a
+pop is a step out of line with its neighbours (a lone jump or an out-and-back), not a fast beat that builds.
 
     python -m pytest -q tools/anim/test_spike_rule.py
 """
@@ -42,3 +43,17 @@ def test_one_frame_spike_after_a_hold_still_fails():
 def test_lone_spike_after_a_hold_sets_no_bar():
     out, _, _ = CC.pops(["root"], [-1], _clip(40, [8, -8] + [0] * 5), ["root"], False)
     assert "root" in out
+
+
+def test_burst_into_a_frozen_hold_is_not_a_spike():
+    # (iron_vow's shove: frozen brace, a 3-frame burst that builds and settles (8.2, 14.5, 3.9), the contact hold
+    # frozen, the recovery: in line with its neighbours, so no pop however fast)
+    steps = [8.2, 14.5, 3.9, 0, 0, 1.6, 1.9, 1.4, 2.2, 2.1, 2.3, 3.1, 3.8, 4.4, 4.3, 3.7, 2.7, 1.9, 1.0]
+    out, worst, _ = CC.pops(["root"], [-1], _clip(60, steps), ["root"], False)
+    assert out == {} and worst[0] > 14
+
+
+def test_lone_jump_inside_motion_fails():
+    steps = [2, 2.5, 3, 2, 15, 2, 3, 2.5, 2, 3, 2.5]      # (a one-frame jump that stays: a teleport, not an out-and-back)
+    out, _, _ = CC.pops(["root"], [-1], _clip(40, steps), ["root"], False)
+    assert out["root"]["frame"] == 44
