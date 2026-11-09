@@ -38,7 +38,8 @@ public sealed class RunMeasures
         $"flare {FlareCasts}@{FlareFirst:0} {FlareShare:0}%/{(double.IsNaN(FlareBossShare) ? "-" : FlareBossShare.ToString("0"))}%boss " +
         $"dmg {string.Join(",", DamageShare.OrderByDescending(kv => kv.Value).Take(6).Select(kv => kv.Key + ":" + kv.Value.ToString("0")))}" +
         (Falls.Count > 0 ? $" falls [{string.Join("; ", Falls)}]" : "") +
-        $" low {LowLife:0.00} taken {string.Join(",", Taken.Where(kv => kv.Key[0] != '#').OrderByDescending(kv => kv.Value).Take(6).Select(kv => kv.Key + ":" + kv.Value.ToString("0.0")))}" +
+        $" low {LowLife:0.00} taken {string.Join(",", Taken.Where(kv => kv.Key[0] is not ('#' or '+')).OrderByDescending(kv => kv.Value).Take(6).Select(kv => kv.Key + ":" + kv.Value.ToString("0.0")))}" +
+        $" healed {string.Join(",", Taken.Where(kv => kv.Key[0] == '+').OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key[1..] + ":" + kv.Value.ToString("0.0")))}" +
         $" kit {string.Join(",", Taken.Where(kv => kv.Key[0] == '#').OrderBy(kv => kv.Key).Select(kv => kv.Key[1..].Replace("caught ", "c.").Replace("missed ", "m.") + ":" + kv.Value.ToString("0")))}";
 
     static double Med(IEnumerable<double> xs) { var a = xs.Where(x => !double.IsNaN(x)).OrderBy(x => x).ToList(); return a.Count == 0 ? double.NaN : a[a.Count / 2]; }
@@ -158,5 +159,6 @@ public sealed class RunMeter
         m.FallNotes.AddRange(notes);
         m.LowLife = low;
         foreach (var (k, v) in taken) m.Taken[k] = v;
+        foreach (var (k, v) in b.HealBy) m.Taken["+" + k] = v / Math.Max(1, b.MaxHp);
     }
 }

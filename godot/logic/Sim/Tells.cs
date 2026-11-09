@@ -75,6 +75,8 @@ public sealed partial class Battle
     /// <summary>Every kit damage times this (H6: the night's tier, the waves' TierDamage; set by the zone with ClosingTeeth).
     /// 1: as it was.</summary>
     public double KitDamageMul = 1;
+    /// <summary>(M3) The kit's cadence in a story fight by world tier (Encounters: champions' affixes, packs' tells): waits x this.</summary>
+    public double KitEveryMul = 1;
 
     /// <summary>The kit telegraphs alive now (their windups, a charger's run): the hands read a pull's reach here.</summary>
     public IReadOnlyList<TellOn> ActiveTells => tells;
