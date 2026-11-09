@@ -936,7 +936,7 @@ def weight_roles(spec):
     because LBS weights are per-vertex partitions over the same bone names; the patch's blend (1 - k) W + k Wt keeps
     this body's own rule weights outside the mask. "weight_roles": null turns it off; a spec that names a role in
     its "weights" (her_b and her variants: all four) keeps its own: no change. Returns ((ref spec, ref path), roles)."""
-    conf = spec.get("weight_roles")      # WIP (step 4, unverified): opt-in per spec until (a)-(c) are measured
+    conf = spec.get("weight_roles", {})      # default on; "weight_roles": null opts out
     if not isinstance(conf, dict):
         return None, []
     w = spec.get("weights") or {}
