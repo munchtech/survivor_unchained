@@ -59,8 +59,17 @@ public static class CelLib
         yield return ("cel_ink", e.Ink);
         yield return ("cel_rim_k", e.RimK);
         if (c.Edge is { } ed) yield return ("cel_edge", new Vector2(ed[0], ed[1]));
+        // (L1 l9 PACK2) the class's own rim hue (vat.gdshaderinc cel_edge_hue): linear, at luminance 1
+        if (c.EdgeColor is { } ec)
+        {
+            var l = new Color(ec).SrgbToLinear();
+            float y = Mathf.Max(l.R * 0.2126f + l.G * 0.7152f + l.B * 0.0722f, 1e-4f);
+            yield return ("cel_edge_hue", new Vector4(l.R / y, l.G / y, l.B / y, 1f));
+        }
         var al = c.AlbUniform;
         yield return ("cel_alb", new Vector4(al[0], al[1], al[2], al[3]));
+        var ah = c.AlbHueUniform;
+        yield return ("cel_alb_hue", new Vector4(ah[0], ah[1], ah[2], 0f));
     }
 
     static readonly Dictionary<ulong, bool> celShaders = new();

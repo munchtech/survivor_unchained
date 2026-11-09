@@ -10,8 +10,14 @@
 #define CEL_CROWD_EDGE vec2(0.25, 0.04)
 // (L1 W2: the class's albedo control goes on the crowd's paint below, so its own night light (the emission) takes it too)
 #define CEL_OWN_ALB
+// (L1 l9 PACK2: the moon stays on the pack inside her pool, as target 09's cool bodies by her: only the ground gives way)
+#define CEL_NO_GIVE
 #include "res://shaders/cel.gdshaderinc"
 uniform vec2 cel_edge = CEL_CROWD_EDGE;
+// (L1 l9 PACK2, rule 7: the moon's rim on the pack in the class's own hue, materials.json crowd_fur "edge_color" FROM target 09's
+// backs (#2abbec, cyan-blue, never white or pale silver): rgb that hue at luminance 1, a its share over the rig's rim hue; the
+// rig keeps the rim's level (crowd_rim))
+uniform vec4 cel_edge_hue = vec4(1.0, 1.0, 1.0, 0.0);
 // (H7: a marked foe's rim takes the Flare's school hue while the marks are up: FlareFx.Family; a 0 none)
 global uniform vec4 flare_mark_rim;
 // H7 r2: a marked foe's light from its pool below (FlareMarksView; flare_family.json marks.lift), x its rim strength.
@@ -401,7 +407,8 @@ void fragment() {
 	if (crowd_rim.a > 0.0) {
 		vec3 kv = normalize((VIEW_MATRIX * vec4(key_dir.xyz, 0.0)).xyz);
 		float side = 0.3 + 0.7 * clamp(dot(NORMAL, kv) * 0.5 + 0.5, 0.0, 1.0);
-		e += crowd_rim.rgb * crowd_rim.a * crowd_edge(rim) * side * (1.0 - busy);
+		vec3 cr_c = mix(crowd_rim.rgb, cel_edge_hue.rgb * dot(crowd_rim.rgb, vec3(0.2126, 0.7152, 0.0722)), cel_edge_hue.a * cel_on);
+		e += cr_c * crowd_rim.a * crowd_edge(rim) * side * (1.0 - busy);
 	}
 	// Her lamp and the sky's fill on the crowd by night (crowd_ember, crowd_fill, crowd_lamp, crowd_night, crowd_top above).
 	// Her lamp: from over her, barely wrapped, so a body in her pool has a warm side toward her and a dark side away,

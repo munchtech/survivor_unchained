@@ -13,11 +13,19 @@ public sealed record CelPreset(float[] Band, float[] Mid, float Form, float[] Sp
 /// <summary>One cel class of data/look/materials.json. Mid = paint.albedo.mid ("#rrggbb", the board's light divided out:
 /// what a surface's albedo is), LitMid = paint.lit.mid (as painted on the board, lit); either null if not measured.
 /// (L1 W2) Alb: the class's albedo control (materials.json "albedo_ctl": target, pull, cap, chroma; cel.gdshaderinc cel_alb):
-/// the albedo's Oklab L pulled toward target by pull, capped at cap, its chroma scaled by chroma; null: as painted.</summary>
-public sealed record LookClass(string Name, string From, CelPreset Cel, float[]? Sheen, float[]? Edge, string? Mid, string? LitMid = null, float[]? Alb = null)
+/// the albedo's Oklab L pulled toward target by pull, capped at cap, its chroma scaled by chroma; null: as painted.
+/// (L1 l9 PACK2) AlbHue: albedo_ctl "hue" [h (deg), C, pull]: the albedo's Oklab a, b pulled toward C at h by pull
+/// (cel_alb_hue); null: its own hue.</summary>
+public sealed record LookClass(string Name, string From, CelPreset Cel, float[]? Sheen, float[]? Edge, string? Mid, string? LitMid = null, float[]? Alb = null,
+    float[]? AlbHue = null, string? EdgeColor = null)
 {
     /// <summary>cel_alb's four numbers (as painted: 0, 0, 1, 1).</summary>
     public float[] AlbUniform => Alb ?? [0f, 0f, 1f, 1f];
+
+    /// <summary>cel_alb_hue's numbers: the target's Oklab a, b and the pull (its own hue: 0, 0, 0).</summary>
+    public float[] AlbHueUniform => AlbHue is { } h
+        ? [h[1] * MathF.Cos(h[0] * MathF.PI / 180f), h[1] * MathF.Sin(h[0] * MathF.PI / 180f), h[2]]
+        : [0f, 0f, 0f];
 }
 
 /// <summary>One assign rule: every given pattern must match.</summary>
@@ -56,15 +64,21 @@ public sealed class MaterialLibrary
                 float[]? edge = c.TryGetProperty("edge", out var ed) ? Floats(ed, -1, p.Name + ".edge") : null;
                 string? MidOf(string key) => c.TryGetProperty("paint", out var paint) && paint.TryGetProperty(key, out var ms)
                     && ms.TryGetProperty("mid", out var mv) && mv.ValueKind == JsonValueKind.String ? mv.GetString() : null;
-                float[]? alb = null;
+                float[]? alb = null, albHue = null;
                 if (c.TryGetProperty("albedo_ctl", out var ac))
                 {
+                    if (ac.TryGetProperty("hue", out var hu))
+                    {
+                        albHue = Floats(hu, 3, p.Name + ".albedo_ctl.hue");
+                        if (albHue[1] < 0 || albHue[2] < 0 || albHue[2] > 1) throw new FormatException($"{p.Name}.albedo_ctl.hue: [h, C 0+, pull 0..1]");
+                    }
                     float G(string k, float d) => ac.TryGetProperty(k, out var v) ? v.GetSingle() : d;
                     alb = [G("target", 0f), G("pull", 0f), G("cap", 1f), G("chroma", 1f)];
                     if (alb[1] < 0 || alb[1] > 1 || alb[2] <= 0 || alb[3] < 0) throw new FormatException($"{p.Name}.albedo_ctl: pull 0..1, cap over 0, chroma 0+");
                 }
                 classes[p.Name] = new LookClass(p.Name, c.TryGetProperty("from", out var f) ? f.GetString() ?? "" : "", preset, sheen, edge,
-                    MidOf("albedo"), MidOf("lit"), alb);
+                    MidOf("albedo"), MidOf("lit"), alb, albHue,
+                    c.TryGetProperty("edge_color", out var ec) && ec.ValueKind == JsonValueKind.String ? ec.GetString() : null);
             }
             var shaders = new Dictionary<string, string>();
             foreach (var p in root.GetProperty("shaders").EnumerateObject()) shaders[p.Name] = p.Value.GetString() ?? "";

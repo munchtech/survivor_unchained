@@ -1657,7 +1657,7 @@
     "band": [0.0, 0.06, 0.2, 0.05],
     "mid": [0.55, 0.55, 0.6, 1.0],
     "form": 0.3,
-    "spec": [9.0, 1.5, 1.0, 0.85],
+    "spec": [9.0, 1.5, 0.0, 0.85],
     "nmap": 0.35,
     "ink": 1,
     "rim_k": 0.0
@@ -1709,12 +1709,14 @@
     }
    },
    "edge": [0.25, 0.04],
+   "edge_color": "#2abbec",
    "albedo_ctl": {
-    "target": 0.3,
+    "target": 0.45,
     "pull": 0.7,
-    "cap": 0.4,
+    "cap": 0.55,
     "chroma": 1.0,
-    "from": "L1 W2 C6: rule 7: the pack mid-dark, never pale silver (it read pale silver in 09 and 12)"
+    "hue": [266, 0.025, 0.85],
+    "from": "L1 W2 C6: rule 7: the pack mid-dark, never pale silver (it read pale silver in 09 and 12); L1 l9 PACK2: the fur's hue pulled cold neutral FROM target 09 (bodies h 260-268: the wolf paint's own h 50 read tan), its glossy band gone (rule 6: spec 0)"
    }
   },
   "folk_skin": {

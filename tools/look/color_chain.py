@@ -643,7 +643,8 @@ def check(name="check_r1"):
 # ---- apply: the classes (materials.json), the ground (ground.json) -----------------------------------------------------
 WORLD = ("setts", "plaster", "plank", "stone", "roof", "grass", "foliage", "rock", "road", "leather", "cloth")
 CTL = {  # (6) the class marks, through albedo_ctl (cel.gdshaderinc cel_alb: L = min(mix(L, target, pull), cap), ab x chroma)
-    "crowd_fur": ({"target": 0.30, "pull": 0.7, "cap": 0.40, "chroma": 1.0}, "rule 7: the pack mid-dark, never pale silver (it read pale silver in 09 and 12)"),
+    "crowd_fur": ({"target": 0.45, "pull": 0.7, "cap": 0.55, "chroma": 1.0, "hue": [266, 0.025, 0.85]},
+                  "rule 7: the pack mid-dark, never pale silver (it read pale silver in 09 and 12); L1 l9 PACK2: the fur's hue pulled cold neutral FROM target 09 (bodies h 260-268: the wolf paint's own h 50 read tan), its glossy band gone (rule 6: spec 0)"),
     "folk_cloth": ({"target": 0.0, "pull": 0.0, "cap": 0.75, "chroma": 1.0}, "the brief: the folk's white cloth capped at L 0.75"),
 }
 # (L7 S1) dropped: their cuts answered the day grade's chroma push (cloth drawn C 0.121 against MB2's 0.075; plaster's albedo

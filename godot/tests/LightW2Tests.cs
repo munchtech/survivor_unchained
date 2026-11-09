@@ -92,5 +92,14 @@ public class LightW2Tests
         Assert.Equal(new[] { 0.3f, 0.7f, 1f, 0.8f }, a.Classes["k"].AlbUniform);
         Assert.Equal(new[] { 0f, 0f, 1f, 1f }, MaterialLibrary.Parse(J("")).Classes["k"].AlbUniform);
         Assert.Throws<InvalidDataException>(() => MaterialLibrary.Parse(J(""", "albedo_ctl": { "pull": 2 }""")));
+        // (L1 l9 PACK2) the hue: [h, C, pull] -> the target's Oklab a, b and the pull; none: its own hue
+        var h = MaterialLibrary.Parse(J(""", "albedo_ctl": { "target": 0.3, "pull": 0.7, "hue": [266, 0.025, 0.8] }""")).Classes["k"].AlbHueUniform;
+        Assert.Equal(-0.00174f, h[0], 4); Assert.Equal(-0.02494f, h[1], 4); Assert.Equal(0.8f, h[2]);
+        Assert.Equal(new[] { 0f, 0f, 0f }, a.Classes["k"].AlbHueUniform);
+        Assert.Throws<InvalidDataException>(() => MaterialLibrary.Parse(J(""", "albedo_ctl": { "hue": [266, 0.025, 1.5] }""")));
+        // the pack's fur: cold neutral FROM target 09 (h 260-268), and no glossy band (rule 6: a clump band or none)
+        var fur = MaterialLibrary.Parse(File.ReadAllText(Path.Combine(Root(), "data", "look", "materials.json"))).Classes["crowd_fur"];
+        Assert.InRange(fur.AlbHue![0], 260f, 268f);
+        Assert.Equal(0f, fur.Cel.Spec[2]);
     }
 }
