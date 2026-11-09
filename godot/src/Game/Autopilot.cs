@@ -119,7 +119,8 @@ public sealed class Autopilot
         }
         resultSeen = false;
         // The Wayfinder's table: a picture of it, then the night's offer taken (--offer N), as a player does.
-        if (g.Overlay == "maps" && GoalsOn) { Table(dt); return; }
+        // (the zone ends at the town: a run begun in the Low Ford never works the table, M5 r2)
+        if (g.Overlay == "maps" && GoalsOn && !(fromLowford && g.Zone?.Id == "waystation")) { Table(dt); return; }
         tableOpen = false;
         if (g.Overlay != null) { g.CloseOverlay(); return; }
         // A choice the story puts to her is read a while (pictures of it), then answered as --knee says
@@ -135,6 +136,7 @@ public sealed class Autopilot
         choiceT = 0;
         var b = g.Battle;
         var z = g.Zone;
+        if (z?.Id == "lowford") fromLowford = true;
         if (GoalsOn) Track(dt, b, z);
         if (b != null && z != null) Hooks(b, z);
         // (--auto toward: walking down the screen, toward the camera, her face
@@ -160,6 +162,7 @@ public sealed class Autopilot
         if (Args.Has("clip") && z is Zones.StoryNight { Beat: Story.Doorway { Raised: false } }) return;
         if (b == null || z == null || !b.Player.Alive || g.InTransit || g.InCinematic || Idle && (spots || !(z is Zones.Prologue { Sprung: false }))) return;
         if (Talk && !z.Combat) { WalkUp(dt, b, z); return; }
+        if (fromLowford && z.Id == "waystation") { TownStop(dt, b); return; }
         if (GoalsOn && GoalWalk(dt, b, z)) return;
         if (z.Id != "lowford") { Field(dt, b); return; }
         Prologue(dt, b, z);
@@ -507,6 +510,7 @@ public sealed class Autopilot
     double watchT, legendWalkT, menuT = -1, litAt = -1;
     bool legendSeen, cardShot, menuDone, fell, wasDown;
     static readonly bool FallOnce = Args.Has("fall-once");
+    static readonly bool JudgeHooks = Args.Has("judge-hooks");  // (the watch-post's menu dwell: only for the judge's capture, never the pacing run)
 
     static string Slug(Enemy e) => new string((e.Named?.Title ?? e.Def.Id).Split(',')[0].Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
 
@@ -545,14 +549,14 @@ public sealed class Autopilot
         }
         if (litAt < 0 && z.Id == "lowford" && Rpg.LampBook.PostLit(g.Journey.World, "lowford.watch")) litAt = t;
         // The post's menu, once, 3 s after the watch-post burns, while she stands by it.
-        if (litAt >= 0 && !menuDone && t - litAt > 3)
+        if (JudgeHooks && litAt >= 0 && !menuDone && t - litAt > 3)
         {
             menuDone = true; menuT = 0;
             g.OpenPost("lowford.watch");
             Frame("post_menu_watch", 0.8);
         }
         // --fall-once: her life to nothing once, after the watch-post burns and its menu is closed; the fall and the rise framed.
-        if (FallOnce && !fell && menuDone && menuT < 0 && b.Player.Alive && t - litAt > 8)
+        if (FallOnce && !fell && (menuDone || !JudgeHooks) && menuT < 0 && b.Player.Alive && t - litAt > 8)
         {
             fell = true;
             Godot.GD.Print($"auto: fall-once t={b.Time:0.0}");
@@ -635,6 +639,37 @@ public sealed class Autopilot
         Godot.GD.Print($"auto: night {n}: taking offer {pick}");
         tableOpen = false;
         g.SetOut(offers[pick]);
+    }
+
+    /// <summary>(M5 r2) The zone ends at the town: a run begun in the Low Ford, once through its gate into the Waystation
+    /// (prologue.done), walks to the square's lamp-post and stands there. No table, no map, no arena loop (the Wayfinder's
+    /// table is the arena's door, not the campaign's hand-off). Runs started elsewhere (--zone waystation --nights N) loop as before.</summary>
+    bool fromLowford, townStood;
+    void TownStop(double dt, Battle b)
+    {
+        var p = b.Player;
+        var post = SurvivorUnchained.Content.LampPosts.Get("waystation.square");
+        if (post == null) return;
+        double dx = post.X - p.X, dz = post.Z - p.Z, d = Math.Sqrt(dx * dx + dz * dz);
+        if (d < 1.8)
+        {
+            if (!townStood) { townStood = true; Godot.GD.Print($"auto: town stop at the square's lamp t={t:0.0} prologue.done={g.Journey.World.Fact("prologue.done").Truthy}"); Frame("town_stop", 1.5); }
+            return;
+        }
+        routeT -= dt;
+        if (route == null || routeT <= 0 || routeFor != (post.X, post.Z))
+        {
+            routeT = 3; routeFor = (post.X, post.Z);
+            route = SurvivorUnchained.Sim.GroundPath.Find(b.Collision, p.X, p.Z, post.X, post.Z);
+        }
+        while (route is { Count: > 1 } && Math.Sqrt((route[0].X - p.X) * (route[0].X - p.X) + (route[0].Z - p.Z) * (route[0].Z - p.Z)) < 0.8) route.RemoveAt(0);
+        double sx = dx / d, sz = dz / d;
+        if (route is { Count: > 0 })
+        {
+            double wx = route[0].X - p.X, wz = route[0].Z - p.Z, wd = Math.Max(0.01, Math.Sqrt(wx * wx + wz * wz));
+            sx = wx / wd; sz = wz / wd;
+        }
+        Steer(dt, sx, sz, p, post.X, post.Z);
     }
 
     /// <summary>Walk to the goal and use it: in the town, the first one standing; in a won arena, the way out
