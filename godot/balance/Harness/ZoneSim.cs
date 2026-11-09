@@ -123,6 +123,8 @@ public static class ZoneSim
         double anchorX = b.Player.X, anchorZ = b.Player.Z, anchorAt = 0, sideUntil = -1; int side = 1;
         var postTried = new Dictionary<string, double>();
         var underfoot = new Dictionary<Pickup, double>(ReferenceEqualityComparer.Instance);
+        // (the gear she walks to out of a fight: Pilot.Steer's nearest within 12 m, how near she has come and since when)
+        Pickup? chase = null; double chaseBest = 0, chaseSince = 0, chaseX = 0, chaseZ = 0;
 
         while (tt < Cap)
         {
@@ -234,6 +236,18 @@ public static class ZoneSim
             foreach (var k in underfoot.Keys.Where(k => !k.Alive || Dist(k.X, k.Z, p.X, p.Z) >= 1.5).ToList()) underfoot.Remove(k);
             foreach (var k in b.Pickups.Living().Where(k => Dist(k.X, k.Z, p.X, p.Z) < 1.5).ToList())
                 if ((underfoot[k] = underfoot.GetValueOrDefault(k) + dt) > 3) { underfoot.Remove(k); b.Pickups.Release(k); r.LeftLying++; }
+            // (gear she walks to and comes no nearer for 10 s, out of a fight: the bots' feet slide along a wall and do not route
+            // round it, so a drop that scattered past a rock's edge held her in its corner for good: left lying, LeftLying counts it)
+            if (!fight && p.Alive && !held)
+            {
+                var near = b.Pickups.Items.Where(k => k.Alive && k.Kind is PickupKind.Item or PickupKind.Material or PickupKind.Gold or PickupKind.Chest)
+                    .MinBy(k => Dist(k.X, k.Z, p.X, p.Z));
+                double nd = near == null ? 99 : Dist(near.X, near.Z, p.X, p.Z);
+                if (near == null || nd >= 12) chase = null;
+                else if (!ReferenceEquals(near, chase) || Dist(near.X, near.Z, chaseX, chaseZ) > 1) { chase = near; chaseBest = nd; chaseSince = tt; chaseX = near.X; chaseZ = near.Z; }
+                else if (nd < chaseBest - 0.3) { chaseBest = nd; chaseSince = tt; }
+                else if (tt - chaseSince > 10) { b.Pickups.Release(near); r.LeftLying++; chase = null; }
+            }
             zone.Step(dt);
             b.Tick(dt, mx, mz);
             b.Events.Drain();
