@@ -174,7 +174,7 @@ public partial class Socket
         var cc = Size / 2 + DgPanel.ChipOff;
         float dx = Math.Max(Math.Max(box.Position.X - cc.X, 0), cc.X - box.End.X), dy = Math.Max(Math.Max(box.Position.Y - cc.Y, 0), cc.Y - box.End.Y);
         CapGap = Mathf.Sqrt(dx * dx + dy * dy) - DgPanel.ChipR;
-        bool low = CapGap < 1;
+        bool low = true; // M4 lead 3: the cap owns 12 o'clock, the rank sits at 4:30, so a key "1" and a rank "1" never stand side by side
         if (low != RankLow) { RankLow = low; dirty = true; }
     }
 

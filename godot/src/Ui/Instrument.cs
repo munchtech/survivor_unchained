@@ -487,7 +487,10 @@ public partial class Socket : Control
             waiting = false; prevWait = -1; cue = -1; cool = ready < 0.98 ? 1 : 0; glow = ready < 0.98 ? 0 : 0.42; waitT = 0;
         }
         // The skill's own painting where there is one (the draft's card shows the same), else its drawn glyph.
-        var newArt = UiArt.Icon("glyph_color", Glyphs.IconKey(glyph)) ?? Glyphs.Texture(glyph, 78, school, line: true);
+        // (M4 lead 3: looked up when the glyph or school changes, not each frame: the path string and the key cost 6 seats x 80 B a frame)
+        var newArt = art;
+        if (art == null || glyph != glyphKey || school != this.school)
+            newArt = UiArt.Icon("glyph_color", Glyphs.IconKey(glyph)) ?? Glyphs.Texture(glyph, 78, school, line: true);
         if (glyph != glyphKey) { glyphKey = glyph; dirty = true; }
         // (redrawn only when what it shows changes: MR4, the HUD's redraws were 3.4 ms a frame)
         if (newArt != art || school != this.school || rank != this.rank || Math.Max(1, max) != this.max || evolved != this.evolved || canEvolve != ripe || ready != this.ready) dirty = true;
