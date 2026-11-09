@@ -60,6 +60,10 @@ public class P1GripTests
         double aa = Math.Acos(Vector3.Dot(WeaponSockets.BladeDirR, Vector3.Normalize(WeaponSockets.KnuckleLineRA))) * 180 / Math.PI;
         double bb = Math.Acos(Vector3.Dot(Vector3.Normalize(pocket.Dir), Vector3.Normalize(WeaponSockets.KnuckleLineRB))) * 180 / Math.PI;
         Assert.InRange(bb - aa, -3, 3);
+        // and the grip point: A's carried by the same turn about the knuckles' midpoint (index_01 and pinky_01 heads), within 2 mm
+        var ma0 = (InA("index_01_r") + InA("pinky_01_r")) / 2; var mb0 = (InB("index_01_r") + InB("pinky_01_r")) / 2;
+        var atWant = Vector3.TransformNormal(Vector3.TransformNormal(WeaponSockets.BladeAtR - ma0, Matrix4x4.Transpose(fai)), Matrix4x4.Transpose(fb)) + mb0;
+        Assert.True(Vector3.Distance(pocket.At, atWant) <= 0.002f, $"B's grip point {Vector3.Distance(pocket.At, atWant) * 1000:F1} mm off A's carried");
         Assert.Equal(WeaponSockets.BladeDirR, WeaponSockets.Pocket(WeaponKind.Blade1H, "hand_r", isB: false)!.Value.Dir);
         Assert.Equal(WeaponSockets.DaggerDirR, WeaponSockets.Pocket(WeaponKind.Dagger, "hand_r", isB: true)!.Value.Dir);
     }

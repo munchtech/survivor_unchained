@@ -215,16 +215,18 @@ public static class WeaponSockets
 
     /// <summary>B's (P1) right fist, by the grip standard: the piece's axis through the fist's grip line, the guard at the
     /// index side. B's hand_r frame is not A's: its knuckle frame (the index_01 -> pinky_01 line and the knuckles' reach,
-    /// tools/body/rig/b_skeleton.json at rest) sits 13.7 deg off A's (a_skeleton.json), so A's fitted blade pocket
+    /// tools/body/rig/b_skeleton.json at rest) sits 3.7 deg off A's (a_skeleton.json; 13.7 before P1's pick put A's hand joints
+    /// on B, 9 Nov), so A's fitted blade pocket
     /// (BladeAtR / BladeDirR, 20.9 deg off A's knuckle line) is carried onto B's knuckle frame by that turn: the same
-    /// diagonal grip on B's fist. (Measured A1 round 3; the upright blade in the run and the fight idle was mostly the
+    /// diagonal grip on B's fist, the grip point carried about the knuckles' midpoint (index_01 and pinky_01 heads).
+    /// (Measured A1 round 3, re-derived on the picked B by the A1 rebase; the upright blade in the run and the fight idle was mostly the
     /// clips' hand roll, keyed now in the clips: Marionette motion/fit.py `blade`.)</summary>
-    public static readonly Vector3 BladeAtRB = new(-0.0416f, 0.0810f, -0.0080f);
-    public static readonly Vector3 BladeDirRB = new(0.206402f, 0.624985f, 0.752856f);
+    public static readonly Vector3 BladeAtRB = new(-0.0417f, 0.0855f, -0.0226f);
+    public static readonly Vector3 BladeDirRB = new(-0.002234f, 0.624763f, 0.780811f);
 
     /// <summary>B's knuckle line in its hand_r space (pinky_01 toward index_01: the guard side), what BladeDirRB is laid
     /// against (the tests pin the angle to A's 20.9 deg).</summary>
-    public static readonly Vector3 KnuckleLineRB = new(0.1056f, 0.3302f, 0.9380f);
+    public static readonly Vector3 KnuckleLineRB = new(-0.1254f, 0.3225f, 0.9382f);
     /// <summary>A's knuckle line in its hand_r space (a_skeleton.json), the same measure.</summary>
     public static readonly Vector3 KnuckleLineRA = new(-0.1209f, 0.2613f, 0.9577f);
 

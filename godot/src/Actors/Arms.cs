@@ -236,22 +236,13 @@ public static class Arms
         person.Skeleton.AddChild(att);
         var mount = new Node3D { Name = GripSlide.MountPrefix + bone };
         att.AddChild(mount);
-        mount.Transform = InAFrame(person.Skeleton, bone) * MountTransform(id, bone, person.Own != null);
-        if (P1Body.IsB(person.Skeleton)) P1Laws.Follow(person.Skeleton, mount, bone, MountTransform(id, bone, person.Own != null));
+        // (on P1's B too: B's own bone frame, the plain attachment; B's pockets in Seat. A1 rebase on B: no A frame, no
+        // follow of A's hinge rule; B's holds are clip data)
+        mount.Transform = MountTransform(id, bone, person.Own != null);
         var w = Make(id);
         w.Transform = Seat(w, id, bone, person.Own != null, P1Body.IsB(person.Skeleton));
         mount.AddChild(w);
         return mount;
-    }
-
-    /// <summary>A held mount's frame: on A (and anyone but P1's B) the bone's own; on B the A bone's frame in the B bone's space
-    /// (P1Retarget.AFrame, a turn about the joint; B's hand and forearm joints ride A's path), so the mount, keyed in A's hand
-    /// and forearm frames, rides as on A. In B's own frame (its hands 6.7 degrees about their x off A's, the forearms 1-4
-    /// about their length) the sword's tip sat 113 mm and the shield's rim 30 mm off A's (P1 R1 round 31, gate judge 2's fault 2).</summary>
-    public static Transform3D InAFrame(Skeleton3D sk, string bone)
-    {
-        if (!P1Body.IsB(sk) || P1Body.RoleMap(sk).AFrame(P1Body.Bone(sk, bone)) is not { } r) return Transform3D.Identity;
-        return P1Body.T(P1M4.From(r, new P1V(0, 0, 0)));
     }
 
     /// <summary>A held piece's place inside its mount (Hold's and ArmsDump's): PieceTransform, and in her right hand, for a
