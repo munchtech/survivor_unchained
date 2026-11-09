@@ -71,20 +71,26 @@ def _cs_vec(name):
 
 
 def pieces():
-    """B's held pieces in their bones' spaces, as the game seats them on B: the sword's points (ArmsDump's, A's hand
-    space, seated on A's fist pocket) moved onto B's own pocket (WeaponSockets.BladeAtRB / BladeDirRB, the least turn,
-    as FistSeat lays it), the shield's as they are (lowerarm_l, the same bone-local mount). And the pockets the fit aims
-    by: the blade's axis and grip, the shield's boss (its points' centroid) and face (its thin axis, out of the arm)."""
+    """B's held pieces in their bones' spaces, as the game seats them on B: the sword's and the shield's points are
+    tools/anim/data/arms_local_b.json's (ArmsDump with Arms.Seat isB: the game's own seat on B's fist pocket, WeaponSockets
+    BladeAtRB / BladeDirRB). Only when that file is missing: the old model, A's dump (arms_local.json) with the sword moved
+    onto B's pocket by the least turn. And the pockets the fit aims by: the blade's axis and grip, the shield's boss (its
+    points' centroid) and face (its thin axis, out of the arm)."""
     if "_pc" in globals():
         return _pc
     from motion import quat as Q
-    arms = json.loads((REPO / "tools/anim/data/arms_local.json").read_text())
-    atA, dirA = np.array(_cs_vec("BladeAtR")), np.array(_cs_vec("BladeDirR"))
     atB, dirB = np.array(_cs_vec("BladeAtRB")), np.array(_cs_vec("BladeDirRB"))
-    dirA, dirB = dirA / np.linalg.norm(dirA), dirB / np.linalg.norm(dirB)
-    R = Q.arc(dirA, dirB)
-    sw = np.array(arms["chevalier_sword@hand_r"]["v"], float)
-    sw = atB + (sw - atA) @ R.T
+    dirB = dirB / np.linalg.norm(dirB)
+    fb = REPO / "tools/anim/data/arms_local_b.json"
+    if fb.exists():
+        arms = json.loads(fb.read_text())
+        sw = np.array(arms["chevalier_sword@hand_r"]["v"], float)
+    else:
+        arms = json.loads((REPO / "tools/anim/data/arms_local.json").read_text())
+        atA, dirA = np.array(_cs_vec("BladeAtR")), np.array(_cs_vec("BladeDirR"))
+        dirA = dirA / np.linalg.norm(dirA)
+        sw = np.array(arms["chevalier_sword@hand_r"]["v"], float)
+        sw = atB + (sw - atA) @ Q.arc(dirA, dirB).T
     tip = float(np.max((sw - atB) @ dirB))
     sh = np.array(arms["shield_round@lowerarm_l"]["v"], float)
     c = sh.mean(0)

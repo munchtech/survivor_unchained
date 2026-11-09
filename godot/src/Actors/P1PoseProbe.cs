@@ -121,6 +121,55 @@ public partial class P1PoseProbe : Node
         return s;
     }
 
+    static readonly System.Collections.Generic.Dictionary<Node3D, (int N, int Step)> counts = new();
+    static readonly System.Collections.Generic.Dictionary<(MeshInstance3D, int), Vector3[]> verts = new();
+
+    static void Count(Node n, ref int total)
+    {
+        foreach (var c in n.GetChildren())
+        {
+            if (c is MeshInstance3D mi && mi.Mesh != null)
+                for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
+                {
+                    if (!verts.TryGetValue((mi, s), out var vs)) verts[(mi, s)] = vs = mi.Mesh.SurfaceGetArrays(s)[(int)Mesh.ArrayType.Vertex].AsVector3Array();
+                    total += vs.Length;
+                }
+            Count(c, ref total);
+        }
+    }
+
+    static void Sample(Node n, Transform3D at, Transform3D to, int step, ref int idx, StringBuilder sb)
+    {
+        foreach (var c in n.GetChildren())
+        {
+            var m = c is Node3D c3 ? at * c3.Transform : at;
+            if (c is MeshInstance3D mi && mi.Mesh != null)
+                for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
+                {
+                    var vs = verts[(mi, s)];
+                    for (int i = 0; i < vs.Length; i++, idx++)
+                        if (idx % step == 0) sb.Append($"{(sb.Length > 0 ? "," : "")}{V(to * (m * vs[i]))}");
+                }
+            Sample(c, m, to, step, ref idx, sb);
+        }
+    }
+
+    /// <summary>The piece's vertex count and 64-ish sample points (vertex indices range(0, n, max(1, n/64)), in ArmsDump.Collect's
+    /// order: children recursively, each mesh's surfaces in order) in skeleton space; `t` is bone pose * mount * piece.</summary>
+    static (int, string) Pts(Node3D piece, Transform3D t)
+    {
+        if (!counts.TryGetValue(piece, out var c))
+        {
+            int total = 0;
+            Count(piece, ref total);
+            counts[piece] = c = (total, System.Math.Max(1, total / 64));
+        }
+        var sb = new StringBuilder();
+        int idx = 0;
+        Sample(piece, Transform3D.Identity, t, c.Step, ref idx, sb);
+        return (c.N, sb.ToString());
+    }
+
     static System.Collections.Generic.IEnumerable<Node> Walk(Node n)
     {
         yield return n;
@@ -168,7 +217,8 @@ public partial class P1PoseProbe : Node
                 foreach (var piece in mount.GetChildren().OfType<Node3D>())
                 {
                     var t = sk.GetBoneGlobalPose(b) * mount.Transform * piece.Transform;
-                    sb.Append($"{(fp ? "" : ",")}\"{mount.Name}/{piece.Name}\":{{\"x\":{X(t)},\"box\":{Box(piece)}}}");
+                    var (pn, pp) = Pts(piece, t);
+                    sb.Append($"{(fp ? "" : ",")}\"{mount.Name}/{piece.Name}\":{{\"x\":{X(t)},\"box\":{Box(piece)},\"n\":{pn},\"pts\":[{pp}]}}");
                     fp = false;
                 }
         }
