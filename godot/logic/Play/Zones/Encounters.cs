@@ -163,6 +163,12 @@ public sealed class Encounters
     {
         S = s; b = battle; state = zoneState; level = herLevel; this.day = day; Phase = phase; Features = features ?? [];
         // (a post's beat stands where lamp_posts.json says: LampPosts moves it with the zone's features)
+        SyncPosts(s);
+    }
+
+    /// <summary>A post's beat stands where its lamp-post does (LampPosts.Resolve has moved the post with the zone's features).</summary>
+    public static void SyncPosts(Spec s)
+    {
         foreach (var bt in s.Beats)
             if (bt.Kind == "post" && bt.Post != null && Content.LampPosts.Get(bt.Post) is { } lp) { bt.X = lp.X; bt.Z = lp.Z; bt.Light = lp.Light; }
     }

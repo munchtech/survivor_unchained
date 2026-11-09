@@ -129,6 +129,7 @@ public sealed partial class Prologue : ZoneRuntime
     public Prologue(IZoneHost host, ZoneMeta meta) : base(host, meta)
     {
         SurvivorUnchained.Content.LampPosts.Resolve(meta.Id, meta.Features);
+        if (Encounters.For(meta.Id) is { } es) Encounters.SyncPosts(es);
         foreach (var p in meta.Refs.GetProperty("pylons").EnumerateArray())
             pylons.Add((p.GetProperty("x").GetDouble(), p.GetProperty("z").GetDouble(), p.GetProperty("light").GetInt32(), p.GetProperty("flame").GetString()!));
         litPylons = pylons.Select(_ => true).ToArray();
