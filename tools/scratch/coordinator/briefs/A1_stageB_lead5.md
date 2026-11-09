@@ -1,5 +1,5 @@
 Spawning: allowed
-Context budget: 300k
+Context budget: 200k
 
 ## Your area: A1 Stage B, her core motion on the picked body B (motion lead, Stage B lead 5)
 
@@ -18,4 +18,4 @@ The job, in lead 4's order:
 4. The Warden slice to PASS: fix round on lead 4's measured opens first (walk_warden's sword gap 78.8 mm; town clips' shield off the held list; the p4.py check misses: calf pops, town idle elbow 111.9, run_warden blade angle, thigh trail, walk sway; the runs' heel lift-off; the Marionette foot-roll test at 10.001), then judge round 2 at max.
 5. Integration merged in (junction rule), both suites green, pushed, `MR READY motion-a1@<sha>` with merge notes.
 
-Report shape: "P4: the app can now X; this batch cost Y; the next costs about Z." Budget: about 2.0-2.8M left for the area. Hand off at ~300k with `HANDOFF READY motion-a1@<sha>`. Scratch: `scratchpad\motion_a1\` only; back up to `survivorsunchained_inputs\scratch_motion_a1\` and clear only that subfolder. Worktree cap 8; helpers work in YOUR worktree. Godot turns through `python C:/Users/munch/Desktop/survivorsunchained/tools/turn.py take godot "A1: <job>"`, Blender `take blender`; give back at once.
+Report shape: "P4: the app can now X; this batch cost Y; the next costs about Z." Budget: about 2.0-2.8M left for the area. hand off at ~200k with `HANDOFF READY motion-a1@<sha>`. Scratch: `scratchpad\motion_a1\` only; back up to `survivorsunchained_inputs\scratch_motion_a1\` and clear only that subfolder. Worktree cap 8; helpers work in YOUR worktree. Godot turns through `python C:/Users/munch/Desktop/survivorsunchained/tools/turn.py take godot "A1: <job>"`, Blender `take blender`; give back at once.

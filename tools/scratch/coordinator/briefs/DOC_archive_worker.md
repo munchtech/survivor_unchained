@@ -9,4 +9,4 @@ Main checkout, integration branch, no code changes, nothing edited, only moved.
 3. Do not touch lead_brief.md, RESUME.md, PIPELINE.md, docs/design.
 4. Two commits (OWNER_NOTES; handoffs), Co-Authored-By line, push. Report files, blocks moved, shas, before/after line counts.
 
-Then (the coordinator, Fable, ~20k, not the worker): condense `docs/handoff/lead_brief.md` to a <=2,500-token "Rules" top (junction rule, delete rule, kill by PID, usage rules, report shape, half-size pictures, handoff at 300k) with the rest under "## Appendix (read only when a brief points at a line)". And per area, the handoff's top block IS the start pack: one file a successor reads, nothing else.
+Then (the coordinator, Fable, ~20k, not the worker): condense `docs/handoff/lead_brief.md` to a <=2,500-token "Rules" top (junction rule, delete rule, kill by PID, usage rules, report shape, half-size pictures, handoff at 200k) with the rest under "## Appendix (read only when a brief points at a line)". And per area, the handoff's top block IS the start pack: one file a successor reads, nothing else.

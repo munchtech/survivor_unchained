@@ -1,5 +1,5 @@
 Spawning: allowed
-Context budget: 300k
+Context budget: 200k
 
 ## Your area: M4 UI for the ARPG, lead 2 (9 Nov, coordinator ad002ada): BUILD the design in `docs/design/M4_HUD.md`
 
@@ -9,4 +9,4 @@ Lead 1 handed off at HANDOFF READY ui-m4@879c80d84 with the whole M4 design writ
 
 **Judge:** `su-lead-max` in the foreground on the frames M4_HUD.md names (day and night, the warden pressing in the campaign: two pressed, three kindled, a Union), the whole-frame question first ("would this HUD ship in a AAA ARPG; does it have soul; can a player read what she presses in one glance?"); two rounds, then knowns with owners; a PASS before anything reaches the owner (main shows the Resolve picture). Suite green. Then merge integration (combat-m3 must be in first: tell main the combat-m3 sha you carry) and **MR READY ui-m4@<sha>** in the handoff top and to main.
 
-Shared files: Controls.cs and GameHud.cs are M4's (M3 told); Game.cs needs a named hook through main first. Report to main (SendMessage "main"): a short oriented line (phase states, estimate) within your first few turns, then at each judge, at MR READY, at a HANDOFF, at a block. Report shape: "M4: the app can now X; this cost Y." Budget: ~1.0M left of 1.3M. Hand off at ~300k with `HANDOFF READY ui-m4@<sha>`. Scratch: `scratchpad\ui_m4\` only; back up to `survivorsunchained_inputs\scratch_ui_m4\` and clear only that subfolder. Godot turns: `python C:/Users/munch/Desktop/survivorsunchained/tools/turn.py take godot "M4: <job>"`; give back at once.
+Shared files: Controls.cs and GameHud.cs are M4's (M3 told); Game.cs needs a named hook through main first. Report to main (SendMessage "main"): a short oriented line (phase states, estimate) within your first few turns, then at each judge, at MR READY, at a HANDOFF, at a block. Report shape: "M4: the app can now X; this cost Y." Budget: ~1.0M left of 1.3M. hand off at ~200k with `HANDOFF READY ui-m4@<sha>`. Scratch: `scratchpad\ui_m4\` only; back up to `survivorsunchained_inputs\scratch_ui_m4\` and clear only that subfolder. Godot turns: `python C:/Users/munch/Desktop/survivorsunchained/tools/turn.py take godot "M4: <job>"`; give back at once.
