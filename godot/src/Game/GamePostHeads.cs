@@ -70,7 +70,7 @@ public partial class Game
             var bc = gc.SrgbToLinear() * (Mathf.Lerp(0.4f, night ? 0.6f : 0.35f, a) * breath * (1 + 1.2f * f));
             h.Bloom.AlbedoColor = new Color(bc.R, bc.G, bc.B, 1);
             // (the pool: a soft round of its light on the ground, lit only; a landmark's even by day)
-            float pe = a * (night ? 0.3f : h.Landmark ? 0.16f : 0.06f) * breath * (1 + 1.2f * f);
+            float pe = a * (night ? 0.3f : h.Landmark ? 0.24f : 0.06f) * breath * (1 + 1.2f * f);
             h.Pool.Visible = pe > 0.002f;
             h.Pool.EmissionEnergy = pe;
             // (the pool a warmer gold than the flame: lit.color alone laid a white spot on sunlit ground)
