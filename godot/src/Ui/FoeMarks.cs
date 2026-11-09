@@ -19,9 +19,9 @@ public partial class FoeMarks : Control
     float ringR;
     float time;
     readonly Vector2[] ringPts = new Vector2[33];
-    // A board's lamp (H1 item 6B, Battle.HeldLamp): its life bar over it when below full, and its pool's edge on the
-    // ground while she stands outside it. Functional; its look is H2's.
-    bool lampBar, lampRing, lampOut;
+    // A board's lamp (H1 item 6B, Battle.HeldLamp): its life bar over it when below full. (Its pool's edge left the HUD
+    // for L1's ground decal, M4.) Functional; its look is H2's.
+    bool lampBar, lampOut;
     Vector2 lampAt;
     // The lamp's snuffers (Enemy.Goal): a small cold-blue diamond over each, the foes to turn on to save it.
     Vector2[] snuffs = new Vector2[32];
@@ -29,7 +29,6 @@ public partial class FoeMarks : Control
     readonly Vector2[] dia = new Vector2[4], diaEdge = new Vector2[5];
     static readonly Color Snuff = new("#8fd0ff");
     float lampK;
-    readonly Vector2[] poolPts = new Vector2[49];
     static readonly Color LampFill = new("#ffd07a");
     static readonly Color Ink = new(0.043f, 0.035f, 0.024f, 0.78f), Danger = new("#b8302f"), Bronze = new("#8a6a3a"), BronzeHi = new("#c9a35c"), Bone = new("#e6dcc8");
 
@@ -100,7 +99,7 @@ public partial class FoeMarks : Control
 
     void Lamp(Battle b, Camera3D cam, Rect2 vp)
     {
-        lampBar = lampRing = lampOut = false;
+        lampBar = lampOut = false;
         if (b.HeldLamp is not { Caught: true } l) return;
         float y = (float)b.HeightAt(l.X, l.Z);
         var top = new Vector3((float)l.X, y + (float)l.Top + 0.4f, (float)l.Z);
@@ -112,21 +111,10 @@ public partial class FoeMarks : Control
             lampAt.Y = Math.Max(lampAt.Y, 60 * vp.Size.Y / 1080f);
             lampK = l.Lit ? (float)Math.Clamp(l.Life, 0, 1) : 0;
         }
-        var p = b.Player;
-        if (!l.Lit || (p.X - l.X) * (p.X - l.X) + (p.Z - l.Z) * (p.Z - l.Z) < l.Pool * l.Pool) return;
-        for (int i = 0; i < poolPts.Length; i++)
-        {
-            double t = i / (double)(poolPts.Length - 1) * Math.Tau;
-            double x = l.X + Math.Cos(t) * l.Pool, z = l.Z + Math.Sin(t) * l.Pool;
-            var w = new Vector3((float)x, (float)b.HeightAt(x, z) + 0.05f, (float)z);
-            if (cam.IsPositionBehind(w)) return;
-            poolPts[i] = cam.UnprojectPosition(w);
-        }
-        lampRing = true;
     }
 
     /// <summary>Nothing this frame.</summary>
-    public void Show0() { if (count == 0 && snuffCount == 0 && !ring && !lampBar && !lampRing) return; count = snuffCount = 0; ring = lampBar = lampRing = false; QueueRedraw(); }
+    public void Show0() { if (count == 0 && snuffCount == 0 && !ring && !lampBar) return; count = snuffCount = 0; ring = lampBar = false; QueueRedraw(); }
 
     /// <summary>A champion's bar over its head: the lamp bar's bronze-framed ink well at a champion's size, its life
     /// in danger red lit along the top, quarter notches, a dark shadow so it holds on any ground or crowd.</summary>
@@ -213,16 +201,6 @@ public partial class FoeMarks : Control
             DrawRect(r, new Color(Ink, Ink.A * a));
             var inner = r.Grow(-1 * s);
             DrawRect(new Rect2(inner.Position, new Vector2(inner.Size.X * b.K, inner.Size.Y)), new Color(Danger, a));
-        }
-        if (lampRing)
-        {
-            // A dashed warm-white line (the place to hold), never the unbroken amber ring of a blow to leave.
-            var warm = new Color("#fff1d6");
-            for (int i = 0; i + 1 < poolPts.Length; i += 2)
-            {
-                DrawLine(poolPts[i], poolPts[i + 1], new Color(Ink, 0.4f), 4.5f * s);
-                DrawLine(poolPts[i], poolPts[i + 1], new Color(warm, 0.75f), 2.2f * s);
-            }
         }
         if (lampBar)
         {

@@ -120,7 +120,7 @@ public static class DevSlots
         if (!string.IsNullOrWhiteSpace(union))
         {
             var u = b.GrantUnion(union.Trim());
-            said.Add(u != null ? $"slots: union {union} on slots {u.Slot + 1} and {u.Slot2 + 1}" : $"slots: union {union} not made");
+            said.Add(u != null ? $"slots: union {union} granted on slots {u.Slot + 1} and {u.Slot2 + 1}" : $"slots: union {union} not made");
         }
         return said;
     }
