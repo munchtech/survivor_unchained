@@ -25,7 +25,9 @@ import numpy as np
 from scipy.spatial import cKDTree
 
 FIELD = {
-    "near_m": 0.001,        # within: the exact bound evaluation (round 2: the band narrowed from 4 mm; see HOLD)
+    "near_m": -1.0,         # within: the exact bound evaluation; negative = none (round 2: every vertex on the field,
+                            # the tight set held by HOLD; a 1 mm band measured worse on the weight body: 2 rows flagged
+                            # against 1, its jumps across creases)
     "blend_m": 0.002,       # over this band: exact -> field
     "r_min_edges": 2.5,     # the kernel's smallest radius, in body edge lengths (close ~19 mm, play ~37 mm)
     "r_gain": 1.2,          # radius growth per metre of stand-off
@@ -38,12 +40,26 @@ FIELD = {
     "push_m": (0.004, 0.02),  # a clearance push's smallest radius: min, max of its clearance share (0.5 c + min)
     "push_slope": 15.0,       # a push's radius is at least this times its depth (the lean: ~1.6 / 15 = 11% at most)
     "push_max_m": 0.06,
+    "push_cos": 0.5,          # a smoothed push direction counts at least this much toward the skin's normal
+    "push_keep": 0.6,         # a stand-off vertex (past HOLD in_m) is pushed only when nearer than this share of its
+                              # bind clearance (never below in_m): a part may settle toward a fuller body (a strap in a
+                              # narrowing cleft), never into it
 }
+
+
+def push_req(c0):
+    """The clearance the one-sided push keeps: the bind clearance up to HOLD in_m (and inside: no deeper), beyond it
+    push_keep of it, never under in_m."""
+    return np.where(c0 > HOLD["in_m"], np.maximum(HOLD["in_m"], FIELD["push_keep"] * c0), c0)
 
 
 # the tight set holds its bind clearance (two-sided, along the new skin's normal): full within in_m, fading to none over
 # fade_m beyond it (the exact binding is not used for that: it jumps where the binding changes body part at a crease)
-HOLD = {"in_m": 0.004, "fade_m": 0.004, "rounds": 2}
+HOLD = {"in_m": 0.004, "fade_m": 0.004, "rounds": 2,
+        "dir_m": 0.008,   # the hold's direction: the new skin's normals averaged over the piece's held vertices this near
+        "cos": 0.5,
+        "coh": (0.6, 0.9),
+        "smooth": 1.0}  # the neighbours' mean skin normal's length: no hold under the first, full over the second
 # a rigid component's made-to-measure fit: rotation + translation + a scale per principal axis of its own (no shear)
 RIGID = {"scale": (0.85, 1.25), "iters": 30, "reg": 0.02,
          "clear_m": 0.0003,   # a point clear on the bind body ends at least min(its bind clearance, this) out
@@ -75,7 +91,10 @@ def vertex_areas(V, T):
 
 
 def beta(c):
-    """The field's share at bind clearance c (m): 0 within NEAR_M, 1 beyond NEAR_M + BLEND_M."""
+    """The field's share at bind clearance c (m): 0 within NEAR_M, 1 beyond NEAR_M + BLEND_M (1 everywhere when
+    NEAR_M is negative)."""
+    if FIELD["near_m"] < 0:
+        return np.ones(np.shape(c))
     return smoothstep((np.abs(c) - FIELD["near_m"]) / FIELD["blend_m"])
 
 
@@ -221,8 +240,11 @@ class Field:
         return self.vals[np.searchsorted(self.keys, keys)]
 
     def __call__(self, X):
-        """(x' [n,3], F [n,3,3]) at bind-side points X: each lattice corner's map carried to X by its own gradient
-        (x'_c + F_c (X - y_c)), blended trilinearly (exact for an affine move)."""
+        """(x' [n,3], J [n,3,3]) at bind-side points X: each lattice corner's map carried to X by its own gradient
+        (x'_c + F_c (X - y_c)), blended trilinearly (exact for an affine move). J is the map's own Jacobian there (the
+        blended gradients plus the trilinear weights' gradients times the corner maps: where the body's move is not
+        affine within the kernel, e.g. two walls of a cleft closing in, the second term is what the field does), so the
+        normals (J^-T) and the expected stretch see the deformation the field really applies."""
         X = np.asarray(X, np.float64)
         if self.zero or not len(X):
             return X.copy(), np.tile(np.eye(3), (len(X), 1, 1))
@@ -230,17 +252,21 @@ class Field:
         I0 = np.floor(s).astype(np.int64)
         f = s - I0
         Xn = np.zeros_like(X)
-        F = np.zeros((len(X), 9))
+        J = np.zeros((len(X), 3, 3))
         for cx in (0, 1):
             for cy in (0, 1):
                 for cz in (0, 1):
                     o = np.array([cx, cy, cz])
                     val = self._nodes(self._key(I0 + o))
-                    w = np.where(o == 1, f, 1 - f).prod(1)
+                    fw = np.where(o == 1, f, 1 - f)
+                    w = fw.prod(1)
+                    # d w / d X: one factor differentiated (+-1/g), the other two kept
+                    dw = np.stack([np.where(o[k] == 1, 1.0, -1.0) / self.g * np.delete(fw, k, 1).prod(1) for k in range(3)], 1)
                     Fc = val[:, 3:].reshape(-1, 3, 3)
-                    Xn += w[:, None] * (val[:, :3] + np.einsum("nij,nj->ni", Fc, X - (I0 + o) * self.g))
-                    F += w[:, None] * val[:, 3:]
-        return Xn, F.reshape(-1, 3, 3)
+                    xc = val[:, :3] + np.einsum("nij,nj->ni", Fc, X - (I0 + o) * self.g)
+                    Xn += w[:, None] * xc
+                    J += w[:, None, None] * Fc + xc[:, :, None] * dw[:, None, :]
+        return Xn, J
 
 
 _CACHE = {}
@@ -316,9 +342,12 @@ def clear_push(body, X, c_req, sel, rounds=4, tol=2e-4):
         n = len(sel)
         p = np.zeros(n)
         np.maximum.at(p, i, h)
-        w = h ** 4
-        d = U(np.stack([np.bincount(i, w * bn[k, a], n) for a in range(3)], 1))
-        mv = p[:, None] * d
+        # the push direction: the bumps' skin normals averaged by their kernels (not the deepest one's alone: across a
+        # crease or a cleft the closest skin flips side between neighbours, and so would a per-vertex normal), the
+        # depth divided by its cosine to the vertex's own skin normal so the clearance is met
+        d = U(np.stack([np.bincount(i, h * bn[k, a], n) for a in range(3)], 1))
+        cos = np.maximum((d * fn).sum(1), FIELD["push_cos"])
+        mv = (p / cos)[:, None] * d
         X[sel] += mv
         total += mv
         moved = np.where(p > 0)[0]
@@ -344,7 +373,25 @@ def hold_clear(body, X, c_req, sel):
         # (the later rounds refine only the full-weight vertices: a partial weight is applied once)
         wr = w[idx] if r == 0 else (w[idx] >= 1.0).astype(np.float64)
         dlt = wr * (c_req[idx] - c)
-        X[idx] += dlt[:, None] * n
+        # the direction: the skin normals averaged over the neighbours (over a cleft the closest skin flips side)
+        Y = X[idx]
+        sm = cKDTree(Y).sparse_distance_matrix(cKDTree(Y), HOLD["dir_m"], output_type="ndarray")
+        a_, b_, dd = sm["i"].astype(np.int64), sm["j"].astype(np.int64), sm["v"]
+        kw = wendland(dd / HOLD["dir_m"])
+        mn = np.stack([np.bincount(a_, kw * n[b_, k], len(idx)) for k in range(3)], 1) / np.bincount(a_, kw, len(idx))[:, None]
+        d = U(mn + 1e-9 * n)
+        cos = np.maximum((d * n).sum(1), HOLD["cos"])
+        # in a cleft (neighbours' skin normals disagree: a strap between two walls that close in) a clearance from both
+        # walls cannot be held without crushing the part; there the one-sided push keeps it out instead
+        coh = smoothstep((np.linalg.norm(mn, axis=1) - HOLD["coh"][0]) / (HOLD["coh"][1] - HOLD["coh"][0]))
+        if r == 0:
+            w[idx] *= coh
+            dlt *= coh
+        # the correction itself averaged over the same neighbours (its weight falls off with the bind clearance, which
+        # can change fast across a part in a crease: unsmoothed, neighbours would be moved apart)
+        if HOLD["smooth"]:
+            dlt = np.bincount(a_, kw * dlt[b_], len(idx)) / np.bincount(a_, kw, len(idx))
+        X[idx] += (dlt / cos)[:, None] * d
         total += dlt
     st["hold_max_mm"] = round(float(np.abs(total).max()) * 1000, 3)
     return X, st

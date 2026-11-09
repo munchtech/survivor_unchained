@@ -21,18 +21,26 @@ mesh extras are read from A's file at build time.
 `build --body <dir>` evaluates every binding on a body (its body.glb / play.glb and its stage npz for topology order):
     bendy vertices: the bound triangle's point + the offset in this body's frame there; B's skin weights at the point
       (barycentric, top 8); B's blend shapes at the point (every Heroine shape that moves the piece; HeroineHead's face
-      shapes are not carried). On a body other than the bind body a piece follows by gear_field: within 4 mm of the
-      skin its bound evaluation (made continuous across triangles), beyond it the body's move as a spatially smooth
-      field (so a stand-off part bound to two surfaces follows as one surface), then a smooth clearance push; on the
-      bind body none of it runs (built == bind geometry).
-    rigid components (rows "rigid": true and the plate_* / mar_her_* styles, their metal meshes): one rigid transform
-      per component (Procrustes of its bendy evaluation onto its bind-body points), one blend of weights (the mean of
-      B's weights over its bound points, top 8), its blend shapes as their mean delta (a pure translation). Small
+      shapes are not carried). On a body other than the bind body a piece follows by gear_field: the body's move as a
+      spatially smooth field (so a stand-off part bound to two surfaces follows as one surface; an optional exact band
+      on the skin, gear_field FIELD near_m, is off: it measured worse); the tight set (within 4 mm on the bind body)
+      then holds its bind clearance two-sided along the new skin's (smoothed) normal, and a smooth one-sided push keeps
+      every vertex out of the new skin; on the bind body none of it runs (built == bind geometry).
+    rigid components (rows "rigid": true and the plate_* / mar_her_* styles, their metal meshes): never bend (one blend
+      of weights: the mean of B's weights over its bound points, top 8; its blend shapes as their mean delta) but are
+      made to measure per body: rotation + translation + a scale per own principal axis (0.85-1.25, no shear) fit to
+      the field's move, then the smallest change of translation and scales that clears the new skin (an LP). Small
       components (rivets, gems: under 2% of the tier's rigid area) ride the nearest big component.
+    refuse or flag: on a body other than the bind body every row's meshes are measured (field_metrics: stretch beyond
+      the body's own on edges of 1.5 mm and more, edges over 2x, inside the new skin, the tight set's clearance) and
+      the row's "fit" is "ok" or "flagged" with "fit_fail" (the failing numbers per mesh); the game skips flagged rows
+      on NPC bodies.
 Writes <out>/<id>.gltf + .bin (A's node and mesh names, mesh extras, materials; B's body.glb skin verbatim) and
 <out>/gear_index.json (A's row fields, "file", "body_hash" = the body glb's sha1), and <id>.sockets.json for armor.
 
-`check --body <dir> [--synthetic]` reports the acceptance numbers (JSON + a short table).
+`check --body <dir> [--synthetic]` reports the acceptance numbers (JSON + a short table): on the bind body the identity,
+on another body (built on the base: a slider variant, a second woman) it builds it and reports each mesh's follow
+numbers and the flagged rows; `check --field all` runs the synthetic and the +1 slider stress bodies (information).
 
     python tools/armor/gear_fit.py bind [--only id,id]
     python tools/armor/gear_fit.py build --body godot/art/people/body_p1 [--out dir] [--only ...]
@@ -818,6 +826,21 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                 rots[int(c)] = (M, ca, cb)
                 fit["rigid"][f"{tier}/{int(c)}"] = info
         rots_tier[tier] = rots
+        if bbody is not None:
+            # the tight set holds its bind clearance (two-sided), then no vertex nearer the new skin than it was to the
+            # bind skin (one-sided, a smooth push): over every mesh of the tier at once, so a garment's layers (leather,
+            # its stitches, its trims) are moved as one
+            cut = np.cumsum([0] + [len(ev[m["i"]]["X"]) for m in ms])
+            Xall = np.vstack([ev[m["i"]]["X"] for m in ms])
+            c0all = np.concatenate([ev[m["i"]]["c0"] for m in ms])
+            bend_all = comp < 0
+            Xall, hst = gear_field.hold_clear(body, Xall, c0all, bend_all)
+            Xall, cst = gear_field.clear_push(body, Xall, gear_field.push_req(c0all), bend_all)
+            fit["hold"][tier], fit["push"][tier] = hst, cst
+            if stats is not None:
+                stats[tier] = dict(cst, **hst)
+            for k, m in enumerate(ms):
+                ev[m["i"]]["X"] = np.where(bend_all[cut[k]:cut[k + 1], None], Xall[cut[k]:cut[k + 1]], ev[m["i"]]["X"])
         for m in ms:
             e = ev[m["i"]]
             i, comp_i = m["i"], e["comp"]
@@ -836,13 +859,6 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                     bv = (bt * bend)[inv][:, None]
                     Ne = np.einsum("nij,nj->ni", e["Re"][inv], Nb)
                     N = np.where(bend[inv][:, None], (1 - bv) * Ne + bv * Nf, N)
-                    # the tight set holds its bind clearance (two-sided), then no vertex nearer the new skin than it
-                    # was to the bind skin (one-sided, a smooth push)
-                    X, hst = gear_field.hold_clear(body, X, e["c0"], bend)
-                    X, cst = gear_field.clear_push(body, X, e["c0"], bend)
-                    fit["hold"][m["node"]], fit["push"][m["node"]] = hst, cst
-                    if stats is not None:
-                        stats[m["node"]] = dict(cst, **hst)
                 rg = comp_i >= 0
                 if rg.any():
                     Nb = np.einsum("nij,nj->ni", e["Fbind"][inv], nloc)
