@@ -703,7 +703,7 @@
    "ring": {
     "what": "the target: a wavefront standing at the hit radius; arcs grow to its coverage curve (s since the press), opacity with them; one flash at 1.5x width when shut",
     "lead_px": 8,
-    "trail_px": 5,
+    "trail_px": 6,
     "arcs": 3,
     "cover": [
      [
@@ -855,7 +855,7 @@
    },
    "ring": {
     "lead_px": 12,
-    "trail_px": 14,
+    "trail_px": 20,
     "run": 0.18
    },
    "star": {
@@ -902,7 +902,7 @@
     "root_px": 18,
     "frames": 3,
     "lead_px": 10,
-    "trail_px": 12,
+    "trail_px": 16,
     "run": 0.3,
     "light_k": 0.4,
     "light_frames": 2

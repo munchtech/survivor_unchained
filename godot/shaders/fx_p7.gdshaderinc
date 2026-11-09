@@ -36,6 +36,7 @@ uniform float p7_h = 1.8;     // pulse: her height
 uniform float p7_lead = 0.05;  // wave: the leading edge's width (share of the quad's half-size)
 uniform float p7_trw = 0.06;   // wave: the trailing band's depth
 uniform float p7_fall = 0.0;   // wave: how far it has run to its reach (width and coverage -> 0 at 1)
+uniform float p7_rpx = 200.0;  // wave / target: the quad's half-size (the reach) in px at the play camera (the brush's scale)
 uniform float p7_cover = 1.0;  // target: the share of the ring its arcs cover
 uniform float p7_arcs = 3.0;   // target: its arcs
 uniform float p7_root = 0.06;  // star: a spike's root half-width
@@ -84,7 +85,7 @@ vec4 p7_ring(vec2 p) {
 		if (dc > h) return vec4(0.0);
 		tip = clamp((h - dc) / max(0.3 * h, 0.01), 0.0, 1.0);
 	}
-	vec4 o = p7_wave(p, 1.0, p7_lead, p7_trw, 0.0, p7_fade, tip);
+	vec4 o = p7_wave(p, 1.0, p7_lead, p7_trw, 0.0, p7_fade, tip, p7_rpx);
 	o.a *= p7_alpha;
 	return o;
 }
@@ -149,7 +150,7 @@ vec4 p7_glint(vec2 p) {
 
 // (5, 16) a wavefront running out to the quad's edge (the reach): front p7_prog
 vec4 p7_shove(vec2 p) {
-	vec4 o = p7_wave(p, p7_prog, p7_lead, p7_trw, p7_fall, p7_fade, 1.0);
+	vec4 o = p7_wave(p, p7_prog, p7_lead, p7_trw, p7_fall, p7_fade, 1.0, p7_rpx);
 	o.a *= p7_alpha;
 	return o;
 }

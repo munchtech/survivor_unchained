@@ -11,39 +11,58 @@
 // fx_stroke_seed).
 // Needs fx_cel.gdshaderinc included first.
 
-vec4 p7_stroke(float across, float along, float life) {
+vec4 p7_stroke_at(float across, float along, float life, vec2 grain_at) {
 	float lf = floor(clamp(life, 0.0, 1.0) * 3.0 + 1e-4) / 3.0;
-	return fx_stroke(across * fx_stroke_shape.x, along, lf);
+	return fx_stroke_at(across * fx_stroke_shape.x, along, lf, grain_at);
+}
+vec4 p7_stroke(float across, float along, float life) { return p7_stroke_at(across, along, life, vec2(0.0)); }
+
+// the lead's band map: depth behind the front (a share of the lead) -> the stroke's distance from its centerline, through
+// the core's end (0.3), the gold's end (0.75) and the stroke's edge (1), straight on past it
+float p7_wave_g(float x, float kc, float km) {
+	if (x < 0.3) return x / 0.3 * kc;
+	if (x < 0.75) return mix(kc, km, (x - 0.3) / 0.45);
+	return mix(km, 1.0, (x - 0.75) / 0.25);
 }
 
-// p7_wave (round 3, 9 Nov; the r2 judge's ONE CHANGE): the travelling wavefront. A ring is never a band: a hot three-band
-// leading edge `lead` wide whose outer side is the front, and a feathered trailing band `trail` deep behind it (across: the
-// radial offset; along: closeness to the front, 1 at the leading edge), gold stepping to amber and breaking into dry-brush
-// streaks toward its end. Width and coverage run to 0 as it reaches its reach (`fall` 0..1: how far it has run). The brush
-// wanders round the ring (the front a pixel uneven, the width and the core breathing, the bristles' streaks broken along
-// it), so it never reads as a stamped circle.
-//   p      the pixel in the quad (-1..1; the quad is the reach, 2R wide); front, lead, trail in the same units (shares of R)
-//   life   stepped (p7_stroke); tip 0..1 scales the along (an arc's ends taper to points; 1 for a whole ring)
-vec4 p7_wave(vec2 p, float front, float lead, float trail, float fall, float life, float tip) {
-	float r = length(p), a = atan(p.y, p.x);
-	float k = clamp(1.0 - fall, 0.0, 1.0);
-	float n1 = fx_gnoise(vec2(a * 2.3 + fx_stroke_seed * 1.3, fx_stroke_seed * 0.7));
-	float n2 = fx_gnoise(vec2(a * 6.1 + fx_stroke_seed * 2.9, 3.1 + fx_stroke_seed));
-	float n3 = fx_gnoise(vec2(a * 17.0 + fx_stroke_seed * 5.3, 7.7));
-	float L = lead * k * (1.0 + 0.16 * n1);
-	float T = trail * k * (1.0 + 0.35 * n2);
-	if (L < 1e-5) return vec4(0.0);
-	float f = front + lead * 0.1 * n2;
-	float al = clamp(tip, 0.0, 1.0) * clamp(0.82 + 0.05 * n1 + 0.03 * n3, 0.7, 0.9); // (under the head cap, 0.92+)
-	vec4 o = p7_stroke((r - (f - 0.5 * L)) / (0.5 * L), al, life);
-	float u = (f - 0.8 * L - r) / max(T, 1e-5);
-	if (u > 0.0 && u < 1.0 && T > 1e-5) {
-		float at = al * mix(0.95, 0.3, u);
-		float taper = mix(fx_stroke_shape.z, 1.0, pow(max(at, 1e-3), 0.7));
-		vec4 t = p7_stroke((0.3 + 0.7 * u) * taper, at, life);
-		t.a *= 1.0 - 0.5 * u;
-		if (t.a > o.a) o = t;
-	}
-	o.a *= 1.0 - fall * fall;
+// p7_wave (round 3 fix, 9 Nov: r3 read as a selection circle, an even gold tube): the travelling wavefront, asymmetric.
+// The LEAD is one stroke whose core is the front itself: a white-gold lip (its outer side 1.3 px, so the front is crisp),
+// gold to 75% of `lead`, amber to its end; the TRAIL behind it is a second stroke in the amber band running out into dry
+// brush over `trail`, its bristles RADIAL (dragged outward: the travel) where the lead's run round the ring. The brush is
+// seamless round the ring (noise on circles, never an angle seam): the width and the heat swell, the front wobbles a
+// pixel, the trail's depth varies by half, and a few stretches run thinner, cooler and drier (broken coverage). Width
+// goes 1 - fall^1.5 and coverage 1 - fall^2.2 (to nothing at the reach); the core steps out past fall 0.6, the gold past
+// 0.86. No branch round the strokes (fx_stroke's antialiasing takes derivatives).
+//   p      the pixel in the quad (-1..1; the quad is the reach); front, lead, trail in shares of it; rpx: the reach in px
+//   life   stepped (p7_stroke); tip 0..1 scales the heat (an arc's ends taper to points; 1 for a whole ring)
+vec4 p7_wave(vec2 p, float front, float lead, float trail, float fall, float life, float tip, float rpx) {
+	float r = length(p);
+	vec2 dr = p / max(r, 1e-5);
+	float sd = fx_stroke_seed;
+	float n1 = fx_gnoise(dr * 1.1 + vec2(sd * 0.37, sd * 0.11));
+	float n2 = fx_gnoise(dr * 2.6 + vec2(5.3 + sd * 0.21, sd * 0.53));
+	float n3 = fx_gnoise(dr * 0.8 + vec2(9.1 + sd * 0.17, 2.2));
+	float fl = clamp(fall, 0.0, 1.0);
+	float kw = 1.0 - pow(fl, 1.5);
+	float L = max(lead * rpx * kw * (1.0 + 0.18 * n1), 0.05);
+	float T = max(trail * rpx * kw * (1.0 + 0.45 * n2), 0.0);
+	float r0 = front * rpx;
+	float d = r0 - r * rpx + lead * rpx * 0.12 * n2;
+	float al = clamp(tip, 0.0, 1.0) * clamp(0.86 + 0.05 * n1 - 0.9 * max(0.0, n3 - 0.35), 0.15, 0.9);
+	float lf = max(life, fl > 0.86 ? 0.67 : (fl > 0.6 ? 0.34 : 0.0));
+	float mref = mix(fx_stroke_shape.z, 1.0, pow(0.86, 0.7));
+	float hot = smoothstep(0.15, 1.0, 0.86);
+	float g = d < 0.0 ? -d / 1.3 : p7_wave_g(d / L, 0.24 * hot, mix(0.48, 0.66, hot));
+	vec4 o = p7_stroke_at(g * mref, al, lf, dr * (r0 / 22.0));
+	float t0 = 0.75 * L;
+	float ut = (d - t0) / max(L + T - t0, 1e-3);
+	float uc = clamp(ut, 0.0, 1.0);
+	float at = al * mix(0.62, 0.3, uc);
+	float mt = mix(fx_stroke_shape.z, 1.0, pow(max(at, 1e-3), 0.7));
+	float rho = r0 / 3.5 - d / 9.0;
+	vec4 t = p7_stroke_at(mix(0.5, 1.0, uc) * mt, at, lf, dr * rho + vec2(17.0, 3.0));
+	t.a *= (1.0 - 0.3 * uc) * step(0.0, ut) * step(ut, 1.0) * step(1e-3, T);
+	if (t.a > o.a) o = t;
+	o.a *= 1.0 - pow(fl, 2.2);
 	return o;
 }

@@ -42,7 +42,10 @@ vec4 p7_shell(vec2 uv, vec3 n, vec3 v) {
 	n = normalize(n);
 	float f = abs(dot(n, normalize(v)));
 	float px = f / max(fwidth(f), 1e-4);
-	float hb = max(p7_wy - p7_y0, 0.0);
+	// (r3 fix) nothing at or under the ground line: the hemisphere mesh's bottom cap (Godot flattens its lower rings onto
+	// y 0) sat there as a flat disc whose height above the line, 0, made it the stroke's centerline: the opaque disc under her
+	if (p7_wy <= p7_y0) return vec4(0.0);
+	float hb = p7_wy - p7_y0;
 	px = min(px, hb / max(fwidth(p7_wy), 1e-5));
 	float ang = atan(n.y, n.x);
 	float along = 0.8 + 0.06 * fx_gnoise(vec2(ang * 3.0, p7_seed)) + 0.04 * fx_gnoise(vec2(ang * 11.0, p7_seed + 2.0));

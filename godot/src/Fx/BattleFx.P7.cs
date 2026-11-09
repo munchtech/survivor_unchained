@@ -294,7 +294,7 @@ public partial class BattleFx
             });
             run.Ring.M.SetShaderParameter("p7_arcs", P7D["leap.ring.arcs"]);
             run.Ring.M.SetShaderParameter("p7_cover", 0f);
-            P7Brush(run.Ring.M, P7D["leap.ring.lead_px"] + P7D["leap.ring.trail_px"]);
+            P7BrushWave(run.Ring.M, rpx);
             // the ribbon: her blade's way through the air (her chest plus the data's share of the blade's own swing: the
             // stand-in's blade loops), splined, its head the data's px tapering to a point
             float hw = 0.5f * P7D["leap.ribbon.head_px"] * P7Px(from);
@@ -576,8 +576,18 @@ public partial class BattleFx
         s.M.SetShaderParameter("p7_lead", leadPx / rpx);
         s.M.SetShaderParameter("p7_trw", trailPx / rpx);
         s.M.SetShaderParameter("p7_prog", 0.02f);
-        P7Brush(s.M, leadPx + trailPx);
+        P7BrushWave(s.M, rpx);
         return s;
+    }
+
+    /// <summary>(r3 fix) A wavefront's brush (p7_wave): its own bristles, laid by the shape itself (seamless round the ring:
+    /// along the ring in the lead, radial in the trail), so the stroke's own bristle field stays small; a lighter waver
+    /// keeps the white-gold lip whole. `rpx`: the reach in px at the play camera.</summary>
+    void P7BrushWave(ShaderMaterial m, float rpx)
+    {
+        m.SetShaderParameter("fx_stroke_seed", R() * 97f);
+        m.SetShaderParameter("fx_bristle", new Vector4(2.5f, 2f, 0.55f, 0.14f));
+        m.SetShaderParameter("p7_rpx", rpx);
     }
 
     /// <summary>The press (every move): one three-band glint at `at` (the blade's tip or the shield) and a dust kick at
