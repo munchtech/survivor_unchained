@@ -179,7 +179,8 @@ public sealed class Autopilot
         double tx = p.X, tz = p.Z;
         switch (stage)
         {
-            case "Wake" or "Rising" or "Ambush":
+            // (M5: the Rising is placed beats now, n_lone and n_three up the road; it walks to them as the default does)
+            case "Wake" or "Ambush" or "Rising" when Idle || stage != "Rising":
             {
                 var c = stage == "Ambush" ? Place("cart") : Place("camp");
                 orbit += dt * 0.35;
