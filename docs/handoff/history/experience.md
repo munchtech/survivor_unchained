@@ -1,0 +1,539 @@
+# experience.md history
+
+Moved 9 Nov 2026 from docs/handoff/experience.md, nothing edited.
+
+## H8 rc2's bugs (seams-h8 lead 3, 4-5 Nov): MR READY seams-h8@5a5514f25 (the code at 2df6a1a7c; this line's own commit follows)
+
+All seven items pass. Brief: `docs/team/hook/H8_rc2_bugs.md`. Integration merged at d9ab02f6d (docs only; the junction was removed and remade to our own `public\assets`). Sheets, runs and verdicts: `C:\Users\munch\Desktop\survivorsunchained_inputs\seams_h8\` (`r2\` judge round 2, `r3\` and `r4\` the x-ray, `r5\` the final b_path and suite).
+
+**Judges** (API, xhigh):
+- Round 2 (`r2\verdict.md`, $0.86): 4 PASS. N22, N24 and N23 B1 (her feet are never in frame; planted drift at most 5.7 cm). N36's PASS stood, but it still needed a frame with her actually hidden.
+- N36 closing frame (`r3\verdict.md`, $0.14): self-overdraw gone. But the x-ray's own look FAILED at 1:1: an opaque cream blob with grainy edges.
+- x-ray look round 2 (`r4\verdict.md`, $0.35): PASS.
+- Round 1 (lead 2) passed N20, N23, N25, N35 and N36.
+
+**What lead 3 built:**
+- **N22, the shut gate** (e07607b37, solver aab7f549):
+  - Leaf A was not lost. The gatehouse's kit tile stands 0.76 m over Low Ford's road, so the teeth stopped short.
+  - `Landmarks.Land` (from `Swap`) drops every portcullis leaf by the measured distance to the lowest ground under it (9 samples), converted into each leaf's parent space.
+  - Leaf B is now 3.2 m (`env_props.py gatehouse()`, re-exported), so the crown stays covered.
+  - The watchman stands 0.85 m behind the bars with the Watch's lit torch (`Prologue.Day.cs DayGate`).
+  - `Landmarks.Shift` logs the leaf positions (bounded).
+  - The rise runs 32.4-35.05 s; the exit waits for it.
+- **N24, the dawn card** (6f93abf46, worker ab019460):
+  - `tools/uiforge/paper.py make_card/build_card` writes `godot/art/ui/frames/dawn_paper.png` (760x480): untiled, the middle calmed through a soft mask, no step over 0.26 levels/px. Build group `dawn_paper`, separate from `paper`.
+  - `DawnCardView` uses it (falling back to paper.png), margins 44.
+  - "Your traits".
+  - No "The ember's skills" line when nothing was lent.
+- **N36, the x-ray look** (2df6a1a7c, solver a3478067):
+  - The grain came from her body and outfit layers each blending the overlay, 2-4 times per pixel.
+  - Now a stencil keeps one layer per pixel. The fill is dark slate at 50% (`her_xray.gdshader`), plus a thin moonlight outline as its next pass (`her_xray_rim.gdshader`, `rim_px` 1.6).
+  - The her_at capsule is kept. `PlayerView.XraySet` drives both passes.
+
+**Checks:**
+- Suite 1525/0/10 (r2, and again in r5 after the x-ray).
+- b_path: h8b_path4 1304 s, 0 exceptions, Warden fought 113 s, dawn card shot. After the x-ray: h8b_path5 1366 s, 0 exceptions, Warden fought 112 s, dawn card shot.
+- Day harness (64 seeds): human 61/64 reached, careless 63/64, 0 falls, median 120 s / 119 s. 4 stuck runs, at the road ambush and the gold, none at the gate.
+
+**Later lists (not H8):**
+- Sound: `gate.portcullis` is not banked (the rise is silent).
+- Combat/VFX:
+  - The wolves' howl telegraph ring is a flat, unshaded yellow screen line; the judge called it "a debug gizmo".
+  - The HOWL label is clipped behind the right HUD statue.
+- E8 art:
+  - The portcullis leaves read as rust-brown timber.
+  - The shut watchman is a pale smudge (a brighter torch).
+  - In C04b B1 the right-hand wall has blue marbled plaster.
+- UI:
+  - The dawn card's divider is a 70 px stub.
+  - "Q READY" blazes right after "The ember goes out".
+  - "Put out the lamps" should be the white main line in the Warden fight.
+- Cinematics: the b4a lantern cutaway.
+- Code:
+  - `Landmarks.Swap`'s `Ground()` assumes a kit piece is a direct child of the root (the same wrong frame Land hit).
+  - `demo_run`'s freshness check missed a stale import after a glb re-export.
+  - The gate shoot is luck-dependent (about 2 of 6 runs catch her in the passage).
+
+**PIPELINE ledger:** P6/P9: the app can now:
+- bar a day stretch with the zone's own moving pieces (props.json `moves`; `Landmarks.Movers/Shift/Land`: a kit mover landed on the terrain, driven by one 0-1 k);
+- give the dawn its own click-through card on an untiled painted parchment (`paper.make_card`);
+- draw her through occluders as a clean ARPG x-ray (stencil fill plus a rim pass).
+
+This item cost about 0.4M for lead 3's part (lead 2's ~0.52M and lead 1's before it), plus $2.67 of API judges. The next gate or mover costs about 30-50k: a props.json `moves` entry and a beat's bar line.
+
+**Derivation:**
+- Land: the game's need (a shut portcullis meets the road), computed from the terrain, no hand-tuned offset.
+- Leaf B, 3.2 m: the game's need; the look inherited from the E8 gatehouse.
+- The watchman's torch: inherited (Folk's Watch role).
+- dawn_paper: inherited (`paper.py` sheet plus the Krea paint-over, UI art 3 Oct), made for the card.
+- The x-ray: a named reference (the Diablo IV / Path of Exile wall x-ray) on H1 round 2C's overlay.
+- Undone, not kept: the stacked per-layer blend (the grain), and lead 2's invisible bar 5 m out.
+
+**Spend (lead 3):**
+- Lead ~130k.
+- Solvers: N22 ~108k, x-ray ~81k.
+- Worker ~36k; runner ~35k.
+- API $1.35 (round 2 $0.86, N36 $0.14, x-ray $0.35).
+
+## H8 rc2's bugs (seams-h8 lead 2, 4 Nov): history (lead 3 above closed the list)
+
+HANDOFF READY at ~245k (lead 2). Brief: `docs/team/hook/H8_rc2_bugs.md`. Report to main (the coordinator) only at MR READY, a HANDOFF or a block. Integration merged at d36a4cd19: the ten .import files are tracked now, and the junction was remade to our own `public\assets` (assume-unchanged). Sheets and runs are in `C:\Users\munch\Desktop\survivorsunchained_inputs\seams_h8\`: `n20\` (runs and strip), `judge1\` (the judge's inputs, brief and `verdict.md`), `n22\` (the gate solver's shots).
+**Note:** lead 1 woke after its handoff and committed 7588aef92 (two lines in its section). Its "88 s misread" is wrong: the 88 s run is real (n20a, on d36a4cd19).
+
+**N20, the Warden: DONE.** Lead 1's "fell in 11.2 s" came from a run in the MAIN checkout: its log's paths are `survivorsunchained\godot\...`, which has no N20 code and no dawn card. In seams-h8 the ward and floors hold. `WardFloor` logs `ford wardlog` once a second under `--pace` (bounded), plus `ford down`. H6's numbers are FINAL for rc3 (via the coordinator): teeth.json as it stands, band human 60-120 s. Measured on the first-time path with `--auto`:
+- n20a: 88.3 s. Crashes at 26.9 s, 61.1 s and about 72 s; the 0.67 floor was never reached.
+- b_path3: 111.8 s. The 0.34 floor held from 70 s to about 100 s (4 Warded barks, 531 hp turned). 0 exceptions, dawn card shot.
+- H6's proof 1 (SU_TEETH=`n20\teeth_floor067.json`, 0.67 everywhere, no crack): the 0.67 floor held from 10 s to the end of the run (86 s and more), turning 5112 hp.
+- H6's proof 2 (`n20\teeth_backstop.json`, floors 0): the 0.05 backstop held him until 60 s; he fell at 70.8 s.
+- The strip: `n20\warden_strip.jpg` (88 s, a frame every 3 s, crashes labelled).
+
+**Judge 1** (API, xhigh, $1.32; `judge1\verdict.md`): 5 PASS, 2 FAIL.
+- PASS: N20, N23, N25, N35, N36.
+- FAIL N22: at 1:1 the arch looks open (an invisible wall), and nothing names the ring.
+- FAIL N24: an inner rectangle in the paper; the "Click to go on" font.
+- To close before MR: N36 needs one 1:1 town frame (pick one in `godot/.shots/h8xw_*.png` with her under the eaves). N23 needs a motion check of its 1.56x shot: a dense strip (0.1 s apart) of that shot's feet, for foot-skate.
+- For later lists (not ours): make "Put out the lamps" the white main line during the fight; the b4a lantern cutaway; the town bark printing over the tracker.
+
+**N22 fix: BUILT, one bug left** (solver a07675ec, ~188k; commits 50119828f and c40d4b969, both WIP).
+- The gatehouse portcullis is two moving leaves inside `gatehouse.glb` (`env_props.py` MOVES; props.json "moves"; `OwnProps`, `Landmarks.Movers`, `IZoneLook.Shift`). It drops while the gate is shut and rises over 2.6 s once the ring is down; the exit waits for the full rise.
+- The bar sits on the portcullis line (`day_stretch.json portcullisZ`). The old invisible bar 5 m out was undone as a hack.
+- A watchman (the Folk Watch spec) stands behind the bars, with the bark on him.
+- The tracker's first line reads "The watch won't raise the gate: clear the wolves on the road" (`Goals.Replace`).
+- Suite 1525/0/10.
+- **Bug: in `n22\n22_shut_full.png` the grate covers only the crown down to the springing, and the lower passage looks open: leaf A (travel -4.0 m) isn't seen.** Suspects:
+  1. The travel applied in a scaled parent's space (kit scale 0.192; `Position = rest + travel*k` is local).
+  2. The occluder cutaway or x-ray near her.
+  3. A terrain gap of about 0.75 m under the teeth.
+- Next for N22: log the leaves' global positions in `Landmarks.Shift`, fix, re-shoot `n22\batch.json` (h8n22a = h8g2 + `--on gate`), make the watchman visible (light, or stand him nearer), and check the rise is complete before the travel fade.
+- No gate sound is banked (`gate.portcullis` plays nothing): route it to sound.
+
+**N24 fix: half done.**
+- Done (3938813a2): "Click to go on" in the serif, 19 px, Ink.
+- The inner rectangle is painted into `frames/paper.png`. That is the ledger's TILING sheet: `tools/uiforge/paper.py make()` calms a hard rectangle and makes it tileable.
+- The decided remake: a new `paper.make_card()`, not tiled, the middle calmed through a soft blurred mask, written to `frames/dawn_paper.png` at 760x480; DawnCardView uses it, falling back to paper.png. Never rebuild the `paper` group: it remakes the UI lead's paper.png and hint.png.
+- Worker a2f402ac9e2a43c8e has the full brief and waits: **ComfyUI is DOWN at 127.0.0.1:8188**, and the paint-over needs it. Ask the coordinator to bring it up, then SendMessage the worker "ComfyUI is up, go".
+- The studs stay (the judge called them acceptable).
+
+**Next, in order:**
+1. N22's leaf A (a fresh su-lead-high solver at medium, given the suspects above). N24's paper once ComfyUI is up.
+2. Judge round 2 (`Item: H8 changed moments`, round 2 of 2, API route, `judge1\brief.md` as the model) on N22's new frames, the new dawn card (shoot `--stage day` as h8g2 did, giving `godot/.shots/h8g2_dawn_card_1.png`), the N36 town frame and the N23 dense strip.
+3. Then:
+   - the suite;
+   - b_path (`n20\batch_final.json` h8b_path3);
+   - the day harness again, since the bar moved to the portcullis line. It runs on a runner: in `godot/balance`, `dotnet run -c Release -- lowford-day --callings warden --levels 3 --bots human,careless --seeds 64`. Last result: human 61/64 reached, careless 63/64, 0 falls, median 120 s, none stuck at the gate.
+   - push, then MR READY.
+**Derivation (the owner's rule):**
+- The ward log: the game's need.
+- The portcullis: the game's need, its look inherited from the E8 gatehouse (`env_props.py`).
+- The bar on the portcullis line: the game's need; it replaces the stand-in.
+- The watchman: inherited (Folk Watch).
+- The dawn paper: inherited (`tools/uiforge/paper.py`, UI art, 3 Oct), made specifically for the card.
+**Spend (lead 2):** lead ~245k; solver a07675ec ~188k; workers ~32k + ~24k; runner ~30k; API judge $1.32.
+
+## H8 rc2's bugs (seams-h8 lead 1, 4 Nov): HANDOFF READY seams-h8@9c7dc0666
+
+HANDOFF READY seams-h8@9c7dc0666 (lead 1 at ~280k). Brief `docs/team/hook/H8_rc2_bugs.md`. Branched from 0febc5160 (integration; nothing newer to merge at the start). Report to main (the coordinator) only at MR READY or a block. The H6 lead is agent `abf0b8606f7e91474`: it owns the Warden's numbers and H8 wires them. Scratch and sheets: `C:\Users\munch\Desktop\survivorsunchained_inputs\seams_h8\` (`shoot1\` runs and sheets, `solver_45\`, `dawn\`). No judge has run yet; round cap 2.
+**Worktree setup gaps (fixed locally, not committed; the files are untracked in main too):** `public/assets` had no `.import` files (solver 45 copied 408 from main), and 10 `godot/art/**.glb.import` were missing (sunder_blade, castle, curtains, gatehouse, towers, beard_cards). They caused the LampIron.SunderBlade and Waystation.DressStall NREs in b_path 1. All were copied from the main checkout.
+
+**State by item:**
+1. **N22, the gate: DONE, measured.**
+   - `DayStretch.GateOpen` now needs every ring sprung (or done before a reload) and its follow wave come and down. `RingOwed` is new.
+   - The ring springs on the road one metre past its line, armed or not (`DayStretch.Tick`).
+   - `Prologue.Day.cs DayGate()`: while the gate is shut, a player-only bar sits across it (tag `gate_shut`), the watch barks "Not with that behind you!" every 7 s, and goal `day_ring` (goals.json, pin `ring_line`, glyph boot) points back to the road.
+   - Test: `A_gate_is_shut_before_the_ring`.
+   - Repro with `--day-rush` (the autopilot runs straight to the gate): "day gate shut" at t 42.3 with the boars behind her. Sheet `shoot1\gate_sheet.jpg`.
+   - Day harness, 64 seeds: human and careless 0 falls, median ~2:00; 61/64 and 63/64 reach the gate. The stuck seeds (human s6, s7, s15; careless s7) look like the known howler bot limit. Check that none is stuck at the new bar.
+2. **N20, the Warden: WIRED, NOT PASSING IN GAME.**
+   - Data: teeth.json `prologue.fordWarden`. Floors 0/0/0.34/0.67, indexed by lamps still UNBROKEN this fight (3 - broken - cracks). Ward by lamps lit. hpMul 1.25. minSeconds 60 (backstop floor 0.05). crackAfter 45.
+   - Code: `Teeth.Ford`, `Prologue.WardFloor`/`Toothed`, `lampsBroken` (counted in `Snuff`), bar ticks at the floors, a "Warded" bark at most every 4 s, and a channel break that counts Overflow.
+   - Tests pass: `FordWardenTeethTests`, `PrologueTests.The_Ford_Warden_holds_at_his_floor_until_two_lamps_are_broken`.
+   - b_path 1 (floors by lamps LIT, hpMul 2.5): the Boss stage ran 338 s, because his channel kept relighting the lamps. That is why the floors now count broken lamps.
+   - **b_path 2 (current code): he fell in 11.2 s with all three lamps lit, and there were 0 "ford warded" lines. The floor did not hold in game, though the logic test holds. FIRST NEXT STEP: find why.** Suspects: a damage path in game that is not `Battle.HitEnemy` (her Bull Rush or another ability, DoTs, the Flare), or `HpFloor` reset each tick after BossTick. To find it, add a PaceNotes line per second in WardFloor with Hp, HpFloor and TakenMul, then run b_path or `--quick warden --zone lowford --cine c02 --auto --lampcheck --pace`. Note that `--quick warden` has no drafts: it never killed him even on the old numbers.
+   - H6's targets: human 60-90 s, careless wins, deft no fall. H6 has been told about hpMul 1.25 and floors by broken lamps; send it the measured numbers.
+3. **N24, the dawn card: BUILT, not judged** (solver a0a901e1).
+   - Files: `logic/Play/DawnCard.cs`, `src/Ui/DawnCardView.cs`, `src/Game/GameDawn.cs`, `IZoneHost.DawnCard`. Tests: `DawnCardTests`.
+   - Stills: `dawn\dawn4_dawn_card_1.png` (skill names set with `--dawn-skills`). b_path 1's real card is `godot/.shots/h8b_path_dawn_card_1.png`.
+   - b_path 2 took no dawn_card frame and never reached the Waystation. Check why; maybe the 440-frame count ended the run at Exit.
+   - My look: it reads well. The judge decides its size and the iron studs at the corners.
+4. **N23, C04b: DONE, not judged** (solver a41eff2e, 16299e545).
+   - A move now takes an `ease` of linear or settle (`CineCamera.Settle`). B3's walk runs on into B4 and settles into her idle. cut_check PASS.
+   - Strips: `solver_45\n23_strip_*.jpg`; before: `before_rook.jpg`.
+   - Left: her pace changes across the cuts (1.56x, 1.01x, 1.40x).
+5. **N25, the map: DONE, not judged** (64a2ed272).
+   - The drawing is made ahead on a worker (`MapScreen.DrawSoon`), the fog is cached and the ink batched. The first open costs 196 ms (was 2.4 s); no later frame is over 32 ms.
+   - Stills: `solver_45\n25_map_after_half.jpg` against `_before_`.
+   - Separate finding: the first ember draft in an arena costs ~0.5 s in the HUD. Route it to UI or perf.
+6. **N35, the boss camera: DONE, measured.**
+   - Cause: `Ev.Focus` set a fixed midpoint, and Game.cs cleared it only if no panel was open when its time ran out. A draft open at the boss's arrival parked the look there for good.
+   - Fix: `Game.BossFocus()` follows her, half the way to the boss, capped to the middle third (`FollowCamera.CapLean`), and takes back what it set once the panel closes. The `Toward` lean eases in over 1 s, takes the same cap, and is off past `TowardRange` (22 m; the Ford 26; the gate 40).
+   - Repro flags: `--focus-old`, `--draft-at-arrival`, `--draft-hold`, `--looklog`, `--on arrival`.
+   - Measured: before, the look stayed 6-46 m off her for 44 s after the focus ended. After, it came back under 3 m.
+   - Sheets: `shoot1\arrival_before.jpg`, `arrival_after.jpg`; table `shoot1\lookog_table.txt`.
+7. **N36, the x-ray: DONE, not judged.**
+   - `her_xray.gdshader` drops an occluder whose world point lies inside her capsule (`her_at` from `PlayerView.XrayStep`, r 0.8, top 2.2). `--xray-old` gives the before.
+   - Sheets: `shoot1\xray_toward.jpg` and `xray_across.jpg` (old rows, then new); `xray_town.jpg` (the Waystation, the roof case: check she shows under the eaves).
+
+**H6 (abf0b8606f7e91474), 4 Nov, final for rc3:** floors by lamps BROKEN (0.67/0.34/0) and hpMul 1.25 are final; ward by lit; minSeconds 60 and crackAfter 45 stay as backstops only. Its band: up to ~120 s for a slower human. It asks for one --auto run with crashes disabled (the 0.67 floor holds) and one at the 60 s backstop. Its "88 s autopilot run" is a misread: no current-code run lasted 88 s (the 84 s was demo-1, on the old numbers; the current code fell in 11 s). Quote the measured numbers once N20 holds in game.
+
+**Next, in order:**
+1. N20's in-game cause (above): fix it, re-measure with b_path (`shoot1\batch_b.json` style, `--lampcheck`), and agree the numbers with H6.
+2. One su-lead-max xhigh judge (`Item: H8 changed moments`) on: gate_sheet; a 60 s Warden strip (a frame every 3 s across the Boss stage, the crash in it); the dawn card at full size; solver_45's C04b strips; arrival before/after; the x-ray sheets; the map still. The whole-frame question first, then "is the mark gone, and is nothing new clunky?"
+3. The judge's fixes; a round 2 only if it fails.
+4. The full suite (the dawn solver's last run: 1522/0/10), b_path with 0 exceptions, the day harness; push; then `MR READY seams-h8@<sha>` here and to main, with the sheet paths, the verdict in two lines and the cost.
+
+**Spend (lead 1):** lead ~280k; helpers: solver 45 ~185k, dawn solver ~148k, runners ~57k + 41k + 48k; API $0.
+
+## H4 seams (seams-h4 lead 3, 4 Nov): MR READY seams-h4@5d84747a7
+
+MR READY seams-h4@5d84747a7 (the code; this doc commit follows it). Round 3 (the coordinator's one extra round: the four marks folded into item 10, one xhigh judge on both, no further round). Integration (to ac691b510: H1, R4, audio-h3) and combat-h1's round 2 are merged in. Suite 1517/0/10.
+
+**Judge r3 (su-lead-max xhigh; sheets in `survivorsunchained_inputs\scratch_h4_lead3\judge_r3\`: c02_cut, c04a_cut, c04b_cut, snuff, day_handback, day_calls, day_strip):** C02 > fight PASS (015/016 the same Warden pose; his lantern arm and cape flap at 017-018 read as him waking; cut_light 8.1% at the control frame, borderline: lengthen the play-grade ease to <= 5%/frame if it's ever reopened). C03 > C04a PASS. C04b barks PASS. Snuff FAIL, one line: the lamps2 tip came back over the Warden after its duck. Day stretch FAIL, close: the owner's function met (3 min of real day play; every lesson lands; hand-back PASS) but at the ring no gate in sight, the ring drawn after its wolves died, "No draughts left" x3, a striped "artifact" at the frame's edge.
+**Post-judge fixes (measured, NOT re-judged):** lamps2 cleared and held 30 s on a snuff by charge, his "It lowers its head..." in the boss slot (`Prologue.cs` Snuff); a closing whose foes all die in its windup is called off and fades in 0.4 s (`TellPhase.Off`, `Tells.cs`, `BattleFx.cs`, every zone); identical toasts within 3 s merge as x2/x3 (`GameHud.cs`; not seen in a frame); the day road's last 28 m lean the look toward the gate (`Prologue.GateInFrame` > `FollowCamera.Toward` a third to 3.5 m, view 25 m; moving the ring south could never show it: the play camera sees ~11 m past her). The "artifact" is H1's closing gap (the lit way-out lane, blue-white stipple), seen at the frame's edge: H1's design, judged by H1's judge, not changed.
+**Distance to bar (known):** at the ring the gate's towers, apron and lamp stand at the frame's head and the arch comes in on the walk-in (frames `godot/.shots/j08_teach_day_flare_1`, `_after1_1`, `_after2_1`, sheet `scratch_h4_lead3\judge_r3\post_ring.jpg`); a stronger lean (3.5-7 m) put her feet at 75-85% of the frame, under the hotbar. Her feet sit about 70% down at the ring. If it's reopened, spring the ring nearer the gate (exitZ -104 is the limit) or ease the view out further, not the lean. C02's control-frame grade step is 8.1% (threshold 8%): the judge passed it as a fade. Toast merging is built but never seen in a frame.
+
+**Item 10, the day stretch (N18), as built:** NOT the Verge, because the Verge is east of the Waystation (its exit runs "West along the Old Road") while the ford road enters by the south gate, which is built in `lowford` (gatehouse, towers, curtains in `props_own.json`), where C04a shows it and C04b is staged; the Low Ford was already a permanent day zone (`prologue.done`, the south gate travels to it) and Lamps v2 drafted `act1.post1` there (coordinator approved, 4 Nov).
+- Data `godot/data/content/day_stretch.json` > `godot/logic/Play/Zones/DayStretch.cs` (game and harness) + `Prologue.Day.cs`. Beats: boars on the road (2,-80) with the charge tell (freeze callout `day_charge`); the Kerchiefs' camp (44,-89), captain rallies (hover callout `day_hover`), leash 8; strongbox (45.4,-85) in it; `act1.post1` relit at (-1,-86) (permanent, `LampBook.PostLit`); the west wallow (-42,-89); two ambushes; the wolf ring at -97 (`TellClosing`, Flare filled, `day_flare`), a follow wave, the gate held till it's down (`DayStretch.GateOpen`), C04b only through the gate. The morning sun climbs over the stretch (`Atmospheres.LowFordMorning`, `MorningClimbs`). Clearings and `"solid"` circles for the hill's cliff rocks in `lowford/props_own.json`.
+- Reset as data: `godot/data/content/zone_resets.json` (`lowford: "reset": "day"`) + `godot/logic/World/ZoneReset.cs` (for the Wayfinder's maps). Tests `DayStretchTests.cs`.
+- Run: `--stage day` starts at C04a; autopilot route `DayStretch.Goal`. Batch `survivorsunchained_inputs\scratch_h4_lead3\batch_d.json` j08 (with batch_j.json, sheet.py). Harness `Balance.dll lowford-day` (bin `godot/balance/bin/h4day`).
+- Measured (final j08, `seams_h4
+uns_g4`): hand-back t 34 to the gate about t 207, so about 2:55-3:00 of game time (freezes pause it; about 3:20 on the clock). Lowest health 76/212 (36%), no falls; the ring at 187, its follow wave down at 206. A post-judge fix: a pack's foes more than 24 m off (after 6 s up) no longer hold the ring and the gate (run g3 soft-locked 4 min on one stuck ambush foe; `DayStretch.Fighting`, test `A_pack_left_standing_far_off_does_not_hold_the_ring`). Harness 64 seeds: human/careless 0 falls, median ~2:00 (bots don't read or loot), lowest 32% median / 17% worst; 3+1 seeds stuck chasing a howler that keeps its distance (a bot limit). Cuts: C04a hand-back and the gate into C04b PASS, cut_light worst 4.9%.
+
+**Marks 1-4 as built:** (1) `WardenView.TakeFrom` (BossViews.cs) from `GameCinema.Finish`, C02 s12 ends on Sword_Idle, `HerLod.FilmFollows` (the film's last shot on play's LOD rule), his lamp light eases from the flame, `WakeHold` 1.0 s, cape springs copied; (2) `Game.HoldFrame(2)` over the C03 > C04a chain; (3) `Voices.Ambient` queue (1.5 s after control, one at a time, 0.45 s fade-in, >= 2.5 s; `Voices.Held = InSeam`); (4) one bark per lamp event, `IZoneHost.DuckTip`, no lore in the C02-fight-C03 run.
+**Tools gap:** `tools/freshness.py` checks models, not textures: after integration's R2 the ground's `*_paint.jpg` sheets weren't imported and the ground rendered white. Run `Godot_console --headless --path godot --import` after a merge that brings textures.
+
+**Not H4's (route these):** the arena's flat dark floor at arrival (arena art); the grade jump on Mother Rook's close-up, C04b sb4 > sb4b (cinematics); red cheek patches in C02 s8 (face); the Warden as a black silhouette in play (his boss-tier rebuild); at C01's control the MOVE tip and "Warm your hands" arrive together (tutorial wording); C04a sa8a holds her still over three narration lines (cinematics); a villager walks 0.5 m behind her in C04b sb5. (STAGGERED banner spam: done by H1, 56bb5626a.)
+**Spend (lead 3):** lead ~250k; helpers ~1.65M (mark solvers 201k + 102k; item 10 builders 275k + 231k + 197k; light 152k; rock 130k; judge 147k; post-judge fixes 160k); API $0.
+
+## H4 seams (seams-h4 lead 2, 4 Nov): history (lead 3 above took the four marks and item 10)
+
+HANDOFF READY seams-h4@e0d4ed514 (the code; this doc commit follows it). Lead 2 handed off at ~255k after two judge rounds. Items 2, 3, 4, 6, 7, 8, 9 PASS; items 1 and 5 FAIL round 2 on four small, exact marks (below); item 10 NOT STARTED. Pushed to origin/seams-h4. Integration (look-r1, anim-62) and combat-h1 (H1's Tell/Targeting API) are merged in.
+
+**Brief:** `docs/team/hook/H4_seams.md` (items 1-9) + `docs/team/DEMO_GATE.md` N18 (item 10). Report to main only at the judge's verdict and "MR READY seams-h4@<sha>". The coordinator is changing sessions, so THIS LINE is the record: put MR READY / HANDOFF READY as this section's first line. Peers: H3 audio (wires `SoundHooks.Cue`; ids `ui.way_out`, `ui.skill_ready`, `cine.to_play`), H1 combat (combat-h1).
+
+**Judges:** round 1 in scratchpad `judge_h4\` (su-lead-max xhigh), round 2 in `judge_r2\` (c02_warden.jpg, c04a_her.jpg, c04b_text.jpg, snuff_c.jpg). Scratchpad S = `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch--claude-spares-spare-vbE3sS\9b88d234-4c08-456b-bf87-d5e3616316a8\scratchpad\` (H4's files in `seams_h4\`: `batch_j.json` = j01 C01, j02 C02, j03 C03>C04a, j04 C04b, j05 the Warden fight with `--auto --teach-reset --lampcheck`, j06 arena arrival, j07 an arena win (~30 min); run `python tools/experience/demo_run.py S\seams_h4\batch_j.json j01,j02 --out S\seams_h4\runs`). Measures: `tools/experience/cut_check.py LOG` (speeds, jumps, HUD, pose, and her head/feet inside x 25-75% / y 20-72% through the seam + 3 s), `tools/experience/cut_light.py LOG godot/.shots` (brightness change <= 8% per 0.1 s in a seam), `--cutlights N`, `--lampcheck` (LAMPCHECK lit/inframe/all/her every 0.5 s in the Warden fight). A runner's background job dies with the runner: run long shoots yourself with run_in_background, or have the runner run them in the foreground.
+
+**Round 2 verdict: the four marks left.** Round cap 2 is reached: ask main for a round 3 on these four (each is exact), or close them as known.
+1. C02 > fight: on the control frame the Warden snaps from his film pose to his fight pose (~40 deg turn, blade high) and shifts toward her. Fix: start his AI/view from the film's last pose with a 0.4-0.5 s blend, first attack after the HUD is up; or end C02 s12 on his fight idle (`Prologue.cs` StartBoss / `wardenView`; `GameCinema.cs` Finish hands the Warden back on the frame he first draws).
+2. C03 > C04a: C04a's first frame (j03_ho_c04a_016) renders the dawn set with no heroine and no grass; she pops in a frame later (log: her outfit swap `her wear: warden` + mesh merge, and `BUG, indexing did not unpair geometries from light`). Fix: do her swap/merge and the set dressing during C03's last second, or hold C03's last frame until she is ready.
+3. C04b > play: three town barks pop on at full opacity on the HUD's frame and two are gone 0.4 s later. Fix: ambient barks start 1.5 s after control, one at a time, fading in, >= 2.5 s up.
+4. Lamp snuff (j05_snuffed_1): the BREAK HIS SPELL panel lands on the Warden and the post as it shatters; "The lamp shatters!" and "The Warden reels!" stack on the burst; a lore line shows at the same instant. Fix: that panel in a fixed slot under the boss bar (or ~1 s after a lamp event), one bark per lamp event, no lore tip in the boss fight. j05_snuffed_2 (one bark on the burst) is the look to match.
+Round 2 quotes: "Not yet: C01 passes a motion judge; C02, C03 > C04a and C04b each have one small, exact mark." / "Clunky still seen: those three, plus the spell panel on the snuff; the lamps themselves now read as three."
+
+**Built (both H4 leads):**
+- Item 1 (`godot/src/Game/GameSeam.cs`): the hand-back eases on an arc round her (look ~0.8 m up her, the film's framing blended out ahead of the move), place and turn on one ease, 0.35-1.6 s; HUD fades in just before landing; control on landing; her walk carries. Grade tables blend through atmosphere cues and over the seam (`Atmosphere.cs` LutFor/MixLuts/GlideLuts, `FadeHaze`); a chained film places its camera with its first cues; the lamp beacons fade in over 1.2 s; C04b B5 blends to the clock's play air (`GameClock.ClockAir`). Measured brightness steps 7.7/6.0/6.3/4.2% (C01/C02/C03>C04a/C04b). C01 PASSES round 2.
+- Item 2 (PASS): C02 s5 tilts up with his rise (no swing or zoom onto the lantern); his unseen lines read "A VOICE IN THE WATER" (a line cue's `"as"`, `GameCinema.cs`).
+- Item 3 (PASS): no play banners in films (`Ev.Announce` dropped during a cinematic, `hud.ClearBanner()` at a film's start, a zone `Announce` during a film waits for play); C03 s6 opens lit and its title ends inside s6; s12 an MLS on her and Grimtunnel (set from her mark), then the pull-out, 14.2 s; s8's heart lifted off her chest; C04a A8 hands back mid-stride 4.6 m up the road (was a 12 s steered walk; end mark `up`); the douse burst at end-1.2. Known: sa8a holds her still over three narration lines.
+- Item 4 (PASS): `CinePaths` checks; the Waystation handcart and sacks moved. Known: a villager walks 0.5 m behind her in C04b sb5.
+- Item 5 (FAILS on mark 4 only): lamp marks beside the boss name (`godot/src/Ui/LampMarks.cs`, `BossBar.Lamps/LampsLit`, 28x38, out one by one, a flare on relight; timeline in `godot/logic/Ui/LampMarkAnim.cs` + tests); lit posts are beacons in the fight (a cold halo and a pool of light; `godot/src/Game/GameLampPosts.cs`, tuning flags `--beacon-pool/-glow/-halo/-off`); cold-blue edge pointers for off-screen lit posts (`GameHud.Posts.cs`); lamp tips wait 1.5 s after a lamp event; at most 2 barks near one source (`Voices.NearCap`); a dark backing behind tip words in boss fights. The fight camera is the original lean to him, at 25 m. A lean toward the triangle and a wide fitted frame were tried and measured worse (her lost up to 36% of the fight; a dark, empty board): the posts are 16-19 m apart and never share a play frame.
+- Item 6 (PASS): the way out with its banner at +0.8 s, `Ev.WayOutOpen` -> `ui.way_out`, the ring's hint; the Great Blessing after the arrival fade and after the arena title has faded (`IZoneHost.BannerUp`); the `arch` glyph redrawn as a portcullis (its pin read as a skull); the Leave prompt keeps loot labels off it.
+- Item 7 (PASS): one ready glow that settles (`Instrument.cs`). The judge's note: a capture with a slot left idle for 2 s would show a regular slot settle.
+- Item 8 (PASS): `Portrait.cs` strips the alpha-erase pass; `FIGURECHECK`.
+- Item 9: the Waystation starts the clock at C04b's hand-back.
+
+**Item 10 (N18, the day between the Warden and the town): NOT STARTED, design open.** Today: `Prologue.cs` HeartGone -> FirstLight (C04a) -> `Stage.Dawn` (~10 s, `Dawnbreak`) -> `Stage.Exit` (p.Z < ExitZ) -> Finish -> the Waystation and C04b. N18 asks: out of C03 she is in the Verge by day (the last stretch between the Low Ford and the town gate; the Verge zone exists in `godot/data/zones/verge` and was judged; `godot/balance` has the `verge-day` measure), 3-5 min of free play teaching what the night needs (H1's telegraph and the Flare's save, the hover target, a chest, a lamp), with the gate in sight; C04 plays at the gate. It is a permanent zone: the town gate opens onto it by day, its state saves, it resets on the day change. H1's API (merged): `b.Tell(kind, from, x, z, scale)` (ring|charge|pull, `data/content/telegraphs.json`), `b.TellClosing(x, z, n)` + `b.Closes(e)`, `b.Priority = enemyId`, `Sim.Targeting.AtPointer/AlongStick`. Agree the teach hooks with H1. Est 0.5-0.6M.
+
+**Not H4's (route these):** STAGGERED banner spam in arenas (~20 a night in zone-title type; H1, main passed it on); the arena's flat dark floor at arrival (j06_00/01; arena art); the grade jump from cool blue to heavy sepia on Mother Rook's close-up, C04b sb4 > sb4b (cinematics); red cheek patches in C02 s8 (face); the Warden as a black, toppling silhouette in play (his placeholder; the boss-tier rebuild); at C01's control the MOVE tip and "Warm your hands" arrive together (tutorial wording).
+
+**Next, in order:** (1) the four marks (one round, if main allows a round 3): reshoot j02, j03, j04, j05, one su-lead-max xhigh judge on just those; (2) item 10; (3) the full suite (`dotnet test godot/tests/Tests.csproj`; last 1483/0/10), push, "MR READY seams-h4@<sha>" as this section's first line and to main.
+**Spend (lead 2):** lead ~255k; helpers ~1.4M (solvers 190k + 192k + 153k, judges 142k + 118k, workers ~180k, runners ~250k); API $0.
+
+## Experience 12 (exp-12 lead, 3 Nov): gate items 1, 2, 4 and tools T1-T3 DONE, MR READY
+
+**State:** DEMO_GATE items 1, 2 and 4 DONE (see their rows), T1-T3 DONE. Tests 1453/0/10. xhigh judge "goal pins" r1 PASS-WITH-NOTES on both items, its must-fixes applied and checked at 1:1 (no round 2 needed).
+- **The goal system** (the app can now point a player anywhere with one data entry): `godot/data/content/goals.json` (zone, `when`/`lineWhen` as the shared `Cond`, `pin` = an interactable id, `into`/`at`/`first`, label, glyph, color, `edge`, `near`, `fade`; `{boss}` words from `Zone.Word`), `godot/logic/World/Goals.cs` (Active, Merge), `godot/src/Game/GameGoals.cs` (tracker merge, minimap `MarkKind.Goal`, map "Your road", screen marks), `godot/src/Ui/GoalMarks.cs` + `GameHud.Goals.cs` (on-screen pin with a ground tick, edge arrow with distance, kept off the tracker corner; `EdgeMarks.Keep` slides boss/elite marks off it). Glyphs `chart`, `arch` added. Tests `GoalsTests`.
+- **The autopilot follows the goals** (`godot/src/Game/Autopilot.cs`, `GoalWalk`, `Table`, `Track`; routes by `godot/logic/Sim/GroundPath.cs`, tests `GroundPathTests`): flags `--offer N`, `--leave-after S`, `--nights N`, `--no-goals`; step frames `loop_*`; town steps kept as saves (`Keep`).
+- **Run tool:** `tools/experience/demo_run.py` (+ `sheet.py`); the proof batch `survivorsunchained_inputs/scratch_exp12/batch_final.json`, snapshots in `survivorsunchained_inputs/demo_runs/` (`load_snap: "fr3_loop:loop_back_1"` = back at the table after a won night).
+- **Routes (after the demo):** UI: the won result's "What you take out" shows its spoils then empties within ~2 s; the tracker's goal diamonds could take the goal's color; the night line "Answer the night: hold N" beside "Tonight: The Wayfinder's table" may read as a second route. Experience: the "way out is open" banner subline shows 1.6 s before the line and arrow; nothing says what leaving takes at the ring.
+
+## Experience 11 (demo-1 lead, 3 Nov): THE DEMO GATE written, MR READY
+
+**State:** `docs/team/DEMO_GATE.md` is the one backlog (owner's reset, `DEMO_PLAN.md`): the loop played end to end at 1920x1080 (first-time path 21 min, 125 frames, 0 exceptions; all four callings through the prologue; town screens; table > night > result > table; save/reload), ranked BROKEN 1 (suspected) / MISSING 2 / CONFUSING 3, one max xhigh review applied. No game code changed.
+- **Worktree** `.claude/worktrees/demo-1`, own junction `godot/assets` -> its own `public/assets` (skip-worktree). Evidence: `docs/experience/demo_gate/*.jpg` (half size); full frames in demo-1's `godot/.shots/` (a_*, b_path*, c*, e1_*, f*, g1*, h*, k_*).
+- **Run tool:** `survivorsunchained_inputs/scratch_demo11/run.py BATCH.json` (one godot turn per batch; `fresh` moves saves aside, `snap` copies the saves after a run, `load_snap` reloads the longest-played slot with `--load`). Batches `batch_a..k.json` are the gate's runs; `sheet.py` makes labelled contact sheets.
+- **Gotchas:** `--auto` closes every overlay (so no `--open maps` under it) and never takes an arena's way out; `--pull` + `--auto` gives a black night (gate item 6); `--zone arena --offer 0 --auto` is the clean night harness; other leads' quick runs overwrite `user://saves` (snapshot right after a run).
+- **Next (Phase 2, Experience):** gate items 1, 2, 4 and tools T1-T3.
+
+## Experience 10 (exp-10 lead, 28 Oct): fixed list DONE, MR READY
+
+**State:** all five items closed; exp-10 merged with integration 47c99dae; the full test run is the last check before the MR.
+- **1. Act 1 DAYS playtest:** a new headless measure, `dotnet run -c Release -- verge-day --seeds 12 --stages 1:1:0,4:2:2,4:2:3,8:4:4 [--bot deft] [--callings ..]` in godot/balance (Harness/VergeDaySim.cs, 9b5fadbf; ~30 s). It runs the Verge's day packs at Verge.Level() in three setups: OLD (1/2/3 slots, no Hands), NEW, and NEW without the Hands. Result: days play 0-15% faster, and HP lost per pack drops from ~7% to ~4%. Packs were already trivial before the change (lamplings 0%, 3-5 s kills from L4). Sent to main for Classes 15: the Axe Gyre reaver can't survive day 1; the L1 calling skill was never granted (Classes 15 granted it on classes-15@e7417546, in its MR1); the stalker's Hand never fires by day (P8). Main logged "Verge days have no stakes" as a later item. **Owed after Classes 15 MR1 lands:** one verge-day re-run (main asks). Tables: scratch `exp10\s1\verge_day*.md`.
+- **Prologue Ambush:** an idle player loses 35% (212 to 138), inside 25-40%. The normal pilot loses 6%.
+- **2. "Ember fills this":** keeps its box on the bar's run (her hair to the Flare cup). A bare point on the crest failed two xhigh judges ("can't tell what 'this' is"), and judge r2 picked the box (GATE YES). The arrow now drops plumb onto a wide box (Callout.Lands).
+- **3. The lock lesson** is now "The ember's count / Hold Alt to see the ember's level, and how far it is to the next." Target "card": GameHud.TeachCard holds the numbers card up while the callout shows, bracketed via XpCardArea; EmberLockArea is gone. Judge r1 PASS.
+- **4. Callout rings** fit the Drowned Girl: Flare = DgRiver.FlareR; dash = DgSmall.RingD/2 at DashMid; flask = half its height at DraughtMid; default seat = SeatD/2. Judge r1 PASS on sizes. Small boxes (a seat) are landed on at the top middle only (r2 fix, checked at 1:1). **With UI 20 (main relayed):** the rings cross the SPACE/R/Q key plates, the rings' colour, an optional crest trace.
+- **5. Zoom pop:** already fixed by 2719e93c and judged SHIP (Experience 8); closed.
+- **Scratch:** `exp10\` in coordinator 31372078's scratchpad (pace5.py for exp-10, briefs, logs amb1, v1-v4), backed up to `survivorsunchained_inputs\scratch_exp10\`. Frames: `godot/.shots/v1-v4_teach_*`.
+- **Cost:** worker 44k, runner 40k, solver 122k, judges 56k + 49k; API $0.
+
+## Experience 9 (play-1 lead, 27 Oct): MR5 fix round done, re-judged; MR5 READY
+
+**State:** the MR5 fix round (12 items) built, the xhigh re-judge (aebd7397) gave A and B SHIP WITH FIXES (small); its three fixes built (df36280d); a full run v8 on the final code. This was i15's and i14's last round: anything later is a new list.
+- **Built:** elite/chest/pack tips re-timed, the Barrow line waits for the pack tip (e11df505); the Knight lives through 2 windups; L4 talk cut; L1 lock after the 2nd rise's draft, no crowd gate (ec6c92a5, 33c8d478); F2 aims at `chain_fill` (Instrument.ChainFill); F7 rings the Knight + arrow on his lane, the wall case fixed (open-ground test now uses a wall's faces, not its box; the Knight narrows when stuck out of sight) and F8 shows while the Grave-Caller stands (his arrival fills her Flare once; the autopilot holds the Flare for it) (1b130e90); the draught lesson under 70%, no "she must be seen" wait, gap 3, held off the Knight's windup/lunge + 1.5 s (df36280d).
+- **Ambush stakes** (36a8658f..24aeacb2, df36280d): opening volley x1.5, ditch dead x1.3, 24 foes held, and a steer in `Prologue.AmbushMul` via `Battle.FoeHitMul` (x0.25 when she loses >1.2%/s; x2.5 when she stood still 3 s and loses <0.9%/s in the first 30 s, off after she drinks). Idle loses 27-29% by +30 s (amb21-23), the dodging pilot 7.5-10% (n13-14). Judge: the steer is acceptable while no hit numbers show on her.
+- **Closed as known:** the F7 arrow tip lands on her figure (reads "you're on it").
+- **Routed (with the MR):** the Knight's white flash (VFX/model); the dark blue night frames (env). UI 16's "Knight low in frame" was the old v4 frame; v6 has him mid-frame.
+- **Scratch:** `survivorsunchained_inputs\scratch_play6\` (briefs, pace5.py, logs amb*, n*, v6-v9). Frames `godot/.shots/v6_*`, `v6b_*`, `v8_*`.
+- **Cost:** worker 64k + 44k, solvers 189k + 151k (3.7 h of runs), judge 131k, API $0.
+
+## Experience 8 (play-1 lead, 27 Oct): PAUSED (coordinator wind-down); MR5 judged, ONE fix round left
+
+**Paused here (Experience 8, 27 Oct); next:** run the fix round in scratch `play5\brief_mr5fix.md` (12 decided items) on ONE fresh `su-worker` (or a medium su-lead-high for items 11-12, which need digging). Then ONE xhigh re-judge of only the changed frames (F2, L1, F7, the Post tips, F8, the draught if it fires) plus the ambush HP numbers, then one full shot-free run, tests, and MR5 to main. This is i15's last round (the cap): anything still open after it closes as known. Integration f09f6d81 is merged in (5ae3fdb1). Tests 1130/0/8. No turns held, no helpers running.
+- **Built since Experience 7:**
+  - Item 14 + F7 (89d2a819, 81b93b42, 203ed65a): lessons L1 lock, L2 tally, L3 minimap, L4 talk; the Ember explanation in order; Callout `Quiet`/`Still`; `--auto talk`.
+  - New GameHud accessors `PromptArea`, `MinimapArea`, `TallyArea`, `EmberLockArea`: the merge point with UI 14.
+  - F7: the Knight's holds are bounded and his first lunge is forced at close range (26faaf13, 2b4ac60f, 993a94af: `Enemy.LungeMin`; `pace knight windup/watch` log lines).
+- **Judge (xhigh, combined, a16ec7c2):**
+  - C, the zoom pop: SHIP.
+  - A, i15 round 2: SHIP WITH FIXES, close. No stakes yet: v4 and v5 ran at 212/212 the whole Prologue. Tune the Ambush with `--auto idle` until an idle player loses 25-40% HP; the draught lesson fires under 70% HP.
+  - B, i14 + F7: SHIP WITH FIXES, close. Cut L4; move L1 to the 2nd rise; F7 rings the Knight, with the arrow at her spot on the lane; space the Post's tips; F2 aims at the filled links; the chest tip loses its E chip; F8 (art) never shows in time.
+  - Every fix is in the brief.
+- **F7 status:** f7e is within target (the windup came 11.5 s into the Post). f7f is the wall case: no clear ray, so the first freeze was dropped "gone, notyet". That's brief item 12.
+- **Routed (tell main with the MR):**
+  - The red-line telegraph reads salmon, not red (combat VFX).
+  - The freeze dim leaves night frames near black (UI).
+  - The lock shows her own level by day with no word (UI; it matters from night 2).
+  - Pink-skinned figures in the town's top left (NPC).
+  - The "RAV CUTWELL" label is clipped at the top edge (UI).
+- **Scratch:** `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\9c583f93-c0ad-4a2d-8f37-a803f39d38c2\scratchpad\play5\`, backed up to `survivorsunchained_inputs\scratch_play5\`. It holds pace5.py (env STOP, BASE=hub, AUTO), the logs v4, v5 and f7a-f, and the briefs i14, f7fix, mr5fix and judge_mr5. Frames are `godot/.shots/v4_*` and `v4b_*`.
+- **Cost this session:** solver 201k, worker 57k, judge 151k, API $0.
+
+## Experience 7 (play-1 lead, 26 Oct): PAUSED (coordinator wind-down); MR4b MR READY (db2f125a, sent); MR5 mostly built
+
+**Paused here; next:** MR5 at play-1@5ce39cac+this doc, tests 1074/0/8, no turns held. Built:
+- **Item 15 (pacing)** f2da898a..1e5deea3 + judge fixes 5ce39cac. Judge i15 r1 (xhigh, play4\judge_i15.md): SHIP WITH FIXES, close; all fixes applied (dash freezes at 4 m with bolt marks and a dodge line; draught waits only for a freeze (`Callout.Urgent`); the Road's dead fall away, coins at the wagon tail, the objective set at the trap, 0.8 s silence; spacing from a line's end; the shield tip from the trap with new copy; unvoiced lines up >= chars/17 s CENTRALLY in `Game.Say`; no spawns in Road/ToFord/Road2's first 6 s). v3 timeline in play4\logs\v3.pace; frames `godot/.shots/i15t_*`. Round 2 = ONE xhigh judge on the i15t frames (no draught frame in the seeded run; v3.pace has it at 192.3 s, HP 87) combined with the zoom strip below and item 14.
+- **Zoom pop** 2719e93c: the room ray (new `logic/Play/CameraRoom.cs`) sees past thin posts, passes over low colliders (drawn top cached), glides in log distance; 14.85% -> 3.29% a frame max. Strips play4\strip_zoom_before/after.png, unjudged: a lamp post now passes in front of her for a few frames (a thin-occluder fade would be polish, likely close as fine).
+- **Perf tail** (CLOSED AS KNOWN): C02 start 91-138 ms cold (cast 16-22 ms + first cues 31 ms + 117 pipelines on the first draw; only an offscreen pipeline warm would cure it, at a cut it hides); 319.7 s not reproducible; 345/891 s outside our code on a shared GPU. Diagnostics in dce862db (`--perf` prints a cinematic start's sections).
+- **Open, NEXT:** item 14 (UNBLOCKED: the owner picked HUD A2, bottom-center layout kept): teach the minimap + map key, check the talk prompt appears at an NPC (`Style.KeyCap` + name; autopilot never talks: script a walk-up), the padlock "4" and kill/gold counters, Ember in plain words (TUTORIAL_COPY "The Ember explanation"); audit text `survivorsunchained_inputs\play1udit_au1.md` item 14. Also F7 (the Knight's red-line lesson) never shows in real runs (old): fix in the same pass. One medium solver, then the combined judge, then the full run, MR5.
+- Scratch play4\ (briefs, pace.py, cam.py, jumps.py, strip.py, logs). Cost this session: solvers 191k+165k, worker 88k, judge 114k, runner 30k.
+
+## Experience 6 (play-1 lead, 26-27 Oct): PAUSED (coordinator wind-down); MR4 sent at ea5f1cc2; MR4b (s5+s6) built, checks left
+
+**Paused here; next:** MR4b = the Prologue's freezes, commits b18d9c53 (s5) + 9a13fc74 + 6af708cb (s6), tests 1070/0/8, full shot-free run s6full: 61 frames over 33 ms (mr4b 165), 5 over 100 (was 12). Done: cinematic starts (her double built ahead on a worker `--no-double-ahead`, the dawn thaw's sun map baked ahead, C02's cast files and each cinematic's boss+extras built ahead `--cast-ahead off`; C04 A 2.43 s -> 49/59 ms, C03 351 -> 31/65, C02 1212 -> 28 then 125 ms); the "draft" hitches were TEACHING CALLOUTS (`Callout.Place` ~6000 spots, each allocating a Bezier list: 325-400 ms -> ~10 ms, same placement). LEFT, in order: (1) the no-look pixel check of the ahead-built cast: C02 and C04 A at fixed fps seed 1, on vs `--no-double-ahead --cast-ahead off`, vs a HEAD-vs-HEAD floor (sh4/sh5/cmp.py; a worker job); (2) check the arrival frames 1160/119/90 ms at 459.4-459.6 s against the travel fade (behind full black = known; visible = hold the fade-in a few rendered frames); (3) optional: C02's 2nd frame 125 ms (13 figures entering the tree + 47 pipelines: add them hidden a few frames early); then merge integration (82c1f68e heroine repack; junction rule; import), full test, MR4b. Then MR5 (items 14+15). s6's run used `--stale-ok` (play_perf_s.py). Cost MR4b: s5 202k, s6 183k (medium), API $0.
+
+**MR4 (frame time), MR READY at play-1@06c7db76 (integration merged, imported; tests 1070/0/8; full shot-free Prologue run mr4b clean, no errors):**
+- s1 ade3d9ea: the Waystation's pieces built on a worker during C04 A, one step a frame (`Slices.Paced`; `--ahead-main` = old path). C04 A: 0 new frames over 33 ms (was ~20 of 100-224). Hold behind the black 2.2 -> ~1.0 s (one ~0.9 s frame: her outfit 256 ms, Waystation.Begin 214, 900 pipelines). CLOSED AS KNOWN: the screen is static black; a split needs her figure built ahead via `HerWear.Live` (s3's plan) if UI ever animates the hold.
+- s2 368f6085: GC pauses cut (Godot Variant/StringName wrappers surviving young GCs: HairSway, HerFaceLife, OwnClips, Controls, Instrument); `Atmosphere.GradeLut` on workers (bytes identical). Editor runs use .NET 10 via GodotPlugins' rollForward, so csproj GC settings don't apply in our runs; exports run net8.
+- s3 c80fdae3: flipbook atlases loaded ahead, the draft backdrop warmed, HerJiggle string churn. s4 9b1075dc + fa8a5373: folk shadow merge (`FolkShadow.cs`, shadow draws -86%), off-screen folk animation held (-2.4 ms with 16 folk), walkers built on a worker (`WalkerView`), a draft rehearsal (`GameMenus.RehearseDraft`; the hub's first draft 80+85 -> 36+45 ms, closed as known). Switches: `--folk-shadow off --folk-lod off --walker-later off --draft-rehearse off --folk-churn S`.
+- No-look-change checks (w1): grade LUT 0 bytes differ; her close-up frames vs the old files at the noise floor; Waystation arrival vs `--ahead-main` spread jitter only (sheets in scratch play3\w1\).
+**Next (s5, brief in scratch play3\brief_s5.md):** the shot-free run found freezes at cinematic STARTS: C04 A 2.43 s (+326 ms), C02 1.21 s, C03 351 ms (~240 MB allocated each), and the Prologue's first drafts 382/325 ms (the rehearsal doesn't cover them). Then MR5 = items 14 (UNBLOCKED by UI 12: teach minimap, lock, counters, Ember plainly; talk prompt = Style.KeyCap + name label, looks are UI's) + 15 (Experience 4's notes below). Routed: the play camera's ~30% zoom pop in Animation's side strips: likely `FollowCamera.Place`'s `room` (a 2D raycast on Battle.Collision, GameCloseUp.cs ~30, snaps in at rate 14 on any collider incl. low props): diagnose with a camera log.
+**Scratch:** `...\fce3bb46-...\scratchpad\play3\` (tr.py, perf.py, play.py, play_perf.py = no --shot, frames/cut/corr.py, trtrace2.py, sh4/sh5.py, cmp.py; `..\alloctool` = s2's trace reader). Shots mode saves PNGs that cost 300-800 ms a frame: never read hitches from a `--shot` run.
+
+## Experience 5 (play-1 lead, 26 Oct): PAUSED for the coordinator's wind-down; MR4 freeze WIP at 69338d30 (NOT mergeable)
+
+**Paused here; next:** finish MR4's freeze (below), then the folk LOD, then the full test and MR; then MR5 (item 15, Experience 4's notes below). Integration merged at 0a447b24 (docs only, no import needed). No turns held. Item 14 still on HOLD for UI 11 (`a00a39b9f159396f9`).
+
+**MR4 freeze, WIP 69338d30 (medium solver a5323c4b, 192k).** The Waystation is now built ahead during C04 A (`Game.Prepare`/`BuildAhead`/`PumpAhead`, new `src/World/Slices.cs` step runner, `Prologue.Dawnbreak` calls `G.Prepare("waystation")`; ZoneView/Dressing.Props/OwnWalls as steps; GroundPaint.Ahead; MapScreen.DrawAhead; Prefetch.Ahead; Travel waits behind the black via WhenBuilt). Tests 1054/0/8.
+- Before (repro tr0): build frame 7.46 s, then 1.62 s (the map's first drawing, `MapScreen.Drawing`, not pipelines). C04 A already had 79/127/93 ms frames of its own.
+- After (tr2): build frame 2.41 s (EnterPlay 2082 ms: `Waystation.People` 1567, her outfit 292), next frame 57 ms. **But C04 A now has ~20 frames of 100-224 ms from the ahead-steps: do not merge until fixed.**
+- Fast repro (2 min): `play2/tr.py NAME --zone lowford --cine c04a --prepare waystation@24 --travel waystation@40 --perf-warm 2 --perf-for 40`; `frames.py NAME 33` lists slow frames; `trtrace.py`, `sscope.py`, `sslong.py FILE "Game._Process" 150` for dotnet-trace trees.
+- NEXT, in order (each measured with the repro): (1) long ahead-steps: OwnWalls' ground SetPixel loop (214 ms; float[] on a worker + CreateFromData), prop file loads one per step (find the slow ones), flora 128, scatter 109, GrowGrass 186 (Randf), landmarks 237, OwnWalls.Furnish 157, `OwnWalls.Take`'s ResourceLoader.Exists 281 ms (cache it). (2) EnterPlay in one frame: load and hold the townsfolk's parts during the build ahead (`Waystation.People`, `Arms.Make` 232); reuse her PlayerView when `Loadouts.Look` is unchanged; C04 B's cast rebuilds her (`GameCinema.Cast` "CineSurvivor" 244-310 ms): a spare figure matched by look. (3) pipelines (~910 on the build frame): measure whether the main thread waits; add the scene in pieces behind the black. (4) Check the Waystation looks the same at arrival, then the full play.py run.
+- Acceptance (unchanged): fade start to first play frame no frame over 100 ms (stretch 50), hold at most ~2 s past the fade, C04 A no new frame over 33 ms.
+- Spawn the next solver fresh with this list (the old one was at budget). A loading indicator during the hold, if needed, is UI 11's look.
+
+**Folk LOD (not started):** mixers off off-screen (VisibleOnScreenNotifier3D, generous AABB), small parts' shadows off or one merged shadow caster per folk (HerLod.Merge pattern; persons built in People.cs / NpcPackage.cs), ABAB with flipstat.py (flips anim, people). Real play after C04 has 4 folk, the quick start 15.
+
+## Experience 4 (play-1 lead, 26 Oct): MR3 MR READY (d6868600); MR4 diagnosed, HUD part fixed (54e83e86), the rest NEXT
+
+**Start here (Experience 5).** Scratch: `<coordinator scratchpad>/play2/` (play.py, play_fixed.py = play.py at `--fixed-fps 60`, perf.py = the hub straight from launch with `--perf`, flipstat.py NAME = an ABAB flip run's in/out means, ease_sheets.py, `*_stale.py` = copies with `--stale-ok`).
+- **Merge integration first.** turn.py now refuses play-1 as STALE (an integration commit came in). Follow the junction rule: `cmd /c rmdir godotssets`, merge, remake the link, then `--headless --import`.
+- **An import is needed after every merge.** A stale cache broke the hub build with a missing own:crock.
+
+**Owner and coordinator (26 Oct):**
+- The HUD and UI visuals are placeholder until **UI 11** (worktree ui-11, SendMessage id `a00a39b9f159396f9`) finishes.
+- The split: UI 11 owns how each element looks and where it sits; we own when it shows, what it says, and the flow. Sign-off goes both ways, and neither side edits the other's code without asking.
+- No judge rounds on how any tip, ring, chip, card or marker looks. Judge flow, timing and wording only.
+- Audit item 14 (minimap, talk key, counters, Ember in plain words) is on HOLD for UI 11, which will say when the HUD settles. Item 15 is ours (below).
+
+**MR3, canopy fade: DONE, MR READY play-1@d6868600, sent to main.**
+- Motion judge e2 (xhigh; 6 bursts of consecutive 1/60 s frames caught mid-ease via `--canopy-log --canopy-burst N,K` under `--fixed-fps 60`): the ease band and the half-faded holds SHIP at 1:1.
+- It found crowns whose axis sat behind the lens plane flashing over her for 3 frames. Now any crown within 1 m of the lens is cut, eased over the 1.5 m before it. Rejudge e3: SHIP.
+- Tests 1054/0/8.
+- town_o_03 subtitle: asked Env 17 (aa34beda274ad4169) for the frame, no reply yet. Speech is a 2D CanvasLayer, so a tree can't draw over it. Main says: if it's low contrast over foliage, give the line a backing (that's now UI 11's look); if it's a mid-fade catch, close it.
+
+**MR4 findings (the hub straight from launch, `perf.py`; numbers noisy run to run, GPU shared, so trust only ABAB flips):**
+- Hub frame is 14-22 ms, CPU-bound (GPU 3-3.6 ms). The new wall-clock cuts in Perf (`cut: physics / tail (queue) / draw / after`) place the old "unaccounted ~6 ms" in two spots:
+  - Godot's message queue: controls' _Draw after QueueRedraw, plus skeleton updates.
+  - The renderer's draw: about 2 ms over its measured CPU time, which is GPU sync.
+- **HUD, ABAB:** 5.0 ms a frame (queue 3.4 + draw 1.3), and in ALL play, not just the hub. Fixed in part at **54e83e86** (worker): minimap marks pooled, redraw on change; the queue is down about 1.9 ms.
+  - Still per-frame because they breathe by Time: the dash glass while ready, the chain glow with heat, a ripe socket rim, the bezel's day ember.
+  - UI 11 took "the HUD under 1 ms, redraw on change, no per-frame node churn" as hard constraints for its rebuild.
+- **Folk, ABAB with 15 folk out in the quick start (real play after C04 has 4):**
+  - Animation (`--perf-flip anim`): 4.7 ms total, about 0.3 ms a folk (mixers 1.7, skeleton queue 1.2, draw/skin setup 1.7).
+  - Drawing (`--perf-flip people`): 3.2 ms, with +105 draws and +510 SHADOW draws (about 33 shadow draws each: many outfit meshes, each casting into the sun cascades and the lamps).
+  - All three (anim, people, labels): 7.9 ms.
+  - Her (visibility only): 1.6 ms.
+- **NEXT for frame time (code, ours):**
+  1. Folk animation LOD: mixers off when off-screen (VisibleOnScreenNotifier3D), a lower rate when far.
+  2. Folk shadows: one merged shadow caster per folk (her HerLod.Merge does this for her: "23 shadow casters into 1"), or no shadows from small parts.
+  3. Re-measure with `flipstat.py` (flips anim, people, hud, her). Folk art itself belongs to NPC/Marionette (baked dressed NPCs will be single meshes); say so to main.
+- **NEXT for the 6 s freeze:** nothing built yet. The facts:
+  - `Prologue.Finish` calls `G.Travel("waystation")` (Game.cs ~735). It fades 0.8 s, then `EnterZone` builds synchronously, a 7.6 s frame (ground+water 2.1-2.3 s, props files 0.9 s, props 1.6 s, textures 0.4-0.56 s; 1041-1126 pipelines on first draw). Then C04 B plays.
+  - The black hold shows a static caption, so it reads as a hang. Her outfit is rebuilt (250-310 ms) at every cinematic hand-back.
+  - Plan:
+    a) preload the Waystation's files (ResourceLoader.LoadThreadedRequest) during C04 A at Low Ford (27 s);
+    b) split EnterZone's laps over frames behind the black, with something that moves (ask UI 11 for the loading look);
+    c) a pipeline prewarm: render the hub from the C04 B and play cameras behind the black before the fade-in;
+    d) stop the outfit rebuild at hand-back when nothing changed.
+  - Measure with `--perf h1`-style real runs (play.py with `--perf NAME --perf-warm 8 --perf-for 2600`; the window lines and `built in` laps).
+  - Art causes go to main with numbers, for Env 17.
+
+**MR5 = audit item 15 only (go):**
+- Health is full until 2:46, so dash and the draught are taught with nothing to dodge. Add a real threat in the Ambush (Prologue.cs `case Stage.Ambush`, ~694).
+- The Road (4 s) and ToFord (6 s) are skipped. Give the Road a short lore or loot beat: the Road ends at `p.Z < cart.Z + 7`, Prologue.cs ~670.
+- Space the lessons. No new HUD visuals.
+- Copy is in our voice, logged for Story in docs/story/TUTORIAL_COPY.md.
+- Judge on flow, timing and wording (xhigh) with a play.py run.
+
+**UI elements the tutorial depends on (sent to UI 11 and main asked for it here; what each must communicate):**
+1. Callout, Freeze/Arrow/Panel (Callout.cs, Teach.cs, GameTeach.cs): a ring on the target (world ember, HUD pale, lamps cold blue), a title, 1-3 lines. Says: look here, what it is or how, paused, how to go on.
+2. Off-screen marker: says one of them is that way (the lamps).
+3. Dash-ready form (GameHud.DashLit, Round.Form, Licks, FormGlyph): says your next dash is your calling's art. It must not look like a callout highlight.
+4. Key chips ({key:X} in copy, TipLine.Chip): the bound key, readable on the tip bar.
+5. Tip line: one optional fact, then it fades.
+6. Teaching cards (Panels.cs v.Teaching): choose one, and what each does in a line. No reroll, banish, skip, recipe or shared reasons.
+7. Ember chain and padlock (Instrument.cs): gathered ember fills it, full means rise and pick a skill, and the number is tonight's rise.
+8. Ember halo on the ground: pick this up.
+9. Channel tip and cast bar ("Break his spell" / "Raising the drowned: break it!"): stop this now, with the tool that's ready.
+10. Boss bar with the lamps: the lamps shield him.
+11. Red line ring (F7): get off this line.
+12. Level card (F12): N levels kept for good, skills were lent, press C to choose N traits.
+13. Interaction prompt ("[E] Talk Chid"): you can talk to them. Unverified, because the autopilot never walks up to anyone.
+
+## Experience 3 (play-1 lead, 26 Oct): MR1+2 MR READY (sent to main at 9f3b6c8e); MR3 canopy fade built, motion re-check NEXT
+
+**Start here (Experience 4).** Scratch: `<coordinator scratchpad>/play2/` (play.py, play_burst.py, logs, judge_b1 crops).
+1. **Import first:** integration 6d8c2e92 (Env E9d) is merged in (0c658800) with new assets: run `Godot_console.exe --headless --path godot --import` (~4 min) before any shot. One untracked .uid was set aside in `play2/uid_backup/`.
+2. **MR3, the canopy fade** (solver commits 10741942, 943c0eec; tune 34f1bca2). kit.gdshader OWN_FOLIAGE: a tree whose crown covers her or the ground within `canopy_fade.x` m of her (on screen, at her distance) fades whole by the house fade's dither; the lower trunk stays (per-species crown_lo/hi/r/keep in data/flora_species.json); shadows kept; play camera only (`KitLook.CanopyView`). Switches `--canopy R,E,G|off`, `--canopy-log` (CPU mirror, prints the blocking trees).
+   - Judges: the stills (c3_* vs h1_*) SHIP at 7 m / 0.85 (it asked 6 m / 0.80). The MOTION judge (burst b1_*: `SHOT_FROM=143 python play_burst.py NAME 0.05 24`) FAILED the dithered ghost: a screen-door patch over her ember-lit ground and frame-to-frame sizzle (crops `play2/judge_b1/`, p2223.png).
+   - Applied its quick fix, NOT yet re-shot: crowns cut 100% once eased, ease 1.5 m (`canopy_fade` = (6, 1.5, 1, 1) in project.godot).
+   - NEXT: re-shoot in motion (movie mode `--write-movie <file>.avi --fixed-fps 60`, or a burst) covering an ease-in AND an ease-out; judge (xhigh); full test; MR. If the ease band still sizzles, the judge's preferred fix is alpha blend (alpha ~0.2, depth write off) with a shadows-only copy.
+3. **Also on MR3 (coordinator, 26 Oct):** subtitles show through a tree in Env 17's town frame `town_o_03` (UI/text draw order): find the frame in Env's shots and fix it with MR3.
+4. **Sent to Env 17** (aa34beda274ad4169): the tree list. Five spruce trunks stand in the road at z 63-70: (-3.7, 63.2) (-7.9, 69.9) (-5.6, 69.4) (-6.6, 66.9) (-8.0, 64.3); the rest are covered by the fade. Roofs (au1 6): the h1 hub run shows E9c's house cutaway already clears them, so it is closed.
+5. **MR4 baseline (h1 run, `play2/logs/h1.log`):** the Waystation built in 7608 ms (ground+water 2067, props files 949 + props 1574, textures 405, landmarks 231, grass 171, the rest 242) plus pipelines. Her outfit is rebuilt (250-310 ms) at EVERY hand-back (the "her outfit" laps after each cinematic). Hub windows: p50 11.6-13.2 ms against main 3.4-3.7 + render 3.2-3.4 + gpu 3.0 ms, so ~6 ms is unaccounted (engine side: animation mixers, skeletons, physics, navigation? Godot's Performance monitors). The 0.1% and max (230-630 ms) are the shot captures every 20 s, not the game. Perf is noisy while other leads use the GPU (38% GPU use with no game running): measure ABAB. Then MR5 (audit 14, 15).
+
+**MR1+2 round 3 (commits after 134c320f):** judge r3 (xhigh): all 7 frames SHIP (frames `survivorsunchained_inputs/play1/r3/`). Fixes:
+- The Flare's great blessings leaked on a test profile: `GameTeach.Taught` read the profile before `--teach-reset` cleared it (the Teacher is lazy). `Taught` now builds the Teacher first.
+- Callout rings round a HUD part are pale (`Callout.OnHud`, `Mark(..., pale)`); a lit dash form wears flame licks and the calling's badge (`Round.Licks`, `FormGlyph`), animating through freezes (`ProcessMode.Always`); the ring round a lit dash stands 18 px out (`GameHud.DashLit`). Form copy "When your dash is aflame, it's a charge / ...".
+- Channel: `Prologue.ChannelTip()` shows at a channel's start only with an answer ready, naming only what's ready; title "Break his spell"; cast bar "Raising the drowned: break it!"; the RISE bark 1.3 s after the tip (`riseBarkIn`).
+- Teaching panels drop the recipe, "Fits your build" and any reason every card shares; card bodies keep their last two words together.
+- Tips take inline keycaps: `{key:I}` in a tip's text (`TipLine.Chip`, a small SubViewport). Pack tip broken at sentence ends.
+- Callout `Aim.Cold` (ice-blue ink), `Aim.WordsNear`, `Aim.ShunBig` (words off bosses): the lamps use all three. Red line ring kept off the chest (`KnightLane`).
+- Tests 1051/0/8.
+**Polish routed to UI (judge r3, not blocking):** great-blessing footer rows at uneven heights (anchor reason + tag rows); gray "not in your build" tags read as disabled (style alike or drop); env: forest near-black outside her light pool.
+**Run variance seen:** red_line and draught can go untaught in a run (queued, dropped "notyet": likely canopy over the Knight/her); the canopy fade (MR3) should help; re-check in its run.
+**Next:** MR3 canopy whole-tree fade (kit.gdshader OWN_FOLIAGE; hub run first for the roofs), the tree list to Env 17; MR4 Waystation freeze + frame time; MR5 audit 14 and 15.
+
+## Experience 2 (play-1 lead, 26 Oct): MR1+MR2 judged twice (history; round 3 done by Experience 3)
+
+**Worktree/branch** as Experience 1 below (junction to the worktree's OWN `public/assets`; to remove the link use PowerShell `cmd /c rmdir godot\assets` from the worktree, since bash's `cmd //c rmdir` failed). Integration 126b1d9e is merged in. Import cache is fresh. Run tool: `<coordinator scratchpad>\play2\play.py NAME EVERY COUNT --teach-end` (one godot turn, about 9 min to dawn). It logs `teach ...` and now `tip <id> t= keys= text=` lines, and shoots `NAME_teach_<id>_1.png` and `NAME_tip_<id>_1.png` into `godot/.shots/`.
+**Done (commits 3145c709, 200aeb30, a2a06a12, plus the copy doc):**
+- au1 4: the channel tip had a dead key, because Act.Ability became Act.Flare on 11 Oct and her calling's art now rides the dash (Forms.cs). The tip now names Bull Rush and the Flare. A new F6b `form` callout in the Ambush. The dash ring glows ember when the form is ready (`Round.Form`), and the gray "Bull Rush: ready" note under the Q orb is gone.
+- au1 9: the lamps callout says how. Callout rings keep out of the top-right HUD corner (`GameTeach.HudCorner`).
+- au1 10: F8 waits for "Your pack" to clear. The Knight doesn't begin its first lunge far from her or under another callout, and holds it once while F7 waits.
+- au1 2: the opening is spread. The great blessing gets its own panel 40 s into Rising, and dash comes after it. Timeline in m2: 0:45 / 0:46 / 0:53 / 0:55 / 1:21 / 1:39 / 1:51 road / 2:09 form.
+- au1 3: `Battle.FlareGreatsHeld` keeps Flare blessings out until F8.
+- au1 13: F12 and its banner now give the counts and tell traits from skills (`Callout.Mark` picks the word marked in ember).
+- au1 17: a line rests 300 s per NPC (`NpcActor.LineRest`). au1 20: the lanes log.
+- Judge round 1 fixes: the blessing kicker is keyed on holding a great blessing, no summon blessings before a summon, teaching panels hide Reroll/Banish/Skip, keys read 1-N, and lamps2 no longer re-fires every frame.
+- Tests 1051/0/8 before round 1.
+**Round 2 judge (m3 frames): level SHIP; all round-1 asks landed; 6 FIX.** Fix next, in this order:
+1. **Called Shot (a Flare blessing) was still offered at 1:21.** `b.FlareGreatsHeld` is set at Prologue.cs ~1157 and read at LevelUp.cs:293. Find which path still adds FlareGreat: maybe another offer builder for the GreatRoles Answer slot, or setup running on another Battle. Also change the great block's `o.Why.Add("Your calling's own")` to "Suits your calling".
+2. **The form glow can't be told apart:** a callout's HUD-target spotlight is ember too (`hud.Spotlight`). Make the callout highlight neutral (pale), and give `Round.Form` ready a look of its own (flame licks or a horn badge). Re-break the form lines: "When your dash glows, it's a charge / that throws the dead aside. / Big ones stop it, but they're stunned, / and their spell breaks."
+3. **Channel tip:** show it only once the form or the Flare is ready. Hold the Warden's "RISE..." bark until the tip settles. Use one name: cast bar "Raising the drowned: break it!" (Prologue.cs channel case) and title "Break his spell".
+4. **First draft:** hide "Fits your build" and the "Evolves:" lines on teaching panels (Panels.cs, `v.Teaching`). "all the way round" -> "sweeps the whole front of you" (Butcher's Cleaver text).
+5. **Pack tip:** an inline [I] chip (hint text has no inline keys today: `TipLine`), with breaks at sentence ends.
+6. **Lamps:** the off-screen markers are orange flames but the lamps are cold blue (recolor the markers); drop the card lower-left, off the Warden.
+Routed by the judge: Combat card copy (Cold, Then Not tail; "fire" -> "strike"); UI (rarity row floats, dim italic objective, Night icon at dawn, bottom-right counters over bright planks); Env (no visible flame in the lit lamps); Rendering (ferns cover her at the form freeze).
+**The m3 run found:** with the Knight's first lunge gated on her distance (8 m), a kiting run never saw F7 and the Post ran 140 s. Gate removed (commit after d9748814). m4 confirms the fix: F7 showed on its first windup (199.9 s) and the art freeze followed at 214 s.
+**Tests:** PrologueTests updated (the first rise brings its card alone). Full suite 1050+1 green after that fix. Run the full suite before the merge.
+**Still open from judge 1:**
+- The red_line ring sits at the lane's far end by the chest. Order `KnightLane()` points away from L("chest").
+- The pack tip's "I" chip is dark (`GameHud.HintKeys`, UI).
+- "Cold, Then Not" tail copy (Combat).
+**Then:**
+- MR3: canopy whole-fade per tree instance in kit.gdshader (`see_parts`, OWN_FOLIAGE). Re-check whether E9c's house fade already fixed au1 6 in a hub run.
+- MR4: Waystation 6 s freeze. The audit log breakdown: ground+water 1.8 s, props 1.5 s, her outfit built twice (about 0.5 s), 1126 pipelines. Fix with a black-hold pipeline prewarm before the fade-in. Hub p50 13-15 ms against main 4 + render 4.6 + gpu 3.5: diagnose with a medium solver, art causes to main for Env 17.
+- MR5: au1 14 and 15.
+**Routed (tell main):** night exposure crushes her and the dead at 1:1 and she blows out under the gallows lantern (Rendering); blobby canopies, flat crates, gray boulders and graves (Env); the "blocked" floater collides with the Warden's bark (UI); the zone header reads "Night" at dawn (UI); the Q orb shows the calling's bull icon for the Flare (UI).
+
+## Experience 1 (play-1 lead, 26 Oct): step 1 MR READY, the audit done, step 3 (fixes) next
+
+**Worktree** `.claude/worktrees/play-1`, branch `play-1` (from integration f91a13ca). `godot/assets` is a junction to this worktree's OWN `public/assets` (skip-worktree): never stash, reset --hard or checkout .; before merging integration, `cmd /c rmdir godot\assets`, merge, remake it. Import cache is current. Commit named files only (the .import/.uid noise stays out). Tests 1046/0/8.
+**Scope (coordinator brief):** playability of the path from new game to Act 1. Env 16 owns env art, Face 41 and Body 12 own her: route their items to main in one line.
+**Step 1, DONE, MR READY play-1@3cf21c2b** (the owner's 25 Oct butt-shot note). C04 A: the old A8 became A8a (a 3/4 front full figure at head height, for the reeds and sun lines, with a soft sinking ember) plus A8 (over her shoulder at shoulder height; she walks off 5 s in; `top` moved to -71). A1s is her front 3/4. The dawn now comes up under the lines (atmosphere preset `playdawn`), and the ford lamps dim with it. Code: `PlayerView.Still` (no idle breaks while a cinematic holds or hides her), nova `plain` -> `BattleFx.Sinking`, GameCinema `playdawn`. Four xhigh judges, all camera SHIP. The doc is `docs/cinematics/shoot/c04a.md` "As it plays now". Frames are in `survivorsunchained_inputs/play1/`. Scan of the other cinematics: no other low rear shots.
+**Step 2, DONE:** the audit `survivorsunchained_inputs/play1/audit_au1.md`: 20 ranked items with their owners and sizes, and the fix order at the end. Run tools (backed up): `survivorsunchained_inputs/scratch_a44c2c21/play1/` (`play.py NAME EVERY COUNT [args]` is the full real-play run, one godot turn, ~9 min to the hub; `shoot.py RUNS.json` and `jedit.py c04a ed_X.py` are the cinematics tools; all point at play-1). The autopilot now walks to the Waystation at Dawn (e84d289d).
+**Step 3, NEXT (start here):** the fixes in the audit's order, small MRs, each re-run on its stretch. (1) Items 4, 9 and 10: the "[ABILITY]" key name unresolved on the boss banner plus a Bull Rush callout; the lamps callout says how and aims clear of the HUD; YOUR PACK out of the Knight fight; the red line held until its callout shows (`Prologue.cs Callouts()`, `logic/Play/Teach.cs`). (2) Items 2, 3 and 13: spread the opening six lessons; Flare before the Great Blessing; the level copy. (3) Items 5 and 6: the canopy and roof cutaways. (4) Item 7: a loading screen and pipeline pre-warm. Judges: teaching frames at xhigh (whole-frame gate).
+**For main / the owner:** SB00 (the storybook lore intro) is OFF (`sb00.json` `"live": false` since 19 Oct, waiting on its painted plates), so a new game opens on black, then C01.
+
+## Teaching pass round 2 (teach-1 lead, 19 Oct): rounds 2-3 judged, fixes built, the MR next
+
+**Worktree** `.claude/worktrees/teach-1`, branch `teach-1`. Integration merged twice (fd5271bc; 470c3293 with env 1 E1). Commit named files only: the `*.import`/`.uid` noise and the local clip pack (`godot/art/anim/heroine.res`, `heroine_clips.json`, `tools/anim/manifest.json`, rebuilt here by `tools/anim/build.py`) are NOT committed. Tests 993/0/8.
+**Built:** the callout queue (`logic/Play/Teach.cs`), freeze and aims (`src/Game/GameTeach.cs`), the drawing (`src/Ui/Callout.cs`); F1-F10 and F12 in `Prologue.cs Callouts()`.
+**Verdicts** (`survivorsunchained_inputs/teach1/`): judge1 (r1 1/11), round2/verdict.md (r2 0/10: the dim), round3/verdict_fixes.md (r3, the cap: F3, F4 PASS; the callouts pass in F2, F5, F6, F10, their gate fails are the WORLD; seven small fixes, all built and checked by the numbers). Final frames: `teach1/final/`.
+**Since r1:** world dim ~30% with her own soft pool, HUD whole; damage numbers, trails and sparks hidden under a freeze (`BattleFx.Frozen`); the camera holds in a freeze; F2 brackets the whole chain (slots and buttons over it at 20%, heat fills from the left); F4 no arrow; F7 waits for a windup in the open with the Knight in view (`Aim.Open`, `Aim.Seen`, `GameTeach.InOpen`, per plant for flora scatters) and rings the lane clear of her; F8's copy says what a Flare is, in three rows; F9 rings a lamp only well inside the screen, the others get an edge marker (a ringed glyph with a tip), copy "Three lamps guard the Warden..."; her keep-out covers what she holds; ground embers get a warm breathing halo (`shaders/ember_halo.gdshader`, faded by ALPHA so fog paints no square).
+**Autopilot:** at the Post it circles until F7 is read, then closes on the Knight (`Autopilot.cs`, `Game.OpenGround`); before that it walked off and the run stalled.
+**MR READY** (19 Oct): the final xhigh check on HER 11 frames (`teach1/final_her/`, sheet_11.jpg) passed the callouts everywhere; F10 (she hid under a roof slab) fixed with Aim.HerSeen and re-shot. Gate fails left are the world (routed below). Earlier rounds' frames showed the male hero by mistake (no --sex female). Open, not blocking: world barks show dimmed during a freeze (hide them like damage numbers); F1 may ring an ember with a mob over it.
+**Run:** from godot/, under a godot turn: `Godot_v4.5.1-stable_mono_win64_console.exe --path . --resolution 1920x1080 -- --quick warden --sex female --auto --teach-reset --teach-hurt --teach-end --shot teach --cines --until 1500 --count 0` (`--teach-diag` logs the cover checks; 10-35 min depending on the GPU). Frames `godot/.shots/teach_teach_<id>_1.png`.
+**For the MR and other leads:** F8 teaches the Flare on Q (the story writer reconciles the F8/F13/F9 copy in docs/story/TUTORIAL_COPY.md). The Knight and the Grave-Caller can't die until their callout shows (caps 48 s, 30 s); F7 can be missed if the fight stays under cover (the cap lets the Knight die). Elite lanes draw through roofs game-wide (combat). Slot icons come from the skill's painted icon (HUD). Routed world items (r3): white fog blotches over the Low Ford Road (environment: the largest gate failure); lamps blow out to a white disc with blue bloom (lighting); the opening cinematic's frost decal left on a flat prop in play (cinematics); card UI "1-4 Choose" with three cards, Moonbrand's text cut, orphan words (UI); the Q orb's percent on its sigil (HUD); light squares round Thornbloom's brambles, likely the same fog-on-quad fault in `BattleFx.Skills.SkillGround` (VFX).
+
+## The owner, in their words
+
+- "We are striving for perfection." Improved is not the bar: ask whether this is the best version of the moment in any game, and root it in how the best games solve it.
+- "Endless is truly endless."
+- Full pages pause rarely, and "are often not the best choice".
+- Story nights: "smaller arena", "proper arpg end bosses", no endless.
+- Time "passing should probably happen".
+
+**Standing decisions:**
+- A lost story fight wakes her at Chid's a day on.
+- Redcowl can be spared or killed.
+- One rise in Act 1; after that, only with the rise skill.
+- Story is about 40% of the early game.
+- The endgame is PoE-like maps plus survivors arenas.
+
+**Working rules:**
+- Only 3 to 5 leads run at once.
+- One Godot turn per batch of shots: look once, then fix in one pass.
+- Handoffs are lean, at about 500k tokens.
+
+## The brief
+
+You own how the game feels to play, end to end: pacing, readability, the day clock, the story fights' flow, what the screen says and what is noise. Play it on the autopilot and in scripted runs, judge it at 1920×1080, then fix it yourself or brief the owning lead in short writing: what's wrong, the evidence, the target, how it's judged.
+
+**Branch:** `worktree-agent-a9f0d6c64d891d56d`. The main session merges it; open no PRs. Run `dotnet test` in `godot/tests` before each commit.
+
+## Collaborators (roster in `docs/team/README.md`)
+
+- **Combat** `a739d6792d21f5efd`: the story fights. 52d202f2 and later are not yet judged.
+- **UI design** `a4fdbc49786ba8b7f`: the dial and the fall at 2378e165; the result screens.
+- **Story** `a7ba8903f4c8261b1`: all the words.
+- **Paused:** skills `abc6bbe020c7fe287` and arena art `aba487928a1515c93`. Their asks are on the status page.
+
+## Failures and gotchas
+
+- **A fresh worktree has `godot/assets` as a 16-byte stub.**
+  - Fix it: delete the stub, make a junction to `public/assets` (PowerShell `New-Item -ItemType Junction`), run `git update-index --skip-worktree godot/assets`, then `--headless --import` (about 4 minutes).
+  - A checkout can turn the junction back into a stub, and the game then renders black frames or throws in `Dressing.PartsOf`. Check `(Get-Item godot\assets).LinkType`.
+  - Once, deleting the stub through git removed `public/assets`. `git checkout -- public/assets` brings it back.
+- **Copy `.godot` from an older worktree** to skip the full import.
+- **Godot runs `.godot/mono/temp/bin`.** Run `dotnet build SurvivorUnchained.csproj` in `godot/` after every change.
+- **To judge someone's unmerged work, use a local `exp-judge` branch,** then return to your own branch and delete it.
+  - Skills' branch conflicts with loot's code, so leave it out.
+  - Revert regenerated `.import` files before switching branches.
+- **The shell guard** refuses compound git commands, `cd ..` followed by git, and runtime-built sed. Write a small Python script in the scratchpad instead (`gist.py`, `branches.py`, `contains.py`).
+- **The autopilot** never answers a story fight's spare/finish offer (the Roost stalls), and takes the first card of every draft. A drafted Cold, Then Not rises her on its own. Use `--auto idle` to see the fall card.
+- **Quote commit ids only from git.**
+
+## Tools (scratchpad `experience/`)
+
+- `play.py NAME -- [game args]`: a run at 1920×1080 and 60 fps, with the log in `logs/`.
+- `batch1.sh`: one turn holding all three fights whole (`--on boss --until 720`), the fall, the dial, the Verge, loot and map results.
+- `gist.py NAME`: a run's health by time, its tagged moves and its exceptions.
+- `sheet.py`, `tsheet.py`, `crop.py`, `keep.py` (frames to `docs/experience/`).
+- `wait_for.py`.
+- Turns: `turn.py take godot "experience: <job>" --wait 30`.
+- **Game switches:**
+  - `--night ID`, `--stage N`, `--on boss`, `--die T1,T2`, `--choose rise|letgo`;
+  - `--clock S`;
+  - `--loot [legendary]`, `--hoard N`, `--strongbox`;
+  - `--open mapresult [--fell]`, `--perf-off taa`.

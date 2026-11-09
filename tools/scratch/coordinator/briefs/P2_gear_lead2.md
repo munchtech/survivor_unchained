@@ -1,5 +1,5 @@
 Spawning: allowed
-Context budget: 300k
+Context budget: 200k
 
 ## P2 gear, lead 2 (9 Nov, coordinator ad002ada): pauldrons, the slider proof, the plate set's missing pieces, the Marionette tool, the 3-set judge, the `--body p1` flip
 
@@ -18,4 +18,4 @@ Area: P2 gear (PIPELINE row P2; the P2 chain `tools/scratch/coordinator/briefs/P
 
 For A1: `Jog_Fwd` is a broken clip (spine_03 against spine_04 bent 35-50 deg every frame); main has relayed it. When main says motion-a1 has packed the P4 clips, re-run `gear_wear` on them.
 
-Report to main (SendMessage "main"): a short oriented line (the list with states, an estimate) within your first few turns, then at the judge, at MR READY, at a HANDOFF, at a block, and for anything only the owner can answer. Report shape: "P2: the app can now X; this cost Y; the next piece costs about Z." Budget: ~0.7-1.0M left. Hand off at ~300k with `HANDOFF READY gear-p2@<sha>`. Scratch: `scratchpad\gear\` (lead 1's briefs and numbers are there; back up to `survivorsunchained_inputs\scratch_gear_p2\` and clear only that subfolder at the end). Godot turns: `python C:/Users/munch/Desktop/survivorsunchained/tools/turn.py take godot "P2: <job>"`; Blender `take blender`; give back at once. Worktree cap 8 (at cap now: helpers work in YOUR worktree, never isolation worktree).
+Report to main (SendMessage "main"): a short oriented line (the list with states, an estimate) within your first few turns, then at the judge, at MR READY, at a HANDOFF, at a block, and for anything only the owner can answer. Report shape: "P2: the app can now X; this cost Y; the next piece costs about Z." Budget: ~0.7-1.0M left. hand off at ~200k with `HANDOFF READY gear-p2@<sha>`. Scratch: `scratchpad\gear\` (lead 1's briefs and numbers are there; back up to `survivorsunchained_inputs\scratch_gear_p2\` and clear only that subfolder at the end). Godot turns: `python C:/Users/munch/Desktop/survivorsunchained/tools/turn.py take godot "P2: <job>"`; Blender `take blender`; give back at once. Worktree cap 8 (at cap now: helpers work in YOUR worktree, never isolation worktree).

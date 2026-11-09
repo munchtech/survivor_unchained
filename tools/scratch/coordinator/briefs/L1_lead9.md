@@ -1,5 +1,5 @@
 Spawning: allowed
-Context budget: 300k
+Context budget: 200k
 
 ## L1 the look, lead 9 (9 Nov, coordinator ad002ada): the 13-frame judge, the pool rebuild, Stage D, GATE G2
 
@@ -15,4 +15,4 @@ Area: L1 the look (PIPELINE row P12). Worktree `C:\Users\munch\Desktop\survivors
 
 Then (after G2, main re-briefs): the P5 Low Ford pockets (`tools/scratch/coordinator/briefs/P5_lowford_pockets.md`, worktree world-p5) and M10's sizing (Act 1's ground through the look pipeline).
 
-Report to main (SendMessage "main"): a short oriented line (plan, estimate) within your first few turns, then at the judge, at GATE G2 READY, at a HANDOFF, at a block. Report shape: "P12: the app can now X; cost Y." GPU and Godot turns through `python C:/Users/munch/Desktop/survivorsunchained/tools/turn.py` (godot for shoots, not gpu; give back at once). Hand off at ~300k with `HANDOFF READY look-l1@<sha>`. Scratch: `scratchpad\look_l1\` only; back up to `survivorsunchained_inputs\look_l1\work\` and clear only that subfolder.
+Report to main (SendMessage "main"): a short oriented line (plan, estimate) within your first few turns, then at the judge, at GATE G2 READY, at a HANDOFF, at a block. Report shape: "P12: the app can now X; cost Y." GPU and Godot turns through `python C:/Users/munch/Desktop/survivorsunchained/tools/turn.py` (godot for shoots, not gpu; give back at once). hand off at ~200k with `HANDOFF READY look-l1@<sha>`. Scratch: `scratchpad\look_l1\` only; back up to `survivorsunchained_inputs\look_l1\work\` and clear only that subfolder.
