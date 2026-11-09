@@ -1219,7 +1219,10 @@ public partial class VatCrowd : MultiMeshInstance3D
     {
         Asset = asset;
         Name = $"crowd:{asset.Key}";
-        Layers = 2 | SurvivorUnchained.View.PlayerView.CrowdLayer;
+        // (L1 l9 B2, rule 7: the crowd's own layer only, not people's (2): her FolkLight (#ffc08a, 5x her lamp, mask 2 | HerLayers)
+        // lit every wolf within 11 m pale peach, the pack's tan (09 crowd L50 0.45 h 46; the ember term, the lift, the fill and the
+        // grey card left it, the lit paint carried it). Her lamp reaches the crowd in its own paint only (crowd_ember, vat.gdshaderinc).)
+        Layers = SurvivorUnchained.View.PlayerView.CrowdLayer;
         CastShadow = ShadowCastingSetting.On;
         // They go everywhere: never culled as a whole (each is small; the GPU is not the limit here).
         CustomAabb = new Aabb(new Vector3(-1e4f, -1e4f, -1e4f), new Vector3(2e4f, 2e4f, 2e4f));

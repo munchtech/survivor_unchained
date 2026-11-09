@@ -239,6 +239,8 @@ void fragment() {
 	// (L1 W2, B2: the crowd fur class's albedo control, materials.json "albedo", after the night lift and before the copy's own
 	// tint, so the dead's darkening and the mud still read; LOOK_BIBLE rule 7: mid-dark bodies, never pale silver)
 	c = cel_alb_apply(c);
+	// (L1 l9 B2: --crowd-dbg-mode 8, the grey card: the paint's luminance only, every light as it is, to find a hue's root)
+	if (crowd_night.w > 7.5 && crowd_night.w < 8.5) c = vec3(dot(c, vec3(0.2126, 0.7152, 0.0722)));
 	c *= abs(COLOR.rgb);
 	if (COLOR.r < 0.0) {
 		float low = 1.0 - smoothstep(0.25, 1.15, vat_local.y);
@@ -442,7 +444,7 @@ void fragment() {
 		BACKLIGHT = vec3(crowd_top.a);
 		// (less of the unshadowed ambient, which lit them alike in the canopy's dark and in its pools)
 		AO = crowd_amb;
-		if (crowd_night.w > 2.5) {
+		if (crowd_night.w > 2.5 && crowd_night.w < 7.5) {
 			// (the debug masks, for tools/render/crowd_lamp_measure.py; ALBEDO and every light off, an emission of 0.4 on one
 			// channel. Mode 3: red within 5 m of her, green 8-12 m, blue between; yellow the flat; magenta the dead. Mode 4:
 			// red within 1.5 m of her, green 1.5-2.5 m, blue 3-4 m. Mode 5: red 5.5-6.5 m, green 6.5-7.5 m, blue past 7.5 m.
@@ -493,6 +495,9 @@ void fragment() {
 			EMISSION = mix(EMISSION, fc * fire_rim, fw * ice) + fc * fire_rim * fw * (1.0 - ice) * pow(rim, 3.0) * 0.35;
 		}
 	}
+	// (L1 l9 B2, measuring: --crowd-dbg-mode 9 the emission alone (no lit paint), 10 the lit paint alone (no emission))
+	if (crowd_night.w > 8.5 && crowd_night.w < 9.5) ALBEDO = vec3(0.0);
+	if (crowd_night.w > 9.5 && crowd_night.w < 10.5) EMISSION = vec3(0.0);
 	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug).
 	CEL_FRAGMENT;
 }
