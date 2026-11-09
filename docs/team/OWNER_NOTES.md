@@ -8,6 +8,17 @@ Then, the same night: **"Our original body was really good. this was to make it 
 The owner then weighed keeping A for her and using B for NPCs: "the problem was her body was so hacked together and not smooth or \"easy\" to change"; "the arms and stuff were a real pain in the butt. so we probably do need to keep moving forward on the rebuild." **The rebuild stays.** The gate adds her arms in motion and how easy she is to change.
 On MakeHuman ("why are we still using makehuman? is there not something better?"): her base doesn't switch now. The owner said yes to testing MetaHuman against our base later, when the R3 head, him or NPCs start, after reading Epic's current license.
 
+**8 November (P1 coordinator).** The owner asked: "we aren't just hacking this together right? this is being built so it can be manipulated with sliders and make making more npcs easier right?" They also said: "one of the main reasons we were rebuilding the body was for better rigging and easier forward progress".
+
+R1's gate now also has to prove ease of change:
+- her sliders moved one at a time, with nothing tearing or popping;
+- a second body built from the same pipeline with none of A's data, holding up;
+- a list of which parts are her-only A data and which are general pipeline, with a plan to promote A's patches to rule defaults.
+
+B's two runtime crutches go when A1 rebuilds her clips on B's rig: the HerShrug port and P1BlendBase. No more of A's runtime code goes into B. NPCs stay generated dressed (21 Oct) unless the NPC bake-off picks this base.
+
+**The owner, on sequencing: "finish body first".** A1 rebases onto B's new rig data (B's joints moved in rounds 24-28) as soon as R1 passes. It does not run alongside R1.
+
 ## 5 November 2026, night (P1 rebuild coordinator 3bede919): P1 REBUILD PLAN: "Go, with your changes"
 
 - P1 breasts: **(Owner, 6 Nov) "our tests so far are not round"**, with a board: Erza Scarlet (Fairy Tail), "good shape size and physics and often wears armor" (`body_p1\refs\owner_board_round_shape_erza.webp`, a board only). The BARE shape is now round globes through the whole volume, a full upper pole, large with a wide base wrapping to the side, set high, pressing to a deep cleavage line, soft weight on the ribcage over a slim waist. The push-up proxy stays the armor test. Roundness becomes a forms-rule number. Relayed to R1 lead 3.
