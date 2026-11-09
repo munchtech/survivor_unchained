@@ -326,7 +326,11 @@ public static class HerWear
         }
 
         bool full = Wear.IsCallingSet(look, calling, ix);
-        bool lodFile = full && ResourceLoader.Exists($"res://art/people/heroine_outfit_{calling}_lod.gltf");
+        // (B's gear, --body p1: the calling's play-tier unit is its built body's own (ArmorPiece.LodFile), and B's body has no
+        // tuck channels: its tuck is always the map)
+        bool gear = rows.Any(r => r.Gear);
+        string? gearLod = gear ? rows.Select(r => r.LodFile).FirstOrDefault(f => f != null && ResourceLoader.Exists(f)) : null;
+        bool lodFile = !gear && full && ResourceLoader.Exists($"res://art/people/heroine_outfit_{calling}_lod.gltf");
         if (lodFile)
         {
             // (her gameplay body shares her skin's materials and its own vertices have no tuck map: one calling's
@@ -338,7 +342,8 @@ public static class HerWear
         }
         else TuckMap(p, rows, under);
         if (Prof) GD.Print($"wear prof: tuck map {ap.Elapsed.TotalMilliseconds:F1} ms");
-        if (full) HerLod.Attach(p, calling);
+        if (full && !gear) HerLod.Attach(p, calling);
+        else if (full && gearLod != null) HerLod.Attach(p, calling, gearLod);
         if (lodPairs.Count > 0 || lodShadows.Count > 0)
         {
             var lod = HerLod.For(p);
@@ -380,6 +385,8 @@ public static class HerWear
         mi.Skeleton = "..";
         mi.Layers = 2;
         mi.SetMeta(Meta, id);
+        // (a built body's own piece (B's gear): P1Laws never hides, swaps or rebinds it, and keeps it on its body's shapes)
+        if (ArmorIndex.Shared.Find(id) is { Gear: true }) mi.SetMeta(P1Body.GearMeta, true);
     }
 
     static List<MeshInstance3D> Of(Dictionary<string, List<MeshInstance3D>> d, string id) =>
@@ -892,10 +899,10 @@ public static class HerWear
     /// at each of her points.</summary>
     static IReadOnlyList<(long Key, float T)> Footprint(ArmorPiece r)
     {
-        var path = $"res://art/{r.Dir}/armor_cover/{r.Id}.bin";
+        var path = r.CoverPath;
         if (tucks.TryGetValue("foot:" + path, out var f)) return f;
         var d = new Dictionary<long, float>();
-        if (r.Tuck != null) foreach (var (k, t) in Records($"res://art/{r.Dir}/{r.Tuck}")) d[k] = t;
+        if (r.TuckPath is string tp) foreach (var (k, t) in Records(tp)) d[k] = t;
         if (FileAccess.FileExists(path))
             foreach (var (k, t) in Records(path))
                 if (!d.TryGetValue(k, out var o) || t > o) d[k] = t;
@@ -1135,8 +1142,8 @@ public static class HerWear
         var at = new Dictionary<long, float>();
         foreach (var r in rows)
         {
-            if (r.Tuck == null) continue;
-            foreach (var (k, t) in Records($"res://art/{r.Dir}/{r.Tuck}"))
+            if (r.TuckPath is not string tp) continue;
+            foreach (var (k, t) in Records(tp))
                 if (!at.TryGetValue(k, out var o) || t * TuckScale > o) at[k] = t * TuckScale;
         }
         if (under != null)
@@ -1147,6 +1154,15 @@ public static class HerWear
         foreach (var mi in bodies)
         {
             var keys = KeysOf(mi.Mesh);
+            // (B, --body p1: its play body (lod_p1_body) wears the close body's materials (P1Laws.PlaySwitch), so one map holds
+            // both, the play body's values after the close body's, read at its instance's tuck_offset; gear_tuck.py keys the
+            // records on both tiers' points)
+            if (P1Body.IsB(p.Skeleton) && mi.Name == "Heroine" && p.Skeleton.GetNodeOrNull<MeshInstance3D>("lod_p1_body") is { Mesh: not null } lb
+                && keys.Length == 1 && lb.Mesh.GetSurfaceCount() == 1)
+            {
+                lb.SetInstanceShaderParameter("tuck_offset", keys[0].Length);
+                keys = new[] { keys[0].Concat(KeysOf(lb.Mesh)[0]).ToArray() };
+            }
             for (int s = 0; s < keys.Length && s < mi.GetSurfaceOverrideMaterialCount(); s++)
             {
                 if (mi.GetSurfaceOverrideMaterial(s) is not ShaderMaterial m || !People.IsSkin(m)) continue;

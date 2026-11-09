@@ -60,6 +60,17 @@ public sealed class ArmorPiece
     [JsonPropertyName("replaces")] public string? Replaces { get; set; }
     /// <summary>The index's folder under art/ ("people" or "armor"), which its tuck path is relative to.</summary>
     [JsonIgnore] public string Dir { get; set; } = "people";
+    /// <summary>A built body's gear row (tools/armor/gear_fit.py build, art/gear/out/BODY/gear_index.json): its calling's
+    /// play-tier unit (BODY/CALLING.lod.gltf), which HerLod lays for the calling's full set.</summary>
+    [JsonPropertyName("lod_file")] public string? LodFile { get; set; }
+    /// <summary>A gear index's play-tier unit row (no slot: never worn as a piece; ArmorIndex.AddGear leaves it out).</summary>
+    [JsonPropertyName("lod")] public bool Lod { get; set; }
+    /// <summary>A row of a built body's gear index (art/gear/out/BODY): its pieces are that body's own.</summary>
+    [JsonIgnore] public bool Gear => Dir.StartsWith("gear/", StringComparison.Ordinal);
+    /// <summary>Its tuck of her skin as a res:// path (null: it tucks nothing).</summary>
+    [JsonIgnore] public string? TuckPath => Tuck == null ? null : $"res://art/{Dir}/{Tuck}";
+    /// <summary>Its cover of her (tools/armor/cover.py, gear_tuck.py) as a res:// path, beside its tuck.</summary>
+    [JsonIgnore] public string CoverPath => $"res://art/{Dir}/armor_cover/{Id}.bin";
 }
 
 /// <summary>Every wearable piece by id, from the two indexes (the second only when it exists).</summary>
@@ -77,13 +88,20 @@ public sealed class ArmorIndex
 
     static ArmorIndex? shared;
 
+    /// <summary>A built body's gear folder under art/ (gear/out/BODY: --body p1, P1Body.GearDir): its gear_index.json is read
+    /// INSTEAD of the two A indexes. Null: A's (nothing changes for A).</summary>
+    public static string? GearDir;
+
+    /// <summary>Load asked for a gear folder whose gear_index.json is not there: this index is A's.</summary>
+    public bool GearMissing { get; private set; }
+
     /// <summary>The game's index, read once (empty if it cannot be read).</summary>
     public static ArmorIndex Shared
     {
         get
         {
             if (shared != null) return shared;
-            try { shared = Load(Text); }
+            try { shared = Load(Text, GearDir); }
             catch (Exception e) { Console.Error.WriteLine("ArmorIndex: " + e.Message); shared = new ArmorIndex(); }
             return shared;
         }
@@ -117,13 +135,30 @@ public sealed class ArmorIndex
 
     public static ArmorIndex Parse(string json, string dir = "people") => new ArmorIndex().Add(json, dir);
 
-    /// <summary>Both indexes through `text` (the second only if it is there).</summary>
-    public static ArmorIndex Load(Func<string, string?> text)
+    /// <summary>Both indexes through `text` (the second only if it is there); with `gearDir`, that built body's gear index
+    /// instead (A's when it is not there: GearMissing).</summary>
+    public static ArmorIndex Load(Func<string, string?> text, string? gearDir = null)
     {
         var ix = new ArmorIndex();
+        if (gearDir != null)
+        {
+            if (text($"{gearDir}/gear_index.json") is string g) return ix.AddGear(g, gearDir);
+            ix.GearMissing = true;
+        }
         foreach (var f in Files)
             if (text(f) is string s) ix.Add(s, f[..f.IndexOf('/')]);
         return ix;
+    }
+
+    /// <summary>A built body's gear index ({"body", "body_hash", "rows": [...]}, rows as the A indexes have them, `file` and
+    /// `tuck` that body's own): its pieces, each row's Dir the gear folder; the calling play-tier unit rows left out.</summary>
+    public ArmorIndex AddGear(string json, string dir)
+    {
+        using var doc = JsonDocument.Parse(json, new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip });
+        if (!doc.RootElement.TryGetProperty("rows", out var rows) || rows.ValueKind != JsonValueKind.Array)
+            throw new JsonException($"gear index ({dir}): no rows");
+        var keep = rows.EnumerateArray().Where(r => !(r.TryGetProperty("lod", out var l) && l.ValueKind == JsonValueKind.True)).ToList();
+        return Add(JsonSerializer.Serialize(keep), dir);
     }
 
     /// <summary>A calling's own pieces (its outfit's rows), by visual slot; a row another piece `replaces` is given as that piece.</summary>

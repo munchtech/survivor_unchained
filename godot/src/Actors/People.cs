@@ -176,7 +176,14 @@ public static class People
         {
             if (P1Body.On) { yield return P1Body.Dir + "body.glb"; yield return P1Body.Dir + "play.glb"; }
             else yield return "res://art/people/heroine.glb";
-            if (look.Outfit.FirstOrDefault(o => o.StartsWith("her:")) is string her) yield return $"res://art/people/heroine_outfit_{her[4..]}.gltf";
+            if (look.Outfit.FirstOrDefault(o => o.StartsWith("her:")) is string her)
+            {
+                // (B's built gear: the calling's own pieces' files on that body)
+                var ix = SurvivorUnchained.Rpg.ArmorIndex.Shared;
+                var own = ix.Calling(her[4..]).Values.Select(id => ix.Find(id)).Where(r => r is { Gear: true, File: not null }).Select(r => r!.File!).Distinct().ToList();
+                if (own.Count > 0) foreach (var f in own) yield return f;
+                else yield return $"res://art/people/heroine_outfit_{her[4..]}.gltf";
+            }
             yield return $"res://art/people/heroine_hair_{(HerHairs.Contains(look.Hair) ? look.Hair! : HerHairs[0])}.gltf";
             yield break;
         }
@@ -1800,6 +1807,8 @@ public static class People
     internal static bool TuckBody(MeshInstance3D mi)
     {
         string n = mi.Name.ToString();
+        // (B's close body, --body p1 with its built gear: no tuck channels (no vertex colours), its tuck is HerWear's map)
+        if (n == "Heroine" && mi.HasMeta("p1_b")) return SurvivorUnchained.Rpg.ArmorIndex.GearDir != null;
         if (n.Contains('.') || n.Contains('_') || n.EndsWith("Head") || n.EndsWith("Tongue")) return false;
         return mi.Mesh is ArrayMesh am && (am.SurfaceGetFormat(0) & Mesh.ArrayFormat.FormatColor) != 0;
     }

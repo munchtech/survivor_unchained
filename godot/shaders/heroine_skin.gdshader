@@ -356,6 +356,9 @@ uniform int tuck_channel = -1;
 uniform float tuck = 0.010;
 uniform sampler2D tuck_map : filter_nearest, repeat_disable;
 uniform int tuck_map_width = 1;
+// (B, --body p1: its play body wears its close body's material, and one tuck_map holds both bodies' values, the play
+// body's from this offset on, set on its instance by HerWear.TuckMap; 0 everywhere else)
+instance uniform int tuck_offset = 0;
 varying float tuck_gone;
 
 // The light through her (BACKLIGHT): how much, its colour, and how far it is kept to lamps behind her (it has no
@@ -604,7 +607,8 @@ void vertex() {
 		tuck_gone = step(0.995, h);
 		VERTEX -= NORMAL * tuck * (h > 0.973 ? 1.0 : h);
 	} else if (tuck_channel == -2) {
-		float h = texelFetch(tuck_map, ivec2(VERTEX_ID % tuck_map_width, VERTEX_ID / tuck_map_width), 0).r;
+		int vid = VERTEX_ID + tuck_offset;
+		float h = texelFetch(tuck_map, ivec2(vid % tuck_map_width, vid / tuck_map_width), 0).r;
 		tuck_gone = step(0.995, h);
 		VERTEX -= NORMAL * tuck * (h > 0.973 ? 1.0 : h);
 	}

@@ -34,6 +34,25 @@ public static class P1Body
     /// <summary>--body p1, and a published B (with its baked clips) to load.</summary>
     public static bool On => Args.Get("body") == "p1" && ResourceLoader.Exists(Dir + "body.glb") && ResourceLoader.Exists(Dir + "clips.res");
     static PackedScene? close, play;
+
+    /// <summary>Meta on a mesh laid from a built body's gear (HerWear.Lay, HerLod.Attach with B's play-tier unit): B's own
+    /// piece, never hidden, swapped or rebound by P1Laws; it follows its body's blend shapes.</summary>
+    public const string GearMeta = "p1_gear";
+
+    /// <summary>B's built gear folder under art/ (tools/armor/gear_fit.py build --body ...: gear/out/BODY, BODY the published
+    /// folder's name: body_p1, or a --p1-dir variant's), or null without --body p1. Null too, with one log line, when that
+    /// folder has no gear_index.json (A's indexes are read and A's pieces stay off B, as before the refit).</summary>
+    public static string? GearDir()
+    {
+        if (!On) return null;
+        string body = Dir.TrimEnd('/');
+        body = body[(body.LastIndexOf('/') + 1)..];
+        string dir = $"gear/out/{body}";
+        if (FileAccess.FileExists($"res://art/{dir}/gear_index.json")) return dir;
+        string src = Dir.StartsWith("res://") ? "godot/" + Dir["res://".Length..].TrimEnd('/') : Dir;
+        GD.Print($"gear: no built gear for {body}: run python tools/armor/gear_fit.py build --body {src}");
+        return null;
+    }
     static readonly Dictionary<string, JsonDocument> rigs = new();
     static AnimationLibrary? clips, herClips;
 
@@ -563,6 +582,15 @@ public partial class P1Laws : SkeletonModifier3D
         foreach (var mi in sk.GetChildren().OfType<MeshInstance3D>())
         {
             if (mi.HasMeta("p1_b") || mi.HasMeta("p1_rebound") || mi.HasMeta("p1_piece") || mi.Skin == null) continue;
+            // (a piece of B's built gear (P1Body.GearMeta): B's own skin; it rides its tier's body's shapes)
+            if (mi.HasMeta(P1Body.GearMeta))
+            {
+                string n = mi.Name.ToString();
+                bool playTier = n.StartsWith("lod_") || n.Contains("_lod1_") || n.EndsWith("_shadow");
+                Wear(mi, playTier);
+                mi.SetMeta("p1_piece", playTier ? "play" : "close");
+                continue;
+            }
             // (her hair and a head piece rebound; A's skin-tight pieces (the ink slot) worn as B's carries of them; A's
             // other outfit pieces are cut from A's surface and stay off B till P1's refit)
             bool hair = mi.GetChildren().OfType<HairSway>().Any(), head = mi.Name.ToString().Contains("_head_");

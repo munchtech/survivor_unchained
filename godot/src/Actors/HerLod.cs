@@ -51,10 +51,13 @@ public partial class HerLod : Node
 
     /// <summary>Her gameplay model for an outfit, laid on her skeleton beside the full one (People.HerOutfit, after
     /// the outfit's pieces and materials are on her).</summary>
-    public static void Attach(People.Person p, string set)
+    public static void Attach(People.Person p, string set, string? file = null)
     {
         if (Mode == "off") return;
-        var file = $"res://art/people/heroine_outfit_{set}_lod.gltf";
+        // (file: a built body's own play-tier unit (B's gear, ArmorPiece.LodFile): no lod_body (B's play body is P1Laws'),
+        // its meshes B's own)
+        bool gear = file != null;
+        file ??= $"res://art/people/heroine_outfit_{set}_lod.gltf";
         if (!ResourceLoader.Exists(file)) return;
         p.Skeleton.GetNodeOrNull<HerLod>("HerLod")?.Remove();
         var lod = new HerLod { Name = "HerLod", skel = p.Skeleton };
@@ -71,6 +74,7 @@ public partial class HerLod : Node
             mi.Skeleton = "..";
             mi.Layers = 2;
             mi.Visible = false;
+            if (gear) mi.SetMeta(P1Body.GearMeta, true);
             if (name == "lod_shadow")
             {
                 mi.CastShadow = GeometryInstance3D.ShadowCastingSetting.ShadowsOnly;
