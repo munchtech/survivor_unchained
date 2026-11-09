@@ -103,13 +103,24 @@ public partial class PlayerView
         int tr = -1;
         for (int i = 0; i < anim.GetTrackCount(); i++)
             if (anim.TrackGetType(i) == Animation.TrackType.Position3D && anim.TrackGetPath(i).ToString().EndsWith(":pelvis")) { tr = i; break; }
-        if (tr < 0) return false;
-        double apex = 0, top = double.NegativeInfinity;
-        for (double t = 0; t <= anim.Length; t += 1 / 60.0)
+        double apex = 0, top = double.NegativeInfinity, air2 = System.Math.Max(0.1, air);
+        if (tr >= 0)
+            for (double t = 0; t <= anim.Length; t += 1 / 60.0)
+            {
+                double y = anim.PositionTrackInterpolate(tr, t).Y;
+                if (y > top) { top = y; apex = t; }
+            }
+        // (hers is in place: no rise in the pelvis to time it by; the whole clip then runs over the air and its landing,
+        // so she lands on the land event: about 1.5x)
+        if (apex < 0.25 || apex > anim.Length - 0.25)
         {
-            double y = anim.PositionTrackInterpolate(tr, t).Y;
-            if (y > top) { top = y; apex = t; }
+            double k = anim.Length / (air2 + 0.12);
+            P7Drive((0, 0), (anim.Length / k, anim.Length));
+            p7State = P7State.None;
+            if (SurvivorUnchained.Args.Has("clip")) GD.Print($"p7 leap fit: no apex in the pelvis ({apex:0.00} s), the clip at {k:0.00}x over the air {air:0.00} s");
+            return true;
         }
+        if (tr < 0) return false;
         double t0 = System.Math.Clamp(apex - 0.21, 0.02, anim.Length), t1 = System.Math.Min(anim.Length, apex + 0.21);
         P7Drive((0, 0), (0.06, t0), (System.Math.Max(0.1, air), t1), (System.Math.Max(0.1, air) + (anim.Length - t1), anim.Length));
         p7State = P7State.None;

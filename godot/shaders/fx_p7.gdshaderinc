@@ -160,12 +160,12 @@ vec4 p7_scar(vec2 uv) {
 	float x = uv.x, y = uv.y * 2.0 - 1.0;
 	float cy = 0.34 * (fx_gnoise(vec2(x * 7.0, p7_seed)) - 0.5) + 0.12 * (fx_noise(vec2(x * 23.0, p7_seed + 4.0)) - 0.5);
 	float ends = smoothstep(0.0, 0.04, x) * (1.0 - smoothstep(0.93, 1.0, x));
-	float pw = 0.13 * (0.75 + 0.5 * fx_noise(vec2(x * 31.0, p7_seed + 9.0)));
+	float pw = 0.07 * (0.75 + 0.5 * fx_noise(vec2(x * 31.0, p7_seed + 9.0)));
 	float lvl = 0.6, w = pw;
 	if (p7_prog >= 0.0 && x <= p7_prog) {
 		// split: the crack opens behind the front; the front itself is the hottest
 		float behind = p7_prog - x;
-		w = mix(pw * 2.2, 0.42, clamp(behind * 5.0, 0.0, 1.0));
+		w = mix(pw * 2.2, 0.24, clamp(behind * 5.0, 0.0, 1.0));
 		lvl = p7_lvl + max(0.0, 0.5 - behind * 6.0) * step(p7_prog, 0.999);
 	} else if (p7_prog < 0.0) lvl = p7_lvl;
 	float prof = 1.0 - abs(y - cy) / w;

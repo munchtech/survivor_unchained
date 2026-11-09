@@ -165,17 +165,17 @@ public partial class BattleFx
     {
         var c = V(x, Y(x, z), z);
         float k = Mathf.Clamp((grow - 1) / 0.6f, 0, 1);
-        P7Quad(1, c + Vector3.Up * 0.05f, Mathf.Min(2.4f, r * 0.36f), 5 * P7Sample, step: s => s.M.SetShaderParameter("p7_t", s.Age));
+        P7Quad(1, c + Vector3.Up * 0.05f, Mathf.Min(1.6f, r * 0.24f), 5 * P7Sample, step: s => s.M.SetShaderParameter("p7_t", s.Age));
         const float run = 0.16f;
         P7Quad(5, c + Vector3.Up * 0.06f, r, run + 3 * P7Sample, step: s =>
         {
             s.M.SetShaderParameter("p7_prog", Mathf.Clamp(s.Age / run, 0, 1));
-            s.M.SetShaderParameter("p7_width", 0.1f + 0.04f * k);
+            s.M.SetShaderParameter("p7_width", 0.045f + 0.015f * k);
             s.M.SetShaderParameter("p7_alpha", 0.92f);
             float after = s.Age - run;
             s.M.SetShaderParameter("p7_fade", after <= 0 ? 0f : Mathf.Min(1, Mathf.Floor(after / P7Sample + 1) * 0.34f));
         });
-        P7LightOn(c + Vector3.Up * 1.4f, r * 1.5f, (Flare.Night ? 4f : 5.5f) * (0.85f + 0.3f * k));
+        P7LightOn(c + Vector3.Up * 1.4f, r * 1.5f, (Flare.Night ? 2.8f : 5f) * (0.85f + 0.3f * k));
         P7DustRing(x, z, R() * Mathf.Tau, r * 0.95f, 26 + (int)(10 * k), 0.9f + 0.2f * k);
         int chunks = 7 + (int)(R() * 3.99f + 4 * k);
         for (int i = 0; i < chunks; i++)
@@ -271,10 +271,10 @@ public partial class BattleFx
                 s.M.SetShaderParameter("p7_prog", prog);
                 // the heart cools in steps once the front is out: core, mid, edge, gone (1.5 s)
                 float after = s.SplitAge - s.Travel;
-                float lvl = after < 0.12f ? 1.1f : after < 0.5f ? 0.62f : after < 1.0f ? 0.3f : 0.18f;
+                float lvl = after < 0.1f ? 1.1f : after < 0.35f ? 0.62f : after < 0.7f ? 0.3f : 0.16f;
                 s.M.SetShaderParameter("p7_lvl", lvl);
-                s.M.SetShaderParameter("p7_fade", after < 1.0f ? 0f : Mathf.Min(1, (Mathf.Floor((after - 1.0f) / P7Sample) + 1) * 0.2f));
-                if (after > 1.5f) (gone ??= new()).Add(id);
+                s.M.SetShaderParameter("p7_fade", after < 0.7f ? 0f : Mathf.Min(1, (Mathf.Floor((after - 0.7f) / P7Sample) + 1) * 0.25f));
+                if (after > 1.1f) (gone ??= new()).Add(id);
             }
             else if (s.FadeAge >= 0)
             {

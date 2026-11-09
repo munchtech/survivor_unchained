@@ -5,7 +5,8 @@ namespace SurvivorUnchained.Sim;
 
 /// <summary>Debug grants for testing the pressed skills, unions and the dash's steps (src/Game/Game.cs reads them
 /// from the command line at the fight's start; the game has no dev console):
-///   --grant id[,id:rank...]   those skills in, at rank 1 or the rank given (one carried is ranked up to it);
+///   --grant id[,id:rank[:wait]...]   those skills in, at rank 1 or the rank given (one carried is ranked up to it), a
+///                             wait before it may fire if given (a kindled skill held off the title card, for a clip);
 ///   --grant-union unionId     the union in at full rank holding two slots (its parts go if carried; no evolutions asked);
 ///   --dash-step id[,id...]    those dash steps taken for the fight (Content/DashSteps.cs).
 /// Returns what it did, a line each, for the log.</summary>
@@ -22,6 +23,7 @@ public static class DevGrants
                 string id = parts[0];
                 if (b.Weapons.Find(w => w.Id == id) is { } held) { held.Rank = Math.Max(held.Rank, rank); said.Add($"grant: {id} ranked to {held.Rank}"); continue; }
                 var w = b.AddWeapon(id, rank);
+                if (w != null && parts.Length > 2 && double.TryParse(parts[2], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var wait)) w.Timer = wait;
                 said.Add(w != null ? $"grant: {id} rank {rank} on slot {w.Slot + 1}" : $"grant: {id} not added (unknown, or no slot free: {b.SlotsUsed}/{Content.Weapons.MaxWeapons})");
             }
         if (!string.IsNullOrWhiteSpace(union))
