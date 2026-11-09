@@ -497,7 +497,7 @@ public partial class Atmosphere : Node3D
         if (CelRigs) InkPass.SetRig(p.CelInk is [var ir, var ig, var ib] ? new Color((float)ir, (float)ig, (float)ib) : InkPass.Night);
         float dap = CelRigs && cam == null && CanopyCookie.Shown && p.DappleCover > 0 ? (float)p.DappleStrength : 0f;
         RenderingServer.GlobalShaderParameterSet("cel_key", new Vector4(keyToward.X, keyToward.Y, keyToward.Z, dap));
-        RenderingServer.GlobalShaderParameterSet("cel_dapple", new Vector4((float)p.DappleCover, CanopyCookie.PlaneY + (float)p.DappleHeight, (float)(p.DappleSize > 0 ? p.DappleSize : CanopyCookie.Tile), (float)p.DappleFloor));
+        RenderingServer.GlobalShaderParameterSet("cel_dapple", new Vector4((float)p.DappleCover, CanopyCookie.PlaneY + (float)p.DappleHeight, (float)(p.DappleSize > 0 ? p.DappleSize : CanopyCookie.Tile), (float)(CanopyCookie.Floored ? p.DappleFloor : 0)));
         static Vector3 Hue(Color c)
         {
             float l = Mathf.Max(c.R * 0.2126f + c.G * 0.7152f + c.B * 0.0722f, 1e-4f);

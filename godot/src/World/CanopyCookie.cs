@@ -21,6 +21,9 @@ public static class CanopyCookie
     public static bool Shown { get; private set; }
     /// <summary>The ground's mean height under the mask (the crowns' height is over it).</summary>
     public static float PlaneY { get; private set; }
+    /// <summary>(S2b-N3) The rig's cover floor holds here: off in an arena whose air has no canopy (the barrow's open sky, the
+    /// ruts, the dig), so the floor never roofs a place the H2 places left open.</summary>
+    public static bool Floored { get; private set; } = true;
 
     static Texture2D Leaf()
     {
@@ -65,6 +68,7 @@ public static class CanopyCookie
     public static void For(ZoneData z)
     {
         Shown = false;
+        Floored = z.Place is not { } pl0 || pl0.Air.Dapple > 0;
         if (!Atmosphere.CelRigs) return;
         Atmosphere.RigsLoad();
         var set = Rigs.Current;

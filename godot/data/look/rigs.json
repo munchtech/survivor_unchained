@@ -36,7 +36,7 @@
         "height": 9
       },
       "ember_give": [0.75, 0.6, 2.8, 4.5],
-      "ember_pool": [1.3, 2.1, 2.9, 0.3, 0.6, 0.9, 0.4, 1.4, 0.08, 0.6, 2.0, 0.6, 0.35],
+      "ember_pool": [1.4, 2.2, 3.0, 0.3, 0.6, 0.9, 0.5, 1.4, 0.1, 1.0, 2.4, 0.85, 0.8],
       "ember_edge": "#ff5a30",
       "warm_keep": 0.85,
       "scene_color": 1,
@@ -94,7 +94,7 @@
         "color": "#7a92ff",
         "intensity": null,
         "shadow": 0.6,
-        "scale": 0.30
+        "scale": 0.40
       },
       "fill": {
         "sky": "#b5d9ff",
@@ -103,11 +103,11 @@
         "env": null,
         "sky_scale": 1.5
       },
-      "grade": "rig_night",
+      "grade": "rig_arena_night",
       "exposure": 1.15,
       "dapple": {
         "cover": 1.0,
-        "strength": 0.75,
+        "strength": 0.85,
         "size": 80,
         "floor": 1.0
       },
