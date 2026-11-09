@@ -518,6 +518,15 @@ def apply_classes(rep):
             return x
         for kk in ("masses", "cells", "stamps", "patches"):
             if kk in sf: sf[kk] = fix(sf[kk])
+        # (L7 S1b) the coursed setts (ground_paint.py courses; the town's setts arrays) never took the class: their colors were
+        # hand-set by wave 2's town helper over the old day response (#5a4962, a purple). Now FROM the class's albedo: the first
+        # stone is the class mid, the others and the joint keep their ratios to it (the painter's relations)
+        cs = sf.get("courses")
+        if cs and sf.get("class") in lib["classes"]:
+            mid = hex_to_lin(lib["classes"][sf["class"]]["paint"]["albedo"]["mid"]); base = hex_to_lin(cs["colors"][0])
+            cs["colors"] = [lin_to_hex(np.clip(mid * hex_to_lin(c) / np.maximum(base, 1e-4), 0, 0.9)) for c in cs["colors"]]
+            cs["joint"] = lin_to_hex(np.clip(mid * hex_to_lin(cs["joint"]) / np.maximum(base, 1e-4), 0, 0.9))
+            sf["c6"] = f"L7 S1b (the color chain): the courses FROM the {sf['class']} class's mid {lib['classes'][sf['class']]['paint']['albedo']['mid']}, the stones and joint at their ratios to the first."
         sf["c6"] = f"L1 W2 C6 (the color chain): x{np.round(k, 3).tolist()} per channel (linear) = the {sf['class']} class's chain albedo / its old mid (materials.json)."
     json.dump(g, open(P, "w", encoding="utf-8", newline="\n"), indent=1, ensure_ascii=False)
     print("classes:", {c: rep["albedo"][c]["hex"] for c in WORLD if c in rep["albedo"]}, "gains:", {c: np.round(v, 2).tolist() for c, v in gains.items() if v is not None})

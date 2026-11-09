@@ -298,14 +298,14 @@
      ],
      "colors": [
       "#6f863f",
-      "#8ba14b"
+      "#8ba24b"
      ],
      "under": "#475b36",
      "height": 0.85
     }
    ],
    "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.602, 0.716, 0.972] per channel (linear) = the terrain grass anchor 'grass' target / its mean [0.106, 0.1244, 0.0373]; target = MB4_grass_day paint [0.2114, 0.2035, 0.0381] / the day key (day_play grass) [3.313, 2.284, 1.051] = [0.0638, 0.0891, 0.0362]. Replaces C1's r1 calib (a lift read off frames).",
-   "c6": "L1 W2 C6 (the color chain): x[0.999, 0.99, 1.093] per channel (linear) = the grass class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[0.999, 1.007, 0.994] per channel (linear) = the grass class's chain albedo / its old mid (materials.json)."
   },
   "litter_day": {
    "class": "soil",
@@ -340,7 +340,7 @@
     }
    ],
    "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.267, 0.263, 0.6] per channel (linear) = the terrain soil anchor 'dirt' target / its mean [0.2132, 0.1275, 0.0784]; target = MB4_road_day paint [0.1876, 0.0762, 0.0498] / the day key (day_play road; the earth under the crowns takes the road's gain) [3.301, 2.274, 1.058] = [0.0568, 0.0335, 0.0471]. Replaces C1's r1 calib (a lift read off frames).",
-   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 1.082] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 0.994] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
   },
   "road": {
    "class": "road",
@@ -373,7 +373,7 @@
     }
    ],
    "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.267, 0.263, 0.6] per channel (linear) = the terrain road anchor 'dirt' target / its mean [0.2132, 0.1275, 0.0784]; target = MB4_road_day paint [0.1876, 0.0762, 0.0498] / the day key (day_play road) [3.301, 2.274, 1.058] = [0.0568, 0.0335, 0.0471]. Replaces C1's r1 calib (a lift read off frames).",
-   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 1.082] per channel (linear) = the road class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 0.994] per channel (linear) = the road class's chain albedo / its old mid (materials.json)."
   },
   "mud": {
    "class": "road",
@@ -391,7 +391,7 @@
     "scale_m": 1.3
    },
    "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.267, 0.263, 0.6] per channel (linear) = the terrain road anchor 'dirt' target / its mean [0.2132, 0.1275, 0.0784]; target = MB4_road_day paint [0.1876, 0.0762, 0.0498] / the day key (day_play road) [3.301, 2.274, 1.058] = [0.0568, 0.0335, 0.0471]. Replaces C1's r1 calib (a lift read off frames).",
-   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 1.082] per channel (linear) = the road class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 0.994] per channel (linear) = the road class's chain albedo / its old mid (materials.json)."
   },
   "cobble": {
    "class": "road",
@@ -419,7 +419,7 @@
     "scale_m": 1.5
    },
    "w2": "L1 W2 ground, mark 6: kept at C1's colors (the town's stone layer is the town kit's, 07/13)",
-   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 1.082] per channel (linear) = the road class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 0.994] per channel (linear) = the road class's chain albedo / its old mid (materials.json)."
   },
   "rock_moss": {
    "class": "rock",
@@ -454,7 +454,7 @@
     "share": 0.28,
     "scale_m": 0.9
    },
-   "c6": "L1 W2 C6 (the color chain): x[1.016, 0.985, 0.963] per channel (linear) = the rock class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[0.999, 1.002, 0.999] per channel (linear) = the rock class's chain albedo / its old mid (materials.json)."
   },
   "blight": {
    "class": "soil",
@@ -490,7 +490,7 @@
     }
    ],
    "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.267, 0.263, 0.6] per channel (linear) = the terrain soil anchor 'dirt' target / its mean [0.2132, 0.1275, 0.0784]; target = MB4_road_day paint [0.1876, 0.0762, 0.0498] / the day key (day_play road; the earth under the crowns takes the road's gain) [3.301, 2.274, 1.058] = [0.0568, 0.0335, 0.0471]. Replaces C1's r1 calib (a lift read off frames).",
-   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 1.082] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 0.994] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
   },
   "forest_floor": {
    "class": "soil",
@@ -526,7 +526,7 @@
    ],
    "from_w2": "L1 W2 ground, mark 3: the leaf stamps halved (20 -> 10 a square metre), the wave-1 judge at 09 (busy leaf speckle)",
    "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.785, 0.829, 0.952] per channel (linear) = the hollow soil anchor 'litter' target / its mean [0.171, 0.1279, 0.088]; target = (T09_floor [0.0044, 0.015, 0.0566] + T10_floor [0.005, 0.0202, 0.0503]) / 2 / the arena moon [0.035, 0.166, 0.638] = [0.1343, 0.106, 0.0838]. Replaces C1's r1 calib (a lift read off frames).",
-   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 1.082] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 0.994] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
   },
   "rot": {
    "class": "soil",
@@ -559,7 +559,7 @@
     }
    ],
    "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.785, 0.829, 0.952] per channel (linear) = the hollow soil anchor 'litter' target / its mean [0.171, 0.1279, 0.088]; target = (T09_floor [0.0044, 0.015, 0.0566] + T10_floor [0.005, 0.0202, 0.0503]) / 2 / the arena moon [0.035, 0.166, 0.638] = [0.1343, 0.106, 0.0838]. Replaces C1's r1 calib (a lift read off frames).",
-   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 1.082] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 0.994] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
   },
   "roots": {
    "class": "soil",
@@ -595,7 +595,7 @@
     }
    ],
    "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.785, 0.829, 0.952] per channel (linear) = the hollow soil anchor 'litter' target / its mean [0.171, 0.1279, 0.088]; target = (T09_floor [0.0044, 0.015, 0.0566] + T10_floor [0.005, 0.0202, 0.0503]) / 2 / the arena moon [0.035, 0.166, 0.638] = [0.1343, 0.106, 0.0838]. Replaces C1's r1 calib (a lift read off frames).",
-   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 1.082] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 0.994] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
   },
   "den_mud": {
    "class": "soil",
@@ -613,7 +613,7 @@
     "scale_m": 1.4
    },
    "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.785, 0.829, 0.952] per channel (linear) = the hollow soil anchor 'litter' target / its mean [0.171, 0.1279, 0.088]; target = (T09_floor [0.0044, 0.015, 0.0566] + T10_floor [0.005, 0.0202, 0.0503]) / 2 / the arena moon [0.035, 0.166, 0.638] = [0.1343, 0.106, 0.0838]. Replaces C1's r1 calib (a lift read off frames).",
-   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 1.082] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 0.994] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
   },
   "stream_bed": {
    "class": "rock",
@@ -641,7 +641,7 @@
     "scale_m": 1.0
    },
    "calib": "r1 (L1 C1, 5 Nov): +0.06 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)",
-   "c6": "L1 W2 C6 (the color chain): x[1.016, 0.985, 0.963] per channel (linear) = the rock class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[0.999, 1.002, 0.999] per channel (linear) = the rock class's chain albedo / its old mid (materials.json)."
   },
   "needles": {
    "class": "soil",
@@ -679,7 +679,7 @@
     }
    ],
    "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.785, 0.829, 0.952] per channel (linear) = the hollow soil anchor 'litter' target / its mean [0.171, 0.1279, 0.088]; target = (T09_floor [0.0044, 0.015, 0.0566] + T10_floor [0.005, 0.0202, 0.0503]) / 2 / the arena moon [0.035, 0.166, 0.638] = [0.1343, 0.106, 0.0838]. Replaces C1's r1 calib (a lift read off frames).",
-   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 1.082] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 0.994] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
   },
   "bank": {
    "class": "soil",
@@ -707,7 +707,7 @@
     "scale_m": 2.0
    },
    "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.785, 0.829, 0.952] per channel (linear) = the hollow soil anchor 'litter' target / its mean [0.171, 0.1279, 0.088]; target = (T09_floor [0.0044, 0.015, 0.0566] + T10_floor [0.005, 0.0202, 0.0503]) / 2 / the arena moon [0.035, 0.166, 0.638] = [0.1343, 0.106, 0.0838]. Replaces C1's r1 calib (a lift read off frames).",
-   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 1.082] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 0.994] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
   },
   "verge": {
    "class": "grass",
@@ -738,14 +738,14 @@
      ],
      "colors": [
       "#82943e",
-      "#a2b24a"
+      "#a2b34a"
      ],
      "under": "#536133",
      "height": 0.85
     }
    ],
    "calib": "r1 (L1 C1, 5 Nov): +0.04 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)",
-   "c6": "L1 W2 C6 (the color chain): x[0.999, 0.99, 1.093] per channel (linear) = the grass class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[0.999, 1.007, 0.994] per channel (linear) = the grass class's chain albedo / its old mid (materials.json)."
   },
   "churn": {
    "class": "road",
@@ -777,7 +777,7 @@
      "height": 0.7
     }
    ],
-   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 1.082] per channel (linear) = the road class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 0.994] per channel (linear) = the road class's chain albedo / its old mid (materials.json)."
   },
   "rut_mud": {
    "class": "road",
@@ -813,7 +813,7 @@
      "height": 0.2
     }
    ],
-   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 1.082] per channel (linear) = the road class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 0.994] per channel (linear) = the road class's chain albedo / its old mid (materials.json)."
   },
   "wet": {
    "class": "road",
@@ -828,7 +828,7 @@
     ],
     "scale_m": 1.3
    },
-   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 1.082] per channel (linear) = the road class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 0.994] per channel (linear) = the road class's chain albedo / its old mid (materials.json)."
   },
   "chips": {
    "class": "soil",
@@ -859,7 +859,7 @@
      "height": 0.7
     }
    ],
-   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 1.082] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 0.994] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
   },
   "gravel": {
    "class": "road",
@@ -886,7 +886,7 @@
     ],
     "scale_m": 0.8
    },
-   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 1.082] per channel (linear) = the road class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 0.994] per channel (linear) = the road class's chain albedo / its old mid (materials.json)."
   },
   "cut_bank": {
    "class": "soil",
@@ -913,7 +913,7 @@
     ],
     "scale_m": 2.0
    },
-   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 1.082] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 0.994] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
   },
   "turf": {
    "class": "grass",
@@ -950,7 +950,7 @@
      "height": 0.85
     }
    ],
-   "c6": "L1 W2 C6 (the color chain): x[0.999, 0.99, 1.093] per channel (linear) = the grass class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[0.999, 1.007, 0.994] per channel (linear) = the grass class's chain albedo / its old mid (materials.json)."
   },
   "bare": {
    "class": "soil",
@@ -981,7 +981,7 @@
      "height": 0.8
     }
    ],
-   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 1.082] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 0.994] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
   },
   "slabs": {
    "class": "rock",
@@ -1008,7 +1008,7 @@
     ],
     "scale_m": 1.5
    },
-   "c6": "L1 W2 C6 (the color chain): x[1.016, 0.985, 0.963] per channel (linear) = the rock class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[0.999, 1.002, 0.999] per channel (linear) = the rock class's chain albedo / its old mid (materials.json)."
   },
   "grave": {
    "class": "soil",
@@ -1040,7 +1040,7 @@
      "height": 0.7
     }
    ],
-   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 1.082] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 0.994] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
   },
   "ash": {
    "class": "soil",
@@ -1057,7 +1057,7 @@
     ],
     "scale_m": 1.0
    },
-   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 1.082] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 0.994] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
   },
   "rubble": {
    "class": "rock",
@@ -1084,7 +1084,7 @@
     ],
     "scale_m": 1.0
    },
-   "c6": "L1 W2 C6 (the color chain): x[1.016, 0.985, 0.963] per channel (linear) = the rock class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[0.999, 1.002, 0.999] per channel (linear) = the rock class's chain albedo / its old mid (materials.json)."
   },
   "barrow_face": {
    "class": "rock",
@@ -1111,7 +1111,7 @@
     ],
     "scale_m": 2.0
    },
-   "c6": "L1 W2 C6 (the color chain): x[1.016, 0.985, 0.963] per channel (linear) = the rock class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[0.999, 1.002, 0.999] per channel (linear) = the rock class's chain albedo / its old mid (materials.json)."
   },
   "clay": {
    "class": "soil",
@@ -1142,7 +1142,7 @@
      "height": 0.8
     }
    ],
-   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 1.082] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 0.994] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
   },
   "spoil": {
    "class": "rock",
@@ -1169,7 +1169,7 @@
     ],
     "scale_m": 1.0
    },
-   "c6": "L1 W2 C6 (the color chain): x[1.016, 0.985, 0.963] per channel (linear) = the rock class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[0.999, 1.002, 0.999] per channel (linear) = the rock class's chain albedo / its old mid (materials.json)."
   },
   "ballast": {
    "class": "rock",
@@ -1196,7 +1196,7 @@
     ],
     "scale_m": 0.8
    },
-   "c6": "L1 W2 C6 (the color chain): x[1.016, 0.985, 0.963] per channel (linear) = the rock class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[0.999, 1.002, 0.999] per channel (linear) = the rock class's chain albedo / its old mid (materials.json)."
   },
   "slurry": {
    "class": "soil",
@@ -1213,7 +1213,7 @@
     ],
     "scale_m": 1.4
    },
-   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 1.082] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 0.994] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
   },
   "rust": {
    "class": "soil",
@@ -1230,7 +1230,7 @@
     ],
     "scale_m": 1.4
    },
-   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 1.082] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 0.994] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
   },
   "burnt": {
    "class": "soil",
@@ -1247,7 +1247,7 @@
     ],
     "scale_m": 1.0
    },
-   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 1.082] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 0.994] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
   },
   "clay_face": {
    "class": "soil",
@@ -1274,7 +1274,7 @@
     ],
     "scale_m": 2.0
    },
-   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 1.082] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.004, 0.999, 0.994] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
   },
   "setts": {
    "class": "setts",
@@ -1291,15 +1291,15 @@
     "tilt": 0.5,
     "lit": 0.06,
     "colors": [
-     "#5a4962",
-     "#5f495d",
-     "#574866",
-     "#604e69"
+     "#7c7a81",
+     "#837a7b",
+     "#787886",
+     "#84828a"
     ],
-    "joint": "#382d46"
+    "joint": "#4f4e5d"
    },
    "w2": "L1 W2 town (C4): base #5a4962 = MB3_setts_day all_lin [0.3381, 0.1515, 0.1288] (look_l1/c/w2/town/board_town.json) / the day rig's terrain response (the road class, the same terrain.gdshader: resp/final day_play lit [3.3006, 2.274, 1.0575]) = [0.1024, 0.0666, 0.1218], as the ground helper's mark 6; siblings by hand x[1.12,1.0,0.9] warm, x[0.92,0.97,1.08] cool, x1.15 light; joint x[0.38,0.4,0.5] (MB3's joints: about 0.4 of the stone, bluer). Known: the rig's shade response [0.296, 0.308, 0.768] draws this base #312756 in shade against the board's #75545d (the day fill, the light helper's).",
-   "c6": "L1 W2 C6 (the color chain): x[1.011, 1.001, 1.004] per channel (linear) = the setts class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[0.994, 1.001, 1.004] per channel (linear) = the setts class's chain albedo / its old mid (materials.json)."
   }
  },
  "grass_atlas": {
