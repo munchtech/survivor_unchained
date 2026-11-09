@@ -102,7 +102,12 @@ public partial class Controls : Node
 
     public Controls() { Instance = this; ProcessPriority = -100; }
 
-    public override void _Ready() => LoadBindings();
+    public override void _Ready()
+    {
+        LoadBindings();
+        // (--keys-preset N, pictures: that layout on, and saved as a player's pick would be)
+        if (Args.Get("keys-preset") is string kp && int.TryParse(kp, out int pi)) ApplyPreset(pi);
+    }
 
     /// <summary>The interface hears actions as they happen (menus move on a
     /// press). A listener returning true takes it.</summary>

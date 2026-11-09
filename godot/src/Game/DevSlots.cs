@@ -18,8 +18,34 @@ public static class DevSlots
     static readonly string? Spec = Args.Get("slots");
     static Battle? done;
 
+    /// <summary>--resolve-at T:V[,T:V...] (pictures): her Resolve set to V once the fight's clock passes T s (a storm's
+    /// fuel, a spender short of its cost), each once.</summary>
+    static readonly (double T, double V)[] ResolveAt = (Args.Get("resolve-at") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries)
+        .Select(x => x.Split(':')).Where(x => x.Length == 2)
+        .Select(x => (double.Parse(x[0], System.Globalization.CultureInfo.InvariantCulture), double.Parse(x[1], System.Globalization.CultureInfo.InvariantCulture))).ToArray();
+    static int resolveNext;
+    static double traceAt;
+    static Battle? resolveFor;
+
     public static void Tick(Battle b)
     {
+        if (ResolveAt.Length > 0 && b.Campaign && b.Combat)
+        {
+            if (!ReferenceEquals(resolveFor, b)) { resolveFor = b; resolveNext = 0; }
+            while (resolveNext < ResolveAt.Length && b.Time >= ResolveAt[resolveNext].T)
+            {
+                b.Resolve.Set(ResolveAt[resolveNext].V);
+                GD.Print($"slots: resolve set to {ResolveAt[resolveNext].V} at {b.Time:0.00}");
+                resolveNext++;
+            }
+        }
+        if (Args.Has("slots-trace") && b.Campaign && b.Combat && b.Time >= traceAt)
+        {
+            traceAt = b.Time + 0.25;
+            var sb = new System.Text.StringBuilder($"slots-trace t {b.Time:0.00} resolve {b.Resolve.Value:0}");
+            foreach (var w in b.Weapons) sb.Append($" | {w.Id}@{w.Slot + 1}/{w.Slot2 + 1} {w.Cast} held {w.Held} ch {w.Channeling} t {w.Timer:0.0} brk {w.BreakUntil:0.0}");
+            GD.Print(sb.ToString());
+        }
         if (Spec == null || ReferenceEquals(done, b) || !b.Combat || !b.Campaign) return;
         done = b;
         foreach (var line in Apply(b, Spec, Args.Get("grant-union"))) GD.Print(line);
