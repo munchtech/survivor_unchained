@@ -178,6 +178,13 @@ def stage_base(spec, tier, rep, pre=None):
         import neck_form
         V = neck_form.after_join(sl, V, sliders)
         info["post_join_ring_move_mm"] = [round(float(x) * 1e3, 2) for x in post[boundary_ring(z["Q"], len(V0))].mean(0)]
+    if sliders:
+        # P1 R1 sliders round 2: a catalogue slider's own "shrink" (bust_size's minus side: the breast toward the chest
+        # wall), laid on the finished rest body so it shrinks the breast the body has (a post-join target's too)
+        import breast_form
+        V, sh = breast_form.shrink(sl, V, sliders)
+        if sh:
+            info["shrink"] = sh
     if spec.get("forms"):
         info["forms"] = f"NOT applied ({spec['forms']}: per MakeHuman point; ours are \"forms_topo\", stage 2b)"
     if spec.get("_ground_m"):

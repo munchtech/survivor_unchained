@@ -486,8 +486,12 @@ public static class Arms
         if (P1Body.IsB(skeleton) && skeleton.FindBone(P1Body.BoneName(skeleton, bone)) is int bb and >= 0)
         {
             // (P1's B: the socket kept at its rest-world point (A's rest coordinates, RestOf), on the B bone that plays the
-            // A bone's part (B's spine_03 is mid-back; A's chest is B's spine_05))
-            var toB = skeleton.GetBoneGlobalRest(bb).AffineInverse() * RestOf(bone);
+            // A bone's part (B's spine_03 is mid-back; A's chest is B's spine_05); P1 R1 sliders: on a slider body carried
+            // by that B bone's move against the ref body (P1Body.OnB, as the hair's pivots are), so it keeps its place on
+            // her: at A's rest point the height -0.15 body's hip axe rode 69 mm over her hip, at her elbow; the ref body: 0)
+            var restA = RestOf(bone);
+            restA.Origin = P1Body.OnB(skeleton, bb, restA.Origin);
+            var toB = skeleton.GetBoneGlobalRest(bb).AffineInverse() * restA;
             at = toB * at;
             if (pivotAt is { } pv) pivotAt = toB * pv;
             bone = skeleton.GetBoneName(bb);

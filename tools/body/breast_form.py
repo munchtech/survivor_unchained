@@ -149,6 +149,31 @@ def chest_wall(sl, c, v, V, values):
     return V + v * D
 
 
+def shrink(sl, V, values):
+    """P1 R1 sliders round 2 (the check judge: bust_size -0.75 "barely reads"): MakeHuman's cup macro is weak on its
+    minus side (the cup at -1 moves 23 mm at most, +1 moves 91; on her_b -0.75 took 276 mL per side, +0.5 added
+    1021). A catalogue slider's "shrink" {"wall": designed rule, "k": s at v = -1} gives the minus side our own rule:
+    the breast the body HAS (laid on the finished rest body, so a post-join target's breast, her_a's, shrinks the
+    same as a slider-built one) is carried toward its chest wall (wall_delta: the wall rule's biharmonic fill of the
+    region on this body, its C2 blend) by s = k |v|: every point keeps its place on the breast and moves a share of
+    its height over the wall, so the profile scales down whole (the round lower pole stays a round curve, smaller;
+    the fold rises with the mass it held; the rim and the cleavage floor, where the height is 0, hold).
+    Linear in V for a given v; 0 at v >= 0 (the body is untouched: byte-identical). Returns (V, report or None)."""
+    from sliders import catalogue
+    rep = None
+    for n, c in catalogue().items():
+        sh = c.get("shrink")
+        v = float(values.get(n, 0.0) or 0.0)
+        if not sh or v >= 0.0:
+            continue
+        lo, hi = c["range"]
+        s = float(sh["k"]) * min(-max(v, lo), 1.0)
+        D = wall_delta(sl, sl.designed[sh["wall"]], V)
+        V = V + s * D
+        rep = dict(rep or {}, **{n: {"s": round(s, 4), "max_mm": round(float(np.linalg.norm(s * D, axis=1).max()) * 1e3, 2)}})
+    return V, rep
+
+
 # ------------------------------------------------------------------------------------------ route (a) dome --
 def profile_table(p, n=4001):
     """A 1D profile P(t), t = 0 (apex) .. 1 (the root on the wall): P = 1 - int sigma / int_0^1 sigma with the slope
