@@ -540,6 +540,15 @@ def run_all(name=None):
         rc = subprocess.run([sys.executable, os.path.join(HERE, cmd[0])] + cmd[1:]).returncode
         if rc != 0: print("FAILED", " ".join(cmd), rc); sys.exit(rc)
     subprocess.run([sys.executable, os.path.join(HERE, "ground_paint.py"), "check", "all"])
+    # (L7 S1b) the rebuilt textures reach the game only through Godot's import: on 9 Nov the frames were shot with the
+    # kits' old .ctex (house and roof sheets rebuilt at 01:24, imported 8 Nov 23:37), so the chain ends with one import
+    turn = "C:/Users/munch/Desktop/survivorsunchained/tools/turn.py"
+    subprocess.run([sys.executable, turn, "take", "godot", "chain import", "--wait", "30"])
+    try:
+        godot = os.environ.get("GODOT_CONSOLE", "C:/Users/munch/Desktop/Godot_v4.5.1-stable_mono_win64/Godot_v4.5.1-stable_mono_win64_console.exe")
+        print("import rc", subprocess.run([godot, "--headless", "--path", os.path.join(ROOT, "godot"), "--import"], capture_output=True).returncode)
+    finally:
+        subprocess.run([sys.executable, turn, "give", "godot", "chain import"])
 
 
 if __name__ == "__main__":
