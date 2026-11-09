@@ -148,6 +148,7 @@ public static class People
             p.FaceShape = look.FaceShape;                 // (its painting laid as her skin was made: Skin)
             HerPaint(p, look.Paint, look.HairColor ?? HerHairColour);
             Perf.Lap("play: her face and paint");
+            SurvivorUnchained.View.FxAfter.OccludeFigure(p.Root);
         }
         // A child's larger head.
         if (spec.Head is double h && h != 1)
