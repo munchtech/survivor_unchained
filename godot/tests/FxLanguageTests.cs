@@ -96,4 +96,33 @@ public class FxLanguageTests
         Assert.InRange(u.Panel.FrameWidth, 20f, 24f);
         Assert.InRange(u.Line, 1.5f, 4f);
     }
+
+    /// <summary>The body of a shader function in <paramref name="src"/>, from its signature to its closing brace.</summary>
+    static string FunctionBody(string src, string signature)
+    {
+        int i = src.IndexOf(signature, StringComparison.Ordinal);
+        Assert.True(i >= 0, $"{signature} is missing");
+        int open = src.IndexOf('{', i), depth = 0;
+        for (int k = open; k < src.Length; k++)
+        {
+            if (src[k] == '{') depth++;
+            else if (src[k] == '}' && --depth == 0) return src.Substring(open, k - open + 1);
+        }
+        throw new InvalidOperationException("unclosed " + signature);
+    }
+
+    [Fact]
+    public void TheStrokeIsP7sSignatureInTheSchoolsThreeBandsWithABrush()
+    {
+        // (L1 lead 7) fx_stroke(across, along, life), the one painted-stroke primitive every skill shape uses: its colors are
+        // the school's family only (edge, mid, core, the glow), never a color of its own; its edge is a brush (the bristles)
+        var src = File.ReadAllText(Path.Combine(Root(), "shaders", "fx_cel.gdshaderinc"));
+        var body = FunctionBody(src, "vec4 fx_stroke(float across, float along, float life)");
+        foreach (var u in new[] { "fx_edge", "fx_mid", "fx_core", "fx_glow_color", "fx_stroke_shape", "fx_bristle", "fx_stroke_seed" })
+            Assert.Contains(u, body);
+        foreach (var u in new[] { "uniform vec4 fx_stroke_shape", "uniform vec4 fx_bristle", "uniform float fx_stroke_seed" })
+            Assert.Contains(u, src);
+        Assert.DoesNotMatch(@"vec3\(\s*[0-9.]+\s*,", body);
+        Assert.DoesNotContain("ALPHA", body);
+    }
 }
