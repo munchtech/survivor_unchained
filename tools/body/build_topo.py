@@ -457,9 +457,11 @@ def target_joints_ref(spec, tier, z, A, baked, joints):
         Vr, ring_r, _ = stage_place(rs, z, Vr, A, baked, r2)
         Vr = stage_forms(rs, tier, z, Vr, ring_r, r2)
         rec = {}
-        stage_skeleton(bone_body(rs, tier, z, Vr, A, baked, r2), tier, r2, baked["HeroineHead"]["P"], rs.get("joint_moves"),
-                       target_joints(rs), rec)
+        skr = stage_skeleton(bone_body(rs, tier, z, Vr, A, baked, r2), tier, r2, baked["HeroineHead"]["P"], rs.get("joint_moves"),
+                             target_joints(rs), rec)
+        info["_sk_ref"] = {k: skr[k] for k in ("skel", "names", "parents", "worlds", "ends")}
         info["_weights_ref"] = weights_body(rs, tier, z, Vr, A, baked, r2)
+        info["_rest_ref"] = Vr
         for k in out:
             if k in rec and not k.startswith("x:"):
                 out[k] = (out[k][0], out[k][1], rec[k])
@@ -488,20 +490,28 @@ def stage_skeleton(V, tier, rep, head=None, moves=None, joints=None, record=None
 def stage_weights(z, V, ring, hv, sk, A, baked, rep, rules=None):
     J, W, info = wtp.body(V, z, sk, rules)      # (rules: the spec's "weights", P1 R1 round 30)
     names = sk["names"]
+    # (P1 R1 sliders: with a ref body (build_topo target_joints_ref), A's patches are laid out on the REF body and skeleton,
+    # where her_a's surface IS A's, and ride the vertices onto this one: their masks were absolute (a_shoulter_top's
+    # y_lo_m 1.5 found no point on the grounded height -0.15 body) and their A lookup closest-point)
+    Pa, ska = V, sk
+    ref = next((c for c in (rules or {}).values() if isinstance(c, dict) and c.get("_P_ref") is not None), None)
+    if ref is not None and ref.get("_sk_ref") is not None:
+        Pa, ska = ref["_P_ref"], ref["_sk_ref"]
+        assert ska["names"] == names, "the ref skeleton's bones are not this body's"
     nb = len(names)
     D = np.zeros((len(V), nb))
     np.put_along_axis(D, J, W, 1)
     if (rules or {}).get("a_lower_breast"):
         # (P1 R1 round 30: A's own skin weights over the lower breasts and their skirt, weights_topo.a_lower_breast)
         import weights as wt_
-        D, info["a_lower_breast"] = wtp.a_lower_breast(D, V, z, sk, A, rules["a_lower_breast"])
+        D, info["a_lower_breast"] = wtp.a_lower_breast(D, Pa, z, ska, A, rules["a_lower_breast"])
         J, W = wt_.cap(D, wt_.RULES["cap"])
         D = np.zeros((len(V), nb))
         np.put_along_axis(D, J, W, 1)
     if (rules or {}).get("a_shoulder_top"):
         # (P1 R1 round 30: A's own skin weights over the top of the shoulders, weights_topo.a_shoulder_top)
         import weights as wt_
-        D, info["a_shoulder_top"] = wtp.a_shoulder_top(D, V, z, sk, A, rules["a_shoulder_top"])
+        D, info["a_shoulder_top"] = wtp.a_shoulder_top(D, Pa, z, ska, A, rules["a_shoulder_top"])
         J, W = wt_.cap(D, wt_.RULES["cap"])
         D = np.zeros((len(V), nb))
         np.put_along_axis(D, J, W, 1)
@@ -510,7 +520,7 @@ def stage_weights(z, V, ring, hv, sk, A, baked, rep, rules=None):
         # weights_topo.a_elbow, a_thigh, a_neck; the neck's seam is the head's ring)
         if (rules or {}).get(key):
             import weights as wt_
-            D, info[key] = getattr(wtp, key)(D, V, z, sk, A, rules[key], **({"ring": ring} if key == "a_neck" else {}))
+            D, info[key] = getattr(wtp, key)(D, Pa, z, ska, A, rules[key], **({"ring": ring} if key == "a_neck" else {}))
             J, W = wt_.cap(D, wt_.RULES["cap"])
             D = np.zeros((len(V), nb))
             np.put_along_axis(D, J, W, 1)
@@ -805,6 +815,13 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
                             tj)
         if tj_info:
             P_ref = tj_info.pop("_weights_ref", None)
+            skr = tj_info.pop("_sk_ref", None)
+            Vr_ = tj_info.pop("_rest_ref", None)
+            if Vr_ is not None:
+                np.save(os.path.join(out, "stage", "ref_rest_close.npy"), Vr_)      # (correctives' posed_a twins, _REF)
+            if skr is not None:
+                with open(os.path.join(out, "stage", "ref_skeleton.json"), "w") as f:
+                    json.dump(skr, f, default=lambda x: np.asarray(x).tolist())
             rep["skeleton"]["target_joints_ref"] = tj_info
             if P_ref is not None:
                 # (P1 R1 sliders: the A-copied weight patches look A up by the ref body's points, weights_topo.a_lookup)
@@ -827,9 +844,14 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
             Vr, ring_r, _ = stage_place(rs, z, Vr, A, bu, r2)
             Vr = stage_forms(rs, tier, z, Vr, ring_r, r2)
             np.save(pref, weights_body(rs, tier, z, Vr, A, bu, r2))
+            np.save(os.path.join(out, "stage", f"ref_rest_{tier}.npy"), Vr)
     if wrules and os.path.exists(pref) and spec.get("target_joints_ref"):
         P_ref = np.load(pref)
-        wrules = {k: ({**v, "_P_ref": P_ref} if isinstance(v, dict) and k.startswith("a_") else v) for k, v in wrules.items()}
+        with open(os.path.join(out, "stage", "ref_skeleton.json")) as f:
+            skr = json.load(f)
+        skr["worlds"] = np.asarray(skr["worlds"], float)
+        skr["ends"] = {k: tuple(np.asarray(x, float) for x in v) for k, v in skr["ends"].items()}
+        wrules = {k: ({**v, "_P_ref": P_ref, "_sk_ref": skr} if isinstance(v, dict) and k.startswith("a_") else v) for k, v in wrules.items()}
         rep["weights_ref"] = f"stage/weights_ref_{tier}.npy (A looked up by the ref body's points)"
     wts = stage_weights(z, weights_body(spec, tier, z, V, A, baked, rep), ring, hv, sk, A, baked, rep, wrules)
     tim["weights"] = round(time.time() - t, 2)

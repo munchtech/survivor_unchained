@@ -198,6 +198,8 @@ def fair_key(mesh, st, V, G, jc):
 
 
 _A = {}
+# (P1 R1 sliders: the ref body's rest for this build's welded points, run() from stage/ref_rest_<tier>.npy; empty: none)
+_REF = {}
 
 
 def posed_a_key(mesh, st, V, G, jc):
@@ -212,17 +214,22 @@ def posed_a_key(mesh, st, V, G, jc):
     p = mesh.p
     pa = jc["posed_a"]
     I3 = [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]
-    if "A" not in _A:
+    # (P1 R1 sliders: a slider body's twin on A is its ref body's (her_b's, which lies on A), and the key is A's posed twin
+    # carried by the rest offset s = rest - ref rest (exact for a rigid move, height's grounding; first order for a local
+    # one): the height -0.15 body, 98 mm under A, kept 5 of the 75 full points; her_b itself: s = 0, the same key)
+    P0r = _REF.get("P0", mesh.P0)
+    s_off = mesh.P0 - P0r
+    if "A" not in _A or _A.get("ref") is not _REF.get("P0"):
         A = Glb(os.path.join(REPO, pa.get("glb", "godot/art/people/heroine.glb")))
         Par, Ta = pf.skin(A, "Heroine", {"bones": {}, "skeleton": I3, "meshes": {}})
-        q, _, tri, d0 = Surface(Par, Ta).closest(mesh.P0, k=16)
+        q, _, tri, d0 = Surface(Par, Ta).closest(P0r, k=16)
         T = Ta[tri]
         x0, x1, x2 = Par[T[:, 0]], Par[T[:, 1]], Par[T[:, 2]]
         v0, v1, v2 = x1 - x0, x2 - x0, q - x0
         d00, d01, d11, d20, d21 = (v0 * v0).sum(1), (v0 * v1).sum(1), (v1 * v1).sum(1), (v2 * v0).sum(1), (v2 * v1).sum(1)
         den = np.maximum(d00 * d11 - d01 * d01, 1e-20)
         bv, bw = (d11 * d20 - d01 * d21) / den, (d00 * d21 - d01 * d20) / den
-        _A.update(A=A, T=T, bc=np.stack([1 - bv - bw, bv, bw], 1), d0=d0)
+        _A.update(A=A, T=T, bc=np.stack([1 - bv - bw, bv, bw], 1), d0=d0, ref=_REF.get("P0"))
     A, T, bc, d0 = _A["A"], _A["T"], _A["bc"], _A["d0"]
     sk = p.glb.skeleton(0)
     m = lambda M: list(M[:3, 0]) + list(M[:3, 1]) + list(M[:3, 2]) + list(M[:3, 3])
@@ -230,7 +237,7 @@ def posed_a_key(mesh, st, V, G, jc):
     lines = [(f"{x}_{s_}", f"{y}_{s_}") for s_ in "lr" for x, y in (("clavicle", "upperarm"), ("upperarm", "lowerarm"), ("lowerarm", "hand"))]
     GA = pf.carry_pose(p.glb, A, probe, lines)
     Va, _ = pf.skin(A, "Heroine", probe, bones=GA)
-    Yt = (Va[T] * bc[:, :, None]).sum(1)
+    Yt = (Va[T] * bc[:, :, None]).sum(1) + s_off
     X = V[mesh.first].copy()
     c = p.rest[p.index[jc["center"].replace("{s}", st.s)]][:3, 3] + np.asarray(pa["c"], float)
     d = np.linalg.norm((X - c) / np.asarray(pa["r"], float), axis=1)
@@ -683,6 +690,13 @@ def run(out, only=None, tier="close", fresh=False, turn_normals=False, conf_path
     rig["correctives"] = [c for c in rig.get("correctives", []) if only and c.get("joint") not in only]
     poser = LbsPoser(base, dict(rig, correctives=[]))
     mesh = Mesh(poser)
+    _REF.clear()
+    rp, sp = os.path.join(out, "stage", f"ref_rest_{tier}.npy"), os.path.join(out, "stage", f"{tier}.npz")
+    if os.path.exists(rp) and os.path.exists(sp):
+        from scipy.spatial import cKDTree as _KD
+        Vv, Vr = np.load(sp)["V"], np.load(rp)
+        d_, i_ = _KD(Vv).query(mesh.P0)
+        _REF["P0"] = np.where((d_ < 1e-5)[:, None], Vr[i_], mesh.P0)
     frame = bends.Frame(poser, rig)
     body = np.nonzero(poser.piece == "body")[0]
     Pb, Tb = poser.Pb[body], poser.T[(poser.piece[poser.T] == "body").all(1)]
