@@ -9,7 +9,8 @@ namespace SurvivorUnchained.Content;
  * weird". So the dash no longer ranks by use: a movement art stays rank 1 (ArtBook.Rank) and grows only by these,
  * each one a card the player reads when it is granted (Journey.GrantDashStep, Ev.DashStep). The steps chosen live on
  * the survivor (CharacterData.DashSteps) and enter every fight at its start (BattleSetup.DashSteps,
- * Sim/DashGrowth.cs). The route that grants them in play (a lamp-post Wick, a level-up) is the design lead's. */
+ * Sim/DashGrowth.cs). In play (ARPG.md 3.3) Hard Landing is a board hearth lamp and the rest come from story beats and gear, never a
+ * level-up card or the ember's cards; console grants (--dash-step) until then. */
 
 public enum DashStepKind { Charge, Length, Recharge, Landing }
 
@@ -21,8 +22,11 @@ public sealed class DashStepDef
     public double Amount;
     /// <summary>Landing: the shove's reach (m), its knockback and its damage.</summary>
     public double Radius, Knockback, Damage;
-    /// <summary>The lamp the design lead's board lights for this step ("dash.&lt;id&gt;").</summary>
+    /// <summary>The lamp the board lights for this step ("dash.&lt;id&gt;"): Hard Landing's only, a Warden hearth lamp
+    /// (ARPG.md 3.3); the rest have none.</summary>
     public string Lamp = "";
+    /// <summary>Where a step with no lamp is earned (story, gear): never a level-up card or the ember's cards.</summary>
+    public string[] From = System.Array.Empty<string>();
     /// <summary>Times it may be taken (1 if unset).</summary>
     public int Most = 1;
 }

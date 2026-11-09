@@ -38,8 +38,10 @@ public class DashStepTests
             }
         }
         foreach (var id in new[] { "second_wind_pip", "long_stride", "quick_breath", "hard_landing" }) Assert.NotNull(DashSteps.Find(id));
-        // Nothing rides the dash: no step opens a facet, and each step names its board lamp.
-        foreach (var s in all) Assert.Equal("dash." + s.Id, s.Lamp);
+        // Hard Landing alone is a board lamp; the rest come from story beats and gear (ARPG.md 3.3), never a card.
+        foreach (var s in all)
+            if (s.Id == "hard_landing") { Assert.Equal("dash.hard_landing", s.Lamp); Assert.Empty(s.From); }
+            else { Assert.Equal("", s.Lamp); Assert.Equal(["story", "gear"], s.From); }
         Assert.True(all.Where(s => s.Kind == DashStepKind.Charge).Sum(s => s.Amount * s.Most) <= DashSteps.MaxPips);
     }
 

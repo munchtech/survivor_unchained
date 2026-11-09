@@ -15,6 +15,9 @@ public sealed partial class Battle
     public (double X, double Z)? SkillAim;
 
     readonly bool[] heldSlots = new bool[Content.Weapons.MaxWeapons];
+    /// <summary>When each key last went down (NaN: never told; a press then is fresh): a fresh press against a grip held,
+    /// or a press buffered, from before.</summary>
+    readonly double[] downAt = Enumerable.Repeat(double.NaN, Content.Weapons.MaxWeapons).ToArray();
 
     /// <summary>Skill slots in use (a union counts two): what MaxWeapons is measured against.</summary>
     public int SlotsUsed
@@ -48,9 +51,15 @@ public sealed partial class Battle
         if (!Combat || !Player.Alive || FlareHold > 0) return false;
         if (OnSlot(slot) is not { } w || !w.Pressed) return false;
         SkillAim = (aimX, aimZ);
-        // Bladestorm (a spin union): its first key (its part A's, the Cleaver's) spins; its second (the Sunder's) breaks
-        // the storm, and does nothing with no storm to break.
-        if (w.Behavior == WeaponBehavior.Spin && w.Slot2 >= 0 && slot == w.Slot2) return Firing.SpinBreak(this, w);
+        // Bladestorm (a spin union): its first key (its part A's, the Cleaver's) spins; its second (the Sunder's), pressed
+        // fresh in the storm or within its BreakWindow after, breaks it (a grip held, or a press buffered, from before the
+        // storm began never does), and out of a storm swings Sunder.
+        if (w.Behavior == WeaponBehavior.Spin && w.Slot2 >= 0 && slot == w.Slot2)
+        {
+            bool fresh = double.IsNaN(downAt[slot]) || downAt[slot] >= w.StormAt;
+            if (Firing.InStorm(this, w)) return fresh && Firing.SpinBreak(this, w);
+            return Firing.SwingHalf(this, w);
+        }
         return Firing.Press(this, w);
     }
 
@@ -59,9 +68,15 @@ public sealed partial class Battle
     public void HoldSkill(int slot, bool held)
     {
         if (slot < 0 || slot >= heldSlots.Length) return;
+        if (held && !heldSlots[slot]) downAt[slot] = Time;
         heldSlots[slot] = held;
-        // (A spin is held on its first key only: its second is the break.)
-        foreach (var w in Weapons) w.Held = heldSlots[w.Slot] || (w.Slot2 >= 0 && w.Behavior != WeaponBehavior.Spin && heldSlots[w.Slot2]);
+        // (A spin is held on its first key only: its second is the break, and out of a storm its other half's swing.)
+        foreach (var w in Weapons)
+        {
+            bool spin = w.Behavior == WeaponBehavior.Spin;
+            w.Held = heldSlots[w.Slot] || (w.Slot2 >= 0 && !spin && heldSlots[w.Slot2]);
+            w.Held2 = spin && w.Slot2 >= 0 && heldSlots[w.Slot2];
+        }
     }
 
     /// <summary>A union put in at full rank holding two slots, without its evolutions asked (tests, --grant-union):

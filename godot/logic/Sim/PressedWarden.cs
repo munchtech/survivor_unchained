@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using SurvivorUnchained.Content;
 using static SurvivorUnchained.Core.MathX;
 
@@ -185,6 +186,83 @@ public sealed partial class Battle
         (HeavyBy, credit) = (hb, was);
     }
 
+    /* ---------------------------------------------------------- iron vow -- */
+
+    /// <summary>Iron Vow's brace while it holds: the skill, the plant left (her walk held), the brace left, the store, and
+    /// when a Store was last told (the view hears one each 0.15 s at most).</summary>
+    internal sealed class BraceRun { public WeaponInst Weapon = null!; public double Plant, T, Stored, SaidAt = double.NegativeInfinity; public bool Heavy; }
+    internal BraceRun? Braced;
+    /// <summary>The ids Iron Vow's last burst struck (tests: what its ring marked is what it hit).</summary>
+    public readonly List<int> VowStruck = new();
+    /// <summary>Iron Vow bracing now (the plant and the brace), and its store so far.</summary>
+    public bool Bracing => Braced != null;
+    public double VowStored => Braced?.Stored ?? 0;
+    /// <summary>Her feet held by the vow's plant (UpdatePlayer).</summary>
+    bool VowPlanted => Braced is { Plant: > 0 };
+
+    /// <summary>Iron Vow (behavior brace, cast press): she plants (Plant seconds, no walking) and braces (Brace seconds
+    /// after the plant; she may walk): blows on her land at Halve and Store of each, before the halving, is kept; it ends
+    /// in a burst round her (TickVow). Not while she is carried, nor again while it holds.</summary>
+    internal bool SkillBrace(WeaponInst w)
+    {
+        if (Braced != null || FireFrom != null || Refiring) return false;
+        var p = Player;
+        Braced = new BraceRun { Weapon = w, Plant = Math.Max(0, w.Num(s => s.Plant) ?? 0.3), T = Math.Max(0.05, w.Num(s => s.Brace) ?? 2), Heavy = HeavyBy == w };
+        p.Vx = p.Vz = 0;
+        Events.Emit(new Ev.Brace { Phase = BracePhase.Start, X = p.X, Z = p.Z, Radius = Firing.AreaOf(this, w, w.Num(s => s.Radius) ?? 5) });
+        return true;
+    }
+
+    /// <summary>A blow on her, its final amount (HurtPlayer): bracing, a share is stored (before the halving) and it lands
+    /// at Halve.</summary>
+    double VowTake(double dmg)
+    {
+        if (Braced is not { } v || dmg <= 0) return dmg;
+        var w = v.Weapon;
+        v.Stored += dmg * (w.Num(s => s.Store) ?? 0.2);
+        if (Time - v.SaidAt >= 0.15)
+        {
+            v.SaidAt = Time;
+            Events.Emit(new Ev.Brace { Phase = BracePhase.Store, X = Player.X, Z = Player.Z, Radius = Firing.AreaOf(this, w, w.Num(s => s.Radius) ?? 5), Stored = v.Stored });
+        }
+        return dmg * (w.Num(s => s.Halve) ?? 0.5);
+    }
+
+    /// <summary>The vow's clock (each step in the fight): the plant, then the brace; over, the burst: everything within
+    /// Radius of her struck for Damage plus the store times StoreMul (the skill's; its bossDamage on a boss), thrown outward,
+    /// a lesser foe stunned.</summary>
+    void TickVow(double dt)
+    {
+        if (Braced is not { } v) return;
+        if (!Player.Alive) { Braced = null; return; }
+        if (v.Plant > 0) { v.Plant = Math.Max(0, v.Plant - dt); return; }
+        v.T -= dt;
+        if (v.T > 0) return;
+        Braced = null;
+        var w = v.Weapon;
+        var p = Player;
+        double r = Firing.AreaOf(this, w, w.Num(s => s.Radius) ?? 5), kb = w.Num(s => s.Knockback) ?? 1.2, stun = w.Num(s => s.Stun) ?? 0.4;
+        double dmg = w.Damage + v.Stored * (w.Num(s => s.StoreMul) ?? 3);
+        var ring = HostilesInRadius(p.X, p.Z, r);
+        Events.Emit(new Ev.Brace { Phase = BracePhase.Burst, X = p.X, Z = p.Z, Radius = r, Stored = v.Stored, Hit = ring.Count });
+        var (hb, was) = (HeavyBy, credit);
+        HeavyBy = v.Heavy ? w : null;
+        credit = w.Id;
+        VowStruck.Clear();
+        foreach (var e in ring)
+        {
+            double d = Dist(e.X, e.Z, p.X, p.Z), dd = d < 0.01 ? 1 : d;
+            VowStruck.Add(e.Id);
+            HitEnemy(e, dmg, w.School, w.Tags, new HitOpts { Weapon = w, Knockback = kb, DirX = d < 0.01 ? Math.Sin(p.Facing) : (e.X - p.X) / dd, DirZ = d < 0.01 ? Math.Cos(p.Facing) : (e.Z - p.Z) / dd });
+            if (!e.Alive || e.State == EnemyState.Dying || e.Elite || e.Boss) continue;
+            ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, stun), 0);
+            Interrupt(e);
+        }
+        (HeavyBy, credit) = (hb, was);
+        Events.Emit(new Ev.Explosion { X = p.X, Z = p.Z, Radius = r, School = w.School, Power = 1.1, Art = w.Art + "_burst", Rank = w.Rank });
+        Events.Emit(new Ev.Shake { Amount = 0.45 });
+    }
+
     /* --------------------------------------------------------- bladestorm -- */
 
     /// <summary>Her pace while a spin runs (its Pace share; 1 otherwise): she steers freely, a little slower.</summary>
@@ -235,8 +313,58 @@ public static partial class Firing
     /// <summary>The spin ended (released, or at its longest): it may still be broken for BreakWindow seconds.</summary>
     static void SpinEnded(Battle b, WeaponInst w)
     {
-        w.BreakUntil = b.Time + (w.Num(s => s.BreakWindow) ?? 0.4);
+        w.BreakUntil = b.Time + (w.Num(s => s.BreakWindow) ?? 1);
         b.Events.Emit(new Ev.Spin { Phase = SpinPhase.End, X = b.Player.X, Z = b.Player.Z, Radius = AreaOf(b, w, w.Num(s => s.Radius) ?? 3.2) });
+    }
+
+    /// <summary>What a storm of this many seconds makes of its break: x1 to BreakFrom (0.5 s), then linearly to BreakGrow
+    /// (x1.6) at its longest hold (ChannelTime).</summary>
+    public static double BreakGrowth(WeaponInst w, double spent)
+    {
+        double from = w.Num(s => s.BreakFrom) ?? 0.5, most = w.Num(s => s.BreakGrow) ?? 1.6, cap = w.ChannelMax;
+        if (cap <= from) return spent >= cap ? most : 1;
+        return 1 + (most - 1) * Math.Clamp((spent - from) / (cap - from), 0, 1);
+    }
+
+    /// <summary>A storm on: spinning, or within its BreakWindow after (its second key breaks it then).</summary>
+    public static bool InStorm(Battle b, WeaponInst w) => w.Channeling || (w.BreakUntil >= 0 && b.Time <= w.BreakUntil);
+
+    /// <summary>A spin union's other part (its B: Bladestorm's Sunder) at the union's rank and mods, on the union's second
+    /// key: what that key swings out of a storm. Never in Weapons (it holds no slot of its own); its damage is its own id's.</summary>
+    internal static WeaponInst? HalfOf(WeaponInst w)
+    {
+        if (w.Half == null)
+        {
+            var u = Content.Unions.All.FirstOrDefault(x => x.Into == w.Id);
+            if (u == null || !Content.Weapons.All.ContainsKey(u.B)) return null;
+            w.Half = new WeaponInst(u.B, w.Rank, w.Slot2) { Timer = 0 };
+        }
+        var h = w.Half;
+        h.Rank = w.Rank;
+        h.Slot = w.Slot2;
+        var (m, hm) = (w.Mods, h.Mods);
+        (hm.Damage, hm.Area, hm.Cooldown, hm.Speed, hm.Duration, hm.Homing, hm.Projectiles, hm.Pierce) = (m.Damage, m.Area, m.Cooldown, m.Speed, m.Duration, m.Homing, m.Projectiles, m.Pierce);
+        return h;
+    }
+
+    /// <summary>The second key out of a storm (pressed, or held: again each time it is ready): the half swings as itself
+    /// (Sunder: its slash, every fourth heavy with its line), on its own cooldown. False: not ready, or a storm is on.</summary>
+    public static bool SwingHalf(Battle b, WeaponInst w)
+    {
+        if (w.DisabledT > 0 || InStorm(b, w) || HalfOf(w) is not { } h || h.Timer > 0) return false;
+        if (b.FireFrom != null || b.Refiring) return false;
+        int kills0 = h.Kills;
+        bool fired = CastOnce(b, h);
+        if (fired) Rearm(b, h, true, kills0);
+        return fired;
+    }
+
+    /// <summary>The half's clock (TickPressed): its wait runs down; held out of a storm, it swings each time it is ready.</summary>
+    static void TickHalf(Battle b, WeaponInst w, double dt)
+    {
+        if (HalfOf(w) is not { } h) return;
+        if (h.Timer > 0) h.Timer = Math.Max(0, h.Timer - dt);
+        if (w.Held2 && h.Timer <= 0) SwingHalf(b, w);
     }
 
     static void Fade(Battle b, SpinLineRec l) =>
@@ -258,15 +386,18 @@ public static partial class Firing
         if (w.Behavior != WeaponBehavior.Spin || w.DisabledT > 0) return false;
         if (!w.Channeling && !(w.BreakUntil >= 0 && b.Time <= w.BreakUntil)) return false;
         var p = b.Player;
+        double spent = w.Channeling ? w.ChannelT : w.StormT;
         if (w.Channeling)
         {
+            w.StormT = spent;
             w.Channeling = false;
             b.Events.Emit(new Ev.Channel { Weapon = w.Id, Slot = w.Slot, On = false, X = p.X, Z = p.Z });
         }
         w.BreakUntil = -1;
-        double r = AreaOf(b, w, w.Num(s => s.BreakRadius) ?? 4), dmg = Grown(w, w.Num(s => s.BreakDamage) ?? 60);
+        double grow = BreakGrowth(w, spent);
+        double r = AreaOf(b, w, w.Num(s => s.BreakRadius) ?? 4) * grow, dmg = Grown(w, w.Num(s => s.BreakDamage) ?? 60) * grow;
         double stun = w.Num(s => s.BreakStun) ?? 0.5, kb = w.Num(s => s.BreakKnockback) ?? 1.5;
-        b.Events.Emit(new Ev.Spin { Phase = SpinPhase.Break, X = p.X, Z = p.Z, Radius = r, Heavy = true });
+        b.Events.Emit(new Ev.Spin { Phase = SpinPhase.Break, X = p.X, Z = p.Z, Radius = r, Heavy = true, Grow = grow });
         b.ForEachHostileInRadius(p.X, p.Z, r, (e, d) =>
         {
             double dd = d == 0 ? 1 : d;

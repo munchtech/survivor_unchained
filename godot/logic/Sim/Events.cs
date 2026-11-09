@@ -33,6 +33,8 @@ public enum LeapPhase { Takeoff, Land }
 public enum ChargePhase { Start, Impact, Stop, End, Slam }
 public enum SpinPhase { Start, Tick, End, Break }
 public enum SpinLinePhase { Thrown, Split, Faded }
+/// <summary>Iron Vow's phases (Ev.Brace).</summary>
+public enum BracePhase { Start, Store, Burst }
 
 public static class Ev
 {
@@ -138,11 +140,16 @@ public static class Ev
     public sealed class Charge : CombatEvent { public ChargePhase Phase; public double X, Z, DX, DZ, X1, Z1, Dur, Radius; public int Target = -1; }
     /// <summary>Bladestorm's spin (Sim/PressedWarden.cs). Start, then a Tick each blow of the storm (Heavy: the Hand's or
     /// its own heavy count; a heavy tick throws a line), End (released or out of time: it may still be broken for a breath),
-    /// Break (the second key: a heavy blow of Radius round her, the storm over).</summary>
-    public sealed class Spin : CombatEvent { public SpinPhase Phase; public double X, Z, Radius; public bool Heavy; }
+    /// Break (the second key: a heavy blow of Radius round her, the storm over; Grow: what the storm spent made of it, x1
+    /// at half a second to x1.6 at its longest, on its damage and its Radius).</summary>
+    public sealed class Spin : CombatEvent { public SpinPhase Phase; public double X, Z, Radius; public bool Heavy; public double Grow = 1; }
     /// <summary>A Sunder line Bladestorm threw (Id: the same line through its life): Thrown pending on the ground, Split at
     /// the break (it strikes all along it), Faded unbroken (it deals nothing).</summary>
     public sealed class SpinLine : CombatEvent { public SpinLinePhase Phase; public int Id; public double X0, Z0, X1, Z1, Width; }
+    /// <summary>Iron Vow (Sim/PressedWarden.cs). Start: she plants at (X, Z) and braces (Radius: the ring it will burst in).
+    /// Store: a blow on her in the brace, halved, a share kept (Stored: the store so far; at most one each 0.15 s). Burst: the
+    /// brace is over and the store comes out in a ring of Radius round (X, Z) (Stored: the final store; Hit: how many it struck).</summary>
+    public sealed class Brace : CombatEvent { public BracePhase Phase; public double X, Z, Radius, Stored; public int Hit; }
     /// <summary>She is knocked down (the kit's charge caught her, Battle.KnockPlayer): held for Seconds (after her tenacity).</summary>
     public sealed class Knockdown : CombatEvent
     {

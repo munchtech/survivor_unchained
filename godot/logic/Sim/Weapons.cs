@@ -48,6 +48,12 @@ public sealed class WeaponInst
     public int SpinTicks;
     public readonly List<SpinLineRec> Lines = new();
     public double BreakUntil = -1;
+    /// <summary>A spin's storm: when the last began (the battle's clock), and the seconds the last one ran (the break grows
+    /// with it). A spin union's second key held (Held2), and its other part (Sunder, at the union's rank, on its own cooldown,
+    /// never in Weapons): what that key swings outside a storm (Battle.PressSkill, Firing.TickPressed).</summary>
+    public double StormAt = double.NegativeInfinity, StormT;
+    public bool Held2;
+    public WeaponInst? Half;
     /// <summary>For beams and orbits: active until.</summary>
     public double ActiveT;
     /// <summary>Times it has been honed (finished, in the endless dark).</summary>
@@ -311,6 +317,7 @@ public static partial class Firing
      * its key is held, and ends on release or at its longest hold, its cooldown starting then. */
     static void TickPressed(Battle b, WeaponInst w, double dt)
     {
+        if (w.Behavior == WeaponBehavior.Spin && w.Slot2 >= 0) TickHalf(b, w, dt);
         if (!w.Channeling) { if (w.Timer < 0) w.Timer = 0; if (w.Lines.Count > 0 && b.Time > w.BreakUntil) FadeLines(b, w); return; }
         w.Timer = 0;
         w.ChannelT += dt;
@@ -324,6 +331,7 @@ public static partial class Firing
 
     static void EndChannel(Battle b, WeaponInst w)
     {
+        w.StormT = w.ChannelT;
         w.Channeling = false;
         w.Timer = CooldownOf(b, w);
         b.Events.Emit(new Ev.Channel { Weapon = w.Id, Slot = w.Slot, On = false, X = b.Player.X, Z = b.Player.Z });
@@ -341,6 +349,7 @@ public static partial class Firing
             w.ChannelT = 0;
             w.ChannelNext = w.ChannelEvery;
             w.SpinTicks = 0;
+            w.StormAt = b.Time;
             b.Events.Emit(new Ev.Channel { Weapon = w.Id, Slot = w.Slot, On = true, X = b.Player.X, Z = b.Player.Z });
             CastOnce(b, w);
             return true;
@@ -392,6 +401,7 @@ public static partial class Firing
         WeaponBehavior.Leap => b.SkillLeap(w),
         WeaponBehavior.Charge => b.SkillCharge(w),
         WeaponBehavior.Spin => FireSpin(b, w),
+        WeaponBehavior.Brace => b.SkillBrace(w),
         _ => false,
     };
 

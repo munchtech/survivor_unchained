@@ -134,7 +134,7 @@ public static class Pilot
         var p = b.Player;
         if (rooted && b.ActiveTells.Count > 0) KitDash(b, mx, mz);
         if (rooted && b.ActiveTells.Count > 0) ClosingDash(b, presses);
-        if (presses) PressSkills(b);
+        if (presses) PressSkills(b, rooted);
         // A champion winding up a lunge close by: dash across its line, as anyone with a dash learns to.
         // (Not a boss: its blows are marked on the ground, and Boss reads them by their shape.)
         if (p.DashCharges > 0 && lunges)
@@ -349,8 +349,9 @@ public static class Pilot
     /// <summary>The pressed skills a player carries (P7: Heroic Leap, Shield Charge, Bladestorm), pressed as one who
     /// knows them would: the leap at a pack of five or more within 9 m (its center), the charge into four or more in
     /// the 8 m line ahead, the storm held while four or more stand within 3.5 m and broken once two lines are pending,
-    /// with half a second left, or as the crowd thins with a line down.</summary>
-    static void PressSkills(Battle b)
+    /// with half a second left, or as the crowd thins with a line down (out of a storm, Sunder's key swung at what is near); Iron Vow when three or more stand within 3 m, or
+    /// (one who reads the marks: sees) a marked blow about to land on her.</summary>
+    static void PressSkills(Battle b, bool sees = true)
     {
         var p = b.Player;
         if (p.Leap != null || b.Art.Rush != null || p.DashT > 0) return;
@@ -386,6 +387,15 @@ public static class Pilot
                 if (n >= 4) { b.PressSkill(w.Slot, p.X + fx * 8, p.Z + fz * 8); return; }
                 continue;
             }
+            if (w.Behavior == WeaponBehavior.Brace)
+            {
+                if (w.Timer > 0 || b.Bracing) continue;
+                bool crowd = b.HostilesInRadius(p.X, p.Z, 3).Count >= 3;
+                bool blow = false;
+                if (sees) foreach (var bl in b.Blows) if (bl.Kind == TelegraphKind.Blow && bl.T <= 0.6 && bl.Hit(p.X, p.Z, p.Radius + 0.3)) { blow = true; break; }
+                if (crowd || blow) { b.PressSkill(w.Slot, p.X, p.Z); return; }
+                continue;
+            }
             if (w.Behavior == WeaponBehavior.Spin)
             {
                 int n = b.HostilesInRadius(p.X, p.Z, 3.5).Count;
@@ -396,7 +406,12 @@ public static class Pilot
                     else b.HoldSkill(w.Slot, n >= 4);
                 }
                 else if (w.Timer <= 0 && n >= 4) { b.HoldSkill(w.Slot, true); b.PressSkill(w.Slot, p.X + Math.Sin(p.Facing) * 2, p.Z + Math.Cos(p.Facing) * 2); }
-                else b.HoldSkill(w.Slot, false);
+                else
+                {
+                    b.HoldSkill(w.Slot, false);
+                    // Out of a storm (on its cooldown, or too few for one), Sunder's key swings Sunder at what is in reach.
+                    if (w.Slot2 >= 0 && !Firing.InStorm(b, w) && b.HostilesInRadius(p.X, p.Z, 3.5).Count > 0) b.PressSkill(w.Slot2, p.X, p.Z);
+                }
             }
         }
     }

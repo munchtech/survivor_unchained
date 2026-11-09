@@ -1506,6 +1506,20 @@
       ]
     },
     {
+      "id": "iron_vow",
+      "name": "Iron Vow",
+      "school": "physical",
+      "behavior": "brace",
+      "cast": "press",
+      "tags": ["shield", "physical", "area"],
+      "access": ["warden"],
+      "bossDamage": 1.2,
+      "art": "iron_vow",
+      "description": "You plant your feet and swear it: for 2 s every blow on you lands at half, and a fifth of each is kept. Then it all comes back out of you in a ring.",
+      "base": { "cooldown": 10, "damage": 30, "radius": 5, "knockback": 1.2, "stun": 0.4, "brace": 2, "plant": 0.3, "store": 0.2, "storeMul": 3, "halve": 0.5 },
+      "evolutions": []
+    },
+    {
       "id": "bladestorm",
       "name": "Bladestorm",
       "school": "physical",
@@ -1514,13 +1528,14 @@
       "tags": ["melee", "steel", "physical", "area", "heavy"],
       "bossDamage": 1.6,
       "art": "slash_spin",
-      "description": "Hold the Cleaver's key and you spin, blade out, cutting everything around you; every fourth turn throws a Sunder line. Press Sunder's key to break the storm with one great blow, and every line splits at once.",
+      "description": "Hold the Cleaver's key and you spin, blade out, cutting everything around you; every fourth turn throws a Sunder line. Press Sunder's key to break the storm with one great blow, the greater the longer you spun, and every line splits at once. Out of the storm, Sunder's key swings Sunder.",
+      "_doc": "cooldown and channelTime are placeholders: they go when the Warden's Resolve lands (ARPG.md 3.1, M3); the spin then drains Resolve while held.",
       "base": {
         "cooldown": 6,
-        "damage": 15,
+        "damage": 10.8,
         "radius": 3.2,
         "knockback": 0.3,
-        "channelTime": 4,
+        "channelTime": 3,
         "channelGap": 0.3,
         "pace": 0.85,
         "heavyEvery": 4,
@@ -1532,7 +1547,9 @@
         "breakRadius": 4,
         "breakStun": 0.5,
         "breakKnockback": 1.5,
-        "breakWindow": 0.4
+        "breakWindow": 1,
+        "breakFrom": 0.5,
+        "breakGrow": 1.6
       }
     }
   ],

@@ -262,7 +262,7 @@ public sealed class WardenPressedTests(ITestOutputHelper output)
         var (b, w) = Storm();
         var p = b.Player;
         p.Facing = Math.PI / 2; // along +x
-        var at = new List<(double, double)> { (p.X + 1.5, p.Z), (p.X + 6, p.Z), (p.X - 6, p.Z) };
+        var at = new List<(double, double)> { (p.X + 1.5, p.Z), (p.X + 6, p.Z), (p.X - 9, p.Z) };
         var es = at.Select(a => Dummy(b, a.Item1, a.Item2)).ToList();
         Run(b, 0.5, () => Pin(b, es, at));
         p.Facing = Math.PI / 2;
@@ -291,8 +291,9 @@ public sealed class WardenPressedTests(ITestOutputHelper output)
         Assert.False(w.Channeling);
         Assert.True(w.Timer > 5.5);
         Assert.True(es[0].Status.Has(StatusKind.Stun));
-        // Broken once: the key does nothing more.
-        Assert.False(b.PressSkill(w.Slot2, p.X, p.Z));
+        // Broken once: the key breaks nothing more (it swings Sunder now).
+        b.PressSkill(w.Slot2, p.X, p.Z);
+        Assert.DoesNotContain(b.Events.Drain(), e => e is Ev.Spin { Phase: SpinPhase.Break });
     }
 
     [Fact]
@@ -300,17 +301,17 @@ public sealed class WardenPressedTests(ITestOutputHelper output)
     {
         var (b, w) = Storm();
         var p = b.Player;
-        // Ready, no storm: the Sunder's key does nothing.
-        Assert.False(b.PressSkill(w.Slot2, p.X + 2, p.Z));
+        // Ready, no storm: the Sunder's key breaks nothing (with nothing in reach it doesn't even swing).
+        b.PressSkill(w.Slot2, p.X + 2, p.Z);
         Assert.False(w.Channeling);
         Assert.Equal(0, w.Timer);
         Assert.DoesNotContain(b.Events.Drain(), e => e is Ev.Spin);
-        // Spun and let go: within 0.4 s it still breaks.
+        // Spun and let go: within 1 s it still breaks.
         b.HoldSkill(w.Slot, true);
         b.PressSkill(w.Slot, p.X + 2, p.Z);
         Run(b, 1.3, () => b.HoldSkill(w.Slot, true));
         b.HoldSkill(w.Slot, false);
-        Run(b, 0.2);
+        Run(b, 0.8);
         Assert.False(w.Channeling);
         Assert.Single(w.Lines);
         Assert.True(b.PressSkill(w.Slot2, p.X, p.Z));
@@ -321,10 +322,11 @@ public sealed class WardenPressedTests(ITestOutputHelper output)
         b.PressSkill(w.Slot, p.X + 2, p.Z);
         Run(b, 1.3, () => b.HoldSkill(w.Slot, true));
         b.HoldSkill(w.Slot, false);
-        var evs = Run(b, 0.6);
+        var evs = Run(b, 1.1);
         Assert.Contains(evs, e => e is Ev.SpinLine { Phase: SpinLinePhase.Faded });
         Assert.Empty(w.Lines);
-        Assert.False(b.PressSkill(w.Slot2, p.X, p.Z));
+        b.PressSkill(w.Slot2, p.X, p.Z);
+        Assert.DoesNotContain(b.Events.Drain(), e => e is Ev.Spin { Phase: SpinPhase.Break });
     }
 
     [Fact]
@@ -340,7 +342,163 @@ public sealed class WardenPressedTests(ITestOutputHelper output)
         Assert.Contains(evs, e => e is Ev.Spin { Phase: SpinPhase.End });
     }
 
-    /// <summary>The first DPS check (the P7 brief): per target in the radius, Bladestorm while it spins (a 4 s spin and
+    [Fact]
+    public void Bladestorm_sunders_key_out_of_a_storm_swings_sunder_on_its_own_cooldown_and_repeats_held()
+    {
+        var (b, w) = Storm();
+        var p = b.Player;
+        p.Facing = Math.PI / 2;
+        var at = new List<(double, double)> { (p.X + 1.5, p.Z) };
+        var es = at.Select(a => Dummy(b, a.Item1, a.Item2)).ToList();
+        Run(b, 0.2, () => Pin(b, es, at));
+        b.Events.Drain();
+        b.HoldSkill(w.Slot2, true);
+        Assert.True(b.PressSkill(w.Slot2, p.X + 2, p.Z));
+        var evs = b.Events.Drain().ToList();
+        evs.AddRange(Run(b, 5.0, () => { b.HoldSkill(w.Slot2, true); Pin(b, es, at); }));
+        var h = w.Half!;
+        Assert.Equal("sunder", h.Id);
+        Assert.Equal(w.Rank, h.Rank);
+        // Pressed at 0, then held: 1.6, 3.2, 4.8; its fourth is its own heavy one, with the line.
+        Assert.Equal(4, h.OwnBlows);
+        Assert.Equal(4 * Firing.CountOf(b, h, 1), evs.Count(e => e is Ev.Slash));
+        Assert.DoesNotContain(evs, e => e is Ev.Spin);
+        Assert.False(w.Channeling);
+        Assert.Equal(0, w.Timer);
+        Assert.True(b.DamageBy.GetValueOrDefault("sunder") > 0);
+        Assert.Equal(["bladestorm"], b.Weapons.Select(x => x.Id).ToArray());
+    }
+
+    [Fact]
+    public void Bladestorm_a_grip_held_into_the_storm_never_breaks_it_and_a_fresh_press_does()
+    {
+        var (b, w) = Storm();
+        var p = b.Player;
+        var at = new List<(double, double)> { (p.X + 1.5, p.Z) };
+        var es = at.Select(a => Dummy(b, a.Item1, a.Item2)).ToList();
+        Run(b, 0.2, () => Pin(b, es, at));
+        // Sunder's key held first (it swings), then the storm.
+        b.HoldSkill(w.Slot2, true);
+        b.PressSkill(w.Slot2, p.X + 2, p.Z);
+        Run(b, 0.3, () => { b.HoldSkill(w.Slot2, true); Pin(b, es, at); });
+        int swung = w.Half!.OwnBlows;
+        b.HoldSkill(w.Slot, true);
+        Assert.True(b.PressSkill(w.Slot, p.X + 2, p.Z));
+        // Held on into it, and pressed again each step as a buffer would: no break, no Sunder swing, still spinning.
+        var evs = Run(b, 2.0, () => { b.HoldSkill(w.Slot, true); b.HoldSkill(w.Slot2, true); b.PressSkill(w.Slot2, p.X, p.Z); Pin(b, es, at); });
+        Assert.True(w.Channeling);
+        Assert.DoesNotContain(evs, e => e is Ev.Spin { Phase: SpinPhase.Break });
+        Assert.Equal(swung, w.Half.OwnBlows);
+        // Let go and pressed fresh: it breaks.
+        b.HoldSkill(w.Slot2, false);
+        Run(b, Dt, () => { b.HoldSkill(w.Slot, true); Pin(b, es, at); });
+        b.HoldSkill(w.Slot2, true);
+        Assert.True(b.PressSkill(w.Slot2, p.X, p.Z));
+        Assert.Contains(b.Events.Drain(), e => e is Ev.Spin { Phase: SpinPhase.Break });
+        Assert.False(w.Channeling);
+    }
+
+    [Fact]
+    public void Bladestorm_break_grows_with_the_storm_spent_from_half_a_second_to_its_cap()
+    {
+        Ev.Spin BreakAfter(double seconds)
+        {
+            var (b, w) = Storm();
+            var p = b.Player;
+            b.HoldSkill(w.Slot, true);
+            Assert.True(b.PressSkill(w.Slot, p.X + 2, p.Z));
+            Run(b, seconds, () => b.HoldSkill(w.Slot, true), () => !w.Channeling);
+            b.Events.Drain();
+            Assert.True(b.PressSkill(w.Slot2, p.X, p.Z));
+            return b.Events.Drain().OfType<Ev.Spin>().Single(e => e.Phase == SpinPhase.Break);
+        }
+        var (b0, w0) = Storm();
+        double r = Firing.AreaOf(b0, w0, 4);
+        Assert.Equal(3, w0.ChannelMax);
+        var quick = BreakAfter(0.3);
+        var mid = BreakAfter(1.75);
+        var full = BreakAfter(3.5);
+        Assert.Equal(1, quick.Grow, 6);
+        Assert.Equal(1.3, mid.Grow, 1);
+        Assert.Equal(1.6, full.Grow, 6);
+        Assert.Equal(r, quick.Radius, 6);
+        Assert.Equal(r * 1.6, full.Radius, 6);
+    }
+
+    /* ----------------------------------------------------------- iron vow -- */
+
+    [Fact]
+    public void Iron_vow_plants_then_braces_halving_blows_and_storing_a_fifth()
+    {
+        var b = Fight(("iron_vow", 1));
+        var w = b.Weapons.Single(x => x.Id == "iron_vow");
+        var p = b.Player;
+        Assert.Equal(CastMode.Press, w.Cast);
+        Assert.Equal(WeaponBehavior.Brace, w.Behavior);
+        Run(b, 0.2);
+        p.Hp = 1e6;
+        double Blow() { p.Iframes = 0; double h0 = p.Hp; b.HurtPlayer(100, School.Physical, "test", null); return h0 - p.Hp; }
+        double free = Blow();
+        Assert.True(free > 0);
+        b.Events.Drain();
+        Assert.True(b.PressSkill(w.Slot, p.X, p.Z));
+        Assert.Contains(b.Events.Drain(), e => e is Ev.Brace { Phase: BracePhase.Start, Radius: > 4.9 });
+        Assert.True(w.Timer > 9.5);
+        // The plant: her walk held for 0.3 s, then she walks while it braces.
+        double x0 = p.X;
+        for (int i = 0; i < 15; i++) { b.Tick(Dt, 1, 0); b.Events.Drain(); }
+        Assert.Equal(x0, p.X, 6);
+        for (int i = 0; i < 30; i++) { b.Tick(Dt, 1, 0); b.Events.Drain(); }
+        Assert.True(p.X > x0 + 0.5);
+        Assert.True(b.Bracing);
+        double braced = Blow();
+        Assert.Equal(free * 0.5, braced, 6);
+        Assert.Equal(free * 0.2, b.VowStored, 6);
+        Assert.Contains(b.Events.Drain(), e => e is Ev.Brace { Phase: BracePhase.Store });
+        // Store events are throttled: a second blow at once stores but says nothing.
+        Blow();
+        Assert.Equal(free * 0.4, b.VowStored, 6);
+        Assert.DoesNotContain(b.Events.Drain(), e => e is Ev.Brace);
+    }
+
+    [Fact]
+    public void Iron_vow_burst_strikes_exactly_what_its_ring_marked_for_its_store_times_three()
+    {
+        var b = Fight(("iron_vow", 1));
+        var w = b.Weapons.Single(x => x.Id == "iron_vow");
+        var p = b.Player;
+        var at = new List<(double, double)> { (p.X + 1, p.Z), (p.X, p.Z - 4.5), (p.X - 3, p.Z + 3), (p.X + 6, p.Z), (p.X, p.Z + 8) };
+        var es = at.Select(a => Dummy(b, a.Item1, a.Item2)).ToList();
+        Run(b, 0.2, () => Pin(b, es, at));
+        p.Hp = 1e6;
+        b.Events.Drain();
+        Assert.True(b.PressSkill(w.Slot, p.X, p.Z));
+        Run(b, 1.0, () => Pin(b, es, at));
+        p.Iframes = 0;
+        b.HurtPlayer(200, School.Physical, "test", null);
+        double stored = b.VowStored;
+        Assert.True(stored > 0);
+        var hp0 = es.Select(e => e.Hp).ToList();
+        var evs = Run(b, 1.5, () => Pin(b, es, at), () => !b.Bracing);
+        var burst = evs.OfType<Ev.Brace>().Single(e => e.Phase == BracePhase.Burst);
+        Assert.Equal(stored, burst.Stored, 6);
+        double r = burst.Radius;
+        Assert.Equal(Firing.AreaOf(b, w, 5), r, 6);
+        var inside = es.Where(e => Math.Sqrt((e.X - burst.X) * (e.X - burst.X) + (e.Z - burst.Z) * (e.Z - burst.Z)) <= r).Select(e => e.Id).ToHashSet();
+        Assert.Equal(3, inside.Count);
+        Assert.Equal(inside, b.VowStruck.ToHashSet());
+        Assert.Equal(inside.Count, burst.Hit);
+        for (int i = 0; i < es.Count; i++)
+        {
+            if (inside.Contains(es[i].Id)) { Assert.True(es[i].Hp < hp0[i]); Assert.True(es[i].Status.Has(StatusKind.Stun)); }
+            else Assert.Equal(hp0[i], es[i].Hp);
+        }
+        double dealt = hp0[0] - es[0].Hp;
+        Assert.InRange(dealt, (w.Damage + stored * 3) * 0.99, (w.Damage + stored * 3) * 2.01);
+        output.WriteLine($"stored {stored:0.0}, burst {dealt:0.0} on one (base {w.Damage:0.0})");
+    }
+
+    /// <summary>The first DPS check (the P7 brief): per target in the radius, Bladestorm while it spins (a 3 s spin and
     /// its break) against Cleaver and Sunder together on one target, the same rank, no Hand.</summary>
     [Fact]
     public void Bladestorm_out_damages_cleaver_and_sunder_by_a_third_to_a_half_per_target_while_it_spins()
@@ -372,14 +530,14 @@ public sealed class WardenPressedTests(ITestOutputHelper output)
                 w.Timer = 0;
                 b.HoldSkill(w.Slot, true);
                 Assert.True(b.PressSkill(w.Slot, p.X + 2, p.Z));
-                Run(b, 4.1, () => { b.HoldSkill(w.Slot, true); Pin(b, [e, off], at); }, () => !w.Channeling);
+                Run(b, 3.1, () => { b.HoldSkill(w.Slot, true); Pin(b, [e, off], at); }, () => !w.Channeling);
                 b.HoldSkill(w.Slot, false);
                 Assert.True(b.PressSkill(w.Slot2, p.X, p.Z));
                 b.Events.Drain();
             }
-            double spin = (hp0 - e.Hp) / (4.0 * spins);
-            offLine = (off0 - off.Hp) / (4.0 * spins);
-            return (spin, spin * 4 / (4 + w.Timer));
+            double spin = (hp0 - e.Hp) / (3.0 * spins);
+            offLine = (off0 - off.Hp) / (3.0 * spins);
+            return (spin, spin * 3 / (3 + w.Timer));
         }
         double parts = PartsDps();
         var (storm, cycle) = StormDps();

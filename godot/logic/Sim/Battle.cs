@@ -459,6 +459,7 @@ public sealed partial class Battle
         {
             RunOnKills();
             foreach (var w in Weapons.ToArray()) Firing.Tick(this, w, dt);
+            TickVow(dt);
             TickAuras(dt);
             TickTriggers(dt);
             TickReflexes(dt);
@@ -579,6 +580,8 @@ public sealed partial class Battle
         p.Vz += (targetVZ - p.Vz) * accel;
         // Rooted (the kit's ring): her feet are held; only a dash frees them.
         if (p.RootT > 0) { p.Vx = p.Vz = 0; p.DriftX = p.DriftZ = 0; }
+        // Iron Vow's plant: her walk is held (a drag still moves her).
+        if (VowPlanted) { p.Vx = p.Vz = 0; }
         double wasX = p.X, wasZ = p.Z;
         // Dragged (the kit's pull): the drag moves her on top of her own walk, and is not her pace.
         bool drift = p.DriftX != 0 || p.DriftZ != 0;
@@ -1375,6 +1378,8 @@ public sealed partial class Battle
         // Grounding: part of the blow goes to earth (its lightning is the blessing's Hurt rule).
         if (Boons.TryGetValue("grounding", out int ground)) dmg *= ground >= 2 ? 0.67 : 0.8;
         dmg *= ReaverTakenMul(school) * ArcanistTakenMul();
+        // Iron Vow: bracing, a share of the blow is kept and it lands at half.
+        dmg = VowTake(dmg);
         return HurtPlayerRaw(FlareGuard(dmg), school, source, from);
     }
 

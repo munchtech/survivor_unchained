@@ -21,7 +21,7 @@ namespace SurvivorUnchained.Content;
  * rank, +6% duration per rank, one more projectile at ranks 4 and 7. */
 
 /// <summary>How a skill fires (Sim/Weapons.cs Firing.Fire). Appended only: older keys keep their places.</summary>
-public enum WeaponBehavior { Aimed, Spray, Ring, Nova, Zone, Chain, Orbit, Storm, Bounce, Beam, Palm, Herd, Chakram, Slash, Raise, Crack, Reactive, Toll, Leap, Charge, Spin }
+public enum WeaponBehavior { Aimed, Spray, Ring, Nova, Zone, Chain, Orbit, Storm, Bounce, Beam, Palm, Herd, Chakram, Slash, Raise, Crack, Reactive, Toll, Leap, Charge, Spin, Brace }
 
 /// <summary>How a skill is set off (skills.json "cast"): by itself on its cooldown (auto, every skill so far),
 /// once on a press when ready (press), or from a press for as long as it is held, to its ChannelTime, its cooldown
@@ -89,6 +89,13 @@ public sealed class WeaponStats
     /// stunning BreakStun and throwing BreakKnockback, each pending line splitting for LineDamage; BreakWindow seconds after
     /// the spin ends it may still be broken. The damages are base numbers, grown with the skill's rank as its Damage is.</summary>
     public double? Pace, MaxLines, LineDamage, BreakDamage, BreakRadius, BreakStun, BreakKnockback, BreakWindow;
+    /// <summary>Spin: the break grows with the storm she spent, from x1 at BreakFrom seconds to BreakGrow at its longest
+    /// (ChannelTime), linearly, on its damage and its radius.</summary>
+    public double? BreakFrom, BreakGrow;
+    /// <summary>Brace (Iron Vow): she plants Plant seconds (no walking), then braces Brace seconds; blows on her while it
+    /// holds land at Halve, and Store of each (before the halving) is stored; it ends in a burst of Radius for Damage plus
+    /// the store times StoreMul, Knockback outward, a lesser foe stunned Stun seconds.</summary>
+    public double? Brace, Plant, Store, StoreMul, Halve;
 }
 
 /// <summary>Multiplicative on damage, cooldown, area, speed, duration; additive on counts.</summary>
@@ -132,6 +139,9 @@ public sealed class WeaponDef
     /// <summary>Bosses and elites: crowd weapons hit one big target softly.</summary>
     public double? BossDamage;
     public string Description = "";
+    /// <summary>A note for whoever tunes it (skills.json "_doc"): never read by the game, kept by the round trip.</summary>
+    [System.Text.Json.Serialization.JsonPropertyName("_doc")]
+    public string Doc = "";
     public Evolution[] Evolutions = System.Array.Empty<Evolution>();
     /// <summary>Offered in the level-up pool (and so discoverable, and learnable by day).</summary>
     public bool Findable;
