@@ -117,6 +117,11 @@ if (opt.Has("over"))
     var read = DataFiles.Text;
     DataFiles.Text = rel => File.Exists(Path.Combine(over, rel)) ? File.ReadAllText(Path.Combine(over, rel)) : read(rel);
 }
+// --dashforms 1|0: do the movement arts ride the dash (the old forms)? Off is the game now (MapRules.DashForms).
+// --grant id[:rank],... / --grant-union id: every arena carries these from its start (the game's dev grants).
+if (opt.Has("grant")) SurvivorUnchained.Balance.ArenaSim.Grant = opt.Get("grant", "");
+if (opt.Has("grant-union")) SurvivorUnchained.Balance.ArenaSim.GrantUnion = opt.Get("grant-union", "");
+if (opt.Has("dashforms")) SurvivorUnchained.Sim.MapRules.DashFormsDefault = opt.Get("dashforms", "1") != "0";
 string cmd = args.Length > 0 && !args[0].StartsWith("--") ? args[0] : "help";
 // The content is read once, before the runs share it.
 _ = Callings.Archetypes; _ = Items.All; _ = Weapons.All; _ = Boons.All;
@@ -132,6 +137,7 @@ switch (cmd)
     case "story": Story(); break;
     case "verge-day": VergeDay(); break;
     case "lowford-day": LowfordDay(); break;
+    case "zone": ZoneRuns(); break;
     case "place": Place(); break;
     case "landmarks": Landmarks(); break;
     case "board": BoardPlan.Run(opt.Get("people", "pack"), opt.Int("tier", 1), opt.Get("seed", "311").Split(',').Select(int.Parse).ToArray(), opt.Get("out", ""), double.Parse(opt.Get("ppm", "4"), System.Globalization.CultureInfo.InvariantCulture)); break;
@@ -414,6 +420,42 @@ void Place()
  * with what she has learned by then (--learned 0,2,4 a stage), in three setups: old (1/2/3 slots, Hands off), new
  * (2/3/4, Hands on), nohand (new slots, Hands off). --stages 1:1:0,4:2:2,8:4:4 (level:day:learned)
  * --packs wolves,boars,footpads,lamplings,elitewolves --setups old,new,nohand --seeds N --waves N (packs a fight) --bot plain|deft --out PATH */
+// zone: a real zone played from its start (M5-F, ARPG 7.1): the Low Ford from the Wake to the gate, through HeadlessHost:
+// --zone lowford --bots human,careless,deft,plain,standing --seeds 8 --tier 2 (or --tiers 1,2) --also 1:human+deft --out PATH.md
+void ZoneRuns()
+{
+    var bots = opt.List("bots", "human,careless,deft,plain,standing");
+    var tiers = (opt.Has("tiers") ? opt.List("tiers", "2") : opt.List("tier", "2")).Select(int.Parse).ToArray();
+    int seeds = opt.Int("seeds", 8), seed0 = opt.Int("seed0", 1);
+    var zoneId = opt.Get("zone", "lowford");
+    var specs = new List<ZoneRunSpec>();
+    var feats = opt.Has("features") ? opt.List("features", "").ToArray() : null;
+    foreach (var t in tiers)
+        foreach (var bot in bots)
+            for (int s = 0; s < seeds; s++) specs.Add(new ZoneRunSpec(seed0 + s, zoneId, bot, t, Features: feats));
+    // (--also 1:human,deft: more bots at another tier in the same report)
+    foreach (var more in opt.List("also", "").Where(x => x.Contains(':')))
+        foreach (var bot in more.Split(':')[1].Split('+', ','))
+            for (int s = 0; s < seeds; s++) specs.Add(new ZoneRunSpec(seed0 + s, zoneId, bot, int.Parse(more.Split(':')[0])));
+    Console.WriteLine($"{specs.Count} zone runs");
+    var results = new ConcurrentBag<ZoneRunResult>();
+    var sw = Stopwatch.StartNew();
+    int done = 0;
+    var gate = new object();
+    Parallel.ForEach(specs, new ParallelOptions { MaxDegreeOfParallelism = opt.Int("par", 16) }, spec =>
+    {
+        ZoneRunResult r;
+        try { r = ZoneSim.Play(spec); }
+        catch (Exception e) { Console.Error.WriteLine($"{spec.Key}: {e}"); return; }
+        results.Add(r);
+        lock (gate) Console.WriteLine($"[{++done}/{specs.Count} {sw.Elapsed:mm\\:ss}] {spec.Key}: {(r.Reached ? "through" : r.Stuck ? "STUCK " + r.StuckAt : "capped")} {r.PlaySeconds / 60:0.0} min kills {r.Kills} packs {r.Packs} champs {r.Champions} falls {r.Falls} rises {r.Rises} shown {r.GearShown} L{r.LevelAtWarden}/{r.LevelAtGate}");
+    });
+    var all = results.OrderBy(r => r.Spec.Key).ToList();
+    var md = ZoneSim.Report(all, opt.Get("cmd", "dotnet run -c Release --project godot/balance -- zone " + string.Join(" ", args.Skip(1))));
+    if (opt.Has("out")) File.WriteAllText(opt.Get("out", "zone.md"), md);
+    Console.WriteLine(md);
+}
+
 // lowford-day: the Low Ford Road by day (H4 item 10), from C04 A's hand-back to the gate, many seeds a pair of hands:
 // --callings warden --levels 3 --bots human,careless --seeds 64.
 void LowfordDay()

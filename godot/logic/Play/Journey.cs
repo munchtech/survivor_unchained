@@ -22,7 +22,8 @@ public enum ToastKind { Loot, Gold, Relation, Quest, World, Lore, Level, Warning
 public sealed record Toast(ToastKind Kind, string Text, string? Sub = null, string? Icon = null, int? Rarity = null, double? Life = null);
 
 /// <summary>A heading for the interface: a new level, a place.</summary>
-public sealed record Announcement(string Title, string? Sub, string Kind, double Seconds, string? Kicker = null);
+/// <param name="Through">(M5 r2) Shown even while banners are held (IZoneHost.HoldBanners): the staging's own.</param>
+public sealed record Announcement(string Title, string? Sub, string Kind, double Seconds, string? Kicker = null, bool Through = false);
 
 /// <summary>What the road has taken out of the survivor, carried between
 /// zones until they rest (the ember is an arena's, and stays in it).</summary>
@@ -144,7 +145,10 @@ public sealed partial class Journey
     /// art, the dash) and grows by experience.</summary>
     /// <param name="arena">An ember arena: the ember burns, from nothing, whatever is carried.</param>
     /// <param name="ember">The ember burns here (the night: the prologue, an arena).</param>
-    public Battle StartBattle(bool combat, CollisionWorld col, Func<double, double, double> heightAt, double x, double z, double facing, uint seed, bool arena = false, bool ember = false)
+    /// <summary>The fight in play carries the world's tier, so its drops do too (Drops).</summary>
+    public bool WorldTierOn;
+
+    public Battle StartBattle(bool combat, CollisionWorld col, Func<double, double, double> heightAt, double x, double z, double facing, uint seed, bool arena = false, bool ember = false, bool? worldTier = null)
     {
         // The kit goes on with the place: the night's wherever the ember burns, where its coals work.
         Kits.Wear(Ch, combat && (arena || ember) ? KitKind.Night : KitKind.Day);
@@ -155,7 +159,7 @@ public sealed partial class Journey
         {
             Seed = seed, Combat = combat, Collision = col, HeightAt = heightAt, Stats = kit.Stats,
             StartX = x, StartZ = z, StartFacing = facing, Weapons = kit.Weapons, Triggers = kit.Triggers, Ability = kit.Ability,
-            ArtRank = kit.ArtRank, Facets = kit.Facets,
+            ArtRank = kit.ArtRank, Facets = kit.Facets, DashSteps = kit.DashSteps,
             Lamps = kit.Lamps, ReflexRanks = kit.ReflexRanks, Level = Ch.Level,
             // Each skill's wick, as planned by day (Light my way where she planned none).
             Wicks = combat ? WickBook.Paths(Ch) : null,
@@ -163,6 +167,14 @@ public sealed partial class Journey
             FlareStart = combat && ember && !arena ? Battle.FlareFull / 2 : combat && arena ? Battle.FlareStartNight : 0,
             Hp = exp != null ? Math.Min(exp.Hp, kit.Stats.Get(Stat.MaxHealth)) : null,
         });
+        // The world's tier (ARPG.md 7.3) goes on story fights and story nights; not on arena nights or maps (worldTier false: they climb
+        // tiers with the atlas later). Left null it is every non-arena fight.
+        WorldTierOn = combat && (worldTier ?? !arena);
+        if (WorldTierOn)
+        {
+            var wt = Content.WorldTiers.Get(Content.WorldTiers.Of(World));
+            b.WorldHealth = wt.Health; b.WorldDamage = wt.Damage; b.KitDamageMul = wt.Kit;
+        }
         b.EmberOn = combat && (arena || ember);
         EmberLit = b.EmberOn && !arena;
         b.Night = arena || ember || World.Time == TimeOfDay.Night;
@@ -554,6 +566,8 @@ public sealed partial class Journey
     public void BankArt(Battle? b)
     {
         if (b == null || b.ArtXp <= 0 || Ch.Ability == "") return;
+        // A way of moving grows by the dash's steps, never by use: nothing to bank, nothing said.
+        if (ArtBook.Movement(Ch.Ability)) { b.ArtXp = 0; return; }
         double xp = b.ArtXp;
         b.ArtXp = 0;
         int rank = ArtBook.Grow(Ch, Ch.Ability, xp);
@@ -563,6 +577,17 @@ public sealed partial class Journey
         bool open = ArtBook.OpenSlots(Ch, Ch.Ability) > 0;
         OnAnnounce(new Announcement($"{def.Name}, rank {rank}", open ? "A facet can be chosen (K)" : "Stronger, and sooner ready", "boon", 3.2, "Your art grows"));
         OnTouch();
+    }
+
+    /// <summary>A step of the dash's growth (Content/DashSteps.cs) taken: kept on her, and into the fight now if
+    /// one runs (Ev.DashStep, for the view to announce). The design lead's route (a lamp-post Wick, a level-up)
+    /// calls this. False if unknown or taken as often as it may be.</summary>
+    public bool GrantDashStep(string id, Battle? b)
+    {
+        if (!Ch.GrantDashStep(id)) return false;
+        b?.GrantDashStep(id);
+        OnTouch();
+        return true;
     }
 
     /// <summary>Carry another known art (somewhere safe).</summary>

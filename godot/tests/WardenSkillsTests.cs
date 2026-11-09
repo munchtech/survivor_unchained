@@ -62,6 +62,7 @@ public sealed class WardenSkillsTests
     {
         Pin(b, es, at);
         w.Timer = 0;
+        w.Unkindled = true;
         int casts = w.Casts;
         Firing.Tick(b, w, 0.01);
         Assert.Equal(casts + 1, w.Casts);

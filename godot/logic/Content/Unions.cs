@@ -7,8 +7,9 @@ namespace SurvivorUnchained.Content;
  *
  * The draft offers a union once both are evolved (whichever branch), as it
  * offers an evolution: first, and not left to chance. Taken, the two go and
- * the union comes in their place at full rank, and a combat slot is free
- * again: the build that finished two things gets room for a seventh. Each
+ * the union comes in their place at full rank, holding BOTH their slots
+ * (Weapons.SlotCost: the owner, 8 Nov, "unions are 2 skills combined but
+ * still take up both skill slots since 6 is a lot"; never a seventh). Each
  * path has one, joining its two most its own; the hidden pairings (the
  * codex's Discoveries) hint at some of them long before. A union can be
  * honed, never evolved. Its weapon is in Weapons.All, not in the draft's pool. Both live in

@@ -14,7 +14,7 @@ public static class ZoneReset
 {
     public sealed class Rule
     {
-        /// <summary>"day": cleared on the day change; "never": kept for good.</summary>
+        /// <summary>"day": cleared on the day change; "leave": cleared when she enters it from a different zone; "never": kept for good.</summary>
         public string Reset = "never";
         /// <summary>Key prefixes in the zone's state that are never cleared.</summary>
         public List<string> Keep = new();
@@ -38,11 +38,29 @@ public static class ZoneReset
     /// state but the kept keys, and stamps the turn. True when something was cleared.</summary>
     public static bool Apply(WorldState w, string zone) => For(zone) is { } r && Apply(w, zone, r);
 
+    /// <summary>Applies the zone's rule as she enters it from <paramref name="from"/> (the zone she came from; null, "load", "death"
+    /// or the zone itself is no leaving). "leave" clears only on entering from another zone; the other rules are as Apply(w, zone).</summary>
+    public static bool Apply(WorldState w, string zone, string? from)
+    {
+        if (For(zone) is not { } r) return false;
+        if (r.Reset != "leave") return Apply(w, zone, r);
+        if (from is null or "load" or "death" || from == zone) return false;
+        return Clear(w, zone, r);
+    }
+
     public static bool Apply(WorldState w, string zone, Rule r)
     {
+        if (r.Reset is "leave" or "never") return false;
         var st = w.Zone(zone);
         int now = Turn(r, w);
         if (st.TryGetValue(Stamp, out var f) && (int)f.Number == now) return false;
+        return Clear(w, zone, r);
+    }
+
+    static bool Clear(WorldState w, string zone, Rule r)
+    {
+        var st = w.Zone(zone);
+        int now = Turn(r, w);
         bool cleared = false;
         foreach (var k in st.Keys.ToList())
         {

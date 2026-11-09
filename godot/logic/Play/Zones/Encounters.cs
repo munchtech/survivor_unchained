@@ -3,20 +3,25 @@ using System.Collections.Generic;
 using System.Linq;
 using SurvivorUnchained.Content;
 using SurvivorUnchained.Core;
+using SurvivorUnchained.Rpg;
 using SurvivorUnchained.Sim;
 using SurvivorUnchained.World;
 using static SurvivorUnchained.Core.MathX;
+using ChampionKit = SurvivorUnchained.Content.Champions;
+using JsonElement = System.Text.Json.JsonElement;
+using JsonValueKind = System.Text.Json.JsonValueKind;
 
 namespace SurvivorUnchained.Play.Zones;
 
 /// <summary>
-/// The app can now lay a day stretch into a zone from data (data/content/day_stretch.json, H4 item 10): resting packs
+/// The app can now lay a zone's encounters from data (data/content/encounters.json; the day stretch, H4 item 10, and
+/// since M5 the Low Ford's night, each beat's `when` saying which run lays it; an instance runs one phase): resting packs
 /// that wake as she comes near, their foes' kit telegraphs (a boar's charge), a champion who rallies its pack, a
 /// lamp-post, a strongbox and the Flare's save (a closing ring round her), each beat's "down" kept in the zone's state
 /// (WorldState.Zone, reset by ZoneReset's rule). The zone (Prologue) wraps it with its words and callouts; the balance
 /// harness (godot/balance, lowford-day) plays the same fights from the same data. Its dice are the fight's (Battle.Rng).
 /// </summary>
-public sealed class DayStretch
+public sealed class Encounters
 {
     public sealed class Foe { public string Def = ""; public int N = 1; }
 
@@ -32,12 +37,34 @@ public sealed class DayStretch
         public double? Leash;
     }
 
+    /// <summary>(M5-B, ARPG.md 5 lesson 8, 7.1) A champion: a named elite with affixes (data/content/champions.json).</summary>
+    public sealed class ChampionSpec
+    {
+        /// <summary>Its kind. Unset, or the beat's captain's (a ring's followElite's): that foe is crowned; another kind
+        /// spawns beside the pack as its elite (and its carrier, when the beat has no captain).</summary>
+        public string? Def;
+        /// <summary>A list of affix ids (fixed: a tutorial's beat), or a count rolled from the pool with the fight's dice
+        /// (its tier I count, rising with the world tier: Champions.Count). Unset: the tier's own count, rolled.</summary>
+        public JsonElement Affixes;
+        /// <summary>Its title as shown over its bar (unset: rolled from the name parts).</summary>
+        public string? Name;
+        /// <summary>Its level over the pack's (a captain's is 1).</summary>
+        public int LevelUp = 1;
+    }
+
     public sealed class Beat
     {
         public string Id = "", Kind = "";
+        /// <summary>(M5) Which run of the zone lays it: "night" or "day" (the default). An instance sees only its phase's beats.</summary>
+        public string When = "day";
         public double X, Z, Spread = 3, Wake = 9, Leash = 20, R = 2.4, ArmZ, FlareTo = 1, FirstAfter = 1.2;
         public List<Foe> Foes = new();
         public string? Tell, Captain, Post, Def, FollowElite;
+        /// <summary>(M5) A pack's gate: its foes are not laid (they rise out of the road, resting) until this beat, or this Placed
+        /// champion, is down AfterSecs s. The breather between one fight and the next on a short road (her weapon strikes
+        /// anything in reach, so a pack merely told to ignore her would wake at the first swing).</summary>
+        public string? After;
+        public double AfterSecs;
         /// <summary>Only this kind casts the pack's tell (null: all of it); a chest's keepers (a pack's id).</summary>
         public string? TellBy, Guard;
         /// <summary>A ring springs only within this of its x (a fight off the road that strays north does not).</summary>
@@ -51,6 +78,15 @@ public sealed class DayStretch
         public List<Wave> Waves = new();
         public double[] Every = [5, 7];
         public int N, Light = -1, Gold, LevelUp;
+        /// <summary>(M5-B) The pack's champion (see ChampionSpec).</summary>
+        public ChampionSpec? Champion;
+        /// <summary>(M5-B) Its carrier's first roll is gear of at least this tier ("rare": ARPG.md 5 lesson 6, the captain's Rare).</summary>
+        public string? Loot;
+        /// <summary>(M5) A zone feature the beat needs (ZoneMeta.Features, e.g. "lowford.pockets"): without it the beat is not placed,
+        /// never springs, and GateOpen and Goal do not count it.</summary>
+        public string? Needs;
+        /// <summary>A note for the data's readers; nothing reads it.</summary>
+        public string? About;
     }
 
     public sealed class Spec
@@ -60,23 +96,34 @@ public sealed class DayStretch
         /// <summary>(H8 N22) The portcullis's line (z), where the shut gate bars her (0: none, the bar on the exit line).</summary>
         public double PortcullisZ;
         public List<Beat> Beats = new();
+        /// <summary>(M5-B) Champions the zone spawns itself (the Barrow Knight, the Grave-Caller), by the key it crowns them with (Crown).</summary>
+        public Dictionary<string, ChampionSpec> Placed = new();
+        /// <summary>(M5) The ember-card draft runs in the zone's night (false: its kills teach plain experience, ARPG.md 5).</summary>
+        public bool Draft = true;
+        /// <summary>The beats of one phase ("night" or "day"), in the data's order.</summary>
+        public IEnumerable<Beat> In(string when, IReadOnlyCollection<string>? features = null) =>
+            Beats.Where(b => b.When == when && (b.Needs == null || features?.Contains(b.Needs) == true));
         public Beat? Get(string id) => Beats.FirstOrDefault(b => b.Id == id);
     }
 
     sealed class File { public Dictionary<string, Spec> Zones = new(); }
     static File? file;
-    static File F => file ??= Json.Parse<File>(Json.ReadContent("day_stretch.json"));
+    static File F => file ??= Json.Parse<File>(Json.ReadContent("encounters.json"));
 
     /// <summary>The zone's stretch, or null for a zone without one.</summary>
     public static Spec? For(string zone) => F.Zones.GetValueOrDefault(zone);
 
     /// <summary>The key in the zone's state that says a beat is done for the day (its pack down, its chest opened).</summary>
     public static string DoneKey(string beat) => "day." + beat;
+    /// <summary>This instance's key for a beat: the day's DoneKey, or "night." + the beat.</summary>
+    public string Key(string beat) => Phase == "day" ? DoneKey(beat) : Phase + "." + beat;
 
     /// <summary>A day foe's level, as the Verge's: 1 + (her level + the day) / 2, and the beat's own step up.</summary>
     public static int Level(int herLevel, int day, Beat bt) => Math.Max(1, 1 + (herLevel + day) / 2 + bt.LevelUp);
 
     public readonly Spec S;
+    /// <summary>The phase this instance runs ("night" or "day"): Place, the ambush, the ring, GateOpen, RingOwed and Goal see only its beats.</summary>
+    public readonly string Phase;
     readonly Battle b;
     readonly Dictionary<string, Fact> state;
     readonly int level, day;
@@ -92,6 +139,18 @@ public sealed class DayStretch
     bool armed;
     public double RingAt = -1;
 
+    /// <summary>(M5-B) The world's tier (1-4, WorldTiers.Of): a rolled champion's affix count rises with it.</summary>
+    public int Tier = WorldTiers.Default;
+    /// <summary>(M5-B) Each crowned champion, by its beat's id (or its Placed key), while this instance runs.</summary>
+    public readonly Dictionary<string, (Enemy E, double Seed)> Champions = new();
+    /// <summary>(M5-B) A champion fell (its beat's id or Placed key, and the foe).</summary>
+    public Action<string, Enemy>? ChampionDown;
+    readonly Dictionary<double, List<ChampionKit.Affix>> crowned = new();
+    readonly Dictionary<(double, string), double> nextAffix = new();
+    readonly Dictionary<double, double> champWoke = new();
+    readonly HashSet<string> championsDown = new(), carried = new();
+    readonly Dictionary<string, double> championDownAt = new();
+
     /// <summary>A pack woke (its first foe roused).</summary>
     public Action<Beat>? Woke;
     /// <summary>A beat's foes are all down (marked done for the day).</summary>
@@ -103,15 +162,27 @@ public sealed class DayStretch
     /// <summary>Whether casts wait (a freeze up): none ask while it holds.</summary>
     public Func<bool>? Held;
 
-    public DayStretch(Spec s, Battle battle, Dictionary<string, Fact> zoneState, int herLevel, int day)
+    /// <summary>The zone's features (ZoneMeta.Features): the beats that need one it lacks are left out.</summary>
+    public readonly IReadOnlyCollection<string> Features;
+
+    public Encounters(Spec s, Battle battle, Dictionary<string, Fact> zoneState, int herLevel, int day, string phase = "day", IReadOnlyCollection<string>? features = null)
     {
-        S = s; b = battle; state = zoneState; level = herLevel; this.day = day;
+        S = s; b = battle; state = zoneState; level = herLevel; this.day = day; Phase = phase; Features = features ?? [];
+        // (a post's beat stands where lamp_posts.json says: LampPosts moves it with the zone's features)
+        SyncPosts(s);
     }
 
-    public bool Done(string beat) => state.TryGetValue(DoneKey(beat), out var f) && f.Truthy;
-    public void MarkDone(string beat) => state[DoneKey(beat)] = true;
+    /// <summary>A post's beat stands where its lamp-post does (LampPosts.Resolve has moved the post with the zone's features).</summary>
+    public static void SyncPosts(Spec s)
+    {
+        foreach (var bt in s.Beats)
+            if (bt.Kind == "post" && bt.Post != null && Content.LampPosts.Get(bt.Post) is { } lp) { bt.X = lp.X; bt.Z = lp.Z; bt.Light = lp.Light; }
+    }
 
-    public IEnumerable<Beat> Of(string kind) => S.Beats.Where(x => x.Kind == kind);
+    public bool Done(string beat) => state.TryGetValue(Key(beat), out var f) && f.Truthy;
+    public void MarkDone(string beat) => state[Key(beat)] = true;
+
+    public IEnumerable<Beat> Of(string kind) => S.In(Phase, Features).Where(x => x.Kind == kind);
 
     /// <summary>The packs not yet down today, resting where the data puts them.</summary>
     public void Place()
@@ -120,21 +191,47 @@ public sealed class DayStretch
         foreach (var bt in Of("pack"))
         {
             if (Done(bt.Id)) continue;
+            if (bt.After != null) { pending.Add(bt.Id); continue; }
+            PlacePack(bt, SpawnStyle.Walk);
+        }
+    }
+
+    /// <summary>The packs still to be laid, each when the beat it waits on (After) has been down AfterSecs.</summary>
+    readonly HashSet<string> pending = new();
+    /// <summary>A gated pack's breather is running (the beat it waits on is down; it rises when the seconds are out): the next fight is owed, so the line is not clear.</summary>
+    bool PendingBreath => pending.Count > 0 && pending.Any(pid => S.Get(pid) is { After: { } af } && (DownAt.ContainsKey(af) || championDownAt.ContainsKey(af)));
+    /// <summary>Lay every gated pack now, whatever it waits on (the tests' look at the ground; the game lays them as their gates open).</summary>
+    public void LayGated() { foreach (var pid in pending.ToList()) { pending.Remove(pid); PlacePack(S.Get(pid)!, SpawnStyle.Rise); } }
+    public bool Pending(string beat) => pending.Contains(beat);
+
+    void PlacePack(Beat bt, SpawnStyle style)
+    {
+        {
             var list = new List<(Enemy, double)>();
             int lv = Level(level, day, bt);
             foreach (var f in bt.Foes)
                 for (int i = 0; i < f.N; i++)
-                    if (Spawn(f.Def, bt, lv, false) is { } e) list.Add((e, e.Seed));
-            if (bt.Captain != null && Spawn(bt.Captain, bt, lv + 1, true, near: 1) is { } c)
+                    if (Spawn(f.Def, bt, lv, false, null, style) is { } e) list.Add((e, e.Seed));
+            var ch = bt.Champion;
+            bool crownCaptain = ch != null && bt.Captain != null && (ch.Def == null || ch.Def == bt.Captain);
+            if (bt.Captain != null && Spawn(bt.Captain, bt, lv + (crownCaptain ? ch!.LevelUp : 1), true, near: 1, style: style) is { } c)
             {
                 list.Add((c, c.Seed));
                 Captains[bt.Id] = (c, c.Seed);
+                if (crownCaptain) Crown(c, bt.Id);
+            }
+            // (a champion of its own kind: beside the pack, its elite; with no captain, its carrier too)
+            if (ch is { Def: { } cd } && !crownCaptain && Spawn(cd, bt, lv + ch.LevelUp, true, near: 1, style: style) is { } cc)
+            {
+                list.Add((cc, cc.Seed));
+                if (bt.Captain == null) Captains[bt.Id] = (cc, cc.Seed);
+                Crown(cc, bt.Id);
             }
             Packs[bt.Id] = list;
         }
     }
 
-    Enemy? Spawn(string def, Beat bt, int lv, bool elite, double? near = null)
+    Enemy? Spawn(string def, Beat bt, int lv, bool elite, double? near = null, SpawnStyle style = SpawnStyle.Walk)
     {
         double spread = near ?? bt.Spread;
         for (int t = 0; t < 12; t++)
@@ -144,7 +241,7 @@ public sealed class DayStretch
             if (b.Collision.Blocked(x, z, 0.7) && t < 11) continue;
             var e = b.SpawnEnemy(def, x, z, new Battle.SpawnOpts
             {
-                Level = lv, Elite = elite, Style = SpawnStyle.Walk, Tag = "day:" + bt.Id, Home = (bt.X, bt.Z, bt.Leash), Wake = bt.Wake,
+                Level = lv, Elite = elite, Style = style, Tag = Phase + ":" + bt.Id, Home = (bt.X, bt.Z, bt.Leash), Wake = bt.Wake,
             });
             if (e != null) e.Facing = b.Rng.Next() * Math.Tau;
             return e;
@@ -163,13 +260,26 @@ public sealed class DayStretch
     /// <summary>Some pack is awake and on its feet (a fight is on), or the ring's foes still stand. Only foes within
     /// FightNear of her count once a pack has been up FightGrace (H4 lead 3: j08 run g3 soft-locked at the ring for
     /// 4 minutes on one track-ambush foe left standing far off in the trees; the gate held for good).</summary>
-    public bool Fighting => Packs.Any(kv => WokeAt.TryGetValue(kv.Key, out var w) && !DownAt.ContainsKey(kv.Key)
+    public bool Fighting => PendingBreath || Packs.Any(kv => WokeAt.TryGetValue(kv.Key, out var w) && !DownAt.ContainsKey(kv.Key)
         && (b.Time - w < FightGrace || kv.Value.Any(f => Live(f) && Dist(f.E.X, f.E.Z, b.Player.X, b.Player.Z) < FightNear)));
     public const double FightNear = 24, FightGrace = 6;
+
+    /// <summary>The beat (or Placed champion) is down, and has been for secs; one that is not placed in this instance counts as down.</summary>
+    bool Cleared(string id, double secs)
+    {
+        if (DownAt.TryGetValue(id, out var t) || championDownAt.TryGetValue(id, out t)) return b.Time - t >= secs;
+        // (not down yet: a beat of this night that is still to come, sprung or laid, or a Placed champion; one carried as done, or not ours, is clear)
+        if (S.Placed.ContainsKey(id) || pending.Contains(id) || Packs.ContainsKey(id)) return false;
+        return !S.In(Phase, Features).Any(x => x.Id == id) || Done(id);
+    }
 
     public void Tick(double dt)
     {
         var p = b.Player;
+        // (the gated packs rise out of the road once the beat they wait on is down its breather)
+        if (pending.Count > 0)
+            foreach (var pid in pending.ToList())
+                if (S.Get(pid) is { After: { } af } pb && Cleared(af, pb.AfterSecs) && !b.LampHush) { pending.Remove(pid); PlacePack(pb, SpawnStyle.Rise); }
         foreach (var (id, list) in Packs)
         {
             var bt = S.Get(id)!;
@@ -187,7 +297,7 @@ public sealed class DayStretch
                 foreach (var o in b.Enemies.Living())
                     if (o.Tag == null && o.LifeT < 0.5 && o.Faction == cap.E.Faction && o.State != EnemyState.Dying && Dist(o.X, o.Z, cap.E.X, cap.E.Z) < su.Range + 2)
                     {
-                        o.Tag = "day:" + id; o.Roused = true;
+                        o.Tag = Phase + ":" + id; o.Roused = true;
                         // (on the pack's leash, round its ground: a called foe had none, and drew her 40 m off the camp)
                         o.HomeX = bt.X; o.HomeZ = bt.Z; o.Leash = bt.Leash;
                         list.Add((o, o.Seed)); up.Add((o, o.Seed));
@@ -234,6 +344,7 @@ public sealed class DayStretch
                 if (blow != null) Told?.Invoke(bt, e, blow);
             }
         }
+        ChampionsTick();
         foreach (var bt in Of("ambush"))
             if (!Done(bt.Id) && !Packs.ContainsKey(bt.Id) && (bt.Guard == null || Done(bt.Guard)) && !Fighting && Held?.Invoke() != true
                 && Dist(p.X, p.Z, bt.X, bt.Z) < bt.R)
@@ -241,6 +352,8 @@ public sealed class DayStretch
         foreach (var bt in Of("ring"))
         {
             // (r3: the rest of the pack after a breath, FollowAfter s once the ring's own foes are down: two pulses, not one press)
+            // (M5 r4: a champion in the second wave is due then: ChampionGate's window holds the band and the banners for it)
+            if (RingAt >= 0 && !followed && bt.Champion != null && bt.FollowElite != null && DownAt.TryGetValue(bt.Id, out var cd)) b.ChampionDueAt = cd + bt.FollowAfter;
             if (RingAt >= 0 && !followed && DownAt.TryGetValue(bt.Id, out var rd) && b.Time - rd >= bt.FollowAfter && (bt.Follow.Count > 0 || bt.FollowElite != null)) { followed = true; Follow(bt); }
             if (Done(bt.Id) || RingAt >= 0) continue;
             // (armed on the road south of its line; off the road it disarms, so she comes back to the road to spring it,
@@ -266,8 +379,9 @@ public sealed class DayStretch
     /// <summary>The gate is shut and no ring has been sprung: what holds it is the ring still to come (its line on the road).</summary>
     public Beat? RingOwed => RingAt < 0 ? Of("ring").FirstOrDefault(bt => !Done(bt.Id)) : null;
 
-    /// <summary>An ambush springs: its foes out of the trees round her, a fight where she stands.</summary>
-    void Spring(Beat bt)
+    /// <summary>An ambush springs: its foes out of the trees round her, a fight where she stands. (An ambush with r 0
+    /// never springs on its own: the zone springs it, as the Low Ford's night does the wagon's.)</summary>
+    public void Spring(Beat bt)
     {
         var p = b.Player;
         int lv = Level(level, day, bt);
@@ -282,7 +396,7 @@ public sealed class DayStretch
                 if (b.Collision.Blocked(x, z, 0.7) && t < 11) continue;
                 var e = b.SpawnEnemy(kinds[i], x, z, new Battle.SpawnOpts
                 {
-                    Level = lv, Style = SpawnStyle.Walk, Tag = "day:" + bt.Id, Home = (bt.X, bt.Z, bt.Leash),
+                    Level = lv, Style = SpawnStyle.Walk, Tag = Phase + ":" + bt.Id, Home = (bt.X, bt.Z, bt.Leash),
                 });
                 if (e != null) { e.Roused = true; list.Add((e, e.Seed)); }
                 break;
@@ -322,7 +436,7 @@ public sealed class DayStretch
                 if ((b.Collision.Blocked(x, z, 0.7) || Dist(x, z, p.X, p.Z) < 5) && t < 11) continue;
                 var e = b.SpawnEnemy(def, x, z, new Battle.SpawnOpts
                 {
-                    Level = elite ? lv + 1 : lv, Elite = elite, Style = SpawnStyle.Walk, Tag = "day:" + bt.Id, Home = (bt.X, bt.Z, w.Leash ?? bt.Leash + 4),
+                    Level = elite ? lv + 1 : lv, Elite = elite, Style = SpawnStyle.Walk, Tag = Phase + ":" + bt.Id, Home = (bt.X, bt.Z, w.Leash ?? bt.Leash + 4),
                 });
                 if (e != null) { e.Roused = true; got.Add(e); }
                 break;
@@ -347,10 +461,12 @@ public sealed class DayStretch
         }
         // (round the trees to it: a footpad's bowman backs into the wood)
         if (near != null) return nd < 4 ? (near.X, near.Z, null) : Route(near.X, near.Z, null);
-        foreach (var bt in S.Beats)
+        foreach (var bt in S.In(Phase, Features))
         {
             switch (bt.Kind)
             {
+                case "pack" when pending.Contains(bt.Id):
+                    return Route(bt.X, bt.Z, bt);
                 case "pack" when Packs.ContainsKey(bt.Id) && !DownAt.ContainsKey(bt.Id):
                 {
                     // (woke, its foes strayed: the nearest of them; resting: its ground)
@@ -409,21 +525,27 @@ public sealed class DayStretch
     (double X, double Z) side, lastW;
     double sideUntil = -1, stuckSince, lastD = 1e9;
 
+    /// <summary>(M5 r4) A ring's champion comes out this far ahead of her (m): in the play camera's view, under its top band.</summary>
+    public const double FrontD = 8;
+
     /// <summary>The rest of the ring's pack: out of the trees 12 m on toward the gate, hunting her.</summary>
     void Follow(Beat bt)
     {
         var p = b.Player;
         int lv = Level(level, day, bt);
         var list = Packs.TryGetValue(bt.Id, out var l) ? l : Packs[bt.Id] = new();
-        Enemy? One(string def, bool elite, int i, int n)
+        Enemy? One(string def, bool elite, int i, int n, bool front = false)
         {
             for (int t = 0; t < 16; t++)
             {
                 // (r3: on this side of the wall, never in it: j08's harness had four stuck in the stones, holding the gate)
                 double a = -Math.PI / 2 + (n <= 1 ? 0 : (i / (double)(n - 1) - 0.5) * (1.6 + t * 0.12)) + (b.Rng.Next() - 0.5) * 0.4, d = Math.Max(7, 11 + b.Rng.Next() * 3 - t * 0.3);
+                // (M5 r4: a champion comes out straight ahead of her, FrontD m up the road, in the play camera's view: Ashjaw woke
+                // at the right edge under the tracker, the last of the fan)
+                if (front) { a = -Math.PI / 2 + (t % 2 == 1 ? 1 : -1) * ((t + 1) / 2) * 0.2; d = FrontD; }
                 double x = p.X + Math.Cos(a) * d, z = p.Z + Math.Sin(a) * d;
                 if (b.Collision.Blocked(x, z, 0.6) || z < S.GateZ - 6) continue;
-                var e = b.SpawnEnemy(def, x, z, new Battle.SpawnOpts { Level = elite ? lv + 1 : lv, Elite = elite, Style = SpawnStyle.Walk, Tag = "day:" + bt.Id });
+                var e = b.SpawnEnemy(def, x, z, new Battle.SpawnOpts { Level = elite ? lv + 1 : lv, Elite = elite, Style = SpawnStyle.Walk, Tag = Phase + ":" + bt.Id });
                 if (e != null) { e.Roused = true; list.Add((e, e.Seed)); }
                 return e;
             }
@@ -431,10 +553,143 @@ public sealed class DayStretch
         }
         int all = bt.Follow.Sum(f => f.N) + (bt.FollowElite != null ? 1 : 0), k = 0;
         foreach (var f in bt.Follow) for (int i = 0; i < f.N; i++) One(f.Def, false, k++, all);
-        if (bt.FollowElite != null && One(bt.FollowElite, true, k++, all) is { } c) Captains[bt.Id] = (c, c.Seed);
+        if (bt.FollowElite != null && One(bt.FollowElite, true, k++, all, bt.Champion is { } fc && (fc.Def == null || fc.Def == bt.FollowElite)) is { } c)
+        {
+            Captains[bt.Id] = (c, c.Seed);
+            if (bt.Champion is { } ch && (ch.Def == null || ch.Def == bt.FollowElite)) Crown(c, bt.Id);
+        }
         // (a pack put down before its second wave came is up again until the wave is down)
         DownAt.Remove(bt.Id);
-        state.Remove(DoneKey(bt.Id));
+        state.Remove(Key(bt.Id));
+    }
+
+    /* ------------------------------------------------------- champions (M5-B) -- */
+
+    /// <summary>The app can now crown a foe a champion (ARPG.md 5 lesson 8, 7.1): its beat's (or the zone's Placed)
+    /// champion spec gives it a title and its affixes (Content/Champions.cs), their numbers on it at once (health,
+    /// damage, speed) and their kit cast on their cadence while it stands (ChampionsTick). It is an elite from now.</summary>
+    public Enemy Crown(Enemy e, string id)
+    {
+        var bt = S.Get(id);
+        if ((bt?.Champion ?? S.Placed.GetValueOrDefault(id)) is not { } ch) return e;
+        var aff = AffixesOf(ch, bt);
+        e.Elite = true;
+        double share = e.Hp / Math.Max(1e-9, e.MaxHp);
+        foreach (var a in aff) { e.MaxHp *= a.Health; e.Damage *= a.Damage; e.Speed *= a.Speed; }
+        e.Hp = e.MaxHp * share;
+        e.Named = new Named { Title = ch.Name ?? ChampionKit.Title(b.Rng.Next), Affixes = aff.Select(a => a.Label).ToList() };
+        Champions[id] = (e, e.Seed);
+        crowned[e.Seed] = aff;
+        ChampionKit.Look(e, 2, aff);
+        return e;
+    }
+
+    /// <summary>A spec's affixes: its list as given, or its count (the tier's when unset) rolled with the fight's dice
+    /// (a closing only where the beat has foes to stand on its band).</summary>
+    List<ChampionKit.Affix> AffixesOf(ChampionSpec ch, Beat? bt)
+    {
+        var a = ch.Affixes;
+        if (a.ValueKind == JsonValueKind.Array)
+            return a.EnumerateArray().Select(x => ChampionKit.Get(x.GetString() ?? "")).OfType<ChampionKit.Affix>().ToList();
+        int asked = a.ValueKind == JsonValueKind.Number ? a.GetInt32() : ChampionKit.PerTier[0];
+        return ChampionKit.Roll(ChampionKit.Count(asked, Tier), b.Rng.Next, x => x.Kind != "closing" || bt is { Foes.Count: > 0 });
+    }
+
+    /// <summary>The crowned foe's affix ids (empty: not a champion).</summary>
+    public IEnumerable<string> AffixesOn(Enemy e) => crowned.TryGetValue(e.Seed, out var l) ? l.Select(a => a.Id) : [];
+
+    /// <summary>Each champion's kit, as a pack's tell is cast (her within reach, in its sight, the kit's spacing, no
+    /// freeze up), each affix on its own clock from when it woke; its fall said once.</summary>
+    void ChampionsTick()
+    {
+        var p = b.Player;
+        foreach (var (id, (e, seed)) in Champions)
+        {
+            if (!(e.Alive && e.Seed == seed && e.State != EnemyState.Dying))
+            {
+                if (championsDown.Add(id)) { championDownAt[id] = b.Time; ChampionDown?.Invoke(id, e); }
+                continue;
+            }
+            if (!crowned.TryGetValue(seed, out var aff) || aff.All(a => a.Kind == null)) continue;
+            double woke;
+            if (WokeAt.TryGetValue(id, out var w)) woke = w;
+            else if (e.Roused) woke = champWoke.TryGetValue(seed, out var cw) ? cw : champWoke[seed] = b.Time;
+            else continue;
+            var bt = S.Get(id);
+            foreach (var a in aff)
+            {
+                if (a.Kind is not { } kind || Telegraphs.Get(kind) is not { } k) continue;
+                var key = (seed, a.Id);
+                // (its charge is the kit's, never its own)
+                if (kind == "charge") e.RangedT = Math.Max(e.RangedT, 5);
+                if (!nextAffix.TryGetValue(key, out var at)) nextAffix[key] = at = woke + a.FirstAfter;
+                if (b.Time < at || e.State != EnemyState.Active || e.HoldUntil > b.Time || Held?.Invoke() == true) continue;
+                double reach = k.Length > 0 ? k.Length * a.Scale - 2 : 12, d = Dist(e.X, e.Z, p.X, p.Z);
+                if (d > reach || d < 2.5 || b.Collision.Raycast(e.X, e.Z, p.X, p.Z, 0.3) != null) { nextAffix[key] = b.Time + 0.4; continue; }
+                double wait = b.KitWait(kind, e);
+                if (wait > 0) { nextAffix[key] = b.Time + wait; continue; }
+                var blow = CastAffix(a, kind, e, bt);
+                nextAffix[key] = b.Time + a.Every[0] + b.Rng.Next() * (a.Every[1] - a.Every[0]);
+                if (blow != null && bt != null) Told?.Invoke(bt, e, blow);
+                // (one blow a champion at a time: its next affix waits its turn)
+                break;
+            }
+        }
+    }
+
+    /// <summary>An affix's blow: a ring on her, a charge through her, a pull centered a little off her toward it, a
+    /// closing round her with its pack's first kind on the band.</summary>
+    Battle.EnemyBlow? CastAffix(ChampionKit.Affix a, string kind, Enemy e, Beat? bt)
+    {
+        var p = b.Player;
+        switch (kind)
+        {
+            case "pull":
+            {
+                double dx = e.X - p.X, dz = e.Z - p.Z, l = Math.Max(0.01, Len(dx, dz)), off = Math.Min(Telegraphs.Waves.SwarmOffset, l);
+                return b.Tell(kind, e, p.X + dx / l * off, p.Z + dz / l * off, a.Scale);
+            }
+            case "closing":
+            {
+                if (bt?.Foes.FirstOrDefault()?.Def is not { } def) return null;
+                var list = Packs.TryGetValue(bt.Id, out var l) ? l : Packs[bt.Id] = new();
+                int lv = Level(level, day, bt);
+                var pts = b.TellClosing(p.X, p.Z, a.Foes);
+                foreach (var (x, z) in pts)
+                {
+                    if (b.Collision.Blocked(x, z, 0.6)) continue;
+                    var f = b.SpawnEnemy(def, x, z, new Battle.SpawnOpts { Level = lv, Style = SpawnStyle.Walk, Tag = Phase + ":" + bt.Id, Home = (bt.X, bt.Z, bt.Leash + 4) });
+                    if (f == null) continue;
+                    b.Closes(f);
+                    f.Roused = true;
+                    list.Add((f, f.Seed));
+                }
+                return pts.Count > 0 && b.ActiveTells.Count > 0 ? b.ActiveTells[^1].Blow : null;
+            }
+            default:
+                return b.Tell(kind, e, p.X, p.Z, a.Scale);
+        }
+    }
+
+    /// <summary>The app can now make a pack's captain its carrier (ARPG.md 7.1): what a carrier leaves on its kill, for
+    /// the zone's OnLoot hook to hand back (Battle spills it where it died). A pack's captain rolls gear as the loot
+    /// "champion" source (0.45 a roll), a crowned champion as "elite" (0.7); the beat's "loot" floor makes the first roll
+    /// gear of at least that tier (n_first's Rare). Once per beat; nothing for any other foe. drops: the survivor's roll
+    /// (Journey.Drops: the world tier, the filter's verdict).</summary>
+    public IEnumerable<Loot> Carried(Enemy e, Func<DropCtx, List<Loot>> drops)
+    {
+        string? id = null;
+        bool champ = false;
+        foreach (var (k, c) in Champions) if (ReferenceEquals(c.E, e) && c.Seed == e.Seed) { id = k; champ = true; break; }
+        if (id == null) foreach (var (k, c) in Captains) if (ReferenceEquals(c.E, e) && c.Seed == e.Seed) { id = k; break; }
+        if (id == null || !carried.Add(id)) return [];
+        int floor = S.Get(id)?.Loot is { } fl && Enum.TryParse<LootTier>(fl, true, out var t) ? (int)t : 0;
+        var x = new DropCtx
+        {
+            Source = champ ? DropSource.Elite : DropSource.Champion, Level = e.Level, People = Drops.PeopleOf(e.Def.Family),
+            Floor = floor, Luck = b.Stats.Get(Stat.Luck), R = b.Rng.Next,
+        };
+        return drops(x).Select(l => l with { Persistent = true }).ToList();
     }
 
     /// <summary>The Flare's save: the closing round her, its foes on the band's points, her Flare filled if short.</summary>
@@ -448,7 +703,7 @@ public sealed class DayStretch
         foreach (var (x, z) in b.TellClosing(p.X, p.Z, bt.N))
         {
             if (b.Collision.Blocked(x, z, 0.6)) continue;
-            var e = b.SpawnEnemy(bt.Def ?? "wolf", x, z, new Battle.SpawnOpts { Level = lv, Style = SpawnStyle.Walk, Tag = "day:" + bt.Id });
+            var e = b.SpawnEnemy(bt.Def ?? "wolf", x, z, new Battle.SpawnOpts { Level = lv, Style = SpawnStyle.Walk, Tag = Phase + ":" + bt.Id });
             if (e == null) continue;
             b.Closes(e);
             e.Roused = true;

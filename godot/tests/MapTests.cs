@@ -180,7 +180,8 @@ public class MapTests
         var r = Open(Chart("dead"));
         var p = r.B.Player;
         p.Revives = 1;
-        r.B.HurtPlayer(r.B.MaxHp * 5, School.Physical, "test", null);
+        // (A blow may be turned by a skill she carries at six slots: strike until the revive is spent.)
+        for (int i = 0; i < 20 && p.Revives > 0; i++) { p.Iframes = 0; r.B.HurtPlayer(r.B.MaxHp * 5, School.Physical, "test", null); }
         Assert.True(p.Alive);
         Assert.Equal(r.B.MaxHp * 0.5, p.Hp, 1);
         Assert.Equal(0, r.Zone.Falls);

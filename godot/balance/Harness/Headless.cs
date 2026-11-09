@@ -34,7 +34,9 @@ public sealed class HeadlessHost : IZoneHost
     public void Toast(Toast t) { }
     public void Announce(Announcement a) { }
     public void Talk(string npc) { }
-    public void Travel(string zone, string? caption = null, string? sub = null) { }
+    /// <summary>Where the zone sent her (the zone sim's end: the Low Ford's gate to the Waystation).</summary>
+    public string? TravelledTo;
+    public void Travel(string zone, string? caption = null, string? sub = null) => TravelledTo = zone;
     public void After(double seconds, Action fn) => later.Add((seconds, fn));
     public void Save(string reason) { }
     public bool GiveItem(string def, int qty = 1, int? rarity = null) => Journey.GiveItem(def, qty, rarity);

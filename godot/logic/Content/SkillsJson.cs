@@ -36,8 +36,8 @@ public static class SkillsJson
 
     /* Reading order for a skill's and an evolution's keys; anything not named
      * keeps its place after these. */
-    static readonly string[] SkillKeys = ["id", "name", "school", "behavior", "tags", "access", "findable", "growth", "bossDamage", "art", "description", "base", "triggers", "evolutions"];
-    static readonly string[] EvoKeys = ["id", "name", "catalysts", "description", "behavior", "school", "addTags", "art", "mods", "set", "triggers"];
+    static readonly string[] SkillKeys = ["id", "name", "school", "behavior", "cast", "kindle", "tags", "access", "findable", "growth", "bossDamage", "art", "description", "_doc", "base", "triggers", "evolutions"];
+    static readonly string[] EvoKeys = ["id", "name", "catalysts", "description", "behavior", "cast", "kindle", "school", "addTags", "art", "mods", "set", "triggers"];
     static readonly string[] UnionKeys = ["id", "name", "a", "b", "into", "description"];
 
     public static string Write(SkillsFile f)
@@ -48,9 +48,9 @@ public static class SkillsJson
         foreach (var s in root["skills"]!.AsArray().ToList())
         {
             var o = Prune(s!.AsObject())!;
-            // A skill's own defaults (not findable, the usual growth) go; the
+            // A skill's own defaults (not findable, the usual growth, fired by itself) go; the
             // identity keys stay even when they are the enum's first value.
-            foreach (var k in new[] { "findable", "growth" })
+            foreach (var k in new[] { "findable", "growth", "cast" })
                 if (o[k] is JsonNode v && defaults[k] is JsonNode d && JsonNode.DeepEquals(v, d)) o.Remove(k);
             if (o["evolutions"] is JsonArray evos)
             {

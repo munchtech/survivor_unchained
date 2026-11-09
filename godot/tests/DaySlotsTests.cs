@@ -8,7 +8,7 @@ using Xunit;
 
 namespace SurvivorUnchained.Tests;
 
-/// <summary>Six day slots by level 20, and the type chosen at creation
+/// <summary>Six day slots by level 9, and the type chosen at creation
 /// (docs/design/CLASS_IDENTITY_AND_TALENTS.md §3.7; Rpg/SkillBook.cs, Rpg/LampBook.cs).</summary>
 public class DaySlotsTests
 {
@@ -22,9 +22,9 @@ public class DaySlotsTests
     }
 
     [Theory]
-    [InlineData(1, 2)] [InlineData(3, 2)] [InlineData(4, 3)] [InlineData(7, 3)] [InlineData(8, 4)]
-    [InlineData(13, 4)] [InlineData(14, 5)] [InlineData(19, 5)] [InlineData(20, 6)] [InlineData(30, 6)]
-    public void Slots_grow_to_six_by_the_twentieth_level(int level, int slots)
+    [InlineData(1, 2)] [InlineData(3, 2)] [InlineData(4, 3)] [InlineData(5, 4)] [InlineData(6, 4)]
+    [InlineData(7, 5)] [InlineData(8, 5)] [InlineData(9, 6)] [InlineData(30, 6)]
+    public void Slots_grow_to_six_by_the_ninth_level(int level, int slots)
     {
         var ch = Make();
         ch.Level = level;
@@ -38,7 +38,7 @@ public class DaySlotsTests
         // Everything the calling may carry, learned and slotted past the limit by hand (as an old save might).
         var all = Weapons.All.Keys.Where(id => SkillBook.Carries(ch, id)).ToList();
         Assert.True(all.Count > 6);
-        foreach (var level in new[] { 1, 4, 8, 14, 20, 30 })
+        foreach (var level in new[] { 1, 4, 5, 7, 9, 30 })
         {
             ch.Level = level;
             ch.Skills = all.ToList();

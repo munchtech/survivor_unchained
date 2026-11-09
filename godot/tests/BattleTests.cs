@@ -41,7 +41,7 @@ public class BattleTests
     }
 
     /// <summary>Headless survivor: drifts, spawns a ring of the dead, takes every draft.</summary>
-    internal static void Simulate(Battle b, double seconds, double spawnEvery = 1.2, string def = "risen")
+    internal static void Simulate(Battle b, double seconds, double spawnEvery = 1.2, string def = "risen", bool press = false)
     {
         const double dt = 1.0 / 60;
         double spawnT = 0;
@@ -61,10 +61,25 @@ public class BattleTests
             }
             // Drift slowly, the way a player holding ground does, rather than fleeing.
             double mx = Math.Cos(t * 0.35) * 0.35, mz = Math.Sin(t * 0.35) * 0.35;
+            if (press) PressAll(b);
             b.Tick(dt, mx, mz);
             while (b.DraftOwed) LevelUp.Choose(b, LevelUp.Draft(b, 3)[0]);
             b.Events.Drain();
             if (b.Over != null) break;
+        }
+    }
+
+    /// <summary>A player's thumbs: every pressed or channel skill is pressed (and held) at the nearest foe.</summary>
+    internal static void PressAll(Battle b)
+    {
+        foreach (var w in b.Weapons.ToArray())
+        {
+            if (!w.Pressed) continue;
+            var foes = b.HostilesInRadius(b.Player.X, b.Player.Z, 20);
+            if (foes.Count == 0) { b.HoldSkill(w.Slot, false); continue; }
+            var near = foes.OrderBy(e => (e.X - b.Player.X) * (e.X - b.Player.X) + (e.Z - b.Player.Z) * (e.Z - b.Player.Z)).First();
+            b.HoldSkill(w.Slot, true);
+            b.PressSkill(w.Slot, near.X, near.Z);
         }
     }
 
@@ -124,7 +139,7 @@ public class BattleTests
         foreach (var id in Content.Weapons.All.Keys)
         {
             var b = Arena(7, (id, 3));
-            Simulate(b, 20, 0.5);
+            Simulate(b, 20, 0.5, press: true); // (pressed and channel skills never fire themselves)
             if (b.KillCount <= 3) failed.Add($"{id}: {b.KillCount}");
         }
         Assert.Empty(failed);
@@ -139,7 +154,7 @@ public class BattleTests
             {
                 var b = Arena(11, (w.Id, 8));
                 b.Evolve(w.Id, evo.Id);
-                Simulate(b, 12, 0.4);
+                Simulate(b, 12, 0.4, press: true); // (pressed skills never fire themselves)
                 if (b.KillCount <= 3) failed.Add($"{evo.Id}: {b.KillCount}");
             }
         Assert.Empty(failed);

@@ -51,6 +51,7 @@ public partial class BattleFx
     void Impact(Ev.Hit e, Vector3 at)
     {
         if (WgOwns(e)) return;
+        if (P7Owns(e)) return;
         var school = e.School;
         var pal = Palette.Of(school);
         string art = e.Art ?? "";

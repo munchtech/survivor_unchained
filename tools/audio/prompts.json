@@ -1035,6 +1035,98 @@
    "loop": false,
    "tail_db": -55,
    "note": "H7: the marks appear (flare.mark)"
+  },
+  "leap_takeoff": {
+   "prompt": "An armored warrior springing high into the air: one powerful upward whoosh of a heavy cloak and plate armor, a boot pushing hard off packed dirt, close-miked, dry, no reverb, no music, no voice",
+   "seconds": 0.7,
+   "influence": 0.55,
+   "n": 6,
+   "keep": 3,
+   "kind": "oneshot",
+   "stereo": false,
+   "peak_db": -1.0,
+   "loop": false,
+   "tail_db": -55,
+   "note": "Heroic Leap takeoff (art.heroic_leap.takeoff)"
+  },
+  "leap_land": {
+   "prompt": "An armored warrior landing from a great height blade-first into the earth: a massive deep ground slam, a heavy thud, then rocks and dirt debris scattering and pattering down, punchy, close-miked, dry, no reverb, no music, no voice",
+   "seconds": 1.6,
+   "influence": 0.55,
+   "n": 6,
+   "keep": 3,
+   "kind": "oneshot",
+   "stereo": false,
+   "peak_db": -1.0,
+   "loop": false,
+   "tail_db": -55,
+   "note": "Heroic Leap landing (art.heroic_leap_heave.burst, art.shield_charge_slam.burst)",
+   "max_onsets": 6
+  },
+  "charge_start": {
+   "prompt": "A warrior bursting into a shield charge: a sharp heavy armored lunge, a steel shield and chainmail jangle, boots digging into dirt, a quick forward whoosh, close-miked, dry, no reverb, no music, no voice",
+   "seconds": 0.6,
+   "influence": 0.55,
+   "n": 6,
+   "keep": 3,
+   "kind": "oneshot",
+   "stereo": false,
+   "peak_db": -1.0,
+   "loop": false,
+   "tail_db": -55,
+   "note": "Shield Charge start (art.shield_charge.start)"
+  },
+  "shield_charge_hit": {
+   "prompt": "A steel shield slammed into a body at a full run: a heavy metallic bash with a meaty thud under it, short and punchy, close-miked, dry, no reverb, no music, no voice",
+   "seconds": 0.5,
+   "influence": 0.55,
+   "n": 6,
+   "keep": 4,
+   "kind": "oneshot",
+   "stereo": false,
+   "peak_db": -1.0,
+   "loop": false,
+   "tail_db": -55,
+   "note": "Shield Charge hit/stop (art.shield_charge.hit, .stop)"
+  },
+  "hard_landing": {
+   "prompt": "A heavy armored warrior skidding to a stop and stamping the ground: a low shoving thump and a burst of dirt and gravel, close-miked, dry, no reverb, no music, no voice",
+   "seconds": 0.6,
+   "influence": 0.55,
+   "n": 6,
+   "keep": 3,
+   "kind": "oneshot",
+   "stereo": false,
+   "peak_db": -1.0,
+   "loop": false,
+   "tail_db": -55,
+   "note": "Hard landing (dash.hard_landing)"
+  },
+  "storm_whir": {
+   "prompt": "A heavy steel sword spun fast in a full circle through the air, a deep rhythmic whirring whoosh of the blade cutting air, one spin, sharp metallic edge to the swish, close-miked, dry, no reverb, no music, no voice",
+   "seconds": 0.6,
+   "influence": 0.6,
+   "n": 6,
+   "keep": 4,
+   "kind": "oneshot",
+   "stereo": false,
+   "peak_db": -1.0,
+   "loop": false,
+   "tail_db": -55,
+   "note": "Bladestorm spin, chained on every tick (art.bladestorm.whir)"
+  },
+  "vow_absorb": {
+   "prompt": "A blow absorbed by a braced steel shield: a short dull metallic thunk swallowed into a low resonant hum that pulls inward, the metal ringing faintly then gone, close-miked, dry, no reverb, no music, no voice",
+   "seconds": 0.5,
+   "influence": 0.55,
+   "n": 6,
+   "keep": 4,
+   "kind": "oneshot",
+   "stereo": false,
+   "peak_db": -1.0,
+   "loop": false,
+   "tail_db": -55,
+   "note": "Iron Vow stored blow (art.iron_vow.store)"
   }
  }
 }

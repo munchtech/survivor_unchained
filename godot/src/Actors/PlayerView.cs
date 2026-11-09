@@ -889,7 +889,7 @@ public partial class PlayerView : Node3D
         time += dt;
         probeDt = dt; probeFight = fightTime;
         if (GripProbe && mine) Probe();
-        if (mine) { Xfade(); tree.Advance(dt); }
+        if (mine) { Xfade(); P7Tick(dt); tree.Advance(dt); }
         // The arm-hold crossfade, on the frame the tree first shows what Carry set last frame.
         if (armMod != null)
         {
@@ -1037,6 +1037,9 @@ public partial class PlayerView : Node3D
                 var jump = vault ? "Jump_Start" : "Jump_Full_Short";
                 bool native = own.Owns(People.Clip(person, jump));
                 Full(jump, native ? 1.0 : vault ? 1.8 : 1.3);
+                // (P7: hers fitted to the air, the flight over the sim's, not the art's old 0.42 s)
+                if (native && !vault) P7LeapFit(l2.Dur);
+                if (SurvivorUnchained.Args.Has("clip") && person.Anim.HasAnimation(full.Animation)) GD.Print($"p7 jump clip {full.Animation} len {person.Anim.GetAnimation(full.Animation).Length:0.00} speed {(native ? 1.0 : vault ? 1.8 : 1.3)} air {l2.Dur:0.00}");
             }
             // Once down, the landing gives way as soon as she moves on.
             artTail = time + l2.Dur + 0.1;
@@ -1065,6 +1068,7 @@ public partial class PlayerView : Node3D
             else if (was == Content.AbilityKind.Grapple && UpperHer(HerClips.Heavy(person.Kind), 1.5))
                 artTail = time + 0.3;
         }
+        P7Step(b, dt, sp);
         // Weapon swings: the blade drives the arm. Hers alternate as the
         // arcs do (the first from her left), the wide arcs her heavy cut.
         if (p.AttackAnim is { } a && a.T != lastAttack && !KnockSkip(a.T))

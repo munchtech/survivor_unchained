@@ -161,7 +161,7 @@ public sealed class FlareDef
     public double BeatAt(string key, double fallback) => Beat.TryGetValue(key, out var v) ? v : fallback;
 }
 
-/// <summary>A dark lamp-post of an act: where it stands (a zone and a spot) is a placeholder while Draft is set.</summary>
+/// <summary>A dark lamp-post of an act (lamp_posts.json's board posts): where it stands (a zone and a spot) is a placeholder while Draft is set.</summary>
 public sealed class PostDef
 {
     public string Id = "", Zone = "";
@@ -191,8 +191,6 @@ public static class Lamps
         public List<LampDef> Lamps = new();
         /// <summary>The story's fights whose first win lights a lamp (their arena ids).</summary>
         public List<string> Story = new();
-        /// <summary>v2: the dark lamp-posts whose relighting gives a lamp (LampBook.RelightPost).</summary>
-        public List<PostDef> Posts = new();
         public int Version = 1;
     }
 
@@ -211,7 +209,8 @@ public static class Lamps
             Roads = f.Roads.ToDictionary(r => r.Id);
             Flares = f.Flares.ToDictionary(x => x.Id);
             Story = f.Story;
-            Posts = f.Posts;
+            // (v2: the dark lamp-posts whose relighting gives a lamp, LampBook.RelightPost: lamp_posts.json's board posts, its one truth)
+            Posts = f.Version >= 2 ? LampPosts.Board.Select(p => new PostDef { Id = p.Id, Zone = p.Zone, Act = p.Act, X = p.X, Z = p.Z, Draft = p.Draft }).ToList() : new();
             foreach (var l in f.Lamps)
             {
                 Next[l.Id] = new();

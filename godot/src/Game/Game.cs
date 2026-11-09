@@ -692,7 +692,20 @@ public partial class Game : Node, IZoneHost
         // While a story's choice waits, its keys are its own: her art is not cast by the key that answers it.
         scene.Pressed = a => choiceUp != null && Array.IndexOf(ChoiceKeys, a) >= 0 ? Swallow(a)
             : heldOn != null ? false : (auto?.Take(a) ?? false) || (!controls.Captured && controls.Pressed(a));
-        scene.OnStep = dt => { if (cine is not { ZoneHeld: true }) zone?.Step(dt); };
+        // The skill keys held (a channel), and where the cursor meets the ground (a pressed skill's aim).
+        scene.Held = a => heldOn == null && choiceUp == null && auto == null && !controls.Captured && controls.Held(a);
+        scene.Pointer = PointerGround;
+        // --press (ScriptedPress.cs): scripted skill/dash presses, held keys, aim and dash direction (pictures; under --auto idle).
+        if (Args.Get("press") is { Length: > 0 } pressSpec)
+        {
+            var sp = new ScriptedPress(pressSpec, () => Journey.Playtime, () => Battle is { } pb ? (pb.Player.X, pb.Player.Z) : null);
+            var bMove = scene.Move; var bPressed = scene.Pressed; var bHeld = scene.Held; var bPointer = scene.Pointer;
+            scene.Move = () => sp.Move() ?? bMove();
+            scene.Pressed = x => sp.Take(x) || bPressed(x);
+            scene.Held = x => sp.Held(x) || bHeld(x);
+            scene.Pointer = () => sp.Pointer() ?? bPointer();
+        }
+        scene.OnStep = dt => { if (cine is not { ZoneHeld: true }) { zone?.Step(dt); if (zone != null) SurvivorUnchained.Play.Zones.LampRise.Doors(zone, Battle); } };
         scene.OnEvents = OnEvents;
         // The Flare's view speaks to the pad, the HUD and the crowd through these (Fx/Flare/FlareFx.cs).
         var fl = scene.Fx.Flare;
@@ -803,6 +816,8 @@ public partial class Game : Node, IZoneHost
 
     void EnterPlay(ZoneRuntime z, string? from, Arrival? at)
     {
+        storyLine?.Clear();
+        championsWoke.Clear();
         Mode = "play";
         hudMode = null;
         screens.Close();
@@ -811,11 +826,13 @@ public partial class Game : Node, IZoneHost
         scene!.SimPaused = false;
         showing = false;
         scene.Showcase = null;
+        // (a lamp-post's travel: the zone still hears where she came from, as any entry from there, GamePostMenu.cs)
+        if (toPost) { toPost = false; z.ArrivalFrom(from); }
         var start = at ?? z.ArrivalFrom(from);
         // (--facing DEG: which way she stands at the start, for pictures of her from the front)
         if (Args.Get("facing") is string fa) start = start with { Facing = double.Parse(fa, System.Globalization.CultureInfo.InvariantCulture) * Math.PI / 180 };
         var meta = scene.Data.Meta;
-        var b = Journey.StartBattle(z.Combat, meta.Collision(), scene.HeightAt, start.X, start.Z, start.Facing, (uint)Rng.Next(), arena: z is ArenaRun or StoryNight, ember: z.Ember);
+        var b = Journey.StartBattle(z.Combat, meta.Collision(), scene.HeightAt, start.X, start.Z, start.Facing, (uint)Rng.Next(), arena: z is ArenaRun or StoryNight, ember: z.Ember, worldTier: z is not (ArenaRun or MapRun));
         Perf.Lap("play: the fight begun");
         // An arena is seen from higher and further out: the whole of the fight.
         var (pitch, dist) = z.Camera is var (cp, cd) ? (Mathf.DegToRad((float)cp), (float)cd) : camHome;
@@ -939,9 +956,23 @@ public partial class Game : Node, IZoneHost
     public void Apply(IEnumerable<Change> changes) => Journey.Apply(changes);
     /// <summary>The narrator (or a voice the zone names), read aloud where
     /// there is a take; the words stay up at least as long as the voice.</summary>
-    public void Say(string text, string? who = null, double seconds = 4)
+    public void Say(string text, string? who = null, double seconds = 4) =>
+        // (M5 r3: one story text at a time: a narration waits for a speaker's card to close, and for a champion's wake beat)
+        StoryLine.Ask(Play.StoryText.Kind.Narration, () => SayNow(text, who, seconds));
+
+    /// <summary>(M5 r3) The bottom band's narration and the speakers' named cards, in turn (Play/StoryText.cs).</summary>
+    Play.StoryText StoryLine => storyLine ??= new Play.StoryText(() => Now, () => hud.SayUp, () => scene?.Voices.SpeakerUp == true)
     {
-        var take = voice.Narrate(text);
+        // (M5 r4: the band is clear from 2 s before a champion wakes: the judge, round 3, Ser Aldric's line through his body)
+        WakeSoon = () => Battle is { } b && cine == null && Play.Zones.ChampionGate.Waking(b, Play.StoryText.WakeAhead, 2),
+        TakeDown = () => { if (Args.Has("pace")) GD.Print($"pace saydown t={Battle?.Time ?? 0:0.00}"); hud.SayClear(); if (narrTake != null && voice.Current == narrTake) voice.Stop(); },
+    };
+    SurvivorUnchained.World.VoTake? narrTake;
+    Play.StoryText? storyLine;
+
+    void SayNow(string text, string? who, double seconds)
+    {
+        var take = narrTake = voice.Narrate(text);
         // (no voice: up long enough to read, 17 characters a second)
         double up = take != null ? Math.Max(seconds, take.Sec + 0.8) : Math.Max(seconds, text.Length / 17.0);
         // (--pace: each line's time, length and her health, for the tutorial's pacing audit)
@@ -950,9 +981,29 @@ public partial class Game : Node, IZoneHost
         hud.Say(text, who, up);
     }
     public void Toast(Toast t) { hud.Toast(t); sound.Toast(t); }
+    double bannerHold, promptHush, lastAnnAt = -1;
+    Announcement? lastAnn;
+    static double Now => Godot.Time.GetTicksMsec() / 1000.0;
+    public void HoldBanners(double seconds)
+    {
+        bannerHold = Now + seconds;
+        hud.XpHoldUntil = bannerHold;
+        // (one shown a moment ago, a level-up in the same blow, is shown again once the hold is over)
+        if (lastAnn is { Through: false } la && Now - lastAnnAt < 0.6) { lastAnn = null; After(seconds + 0.1, () => Announce(la)); }
+    }
+    public bool StoryClear => storyLine == null || (storyLine.Waiting == 0 && !hud.SayUp && scene?.Voices.SpeakerUp != true);
+    public void HushPrompts(double seconds) => promptHush = Now + seconds;
     public void Announce(Announcement a)
     {
         if (Args.Has("no-banners")) return; // (dev: pictures of a skill without the level and zone cards over it)
+        if (!a.Through && Now < bannerHold) { After(bannerHold - Now + 0.1, () => Announce(a)); return; }
+        // (M5 r4: not over a screen: a level-up held for the Legendary's moment came up over its item card)
+        if (!a.Through && Overlay != null) { After(0.5, () => Announce(a)); return; }
+        // (M5 r4: a level's title is not on a champion's wake: from 2 s before it (ChampionGate) to 3 s after; LEVEL 5 came
+        // 2 s before Ashjaw)
+        if (!a.Through && Battle is { } cb && (Now - champWokeAt < Play.StoryText.WakeHold || Play.Zones.ChampionGate.Waking(cb, Play.StoryText.WakeAhead, 2)))
+        { After(0.3, () => Announce(a)); return; }
+        if (!a.Through) { lastAnn = a; lastAnnAt = Now; }
         if (scene?.Fx.Flare.HoldsFrame == true) { After(0.25, () => Announce(a)); return; }
         // (a zone's banner asked for during a film waits for play: "The ember goes out" under C04a's bars; a film's own titles go straight to the HUD)
         if (InCinematic) { After(0.3, () => Announce(a)); return; }
@@ -1067,7 +1118,8 @@ public partial class Game : Node, IZoneHost
     {
         var b = Battle;
         // (a story's choice waiting has the keys: no prompt beside it)
-        if (b == null || zone == null || Overlay != null || !b.Player.Alive || inTransit || cine != null || zone.Choice != null)
+        // (M5 r3: no Examine/Rest prompt while a champion is awake on the screen: three text blocks at the Knight's wake)
+        if (b == null || zone == null || Overlay != null || !b.Player.Alive || inTransit || cine != null || zone.Choice != null || Now < promptHush || championOn)
         {
             near = null;
             if (promptShown != null) hud.Prompt(promptShown = null);
@@ -1173,6 +1225,10 @@ public partial class Game : Node, IZoneHost
                     if (InCinematic) break;
                     Announce(new Announcement(an.Title, an.Subtitle, an.Tone?.ToString().ToLowerInvariant() ?? "info", an.Subtitle is { Length: > 60 } ? 5 : 3.6, an.Kicker));
                     break;
+                // (P7) a dash step taken in play: its card line in the fight's own announce
+                case Ev.DashStep ds when !InCinematic && Content.DashSteps.Find(ds.Id) is { } step:
+                    Announce(new Announcement(step.Name, step.Card, "info", 3.6, "The dash"));
+                    break;
                 case Ev.Discovery d:
                     if (!World.Codex.Contains(d.Id)) World.Codex.Add(d.Id);
                     if (Content.Discoveries.All.FirstOrDefault(x => x.Id == d.Id) is { } pair) Toast(new Toast(ToastKind.Lore, $"Discovery: {pair.Name}", pair.Description, null, null, 9));
@@ -1200,13 +1256,18 @@ public partial class Game : Node, IZoneHost
                     // A named voice in a fight (the Warden, Grimtunnel) is heard over everything, when its line shows
                     // (one of theirs at a time: the next waits for the last to be said).
                     var said = bk.Text;
-                    scene?.Voices.Bark(bk.Text, new Vector3((float)bk.X, (float)scene.HeightAt(bk.X, bk.Z), (float)bk.Z), bk.Speaker, bk.Speaker == null,
+                    void BarkNow() => scene?.Voices.Bark(bk.Text, new Vector3((float)bk.X, (float)scene.HeightAt(bk.X, bk.Z), (float)bk.Z), bk.Speaker, bk.Speaker == null,
                         shown: bk.Speaker != null ? () => voice.Shout(said)?.Sec ?? 0 : null, boss: bk.Boss, signature: bk.Signature);
+                    // (M5 r3: a named speaker's card waits for the narration band to close; a boss's slot line and a
+                    // signature tell keep their beat, standing where no narration is)
+                    if (bk.Speaker != null && !bk.Boss && !bk.Signature) StoryLine.Ask(Play.StoryText.Kind.Speaker, BarkNow, bk.Speaker);
+                    else BarkNow();
                     break;
                 case Ev.PlayerHit ph when ph.Dodged && Battle is { } b:
                     scene?.Voices.Bark("Dodged", new Vector3((float)b.Player.X, (float)scene.HeightAt(b.Player.X, b.Player.Z), (float)b.Player.Z), null, true);
                     break;
                 case Ev.Hush hu:
+                    storyLine?.Drop(hu.Speaker);
                     scene?.Voices.Hush(hu.Speaker);
                     break;
                 case Ev.Fade fd:
@@ -1367,6 +1428,9 @@ public partial class Game : Node, IZoneHost
     public override void _Process(double delta)
     {
         PumpAhead();
+        storyLine?.Tick();
+        // (M5 r5: a level's title waits while a screen/card is open and 0.6 s after it closes: LEVEL 4 printed into the Legendary's card)
+        if (Overlay != null) hud.XpHoldUntil = Math.Max(hud.XpHoldUntil, Now + 0.6);
         // Something over the game has the buttons: pad buttons mean their menu meaning first.
         controls.MenuMode = screens.Current != null || hudMode != null;
         // --pad (pictures of pad play): the pad stays in hand whatever the window's mouse does.
@@ -1567,10 +1631,16 @@ public partial class Game : Node, IZoneHost
             }
             else hud.PromptAt(null);
             Perf.Begin(Perf.Part.Labels);
+            ChampionWatch(fb2);
+            // (M5 r4: no pack wakes while a lamp's menu is open, nor MenuQuiet after it)
+            bool menuUp = screens.Current is PostScreen;
+            if (menuUp) fb2.Breather(Battle.MenuQuiet);
+            if (Args.Has("pace")) PaceBreather(fb2, menuUp);
             hud.Beyond(Overlay == null ? Offscreen(fb2) : new());
             hud.Goals(Overlay == null ? GoalScreen() : new());
             hud.Posts(Overlay == null ? PostPointers() : new());
             LampBeacons(dt);
+            PostHeads(dt);
             LampCheck(fb2.Time);
             Priority();
             hud.Foes(Battle, camera, scene.Crowd.DrawnAt, !Args.Has("nobars"));
@@ -1643,19 +1713,27 @@ public partial class Game : Node, IZoneHost
         }
         else
         {
-            var vp = GetViewport();
-            var m = vp.GetMousePosition();
-            if (!vp.GetVisibleRect().HasPoint(m)) return;
-            var o = camera.ProjectRayOrigin(m);
-            var d = camera.ProjectRayNormal(m);
-            float y = (float)scene.HeightAt(b.Player.X, b.Player.Z);
-            if (Mathf.Abs(d.Y) < 1e-4f) return;
-            float t = (y - o.Y) / d.Y;
-            if (t <= 0) return;
-            var g = o + d * t;
+            if (PointerGround() is not { } g) return;
             hit = Targeting.AtPointer(b, g.X, g.Z);
         }
         if (hit != null) b.Priority = hit.Id;
+    }
+
+    /// <summary>Where the mouse's ray meets the ground at her height; null on a pad, or off the window.</summary>
+    (double X, double Z)? PointerGround()
+    {
+        if (Battle is not { } b || scene == null || controls.UsingPad) return null;
+        var vp = GetViewport();
+        var m = vp.GetMousePosition();
+        if (!vp.GetVisibleRect().HasPoint(m)) return null;
+        var o = camera.ProjectRayOrigin(m);
+        var d = camera.ProjectRayNormal(m);
+        float y = (float)scene.HeightAt(b.Player.X, b.Player.Z);
+        if (Mathf.Abs(d.Y) < 1e-4f) return null;
+        float t = (y - o.Y) / d.Y;
+        if (t <= 0) return null;
+        var g = o + d * t;
+        return (g.X, g.Z);
     }
 
     /// <summary>The night's phases, named on the clock (docs/feel S-21), as shares of the arena's length.</summary>
@@ -1694,15 +1772,62 @@ public partial class Game : Node, IZoneHost
             o.Add(new Ui.Beyond(sp, glyph, c, (float)Math.Clamp(1 - (d - 20) / 60, 0, 1)));
         }
         foreach (var e in b.Enemies.Living().Where(e => e.Boss)) Add(e.X, e.Z, "horns", Style.BloodHi);
-        foreach (var e in b.Enemies.Living().Where(e => e.Elite && !e.Boss).OrderBy(e => (e.X - px) * (e.X - px) + (e.Z - pz) * (e.Z - pz)).Take(3))
-            Add(e.X, e.Z, "skull", Style.EmberHi);
+        // (M5 r3: not while a champion is awake on the screen: the Knight's wake had a skull at the bottom edge pointing south,
+        // read as a threat behind her)
+        if (!championOn)
+            foreach (var e in b.Enemies.Living().Where(e => e.Elite && !e.Boss).OrderBy(e => (e.X - px) * (e.X - px) + (e.Z - pz) * (e.Z - pz)).Take(3))
+                Add(e.X, e.Z, "skull", Style.EmberHi);
         foreach (var p in b.Pickups.Living().Where(p => p.Kind == PickupKind.Chest).OrderBy(p => (p.X - px) * (p.X - px) + (p.Z - pz) * (p.Z - pz)).Take(2))
             Add(p.X, p.Z, "relic", Style.GoldHi);
         // A Legendary lying untaken: the screen's edge points to it, in its amber (docs/design/LOOT_DESIGN.md §8.2).
-        foreach (var p in b.Pickups.Living().Where(p => p.Loot is (int)LootTier.Legendary or (int)LootTier.Storied && p.Look != Verdict.Hidden))
+        // (M5 r2: within LegendReach only: the Warden's, left at the ford, pulled her back south from the north bank all day
+        // against the objective, the judge's "gold chevron")
+        foreach (var p in b.Pickups.Living().Where(p => p.Loot is (int)LootTier.Legendary or (int)LootTier.Storied && p.Look != Verdict.Hidden
+            && (p.X - px) * (p.X - px) + (p.Z - pz) * (p.Z - pz) < LegendReach * LegendReach))
             Add(p.X, p.Z, "legendary", p.Loot == (int)LootTier.Storied ? ItemViews.TierColour(LootTier.Storied) : ItemViews.TierColour(LootTier.Legendary));
         return o;
     }
+
+    /// <summary>(M5 r3) A champion (a named foe, not a boss) awake and on the screen now: the interact prompt and the
+    /// off-screen skull pointers stand down (championOn); each one's wake holds the narration band StoryText.WakeHold.</summary>
+    bool championOn;
+    readonly HashSet<(int, double)> championsWoke = new();
+    double champWokeAt = double.NegativeInfinity;
+
+    double paceLit = double.NegativeInfinity, paceHush = double.NegativeInfinity;
+    bool paceMenu;
+    /// <summary>(M5 r4, --pace) The breather's events in game seconds, for the capture's acceptance: a lamp lit, a lamp menu
+    /// opened and closed, a rise.</summary>
+    void PaceBreather(Battle b, bool menuUp)
+    {
+        if (b.LampLitAt != paceLit) { paceLit = b.LampLitAt; GD.Print($"pace breath lamp t={b.Time:0.00}"); }
+        if (menuUp != paceMenu) { paceMenu = menuUp; GD.Print($"pace breath menu {(menuUp ? "open" : "closed")} t={b.Time:0.00}"); }
+        if (!menuUp && b.HushUntil > paceHush + 0.5 && b.HushUntil - b.Time > Battle.RiseQuiet - 0.2) GD.Print($"pace breath rise t={b.Time:0.00}");
+        paceHush = b.HushUntil;
+        if (Overlay != paceOverlay) { paceOverlay = Overlay; GD.Print($"pace overlay {Overlay ?? "-"} t={b.Time:0.00}"); }
+    }
+    string? paceOverlay;
+
+    void ChampionWatch(Battle b)
+    {
+        championOn = false;
+        if (scene == null) return;
+        var view = new Rect2(Vector2.Zero, GetViewport().GetVisibleRect().Size);
+        foreach (var e in b.Enemies.Living())
+        {
+            if (e.Named == null || e.Boss || !e.Roused || e.State == EnemyState.Dying) continue;
+            if (championsWoke.Add((e.Id, e.Seed)))
+            {
+                StoryLine.HoldNarration(Play.StoryText.WakeHold); champWokeAt = Now;
+                if (Args.Has("pace")) GD.Print($"pace champ woke {e.Named} t={b.Time:0.00} say={hud.SayUp}");
+            }
+            var w = new Vector3((float)e.X, (float)scene.HeightAt(e.X, e.Z) + 1, (float)e.Z);
+            if (!camera.IsPositionBehind(w) && view.HasPoint(camera.UnprojectPosition(w))) championOn = true;
+        }
+    }
+
+    /// <summary>(M5 r2) An untaken Legendary's edge pointer shows within this of her (m).</summary>
+    const double LegendReach = 40;
 
     /// <summary>Loot's names on the ground (docs/design/LOOT_DESIGN.md §8.1): what the filter shows, Rare
     /// and up wherever it lies on screen, the rest only near her, so a horde's floor is not a page of text.</summary>
@@ -1784,7 +1909,7 @@ public partial class Game : Node, IZoneHost
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
     bool flareFilled, flareReadyShot;
-    bool hordeDone, dropsDone, lootDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone, fallDone, litDone, tipDone, freezeTestDone, bossKillDone;
+    bool hordeDone, dropsDone, lootDone, castDone, giveDone, grantDone, minuteDone, chestDone, barksDone, answerDone, fallDone, litDone, tipDone, freezeTestDone, bossKillDone;
     double? bossSeenAt;
     int toastI;
 
@@ -1973,6 +2098,12 @@ public partial class Game : Node, IZoneHost
                 GD.Print($"armor swap: t={sw.T.ToString(System.Globalization.CultureInfo.InvariantCulture)} {sw.Ids}");
             }
         }
+        // --grant / --grant-union / --dash-step (Sim/DevGrants.cs): pressed skills, unions and dash steps to test with.
+        if (!grantDone && Battle is { Combat: true } grb && (Args.Has("grant") || Args.Has("grant-union") || Args.Has("dash-step")))
+        {
+            grantDone = true;
+            foreach (var line in DevGrants.Apply(grb, Args.Get("grant"), Args.Get("grant-union"), Args.Get("dash-step"))) GD.Print(line);
+        }
         if (!giveDone && Args.Get("give") is string give && Battle is { } gb)
         {
             giveDone = true;
@@ -2067,12 +2198,12 @@ public partial class Game : Node, IZoneHost
         // still land and knock her down; only her health is held).
         if (Args.Has("clip") && Args.Has("court-hold") && Battle is { } holdB && holdB.Player.Alive)
             holdB.Player.Hp = Math.Max(holdB.Player.Hp, holdB.MaxHp);
-        if (Args.Has("clip") && Args.Has("flare") && Battle is { } clipB && clipB.Player.Alive)
+        if (Args.Has("clip") && (Args.Has("flare") || Args.Has("press")) && Battle is { } clipB && clipB.Player.Alive)
             clipB.Player.Hp = Math.Max(clipB.Player.Hp, clipB.MaxHp * (Args.Has("flare-hp") ? Args.Num("flare-hp", 1) : 1));
         // --clip with --flare (pictures only): no ember level-up in the shot (H7 r2: she levelled at about the press and the
         // level's title sat over the frame's center through the Flare, its flash a white orb on her after the stop); the
         // ember's next level is pushed out of reach, nothing else changes. --clip-level keeps the game's own.
-        if (Args.Has("clip") && Args.Has("flare") && !Args.Has("clip-level") && Battle is { } clipE && clipE.EmberNext < 1e8)
+        if (Args.Has("clip") && (Args.Has("flare") || Args.Has("press")) && !Args.Has("clip-level") && Battle is { } clipE && clipE.EmberNext < 1e8)
             clipE.EmberNext = 1e9;
         if (!castDone && !flareReadyShot && Args.Has("cast") && Battle != null && Journey.Playtime >= Args.Num("cast", 1) - 0.1)
         {
@@ -2203,6 +2334,7 @@ public partial class Game : Node, IZoneHost
         CloseOverlay();
         var next = list[tourI++];
         if (next.StartsWith("talk:")) TalkTo(next[5..]);
+        else if (next.StartsWith("post:")) OpenPost(next[5..]);
         else if (next == "draft" && Battle is { } b) { b.GainEmber(b.EmberNext); }
         // A won arena's end, with a sample tally (pictures of the result screen; in an arena).
         else if (next == "result" && World.Arena is { } spec && Battle is { } rb)

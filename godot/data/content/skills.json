@@ -61,15 +61,6 @@
       },
       "evolutions": [
         {
-          "id": "whirlwind",
-          "name": "Whirlwind",
-          "catalysts": ["fleetfoot", "ferocity"],
-          "description": "The chop becomes a full turn: everything around you, every time.",
-          "art": "slash_spin",
-          "mods": { "damage": 1.15, "cooldown": 0.8 },
-          "set": { "arc": 6.283 }
-        },
-        {
           "id": "bonesplitter",
           "name": "Bonesplitter",
           "catalysts": ["might"],
@@ -148,6 +139,7 @@
       "name": "Watch Bell",
       "school": "holy",
       "behavior": "toll",
+      "kindle": { "when": "crowd", "count": 4, "radius": 8 },
       "tags": ["aura", "holy", "shield", "area"],
       "access": ["warden"],
       "findable": true,
@@ -264,7 +256,7 @@
       "bossDamage": 2.9,
       "art": "nova_blood",
       "description": "A sweeping graveblade that carves health out of the wound it makes.",
-      "base": { "cooldown": 2.4, "damage": 40.29, "radius": 3.25, "knockback": 0.5, "expandTime": 0.28, "heal": 3 },
+      "base": { "cooldown": 2.4, "damage": 41.9, "radius": 3.25, "knockback": 0.5, "expandTime": 0.28, "heal": 3 },
       "evolutions": [
         {
           "id": "rend_and_mend",
@@ -1468,6 +1460,89 @@
           ]
         }
       ]
+    },
+    {
+      "id": "heroic_leap",
+      "name": "Heroic Leap",
+      "school": "physical",
+      "behavior": "leap",
+      "cast": "press",
+      "tags": ["melee", "physical", "area", "heavy"],
+      "access": ["warden"],
+      "bossDamage": 1.5,
+      "art": "heroic_leap",
+      "description": "You leap where you aim, untouchable in the air, and come down blade first: everything in the ring is struck, thrown back and knocked down.",
+      "base": { "cooldown": 8, "damage": 130, "range": 9, "minRange": 3, "radius": 3.5, "air": 0.62, "knockback": 2.5, "stun": 0.8, "stagger": 0.3 },
+      "evolutions": []
+    },
+    {
+      "id": "shield_charge",
+      "name": "Shield Charge",
+      "school": "physical",
+      "behavior": "charge",
+      "cast": "press",
+      "tags": ["melee", "physical", "shield"],
+      "access": ["warden"],
+      "art": "shield_charge",
+      "description": "Shield first, you charge 8 m with a barrier of 15% of your health: what stands in the way is struck and thrown aside, and a champion that stops you is stunned.",
+      "base": { "cooldown": 7, "damage": 40, "range": 8, "rushTime": 0.3, "barrier": 0.15, "duration": 4, "knockback": 2.2, "stun": 1 },
+      "evolutions": [
+        {
+          "id": "pile_driver",
+          "name": "Pile Driver",
+          "catalysts": ["ironhide"],
+          "description": "The charge ends in a slam: everything within 3 m is struck harder and stunned for 1 s.",
+          "art": "shield_charge_slam",
+          "set": { "radius": 3, "slam": 1.4 }
+        }
+      ]
+    },
+    {
+      "id": "iron_vow",
+      "name": "Iron Vow",
+      "school": "physical",
+      "behavior": "brace",
+      "kindle": { "any": [ { "when": "windup", "big": true, "radius": 3, "within": 0.6 }, { "when": "crowd", "count": 5, "radius": 3 } ] },
+      "tags": ["shield", "physical", "area"],
+      "access": ["warden"],
+      "bossDamage": 1.2,
+      "art": "iron_vow",
+      "description": "You plant your feet and swear it: for 2 s every blow on you lands at half, and a fifth of each is kept. Then it all comes back out of you in a ring.",
+      "base": { "cooldown": 10, "damage": 30, "radius": 5, "knockback": 1.2, "stun": 0.4, "brace": 2, "plant": 0.3, "store": 0.2, "storeMul": 3, "halve": 0.5 },
+      "evolutions": []
+    },
+    {
+      "id": "bladestorm",
+      "name": "Bladestorm",
+      "school": "physical",
+      "behavior": "spin",
+      "cast": "channel",
+      "tags": ["melee", "steel", "physical", "area", "heavy"],
+      "bossDamage": 1.6,
+      "art": "slash_spin",
+      "description": "Hold the Cleaver's key and you spin, blade out, cutting everything around you; every fourth turn throws a Sunder line. Press Sunder's key to break the storm with one great blow, the greater the longer you spun, and every line splits at once. Out of the storm, Sunder's key swings Sunder.",
+      "_doc": "cooldown and channelTime are placeholders: they go when the Warden's Resolve lands (ARPG.md 3.1, M3); the spin then drains Resolve while held.",
+      "base": {
+        "cooldown": 6,
+        "damage": 10.8,
+        "radius": 3.2,
+        "knockback": 0.3,
+        "channelTime": 3,
+        "channelGap": 0.3,
+        "pace": 0.85,
+        "heavyEvery": 4,
+        "line": 7,
+        "beamWidth": 1.2,
+        "maxLines": 6,
+        "lineDamage": 33.6,
+        "breakDamage": 60,
+        "breakRadius": 4,
+        "breakStun": 0.5,
+        "breakKnockback": 1.5,
+        "breakWindow": 1,
+        "breakFrom": 0.5,
+        "breakGrow": 1.6
+      }
     }
   ],
   "unions": [
@@ -1542,6 +1617,14 @@
       "b": "moonbrand",
       "into": "starfall",
       "description": "Moons fall among them and break into motes that hunt the strongest."
+    },
+    {
+      "id": "bladestorm",
+      "name": "Bladestorm",
+      "a": "cleaver",
+      "b": "sunder",
+      "into": "bladestorm",
+      "description": "Cleaver and Sunder become one storm of steel: she spins, blade out, through the crowd, and everything around her is cut, again and again."
     }
   ]
 }
