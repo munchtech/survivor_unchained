@@ -5,7 +5,33 @@ For a fresh successor. Read these first:
 2. `docs/team/experience.md`: the one-page status, which holds what's done, the next steps in order, and the verdicts.
 3. `docs/design/STORY_NIGHTS_AND_TIME.md`: the owner's decisions are at its top.
 
-## M5 zones and encounters (zones-m5, lead 1 -> lead 2, 9 Nov): HANDOFF READY zones-m5@c27056fa9 (this line's own commit follows)
+## M5 zones and encounters (zones-m5, lead 2, 9 Nov): MR READY zones-m5@e195b0a45 (this line's own commit follows)
+
+**State.** Every M5 item built (lead 1's block below: encounters as data, champions, lamp-posts, death, world tiers, resets, the zone sim). Lead 2 ran rounds 3 and 4 of `Item: M5 first 10 min` (cap raised to 4 by the coordinator). Integration merged at 81b34cd31 (and 7732f83c0 before) (junction rule each time). Suite 1650/0/10 (at ff9c4f616). Zone sim (`docs/balance/zone_lowford.md`): tier II human 8/8 through, 7.2 min play (8.4 with films), kills 176/5/4/1, 16 packs, falls 0 (worst 1), Legendary 8/8, level 3 at the Warden and 5 at the gate; 3/56 runs stuck in the day's Exit (careless/deft, lead 1's known ground wedge).
+
+**Verdicts** (`C:\Users\munch\Desktop\survivorsunchained_inputs\m5_zones\`): r3 FAIL close (`clip_r3\verdict_r3.md`): 2,4,5,7,8,9 closed. r4 FAIL close (`clip_r4b\verdict_r4.md`): Aldric's wake, the Legendary ground beat and card, the push-in, the breather, the pointers and Ashjaw closed; "Would a Diablo player keep walking? Yes, more than in round 3. Fixing marks 1 and 2 makes this a PASS WITH KNOWN." After r4, mark 1 (heart line after Grimtunnel's take) and mark 4 (LEVEL inside the card) were fixed (d7f94b728, 5b842321f) and checked by the log only (clip_r4d: pickup 233.6, heart line 234.2, LEVEL 234.3, Dawn 249.4; no dead air): UNJUDGED. Lead 2 then fixed two bugs the sim caught: a held narration's delay carried into every later line (StoryText BeatGap, 5b842321f), and the Legendary's wait counted one frame in fifteen, so a coat left on the ground held Victory ~5 min (ff9c4f616; the sim had 0/8 through).
+
+**What lead 2 built (the app can now):**
+- One story-text channel (`logic/Play/StoryText.cs`): narration and speaker cards in order, never over each other; narration held 2 s before to 3 s after a champion wake (a line up is taken down and re-asked); a held line's delay carries only within one beat (BeatGap 10 s).
+- `logic/Play/Zones/ChampionGate.cs`: tutorial cards and LEVEL banners wait near a champion wake (awake within 30 m, predicted wake, scheduled ring waves `Battle.ChampionDueAt`).
+- The Legendary staged alone (`Prologue.LegendSpot`, held spoils, the heart beat waits for the pickup, `IZoneHost.StoryClear` gates Grimtunnel behind the heart line; `GameHud.XpHoldUntil` while any screen is open).
+- One pack breather (`Battle.HushUntil/LampHush`: 4 s after a lamp, a lamp menu +2 s, 4 s after a rise); resting packs can't be hit inside it. Rise 1.75 m off the post toward the road (`LampRise.RiseSpot`, `lamp_posts.json` "rise"), outside sleeping packs' wake radius.
+- Post menu Rest/Leave until `prologue.done` (`PostMenu.FullMenu`; Rest = rise point + heal; the "Rested" toast copy is M6's); tier line hidden until then.
+- Champion rims (`champions.json` body.rim hues, `Champions.Look` -> `Enemy.RankRim` -> `Vat.Push` champRim -> `vat.gdshaderinc`); Nan Sallow's label-only "Raiser"; a champion with no affix takes the champion rim (42); Mother Mire moved to sun (-39,-91.5); the Slurry Sow's trail pools spaced and off while asleep (`Ai.TrailSpacing`).
+- Lamp-post heads (`src/Game/GamePostHeads.cs`): unlit ember, lit flame + bloom + pool, kindling sparks; the square's lamp a 4.6 m landmark (`waystation.square` landmark/tall).
+- Edge pointers notch around the HUD's top-right block (`EdgeMarks.Avoid`); Ashjaw comes out 8 m ahead (`Encounters.Follow`).
+
+**Known (closed at the round cap; named for their owners):**
+- M5/M3: a fall doesn't reset awake packs (n_road3 on her ~3 s after the rise); champion plates fade in slowly (Ashjaw ~30% at 1.5 s; UI if the HUD owns it); the dawn frame stacks text (feed cap 2, skull pointers hidden in a lamp breather); Mother Mire's violet rings still overlap; "LEVEL 4" at the kill instant with "The Ford-Warden falls"; a coat badge over her head after the pickup (UI); the autopilot's watch-post chest wedge (tooling).
+- Combat/Loot VFX: a hard-edged cracked-earth quad beside the Legendary's beam when the Warden dies on land (r4 new mark 2: feather/depth-fade or skip on land).
+- L1: the lamp head mesh, every light energy, the pool vs the zone light, the rim strength and hues. M6: THE LAMP BOARD stays after the road lamp (judge agreed: the bank is a checkpoint); the heart line's copy if it ever moves to dawn.
+- Round 2's cross-area notes are in `docs/team/ARPG_NOTES.md` (trees, dappled shadows, damage numbers, gold discs, the Legendary smear, Knight naming).
+
+**Merge notes.** Shared files: Battle.cs, Ai.cs, Entities.cs, Loot.cs, JourneyLoot.cs, Journey.cs, Game.cs (StoryText wiring, ChampionWatch, HoldBanners, PostRest, StoryClear, XpHold; more than ~10 lines now), GameHud.cs, Voices.cs, FoeMarks.cs, EdgeMarks.cs, CrowdView.cs, Vat.cs, vat.gdshaderinc, Zone.cs (logic/Play and logic/World), Lamps.cs, lamps_v2.json, champions.json, encounters.json, lamp_posts.json, Menus.cs, WorldScene.cs. Stray .uid files tracked by a solver (P1Bake.cs.uid, P1Springs.cs.uid, P1PoseProbe.cs.uid): harmless.
+
+**Cost (lead 2):** lead ~0.2M; helpers ~1.0M (3 medium solvers 0.59M, 2 max judges 0.33M, 1 worker 0.05M, 1 runner 0.05M); $0 API.
+
+## M5 zones and encounters (zones-m5, lead 1, 9 Nov): history (lead 2 above ran rounds 3-4 and the MR)
 
 **Start here (lead 2).** Brief: `tools/scratch/coordinator/briefs/M5_zones_lead1.md` and `docs/handoff/lead_brief.md` (the junction rule; NEVER `git reset`, even --soft: a solver's soft reset uncommitted another's work once). Area: `docs/design/ARPG.md` §5, §7. The worktree is green: suite 1613/0/10 (e9174bd85+). Branch tip has every item built. **What is left: judge round 3 (the LAST for `Item: M5 first 10 min`; r1 FAIL medium, r2 FAIL close), then MR READY zones-m5@<sha>.**
 
