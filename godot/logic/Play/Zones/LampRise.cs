@@ -37,6 +37,35 @@ public static class LampRise
     /// <summary>Where she rises in a zone: her last post there, while it burns; else null (the zone's own fallback).</summary>
     public static (double X, double Z)? Post(WorldState w, string zone) => LampBook.LastPost(w, zone) is { } p ? (p.X, p.Z) : null;
 
+    /// <summary>(M5 r3) Where she stands up beside a post: RiseOff m off it toward the road (`toward`, a direction), on free
+    /// ground (`free`: the fight's collision), the nearest free bearing to it at RiseOff, then RiseOffNear and RiseOffFar;
+    /// none free: the post itself. The judge: she rose on the post, its "Rest" prompt over her torso.</summary>
+    public static (double X, double Z) RiseSpot(double x, double z, (double X, double Z) toward, Func<double, double, bool> free)
+    {
+        double a0 = Math.Atan2(toward.Z, toward.X);
+        if (toward.X == 0 && toward.Z == 0) a0 = 0;
+        foreach (var d in new[] { RiseOff, RiseOffNear, RiseOffFar })
+            for (int i = 0; i <= 12; i++)
+            {
+                // (0, +30, -30, +60, -60 ... degrees from the road's way)
+                double a = a0 + (i % 2 == 1 ? 1 : -1) * ((i + 1) / 2) * Math.PI / 6;
+                double rx = x + Math.Cos(a) * d, rz = z + Math.Sin(a) * d;
+                if (free(rx, rz)) return (rx, rz);
+            }
+        return (x, z);
+    }
+    public const double RiseOff = 1.75, RiseOffNear = 1.5, RiseOffFar = 2.0;
+    /// <summary>(M5 r3) The post's prompt is held this long after she rises (s).</summary>
+    public const double RisePromptHush = 2.2;
+
+    /// <summary>(M5 r3) Where she rises in a zone, stood beside her last post toward its road (RiseSpot); else the fallback.</summary>
+    public static (double X, double Z) RiseAt(WorldState w, string zone, Battle b, (double X, double Z) fallback)
+    {
+        if (LampBook.LastPost(w, zone) is not { } p) return fallback;
+        var way = p.Rise is { Length: 2 } r ? (r[0], r[1]) : (fallback.X - p.X, fallback.Z - p.Z);
+        return RiseSpot(p.X, p.Z, way, (x, z) => !b.Collision.Blocked(x, z, 0.5) && (b.Collision.Bound <= 0 || Math.Abs(x) < b.Collision.Bound - 1 && Math.Abs(z) < b.Collision.Bound - 1));
+    }
+
     /// <summary>Hostile foes on their feet within r of a spot.</summary>
     public static int Crowd(Battle b, double x, double z, double r) =>
         b.Enemies.Living().Count(e => e.State is not (EnemyState.Dying or EnemyState.Rising) && e.Disposition == Disposition.Hostile && Math.Sqrt((e.X - x) * (e.X - x) + (e.Z - z) * (e.Z - z)) < r);
@@ -50,6 +79,8 @@ public static class LampRise
         p.Hp = b.MaxHp;
         p.Iframes = 3;
         p.X = x; p.Z = z;
+        // (M5 r3: no post prompt over her as she gets up)
+        g.HushPrompts(RisePromptHush);
         foreach (var e in b.Enemies.Living())
             if ((e.Elite || e.Boss || e.Named != null) && e.State != EnemyState.Dying) e.Hp = e.MaxHp;
         g.Revived(x, z);

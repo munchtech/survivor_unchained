@@ -27,6 +27,9 @@ public static class LampPosts
         public bool Draft;
         /// <summary>The zone light that is its lantern (dark until lit), or -1.</summary>
         public int Light = -1;
+        /// <summary>(M5 r3) Which way the road lies from it (a direction on the ground, [x, z]): she rises 1.5-2 m off the post
+        /// that way, not on it (LampRise.RiseSpot). Unset: toward the zone's fallback spot.</summary>
+        public double[]? Rise;
 
         public bool Dark => Kind == "dark";
 

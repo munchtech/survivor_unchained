@@ -52,6 +52,29 @@ public class PostMenuTests
     }
 
     [Fact]
+    public void She_rises_beside_her_post_toward_the_road_not_on_it()
+    {
+        // (M5 r3, the judge: "the 'Rest' prompt covers her torso as she rises (she rises on the post)")
+        var (x, z) = LampRise.RiseSpot(0, 0, (1, 0), (_, _) => true);
+        Assert.Equal(LampRise.RiseOff, x, 3);
+        Assert.Equal(0, z, 3);
+        // the road's way blocked: the nearest free bearing, still 1.5-2 m off
+        var (bx, bz) = LampRise.RiseSpot(0, 0, (1, 0), (px, pz) => px < 1.2);
+        double d = System.Math.Sqrt(bx * bx + bz * bz);
+        Assert.InRange(d, 1.5, 2.0);
+        Assert.True(bx < 1.2);
+        // every Low Ford post says where its road lies
+        foreach (var p in LampPosts.In("lowford").Where(p => !p.Draft)) Assert.True(p.Rise is { Length: 2 }, p.Id);
+        // and in a fight on open ground she stands RiseOff from her last post
+        var w = new WorldState();
+        LampBook.LightPost(w, "lowford.bank");
+        var post = P("lowford.bank");
+        var b = Fight(post.X + 20, post.Z);
+        var at = LampRise.RiseAt(w, "lowford", b, (0, 0));
+        Assert.InRange(System.Math.Sqrt((at.X - post.X) * (at.X - post.X) + (at.Z - post.Z) * (at.Z - post.Z)), 1.5, 2.0);
+    }
+
+    [Fact]
     public void Rest_makes_the_post_her_rise_point()
     {
         var w = new WorldState();

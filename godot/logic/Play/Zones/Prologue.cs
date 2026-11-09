@@ -1838,7 +1838,7 @@ public sealed partial class Prologue : ZoneRuntime
         G.After(2.6, () =>
         {
             G.Say(line, null, 3.5);
-            var at = LampRise.Post(W, Id) ?? (checkpoint.X, checkpoint.Z);
+            var at = LampRise.RiseAt(W, Id, battle, (checkpoint.X, checkpoint.Z));
             LampRise.Stand(G, battle, at.X, at.Z);
             if (warden is { Alive: true } && Now == Stage.Boss)
             {

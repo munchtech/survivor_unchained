@@ -1066,7 +1066,7 @@ public sealed class Verge : ZoneRuntime
         G.After(2.6, () =>
         {
             G.Say(line, null, 3.5);
-            var at = LampRise.Post(W, Id) ?? (entry.X + 4, entry.Z);
+            var at = LampRise.RiseAt(W, Id, battle, (entry.X + 4, entry.Z));
             LampRise.Stand(G, battle, at.X, at.Z);
         });
         return true;

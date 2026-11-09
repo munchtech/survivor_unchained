@@ -100,8 +100,9 @@ public class LampPostsTests
         host.Pass(3);
         Assert.True(b.Player.Alive);
         Assert.Equal(b.MaxHp, b.Player.Hp);
-        Assert.Equal((post.X, post.Z), host.Revival);
-        Assert.Equal((post.X, post.Z), (b.Player.X, b.Player.Z));
+        // (M5 r3: beside the post, 1.5-2 m toward its road, not on it)
+        Assert.InRange(System.Math.Sqrt(System.Math.Pow(host.Revival!.Value.X - post.X, 2) + System.Math.Pow(host.Revival!.Value.Z - post.Z, 2)), 1.5, 2.0);
+        Assert.Equal(host.Revival!.Value, (b.Player.X, b.Player.Z));
         Assert.Equal(champ.MaxHp, champ.Hp);
         Assert.True(near.Alive);   // (nothing is cleared round her: ClearAround is gone)
         Assert.True(!killed.Alive || killed.State == EnemyState.Dying);   // (and it is not raised: dead stays dead)
@@ -151,7 +152,8 @@ public class LampPostsTests
         b.Player.X = 40; b.Player.Z = 40;
         Assert.True(zone.OnDeath("a wolf"));
         host.Pass(3);
-        Assert.Equal((post.X, post.Z), host.Revival);
+        // (M5 r3: beside the post, 1.5-2 m toward its road, not on it)
+        Assert.InRange(System.Math.Sqrt(System.Math.Pow(host.Revival!.Value.X - post.X, 2) + System.Math.Pow(host.Revival!.Value.Z - post.Z, 2)), 1.5, 2.0);
         Assert.Null(host.Travelled);
         Assert.Equal(2, LampRise.Toll(j.World));
         Assert.Contains(Journey.DayLines.Rise, host.Said);
