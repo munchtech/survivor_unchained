@@ -56,7 +56,9 @@ public partial class FoeMarks : Control
             if (e.Disposition == Disposition.Ally) continue;
             bool isPri = i == pri;
             if (e.Boss && !isPri) continue;
-            if (!isPri && !b.Targetable(e)) continue;
+            // (M4 §5: a champion's plate names it from its first moment on screen, a lamp's breather or not: a plate names,
+            // it does not invite a hit. Targetable stays the sim's (LampHush); a hushed champion still wears its plate.)
+            if (!isPri && !b.Targetable(e) && !(e.Elite && b.HostileToPlayer(e))) continue;
             bool low = e.Hp / Math.Max(1e-6, e.MaxHp) < 0.7;
             bool wantBar = bars_ && !e.Boss && (low || e.Elite || isPri);
             bool snuff = e.Goal && b.HeldLamp is { Lit: true };
