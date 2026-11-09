@@ -321,6 +321,8 @@ public sealed partial class Prologue
     /// strongbox, the dark lamp, the wallow, the ring, the gate. Press: the prompt to answer there.</summary>
     /// <summary>A day fight is on (the autopilot fights it where it stands).</summary>
     public bool DayFighting => day?.Fighting == true;
+    /// <summary>The day's placed beats (null before the dawn starts them): the zone sim reads their packs.</summary>
+    public Encounters? Day => day;
 
     public (double X, double Z, string? Press)? DayGoal()
     {
