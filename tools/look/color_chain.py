@@ -75,6 +75,13 @@ def measure(name="cards", rigs="all", extra=CARD_EXTRA):
             shoot(d, f, extra, rigs)
             calib.measure(tag)
         cards[tag] = json.load(open(os.path.join(d, "swatches.json")))
+    # (L7 S1) the day's sky on the lit side: the 0.18 cards under the day rig with its key off (--air-tune key=0)
+    d = os.path.join(calib.OUT, "nokey")
+    if "day" in rigs and not os.path.exists(os.path.join(d, "swatches.json")):
+        os.makedirs(d, exist_ok=True); f = os.path.join(d, "grey.json")
+        json.dump({c: f"{lin_hex(0.18)} {0.45 if lib['classes'][c]['cel']['spec'][2] > 0 else 1.0}" for c in lib["classes"]}, open(f, "w"))
+        calib.RIGS = ("day",); shoot(d, f, extra + " --air-tune key=0", ("day",)); calib.measure("nokey"); calib.RIGS = rigs
+    if os.path.exists(os.path.join(d, "swatches.json")): cards["nokey"] = json.load(open(os.path.join(d, "swatches.json")))
     json.dump(cards, open(os.path.join(calib.OUT, "cards.json"), "w"), indent=0)
     print("cards:", {k: len(v) for k, v in cards.items()})
 
@@ -214,6 +221,7 @@ def shade_gain(cards, rig, rho, cam="play", lv=1, lit_gain=1.0):
 
 
 SUN = "#f3d9a0"  # (rule 3: the day and dawn sun, pale gold)
+BOARD_NEUTRAL = ("rock", "stone", "lb_setts")  # (the boards' grey stones: their lit sides are the boards' sun)
 
 
 def day_lit_gain(cards):
@@ -248,13 +256,30 @@ def solve(name="cards", night_name=None, refine=None):
     # and 0.5 cards (the 0.8 card's lit side sits at the gamut's ceiling), the geometric mean
     k_lit = day_lit_gain(cards)
     k_day, now = shade_gain(cards, "day", rho, lit_gain=k_lit)
-    kk, q = key_gain(cards, "day", k_lit, k_day)
+    # the key itself: the 0.18 card's lit side less its sky (the key-off cards) is the key's part, a per channel; the key that
+    # draws the sun's color = (target - sky) / a, the sky as the fill solve leaves it
+    lit18 = curve(cards, None, "day_play", "lit")[1][1]
+    sky18 = np.median([cards["nokey"][c]["day_play"]["lit"] for c in DIFFUSE if c in cards.get("nokey", {})], 0) * k_day
+    rk = json.load(open(RIGS_JSON, encoding="utf-8"))["rigs"]["day_town"]["key"]
+    key_now = hex_to_lin(rk["color"]) * rk["intensity"]
+    a_key = (lit18 - sky18 / k_day) / key_now
+    key_new = (lit18 * k_lit - sky18) / a_key
+    kk, q = key_new / key_now, sky18 / (lit18 * k_lit)
     rep["day"] = {"rho": rho.round(4).tolist(), "spread": spread([B[m]["day_ratio"] for m in dm], dm, rho), "swatches": dm,
                   "card_ratio_now": now.round(4).tolist(), "shade_gain": k_day.round(4).tolist(),
                   "lit_gain": k_lit.round(4).tolist(), "q": q.round(4).tolist(), "key_gain": np.maximum(kk, 0.05).round(4).tolist()}
     # (6) dawn: LB DAWN's setts, the same way
     k_dawn, now_d = shade_gain(cards, "dawn", np.array(B["lb_setts"]["dawn_ratio"]))
     rep["dawn"] = {"rho": B["lb_setts"]["dawn_ratio"], "card_ratio_now": now_d.round(4).tolist(), "shade_gain": k_dawn.round(4).tolist()}
+    # (L7 S1) the boards' own sun, read on their near-neutral stones (MB4's rock, MB3's stone, LB's setts): its chromaticity
+    # (luminance 1) is a peach gold (about #ffc296, Oklab h 57) against rule 3's pale gold #f3d9a0 (h 86). Divided through
+    # rule 3's sun, every warm surface came out pink (plaster h 25, setts h 1). The boards are adapted to the rule's sun
+    # (per channel, von Kries; the rule wins over a board, bible): each lit side x W = rule sun / board sun; the shade side
+    # follows through rho (shade/lit), so the whole board is seen under rule 3's sun.
+    def chrom(v): v = np.asarray(v, float); return v / np.dot(bm.Y, v)
+    bsun = np.exp(np.mean([np.log(chrom(B[m]["day_lit"])) for m in BOARD_NEUTRAL], 0))
+    W = chrom(hex_to_lin(SUN)) / bsun
+    rep["board_sun"] = {"from": list(BOARD_NEUTRAL), "chroma": bsun.round(4).tolist(), "hex": lin_to_hex(bsun / bsun.max()), "W": W.round(4).tolist()}
     # (3) each class's albedo: the board's day lit side through its card's day lit curve (the key's response, the grade's
     # inverse); a class two swatches give (setts: MB3 and LB; plank: MB3's beam and barrel) is their geometric mean
     alb, alb_rows = {}, {}
@@ -264,7 +289,7 @@ def solve(name="cards", night_name=None, refine=None):
         cv = curve(cards, c, "day_play", "lit")
         if cv is None or "day_lit" not in B[m]: continue
         cv = (cv[0], cv[1] * k_lit)  # (L7 S1: the lit side as the solved key will draw it; under scene_color a light's gain is the drawn one)
-        alb_rows.setdefault(c, []).append((m, inv(cv, np.array(B[m]["day_lit"]))))
+        alb_rows.setdefault(c, []).append((m, inv(cv, np.array(B[m]["day_lit"]) * W)))
     for c, rows in alb_rows.items():
         a = np.exp(np.mean([np.log(np.maximum(r, 1e-5)) for _, r in rows], 0))
         alb[c] = {"linear": np.clip(a, 0.005, 0.9).round(4).tolist(), "hex": lin_to_hex(np.clip(a, 0.005, 0.9)),
@@ -352,7 +377,7 @@ def key_gain(cards, rig, k_lit, k_sh):
     return (k_lit - k_sh * q) / (1 - q), q
 
 
-def apply_rigs(rep, cards):
+def apply_rigs(rep, cards, night=True):
     d = json.load(open(RIGS_JSON, encoding="utf-8")); R = d["rigs"]
     tag = "C6 (the color chain, tools/look/color_chain.py; godot/data/look/swatches.json; rules 2-4)"
     # day: the fill FROM the boards' shade/lit
@@ -362,8 +387,10 @@ def apply_rigs(rep, cards):
         base = R["day_town"] if name == "day_wild" else {}
         # (L7 S1) the key: its color x key_gain (top channel back to 1, the energy into the intensity); the wild keeps the
         # town's color (its base) and its own intensity times the same energy
-        key = R[name]["key"]; kc = key.get("color") or R["day_town"]["key"]["color"]
-        kc_new, e = split_energy(scale_hex(kc, kk)); e /= float(hex_to_lin(kc).max())
+        key = R[name]["key"]; kc = key.get("color") or kc0
+        if name == "day_town": kc0 = kc
+        kc_new = split_energy(scale_hex(kc, kk))[0]
+        e = float(np.dot(bm.Y, scale_hex(kc, kk))) / float(np.dot(bm.Y, hex_to_lin(kc_new)))  # (the key's luminance x the solve's)
         kwords = f"key {kc} {key.get('intensity')} -> {kc_new} {round(key['intensity'] * e, 4)}"
         if name == "day_town": key["color"] = kc_new
         key["intensity"] = round(key["intensity"] * e, 4)
@@ -376,6 +403,8 @@ def apply_rigs(rep, cards):
                             f"L7 S1: the key FROM rule 3, the neutral card's sunlit side the sun's own {SUN} (under scene_color, the drawn ratios are the light's): "
                             f"the lit side x{rep['day'].get('lit_gain')}, the shade's share of it {rep['day'].get('q')}, so the key x{kk.round(4).tolist()}: {kwords}. "
                             f"The grade rig_day{'_wild' if name == 'day_wild' else ''}: the highlight tint neutral (the sun's color is the key's, rule 3).")
+    if not night:  # (L7 S1: `all` writes the day; the night rigs' re-solve is lead 7's and S2's, run by `apply`)
+        write_json(RIGS_JSON, d); print("rigs.json written (day):", {k: {a: R[k].get(a) for a in ("key", "fill")} for k in ("day_town", "day_wild")}); return
     # night: the moon FROM the boards over the classes' albedos, solved on night_play (the lookdev stage's play night)
     n = rep["night"]; k_lit, k_sh = np.array(n["lit"]["gain"]), np.array(n["shade"]["gain"])
     kk, q = key_gain(cards, "night", k_lit, k_sh); kk = np.maximum(kk, 0.05)
@@ -426,14 +455,16 @@ def check(name="check_r1"):
         calib.measure(name)
     got = json.load(open(os.path.join(d, "swatches.json")))
     rows, out = [], {}
+    Wd = np.array(rep.get("board_sun", {}).get("W", [1, 1, 1]))  # (L7 S1: by day the boards as adapted to rule 3's sun)
     for m, r in B.items():
         c = r["class"]
         if c not in got: continue
         for light, rig in (("day", "day_play"), ("night", "night_play")):
             for side in ("lit", "shade"):
                 if f"{light}_{side}" not in r or rig not in got[c]: continue
-                g, b = lab(got[c][rig][side]), lab(r[f"{light}_{side}"])
-                dE = float(np.hypot(g[0] - b[0], 2 * np.hypot(*(np.array(bm.lin_to_lab5(np.array([got[c][rig][side]]))[3:5]).ravel() - np.array(bm.lin_to_lab5(np.array([r[f'{light}_{side}']]))[3:5]).ravel()))))
+                ref = np.array(r[f"{light}_{side}"]) * (Wd if light == "day" else 1)
+                g, b = lab(got[c][rig][side]), lab(ref)
+                dE = float(np.hypot(g[0] - b[0], 2 * np.hypot(*(np.array(bm.lin_to_lab5(np.array([got[c][rig][side]]))[3:5]).ravel() - np.array(bm.lin_to_lab5(np.array([ref]))[3:5]).ravel()))))
                 out.setdefault(m, {})[f"{light}_{side}"] = {"drawn": g, "board": b, "dE": round(dE, 3)}
                 rows.append(dE)
                 print(f"{m:9s} {light:5s} {side:5s} drawn L{g[0]:.2f} C{g[1]:.3f} h{g[2]:4d} | board L{b[0]:.2f} C{b[1]:.3f} h{b[2]:4d} | dE {dE:.3f}")
@@ -502,7 +533,7 @@ def run_all(name=None):
     boards()
     solve(name)
     rep = json.load(open(os.path.join(OUT, "solve.json")))
-    apply_rigs(rep, json.load(open(os.path.join(OUT, name, "cards.json"))))
+    apply_rigs(rep, json.load(open(os.path.join(OUT, name, "cards.json"))), night=False)
     apply_classes(rep)
     check("check_" + name)
     for cmd in (["ground_paint.py", "build", "all"], ["wild.py", "all", "--no-mesh"], ["town.py", "all", "--no-mesh"]):
