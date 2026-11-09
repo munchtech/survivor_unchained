@@ -110,6 +110,7 @@ group_uniforms;
 global uniform float cel_on;
 global uniform vec4 cel_rig;
 global uniform vec3 cel_fill;
+global uniform vec3 cel_sky;   // (L1 l9 DAY, rule 6: the sky's hue at luminance 1, for the metal's broad band; the fill's tinted it magenta at 08)
 global uniform vec3 cel_rim;
 global uniform vec4 cel_tune;
 global uniform float cel_dbg;

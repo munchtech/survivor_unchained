@@ -511,6 +511,8 @@ public partial class Atmosphere : Node3D
         RenderingServer.GlobalShaderParameterSet("cel_on", CelArg ?? (float)p.CelOn);
         RenderingServer.GlobalShaderParameterSet("cel_rig", new Vector4(rig[0], rig[1], rig[2], rig[3]));
         RenderingServer.GlobalShaderParameterSet("cel_fill", fill);
+        // (L1 l9 DAY, rule 6: the metal's broad band in the sky's color, never the fill's: look_day's fill drew a magenta disc on her cup at 08)
+        RenderingServer.GlobalShaderParameterSet("cel_sky", Hue(C(p.HemiSky).SrgbToLinear()));
         RenderingServer.GlobalShaderParameterSet("cel_rim", rim);
         RenderingServer.GlobalShaderParameterSet("cel_tune", new Vector4(CelTune[0], CelTune[1], CelTune[2], CelTune[3]));
         RenderingServer.GlobalShaderParameterSet("cel_dbg", CelDbg);

@@ -619,7 +619,7 @@ vec3 outfit_hl(vec3 n, vec3 l, vec3 v, vec3 lc, float lit_sh, float r, float mt,
 	// roughness map, pixel by pixel. Metal and gloss draw theirs by the kind's fixed roughness (OUTFIT_HL_ROUGH: under the
 	// fade, so the 20 degree sky band at 0.35 and the 7 degree key highlight at 1.0 are whole shapes); leather keeps its map)
 	if (kind == 1 || kind == 3) r = OUTFIT_HL_ROUGH;
-	if (kind == 1) return cel_spec_disc(vec4(20.0, 4.0, 0.35, 1.0), cel_fill * cel_lum(lc), n, l, v, lit_sh, r, mt, alb, sp, amt)
+	if (kind == 1) return cel_spec_disc(vec4(20.0, 4.0, 0.35, 1.0), cel_sky * cel_lum(lc), n, l, v, lit_sh, r, mt, alb, sp, amt)
 		+ cel_spec_disc(vec4(7.0, 1.0, 1.0, 1.0), lc, n, l, v, lit_sh, r, mt, alb, sp, amt);
 	if (kind == 0) return cel_spec_disc(vec4(9.0, 1.5, 0.6, 1.0), lc, n, l, v, lit_sh, r, mt, alb, sp, amt);
 	if (kind == 3) return cel_spec_disc(vec4(7.0, 1.0, 0.8, 1.0), lc, n, l, v, lit_sh, r, mt, alb, sp, amt);

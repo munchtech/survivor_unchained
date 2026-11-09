@@ -86,7 +86,17 @@ def measure(name="cards", rigs="all", extra=CARD_EXTRA):
         calib.RIGS = ("day",); shoot(d, f, extra + " --air-tune key=0", ("day",)); calib.measure("nokey"); calib.RIGS = rigs
     if os.path.exists(os.path.join(d, "swatches.json")): cards["nokey"] = json.load(open(os.path.join(d, "swatches.json")))
     json.dump(cards, open(os.path.join(calib.OUT, "cards.json"), "w"), indent=0)
+    open(os.path.join(calib.OUT, "day_rigs.sig"), "w").write(day_sig())
     print("cards:", {k: len(v) for k, v in cards.items()})
+
+
+def day_sig():
+    """(L1 l9 DAY) The day rigs' light as the cards were measured under it (day_town, day_wild, less their FROM): apply_day
+    composes its gains onto the rigs as they stand, so a solve on cards measured under other rigs stepped the key again on
+    every `all` (#ffbd88, #ffbd80, #ffbd78: the key drifted off the boards' sun, h 57 to 66). solve() refuses such cards."""
+    import hashlib
+    R = json.load(open(os.path.join(DATA, "rigs.json"), encoding="utf-8"))["rigs"]
+    return hashlib.sha1(json.dumps({n: {a: b for a, b in R[n].items() if a != "from"} for n in ("day_town", "day_wild")}, sort_keys=True).encode()).hexdigest()
 
 
 # ---- (1) the boards' swatches --------------------------------------------------------------------------------------
@@ -223,7 +233,13 @@ def shade_gain(cards, rig, rho, cam="play", lv=1, lit_gain=1.0):
     return med(ks), med(now)
 
 
-DAWN_SUN = "#f3d9a0"  # (rule 3: the dawn sun stays pale gold; L7 S2)
+DAWN_SUN = "#ffa24a"  # (L1 l9 DAY, lead 8's call "the board wins": LB DAWN's sunlit setts [0.914, 0.312, 0.077] over the setts albedo #6c6977, the sun as board_sun reads it (the lit side's color over a known albedo); Oklab h 61 C 0.149; the setts draw LB's h 56. Was #f3d9a0 (L7 S2). solve() recomputes it: dawn_sun)
+
+
+def dawn_sun(B, a):
+    """(L1 l9 DAY) The dawn sun FROM LB DAWN: its sunlit setts over the setts albedo (linear a), luminance 1."""
+    v = np.array(B["lb_setts"]["dawn_lit"]) / np.maximum(np.asarray(a, float), 1e-5)
+    return lin_to_hex(v / v.max())
 SUN = "#f3d9a0"  # (rule 3 of 3 Nov: the pale gold; L7 S1c: by day the boards' own sun replaces it, board_sun below; dawn keeps it)
 BOARD_NEUTRAL = ("rock", "stone", "lb_setts")  # (the boards' grey stones: their lit sides are the boards' sun)
 
@@ -272,6 +288,9 @@ SLOPE = 0.75  # (the cards' mean log-log slope of drawn over albedo, lit and sha
 def solve(name="cards", night_name=None, refine=None):
     """NAME's cards for the day (and every rig), NIGHT_NAME's (when given) for the night, arena and dawn rigs."""
     cards = json.load(open(os.path.join(OUT, name, "cards.json")))
+    sig = os.path.join(OUT, name, "day_rigs.sig")
+    if not os.path.exists(sig) or open(sig).read().strip() != day_sig():
+        sys.exit(f"color_chain solve: {name}'s cards were not measured under today's day rigs (day_town, day_wild): measure under a new NAME first (L1 l9: stale cards drifted the day key)")
     if night_name:
         nc = json.load(open(os.path.join(OUT, night_name, "cards.json")))
         for t in cards:
@@ -380,15 +399,15 @@ def solve(name="cards", night_name=None, refine=None):
         rep[rig] = out
     # (6, L7 S2) dawn FROM LB DAWN's setts over the setts albedo, the night's way (under scene_color the drawn ratios are the
     # light's): the shade light so the setts' shade draws LB's (its lilac, h ~325), the lit side the dawn sun's own color
-    # (rule 3: pale gold #f3d9a0; LB's lit setts read an orange sun, h 56: lead 7's call) at LB's lit luminance
+    # (L1 l9: LB DAWN's own sun, dawn_sun; it was rule 3's pale gold #f3d9a0, lead 7's call, until lead 8's "the board wins") at LB's lit luminance
     if "setts" in alb and "dawn_lit" in B.get("lb_setts", {}):
         a = np.array(alb["setts"]["linear"]); cl, cs = curve(cards, None, "dawn_play", "lit"), curve(cards, None, "dawn_play", "shade")
         if cl is not None and cs is not None:
             k_sh = inv(cs, np.array(B["lb_setts"]["dawn_shade"])) / a
-            sun = hex_to_lin(DAWN_SUN); want = sun / np.dot(bm.Y, sun) * np.dot(bm.Y, B["lb_setts"]["dawn_lit"])
+            dsun = dawn_sun(B, a); sun = hex_to_lin(dsun); want = sun / np.dot(bm.Y, sun) * np.dot(bm.Y, B["lb_setts"]["dawn_lit"])
             k_lit = inv(cl, want) / a
             rep["dawn"].update({"lit": {"gain": k_lit.round(4).tolist()}, "shade": {"gain": k_sh.round(4).tolist()},
-                                "albedo": alb["setts"]["hex"], "sun": DAWN_SUN, "lb_lit": B["lb_setts"]["dawn_lit"], "lb_shade": B["lb_setts"]["dawn_shade"]})
+                                "albedo": alb["setts"]["hex"], "sun": dsun, "lb_lit": B["lb_setts"]["dawn_lit"], "lb_shade": B["lb_setts"]["dawn_shade"]})
     json.dump(rep, open(os.path.join(OUT, "solve.json"), "w"), indent=1)
     print(json.dumps({k: (v if k != "albedo" else {c: x["hex"] for c, x in v.items()}) for k, v in rep.items()}, indent=None)[:6000])
     return rep
@@ -492,7 +511,9 @@ def apply_day(R, rep, tag):
         # town's color (its base) and its own intensity times the same energy
         key = R[name]["key"]; kc = key.get("color") or kc0
         if name == "day_town": kc0 = kc
-        kc_new = split_energy(scale_hex(kc, kk))[0]
+        # (L1 l9 DAY, judge 1 fix 2: the key's color IS the boards' sun, rule 3; the solve gives its energy only. The sky's
+        # violet on the lit side stays: it is the boards' painted look, and solving it out warmed the key to h 66.)
+        kc_new = rep["board_sun"]["hex"]
         e = float(np.dot(bm.Y, scale_hex(kc, kk))) / float(np.dot(bm.Y, hex_to_lin(kc_new)))  # (the key's luminance x the solve's)
         kwords = f"key {kc} {key.get('intensity')} -> {kc_new} {round(key['intensity'] * e, 4)}"
         if name == "day_town": key["color"] = kc_new
@@ -555,6 +576,7 @@ def apply_dawn(R, rep, cards, tag):
     blue sky made a mint sky and a pink fill that only summed to lilac on a card's side face (S2's first solve)."""
     n = rep.get("dawn", {})
     if "lit" not in n: print("no dawn solve"); return
+    DAWN_SUN = n.get("sun", globals()["DAWN_SUN"])
     k_lit, k_sh = np.array(n["lit"]["gain"]), np.array(n["shade"]["gain"])
     cl, cs = curve(cards, None, "dawn_play", "lit"), curve(cards, None, "dawn_play", "shade")
     sh_now, lit_now = cs[1][1], cl[1][1]
