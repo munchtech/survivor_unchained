@@ -101,8 +101,9 @@ class Skin:
         self.kd = cKDTree(self.P)
 
 
-def tuck_bound(sk, t, hard=None, under=None):
-    """heroine_outfits.tuck_bound on this body's welded graph (per vertex in, per vertex out)."""
+def tuck_bound(sk, t, hard=None, under=None, step=None):
+    """heroine_outfits.tuck_bound on this body's welded graph (per vertex in, per vertex out); `step` the most the tuck
+    may rise over one edge in from the edge of the skin it covers (STEP, or a rigid slot's stand-off law)."""
     gid, ng, a_, b_, l_ = sk.gid, sk.ng, sk.a, sk.b, sk.l
     need = np.zeros(ng)
     np.maximum.at(need, gid, t)
@@ -115,7 +116,7 @@ def tuck_bound(sk, t, hard=None, under=None):
     if not U.any():
         return t
     inn = U[a_] & U[b_]
-    lw_ = np.minimum(SLOPE * l_, STEP)
+    lw_ = np.minimum(SLOPE * l_, STEP if step is None else step)
     ai, bi, li = a_[inn], b_[inn], lw_[inn]
     s = need.copy()
     deg = np.bincount(bi, minlength=ng).astype(float)
@@ -142,7 +143,17 @@ def tuck_bound(sk, t, hard=None, under=None):
     return np.clip(F, 0.0, 1.0)[gid]
 
 
-def tuck_of(sk, PB, TB, rigid=None):
+def rigid_tuck_law(slot):
+    """(full m, zero m, step) of the UNDER A RIGID PLATE rule for a slot: RIGID_FULL, RIGID_ZERO, STEP, or the slot's
+    stand-off law (tools/armor/rigid_roles.json slots "standoff": "tuck_full_mm", "tuck_zero_mm", "tuck_step"): a plate
+    made to stand off her where she moves keeps its full tuck that much further out."""
+    import gear_fit
+    law = gear_fit.standoff_law(slot) or {}
+    return (law.get("tuck_full_mm", RIGID_FULL * 1000) / 1000.0, law.get("tuck_zero_mm", RIGID_ZERO * 1000) / 1000.0,
+            law.get("tuck_step", STEP))
+
+
+def tuck_of(sk, PB, TB, rigid=None, slot=None):
     """Her skin's tuck under one piece (PB points, TB triangles, `rigid` a flag per triangle: a plate that never bends),
     per vertex of sk; how many rays grazed it; and how many points the two rules for plates raised.
 
@@ -178,7 +189,8 @@ def tuck_of(sk, PB, TB, rigid=None):
     raised = 0
     if rigid is not None and rigid.any():
         rg = rigid[tri[face_on]]
-        tr = FULL * np.clip((RIGID_ZERO - (d[face_on] + LIFT)) / (RIGID_ZERO - RIGID_FULL), 0, 1)
+        rf, rz, _ = rigid_tuck_law(slot)
+        tr = FULL * np.clip((rz - (d[face_on] + LIFT)) / (rz - rf), 0, 1)
         up = rg & (tr > t[v])
         t[v[up]] = tr[up]
         raised += int(up.sum())
@@ -195,7 +207,8 @@ def tuck_of(sk, PB, TB, rigid=None):
     raised += int((t[thr] < FULL).sum())
     t[thr] = FULL
     under[thr] = True
-    return tuck_bound(sk, t, hard, under | (t > 0)), grazed, raised
+    step = rigid_tuck_law(slot)[2] if rigid is not None and rigid.any() else None
+    return tuck_bound(sk, t, hard, under | (t > 0), step), grazed, raised
 
 
 def fib_dirs(n):
@@ -369,8 +382,8 @@ def write_all(out_dir, close_glb, play_glb, rows, say=print):
         c = cover_of(close, PB, TB, r) if r["slot"] != "ink" else np.zeros(len(close.P))
         ng = 0
         if hides.get(r["id"], True):
-            tc, gz, rz = tuck_of(close, PB, TB, RB)
-            tp = tuck_of(play, PB, TB, RB)[0] if play is not None else np.zeros(0)
+            tc, gz, rz = tuck_of(close, PB, TB, RB, r["slot"])
+            tp = tuck_of(play, PB, TB, RB, r["slot"])[0] if play is not None else np.zeros(0)
             gc = np.zeros(len(close.P), bool)
             if r["slot"] in ENCLOSE_SLOTS:
                 box = ((close.P >= PB.min(0) - BOX) & (close.P <= PB.max(0) + BOX)).all(1)

@@ -279,3 +279,43 @@ def test_stale_detection(tmp_path, monkeypatch):
     assert dict(gf.stale_units(bodies, str(bd), us)[0]) == {"u2": "source changed"}
     write("u2", bind_version=0)
     assert "bind_version" in gf.stale_units(bodies, str(bd), us)[0][0][1]
+
+
+def test_standoff_floor_law(tmp_path):
+    """The stand-off law: a plate whose lower edge must stand 12 mm off (measured targets) moves out there, its top
+    (no target) stays seated within a few mm; a target over the law's cap is held at the cap; the tuck reach follows."""
+    import json as _json
+    import gear_field as gfl
+    import gear_tuck as gt
+    P, T = cylinder(0.05, 0.3, 64, 30)
+    b = body(P, T)
+    a = np.linspace(-0.25 * math.pi, 0.25 * math.pi, 16)
+    ys = np.linspace(0.05, 0.25, 14)
+    A = np.array([[0.054 * math.sin(t), y, 0.054 * math.cos(t)] for y in ys for t in a])
+    c_req, _ = gfl.signed_clear(b, A, k=16)
+    low = A[:, 1] < 0.08
+    floor = np.where(low, 0.012, np.nan)
+    M, ca, cb, info = gfl.rigid_fit_clear(b, A, A, A, c_req, floor)
+    c, _ = gfl.signed_clear(b, (A - ca) @ M.T + cb, k=16)
+    assert c[low].min() > 0.012 - 2e-4, (c[low].min(), info)
+    lift = c - c_req
+    assert np.median(lift[A[:, 1] > 0.22]) < 0.5 * np.median(lift[low]), info   # the top stays nearer her (a turn)
+    assert max(info["scale"]) <= 1.25 and min(info["scale"]) >= 0.85
+    # the law: rigid_roles slots "standoff"; targets per node, capped
+    roles = {"slots": {"pauldrons": {"standoff": {"cap_mm": 10, "tuck_full_mm": 12, "tuck_zero_mm": 18, "tuck_step": 0.5}}}}
+    assert gf.standoff_law("pauldrons", roles)["cap_mm"] == 10 and gf.standoff_law("top", roles) is None
+
+    class _Bd:
+        id, meta = "u", {"row": {"slot": "pauldrons"}}
+    fp = tmp_path / "u.json"
+    fp.write_text(_json.dumps({"targets": {"n0": [[0, 0.03], [2, 0.005]]}}))
+    ev = {0: {"X": np.zeros((4, 3)), "comp": np.array([0, 0, 0, -1])}}
+    old = gf.rigid_roles
+    gf.rigid_roles = lambda path=None: roles
+    try:
+        f = gf.standoff_floor(_Bd, [{"i": 0, "node": "n0"}], ev, path=str(fp))
+        assert abs(f[0] - 0.010) < 1e-9 and np.isnan(f[1]) and abs(f[2] - 0.005) < 1e-9 and np.isnan(f[3])
+        assert gt.rigid_tuck_law("pauldrons") == (0.012, 0.018, 0.5)
+        assert gt.rigid_tuck_law("top") == (gt.RIGID_FULL, gt.RIGID_ZERO, gt.STEP)
+    finally:
+        gf.rigid_roles = old

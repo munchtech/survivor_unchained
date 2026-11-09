@@ -832,6 +832,38 @@ class Binding:
         self.id = self.meta["id"]
 
 
+STANDOFF = os.path.join(GEAR, "standoff")
+
+
+def standoff_law(slot, roles=None):
+    """rigid_roles.json slots[slot]["standoff"] (or None): the stand-off law of the slot's plates."""
+    rr = roles if roles is not None else rigid_roles()
+    return (rr.get("slots", {}).get(slot) or {}).get("standoff")
+
+
+def standoff_floor(bd, ms, ev, path=None):
+    """The stand-off each rigid point of a tier must reach (m; NaN where none), or None: the slot's law
+    (rigid_roles.json "standoff": "cap_mm") over the unit's measured targets (godot/art/gear/standoff/<id>.json, written
+    by tools/armor/gear_standoff.py from her skin's excursion under the plate over the clips: per node, [unique vertex,
+    clearance m]). A measured need over the cap is held at the cap (a plate that stands further off floats)."""
+    law = standoff_law(bd.meta["row"].get("slot"))
+    fp = path or os.path.join(STANDOFF, f"{bd.id}.json")
+    if not law or not os.path.isfile(fp):
+        return None
+    tg = json.load(open(fp)).get("targets", {})
+    cap = float(law.get("cap_mm", 20.0)) / 1000.0
+    out = []
+    for m in ms:
+        f = np.full(len(ev[m["i"]]["X"]), np.nan)
+        for u, c in tg.get(m["node"], []):
+            if 0 <= int(u) < len(f):
+                f[int(u)] = min(float(c), cap)
+        f[ev[m["i"]]["comp"] < 0] = np.nan
+        out.append(f)
+    out = np.concatenate(out) if out else np.zeros(0)
+    return out if np.isfinite(out).any() else None
+
+
 def eval_unit(bd, bodies, bind_bodies, stats=None):
     """{node: dict(P, N, J, W, shapes)} and aux on one body; bind_bodies None when the body IS the bind body."""
     z, out = bd.z, {}
@@ -863,16 +895,24 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                 ev[i].update(c0=c0, n0=n0, beta=bt, G=G, Gk=fld.gradient(Xbind), Re=Re, X=Xe + bt[:, None] * (Xf - Xe))
         # rigid components: transforms from all rigid uniques of the tier
         comp = np.concatenate([ev[m["i"]]["comp"] for m in ms])
-        if (comp >= 0).any() and bbody is not None:
+        # (the stand-off law, rigid_roles.json slots "standoff": each plate point's measured need, on every body)
+        flo = standoff_floor(bd, ms, ev)
+        if (comp >= 0).any() and (bbody is not None or flo is not None):
             Xa = np.vstack([ev[m["i"]]["Xbind"] for m in ms])
             Xn = np.vstack([ev[m["i"]]["X"] for m in ms])
-            c0s = np.concatenate([ev[m["i"]]["c0"] for m in ms])
+            if bbody is None:
+                c0s = gear_field.signed_clear(body, Xa, k=16)[0]
+            else:
+                c0s = np.concatenate([ev[m["i"]]["c0"] for m in ms])
             for c in np.unique(lead[comp[comp >= 0]]):
                 # made to measure: rotation + translation + a scale per own principal axis (never bends: one blend
-                # of weights), then the smallest translation that clears it
+                # of weights), then the smallest translation that clears it (and stands off where she moves)
                 own = comp == c
                 grp = (comp >= 0) & (lead[np.maximum(comp, 0)] == c)
-                M, ca, cb, info = gear_field.rigid_fit_clear(body, Xa[own], Xn[own], Xa[grp], c0s[grp])
+                fg = None if flo is None else flo[grp]
+                if bbody is None and (fg is None or not np.isfinite(fg).any()):
+                    continue
+                M, ca, cb, info = gear_field.rigid_fit_clear(body, Xa[own], Xn[own], Xa[grp], c0s[grp], fg)
                 rots[int(c)] = (M, ca, cb)
                 fit["rigid"][f"{tier}/{int(c)}"] = info
         rots_tier[tier] = rots
@@ -911,14 +951,14 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                     bv = (bt * bend)[inv][:, None]
                     Ne = np.einsum("nij,nj->ni", e["Re"][inv], Nb)
                     N = np.where(bend[inv][:, None], (1 - bv) * Ne + bv * Nf, N)
-                rg = comp_i >= 0
-                if rg.any():
-                    Nb = np.einsum("nij,nj->ni", e["Fbind"][inv], nloc)
-                    for c, (M, ca, cb) in rots.items():
-                        sel = rg & (lead[np.maximum(comp_i, 0)] == c)
-                        X[sel] = (e["Xbind"][sel] - ca) @ M.T + cb
-                        sv = sel[inv]
-                        N[sv] = Nb[sv] @ np.linalg.inv(M)
+            rg = comp_i >= 0
+            if rots and rg.any():
+                Nb = np.einsum("nij,nj->ni", e["Fbind"][inv], nloc)
+                for c, (M, ca, cb) in rots.items():
+                    sel = rg & (lead[np.maximum(comp_i, 0)] == c)
+                    X[sel] = (e["Xbind"][sel] - ca) @ M.T + cb
+                    sv = sel[inv]
+                    N[sv] = Nb[sv] @ np.linalg.inv(M)
             # weights and shapes
             J, W = body_weights(body, e["tri"], e["w"])
             Tv = body.T[e["tri"]]
@@ -955,9 +995,9 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
         Nn = np.einsum("nij,nj->ni", F, unsnorm16(z["aux_nrm"]))
         Up = np.einsum("nij,nj->ni", F, unsnorm16(z["aux_up"]))
         comp = z["aux_comp"]
-        if bind_bodies is not None and (comp >= 0).any():
+        if (comp >= 0).any() and rots_tier.get("close"):
             # sockets on a rigid component ride its fit (positions by the full map, directions turned by its rotation)
-            Xb, Fb = eval_points(bind_bodies["close"], tri, bq, off)
+            Xb, Fb = eval_points(bodies["close"] if bind_bodies is None else bind_bodies["close"], tri, bq, off)
             rots = rots_tier.get("close", {})
             for c in np.unique(comp[comp >= 0]):
                 if int(c) not in rots:

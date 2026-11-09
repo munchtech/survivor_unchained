@@ -1,5 +1,5 @@
 {
- "_doc": "The bones a rigid gear component's one blend of weights may use, by slot (tools/armor/gear_fit.py rigid_blend). A rigid component (a plate, its rivets) never bends: it takes one blend, B's skin weights averaged over its bound points. That mean takes in every bone her skin there follows (the breast springs, the neck, the clavicle under a cuirass), and the whole plate then swings with each. Here each slot names the roles its plates may ride (\"ride\") and each role's share of the blend: a number is a fixed share; \"mean\" is the share that role already has in the mean. With \"one_bone\" each role's share goes to its strongest bone in the mean (a plate on one bone moves rigidly; a blend of two turning bones shrinks and shears it), else bones keep their proportions from the mean; a role the mean does not reach rides its anchor bone (\"{s}\" the side the mean leans to). Bones are given roles by the first pattern they match (regex, whole name). A slot not listed keeps the mean as it is. A new slot or a new body's bones need only this file.",
+ "_doc": "The bones a rigid gear component's one blend of weights may use, by slot (tools/armor/gear_fit.py rigid_blend). A rigid component (a plate, its rivets) never bends: it takes one blend, B's skin weights averaged over its bound points. That mean takes in every bone her skin there follows (the breast springs, the neck, the clavicle under a cuirass), and the whole plate then swings with each. Here each slot names the roles its plates may ride (\"ride\") and each role's share of the blend: a number is a fixed share; \"mean\" is the share that role already has in the mean. With \"one_bone\" each role's share goes to its strongest bone in the mean (a plate on one bone moves rigidly; a blend of two turning bones shrinks and shears it), else bones keep their proportions from the mean; a role the mean does not reach rides its anchor bone (\"{s}\" the side the mean leans to). Bones are given roles by the first pattern they match (regex, whole name). A slot not listed keeps the mean as it is. A new slot or a new body's bones need only this file. \"standoff\" (a slot's stand-off law): its plates stand off her where her skin measurably rises under them as she moves (tools/armor/gear_standoff.py measures each plate vertex's target clearance over the clips; gear_fit build clears each rigid component to its targets, each held at \"cap_mm\"; \"margin_mm\" over the measured need), and the tuck under them (gear_tuck's rule under a rigid plate) is full within \"tuck_full_mm\", none past \"tuck_zero_mm\", rising at most \"tuck_step\" a skin edge in from the edge of the skin it covers.",
  "roles": {
   "spine": ["pelvis", "spine_0[1-5]"],
   "neck": ["neck_0[0-9]", "Head"],
@@ -16,7 +16,8 @@
              "lowerarm": "lowerarm_{s}", "hand": "hand_{s}", "thigh": "thigh_{s}", "calf": "calf_{s}", "foot": "foot_{s}"},
  "slots": {
   "top": {"ride": {"spine": 1}, "one_bone": true},
-  "pauldrons": {"ride": {"upperarm": 1}, "one_bone": true},
+  "pauldrons": {"ride": {"upperarm": 1}, "one_bone": true,
+                "standoff_trial": {"cap_mm": 16, "margin_mm": 1, "tuck_full_mm": 14, "tuck_zero_mm": 20, "tuck_step": 0.4}},
   "bracers": {"ride": {"lowerarm": "mean"}},
   "greaves": {"ride": {"calf": "mean"}}
  }

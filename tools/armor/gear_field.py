@@ -67,7 +67,8 @@ RIGID = {"scale": (0.85, 1.25), "iters": 30, "reg": 0.02,
          "clear_m": 0.0003,   # a point clear on the bind body ends at least min(its bind clearance, this) out
          "near_m": 0.003,     # points within this of their target join the LP (so the change pushes no other in)
          "clear_w": 0.1,      # LP cost of a unit scale change, in metres of translation (1% ~ 1 mm)
-         "clear_rounds": 4}
+         "clear_rounds": 4,
+         "turn_w": 0.05}      # LP cost of a radian of turn under a stand-off floor (1 degree ~ 0.9 mm)
 
 
 def U(v):
@@ -679,12 +680,14 @@ def rigid_clear(body, Xs, c_req):
     return min_translation(fn[m], need[m])
 
 
-def rigid_fit_clear(body, A, B, Ag, c_req):
+def rigid_fit_clear(body, A, B, Ag, c_req, floor=None):
     """A rigid group made to measure and cleared: the similarity fit of its leader's bind points A onto their followed
     points B (similarity_fit), then the smallest change of translation and per-axis scales (an LP: L1 of the translation
     + RIGID "clear_w" x the scales' change, the scales kept in their clamp) that puts every point of the group Ag that was
     clear on the bind body at least min(its bind clearance, RIGID "clear_m") out of the new skin, linearized and
     re-measured over a few rounds. A plate that wraps the body (front, sides) cannot clear by one translation; a scale can.
+    `floor` (per point of Ag, m, or None): a stand-off the point must reach whatever its bind clearance (gear_fit
+    standoff_targets: the skin's measured excursion under the plate as she moves); NaN where none.
     Returns (M, ca, cb, info)."""
     from scipy.optimize import linprog
     M, ca, cb, s, P = similarity_fit(A, B)
@@ -694,36 +697,54 @@ def rigid_fit_clear(body, A, B, Ag, c_req):
     x = (Ag - ca) @ P
     ok_req = c_req >= 0
     tgt = np.minimum(c_req, RIGID["clear_m"])
+    if floor is not None:
+        has = np.isfinite(floor)
+        tgt = np.where(has, np.maximum(tgt, np.nan_to_num(floor)), tgt)
+        ok_req = ok_req | has
     info = {"scale_fit": [round(float(v), 4) for v in s], "rounds": 0, "left_mm": 0.0}
+    # (a stand-off floor also lets the plate turn about its middle, RIGID "turn_w" metres a radian: a pauldron's edge
+    # swings out where her skin rises while its top stays seated, as a hinged plate does)
+    turn = floor is not None
+    Q, cc = np.eye(3), (Ag - ca).mean(0) + cb
     for r in range(RIGID["clear_rounds"] + 1):
         Mr = R @ P @ np.diag(s) @ P.T
-        Y = (Ag - ca) @ Mr.T + cb + t
+        Y = ((Ag - ca) @ Mr.T + cb + t - cc) @ Q.T + cc
         c, fn = signed_clear(body, Y)
         need = tgt - c
         info["left_mm"] = round(float(max(0.0, need[ok_req].max() if ok_req.any() else 0.0)) * 1000, 3)
         m = ok_req & (need > -RIGID["near_m"])
         if not (need[m] > 1e-5).any() or r == RIGID["clear_rounds"]:
             break
-        gs = x[m] * (fn[m] @ R @ P)          # d(fn . Y) / d s_k
-        G = np.hstack([fn[m], gs])
-        cw = np.r_[np.ones(3), RIGID["clear_w"] * np.ones(3)]
+        fq = fn[m] @ Q
+        gs = x[m] * (fq @ R @ P)          # d(fn . Y) / d s_k
+        G = np.hstack([fq, gs] + ([np.cross(Y[m] - cc, fn[m])] if turn else []))
+        cw = np.r_[np.ones(3), RIGID["clear_w"] * np.ones(3)] if not turn else             np.r_[np.ones(3), RIGID["clear_w"] * np.ones(3), RIGID["turn_w"] * np.ones(3)]
+        k = G.shape[1]
+        bounds = [(0, None)] * 3 + [(0, max(0.0, hi - v)) for v in s] + [(0, 0.15)] * (k - 6)
+        bounds += [(0, None)] * 3 + [(0, max(0.0, v - lo)) for v in s] + [(0, 0.15)] * (k - 6)
         # v = v+ - v-, both >= 0; G v >= need  ->  -G v+ + G v- <= -need
-        res = linprog(np.r_[cw, cw], A_ub=np.hstack([-G, G]), b_ub=-(need[m] + 2e-5),
-                      bounds=[(0, None)] * 3 + [(0, max(0.0, hi - v)) for v in s] + [(0, None)] * 3
-                      + [(0, max(0.0, v - lo)) for v in s], method="highs")
+        res = linprog(np.r_[cw, cw], A_ub=np.hstack([-G, G]), b_ub=-(need[m] + 2e-5), bounds=bounds, method="highs")
         if res.status != 0:
             # infeasible within the clamp: the translation alone (cyclic projections), the row is flagged by its numbers
             bad = m & (need > 0)
-            t = t + min_translation(fn[bad], need[bad])
+            t = t + Q.T @ min_translation(fn[bad], need[bad])
             info["lp"] = "infeasible"
             continue
-        v = res.x[:6] - res.x[6:]
+        v = res.x[:k] - res.x[k:]
         t = t + v[:3]
-        s = np.clip(s + v[3:], lo, hi)
+        s = np.clip(s + v[3:6], lo, hi)
+        if turn:
+            w = v[6:9]
+            a = float(np.linalg.norm(w))
+            if a > 1e-12:
+                kx = np.array([[0, -w[2], w[1]], [w[2], 0, -w[0]], [-w[1], w[0], 0]]) / a
+                Q = (np.eye(3) + np.sin(a) * kx + (1 - np.cos(a)) * kx @ kx) @ Q
         info["rounds"] = r + 1
-    M = R @ P @ np.diag(s) @ P.T
+    M = Q @ R @ P @ np.diag(s) @ P.T
     info.update(scale=[round(float(v), 4) for v in s], clear_mm=round(float(np.linalg.norm(t)) * 1000, 2))
-    return M, ca, cb + t, info
+    if turn:
+        info["turn_deg"] = round(float(np.degrees(np.arccos(np.clip((np.trace(Q) - 1) / 2, -1, 1)))), 2)
+    return M, ca, Q @ (cb + t - cc) + cc, info
 
 
 # ---------------------------------------------------------------------- test bodies
