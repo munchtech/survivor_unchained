@@ -405,15 +405,7 @@ cel_pool_band={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
-cel_pool_tint={
-"type": "vec4",
-"value": Vector4(1, 1, 1, 1)
-}
-cel_pool_lv={
-"type": "vec4",
-"value": Vector4(0, 0, 0, 0)
-}
-cel_pool_out={
-"type": "vec4",
-"value": Vector4(0, 0, 0, 0)
+cel_pool_ramp={
+"type": "sampler2D",
+"value": "res://art/fx/flare/flare_noise.png"
 }

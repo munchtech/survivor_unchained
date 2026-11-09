@@ -1226,6 +1226,9 @@ void light() {
 	if (cel_dbg_light(nb, tw, ATTENUATION, LIGHT_IS_DIRECTIONAL, dbg)) { SPECULAR_LIGHT += dbg; } else {
 	float sh = cel_shadow(ATTENUATION, LIGHT_IS_DIRECTIONAL);
 	float att = LIGHT_IS_DIRECTIONAL && UV.x < 0.75 ? mix(1.0, mix(ATTENUATION, sh, cel_on), self_shadow) : mix(ATTENUATION, sh, cel_on);
+	// (L1 lead 9, B1: her pool's ramp, as on the ground)
+	vec3 plc = LIGHT_COLOR;
+	if (!LIGHT_IS_DIRECTIONAL && cel_on > 0.0) { float patt = ATTENUATION; cel_pool_paint(plc, patt, (INV_VIEW_MATRIX * vec4(LIGHT, 0.0)).xyz); att = patt; }
 	// (leaves pass light round the crown: wrapped, so its far side from the sun is lit low, not the sky's blue alone)
 	float d = max(clamp((dot(NORMAL, LIGHT) + wrap) / (1.0 + wrap), 0.0, 1.0), 0.45);
 	vec3 dd = cel_on > 0.0 ? mix(vec3(d), max(cel_level(tw), vec3(0.45)), cel_on) : vec3(d);
@@ -1234,7 +1237,7 @@ void light() {
 	// (by day only, not under a low sun: at 0.7 it took the dawn alder's sunlit top to hue 86, under its floor of 90)
 	// (B1c: under cel the light through the leaves only at the terminator's thin edge, capped: cel_trans)
 	vec3 tr = mix(BACKLIGHT * (1.0 - dd), cel_trans(BACKLIGHT, tw, 0.0), cel_on);
-	DIFFUSE_LIGHT += LIGHT_COLOR * att * (dd * lift + tr) / PI + cel_on * cel_fill_add(LIGHT_COLOR, cel_lit(tw) * att, LIGHT_IS_DIRECTIONAL);
+	DIFFUSE_LIGHT += plc * att * (dd * lift + tr) / PI + cel_on * cel_fill_add(plc, cel_lit(tw) * att, LIGHT_IS_DIRECTIONAL);
 	// (no highlight: matte leaves; a GGX one here blew the crown out cream by day)
 	}
 }
@@ -1246,6 +1249,9 @@ void light() {
 // them, not lime. No highlight (SPECULAR was 0.12: the moon's specks read as frost).
 void light() {
 	vec3 lc = LIGHT_COLOR;
+	// (L1 lead 9, B1: her pool's ramp, as on the ground)
+	float patt = ATTENUATION;
+	if (!LIGHT_IS_DIRECTIONAL && cel_on > 0.0) cel_pool_paint(lc, patt, (INV_VIEW_MATRIX * vec4(LIGHT, 0.0)).xyz);
 	if (!LIGHT_IS_DIRECTIONAL && UV.x < 0.75) lc *= vec3(1.0, 1.0 - lamp_green, 1.0 - 0.5 * lamp_green) * lamp_gain;
 	vec3 nb = cel_nb(NORMAL);
 	float t = dot(nb, LIGHT);
@@ -1255,7 +1261,7 @@ void light() {
 	// (cel: the band and the hardened key shadow in place of Lambert and the soft one, the back light kept)
 	float sh = cel_shadow(ATTENUATION, LIGHT_IS_DIRECTIONAL);
 	vec3 dd = cel_on > 0.0 ? mix(vec3(d), cel_level(t), cel_on) : vec3(d);
-	float att = mix(ATTENUATION, sh, cel_on);
+	float att = LIGHT_IS_DIRECTIONAL ? mix(ATTENUATION, sh, cel_on) : mix(ATTENUATION, patt, cel_on);
 	// (B1c: under cel the light through the needles only at the terminator's thin edge, capped: cel_trans)
 	vec3 tr = mix(BACKLIGHT * (1.0 - dd), cel_trans(BACKLIGHT, t, 0.0), cel_on);
 	DIFFUSE_LIGHT += lc * att * (dd + tr) / PI + cel_on * cel_fill_add(LIGHT_COLOR, cel_lit(t) * sh, LIGHT_IS_DIRECTIONAL);

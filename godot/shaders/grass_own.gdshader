@@ -316,6 +316,8 @@ void light() {
 	float sh = cel_shadow(ATTENUATION, LIGHT_IS_DIRECTIONAL);
 	vec3 d = cel_on > 0.0 ? mix(vec3(fl * fv * cnl), cel_level(t), cel_on) : vec3(fl * fv * cnl);
 	vec3 lc = LIGHT_COLOR * mix(ATTENUATION, sh, cel_on);
+	// (L1 lead 9, B1: her pool's ramp on the blades as on the ground, never Godot's raw fall under her light)
+	if (!LIGHT_IS_DIRECTIONAL && cel_on > 0.0) { vec3 plc = LIGHT_COLOR; float patt = ATTENUATION; cel_pool_paint(plc, patt, (INV_VIEW_MATRIX * vec4(LIGHT, 0.0)).xyz); lc = plc * patt; }
 	if (LIGHT_IS_DIRECTIONAL) lc *= mix(vec3(1.0), sun_body * mix(vec3(1.0), sun_tip, smoothstep(0.3, 0.85, v_t)), 1.0 - flora_light.x);
 	vec3 add = lc * (d + BACKLIGHT * max(vec3(1.0) - d, vec3(0.0))) / PI;
 	if (!LIGHT_IS_DIRECTIONAL && flora_lamp > 0.0) {

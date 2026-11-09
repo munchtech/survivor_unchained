@@ -519,27 +519,52 @@ public partial class Atmosphere : Node3D
         // (L1 W2) how the moon gives way to her light (the rig's ember_give; her light's point and reach are PlayerView's); not under a camera rig: at the close view by night her lamp is off her, so the moon is her light (r1: night close Lp95 0.49 to 0.34 with it)
         var give = CelRigs && cam == null && p.EmberGive is [var gk, var gs, var g0, var g1] ? new Vector4((float)gk, (float)gs, (float)g0, (float)g1) : Vector4.Zero;
         RenderingServer.GlobalShaderParameterSet("cel_give", give);
-        // (L1 lead 8, S2b-N2) her pool as light (the rig's ember_pool, ember_edge; cel.gdshaderinc cel_pool_band, cel_pool_lv): three
-        // steps in metres from her light, their edges moved by painted patches, the outer step's tint over her light's color at the
-        // same luminance (redder; its level makes it dark): [core, middle, outer, patch push (m), core fall kept, middle level,
-        // outer level, patch size (m), edge half-width (m), the outer edge's own half-width (m), the pool's gain (absent: 1)].
-        var ep = CelRigs && cam == null && p.EmberPool is { Length: >= 10 } e10 ? e10 : null;
-        var pool = ep != null ? new Vector4((float)ep[0], (float)ep[1], (float)ep[2], (float)ep[3]) : Vector4.Zero;
-        var lv = ep != null ? new Vector4((float)ep[5], (float)ep[6], (float)ep[7], (float)ep[8]) : Vector4.Zero;
-        var tint = new Vector4(1, 1, 1, ep != null ? (float)ep[4] : 1);
-        if (ep != null && p.EmberEdge != "")
+        // (L1 lead 9, B1) her pool as light, a ramp in metres from her light's foot (the rig's ember_pool; cel.gdshaderinc
+        // cel_pool_paint, cel_pool_ramp): [the canopy's dapple kept at its edge and at its core, then stops of r (m), level (over her light's energy),
+        // color (sRGB 0-255)], FROM targets 09 and 12. Not under a camera rig (the close view's own light).
+        var ramp = CelRigs && cam == null ? PoolRamp(p.EmberPool) : null;
+        RenderingServer.GlobalShaderParameterSet("cel_pool_band", ramp is { } pr ? new Vector4(pr.Reach, pr.Core, (float)p.EmberPool![0], (float)p.EmberPool![1]) : Vector4.Zero);
+        if (ramp is { } pr2) RenderingServer.GlobalShaderParameterSet("cel_pool_ramp", pr2.Tex);
+    }
+
+    /// <summary>(L1 lead 9, B1) Her pool's ramp from a rig's ember_pool ([dapple kept at the edge, at the core, (r m, level, R, G, B 0-255) x n], r rising,
+    /// the last stop's level 0): 64 texels over 0..the last stop, rgb the level x the color (linear, largest channel 1), a the
+    /// moon's give-way (the level over the core's). Levels and colors linear between stops (a cubic's overshoot would ring).
+    /// Null: no ramp (fewer than two stops).</summary>
+    internal static (ImageTexture Tex, float Reach, float Core)? PoolRamp(double[]? ep)
+    {
+        if (ep is not { Length: >= 12 } || (ep.Length - 2) % 5 != 0) return null;
+        // (the last one built, kept: the air's glide sets the cel globals every frame)
+        if (poolRampOf != null && poolRamp != null && System.Linq.Enumerable.SequenceEqual(poolRampOf, ep)) return poolRamp;
+        poolRampOf = (double[])ep.Clone();
+        poolRamp = BuildPoolRamp(ep);
+        return poolRamp;
+    }
+    static double[]? poolRampOf;
+    static (ImageTexture Tex, float Reach, float Core)? poolRamp;
+    static (ImageTexture Tex, float Reach, float Core) BuildPoolRamp(double[] ep)
+    {
+        int n = (ep.Length - 2) / 5;
+        var r = new float[n]; var lv = new float[n]; var c = new Color[n];
+        for (int i = 0; i < n; i++)
+        {
+            int k = 2 + i * 5;
+            r[i] = (float)ep[k]; lv[i] = (float)ep[k + 1];
+            var cl = new Color((float)ep[k + 2] / 255f, (float)ep[k + 3] / 255f, (float)ep[k + 4] / 255f).SrgbToLinear();
+            float mx = Mathf.Max(cl.R, Mathf.Max(cl.G, Mathf.Max(cl.B, 1e-4f)));
+            c[i] = new Color(cl.R / mx, cl.G / mx, cl.B / mx);
+        }
+        float reach = Mathf.Max(r[n - 1], 0.1f), core = Mathf.Max(lv[0], 1e-3f);
+        const int W = 64;
+        var img = Image.CreateEmpty(W, 1, false, Image.Format.Rgbaf);
+        for (int x = 0; x < W; x++)
         {
             var ec = (p.EmberColor != "" ? new Color(p.EmberColor) : new Color("#ffa868")).SrgbToLinear();
             var ed = new Color(p.EmberEdge).SrgbToLinear();
             float le = ec.R * 0.2126f + ec.G * 0.7152f + ec.B * 0.0722f, ld = Mathf.Max(ed.R * 0.2126f + ed.G * 0.7152f + ed.B * 0.0722f, 1e-4f);
             tint = new Vector4(ed.R / Mathf.Max(ec.R, 1e-4f), ed.G / Mathf.Max(ec.G, 1e-4f), ed.B / Mathf.Max(ec.B, 1e-4f), tint.W) * new Vector4(le / ld, le / ld, le / ld, 1);
         }
-        RenderingServer.GlobalShaderParameterSet("cel_pool_band", pool);
-        RenderingServer.GlobalShaderParameterSet("cel_pool_tint", tint);
-        RenderingServer.GlobalShaderParameterSet("cel_pool_lv", lv);
-        // (S2b-N3: [11] the canopy's dapple kept in her pool, [12] the core toward the lamps' gold; absent: 0)
-        RenderingServer.GlobalShaderParameterSet("cel_pool_out", new Vector4(ep != null ? (float)ep[9] : 0, ep is { Length: >= 11 } ? (float)ep[10] : 1,
-            ep is { Length: >= 12 } ? (float)ep[11] : 0, ep is { Length: >= 13 } ? (float)ep[12] : 0));
+        return (ImageTexture.CreateFromImage(img), reach, core);
     }
 
     /* ---------------------------------------------------- the grade's glide (H4) -- */

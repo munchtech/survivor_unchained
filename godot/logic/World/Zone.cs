@@ -166,13 +166,15 @@ public sealed record AtmospherePreset(
     /// share of the moon's key, fill and rim given up at the pool's heart, the share of the sky's light, and where the giving
     /// starts to fade and where it is gone (metres from her light; S2b-N2). Null: none (the rig's rigs.json "ember_give").</summary>
     public double[]? EmberGive { get; init; }
-    /// <summary>(L1 lead 8, S2b-N2) Her pool as light (cel.gdshaderinc cel_pool_paint): [core, middle, outer] step edges in metres
-    /// from her light (3D), how far painted patches move each edge in and out (m), how much of the light's own fall stays in
-    /// the core (0 flat, 1 as Godot's), the middle and outer steps' levels (shares of the core's edge), the patches' size (m)
-    /// the edges' half-width (m) and the outer edge's own (m, so the pool fades into the dark), and the pool's gain over her light (absent: 1). Null: her light as Godot falls it. FROM the picked night targets 05/09/10: a hot core at
-    /// her feet falling off wide through orange to a dark red-brown, each edge broken by painted patches, never a ring.</summary>
+    /// <summary>(L1 lead 9, B1) Her pool as light, a ramp in metres from her light's foot (cel.gdshaderinc cel_pool_paint;
+    /// Atmosphere.PoolRamp): [how much of the canopy's dapple stays in it at its edge and at its core (target 09: the leaf shapes
+    /// cut its edge, its core whole), then stops of r (m, rising), level (over her light's
+    /// energy; the last 0), color (sRGB 0-255, its largest channel taken as 1)], linear between stops; the moon gives way along
+    /// it (ember_give x and y at the core's level). FROM targets 09 and 12 (judge 1, verdict section 3): a gold core falling off
+    /// from 0.5 m through orange and dusk into the moon's ground by 3.25 m, no plateau, no ring. Null: her light as Godot
+    /// falls it.</summary>
     public double[]? EmberPool { get; init; }
-    /// <summary>(L1 lead 8, S2b) The pool's outer step's color (sRGB hex; "": the ember's own): the targets' edge, h 34-40.</summary>
+    /// <summary>(L1 lead 8, S2b) The pool's outer step's color (sRGB hex). Retired by lead 9 (B1: the ramp's stops carry the colors); read, unused.</summary>
     public string EmberEdge { get; init; } = "";
     /// <summary>The moon's rim on the crowd in play, in shade as in its light (0: none, as the cinematics' presets have it).</summary>
     public double CrowdRim { get; init; }

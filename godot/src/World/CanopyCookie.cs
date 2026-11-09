@@ -15,7 +15,8 @@ namespace SurvivorUnchained.View;
 public static class CanopyCookie
 {
     public const float Tile = 32f;
-    const int TilePx = 1024;
+    // (L1 lead 9, B1: 1024 stepped 6-8 px at 1:1 under the arena's 80 m tile; 4096 steps under 2 px)
+    const int TilePx = 4096;
     static ImageTexture? leaf;
     /// <summary>A canopy mask stands for this zone (the dapple can show).</summary>
     public static bool Shown { get; private set; }

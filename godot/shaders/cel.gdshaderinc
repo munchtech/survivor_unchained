@@ -132,25 +132,19 @@ global uniform sampler2D cel_canopy : filter_linear, repeat_disable;
 // (rigs.json "ember_give"; Atmosphere.SetCel) and her light (PlayerView, each frame). A shader may define CEL_NO_GIVE.
 global uniform vec4 cel_ember;
 global uniform vec4 cel_give;
-// (L1 lead 8, S2b-N2) Her pool as light (bible rules 1, 3, 5; the picked night targets 05/09/10: a hot core at her feet
-// falling off wide through her orange to a dark red-brown and into the moon's ground, each step's edge broken by painted
-// patches, never a ring): an omni light of her color stepped in metres from the light, so every place gets the same pool.
-// cel_pool her light's color (linear, largest channel 1; how the cel model knows her light among the others) and w its fall
-// (OmniAttenuation; 0: off); cel_pool_band x the core's edge, y the middle step's, z the outer step's (metres from the
-// light), w how far the patches push an edge in and out (m); cel_pool_tint rgb the outer step's tint over her color (redder,
-// the luminance its level's), w how much of the light's own fall stays in the core (0 flat, 1 Godot's); cel_pool_lv x the
-// middle step's level and y the outer's (shares of the core's edge), z the patches' size (m), w the edges' half-width (m).
+// (L1 lead 9, B1) Her pool as light, a ramp in metres from her light's foot (judge 1, verdict section 3, FROM targets 09 and
+// 12: no plateau, no step, no ring; L falling from 0.5 m on, chroma peaking at the gold core and dying outward through
+// orange and dusk into the moon's ground): an omni light of her color whose level and color at a distance r on the ground
+// (horizontal, from the point under the light) come from the rig's table (rigs.json "ember_pool": stops of r, level,
+// color; Atmosphere builds cel_pool_ramp from it), the same in every place. cel_pool her light's color (linear, largest
+// channel 1; how the cel model knows her light among the others) and w its fall (OmniAttenuation; 0: off); cel_pool_band
+// x the ramp's last stop (m; 0: no ramp, her light as Godot falls it), y the core's level (her gear takes the ramp's shape
+// at that level, CEL_POOL_PLAIN), z and w how much of the canopy's dapple stays in her pool at its edge and at its core (light adds to the ground, so the moon's
+// leaf shapes run on through the pool, its lit patches hotter and its shade darker: target 09). cel_pool_ramp rgb the
+// light's level x color over her light's energy at r, a the moon's give-way there (0..1; cel_give x and y scale it).
 global uniform vec4 cel_pool;
 global uniform vec4 cel_pool_band;
-global uniform vec4 cel_pool_tint;
-global uniform vec4 cel_pool_lv;
-// (S2b-N2) cel_pool_out x the outer step's own half-width (m): the pool's last edge fades into the dark, never a cut rim;
-// y the pool's gain over her light (0: 1), so the core is the frame's brightest without her light lifting her and the crowd.
-// (S2b-N3) z how much the canopy's dapple keeps in her pool (0: none; 1: her light under a leaf's shadow as dark as the
-// moon's there): light ADDS to the ground, so the moon's big leaf shapes run on through the pool, its lit patches hotter and
-// its shade darker (target 09); w how far the core goes from her color toward the lamps' gold #ffd07a (rule 3), the
-// near-white yellow at her feet (09: L 0.75, h 60).
-global uniform vec4 cel_pool_out;
+global uniform sampler2D cel_pool_ramp : filter_linear, repeat_disable;
 
 // (fragment() to light(): the geometric normal, and x SPECULAR, y RIM, z RIM_TINT, w ROUGHNESS before the tag)
 // (L1 B4r2) cel_gn's length is 1 + the key's share through the canopy here (cel_dap(): 1 open sky): packed, not a varying
@@ -215,12 +209,18 @@ float cel_dapple_at(vec3 c_wp) {
 	float c_w = fwidth(c_f) * 0.5 + 0.01;
 	return mix(1.0, smoothstep(c_cov - c_w, c_cov + c_w, c_f), cel_key.w);
 }
+// (L1 lead 9, B1) Her pool's ramp at r metres from her light's foot (past its last stop: the last stop's).
+vec4 cel_pool_at(float c_r) {
+	return texture(cel_pool_ramp, vec2((clamp(c_r / cel_pool_band.x, 0.0, 1.0) * 63.0 + 0.5) / 64.0, 0.5));
+}
 // (L1 W2) The moon's share at a world point under her light: 1 out of its reach, 1 - cel_give.x (key) or .y (sky) at its heart.
 float cel_give_at(vec3 c_wp, float c_k) {
 #ifdef CEL_NO_GIVE
 	return 1.0;
 #else
 	if (cel_ember.w <= 0.0 || c_k <= 0.0) return 1.0;
+	// (L1 lead 9, B1: under the ramp the moon gives way along it, cel_pool_ramp a; else between cel_give z and w)
+	if (cel_pool_band.x > 0.0) return 1.0 - c_k * cel_on * cel_pool_at(length(c_wp.xz - cel_ember.xz)).a;
 	float c_d = length(c_wp - cel_ember.xyz);
 	return 1.0 - c_k * cel_on * (1.0 - smoothstep(cel_give.z, max(cel_give.w, cel_give.z + 1e-3), c_d));
 #endif
@@ -359,24 +359,12 @@ vec3 cel_today_cc(vec3 c_n, vec3 c_l, vec3 c_v, vec3 c_lc, float c_att, bool c_d
 }
 #endif
 
-// (S2b-N2) Painted patches over the ground at one size (rule 5: one stroke size): value noise in two octaves, -1..1.
-float cel_pool_hash(vec2 c_p) { return fract(sin(dot(c_p, vec2(127.1, 311.7))) * 43758.5453); }
-float cel_pool_vnoise(vec2 c_p) {
-	vec2 c_i = floor(c_p), c_f = fract(c_p);
-	vec2 c_s = c_f * c_f * (3.0 - 2.0 * c_f);
-	return mix(mix(cel_pool_hash(c_i), cel_pool_hash(c_i + vec2(1.0, 0.0)), c_s.x),
-		mix(cel_pool_hash(c_i + vec2(0.0, 1.0)), cel_pool_hash(c_i + vec2(1.0, 1.0)), c_s.x), c_s.y);
-}
-float cel_pool_patch(vec2 c_xz) {
-	vec2 c_p = c_xz / max(cel_pool_lv.z, 0.05);
-	return clamp((0.65 * cel_pool_vnoise(c_p) + 0.35 * cel_pool_vnoise(c_p * 2.3 + vec2(17.3, 5.1)) - 0.5) * 2.6, -1.0, 1.0);
-}
-
-// (L1 lead 8, S2b-N2) Her light painted as light (cel_pool above): an omni light of her color, its distance from the light
-// read back from its attenuation (Godot's omni fall: (1 - u^4)^2 (u r)^-decay, u = d / r; her light casts no shadow, so
-// ATTENUATION is the fall alone), the point found along the light's way (c_lw: world, toward the light), the patches moving
-// each step's edge, then three steps: the core with cel_pool_tint.w of the fall in it, the middle step in her color, the
-// outer step darker and redder, nothing past it. Called by light() before cel_shade.
+// (L1 lead 9, B1) Her light painted as light (cel_pool above): an omni light of her color, its distance from the light read
+// back from its attenuation (Godot's omni fall: (1 - u^4)^2 (u r)^-decay, u = d / r; her light casts no shadow, so
+// ATTENUATION is the fall alone), the point found along the light's way (c_lw: world, toward the light), then the ramp's
+// level and color at that point's distance on the ground from the light's foot, over her light's energy (her flicker and
+// her flare carry through), and the canopy's leaf shapes kept in it. Called by light() before cel_shade. (Retired: lead 8's
+// three steps, their value-noise patches and the gold and red tints, cel_pool_tint/lv/out and rigs.json "ember_edge".)
 void cel_pool_paint(inout vec3 c_lc, inout float c_att, vec3 c_lw) {
 	if (cel_on <= 0.0 || cel_pool.w <= 0.0 || cel_pool_band.x <= 0.0 || cel_ember.w <= 0.0 || c_att <= 0.0) return;
 	float c_m = max(c_lc.r, max(c_lc.g, max(c_lc.b, 1e-6)));
@@ -389,34 +377,21 @@ void cel_pool_paint(inout vec3 c_lc, inout float c_att, vec3 c_lw) {
 		float c_f = c_q * c_q * pow(max(c_u * c_r, 1e-4), -c_dec);
 		if (c_f > c_att) c_lo = c_u; else c_hi = c_u;
 	}
-	float c_d = 0.5 * (c_lo + c_hi) * c_r;
-	vec3 c_wp = cel_ember.xyz - normalize(c_lw) * c_d;
-	float c_dp = c_d + cel_pool_band.w * cel_pool_patch(c_wp.xz);
-	float c_w = max(cel_pool_lv.w, 1e-3);
-	float c_r1 = min(cel_pool_band.x, 0.95 * c_r);
-	float c_q1 = c_r1 / c_r; c_q1 *= c_q1; c_q1 *= c_q1; c_q1 = max(1.0 - c_q1, 0.0);
-	float c_ref = c_q1 * c_q1 * pow(max(c_r1, 1e-4), -c_dec);
-	float c_core = 1.0 - smoothstep(cel_pool_band.x - c_w, cel_pool_band.x + c_w, c_dp);
-	float c_mid = 1.0 - smoothstep(cel_pool_band.y - c_w, cel_pool_band.y + c_w, c_dp);
-	float c_wo = max(cel_pool_out.x, c_w);
-	float c_out = 1.0 - smoothstep(cel_pool_band.z - c_wo, cel_pool_band.z + c_wo, c_dp);
-	float c_in = c_ref * pow(max(c_att, 1e-6) / c_ref, cel_pool_tint.w);
-	c_att = c_in * c_core + c_ref * (cel_pool_lv.x * (c_mid - c_core) + cel_pool_lv.y * (c_out - c_mid));
-#ifndef CEL_POOL_PLAIN
-	c_att *= cel_pool_out.y > 0.0 ? cel_pool_out.y : 1.0;
+	vec3 c_wp = cel_ember.xyz - normalize(c_lw) * (0.5 * (c_lo + c_hi) * c_r);
+	vec4 c_rp = cel_pool_at(length(c_wp.xz - cel_ember.xz));
+	vec3 c_ramp = c_rp.rgb;
+#ifdef CEL_POOL_PLAIN
+	c_ramp /= max(cel_pool_band.y, 1e-3);
 #endif
-	// (S2b-N3) the canopy's leaf shapes kept in her light (the key's dapple here, packed in cel_gn: 1 - cel_key.w under a
-	// leaf, 1 open; only where fragment() packed it)
-	if (cel_pool_out.z > 0.0 && cel_key.w > 0.0 && cel_gq() >= 1.0) {
+	c_lc = c_m * c_ramp;
+	c_att = 1.0;
+	// (the canopy's leaf shapes kept in her light: the key's dapple here, packed in cel_gn: 1 - cel_key.w under a leaf, 1
+	// open; only where fragment() packed it)
+	if (cel_pool_band.z > 0.0 && cel_key.w > 0.0 && cel_gq() >= 1.0) {
 		float c_dr = clamp((length(cel_gn) - 1.01 - 2.0 * cel_gq()) / 0.98, 0.0, 1.0);
 		float c_ds = clamp((c_dr - (1.0 - cel_key.w)) / cel_key.w, 0.0, 1.0);
-		c_att *= mix(1.0 - cel_pool_out.z * cel_key.w, 1.0, c_ds);
+		c_att = mix(1.0 - mix(cel_pool_band.z, cel_pool_band.w, c_rp.a) * cel_key.w, 1.0, c_ds);
 	}
-	c_lc *= mix(cel_pool_tint.rgb, vec3(1.0), clamp(c_mid, 0.0, 1.0));
-#ifndef CEL_POOL_PLAIN
-	// (the gold in the core, half of it in the middle step: yellow to orange to red, the target's run)
-	c_lc *= mix(vec3(1.0), vec3(1.0, 0.6308, 0.1946) / max(cel_pool.rgb, vec3(1e-3)), cel_pool_out.w * clamp(0.5 * (c_core + c_mid), 0.0, 1.0));
-#endif
 }
 
 // The cel model for one light, t = the band's n.l (the caller may wrap it).
