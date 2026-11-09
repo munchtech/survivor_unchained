@@ -44,7 +44,7 @@ public sealed class RunMeasures
         var ppm = l.SelectMany(m => m.PressesPerMin).GroupBy(kv => kv.Key).ToDictionary(g => g.Key, g => g.Sum(kv => kv.Value) / l.Count);
         var dmg = l.SelectMany(m => m.DamageShare).GroupBy(kv => kv.Key).ToDictionary(g => g.Key, g => g.Sum(kv => kv.Value) / l.Count);
         var gaps = l.Select(m => m.MarkGapMax).Where(x => !double.IsNaN(x)).ToList();
-        var falls = l.SelectMany(m => m.Falls).GroupBy(f => f.Split('@').ElementAtOrDefault(1)?.Trim() ?? f).OrderByDescending(g => g.Count()).Take(4).Select(g => $"{g.Key} x{g.Count()}");
+        var falls = l.SelectMany(m => m.Falls).GroupBy(f => System.Text.RegularExpressions.Regex.Replace(f, @"^\d+(\.\d+)?m ", "")).OrderByDescending(g => g.Count()).Take(4).Select(g => $"{g.Key} x{g.Count()}");
         return $"| {name} | {l.Count} | {F(Med(gaps))} / {(gaps.Count > 0 ? gaps.Max().ToString("0") : "-")} | {F(Med(l.Select(m => m.ResolveSpentPerMin)))} | {F(Med(l.Select(m => m.ResolveFullPct)))} | " +
             $"{string.Join(", ", ppm.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Key} {kv.Value:0.0}"))} | {string.Join(", ", dmg.OrderByDescending(kv => kv.Value).Take(6).Select(kv => $"{kv.Key} {kv.Value:0}"))} | " +
             $"{F(Med(l.Select(m => (double)m.FlareCasts)))} / {F(Med(l.Where(m => m.FlareFirst >= 0).Select(m => m.FlareFirst)))} / {F(Med(l.Select(m => m.FlareShare)))} / {F(Med(l.Select(m => m.FlareBossShare)))} | {string.Join("; ", falls)} |";
