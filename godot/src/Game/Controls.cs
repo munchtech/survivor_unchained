@@ -107,6 +107,8 @@ public partial class Controls : Node
         LoadBindings();
         // (--keys-preset N, pictures: that layout on, and saved as a player's pick would be)
         if (Args.Get("keys-preset") is string kp && int.TryParse(kp, out int pi)) ApplyPreset(pi);
+        // (--pad: the prompts and the seats' caps as a pad's from the first frame, a picture's)
+        if (Args.Has("pad")) UsingPad = true;
     }
 
     /// <summary>The interface hears actions as they happen (menus move on a

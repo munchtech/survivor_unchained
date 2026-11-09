@@ -48,6 +48,7 @@ public partial class Socket
     Color capShown = new(-1, -1, -1, -1);
     bool capVisible = true;
 
+    static readonly bool Trace = Args.Has("slots-trace");
     static readonly Color Edge = new("#ca6e06"), Mid = new("#f9b214");
     const float CapAlphaKindled = 0.5f, CapAlphaOpen = 0.3f;
 
@@ -135,6 +136,7 @@ public partial class Socket
             }
         }
         bool spin = keyed && filled && st.Channeling;
+        if (Trace && (spin != (spinner?.Visible ?? false) || st.Bond != (bond?.Visible ?? false))) GD.Print($"seat {Index}: spin {spin} bond {st.Bond} keyed {keyed} filled {filled}");
         if (spin && spinner == null) spinner = Fx(SeatFx.Mode.Spinner);
         if (spinner != null)
         {
@@ -234,6 +236,7 @@ public partial class SeatFx : Control
     public enum Mode { Lantern, Spinner, Bond }
     readonly Mode mode;
     readonly float hr;
+    static readonly Color Head = new("#fbf1d8"), Spin = new("#f9b214");
 
     public SeatFx(Mode mode, Vector2 size, float hr)
     {
@@ -242,7 +245,8 @@ public partial class SeatFx : Control
         MouseFilter = MouseFilterEnum.Ignore;
         Size = size;
         PivotOffset = size / 2;
-        if (mode == Mode.Lantern) Material = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.Add };
+        // (added light: the lantern in the well; the turning arc and the bond's breath read over the union's gold edge)
+        Material = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.Add };
     }
 
     public override void _Draw()
@@ -254,13 +258,19 @@ public partial class SeatFx : Control
                 DrawTextureRect(DgMeters.Disc, new Rect2(c - Vector2.One * hr * 1.1f, Vector2.One * hr * 2.2f), false);
                 break;
             case Mode.Spinner:
-                // a gold segment with a fading tail, turning clockwise in the ring
-                DrawArc(c, hr + 0.5f, -Mathf.Pi / 2 - 0.9f, -Mathf.Pi / 2 - 0.35f, 12, Style.Gold with { A = 0.35f }, 2, true);
-                DrawArc(c, hr + 0.5f, -Mathf.Pi / 2 - 0.35f, -Mathf.Pi / 2 + 0.55f, 16, Style.GoldHi, 2.5f, true);
+                // a white-gold head with a fading gold tail, turning clockwise in the bezel just outside the gold edge
+                for (int i = 0; i < 6; i++)
+                {
+                    float a0 = -Mathf.Pi / 2 - 1.2f + i * 0.2f;
+                    DrawArc(c, hr + 2.5f, a0, a0 + 0.21f, 6, Spin.Lerp(Head, i / 5f) with { A = 0.15f + 0.17f * i }, 3, true);
+                }
+                DrawArc(c, hr + 2.5f, -Mathf.Pi / 2 - 0.05f, -Mathf.Pi / 2 + 0.35f, 8, Head, 3.5f, true);
                 break;
             case Mode.Bond:
-                DrawArc(c, hr + 0.5f, 0, Mathf.Tau, 64, Style.GoldHi, 2.5f, true);
-                DrawArc(c, hr + 3f, 0, Mathf.Tau, 64, Style.EmberHi with { A = 0.35f }, 3, true);
+                // the second key's "press now": a gold light in the well and a bright ring, breathing (the seat's Modulate)
+                DrawTextureRect(DgMeters.Disc, new Rect2(c - Vector2.One * hr * 1.15f, Vector2.One * hr * 2.3f), false, Style.Gold with { A = 0.55f });
+                DrawArc(c, hr + 2.5f, 0, Mathf.Tau, 64, Head with { A = 0.9f }, 2.5f, true);
+                DrawArc(c, hr + 5f, 0, Mathf.Tau, 64, Style.EmberHi with { A = 0.4f }, 4, true);
                 break;
         }
     }
