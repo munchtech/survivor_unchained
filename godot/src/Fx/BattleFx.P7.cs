@@ -284,7 +284,7 @@ public partial class BattleFx
                 float cover = P7D.Curve("leap.ring.cover", s.Age);
                 if (cover >= 0.999f && shutAt < 0) shutAt = s.Age;
                 bool flash = shutAt >= 0 && s.Age - shutAt < flashN / 60f - 1e-4f;
-                s.M.SetShaderParameter("p7_cover", cover);
+                s.M.SetShaderParameter("p7_shrink", cover);
                 s.M.SetShaderParameter("p7_alpha", P7D.Range("leap.ring.alpha", cover));
                 s.M.SetShaderParameter("p7_lead", lead * (flash ? flashK : 1));
                 s.M.SetShaderParameter("p7_trw", trail);
@@ -292,9 +292,9 @@ public partial class BattleFx
                 int k = after < 0 ? -1 : (int)(after / P7Sample);
                 s.M.SetShaderParameter("p7_fade", k < 0 ? 0f : k == 0 ? 0.34f : 0.67f);
             });
-            run.Ring.M.SetShaderParameter("p7_arcs", P7D["leap.ring.arcs"]);
-            run.Ring.M.SetShaderParameter("p7_cover", 0f);
-            P7BrushWave(run.Ring.M, rpx);
+            run.Ring.M.SetShaderParameter("p7_shrink", 0f);
+            P7Arcs(run.Ring.M, R() * Mathf.Tau, Mathf.Tau, (int)P7D["leap.ring.arcs"], 1, 1.08f, 1.12f, 0.15f);
+            P7BrushWave(run.Ring.M, rpx, P7D["leap.ring.lead_px"]);
             // the ribbon: her blade's way through the air (her chest plus the data's share of the blade's own swing: the
             // stand-in's blade loops), splined, its head the data's px tapering to a point
             float hw = 0.5f * P7D["leap.ribbon.head_px"] * P7Px(from);
@@ -500,9 +500,13 @@ public partial class BattleFx
                 P7StarPx(at - dir * 0.3f, P7D["charge.stop.px"], (int)P7D["charge.stop.spikes"], P7D["charge.stop.root_px"], 0, 2, 2, true, 1f / P7D["charge.star.root_tip"]);
                 P7LightOn(at + Vector3.Up * 0.5f, 4.5f, Flare.Night ? 3.4f : 4.5f);
                 Cam?.Kick(dir, 0.22f);
-                var sh = P7ShieldAt();
-                P7Wave(sh, P7D["charge.stop.reach"], P7D["charge.stop.run"], P7D["charge.stop.lead_px"], P7D["charge.stop.trail_px"], bill: true);
+                // the wave off the shield: on the ground at the contact ahead of her, an open arc facing the drive (r3 fix 2:
+                // the camera-facing ring round the shield read as a reticle on her)
                 var feet = V(e.X, Y(e.X, e.Z), e.Z);
+                var hit = feet + dir * 0.6f;
+                float open = Mathf.DegToRad(P7D["wave.open_deg"]);
+                P7Wave(new Vector3(hit.X, Y(hit.X, hit.Z) + 0.06f, hit.Z), P7D["charge.stop.reach"], P7D["charge.stop.run"], P7D["charge.stop.lead_px"], P7D["charge.stop.trail_px"],
+                    span0: Mathf.Atan2(dir.Z, dir.X) - open / 2, span: open);
                 P7Dust(feet + dir * 0.4f, 1.6f, 10, 22, 40, 0.35f, 0.25f);
                 if (p7ChargeTrail != null) p7ChargeTrail.Until = 0;
                 p7GhostDue.Clear();
@@ -564,29 +568,83 @@ public partial class BattleFx
     /// <summary>A wavefront (p7_wave) running out from `at` to `reach` m in `run` s (fast first), its edge and trailing
     /// band the given px at the play camera, width and coverage to nothing as it arrives; flat on the ground or facing the
     /// camera (`bill`, over everything).</summary>
-    P7Shape P7Wave(Vector3 at, float reach, float run, float leadPx, float trailPx, bool bill = false)
+    P7Shape P7Wave(Vector3 at, float reach, float run, float leadPx, float trailPx, bool bill = false, float span0 = 0, float span = Mathf.Tau)
     {
         float rpx = reach / P7Px(at);
+        int n = Math.Clamp((int)MathF.Round(span * rpx / P7D["wave.arc_px"]), 3, 9);
+        Vector4[]? arcs = null;
+        var shed = P7D.All("wave.shed");
+        var dpx = P7D.All("wave.dust_px");
+        int next = 0;
         var s = P7Quad(5, at, reach, run + 1 / 60f, bill: bill, top: bill, step: q =>
         {
             float t = Mathf.Clamp(q.Age / run, 0, 1), prog = 1 - (1 - t) * (1 - t);
             q.M.SetShaderParameter("p7_prog", prog);
             q.M.SetShaderParameter("p7_fall", prog);
+            // the front sheds dust as it passes (clusters off the arcs, riding out behind it); the last at the reach
+            while (arcs != null && next < shed.Length && prog >= shed[next])
+            {
+                float k = shed[next++];
+                P7Shed(new Vector3(at.X, at.Y - 0.06f, at.Z), reach * k, arcs, 2 * (1 - t) * reach / run, dpx[0], dpx[1]);
+            }
         });
         s.M.SetShaderParameter("p7_lead", leadPx / rpx);
         s.M.SetShaderParameter("p7_trw", trailPx / rpx);
         s.M.SetShaderParameter("p7_prog", 0.02f);
-        P7BrushWave(s.M, rpx);
+        arcs = P7Arcs(s.M, span0 + (span >= Mathf.Tau - 1e-3f ? R() * Mathf.Tau : 0), span, n, 0, 0.85f, 1.25f, 0.35f);
+        P7BrushWave(s.M, rpx, leadPx);
         return s;
     }
 
-    /// <summary>(r3 fix) A wavefront's brush (p7_wave): its own bristles, laid by the shape itself (seamless round the ring:
-    /// along the ring in the lead, radial in the trail), so the stroke's own bristle field stays small; a lighter waver
-    /// keeps the white-gold lip whole. `rpx`: the reach in px at the play camera.</summary>
-    void P7BrushWave(ShaderMaterial m, float rpx)
+    /// <summary>(r3 fix 2) A wavefront's painted arcs (p7_wave): `n` brush swipes evenly over `span` from `span0` (radians,
+    /// atan2(z, x) round the quad), each centred in its sector give or take 15%, its half-length `lo`-`hi` of half its sector
+    /// (some overlap, some gaps), its front `zk` leads in or out, its head on a side (`swirl` +1/-1 all one way, 0 each its
+    /// own). Returns them (x centre, y half-length, z offset, w side) for the dust.</summary>
+    Vector4[] P7Arcs(ShaderMaterial m, float span0, float span, int n, int swirl, float lo, float hi, float zk)
+    {
+        n = Math.Clamp(n, 1, 12);
+        var a = new Vector4[12];
+        float sec = span / n;
+        for (int i = 0; i < n; i++)
+            a[i] = new Vector4(span0 + (i + 0.5f + (R() - 0.5f) * 0.3f) * sec, 0.5f * sec * Mathf.Lerp(lo, hi, R()), (R() - 0.5f) * 2 * zk,
+                swirl != 0 ? swirl : (R() < 0.5f ? 1 : -1));
+        m.SetShaderParameter("p7_arc", a);
+        m.SetShaderParameter("p7_narc", n);
+        m.SetShaderParameter("p7_span", new Vector2(span0, span));
+        return a[..n];
+    }
+
+    /// <summary>(r3 fix 2) Dust shed by a wavefront's arcs at `radius` m from `c` (the ground): on most arcs a cluster of
+    /// two or three two-value puffs (`px0`-`px1` at the play camera; a lit top over a darker, wider skirt) toward the arc's
+    /// head, thrown on outward at a share of the front's `speed` (m/s) so the front leaves them behind.</summary>
+    void P7Shed(Vector3 c, float radius, Vector4[] arcs, float speed, float px0, float px1)
+    {
+        float m = P7Px(c);
+        foreach (var a in arcs)
+        {
+            if (R() > 0.7f) continue;
+            int k = 2 + (int)(R() * 1.99f);
+            for (int i = 0; i < k; i++)
+            {
+                float ang = a.X + a.W * a.Y * (0.1f + 0.7f * R());
+                var o = new Vector3(Mathf.Cos(ang), 0, Mathf.Sin(ang));
+                var p = c + o * (radius * (0.97f + R() * 0.06f));
+                p.Y = Y(p.X, p.Z);
+                float sz = Mathf.Lerp(px0, px1, R() * R()) * m;
+                var v = o * speed * (0.3f + 0.25f * R()) + Vector3.Up * (0.4f + R() * 0.5f);
+                WgPuff(p + Vector3.Up * (0.18f + R() * 0.08f), v, sz, 1.6f, 0.4f + R() * 0.25f, P7Lit(1.2f + R() * 0.1f), 0.92f, 5f);
+                WgPuff(p + Vector3.Up * 0.07f, v * 0.8f, sz * 1.3f, 1.45f, 0.48f + R() * 0.25f, WgDust(0.58f), 0.88f, 5.5f);
+            }
+        }
+    }
+
+    /// <summary>(r3 fix 2) A wavefront's brush (p7_wave): its own bristles, about one per 3 px across the lead's swell
+    /// (the shape lays their run along each arc and the trail's drag), drier tails (0.75) and a 0.28 waver so the band
+    /// edges read as a brush's at 1:1. `rpx`: the reach in px at the play camera.</summary>
+    void P7BrushWave(ShaderMaterial m, float rpx, float leadPx)
     {
         m.SetShaderParameter("fx_stroke_seed", R() * 97f);
-        m.SetShaderParameter("fx_bristle", new Vector4(2.5f, 2f, 0.55f, 0.14f));
+        m.SetShaderParameter("fx_bristle", new Vector4(Mathf.Clamp(0.66f * 1.3f * leadPx, 3f, 14f), 2f, 0.75f, 0.28f));
         m.SetShaderParameter("p7_rpx", rpx);
     }
 

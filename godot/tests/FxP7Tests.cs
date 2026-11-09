@@ -30,7 +30,7 @@ public class FxP7Tests
             "dash.shove.lead_px", "dash.shove.trail_px", "dash.shove.run", "dash.shove.puffs", "dash.shove.px", "storm.smear.head_px", "storm.smear.arc_deg", "storm.smear.alpha",
             "storm.seam.px", "storm.ring.lead_px", "storm.ring.trail_px", "storm.ring.run", "storm.star.spikes", "storm.star.px", "storm.star.root_px", "storm.nick.px",
             "storm.nick.frames", "vow.plant.flash_px", "vow.plant.puffs", "vow.dome.rim_px", "vow.dome.flare_px", "vow.dome.flare_s", "vow.store.px", "vow.store.grow",
-            "vow.burst.spikes", "vow.burst.px", "vow.burst.root_px", "vow.burst.frames", "vow.burst.lead_px", "vow.burst.trail_px", "vow.burst.run", "vow.burst.light_k", "vow.burst.light_frames" })
+            "vow.burst.spikes", "vow.burst.px", "vow.burst.root_px", "vow.burst.frames", "vow.burst.lead_px", "vow.burst.trail_px", "vow.burst.run", "vow.burst.light_k", "vow.burst.light_frames", "wave.arc_px", "wave.dust_px", "wave.shed", "wave.open_deg" })
             Assert.True(p.Has(k), "fx_language.json p7 lacks " + k);
     }
 
@@ -48,5 +48,9 @@ public class FxP7Tests
         Assert.Equal(1.0, (double)p.Curve("leap.ring.cover", 0.4f), 3);
         Assert.Equal(0.55, (double)p.Curve("leap.ring.cover", 0.175f), 3);
         Assert.InRange(p.Count("kick.puffs", 0.999f), 8, 12);
+        // (r3 fix 2) a ring is 3-9 painted arcs; its shed dust two-value puffs of 20-60 px; the charge stop an open arc
+        Assert.InRange(p["wave.arc_px"], 300, 700);
+        Assert.InRange(p.All("wave.dust_px")[0], 20, 40);
+        Assert.InRange(p["wave.open_deg"], 120, 300);
     }
 }

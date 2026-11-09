@@ -3,8 +3,8 @@
 // displayed color. Round 3 (9 Nov, against judge r2): every light shape is p7_stroke (L1's fx_stroke) or p7_wave (the
 // travelling wavefront built on it, fx_p7_stroke.gdshaderinc) plus a coverage cap (p7_alpha); the sizes come from the
 // view in shares of the quad, worked out from the px in data/look/fx_language.json "p7". Shapes (p7_mode):
-//   0 target  the leap's mark: a wavefront standing at the hit radius (front 1), p7_arcs arcs growing to p7_cover of the
-//             ring (their ends tapering to points), p7_lead / p7_trw its edge and trailing band; life p7_fade.
+//   0 target  the leap's mark: a wavefront standing at the hit radius (front 1), its painted arcs (p7_arc) growing to the
+//             cover (p7_shrink), p7_lead / p7_trw its edge and trailing band; life p7_fade.
 //   1 star    a hit (17 the same): p7_count tapered spikes of varied length round a small heart (p7_heart), their roots
 //             p7_root half-wide (so the middle never merges into a slab), p7_streaks thin streaks running out between them
 //             over 3 samples (p7_t); life p7_fade (stepped by the view). Flat on the ground, or facing the camera (p7_bill).
@@ -75,17 +75,10 @@ vec2 p7_ray(vec2 p, float th, float len, float hw) {
 	return vec2(v / hw, 1.0 - u / len);
 }
 
-// (0) the leap's target: the wavefront standing at the hit radius (its outer edge the radius: marked = hit); p7_arcs
-// arcs, each centred in its sector, growing to p7_cover of it, their ends tapering to points; whole at cover 1.
+// (0) the leap's target: the wavefront standing at the hit radius (its outer edge the radius: marked = hit), its painted
+// arcs (p7_arc, laid by the view) growing to the cover (p7_shrink), their ends tapering to points; whole at cover 1.
 vec4 p7_ring(vec2 p) {
-	float tip = 1.0;
-	if (p7_cover < 0.999) {
-		float s = fract(atan(p.y, p.x) / P7_TAU * p7_arcs + p7_seed);
-		float h = 0.5 * p7_cover, dc = abs(s - 0.5);
-		if (dc > h) return vec4(0.0);
-		tip = clamp((h - dc) / max(0.3 * h, 0.01), 0.0, 1.0);
-	}
-	vec4 o = p7_wave(p, 1.0, p7_lead, p7_trw, 0.0, p7_fade, tip, p7_rpx);
+	vec4 o = p7_wave(p, 1.0, p7_lead, p7_trw, 0.0, p7_fade, 1.0, p7_rpx);
 	o.a *= p7_alpha;
 	return o;
 }

@@ -683,6 +683,13 @@
  },
  "p7": {
   "what": "P7 round 3 (9 Nov): the skills lead's shapes in numbers, FROM judge r2 (survivorsunchained_inputs/skills_p7/judge_r2/verdict.md). px are at the play camera (1080 lines, the view converts with BattleFx.P7Px); s seconds; frames at 60 fps; [lo, hi] a range; a curve is [t, v] pairs. Colors stay the physical school's (L1). Read by logic/Look/FxP7.cs.",
+  "wave": {
+   "what": "r3 fix 2: every ring's wavefront (p7_wave): painted arcs about arc_px long at the reach (3-9 a ring), dust shed off them as the front passes each share of its reach (shed), dust_px the puffs at the play camera; open_deg the charge stop's forward arc",
+   "arc_px": 480,
+   "dust_px": [24, 48],
+   "shed": [0.3, 0.55, 0.8, 0.97],
+   "open_deg": 220
+  },
   "glint": {
    "what": "the press on every move: one three-band glint at the blade tip or shield, plus a dust kick",
    "px": 26,
