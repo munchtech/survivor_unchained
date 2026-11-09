@@ -1,5 +1,8 @@
 # The owner's notes waiting for the leads
 
+## 9 Nov (afternoon): USAGE REVIEW, PICKED
+The owner: "were burning through usage, what can we do to preserve some without losing quality?" Coordinator's finding: ~15M in 12 h, mostly work built twice (skill views before clips, ~2M), a shader scrapped at round 3 (~0.6M), six leads' orientation and handoffs (~1M), re-merges against moving branches. PICKED: "all those changes are great please do them. for the leads - lets reduce it if things would be waiting long, but for things that are not a big pipeline like needing judges or anything they can go past the 4 anytime." Rules in `docs/handoff/lead_brief.md` "Usage rules": own look before every max judge; scrap at the first FAR; orientation cap 60k/80k; no visuals before their inputs; four live JUDGED leads, non-judged data/systems work past four anytime. Judges stay max on always-seen things; models unchanged.
+
 Every lead reads this after RESUME.md. When you take a note into your work, mark it done here with your commit. The main session keeps it current.
 
 ## 9 November 2026 (coordinator ad002ada): GATE P1 PICKED: "B, go" (body-p1@eff9b5b96)
