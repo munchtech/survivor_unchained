@@ -419,29 +419,48 @@ def main():
 
 
 def body_field():
-    """Her skin as the fit's `clear` layer reads it (clipcheck's posed B, torso: the arms left out): body(G, P) -> a
-    field: world points -> (signed distance m, + outside; outward normals). Far points (over 8 cm from the nearest
-    vertex, where a nearest-vertex sign can flip) read as outside."""
+    """Her skin as the fit's `clear` layer and p4_blend read it: body(G, P) -> a field: world points -> (signed
+    distance m, + outside; outward normals), B posed by clipcheck's poser (the glb's skin + B's laws).
+
+    The sign is the generalized winding number of her whole closed skin (body + head pieces: Marionette
+    motion/winding.py), so it holds deep inside her and far outside (the old nearest-vertex sign read any point over
+    8 cm from her skin as outside: idle_warden's shield rim sat in her thigh at that ceiling and read clear). A point
+    nearer her arms' skin than the rest is never inside (a held piece's strap in its own forearm, a blade against the
+    other arm: the arms are clipcheck's matter). The distance: to the nearest skin vertex but the arms' (torso, legs,
+    neck, head), along its normal where that agrees with the sign; the normal is that vertex's."""
     if "_bf" in globals():
         return _bf
     sys.path.insert(0, str(REPO / "tools/body"))
     import clipcheck as CC
+    from scipy.spatial import cKDTree
     from motion.rig import Rig
+    from motion.winding import Winding
     rig = Rig(RIG)
     P1 = REPO / "godot/art/people/body_p1"
     B = CC.Body(str(P1 / "body.glb"), json.loads((P1 / "rig.json").read_text()), rig.names, m44(rig.R0, rig.head), True)
     Xi = np.linalg.inv(B.X)
     keyed = set(rig.keyed)
+    arm = B.arm["l"] | B.arm["r"] | B.hand["l"] | B.hand["r"]
+    skin = np.nonzero(~arm)[0]
+    armi = np.nonzero(arm)[0]
+    # (a point well inside the rest mesh for the winding's orientation: the pelvis head, in glb space)
+    pv = rig.index["pelvis"]
+    W = Winding(B.p.T, B.p.P0, inside=(B.X @ np.r_[rig.head[pv], 1.0])[:3])
 
     def body(G, P):
         B.cache.clear()
-        V, _, N, tr = B.pose(m44(G, P), keyed, 0)
+        V, _, N, _ = B.pose(m44(G, P), keyed, 0)
+        ts, ta = cKDTree(V[skin]), cKDTree(V[armi])
 
         def field(pts):
             Pg = (np.c_[pts, np.ones(len(pts))] @ B.X.T)[:, :3]
-            s, d, q = CC.signed(V, N, tr, B.tidx, Pg)
-            far = (s < 0) & (d >= 0.08)
-            s = np.where(far, d, s)
+            d, i = ts.query(Pg)
+            q = skin[i]
+            da, _ = ta.query(Pg)
+            inside = (W(V, Pg) > 0.5) & (da >= d)
+            pr = np.einsum("ij,ij->i", Pg - V[q], N[q])
+            mag = np.where((pr < 0) == inside, np.abs(pr), d)
+            s = np.where(inside, -mag, mag)
             nrm = N[q] @ Xi[:3, :3].T
             nrm = nrm / (np.linalg.norm(nrm, axis=1, keepdims=True) + 1e-12)
             return s, nrm

@@ -4,7 +4,8 @@ left foot down). For each weight in 0 .. 1 by .125 across one cycle:
   - the piece's deviation: hand_r (the sword) and lowerarm_l (the shield) global turn against the straight path
     (the slerp between the two holds' own turns at that phase), deg; the old per-bone mix read 43-54 deg at 0.5;
   - the piece against her body: the warden set's pieces (p4.pieces(): arms_local_b.json, the game's own seat on B; was A's hand space, laid on B's
-    bone by the rest-world rule Arms.HoldSheathed uses), mm inside her skin (clipcheck's posed B, torso: arms left out).
+    bone by the rest-world rule Arms.HoldSheathed uses), mm inside her skin and the nearest gap (p4.body_field: B posed by clipcheck's poser, the sign by
+    the winding number of her closed skin, the arms left out).
 
     python tools/anim/p4_blend.py [walk_clip run_clip] [--phases N]     (default walk_warden run_warden)
 """
@@ -61,11 +62,6 @@ def main(argv):
     nph = int(argv[argv.index("--phases") + 1]) if "--phases" in argv else 12
     rig = Rig(p4.RIG)
     cw, cr = (MC.read(p4.OUT / f"{n}.json") for n in names)
-    sys.path.insert(0, str(REPO / "tools/body"))
-    import clipcheck as CC
-    P1 = REPO / "godot/art/people/body_p1"
-    body = CC.Body(str(P1 / "body.glb"), json.loads((P1 / "rig.json").read_text()), rig.names,
-                   p4.m44(rig.R0, rig.head), True)
     arms = json.loads((REPO / "tools/anim/data/arms_local.json").read_text())
     pieces = {"sword": ("chevalier_sword@hand_r", "hand_r"), "shield": ("shield_round@lowerarm_l", "lowerarm_l")}
     pts = {}
@@ -88,23 +84,17 @@ def main(argv):
             G, P = pose(rig, rot, pos)
             Gw, _ = pose(rig, rw, pw)
             Gr, _ = pose(rig, rr, pr)
-            Gd = p4.m44(G, P)
             for k, (_, bone) in pieces.items():
                 j = rig.index[bone]
                 straight = Q.to_mat(Q.slerp(Q.from_mat(Gw[j][None])[0], Q.from_mat(Gr[j][None])[0], w)[None])[0]
                 dev[k] = max(dev[k], ang(G[j], straight))
-            # the body posed at this blend
-            body.cache.clear()
-            Vb, _, Nb, tr = body.pose(Gd, set(rot), 0)
+            # the body posed at this blend: her skin's field (p4.body_field: the winding number's sign, no ceiling)
+            field = p4.body_field()(G, P)
             for k, (_, bone) in pieces.items():
                 j = rig.index[bone]
-                Pw = pts[k] @ G[j].T + P[j]
-                Pg = (np.c_[Pw, np.ones(len(Pw))] @ body.X.T)[:, :3]
-                s, d, _ = CC.signed(Vb, Nb, tr, body.tidx, Pg)
-                inside = s[(s < 0) & (d < 0.08)]      # (as p4.body_field: a nearest-vertex sign holds within 8 cm)
-                depth[k] = max(depth[k], float(-inside.min() * 1000) if len(inside) else 0.0)
-                near = s[d < 0.08]
-                clear[k] = min(clear[k], float(near.min() * 1000) if len(near) else 1e9)   # (the nearest gap, mm: + outside)
+                s, _ = field(pts[k] @ G[j].T + P[j])
+                depth[k] = max(depth[k], float(-s.min() * 1000) if s.min() < 0 else 0.0)
+                clear[k] = min(clear[k], float(s.min() * 1000))   # (the nearest gap, mm: + outside)
         rows.append({"w": w, "sword_dev_deg": round(dev["sword"], 2), "shield_dev_deg": round(dev["shield"], 2),
                      "sword_in_mm": round(depth["sword"], 1), "shield_in_mm": round(depth["shield"], 1),
                      "sword_gap_mm": round(clear["sword"], 1), "shield_gap_mm": round(clear["shield"], 1)})
