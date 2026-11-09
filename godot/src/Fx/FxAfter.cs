@@ -15,6 +15,11 @@ namespace SurvivorUnchained.View;
 /// it hands over linear(srgb(c) x a) / a, which the pass blends to srgb(c) x a), and the layer composites premultiplied.
 /// --fx-after off: drawn in the frame as before (B6's emit). Never at --cel off (FxCel.On).
 /// --fx-after-occlude off: no depth twins for figures (OccludeFigure), so a spell draws over her as before.
+/// (L1 lead 7) The world hides it too: <see cref="FxWorldDepth"/> copies the play frame's depth into this camera's depth
+/// after its opaque pass, so a canopy, a foe or a prop in front of a spell covers it (--fx-after-world off: as before).
+/// The danger marks show over it (FLARE_LOOK 1.6): the composite lays this layer under the marks' coverage
+/// (<see cref="MarkPass.Mask"/>, written by the pass that draws them in the frame): layer x (1 - mask). --fx-marks-over
+/// off: as before (the layer over the marks).
 /// </summary>
 public partial class FxAfter : CanvasLayer
 {
@@ -25,6 +30,21 @@ public partial class FxAfter : CanvasLayer
 
     SubViewport vp = null!;
     Camera3D cam = null!;
+    public static readonly bool MarksOver = SurvivorUnchained.Args.Get("fx-marks-over") != "off";
+    ShaderMaterial comp = null!;
+    Texture2Drd? maskTex;
+    static readonly FxWorldDepthCopy worldCopy = new();
+
+    /// <summary>The composite: the layer (premultiplied display color) under the marks' coverage.</summary>
+    public const string CompositeCode = @"shader_type canvas_item;
+render_mode blend_premul_alpha;
+uniform sampler2D marks : filter_linear, repeat_disable;
+uniform float marks_on = 0.0;
+void fragment() {
+	vec4 c = texture(TEXTURE, UV);
+	float m = marks_on > 0.5 ? texture(marks, SCREEN_UV).r : 0.0;
+	COLOR = c * (1.0 - m);
+}";
 
     /// <summary>Puts an effect on the after-grade layer (and makes the layer once).</summary>
     public static void Adopt(GeometryInstance3D g)
@@ -49,6 +69,12 @@ public partial class FxAfter : CanvasLayer
     /// lashes, cutout cloth) are skipped so a card never punches its quad out of a spell. --fx-after-occlude off: nothing.</summary>
     public static void OccludeFigure(Node3D root)
     {
+        // (--fx-debug-stroke: the layer is made with her, so the lookdev strokes have a home)
+        if (On && debugStroke && (one == null || !IsInstanceValid(one)))
+        {
+            one = new FxAfter { Name = "FxAfter" };
+            if (Engine.GetMainLoop() is SceneTree t0) t0.Root.CallDeferred(Node.MethodName.AddChild, one);
+        }
         if (!On || !FigureOn) return;
         figures.RemoveAll(f => !IsInstanceValid(f));
         if (!figures.Contains(root)) figures.Add(root);
@@ -160,13 +186,16 @@ public partial class FxAfter : CanvasLayer
                 AmbientLightSource = Godot.Environment.AmbientSource.Disabled, ReflectedLightSource = Godot.Environment.ReflectionSource.Disabled,
             },
         };
+        if (FxWorldDepth.On)
+            cam.Compositor = new Compositor { CompositorEffects = new Godot.Collections.Array<CompositorEffect> { new FxWorldDepthWrite() } };
         vp.AddChild(cam);
         AddChild(vp);
+        comp = new ShaderMaterial { Shader = new Shader { Code = CompositeCode } };
         var rect = new TextureRect
         {
             Texture = vp.GetTexture(), MouseFilter = Control.MouseFilterEnum.Ignore,
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale,
-            Material = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.PremultAlpha },
+            Material = comp,
         };
         rect.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         AddChild(rect);
@@ -185,5 +214,64 @@ public partial class FxAfter : CanvasLayer
         cam.Fov = main.Fov; cam.Size = main.Size; cam.FrustumOffset = main.FrustumOffset;
         cam.Near = main.Near; cam.Far = main.Far; cam.KeepAspect = main.KeepAspect;
         cam.HOffset = main.HOffset; cam.VOffset = main.VOffset;
+        if (FxWorldDepth.On) HookWorldDepth(main);
+        // the marks over this layer: their coverage this frame (none up: the pass did not run, its mask is stale)
+        bool marks = MarksOver && MarkPass.MaskLive && MarkPass.Mask.IsValid;
+        if (marks)
+        {
+            maskTex ??= new Texture2Drd();
+            if (maskTex.TextureRdRid != MarkPass.Mask) { maskTex.TextureRdRid = MarkPass.Mask; comp.SetShaderParameter("marks", maskTex); }
+        }
+        comp.SetShaderParameter("marks_on", marks ? 1f : 0f);
+        DebugStroke(main);
+    }
+
+    static readonly bool debugStroke = SurvivorUnchained.Args.Get("fx-debug-stroke") is { Length: > 0 } ds && ds != "off";
+    MeshInstance3D? dsFlat, dsUp;
+
+    /// <summary>(--fx-debug-stroke) Two lookdev strokes in the steel across the first danger mark (none up: where the
+    /// camera looks at the ground): one lying on the ground through the mark (the marks-over A|B), one standing 1.4 m up
+    /// facing the camera (the world-depth A|B: foes and trees in front hide it).</summary>
+    void DebugStroke(Camera3D main)
+    {
+        if (!debugStroke) return;
+        if (dsFlat == null)
+        {
+            MeshInstance3D Make(string name)
+            {
+                var m = FxCel.Apply(new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/fx_stroke_debug.gdshader") }, SurvivorUnchained.Sim.School.Physical, after: true);
+                var mi = new MeshInstance3D { Name = name, Mesh = new QuadMesh { Size = new Vector2(9f, 1.6f) }, MaterialOverride = m, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
+                GetTree().Root.AddChild(mi);
+                Adopt(mi);
+                return mi;
+            }
+            dsFlat = Make("FxDebugStrokeFlat");
+            dsUp = Make("FxDebugStrokeUp");
+        }
+        Vector3 at;
+        if (MarkPass.FirstMark is { } fm) at = fm;
+        else
+        {
+            var f = -main.GlobalBasis.Z;
+            at = main.GlobalPosition + f * (Mathf.Abs(f.Y) > 1e-3f ? Mathf.Abs(main.GlobalPosition.Y / f.Y) : 10f);
+        }
+        var right = main.GlobalBasis.X; right.Y = 0; right = right.Normalized();
+        var fwd = new Vector3(-right.Z, 0, right.X);
+        // the flat one: lying on the ground, its length across the screen (the quad's X), a little above the ground
+        dsFlat.GlobalTransform = new Transform3D(new Basis(right, -fwd, Vector3.Up), at + Vector3.Up * 0.05f);
+        // the standing one: facing the camera, 1.4 m up
+        dsUp!.GlobalTransform = new Transform3D(new Basis(right, Vector3.Up, right.Cross(Vector3.Up)), at + Vector3.Up * 1.4f);
+    }
+
+    /// <summary>The world-depth copy on the play camera (first, beside whatever compositor it has; again if one replaced it).</summary>
+    static void HookWorldDepth(Camera3D main)
+    {
+        if (main.Compositor == null) main.Compositor = new Compositor { CompositorEffects = new Godot.Collections.Array<CompositorEffect> { worldCopy } };
+        else if (!main.Compositor.CompositorEffects.Contains(worldCopy))
+        {
+            var fx = main.Compositor.CompositorEffects.Duplicate();
+            fx.Add(worldCopy);
+            main.Compositor.CompositorEffects = fx;
+        }
     }
 }

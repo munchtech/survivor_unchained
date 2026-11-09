@@ -125,4 +125,25 @@ public class FxLanguageTests
         Assert.DoesNotMatch(@"vec3\(\s*[0-9.]+\s*,", body);
         Assert.DoesNotContain("ALPHA", body);
     }
+
+    [Fact]
+    public void DangerMarksSitOverEveryAfterGradeLight()
+    {
+        // (L1 lead 7, FLARE_LOOK 1.6) MarkPass writes the marks' coverage into a mask; FxAfter's composite lays the
+        // after-grade layer under it (x (1 - mask)), so whatever goes through FxAfter.Adopt sits under every danger mark
+        var fx = Path.Combine(Root(), "src", "Fx");
+        var mark = File.ReadAllText(Path.Combine(fx, "MarkPass.cs"));
+        Assert.Contains("public static Rid Mask;", mark);
+        Assert.Contains("uniform writeonly image2D mask;", mark);
+        Assert.Contains("imageStore(mask, p, vec4(0.0))", mark);
+        Assert.Contains("U(RenderingDevice.UniformType.Image, 8, Mask)", mark);
+        var after = File.ReadAllText(Path.Combine(fx, "FxAfter.cs"));
+        Assert.Contains("texture(marks, SCREEN_UV)", after);
+        Assert.Contains("COLOR = c * (1.0 - m);", after);
+        Assert.Contains("Material = comp,", after);
+        Assert.Contains("MarkPass.Mask", after);
+        // (B) the world's depth behind the layer: the copy on the play camera, the write on the after-grade camera
+        Assert.Contains("new FxWorldDepthWrite()", after);
+        Assert.Contains("HookWorldDepth(main)", after);
+    }
 }
