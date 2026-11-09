@@ -106,17 +106,21 @@ vec4 p7_star(vec2 p) {
 	float r = length(p), a = atan(p.y, p.x);
 	float k = p7_steps(p7_t, P7_SAMPLE);
 	float life = clamp(k * 0.34 + p7_fade, 0.0, 1.0);
-	float shrink = 1.0 - 0.12 * k;
+	float shrink = 1.0 - 0.18 * k;
+	// each step it thins as well as cools (never a full-width amber slab broken into blocks)
+	float thin = 1.0 - 0.3 * min(k, 2.0);
 	// the heart: a disc whose across is compressed so most of it is the core band
-	float rc = 0.2 * shrink;
+	float rc = 0.2 * (1.0 - 0.35 * k);
 	vec4 o = p7_stroke(pow(r / rc, 2.2), 1.0, life);
 	float n = clamp(p7_spikes, 3.0, 8.0);
 	for (float i = 0.0; i < 8.0; i += 1.0) {
 		if (i >= n) break;
 		float h = fx_hash(vec2(i, p7_seed));
 		float th = (i + (h - 0.5) * 0.55) / n * P7_TAU + p7_seed;
-		float len = mix(0.55, 1.0, fx_hash(vec2(p7_seed, i * 1.7))) * shrink;
-		vec2 q = p7_ray(p, th, len, 0.075);
+		// varied: one or two long, the rest a half to two thirds of it
+		float hl = fx_hash(vec2(p7_seed, i * 1.7));
+		float len = (i < 0.5 ? 0.92 : mix(0.38, 0.8, hl * hl)) * shrink;
+		vec2 q = p7_ray(p, th, len, 0.1 * thin);
 		if (q.y >= 0.0) o = p7_over(o, p7_stroke(q.x, q.y, life));
 	}
 	// the streaks: thin and short, running out from 0.25 to the spikes' reach over 3 samples, gone with the star
@@ -134,8 +138,11 @@ vec4 p7_star(vec2 p) {
 }
 
 vec4 p7_ribbon(vec2 uv) {
-	// a strip (UV.x its age along it: 0 the tail .. 1 the head; UV.y 0..1 across): the stroke tapers it to nothing at the tail
-	return p7_stroke(uv.y * 2.0 - 1.0, uv.x, p7_fade);
+	// a strip (UV.x its age along it: 0 the tail .. 1 the head; UV.y 0..1 across): the stroke tapers it to nothing at the
+	// tail; its very head (the last 6%, where it meets her) feathers in coverage so it never ends in a square cap
+	vec4 o = p7_stroke(uv.y * 2.0 - 1.0, uv.x, p7_fade);
+	o.a *= 1.0 - smoothstep(0.94, 1.0, uv.x);
+	return o;
 }
 
 // An afterimage: her pose as a rim of light only (~2 px in from her silhouette, measured in pixels of the facing

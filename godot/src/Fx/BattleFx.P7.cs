@@ -82,7 +82,7 @@ public partial class BattleFx
         for (int q = 0; q < clusters; q++)
         {
             float ac = a0 + (q + (R() - 0.5f) * 0.7f) / clusters * Mathf.Tau;
-            int n = 3 + (int)(R() * 3.99f);
+            int n = 4 + (int)(R() * 3.99f);
             for (int i = 0; i < n; i++)
             {
                 float a = ac + (R() - 0.5f) * 0.42f;
@@ -90,7 +90,7 @@ public partial class BattleFx
                 float far = reach * (0.7f + R() * 0.38f) - d0;
                 float v0 = far * drag / (1 - Mathf.Exp(-drag * 0.45f));
                 var at = c + o * d0;
-                float sz = (0.16f + R() * R() * 0.4f) * k;
+                float sz = (0.24f + R() * R() * 0.5f) * k;
                 // the lit top rides a little higher and dies first; the skirt is wider, lower and darker
                 WgPuff(at + Vector3.Up * (0.22f + R() * 0.1f), o * v0 + Vector3.Up * (0.15f + R() * 0.25f), sz, 1.5f, 0.6f + R() * 0.3f, WgDust(1.06f + R() * 0.12f), 0.8f, drag);
                 WgPuff(at + Vector3.Up * 0.1f, o * v0 * (0.8f + R() * 0.15f), sz * 1.25f, 1.4f, 0.7f + R() * 0.3f, WgDust(0.66f + R() * 0.08f), 0.76f, drag);
@@ -160,6 +160,8 @@ public partial class BattleFx
     {
         var mesh = new ImmediateMesh();
         var m = P7Mat(2);
+        // a ribbon tapers harder than the default stroke: a wedge, its width falling off all the way from the head
+        m.SetShaderParameter("p7_sw", new Vector4(0.14f, 0.52f, 0.42f, 1.4f));
         var n = new MeshInstance3D { Mesh = mesh, MaterialOverride = m, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
         AddChild(n);
         n.GlobalTransform = Transform3D.Identity;
@@ -263,7 +265,7 @@ public partial class BattleFx
             });
             run.Ring.M.SetShaderParameter("p7_sw", new Vector4(0.3f, 0.62f, 0.35f, 0.75f));
             // the ribbon: the blade's upper half swept through the air, smoothed, tapering from the blade to nothing
-            run.Ribbon = P7NewTrail(() => (P7BladeAt(0.45f), P7BladeAt(0.98f)), (float)e.Dur, 2.5f * P7Sample);
+            run.Ribbon = P7NewTrail(() => (P7BladeAt(0.6f), P7BladeAt(0.98f)), (float)e.Dur, 2.5f * P7Sample);
             p7Leap = run;
             return;
         }
@@ -377,7 +379,7 @@ public partial class BattleFx
                 p7GhostDue.Clear();
                 p7GhostNext = 0.03f; p7PlowNext = 0.04f;
                 if (p7ChargeTrail != null) p7ChargeTrail.Until = 0;
-                p7ChargeTrail = P7NewTrail(() => PlayerPos + Vector3.Up * 0.95f - p7ChargeDir * 0.25f, 0.3f, p7ChargeDur + 0.05f, 2.5f * P7Sample);
+                p7ChargeTrail = P7NewTrail(() => PlayerPos + Vector3.Up * 0.95f - p7ChargeDir * 0.25f, 0.2f, p7ChargeDur + 0.05f, 2.5f * P7Sample);
                 // the crescent of light on the shield's face, its middle toward where she drives
                 if (p7Crescent != null && IsInstanceValid(p7Crescent.N)) p7Crescent.Age = p7Crescent.Life;
                 float dur = p7ChargeDur;
@@ -475,7 +477,7 @@ public partial class BattleFx
             }
         }
         // the wedge: a ribbon off her hips (three bands, tapering to nothing, gone in 2.5 samples)
-        P7NewTrail(() => PlayerPos + Vector3.Up * 0.95f, 0.32f, 0.24f, 2.5f * P7Sample);
+        P7NewTrail(() => PlayerPos + Vector3.Up * 0.95f, 0.24f, 0.24f, 2.5f * P7Sample);
         p7ChargeT = 0; p7ChargeDur = 0.0f; p7ChargeDir = dir;
         p7GhostDue.Clear();
         p7GhostNext = -1;
