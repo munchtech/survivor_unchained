@@ -30,6 +30,7 @@ FIELD = {
                             # against 1, its jumps across creases)
     "blend_m": 0.002,       # over this band: exact -> field
     "r_min_edges": 2.5,     # the kernel's smallest radius, in body edge lengths (close ~19 mm, play ~37 mm)
+    "r_tight_edges": 2.5,   # the kernel's smallest radius within HOLD in_m of the skin (fading to r_min over fade_m)
     "r_gain": 1.2,          # radius growth per metre of stand-off
     "r_max_m": 0.06,
     "grid_edges": 0.75,     # lattice spacing, in body edge lengths
@@ -168,7 +169,11 @@ class Field:
 
     # ------------------------------------------------------------------ the kernel at points
     def radius(self, c):
-        return np.clip(self.r_min + FIELD["r_gain"] * c, self.r_min, max(FIELD["r_max_m"], self.r_min))
+        # near the skin (the tight set) the kernel may shrink toward r_tight_edges (measured on second's gloves: the
+        # field's own stretch grew more than the clearance improved, so it is left at r_min)
+        rm = self.edge * (FIELD["r_tight_edges"] + (FIELD["r_min_edges"] - FIELD["r_tight_edges"])
+                          * smoothstep((c - HOLD["in_m"]) / HOLD["fade_m"]))
+        return np.clip(rm + FIELD["r_gain"] * c, rm, max(FIELD["r_max_m"], self.r_min))
 
     def _blend(self, lv, Y, c, r, chunk=4000):
         """Kernel blend of the level's channels at Y (with their clearance c and radius r): (sum w C, sum w)."""
@@ -440,7 +445,7 @@ SOLVE = {
     "edge_floor_m": 2e-4,
     "cleft": 0.75,        # neighbours' mean skin normal length under which a tight vertex is in a cleft (one-sided)
     "cleft_m": 0.008,
-    "band_m": 0.00025,
+    "band_m": 0.0004,     # the tight set is held within this of its bind clearance (not exactly: the two bodies' facets)
     "hold_m": 0.0015,
     "smooth_m": 0.004,    # the two-sided correction's smoothing radius     # a tight vertex is held two-sided only when the field left it this near its bind clearance
     "side_cos": 0.3,      # the closest skin's normal . the carried bind normal under this: the far side (march instead)
