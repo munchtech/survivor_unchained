@@ -116,6 +116,8 @@ def fit_of(spec):
         # (an action's blend out: the built clip it ends in (fit.end.clip, at fit.end.frame), its locals, its pelvis's
         # world turn and height on B)
         f["end"]["pose"] = end_pose(f["end"]["clip"], f["end"].get("frame", 0))
+        if f.get("shield", {}).get("hand") == "end":    # (the shield hand held at the end pose's local all through)
+            f["shield"]["hand_rot"] = f["end"]["pose"]["rot"]["hand_l"]
     if "clear" in f:
         # (the game's mount on B: the pieces' points in their bones' spaces, a fixed sample)
         pc, bones = pieces(), {"sword": ("hand_r", "r"), "shield": ("lowerarm_l", "l")}
@@ -282,10 +284,20 @@ def action_held(r, spec):
         out["boss_sternum_cm"] = 100 * np.linalg.norm(boss - P[:, rig.index["spine_05"]], axis=1)
         out["boss_cm"] = 100 * boss[:, 1]                                       # (the shield's centre height)
         out["boss_ahead_cm"] = 100 * np.einsum("fi,fi->f", boss - P[:, pv], hd)  # (ahead of the pelvis, her heading)
+        # (a block's cover: the shield's top edge over her eyes (EYE_BELOW_TOP under the head's top, along the Head's
+        # up), and its face ahead of the head's top along her heading (+ = the head tucked behind it))
+        hj = rig.index["Head"]
+        top = P[:, hj] + np.einsum("fij,j->fi", G[:, hj] @ rig.R0[hj].T, [0, 1.0, 0]) * head_top()
+        eye = top - np.einsum("fij,j->fi", G[:, hj] @ rig.R0[hj].T, [0, 1.0, 0]) * EYE_BELOW_TOP
+        out["shield_over_eyes_cm"] = out["shield_top_cm"] - 100 * eye[:, 1]
+        out["head_behind_cm"] = 100 * np.einsum("fi,fi->f", boss - top, hd)
     if "sword" in spec.get("held", []) or "shield" in spec.get("held", []):
         for sd in "lr":                # (the hands ahead of the pelvis along her heading: a shove's reach)
             out[f"hand_{sd}_ahead_cm"] = 100 * np.einsum("fi,fi->f", P[:, rig.index[f"hand_{sd}"]] - P[:, pv], hd)
     return out
+
+
+EYE_BELOW_TOP = 0.11     # m: an adult's eyes under the top of the head (vertex to pupil, ~11-12 cm)
 
 
 def head_top():

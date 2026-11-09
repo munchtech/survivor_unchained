@@ -266,16 +266,20 @@
     "foot_r": [
      [
       0.2333,
-      0.4333
+      0.5333
      ]
     ]
-   }
+   },
+   "ground": [
+    "impact",
+    "end"
+   ]
   }
  },
  "notes": "A1 actions (solver B): keyed beats from one native rush (chnat2 pick 4, its own placement kept: launch f31, mid-stride f35, impact f38, absorbed f48; the sword hand trailing low by IK), the start its f16 with idle_warden's hands, fight-ready (rdpose) at 0.8 s. Job frames = clip frames + 8 (crop). The travel launch->impact is stripped (the game moves her).",
  "bands": {
   "lean_deg@0.2": [
-   20,
+   15,
    35
   ],
   "stance_fb_cm@0.2": [
@@ -306,9 +310,33 @@
    0,
    1
   ],
-  "pelvis_cm@0.8": [
-   -6,
-   3
+  "end_deg@0.8": [
+   0,
+   10
+  ],
+  "shield_over_eyes_cm@impact": [
+   0,
+   30
+  ],
+  "head_behind_cm@impact": [
+   5,
+   60
+  ],
+  "shield_face_deg@0.1..impact:min": [
+   -15,
+   15
+  ],
+  "shield_face_deg@0.1..impact:max": [
+   -15,
+   15
+  ],
+  "boss_cm@0.1..impact:min": [
+   105,
+   130
+  ],
+  "boss_cm@0.1..impact:max": [
+   105,
+   130
   ]
  },
  "gate": [
@@ -319,5 +347,194 @@
  "source": "src/shield_charge.npz",
  "bvh": "shield_charge__qc0s822_0.bvh",
  "sha1": "61d449b20d4864ab9a7c831c374b25dd0e6bda3f",
- "take_score": 4.981
+ "take_score": 4.981,
+ "fit": {
+  "lean": {
+   "keys": [
+    [
+     0.0,
+     0,
+     "still"
+    ],
+    [
+     0.0667,
+     5
+    ],
+    [
+     0.2,
+     14
+    ],
+    [
+     0.3667,
+     16,
+     "still"
+    ],
+    [
+     0.4333,
+     16,
+     "still"
+    ],
+    [
+     0.65,
+     0,
+     "still"
+    ]
+   ]
+  },
+  "shield": {
+   "solve": true,
+   "branch": -1,
+   "hand": "end",
+   "keys": [
+    [
+     0.0,
+     [
+      0.31,
+      0.33,
+      0.26
+     ],
+     53,
+     -40
+    ],
+    [
+     0.1,
+     [
+      0.1,
+      0.42,
+      0.4
+     ],
+     0,
+     0
+    ],
+    [
+     0.2,
+     [
+      0.06,
+      0.44,
+      0.44
+     ],
+     0,
+     4
+    ],
+    [
+     0.3667,
+     [
+      0.04,
+      0.5,
+      0.46
+     ],
+     0,
+     15,
+     "still"
+    ],
+    [
+     0.4333,
+     [
+      0.04,
+      0.5,
+      0.46
+     ],
+     0,
+     15,
+     "still"
+    ],
+    [
+     0.8,
+     [
+      0.14,
+      0.37,
+      0.28
+     ],
+     34,
+     -46,
+     "still"
+    ]
+   ]
+  },
+  "blade": {
+   "dir": [
+    -0.2,
+    -0.45,
+    -0.87
+   ],
+   "keep": 0,
+   "ease": "through",
+   "frame": "heading",
+   "twist_smooth": 3,
+   "keys": [
+    [
+     0.0,
+     [
+      -0.2425,
+      -0.7071,
+      0.6646
+     ],
+     "still"
+    ],
+    [
+     0.0667,
+     [
+      -0.65,
+      -0.65,
+      0.1
+     ]
+    ],
+    [
+     0.1667,
+     [
+      -0.2,
+      -0.45,
+      -0.87
+     ]
+    ],
+    [
+     0.3667,
+     [
+      -0.2,
+      -0.45,
+      -0.87
+     ],
+     "still"
+    ],
+    [
+     0.4333,
+     [
+      -0.2,
+      -0.45,
+      -0.87
+     ],
+     "still"
+    ],
+    [
+     0.65,
+     [
+      -0.85,
+      -0.45,
+      0.0
+     ]
+    ],
+    [
+     0.8,
+     [
+      -0.2425,
+      -0.7071,
+      0.6646
+     ],
+     "still"
+    ]
+   ]
+  },
+  "end": {
+   "clip": "idle_warden",
+   "frame": 0,
+   "over": [
+    0.45,
+    0.8
+   ]
+  },
+  "pop": {
+   "cap": {},
+   "x": 3.6
+  }
+ }
 }
