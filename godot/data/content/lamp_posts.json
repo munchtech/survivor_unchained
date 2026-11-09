@@ -1,0 +1,14 @@
+{
+  "about": "Every lamp-post, as data (docs/design/ARPG.md section 2 'Lamp-posts', 7.2 Death), read by logic/Content/LampPosts.cs. The one source of truth for where posts stand and what they give: Lamps v2's board points (Lamps.Posts) are this list's board posts. kind: 'checkpoint' (lit by her hand, a world fact, never reset; her rise point and a waypoint; no board point), 'dark' (an act's dark post off the road: relit for a lamp-board point, LampBook.RelightPost; also a rise point). town: a town's post, lit from the start. door: it stands at a boss's door. board: true only for dark posts. light: the zone light that is its lantern (-1: none); dark until lit. draft: where it stands is still a placeholder.",
+  "posts": [
+    { "id": "lowford.watch", "zone": "lowford", "act": 1, "name": "The Watch-post lamp", "x": 9.5, "z": 36.99, "kind": "checkpoint", "door": false, "board": false, "light": 2 },
+    { "id": "lowford.door", "zone": "lowford", "act": 1, "name": "The lamp before the ford", "x": -2.49, "z": -22, "kind": "checkpoint", "door": true, "board": false, "light": 12 },
+    { "id": "lowford.bank", "zone": "lowford", "act": 1, "name": "The north bank's lamp", "x": 1.99, "z": -64, "kind": "checkpoint", "door": false, "board": false, "light": 13 },
+    { "id": "act1.post1", "zone": "lowford", "act": 1, "name": "Road lamp", "x": -0.99, "z": -86, "kind": "dark", "door": false, "board": true, "light": 14 },
+    { "id": "waystation.square", "zone": "waystation", "act": 1, "name": "The square's lamp", "x": -4, "z": 12.95, "kind": "checkpoint", "town": true, "door": false, "board": false, "light": 29 },
+    { "id": "verge.entry", "zone": "verge", "act": 1, "name": "The lamp at the wood's edge", "x": -121.01, "z": 13, "kind": "checkpoint", "door": false, "board": false, "light": 12 },
+    { "id": "act1.post2", "zone": "verge", "act": 1, "x": 0, "z": 0, "kind": "dark", "door": false, "board": true, "light": -1, "draft": true },
+    { "id": "act1.post3", "zone": "waystation", "act": 1, "x": 0, "z": 0, "kind": "dark", "door": false, "board": true, "light": -1, "draft": true },
+    { "id": "act1.post4", "zone": "lowford", "act": 1, "x": 0, "z": 0, "kind": "dark", "door": false, "board": true, "light": -1, "draft": true }
+  ]
+}

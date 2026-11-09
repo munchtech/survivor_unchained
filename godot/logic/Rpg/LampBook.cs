@@ -96,8 +96,39 @@ public static class LampBook
 
     static string PostFact(string post) => $"lampposts.{post}";
 
-    /// <summary>Lamps v2: whether a lamp-post has been relit (a world fact: never a zone's state, so never reset).</summary>
-    public static bool PostLit(WorldState? w, string postId) => w != null && w.Fact(PostFact(postId)).Truthy;
+    /// <summary>Whether a lamp-post burns: relit or lit by her (a world fact: never a zone's state, so never reset), or a
+    /// town's post (lit from the start). Any post of lamp_posts.json; a board post only counts for the board on v2.</summary>
+    public static bool PostLit(WorldState? w, string postId) => w != null && (w.Fact(PostFact(postId)).Truthy || LampPosts.Get(postId)?.Town == true);
+
+    static string LastFact(string zone) => $"lamppost_last.{zone}";
+
+    /// <summary>She lights a lamp-post (lamp_posts.json) where she stands: a checkpoint is lit for good (a world fact, no
+    /// board point), a dark post is relit (RelightPost: its board point, on v2 only); either becomes her last post in its
+    /// zone, where she rises. True the first time it is lit by her.</summary>
+    public static bool LightPost(WorldState w, string postId)
+    {
+        if (LampPosts.Get(postId) is not { } p) return false;
+        bool first;
+        if (p.Dark) first = RelightPost(w, postId);
+        else
+        {
+            first = !p.Town && !w.Fact(PostFact(postId)).Truthy;
+            if (first) w.Facts[PostFact(postId)] = true;
+        }
+        if (PostLit(w, postId)) w.Facts[LastFact(p.Zone)] = postId;
+        return first;
+    }
+
+    /// <summary>The last lamp-post she lit in a zone, while it burns (where she rises there), or null.</summary>
+    public static LampPosts.Post? LastPost(WorldState? w, string zone) =>
+        w != null && w.Fact(LastFact(zone)) is { Truthy: true } f && LampPosts.Get(f.Str ?? "") is { } p && p.Zone == zone && PostLit(w, p.Id) ? p : null;
+
+    /// <summary>Her last post in a zone set (or forgotten: null), as a part of the zone she has walked past is left behind.</summary>
+    public static void SetLastPost(WorldState w, string zone, string? postId)
+    {
+        if (postId == null) w.Facts.Remove(LastFact(zone));
+        else w.Facts[LastFact(zone)] = postId;
+    }
 
     /// <summary>Lamps v2: a dark lamp-post is relit (where it stands is the zone's). True the first time; false if it
     /// was lit already, or isn't one of the board's posts (none on v1).</summary>

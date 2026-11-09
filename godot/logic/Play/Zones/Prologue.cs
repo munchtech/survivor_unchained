@@ -193,6 +193,7 @@ public sealed partial class Prologue : ZoneRuntime
             Act = () => G.Say("The fire is almost out. It will not hold them back.", null, 3.5),
         });
         AddDay();
+        AddPosts();
     }
 
     /* ------------------------------------------------------------- helpers -- */
@@ -1609,6 +1610,7 @@ public sealed partial class Prologue : ZoneRuntime
 
     public override Arrival ArrivalFrom(string? from)
     {
+        cameFrom = from;
         var gate = L("gate"); var camp = L("camp");
         // Back down the road from the Waystation: arrive at the north end, by the gate.
         return from == "waystation" ? new(gate.X + 0.5, ExitZ + 9, 0) : new(camp.X + 1.5, camp.Z - 1.5, Math.PI);
@@ -1636,6 +1638,7 @@ public sealed partial class Prologue : ZoneRuntime
     public override void Begin(Battle b)
     {
         base.Begin(b);
+        LampRise.ShowLamps(G, Id);
         // (the ford's risen come close and many: each its own pace and weave, not a file of clones, NPC 17)
         b.VaryPacks = true;
         // (and they steer round the camp: the fire and its ring of logs, not walked through or stood on, judge r2)
@@ -1733,23 +1736,20 @@ public sealed partial class Prologue : ZoneRuntime
 
     public override bool OnDeath(string killer)
     {
-        // The ember is not done with you. Up again where you were last safe.
+        // The ember is not done with you (ARPG 7.2): up again at the last lamp-post she lit here, else where she was last
+        // safe (the stage's checkpoint, before the first post). What she killed stays dead; champions and the Warden heal.
         if (B == null) return true;
         var battle = B;
+        int toll = LampRise.CountRise(W);
+        string line = day == null && nightRises++ == 0 ? "The ember will not let you go so easily." : LampRise.Line(toll);
         G.After(2.6, () =>
         {
-            G.Say(day != null ? "You come to on the road, bruised, with the sun higher." : "The ember will not let you go so easily.", null, 3.5);
-            battle.Over = null;
-            var p = battle.Player;
-            p.Alive = true;
-            p.Hp = battle.MaxHp;
-            p.Iframes = 3;
-            p.X = checkpoint.X; p.Z = checkpoint.Z;
-            ClearAround(p.X, p.Z, 16);
-            G.Revived(p.X, p.Z);
+            G.Say(line, null, 3.5);
+            var at = LampRise.Post(W, Id) ?? (checkpoint.X, checkpoint.Z);
+            LampRise.Stand(G, battle, at.X, at.Z);
             if (warden is { Alive: true } && Now == Stage.Boss)
             {
-                warden.Hp = Math.Min(warden.MaxHp, warden.Hp + warden.MaxHp * 0.25);
+                warden.Hp = warden.MaxHp;
                 warden.X = wardenHome.X; warden.Z = wardenHome.Z;
                 ai.Mode = "walk";
                 if (bar != null) Bar(bar with { Channel = null });
