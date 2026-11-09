@@ -874,6 +874,14 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
         skr["ends"] = {k: tuple(np.asarray(x, float) for x in v) for k, v in skr["ends"].items()}
         wrules = {k: ({**v, "_P_ref": P_ref, "_sk_ref": skr} if isinstance(v, dict) and k.startswith("a_") else v) for k, v in wrules.items()}
         rep["weights_ref"] = f"stage/weights_ref_{tier}.npy (A looked up by the ref body's points)"
+    wr, roles = weight_roles(spec)
+    if roles:
+        # (P1 R1 step 4: A's role patches as rule defaults, weight_roles: the ref body's patches carried by vertex)
+        rs, ref_path = wr
+        assert not any(isinstance(v, dict) and v.get("_P_ref") is not None for v in (wrules or {}).values()),             "weight_roles with a target_joints_ref spec's own carried patches: one ref only"
+        P_r, sk_r = role_ref(spec, rs, ref_path, tier, A, baked)
+        wrules = {**(wrules or {}), **{r: {**rs["weights"][r], "_P_ref": P_r, "_sk_ref": sk_r} for r in roles}}
+        rep["weight_roles"] = {"ref": ref_path, "roles": roles}
     wts = stage_weights(z, weights_body(spec, tier, z, V, A, baked, rep), ring, hv, sk, A, baked, rep, wrules)
     tim["weights"] = round(time.time() - t, 2)
     t = time.time()
@@ -904,6 +912,66 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
         rep["skeleton_play_vs_close"] = d
         assert d.get("same_names_parents") and d["max_mm"] < 1e-3 and d["max_deg"] < 1e-3, f"play skeleton != close: {d}"
     return sk
+
+
+ROLE_DEFAULTS = ("a_lower_breast", "a_elbow", "a_neck", "a_axilla")
+ROLE_REF = "tools/body/specs/her_b.json"
+_ROLE_SK = {}
+
+
+def weight_roles(spec):
+    """P1 R1 step 4: A's weight patches' ROLE mappings as rule defaults for every body on the shared topology.
+    The general form chosen: the patches are carried BY VERTEX from a ref body (spec "weight_roles" {"ref", "roles"};
+    ref default: the spec's "ref_body", else her_b; roles default ROLE_DEFAULTS: a_lower_breast, a_elbow, a_neck,
+    a_axilla, each only where the spec's own "weights" lacks it). Why this form: every body shares one topology, so a
+    vertex IS the same anatomical point on every body (the breast's lower pole, the elbow's upper band, the throat, the
+    armpit's folds), and the patch is a per-vertex statement ("this skin follows these bones in A's ratios"), not a
+    shape. Laid out on the ref body (her_b, where her_a's surface IS A's, so A's skin weights are read where they
+    were authored) with the ref's skeleton, each patch is a function of the vertex alone: its mask k, its A lookup
+    and its role map (A bone -> our bone) are evaluated once on the ref and ride the vertex onto any body, exactly as
+    the slider variants already carry them (weights_topo.a_lookup, _P_ref). A role-frame fit (a parametric rule per
+    region fitted to A's patch) would re-derive the same numbers less faithfully and needs per-region fitting; a
+    stored per-vertex table would duplicate a build output as source and go stale when the ref spec changes. Derived
+    live from the ref spec (source) + heroine.glb (source), the defaults stay one rule. The bone ratios transfer
+    because LBS weights are per-vertex partitions over the same bone names; the patch's blend (1 - k) W + k Wt keeps
+    this body's own rule weights outside the mask. "weight_roles": null turns it off; a spec that names a role in
+    its "weights" (her_b and her variants: all four) keeps its own: no change. Returns ((ref spec, ref path), roles)."""
+    conf = spec.get("weight_roles")      # WIP (step 4, unverified): opt-in per spec until (a)-(c) are measured
+    if not isinstance(conf, dict):
+        return None, []
+    w = spec.get("weights") or {}
+    todo = [r for r in conf.get("roles", ROLE_DEFAULTS) if not w.get(r)]
+    if not todo:
+        return None, []
+    ref = conf.get("ref") or spec.get("ref_body") or ROLE_REF
+    rs = with_defaults(load_spec(os.path.join(REPO, ref)))
+    rw = rs.get("weights") or {}
+    roles = [r for r in todo if rw.get(r)]
+    return ((rs, ref), roles) if roles else (None, [])
+
+
+def role_ref(spec, rs, ref_path, tier, A, baked):
+    """The ref body for weight_roles: its weights body on this tier (the points the patches are laid out on) and its
+    skeleton (placed on the close tier, as target_joints_ref places it; one skeleton for both tiers)."""
+    bu = unground(spec, baked, rs)
+    key = (ref_path, json.dumps(spec.get("sliders", {}), sort_keys=True))
+    if key not in _ROLE_SK:
+        r2 = {}
+        zc, Vc = stage_base(rs, "close", r2)
+        Vc, ring_c, _ = stage_place(rs, zc, Vc, A, bu, r2)
+        Vc = stage_forms(rs, "close", zc, Vc, ring_c, r2)
+        skr = stage_skeleton(bone_body(rs, "close", zc, Vc, A, bu, r2), "close", r2, bu["HeroineHead"]["P"],
+                             rs.get("joint_moves"), target_joints(rs), {})
+        _ROLE_SK[key] = ({k: skr[k] for k in ("skel", "names", "parents", "worlds", "ends")},
+                         weights_body(rs, "close", zc, Vc, A, bu, r2))
+    sk_r, P_c = _ROLE_SK[key]
+    if tier == "close":
+        return P_c, sk_r
+    r2 = {}
+    zt, Vt = stage_base(rs, tier, r2)
+    Vt, ring_t, _ = stage_place(rs, zt, Vt, A, bu, r2)
+    Vt = stage_forms(rs, tier, zt, Vt, ring_t, r2)
+    return weights_body(rs, tier, zt, Vt, A, bu, r2), sk_r
 
 
 def weights_body(spec, tier, z, V, A, baked, rep):
