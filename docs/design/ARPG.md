@@ -17,7 +17,7 @@ The ARPG design lead, 9 November 2026, from the owner's words of 8 November (`AR
 - the Barrow Knight, with his bar and his name;
 - a lamp-post relit: her checkpoint and a waypoint.
 
-At the water the Ford-Warden waits, and the ember lends her the Flare to break his lamps. First light takes the Flare back on one storybook page; she keeps everything else, and a Legendary from him. By day the same road runs on: boars, the Kerchiefs, a strongbox, Heroic Leap at level 4, the wolves' ring at the gate, then the Waystation, where the Flare is lit for good. About 45 minutes, five levels, four skills. All six keys are hers by the Barrow, at Act 1's end.
+At the water the Ford-Warden waits, and the ember lends her the Flare to break his lamps. First light takes the Flare back on one storybook page; she keeps everything else, and a Legendary from him. By day the same road runs on: boars, the Kerchiefs, a strongbox, Heroic Leap at level 4, the wolves' ring at the gate, then the Waystation, where the Flare is lit for good. About 45 minutes, five levels, four skills. The dash stays her evade; its steps come from story beats and gear, shown as pips, never from a level-up press. All six keys are hers by the Barrow, at Act 1's end, about five hours in, and her first Union (Bladestorm) comes just after.
 
 **A veteran's hour.** Level 30, on the hardest difficulty open to her, six keys:
 - Sunder held to swing, building her Resolve;
@@ -386,4 +386,4 @@ Act 1 as an ARPG totals about 25-30M plus A1's re-cut (M10's range) (ONE_BUILD's
 10. **The prologue's dawn:** the ember lends the Flare for the Warden and first light takes it back on one page, so Act 4 has its rule; or no dawn loss at all.
 11. **Ember is her experience:** the dead's light is how she grows, which sharpens Act 4; or plain experience on a kill.
 12. **The daily:** one seed, one rule and one loaned build for everyone; or her own build.
-13. **Slots:** all six keys by level 9 (2/3/4/5/6 at 1/4/5/7/9), Heroic Leap at level 4 and Shield Charge at 5, the first Union about level 11; or today's 1/4/8/14/20, six keys from Act 3.
+13. **Slots:** all six keys by level 9 (2/3/4/5/6 at 1/4/5/7/9), Heroic Leap at level 4 and Shield Charge at 5, the first Union (so Bladestorm's spin) about level 11, at Act 2's door, about five hours in; or the spin sooner: Bladestorm as the Warden's own skill at level 7 and the Union rule kept for the rest; or today's 1/4/8/14/20, six keys from Act 3.
