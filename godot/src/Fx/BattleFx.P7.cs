@@ -414,7 +414,7 @@ public partial class BattleFx
             float tip = bl.HasMeta("tip") ? (float)bl.GetMeta("tip") : 1.4f;
             var at = bl.GlobalTransform * new Vector3(0, Mathf.Lerp(0.25f, tip, k), 0);
             // (a blade between hands for a frame, its transform not hers yet: never draw a glint metres off her)
-            if (at.DistanceTo(PlayerPos + Vector3.Up * 1.0f) < 2.6f) return at;
+            if (k < 1 || at.DistanceTo(PlayerPos + Vector3.Up * 1.0f) < 2.6f) return at; // (the ribbon follows the blade into the air)
             if (Args.Has("clip")) GD.Print($"p7 blade far: {at} her {PlayerPos} frame {Engine.GetFramesDrawn()}");
         }
         return PlayerPos + new Vector3(0.3f, 1.1f + 0.6f * k, 0);
