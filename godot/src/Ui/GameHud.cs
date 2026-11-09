@@ -1378,8 +1378,9 @@ public partial class GameHud : CanvasLayer
             foot = Math.Min(foot, r.Position.Y);
         }
         Clear(irons.Passives);
-        if (irons.Statuses.GetChildCount() > 0) Clear(irons.Statuses);
-        GD.Print($"level card: beads {irons.Passives.GetGlobalRect()}, statuses {irons.Statuses.GetGlobalRect()} ({irons.Statuses.GetChildCount()}), coin arch top {DgPanel.Coin.Y - DgPanel.ArchR:0}");
+        // (the status row is a full-screen container: its shown entries, not its box)
+        foreach (var n in irons.Statuses.GetChildren()) if (n is Control sc) Clear(sc);
+        GD.Print($"level card: beads {irons.Passives.GetGlobalRect()}, statuses ({irons.Statuses.GetChildCount()} shown), coin arch top {DgPanel.Coin.Y - DgPanel.ArchR:0}");
         return foot - 12;
     }
 
