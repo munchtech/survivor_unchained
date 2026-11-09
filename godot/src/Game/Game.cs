@@ -692,7 +692,7 @@ public partial class Game : Node, IZoneHost
         // While a story's choice waits, its keys are its own: her art is not cast by the key that answers it.
         scene.Pressed = a => choiceUp != null && Array.IndexOf(ChoiceKeys, a) >= 0 ? Swallow(a)
             : heldOn != null ? false : (auto?.Take(a) ?? false) || (!controls.Captured && controls.Pressed(a));
-        scene.OnStep = dt => { if (cine is not { ZoneHeld: true }) zone?.Step(dt); };
+        scene.OnStep = dt => { if (cine is not { ZoneHeld: true }) { zone?.Step(dt); if (zone != null) SurvivorUnchained.Play.Zones.LampRise.Doors(zone, Battle); } };
         scene.OnEvents = OnEvents;
         // The Flare's view speaks to the pad, the HUD and the crowd through these (Fx/Flare/FlareFx.cs).
         var fl = scene.Fx.Flare;
@@ -811,6 +811,8 @@ public partial class Game : Node, IZoneHost
         scene!.SimPaused = false;
         showing = false;
         scene.Showcase = null;
+        // (a lamp-post's travel: the zone still hears where she came from, as any entry from there, GamePostMenu.cs)
+        if (toPost) { toPost = false; z.ArrivalFrom(from); }
         var start = at ?? z.ArrivalFrom(from);
         // (--facing DEG: which way she stands at the start, for pictures of her from the front)
         if (Args.Get("facing") is string fa) start = start with { Facing = double.Parse(fa, System.Globalization.CultureInfo.InvariantCulture) * Math.PI / 180 };

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using SurvivorUnchained.Core;
 using SurvivorUnchained.World;
 
@@ -27,6 +28,9 @@ public static class WorldTiers
     public static void Reload() => file = null;
 
     public static int Default => F.Default;
+
+    /// <summary>The tiers' numbers, in order (1-4).</summary>
+    public static IEnumerable<int> Numbers => F.Tiers.Keys.Select(int.Parse).OrderBy(n => n);
 
     /// <summary>Tier n (1-4); an unknown n is the default tier.</summary>
     public static Tier Get(int n) => F.Tiers.TryGetValue(n.ToString(), out var t) ? t : F.Tiers[F.Default.ToString()];

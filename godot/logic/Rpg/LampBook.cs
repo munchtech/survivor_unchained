@@ -306,9 +306,18 @@ public static class LampBook
     /// <summary>The towns, where layouts change (Act 1 has one).</summary>
     public static readonly HashSet<string> Towns = new() { "waystation" };
 
-    /// <summary>Can layouts change here and now? In a town, not by night, never mid-map or mid-arena (§3.5).</summary>
-    public static bool LayoutsOpen(WorldState? w, string? zone) =>
-        w != null && zone != null && Towns.Contains(zone) && w.Time != TimeOfDay.Night && w.Map == null && w.Arena == null;
+    /// <summary>The lit lamp-post she stands at out of a fight, for a world, or null (the post menu sets it as it opens the
+    /// Lamps there: it says so only while she is still at the post and calm). Never saved.</summary>
+    public static Func<WorldState, string?>? Bench;
+
+    /// <summary>Can layouts change here and now (the respec bench, ARPG.md 3.5)? In a town, not by night; or at a lit lamp-post
+    /// she stands at out of a fight (Bench); never mid-map or mid-arena.</summary>
+    public static bool LayoutsOpen(WorldState? w, string? zone) => LayoutsOpen(w, zone, w == null ? null : Bench?.Invoke(w));
+
+    /// <summary>LayoutsOpen, with the lit post she stands at out of a fight (or null) given.</summary>
+    public static bool LayoutsOpen(WorldState? w, string? zone, string? atPost) =>
+        w != null && zone != null && w.Map == null && w.Arena == null
+        && (Towns.Contains(zone) && w.Time != TimeOfDay.Night || atPost != null && LampPosts.Get(atPost)?.Zone == zone && PostLit(w, atPost));
 
     /// <summary>Take up another saved layout, the whole build: the board, the wicks, the links, the Flare and the
     /// skills carried (the one left keeps what she carried). Only where LayoutsOpen.</summary>

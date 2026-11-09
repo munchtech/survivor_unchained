@@ -85,6 +85,9 @@ public interface IZoneHost
     /// stage says what came out in a line.</summary>
     void Chest(ChestOpened c) => Announce(new Announcement(c.Hoard ?? "A chest", string.Join(" · ", c.Items.Select(i => i.Name)), "reward", 2.8));
     void Talk(string npc);
+    /// <summary>A lit lamp-post's menu (Play/PostMenu.cs: travel, the world tier, the Lamps, leave), opened where she stands
+    /// at it; a host without a screen does nothing.</summary>
+    void OpenPost(string postId) { }
     /// <summary>A conversation opened at one of its nodes (a story night's scene: door_night at go_home), the sim held
     /// while it runs; `ended` is told the id of the last node shown (lie_down: she raised her weapon; go: she went).
     /// A host without a screen runs it at once (SceneTalk: its chooser, or the first ending answer).</summary>
