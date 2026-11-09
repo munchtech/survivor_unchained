@@ -146,6 +146,8 @@ public sealed partial class Prologue : ZoneRuntime
         {
             BossTick = (e, dt) => e.Tag == "warden" && WardenTick(e, dt),
             OnKill = OnKill,
+            // (M5-B, ARPG 7.1: a pack's captain is its carrier, a champion carries more; Encounters.Carried)
+            OnLoot = e => [.. night?.Carried(e, G.Journey.Drops) ?? [], .. day?.Carried(e, G.Journey.Drops) ?? []],
             OnPickup = OnDayPickup,
             OnHitProp = (tag, _, _, dmg, _, _) =>
             {
@@ -1190,7 +1192,7 @@ public sealed partial class Prologue : ZoneRuntime
     void StartNight(Battle b)
     {
         if (night != null || Encounters.For(Id) is not { } spec) return;
-        night = new Encounters(spec, b, new Dictionary<string, Fact>(), G.Journey.Ch.Level, W.Day, "night") { Held = () => G.Teaching != null };
+        night = new Encounters(spec, b, new Dictionary<string, Fact>(), G.Journey.Ch.Level, W.Day, "night") { Held = () => G.Teaching != null, Tier = WorldTiers.Of(W) };
         night.Woke = bt => PaceNotes.Enqueue($"night woke {bt.Id} t={b.Time:0.0} hp={b.Player.Hp:0}/{b.MaxHp:0} at=({b.Player.X:0.0},{b.Player.Z:0.0})");
         night.Down = bt => PaceNotes.Enqueue($"night down {bt.Id} t={b.Time:0.0} hp={b.Player.Hp:0}/{b.MaxHp:0}");
         night.Place();
@@ -1201,7 +1203,7 @@ public sealed partial class Prologue : ZoneRuntime
             Level = 1, Tag = "knight", Style = SpawnStyle.Walk,
             Home = np != null ? (np.X, np.Z, np.Leash) : null, Wake = np?.Wake ?? 8,
         });
-        if (knightRest != null) { knightRestSeed = knightRest.Seed; knightRest.Facing = Math.PI / 2; }
+        if (knightRest != null) { knightRestSeed = knightRest.Seed; knightRest.Facing = Math.PI / 2; night.Crown(knightRest, "knight"); }
     }
 
     void StartBarrow()
@@ -1212,6 +1214,7 @@ public sealed partial class Prologue : ZoneRuntime
         // (M5: it and its dead rest at the barrow till she comes, BarrowWake: the road's packs lie between)
         var home = (barrow.X, barrow.Z, 20.0);
         caller = B.SpawnEnemy("grave_caller", barrow.X - 3, barrow.Z, new Battle.SpawnOpts { Level = 2, Tag = "caller", Elite = true, Home = home, Wake = BarrowWake });
+        if (caller != null) night?.Crown(caller, "caller");
         // It can't fall before F8 has pointed at it (or a while has passed): the art is taught on it.
         if (!G.Taught("art")) { caller.HpFloor = caller.MaxHp * 0.2; callerAt = B.Time; }
         for (int i = 0; i < 5; i++)

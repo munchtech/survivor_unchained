@@ -65,6 +65,8 @@ public sealed class Named
     public string Title = "";
     public List<string> Carries = new();
     public string SourceHero = "";
+    /// <summary>A champion's affix labels, as drawn under its bar (Content/Champions.cs: "Quaking", "Ironhide").</summary>
+    public List<string> Affixes = new();
 }
 
 public sealed class Enemy : Pooled

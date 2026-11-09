@@ -11,7 +11,7 @@ namespace SurvivorUnchained.Ui;
 /// </summary>
 public partial class FoeMarks : Control
 {
-    struct Bar { public Vector2 At; public float K; public bool Elite, Full; }
+    struct Bar { public Vector2 At; public float K; public bool Elite, Full; public Named? N; }
     Bar[] bars = new Bar[256];
     int count;
     bool ring;
@@ -70,7 +70,7 @@ public partial class FoeMarks : Control
             if (snuff)
             {
                 if (snuffCount == snuffs.Length) Array.Resize(ref snuffs, snuffCount * 2);
-                snuffs[snuffCount++] = cam.UnprojectPosition(overHead) - new Vector2(0, eliteBar ? 30 * s : 0);
+                snuffs[snuffCount++] = cam.UnprojectPosition(overHead) - new Vector2(0, eliteBar ? (e.Named != null ? 48 : 30) * s : 0);
             }
             if (!wantBar && !isPri) continue;
             if (isPri)
@@ -86,7 +86,7 @@ public partial class FoeMarks : Control
             // N19 (H6): a champion's bar is over its head at full strength from its first moment, as an ARPG's elite
             // bar is; at its feet at 45% it was lost on the night ground and read as no bar at all. The crowd's small
             // bar stays at the feet (once below 70%, or the priority target's).
-            bars[count++] = new Bar { At = eliteBar ? cam.UnprojectPosition(overHead) : sp, K = (float)Math.Clamp(e.Hp / e.MaxHp, 0, 1), Elite = e.Elite, Full = !low && !isPri && !e.Elite };
+            bars[count++] = new Bar { At = eliteBar ? cam.UnprojectPosition(overHead) : sp, K = (float)Math.Clamp(e.Hp / e.MaxHp, 0, 1), Elite = e.Elite, Full = !low && !isPri && !e.Elite, N = eliteBar ? e.Named : null };
         }
         Lamp(b, cam, vp);
         QueueRedraw();
@@ -144,6 +144,35 @@ public partial class FoeMarks : Control
         }
         DrawRect(r, Bronze, false, Math.Max(1.5f, 1.5f * s));
         DrawRect(new Rect2(r.Position.X + s, r.Position.Y, r.Size.X - 2 * s, Math.Max(1, s)), BronzeHi);
+        if (b.N is { } n) Champion(n, r, s);
+    }
+
+    /// <summary>(M5-B, functional; the look is the UI lead's) A champion's title over its bar in bronze, and its affixes
+    /// under it in red, small, ink-shadowed as the lamp's hint is.</summary>
+    void Champion(Named n, Rect2 r, float s)
+    {
+        var font = ThemeDB.FallbackFont;
+        float cx = r.Position.X + r.Size.X / 2;
+        if (n.Title.Length > 0)
+        {
+            int fs = (int)(16 * s);
+            var sz = font.GetStringSize(n.Title, HorizontalAlignment.Left, -1, fs);
+            var at = new Vector2(Mathf.Round(cx - sz.X / 2), Mathf.Round(r.Position.Y - 4 * s));
+            DrawString(font, at + new Vector2(1, 1) * s, n.Title, HorizontalAlignment.Left, -1, fs, Ink);
+            DrawString(font, at, n.Title, HorizontalAlignment.Left, -1, fs, BronzeHi);
+        }
+        if (n.Affixes.Count == 0) return;
+        int afs = (int)(13 * s);
+        float gap = 9 * s, w = -gap;
+        foreach (var a in n.Affixes) w += font.GetStringSize(a, HorizontalAlignment.Left, -1, afs).X + gap;
+        float x = Mathf.Round(cx - w / 2), y = Mathf.Round(r.End.Y + 3 * s + font.GetAscent(afs));
+        var red = Danger.Lightened(0.3f);
+        foreach (var a in n.Affixes)
+        {
+            DrawString(font, new Vector2(x, y) + new Vector2(1, 1) * s, a, HorizontalAlignment.Left, -1, afs, Ink);
+            DrawString(font, new Vector2(x, y), a, HorizontalAlignment.Left, -1, afs, red);
+            x += font.GetStringSize(a, HorizontalAlignment.Left, -1, afs).X + gap;
+        }
     }
 
     public override void _Draw()

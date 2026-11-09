@@ -128,6 +128,9 @@ public sealed class DropCtx
     public int Tier = 1;
     /// <summary>Rolls beyond the source's own (what the atlas has earned).</summary>
     public int Extra;
+    /// <summary>(M5-B) The least tier of the first roll over the source's own (2: Rare, a tutorial carrier's "loot"
+    /// floor); above 0 the first roll is gear for certain.</summary>
+    public int Floor;
     /// <summary>A story fight's boss: the first one a survivor beats pays a Legendary for certain.</summary>
     public bool StoryBoss;
     /// <summary>Whether a story condition holds (a piece's DropsWhen).</summary>
@@ -447,7 +450,7 @@ public static class Drops
             material = Iron;
         for (int k = 0; k < rolls; k++)
         {
-            bool gear = R() < Math.Min(1, src.Chance * x.Gear);
+            bool gear = (k == 0 && x.Floor > 0) || R() < Math.Min(1, src.Chance * x.Gear);
             if (!gear)
             {
                 if (material != null && R() < Rules.Material) o.Add(new Dropped(null, material, 1, LootTier.Material));
@@ -468,7 +471,7 @@ public static class Drops
             }
             else
             {
-                tier = k == 0 && owed && Legendaries(x).Any() ? LootTier.Legendary : RollTier(x, src, k == 0 ? src.Floor : 0, R);
+                tier = k == 0 && owed && Legendaries(x).Any() ? LootTier.Legendary : RollTier(x, src, k == 0 ? Math.Max(src.Floor, x.Floor) : 0, R);
                 it = Piece(x, tier, R);
                 tier = TierOf(it);
             }

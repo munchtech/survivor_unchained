@@ -1,0 +1,14 @@
+{
+  "about": "Champions (docs/design/ARPG.md 5 lesson 8 and 7.1): named elites with affixes, read by logic/Content/Champions.cs and laid by Encounters (a beat's \"champion\" field, or a zone's \"placed\" one). A kit affix (kind set) casts that telegraph from data/content/telegraphs.json on its own cadence (every [min, max] s, the first firstAfter s after its pack wakes, its sizes x scale); every affix multiplies the foe's health, damage and speed. perTier: how many a rolled champion has at world tiers I-IV (a beat's count is its tier I count; a fixed list never grows). weight: how often a roll picks it. foes: a closing's ring, of its pack's first kind. The names and epithets are PLACEHOLDER copy for the story lead: a rolled title is \"<name> <epithet>\" when the epithet starts with \"the\", else \"<name>, <epithet>\".",
+  "affixes": {
+    "quaking": { "label": "Quaking", "kind": "ring", "every": [9, 13], "firstAfter": 2.5, "scale": 0.8 },
+    "charging": { "label": "Charging", "kind": "charge", "every": [7, 10], "firstAfter": 1.5 },
+    "grasping": { "label": "Grasping", "kind": "pull", "every": [10, 14], "firstAfter": 2.5, "scale": 0.8 },
+    "hemming": { "label": "Hemming", "kind": "closing", "every": [18, 24], "firstAfter": 4, "foes": 8, "weight": 0.5 },
+    "ironhide": { "label": "Ironhide", "health": 1.4 },
+    "swift": { "label": "Swift", "speed": 1.25 }
+  },
+  "perTier": [1, 1, 2, 3],
+  "names": ["Old Harrow", "Garrick Wade", "Tamsin Reed", "Gaunt Ossery", "Wenna Coldwater", "Hob Marrow", "Corra Ashby", "Dunstan Mire", "Elsbet Hollin", "Ketch", "Absalom Pike", "Nell Gorse"],
+  "epithets": ["the Drowned", "the Unburied", "Who Keeps the Ford", "the Ember-Eaten", "the Mudborn", "the Barrow-Sworn", "the Reed-Bound", "the Lantern-Thief", "Who Walks Under Water", "the Hollow Bell", "Twice Buried", "the Ferryman's Debt"]
+}
