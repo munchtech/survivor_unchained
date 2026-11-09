@@ -266,6 +266,11 @@ public sealed class Autopilot
                 tx = f.X + Math.Cos(orbit) * 9; tz = f.Z + 10 + Math.Sin(orbit) * 5;
                 break;
             }
+            // (M5 r4) The Warden's Legendary is taken at the ford once its banner has been up (the heart's beat waits for it).
+            case "Victory" when !Idle && legendSeen && (victoryLegendT += dt) > 4.5
+                && b.Pickups.Living().FirstOrDefault(k => k.Loot is (int)Rpg.LootTier.Legendary or (int)Rpg.LootTier.Storied) is { } lv:
+                tx = lv.X; tz = lv.Z;
+                break;
             case "Victory":
                 break;
             // (M5 r2) The Warden's Legendary is taken before the day's road (it lay at the ford all day).
@@ -509,6 +514,7 @@ public sealed class Autopilot
     readonly HashSet<string> lampShots = new();
     double watchT, legendWalkT, menuT = -1, litAt = -1;
     bool legendSeen, cardShot, menuDone, fell, wasDown;
+    double victoryLegendT;
     static readonly bool FallOnce = Args.Has("fall-once");
     static readonly bool JudgeHooks = Args.Has("judge-hooks");  // (the watch-post's menu dwell: only for the judge's capture, never the pacing run)
 

@@ -1364,7 +1364,7 @@ public sealed partial class Prologue : ZoneRuntime
         ClearAround(e.X, e.Z, 40);
         // What it leaves: by the film, all at once; in play, staged (Legendary, RunVictory).
         legendFrom = (e.Level, e.Def.Family, e.X, e.Z);
-        vicT = 0; legendAt = -1; legendName = null;
+        vicT = 0; legendAt = -1; legendName = null; legendWait = 0;
         Go(Stage.Victory);
         cutT = 0;
         Objective([("Cross at the Low Ford", true, false)]);
@@ -1408,8 +1408,26 @@ public sealed partial class Prologue : ZoneRuntime
             G.HushPrompts(LegendBannerSecs + 0.2);
             G.Announce(new Announcement(legendName, "Legendary", "reward", LegendBannerSecs, Drops.NamedFalls, Through: true));
         }
+        // (M5 r4: the rest waits for her to take it: the judge, round 3, the push-in put the Ford's lamp column over its beam,
+        // its name on her head, and LEVEL 4, four labels, the narration and Grimtunnel's line came before its card. So the
+        // heart's beat (spoils, LEVEL, narration, push-in, Grimtunnel) starts once it is taken, or after LegendWaitMax.)
+        if (vicT >= LegendBanner + LegendBannerSecs && legendWait < LegendWaitMax && LegendLies())
+        {
+            legendWait += dt;
+            vicT = Math.Min(vicT, LegendNarrate - 0.8);
+            G.HoldBanners(1.0);
+        }
         if (vicT >= LegendNarrate && shown.Add("legend.spoils")) WardenSpoils();
     }
+
+    /// <summary>(M5 r4) Seconds the heart's beat waits for her to take the Warden's Legendary (then it goes on without).</summary>
+    public const double LegendWaitMax = 20;
+    double legendWait;
+
+    /// <summary>The Warden's Legendary still lies at the ford (by its corpse).</summary>
+    bool LegendLies() => B != null && legendName != null
+        && B.Pickups.Living().Any(k => k.Loot is (int)LootTier.Legendary or (int)LootTier.Storied
+            && Math.Abs(k.X - legendFrom.X) + Math.Abs(k.Z - legendFrom.Z) < 8);
 
     /// <summary>The Warden's drop roll at its corpse (WardenLegendary); hush: its Legendary's line is said by the staging.</summary>
     string? Legendary(bool hush)

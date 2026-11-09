@@ -389,8 +389,15 @@ public class PrologueTests
         s.B.KillEnemy(warden, true, null);
         Assert.Equal(Prologue.Stage.Victory, s.Zone.Now);
         Assert.Equal(0, s.Zone.LitCount);
-        // (M5 r2: the first Legendary's beat holds the narration about 5.7 s)
-        Run(s, 20);
+        // (M5 r2: the first Legendary's beat holds the narration about 5.7 s; M5 r4: the heart's beat waits for her to take
+        // the Legendary, up to LegendWaitMax)
+        Run(s, 12);
+        Assert.Equal(Prologue.Stage.Victory, s.Zone.Now);
+        var legends = s.B.Pickups.Living().Where(k => k.Loot is (int)LootTier.Legendary or (int)LootTier.Storied).ToList();
+        Assert.NotEmpty(legends);
+        Assert.DoesNotContain(s.B.Pickups.Living(), k => k.Ref == "wardens_lampiron");
+        foreach (var l in legends) s.B.Pickups.Release(l);
+        Run(s, 13.5);
         Assert.Equal(Prologue.Stage.Dawn, s.Zone.Now);
         Assert.Equal(TimeOfDay.Dawn, s.J.World.Time);
         Assert.Contains(s.J.World.History, h => h.Id == "ford_warden_slain");

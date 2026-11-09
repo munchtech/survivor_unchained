@@ -983,6 +983,8 @@ public partial class Game : Node, IZoneHost
     {
         if (Args.Has("no-banners")) return; // (dev: pictures of a skill without the level and zone cards over it)
         if (!a.Through && Now < bannerHold) { After(bannerHold - Now + 0.1, () => Announce(a)); return; }
+        // (M5 r4: not over a screen: a level-up held for the Legendary's moment came up over its item card)
+        if (!a.Through && Overlay != null) { After(0.5, () => Announce(a)); return; }
         if (!a.Through) { lastAnn = a; lastAnnAt = Now; }
         if (scene?.Fx.Flare.HoldsFrame == true) { After(0.25, () => Announce(a)); return; }
         // (a zone's banner asked for during a film waits for play: "The ember goes out" under C04a's bars; a film's own titles go straight to the HUD)
