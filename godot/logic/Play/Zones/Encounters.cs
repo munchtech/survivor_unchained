@@ -340,7 +340,7 @@ public sealed class Encounters
                 double wait = b.KitWait(kind, e);
                 if (wait > 0) { nextTell[seed] = b.Time + wait; continue; }
                 var blow = b.Tell(kind, e, p.X, p.Z);
-                nextTell[seed] = b.Time + bt.Every[0] + b.Rng.Next() * (bt.Every[1] - bt.Every[0]);
+                nextTell[seed] = b.Time + (bt.Every[0] + b.Rng.Next() * (bt.Every[1] - bt.Every[0])) * b.KitEveryMul;
                 if (blow != null) Told?.Invoke(bt, e, blow);
             }
         }
@@ -622,14 +622,14 @@ public sealed class Encounters
                 var key = (seed, a.Id);
                 // (its charge is the kit's, never its own)
                 if (kind == "charge") e.RangedT = Math.Max(e.RangedT, 5);
-                if (!nextAffix.TryGetValue(key, out var at)) nextAffix[key] = at = woke + a.FirstAfter;
+                if (!nextAffix.TryGetValue(key, out var at)) nextAffix[key] = at = woke + a.FirstAfter * Math.Min(1, b.KitEveryMul);
                 if (b.Time < at || e.State != EnemyState.Active || e.HoldUntil > b.Time || Held?.Invoke() == true) continue;
                 double reach = k.Length > 0 ? k.Length * a.Scale - 2 : 12, d = Dist(e.X, e.Z, p.X, p.Z);
                 if (d > reach || d < 2.5 || b.Collision.Raycast(e.X, e.Z, p.X, p.Z, 0.3) != null) { nextAffix[key] = b.Time + 0.4; continue; }
                 double wait = b.KitWait(kind, e);
                 if (wait > 0) { nextAffix[key] = b.Time + wait; continue; }
                 var blow = CastAffix(a, kind, e, bt);
-                nextAffix[key] = b.Time + a.Every[0] + b.Rng.Next() * (a.Every[1] - a.Every[0]);
+                nextAffix[key] = b.Time + (a.Every[0] + b.Rng.Next() * (a.Every[1] - a.Every[0])) * b.KitEveryMul;
                 if (blow != null && bt != null) Told?.Invoke(bt, e, blow);
                 // (one blow a champion at a time: its next affix waits its turn)
                 break;

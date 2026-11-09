@@ -96,7 +96,17 @@ public static class PressPlan
             if (near == null || !h.GripHeld(b.Time)) b.HoldSkill(w.Slot, false);
             else b.HoldSkill(w.Slot, true, near.X, near.Z);
         }
-        if (h.GripOnly || p.Leap != null || b.Art.Rush != null || p.DashT > 0) return;
+        // A union that took the grip's key (Bladestorm: Sunder's is its break): out of a storm that key still swings Sunder,
+        // and a grip-only hand holds it as it held the grip.
+        if (h.GripOnly)
+        {
+            foreach (var w in b.Weapons)
+                if (w.Slot2 >= 0 && !w.Channeling && d.For(w.Id).Aim == "storm" && !Firing.InStorm(b, w)
+                    && b.NearestHostile(p.X, p.Z, (w.Num(s => s.Reach) ?? 2.6) + d.GripPad) is { } nf && h.GripHeld(b.Time))
+                    b.PressSkill(w.Slot2, nf.X, nf.Z);
+            return;
+        }
+        if (p.Leap != null || b.Art.Rush != null || p.DashT > 0) return;
         bool reads = sees && h.Reads, ignore = h.Ignoring(b.Time);
         bool full = b.Resolve.On && b.Resolve.Value >= d.SpendFullAt * b.Resolve.Max;
         foreach (var w in b.Weapons.Where(w => w.Keyed && !w.Hold && w.DisabledT <= 0).OrderBy(w => d.For(w.Id).Priority).ToList())
@@ -105,15 +115,17 @@ public static class PressPlan
             if (rule.Aim == "storm") { if (Storm(b, h, w, rule, full, ignore)) return; continue; }
             double cost = b.CostOf(w);
             bool ready = w.KindledNow
-                ? w.KindleKey == KindlePress.Now ? w.Timer <= 0 && !b.BlowPending(w) && (cost <= 0 || b.Resolve.Value >= cost / 2) : w.PressWait <= 0
+                ? w.KindleKey == KindlePress.Now ? (w.Timer <= 0 || w.Relooking) && !b.BlowPending(w) && (cost <= 0 || b.Resolve.Value >= cost / 2) : w.PressWait <= 0
                 : w.Timer <= 0 && !w.Channeling && !b.BlowPending(w) && (cost <= 0 || b.Resolve.Value >= cost);
             if (!ready) { h.Clear(w); continue; }
             var when = rule.When ?? (w.KindledNow ? w.Kindle : null);
             bool cond = ignore || when == null || (reads || !NeedsReading(when)) && b.Kindled(when);
-            // A kindled "now" fires itself on its condition with the whole cost: its key is for the heave when full.
-            if (w.KindledNow && w.KindleKey == KindlePress.Now && cost > 0 && !ignore) cond = full;
+            // A kindled "now" spender fires itself only when Resolve is full (and takes all of it): the plan heaves it
+            // from its whole cost as soon as its condition holds, and always before Resolve would cap.
+            if (w.KindledNow && w.KindleKey == KindlePress.Now && cost > 0 && !ignore) cond = full || cond && b.Resolve.Value >= cost;
             else if (cost > 0 && full) cond = true;
-            if (!cond || AimOf(b, w, rule) is not var (ax, az)) { h.Clear(w); continue; }
+            // Full: the spender goes at what there is (a pack if one stands in reach, else the nearest foe), never wasted.
+            if (!cond || (AimOf(b, w, rule) ?? (cost > 0 && full ? AimOf(b, w, d.Default) : null)) is not var (ax, az)) { h.Clear(w); continue; }
             if (!h.Due(w, b.Time)) continue;
             if (b.PressSkill(w.Slot, ax, az)) { h.Went(w); return; }
         }

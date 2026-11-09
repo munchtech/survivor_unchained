@@ -161,6 +161,9 @@ public sealed class CharacterData
     public List<string> Discovered = new();
     /// <summary>Combat skills learned for the day (Rpg/SkillBook.cs), and those carried.</summary>
     public List<string> Skills = new(), Slotted = new();
+    /// <summary>(M3) The taught build's levels granted so far (Content/TaughtBuilds.Grant): a slot the player took off
+    /// is not put back.</summary>
+    public int TaughtUpTo;
     /// <summary>Every art the survivor knows (Rpg/ArtBook.cs).</summary>
     public List<string> Known = new();
     /// <summary>How far each art has come, and its facets.</summary>

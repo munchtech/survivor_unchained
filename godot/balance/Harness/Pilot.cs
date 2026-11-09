@@ -94,7 +94,9 @@ public static class Pilot
             if (Dist(gx, gz, p.X, p.Z) > 1.2) { mx = gx - p.X; mz = gz - p.Z; } else { mx = 0; mz = 0; }
         }
         else if (stone != null && near > engage + 1) { mx = stone.X - p.X; mz = stone.Z - p.Z; }
-        else if (nearest != null && near > engage) { mx = nearest.X - p.X; mz = nearest.Z - p.Z; }
+        // (M3: in the campaign the engage distance is to its edge: a boss's girth is not walked into, where his touch hurts;
+        // the arena keeps the center, byte-same)
+        else if (nearest != null && near - (b.Campaign ? nearest.Radius : 0) > engage) { mx = nearest.X - p.X; mz = nearest.Z - p.Z; }
         // In the press the wall stands: still, where Planted and The Wall Holds pay and every blow is a chance at a stone.
         else if (nearest != null && wall) { mx = 0; mz = 0; }
         else if (nearest != null) { mx = -(nearest.Z - p.Z); mz = nearest.X - p.X; }

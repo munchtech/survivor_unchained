@@ -104,6 +104,8 @@ public sealed class Human
         return aware ? Pilot.Steer(b, true, boss, goal: goal, onward: onward) : Pilot.Steer(b, false, null, goal: goal, naive: true, onward: onward);
     }
     bool lastAware;
+    /// <summary>(M3) Whether the last step's feet were the aware (deft) Pilot's.</summary>
+    public bool LastAware => lastAware;
 
     /// <summary>The hands that are not the feet, as the Pilot's, with a champion's lunge dashed only when read and seen,
     /// and (careless) no Flare saved for a boss.</summary>

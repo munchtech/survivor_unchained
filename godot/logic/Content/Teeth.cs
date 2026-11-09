@@ -107,6 +107,8 @@ public static class Teeth
         /// <summary>Seconds held at one floor before it cracks a step (a player who can't bring a lamp down is never
         /// held for good: H8's runs had the autopilot's lamps relit by his channel over and over).</summary>
         public double CrackAfter = 45;
+        /// <summary>(M3) His cleave's damage multiplier (a marked blow: a mover steps out of it, a stander eats it).</summary>
+        public double Cleave = 1;
     }
 
     public sealed class PrologueTeeth

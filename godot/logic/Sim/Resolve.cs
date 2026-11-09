@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using SurvivorUnchained.Content;
+using SurvivorUnchained.Core;
 using static SurvivorUnchained.Core.MathX;
 
 namespace SurvivorUnchained.Sim;
@@ -16,6 +18,8 @@ namespace SurvivorUnchained.Sim;
  *                       channel: Bladestorm), Faded (out of a fight).
  *   LastDelta, LastAt   the last change and when (the battle's clock).
  *   SpentInStorm        Resolve the current (or last) storm drained: its break grows with it.
+ *   Spent       double  (M3) Resolve spent and drained this fight, in all (the harness's spent a minute).
+ *   Cap, TakenPer, BlockGain, FadeRate, FadeAfter, FightRadius, SelfAt   the numbers below, read from data/content/resolve.json.
  * Ev.Resolve is emitted when Value has moved a whole point or more since the last one told, or reached 0 or Max (never
  * every tick): Value, Max, Delta (since the last told), Reason (the change that crossed it).
  *
@@ -26,8 +30,17 @@ namespace SurvivorUnchained.Sim;
  *     or block gain is allowed only up to 0.5 * LandedFill - TakenFill this fight. She fills by going in, never by standing.
  *   - Fade: out of a fight (no hostile within 12 m and no blow given or taken for 3 s) it falls 10 a second; never in one.
  *   - Spend: Battle.CostOf, read by Firing.Press and the kindled spenders. A channel with a Drain drains it while held
- *     and ends at 0.
+ *     and ends at 0. (M3) A kindled spender whose key heaves (press "now") fires itself only at SelfAt of the cap (full)
+ *     and spends all of it; its key heaves at full strength from its cost and with what she has from half its cost.
  */
+/// <summary>The meter's numbers (data/content/resolve.json).</summary>
+public sealed class ResolveDef
+{
+    public double Cap = 100, TakenPer = 0.02, BlockGain = 4, FadeRate = 10, FadeAfter = 3, FightRadius = 12, SelfAt = 1;
+    static ResolveDef? def;
+    public static ResolveDef Data => def ??= JsonSerializer.Deserialize<ResolveDef>(Json.ReadContent("resolve.json"), Json.Options)!;
+}
+
 public enum ResolveReason { Landed, Taken, Blocked, Spent, Drained, Faded }
 
 public sealed class ResolveMeter
@@ -35,7 +48,10 @@ public sealed class ResolveMeter
     readonly Battle b;
     internal ResolveMeter(Battle battle) => b = battle;
 
-    public const double Cap = 100, TakenPer = 0.02, BlockGain = 4, FadeRate = 10, FadeAfter = 3, FightRadius = 12;
+    /// <summary>The numbers, from data/content/resolve.json (M3: were constants; the same names, types and values).</summary>
+    public static readonly double Cap = ResolveDef.Data.Cap, TakenPer = ResolveDef.Data.TakenPer, BlockGain = ResolveDef.Data.BlockGain,
+        FadeRate = ResolveDef.Data.FadeRate, FadeAfter = ResolveDef.Data.FadeAfter, FightRadius = ResolveDef.Data.FightRadius,
+        SelfAt = ResolveDef.Data.SelfAt;
 
     public bool On => b.Campaign && b.Calling == "warden";
     public double Value { get; private set; }
@@ -48,6 +64,8 @@ public sealed class ResolveMeter
     public double LandedFill { get; private set; }
     public double TakenFill { get; private set; }
     public double SpentInStorm;
+    /// <summary>(M3) Resolve spent and drained this fight, in all.</summary>
+    public double Spent { get; private set; }
 
     readonly Queue<(double T, double D)> recent = new();
     double told;
@@ -63,6 +81,7 @@ public sealed class ResolveMeter
         double v = Math.Clamp(Value + d, 0, Max), real = v - Value;
         if (real == 0) return;
         Value = v;
+        if (why is ResolveReason.Spent or ResolveReason.Drained) Spent -= real;
         LastReason = why; LastDelta = real; LastAt = b.Time;
         recent.Enqueue((b.Time, real));
         Trim();
@@ -217,7 +236,7 @@ public sealed partial class Battle
         {
             case KindlePress.Now:
             {
-                if (w.Timer > 0 || BlowPending(w)) return false;
+                if (w.Timer > 0 && !w.Relooking || BlowPending(w)) return false;
                 double cost = CostOf(w), mul = 1;
                 if (cost > 0)
                 {

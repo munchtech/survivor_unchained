@@ -61,6 +61,9 @@ public partial class WorldScene : Node3D, IZoneLook
     /// <summary>An action held now (the skill keys, for a channel), and the cursor's point on the ground (null with
     /// no cursor: a pad, or the pointer off the window).</summary>
     public Func<Act, bool> Held = _ => false;
+    /// <summary>(M3) Hands on the sim each step after the keys (the autopilot's press plan: Sim/PressPlan.cs): what they hold
+    /// and press goes through Battle.HoldSkill/PressSkill, as the keys' do.</summary>
+    public Action<Battle>? Hands;
     public Func<(double X, double Z)?> Pointer = () => null;
     /// <summary>Each fixed step, before the fight's (the zone's own logic).</summary>
     public Action<double> OnStep = _ => { };
@@ -303,6 +306,7 @@ public partial class WorldScene : Node3D, IZoneLook
                 if (Pressed(Act.Flare)) artHeld = Buffer;
                 if (artHeld > 0) artHeld = b.UseFlare(mx, mz) ? 0 : artHeld - Step;
                 Skills(b);
+                Hands?.Invoke(b);
                 OnStep(Step);
                 Perf.Begin(Perf.Part.Sim);
                 b.Tick(Step, mx, mz);

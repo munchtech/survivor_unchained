@@ -1,0 +1,10 @@
+{
+  "_doc": "Resolve, the warden's resource (ARPG.md 3.1; logic/Sim/Resolve.cs, its rules and the UI's API). cap: the meter's top. takenPer: 1 Resolve for each this share of max health lost to a blow (after armor). blockGain: a block's gain. Taken and block gains are held to half the landed fill. fadeRate: lost a second out of a fight, fadeAfter s after the last blow given or taken, with no hostile within fightRadius m. Each skill's cost and fill are its press record in skills.json. selfAt (M3): a kindled spender whose key heaves (press now: Groundbreaker, the Disc) fires itself only at this share of the cap, and that heave spends all she has; her key heaves from its cost (full strength) or from half of it (at what she has).",
+  "cap": 100,
+  "takenPer": 0.02,
+  "blockGain": 4,
+  "fadeRate": 10,
+  "fadeAfter": 3,
+  "fightRadius": 12,
+  "selfAt": 1
+}

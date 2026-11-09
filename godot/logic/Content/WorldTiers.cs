@@ -13,6 +13,8 @@ public static class WorldTiers
     {
         public string Name = "";
         public double Health = 1, Damage = 1, Rare = 1, Legendary = 1, Kit = 1;
+        /// <summary>(M3) The kit's cadence in story fights (champions' affixes, packs' tells): their waits x this (under 1, more marks).</summary>
+        public double KitEvery = 1;
         public int ItemLevels;
         /// <summary>The world fact that opens this tier (null: always open).</summary>
         public string? Opens;
