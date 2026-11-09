@@ -115,6 +115,9 @@ public static class Ev
     /// <summary>Loot landed where the filter lets it be seen: Tier is Rpg.LootTier (its beam and its sound).</summary>
     public sealed class Drop : CombatEvent { public int Tier; public double X, Z; public bool Emphasised, Quiet; public PickupKind Kind; }
     public sealed class LevelUp : CombatEvent { public int Level; }
+    /// <summary>(M3) Her calling taught a slot of its build (taught_builds.json) at a level reached in the campaign: the
+    /// skill, the slot it went to (-1: carried by day but not in this fight), its cast form.</summary>
+    public sealed class Taught : CombatEvent { public string Skill = "", Cast = ""; public int Slot = -1, Level; }
     /// <summary>A weapon evolved; out of a chest, the chest's opening shows it, not this.</summary>
     public sealed class Evolve : CombatEvent { public string Weapon = "", Into = ""; public bool Chest; }
 
