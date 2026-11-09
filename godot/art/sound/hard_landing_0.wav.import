@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://bjfrwwvu5qojk"
+path="res://.godot/imported/hard_landing_0.wav-b2a7504c5cf1bc08d0ce861448136e3d.sample"
 
 [deps]
 
 source_file="res://art/sound/hard_landing_0.wav"
+dest_files=["res://.godot/imported/hard_landing_0.wav-b2a7504c5cf1bc08d0ce861448136e3d.sample"]
 
 [params]
 

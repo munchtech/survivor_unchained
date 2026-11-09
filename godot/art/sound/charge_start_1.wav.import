@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://f4vx3vuegnrx"
+path="res://.godot/imported/charge_start_1.wav-f911fe0bfc67975ba6e46ca6a5237838.sample"
 
 [deps]
 
 source_file="res://art/sound/charge_start_1.wav"
+dest_files=["res://.godot/imported/charge_start_1.wav-f911fe0bfc67975ba6e46ca6a5237838.sample"]
 
 [params]
 

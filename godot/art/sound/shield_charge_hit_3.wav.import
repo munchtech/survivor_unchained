@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://dupldqodm57r5"
+path="res://.godot/imported/shield_charge_hit_3.wav-bd55e27ae2112f7d8cc04984dd50ce1a.sample"
 
 [deps]
 
 source_file="res://art/sound/shield_charge_hit_3.wav"
+dest_files=["res://.godot/imported/shield_charge_hit_3.wav-bd55e27ae2112f7d8cc04984dd50ce1a.sample"]
 
 [params]
 

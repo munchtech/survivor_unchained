@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://or5wq7gt27d8"
+path="res://.godot/imported/leap_land_0.wav-bd179f6ac5e8abe644cbbf5d917cce85.sample"
 
 [deps]
 
 source_file="res://art/sound/leap_land_0.wav"
+dest_files=["res://.godot/imported/leap_land_0.wav-bd179f6ac5e8abe644cbbf5d917cce85.sample"]
 
 [params]
 

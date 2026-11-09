@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://0l865ealsocq"
+path="res://.godot/imported/leap_takeoff_0.wav-456cd83ed673b7a466e7155eca6ae009.sample"
 
 [deps]
 
 source_file="res://art/sound/leap_takeoff_0.wav"
+dest_files=["res://.godot/imported/leap_takeoff_0.wav-456cd83ed673b7a466e7155eca6ae009.sample"]
 
 [params]
 
