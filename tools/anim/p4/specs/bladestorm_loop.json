@@ -1,0 +1,326 @@
+{
+ "kind": "action",
+ "rules": "R8.1-R8.4 anticipation, contact, hold, follow-through, recovery to the RELAXED fight-ready pose; s11 Warden: committed, rotation-driven, the shield first; R1.2 the weapon carries 2-3x the body's motion. The read: a compact, terrifying top: the sword arm out at waist-to-chest height, the blade level and leading the turn, the shield tucked to her chest, the hips driving, one step per half turn.",
+ "held": [
+  "sword",
+  "shield"
+ ],
+ "beats": {
+  "events": {},
+  "loop": [
+   0.0,
+   1.3333
+  ]
+ },
+ "gen": {
+  "engine": "kimodo",
+  "seconds": 4.0,
+  "takes": 6,
+  "seeds": [
+   801
+  ],
+  "prompts": [
+   "A warrior woman spins round and round to her left in place like a whirlwind, stepping her right foot around her planted left foot every half turn, knees bent and leaning forward, her sword arm extended straight out at waist height and her shield pulled tight against her chest."
+  ],
+  "root2d": {
+   "kind": "straight",
+   "speed": 0.0,
+   "heading_tps": 1.0,
+   "heading_deg0": -180.0,
+   "orbit": [
+    -0.314,
+    -0.276
+   ],
+   "every": 1
+  },
+  "keys": {
+   "poses": [
+    {
+     "src": {
+      "prompt": "A woman stands with her knees bent and leans slightly forward, her right arm extended straight out to her side at waist height holding a sword level, her left arm tucked against her chest holding a shield.",
+      "seed": 505,
+      "seconds": 2.0,
+      "takes": 6
+     },
+     "pick": 0,
+     "frame": 30,
+     "arm": {
+      "RightHand": [
+       -0.6,
+       0.22,
+       0.12
+      ],
+      "LeftHand": [
+       0.0,
+       0.33,
+       0.25
+      ]
+     },
+     "at": 15,
+     "xz": [
+      -0.314,
+      -0.276
+     ],
+     "yaw": 0.0
+    },
+    {
+     "src": {
+      "prompt": "A woman stands with her knees bent and leans slightly forward, her right arm extended straight out to her side at waist height holding a sword level, her left arm tucked against her chest holding a shield.",
+      "seed": 505,
+      "seconds": 2.0,
+      "takes": 6
+     },
+     "pick": 0,
+     "frame": 30,
+     "arm": {
+      "RightHand": [
+       -0.6,
+       0.22,
+       0.12
+      ],
+      "LeftHand": [
+       0.0,
+       0.33,
+       0.25
+      ]
+     },
+     "at": 30,
+     "xz": [
+      0.314,
+      0.276
+     ],
+     "yaw": 180.0
+    },
+    {
+     "src": {
+      "prompt": "A woman stands with her knees bent and leans slightly forward, her right arm extended straight out to her side at waist height holding a sword level, her left arm tucked against her chest holding a shield.",
+      "seed": 505,
+      "seconds": 2.0,
+      "takes": 6
+     },
+     "pick": 0,
+     "frame": 30,
+     "arm": {
+      "RightHand": [
+       -0.6,
+       0.22,
+       0.12
+      ],
+      "LeftHand": [
+       0.0,
+       0.33,
+       0.25
+      ]
+     },
+     "at": 45,
+     "xz": [
+      -0.314,
+      -0.276
+     ],
+     "yaw": 360.0
+    },
+    {
+     "src": {
+      "prompt": "A woman stands with her knees bent and leans slightly forward, her right arm extended straight out to her side at waist height holding a sword level, her left arm tucked against her chest holding a shield.",
+      "seed": 505,
+      "seconds": 2.0,
+      "takes": 6
+     },
+     "pick": 0,
+     "frame": 30,
+     "arm": {
+      "RightHand": [
+       -0.6,
+       0.22,
+       0.12
+      ],
+      "LeftHand": [
+       0.0,
+       0.33,
+       0.25
+      ]
+     },
+     "at": 60,
+     "xz": [
+      0.314,
+      0.276
+     ],
+     "yaw": 540.0
+    },
+    {
+     "src": {
+      "prompt": "A woman stands with her knees bent and leans slightly forward, her right arm extended straight out to her side at waist height holding a sword level, her left arm tucked against her chest holding a shield.",
+      "seed": 505,
+      "seconds": 2.0,
+      "takes": 6
+     },
+     "pick": 0,
+     "frame": 30,
+     "arm": {
+      "RightHand": [
+       -0.6,
+       0.22,
+       0.12
+      ],
+      "LeftHand": [
+       0.0,
+       0.33,
+       0.25
+      ]
+     },
+     "at": 75,
+     "xz": [
+      -0.314,
+      -0.276
+     ],
+     "yaw": 720.0
+    },
+    {
+     "src": {
+      "prompt": "A woman stands with her knees bent and leans slightly forward, her right arm extended straight out to her side at waist height holding a sword level, her left arm tucked against her chest holding a shield.",
+      "seed": 505,
+      "seconds": 2.0,
+      "takes": 6
+     },
+     "pick": 0,
+     "frame": 30,
+     "arm": {
+      "RightHand": [
+       -0.6,
+       0.22,
+       0.12
+      ],
+      "LeftHand": [
+       0.0,
+       0.33,
+       0.25
+      ]
+     },
+     "at": 90,
+     "xz": [
+      0.314,
+      0.276
+     ],
+     "yaw": 900.0
+    },
+    {
+     "src": {
+      "prompt": "A woman stands with her knees bent and leans slightly forward, her right arm extended straight out to her side at waist height holding a sword level, her left arm tucked against her chest holding a shield.",
+      "seed": 505,
+      "seconds": 2.0,
+      "takes": 6
+     },
+     "pick": 0,
+     "frame": 30,
+     "arm": {
+      "RightHand": [
+       -0.6,
+       0.22,
+       0.12
+      ],
+      "LeftHand": [
+       0.0,
+       0.33,
+       0.25
+      ]
+     },
+     "at": 105,
+     "xz": [
+      -0.314,
+      -0.276
+     ],
+     "yaw": 1080.0
+    }
+   ],
+   "prompts": [
+    0
+   ],
+   "seeds": [
+    801,
+    802
+   ],
+   "seconds": 4.0,
+   "takes": 6,
+   "tag": "s"
+  }
+ },
+ "post": {
+  "loop": true,
+  "inplace": true,
+  "cycle_s": [
+   3.0,
+   3.0
+  ],
+  "crop": [
+   15,
+   105
+  ],
+  "action": {
+   "seconds": 1.3333,
+   "stretch": true,
+   "derotate_tps": 2.25,
+   "pivot": "LeftFoot",
+   "planted": {
+    "foot_l": [
+     [
+      "start",
+      "end",
+      "ankle"
+     ]
+    ]
+   }
+  }
+ },
+ "notes": "A1 actions (solver B): three turns to her left in 40 frames. Made at 1.0 turn/s (Kimodo holds about that; asked for 2.25 it turns at 1.4 at most and hovers) by a Root2D heading track with the root orbiting the planted left foot, the same stance pose keyed every half turn (the right foot steps around the pivot), then stretched x2.25 onto 1.3333 s and de-rotated at 2.25 turns/s about the pivot.",
+ "bands": {
+  "yaw_resid_deg@loop": [
+   0,
+   15
+  ],
+  "loop_seam_deg": [
+   0,
+   1
+  ],
+  "hand_r_axis_cm@loop:min": [
+   45,
+   90
+  ],
+  "hand_r_over_head_cm@loop:mean": [
+   -80,
+   -35
+  ],
+  "lean_deg@loop:mean": [
+   5,
+   12
+  ],
+  "knee_l_deg@loop:mean": [
+   15,
+   35
+  ],
+  "knee_r_deg@loop:mean": [
+   15,
+   35
+  ],
+  "blade_below_deg@loop:max": [
+   -15,
+   15
+  ],
+  "blade_below_deg@loop:min": [
+   -15,
+   15
+  ],
+  "boss_sternum_cm@loop:max": [
+   0,
+   25
+  ]
+ },
+ "gate": [
+  "yaw_resid_deg@loop",
+  "hand_r_axis_cm@loop:min",
+  "lean_deg@loop:mean"
+ ],
+ "source": "src/bladestorm_loop.npz",
+ "bvh": "bladestorm_loop__qs0s802_4.bvh",
+ "sha1": "616babcc244c0a21ea2c9fdd3d3ae5325065fd49",
+ "take_score": 3.67
+}

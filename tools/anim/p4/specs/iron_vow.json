@@ -1,0 +1,360 @@
+{
+ "kind": "action",
+ "rules": "R8.1-R8.4 anticipation, contact, hold, follow-through, recovery to the RELAXED fight-ready pose; s11 Warden: committed, rotation-driven, the shield first; R1.2 the weapon carries 2-3x the body's motion. The read: she plants and becomes a wall; then it all comes back out of her.",
+ "held": [
+  "sword",
+  "shield"
+ ],
+ "beats": {
+  "events": {
+   "plant": 0.3,
+   "burst": 1.4
+  },
+  "loop": [
+   0.3,
+   1.3
+  ],
+  "contact": [
+   1.4
+  ],
+  "hold": [
+   1.4,
+   1.4667
+  ],
+  "cancel": 1.4667
+ },
+ "gen": {
+  "engine": "kimodo",
+  "seconds": 2.8,
+  "takes": 6,
+  "seeds": [
+   811
+  ],
+  "prompts": [
+   "A woman plants her feet and raises her shield, braces behind it breathing heavily, then shoves the shield forward hard and returns to a ready stance."
+  ],
+  "keys": {
+   "poses": [
+    {
+     "src": {
+      "prompt": "A woman stands ready and relaxed, a shield held on her left forearm at chest height and a sword held low by her right hip, breathing calmly.",
+      "seed": 531,
+      "seconds": 2.0,
+      "takes": 6
+     },
+     "pick": 0,
+     "frame": 30,
+     "arm": {
+      "LeftHand": [
+       0.056,
+       0.243,
+       0.28
+      ],
+      "RightHand": [
+       -0.187,
+       -0.075,
+       0.112
+      ]
+     },
+     "at": 0,
+     "xz": [
+      0,
+      0
+     ],
+     "yaw": 0
+    },
+    {
+     "src": {
+      "prompt": "A warrior woman plants her feet wide with her left foot forward and crouches slightly, raising her shield on her left arm up in front of her face and bracing behind it, her sword drawn back low at her right hip, and holds still.",
+      "seed": 511,
+      "seconds": 2.5,
+      "takes": 6
+     },
+     "pick": 1,
+     "frame": 37,
+     "xz": [
+      0.045,
+      0.019
+     ],
+     "yaw": 0,
+     "arm": {
+      "RightHand": [
+       -0.24,
+       0.0,
+       0.0
+      ]
+     },
+     "at": 15
+    },
+    {
+     "src": {
+      "prompt": "A warrior woman plants her feet wide with her left foot forward and crouches slightly, raising her shield on her left arm up in front of her face and bracing behind it, her sword drawn back low at her right hip, and holds still.",
+      "seed": 511,
+      "seconds": 2.5,
+      "takes": 6
+     },
+     "pick": 1,
+     "frame": 37,
+     "xz": [
+      0.045,
+      0.019
+     ],
+     "yaw": 0,
+     "arm": {
+      "RightHand": [
+       -0.24,
+       0.0,
+       0.0
+      ]
+     },
+     "at": 23
+    },
+    {
+     "src": {
+      "prompt": "A warrior woman plants her feet wide with her left foot forward and crouches slightly, raising her shield on her left arm up in front of her face and bracing behind it, her sword drawn back low at her right hip, and holds still.",
+      "seed": 511,
+      "seconds": 2.5,
+      "takes": 6
+     },
+     "pick": 1,
+     "frame": 37,
+     "xz": [
+      0.045,
+      0.019
+     ],
+     "yaw": 0,
+     "arm": {
+      "RightHand": [
+       -0.24,
+       0.0,
+       0.0
+      ]
+     },
+     "at": 30
+    },
+    {
+     "src": {
+      "prompt": "A warrior woman plants her feet wide with her left foot forward and crouches slightly, raising her shield on her left arm up in front of her face and bracing behind it, her sword drawn back low at her right hip, and holds still.",
+      "seed": 511,
+      "seconds": 2.5,
+      "takes": 6
+     },
+     "pick": 1,
+     "frame": 37,
+     "xz": [
+      0.045,
+      0.019
+     ],
+     "yaw": 0,
+     "arm": {
+      "RightHand": [
+       -0.24,
+       0.0,
+       0.0
+      ]
+     },
+     "at": 37
+    },
+    {
+     "src": {
+      "prompt": "A warrior woman plants her feet wide with her left foot forward and crouches slightly, raising her shield on her left arm up in front of her face and bracing behind it, her sword drawn back low at her right hip, and holds still.",
+      "seed": 511,
+      "seconds": 2.5,
+      "takes": 6
+     },
+     "pick": 1,
+     "frame": 37,
+     "xz": [
+      0.045,
+      0.019
+     ],
+     "yaw": 0,
+     "arm": {
+      "RightHand": [
+       -0.24,
+       0.0,
+       0.0
+      ]
+     },
+     "at": 45
+    },
+    {
+     "src": {
+      "prompt": "A woman braced behind a shield explodes forward, driving her hips and shoving the shield hard forward with her left arm, then steps back into a ready stance.",
+      "seed": 512,
+      "seconds": 2.5,
+      "takes": 6
+     },
+     "pick": 4,
+     "frame": 32,
+     "xz": [
+      0.203,
+      0.169
+     ],
+     "yaw": -15,
+     "at": 48
+    },
+    {
+     "src": {
+      "prompt": "A woman braced behind a shield explodes forward, driving her hips and shoving the shield hard forward with her left arm, then steps back into a ready stance.",
+      "seed": 512,
+      "seconds": 2.5,
+      "takes": 6
+     },
+     "pick": 4,
+     "frame": 32,
+     "xz": [
+      0.203,
+      0.169
+     ],
+     "yaw": -15,
+     "at": 50
+    },
+    {
+     "src": {
+      "prompt": "A woman stands ready and relaxed, a shield held on her left forearm at chest height and a sword held low by her right hip, breathing calmly.",
+      "seed": 531,
+      "seconds": 2.0,
+      "takes": 6
+     },
+     "pick": 0,
+     "frame": 30,
+     "arm": {
+      "LeftHand": [
+       0.056,
+       0.243,
+       0.28
+      ],
+      "RightHand": [
+       -0.187,
+       -0.075,
+       0.112
+      ]
+     },
+     "at": 66,
+     "xz": [
+      -0.036,
+      0.045
+     ],
+     "yaw": 0
+    },
+    {
+     "src": {
+      "prompt": "A woman stands ready and relaxed, a shield held on her left forearm at chest height and a sword held low by her right hip, breathing calmly.",
+      "seed": 531,
+      "seconds": 2.0,
+      "takes": 6
+     },
+     "pick": 0,
+     "frame": 30,
+     "arm": {
+      "LeftHand": [
+       0.056,
+       0.243,
+       0.28
+      ],
+      "RightHand": [
+       -0.187,
+       -0.075,
+       0.112
+      ]
+     },
+     "at": 78,
+     "xz": [
+      -0.036,
+      0.045
+     ],
+     "yaw": 0
+    }
+   ],
+   "prompts": [
+    0
+   ],
+   "seeds": [
+    811,
+    812
+   ],
+   "seconds": 2.8,
+   "takes": 6,
+   "tag": "v"
+  }
+ },
+ "post": {
+  "loop": false,
+  "inplace": false,
+  "crop": [
+   6,
+   66
+  ],
+  "action": {
+   "seconds": 2.0,
+   "planted": {
+    "foot_l": [
+     [
+      "plant",
+      1.4667
+     ]
+    ],
+    "foot_r": [
+     [
+      "start",
+      1.4667
+     ]
+    ]
+   }
+  }
+ },
+ "notes": "A1 actions (solver B): keyed beats from native takes: the fight-ready start (rdpose, hands on idle_warden's), the brace (vwpose_brace pick 1 f37, the sword hand drawn back by IK) keyed through the loop, the shove (vwpose_shove pick 4 f32, feet on the brace's) at the burst and the hold, fight-ready at 2.0 s. Job frames = clip frames + 6 (crop).",
+ "bands": {
+  "pelvis_cm@plant": [
+   -15,
+   -8
+  ],
+  "stance_cm@plant": [
+   55,
+   75
+  ],
+  "stance_fb_cm@plant": [
+   20,
+   60
+  ],
+  "pelvis_cm@loop:ptp": [
+   0,
+   3
+  ],
+  "chest_cm@loop:ptp": [
+   1,
+   3
+  ],
+  "hand_l_ahead_cm@loop:ptp": [
+   0,
+   3
+  ],
+  "shield_top_cm@plant": [
+   140,
+   155
+  ],
+  "shield_face_deg@plant": [
+   -20,
+   20
+  ],
+  "still_deg@hold:max": [
+   0,
+   1
+  ],
+  "pelvis_cm@2.0": [
+   -6,
+   3
+  ]
+ },
+ "gate": [
+  "pelvis_cm@plant",
+  "stance_cm@plant",
+  "pelvis_cm@loop:ptp",
+  "pelvis_cm@2.0"
+ ],
+ "source": "src/iron_vow.npz",
+ "bvh": "iron_vow__qv0s812_2.bvh",
+ "sha1": "c02c0a46a2a00b5114f79ce20cecb7c8d7dc9d89",
+ "take_score": 1.132
+}
