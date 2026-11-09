@@ -1283,8 +1283,8 @@ public partial class BattleFx : Node3D
                     else if (BashStruck(e, at)) { }
                     else Burst(at, e.School, e.Crit ? 10 : 4, e.Crit ? 5 : 3, size: e.Crit ? 0.12f : 0.08f);
                     // (her auto-attacks on the dry dead: no bone-chip snow, their chip puff carries it; VFX 10 r3)
-                    // (P7 solver A: the charge's hits throw lit dust, not a speck cloud that reads as pepper at night)
-                    if (e.Family != null && !(!P7Off && e.Art is "shield_charge" or "shield_charge_slam") && !(e.Family == Family.Undead && !e.Dot && (IsOath(e.Art) || IsDisc(e.Art) || e.Art == "watch_bell" || (e.Art == null && time == bashAt))))
+                    // (P7 solver A: the leap's and the charge's hits throw lit dust, not a speck cloud that reads as pepper at night)
+                    if (e.Family != null && !(!P7Off && e.Art is "shield_charge" or "shield_charge_slam" or "heroic_leap") && !(e.Family == Family.Undead && !e.Dot && (IsOath(e.Art) || IsDisc(e.Art) || e.Art == "watch_bell" || (e.Art == null && time == bashAt))))
                     {
                         var away = new Vector3((float)e.Dx, 0, (float)e.Dz);
                         if (away.LengthSquared() < 0.01f) away = Vector3.Forward;

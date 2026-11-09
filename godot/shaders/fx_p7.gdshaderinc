@@ -129,10 +129,10 @@ vec4 p7_star(vec2 p) {
 		float h = fx_hash(vec2(j * 3.1, p7_seed + 1.0));
 		float th = (j + 0.5 + (h - 0.5) * 0.8) / 12.0 * P7_TAU + p7_seed;
 		float len = mix(0.1, 0.2, h);
-		float head = mix(0.3, mix(0.8, 1.05, fract(h * 7.0)), 1.0 - (1.0 - run) * (1.0 - run));
+		float head = mix(0.3, mix(0.7, 0.92, fract(h * 7.0)), 1.0 - (1.0 - run) * (1.0 - run));
 		vec2 d = vec2(cos(th), sin(th));
 		float u = dot(p, d), v = dot(p, vec2(-d.y, d.x));
-		if (u > head - len && u < head) o = p7_over(o, p7_stroke(v / 0.02, (u - (head - len)) / len, max(life, run * 0.34)));
+		if (u > head - len && u < head) o = p7_over(o, p7_stroke(v / 0.02, (u - (head - len)) / len, min(1.0, max(life * 1.5, run * 0.34))));
 	}
 	return o;
 }
@@ -142,6 +142,8 @@ vec4 p7_ribbon(vec2 uv) {
 	// tail; its very head (the last 6%, where it meets her) feathers in coverage so it never ends in a square cap
 	vec4 o = p7_stroke(uv.y * 2.0 - 1.0, uv.x, p7_fade);
 	o.a *= 1.0 - smoothstep(0.94, 1.0, uv.x);
+	// and its tail ends where it would thin to a hairline (no 1 px line running long)
+	o.a *= smoothstep(0.12, 0.24, uv.x);
 	return o;
 }
 
