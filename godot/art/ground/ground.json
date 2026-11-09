@@ -1,7 +1,7 @@
 {
  "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
  "painted": 2,
- "inputs": "b60529359a5f",
+ "inputs": "aa9e70e8b751",
  "from": "(c) the terrain zones' seven layers as terrain.gdshader reads them (Ground.cs: the Verge, the Low Ford, the Waystation, the title's camp, C01's frost)",
  "layers": [
   {
@@ -11,9 +11,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 grass (day): golden-green big flat clumps, olive and worn, never lime; target 04's verge; rule 4",
    "mean": [
-    0.14055,
-    0.20848,
-    0.04607
+    0.04607,
+    0.08306,
+    0.0318
    ]
   },
   {
@@ -24,8 +24,8 @@
    "from": "MB4 (the floor under the spruce, day); rule 9: leaf litter as a few leaf shapes",
    "mean": [
     0.05476,
-    0.04456,
-    0.03191
+    0.04391,
+    0.03533
    ]
   },
   {
@@ -36,8 +36,8 @@
    "from": "MB4 road (day): two or three value masses, warm; target 04's road, 05's track",
    "mean": [
     0.10614,
-    0.07724,
-    0.06357
+    0.07527,
+    0.07042
    ]
   },
   {
@@ -48,8 +48,8 @@
    "from": "MB4 road (the ruts' wet earth, a step darker than the road)",
    "mean": [
     0.03731,
-    0.03192,
-    0.0267
+    0.03159,
+    0.02965
    ]
   },
   {
@@ -59,9 +59,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB3 (the town's rough paving as chunky planes, warm tops, cool joints); the setts' own maps are wave 2",
    "mean": [
-    0.17178,
-    0.19569,
-    0.09935
+    0.17179,
+    0.19523,
+    0.10956
    ]
   },
   {
@@ -71,9 +71,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 rock: a few big rounded planes in muted moon-blue grey, moss on the top planes",
    "mean": [
-    0.21443,
-    0.2166,
-    0.12752
+    0.20501,
+    0.2059,
+    0.14455
    ]
   },
   {
@@ -85,7 +85,7 @@
    "mean": [
     0.01676,
     0.01787,
-    0.01931
+    0.02146
    ]
   }
  ],

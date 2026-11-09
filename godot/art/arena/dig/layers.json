@@ -1,7 +1,7 @@
 {
  "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
  "painted": 2,
- "inputs": "6b26f2ff205a",
+ "inputs": "5cf55632ae18",
  "from": "(c) the Dig's layers (clay, spoil, ballast, slurry, rust, burnt, face); (b) MB4 rock and road",
  "layers": [
   {
@@ -13,7 +13,7 @@
    "mean": [
     0.36474,
     0.24169,
-    0.05527
+    0.06096
    ]
   },
   {
@@ -23,9 +23,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 rock (the spoil's coal lumps as chunky planes, a shade lighter than coal)",
    "mean": [
-    0.12923,
-    0.1137,
-    0.07978
+    0.12372,
+    0.1092,
+    0.09032
    ]
   },
   {
@@ -35,9 +35,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 rock (broken stone, grey-brown over the clay)",
    "mean": [
-    0.17364,
-    0.13727,
-    0.07797
+    0.16629,
+    0.13133,
+    0.08828
    ]
   },
   {
@@ -48,8 +48,8 @@
    "from": "(c) the slurry's mud, a little darker than the clay (ArenaGround's note)",
    "mean": [
     0.20169,
-    0.16686,
-    0.04788
+    0.16459,
+    0.05297
    ]
   },
   {
@@ -60,8 +60,8 @@
    "from": "(c) rust-stained clay, as light as the clay: a shift of hue, never a darker blot",
    "mean": [
     0.42017,
-    0.2228,
-    0.0464
+    0.22169,
+    0.05097
    ]
   },
   {
@@ -72,8 +72,8 @@
    "from": "(c) burnt ground, ash and char",
    "mean": [
     0.05766,
-    0.05993,
-    0.0279
+    0.05822,
+    0.03092
    ]
   },
   {
@@ -83,9 +83,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 rock and road (the cut walls' ochre as big planes)",
    "mean": [
-    0.25507,
-    0.19176,
-    0.05279
+    0.25509,
+    0.19073,
+    0.05807
    ]
   }
  ],

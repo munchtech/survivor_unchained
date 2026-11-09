@@ -326,8 +326,9 @@ def solve(name="cards", night_name=None, refine=None):
     calp = os.path.join(DATA, "calibration.json")
     for c, x in (json.load(open(calp, encoding="utf-8"))["classes"].items() if os.path.exists(calp) else ()):
         if c not in alb: continue
-        a = np.clip(np.array(alb[c]["linear"]) * np.array(x["gain"]), 0.005, 0.9)
-        alb[c].update({"calibrated": x["gain"], "linear": a.round(4).tolist(), "hex": lin_to_hex(a)})
+        L, C, h = lab(alb[c]["linear"])
+        a = np.clip(oklab_to_lin(L * x["L"], C * x["C"], h + (x["dh"] if C >= 0.02 else 0)), 0.005, 0.9)
+        alb[c].update({"calibrated": {k: x[k] for k in ("L", "C", "dh")}, "linear": a.round(4).tolist(), "hex": lin_to_hex(a)})
     # (L7 S1c) a class no board shows undyed (cloth: the props' canvas, linen, sacking and rope; MB2's cloth is her navy) takes a
     # named neighbour's lightness at the undyed band's chroma and hue (lead 7: tan, h 60-80, C 0.03-0.05, never rose)
     for c, (src, C, h, why) in DERIVED.items():

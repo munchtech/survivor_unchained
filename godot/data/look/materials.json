@@ -245,16 +245,16 @@
      "roles": {"lit": "#542a1b"}
     },
     "albedo": {
-     "L": [0.2408, 0.389, 0.5372],
-     "C": [0.0, 0.036, 0.072],
-     "h": [55, -4.2, 2.9],
-     "mid": "#544033",
+     "L": [0.2388, 0.387, 0.5352],
+     "C": [0, 0.034, 0.069],
+     "h": [46, -4.2, 2.9],
+     "mid": "#543f35",
      "n": 1152,
      "roles": {"lit": "#421b09"},
      "v": 4,
-     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'leather': [0.0888, 0.051, 0.0326]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #544033 (lin [0.0888, 0.051, 0.0326]); one albedo serves day and night (the night rigs' moon is solved over it). Was #544034.",
+     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'leather': [0.0888, 0.0495, 0.0357]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #543f35 (lin [0.0888, 0.0495, 0.0357]); one albedo serves day and night (the night rigs' moon is solved over it). Was #543f35.",
      "samples": ["day lit"],
-     "linear": [0.0888, 0.051, 0.0326],
+     "linear": [0.0888, 0.0495, 0.0357],
      "fit_dE": 0.0135
     }
    }
@@ -310,16 +310,16 @@
      "roles": {"lit": "#4e5588", "shade": "#2c315a"}
     },
     "albedo": {
-     "L": [0.408, 0.573, 0.738],
-     "C": [0.0324, 0.043, 0.0536],
-     "h": [26, -1.9, 2.5],
-     "mid": "#906f6b",
+     "L": [0.442, 0.607, 0.772],
+     "C": [0.0294, 0.04, 0.0506],
+     "h": [75, -1.9, 2.5],
+     "mid": "#917f68",
      "n": 4000,
      "roles": {"lit": "#3a3e6e", "shade": "#4c507f"},
      "v": 4,
-     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'cloth': [0.2803, 0.1587, 0.1479]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #906f6b (lin [0.2803, 0.1587, 0.1479]); one albedo serves day and night (the night rigs' moon is solved over it). Was #4f67e4.",
+     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'plank L, C 0.04, h 75': \"MB3's plank (the beam and barrel, undyed wood's tan) lightness; C 0.04 and h 75 the middle of lead 7's undyed band (h 60-80, C 0.03-0.05); no picked board or target shows a lit undyed cloth that divides clean (G1 13's lit sacks give h 97, C 0.068)\"} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #917f68 (lin [0.2819, 0.2133, 0.1382]); one albedo serves day and night (the night rigs' moon is solved over it). Was #917f68.",
      "samples": ["day lit", "day shade"],
-     "linear": [0.2803, 0.1587, 0.1479],
+     "linear": [0.2819, 0.2133, 0.1382],
      "fit_dE": 0.0336
     }
    }
@@ -772,16 +772,16 @@
      "roles": {"lit": "#884d41", "shade": "#432a37"}
     },
     "albedo": {
-     "L": [0.5192, 0.621, 0.7228],
-     "C": [0.0035, 0.037, 0.0705],
-     "h": [82, -69.6, 16.2],
-     "mid": "#92856d",
+     "L": [0.5052, 0.607, 0.7088],
+     "C": [0, 0.029, 0.0602],
+     "h": [77, -69.6, 16.2],
+     "mid": "#8c806f",
      "n": 12052,
      "roles": {"lit": "#74443d", "shade": "#7a4e45"},
      "v": 4,
-     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'beam': [0.356, 0.3916, 0.2769], 'wood': [0.2305, 0.1389, 0.0853]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #92856d (lin [0.2864, 0.2332, 0.1537]); one albedo serves day and night (the night rigs' moon is solved over it). Was #92856d.",
+     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'beam': [0.3151, 0.3419, 0.2675], 'wood': [0.22, 0.1375, 0.0944]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #8c806f (lin [0.2633, 0.2168, 0.1589]); one albedo serves day and night (the night rigs' moon is solved over it). Was #8c806f.",
      "samples": ["day lit", "day shade"],
-     "linear": [0.2864, 0.2332, 0.1537],
+     "linear": [0.2633, 0.2168, 0.1589],
      "fit_dE": 0.0961
     }
    }
@@ -921,16 +921,16 @@
      "roles": {"lit": "#b2826f", "lit_night": "#3b3f64", "shade": "#47405d"}
     },
     "albedo": {
-     "L": [0.4694, 0.566, 0.6626],
-     "C": [0, 0.005, 0.0118],
-     "h": [35, -28.9, 36.6],
-     "mid": "#797574",
+     "L": [0.4704, 0.567, 0.6636],
+     "C": [0.0051, 0.011, 0.0169],
+     "h": [308, -28.9, 36.6],
+     "mid": "#78757c",
      "n": 20800,
      "roles": {"lit": "#554a67", "shade": "#554a67"},
      "v": 4,
-     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'stone': [0.1914, 0.1787, 0.1754]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #797574 (lin [0.1914, 0.1787, 0.1754]); one albedo serves day and night (the night rigs' moon is solved over it). Was #797574.",
+     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'stone': [0.1886, 0.1778, 0.2001]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #78757c (lin [0.1886, 0.1778, 0.2001]); one albedo serves day and night (the night rigs' moon is solved over it). Was #78757c.",
      "samples": ["day lit", "day shade"],
-     "linear": [0.1914, 0.1787, 0.1754],
+     "linear": [0.1886, 0.1778, 0.2001],
      "fit_dE": 0.0106,
      "w2": "L1 W2 town (C4), by hand, no fit: MB3_stone_day all_lin [0.3003, 0.1575, 0.1429] / day lit [3.2966, 2.2805, 1.0513] = [0.0911, 0.0691, 0.1359] (look_l1/c/w2/town/board_town.json over look_l1/c/w2/town/resp/r1/response.json (day_play lit)); replaces B3r3's least-squares mid; the ranges' widths kept"
     }
@@ -997,16 +997,16 @@
      "roles": {"lit": "#836b65", "lit_night": "#2d3c5f", "shade": "#3d3b4a"}
     },
     "albedo": {
-     "L": [0.47, 0.595, 0.72],
-     "C": [0, 0.012, 0.0253],
-     "h": [87, -60.1, 90.4],
-     "mid": "#827f77",
+     "L": [0.466, 0.591, 0.716],
+     "C": [0, 0.004, 0.0123],
+     "h": [337, -60.1, 90.4],
+     "mid": "#7f7d7e",
      "n": 13519,
      "roles": {"lit": "#998060", "shade": "#303054"},
      "v": 4,
-     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'rock': [0.2223, 0.2105, 0.1849]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #827f77 (lin [0.2223, 0.2105, 0.1849]); one albedo serves day and night (the night rigs' moon is solved over it). Was #827e76.",
+     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'rock': [0.2135, 0.2034, 0.2103]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #7f7d7e (lin [0.2135, 0.2034, 0.2103]); one albedo serves day and night (the night rigs' moon is solved over it). Was #7f7d7e.",
      "samples": ["day shade"],
-     "linear": [0.2223, 0.2105, 0.1849]
+     "linear": [0.2135, 0.2034, 0.2103]
     }
    }
   },
@@ -1068,16 +1068,16 @@
      "roles": {"lit": "#fdbb8b", "lit_night": "#635370", "shade": "#7b6176"}
     },
     "albedo": {
-     "L": [0.5823, 0.694, 0.8057],
-     "C": [0.0177, 0.029, 0.0403],
-     "h": [98, -51.5, 12.6],
-     "mid": "#a19d89",
+     "L": [0.5583, 0.67, 0.7817],
+     "C": [0.0067, 0.018, 0.0293],
+     "h": [95, -51.5, 12.6],
+     "mid": "#989589",
      "n": 7703,
      "roles": {"lit": "#8e7d82", "shade": "#8e7d82"},
      "v": 4,
-     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'plaster': [0.3571, 0.3383, 0.2506]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #a19d89 (lin [0.3571, 0.3383, 0.2506]); one albedo serves day and night (the night rigs' moon is solved over it). Was #a19d89.",
+     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'plaster': [0.3159, 0.3024, 0.2521]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #989589 (lin [0.3159, 0.3024, 0.2521]); one albedo serves day and night (the night rigs' moon is solved over it). Was #989589.",
      "samples": ["day lit", "day shade"],
-     "linear": [0.3571, 0.3383, 0.2506],
+     "linear": [0.3159, 0.3024, 0.2521],
      "fit_dE": 0.0132,
      "w2": "L1 W2 town (C4), by hand, no fit: MB3_plaster_day all_lin [0.9078, 0.4722, 0.2376] / day lit [3.3332, 2.2838, 1.0617] = [0.2724, 0.2068, 0.2238] (look_l1/c/w2/town/board_town.json over look_l1/c/w2/town/resp/r1/response.json (day_play lit)); replaces B3r3's least-squares mid; the ranges' widths kept"
     }
@@ -1154,16 +1154,16 @@
      "roles": {"lit": "#a05654", "lit_night": "#29376b", "shade": "#452a42"}
     },
     "albedo": {
-     "L": [0.3718, 0.483, 0.5942],
-     "C": [0.0045, 0.03, 0.0555],
-     "h": [9, -27.7, 19.6],
-     "mid": "#6e585b",
+     "L": [0.3708, 0.482, 0.5932],
+     "C": [0.0075, 0.033, 0.0585],
+     "h": [355, -27.7, 19.6],
+     "mid": "#6e575f",
      "n": 30001,
      "roles": {"lit": "#5d3b4e", "shade": "#5d3b4e"},
      "v": 4,
-     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'roof': [0.1562, 0.0966, 0.1038]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #6e585b (lin [0.1562, 0.0966, 0.1038]); one albedo serves day and night (the night rigs' moon is solved over it). Was #6e575b.",
+     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'roof': [0.1559, 0.095, 0.1151]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #6e575f (lin [0.1559, 0.095, 0.1151]); one albedo serves day and night (the night rigs' moon is solved over it). Was #6e575f.",
      "samples": ["day lit", "day shade"],
-     "linear": [0.1562, 0.0966, 0.1038],
+     "linear": [0.1559, 0.095, 0.1151],
      "fit_dE": 0.0171,
      "w2": "L1 W2 town (C4), by hand, no fit: MB3_roof_day all_lin [0.3662, 0.1001, 0.0796] / day lit [3.3087, 2.2805, 1.0575] = [0.1107, 0.0439, 0.0753] (look_l1/c/w2/town/board_town.json over look_l1/c/w2/town/resp/r1/response.json (day_play lit)); replaces B3r3's least-squares mid; the ranges' widths kept"
     }
@@ -1232,16 +1232,16 @@
      "roles": {"lit": "#b9806c", "lit_night": "#3e4575", "shade": "#4a3c64"}
     },
     "albedo": {
-     "L": [0.5263, 0.584, 0.6417],
-     "C": [0, 0.011, 0.0222],
-     "h": [294, -24.9, 24.3],
-     "mid": "#7c7a81",
+     "L": [0.4563, 0.514, 0.5717],
+     "C": [0.0069, 0.018, 0.0291],
+     "h": [297, -24.9, 24.3],
+     "mid": "#686570",
      "n": 31201,
      "roles": {"lit": "#5a4962", "shade": "#5a4962"},
      "v": 4,
-     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'setts': [0.158, 0.1308, 0.1427], 'lb_setts': [0.2529, 0.2921, 0.341]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #7c7a81 (lin [0.1999, 0.1955, 0.2206]); one albedo serves day and night (the night rigs' moon is solved over it). Was #7c7a81.",
+     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'setts': [0.1578, 0.1293, 0.1587], 'lb_setts': [0.2375, 0.2675, 0.3029]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #686570 (lin [0.1385, 0.1309, 0.1634]); one albedo serves day and night (the night rigs' moon is solved over it). Was #6e6266.",
      "samples": ["day lit", "day shade"],
-     "linear": [0.1999, 0.1955, 0.2206],
+     "linear": [0.1385, 0.1309, 0.1634],
      "fit_dE": 0.0165,
      "w2": "L1 W2 town (C4), by hand, no fit: MB3_setts_day all_lin [0.3381, 0.1515, 0.1288] / the terrain's day lit [3.3006, 2.274, 1.0575] = [0.1024, 0.0666, 0.1218] (ground.json setts) (look_l1/c/w2/town/board_town.json over look_l1/c/w2/town/resp/r1/response.json (day_play lit)); replaces B3r3's least-squares mid; the ranges' widths kept"
     },
@@ -1366,13 +1366,13 @@
      "roles": {"lit": "#a96847"}
     },
     "albedo": {
-     "mid": "#5b4e47",
-     "linear": [0.105, 0.0766, 0.0632],
+     "mid": "#5b4d4b",
+     "linear": [0.1049, 0.0749, 0.0697],
      "v": 4,
-     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'road': [0.105, 0.0766, 0.0632]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #5b4e47 (lin [0.105, 0.0766, 0.0632]); one albedo serves day and night (the night rigs' moon is solved over it). Was #5b4e48.",
-     "L": [0.405, 0.435, 0.465],
-     "C": [0.011, 0.021, 0.031],
-     "h": [51, 0, 0]
+     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'road': [0.1049, 0.0749, 0.0697]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #5b4d4b (lin [0.1049, 0.0749, 0.0697]); one albedo serves day and night (the night rigs' moon is solved over it). Was #5b4d4b.",
+     "L": [0.404, 0.434, 0.464],
+     "C": [0.009, 0.019, 0.029],
+     "h": [31, 0, 0]
     }
    }
   },
@@ -1447,13 +1447,13 @@
      "roles": {"lit": "#aaa036", "lit_night": "#286770", "shade": "#1c374f"}
     },
     "albedo": {
-     "mid": "#687d3e",
-     "linear": [0.138, 0.2045, 0.0481],
+     "mid": "#3c5133",
+     "linear": [0.0448, 0.0819, 0.0335],
      "v": 4,
-     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'grass': [0.138, 0.2045, 0.0481]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #687d3e (lin [0.138, 0.2045, 0.0481]); one albedo serves day and night (the night rigs' moon is solved over it). Was #687c3f.",
-     "L": [0.527, 0.557, 0.587],
-     "C": [0.082, 0.092, 0.102],
-     "h": [125, 0, 0]
+     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'grass': [0.1378, 0.1985, 0.0529]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #3c5133 (lin [0.0448, 0.0819, 0.0335]); one albedo serves day and night (the night rigs' moon is solved over it). Was #3b5456.",
+     "L": [0.378, 0.408, 0.438],
+     "C": [0.044, 0.054, 0.064],
+     "h": [137, 0, 0]
     }
    }
   },
@@ -1521,16 +1521,16 @@
      "roles": {"lit": "#ae9936", "lit_night": "#23676d", "shade": "#3f4b2c"}
     },
     "albedo": {
-     "L": [0.437, 0.517, 0.597],
-     "C": [0.0677, 0.078, 0.0883],
+     "L": [0.436, 0.516, 0.596],
+     "C": [0.0637, 0.074, 0.0843],
      "h": [122, -9.3, 9.5],
-     "mid": "#606f3a",
+     "mid": "#606f3d",
      "n": 8267,
      "roles": {"lit": "#7d8a3c", "shade": "#263434"},
      "v": 4,
-     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'spruce': [0.1176, 0.1596, 0.0428]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #606f3a (lin [0.1176, 0.1596, 0.0428]); one albedo serves day and night (the night rigs' moon is solved over it). Was #606f3b.",
+     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'spruce': [0.1175, 0.1585, 0.047]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #606f3d (lin [0.1175, 0.1585, 0.047]); one albedo serves day and night (the night rigs' moon is solved over it). Was #606f3d.",
      "samples": ["day shade"],
-     "linear": [0.1176, 0.1596, 0.0428]
+     "linear": [0.1175, 0.1585, 0.047]
     }
    }
   },
