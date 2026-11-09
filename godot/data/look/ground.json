@@ -271,41 +271,39 @@
  "surfaces": {
   "meadow": {
    "class": "grass",
-   "from": "MB4 grass (day): golden-green big flat clumps, olive and worn, never lime; target 04's verge; rule 4",
+   "from": "MB4 grass (day) and target 07's lawn: golden-green big flat clumps in three values (a cool dark under-mass, the body, a lit spiky crown toward the light), overlapping like scales over three soft masses; olive, never lime (rule 4)",
    "masses": {
     "colors": [
-     "#2e412a",
-     "#3a4f2f",
-     "#435837"
+     "#2d442d",
+     "#364f34",
+     "#405b3b"
     ],
     "split": [
      0.35,
      0.7
     ],
-    "scale_m": 1.4
+    "scale_m": 2.2
    },
    "stamps": [
     {
-     "shape": "clump",
-     "per_m2": 4.5,
+     "shape": "mound",
+     "per_m2": 0.9,
      "size_cm": [
-      26,
-      48
+      80,
+      160
      ],
-     "blades": [
-      7,
-      11
-     ],
+     "leaves": 9,
      "colors": [
-      "#405833",
-      "#526a3d"
+      "#2a402b",
+      "#3a5437",
+      "#4a6540"
      ],
-     "under": "#283a2b",
      "height": 0.85
     }
    ],
    "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.602, 0.716, 0.972] per channel (linear) = the terrain grass anchor 'grass' target / its mean [0.106, 0.1244, 0.0373]; target = MB4_grass_day paint [0.2114, 0.2035, 0.0381] / the day key (day_play grass) [3.313, 2.284, 1.051] = [0.0638, 0.0891, 0.0362]. Replaces C1's r1 calib (a lift read off frames).",
-   "c6": "L1 W2 C6 (the color chain): x[1.024, 0.924, 0.36] per channel (linear) = the grass class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.024, 0.924, 0.36] per channel (linear) = the grass class's chain albedo / its old mid (materials.json).",
+   "l9": "L1 l9 grass (9 Nov, judge 1 fix 6): the star stamps (4.5/m2, 26-48 cm) replaced by mounds (ground_paint.py mounds); hue turned from 135 to 141-145 so the lit lawn lands at h 106-112 under the boards' sun (T04 110, T07 109)"
   },
   "litter_day": {
    "class": "soil",
@@ -1318,15 +1316,18 @@
   "out": "godot/art/world/flora/grass_meadow_atlas.png",
   "from": "MB4 grass ('grass as big flat clumps': broad blades massed into a mound, a lit top and a cool underside, three flat values); rule 4 (olive and worn, never lime); replaces env_trees.py's thin-blade grass atlas (L1 C1)",
   "colors": {
-   "under": "#1e2c2a",
-   "body": "#3c5133",
-   "lit": "#5c6e43"
+   "under": "#192e23",
+   "body": "#395636",
+   "lit": "#617f4e"
   },
   "flowers": [
    "#a39c7e",
    "#857c95"
   ],
   "flower_cells": 2,
-  "c6": "L7 S1d (the color chain): the clump's body FROM the grass class's mid #3c5133, the lit top and the underside at their ratios to it."
+  "c6": "L7 S1d (the color chain): the clump's body FROM the grass class's mid #3c5133, the lit top and the underside at their ratios to it.",
+  "form": "tuft",
+  "aspect": 0.5,
+  "l9": "L1 l9 grass: low wide tufts (cells 256 x 128, twice as wide as tall) in three flat values by depth, FROM target 07's tufts: a dark mass behind, the body, a lit crown in front; replaces the 7-11 tall blades"
  }
 }

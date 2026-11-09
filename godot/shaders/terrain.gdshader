@@ -85,6 +85,10 @@ uniform vec4 warm_at[4];
 // The meadow's three scales (look bible 1f): the land's lie and patches over 10-40 m, clumps and bare
 // ground over 1-5 m (0: as A left it).
 uniform float meadow_amt = 1.0;
+// (L1 l9 grass: the meadow's own bare patches (1 as before) off: bible rule 9's grass is clumps on grass, the dirt is the ways'; and
+// trod_floor, the paint's trodden earth under which the ground stays meadow (see wd))
+uniform float meadow_bare = 0.0;
+uniform float trod_floor = 0.4;
 // Judge 1's fix round (E3 C). GroundPaint's Near: R the distance to a wall's base, G to anything standing, B the setts'
 // wear lane, A the distance into the setts from their edge (each /2 m).
 uniform sampler2D near_tex : filter_linear, repeat_disable, hint_default_black;
@@ -335,7 +339,11 @@ void fragment() {
 	// metre), nudged by noise, never stepped.
 	// (Fingers of dirt into the grass at a clearing's edge: 2-3 every 5 m, 0.5-1 m long; judge 1, E3 fix 4.)
 	float fing = smoothstep(0.5, 0.8, texture(noise_tex, w * 0.105 + 0.21).g) * (1.0 - smoothstep(0.3, 0.7, pm.r));
-	float wd = clamp((sp.r - 0.5) * edge_k + 0.5 + (nM.b - 0.5) * 0.3 + (nF.g - 0.5) * 0.12 + fing * 0.45 * smoothstep(0.03, 0.25, sp.r), 0.0, 1.0) * step(0.02, sp.r);
+	// (L1 l9 grass, judge 1 fix 6: the lawns and verges are grass, never dirt showing through as their color (targets 04, 07):
+	// trodden earth only where the paint asks for more than trod_floor of it (a made way's core and edge); the paint's light
+	// wear under that (a town's speckled halo, a road's fringe) stays meadow. 0: as before.)
+	float sp_r = trod_floor > 0.0 ? max(sp.r - trod_floor, 0.0) / (1.0 - trod_floor) : sp.r;
+	float wd = clamp((sp_r - 0.5) * edge_k + 0.5 + (nM.b - 0.5) * 0.3 + (nF.g - 0.5) * 0.12 + fing * 0.45 * smoothstep(0.03, 0.25, sp_r), 0.0, 1.0) * step(0.02, sp_r);
 	float ws = clamp((sp.g - 0.5) * edge_k + 0.5 + (nM.g - 0.5) * 0.25, 0.0, 1.0) * step(0.02, sp.g);
 	// The setts' ragged edge (judge 1, E3 fix 5): within a metre of their edge (wobbling, so no straight run), whole
 	// stones dropped or sunk, dirt filling where they went, and the paint's own edge pushed in and out.
@@ -372,7 +380,7 @@ void fragment() {
 	float wm = clamp((sp.a - 0.5) * edge_k + 0.5 + (nM.g - 0.5) * 0.3, 0.0, 1.0) * step(0.02, sp.a);
 	// The meadow's bare patches (1-3 m, in loose drifts): trodden earth through the grass, as the grass leaves them.
 	// (noise_tex's channels are value noise of base period 4, 8, 16 and 64 a tile: nM's R about 4 m across, G 2 m, B 1 m.)
-	float bare = smoothstep(0.62, 0.76, nM.b * 0.45 + nC.b * 0.55) * smoothstep(0.45, 0.68, nL.b) * meadow_amt;
+	float bare = smoothstep(0.62, 0.76, nM.b * 0.45 + nC.b * 0.55) * smoothstep(0.45, 0.68, nL.b) * meadow_amt * meadow_bare;
 	wd = max(wd, bare * (1.0 - step(0.02, sp.g)));
 	// (Their rims blended over a wider overlap, so a patch is not stamped: judge 1, E3 fix 8, 0.3 m or more of feather.)
 	float hdp = h_depth + 0.22 * clamp(bare * (1.0 - bare) * 4.0, 0.0, 1.0);
@@ -494,11 +502,14 @@ void fragment() {
 	vec3 albedo = vec3(0.0);
 	vec3 n_w = vec3(0.0);
 	float rough = 0.0, ao = 0.0, hgt = 0.0;
+	vec3 dbg_lw = vec3(0.0);
 	float w_mud = 0.0, w_soft = 0.0, w_meadow = 0.0, w_blight = 0.0, w_setts = 0.0;
 	for (int s = 0; s < 4; s++) {
 		float wk = bw[s] / tot;
 		if (wk <= 0.0) continue;
 		int k = id[s];
+		// (--ground-debug 9, L1 l9 grass: the layer shown, meadow green, leaves blue, dirt red, mud yellow, setts grey, others magenta)
+		dbg_lw += wk * (k == 0 ? vec3(0.0, 1.0, 0.0) : k == 1 ? vec3(0.0, 0.0, 1.0) : k == 2 ? vec3(1.0, 0.0, 0.0) : k == 3 ? vec3(1.0, 1.0, 0.0) : k == SETTS ? vec3(0.5) : vec3(1.0, 0.0, 1.0));
 		albedo += A[s].rgb * wk;
 		vec3 tn = Nn[s].xyz * 2.0 - 1.0;
 		n_w += T[s] * tn * wk;
@@ -891,6 +902,7 @@ void fragment() {
 	if (debug_view == 2) ALBEDO = sp.rgb;
 	if (debug_view == 4) ALBEDO = vec3(frost_k, 0.0, 1.0 - frost_k);
 	if (debug_view == 3) ALBEDO = vec3(texture(expo_tex, zuv).rg, 0.0);
+	if (debug_view == 9) { ALBEDO = vec3(0.0); EMISSION = dbg_lw * 2.0; }
 	// 10-18 (measure_d.py's masks), one a frame, unlit and stepped at 0.5 (white on black: no tonemap can mix them):
 	// 10 the gutter, 11 open setts (no grime, gutter, lane or puddle), 12 the grime's reach on setts, 13 puddles,
 	// 14 setts within 0.9 m of a wall (0.5 m past the gutter) whose joints are weeded, 15 setts within 0.9 m of a wall, 16 the wear lane (clear of the grime),

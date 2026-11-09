@@ -106,9 +106,10 @@
       "meadow": {"atlas": "grass_meadow",
                  "olive": ["#171a0d", "#2a3018", "#3e4622", "#545d2d", "#6c763b"],
                  "cool": ["#101812", "#1e2d22", "#2d4232", "#3f5944", "#567259"],
-                 "flowers": ["#a39c7e", "#857c95"], "flower_cells": 2, "flower_share": 0.015,
-                 "card": [0.62, 0.55], "cell": 0.8, "yaw": 35, "drift": [0.46, 0.54],
-                 "shader": {"warm": [1.04, 1.0, 0.86], "cool": [0.84, 0.98, 1.06], "night": [0.6, 0.86, 0.8], "night_sat": 0.6, "base": 0.6, "tone": 0.9, "sat": 0.75, "density": 1.4, "tilt": 0.35, "clear": 5.0, "sun_tip": [1.07, 1.0, 0.8], "sun_body": [1.02, 1.0, 0.92], "size_var": 0.3}}
+                 "flowers": ["#a39c7e", "#857c95"], "flower_cells": 2, "flower_share": 0.01,
+                 "_l9": "L1 l9 grass (judge 1 fix 6, FROM MB4 grass and target 07's tufts): big flat clumps, fewer and bigger (a 0.95 x 0.48 m low tuft in three values on a ~0.7 m grid at high, clustered), never a field of blades; the one preset for every terrain meadow (the Low Ford's own kind removed)",
+                 "card": [0.95, 0.48], "cell": 2.4, "yaw": 25, "drift": [0.42, 0.56],
+                 "shader": {"warm": [1.0, 1.0, 0.94], "cool": [0.94, 1.0, 1.02], "night": [0.6, 0.86, 0.8], "night_sat": 0.6, "base": 0.55, "tone": 1.0, "sat": 0.85, "density": 1.0, "tilt": 0.3, "clear": 5.0, "sun_tip": [1.0, 1.0, 1.0], "sun_body": [1.0, 1.0, 1.0], "size_var": 0.3, "cluster": 0.35, "cluster_cell": 2.2, "big_share": 0.15, "small_share": 0.2, "tilt_var": 0.3, "val_spread": 0.08}}
     }
   }
 }

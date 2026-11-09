@@ -70,6 +70,9 @@ uniform float frost_lift = 1.2;
 uniform float frost_own = 0.65;
 uniform vec4 warm_at[4];
 uniform float meadow_amt = 1.0;
+// (L1 l9 grass: as terrain.gdshader's: no bare patches in the meadow, and the paint's light wear under trod_floor grows grass)
+uniform float meadow_bare = 0.0;
+uniform float trod_floor = 0.4;
 uniform int debug_view = 0;
 uniform vec4 bare_at[4];
 
@@ -158,13 +161,13 @@ void vertex() {
 	// None on setts, mud or blight; over trodden earth it thins (grass.gdshader's masks).
 	float hard = max(sp.g, max(sp.b, sp.a));
 	float dens = (1.0 - smoothstep(0.12, 0.45, hard + (nz.g - 0.5) * 0.35))
-		* (1.0 - smoothstep(0.15, 0.8, sp.r + (nz.g - 0.5) * 0.35) * 0.85);
+		* (1.0 - smoothstep(0.15, 0.8, (trod_floor > 0.0 ? max(sp.r - trod_floor, 0.0) / (1.0 - trod_floor) : sp.r) + (nz.g - 0.5) * 0.35) * 0.85);
 	// Drifts: the ground's clump field (terrain.gdshader, the same noise), cut between drift.x and drift.y, so a
 	// drift is grass to its heart and thins to single clumps at its edge, with bare ground between; the ground's
 	// bare patches bare.
 	vec4 nF = texture(noise_tex, wp * 0.29 + 0.71), nM = texture(noise_tex, wp * 0.061 + 0.37);
 	vec4 nC = texture(noise_tex, wp * 0.0213 + 0.13), nL = texture(noise_tex, wp * 0.011);
-	float bare_p = smoothstep(0.62, 0.76, nM.b * 0.45 + nC.b * 0.55) * smoothstep(0.45, 0.68, nL.b) * meadow_amt;
+	float bare_p = smoothstep(0.62, 0.76, nM.b * 0.45 + nC.b * 0.55) * smoothstep(0.45, 0.68, nL.b) * meadow_amt * meadow_bare;
 	// (half the ground's own clump field, so a drift lies on the ground's darker green hearts, half a field with more
 	// contrast, 4 m blobs and 6 m swells; lo-hi 0.46-0.54 covers 48% of an open meadow, 39% bare: env10's drift_sim.py)
 	float clump = (nM.r * 0.45 + nM.g * 0.35 + nF.r * 0.2) * 0.5 + (nM.r * 0.55 + nC.g * 0.3 + nF.r * 0.15) * 0.5;
