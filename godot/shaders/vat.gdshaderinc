@@ -12,6 +12,8 @@
 #define CEL_OWN_ALB
 // (L1 l9 PACK2: the moon stays on the pack inside her pool, as target 09's cool bodies by her: only the ground gives way)
 #define CEL_NO_GIVE
+// (L1 lead 9: the fur class has no highlight, crowd_fur cel.spec z 0, bible rule 6; the fallback equals the class)
+#define CEL_SPEC vec4(9.0, 1.5, 0.0, 0.85)
 #include "res://shaders/cel.gdshaderinc"
 uniform vec2 cel_edge = CEL_CROWD_EDGE;
 // (L1 l9 PACK2, rule 7: the moon's rim on the pack in the class's own hue, materials.json crowd_fur "edge_color" FROM target 09's
