@@ -555,7 +555,7 @@ public sealed partial class Battle
             p.X = leap.X0 + (leap.X1 - leap.X0) * k;
             p.Z = leap.Z0 + (leap.Z1 - leap.Z0) * k;
             p.Iframes = Math.Max(p.Iframes, 0.05);
-            if (k >= 1) { p.Leap = null; LandLeap(leap); }
+            if (k >= 1 && !RuleLeapHangs(leap, dt)) { p.Leap = null; LandLeap(leap); }
             Collision.Resolve(ref p.X, ref p.Z, p.Radius, true, overGaps: true);
             return;
         }
@@ -582,7 +582,7 @@ public sealed partial class Battle
             return;
         }
 
-        double speed = st.Get(Stat.MoveSpeed) * p.SlowF * SpinPace();
+        double speed = st.Get(Stat.MoveSpeed) * p.SlowF * SpinPace() * RuleMoveMul();
         // A campaign cast plays on her upper body: she walks at its pace (1 everywhere else).
         if (p.CastT > 0) speed *= p.CastWalk;
         if (p.BulwarkT > 0 && !Has("marching_wall")) speed *= 0.45;
@@ -1042,6 +1042,7 @@ public sealed partial class Battle
 
     public void KillEnemy(Enemy e, bool byPlayer, WeaponInst? weapon, int depth = 0)
     {
+        RuleOnDeath(e);
         e.Hp = 0;
         e.State = EnemyState.Dying;
         e.StateT = 0;
@@ -1341,6 +1342,7 @@ public sealed partial class Battle
         }
         // Rebuke's riposte (campaign): the blow is blocked and answered.
         if (TryRiposte(amount, school, source, from)) return 0;
+        if (RuleShieldBlock(amount, school, source, from)) return 0;
         // Warding light.
         int blockRank = RoundInt(st.Get(Stat.Block));
         // blue.feral's price: she can't block.
@@ -1397,7 +1399,7 @@ public sealed partial class Battle
         if (Boons.TryGetValue("grounding", out int ground)) dmg *= ground >= 2 ? 0.67 : 0.8;
         dmg *= ReaverTakenMul(school) * ArcanistTakenMul();
         // Iron Vow: bracing, a share of the blow is kept and it lands at half.
-        dmg = VowTake(dmg);
+        dmg = VowTake(dmg, from);
         double dealt = HurtPlayerRaw(FlareGuard(dmg), school, source, from);
         Resolve.Taken(dealt);
         return dealt;

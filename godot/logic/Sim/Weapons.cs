@@ -218,7 +218,7 @@ public static partial class Firing
 {
     public static double CooldownOf(Battle b, WeaponInst w)
     {
-        double c = BaseCooldown(b, w) * b.Stats.Get(Stat.Cooldown) * w.Mods.Cooldown * b.ReaverCooldownMul(w) * b.ArcanistCooldownMul(w) * b.StalkerCooldownMul(w) * b.FlareCooldownMul(w);
+        double c = BaseCooldown(b, w) * b.Stats.Get(Stat.Cooldown) * w.Mods.Cooldown * b.ReaverCooldownMul(w) * b.ArcanistCooldownMul(w) * b.StalkerCooldownMul(w) * b.FlareCooldownMul(w) * b.RuleCooldownMul(w);
         if (b.Lamps.Board) c *= b.BoardCooldownMul(w);
         if (w.Evolution != null) c *= w.Evolution.Mods.Cooldown ?? 1;
         if (w.Wick != null) c *= w.Wick.Cooldown;
@@ -247,7 +247,7 @@ public static partial class Firing
 
     /// <summary>The status a skill strikes with: its own, or the one its lamp gives (sunderer.skill.status).</summary>
     public static StatusPayload? StatusWith(Battle b, WeaponInst w) =>
-        w.StatusOf ?? (b.Lamps.HasOn("skill.status", w.Def.Id, w.Def.Tags) && b.Lamps.Each["skill.status"].Find(e => e.Status != null && (e.Skill == w.Def.Id)) is { Status: { } k } ? new StatusPayload(k, 1, 1, 3) : null);
+        b.RuleStatus(w) ?? w.StatusOf ?? (b.Lamps.HasOn("skill.status", w.Def.Id, w.Def.Tags) && b.Lamps.Each["skill.status"].Find(e => e.Status != null && (e.Skill == w.Def.Id)) is { Status: { } k } ? new StatusPayload(k, 1, 1, 3) : null);
 
     public static double DurationOf(Battle b, WeaponInst w, double baseValue)
     {
@@ -376,6 +376,7 @@ public static partial class Firing
         // sunderer.momentum: a melee swing that kills enough brings the skill's next swing sooner.
         if (fired && w.Tags.Has(Tag.Melee) && b.Lamp("momentum") && w.Kills - kills0 >= b.Lamps.Full("momentum", "kills", 3))
             w.Timer *= 1 - Math.Min(0.9, b.Lamps.Size("momentum", "sooner"));
+        b.RuleRearm(w, fired);
     }
 
     /* A pressed skill's own clock: its wait runs down to ready and stays there; a channel fires on its gap while
@@ -394,7 +395,7 @@ public static partial class Firing
         w.Timer = 0;
         w.ChannelT += dt;
         // Drained (campaign, Resolve): it runs while held and Resolve lasts, no cap; at 0 the storm ends.
-        double drain = b.Resolve.On ? w.Press?.Drain ?? 0 : 0;
+        double drain = b.Resolve.On ? (w.Press?.Drain ?? 0) * b.RulePayMul(w) : 0;
         if (drain > 0 && w.Held) b.Resolve.Drain(drain * dt);
         if (!w.Held || (drain > 0 ? b.Resolve.Value <= 0 : w.ChannelT >= w.ChannelMax)) { EndChannel(b, w); return; }
         w.ChannelNext -= dt;
@@ -887,7 +888,9 @@ public static partial class Firing
             b.HitEnemy(e, dmg, w.School, w.Tags, new HitOpts
             {
                 Weapon = w, Knockback = kb, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd, Status = hitStatus, BossDamage = w.Def.BossDamage,
+                Heavy = b.RuleBeforeCut(w, e),
             });
+            b.RuleAfterCut(w, e, p.X, p.Z);
         });
         if (last != null) b.HookLast(w, last); // chainbound.the_long_chain
         return any;
@@ -898,7 +901,7 @@ public static partial class Firing
         // An On-kill echo swings from the corpse, at the nearest creature to the corpse within the swing's reach (the
         // same rule as her swing, measured from where it fell); none near, and the echo doesn't go off.
         var p = At(b);
-        double reach = AreaOf(b, w, w.Num(s => s.Reach) ?? 2.6) * b.SkillStillReach(w) + ReachAdd(b, w);
+        double reach = AreaOf(b, w, b.RuleReach(w, w.Num(s => s.Reach) ?? 2.6)) * b.SkillStillReach(w) + ReachAdd(b, w);
         double a;
         // A campaign press swings toward its aim (the hover foe, else the point), struck or not: every press is seen.
         if (b.CastAt is { } ca) a = AimAngle(b, ca.X, ca.Z);
@@ -910,10 +913,12 @@ public static partial class Firing
         }
         double arc = b.SkillArc(w, w.Num(s => s.Arc) ?? 2.2);
         int n = CountOf(b, w, 1);
+        b.RuleChopBegin(w);
         for (int i = 0; i < n; i++)
         {
             double ai = a + (i == 0 ? 0 : (i % 2 == 1 ? 1 : -1) * Math.Ceiling(i / 2.0) * arc * 0.85);
-            ConeHit(b, w, ai, arc, reach, w.Damage);
+            ConeHit(b, w, ai, arc, reach, w.Damage * b.RuleCutMul(w));
+            b.RuleCrossCut(w, ai, arc, reach);
         }
         // Blades hit things as well as creatures: barrels, brambles, a boss's lamps.
         foreach (var c in b.Collision.Within(p.X, p.Z, reach))

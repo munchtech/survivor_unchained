@@ -137,7 +137,7 @@ public sealed partial class Battle
     internal (double X, double Z, Enemy? Foe)? CastAt;
 
     /// <summary>A press's Resolve cost, if Resolve counts (0 otherwise: a cost never blocks a skill with no resource).</summary>
-    internal double CostOf(WeaponInst w) => Resolve.On ? w.Press?.Resolve ?? 0 : 0;
+    internal double CostOf(WeaponInst w) => Resolve.On ? (w.Press?.Resolve ?? 0) * RulePayMul(w) : 0;
 
     /// <summary>Her riposte is readied until (Rebuke's kindled press): the next blow that reaches her is blocked and answered.</summary>
     public double RiposteUntil = double.NegativeInfinity;

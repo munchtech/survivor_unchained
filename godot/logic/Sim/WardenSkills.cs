@@ -20,6 +20,7 @@ public static partial class Firing
         static int Min(int a, int c) => a > 0 ? Math.Min(a, c) : c;
         if (n > 0 && b.SkillRule(w, "third_blow")) n = Min(n, (int)b.SkillFull(w, "third_blow", "every", 3));
         if (w.Wick is { HeavyEvery: > 0 } fx) n = Min(n, fx.HeavyEvery);
+        if (b.Wk(w, "cleaver.overhand")) n = Min(n, (int)b.Wn("cleaver.overhand", "every", 3));
         return n;
     }
 

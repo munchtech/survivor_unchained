@@ -41,11 +41,13 @@ public sealed partial class Battle
     {
         if (!FreeToMove) return false;
         var p = Player;
-        double range = w.Num(s => s.Range) ?? 9, min = Math.Min(range, w.Num(s => s.MinRange) ?? 3);
+        double range = RuleLeapRange(w, w.Num(s => s.Range) ?? 9), min = Math.Min(range, w.Num(s => s.MinRange) ?? 3);
         var (dx, dz, d) = SkillDir(range);
+        (dx, dz, d) = RuleLeapAim(w, dx, dz, d);
         d = Math.Clamp(d, min, range);
         var (x1, z1) = LeapTo(dx, dz, d);
-        double r = Firing.AreaOf(this, w, w.Num(s => s.Radius) ?? 3.5), air = Math.Max(0.1, w.Num(s => s.Air) ?? 0.62);
+        double r = Firing.AreaOf(this, w, WkOver(w, "heroic_leap.crater", "radius", w.Num(s => s.Radius) ?? 3.5)), air = Math.Max(0.1, w.Num(s => s.Air) ?? 0.62);
+        RuleLeapTakeoff(w);
         p.Leap = new Leap { T = 0, Dur = air, X0 = p.X, Z0 = p.Z, X1 = x1, Z1 = z1, Weapon = w, Radius = r, Heavy = HeavyBy == w };
         p.Iframes = Math.Max(p.Iframes, air);
         p.Facing = Math.Atan2(dx, dz);
@@ -79,7 +81,8 @@ public sealed partial class Battle
         var (hb, was) = (HeavyBy, credit);
         HeavyBy = leap.Heavy ? w : null;
         credit = w.Id;
-        double kb = w.Num(s => s.Knockback) ?? 2.5, stun = w.Num(s => s.Stun) ?? 0.8, stagger = w.Num(s => s.Stagger) ?? 0.3;
+        double kb = w.Num(s => s.Knockback) ?? 2.5, stun = RuleLeapStun(w, w.Num(s => s.Stun) ?? 0.8), stagger = w.Num(s => s.Stagger) ?? 0.3;
+        double dmg = w.Damage * RuleDamageMul(w);
         var ring = HostilesInRadius(leap.X1, leap.Z1, leap.Radius);
         LeapStruck.Clear();
         foreach (var e in ring)
@@ -87,11 +90,12 @@ public sealed partial class Battle
             double d = Dist(e.X, e.Z, leap.X1, leap.Z1), dd = d < 0.01 ? 1 : d;
             double ox = d < 0.01 ? Math.Sin(Player.Facing) : (e.X - leap.X1) / dd, oz = d < 0.01 ? Math.Cos(Player.Facing) : (e.Z - leap.Z1) / dd;
             LeapStruck.Add(e.Id);
-            HitEnemy(e, w.Damage, w.School, w.Tags, new HitOpts { Weapon = w, Knockback = kb, DirX = ox, DirZ = oz });
+            HitEnemy(e, dmg, w.School, w.Tags, new HitOpts { Weapon = w, Knockback = kb, DirX = ox, DirZ = oz });
             if (!e.Alive || e.State == EnemyState.Dying) continue;
             ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, e.Elite || e.Boss ? stagger : stun), 0);
             Interrupt(e);
         }
+        RuleLeapLanded(leap, ring, dmg);
         (HeavyBy, credit) = (hb, was);
         Events.Emit(new Ev.Explosion { X = leap.X1, Z = leap.Z1, Radius = leap.Radius, School = w.School, Power = 1.2, Art = w.Art + "_heave", Rank = w.Rank });
         Events.Emit(new Ev.Leap { Phase = LeapPhase.Land, X0 = leap.X0, Z0 = leap.Z0, X1 = leap.X1, Z1 = leap.Z1, Dur = leap.Dur, Radius = leap.Radius, Hit = ring.Count });
@@ -108,7 +112,8 @@ public sealed partial class Battle
     {
         if (!FreeToMove) return false;
         var p = Player;
-        double dist = w.Num(s => s.Range) ?? 8, time = Math.Max(0.05, w.Num(s => s.RushTime) ?? 0.3);
+        double dist = WkOver(w, "shield_charge.headlong", "range", w.Num(s => s.Range) ?? 8), time = Math.Max(0.05, w.Num(s => s.RushTime) ?? 0.3);
+        double strength = RuleChargeBegin(w);
         var (dx, dz, _) = SkillDir(dist);
         double share = SkillRule(w, "iron_hide") ? SkillFull(w, "iron_hide", "barrier", 0.25) : w.Num(s => s.Barrier) ?? 0.15;
         Art.Barrier = MaxHp * share;
@@ -120,12 +125,12 @@ public sealed partial class Battle
         double stun = w.Num(s => s.Stun) ?? 1;
         Art.Charge = new ChargeRun
         {
-            Weapon = w, Heavy = HeavyBy == w, Tags = w.Tags, SlamTags = w.Tags, Damage = w.Damage, Knockback = w.Num(s => s.Knockback) ?? 2.2,
-            ChampionMul = gore ? SkillFull(w, "gore", "champions", 1.5) : 1, ChampionStun = stun, BossStun = stun,
+            Weapon = w, Heavy = HeavyBy == w, Tags = w.Tags, SlamTags = w.Tags, Damage = w.Damage * strength, Knockback = w.Num(s => s.Knockback) ?? 2.2,
+            ChampionMul = gore ? SkillFull(w, "gore", "champions", 1.5) : 1, ChampionStun = RuleChargeStun(w, stun), BossStun = stun,
             Bleed = gore ? new StatusPayload(StatusKind.Bleed, 1, SkillFull(w, "gore", "power", 0.8), SkillFull(w, "gore", "seconds", 4)) : null,
             PerStruck = SkillRule(w, "unbroken") ? SkillFull(w, "unbroken", "health", 0.02) : 0, StruckCap = SkillFull(w, "unbroken", "cap", 0.2),
             Slam = w.Evolution?.Id == "pile_driver", SlamRadius = Firing.AreaOf(this, w, w.Num(s => s.Radius) ?? 3),
-            SlamDamage = w.Damage * (w.Num(s => s.Slam) ?? 1.4), SlamKnockback = 1.4, SlamStun = stun, SlamBossStun = stun,
+            SlamDamage = w.Damage * strength * (w.Num(s => s.Slam) ?? 1.4), SlamKnockback = 1.4, SlamStun = stun, SlamBossStun = stun,
         };
         p.SlowT = 0; p.SlowF = 1;
         Events.Emit(new Ev.Charge { Phase = ChargePhase.Start, X = x0, Z = z0, DX = dx, DZ = dz, X1 = x0 + dx * dist, Z1 = z0 + dz * dist, Dur = time });
@@ -143,12 +148,13 @@ public sealed partial class Battle
         var (hb, was) = (HeavyBy, credit);
         if (w != null) { HeavyBy = run.Heavy ? w : null; credit = w.Id; }
         Enemy? stopper = null;
+        RuleCarryRiders();
         ForEachHostileInRadius(p.X, p.Z, p.Radius + 0.6, (e, _) =>
         {
             if (stopper != null || !a.Struck.Add(e.Id)) return;
             if (e.Elite || e.Boss)
             {
-                stopper = e;
+                if (!RuleChargeRunsOn(w, e)) stopper = e;
                 HitEnemy(e, run.Damage * run.ChampionMul, School.Physical, run.Tags, new HitOpts { Weapon = w, Status = run.Bleed });
                 ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, e.Boss ? run.BossStun : run.ChampionStun), 0);
                 Interrupt(e);
@@ -159,6 +165,7 @@ public sealed partial class Battle
             double sx = side >= 0 ? a.RushDZ : -a.RushDZ, sz = side >= 0 ? -a.RushDX : a.RushDX;
             HitEnemy(e, run.Damage, School.Physical, run.Tags, new HitOpts { Weapon = w, Knockback = run.Knockback, DirX = sx * 0.85 + a.RushDX * 0.5, DirZ = sz * 0.85 + a.RushDZ * 0.5, Status = run.Bleed });
             run.Struck++;
+            RuleRide(w, e);
             if (w != null) Events.Emit(new Ev.Charge { Phase = ChargePhase.Impact, X = e.X, Z = e.Z, DX = a.RushDX, DZ = a.RushDZ, Target = e.Id });
             if (run.PerStruck > 0 && p.Shield < a.Barrier + MaxHp * run.StruckCap) { p.Shield += MaxHp * run.PerStruck; p.ShieldT = Math.Max(p.ShieldT, run.StruckHold); }
         });
@@ -181,6 +188,7 @@ public sealed partial class Battle
                     ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, e.Boss ? run.SlamBossStun : run.SlamStun), 0);
                 });
             }
+            RuleChargeEnd(run, w);
             if (w != null) Events.Emit(new Ev.Charge { Phase = ChargePhase.End, X = p.X, Z = p.Z, DX = a.RushDX, DZ = a.RushDZ });
         }
         (HeavyBy, credit) = (hb, was);
@@ -190,7 +198,7 @@ public sealed partial class Battle
 
     /// <summary>Iron Vow's brace while it holds: the skill, the plant left (her walk held), the brace left, the store, and
     /// when a Store was last told (the view hears one each 0.15 s at most).</summary>
-    internal sealed class BraceRun { public WeaponInst Weapon = null!; public double Plant, T, Stored, SaidAt = double.NegativeInfinity; public bool Heavy; }
+    internal sealed class BraceRun { public WeaponInst Weapon = null!; public double Plant, T, Stored, SaidAt = double.NegativeInfinity, HeldT, Age; public bool Heavy; }
     internal BraceRun? Braced;
     /// <summary>The ids Iron Vow's last burst struck (tests: what its ring marked is what it hit).</summary>
     public readonly List<int> VowStruck = new();
@@ -198,7 +206,7 @@ public sealed partial class Battle
     public bool Bracing => Braced != null;
     public double VowStored => Braced?.Stored ?? 0;
     /// <summary>Her feet held by the vow's plant (UpdatePlayer).</summary>
-    bool VowPlanted => Braced is { Plant: > 0 };
+    bool VowPlanted => Braced is { Plant: > 0 } && !RuleMarch;
 
     /// <summary>Iron Vow (behavior brace, cast press): she plants (Plant seconds, no walking) and braces (Brace seconds
     /// after the plant; she may walk): blows on her land at Halve and Store of each, before the halving, is kept; it ends
@@ -207,7 +215,8 @@ public sealed partial class Battle
     {
         if (Braced != null || FireFrom != null || Refiring) return false;
         var p = Player;
-        Braced = new BraceRun { Weapon = w, Plant = Math.Max(0, w.Num(s => s.Plant) ?? 0.3), T = Math.Max(0.05, w.Num(s => s.Brace) ?? 2), Heavy = HeavyBy == w };
+        Braced = new BraceRun { Weapon = w, Plant = Math.Max(0, w.Num(s => s.Plant) ?? 0.3), T = Math.Max(0.05, WkOver(w, "iron_vow.steadfast", "brace", w.Num(s => s.Brace) ?? 2)), Heavy = HeavyBy == w };
+        RuleBraceBegin(w, Braced.Plant + Braced.T);
         p.Vx = p.Vz = 0;
         Events.Emit(new Ev.Brace { Phase = BracePhase.Start, X = p.X, Z = p.Z, Radius = Firing.AreaOf(this, w, w.Num(s => s.Radius) ?? 5) });
         return true;
@@ -215,17 +224,18 @@ public sealed partial class Battle
 
     /// <summary>A blow on her, its final amount (HurtPlayer): bracing, a share is stored (before the halving) and it lands
     /// at Halve.</summary>
-    double VowTake(double dmg)
+    double VowTake(double dmg, Enemy? from = null)
     {
         if (Braced is not { } v || dmg <= 0) return dmg;
         var w = v.Weapon;
-        v.Stored += dmg * (w.Num(s => s.Store) ?? 0.2);
+        v.Stored += dmg * RuleVowStore(w, w.Num(s => s.Store) ?? 0.2);
+        RuleVowBlow(w, dmg, from);
         if (Time - v.SaidAt >= 0.15)
         {
             v.SaidAt = Time;
             Events.Emit(new Ev.Brace { Phase = BracePhase.Store, X = Player.X, Z = Player.Z, Radius = Firing.AreaOf(this, w, w.Num(s => s.Radius) ?? 5), Stored = v.Stored });
         }
-        return dmg * (w.Num(s => s.Halve) ?? 0.5);
+        return dmg * RuleVowHalve(w, w.Num(s => s.Halve) ?? 0.5);
     }
 
     /// <summary>The vow's clock (each step in the fight): the plant, then the brace; over, the burst: everything within
@@ -233,18 +243,22 @@ public sealed partial class Battle
     /// a lesser foe stunned.</summary>
     void TickVow(double dt)
     {
+        TickRules(dt);
         if (Braced is not { } v) return;
         if (!Player.Alive) { Braced = null; return; }
+        if (RuleBraceHolds(v, dt) && v.Plant <= 0 && v.T <= dt) return;
         if (v.Plant > 0) { v.Plant = Math.Max(0, v.Plant - dt); return; }
         v.T -= dt;
         if (v.T > 0) return;
         Braced = null;
         var w = v.Weapon;
         var p = Player;
-        double r = Firing.AreaOf(this, w, w.Num(s => s.Radius) ?? 5), kb = w.Num(s => s.Knockback) ?? 1.2, stun = w.Num(s => s.Stun) ?? 0.4;
-        double dmg = w.Damage + v.Stored * (w.Num(s => s.StoreMul) ?? 3);
+        double r = Firing.AreaOf(this, w, RuleBurstRadius(v, RuleVowRadius(w, w.Num(s => s.Radius) ?? 5))), kb = w.Num(s => s.Knockback) ?? 1.2, stun = w.Num(s => s.Stun) ?? 0.4;
+        double dmg = (w.Damage + v.Stored * WkOver(w, "iron_vow.old_grudge", "storeMul", w.Num(s => s.StoreMul) ?? 3)) * RuleDamageMul(w);
+        var status = Firing.StatusWith(this, w);
         var ring = HostilesInRadius(p.X, p.Z, r);
         Events.Emit(new Ev.Brace { Phase = BracePhase.Burst, X = p.X, Z = p.Z, Radius = r, Stored = v.Stored, Hit = ring.Count });
+        if (RuleBurstWave(v, dmg)) return;
         var (hb, was) = (HeavyBy, credit);
         HeavyBy = v.Heavy ? w : null;
         credit = w.Id;
@@ -253,7 +267,7 @@ public sealed partial class Battle
         {
             double d = Dist(e.X, e.Z, p.X, p.Z), dd = d < 0.01 ? 1 : d;
             VowStruck.Add(e.Id);
-            HitEnemy(e, dmg, w.School, w.Tags, new HitOpts { Weapon = w, Knockback = kb, DirX = d < 0.01 ? Math.Sin(p.Facing) : (e.X - p.X) / dd, DirZ = d < 0.01 ? Math.Cos(p.Facing) : (e.Z - p.Z) / dd });
+            HitEnemy(e, dmg, w.School, w.Tags, new HitOpts { Weapon = w, Knockback = kb, DirX = d < 0.01 ? Math.Sin(p.Facing) : (e.X - p.X) / dd, DirZ = d < 0.01 ? Math.Cos(p.Facing) : (e.Z - p.Z) / dd, Status = status });
             if (!e.Alive || e.State == EnemyState.Dying || e.Elite || e.Boss) continue;
             ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, stun), 0);
             Interrupt(e);
@@ -287,14 +301,16 @@ public static partial class Firing
         if (!w.Channeling || b.FireFrom != null || b.Refiring) return false;
         var p = b.Player;
         bool heavy = b.HeavyBy == w;
-        double r = AreaOf(b, w, w.Num(s => s.Radius) ?? 3.2), kb = w.Num(s => s.Knockback) ?? 0.3;
+        double r = AreaOf(b, w, b.RuleReach(w, w.Num(s => s.Radius) ?? 3.2)), kb = w.Num(s => s.Knockback) ?? 0.3, cut = w.Damage * b.RuleDamageMul(w);
+        b.RuleChopBegin(w);
         if (w.SpinTicks == 0) b.Events.Emit(new Ev.Spin { Phase = SpinPhase.Start, X = p.X, Z = p.Z, Radius = r });
         w.SpinTicks++;
         var status = StatusWith(b, w);
         b.ForEachHostileInRadius(p.X, p.Z, r, (e, d) =>
         {
             double dd = d == 0 ? 1 : d;
-            b.HitEnemy(e, w.Damage, w.School, w.Tags, new HitOpts { Weapon = w, Knockback = kb, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd, Status = status });
+            b.HitEnemy(e, cut, w.School, w.Tags, new HitOpts { Weapon = w, Knockback = kb, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd, Status = status, Heavy = b.RuleBeforeCut(w, e) });
+            b.RuleAfterCut(w, e, p.X, p.Z);
         });
         b.Events.Emit(new Ev.Spin { Phase = SpinPhase.Tick, X = p.X, Z = p.Z, Radius = r, Heavy = heavy });
         if (heavy && w.Num(s => s.Line) is { } line)
