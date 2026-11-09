@@ -8,17 +8,17 @@
  "beats": {
   "events": {
    "takeoff": 0.1,
-   "apex": 0.41,
-   "land": 0.72
+   "apex": 0.4,
+   "land": 0.7333
   },
   "contact": [
-   0.72
+   0.7333
   ],
   "hold": [
-   0.72,
-   0.7867
+   0.7333,
+   0.8
   ],
-  "cancel": 0.95
+  "cancel": 0.9667
  },
  "gen": {
   "engine": "kimodo",
@@ -33,7 +33,238 @@
    "A woman crouches and leaps forward high into the air, raising a sword overhead with her right hand, tucks her knees at the top of the jump, then drives the sword point down into the ground as she lands on one knee, and stands up.",
    "A warrior woman jumps high forward with a sword raised above her head in her right hand and a shield on her left arm, pulls her knees up in the air, and slams down onto one knee stabbing the sword into the ground in front of her, then rises.",
    "A woman makes a powerful leaping attack: she springs up high, lifting her sword overhead, then comes down kneeling on one knee and plunges the sword point first into the ground, then stands back up ready."
-  ]
+  ],
+  "keys": {
+   "src": {
+    "prompt": 0,
+    "seed": 702,
+    "seconds": 2.6,
+    "takes": 4,
+    "pick": 1,
+    "keys": {
+     "poses": [
+      {
+       "src": {
+        "prompt": "A woman holding a sword in her right hand crouches low with her weight forward, drawing the sword back and up behind her shoulder, about to spring forward into a jump.",
+        "seed": 321,
+        "seconds": 2.0,
+        "takes": 6
+       },
+       "pick": 1,
+       "frame": 0,
+       "at": 0,
+       "xz": [
+        0,
+        0
+       ],
+       "yaw": 0
+      },
+      {
+       "src": {
+        "prompt": "A warrior woman bends her knees deeply and leans forward, gathering herself to leap, her sword arm drawn back and her left arm tucked to her chest.",
+        "seed": 322,
+        "seconds": 2.0,
+        "takes": 6
+       },
+       "pick": 5,
+       "frame": 53,
+       "at": 12,
+       "xz": [
+        0,
+        0.3
+       ],
+       "yaw": 0,
+       "arm": {
+        "RightHand": [
+         -0.3,
+         0.55,
+         -0.2
+        ]
+       }
+      },
+      {
+       "src": {
+        "prompt": 2,
+        "seed": 403,
+        "seconds": 2.6,
+        "takes": 4,
+        "keys": {
+         "poses": [
+          {
+           "src": {
+            "prompt": 2,
+            "seed": 213
+           },
+           "pick": 4,
+           "frame": 53,
+           "at": 23,
+           "xz": [
+            0,
+            1.0
+           ],
+           "yaw": 0,
+           "lift": 0
+          },
+          {
+           "src": {
+            "prompt": 2,
+            "seed": 213
+           },
+           "pick": 4,
+           "frame": 79,
+           "at": 33,
+           "xz": [
+            0,
+            2.2
+           ],
+           "yaw": 0,
+           "lift": 0
+          }
+         ]
+        }
+       },
+       "pick": 2,
+       "frame": 21,
+       "at": 22,
+       "xz": [
+        0,
+        1.1
+       ],
+       "yaw": 0
+      },
+      {
+       "src": {
+        "prompt": 2,
+        "seed": 403,
+        "seconds": 2.6,
+        "takes": 4,
+        "keys": {
+         "poses": [
+          {
+           "src": {
+            "prompt": 2,
+            "seed": 213
+           },
+           "pick": 4,
+           "frame": 53,
+           "at": 23,
+           "xz": [
+            0,
+            1.0
+           ],
+           "yaw": 0,
+           "lift": 0
+          },
+          {
+           "src": {
+            "prompt": 2,
+            "seed": 213
+           },
+           "pick": 4,
+           "frame": 79,
+           "at": 33,
+           "xz": [
+            0,
+            2.2
+           ],
+           "yaw": 0,
+           "lift": 0
+          }
+         ]
+        }
+       },
+       "pick": 2,
+       "frame": 37,
+       "at": 32,
+       "xz": [
+        0,
+        2.2
+       ],
+       "yaw": 0,
+       "arm": {
+        "RightHand": [
+         -0.08,
+         0.32,
+         0.22
+        ]
+       }
+      }
+     ]
+    }
+   },
+   "targets": {
+    "RightHand": {
+     "12": [
+      -0.12,
+      1.12,
+      0.0
+     ],
+     "13": [
+      -0.12,
+      1.12,
+      0.0
+     ],
+     "14": [
+      -0.12,
+      1.12,
+      0.0
+     ],
+     "15": [
+      -0.12,
+      1.12,
+      0.0
+     ],
+     "16": [
+      -0.12,
+      1.12,
+      0.0
+     ],
+     "17": [
+      -0.12,
+      1.12,
+      0.0
+     ],
+     "18": [
+      -0.12,
+      1.12,
+      0.0
+     ],
+     "19": [
+      -0.12,
+      1.12,
+      0.0
+     ],
+     "20": [
+      -0.12,
+      1.12,
+      0.0
+     ],
+     "21": [
+      -0.12,
+      1.12,
+      0.0
+     ]
+    }
+   },
+   "fullbody": [
+    0,
+    11,
+    22,
+    33
+   ],
+   "prompts": [
+    0,
+    1,
+    2
+   ],
+   "seeds": [
+    821,
+    822
+   ],
+   "seconds": 2.6,
+   "takes": 4,
+   "tag": "j"
+  }
  },
  "post": {
   "loop": false,
@@ -43,7 +274,9 @@
    "retime": {
     "lead": 0.3,
     "tail": 0.75,
-    "hold_on": "land"
+    "hold_on": "land",
+    "land_on": "knee",
+    "takeoff_on": "coil"
    },
    "travel": [
     "takeoff",
@@ -70,6 +303,13 @@
       "end"
      ]
     ]
+   },
+   "arc": {
+    "over": [
+     "takeoff",
+     "land"
+    ],
+    "apex_cm": 100
    }
   }
  },
@@ -84,8 +324,8 @@
    80
   ],
   "pelvis_cm@apex": [
-   90,
-   130
+   80,
+   120
   ],
   "thigh_l_deg@apex": [
    50,
@@ -95,7 +335,7 @@
    50,
    130
   ],
-  "blade_below_deg@0.58..0.72:min": [
+  "blade_below_deg@0.5667..land:min": [
    60,
    90
   ],
@@ -123,5 +363,119 @@
    -6,
    3
   ]
+ },
+ "source": "src/heroic_leap.npz",
+ "bvh": "heroic_leap__kj0s100r822_0.bvh",
+ "sha1": "ba18934df5206a2fced7d0dd5fc09c64b9b5d911",
+ "take_score": 13.574,
+ "gate": [
+  "pelvis_cm@takeoff",
+  "hand_r_over_head_cm@0.18..0.35:min",
+  "pelvis_cm@apex",
+  "thigh_l_deg@apex",
+  "thigh_r_deg@apex",
+  "knee_low_cm@land",
+  "pelvis_cm@1.3"
+ ],
+ "fit": {
+  "blade": {
+   "dir": [
+    -0.2425,
+    -0.7071,
+    0.6646
+   ],
+   "keep": 0,
+   "keys": [
+    [
+     0.0,
+     [
+      -0.2425,
+      -0.7071,
+      0.6646
+     ]
+    ],
+    [
+     0.1,
+     [
+      -0.2,
+      0.7,
+      -0.68
+     ]
+    ],
+    [
+     0.27,
+     [
+      -0.1,
+      0.9,
+      -0.42
+     ]
+    ],
+    [
+     0.4,
+     [
+      0,
+      0.6,
+      0.8
+     ]
+    ],
+    [
+     0.5,
+     [
+      0,
+      -0.3,
+      0.95
+     ]
+    ],
+    [
+     0.5667,
+     [
+      0,
+      -0.87,
+      0.5
+     ]
+    ],
+    [
+     0.7333,
+     [
+      0,
+      -0.97,
+      0.25
+     ]
+    ],
+    [
+     0.9,
+     [
+      0,
+      -0.97,
+      0.25
+     ]
+    ],
+    [
+     1.15,
+     [
+      -0.2425,
+      -0.7071,
+      0.6646
+     ]
+    ],
+    [
+     1.3,
+     [
+      -0.2425,
+      -0.7071,
+      0.6646
+     ]
+    ]
+   ]
+  },
+  "pop": {
+   "x": 4,
+   "span": 4,
+   "cap": {}
+  },
+  "clear": {
+   "target_mm": 10,
+   "passes": 8
+  }
  }
 }

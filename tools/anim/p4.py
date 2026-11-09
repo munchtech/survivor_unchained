@@ -318,12 +318,41 @@ def jobs_of(names):
                 j = job(i, 1.0, f"{p.stem}__m{i}")
                 j.update(takes=g["more"]["takes"], seed=j["seed"] + g["more"]["seed_add"])
                 jobs.append(j)
-        if g.get("keys"):
+
+        def pz(d):
+            d = dict(d)
+            if isinstance(d.get("prompt"), int):
+                d["prompt"] = g["prompts"][d["prompt"]]
+            d.setdefault("seconds", g["seconds"])
+            d.setdefault("takes", g["takes"])
+            if d.get("keys", {}).get("poses"):          # (a source that is itself a keyed take)
+                d["keys"] = dict(d["keys"], poses=[dict(q, src=pz(q["src"])) for q in d["keys"]["poses"]])
+            return d
+        if g.get("keys") and g["keys"].get("poses") and not g["keys"].get("src"):
+            # (keyed beats: FullBody key poses from native takes {src: {prompt: index | text, seed, seconds, takes},
+            # pick, frame (the source take's), at (this job's frame), xz, yaw, lift} (kimodo_run.pose_keys); Kimodo
+            # makes only the in-betweens, per keys.prompts x keys.seeds as __q<tag><i>s<seed>)
+            K = g["keys"]
+            poses = [dict(q, src=pz(q["src"])) for q in K["poses"]]
+            for i in K.get("prompts", range(len(g["prompts"]))):
+                for sd in K.get("seeds", [g["seeds"][i % len(g["seeds"])]]):
+                    j = job(i, 1.0, f"{p.stem}__q{K.get('tag', '')}{i}s{sd}")
+                    j.update(seed=sd, keys={"poses": poses})
+                    if K.get("seconds"):
+                        j["seconds"] = K["seconds"]
+                    if K.get("takes"):
+                        j["takes"] = K["takes"]
+                    jobs.append(j)
+        elif g.get("keys"):
             K = g["keys"]
             k = soma_k(sp)
             src = job(K["src"]["prompt"], K["src"].get("scale", 1.0), "src")
             src = {kk: src[kk] for kk in ("prompt", "seconds", "seed", "takes", "root2d") if kk in src}
             src["pick"] = K["src"].get("pick", 0)
+            # (a source made by its own seed, length and keys: a keyed take, the hands then keyed on it)
+            src.update({kk: K["src"][kk] for kk in ("seed", "seconds", "takes") if kk in K["src"]})
+            if K["src"].get("keys"):
+                src["keys"] = pz({"prompt": "", "keys": K["src"]["keys"]})["keys"]
             # (aim: what is sent = the target minus the take's measured mean miss on B, in the pelvis frame: the
             # retarget's arm calibration lands Kimodo's wrist a few cm from where it put SOMA's)
             aim = K.get("aim", {})
@@ -334,10 +363,16 @@ def jobs_of(names):
                     for jn, d in K.get("targets", {}).items()}
             for i in K.get("prompts", [K["src"]["prompt"]]):
                 for sc in K.get("scales", [K["src"].get("scale", 1.0)]):
-                    j = job(i, sc, f"{p.stem}__k{K.get('tag', '')}{i}s{round(sc * 100)}")
-                    j["keys"] = {"src": src, "hands": hands, "targets": tgts, "fullbody": K.get("fullbody", []),
-                                 "start": K.get("start", 15), "every": K.get("every", 30)}
-                    jobs.append(j)
+                    for sd in K.get("seeds", [None]):     # (seeds: more takes of the keyed job, __k<tag><i>s<pct>r<seed>)
+                        j = job(i, sc, f"{p.stem}__k{K.get('tag', '')}{i}s{round(sc * 100)}" + (f"r{sd}" if sd else ""))
+                        j["keys"] = {"src": src, "hands": hands, "targets": tgts, "fullbody": K.get("fullbody", []),
+                                     "start": K.get("start", 15), "every": K.get("every", 30)}
+                        if sd:
+                            j["seed"] = sd
+                        for kk in ("seconds", "takes"):
+                            if K.get(kk):
+                                j[kk] = K[kk]
+                        jobs.append(j)
     return jobs
 
 
