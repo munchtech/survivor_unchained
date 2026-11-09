@@ -497,9 +497,9 @@
    "from": "targets 09 and 10 (the Deep Shaw's floor: mid-value under the moon, never black; warm where her pool lights it); MB4 night; rule 9 leaf litter as a few leaf shapes",
    "masses": {
     "colors": [
-     "#929972",
-     "#a7aa7d",
-     "#b8bd88"
+     "#58504a",
+     "#655a52",
+     "#706559"
     ],
     "split": [
      0.33,
@@ -516,26 +516,27 @@
       17
      ],
      "colors": [
-      "#c9b270",
-      "#daca80",
-      "#b1a56c",
-      "#dfe78e"
+      "#7b5e49",
+      "#856c54",
+      "#6b5746",
+      "#897c5d"
      ],
      "height": 0.7
     }
    ],
    "from_w2": "L1 W2 ground, mark 3: the leaf stamps halved (20 -> 10 a square metre), the wave-1 judge at 09 (busy leaf speckle)",
    "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.785, 0.829, 0.952] per channel (linear) = the hollow soil anchor 'litter' target / its mean [0.171, 0.1279, 0.088]; target = (T09_floor [0.0044, 0.015, 0.0566] + T10_floor [0.005, 0.0202, 0.0503]) / 2 / the arena moon [0.035, 0.166, 0.638] = [0.1343, 0.106, 0.0838]. Replaces C1's r1 calib (a lift read off frames).",
-   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json).",
+   "l9_arena": "L1 lead 9 ARENA (9 Nov): back on the day chain, at the root. Its built mean albedo was [0.398, 0.418, 0.206] (Y 0.398), 3.6x the soil class's [0.134, 0.106, 0.084] (materials.json; MB4's day earth through the road's chain response gives Y 0.07-0.13, the road class 0.13, turf 0.060, verge 0.086, rut_mud 0.085): lifted to make up for the hollow's canopy-cut moon. Every color x[0.337, 0.254, 0.408] per channel (linear) = the soil class / the built mean, so the layer's mean is the soil class's; the one arena moon (ArenaPlaces.OneMoon, rigs.json arena_night) lights it."
   },
   "rot": {
    "class": "soil",
    "from": "(c) the Shaw's black earth under the litter (ArenaGround: 'the rot is black earth'), a few old leaves",
    "masses": {
     "colors": [
-     "#5e664f",
-     "#6a725b",
-     "#787d60"
+     "#313629",
+     "#383d30",
+     "#414433"
     ],
     "split": [
      0.4,
@@ -552,22 +553,23 @@
       14
      ],
      "colors": [
-      "#8a885e",
-      "#9b9764"
+      "#4b4a31",
+      "#555335"
      ],
      "height": 0.6
     }
    ],
    "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.785, 0.829, 0.952] per channel (linear) = the hollow soil anchor 'litter' target / its mean [0.171, 0.1279, 0.088]; target = (T09_floor [0.0044, 0.015, 0.0566] + T10_floor [0.005, 0.0202, 0.0503]) / 2 / the arena moon [0.035, 0.166, 0.638] = [0.1343, 0.106, 0.0838]. Replaces C1's r1 calib (a lift read off frames).",
-   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json).",
+   "l9_arena": "L1 lead 9 ARENA (9 Nov): the hollow's layers keep their value steps under the litter: every color x0.2789 (linear, the litter's own step back to the soil class, 0.111/0.398), which lands them on ArenaGround.Looks' designed hollow values (rot 0.04, roots 0.075, mud 0.035, bed 0.1, face 0.07; the painted layers had lifted all seven about 3.6x)."
   },
   "roots": {
    "class": "soil",
    "from": "(c) the roots' runs; rule 9 (wood as a few long strokes)",
    "masses": {
     "colors": [
-     "#6a6d54",
-     "#797c5c"
+     "#383a2c",
+     "#414330"
     ],
     "split": [
      0.5
@@ -587,24 +589,25 @@
       160
      ],
      "colors": [
-      "#a2a270",
-      "#8f8e64"
+      "#59593c",
+      "#4e4e35"
      ],
      "lit_edge": 0.05,
      "height": 0.9
     }
    ],
    "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.785, 0.829, 0.952] per channel (linear) = the hollow soil anchor 'litter' target / its mean [0.171, 0.1279, 0.088]; target = (T09_floor [0.0044, 0.015, 0.0566] + T10_floor [0.005, 0.0202, 0.0503]) / 2 / the arena moon [0.035, 0.166, 0.638] = [0.1343, 0.106, 0.0838]. Replaces C1's r1 calib (a lift read off frames).",
-   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json).",
+   "l9_arena": "L1 lead 9 ARENA (9 Nov): the hollow's layers keep their value steps under the litter: every color x0.2789 (linear, the litter's own step back to the soil class, 0.111/0.398), which lands them on ArenaGround.Looks' designed hollow values (rot 0.04, roots 0.075, mud 0.035, bed 0.1, face 0.07; the painted layers had lifted all seven about 3.6x)."
   },
   "den_mud": {
    "class": "soil",
    "from": "(c) the den's mud, trodden smooth (ArenaGround: 'at the scan's own contrast the den's floor read as asphalt')",
    "masses": {
     "colors": [
-     "#575d4a",
-     "#63684f",
-     "#6e7256"
+     "#2d3126",
+     "#343729",
+     "#3b3d2d"
     ],
     "split": [
      0.4,
@@ -613,7 +616,8 @@
     "scale_m": 1.4
    },
    "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.785, 0.829, 0.952] per channel (linear) = the hollow soil anchor 'litter' target / its mean [0.171, 0.1279, 0.088]; target = (T09_floor [0.0044, 0.015, 0.0566] + T10_floor [0.005, 0.0202, 0.0503]) / 2 / the arena moon [0.035, 0.166, 0.638] = [0.1343, 0.106, 0.0838]. Replaces C1's r1 calib (a lift read off frames).",
-   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json).",
+   "l9_arena": "L1 lead 9 ARENA (9 Nov): the hollow's layers keep their value steps under the litter: every color x0.2789 (linear, the litter's own step back to the soil class, 0.111/0.398), which lands them on ArenaGround.Looks' designed hollow values (rot 0.04, roots 0.075, mud 0.035, bed 0.1, face 0.07; the painted layers had lifted all seven about 3.6x)."
   },
   "stream_bed": {
    "class": "rock",
@@ -621,19 +625,19 @@
    "cells": {
     "size_cm": 22,
     "colors": [
-     "#948e82",
-     "#a79e92",
-     "#878475"
+     "#514e47",
+     "#5c5750",
+     "#4a483f"
     ],
-    "joint": "#6a635b",
+    "joint": "#383430",
     "joint_cm": 4.0,
     "lit": 0.06,
     "round": 0.55
    },
    "masses": {
     "colors": [
-     "#6a635b",
-     "#776e61"
+     "#383430",
+     "#403b33"
     ],
     "split": [
      0.5
@@ -642,16 +646,17 @@
    },
    "calib": "r1 (L1 C1, 5 Nov): +0.06 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)",
    "c6": "L1 W2 C6 (the color chain): x[1.006, 0.992, 1.008] per channel (linear) = the rock class's chain albedo / its old mid (materials.json).",
-   "s1c": "L7 S1c (ground check values90 10 > 9): rule 9, each block inside its class's range: the cells' top at or under the rock class's albedo L top (0.72, materials.json); the joint and the masses (the ground between the stones) 0.11 L under the darkest cell, the depth the rock-class surfaces that pass hold (ballast 0.109, spoil 0.116; MB4 rock's chunky planes). Was {\"cells\": [\"#a29f83\", \"#b5b08f\", \"#959177\"], \"joint\": \"#5e5849\", \"masses\": [\"#5e5849\", \"#6b6350\"]}."
+   "s1c": "L7 S1c (ground check values90 10 > 9): rule 9, each block inside its class's range: the cells' top at or under the rock class's albedo L top (0.72, materials.json); the joint and the masses (the ground between the stones) 0.11 L under the darkest cell, the depth the rock-class surfaces that pass hold (ballast 0.109, spoil 0.116; MB4 rock's chunky planes). Was {\"cells\": [\"#a29f83\", \"#b5b08f\", \"#959177\"], \"joint\": \"#5e5849\", \"masses\": [\"#5e5849\", \"#6b6350\"]}.",
+   "l9_arena": "L1 lead 9 ARENA (9 Nov): the hollow's layers keep their value steps under the litter: every color x0.2789 (linear, the litter's own step back to the soil class, 0.111/0.398), which lands them on ArenaGround.Looks' designed hollow values (rot 0.04, roots 0.075, mud 0.035, bed 0.1, face 0.07; the painted layers had lifted all seven about 3.6x)."
   },
   "needles": {
    "class": "soil",
    "from": "MB4 spruce (the needle litter under the tiers), as needle tufts",
    "masses": {
     "colors": [
-     "#96996b",
-     "#a9aa74",
-     "#b8bd81"
+     "#5a514a",
+     "#665a51",
+     "#6f655a"
     ],
     "split": [
      0.35,
@@ -672,15 +677,16 @@
       8
      ],
      "colors": [
-      "#d1cf80",
-      "#bdbd74"
+      "#7f6f5a",
+      "#736551"
      ],
-     "under": "#888862",
+     "under": "#514744",
      "height": 0.7
     }
    ],
    "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.785, 0.829, 0.952] per channel (linear) = the hollow soil anchor 'litter' target / its mean [0.171, 0.1279, 0.088]; target = (T09_floor [0.0044, 0.015, 0.0566] + T10_floor [0.005, 0.0202, 0.0503]) / 2 / the arena moon [0.035, 0.166, 0.638] = [0.1343, 0.106, 0.0838]. Replaces C1's r1 calib (a lift read off frames).",
-   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json).",
+   "l9_arena": "L1 lead 9 ARENA (9 Nov): back on the day chain, at the root. Its built mean albedo was [0.401, 0.414, 0.179] (Y 0.394), 3.6x the soil class's [0.134, 0.106, 0.084] (materials.json; MB4's day earth through the road's chain response gives Y 0.07-0.13, the road class 0.13, turf 0.060, verge 0.086, rut_mud 0.085): lifted to make up for the hollow's canopy-cut moon. Every color x[0.334, 0.256, 0.469] per channel (linear) = the soil class / the built mean, so the layer's mean is the soil class's; the one arena moon (ArenaPlaces.OneMoon, rigs.json arena_night) lights it."
   },
   "bank": {
    "class": "soil",
@@ -688,19 +694,19 @@
    "cells": {
     "size_cm": 70,
     "colors": [
-     "#859d76",
-     "#96ae81",
-     "#76886b"
+     "#485640",
+     "#526046",
+     "#404a39"
     ],
-    "joint": "#606a56",
+    "joint": "#33382d",
     "joint_cm": 4.0,
     "lit": 0.05,
     "round": 0.0
    },
    "masses": {
     "colors": [
-     "#606a56",
-     "#707d5e"
+     "#33382d",
+     "#3c4431"
     ],
     "split": [
      0.5
@@ -708,7 +714,8 @@
     "scale_m": 2.0
    },
    "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.785, 0.829, 0.952] per channel (linear) = the hollow soil anchor 'litter' target / its mean [0.171, 0.1279, 0.088]; target = (T09_floor [0.0044, 0.015, 0.0566] + T10_floor [0.005, 0.0202, 0.0503]) / 2 / the arena moon [0.035, 0.166, 0.638] = [0.1343, 0.106, 0.0838]. Replaces C1's r1 calib (a lift read off frames).",
-   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json).",
+   "l9_arena": "L1 lead 9 ARENA (9 Nov): the hollow's layers keep their value steps under the litter: every color x0.2789 (linear, the litter's own step back to the soil class, 0.111/0.398), which lands them on ArenaGround.Looks' designed hollow values (rot 0.04, roots 0.075, mud 0.035, bed 0.1, face 0.07; the painted layers had lifted all seven about 3.6x)."
   },
   "verge": {
    "class": "grass",
@@ -1282,24 +1289,26 @@
    "class": "setts",
    "from": "(b) MB3 SETTS (day): coursed rounded-rectangle setts, chunky planes with warm tops and cool joints, a few long courses; rule 9 (one color varied +-spread, lit bevel to the light, cool darker bevel and joints), rule 10 (big-medium-small: stone, bevel, joint; nothing under 3 cm). (a) the play camera of 07/13: a sett 28 x 18 cm is about 14 x 9 px (setts' own 4 m tile, 1024 px).",
    "courses": {
-    "row_cm": 20,
+    "row_cm": 27,
     "row_jit": 0.12,
-    "len_cm": 30,
+    "len_cm": 45,
     "len_jit": 0.28,
     "joint_cm": 3.0,
-    "corner_cm": 3.5,
-    "bevel_cm": 4.0,
+    "corner_cm": 5.0,
+    "bevel_cm": 5.0,
     "wobble_cm": 0.8,
-    "tilt": 0.5,
-    "lit": 0.06,
+    "tilt": 0.3,
+    "lit": 0.035,
+    "spread": 0.03,
     "colors": [
      "#6c6977",
      "#726972",
      "#68677b",
      "#73707f"
     ],
-    "joint": "#454356"
+    "joint": "#535263"
    },
+   "l9": "L1 l9 kit (judge 1 fix 7: 07's lit setts busy, q80-q20 0.14 against T07's 0.085): FROM T07 at the play camera (her ~80 px tall in both), its setts ~34 x 15 px against ours ~22 x 11, so courses 20 -> 27 cm and stones 30 -> 45 cm (x1.35, x1.5); MB3's joints low contrast, so the joint x[0.58,0.6,0.68] of #6c6977 (was x0.4) and the lit/cool bevel 0.06 -> 0.035 over a 5 cm bevel and corner; the stones' own spread 0.05 -> 0.03 and tilt 0.5 -> 0.3 ('spread', ground_paint.py courses).",
    "w2": "L1 W2 town (C4): base #5a4962 = MB3_setts_day all_lin [0.3381, 0.1515, 0.1288] (look_l1/c/w2/town/board_town.json) / the day rig's terrain response (the road class, the same terrain.gdshader: resp/final day_play lit [3.3006, 2.274, 1.0575]) = [0.1024, 0.0666, 0.1218], as the ground helper's mark 6; siblings by hand x[1.12,1.0,0.9] warm, x[0.92,0.97,1.08] cool, x1.15 light; joint x[0.38,0.4,0.5] (MB3's joints: about 0.4 of the stone, bluer). Known: the rig's shade response [0.296, 0.308, 0.768] draws this base #312756 in shade against the board's #75545d (the day fill, the light helper's).",
    "c6": "L1 W2 C6 (the color chain): x[1.006, 0.997, 0.994] per channel (linear) = the setts class's chain albedo / its old mid (materials.json)."
   }

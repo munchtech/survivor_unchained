@@ -242,9 +242,11 @@ def courses(cv, c, rng):
     h = rng.random(nr * nst)
     pick = np.minimum((h * len(labs)).astype(int), len(labs) - 1)
     o = labs[pick][sid].copy()
-    o[..., 0] += ((np.modf(h * 7.31)[0] - 0.5) * 2 * cv.spread * 0.9)[sid]
+    # ('spread' (L1 l9 kit): the class's own +-L between stones, over ground.json's spread_L: MB3's setts are quiet)
+    sp = c.get("spread", cv.spread)
+    o[..., 0] += ((np.modf(h * 7.31)[0] - 0.5) * 2 * sp * 0.9)[sid]
     tilt = rng.uniform(-1, 1, (nr * nst, 2))
-    o[..., 0] += (tilt[sid, 0] * px / np.maximum(hx, 1) + tilt[sid, 1] * py / np.maximum(hy, 1)) * cv.spread * c["tilt"]
+    o[..., 0] += (tilt[sid, 0] * px / np.maximum(hx, 1) + tilt[sid, 1] * py / np.maximum(hy, 1)) * sp * c["tilt"]
     rim = stone & (e < bevel)
     lit = c["lit"]
     w = 1 - np.clip(e / bevel, 0, 1)
@@ -274,7 +276,58 @@ def stamp_colors(cv, st, rng):
     return h, rng.uniform(-1, 1) * cv.spread * 0.8
 
 
+def fan_leaf(c, ang, ln, w, L, perp, curl):
+    """A broad pointed leaf on the ground, from c, at ang radians off the light's direction (L, the picture's up)."""
+    d = L * math.cos(ang) + perp * math.sin(ang)
+    n_ = np.array([-d[1], d[0]])
+    t = np.linspace(0, 1, 9)[:, None]
+    spine = c + d * ln * t + n_ * curl * ln * t ** 2
+    wd = w * np.sin(np.clip(t * 0.9 + 0.1, 0, 1) * math.pi) ** 0.7 * (1 - t) ** 0.25
+    return np.concatenate([spine + n_ * wd, (spine - n_ * wd)[::-1]])
+
+
+def mound_fan(cv, c, r, rng, L, nl, spread, reach, wide, color, h):
+    """A fan of nl broad pointed leaves from c toward the light, over a rounded foot, as one flat color."""
+    perp = np.array([-L[1], L[0]])
+    k = 16
+    ang = np.linspace(0, 2 * math.pi, k, endpoint=False)
+    jit = rng.uniform(0.85, 1.1, k)
+    foot = [c + perp * math.cos(a_) * r * 0.62 * j + L * math.sin(a_) * r * 0.42 * j for a_, j in zip(ang, jit)]
+    cv.poly(foot, color, h)
+    for i in range(nl):
+        u = (i + rng.uniform(0.25, 0.75)) / nl * 2 - 1
+        a_ = u * spread + rng.uniform(-0.08, 0.08)
+        ln = r * reach * rng.uniform(0.75, 1.0) * (1 - 0.3 * u * u)
+        root = c + perp * u * r * 0.35
+        cv.poly(fan_leaf(root, a_, ln, r * wide * rng.uniform(0.85, 1.15), L, perp, rng.uniform(-0.15, 0.15)), color, h)
+
+
+def mounds(cv, st, rng):
+    """Grass as big flat clumps (bible rule 9, MB4 grass, target 07's lawn): each mound three flat values, a cool dark
+    under-mass dropped away from the light, the body, and a lit spiky crown toward the light, overlapping like scales
+    (the ones toward the light drawn first, so a nearer mound's lit crown covers the dark foot of the one behind)."""
+    T = cv.metres
+    count = int(round(st["per_m2"] * T * T))
+    lo, hi = st["size_cm"]
+    L = cv.light
+    cols = st["colors"]  # [under, body, lit]
+    ms = []
+    for _ in range(count):
+        c = rng.uniform(0, cv.W, 2)
+        r = cv.px(max(rng.uniform(lo, hi), 3.0)) * 0.5
+        ms.append((float(c @ L) % (cv.W * abs(L[1]) + 1e-6), c, r, rng.uniform(-1, 1) * cv.spread * 0.8, rng.integers(1 << 30)))
+    for _, c, r, dL, sd in sorted(ms, key=lambda m: -m[0]):
+        g = np.random.default_rng(int(sd))
+        nl = int(st.get("leaves", 7))
+        # the dark under-mass, wider and dropped away from the light; the body; the lit crown toward the light
+        mound_fan(cv, c - L * r * 0.22, r * 1.05, g, L, nl + 2, 1.6, 0.95, 0.2, shift(cols[0], dL * 0.5), st["height"] * 0.7)
+        mound_fan(cv, c, r * 0.9, g, L, nl, 1.45, 1.0, 0.2, shift(cols[1], dL), st["height"] * 0.85)
+        mound_fan(cv, c + L * r * 0.2, r * 0.7, g, L, max(nl - 2, 3), 1.2, 1.0, 0.2, shift(cols[2], dL), st["height"])
+
+
 def stamps(cv, st, rng):
+    if st["shape"] == "mound":
+        return mounds(cv, st, rng)
     T = cv.metres
     count = int(round(st["per_m2"] * T * T))
     lo, hi = st["size_cm"]
@@ -475,14 +528,59 @@ def atlas_clump(rng, col, flowers, nfl):
     return a.reshape(GC, S, GC, S, 4).mean((1, 3))
 
 
+def atlas_tuft(rng, col, flowers, nfl, ah):
+    """One clump as a low wide tuft (L1 l9 grass, FROM target 07's tufts and MB4 grass), side-on on a GC x ah cell, at 2x:
+    three flat values by depth, never blades: a cool dark mass behind (the underside, leaves in 'under'), the body's
+    leaves before it, and a crown of short broad pointed leaves in front lit ('lit'), fanned wide (a tuft is about twice
+    as wide as it is tall); the root's last part darkens into the ground in the shader (grass_own.gdshader's base)."""
+    W, H = GC * S, ah * S
+    im = Image.new("RGBA", (W, H), rgb8(lab(col["body"])) + (0,))
+    d = ImageDraw.Draw(im)
+    cx = W * 0.5 + rng.uniform(-0.04, 0.04) * W
+    lean = rng.uniform(-0.2, 0.2)
+
+    def leaf(x0, ang, ln, w0, color):
+        p0 = np.array([x0, H * 0.995])
+        tip = p0 + np.array([math.sin(ang) * ln, -math.cos(ang) * ln])
+        p1 = p0 + np.array([math.sin(ang) * ln * 0.2, -math.cos(ang) * ln * 0.62])
+        s_ = np.linspace(0, 1, 12)[:, None]
+        cl = (1 - s_) ** 2 * p0 + 2 * (1 - s_) * s_ * p1 + s_ ** 2 * tip
+        tg = np.gradient(cl, axis=0); tg /= np.linalg.norm(tg, axis=1, keepdims=True) + 1e-9
+        nr = np.stack([-tg[:, 1], tg[:, 0]], 1)
+        wd = w0 * np.sin(np.clip(s_[:, 0] * 0.85 + 0.15, 0, 1) * math.pi) ** 0.6 * (1 - s_[:, 0]) ** 0.35
+        d.polygon([tuple(p) for p in np.concatenate([cl + nr * wd[:, None], (cl - nr * wd[:, None])[::-1]])], fill=color + (255,))
+
+    # (a dark mound at the root, so the tuft sits on a mass, not a fan of stalks)
+    d.ellipse([cx - W * 0.36, H * 0.62, cx + W * 0.36, H * 1.3], fill=shift(col["under"], 0) + (255,))
+    layers = ((col["under"], 9, 12, 0.6, 1.0, 1.3), (col["body"], 7, 9, 0.48, 0.85, 1.15), (col["lit"], 5, 7, 0.36, 0.72, 1.0))
+    for li, (cc, n0, n1, hl, hh, spread) in enumerate(layers):
+        nb = int(rng.integers(n0, n1 + 1))
+        for i in range(nb):
+            u = (i + rng.uniform(0.2, 0.8)) / nb * 2 - 1
+            ang = u * spread + lean + rng.uniform(-0.1, 0.1)
+            ln = H * rng.uniform(hl, hh) * (1.0 - 0.35 * abs(u) ** 2)
+            leaf(cx + u * W * (0.3 - 0.06 * li), ang, ln, W * rng.uniform(0.06, 0.08), shift(cc, rng.uniform(-1, 1) * 0.02))
+    for _ in range(nfl):
+        hx = cx + rng.uniform(-0.25, 0.25) * W
+        hy = H * rng.uniform(0.1, 0.25)
+        d.line([(hx, hy), (cx + (hx - cx) * 0.5, H * 0.7)], fill=shift(col["under"], 0.04) + (255,), width=int(W * 0.014))
+        r = W * rng.uniform(0.02, 0.026)
+        fc = flowers[int(rng.integers(len(flowers)))]
+        d.ellipse([hx - r, hy - r, hx + r, hy + r], fill=shift(fc, 0) + (255,))
+    a = np.asarray(im, np.float32) / 255
+    return a.reshape(ah, S, GC, S, 4).mean((1, 3))
+
+
 def build_atlas(data, out=None):
     g = data["grass_atlas"]
     rng = np.random.default_rng(seed_of("grass_atlas", g["kind"], VERSION))
-    atlas = np.zeros((GC * 2, GC * 4, 4), np.float32)
+    ah = int(GC * g.get("aspect", 1.0))  # (a cell's height to its width: 0.5 for the tufts, twice as wide as tall)
+    atlas = np.zeros((ah * 2, GC * 4, 4), np.float32)
     for j in range(8):
-        c = atlas_clump(rng, g["colors"], g["flowers"], 3 if j >= 8 - g["flower_cells"] else 0)
+        nfl = 3 if j >= 8 - g["flower_cells"] else 0
+        c = atlas_tuft(rng, g["colors"], g["flowers"], nfl, ah) if g.get("form") == "tuft" else atlas_clump(rng, g["colors"], g["flowers"], nfl)
         r, k = j // 4, j % 4
-        atlas[r * GC:(r + 1) * GC, k * GC:(k + 1) * GC] = c
+        atlas[r * ah:(r + 1) * ah, k * GC:(k + 1) * GC] = c
     # (the edges' color carried into the clear, so the mips never darken a clump's outline)
     body = np.array(rgb8(lab(g["colors"]["body"])), np.float32) / 255
     al = atlas[..., 3:4]
