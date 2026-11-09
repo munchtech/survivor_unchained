@@ -24,6 +24,48 @@ public static class FxWorldDepth
     internal static Vector2I TexSize;
 
     static Rid samplerNearest;
+
+    /// <summary>(L1 lead 8 FX2) The effects run only while the after-grade layer lives (FxAfter sets it in _Ready, clears it as it leaves).</summary>
+    public static volatile bool Live;
+
+    /// <summary>An effect holding render-device RIDs: <see cref="Release"/> frees them (render thread) and the effect remakes them lazily.</summary>
+    internal interface IRids { void FreeRids(RenderingDevice rd); }
+    static readonly System.Collections.Generic.List<IRids> owners = new();
+    internal static void Track(IRids o) { lock (owners) if (!owners.Contains(o)) owners.Add(o); }
+
+    /// <summary>(L1 lead 8 FX2) Frees every effect's RIDs, the depth texture and the sampler, on the render thread, now. FxAfter
+    /// calls it as it leaves the tree: at quit that is SceneTree.finalize, before the scripts and the rendering server go.
+    /// The effects' own predelete never came in time: the static copy effect and the compositors' C# wrappers outlive the
+    /// tree, and are only let go at the .NET shutdown, by which time a predelete either never reaches the script or the
+    /// device is gone; the cached uniform sets (UniformSetCacheRD) then outlive the cache, and the device's leak sweep
+    /// calls back into the freed cache: the signal 11 at quit.</summary>
+    public static void Release()
+    {
+        Live = false;
+        RenderingServer.CallOnRenderThread(Callable.From(ReleaseNow));
+    }
+
+    static void ReleaseNow()
+    {
+        var rd = RenderingServer.GetRenderingDevice();
+        if (rd == null) return;
+        IRids[] all;
+        lock (owners) { all = owners.ToArray(); owners.Clear(); }
+        foreach (var o in all) o.FreeRids(rd);
+        bool tex = Tex.IsValid;
+        Free(rd);
+        GD.Print($"fx world depth: released {all.Length} effect(s), depth texture {(tex ? "freed" : "none")}");
+    }
+
+    /// <summary>Frees the static depth texture and the sampler.</summary>
+    static void Free(RenderingDevice rd)
+    {
+        if (Tex.IsValid) rd.FreeRid(Tex);
+        Tex = default; TexSize = default;
+        if (samplerNearest.IsValid) rd.FreeRid(samplerNearest);
+        samplerNearest = default;
+    }
+
     internal static Rid Nearest(RenderingDevice rd)
     {
         if (!samplerNearest.IsValid)
