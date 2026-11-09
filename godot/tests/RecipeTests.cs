@@ -68,7 +68,7 @@ public class RecipeTests
         var u = Unions.Find(id)!;
         var b = BattleTests.Arena(8, (u.A, Weapons.MaxRank), (u.B, Weapons.MaxRank));
         b.Evolve(u.A, Weapons.All[u.A].Evolutions[0].Id);
-        b.Evolve(u.B, Weapons.All[u.B].Evolutions[1].Id);
+        b.Evolve(u.B, Weapons.All[u.B].Evolutions[Math.Min(1, Weapons.All[u.B].Evolutions.Length - 1)].Id);
         b.EmberLevel = 3; b.PendingLevels = 1;
         var offer = Assert.Single(LevelUp.Draft(b), o => o.Kind == OfferKind.Union && o.Id == id);
         LevelUp.Choose(b, offer);

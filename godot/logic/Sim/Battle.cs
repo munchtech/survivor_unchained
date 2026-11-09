@@ -506,7 +506,7 @@ public sealed partial class Battle
         if (p.RootT > 0) p.RootT = Math.Max(0, p.RootT - dt);
         if (p.ShieldT > 0) { p.ShieldT -= dt; if (p.ShieldT <= 0) p.Shield = 0; }
         p.UnstruckT += dt;
-        if (Boons.TryGetValue("iron_vow", out int vow)) Vow(vow);
+        if (Boons.TryGetValue("boon_iron_vow", out int vow)) Vow(vow);
         if (p.AttackAnim != null && Time - p.AttackAnim.T > 0.6) p.AttackAnim = null;
 
         // Dash charges come back one at a time.
@@ -1515,7 +1515,7 @@ public sealed partial class Battle
                 ForEachHostileInRadius(p.X, p.Z, 3.5, (e, d) =>
                 {
                     double dd = d == 0 ? 1 : d;
-                    HitEnemy(e, 10 + EmberLevel, School.Holy, [Tag.Holy, Tag.Area], new HitOpts { Knockback = 2.4, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd, NoProcs = true, Credit = "boon:iron_vow" });
+                    HitEnemy(e, 10 + EmberLevel, School.Holy, [Tag.Holy, Tag.Area], new HitOpts { Knockback = 2.4, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd, NoProcs = true, Credit = "boon:boon_iron_vow" });
                 });
             }
         }

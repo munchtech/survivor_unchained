@@ -117,7 +117,7 @@ public class PressedSkillTests
         Assert.Equal(1, Weapons.SlotCost("cleaver"));
         // Sunder has no evolution yet (a placeholder union): Unite asks both evolved, so only a grant makes it.
         var b = BattleTests.Arena(2, ("cleaver", 8), ("sunder", 8));
-        b.Evolve("cleaver", "whirlwind", chest: true);
+        b.Evolve("cleaver", "bonesplitter", chest: true);
         Assert.Null(b.Unite("bladestorm"));
         Assert.NotNull(b.GrantUnion("bladestorm"));
     }

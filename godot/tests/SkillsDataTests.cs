@@ -19,7 +19,7 @@ public class SkillsDataTests
     public void Counts()
     {
         Assert.Equal(30, Weapons.Pool.Length);
-        Assert.Equal(52, Weapons.Pool.Sum(id => Weapons.All[id].Evolutions.Length));
+        Assert.Equal(51, Weapons.Pool.Sum(id => Weapons.All[id].Evolutions.Length));
         Assert.Equal(10, Unions.All.Length);
         // (+3: the Warden's pressed Heroic Leap, Shield Charge and Iron Vow, P7: granted, not found, until the design lead offers them.)
         Assert.Equal(Weapons.Pool.Length + Unions.All.Length + 3, Weapons.All.Count);

@@ -61,15 +61,6 @@
       },
       "evolutions": [
         {
-          "id": "whirlwind",
-          "name": "Whirlwind",
-          "catalysts": ["fleetfoot", "ferocity"],
-          "description": "The chop becomes a full turn: everything around you, every time.",
-          "art": "slash_spin",
-          "mods": { "damage": 1.15, "cooldown": 0.8 },
-          "set": { "arc": 6.283 }
-        },
-        {
           "id": "bonesplitter",
           "name": "Bonesplitter",
           "catalysts": ["might"],
