@@ -223,7 +223,7 @@ public partial class BattleFx
     void P7Slam(double x, double z, float r, float k)
     {
         var c = V(x, Y(x, z), z);
-        P7Quad(1, c + Vector3.Up * 0.05f, r * 0.9f * k, 5 * P7Sample, step: s => s.M.SetShaderParameter("p7_t", s.Age));
+        P7Quad(1, c + Vector3.Up * 0.05f, r * 0.62f * k, 5 * P7Sample, step: s => s.M.SetShaderParameter("p7_t", s.Age));
         P7LightOn(c + Vector3.Up * 1.4f, r * 1.5f, (Flare.Night ? 4.2f : 6f) * k);
         // the crack: radial splits out from the heart (the Groundbreaker's strip, its narrow end), and their hearts
         float a0 = R() * Mathf.Tau;
