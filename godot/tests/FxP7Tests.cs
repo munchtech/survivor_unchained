@@ -45,8 +45,8 @@ public class FxP7Tests
         Assert.InRange(p["storm.seam.px"], 1, 4);
         Assert.InRange(p["vow.dome.rim_px"], 6, 8);
         Assert.InRange(p["vow.burst.light_k"], 0, 0.4f);
-        Assert.Equal(1f, p.Curve("leap.ring.cover", 0.4f), 3);
-        Assert.Equal(0.55f, p.Curve("leap.ring.cover", 0.175f), 3);
+        Assert.Equal(1.0, (double)p.Curve("leap.ring.cover", 0.4f), 3);
+        Assert.Equal(0.55, (double)p.Curve("leap.ring.cover", 0.175f), 3);
         Assert.InRange(p.Count("kick.puffs", 0.999f), 8, 12);
     }
 }
