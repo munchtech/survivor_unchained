@@ -94,7 +94,7 @@ public class LightW2Tests
         Assert.Throws<InvalidDataException>(() => MaterialLibrary.Parse(J(""", "albedo_ctl": { "pull": 2 }""")));
         // (L1 l9 PACK2) the hue: [h, C, pull] -> the target's Oklab a, b and the pull; none: its own hue
         var h = MaterialLibrary.Parse(J(""", "albedo_ctl": { "target": 0.3, "pull": 0.7, "hue": [266, 0.025, 0.8] }""")).Classes["k"].AlbHueUniform;
-        Assert.Equal(-0.00174f, h[0], 4); Assert.Equal(-0.02494f, h[1], 4); Assert.Equal(0.8f, h[2]);
+        Assert.Equal(-0.00174, (double)h[0], 4); Assert.Equal(-0.02494, (double)h[1], 4); Assert.Equal(0.8f, h[2]);
         Assert.Equal(new[] { 0f, 0f, 0f }, a.Classes["k"].AlbHueUniform);
         Assert.Throws<InvalidDataException>(() => MaterialLibrary.Parse(J(""", "albedo_ctl": { "hue": [266, 0.025, 1.5] }""")));
         // the pack's fur: cold neutral FROM target 09 (h 260-268), and no glossy band (rule 6: a clump band or none)
