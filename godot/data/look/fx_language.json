@@ -85,11 +85,11 @@
     {
      "name": "edge",
      "L": 0.63,
-     "C": 0.142,
-     "h": 58.0,
+     "C": 0.149,
+     "h": 58.1,
      "share_of_body": 0.3,
      "t": 0.0,
-     "hex": "#c7701a",
+     "hex": "#ca6e06",
      "emit": [
       1.0,
       1.0,
@@ -99,11 +99,11 @@
     {
      "name": "mid",
      "L": 0.81,
-     "C": 0.15,
-     "h": 79.0,
+     "C": 0.165,
+     "h": 79.1,
      "share_of_body": 0.4,
      "t": 0.3,
-     "hex": "#f4b43a",
+     "hex": "#f9b214",
      "emit": [
       1.0,
       1.0,
@@ -138,7 +138,7 @@
     "units": "width: the e-fold of the falloff and reach: where it ends, both in head radii; head, tail: its strength at the body's edge, (glow L - backdrop L) / (edge band L - backdrop L)"
    },
    "sparks": {
-    "hex": "#f6d389",
+    "hex": "#fdd171",
     "count": 23,
     "length": 0.018,
     "aspect": 1.6,
@@ -649,15 +649,15 @@
     {
      "name": "edge",
      "L": 0.63,
-     "C": 0.142,
-     "h": 58.0,
+     "C": 0.149,
+     "h": 58.1,
      "share": 0.3
     },
     {
      "name": "mid",
      "L": 0.81,
-     "C": 0.15,
-     "h": 79.0,
+     "C": 0.165,
+     "h": 79.1,
      "share": 0.4
     },
     {
@@ -675,8 +675,8 @@
    },
    "sparks": {
     "L": 0.88,
-    "C": 0.1,
-    "h": 85.0
+    "C": 0.125,
+    "h": 85.1
    },
    "calibration": "AUTHORED, emit 1: drawn after the grade (FxAfter), its hex is its displayed color on every rig; judged with the skills lead's first clips (Heroic Leap, the Cyclone)"
   }
