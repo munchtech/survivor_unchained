@@ -1,5 +1,22 @@
 # Handoff: the signature art style (style frames)
 
+## L1 lead 7 (9 Nov, coordinator ad002ada): IN PROGRESS, the day's color at its root (this block is rewritten at handoff)
+- **Done:**
+  - **S1 and S1b** (a299c344): the grade's `scene_color` (by day the grade gives lightness only; AgX and the chroma terms had pushed a neutral card to R/B 2.95). `color_chain.py all` wired and ending with the Godot import; the setts follow their class (12ba2aa0a).
+  - **S1c** (a79803f4): ONE SUN, the boards' own #ffc296. The picked G1 07 setts read 0.027 from it; rule 3 is moved, and dawn keeps #f3d9a0. `board_sun` is the identity. Cloth is no longer her navy. The ground check passes (f673c21b9..24bcf6bfc).
+  - **The worker:** every shoot re-imports stale textures first (796e39e07). S1's first frames were shot on stale .ctex.
+  - **Bible rule 4:** the day midC band is 0.05-0.08, FROM the picked targets (fc3bfa553).
+- **Running: S1c round 2.**
+  - The class mids are calibrated in closed loop on the lookdev stage against the G1 targets (the boards' p70 plus the kits' lit strokes counted the light twice: lime grass, pale setts, Lp50 high).
+  - The town-day sun moves to the camera side (az 330 backlit 13's fronts; G1 07's house shadows point up).
+  - Cloth becomes undyed tan, and rock by day stays neutral.
+- **Next:**
+  1. S2: `look_l1\workrief_l6_s2_night.md`, plus S1's numbers. Point S2 at `scene_color` for the night: AgX pulls a bright ember's channels together, the likely root of the brown pool. The chain's night solve is broken (sky #fff9f2, orange ground) and `all` writes the day only.
+  2. The 13-frame shoot, then one max judge.
+  3. FXM in the judge's window: `look_l1\workrief_l7_fx_marks.md`. The danger marks go over every after-grade light (FLARE_LOOK §1.6). Main approved it; send main the fx-lang sha.
+  4. Stage D, then G2.
+- **Sent to main:** the Low Ford pockets' cost line (a P5 lead after G2; about 0.6-1.0M).
+
 ## L1 lead 6 (9 Nov, coordinator ad002ada): FX language out, fx-lang published, her depth twin; the color chain NOT started (HANDOFF READY look-l1, the commit that adds this section)
 The owner, 8 Nov: "visually stunning cel shading painterly with vibrant colors". Brief: `tools/scratch/coordinator/briefs/L1_lead6.md`. The coordinator accepted ~1.4-1.9M to G2 ("cost does not matter for the art, building blocks do") and wants reports only at the judge's verdict and at GATE G2 READY. Lead 6 ran out of context at onboarding plus the skills lead's needs, so steps 1-4 of the brief are all still ahead.
 - **Start here (lead 7):**
