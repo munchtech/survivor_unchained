@@ -279,20 +279,21 @@ public class ArtTests
         Assert.Contains("bulwark", ch.Known);
         Assert.Contains("bull_rush", ch.Known);
         Assert.Contains("sprint", ch.Known);
-        Assert.Equal(1, ArtBook.Rank(ch, "sprint"));
-        Assert.False(ArtBook.Choose(ch, "sprint", "trample"));
-        Assert.Equal(2, ArtBook.Grow(ch, "sprint", Abilities.RankXp[1]));
-        Assert.True(ArtBook.Choose(ch, "sprint", "trample"));
-        Assert.False(ArtBook.Choose(ch, "sprint", "second_wind"));
-        Assert.False(ArtBook.Choose(ch, "sprint", "no_such_facet"));
-        ArtBook.Grow(ch, "sprint", Abilities.RankXp[3]);
-        Assert.Equal(4, ArtBook.Rank(ch, "sprint"));
-        Assert.True(ArtBook.Choose(ch, "sprint", "second_wind"));
-        Assert.True(ArtBook.Hold(ch, "sprint"));
+        // (A way of moving has no ranks now, its facets come by the dash's steps: DashStepTests. The calling's own art ranks.)
+        Assert.Equal(1, ArtBook.Rank(ch, "shield_bash"));
+        Assert.False(ArtBook.Choose(ch, "shield_bash", "wide_arc"));
+        Assert.Equal(2, ArtBook.Grow(ch, "shield_bash", Abilities.RankXp[1]));
+        Assert.True(ArtBook.Choose(ch, "shield_bash", "wide_arc"));
+        Assert.False(ArtBook.Choose(ch, "shield_bash", "concussion"));
+        Assert.False(ArtBook.Choose(ch, "shield_bash", "no_such_facet"));
+        ArtBook.Grow(ch, "shield_bash", Abilities.RankXp[3]);
+        Assert.Equal(4, ArtBook.Rank(ch, "shield_bash"));
+        Assert.True(ArtBook.Choose(ch, "shield_bash", "concussion"));
+        Assert.True(ArtBook.Hold(ch, "shield_bash"));
         var kit = Character.Kit(ch);
-        Assert.Equal(AbilityKind.Sprint, kit.Ability);
+        Assert.Equal(AbilityKind.ShieldBash, kit.Ability);
         Assert.Equal(4, kit.ArtRank);
-        Assert.Equal(new[] { "trample", "second_wind" }, kit.Facets);
+        Assert.Equal(new[] { "wide_arc", "concussion" }, kit.Facets);
         // Nobody carries what they do not know.
         Assert.False(ArtBook.Hold(ch, "wraith_walk"));
     }
