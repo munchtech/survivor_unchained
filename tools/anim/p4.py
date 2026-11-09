@@ -334,10 +334,17 @@ def path_of(g, sc):
         if k in r:
             r[k] = r[k] * sc
     # (heading_tps: a heading track at that rate, turns a second, + to her left: a spin's turn, Kimodo's heading)
-    tps = r.pop("heading_tps", None)
+    # (orbit [x, z]: the root circles a pivot at the origin, at that offset when the heading is 0 and turning with it:
+    # a spin over a planted foot)
+    tps, h0, orb = r.pop("heading_tps", None), r.pop("heading_deg0", 0.0), r.pop("orbit", None)
     out = {"xz": paths.make(r, g["seconds"], KFPS).round(5).tolist(), "every": r.get("every", 1)}
     if tps:
-        out["heading"] = (2 * np.pi * tps * np.arange(len(out["xz"])) / KFPS).round(6).tolist()
+        h = np.radians(h0) + 2 * np.pi * tps * np.arange(len(out["xz"])) / KFPS
+        out["heading"] = h.round(6).tolist()
+        if orb:
+            c, s_ = np.cos(h), np.sin(h)
+            out["xz"] = (np.array(out["xz"]) + np.stack([c * orb[0] + s_ * orb[1], -s_ * orb[0] + c * orb[1]], 1)
+                         ).round(5).tolist()
     return out
 
 
