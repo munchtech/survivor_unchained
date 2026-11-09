@@ -150,15 +150,13 @@ def chest_wall(sl, c, v, V, values):
 
 
 def shrink(sl, V, values):
-    """P1 R1 sliders round 2 (the check judge: bust_size -0.75 "barely reads"): MakeHuman's cup macro is weak on its
-    minus side (the cup at -1 moves 23 mm at most, +1 moves 91; on her_b -0.75 took 276 mL per side, +0.5 added
-    1021). A catalogue slider's "shrink" {"wall": designed rule, "k": s at v = -1} gives the minus side our own rule:
-    the breast the body HAS (laid on the finished rest body, so a post-join target's breast, her_a's, shrinks the
-    same as a slider-built one) is carried toward its chest wall (wall_delta: the wall rule's biharmonic fill of the
-    region on this body, its C2 blend) by s = k |v|: every point keeps its place on the breast and moves a share of
-    its height over the wall, so the profile scales down whole (the round lower pole stays a round curve, smaller;
-    the fold rises with the mass it held; the rim and the cleavage floor, where the height is 0, hold).
-    Linear in V for a given v; 0 at v >= 0 (the body is untouched: byte-identical). Returns (V, report or None)."""
+    """P1 R1 sliders round 2-3 (the check judges: bust_size -0.75 "barely reads", then "deflated": a height-only squash
+    kept the base and the fold and took the volume out of the projection). MakeHuman's cup macro is weak on its minus
+    side (the cup at -1 moves 23 mm at most, +1 moves 91). A catalogue slider's "shrink" {"wall": designed rule,
+    "across": a, "height": b, "k": strength} gives the minus side our own rule, laid on the finished rest body (so a
+    post-join target's breast, her_a's, shrinks like a slider-built one): shrink_move, a near-uniform 3D scale of the
+    breast about the point on its chest wall behind its centre, at v = -1 / k; the move is linear in v (s = k |v|).
+    0 at v >= 0 (the body untouched: byte-identical). Returns (V, report or None)."""
     from sliders import catalogue
     rep = None
     for n, c in catalogue().items():
@@ -167,11 +165,60 @@ def shrink(sl, V, values):
         if not sh or v >= 0.0:
             continue
         lo, hi = c["range"]
-        s = float(sh["k"]) * min(-max(v, lo), 1.0)
-        D = wall_delta(sl, sl.designed[sh["wall"]], V)
-        V = V + s * D
-        rep = dict(rep or {}, **{n: {"s": round(s, 4), "max_mm": round(float(np.linalg.norm(s * D, axis=1).max()) * 1e3, 2)}})
+        s = float(sh.get("k", 1.0)) * min(-max(v, lo), 1.0)
+        M = shrink_move(sl, sh, V)
+        V = V + s * M
+        rep = dict(rep or {}, **{n: {"s": round(s, 4), "max_mm": round(float(np.linalg.norm(s * M, axis=1).max()) * 1e3, 2)}})
     return V, rep
+
+
+def shrink_move(sl, sh, V):
+    """The full shrink's move on body V (left side, mirrored): the chest wall W = V + wall_delta (the wall rule's fill)
+    is the breast's base surface, the breast its offset H = V - W. A base frame per side: n the breast's mass direction
+    (the |H|-weighted mean of H), u across, w up the base; the centre c the |H|-weighted mean of the wall points in
+    (u, w). Each point's wall point slides ON the wall toward c by (1 - a m) (the wall as a smooth height field g(u, w)
+    along n, Clough-Tocher C1 over the region's wall points): the base and the fold come in with the volume; its offset
+    H scales by a m along the base and b m along n. m is the wall rule's C2 blend (1 over the mound, 0 well inside the
+    rim): the rim is feathered, the midline and the wall outside hold. With a ~ b the breast keeps its own shape
+    smaller (the round lower pole, the convex upper pole, its point where it was on the profile)."""
+    from scipy.interpolate import CloughTocher2DInterpolator
+    from sliders import smoother
+    c = sl.designed[sh["wall"]]
+    A, B = float(sh["across"]), float(sh["height"])
+    D = wall_delta(sl, c, V)
+    W = V + D
+    H = -D
+    m = sl.mask(c["blend"], sl.V0)
+    reg = sl.mask(c["region"], sl.V0) > 1e-9
+    left = sl.V0[:, 0] > 1e-4
+    hw = np.linalg.norm(H, axis=1)
+    if sh.get("full_h"):
+        # (optional feather: the blend times the breast's own height ramp, full from "full_h" of its peak height. Tried
+        # in round 3 at 0.2: the base did not come in vertically and the fold notch deepened; not used)
+        m = m * smoother(hw / (float(sh["full_h"]) * hw[left & (m > 0)].max()))
+    sel = left & (m > 0)
+    n = (H[sel] * hw[sel, None]).sum(0)
+    n /= np.linalg.norm(n)
+    eu = np.array([1.0, 0.0, 0.0]) - n[0] * n
+    eu /= np.linalg.norm(eu)
+    ew = np.cross(n, eu)
+    F = np.stack([eu, ew, n], 1)                      # world -> (u, w, z): X @ F
+    cloud = left & reg
+    Wc = W[cloud] @ F
+    g = CloughTocher2DInterpolator(Wc[:, :2], Wc[:, 2])
+    Ws = W[sel] @ F
+    cen = (Ws[:, :2] * hw[sel, None]).sum(0) / hw[sel].sum()
+    ms = m[sel][:, None]
+    a, b = 1.0 - (1.0 - A) * ms, 1.0 - (1.0 - B) * ms
+    uw = cen + (Ws[:, :2] - cen) * a
+    z = g(uw)
+    ok = np.isfinite(z)
+    Wn = np.concatenate([uw, np.where(ok, z, Ws[:, 2])[:, None]], 1) @ F.T
+    Hs = H[sel] @ F
+    Hn = np.concatenate([Hs[:, :2] * a, Hs[:, 2:] * b], 1) @ F.T
+    Mv = np.zeros_like(V)
+    Mv[sel] = np.where(ok[:, None], (Wn + Hn) - V[sel], 0.0)
+    return mirror_left(sl, Mv)
 
 
 # ------------------------------------------------------------------------------------------ route (a) dome --
