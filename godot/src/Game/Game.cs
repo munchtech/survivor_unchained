@@ -1594,6 +1594,7 @@ public partial class Game : Node, IZoneHost
             hud.Goals(Overlay == null ? GoalScreen() : new());
             hud.Posts(Overlay == null ? PostPointers() : new());
             LampBeacons(dt);
+            PostHeads(dt);
             LampCheck(fb2.Time);
             Priority();
             hud.Foes(Battle, camera, scene.Crowd.DrawnAt, !Args.Has("nobars"));

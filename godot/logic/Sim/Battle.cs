@@ -1706,7 +1706,7 @@ public sealed partial class Battle
         e.DieT = 0;
         e.LifeT = 0;
         e.Named = null;
-        e.Rank = 0; e.RankScale = e.RankR = e.RankG = e.RankB = 1; e.RankGlow = 0;
+        e.Rank = 0; e.RankScale = e.RankR = e.RankG = e.RankB = 1; e.RankGlow = 0; e.RankRim = -1; e.TrailX = e.TrailZ = double.NaN;
         e.Tag = o.Tag;
         e.Credit = false;
         e.Provoked = false;

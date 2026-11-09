@@ -33,6 +33,9 @@ public static class Champions
         public double? Scale;
         public double[]? Tint;
         public double? Glow;
+        /// <summary>(M5 r3) An affix's rim on its champion's body: its hue (degrees on the color wheel), drawn as an emitted
+        /// edge glow so the champion reads at night and in shade (vat.gdshaderinc). Champions only; captains keep their plate.</summary>
+        public double? Rim;
     }
 
     sealed class File
@@ -74,7 +77,7 @@ public static class Champions
     /// <summary>n affixes drawn by weight, none twice, with the fight's dice. fits: which may be drawn (null: all).</summary>
     public static List<Affix> Roll(int n, Func<double> r, Func<Affix, bool>? fits = null)
     {
-        var pool = F.Affixes.Values.Where(a => fits == null || fits(a)).OrderBy(a => a.Id, StringComparer.Ordinal).ToList();
+        var pool = F.Affixes.Values.Where(a => a.Weight > 0 && (fits == null || fits(a))).OrderBy(a => a.Id, StringComparer.Ordinal).ToList();
         var got = new List<Affix>();
         while (got.Count < n && pool.Count > 0)
         {
@@ -96,12 +99,14 @@ public static class Champions
         if (d != null) bodies.Add(d);
         if (affixes != null) bodies.AddRange(affixes.Select(a => a.Body).OfType<Body>());
         e.Rank = rank;
-        e.RankScale = 1; e.RankR = e.RankG = e.RankB = 1; e.RankGlow = 0;
+        e.RankScale = 1; e.RankR = e.RankG = e.RankB = 1; e.RankGlow = 0; e.RankRim = -1;
         bool tinted = false;
         foreach (var b in bodies)
         {
             if (b.Scale is { } sc) e.RankScale = Math.Max(e.RankScale, sc);
             if (b.Glow is { } g) e.RankGlow = Math.Max(e.RankGlow, g);
+            // (the first affix's rim: two hues on one edge read as neither)
+            if (rank >= 2 && b != d && b.Rim is { } rh && e.RankRim < 0) e.RankRim = ((rh % 360) + 360) % 360;
             // (the champion's own tint, then one affix's over it: two affix tints muddy to grey)
             if (b.Tint is { Length: 3 } t && (b == d || !tinted))
             {

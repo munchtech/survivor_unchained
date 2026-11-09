@@ -40,7 +40,9 @@ public class ChampionsTests
         {
             Assert.Matches("^[A-Z][a-z]+$", a.Label);
             if (a.Kind != null) Assert.NotNull(Telegraphs.Get(a.Kind));
-            else Assert.True(a.Health != 1 || a.Damage != 1 || a.Speed != 1, a.Id + " is no number on the foe");
+            // (a label-only affix, never rolled: the Grave-Caller's "Raiser", her raising is her kit; M5 r3)
+            else if (a.Weight > 0) Assert.True(a.Health != 1 || a.Damage != 1 || a.Speed != 1, a.Id + " is no number on the foe");
+            Assert.True(a.Body?.Rim is >= 0 and < 360, a.Id + " has a rim hue (M5 r3)");
             Assert.True(a.Every[1] >= a.Every[0] && a.Every[0] > 0);
         }
         // Every champion the Low Ford names has affixes the kit has, and a def that exists.

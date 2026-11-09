@@ -30,6 +30,10 @@ public static class LampPosts
         /// <summary>(M5 r3) Which way the road lies from it (a direction on the ground, [x, z]): she rises 1.5-2 m off the post
         /// that way, not on it (LampRise.RiseSpot). Unset: toward the zone's fallback spot.</summary>
         public double[]? Rise;
+        /// <summary>(M5 r3) A landmark post (a town square's lamp, where a zone's walk ends): its lantern head drawn this many
+        /// times the posts' (0: an ordinary post), on its own iron pole Tall m over the ground, lit with a warm pool even by
+        /// day (Game.PostHeads).</summary>
+        public double Landmark, Tall;
 
         public bool Dark => Kind == "dark";
 
@@ -53,7 +57,13 @@ public static class LampPosts
     /// <summary>(M5 r2) A lit post's lantern, set apart from her ember pool: a cooler, whiter gold and brighter (its level over
     /// the zone light as built), and the flare it gives as it kindles (that level, falling back over flareSeconds).
     /// Functional; L1 owns the final light.</summary>
-    public sealed class LitLook { public string Color = "#ffe6b8"; public double Level = 1.6, Flare = 4, FlareSeconds = 0.9; }
+    public sealed class LitLook
+    {
+        public string Color = "#ffe6b8";
+        public double Level = 1.6, Flare = 4, FlareSeconds = 0.9;
+        /// <summary>(M5 r3) A dark post's head: a faint ember in its glass (Game.PostHeads), never her ember's brightness.</summary>
+        public string Ember = "#ff5a1c";
+    }
 
     sealed class File { public List<Post> Posts = new(); public LitLook Lit = new(); }
 

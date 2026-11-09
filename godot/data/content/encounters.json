@@ -236,8 +236,8 @@
         {
           "id": "wallow",
           "kind": "pack",
-          "x": -42,
-          "z": -89,
+          "x": -39,
+          "z": -91.5,
           "spread": 3.5,
           "wake": 9,
           "leash": 20,
@@ -744,7 +744,9 @@
         "caller": {
           "def": "grave_caller",
           "name": "Nan Sallow, Who Calls the Graves",
-          "affixes": []
+          "affixes": [
+            "raiser"
+          ]
         }
       }
     }

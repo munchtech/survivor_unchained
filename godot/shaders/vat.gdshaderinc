@@ -362,7 +362,18 @@ void fragment() {
 	// (H7 r2, judge r1 fix 5: the foe stands in its mark's pool, so the pool lights it from below: its lower body and the
 	// faces turned from the sky, in the school's light, x its own paint (light, not paint: a dark body stays dark))
 	e += flare_mark_rim.rgb * flare_mark_rim.a * flare_mark_lift * fx_rim * c * exp(-max(vat_local.y, 0.0) / 0.8) * (0.35 + 0.65 * (1.0 - up));
-	e += c * COLOR.a;
+	// (M5 r3) COLOR.a: the glow in its fraction; a champion's affix rim in its whole part (1 + its hue in 64ths of the
+	// wheel, CrowdView/Vat.Push). The rim: a colored edge glow of the affix's hue, emitted (so night and shade keep it),
+	// tight at the silhouette with a faint wider breath, never a neon outline. Functional; L1 owns the final look.
+	float champ_code = floor(COLOR.a);
+	e += c * (COLOR.a - champ_code);
+	if (champ_code > 0.5) {
+		float ch_h = (champ_code - 1.0) / 64.0;
+		vec3 ch_c = clamp(abs(mod(ch_h * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
+		ch_c = mix(vec3(1.0), ch_c, 0.8);
+		float ch_k = smoothstep(0.62, 0.96, rim) * 1.1 + smoothstep(0.35, 0.8, rim) * 0.18;
+		e += ch_c * ch_k * (1.0 - fx.y);
+	}
 	// The moon's rim, in shade as in its light: strongest on the side toward the key, a breath on the far side.
 	if (crowd_rim.a > 0.0) {
 		vec3 kv = normalize((VIEW_MATRIX * vec4(key_dir.xyz, 0.0)).xyz);
