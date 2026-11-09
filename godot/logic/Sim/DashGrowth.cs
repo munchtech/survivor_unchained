@@ -43,17 +43,9 @@ public sealed partial class Battle
         var d = Content.DashSteps.Find(id)!;
         int pips = DashPips;
         DashSteps.Add(id);
-        if (d.Kind == DashStepKind.Facet && d.Facet != "") { Facets.Add(d.Facet); artFacets.Add(d.Facet); }
         if (Player != null && DashPips > pips) Player.DashCharges = Math.Min(MaxDashCharges, Player.DashCharges + DashPips - pips);
         if (announce) Events.Emit(new Ev.DashStep { Id = id });
         return true;
-    }
-
-    /// <summary>The steps' facets ride whichever art is in hand (SetArt keeps them).</summary>
-    void KeepStepFacets()
-    {
-        foreach (var id in DashSteps)
-            if (Content.DashSteps.Find(id) is { Kind: DashStepKind.Facet, Facet.Length: > 0 } d) { Facets.Add(d.Facet); artFacets.Add(d.Facet); }
     }
 
     /// <summary>A dash (or the form that carried her in its place) has ended: Hard Landing shoves the lesser things

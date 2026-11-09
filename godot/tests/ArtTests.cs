@@ -263,7 +263,8 @@ public class ArtTests
     [Fact]
     public void An_art_grows_with_use_and_kills_made_while_it_is_fresh()
     {
-        var b = Arena(AbilityKind.Sprint);
+        // (A calling's art grows by use; a way of moving does not now, DashStepTests.)
+        var b = Arena(AbilityKind.ShieldBash);
         b.UseAbility(1, 0);
         Assert.Equal(1, b.ArtXp, 3);
         var r = Foe(b, "risen", 4, 0);
@@ -350,15 +351,15 @@ public class ArtTests
     public void The_fight_writes_what_the_art_grew_to_the_survivor()
     {
         var j = Journey("warden");
-        ArtBook.Hold(j.Ch, "sprint");
+        ArtBook.Hold(j.Ch, "shield_bash");
         var b = BattleTests.Arena(9);
-        b.SetArt(AbilityKind.Sprint, 1, []);
+        b.SetArt(AbilityKind.ShieldBash, 1, []);
         b.ArtXp = Abilities.RankXp[1] + 1;
         j.BankArt(b);
         Assert.Equal(0, b.ArtXp);
-        Assert.Equal(2, ArtBook.Rank(j.Ch, "sprint"));
+        Assert.Equal(2, ArtBook.Rank(j.Ch, "shield_bash"));
         Assert.Equal(2, b.ArtRank);
-        j.ChooseFacet("sprint", "tailwind", true, b);
-        Assert.True(b.Has("tailwind"));
+        j.ChooseFacet("shield_bash", "wide_arc", true, b);
+        Assert.True(b.Has("wide_arc"));
     }
 }

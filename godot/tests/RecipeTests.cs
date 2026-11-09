@@ -55,7 +55,11 @@ public class RecipeTests
         Assert.True(b.DamageBy.GetValueOrDefault(weapon) > before, $"{branch} dealt nothing");
     }
 
-    public static IEnumerable<object[]> AllUnions() => Unions.All.Select(u => new object[] { u.Id });
+    /// <summary>Unions that are granted, not drafted, for now: Sunder has no evolution, so Bladestorm has no two evolved
+    /// halves to be made from (console --grant-union, Battle.GrantUnion). Drop it from here when Sunder evolves.</summary>
+    static readonly HashSet<string> GrantedOnlyUnions = ["bladestorm"];
+
+    public static IEnumerable<object[]> AllUnions() => Unions.All.Where(u => !GrantedOnlyUnions.Contains(u.Id)).Select(u => new object[] { u.Id });
 
     [Theory]
     [MemberData(nameof(AllUnions))]
@@ -164,7 +168,8 @@ public class RecipeTests
     [Fact]
     public void A_union_is_never_drafted_on_its_own_and_both_halves_are_findable()
     {
+        var drafted = Unions.All.Where(u => !GrantedOnlyUnions.Contains(u.Id)).ToArray();
         foreach (var u in Unions.All) Assert.DoesNotContain(u.Into, Weapons.Pool);
-        Assert.Equal(Unions.All.Length, Unions.All.Select(u => u.A).Concat(Unions.All.Select(u => u.B)).Distinct().Count() / 2);
+        Assert.Equal(drafted.Length, drafted.Select(u => u.A).Concat(drafted.Select(u => u.B)).Distinct().Count() / 2);
     }
 }

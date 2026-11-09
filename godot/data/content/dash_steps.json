@@ -1,13 +1,10 @@
 {
-  "_doc": "The dash's growth (the owner, 8 Nov: 'just pushing the button leveling it up is weird'): named, visible steps, each granted by the design lead's route (a lamp-post Wick or a level-up) through Journey.GrantDashStep. kind: charge (+amount pips, at most 2 from steps), length (the dash goes amount farther), recharge (charges come back amount sooner), landing (every dash ends in a shove), facet (the dash form's facet, the only way a movement art's facets now come). most: times it may be taken (1 if unset). Loaded by logic/Content/DashSteps.cs; checked by tests/DashStepTests.cs.",
+  "_doc": "Dash steps are earned from board points (levels), spent anywhere out of a fight, with a free respec at lamp-posts; extra charges come from story beats; gear can carry steps; never from level-up cards. Console grants (--dash-step) until the board lands.",
+  "_kinds": "charge (+amount pips, at most 2 from steps), length (the dash goes amount farther), recharge (charges come back amount sooner), landing (every dash ends in a shove). most: times it may be taken (1 if unset). lamp: the id the board lights. Loaded by logic/Content/DashSteps.cs; checked by tests/DashStepTests.cs.",
   "steps": [
-    { "id": "second_wind_pip", "name": "Another Breath", "card": "One more dash before you must catch your breath.", "kind": "charge", "amount": 1, "most": 2 },
-    { "id": "long_stride", "name": "Long Stride", "card": "Your dash carries you 30% farther.", "kind": "length", "amount": 0.3 },
-    { "id": "quick_breath", "name": "Quick Breath", "card": "Your dashes come back 25% sooner.", "kind": "recharge", "amount": 0.25 },
-    { "id": "hard_landing", "name": "Hard Landing", "card": "Every dash ends in a shove: lesser things within 2 m are knocked aside.", "kind": "landing", "radius": 2, "knockback": 1.5, "damage": 6 },
-    { "id": "iron_hide", "name": "Iron Hide", "card": "The barrier is 30% of your health.", "kind": "facet", "art": "bull_rush", "facet": "iron_hide" },
-    { "id": "pile_driver", "name": "Pile Driver", "card": "The charge ends in a slam that stuns everything 3 m round.", "kind": "facet", "art": "bull_rush", "facet": "pile_driver" },
-    { "id": "unbroken", "name": "Unbroken", "card": "Each thing you strike adds 2% of your health to the barrier.", "kind": "facet", "art": "bull_rush", "facet": "unbroken" },
-    { "id": "gore", "name": "Gore", "card": "What you strike bleeds, and champions take half again as much.", "kind": "facet", "art": "bull_rush", "facet": "gore" }
+    {"id": "second_wind_pip", "name": "Another Breath", "card": "One more dash before you must catch your breath.", "kind": "charge", "amount": 1, "most": 2, "lamp": "dash.second_wind_pip"},
+    {"id": "long_stride", "name": "Long Stride", "card": "Your dash carries you 30% farther.", "kind": "length", "amount": 0.3, "lamp": "dash.long_stride"},
+    {"id": "quick_breath", "name": "Quick Breath", "card": "Your dashes come back 25% sooner.", "kind": "recharge", "amount": 0.25, "lamp": "dash.quick_breath"},
+    {"id": "hard_landing", "name": "Hard Landing", "card": "Every dash ends in a shove: lesser things within 2 m are knocked aside.", "kind": "landing", "radius": 2, "knockback": 1.5, "damage": 6, "lamp": "dash.hard_landing"}
   ]
 }

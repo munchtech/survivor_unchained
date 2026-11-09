@@ -104,6 +104,10 @@ public sealed class MapRules
     /// <summary>Smothered: the Flare fills slower. Bright: a Flare cast mends nothing (CLASSES.md §5).</summary>
     public double FlareFill = 1;
     public bool FlareMends = true;
+    /// <summary>Does a movement art ride the dash (the old dash forms)? Off since 8 Nov: nothing rides the dash;
+    /// the movement arts become pressed skills. True restores the old behavior (tests, the balance harness).</summary>
+    public bool DashForms = DashFormsDefault;
+    public static bool DashFormsDefault = false;
 }
 
 public sealed class BattleHooks

@@ -80,14 +80,13 @@ public static class ArtBook
     /// <summary>A way of moving (the dash's form).</summary>
     public static bool Movement(string id) => Abilities.Find(id) is { Movement: true };
 
-    /// <summary>Facets opened by rank and not yet chosen (none for a way of moving: its facets come by step).</summary>
+    /// <summary>Facets opened by rank and not yet chosen (none for a way of moving: it has none now).</summary>
     public static int OpenSlots(CharacterData ch, string id) => Movement(id) ? 0 : Math.Max(0, Abilities.FacetSlots(Rank(ch, id)) - Facets(ch, id).Count);
 
-    /// <summary>The chosen facets that belong to the art and fit its rank; for a way of moving, those its dash
-    /// steps opened (DashSteps kind facet).</summary>
+    /// <summary>The chosen facets that belong to the art and fit its rank;</summary>
     public static List<string> Facets(CharacterData ch, string id)
     {
-        if (Movement(id)) return DashSteps.FacetsFor(ch.DashSteps, id);
+        if (Movement(id)) return new();
         if (Abilities.Find(id) is not { } def || !ch.Arts.TryGetValue(id, out var s)) return new();
         return s.Facets.Where(f => def.Facets.Any(x => x.Id == f)).Take(Abilities.FacetSlots(Rank(ch, id))).ToList();
     }

@@ -60,14 +60,14 @@ public sealed partial class Battle
     }
 
     /// <summary>The dash form in hand is ready (the dash pip shows it).</summary>
-    public bool FormReady => Ability is { } k && Abilities.All[k].Movement && Player.AbilityCd <= 0;
+    public bool FormReady => Rules.DashForms && Ability is { } k && Abilities.All[k].Movement && Player.AbilityCd <= 0;
 
     /// <summary>The form rides this dash, along its line. True when the form carried her itself
     /// (a charge, a haul, a leap, a blink): the dash's own motion is not run.</summary>
     bool DashForm(double dx, double dz)
     {
         var p = Player;
-        if (!Combat || Ability is not { } kind) return false;
+        if (!Rules.DashForms || !Combat || Ability is not { } kind) return false;
         var def = Abilities.All[kind];
         if (!def.Movement) return false;
         // The second dash while an echo lives steps back into it, whatever the wait.

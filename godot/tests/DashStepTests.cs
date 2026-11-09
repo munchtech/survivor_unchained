@@ -33,17 +33,13 @@ public class DashStepTests
             Assert.True(s.Card.Length <= 90 && !s.Card.Contains('\n'), $"{s.Id}: a card is one plain line");
             switch (s.Kind)
             {
-                case DashStepKind.Facet:
-                    Assert.True(Abilities.Find(s.Art) is { Movement: true } a && a.Facets.Any(f => f.Id == s.Facet), $"{s.Id}: no facet {s.Art}/{s.Facet}");
-                    break;
                 case DashStepKind.Landing: Assert.True(s.Radius > 0 && s.Knockback > 0 && s.Damage > 0, s.Id); break;
                 default: Assert.True(s.Amount > 0, s.Id); break;
             }
         }
         foreach (var id in new[] { "second_wind_pip", "long_stride", "quick_breath", "hard_landing" }) Assert.NotNull(DashSteps.Find(id));
-        // Bull Rush's facets come only by step: every one has its step.
-        foreach (var f in Abilities.All[AbilityKind.BullRush].Facets)
-            Assert.Contains(all, s => s.Kind == DashStepKind.Facet && s.Art == "bull_rush" && s.Facet == f.Id);
+        // Nothing rides the dash: no step opens a facet, and each step names its board lamp.
+        foreach (var s in all) Assert.Equal("dash." + s.Id, s.Lamp);
         Assert.True(all.Where(s => s.Kind == DashStepKind.Charge).Sum(s => s.Amount * s.Most) <= DashSteps.MaxPips);
     }
 
@@ -139,19 +135,19 @@ public class DashStepTests
         Tick(b, 1);
         Assert.Equal(0, b.ArtXp);
         Assert.Equal(1, b.ArtRank);
-        // A step opens the facet: kept on her, in the kit, in the fight.
-        Assert.True(j.GrantDashStep("iron_hide", null));
-        Assert.False(ch.GrantDashStep("iron_hide"));
-        Assert.Equal(["iron_hide"], ArtBook.Facets(ch, "bull_rush").ToArray());
+        // A step is kept on her, in the kit, in the fight.
+        Assert.True(j.GrantDashStep("hard_landing", null));
+        Assert.False(ch.GrantDashStep("hard_landing"));
+        Assert.Empty(ArtBook.Facets(ch, "bull_rush"));
         var kit = Character.Kit(ch);
-        Assert.Contains("iron_hide", kit.DashSteps);
+        Assert.Contains("hard_landing", kit.DashSteps);
         var f = Arena(AbilityKind.BullRush, kit.DashSteps.ToArray());
-        Assert.True(f.Has("iron_hide"));
+        Assert.Contains("hard_landing", f.DashSteps);
         f.SetArt(AbilityKind.BullRush, 3, []);
-        Assert.True(f.Has("iron_hide"));
+        Assert.Contains("hard_landing", f.DashSteps);
         Assert.Equal(1, f.ArtRank);
         // Saved with her.
         var back = Core.Json.Parse<CharacterData>(Core.Json.Write(ch));
-        Assert.Equal(["iron_hide"], back.DashSteps.ToArray());
+        Assert.Equal(["hard_landing"], back.DashSteps.ToArray());
     }
 }

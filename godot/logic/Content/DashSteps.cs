@@ -11,7 +11,7 @@ namespace SurvivorUnchained.Content;
  * the survivor (CharacterData.DashSteps) and enter every fight at its start (BattleSetup.DashSteps,
  * Sim/DashGrowth.cs). The route that grants them in play (a lamp-post Wick, a level-up) is the design lead's. */
 
-public enum DashStepKind { Charge, Length, Recharge, Landing, Facet }
+public enum DashStepKind { Charge, Length, Recharge, Landing }
 
 public sealed class DashStepDef
 {
@@ -21,8 +21,8 @@ public sealed class DashStepDef
     public double Amount;
     /// <summary>Landing: the shove's reach (m), its knockback and its damage.</summary>
     public double Radius, Knockback, Damage;
-    /// <summary>Facet: the movement art (its id) and its facet the step opens.</summary>
-    public string Art = "", Facet = "";
+    /// <summary>The lamp the design lead's board lights for this step ("dash.&lt;id&gt;").</summary>
+    public string Lamp = "";
     /// <summary>Times it may be taken (1 if unset).</summary>
     public int Most = 1;
 }
@@ -49,8 +49,4 @@ public static class DashSteps
     /// <summary>May one more of this step be taken, with these taken already?</summary>
     public static bool CanTake(IEnumerable<string> taken, string id) =>
         Find(id) is { } d && taken.Count(t => t == id) < System.Math.Max(1, d.Most);
-
-    /// <summary>The facets the taken steps open for a movement art (its id).</summary>
-    public static List<string> FacetsFor(IEnumerable<string> taken, string art) =>
-        taken.Select(Find).Where(d => d is { Kind: DashStepKind.Facet } && d.Art == art).Select(d => d!.Facet).Distinct().ToList();
 }

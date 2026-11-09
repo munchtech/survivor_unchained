@@ -121,7 +121,6 @@ public sealed partial class Battle
         Facets.UnionWith(facets);
         artFacets.Clear();
         artFacets.UnionWith(Facets);
-        KeepStepFacets();
     }
 
     /// <summary>The art in hand grows by use (ArtXp): every art but a way of moving, which grows by steps.</summary>

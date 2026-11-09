@@ -133,7 +133,8 @@ public class PressedSkillTests
         Assert.True(w.Channeling);
         Assert.Equal(foe.X, b.SkillAim!.Value.X);
         Assert.False(b.PressSkill(w.Slot, foe.X, foe.Z));
-        Tick(b, 1.0, () => b.HoldSkill(w.Slot2, true));
+        // (The foe is pinned where it stood: the storm's knockback would carry it out of reach.)
+        Tick(b, 1.0, () => { b.HoldSkill(w.Slot2, true); foe.X = b.Player.X + 1.2; foe.Z = b.Player.Z; });
         int during = w.Casts;
         Assert.True(during >= 3, $"{during} firings in a held second");
         Assert.True(foe.Hp < foe.MaxHp);
@@ -154,6 +155,7 @@ public class PressedSkillTests
         b.RemoveWeapon("oathblade");
         var w = b.GrantUnion("bladestorm")!;
         Dummy(b, 1.2, 0);
+        Tick(b, 2); // (a union comes in with its clock running: let it settle ready)
         b.HoldSkill(w.Slot, true);
         Assert.True(b.PressSkill(w.Slot, b.Player.X + 2, b.Player.Z));
         Tick(b, w.ChannelMax - 0.1, () => b.HoldSkill(w.Slot, true));
