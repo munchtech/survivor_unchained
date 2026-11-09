@@ -1,5 +1,13 @@
 # Handoff: her body (rig, mesh, weights)
 
+## R1 LEAD 9, running state (8 Nov night): GATE JUDGE 6 (max) PASS on round_36 + the shared skin shader of round 38; the slider proof (coordinator's addition) next
+- Round 35 (weights 6, 6cc9a7505/0b3099670/380945e1f): a_axilla (A's fold weights), springs rest_down, a_shoulder_top lat_share 1, cavity bounce retired (spec 0). Harness (ae5d2305e): fight A|B out of sync was the desktop mouse picking her target; `--no-pointer` (pictures only) + `--simlog N`; A and B fights now identical frame for frame. VFX particles stay unseeded (differ run to run, not part of either body).
+- Round 36 (seam 1, eb410354c/0d2b90154, round_36 PUBLISHED): her_a.normals seam_a (A's normals within 45 mm of the head ring), heroine_seam.feather (seam_feather 2) ALSO RUN ON A's heroine.glb (uncommitted; redo: heroine_seam.feather on HEAD~2's copy), P1Body ApplySkin lists (cavity_down settable).
+- Round 37 (seam 2, aa6f03f49/2811b86a9): SHARED SHADER heroine_skin back_neutral, back_neutral_sky (cool lamps behind her light skin without the blue), thin_ease (head light-through eased over the seam); People.cs HerBackNeutral(Sky) 1, switches --back-neutral(-sky), --thin-ease.
+- Round 38 (seam 3, 26e5a95cc): SHARED SHADER heroine_skin throat_terminator (default -1 off; her neck column only: wider red falloff past the key's terminator); People.cs HerThroatTerminator 0.6/0.15/0.08, switch --throat-term.
+- Gate judges (verdicts verbatim): 4 FAIL r1c\round36\gate4\verdict.md (shared Look neck lavender), 5 FAIL r1c\round37\gate5\verdict.md (shared fight throat band), 6 PASS r1c\round38\gate6\verdict.md. A shot as gate2 tags Anp/Anp2/Anp3/Anp4 (current: Anp4); pairs.py default A tag = Anp4.
+- MERGE NOTES (A changes): heroine_skin.gdshader (cavity_bounce, cavity_down, back_neutral, back_neutral_sky, thin_ease, throat_terminator), People.cs (HerBackNeutral, HerBackNeutralSky, head thin_ease, HerThroatTerminator: A's look changes: warmer rims, neck), heroine.glb seam feather (uncommitted), Atmosphere.Moonlight / GradeSettings.MoonSkin (round 33).
+
 ## R1 LEAD 8 -> R1 LEAD 9 (8 Nov): GATE JUDGE 3 FAIL on round_34 with a short list; round 35 (weights, last round of the item) RUNNING
 **Brief:** the coordinator's lead brief stands (A is the floor; max gate judge on A|B pairs + back frames + motion strips: "Is anything of B's visibly worse than A? Would a player call B a step down? Sexy and confident?"; no carve-outs; verdicts saved verbatim; last line RIGHT / BLOCKED / HANDOFF READY).
 **Published: round_34** (tools/body/out/round_34 geometry = round_32/33; body_p1/* UNCOMMITTED incl. pieces.glb/json, cavity.png, blend_base.json). The running-state lines below this block carry each round 26-34 (what, SHA, numbers).
