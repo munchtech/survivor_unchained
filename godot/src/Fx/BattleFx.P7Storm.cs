@@ -320,12 +320,15 @@ public partial class BattleFx
                 {
                     s.N.GlobalPosition = PlayerPos + Vector3.Up * 1.0f;
                     s.M.SetShaderParameter("p7_t", s.Age);
-                    // in over two samples; a stored blow lifts it a band for one
+                    // in over two samples; the edge band only, bold (its width a step up at each store level, a sample
+                    // wider on a stored blow), its gaps closing a step a level
                     s.M.SetShaderParameter("p7_fade", s.Age < P7Sample ? 0.5f : 0f);
-                    s.M.SetShaderParameter("p7_alpha", 0.85f);
-                    s.M.SetShaderParameter("p7_lvl", time - p7StoreAt < P7Sample ? 0.66f : 0.3f);
+                    s.M.SetShaderParameter("p7_alpha", 0.9f);
+                    s.M.SetShaderParameter("p7_lvl", 0.27f);
+                    s.M.SetShaderParameter("p7_prog", p7VowLevel);
+                    s.M.SetShaderParameter("p7_width", 0.075f + 0.03f * p7VowLevel + (time - p7StoreAt < P7Sample ? 0.025f : 0f));
                 });
-                p7Store = P7Quad(9, P7ShieldAt(), 0.5f, 9999, bill: true, top: true, step: s =>
+                p7Store = P7Quad(9, P7ShieldAt(), 0.8f, 9999, bill: true, top: true, step: s =>
                 {
                     s.N.GlobalPosition = P7ShieldAt();
                     s.M.SetShaderParameter("p7_prog", p7VowLevel);
@@ -339,6 +342,18 @@ public partial class BattleFx
                 p7VowStored = e.Stored;
                 p7StoreAt = time;
                 p7VowLevel = P7StoreLevel(e.Stored);
+                // a faint gold pulse up her body (at most one each two samples)
+                if (time - p7PulseAt >= 2 * P7Sample)
+                {
+                    p7PulseAt = time;
+                    float y0 = Y(PlayerPos.X, PlayerPos.Z);
+                    P7Snap(11, 4 * P7Sample, g =>
+                    {
+                        g.M.SetShaderParameter("p7_y0", y0);
+                        g.M.SetShaderParameter("p7_h", 1.85f);
+                        g.M.SetShaderParameter("p7_alpha", 0.42f);
+                    });
+                }
                 break;
             case BracePhase.Burst:
             {
@@ -350,15 +365,17 @@ public partial class BattleFx
                 float k = P7StoreLevel(e.Stored);
                 float r = (float)e.Radius;
                 var c = V(e.X, Y(e.X, e.Z), e.Z);
-                P7Quad(1, c + Vector3.Up * 0.05f, 0.9f + 1.1f * k, 5 * P7Sample, step: s => s.M.SetShaderParameter("p7_t", s.Age));
+                // the star: camera-facing at her shield, over her for its one sample (sized by the store), then stepping down
+                P7Quad(1, P7ShieldAt(), 1.0f + 0.7f * k, 5 * P7Sample, bill: true, top: true, step: s => s.M.SetShaderParameter("p7_t", s.Age));
                 P7Glint(P7ShieldAt(), 0.5f + 0.3f * k);
-                float run = 0.2f;
-                P7Quad(5, c + Vector3.Up * 0.06f, r, run + 3 * P7Sample, step: s =>
+                // the ring: runs out to the radius, holds a sample at its reach, then steps out
+                float run = 0.26f;
+                P7Quad(5, c + Vector3.Up * 0.06f, r, run + 4 * P7Sample, step: s =>
                 {
                     s.M.SetShaderParameter("p7_prog", Mathf.Clamp(s.Age / run, 0, 1));
-                    s.M.SetShaderParameter("p7_width", 0.07f + 0.06f * k);
-                    s.M.SetShaderParameter("p7_alpha", 0.9f);
-                    float after = s.Age - run;
+                    s.M.SetShaderParameter("p7_width", 0.1f + 0.05f * k);
+                    s.M.SetShaderParameter("p7_alpha", 0.95f);
+                    float after = s.Age - run - P7Sample;
                     s.M.SetShaderParameter("p7_fade", after <= 0 ? 0f : Mathf.Min(1, Mathf.Floor(after / P7Sample + 1) * 0.34f));
                 });
                 P7LightOn(c + Vector3.Up * 1.3f, r * 1.3f, (Flare.Night ? 3f : 4.2f) * (0.8f + 0.5f * k));
@@ -369,7 +386,7 @@ public partial class BattleFx
         }
     }
 
-    double p7StoreAt = -9;
+    double p7StoreAt = -9, p7PulseAt = -9;
 
     /// <summary>The store as steps (0, then a quarter a step up to 1): the blows' kept fifths, 4, 10, 20, 35.</summary>
     static float P7StoreLevel(double stored) => stored >= 35 ? 1f : stored >= 20 ? 0.75f : stored >= 10 ? 0.5f : stored >= 4 ? 0.25f : stored > 0 ? 0.12f : 0f;

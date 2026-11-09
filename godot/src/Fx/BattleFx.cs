@@ -1690,6 +1690,8 @@ public partial class BattleFx : Node3D
                 case Ev.Dash e:
                 {
                     P7Ev("dash");
+                    // The Warden's dash is a body moving in the steel (FX_LANGUAGE §4): her ribbon and afterimages, not the cold air
+                    if (P7Dash(e, b)) break;
                     // Her dash: one streak of cold air where she went, thinning to its start, and dust
                     // kicked up at her heels (fourteen soft spots in a row read as a string of pearls).
                     var path = new Vector3[6];

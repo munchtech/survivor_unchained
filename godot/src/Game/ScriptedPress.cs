@@ -8,7 +8,7 @@ namespace SurvivorUnchained.Play;
 /// <summary>--press SPEC[;SPEC...] (pictures only): scripted skill and dash presses for a shooting clip, under --auto idle.
 /// SPEC = slot:t:dx,dz[:hold=S]; slot is 1-6 (Act.Skill1..6) or dash; t is Journey.Playtime seconds (as --cast); dx,dz are metres
 /// from her position at the press moment (the aim); hold=S keeps the key held S seconds (a channel); move walks her along dx,dz
-/// while it is held (a spin steered through a pack). Game.cs wraps scene.Move,
+/// while it is held (a spin steered through a pack), and turn=DEG swings that walk DEG degrees over the hold (a curve). Game.cs wraps scene.Move,
 /// Pressed, Held and Pointer through this. Each spec fires once, in time order.</summary>
 public sealed class ScriptedPress
 {
@@ -16,7 +16,7 @@ public sealed class ScriptedPress
 
     sealed class Spec
     {
-        public Act Act; public int Slot; public double T, Dx, Dz, Hold;
+        public Act Act; public int Slot; public double T, Dx, Dz, Hold, Turn;
         public bool Fired, Said, Consumed, Walk; public double At, Ax, Az;
     }
 
@@ -40,6 +40,7 @@ public sealed class ScriptedPress
             for (int i = 3; i < p.Length; i++)
                 if (p[i].StartsWith("hold=")) s.Hold = double.Parse(p[i][5..], inv);
                 else if (p[i] == "move") s.Walk = true;
+                else if (p[i].StartsWith("turn=")) s.Turn = double.Parse(p[i][5..], inv) * Math.PI / 180;
             specs.Add(s);
         }
         specs.Sort((a, b) => a.T.CompareTo(b.T));
@@ -102,7 +103,9 @@ public sealed class ScriptedPress
             if (s.Walk && s.Fired && t < s.At + s.Hold)
             {
                 double lw = Math.Sqrt(s.Dx * s.Dx + s.Dz * s.Dz);
-                if (lw > 1e-6) return (s.Dx / lw, s.Dz / lw);
+                // turn=DEG: the walk swings that many degrees (from +X toward +Z) over the hold (a curve steered)
+                double ta = s.Turn * Math.Clamp((t - s.At) / s.Hold, 0, 1), c = Math.Cos(ta), sn = Math.Sin(ta);
+                if (lw > 1e-6) return ((s.Dx * c - s.Dz * sn) / lw, (s.Dx * sn + s.Dz * c) / lw);
             }
             if (s.Act != Act.Dash || !s.Fired || t >= s.At + DashMove) continue;
             double l = Math.Sqrt(s.Dx * s.Dx + s.Dz * s.Dz);

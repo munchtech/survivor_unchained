@@ -14,10 +14,14 @@
 //            a point over p7_trail radians (times p7_prog, the wind-in), curling a little inward; erodes by p7_fade.
 //   7 scar   a Sunder line on the ground (UV.x 0 her end .. 1 the far end): pending, a thin jagged heart at p7_lvl
 //            (mid); split (p7_prog >= 0), the crack opening behind a core front racing out to p7_prog, at p7_lvl.
-//   8 shell  Iron Vow's brace: a tight edge-band stroke round her (camera-facing), four arcs with gaps, turning;
-//            p7_lvl lifts it a band on a stored blow.
-//   9 store  the vow's store on her shield (camera-facing): a core disc stepping up with p7_prog (0..1), and the stored
-//            blow's sparks pulled inward for 3 samples after it (p7_t since the last).
+//   8 shell  Iron Vow's brace: a bold edge-band stroke round her (camera-facing; p7_width its half-width, a share of
+//            the quad), four arcs with ragged gaps that close a step with each store level (p7_prog 0..1), turning;
+//            p7_lvl is its heat (edge band only: under the mid's cut).
+//   9 store  the vow's store on her shield (camera-facing): a core disc ringed in gold with a four-point flare, both
+//            stepping up with p7_prog (0..1); a stored blow brightens it a sample and pulls its sparks inward for 3
+//            samples (p7_t since the last).
+//  11 pulse  a stored blow's pulse up her body (her pose, a mesh, like the ghost): a flat mid band climbing from her feet
+//            (p7_y0, world) to her crown (p7_y0 + p7_h) over 3 samples (p7_t), faint (p7_alpha), its trailing lip edge.
 //  10 streak a struck foe's tangential sparks (camera-facing): tears flung along p7_dir2 (screen, y down), 3 samples.
 #include "res://shaders/fx_cel.gdshaderinc"
 
@@ -35,8 +39,14 @@ uniform float p7_count = 4.0;  // storm: blades
 uniform float p7_trail = 1.75; // storm: the trail's arc (radians)
 uniform float p7_lvl = 0.6;    // scar / shell: the heat at its heart
 uniform vec2 p7_dir2 = vec2(1.0, 0.0); // streak: the flight, on screen
+uniform float p7_y0 = 0.0;    // pulse: her feet (world y)
+uniform float p7_h = 1.8;     // pulse: her height
+varying float p7_wy;
 
 void vertex() {
+	// the pulse lies on her own surface: pushed out a little along it so her depth twin does not fight it
+	if (p7_mode == 11) VERTEX += NORMAL * 0.014;
+	p7_wy = (MODEL_MATRIX * vec4(VERTEX, 1.0)).y;
 	if (p7_bill > 0.5) {
 		float s = length(MODEL_MATRIX[0].xyz);
 		mat4 bb = mat4(INV_VIEW_MATRIX[0] * s, INV_VIEW_MATRIX[1] * s, INV_VIEW_MATRIX[2] * s, MODEL_MATRIX[3]);
@@ -93,7 +103,9 @@ vec4 p7_star(vec2 p) {
 
 vec4 p7_ribbon(vec2 uv) {
 	float along = uv.x, y = abs(uv.y * 2.0 - 1.0);
-	float heat = (1.0 - y) * mix(0.18, 1.05, pow(along, 1.4)) - (1.0 - along) * 0.12;
+	// gold carries it; the white-gold only on the thin head (the last tenth, its middle)
+	float heat = (1.0 - y) * mix(0.16, 0.66, pow(along, 1.2)) - (1.0 - along) * 0.1;
+	heat += 0.32 * smoothstep(0.9, 1.0, along) * step(y, 0.45);
 	heat -= fx_noise(vec2(along * 14.0, p7_seed)) * 0.18 * (1.0 - along);
 	heat -= p7_fade * 0.8 + p7_fade * 0.5 * fx_noise(uv * vec2(20.0, 3.0) + p7_seed);
 	return fx_cel(heat, along);
@@ -147,7 +159,11 @@ vec4 p7_storm(vec2 p) {
 		float w = u < 0.0 ? w0 * sqrt(max(0.0, 1.0 - pow(u / (0.13 / trail), 2.0))) : w0 * pow(1.0 - u, 0.85);
 		w *= 1.0 + 0.22 * (fx_gnoise(vec2(u * 6.0 + float(k) * 3.1, p7_seed)) - 0.5);
 		float prof = 1.0 - abs(r - rc) / max(w, 1e-4);
-		float hk = (prof > 0.0 ? min(prof / 0.45, 1.0) : prof * 0.35) * mix(1.12, 0.22, pow(clamp(u, 0.0, 1.0), 0.75));
+		// the gold carries the crescent (its heat under the core's cut); the white-gold is only the thin leading lip: the
+		// nose and the first few percent of the arc, on the blade's outer half
+		float body = (prof > 0.0 ? min(prof / 0.45, 1.0) : prof * 0.35);
+		float lip = (1.0 - smoothstep(0.0, 0.07, u)) * smoothstep(0.35, 0.75, prof);
+		float hk = body * mix(0.62, 0.2, pow(clamp(u, 0.0, 1.0), 0.75)) + lip * 0.5;
 		// painted bites in the tail, holes as it erodes
 		hk -= 0.16 * fx_noise(vec2(u * 11.0, r * 24.0) + p7_seed + float(k)) * clamp(u, 0.0, 1.0);
 		hk -= p7_fade * 0.9 + p7_fade * 0.6 * fx_noise(p * 10.0 + p7_seed);
@@ -176,11 +192,11 @@ vec4 p7_scar(vec2 uv) {
 
 vec4 p7_shell(vec2 p) {
 	float r = length(p), a = atan(p.y, p.x) + p7_t * 0.9 + p7_seed;
-	float w = 0.035 * (1.0 + 0.3 * fx_gnoise(vec2(a * 3.0, p7_seed)));
-	float prof = 1.0 - abs(r - 0.9) / w;
-	// four arcs, ragged gaps between
+	float w = p7_width * (1.0 + 0.3 * fx_gnoise(vec2(a * 3.0, p7_seed)));
+	float prof = 1.0 - abs(r - 0.86) / w;
+	// four arcs, ragged gaps between that close a step at each store level (never shut: it stays four arcs)
 	float seg = fract(a / P7_TAU * 4.0);
-	float gap = 0.09 * (1.0 + 0.4 * fx_noise(vec2(a * 5.0, r * 30.0))) - min(seg, 1.0 - seg);
+	float gap = mix(0.12, 0.05, p7_prog) * (1.0 + 0.4 * fx_noise(vec2(a * 5.0, r * 30.0))) - min(seg, 1.0 - seg);
 	prof -= max(0.0, gap) * 12.0;
 	float heat = (prof > 0.0 ? min(prof / 0.5, 1.0) : prof * 0.25) * p7_lvl;
 	heat -= p7_fade * 0.9 + p7_fade * 0.6 * fx_noise(p * 9.0 + p7_seed);
@@ -192,8 +208,14 @@ vec4 p7_shell(vec2 p) {
 vec4 p7_store(vec2 p) {
 	float r = length(p), a = atan(p.y, p.x);
 	float lv = p7_prog;
-	float rad = 0.18 + 0.3 * lv;
-	float heat = lv > 0.001 ? (1.0 - r / rad) * (0.7 + 0.6 * lv) : -1.0;
+	float hit = p7_t < P7_SAMPLE ? 0.22 : 0.0;
+	// the disc: a white-gold heart ringed in gold, an amber lip
+	float rad = 0.14 + 0.18 * lv + hit * 0.2;
+	float heat = lv > 0.001 ? (1.0 - r / rad) * (1.0 + 0.35 * lv) : -1.0;
+	// the flare: four thin spikes off it, longer a step at each level (gold along their length, white only at the root)
+	float len = 0.3 + 0.62 * lv + hit;
+	float arms = max(1.0 - abs(p.y) * 22.0 - abs(p.x) / len, 1.0 - abs(p.x) * 22.0 - abs(p.y) / len);
+	if (lv > 0.001) heat = max(heat, arms * 0.95 - 0.05);
 	vec4 o = fx_cel(heat, 1.0);
 	// the stored blow: tears pulled inward to the shield's heart, 3 samples
 	if (p7_t < 3.0 * P7_SAMPLE) {
@@ -204,6 +226,19 @@ vec4 p7_store(vec2 p) {
 		o = vec4(mix(o.rgb, fx_spark_color, sp * (1.0 - body)), max(o.a, sp));
 	}
 	o.a *= 1.0 - p7_fade;
+	return o;
+}
+
+vec4 p7_pulse(vec3 n, vec3 v) {
+	float y = (p7_wy - p7_y0) / max(p7_h, 0.1);
+	float front = p7_t / (3.0 * P7_SAMPLE) * 1.15;
+	float d = front - y;
+	if (d < 0.0 || d > 0.2 || front > 1.25) return vec4(0.0);
+	// a flat gold band, its trailing lip the edge band, at the figure's silhouette the edge too
+	float rim = 1.0 - clamp(abs(dot(normalize(n), normalize(v))), 0.0, 1.0);
+	float heat = (d > 0.13 || rim > 0.7) ? 0.15 : 0.5;
+	vec4 o = fx_cel(heat, 0.5);
+	o.a *= p7_alpha;
 	return o;
 }
 
@@ -231,6 +266,7 @@ void p7_frag(vec2 uv, vec3 n, vec3 v, out vec3 albedo, out float alpha) {
 	else if (p7_mode == 7) c = p7_scar(uv);
 	else if (p7_mode == 8) c = p7_shell(p);
 	else if (p7_mode == 9) c = p7_store(p);
+	else if (p7_mode == 11) c = p7_pulse(n, v);
 	else c = p7_streak(p);
 	if (c.a < 0.004) discard;
 	albedo = fx_out(c.rgb, c.a);

@@ -5,7 +5,7 @@
         [--grant heroic_leap,shield_charge] [--grant-union bladestorm] [--anchor P7EV] [--dash-step long_stride,hard_landing] [--horde "50"] [--pack DEG:WIDTH:DIST:SPREAD]
         [--close] [--perf] [--godot-args "..."]
 
---press SPEC[;SPEC...]: SPEC = slot:t:dx,dz[:hold=S]; slot 1-6 or dash; t = Journey.Playtime seconds (as --cast); dx,dz = metres
+--press SPEC[;SPEC...]: SPEC = slot:t:dx,dz[:hold=S][:move][:turn=DEG]; slot 1-6 or dash; t = Journey.Playtime seconds (as --cast); dx,dz = metres
   from her at the press (the aim); hold=S holds the key S seconds (a channel). A dash goes toward dx,dz.
 Night: zone arena. Day: zone verge + --time day (the arena has no day). Default crowd: --horde 50 --dist 3 --spread 9 --no-spawn,
   dropped when you pass --horde or --pack (or --horde in --godot-args). --pack DEG:WIDTH:DIST:SPREAD = --horde-arc (world degrees

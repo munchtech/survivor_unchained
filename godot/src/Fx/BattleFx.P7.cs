@@ -110,6 +110,7 @@ public partial class BattleFx
         n.Scale = Vector3.One * half;
         AddChild(n);
         n.GlobalPosition = at;
+        if (Args.Has("clip") && bill && (GetViewport()?.GetCamera3D() is { } c3) && c3.GlobalPosition.DistanceTo(at) < 8) GD.Print($"p7 near-camera shape mode {mode} at {at} frame {Engine.GetFramesDrawn()}");
         if (FxAfter.On) FxAfter.Adopt(n);
         var s = new P7Shape { N = n, M = m, Life = life, Step = step };
         p7Shapes.Add(s);
@@ -301,7 +302,7 @@ public partial class BattleFx
                 p7GhostDue.Clear();
                 p7GhostDue.AddRange([p7ChargeDur * 0.22f, p7ChargeDur * 0.52f, p7ChargeDur * 0.82f]);
                 if (p7ChargeTrail != null) p7ChargeTrail.Until = 0;
-                p7ChargeTrail = P7NewTrail(() => PlayerPos + Vector3.Up * 0.95f - p7ChargeDir * 0.25f, 0.42f, p7ChargeDur + 0.05f, 2.5f * P7Sample);
+                p7ChargeTrail = P7NewTrail(() => PlayerPos + Vector3.Up * 0.95f - p7ChargeDir * 0.25f, 0.26f, p7ChargeDur + 0.05f, 2.5f * P7Sample);
                 break;
             }
             case ChargePhase.Impact:
@@ -348,6 +349,28 @@ public partial class BattleFx
         }
     }
 
+    /// <summary>The Warden's dash (FX_LANGUAGE §4, a body moving): an edge-band ribbon off her hips that tapers to nothing
+    /// in 2.5 samples, two mid-band afterimages stepping out, dust at her heels. Her figure runs the blink over ~0.2 s, so
+    /// the ribbon follows the figure, never drawn ahead of it. False: not hers (another calling's dash keeps its look).</summary>
+    bool P7Dash(Ev.Dash e, Battle b)
+    {
+        if (P7Off || !string.Equals(b.Calling, "warden", StringComparison.OrdinalIgnoreCase) || p7ChargeT >= 0) return false;
+        P7WarmUp();
+        var dir = new Vector3((float)(e.X1 - e.X0), 0, (float)(e.Z1 - e.Z0));
+        dir = dir.LengthSquared() > 1e-4f ? dir.Normalized() : Vector3.Forward;
+        var feet = V(e.X0, Y(e.X0, e.Z0), e.Z0);
+        for (int i = 0; i < 6; i++)
+        {
+            var side = new Vector3(dir.Z, 0, -dir.X) * ((R() - 0.5f) * 1.6f);
+            WgPuff(feet + Vector3.Up * 0.14f, -dir * (1.6f + R() * 1.2f) + side + Vector3.Up * 0.25f, 0.22f + R() * 0.08f, 1.4f, 0.45f + R() * 0.2f, WgDust(i % 3 == 0 ? 0.72f : 1.04f), 0.74f, 3.8f);
+        }
+        P7NewTrail(() => PlayerPos + Vector3.Up * 0.95f, 0.36f, 0.24f, 2.5f * P7Sample);
+        p7ChargeT = 0; p7ChargeDur = 0.0f; p7ChargeDir = dir;
+        p7GhostDue.Clear();
+        p7GhostDue.AddRange([0.06f, 0.14f]);
+        return true;
+    }
+
     /// <summary>Hard Landing: a low steel arc running out at her feet to the shove's radius, and the dust it throws.</summary>
     void P7Shove(Ev.HardLanding e)
     {
@@ -389,7 +412,10 @@ public partial class BattleFx
         if (Flare.Blade is { } bl && IsInstanceValid(bl) && bl.IsInsideTree())
         {
             float tip = bl.HasMeta("tip") ? (float)bl.GetMeta("tip") : 1.4f;
-            return bl.GlobalTransform * new Vector3(0, Mathf.Lerp(0.25f, tip, k), 0);
+            var at = bl.GlobalTransform * new Vector3(0, Mathf.Lerp(0.25f, tip, k), 0);
+            // (a blade between hands for a frame, its transform not hers yet: never draw a glint metres off her)
+            if (at.DistanceTo(PlayerPos + Vector3.Up * 1.0f) < 2.6f) return at;
+            if (Args.Has("clip")) GD.Print($"p7 blade far: {at} her {PlayerPos} frame {Engine.GetFramesDrawn()}");
         }
         return PlayerPos + new Vector3(0.3f, 1.1f + 0.6f * k, 0);
     }
@@ -436,11 +462,13 @@ public partial class BattleFx
     }
 
     /// <summary>An afterimage: her pose this frame, in the mid band (§4: 2-3 flat afterimages that step out).</summary>
-    void P7Snap()
+    /// <summary>A copy of her pose now (each skinned mesh on a frozen copy of its skeleton) in a P7 mode: the charge's
+    /// afterimage (3), the vow's pulse (11); `init` sets its uniforms.</summary>
+    void P7Snap(int mode = 3, float life = 3 * P7Sample, Action<P7Ghost>? init = null)
     {
         if (Her3D == null || !IsInstanceValid(Her3D)) return;
-        var m = P7Mat(3, ghost: true);
-        m.SetShaderParameter("p7_alpha", 0.5f);
+        var m = P7Mat(mode, ghost: true);
+        m.SetShaderParameter("p7_alpha", 0.72f);
         var root = new Node3D { Name = "P7Ghost" };
         AddChild(root);
         root.GlobalTransform = Transform3D.Identity;
@@ -484,7 +512,9 @@ public partial class BattleFx
             for (int bs = 0; bs < mi.GetBlendShapeCount(); bs++) copy.SetBlendShapeValue(bs, mi.GetBlendShapeValue(bs));
             if (FxAfter.On) FxAfter.Adopt(copy);
         }
-        p7Ghosts.Add(new P7Ghost { Root = root, M = m, Life = 3 * P7Sample });
+        var g = new P7Ghost { Root = root, M = m, Life = life };
+        init?.Invoke(g);
+        p7Ghosts.Add(g);
     }
 
     static bool P7SeeThrough(MeshInstance3D mi)
