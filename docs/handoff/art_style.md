@@ -1,5 +1,39 @@
 # Handoff: the signature art style (style frames)
 
+## L1 lead 8 (9 Nov, coordinator ad002ada): FXM verified; the arena night's roots fixed, her pool not; integration merged; the 13 frames shot; the judge next (HANDOFF READY look-l1, the commit that adds this section)
+Briefs and results: `survivorsunchained_inputs\look_l1\work\brief_l8_*`, runs under `look_l1\c\l8\`. Main approved 1.9M to G2 (all 13 frames, the arena night included; tell main past 2.3M). Lead 8's spend: about 1.0M in helpers plus 265k for lead 8; $0 API.
+
+- **Done:**
+  - **FXM B and C verified on screen** (fxv\ab_scout: the world and foes hide the after-grade stroke; the danger marks sit over it). Merged into look-l1; main and P7 told.
+  - **FX2 on fx-lang:** the quit crash (9efa8685f: world-depth RIDs freed from `FxAfter._ExitTree`), the after-layer's first-frame shape (the same commit: its camera synced in `_Ready`), blood keeps its hue (8bfe43d57). fx-lang is pushed at 8bfe43d57; its worktree is removed.
+  - **The arena night's roots:**
+    - Its places kept their own H2 moons, 3.4 times night_play's. `Rigs.cs` now has a key `scale` and a fill `sky_scale` over each place's moon. `arena_night` has its own grade (Moon step hue 262), a violet moon #7a92ff, and a canopy dapple with `size` and `floor`.
+    - The crowd's fill was 15 times too bright: it is now times hemi / `CrowdSkyRef`, and `CrowdEmberK` is 0.24.
+    - 09: Lp50 0.20, key 2.22, shade h 263, cold 83% (target 0.24 / 2.10 / 263 / 81). Commits 03ff97dc1, eea080076, fd6ebcce2, 5a3a317de, 1b2d9a6fc.
+  - **Integration merged** (5ea603fab, 33bf86eab): P1's picked body, M5, P7. `MoonSkin` acts under `scene_moon`. Suite 1682/0/10.
+  - **The 13 frames are shot:** `look_l1\c\l8\shoot1` (frames, `palette.md`, `pairs\`, `sheet.jpg`). The Low Ford run quit cleanly there (exit 0) for the first time since FX2.
+- **Open (lead 8's own half-size looks, against target 09):**
+  1. **Her pool reads as a round orange-red disc or stain, not light.** `cel_pool_paint` has 13 knobs and three rounds behind it: the scrap line is crossed (main agrees). Rebuild it FROM target 09's radial color profile (a ramp over distance in metres, multiplying the ground and keeping its pattern), unless the judge rules it within one round. Numbers: the core is right (q95 0.75); the middle is too dark and red (q80 0.58 h 37 against 0.67 h 48; q20 0.31 h 32 against 0.45 h 34). The skills judge reads it as a stain too.
+  2. **The pack reads tan-brown, its rim white,** not the target's gray-blue with a cool rim. The root is unconfirmed: the wolf albedo or the crowd lift's dirt hue.
+  3. **The barrow and the ruts run dark** (Lp50 0.17, 0.14), and the barrow's pool blows out (q95 0.92). S2b-N3 proposes a key "keep" exponent and a pool gain scaled by the ground's albedo.
+  4. The arena kit's small dark albedo litter (B3); an 8 px stair-step on the dapple and pool edges at 1:1 (the render scale is the suspect).
+  5. Blood reads as 2-3 px red "pepper" over the gold FX (P7's judge, round 2): it needs the droplet and stroke language.
+  6. **Not started** (brief ready: `brief_l8_s2b_day.md`):
+     - `close_day`'s old gold key (13);
+     - her day skin shade at h 325;
+     - dawn: lead 8's call is that the board wins, so the dawn sun comes FROM LB DAWN, h about 56, and rule 3 is rewritten with its FROM;
+     - lamps' `ember_give` (far: `cel_ember` is one global, so it needs the nearest N sources).
+  7. **The Low Ford quit hang:** 3 of 3 runs hung before the integration merge; one clean run after it. The ink release (eee011180, FX2's pattern for `InkPass`) stays in. Run two more full ford runs before calling it closed.
+- **Next, in order:**
+  1. The judge: `su-lead-max`, foreground, effort max, brief `look_l1\work\judge_l8_c13.md` (filled: what changed, the open list). It writes `c\l8\judge1\verdict.md` and returns a 350-word summary.
+  2. One fix round on its ranked blocks (the pool ramp first), then Stage D, then GATE G2 READY with the A|B pairs in `look_l1\g2\`.
+- **Learned:**
+  - `frames.py` has no `--help`: any call shoots.
+  - Tell runners that `frames.py` takes the godot turn itself, never `turn.py take gpu` (one stalled on the GPU queue).
+  - Run `cmd /c rmdir` for the junction alone in its own PowerShell call: combined with a `Move-Item`, it was blocked.
+  - Freeing other agents' stale turns is blocked by the permission system: leave them to the 3-hour expiry.
+  - `godot/tests/CorvaneTests.cs.uid` is tracked now (the untracked copy is in `c\l8\aside`).
+
 ## L1 lead 7 (9 Nov, coordinator ad002ada): the day's color fixed at its root; S2 partial, FXM landed unverified; verify FXM, S2b, the shoot, the judge, Stage D and G2 next (HANDOFF READY look-l1, the commit that adds this section)
 The owner, 8 Nov: "visually stunning cel shading painterly with vibrant colors". Briefs and results are in `survivorsunchained_inputs\look_l1\work\` (`brief_l7_*`). Report to main only at the judge's verdict and at GATE G2 READY, plus the fx-lang shas.
 
