@@ -10,13 +10,14 @@ using static SurvivorUnchained.Core.MathX;
 namespace SurvivorUnchained.Play.Zones;
 
 /// <summary>
-/// The app can now lay a day stretch into a zone from data (data/content/day_stretch.json, H4 item 10): resting packs
+/// The app can now lay a zone's encounters from data (data/content/encounters.json; the day stretch, H4 item 10, and
+/// since M5 the Low Ford's night, each beat's `when` saying which run lays it; an instance runs one phase): resting packs
 /// that wake as she comes near, their foes' kit telegraphs (a boar's charge), a champion who rallies its pack, a
 /// lamp-post, a strongbox and the Flare's save (a closing ring round her), each beat's "down" kept in the zone's state
 /// (WorldState.Zone, reset by ZoneReset's rule). The zone (Prologue) wraps it with its words and callouts; the balance
 /// harness (godot/balance, lowford-day) plays the same fights from the same data. Its dice are the fight's (Battle.Rng).
 /// </summary>
-public sealed class DayStretch
+public sealed class Encounters
 {
     public sealed class Foe { public string Def = ""; public int N = 1; }
 
@@ -35,6 +36,8 @@ public sealed class DayStretch
     public sealed class Beat
     {
         public string Id = "", Kind = "";
+        /// <summary>(M5) Which run of the zone lays it: "night" or "day" (the default). An instance sees only its phase's beats.</summary>
+        public string When = "day";
         public double X, Z, Spread = 3, Wake = 9, Leash = 20, R = 2.4, ArmZ, FlareTo = 1, FirstAfter = 1.2;
         public List<Foe> Foes = new();
         public string? Tell, Captain, Post, Def, FollowElite;
@@ -60,23 +63,31 @@ public sealed class DayStretch
         /// <summary>(H8 N22) The portcullis's line (z), where the shut gate bars her (0: none, the bar on the exit line).</summary>
         public double PortcullisZ;
         public List<Beat> Beats = new();
+        /// <summary>(M5) The ember-card draft runs in the zone's night (false: its kills teach plain experience, ARPG.md 5).</summary>
+        public bool Draft = true;
+        /// <summary>The beats of one phase ("night" or "day"), in the data's order.</summary>
+        public IEnumerable<Beat> In(string when) => Beats.Where(b => b.When == when);
         public Beat? Get(string id) => Beats.FirstOrDefault(b => b.Id == id);
     }
 
     sealed class File { public Dictionary<string, Spec> Zones = new(); }
     static File? file;
-    static File F => file ??= Json.Parse<File>(Json.ReadContent("day_stretch.json"));
+    static File F => file ??= Json.Parse<File>(Json.ReadContent("encounters.json"));
 
     /// <summary>The zone's stretch, or null for a zone without one.</summary>
     public static Spec? For(string zone) => F.Zones.GetValueOrDefault(zone);
 
     /// <summary>The key in the zone's state that says a beat is done for the day (its pack down, its chest opened).</summary>
     public static string DoneKey(string beat) => "day." + beat;
+    /// <summary>This instance's key for a beat: the day's DoneKey, or "night." + the beat.</summary>
+    public string Key(string beat) => Phase == "day" ? DoneKey(beat) : Phase + "." + beat;
 
     /// <summary>A day foe's level, as the Verge's: 1 + (her level + the day) / 2, and the beat's own step up.</summary>
     public static int Level(int herLevel, int day, Beat bt) => Math.Max(1, 1 + (herLevel + day) / 2 + bt.LevelUp);
 
     public readonly Spec S;
+    /// <summary>The phase this instance runs ("night" or "day"): Place, the ambush, the ring, GateOpen, RingOwed and Goal see only its beats.</summary>
+    public readonly string Phase;
     readonly Battle b;
     readonly Dictionary<string, Fact> state;
     readonly int level, day;
@@ -103,15 +114,15 @@ public sealed class DayStretch
     /// <summary>Whether casts wait (a freeze up): none ask while it holds.</summary>
     public Func<bool>? Held;
 
-    public DayStretch(Spec s, Battle battle, Dictionary<string, Fact> zoneState, int herLevel, int day)
+    public Encounters(Spec s, Battle battle, Dictionary<string, Fact> zoneState, int herLevel, int day, string phase = "day")
     {
-        S = s; b = battle; state = zoneState; level = herLevel; this.day = day;
+        S = s; b = battle; state = zoneState; level = herLevel; this.day = day; Phase = phase;
     }
 
-    public bool Done(string beat) => state.TryGetValue(DoneKey(beat), out var f) && f.Truthy;
-    public void MarkDone(string beat) => state[DoneKey(beat)] = true;
+    public bool Done(string beat) => state.TryGetValue(Key(beat), out var f) && f.Truthy;
+    public void MarkDone(string beat) => state[Key(beat)] = true;
 
-    public IEnumerable<Beat> Of(string kind) => S.Beats.Where(x => x.Kind == kind);
+    public IEnumerable<Beat> Of(string kind) => S.In(Phase).Where(x => x.Kind == kind);
 
     /// <summary>The packs not yet down today, resting where the data puts them.</summary>
     public void Place()
@@ -144,7 +155,7 @@ public sealed class DayStretch
             if (b.Collision.Blocked(x, z, 0.7) && t < 11) continue;
             var e = b.SpawnEnemy(def, x, z, new Battle.SpawnOpts
             {
-                Level = lv, Elite = elite, Style = SpawnStyle.Walk, Tag = "day:" + bt.Id, Home = (bt.X, bt.Z, bt.Leash), Wake = bt.Wake,
+                Level = lv, Elite = elite, Style = SpawnStyle.Walk, Tag = Phase + ":" + bt.Id, Home = (bt.X, bt.Z, bt.Leash), Wake = bt.Wake,
             });
             if (e != null) e.Facing = b.Rng.Next() * Math.Tau;
             return e;
@@ -187,7 +198,7 @@ public sealed class DayStretch
                 foreach (var o in b.Enemies.Living())
                     if (o.Tag == null && o.LifeT < 0.5 && o.Faction == cap.E.Faction && o.State != EnemyState.Dying && Dist(o.X, o.Z, cap.E.X, cap.E.Z) < su.Range + 2)
                     {
-                        o.Tag = "day:" + id; o.Roused = true;
+                        o.Tag = Phase + ":" + id; o.Roused = true;
                         // (on the pack's leash, round its ground: a called foe had none, and drew her 40 m off the camp)
                         o.HomeX = bt.X; o.HomeZ = bt.Z; o.Leash = bt.Leash;
                         list.Add((o, o.Seed)); up.Add((o, o.Seed));
@@ -266,8 +277,9 @@ public sealed class DayStretch
     /// <summary>The gate is shut and no ring has been sprung: what holds it is the ring still to come (its line on the road).</summary>
     public Beat? RingOwed => RingAt < 0 ? Of("ring").FirstOrDefault(bt => !Done(bt.Id)) : null;
 
-    /// <summary>An ambush springs: its foes out of the trees round her, a fight where she stands.</summary>
-    void Spring(Beat bt)
+    /// <summary>An ambush springs: its foes out of the trees round her, a fight where she stands. (An ambush with r 0
+    /// never springs on its own: the zone springs it, as the Low Ford's night does the wagon's.)</summary>
+    public void Spring(Beat bt)
     {
         var p = b.Player;
         int lv = Level(level, day, bt);
@@ -282,7 +294,7 @@ public sealed class DayStretch
                 if (b.Collision.Blocked(x, z, 0.7) && t < 11) continue;
                 var e = b.SpawnEnemy(kinds[i], x, z, new Battle.SpawnOpts
                 {
-                    Level = lv, Style = SpawnStyle.Walk, Tag = "day:" + bt.Id, Home = (bt.X, bt.Z, bt.Leash),
+                    Level = lv, Style = SpawnStyle.Walk, Tag = Phase + ":" + bt.Id, Home = (bt.X, bt.Z, bt.Leash),
                 });
                 if (e != null) { e.Roused = true; list.Add((e, e.Seed)); }
                 break;
@@ -322,7 +334,7 @@ public sealed class DayStretch
                 if ((b.Collision.Blocked(x, z, 0.7) || Dist(x, z, p.X, p.Z) < 5) && t < 11) continue;
                 var e = b.SpawnEnemy(def, x, z, new Battle.SpawnOpts
                 {
-                    Level = elite ? lv + 1 : lv, Elite = elite, Style = SpawnStyle.Walk, Tag = "day:" + bt.Id, Home = (bt.X, bt.Z, w.Leash ?? bt.Leash + 4),
+                    Level = elite ? lv + 1 : lv, Elite = elite, Style = SpawnStyle.Walk, Tag = Phase + ":" + bt.Id, Home = (bt.X, bt.Z, w.Leash ?? bt.Leash + 4),
                 });
                 if (e != null) { e.Roused = true; got.Add(e); }
                 break;
@@ -347,7 +359,7 @@ public sealed class DayStretch
         }
         // (round the trees to it: a footpad's bowman backs into the wood)
         if (near != null) return nd < 4 ? (near.X, near.Z, null) : Route(near.X, near.Z, null);
-        foreach (var bt in S.Beats)
+        foreach (var bt in S.In(Phase))
         {
             switch (bt.Kind)
             {
@@ -423,7 +435,7 @@ public sealed class DayStretch
                 double a = -Math.PI / 2 + (n <= 1 ? 0 : (i / (double)(n - 1) - 0.5) * (1.6 + t * 0.12)) + (b.Rng.Next() - 0.5) * 0.4, d = Math.Max(7, 11 + b.Rng.Next() * 3 - t * 0.3);
                 double x = p.X + Math.Cos(a) * d, z = p.Z + Math.Sin(a) * d;
                 if (b.Collision.Blocked(x, z, 0.6) || z < S.GateZ - 6) continue;
-                var e = b.SpawnEnemy(def, x, z, new Battle.SpawnOpts { Level = elite ? lv + 1 : lv, Elite = elite, Style = SpawnStyle.Walk, Tag = "day:" + bt.Id });
+                var e = b.SpawnEnemy(def, x, z, new Battle.SpawnOpts { Level = elite ? lv + 1 : lv, Elite = elite, Style = SpawnStyle.Walk, Tag = Phase + ":" + bt.Id });
                 if (e != null) { e.Roused = true; list.Add((e, e.Seed)); }
                 return e;
             }
@@ -434,7 +446,7 @@ public sealed class DayStretch
         if (bt.FollowElite != null && One(bt.FollowElite, true, k++, all) is { } c) Captains[bt.Id] = (c, c.Seed);
         // (a pack put down before its second wave came is up again until the wave is down)
         DownAt.Remove(bt.Id);
-        state.Remove(DoneKey(bt.Id));
+        state.Remove(Key(bt.Id));
     }
 
     /// <summary>The Flare's save: the closing round her, its foes on the band's points, her Flare filled if short.</summary>
@@ -448,7 +460,7 @@ public sealed class DayStretch
         foreach (var (x, z) in b.TellClosing(p.X, p.Z, bt.N))
         {
             if (b.Collision.Blocked(x, z, 0.6)) continue;
-            var e = b.SpawnEnemy(bt.Def ?? "wolf", x, z, new Battle.SpawnOpts { Level = lv, Style = SpawnStyle.Walk, Tag = "day:" + bt.Id });
+            var e = b.SpawnEnemy(bt.Def ?? "wolf", x, z, new Battle.SpawnOpts { Level = lv, Style = SpawnStyle.Walk, Tag = Phase + ":" + bt.Id });
             if (e == null) continue;
             b.Closes(e);
             e.Roused = true;

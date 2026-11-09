@@ -11,8 +11,8 @@ using Xunit;
 namespace SurvivorUnchained.Tests;
 
 /// <summary>The Low Ford Road by day (H4 item 10): a permanent zone reset as data (data/content/zone_resets.json,
-/// World/ZoneReset.cs) and its stretch (data/content/day_stretch.json, Play/Zones/DayStretch.cs).</summary>
-public class DayStretchTests
+/// World/ZoneReset.cs) and its stretch (data/content/encounters.json, Play/Zones/Encounters.cs).</summary>
+public class EncountersTests
 {
     const double Dt = 1 / 60.0;
 
@@ -23,17 +23,18 @@ public class DayStretchTests
     });
 
     [Fact]
-    public void The_road_resets_on_the_day_change()
+    public void The_road_resets_when_she_comes_back_from_another_zone()
     {
+        // (ARPG 7.3: the Low Ford's rule is "leave", zone_resets.json; a reload keeps it)
         var w = new WorldState { Day = 1 };
-        Assert.Equal("day", ZoneReset.For("lowford")!.Reset);
-        ZoneReset.Apply(w, "lowford");
-        w.Zone("lowford")[DayStretch.DoneKey("boars")] = true;
-        w.Zone("lowford")[DayStretch.DoneKey("strongbox")] = true;
-        w.Day = 2;
-        Assert.True(ZoneReset.Apply(w, "lowford"));
-        Assert.False(w.Zone("lowford").ContainsKey(DayStretch.DoneKey("boars")));
-        Assert.False(w.Zone("lowford").ContainsKey(DayStretch.DoneKey("strongbox")));
+        Assert.Equal("leave", ZoneReset.For("lowford")!.Reset);
+        w.Zone("lowford")[Encounters.DoneKey("boars")] = true;
+        w.Zone("lowford")[Encounters.DoneKey("strongbox")] = true;
+        Assert.False(ZoneReset.Apply(w, "lowford", "load"));
+        Assert.True(w.Zone("lowford")[Encounters.DoneKey("boars")].Truthy);
+        Assert.True(ZoneReset.Apply(w, "lowford", "waystation"));
+        Assert.False(w.Zone("lowford").ContainsKey(Encounters.DoneKey("boars")));
+        Assert.False(w.Zone("lowford").ContainsKey(Encounters.DoneKey("strongbox")));
     }
 
     [Fact]
@@ -41,11 +42,11 @@ public class DayStretchTests
     {
         var w = new WorldState { Day = 3 };
         ZoneReset.Apply(w, "lowford");
-        w.Zone("lowford")[DayStretch.DoneKey("kerchiefs")] = true;
+        w.Zone("lowford")[Encounters.DoneKey("kerchiefs")] = true;
         // Out to the Waystation and back, the same day: still down.
         Assert.False(ZoneReset.Apply(w, "lowford"));
         Assert.False(ZoneReset.Apply(w, "lowford"));
-        Assert.True(w.Zone("lowford")[DayStretch.DoneKey("kerchiefs")].Truthy);
+        Assert.True(w.Zone("lowford")[Encounters.DoneKey("kerchiefs")].Truthy);
         // A zone without a rule is never touched.
         w.Zone("verge")["roost_kitchen"] = true;
         w.Day = 4;
@@ -74,9 +75,9 @@ public class DayStretchTests
     [Fact]
     public void The_stretch_runs_up_the_road_in_order_between_the_handback_and_the_gate()
     {
-        var s = DayStretch.For("lowford")!;
-        Assert.Equal(new[] { "boars", "kerchiefs", "strongbox", "road_ambush", "post", "wallow", "track_ambush", "wolves" }, s.Beats.Select(b => b.Id));
-        foreach (var bt in s.Beats) Assert.InRange(bt.Z, s.GateZ + 4, s.From[1] - 10);
+        var s = Encounters.For("lowford")!;
+        Assert.Equal(new[] { "boars", "kerchiefs", "strongbox", "road_ambush", "post", "wallow", "track_ambush", "wolves" }, s.In("day").Select(b => b.Id));
+        foreach (var bt in s.In("day")) Assert.InRange(bt.Z, s.GateZ + 4, s.From[1] - 10);
         Assert.Equal("act1.post1", s.Get("post")!.Post);
         Assert.Equal("charge", s.Get("boars")!.Tell);
         Assert.NotNull(Content.Enemies.Get(s.Get("kerchiefs")!.Captain!));
@@ -87,8 +88,8 @@ public class DayStretchTests
     public void Packs_down_today_stay_down_and_the_rest_rest_until_she_comes()
     {
         var b = Road(11);
-        var st = new Dictionary<string, Fact> { [DayStretch.DoneKey("boars")] = true };
-        var d = new DayStretch(DayStretch.For("lowford")!, b, st, 2, 1);
+        var st = new Dictionary<string, Fact> { [Encounters.DoneKey("boars")] = true };
+        var d = new Encounters(Encounters.For("lowford")!, b, st, 2, 1);
         d.Place();
         Assert.False(d.Packs.ContainsKey("boars"));
         Assert.True(d.Standing("kerchiefs").Count >= 6);
@@ -104,8 +105,8 @@ public class DayStretchTests
     public void The_boars_charge_through_the_kit_and_the_ring_closes_with_the_flare_full()
     {
         var b = Road(5);
-        var s = DayStretch.For("lowford")!;
-        var d = new DayStretch(s, b, new Dictionary<string, Fact> { [DayStretch.DoneKey("kerchiefs")] = true }, 2, 1);
+        var s = Encounters.For("lowford")!;
+        var d = new Encounters(s, b, new Dictionary<string, Fact> { [Encounters.DoneKey("kerchiefs")] = true }, 2, 1);
         d.Place();
         var boars = s.Get("boars")!;
         b.Player.X = boars.X; b.Player.Z = boars.Z + 7;
@@ -122,7 +123,7 @@ public class DayStretchTests
         d.Tick(Dt);
         Assert.True(d.RingAt < 0);
         // North past the ring's line, having come from the south, the road's packs down: it closes round her.
-        d = new DayStretch(s, b, s.Beats.Where(x => x.Kind == "pack").ToDictionary(x => DayStretch.DoneKey(x.Id), _ => (Fact)true), 2, 1);
+        d = new Encounters(s, b, s.In("day").Where(x => x.Kind == "pack").ToDictionary(x => Encounters.DoneKey(x.Id), _ => (Fact)true), 2, 1);
         d.Place();
         b.Player.Hp = b.MaxHp;
         b.FlareMeter = 0;
@@ -150,8 +151,8 @@ public class DayStretchTests
         // (H8, N22, the owner on demo-rc2: "we are able to just run up to the waystation and skip the whole day time
         // tutorial". The gate was open until a ring was sprung; a player round by the wall never sprang it.)
         var b = Road(9);
-        var s = DayStretch.For("lowford")!;
-        var d = new DayStretch(s, b, s.Beats.Where(x => x.Kind == "pack").ToDictionary(x => DayStretch.DoneKey(x.Id), _ => (Fact)true), 2, 1);
+        var s = Encounters.For("lowford")!;
+        var d = new Encounters(s, b, s.In("day").Where(x => x.Kind == "pack").ToDictionary(x => Encounters.DoneKey(x.Id), _ => (Fact)true), 2, 1);
         d.Place();
         var ring = s.Get("wolves")!;
         Assert.False(d.GateOpen);
@@ -177,7 +178,7 @@ public class DayStretchTests
         b.Tick(Dt, 0, 0); d.Tick(Dt); b.Events.Drain();
         Assert.True(d.GateOpen);
         // Done before a reload (no ring sprung this run): open.
-        var again = new DayStretch(s, Road(10), new Dictionary<string, Fact>(s.Beats.Where(x => x.Kind is "pack" or "ring").ToDictionary(x => DayStretch.DoneKey(x.Id), _ => (Fact)true)), 2, 1);
+        var again = new Encounters(s, Road(10), new Dictionary<string, Fact>(s.In("day").Where(x => x.Kind is "pack" or "ring").ToDictionary(x => Encounters.DoneKey(x.Id), _ => (Fact)true)), 2, 1);
         Assert.True(again.GateOpen);
     }
 
@@ -186,8 +187,8 @@ public class DayStretchTests
     {
         // (H4 lead 3, j08 g3: one ambush foe stuck in the trees held the ring, and the gate, for good.)
         var b = Road(7);
-        var s = DayStretch.For("lowford")!;
-        var d = new DayStretch(s, b, s.Beats.Where(x => x.Kind == "pack" && x.Id != "boars").ToDictionary(x => DayStretch.DoneKey(x.Id), _ => (Fact)true), 2, 1);
+        var s = Encounters.For("lowford")!;
+        var d = new Encounters(s, b, s.In("day").Where(x => x.Kind == "pack" && x.Id != "boars").ToDictionary(x => Encounters.DoneKey(x.Id), _ => (Fact)true), 2, 1);
         d.Place();
         var boars = s.Get("boars")!;
         b.Player.X = boars.X; b.Player.Z = boars.Z + 7;
@@ -198,7 +199,7 @@ public class DayStretchTests
         b.Player.X = ring.X; b.Player.Z = ring.ArmZ + 2;
         d.Tick(Dt);
         b.Player.Z = ring.Z - 0.5;
-        for (double t = 0; t < DayStretch.FightGrace + 1 && d.RingAt < 0; t += Dt)
+        for (double t = 0; t < Encounters.FightGrace + 1 && d.RingAt < 0; t += Dt)
         {
             foreach (var e in d.Standing("boars")) { e.X = boars.X + 60; e.Z = boars.Z; }
             b.Player.Hp = b.MaxHp; b.Player.X = ring.X; b.Player.Z = ring.Z - 0.5; b.Tick(Dt, 0, 0); d.Tick(Dt); b.Events.Drain();
@@ -210,10 +211,10 @@ public class DayStretchTests
     public void The_road_ambush_springs_on_her_way_back_once_the_strongbox_is_open()
     {
         var b = Road(7);
-        var s = DayStretch.For("lowford")!;
+        var s = Encounters.For("lowford")!;
         var am = s.Get("road_ambush")!;
-        var st = s.Beats.Where(x => x.Kind == "pack").ToDictionary(x => DayStretch.DoneKey(x.Id), _ => (Fact)true);
-        var d = new DayStretch(s, b, st, 2, 1);
+        var st = s.In("day").Where(x => x.Kind == "pack").ToDictionary(x => Encounters.DoneKey(x.Id), _ => (Fact)true);
+        var d = new Encounters(s, b, st, 2, 1);
         d.Place();
         b.Player.X = am.X; b.Player.Z = am.Z;
         d.Tick(Dt);
@@ -234,10 +235,10 @@ public class DayStretchTests
     public void No_two_packs_wake_within_20_m_of_each_other()
     {
         // (each fight and its callout stand alone: a pack's waking ring, its wake round each of its foes, 20 m or more
-        // clear of the next one's; the ring waits while any pack is up and fighting, DayStretch.Tick)
-        var s = DayStretch.For("lowford")!;
-        double Reach(DayStretch.Beat bt) => bt.Wake + bt.Spread;
-        var fights = s.Beats.Where(bt => bt.Kind is "pack").ToList();
+        // clear of the next one's; the ring waits while any pack is up and fighting, Encounters.Tick)
+        var s = Encounters.For("lowford")!;
+        double Reach(Encounters.Beat bt) => bt.Wake + bt.Spread;
+        var fights = s.In("day").Where(bt => bt.Kind is "pack").ToList();
         Assert.True(fights.Count >= 3);
         for (int i = 0; i < fights.Count; i++)
             for (int j = i + 1; j < fights.Count; j++)
@@ -248,7 +249,7 @@ public class DayStretchTests
             }
         // Each pack 5-10 strong with its champion, and as many again in its waves (the road's boars, the charge's lesson,
         // 3-4 and no waves); the strongbox in its keepers' camp.
-        foreach (var bt in s.Beats.Where(x => x.Kind == "pack"))
+        foreach (var bt in s.In("day").Where(x => x.Kind == "pack"))
         {
             Assert.InRange(bt.Foes.Sum(f => f.N) + (bt.Captain != null ? 1 : 0), bt.Id == "boars" ? 3 : 5, bt.Id == "boars" ? 4 : 10);
             // (a pulse after a breath, r3, is a smaller beat: 2-4)
@@ -262,14 +263,87 @@ public class DayStretchTests
     [Fact]
     public void Every_beat_off_the_road_has_a_way_there_round_the_trees()
     {
-        var s = DayStretch.For("lowford")!;
+        var s = Encounters.For("lowford")!;
         var col = ZoneMeta.Load("lowford").Collision();
-        foreach (var bt in s.Beats.Where(x => x.Kind is "pack" or "chest"))
+        foreach (var bt in s.In("day").Where(x => x.Kind is "pack" or "chest"))
         {
             Assert.False(col.Blocked(bt.X, bt.Z, 0.7), bt.Id + " stands in a tree");
             var path = GroundPath.Find(col, 1, -84, bt.X, bt.Z, 0.8);
             Assert.True(path != null, bt.Id + ": no way there");
             Assert.True(MathX.Dist(path![^1].X, path[^1].Z, bt.X, bt.Z) < 1.5, $"{bt.Id}: the way ends at ({path[^1].X:0.0}, {path[^1].Z:0.0})");
         }
+    }
+
+    /// <summary>The Low Ford's night (M5, when: night): the beats from the fire to the ford, in order.</summary>
+    static readonly string[] NightBeats = ["n_lone", "n_three", "n_first", "n_cart", "n_road1", "n_road2", "n_post", "n_road3", "n_road4", "n_ford"];
+
+    [Fact]
+    public void The_night_beats_load_and_rest_on_open_ground_by_the_road()
+    {
+        var s = Encounters.For("lowford")!;
+        Assert.False(s.Draft);
+        Assert.Equal(NightBeats, s.In("night").Select(b => b.Id));
+        // (the day's beats are the day's: none of the night's leak in)
+        Assert.DoesNotContain(s.In("day"), b => b.Id.StartsWith("n_"));
+        var meta = ZoneMeta.Load("lowford");
+        var col = meta.Collision();
+        // Along the road north, the fire's end first; each pack's ground open and within 9 m of the road's line.
+        var road = meta.Paths["ROAD"];
+        double ToRoad(double x, double z) => Enumerable.Range(0, road.Length - 1).Min(i => SegDist(x, z, road[i], road[i + 1]));
+        double lastZ = 200;
+        foreach (var bt in s.In("night"))
+        {
+            Assert.True(bt.Z < lastZ, bt.Id + " is out of the road's order");
+            lastZ = bt.Z;
+            if (bt.Kind != "pack") continue;
+            Assert.False(col.Blocked(bt.X, bt.Z, 0.7), bt.Id + " stands in a tree");
+            Assert.True(ToRoad(bt.X, bt.Z) < 9, $"{bt.Id} is {ToRoad(bt.X, bt.Z):0.0} m off the road");
+        }
+        // The wagon's ditch: 8 risen, 3 bowmen and a charger whose charge is the dash's lane; sprung by the zone (r 0).
+        var cart = s.Get("n_cart")!;
+        Assert.Equal("ambush", cart.Kind);
+        Assert.Equal(0, cart.R);
+        Assert.Equal(("charge", "risen_warrior"), (cart.Tell, cart.TellBy));
+        Assert.Equal(8, cart.Foes.Where(f => f.Def == "risen").Sum(f => f.N));
+        Assert.Equal(3, cart.Foes.Where(f => f.Def == "risen_archer").Sum(f => f.N));
+        Assert.Equal(1, s.Get("n_lone")!.Foes.Sum(f => f.N));
+        Assert.Equal(3, s.Get("n_three")!.Foes.Sum(f => f.N));
+        Assert.Equal("risen_warrior", s.Get("n_first")!.Captain);
+
+        // Placed on the Low Ford's own ground: every foe of every pack on open ground (no tree, no wall, not the river).
+        var b = new Battle(new BattleSetup
+        {
+            Seed = 5, Collision = col, Combat = true, Stats = BattleTests.BaseStats(), Weapons = [("oathblade", 1)], Ability = AbilityKind.ShieldBash,
+            StartX = -7.5, StartZ = 87.5,
+        });
+        var n = new Encounters(s, b, new Dictionary<string, Fact>(), 1, 0, "night");
+        n.Place();
+        Assert.Equal(s.In("night").Where(x => x.Kind == "pack").Select(x => x.Id), n.Packs.Keys);
+        foreach (var (id, list) in n.Packs)
+        {
+            var bt = s.Get(id)!;
+            Assert.Equal(bt.Foes.Sum(f => f.N) + (bt.Captain != null ? 1 : 0), list.Count);
+            foreach (var (e, _) in list)
+            {
+                Assert.False(col.Blocked(e.X, e.Z, 0.6), $"{id}: a foe in a tree at ({e.X:0.0}, {e.Z:0.0})");
+                Assert.False(System.Math.Abs(e.Z - Prologue.RiverZ(e.X)) < 9 && System.Math.Abs(e.X) > 14, $"{id}: a foe in the river");
+                Assert.StartsWith("night:", e.Tag);
+            }
+        }
+        // (and the night's done keys are its own: a day's "day." key does not put a night beat down)
+        Assert.Equal("night.n_lone", n.Key("n_lone"));
+        Assert.False(n.Done("n_lone"));
+        // A day instance on the same data places only the day's packs, as before.
+        var d = new Encounters(s, Road(9), new Dictionary<string, Fact>(), 2, 1);
+        d.Place();
+        Assert.Equal(s.In("day").Where(x => x.Kind == "pack").Select(x => x.Id), d.Packs.Keys);
+        Assert.Equal("wolves", d.RingOwed?.Id);
+    }
+
+    static double SegDist(double x, double z, double[] a, double[] c)
+    {
+        double dx = c[0] - a[0], dz = c[1] - a[1], l = dx * dx + dz * dz;
+        double t = l <= 0 ? 0 : System.Math.Clamp(((x - a[0]) * dx + (z - a[1]) * dz) / l, 0, 1);
+        return MathX.Dist(x, z, a[0] + t * dx, a[1] + t * dz);
     }
 }

@@ -28,7 +28,7 @@ public sealed class LowfordDayResult
     public readonly Dictionary<string, (double Start, double End, double Low)> Beats = new();
 }
 
-/// <summary>The stretch as the game lays it (DayStretch from data/content/day_stretch.json on the Low Ford's own ground and
+/// <summary>The stretch as the game lays it (Encounters from data/content/encounters.json on the Low Ford's own ground and
 /// colliders), walked as a player walks it: up the road, fighting what wakes, the strongbox once its keepers are down,
 /// the dark lamp relit, then the gate. A measuring aid: the game's rules are untouched.</summary>
 public static class LowfordDaySim
@@ -46,14 +46,14 @@ public static class LowfordDaySim
         ch.Points = 0;
         // The Watch Chest's two draughts (the night's), as the Prologue gives them.
         j.GiveItem("health_draught", 2);
-        var s = DayStretch.For("lowford")!;
+        var s = Encounters.For("lowford")!;
         var meta = ZoneMeta.Load("lowford");
         var b = j.StartBattle(true, meta.Collision(), (_, _) => 0, s.From[0], s.From[1], -Math.PI / 2, (uint)spec.Seed);
         b.Collision.RemoveTagged("gate");
         foreach (var t in Enumerable.Range(0, 3)) b.Collision.RemoveTagged($"pylon:{t}");
         var r = new LowfordDayResult { Spec = spec };
         b.Hooks.OnPlayerDeath = _ => { r.Falls++; b.Player.Hp = b.MaxHp; b.Player.Iframes = Math.Max(b.Player.Iframes, 2); return true; };
-        var d = new DayStretch(s, b, new Dictionary<string, Fact>(), spec.Level, 1);
+        var d = new Encounters(s, b, new Dictionary<string, Fact>(), spec.Level, 1);
         d.Told = (_, _, _) => r.Tells++;
         d.Place();
         var post = s.Get("post");
@@ -67,7 +67,7 @@ public static class LowfordDaySim
         while (b.Time - t0 < cap)
         {
             var p = b.Player;
-            // (the zone's route: DayStretch.Goal, as the autopilot walks it)
+            // (the zone's route: Encounters.Goal, as the autopilot walks it)
             var g = d.Goal(_ => r.PostLit, _ => box is { Alive: true, Ref: "day_strongbox" } bx ? (bx.X, bx.Z) : null, 0);
             (double X, double Z) to = (g.X, g.Z);
             var (mx, mz) = human != null ? human.Steer(b, null, onward: to) : Pilot.Steer(b, deft, null, onward: to);
@@ -108,7 +108,7 @@ public static class LowfordDaySim
     /// health (median / worst), and per beat its time (woke to down, median) and her lowest health in it (median / worst).</summary>
     public static string Report(List<LowfordDayResult> rs)
     {
-        var beats = DayStretch.For("lowford")!.Beats.Where(x => x.Kind is "pack" or "ring" or "ambush").Select(x => x.Id).ToList();
+        var beats = Encounters.For("lowford")!.In("day").Where(x => x.Kind is "pack" or "ring" or "ambush").Select(x => x.Id).ToList();
         var sb = new StringBuilder();
         sb.AppendLine("| Calling | Hands | Runs | Reached | Time s (med / p90) | Falls (runs / total) | Low (med / worst) | " + string.Join(" | ", beats.Select(x => $"{x}: s / low med-worst")) + " | Post, box |");
         sb.AppendLine("|---|---|---|---|---|---|---|" + string.Concat(beats.Select(_ => "---|")) + "---|");
