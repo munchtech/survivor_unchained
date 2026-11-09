@@ -300,7 +300,7 @@ public static class Atmospheres
             CelRimColor = a.CelRimColor != "" && b.CelRimColor != "" ? Mix(a.CelRimColor, b.CelRimColor, t) : t < 0.5 ? a.CelRimColor : b.CelRimColor,
             CelInk = a.CelInk is { } ia && b.CelInk is { } ib ? Lerp3(ia, ib, t) : t < 0.5 ? a.CelInk : b.CelInk,
             DappleCover = Lerp(a.DappleCover, b.DappleCover, t), DappleStrength = Lerp(a.DappleStrength, b.DappleStrength, t),
-            DappleHeight = Lerp(a.DappleHeight, b.DappleHeight, t),
+            DappleHeight = Lerp(a.DappleHeight, b.DappleHeight, t), DappleSize = t < 0.5 ? a.DappleSize : b.DappleSize, DappleFloor = Lerp(a.DappleFloor, b.DappleFloor, t),
             Rig = t < 0.5 ? a.Rig : b.Rig, IsLit = a.IsLit && b.IsLit,
         } is var r && (r.IsLit || (a.Rig == "" && b.Rig == "" && a.CelTwin == null && b.CelTwin == null)) ? r
           : r with { CelTwin = Blend(LitAsIs(a), LitAsIs(b), t) };

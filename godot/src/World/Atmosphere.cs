@@ -329,6 +329,9 @@ public partial class Atmosphere : Node3D
                 ShadowStrength = T("shadow", p.ShadowStrength), Ember = T("ember", p.Ember), Mist = T("mist", p.Mist), Haze = T("haze", p.Haze),
                 FogDensity = T("fog", p.FogDensity), CrowdRim = T("crowdrim", p.CrowdRim), CrowdFill = T("crowdfill", p.CrowdFill), RiverLight = T("river", p.RiverLight),
                 RiverSky = T("riversky", p.RiverSky), RiverBend = T("bend", p.RiverBend),
+                // (S2b-N3: her pool, the moon's give, and the canopy's dapple, for a sweep in one build: pool=a/b/..., give=a/b/c/d)
+                EmberPool = V("pool", p.EmberPool ?? []) is { Length: > 0 } tp ? tp : p.EmberPool, EmberGive = V("give", p.EmberGive ?? []) is { Length: > 0 } tg ? tg : p.EmberGive,
+                EmberEdge = H("edge", p.EmberEdge), DappleCover = T("dcover", p.DappleCover), DappleStrength = T("dstr", p.DappleStrength), DappleSize = T("dsize", p.DappleSize), DappleFloor = T("dfloor", p.DappleFloor),
                 Grade = p.Grade with
                 {
                     TintStrength = T("tint", p.Grade.TintStrength), Contrast = T("contrast", p.Grade.Contrast), Toe = T("toe", p.Grade.Toe),
@@ -392,7 +395,9 @@ public partial class Atmosphere : Node3D
         EmberColor = p.EmberColor != "" ? new Color(p.EmberColor) : null; EmberReach = (float)p.EmberReach;
         var rim = C(p.Rim).SrgbToLinear();
         RenderingServer.GlobalShaderParameterSet("body_rim", new Vector4(rim.R, rim.G, rim.B, (float)p.RimStrength));
-        RenderingServer.GlobalShaderParameterSet("crowd_rim", new Vector4(rim.R, rim.G, rim.B, (float)(p.RimStrength * p.CrowdRim) * (R4 && CrowdFillOn && p.CrowdFill > 0 ? CrowdEdgeK : 1)));
+        // (S2b-N3, rule 7: under the cel rigs the pack's moon rim is the rig's moon rim, one for every pack and place)
+        var crim = CelRigs && p.CelRimColor != "" ? C(p.CelRimColor).SrgbToLinear() : rim;
+        RenderingServer.GlobalShaderParameterSet("crowd_rim", new Vector4(crim.R, crim.G, crim.B, (float)(p.RimStrength * p.CrowdRim) * (R4 && CrowdFillOn && p.CrowdFill > 0 ? CrowdEdgeK : 1)));
         RenderingServer.GlobalShaderParameterSet("key_dir", new Vector4(dir.X, dir.Y, dir.Z, 0));
         // Rendering 4: the crowd's own light by night (vat.gdshaderinc): the sky's fill here, her lamp's in PlayerView.
         CrowdFill = CrowdFillOn ? (float)p.CrowdFill : 0;
@@ -492,7 +497,7 @@ public partial class Atmosphere : Node3D
         if (CelRigs) InkPass.SetRig(p.CelInk is [var ir, var ig, var ib] ? new Color((float)ir, (float)ig, (float)ib) : InkPass.Night);
         float dap = CelRigs && cam == null && CanopyCookie.Shown && p.DappleCover > 0 ? (float)p.DappleStrength : 0f;
         RenderingServer.GlobalShaderParameterSet("cel_key", new Vector4(keyToward.X, keyToward.Y, keyToward.Z, dap));
-        RenderingServer.GlobalShaderParameterSet("cel_dapple", new Vector4((float)p.DappleCover, CanopyCookie.PlaneY + (float)p.DappleHeight, CanopyCookie.Tile, 0));
+        RenderingServer.GlobalShaderParameterSet("cel_dapple", new Vector4((float)p.DappleCover, CanopyCookie.PlaneY + (float)p.DappleHeight, (float)(p.DappleSize > 0 ? p.DappleSize : CanopyCookie.Tile), (float)p.DappleFloor));
         static Vector3 Hue(Color c)
         {
             float l = Mathf.Max(c.R * 0.2126f + c.G * 0.7152f + c.B * 0.0722f, 1e-4f);
@@ -530,7 +535,9 @@ public partial class Atmosphere : Node3D
         RenderingServer.GlobalShaderParameterSet("cel_pool_band", pool);
         RenderingServer.GlobalShaderParameterSet("cel_pool_tint", tint);
         RenderingServer.GlobalShaderParameterSet("cel_pool_lv", lv);
-        RenderingServer.GlobalShaderParameterSet("cel_pool_out", new Vector4(ep != null ? (float)ep[9] : 0, ep is { Length: >= 11 } ? (float)ep[10] : 1, 0, 0));
+        // (S2b-N3: [11] the canopy's dapple kept in her pool, [12] the core toward the lamps' gold; absent: 0)
+        RenderingServer.GlobalShaderParameterSet("cel_pool_out", new Vector4(ep != null ? (float)ep[9] : 0, ep is { Length: >= 11 } ? (float)ep[10] : 1,
+            ep is { Length: >= 12 } ? (float)ep[11] : 0, ep is { Length: >= 13 } ? (float)ep[12] : 0));
     }
 
     /* ---------------------------------------------------- the grade's glide (H4) -- */

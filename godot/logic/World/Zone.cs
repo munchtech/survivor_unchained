@@ -215,6 +215,11 @@ public sealed record AtmospherePreset(
     public double DappleCover { get; init; }
     public double DappleStrength { get; init; } = 1;
     public double DappleHeight { get; init; } = 9;
+    /// <summary>(S2b-N3) The leaf tile's size (m; 0: CanopyCookie.Tile, 32): larger, the moon's patches and the leaves' shade
+    /// grow together, the big painted shapes of target 09's clearing.</summary>
+    public double DappleSize { get; init; }
+    /// <summary>(S2b-N3) The canopy's cover floor (0-1): at least this much of the sky closed everywhere, the clearings too.</summary>
+    public double DappleFloor { get; init; }
     /// <summary>(L1 B4) This air is already its rig's light (Rigs.Lit's output); Source is the preset it came from.</summary>
     public bool IsLit { get; init; }
     public AtmospherePreset? Source { get; init; }

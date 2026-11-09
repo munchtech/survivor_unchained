@@ -115,7 +115,8 @@ global uniform vec4 cel_tune;
 global uniform float cel_dbg;
 // (L1 B4) The moon through the canopy (bible rule 9): cel_key xyz the world key's way toward the light, w the dapple's
 // strength (0: none); cel_dapple x how much of the sky the crowns close where the canopy is whole, y the crowns' world
-// height, z the leaf cookie's tile (m); cel_canopy the canopy's mask over the zone (from the trees' placement,
+// height, z the leaf cookie's tile (m), w the cover's floor (S2b-N3: the canopy closes at least this much of the sky
+// everywhere, so an arena's clearing too reads as big moonlit patches on deep shade, target 09); cel_canopy the canopy's mask over the zone (from the trees' placement,
 // CanopyCookie), cel_canopy_r its world origin (xy) and 1/size (zw); cel_cookie the leaf shapes (a rank per leaf cluster).
 global uniform vec4 cel_key;
 global uniform vec4 cel_dapple;
@@ -144,6 +145,10 @@ global uniform vec4 cel_pool_tint;
 global uniform vec4 cel_pool_lv;
 // (S2b-N2) cel_pool_out x the outer step's own half-width (m): the pool's last edge fades into the dark, never a cut rim;
 // y the pool's gain over her light (0: 1), so the core is the frame's brightest without her light lifting her and the crowd.
+// (S2b-N3) z how much the canopy's dapple keeps in her pool (0: none; 1: her light under a leaf's shadow as dark as the
+// moon's there): light ADDS to the ground, so the moon's big leaf shapes run on through the pool, its lit patches hotter and
+// its shade darker (target 09); w how far the core goes from her color toward the lamps' gold #ffd07a (rule 3), the
+// near-white yellow at her feet (09: L 0.75, h 60).
 global uniform vec4 cel_pool_out;
 
 // (fragment() to light(): the geometric normal, and x SPECULAR, y RIM, z RIM_TINT, w ROUGHNESS before the tag)
@@ -203,7 +208,7 @@ vec3 cel_ink_rgb(int c_ink) {
 float cel_dapple_at(vec3 c_wp) {
 	if (cel_key.w <= 0.0) return 1.0;
 	vec2 c_p = c_wp.xz + cel_key.xz * (max(cel_dapple.y - c_wp.y, 0.0) / max(cel_key.y, 0.2));
-	float c_cov = texture(cel_canopy, (c_p - cel_canopy_r.xy) * cel_canopy_r.zw).r * cel_dapple.x;
+	float c_cov = max(texture(cel_canopy, (c_p - cel_canopy_r.xy) * cel_canopy_r.zw).r, cel_dapple.w) * cel_dapple.x;
 	if (c_cov <= 0.004) return 1.0;
 	float c_f = texture(cel_cookie, c_p / cel_dapple.z).r;
 	float c_w = fwidth(c_f) * 0.5 + 0.01;
@@ -395,8 +400,22 @@ void cel_pool_paint(inout vec3 c_lc, inout float c_att, vec3 c_lw) {
 	float c_wo = max(cel_pool_out.x, c_w);
 	float c_out = 1.0 - smoothstep(cel_pool_band.z - c_wo, cel_pool_band.z + c_wo, c_dp);
 	float c_in = c_ref * pow(max(c_att, 1e-6) / c_ref, cel_pool_tint.w);
-	c_att = (c_in * c_core + c_ref * (cel_pool_lv.x * (c_mid - c_core) + cel_pool_lv.y * (c_out - c_mid))) * (cel_pool_out.y > 0.0 ? cel_pool_out.y : 1.0);
+	c_att = c_in * c_core + c_ref * (cel_pool_lv.x * (c_mid - c_core) + cel_pool_lv.y * (c_out - c_mid));
+#ifndef CEL_POOL_PLAIN
+	c_att *= cel_pool_out.y > 0.0 ? cel_pool_out.y : 1.0;
+#endif
+	// (S2b-N3) the canopy's leaf shapes kept in her light (the key's dapple here, packed in cel_gn: 1 - cel_key.w under a
+	// leaf, 1 open; only where fragment() packed it)
+	if (cel_pool_out.z > 0.0 && cel_key.w > 0.0 && cel_gq() >= 1.0) {
+		float c_dr = clamp((length(cel_gn) - 1.01 - 2.0 * cel_gq()) / 0.98, 0.0, 1.0);
+		float c_ds = clamp((c_dr - (1.0 - cel_key.w)) / cel_key.w, 0.0, 1.0);
+		c_att *= mix(1.0 - cel_pool_out.z * cel_key.w, 1.0, c_ds);
+	}
 	c_lc *= mix(cel_pool_tint.rgb, vec3(1.0), clamp(c_mid, 0.0, 1.0));
+#ifndef CEL_POOL_PLAIN
+	// (the gold in the core, half of it in the middle step: yellow to orange to red, the target's run)
+	c_lc *= mix(vec3(1.0), vec3(1.0, 0.6308, 0.1946) / max(cel_pool.rgb, vec3(1e-3)), cel_pool_out.w * clamp(0.5 * (c_core + c_mid), 0.0, 1.0));
+#endif
 }
 
 // The cel model for one light, t = the band's n.l (the caller may wrap it).

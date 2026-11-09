@@ -10,6 +10,9 @@
 #define CEL_BUILTIN_RIM
 #define CEL_EXACT_ROUGH
 #define CEL_OWN_LIGHT
+// (S2b-N3) her pool's steps on her gear, never its gain or gold: her skin (heroine_skin, its own light) takes her plain light,
+// so her gear and skin read alike in her own pool and she stands dark-on-bright over the core (rule 1)
+#define CEL_POOL_PLAIN
 // (the library's leather, rule 6: the fallback only; her own light draws each kind's highlight, outfit_hl)
 #define CEL_SPEC vec4(9.0, 1.5, 0.6, 0.85)
 #define CEL_NMAP 0.20   // (L1 C2: the class's cel_nmap)
