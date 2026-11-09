@@ -43,6 +43,11 @@ public sealed class WeaponInst
     public double ChannelT, ChannelNext;
     /// <summary>Its key is held (Battle.HoldSkill, each sim step): a channel keeps on while it is.</summary>
     public bool Held;
+    /// <summary>A spin (Bladestorm): its ticks this storm, the Sunder lines it has thrown and holds pending (split by its
+    /// break, else faded), and the time it may still be broken after the spin ended (-1: not).</summary>
+    public int SpinTicks;
+    public readonly List<SpinLineRec> Lines = new();
+    public double BreakUntil = -1;
     /// <summary>For beams and orbits: active until.</summary>
     public double ActiveT;
     /// <summary>Times it has been honed (finished, in the endless dark).</summary>
@@ -153,6 +158,9 @@ public sealed class WeaponInst
     /// <summary>Critical strike chance its own blows add (Starseeker's sure strikes).</summary>
     public double CritBonus => Num(s => s.Crit) ?? 0;
 }
+
+/// <summary>A pending line a spin threw (Ev.SpinLine): its ends and width.</summary>
+public sealed record SpinLineRec(int Id, double X0, double Z0, double X1, double Z1, double Width);
 
 /// <summary>How each behaviour turns a weapon into things on the field.</summary>
 public static partial class Firing
@@ -303,7 +311,7 @@ public static partial class Firing
      * its key is held, and ends on release or at its longest hold, its cooldown starting then. */
     static void TickPressed(Battle b, WeaponInst w, double dt)
     {
-        if (!w.Channeling) { if (w.Timer < 0) w.Timer = 0; return; }
+        if (!w.Channeling) { if (w.Timer < 0) w.Timer = 0; if (w.Lines.Count > 0 && b.Time > w.BreakUntil) FadeLines(b, w); return; }
         w.Timer = 0;
         w.ChannelT += dt;
         if (!w.Held || w.ChannelT >= w.ChannelMax) { EndChannel(b, w); return; }
@@ -319,6 +327,7 @@ public static partial class Firing
         w.Channeling = false;
         w.Timer = CooldownOf(b, w);
         b.Events.Emit(new Ev.Channel { Weapon = w.Id, Slot = w.Slot, On = false, X = b.Player.X, Z = b.Player.Z });
+        if (w.Behavior == WeaponBehavior.Spin) SpinEnded(b, w);
     }
 
     /// <summary>Its key pressed (Battle.PressSkill): a press skill fires once if ready; a channel starts (its first
@@ -331,6 +340,7 @@ public static partial class Firing
             w.Channeling = true;
             w.ChannelT = 0;
             w.ChannelNext = w.ChannelEvery;
+            w.SpinTicks = 0;
             b.Events.Emit(new Ev.Channel { Weapon = w.Id, Slot = w.Slot, On = true, X = b.Player.X, Z = b.Player.Z });
             CastOnce(b, w);
             return true;
@@ -379,6 +389,9 @@ public static partial class Firing
         WeaponBehavior.Crack => FireCrack(b, w),
         WeaponBehavior.Reactive => FireReactive(b, w),
         WeaponBehavior.Toll => FireToll(b, w),
+        WeaponBehavior.Leap => b.SkillLeap(w),
+        WeaponBehavior.Charge => b.SkillCharge(w),
+        WeaponBehavior.Spin => FireSpin(b, w),
         _ => false,
     };
 

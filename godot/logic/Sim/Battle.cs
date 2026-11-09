@@ -17,7 +17,9 @@ namespace SurvivorUnchained.Sim;
  * camera are one system everywhere. */
 
 public sealed record AttackAnim(string Weapon, double Angle, double T, bool Heavy);
-public sealed class Leap { public double T, Dur, X0, Z0, X1, Z1; public AbilityKind Kind = AbilityKind.Leap; }
+/// <summary>A leap through the air (the art's, a Vault's, or a leap skill's: Weapon set, it lands in a ring of Radius, heavy
+/// if its cast was).</summary>
+public sealed class Leap { public double T, Dur, X0, Z0, X1, Z1; public AbilityKind Kind = AbilityKind.Leap; public WeaponInst? Weapon; public double Radius; public bool Heavy; }
 
 public sealed class PlayerState
 {
@@ -569,7 +571,7 @@ public sealed partial class Battle
             return;
         }
 
-        double speed = st.Get(Stat.MoveSpeed) * p.SlowF;
+        double speed = st.Get(Stat.MoveSpeed) * p.SlowF * SpinPace();
         if (p.BulwarkT > 0 && !Has("marching_wall")) speed *= 0.45;
         double targetVX = mx * speed, targetVZ = mz * speed;
         double accel = 1 - Math.Exp(-dt * 14);
@@ -2522,7 +2524,8 @@ public sealed partial class Battle
         var w = AddWeapon(u.Into, Content.Weapons.MaxRank);
         building--;
         // It sits on both its parts' keys.
-        if (w != null) { w.Slot = Math.Min(sa, sb); w.Slot2 = Math.Max(sa, sb); CarryTurns(w, a, c); }
+        // (Slot is part A's key, Slot2 part B's: a union whose keys differ, as Bladestorm's do, knows which is which.)
+        if (w != null) { w.Slot = sa; w.Slot2 = sb; CarryTurns(w, a, c); }
         Events.Emit(new Ev.Evolve { Weapon = u.Into, Into = u.Id });
         Events.Emit(new Ev.Announce { Kicker = "Union", Title = u.Name, Subtitle = u.Description, Tone = Tone.Boon });
         return w;

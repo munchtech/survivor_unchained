@@ -48,6 +48,9 @@ public sealed partial class Battle
         if (!Combat || !Player.Alive || FlareHold > 0) return false;
         if (OnSlot(slot) is not { } w || !w.Pressed) return false;
         SkillAim = (aimX, aimZ);
+        // Bladestorm (a spin union): its first key (its part A's, the Cleaver's) spins; its second (the Sunder's) breaks
+        // the storm, and does nothing with no storm to break.
+        if (w.Behavior == WeaponBehavior.Spin && w.Slot2 >= 0 && slot == w.Slot2) return Firing.SpinBreak(this, w);
         return Firing.Press(this, w);
     }
 
@@ -57,7 +60,8 @@ public sealed partial class Battle
     {
         if (slot < 0 || slot >= heldSlots.Length) return;
         heldSlots[slot] = held;
-        foreach (var w in Weapons) w.Held = heldSlots[w.Slot] || (w.Slot2 >= 0 && heldSlots[w.Slot2]);
+        // (A spin is held on its first key only: its second is the break.)
+        foreach (var w in Weapons) w.Held = heldSlots[w.Slot] || (w.Slot2 >= 0 && w.Behavior != WeaponBehavior.Spin && heldSlots[w.Slot2]);
     }
 
     /// <summary>A union put in at full rank holding two slots, without its evolutions asked (tests, --grant-union):
@@ -69,16 +73,19 @@ public sealed partial class Battle
         Journal('G', union);
         var a = Weapons.Find(w => w.Id == u.A);
         var c = Weapons.Find(w => w.Id == u.B);
-        var parts = new[] { a, c }.Where(x => x != null).Select(x => x!.Slot).ToList();
+        int sa = a?.Slot ?? -1, sb = c?.Slot ?? -1;
         building++;
         if (a != null) RemoveWeapon(u.A);
         if (c != null) RemoveWeapon(u.B);
         var w = AddWeapon(u.Into, Content.Weapons.MaxRank);
         building--;
         if (w == null) return null;
-        if (parts.Count == 2) { w.Slot = Math.Min(parts[0], parts[1]); w.Slot2 = Math.Max(parts[0], parts[1]); }
-        else if (parts.Count == 1 && !w.On(parts[0])) { w.Slot2 = Math.Min(w.Slot, w.Slot2); w.Slot = parts[0]; }
-        if (w.Slot2 < w.Slot) (w.Slot, w.Slot2) = (w.Slot2, w.Slot);
+        // Slot is part A's key, Slot2 part B's (Bladestorm: A the Cleaver's, held to spin; B the Sunder's, the break); a
+        // part not carried takes a free key, the lowest.
+        int[] free = [w.Slot, w.Slot2];
+        if (sa >= 0 && sb >= 0) (w.Slot, w.Slot2) = (sa, sb);
+        else if (sa >= 0) (w.Slot, w.Slot2) = (sa, free.Where(s => s != sa).Min());
+        else if (sb >= 0) (w.Slot, w.Slot2) = (free.Where(s => s != sb).Min(), sb);
         Events.Emit(new Ev.Evolve { Weapon = u.Into, Into = u.Id });
         return w;
     }

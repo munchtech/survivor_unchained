@@ -38,7 +38,10 @@ def main():
 
     for sid, h in heads.items():
         ids = [s["id"] for s in h["strands"]]
-        if len(ids) != 3 or len(set(ids)) != 3:
+        # A partial head (a first cut: "partial" says why) has fewer strands, each still whole (lamps 1-4).
+        if h.get("partial") and (not ids or len(set(ids)) != len(ids) or len(ids) > 3):
+            probs.append(f"{sid}: a partial head needs 1-3 distinct strands")
+        elif not h.get("partial") and (len(ids) != 3 or len(set(ids)) != 3):
             probs.append(f"{sid}: needs 3 distinct strands")
         if h.get("suggested") not in ids:
             probs.append(f"{sid}: suggested '{h.get('suggested')}' is not a strand")
@@ -81,8 +84,9 @@ def main():
 
     for sid in heads:
         lamps = by.get(sid, [])
-        if len(lamps) != 12:
-            probs.append(f"{sid}: {len(lamps)} lamps (want 12)")
+        want = 4 * len(heads[sid]["strands"]) if heads[sid].get("partial") else 12
+        if len(lamps) != want:
+            probs.append(f"{sid}: {len(lamps)} lamps (want {want})")
         for s in heads[sid]["strands"]:
             ns = sorted(l["n"] for l in lamps if l["strand"] == s["id"])
             if ns != [1, 2, 3, 4]:
@@ -117,7 +121,7 @@ def main():
         for p in probs:
             print("  " + p)
         return 1
-    print(f"skill_lamps_check: OK: {len(heads)} skills, {nl} lamps, {len(d['unions'])} unions; parents, Turns, costs, kinds, unique ids and names, no bare-percent line, no barrier or mend too small to feel, blow-fed barriers bounded, Stones reachable, keywords")
+    print(f"skill_lamps_check: OK: {len(heads)} skills ({sum(1 for h in heads.values() if h.get('partial'))} partial), {nl} lamps, {len(d['unions'])} unions; parents, Turns, costs, kinds, unique ids and names, no bare-percent line, no barrier or mend too small to feel, blow-fed barriers bounded, Stones reachable, keywords")
     return 0
 
 

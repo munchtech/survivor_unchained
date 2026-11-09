@@ -28,6 +28,11 @@ public enum Tone { Danger, Info, Boon, Story }
 /// Release (the key pose ends: time returns, the camera eases back), Blow (each toll, cut, ember or pulse; carries its
 /// hitstop), Kill (a blow of it, or anything while a Stand holds, killed a boss: the last blow's slow orbit), End.</summary>
 public enum FlarePhase { Ready, Press, Blow, End, Release, Kill }
+/// <summary>The pressed Warden skills' event phases (Ev.Leap, Ev.Charge, Ev.Spin, Ev.SpinLine).</summary>
+public enum LeapPhase { Takeoff, Land }
+public enum ChargePhase { Start, Impact, Stop, End, Slam }
+public enum SpinPhase { Start, Tick, End, Break }
+public enum SpinLinePhase { Thrown, Split, Faded }
 
 public static class Ev
 {
@@ -122,6 +127,22 @@ public static class Ev
     public sealed class HardLanding : CombatEvent { public double X, Z, Radius; }
     /// <summary>A channelled skill (CastMode.Channel) began (On) or ended, on its slot.</summary>
     public sealed class Channel : CombatEvent { public string Weapon = ""; public int Slot; public bool On; public double X, Z; }
+    /// <summary>Heroic Leap (Sim/PressedWarden.cs). Takeoff: she leaves (X0, Z0) for (X1, Z1), Dur seconds in the air,
+    /// and lands in a ring of Radius there (the view draws the ring at once: everything in it at landing is struck, and
+    /// nothing outside). Land: she is down at (X1, Z1) and the ring strikes (Hit things struck; a heave and a shake
+    /// come with it).</summary>
+    public sealed class Leap : CombatEvent { public LeapPhase Phase; public double X0, Z0, X1, Z1, Dur, Radius; public int Hit; }
+    /// <summary>Shield Charge (Sim/PressedWarden.cs). Start: from (X, Z) along (DX, DZ) to (X1, Z1) (where it would end
+    /// unstopped), Dur seconds. Impact: Target struck and thrown aside at (X, Z). Stop: Target (a champion or boss) stopped
+    /// her and is stunned. End: she is done at (X, Z). Slam: the Turn's slam, Radius round (X, Z).</summary>
+    public sealed class Charge : CombatEvent { public ChargePhase Phase; public double X, Z, DX, DZ, X1, Z1, Dur, Radius; public int Target = -1; }
+    /// <summary>Bladestorm's spin (Sim/PressedWarden.cs). Start, then a Tick each blow of the storm (Heavy: the Hand's or
+    /// its own heavy count; a heavy tick throws a line), End (released or out of time: it may still be broken for a breath),
+    /// Break (the second key: a heavy blow of Radius round her, the storm over).</summary>
+    public sealed class Spin : CombatEvent { public SpinPhase Phase; public double X, Z, Radius; public bool Heavy; }
+    /// <summary>A Sunder line Bladestorm threw (Id: the same line through its life): Thrown pending on the ground, Split at
+    /// the break (it strikes all along it), Faded unbroken (it deals nothing).</summary>
+    public sealed class SpinLine : CombatEvent { public SpinLinePhase Phase; public int Id; public double X0, Z0, X1, Z1, Width; }
     /// <summary>She is knocked down (the kit's charge caught her, Battle.KnockPlayer): held for Seconds (after her tenacity).</summary>
     public sealed class Knockdown : CombatEvent
     {

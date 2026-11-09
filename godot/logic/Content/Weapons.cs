@@ -21,7 +21,7 @@ namespace SurvivorUnchained.Content;
  * rank, +6% duration per rank, one more projectile at ranks 4 and 7. */
 
 /// <summary>How a skill fires (Sim/Weapons.cs Firing.Fire). Appended only: older keys keep their places.</summary>
-public enum WeaponBehavior { Aimed, Spray, Ring, Nova, Zone, Chain, Orbit, Storm, Bounce, Beam, Palm, Herd, Chakram, Slash, Raise, Crack, Reactive, Toll }
+public enum WeaponBehavior { Aimed, Spray, Ring, Nova, Zone, Chain, Orbit, Storm, Bounce, Beam, Palm, Herd, Chakram, Slash, Raise, Crack, Reactive, Toll, Leap, Charge, Spin }
 
 /// <summary>How a skill is set off (skills.json "cast"): by itself on its cooldown (auto, every skill so far),
 /// once on a press when ready (press), or from a press for as long as it is held, to its ChannelTime, its cooldown
@@ -77,6 +77,18 @@ public sealed class WeaponStats
     /// <summary>A channel's longest hold in seconds (CastMode.Channel; 3 if unset), and the seconds between its
     /// firings while held (its TickRate, else 0.4).</summary>
     public double? ChannelTime, ChannelGap;
+    /// <summary>Leap (Heroic Leap): seconds in the air (untouchable), and the shortest jump (an aim nearer lands this far
+    /// along it). Its Range is the longest, its Radius the ring it lands in, its Stun what a lesser foe is knocked down
+    /// for, Stagger the shorter stun a champion takes.</summary>
+    public double? Air, MinRange, Stagger;
+    /// <summary>Charge (Shield Charge): seconds the run takes (Range metres); Barrier her barrier's share of max health,
+    /// held Duration seconds; Stun the champion or boss that stops her. Slam: the evolution's end-slam, times the damage.</summary>
+    public double? RushTime, Slam;
+    /// <summary>Spin (Bladestorm): her pace while it spins (a share), the line a heavy tick throws (Line long, BeamWidth
+    /// wide) held pending, at most MaxLines; the break (its second key) a heavy blow of BreakRadius for BreakDamage,
+    /// stunning BreakStun and throwing BreakKnockback, each pending line splitting for LineDamage; BreakWindow seconds after
+    /// the spin ends it may still be broken. The damages are base numbers, grown with the skill's rank as its Damage is.</summary>
+    public double? Pace, MaxLines, LineDamage, BreakDamage, BreakRadius, BreakStun, BreakKnockback, BreakWindow;
 }
 
 /// <summary>Multiplicative on damage, cooldown, area, speed, duration; additive on counts.</summary>

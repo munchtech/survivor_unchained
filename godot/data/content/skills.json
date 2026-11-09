@@ -1470,24 +1470,69 @@
       ]
     },
     {
+      "id": "heroic_leap",
+      "name": "Heroic Leap",
+      "school": "physical",
+      "behavior": "leap",
+      "cast": "press",
+      "tags": ["melee", "physical", "area", "heavy"],
+      "access": ["warden"],
+      "bossDamage": 1.5,
+      "art": "heroic_leap",
+      "description": "You leap where you aim, untouchable in the air, and come down blade first: everything in the ring is struck, thrown back and knocked down.",
+      "base": { "cooldown": 8, "damage": 130, "range": 9, "minRange": 3, "radius": 3.5, "air": 0.62, "knockback": 2.5, "stun": 0.8, "stagger": 0.3 },
+      "evolutions": []
+    },
+    {
+      "id": "shield_charge",
+      "name": "Shield Charge",
+      "school": "physical",
+      "behavior": "charge",
+      "cast": "press",
+      "tags": ["melee", "physical", "shield"],
+      "access": ["warden"],
+      "art": "shield_charge",
+      "description": "Shield first, you charge 8 m with a barrier of 15% of your health: what stands in the way is struck and thrown aside, and a champion that stops you is stunned.",
+      "base": { "cooldown": 7, "damage": 40, "range": 8, "rushTime": 0.3, "barrier": 0.15, "duration": 4, "knockback": 2.2, "stun": 1 },
+      "evolutions": [
+        {
+          "id": "pile_driver",
+          "name": "Pile Driver",
+          "catalysts": ["ironhide"],
+          "description": "The charge ends in a slam: everything within 3 m is struck harder and stunned for 1 s.",
+          "art": "shield_charge_slam",
+          "set": { "radius": 3, "slam": 1.4 }
+        }
+      ]
+    },
+    {
       "id": "bladestorm",
       "name": "Bladestorm",
       "school": "physical",
-      "behavior": "slash",
+      "behavior": "spin",
       "cast": "channel",
       "tags": ["melee", "steel", "physical", "area", "heavy"],
+      "bossDamage": 1.6,
       "art": "slash_spin",
-      "description": "Cleaver and Sunder become one storm of steel: she spins, blade out, through the crowd, and everything around her is cut, again and again.",
+      "description": "Hold the Cleaver's key and you spin, blade out, cutting everything around you; every fourth turn throws a Sunder line. Press Sunder's key to break the storm with one great blow, and every line splits at once.",
       "base": {
         "cooldown": 6,
-        "damage": 38.26,
-        "reach": 2.5,
-        "arc": 6.283,
-        "knockback": 1.3,
-        "projectiles": 1,
-        "status": { "kind": "bleed", "chance": 0.35, "power": 0.3, "duration": 3 },
-        "channelTime": 3,
-        "channelGap": 0.35
+        "damage": 15,
+        "radius": 3.2,
+        "knockback": 0.3,
+        "channelTime": 4,
+        "channelGap": 0.3,
+        "pace": 0.85,
+        "heavyEvery": 4,
+        "line": 7,
+        "beamWidth": 1.2,
+        "maxLines": 6,
+        "lineDamage": 33.6,
+        "breakDamage": 60,
+        "breakRadius": 4,
+        "breakStun": 0.5,
+        "breakKnockback": 1.5,
+        "breakWindow": 0.4
       }
     }
   ],

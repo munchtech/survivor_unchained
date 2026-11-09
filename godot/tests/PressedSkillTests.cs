@@ -27,13 +27,16 @@ public class PressedSkillTests
     }
 
     [Fact]
-    public void Every_skill_but_the_placeholder_union_still_fires_itself()
+    public void Every_skill_but_the_wardens_three_pressed_ones_still_fires_itself()
     {
-        foreach (var w in Weapons.All.Values.Where(w => w.Id != "bladestorm"))
+        string[] pressed = ["heroic_leap", "shield_charge", "bladestorm"];
+        foreach (var w in Weapons.All.Values.Where(w => !pressed.Contains(w.Id)))
         {
             Assert.Equal(CastMode.Auto, w.Cast);
             foreach (var e in w.Evolutions) Assert.Null(e.Cast);
         }
+        Assert.Equal(CastMode.Press, Weapons.Get("heroic_leap").Cast);
+        Assert.Equal(CastMode.Press, Weapons.Get("shield_charge").Cast);
         Assert.Equal(CastMode.Channel, Weapons.Get("bladestorm").Cast);
     }
 
@@ -43,7 +46,7 @@ public class PressedSkillTests
         var once = SkillsJson.File;
         string written = SkillsJson.Write(once);
         Assert.Contains("\"cast\": \"channel\"", written);
-        Assert.Equal(1, written.Split("\"cast\"").Length - 1);
+        Assert.Equal(3, written.Split("\"cast\"").Length - 1);
         Assert.Equal(CastMode.Channel, SkillsJson.Parse(written).Skills.Single(s => s.Id == "bladestorm").Cast);
     }
 
@@ -86,7 +89,8 @@ public class PressedSkillTests
         b.Evolve("judgement_disc", "reckoning", chest: true);
         b.Evolve("dawnpulse", Weapons.Get("dawnpulse").Evolutions[0].Id, chest: true);
         var u = b.Unite("dawns_judgement")!;
-        Assert.Equal((1, 3), (u.Slot, u.Slot2));
+        // Slot is part A's key (Dawnpulse's), Slot2 part B's (the disc's).
+        Assert.Equal((3, 1), (u.Slot, u.Slot2));
         Assert.Equal(4, b.SlotsUsed);
         Assert.Equal(0, b.OnSlot(0)!.Slot);
         Assert.Equal("volley", b.OnSlot(2)!.Id);
@@ -127,19 +131,19 @@ public class PressedSkillTests
         Tick(b, 2);
         Assert.Equal(0, w.Casts);
         Assert.Equal(0, w.Timer);
-        // Held on its second key (either of its slots answers).
-        b.HoldSkill(w.Slot2, true);
-        Assert.True(b.PressSkill(w.Slot2, foe.X, foe.Z));
+        // Held on its first key (Bladestorm's spin key; its second is the break).
+        b.HoldSkill(w.Slot, true);
+        Assert.True(b.PressSkill(w.Slot, foe.X, foe.Z));
         Assert.True(w.Channeling);
         Assert.Equal(foe.X, b.SkillAim!.Value.X);
         Assert.False(b.PressSkill(w.Slot, foe.X, foe.Z));
         // (The foe is pinned where it stood: the storm's knockback would carry it out of reach.)
-        Tick(b, 1.0, () => { b.HoldSkill(w.Slot2, true); foe.X = b.Player.X + 1.2; foe.Z = b.Player.Z; });
+        Tick(b, 1.0, () => { b.HoldSkill(w.Slot, true); foe.X = b.Player.X + 1.2; foe.Z = b.Player.Z; });
         int during = w.Casts;
         Assert.True(during >= 3, $"{during} firings in a held second");
         Assert.True(foe.Hp < foe.MaxHp);
         // Let go: it ends, and only now its cooldown runs.
-        b.HoldSkill(w.Slot2, false);
+        b.HoldSkill(w.Slot, false);
         Tick(b, Dt);
         Assert.False(w.Channeling);
         Assert.True(w.Timer > 5, $"timer {w.Timer}");
@@ -194,40 +198,25 @@ public class PressedSkillTests
     }
 }
 
-/// <summary>A press skill (none ships yet: every skill so far is auto) tested by turning the placeholder union's
-/// cast for the test alone; not run beside the rest, which read the same def.</summary>
-[CollectionDefinition("Cast mutation", DisableParallelization = true)]
-public class CastMutationCollection { }
-
-[Collection("Cast mutation")]
+/// <summary>A press skill (Shield Charge): never on its own, once on a press when ready, its cooldown then.</summary>
 public class PressSkillTests
 {
     [Fact]
     public void A_press_skill_fires_once_on_a_press_when_ready()
     {
-        var def = Weapons.Get("bladestorm");
-        var was = def.Cast;
-        def.Cast = CastMode.Press;
-        try
-        {
-            var b = BattleTests.Arena(10, ("oathblade", 1));
-            b.RemoveWeapon("oathblade");
-            var w = b.GrantUnion("bladestorm")!;
-            var foe = b.SpawnEnemy("footpad", b.Player.X + 1.2, b.Player.Z)!;
-            foe.Hp = foe.MaxHp = 1e7; foe.AttackT = 999;
-            for (int i = 0; i < 60; i++) { b.Tick(1 / 60.0, 0, 0); b.Events.Drain(); }
-            Assert.Equal(0, w.Casts);
-            Assert.True(b.PressSkill(w.Slot, foe.X, foe.Z));
-            Assert.Equal(1, w.Casts);
-            Assert.True(w.Timer > 5);
-            Assert.False(b.PressSkill(w.Slot2, foe.X, foe.Z));
-            Assert.Equal(1, w.Casts);
-            // Nothing in reach: it stays ready (the buffer tries again).
-            foe.X += 40;
-            w.Timer = 0;
-            Assert.False(b.PressSkill(w.Slot, foe.X, foe.Z));
-            Assert.Equal(0, w.Timer);
-        }
-        finally { def.Cast = was; }
+        var b = BattleTests.Arena(10, ("shield_charge", 1));
+        var w = b.Weapons.Single();
+        w.Timer = 0;
+        var foe = b.SpawnEnemy("footpad", b.Player.X + 3, b.Player.Z)!;
+        foe.Hp = foe.MaxHp = 1e7; foe.AttackT = 999;
+        for (int i = 0; i < 60; i++) { b.Tick(1 / 60.0, 0, 0); b.Events.Drain(); }
+        Assert.Equal(0, w.Casts);
+        Assert.Equal(0, w.Timer);
+        Assert.True(b.PressSkill(w.Slot, foe.X, foe.Z));
+        Assert.Equal(1, w.Casts);
+        Assert.True(w.Timer > 6);
+        for (int i = 0; i < 30; i++) { b.Tick(1 / 60.0, 0, 0); b.Events.Drain(); }
+        Assert.False(b.PressSkill(w.Slot, foe.X, foe.Z));
+        Assert.Equal(1, w.Casts);
     }
 }

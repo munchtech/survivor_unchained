@@ -154,7 +154,7 @@ public class BattleTests
             {
                 var b = Arena(11, (w.Id, 8));
                 b.Evolve(w.Id, evo.Id);
-                Simulate(b, 12, 0.4);
+                Simulate(b, 12, 0.4, press: true); // (pressed skills never fire themselves)
                 if (b.KillCount <= 3) failed.Add($"{evo.Id}: {b.KillCount}");
             }
         Assert.Empty(failed);
