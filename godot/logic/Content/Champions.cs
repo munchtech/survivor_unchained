@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using SurvivorUnchained.Core;
+using SurvivorUnchained.Sim;
 
 namespace SurvivorUnchained.Content;
 
@@ -21,6 +22,17 @@ public static class Champions
         public double Health = 1, Damage = 1, Speed = 1;
         /// <summary>A closing's ring: this many of its pack's first kind on the band.</summary>
         public int Foes = 8;
+        /// <summary>(M5) Its body's read: a tint (and sheen) over the champion's, its size when set.</summary>
+        public Body? Body;
+    }
+
+    /// <summary>(M5) A rank's body over its kind's: size, tint (r, g, b multipliers) and glow. The view reads it off
+    /// the foe (Enemy.Rank*), so the body reads before the plate does. Functional; the final look is L1's.</summary>
+    public sealed class Body
+    {
+        public double? Scale;
+        public double[]? Tint;
+        public double? Glow;
     }
 
     sealed class File
@@ -28,6 +40,7 @@ public static class Champions
         public Dictionary<string, Affix> Affixes = new();
         public int[] PerTier = [1, 1, 2, 3];
         public string[] Names = [], Epithets = [];
+        public Dictionary<string, Body> Looks = new();
     }
 
     static File? file;
@@ -72,6 +85,30 @@ public static class Champions
             pool.RemoveAt(i);
         }
         return got;
+    }
+
+    /// <summary>(M5) Gives a foe its rank's body: a captain's (looks.captain) or a champion's (looks.champion, then
+    /// its affixes': the largest size, the first affix tint over the champion's, the brightest glow).</summary>
+    public static void Look(Enemy e, byte rank, IEnumerable<Affix>? affixes = null)
+    {
+        var bodies = new List<Body>();
+        var d = F.Looks.GetValueOrDefault(rank >= 2 ? "champion" : "captain");
+        if (d != null) bodies.Add(d);
+        if (affixes != null) bodies.AddRange(affixes.Select(a => a.Body).OfType<Body>());
+        e.Rank = rank;
+        e.RankScale = 1; e.RankR = e.RankG = e.RankB = 1; e.RankGlow = 0;
+        bool tinted = false;
+        foreach (var b in bodies)
+        {
+            if (b.Scale is { } sc) e.RankScale = Math.Max(e.RankScale, sc);
+            if (b.Glow is { } g) e.RankGlow = Math.Max(e.RankGlow, g);
+            // (the champion's own tint, then one affix's over it: two affix tints muddy to grey)
+            if (b.Tint is { Length: 3 } t && (b == d || !tinted))
+            {
+                e.RankR *= t[0]; e.RankG *= t[1]; e.RankB *= t[2];
+                if (b != d) tinted = true;
+            }
+        }
     }
 
     /// <summary>A rolled title: "Hob Marrow the Drowned", "Ketch, Who Keeps the Ford".</summary>

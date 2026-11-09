@@ -654,7 +654,7 @@ public partial class CrowdView : Node3D
                         var (st, sg) = TintOf(e);
                         string sr = g.LastRole ?? (g.Death ??= DeathOf(asset, e));
                         statues[key] = new Statue(key, e.Id, Vary.Body(e.Def.Visual, e.Seed), sr, g.LastRole != null ? g.LastT : 0, (float)ex, (float)ez, (float)g.Facing,
-                            (float)((e.Def.Scale ?? 1) * Vary.Size(e.Seed, e.Def.Size ?? 0)) * Beasts.Size(e.Def.Visual), st, sg);
+                            (float)(((e.Def.Scale ?? 1) * e.RankScale) * Vary.Size(e.Seed, e.Def.Size ?? 0)) * Beasts.Size(e.Def.Visual), st, sg);
                     }
                     return;
                 }
@@ -787,7 +787,7 @@ public partial class CrowdView : Node3D
                     // A walk whose pace is known keeps its feet on the ground at any size and speed.
                     // (a share of a varied pack walks its kind's second gait, the other hand reaching: Vary.Second)
                     role = battle?.VaryPacks == true && asset.Clips.ContainsKey("move2") && Vary.Second(e.Seed, 0.45) ? "move2" : "move";
-                    double size = (e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual) * Vary.Size(e.Seed, e.Def.Size ?? 0);
+                    double size = ((e.Def.Scale ?? 1) * e.RankScale) * Beasts.Size(e.Def.Visual) * Vary.Size(e.Seed, e.Def.Size ?? 0);
                     // (shoved against its facing, its steps run backward: it is pushed back a step, it does not moonwalk)
                     g.Back = speed < 0.2 && g.DrawnSpeed > 0.2 && Math.Abs(Wrap(Math.Atan2(g.DVz, g.DVx) - g.Facing)) > Math.PI * (g.Back ? 0.45 : 0.61);
                     g.Phase += (g.Back ? -dt : dt) * (asset.Pace > 0
@@ -813,7 +813,7 @@ public partial class CrowdView : Node3D
         // Gone along under the ground by its script (Grimtunnel's Under): drawn burrowing, as the
         // burrowed are (its back, hat and lamp above the earth), while the effects heave the mound.
         // (each copy of a many-at-once kind its own size: EnemyDef.Size, Sim.Vary)
-        float sc = (float)((e.Def.Scale ?? 1) * Vary.Size(e.Seed, e.Def.Size ?? 0)) * Beasts.Size(e.Def.Visual);
+        float sc = (float)(((e.Def.Scale ?? 1) * e.RankScale) * Vary.Size(e.Seed, e.Def.Size ?? 0)) * Beasts.Size(e.Def.Visual);
         // (Sunk by its size: at a lampling's quarter metre a foreman of twice its size still walked
         // the dirt whole.)
         if (e.State == EnemyState.Active && Under?.Invoke(e) == true) { role = "burrow"; y -= 0.25 + 0.32 * Math.Max(0, sc - 1); t = time + e.Seed * 3; }
@@ -884,6 +884,8 @@ public partial class CrowdView : Node3D
             if (nm.SourceHero != "") { glow = 0.25f; tint *= new Color(1.3f, 0.75f, 0.6f); }
             else glow = Math.Max(glow, 0.06f);
         }
+        // (M5) A captain's or champion's rank: its body reads before its plate (Content/Champions.Look, champions.json looks).
+        if (e.Rank > 0) { tint *= new Color((float)e.RankR, (float)e.RankG, (float)e.RankB); glow = Math.Max(glow, (float)e.RankGlow); }
         if (e.Disposition == Disposition.Neutral && !e.Provoked) tint *= new Color(0.95f, 0.95f, 0.95f);
         // A varied pack's copy (the Low Ford's risen): its own skin value (0.35 to 1: NPC 18 r3, not a crowd of bone-white
         // bodies at night; the drowned woman, painted darker, 0.9 to 1: lower sank her to one dark blob out of firelight) and, for about a third, a coat of river mud: a
@@ -938,7 +940,8 @@ public partial class CrowdView : Node3D
         var (tint, glow) = Visuals.Tint(e.Def.Visual);
         if (e.Def.Tint is var (tr, tg, tb)) tint *= new Color((float)tr, (float)tg, (float)tb);
         if (e.Def.Glow is { } dg) glow = Math.Max(glow, (float)dg);
-        corpses.Add(new Corpse(KeyOf(e), Vary.Body(e.Def.Visual, e.Seed), role, (float)x, (float)z, (float)facing, (float)((e.Def.Scale ?? 1) * Vary.Size(e.Seed, e.Def.Size ?? 0)) * Beasts.Size(e.Def.Visual), tint, glow * 0.3f, time) { Char = charred, Id = e.Id, Rad = cnLastRad });
+        if (e.Rank > 0) tint *= new Color((float)e.RankR, (float)e.RankG, (float)e.RankB);
+        corpses.Add(new Corpse(KeyOf(e), Vary.Body(e.Def.Visual, e.Seed), role, (float)x, (float)z, (float)facing, (float)(((e.Def.Scale ?? 1) * e.RankScale) * Vary.Size(e.Seed, e.Def.Size ?? 0)) * Beasts.Size(e.Def.Visual), tint, glow * 0.3f, time) { Char = charred, Id = e.Id, Rad = cnLastRad });
         cnLastRad = float.NaN;
         while (corpses.Count > CorpseMax) corpses.RemoveAt(0);
     }

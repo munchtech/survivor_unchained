@@ -206,6 +206,7 @@ public sealed partial class Prologue
     {
         if (day == null || B == null) return;
         day.Tick(dt);
+        Ranks(day);
         DayGate(dt);
         // The strongbox, once the cinematic's gather has been (it would have brought it to her feet).
         if (box == null && dawnK >= 1 && !day.Done("strongbox") && DayBeat("strongbox") is { } sb)

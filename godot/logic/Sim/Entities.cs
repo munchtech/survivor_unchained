@@ -115,6 +115,10 @@ public sealed class Enemy : Pooled
     public double DieT;
     /// <summary>A named creature: promoted when it killed the survivor, carrying what it took.</summary>
     public Named? Named;
+    /// <summary>(M5) Its rank in its pack, read before its plate: 1 a captain, 2 a champion (Content/Champions.Look), and
+    /// that rank's body over its kind's: a size and a tint (with a little glow), as champions.json "looks" gives them.</summary>
+    public byte Rank;
+    public double RankScale = 1, RankR = 1, RankG = 1, RankB = 1, RankGlow;
     /// <summary>Summons and raised dead expire.</summary>
     public double LifeT;
     /// <summary>The weapon that raised it (an ally of a raising skill), for its damage and credit.</summary>

@@ -535,6 +535,7 @@ public sealed class Encounters
         e.Named = new Named { Title = ch.Name ?? ChampionKit.Title(b.Rng.Next), Affixes = aff.Select(a => a.Label).ToList() };
         Champions[id] = (e, e.Seed);
         crowned[e.Seed] = aff;
+        ChampionKit.Look(e, 2, aff);
         return e;
     }
 

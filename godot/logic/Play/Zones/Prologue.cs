@@ -978,7 +978,7 @@ public sealed partial class Prologue : ZoneRuntime
         var p = B.Player;
         stageT += dt;
         // (M5: the night's placed packs, from the fire to the ford; no top-ups: the stages advance on its beats)
-        if (night != null && Now < Stage.Intro) night.Tick(dt);
+        if (night != null && Now < Stage.Intro) { night.Tick(dt); Ranks(night); }
         if (Draft) GreatBlessing();
         Callouts();
         PaceWords();
@@ -1193,6 +1193,14 @@ public sealed partial class Prologue : ZoneRuntime
             // F3 says it on the panel (the general draft tip waits for the panels after it).
             Teach("great_blessing", CalloutKind.Panel, "A great blessing", "The ember lends you a blessing. It changes how you fight until dawn.", Aim.At("cards"));
         }
+    }
+
+    /// <summary>(M5) Each pack's captain wears its rank's body (Champions.Look: a step below a champion's) and its
+    /// plate (FoeMarks); a crowned captain is a champion already.</summary>
+    static void Ranks(Encounters enc)
+    {
+        foreach (var (e, seed) in enc.Captains.Values)
+            if (e.Alive && e.Seed == seed && e.Rank == 0 && e.Named == null) Content.Champions.Look(e, 1);
     }
 
     /// <summary>The night laid out at nightfall (M5, encounters.json when: night): its packs resting on the road, the
