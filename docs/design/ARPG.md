@@ -2,6 +2,9 @@
 
 The ARPG design lead, 9 November 2026, from the owner's words of 8 November (`ARPG_DIRECTION.md`, `SIEGES.md`). **A proposal for the owner's pick: design only, no game code.** Where `ONE_BUILD.md`, `CLASS_IDENTITY_AND_TALENTS.md` and `STORY_NIGHTS_AND_TIME.md` describe the night as the game, this page wins; everything else in them stands and is reused by name below.
 
+## PICKED (the owner, 9 November 2026): "defaults work", with one amendment on call 1
+**The hands rule.** The owner: "with casted abilities I worry that 6 is too many. maybe 2 pressed 3 not? (either auras or auto casts etc?)". So six slots stand, but the SHAPE of a build is two or three pressed skills and the rest kindled (auras, auto-casts, triggers): every calling's kit offers at least half its skills as kindled options, each calling's taught build in Act 1 has at most two pressed skills beside the held swing and the dash, and the slot UI shows which keys she actually presses. No hard cap on a veteran who wants six pressed. The Warden's taught build: the swing held (Resolve), Heroic Leap and Shield Charge pressed, Iron Vow kindled (braces itself when a brute winds up), Watch Bell and Dawnpulse kindled; Bladestorm takes Cleaver's and Sunder's keys when it comes.
+
 ## For the owner (one page)
 
 **What the game is now.** Diablo's loop in our valley. She walks the zones of an act, fights packs and their captains with six skills she presses, dashes out of what is telegraphed, kills named champions and the act's bosses, and picks up loot where it falls. Towns sit between zones. Her build grows through levels (each one lights a lamp), gear and Unions. The survivors night becomes the arena: a side door, never the road.
