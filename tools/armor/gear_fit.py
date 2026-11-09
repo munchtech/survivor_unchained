@@ -834,7 +834,7 @@ class Binding:
 def eval_unit(bd, bodies, bind_bodies, stats=None):
     """{node: dict(P, N, J, W, shapes)} and aux on one body; bind_bodies None when the body IS the bind body."""
     z, out = bd.z, {}
-    fit = {"rigid": {}, "hold": {}, "push": {}}
+    fit = {"rigid": {}, "solve": {}}
     rots_tier = {}
     for tier in TIERS:
         ms = [m for m in bd.meta["meshes"] if m["tier"] == tier]
@@ -854,11 +854,12 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
             if bbody is not None:
                 # the follow field (gear_field): exact on the skin (1 mm), the body's smoothed move beyond; c0 is the
                 # vertex's signed clearance on the bind body (what the tight set holds and the push keeps)
-                c0, _ = gear_field.signed_clear(bbody, Xbind, k=16)
+                c0, n0 = gear_field.signed_clear(bbody, Xbind, k=16)
                 bt = gear_field.beta(c0)
-                Xf, G = gear_field.field_for(body, bbody)(Xbind)
+                fld = gear_field.field_for(body, bbody)
+                Xf, G = fld(Xbind)
                 Xe, Re = gear_field.exact_follow(X, F, Xbind, Fbind, off)
-                ev[i].update(c0=c0, beta=bt, G=G, Re=Re, X=Xe + bt[:, None] * (Xf - Xe))
+                ev[i].update(c0=c0, n0=n0, beta=bt, G=G, Gk=fld.gradient(Xbind), Re=Re, X=Xe + bt[:, None] * (Xf - Xe))
         # rigid components: transforms from all rigid uniques of the tier
         comp = np.concatenate([ev[m["i"]]["comp"] for m in ms])
         if (comp >= 0).any() and bbody is not None:
@@ -875,18 +876,20 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                 fit["rigid"][f"{tier}/{int(c)}"] = info
         rots_tier[tier] = rots
         if bbody is not None:
-            # the tight set holds its bind clearance (two-sided), then no vertex nearer the new skin than it was to the
-            # bind skin (one-sided, a smooth push): over every mesh of the tier at once, so a garment's layers (leather,
-            # its stitches, its trims) are moved as one
+            # one smooth correction over every mesh of the tier at once (gear_field.follow_solve: each edge keeps the
+            # field's expected deformation, the tight set its bind clearance, the rest clear of the new skin), so a
+            # garment's layers (leather, its stitches, its trims) are moved as one
             cut = np.cumsum([0] + [len(ev[m["i"]]["X"]) for m in ms])
             Xall = np.vstack([ev[m["i"]]["X"] for m in ms])
             c0all = np.concatenate([ev[m["i"]]["c0"] for m in ms])
             bend_all = comp < 0
-            Xall, hst = gear_field.hold_clear(body, Xall, c0all, bend_all)
-            Xall, cst = gear_field.clear_push(body, Xall, gear_field.push_req(c0all), bend_all)
-            fit["hold"][tier], fit["push"][tier] = hst, cst
+            Tall = np.vstack([bd_tris(bd, m["i"]) + cut[k] for k, m in enumerate(ms)])
+            Xall, sst = gear_field.follow_solve(body, Xall, np.vstack([ev[m["i"]]["Xbind"] for m in ms]), Tall,
+                                                np.concatenate([ev[m["i"]][gear_field.SOLVE["target"]] for m in ms]),
+                                                np.concatenate([ev[m["i"]]["Gk"] for m in ms]), c0all, np.vstack([ev[m["i"]]["n0"] for m in ms]), bend_all)
+            fit["solve"][tier] = sst
             if stats is not None:
-                stats[tier] = dict(cst, **hst)
+                stats[tier] = dict(sst)
             for k, m in enumerate(ms):
                 ev[m["i"]]["X"] = np.where(bend_all[cut[k]:cut[k + 1], None], Xall[cut[k]:cut[k + 1]], ev[m["i"]]["X"])
         for m in ms:
@@ -943,7 +946,7 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                               "shapes": {k: v[inv] for k, v in shapes.items()}, "tier": tier, "comp": comp_i,
                               "Xbind": e["Xbind"], "h": z[f"off{i}"][:, 2]}
             if "beta" in e:
-                out[m["node"]].update(beta=e["beta"], G=e["G"])
+                out[m["node"]].update(beta=e["beta"], G=e["G"], Gk=e["Gk"])
     if "aux_tri" in z:
         body = bodies["close"]
         tri, bq, off = z["aux_tri"], z["aux_bw"], z["aux_off"]
@@ -986,7 +989,18 @@ def bd_edges(bd, i):
         pr = js["meshes"][js["nodes"][ni]["mesh"]]["primitives"][0]
         T = g.accessor(pr["indices"]).reshape(-1, 3).astype(np.int64)
         _EDGES[key] = edges_of(bd.z[f"inv{i}"][T])
+        _TRIS[key] = bd.z[f"inv{i}"][T]
     return _EDGES[key]
+
+
+_TRIS = {}
+
+
+def bd_tris(bd, i):
+    """The piece mesh's triangles over its uniques (cached with bd_edges)."""
+    if (bd.id, i) not in _TRIS:
+        bd_edges(bd, i)
+    return _TRIS[(bd.id, i)]
 
 
 _GL = {}
@@ -1360,7 +1374,8 @@ def field_metrics(bd, ev, bodies, bind_bodies):
         E, l0 = E[ok], l0[ok]
         if len(E):
             l1 = np.linalg.norm(X[E[:, 0]] - X[E[:, 1]], axis=1)
-            le = gear_field.expected_edges(bb, body, bd.z[f"tri{m['i']}"].astype(np.int64), E, X0, e.get("beta"), e.get("G"))
+            le = gear_field.expected_edges(bb, body, bd.z[f"tri{m['i']}"].astype(np.int64), E, X0, e.get("beta"),
+                                           e.get(gear_field.FIELD["expect"]))
             ex = np.abs(l1 / np.maximum(le, 1e-9) - 1) * 100
             raw = np.abs(l1 / l0 - 1) * 100
             lg = l0 >= GATE["edge_min_mm"] / 1000

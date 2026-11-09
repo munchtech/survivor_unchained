@@ -41,6 +41,7 @@ FIELD = {
     "push_slope": 15.0,       # a push's radius is at least this times its depth (the lean: ~1.6 / 15 = 11% at most)
     "push_max_m": 0.06,
     "push_cos": 0.5,          # a smoothed push direction counts at least this much toward the skin's normal
+    "expect": "G",            # the stretch gate's reference: "G" the map's own Jacobian, "Gk" the body's over the kernel
     "push_keep": 0.6,         # a stand-off vertex (past HOLD in_m) is pushed only when nearer than this share of its
                               # bind clearance (never below in_m): a part may settle toward a fuller body (a strap in a
                               # narrowing cleft), never into it
@@ -268,6 +269,26 @@ class Field:
                     J += w[:, None, None] * Fc + xc[:, :, None] * dw[:, None, :]
         return Xn, J
 
+    def gradient(self, X):
+        """[n,3,3] the body's own deformation over the kernel's footprint at bind-side points X (the corners' blended
+        gradients, trilinear): what the field asks of a piece edge there. Unlike the map's Jacobian it has no
+        trilinear-weight term, so where the body's move is far from affine within the kernel (a smaller foot's toe
+        tip seen from the boot's toe box) it does not fold to nothing."""
+        X = np.asarray(X, np.float64)
+        if self.zero or not len(X):
+            return np.tile(np.eye(3), (len(X), 1, 1))
+        s = X / self.g
+        I0 = np.floor(s).astype(np.int64)
+        f = s - I0
+        F = np.zeros((len(X), 3, 3))
+        for cx in (0, 1):
+            for cy in (0, 1):
+                for cz in (0, 1):
+                    o = np.array([cx, cy, cz])
+                    w = np.where(o == 1, f, 1 - f).prod(1)
+                    F += w[:, None, None] * self._nodes(self._key(I0 + o))[:, 3:].reshape(-1, 3, 3)
+        return F
+
 
 _CACHE = {}
 
@@ -395,6 +416,188 @@ def hold_clear(body, X, c_req, sel):
         total += dlt
     st["hold_max_mm"] = round(float(np.abs(total).max()) * 1000, 3)
     return X, st
+
+
+# ---------------------------------------------------------------------- the follow solve (round 3)
+# One smooth correction over a tier's bendy piece meshes together (replaces round 2's hold and bump push): unknowns the
+# piece positions X; energy  w_e sum_e k_e |x_b - x_a - G_e e0|^2   (each edge keeps the field's expected deformation of
+# its bind edge: the stretch gate's own target, so the field's lattice ripples are ironed out and a correction cannot tear)
+#   + bend^2 (X - Y)^T K M^-1 K (X - Y)   (the correction is smooth: bumps, not dents)
+#   + sum_i A_i |X_i - Y_i|^2 / data^2   (the field's result kept, weakly)
+# under clearance constraints along the new skin's normal (the tight set at its her_b clearance two-sided, the rest no
+# nearer than push_req; a tight vertex in a cleft one-sided), each linearized at the closest skin point and re-linearized
+# per round, solved by ADMM (one sparse factorization per round, the constraint planes projected per iteration).
+SOLVE = {
+    "data_m": 0.02,       # the field's result is kept at wavelengths over this
+    "bend_m": 0.006,      # the correction is smooth under this
+    "gamma": 1.0,         # constraint penalty, times the system's own diagonal (a broad push is met; a lone vertex
+                          # meets a share of it: no spikes)
+    "rounds": 4,          # re-linearizations (closest skin points)
+    "iters": 25,          # local-global iterations per round
+    "reach_m": 0.04,      # the system spans the vertices this near an active one (bind space)
+    "margin_m": 0.0002,   # a one-sided limit is aimed this far past (the penalty's residual)
+    "glue_m": 0.002,      # components within this of each other in bind space are tied by edges (stitches, trims)
+    "edge_floor_m": 2e-4,
+    "cleft": 0.75,        # neighbours' mean skin normal length under which a tight vertex is in a cleft (one-sided)
+    "cleft_m": 0.008,
+    "band_m": 0.00025,
+    "hold_m": 0.0015,
+    "smooth_m": 0.004,    # the two-sided correction's smoothing radius     # a tight vertex is held two-sided only when the field left it this near its bind clearance
+    "side_cos": 0.3,      # the closest skin's normal . the carried bind normal under this: the far side (march instead)
+    "march_m": 0.0005, "march_n": 50,    # the tight set is held within this of its bind clearance (not exactly: the two bodies' facets)
+    "target": "G",        # the edges' target deformation: "Gk" the body's over the kernel (Field.gradient), "G" the map's
+}
+
+
+def _tri_edges(T):
+    e = np.vstack([T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]])
+    e = np.sort(e, 1)
+    e = e[e[:, 0] != e[:, 1]]
+    return np.unique(e, axis=0)
+
+
+def follow_solve(body, Y, Xb, T, G, Gk, c0, n0, sel, stats=None):
+    """Y (the field's result, one tier's meshes stacked) corrected on body as one smooth surface: see SOLVE. Xb the bind
+    positions, T the stacked triangles, G the edges' target deformation per vertex, Gk the body's (Field.gradient: it
+    carries the bind normal), c0 the bind clearance, n0 the bind
+    skin's normal there, sel the bendy vertices. A vertex whose new closest skin is not on its bind side (it is inside,
+    or the closest skin faces away from its bind normal carried by Gk: the far side of a thin toe, the other wall of a
+    cleft) is moved along that carried normal, as far as it takes to clear (marched), never through the nearest wall.
+    Returns (X, stats)."""
+    from scipy import sparse
+    from scipy.sparse.csgraph import connected_components
+    from scipy.sparse.linalg import splu
+    st = {"n": 0}
+    idx = np.where(sel)[0]
+    n = len(idx)
+    if not n:
+        return Y, st
+    loc = -np.ones(len(Y), np.int64)
+    loc[idx] = np.arange(n)
+    T = loc[T[sel[T].all(1)]]
+    P0, Y0, Gs, c0s = Xb[idx], Y[idx], G[idx], c0[idx]
+    nb = U(np.linalg.solve(np.transpose(Gk[idx], (0, 2, 1)), n0[idx][:, :, None])[:, :, 0])   # the bind side, carried
+    A = vertex_areas(P0, T) if len(T) else np.zeros(n)
+    A = np.maximum(A, 0.2 * (np.median(A[A > 0]) if (A > 0).any() else 1e-6))
+    E = _tri_edges(T) if len(T) else np.zeros((0, 2), np.int64)
+    # glue: separate components close in bind space move together (a stitch on its leather)
+    if len(E):
+        ncomp, lab = connected_components(sparse.coo_matrix((np.ones(len(E)), (E[:, 0], E[:, 1])), (n, n)), directed=False)
+    else:
+        ncomp, lab = n, np.arange(n)
+    if ncomp > 1:
+        # each vertex to its nearest vertex of another component within glue_m (one tie each: no fill)
+        kq = min(12, n)
+        dq, jq = cKDTree(P0).query(P0, k=kq, distance_upper_bound=SOLVE["glue_m"])
+        jq = np.where(np.isfinite(dq), jq, -1)
+        other = (jq >= 0) & (lab[np.maximum(jq, 0)] != lab[:, None])
+        has = other.any(1)
+        first = np.argmax(other, 1)
+        pr = np.c_[np.where(has)[0], jq[has, first[has]]]
+        pr = np.unique(np.sort(pr, 1), axis=0) if len(pr) else pr.reshape(0, 2)
+        st["glue"] = int(len(pr))
+        E = np.vstack([E, np.sort(pr, 1)]) if len(pr) else E
+    a, b = E[:, 0], E[:, 1]
+    e0 = P0[b] - P0[a]
+    l2 = (e0 * e0).sum(1)
+    # coincident / tiny edges (split normals, welded seams) tied, not stiffer than a short edge: a huge 1/l^2 makes the
+    # system ill-conditioned (and the bending term squares it)
+    l2 = np.maximum(l2, max(SOLVE["edge_floor_m"], 0.3 * float(np.sqrt(np.median(l2[l2 > 0])) if (l2 > 0).any() else 0.0)) ** 2)
+    k = (A[a] + A[b]) / (3.0 * l2)
+    t = 0.5 * np.einsum("nij,nj->ni", Gs[a] + Gs[b], e0)
+    K = sparse.coo_matrix((np.r_[-k, -k], (np.r_[a, b], np.r_[b, a])), (n, n)).tocsr()
+    K = (K - sparse.diags(np.asarray(K.sum(1)).ravel())).tocsr()       # PSD: diag sum k, off -k
+    f = np.zeros((n, 3))
+    for ax in range(3):
+        f[:, ax] = np.bincount(b, k * t[:, ax], n) - np.bincount(a, k * t[:, ax], n)
+    Bd = (K @ sparse.diags(1.0 / A) @ K).tocsr() * SOLVE["bend_m"] ** 2
+    Md = sparse.diags(A / SOLVE["data_m"] ** 2)
+    S = (K + Bd + Md).tocsr()
+    rhs0 = f + Bd @ Y0 + Md @ Y0
+    diag = S.diagonal()
+    X = Y0.copy()
+    act = np.zeros(n, bool)
+    req1 = push_req(c0s)
+    tight = np.abs(c0s) < HOLD["in_m"]
+    lim = np.where(tight, c0s, req1)
+    st.update(n=n, rounds=0, marched=0)
+    tree0 = cKDTree(P0)
+    for r in range(SOLVE["rounds"]):
+        c, nn = signed_clear(body, X, k=16)
+        # clefts: the neighbours' skin normals disagree (the closest skin flips side): a tight vertex there one-sided
+        cl = np.zeros(n, bool)
+        if tight.any():
+            ti = np.where(tight)[0]
+            sm = cKDTree(X[ti]).sparse_distance_matrix(cKDTree(X[ti]), SOLVE["cleft_m"], output_type="ndarray")
+            i_, j_, d_ = sm["i"].astype(np.int64), sm["j"].astype(np.int64), sm["v"]
+            kw = wendland(d_ / SOLVE["cleft_m"])
+            mn = np.stack([np.bincount(i_, kw * nn[ti[j_], q], len(ti)) for q in range(3)], 1)
+            mn /= np.maximum(np.bincount(i_, kw, len(ti)), 1e-30)[:, None]
+            cl[ti] = np.linalg.norm(mn, axis=1) < SOLVE["cleft"]
+        # the constraint plane (x - X) . d = off (two-sided, within band) or >= off: d the closest skin's normal, except
+        # for a vertex inside the new skin whose closest skin is not on its bind side (the far side of a thin toe):
+        # there the carried bind normal, as far along it as it takes to clear (marched)
+        d = nn.copy()
+        off = lim - c
+        amb = (c < np.minimum(lim, 0.0)) & ((nn * nb).sum(1) < SOLVE["side_cos"])
+        if amb.any():
+            ai = np.where(amb)[0]
+            ss = np.arange(1, SOLVE["march_n"] + 1) * SOLVE["march_m"]
+            Q = X[ai][:, None, :] + ss[None, :, None] * nb[ai][:, None, :]
+            cq, _ = signed_clear(body, Q.reshape(-1, 3), k=16)
+            okq = cq.reshape(len(ai), -1) >= lim[ai][:, None]
+            first = np.where(okq.any(1), np.argmax(okq, 1), len(ss) - 1)
+            d[ai] = nb[ai]
+            off[ai] = ss[first]
+            st["marched"] += int(amb.sum())
+        # two-sided only where the field is near its bind clearance (a tight vertex far off it has its closest skin
+        # elsewhere: across a crease or a fold; pulling it in would tear it from its neighbours): one-sided there
+        eq = tight & ~cl & ~amb & (np.abs(off) < SOLVE["hold_m"])
+        viol = np.where(eq, np.abs(off) > SOLVE["band_m"], off > 0)
+        act |= viol
+        if not act.any():
+            break
+        # the system over the vertices near the active ones (the rest stay on the field)
+        free = np.zeros(n, bool)
+        for lst in tree0.query_ball_point(P0[act], SOLVE["reach_m"]):
+            free[lst] = True
+        fi, bi = np.where(free)[0], np.where(~free)[0]
+        Sff = S[fi][:, fi]
+        rhs = rhs0[fi] - (S[fi][:, bi] @ X[bi] if len(bi) else 0.0)
+        rho = np.where(act[fi], SOLVE["gamma"] * diag[fi], 0.0)
+        lu = splu((Sff + sparse.diags(rho)).tocsc(), permc_spec="MMD_AT_PLUS_A", diag_pivot_thresh=0.0,
+                  options={"SymmetricMode": True})
+        base, df, of_, eqf, af = X[fi].copy(), d[fi], off[fi], eq[fi], act[fi]
+        hb = 0.5 * SOLVE["band_m"]
+        # the two-sided correction is smoothed over the held neighbours (bind space): the two bodies' facets put a
+        # few tenths of a mm of noise in each clearance, which a per-vertex hold would print into short edges
+        ei = np.where(eqf)[0]
+        Ws = None
+        if len(ei):
+            sm = cKDTree(P0[fi[ei]]).sparse_distance_matrix(cKDTree(P0[fi[ei]]), SOLVE["smooth_m"], output_type="ndarray")
+            ws_ = wendland(sm["v"] / SOLVE["smooth_m"])
+            Ws = sparse.coo_matrix((ws_, (sm["i"], sm["j"])), (len(ei), len(ei))).tocsr()
+            Ws = sparse.diags(1.0 / np.asarray(Ws.sum(1)).ravel()) @ Ws
+        Xf = X[fi]
+        for it in range(SOLVE["iters"]):
+            # local: each active vertex to its constraint (a penalty, not exact: a lone vertex cannot spike out)
+            h = ((Xf - base) * df).sum(1) - of_
+            if Ws is not None:
+                h[ei] = Ws @ h[ei]
+            h = np.where(eqf, np.sign(h) * np.maximum(np.abs(h) - hb, 0.0), np.minimum(h - SOLVE["margin_m"], 0.0))
+            z = Xf - (h * af)[:, None] * df
+            Xf = lu.solve(rhs + rho[:, None] * z)
+        X[fi] = Xf
+        st["rounds"] = r + 1
+        st["free"] = max(st.get("free", 0), int(len(fi)))
+    c, _ = signed_clear(body, X, k=16)
+    st["active"] = int(act.sum())
+    st["left_mm"] = round(float(max(0.0, (req1 - c)[~tight].max() if (~tight).any() else 0.0)) * 1000, 3)
+    st["tight_p95_mm"] = round(float(np.percentile(np.abs(c - c0s)[tight], 95)) * 1000, 3) if tight.any() else None
+    st["max_move_mm"] = round(float(np.linalg.norm(X - Y0, axis=1).max()) * 1000, 3)
+    out = Y.copy()
+    out[idx] = X
+    return out, st
 
 
 def similarity_fit(A, B, wt=None):

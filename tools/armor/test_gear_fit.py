@@ -113,7 +113,9 @@ def test_field_two_cylinders():
     Xe, _ = gfl.exact_follow(X2, F2, Xb, Fb, off)
     Xf, G = gfl.field_for(b2, b)(Xb)
     bt = gfl.beta(c0)
-    Xn, _ = gfl.clear_push(b2, Xe + bt[:, None] * (Xf - Xe), c0, np.ones(len(X), bool))
+    n0 = gfl.signed_clear(b, Xb, k=16)[1]
+    Xn, _ = gfl.follow_solve(b2, Xe + bt[:, None] * (Xf - Xe), Xb, np.array(Ts), G, gfl.field_for(b2, b).gradient(Xb), c0,
+                             n0, np.ones(len(X), bool))
     l0 = np.linalg.norm(Xb[E[:, 0]] - Xb[E[:, 1]], axis=1)
     st = lambda Y: np.abs(np.linalg.norm(Y[E[:, 0]] - Y[E[:, 1]], axis=1) / l0 - 1)  # noqa: E731
     assert not np.isnan(Xn).any()
@@ -121,7 +123,7 @@ def test_field_two_cylinders():
     assert st(Xn).max() < 0.16                              # the field: one surface (the cylinder itself grew 10%)
     assert st(Xn).max() < 0.8 * st(Xe).max()
     c, _ = gfl.signed_clear(b2, Xn, k=16)
-    assert (c > c0 - 5e-4).all()                            # kept its clearance on the grown body
+    assert (c > gfl.push_req(c0) - 5e-4).all()              # clear of the grown body (a stand-off keeps 60%)
     grew = Xn[:, 0] > 0.08
     assert (np.hypot(Xn[grew, 0] - 0.055, Xn[grew, 2]) > np.hypot(Xb[grew, 0] - 0.055, Xb[grew, 2]) + 2e-3).all()
     gfl._CACHE.clear()
@@ -168,21 +170,75 @@ def test_rigid_fit_clear_wrapping_plate():
     assert max(info["scale"]) <= 1.25 and min(info["scale"]) >= 0.85
 
 
-def test_hold_clear_two_sided():
-    """The tight set holds its bind clearance in and out; past in_m + fade_m nothing is held."""
+def ring_sleeve(rx, rz, x0, ys, na):
+    a = np.linspace(0, 2 * math.pi, na, endpoint=False)
+    X = np.array([[x0 + rx * math.cos(t), y, rz * math.sin(t)] for y in ys for t in a])
+    Ts = []
+    for i in range(len(ys) - 1):
+        for k in range(na):
+            p_, q = i * na + k, i * na + (k + 1) % na
+            Ts += [[p_, p_ + na, q], [q, p_ + na, q + na]]
+    return X, np.array(Ts)
+
+
+def test_follow_solve_shrunk_cylinder():
+    """The follow solve on the two-cylinder body with the right cylinder 12% thinner: a tight sleeve on it (2 mm) and a
+    stand-off sleeve over both (2 cm) are solved together (one tier): the tight one keeps its clearance (p95 within
+    0.5 mm), nothing is nearer the new skin than push_req, the stretch beyond the field's own stays under the gates; a
+    dent (to 5 mm off the skin, 12 mm asked) comes out as one smooth bump (no edge over 25%); the bind body gives Y back exactly."""
     import gear_field as gfl
-    P, T = cylinder(0.05, 0.3, 64, 30)
-    b = body(P, T)
-    a = np.linspace(0, 2 * math.pi, 50, endpoint=False)
-    X = np.array([[r * math.cos(t), 0.15, r * math.sin(t)] for r in (0.051, 0.0535, 0.07) for t in a])
-    c0, _ = gfl.signed_clear(b, X, k=16)
-    b2 = b.with_points(b.V * [1.04, 1, 1.04], "grown")
-    Xh, st = gfl.hold_clear(b2, X, c0, np.ones(len(X), bool))
-    c, _ = gfl.signed_clear(b2, Xh, k=16)
-    near = np.abs(c0) < gfl.HOLD["in_m"]
-    assert np.abs(c - c0)[near].max() < 1e-4
-    far = np.abs(c0) > gfl.HOLD["in_m"] + gfl.HOLD["fade_m"]
-    assert np.abs(Xh - X)[far].max() == 0.0
+    P, T = cylinder(0.05, 0.3, 48, 30)
+    n = len(P)
+    b = body(np.vstack([P + [-0.055, 0, 0], P + [0.055, 0, 0]]), np.vstack([T, T + n]))
+    ys = np.linspace(0.05, 0.25, 21)
+    Xt, Tt = ring_sleeve(0.052, 0.052, 0.055, ys, 64)
+    Xs, Ts = ring_sleeve(0.125, 0.07, 0.0, ys, 96)
+    Xb = np.vstack([Xt, Xs])
+    Tb = np.vstack([Tt, Ts + len(Xt)])
+    V = b.V.copy()
+    r = V[n:2 * n] - [0.055, 0, 0]
+    V[n:2 * n] -= 0.12 * r * [1, 0, 1]
+    b2 = b.with_points(V, "shrunk")
+    gfl._CACHE.clear()
+    c0, n0 = gfl.signed_clear(b, Xb, k=16)
+    fld = gfl.field_for(b2, b)
+    Y, G = fld(Xb)
+    Gk = fld.gradient(Xb)
+    sel = np.ones(len(Xb), bool)
+    X, st = gfl.follow_solve(b2, Y, Xb, Tb, G, Gk, c0, n0, sel)
+    assert not np.isnan(X).any()
+    c, _ = gfl.signed_clear(b2, X, k=16)
+    tight = np.abs(c0) < gfl.HOLD["in_m"]
+    assert tight.sum() == len(Xt)
+    assert np.percentile(np.abs(c - c0)[tight], 95) < 5e-4, st
+    assert (c[~tight] > gfl.push_req(c0[~tight]) - 5e-4).all(), st
+    E = gfl._tri_edges(Tb)
+    e0 = Xb[E[:, 1]] - Xb[E[:, 0]]
+    le = np.linalg.norm(0.5 * np.einsum("nij,nj->ni", G[E[:, 0]] + G[E[:, 1]], e0), axis=1)
+    ex = np.abs(np.linalg.norm(X[E[:, 1]] - X[E[:, 0]], axis=1) / le - 1)
+    assert np.percentile(ex, 99) < 0.08 and ex.max() < 0.25, (np.percentile(ex, 99), ex.max())
+    # a dent: the stand-off sleeve on the same body with a 6 cm patch pushed to 5 mm off the left cylinder (12 asked)
+    gfl._CACHE.clear()
+    same = b.with_points(b.V.copy(), "same")
+    Xs, Ts = ring_sleeve(0.125, 0.07, 0.0, np.linspace(0.05, 0.25, 51), 192)      # finer: ~4 mm edges
+    Xd = Xs.copy()
+    rr = np.linalg.norm(Xs - [-0.125, 0.15, 0.0], axis=1)
+    hit = rr < 0.03
+    Xd[hit, 0] += 0.015 * np.cos(rr[hit] / 0.03 * math.pi / 2) ** 2
+    c0s, n0s = gfl.signed_clear(b, Xs, k=16)
+    I = np.tile(np.eye(3), (len(Xs), 1, 1))
+    Xo, st = gfl.follow_solve(same, Xd, Xs, Ts, I, I, c0s, n0s, np.ones(len(Xs), bool))
+    cd, _ = gfl.signed_clear(same, Xd, k=16)
+    co, _ = gfl.signed_clear(same, Xo, k=16)
+    assert cd.min() < 0.0055 and co.min() > gfl.push_req(c0s).min() - 5e-4, (cd.min(), co.min(), st)
+    E = gfl._tri_edges(Ts)
+    l0 = np.linalg.norm(Xs[E[:, 1]] - Xs[E[:, 0]], axis=1)
+    ld = np.linalg.norm(Xd[E[:, 1]] - Xd[E[:, 0]], axis=1)
+    lo = np.linalg.norm(Xo[E[:, 1]] - Xo[E[:, 0]], axis=1)
+    assert np.abs(lo / l0 - 1).max() < 0.25 and np.abs(lo / l0 - 1).max() < np.abs(ld / l0 - 1).max()
+    # the bind body: Y back exactly
+    Xi, _ = gfl.follow_solve(same, Xs, Xs, Ts, I, I, c0s, n0s, np.ones(len(Xs), bool))
+    assert np.abs(Xi - Xs).max() == 0.0
 
 
 def test_fit_verdict():
