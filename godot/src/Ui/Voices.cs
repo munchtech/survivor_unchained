@@ -195,6 +195,11 @@ public partial class Voices : Node3D
         foreach (var b in barks) if (b.Key == speaker) b.Life = Math.Min(b.Life, b.T + 0.25);
     }
 
+    /// <summary>(M5 r3) A named speaker's card is up, or one waits its turn (not a boss's slot line nor a signature tell):
+    /// the narration band waits for it (Play/StoryText.cs).</summary>
+    public bool SpeakerUp => barks.Any(b => !b.Key.StartsWith('@') && !b.Boss && !b.Signature && b.T < b.Life)
+        || waiting.Any(kv => !kv.Key.StartsWith('@') && kv.Value.Count > 0);
+
     public void Bark(string text, Vector3 at, string? speaker = null, bool alert = false, string? voice = null, Func<double>? shown = null, bool boss = false, bool signature = false)
     {
         // Whose turn it is: a named speaker's own; else whatever stands there.

@@ -12,13 +12,14 @@ namespace SurvivorUnchained.Play.Zones;
 /* The Low Ford Road by day (H4 item 10, gate N18; the owner, 3 Nov: "a daytime tutorial could be helpful - so a zone
  * outside of town after the tutorial bit, we just load into it out of the cinematic - this zone tho will be a permanent
  * one that can get reset like any diablo type zone"). From C04 A's hand-back on the north bank to the Waystation's gate:
- * the day stretch (data/content/day_stretch.json, DayStretch) with its lessons, one at a time and never on a fight's
+ * the day stretch (data/content/encounters.json, Encounters) with its lessons, one at a time and never on a fight's
  * first second: a boar's charge (dash out of the line), a Kerchief captain (point at your target), the road lamp
  * (Lamps v2's act1.post1, relit for good), the Kerchiefs' strongbox, and a wolf ring at the gate (the Flare's save).
- * Its packs and strongbox come back each day (data/content/zone_resets.json, ZoneReset); the lamp never goes dark again. */
+ * Its packs and strongbox come back when she comes in from another zone (data/content/zone_resets.json, ZoneReset "leave");
+ * the lamps never go dark again. */
 public sealed partial class Prologue
 {
-    DayStretch? day;
+    Encounters? day;
     /// <summary>--stage day: the run begins at C04 A (the Warden down, the ember about to go out), for the stretch's proof.</summary>
     public bool DayStart;
     /// <summary>The strongbox on the ground (laid once the cinematic's gather is done), and its seed.</summary>
@@ -29,13 +30,21 @@ public sealed partial class Prologue
     /// <summary>When the last of the stretch's fights ended (game seconds): the day's words wait 2.5 s after it.</summary>
     double dayFightEnd = -99;
     const double AfterFight = 2.5;
+    /// <summary>The zone she came from (ArrivalFrom; null on a load, a new journey or a rise): the reset rule's turn.</summary>
+    string? cameFrom;
+    /// <summary>How often she has risen tonight (the night's first rise has its own line).</summary>
+    int nightRises;
 
-    DayStretch.Beat? DayBeat(string id) => DayStretch.For(Id)?.Get(id);
+    /// <summary>The Low Ford's checkpoint posts (lamp_posts.json): the Watch-post's once the Barrow Knight is down (ARPG
+    /// lesson 9: her checkpoint and a waypoint), the lamp before the ford (the Warden's door), and the north bank's.</summary>
+    void AddPosts() => LampRise.AddPosts(this, G, () => B, p => p.Id != "lowford.watch" || Now > Stage.Post || Now == Stage.Post && knight is not { Alive: true });
+
+    Encounters.Beat? DayBeat(string id) => Encounters.For(Id)?.Get(id);
 
     void AddDay()
     {
         // The ring's line, while the gate waits on it: the goal arrow's pin (never a prompt: no reach).
-        if (DayStretch.For(Id)?.Beats.FirstOrDefault(x => x.Kind == "ring") is { } rb)
+        if (Encounters.For(Id)?.In("day").FirstOrDefault(x => x.Kind == "ring") is { } rb)
             Interactables.Add(new() { Id = "ring_line", X = rb.X, Z = rb.Z + 2, R = 0, Name = "The road", When = () => day?.RingOwed != null && B?.Player is { } q && q.Z < ExitZ + 9 });
         if (DayBeat("post") is not { Post: { } postId } pb) return;
         Interactables.Add(new()
@@ -50,9 +59,13 @@ public sealed partial class Prologue
     /// <summary>The stretch laid out for today (its reset rule applied first): the packs still up, the lamp dark or lit.</summary>
     void StartDay()
     {
-        if (day != null || B == null || DayStretch.For(Id) is not { } spec) return;
-        ZoneReset.Apply(W, Id);
-        day = new DayStretch(spec, B, W.Zone(Id), G.Journey.Ch.Level, W.Day) { Held = () => G.Teaching != null };
+        if (day != null || B == null || Encounters.For(Id) is not { } spec) return;
+        // (ARPG 7.3, "leave": its packs and strongbox come back when she comes in from another zone; a load or a rise keeps them)
+        ZoneReset.Apply(W, Id, cameFrom);
+        // Her rise point by day: a post she lit on the night's side of the river is left behind with the night.
+        if (LampBook.LastPost(W, Id) is { } lp && lp.Z > RiverZ(lp.X))
+            LampBook.SetLastPost(W, Id, LampBook.PostLit(W, "lowford.bank") ? "lowford.bank" : null);
+        day = new Encounters(spec, B, W.Zone(Id), G.Journey.Ch.Level, W.Day, features: Meta.Features) { Held = () => G.Teaching != null, Tier = WorldTiers.Of(W) };
         // Up again on the road, not back at the camp across the river.
         checkpoint = new XZ(spec.From[0], spec.From[1]);
         day.Woke = bt => PaceNotes.Enqueue($"day woke {bt.Id} t={B!.Time:0.0} hp={B.Player.Hp:0}/{B.MaxHp:0} at=({B.Player.X:0.0},{B.Player.Z:0.0})");
@@ -86,7 +99,7 @@ public sealed partial class Prologue
         chestOpened = true;
         G.Apply("""[{ "give": "padded_jerkin", "rarity": 1 }, { "give": "health_draught", "qty": 2 }, { "gold": 15 }]""");
         if (W.NightLessons <= 0) W.NightLessons = 500;
-        var bank = DayStretch.For(Id) is { } s ? (X: s.From[0] + 0.55, Z: s.From[1] + 14) : (X: 1.0, Z: -49.0);
+        var bank = Encounters.For(Id) is { } s ? (X: s.From[0] + 0.55, Z: s.From[1] + 14) : (X: 1.0, Z: -49.0);
         b.Player.X = bank.X; b.Player.Z = bank.Z; b.Player.Facing = -Math.PI / 2;
         wardenInCine = false;
         Taken(toast: false);
@@ -193,6 +206,7 @@ public sealed partial class Prologue
     {
         if (day == null || B == null) return;
         day.Tick(dt);
+        Ranks(day);
         DayGate(dt);
         // The strongbox, once the cinematic's gather has been (it would have brought it to her feet).
         if (box == null && dawnK >= 1 && !day.Done("strongbox") && DayBeat("strongbox") is { } sb)
@@ -237,11 +251,13 @@ public sealed partial class Prologue
     }
 
     /// <summary>The road lamp relit (Lamps v2's post): for good, a lamp for her board, and the board's lesson after it.</summary>
-    void RelightRoadLamp(DayStretch.Beat pb)
+    void RelightRoadLamp(Encounters.Beat pb)
     {
-        if (B == null || !LampBook.RelightPost(W, pb.Post!)) return;
+        // (relit, it is her rise point too: LightPost)
+        if (B == null || !LampBook.LightPost(W, pb.Post!)) return;
         if (pb.Light >= 0) G.Look.SetLit(pb.Light, true);
         lampEventAt = B.Time;
+        B.LampLitAt = B.Time;
         B.Events.Emit(new Ev.Nova { X = pb.X, Z = pb.Z, Radius = 2.2, School = School.Fire, Duration = 0.9 });
         G.Toast(new Toast(ToastKind.World, "The road lamp burns again", "It will not go dark again. A lamp for your board.", Life: 6));
         PaceNotes.Enqueue($"day post t={B.Time:0.0} lamps={LampBook.PostLamps(W)}");
@@ -302,11 +318,13 @@ public sealed partial class Prologue
         return pts.OrderBy(q => Dist(q.X, q.Z, p.X, p.Z)).ToList();
     }
 
-    /// <summary>Where a sensible player goes next on the stretch (the autopilot's day): DayStretch.Goal's route (the
+    /// <summary>Where a sensible player goes next on the stretch (the autopilot's day): Encounters.Goal's route (the
     /// harness walks the same one): a waking pack fought where it stands, the road's boars, the Kerchiefs' camp and its
     /// strongbox, the dark lamp, the wallow, the ring, the gate. Press: the prompt to answer there.</summary>
     /// <summary>A day fight is on (the autopilot fights it where it stands).</summary>
     public bool DayFighting => day?.Fighting == true;
+    /// <summary>The day's placed beats (null before the dawn starts them): the zone sim reads their packs.</summary>
+    public Encounters? Day => day;
 
     public (double X, double Z, string? Press)? DayGoal()
     {

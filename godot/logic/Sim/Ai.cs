@@ -407,9 +407,13 @@ public static class Ai
         if (def.Trail is { } trail)
         {
             e.RaiseT -= dt;
-            if (e.RaiseT <= 0)
+            // (M5 r3, judge mark 4c: a pool only once it has walked on past the last one, most of a pool's width: standing or
+            // milling in its wallow, the Slurry Sow stacked three violet rings deep on one spot, read as three charge rings)
+            // (and none while its pack sleeps: milling in the wallow before it woke laid three rings under the champion's wake)
+            if (e.RaiseT <= 0 && !(e.Wake > 0 && !e.Roused) && (double.IsNaN(e.TrailX) || (e.X - e.TrailX) * (e.X - e.TrailX) + (e.Z - e.TrailZ) * (e.Z - e.TrailZ) >= trail.Radius * trail.Radius * TrailSpacing * TrailSpacing))
             {
                 e.RaiseT = trail.Interval;
+                e.TrailX = e.X; e.TrailZ = e.Z;
                 var zn = b.SpawnZone(Side.Enemy, e.X, e.Z, trail.Radius, trail.Life, e.Damage * trail.DpsPct, trail.School);
                 if (zn != null) { zn.Tags = [Tag.Zone]; zn.Art = "zone_venom"; }
             }
@@ -461,6 +465,9 @@ public static class Ai
             e.AnimT = 0;
         }
     }
+
+    /// <summary>(M5 r3) A trail's next pool waits until its layer is this many pool radii from its last.</summary>
+    public const double TrailSpacing = 1.8;
 
     /// <summary>Plant and mark the lane, then run exactly it (a first run, or the next of a chain).</summary>
     static void Run(Battle b, Enemy e, LungeSpec lunge, double dirX, double dirZ, double windup)
@@ -676,7 +683,8 @@ public static class Ai
             double aggro = e.Def.AggroRange ?? 60;
             // A pack at rest notices the survivor only close by; once roused it
             // hunts them as far as its leash, and rouses its own.
-            if (e.Wake > 0 && !e.Roused && d < e.Wake) b.Rouse(e);
+            // (M5 r3: not in the lamp's moment, LampQuiet after a post is lit; a blow still wakes it)
+            if (e.Wake > 0 && !e.Roused && d < e.Wake && !b.LampHush) b.Rouse(e);
             bool resting = e.Wake > 0 && !e.Roused;
             if (!resting && d < aggro && (e.Leash == 0 || Dist(p.X, p.Z, e.HomeX, e.HomeZ) < e.Leash * 1.6)) { best = -1; bd = d * 0.8; }
         }

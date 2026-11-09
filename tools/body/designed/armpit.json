@@ -1,0 +1,26 @@
+{
+ "about": "P1 R1c form library: the armpit (OURS, designed; rule \"py:armpit_form.fill\": rule \"field\"'s masks and moves plus a masked fairing). Measured on her_r1 (r1c armpit report): with the arms hanging (lbs, the game's drive) the armpit's skin rides upperarm_share (0.93-1.0), which hangs with the girdle (base_drive below.amount -0.03), so the A-pose hollow (trunk wall to inner arm 17-22 mm at rest, a sharp crease at its apex) closes only to a 4-8 mm slit at the top of the armpit, see-through from the front (37.5 / 56 / 85 mm2 per side at 5 / 8 / 12 deg: the 'window'), under a horizontal shelf at the front fold whose underside faces down (the dark 'comma'). A rest-shape fill, so it arrives at every hanging angle unchanged. \"default\": build_topo lays it on every body unless a spec sets it (0 = off); \"soft\": the skeleton's landmarks never see it; \"rides_skin\": the skin weights are read on the body under it (build_topo.weights_body), so it rides the skin it sits on and every weight stays byte-identical.",
+ "sliders": {
+  "armpit_fill": {
+   "range": [0, 1],
+   "rule": "py:armpit_form.fill",
+   "soft": true,
+   "rides_skin": true,
+   "default": 1.0,
+   "order": 40,
+   "moves": [
+    {
+     "fair": {"iters": 90, "lam": 0.5},
+     "mask": [{"on": "ell", "c": [0.175, 1.452, -0.035], "r": [0.035, 0.035, 0.07], "full": 0.5}],
+     "why": "the hollow: a masked umbrella fairing (90 steps of 0.5 x the mask) fills and rounds the crease at the armpit's apex (moves p50 2.6, p90 10.6, max 14.5 mm, the most at the apex line); full within 1.75 / 1.75 / 3.5 cm of the slit's centre, C2 to 0 at 3.5 / 3.5 / 7 cm (0 on the breast, the neck and the arm below the armpit's top). Window at 5 / 8 / 12 deg 37.5 / 56 / 85 -> 0 / 0 / 5.3 mm2 per side (prototype). A 3-6 mm move along the normals closed it too but folded the apex (her close tier: quad folds over 60 deg 60 -> 68-76, to 95 deg): the crease's two sides moved into each other; the fairing moves the apex as one piece (none new over 60)"
+    },
+    {
+     "translate": [0.0, 0.0, 0.008],
+     "mask": [{"on": "ell", "c": [0.178, 1.462, 0.0], "r": [0.025, 0.025, 0.04], "full": 0.3}],
+     "why": "the front fold's underside: 8 mm forward under the shelf, so the fold slopes onto the inner arm instead of overhanging it: the lit side's dark comma 201 -> 35 mm2 (front, 8 deg, the 4 x 4 cm box at the armpit's top)"
+    }
+   ],
+   "why": "fill the armpit's top so the hanging arm meets the trunk in one crease (the clay judge, r1b judge2: 'fill the armpit hollow 3-5 mm, or bring the front armpit fold onto the inner arm')"
+  }
+ }
+}

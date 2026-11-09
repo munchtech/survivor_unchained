@@ -1,0 +1,40 @@
+{
+ "about": "Her body: v1's base (MakeHuman's woman, her shipped head) with her forms as data. Sliders and stance solved by tools/body/wrap.py against A (godot/art/people/heroine.glb) posed into the base's rest (her_target.py); the residual (forms) likewise. Rebuild: python tools/body/build.py tools/body/specs/her.json <out>.",
+ "base": "tools/body/specs/base_woman.json",
+ "sliders": {
+  "height": 0.0998,
+  "leg_length": 0.3391,
+  "thigh_length": -0.0019,
+  "torso_length": -0.198,
+  "shoulder_width": 0.5207,
+  "build": -0.1206,
+  "weight": -0.0996,
+  "bust_size": 0.7611,
+  "bust_firmness": 0.0362,
+  "bust_set": 0.2038,
+  "bust_spacing": 0.0569,
+  "bust_point": 0.356,
+  "underbust": 0.0583,
+  "waist": -0.3109,
+  "belly": 0.35,
+  "hips": 0.1704,
+  "glutes": -0.0962,
+  "thighs": 0.2571,
+  "calves": 0.0817,
+  "upperarm_length": -0.082,
+  "forearm_length": -0.2019,
+  "arm_girth": 0.0057,
+  "forearm_girth": 0.2813,
+  "hand_size": -0.1354,
+  "foot_size": -0.463
+ },
+ "stance": {
+  "pitch_deg": -2.175,
+  "move_m": [
+   0.0,
+   0.01522,
+   -0.02594
+  ]
+ },
+ "forms": "tools/body/forms/her_v1.npz"
+}

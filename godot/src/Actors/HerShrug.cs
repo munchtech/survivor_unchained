@@ -40,7 +40,9 @@ public partial class HerShrug : SkeletonModifier3D
         if (off || GetSkeleton() is not Skeleton3D sk) return;
         if (pelvis < 0)
         {
-            pelvis = sk.FindBone("pelvis"); neck = sk.FindBone("neck_01"); chest = sk.FindBone("spine_03");
+            // (on P1's B by role, P1 R1 arm chain: B's pelvis, neck_02 and spine_04 joints ARE A's pelvis, neck_01 and
+            // spine_03, and spine_04's rest X is A's spine_03's, so the torso frame, the rest elevation and the lift are A's)
+            pelvis = P1Body.Bone(sk, "pelvis"); neck = P1Body.Bone(sk, "neck_01"); chest = P1Body.Bone(sk, "spine_03");
             string[] s = { "l", "r" };
             for (int i = 0; i < 2; i++)
             {

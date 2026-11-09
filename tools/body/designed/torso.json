@@ -1,0 +1,18 @@
+{
+ "about": "P1 R1 form library: the upper torso's span (OURS, designed; rule \"field\"). Replaces MakeHuman's measure-shoulder-dist target, which is a pure sideways move of everything past the shoulder (8.1 mm at 0.3, ramped over 11-17 cm out).",
+ "sliders": {
+  "upper_belly": {"range": [-1, 1], "rule": "py:armpit_form.fill", "order": 26, "soft": true,
+   "moves": [
+    {"fair": {"iters": 200, "lam": 0.5}, "mask": [{"on": "ell", "c": [0.0, 1.2, 0.075], "r": [0.11, 0.105, 0.05], "full": 0.35}]},
+    {"translate": [0.0, 0.0, 0.003], "mask": [{"on": "ell", "c": [0.0, 1.25, 0.06], "r": [0.15, 0.085, 0.06], "full": 0.0}]}
+   ],
+   "why": "P1 R1 round 8 (the judge on round 7: an isolated lit island in cel, turntable_b 330 deg, close_town_night): the midline falls 13 mm from the belly (y 1.16) to the under-bust hollow (y 1.24) over 8 cm, and that up-facing stretch catches the key as an oval. The hollow filled and the belly's crown eased: shallower and wider. Front only: the waist's width and the fold-to-waist read keep"
+  },
+  "shoulder_span": {"range": [-1, 1], "rule": "field", "order": 20,
+   "moves": [
+    {"translate": [0.027, 0.0, 0.0], "mask": [{"on": "ax", "full": [0.175, null], "fade": [0.07, 0]}, {"on": "y", "full": [1.25, null], "fade": [0.10, 0]}]},
+    {"translate": [0.027, 0.0, 0.0], "mask": [{"on": "ax", "full": [0.30, null], "fade": [0.05, 0]}, {"on": "y", "full": [null, 1.15], "fade": [0, 0.10]}]}
+   ],
+   "why": "the shoulders' span: the shoulder and the whole arm move out 27 mm a side at v = 1 (her 0.3: 8.1 mm), the chest and trapezius between 10.5 and 17.5 cm out stretch to meet them (C2); the arm below 1.25 m (the A-pose rest's elbows and hands) moves whole by the second move (the two y windows sum to 1), the hips (under 25 cm out) never move"}
+ }
+}

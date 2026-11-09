@@ -69,7 +69,7 @@ public partial class HerArmHold : SkeletonModifier3D
         parentSlot = new int[n]; paths = new string[n]; rest = new Quaternion[n];
         cw = new Quaternion[n]; cr = new Quaternion[n]; co = new Quaternion[n];
         swings = new int[n];
-        pelvis = sk.FindBone("pelvis"); spine3 = sk.FindBone("spine_03");
+        pelvis = sk.FindBone("pelvis"); spine3 = P1Body.Bone(sk, "spine_03");
         for (int i = 0; i < n; i++)
         {
             parentSlot[i] = list.IndexOf(sk.GetBoneParent(bones[i]));

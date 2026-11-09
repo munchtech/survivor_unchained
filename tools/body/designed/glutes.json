@@ -1,0 +1,435 @@
+{
+ "about": "P1 R1 form library: her hourglass and her glutes (OURS, designed; tools/body/glute_form.py, rule py). They replace MakeHuman's measure targets (waist, hips) and its buttock target with our glute_lift (catalogue.json).",
+ "sliders": {
+  "hourglass": {
+   "range": [
+    0,
+    1
+   ],
+   "rule": "py:glute_form.hourglass",
+   "soft": true,
+   "order": 20,
+   "zc": 0.02,
+   "parts": [
+    "trunk",
+    "crotch",
+    "thigh"
+   ],
+   "line": {
+    "unit": "hip_x",
+    "h": [
+     0.3,
+     0.255,
+     0.21,
+     0.16,
+     0.1,
+     0.05,
+     0.0,
+     -0.05,
+     -0.1,
+     -0.15,
+     -0.2,
+     -0.25,
+     -0.3,
+     -0.35,
+     -0.4
+    ],
+    "w": [
+     1.4059,
+     1.2376,
+     1.1386,
+     1.25,
+     1.6,
+     1.895,
+     2.03,
+     2.03,
+     2.02,
+     2.02,
+     2.02,
+     2.02,
+     2.015,
+     2.0,
+     1.985
+    ],
+    "full": [
+     -0.33,
+     0.26
+    ],
+    "fade": [
+     0.07,
+     0.06
+    ]
+   },
+   "bands": [
+    {
+     "h": 0.21,
+     "w": [
+      0.09,
+      0.1
+     ],
+     "sz": -0.1
+    }
+   ],
+   "why": "OURS (P1 R1, replaces MakeHuman's waist -0.6 / hips 0.4): the front-view outer line designed directly (half-widths in units of the hip joints' |x| at 5 cm steps over the joints, a natural cubic spline; x scaled per height to meet it, eased out over 8/6 cm past h -0.28..+0.26) and the waist's depth (z scale -10% at h +0.21 about zc). Her rest numbers at v 1: waist 231 mm wide / 144 deep / 617 round at 1228-1240 (navel 1210), hips widest 411 at 1010 (408 at the joints, 1033), the line straight into the thighs (about 400-404 to 0.75 m), waist/hip 0.56 (width) 0.55 (round). R1b: 'soft': true (build_topo.bone_body: the skeleton's landmarks are read without it, so the hip joint stays her_r1's). The line's lower end redrawn to meet her own thigh (2.0-2.02 hip_x from h -0.10 to -0.30, 1.985 at -0.40, full to -0.33, eased out over 7 cm where the line and her thigh agree within ~2%): the outer thigh now runs 201 -> 205 mm (half-width) from the knee's top to the hip with no ring at 0.70-0.75 (was a 207.7 bump at 0.72 dropping to 202), 2-5 mm fuller mid-thigh than R1. R2 (judge: the hip corner sharp from behind): the waist-to-hip run pushed out (w 1.25/1.60/1.895 at h +0.16/+0.10/+0.05: half-width +6.6 mm at +0.10, +9.4 at +0.05) and the turn into the outer thigh made a flat-topped round (2.03 at 0 and -0.05, 2.02 to -0.15): the back-view outline's tightest radius from waist to thigh 87 -> 149 mm (Gaussian 5 mm), hips widest 414 at 19 mm under the joint (form rule band +-30), no saddle (0.0), waist/hip 0.558."
+  },
+  "glute_form": {
+   "range": [
+    0,
+    1
+   ],
+   "rule": "py:glute_form.glutes",
+   "soft": true,
+   "order": 21,
+   "axis": [
+    0.0,
+    -0.04
+   ],
+   "parts": [
+    "trunk",
+    "crotch",
+    "thigh"
+   ],
+   "moves": [
+    {
+     "dir": [
+      0,
+      -1
+     ],
+     "m": 0.044,
+     "y": {
+      "full": [
+       -0.085,
+       0.06
+      ],
+      "fade": [
+       0.055,
+       0.13
+      ]
+     },
+     "z": {
+      "full": [
+       null,
+       -0.03
+      ],
+      "fade": [
+       0,
+       0.05
+      ]
+     },
+     "axa": {
+      "c": 0.075,
+      "w": [
+       0.075,
+       0.13
+      ],
+      "mid": 0.85
+     },
+     "smile": {
+      "x": [
+       0.03,
+       0.18
+      ],
+      "dy": 0.045,
+      "fade_k": 3.5,
+      "top": {
+       "x": [
+        0.05,
+        0.15
+       ],
+       "dy": -0.03
+      }
+     }
+    },
+    {
+     "dir": [
+      1,
+      0
+     ],
+     "m": 0.01,
+     "y": {
+      "c": -0.11,
+      "w": [
+       0.05,
+       0.08
+      ]
+     },
+     "z": {
+      "full": [
+       null,
+       -0.03
+      ],
+      "fade": [
+       0,
+       0.05
+      ]
+     },
+     "axa": {
+      "c": 0.075,
+      "w": [
+       0.075,
+       0.11
+      ],
+      "mid": 0.3
+     },
+     "smile": {
+      "x": [
+       0.03,
+       0.18
+      ],
+      "dy": 0.045,
+      "fade_k": 2.0
+     }
+    },
+    {
+     "dir": [
+      0,
+      -1
+     ],
+     "m": 0.013,
+     "axa": {
+      "tent": 0.03
+     },
+     "y": {
+      "full": [
+       -0.03,
+       0.03
+      ],
+      "fade": [
+       0.04,
+       0.04
+      ]
+     },
+     "z": {
+      "full": [
+       null,
+       -0.03
+      ],
+      "fade": [
+       0,
+       0.05
+      ]
+     }
+    },
+    {
+     "dir": [
+      0,
+      1
+     ],
+     "m": 0.018,
+     "axa": {
+      "c": 0.0,
+      "w": [
+       0.05,
+       0.07
+      ]
+     },
+     "y": {
+      "c": 0.1,
+      "w": [
+       0.08,
+       0.09
+      ]
+     },
+     "z": {
+      "full": [
+       null,
+       -0.03
+      ],
+      "fade": [
+       0,
+       0.05
+      ]
+     }
+    }
+   ],
+   "why": "OURS route (a) (P1 R1, replaces MakeHuman's buttock target and glute_lift): moves in the side planes only (no x: nothing crosses the midline): the mass 44 mm straight back (full at |x| 75 mm, 55% held at the midline, 0 by |x| 205 mm; full from 85 mm under to 60 mm over the hip joints, eased to 0 at 140 mm under and 190 over; back half only), the cleft's soft valley (+16 mm at the midline), the under-curve lifted 10 mm, the cleft's V rounded (a 5 mm tent over 2 cm), a 20-step Taubin fairing and a 12-step quad evening. Her rest numbers at v 1: apex 9 mm over the hip joint, 115 mm behind the small of the back, 113 behind the thigh; cleft floor 0 folds over 60 deg (max 22); 0 points inside. R2 (judge: the pair boxy from behind): the mass's and the under-curve lift's lower side follow a smile (move key 'smile', glute_form.smile_y): from |x| 30 to 180 mm the foot rises 32 mm and the mass's fade grows 3.5x upward (the lift's 2x), so the under-curve climbs toward the outer hip (fold 129 mm under the joint at |x| 60 -> 107 at |x| 120-140; was 133-137, a frown) and eases out there (its tightest radius 27 mm inside -> 57 at |x| 120, 94 at 140; was 29, 39); the lower outer quarter rounds into the hip. A fifth move deepens the cleft's top third (7 mm forward at the midline, centred 75 mm over the joint, over |x| < 30 mm): cleft depth 60 mm over the apex 15.9 -> 22.4 mm, 90 mm over 11.4 -> 14.4, at the apex unchanged 24.3; cleft floor still 0 folds over 60. P1 R1 round 9 (judge: from behind a box, a short cleft, a bright strip and ripples; round from 3/4): the ripples and strip were the feet of three midline moves (a 45% hold, a 16 mm fill over 5 cm, a tent) stacked at |x| 25-50 mm, not vertex noise (vertex band-pass relief 0.05 mm, under the base's 0.39). The fill is gone and the mass held at 85% to the midline, so her base's own narrow V carries the cleft; one soft groove (18 mm at the midline, over |x| < 7 cm, centred 100 mm over the joint) runs it up and dies into the sacrum; a 13 mm tent over 3 cm rounds its floor. The mass's upper side falls 30 mm toward the outer hip (smile.top: each lobe's top an arch) and its lower side lifts 45 mm at the outer hip (was 32).",
+   "fair": {
+    "mask": {
+     "axa": {
+      "full": [
+       null,
+       0.15
+      ],
+      "fade": [
+       0,
+       0.05
+      ]
+     },
+     "y": {
+      "full": [
+       -0.12,
+       0.12
+      ],
+      "fade": [
+       0.05,
+       0.08
+      ]
+     },
+     "z": {
+      "full": [
+       null,
+       -0.03
+      ],
+      "fade": [
+       0,
+       0.05
+      ]
+     }
+    },
+    "iters": 20
+   },
+   "even": {
+    "full_m": 0.008,
+    "iters": 12,
+    "step": 0.5
+   },
+   "move_smooth": {
+    "iters": 8,
+    "step": 0.5,
+    "why": "P1 R1c (milestone judge: vertical ripples on the cheeks from behind, turntable 180/210; the cleft reading only in its lower third): the move low-passed over the mesh graph before it is laid (glute_form.glutes): the ripples were vertex-scale content riding on the 44 mm push (0.4-0.9 mm high-pass relief across the cheeks vs 0.1 on the base), and the narrow cleft fill had flattened the cleft's V above the hip joints; see the numbers in the R1c forms report"
+   },
+   "depth_blend": {
+    "mask": {
+     "axa": {
+      "full": [
+       null,
+       0.1
+      ],
+      "fade": [
+       0,
+       0.05
+      ]
+     },
+     "y": {
+      "full": [
+       0.15,
+       0.23
+      ],
+      "fade": [
+       0.05,
+       0.06
+      ]
+     },
+     "z": {
+      "full": [
+       null,
+       -0.03
+      ],
+      "fade": [
+       0,
+       0.05
+      ]
+     }
+    },
+    "iters": 40,
+    "step": 0.5,
+    "why": "P1 R1 round 9 (judge: a straight line across the low back): her base turns from the sacrum's slope to the small of the back inside one row on every column (with or without the glutes); glute_form's own z low-pass there takes it from a 30 mm turn to about 36."
+   }
+  },
+  "glute_sculpt": {
+   "range": [
+    0,
+    1
+   ],
+   "rule": "target",
+   "soft": true,
+   "order": 22,
+   "file": "tools/body/base/targets/glute_sculpt_{tier}.npz",
+   "made_by": "tools/body/sculpt/glute_sculpt.py",
+   "sculpt": {
+    "mode": "from_field",
+    "field": "glute_form",
+    "fair": {
+     "mask": {
+      "axa": {
+       "full": [
+        0.035,
+        0.16
+       ],
+       "fade": [
+        0.03,
+        0.05
+       ]
+      },
+      "y": {
+       "full": [
+        -0.13,
+        0.13
+       ],
+       "fade": [
+        0.05,
+        0.08
+       ]
+      },
+      "z": {
+       "full": [
+        null,
+        -0.03
+       ],
+       "fade": [
+        0,
+        0.05
+       ]
+      }
+     },
+     "iters": 40
+    },
+    "parts": [
+     "trunk",
+     "crotch",
+     "thigh"
+    ],
+    "solid_tried": {
+     "x": 0.072,
+     "y": -0.005,
+     "z": -0.055,
+     "r_back": 0.105,
+     "r_front": 0.105,
+     "r_up": 0.14,
+     "r_down": 0.1,
+     "n": 2.2,
+     "eps": 0.25,
+     "tilt_deg": 0.0,
+     "r_med": 0.1,
+     "r_lat": 0.1,
+     "m": 2.0,
+     "eps_x": 0.01,
+     "kc": 0.05,
+     "region": {
+      "axa": {
+       "full": [
+        null,
+        0.19
+       ],
+       "fade": [
+        0,
+        0.03
+       ]
+      },
+      "y": {
+       "full": [
+        -0.2,
+        0.22
+       ],
+       "fade": [
+        0.03,
+        0.03
+       ]
+      },
+      "z": {
+       "full": [
+        null,
+        0.0
+       ],
+       "fade": [
+        0,
+        0.03
+       ]
+      }
+     }
+    }
+   },
+   "why": "OURS route (b): her glutes sculpted once as a stored target (tools/body/sculpt/glute_sculpt.py: mode from_field = route (a)'s design laid on her body and faired 40 more Taubin steps in the side planes, off the cleft; artist-editable OBJ beside the npz, --from-obj reads it back). Mode solid (a designed solid per cheek, projected) is kept but left a rim at the solid's outline; see the R1 glute report."
+  }
+ }
+}

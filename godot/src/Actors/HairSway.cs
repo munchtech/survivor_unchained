@@ -133,6 +133,8 @@ public partial class HairSway : Node
         mesh = GetParent() as MeshInstance3D;
         sk = mesh?.GetParent() as Skeleton3D;
         if (sk == null) return;
+        // (on P1's B: her hair, skinned to A's bones, taken onto B before its binds are read here)
+        if (P1Body.IsB(sk)) P1Body.Rebind(sk, mesh!);
         // Stepped once her skeleton's final pose is made (SkeletonUpdated: her modifiers' corrections in it, HerCarriage's
         // lift of her chest and head and the rest), as she is drawn. (18 October, face 30: stepped in _Process, it read
         // her pose before them, so the chain's rest and her balls stood where her head and back were before the lift,
@@ -168,7 +170,7 @@ public partial class HairSway : Node
         {
             var b = bs[i].AsGodotDictionary();
             var name = (string)b["bone"];
-            list.Add(new Ball { Bone = sk.FindBone(name), At = Vec(b["at"]), R = (float)b["r"], Behind = name.StartsWith("neck") || name.StartsWith("spine") });
+            list.Add(new Ball { Bone = P1Body.Bone(sk, name), At = Vec(b["at"]), R = (float)b["r"], Behind = name.StartsWith("neck") || name.StartsWith("spine") });
             // Her back is wide and flat: those down her spine are stretched 6 cm each way across it (as far back as at her
             // spine to 6 cm out, and reaching her sides), so a braid that swings over her shoulder as she throws and then
             // bends forward lies on her back, not 2-4 cm into it beside her spine, hidden (hair judge hj2).
@@ -181,6 +183,9 @@ public partial class HairSway : Node
             // to 4 cm off her middle, where her shoulder blades rise (her middle, as the hair hangs, is as it was). Only
             // toward her back: sideways and in front they are as they were. Env NOBACKWIDE=1 leaves it out, to compare.
             if (name.StartsWith("spine")) { list[^1].WB = Lerp3(BackY, BackW, list[^1].At.Y); list[^1].Bulge = Lerp3(BackY, BackOut, list[^1].At.Y); }
+            // (P1 R1 sliders: the ball, laid in A's rest, carried by its B bone's move against the ref body (P1Body.OnB: a
+            // height slider's head and back 70-98 mm down); its back profile read at A's height above; nothing on A or her_b)
+            list[^1].At = P1Body.OnB(sk, list[^1].Bone, list[^1].At);
         }
         // (her shoulders and upper arms only: her forearm and fist sweeping past her head as she threw kicked the chain
         // up over her head, hair judge hj1; the shader keeps her hair out of her forearms)
@@ -490,7 +495,7 @@ public partial class HairSway : Node
             if (OS.HasEnvironment("HAIRBODY"))
             {
                 // (each point in her body's rest space, by spine_03: to check against her torso's shape)
-                var inv = (world * Moved(sk.FindBone("spine_03"))).AffineInverse();
+                var inv = (world * Moved(P1Body.Bone(sk, "spine_03"))).AffineInverse();
                 var line = $"HAIRBODY f{Engine.GetProcessFrames()}";
                 for (int i = 0; i < 8; i++) { var q = inv * x[i]; line += $" {q.X:F3},{q.Y:F3},{q.Z:F3}"; }
                 GD.Print(line);

@@ -117,16 +117,22 @@ public sealed class DropCtx
     /// <summary>The people it fell among (pack, dead, lamplings, kerchiefs): homes and materials.</summary>
     public string? People;
     public IReadOnlyCollection<string>? Lean;
+    public double LegendaryMul = 1;
     public double Luck = 1, Rarity = 1, Quantity = 1, Gear = 1;
     /// <summary>In the night's arenas the materials go to the night's end tally, not the ground
     /// (crafting decision 7: no confetti, the tally is the moment).</summary>
     public bool Tally;
+    /// <summary>(M5 r2) A Legendary's line is not said here: the caller stages it (the Warden's first, Prologue).</summary>
+    public bool Hush;
     /// <summary>The scars: minutes past the half hour.</summary>
     public double Depth;
     /// <summary>The arena's tier (a hoard's extra rolls from the third).</summary>
     public int Tier = 1;
     /// <summary>Rolls beyond the source's own (what the atlas has earned).</summary>
     public int Extra;
+    /// <summary>(M5-B) The least tier of the first roll over the source's own (2: Rare, a tutorial carrier's "loot"
+    /// floor); above 0 the first roll is gear for certain.</summary>
+    public int Floor;
     /// <summary>A story fight's boss: the first one a survivor beats pays a Legendary for certain.</summary>
     public bool StoryBoss;
     /// <summary>Whether a story condition holds (a piece's DropsWhen).</summary>
@@ -367,7 +373,7 @@ public static class Drops
         double depth = Math.Min(Rules.DepthCap, x.Depth * Rules.DepthPerMinute);
         double q = src.Quality * x.Rarity * (1 + Math.Max(0, x.Luck - 1) * Rules.LuckShare) * (1 + depth);
         for (int i = 2; i < w.Length; i++) w[i] *= q;
-        w[5] *= src.Legendary * (1 + depth);
+        w[5] *= src.Legendary * (1 + depth) * x.LegendaryMul;
         bool sets = SetPieces(x).Any(), legends = Legendaries(x).Any();
         if (!sets) { w[3] += w[4]; w[4] = 0; }
         if (!legends) { w[3] += w[5]; w[5] = 0; }
@@ -446,7 +452,7 @@ public static class Drops
             material = Iron;
         for (int k = 0; k < rolls; k++)
         {
-            bool gear = R() < Math.Min(1, src.Chance * x.Gear);
+            bool gear = (k == 0 && x.Floor > 0) || R() < Math.Min(1, src.Chance * x.Gear);
             if (!gear)
             {
                 if (material != null && R() < Rules.Material) o.Add(new Dropped(null, material, 1, LootTier.Material));
@@ -467,7 +473,7 @@ public static class Drops
             }
             else
             {
-                tier = k == 0 && owed && Legendaries(x).Any() ? LootTier.Legendary : RollTier(x, src, k == 0 ? src.Floor : 0, R);
+                tier = k == 0 && (owed || x.Floor >= (int)LootTier.Legendary) && Legendaries(x).Any() ? LootTier.Legendary : RollTier(x, src, k == 0 ? Math.Max(src.Floor, x.Floor) : 0, R);
                 it = Piece(x, tier, R);
                 tier = TierOf(it);
             }

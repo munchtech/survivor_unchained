@@ -1,0 +1,1830 @@
+{
+ "about": "Her new skeleton (P1 base v1), as data: each bone's head and tail placed from MakeHuman landmarks (MPFB rigs/standard/rig.default.json's rules: cube = a joint-* group's centre, mh = a MakeHuman bone's head/tail by its own rule, mean, lerp; skin_out = the skin's furthest point out from a point that way; weights_base = the centre of a MakeHuman bone's weight boundary (the breast's base on the chest wall); leaf = the parent's tail, a third of its length on). Only the left side ({s}=l, MakeHuman's {S}=l / {X}=L) is placed; the right is its true mirror. Frames: Y head to tail; front = Z toward her front (up where the bone runs front-back); elbow_upper/elbow_lower: X the elbow's hinge (the normal of the rest arm's bend plane), flexion = +X; knee: X across her, Z behind, flexion = +X; hand: X the elbow's hinge; palm/thumb: Z toward the palm (the fingers' rest curl). mh: MakeHuman bones whose CC0 weights this bone takes (weights.py; chains split along by helper 'twist'). Anatomical rules (P1 skel round; skeleton.py ANAT_RULES, run on OUR body and her approved head at placement, undone: inherited from MakeHuman): harrington = the hip joint centre by Harrington et al. 2007 from our skin ASIS/PSIS (soft tissue stated), its height kept from the inherited cube; cervical = neck_01's head at C7/T1 (the cervicale = the nape's corner on the back midline, the joint 0.40 of the neck's depth forward); occiput = Head's head at the occipital condyles (midline, the earlobe's level, under the ear) on her head mesh; neck_02 halfway between; crown = the head's top. tools/body/README.md 'skeleton'. P1 skel2: spine_body = a spine joint's depth: Grünwald et al. 2024 (vertebral body centre -> spinous tip, per level) + 8 mm soft tissue in front of the midline back skin, its level by Gray's column lengths between the pelvis joint and C7/T1, the height inherited; knee_tea = the knee's flexion axis centre (Hollister 1993 / ISB Wu 2002): the leg's section normal to hip -> ankle at the inherited height, mid medial/lateral, back_frac of its depth from the back skin.",
+ "bones": [
+  {
+   "name": "root",
+   "parent": null,
+   "head": {
+    "origin": true
+   },
+   "tail": {
+    "cube": "joint-pelvis"
+   },
+   "frame": "front"
+  },
+  {
+   "name": "pelvis",
+   "parent": "root",
+   "head": {
+    "cube": "joint-pelvis"
+   },
+   "tail": {
+    "harrington": {
+     "height": {
+      "cube": "joint-l-upper-leg"
+     },
+     "asis_azimuth_deg": 35,
+     "tilt_deg": 12,
+     "psis_x_m": 0.045,
+     "soft_asis_m": 0.015,
+     "soft_psis_m": 0.01
+    }
+   },
+   "frame": "front",
+   "mh": [
+    "root",
+    "pelvis.L",
+    "pelvis.R"
+   ]
+  },
+  {
+   "name": "spine_01",
+   "parent": "pelvis",
+   "head": {
+    "cube": "joint-pelvis"
+   },
+   "tail": {
+    "spine_body": {
+     "height": {
+      "cube": "joint-spine-4"
+     },
+     "base": {
+      "cube": "joint-pelvis"
+     },
+     "top": {
+      "cervical": {
+       "depth": 0.4
+      }
+     },
+     "soft_m": 0.008
+    }
+   },
+   "frame": "front",
+   "mh": [
+    "spine05"
+   ]
+  },
+  {
+   "name": "spine_02",
+   "parent": "spine_01",
+   "head": {
+    "spine_body": {
+     "height": {
+      "cube": "joint-spine-4"
+     },
+     "base": {
+      "cube": "joint-pelvis"
+     },
+     "top": {
+      "cervical": {
+       "depth": 0.4
+      }
+     },
+     "soft_m": 0.008
+    }
+   },
+   "tail": {
+    "spine_body": {
+     "height": {
+      "cube": "joint-spine-3"
+     },
+     "base": {
+      "cube": "joint-pelvis"
+     },
+     "top": {
+      "cervical": {
+       "depth": 0.4
+      }
+     },
+     "soft_m": 0.008
+    }
+   },
+   "frame": "front",
+   "mh": [
+    "spine04"
+   ]
+  },
+  {
+   "name": "spine_03",
+   "parent": "spine_02",
+   "head": {
+    "spine_body": {
+     "height": {
+      "cube": "joint-spine-3"
+     },
+     "base": {
+      "cube": "joint-pelvis"
+     },
+     "top": {
+      "cervical": {
+       "depth": 0.4
+      }
+     },
+     "soft_m": 0.008
+    }
+   },
+   "tail": {
+    "spine_body": {
+     "height": {
+      "cube": "joint-spine-2"
+     },
+     "base": {
+      "cube": "joint-pelvis"
+     },
+     "top": {
+      "cervical": {
+       "depth": 0.4
+      }
+     },
+     "soft_m": 0.008
+    }
+   },
+   "frame": "front",
+   "mh": [
+    "spine03"
+   ]
+  },
+  {
+   "name": "spine_04",
+   "parent": "spine_03",
+   "head": {
+    "spine_body": {
+     "height": {
+      "cube": "joint-spine-2"
+     },
+     "base": {
+      "cube": "joint-pelvis"
+     },
+     "top": {
+      "cervical": {
+       "depth": 0.4
+      }
+     },
+     "soft_m": 0.008
+    }
+   },
+   "tail": {
+    "spine_body": {
+     "height": {
+      "cube": "joint-spine-1"
+     },
+     "base": {
+      "cube": "joint-pelvis"
+     },
+     "top": {
+      "cervical": {
+       "depth": 0.4
+      }
+     },
+     "soft_m": 0.008
+    }
+   },
+   "frame": "front",
+   "mh": [
+    "spine02"
+   ]
+  },
+  {
+   "name": "spine_05",
+   "parent": "spine_04",
+   "head": {
+    "spine_body": {
+     "height": {
+      "cube": "joint-spine-1"
+     },
+     "base": {
+      "cube": "joint-pelvis"
+     },
+     "top": {
+      "cervical": {
+       "depth": 0.4
+      }
+     },
+     "soft_m": 0.008
+    }
+   },
+   "tail": {
+    "cervical": {
+     "depth": 0.4
+    }
+   },
+   "frame": "front",
+   "mh": [
+    "spine01"
+   ]
+  },
+  {
+   "name": "neck_01",
+   "parent": "spine_05",
+   "head": {
+    "cervical": {
+     "depth": 0.4
+    }
+   },
+   "tail": {
+    "lerp": [
+     {
+      "cervical": {
+       "depth": 0.4
+      }
+     },
+     {
+      "occiput": {
+       "ear_band_m": 0.008
+      }
+     },
+     0.5
+    ]
+   },
+   "frame": "front",
+   "mh": [
+    "neck01",
+    "neck02"
+   ]
+  },
+  {
+   "name": "neck_02",
+   "parent": "neck_01",
+   "head": {
+    "lerp": [
+     {
+      "cervical": {
+       "depth": 0.4
+      }
+     },
+     {
+      "occiput": {
+       "ear_band_m": 0.008
+      }
+     },
+     0.5
+    ]
+   },
+   "tail": {
+    "occiput": {
+     "ear_band_m": 0.008
+    }
+   },
+   "frame": "front",
+   "mh": [
+    "neck03"
+   ]
+  },
+  {
+   "name": "Head",
+   "parent": "neck_02",
+   "head": {
+    "occiput": {
+     "ear_band_m": 0.008
+    }
+   },
+   "tail": {
+    "crown": true
+   },
+   "frame": "front",
+   "mh": "face"
+  },
+  {
+   "name": "clavicle_{s}",
+   "parent": "spine_05",
+   "head": {
+    "cube": "joint-{S}-clavicle"
+   },
+   "tail": {
+    "cube": "joint-{S}-shoulder"
+   },
+   "frame": "front",
+   "mh": [
+    "clavicle.{X}",
+    "shoulder01.{X}"
+   ]
+  },
+  {
+   "name": "scap_{s}",
+   "parent": "clavicle_{s}",
+   "head": {
+    "cube": "joint-{S}-scapula"
+   },
+   "tail": {
+    "cube": "joint-{S}-shoulder"
+   },
+   "frame": "front",
+   "helper": "scap"
+  },
+  {
+   "name": "upperarm_{s}",
+   "parent": "clavicle_{s}",
+   "head": {
+    "cube": "joint-{S}-shoulder"
+   },
+   "tail": {
+    "cube": "joint-{S}-elbow"
+   },
+   "frame": "elbow_upper",
+   "mh": [
+    "upperarm01.{X}",
+    "upperarm02.{X}"
+   ],
+   "chain": "upperarm"
+  },
+  {
+   "name": "upperarm_twist_01_{s}",
+   "parent": "upperarm_{s}",
+   "head": {
+    "lerp": [
+     {
+      "cube": "joint-{S}-shoulder"
+     },
+     {
+      "cube": "joint-{S}-elbow"
+     },
+     0.0
+    ]
+   },
+   "tail": {
+    "lerp": [
+     {
+      "cube": "joint-{S}-shoulder"
+     },
+     {
+      "cube": "joint-{S}-elbow"
+     },
+     0.25
+    ]
+   },
+   "frame": "elbow_upper",
+   "helper": "twist",
+   "at": 0.0
+  },
+  {
+   "name": "upperarm_twist_02_{s}",
+   "parent": "upperarm_{s}",
+   "head": {
+    "lerp": [
+     {
+      "cube": "joint-{S}-shoulder"
+     },
+     {
+      "cube": "joint-{S}-elbow"
+     },
+     0.25
+    ]
+   },
+   "tail": {
+    "lerp": [
+     {
+      "cube": "joint-{S}-shoulder"
+     },
+     {
+      "cube": "joint-{S}-elbow"
+     },
+     0.5
+    ]
+   },
+   "frame": "elbow_upper",
+   "helper": "twist",
+   "at": 0.25
+  },
+  {
+   "name": "upperarm_twist_03_{s}",
+   "parent": "upperarm_{s}",
+   "head": {
+    "lerp": [
+     {
+      "cube": "joint-{S}-shoulder"
+     },
+     {
+      "cube": "joint-{S}-elbow"
+     },
+     0.5
+    ]
+   },
+   "tail": {
+    "lerp": [
+     {
+      "cube": "joint-{S}-shoulder"
+     },
+     {
+      "cube": "joint-{S}-elbow"
+     },
+     0.75
+    ]
+   },
+   "frame": "elbow_upper",
+   "helper": "twist",
+   "at": 0.5
+  },
+  {
+   "name": "upperarm_twist_04_{s}",
+   "parent": "upperarm_{s}",
+   "head": {
+    "lerp": [
+     {
+      "cube": "joint-{S}-shoulder"
+     },
+     {
+      "cube": "joint-{S}-elbow"
+     },
+     0.75
+    ]
+   },
+   "tail": {
+    "lerp": [
+     {
+      "cube": "joint-{S}-shoulder"
+     },
+     {
+      "cube": "joint-{S}-elbow"
+     },
+     1.0
+    ]
+   },
+   "frame": "elbow_upper",
+   "helper": "twist",
+   "at": 0.75
+  },
+  {
+   "name": "upperarm_share_{s}",
+   "parent": "clavicle_{s}",
+   "head": {
+    "cube": "joint-{S}-shoulder"
+   },
+   "tail": {
+    "lerp": [
+     {
+      "cube": "joint-{S}-shoulder"
+     },
+     {
+      "cube": "joint-{S}-elbow"
+     },
+     0.25
+    ]
+   },
+   "frame": "elbow_upper",
+   "helper": "share"
+  },
+  {
+   "name": "delt_{s}",
+   "parent": "upperarm_twist_01_{s}",
+   "head": {
+    "cube": "joint-{S}-shoulder"
+   },
+   "tail": {
+    "skin_out": [
+     {
+      "lerp": [
+       {
+        "cube": "joint-{S}-shoulder"
+       },
+       {
+        "cube": "joint-{S}-elbow"
+       },
+       0.3
+      ]
+     },
+     "lateral"
+    ]
+   },
+   "frame": "front",
+   "helper": "muscle"
+  },
+  {
+   "name": "trap_{s}",
+   "parent": "clavicle_{s}",
+   "head": {
+    "lerp": [
+     {
+      "cube": "joint-neck"
+     },
+     {
+      "cube": "joint-{S}-shoulder"
+     },
+     0.4
+    ]
+   },
+   "tail": {
+    "skin_out": [
+     {
+      "lerp": [
+       {
+        "cube": "joint-neck"
+       },
+       {
+        "cube": "joint-{S}-shoulder"
+       },
+       0.55
+      ]
+     },
+     "up"
+    ]
+   },
+   "frame": "front",
+   "helper": "muscle"
+  },
+  {
+   "name": "lowerarm_{s}",
+   "parent": "upperarm_{s}",
+   "head": {
+    "cube": "joint-{S}-elbow"
+   },
+   "tail": {
+    "cube": "joint-{S}-hand"
+   },
+   "frame": "elbow_lower",
+   "mh": [
+    "lowerarm01.{X}",
+    "lowerarm02.{X}"
+   ],
+   "chain": "lowerarm"
+  },
+  {
+   "name": "lowerarm_twist_01_{s}",
+   "parent": "lowerarm_{s}",
+   "head": {
+    "lerp": [
+     {
+      "cube": "joint-{S}-elbow"
+     },
+     {
+      "cube": "joint-{S}-hand"
+     },
+     0.4
+    ]
+   },
+   "tail": {
+    "lerp": [
+     {
+      "cube": "joint-{S}-elbow"
+     },
+     {
+      "cube": "joint-{S}-hand"
+     },
+     0.6000000000000001
+    ]
+   },
+   "frame": "elbow_lower",
+   "helper": "twist",
+   "at": 0.4
+  },
+  {
+   "name": "lowerarm_twist_02_{s}",
+   "parent": "lowerarm_{s}",
+   "head": {
+    "lerp": [
+     {
+      "cube": "joint-{S}-elbow"
+     },
+     {
+      "cube": "joint-{S}-hand"
+     },
+     0.8
+    ]
+   },
+   "tail": {
+    "lerp": [
+     {
+      "cube": "joint-{S}-elbow"
+     },
+     {
+      "cube": "joint-{S}-hand"
+     },
+     1.0
+    ]
+   },
+   "frame": "elbow_lower",
+   "helper": "twist",
+   "at": 0.8
+  },
+  {
+   "name": "lowerarm_share_{s}",
+   "parent": "upperarm_{s}",
+   "head": {
+    "cube": "joint-{S}-elbow"
+   },
+   "tail": {
+    "lerp": [
+     {
+      "cube": "joint-{S}-elbow"
+     },
+     {
+      "cube": "joint-{S}-hand"
+     },
+     0.25
+    ]
+   },
+   "frame": "elbow_lower",
+   "helper": "share"
+  },
+  {
+   "name": "lowerarm_point_{s}",
+   "parent": "upperarm_{s}",
+   "head": {
+    "cube": "joint-{S}-elbow"
+   },
+   "tail": {
+    "lerp": [
+     {
+      "cube": "joint-{S}-elbow"
+     },
+     {
+      "cube": "joint-{S}-hand"
+     },
+     0.25
+    ]
+   },
+   "frame": "elbow_lower",
+   "helper": "point"
+  },
+  {
+   "name": "hand_{s}",
+   "parent": "lowerarm_{s}",
+   "head": {
+    "cube": "joint-{S}-hand"
+   },
+   "tail": {
+    "cube": "joint-{S}-hand-3"
+   },
+   "frame": "hand",
+   "mh": [
+    "wrist.{X}"
+   ]
+  },
+  {
+   "name": "index_metacarpal_{s}",
+   "parent": "hand_{s}",
+   "head": {
+    "mh": "metacarpal1.{X}",
+    "end": "head"
+   },
+   "tail": {
+    "mh": "metacarpal1.{X}",
+    "end": "tail"
+   },
+   "frame": "palm",
+   "mh": [
+    "metacarpal1.{X}"
+   ]
+  },
+  {
+   "name": "index_01_{s}",
+   "parent": "index_metacarpal_{s}",
+   "head": {
+    "mh": "finger2-1.{X}",
+    "end": "head"
+   },
+   "tail": {
+    "mh": "finger2-1.{X}",
+    "end": "tail"
+   },
+   "frame": "palm",
+   "mh": [
+    "finger2-1.{X}"
+   ]
+  },
+  {
+   "name": "index_02_{s}",
+   "parent": "index_01_{s}",
+   "head": {
+    "mh": "finger2-2.{X}",
+    "end": "head"
+   },
+   "tail": {
+    "mh": "finger2-2.{X}",
+    "end": "tail"
+   },
+   "frame": "palm",
+   "mh": [
+    "finger2-2.{X}"
+   ]
+  },
+  {
+   "name": "index_03_{s}",
+   "parent": "index_02_{s}",
+   "head": {
+    "mh": "finger2-3.{X}",
+    "end": "head"
+   },
+   "tail": {
+    "mh": "finger2-3.{X}",
+    "end": "tail"
+   },
+   "frame": "palm",
+   "mh": [
+    "finger2-3.{X}"
+   ]
+  },
+  {
+   "name": "index_04_leaf_{s}",
+   "parent": "index_03_{s}",
+   "head": {
+    "leaf": true
+   },
+   "tail": {
+    "leaf": true
+   },
+   "frame": "palm",
+   "leaf": true
+  },
+  {
+   "name": "middle_metacarpal_{s}",
+   "parent": "hand_{s}",
+   "head": {
+    "mh": "metacarpal2.{X}",
+    "end": "head"
+   },
+   "tail": {
+    "mh": "metacarpal2.{X}",
+    "end": "tail"
+   },
+   "frame": "palm",
+   "mh": [
+    "metacarpal2.{X}"
+   ]
+  },
+  {
+   "name": "middle_01_{s}",
+   "parent": "middle_metacarpal_{s}",
+   "head": {
+    "mh": "finger3-1.{X}",
+    "end": "head"
+   },
+   "tail": {
+    "mh": "finger3-1.{X}",
+    "end": "tail"
+   },
+   "frame": "palm",
+   "mh": [
+    "finger3-1.{X}"
+   ]
+  },
+  {
+   "name": "middle_02_{s}",
+   "parent": "middle_01_{s}",
+   "head": {
+    "mh": "finger3-2.{X}",
+    "end": "head"
+   },
+   "tail": {
+    "mh": "finger3-2.{X}",
+    "end": "tail"
+   },
+   "frame": "palm",
+   "mh": [
+    "finger3-2.{X}"
+   ]
+  },
+  {
+   "name": "middle_03_{s}",
+   "parent": "middle_02_{s}",
+   "head": {
+    "mh": "finger3-3.{X}",
+    "end": "head"
+   },
+   "tail": {
+    "mh": "finger3-3.{X}",
+    "end": "tail"
+   },
+   "frame": "palm",
+   "mh": [
+    "finger3-3.{X}"
+   ]
+  },
+  {
+   "name": "middle_04_leaf_{s}",
+   "parent": "middle_03_{s}",
+   "head": {
+    "leaf": true
+   },
+   "tail": {
+    "leaf": true
+   },
+   "frame": "palm",
+   "leaf": true
+  },
+  {
+   "name": "ring_metacarpal_{s}",
+   "parent": "hand_{s}",
+   "head": {
+    "mh": "metacarpal3.{X}",
+    "end": "head"
+   },
+   "tail": {
+    "mh": "metacarpal3.{X}",
+    "end": "tail"
+   },
+   "frame": "palm",
+   "mh": [
+    "metacarpal3.{X}"
+   ]
+  },
+  {
+   "name": "ring_01_{s}",
+   "parent": "ring_metacarpal_{s}",
+   "head": {
+    "mh": "finger4-1.{X}",
+    "end": "head"
+   },
+   "tail": {
+    "mh": "finger4-1.{X}",
+    "end": "tail"
+   },
+   "frame": "palm",
+   "mh": [
+    "finger4-1.{X}"
+   ]
+  },
+  {
+   "name": "ring_02_{s}",
+   "parent": "ring_01_{s}",
+   "head": {
+    "mh": "finger4-2.{X}",
+    "end": "head"
+   },
+   "tail": {
+    "mh": "finger4-2.{X}",
+    "end": "tail"
+   },
+   "frame": "palm",
+   "mh": [
+    "finger4-2.{X}"
+   ]
+  },
+  {
+   "name": "ring_03_{s}",
+   "parent": "ring_02_{s}",
+   "head": {
+    "mh": "finger4-3.{X}",
+    "end": "head"
+   },
+   "tail": {
+    "mh": "finger4-3.{X}",
+    "end": "tail"
+   },
+   "frame": "palm",
+   "mh": [
+    "finger4-3.{X}"
+   ]
+  },
+  {
+   "name": "ring_04_leaf_{s}",
+   "parent": "ring_03_{s}",
+   "head": {
+    "leaf": true
+   },
+   "tail": {
+    "leaf": true
+   },
+   "frame": "palm",
+   "leaf": true
+  },
+  {
+   "name": "pinky_metacarpal_{s}",
+   "parent": "hand_{s}",
+   "head": {
+    "mh": "metacarpal4.{X}",
+    "end": "head"
+   },
+   "tail": {
+    "mh": "metacarpal4.{X}",
+    "end": "tail"
+   },
+   "frame": "palm",
+   "mh": [
+    "metacarpal4.{X}"
+   ]
+  },
+  {
+   "name": "pinky_01_{s}",
+   "parent": "pinky_metacarpal_{s}",
+   "head": {
+    "mh": "finger5-1.{X}",
+    "end": "head"
+   },
+   "tail": {
+    "mh": "finger5-1.{X}",
+    "end": "tail"
+   },
+   "frame": "palm",
+   "mh": [
+    "finger5-1.{X}"
+   ]
+  },
+  {
+   "name": "pinky_02_{s}",
+   "parent": "pinky_01_{s}",
+   "head": {
+    "mh": "finger5-2.{X}",
+    "end": "head"
+   },
+   "tail": {
+    "mh": "finger5-2.{X}",
+    "end": "tail"
+   },
+   "frame": "palm",
+   "mh": [
+    "finger5-2.{X}"
+   ]
+  },
+  {
+   "name": "pinky_03_{s}",
+   "parent": "pinky_02_{s}",
+   "head": {
+    "mh": "finger5-3.{X}",
+    "end": "head"
+   },
+   "tail": {
+    "mh": "finger5-3.{X}",
+    "end": "tail"
+   },
+   "frame": "palm",
+   "mh": [
+    "finger5-3.{X}"
+   ]
+  },
+  {
+   "name": "pinky_04_leaf_{s}",
+   "parent": "pinky_03_{s}",
+   "head": {
+    "leaf": true
+   },
+   "tail": {
+    "leaf": true
+   },
+   "frame": "palm",
+   "leaf": true
+  },
+  {
+   "name": "thumb_01_{s}",
+   "parent": "hand_{s}",
+   "head": {
+    "mh": "finger1-1.{X}",
+    "end": "head"
+   },
+   "tail": {
+    "mh": "finger1-1.{X}",
+    "end": "tail"
+   },
+   "frame": "thumb",
+   "mh": [
+    "finger1-1.{X}"
+   ]
+  },
+  {
+   "name": "thumb_02_{s}",
+   "parent": "thumb_01_{s}",
+   "head": {
+    "mh": "finger1-2.{X}",
+    "end": "head"
+   },
+   "tail": {
+    "mh": "finger1-2.{X}",
+    "end": "tail"
+   },
+   "frame": "thumb",
+   "mh": [
+    "finger1-2.{X}"
+   ]
+  },
+  {
+   "name": "thumb_03_{s}",
+   "parent": "thumb_02_{s}",
+   "head": {
+    "mh": "finger1-3.{X}",
+    "end": "head"
+   },
+   "tail": {
+    "mh": "finger1-3.{X}",
+    "end": "tail"
+   },
+   "frame": "thumb",
+   "mh": [
+    "finger1-3.{X}"
+   ]
+  },
+  {
+   "name": "thumb_04_leaf_{s}",
+   "parent": "thumb_03_{s}",
+   "head": {
+    "leaf": true
+   },
+   "tail": {
+    "leaf": true
+   },
+   "frame": "thumb",
+   "leaf": true
+  },
+  {
+   "name": "pec_{s}",
+   "parent": "spine_05",
+   "head": {
+    "lerp": [
+     {
+      "cube": "joint-spine-1"
+     },
+     {
+      "cube": "joint-{S}-shoulder"
+     },
+     0.5
+    ]
+   },
+   "tail": {
+    "skin_out": [
+     {
+      "lerp": [
+       {
+        "cube": "joint-spine-1"
+       },
+       {
+        "cube": "joint-{S}-shoulder"
+       },
+       0.55
+      ]
+     },
+     "front"
+    ]
+   },
+   "frame": "up",
+   "helper": "muscle"
+  },
+  {
+   "name": "lat_{s}",
+   "parent": "spine_04",
+   "head": {
+    "lerp": [
+     {
+      "cube": "joint-spine-2"
+     },
+     {
+      "cube": "joint-{S}-shoulder"
+     },
+     0.55
+    ]
+   },
+   "tail": {
+    "skin_out": [
+     {
+      "lerp": [
+       {
+        "cube": "joint-spine-2"
+       },
+       {
+        "cube": "joint-{S}-shoulder"
+       },
+       0.6
+      ]
+     },
+     "back"
+    ]
+   },
+   "frame": "up",
+   "helper": "muscle"
+  },
+  {
+   "name": "breast_{s}",
+   "parent": "spine_04",
+   "head": {
+    "weights_base": "breast.{X}"
+   },
+   "tail": {
+    "lerp": [
+     {
+      "weights_base": "breast.{X}"
+     },
+     {
+      "mh": "breast.{X}",
+      "end": "tail"
+     },
+     0.5
+    ]
+   },
+   "frame": "up",
+   "mh": [
+    "breast.{X}"
+   ]
+  },
+  {
+   "name": "breast_tip_{s}",
+   "parent": "breast_{s}",
+   "head": {
+    "lerp": [
+     {
+      "weights_base": "breast.{X}"
+     },
+     {
+      "mh": "breast.{X}",
+      "end": "tail"
+     },
+     0.5
+    ]
+   },
+   "tail": {
+    "mh": "breast.{X}",
+    "end": "tail"
+   },
+   "frame": "up",
+   "helper": "tip"
+  },
+  {
+   "name": "thigh_{s}",
+   "parent": "pelvis",
+   "head": {
+    "harrington": {
+     "height": {
+      "cube": "joint-l-upper-leg"
+     },
+     "asis_azimuth_deg": 35,
+     "tilt_deg": 12,
+     "psis_x_m": 0.045,
+     "soft_asis_m": 0.015,
+     "soft_psis_m": 0.01
+    }
+   },
+   "tail": {
+    "knee_tea": {
+     "back_frac": 0.41,
+     "height": {
+      "cube": "joint-{S}-knee"
+     },
+     "hip": {
+      "harrington": {
+       "height": {
+        "cube": "joint-l-upper-leg"
+       },
+       "asis_azimuth_deg": 35,
+       "tilt_deg": 12,
+       "psis_x_m": 0.045,
+       "soft_asis_m": 0.015,
+       "soft_psis_m": 0.01
+      }
+     },
+     "ankle": {
+      "cube": "joint-{S}-ankle"
+     }
+    }
+   },
+   "frame": "knee",
+   "mh": [
+    "upperleg01.{X}",
+    "upperleg02.{X}"
+   ],
+   "chain": "thigh"
+  },
+  {
+   "name": "thigh_twist_01_{s}",
+   "parent": "thigh_{s}",
+   "head": {
+    "lerp": [
+     {
+      "harrington": {
+       "height": {
+        "cube": "joint-l-upper-leg"
+       },
+       "asis_azimuth_deg": 35,
+       "tilt_deg": 12,
+       "psis_x_m": 0.045,
+       "soft_asis_m": 0.015,
+       "soft_psis_m": 0.01
+      }
+     },
+     {
+      "knee_tea": {
+       "back_frac": 0.41,
+       "height": {
+        "cube": "joint-{S}-knee"
+       },
+       "hip": {
+        "harrington": {
+         "height": {
+          "cube": "joint-l-upper-leg"
+         },
+         "asis_azimuth_deg": 35,
+         "tilt_deg": 12,
+         "psis_x_m": 0.045,
+         "soft_asis_m": 0.015,
+         "soft_psis_m": 0.01
+        }
+       },
+       "ankle": {
+        "cube": "joint-{S}-ankle"
+       }
+      }
+     },
+     0.0
+    ]
+   },
+   "tail": {
+    "lerp": [
+     {
+      "harrington": {
+       "height": {
+        "cube": "joint-l-upper-leg"
+       },
+       "asis_azimuth_deg": 35,
+       "tilt_deg": 12,
+       "psis_x_m": 0.045,
+       "soft_asis_m": 0.015,
+       "soft_psis_m": 0.01
+      }
+     },
+     {
+      "knee_tea": {
+       "back_frac": 0.41,
+       "height": {
+        "cube": "joint-{S}-knee"
+       },
+       "hip": {
+        "harrington": {
+         "height": {
+          "cube": "joint-l-upper-leg"
+         },
+         "asis_azimuth_deg": 35,
+         "tilt_deg": 12,
+         "psis_x_m": 0.045,
+         "soft_asis_m": 0.015,
+         "soft_psis_m": 0.01
+        }
+       },
+       "ankle": {
+        "cube": "joint-{S}-ankle"
+       }
+      }
+     },
+     0.25
+    ]
+   },
+   "frame": "knee",
+   "helper": "twist",
+   "at": 0.0
+  },
+  {
+   "name": "thigh_twist_02_{s}",
+   "parent": "thigh_{s}",
+   "head": {
+    "lerp": [
+     {
+      "harrington": {
+       "height": {
+        "cube": "joint-l-upper-leg"
+       },
+       "asis_azimuth_deg": 35,
+       "tilt_deg": 12,
+       "psis_x_m": 0.045,
+       "soft_asis_m": 0.015,
+       "soft_psis_m": 0.01
+      }
+     },
+     {
+      "knee_tea": {
+       "back_frac": 0.41,
+       "height": {
+        "cube": "joint-{S}-knee"
+       },
+       "hip": {
+        "harrington": {
+         "height": {
+          "cube": "joint-l-upper-leg"
+         },
+         "asis_azimuth_deg": 35,
+         "tilt_deg": 12,
+         "psis_x_m": 0.045,
+         "soft_asis_m": 0.015,
+         "soft_psis_m": 0.01
+        }
+       },
+       "ankle": {
+        "cube": "joint-{S}-ankle"
+       }
+      }
+     },
+     0.5
+    ]
+   },
+   "tail": {
+    "lerp": [
+     {
+      "harrington": {
+       "height": {
+        "cube": "joint-l-upper-leg"
+       },
+       "asis_azimuth_deg": 35,
+       "tilt_deg": 12,
+       "psis_x_m": 0.045,
+       "soft_asis_m": 0.015,
+       "soft_psis_m": 0.01
+      }
+     },
+     {
+      "knee_tea": {
+       "back_frac": 0.41,
+       "height": {
+        "cube": "joint-{S}-knee"
+       },
+       "hip": {
+        "harrington": {
+         "height": {
+          "cube": "joint-l-upper-leg"
+         },
+         "asis_azimuth_deg": 35,
+         "tilt_deg": 12,
+         "psis_x_m": 0.045,
+         "soft_asis_m": 0.015,
+         "soft_psis_m": 0.01
+        }
+       },
+       "ankle": {
+        "cube": "joint-{S}-ankle"
+       }
+      }
+     },
+     0.75
+    ]
+   },
+   "frame": "knee",
+   "helper": "twist",
+   "at": 0.5
+  },
+  {
+   "name": "thigh_share_{s}",
+   "parent": "pelvis",
+   "head": {
+    "harrington": {
+     "height": {
+      "cube": "joint-l-upper-leg"
+     },
+     "asis_azimuth_deg": 35,
+     "tilt_deg": 12,
+     "psis_x_m": 0.045,
+     "soft_asis_m": 0.015,
+     "soft_psis_m": 0.01
+    }
+   },
+   "tail": {
+    "lerp": [
+     {
+      "harrington": {
+       "height": {
+        "cube": "joint-l-upper-leg"
+       },
+       "asis_azimuth_deg": 35,
+       "tilt_deg": 12,
+       "psis_x_m": 0.045,
+       "soft_asis_m": 0.015,
+       "soft_psis_m": 0.01
+      }
+     },
+     {
+      "knee_tea": {
+       "back_frac": 0.41,
+       "height": {
+        "cube": "joint-{S}-knee"
+       },
+       "hip": {
+        "harrington": {
+         "height": {
+          "cube": "joint-l-upper-leg"
+         },
+         "asis_azimuth_deg": 35,
+         "tilt_deg": 12,
+         "psis_x_m": 0.045,
+         "soft_asis_m": 0.015,
+         "soft_psis_m": 0.01
+        }
+       },
+       "ankle": {
+        "cube": "joint-{S}-ankle"
+       }
+      }
+     },
+     0.25
+    ]
+   },
+   "frame": "knee",
+   "helper": "share"
+  },
+  {
+   "name": "glute_{s}",
+   "parent": "pelvis",
+   "head": {
+    "harrington": {
+     "height": {
+      "cube": "joint-l-upper-leg"
+     },
+     "asis_azimuth_deg": 35,
+     "tilt_deg": 12,
+     "psis_x_m": 0.045,
+     "soft_asis_m": 0.015,
+     "soft_psis_m": 0.01
+    }
+   },
+   "tail": {
+    "skin_out": [
+     {
+      "lerp": [
+       {
+        "harrington": {
+         "height": {
+          "cube": "joint-l-upper-leg"
+         },
+         "asis_azimuth_deg": 35,
+         "tilt_deg": 12,
+         "psis_x_m": 0.045,
+         "soft_asis_m": 0.015,
+         "soft_psis_m": 0.01
+        }
+       },
+       {
+        "cube": "joint-{S}-knee"
+       },
+       0.05
+      ]
+     },
+     "back"
+    ]
+   },
+   "frame": "up",
+   "helper": "muscle"
+  },
+  {
+   "name": "calf_{s}",
+   "parent": "thigh_{s}",
+   "head": {
+    "knee_tea": {
+     "back_frac": 0.41,
+     "height": {
+      "cube": "joint-{S}-knee"
+     },
+     "hip": {
+      "harrington": {
+       "height": {
+        "cube": "joint-l-upper-leg"
+       },
+       "asis_azimuth_deg": 35,
+       "tilt_deg": 12,
+       "psis_x_m": 0.045,
+       "soft_asis_m": 0.015,
+       "soft_psis_m": 0.01
+      }
+     },
+     "ankle": {
+      "cube": "joint-{S}-ankle"
+     }
+    }
+   },
+   "tail": {
+    "cube": "joint-{S}-ankle"
+   },
+   "frame": "knee",
+   "mh": [
+    "lowerleg01.{X}",
+    "lowerleg02.{X}"
+   ],
+   "chain": "calf"
+  },
+  {
+   "name": "calf_twist_01_{s}",
+   "parent": "calf_{s}",
+   "head": {
+    "lerp": [
+     {
+      "knee_tea": {
+       "back_frac": 0.41,
+       "height": {
+        "cube": "joint-{S}-knee"
+       },
+       "hip": {
+        "harrington": {
+         "height": {
+          "cube": "joint-l-upper-leg"
+         },
+         "asis_azimuth_deg": 35,
+         "tilt_deg": 12,
+         "psis_x_m": 0.045,
+         "soft_asis_m": 0.015,
+         "soft_psis_m": 0.01
+        }
+       },
+       "ankle": {
+        "cube": "joint-{S}-ankle"
+       }
+      }
+     },
+     {
+      "cube": "joint-{S}-ankle"
+     },
+     0.4
+    ]
+   },
+   "tail": {
+    "lerp": [
+     {
+      "knee_tea": {
+       "back_frac": 0.41,
+       "height": {
+        "cube": "joint-{S}-knee"
+       },
+       "hip": {
+        "harrington": {
+         "height": {
+          "cube": "joint-l-upper-leg"
+         },
+         "asis_azimuth_deg": 35,
+         "tilt_deg": 12,
+         "psis_x_m": 0.045,
+         "soft_asis_m": 0.015,
+         "soft_psis_m": 0.01
+        }
+       },
+       "ankle": {
+        "cube": "joint-{S}-ankle"
+       }
+      }
+     },
+     {
+      "cube": "joint-{S}-ankle"
+     },
+     0.6000000000000001
+    ]
+   },
+   "frame": "knee",
+   "helper": "twist",
+   "at": 0.4
+  },
+  {
+   "name": "calf_twist_02_{s}",
+   "parent": "calf_{s}",
+   "head": {
+    "lerp": [
+     {
+      "knee_tea": {
+       "back_frac": 0.41,
+       "height": {
+        "cube": "joint-{S}-knee"
+       },
+       "hip": {
+        "harrington": {
+         "height": {
+          "cube": "joint-l-upper-leg"
+         },
+         "asis_azimuth_deg": 35,
+         "tilt_deg": 12,
+         "psis_x_m": 0.045,
+         "soft_asis_m": 0.015,
+         "soft_psis_m": 0.01
+        }
+       },
+       "ankle": {
+        "cube": "joint-{S}-ankle"
+       }
+      }
+     },
+     {
+      "cube": "joint-{S}-ankle"
+     },
+     0.8
+    ]
+   },
+   "tail": {
+    "lerp": [
+     {
+      "knee_tea": {
+       "back_frac": 0.41,
+       "height": {
+        "cube": "joint-{S}-knee"
+       },
+       "hip": {
+        "harrington": {
+         "height": {
+          "cube": "joint-l-upper-leg"
+         },
+         "asis_azimuth_deg": 35,
+         "tilt_deg": 12,
+         "psis_x_m": 0.045,
+         "soft_asis_m": 0.015,
+         "soft_psis_m": 0.01
+        }
+       },
+       "ankle": {
+        "cube": "joint-{S}-ankle"
+       }
+      }
+     },
+     {
+      "cube": "joint-{S}-ankle"
+     },
+     1.0
+    ]
+   },
+   "frame": "knee",
+   "helper": "twist",
+   "at": 0.8
+  },
+  {
+   "name": "calf_share_{s}",
+   "parent": "thigh_{s}",
+   "head": {
+    "knee_tea": {
+     "back_frac": 0.41,
+     "height": {
+      "cube": "joint-{S}-knee"
+     },
+     "hip": {
+      "harrington": {
+       "height": {
+        "cube": "joint-l-upper-leg"
+       },
+       "asis_azimuth_deg": 35,
+       "tilt_deg": 12,
+       "psis_x_m": 0.045,
+       "soft_asis_m": 0.015,
+       "soft_psis_m": 0.01
+      }
+     },
+     "ankle": {
+      "cube": "joint-{S}-ankle"
+     }
+    }
+   },
+   "tail": {
+    "lerp": [
+     {
+      "knee_tea": {
+       "back_frac": 0.41,
+       "height": {
+        "cube": "joint-{S}-knee"
+       },
+       "hip": {
+        "harrington": {
+         "height": {
+          "cube": "joint-l-upper-leg"
+         },
+         "asis_azimuth_deg": 35,
+         "tilt_deg": 12,
+         "psis_x_m": 0.045,
+         "soft_asis_m": 0.015,
+         "soft_psis_m": 0.01
+        }
+       },
+       "ankle": {
+        "cube": "joint-{S}-ankle"
+       }
+      }
+     },
+     {
+      "cube": "joint-{S}-ankle"
+     },
+     0.25
+    ]
+   },
+   "frame": "knee",
+   "helper": "share"
+  },
+  {
+   "name": "calf_point_{s}",
+   "parent": "thigh_{s}",
+   "head": {
+    "knee_tea": {
+     "back_frac": 0.41,
+     "height": {
+      "cube": "joint-{S}-knee"
+     },
+     "hip": {
+      "harrington": {
+       "height": {
+        "cube": "joint-l-upper-leg"
+       },
+       "asis_azimuth_deg": 35,
+       "tilt_deg": 12,
+       "psis_x_m": 0.045,
+       "soft_asis_m": 0.015,
+       "soft_psis_m": 0.01
+      }
+     },
+     "ankle": {
+      "cube": "joint-{S}-ankle"
+     }
+    }
+   },
+   "tail": {
+    "lerp": [
+     {
+      "knee_tea": {
+       "back_frac": 0.41,
+       "height": {
+        "cube": "joint-{S}-knee"
+       },
+       "hip": {
+        "harrington": {
+         "height": {
+          "cube": "joint-l-upper-leg"
+         },
+         "asis_azimuth_deg": 35,
+         "tilt_deg": 12,
+         "psis_x_m": 0.045,
+         "soft_asis_m": 0.015,
+         "soft_psis_m": 0.01
+        }
+       },
+       "ankle": {
+        "cube": "joint-{S}-ankle"
+       }
+      }
+     },
+     {
+      "cube": "joint-{S}-ankle"
+     },
+     0.25
+    ]
+   },
+   "frame": "knee",
+   "helper": "point"
+  },
+  {
+   "name": "foot_{s}",
+   "parent": "calf_{s}",
+   "head": {
+    "cube": "joint-{S}-ankle"
+   },
+   "tail": {
+    "mean": [
+     {
+      "cube": "joint-{S}-toe-1-1"
+     },
+     {
+      "cube": "joint-{S}-toe-2-1"
+     },
+     {
+      "cube": "joint-{S}-toe-3-1"
+     },
+     {
+      "cube": "joint-{S}-toe-4-1"
+     },
+     {
+      "cube": "joint-{S}-toe-5-1"
+     }
+    ]
+   },
+   "frame": "up",
+   "mh": [
+    "foot.{X}"
+   ]
+  },
+  {
+   "name": "ball_{s}",
+   "parent": "foot_{s}",
+   "head": {
+    "mean": [
+     {
+      "cube": "joint-{S}-toe-1-1"
+     },
+     {
+      "cube": "joint-{S}-toe-2-1"
+     },
+     {
+      "cube": "joint-{S}-toe-3-1"
+     },
+     {
+      "cube": "joint-{S}-toe-4-1"
+     },
+     {
+      "cube": "joint-{S}-toe-5-1"
+     }
+    ]
+   },
+   "tail": {
+    "mean": [
+     {
+      "cube": "joint-{S}-toe-1-3"
+     },
+     {
+      "cube": "joint-{S}-toe-2-4"
+     },
+     {
+      "cube": "joint-{S}-toe-3-4"
+     },
+     {
+      "cube": "joint-{S}-toe-4-4"
+     },
+     {
+      "cube": "joint-{S}-toe-5-4"
+     }
+    ]
+   },
+   "frame": "up",
+   "mh": [
+    "toe*.{X}"
+   ]
+  },
+  {
+   "name": "ball_leaf_{s}",
+   "parent": "ball_{s}",
+   "head": {
+    "leaf": true
+   },
+   "tail": {
+    "leaf": true
+   },
+   "frame": "up",
+   "leaf": true
+  }
+ ]
+}

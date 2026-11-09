@@ -450,6 +450,8 @@ public sealed class Waystation : ZoneRuntime
         base.Begin(b);
         People();
         DressStall();
+        // The square's lamp-post (lamp_posts.json, lit from the start): its menu, travel to the posts she has lit.
+        LampRise.AddPosts(this, G, () => B);
         G.SetAtmosphere(AtmosphereFor(W.Time));
         nightNow = Dark;
         SetNight(nightNow);

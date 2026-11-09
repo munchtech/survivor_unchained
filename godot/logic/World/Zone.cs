@@ -96,6 +96,11 @@ public sealed record GradeSettings(double[] Lift, double[] Gamma, double[] Gain,
     public double MoonHi { get; init; } = 0.16;
     public double MoonTop { get; init; } = 0.9;
     public double MoonWidth { get; init; } = 0.2;
+    /// <summary>Skin's hues spared the moon's step, this share of it (0: none, as before; the Look's 1): skin in shade is
+    /// weakly coloured (C/L under MoonHi) and mid-dark, so the step gave it the moon's silver-blue, a blue-grey patch on the
+    /// far side of her neck under her jaw at the Look (P1 R1 round 33, gate judge 2 S4: Oklab h 46 C .045 before the grade,
+    /// h -15 C .020 after; on A and B alike). The band: Atmosphere.MoonSkinHue on the input, C 0.012 up.</summary>
+    public double MoonSkin { get; init; }
     /// <summary>The paint grade (art style round 2, approved 20 Oct; 0: off), after the moon's step, in Oklab: PaintVib
     /// raises the chroma of what is dull and not dark (skin hues held), PaintHi that of the lit brights, PaintLift lifts the
     /// darkest values, and PaintShadowK of PaintShadow's hue and chroma (sRGB hex; "" none) is laid on what is dark and
@@ -240,6 +245,9 @@ public sealed class ZoneMeta
     public string BlightGlow = "#8cff5a";
     /// <summary>How far from the centre the survivor may go, each way.</summary>
     public double Bound;
+    /// <summary>(M5) What the zone's ground has, by name (e.g. "lowford.pockets"); the ground lead adds one when it lands.
+    /// Content that needs one (Encounters.Beat.Needs, LampPosts moved) is off until the zone holds it.</summary>
+    public List<string> Features = new();
     public Start Start = new();
     /// <summary>The zone's air by day (the runtime changes it with the hour).</summary>
     public AtmospherePreset Atmosphere = null!;

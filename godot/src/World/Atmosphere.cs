@@ -339,7 +339,7 @@ public partial class Atmosphere : Node3D
                     Lift = V("lift", p.Grade.Lift), Saturation = T("sat", p.Grade.Saturation), Vibrance = T("vib", p.Grade.Vibrance),
                     Moon = T("moon", p.Grade.Moon), MoonHue = T("mhue", p.Grade.MoonHue), MoonSat = T("msat", p.Grade.MoonSat),
                     MoonDrop = T("mdrop", p.Grade.MoonDrop), MoonLo = T("mlo", p.Grade.MoonLo), MoonHi = T("mhi", p.Grade.MoonHi),
-                    MoonTop = T("mtop", p.Grade.MoonTop), MoonWidth = T("mw", p.Grade.MoonWidth),
+                    MoonTop = T("mtop", p.Grade.MoonTop), MoonWidth = T("mw", p.Grade.MoonWidth), MoonSkin = T("mskin", p.Grade.MoonSkin),
                     PaintShadow = H("psh", p.Grade.PaintShadow), PaintShadowK = T("pshk", p.Grade.PaintShadowK), PaintVib = T("pvib", p.Grade.PaintVib),
                     PaintLift = T("plift", p.Grade.PaintLift), PaintHi = T("phi", p.Grade.PaintHi), PaintShadowSkin = T("pshskin", p.Grade.PaintShadowSkin),
                 },
@@ -884,6 +884,10 @@ public partial class Atmosphere : Node3D
         return FromOklab(o.X, a, b).Clamp(Vector3.Zero, Vector3.One);
     }
 
+    /// <summary>GradeSettings.MoonSkin's hue band (Oklab degrees on the input: in over [0]..[1], out over [2]..[3]): her skin in
+    /// shade at the Look runs h 34-55 before the grade; the camp's earth behind her 53-87 (p5-p95), which keeps the moon's blue
+    /// (at the paint grade's 15-90 band it went warm brown over the Look's lower third). --moon-skin-hue A,B,C,D.</summary>
+    static readonly float[] MoonSkinHue = Floats("moon-skin-hue", 15f, 25f, 50f, 62f);
     /// <summary>GradeSettings.Moon: the moon's (or the dawn shade's) cool colour over what is weakly coloured.</summary>
     /// <summary>(L1 W2, bible rules 1, 3, 4) The warm-source term: what a warm light lit (input hue WarmHue +-WarmWidth, its
     /// chroma over 0.10-0.18 of its L, not black) keeps WarmKeep of the chroma (as a share of its L) and the hue the renderer
@@ -998,6 +1002,8 @@ public partial class Atmosphere : Node3D
         var i = Oklab(inLin); var o = Oklab(outLin);
         float sat = i.Y / Mathf.Max(i.X, 1e-4f), top = (float)g.MoonTop;
         float m = (float)g.Moon * (1 - Smooth((float)g.MoonLo, (float)g.MoonHi, sat)) * (1 - Smooth(top - (float)g.MoonWidth, top, i.X)) * Smooth(0, 0.06f, i.X);
+        // (skin's hues spared MoonSkin of it: P1 R1 round 33, S4, her shaded neck blue-grey at the Look)
+        if (g.MoonSkin > 0) m *= 1 - (float)g.MoonSkin * Smooth(MoonSkinHue[0], MoonSkinHue[1], i.Z) * (1 - Smooth(MoonSkinHue[2], MoonSkinHue[3], i.Z)) * Smooth(0.012f, 0.025f, i.Y);
         if (m <= 0) return outLin;
         float h0 = Mathf.DegToRad(o.Z), h1 = Mathf.DegToRad((float)g.MoonHue), keep = 1 - m * (float)g.MoonDrop, add = m * o.X * (float)g.MoonSat;
         return FromOklab(o.X, o.Y * Mathf.Cos(h0) * keep + add * Mathf.Cos(h1), o.Y * Mathf.Sin(h0) * keep + add * Mathf.Sin(h1)).Clamp(Vector3.Zero, Vector3.One);

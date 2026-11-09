@@ -899,8 +899,12 @@ public sealed class Verge : ZoneRuntime
 
     /* ------------------------------------------------------------ runtime -- */
 
+    /// <summary>The zone she came from (ArrivalFrom; null on a load or a rise): the reset rule's turn.</summary>
+    string? cameFrom;
+
     public override Arrival ArrivalFrom(string? from)
     {
+        cameFrom = from;
         var e = V("entry");
         return from == "waystation" || from == null ? new Arrival(e.X + 4, e.Z, Math.PI / 2) : new Arrival(e.X + 4, e.Z);
     }
@@ -909,6 +913,11 @@ public sealed class Verge : ZoneRuntime
     {
         base.Begin(battle);
         var wd = W;
+        // (ARPG 7.3, "leave": its packs and chests come back when she comes in from another zone; a load or a rise keeps them)
+        ZoneReset.Apply(wd, Id, cameFrom);
+        // Its lamp-post at the wood's edge (lamp_posts.json): her checkpoint here once lit.
+        LampRise.ShowLamps(G, Id);
+        LampRise.AddPosts(this, G, () => B);
         G.SetAtmosphere(AtmosphereFor(wd.Time));
         // Maeca hunts here by day, once you have met her in town.
         if (wd.Time != TimeOfDay.Night && F("beasts.outcome").Str != "slaughtered" && wd.Npcs.TryGetValue("maeca", out var m) && m.Flags.TryGetValue("met", out var met) && met.Truthy)
@@ -1044,6 +1053,23 @@ public sealed class Verge : ZoneRuntime
         G.Look.Plates(plates);
         trackT -= dt;
         if (trackT <= 0) { trackT = 1.5; G.SetObjectives(Objectives.Of(C)); }
+    }
+
+    /// <summary>A fall out here (ARPG 7.2): she gets up at the last lamp-post she lit in the Verge, else at its entry, whole
+    /// and with everything; never carried back to the Waystation. The story's toll counts it.</summary>
+    public override bool OnDeath(string killer)
+    {
+        if (B == null) return false;
+        var battle = B;
+        string line = LampRise.Line(LampRise.CountRise(W));
+        var entry = V("entry");
+        G.After(2.6, () =>
+        {
+            G.Say(line, null, 3.5);
+            var at = LampRise.RiseAt(W, Id, battle, (entry.X + 4, entry.Z));
+            LampRise.Stand(G, battle, at.X, at.Z);
+        });
+        return true;
     }
 
     public override List<MapMark> MapMarks()

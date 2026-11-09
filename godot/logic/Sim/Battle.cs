@@ -691,9 +691,10 @@ public sealed partial class Battle
     }
 
     /// <summary>Targetable by weapons: hostile, or neutral and provoked.</summary>
+    /// (M5 r4: not a resting pack in a lamp's breather, LampHush: her weapons woke the dawn boars 1.5 s after the bank lamp)
     public bool Targetable(Enemy e) =>
         e.Alive && e.State != EnemyState.Dying && e.State != EnemyState.Burrowed && e.Disposition != Disposition.Ally &&
-        (e.Disposition == Disposition.Hostile || e.Provoked);
+        (e.Disposition == Disposition.Hostile || e.Provoked) && !(e.Wake > 0 && !e.Roused && LampHush);
 
     public bool FactionsAtWar(Faction a, Faction b)
     {
@@ -1651,6 +1652,9 @@ public sealed partial class Battle
     /// <summary>No more enemies come (a developer's picture: --no-spawn, after --horde, so a cleared field stays clear).</summary>
     public bool NoSpawn;
 
+    /// <summary>The world tier's scale on the foes spawned from now (Journey.StartBattle; ARPG.md 7.3).</summary>
+    public double WorldHealth = 1, WorldDamage = 1;
+
     public Enemy? SpawnEnemy(string defId, double x, double z, SpawnOpts? o = null)
     {
         if (NoSpawn) return null;
@@ -1669,6 +1673,8 @@ public sealed partial class Battle
         e.MaxHp = e.Hp = def.Health * sc.Health * (o.Elite && !def.Elite ? 3 : 1);
         e.Damage = def.Damage * sc.Damage;
         e.Faction = o.Faction ?? def.Faction;
+        // The world's tier scales foes only: never her allies, never neutrals (ARPG.md 7.3).
+        if (e.Faction is not (Faction.Ally or Faction.Town or Faction.Wild or Faction.Player)) { e.MaxHp = e.Hp = e.MaxHp * WorldHealth; e.Damage *= WorldDamage; }
         e.Disposition = o.Disposition ?? (def.Faction == Faction.Ally ? Disposition.Ally : Disposition.Hostile);
         e.Speed = def.Speed * Vary.Pace(Rng.Next(), VaryPacks ? def.Spread ?? 0.08 : 0.08) * (e.Disposition == Disposition.Ally ? 1 : Rules.FoeSpeed * (1 + 0.05 * Boons.GetValueOrDefault("dark_bargain")));
         e.Elite = def.Elite || o.Elite;
@@ -1701,6 +1707,7 @@ public sealed partial class Battle
         e.DieT = 0;
         e.LifeT = 0;
         e.Named = null;
+        e.Rank = 0; e.RankScale = e.RankR = e.RankG = e.RankB = 1; e.RankGlow = 0; e.RankRim = -1; e.TrailX = e.TrailZ = double.NaN;
         e.Tag = o.Tag;
         e.Credit = false;
         e.Provoked = false;
@@ -1819,6 +1826,21 @@ public sealed partial class Battle
 
     /// <summary>Hidden drops are taken underfoot only while this holds (the show-all key held).</summary>
     public bool TakeHidden;
+
+    /// <summary>(M5 r3) When a lamp-post was last lit (game seconds): no pack wakes within LampQuiet of it (the judge: n_post
+    /// rose 0.7 s after the lamp lit, its light's moment lost under the rising). Set by whoever lights one (LampRise.Light).</summary>
+    public double LampLitAt = double.NegativeInfinity;
+    public const double LampQuiet = 4;
+    /// <summary>(M5 r3) A lamp lit under LampQuiet ago: resting packs stay down (Ai) and gated packs wait (Encounters).</summary>
+    public bool LampHush => Time - LampLitAt < LampQuiet || Time < HushUntil;
+    /// <summary>(M5 r4) The breather's end besides a lamp's lighting (game seconds): a lamp menu open (MenuQuiet after it
+    /// closes), her rise (RiseQuiet). The judge, round 3: n_post woke 0.3 s into the first lamp's menu, n_road3 as she rose.</summary>
+    public double HushUntil = double.NegativeInfinity;
+    /// <summary>(M5 r4) When a scheduled champion comes (a ring's second wave, game seconds; NaN: none): ChampionGate.Waking.</summary>
+    public double ChampionDueAt = double.NaN;
+    public const double MenuQuiet = 2, RiseQuiet = 4;
+    /// <summary>(M5 r4) No pack wakes for `seconds` from now (LampHush).</summary>
+    public void Breather(double seconds) => HushUntil = Math.Max(HushUntil, Time + seconds);
 
     /// <summary>The most stones left lying before the rest are gathered into one, the night's hoard
     /// stone (the genre's red gem): a late night left thousands carpeting the field, and once the

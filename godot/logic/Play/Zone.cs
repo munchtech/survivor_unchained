@@ -81,10 +81,20 @@ public interface IZoneHost
     void Say(string text, string? who = null, double seconds = 4);
     void Toast(Toast t);
     void Announce(Announcement a);
+    /// <summary>(M5 r2) Banners asked for in the next seconds (a level-up) wait till then, and one shown just now is shown
+    /// again after; an Announcement marked Through still shows (the staging's own).</summary>
+    void HoldBanners(double seconds) { }
+    /// <summary>(M5 r5) No story text (narration or speaker card) is up or waiting; a zone that must follow a line waits on it.</summary>
+    bool StoryClear => true;
+    /// <summary>(M5 r2) No interact prompt for the next seconds (under a banner that must read alone).</summary>
+    void HushPrompts(double seconds) { }
     /// <summary>A chest opened in a fight: the game stages it (ChestCeremony); a host without a
     /// stage says what came out in a line.</summary>
     void Chest(ChestOpened c) => Announce(new Announcement(c.Hoard ?? "A chest", string.Join(" · ", c.Items.Select(i => i.Name)), "reward", 2.8));
     void Talk(string npc);
+    /// <summary>A lit lamp-post's menu (Play/PostMenu.cs: travel, the world tier, the Lamps, leave), opened where she stands
+    /// at it; a host without a screen does nothing.</summary>
+    void OpenPost(string postId) { }
     /// <summary>A conversation opened at one of its nodes (a story night's scene: door_night at go_home), the sim held
     /// while it runs; `ended` is told the id of the last node shown (lie_down: she raised her weapon; go: she went).
     /// A host without a screen runs it at once (SceneTalk: its chooser, or the first ending answer).</summary>
@@ -174,6 +184,8 @@ public interface IZoneLook
 {
     /// <summary>A light on or off, its glowing bits and its fire with it.</summary>
     void SetLit(int light, bool on);
+    /// <summary>(M5 r2) A light's level over its built brightness, and its color when given (a lit lamp-post's own light).</summary>
+    void LightLevel(int light, double level, string? color = null) { }
     bool IsLit(int light);
     /// <summary>Show or hide a named piece of the landmarks.</summary>
     void Show(string node, bool visible);

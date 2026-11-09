@@ -63,6 +63,15 @@ uniform float rim = 0.25;
 // line; Godot's screen-space scattering spreads a few pixels at a close-up,
 // and spread wider it blurred away her skin's grain.)
 uniform vec3 terminator = vec3(0.32, 0.15, 0.1);
+// The same reach on her throat (P1 R1 round 38, gate judge 5 fault 1): when her head turns, the fold of her throat
+// faces away from the key (its n.l about a third of her neck's beside it, H1DBG 1), and with red reaching only 0.32 past
+// her lit side the fold darkened nearly grey-proportionally (linear crease/neck R .55 G .38 B .35): a grey-mauve band
+// (Oklab hue 48, chroma .097) under a warm brown jaw shade (hue 40, .108). Neither the sky (ambient), the fill, the
+// head's AO, the scattering nor the grade moved its hue 0.3 deg (round 38 toggles). Red reaching further in the fold,
+// as a pre-integrated skin's falloff does in tight curves, takes it to hue 44.5, chroma .110. Over her neck's column
+// (her freckles' map's blue on her body; her head under neck_pull_y) only: all over her it moved the Look's and the
+// close view's shade 3-5 deg. x < 0: none (everyone else).
+uniform vec3 throat_terminator = vec3(-1.0);
 // Her skin's colour in the sky's light (the ambient) against the lamps': her colour times this there, the lamps'
 // light on her as before (light() divides it back out). Light from all round goes deeper into skin and comes out
 // redder than a lamp's from one side; without it, the night sky's blue in her jaw's shadow, the only light there,
@@ -107,6 +116,22 @@ uniform sampler2D features : hint_default_black, filter_linear_mipmap;
 // on the light round her and on some of her lights' too (as a soft shadow).
 uniform sampler2D ao_map : hint_default_white, filter_linear_mipmap;
 uniform float ao_light = 0.0;
+// Her own skin's light bounced into her hollows (P1 R1 round 33, gate judge 2 S3, the armpit blot): where a lamp
+// can't reach (n.l under cavity_ndl), cavity_bounce of its light, by cavity_map's shade (her body's own baked AO, red:
+// 1 open, under cavity_ao.y; all of it at cavity_ao.x). As her arm lifts, the hollow under it faces away from every
+// lamp and the sky's ground gives nothing: it went black and Godot's skin scattering painted it a dark red-brown blot
+// (fight_stalker 359, Oklab L .32 C .098; with scattering off L .06). A directional lamp's bounce takes no shadow
+// (the hollow under her raised arm is in her arm's own shadow; what lights it is her lit skin round it), cavity_shadow
+// of it does. 0: none (A, her head, everyone else).
+uniform sampler2D cavity_map : hint_default_white, filter_linear_mipmap;
+uniform float cavity_bounce = 0.0;
+uniform vec2 cavity_ao = vec2(0.35, 0.9);
+uniform vec2 cavity_ndl = vec2(-0.25, 0.25);
+uniform float cavity_shadow = 0.0;
+// (and only where she faces down (world normal y under -cavity_down.x, all of it under -.y): the hollow under her
+// raised arm faces the ground; at rest her armpit's front fold faces sideways and is her form, and the bounce over it
+// took its shade to a pale patch at the Look: at (0.1, 0.35) 2454 px changed there, max 79 levels; at (0.35, 0.7) 1367, the crease kept; the pit at fight_stalker 359 L .42)
+uniform vec2 cavity_down = vec2(0.35, 0.7);
 // (her lips parted (HerFaceLife.MouthShade, 0 shut to 1 by mouth_open 0.3): the shade ao_map bakes where her lips
 // meet, right for them shut, is eased up to lip_ao_open on her lips (features' green): opened, the inner faces of her
 // lips came out of that bake near black, her lower lip's top a black band under her teeth (c04a A5, judge F1, face 29))
@@ -361,10 +386,17 @@ uniform float backlight_behind = 0.0;
 // turned from a lamp, as they are her body's; without them, by the overhead lantern at night, her lower face, jaw
 // and nostrils fell to the night sky's blue-black under a lit neck (judge rj2v, 12 October 2026).)
 uniform float thin_map = 0.0;
+// (and eased out over the 3 cm above her neck's seam, by ao_map's green, thin_ease of it: her body below the seam takes
+// the light through her unmasked, her head's neck above it took none, so the seam under her jaw at the Look was a
+// darker step on the head's side, 9-12 levels at 1:1 (P1 R1 seam 2, 8 November 2026); 0: as before)
+uniform float thin_ease = 0.0;
 // (her head's rim from every lamp, as her paint's light through her: her head outside the rig, eased out over the
 // 3 cm above SPLIT (ao_map's green); her body keeps it to lamps behind)
-varying float front_rim;
-varying float rim_dn;
+// (front_rim and rim_dn share one varying, so the throat's weight has one: 32 at most, P1 R1 round 38)
+varying vec3 rim_throat;
+#define front_rim rim_throat.x
+#define rim_dn rim_throat.y
+#define throat_w rim_throat.z
 // Her shade richer (a lamp's light where it reaches her at a low angle, ndl shade_from to shade_to, times shade_tint,
 // its lightness kept): where she faces down (shade_down, world normal's -y from down_from to down_to) and where
 // ao_map's alpha says (shade_zone). (Tried 11 October 2026: ungated it misses the shade under her jaw, lit there
@@ -419,7 +451,10 @@ varying vec4 shade_lse;
 #define lift_w shade_lse.y
 #define soft_w shade_lse.z
 #define edge_w shade_lse.w
-varying float back_ao;
+// (back_ao and cav_w share one varying: 32 at most, P1 R1 round 33)
+varying vec2 back_cav;
+#define back_ao back_cav.x
+#define cav_w back_cav.y
 // The inside of her mouth (heroine_mouth.py: her head's vertex colour's alpha, 1 outside, falling to 0 deep in her
 // mouth): her paint there (a lilac-grey island, an orange-brown cheek wall) and every lamp's light, unshadowed at
 // this scale, showed it as a lit box with an orange glow (judge rj3). There it takes mouth_colour, a wet dark red,
@@ -459,6 +494,16 @@ uniform float metal_cap = 0.8;
 // Directional lamps (sun, moon) and cool lamps untouched. 0: as before.)
 uniform float skin_hold = 0.0;
 uniform vec3 hold_tint = vec3(1.0, 0.85, 0.55);
+// A cool lamp behind her lights her skin at its own lightness, its blue taken out (back_neutral of it: 0 none, 1 all;
+// People.HerBackNeutral). The Look's cool rim (0.72, 0.82, 1) and the close view's night rim (#a9c4ff) reach the far side
+// of her neck under her jaw, where neither key nor fill does: blue light on red-rich skin came out lavender (P1 R1 seam 2,
+// 8 Nov 2026: the Look's far neck Oklab hue -10 against 30-36 round it, its diffuse and its sheen alike; the rim's colour
+// 0.85 grey: 33.5, her face, chest and shade within 1 deg). Her hair, gear and the scene keep the rims' colour; warm
+// lamps (the fires, the edge lamp) untouched.
+uniform float back_neutral = 0.0;
+// (and the sun and moon behind her, back_neutral_sky of it: the close view's fights, a directional lamp behind her lit the
+// end of her throat's crease by her outline pink-grey, Oklab hue 44 against 51 at its lightness beside it; 47 with it)
+uniform float back_neutral_sky = 0.0;
 uniform float hold_chroma = 0.0;
 uniform float hold_gain = 1.0;
 // (deep skin's sheen: on a dark albedo a lamp's sheen held at spec_cap outshone the skin's own light and lay along her
@@ -777,9 +822,12 @@ void fragment() {
 	AO_LIGHT_AFFECT = mix(ao_light, ear_light, smoothstep(0.0, 0.15, 1.0 - ea));
 	back_ao = mix(1.0, ao, back_occ);
 	SSS_STRENGTH = scatter * mix(1.0, paint_scatter, pa) * mix(1.0, scatter_cel, cel_on);
-	BACKLIGHT = ALBEDO * backlight_colour * backlight * mix(1.0, aot.b, thin_map * rig_w);
+	BACKLIGHT = ALBEDO * backlight_colour * backlight * mix(1.0, mix(aot.b, 1.0, thin_ease * (1.0 - aot.g)), thin_map * rig_w);
 	float wd = (INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).y;
+	cav_w = cavity_bounce > 0.0 ? cavity_bounce * (1.0 - smoothstep(cavity_ao.x, cavity_ao.y, texture(cavity_map, UV).r))
+		* smoothstep(cavity_down.x, cavity_down.y, -wd) : 0.0;
 	front_rim = seam_ease ? aot.g * (1.0 - rig_w) : 0.0;
+	throat_w = throat_terminator.x < 0.0 ? 0.0 : (seam_ease ? 1.0 - smoothstep(neck_pull_y.x, neck_pull_y.y, model_y) : fk.b);
 	rim_dn = rim_down * smoothstep(rim_down_from, rim_down_to, -wd);
 	shade_w = mix(1.0, smoothstep(down_from, down_to, -wd), shade_down) * mix(1.0, aot.a, shade_zone)
 		* (1.0 - shade_thin * smoothstep(thin_from, thin_to, -wd));
@@ -873,7 +921,13 @@ void light() {
 			: dbg_gate * ATTENUATION * c_ndl * vec3(kw * (1.0 - bh), 1.0 - kw, kw * bh));
 	} else {
 	vec3 cool_d0 = DIFFUSE_LIGHT;
-	vec3 lc = LIGHT_COLOR;
+	vec3 lcol = LIGHT_COLOR;
+	if (back_neutral > 0.0 && (!LIGHT_IS_DIRECTIONAL || back_neutral_sky > 0.0)) {
+		float bl = dot(LIGHT_COLOR, vec3(0.2126, 0.7152, 0.0722));
+		float bw = back_neutral * smoothstep(-0.1, 0.6, dot(-LIGHT, VIEW)) * smoothstep(0.0, 0.1, (LIGHT_COLOR.b - LIGHT_COLOR.r) / max(bl, 1e-4));
+		lcol = mix(LIGHT_COLOR, vec3(bl), bw * (LIGHT_IS_DIRECTIONAL ? back_neutral_sky : 1.0));
+	}
+	vec3 lc = lcol;
 	if (skin_hold > 0.0 && !LIGHT_IS_DIRECTIONAL && LIGHT_COLOR.r > LIGHT_COLOR.b) {
 		vec3 hlw = vec3(0.2126, 0.7152, 0.0722);
 		float ly = max(dot(LIGHT_COLOR, hlw), 1e-5);
@@ -888,7 +942,7 @@ void light() {
 	float c_ldh = clamp(dot(LIGHT, h), 0.0, 1.0);
 	// (the edge eased over each channel's reach, C1 with the light either side:
 	// (n + w)^2 / 4w from -w to w, n itself beyond)
-	vec3 w = max(terminator, vec3(1e-4));
+	vec3 w = max(mix(terminator, throat_terminator, throat_w), vec3(1e-4));
 	vec3 n = vec3(ndl);
 	vec3 t = clamp(n + w, vec3(0.0), 2.0 * w);
 	vec3 soft = mix(t * t / (4.0 * w), n, step(w, n));
@@ -941,6 +995,10 @@ void light() {
 	kt = mix(kt, vec3(1.0), paint_w);
 	DIFFUSE_LIGHT += mouth_lit * lc * cb_d * un * rich * kt * mix(1.0, body_lift, key_w * lift_w * (1.0 - behind)) * mix(1.0, back_ao, behind)
 		* mix(vec3(1.0), soft_tone, (1.0 - key_w) * soft_w * shade_by_soft * neck_w * (1.0 - paint_w));
+	// (her hollows' bounce: cavity_bounce above)
+	if (cav_w > 0.0)
+		DIFFUSE_LIGHT += cav_w * (1.0 - smoothstep(cavity_ndl.x, cavity_ndl.y, ndl)) * lc
+			* mix(LIGHT_IS_DIRECTIONAL ? 1.0 : ATTENUATION, ATTENUATION, cavity_shadow) * un / PI;
 	// the fine down at her edges, against a light from behind her only (lit
 	// from the front, it brightened every edge of her: a pale ribbon down her
 	// cheek where her dark hair met it, her temples white)
@@ -952,7 +1010,7 @@ void light() {
 	// light through her where she is thin
 	DIFFUSE_LIGHT += mouth_lit * lc * cb_b * BACKLIGHT * un * mix(1.0, behind, backlight_behind);
 	// (cel: the key's fill where its light doesn't reach)
-	if (cel_on > 0.0) DIFFUSE_LIGHT += cel_on * mouth_lit * cel_fill_add(LIGHT_COLOR, cel_lit(cb_t) * cb_sh, LIGHT_IS_DIRECTIONAL) * un;
+	if (cel_on > 0.0) DIFFUSE_LIGHT += cel_on * mouth_lit * cel_fill_add(lcol, cel_lit(cb_t) * cb_sh, LIGHT_IS_DIRECTIONAL) * un;
 	if (cine_cool > 0.0) {
 		// (Face 49: this lamp's light on her paint as it was, keeping cool_lit of its colour, more at its warm edge)
 		vec3 lw = vec3(0.2126, 0.7152, 0.0722);
@@ -984,11 +1042,11 @@ void light() {
 			float k2 = a2 / (1.0 - c_ndh * c_ndh + da2 * da2);
 			lobes += oil_w * (k2 * k2 / PI) * (0.5 / mix(2.0 * s_ndl * s_ndv, s_ndl + s_ndv, a2));
 		}
-		spec = mouth_lit * s_ndl * lobes * f * LIGHT_COLOR * ATTENUATION * SPECULAR_AMOUNT * mix(1.0, back_spec, behind);
+		spec = mouth_lit * s_ndl * lobes * f * lcol * ATTENUATION * SPECULAR_AMOUNT * mix(1.0, back_spec, behind);
 	}
 	// (cel: a small hard highlight in the key's color on her full normal, in place of the two GGX lobes; then held
 	// as they are)
-	if (cel_on > 0.0 && spec_on) spec = mix(spec, mouth_lit * cel_spec_add(NORMAL, LIGHT, VIEW, LIGHT_COLOR, cel_lit(cb_t) * cb_sh, rgh,
+	if (cel_on > 0.0 && spec_on) spec = mix(spec, mouth_lit * cel_spec_add(NORMAL, LIGHT, VIEW, lcol, cel_lit(cb_t) * cb_sh, rgh,
 			METALLIC, ALBEDO * un, sheen, SPECULAR_AMOUNT) * mix(1.0, back_spec, behind), cel_on);
 	if (spec_on) {
 		// (each lamp's sheen held under spec_cap, its colour kept: a lamp held a hand from her cheek (c02 s8) blew it white)

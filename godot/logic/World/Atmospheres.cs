@@ -94,7 +94,9 @@ public static class Atmospheres
 
     /// <summary>The title and the Look: night, with the grade's toe held whole, so her irises, brows and dark hair keep
     /// their colour at the camera that judges them.</summary>
-    public static readonly AtmospherePreset Front = Night with { KeyIntensity = 2.55, Grade = PlayNightGrade with { MoonTop = 0.6, MoonWidth = 0.2 }, Rig = "" };
+    public static readonly AtmospherePreset Front = Night with { KeyIntensity = 2.55, Grade = PlayNightGrade with { MoonTop = 0.6, MoonWidth = 0.2, MoonSkin = 1 }, Rig = "" };
+    // (P1 R1 round 33, S4: skin's hues spared the moon's step (GradeSettings.MoonSkin): the far side of her neck under her
+    // jaw, in shade at L 0.5 and C/L 0.09, took the moon's silver-blue, a blue-grey patch on A and B alike (gate judge 2).)
     // (H2 R3: the play night's paint grade, its toe whole (Toe 1); the paint terms are the close view's (Atmosphere.Own). The
     // moon's colour faded out by Oklab L 0.6: at the play night's 0.9 it reached her lit skin at the Look (fair skin's C/L
     // under MoonHi) and turned her face and shoulders lilac-white, and the camp ground frost-white with the fire's pool gone;
@@ -277,6 +279,7 @@ public static class Atmospheres
             MoonSat = Lerp(a.Grade.MoonSat, b.Grade.MoonSat, t), MoonDrop = Lerp(a.Grade.MoonDrop, b.Grade.MoonDrop, t),
             MoonLo = Lerp(a.Grade.MoonLo, b.Grade.MoonLo, t), MoonHi = Lerp(a.Grade.MoonHi, b.Grade.MoonHi, t),
             MoonTop = Lerp(a.Grade.MoonTop, b.Grade.MoonTop, t), MoonWidth = Lerp(a.Grade.MoonWidth, b.Grade.MoonWidth, t),
+            MoonSkin = Lerp(a.Grade.MoonSkin, b.Grade.MoonSkin, t),
             PaintVib = Lerp(a.Grade.PaintVib, b.Grade.PaintVib, t), PaintHi = Lerp(a.Grade.PaintHi, b.Grade.PaintHi, t),
             PaintShadow = MixOr(a.Grade.PaintShadow, b.Grade.PaintShadow, t),
             PaintShadowK = Lerp(a.Grade.PaintShadowK, b.Grade.PaintShadowK, t), PaintLift = Lerp(a.Grade.PaintLift, b.Grade.PaintLift, t),
