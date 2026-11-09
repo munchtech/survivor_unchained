@@ -69,7 +69,8 @@ public static class HerWear
         // (a calling whose index row is stood in for (a row's "replaces") takes the piece path too, or her outfit file would
         // draw the replaced piece; --standin 0: the outfit file as before, for an ABAB)
         bool standIn = StandIns && ix.Calling(calling).Any(kv => ix.Find(kv.Value) is { } r && r.Outfit != calling);
-        if (w.Count == 0 && Override == null && (hide == null || hide.Count == 0) && !standIn) return null;
+        // (B's built gear, --body p1: always the piece path; her outfit file is A's)
+        if (w.Count == 0 && Override == null && (hide == null || hide.Count == 0) && !standIn && ArmorIndex.GearDir == null) return null;
         var notes = new List<string>();
         var look = Wear.Look(w, calling, ix, notes, hide);
         foreach (var n in notes) GD.PushWarning(n);
