@@ -231,8 +231,10 @@ float cel_give_at(vec3 c_wp, float c_k) {
 	return 1.0;
 #else
 	if (cel_ember.w <= 0.0 || c_k <= 0.0) return 1.0;
-	// (L1 lead 9, B1: under the ramp the moon gives way along it, cel_pool_ramp a; else between cel_give z and w)
-	if (cel_pool_band.x > 0.0) return 1.0 - c_k * cel_on * cel_pool_at(length(c_wp.xz - cel_ember.xz)).a;
+	// (L1 lead 10, NIGHT: under the ramp the moon gives way on the ground from her light's foot, wholly inside cel_give z (m)
+	// and none past w, the ramp's warm stops and its tail (rigs.json ember_give). Tied to the ramp's level (lead 9: a = level
+	// over the core's, half the moon back at 1 m), a saturated moon came back inside the gold and drew the pool pink.)
+	if (cel_pool_band.x > 0.0) return 1.0 - c_k * cel_on * (1.0 - smoothstep(cel_give.z, max(cel_give.w, cel_give.z + 1e-3), length(c_wp.xz - cel_ember.xz)));
 	float c_d = length(c_wp - cel_ember.xyz);
 	return 1.0 - c_k * cel_on * (1.0 - smoothstep(cel_give.z, max(cel_give.w, cel_give.z + 1e-3), c_d));
 #endif
