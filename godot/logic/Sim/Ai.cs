@@ -409,7 +409,8 @@ public static class Ai
             e.RaiseT -= dt;
             // (M5 r3, judge mark 4c: a pool only once it has walked on past the last one, most of a pool's width: standing or
             // milling in its wallow, the Slurry Sow stacked three violet rings deep on one spot, read as three charge rings)
-            if (e.RaiseT <= 0 && (double.IsNaN(e.TrailX) || (e.X - e.TrailX) * (e.X - e.TrailX) + (e.Z - e.TrailZ) * (e.Z - e.TrailZ) >= trail.Radius * trail.Radius * TrailSpacing * TrailSpacing))
+            // (and none while its pack sleeps: milling in the wallow before it woke laid three rings under the champion's wake)
+            if (e.RaiseT <= 0 && !(e.Wake > 0 && !e.Roused) && (double.IsNaN(e.TrailX) || (e.X - e.TrailX) * (e.X - e.TrailX) + (e.Z - e.TrailZ) * (e.Z - e.TrailZ) >= trail.Radius * trail.Radius * TrailSpacing * TrailSpacing))
             {
                 e.RaiseT = trail.Interval;
                 e.TrailX = e.X; e.TrailZ = e.Z;
@@ -466,7 +467,7 @@ public static class Ai
     }
 
     /// <summary>(M5 r3) A trail's next pool waits until its layer is this many pool radii from its last.</summary>
-    public const double TrailSpacing = 1.4;
+    public const double TrailSpacing = 1.8;
 
     /// <summary>Plant and mark the lane, then run exactly it (a first run, or the next of a chain).</summary>
     static void Run(Battle b, Enemy e, LungeSpec lunge, double dirX, double dirZ, double windup)

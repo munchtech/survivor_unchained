@@ -59,21 +59,22 @@ public partial class Game
             float breath = 1 + 0.07f * Mathf.Sin(t * 2.3f + i * 1.7f) + 0.04f * Mathf.Sin(t * 6.1f + i);
             // (the glass: an ember dark, the flame lit; brighter by night, where it is the frame's light)
             var gc = ember.Lerp(litC, a);
-            float ge = Mathf.Lerp(0.55f, night ? 3.2f : 2.2f, a) * breath * (1 + 1.6f * f) * (h.Landmark ? 1.25f : 1);
+            float ge = Mathf.Lerp(1.6f, night ? 3.4f : 2.4f, a) * breath * (1 + 1.6f * f) * (h.Landmark ? 1.25f : 1);
             h.Glass.Emission = gc;
             h.Glass.EmissionEnergyMultiplier = ge;
             // (the bloom round the head: small and dim dark, wider lit, swelling with the kindling; drawn toward the camera so
             // the cage never cuts it)
-            float bs = h.Scale * Mathf.Lerp(0.55f, 1.25f, a) * (1 + 1.4f * f);
+            float bs = h.Scale * Mathf.Lerp(0.75f, 1.25f, a) * (1 + 1.2f * f);
             h.BloomQ.Scale = Vector3.One * bs;
             h.BloomQ.GlobalPosition = h.Head + (eye - h.Head).Normalized() * 0.5f * h.Scale;
-            var bc = gc.SrgbToLinear() * (Mathf.Lerp(0.16f, night ? 0.55f : 0.32f, a) * breath * (1 + 1.2f * f));
+            var bc = gc.SrgbToLinear() * (Mathf.Lerp(0.4f, night ? 0.6f : 0.35f, a) * breath * (1 + 1.2f * f));
             h.Bloom.AlbedoColor = new Color(bc.R, bc.G, bc.B, 1);
             // (the pool: a soft round of its light on the ground, lit only; a landmark's even by day)
-            float pe = a * (night ? 0.42f : h.Landmark ? 0.3f : 0.12f) * breath * (1 + 2.2f * f) * (h.Landmark ? 1.2f : 1);
+            float pe = a * (night ? 0.3f : h.Landmark ? 0.16f : 0.06f) * breath * (1 + 1.2f * f);
             h.Pool.Visible = pe > 0.002f;
             h.Pool.EmissionEnergy = pe;
-            h.Pool.Modulate = litC;
+            // (the pool a warmer gold than the flame: lit.color alone laid a white spot on sunlit ground)
+            h.Pool.Modulate = litC.Lerp(ember, 0.3f);
             float pr = h.PoolR * (1 + 0.35f * f);
             h.Pool.Size = new Vector3(pr * 2, h.Pool.Size.Y, pr * 2);
             if (h.Own != null) { h.Own.LightColor = litC; h.Own.LightEnergy = a * (night ? 2.2f : 1.4f) * breath; }
@@ -105,12 +106,22 @@ public partial class Game
                 float ly = (float)lights[p.Light].Y;
                 y = ly > g + 0.8f ? ly : g + ly;
             }
+            // (where the kit hangs its own lantern (the light's glass node, on a bracket off the post), the head is drawn
+            // round it: one lantern, not two)
+            var at = new Vector3((float)p.X, y, (float)p.Z);
+            if (p.Light >= 0 && p.Light < lights.Count && lights[p.Light].Glow.Count > 0 && scene.View.Node(lights[p.Light].Glow[0]) is { } gn && IsInstanceValid(gn))
+            {
+                var gp = gn.GlobalPosition;
+                if (new Vector2(gp.X - at.X, gp.Z - at.Z).Length() < 2.5f && Math.Abs(gp.Y - at.Y) < 2) at = gp;
+            }
             bool mark = p.Landmark > 0;
-            float s = mark ? (float)p.Landmark : 1.35f;
+            float s = mark ? (float)p.Landmark : 1.6f;
             if (mark && p.Tall > 0) y = g + (float)p.Tall;
             var h = new PostHead { Id = p.Id, Root = new Node3D { Name = "PostHead_" + p.Id }, Scale = s, Landmark = mark, PoolR = mark ? 6.5f : 3.4f };
             scene.AddChild(h.Root);
-            h.Root.GlobalPosition = new Vector3((float)p.X, y, (float)p.Z);
+            if (mark && p.Tall > 0) at = new Vector3((float)p.X, y, (float)p.Z);
+            h.Root.GlobalPosition = at;
+            y = at.Y;
             h.Head = h.Root.GlobalPosition;
             var lantern = new Node3D { Scale = Vector3.One * s };
             h.Root.AddChild(lantern);
@@ -118,8 +129,8 @@ public partial class Game
                 lantern.AddChild(new MeshInstance3D { Mesh = m, MaterialOverride = mat, Position = new Vector3(0, py, 0), RotationDegrees = new Vector3(0, rot, 0) });
             // (a four-sided lantern: an iron cap with its ring, the glass in four bars, an iron foot on the post's top)
             h.Glass = new StandardMaterial3D { AlbedoColor = new Color("#3a2414"), Roughness = 0.35f, EmissionEnabled = true, Emission = new Color(LampPosts.Lit.Ember), EmissionEnergyMultiplier = 0.5f };
-            Part(new CylinderMesh { TopRadius = 0.035f, BottomRadius = 0.2f, Height = 0.15f, RadialSegments = 4, Rings = 1 }, iron, 0.255f, 45);
-            Part(new TorusMesh { InnerRadius = 0.025f, OuterRadius = 0.06f, Rings = 8, RingSegments = 6 }, iron, 0.36f);
+            Part(new CylinderMesh { TopRadius = 0.03f, BottomRadius = 0.12f, Height = 0.1f, RadialSegments = 4, Rings = 1 }, iron, 0.23f, 45);
+            Part(new TorusMesh { InnerRadius = 0.02f, OuterRadius = 0.045f, Rings = 8, RingSegments = 6 }, iron, 0.3f);
             Part(new CylinderMesh { TopRadius = 0.135f, BottomRadius = 0.115f, Height = 0.32f, RadialSegments = 4, Rings = 1 }, h.Glass, 0.02f, 45);
             Part(new CylinderMesh { TopRadius = 0.15f, BottomRadius = 0.09f, Height = 0.07f, RadialSegments = 4, Rings = 1 }, iron, -0.175f, 45);
             for (int k = 0; k < 4; k++)

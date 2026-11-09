@@ -370,8 +370,9 @@ void fragment() {
 	if (champ_code > 0.5) {
 		float ch_h = (champ_code - 1.0) / 64.0;
 		vec3 ch_c = clamp(abs(mod(ch_h * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
-		ch_c = mix(vec3(1.0), ch_c, 0.8);
-		float ch_k = smoothstep(0.62, 0.96, rim) * 1.1 + smoothstep(0.35, 0.8, rim) * 0.18;
+		ch_c = mix(vec3(1.0), ch_c, 0.72);
+		// (r3 shot: at 0.62 a thin skeleton was all edge from up here and glowed whole; a broad boar's back took a hairline)
+		float ch_k = smoothstep(0.72, 0.97, rim) * 1.3 + smoothstep(0.4, 0.85, rim) * 0.1;
 		e += ch_c * ch_k * (1.0 - fx.y);
 	}
 	// The moon's rim, in shade as in its light: strongest on the side toward the key, a breath on the far side.
