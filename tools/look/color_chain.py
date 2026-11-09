@@ -220,14 +220,26 @@ def shade_gain(cards, rig, rho, cam="play", lv=1, lit_gain=1.0):
     return med(ks), med(now)
 
 
-SUN = "#f3d9a0"  # (rule 3: the day and dawn sun, pale gold)
+SUN = "#f3d9a0"  # (rule 3 of 3 Nov: the pale gold; L7 S1c: by day the boards' own sun replaces it, board_sun below; dawn keeps it)
 BOARD_NEUTRAL = ("rock", "stone", "lb_setts")  # (the boards' grey stones: their lit sides are the boards' sun)
 
 
-def day_lit_gain(cards):
-    """Per channel, the gain that takes the neutral cards' day lit side to the sun's own color at its luminance (0.18 and
-    0.5 cards, the geometric mean)."""
-    cl = curve(cards, None, "day_play", "lit"); sun = hex_to_lin(SUN); ks = []
+def chrom(v):
+    v = np.asarray(v, float); return v / np.dot(bm.Y, v)
+
+
+def board_sun(B):
+    """(L7 S1c, lead 7's decision of 9 Nov: one sun, the boards') The sun the picked boards were painted under, read on their
+    near-neutral grey stones (MB4's rock, MB3's stone, LB DAY's setts): the geometric mean of their day lit sides'
+    chromaticities (luminance 1). About #ffc296, Oklab h 57: a peach gold. Returns (chroma, per stone chroma)."""
+    per = {m: chrom(B[m]["day_lit"]) for m in BOARD_NEUTRAL}
+    return np.exp(np.mean([np.log(v) for v in per.values()], 0)), per
+
+
+def day_lit_gain(cards, sun):
+    """Per channel, the gain that takes the neutral cards' day lit side to the sun's own color (linear, any scale) at its
+    luminance (0.18 and 0.5 cards, the geometric mean; the 0.8 card's red sits at the gamut's ceiling)."""
+    cl = curve(cards, None, "day_play", "lit"); ks = []
     for lv in (1, 2):
         lit = cl[1][lv]; k = sun / np.maximum(lit, 1e-5)
         ks.append(k * np.dot(bm.Y, lit) / np.dot(bm.Y, k * lit))
@@ -251,10 +263,11 @@ def solve(name="cards", night_name=None, refine=None):
     # (2) the day fill: the boards' day shade/lit per channel, the median over the non-metal day swatches
     dm = [m for m in B if "day_ratio" in B[m] and B[m]["class"] not in METAL]
     rho = med([B[m]["day_ratio"] for m in dm])
-    # (L7 S1) the day key FROM rule 3: the neutral card's sunlit side (the key and the sky's share on it) is the sun's own
-    # color, #f3d9a0; per channel the lit side's gain (its luminance held: the key's strength stays the rig's) on the 0.18
-    # and 0.5 cards (the 0.8 card's lit side sits at the gamut's ceiling), the geometric mean
-    k_lit = day_lit_gain(cards)
+    # (L7 S1c) the day key FROM the boards' sun (board_sun): the neutral card's sunlit side (the key and the sky's share on
+    # it) is the boards' sun; per channel the lit side's gain (its luminance held: the key's strength stays the rig's) on the
+    # 0.18 and 0.5 cards (the 0.8 card's lit side sits at the gamut's ceiling), the geometric mean
+    bsun, bper = board_sun(B)
+    k_lit = day_lit_gain(cards, bsun)
     k_day, now = shade_gain(cards, "day", rho, lit_gain=k_lit)
     # the key itself: the 0.18 card's lit side less its sky (the key-off cards) is the key's part, a per channel; the key that
     # draws the sun's color = (target - sky) / a, the sky as the fill solve leaves it
@@ -271,21 +284,24 @@ def solve(name="cards", night_name=None, refine=None):
     # (6) dawn: LB DAWN's setts, the same way
     k_dawn, now_d = shade_gain(cards, "dawn", np.array(B["lb_setts"]["dawn_ratio"]))
     rep["dawn"] = {"rho": B["lb_setts"]["dawn_ratio"], "card_ratio_now": now_d.round(4).tolist(), "shade_gain": k_dawn.round(4).tolist()}
-    # (L7 S1) the boards' own sun, read on their near-neutral stones (MB4's rock, MB3's stone, LB's setts): its chromaticity
-    # (luminance 1) is a peach gold (about #ffc296, Oklab h 57) against rule 3's pale gold #f3d9a0 (h 86). Divided through
-    # rule 3's sun, every warm surface came out pink (plaster h 25, setts h 1). The boards are adapted to the rule's sun
-    # (per channel, von Kries; the rule wins over a board, bible): each lit side x W = rule sun / board sun; the shade side
-    # follows through rho (shade/lit), so the whole board is seen under rule 3's sun.
-    def chrom(v): v = np.asarray(v, float); return v / np.dot(bm.Y, v)
-    bsun = np.exp(np.mean([np.log(chrom(B[m]["day_lit"])) for m in BOARD_NEUTRAL], 0))
-    W = chrom(hex_to_lin(SUN)) / bsun
-    rep["board_sun"] = {"from": list(BOARD_NEUTRAL), "chroma": bsun.round(4).tolist(), "hex": lin_to_hex(bsun / bsun.max()), "W": W.round(4).tolist()}
+    # (L7 S1c) one sun, the boards': the game is lit by the sun the boards were painted under, so the albedos come straight
+    # off the boards under their own sun (W = 1; S1's adaptation to rule 3's #f3d9a0 made grey setts and lime grass)
+    W = np.ones(3)
+    rep["board_sun"] = {"from": list(BOARD_NEUTRAL), "chroma": bsun.round(4).tolist(), "hex": lin_to_hex(bsun / bsun.max()), "W": W.tolist(),
+                        "per": {m: lin_to_hex(v / v.max()) for m, v in bper.items()},
+                        "rb_gb": [round(float(bsun[0] / bsun[2]), 3), round(float(bsun[1] / bsun[2]), 3)]}
     # (3) each class's albedo: the board's day lit side through its card's day lit curve (the key's response, the grade's
     # inverse); a class two swatches give (setts: MB3 and LB; plank: MB3's beam and barrel) is their geometric mean
     alb, alb_rows = {}, {}
     for m in B:
         c = B[m]["class"]
         if c == "water": continue  # (the water is the FX helper's shader: bands of the sky, no albedo)
+        if "day_lit" not in B[m] and "day_shade" in B[m]:
+            # (L7 S1c) a class only a shade side gives (cloth: G1 07's sacks in the houses' shade): the albedo through the day
+            # shade card's curve as the solved fill draws it (the shade light x k_day; under scene_color a light's gain is the drawn one)
+            cs = curve(cards, c, "day_play", "shade")
+            if cs is not None: alb_rows.setdefault(c, []).append((m, inv((cs[0], cs[1] * k_day), np.array(B[m]["day_shade"]))))
+            continue
         cv = curve(cards, c, "day_play", "lit")
         if cv is None or "day_lit" not in B[m]: continue
         cv = (cv[0], cv[1] * k_lit)  # (L7 S1: the lit side as the solved key will draw it; under scene_color a light's gain is the drawn one)
@@ -400,7 +416,7 @@ def apply_rigs(rep, cards, night=True):
         R[name]["from"] += (f" {tag}: the shade FROM the boards: the median day shade/lit per channel over {len(rep['day']['swatches'])} day swatches "
                             f"{rep['day']['rho']} (spread {rep['day']['spread']['min']}-{rep['day']['spread']['max']}; outliers {', '.join(rep['day']['spread']['outliers'])}); "
                             f"the neutral 0.18 card's shade/lit was {rep['day']['card_ratio_now']}: the shade light x{rep['day']['shade_gain']} per channel: {words}. "
-                            f"L7 S1: the key FROM rule 3, the neutral card's sunlit side the sun's own {SUN} (under scene_color, the drawn ratios are the light's): "
+                            f"L7 S1c: the key FROM the boards' sun {rep['board_sun']['hex']} (read on {', '.join(rep['board_sun']['from'])}; lead 7, one sun), the neutral card's sunlit side that sun's color (under scene_color, the drawn ratios are the light's): "
                             f"the lit side x{rep['day'].get('lit_gain')}, the shade's share of it {rep['day'].get('q')}, so the key x{kk.round(4).tolist()}: {kwords}. "
                             f"The grade rig_day{'_wild' if name == 'day_wild' else ''}: the highlight tint neutral (the sun's color is the key's, rule 3).")
     if not night:  # (L7 S1: `all` writes the day; the night rigs' re-solve is lead 7's and S2's, run by `apply`)
@@ -455,7 +471,7 @@ def check(name="check_r1"):
         calib.measure(name)
     got = json.load(open(os.path.join(d, "swatches.json")))
     rows, out = [], {}
-    Wd = np.array(rep.get("board_sun", {}).get("W", [1, 1, 1]))  # (L7 S1: by day the boards as adapted to rule 3's sun)
+    Wd = np.array(rep.get("board_sun", {}).get("W", [1, 1, 1]))  # (L7 S1c: W = 1, the boards under their own sun)
     for m, r in B.items():
         c = r["class"]
         if c not in got: continue
