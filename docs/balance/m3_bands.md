@@ -1,3 +1,66 @@
+# M3 bands: round 3 (9 Nov): the stand clock in story fights, the Flare's boss share
+
+Same commands as round 2 (below). Run lines now also print `onboss N` (casts that reached a boss) and `fills` (meters filled by source).
+
+## What changed in round 3 (file, field, old -> new, why)
+| where | what | old -> new | why |
+|---|---|---|---|
+| logic/Play/Zones/StandClock.cs (new), ArenaRun.Director.cs | H6's stand rule (trail, still check, first and second charger) | inline in the arena director -> one shared class, the director calls it (same order, same numbers) | one idea, not a fork |
+| Encounters.cs `Standing`, Battle.StoryStand, WorldTiers.Tier.Stand | stand clock in story fights | none -> a woken pack's foe charges a stander (the kit's marked charge, second from another side held its spacing); Campaign on and the tier's `stand` only | standing must lose in story fights |
+| world_tiers.json `stand` I/II (III/IV = old II numbers, unmeasured: maps do not read world tiers) | standMoved / standFor / standNear / standScale / standPair / standFrom / standCooldown / standDamage | (new) 0.6 / 1.0 / 16 / 2.2 / 2 / 7 / 1.0 / 1.4 | pass 1 (1.5 s, cd 1.5, near 14, dmg 1): idler fell 6-31%; standFor 1.0 alone: idler 12/75%; standDamage 1.6 at I one-shot the deft from 72-86% life (194 a charge), so 1.4 |
+| Teeth.Director `StandDamage` (new, default 1) | a stand charge's damage over the kit's | - | read only by the story clock; the arena's casts never pass it |
+| logic/Sim/Flare.cs `StoryFillHurt` (campaign only) | hurt fill per 1% of life | 0.40 -> 0.25 | a stander filled 5-6 meters a run from hurt alone |
+| Flare.cs `StoryBossCut`, FlareStaged.FlareHit (campaign only) | most of a story boss's max life one Flare takes (its blows share it) | uncapped -> 0.10 | the ember's level made one Long Cut ~1700 a blow on the Ford-Warden's 3250: it was the finisher, 16-41% of his damage from ONE cast, so no fill change could reach the band (halving bossMul moved the share 25 -> 24%) |
+
+## Low Ford, 16 seeds, after (falls = runs with at least one fall)
+| tier / bot | falls % (band) | no fall % (band) | falls med | mark gap med/worst s | Flare casts / first s / share % / boss share % (min-max) |
+|---|---|---|---|---|---|
+| I standing | 100 (80+) | 0 | 4.5 | 27/238 | 7.5 / 15 / 13.5 / 12.5 (10-19) |
+| I idler | 88 (70+) | 12 | 1 | 31/194 | 5 / 114 / 13 / 10.5 (6-18) |
+| I human | 19 | 81 (78-85+) | 0 | 22.5/37 | 4 / 118 / 10 / 12.5 (8-24) |
+| I deft | 6 | 94 (95+: one run short) | 0 | 24.5/64 | 4 / 114 / 9 / 13 (7-30) |
+| II standing | 100 (80+) | 0 | 8 | 34.5/242 | 10 / 15 / 21 / 21.5 (11-26) |
+| II idler | 88 (70+) | 12 | 1 | 43.5/240 | 6 / 59 / 12.5 / 15.5 (8-32) |
+| II human | 0 | 100 (78-85+) | 0 | 25/286 | 4 / 119 / 10 / 12.5 (9-29) |
+| II deft | 0 | 100 (95+) | 0 | 26/207 | 3 / 118 / 9.5 / 12 (7-30) |
+| III standing | 100 | 0 | 162 (not through) | 31.5/301 | 138 / 27.5 / 43 / 47.5 |
+| III idler | 100 | 0 | 5 | 156/302 | 8.5 / 66 / 26 / 35 |
+| III human | 69 | 31 | 1 | 47.5/306 | 5 / 136 / 16 / 25.5 |
+| III deft | 25 | 75 | 0 | 25.5/234 | 4 / 131 / 14 / 16 |
+
+Before (round 2 re-run at HEAD 204a49d77, I/II): standing fell 50/62%, idler 0/12%, human no-fall 94/100%, deft 100/100%; Flare boss share human 31.5/39.5, deft 21/24, idler 35.5/46, standing 39/39.5.
+
+Caught stand-clock charges (kit `c.charge` median a run, II): idler 6, human 2, deft 1, standing 17.5 (before: 2 / 1 / 0 / 5). The clock is symmetric per second stood; the idler stands about 4x more, which is the whole gap.
+
+**The Flare (the warden's Long Cut is AoE: band 10-15%).** Human and deft 12-13% at I-II (one cast on the Ford-Warden in most runs, `onboss 1`, a second where his fight fills 1.5+ meters); the stander 12.5/21.5% (2-3 casts on him at II, hurt still fills it first, first cast 15 s). Every bot still casts 3-4 a run (human 4 at I and II).
+
+## Veteran maps III/IV, 8 seeds x people dead and pack (16 runs a bot), warden L30, rank 8 grants + Bladestorm (no tune: maps read neither world tiers nor the story clock)
+| tier / bot | falls % (band) | mark gap med/worst s (band under 45-60) | Flare casts / first s / share % / boss share % |
+|---|---|---|---|
+| III standing | 81 (80+) | 167/433 | 3 / 467 / 11 / 70 |
+| III idler | 50 (70+) | 158/231 | 3 / 603 / 12 / 83 |
+| III human | 12 (no fall 88: band 78-85+) | 174/510 | 2 / 884 / 10 / 75 |
+| III deft | 0 (no fall 100) | 170/334 | 2 / 910 / 8 / 61 |
+| IV standing | 100 | 205/418 | 2 / 445 / 9 / 81 |
+| IV idler | 50 (70+) | 129/236 | 3 / 498 / 11 / 79 |
+| IV human | 6 | 140/355 | 3 / 795 / 10 / 71 |
+| IV deft | 0 | 183/608 | 2 / 884 / 9 / 73 |
+
+People: `dead` cleared 70% / 0.20 falls a run; `pack` 17% / 0.55 (the Pack-Mother takes most falls). A map closes at its first fall (falls cap at 1 a run).
+
+## Paths probe
+BalanceTests (Campaign off): crowd median 1568 (dawn 1571, grave 1288, host 1134, hunt 1565, pyre 1915, rime 1706, steel 1536, storm 1864, weave 1852, wild 1488); host 1134 / (0.7 x 1568 = 1098) = **1.033x its floor**, the same as before round 3. Byte-same off the story path: StandClock is the arena's own code moved (same calls, same order), and the story clock, StoryFillHurt and StoryBossCut all sit behind `Battle.Campaign`. Suite 1733 passed / 0 failed / 10 skipped.
+
+## What still misses, and why
+- **Tier I deft 94% no fall** (band 95%+): 15 of 16; the one fall is a stand charge after a long stand at the lamp. standDamage 1.6 made it 88%, 1.2 left the idler at 56%: 1.4 is the knee.
+- **Low Ford III with a fresh warden** (human 31% no fall) stays too hard, as round 2 said: III opens after act 1.
+- **The stander's boss share at II, 21.5%**: 2-3 casts on the Warden, all from hurt fill. Inside the bot that should lose; left.
+- **Veteran maps: mark gap 129-205 s median** (band under 45-60) and the idler falls 50% (band 70%+). Maps do not read world tiers' `kitEvery`/`stand` (WorldTierOn is story only), and their packs cast the kit about once a fight. The lever is the map path: give maps the story clock and a kit wait (a `map` block in world_tiers.json by tier, or the map's level scaling). Not built: past the round cap. Design question: should maps ride world tiers (pick: yes, a map's tier = the world tier's kit and stand rows) or their own rows?
+- **Veteran Flare boss share 61-83%**: one map boss eats 2-3 casts at the ember's full level; StoryBossCut is Campaign only. The same budget on maps' bosses is the fix (one line in FlareHit), not done: maps are out of this round's tuned scope.
+- **Round cap:** this round took four tune passes on the clock (1.5 s -> 1.0 s, standDamage 1 -> 1.2 -> 1.6 -> 1.4) and two on the Flare (bossMul 0.5 rejected, then the 0.15 -> 0.10 budget), over the cap of two.
+
+---
+
 # M3 bands: the press, the falls and the marks (round 2, 9 Nov)
 
 Commands (from the worktree root):
