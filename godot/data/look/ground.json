@@ -312,9 +312,9 @@
    "from": "MB4 (the floor under the spruce, day); rule 9: leaf litter as a few leaf shapes",
    "masses": {
     "colors": [
-     "#332f2d",
-     "#3d3833",
-     "#473e37"
+     "#413d3a",
+     "#4d4841",
+     "#594f46"
     ],
     "split": [
      0.35,
@@ -331,10 +331,10 @@
       15
      ],
      "colors": [
-      "#554236",
-      "#5f4d42",
-      "#493d34",
-      "#615e48"
+      "#6a5445",
+      "#766254",
+      "#5c4e43",
+      "#79775b"
      ],
      "height": 0.7
     }
@@ -347,9 +347,9 @@
    "from": "MB4 road (day): two or three value masses, warm; target 04's road, 05's track",
    "masses": {
     "colors": [
-     "#514242",
-     "#5b4d4a",
-     "#655753"
+     "#655454",
+     "#71625e",
+     "#7e6e69"
     ],
     "split": [
      0.3,
@@ -366,8 +366,8 @@
       11
      ],
      "colors": [
-      "#65656d",
-      "#58595d"
+      "#7e7f88",
+      "#6e7175"
      ],
      "height": 0.8
     }
@@ -380,9 +380,9 @@
    "from": "MB4 road (the ruts' wet earth, a step darker than the road)",
    "masses": {
     "colors": [
-     "#302b2a",
-     "#373331",
-     "#3e3937"
+     "#3d3836",
+     "#46423f",
+     "#4e4946"
     ],
     "split": [
      0.4,
@@ -399,19 +399,19 @@
    "cells": {
     "size_cm": 26,
     "colors": [
-     "#7c8563",
-     "#89946e",
-     "#717a59"
+     "#99a77c",
+     "#a9b98a",
+     "#8c9970"
     ],
-    "joint": "#484937",
+    "joint": "#5a5d46",
     "joint_cm": 3.0,
     "lit": 0.05,
     "round": 0.0
    },
    "masses": {
     "colors": [
-     "#4f523c",
-     "#5a5b42"
+     "#63684c",
+     "#707354"
     ],
     "split": [
      0.5
@@ -428,7 +428,7 @@
     "size_cm": 55,
     "colors": [
      "#848274",
-     "#938e7e",
+     "#938d7e",
      "#777669"
     ],
     "joint": "#58564e",
@@ -461,9 +461,9 @@
    "from": "(c) the blight's burned ground, as ash masses and long dark cracks",
    "masses": {
     "colors": [
-     "#1c1d21",
-     "#232528",
-     "#2a2b30"
+     "#25272b",
+     "#2d3134",
+     "#36383e"
     ],
     "split": [
      0.35,
@@ -484,7 +484,7 @@
       80
      ],
      "colors": [
-      "#141419"
+      "#1b1c22"
      ],
      "height": 0.1
     }
@@ -497,9 +497,9 @@
    "from": "targets 09 and 10 (the Deep Shaw's floor: mid-value under the moon, never black; warm where her pool lights it); MB4 night; rule 9 leaf litter as a few leaf shapes",
    "masses": {
     "colors": [
-     "#767a5b",
-     "#878864",
-     "#95976d"
+     "#929972",
+     "#a7aa7d",
+     "#b8bd88"
     ],
     "split": [
      0.33,
@@ -516,10 +516,10 @@
       17
      ],
      "colors": [
-      "#a38e59",
-      "#b1a266",
-      "#8f8456",
-      "#b5b972"
+      "#c9b270",
+      "#daca80",
+      "#b1a56c",
+      "#dfe78e"
      ],
      "height": 0.7
     }
@@ -533,9 +533,9 @@
    "from": "(c) the Shaw's black earth under the litter (ArenaGround: 'the rot is black earth'), a few old leaves",
    "masses": {
     "colors": [
-     "#4b503e",
-     "#555a48",
-     "#60634c"
+     "#5e664f",
+     "#6a725b",
+     "#787d60"
     ],
     "split": [
      0.4,
@@ -552,8 +552,8 @@
       14
      ],
      "colors": [
-      "#6f6c4a",
-      "#7d784f"
+      "#8a885e",
+      "#9b9764"
      ],
      "height": 0.6
     }
@@ -566,8 +566,8 @@
    "from": "(c) the roots' runs; rule 9 (wood as a few long strokes)",
    "masses": {
     "colors": [
-     "#555642",
-     "#616249"
+     "#6a6d54",
+     "#797c5c"
     ],
     "split": [
      0.5
@@ -587,8 +587,8 @@
       160
      ],
      "colors": [
-      "#838159",
-      "#73714f"
+      "#a2a270",
+      "#8f8e64"
      ],
      "lit_edge": 0.05,
      "height": 0.9
@@ -602,9 +602,9 @@
    "from": "(c) the den's mud, trodden smooth (ArenaGround: 'at the scan's own contrast the den's floor read as asphalt')",
    "masses": {
     "colors": [
-     "#45493a",
-     "#4f523e",
-     "#585a44"
+     "#575d4a",
+     "#63684f",
+     "#6e7256"
     ],
     "split": [
      0.4,
@@ -621,8 +621,8 @@
    "cells": {
     "size_cm": 22,
     "colors": [
-     "#948f82",
-     "#a79f91",
+     "#948e82",
+     "#a79e92",
      "#878475"
     ],
     "joint": "#6a635b",
@@ -649,9 +649,9 @@
    "from": "MB4 spruce (the needle litter under the tiers), as needle tufts",
    "masses": {
     "colors": [
-     "#797a55",
-     "#89885c",
-     "#959767"
+     "#96996b",
+     "#a9aa74",
+     "#b8bd81"
     ],
     "split": [
      0.35,
@@ -672,10 +672,10 @@
       8
      ],
      "colors": [
-      "#aaa666",
-      "#99975c"
+      "#d1cf80",
+      "#bdbd74"
      ],
-     "under": "#6e6c4e",
+     "under": "#888862",
      "height": 0.7
     }
    ],
@@ -688,19 +688,19 @@
    "cells": {
     "size_cm": 70,
     "colors": [
-     "#6b7d5e",
-     "#798b67",
-     "#5f6c55"
+     "#859d76",
+     "#96ae81",
+     "#76886b"
     ],
-    "joint": "#4d5444",
+    "joint": "#606a56",
     "joint_cm": 4.0,
     "lit": 0.05,
     "round": 0.0
    },
    "masses": {
     "colors": [
-     "#4d5444",
-     "#5a634a"
+     "#606a56",
+     "#707d5e"
     ],
     "split": [
      0.5
@@ -753,9 +753,9 @@
    "from": "MB4 road (the churned earth: masses and a few clods)",
    "masses": {
     "colors": [
-     "#524c30",
-     "#5f5737",
-     "#6b633d"
+     "#67613e",
+     "#766e46",
+     "#857d4e"
     ],
     "split": [
      0.35,
@@ -772,8 +772,8 @@
       10
      ],
      "colors": [
-      "#716742",
-      "#7f7349"
+      "#8c8254",
+      "#9d915c"
      ],
      "height": 0.7
     }
@@ -785,8 +785,8 @@
    "from": "MB4 road: ruts as long strokes, darker",
    "masses": {
     "colors": [
-     "#423d25",
-     "#4f482c"
+     "#534e30",
+     "#635c39"
     ],
     "split": [
      0.5
@@ -807,8 +807,8 @@
      ],
      "along": true,
      "colors": [
-      "#36341f",
-      "#3d3923"
+      "#454329",
+      "#4d492e"
      ],
      "lit_edge": 0.04,
      "height": 0.2
@@ -821,8 +821,8 @@
    "from": "MB4 road (the wet earth by the puddles)",
    "masses": {
     "colors": [
-     "#474633",
-     "#52523a"
+     "#595941",
+     "#67684a"
     ],
     "split": [
      0.5
@@ -836,8 +836,8 @@
    "from": "(c) the camp's wood chips, as flat chips (rule 9: wood as long strokes)",
    "masses": {
     "colors": [
-     "#554c30",
-     "#645a37"
+     "#6a613e",
+     "#7c7246"
     ],
     "split": [
      0.5
@@ -853,9 +853,9 @@
       10
      ],
      "colors": [
-      "#8d7d42",
-      "#79663c",
-      "#9d914c"
+      "#ae9d54",
+      "#96814c",
+      "#c2b560"
      ],
      "height": 0.7
     }
@@ -868,19 +868,19 @@
    "cells": {
     "size_cm": 9,
     "colors": [
-     "#7f7f5b",
-     "#8d9165",
-     "#6e6c4c"
+     "#9d9f72",
+     "#aeb57f",
+     "#888860"
     ],
-    "joint": "#4f4c33",
+    "joint": "#636141",
     "joint_cm": 3.0,
     "lit": 0.05,
     "round": 0.5
    },
    "masses": {
     "colors": [
-     "#4f4c33",
-     "#5b573b"
+     "#636141",
+     "#716e4b"
     ],
     "split": [
      0.5
@@ -895,19 +895,19 @@
    "cells": {
     "size_cm": 70,
     "colors": [
-     "#666340",
-     "#736c48",
-     "#5b573a"
+     "#7f7d51",
+     "#8f885b",
+     "#716e4a"
     ],
-    "joint": "#48442c",
+    "joint": "#5a5739",
     "joint_cm": 4.0,
     "lit": 0.05,
     "round": 0.0
    },
    "masses": {
     "colors": [
-     "#48442c",
-     "#524d34"
+     "#5a5739",
+     "#676243"
     ],
     "split": [
      0.5
@@ -958,9 +958,9 @@
    "from": "(c) the barrow's bare earth: masses",
    "masses": {
     "colors": [
-     "#57573e",
-     "#646549",
-     "#717151"
+     "#6d6e4f",
+     "#7c7f5c",
+     "#8c8e66"
     ],
     "split": [
      0.35,
@@ -977,7 +977,7 @@
       10
      ],
      "colors": [
-      "#7f8865"
+      "#9daa7f"
      ],
      "height": 0.8
     }
@@ -991,7 +991,7 @@
     "size_cm": 50,
     "colors": [
      "#878172",
-     "#968c7c",
+     "#968b7c",
      "#7b7567"
     ],
     "joint": "#4e483f",
@@ -1016,9 +1016,9 @@
    "from": "(c) the graves' turned earth, dark",
    "masses": {
     "colors": [
-     "#3d3e2d",
-     "#494936",
-     "#52523c"
+     "#4d4f3a",
+     "#5c5d45",
+     "#67684c"
     ],
     "split": [
      0.4,
@@ -1035,8 +1035,8 @@
       9
      ],
      "colors": [
-      "#57573e",
-      "#646548"
+      "#6d6e4f",
+      "#7c7f5b"
      ],
      "height": 0.7
     }
@@ -1048,9 +1048,9 @@
    "from": "(c) ash, grey masses",
    "masses": {
     "colors": [
-     "#4b4f3d",
-     "#575e49",
-     "#646a53"
+     "#5e644e",
+     "#6d775c",
+     "#7c8569"
     ],
     "split": [
      0.35,
@@ -1067,7 +1067,7 @@
     "size_cm": 16,
     "colors": [
      "#847e6f",
-     "#938a7a",
+     "#93897a",
      "#747062"
     ],
     "joint": "#565046",
@@ -1120,9 +1120,9 @@
    "from": "MB4 road (the working's ochre clay, worn earths: rule 4)",
    "masses": {
     "colors": [
-     "#937a3d",
-     "#a28844",
-     "#b2974f"
+     "#b5994e",
+     "#c8aa56",
+     "#dbbd64"
     ],
     "split": [
      0.33,
@@ -1139,7 +1139,7 @@
       11
      ],
      "colors": [
-      "#a29f6a"
+      "#c8c785"
      ],
      "height": 0.8
     }
@@ -1205,9 +1205,9 @@
    "from": "(c) the slurry's mud, a little darker than the clay (ArenaGround's note)",
    "masses": {
     "colors": [
-     "#71673b",
-     "#7f7342",
-     "#897f49"
+     "#8c824b",
+     "#9d9154",
+     "#a99f5c"
     ],
     "split": [
      0.4,
@@ -1222,9 +1222,9 @@
    "from": "(c) rust-stained clay, as light as the clay: a shift of hue, never a darker blot",
    "masses": {
     "colors": [
-     "#9f743c",
-     "#af8540",
-     "#bc9144"
+     "#c4924c",
+     "#d7a751",
+     "#e7b556"
     ],
     "split": [
      0.35,
@@ -1239,9 +1239,9 @@
    "from": "(c) burnt ground, ash and char",
    "masses": {
     "colors": [
-     "#3a3b2a",
-     "#454533",
-     "#4f4f38"
+     "#494c36",
+     "#575841",
+     "#636448"
     ],
     "split": [
      0.4,
@@ -1257,19 +1257,19 @@
    "cells": {
     "size_cm": 70,
     "colors": [
-     "#8d7d42",
-     "#9d8b4a",
-     "#7f6d3c"
+     "#ae9d54",
+     "#c2ae5e",
+     "#9d894c"
     ],
-    "joint": "#5f5435",
+    "joint": "#766a44",
     "joint_cm": 4.0,
     "lit": 0.05,
     "round": 0.0
    },
    "masses": {
     "colors": [
-     "#5f5435",
-     "#695f3b"
+     "#766a44",
+     "#82784b"
     ],
     "split": [
      0.5

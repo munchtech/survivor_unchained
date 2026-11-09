@@ -1,7 +1,7 @@
 {
  "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
  "painted": 2,
- "inputs": "fd7224a0bdec",
+ "inputs": "a7c4bc598441",
  "from": "(c) the terrain zones' seven layers as terrain.gdshader reads them (Ground.cs: the Verge, the Low Ford, the Waystation, the title's camp, C01's frost)",
  "layers": [
   {
@@ -23,9 +23,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 (the floor under the spruce, day); rule 9: leaf litter as a few leaf shapes",
    "mean": [
-    0.05476,
-    0.04391,
-    0.03533
+    0.08665,
+    0.07139,
+    0.05644
    ]
   },
   {
@@ -35,9 +35,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 road (day): two or three value masses, warm; target 04's road, 05's track",
    "mean": [
-    0.10614,
-    0.07527,
-    0.07042
+    0.16861,
+    0.12321,
+    0.11489
    ]
   },
   {
@@ -47,9 +47,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 road (the ruts' wet earth, a step darker than the road)",
    "mean": [
-    0.03731,
-    0.03159,
-    0.02965
+    0.05929,
+    0.05173,
+    0.04761
    ]
   },
   {
@@ -59,9 +59,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB3 (the town's rough paving as chunky planes, warm tops, cool joints); the setts' own maps are wave 2",
    "mean": [
-    0.17177,
-    0.20108,
-    0.10959
+    0.27126,
+    0.3286,
+    0.17622
    ]
   },
   {
@@ -71,8 +71,8 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 rock: a few big rounded planes in muted moon-blue grey, moss on the top planes",
    "mean": [
-    0.20501,
-    0.20362,
+    0.20503,
+    0.20249,
     0.14455
    ]
   },
@@ -83,9 +83,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "(c) the blight's burned ground, as ash masses and long dark cracks",
    "mean": [
-    0.01676,
-    0.01787,
-    0.02146
+    0.02651,
+    0.02944,
+    0.03467
    ]
   }
  ],
