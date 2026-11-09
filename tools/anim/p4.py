@@ -242,6 +242,11 @@ def action_held(r, spec):
         f = np.einsum("fji,fj->fi", Rp, np.einsum("fij,j->fi", G[:, la], pc["shieldp"]["face"]))
         out["shield_face_deg"] = np.degrees(np.arctan2(f[:, 0], f[:, 2]))
         out["boss_sternum_cm"] = 100 * np.linalg.norm(boss - P[:, rig.index["spine_05"]], axis=1)
+        out["boss_cm"] = 100 * boss[:, 1]                                       # (the shield's centre height)
+        out["boss_ahead_cm"] = 100 * np.einsum("fi,fi->f", boss - P[:, pv], hd)  # (ahead of the pelvis, her heading)
+    if "sword" in spec.get("held", []) or "shield" in spec.get("held", []):
+        for sd in "lr":                # (the hands ahead of the pelvis along her heading: a shove's reach)
+            out[f"hand_{sd}_ahead_cm"] = 100 * np.einsum("fi,fi->f", P[:, rig.index[f"hand_{sd}"]] - P[:, pv], hd)
     return out
 
 
