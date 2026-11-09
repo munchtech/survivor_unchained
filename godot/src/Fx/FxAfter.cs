@@ -14,6 +14,7 @@ namespace SurvivorUnchained.View;
 /// separate pass. The shader writes its color premultiplied in display space (fx_after: the 3D pass blends in linear, so
 /// it hands over linear(srgb(c) x a) / a, which the pass blends to srgb(c) x a), and the layer composites premultiplied.
 /// --fx-after off: drawn in the frame as before (B6's emit). Never at --cel off (FxCel.On).
+/// --fx-after-occlude off: no depth twins for figures (OccludeFigure), so a spell draws over her as before.
 /// </summary>
 public partial class FxAfter : CanvasLayer
 {
@@ -32,6 +33,95 @@ public partial class FxAfter : CanvasLayer
         if (one != null && IsInstanceValid(one)) return;
         one = new FxAfter { Name = "FxAfter" };
         if (Engine.GetMainLoop() is SceneTree t) t.Root.CallDeferred(Node.MethodName.AddChild, one);
+        foreach (var f in figures.ToArray()) if (IsInstanceValid(f)) TwinFigure(f);
+    }
+
+    public static readonly bool FigureOn = SurvivorUnchained.Args.Get("fx-after-occlude") != "off";
+    const string HoleName = "FxAfterHole";
+    static readonly System.Collections.Generic.List<Node3D> figures = new();
+    static readonly System.Collections.Generic.List<(MeshInstance3D src, MeshInstance3D twin)> pairs = new();
+    static bool hooked;
+    static ShaderMaterial? skipMat;
+
+    /// <summary>(L1 W6) A figure's depth twins, skinned meshes included: registers <paramref name="root"/> and, once the
+    /// after-grade layer exists (none is made for it), gives each of its meshes (and any laid later) a child twin that
+    /// writes depth only, sharing mesh, skin and skeleton so it deforms with the figure; see-through surfaces (hair cards,
+    /// lashes, cutout cloth) are skipped so a card never punches its quad out of a spell. --fx-after-occlude off: nothing.</summary>
+    public static void OccludeFigure(Node3D root)
+    {
+        if (!On || !FigureOn) return;
+        figures.RemoveAll(f => !IsInstanceValid(f));
+        if (!figures.Contains(root)) figures.Add(root);
+        if (!hooked && Engine.GetMainLoop() is SceneTree t)
+        {
+            hooked = true;
+            t.NodeAdded += OnNodeAdded;
+        }
+        if (one != null && IsInstanceValid(one)) TwinFigure(root);
+    }
+
+    static void OnNodeAdded(Node n)
+    {
+        if (n is not MeshInstance3D mi || one == null || !IsInstanceValid(one) || mi.Name == HoleName) return;
+        foreach (var f in figures)
+            if (IsInstanceValid(f) && f.IsAncestorOf(mi)) { Callable.From(() => TwinMesh(mi)).CallDeferred(); return; }
+    }
+
+    static int TwinFigure(Node3D root)
+    {
+        int n = 0;
+        foreach (var node in root.FindChildren("*", "MeshInstance3D", true, false))
+            if (node is MeshInstance3D mi && TwinMesh(mi)) n++;
+        GD.Print($"fxafter: twins {n} under {root.Name}");
+        return n;
+    }
+
+    static bool SeeThrough(MeshInstance3D mi, int i)
+    {
+        var m = mi.GetActiveMaterial(i);
+        if (m is BaseMaterial3D b) return b.Transparency != BaseMaterial3D.TransparencyEnum.Disabled;
+        if (m is ShaderMaterial sm) return sm.Shader != null && sm.Shader.Code.Contains("ALPHA");
+        return false;
+    }
+
+    static bool TwinMesh(MeshInstance3D mi)
+    {
+        if (!IsInstanceValid(mi) || mi.Mesh == null || mi.Name == HoleName || (mi.Layers & RenderLayer) != 0) return false;
+        foreach (var c in mi.GetChildren()) if (c.Name == HoleName) return false;
+        hole ??= MakeHole();
+        skipMat ??= new ShaderMaterial { Shader = new Shader { Code = "shader_type spatial; void fragment() { discard; }" } };
+        var twin = new MeshInstance3D { Mesh = mi.Mesh, Layers = RenderLayer, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Name = HoleName };
+        mi.AddChild(twin);
+        if (mi.Skin != null) twin.Skin = mi.Skin;
+        if (!mi.Skeleton.IsEmpty)
+        {
+            // (the twin is mi's child, so a relative path starts one step further up; absolute ones stay)
+            var sp = mi.Skeleton.IsAbsolute() ? mi.Skeleton : new NodePath("../" + mi.Skeleton);
+            if (twin.GetNodeOrNull(sp) is Skeleton3D) twin.Skeleton = sp;
+        }
+        for (int i = 0; i < mi.Mesh.GetSurfaceCount(); i++)
+            twin.SetSurfaceOverrideMaterial(i, SeeThrough(mi, i) ? skipMat : hole);
+        pairs.Add((mi, twin));
+        return true;
+    }
+
+    static ShaderMaterial MakeHole() => new()
+    {
+        Shader = new Shader { Code = "shader_type spatial; render_mode unshaded, blend_mix, depth_draw_always, cull_back, shadows_disabled, fog_disabled; void fragment() { ALBEDO = vec3(0.0); ALPHA = 0.0; }" },
+        RenderPriority = (int)Material.RenderPriorityMin,
+    };
+
+    static void FollowFigures()
+    {
+        for (int k = pairs.Count - 1; k >= 0; k--)
+        {
+            var (src, twin) = pairs[k];
+            if (!IsInstanceValid(src) || !IsInstanceValid(twin)) { pairs.RemoveAt(k); continue; }
+            if (twin.Mesh != src.Mesh) twin.Mesh = src.Mesh;
+            if (src.Mesh == null) continue;
+            int bs = src.GetBlendShapeCount();
+            for (int b = 0; b < bs; b++) twin.SetBlendShapeValue(b, src.GetBlendShapeValue(b));
+        }
     }
 
     static ShaderMaterial? hole;
@@ -43,11 +133,7 @@ public partial class FxAfter : CanvasLayer
     /// the mesh and follows its parent).</summary>
     public static void Occlude(Node root, Node? skip = null)
     {
-        hole ??= new ShaderMaterial
-        {
-            Shader = new Shader { Code = "shader_type spatial; render_mode unshaded, blend_mix, depth_draw_always, cull_back, shadows_disabled, fog_disabled; void fragment() { ALBEDO = vec3(0.0); ALPHA = 0.0; }" },
-            RenderPriority = (int)Material.RenderPriorityMin,
-        };
+        hole ??= MakeHole();
         foreach (var n in root.FindChildren("*", "MeshInstance3D", true, false))
         {
             if (n is not MeshInstance3D mi || mi.Mesh == null || (mi.Layers & RenderLayer) != 0) continue;
@@ -91,6 +177,7 @@ public partial class FxAfter : CanvasLayer
         var root = GetTree().Root;
         if (root.GetCamera3D() is not { } main) { vp.RenderTargetUpdateMode = SubViewport.UpdateMode.Disabled; return; }
         vp.RenderTargetUpdateMode = SubViewport.UpdateMode.Always;
+        FollowFigures();
         if (vp.Size != root.Size) vp.Size = root.Size;
         main.CullMask &= ~RenderLayer;
         cam.GlobalTransform = main.GlobalTransform;
