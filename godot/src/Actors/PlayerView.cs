@@ -354,7 +354,14 @@ public partial class PlayerView : Node3D
         bt.ConnectNode("upperScale", 0, "upper");
         bt.ConnectNode("upperShot", 0, "move");
         bt.ConnectNode("upperShot", 1, "upperScale");
-        bt.ConnectNode("fullScale", 0, "full");
+        // (--act: a seek node between the clip and its pace, to jump a held loop back; nothing is added without it)
+        if (ActOn && mine)
+        {
+            bt.AddNode("fullSeek", new AnimationNodeTimeSeek(), new Vector2(500, 300));
+            bt.ConnectNode("fullSeek", 0, "full");
+            bt.ConnectNode("fullScale", 0, "fullSeek");
+        }
+        else bt.ConnectNode("fullScale", 0, "full");
         // (the clip she was in, at its place and pace, crossfaded out under the new one: FullHerFrom)
         bt.AddNode("fullOld", fullOld, new Vector2(400, 450));
         bt.AddNode("fullOldScale", new AnimationNodeTimeScale(), new Vector2(600, 450));
@@ -905,7 +912,7 @@ public partial class PlayerView : Node3D
         time += dt;
         probeDt = dt; probeFight = fightTime;
         if (GripProbe && mine) Probe();
-        if (mine) { Xfade(); tree.Advance(dt); }
+        if (mine) { Xfade(); ActTick(dt); tree.Advance(dt); }
         // The arm-hold crossfade, on the frame the tree first shows what Carry set last frame.
         if (armMod != null)
         {
@@ -1125,8 +1132,9 @@ public partial class PlayerView : Node3D
         // (at 10 a second they ran on through the stop, 3.6 m/s off her ground speed; at 40, 1.4).
         speed = Mathf.Lerp(speed, sp, 1 - Mathf.Exp(-(TurnOld ? 10 : BlendRate) * (float)dt));
         velX = (float)p.Vx; velZ = (float)p.Vz;
-        if (mine) Rest(b, dt, sp);
+        if (mine && !ActLive) Rest(b, dt, sp);
         if (mine) Carry((float)dt, sp);
+        if (mine) ActApply();
         if (mine) SurvivorUnchained.Play.TurnRun.Log(b.Time, p.StickX, p.StickZ, p.Vx, p.Vz, Rotation.Y, carriage?.Bank ?? 0, speed, p.X, p.Z);
         else tree.Set(BlendPosition, speed);
         // The carried light: steadier at full health, guttering when hurt.

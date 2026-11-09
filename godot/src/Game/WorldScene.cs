@@ -373,6 +373,8 @@ public partial class WorldScene : Node3D, IZoneLook
             Perf.Begin(Perf.Part.Player);
             Player?.Update(b, hx, hz, leap, herDt, viewTime, HeightAt);
             Perf.End(Perf.Part.Player);
+            // (--act: the shot harness moves her root off the fight's spot; the camera and the lights follow her)
+            if (Player?.ActAt is Vector3 shifted) { HerDrawn = shifted; hx = shifted.X; hz = shifted.Z; y = shifted.Y; }
             // (a teaching freeze holds the camera too: the words were placed for this picture)
             if (Showcase == null && !CameraHeld && !FxStill) cam.Update((float)dt, (float)hx, y, (float)hz, (float)p.Vx, (float)p.Vz);
             Perf.Begin(Perf.Part.Crowd);

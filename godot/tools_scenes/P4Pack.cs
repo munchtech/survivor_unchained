@@ -1,7 +1,9 @@
 using System;
 using System.Linq;
 using System.Text.Json;
+using System.Collections.Generic;
 using Godot;
+using SurvivorUnchained.Play;
 using SurvivorUnchained.View;
 
 namespace SurvivorUnchained.Tools;
@@ -13,7 +15,7 @@ namespace SurvivorUnchained.Tools;
 /// art/people/body_p1/p4_clips.res, an AnimationLibrary: a rotation track per keyed bone, position tracks for root and
 /// pelvis, the loop mode from the clip, length (frames-1)/fps, step 1/fps. The skeleton track path is the bridge clips'
 /// own (read from her_clips.res, as P1BakeRun writes it), so P4 clips drop into the same tree. P1Body.HerClips lays
-/// them over the bridge clips.
+/// them over the bridge clips. A clip's top-level "beats" go to data/anim/her_events.json (HerEvents).
 /// </summary>
 public partial class P4Pack : Node
 {
@@ -34,6 +36,7 @@ public partial class P4Pack : Node
         // t^-1 q, and t (t^-1 q) = q: the clip plays exactly as built while the bridge clips need the base.
         var baseTurn = P1Body.BlendBase().ToDictionary(x => x.Bone, x => x.Turn);
         var outLib = new AnimationLibrary();
+        var events = new Dictionary<string, HerEvents.Beats>();
         var files = DirAccess.GetFilesAt(dir).Where(f => f.EndsWith(".json")).OrderBy(f => f).ToArray();
         foreach (var file in files)
         {
@@ -73,12 +76,18 @@ public partial class P4Pack : Node
             // A gait's ground speed at 1.0x (its locked stance's, m/s of B's skeleton): the game plays it at this on B.
             if (r.TryGetProperty("speed_mps", out var sp) && sp.ValueKind == System.Text.Json.JsonValueKind.Number) anim.SetMeta("speed", sp.GetDouble());
             outLib.AddAnimation(name, anim);
+            if (HerEvents.FromClip(r) is { } beats) events[name] = beats;
             var missing = baseTurn.Keys.Where(k => !r.GetProperty("rot").TryGetProperty(k, out _)).ToArray();
             GD.Print($"p4-pack: {name}: {frames} frames, {bones} bones ({based} under the blend base, pre-turned), {(loop ? "loop" : "once")}, {anim.Length:F3} s" +
                      (missing.Length > 0 ? $"; NOT KEYED under the blend base (they land on t): {string.Join(" ", missing)}" : ""));
         }
         var err = ResourceSaver.Save(outLib, P1Body.Dir + "p4_clips.res", ResourceSaver.SaverFlags.Compress);
         GD.Print($"p4-pack: wrote p4_clips.res ({files.Length} clips, track path {skelPath}): {err}");
+        // The clips' beats as data (a clip's top-level "beats", clip seconds -> frames at 60 fps): written whole at each pack, this is its only writer.
+        var evPath = ProjectSettings.GlobalizePath("res://data/anim/her_events.json");
+        DirAccess.MakeDirRecursiveAbsolute(evPath.GetBaseDir());
+        using (var ef = FileAccess.Open(evPath, FileAccess.ModeFlags.Write)) ef.StoreString(HerEvents.Serialize(events));
+        GD.Print($"p4-pack: wrote data/anim/her_events.json ({events.Count} clips with beats)");
         GetTree().Quit();
     }
 }
