@@ -60,6 +60,11 @@ public sealed class Encounters
         public double X, Z, Spread = 3, Wake = 9, Leash = 20, R = 2.4, ArmZ, FlareTo = 1, FirstAfter = 1.2;
         public List<Foe> Foes = new();
         public string? Tell, Captain, Post, Def, FollowElite;
+        /// <summary>(M5) A pack's gate: its foes are not laid (they rise out of the road, resting) until this beat, or this Placed
+        /// champion, is down AfterSecs s. The breather between one fight and the next on a short road (her weapon strikes
+        /// anything in reach, so a pack merely told to ignore her would wake at the first swing).</summary>
+        public string? After;
+        public double AfterSecs;
         /// <summary>Only this kind casts the pack's tell (null: all of it); a chest's keepers (a pack's id).</summary>
         public string? TellBy, Guard;
         /// <summary>A ring springs only within this of its x (a fight off the road that strays north does not).</summary>
@@ -144,6 +149,7 @@ public sealed class Encounters
     readonly Dictionary<(double, string), double> nextAffix = new();
     readonly Dictionary<double, double> champWoke = new();
     readonly HashSet<string> championsDown = new(), carried = new();
+    readonly Dictionary<string, double> championDownAt = new();
 
     /// <summary>A pack woke (its first foe roused).</summary>
     public Action<Beat>? Woke;
@@ -185,21 +191,37 @@ public sealed class Encounters
         foreach (var bt in Of("pack"))
         {
             if (Done(bt.Id)) continue;
+            if (bt.After != null) { pending.Add(bt.Id); continue; }
+            PlacePack(bt, SpawnStyle.Walk);
+        }
+    }
+
+    /// <summary>The packs still to be laid, each when the beat it waits on (After) has been down AfterSecs.</summary>
+    readonly HashSet<string> pending = new();
+    /// <summary>A gated pack's breather is running (the beat it waits on is down; it rises when the seconds are out): the next fight is owed, so the line is not clear.</summary>
+    bool PendingBreath => pending.Count > 0 && pending.Any(pid => S.Get(pid) is { After: { } af } && (DownAt.ContainsKey(af) || championDownAt.ContainsKey(af)));
+    /// <summary>Lay every gated pack now, whatever it waits on (the tests' look at the ground; the game lays them as their gates open).</summary>
+    public void LayGated() { foreach (var pid in pending.ToList()) { pending.Remove(pid); PlacePack(S.Get(pid)!, SpawnStyle.Rise); } }
+    public bool Pending(string beat) => pending.Contains(beat);
+
+    void PlacePack(Beat bt, SpawnStyle style)
+    {
+        {
             var list = new List<(Enemy, double)>();
             int lv = Level(level, day, bt);
             foreach (var f in bt.Foes)
                 for (int i = 0; i < f.N; i++)
-                    if (Spawn(f.Def, bt, lv, false) is { } e) list.Add((e, e.Seed));
+                    if (Spawn(f.Def, bt, lv, false, null, style) is { } e) list.Add((e, e.Seed));
             var ch = bt.Champion;
             bool crownCaptain = ch != null && bt.Captain != null && (ch.Def == null || ch.Def == bt.Captain);
-            if (bt.Captain != null && Spawn(bt.Captain, bt, lv + (crownCaptain ? ch!.LevelUp : 1), true, near: 1) is { } c)
+            if (bt.Captain != null && Spawn(bt.Captain, bt, lv + (crownCaptain ? ch!.LevelUp : 1), true, near: 1, style: style) is { } c)
             {
                 list.Add((c, c.Seed));
                 Captains[bt.Id] = (c, c.Seed);
                 if (crownCaptain) Crown(c, bt.Id);
             }
             // (a champion of its own kind: beside the pack, its elite; with no captain, its carrier too)
-            if (ch is { Def: { } cd } && !crownCaptain && Spawn(cd, bt, lv + ch.LevelUp, true, near: 1) is { } cc)
+            if (ch is { Def: { } cd } && !crownCaptain && Spawn(cd, bt, lv + ch.LevelUp, true, near: 1, style: style) is { } cc)
             {
                 list.Add((cc, cc.Seed));
                 if (bt.Captain == null) Captains[bt.Id] = (cc, cc.Seed);
@@ -209,7 +231,7 @@ public sealed class Encounters
         }
     }
 
-    Enemy? Spawn(string def, Beat bt, int lv, bool elite, double? near = null)
+    Enemy? Spawn(string def, Beat bt, int lv, bool elite, double? near = null, SpawnStyle style = SpawnStyle.Walk)
     {
         double spread = near ?? bt.Spread;
         for (int t = 0; t < 12; t++)
@@ -219,7 +241,7 @@ public sealed class Encounters
             if (b.Collision.Blocked(x, z, 0.7) && t < 11) continue;
             var e = b.SpawnEnemy(def, x, z, new Battle.SpawnOpts
             {
-                Level = lv, Elite = elite, Style = SpawnStyle.Walk, Tag = Phase + ":" + bt.Id, Home = (bt.X, bt.Z, bt.Leash), Wake = bt.Wake,
+                Level = lv, Elite = elite, Style = style, Tag = Phase + ":" + bt.Id, Home = (bt.X, bt.Z, bt.Leash), Wake = bt.Wake,
             });
             if (e != null) e.Facing = b.Rng.Next() * Math.Tau;
             return e;
@@ -238,13 +260,26 @@ public sealed class Encounters
     /// <summary>Some pack is awake and on its feet (a fight is on), or the ring's foes still stand. Only foes within
     /// FightNear of her count once a pack has been up FightGrace (H4 lead 3: j08 run g3 soft-locked at the ring for
     /// 4 minutes on one track-ambush foe left standing far off in the trees; the gate held for good).</summary>
-    public bool Fighting => Packs.Any(kv => WokeAt.TryGetValue(kv.Key, out var w) && !DownAt.ContainsKey(kv.Key)
+    public bool Fighting => PendingBreath || Packs.Any(kv => WokeAt.TryGetValue(kv.Key, out var w) && !DownAt.ContainsKey(kv.Key)
         && (b.Time - w < FightGrace || kv.Value.Any(f => Live(f) && Dist(f.E.X, f.E.Z, b.Player.X, b.Player.Z) < FightNear)));
     public const double FightNear = 24, FightGrace = 6;
+
+    /// <summary>The beat (or Placed champion) is down, and has been for secs; one that is not placed in this instance counts as down.</summary>
+    bool Cleared(string id, double secs)
+    {
+        if (DownAt.TryGetValue(id, out var t) || championDownAt.TryGetValue(id, out t)) return b.Time - t >= secs;
+        // (not down yet: a beat of this night that is still to come, sprung or laid, or a Placed champion; one carried as done, or not ours, is clear)
+        if (S.Placed.ContainsKey(id) || pending.Contains(id) || Packs.ContainsKey(id)) return false;
+        return !S.In(Phase, Features).Any(x => x.Id == id) || Done(id);
+    }
 
     public void Tick(double dt)
     {
         var p = b.Player;
+        // (the gated packs rise out of the road once the beat they wait on is down its breather)
+        if (pending.Count > 0)
+            foreach (var pid in pending.ToList())
+                if (S.Get(pid) is { After: { } af } pb && Cleared(af, pb.AfterSecs)) { pending.Remove(pid); PlacePack(pb, SpawnStyle.Rise); }
         foreach (var (id, list) in Packs)
         {
             var bt = S.Get(id)!;
@@ -428,6 +463,8 @@ public sealed class Encounters
         {
             switch (bt.Kind)
             {
+                case "pack" when pending.Contains(bt.Id):
+                    return Route(bt.X, bt.Z, bt);
                 case "pack" when Packs.ContainsKey(bt.Id) && !DownAt.ContainsKey(bt.Id):
                 {
                     // (woke, its foes strayed: the nearest of them; resting: its ground)
@@ -562,7 +599,7 @@ public sealed class Encounters
         {
             if (!(e.Alive && e.Seed == seed && e.State != EnemyState.Dying))
             {
-                if (championsDown.Add(id)) ChampionDown?.Invoke(id, e);
+                if (championsDown.Add(id)) { championDownAt[id] = b.Time; ChampionDown?.Invoke(id, e); }
                 continue;
             }
             if (!crowned.TryGetValue(seed, out var aff) || aff.All(a => a.Kind == null)) continue;

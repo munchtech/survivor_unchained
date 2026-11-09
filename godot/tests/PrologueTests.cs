@@ -115,7 +115,7 @@ public class PrologueTests
         Assert.True(s.B.EmberOn);
         Run(s, 12);
         Assert.Equal(Prologue.Stage.Rising, s.Zone.Now);
-        Assert.True(s.B.Enemies.Living().Count() > 6, string.Join(",", s.B.Enemies.Living().Select(e => e.Def.Id + "/" + e.Tag)));
+        Assert.True(s.B.Enemies.Living().Count() > 3);
         Assert.Equal("move", s.Host.CurrentHint?.Id ?? "move");
         // The first rise of the ember brings its first card alone; the great blessing comes on its own
         // panel later (au1 item 2).
@@ -161,7 +161,7 @@ public class PrologueTests
         int placed = s.B.Enemies.Living().Count();
         Run(s, 120);
         Assert.Equal(Prologue.Stage.Rising, s.Zone.Now);
-        Assert.True(s.B.Enemies.Living().Count() <= placed, $"{placed} -> {s.B.Enemies.Living().Count()}: " + string.Join(",", s.B.Enemies.Living().Select(e => e.Def.Id + "/" + e.Tag + "/" + e.State)));
+        Assert.True(s.B.Enemies.Living().Count() <= placed + 3);  // (+ the three, laid once the lone one is down)
         KillPack(s, "n_lone");
         Assert.Equal(Prologue.Stage.Rising, s.Zone.Now);
         KillPack(s, "n_three");
@@ -189,7 +189,11 @@ public class PrologueTests
         Run(s, 4);
         double xp = s.J.Ch.Xp; int level = s.J.Ch.Level;
         foreach (var id in new[] { "n_lone", "n_three", "n_first" })
+        {
+            for (int i = 0; i < 60 && s.Zone.Night!.Pending(id); i++) Run(s, 0.5);
             foreach (var e in s.Zone.Night!.Standing(id)) { s.B.KillEnemy(e, true, null); s.J.Killed(e, true); }
+            Run(s, 0.1);
+        }
         Run(s, 1);
         Assert.False(s.B.DraftOwed);
         Assert.Equal(0, s.B.GreatOwed);
@@ -215,7 +219,7 @@ public class PrologueTests
         Run(s, 4);
         double xp = s.J.Ch.Xp;
         s.B.GainEmber(s.B.EmberNext);
-        foreach (var e in s.Zone.Night!.Standing("n_three")) { s.B.KillEnemy(e, true, null); s.J.Killed(e, true); }
+        foreach (var e in s.Zone.Night!.Standing("n_lone")) { s.B.KillEnemy(e, true, null); s.J.Killed(e, true); }
         Run(s, 0.1);
         Assert.True(s.B.DraftOwed);
         Assert.Equal(xp, s.J.Ch.Xp);
@@ -257,12 +261,14 @@ public class PrologueTests
         Assert.Equal(2, left.Count);
         foreach (var e in s.Zone.Night.Standing("n_cart").Except(left)) s.B.KillEnemy(e, true, null);
         foreach (var e in left) e.Hp = e.MaxHp = 1e9;
+        var leftSeeds = left.Select(e => e.Seed).ToList();
         Run(s, 10);
         Assert.Equal(Prologue.Stage.Ambush, s.Zone.Now);
         Run(s, 25);
         Assert.Equal(Prologue.Stage.Road2, s.Zone.Now);
         Assert.True(s.Zone.Night.Done("n_cart"));
-        Assert.All(left, e => Assert.False(e.Alive && e.State != EnemyState.Dying, $"{e.Def.Id} {e.State} hp {e.Hp} alive {e.Alive} t {s.B.Time}"));
+        // (the pool hands a fallen foe's slot to the next pack that rises, n_road1: a slot is the same foe only while its Seed holds)
+        Assert.All(left.Zip(leftSeeds), x => Assert.False(x.First.Seed == x.Second && x.First.Alive && x.First.State != EnemyState.Dying));
     }
 
     [Fact]

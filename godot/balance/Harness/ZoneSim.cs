@@ -35,6 +35,9 @@ public sealed class ZoneRunResult
     public readonly List<string> FallsAt = new(), RisesAt = new(), WardenDrops = new();
     /// <summary>Each beat put down: its seconds (woke to down) and her level then.</summary>
     public readonly Dictionary<string, (double Seconds, int Level)> Beats = new();
+    /// <summary>(M5) Each beat's wake and down (game seconds), and the wakes made while a champion (not the pack's own) lived within 25 m of her.</summary>
+    public readonly Dictionary<string, double> WokeT = new(), DownT = new();
+    public readonly List<string> ChampWakes = new(), ChampWakesNear = new();
     /// <summary>Seconds in each stage of the zone (Prologue.Stage).</summary>
     public readonly Dictionary<string, double> Stages = new();
     public int Kills => Fodder + Elite + Champion + Boss;
@@ -54,6 +57,7 @@ public static class ZoneSim
 
     public static ZoneRunResult Play(ZoneRunSpec spec, bool quiet = false)
     {
+        var dbg = new HashSet<string>();
         if (spec.Zone != "lowford") throw new ArgumentException($"zone sim: only lowford is built ({spec.Zone})");
         var a = Callings.Archetype(spec.Calling);
         var j = Journey.Begin(new CreationChoice
@@ -161,6 +165,11 @@ public static class ZoneSim
                 var caller = now == Prologue.Stage.Barrow ? b.Enemies.Living().FirstOrDefault(e => e.Tag == "caller" && e.State != EnemyState.Dying) : null;
                 var chest = zone.Interactables.FirstOrDefault(i => i.Id == "chest" && (i.When?.Invoke() ?? true) && i.Locked?.Invoke() == null);
                 var g = night?.Goal(_ => true, _ => null, gate.X);
+                // (a player takes the road's packs in order: the Knight waits for the packs before the post, the Caller for those before the ford)
+                int Idx(string id) => night == null ? 0 : night.S.Beats.FindIndex(x => x.Id == id);
+                bool packFirst(string until) => g is { For: { Kind: "pack" } gf } && Idx(gf.Id) < Idx(until) && !night!.Done(gf.Id);
+                if (knight != null && packFirst("n_post")) knight = null;
+                if (caller != null && packFirst("n_ford")) caller = null;
                 if (g is { } ng && (ng.For == null && night!.Fighting)) to = (ng.X, ng.Z);
                 else if (knight != null) to = (knight.X, knight.Z);
                 else if (caller != null) to = (caller.X, caller.Z);
@@ -247,6 +256,22 @@ public static class ZoneSim
                 stage = zone.Now; stageAt = tt;
                 if (stage == Prologue.Stage.Boss) { r.BossReached = true; r.LevelAtWarden = j.Ch.Level; }
             }
+            foreach (var enc in new[] { night, zone.Day })
+                if (enc != null)
+                {
+                    if (Environment.GetEnvironmentVariable("ZONE_DIAG") == "2")
+                        foreach (var (cid, (ce, cseed)) in enc.Champions)
+                            if (ce.Roused && ce.Seed == cseed && dbg.Add(spec.Key + cid)) Console.Error.WriteLine($"{spec.Key} champion {cid} roused t={b.Time:0.0} stage {zone.Now} her ({p.X:0},{p.Z:0}) it ({ce.X:0},{ce.Z:0}) wake {ce.Wake} woke={string.Join(",", enc.WokeAt.Keys)}");
+                    foreach (var (id, wt) in enc.WokeAt)
+                        if (r.WokeT.TryAdd(id, wt))
+                            foreach (var (cid, (ce, cseed)) in enc.Champions)
+                                if (cid != id && !(id == "n_post" && cid == "knight") && ce.Alive && ce.Seed == cseed && ce.State != EnemyState.Dying && Dist(ce.X, ce.Z, p.X, p.Z) <= 25)
+                                {
+                                    r.ChampWakesNear.Add($"{id}@{wt:0}s by {cid}");
+                                    if (ce.Roused) { r.ChampWakes.Add($"{id}@{wt:0}s by {cid}"); if (Environment.GetEnvironmentVariable("ZONE_DIAG") == "2") Console.Error.WriteLine($"{spec.Key} {id} woke t={wt:0.0} by {cid} her ({p.X:0},{p.Z:0}) it ({ce.X:0},{ce.Z:0}) {zone.Now} states {string.Join(",", enc.Packs.Where(kv => !enc.DownAt.ContainsKey(kv.Key)).Select(kv => kv.Key + ":" + enc.Standing(kv.Key).Count))}"); }
+                                }
+                    foreach (var (id, dt0) in enc.DownAt) r.DownT.TryAdd(id, dt0);
+                }
             foreach (var enc in new[] { night, zone.Day })
                 if (enc != null)
                     foreach (var (id, down) in enc.DownAt)
@@ -489,6 +514,25 @@ public static class ZoneSim
         string[] stages = ["Wake", "Rising", "Road", "Ambush", "Road2", "Post", "Barrow", "ToFord", "Intro", "Boss", "Victory", "Dawn", "Exit"];
         foreach (var s in stages)
             sb.AppendLine($"| stage {s} | " + string.Join(" | ", groups.Select(g => $"{F(Median(g.Select(r => r.Stages.GetValueOrDefault(s, double.NaN))))} s")) + " |");
+        sb.AppendLine();
+        sb.AppendLine("## Quiet between beats (median seconds from the previous beat's down to this beat's wake; negative = woke before the last fell)");
+        sb.AppendLine();
+        sb.AppendLine("| Beat (after the one before it in the data) | " + string.Join(" | ", groups.Select(g => $"{Roman(g.Key.Tier)} {g.Key.Bot}")) + " |");
+        sb.AppendLine("|---|" + string.Concat(groups.Select(_ => "---|")));
+        for (int bi = 1; bi < beats.Count; bi++)
+        {
+            string cur = beats[bi], prev = beats[bi - 1];
+            sb.AppendLine($"| {cur} (after {prev}) | " + string.Join(" | ", groups.Select(g =>
+            {
+                var q = g.Where(r => r.WokeT.ContainsKey(cur) && r.DownT.ContainsKey(prev)).Select(r => r.WokeT[cur] - r.DownT[prev]).ToList();
+                return q.Count == 0 ? "-" : $"{F(Median(q), "0.0")} s ({q.Count})";
+            })) + " |");
+        }
+        sb.AppendLine();
+        sb.AppendLine("Pack wakes while a champion (not its own pack's, nor the Knight at its own escort) lived within 25 m of her and was **awake** (the count that matters): " + string.Join("; ", groups.Select(g =>
+            $"{Roman(g.Key.Tier)} {g.Key.Bot}: {g.Sum(r => r.ChampWakes.Count)} in {g.Count()} runs" + (g.Any(r => r.ChampWakes.Count > 0) ? " (" + string.Join(", ", g.SelectMany(r => r.ChampWakes).GroupBy(x => x.Split('@')[0] + " by " + x.Split(' ')[^1]).Select(x => $"{x.Key} x{x.Count()}")) + ")" : ""))) + ".");
+        sb.AppendLine();
+        sb.AppendLine("The same counting a champion that is still resting (the Knight asleep at the post 12 m from n_road2, for one): " + string.Join("; ", groups.Select(g => $"{Roman(g.Key.Tier)} {g.Key.Bot}: {g.Sum(r => r.ChampWakesNear.Count)}")) + ".");
         sb.AppendLine();
 
         if (feats != null)

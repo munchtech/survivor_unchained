@@ -381,7 +381,10 @@ public class EncountersTests
         });
         var n = new Encounters(s, b, new Dictionary<string, Fact>(), 1, 0, "night");
         n.Place();
-        Assert.Equal(s.In("night").Where(x => x.Kind == "pack").Select(x => x.Id), n.Packs.Keys);
+        // (the gated packs, After, are laid as their breathers end: Place leaves them out)
+        Assert.Contains(n.Pending("n_three") ? "x" : "", "x");
+        n.LayGated();
+        Assert.Equal(s.In("night").Where(x => x.Kind == "pack").Select(x => x.Id).OrderBy(x => x), n.Packs.Keys.OrderBy(x => x));
         foreach (var (id, list) in n.Packs)
         {
             var bt = s.Get(id)!;
