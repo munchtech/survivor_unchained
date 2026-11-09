@@ -122,6 +122,15 @@ public sealed record GradeSettings(double[] Lift, double[] Gamma, double[] Gain,
     public double WarmKeep { get; init; }
     public double WarmHue { get; init; } = 58;
     public double WarmWidth { get; init; } = 32;
+    /// <summary>(L1 lead 7, S1 daycast) The scene's color (0: none; 1: the day rigs, rigs.json "scene_color"): the drawn color
+    /// keeps the hue and the chroma's share of its L (Oklab; the linear channel ratios) of what was lit, the light times the
+    /// surface as it reached the tone mapper; AgX and the grade give its lightness only. Last in the grade, after the tone
+    /// curve. Why: AgX's per-channel sigmoid pulls a color's channels together (the neutral 0.18 card's lit side under the
+    /// #f3d9a0 sun: the scene's R/B 2.26 drawn 1.72), and the day grade's chroma terms (saturation and vibrance, PaintVib 0.75,
+    /// PaintHi 0.7, the per-channel contrast) pushed it back past the light's own (R/B 2.95, red near its ceiling on the 0.5
+    /// card), so the color chain's per-channel division of the boards drew every warm surface pink-mauve (bible rules 3-4:
+    /// the color is the light's and the surface's, never a grade push the chain must divide out).</summary>
+    public double SceneColor { get; init; }
 }
 
 public sealed record AtmospherePreset(

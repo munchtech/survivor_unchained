@@ -10,15 +10,16 @@ response (per channel, the response curve's inverse: the grade is in it); (4) th
 night lit and shade sides over those albedos (the median across the night swatches); (5) her ember, (6) dawn and the class
 marks (albedo_ctl). No frame is ever an input: the frames are the check.
 
-    bash wtlock.sh python tools/look/color_chain.py measure [NAME]   grey cards (0.18, 0.5, 0.8) on the lookdev stage, all
+    python tools/look/color_chain.py measure [NAME]   grey cards (0.18, 0.5, 0.8) on the lookdev stage, all
                                                                     rigs -> OUT/NAME/g18|g50|g80, OUT/NAME/cards.json
     python tools/look/color_chain.py boards                          the swatches' board colors -> OUT/boards.json
     python tools/look/color_chain.py solve [NAME]                    rigs + albedos from boards.json and NAME's cards
                                                                     -> OUT/solve.json (the arithmetic, per channel)
     python tools/look/color_chain.py apply                           solve.json into rigs.json, materials.json, ground.json,
                                                                     town.json (one read-modify-write each)
-    bash wtlock.sh python tools/look/color_chain.py check [NAME]     the solved albedos drawn on the stage (the relit check)
-    bash wtlock.sh python tools/look/color_chain.py all              measure, boards, solve, apply, then the kits' own builds
+    python tools/look/color_chain.py check [NAME]     the solved albedos drawn on the stage (the relit check)
+    python tools/look/color_chain.py all [NAME]                      measure, boards, solve, apply, the relit check, then the
+                                                                    kits' own builds and the ground check
 """
 import json, os, subprocess, sys
 
@@ -197,7 +198,7 @@ def spread(rows, names, ref):
     return {"min": A.min(0).round(3).tolist(), "max": A.max(0).round(3).tolist(), "outliers": off}
 
 
-def shade_gain(cards, rig, rho, cam="play", lv=1):
+def shade_gain(cards, rig, rho, cam="play", lv=1, lit_gain=1.0):
     """The per-channel gain on a rig's shade light (fill, sky, ground) that gives the neutral 0.18 card shade/lit = rho
     (the 0.18 card: the day key clips a 0.5 card's red at 0.99, and dawn's grade lifts a 0.5 card's shade red past 0.99):
     per class card, the albedo whose shade draws rho x its lit (the shade curve's inverse) over 0.5; the median of the
@@ -208,8 +209,21 @@ def shade_gain(cards, rig, rho, cam="play", lv=1):
         if cl is None or cs is None: continue
         lit, sh = cl[1][lv], cs[1][lv]
         now.append(sh / np.maximum(lit, 1e-5))
-        ks.append(inv(cs, rho * lit) / LV[lv])
+        ks.append(inv(cs, rho * lit * lit_gain) / LV[lv])
     return med(ks), med(now)
+
+
+SUN = "#f3d9a0"  # (rule 3: the day and dawn sun, pale gold)
+
+
+def day_lit_gain(cards):
+    """Per channel, the gain that takes the neutral cards' day lit side to the sun's own color at its luminance (0.18 and
+    0.5 cards, the geometric mean)."""
+    cl = curve(cards, None, "day_play", "lit"); sun = hex_to_lin(SUN); ks = []
+    for lv in (1, 2):
+        lit = cl[1][lv]; k = sun / np.maximum(lit, 1e-5)
+        ks.append(k * np.dot(bm.Y, lit) / np.dot(bm.Y, k * lit))
+    return np.exp(np.mean(np.log(ks), 0))
 
 
 NIGHT_SLOPE = 0.98  # (the night cards' slope, g18 to g50 in blue: 0.156 -> 0.424 over 0.18 -> 0.5)
@@ -229,9 +243,15 @@ def solve(name="cards", night_name=None, refine=None):
     # (2) the day fill: the boards' day shade/lit per channel, the median over the non-metal day swatches
     dm = [m for m in B if "day_ratio" in B[m] and B[m]["class"] not in METAL]
     rho = med([B[m]["day_ratio"] for m in dm])
-    k_day, now = shade_gain(cards, "day", rho)
+    # (L7 S1) the day key FROM rule 3: the neutral card's sunlit side (the key and the sky's share on it) is the sun's own
+    # color, #f3d9a0; per channel the lit side's gain (its luminance held: the key's strength stays the rig's) on the 0.18
+    # and 0.5 cards (the 0.8 card's lit side sits at the gamut's ceiling), the geometric mean
+    k_lit = day_lit_gain(cards)
+    k_day, now = shade_gain(cards, "day", rho, lit_gain=k_lit)
+    kk, q = key_gain(cards, "day", k_lit, k_day)
     rep["day"] = {"rho": rho.round(4).tolist(), "spread": spread([B[m]["day_ratio"] for m in dm], dm, rho), "swatches": dm,
-                  "card_ratio_now": now.round(4).tolist(), "shade_gain": k_day.round(4).tolist()}
+                  "card_ratio_now": now.round(4).tolist(), "shade_gain": k_day.round(4).tolist(),
+                  "lit_gain": k_lit.round(4).tolist(), "q": q.round(4).tolist(), "key_gain": np.maximum(kk, 0.05).round(4).tolist()}
     # (6) dawn: LB DAWN's setts, the same way
     k_dawn, now_d = shade_gain(cards, "dawn", np.array(B["lb_setts"]["dawn_ratio"]))
     rep["dawn"] = {"rho": B["lb_setts"]["dawn_ratio"], "card_ratio_now": now_d.round(4).tolist(), "shade_gain": k_dawn.round(4).tolist()}
@@ -243,6 +263,7 @@ def solve(name="cards", night_name=None, refine=None):
         if c == "water": continue  # (the water is the FX helper's shader: bands of the sky, no albedo)
         cv = curve(cards, c, "day_play", "lit")
         if cv is None or "day_lit" not in B[m]: continue
+        cv = (cv[0], cv[1] * k_lit)  # (L7 S1: the lit side as the solved key will draw it; under scene_color a light's gain is the drawn one)
         alb_rows.setdefault(c, []).append((m, inv(cv, np.array(B[m]["day_lit"]))))
     for c, rows in alb_rows.items():
         a = np.exp(np.mean([np.log(np.maximum(r, 1e-5)) for _, r in rows], 0))
@@ -336,14 +357,24 @@ def apply_rigs(rep, cards):
     tag = "C6 (the color chain, tools/look/color_chain.py; godot/data/look/swatches.json; rules 2-4)"
     # day: the fill FROM the boards' shade/lit
     k = np.array(rep["day"]["shade_gain"])
+    kk = np.array(rep["day"].get("key_gain", [1, 1, 1]))
     for name in ("day_town", "day_wild"):
         base = R["day_town"] if name == "day_wild" else {}
+        # (L7 S1) the key: its color x key_gain (top channel back to 1, the energy into the intensity); the wild keeps the
+        # town's color (its base) and its own intensity times the same energy
+        key = R[name]["key"]; kc = key.get("color") or R["day_town"]["key"]["color"]
+        kc_new, e = split_energy(scale_hex(kc, kk)); e /= float(hex_to_lin(kc).max())
+        kwords = f"key {kc} {key.get('intensity')} -> {kc_new} {round(key['intensity'] * e, 4)}"
+        if name == "day_town": key["color"] = kc_new
+        key["intensity"] = round(key["intensity"] * e, 4)
         new, words = shade_light(R[name], base, k)
         if name == "day_wild": new = {a: b for a, b in new.items() if a in R[name].get("fill", {})}
         R[name].setdefault("fill", {}).update(new)
         R[name]["from"] += (f" {tag}: the shade FROM the boards: the median day shade/lit per channel over {len(rep['day']['swatches'])} day swatches "
                             f"{rep['day']['rho']} (spread {rep['day']['spread']['min']}-{rep['day']['spread']['max']}; outliers {', '.join(rep['day']['spread']['outliers'])}); "
                             f"the neutral 0.18 card's shade/lit was {rep['day']['card_ratio_now']}: the shade light x{rep['day']['shade_gain']} per channel: {words}. "
+                            f"L7 S1: the key FROM rule 3, the neutral card's sunlit side the sun's own {SUN} (under scene_color, the drawn ratios are the light's): "
+                            f"the lit side x{rep['day'].get('lit_gain')}, the shade's share of it {rep['day'].get('q')}, so the key x{kk.round(4).tolist()}: {kwords}. "
                             f"The grade rig_day{'_wild' if name == 'day_wild' else ''}: the highlight tint neutral (the sun's color is the key's, rule 3).")
     # night: the moon FROM the boards over the classes' albedos, solved on night_play (the lookdev stage's play night)
     n = rep["night"]; k_lit, k_sh = np.array(n["lit"]["gain"]), np.array(n["shade"]["gain"])
@@ -415,9 +446,10 @@ WORLD = ("setts", "plaster", "plank", "stone", "roof", "grass", "foliage", "rock
 CTL = {  # (6) the class marks, through albedo_ctl (cel.gdshaderinc cel_alb: L = min(mix(L, target, pull), cap), ab x chroma)
     "crowd_fur": ({"target": 0.30, "pull": 0.7, "cap": 0.40, "chroma": 1.0}, "rule 7: the pack mid-dark, never pale silver (it read pale silver in 09 and 12)"),
     "folk_cloth": ({"target": 0.0, "pull": 0.0, "cap": 0.75, "chroma": 1.0}, "the brief: the folk's white cloth capped at L 0.75"),
-    "cloth": ({"target": 0.0, "pull": 0.0, "cap": 1.0, "chroma": 0.62}, "MB2's navy: the relit check drew cloth's lit C 0.121 against the board's 0.075 (0.62); the gold trim is bronze's, untouched"),
-    "plaster": ({"target": 0.0, "pull": 0.0, "cap": 1.0, "chroma": 0.6}, "plaster lit cream: MB3's lit plaster over the day key leaves a pink albedo (C 0.10 lit on the board, h 61); 0.6 of its chroma keeps the lit side cream, not salmon"),
 }
+# (L7 S1) dropped: their cuts answered the day grade's chroma push (cloth drawn C 0.121 against MB2's 0.075; plaster's albedo
+# pink through the too-warm key). Under scene_color the drawn color is the albedo's under the light, so a cut would dull them.
+CTL_DROP = ("cloth", "plaster")
 
 
 def apply_classes(rep):
@@ -437,6 +469,7 @@ def apply_classes(rep):
                        f"-> {p['mid']} (lin {p['linear']}); one albedo serves day and night (the night rigs' moon is solved over it). Was {old}.")
     for c, (ctl, why) in CTL.items():
         lib["classes"][c]["albedo_ctl"] = dict(ctl, **{"from": f"L1 W2 C6: {why}"})
+    for c in CTL_DROP: lib["classes"][c].pop("albedo_ctl", None)
     s = json.dumps(lib, indent=1, ensure_ascii=False)
     s = re.sub(r'\[\s+([^\[\]{}]*?)\s+\]', lambda mm: '[' + re.sub(r'\s+', ' ', mm.group(1)) + ']', s)
     s = re.sub(r'"roles": \{\s+([^{}]*?)\s+\}', lambda mm: '"roles": {' + re.sub(r'\s+', ' ', mm.group(1)) + '}', s)
@@ -459,7 +492,26 @@ def apply_classes(rep):
     print("classes:", {c: rep["albedo"][c]["hex"] for c in WORLD if c in rep["albedo"]}, "gains:", {c: np.round(v, 2).tolist() for c, v in gains.items() if v is not None})
 
 
+def run_all(name=None):
+    """(L7 S1) The chain in one command: fresh grey cards under today's rigs (NAME, default cards_<HEAD>), the boards, the
+    solve, the apply, the relit check (check_NAME), then the kits' own builds (the ground's painted sets, the wild's and the
+    town's paint from materials.json)."""
+    if not name:
+        name = "cards_" + subprocess.run(["git", "-C", ROOT, "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
+    measure(name)
+    boards()
+    solve(name)
+    rep = json.load(open(os.path.join(OUT, "solve.json")))
+    apply_rigs(rep, json.load(open(os.path.join(OUT, name, "cards.json"))))
+    apply_classes(rep)
+    check("check_" + name)
+    for cmd in (["ground_paint.py", "build", "all"], ["wild.py", "all", "--no-mesh"], ["town.py", "all", "--no-mesh"]):
+        rc = subprocess.run([sys.executable, os.path.join(HERE, cmd[0])] + cmd[1:]).returncode
+        if rc != 0: print("FAILED", " ".join(cmd), rc); sys.exit(rc)
+    subprocess.run([sys.executable, os.path.join(HERE, "ground_paint.py"), "check", "all"])
+
+
 if __name__ == "__main__":
     a = sys.argv[1:]
     if not a: print(__doc__); sys.exit(1)
-    {"measure": lambda: measure(*a[1:3]), "boards": boards, "solve": lambda: solve(*a[1:4]), "check": lambda: check(*a[1:2]), "apply": lambda: (apply_rigs(json.load(open(os.path.join(OUT, "solve.json"))), json.load(open(os.path.join(OUT, a[1] if len(a) > 1 else "cards", "cards.json")))), apply_classes(json.load(open(os.path.join(OUT, "solve.json")))))}[a[0]]()
+    {"all": lambda: run_all(*a[1:2]), "measure": lambda: measure(*a[1:3]), "boards": boards, "solve": lambda: solve(*a[1:4]), "check": lambda: check(*a[1:2]), "apply": lambda: (apply_rigs(json.load(open(os.path.join(OUT, "solve.json"))), json.load(open(os.path.join(OUT, a[1] if len(a) > 1 else "cards", "cards.json")))), apply_classes(json.load(open(os.path.join(OUT, "solve.json")))))}[a[0]]()

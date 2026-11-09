@@ -676,6 +676,7 @@ public partial class Atmosphere : Node3D
                     if (skinCool > 0) outLin = SkinCool(c, outLin, skinCool);
                     if (g.WarmKeep > 0) outLin = WarmSource(c, outLin, g);
                     if (tone != null) outLin = Tone(outLin, tone);
+                    if (g.SceneColor > 0) outLin = SceneColour(c, outLin, (float)g.SceneColor);
                     var o = Srgb(outLin);
                     int at = (gi * LutSize + r) * 3;
                     px[at] = Byte8(o.X); px[at + 1] = Byte8(o.Y); px[at + 2] = Byte8(o.Z);
@@ -865,6 +866,73 @@ public partial class Atmosphere : Node3D
         float ct = i.Y * o.X / Mathf.Max(i.X, 1e-4f), c1 = Mathf.Lerp(o.Y, Mathf.Max(o.Y, ct), w);
         float dz = Mathf.PosMod(i.Z - o.Z + 180f, 360f) - 180f, h = Mathf.DegToRad(o.Z + dz * w);
         return InGamut(o.X, c1 * Mathf.Cos(h), c1 * Mathf.Sin(h));
+    }
+
+    /// <summary>(L1 lead 7, S1) GradeSettings.SceneColor: the scene's own channel ratios (what AgX was given: Godot 4.5.1's
+    /// tonemap_agx run backward from the table's input) at the lightness the grade gave (its Oklab L), chroma taken in only
+    /// where that leaves the gamut; k of it over the grade's color.</summary>
+    static Vector3 SceneColour(Vector3 inLin, Vector3 outLin, float k)
+    {
+        var s = AgxBack(inLin);
+        var os = OklabAb(s);
+        var o = Oklab(outLin);
+        if (os.X < 1e-4f || o.X < 1e-4f) return outLin;
+        float f = o.X / os.X;  // (Oklab's L, a and b all scale as the cube root of a linear scale: the ratios held)
+        var t = InGamut(o.X, os.Y * f, os.Z * f);
+        return k >= 1 ? t : outLin.Lerp(t, k);
+    }
+    /// <summary>Linear sRGB to Oklab as (L, a, b).</summary>
+    static Vector3 OklabAb(Vector3 c)
+    {
+        var o = Oklab(c); float h = Mathf.DegToRad(o.Z);
+        return new(o.X, o.Y * Mathf.Cos(h), o.Y * Mathf.Sin(h));
+    }
+    // Godot 4.5.1's tonemap_agx (servers/rendering/renderer_rd/shaders/effects/tonemap.glsl, read from the engine's own
+    // build): the inset and outset matrices (GLSL's column-major mat3, here row-major), the log2 range and the sigmoid's polynomial.
+    static readonly float[] AgxInset = { 0.54490813676f, 0.37377945960f, 0.08138497669f, 0.14044005884f, 0.75410959864f, 0.10543358537f, 0.08882741185f, 0.17887712465f, 0.73224999957f };
+    static readonly float[] AgxOutset = { 1.96455096027f, -0.85585845118f, -0.10886710827f, -0.29932243391f, 1.32645107415f, -0.02708402098f, -0.16436833806f, -0.23822464069f, 1.40266534714f };
+    const float AgxMinEv = -12.4739311883324f, AgxMaxEv = 4.02606881166759f;
+    static readonly float[] AgxInsetInv = Inv3(AgxInset), AgxOutsetInv = Inv3(AgxOutset);
+    static float AgxSig(float x) { float x2 = x * x, x4 = x2 * x2; return 0.021f * x + 4.0111f * x2 - 25.682f * x2 * x + 70.359f * x4 - 74.778f * x4 * x + 27.069f * x4 * x2; }
+    static readonly float[] AgxSigY = BuildSig();
+    static float[] BuildSig() { var y = new float[4097]; for (int i = 0; i <= 4096; i++) y[i] = AgxSig(i / 4096f); return y; }
+    static float AgxSigInv(float y)
+    {
+        if (y <= AgxSigY[0]) return 0; if (y >= AgxSigY[4096]) return 1;
+        int lo = 0, hi = 4096;
+        while (hi - lo > 1) { int m = (lo + hi) >> 1; if (AgxSigY[m] <= y) lo = m; else hi = m; }
+        return (lo + (y - AgxSigY[lo]) / Mathf.Max(AgxSigY[hi] - AgxSigY[lo], 1e-9f)) / 4096f;
+    }
+    /// <summary>AgX's output (linear sRGB, as the grade's table gets it) back to its input (linear sRGB times the exposure).</summary>
+    internal static Vector3 AgxBack(Vector3 c)
+    {
+        var t = Mul3(AgxOutsetInv, c);
+        Vector3 v = default;
+        for (int i = 0; i < 3; i++)
+        {
+            float x = AgxSigInv(Mathf.Pow(Mathf.Clamp(t[i], 0, 1), 1 / 2.4f));
+            v[i] = Mathf.Pow(2, x * (AgxMaxEv - AgxMinEv) + AgxMinEv);
+        }
+        return Max0(Mul3(AgxInsetInv, v));
+    }
+    internal static Vector3 AgxForward(Vector3 c)
+    {
+        var v = Mul3(AgxInset, Max0(c) + new Vector3(2e-10f, 2e-10f, 2e-10f));
+        for (int i = 0; i < 3; i++)
+        {
+            float x = (Mathf.Clamp(Mathf.Log(Mathf.Max(v[i], 1e-30f)) / Mathf.Log(2), AgxMinEv, AgxMaxEv) - AgxMinEv) / (AgxMaxEv - AgxMinEv);
+            v[i] = Mathf.Pow(AgxSig(x), 2.4f);
+        }
+        return Mul3(AgxOutset, v);
+    }
+    static Vector3 Mul3(float[] m, Vector3 v) => new(m[0] * v.X + m[1] * v.Y + m[2] * v.Z, m[3] * v.X + m[4] * v.Y + m[5] * v.Z, m[6] * v.X + m[7] * v.Y + m[8] * v.Z);
+    static float[] Inv3(float[] m)
+    {
+        double a = m[0], b = m[1], c = m[2], d = m[3], e = m[4], f = m[5], g = m[6], h = m[7], i = m[8];
+        double A = e * i - f * h, B = -(d * i - f * g), C = d * h - e * g, det = a * A + b * B + c * C;
+        return new[] { (float)(A / det), (float)(-(b * i - c * h) / det), (float)((b * f - c * e) / det),
+            (float)(B / det), (float)((a * i - c * g) / det), (float)(-(a * f - c * d) / det),
+            (float)(C / det), (float)(-(a * h - b * g) / det), (float)((a * e - b * d) / det) };
     }
 
     /// <summary>(L1 W2) The tone curve on Oklab L (GradeSettings.Curve, tabled): a darkened pixel keeps its chroma's share of
