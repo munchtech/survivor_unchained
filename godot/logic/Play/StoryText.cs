@@ -74,6 +74,9 @@ public sealed class StoryText
             // (taken down and asked again at the head of the line: it shows after the wake's hold)
             TakeDown();
             upNow = null;
+            // (r4 capture: the prediction flickered off 0.8 s later and the line came back over Nan Sallow's wake; held
+            // through the wake's window, its own hold added when it comes)
+            holdUntil = Math.Max(holdUntil, clock() + WakeAhead + 1);
             var rest = new List<(Kind, double, Action, string?)>(line);
             line.Clear();
             line.Enqueue((Kind.Narration, clock(), () => { u.Show(); upNow = (u.Show, true); }, null));
