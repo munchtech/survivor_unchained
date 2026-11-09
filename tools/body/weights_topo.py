@@ -607,6 +607,14 @@ def spine_front(W, c, thr):
     return keep
 
 
+def a_lookup(P, cfg):
+    """The points the A-copied patches look A up by (P1 R1 sliders): cfg "_P_ref" (build_topo, with target_joints_ref:
+    the target's own body, same topology) when the body carries other sliders, so a vertex takes the A point it lies on
+    in her_b (her_a's surface IS A's there) wherever a slider moved it; else this body's points."""
+    R = cfg.get("_P_ref") if isinstance(cfg, dict) else None
+    return P if R is None else R
+
+
 def a_lower_breast(W, P, topo, sk, A, cfg):
     """A spec's "weights" "a_lower_breast" (P1 R1 round 30, her body: her breasts and the trunk round them ARE A's surface,
     her_a): A's own skin weights over the breasts' lower half and the skirt under and beside them, mapped onto B's bones
@@ -638,7 +646,7 @@ def a_lower_breast(W, P, topo, sk, A, cfg):
     k = np.where(br, 1.0, np.where(tr & (P[:, 2] > float(cfg.get("front_z", 0.0))), 1 - s01(dB / float(cfg["fade_m"])), 0.0))
     k *= 1 - s01((P[:, 1] - yc) / float(cfg["y_ease_m"]))
     ids = np.where((k > 1e-4) & left)[0]
-    q, _, tri, d = Surface(PA, m.T).closest(P[ids], k=16)
+    q, _, tri, d = Surface(PA, m.T).closest(a_lookup(P, cfg)[ids], k=16)
     a, b, c = (PA[m.T[tri, i]] for i in range(3))
     w = np.clip(tu.bary(q, a, b, c), 0, None)
     w /= w.sum(1, keepdims=True)
@@ -693,7 +701,7 @@ def a_shoulder_top(W, P, topo, sk, A, cfg):
     lat = lat + float(cfg["lat_share"]) * (lat2 - lat)
     k = zone * s01((dN - float(cfg["neck_d_m"])) / float(cfg["neck_ease_m"])) * lat * s01((P[:, 1] - float(cfg["y_lo_m"])) / float(cfg["y_ease_m"]))
     ids = np.where((k > 1e-4) & (P[:, 0] > 0))[0]
-    q, _, tri, d = Surface(PA, m.T).closest(P[ids], k=16)
+    q, _, tri, d = Surface(PA, m.T).closest(a_lookup(P, cfg)[ids], k=16)
     a, b, c = (PA[m.T[tri, i]] for i in range(3))
     w = np.clip(tu.bary(q, a, b, c), 0, None)
     w /= w.sum(1, keepdims=True)
@@ -741,7 +749,7 @@ def a_elbow(W, P, topo, sk, A, cfg):
     t = (P - E) @ ax
     k = zone * s01((t - float(cfg["t_lo_m"])) / float(cfg["t_ease_m"])) * (1 - s01((t - float(cfg["t_hi_m"])) / float(cfg["t_ease_m"])))
     ids = np.where((k > 1e-4) & (P[:, 0] > 0))[0]
-    q, _, tri, d = Surface(PA, m.T).closest(P[ids], k=16)
+    q, _, tri, d = Surface(PA, m.T).closest(a_lookup(P, cfg)[ids], k=16)
     a, b, c = (PA[m.T[tri, i]] for i in range(3))
     w = np.clip(tu.bary(q, a, b, c), 0, None)
     w /= w.sum(1, keepdims=True)
@@ -793,7 +801,7 @@ def a_thigh(W, P, topo, sk, A, cfg):
     if "back_z_m" in cfg:                                                                   # its back (the crease side kept B's)
         k *= 1 - s01((P[:, 2] - H[2] - float(cfg["back_z_m"])) / float(cfg["back_ease_m"]))
     ids = np.where((k > 1e-4) & (P[:, 0] > 0))[0]
-    q, _, tri, d = Surface(PA, m.T).closest(P[ids], k=16)
+    q, _, tri, d = Surface(PA, m.T).closest(a_lookup(P, cfg)[ids], k=16)
     a, b, c = (PA[m.T[tri, i]] for i in range(3))
     w = np.clip(tu.bary(q, a, b, c), 0, None)
     w /= w.sum(1, keepdims=True)
@@ -842,7 +850,7 @@ def a_neck(W, P, topo, sk, A, cfg, ring=None):
     dy = np.interp(ang, ra[o], R[o, 1], period=2 * np.pi) - P[:, 1]          # height under the seam at its angle
     k = zone * (1 - s01((dy - float(cfg["h_full_m"])) / float(cfg["h_ease_m"])))
     ids = np.where((k > 1e-4) & (P[:, 0] >= 0))[0]
-    q, _, tri, d = Surface(PA, m.T).closest(P[ids], k=16)
+    q, _, tri, d = Surface(PA, m.T).closest(a_lookup(P, cfg)[ids], k=16)
     a, b, c_ = (PA[m.T[tri, i]] for i in range(3))
     w = np.clip(tu.bary(q, a, b, c_), 0, None)
     w /= w.sum(1, keepdims=True)
@@ -897,7 +905,7 @@ def a_axilla(W, P, topo, sk, A, cfg):
     if "cap_y_m" in cfg:
         k *= 1 - (part == parts.index("shoulder")) * s01((P[:, 1] - apex[1] - float(cfg["cap_y_m"])) / float(cfg["cap_ease_m"]))
     ids = np.where((k > 1e-4) & (P[:, 0] > 0))[0]
-    q, _, tri, d = Surface(PA, m.T).closest(P[ids], k=16)
+    q, _, tri, d = Surface(PA, m.T).closest(a_lookup(P, cfg)[ids], k=16)
     a, b, c = (PA[m.T[tri, i]] for i in range(3))
     w = np.clip(tu.bary(q, a, b, c), 0, None)
     w /= w.sum(1, keepdims=True)

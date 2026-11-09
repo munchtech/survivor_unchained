@@ -180,8 +180,34 @@ def stage_base(spec, tier, rep, pre=None):
         info["post_join_ring_move_mm"] = [round(float(x) * 1e3, 2) for x in post[boundary_ring(z["Q"], len(V0))].mean(0)]
     if spec.get("forms"):
         info["forms"] = f"NOT applied ({spec['forms']}: per MakeHuman point; ours are \"forms_topo\", stage 2b)"
+    if spec.get("_ground_m"):
+        # (P1 R1 sliders, ground_offset: the whole build moved rigidly, the baked head with it, so the soles stand where
+        # the ground ref's do)
+        V = V + np.asarray(spec["_ground_m"], float)[None, :]
+        info["ground_m"] = spec["_ground_m"]
     rep["base"] = info
     return z, V
+
+
+def ground_offset(spec):
+    """P1 R1 sliders: the join holds the neck ring where the head is (A's head, fixed), so a slider that changes her
+    length (height, legs, torso) moved her soles instead: height -0.15 stood her 98 mm over the floor. spec "ground_ref"
+    (a spec path): the rigid move [0, dy, 0] that puts this body's soles (its lowest skin point after stage 1) at the ref
+    spec's; laid on the body in stage_base and on the baked head in main (head_move), so the build moves as one. The ref
+    itself, and a body with the ref's sliders: 0 (identical bytes)."""
+    ref = spec.get("ground_ref")
+    if not ref:
+        return None
+    rs = with_defaults(load_spec(os.path.join(REPO, ref)))
+    if rs.get("sliders", {}) == spec.get("sliders", {}):
+        return None
+    lo = []
+    for sp in (spec, rs):
+        s2 = {k: v for k, v in sp.items() if k != "_ground_m"}
+        _, V = stage_base(s2, "close", {})
+        lo.append(float(V[:, 1].min()))
+    dy = lo[1] - lo[0]
+    return [0.0, round(dy, 6), 0.0] if abs(dy) > 1e-6 else None
 
 
 # ------------------------------------------------------------------------------------------------ 2 place --
@@ -398,6 +424,14 @@ def target_joints(spec):
     return out
 
 
+def unground(spec, baked):
+    """The baked head where the ref spec has it (ground_offset's move taken off): a ref body is built in A's frame."""
+    g = spec.get("_ground_m")
+    if not g:
+        return baked
+    return {h: dict(v, P=v["P"] - np.asarray(g, float)[None, :]) for h, v in baked.items()}
+
+
 def target_joints_ref(spec, tier, z, A, baked, joints):
     """P1 R1 sliders: a designed target's joints are absolute points on the body the target was made on (her_a: A's joints
     on her_b's body), so a slider laid on top (height, hips, legs) moved the skin and left those joints where A's are.
@@ -410,6 +444,7 @@ def target_joints_ref(spec, tier, z, A, baked, joints):
         return joints, None
     out = dict(joints)
     info = {}
+    baked = unground(spec, baked)
     for tgt, ref_path in refs.items():
         if tgt == "why":
             continue
@@ -424,6 +459,7 @@ def target_joints_ref(spec, tier, z, A, baked, joints):
         rec = {}
         stage_skeleton(bone_body(rs, tier, z, Vr, A, baked, r2), tier, r2, baked["HeroineHead"]["P"], rs.get("joint_moves"),
                        target_joints(rs), rec)
+        info["_weights_ref"] = weights_body(rs, tier, z, Vr, A, baked, r2)
         for k in out:
             if k in rec and not k.startswith("x:"):
                 out[k] = (out[k][0], out[k][1], rec[k])
@@ -768,13 +804,34 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
         sk = stage_skeleton(bone_body(spec, tier, z, V, A, baked, rep), tier, rep, baked["HeroineHead"]["P"], spec.get("joint_moves"),
                             tj)
         if tj_info:
+            P_ref = tj_info.pop("_weights_ref", None)
             rep["skeleton"]["target_joints_ref"] = tj_info
+            if P_ref is not None:
+                # (P1 R1 sliders: the A-copied weight patches look A up by the ref body's points, weights_topo.a_lookup)
+                np.save(os.path.join(out, "stage", "weights_ref_close.npy"), P_ref)
         with open(os.path.join(out, "stage", "close_skeleton.json"), "w") as f:
             json.dump({k: sk[k] for k in ("skel", "names", "parents", "worlds", "ends")}, f,
                       default=lambda x: np.asarray(x).tolist())
     tim["skeleton"] = round(time.time() - t, 2)
     t = time.time()
-    wts = stage_weights(z, weights_body(spec, tier, z, V, A, baked, rep), ring, hv, sk, A, baked, rep, spec.get("weights"))
+    wrules = spec.get("weights")
+    pref = os.path.join(out, "stage", f"weights_ref_{tier}.npy")
+    if tier == "play" and spec.get("target_joints_ref") and os.path.exists(os.path.join(out, "stage", "weights_ref_close.npy")):
+        # (play: its own ref body, the ref spec's play tier)
+        refs = {k: v for k, v in spec["target_joints_ref"].items() if k != "why"}
+        rs = with_defaults(load_spec(os.path.join(REPO, next(iter(refs.values())))))
+        if rs.get("sliders", {}) != spec.get("sliders", {}):
+            r2 = {}
+            bu = unground(spec, baked)
+            _, Vr = stage_base(rs, tier, r2)
+            Vr, ring_r, _ = stage_place(rs, z, Vr, A, bu, r2)
+            Vr = stage_forms(rs, tier, z, Vr, ring_r, r2)
+            np.save(pref, weights_body(rs, tier, z, Vr, A, bu, r2))
+    if wrules and os.path.exists(pref) and spec.get("target_joints_ref"):
+        P_ref = np.load(pref)
+        wrules = {k: ({**v, "_P_ref": P_ref} if isinstance(v, dict) and k.startswith("a_") else v) for k, v in wrules.items()}
+        rep["weights_ref"] = f"stage/weights_ref_{tier}.npy (A looked up by the ref body's points)"
+    wts = stage_weights(z, weights_body(spec, tier, z, V, A, baked, rep), ring, hv, sk, A, baked, rep, wrules)
     tim["weights"] = round(time.time() - t, 2)
     t = time.time()
     uv = stage_uv(z, tier, rep) if spec.get("uv", True) else None
@@ -859,10 +916,13 @@ def main():
     os.makedirs(os.path.join(out, "stage"), exist_ok=True)
     spec = load_spec(a.spec)
     spec = with_defaults(spec)
+    g = ground_offset(spec)
+    if g:
+        spec["_ground_m"] = g
     A = Glb(os.path.join(REPO, spec["ref"]))
     t0 = time.time()
     baked = headbake.bake(A, HEADS)
-    hmove = np.asarray(sliders_head_move(spec.get("sliders", {})), float)
+    hmove = np.asarray(sliders_head_move(spec.get("sliders", {})), float) + np.asarray(g or [0.0, 0.0, 0.0], float)
     if np.abs(hmove).max() > 0:
         # P1 R1: the head's placement on the new neck (the designed neck sliders' head_move): the whole baked head
         # (every head mesh; the skeleton's Head joint is placed from it) moves rigidly; the ring moves with it
@@ -870,6 +930,8 @@ def main():
             baked[h]["P"] = baked[h]["P"] + hmove[None, :]
     full = {"spec": os.path.relpath(os.path.abspath(a.spec), REPO).replace("\\", "/"), "tiers": {}}
     full["head_move_m"] = [round(float(x), 5) for x in hmove]
+    if g:
+        full["ground_m"] = g
     sk_close = None
     for tier in a.tiers.split(","):
         rep = {"spec": full["spec"], "timings_s": {}}
