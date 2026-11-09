@@ -621,19 +621,19 @@
    "cells": {
     "size_cm": 22,
     "colors": [
-     "#a29f83",
-     "#b5b08f",
-     "#959177"
+     "#97957a",
+     "#aaa586",
+     "#8a876e"
     ],
-    "joint": "#5e5849",
+    "joint": "#6c6555",
     "joint_cm": 4.0,
     "lit": 0.06,
     "round": 0.55
    },
    "masses": {
     "colors": [
-     "#5e5849",
-     "#6b6350"
+     "#6c6555",
+     "#79705b"
     ],
     "split": [
      0.5
@@ -641,7 +641,8 @@
     "scale_m": 1.0
    },
    "calib": "r1 (L1 C1, 5 Nov): +0.06 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)",
-   "c6": "L1 W2 C6 (the color chain): x[0.996, 1.009, 1.021] per channel (linear) = the rock class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[0.996, 1.009, 1.021] per channel (linear) = the rock class's chain albedo / its old mid (materials.json).",
+   "s1c": "L7 S1c (ground check values90 10 > 9): rule 9, each block inside its class's range: the cells' top at or under the rock class's albedo L top (0.72, materials.json); the joint and the masses (the ground between the stones) 0.11 L under the darkest cell, the depth the rock-class surfaces that pass hold (ballast 0.109, spoil 0.116; MB4 rock's chunky planes). Was {\"cells\": [\"#a29f83\", \"#b5b08f\", \"#959177\"], \"joint\": \"#5e5849\", \"masses\": [\"#5e5849\", \"#6b6350\"]}."
   },
   "needles": {
    "class": "soil",
@@ -1069,22 +1070,23 @@
      "#969073",
      "#76725c"
     ],
-    "joint": "#4c4638",
+    "joint": "#585242",
     "joint_cm": 3.5,
     "lit": 0.06,
     "round": 0.5
    },
    "masses": {
     "colors": [
-     "#4c4638",
-     "#575041"
+     "#585242",
+     "#645c4c"
     ],
     "split": [
      0.5
     ],
     "scale_m": 1.0
    },
-   "c6": "L1 W2 C6 (the color chain): x[0.996, 1.009, 1.021] per channel (linear) = the rock class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[0.996, 1.009, 1.021] per channel (linear) = the rock class's chain albedo / its old mid (materials.json).",
+   "s1c": "L7 S1c (ground check values90 10 > 9): rule 9, each block inside its class's range: the cells' top at or under the rock class's albedo L top (0.72, materials.json); the joint and the masses (the ground between the stones) 0.11 L under the darkest cell, the depth the rock-class surfaces that pass hold (ballast 0.109, spoil 0.116; MB4 rock's chunky planes). Was {\"cells\": [\"#878168\", \"#969073\", \"#76725c\"], \"joint\": \"#4c4638\", \"masses\": [\"#4c4638\", \"#575041\"]}."
   },
   "barrow_face": {
    "class": "rock",
