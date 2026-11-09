@@ -14,18 +14,19 @@ The ARPG design lead, 9 November 2026, from the owner's words of 8 November (`AR
 - a Rare's beam, and the filter;
 - a charger's lane, crossed with the dash;
 - the Barrow Knight, with his bar and his name;
-- a lamp-post relit: her checkpoint and her first lamp (every fourth swing now cracks the ground).
+- a lamp-post relit: her checkpoint; her first level's lamp, lit where she stands (*Third Blow*: every third swing now lands heavy).
 
-At the water the Ford-Warden waits, and the ember lends her the Flare to break his lamps. First light takes the Flare back on one storybook page; she keeps everything else, and a Legendary from him. By day the same road runs on: boars, the Kerchiefs, a strongbox, the wolves' ring at the gate, then the Waystation, where the Flare is lit for good. About 45 minutes, five levels, three skills.
+At the water the Ford-Warden waits, and the ember lends her the Flare to break his lamps. First light takes the Flare back on one storybook page; she keeps everything else, and a Legendary from him. By day the same road runs on: boars, the Kerchiefs, a strongbox, Heroic Leap at level 4, the wolves' ring at the gate, then the Waystation, where the Flare is lit for good. About 45 minutes, five levels, four skills. All six keys are hers by the Barrow, at Act 1's end.
 
-**A veteran's hour.** Level 30, world tier III, six skills:
-- Sunder held to swing;
+**A veteran's hour.** Level 30, on the hardest difficulty open to her, six keys:
+- Sunder held to swing, building her Resolve;
+- Cleaver's key held to spin: Bladestorm, a Union of the two, and Sunder pressed mid-storm breaks it and splits the ground;
 - Heroic Leap into the thick of it;
-- Bladestorm through the pack: one skill on two keys, hold one to spin, press the other to break the storm and split the ground;
-- the Watch Bell to drag the next pack onto her shield;
+- Shield Charge to cross to the next pack;
+- the Watch Bell to drag it onto her shield;
 - Iron Vow when the brute winds up.
 
-She runs four or five atlas maps: generated ground, mods that test her build, a ruler at the end. Then she plays the day's challenge at the Wayfinder's table.
+She runs four or five endgame maps: generated ground, twists that test her build, a ruler at the end. Then she plays the day's challenge at the Wayfinder's table.
 
 **The arena.** Today's night, kept whole: twelve minutes, the tiers, the endless, the horde. One rule changes: the ember casts her skills for her, and she moves, dashes and Flares. Each time the ember rises she lights a lamp on a skill she carries until first light: try before you buy. Each day brings one challenge: the same seed and rule for everyone, a loaned build, a board and a cache. It is never required.
 
@@ -58,11 +59,11 @@ She runs four or five atlas maps: generated ground, mods that test her build, a 
 
 | System | Verdict | Why, in one line | Cost (section 9) |
 |---|---|---|---|
-| The 39 self-firing skills | **REWORK** | Each gets a pressed form (a kind, a cost or wait, an aim) and keeps its own rule for the arena | M3, ~2.5M for the warden; each later calling in its wave |
+| The 39 self-firing skills | **REWORK** | Each gets a pressed form (a kind, a cost or wait, an aim) and keeps its own rule for the arena | M3 (most of its ~3.3M) for the warden; each later calling in its wave |
 | The night's ember cards (`LevelUp.Draft`) | **MOVE TO ARENA** | Try-before-you-buy is the arena's identity; a draft freezing a Diablo fight every minute is not | M7-M8, ~0.3M |
 | Lamps and Wicks | **KEEP**, rework the point rate | The board stays the passives and the Wicks the skill trees. Points come only from levels now, so the rate rises (section 3.5) | M7, ~2M |
 | Lamp-posts and *Light my way* | **KEEP**, more jobs | A lamp-post is now her checkpoint, a waypoint, the respec bench and the safe light at night; relit posts give board points; *Light my way* lights what she leaves at each level | M5 and M7 |
-| The Flare | **KEEP** | The BOOM stays outside the six slots. The prologue lends it once (section 5); its fill is re-measured under pressed combat | M3, ~0.2M |
+| The Flare | **KEEP** | The BOOM stays outside the six slots. The prologue lends it once (section 5); its fill is re-measured under pressed combat | part of M3 |
 | The tiers and the endless | **MOVE TO ARENA** | They are the arena's difficulty and its long night; the campaign uses world tiers | M8 |
 | The Wayfinder's table | **REWORK** | It becomes the door to the arena, the daily and the atlas (charts): the endgame's hub | M8, M11 |
 | The day stretch | **KEEP** as the template | Its eight beats (packs, ambushes, a strongbox, a lamp-post, a gated ring) are an ARPG zone already. `DayStretch.cs` becomes every zone's encounter list | M5 |
@@ -73,7 +74,7 @@ She runs four or five atlas maps: generated ground, mods that test her build, a 
 | Quests | **KEEP** | The two troubles, the vault and the lamps already lead through the act's places; their marks now point at zones and dungeons | M10 |
 | The story nights | **REWORK** into story dungeons | Her whole build, placed packs, a set piece, the boss as built. The capsule rooms and boss scripts are reused; the waves and the draft go | M10, ~2M for four |
 | The dawn card | **MOVE TO ARENA**, plus one page | It ends every arena run. In the campaign it survives once, as a storybook page at the prologue's first light (section 5) | M6, M8 |
-| The harness bots | **KEEP**, taught to press | Human, deft and careless press by priority; standing and idler stay. A zone sim measures an hour (kills, drops, falls) | M3, M5, ~0.6M |
+| The harness bots | **KEEP**, taught to press | Human, deft and careless press by priority; standing and idler stay. A zone sim measures an hour (kills, drops, falls) | part of M3 and M5 |
 | The dash's riding arts and night boons | **DROP** the ride | What she presses is what happens (section 3.4). The riding arts become pressed skills | M1 |
 | Unions (the merge that frees a slot) | **REWORK** | One skill on both keys (section 3.3) | M1, M7 |
 | `SkillBook` tomes | **DROP** | Already cut by ONE_BUILD: skills open by level | M7 |
@@ -89,13 +90,14 @@ She runs four or five atlas maps: generated ground, mods that test her build, a 
 **Six keys, Diablo's way.** Every carried skill is one of three kinds, and its record says which.
 - **Pressed:** it fires on the press, or on the hold, repeating when ready. It aims at the hover target if one is in reach, otherwise at the cursor's point (on a pad: the stick's pick, else her facing). This is most skills.
 - **Channeled:** it runs while held (Bladestorm), and she keeps moving at part speed.
-- **Kindled:** a few skills fire themselves once slotted, because pressing them would be a chore: Rebuke on a block, auras, summons. They still take a slot.
+- **Kindled:** a few skills fire themselves once slotted, because pressing them would be a chore: Rebuke on a block, auras, summons. They still take a slot, and each keeps a press so no key is dead: Rebuke's key readies a riposte for 2 s, an aura's flares it for 3 s, a summon's commands or recalls it.
+- **Never rooted:** a press never roots her. Blows and casts play on her upper body while she walks at 70% speed; only the heavy commits (Sunder's heavy swing, Groundbreaker's heave, Iron Vow) plant her, for at most 0.3 s. Self-firing let her swing while she walked, and a swing that roots her would bring back rc2's standing still.
 
 **The rhythm comes from a resource.** The grip (LMB, hold) builds the calling's resource and the big skills spend it, while movement and defense run on waits. That is Diablo III's generator, spender and cooldown, the genre's most proven rhythm. Without a resource, six keys collapse into "press whatever is lit".
-- The warden's resource is **Resolve** (a working name for the story lead). Her landed blows, the blows she takes and her blocks fill it: only she gets stronger by being hit, so it is her identity in a bar. It fades slowly out of a fight.
+- The warden's resource is **Resolve** (a working name for the story lead). Her landed blows, the blows she takes and her blocks fill it: only she gets stronger by being hit, so it is her identity in a bar. Blows taken and blocks give at most a third of its fill and landed blows the rest, so she fills by going in, never by standing. It fades slowly out of a fight.
 - The reaver's resource is her Frenzy, already her mechanic. The arcanist's and the stalker's are named in their waves.
 
-**Keys:** LMB, RMB and 1-4, Diablo's own layout, are the default because they clash with nothing bound today. Q-E-R-F, beside WASD, is the second preset. On a pad the six go to the face buttons and the right shoulder and trigger. The UI lead settles keys and the HUD.
+**Keys:** LMB, RMB and 1-4, Diablo's own layout, are the default. RMB leaves the Flare, which keeps Q, and 1-4 are free in the campaign (the draft's picks go to the arena with the cards). Q-E-R-F, beside WASD, is the second preset, and under it the Flare, Draught and Interact move. On a pad the six go to the face buttons and the right shoulder and trigger; the dash, Flare and Draught go to the left shoulder, trigger and d-pad, and Interact shares a face button out of a fight. The UI lead places them, and the HUD.
 
 **Where self-firing stays:**
 - the kindled skills;
@@ -107,12 +109,13 @@ Every skill keeps its self-firing rule for the arena, so an assist setting ("the
 **Why pressed:**
 - Both demos' notes were about agency: "skill expression thru 2 buttons (dash and ultimate)" (rc1); "standing still letting everything come to me" (rc2).
 - The owner's new skills are pressed in every game that has them: a leap to a point, a spin she steers.
-- "6 is a lot" only makes sense of keys she manages.
 - The goal line, "an approachable Path of Exile", holds. The pushback on record is that PoE's barrier is information, not hands, and Diablo III and IV are the approachable ARPGs, both pressed.
 
 **The cost:**
 - Every skill's timer becomes a wait or a cost, and its target rule becomes its aim assist. Most of that is data on the skills lead's switch.
 - The harness's bots learn to press.
+- Every skill, lamp and Union is written for both modes, for good. A cost or wait lamp translates to the arena's cadence (-10% cost is -10% interval); a channel fires itself for its full time; the ember fires a bond when its first half is at full charge; the harness fails any lamp that does nothing in either mode.
+- Every press needs its cast clip (the disc's throw, the bell, the brace, the heave), so A1's Stage B list is re-cut for a pressed game (section 9, A1).
 - The CLASS_IDENTITY rule "a combat skill never moves her" is retired, for movement skills only.
 
 ### 3.2 The warden's kit in the ARPG (the first slice; numbers are the combat lead's)
@@ -123,7 +126,7 @@ Every skill keeps its self-firing rule for the arena, so an assist setting ("the
 | Oathblade (the bulwark's grip) | pressed, hold | builds Resolve | The wide swing that turns blows |
 | Groundbreaker | pressed | Resolve | The crack runs to the pack under the cursor; the heave stuns |
 | Judgment Disc | pressed | Resolve | Thrown at the hover target; it bounces five times |
-| Dawnpulse | pressed | Resolve | The ring of light round her throws back what it touches |
+| Dawnpulse | pressed | Resolve | The ring of light around her throws back what it touches |
 | Watch Bell | pressed | a wait | Draws everything within 8 m onto her, with barrier for each |
 | **Heroic Leap** (new, skills lead) | pressed, aimed | a wait | She jumps to the cursor and lands in a slam |
 | **Shield Charge** (Bull Rush, reworked) | pressed, aimed | a wait | She charges to the cursor shield-first and knocks lesser things aside. Its wick takes the four facets the skills lead wrote (Iron Hide, Unbroken, Gore, and Pile Driver as its Turn) |
@@ -140,12 +143,12 @@ Every skill keeps its self-firing rule for the arena, so an assist setting ("the
 - Cleaver's key, held, spins her through the crowd with the blade out, a cut every turn.
 - Sunder's key breaks the storm: she plants the blade, and every heavy line she threw in the spin splits at once. The longer the storm, the bigger the break.
 
-Each half is still its part: the part's wick, rank and Turn apply to its half, so no lit lamp is lost. The Union adds the bond and its own look.
+Each half is still its part: the part's wick, rank and Turn apply to its half, so no lit lamp is lost. The Union adds the bond and its own look. The first half may become a new action (Cleaver's chop becomes the spin). The second half keeps its part's own action and gains the bond when pressed during, or within 1 s after, the first: outside a storm Sunder still swings and builds Resolve.
 
 **Gate and cost** (ONE_BUILD's, kept):
 - It opens when both parts burn a Turn, and it costs one point from each.
 - Joining and unjoining are free at a lamp-post.
-- With section 3.5's rate, the first Union arrives about level 11, at Act 2's door: by then she has four slots, and five at 14.
+- With section 3.5's rate, the first Union arrives about level 11, at Act 2's door, when all six of her slots are open (call 13).
 - The harness holds it honest. A Union build beats the same two skills apart by ×1.15-1.3 at equal gear: power and a combo for the two slots, never mandatory.
 
 **The first Union list** (working names are drafts for the story lead; "built" means it is in `skills.json` today):
@@ -158,7 +161,7 @@ Each half is still its part: the part's wick, rank and Turn apply to its half, s
 | Warden | **The Last Bell** | Watch Bell + Rebuke | the toll drags all within 8 m onto her shield | for 2 s every blow on her answers on its striker and three near it |
 | Reaver | **Gallows Wheel** | Red Whirl + Chain Lash | hold: she whirls with the chain out and hooks what it touches | yank: the hooked are knotted at her feet and hoisted |
 | Reaver | **Butcher's Wheel** (built) | Axe Gyre + Cleaver | the cleavers circle and never stop | fling the wheel at the farthest bleeding; it returns |
-| Reaver | **Red Knot** | Anchor + Rend | the anchor Binds everything 5 m round and yanks it together | the knot bleeds out: 3 s of bleed at once |
+| Reaver | **Red Knot** | Anchor + Rend | the anchor Binds everything within 5 m and yanks it together | the knot bleeds out: 3 s of bleed at once |
 | Reaver, Arcanist | **The Tempest** (built) | Thunderhead + Arcweb | the cloud over the cursor | the lightning leaps from every shocked thing at once |
 | Arcanist | **Frostfire Comet** (built) | Cinderfall + Rimeshard | the comet bursts and freezes what it does not burn | shatter: everything frozen in sight explodes |
 | Arcanist | **Starfall** (built) | Moonbrand + Seeking Motes | moonfire marks what it tracks | moons fall on every mark and break into hunting motes |
@@ -175,17 +178,13 @@ Access follows CLASS_IDENTITY's circles; The Barrow Host (built) stays open to t
 
 - **The dash stays the dash**, everyone's evade on Space. Space takes her out; the Charge and Leap keys take her in. Nothing rides the dash on a hidden wait. The riding arts become pressed skills: Heroic Leap and the warden's Shield Charge now, and each calling's art in its wave.
 - **Every step is visible and named,** from `dash_steps.json`: Another Breath (a charge), Long Stride, Quick Breath, and Hard Landing (the warden's shove as the ending).
-- **Where they are earned:**
-  - the hearth's dash lamps on the board, with board points;
-  - charges at story beats (the third pip is an Act 1 reward);
-  - gear, named on the item.
-
-  Never from a level-up card or the ember's cards.
+- **Where they are earned:** the steps (a charge, the stride, the breath) come from story beats and gear, each shown when it lands (the third pip is an Act 1 reward). The board's hearth lamps hold only the endings (the warden's shove), a choice against other lamps. Never from a level-up card or the ember's cards: a point spent on a longer stride would still be "pushing the button leveling it up".
 - **How they show:** pips with a refill ring under her life (the owner liked it, rc2), a before-and-after line and a short loop on the dash's panel, and the ending's own effect in play.
 
 ### 3.5 Where the lamp offer lives (the owner's call 4; my pick)
 
 **Levels light lamps, lamp-posts change them, and the cards are the arena's.**
+- **Slots (call 13):** 2/3/4/5/6 at levels 1/3/5/7/9, so all six keys are hers by the Barrow at Act 1's end. Today's 1/4/8/14/20 would leave six keys for Act 3; Diablo III's six come two or three hours in. Heroic Leap opens at level 4.
 - **What a level gives:** each level is a board point. Each carried skill has its own wick points: one at level 1, then one every second level, to 8 at level 15 (today one every third, 8 at level 22).
   - The night's ember used to light lamps for free; without it, the old rate would bring the first Turn at level 13, deep in Act 2. At the new rate the first Turn lands at level 9, on Act 1's last boss, as CLASS_IDENTITY §5.1 planned.
   - Gear's new "+1 to <skill>" affixes add up to three more points: a chase, and Diablo's oldest good affix.
@@ -215,12 +214,12 @@ Access follows CLASS_IDENTITY's circles; The Barrow Host (built) stays open to t
 **The daily:**
 - one seed (the place, the people, the events) and one rule from a deck of about twenty (*Bright Hour*: the Flare fills twice as fast; *Hunted*: a herald from minute 2; *Lampless*; *Red Moon*: everything bleeds);
 - one loaned build that everyone plays, three a week, so players meet builds they would never make (Diablo III's challenge rifts);
-- the first attempt is scored on a local board, and on Steam's boards at the store build;
+- the first attempt is scored on a local board, and on Steam's boards at the store build: how far she got (the minute, then the boss's kill time), ties broken by kills;
 - a second daily on her own build is a later choice.
 
 **What it pays into the campaign, never required:**
 - the day's first daily: a Wayfinder's cache (gear at her level, materials, never a certain Legendary) and cosmetics for marks (lamp colors, dyes, a title);
-- the table's nights: gear and experience at her level, the experience below a campaign hour's, so the arena is never the leveling road;
+- the table's nights: gear and experience at her level, the experience at most 60% of a campaign hour's, so the arena is never the leveling road;
 - Legendary homes huntable by people (LOOT_DESIGN §5.3);
 - the dawn card's lamp suggestion.
 
@@ -240,22 +239,22 @@ Access follows CLASS_IDENTITY's circles; The Barrow Host (built) stays open to t
 | 6 | The captain's Rare | loot: the beam, the label; the filter hides the rest | the label, then the filter's key |
 | 7 | The ambush's charger | the dash through a telegraph | the lane, then Space |
 | 8 | The Barrow Knight at the post | the first elite: a bar, a name, an affix | the bar and the affix |
-| 9 | The post relit | a lamp-post: her checkpoint, and her first lamp lit with her first level | the lamp on Sunder's wick, before and after |
+| 9 | The post relit | a lamp-post: her checkpoint; her first level's lamp, lit where she stands | *Third Blow* on Sunder's wick, before and after |
 | 10 | The barrow's Grave-Caller | a raiser: kill it first | the hover target |
 | 11 | C02, the Ford-Warden | the first boss: his three lamps; the ember lends her the Flare | the Flare's key |
 | 12 | C03, then first light | one storybook page: first light takes back what it lent (the Flare); she keeps the rest | none |
-| 13 | C04 A, then the day stretch | the zone by day: packs, a strongbox, ambushes, the wolves' ring holding the gate; the third slot at level 4 | the new slot only |
+| 13 | C04 A, then the day stretch | the zone by day: packs, a strongbox, ambushes, Heroic Leap at level 4, taught at the wolves' ring holding the gate; the third and fourth slots at levels 3 and 5 | the Leap's key, then each new slot |
 | 14 | The Waystation, C04 B | the town; the Flare lit for good at the square's lamp | none |
 
 - **Films:** C01, C02, C03 (and their warden variants), C04 A and C04 B all stay. The prologue's night stays as setting and story ("None cross after dark"). What goes is the night's mechanics: the rising's draft, waves and the dawn card as a system.
 - **Cut callouts** (`TUTORIAL_COPY.md`): F2 (the ember rising into cards), F3 (the great blessing), F4 (the skill draft), F5 (lent skills) and F12 (the night's levels). F1 is re-aimed so the ember is experience. Words are the story lead's.
-- **Pushback, the one dawn page:** the brief says "nothing about dawn cards", but Act 4's "the first light that takes nothing back" (PLAN.md §3) needs the rule taught once. So the ember lends one thing for the Warden fight and first light takes it on one page; nothing she earned is ever taken. That answers the owner's rc2 "losing everything after the warden fight feels bad". The ember as experience also makes the Act 4 reveal ("ember is them") cut deeper: every level she ever gained was the dead.
+- **Pushback, the one dawn page:** the brief says "nothing about dawn cards", but Act 4's "the first light that takes nothing back" (PLAN.md §3) needs the rule taught once. So the ember lends one thing for the Warden fight and first light takes it on one page; nothing she earned is ever taken. It shrinks the owner's rc2 "losing everything after the warden fight feels bad" to one thing, lent and named as lent, back for good at the Waystation about 15 minutes later; call 10's other branch drops even that. The ember as experience also makes the Act 4 reveal ("ember is them") cut deeper: every level she ever gained was the dead.
 
 ---
 
 ## 6. Acts, zones and the endgame
 
-**Pick (the owner's call 5):** handcrafted acts with set zones and story dungeons, as in Diablo II and IV, and generated maps for the endgame, as in Diablo III's rifts and PoE's maps.
+**Pick (the owner's call 5):** handcrafted acts with set zones and story dungeons, as in Diablo IV, and generated maps for the endgame, as in Diablo III's rifts and PoE's maps. Authored landmarks and set pieces on generated layouts (Diablo II's and PoE's campaigns) are M10's cost lever; L1 says which the Verge zones use.
 - The story is about 40% of the early game, and it needs landmarks, set pieces and places people remember; the endgame needs variety without end.
 - We have both today: three hand-made zones, and `MapGen`, whose `MapRun` already plays like an ARPG map.
 - A dungeon can mix them: authored set-piece rooms (the StoryPlaces) joined by generated halls.
@@ -306,10 +305,11 @@ LOOT_DESIGN's Act 1 run (215 gear drops and 3.5 Legendaries over about five hour
 - When a zone resets, Rare and better left behind goes to Rook's storeroom.
 - The certain first Legendary (Diablo III's first-kill rule) moves to the Ford-Warden: the owner's "huge dopamine spike" at low level, in the first 45 minutes.
 - The dark's debt and the homes stand. The numbers are targets the loot lead sets as data and measures in the zone sim.
+- **Campaign gates** (the zone sim, tier II): the human bot rises 1-3 times an hour in Act 1 and the deft at most once; the standing bot falls to every champion pack; levels and drops land within ±20% of this table.
 
 ### 7.2 Death (the owner's call 7)
 
-- **The pick:** an Ember Walker gets up. She rises at the last lamp-post she lit, whole, with everything she carries.
+- **The pick:** an Ember Walker gets up. She rises at the last lamp-post she lit (there is one at every boss's door), whole, with everything she carries.
   - Foes she killed stay dead; champions and bosses heal.
   - No experience, gear or gold is lost.
   - The narrator's "You get up. It takes less than it did." plays, and the story's toll counts each rise. That cost is canon (PLAN.md: every rising costs a life, revealed at C41).
@@ -320,7 +320,7 @@ LOOT_DESIGN's Act 1 run (215 gear drops and 3.5 Legendaries over about five hour
 
 **Pick: four world tiers, picked at any lamp-post (Diablo III and IV).**
 - I (story) and II (the default) are open from the start. III opens after Act 1, IV after the campaign.
-- Each tier raises foe health and damage, the make, and the Rare and Legendary weights.
+- Each tier raises foe health and damage, the make and the drops (starting numbers for the combat and loot leads): I ×0.7 health, ×0.6 damage; II ×1, ×1, Rare+ ×1.2; III ×2.5, ×1.8, +5 item levels, Rare+ ×1.6, Legendary ×1.5; IV ×6, ×3, +10 item levels, Rare+ ×2, Legendary ×2.5.
 - Zones keep level bands, and foes scale to her level inside a zone's band.
 - The arena keeps its own tiers, and the atlas climbs on tiers III-IV. Tiers per act would make the player relearn the difficulty every act.
 
@@ -339,6 +339,7 @@ LOOT_DESIGN's Act 1 run (215 gear drops and 3.5 Legendaries over about five hour
 | A dawn timer (§8) | The arena's night clock and its phases stay general code, and are kept | Deleting the night's clock with the campaign's |
 | Heroic Momentum (§9) | The Flare's named fill events (`FillFlare(amount, why)`) take new kinds | Flare fills hard-coded |
 | Districts that fall and are retaken (§2) | Zone state as keys (`WorldState`, `ZoneReset`) holds district states | Zone state as flags in code |
+| The preparation phase (§3) | Positions can start unbuilt: zone data names build sites with their options and costs | Fortifications baked into zone scenes |
 
 Act 3's war at the gate (PLAN.md §3, chain 6) is the story's natural first siege.
 
@@ -348,20 +349,22 @@ Act 3's war at the gate (PLAN.md §3, chain 6) is the story's natural first sieg
 
 | # | Lead | Builds | Cost | Stops doing |
 |---|---|---|---|---|
-| M1 | Skills (skills-p7, running) | Heroic Leap; Shield Charge with its four facets on its wick; Bladestorm on two keys; the dash's four steps and pips | ~1.5-2M, 2-3 judged clip rounds | facets on the dash |
+| M1 | Skills (skills-p7, running) | Heroic Leap; Shield Charge with its four facets on its wick; Bladestorm on two keys, the WIP's union split so each key drives its half (today either key holds one channel); the dash's four steps and pips | ~1.5-2M, 2-3 judged clip rounds | facets on the dash |
 | M2 | The owner | picks on this page | none | none |
-| M3 | Combat systems (the held C2 build lead, re-briefed) | the press path for every warden skill (kind, aim, hold to repeat), Resolve, the kindled rules, the bots that press, the Low Ford's curve re-measured | ~2.5M, 3-4 number rounds | tuning the night's draft as the game; the ×1.25 night lean |
+| M3 | Combat systems (the held C2 build lead, re-briefed) | the press path for every warden skill (kind, aim, hold to repeat), Resolve, the kindled rules, the bots that press, the Low Ford's curve re-measured | ~3.3M (the bots and the Flare's fill included), 3-4 number rounds | tuning the night's draft as the game; the ×1.25 night lean |
 | M4 | UI (design and art) | six keys with waits and costs, the Resolve bar, the dash pips under her life, the level-up flash with before and after | ~1.2M, 2 judged rounds | campaign draft screens |
-| M5 | Zones and encounters (new, su-lead-high) | the Low Ford as the first ARPG zone: packs with captains, champions with affixes from the telegraph kit, lamp-posts as checkpoints and waypoints, `zone_resets.json` per zone, the zone sim | ~2M, 3 rounds | arena boards as campaign ground |
+| M5 | Zones and encounters (new, su-lead-high) | the Low Ford as the first ARPG zone: packs with captains, champions with affixes from the telegraph kit, lamp-posts as checkpoints and waypoints, `zone_resets.json` per zone, a lamp-post at every boss door, the day's clock off in the Low Ford, the zone sim | ~2M, 3 rounds | arena boards as campaign ground |
 | M6 | Experience with story | section 5's tutorial: the callouts, the cuts, the one dawn page, the lent Flare | ~1.4M, 2 rounds | night tutorial copy |
-| **demo-arpg1** | the owner plays | the first 45 minutes as an ARPG (the warden) | **~9M to here** | none |
-| M7 | Classes build | `skill_lamps.json` lit by points at the new rate; *Light my way* at each level; Unions joined at lamp-posts; tomes out (ONE_BUILD §5: 1, 3, 5, 6, 15, 16) | ~2M, 2-3 rounds | wiring the cards into the campaign |
+| A1 | Animation (Stage B, re-cut) | the warden's cast clips on an upper and lower split, so she walks while she swings and casts, judged in motion at the play camera | A1 sizes it | clips made for a self-firing game |
+| M7a | Classes build | Sunder's and Groundbreaker's wicks lit by level at the new rate, with the level-up flash | ~0.5M, 1 round | none |
+| M9 | Loot (su-lead-sonnet) | captains as carriers, ground loot, world-tier weights, "+1 to a skill", the Ford-Warden's Legendary | ~0.6M, 1-2 rounds | the night's-end tally outside the arena |
+| **demo-arpg1** | the owner plays | the first 45 minutes as an ARPG (the warden), plus a second start: the veteran's hour on a level-30 warden through the WIP's dev grants, so he plays the Leap and Bladestorm before M10 is spent | **~11M plus A1 to here** | none |
+| M7 | Classes build (the rest) | every wick in `skill_lamps.json` lit by points at the new rate; *Light my way* at each level; Unions joined at lamp-posts; tomes out (ONE_BUILD §5: 1, 3, 5, 6, 15, 16) | ~2M, 2-3 rounds | wiring the cards into the campaign |
 | M8 | Arena | the ember-cast rule, the daily (seed, rule deck, loaned builds, local board, cache), the dawn card and offer kept here | ~1.5M, 2 rounds | the night as the game's gate |
-| M9 | Loot (su-lead-sonnet) | carriers per pack, ground loot, world-tier weights, "+1 to a skill", the Ford-Warden's Legendary | ~0.6M, 1-2 rounds | the night's-end tally outside the arena |
 | M10 | Act 1's ground (L1's look pipeline, zones, combat) | the Verge's three zones, the Deep Shaw, the four story dungeons (rooms and boss scripts reused, waves turned into placed packs), time by the story | ~10-15M plus GPU: the long pole; L1 sizes it after G2 | story nights as drafts from nothing |
 | M11 | Later | the atlas on world tiers (~1.5M), the dead's nights, the other callings' pressed waves, then sieges | | |
 
-Act 1 as an ARPG totals about 25M (ONE_BUILD's C2 build of ~0.5M is folded into M3 and M7). The character pipeline (P1, P2, P3) and L1's G2 run beside it unchanged.
+Act 1 as an ARPG totals about 26M plus A1's re-cut (ONE_BUILD's C2 build of ~0.5M is folded into M3 and M7). The character pipeline (P1, P2, P3) and L1's G2 run beside it unchanged.
 
 ---
 
@@ -379,3 +382,4 @@ Act 1 as an ARPG totals about 25M (ONE_BUILD's C2 build of ~0.5M is folded into 
 10. **The prologue's dawn:** the ember lends the Flare for the Warden and first light takes it back on one page, so Act 4 has its rule; or no dawn loss at all.
 11. **Ember is her experience:** the dead's light is how she grows, which sharpens Act 4; or plain experience on a kill.
 12. **The daily:** one seed, one rule and one loaned build for everyone; or her own build.
+13. **Slots:** all six keys by level 9 (2/3/4/5/6 at 1/3/5/7/9), Heroic Leap at level 4, the first Union about level 11; or today's 1/4/8/14/20, six keys from Act 3.
