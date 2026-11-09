@@ -680,5 +680,232 @@
    },
    "calibration": "AUTHORED, emit 1: drawn after the grade (FxAfter), its hex is its displayed color on every rig; judged with the skills lead's first clips (Heroic Leap, the Cyclone)"
   }
+ },
+ "p7": {
+  "what": "P7 round 3 (9 Nov): the skills lead's shapes in numbers, FROM judge r2 (survivorsunchained_inputs/skills_p7/judge_r2/verdict.md). px are at the play camera (1080 lines, the view converts with BattleFx.P7Px); s seconds; frames at 60 fps; [lo, hi] a range; a curve is [t, v] pairs. Colors stay the physical school's (L1). Read by logic/Look/FxP7.cs.",
+  "glint": {
+   "what": "the press on every move: one three-band glint at the blade tip or shield, plus a dust kick",
+   "px": 26,
+   "frames": 3
+  },
+  "kick": {
+   "puffs": [
+    8,
+    12
+   ],
+   "px": [
+    20,
+    40
+   ],
+   "life": 0.3
+  },
+  "leap": {
+   "ring": {
+    "what": "the target: a wavefront standing at the hit radius; arcs grow to its coverage curve (s since the press), opacity with them; one flash at 1.5x width when shut",
+    "lead_px": 8,
+    "trail_px": 10,
+    "arcs": 3,
+    "cover": [
+     [
+      0.0,
+      0.0
+     ],
+     [
+      0.1,
+      0.4
+     ],
+     [
+      0.25,
+      0.7
+     ],
+     [
+      0.4,
+      1.0
+     ]
+    ],
+    "alpha": [
+     0.6,
+     1.0
+    ],
+    "flash_frames": 2,
+    "flash_k": 1.5
+   },
+   "ribbon": {
+    "what": "the blade's path through the air, splined",
+    "head_px": 10,
+    "life": 0.2,
+    "turn_deg": 30
+   },
+   "star": {
+    "spikes": [
+     6,
+     7
+    ],
+    "streaks": [
+     6,
+     8
+    ],
+    "root_px": 22,
+    "heart_px": 8,
+    "reach": 0.8,
+    "hold_frames": 2,
+    "step_frames": 2
+   },
+   "crack": {
+    "what": "px at the dark gap; gap: the crack strip's gap as a share of its band (art/fx/longcut crack_albedo, ~0.1); the seam the light down its middle",
+    "root_px": 5,
+    "tip_px": 1,
+    "gap": 0.1,
+    "seam_px": [
+     2.5,
+     1
+    ],
+    "cool": 0.6
+   },
+   "dust": {
+    "puffs": [
+     16,
+     24
+    ],
+    "px": [
+     30,
+     60
+    ],
+    "run": 0.4
+   },
+   "chunks": [
+    10,
+    14
+   ]
+  },
+  "charge": {
+   "crescent": {
+    "what": "the press: the crescent flash on the shield",
+    "px": 64,
+    "frames": 3
+   },
+   "ribbon": {
+    "head_px": 20,
+    "life": 0.2
+   },
+   "star": {
+    "what": "one per hit at the contact",
+    "spikes": [
+     4,
+     6
+    ],
+    "px": 70,
+    "root_px": 15,
+    "root_tip": 3,
+    "frames": 3
+   },
+   "stop": {
+    "what": "the champion stops her: one star and one wavefront off the shield",
+    "spikes": 6,
+    "px": 110,
+    "root_px": 18,
+    "lead_px": 8,
+    "trail_px": 12,
+    "run": 0.2,
+    "reach": 2.2
+   },
+   "ghost": {
+    "gap": 0.04,
+    "life": 0.15,
+    "rim_px": 2
+   },
+   "plow": {
+    "gap": 0.05,
+    "px": [
+     15,
+     25
+    ]
+   }
+  },
+  "dash": {
+   "ribbon": {
+    "head_px": 24,
+    "life": 0.21
+   },
+   "shove": {
+    "lead_px": 10,
+    "trail_px": 20,
+    "run": 0.2,
+    "puffs": [
+     10,
+     14
+    ],
+    "px": [
+     20,
+     40
+    ]
+   }
+  },
+  "storm": {
+   "smear": {
+    "what": "a swept arc on the blade's path at its reach",
+    "head_px": 12,
+    "arc_deg": 105,
+    "core_share": 0.25,
+    "alpha": 0.8
+   },
+   "seam": {
+    "px": 4
+   },
+   "ring": {
+    "lead_px": 12,
+    "trail_px": 14,
+    "run": 0.18
+   },
+   "star": {
+    "spikes": 7,
+    "px": 150,
+    "root_px": 20
+   },
+   "nick": {
+    "px": 20,
+    "frames": 3
+   }
+  },
+  "vow": {
+   "plant": {
+    "flash_px": 50,
+    "frames": 3,
+    "puffs": [
+     12,
+     16
+    ],
+    "px": [
+     20,
+     40
+    ]
+   },
+   "dome": {
+    "rim_px": 7,
+    "flare_px": 12,
+    "flare_s": 0.1
+   },
+   "store": {
+    "px": [
+     20,
+     60
+    ],
+    "grow": 2.0
+   },
+   "burst": {
+    "spikes": [
+     6,
+     8
+    ],
+    "px": 130,
+    "root_px": 18,
+    "frames": 3,
+    "lead_px": 10,
+    "trail_px": 12,
+    "run": 0.3,
+    "light_k": 0.4,
+    "light_frames": 2
+   }
+  }
  }
 }
