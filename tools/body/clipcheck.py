@@ -39,6 +39,18 @@ ARM = ("upperarm", "lowerarm", "hand", "thumb", "index", "middle", "ring", "pink
 TORSO = ("pelvis", "spine", "thigh", "glute", "breast", "pec", "lat", "belly", "butt")
 GIRDLE = ("clavicle", "scap", "trap", "delt", "upperarm")
 SPIKE_X, SPIKE_DEG = 4.0, 3.0
+MOVING_DEG = 0.1   # a step under this is a held frame: left out of the spike rule's median
+
+
+def spike_median(st):
+    """The spike rule's median: over the MOVING steps only (> MOVING_DEG), the two largest left out (a one-frame
+    spike is two steps: out and back). A frozen hold's ~0 steps no longer pull the median to 0 (every fast beat after
+    a hold was flagged), and a lone spike after a hold cannot set its own bar (its two steps alone: median 0, so it
+    is flagged). fit.pop mirrors it."""
+    mv = np.sort(st[st > MOVING_DEG])
+    return float(np.median(mv[:-2])) if len(mv) > 2 else 0.0
+
+
 AXILLA = 0.4   # the upper arm's first 40% along its axis: the armpit fold (skin/weights, not the clip), reported apart
 
 
@@ -151,7 +163,7 @@ def pops(names, parent, Gs, keyed, loop):
         pj = parent[j]
         R = Gs[:, j, :3, :3] if pj < 0 else np.linalg.inv(Gs[:, pj, :3, :3]) @ Gs[:, j, :3, :3]
         st = ang(R[:-1], R[1:])
-        med = float(np.median(st))
+        med = spike_median(st)
         k = int(np.argmax(st))
         if st[k] > SPIKE_DEG and st[k] > SPIKE_X * max(med, 1e-6):
             out[n] = {"frame": k + 1, "step": round(float(st[k]), 2), "median": round(med, 3)}
