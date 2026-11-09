@@ -12,9 +12,11 @@ using SurvivorUnchained.Sim;
 namespace SurvivorUnchained.Balance;
 
 /// <summary>One map to play: who, how hard, with what character, under which mods.</summary>
-public sealed record MapRunSpec(int Seed, string Calling, int Tier, string People, int Level, int GearRarity, string[] Mods, bool Deft, double Cap = 25)
+public sealed record MapRunSpec(int Seed, string Calling, int Tier, string People, int Level, int GearRarity, string[] Mods, string Bot, double Cap = 25)
 {
-    public string Key => $"{Calling}/t{Tier}/{People}/s{Seed}/L{Level}/g{GearRarity}{(Mods.Length > 0 ? "/" + string.Join("+", Mods) : "")}";
+    /// <summary>(M3) The hands: human, deft, careless, standing, idler (the press plan's) or plain (the old self-firing Pilot).</summary>
+    public bool Deft => Bot == "deft";
+    public string Key => $"{Calling}/t{Tier}/{People}/{Bot}/s{Seed}/L{Level}/g{GearRarity}{(Mods.Length > 0 ? "/" + string.Join("+", Mods) : "")}";
 }
 
 public sealed class MapRunResult
@@ -35,6 +37,9 @@ public sealed class MapRunResult
     public double KillGap, PackGap;
     public string Build = "", KilledBy = "";
     public double MaxHp;
+    /// <summary>(M3) The press plan's hands (presses by skill) and the numbers round's measures (RunMeter).</summary>
+    public PressHands? Hands;
+    public RunMeasures Measures = new();
 }
 
 /// <summary>A Wayfinder's map played through headless (Play/Zones/MapRun.cs on MapGen's winding
@@ -59,6 +64,9 @@ public static class MapSim
         while (ch.Level < level) Character.GainXp(ch, Character.XpForLevel(ch.Level) - ch.Xp + 1);
         switch (calling) { case "arcanist": ch.Attributes.Wits += ch.Points; break; case "stalker": ch.Attributes.Finesse += ch.Points; break; default: ch.Attributes.Might += ch.Points; break; }
         ch.Points = 0;
+        // (M3) A calling with a taught build carries it first (taught_builds.json, as a campaign survivor of that level does);
+        // the path's skills fill what slots are left.
+        TaughtBuilds.Grant(ch, ch.Level);
         var path = Content.Paths.All.Where(p => p.Callings.Contains(calling)).OrderBy(p => p.Id).ToList();
         var pick = path[seed % path.Count];
         foreach (var id in pick.Weapons.Concat(path.SelectMany(p => p.Weapons)).Distinct())
@@ -110,6 +118,9 @@ public static class MapSim
         };
         host.Battle = b;
         zone.Begin(b);
+        // (M3) --grant / --grant-union / --dash-steps: the game's dev grants (Sim/DevGrants.cs), carried from the start. A grant
+        // the keys cannot hold takes the last key that is not the grip's nor the union's part.
+        if (Grant != null || GrantUnion != null) GiveGrants(b, spec);
         var r = new MapRunResult { Spec = spec, Packs = zone.PackCount, MaxHp = b.MaxHp, Build = string.Join(" ", b.Weapons.Select(w => $"{w.Id}{w.Rank}")) };
         var nav = new NavField(map, b, map.Boss.X, map.Boss.Z);
         double along = 0;
@@ -120,13 +131,36 @@ public static class MapSim
         var kills = new List<double>();
         bool trace = Environment.GetEnvironmentVariable("MAP_TRACE") == "1", blows = Environment.GetEnvironmentVariable("MAP_BLOWS") == "1";
         var packs = new List<double>();
+        // (M3) The hands on the one press plan (Sim/PressPlan.cs), as ZoneSim's.
+        var human = spec.Bot is "human" or "careless" or "idler" ? new Human(spec.Seed, spec.Bot == "careless") { Idle = spec.Bot == "idler" } : null;
+        if (human == null && spec.Bot is not ("deft" or "plain" or "standing")) throw new ArgumentException($"map sim: unknown bot {spec.Bot}");
+        uint hs = (uint)spec.Seed;
+        var hands = spec.Bot switch
+        {
+            "deft" => PressHands.Deft(hs),
+            "human" => PressHands.Human(hs, human!.React),
+            "careless" => PressHands.Careless(hs, human!.React),
+            "standing" or "idler" => PressHands.Grip(hs),
+            _ => null,
+        };
+        if (human != null) human.Hands = hands;
+        r.Hands = hands;
+        var meter = new RunMeter();
         while (t < spec.Cap * 60 && !zone.Over)
         {
             // Onward: downhill on the way's distance to the ruler, a few metres ahead, by a line
             // that is clear of what stands on the ground.
             var onward = nav.Onward(p.X, p.Z);
             along = nav.ToGo(p.X, p.Z);
-            var (mx, mz) = Pilot.Steer(b, spec.Deft, zone.BossScript, onward);
+            double reach = Math.Max(1.5, Pilot.Reach(b));
+            bool inReach = b.Enemies.Living().Any(e => e.Disposition == Disposition.Hostile && e.State != EnemyState.Dying && Dist(e.X, e.Z, p.X, p.Z) < reach);
+            var (mx, mz) = spec.Bot switch
+            {
+                "idler" => human!.Steer(b, zone.BossScript, goal: inReach ? null : onward),
+                "human" or "careless" => human!.Steer(b, zone.BossScript, onward: onward),
+                "standing" => inReach ? (0, 0) : Pilot.Steer(b, false, null, goal: onward, naive: true),
+                _ => Pilot.Steer(b, spec.Deft, zone.BossScript, onward),
+            };
             // No nearer the ruler in twenty seconds with the ruler not up (a pickup out of reach, a
             // corner, a tunneller under the ground the hands wait on): walk on, longer each time.
             if ((int)(t / 20) != (int)((t + Dt) / 20))
@@ -146,11 +180,16 @@ public static class MapSim
                 double ml = Math.Max(1e-6, Math.Sqrt(mx * mx + mz * mz));
                 (mx, mz) = (mx / ml, mz / ml);
             }
-            if (Pilot.Act(b, j, mx, mz)) r.Quaffs++;
+            bool quaff = human != null ? human.Act(b, j, mx, mz, zone.BossScript)
+                : spec.Bot == "standing" ? Pilot.Act(b, j, mx, mz, null, lunges: false, aimsFlare: true, rooted: false, crush: false, hands: hands)
+                : Pilot.Act(b, j, mx, mz, hands: hands);
+            if (quaff) r.Quaffs++;
             zone.Step(Dt);
             zone.Frame(Dt);
             b.Tick(Dt, mx, mz);
-            foreach (var ev in b.Events.Drain())
+            var evs = b.Events.Drain();
+            meter.Step(b, t, Dt, evs, RunMeter.Fighting(b));
+            foreach (var ev in evs)
                 switch (ev)
                 {
                     case Ev.Kill k when k.ByPlayer: kills.Add(t - lastKill); lastKill = t; break;
@@ -191,7 +230,38 @@ public static class MapSim
         r.Iron = iron + j.Ch.Materials.GetValueOrDefault(Crafting.Iron);
         r.Material = j.Ch.Materials.Where(m => m.Key != Crafting.Shard && m.Key != Crafting.Iron).Sum(m => m.Value);
         r.Marks = marks;
+        meter.Finish(b, t, r.Measures, hands);
         return r;
+    }
+
+    /// <summary>(M3) --grant id[:rank],... / --grant-union id: what every map starts carrying (as ArenaSim's).</summary>
+    public static string? Grant, GrantUnion;
+    static int grantSaid;
+
+    static void GiveGrants(Battle b, MapRunSpec spec)
+    {
+        var keep = new HashSet<string>();
+        if (TaughtBuilds.Of(spec.Calling) is { } t) keep.Add(t.Grip);
+        int need = 0;
+        foreach (var raw in (Grant ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            string id = raw.Split(':')[0];
+            keep.Add(id);
+            if (Content.Weapons.All.ContainsKey(id) && !b.Weapons.Exists(w => w.Id == id)) need += Content.Weapons.SlotCost(id);
+        }
+        if (GrantUnion is { Length: > 0 } un && Unions.Find(un.Trim()) is { } u && !b.Weapons.Exists(w => w.Id == u.Into))
+        {
+            keep.Add(u.A); keep.Add(u.B);
+            need += Content.Weapons.SlotCost(u.Into) - b.Weapons.Count(w => w.Id == u.A || w.Id == u.B);
+        }
+        var said = new List<string>();
+        while (need > 0 && b.SlotsUsed + need > Content.Weapons.MaxWeapons && b.Weapons.LastOrDefault(w => !keep.Contains(w.Id)) is { } give)
+        {
+            b.RemoveWeapon(give.Id);
+            said.Add($"grant: {give.Id} gives up its key");
+        }
+        said.AddRange(DevGrants.Apply(b, Grant, GrantUnion, null));
+        foreach (var line in said) if (System.Threading.Interlocked.Increment(ref grantSaid) <= 4 || line.Contains("not ")) Console.WriteLine($"{spec.Key}: {line}");
     }
 
     static double Dist(double ax, double az, double bx, double bz) => Math.Sqrt((ax - bx) * (ax - bx) + (az - bz) * (az - bz));
@@ -218,6 +288,11 @@ public static class MapSim
         foreach (var g in rs.GroupBy(x => $"tier {x.Spec.Tier}").OrderBy(g => g.Key)) Row(g.Key, g.ToList());
         foreach (var g in rs.GroupBy(x => x.Spec.Calling).OrderBy(g => g.Key)) Row(g.Key, g.ToList());
         foreach (var g in rs.GroupBy(x => x.Spec.People).OrderBy(g => g.Key)) Row(g.Key, g.ToList());
+        foreach (var g in rs.GroupBy(x => x.Spec.Bot).OrderBy(g => g.Key)) Row(g.Key, g.ToList());
+        // (M3) The press measures, per bot and tier.
+        sb.AppendLine();
+        sb.AppendLine(RunMeasures.Header);
+        foreach (var g in rs.GroupBy(x => (x.Spec.Tier, x.Spec.Bot)).OrderBy(g => g.Key)) sb.AppendLine(RunMeasures.Row($"T{g.Key.Tier} {g.Key.Bot}", g.Select(x => x.Measures).ToList()));
         return sb.ToString();
     }
 }

@@ -96,7 +96,17 @@ public static class PressPlan
             if (near == null || !h.GripHeld(b.Time)) b.HoldSkill(w.Slot, false);
             else b.HoldSkill(w.Slot, true, near.X, near.Z);
         }
-        if (h.GripOnly || p.Leap != null || b.Art.Rush != null || p.DashT > 0) return;
+        // A union that took the grip's key (Bladestorm: Sunder's is its break): out of a storm that key still swings Sunder,
+        // and a grip-only hand holds it as it held the grip.
+        if (h.GripOnly)
+        {
+            foreach (var w in b.Weapons)
+                if (w.Slot2 >= 0 && !w.Channeling && d.For(w.Id).Aim == "storm" && !Firing.InStorm(b, w)
+                    && b.NearestHostile(p.X, p.Z, (w.Num(s => s.Reach) ?? 2.6) + d.GripPad) is { } nf && h.GripHeld(b.Time))
+                    b.PressSkill(w.Slot2, nf.X, nf.Z);
+            return;
+        }
+        if (p.Leap != null || b.Art.Rush != null || p.DashT > 0) return;
         bool reads = sees && h.Reads, ignore = h.Ignoring(b.Time);
         bool full = b.Resolve.On && b.Resolve.Value >= d.SpendFullAt * b.Resolve.Max;
         foreach (var w in b.Weapons.Where(w => w.Keyed && !w.Hold && w.DisabledT <= 0).OrderBy(w => d.For(w.Id).Priority).ToList())

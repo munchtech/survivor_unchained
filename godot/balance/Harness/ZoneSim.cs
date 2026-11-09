@@ -37,6 +37,8 @@ public sealed class ZoneRunResult
     public Dictionary<string, double> DamageBy = new();
     public double ResolveSpent, ResolveFullSec, FlareFirst = -1, MarkGapMax;
     public int FlareCasts;
+    /// <summary>(M3) The numbers round's measures (RunMeter: mark gap, Resolve, presses, shares, Flare, falls).</summary>
+    public RunMeasures Measures = new();
     public readonly List<string> FallsAt = new(), RisesAt = new(), WardenDrops = new();
     /// <summary>Each beat put down: its seconds (woke to down) and her level then.</summary>
     public readonly Dictionary<string, (double Seconds, int Level)> Beats = new();
@@ -121,6 +123,7 @@ public static class ZoneSim
         };
         if (human != null) human.Hands = hands;
         r.Hands = hands;
+        var meter = new RunMeter { Deaths = false };
         var road = meta.Paths.GetValueOrDefault("ROAD") ?? Array.Empty<double[]>();
         int wp = 0;
         var ford = meta.Place("LOWFORD", "ford");
@@ -223,7 +226,15 @@ public static class ZoneSim
             double mx = 0, mz = 0;
             if (!held && p.Alive)
             {
-                if (human != null) { (mx, mz) = human.Steer(b, null, onward: to); human.Act(b, j, mx, mz, null); }
+                if (human is { Idle: true })
+                {
+                    // (M3: the idler walks the road as its goal, and stands where a foe is in reach, stepping only out of what it read)
+                    double reach = Math.Max(1.5, Pilot.Reach(b));
+                    bool inReach = b.Enemies.Living().Any(e => e.Disposition == Disposition.Hostile && e.State != EnemyState.Dying && Dist(e.X, e.Z, p.X, p.Z) < reach);
+                    (mx, mz) = human.Steer(b, null, goal: inReach ? null : to);
+                    human.Act(b, j, mx, mz, null);
+                }
+                else if (human != null) { (mx, mz) = human.Steer(b, null, onward: to); human.Act(b, j, mx, mz, null); }
                 else if (standing)
                 {
                     // (stands and takes it while a foe is in her reach, never stepping out of a blow; else walks on to the goal)
@@ -267,7 +278,7 @@ public static class ZoneSim
             }
             zone.Step(dt);
             b.Tick(dt, mx, mz);
-            b.Events.Drain();
+            meter.Step(b, tt, dt, b.Events.Drain(), fight);
             zone.Frame(dt);
             host.Pass(dt);
             tt += dt;
@@ -353,6 +364,8 @@ public static class ZoneSim
         r.Seconds = tt;
         foreach (var (k, v) in b.DamageBy) r.DamageBy[k] = v;
         r.FlareCasts = b.FlareCasts; if (b.FlareTimes.Count > 0) r.FlareFirst = b.FlareTimes[0];
+        meter.Finish(b, tt, r.Measures, hands);
+        r.Measures.Falls.AddRange(r.FallsAt);
         if (spec.Features != null)
             foreach (var enc in new[] { zone.Night, zone.Day })
                 if (enc != null)
@@ -424,6 +437,11 @@ public static class ZoneSim
         }
         sb.AppendLine();
 
+        sb.AppendLine("## The presses (M3; medians, presses and damage shares averaged over the runs)");
+        sb.AppendLine();
+        sb.AppendLine(RunMeasures.Header);
+        foreach (var g in groups) sb.AppendLine(RunMeasures.Row($"T{g.Key.Tier} {g.Key.Bot}", g.Select(r => r.Measures).ToList()));
+        sb.AppendLine();
         sb.AppendLine("## Per hour (medians of each run's rate; play-only / with films)");
         sb.AppendLine();
         sb.AppendLine("| Tier | Bot | Kills/hr | Packs/hr | Champions/hr | Gear shown/hr | Minutes per upgrade | Rises/hr |");

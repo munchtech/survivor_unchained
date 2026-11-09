@@ -448,7 +448,7 @@ void ZoneRuns()
         try { r = ZoneSim.Play(spec); }
         catch (Exception e) { Console.Error.WriteLine($"{spec.Key}: {e}"); return; }
         results.Add(r);
-        lock (gate) Console.WriteLine($"[{++done}/{specs.Count} {sw.Elapsed:mm\\:ss}] {spec.Key}: {(r.Reached ? "through" : r.Stuck ? "STUCK " + r.StuckAt : "capped")} {r.PlaySeconds / 60:0.0} min kills {r.Kills} packs {r.Packs} champs {r.Champions} falls {r.Falls} rises {r.Rises} shown {r.GearShown} L{r.LevelAtWarden}/{r.LevelAtGate} presses {string.Join(",", r.Hands?.Presses.Select(kv => kv.Key + ":" + kv.Value) ?? [])} flare {r.FlareCasts}@{r.FlareFirst:0} rfull {r.ResolveFullSec:0}s dmg {string.Join(",", r.DamageBy.OrderByDescending(kv => kv.Value).Take(5).Select(kv => kv.Key + ":" + (100 * kv.Value / Math.Max(1, r.DamageBy.Values.Sum())).ToString("0")))}");
+        lock (gate) Console.WriteLine($"[{++done}/{specs.Count} {sw.Elapsed:mm\\:ss}] {spec.Key}: {(r.Reached ? "through" : r.Stuck ? "STUCK " + r.StuckAt : "capped")} {r.PlaySeconds / 60:0.0} min kills {r.Kills} packs {r.Packs} champs {r.Champions} falls {r.Falls} rises {r.Rises} shown {r.GearShown} L{r.LevelAtWarden}/{r.LevelAtGate} {r.Measures.Line()}");
     });
     var all = results.OrderBy(r => r.Spec.Key).ToList();
     var md = ZoneSim.Report(all, opt.Get("cmd", "dotnet run -c Release --project godot/balance -- zone " + string.Join(" ", args.Skip(1))));
@@ -559,13 +559,18 @@ void Maps()
     var tiers = opt.List("tiers", "1").Select(int.Parse).ToArray();
     var mods = opt.Get("mods", "") is { Length: > 0 } m ? m.Split('+') : Array.Empty<string>();
     var specs = new List<MapRunSpec>();
+    // (M3) --bot human|deft|careless|standing|idler|plain (or a list: --bots human,deft); --grant / --grant-union as the arena's.
+    var bots = opt.Has("bots") ? opt.List("bots", "deft") : [opt.Get("bot", "deft")];
+    if (opt.Has("grant")) SurvivorUnchained.Balance.MapSim.Grant = opt.Get("grant", "");
+    if (opt.Has("grant-union")) SurvivorUnchained.Balance.MapSim.GrantUnion = opt.Get("grant-union", "");
+    foreach (var bot in bots)
     foreach (var c in Callers())
         foreach (int tier in tiers)
             foreach (var people in peoples)
                 for (int s = 0; s < seeds; s++)
                 {
                     int level = opt.Get("level", "tier") == "tier" ? Math.Min(30, 8 + 2 * tier) : opt.Int("level", 10);
-                    specs.Add(new MapRunSpec(seed0 + s, c, tier, people, level, opt.Int("gear", 2), mods, opt.Get("bot", "deft") == "deft", opt.Double("cap", 25)));
+                    specs.Add(new MapRunSpec(seed0 + s, c, tier, people, level, opt.Int("gear", 2), mods, bot, opt.Double("cap", 25)));
                 }
     Console.WriteLine($"{specs.Count} maps, {opt.Int("par", 16)} at a time");
     var results = new ConcurrentBag<MapRunResult>();
@@ -581,7 +586,7 @@ void Maps()
         lock (gate)
         {
             done++;
-            Console.WriteLine($"[{done}/{specs.Count} {sw.Elapsed:mm\\:ss}] {spec.Key}: {(r.Cleared ? $"cleared {r.Minutes:0.0}" : r.Closed ? $"closed {r.Minutes:0.0} ({r.KilledBy})" : $"walking {r.Minutes:0.0}")} falls {r.Falls} packs {r.PacksCleared}/{r.Packs} boss {(r.BossTtk is double bt ? $"{bt:0}s" : $"phase {r.BossPhase} left {r.BossLeft:0.00}")} low {r.LowHp:0.00}  {r.Build}");
+            Console.WriteLine($"[{done}/{specs.Count} {sw.Elapsed:mm\\:ss}] {spec.Key}: {(r.Cleared ? $"cleared {r.Minutes:0.0}" : r.Closed ? $"closed {r.Minutes:0.0} ({r.KilledBy})" : $"walking {r.Minutes:0.0}")} falls {r.Falls} packs {r.PacksCleared}/{r.Packs} boss {(r.BossTtk is double bt ? $"{bt:0}s" : $"phase {r.BossPhase} left {r.BossLeft:0.00}")} low {r.LowHp:0.00}  {r.Build}\n    {r.Measures.Line()}");
         }
     });
     var md = MapSim.Report(results.OrderBy(r => r.Spec.Key).ToList());
