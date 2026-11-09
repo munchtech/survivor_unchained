@@ -1,3 +1,33 @@
+# The ARPG design lead 1 (8-9 Nov): `docs/design/ARPG.md` on design-arpg; three judge rounds, the last FAIL close with its five fixes applied; a confirm judge is needed before the owner sees it
+
+Brief: `tools/scratch/coordinator/briefs/ARPG_design_lead1.md`. Owner's words: `docs/design/ARPG_DIRECTION.md`, `SIEGES.md`, and on the dash: "its decent fundamentally - its improvements behind the scenes are awkward - just pushing the button leveling it up is weird". Report to main. Docs only, no game code. The worktree is a junction worktree (`godot\assets` links to its own `public\assets`): never merge, reset or checkout without the junction rule in `lead_brief.md`.
+
+- **The page:** `docs/design/ARPG.md`, with the owner's one-page, the systems table, skills and Unions, the arena, the tutorial, acts and zones, loot, death and difficulty, the siege hooks, the migration list M1-M11, and 13 owner's calls with picks first.
+- **The picks:**
+  - pressed skills (six keys, Resolve built by the grip, waits on movement, never rooted, kindled skills keep a press);
+  - the arena's rule: the ember casts for her;
+  - Unions on two keys with a bond (Bladestorm = Cleaver + Sunder: hold to spin, a fresh press of Sunder breaks it);
+  - slots at levels 1/4/5/7/9;
+  - the dash's steps from story beats and gear, never from level-up cards;
+  - levels light lamps anywhere out of a fight, and lamp-posts change them;
+  - handcrafted acts, generated endgame maps;
+  - world tiers;
+  - she rises at a lamp-post.
+- **Judge (Item: ARPG design, 3 of 3 rounds, su-lead-max, foreground):** r1 FAIL medium (13 findings), r2 FAIL close (9), r3 FAIL close (5: map rises against the owner's MapRun rule, board points from posts, Iron Vow unbuilt, the total, M1 wording). All of r3's fixes are applied but not judged after them. **Next:** main raises the cap for one confirm judge (the r3 list as the checklist), then PROPOSAL READY and the owner's pick.
+- **Sent early to main for the skills lead (skills-p7):**
+  - Rule 1: the dash is a plain evade with visible steps; Bull Rush becomes the pressed Shield Charge, whose four facets are its wick (Pile Driver is the Turn);
+  - the Union's two keys;
+  - since then: dash steps come from story beats and gear, and the hearth lamps hold only the endings;
+  - the WIP's union must split so each key drives its half;
+  - Bladestorm paid from Resolve.
+- **Gotchas:**
+  - "The Deep Shaw" is a name the table generates, not a place.
+  - Cleaver, Heroic Leap and Iron Vow have no wick in `skill_lamps.json`.
+  - `MapRun.cs:34` records the owner's "a fall closes the map".
+- **Cost:** lead ~0.32M; surveys 2 × Sonnet; judges 135k + 128k + 111k.
+
+**PROPOSAL (needs a confirm judge) design-arpg@HEAD**
+
 # C2 one build (5 Nov, lead 2): MR READY classes-c2@f83bb3878 (judge PASS WITH KNOWN, the known list closed)
 
 Branch `classes-c2` (junction to its own `public\assets`), integration merged at e3fcfb760, pushed. Suite 1565/0/10 after the merge. Report to coordinator cd68c87d via SendMessage "main".
