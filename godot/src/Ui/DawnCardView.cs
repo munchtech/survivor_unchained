@@ -1,3 +1,4 @@
+using System.Linq;
 using System;
 using System.Collections.Generic;
 using Godot;
@@ -54,9 +55,9 @@ public partial class DawnCardView : Control
         cols.AddChild(new InkRule(0, true) { CustomMinimumSize = new Vector2(64, 0), SizeFlagsVertical = SizeFlags.ExpandFill });
         cols.AddChild(Column(c.KeepsHead, c.Keeps));
         page.AddChild(cols);
-        page.AddChild(Gap(26));
-        page.AddChild(Words(c.Last, Style.TextItalic, 22, Ink, HorizontalAlignment.Center));
-        page.AddChild(Gap(18));
+        // (M4 §5: one title, one line each of what the dark took and what she keeps, the go-on prompt; the closing
+        // line, c.Last, stays in the card's words for M6 but is not laid out)
+        page.AddChild(Gap(24));
         more = Words(c.Go, Style.Text, 19, Ink, HorizontalAlignment.Center);   // (judge 1: the card's serif, 19 px, in the darker ink)
         more.Modulate = Colors.Transparent;
         page.AddChild(more);
@@ -88,7 +89,10 @@ public partial class DawnCardView : Control
         col.AddThemeConstantOverride("separation", 4);
         col.AddChild(Words(head.ToUpperInvariant(), Style.DisplayLight, Style.Small, Red, HorizontalAlignment.Center));
         col.AddChild(Gap(6));
-        foreach (var l in lines) col.AddChild(Words(l, Style.Text, Style.Lead, Ink, HorizontalAlignment.Center));
+        // (one line: the column's items run together, wrapping inside the short column)
+        var line = Style.Label(string.Join(" · ", lines.Select(l => l.Replace(" ", "\u00A0"))), Style.Text, Style.Lead, Ink, true, HorizontalAlignment.Center, false);
+        line.CustomMinimumSize = new Vector2(250, 0);
+        col.AddChild(line);
         return col;
     }
 

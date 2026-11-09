@@ -695,6 +695,8 @@ public partial class GameHud : CanvasLayer
             { cardDue.PromptKey = Act.Character; cardDue.PromptText = LevelCards.PromptFor(dch.TraitPicks); }
             LevelCard(cardDue);
         }
+        if (DevSlots.DawnDue(b) && GetParent() is Game dg)
+            dg.DawnCard(Play.DawnCard.Build(["Whirling Ember", "Cinder Ward"], 4), () => { });
         // (M4: the pad's A is Interact only out of a fight)
         if (Controls.Instance is { } ctl) ctl.Fighting = b.Combat && p.Alive && b.NearestHostile(p.X, p.Z, FightNear) != null;
         // The six places. In the campaign (M4 §1) seat k shows slot KeyMap.SeatSlot[k] with its key; elsewhere (the
@@ -1192,6 +1194,7 @@ public partial class GameHud : CanvasLayer
 
     public void Boss(BossBar? bar)
     {
+        bar ??= DevSlots.ShieldBar;
         bossBox.Visible = bar != null;
         BossName = bar?.Name;
         if (bar == null) return;

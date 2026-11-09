@@ -61,6 +61,22 @@ public static class DevSlots
         return c.Spec;
     }
 
+    // --dawn-card T: the dawn's card T seconds into a fight (M4 §5's dawn frame, pictured without a whole night's end)
+    static readonly double DawnAt = Args.Has("dawn-card") ? Args.Num("dawn-card", 1.5f) : -1;
+    static Battle? dawnFor;
+
+    public static bool DawnDue(Battle b)
+    {
+        if (DawnAt < 0 || ReferenceEquals(dawnFor, b) || !b.Combat || b.Time < DawnAt) return false;
+        dawnFor = b;
+        GD.Print($"dawn-card: staged at {b.Time:0.00}");
+        return true;
+    }
+
+    // --boss-shield: a shielded foe's bar in place of none (Hollow's ring wording), for the boss bar's silver sheen
+    public static readonly Play.BossBar? ShieldBar = Args.Has("boss-shield")
+        ? new Play.BossBar("The ring", "Old Blue is out of reach until it breaks", 6, 10, Shielded: true, IsBoss: false) : null;
+
     public static void Tick(Battle b)
     {
         if (ResolveAt.Length > 0 && b.Campaign && b.Combat)
