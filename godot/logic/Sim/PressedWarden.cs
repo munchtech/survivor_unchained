@@ -326,6 +326,14 @@ public static partial class Firing
         return 1 + (most - 1) * Math.Clamp((spent - from) / (cap - from), 0, 1);
     }
 
+    /// <summary>What a storm that spent this much Resolve makes of its break: x1 at none to BreakGrow (x1.6) at BreakSpent
+    /// (100), linearly, capped.</summary>
+    public static double BreakGrowthSpent(WeaponInst w, double resolve)
+    {
+        double most = w.Num(s => s.BreakGrow) ?? 1.6, at = Math.Max(1e-9, w.Num(s => s.BreakSpent) ?? 100);
+        return 1 + (most - 1) * Math.Clamp(resolve / at, 0, 1);
+    }
+
     /// <summary>A storm on: spinning, or within its BreakWindow after (its second key breaks it then).</summary>
     public static bool InStorm(Battle b, WeaponInst w) => w.Channeling || (w.BreakUntil >= 0 && b.Time <= w.BreakUntil);
 
@@ -340,6 +348,8 @@ public static partial class Firing
             w.Half = new WeaponInst(u.B, w.Rank, w.Slot2) { Timer = 0 };
         }
         var h = w.Half;
+        // In the campaign the half keeps its part's record (Sunder's: a hold that builds Resolve).
+        h.Press = w.Press != null ? h.Def.Press : null;
         h.Rank = w.Rank;
         h.Slot = w.Slot2;
         var (m, hm) = (w.Mods, h.Mods);
@@ -354,8 +364,12 @@ public static partial class Firing
         if (w.DisabledT > 0 || InStorm(b, w) || HalfOf(w) is not { } h || h.Timer > 0) return false;
         if (b.FireFrom != null || b.Refiring) return false;
         int kills0 = h.Kills;
-        bool fired = CastOnce(b, h);
-        if (fired) Rearm(b, h, true, kills0);
+        var aim0 = b.CastAt;
+        b.CastAt = b.AimFor(h);
+        bool fired;
+        try { fired = CastOnce(b, h); }
+        finally { b.CastAt = aim0; }
+        if (fired) { Rearm(b, h, true, kills0); b.CastPose(h); }
         return fired;
     }
 
@@ -394,7 +408,8 @@ public static partial class Firing
             b.Events.Emit(new Ev.Channel { Weapon = w.Id, Slot = w.Slot, On = false, X = p.X, Z = p.Z });
         }
         w.BreakUntil = -1;
-        double grow = BreakGrowth(w, spent);
+        // In the campaign with Resolve, the break grows with the Resolve the storm spent; elsewhere with its seconds.
+        double grow = b.Resolve.On && w.Press?.Drain is > 0 ? BreakGrowthSpent(w, b.Resolve.SpentInStorm) : BreakGrowth(w, spent);
         double r = AreaOf(b, w, w.Num(s => s.BreakRadius) ?? 4) * grow, dmg = Grown(w, w.Num(s => s.BreakDamage) ?? 60) * grow;
         double stun = w.Num(s => s.BreakStun) ?? 0.5, kb = w.Num(s => s.BreakKnockback) ?? 1.5;
         b.Events.Emit(new Ev.Spin { Phase = SpinPhase.Break, X = p.X, Z = p.Z, Radius = r, Heavy = true, Grow = grow });

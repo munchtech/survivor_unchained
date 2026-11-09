@@ -1,0 +1,16 @@
+{
+  "_doc": "Each calling's taught build in Act 1 (ARPG.md 3.1, the hands rule; the coordinator approved the warden's on 9 Nov, Dawnpulse offered later). grip: the held swing (LMB). slots: the six keys in order, each skill with its cast form (one its press record in skills.json allows: hold, press, channel, or kindle for a skill offered kindled) and the level it is taught at. later: offered after the six. union: the first Union and how it takes its keys. Read by Content/TaughtBuilds.cs (M6/M7: the tutorial and the lamp offer); Battle.SetForm applies a cast. HandsRuleTests holds the rule: at most two press or channel slots beside the grip (the dash is not a slot), at most six slots, and at least half the calling's kit offered kindled.",
+  "warden": {
+    "grip": "sunder",
+    "slots": [
+      { "skill": "sunder", "cast": "hold", "level": 1 },
+      { "skill": "groundbreaker", "cast": "kindle", "level": 1 },
+      { "skill": "heroic_leap", "cast": "press", "level": 4 },
+      { "skill": "shield_charge", "cast": "press", "level": 5 },
+      { "skill": "iron_vow", "cast": "kindle", "level": 7 },
+      { "skill": "watch_bell", "cast": "kindle", "level": 9 }
+    ],
+    "later": ["dawnpulse"],
+    "union": { "id": "bladestorm", "note": "takes Cleaver's and Sunder's keys when it comes" }
+  }
+}

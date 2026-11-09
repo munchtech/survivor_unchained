@@ -158,6 +158,8 @@ public sealed partial class Journey
         var b = new Battle(new BattleSetup
         {
             Seed = seed, Combat = combat, Collision = col, HeightAt = heightAt, Stats = kit.Stats,
+            // The campaign (ARPG.md 3.1): story fights press their skills; the arena keeps every skill self-firing.
+            Campaign = combat && !arena,
             StartX = x, StartZ = z, StartFacing = facing, Weapons = kit.Weapons, Triggers = kit.Triggers, Ability = kit.Ability,
             ArtRank = kit.ArtRank, Facets = kit.Facets, DashSteps = kit.DashSteps,
             Lamps = kit.Lamps, ReflexRanks = kit.ReflexRanks, Level = Ch.Level,
@@ -181,6 +183,8 @@ public sealed partial class Journey
         GearWeapons = kit.Weapons.Select(w => w.Id).ToHashSet();
         b.Favours.UnionWith(Callings.Archetype(Ch.Archetype).Favours);
         b.Calling = Ch.Archetype;
+        // The campaign runs each carried skill in its taught form (taught_builds.json: the grip held, the rest kindled or pressed).
+        if (b.Campaign) Content.TaughtBuilds.Apply(b, b.Calling);
         b.CallingPaths.UnionWith(Content.Paths.All.Where(p => p.Callings.Contains(Ch.Archetype)).Select(p => p.Id));
         // What is carried by day is attuned for the night (offered first, a
         // rank or two up); what is only learned comes a little more often.

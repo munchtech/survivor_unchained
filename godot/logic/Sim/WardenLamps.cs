@@ -61,6 +61,7 @@ public sealed partial class Battle
         var p = Player;
         Blocks++;
         BlockedAt = Time;
+        Resolve.Blocked();
         var l = Lamps;
         if (l.Board) BoardOnBlock(from);
         // bulwark.block.mend: each block mends a sliver while above half.

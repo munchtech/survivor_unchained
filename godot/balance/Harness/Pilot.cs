@@ -134,6 +134,8 @@ public static class Pilot
         var p = b.Player;
         if (rooted && b.ActiveTells.Count > 0) KitDash(b, mx, mz);
         if (rooted && b.ActiveTells.Count > 0) ClosingDash(b, presses);
+        // The campaign's grips (ARPG.md 3.1): anyone holds the swing on what is near; a pressing hand presses the rest.
+        if (b.Campaign) Grips(b);
         if (presses) PressSkills(b, rooted);
         // A champion winding up a lunge close by: dash across its line, as anyone with a dash learns to.
         // (Not a boss: its blows are marked on the ground, and Boss reads them by their shape.)
@@ -351,6 +353,33 @@ public static class Pilot
     /// the 8 m line ahead, the storm held while four or more stand within 3.5 m and broken once two lines are pending,
     /// with half a second left, or as the crowd thins with a line down (out of a storm, Sunder's key swung at what is near); Iron Vow when three or more stand within 3 m, or
     /// (one who reads the marks: sees) a marked blow about to land on her.</summary>
+    /// <summary>The campaign's held swings (a hold record: Sunder, Oathblade): held at the nearest foe within its reach and
+    /// a step, released with none.</summary>
+    static void Grips(Battle b)
+    {
+        var p = b.Player;
+        foreach (var w in b.Weapons)
+        {
+            if (!w.Hold) continue;
+            double reach = (w.Num(s => s.Reach) ?? 2.6) + 1.5;
+            var near = b.NearestHostile(p.X, p.Z, reach);
+            if (near == null) b.HoldSkill(w.Slot, false);
+            else b.HoldSkill(w.Slot, true, near.X, near.Z);
+        }
+    }
+
+    /// <summary>A campaign press the hand knows no better rule for (a spender, a wait): at the nearest foe in its reach
+    /// when ready and paid for.</summary>
+    static bool PressPlain(Battle b, WeaponInst w)
+    {
+        if (w.Press == null || w.Hold || w.Cast != CastMode.Press || w.Timer > 0) return false;
+        if (b.Resolve.On && b.Resolve.Value < (w.Press.Resolve ?? 0)) return false;
+        var p = b.Player;
+        double reach = w.Press.Aim == PressAim.Self ? (w.Num(s => s.Radius) ?? 3.5) : w.Press.Reach ?? w.AimRange;
+        var near = b.NearestHostile(p.X, p.Z, reach);
+        return near != null && b.PressSkill(w.Slot, near.X, near.Z);
+    }
+
     static void PressSkills(Battle b, bool sees = true)
     {
         var p = b.Player;
@@ -412,7 +441,9 @@ public static class Pilot
                     // Out of a storm (on its cooldown, or too few for one), Sunder's key swings Sunder at what is in reach.
                     if (w.Slot2 >= 0 && !Firing.InStorm(b, w) && b.HostilesInRadius(p.X, p.Z, 3.5).Count > 0) b.PressSkill(w.Slot2, p.X, p.Z);
                 }
+                continue;
             }
+            if (w.Behavior is not (WeaponBehavior.Leap or WeaponBehavior.Charge or WeaponBehavior.Brace) && PressPlain(b, w)) return;
         }
     }
 

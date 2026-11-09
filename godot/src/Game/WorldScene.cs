@@ -32,12 +32,19 @@ public partial class WorldScene : Node3D, IZoneLook
     /// the Buffer, fired toward the cursor's ground point, or with none her facing times the skill's range.</summary>
     void Skills(Battle b)
     {
+        // The pointer each step (with none, her facing ahead): a held skill (the grips, campaign) repeats at it.
+        var pt = Pointer();
+        {
+            var p0 = b.Player;
+            b.AimSkills(pt?.X ?? p0.X + Math.Sin(p0.Facing) * 6, pt?.Z ?? p0.Z + Math.Cos(p0.Facing) * 6);
+        }
         for (int i = 0; i < skillHeld.Length; i++)
         {
             b.HoldSkill(i, Held(Controls.Skills[i]));
             if (Pressed(Controls.Skills[i])) skillHeld[i] = Buffer;
             if (skillHeld[i] <= 0) continue;
-            if (b.OnSlot(i) is not { Pressed: true } w) { skillHeld[i] = 0; continue; }
+            // (A kindled skill's key too, in the campaign: its riposte, flare or now.)
+            if (b.OnSlot(i) is not { Keyed: true } w) { skillHeld[i] = 0; continue; }
             var p = b.Player;
             var aim = Pointer() ?? (p.X + Math.Sin(p.Facing) * w.AimRange, p.Z + Math.Cos(p.Facing) * w.AimRange);
             skillHeld[i] = b.PressSkill(i, aim.X, aim.Z) ? 0 : skillHeld[i] - Step;

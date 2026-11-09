@@ -49,7 +49,9 @@ public sealed partial class Battle
     public bool PressSkill(int slot, double aimX, double aimZ)
     {
         if (!Combat || !Player.Alive || FlareHold > 0) return false;
-        if (OnSlot(slot) is not { } w || !w.Pressed) return false;
+        if (OnSlot(slot) is not { } w) return false;
+        // A kindled skill's key (campaign): its live press (now, riposte, flare, command).
+        if (!w.Pressed) { if (!w.KindledNow) return false; SkillAim = (aimX, aimZ); return KindledPress(w); }
         SkillAim = (aimX, aimZ);
         // Bladestorm (a spin union): its first key (its part A's, the Cleaver's) spins; its second (the Sunder's), pressed
         // fresh in the storm or within its BreakWindow after, breaks it (a grip held, or a press buffered, from before the
@@ -65,6 +67,13 @@ public sealed partial class Battle
 
     /// <summary>Whether a slot's key is held, every sim step (a channel runs while it is; a union reads both its
     /// slots).</summary>
+    /// <summary>HoldSkill with the aim this step (the cursor's point): a held skill repeats at it.</summary>
+    public void HoldSkill(int slot, bool held, double aimX, double aimZ)
+    {
+        SkillAim = (aimX, aimZ);
+        HoldSkill(slot, held);
+    }
+
     public void HoldSkill(int slot, bool held)
     {
         if (slot < 0 || slot >= heldSlots.Length) return;
@@ -101,6 +110,8 @@ public sealed partial class Battle
         if (sa >= 0 && sb >= 0) (w.Slot, w.Slot2) = (sa, sb);
         else if (sa >= 0) (w.Slot, w.Slot2) = (sa, free.Where(s => s != sa).Min());
         else if (sb >= 0) (w.Slot, w.Slot2) = (free.Where(s => s != sb).Min(), sb);
+        // Its parts' lit lamps come with it, as a union made at a lamp-post keeps them (a spin's: each on its own half).
+        if (a != null || c != null) CarryTurns(w, a, c);
         Events.Emit(new Ev.Evolve { Weapon = u.Into, Into = u.Id });
         return w;
     }

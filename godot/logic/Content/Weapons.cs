@@ -92,6 +92,9 @@ public sealed class WeaponStats
     /// <summary>Spin: the break grows with the storm she spent, from x1 at BreakFrom seconds to BreakGrow at its longest
     /// (ChannelTime), linearly, on its damage and its radius.</summary>
     public double? BreakFrom, BreakGrow;
+    /// <summary>Spin, in the campaign with Resolve: the break grows with the Resolve the storm spent instead, x1 at none to
+    /// BreakGrow at BreakSpent (100), linearly.</summary>
+    public double? BreakSpent;
     /// <summary>Brace (Iron Vow): she plants Plant seconds (no walking), then braces Brace seconds; blows on her while it
     /// holds land at Halve, and Store of each (before the halving) is stored; it ends in a burst of Radius for Damage plus
     /// the store times StoreMul, Knockback outward, a lesser foe stunned Stun seconds.</summary>
@@ -117,6 +120,54 @@ public sealed class KindleDef
     public int? Count;
     public KindleDef[]? Any;
 }
+
+/// <summary>The ARPG press record (skills.json "press"; ARPG.md 3.1): how a skill is set off in the campaign
+/// (Battle.Campaign; the arena keeps "cast"/"kindle" and never reads this). Every field optional:
+///   kind: hold (fires whenever ready while its key is held: the grips), press (once a press; the default), channel
+///     (runs while held), kindle (fires itself on its kindle condition; its key does `kindled.press`);
+///   kindled: the kindled OPTION (a slot may run the skill in either form, WeaponInst.SetForm): its condition (KindleDef
+///     fields; none, the skill's own "kindle") and what its key does then (now | riposte | flare | command);
+///   aim: hover (the foe nearest the aim point within 1.5 m of it and within reach; else the point clamped to reach; the
+///     default), point (the point clamped to reach), self; reach (m; absent, the skill's range/reach); pad: stick | facing (M4);
+///   walk: her pace while the cast plays (0.7), castTime (s, 0.35), plant (s she stands, at most 0.3: the heavy commits);
+///   wait: its cooldown in the campaign (absent: its base cooldown; a spender whose calling has no resource to pay
+///     keeps its base cooldown and channel cap, since its wait assumed the cost as the limit);
+///   resolve: Resolve a press costs (spenders); drain: Resolve a second while it channels (Bladestorm);
+///   builds: Resolve a landed swing gives (it struck at least one foe), plus buildsEach for each foe past the first (at
+///     most buildsMost), times heavyMul on a heavy swing (Sim/Resolve.cs).</summary>
+public sealed class PressDef
+{
+    public PressKind? Kind;
+    public PressKindled? Kindled;
+    public PressAim? Aim;
+    public double? Reach;
+    public PadAim? Pad;
+    public double? Walk, CastTime, Plant, Wait, Resolve, Drain, Builds, BuildsEach, BuildsMost, HeavyMul;
+}
+
+/// <summary>A skill's kindled option (PressDef.Kindled): the condition (KindleDef's fields; none set, the skill's own
+/// "kindle", else its wait alone) and its key's live press.</summary>
+public sealed class PressKindled
+{
+    public string? When;
+    public bool? Big;
+    public double? Radius, Within, Below;
+    public int? Count;
+    public KindleDef[]? Any;
+    public KindlePress? Press;
+    /// <summary>Its key's own wait in the kindled form (riposte, flare, command; absent: the skill's base cooldown).</summary>
+    public double? Wait;
+
+    /// <summary>The condition as a KindleDef, or null when it names none.</summary>
+    public KindleDef? Condition() => When == null && Any is not { Length: > 0 } ? null
+        : new KindleDef { When = When, Big = Big, Radius = Radius, Within = Within, Below = Below, Count = Count, Any = Any };
+}
+
+public enum PressKind { Press, Hold, Channel, Kindle }
+public enum PressAim { Hover, Point, Self }
+public enum PadAim { Stick, Facing }
+/// <summary>A kindled skill's key: fire now (its condition skipped), ready a riposte (2 s), flare an aura (3 s), command a summon.</summary>
+public enum KindlePress { Now, Riposte, Flare, Command }
 
 public sealed class Evolution
 {
@@ -147,6 +198,8 @@ public sealed class WeaponDef
     public CastMode Cast;
     /// <summary>An auto skill fires itself only when this holds too (absent: on its wait alone).</summary>
     public KindleDef? Kindle;
+    /// <summary>How it is set off in the campaign (ARPG.md 3.1): null, as "cast" says everywhere.</summary>
+    public PressDef? Press;
     public Tag[] Tags = System.Array.Empty<Tag>();
     /// <summary>The callings that may carry it (a kindred pair); absent, everyone
     /// (the valley's). A union's is never set: it is its parts' in common.</summary>
