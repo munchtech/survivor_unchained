@@ -60,7 +60,22 @@ public sealed class Autopilot
     void PlanStep(Battle b)
     {
         if (!b.Campaign || Idle || Toward || Away || Across || Talk || g.InTransit || g.InCinematic || !b.Player.Alive) return;
+        if (!Args.Has("clip")) { PressPlan.Run(b, planHands); return; }
+        // --clip: one line per press the plan makes (the shape of ScriptedPress's), a print only.
+        var before = new Dictionary<string, int>(planHands.Presses);
+        var held = b.Weapons.ToDictionary(w => w, w => w.Held);
+        var kind = b.Weapons.ToDictionary(w => w, w => w.KindledNow);
+        double resolve = b.Resolve.Value;
         PressPlan.Run(b, planHands);
+        foreach (var w in b.Weapons)
+        {
+            string? k = null;
+            if (planHands.Presses.GetValueOrDefault(w.Id) > before.GetValueOrDefault(w.Id)) k = kind[w] ? "kindle" : "press";
+            else if (w.Held && !held[w] && w.Hold) k = "hold-start";
+            else if (!w.Held && held[w] && w.Hold) k = "hold-end";
+            if (k != null) Godot.GD.Print(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "skill press frame {0} slot {1} t {2:0.00} skill {3} kind {4} resolve {5:0.0}/{6:0}", Godot.Engine.GetFramesDrawn(), w.Slot + 1, g.Journey.Playtime, w.Id, k, resolve, b.Resolve.Max));
+        }
     }
 
     readonly Picker picker = Picker.Make(Args.Get("draft") ?? "greedy");
@@ -68,7 +83,12 @@ public sealed class Autopilot
 
     /// <summary>A press the survivor makes this step (taken once).</summary>
     public bool Take(Act a) => pressed.Remove(a);
-    void Press(Act a) => pressed.Add(a);
+    void Press(Act a)
+    {
+        pressed.Add(a);
+        if (a == Act.Dash && Args.Has("clip") && g.Battle is { } db)
+            Godot.GD.Print(string.Format(System.Globalization.CultureInfo.InvariantCulture, "skill press frame {0} slot dash t {1:0.00} skill dash kind dash resolve {2:0.0}/{3:0}", Godot.Engine.GetFramesDrawn(), g.Journey.Playtime, db.Resolve.Value, db.Resolve.Max));
+    }
 
     double draftFor;
     static readonly double DraftHold = Args.Num("draft-hold", 0);
