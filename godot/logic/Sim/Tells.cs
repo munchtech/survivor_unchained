@@ -77,6 +77,8 @@ public sealed partial class Battle
     public double KitDamageMul = 1;
     /// <summary>(M3) The kit's cadence in a story fight by world tier (Encounters: champions' affixes, packs' tells): waits x this.</summary>
     public double KitEveryMul = 1;
+    /// <summary>(M3) The stand clock in a story fight by world tier (WorldTiers' `stand`, read by Encounters with Campaign on). Null: none.</summary>
+    public SurvivorUnchained.Content.Teeth.Director? StoryStand;
 
     /// <summary>The kit telegraphs alive now (their windups, a charger's run): the hands read a pull's reach here.</summary>
     public IReadOnlyList<TellOn> ActiveTells => tells;

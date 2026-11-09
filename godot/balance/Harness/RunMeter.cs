@@ -20,6 +20,11 @@ public sealed class RunMeasures
     public Dictionary<string, double> DamageShare = new();
     public int FlareCasts;
     public double FlareFirst = -1, FlareShare, FlareBossShare = double.NaN;
+    /// <summary>(M3 round 4) The Flare's share of the life the bosses lost (BossHealthBy: a gate's overflow past its Break counts not).</summary>
+    public double FlareBossLife = double.NaN;
+    /// <summary>(M3 round 3) Casts whose blows reached a boss, and what filled the meter (by why, in meters of 100).</summary>
+    public int FlareOnBoss;
+    public string FlareFills = "";
     /// <summary>Falls: when, where and what took her.</summary>
     public List<string> Falls = new();
     /// <summary>(M3 round 2) Each fall's last 5 s: the blows on her (marked by their label or not, their source), her life,
@@ -35,7 +40,7 @@ public sealed class RunMeasures
     public string Line() =>
         $"gap {(double.IsNaN(MarkGapMax) ? "-" : MarkGapMax.ToString("0"))}s marks {MarksOnHer} rspent {ResolveSpentPerMin:0}/min rfull {ResolveFullPct:0}% " +
         $"ppm {string.Join(",", PressesPerMin.OrderByDescending(kv => kv.Value).Select(kv => kv.Key + ":" + kv.Value.ToString("0.0")))} " +
-        $"flare {FlareCasts}@{FlareFirst:0} {FlareShare:0}%/{(double.IsNaN(FlareBossShare) ? "-" : FlareBossShare.ToString("0"))}%boss " +
+        $"flare {FlareCasts}@{FlareFirst:0} {FlareShare:0}%/{(double.IsNaN(FlareBossShare) ? "-" : FlareBossShare.ToString("0"))}%boss life {(double.IsNaN(FlareBossLife) ? "-" : FlareBossLife.ToString("0"))}% onboss {FlareOnBoss} fills {FlareFills} " +
         $"dmg {string.Join(",", DamageShare.OrderByDescending(kv => kv.Value).Take(6).Select(kv => kv.Key + ":" + kv.Value.ToString("0")))}" +
         (Falls.Count > 0 ? $" falls [{string.Join("; ", Falls)}]" : "") +
         $" low {LowLife:0.00} taken {string.Join(",", Taken.Where(kv => kv.Key[0] is not ('#' or '+')).OrderByDescending(kv => kv.Value).Take(6).Select(kv => kv.Key + ":" + kv.Value.ToString("0.0")))}" +
@@ -152,9 +157,13 @@ public sealed class RunMeter
         foreach (var (k, v) in b.DamageBy) if (v > 0) m.DamageShare[k] = 100 * v / Math.Max(1, all);
         m.FlareCasts = b.FlareCasts;
         m.FlareFirst = b.FlareTimes.Count > 0 ? b.FlareTimes[0] : -1;
+        m.FlareOnBoss = b.FlareCastsOnBoss;
+        m.FlareFills = string.Join(",", b.FlareFills.OrderByDescending(kv => kv.Value).Select(kv => kv.Key + ":" + (kv.Value / Battle.FlareFull).ToString("0.0")));
         m.FlareShare = 100 * b.DamageBy.GetValueOrDefault("flare") / Math.Max(1, all);
         double boss = b.BossDamageBy.Values.Sum();
         if (boss > 0) m.FlareBossShare = 100 * b.BossDamageBy.GetValueOrDefault("flare") / boss;
+        double life = b.BossHealthBy.Values.Sum();
+        if (life > 0) m.FlareBossLife = 100 * b.BossHealthBy.GetValueOrDefault("flare") / life;
         m.Falls.AddRange(falls);
         m.FallNotes.AddRange(notes);
         m.LowLife = low;

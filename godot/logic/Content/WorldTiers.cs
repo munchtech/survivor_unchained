@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using SurvivorUnchained.Core;
@@ -15,6 +16,9 @@ public static class WorldTiers
         public double Health = 1, Damage = 1, Rare = 1, Legendary = 1, Kit = 1;
         /// <summary>(M3) The kit's cadence in story fights (champions' affixes, packs' tells): their waits x this (under 1, more marks).</summary>
         public double KitEvery = 1;
+        /// <summary>(M3) The stand clock in story fights (H6's rule, Teeth.Director's stand fields; Encounters through
+        /// StandClock): a woken pack's foe charges her when she has not moved StandMoved in StandFor s. Null: none.</summary>
+        public Teeth.Director? Stand;
         public int ItemLevels;
         /// <summary>The world fact that opens this tier (null: always open).</summary>
         public string? Opens;
@@ -36,6 +40,11 @@ public static class WorldTiers
 
     /// <summary>Tier n (1-4); an unknown n is the default tier.</summary>
     public static Tier Get(int n) => F.Tiers.TryGetValue(n.ToString(), out var t) ? t : F.Tiers[F.Default.ToString()];
+
+    /// <summary>(M3 round 4) The row a Wayfinder's map of this chart tier presses with (its kit, kitEvery and stand only: a
+    /// map keeps its own health and damage by level): the chart's tier, past the last row the last (the lead: a map's
+    /// tier is the world tier's kit and stand rows).</summary>
+    public static Tier ForMap(int chartTier) => Get(Math.Clamp(chartTier, Numbers.First(), Numbers.Last()));
 
     /// <summary>The world's tier: its fact, else the default.</summary>
     public static int Of(WorldState w)

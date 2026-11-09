@@ -78,8 +78,20 @@ public sealed partial class Battle
         if (e.Boss && !flareStruckBoss) { flareStruckBoss = true; FlareCastsOnBoss++; }
         // A staged Flare's measure on a boss ("bossMul"): its blows can gather on a boss as the plain form's never did.
         if (e.Boss) share *= Flare!.Arg("bossMul", 1);
+        // (M3 round 3-4) The campaign's cut (story fights and the Wayfinder's maps, both Campaign): one Flare takes at most
+        // StoryBossCut of a boss's max life, its blows sharing it, counted after the build's multipliers (round 4: counted
+        // before them, a level-30 build's x5-x8 made the cut 50-80% of a map ruler's life, 61-87% of his damage).
+        double? cap = null;
+        if (e.Boss && Campaign)
+        {
+            if (flareBossBudget < 0) flareBossBudget = StoryBossCut * e.MaxHp;
+            if (flareBossBudget <= 0) { FlareMarkHit(e); return 0; }
+            cap = flareBossBudget;
+        }
         FlareMarkHit(e);
-        return HitEnemy(e, flarePower * share, school, Flare!.Tags, new HitOpts { Credit = "flare", BossDamage = vsBig, Knockback = e.Boss ? 0 : knockback, DirX = dx / d, DirZ = dz / d });
+        double dealt = HitEnemy(e, flarePower * share, school, Flare!.Tags, new HitOpts { Credit = "flare", BossDamage = vsBig, Knockback = e.Boss ? 0 : knockback, DirX = dx / d, DirZ = dz / d, Cap = cap });
+        if (cap != null) flareBossBudget = Math.Max(0, flareBossBudget - dealt);
+        return dealt;
     }
 
     int FlareHitstop(FlareDef f, bool last, string key = "hitstop") =>

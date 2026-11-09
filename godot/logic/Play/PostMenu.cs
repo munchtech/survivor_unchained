@@ -102,7 +102,7 @@ public static class PostMenu
             e.Hp *= hp;
             e.Damage *= dmg;
         }
-        b.WorldHealth = t.Health; b.WorldDamage = t.Damage; b.KitDamageMul = t.Kit; b.KitEveryMul = t.KitEvery;
+        b.WorldHealth = t.Health; b.WorldDamage = t.Damage; b.KitDamageMul = t.Kit; b.KitEveryMul = t.KitEvery; b.StoryStand = t.Stand;
         return true;
     }
 
