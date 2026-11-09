@@ -1,0 +1,21 @@
+{
+ "what": "L7 S1c (lead 7, 9 Nov: the class mids calibrated in closed loop): a class's mid comes off its board (color_chain.py solve), then the kits paint the light in (the top gradient, the lit bevel, the cool cavity), so the mid from the boards' lit tops counted the light twice. Per class, the in-game lit read (the frame's lit blocks at the play zoom, the kits' painting on) against its reference (the picked G1 day targets where they show the class; the targets rule the mid, the boards the painting inside the block): gain = reference / read per channel (linear), times the gain before. color_chain.py solve multiplies the class's albedo by it. Re-calibrate: shoot, read, update.",
+ "classes": {
+  "grass": {
+   "gain": [
+    0.3177,
+    0.4425,
+    1.7451
+   ],
+   "from": "G1 07's lit grass (a fresh mid green; MB4's lit tops are yellower and lighter: the target rules the mid): target 07_r5 box [200, 150, 500, 350] lit (0.549, 0.091, 107) against the game's 07 (c/l7/s1c, box [100, 150, 600, 450]) lit (0.744, 0.144, 94), mask {'h': [80, 160], 'lit': True}"
+  },
+  "setts": {
+   "gain": [
+    0.8122,
+    0.653,
+    0.6108
+   ],
+   "from": "G1 07's lit setts up the road (warm sandy-beige): target 07_r5 box [720, 100, 960, 340] lit (0.714, 0.085, 46) against the game's 07 (c/l7/s1c, box [800, 100, 1100, 400]) lit (0.8, 0.072, 52), mask {'lit': True}"
+  }
+ }
+}

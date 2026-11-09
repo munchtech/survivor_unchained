@@ -246,6 +246,17 @@ def day_lit_gain(cards, sun):
     return np.exp(np.mean(np.log(ks), 0))
 
 
+DERIVED = {"cloth": ("plank", 0.04, 75, "MB3's plank (the beam and barrel, undyed wood's tan) lightness; C 0.04 and h 75 the middle of lead 7's undyed band (h 60-80, C 0.03-0.05); no picked board or target shows a lit undyed cloth that divides clean (G1 13's lit sacks give h 97, C 0.068)")}
+
+
+def oklab_to_lin(L, C, h):
+    a, b = C * np.cos(np.radians(h)), C * np.sin(np.radians(h))
+    l_, m_, s_ = L + 0.3963377774 * a + 0.2158037573 * b, L - 0.1055613458 * a - 0.0638541728 * b, L - 0.0894841775 * a - 1.2914855480 * b
+    l, m, s = l_ ** 3, m_ ** 3, s_ ** 3
+    return np.array([4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+                     -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s])
+
+
 NIGHT_SLOPE = 0.98  # (the night cards' slope, g18 to g50 in blue: 0.156 -> 0.424 over 0.18 -> 0.5)
 SLOPE = 0.75  # (the cards' mean log-log slope of drawn over albedo, lit and shade, day and night: the refine's damping)
 
@@ -310,6 +321,19 @@ def solve(name="cards", night_name=None, refine=None):
         a = np.exp(np.mean([np.log(np.maximum(r, 1e-5)) for _, r in rows], 0))
         alb[c] = {"linear": np.clip(a, 0.005, 0.9).round(4).tolist(), "hex": lin_to_hex(np.clip(a, 0.005, 0.9)),
                   "from": {m: np.round(r, 4).tolist() for m, r in rows}}
+    # (L7 S1c) the closed-loop calibration (godot/data/look/calibration.json): a class's in-game lit read against its reference
+    # (the picked targets where they show it), per channel, the kits' painting in it
+    calp = os.path.join(DATA, "calibration.json")
+    for c, x in (json.load(open(calp, encoding="utf-8"))["classes"].items() if os.path.exists(calp) else ()):
+        if c not in alb: continue
+        a = np.clip(np.array(alb[c]["linear"]) * np.array(x["gain"]), 0.005, 0.9)
+        alb[c].update({"calibrated": x["gain"], "linear": a.round(4).tolist(), "hex": lin_to_hex(a)})
+    # (L7 S1c) a class no board shows undyed (cloth: the props' canvas, linen, sacking and rope; MB2's cloth is her navy) takes a
+    # named neighbour's lightness at the undyed band's chroma and hue (lead 7: tan, h 60-80, C 0.03-0.05, never rose)
+    for c, (src, C, h, why) in DERIVED.items():
+        if src not in alb: continue
+        L = lab(alb[src]["linear"])[0]; a = np.clip(oklab_to_lin(L, C, h), 0.005, 0.9)
+        alb[c] = {"linear": a.round(4).tolist(), "hex": lin_to_hex(a), "from": {f"{src} L, C {C}, h {h}": why}}
     # the refine (one round, the relit check REFINE: the solved albedos drawn under the solved rigs): each class's albedo times
     # (board / drawn)^(1/SLOPE) per channel on its day lit sides, and the night gains times the median of the same over the
     # night swatches; a class whose own card the stage shades (its 0.18 card's lit 30%+ under the neutral card's) is not refined
