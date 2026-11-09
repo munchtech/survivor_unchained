@@ -29,6 +29,10 @@ public partial class P4Pack : Node
             for (int t = 0; t < a0.GetTrackCount(); t++)
                 if (a0.TrackGetType(t) == Animation.TrackType.Rotation3D) { skelPath = a0.TrackGetPath(t).GetConcatenatedNames(); break; }
         }
+        // B's blend base (P1BlendBase, first of B's modifiers, turns each of its bones by t on the mixer's pose, for the
+        // bridge clips' keys R_B M^-1 q): a P4 clip is keyed in B's own locals, so its keys on those bones are written
+        // t^-1 q, and t (t^-1 q) = q: the clip plays exactly as built while the bridge clips need the base.
+        var baseTurn = P1Body.BlendBase().ToDictionary(x => x.Bone, x => x.Turn);
         var outLib = new AnimationLibrary();
         var files = DirAccess.GetFilesAt(dir).Where(f => f.EndsWith(".json")).OrderBy(f => f).ToArray();
         foreach (var file in files)
@@ -40,18 +44,20 @@ public partial class P4Pack : Node
             int frames = r.GetProperty("frames").GetInt32();
             bool loop = r.GetProperty("loop").GetBoolean();
             var anim = new Animation { Length = (float)((frames - 1) / fps), LoopMode = loop ? Animation.LoopModeEnum.Linear : Animation.LoopModeEnum.None, Step = (float)(1 / fps) };
-            int bones = 0;
+            int bones = 0, based = 0;
             foreach (var b in r.GetProperty("rot").EnumerateObject())
             {
                 int tr = anim.AddTrack(Animation.TrackType.Rotation3D);
                 anim.TrackSetPath(tr, $"{skelPath}:{b.Name}");
+                var pre = baseTurn.TryGetValue(b.Name, out var t) ? t.Inverse() : Quaternion.Identity;
                 int f = 0;
                 foreach (var q in b.Value.EnumerateArray())
                 {
                     var v = q.EnumerateArray().Select(x => (float)x.GetDouble()).ToArray();
-                    anim.RotationTrackInsertKey(tr, f++ / fps, new Quaternion(v[0], v[1], v[2], v[3]).Normalized());
+                    anim.RotationTrackInsertKey(tr, f++ / fps, (pre * new Quaternion(v[0], v[1], v[2], v[3]).Normalized()).Normalized());
                 }
                 bones++;
+                if (baseTurn.ContainsKey(b.Name)) based++;
             }
             foreach (var b in r.GetProperty("pos").EnumerateObject())
             {
@@ -67,7 +73,9 @@ public partial class P4Pack : Node
             // A gait's ground speed at 1.0x (its locked stance's, m/s of B's skeleton): the game plays it at this on B.
             if (r.TryGetProperty("speed_mps", out var sp) && sp.ValueKind == System.Text.Json.JsonValueKind.Number) anim.SetMeta("speed", sp.GetDouble());
             outLib.AddAnimation(name, anim);
-            GD.Print($"p4-pack: {name}: {frames} frames, {bones} bones, {(loop ? "loop" : "once")}, {anim.Length:F3} s");
+            var missing = baseTurn.Keys.Where(k => !r.GetProperty("rot").TryGetProperty(k, out _)).ToArray();
+            GD.Print($"p4-pack: {name}: {frames} frames, {bones} bones ({based} under the blend base, pre-turned), {(loop ? "loop" : "once")}, {anim.Length:F3} s" +
+                     (missing.Length > 0 ? $"; NOT KEYED under the blend base (they land on t): {string.Join(" ", missing)}" : ""));
         }
         var err = ResourceSaver.Save(outLib, P1Body.Dir + "p4_clips.res", ResourceSaver.SaverFlags.Compress);
         GD.Print($"p4-pack: wrote p4_clips.res ({files.Length} clips, track path {skelPath}): {err}");
