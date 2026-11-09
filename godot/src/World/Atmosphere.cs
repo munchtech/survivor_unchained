@@ -312,10 +312,12 @@ public partial class Atmosphere : Node3D
         // play's presets (E1) nudged, for a sweep of pictures in one build (under cel, the rig's light nudged).
         if (Tune != null && (ReferenceEquals(orig, Atmospheres.LowFordNight) || ReferenceEquals(orig, Atmospheres.LowFordDawn)
             || ReferenceEquals(orig, Atmospheres.WaystationDawn) || ReferenceEquals(orig, Atmospheres.WaystationDay) || ReferenceEquals(orig, Atmospheres.NightTown)
-            || p.CrowdFill > 0 || ReferenceEquals(orig, Atmospheres.Front)))   // (H2 R1: an ember arena's night, the only preset with the crowd's fill; R3: the title)
+            || p.CrowdFill > 0 || ReferenceEquals(orig, Atmospheres.Front)   // (H2 R1: an ember arena's night, the only preset with the crowd's fill; R3: the title)
+            || ReferenceEquals(orig, Atmospheres.Title) || ReferenceEquals(orig, Atmospheres.CineNight)))   // (L1 lead 9: the title's and the cinematics' night rigs)
         {
             bool front = ReferenceEquals(orig, Atmospheres.Front);
             double T(string k, double v) => Tune.TryGetValue(k, out var x) ? double.Parse(x, System.Globalization.CultureInfo.InvariantCulture) : v;
+            ZoneView.FireShare = (float)T("fires", ZoneView.FireShare);   // (L1 lead 9: the fires' share, rigs.json "fires")
             string H(string k, string v) => Tune.TryGetValue(k, out var x) ? x : v;
             double[] V(string k, double[] v) => Tune.TryGetValue(k, out var x)
                 ? x.Split('/').Select(n => double.Parse(n, System.Globalization.CultureInfo.InvariantCulture)).ToArray() : v;
@@ -559,10 +561,12 @@ public partial class Atmosphere : Node3D
         var img = Image.CreateEmpty(W, 1, false, Image.Format.Rgbaf);
         for (int x = 0; x < W; x++)
         {
-            var ec = (p.EmberColor != "" ? new Color(p.EmberColor) : new Color("#ffa868")).SrgbToLinear();
-            var ed = new Color(p.EmberEdge).SrgbToLinear();
-            float le = ec.R * 0.2126f + ec.G * 0.7152f + ec.B * 0.0722f, ld = Mathf.Max(ed.R * 0.2126f + ed.G * 0.7152f + ed.B * 0.0722f, 1e-4f);
-            tint = new Vector4(ed.R / Mathf.Max(ec.R, 1e-4f), ed.G / Mathf.Max(ec.G, 1e-4f), ed.B / Mathf.Max(ec.B, 1e-4f), tint.W) * new Vector4(le / ld, le / ld, le / ld, 1);
+            float d = reach * x / (W - 1);
+            int j = 0; while (j < n - 2 && d > r[j + 1]) j++;
+            float t = Mathf.Clamp((d - r[j]) / Mathf.Max(r[j + 1] - r[j], 1e-4f), 0, 1);
+            float l = Mathf.Lerp(lv[j], lv[j + 1], t);
+            var col = c[j].Lerp(c[j + 1], t);
+            img.SetPixel(x, 0, new Color(col.R * l, col.G * l, col.B * l, Mathf.Clamp(l / core, 0, 1)));
         }
         return (ImageTexture.CreateFromImage(img), reach, core);
     }
