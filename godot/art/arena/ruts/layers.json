@@ -1,7 +1,7 @@
 {
  "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
  "painted": 2,
- "inputs": "4baad1e70df9",
+ "inputs": "539ae0dc211a",
  "from": "(c) the Ruts' layers (verge, churn, ruts, wet, camp, metal, face); (b) MB4 road, targets 04 and 05",
  "layers": [
   {
@@ -12,8 +12,8 @@
    "from": "MB4 grass and road (the verge: golden-green clumps, worn); targets 04 and 05",
    "mean": [
     0.19452,
-    0.24493,
-    0.04507
+    0.24917,
+    0.04364
    ]
   },
   {
@@ -25,7 +25,7 @@
    "mean": [
     0.11411,
     0.09861,
-    0.03533
+    0.03408
    ]
   },
   {
@@ -37,7 +37,7 @@
    "mean": [
     0.06216,
     0.0546,
-    0.02033
+    0.01965
    ]
   },
   {
@@ -49,7 +49,7 @@
    "mean": [
     0.0736,
     0.07465,
-    0.03512
+    0.03387
    ]
   },
   {
@@ -61,7 +61,7 @@
    "mean": [
     0.12325,
     0.09973,
-    0.03357
+    0.03236
    ]
   },
   {
@@ -71,9 +71,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 road (the metalled way: small rounded stones in masses)",
    "mean": [
-    0.14168,
+    0.14167,
     0.13928,
-    0.06353
+    0.06184
    ]
   },
   {
@@ -84,8 +84,8 @@
    "from": "MB4 road (the cut bank's earth as big planes)",
    "mean": [
     0.13614,
-    0.12646,
-    0.05243
+    0.12647,
+    0.05088
    ]
   }
  ],

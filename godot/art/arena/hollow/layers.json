@@ -1,7 +1,7 @@
 {
  "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
  "painted": 2,
- "inputs": "762f5e01b596",
+ "inputs": "3a077c1b8991",
  "from": "(c) the Deep Shaw's layers (ArenaGround.cs order: litter, rot, roots, mud, bed, needles, face); (b) targets 09, 10, 12 and MB4 night",
  "layers": [
   {
@@ -13,7 +13,7 @@
    "mean": [
     0.24983,
     0.24723,
-    0.11879
+    0.11624
    ]
   },
   {
@@ -25,7 +25,7 @@
    "mean": [
     0.09172,
     0.10333,
-    0.05609
+    0.05445
    ]
   },
   {
@@ -35,9 +35,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "(c) the roots' runs; rule 9 (wood as a few long strokes)",
    "mean": [
-    0.11895,
-    0.12206,
-    0.06097
+    0.11896,
+    0.12205,
+    0.05925
    ]
   },
   {
@@ -49,7 +49,7 @@
    "mean": [
     0.07529,
     0.08358,
-    0.04511
+    0.04366
    ]
   },
   {
@@ -59,9 +59,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 water and rock: the bed's stones as rounded flat planes, moon-grey",
    "mean": [
-    0.28439,
-    0.2636,
-    0.17356
+    0.28438,
+    0.26661,
+    0.17668
    ]
   },
   {
@@ -73,7 +73,7 @@
    "mean": [
     0.25172,
     0.24513,
-    0.10247
+    0.10013
    ]
   },
   {
@@ -85,7 +85,7 @@
    "mean": [
     0.13937,
     0.18568,
-    0.10033
+    0.09805
    ]
   }
  ],

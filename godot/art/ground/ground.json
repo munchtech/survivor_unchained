@@ -1,7 +1,7 @@
 {
  "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
  "painted": 2,
- "inputs": "e96e4c6463b9",
+ "inputs": "b60529359a5f",
  "from": "(c) the terrain zones' seven layers as terrain.gdshader reads them (Ground.cs: the Verge, the Low Ford, the Waystation, the title's camp, C01's frost)",
  "layers": [
   {
@@ -12,8 +12,8 @@
    "from": "MB4 grass (day): golden-green big flat clumps, olive and worn, never lime; target 04's verge; rule 4",
    "mean": [
     0.14055,
-    0.20459,
-    0.04755
+    0.20848,
+    0.04607
    ]
   },
   {
@@ -25,7 +25,7 @@
    "mean": [
     0.05476,
     0.04456,
-    0.03311
+    0.03191
    ]
   },
   {
@@ -37,7 +37,7 @@
    "mean": [
     0.10614,
     0.07724,
-    0.06536
+    0.06357
    ]
   },
   {
@@ -49,7 +49,7 @@
    "mean": [
     0.03731,
     0.03192,
-    0.02778
+    0.0267
    ]
   },
   {
@@ -61,7 +61,7 @@
    "mean": [
     0.17178,
     0.19569,
-    0.10159
+    0.09935
    ]
   },
   {
@@ -72,8 +72,8 @@
    "from": "MB4 rock: a few big rounded planes in muted moon-blue grey, moss on the top planes",
    "mean": [
     0.21443,
-    0.21427,
-    0.12495
+    0.2166,
+    0.12752
    ]
   },
   {
@@ -85,7 +85,7 @@
    "mean": [
     0.01676,
     0.01787,
-    0.01994
+    0.01931
    ]
   }
  ],

@@ -1,7 +1,7 @@
 {
  "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
  "painted": 2,
- "inputs": "a7d7212ad633",
+ "inputs": "6b26f2ff205a",
  "from": "(c) the Dig's layers (clay, spoil, ballast, slurry, rust, burnt, face); (b) MB4 rock and road",
  "layers": [
   {
@@ -13,7 +13,7 @@
    "mean": [
     0.36474,
     0.24169,
-    0.05692
+    0.05527
    ]
   },
   {
@@ -25,7 +25,7 @@
    "mean": [
     0.12923,
     0.1137,
-    0.07783
+    0.07978
    ]
   },
   {
@@ -36,8 +36,8 @@
    "from": "MB4 rock (broken stone, grey-brown over the clay)",
    "mean": [
     0.17364,
-    0.13624,
-    0.07604
+    0.13727,
+    0.07797
    ]
   },
   {
@@ -49,7 +49,7 @@
    "mean": [
     0.20169,
     0.16686,
-    0.0494
+    0.04788
    ]
   },
   {
@@ -61,7 +61,7 @@
    "mean": [
     0.42017,
     0.2228,
-    0.0479
+    0.0464
    ]
   },
   {
@@ -73,7 +73,7 @@
    "mean": [
     0.05766,
     0.05993,
-    0.02901
+    0.0279
    ]
   },
   {
@@ -85,7 +85,7 @@
    "mean": [
     0.25507,
     0.19176,
-    0.05437
+    0.05279
    ]
   }
  ],

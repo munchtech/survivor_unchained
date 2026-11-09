@@ -1,7 +1,7 @@
 {
  "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
  "painted": 2,
- "inputs": "fbd012f87b2f",
+ "inputs": "c4b6cd7705f2",
  "from": "(c) the Barrow's layers (turf, bare, way, grave, ash, rubble, face); (b) MB4 night, rock and grass",
  "layers": [
   {
@@ -12,8 +12,8 @@
    "from": "MB4 grass (night: the barrow's grey-green turf as flat clumps)",
    "mean": [
     0.14268,
-    0.1645,
-    0.05031
+    0.1676,
+    0.04878
    ]
   },
   {
@@ -25,7 +25,7 @@
    "mean": [
     0.12858,
     0.13231,
-    0.06076
+    0.05905
    ]
   },
   {
@@ -35,9 +35,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 rock and MB3 setts (the old way's slabs: chunky planes, warm tops, cool joints)",
    "mean": [
-    0.23385,
-    0.20892,
-    0.13429
+    0.23384,
+    0.21127,
+    0.137
    ]
   },
   {
@@ -48,8 +48,8 @@
    "from": "(c) the graves' turned earth, dark",
    "mean": [
     0.06396,
-    0.06637,
-    0.03305
+    0.06636,
+    0.03185
    ]
   },
   {
@@ -61,7 +61,7 @@
    "mean": [
     0.09557,
     0.11146,
-    0.06041
+    0.0587
    ]
   },
   {
@@ -72,8 +72,8 @@
    "from": "MB4 rock (rubble as rounded flat stones)",
    "mean": [
     0.17724,
-    0.15928,
-    0.10238
+    0.16084,
+    0.10466
    ]
   },
   {
@@ -83,9 +83,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 rock (steep faces as big planes)",
    "mean": [
-    0.11257,
+    0.11258,
     0.09834,
-    0.06315
+    0.0649
    ]
   }
  ],
