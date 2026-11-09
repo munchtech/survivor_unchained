@@ -11,7 +11,7 @@ namespace SurvivorUnchained.Ui;
 /// </summary>
 public partial class FoeMarks : Control
 {
-    struct Bar { public Vector2 At; public float K; public bool Elite, Full; }
+    struct Bar { public Vector2 At; public float K; public bool Elite, Full; public Named? N; public string? Cap; }
     Bar[] bars = new Bar[256];
     int count;
     bool ring;
@@ -50,7 +50,9 @@ public partial class FoeMarks : Control
         for (int i = 0; i < items.Length; i++)
         {
             var e = items[i];
-            if (!e.Alive || e.State == EnemyState.Dying || e.State == EnemyState.Burrowed || e.Faction == Faction.Dead) continue;
+            if (!e.Alive || e.State == EnemyState.Dying || e.State == EnemyState.Burrowed) continue;
+            // (M5 r2: Faction.Dead is the risen's side, not a corpse: it hid every undead foe's bar, ring and plate, the
+            // Barrow Knight's and the Grave-Caller's among them. The dying and the fallen are out above.)
             if (e.Disposition == Disposition.Ally) continue;
             bool isPri = i == pri;
             if (e.Boss && !isPri) continue;
@@ -65,12 +67,14 @@ public partial class FoeMarks : Control
             var sp = cam.UnprojectPosition(p);
             if (sp.X < -80 || sp.Y < -40 || sp.X > vp.Size.X + 80 || sp.Y > vp.Size.Y + 80) continue;
             // Over its head (a champion's bar, and the snuffer's diamond above that bar when it has one).
-            var overHead = p + Vector3.Up * (float)Math.Max(1.6, e.Radius * 3.2 + 0.8);
+            var overHead = p + Vector3.Up * (float)Math.Max(Math.Max(1.6, e.Radius * 3.2 + 0.8), (e.Def.Scale ?? 1) * e.RankScale * 1.85 + 0.35);
             bool eliteBar = wantBar && e.Elite;
+            // (M5 r2: a plate only while its owner is on screen; one at the edge was cut by it)
+            if (eliteBar && (sp.X < 0 || sp.Y < 0 || sp.X > vp.Size.X || sp.Y > vp.Size.Y)) { eliteBar = false; wantBar = isPri; }
             if (snuff)
             {
                 if (snuffCount == snuffs.Length) Array.Resize(ref snuffs, snuffCount * 2);
-                snuffs[snuffCount++] = cam.UnprojectPosition(overHead) - new Vector2(0, eliteBar ? 30 * s : 0);
+                snuffs[snuffCount++] = cam.UnprojectPosition(overHead) - new Vector2(0, eliteBar ? (e.Named != null ? 48 : 30) * s : 0);
             }
             if (!wantBar && !isPri) continue;
             if (isPri)
@@ -86,7 +90,7 @@ public partial class FoeMarks : Control
             // N19 (H6): a champion's bar is over its head at full strength from its first moment, as an ARPG's elite
             // bar is; at its feet at 45% it was lost on the night ground and read as no bar at all. The crowd's small
             // bar stays at the feet (once below 70%, or the priority target's).
-            bars[count++] = new Bar { At = eliteBar ? cam.UnprojectPosition(overHead) : sp, K = (float)Math.Clamp(e.Hp / e.MaxHp, 0, 1), Elite = e.Elite, Full = !low && !isPri && !e.Elite };
+            bars[count++] = new Bar { At = eliteBar ? cam.UnprojectPosition(overHead) : sp, K = (float)Math.Clamp(e.Hp / e.MaxHp, 0, 1), Elite = e.Elite, Full = !low && !isPri && !e.Elite, N = eliteBar ? e.Named : null, Cap = eliteBar && e.Named == null && e.Rank == 1 ? e.Def.Name : null };
         }
         Lamp(b, cam, vp);
         QueueRedraw();
@@ -126,8 +130,12 @@ public partial class FoeMarks : Control
     /// in danger red lit along the top, quarter notches, a dark shadow so it holds on any ground or crowd.</summary>
     void EliteBar(in Bar b, float s)
     {
-        float w = 92 * s, h = 9 * s;
-        var r = new Rect2(Mathf.Round(b.At.X - w / 2), Mathf.Round(b.At.Y - h - 6 * s), w, h);
+        float w = (b.N != null ? 92 : 64) * s, h = (b.N != null ? 9 : 7) * s;
+        // (M5 r2: held inside the safe area, 5% in from each side and a title's height under the top)
+        var vp = GetViewportRect().Size;
+        float mx = vp.X * 0.05f + 60 * s, top = vp.Y * 0.05f + 30 * s;
+        float cx = Math.Clamp(b.At.X, mx, Math.Max(mx, vp.X - mx)), cy = Math.Clamp(b.At.Y, top + h, Math.Max(top + h, vp.Y * 0.95f));
+        var r = new Rect2(Mathf.Round(cx - w / 2), Mathf.Round(cy - h - 6 * s), w, h);
         DrawRect(r.Grow(2 * s), new Color(0, 0, 0, 0.45f));
         DrawRect(r, Ink with { A = 0.92f });
         var inner = r.Grow(-1.5f * s);
@@ -144,6 +152,50 @@ public partial class FoeMarks : Control
         }
         DrawRect(r, Bronze, false, Math.Max(1.5f, 1.5f * s));
         DrawRect(new Rect2(r.Position.X + s, r.Position.Y, r.Size.X - 2 * s, Math.Max(1, s)), BronzeHi);
+        if (b.N is { } n) Champion(n, r, s);
+        else if (b.Cap is { } c) Captain(c, r, s);
+    }
+
+    /// <summary>(M5 r2, functional; the look is the UI lead's) A captain's short plate: its kind and its rank, a step
+    /// below a champion's title (smaller, the bronze dimmer) over its smaller bar.</summary>
+    void Captain(string name, Rect2 r, float s)
+    {
+        var font = ThemeDB.FallbackFont;
+        int fs = (int)(14 * s);
+        string t = name + "  • captain";
+        var sz = font.GetStringSize(t, HorizontalAlignment.Left, -1, fs);
+        var at = new Vector2(Mathf.Round(r.Position.X + r.Size.X / 2 - sz.X / 2), Mathf.Round(r.Position.Y - 4 * s));
+        DrawStringOutline(font, at, t, HorizontalAlignment.Left, -1, fs, Math.Max(2, (int)(3 * s)), Ink with { A = 0.9f });
+        DrawString(font, at, t, HorizontalAlignment.Left, -1, fs, Bronze.Lightened(0.35f));
+    }
+
+    /// <summary>(M5-B, functional; the look is the UI lead's) A champion's title over its bar in bronze, and its affixes
+    /// under it in a light parchment with an ink outline (M5 r2: red on the red bar did not read).</summary>
+    void Champion(Named n, Rect2 r, float s)
+    {
+        var font = ThemeDB.FallbackFont;
+        float cx = r.Position.X + r.Size.X / 2;
+        if (n.Title.Length > 0)
+        {
+            int fs = (int)(16 * s);
+            var sz = font.GetStringSize(n.Title, HorizontalAlignment.Left, -1, fs);
+            var at = new Vector2(Mathf.Round(cx - sz.X / 2), Mathf.Round(r.Position.Y - 4 * s));
+            DrawStringOutline(font, at, n.Title, HorizontalAlignment.Left, -1, fs, Math.Max(2, (int)(4 * s)), Ink with { A = 0.95f });
+            DrawString(font, at, n.Title, HorizontalAlignment.Left, -1, fs, BronzeHi);
+        }
+        if (n.Affixes.Count == 0) return;
+        int afs = (int)(17 * s);
+        float gap = 9 * s, w = -gap;
+        foreach (var a in n.Affixes) w += font.GetStringSize(a, HorizontalAlignment.Left, -1, afs).X + gap;
+        float x = Mathf.Round(cx - w / 2), y = Mathf.Round(r.End.Y + 3 * s + font.GetAscent(afs));
+        var light = new Color("#f3e7cf");
+        int ow = Math.Max(2, (int)(4 * s));
+        foreach (var a in n.Affixes)
+        {
+            DrawStringOutline(font, new Vector2(x, y), a, HorizontalAlignment.Left, -1, afs, ow, Ink with { A = 0.95f });
+            DrawString(font, new Vector2(x, y), a, HorizontalAlignment.Left, -1, afs, light);
+            x += font.GetStringSize(a, HorizontalAlignment.Left, -1, afs).X + gap;
+        }
     }
 
     public override void _Draw()
