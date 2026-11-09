@@ -118,6 +118,9 @@ if (opt.Has("over"))
     DataFiles.Text = rel => File.Exists(Path.Combine(over, rel)) ? File.ReadAllText(Path.Combine(over, rel)) : read(rel);
 }
 // --dashforms 1|0: do the movement arts ride the dash (the old forms)? Off is the game now (MapRules.DashForms).
+// --grant id[:rank],... / --grant-union id: every arena carries these from its start (the game's dev grants).
+if (opt.Has("grant")) SurvivorUnchained.Balance.ArenaSim.Grant = opt.Get("grant", "");
+if (opt.Has("grant-union")) SurvivorUnchained.Balance.ArenaSim.GrantUnion = opt.Get("grant-union", "");
 if (opt.Has("dashforms")) SurvivorUnchained.Sim.MapRules.DashFormsDefault = opt.Get("dashforms", "1") != "0";
 string cmd = args.Length > 0 && !args[0].StartsWith("--") ? args[0] : "help";
 // The content is read once, before the runs share it.
