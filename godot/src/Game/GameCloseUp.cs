@@ -149,7 +149,15 @@ public partial class Game
     {
         if (scene?.Player is not { } pv || screens.Current != null)
         {
-            if (Mode != "create") CelRigOff();
+            // (L7 S1d, rule 11: "the close-up and Look rigs key her from the front three-quarter"; G1 08, the Lamps by day, has
+            // her lit warm from the front: a book screen that frames her (Overlay.CameraFrame) keys her by the Look's day rig
+            // (look_day), its key only: the world keeps the town's rig, fill and rim (world: false). By night as before.)
+            if (Mode != "create")
+            {
+                if (screens.Current?.CameraFrame != null && scene?.Player is { } pb && scene.View.Night != true)
+                    CelRig("look_day", 1, cam.Camera, pb.GlobalPosition + new Vector3(0, 1.55f, 0), world: false);
+                else CelRigOff();
+            }
             closeDrives = false;
             if (scene?.Player is { } pv0) { pv0.FolkScale = 1; pv0.PoolScale = 1; pv0.LampOffHer = false; if (pv0.OwnLayer) { pv0.OwnLayer = false; scene.View.HerUnlit(false); } }
             if (scene?.Player is { } pv1 && skyShown != 1) { skyShown = 1; SurvivorUnchained.View.People.HerSkyShare(pv1.Person, 1); }
@@ -403,7 +411,7 @@ public partial class Game
     const uint CelHerMask = 2 | SurvivorUnchained.View.PlayerView.CastLayer | SurvivorUnchained.View.PlayerView.HerLayer
         | SurvivorUnchained.View.PlayerView.HerHairLayer | SurvivorUnchained.View.PlayerView.HerGearLayer;
 
-    void CelRig(string id, float k, Camera3D lens, Vector3 at)
+    void CelRig(string id, float k, Camera3D lens, Vector3 at, bool world = true)
     {
         if (!SurvivorUnchained.View.Atmosphere.CelRigs || LookKeyHeld || scene == null) { CelRigOff(); return; }
         SurvivorUnchained.View.Atmosphere.RigsLoad();
@@ -425,7 +433,7 @@ public partial class Game
         celKey.Visible = k > 0.01f;
         if (!celKey.Visible) { CelRigOff(); return; }
         if (celKeyMask == 0) { celWorldMask = air.Key.LightCullMask; celKeyMask = CelHerMask; air.Key.LightCullMask = celWorldMask & ~CelHerMask; }
-        air.HoldCameraRig(r);
+        air.HoldCameraRig(world ? r : null);
     }
 
     void CelRigOff()

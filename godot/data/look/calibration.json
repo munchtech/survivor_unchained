@@ -8,10 +8,16 @@
    "dh": 13
   },
   "setts": {
-   "from": "G1 07's lit setts up the road (warm sandy-beige): target 07_r5 box [720, 100, 960, 340] lit (0.714, 0.085, 46) against the game's 07 (c/l7/s1c, box [800, 100, 1100, 400]) lit (0.8, 0.072, 52), mask {'lit': True}",
-   "L": 0.8925,
-   "C": 1.1806,
-   "dh": -6
+   "from": "G1 07's lit setts up the road (warm sandy-beige): target 07_r5 box [720, 100, 960, 340] lit (0.714, 0.085, 46) against the game's 07 (c/l7/s1c, box [800, 100, 1100, 400]) lit (0.8, 0.072, 52), mask {'lit': True} | L7 S1d: the lit reads (L, C, h) of G1 07, 13 [(0.672, 0.067, 37), (0.712, 0.079, 42)] against the game's (c/l7/s1c/r2) [(0.659, 0.058, 53), (0.688, 0.061, 48)], boxes by eye at half size (scratch boxes.py, the middle 60% by L): L x1.027, C x1.227, dh -11 on {'L': 0.8925, 'C': 1.1806, 'dh': -6}",
+   "L": 0.917,
+   "C": 1.4485,
+   "dh": -17
+  },
+  "plaster": {
+   "L": 0.7801,
+   "C": 0.83,
+   "dh": -23,
+   "from": "L7 S1d: the lit reads (L, C, h) of G1 13 [(0.674, 0.083, 47)] against the game's (c/l7/s1c/r2) [(0.864, 0.1, 70)], boxes by eye at half size (scratch boxes.py, the middle 60% by L): L x0.780, C x0.830, dh -23 on {'L': 1.0, 'C': 1.0, 'dh': 0}"
   }
  }
 }

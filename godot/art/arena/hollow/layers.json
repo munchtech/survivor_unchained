@@ -1,7 +1,7 @@
 {
  "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
  "painted": 2,
- "inputs": "8c28ca46d096",
+ "inputs": "a33b303947db",
  "from": "(c) the Deep Shaw's layers (ArenaGround.cs order: litter, rot, roots, mud, bed, needles, face); (b) targets 09, 10, 12 and MB4 night",
  "layers": [
   {
@@ -12,8 +12,8 @@
    "from": "targets 09 and 10 (the Deep Shaw's floor: mid-value under the moon, never black; warm where her pool lights it); MB4 night; rule 9 leaf litter as a few leaf shapes",
    "mean": [
     0.24983,
-    0.24723,
-    0.12841
+    0.25516,
+    0.12831
    ]
   },
   {
@@ -24,7 +24,7 @@
    "from": "(c) the Shaw's black earth under the litter (ArenaGround: 'the rot is black earth'), a few old leaves",
    "mean": [
     0.09172,
-    0.10101,
+    0.10108,
     0.06058
    ]
   },
@@ -35,8 +35,8 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "(c) the roots' runs; rule 9 (wood as a few long strokes)",
    "mean": [
-    0.11895,
-    0.11974,
+    0.11896,
+    0.12033,
     0.06558
    ]
   },
@@ -59,9 +59,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 water and rock: the bed's stones as rounded flat planes, moon-grey",
    "mean": [
-    0.25664,
-    0.23746,
-    0.18923
+    0.25665,
+    0.23352,
+    0.19102
    ]
   },
   {
@@ -72,7 +72,7 @@
    "from": "MB4 spruce (the needle litter under the tiers), as needle tufts",
    "mean": [
     0.25172,
-    0.24512,
+    0.25299,
     0.1105
    ]
   },
@@ -83,9 +83,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 rock (the banks and steep faces as big planes)",
    "mean": [
-    0.13937,
-    0.18467,
-    0.10791
+    0.13935,
+    0.18927,
+    0.10793
    ]
   }
  ],

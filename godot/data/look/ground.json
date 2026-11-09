@@ -399,9 +399,9 @@
    "cells": {
     "size_cm": 26,
     "colors": [
-     "#7c8363",
-     "#89926e",
-     "#717859"
+     "#7c8563",
+     "#89946e",
+     "#717a59"
     ],
     "joint": "#484937",
     "joint_cm": 3.0,
@@ -428,7 +428,7 @@
     "size_cm": 55,
     "colors": [
      "#848274",
-     "#93907e",
+     "#938e7e",
      "#777669"
     ],
     "joint": "#58564e",
@@ -497,9 +497,9 @@
    "from": "targets 09 and 10 (the Deep Shaw's floor: mid-value under the moon, never black; warm where her pool lights it); MB4 night; rule 9 leaf litter as a few leaf shapes",
    "masses": {
     "colors": [
-     "#76785b",
-     "#878664",
-     "#95956d"
+     "#767a5b",
+     "#878864",
+     "#95976d"
     ],
     "split": [
      0.33,
@@ -516,10 +516,10 @@
       17
      ],
      "colors": [
-      "#a38c59",
-      "#b1a066",
-      "#8f8256",
-      "#b5b774"
+      "#a38e59",
+      "#b1a266",
+      "#8f8456",
+      "#b5b972"
      ],
      "height": 0.7
     }
@@ -553,7 +553,7 @@
      ],
      "colors": [
       "#6f6c4a",
-      "#7d764f"
+      "#7d784f"
      ],
      "height": 0.6
     }
@@ -587,7 +587,7 @@
       160
      ],
      "colors": [
-      "#837f59",
+      "#838159",
       "#73714f"
      ],
      "lit_edge": 0.05,
@@ -621,8 +621,8 @@
    "cells": {
     "size_cm": 22,
     "colors": [
-     "#949182",
-     "#a7a18f",
+     "#948f82",
+     "#a79f91",
      "#878475"
     ],
     "joint": "#6a635b",
@@ -649,9 +649,9 @@
    "from": "MB4 spruce (the needle litter under the tiers), as needle tufts",
    "masses": {
     "colors": [
-     "#797855",
-     "#89865c",
-     "#959567"
+     "#797a55",
+     "#89885c",
+     "#959767"
     ],
     "split": [
      0.35,
@@ -672,8 +672,8 @@
       8
      ],
      "colors": [
-      "#aaa466",
-      "#99955c"
+      "#aaa666",
+      "#99975c"
      ],
      "under": "#6e6c4e",
      "height": 0.7
@@ -688,8 +688,8 @@
    "cells": {
     "size_cm": 70,
     "colors": [
-     "#6b7b5e",
-     "#798967",
+     "#6b7d5e",
+     "#798b67",
      "#5f6c55"
     ],
     "joint": "#4d5444",
@@ -853,9 +853,9 @@
       10
      ],
      "colors": [
-      "#8d7b42",
+      "#8d7d42",
       "#79663c",
-      "#9d8f4c"
+      "#9d914c"
      ],
      "height": 0.7
     }
@@ -868,8 +868,8 @@
    "cells": {
     "size_cm": 9,
     "colors": [
-     "#7f7d5b",
-     "#8d8f65",
+     "#7f7f5b",
+     "#8d9165",
      "#6e6c4c"
     ],
     "joint": "#4f4c33",
@@ -977,7 +977,7 @@
       10
      ],
      "colors": [
-      "#7f8665"
+      "#7f8865"
      ],
      "height": 0.8
     }
@@ -991,7 +991,7 @@
     "size_cm": 50,
     "colors": [
      "#878172",
-     "#968e7c",
+     "#968c7c",
      "#7b7567"
     ],
     "joint": "#4e483f",
@@ -1067,7 +1067,7 @@
     "size_cm": 16,
     "colors": [
      "#847e6f",
-     "#938c7a",
+     "#938a7a",
      "#747062"
     ],
     "joint": "#565046",
@@ -1120,9 +1120,9 @@
    "from": "MB4 road (the working's ochre clay, worn earths: rule 4)",
    "masses": {
     "colors": [
-     "#93783d",
-     "#a28644",
-     "#b2954f"
+     "#937a3d",
+     "#a28844",
+     "#b2974f"
     ],
     "split": [
      0.33,
@@ -1139,7 +1139,7 @@
       11
      ],
      "colors": [
-      "#a29d6a"
+      "#a29f6a"
      ],
      "height": 0.8
     }
@@ -1207,7 +1207,7 @@
     "colors": [
      "#71673b",
      "#7f7342",
-     "#897d49"
+     "#897f49"
     ],
     "split": [
      0.4,
@@ -1223,8 +1223,8 @@
    "masses": {
     "colors": [
      "#9f743c",
-     "#af8340",
-     "#bc8f44"
+     "#af8540",
+     "#bc9144"
     ],
     "split": [
      0.35,
@@ -1257,8 +1257,8 @@
    "cells": {
     "size_cm": 70,
     "colors": [
-     "#8d7b42",
-     "#9d894a",
+     "#8d7d42",
+     "#9d8b4a",
      "#7f6d3c"
     ],
     "joint": "#5f5435",
@@ -1293,15 +1293,15 @@
     "tilt": 0.5,
     "lit": 0.06,
     "colors": [
-     "#686570",
-     "#6e656b",
-     "#646374",
-     "#6f6c78"
+     "#6c6977",
+     "#726972",
+     "#68677b",
+     "#73707f"
     ],
-    "joint": "#424051"
+    "joint": "#454356"
    },
    "w2": "L1 W2 town (C4): base #5a4962 = MB3_setts_day all_lin [0.3381, 0.1515, 0.1288] (look_l1/c/w2/town/board_town.json) / the day rig's terrain response (the road class, the same terrain.gdshader: resp/final day_play lit [3.3006, 2.274, 1.0575]) = [0.1024, 0.0666, 0.1218], as the ground helper's mark 6; siblings by hand x[1.12,1.0,0.9] warm, x[0.92,0.97,1.08] cool, x1.15 light; joint x[0.38,0.4,0.5] (MB3's joints: about 0.4 of the stone, bluer). Known: the rig's shade response [0.296, 0.308, 0.768] draws this base #312756 in shade against the board's #75545d (the day fill, the light helper's).",
-   "c6": "L1 W2 C6 (the color chain): x[0.888, 1.072, 1.23] per channel (linear) = the setts class's chain albedo / its old mid (materials.json)."
+   "c6": "L1 W2 C6 (the color chain): x[1.006, 0.997, 0.994] per channel (linear) = the setts class's chain albedo / its old mid (materials.json)."
   }
  },
  "grass_atlas": {
@@ -1309,14 +1309,15 @@
   "out": "godot/art/world/flora/grass_meadow_atlas.png",
   "from": "MB4 grass ('grass as big flat clumps': broad blades massed into a mound, a lit top and a cool underside, three flat values); rule 4 (olive and worn, never lime); replaces env_trees.py's thin-blade grass atlas (L1 C1)",
   "colors": {
-   "under": "#24301f",
-   "body": "#475726",
-   "lit": "#6c7633"
+   "under": "#1e2c2a",
+   "body": "#3c5133",
+   "lit": "#5c6e43"
   },
   "flowers": [
    "#a39c7e",
    "#857c95"
   ],
-  "flower_cells": 2
+  "flower_cells": 2,
+  "c6": "L7 S1d (the color chain): the clump's body FROM the grass class's mid #3c5133, the lit top and the underside at their ratios to it."
  }
 }

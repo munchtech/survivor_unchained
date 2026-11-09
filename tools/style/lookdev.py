@@ -24,6 +24,7 @@ INPUTS = r"C:\Users\munch\Desktop\survivorsunchained_inputs"
 HER = ["--sex", "female", "--preset", "own", "--skin", "fair", "--eyes", "moss", "--hair", "braid"]
 STAGE = ["--quick", "warden"] + HER + ["--zone", "arena", "--offer", "0", "--tier", "1", "--no-foes", "--nohud", "--count", "0"]
 RIGS = ["night", "day", "dawn", "arena"]
+MORE = ["morning", "wdawn", "wild"]  # (named only, never in all: GameLookdev.MoreRigs; L7 S1d wild = the Verge's day, day_wild)
 CAMS = ["play", "close", "side"]
 
 
@@ -46,7 +47,7 @@ def half(path):
 
 
 def sheet(out_dir, rigs=None):
-    rigs = rigs or [r for r in RIGS if any(os.path.exists(os.path.join(out_dir, f"lookdev_{r}_{c}.png")) for c in CAMS)]
+    rigs = rigs or [r for r in RIGS + MORE if any(os.path.exists(os.path.join(out_dir, f"lookdev_{r}_{c}.png")) for c in CAMS)]
     tw, th = 640, 360
     S = Image.new("RGB", (tw * len(CAMS), th * max(1, len(rigs))), (16, 16, 16))
     d = ImageDraw.Draw(S); f = font(20)
@@ -78,7 +79,7 @@ def check(out_dir):
             if w[2] in ("PASS", "FAIL"): stage[w[1]] = " ".join(w[2:4]) if w[2] == "FAIL" else "PASS"
             elif len(w) >= 17: items.setdefault(w[1], []).append(dict(row=w[2], name=w[3], rect=[float(v) for v in w[5:9]], inside=float(w[10]), hidden=float(w[12]), foot=float(w[16])))
     rows = []
-    for r in RIGS:
+    for r in RIGS + MORE:
         for c in CAMS:
             p = os.path.join(out_dir, f"lookdev_{r}_{c}.png")
             if not os.path.exists(p): continue
@@ -113,7 +114,7 @@ def check(out_dir):
 def shoot(args):
     root = os.path.abspath(opt(args, "--root", os.path.join(HERE, "..", "..")))
     out = os.path.abspath(opt(args, "--out", os.path.join(INPUTS, "look_l1", "lookdev", "r0")))
-    rigs = [r for r in opt(args, "--rigs", "all").replace("all", ",".join(RIGS)).split(",") if r in RIGS]
+    rigs = [r for r in opt(args, "--rigs", "all").replace("all", ",".join(RIGS)).split(",") if r in RIGS + MORE]
     extra = opt(args, "--extra", "").split()
     os.makedirs(out, exist_ok=True)
     run = [dict(name="lookdev", timeout=240 + 40 * len(rigs), godot=["--fixed-fps", "60"],

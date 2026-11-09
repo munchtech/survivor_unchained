@@ -30,8 +30,9 @@ namespace SurvivorUnchained.Play;
 public partial class Game
 {
     static readonly string[] LookRigs = { "night", "day", "dawn", "arena" };
-    /// <summary>(B4r3) Named only, never in "all": the dawn rig an hour on (morning: LowFordMorning) and over the town (wdawn: WaystationDawn).</summary>
-    static readonly string[] MoreRigs = { "morning", "wdawn" };
+    /// <summary>(B4r3) Named only, never in "all": the dawn rig an hour on (morning: LowFordMorning) and over the town (wdawn: WaystationDawn);
+    /// (L7 S1d) the day in the wild (wild: Atmospheres.Day, the Verge's day_wild), for the chain's grey cards under both day rigs.</summary>
+    static readonly string[] MoreRigs = { "morning", "wdawn", "wild" };
     string[]? lookRigs;
     double lookBuiltAt = -1;
     int lookStep = -1;
@@ -121,12 +122,12 @@ public partial class Game
     {
         var p = rig switch
         {
-            "night" => Atmospheres.LowFordNight, "day" => Atmospheres.WaystationDay, "dawn" => Atmospheres.LowFordDawn,
+            "night" => Atmospheres.LowFordNight, "day" => Atmospheres.WaystationDay, "wild" => Atmospheres.Day, "dawn" => Atmospheres.LowFordDawn,
             "morning" => Atmospheres.LowFordMorning, "wdawn" => Atmospheres.WaystationDawn,
             _ => zone!.AtmosphereFor(TimeOfDay.Night),
         };
         bool night = rig is "night" or "arena";
-        World.Time = rig switch { "day" => TimeOfDay.Day, "dawn" or "morning" or "wdawn" => TimeOfDay.Dawn, _ => TimeOfDay.Night };
+        World.Time = rig switch { "day" or "wild" => TimeOfDay.Day, "dawn" or "morning" or "wdawn" => TimeOfDay.Dawn, _ => TimeOfDay.Night };
         air.Air(rig == "arena" ? scene!.Data.Place?.Air : null);
         air.Set(p);
         scene!.View.SetNight(night);
@@ -135,12 +136,12 @@ public partial class Game
         // The town's lamps go cold by day (ZoneView.Town); the fire burns in every rig.
         // (L1 B3r3: --lookdev-lamps 0 keeps the stage's lamps dark in every rig: the swatch row's night relit check, the
         // moon alone, as the boards' moonlit panels are read away from their lanterns.)
-        bool lampsOn = rig != "day" && Args.Num("lookdev-lamps", 1f) > 0;
+        bool lampsOn = rig is not ("day" or "wild") && Args.Num("lookdev-lamps", 1f) > 0;
         foreach (var f in lookFlames) f.Lit = lampsOn;
         foreach (var l in lookLamps) Lamps.SetLit(l, lampsOn);
         if (lookFireLight != null)
         {
-            lookFireLight.ShadowEnabled = rig != "day";
+            lookFireLight.ShadowEnabled = rig is not ("day" or "wild");
             // (L1 B4r2: under the rigs the fire's light is the rig's share of it (rigs.json "fires": by day a glow, rule 3; at
             // night strength by day it was the warm half of her shade at the close view, 6.7 m off). --lookdev-fire K scales it.)
             double share = SurvivorUnchained.View.Atmosphere.CelRigs && p.Rig != "" && SurvivorUnchained.Look.Rigs.Current[p.Rig] is { } fr ? fr.FireShare : 1;

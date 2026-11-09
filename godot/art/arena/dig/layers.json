@@ -1,7 +1,7 @@
 {
  "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
  "painted": 2,
- "inputs": "5cf55632ae18",
+ "inputs": "459fc14c348e",
  "from": "(c) the Dig's layers (clay, spoil, ballast, slurry, rust, burnt, face); (b) MB4 rock and road",
  "layers": [
   {
@@ -12,7 +12,7 @@
    "from": "MB4 road (the working's ochre clay, worn earths: rule 4)",
    "mean": [
     0.36474,
-    0.24169,
+    0.24952,
     0.06096
    ]
   },
@@ -48,7 +48,7 @@
    "from": "(c) the slurry's mud, a little darker than the clay (ArenaGround's note)",
    "mean": [
     0.20169,
-    0.16459,
+    0.16629,
     0.05297
    ]
   },
@@ -60,7 +60,7 @@
    "from": "(c) rust-stained clay, as light as the clay: a shift of hue, never a darker blot",
    "mean": [
     0.42017,
-    0.22169,
+    0.22691,
     0.05097
    ]
   },
@@ -83,9 +83,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 rock and road (the cut walls' ochre as big planes)",
    "mean": [
-    0.25509,
-    0.19073,
-    0.05807
+    0.25508,
+    0.19544,
+    0.05811
    ]
   }
  ],

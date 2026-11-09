@@ -17,6 +17,7 @@ marks (albedo_ctl). No frame is ever an input: the frames are the check.
                                                                     -> OUT/solve.json (the arithmetic, per channel)
     python tools/look/color_chain.py apply                           solve.json into rigs.json, materials.json, ground.json,
                                                                     town.json (one read-modify-write each)
+    python tools/look/color_chain.py wild NAME                       (L7 S1d) day_wild's key from NAME's wild and day cards
     python tools/look/color_chain.py check [NAME]     the solved albedos drawn on the stage (the relit check)
     python tools/look/color_chain.py all [NAME]                      measure, boards, solve, apply, the relit check, then the
                                                                     kits' own builds and the ground check
@@ -34,7 +35,7 @@ import calib  # noqa: E402
 INPUTS = r"C:\Users\munch\Desktop\survivorsunchained_inputs"
 OUT = os.path.join(INPUTS, "look_l1", "c", "w2", "chain", "lookdev")
 DATA = os.path.join(ROOT, "godot", "data", "look")
-RIGS = ("day", "night", "dawn", "arena")
+RIGS = ("day", "night", "dawn", "arena", "wild")  # (L7 S1d: wild, the Verge's day_wild, for wild_key)
 GREYS = {"g05": 0.05, "g18": 0.18, "g50": 0.5, "g80": 0.8}  # (0.05: the dark classes, leather and road, sit under the 0.18 card)
 
 
@@ -418,6 +419,39 @@ def key_gain(cards, rig, k_lit, k_sh):
     return (k_lit - k_sh * q) / (1 - q), q
 
 
+def wild_key(cards, face="top"):
+    """(L7 S1d) day_wild's light from its own grey cards: one sun (lead 7), so the open ground's lit response in the wild is the
+    town's. The neutral cards' TOP face (the ground's lie) at the play camera, under 'wild' (lookdev's wild rig, the Verge's
+    day_wild) against 'day' (day_town), the 0.18 and 0.5 cards: the albedo that draws the town's luminance on the wild's curve
+    over the card's own is the light the wild lacks (k). None when the cards have no wild."""
+    def top(rig):
+        rows = []
+        for c in DIFFUSE:
+            try: rows.append([np.dot(bm.Y, cards[t][c][f"{rig}_play"]["faces"][face]) for t in TAGS])
+            except KeyError: pass
+        return np.median(np.array(rows), 0) if rows else None
+    yd, yw = top("day"), top("wild")
+    if yd is None or yw is None: return None
+    ks = [np.exp(np.interp(np.log(yd[i]), np.log(np.sort(yw)), np.log(LV[np.argsort(yw)]))) / LV[i] for i in (1, 2)]
+    return {"k": round(float(np.exp(np.mean(np.log(ks)))), 4), "top_day": np.round(yd, 4).tolist(), "top_wild": np.round(yw, 4).tolist()}
+
+
+def apply_wild(cards):
+    """(L7 S1d) day_wild's key and sky x wild_key's k (rigs.json), with its FROM: the whole light, so the wild keeps its own
+    shade share (its open sky, its canopy) and only its level meets the town's."""
+    w = wild_key(cards)
+    if w is None: print("no wild cards"); return None
+    d = json.load(open(RIGS_JSON, encoding="utf-8")); r = d["rigs"]["day_wild"]; k = w["k"]; f = r.setdefault("fill", {})
+    old = f"key {r['key']['intensity']}, fill {f.get('strength')}, hemi {f.get('hemi')}, env {f.get('env')}"
+    r["key"]["intensity"] = round(r["key"]["intensity"] * k, 4)
+    for a in ("strength", "hemi", "env"):
+        if f.get(a) is not None: f[a] = round(f[a] * k, 4)
+    r["from"] += (f" L7 S1d (one sun, lead 7: the open ground's lit response in the wild is the town's; color_chain.py wild_key): the neutral cards' "
+                  f"top face at the play camera read {w['top_wild']} (0.05/0.18/0.5/0.8, luminance) under wild against {w['top_day']} under day_town: "
+                  f"the whole light x{k} (the wild's own shade share kept): {old} -> key {r['key']['intensity']}, fill {f.get('strength')}, hemi {f.get('hemi')}, env {f.get('env')}.")
+    write_json(RIGS_JSON, d); print("day_wild:", old, "->", r["key"]["intensity"], f, w); return w
+
+
 def apply_rigs(rep, cards, night=True):
     d = json.load(open(RIGS_JSON, encoding="utf-8")); R = d["rigs"]
     tag = "C6 (the color chain, tools/look/color_chain.py; godot/data/look/swatches.json; rules 2-4)"
@@ -568,6 +602,14 @@ def apply_classes(rep):
             cs["colors"] = [lin_to_hex(np.clip(mid * hex_to_lin(c) / np.maximum(base, 1e-4), 0, 0.9)) for c in cs["colors"]]
             cs["joint"] = lin_to_hex(np.clip(mid * hex_to_lin(cs["joint"]) / np.maximum(base, 1e-4), 0, 0.9))
             sf["c6"] = f"L7 S1b (the color chain): the courses FROM the {sf['class']} class's mid {lib['classes'][sf['class']]['paint']['albedo']['mid']}, the stones and joint at their ratios to the first."
+    # (L7 S1d) the grass cards (grass_own.gdshader's atlas, ground_paint.py atlas; the lit grass in 04 and 07) never took the
+    # class: their colors were hand-set by C1 (5 Nov). Now FROM the grass class's mid: the clump's body is the mid, the lit top
+    # and the cool underside at their ratios to it (the painter's relations)
+    ga = g.get("grass_atlas")
+    if ga and "grass" in lib["classes"]:
+        mid = hex_to_lin(lib["classes"]["grass"]["paint"]["albedo"]["mid"]); base = hex_to_lin(ga["colors"]["body"])
+        ga["colors"] = {k: lin_to_hex(np.clip(mid * hex_to_lin(v) / np.maximum(base, 1e-4), 0, 0.9)) for k, v in ga["colors"].items()}
+        ga["c6"] = f"L7 S1d (the color chain): the clump's body FROM the grass class's mid {lib['classes']['grass']['paint']['albedo']['mid']}, the lit top and the underside at their ratios to it."
         sf["c6"] = f"L1 W2 C6 (the color chain): x{np.round(k, 3).tolist()} per channel (linear) = the {sf['class']} class's chain albedo / its old mid (materials.json)."
     json.dump(g, open(P, "w", encoding="utf-8", newline="\n"), indent=1, ensure_ascii=False)
     print("classes:", {c: rep["albedo"][c]["hex"] for c in WORLD if c in rep["albedo"]}, "gains:", {c: np.round(v, 2).tolist() for c, v in gains.items() if v is not None})
@@ -584,6 +626,7 @@ def run_all(name=None):
     solve(name)
     rep = json.load(open(os.path.join(OUT, "solve.json")))
     apply_rigs(rep, json.load(open(os.path.join(OUT, name, "cards.json"))), night=False)
+    apply_wild(json.load(open(os.path.join(OUT, name, "cards.json"))))
     apply_classes(rep)
     check("check_" + name)
     for cmd in (["ground_paint.py", "build", "all"], ["wild.py", "all", "--no-mesh"], ["town.py", "all", "--no-mesh"]):
@@ -604,4 +647,4 @@ def run_all(name=None):
 if __name__ == "__main__":
     a = sys.argv[1:]
     if not a: print(__doc__); sys.exit(1)
-    {"all": lambda: run_all(*a[1:2]), "measure": lambda: measure(*a[1:3]), "boards": boards, "solve": lambda: solve(*a[1:4]), "check": lambda: check(*a[1:2]), "apply": lambda: (apply_rigs(json.load(open(os.path.join(OUT, "solve.json"))), json.load(open(os.path.join(OUT, a[1] if len(a) > 1 else "cards", "cards.json")))), apply_classes(json.load(open(os.path.join(OUT, "solve.json")))))}[a[0]]()
+    {"all": lambda: run_all(*a[1:2]), "measure": lambda: measure(*a[1:3]), "wild": lambda: apply_wild(json.load(open(os.path.join(OUT, a[1], "cards.json")))), "boards": boards, "solve": lambda: solve(*a[1:4]), "check": lambda: check(*a[1:2]), "apply": lambda: (apply_rigs(json.load(open(os.path.join(OUT, "solve.json"))), json.load(open(os.path.join(OUT, a[1] if len(a) > 1 else "cards", "cards.json")))), apply_classes(json.load(open(os.path.join(OUT, "solve.json")))))}[a[0]]()

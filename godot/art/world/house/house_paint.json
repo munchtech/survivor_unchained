@@ -9,8 +9,8 @@
   },
   "plaster": {
    "class": "plaster",
-   "L50": 0.669,
-   "C50": 0.018
+   "L50": 0.523,
+   "C50": 0.016
   },
   "timber": {
    "class": "plank",

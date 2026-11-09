@@ -1,7 +1,7 @@
 {
  "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
  "painted": 2,
- "inputs": "99ae790a2266",
+ "inputs": "dc87e84a2912",
  "from": "(c) the Ruts' layers (verge, churn, ruts, wet, camp, metal, face); (b) MB4 road, targets 04 and 05",
  "layers": [
   {
@@ -60,7 +60,7 @@
    "from": "(c) the camp's wood chips, as flat chips (rule 9: wood as long strokes)",
    "mean": [
     0.12325,
-    0.09766,
+    0.09809,
     0.03612
    ]
   },
@@ -71,9 +71,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 road (the metalled way: small rounded stones in masses)",
    "mean": [
-    0.14168,
-    0.13758,
-    0.06831
+    0.14167,
+    0.1397,
+    0.06833
    ]
   },
   {

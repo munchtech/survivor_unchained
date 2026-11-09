@@ -1,7 +1,7 @@
 {
  "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
  "painted": 2,
- "inputs": "aa9e70e8b751",
+ "inputs": "fd7224a0bdec",
  "from": "(c) the terrain zones' seven layers as terrain.gdshader reads them (Ground.cs: the Verge, the Low Ford, the Waystation, the title's camp, C01's frost)",
  "layers": [
   {
@@ -59,9 +59,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB3 (the town's rough paving as chunky planes, warm tops, cool joints); the setts' own maps are wave 2",
    "mean": [
-    0.17179,
-    0.19523,
-    0.10956
+    0.17177,
+    0.20108,
+    0.10959
    ]
   },
   {
@@ -72,7 +72,7 @@
    "from": "MB4 rock: a few big rounded planes in muted moon-blue grey, moss on the top planes",
    "mean": [
     0.20501,
-    0.2059,
+    0.20362,
     0.14455
    ]
   },
