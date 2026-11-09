@@ -147,8 +147,8 @@ public partial class BattleFx
                 var tip = P7BladeAt(1);
                 p7TiltPhi = Mathf.Atan2(tip.Z - PlayerPos.Z, tip.X - PlayerPos.X) + Mathf.Pi * 0.5f;
                 // the blade's own smear, and its wake: thinner, lower, wider, lagging, at another tilt, without its core
-                p7Smears.Add(P7NewSmear(Mathf.DegToRad(105), 1f, 1f, 0, 0, 17, 0.95f, 0f));
-                p7Smears.Add(P7NewSmear(Mathf.DegToRad(62), 1.2f, 0.5f, 0.45f, -0.32f, -9, 0.72f, 0.34f));
+                p7Smears.Add(P7NewSmear(Mathf.DegToRad(115), 1f, 1f, 0, 0, 17, 0.95f, 0f));
+                p7Smears.Add(P7NewSmear(Mathf.DegToRad(70), 1.34f, 0.45f, 0.5f, -0.22f, -9, 0.78f, 0.34f));
                 if (p7StormLight == null)
                 {
                     p7StormLight = new OmniLight3D { ShadowEnabled = false, OmniAttenuation = 1.1f, LightColor = P7Band(1) };
@@ -188,10 +188,11 @@ public partial class BattleFx
     void P7BuildSmear(P7Smear s, float wind)
     {
         var her = PlayerPos;
+        her.Y = Y(her.X, her.Z);
         var tip = P7BladeAt(1);
         float a = Mathf.Atan2(tip.Z - her.Z, tip.X - her.X);
         float rt = new Vector2(tip.X - her.X, tip.Z - her.Z).Length();
-        float ro = Mathf.Clamp(rt * 1.05f, 0.95f, 1.6f) * s.RadK, ri = ro * 0.58f;
+        float ro = Mathf.Clamp(rt * 1.1f, 1.15f, 1.5f) * s.RadK, ri = ro * 0.58f;
         float rc = (ro + ri) * 0.5f, hw = (ro - ri) * 0.5f * s.HwK;
         float h = Mathf.Clamp(tip.Y - her.Y, 0.45f, 1.5f) + s.Dy;
         float k = Mathf.Tan(Mathf.DegToRad(s.Tilt));
@@ -215,6 +216,8 @@ public partial class BattleFx
             m.SurfaceAddVertex(new Vector3(her.X, y, her.Z) + d * (rc + hw));
         }
         m.SurfaceEnd();
+        if (Args.Has("clip") && p7StormOn > 0.5f && p7StormOn < 0.5f + 1 / 60f)
+            GD.Print($"p7 smear arc {s.Arc:F2} rc {rc:F2} hw {hw:F2} h {h:F2} head {new Vector3(her.X, her.Y + h, her.Z) + new Vector3(Mathf.Cos(a0), 0, Mathf.Sin(a0)) * rc} vis {s.N.IsVisibleInTree()} layers {s.N.Layers}");
     }
 
     void P7StormDown()
@@ -249,7 +252,7 @@ public partial class BattleFx
         var c = V(x, Y(x, z), z);
         float k = Mathf.Clamp((grow - 1) / 0.6f, 0, 1);
         P7Star(c + Vector3.Up * 0.05f, Mathf.Min(1.7f, r * 0.3f), 7);
-        P7Ring(c + Vector3.Up * 0.06f, r, 0.18f, 0.055f + 0.015f * k, 1f, 0f, 0.3f, 0.95f);
+        P7Ring(c + Vector3.Up * 0.06f, r, 0.18f, 0.04f + 0.012f * k, 1f, 0f, 0.3f, 0.95f);
         P7LightOn(c + Vector3.Up * 1.4f, r * 1.5f, (Flare.Night ? 2.6f : 4.5f) * (0.85f + 0.3f * k));
         P7DustRing(x, z, R() * Mathf.Tau, r * 0.95f, 26 + (int)(10 * k), 0.9f + 0.2f * k);
         int chunks = 7 + (int)(R() * 3.99f + 4 * k);
@@ -282,7 +285,7 @@ public partial class BattleFx
                 float v0 = rr * drag / (1 - Mathf.Exp(-drag * 0.4f));
                 double px = x + o.X * d0, pz = z + o.Z * d0;
                 float sz = (0.2f + R() * 0.2f) * sizeK * big;
-                WgPuff(V(px, Y(px, pz) + 0.22, pz), o * v0 + Vector3.Up * (0.05f + R() * 0.15f), sz, 1.4f, 0.75f + R() * 0.35f, WgDust(1.0f + R() * 0.14f), 0.8f, drag);
+                WgPuff(V(px, Y(px, pz) + 0.22, pz), o * v0 + Vector3.Up * (0.05f + R() * 0.15f), sz, 1.4f, 0.75f + R() * 0.35f, P7Lit(1.0f + R() * 0.14f), 0.8f, drag);
                 if (R() < 0.65f) WgPuff(V(px, Y(px, pz) + 0.1, pz), o * v0 * 0.85f, sz * (1.0f + R() * 0.3f), 1.3f, 0.7f + R() * 0.25f, WgDust(0.68f), 0.76f, drag);
             }
         }
@@ -319,7 +322,7 @@ public partial class BattleFx
                 for (int j = 0; j <= K; j++)
                 {
                     float al = len * j / K;
-                    var p = WgCrackPoint(from, dir, side, al, len, t0, n, across) + Vector3.Up * 0.04f;
+                    var p = P7CrackAt(from, dir, side, al, len, t0, n, across) + Vector3.Up * 0.04f;
                     mesh.SurfaceSetUV(new Vector2((float)j / K, 0));
                     mesh.SurfaceAddVertex(p - s3 * hwMax);
                     mesh.SurfaceSetUV(new Vector2((float)j / K, 1));
@@ -359,7 +362,7 @@ public partial class BattleFx
                 for (int c = 0; c < cl; c++)
                 {
                     float al = (c + 0.2f + R() * 0.6f) / cl * len;
-                    var p = WgCrackPoint(from, dir, side, al, len, t0, n, across);
+                    var p = P7CrackAt(from, dir, side, al, len, t0, n, across);
                     WgLater(0.1f * al / len, () => WgJet(p, 0.55f));
                 }
                 break;
@@ -376,7 +379,7 @@ public partial class BattleFx
                 {
                     float al = Mathf.Clamp((c + R()) / m, 0.03f, 0.97f) * len;
                     float force = 1.1f - 0.35f * al / len;
-                    var p = WgCrackPoint(from, dir, side, al, len, t0, n, across);
+                    var p = P7CrackAt(from, dir, side, al, len, t0, n, across);
                     int jets = 1 + (int)(R() * 2.2f);
                     float delay = 0.1f * al / len;
                     WgLater(delay, () =>
@@ -403,6 +406,16 @@ public partial class BattleFx
                 }
                 break;
         }
+    }
+
+    /// <summary>The crack strip's gap centre at `along` (m), as the decals draw it (WgCrackPoint's offset taken the
+    /// other way: measured on the laid strip, the gap ran mirrored to it).</summary>
+    Vector3 P7CrackAt(Vector2 from, Vector2 dir, Vector2 side, float along, float len, int t0, int n, float across)
+    {
+        var c = WgCrackPoint(from, dir, side, along, len, t0, n, across);
+        var q = from + dir * along;
+        var m = new Vector2(2 * q.X - c.X, 2 * q.Y - c.Z);
+        return V(m.X, Y(m.X, m.Y), m.Y);
     }
 
     void P7ScarGone(P7Scar s)
@@ -473,7 +486,7 @@ public partial class BattleFx
                         var o = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
                         float sz = 0.16f + R() * 0.2f;
                         bool lit = i % 3 != 2;
-                        WgPuff(feet + o * (0.25f + R() * 0.15f) + Vector3.Up * (lit ? 0.14f : 0.07f), o * (2.0f + R() * 1.6f) + Vector3.Up * 0.12f, sz, 1.5f, 0.55f + R() * 0.3f, WgDust(lit ? 1.04f : 0.7f), 0.8f, 4.5f);
+                        WgPuff(feet + o * (0.25f + R() * 0.15f) + Vector3.Up * (lit ? 0.14f : 0.07f), o * (2.0f + R() * 1.6f) + Vector3.Up * 0.12f, sz, 1.5f, 0.55f + R() * 0.3f, (lit ? P7Lit(1.04f) : WgDust(0.7f)), 0.8f, 4.5f);
                     }
                 }
                 p7VowLevel = 0; p7VowBlows = 0; p7StoreAt = -9;
@@ -487,7 +500,7 @@ public partial class BattleFx
                     // comes in over a sample; an amber rim only; a sample at full (the core in it) on each blow taken
                     float life = s.Age < P7Sample ? 0.85f : since < P7Sample ? 0f : since < 2 * P7Sample ? 0.4f : 0.72f;
                     s.M.SetShaderParameter("p7_lvl", life);
-                    s.M.SetShaderParameter("p7_width", (since < P7Sample ? 0.5f : 0.3f) + 0.05f * p7VowLevel);
+                    s.M.SetShaderParameter("p7_width", (since < P7Sample ? 0.85f : 0.55f) + 0.08f * p7VowLevel);
                     s.M.SetShaderParameter("p7_alpha", 0.9f);
                 });
                 p7Glow = P7Quad(9, P7ShieldAt(), 0.14f, 9999, bill: true, top: true, step: s =>
@@ -496,7 +509,7 @@ public partial class BattleFx
                     float t = (float)(time - p7VowStart), since = (float)(time - p7StoreAt);
                     // ~3x over the brace in four steps, a step more for each blow kept (capped), a sample larger on one
                     float g = 1 + 2 * Mathf.Min(1, Mathf.Floor(t / 0.55f) / 4) + Mathf.Min(0.6f, 0.1f * p7VowBlows);
-                    s.N.Scale = Vector3.One * 0.14f * g * (since < P7Sample ? 1.2f : 1f);
+                    s.N.Scale = Vector3.One * 0.17f * g * (since < P7Sample ? 1.2f : 1f);
                     s.M.SetShaderParameter("p7_lvl", since < P7Sample || g >= 2.2f ? 0f : 0.36f);
                     s.M.SetShaderParameter("p7_t", since);
                     s.M.SetShaderParameter("p7_alpha", 0.92f);
@@ -593,10 +606,13 @@ public partial class BattleFx
                 double px = x + o.X * d, pz = z + o.Z * d;
                 float sz = 0.18f + R() * 0.26f;
                 bool lit = R() < 0.6f;
-                WgPuff(V(px, Y(px, pz) + (lit ? 0.2 : 0.09), pz), o * (0.8f + R() * 0.9f) + Vector3.Up * (lit ? 0.35f : 0.08f), sz, 1.6f, 0.6f + R() * 0.3f, WgDust(lit ? 1.04f : 0.7f), 0.78f, 3f);
+                WgPuff(V(px, Y(px, pz) + (lit ? 0.2 : 0.09), pz), o * (0.8f + R() * 0.9f) + Vector3.Up * (lit ? 0.35f : 0.08f), sz, 1.6f, 0.6f + R() * 0.3f, (lit ? P7Lit(1.04f) : WgDust(0.7f)), 0.78f, 3f);
             }
         }
     }
+
+    /// <summary>A dust puff's lit top: by night held a third brighter (the night tan sank under her pool's lit ground).</summary>
+    Color P7Lit(float lit) => WgDust(Flare.Night ? lit * 1.35f : lit);
 
     /// <summary>The store as steps (0, then a quarter a step up to 1): the blows' kept fifths, 4, 10, 20, 35.</summary>
     static float P7StoreLevel(double stored) => stored >= 35 ? 1f : stored >= 20 ? 0.75f : stored >= 10 ? 0.5f : stored >= 4 ? 0.25f : stored > 0 ? 0.12f : 0f;
@@ -667,7 +683,7 @@ public partial class BattleFx
             while (p7Swirl <= 0)
             {
                 p7Swirl += 0.07f + R() * 0.05f;
-                float ac = p7SpinAngle - p7SpinDir * (0.4f + R() * 1.4f), dc = 0.5f + R() * 0.55f;
+                float ac = p7SpinAngle - p7SpinDir * (0.4f + R() * 1.4f), dc = 0.75f + R() * 0.55f;
                 var feet = new Vector3(PlayerPos.X, Y(PlayerPos.X, PlayerPos.Z), PlayerPos.Z);
                 int n = 2 + (int)(R() * 2.99f);
                 float big = 0.7f + R() * 0.8f;
@@ -676,9 +692,9 @@ public partial class BattleFx
                     float a = ac + (R() - 0.5f) * 0.35f, d = dc + (R() - 0.5f) * 0.25f;
                     var o = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
                     var tan = new Vector3(-o.Z, 0, o.X) * p7SpinDir;
-                    float sz = (0.16f + R() * 0.12f) * big;
+                    float sz = (0.22f + R() * 0.16f) * big;
                     var v = tan * (2.4f + R() * 1.4f) + o * (0.7f + R() * 0.6f) + Vector3.Up * 0.08f;
-                    WgPuff(feet + o * d + Vector3.Up * 0.17f, v, sz, 1.5f, 0.45f + R() * 0.25f, WgDust(1.02f + R() * 0.1f), 0.84f, 3.2f);
+                    WgPuff(feet + o * d + Vector3.Up * 0.2f, v, sz, 1.5f, 0.5f + R() * 0.25f, P7Lit(1.18f + R() * 0.12f), 0.88f, 3.2f);
                     if (i % 2 == 0) WgPuff(feet + o * d + Vector3.Up * 0.08f, v * 0.85f, sz * 1.15f, 1.4f, 0.45f + R() * 0.2f, WgDust(0.66f), 0.8f, 3.2f);
                 }
             }
