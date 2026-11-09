@@ -110,7 +110,7 @@ public sealed partial class HerLight : Control
         /// <summary>M4 §3, a step won (GameHud.StepWon): a charge pops the new pip in (PopTime) with a core glint; the
         /// rest glint every pip once (left to right, GlintStagger apart, each GlintTime); the step's name in small caps
         /// (Cinzel, LabelSize px) under the pips for LabelTime, fading over its last LabelFade.</summary>
-        public const float PopTime = 0.32f, GlintTime = 0.3f, GlintStagger = 0.06f, LabelTime = 1.6f, LabelFade = 0.5f, LabelSize = 13, LabelGap = 3;
+        public const float PopTime = 0.32f, PopGlint = 0.1f, GlintTime = 0.3f, GlintStagger = 0.06f, LabelTime = 1.6f, LabelFade = 0.5f, LabelSize = 13, LabelGap = 3;
         float stepT = 99;
         bool stepPop, logged;
         string stepName = "";
@@ -271,7 +271,12 @@ public sealed partial class HerLight : Control
         float StepGlint(int i)
         {
             if (stepT >= LabelTime) return 0;
-            if (stepPop) return i == dashMax - 1 ? Math.Clamp(1 - stepT / PopTime, 0, 1) : 0;
+            // (the popped pip's glint: 2-3 frames, FX_LANGUAGE §4, on the pop's peak, when the new pip is full size)
+            if (stepPop)
+            {
+                float pu = Math.Abs(stepT - PopTime * 0.55f) / (PopGlint / 2);
+                return i == dashMax - 1 && pu < 1 ? 1 - 0.5f * pu : 0;
+            }
             float u = (stepT - i * GlintStagger) / GlintTime;
             return u < 0 || u > 1 ? 0 : MathF.Sin(MathF.PI * u);
         }
@@ -285,14 +290,14 @@ public sealed partial class HerLight : Control
         }
 
         /// <summary>A four-point glint (the FX language's star) at c, arm length len, core color, strength k.</summary>
-        void Star(Vector2 c, float len, float k)
+        void Star(Vector2 c, float len, float k, bool heart = true)
         {
             if (k <= 0.01f) return;
             var col = StepCore with { A = k };
-            DrawLine(c - new Vector2(len, 0), c + new Vector2(len, 0), col, 1.2f, true);
-            DrawLine(c - new Vector2(0, len), c + new Vector2(0, len), col, 1.2f, true);
-            DrawCircle(c, 2.2f, col);
-            DrawCircle(c, 4.5f, StepCore with { A = 0.25f * k });
+            DrawLine(c - new Vector2(len, 0), c + new Vector2(len, 0), col, heart ? 1.2f : 1f, true);
+            DrawLine(c - new Vector2(0, len), c + new Vector2(0, len), col, heart ? 1.2f : 1f, true);
+            DrawCircle(c, heart ? 2.2f : 1.2f, col);
+            if (heart) DrawCircle(c, 4.5f, StepCore with { A = 0.25f * k });
         }
 
         void Pips()
@@ -312,6 +317,8 @@ public sealed partial class HerLight : Control
                         DrawCircle(c, (r - 1) * ps, CopperMid);
                         DrawCircle(c - new Vector2(0, 0.8f), Math.Max(0, (r - 2) * ps), CopperHi);
                         DrawCircle(c - new Vector2(0.4f, 1.4f), Math.Max(0, (r - 3.6f) * ps), CopperLit);
+                        // (the new pip reads core-bright under its glint: a wide hot core while it pops)
+                        DrawCircle(c - new Vector2(0.4f, 0.9f), 2.2f * ps, WickCore);
                     }
                 }
                 else if (i < dashCount)
@@ -333,7 +340,10 @@ public sealed partial class HerLight : Control
                     if (i == dashCount && dashRe > 0.01f)
                         DrawCircle(c, (r - 1.5f) * Math.Clamp(dashRe, 0, 1), CopperHi with { A = 0.8f });
                 }
-                if (sg > 0)
+                if (sg > 0 && stepPop)
+                    // (the pop's glint: about 1.5x the pip across, set off to its upper right, so the new pip itself shows)
+                    Star(c + new Vector2(r + 1.5f, -(r + 1.5f)), Pip * (0.5f + 0.25f * sg), sg, false);
+                else if (sg > 0)
                 {
                     DrawCircle(c, r + 3, StepCore with { A = 0.22f * sg });
                     Star(c, 6 + 5 * sg, sg);
