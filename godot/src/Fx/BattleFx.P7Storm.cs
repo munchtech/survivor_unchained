@@ -216,8 +216,6 @@ public partial class BattleFx
             m.SurfaceAddVertex(new Vector3(her.X, y, her.Z) + d * (rc + hw));
         }
         m.SurfaceEnd();
-        if (Args.Has("clip") && p7StormOn > 0.5f && p7StormOn < 0.5f + 1 / 60f)
-            GD.Print($"p7 smear arc {s.Arc:F2} rc {rc:F2} hw {hw:F2} h {h:F2} head {new Vector3(her.X, her.Y + h, her.Z) + new Vector3(Mathf.Cos(a0), 0, Mathf.Sin(a0)) * rc} vis {s.N.IsVisibleInTree()} layers {s.N.Layers}");
     }
 
     void P7StormDown()
@@ -253,7 +251,7 @@ public partial class BattleFx
         float k = Mathf.Clamp((grow - 1) / 0.6f, 0, 1);
         P7Star(c + Vector3.Up * 0.05f, Mathf.Min(1.7f, r * 0.3f), 7);
         P7Ring(c + Vector3.Up * 0.06f, r, 0.18f, 0.04f + 0.012f * k, 1f, 0f, 0.3f, 0.95f);
-        P7LightOn(c + Vector3.Up * 1.4f, r * 1.5f, (Flare.Night ? 2.6f : 4.5f) * (0.85f + 0.3f * k));
+        P7LightOn(c + Vector3.Up * 1.4f, r * 1.5f, (Flare.Night ? 2.0f : 4.5f) * (0.85f + 0.3f * k));
         P7DustRing(x, z, R() * Mathf.Tau, r * 0.95f, 26 + (int)(10 * k), 0.9f + 0.2f * k);
         int chunks = 7 + (int)(R() * 3.99f + 4 * k);
         for (int i = 0; i < chunks; i++)
