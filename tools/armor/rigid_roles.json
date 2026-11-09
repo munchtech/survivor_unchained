@@ -1,0 +1,23 @@
+{
+ "_doc": "The bones a rigid gear component's one blend of weights may use, by slot (tools/armor/gear_fit.py rigid_blend). A rigid component (a plate, its rivets) never bends: it takes one blend, B's skin weights averaged over its bound points. That mean takes in every bone her skin there follows (the breast springs, the neck, the clavicle under a cuirass), and the whole plate then swings with each. Here each slot names the roles its plates may ride (\"ride\") and each role's share of the blend: a number is a fixed share; \"mean\" is the share that role already has in the mean. With \"one_bone\" each role's share goes to its strongest bone in the mean (a plate on one bone moves rigidly; a blend of two turning bones shrinks and shears it), else bones keep their proportions from the mean; a role the mean does not reach rides its anchor bone (\"{s}\" the side the mean leans to). Bones are given roles by the first pattern they match (regex, whole name). A slot not listed keeps the mean as it is. A new slot or a new body's bones need only this file.",
+ "roles": {
+  "spine": ["pelvis", "spine_0[1-5]"],
+  "neck": ["neck_0[0-9]", "Head"],
+  "clavicle": ["clavicle_[lr]", "scap_[lr]", "trap_[lr]"],
+  "upperarm": ["upperarm(_.+)?_[lr]", "delt_[lr]"],
+  "lowerarm": ["lowerarm(_.+)?_[lr]"],
+  "hand": ["hand_[lr]", "(thumb|index|middle|ring|pinky)_.+"],
+  "chest": ["pec_[lr]", "lat_[lr]", "breast(_tip)?_[lr]"],
+  "thigh": ["thigh(_.+)?_[lr]", "glute_[lr]"],
+  "calf": ["calf(_.+)?_[lr]"],
+  "foot": ["foot_[lr]", "ball(_leaf)?_[lr]"]
+ },
+ "anchors": {"spine": "spine_04", "neck": "neck_01", "clavicle": "clavicle_{s}", "upperarm": "upperarm_{s}",
+             "lowerarm": "lowerarm_{s}", "hand": "hand_{s}", "thigh": "thigh_{s}", "calf": "calf_{s}", "foot": "foot_{s}"},
+ "slots": {
+  "top": {"ride": {"spine": 1}, "one_bone": true},
+  "pauldrons": {"ride": {"upperarm": 1}, "one_bone": true},
+  "bracers": {"ride": {"lowerarm": "mean"}},
+  "greaves": {"ride": {"calf": "mean"}}
+ }
+}

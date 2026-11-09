@@ -22,7 +22,11 @@ climb in from the footprint's border. A's piece-specific rules are not carried: 
 ranger's and warden's foot not drawn inside the boot, the arcanist's hand not drawn inside the glove and her forearm under
 it tucked all the way, its glove-top and glove-edge eases, a hat's hair (the boot's deep tuck is dead code in A: no part
 carries deep_zt). All of those answer clipping in MOTION (a bent ankle, a closed fist); at rest the general rule covers what
-lies under each piece. One row property is A's design and carried: a row whose A tuck is empty (its parts do not hide her
+lies under each piece. In their place three general rules (P2 gear s7): skin through a piece at rest is tucked
+full and held; skin under a rigid plate within RIGID_FULL is tucked full (A reached that by measuring its clips); and THE
+PIECE ENCLOSES HER: in the slots that wrap a limb (ENCLOSE_SLOTS), her skin the piece encloses (every ray over her outward
+hemisphere meets it, ENCLOSE_LEAK allowed out) and GONE_IN or more from any of her it does not is not drawn (1.0): a foot
+in a boot, a hand in a glove, whatever the pose does inside. One row property is A's design and carried: a row whose A tuck is empty (its parts do not hide her
 skin: a sheer stocking, belts, skirts, a collar) tucks nothing (a_hides). `control` compares native with A's records carried, row by row.
 
 The cover: tools/armor/cover.py's rule (cover_of: reach 45 mm, ramp 0, deep 25 mm; a row's cover_grow) on this body.
@@ -58,6 +62,16 @@ SMOOTH_IT = 4
 STEP = 0.15
 COVER_REACH, COVER_RAMP, COVER_DEEP = 0.045, 0.0, 0.025
 BOX = 0.05
+FULL = 0.98            # a full tuck's mark (heroine_skin.gdshader reads 0.973 and over as all of its 10 mm)
+GONE = 1.0             # her skin not drawn (the shader discards 0.995 and over)
+BACK = 0.015           # through at rest: the piece's outer face met this far back along her inward normal
+RIGID_FULL, RIGID_ZERO = 0.006, 0.010   # under a rigid plate: full this close, eased to none here
+ENCLOSE_DIRS = 160     # rays over the sphere for the enclosure test (those within her outward hemisphere are cast)
+ENCLOSE_RAY = 0.25     # a ray that runs this far clear of the piece leaves it: her point can be seen from outside
+ENCLOSE_LEAK = 0.03    # share of her hemisphere's rays allowed out (grazing gaps between a piece's own parts: a sabaton's lames)
+GONE_IN = 0.015        # her enclosed skin not drawn only this far (along her surface) from any of her that is not
+ENCLOSE_SLOTS = ("boots", "gloves", "greaves", "bracers", "head")   # slots whose pieces wrap a limb (a top's arm holes
+#   and neck open and close as she moves: its skin keeps the tuck)
 
 
 # ---------------------------------------------------------------- the body
@@ -125,16 +139,25 @@ def tuck_bound(sk, t, hard=None, under=None):
     return np.clip(F, 0.0, 1.0)[gid]
 
 
-def tuck_of(sk, PB, TB):
-    """Her skin's tuck under one piece (PB points, TB triangles), per vertex of sk; and how many rays grazed it."""
+def tuck_of(sk, PB, TB, rigid=None):
+    """Her skin's tuck under one piece (PB points, TB triangles, `rigid` a flag per triangle: a plate that never bends),
+    per vertex of sk; how many rays grazed it; and how many points the two rules for plates raised.
+
+    The general rule (A's bounded tuck) tucks her as deep as the piece lies close. Two rules more, for any piece:
+    - THROUGH AT REST: her skin already past the piece (its outer face met within BACK behind her along her inward
+      normal, and nothing of it in front within REACH): a full tuck, held (A's "proud" rule, her skin standing out of
+      the form a plate was made on, without the form).
+    - UNDER A RIGID PLATE: a plate never bends, so as she moves her skin slides under it by more than a bending piece's
+      clearance tracks: within RIGID_FULL a full tuck, eased to the general rule's at RIGID_ZERO. (A reached a full tuck
+      under its pauldrons and cuirass by measuring its clips: tools/armor/pose_tuck.py; this is that, as a rule.)"""
     import trimesh
     t = np.zeros(len(sk.P))
     if not len(TB):
-        return t, 0
+        return t, 0, 0
     lo, hi = PB.min(0) - BOX, PB.max(0) + BOX
     cand = np.nonzero(((sk.P >= lo) & (sk.P <= hi)).all(1))[0]
     if not len(cand):
-        return t, 0
+        return t, 0, 0
     mesh = trimesh.Trimesh(PB, TB, process=False)
     ray = trimesh.ray.ray_pyembree.RayMeshIntersector(mesh)
     O = sk.P[cand] + sk.N[cand] * LIFT
@@ -149,7 +172,91 @@ def tuck_of(sk, PB, TB):
     under = np.zeros(len(sk.P), bool)
     under[v] = True
     t[v] = 0.8 * np.clip((0.005 - d[face_on] - LIFT) / 0.004, 0, 1)
-    return tuck_bound(sk, t, None, under | (t > 0)), grazed
+    raised = 0
+    if rigid is not None and rigid.any():
+        rg = rigid[tri[face_on]]
+        tr = FULL * np.clip((RIGID_ZERO - (d[face_on] + LIFT)) / (RIGID_ZERO - RIGID_FULL), 0, 1)
+        up = rg & (tr > t[v])
+        t[v[up]] = tr[up]
+        raised += int(up.sum())
+    # (through at rest: her inward ray meets a face that looks back at it, i.e. the piece's outside, close behind her)
+    infront = np.zeros(len(sk.P), bool)
+    infront[cand[ri[near]]] = True
+    tb, rb, lb = ray.intersects_id(sk.P[cand] + sk.N[cand] * LIFT, -sk.N[cand], multiple_hits=False, return_locations=True)
+    db = np.linalg.norm(lb - (sk.P[cand[rb]] + sk.N[cand[rb]] * LIFT), axis=1)
+    outer = (mesh.face_normals[tb] * sk.N[cand[rb]]).sum(1) > 0
+    thr = cand[rb[(db <= BACK + LIFT) & outer]]
+    thr = thr[~infront[thr]]
+    hard = np.zeros(len(sk.P), bool)
+    hard[thr] = True
+    raised += int((t[thr] < FULL).sum())
+    t[thr] = FULL
+    under[thr] = True
+    return tuck_bound(sk, t, hard, under | (t > 0)), grazed, raised
+
+
+def fib_dirs(n):
+    i = np.arange(n) + 0.5
+    z = 1 - 2 * i / n
+    r = np.sqrt(1 - z * z)
+    a = np.pi * (1 + 5 ** 0.5) * i
+    return np.c_[r * np.cos(a), r * np.sin(a), z]
+
+
+def enclosed_of(sk, PB, TB, foot):
+    """Her points the piece encloses: every ray from her point over her outward hemisphere (ENCLOSE_DIRS over the
+    sphere, those at or above her tangent plane) meets the piece within ENCLOSE_RAY (a foot in a boot, a hand in a
+    glove). Only her points in `foot` (those within the piece's box: the footprint's rays miss toes floating in a boot's
+    toe box) are tried. Per vertex of sk: bool."""
+    import trimesh
+    out = np.zeros(len(sk.P), bool)
+    cand = np.nonzero(foot)[0]
+    if not len(cand) or not len(TB):
+        return out
+    ray = trimesh.ray.ray_pyembree.RayMeshIntersector(trimesh.Trimesh(PB, TB, process=False))
+    Dd = fib_dirs(ENCLOSE_DIRS)
+    for a in range(0, len(cand), 2000):
+        ii = cand[a:a + 2000]
+        up = (sk.N[ii] @ Dd.T) >= 0.0
+        pi, di = np.nonzero(up)
+        O = sk.P[ii][pi] + sk.N[ii][pi] * LIFT
+        hit = np.zeros(len(pi), bool)
+        _, ri, loc = ray.intersects_id(O, Dd[di], multiple_hits=False, return_locations=True)
+        hit[ri] = np.linalg.norm(loc - O[ri], axis=1) <= ENCLOSE_RAY
+        n_up = np.bincount(pi, minlength=len(ii))
+        n_out = np.bincount(pi[~hit], minlength=len(ii))
+        out[ii] = n_out <= ENCLOSE_LEAK * n_up
+    return out
+
+
+def gone_of(sk, inside):
+    """THE PIECE ENCLOSES HER: her points inside (enclosed by it), welded, holes in that set that
+    touch none of her outside it filled, and only those GONE_IN or more along her surface from any of her not inside it
+    (so no point that can be seen at its opening, nor one that comes into view there as she moves, is cut).
+    Per vertex: bool."""
+    gid, ng, a_, b_, l_ = sk.gid, sk.ng, sk.a, sk.b, sk.l
+    ins = np.zeros(ng, bool)
+    np.logical_or.at(ins, gid, inside)
+    if not ins.any():
+        return np.zeros(len(sk.P), bool)
+    # (holes: her points not inside, in components that touch nothing but inside points and are small: a few of her
+    # points the rays read as seen through a seam of the piece, ringed by enclosed skin)
+    from scipy.sparse.csgraph import connected_components
+    o = ~ins
+    keep = o[a_] & o[b_]
+    g = sparse.csr_matrix((np.ones(int(keep.sum())), (a_[keep], b_[keep])), shape=(ng, ng))
+    nc, lab = connected_components(g, directed=False)
+    size = np.bincount(lab[o], minlength=nc)
+    big = size.max() if len(size) else 0
+    hole = o & (size[lab] < 0.01 * big)
+    ins = ins | hole
+    o = ~ins
+    bd = np.unique(a_[o[a_] & ins[b_]])
+    if not len(bd):
+        return ins[gid]
+    gr = sparse.csr_matrix((l_, (a_, b_)), shape=(ng, ng))
+    dd = dijkstra(gr, directed=False, indices=bd, min_only=True, limit=GONE_IN * 1.01)
+    return (ins & (dd >= GONE_IN))[gid]
 
 
 def cover_of(sk, PB, TB, row):
@@ -185,21 +292,26 @@ def read_records(path):
     return np.c_[rec["x"], rec["y"], rec["z"]].astype(np.int64), rec["t"].astype(np.float64)
 
 
-def piece_of(out_dir, row):
-    """A built row's close-tier meshes on this body: points and triangles (its lod1 / shadow meshes left out)."""
+def piece_of(out_dir, row, flags=False):
+    """A built row's close-tier meshes on this body: points and triangles (its lod1 / shadow meshes left out); with
+    `flags`, also a rigid flag per triangle (gear_fit's rule: a rigid row's metal meshes)."""
     from gl import Glb
+    import gear_fit as gf
     g = Glb(os.path.join(out_dir, f"{row['id']}.gltf"))
-    Ps, Ts, n = [], [], 0
+    rigid_row = bool(row.get("rigid")) or row["id"].startswith(("plate_", "mar_her_"))
+    Ps, Ts, Rs, n = [], [], [], 0
     for name in row["meshes"]:
         m = g.mesh(name)
         if m is None:
             continue
         Ps.append(m.P.astype(np.float64))
         Ts.append(m.T + n)
+        Rs.append(np.full(len(m.T), gf.is_rigid_mesh(rigid_row, name)))
         n += len(m.P)
     if not Ps:
-        return np.zeros((0, 3)), np.zeros((0, 3), np.int64)
-    return np.vstack(Ps), np.vstack(Ts)
+        z = (np.zeros((0, 3)), np.zeros((0, 3), np.int64))
+        return z + (np.zeros(0, bool),) if flags else z
+    return (np.vstack(Ps), np.vstack(Ts), np.concatenate(Rs)) if flags else (np.vstack(Ps), np.vstack(Ts))
 
 
 def write_all(out_dir, close_glb, play_glb, rows, say=print):
@@ -212,13 +324,24 @@ def write_all(out_dir, close_glb, play_glb, rows, say=print):
     for r in rows:
         if r.get("lod"):
             continue   # (a calling's play-tier unit: worn with its set, which tucks; its lod_shadow is no piece)
-        PB, TB = piece_of(out_dir, r)
+        PB, TB, RB = piece_of(out_dir, r, flags=True)
         c = cover_of(close, PB, TB, r) if r["slot"] != "ink" else np.zeros(len(close.P))
+        ng = 0
         if hides.get(r["id"], True):
-            tc, gz = tuck_of(close, PB, TB)
-            tp = tuck_of(play, PB, TB)[0] if play is not None else np.zeros(0)
+            tc, gz, rz = tuck_of(close, PB, TB, RB)
+            tp = tuck_of(play, PB, TB, RB)[0] if play is not None else np.zeros(0)
+            if r["slot"] in ENCLOSE_SLOTS:
+                box = ((close.P >= PB.min(0) - BOX) & (close.P <= PB.max(0) + BOX)).all(1)
+                gc = gone_of(close, enclosed_of(close, PB, TB, box))
+                tc[gc] = GONE
+                ng = int(gc.sum())
+                if play is not None:
+                    # (the play body's points take the close body's gone where they lie on it)
+                    dp, ip = close.kd.query(play.P)
+                    gp = gc[ip] & (dp < 0.004) & (tp > 0)
+                    tp[gp] = GONE
         else:
-            tc, gz = np.zeros(len(close.P)), 0
+            tc, gz, rz = np.zeros(len(close.P)), 0, 0
             tp = np.zeros(len(play.P)) if play is not None else np.zeros(0)
         Pk = np.vstack([close.P, play.P]) if play is not None else close.P
         nt = write_records(os.path.join(out_dir, "armor_tuck", f"{r['id']}.bin"), Pk, np.r_[tc, tp])
@@ -227,11 +350,11 @@ def write_all(out_dir, close_glb, play_glb, rows, say=print):
         r["tuck_count"] = nt
         r["cover_count"] = nc
         st = {"tuck_close": int(len(np.unique(np.round(close.P[tc > 0] * 1e5), axis=0))), "tuck_all": nt, "cover": nc,
-              "full": int((tc >= 0.98).sum()), "gone": int((tc >= 0.995).sum()), "grazed": gz,
+              "full": int((tc >= 0.98).sum()), "gone": int((tc >= 0.995).sum()), "grazed": gz, "raised": rz,
               "max": float(tc.max()) if len(tc) else 0.0}
         stats[r["id"]] = st
         say(f"gear tuck: {r['id']:22} tuck {nt:6d} records ({st['tuck_close']} close), max {st['max']:.2f}, "
-            f"{gz} grazing rays; cover {nc:6d}")
+            f"{gz} grazing rays, {rz} raised (plate / through), {ng} gone (enclosed); cover {nc:6d}")
     say(f"gear tuck: {len(rows)} rows in {time.time() - t0:.1f} s")
     return stats
 

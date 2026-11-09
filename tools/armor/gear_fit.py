@@ -306,6 +306,54 @@ def top_k(D, k=8):
     return idx.astype(np.uint16), val.astype(np.float32)
 
 
+ROLES_PATH = os.path.join(HERE, "rigid_roles.json")
+_ROLES = {}
+
+
+def rigid_roles(path=None):
+    """tools/armor/rigid_roles.json (cached): the bone roles and, per slot, the roles a rigid blend may ride."""
+    path = path or ROLES_PATH
+    if path not in _ROLES:
+        _ROLES[path] = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else {"slots": {}}
+    return _ROLES[path]
+
+
+def rigid_blend(body, trs, ws, slot, roles=None):
+    """A rigid component's one blend of weights (top 8): the mean of B's weights over its bound points (trs, ws), kept to
+    the roles its slot may ride (rigid_roles.json "slots": each role's share a number, or "mean": its share in the
+    mean; "one_bone": each role's share on its strongest bone in the mean, else spread as in the mean; a role the mean
+    does not reach rides its anchor, on the side the mean leans to). A slot with no rule keeps the mean."""
+    import re
+    names = body.joint_names
+    D = dense_weights(body, trs, ws, len(names)).mean(0)
+    rr = roles if roles is not None else rigid_roles()
+    rule = rr.get("slots", {}).get(slot) if slot else None
+    if rule:
+        role = np.array([next((k for k, pats in rr["roles"].items() if any(re.fullmatch(p, n) for p in pats)), "")
+                         for n in names])
+        side = np.array([n[-2:] for n in names])
+        lean = "l" if D[side == "_l"].sum() >= D[side == "_r"].sum() else "r"
+        out = np.zeros(len(names))
+        for k, v in rule["ride"].items():
+            s = float(D[role == k].sum()) if v == "mean" else float(v)
+            if s <= 0:
+                continue
+            part = np.where(role == k, D, 0.0)
+            if part.sum() > 1e-9:
+                if rule.get("one_bone"):
+                    out[int(np.argmax(part))] += s
+                else:
+                    out += s * part / part.sum()
+            else:
+                a = rr.get("anchors", {}).get(k, "").replace("{s}", lean)
+                if a in names:
+                    out[names.index(a)] += s
+        if out.sum() > 1e-9:
+            D = out
+    jj, ww = top_k(D[None])
+    return jj[0], ww[0]
+
+
 def body_weights(body, tri, w, k=8, chunk=60000):
     nj = len(body.joint_names)
     J = np.zeros((len(tri), k), np.uint16)
@@ -877,16 +925,13 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                     shapes[nm] = s
             rg = comp_i >= 0
             if rg.any():
-                nj = len(body.joint_names)
                 for c in np.unique(lead[comp_i[rg]]):
                     sel = rg & (lead[np.maximum(comp_i, 0)] == c)
                     own_all = np.concatenate([ev[mm["i"]]["comp"] for mm in ms]) == c
                     # the leader's bound points over all meshes of the tier
                     trs = np.concatenate([ev[mm["i"]]["tri"] for mm in ms])[own_all]
                     ws = np.vstack([ev[mm["i"]]["w"] for mm in ms])[own_all]
-                    D = dense_weights(body, trs, ws, nj).mean(0, keepdims=True)
-                    jj, ww = top_k(D)
-                    J[sel], W[sel] = jj[0], ww[0]
+                    J[sel], W[sel] = rigid_blend(body, trs, ws, bd.meta["row"].get("slot"))
                     Tvs = body.T[trs]
                     for nm, dP in body.shapes.items():
                         mean = (ws[:, :, None] * dP[Tvs]).sum(1).mean(0)
