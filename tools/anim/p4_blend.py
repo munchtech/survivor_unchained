@@ -3,7 +3,7 @@ local rotation slerped between the walk and the run at the shared stride phase (
 left foot down). For each weight in 0 .. 1 by .125 across one cycle:
   - the piece's deviation: hand_r (the sword) and lowerarm_l (the shield) global turn against the straight path
     (the slerp between the two holds' own turns at that phase), deg; the old per-bone mix read 43-54 deg at 0.5;
-  - the piece against her body: the warden set's pieces (tools/anim/data/arms_local.json, A's hand space, laid on B's
+  - the piece against her body: the warden set's pieces (p4.pieces(): arms_local_b.json, the game's own seat on B; was A's hand space, laid on B's
     bone by the rest-world rule Arms.HoldSheathed uses), mm inside her skin (clipcheck's posed B, torso: arms left out).
 
     python tools/anim/p4_blend.py [walk_clip run_clip] [--phases N]     (default walk_warden run_warden)
