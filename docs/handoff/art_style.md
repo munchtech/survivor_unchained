@@ -11,9 +11,9 @@
   - The town-day sun moves to the camera side (az 330 backlit 13's fronts; G1 07's house shadows point up).
   - Cloth becomes undyed tan, and rock by day stays neutral.
 - **Next:**
-  1. S2: `look_l1\workrief_l6_s2_night.md`, plus S1's numbers. Point S2 at `scene_color` for the night: AgX pulls a bright ember's channels together, the likely root of the brown pool. The chain's night solve is broken (sky #fff9f2, orange ground) and `all` writes the day only.
+  1. S2: `look_l1\work\brief_l6_s2_night.md`, plus S1's numbers. Point S2 at `scene_color` for the night: AgX pulls a bright ember's channels together, the likely root of the brown pool. The chain's night solve is broken (sky #fff9f2, orange ground) and `all` writes the day only.
   2. The 13-frame shoot, then one max judge.
-  3. FXM in the judge's window: `look_l1\workrief_l7_fx_marks.md`. The danger marks go over every after-grade light (FLARE_LOOK §1.6). Main approved it; send main the fx-lang sha.
+  3. FXM in the judge's window: `look_l1\work\brief_l7_fx_marks.md`. The danger marks go over every after-grade light (FLARE_LOOK §1.6). Main approved it; send main the fx-lang sha.
   4. Stage D, then G2.
 - **Sent to main:** the Low Ford pockets' cost line (a P5 lead after G2; about 0.6-1.0M).
 
