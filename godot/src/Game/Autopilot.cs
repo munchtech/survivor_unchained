@@ -230,6 +230,20 @@ public sealed class Autopilot
                 tx = caller.X + Math.Cos(orbit) * 3; tz = caller.Z + Math.Sin(orbit) * 3;
                 break;
             }
+            // The Warden's fight as ZoneSim's bot plays it: a lit lamp between her and him (his charge breaks it, her blows
+            // reach it), then him (he holds at his floor until two lamps are broken: circling the ford, she never won, m5 clip r2).
+            case "Boss" when !Idle && z is Zones.Prologue pb && b.Enemies.Living().FirstOrDefault(e => e.Tag == "warden" && e.State != EnemyState.Dying) is { } w:
+            {
+                var lit = pb.LampPosts.Where(l => l.Lit).OrderBy(l => (l.X - p.X) * (l.X - p.X) + (l.Z - p.Z) * (l.Z - p.Z)).ToList();
+                if (lit.Count > 0)
+                {
+                    var l = lit[0];
+                    double dx = l.X - w.X, dz = l.Z - w.Z, dl = Math.Max(0.1, Math.Sqrt(dx * dx + dz * dz));
+                    tx = l.X + dx / dl * 1.6; tz = l.Z + dz / dl * 1.6;
+                }
+                else { tx = w.X; tz = w.Z; }
+                break;
+            }
             case "Boss" or "Intro":
             {
                 var f = Place("ford");
