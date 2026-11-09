@@ -695,6 +695,16 @@ public partial class Game : Node, IZoneHost
         // The skill keys held (a channel), and where the cursor meets the ground (a pressed skill's aim).
         scene.Held = a => heldOn == null && choiceUp == null && auto == null && !controls.Captured && controls.Held(a);
         scene.Pointer = PointerGround;
+        // --press (ScriptedPress.cs): scripted skill/dash presses, held keys, aim and dash direction (pictures; under --auto idle).
+        if (Args.Get("press") is { Length: > 0 } pressSpec)
+        {
+            var sp = new ScriptedPress(pressSpec, () => Journey.Playtime, () => Battle is { } pb ? (pb.Player.X, pb.Player.Z) : null);
+            var bMove = scene.Move; var bPressed = scene.Pressed; var bHeld = scene.Held; var bPointer = scene.Pointer;
+            scene.Move = () => sp.Move() ?? bMove();
+            scene.Pressed = x => sp.Take(x) || bPressed(x);
+            scene.Held = x => sp.Held(x) || bHeld(x);
+            scene.Pointer = () => sp.Pointer() ?? bPointer();
+        }
         scene.OnStep = dt => { if (cine is not { ZoneHeld: true }) zone?.Step(dt); };
         scene.OnEvents = OnEvents;
         // The Flare's view speaks to the pad, the HUD and the crowd through these (Fx/Flare/FlareFx.cs).
@@ -2072,12 +2082,12 @@ public partial class Game : Node, IZoneHost
         // still land and knock her down; only her health is held).
         if (Args.Has("clip") && Args.Has("court-hold") && Battle is { } holdB && holdB.Player.Alive)
             holdB.Player.Hp = Math.Max(holdB.Player.Hp, holdB.MaxHp);
-        if (Args.Has("clip") && Args.Has("flare") && Battle is { } clipB && clipB.Player.Alive)
+        if (Args.Has("clip") && (Args.Has("flare") || Args.Has("press")) && Battle is { } clipB && clipB.Player.Alive)
             clipB.Player.Hp = Math.Max(clipB.Player.Hp, clipB.MaxHp * (Args.Has("flare-hp") ? Args.Num("flare-hp", 1) : 1));
         // --clip with --flare (pictures only): no ember level-up in the shot (H7 r2: she levelled at about the press and the
         // level's title sat over the frame's center through the Flare, its flash a white orb on her after the stop); the
         // ember's next level is pushed out of reach, nothing else changes. --clip-level keeps the game's own.
-        if (Args.Has("clip") && Args.Has("flare") && !Args.Has("clip-level") && Battle is { } clipE && clipE.EmberNext < 1e8)
+        if (Args.Has("clip") && (Args.Has("flare") || Args.Has("press")) && !Args.Has("clip-level") && Battle is { } clipE && clipE.EmberNext < 1e8)
             clipE.EmberNext = 1e9;
         if (!castDone && !flareReadyShot && Args.Has("cast") && Battle != null && Journey.Playtime >= Args.Num("cast", 1) - 0.1)
         {
