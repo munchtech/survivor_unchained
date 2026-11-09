@@ -612,6 +612,7 @@ class Check:
             sh_local = at[sc.ish]
             SvB = {B: np.unique(np.concatenate([x["Sv"] for x in group if x["B"] == B]), axis=0) for B in {x["B"] for x in group}}
             sub = sc.restrict(need)
+            Jn, Wn = sc.J[need], sc.W[need]
             for x in group:     # (a laid test's points: their own shapes, then the lay)
                 if "dA" in x:
                     x["_sub"] = sc.restrict(x["pts"])
@@ -620,7 +621,7 @@ class Check:
                     w = dict(w)
                     w.update(support_weights(sup))
                     Pn = sc.rest(need, w, sub)
-                    Pp = sc.lbs(S, Pn, sc.J[need], sc.W[need])
+                    Pp = sc.lbs(S, Pn, Jn, Wn)
                     Np = np.zeros_like(Pp)
                     Np[sh_local] = sc.normals_sh(Pp[sh_local])
                     kd_frame = {}
@@ -914,6 +915,7 @@ def fan_out(a, argv, clips, t_start):
         for lk in looks:
             r = ck.show(lk["look"])
             shows.append({**lk, "pieces": r, "fails": [i for i, v in r.items() if v["fail"]]})
+        print(f"gear_wear: {len(shows)} looks shown ({time.time() - t_start:.0f} s)", flush=True)
     for part, pr in procs:
         if pr.wait() != 0:
             raise SystemExit(f"gear_wear: a part failed: {open(part + '.log').read()[-3000:]}")
