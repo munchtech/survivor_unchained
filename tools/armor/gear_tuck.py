@@ -22,7 +22,8 @@ climb in from the footprint's border. A's piece-specific rules are not carried: 
 ranger's and warden's foot not drawn inside the boot, the arcanist's hand not drawn inside the glove and her forearm under
 it tucked all the way, its glove-top and glove-edge eases, a hat's hair (the boot's deep tuck is dead code in A: no part
 carries deep_zt). All of those answer clipping in MOTION (a bent ankle, a closed fist); at rest the general rule covers what
-lies under each piece. `control` compares native with A's records carried, row by row.
+lies under each piece. One row property is A's design and carried: a row whose A tuck is empty (its parts do not hide her
+skin: a sheer stocking, belts, skirts, a collar) tucks nothing (a_hides). `control` compares native with A's records carried, row by row.
 
 The cover: tools/armor/cover.py's rule (cover_of: reach 45 mm, ramp 0, deep 25 mm; a row's cover_grow) on this body.
 
@@ -206,14 +207,19 @@ def write_all(out_dir, close_glb, play_glb, rows, say=print):
     "cover_count". Returns {id: {...numbers}}."""
     t0 = time.time()
     close, play = Skin(close_glb), Skin(play_glb) if play_glb and os.path.exists(play_glb) else None
+    hides = a_hides()
     stats = {}
     for r in rows:
         if r.get("lod"):
             continue   # (a calling's play-tier unit: worn with its set, which tucks; its lod_shadow is no piece)
         PB, TB = piece_of(out_dir, r)
         c = cover_of(close, PB, TB, r) if r["slot"] != "ink" else np.zeros(len(close.P))
-        tc, gz = tuck_of(close, PB, TB)
-        tp = tuck_of(play, PB, TB)[0] if play is not None else np.zeros(0)
+        if hides.get(r["id"], True):
+            tc, gz = tuck_of(close, PB, TB)
+            tp = tuck_of(play, PB, TB)[0] if play is not None else np.zeros(0)
+        else:
+            tc, gz = np.zeros(len(close.P)), 0
+            tp = np.zeros(len(play.P)) if play is not None else np.zeros(0)
         Pk = np.vstack([close.P, play.P]) if play is not None else close.P
         nt = write_records(os.path.join(out_dir, "armor_tuck", f"{r['id']}.bin"), Pk, np.r_[tc, tp])
         nc = write_records(os.path.join(out_dir, "armor_cover", f"{r['id']}.bin"), close.P, c)
@@ -228,6 +234,20 @@ def write_all(out_dir, close_glb, play_glb, rows, say=print):
             f"{gz} grazing rays; cover {nc:6d}")
     say(f"gear tuck: {len(rows)} rows in {time.time() - t0:.1f} s")
     return stats
+
+
+def a_hides():
+    """{id: whether the piece hides her skin}: A's row tucks something (heroine_outfits.py tucks only under a piece's parts
+    marked "hides": a sheer stocking, a belt, a skirt, a collar, the warden's bracers are none, and their A tucks are empty;
+    tucked under a sheer stocking her legs would sit 6-8 mm in, seen through it). Rows A does not have: True."""
+    out = {}
+    for path in (os.path.join(REPO, "godot", "art", "people", "armor_index.json"),
+                 os.path.join(REPO, "godot", "art", "armor", "armor_index.json")):
+        if os.path.exists(path):
+            for r in json.load(open(path, encoding="utf-8")):
+                if r.get("tuck_count") is not None:
+                    out[r["id"]] = r["tuck_count"] > 0
+    return out
 
 
 # ---------------------------------------------------------------- control: A's records carried onto B
