@@ -129,14 +129,19 @@ public static class Pilot
     /// <returns>Whether a draught was drunk.</returns>
     /// <param name="rooted">Read the kit's telegraphs (Sim/Tells.cs): rooted in a marked blow, dash out; dragged into a
     /// pull's heart past walking out, dash out. A caller with hands that did not see it passes false.</param>
-    public static bool Act(Battle b, Journey j, double mx, double mz, SurvivorUnchained.Play.Bosses.ArenaBoss? boss = null, bool lunges = true, bool aimsFlare = true, bool rooted = true, bool crush = true, bool presses = false)
+    public static bool Act(Battle b, Journey j, double mx, double mz, SurvivorUnchained.Play.Bosses.ArenaBoss? boss = null, bool lunges = true, bool aimsFlare = true, bool rooted = true, bool crush = true, bool presses = false, PressHands? hands = null)
     {
         var p = b.Player;
         if (rooted && b.ActiveTells.Count > 0) KitDash(b, mx, mz);
-        if (rooted && b.ActiveTells.Count > 0) ClosingDash(b, presses);
+        if (rooted && b.ActiveTells.Count > 0) ClosingDash(b, presses || hands is { GripOnly: false });
         // The campaign's grips (ARPG.md 3.1): anyone holds the swing on what is near; a pressing hand presses the rest.
-        if (b.Campaign) Grips(b);
-        if (presses) PressSkills(b, rooted);
+        // (M3: a hand on the one press plan, data/content/press_plan.json, grips and presses through it)
+        if (hands != null) PressPlan.Run(b, hands, rooted);
+        else
+        {
+            if (b.Campaign) Grips(b);
+            if (presses) PressSkills(b, rooted);
+        }
         // A champion winding up a lunge close by: dash across its line, as anyone with a dash learns to.
         // (Not a boss: its blows are marked on the ground, and Boss reads them by their shape.)
         if (p.DashCharges > 0 && lunges)
