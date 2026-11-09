@@ -20,6 +20,11 @@ public sealed partial class Journey
         x.Ch ??= Ch;
         x.World ??= World;
         if (x.Allows == null) x.Allows = c => Rules.Test(c, Ctx);
+        if (WorldTierOn)
+        {
+            var wt = Content.WorldTiers.Get(Content.WorldTiers.Of(World));
+            x.Rarity *= wt.Rare; x.LegendaryMul *= wt.Legendary; x.Level += wt.ItemLevels;
+        }
         bool owed = World.LootDebt >= Rpg.Drops.Rules.Debt;
         var rolled = Rpg.Drops.Roll(x);
         // A Legendary falling is said under the HUD, once (docs/design/LOOT_DESIGN.md §8.2); the debt's

@@ -117,6 +117,7 @@ public sealed class DropCtx
     /// <summary>The people it fell among (pack, dead, lamplings, kerchiefs): homes and materials.</summary>
     public string? People;
     public IReadOnlyCollection<string>? Lean;
+    public double LegendaryMul = 1;
     public double Luck = 1, Rarity = 1, Quantity = 1, Gear = 1;
     /// <summary>In the night's arenas the materials go to the night's end tally, not the ground
     /// (crafting decision 7: no confetti, the tally is the moment).</summary>
@@ -367,7 +368,7 @@ public static class Drops
         double depth = Math.Min(Rules.DepthCap, x.Depth * Rules.DepthPerMinute);
         double q = src.Quality * x.Rarity * (1 + Math.Max(0, x.Luck - 1) * Rules.LuckShare) * (1 + depth);
         for (int i = 2; i < w.Length; i++) w[i] *= q;
-        w[5] *= src.Legendary * (1 + depth);
+        w[5] *= src.Legendary * (1 + depth) * x.LegendaryMul;
         bool sets = SetPieces(x).Any(), legends = Legendaries(x).Any();
         if (!sets) { w[3] += w[4]; w[4] = 0; }
         if (!legends) { w[3] += w[5]; w[5] = 0; }

@@ -1651,6 +1651,9 @@ public sealed partial class Battle
     /// <summary>No more enemies come (a developer's picture: --no-spawn, after --horde, so a cleared field stays clear).</summary>
     public bool NoSpawn;
 
+    /// <summary>The world tier's scale on the foes spawned from now (Journey.StartBattle; ARPG.md 7.3).</summary>
+    public double WorldHealth = 1, WorldDamage = 1;
+
     public Enemy? SpawnEnemy(string defId, double x, double z, SpawnOpts? o = null)
     {
         if (NoSpawn) return null;
@@ -1669,6 +1672,8 @@ public sealed partial class Battle
         e.MaxHp = e.Hp = def.Health * sc.Health * (o.Elite && !def.Elite ? 3 : 1);
         e.Damage = def.Damage * sc.Damage;
         e.Faction = o.Faction ?? def.Faction;
+        // The world's tier scales foes only: never her allies, never neutrals (ARPG.md 7.3).
+        if (e.Faction is not (Faction.Ally or Faction.Town or Faction.Wild or Faction.Player)) { e.MaxHp = e.Hp = e.MaxHp * WorldHealth; e.Damage *= WorldDamage; }
         e.Disposition = o.Disposition ?? (def.Faction == Faction.Ally ? Disposition.Ally : Disposition.Hostile);
         e.Speed = def.Speed * Vary.Pace(Rng.Next(), VaryPacks ? def.Spread ?? 0.08 : 0.08) * (e.Disposition == Disposition.Ally ? 1 : Rules.FoeSpeed * (1 + 0.05 * Boons.GetValueOrDefault("dark_bargain")));
         e.Elite = def.Elite || o.Elite;

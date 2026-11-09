@@ -815,7 +815,7 @@ public partial class Game : Node, IZoneHost
         // (--facing DEG: which way she stands at the start, for pictures of her from the front)
         if (Args.Get("facing") is string fa) start = start with { Facing = double.Parse(fa, System.Globalization.CultureInfo.InvariantCulture) * Math.PI / 180 };
         var meta = scene.Data.Meta;
-        var b = Journey.StartBattle(z.Combat, meta.Collision(), scene.HeightAt, start.X, start.Z, start.Facing, (uint)Rng.Next(), arena: z is ArenaRun or StoryNight, ember: z.Ember);
+        var b = Journey.StartBattle(z.Combat, meta.Collision(), scene.HeightAt, start.X, start.Z, start.Facing, (uint)Rng.Next(), arena: z is ArenaRun or StoryNight, ember: z.Ember, worldTier: z is not (ArenaRun or MapRun));
         Perf.Lap("play: the fight begun");
         // An arena is seen from higher and further out: the whole of the fight.
         var (pitch, dist) = z.Camera is var (cp, cd) ? (Mathf.DegToRad((float)cp), (float)cd) : camHome;

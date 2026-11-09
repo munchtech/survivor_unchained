@@ -1,6 +1,8 @@
 {
-  "about": "Permanent zones that reset like a Diablo zone (H4 item 10, the owner 3 Nov: 'a permanent one that can get reset like any diablo type zone'). Each zone's state (WorldState.Zone(id): packs down, chests opened) is cleared when its rule says, read by logic/World/ZoneReset.cs. reset: 'day' clears it on the day change (WorldState.Day); 'never' keeps it. keep: key prefixes in the zone's state never cleared. What is not zone state (a world fact such as a relit lamp-post, lampposts.<id>) is never touched.",
+  "about": "Permanent zones that reset like a Diablo zone (H4 item 10, the owner 3 Nov: 'a permanent one that can get reset like any diablo type zone'). Each zone's state (WorldState.Zone(id): packs down, chests opened) is cleared when its rule says, read by logic/World/ZoneReset.cs. reset: 'day' clears it on the day change (WorldState.Day); 'leave' clears it when she enters the zone from a different zone (not on a load, a rise after death, or a re-entry from itself); 'never' keeps it. Time follows the story: the Low Ford has no clock, so it resets on leaving, not by the day. keep: key prefixes in the zone's state never cleared. What is not zone state (a world fact such as a relit lamp-post, lampposts.<id>) is never touched.",
   "zones": {
-    "lowford": { "reset": "day", "keep": [] }
+    "lowford": { "reset": "leave", "keep": [] },
+    "verge": { "reset": "leave", "keep": [] },
+    "waystation": { "reset": "never", "keep": [] }
   }
 }

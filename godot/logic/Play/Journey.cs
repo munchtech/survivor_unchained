@@ -144,7 +144,10 @@ public sealed partial class Journey
     /// art, the dash) and grows by experience.</summary>
     /// <param name="arena">An ember arena: the ember burns, from nothing, whatever is carried.</param>
     /// <param name="ember">The ember burns here (the night: the prologue, an arena).</param>
-    public Battle StartBattle(bool combat, CollisionWorld col, Func<double, double, double> heightAt, double x, double z, double facing, uint seed, bool arena = false, bool ember = false)
+    /// <summary>The fight in play carries the world's tier, so its drops do too (Drops).</summary>
+    public bool WorldTierOn;
+
+    public Battle StartBattle(bool combat, CollisionWorld col, Func<double, double, double> heightAt, double x, double z, double facing, uint seed, bool arena = false, bool ember = false, bool? worldTier = null)
     {
         // The kit goes on with the place: the night's wherever the ember burns, where its coals work.
         Kits.Wear(Ch, combat && (arena || ember) ? KitKind.Night : KitKind.Day);
@@ -163,6 +166,14 @@ public sealed partial class Journey
             FlareStart = combat && ember && !arena ? Battle.FlareFull / 2 : combat && arena ? Battle.FlareStartNight : 0,
             Hp = exp != null ? Math.Min(exp.Hp, kit.Stats.Get(Stat.MaxHealth)) : null,
         });
+        // The world's tier (ARPG.md 7.3) goes on story fights and story nights; not on arena nights or maps (worldTier false: they climb
+        // tiers with the atlas later). Left null it is every non-arena fight.
+        WorldTierOn = combat && (worldTier ?? !arena);
+        if (WorldTierOn)
+        {
+            var wt = Content.WorldTiers.Get(Content.WorldTiers.Of(World));
+            b.WorldHealth = wt.Health; b.WorldDamage = wt.Damage; b.KitDamageMul = wt.Kit;
+        }
         b.EmberOn = combat && (arena || ember);
         EmberLit = b.EmberOn && !arena;
         b.Night = arena || ember || World.Time == TimeOfDay.Night;
