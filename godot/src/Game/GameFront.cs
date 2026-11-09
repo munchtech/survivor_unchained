@@ -27,8 +27,9 @@ public partial class Game
         hud.Dialogue(null);
         hud.ShowPlay(false);
         var s = Stage("lowford");
-        // (the title and the Look hold the grade's whole toe: her irises and dark hair keep their colour (Atmospheres.Front))
-        air.Set(Atmospheres.Front);
+        // (L1 lead 9: the title under the game's night rig (Atmospheres.Title, rigs.json title_night); the Look takes Front, its face
+        // protections, in NewJourney)
+        air.Set(Atmospheres.Title);
         s.View.SetNight(true);
         Seat(Stranger());
         PoseTitle(true);
@@ -554,6 +555,8 @@ public partial class Game
     public void NewJourney()
     {
         Mode = "create";
+        // (the Look holds the grade's whole toe: her irises and dark hair keep their colour (Atmospheres.Front))
+        air.Set(Atmospheres.Front);
         LookView(true);
         draft = new CreationDraft();
         // --new --sex female: creation opens on a woman (pictures of her).
@@ -613,6 +616,7 @@ public partial class Game
     {
         Mode = "title";
         draft = null;
+        air.Set(Atmospheres.Title);
         EndCreate();
         Seat(Stranger());
         PoseTitle();

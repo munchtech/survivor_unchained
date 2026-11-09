@@ -116,4 +116,21 @@ public class RigsTests
         Assert.NotNull(s["look_day"]!.Fill.Color);
         foreach (var r in s.Rigs.Values) if (r.Grade is string g) Assert.NotNull(SurvivorUnchained.World.Atmospheres.GradeNamed(g));
     }
+    [Fact]
+    public void TheTitleIsLitByTheNightRigAndACinematicNightKeepsItsShotsKey()
+    {
+        // (L1 lead 9, night: the title on the game's night rig, the Look keeping Front; C01's night keeps the cue's moon)
+        var s = Real();
+        var t = Rigs.Lit(Atmospheres.Title, s);
+        Assert.True(t.IsLit);
+        Assert.Equal(s["night_play"]!.Key.Color, t.KeyColor);
+        Assert.Equal(Atmospheres.Title.KeyAzimuth, t.KeyAzimuth);
+        Assert.Same(Atmospheres.Front, Rigs.Lit(Atmospheres.Front, s));
+        var shot = Atmospheres.CineNight with { KeyIntensity = 2.38, KeyAzimuth = 250, KeyElevation = 25, Exposure = 0.66 };
+        var c = Rigs.Lit(shot, s);
+        Assert.Equal(2.38, c.KeyIntensity, 6);
+        Assert.Equal(250, c.KeyAzimuth, 6);
+        Assert.Equal(0.66, c.Exposure, 6);
+        Assert.Equal(s["night_play"]!.Fill.Color, c.CelFillColor);
+    }
 }

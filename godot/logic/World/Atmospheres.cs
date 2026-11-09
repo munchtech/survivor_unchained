@@ -95,6 +95,18 @@ public static class Atmospheres
     /// <summary>The title and the Look: night, with the grade's toe held whole, so her irises, brows and dark hair keep
     /// their colour at the camera that judges them.</summary>
     public static readonly AtmospherePreset Front = Night with { KeyIntensity = 2.55, Grade = PlayNightGrade with { MoonTop = 0.6, MoonWidth = 0.2, MoonSkin = 1 }, Rig = "" };
+
+    /// <summary>(L1 lead 9, night) The title: the Low Ford's camp under the game's night (rigs.json title_night, FROM target 01_r4),
+    /// the first screen lit as play is. Front stays the Look's (creation; GameFront.NewJourney sets it): its face protections
+    /// (the skin guard, the neutral highlight tint, Atmosphere.Own) are for her face up close, and at the title they took the
+    /// fire's pool to cream (C 0.056 against T01's 0.142) and the moonlit clearing to grey (judge 1, 9 Nov).</summary>
+    public static readonly AtmospherePreset Title = Front with { Rig = "title_night" };
+
+    /// <summary>(L1 lead 9, night) The cinematics' night ("preset": "cineNight"; C01 at the Low Ford's camp): the night rig's
+    /// fill, rim, ink and moon grade (rigs.json cine_night, FROM target 03), the key's direction and level, the sky light and
+    /// the exposure the shot's own (the cue's tuning over Night's: the rig leaves them null). Under night_wild's rig the cue's
+    /// staging was dropped and the old wilds grade left C01's shade mauve (h 309 against T03's 262).</summary>
+    public static readonly AtmospherePreset CineNight = Night with { Rig = "cine_night" };
     // (P1 R1 round 33, S4: skin's hues spared the moon's step (GradeSettings.MoonSkin): the far side of her neck under her
     // jaw, in shade at L 0.5 and C/L 0.09, took the moon's silver-blue, a blue-grey patch on A and B alike (gate judge 2).)
     // (H2 R3: the play night's paint grade, its toe whole (Toe 1); the paint terms are the close view's (Atmosphere.Own). The
@@ -252,7 +264,7 @@ public static class Atmospheres
 
     public static AtmospherePreset ByName(string name) => name switch
     {
-        "night" => Night, "nightTown" => NightTown, "dusk" => Dusk, "dawn" => Dawn, "day" => Day,
+        "night" => Night, "cineNight" => CineNight, "title" => Title, "nightTown" => NightTown, "dusk" => Dusk, "dawn" => Dawn, "day" => Day,
         _ => throw new ArgumentException($"no atmosphere {name}"),
     };
 
