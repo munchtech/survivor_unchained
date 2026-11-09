@@ -1556,7 +1556,7 @@ def main():
         if name == "build":
             p.add_argument("--no-bind", action="store_true", help="skip the stale check and rebind")
     a = ap.parse_args()
-    only = [x for x in a.only.split(",") if x]
+    only = [x for x in getattr(a, "only", "").split(",") if x]
     if a.cmd == "bind":
         bind_units(only)
         return
