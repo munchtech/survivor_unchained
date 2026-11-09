@@ -461,6 +461,19 @@ def _tri_edges(T):
     return np.unique(e, axis=0)
 
 
+def _factor(M):
+    """A sparse SPD factorization: SuperLU in symmetric mode (fast), checked on a probe; if the probe's residual says the
+    unpivoted factors lost accuracy (a near-singular corner of the ordering), the pivoting factorization instead."""
+    from scipy.sparse.linalg import splu
+    M = M.tocsc()
+    lu = splu(M, permc_spec="MMD_AT_PLUS_A", diag_pivot_thresh=0.0, options={"SymmetricMode": True})
+    p = np.random.default_rng(0).standard_normal(M.shape[0])
+    x = lu.solve(p)
+    if np.isfinite(x).all() and np.linalg.norm(M @ x - p) <= 1e-8 * np.linalg.norm(p):
+        return lu
+    return splu(M, permc_spec="COLAMD")
+
+
 def follow_solve(body, Y, Xb, T, G, Gk, c0, n0, sel, stats=None):
     """Y (the field's result, one tier's meshes stacked) corrected on body as one smooth surface: see SOLVE. Xb the bind
     positions, T the stacked triangles, G the edges' target deformation per vertex, Gk the body's (Field.gradient: it
@@ -570,8 +583,7 @@ def follow_solve(body, Y, Xb, T, G, Gk, c0, n0, sel, stats=None):
         Sff = S[fi][:, fi]
         rhs = rhs0[fi] - (S[fi][:, bi] @ X[bi] if len(bi) else 0.0)
         rho = np.where(act[fi], SOLVE["gamma"] * diag[fi], 0.0)
-        lu = splu((Sff + sparse.diags(rho)).tocsc(), permc_spec="MMD_AT_PLUS_A", diag_pivot_thresh=0.0,
-                  options={"SymmetricMode": True})
+        lu = _factor(Sff + sparse.diags(rho))
         base, df, of_, eqf, af = X[fi].copy(), d[fi], off[fi], eq[fi], act[fi]
         hb = 0.5 * SOLVE["band_m"]
         # the two-sided correction is smoothed over the held neighbours (bind space): the two bodies' facets put a
@@ -580,15 +592,18 @@ def follow_solve(body, Y, Xb, T, G, Gk, c0, n0, sel, stats=None):
         Ws = None
         if len(ei):
             sm = cKDTree(P0[fi[ei]]).sparse_distance_matrix(cKDTree(P0[fi[ei]]), SOLVE["smooth_m"], output_type="ndarray")
-            ws_ = wendland(sm["v"] / SOLVE["smooth_m"])
-            Ws = sparse.coo_matrix((ws_, (sm["i"], sm["j"])), (len(ei), len(ei))).tocsr()
-            Ws = sparse.diags(1.0 / np.asarray(Ws.sum(1)).ravel()) @ Ws
+            i_, j_ = sm["i"].astype(np.int64), sm["j"].astype(np.int64)
+            # only neighbours whose plane faces the same way (across a cleft the closest skin flips side)
+            ws_ = wendland(sm["v"] / SOLVE["smooth_m"]) * ((df[ei[i_]] * df[ei[j_]]).sum(1) > 0.5)
+            Ws = sparse.coo_matrix((ws_, (i_, j_)), (len(ei), len(ei))).tocsr()
+            Ws = sparse.diags(1.0 / np.maximum(np.asarray(Ws.sum(1)).ravel(), 1e-30)) @ Ws
+            # the target offsets smoothed once per round (a fixed plane each: the local step stays a projection)
+            of_ = of_.copy()
+            of_[ei] = Ws @ of_[ei]
         Xf = X[fi]
         for it in range(SOLVE["iters"]):
             # local: each active vertex to its constraint (a penalty, not exact: a lone vertex cannot spike out)
             h = ((Xf - base) * df).sum(1) - of_
-            if Ws is not None:
-                h[ei] = Ws @ h[ei]
             h = np.where(eqf, np.sign(h) * np.maximum(np.abs(h) - hb, 0.0), np.minimum(h - SOLVE["margin_m"], 0.0))
             z = Xf - (h * af)[:, None] * df
             Xf = lu.solve(rhs + rho[:, None] * z)
