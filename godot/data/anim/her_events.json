@@ -1,0 +1,27 @@
+{
+  "fps": 60,
+  "clips": {
+    "bladestorm_loop": {
+      "loop": [0, 80]
+    },
+    "heroic_leap": {
+      "contact": [44],
+      "hold": [44, 48],
+      "cancel": 58,
+      "events": {"takeoff": 6, "apex": 24, "land": 44}
+    },
+    "iron_vow": {
+      "contact": [144],
+      "hold": [144, 148],
+      "cancel": 148,
+      "loop": [18, 138],
+      "events": {"plant": 18, "burst": 144}
+    },
+    "shield_charge": {
+      "contact": [22],
+      "hold": [22, 26],
+      "cancel": 26,
+      "events": {"launch": 4, "impact": 22}
+    }
+  }
+}
