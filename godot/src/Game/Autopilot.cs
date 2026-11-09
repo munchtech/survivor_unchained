@@ -24,6 +24,7 @@ public sealed class Autopilot
     readonly Game g;
     readonly HashSet<Act> pressed = new();
     int wp = 1;
+    readonly Dictionary<string, double> lampTried = new();
     double diagT, t, orbit, dashT, abilityT, drinkT, stuckT, sideT, lastX, lastZ, postT, resultT, choiceT;
     int side = 1;
     (double X, double Z, double R)? territory;
@@ -260,8 +261,34 @@ public sealed class Autopilot
                 var road = meta.Paths.GetValueOrDefault("ROAD") ?? Array.Empty<double[]>();
                 while (wp < road.Length - 1 && road[wp][1] > p.Z - 3) wp++;
                 if (road.Length > 0) { tx = road[Math.Min(wp, road.Length - 1)][0]; tz = road[Math.Min(wp, road.Length - 1)][1]; }
+                // The night's beats as ZoneSim's goal walks them (ported; --auto idle keeps the plain road): the next undone
+                // beat's ground, a waking pack's foe where it stands; the beats done, down the road and to the ford.
+                if (!Idle && z is Zones.Prologue pn && pn.Night is { } nn)
+                {
+                    var gn = nn.Goal(_ => true, _ => null, Place("gate").X);
+                    if (gn.For != null || nn.Fighting) { tx = gn.X; tz = gn.Z; }
+                    else if (p.Z < Place("ford").Z + 25) { tx = Place("ford").X; tz = Place("ford").Z + 12; }
+                }
                 break;
             }
+        }
+        // A lamp-post she passes, out of a fight, is lit as a player does it: walked to, then the interact key at its prompt
+        // (the Low Ford only; not the idle/toward/across/away/talk modes, not the Warden's fight).
+        if (!Idle && stage is not ("Boss" or "Intro" or "Victory" or "Wake" or "Rising" or "Ambush"))
+        {
+            interactT -= dt;
+            bool inFight = b.Enemies.Living().Any(e => e.Roused && e.Disposition == Disposition.Hostile && e.State != EnemyState.Dying && Math.Sqrt((e.X - p.X) * (e.X - p.X) + (e.Z - p.Z) * (e.Z - p.Z)) < 24);
+            if (!inFight)
+                foreach (var i in z.Interactables)
+                    if (i.Id.StartsWith("lamppost:") && (i.When?.Invoke() ?? true) && i.Locked?.Invoke() == null
+                        && Math.Sqrt((i.X - p.X) * (i.X - p.X) + (i.Z - p.Z) * (i.Z - p.Z)) is var di && di < 14)
+                    {
+                        double since = lampTried.TryGetValue(i.Id, out var pt) ? pt : lampTried[i.Id] = t;
+                        if (t - since >= 20) continue;
+                        tx = i.X; tz = i.Z;
+                        if (di < i.R && g.Prompted == i.Id && interactT <= 0) { interactT = 1.5; Controls.Instance.Press(Act.Interact); }
+                        break;
+                    }
         }
         // Keep off the crowd.
         double rx = 0, rz = 0;
