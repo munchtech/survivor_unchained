@@ -629,6 +629,20 @@ def main():
 
 
 
+EDGE = 0.013              # m: a skin vertex's patch for the field (her edges on B: median 6.8 mm, p95 12.7)
+
+
+def skin_gap(d, pr, inside):
+    """The field's signed distance (m, + outside) from the nearest skin vertex's distance d, the point's offset along
+    that vertex's normal pr, and the winding's inside: along the normal where that agrees with the sign, but only
+    within the vertex's own patch: past EDGE sideways the tangent plane is not her skin, the sideways rest counts (a
+    point 40-57 cm off her side in a vertex's tangent plane read 0-8 mm: the leap's raised sword and out-held shield,
+    and the clear layer moved arms that touched nothing; solver F3)."""
+    t = np.sqrt(np.maximum(d * d - pr * pr, 0.0))
+    mag = np.where((pr < 0) == inside, np.hypot(pr, np.maximum(t - EDGE, 0.0)), d)
+    return np.where(inside, -mag, mag)
+
+
 def body_field():
     """Her skin as the fit's `clear` layer and p4_blend read it: body(G, P) -> a field: world points -> (signed
     distance m, + outside; outward normals), B posed by clipcheck's poser (the glb's skin + B's laws).
@@ -670,8 +684,7 @@ def body_field():
             da, _ = ta.query(Pg)
             inside = (W(V, Pg) > 0.5) & (da >= d)
             pr = np.einsum("ij,ij->i", Pg - V[q], N[q])
-            mag = np.where((pr < 0) == inside, np.abs(pr), d)
-            s = np.where(inside, -mag, mag)
+            s = skin_gap(d, pr, inside)
             nrm = N[q] @ Xi[:3, :3].T
             nrm = nrm / (np.linalg.norm(nrm, axis=1, keepdims=True) + 1e-12)
             return s, nrm
