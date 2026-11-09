@@ -406,6 +406,8 @@ public sealed partial class Battle
         var kd = new Ev.Knockdown { X = p.X, Z = p.Z, Seconds = s };
         if (by is { Shape: TelegraphShape.Line }) { kd.FromX = by.X; kd.FromZ = by.Z; kd.ToX = by.X1; kd.ToZ = by.Z1; kd.Width = by.Width; }
         Events.Emit(kd);
+        // (a blow she was swinging never lands: Sim/Contact.cs)
+        DropBlows();
     }
 
     /// <summary>A closing's crush (H6): from CrushAfter past its landing, for CrushFor, while its wall stands and she is

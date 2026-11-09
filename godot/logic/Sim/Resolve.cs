@@ -217,7 +217,7 @@ public sealed partial class Battle
         {
             case KindlePress.Now:
             {
-                if (w.Timer > 0) return false;
+                if (w.Timer > 0 || BlowPending(w)) return false;
                 double cost = CostOf(w), mul = 1;
                 if (cost > 0)
                 {
@@ -228,7 +228,8 @@ public sealed partial class Battle
                 CastAt = AimFor(w);
                 w.FireMul = fm * mul;
                 bool fired;
-                try { fired = Firing.CastNow(this, w); }
+                // (campaign: the heave lands on its clip's contact, at this press's strength: Sim/Contact.cs)
+                try { fired = DeferBlow(w, mul) || Firing.CastNow(this, w); }
                 finally { (CastAt, w.FireMul) = (aim0, fm); }
                 if (!fired) return false;
                 if (cost > 0) Resolve.Spend(Math.Min(cost, Resolve.Value));

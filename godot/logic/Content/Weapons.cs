@@ -143,6 +143,13 @@ public sealed class PressDef
     public double? Reach;
     public PadAim? Pad;
     public double? Walk, CastTime, Plant, Wait, Resolve, Drain, Builds, BuildsEach, BuildsMost, HeavyMul;
+    /// <summary>Her clips for a press of it (M3, campaign): `clip` alternated swing to swing, `clipHeavy` for a heavy blow,
+    /// each played at its rate (clipRate, clipHeavyRate; absent: 1.6 and 1.5, the view's old pace). The blow's hits land on
+    /// the clip's contact frame (data/anim/her_events.json, Content/HerEvents.cs) after the press; the view plays the
+    /// same clip at the same rate from the press (AttackAnim.Clip). Absent: the blow lands at the press, as before.</summary>
+    public string[]? Clip;
+    public string? ClipHeavy;
+    public double? ClipRate, ClipHeavyRate;
 }
 
 /// <summary>A skill's kindled option (PressDef.Kindled): the condition (KindleDef's fields; none set, the skill's own

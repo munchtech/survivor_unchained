@@ -377,14 +377,16 @@ public static partial class Firing
     /// (Sunder: its slash, every fourth heavy with its line), on its own cooldown. False: not ready, or a storm is on.</summary>
     public static bool SwingHalf(Battle b, WeaponInst w)
     {
-        if (w.DisabledT > 0 || InStorm(b, w) || HalfOf(w) is not { } h || h.Timer > 0) return false;
+        if (w.DisabledT > 0 || InStorm(b, w) || HalfOf(w) is not { } h || h.Timer > 0 || b.BlowPending(h)) return false;
         if (b.FireFrom != null || b.Refiring) return false;
         int kills0 = h.Kills;
         var aim0 = b.CastAt;
         b.CastAt = b.AimFor(h);
-        bool fired;
-        try { fired = CastOnce(b, h); }
+        bool fired, later = false;
+        // (campaign: the half's slash lands on its clip's contact, Sim/Contact.cs)
+        try { later = b.DeferBlow(h); fired = later || CastOnce(b, h); }
         finally { b.CastAt = aim0; }
+        if (later) { b.CastPose(h); return true; }
         if (fired) { Rearm(b, h, true, kills0); b.CastPose(h); }
         return fired;
     }
