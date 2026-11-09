@@ -18,6 +18,8 @@ marks (albedo_ctl). No frame is ever an input: the frames are the check.
     python tools/look/color_chain.py apply                           solve.json into rigs.json, materials.json, ground.json,
                                                                     town.json (one read-modify-write each)
     python tools/look/color_chain.py wild NAME                       (L7 S1d) day_wild's key from NAME's wild and day cards
+    python tools/look/color_chain.py night NAME                      (L7 S2) the night and dawn rigs from solve.json, NAME's cards
+                                                                    (solve DAYCARDS NAME first: the day as it stands)
     python tools/look/color_chain.py check [NAME]     the solved albedos drawn on the stage (the relit check)
     python tools/look/color_chain.py all [NAME]                      measure, boards, solve, apply, the relit check, then the
                                                                     kits' own builds and the ground check
@@ -221,6 +223,7 @@ def shade_gain(cards, rig, rho, cam="play", lv=1, lit_gain=1.0):
     return med(ks), med(now)
 
 
+DAWN_SUN = "#f3d9a0"  # (rule 3: the dawn sun stays pale gold; L7 S2)
 SUN = "#f3d9a0"  # (rule 3 of 3 Nov: the pale gold; L7 S1c: by day the boards' own sun replaces it, board_sun below; dawn keeps it)
 BOARD_NEUTRAL = ("rock", "stone", "lb_setts")  # (the boards' grey stones: their lit sides are the boards' sun)
 
@@ -371,6 +374,17 @@ def solve(name="cards", night_name=None, refine=None):
             out[side] = {"gain": k.round(4).tolist(), "spread": spread(ks, names, k), "swatches": names,
                          "per": {n: np.round(x, 3).tolist() for n, x in zip(names, ks)}}
         rep[rig] = out
+    # (6, L7 S2) dawn FROM LB DAWN's setts over the setts albedo, the night's way (under scene_color the drawn ratios are the
+    # light's): the shade light so the setts' shade draws LB's (its lilac, h ~325), the lit side the dawn sun's own color
+    # (rule 3: pale gold #f3d9a0; LB's lit setts read an orange sun, h 56: lead 7's call) at LB's lit luminance
+    if "setts" in alb and "dawn_lit" in B.get("lb_setts", {}):
+        a = np.array(alb["setts"]["linear"]); cl, cs = curve(cards, None, "dawn_play", "lit"), curve(cards, None, "dawn_play", "shade")
+        if cl is not None and cs is not None:
+            k_sh = inv(cs, np.array(B["lb_setts"]["dawn_shade"])) / a
+            sun = hex_to_lin(DAWN_SUN); want = sun / np.dot(bm.Y, sun) * np.dot(bm.Y, B["lb_setts"]["dawn_lit"])
+            k_lit = inv(cl, want) / a
+            rep["dawn"].update({"lit": {"gain": k_lit.round(4).tolist()}, "shade": {"gain": k_sh.round(4).tolist()},
+                                "albedo": alb["setts"]["hex"], "sun": DAWN_SUN, "lb_lit": B["lb_setts"]["dawn_lit"], "lb_shade": B["lb_setts"]["dawn_shade"]})
     json.dump(rep, open(os.path.join(OUT, "solve.json"), "w"), indent=1)
     print(json.dumps({k: (v if k != "albedo" else {c: x["hex"] for c, x in v.items()}) for k, v in rep.items()}, indent=None)[:6000])
     return rep
@@ -452,9 +466,19 @@ def apply_wild(cards):
     write_json(RIGS_JSON, d); print("day_wild:", old, "->", r["key"]["intensity"], f, w); return w
 
 
-def apply_rigs(rep, cards, night=True):
+def apply_rigs(rep, cards, night=True, day=True):
     d = json.load(open(RIGS_JSON, encoding="utf-8")); R = d["rigs"]
     tag = "C6 (the color chain, tools/look/color_chain.py; godot/data/look/swatches.json; rules 2-4)"
+    if day: apply_day(R, rep, tag)
+    if not night:  # (L7 S1: `all` wrote the day only until S2 fixed the night solve (scene_color by night))
+        write_json(RIGS_JSON, d); print("rigs.json written (day):", {k: {a: R[k].get(a) for a in ("key", "fill")} for k in ("day_town", "day_wild")}); return
+    apply_night(R, rep, cards, tag)
+    apply_dawn(R, rep, cards, tag)
+    write_json(RIGS_JSON, d)
+    print("rigs.json written:", {k: {a: R[k].get(a) for a in ("key", "fill")} for k in ("day_town", "day_wild", "night_play", "arena_night", "night_town", "night_wild", "dawn")})
+
+
+def apply_day(R, rep, tag):
     # day: the fill FROM the boards' shade/lit
     k = np.array(rep["day"]["shade_gain"])
     kk = np.array(rep["day"].get("key_gain", [1, 1, 1]))
@@ -478,8 +502,9 @@ def apply_rigs(rep, cards, night=True):
                             f"L7 S1c: the key FROM the boards' sun {rep['board_sun']['hex']} (read on {', '.join(rep['board_sun']['from'])}; lead 7, one sun), the neutral card's sunlit side that sun's color (under scene_color, the drawn ratios are the light's): "
                             f"the lit side x{rep['day'].get('lit_gain')}, the shade's share of it {rep['day'].get('q')}, so the key x{kk.round(4).tolist()}: {kwords}. "
                             f"The grade rig_day{'_wild' if name == 'day_wild' else ''}: the highlight tint neutral (the sun's color is the key's, rule 3).")
-    if not night:  # (L7 S1: `all` writes the day; the night rigs' re-solve is lead 7's and S2's, run by `apply`)
-        write_json(RIGS_JSON, d); print("rigs.json written (day):", {k: {a: R[k].get(a) for a in ("key", "fill")} for k in ("day_town", "day_wild")}); return
+
+
+def apply_night(R, rep, cards, tag):
     # night: the moon FROM the boards over the classes' albedos, solved on night_play (the lookdev stage's play night)
     n = rep["night"]; k_lit, k_sh = np.array(n["lit"]["gain"]), np.array(n["shade"]["gain"])
     kk, q = key_gain(cards, "night", k_lit, k_sh); kk = np.maximum(kk, 0.05)
@@ -512,8 +537,45 @@ def apply_rigs(rep, cards, night=True):
         r["from"] += (f" {tag}: the boards' one moon: night_play's derived key and sky colors, this rig's own energies x{n['key_energy']} (key) "
                       f"and x{n['sky_energy']} (sky): {old} -> {r['key']['color']} {r['key'].get('intensity')} sky {r['fill'].get('sky')} hemi {r['fill'].get('hemi')}"
                       + (" (the places keep their own moon strengths)" if name == "arena_night" else "") + ".")
-    write_json(RIGS_JSON, d)
-    print("rigs.json written:", {k: {a: R[k].get(a) for a in ("key", "fill")} for k in ("day_town", "day_wild", "night_play", "arena_night", "night_town", "night_wild")})
+
+
+def apply_dawn(R, rep, cards, tag):
+    """(L7 S2) dawn FROM LB DAWN (solve's rep["dawn"]): one lilac shade light (the fill and the sky take LB's shade over the setts albedo as their color: under scene_color the drawn ratios are the light's) at the
+    luminance that draws LB's shade, and the key rule 3's dawn sun (#f3d9a0) at the luminance that draws LB's lit side.
+    dawn_morning's own key and fill colors follow (dawn_waystation is dawn's). Per channel gains on a purple fill and a
+    blue sky made a mint sky and a pink fill that only summed to lilac on a card's side face (S2's first solve)."""
+    n = rep.get("dawn", {})
+    if "lit" not in n: print("no dawn solve"); return
+    k_lit, k_sh = np.array(n["lit"]["gain"]), np.array(n["shade"]["gain"])
+    cl, cs = curve(cards, None, "dawn_play", "lit"), curve(cards, None, "dawn_play", "shade")
+    sh_now, lit_now = cs[1][1], cl[1][1]
+    e_sh = float(np.dot(bm.Y, k_sh * sh_now) / np.dot(bm.Y, sh_now)); e_lit = float(np.dot(bm.Y, k_lit * lit_now) / np.dot(bm.Y, lit_now))
+    q = float(np.clip(np.dot(bm.Y, sh_now) / np.dot(bm.Y, lit_now), 0, 0.9))  # (the shade light's luminance share of the lit side)
+    e_key = max((e_lit - e_sh * q) / (1 - q), 0.05)
+    shade_c = np.array(n["lb_shade"]) / hex_to_lin(n["albedo"]); shade_hex = lin_to_hex(shade_c / shade_c.max())
+    words = []
+    for name in ("dawn", "dawn_morning"):
+        r = R[name]; key = r["key"]; f = r.setdefault("fill", {})
+        if key.get("color"):
+            old = f"{key['color']} {key['intensity']}"; Y0 = float(np.dot(bm.Y, hex_to_lin(key["color"]))); Y1 = float(np.dot(bm.Y, hex_to_lin(DAWN_SUN)))
+            key["color"], key["intensity"] = DAWN_SUN, round(key["intensity"] * e_key * Y0 / Y1, 4); words.append(f"{name} key {old} -> {DAWN_SUN} {key['intensity']}")
+        if f.get("color"):
+            Y0 = float(np.dot(bm.Y, hex_to_lin(f["color"]))); Y1 = float(np.dot(bm.Y, hex_to_lin(shade_hex)))
+            old = f"{f['color']} {f.get('strength')}"; f["color"] = shade_hex
+            if f.get("strength") is not None: f["strength"] = round(f["strength"] * e_sh * Y0 / Y1, 4)
+            words.append(f"{name} fill {old} -> {shade_hex} {f.get('strength')}")
+        if f.get("sky"):
+            Y0 = float(np.dot(bm.Y, hex_to_lin(f["sky"]))); Y1 = float(np.dot(bm.Y, hex_to_lin(shade_hex)))
+            old = f"sky {f['sky']} ground {f.get('ground')} hemi {f.get('hemi')} env {f.get('env')}"; f["sky"] = shade_hex
+            for a_ in ("hemi", "env"):
+                if f.get(a_) is not None: f[a_] = round(f[a_] * e_sh * Y0 / Y1, 4)
+            # (the hemisphere's ground side keeps its own bounce color, at the hemi's new energy)
+            words.append(f"{name} {old} -> sky {f['sky']} ground {f.get('ground')} hemi {f.get('hemi')} env {f.get('env')}")
+    n.update({"e_key": round(e_key, 4), "e_shade": round(e_sh, 4), "q": round(q, 4), "shade_light": shade_hex})
+    R["dawn"]["from"] += (f" L7 S2 (color_chain.py apply_dawn, dawn FROM LB DAWN, chain step 6; under scene_color the drawn ratios are the light's): LB DAWN's setts "
+                          f"lit {n['lb_lit']} and shade {n['lb_shade']} (linear; the shade lilac, Oklab h ~325) over the setts albedo {n['albedo']}: one lilac shade light "
+                          f"{shade_hex} (fill and sky; the ground side its own bounce) x{n['e_shade']} in luminance; the key rule 3's dawn sun {n['sun']} x{n['e_key']} (the shade's share of the lit side {n['q']}): "
+                          + "; ".join(words) + ".")
 
 
 # ---- check: the solved albedos drawn on the stage (the relit check) -------------------------------------------------
@@ -625,7 +687,7 @@ def run_all(name=None):
     boards()
     solve(name)
     rep = json.load(open(os.path.join(OUT, "solve.json")))
-    apply_rigs(rep, json.load(open(os.path.join(OUT, name, "cards.json"))), night=False)
+    apply_rigs(rep, json.load(open(os.path.join(OUT, name, "cards.json"))))
     apply_wild(json.load(open(os.path.join(OUT, name, "cards.json"))))
     apply_classes(rep)
     check("check_" + name)
@@ -647,4 +709,4 @@ def run_all(name=None):
 if __name__ == "__main__":
     a = sys.argv[1:]
     if not a: print(__doc__); sys.exit(1)
-    {"all": lambda: run_all(*a[1:2]), "measure": lambda: measure(*a[1:3]), "wild": lambda: apply_wild(json.load(open(os.path.join(OUT, a[1], "cards.json")))), "boards": boards, "solve": lambda: solve(*a[1:4]), "check": lambda: check(*a[1:2]), "apply": lambda: (apply_rigs(json.load(open(os.path.join(OUT, "solve.json"))), json.load(open(os.path.join(OUT, a[1] if len(a) > 1 else "cards", "cards.json")))), apply_classes(json.load(open(os.path.join(OUT, "solve.json")))))}[a[0]]()
+    {"all": lambda: run_all(*a[1:2]), "measure": lambda: measure(*a[1:3]), "wild": lambda: apply_wild(json.load(open(os.path.join(OUT, a[1], "cards.json")))), "boards": boards, "solve": lambda: solve(*a[1:4]), "check": lambda: check(*a[1:2]), "night": lambda: apply_rigs(json.load(open(os.path.join(OUT, "solve.json"))), json.load(open(os.path.join(OUT, a[1], "cards.json"))), day=False), "apply": lambda: (apply_rigs(json.load(open(os.path.join(OUT, "solve.json"))), json.load(open(os.path.join(OUT, a[1] if len(a) > 1 else "cards", "cards.json")))), apply_classes(json.load(open(os.path.join(OUT, "solve.json")))))}[a[0]]()

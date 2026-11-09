@@ -669,7 +669,7 @@ public partial class Atmosphere : Node3D
                     var outLin = Pow(p.Clamp(Vector3.Zero, Vector3.One), 2.2f);
                     if (!OldGrade) outLin = KeepHue(c, outLin, tintHue);
                     if (toe > 0) outLin = ToeColour(c, outLin, toe);
-                    if (g.Moon > 0) outLin = Moonlight(c, outLin, g);
+                    if (g.Moon > 0 && !(g.SceneColor > 0 && g.SceneMoon > 0)) outLin = Moonlight(c, outLin, g);
                     if (paint.On) outLin = paint.Apply(outLin);
                     if (skinGuard > 0) outLin = SkinGuard(outLin, skinGuard);
                     if (shadeHue > 0) outLin = ShadeHue(outLin, shadeHue);
@@ -677,6 +677,8 @@ public partial class Atmosphere : Node3D
                     if (g.WarmKeep > 0) outLin = WarmSource(c, outLin, g);
                     if (tone != null) outLin = Tone(outLin, tone);
                     if (g.SceneColor > 0) outLin = SceneColour(c, outLin, (float)g.SceneColor);
+                    // (L1 lead 7, S2: GradeSettings.SceneMoon, the moon's blue (dawn's lilac) over the scene's own color)
+                    if (g.SceneColor > 0 && g.SceneMoon > 0 && g.Moon > 0) outLin = Moonlight(c, outLin, g);
                     var o = Srgb(outLin);
                     int at = (gi * LutSize + r) * 3;
                     px[at] = Byte8(o.X); px[at + 1] = Byte8(o.Y); px[at + 2] = Byte8(o.Z);

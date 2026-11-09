@@ -131,6 +131,13 @@ public sealed record GradeSettings(double[] Lift, double[] Gamma, double[] Gain,
     /// card), so the color chain's per-channel division of the boards drew every warm surface pink-mauve (bible rules 3-4:
     /// the color is the light's and the surface's, never a grade push the chain must divide out).</summary>
     public double SceneColor { get; init; }
+    /// <summary>(L1 lead 7, S2) Under SceneColor, the Moon step after it (1) rather than before (0, where SceneColor overrides it).
+    /// Why: the boards and the picked night targets paint what the moon lights moon-blue whatever its albedo (MB4's night grass
+    /// teal, MB3's setts and plaster blue, the targets' cold 73-86% of the chroma, shade h 251-263), which no light gives a warm
+    /// or olive albedo (under scene_color alone the Deep Shaw's moonlit ground read C 0.03, grey, and the shade h 313, gray 24%);
+    /// and LB DAWN's shade is lilac on every surface. The step re-hues only the weakly colored and the dark (MoonLo..MoonHi,
+    /// MoonTop), so what her ember, a lamp or a fire lights keeps the scene's own color.</summary>
+    public double SceneMoon { get; init; }
 }
 
 public sealed record AtmospherePreset(

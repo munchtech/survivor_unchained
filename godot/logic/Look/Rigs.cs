@@ -28,10 +28,10 @@ public sealed record RigDapple(double? Cover = null, double? Strength = null, do
 /// (L1 W2) grade_curve: the grade's tone curve on Oklab L ([in, out] pairs; GradeSettings.Curve); warm_keep: the grade's
 /// warm-source term (GradeSettings.WarmKeep); ember_give: how the moon gives way to her light in its reach
 /// ([key, sky, fade start, gone] as shares; AtmospherePreset.EmberGive). (L1 lead 7 S1) scene_color: the grade's lightness-only
-/// term (GradeSettings.SceneColor).</summary>
+/// term (GradeSettings.SceneColor); (S2) scene_moon: the Moon step after it (GradeSettings.SceneMoon).</summary>
 public sealed record LightRig(string Id, string From, bool Camera, RigKey Key, RigFill Fill, RigRim Rim, double[]? Ink,
     double? Hardness, string? Grade, double? Exposure, double? Ember, RigDapple Dapple, double? Fires = null,
-    double? EmberReach = null, string? EmberColor = null, double[]? Curve = null, double? WarmKeep = null, double[]? EmberGive = null, double? SceneColor = null)
+    double? EmberReach = null, string? EmberColor = null, double[]? Curve = null, double? WarmKeep = null, double[]? EmberGive = null, double? SceneColor = null, double? SceneMoon = null)
 {
     /// <summary>(B4r2) The fires' light under this rig, a share of their own (1: as built; rule 3, one warm light a scene:
     /// by day the sun is it, and a fire burning by day is a glow at its flames, not a light on her across the square).</summary>
@@ -113,7 +113,7 @@ public sealed class RigSet
             ink, D(e, "hardness", b?.Hardness), S(e, "grade", b?.Grade), D(e, "exposure", b?.Exposure), D(e, "ember", b?.Ember),
             new RigDapple(D(d, "cover", b?.Dapple.Cover), D(d, "strength", b?.Dapple.Strength), D(d, "height", b?.Dapple.Height)),
             D(e, "fires", b?.Fires), D(e, "ember_reach", b?.EmberReach), S(e, "ember_color", b?.EmberColor),
-            A(e, "grade_curve", b?.Curve), D(e, "warm_keep", b?.WarmKeep), A(e, "ember_give", b?.EmberGive), D(e, "scene_color", b?.SceneColor));
+            A(e, "grade_curve", b?.Curve), D(e, "warm_keep", b?.WarmKeep), A(e, "ember_give", b?.EmberGive), D(e, "scene_color", b?.SceneColor), D(e, "scene_moon", b?.SceneMoon));
     }
 }
 
@@ -153,8 +153,8 @@ public static class Rigs
 
     /// <summary>(L1 W2) The rig's grade with its tone curve and warm-source term over it (absent: the grade's own).</summary>
     static GradeSettings Graded(GradeSettings g, LightRig r) =>
-        r.Curve == null && r.WarmKeep == null && r.SceneColor == null ? g
-            : g with { Curve = r.Curve ?? g.Curve, WarmKeep = r.WarmKeep ?? g.WarmKeep, SceneColor = r.SceneColor ?? g.SceneColor };
+        r.Curve == null && r.WarmKeep == null && r.SceneColor == null && r.SceneMoon == null ? g
+            : g with { Curve = r.Curve ?? g.Curve, WarmKeep = r.WarmKeep ?? g.WarmKeep, SceneColor = r.SceneColor ?? g.SceneColor, SceneMoon = r.SceneMoon ?? g.SceneMoon };
     /// <summary>A camera rig's key direction in the camera's frame: (right, up, back) of the unit vector toward the light,
     /// for az degrees round from the lens toward its right and el up (GameLookdev's --lookdev-key convention).</summary>
     public static (double Right, double Up, double Back) CameraKey(double az, double el)

@@ -358,7 +358,7 @@ public static class Atmospheres
         // (B4r3: the dawn rig's grade, the Low Ford's dawn with its contrast 1.14 to 1.4, from LB_light's DAWN panel (key 1.76 on
         // the panel; the stage's play dawn 1.50 to 1.6 with the rig's key; the panel's top sky, which the play camera never sees,
         // holds the rest))
-        "rig_dawn" => PlayDawnGrade with { Contrast = 1.4 },
+        "rig_dawn" => PlayDawnGrade with { Contrast = 1.4, MoonHue = 325, MoonSat = 0.087, MoonTop = 0.62 },  // (L1 lead 7 S2: MoonTop 0.45 to 0.62, the stage's dawn shade sits at L 0.40-0.55, over LB's 0.36; under scene_color the step after it (rigs.json scene_moon) gives the shade its color: LB DAWN's shade setts, Oklab L 0.357 C 0.031 h 325 (lilac): the hue, and C/L 0.087)
         // (L1 W2 C6, the color chain: the day rigs' grades with the highlight tint neutral (#bcbcbc: linear 0.5, the tint adds
         // tint - 0.5). The warm-source term (WarmKeep) was never on by day; the warmth past the sun's own was the paint grade's
         // highlight tint (#ffd49a at 0.25; the wild's #ffd9a0 at 0.2), which pushed every lit surface warm as if the sun were a
