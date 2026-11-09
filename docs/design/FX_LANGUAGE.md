@@ -12,7 +12,7 @@ For the skills lead (P7) and every later skill or Flare. The law is `LOOK_BIBLE.
 
 | School | Edge (outer, coolest heat) | Mid | Core (hottest) | State |
 |---|---|---|---|---|
-| **physical: the steel** | #c7701a amber | #f4b43a gold | #fbf1d8 white-gold | **authored 9 Nov** for the Warden: white edge, gold body, steel sparks #f6d389 (SKILL_VFX_STUDY §5; FLARE_LOOK §1.3 dawn-gold) |
+| **physical: the steel** | #ca6e06 amber | #f9b214 gold | #fbf1d8 white-gold | **authored 9 Nov** for the Warden: white edge, gold body, steel sparks #fdd171 (SKILL_VFX_STUDY §5; FLARE_LOOK §1.3 dawn-gold) |
 | fire | #cb451e deep red | #fc8923 amber | #ffe496 white-gold | measured on MB5, charted |
 | frost | #3373ba | #56a1e9 | #8dd3fc | measured on MB5, charted |
 | holy | #916d4b | #c99555 | #fddd84 | measured on MB5, charted |
@@ -36,7 +36,7 @@ Times are in samples of 1/12 s (one sample is 83 ms, five frames at 60 fps).
 - **Travel.** One hard shape pointing along its motion. A crescent tapers to a hot leading edge: the core leads and the edge band trails to a point. A bolt is long and thin (MB5's body is 2.6:1, with a round head, flow-lane tongues, dark gaps and bites; `fx_cel_bolt`). A body moving (a dash or a leap) leaves a ribbon of the edge band that tapers to nothing in 2-3 samples, plus 2-3 flat afterimages in the mid band that step out. Sparks are painted tears along the flow (`fx_sparks`), never soft dots. The shape holds steady with no flicker, and it dies by stepping: holes open and the bands erode core, then mid, then edge. It never just fades its alpha.
 - **Hit.** The peak lasts one sample at the contact: a hard star of 4-8 spikes in core, then mid. The struck figure's rim flashes for 2 frames in the mid band, sparks fly off the contact, the ground pool lights, and the first hit only gets 2-3 frames of hitstop. The decay takes 3-4 samples, with the bands stepping down. A scar (crack or scorch) is matter with a glowing heart that cools in steps (core, mid, edge, dark) over 1-4 s.
 - **Budget at the hit:** mean luminance at most 1.5x the sample before, at most 3% of pixels above 0.9, at most 4 frames. Only a Flare's column breaks this, and it is the Flare's alone.
-- **The vibrance check (a number before the judge):** `python tools/style/fx_measure.py shot <frame.png> X0,Y0,X1,Y1 --bg ...` reports the effect's saturated share (C 0.15 and up). MB5's bolt is 55%; a skill's body reads 40% or more at the play camera.
+- **The vibrance check (a number before the judge):** `python tools/style/fx_measure.py shot <frame.png> X0,Y0,X1,Y1 --bg ...` reports the effect's saturated share (a pixel counts when Oklab C is 0.15 or more, or 90% or more of the sRGB ceiling at its own L and hue, so gold and holy schools at high L are measured fairly). MB5's bolt is 55%; a skill's body reads 40% or more at the play camera.
 
 ## 5. The three skills now (sketches; P7's judge rules)
 

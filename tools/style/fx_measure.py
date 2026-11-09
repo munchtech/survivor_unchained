@@ -8,7 +8,7 @@
 An effect's pixels are those of its box that stand off the backdrop (Oklab C >= 0.06 or L >= the backdrop's L50 + 0.12);
 the bright ones (L >= backdrop + 0.25) are split by k-means on L into the school's band count (edge, mid, core in rising
 L), each band's L, C (medians) and h (circular mean) reported with its share of the effect's area; the rest of the
-effect's pixels are its glow (the soft outer halo). Fully saturated: Oklab C >= 0.15 (MB5's fire bands sit at 0.17-0.18;
+effect's pixels are its glow (the soft outer halo). Fully saturated: Oklab C >= 0.15 or >= 90% of the sRGB ceiling at its own L and hue (MB5's fire bands sit at 0.17-0.18;
 rule 4's night surfaces at 0.09-0.12).
 
     python tools/style/fx_measure.py build            -> writes fx_language.json "schools": MB5's measured schools (fire,
@@ -92,8 +92,37 @@ def kmeans1(x, k, it=40):
     return np.sort(c)
 
 
+def _cmax_table():
+    """sRGB gamut ceiling of C at each Oklab L (0..1, step 0.01) and hue (0..359, step 1), by binary search."""
+    Ls = np.linspace(0, 1, 101)[:, None]; hs = np.radians(np.arange(360))[None, :]
+    lo = np.zeros((101, 360)); hi = np.full((101, 360), 0.5)
+    for _ in range(30):
+        mid = (lo + hi) / 2
+        a, b = mid * np.cos(hs), mid * np.sin(hs)
+        l, m, s = (Ls + 0.3963377774 * a + 0.2158037573 * b) ** 3, (Ls - 0.1055613458 * a - 0.0638541728 * b) ** 3, (Ls - 0.0894841775 * a - 1.2914855480 * b) ** 3
+        ok = np.ones_like(mid, bool)
+        for v in (4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+                  -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s):
+            ok &= (v >= -1e-4) & (v <= 1.0001)
+        lo = np.where(ok, mid, lo); hi = np.where(ok, hi, mid)
+    return lo
+
+
+_CMAX = None
+
+
+def sat_mask(L, C, h):
+    """FROM lead 7, 9 Nov: an absolute 0.15 fails every gold or holy school at high L, even at the screen's limit (steel's edge at L 0.63 tops out at C 0.151)."""
+    global _CMAX
+    if _CMAX is None: _CMAX = _cmax_table()
+    cm = _CMAX[np.clip(np.rint(np.asarray(L) * 100).astype(int), 0, 100), np.rint(np.asarray(h)).astype(int) % 360]
+    return (np.asarray(C) >= 0.15) | (np.asarray(C) >= 0.9 * cm)
+
+
 def saturated(rgb):
-    return oklab(np.asarray(rgb).reshape(-1, 3))[1].reshape(np.asarray(rgb).shape[:-1]) >= 0.15
+    shp = np.asarray(rgb).shape[:-1]
+    L, C, h, _, _ = oklab(np.asarray(rgb).reshape(-1, 3))
+    return sat_mask(L, C, h).reshape(shp)
 
 
 def bands(img, box, bg, k):
@@ -157,7 +186,7 @@ def bolt_marks(img, b, bg):
     core = main & (L >= (cs[1] + cs[2]) / 2)
     head = float(core.sum(0).max() / length)
     fx = (C >= 0.06) | (L >= bL + 0.12)
-    sat = float((C >= 0.15)[fx].mean())
+    sat = float(sat_mask(L, C, h.reshape(L.shape))[fx].mean())
     return dict(box=list(b), length_px=length, bites=bites, sparks=sparks, head=round(head, 3),
                 saturated_share_of_fx=round(sat, 3), core_L=round(float(np.median(L[core])), 3))
 
