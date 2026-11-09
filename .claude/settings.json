@@ -1,5 +1,5 @@
 {
-  "autoCompactWindow": 270000,
+  "autoCompactWindow": 200000,
   "hooks": {
     "PreToolUse": [
       {
