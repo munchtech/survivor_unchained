@@ -122,15 +122,34 @@ def fit_of(spec):
     return f
 
 
+def action_of(spec):
+    """An action's post (Marionette motion/action.py) with its named moments resolved to clip seconds: post.action
+    {seconds, retime, derotate_tps, travel: [a, b], planted: {foot_l|foot_r: [[a, b, "ball"|"ankle"], ...]}}, where a
+    and b are seconds, "start", "end" or a beats event."""
+    if spec.get("kind") != "action":
+        return None, None
+    beats = spec.get("beats", {})
+    act = json.loads(json.dumps(spec.get("post", {}).get("action", {})))
+    T = float(act.setdefault("seconds", spec.get("seconds", 1.0)))
+    ev = beats.get("events", {})
+
+    def sec(x):
+        return 0.0 if x == "start" else T if x == "end" else float(ev[x]) if isinstance(x, str) else float(x)
+    act["planted"] = {k: [[sec(w[0]), sec(w[1])] + list(w[2:]) for w in ws] for k, ws in act.get("planted", {}).items()}
+    return act, beats
+
+
 def run_post(src, spec, name):
-    """The core on one source with the spec's post steps (loop, in place, whole cycles, the gait lock) and its fit."""
+    """The core on one source with the spec's post steps (loop, in place, whole cycles, the gait lock, an action's
+    post) and its fit."""
     po = spec.get("post", {})
+    act, beats = action_of(spec)
     cyc = po.get("cycle_s")
     return MC.run(src, RIG, loop=po.get("loop", spec.get("loop", False)), inplace=po.get("inplace", spec.get("inplace", False)),
                   name=name, gait=po.get("gait", False), duty=po.get("duty"),
                   cycle=(int(round(cyc[0] * KFPS)), int(round(cyc[1] * KFPS))) if cyc else None,
                   crop=tuple(po["crop"]) if po.get("crop") else None, fit=fit_of(spec),
-                  body=body_field() if "clear" in spec.get("fit", {}) else None)
+                  body=body_field() if "clear" in spec.get("fit", {}) else None, action=act, beats=beats)
 
 
 def build_one(p):
@@ -141,6 +160,11 @@ def build_one(p):
 def measure(r, spec):
     """The bible's numbers on a core result (B's side), per the spec's kind."""
     fps = r.src.fps
+    if spec.get("kind") == "action":
+        m = measures.action(r.P, r.G, r.rig, fps, spec.get("bands", {}), r.clip.get("beats", {}),
+                            extra=action_held(r, spec), head_top=head_top())
+        m.update(steps(r))
+        return m
     if spec.get("kind") == "gait":
         m = measures.gait(r.P, r.rig, fps, r.clip.get("speed_mps"), loop=r.clip["loop"])
         m.update(held(r, spec))
@@ -189,6 +213,50 @@ def held(r, spec):
     return out
 
 
+def action_held(r, spec):
+    """Per-frame series of the held pieces for an action's bands (measures.at): blade_below_deg (the blade's angle
+    below the horizontal), tip_cm (its tip's height), tip_ahead_cm (the tip ahead of the pelvis along her heading),
+    shield_top_cm (its top edge's height), shield_face_deg (its face's heading off hers, + open), boss_sternum_cm
+    (the boss from the chest, spine_05's head)."""
+    out = {}
+    rig, G, P = r.rig, r.G, r.P
+    pv = rig.index["pelvis"]
+    Rp = G[:, pv] @ rig.R0[pv].T
+    fwd = Rp @ np.array([0, 0, 1.0])
+    hd = np.stack([fwd[:, 0], np.zeros(len(fwd)), fwd[:, 2]], 1)
+    hd /= np.linalg.norm(hd, axis=1, keepdims=True) + 1e-12
+    pc = pieces()
+    if "sword" in spec.get("held", []):
+        h = rig.index["hand_r"]
+        d = np.einsum("fij,j->fi", G[:, h], pc["blade"]["dir"])
+        out["blade_below_deg"] = np.degrees(np.arctan2(-d[:, 1], np.hypot(d[:, 0], d[:, 2])))
+        grip = P[:, h] + np.einsum("fij,j->fi", G[:, h], pc["blade"]["at"])
+        tip = grip + d * pc["blade"]["tip"]
+        out["tip_cm"] = 100 * tip[:, 1]
+        out["tip_ahead_cm"] = 100 * np.einsum("fi,fi->f", tip - P[:, pv], hd)
+    if "shield" in spec.get("held", []):
+        la = rig.index["lowerarm_l"]
+        boss = P[:, la] + np.einsum("fij,j->fi", G[:, la], pc["shieldp"]["at"])
+        pts = np.einsum("fij,kj->fki", G[:, la], pc["shield"]) + P[:, la][:, None]
+        out["shield_top_cm"] = 100 * pts[:, :, 1].max(1)
+        f = np.einsum("fji,fj->fi", Rp, np.einsum("fij,j->fi", G[:, la], pc["shieldp"]["face"]))
+        out["shield_face_deg"] = np.degrees(np.arctan2(f[:, 0], f[:, 2]))
+        out["boss_sternum_cm"] = 100 * np.linalg.norm(boss - P[:, rig.index["spine_05"]], axis=1)
+    return out
+
+
+def head_top():
+    """The top of her head over the Head bone's head at rest (m): the skin's highest point, B's rest."""
+    if "_ht" not in globals():
+        body_field()
+        B = globals()["_bfB"]
+        from motion.rig import Rig
+        rig = Rig(RIG)
+        V = (np.c_[B.p.P0, np.ones(len(B.p.P0))] @ np.linalg.inv(B.X).T)[:, :3]
+        globals()["_ht"] = float(V[:, 1].max() - rig.head[rig.index["Head"]][1])
+    return _ht
+
+
 def hand_targets(r, spec):
     """The keyed hands' distance from their targets on B (cm; mean and worst over the clip): each target rides the
     pelvis at its rest offset (gen.keys.hands, B meters from the pelvis head, her left/up/forward)."""
@@ -198,7 +266,7 @@ def hand_targets(r, spec):
     rig, out = r.rig, {}
     pv = rig.index["pelvis"]
     Rrel = r.G[:, pv] @ rig.R0[pv].T
-    for h, off in K["hands"].items():
+    for h, off in K.get("hands", {}).items():
         b = rig.index["hand_l" if h.startswith("Left") else "hand_r"]
         t = r.P[:, pv] + Rrel @ np.asarray(off)
         d = np.linalg.norm(r.P[:, b] - t, axis=1) * 100
@@ -259,11 +327,16 @@ def jobs_of(names):
             # (aim: what is sent = the target minus the take's measured mean miss on B, in the pelvis frame: the
             # retarget's arm calibration lands Kimodo's wrist a few cm from where it put SOMA's)
             aim = K.get("aim", {})
-            hands = {h: [(x + a) / k for x, a in zip(off, aim.get(h, [0, 0, 0]))] for h, off in K["hands"].items()}
+            hands = {h: [(x + a) / k for x, a in zip(off, aim.get(h, [0, 0, 0]))] for h, off in K.get("hands", {}).items()}
+            # (an action's keys: end effectors at given take frames {joint: {frame: [l, u, f] B m from the pelvis}},
+            # and FullBody key poses at given take frames (the take's pose there, after those edits))
+            tgts = {jn: {f: [(x + a) / k for x, a in zip(off, aim.get(jn, [0, 0, 0]))] for f, off in d.items()}
+                    for jn, d in K.get("targets", {}).items()}
             for i in K.get("prompts", [K["src"]["prompt"]]):
                 for sc in K.get("scales", [K["src"].get("scale", 1.0)]):
                     j = job(i, sc, f"{p.stem}__k{K.get('tag', '')}{i}s{round(sc * 100)}")
-                    j["keys"] = {"src": src, "hands": hands, "start": K.get("start", 15), "every": K.get("every", 30)}
+                    j["keys"] = {"src": src, "hands": hands, "targets": tgts, "fullbody": K.get("fullbody", []),
+                                 "start": K.get("start", 15), "every": K.get("every", 30)}
                     jobs.append(j)
     return jobs
 
@@ -335,8 +408,39 @@ def cmd_build(a):
                                                      k.startswith(("step_", "wrist_", "blade_", "shield_", "boss_"))))
         for L in r.fitlog or []:
             print(f"  fit {L['layer']}: " + ", ".join(f"{k} {v}" for k, v in L.items() if k != "layer"))
+        if r.clip.get("beats"):
+            print(f"  {p.stem} beats: {json.dumps(r.clip['beats'])}")
+        for nt in r.prep.notes:
+            print(f"  note: {nt}")
         print(f"{p.stem}: {r.clip['frames']} frames, source crop {r.prep.crop}, yaw {r.prep.yaw_deg:.1f} deg, "
               f"windows L {len(r.wins[0])} R {len(r.wins[1])} -> {OUT.relative_to(REPO).as_posix()}/{p.stem}.json")
+
+
+def clearance(G, P, held, target_mm=10.0, n=None, pts=800):
+    """Each held piece against her skin (body_field: the winding number's sign) on every frame of a clip: the closest
+    gap (mm, + outside), the deepest in (mm, 0 if never), the frames inside and the frames under target_mm."""
+    from motion import fit as FIT
+    bones = {"sword": "hand_r", "shield": "lowerarm_l"}
+    pc, rng = pieces(), np.random.default_rng(1)
+    sel = {k: pc[k][rng.choice(len(pc[k]), min(len(pc[k]), pts), replace=False)] for k in held}
+    from motion.rig import Rig
+    rig = Rig(RIG)
+    out = {k: {"gap_mm": 1e9, "in_mm": 0.0, "inside": [], "under": []} for k in held}
+    bf = body_field()
+    for f in range(n or len(G)):
+        field = bf(G[f], P[f])
+        for k in held:
+            j = rig.index[bones[k]]
+            sd = float(field(sel[k] @ G[f, j].T + P[f, j])[0].min()) * 1000
+            o = out[k]
+            o["gap_mm"] = min(o["gap_mm"], sd)
+            if sd < 0:
+                o["in_mm"] = max(o["in_mm"], -sd)
+                o["inside"].append(f)
+            if sd < target_mm:
+                o["under"].append(f)
+    return {k: {"gap_mm": round(v["gap_mm"], 1), "in_mm": round(v["in_mm"], 1), "inside": FIT._ranges(v["inside"]),
+                "under": FIT._ranges(v["under"])} for k, v in out.items()}
 
 
 def m44(R, P):
@@ -377,7 +481,9 @@ def cmd_check(a):
         ct = CC.contact(body, Gb, frames, set(c["bones"]))
         fid = retarget.fidelity_table(retarget.fidelity(rig, r.src, G, P))
         sl = footlock.slide(P, rig, r.wins, r.belt, c["fps"], r.m)
-        rows.append({"clip": p.stem, "frames": n, "pops": len(sp), "worst_step": [round(worst[0], 2), worst[1], worst[2]],
+        sj = json.loads(p.read_text())
+        cl = clearance(G, P, sj.get("held", []), n=n - 1 if c["loop"] else n) if sj.get("held") else {}
+        rows.append({"clip": p.stem, "frames": n, "pops": len(sp), "clearance": cl, "worst_step": [round(worst[0], 2), worst[1], worst[2]],
                      "seam_deg": round(seam[0], 4) if c["loop"] else None, "feet": ft, "contact": ct,
                      "slide_mm": [round(x * 1000, 2) for x in sl], "fidelity": fid,
                      "locked_frames": [sum(w[1] for w in ws) for ws in r.wins]})
@@ -388,6 +494,9 @@ def cmd_check(a):
         print(f"  feet: locked frames L {R['locked_frames'][0]} R {R['locked_frames'][1]}, planted slide (core) L {R['slide_mm'][0]} "
               f"R {R['slide_mm'][1]} mm; clipcheck drift SOMA/B mm L {f['l']['A']}/{f['l']['B']} R {f['r']['A']}/{f['r']['B']} (belt {f['belt_mps']} m/s)")
         print("  fidelity deg (mean / max, worst):  " + "  ".join(f"{g} {v['mean']}/{v['max']} {v['worst']}" for g, v in R["fidelity"].items()))
+        for k, v in R["clearance"].items():
+            print(f"  held {k}: closest gap {v['gap_mm']} mm, deepest in {v['in_mm']} mm (frames in: {v['inside'] or '-'}; "
+                  f"under 10 mm: {v['under'] or '-'})")
         for s in "lr":
             v = b[s]
             print(f"  arm {s}: inside {v['inside']} verts, deepest {v['depth_mm']} mm @f{v['frame']} {v.get('where', '')}; "
@@ -465,7 +574,7 @@ def body_field():
             nrm = nrm / (np.linalg.norm(nrm, axis=1, keepdims=True) + 1e-12)
             return s, nrm
         return field
-    globals()["_bf"] = body
+    globals()["_bf"], globals()["_bfB"] = body, B
     return body
 
 
