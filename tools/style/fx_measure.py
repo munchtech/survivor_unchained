@@ -13,7 +13,8 @@ rule 4's night surfaces at 0.09-0.12).
 
     python tools/style/fx_measure.py build            -> writes fx_language.json "schools": MB5's measured schools (fire,
                                                       frost, holy) and the others derived from Palette.Of by the rules in
-                                                      "derive" (keeps each band's calibrated "emit")
+                                                      "derive" (keeps each band's calibrated "emit"); a school in
+                                                      "authored" (L1 lead 6: physical, the steel) takes its own bands
     python tools/style/fx_measure.py bolt PNG X0,Y0,X1,Y1 [--bg X0,Y0,X1,Y1]
                                                       -> (L1 W2 C5) a bolt's marks against MB5's (B6 verdict): its bites
                                                       (dark holes inside the body), sparks (small hot parts off it, 4-150 px
@@ -279,7 +280,14 @@ def build():
     for name, (core, glow, dim) in PALETTE.items():
         k = 2 if name in dv["two_bands"] else 3
         Lc, Cc, hc = lch(core); Lg, Cg, hg = lch(glow)
-        if name in m:
+        au = d.get("authored", {}).get(name)
+        if au:  # (L1 lead 6) a family authored FROM a named need/reference (its "from"), kept over the derivation
+            k = len(au["bands"])
+            bands = [dict(name=b["name"], L=b["L"], C=b["C"], h=b["h"], share=b["share"]) for b in au["bands"]]
+            if k == 2: bands = [bands[0], bands[0], bands[1]]  # the fold below keeps edge and core
+            frm = au["from"]
+            gl = dict(L=au["glow"]["L"], C=au["glow"]["C"], h=au["glow"]["h"])
+        elif name in m:
             src = m[name]; bands = [dict(name=b["name"], L=b["L"], C=b["C"], h=b["h"], share=b["share"]) for b in src["bands"]]
             frm = f"MB5 {name} box {src['box']} (k-means on L, fx_measure.py board)"
             gl = dict(L=src["glow"]["L"], C=src["glow"]["C"], h=src["glow"]["h"])
@@ -295,8 +303,9 @@ def build():
             for b, f in zip(bands, fb): b["share"] = f["share"]
             frm = "derived: Palette.Of(" + name + ") hues by derive's rules, MB5's band L and fire's chroma ratios"
             gl = dict(L=fire["glow"]["L"], C=round(fire["glow"]["C"] * kc, 3), h=round(hmix(hg, hc, dv["edge_h"]), 1))
-        if k == 2:  # edge and core: the mid band folded into the edge
+        if k == 2 and not au:  # edge and core: the mid band folded into the edge
             e, c = bands[0], bands[2]; e["share"] = round(bands[0]["share"] + bands[1]["share"], 3); bands = [e, c]
+        elif k == 2: bands = [bands[0], bands[2]]
         tot = sum(b["share"] for b in bands)
         t, acc = [], 0.0
         for b in bands:
@@ -305,14 +314,16 @@ def build():
             b["hex"] = to_srgb_hex(b["L"], b["C"], b["h"])
             prev = next((ob for ob in old.get(name, {}).get("bands", []) if ob["name"] == b["name"]), None)
             b["emit"] = prev["emit"] if prev else [1.0, 1.0, 1.0]
+            if prev and "calib_dE" in prev and not au: b["calib_dE"] = prev["calib_dE"]
             b.pop("share")
         gl["hex"] = to_srgb_hex(gl["L"], gl["C"], gl["h"])
         # sparks: MB5's fire sparks (measured), in each school's mid hue at its chroma ratio
         spk = d["sparks"]; mid = bands[1] if k == 3 else bands[0]
         sp_hex = to_srgb_hex(spk["L"], spk["C"], spk["h"]) if name == "fire" else to_srgb_hex(spk["L"], min(spk["C"], spk["C"] * mid["C"] / fire["bands"][1]["C"]), mid["h"])
+        if au and "sparks" in au: sp_hex = to_srgb_hex(au["sparks"]["L"], au["sparks"]["C"], au["sparks"]["h"])
         schools[name] = dict(**{"from": frm}, bands=bands, glow=dict(gl, **d["glow"]), sparks=dict(hex=sp_hex, **{k2: spk[k2] for k2 in ("count", "length", "aspect", "from")}))
         if name in old and "t_tuned" in old[name]: schools[name]["t_tuned"] = old[name]["t_tuned"]
-        schools[name]["calibration"] = old.get(name, {}).get("calibration") or (
+        schools[name]["calibration"] = (au["calibration"] if au else None) or old.get(name, {}).get("calibration") or (
             "DERIVED AND UNCALIBRATED: hues from Palette.Of by 'derive', no board measures this school, and its emit is 1 (no patch chart run): its night colors are not yet checked on the stage"
             if name not in m else "measured from MB5; emit not yet charted")
     d["schools"] = schools

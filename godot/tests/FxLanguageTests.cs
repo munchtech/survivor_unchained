@@ -31,8 +31,19 @@ public class FxLanguageTests
             Assert.Equal(0f, f.Edge.T);
             for (int i = 1; i < f.Bands.Count; i++) Assert.True(f.Bands[i].T > f.Bands[i - 1].T && f.Bands[i].L > f.Bands[i - 1].L);
         }
-        Assert.Equal(2, l["physical"]!.Bands.Count);
-        Assert.Same(l["physical"]!.Core, l["physical"]!.Mid);
+    }
+
+    [Fact]
+    public void PhysicalIsTheWardensSteelWhiteEdgeGoldBodyAmberTrail()
+    {
+        // L1 lead 6 (9 Nov, the owner's "vibrant"): the derived physical was brown and cream at C 0.03-0.075; the steel is
+        // authored (fx_language.json "authored"): a white-gold core, a gold mid, an amber edge, saturated like fire's bands
+        var f = Real()["physical"]!;
+        Assert.Equal(3, f.Bands.Count);
+        Assert.True(f.Core.L > 0.93f && f.Core.C < 0.05f);
+        Assert.InRange(f.Mid.H, 70f, 88f);
+        Assert.InRange(f.Edge.H, 50f, 66f);
+        Assert.True(f.Mid.C >= 0.14f && f.Edge.C >= 0.13f);
     }
 
     [Fact]
@@ -67,8 +78,9 @@ public class FxLanguageTests
         foreach (var s in new[] { "frost", "holy" })
             Assert.Contains(l[s]!.Bands, b => b.Emit.Any(e => Math.Abs(e - 1f) > 0.01f));
         using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(Root(), "data", "look", "fx_language.json")));
-        foreach (var s in new[] { "physical", "storm", "nature", "arcane", "shadow" })
+        foreach (var s in new[] { "storm", "nature", "arcane", "shadow" })
             Assert.StartsWith("DERIVED AND UNCALIBRATED", doc.RootElement.GetProperty("schools").GetProperty(s).GetProperty("calibration").GetString());
+        Assert.StartsWith("AUTHORED", doc.RootElement.GetProperty("schools").GetProperty("physical").GetProperty("calibration").GetString());
     }
 
     [Fact]
