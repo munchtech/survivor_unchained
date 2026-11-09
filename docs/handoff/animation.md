@@ -4,6 +4,37 @@ For the next animation lead (`su-lead-high`). Read `docs/team/README.md` ("Worki
 
 **Standing bar (the owner, 26 Oct): "effortlessly badass".** Every judge brief on her motion (armed walks especially) asks it as the whole-frame question: does she move effortlessly badass, or stiff, careful or strained?
 
+## 0000000000000000000000000000000000000. HANDOFF, A1 Stage B lead 4 -> lead 5 (9 Nov, ~08:45 PST, at ~255k of context): integration merged, the pipeline REBASED on the picked B; the actions brief WRITTEN, not started
+**Start here**, then lead 2's block below (its two blocks), then lead 1's (rules, worktrees, the pipeline). Tips: game motion-a1 (this commit, pushed), Marionette motion-a1@bc87b03 (pushed). Nothing is running.
+**The coordinator approved (9 Nov):** the plan (P7's four clips FIRST, then the Warden slice, then MR READY; ~2.3-3.2M in all); her_events.json's shape (docs/team/ARPG_NOTES.md, last block: the one record M3's item 14 reads; the P4 pack is its only writer); and the rebase decisions: (a) B's held pieces sit in B's own frames and pockets, and Arms.InAFrame, P1Laws.Follow and P1Retarget.AFrame are DELETED; (b) B's clavicle follows B's own girdle law (her_b rig_girdle clavicle_by "law"), HerShrug is no longer added on B, and P4 keys the clavicle neutral; (c) P1BlendBase stays while bridge clips remain, and P4Pack pre-multiplies its bones (t^-1 q). Main told P2 and P7. Report to main at each judge and at the four clips' PASS, nothing else.
+**The merge (358588d84)** followed the junction rule. Conflicts: .gitignore (kept both); P1Body.cs (kept integration's BlendBase and our P4 overlay); PlayerView.cs (ArmHold.Layered: B has no arm-hold layer at all, so integration's armB / --p1-arm-copy are retired). The stale 6 Nov body_p1 copies were backed up, then discarded and recycled.
+**The rebase** (one solver ~220k + a Sonnet worker ~196k; game f8c94d832..77135c7a0, Marionette bc87b03):
+- B's grip re-derived: the knuckle frame is 3.7 deg off A's (BladeAtRB/DirRB, KnuckleLineRB); the sheath is unchanged.
+- Parity, game vs pipeline, every 4th frame: idle_warden sword 0.192 mm / 0.009 deg, shield 0.182 / 0.019; walk_warden 0.086 / 0.005 and 0.091 / 0.003. Tools: tools/anim/p4_parity.py with a test and a fixture; P1PoseProbe dumps the held pieces' points.
+- `build_topo.py <spec> <dir> --rig-only` writes rig.json and play_rig.json without republishing a glb.
+- The clavicle at 78 deg of arm elevation: 0.56 deg under the shrug, 10.97 under the law (Python says 11.05). The lift is applied once (the key is rest). The bridge clips also get it once (2.62 deg); no re-bake needed.
+- Blend base: every bone is within 0.122 deg. The pytest pins 0.15 (cause: float32 interpolation). CLOSED as known.
+- Suites: dotnet 1597/0/10. Marionette pytest 21/1: the foot-roll test is at 10.001 vs < 10 deg, now item 4 of the actions brief. Game pytest 11/1: test_staged needs an ignored file; unrelated.
+- Numbers: survivorsunchained_inputs\motion_a1\stageB\rebase\numbers.md.
+**Open from the rebase** (the Warden slice's fix round, before judge r2):
+- walk_warden's sword gap went from 13.9 to 78.8 mm: the arm is held out (the new rest).
+- In the town walk/run blend the shield reads 16-73 mm into her at weights .5-1. This is a PHANTOM: the measuring shield sits on lowerarm_l, but in town the shield hangs on her back, so drop it from the town clips' held list.
+- p4.py check misses:
+  - the runs' calf pops, 22.3 / 28.2 deg;
+  - idle_warden_town elbow_l at 111.9 (band 80-110);
+  - run_warden's blade 59.6 deg below horizontal, and its boss 6.8 cm up / 8.3 ahead;
+  - the runs' thigh trail at 24-32 (the judge rules);
+  - walk sway 2.15 / 3.45;
+  - the runs' slide, not yet measured.
+- Lead 2's two blocks: the clearance test's 80 mm ceiling (now item 1 of the actions brief) and the runs' heel lift-off.
+**Next, in order:**
+1. Spawn solver A from survivorsunchained_inputs\scratch_motion_a1\actions\brief.md (su-lead-high, effort medium, `Context budget: 280k`, `Item: A1 actions kind + leap`). It builds the action kind (Kimodo key poses / end effectors, de-rotation, loop ranges, the pelvis arc kept), fixes the clearance test, adds the action measures, her_events.json, the `--act` shot harness and the foot-roll fix, then takes heroic_leap end to end on the gpu turn, with shots in stageB\actions\heroic_leap\.
+2. Solver B (fresh, same brief): bladestorm_loop, iron_vow, shield_charge.
+3. ONE max judge on the four: whole frame first, "effortlessly badass", 1:1 at the play camera and the close zoom, with the finish-line sentences. Run `node tools/ai/api_agent.cjs status` first; with no credit, use a su-lead-max subagent. `Item: A1 P7 clips`. Fix rounds to PASS, then tell main: the clips, her_events.json, and P7's wiring (Bladestorm's turn stays in P7's view at 2.25 turns/s against a de-rotated clip; the leap's takeoff is at 0.10 s against P7's 0.06 s crouch, P7's call).
+4. The Warden slice: the open list above; judge r2 (scratch_motion_a1\j2\brief.md, pointed at a fresh re-shoot); the s2b actions (scratch_motion_a1\s2b\brief.md); judges to PASS.
+5. The full suite, then MR READY.
+**Spend:** lead ~0.26M; rebase ~0.42M; API $0. About 2.0-2.8M left for the area.
+
 ## 000000000000000000000000000000000000. HANDOFF, A1 Stage B lead 2 -> lead 3 (6 Nov, ~08:30 PST, wind-down: subscription at 100%): rounds s2a3-s2a5 done; judge round 2 NOT run; two blocks
 **Start here**, then lead 1's block below (rules, worktrees, the junction rule, the pipeline). Tips: game motion-a1 (this commit), Marionette motion-a1@51d1754. Nothing is running.
 **Done since lead 1:** s2a3 (API $15.31): the core FIT (`motion/fit.py`, the bible's layers, each logs in/out), B's own grip (`WeaponSockets.BladeAtRB/DirRB`, 13.7 deg off A's) and sheath (`HipBladeAtB`, 15 cm lower, now tilted 38.6 deg hilt-forward). s2a4 (API $9.29, cut off by the account's credit, finished by a max subagent): held-piece clearance layer, wrist cap (flex <= 25, dev <= 15 on every clip), `fit.shield` solve, ONE side shield carry for the armed walk+run (the bible's "low in front" cannot clear her on B's 23 cm upper arm: every front carry cut 58-80 mm in; LEAD RULING: side carry accepted pending judge r2), no foot roll on the walks. Blend walk<->run at .125 steps: sword AND shield 0.0 mm into her at every weight (gaps 13.8-34 / 16-41.6 mm); dotnet 1593/0. s2a5 (max subagent, partial): the runs' toe snap fixed in the core (ball 46.9/37.9 -> 9.2/9.0 deg a frame; footlock `_limit`), Marionette 51d1754; the rebuilt run JSONs are in `godot/art/people/body_p1/p4/` but NOT packed or re-shot.
