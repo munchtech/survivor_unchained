@@ -1417,6 +1417,8 @@ public partial class GameHud : CanvasLayer
     /// <summary>Whether a narrated line, a banner, the interact prompt or a tip is on the screen now
     /// (a callout waits for them: Teach.cs).</summary>
     public bool SayUp => sayT > 0;
+    /// <summary>(M5 r4) The band taken down now (a champion about to wake: StoryText asks the line again after it).</summary>
+    public void SayClear() { sayT = 0; subtitle.Modulate = Colors.Transparent; }
     public bool BannerUp => annT < annLife;
     /// <summary>A play banner still up when a film starts goes at once (it never reads over a shot).</summary>
     public void ClearBanner() { annT = annLife; announce.Modulate = Colors.Transparent; }

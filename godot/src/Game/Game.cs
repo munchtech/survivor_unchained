@@ -948,12 +948,18 @@ public partial class Game : Node, IZoneHost
         StoryLine.Ask(Play.StoryText.Kind.Narration, () => SayNow(text, who, seconds));
 
     /// <summary>(M5 r3) The bottom band's narration and the speakers' named cards, in turn (Play/StoryText.cs).</summary>
-    Play.StoryText StoryLine => storyLine ??= new Play.StoryText(() => Now, () => hud.SayUp, () => scene?.Voices.SpeakerUp == true);
+    Play.StoryText StoryLine => storyLine ??= new Play.StoryText(() => Now, () => hud.SayUp, () => scene?.Voices.SpeakerUp == true)
+    {
+        // (M5 r4: the band is clear from 2 s before a champion wakes: the judge, round 3, Ser Aldric's line through his body)
+        WakeSoon = () => Battle is { } b && cine == null && Play.Zones.ChampionGate.Waking(b, Play.StoryText.WakeAhead, 2),
+        TakeDown = () => { hud.SayClear(); if (narrTake != null && voice.Current == narrTake) voice.Stop(); },
+    };
+    SurvivorUnchained.World.VoTake? narrTake;
     Play.StoryText? storyLine;
 
     void SayNow(string text, string? who, double seconds)
     {
-        var take = voice.Narrate(text);
+        var take = narrTake = voice.Narrate(text);
         // (no voice: up long enough to read, 17 characters a second)
         double up = take != null ? Math.Max(seconds, take.Sec + 0.8) : Math.Max(seconds, text.Length / 17.0);
         // (--pace: each line's time, length and her health, for the tutorial's pacing audit)

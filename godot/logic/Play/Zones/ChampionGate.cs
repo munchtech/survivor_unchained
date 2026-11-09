@@ -30,27 +30,41 @@ public static class ChampionGate
     }
 
     /// <summary>A champion is awake near her, or its pack wakes within `ahead` seconds.</summary>
-    public static bool Due(Battle b, double ahead = Ahead)
+    public static bool Due(Battle b, double ahead = Ahead) => AwakeNearHer(b) || Waking(b, ahead);
+
+    /// <summary>A champion (a named foe, not a boss) is awake within AwakeNear of her.</summary>
+    public static bool AwakeNearHer(Battle b)
     {
         var p = b.Player;
-        var foes = b.Enemies.Living().Where(e => e.State != EnemyState.Dying && e.Disposition == Disposition.Hostile).ToList();
+        foreach (var e in Hostile(b))
+        {
+            if (e.Named == null || e.Boss || !(e.Roused || e.Wake <= 0)) continue;
+            if ((e.X - p.X) * (e.X - p.X) + (e.Z - p.Z) * (e.Z - p.Z) < AwakeNear * AwakeNear) return true;
+        }
+        return false;
+    }
+
+    /// <summary>(M5 r4) A resting champion's pack wakes within `ahead` seconds (her walk against its waking distance), or
+    /// she is within `close` of its waking distance whatever her pace.</summary>
+    public static bool Waking(Battle b, double ahead, double close = Close)
+    {
+        var p = b.Player;
+        var foes = Hostile(b).ToList();
         var homes = new List<(double X, double Z)>();
         foreach (var e in foes)
-        {
-            if (e.Named == null || e.Boss) continue;
-            double d = Math.Sqrt((e.X - p.X) * (e.X - p.X) + (e.Z - p.Z) * (e.Z - p.Z));
-            if (e.Roused || e.Wake <= 0) { if (d < AwakeNear) return true; }
-            else homes.Add((e.HomeX, e.HomeZ));
-        }
+            if (e.Named != null && !e.Boss && !e.Roused && e.Wake > 0) homes.Add((e.HomeX, e.HomeZ));
         if (homes.Count == 0) return false;
         foreach (var e in foes)
         {
             if (e.Roused || e.Wake <= 0 || !homes.Any(h => Math.Abs(h.X - e.HomeX) + Math.Abs(h.Z - e.HomeZ) <= 1)) continue;
             double dx = e.X - p.X, dz = e.Z - p.Z, d = Math.Sqrt(dx * dx + dz * dz);
-            if (d - e.Wake <= Close) return true;
+            if (d - e.Wake <= close) return true;
             double closing = d > 1e-6 ? (dx * p.Vx + dz * p.Vz) / d : 0;
             if (WakeIn(d, e.Wake, closing) < ahead) return true;
         }
         return false;
     }
+
+    static IEnumerable<Enemy> Hostile(Battle b) =>
+        b.Enemies.Living().Where(e => e.State != EnemyState.Dying && e.Disposition == Disposition.Hostile);
 }

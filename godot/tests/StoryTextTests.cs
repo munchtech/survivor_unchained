@@ -109,4 +109,38 @@ public class StoryTextTests
         Run(s, now + StoryText.MostWait + 0.1);
         Assert.Equal("late", shown[^1]);
     }
+    [Fact]
+    public void A_champion_about_to_wake_holds_the_band_and_a_line_up_is_taken_down_and_asked_again()
+    {
+        // (M5 r4: Ser Aldric's intro line opened 1.7 s before his wake and ran through his body)
+        var s = New();
+        bool soon = false; int downs = 0;
+        s.WakeSoon = () => soon;
+        s.TakeDown = () => { downs++; narrUntil = now; };
+        Narrate(s, "armor", 5);
+        Run(s, 1.0);
+        soon = true;                       // her walk will wake him within 2 s
+        Run(s, 1.2);
+        Assert.Equal(1, downs);
+        Assert.False(now < narrUntil);
+        Narrate(s, "next", 4);
+        Run(s, 3.0);                       // he wakes: the game's hold after it
+        soon = false; s.HoldNarration(StoryText.WakeHold);
+        Run(s, 5.9);
+        Assert.Equal(new[] { "armor" }, shown);
+        Run(s, 6.2);
+        Assert.Equal(new[] { "armor", "armor" }, shown);
+        soon = true; Run(s, 6.5);          // asked again, it is not taken down a second time
+        Assert.Equal(1, downs);
+    }
+
+    [Fact]
+    public void Without_a_wake_coming_nothing_is_taken_down()
+    {
+        var s = New(); int downs = 0;
+        s.WakeSoon = () => false; s.TakeDown = () => downs++;
+        Narrate(s, "a", 3); Run(s, 2);
+        Assert.Equal(0, downs);
+        Assert.Equal(new[] { "a" }, shown);
+    }
 }

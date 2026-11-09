@@ -30,6 +30,19 @@ public sealed class StoryText
     /// <summary>A champion's wake beat is fresh this long (s): the narration band stays clear of it.</summary>
     public const double WakeHold = 3;
 
+    /// <summary>(M5 r4) A champion wakes within WakeAhead seconds (ChampionGate.Waking): no narration opens, and one up
+    /// now is taken down (TakeDown) and asked again, to show after the wake's hold. The judge, round 3: Ser Aldric's line
+    /// opened 1.7 s before he woke, so the hold after the wake never caught it.</summary>
+    public Func<bool>? WakeSoon { get; set; }
+    /// <summary>Takes the narration band down now (the HUD's band and the narrator's voice).</summary>
+    public Action? TakeDown { get; set; }
+    /// <summary>Seconds before a champion's wake the band is kept clear.</summary>
+    public const double WakeAhead = 2;
+
+    /// <summary>The narration shown last (to ask again if a wake comes while it is up) and whether it was already taken
+    /// down once (a line is taken down once; asked again it stays).</summary>
+    (Action Show, bool Again)? upNow;
+
     public StoryText(Func<double> clock, Func<bool> narrationUp, Func<bool> speakerUp)
     {
         this.clock = clock; this.narrationUp = narrationUp; this.speakerUp = speakerUp;
@@ -53,6 +66,20 @@ public sealed class StoryText
     /// <summary>Show what may be shown now, in order (call every frame).</summary>
     public void Tick()
     {
+        if (!narrationUp()) upNow = null;
+        bool soon = WakeSoon?.Invoke() == true;
+        if (soon) holdUntil = Math.Max(holdUntil, clock() + 0.1);
+        if (soon && upNow is { Again: false } u && narrationUp() && TakeDown != null)
+        {
+            // (taken down and asked again at the head of the line: it shows after the wake's hold)
+            TakeDown();
+            upNow = null;
+            var rest = new List<(Kind, double, Action, string?)>(line);
+            line.Clear();
+            line.Enqueue((Kind.Narration, clock(), () => { u.Show(); upNow = (u.Show, true); }, null));
+            foreach (var x in rest) line.Enqueue(x);
+            lastNarration = null;
+        }
         while (line.Count > 0)
         {
             var (kind, asked, show, _) = line.Peek();
@@ -66,6 +93,7 @@ public sealed class StoryText
             }
             else if (narrationUp()) return;
             line.Dequeue();
+            if (kind == Kind.Narration) upNow = (show, false);
             show();
         }
     }
