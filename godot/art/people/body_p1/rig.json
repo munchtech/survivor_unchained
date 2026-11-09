@@ -19,38 +19,291 @@
  "axes": {
   "lowerarm_l": {
    "x": [
-    -0.703828,
-    -0.710344,
-    -0.006149
+    -0.780045,
+    -0.617985,
+    0.098105
    ],
    "flexion": "+X"
   },
   "lowerarm_r": {
    "x": [
-    -0.703828,
-    0.710344,
-    0.006149
+    -0.780045,
+    0.617985,
+    -0.098105
    ],
    "flexion": "+X"
   },
   "calf_l": {
    "x": [
-    0.996957,
-    0.077951,
+    0.997906,
+    0.064675,
     0.0
    ],
    "flexion": "+X"
   },
   "calf_r": {
    "x": [
-    0.996957,
-    -0.077951,
-    0.0
+    0.997906,
+    -0.064675,
+    -0.0
    ],
    "flexion": "+X"
   }
  },
  "correctives": [
+  {
+   "joint": "arm_hang",
+   "law": "rbf",
+   "bone": "upperarm_{s}",
+   "end": "lowerarm_{s}",
+   "frame": "clavicle_{s}",
+   "sigma_deg": 30.0,
+   "shapes": [
+    "arm_hang_look_{s}",
+    "arm_hang_look_larm_{s}",
+    "arm_hang_close_larm_{s}",
+    "arm_hang_stalker302_rarm_{s}",
+    "arm_hang_fclose206_larm_{s}",
+    "arm_hang_fclose342_larm_{s}",
+    "arm_hang_fclose370_rarm_{s}"
+   ],
+   "keys": {
+    "l": [
+     [
+      0.616517,
+      -0.785859,
+      -0.048294
+     ],
+     [
+      -0.071429,
+      -0.988924,
+      -0.130101
+     ],
+     [
+      0.11584,
+      -0.650015,
+      -0.75104
+     ],
+     [
+      0.520135,
+      -0.570885,
+      -0.635256
+     ],
+     [
+      -0.052516,
+      0.181143,
+      0.982054
+     ],
+     [
+      0.866203,
+      -0.29296,
+      -0.404805
+     ],
+     [
+      0.789298,
+      -0.270604,
+      0.551164
+     ],
+     [
+      0.445499,
+      -0.214351,
+      0.869244
+     ]
+    ],
+    "r": [
+     [
+      -0.616517,
+      -0.785859,
+      -0.048294
+     ],
+     [
+      0.071429,
+      -0.988924,
+      -0.130101
+     ],
+     [
+      -0.11584,
+      -0.650015,
+      -0.75104
+     ],
+     [
+      -0.520135,
+      -0.570885,
+      -0.635256
+     ],
+     [
+      0.052516,
+      0.181143,
+      0.982054
+     ],
+     [
+      -0.866203,
+      -0.29296,
+      -0.404805
+     ],
+     [
+      -0.789298,
+      -0.270604,
+      0.551164
+     ],
+     [
+      -0.445499,
+      -0.214351,
+      0.869244
+     ]
+    ]
+   },
+   "M": {
+    "l": [
+     [
+      -0.150005,
+      0.085449,
+      -0.230016,
+      -0.006434,
+      -0.123688,
+      -0.099881,
+      0.036839
+     ],
+     [
+      1.037941,
+      -0.15733,
+      0.060252,
+      0.000903,
+      0.009161,
+      0.013271,
+      -0.005138
+     ],
+     [
+      -0.15733,
+      1.43031,
+      -0.837381,
+      -0.001078,
+      0.254435,
+      -0.014945,
+      0.006073
+     ],
+     [
+      0.060252,
+      -0.837381,
+      1.706543,
+      0.002726,
+      -0.593591,
+      0.038265,
+      -0.015387
+     ],
+     [
+      0.000903,
+      -0.001078,
+      0.002726,
+      1.052939,
+      -0.002354,
+      0.102825,
+      -0.262298
+     ],
+     [
+      0.009161,
+      0.254435,
+      -0.593591,
+      -0.002354,
+      1.247905,
+      -0.027462,
+      0.012975
+     ],
+     [
+      0.013271,
+      -0.014945,
+      0.038265,
+      0.102825,
+      -0.027462,
+      1.256598,
+      -0.56993
+     ],
+     [
+      -0.005138,
+      0.006073,
+      -0.015387,
+      -0.262298,
+      0.012975,
+      -0.56993,
+      1.30308
+     ]
+    ],
+    "r": [
+     [
+      -0.150005,
+      0.085449,
+      -0.230016,
+      -0.006434,
+      -0.123688,
+      -0.099881,
+      0.036839
+     ],
+     [
+      1.037941,
+      -0.15733,
+      0.060252,
+      0.000903,
+      0.009161,
+      0.013271,
+      -0.005138
+     ],
+     [
+      -0.15733,
+      1.43031,
+      -0.837381,
+      -0.001078,
+      0.254435,
+      -0.014945,
+      0.006073
+     ],
+     [
+      0.060252,
+      -0.837381,
+      1.706543,
+      0.002726,
+      -0.593591,
+      0.038265,
+      -0.015387
+     ],
+     [
+      0.000903,
+      -0.001078,
+      0.002726,
+      1.052939,
+      -0.002354,
+      0.102825,
+      -0.262298
+     ],
+     [
+      0.009161,
+      0.254435,
+      -0.593591,
+      -0.002354,
+      1.247905,
+      -0.027462,
+      0.012975
+     ],
+     [
+      0.013271,
+      -0.014945,
+      0.038265,
+      0.102825,
+      -0.027462,
+      1.256598,
+      -0.56993
+     ],
+     [
+      -0.005138,
+      0.006073,
+      -0.015387,
+      -0.262298,
+      0.012975,
+      -0.56993,
+      1.30308
+     ]
+    ]
+   }
+  },
   {
    "joint": "elbow",
    "law": "flex",
@@ -60,7 +313,7 @@
     "hand_{s}"
    ],
    "keys": [
-    40.363,
+    45.99,
     90.0,
     135.0
    ],
@@ -79,7 +332,7 @@
     "foot_{s}"
    ],
    "keys": [
-    0.406,
+    8.474,
     90.0,
     135.0
    ],
@@ -108,63 +361,63 @@
    "keys": {
     "l": [
      [
-      0.072254,
-      -0.995223,
-      0.065657
+      0.12034,
+      -0.983741,
+      0.133313
      ],
      [
-      0.072254,
-      0.099152,
-      0.992446
+      0.12034,
+      0.01589,
+      0.992606
      ],
      [
-      0.072254,
-      0.352638,
-      0.932966
+      0.12034,
+      0.272254,
+      0.954671
      ],
      [
-      0.072254,
-      0.582091,
-      0.809907
+      0.12034,
+      0.510064,
+      0.851677
      ],
      [
-      0.072254,
-      0.771876,
-      0.631654
+      0.12034,
+      0.713114,
+      0.690642
      ]
     ],
     "r": [
      [
-      -0.072254,
-      -0.995223,
-      0.065657
+      -0.12034,
+      -0.983741,
+      0.133313
      ],
      [
-      -0.072254,
-      0.099152,
-      0.992446
+      -0.12034,
+      0.01589,
+      0.992606
      ],
      [
-      -0.072254,
-      0.352638,
-      0.932966
+      -0.12034,
+      0.272254,
+      0.954671
      ],
      [
-      -0.072254,
-      0.582091,
-      0.809907
+      -0.12034,
+      0.510064,
+      0.851677
      ],
      [
-      -0.072254,
-      0.771876,
-      0.631654
+      -0.12034,
+      0.713114,
+      0.690642
      ]
     ]
    }
   }
  ],
  "girdle": {
-  "why": "Scapulohumeral rhythm: past ~30 deg of arm elevation about 1 deg of scapular upward rotation per 2 of the humerus (capped at 60), the clavicle up 16 deg by overhead (a smoothstep over 30..180), the scapula gliding forward 15 mm as the arm goes from hanging to forward; all relative to the rest (MakeHuman's A-pose, 43 deg), so the rest is neutral and a hanging arm turns the blade back down.",
+  "why": "Scapulohumeral rhythm, the clavicle and the scapula driven from the humerus (rig_drive.girdle): tables of the arm's elevation A (deg from the torso's down axis), monotone C1 cubics flat past the ends, each relative to its value at the rest (MakeHuman's A-pose, A0 ~43 deg; the rest exactly neutral). Clavicle elevation and retraction: Ludewig, Phadke, Braman et al. 2009 (JBJS 91-A, 3D motion of the shoulder complex in 12 subjects: clavicle elevation ~10-15 deg, retraction ~15-30 deg, scapular upward rotation ~40-50 deg, posterior tilt ~20-30 deg over full elevation) and Inman, Saunders and Abbott 1944 (the setting phase: through the first ~30 deg the girdle barely moves, so the curves are nearly flat from 0 (hanging) to A0 and a hanging arm moves the clavicle and blade only a little down from rest). Protraction with forward reach (10 deg per unit of the arm's direction . front beyond rest) and the blade's forward glide (15 mm per unit) as the arm flexes forward (Ludewig 2009: scapular protraction in flexion). The upper arm keeps its world turn (the clip's aim).",
   "arm": "upperarm_{s}",
   "arm_end": "lowerarm_{s}",
   "torso": "spine_05",
@@ -178,23 +431,163 @@
    0.0,
    1.0
   ],
+  "up": [
+   0.0,
+   1.0,
+   0.0
+  ],
+  "side": [
+   1.0,
+   0.0,
+   0.0
+  ],
   "clavicle": "clavicle_{s}",
   "scap": "scap_{s}",
-  "clav_A": [
-   30.0,
-   180.0
+  "clav_elev": [
+   [
+    0,
+    0
+   ],
+   [
+    30,
+    1
+   ],
+   [
+    60,
+    4
+   ],
+   [
+    90,
+    8
+   ],
+   [
+    120,
+    12
+   ],
+   [
+    150,
+    15
+   ],
+   [
+    180,
+    17
+   ]
   ],
-  "clav_max": 16.0,
-  "scap_per_deg": 0.5,
-  "scap_from": 30.0,
-  "scap_ease": 20.0,
-  "scap_max": 60.0,
+  "clav_retract": [
+   [
+    0,
+    0
+   ],
+   [
+    30,
+    1
+   ],
+   [
+    60,
+    4
+   ],
+   [
+    90,
+    8
+   ],
+   [
+    120,
+    13
+   ],
+   [
+    150,
+    17
+   ],
+   [
+    180,
+    20
+   ]
+  ],
+  "protract_per_reach": 10.0,
+  "retract_plane": {
+   "why": "P1 R2 law2: retraction by plane. The clavicle's retraction table (relative to the rest) is scaled by the arm's forward reach beyond the rest (d . front - d0 . front: 0 in abduction, full table; 0.4 of it from reach 0.4: the check's flexion 135 reads 0.39, its 90 0.64), faded in over elevation 95..120 deg: below it the full table (the hanging arm and the rest, where the plane is undefined, and flexion to 90: flex 90 outer outline 14.9 mm at 1.0, 20.5 at 0.35, 24.0 at 0). Flex 135 outer 14.1 mm at 1.0, 10.7 at 0, 4.9-6.2 at 0.25-0.5. Read by reach, not azimuth: the check's flexion from her A-pose sits at azimuth 35 (135) and 47 (90), the scapular plane, so the scapular plane at 135 (reach ~0.4) takes the flexion's scale too. Ludewig 2009: the clavicle and scapula sit protracted in high flexion against the retraction of abduction. Protraction by reach stays (protract_per_reach).",
+   "by_reach": [
+    [
+     0.15,
+     1.0
+    ],
+    [
+     0.4,
+     0.4
+    ]
+   ],
+   "fade": [
+    95,
+    120
+   ]
+  },
+  "scap_up": [
+   [
+    0,
+    0
+   ],
+   [
+    30,
+    2
+   ],
+   [
+    60,
+    12
+   ],
+   [
+    90,
+    24
+   ],
+   [
+    120,
+    36
+   ],
+   [
+    150,
+    45
+   ],
+   [
+    180,
+    52
+   ]
+  ],
   "scap_axis": [
    0.5736,
    0.0,
    0.8192
   ],
-  "glide_m": 0.015
+  "scap_tilt": [
+   [
+    0,
+    0
+   ],
+   [
+    60,
+    3
+   ],
+   [
+    90,
+    7
+   ],
+   [
+    120,
+    12
+   ],
+   [
+    150,
+    18
+   ],
+   [
+    180,
+    22
+   ]
+  ],
+  "glide_m": 0.015,
+  "clavicle_by": "shrug",
+  "clavicle_roll": "neutral",
+  "clavicle_roll_keep": [
+   "trap_{s}"
+  ]
  },
  "helpers": [
   {
@@ -272,7 +665,12 @@
    "name": "upperarm_share_{s}",
    "kind": "share",
    "follow": "upperarm_{s}",
-   "amount": 0.5
+   "amount": 0.5,
+   "below": {
+    "amount": -0.03,
+    "band": 10
+   },
+   "why": "P1 R2 law2: the share's hanging branch. amount 0.5 of the arm's turn beyond the clavicle when the arm is above the rest elevation (the cap turns with the humerus as it lifts); below.amount when it hangs below the rest (the deltoid's top stays under the acromion, riding the girdle), smoothstep-blended over the rest -+ band deg (no pop). Tuned by the arm_hang panel (top-drop ratio at 5 deg: 0.5 -> -0.54, 0.15 -> 0.04, 0 -> 0.54, -0.03 -> 0.84, -0.1 -> 0.99); the cost is the inner upper arm's known contact with the torso side 6-11 cm below the joint (1.9 -> ~9 mm deep at 5 deg)."
   },
   {
    "name": "lowerarm_share_{s}",

@@ -1,20 +1,29 @@
 {
- "source": "tools/body/out/her_ek2_final",
+ "source": "tools/body/out/round_36",
  "files": {
-  "body.glb": "190be30a4ec05bb7f4e68c89eea3ba6ca2b34730",
-  "play.glb": "7618c76c71c4f25e53f860ad7b2fad437ca250fa",
-  "rig.json": "684c0962592ec36befc1b3521c4767bbf3f2f7f4",
-  "play_rig.json": "1e38e965289275ebfa344745b5ac8ea21a1476e4",
-  "albedo.png": "5a5ff63f4ec4d5a51cd4e1d9cd2aacccac188e8c",
-  "ao.png": "93610177619448abee76248ba57f0c24b9d66bed",
-  "bake.json": "106ab6a91307e69bfe96aed3a9b84f26c86661d4",
-  "curvature.png": "24d4b372c94062f59be47c42d6c45b61820c18ea",
-  "form_normal.png": "3f84c2946e09c4d6c76473a60a46b81aff76a4cb",
-  "freckles.png": "fe88f446a539ddd9ef12caf5516d23ff225c17b8",
-  "normal.png": "231d2ea041b257c8fd1f1957dd348fac478128d4",
-  "region_id.png": "e374f6e86782fe8b838dd6d2f39875c3ec6c503e",
-  "roughness.png": "44785f58186cd66996701ae8632f427d14cda5f1",
-  "thickness.png": "034f81504c01cbe14079d344261f833afb09bcdd"
+  "body.glb": "4ce415f2b53d8e2bce1dfce62f8922c78ea5a561",
+  "play.glb": "92a3f86b67527c74bdfbb50bde63225589893746",
+  "rig.json": "b633dc797fd93c265cc423f0f0720c367e11c7bd",
+  "play_rig.json": "b633dc797fd93c265cc423f0f0720c367e11c7bd",
+  "pieces.glb": "30cb474d8369383948f2a9bb5166daa0966d28c9",
+  "pieces.json": "7959f1b92a0ae0b1d4cdda5d072ffcc71b07883a",
+  "cavity.png": "256290d36e42ac16a5fa36f99d9e917e82757c17"
  },
- "spec": "tools/body/specs/her_topo.json"
+ "maps": "not copied (no passing bake.json in the build)",
+ "spec": "tools/body/specs/her_b.json",
+ "skin": {
+  "cavity_bounce": 0.0
+ },
+ "import": {
+  "from": "godot/art/people/heroine.glb.import",
+  "params": {
+   "meshes/ensure_tangents": "true",
+   "meshes/generate_lods": "false",
+   "meshes/create_shadow_meshes": "true",
+   "meshes/force_disable_compression": "true",
+   "import_script/path": "\"res://tools_scenes/import_mipmaps.gd\"",
+   "gltf/embedded_image_handling": "3"
+  },
+  "changed": {}
+ }
 }
