@@ -94,6 +94,7 @@ public static class ArenaPlaces
         // The Risen's barrow field burned by the blight theme of old: the same as ashen.
         if (mood == "" && spec.Theme == "blight") mood = "ashen";
         var (night, air) = Light(id);
+        night = OneMoon(night);
         (night, air) = mood switch
         {
             // Less moon, more dark: the light the survivor carries is most of what there is.
@@ -136,6 +137,25 @@ public static class ArenaPlaces
         ShadowTint = "#2c4870", TintStrength = 0.15, Toe = 0.5,
         PaintVib = 0.3, PaintShadow = "#1c3060", PaintShadowK = 0.95, PaintLift = 0, PaintShadowSkin = 1,
     };
+
+    // (L1 lead 9, ARENA: one moon over every place, at the root. Each place keeps its moon's way (azimuth, elevation, hue,
+    // shadow) and its air, but not its own strength: the barrow's 3.3, the ruts' 3.1 and the dig's 2.7 against the
+    // hollow's 4.7 (and their skies 0.71, 0.58 of its) left the barrow and the ruts at Lp50 0.17 and 0.14 over ground
+    // classes on the day chain, while the hollow's litter had been lifted to 0.40 albedo (3.6x the soil class) to
+    // reach 0.20 under its canopy. Now every place takes the hollow's moon and sky light (key 4.7, sky 2.0 x the
+    // hollow's sky luminance), the ground classes' albedo comes from the day chain (ground.json), and arena_night's
+    // scale and sky_scale set the one level FROM T09/T10.)
+    public const double MoonKey = 4.7;
+    public static readonly double MoonSky = 2.0 * Lum("#2a3c48");
+
+    static AtmospherePreset OneMoon(AtmospherePreset p) =>
+        p with { KeyIntensity = MoonKey, HemiIntensity = MoonSky / Math.Max(Lum(p.HemiSky), 1e-4) };
+
+    static double Lum(string hex)
+    {
+        double C(int i) { double c = Convert.ToInt32(hex.Substring(1 + 2 * i, 2), 16) / 255.0; return c <= 0.04045 ? c / 12.92 : Math.Pow((c + 0.055) / 1.055, 2.4); }
+        return 0.2126 * C(0) + 0.7152 * C(1) + 0.0722 * C(2);
+    }
 
     static (AtmospherePreset, ArenaAir) Light(string place) => place switch
     {
