@@ -1378,6 +1378,10 @@ public partial class BattleFx : Node3D
                 case Ev.Explosion { Art: "heroic_leap_heave" or "shield_charge_slam" } when !P7Off: break;
                 case Ev.Leap e: P7Leap(e); break;
                 case Ev.Charge e: P7Charge(e, b); break;
+                case Ev.Spin e: P7Spin(e); break;
+                case Ev.SpinLine e: P7Line(e); break;
+                case Ev.Brace e: P7Vow(e); break;
+                case Ev.Explosion { Art: "iron_vow_burst" } when !P7Off: break;
                 case Ev.HardLanding e: P7Shove(e); break;
                 case Ev.DashStep: P7Ev("dash_step"); break;
                 case Ev.Explosion { Art: "slash_quake_heave" } e:

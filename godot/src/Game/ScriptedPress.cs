@@ -7,7 +7,8 @@ namespace SurvivorUnchained.Play;
 
 /// <summary>--press SPEC[;SPEC...] (pictures only): scripted skill and dash presses for a shooting clip, under --auto idle.
 /// SPEC = slot:t:dx,dz[:hold=S]; slot is 1-6 (Act.Skill1..6) or dash; t is Journey.Playtime seconds (as --cast); dx,dz are metres
-/// from her position at the press moment (the aim); hold=S keeps the key held S seconds (a channel). Game.cs wraps scene.Move,
+/// from her position at the press moment (the aim); hold=S keeps the key held S seconds (a channel); move walks her along dx,dz
+/// while it is held (a spin steered through a pack). Game.cs wraps scene.Move,
 /// Pressed, Held and Pointer through this. Each spec fires once, in time order.</summary>
 public sealed class ScriptedPress
 {
@@ -16,7 +17,7 @@ public sealed class ScriptedPress
     sealed class Spec
     {
         public Act Act; public int Slot; public double T, Dx, Dz, Hold;
-        public bool Fired, Said, Consumed; public double At, Ax, Az;
+        public bool Fired, Said, Consumed, Walk; public double At, Ax, Az;
     }
 
     readonly List<Spec> specs = new();
@@ -38,6 +39,7 @@ public sealed class ScriptedPress
             s.Dx = double.Parse(d[0], inv); s.Dz = double.Parse(d[1], inv);
             for (int i = 3; i < p.Length; i++)
                 if (p[i].StartsWith("hold=")) s.Hold = double.Parse(p[i][5..], inv);
+                else if (p[i] == "move") s.Walk = true;
             specs.Add(s);
         }
         specs.Sort((a, b) => a.T.CompareTo(b.T));
@@ -97,6 +99,11 @@ public sealed class ScriptedPress
         double t = clock();
         foreach (var s in specs)
         {
+            if (s.Walk && s.Fired && t < s.At + s.Hold)
+            {
+                double lw = Math.Sqrt(s.Dx * s.Dx + s.Dz * s.Dz);
+                if (lw > 1e-6) return (s.Dx / lw, s.Dz / lw);
+            }
             if (s.Act != Act.Dash || !s.Fired || t >= s.At + DashMove) continue;
             double l = Math.Sqrt(s.Dx * s.Dx + s.Dz * s.Dz);
             if (l > 1e-6) return (s.Dx / l, s.Dz / l);

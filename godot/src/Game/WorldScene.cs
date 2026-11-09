@@ -311,6 +311,7 @@ public partial class WorldScene : Node3D, IZoneLook
                 {
                     if (e is Ev.Muzzle shot) Player?.OnMuzzle(shot.Angle);
                     else if (e is Ev.Flare fl && fl.Phase == FlarePhase.Press) Player?.OnFlarePress(fl, b);
+                    else if (e is Ev.Spin or Ev.Brace) Player?.OnP7(e);
                     else if (e is Ev.Knockdown kd) { Player?.OnKnockdown(kd.Seconds); SurvivorUnchained.Play.Story.CourtTrace.Say("knock"); }
                     else if (e is Ev.Ability ab)
                     {
@@ -371,6 +372,8 @@ public partial class WorldScene : Node3D, IZoneLook
             else if (e is Ev.Charge { Phase: ChargePhase.Slam }) s = Math.Max(s, 0.04);
             else if (e is Ev.Charge { Phase: ChargePhase.Impact } && !chargeHitStopped) { chargeHitStopped = true; s = Math.Max(s, 0.034); }
             else if (e is Ev.Charge { Phase: ChargePhase.Start }) chargeHitStopped = false;
+            // (P7) the storm's break and the vow's burst: 3 frames
+            else if (e is Ev.Spin { Phase: SpinPhase.Break } || e is Ev.Brace { Phase: BracePhase.Burst }) s = Math.Max(s, 0.05);
         }
         if (s > 0) { hitstop = s; hitstopCd = s + 0.3; return; }
         // Her auto-attack's first hit only (one a swing: its hits all land in one step), on the blade's contact.

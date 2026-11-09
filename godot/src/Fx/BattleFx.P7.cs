@@ -159,6 +159,7 @@ public partial class BattleFx
     {
         p7HushShake = false;
         if (P7Off) return;
+        P7PreStorm(events);
         foreach (var e in events)
             if (e is Ev.Leap { Phase: LeapPhase.Land } || e is Ev.Charge { Phase: ChargePhase.Stop or ChargePhase.Slam }) p7HushShake = true;
     }
@@ -167,7 +168,9 @@ public partial class BattleFx
     /// drawn by the event (one star a contact, not one a number).</summary>
     bool P7Owns(Ev.Hit e)
     {
-        if (P7Off || e.Art is not ("heroic_leap" or "shield_charge" or "shield_charge_slam")) return false;
+        if (P7Off) return false;
+        if (P7OwnsStorm(e)) return true;
+        if (e.Art is not ("heroic_leap" or "shield_charge" or "shield_charge_slam")) return false;
         if (e.Target >= 0) { struckRims[e.Target] = Engine.GetFramesDrawn(); rimNoFlash.Remove(e.Target); }
         return true;
     }
@@ -497,6 +500,7 @@ public partial class BattleFx
     void StepP7(float dt, Battle b)
     {
         if (P7Off) return;
+        StepP7Storm(dt);
         for (int i = p7Shapes.Count - 1; i >= 0; i--)
         {
             var s = p7Shapes[i];

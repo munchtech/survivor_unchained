@@ -110,6 +110,7 @@
  "shield_charge_hit": 4,
  "skill_ready": 3,
  "spawn_rise": 4,
+ "storm_whir": 4,
  "sunder_impact": 3,
  "swing_blade": 5,
  "swing_heavy": 4,
@@ -134,6 +135,7 @@
  "ui_deny": 2,
  "ui_open": 3,
  "ui_pick": 2,
+ "vow_absorb": 3,
  "watch_bell": 2,
  "way_out": 2
 }

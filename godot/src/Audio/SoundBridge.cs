@@ -86,6 +86,13 @@ public sealed class SoundBridge
                 case Ev.Leap lp when lp.Phase == LeapPhase.Takeoff: Sfx.Cue("art.heroic_leap.takeoff", At(lp.X0, lp.Z0)); break;
                 case Ev.Charge ch2: Sfx.ShieldCharge(ch2.Phase, At(ch2.X, ch2.Z)); break;
                 case Ev.HardLanding hl2: Sfx.Cue("dash.hard_landing", At(hl2.X, hl2.Z)); break;
+                // (P7) Bladestorm: the whir chained on every blow of the spin, the break, each line's split; Iron Vow's
+                // brace and stored blows (its burst is its Ev.Explosion's, art.iron_vow_burst.burst)
+                case Ev.Spin sn when sn.Phase is SpinPhase.Start or SpinPhase.Tick: Sfx.Cue("art.bladestorm.whir", At(sn.X, sn.Z)); break;
+                case Ev.Spin { Phase: SpinPhase.Break } sb: Sfx.Cue("art.bladestorm.break", At(sb.X, sb.Z)); break;
+                case Ev.SpinLine { Phase: SpinLinePhase.Split } sl: Sfx.Cue("art.bladestorm.split", At((sl.X0 + sl.X1) / 2, (sl.Z0 + sl.Z1) / 2)); break;
+                case Ev.Brace { Phase: BracePhase.Start } bs: Sfx.Cue("art.iron_vow.brace", At(bs.X, bs.Z)); break;
+                case Ev.Brace { Phase: BracePhase.Store } bt: Sfx.Cue("art.iron_vow.store", At(bt.X, bt.Z)); break;
                 case Ev.PerfectDodge: Sfx.Perfect(); break;
                 case Ev.Rise r: Sfx.Rise(r.Ember); break;
                 // Loot landing where the filter lets it be heard (docs/design/LOOT_DESIGN.md §8).

@@ -2,7 +2,7 @@
 (the bot stands; the game's --press script presses the keys: Game.cs wraps Pressed/Held/Pointer/Move through ScriptedPress.cs).
 
   python tools/fx/skill_clip.py NAME --press "1:3.0:6,0" [--time night|day] [--zone Z] [--pre 0.6] [--len 4.0] [--quick warden]
-        [--grant heroic_leap,shield_charge] [--dash-step long_stride,hard_landing] [--horde "50"] [--pack DEG:WIDTH:DIST:SPREAD]
+        [--grant heroic_leap,shield_charge] [--grant-union bladestorm] [--anchor P7EV] [--dash-step long_stride,hard_landing] [--horde "50"] [--pack DEG:WIDTH:DIST:SPREAD]
         [--close] [--perf] [--godot-args "..."]
 
 --press SPEC[;SPEC...]: SPEC = slot:t:dx,dz[:hold=S]; slot 1-6 or dash; t = Journey.Playtime seconds (as --cast); dx,dz = metres
@@ -39,10 +39,14 @@ ap.add_argument("--len", type=float, default=4.0)
 ap.add_argument("--quick", default="warden")
 ap.add_argument("--zone", default=None, help="default arena by night, verge by day")
 ap.add_argument("--grant", default=None); ap.add_argument("--dash-step", default=None)
+ap.add_argument("--grant-union", default=None)
+ap.add_argument("--offsets", default=None, help="the sheet's 16 times (s from the press), comma separated")
+ap.add_argument("--anchor", default=None, help="a p7ev NAME: the sheet is timed from its first frame, not the press (a kindled skill)")
 ap.add_argument("--horde", default=None); ap.add_argument("--pack", default=None, help="DEG:WIDTH:DIST:SPREAD, passed as --horde-arc")
 ap.add_argument("--close", action="store_true"); ap.add_argument("--perf", action="store_true")
 ap.add_argument("--godot-args", default="")
 a = ap.parse_args()
+if a.offsets: OFFSETS = [float(x) for x in a.offsets.split(",")]
 
 out = OUT / a.name
 shutil.rmtree(out, ignore_errors=True); out.mkdir(parents=True)
@@ -67,6 +71,7 @@ gargs = [GODOT, "--path", str(ROOT / "godot"), "--resolution", "1920x1080", "--w
          "--time", a.time, "--clip", "--shot", "clip", "--seconds", str(last_t + a.len + 2),
          "--wav", str(tmp / "tape.wav"), "--stems", "--soundlog"] + horde
 if a.grant: gargs += ["--grant", a.grant]
+if a.grant_union: gargs += ["--grant-union", a.grant_union]
 if a.dash_step: gargs += ["--dash-step", a.dash_step]
 if a.perf: gargs += ["--perf"]
 gargs += extra
@@ -83,6 +88,13 @@ try:
     if not m: sys.exit("no 'skill press frame' in the log; see " + str(out / "log.txt"))
     pf = int(m.group(1))
     print(re.search(r"skill press frame.*", log.stdout).group(0))
+    for gl in re.findall(r"^(?:grant|grant-union|dash-step): .*$", log.stdout, re.M): print(gl)
+    if (a.grant or a.grant_union or a.dash_step) and not re.search(r"^(?:grant|grant-union|dash-step): ", log.stdout, re.M):
+        print("WARNING: no grant line in the log: the skill was never granted (rerun)")
+    if a.anchor:
+        am = re.search(r"p7ev " + re.escape(a.anchor) + r" frame (\d+)", log.stdout)
+        if not am: sys.exit(f"no p7ev {a.anchor} in the log; see " + str(out / "log.txt"))
+        pf = int(am.group(1)); print(f"anchored on {a.anchor} frame {pf}")
     ss = max(0.0, pf / FPS - a.pre)
     import soundfile as sf
     tape, sr = sf.read(str(tmp / "tape.wav"), dtype="float32", always_2d=True)
