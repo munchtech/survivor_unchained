@@ -1,0 +1,243 @@
+{
+ "why": "B's hand clean of the baked clips (tools_scenes/P1BakeRun.cs applies it after the girdle hold; tools/body/README.md 'B native'). Schema: clips: { clip name (as in its library, no 'her/' prefix): { why: text, turns: { B bone: [x, y, z] (a rotation vector in degrees, in the bone's own frame, laid after the baked local: L = L * exp(v)) }, hold: [B bones set to B's rest local], lock_ease: optional frames the foot lock eases over (default 3) } }. Empty entries list the milestone clips (the Look's town idle, the play idle, the run, the core attacks) for the first clean.",
+ "clips": {
+  "idle_reaver_town": {
+   "why": "the Look's town idle (reaver: GameFront idle_{calling}_town) and the close town camera | clean: upperarm_l turned 2.7 deg out (clipcheck: the left hand rested 16.4-18.1 mm inside B's fuller hip, A's 12-17 mm off it; after: on the skin, gap 2-3.5 mm); R1c: on the final her_r1 (fuller hourglass/glute hips) the left pinky sat 8.0 mm into the thigh again (153 points, frame 25), so the same turn scaled 1.52x (4.1 deg); R1c round 2 (shoulders 17 mm in, round breasts): L pinky 10.9 mm into the waist and R upper arm 7.3 mm into the side chest, so L 6.1 deg and R 4.0 deg out; upperarm_r 1.2 deg out (the hanging arm's upper arm 2.1-2.2 mm into the side chest below the armpit; after: under 1 mm) | round 11: turns off, B has A's torso, hips and legs since round 10 (pose_probe.py: B's arm directions on A's); upperarm_l 1.2 deg out (clavicle on A's line: left pinky 7.5 mm into the thigh, frame 25)",
+   "turns": {
+    "upperarm_l": [
+     0,
+     -1.04,
+     0.61
+    ]
+   },
+   "hold": []
+  },
+  "idle_reaver_look": {
+   "why": "creation's Look: A's idle_reaver_town under HerPose's Look arms (P1BakeRun)",
+   "turns": {},
+   "hold": []
+  },
+  "idle_reaver": {
+   "why": "the play idle (reaver: PlayerView's stance idle)",
+   "turns": {},
+   "hold": []
+  },
+  "run_reaver": {
+   "why": "the run in play (reaver) | round 11: clavicle on A's line: upper arm 1.5 mm into the chest side at frames 9-10, 2 points; turns of 0.6 and 1.5 deg did not clear it, so none",
+   "turns": {},
+   "hold": []
+  },
+  "run_reaver_town": {
+   "why": "the run in town (reaver)",
+   "turns": {},
+   "hold": []
+  },
+  "idle_warden_town": {
+   "why": "the Look's town idle (warden: GameFront idle_{calling}_town) and the close town camera | clean: upperarm_r 1.9 deg out (the right hand 18.8 mm into the thigh, A's 0.5; after: 2.3 mm, the hand travels 24 mm along the thigh over the clip)",
+   "turns": {
+    "upperarm_r": [
+     -0.01,
+     0.54,
+     -1.82
+    ]
+   },
+   "hold": []
+  },
+  "idle_warden_look": {
+   "why": "creation's Look: A's idle_warden_town under HerPose's Look arms (P1BakeRun)",
+   "turns": {
+    "upperarm_r": [
+     -0.01,
+     0.54,
+     -1.82
+    ]
+   },
+   "hold": []
+  },
+  "idle_warden": {
+   "why": "the play idle (warden: PlayerView's stance idle)",
+   "turns": {},
+   "hold": []
+  },
+  "run_warden": {
+   "why": "the run in play (warden)",
+   "turns": {},
+   "hold": []
+  },
+  "run_warden_town": {
+   "why": "the run in town (warden)",
+   "turns": {},
+   "hold": []
+  },
+  "idle_stalker_town": {
+   "why": "the Look's town idle (stalker: GameFront idle_{calling}_town) and the close town camera | clean: upperarm_l 0.9 deg out (the left hand 7.7 mm inside the hip, the forearm 11.9; after: hand gap 2.6, forearm 5.8 mm: the hand moves 15 mm against the hip over the clip, a constant turn cannot hold both); upperarm_r 0.4 deg (the right hand 1.5 mm into the hip; after: gap 2.5-7.4 mm)",
+   "turns": {
+    "upperarm_l": [
+     -0.37,
+     -0.11,
+     0.83
+    ],
+    "upperarm_r": [
+     0.21,
+     0.27,
+     -0.26
+    ]
+   },
+   "hold": []
+  },
+  "idle_stalker_look": {
+   "why": "creation's Look: A's idle_stalker_town under HerPose's Look arms (P1BakeRun)",
+   "turns": {
+    "upperarm_l": [
+     -0.37,
+     -0.11,
+     0.83
+    ],
+    "upperarm_r": [
+     0.21,
+     0.27,
+     -0.26
+    ]
+   },
+   "hold": []
+  },
+  "idle_stalker": {
+   "why": "the play idle (stalker: PlayerView's stance idle)",
+   "turns": {},
+   "hold": []
+  },
+  "run_stalker": {
+   "why": "the run in play (stalker)",
+   "turns": {},
+   "hold": []
+  },
+  "run_stalker_town": {
+   "why": "the run in town (stalker)",
+   "turns": {},
+   "hold": []
+  },
+  "idle_arcanist_town": {
+   "why": "the Look's town idle (arcanist: GameFront idle_{calling}_town) and the close town camera | clean: upperarm_l 2.4 deg (the resting left hand 10.9-12.4 mm inside, A's 5.4 off; after: gap 2.5-3.5 mm); upperarm_r 0.4 deg out (forearm 2.0 mm into the thigh; after: 0)",
+   "turns": {
+    "upperarm_l": [
+     -1.77,
+     1.55,
+     -0.61
+    ],
+    "upperarm_r": [
+     -0.2,
+     0.05,
+     -0.36
+    ]
+   },
+   "hold": []
+  },
+  "idle_arcanist_look": {
+   "why": "creation's Look: A's idle_arcanist_town under HerPose's Look arms (P1BakeRun)",
+   "turns": {
+    "upperarm_l": [
+     -1.77,
+     1.55,
+     -0.61
+    ],
+    "upperarm_r": [
+     -0.2,
+     0.05,
+     -0.36
+    ]
+   },
+   "hold": []
+  },
+  "idle_arcanist": {
+   "why": "the play idle (arcanist: PlayerView's stance idle) | clean: upperarm_r 2.7 deg (upper arm 3.7 mm into the side chest below the armpit; after: 0)",
+   "turns": {
+    "upperarm_r": [
+     2.21,
+     -0.14,
+     -1.57
+    ]
+   },
+   "hold": []
+  },
+  "run_arcanist": {
+   "why": "the run in play (arcanist)",
+   "turns": {},
+   "hold": []
+  },
+  "run_arcanist_town": {
+   "why": "the run in town (arcanist)",
+   "turns": {},
+   "hold": []
+  },
+  "Jog_Fwd": {
+   "why": "the library run (PlayerView's fallback gait, Running_A)",
+   "turns": {},
+   "hold": []
+  },
+  "Idle_Loop": {
+   "why": "the library idle (Idle alias)",
+   "turns": {},
+   "hold": []
+  },
+  "sword_fore": {
+   "why": "a core attack (her own clips, OwnClips.For by calling and kind)",
+   "turns": {},
+   "hold": []
+  },
+  "sword_back": {
+   "why": "a core attack (her own clips, OwnClips.For by calling and kind)",
+   "turns": {},
+   "hold": []
+  },
+  "sword_heavy": {
+   "why": "a core attack (her own clips, OwnClips.For by calling and kind) | no clean (P1 R1 lead 3): clipcheck's 16 local pops are all the source clip's. B's GLOBAL steps follow A's (pelvis 13.9 = 13.9 @3; chest spine_05 31.3 vs A's top spine 33.3 @4; thigh_l 9.0 vs 10.4; foot_r 13.2 = 13.2); the B-only local entries (spine_04/05, thigh_l @3, foot_r @20) are the same whip and foot turn written in B's bones' frames. lock_ease 8 (an earlier guess) moved nothing (14.49/18.17 before and after) and is dropped. Stage B rebuilds the clip",
+   "turns": {},
+   "hold": []
+  },
+  "axe_fore": {
+   "why": "a core attack (her own clips, OwnClips.For by calling and kind)",
+   "turns": {},
+   "hold": []
+  },
+  "axe_back": {
+   "why": "a core attack (her own clips, OwnClips.For by calling and kind)",
+   "turns": {},
+   "hold": []
+  },
+  "axe_heavy": {
+   "why": "a core attack (her own clips, OwnClips.For by calling and kind)",
+   "turns": {},
+   "hold": []
+  },
+  "daggers_fore": {
+   "why": "a core attack (her own clips, OwnClips.For by calling and kind)",
+   "turns": {},
+   "hold": []
+  },
+  "daggers_back": {
+   "why": "a core attack (her own clips, OwnClips.For by calling and kind)",
+   "turns": {},
+   "hold": []
+  },
+  "daggers_heavy": {
+   "why": "a core attack (her own clips, OwnClips.For by calling and kind)",
+   "turns": {},
+   "hold": []
+  },
+  "cast_bolt": {
+   "why": "a core attack (her own clips, OwnClips.For by calling and kind)",
+   "turns": {},
+   "hold": []
+  },
+  "cast_flick": {
+   "why": "a core attack (her own clips, OwnClips.For by calling and kind)",
+   "turns": {},
+   "hold": []
+  },
+  "crossbow_shoot": {
+   "why": "a core attack (her own clips, OwnClips.For by calling and kind)",
+   "turns": {},
+   "hold": []
+  }
+ }
+}

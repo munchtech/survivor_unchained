@@ -1,0 +1,125 @@
+{
+ "provenance": "(c) inherited from L1, look-l1@0148089b4 (docs/design/look/her_paint_regions.json), copied verbatim by P1 E for tools/body/topo_uv.py and topo_bake.py",
+ "what": "Her body's paintable regions for P1's UV layout and B3's painted-block maps (L1 art director, v1, 4 Nov; B3's spec confirms it after G1)",
+ "derived_from": {
+  "need": "the play camera (her 40-60 px tall), the close-up at its closest zoom and the Look camera: the band (cel ramp) must read big forms; painted light needs straight, evenly scaled islands",
+  "reference": "look_l1/a2/r2/MB1_her (skin: two tones, a warm terminator band, a cool colored shade, small hard highlights; no pores or blotches)",
+  "inherited": "none"
+ },
+ "uv_rules": {
+  "symmetry": "mirror left/right on the body's center line (a painted half mirrors clean); the face island's axis on the center",
+  "texel_density": {
+   "body": 1.0,
+   "face": 2.0,
+   "hands": 1.5,
+   "feet": 0.75,
+   "scalp": 0.5
+  },
+  "seams": "inner arms, inside legs, under the hairline, behind the ears, under her outfits' permanent lines; never across the face, the decolletage or the belly",
+  "limbs": "islands straightened along the limb so the brush and the gradients run along U or V",
+  "region_id_map": "bake a region ID map (one flat color per region, the ids below) at the body texture's size, so B3 applies each region's rules as data"
+ },
+ "regions": [
+  {
+   "id": 1,
+   "name": "face",
+   "covers": "front of the head: brow to chin, ear to ear, eyes, nose, lips",
+   "zones_warm": [
+    "cheeks",
+    "nose tip",
+    "lips"
+   ],
+   "zones_cool": [
+    "eyelids",
+    "under the jaw"
+   ]
+  },
+  {
+   "id": 2,
+   "name": "scalp",
+   "covers": "back and top of the head under the hair"
+  },
+  {
+   "id": 3,
+   "name": "ears",
+   "covers": "both ears",
+   "zones_warm": [
+    "whole ear, thin skin"
+   ]
+  },
+  {
+   "id": 4,
+   "name": "neck_decolletage",
+   "covers": "neck front and sides, collarbones, upper chest to the top of the breasts (always seen in her outfits)",
+   "zones_warm": [
+    "throat notch"
+   ]
+  },
+  {
+   "id": 5,
+   "name": "torso_front",
+   "covers": "breasts, ribs, belly to the hip line"
+  },
+  {
+   "id": 6,
+   "name": "torso_back",
+   "covers": "nape to the small of the back, shoulder blades"
+  },
+  {
+   "id": 7,
+   "name": "upper_arms",
+   "covers": "shoulders to elbows, left and right",
+   "zones_warm": [
+    "elbows"
+   ]
+  },
+  {
+   "id": 8,
+   "name": "forearms",
+   "covers": "elbows to wrists"
+  },
+  {
+   "id": 9,
+   "name": "hands",
+   "covers": "hands and fingers, nails as their own material",
+   "zones_warm": [
+    "knuckles",
+    "fingertips"
+   ]
+  },
+  {
+   "id": 10,
+   "name": "pelvis_glutes",
+   "covers": "hips, groin, buttocks"
+  },
+  {
+   "id": 11,
+   "name": "thighs",
+   "covers": "hip line to above the knee"
+  },
+  {
+   "id": 12,
+   "name": "lower_legs",
+   "covers": "knees, shins, calves to the ankle",
+   "zones_warm": [
+    "knees"
+   ]
+  },
+  {
+   "id": 13,
+   "name": "feet",
+   "covers": "ankles, feet, toes",
+   "zones_warm": [
+    "toes",
+    "heels"
+   ]
+  }
+ ],
+ "own_materials": [
+  "eyes",
+  "teeth and tongue",
+  "nails",
+  "lashes and brows (cards)",
+  "hair (cards)"
+ ]
+}

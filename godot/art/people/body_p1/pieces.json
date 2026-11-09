@@ -1,0 +1,103 @@
+{
+ "slots": [
+  "ink"
+ ],
+ "pieces": {
+  "reaver_ink_ink": {
+   "verts": 12453,
+   "a_offset_mm_p5_50_95_max": [
+    1.197,
+    1.205,
+    1.41,
+    3.377
+   ],
+   "a_below": 0,
+   "b_offset_mm_p5_50_95_max": [
+    1.185,
+    1.203,
+    1.407,
+    3.277
+   ],
+   "b_below": 0,
+   "offset_change_mm_p50_95_max": [
+    0.001,
+    0.01,
+    0.799
+   ],
+   "carry_residual_mm_p50_95_max": [
+    0.211,
+    1.729,
+    2.438
+   ],
+   "shapes": [
+    "arm_hang_close_larm_r",
+    "arm_hang_fclose206_larm_r",
+    "arm_hang_fclose342_larm_r",
+    "arm_hang_fclose370_rarm_r",
+    "arm_hang_look_larm_r",
+    "arm_hang_look_r",
+    "arm_hang_stalker302_rarm_r",
+    "elbow_flex135_r",
+    "elbow_flex90_r",
+    "hip_flex105_l",
+    "hip_flex120_l",
+    "hip_flex135_l",
+    "hip_flex90_l",
+    "knee_flex135_l"
+   ],
+   "a_file": "heroine_outfit_reaver.gltf",
+   "a_node": "reaver.ink.ink",
+   "a_godot_name": "reaver_ink_ink",
+   "tier": "close"
+  },
+  "reaver_lod__lod_ink": {
+   "verts": 12453,
+   "a_offset_mm_p5_50_95_max": [
+    1.197,
+    1.205,
+    1.41,
+    3.377
+   ],
+   "a_below": 0,
+   "b_offset_mm_p5_50_95_max": [
+    1.162,
+    1.201,
+    1.405,
+    3.264
+   ],
+   "b_below": 0,
+   "offset_change_mm_p50_95_max": [
+    0.003,
+    0.026,
+    0.839
+   ],
+   "carry_residual_mm_p50_95_max": [
+    0.394,
+    2.046,
+    4.905
+   ],
+   "shapes": [
+    "arm_hang_close_larm_r",
+    "arm_hang_fclose206_larm_r",
+    "arm_hang_fclose342_larm_r",
+    "arm_hang_fclose370_rarm_r",
+    "arm_hang_look_larm_r",
+    "arm_hang_look_r",
+    "arm_hang_stalker302_rarm_r",
+    "elbow_flex135_r",
+    "elbow_flex90_r",
+    "form_support_lift",
+    "form_support_press",
+    "hip_flex105_l",
+    "hip_flex120_l",
+    "hip_flex135_l",
+    "hip_flex90_l",
+    "knee_flex135_l"
+   ],
+   "a_file": "heroine_outfit_reaver_lod.gltf",
+   "a_node": "lod_ink",
+   "a_godot_name": "lod_ink",
+   "tier": "play"
+  }
+ }
+}

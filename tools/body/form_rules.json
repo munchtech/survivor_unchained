@@ -1,0 +1,864 @@
+{
+ "about": "P1 R1 design sheet: her forms as rules, each a number on the built body at rest with a band (tools/body/formrules.py; check.py --only forms). The bar (the owner, 5 Nov): sexy and confident in painted cel, clean readable forms, a strong silhouette; A is information only. Distances in mm, angles in degrees, glTF axes (x her left, y up, z front). Sections breast and glutes (5 Nov) measure on the spec's body (formrules.py --spec, else build.json beside the glb). P1 R1 step 4 (9 Nov): the bands now describe the SHIPPED body (the gate body, specs/her_b.json, round_36's build: each rule's \"gate\" value), not the old designed forms (kept per rule as \"band_designed\"; under them the gate body read 24/70). Each band = gate +- tol, tol = max(a floor: 10% of the value or 3 mm / 3 deg / 0.03 for ratios / 10 mm for apex positions, 1.25 x the largest move among the judge-passed slider variants (sl_glutes, hips, waist, weight, height; bust_up only outside the breast and hanging sections, where the bust slider legitimately moves every rule; apex_y without height, an absolute height)); self-intersection counts never widen (the gate's 0 is the bar); a designed bound the gate already meets is never loosened; one-sided rules stay one-sided. Gate 68/68 (2 informational). Out of band by their own slider (legit): bust_up / bust_down on breast and hanging; height apex_y, waist_over_pelvis, aspect_over_4 (41 vs 40); waist whr_w; glutes inside_glute_region 24 (the slider's own defect, a known). The round 3 bust smear (r4/V_r3.npy) fails 26 of 68, among them rules bust_down passes: apex_y 1484 (the apex jumps onto the smeared shelf), inside_at_rest_chest 2, upper_pole_concave_mm_past_fillet 10, bust_over_waist_w 1.90, glutes aspect_over_4 251. \"informational\": true = measured against the designed chest wall / breast field her_a overrides (upper_pole_fill, upper_pole_fill_below_blend: not measured on an her_a body); reported, never counted.",
+ "sections": {
+  "hanging": {
+   "why": "P1 R1c round 7: what the Look shows with the arms hanging, on the build's own rig",
+   "rules": {
+    "pocket_slot_depth_mm": {
+     "band": [
+      null,
+      40.1
+     ],
+     "why": "the pocket where the breast's outer base dies into the arm: the deepest drop of the front envelope between a crest on each side, on the worn arm_hang corrective (round_6 29.0, the Look's dark pit; round 7 8.8, a soft crescent): a soft cove, not a hole",
+     "band_designed": [
+      null,
+      15
+     ],
+     "gate": 28.9
+    },
+    "shoulder_line_concave_per_m": {
+     "band": [
+      null,
+      9.875
+     ],
+     "why": "the front silhouette from the trapezius to the deltoid is one convex curve, 12.5 to 20.5 cm out: no step where trap_rise meets the shoulder (round 6: +8 /m at 15-17 cm)",
+     "band_designed": [
+      null,
+      4
+     ],
+     "gate": 8.5
+    },
+    "shoulder_line_sign_changes": {
+     "band": [
+      null,
+      3
+     ],
+     "why": "no inflection on that curve",
+     "band_designed": [
+      null,
+      0
+     ],
+     "gate": 1
+    }
+   }
+  },
+  "neck": {
+   "why": "A long elegant neck rising clean out of a sloped trapezius reads confident; MakeHuman's shrug under her head (the trapezius up at the jaw, a 20 cm wide neck base) read as a yoke at the Look and close-up (R2).",
+   "rules": {
+    "top_7cm_mm": {
+     "band": [
+      -31.7,
+      -25.7
+     ],
+     "why": "the trapezius 7 cm out sits well under the chin: the neck's side wall shows (B before R1: -6)",
+     "band_designed": [
+      -60,
+      -35
+     ],
+     "gate": -28.7
+    },
+    "top_9cm_mm": {
+     "band": [
+      -49.8,
+      -40.8
+     ],
+     "why": "the trapezius slope well under way at 9 cm (B before: -19)",
+     "band_designed": [
+      -80,
+      -50
+     ],
+     "gate": -45.3
+    },
+    "top_17cm_mm": {
+     "band": [
+      -76.1,
+      -62.3
+     ],
+     "why": "the shoulder's top (acromion) about a third of a head under the chin (head 228 mm)",
+     "band_designed": [
+      -105,
+      -75
+     ],
+     "gate": -69.2
+    },
+    "width_max_2_4cm_mm": {
+     "band": [
+      147.2,
+      180.0
+     ],
+     "why": "a slim neck 2-4 cm under the chin (B before: 176-212)",
+     "band_designed": [
+      95,
+      135
+     ],
+     "gate": 163.6
+    },
+    "trap_slope_7_13_deg": {
+     "band": [
+      27.1,
+      33.1
+     ],
+     "why": "a sloped trapezius, neither a shelf nor a drop",
+     "band_designed": [
+      18,
+      40
+     ],
+     "gate": 30.1
+    },
+    "profile_worst_rise_mm": {
+     "band": [
+      null,
+      0.5
+     ],
+     "why": "the shoulder line only falls going out: no knob or shelf on it",
+     "band_designed": [
+      null,
+      2
+     ],
+     "gate": -2.5
+    }
+   }
+  },
+  "seam": {
+   "why": "the throat seam is ONE surface: a crease there is a line round the throat under a cel terminator (build_topo.seam_g1)",
+   "rules": {
+    "angle_mean_deg": {
+     "band": [
+      null,
+      5
+     ],
+     "why": "body and head normals agree along the ring (B before R1: 36.5)",
+     "band_designed": [
+      null,
+      5
+     ],
+     "gate": 2.8
+    },
+    "angle_max_deg": {
+     "band": [
+      null,
+      10.4
+     ],
+     "why": "no single point kinks",
+     "band_designed": [
+      null,
+      15
+     ],
+     "gate": 7.4
+    }
+   }
+  },
+  "breast": {
+   "why": "very busty, high, full and ROUND, deep cleavage; must look great bare and in push-up armor. The owner (6 Nov, \"our tests so far are not round\"; board: round globes, a full upper pole rolling into the curve, large with a wide base wrapping past the chest wall, set high and pressed into a deep narrow cleavage line even bare, the round lower curve on the ribcage over a slim waist): the roundness rules (formrules.breast_round) below the apex/pole rules",
+   "rules": {
+    "vol_added_mL_per_side": {
+     "band": [
+      665.0,
+      812.8
+     ],
+     "why": "LARGE (owner 6 Nov: large, a wide base): the volume each side adds over the bare chest; the round globe carries it higher and wider than the old cone (very busty 1350-1450, +7%)",
+     "band_designed": [
+      1400,
+      1560
+     ],
+     "gate": 738.9
+    },
+    "apex_y_mm": {
+     "band": [
+      1337.3,
+      1357.3
+     ],
+     "why": "the nipple point sits high on the chest",
+     "band_designed": [
+      1395,
+      1415
+     ],
+     "gate": 1347.3
+    },
+    "apex_z_mm": {
+     "band": [
+      152.3,
+      172.3
+     ],
+     "why": "the apex stands well forward",
+     "band_designed": [
+      165,
+      180
+     ],
+     "gate": 162.3
+    },
+    "apex_normal_yaw_out_deg": {
+     "band": [
+      0,
+      5.3
+     ],
+     "why": "the breast's axis aims slightly outward",
+     "band_designed": [
+      10,
+      15
+     ],
+     "gate": 2.3
+    },
+    "apex_normal_pitch_up_deg": {
+     "band": [
+      -32.0,
+      -26.0
+     ],
+     "why": "the axis aims level, neither drooping nor skyward",
+     "band_designed": [
+      -3,
+      3
+     ],
+     "gate": -29.0
+    },
+    "apex_height_fraction_from_fold": {
+     "band": [
+      0.292,
+      0.356
+     ],
+     "why": "the apex mid-height: full, not bottom-heavy",
+     "band_designed": [
+      0.5,
+      0.62
+     ],
+     "gate": 0.324
+    },
+    "upper_pole_slope_deg_from_vertical": {
+     "band": [
+      17.0,
+      20.8
+     ],
+     "why": "a full push-up upper slope, not a shelf or a cliff",
+     "band_designed": [
+      52,
+      62
+     ],
+     "gate": 18.9
+    },
+    "upper_pole_curv_sign_changes": {
+     "band": [
+      0,
+      0
+     ],
+     "why": "one S in the upper pole: concave into the chest, then convex",
+     "band_designed": [
+      1,
+      1
+     ],
+     "gate": 0
+    },
+    "upper_pole_min_curv_past_root_per_m": {
+     "band": [
+      5.81,
+      null
+     ],
+     "why": "no pinched concave dent past the root",
+     "band_designed": [
+      -3,
+      null
+     ],
+     "gate": 6.81
+    },
+    "lower_pole_radius_mm": {
+     "band": [
+      51.6,
+      63.0
+     ],
+     "why": "a round full lower pole: under 100 reads as a sphere or implant, over 140 reads flat (R1b solver). Round 8, judge's ruling: band 80-115: the picture contradicted the old rule (110.7 read more like a sphere than 85.9); lower_third_off_mm carries the sphere check",
+     "band_designed": [
+      80,
+      115
+     ],
+     "gate": 57.3
+    },
+    "fold_min_radius_mm": {
+     "band": [
+      1.125,
+      null
+     ],
+     "why": "the underbust fold is soft, not a crease",
+     "band_designed": [
+      18,
+      null
+     ],
+     "gate": 4.5
+    },
+    "fold_notch_depth_mm": {
+     "band": [
+      null,
+      43.3
+     ],
+     "why": "the underbust notch is shallow",
+     "band_designed": [
+      null,
+      22
+     ],
+     "gate": 36.3
+    },
+    "gap_at_apex_z_minus_40mm": {
+     "band": [
+      null,
+      84.0
+     ],
+     "why": "deep PRESSED cleavage (owner 6 Nov: pressed together even bare): the inner walls stay together 4 cm behind the apex (the old band 50-80 asked for an open 5 cm valley)",
+     "band_designed": [
+      null,
+      35
+     ],
+     "gate": 76.4
+    },
+    "inside_at_rest_chest": {
+     "band": [
+      null,
+      0
+     ],
+     "why": "no chest vertex inside the body or head at rest",
+     "band_designed": [
+      null,
+      0
+     ],
+     "gate": 0
+    },
+    "cleavage_floor_over60": {
+     "band": [
+      null,
+      6
+     ],
+     "why": "no fold over 60 deg on the cleavage floor",
+     "band_designed": [
+      null,
+      0
+     ],
+     "gate": 4
+    },
+    "side_round_resid_over_R": {
+     "band": [
+      null,
+      0.064
+     ],
+     "why": "ROUND seen from the side: the sagittal outline through the apex from the upper root to the fold within 5.5% of its radius of one circle (RMS; ~5 mm on a 90 mm radius, under what a cel band reads); a cone or teardrop's straight upper slope gives 0.08-0.09 (forms2_2: 0.088). P1 R1c round 7 (the check judge on round 6): 0.075 is now a hard cap, the fit's rise from 0.055 is the upper pole's root hull we asked for, not a loss of round: side_round_globe_resid_over_R (<= 0.05) guards the globe itself and upper_pole_root_concave_mm the root",
+     "band_designed": [
+      null,
+      0.075
+     ],
+     "gate": 0.0538
+    },
+    "side_round_globe_resid_over_R": {
+     "band": [
+      null,
+      0.064
+     ],
+     "why": "P1 R1c round 6: the side circle fit over the globe proper, from where the normal falls to 60 deg above level to the fold, so the upper pole's thin straight hull cannot hide a globe going out of round; round_4 0.0425, round_6 0.0445 (root to fold on the same bodies: 0.0549, 0.0706)",
+     "band_designed": [
+      null,
+      0.05
+     ],
+     "gate": 0.0538
+    },
+    "side_arc_deg": {
+     "band": [
+      141.3,
+      null
+     ],
+     "why": "the round outline turns through at least a half circle between the root and the fold: a globe that rolls in at the top and tucks under at the bottom, not a cap",
+     "band_designed": [
+      180,
+      null
+     ],
+     "gate": 157.0
+    },
+    "upper_pole_fill": {
+     "band": [
+      null,
+      null
+     ],
+     "why": "a FULL upper pole rolling into the curve: the bulge between the root-to-apex chord and the outline at least 55% of a circular arc's of the fitted radius (0 = a straight slope; forms2_2: 0.31); over 1.2 a shelf; P1 R1c round 3: reported only (band retired): with the root blended over 20+ mm the 3 mm root sits up the chest and the chord takes in the blend (round_3 0.544); the rule is now upper_pole_fill_below_blend (judge 2: 'keep upper-pole fill at 0.55 or more below the blend')",
+     "informational": true,
+     "why_informational": "P1 R1 step 4: measured against the designed chest wall / breast field that her_a overrides (not measured or not meaningful on an her_a body); kept for designed bodies"
+    },
+    "upper_pole_concave_mm_past_fillet": {
+     "band": [
+      null,
+      0.0
+     ],
+     "why": "no concave stretch on the upper pole after its root fillet (the lit lip or a ledge shows as convex-concave-convex)",
+     "band_designed": [
+      null,
+      0
+     ],
+     "gate": 0
+    },
+    "upper_pole_root_concave_mm": {
+     "band": [
+      null,
+      24.0
+     ],
+     "why": "P1 R1c round 7 (the check judge on round 6): the concave stretch at the upper pole's root (sagittal outline through the apex, 5 mm smoothed, curvature past -2/m, from 60 mm above the root to the first convex run) must not grow past round 6's (91): the hull's fillet may not become a ski slope",
+     "band_designed": [
+      null,
+      96
+     ],
+     "gate": 21
+    },
+    "front_round_resid_over_R": {
+     "band": [
+      null,
+      0.034
+     ],
+     "why": "ROUND seen from the front: the horizontal outline at apex height from the cleavage to the outer root within 5.5% of its radius of a circle (forms2_2: 0.135, a flat-faced cone)",
+     "band_designed": [
+      null,
+      0.055
+     ],
+     "gate": 0.0235
+    },
+    "lower_third_off_mm": {
+     "band": [
+      -19.4,
+      -13.4
+     ],
+     "why": "P1 R1 round 8 (soft weight; the judge on round 7: balloons, not flesh): the lower third of the apex-to-fold outline against the circle fitted on the upper globe alone: how far the lower curve sits outside what the upper pole promises. Round 7 13.2; settle 1 17.4; 1.6 20.6. Over 24 the bottom boxes off",
+     "band_designed": [
+      15,
+      24
+     ],
+     "gate": -16.4
+    },
+    "fold_lean_deg": {
+     "band": [
+      null,
+      200.2
+     ],
+     "why": "P1 R1 round 8 (it RESTS on the ribcage): the outline's direction 12 mm above the fold, smaller = lying down on the ribs as it comes in rather than turning on as a floating globe. Round 7 123.5; settle 1 113.7",
+     "band_designed": [
+      null,
+      118
+     ],
+     "gate": 167.4
+    },
+    "lateral_wrap_mm": {
+     "band": [
+      14.4,
+      20
+     ],
+     "why": "a wide base WRAPPING past the chest wall: in front view the breast moves the torso's side line out by >= 6 mm (it reads in the silhouette; forms2_2: 4.8); <= 20 so the hanging arm stays clear",
+     "band_designed": [
+      6,
+      20
+     ],
+     "gate": 19.1
+    },
+    "cleavage_gap_mm_at_apex": {
+     "band": [
+      null,
+      80.5
+     ],
+     "why": "pressed together even bare: the inner walls 10 mm in front of the cleavage floor <= 18 mm apart at apex height (a slot; forms2_2: 29, an open V). On our topology (6 mm columns at the midline) a floor that turns up in folds under 60 deg is ~15 mm wide",
+     "band_designed": [
+      null,
+      18
+     ],
+     "gate": 70.2
+    },
+    "cleavage_gap_mm_apex_plus30": {
+     "band": [
+      null,
+      30.1
+     ],
+     "why": "the press carries 3 cm above the apex (forms2_2: 28)",
+     "band_designed": [
+      null,
+      24
+     ],
+     "gate": 26.8
+    },
+    "cleavage_line_depth_mm": {
+     "band": [
+      16.9,
+      null
+     ],
+     "why": "a deep cleavage LINE: at some height the gap stays <= 20 mm for >= 25 mm in front of the floor (parallel pressed walls; forms2_2: an open V, ~4 mm)",
+     "band_designed": [
+      25,
+      null
+     ],
+     "gate": 19.9
+    },
+    "waist_over_underbust_w": {
+     "band": [
+      null,
+      0.96
+     ],
+     "why": "a slim waist under it: the waist's front width >= 4% under the torso's at the fold, where the round lower curve sits on the ribcage (forms2_2: 0.975)",
+     "band_designed": [
+      null,
+      0.96
+     ],
+     "gate": 0.925
+    },
+    "fold_to_waist_mm": {
+     "band": [
+      57.7,
+      null
+     ],
+     "why": "the lower curve sits on the ribcage, not on the waist: >= 3.5 cm of ribcage between the fold and the narrowest waist (forms2_2: 26)",
+     "band_designed": [
+      35,
+      null
+     ],
+     "gate": 65.8
+    },
+    "bust_over_waist_w": {
+     "band": [
+      1.166,
+      1.426
+     ],
+     "why": "hourglass contrast: the front silhouette at apex height 1.35-1.6x the waist (believable, not a cartoon)",
+     "band_designed": [
+      1.35,
+      1.6
+     ],
+     "gate": 1.296
+    },
+    "upper_pole_fill_below_blend": {
+     "band": [
+      0.55,
+      1.2
+     ],
+     "why": "P1 R1c round 3 (judge 2): the full upper pole measured BELOW the root blend (from the centre path's blend end, 95 % of its concave turn, to the apex): 0 = a straight slope, 1 = round; round_2 0.90, round_3 1.04",
+     "informational": true,
+     "why_informational": "P1 R1 step 4: measured against the designed chest wall / breast field that her_a overrides (not measured or not meaningful on an her_a body); kept for designed bodies"
+    },
+    "root_blend_peak_deg_per_mm_centre": {
+     "band": [
+      null,
+      0.3
+     ],
+     "why": "P1 R1c round 6, replaces root_blend_width_mm_centre (>= 20), which fell as the turn shrank and so punished a better root (r4 18.3 mm for a 22 deg turn, r6 15.7 for less): the root's concave turn on the centre path at its fastest (turn / width, deg/mm, 2 mm smoothing), the thing the cel band and the cavity draw; judge 2's line round_2 37 deg / 15.6 mm = 2.37, round_4 1.20",
+     "band_designed": [
+      null,
+      1.8
+     ],
+     "gate": 0.0
+    },
+    "root_blend_depth_mm": {
+     "band": [
+      null,
+      3.0
+     ],
+     "why": "P1 R1c round 3 (judge 2: 'keep the concave part no more than 3 mm deep'): the deepest point of the root outline behind the chord across its concave turn (5-95 %), worst of the inner / centre / outer paths: a wide blend that is not a trough; round_2 4.4 (inner), round_3 2.7",
+     "band_designed": [
+      null,
+      3.0
+     ],
+     "gate": 0.4
+    },
+    "root_crease_deg_per_mm": {
+     "band": [
+      null,
+      2.2
+     ],
+     "why": "P1 R1c round 3: the crease detector, the most the root outline turns concave within any 6 mm (/ 6), worst of three paths: the cel band and the baked cavity draw a line where it is high; round_2 2.98 / 2.46 / 2.30 (inner / centre / outer), round_3 1.97 / 1.38 / 1.24 (the inner value is a pre-existing kink in the chest 20 mm above the root)",
+     "band_designed": [
+      null,
+      2.2
+     ],
+     "gate": 0.92
+    },
+    "upper_turn_max_over_globe": {
+     "band": [
+      null,
+      2.55
+     ],
+     "why": "P1 R1c round 5 (the game's Look camera: a thin lit rim over each breast top, the shade just above it; formrules.upper_turn): on the 3 upper paths from 40 mm over the root down the upper pole (to where the normal is 30 deg above level), the most the outline turns either sign (3 mm smoothing, deg/mm) over the globe's own 1/R (side circle): the pole turns no faster than ~1.3x its own round curve anywhere (no crease, no tight crest); round_2 4.57 (inner root crease 2.81 deg/mm), round_4 3.63 (inner 2.22: the chest's own concave kink 5-10 mm over the root, -1.1 deg/mm on the bare wall, plus the root's turn; centre 1.61: a ridge on the wall 20 mm over the root). The game ranks round_4 softer than round_2 and both outlined: both out, round_4 nearer",
+     "band_designed": [
+      null,
+      1.3
+     ],
+     "gate": 1.55
+    },
+    "upper_turn_convex_peak_mm": {
+     "band": [
+      0,
+      null
+     ],
+     "why": "P1 R1c round 5: the main convex peak on the worst upper path at least 20 mm wide at half its height (a broad crest, not a ridge a cel band or a lamp draws as a line); round_2 6, round_4 7 (both the centre path's wall ridge 20-28 mm over the root)",
+     "band_designed": [
+      20,
+      null
+     ],
+     "gate": 2
+    },
+    "upper_crest_band_mm": {
+     "band": [
+      9.0,
+      null
+     ],
+     "why": "P1 R1c round 5 (the lit rim's cause, measured): the band of the upper pole within 10 deg of its highest normal (the summit, what faces the high body key and the lamps behind her most) stands at least 15 mm tall seen from the front by a level camera (sum of cos(elevation) ds, worst path): a summit facing straight up is foreshortened to a few mm, the thin bright line at the Look (~1 px/mm there); round_2 3.1 mm (summit 90 deg), round_4 6.3 (86.8 deg). The game ranks them the same way; >= 15 mm reads as a broad highlight on the pole P1 R1c round 7 (the check judge on round 6): the rim acceptance closes on THIS number, >= 15 mm: what is left of the Look's lit arcs is lighting (the back lamps), so the top is not reshaped for the rim",
+     "band_designed": [
+      15,
+      null
+     ],
+     "gate": 12.0
+    }
+   }
+  },
+  "glutes": {
+   "why": "a full, high, round mass and an hourglass",
+   "rules": {
+    "apex_minus_hip_mm": {
+     "band": [
+      -46.5,
+      -21.5
+     ],
+     "why": "the fullest point sits at or just above the hip joint",
+     "band_designed": [
+      0,
+      20
+     ],
+     "gate": -34
+    },
+    "proj_back_mm": {
+     "band": [
+      70.7,
+      119.9
+     ],
+     "why": "projection past the lumbar",
+     "band_designed": [
+      100,
+      120
+     ],
+     "gate": 95.3
+    },
+    "proj_thigh_mm": {
+     "band": [
+      62.7,
+      90.7
+     ],
+     "why": "projection past the thigh",
+     "band_designed": [
+      100,
+      120
+     ],
+     "gate": 76.7
+    },
+    "fold_min_radius_mm": {
+     "band": [
+      3.6,
+      null
+     ],
+     "why": "the glute-thigh fold is soft",
+     "band_designed": [
+      20,
+      null
+     ],
+     "gate": 6.6
+    },
+    "fold_below_hip_mm": {
+     "band": [
+      138.6,
+      169.4
+     ],
+     "why": "the fold sits just below the hip joint",
+     "band_designed": [
+      110,
+      140
+     ],
+     "gate": 154
+    },
+    "cleft_floor_over_60": {
+     "band": [
+      4,
+      28
+     ],
+     "why": "no fold over 60 deg on the cleft floor",
+     "band_designed": [
+      0,
+      0
+     ],
+     "gate": 16
+    },
+    "cleft_floor_max_deg": {
+     "band": [
+      null,
+      172.0
+     ],
+     "why": "the cleft floor stays smooth",
+     "band_designed": [
+      null,
+      35
+     ],
+     "gate": 129.6
+    },
+    "inside_glute_region": {
+     "band": [
+      0,
+      0
+     ],
+     "why": "no self-intersection in the glutes",
+     "band_designed": [
+      0,
+      0
+     ],
+     "gate": 0
+    },
+    "cleft_depth_at_apex_mm": {
+     "band": [
+      36.8,
+      45.0
+     ],
+     "why": "a readable but shallow cleft",
+     "band_designed": [
+      20,
+      30
+     ],
+     "gate": 40.9
+    },
+    "whr_w": {
+     "band": [
+      0.54,
+      0.58
+     ],
+     "why": "hourglass, front width ratio",
+     "band_designed": [
+      0.54,
+      0.58
+     ],
+     "gate": 0.568
+    },
+    "whr_circ": {
+     "band": [
+      0.53,
+      0.685
+     ],
+     "why": "hourglass, girth ratio",
+     "band_designed": [
+      0.53,
+      0.58
+     ],
+     "gate": 0.595
+    },
+    "hip_widest_vs_joint_mm": {
+     "band": [
+      -255.0,
+      -85.0
+     ],
+     "why": "widest hips about at the hip joint",
+     "band_designed": [
+      -30,
+      30
+     ],
+     "gate": -170
+    },
+    "saddle_mm": {
+     "band": [
+      null,
+      3
+     ],
+     "why": "the width only falls going down from the hips: no saddlebag",
+     "band_designed": [
+      null,
+      3
+     ],
+     "gate": 0.0
+    },
+    "fold_over_60": {
+     "band": [
+      null,
+      143
+     ],
+     "why": "few sharp folds on the mesh",
+     "band_designed": [
+      null,
+      20
+     ],
+     "gate": 53
+    },
+    "aspect_over_4": {
+     "band": [
+      null,
+      40
+     ],
+     "why": "few stretched quads",
+     "band_designed": [
+      null,
+      40
+     ],
+     "gate": 32
+    },
+    "edges_under_2mm": {
+     "band": [
+      null,
+      171
+     ],
+     "why": "few tiny edges",
+     "band_designed": [
+      null,
+      13
+     ],
+     "gate": 28
+    },
+    "waist_over_pelvis_mm": {
+     "band": [
+      165,
+      191.2
+     ],
+     "why": "the waist's height against the pelvis joint, a stable landmark (round 9: it replaces waist_over_navel_mm, whose 'navel' was the profile's deepest point and dropped when the belly hollow was filled: 56 mm over that without the waist moving). Her narrowest sits above the pelvis at the height it was designed: r8 179",
+     "band_designed": [
+      165,
+      195
+     ],
+     "gate": 170
+    },
+    "cleft_over_lobe": {
+     "band": [
+      0.443,
+      0.645
+     ],
+     "why": "from behind two round lobes, not one slab with a smile under it: the cleft (midline at least 8 mm forward of the column 26 mm out) runs this share of the lobe from the under-fold to the small of the back (r8 0.54, the judge's 'short cleft')",
+     "band_designed": [
+      0.68,
+      0.85
+     ],
+     "gate": 0.544
+    },
+    "cleft_narrow_at_60_mm": {
+     "band": [
+      0,
+      15.325
+     ],
+     "why": "60 mm over the joint the cleft is a narrow valley, not a wide shallow V (r8 7.6)",
+     "band_designed": [
+      9,
+      16
+     ],
+     "gate": 4.2
+    },
+    "low_back_blend_mm": {
+     "band": [
+      56.0,
+      null
+     ],
+     "why": "the low back's turn isn't a straight edge from behind: height span of the slope's fall from 75% to 25% (r8 32 at the worst column; the base's corner there is one row)",
+     "band_designed": [
+      34,
+      null
+     ],
+     "gate": 66.0
+    },
+    "cheek_ripple_mm": {
+     "band": [
+      null,
+      1.0
+     ],
+     "why": "no vertical ripples across the cheek in cel: Gaussian band 4-16 mm in x, |x| 50-110 mm, a cubic per row taken off",
+     "band_designed": [
+      null,
+      1.0
+     ],
+     "gate": 0.13
+    }
+   }
+  }
+ }
+}

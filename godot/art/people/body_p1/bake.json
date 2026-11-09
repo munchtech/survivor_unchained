@@ -1,0 +1,51 @@
+{
+ "version": "bake2",
+ "size": 2048,
+ "covered": 0.5786,
+ "source_maps": "tools/body/base/targets/her_a_maps",
+ "projection": {
+  "dist_p95_mm": 2.45,
+  "dist_max_mm": 31.72,
+  "closest_point_fallback": 21939
+ },
+ "files": [
+  "albedo.png",
+  "ao.png",
+  "curvature.png",
+  "form_normal.png",
+  "freckles.png",
+  "normal.png",
+  "region_id.png",
+  "roughness.png",
+  "thickness.png"
+ ],
+ "frames": {
+  "tangent_w_mismatch": 0
+ },
+ "gates": {
+  "what": "dE = CIEDE2000 on the saved 8-bit albedo (sRGB -> Lab D65)",
+  "albedo_dE_p95": 1.771,
+  "albedo_dE_p50": 0.251,
+  "albedo_dE_p99": 2.664,
+  "albedo_points_away": 772992,
+  "away_px": 4,
+  "albedo_dE_p95_near_seams": 2.106,
+  "mirror_part_dE_p95": 2.127,
+  "mirror_part_dE_p50": 0.907,
+  "seam_step_dE_p95": 1.966,
+  "seam_step_dE_p99": 5.57,
+  "seam_step_dE_max": 12.127,
+  "seam_edges": 1212,
+  "seam_samples": 8008,
+  "frame_mismatch": 0,
+  "limits": {
+   "albedo_dE_p95": 3.0,
+   "seam_step_dE_p95": 4.0,
+   "frame_mismatch": 0
+  },
+  "pass": true,
+  "from": "the source maps' own bake.json (the carry's gates)"
+ },
+ "sheet": "tools/body/out/round_29/uv_sheet.png",
+ "s": 42.2
+}

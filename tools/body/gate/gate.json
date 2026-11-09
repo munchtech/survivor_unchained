@@ -1,0 +1,74 @@
+{
+ "build": "tools/body/out/her_ek2_final (published byte-identical to godot/art/people/body_p1 at 7c32a9d92)",
+ "sheet": "C:\\Users\\munch\\Desktop\\survivorsunchained_inputs\\body_p1\\GATE_sheet_half.jpg",
+ "shots": {
+  "look_look_A": {
+   "sha256": "929386082721faee",
+   "saved": "saved C:/Users/munch/Desktop/survivorsunchained/.claude/worktrees/body-p1/godot/.shots/look_look_A.png at 5.02s feet 0 0 life 1.000",
+   "camera": "camera [X: (0.9998659, 0, -0.016377728), Y: (-0.0011620721, 0.9974796, -0.07094489), Z: (0.016336448, 0.070954405, 0.9973458), O: (-9.455282, 1.79023, 93.63314)] fov 26.698122",
+   "p1": []
+  },
+  "look_look_B": {
+   "sha256": "846c043b87bbbd23",
+   "saved": "saved C:/Users/munch/Desktop/survivorsunchained/.claude/worktrees/body-p1/godot/.shots/look_look_B.png at 5.02s feet 0 0 life 1.000",
+   "camera": "camera [X: (0.9998659, 0, -0.016377728), Y: (-0.0011620721, 0.9974796, -0.07094489), Z: (0.016336448, 0.070954405, 0.9973458), O: (-9.455282, 1.79023, 93.63314)] fov 26.698122",
+   "p1": [
+    "p1: dirs map limb n=46 p95 0.00 max 0.00 deg; worst index_03_r 0.0, index_02_r 0.0, ring_03_l 0.0, middle_02_l 0.0, pinky_02_l 0.0",
+    "p1: dirs map chain n=6 p95 0.36 max 0.36 deg; worst spine_03 0.4, spine_02 0.3, spine_01 0.0, neck_01 0.0, pelvis 0.0",
+    "p1: dirs driven limb n=46 p95 0.00 max 0.11 deg; worst clavicle_l 0.1, clavicle_r 0.1, index_03_r 0.0, index_02_r 0.0, ring_03_l 0.0",
+    "p1: dirs driven chain n=6 p95 0.36 max 0.36 deg; worst spine_03 0.4, spine_02 0.3, spine_01 0.0, neck_01 0.0, pelvis 0.0"
+   ]
+  },
+  "close_town_A": {
+   "sha256": "9078c4096c50e68e",
+   "saved": "saved C:/Users/munch/Desktop/survivorsunchained/.claude/worktrees/body-p1/godot/.shots/close_town_A.png at 5.02s her 960 979 feet 960 1927 life 1.000",
+   "camera": "camera [X: (0.997958, 0, -0.063873366), Y: (-0.003480867, 0.998514, -0.054385096), Z: (0.06377845, 0.054496378, 0.99647504), O: (0.17951225, 1.9289013, 25.8047)] fov 24.103302",
+   "p1": []
+  },
+  "close_town_B": {
+   "sha256": "af45a329debe35a3",
+   "saved": "saved C:/Users/munch/Desktop/survivorsunchained/.claude/worktrees/body-p1/godot/.shots/close_town_B.png at 5.02s her 960 979 feet 960 1927 life 1.000",
+   "camera": "camera [X: (0.997958, 0, -0.063873366), Y: (-0.003480867, 0.998514, -0.054385096), Z: (0.06377845, 0.054496378, 0.99647504), O: (0.17951225, 1.9289013, 25.8047)] fov 24.103302",
+   "p1": [
+    "p1: dirs map limb n=46 p95 0.00 max 0.00 deg; worst index_03_r 0.0, index_02_r 0.0, ring_03_l 0.0, middle_02_l 0.0, pinky_02_l 0.0",
+    "p1: dirs map chain n=6 p95 0.36 max 0.36 deg; worst spine_03 0.4, spine_02 0.3, spine_01 0.0, neck_01 0.0, pelvis 0.0",
+    "p1: dirs driven limb n=46 p95 0.00 max 0.11 deg; worst clavicle_l 0.1, clavicle_r 0.1, index_03_r 0.0, index_02_r 0.0, ring_03_l 0.0",
+    "p1: dirs driven chain n=6 p95 0.36 max 0.36 deg; worst spine_03 0.4, spine_02 0.3, spine_01 0.0, neck_01 0.0, pelvis 0.0"
+   ]
+  },
+  "play_town_A": {
+   "sha256": "cb672c21e846f6cc",
+   "saved": "saved C:/Users/munch/Desktop/survivorsunchained/.claude/worktrees/body-p1/godot/.shots/play_town_A.png at 5.02s her 960 527 feet 960 573 life 1.000",
+   "camera": "camera [X: (1, 0, 0), Y: (0, 0.5591929, -0.8290376), Z: (0, 0.8290376, 0.5591929), O: (0, 20.049576, 35.861435)] fov 34",
+   "p1": []
+  },
+  "play_town_B": {
+   "sha256": "0e6f72904056dc21",
+   "saved": "saved C:/Users/munch/Desktop/survivorsunchained/.claude/worktrees/body-p1/godot/.shots/play_town_B.png at 5.02s her 960 527 feet 960 573 life 1.000",
+   "camera": "camera [X: (1, 0, 0), Y: (0, 0.5591929, -0.8290376), Z: (0, 0.8290376, 0.5591929), O: (0, 20.049576, 35.861435)] fov 34",
+   "p1": [
+    "p1: dirs map limb n=46 p95 0.00 max 0.00 deg; worst index_03_r 0.0, index_02_r 0.0, ring_03_l 0.0, middle_02_l 0.0, pinky_02_l 0.0",
+    "p1: dirs map chain n=6 p95 0.36 max 0.36 deg; worst spine_03 0.4, spine_02 0.3, spine_01 0.0, neck_01 0.0, pelvis 0.0",
+    "p1: dirs driven limb n=46 p95 0.00 max 0.11 deg; worst clavicle_l 0.1, clavicle_r 0.1, index_03_r 0.0, index_02_r 0.0, ring_03_l 0.0",
+    "p1: dirs driven chain n=6 p95 0.36 max 0.36 deg; worst spine_03 0.4, spine_02 0.3, spine_01 0.0, neck_01 0.0, pelvis 0.0"
+   ]
+  },
+  "play_play_A": {
+   "sha256": "7b51274f48da03ed",
+   "saved": "saved C:/Users/munch/Desktop/survivorsunchained/.claude/worktrees/body-p1/godot/.shots/play_play_A.png at 5.02s her 960 529 feet 960 567 life 1.000",
+   "camera": "camera [X: (1, 0, 0), Y: (0, 0.43837115, -0.8987941), Z: (0, 0.8987941, 0.43837115), O: (0, 18.685648, 9.644165)] fov 34",
+   "p1": []
+  },
+  "play_play_B": {
+   "sha256": "f9728427aa8a4156",
+   "saved": "saved C:/Users/munch/Desktop/survivorsunchained/.claude/worktrees/body-p1/godot/.shots/play_play_B.png at 5.02s her 960 529 feet 960 567 life 1.000",
+   "camera": "camera [X: (1, 0, 0), Y: (0, 0.43837115, -0.8987941), Z: (0, 0.8987941, 0.43837115), O: (0, 18.685648, 9.644165)] fov 34",
+   "p1": [
+    "p1: dirs map limb n=46 p95 0.00 max 0.00 deg; worst index_03_r 0.0, index_02_r 0.0, ring_03_l 0.0, middle_02_l 0.0, pinky_02_l 0.0",
+    "p1: dirs map chain n=6 p95 0.36 max 0.36 deg; worst spine_03 0.4, spine_02 0.3, spine_01 0.0, neck_01 0.0, pelvis 0.0",
+    "p1: dirs driven limb n=46 p95 0.00 max 0.11 deg; worst clavicle_l 0.1, clavicle_r 0.1, index_03_r 0.0, index_02_r 0.0, ring_03_l 0.0",
+    "p1: dirs driven chain n=6 p95 0.36 max 0.36 deg; worst spine_03 0.4, spine_02 0.3, spine_01 0.0, neck_01 0.0, pelvis 0.0"
+   ]
+  }
+ }
+}

@@ -1,0 +1,812 @@
+{
+ "poser": "tools.body.rig_drive",
+ "body_mesh": "Heroine",
+ "close_meshes": [
+  "HeroineHead"
+ ],
+ "roles": {
+  "upperarm": "upperarm_{s}",
+  "lowerarm": "lowerarm_{s}",
+  "hand": "hand_{s}",
+  "thigh": "thigh_{s}",
+  "calf": "calf_{s}",
+  "foot": "foot_{s}"
+ },
+ "hinge": {
+  "elbow": "local_x",
+  "knee": "local_x"
+ },
+ "axes": {
+  "lowerarm_l": {
+   "x": [
+    -0.780045,
+    -0.617985,
+    0.098105
+   ],
+   "flexion": "+X"
+  },
+  "lowerarm_r": {
+   "x": [
+    -0.780045,
+    0.617985,
+    -0.098105
+   ],
+   "flexion": "+X"
+  },
+  "calf_l": {
+   "x": [
+    0.997906,
+    0.064675,
+    0.0
+   ],
+   "flexion": "+X"
+  },
+  "calf_r": {
+   "x": [
+    0.997906,
+    -0.064675,
+    -0.0
+   ],
+   "flexion": "+X"
+  }
+ },
+ "correctives": [
+  {
+   "joint": "arm_hang",
+   "law": "rbf",
+   "bone": "upperarm_{s}",
+   "end": "lowerarm_{s}",
+   "frame": "clavicle_{s}",
+   "sigma_deg": 30.0,
+   "shapes": [
+    "arm_hang_look_{s}",
+    "arm_hang_look_larm_{s}",
+    "arm_hang_close_larm_{s}",
+    "arm_hang_stalker302_rarm_{s}",
+    "arm_hang_fclose206_larm_{s}",
+    "arm_hang_fclose342_larm_{s}",
+    "arm_hang_fclose370_rarm_{s}"
+   ],
+   "keys": {
+    "l": [
+     [
+      0.616517,
+      -0.785859,
+      -0.048294
+     ],
+     [
+      -0.071429,
+      -0.988924,
+      -0.130101
+     ],
+     [
+      0.11584,
+      -0.650015,
+      -0.75104
+     ],
+     [
+      0.520135,
+      -0.570885,
+      -0.635256
+     ],
+     [
+      -0.052516,
+      0.181143,
+      0.982054
+     ],
+     [
+      0.866203,
+      -0.29296,
+      -0.404805
+     ],
+     [
+      0.789298,
+      -0.270604,
+      0.551164
+     ],
+     [
+      0.445499,
+      -0.214351,
+      0.869244
+     ]
+    ],
+    "r": [
+     [
+      -0.616517,
+      -0.785859,
+      -0.048294
+     ],
+     [
+      0.071429,
+      -0.988924,
+      -0.130101
+     ],
+     [
+      -0.11584,
+      -0.650015,
+      -0.75104
+     ],
+     [
+      -0.520135,
+      -0.570885,
+      -0.635256
+     ],
+     [
+      0.052516,
+      0.181143,
+      0.982054
+     ],
+     [
+      -0.866203,
+      -0.29296,
+      -0.404805
+     ],
+     [
+      -0.789298,
+      -0.270604,
+      0.551164
+     ],
+     [
+      -0.445499,
+      -0.214351,
+      0.869244
+     ]
+    ]
+   },
+   "M": {
+    "l": [
+     [
+      -0.150005,
+      0.085449,
+      -0.230016,
+      -0.006434,
+      -0.123688,
+      -0.099881,
+      0.036839
+     ],
+     [
+      1.037941,
+      -0.15733,
+      0.060252,
+      0.000903,
+      0.009161,
+      0.013271,
+      -0.005138
+     ],
+     [
+      -0.15733,
+      1.43031,
+      -0.837381,
+      -0.001078,
+      0.254435,
+      -0.014945,
+      0.006073
+     ],
+     [
+      0.060252,
+      -0.837381,
+      1.706543,
+      0.002726,
+      -0.593591,
+      0.038265,
+      -0.015387
+     ],
+     [
+      0.000903,
+      -0.001078,
+      0.002726,
+      1.052939,
+      -0.002354,
+      0.102825,
+      -0.262298
+     ],
+     [
+      0.009161,
+      0.254435,
+      -0.593591,
+      -0.002354,
+      1.247905,
+      -0.027462,
+      0.012975
+     ],
+     [
+      0.013271,
+      -0.014945,
+      0.038265,
+      0.102825,
+      -0.027462,
+      1.256598,
+      -0.56993
+     ],
+     [
+      -0.005138,
+      0.006073,
+      -0.015387,
+      -0.262298,
+      0.012975,
+      -0.56993,
+      1.30308
+     ]
+    ],
+    "r": [
+     [
+      -0.150005,
+      0.085449,
+      -0.230016,
+      -0.006434,
+      -0.123688,
+      -0.099881,
+      0.036839
+     ],
+     [
+      1.037941,
+      -0.15733,
+      0.060252,
+      0.000903,
+      0.009161,
+      0.013271,
+      -0.005138
+     ],
+     [
+      -0.15733,
+      1.43031,
+      -0.837381,
+      -0.001078,
+      0.254435,
+      -0.014945,
+      0.006073
+     ],
+     [
+      0.060252,
+      -0.837381,
+      1.706543,
+      0.002726,
+      -0.593591,
+      0.038265,
+      -0.015387
+     ],
+     [
+      0.000903,
+      -0.001078,
+      0.002726,
+      1.052939,
+      -0.002354,
+      0.102825,
+      -0.262298
+     ],
+     [
+      0.009161,
+      0.254435,
+      -0.593591,
+      -0.002354,
+      1.247905,
+      -0.027462,
+      0.012975
+     ],
+     [
+      0.013271,
+      -0.014945,
+      0.038265,
+      0.102825,
+      -0.027462,
+      1.256598,
+      -0.56993
+     ],
+     [
+      -0.005138,
+      0.006073,
+      -0.015387,
+      -0.262298,
+      0.012975,
+      -0.56993,
+      1.30308
+     ]
+    ]
+   }
+  },
+  {
+   "joint": "elbow",
+   "law": "flex",
+   "bones": [
+    "upperarm_{s}",
+    "lowerarm_{s}",
+    "hand_{s}"
+   ],
+   "keys": [
+    45.99,
+    90.0,
+    135.0
+   ],
+   "shapes": [
+    null,
+    "elbow_flex90_{s}",
+    "elbow_flex135_{s}"
+   ]
+  },
+  {
+   "joint": "knee",
+   "law": "flex",
+   "bones": [
+    "thigh_{s}",
+    "calf_{s}",
+    "foot_{s}"
+   ],
+   "keys": [
+    8.474,
+    90.0,
+    135.0
+   ],
+   "shapes": [
+    null,
+    "knee_flex90_{s}",
+    "knee_flex135_{s}"
+   ]
+  },
+  {
+   "joint": "hip",
+   "law": "arc",
+   "bone": "thigh_{s}",
+   "end": "calf_{s}",
+   "frame": "pelvis",
+   "gate_deg": [
+    20.0,
+    60.0
+   ],
+   "shapes": [
+    "hip_flex90_{s}",
+    "hip_flex105_{s}",
+    "hip_flex120_{s}",
+    "hip_flex135_{s}"
+   ],
+   "keys": {
+    "l": [
+     [
+      0.12034,
+      -0.983741,
+      0.133313
+     ],
+     [
+      0.12034,
+      0.01589,
+      0.992606
+     ],
+     [
+      0.12034,
+      0.272254,
+      0.954671
+     ],
+     [
+      0.12034,
+      0.510064,
+      0.851677
+     ],
+     [
+      0.12034,
+      0.713114,
+      0.690642
+     ]
+    ],
+    "r": [
+     [
+      -0.12034,
+      -0.983741,
+      0.133313
+     ],
+     [
+      -0.12034,
+      0.01589,
+      0.992606
+     ],
+     [
+      -0.12034,
+      0.272254,
+      0.954671
+     ],
+     [
+      -0.12034,
+      0.510064,
+      0.851677
+     ],
+     [
+      -0.12034,
+      0.713114,
+      0.690642
+     ]
+    ]
+   }
+  }
+ ],
+ "girdle": {
+  "why": "Scapulohumeral rhythm, the clavicle and the scapula driven from the humerus (rig_drive.girdle): tables of the arm's elevation A (deg from the torso's down axis), monotone C1 cubics flat past the ends, each relative to its value at the rest (MakeHuman's A-pose, A0 ~43 deg; the rest exactly neutral). Clavicle elevation and retraction: Ludewig, Phadke, Braman et al. 2009 (JBJS 91-A, 3D motion of the shoulder complex in 12 subjects: clavicle elevation ~10-15 deg, retraction ~15-30 deg, scapular upward rotation ~40-50 deg, posterior tilt ~20-30 deg over full elevation) and Inman, Saunders and Abbott 1944 (the setting phase: through the first ~30 deg the girdle barely moves, so the curves are nearly flat from 0 (hanging) to A0 and a hanging arm moves the clavicle and blade only a little down from rest). Protraction with forward reach (10 deg per unit of the arm's direction . front beyond rest) and the blade's forward glide (15 mm per unit) as the arm flexes forward (Ludewig 2009: scapular protraction in flexion). The upper arm keeps its world turn (the clip's aim).",
+  "arm": "upperarm_{s}",
+  "arm_end": "lowerarm_{s}",
+  "torso": "spine_05",
+  "down": [
+   0.0,
+   -1.0,
+   0.0
+  ],
+  "front": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "up": [
+   0.0,
+   1.0,
+   0.0
+  ],
+  "side": [
+   1.0,
+   0.0,
+   0.0
+  ],
+  "clavicle": "clavicle_{s}",
+  "scap": "scap_{s}",
+  "clav_elev": [
+   [
+    0,
+    0
+   ],
+   [
+    30,
+    1
+   ],
+   [
+    60,
+    4
+   ],
+   [
+    90,
+    8
+   ],
+   [
+    120,
+    12
+   ],
+   [
+    150,
+    15
+   ],
+   [
+    180,
+    17
+   ]
+  ],
+  "clav_retract": [
+   [
+    0,
+    0
+   ],
+   [
+    30,
+    1
+   ],
+   [
+    60,
+    4
+   ],
+   [
+    90,
+    8
+   ],
+   [
+    120,
+    13
+   ],
+   [
+    150,
+    17
+   ],
+   [
+    180,
+    20
+   ]
+  ],
+  "protract_per_reach": 10.0,
+  "retract_plane": {
+   "why": "P1 R2 law2: retraction by plane. The clavicle's retraction table (relative to the rest) is scaled by the arm's forward reach beyond the rest (d . front - d0 . front: 0 in abduction, full table; 0.4 of it from reach 0.4: the check's flexion 135 reads 0.39, its 90 0.64), faded in over elevation 95..120 deg: below it the full table (the hanging arm and the rest, where the plane is undefined, and flexion to 90: flex 90 outer outline 14.9 mm at 1.0, 20.5 at 0.35, 24.0 at 0). Flex 135 outer 14.1 mm at 1.0, 10.7 at 0, 4.9-6.2 at 0.25-0.5. Read by reach, not azimuth: the check's flexion from her A-pose sits at azimuth 35 (135) and 47 (90), the scapular plane, so the scapular plane at 135 (reach ~0.4) takes the flexion's scale too. Ludewig 2009: the clavicle and scapula sit protracted in high flexion against the retraction of abduction. Protraction by reach stays (protract_per_reach).",
+   "by_reach": [
+    [
+     0.15,
+     1.0
+    ],
+    [
+     0.4,
+     0.4
+    ]
+   ],
+   "fade": [
+    95,
+    120
+   ]
+  },
+  "scap_up": [
+   [
+    0,
+    0
+   ],
+   [
+    30,
+    2
+   ],
+   [
+    60,
+    12
+   ],
+   [
+    90,
+    24
+   ],
+   [
+    120,
+    36
+   ],
+   [
+    150,
+    45
+   ],
+   [
+    180,
+    52
+   ]
+  ],
+  "scap_axis": [
+   0.5736,
+   0.0,
+   0.8192
+  ],
+  "scap_tilt": [
+   [
+    0,
+    0
+   ],
+   [
+    60,
+    3
+   ],
+   [
+    90,
+    7
+   ],
+   [
+    120,
+    12
+   ],
+   [
+    150,
+    18
+   ],
+   [
+    180,
+    22
+   ]
+  ],
+  "glide_m": 0.015,
+  "clavicle_by": "shrug",
+  "clavicle_roll": "neutral",
+  "clavicle_roll_keep": [
+   "trap_{s}"
+  ]
+ },
+ "helpers": [
+  {
+   "name": "lowerarm_{s}",
+   "kind": "unroll",
+   "child": "hand_{s}",
+   "why": "the ulna is a hinge: its roll goes to the hand"
+  },
+  {
+   "name": "calf_{s}",
+   "kind": "unroll",
+   "child": "foot_{s}"
+  },
+  {
+   "name": "upperarm_twist_01_{s}",
+   "kind": "counter_twist",
+   "follow": "upperarm_{s}",
+   "amount": 0.5
+  },
+  {
+   "name": "upperarm_twist_02_{s}",
+   "kind": "counter_twist",
+   "follow": "upperarm_{s}",
+   "amount": 0.375
+  },
+  {
+   "name": "upperarm_twist_03_{s}",
+   "kind": "counter_twist",
+   "follow": "upperarm_{s}",
+   "amount": 0.25
+  },
+  {
+   "name": "upperarm_twist_04_{s}",
+   "kind": "counter_twist",
+   "follow": "upperarm_{s}",
+   "amount": 0.125
+  },
+  {
+   "name": "thigh_twist_01_{s}",
+   "kind": "counter_twist",
+   "follow": "thigh_{s}",
+   "amount": 0.7
+  },
+  {
+   "name": "thigh_twist_02_{s}",
+   "kind": "counter_twist",
+   "follow": "thigh_{s}",
+   "amount": 0.35
+  },
+  {
+   "name": "lowerarm_twist_01_{s}",
+   "kind": "twist",
+   "follow": "hand_{s}",
+   "amount": 0.4
+  },
+  {
+   "name": "lowerarm_twist_02_{s}",
+   "kind": "twist",
+   "follow": "hand_{s}",
+   "amount": 0.8
+  },
+  {
+   "name": "calf_twist_01_{s}",
+   "kind": "twist",
+   "follow": "foot_{s}",
+   "amount": 0.4
+  },
+  {
+   "name": "calf_twist_02_{s}",
+   "kind": "twist",
+   "follow": "foot_{s}",
+   "amount": 0.8
+  },
+  {
+   "name": "upperarm_share_{s}",
+   "kind": "share",
+   "follow": "upperarm_{s}",
+   "amount": 0.5,
+   "below": {
+    "amount": -0.03,
+    "band": 10
+   },
+   "why": "P1 R2 law2: the share's hanging branch. amount 0.5 of the arm's turn beyond the clavicle when the arm is above the rest elevation (the cap turns with the humerus as it lifts); below.amount when it hangs below the rest (the deltoid's top stays under the acromion, riding the girdle), smoothstep-blended over the rest -+ band deg (no pop). Tuned by the arm_hang panel (top-drop ratio at 5 deg: 0.5 -> -0.54, 0.15 -> 0.04, 0 -> 0.54, -0.03 -> 0.84, -0.1 -> 0.99); the cost is the inner upper arm's known contact with the torso side 6-11 cm below the joint (1.9 -> ~9 mm deep at 5 deg)."
+  },
+  {
+   "name": "lowerarm_share_{s}",
+   "kind": "share",
+   "follow": "lowerarm_{s}",
+   "amount": 0.5,
+   "crease": 1.0,
+   "pivot": 0.0,
+   "turn_pivot": 0.0,
+   "bulge": 0.0,
+   "bulge_max": 1.0
+  },
+  {
+   "name": "lowerarm_point_{s}",
+   "kind": "point",
+   "follow": "lowerarm_{s}",
+   "amount": 0.5,
+   "crease": 1.0,
+   "flex": [
+    "upperarm_{s}",
+    "lowerarm_{s}",
+    "hand_{s}"
+   ],
+   "push": 0.01,
+   "from": 70.0,
+   "to": 145.0
+  },
+  {
+   "name": "thigh_share_{s}",
+   "kind": "share",
+   "follow": "thigh_{s}",
+   "amount": 0.5,
+   "crease": -1.0
+  },
+  {
+   "name": "calf_share_{s}",
+   "kind": "share",
+   "follow": "calf_{s}",
+   "amount": 0.5,
+   "crease": 1.0,
+   "pivot": 0.0,
+   "turn_pivot": 0.0,
+   "bulge": 0.0,
+   "bulge_max": 1.0
+  },
+  {
+   "name": "calf_point_{s}",
+   "kind": "point",
+   "follow": "calf_{s}",
+   "amount": 0.5,
+   "crease": 1.0,
+   "flex": [
+    "thigh_{s}",
+    "calf_{s}",
+    "foot_{s}"
+   ],
+   "push": 0.006,
+   "from": 60.0,
+   "to": 140.0
+  },
+  {
+   "name": "delt_{s}",
+   "kind": "aim",
+   "on": "upperarm_{s}",
+   "on_end": "lowerarm_{s}",
+   "A": [
+    60.0,
+    130.0
+   ],
+   "aim_m": 0.3,
+   "turn": 0.0,
+   "sa": -0.05,
+   "sp": 0.15,
+   "why": "the deltoid bunches (wider across, shorter along) as the arm rises"
+  },
+  {
+   "name": "trap_{s}",
+   "kind": "aim",
+   "on": "upperarm_{s}",
+   "on_end": "lowerarm_{s}",
+   "A": [
+    60.0,
+    150.0
+   ],
+   "off": [
+    0.0,
+    0.012,
+    0.0
+   ],
+   "why": "the outer trapezius lifts"
+  },
+  {
+   "name": "pec_{s}",
+   "kind": "aim",
+   "on": "upperarm_{s}",
+   "on_end": "lowerarm_{s}",
+   "A": [
+    45.0,
+    120.0
+   ],
+   "aim_m": 0.08,
+   "turn": 0.2,
+   "why": "the front axillary fold follows the arm"
+  },
+  {
+   "name": "lat_{s}",
+   "kind": "aim",
+   "on": "upperarm_{s}",
+   "on_end": "lowerarm_{s}",
+   "A": [
+    45.0,
+    120.0
+   ],
+   "aim_m": 0.07,
+   "turn": 0.15,
+   "why": "the back of the armpit follows the arm"
+  },
+  {
+   "name": "glute_{s}",
+   "kind": "aim",
+   "read": "hip",
+   "on": "thigh_{s}",
+   "on_end": "calf_{s}",
+   "torso": "pelvis",
+   "down": [
+    0.0,
+    -1.0,
+    0.0
+   ],
+   "A": [
+    20.0,
+    110.0
+   ],
+   "aim_m": 0.15,
+   "turn": 0.25,
+   "why": "the glute's lower edge follows the thigh as it flexes (the fold rides with it)"
+  }
+ ]
+}

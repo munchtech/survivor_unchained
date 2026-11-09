@@ -1,3 +1,4 @@
+using System.Linq;
 using Godot;
 
 namespace SurvivorUnchained.View;
@@ -35,6 +36,22 @@ public partial class HerCarriage : SkeletonModifier3D
     public HerCarriage() { Name = "HerCarriage"; }
 
     int head = -2, neck = -2;
+    /// <summary>Spine's shares as bones (on P1's B spread over its chain by role, the total kept), each with its turn's
+    /// centre in the bone's own frame: zero on A (its joint); on B the joint of the A bone whose share it takes (A's rest
+    /// over B's), as HeadTurn's and GazeCarry's. B's spine joints sit 30-50 mm behind A's, and turned about its own each
+    /// share swung B's chest off A's by (I - R)(b - a): 9-18 mm at a 30 deg aim (P1 pose round 2).</summary>
+    (int Bone, float Share, Vector3 Pivot)[]? spread;
+
+    static (int, float, Vector3)[] Shares(Skeleton3D sk) => Spine.SelectMany(s => P1Body.Spread(sk, new[] { s }).Select(x =>
+    {
+        var pivot = Vector3.Zero;
+        if (x.Bone >= 0 && P1Body.IsB(sk) && P1Body.ARest(s.Bone) is Transform3D ar)
+        {
+            var br = sk.GetBoneGlobalRest(x.Bone);
+            pivot = br.Basis.Orthonormalized().Inverse() * (P1Body.OnB(sk, x.Bone, ar.Origin) - br.Origin);
+        }
+        return (x.Bone, x.Share, pivot);
+    })).ToArray();
     Vector3 headForward;
 
     /// <summary>Her head brought up: the droop of her face's forward below the
@@ -44,7 +61,7 @@ public partial class HerCarriage : SkeletonModifier3D
         if (head == -2)
         {
             head = sk.FindBone("Head");
-            neck = sk.FindBone("neck_01");
+            neck = P1Body.Bone(sk, "neck_01");
             // (at rest every body here faces +Z: the face's forward in the head's own frame)
             if (head >= 0) headForward = (sk.GetBoneGlobalRest(head).Basis.Orthonormalized().Inverse() * Vector3.Back).Normalized();
         }
@@ -86,17 +103,18 @@ public partial class HerCarriage : SkeletonModifier3D
             }
         }
         if (Mathf.Abs(Aim) > 0.01f)
-            foreach (var (bone, share) in Spine)
+            foreach (var (b, share, pivot) in spread ??= Shares(sk))
             {
-                int b = sk.FindBone(bone);
                 if (b < 0) continue;
-                // About the skeleton's up, from the bone's head.
+                // About the skeleton's up, from the bone's head (on B: from A's joint, carried by the bone).
                 var g = sk.GetBoneGlobalPose(b);
                 var r = new Basis(Vector3.Up, Mathf.DegToRad(Aim * share));
-                var ng = new Transform3D(r * g.Basis, g.Origin);
+                var centre = g.Origin + g.Basis.Orthonormalized() * pivot;
+                var ng = new Transform3D(r * g.Basis, centre + r * (g.Origin - centre));
                 int p = sk.GetBoneParent(b);
                 var local = p >= 0 ? sk.GetBoneGlobalPose(p).AffineInverse() * ng : ng;
                 sk.SetBonePoseRotation(b, local.Basis.GetRotationQuaternion());
+                if (pivot != Vector3.Zero) sk.SetBonePosePosition(b, local.Origin);
             }
         if (HeadLevel > 0.01f) Level(sk);
     }

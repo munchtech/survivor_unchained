@@ -30,6 +30,10 @@ public partial class HerPose : SkeletonModifier3D
     public float Lower, Upper;
     /// <summary>Both halves at once.</summary>
     public float Native { set { Lower = Upper = value; } }
+    /// <summary>P1's B (--body p1): every clip is baked onto B with her library carriage in it (the clip bridge,
+    /// P1BakeRun), so the library correction (the pelvis shift, finger ease, ArmsIn, NeckPitch, HipTilt) and the Look's arms
+    /// are skipped whatever Native and LookOn say; the runtime parts (CineCurl, the neck sliders, chin up, head tries) stay.</summary>
+    public bool Baked;
     /// <summary>Her neck as her face's sliders shape it (People.HerFace),
     /// each -1 to 1: longer or shorter (her head carried up or down along
     /// her neck) and slimmer or stronger (her neck bone scaled across it,
@@ -64,6 +68,8 @@ public partial class HerPose : SkeletonModifier3D
     /// the shoulder-to-wrist line, the hand's place and turn kept (her left hand stays at her hip). Eased in and
     /// out over LookEase seconds with the idle's crossfade; off the Look nothing here moves.</summary>
     public float LookArmsDownL, LookArmsDownR, LookRollL, LookRollR, LookSwivelL, LookSwivelR;
+    /// <summary>The Look's arms as GameFront sets them; the clip bridge bakes the same into B's idle_{calling}_look (P1BakeRun).</summary>
+    public const float LookDownR = 10f, LookSwivel = 31f;
     public bool LookOn;
     public const float LookEase = 0.3f;
     float lookW;
@@ -127,8 +133,8 @@ public partial class HerPose : SkeletonModifier3D
             for (int k = 1; k <= 3; k++) fr.Add(sk.FindBone($"{f}_0{k}_r"));
         fingR = fr.Contains(-1) ? System.Array.Empty<int>() : fr.ToArray();
         thumb1R = sk.FindBone("thumb_01_r");
-        spine3 = sk.FindBone("spine_03");
-        neck = sk.FindBone("neck_01");
+        spine3 = P1Body.Bone(sk, "spine_03");
+        neck = P1Body.Bone(sk, "neck_01");
         head = sk.FindBone("Head");
         var list = new System.Collections.Generic.List<int>();
         for (int b = 0; b < sk.GetBoneCount(); b++)
@@ -149,7 +155,7 @@ public partial class HerPose : SkeletonModifier3D
         // higher (longer legs): the clip's motion kept, measured from hers.
         // (Her own clips are made at her height already: the shift fades
         // with them.)
-        float lib = 1 - Mathf.Clamp(Lower, 0, 1), arms = 1 - Mathf.Clamp(Upper, 0, 1);
+        float lib = Baked ? 0 : 1 - Mathf.Clamp(Lower, 0, 1), arms = Baked ? 0 : 1 - Mathf.Clamp(Upper, 0, 1);
         int pel = pelvis;
         if (pel >= 0 && lib > 0) sk.SetBonePosePosition(pel, sk.GetBonePosePosition(pel) + (sk.GetBoneRest(pel).Origin - LibraryPelvis) * lib);
         if (arms > 0)
@@ -166,7 +172,8 @@ public partial class HerPose : SkeletonModifier3D
             if (NeckPitch != 0) Turn(sk, neck, Vector3.Right, NeckPitch * arms);
         }
         lookW = Mathf.MoveToward(lookW, LookOn ? 1 : 0, (float)delta / LookEase);
-        if (lookW > 0) LookArms(sk, LookWeight);
+        // (on B the Look's arms are in her idle_{calling}_look clip: LookOn only keeps the weight GameFront's pan rides)
+        if (lookW > 0 && !Baked) LookArms(sk, LookWeight);
         if (CineCurlL != 0 && fingL.Length == 12 && handL >= 0) CurlHand(sk, fingL, handL, thumb1L, CineCurlL, false);
         if (CineCurlR != 0 && fingR.Length == 12 && handR >= 0) CurlHand(sk, fingR, handR, thumb1R, CineCurlR, true);
         if (lib > 0)
