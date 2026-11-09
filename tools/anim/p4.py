@@ -112,6 +112,10 @@ def fit_of(spec):
         f["blade"]["pocket"] = pieces()["blade"]
     if "shield" in f:
         f["shield"]["pocket"] = pieces()["shieldp"]
+    if "end" in f:
+        # (an action's blend out: the built clip it ends in (fit.end.clip, at fit.end.frame), its locals, its pelvis's
+        # world turn and height on B)
+        f["end"]["pose"] = end_pose(f["end"]["clip"], f["end"].get("frame", 0))
     if "clear" in f:
         # (the game's mount on B: the pieces' points in their bones' spaces, a fixed sample)
         pc, bones = pieces(), {"sword": ("hand_r", "r"), "shield": ("lowerarm_l", "l")}
@@ -120,6 +124,17 @@ def fit_of(spec):
                                     "pts": pc[k][rng.choice(len(pc[k]), min(len(pc[k]), 800), replace=False)].tolist()}
                                 for k in f["clear"].get("held", spec.get("held", []))}
     return f
+
+
+def end_pose(clip, frame=0):
+    """A built clip's pose at one frame (OUT/<clip>.json): {rot: {bone: [x, y, z, w] local}, pelvis_rot: its world turn,
+    pelvis_y: its world height}."""
+    from motion.rig import Rig
+    c = MC.read(OUT / f"{clip}.json")
+    G, P = MC.globals_of(c, Rig(RIG))
+    pv = Rig(RIG).index["pelvis"]
+    return {"rot": {b: q[frame] for b, q in c["rot"].items()}, "pelvis_rot": G[frame, pv].tolist(),
+            "pelvis_y": float(P[frame, pv, 1])}
 
 
 def action_of(spec):
@@ -234,6 +249,29 @@ def action_held(r, spec):
         tip = grip + d * pc["blade"]["tip"]
         out["tip_cm"] = 100 * tip[:, 1]
         out["tip_ahead_cm"] = 100 * np.einsum("fi,fi->f", tip - P[:, pv], hd)
+        out["grip_cm"] = 100 * grip[:, 1]                                       # (the grip's height)
+        out["grip_ahead_cm"] = 100 * np.einsum("fi,fi->f", grip - P[:, pv], hd)
+    # (her look: the face's forward (Head's rest +Z) below the horizontal, deg, + down)
+    hz = np.einsum("fij,j->fi", G[:, rig.index["Head"]] @ rig.R0[rig.index["Head"]].T, [0, 0, 1.0])
+    out["head_down_deg"] = np.degrees(np.arctan2(-hz[:, 1], np.hypot(hz[:, 0], hz[:, 2])))
+    hold = r.clip.get("beats", {}).get("hold")
+    if hold:                           # (the settle: the pelvis below its hold height, % of the hold's drop from frame 0)
+        y = P[:, pv, 1]
+        yh = y[int(round(hold[0] * r.src.fps))]
+        out["settle_pct"] = 100 * (yh - y) / max(y[0] - yh, 1e-6)
+    if spec.get("fit", {}).get("end"):  # (each frame's largest keyed-bone turn off the clip it ends in, deg; its pelvis
+        e = spec["fit"]["end"]          # by its world turn)
+        tg = end_pose(e["clip"], e.get("frame", 0))
+        from motion import quat as Q
+        dd = []
+        for b, q in tg["rot"].items():
+            if b in ("root", "pelvis") or b not in rig.index:
+                continue
+            j = rig.index[b]
+            L = np.swapaxes(G[:, rig.parent[j]], -1, -2) @ G[:, j]
+            dd.append(np.degrees(Q.angle(L, Q.to_mat(np.asarray(q, float)[None]))))
+        dd.append(np.degrees(Q.angle(G[:, pv], np.asarray(tg["pelvis_rot"])[None])))
+        out["end_deg"] = np.max(dd, 0)
     if "shield" in spec.get("held", []):
         la = rig.index["lowerarm_l"]
         boss = P[:, la] + np.einsum("fij,j->fi", G[:, la], pc["shieldp"]["at"])
