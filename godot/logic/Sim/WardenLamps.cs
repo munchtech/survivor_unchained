@@ -61,6 +61,8 @@ public sealed partial class Battle
         var p = Player;
         Blocks++;
         BlockedAt = Time;
+        RuleOnBlocked(amount);
+        Resolve.Blocked();
         var l = Lamps;
         if (l.Board) BoardOnBlock(from);
         // bulwark.block.mend: each block mends a sliver while above half.
@@ -167,6 +169,7 @@ public sealed partial class Battle
     /// <summary>A perfect dash's lamps: a barrier (perfect.barrier) and a stone (parry).</summary>
     void LampsOnPerfect()
     {
+        RuleOnPerfect();
         if (Lamps.Has("perfect.barrier")) LampBarrier(MaxHp * Lamps.Size("perfect.barrier", "share"), 5, sized: true);
         if (Lamps.Has("parry")) AddStone();
     }

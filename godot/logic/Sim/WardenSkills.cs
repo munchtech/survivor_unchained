@@ -20,6 +20,7 @@ public static partial class Firing
         static int Min(int a, int c) => a > 0 ? Math.Min(a, c) : c;
         if (n > 0 && b.SkillRule(w, "third_blow")) n = Min(n, (int)b.SkillFull(w, "third_blow", "every", 3));
         if (w.Wick is { HeavyEvery: > 0 } fx) n = Min(n, fx.HeavyEvery);
+        if (b.Wk(w, "cleaver.overhand")) n = Min(n, (int)b.Wn("cleaver.overhand", "every", 3));
         return n;
     }
 
@@ -44,15 +45,20 @@ public static partial class Firing
         var p = At(b);
         double range = w.Num(s => s.Range) ?? 10;
         if (b.SkillRule(w, "fault_line")) range = Math.Max(range, b.SkillFull(w, "fault_line", "reach", 14));
-        var t = b.DensestHostile(p.X, p.Z, range, 2.5);
-        if (t == null) return false;
-        // The pack's center: the middle of what stands round the densest one.
+        // A campaign press: the crack runs to the pack under the cursor (the hover foe's), else to the point.
+        var t = b.CastAt is { } ca ? ca.Foe : b.DensestHostile(p.X, p.Z, range, 2.5);
+        if (t == null && b.CastAt == null) return false;
         double cx = 0, cz = 0;
-        var pack = b.HostilesInRadius(t.X, t.Z, 2.5);
-        foreach (var e in pack) { cx += e.X; cz += e.Z; }
-        if (pack.Count > 0) { cx /= pack.Count; cz /= pack.Count; } else { cx = t.X; cz = t.Z; }
+        if (t != null)
+        {
+            // The pack's center: the middle of what stands round the densest one.
+            var pack = b.HostilesInRadius(t.X, t.Z, 2.5);
+            foreach (var e in pack) { cx += e.X; cz += e.Z; }
+            if (pack.Count > 0) { cx /= pack.Count; cz /= pack.Count; } else { cx = t.X; cz = t.Z; }
+        }
+        else (cx, cz) = (b.CastAt!.Value.X, b.CastAt.Value.Z);
         double d = Dist(cx, cz, p.X, p.Z);
-        double a = d > 0.01 ? Math.Atan2(cz - p.Z, cx - p.X) : Math.Atan2(t.Z - p.Z, t.X - p.X);
+        double a = d > 0.01 ? Math.Atan2(cz - p.Z, cx - p.X) : t != null ? Math.Atan2(t.Z - p.Z, t.X - p.X) : Math.Atan2(Math.Cos(b.Player.Facing), Math.Sin(b.Player.Facing));
         double len = Math.Clamp(d, 1.5, range);
         if (b.SkillRule(w, "twin"))
         {
@@ -169,6 +175,9 @@ public sealed partial class Battle
     /// if it stands within reach of her, and the three nearest it; a missile's (no striker near), the three nearest her.
     /// At most once in its cooldown (0.5 s, shortened as any cooldown is): from blocks alone it struck twice a minute,
     /// 0.3-0.8% of her night (P6b).</summary>
+    /// <summary>A riposte: Rebuke answers the blow it took at once, whatever its gap.</summary>
+    void RebukeAnswerNow() => rebukeAt = double.NegativeInfinity;
+
     void RebukeOnBlow(Enemy? from)
     {
         if (WeaponById("rebuke") is not { DisabledT: <= 0 } w) return;

@@ -299,7 +299,7 @@ public static class Ai
         if ((def.Aura != null || def.Summon != null || def.Slam != null) && Verbs(b, e, def, tgt, dist, dt)) return;
 
         // Where it wants to be.
-        switch (def.Behavior)
+        switch (b.RuleGoaded(e) ? Behavior.Chase : def.Behavior)
         {
             case Behavior.Pack:
                 // Fan out to a slot around the target, then close together.
