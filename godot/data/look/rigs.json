@@ -106,7 +106,7 @@
       "grade": "rig_arena_night",
       "exposure": 1.15,
       "dapple": {
-        "cover": 1.0,
+        "cover": 0.6,
         "strength": 0.85,
         "size": 35,
         "floor": 1.0
