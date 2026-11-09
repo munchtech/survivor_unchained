@@ -38,6 +38,9 @@ from motion.rig import Rig  # noqa: E402
 
 REPO = p4.REPO
 TOL_MM, TOL_DEG, TOL_BASE = 1.0, 0.5, 0.1
+RUN_IN_MM = 0.5       # (and a pelvis more than this far off the fitted clip pose: the overlay is still blending in from the stance before)
+NOT_PLAYING = 1.0     # a probed frame whose best time fit still turns the fit bones this many deg (summed) is not the clip
+                      # playing (the first frame, before the overlay starts): left out, and counted
 FIT_BONES = ("pelvis", "spine_01", "spine_02", "spine_03", "spine_04", "spine_05", "thigh_l", "thigh_r",
              "upperarm_l", "upperarm_r", "hand_l", "hand_r")
 LOOK = ("neck", "head")          # (runtime look layers ride these: listed apart)
@@ -78,11 +81,11 @@ class Py:
 
     def locals_at(self, t):
         n = self.n
-        m = n if self.loop else n - 1
-        t = t % m if self.loop else min(max(t, 0.0), n - 1)
-        a = int(np.floor(t))
+        # (a loop's last frame is its first again: the game's length is (n - 1) / fps, as p4_blend.locals_at)
+        t = t % (n - 1) if self.loop else min(max(t, 0.0), n - 1)
+        a = min(int(np.floor(t)), n - 2)
         f = t - a
-        b = (a + 1) % n if self.loop else min(a + 1, n - 1)
+        b = a + 1
         rig = self.rig
         Lr, Lt = rig.rest_locals(1)
         for k, q in self.Q.items():
@@ -130,7 +133,7 @@ def fit_time(py, game, names=FIT_BONES, step_tol=1e-3):
     def cost(t):
         G, _ = py.pre(t)
         return sum(ang_deg(G[j], R) for j, R in zip(idx, Rg))
-    m = py.n if py.loop else py.n - 1
+    m = py.n - 1
     ts = np.arange(m, dtype=float)
     cs = [cost(t) for t in ts]
     k = int(np.argmin(cs))
@@ -148,7 +151,7 @@ def fit_time(py, game, names=FIT_BONES, step_tol=1e-3):
             b = lo + gr * (hi - lo)
             cb = cost(b)
     t = (lo + hi) / 2
-    return t % m if py.loop else t, cost(t)
+    return (t % m if py.loop else t), cost(t)
 
 
 def kabsch_deg(A, B):
@@ -178,6 +181,12 @@ def run(lines, clip, py=None, pc=None):
         t, cost = fit_time(py, game)
         post = py.post(t)
         row = {"frame": fr["frame"], "t": round(t, 3), "fit_deg_sum": round(cost, 3)}
+        off = (game["pelvis"][:3, 3] - post["pelvis"][:3, 3]) * 1000
+        row["pelvis_off_mm"] = off
+        if cost > NOT_PLAYING or np.linalg.norm(off) > RUN_IN_MM:
+            row["skipped"] = True
+            rows.append(row)
+            continue
         for k, (prefix, bone) in PIECES.items():
             pie = piece_of(fr, prefix)
             if pie is None:
@@ -207,7 +216,12 @@ def run(lines, clip, py=None, pc=None):
 
 
 def report(rows, base, name):
-    print(f"{name}: {len(rows)} probed frames")
+    skipped = [r for r in rows if r.get("skipped")]
+    rows = [r for r in rows if not r.get("skipped")]
+    print(f"{name}: {len(rows)} probed frames compared, {len(skipped)} not the clip playing (fit > {NOT_PLAYING} deg or pelvis > {RUN_IN_MM} mm off: run-in): "
+          f"{[(r['frame'], r['fit_deg_sum'], round(float(np.linalg.norm(r['pelvis_off_mm'])), 1)) for r in skipped]}")
+    po = np.array([r["pelvis_off_mm"] for r in rows]) if rows else np.zeros((1, 3))
+    print(f"  pelvis position game - python (mm), compared frames: max {np.abs(po).max():.3f}, mean {np.round(po.mean(0), 3).tolist()} (a ground offset would show here)")
     print("  frame      t   fit_sum_deg   sword mm / deg      shield mm / deg")
     for r in rows:
         s = f"  {r['frame']:5d} {r['t']:7.2f} {r['fit_deg_sum']:10.3f}"
@@ -232,6 +246,9 @@ def report(rows, base, name):
           f"{dict(sorted(rest.items(), key=lambda kv: -kv[1]))}")
     print(f"  look-layer bones over {TOL_BASE} deg (listed apart): {look}")
     bad |= bool(rest)
+    mxf = max((r["fit_deg_sum"] for r in rows), default=0)
+    print(f"  time fit: worst summed world turn of the {len(FIT_BONES)} fit bones {mxf:.3f} deg; time step between probes "
+          f"{np.round(np.median(np.diff([r['t'] for r in rows])), 3) if len(rows) > 1 else '-'} frames (median)")
     return bad, mx, rest, look
 
 
