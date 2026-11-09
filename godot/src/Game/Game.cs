@@ -968,6 +968,7 @@ public partial class Game : Node, IZoneHost
     public void HoldBanners(double seconds)
     {
         bannerHold = Now + seconds;
+        hud.XpHoldUntil = bannerHold;
         // (one shown a moment ago, a level-up in the same blow, is shown again once the hold is over)
         if (lastAnn is { Through: false } la && Now - lastAnnAt < 0.6) { lastAnn = null; After(seconds + 0.1, () => Announce(la)); }
     }

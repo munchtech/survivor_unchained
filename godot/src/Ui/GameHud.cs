@@ -648,7 +648,8 @@ public partial class GameHud : CanvasLayer
         }
         // (UI 18: the light runs on a gain; a level-up lights all of her and, by night, names the ember through the
         // banner, its sound the ember's own level-up (SoundBridge, Ev.LevelUp); by day Journey names the level)
-        xpLight.Feed(e, lv, ember);
+        // (M5 r3: a level-up's "LEVEL N" over the coin waits while banners are held, the first Legendary's beat)
+        if (Time.GetTicksMsec() / 1000.0 >= XpHoldUntil) xpLight.Feed(e, lv, ember);
         if (xpLight.Rose && ember && !HudPin.Active) Announce(new Announcement($"Ember {lv}", "the ember rises", "ember", 2.6));
         xpLast = !ember && lv >= SurvivorUnchained.Rpg.Character.MaxLevel;
         xpNeed = ember ? b.EmberNext : SurvivorUnchained.Rpg.Character.XpForLevel(Math.Max(1, lv));
@@ -778,6 +779,8 @@ public partial class GameHud : CanvasLayer
     /// the river, or the hold key or button down: XpLight.HoldKey, pad LB).</summary>
     /// <summary>Entering a zone or loading: the experience light at its resting glow, the long quiet's clock from now.</summary>
     public void XpWake() => xpLight.Wake();
+    /// <summary>(M5 r3) The experience light (and its level-up title) holds still until this (Game.HoldBanners).</summary>
+    public double XpHoldUntil;
 
     float beadsA = 1;
 

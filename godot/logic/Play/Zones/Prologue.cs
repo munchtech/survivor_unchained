@@ -1386,6 +1386,8 @@ public sealed partial class Prologue : ZoneRuntime
         B.SpawnPickup(PickupKind.Item, x + 1.5, z + 1, 1, "wardens_lampiron");
         B.SpawnPickup(PickupKind.Item, x + 0.6, z + 1.9, 3, "ember_shard");
         for (int i = 0; i < 12; i++) B.SpawnPickup(PickupKind.Gold, x + 0.6 + B.Rng.Next() * 3, z - 0.8 + B.Rng.Next() * 3.2, 4);
+        foreach (var (l, hx, hz) in heldSpoils) B.Spill(l with { Persistent = true }, hx, hz);
+        heldSpoils.Clear();
     }
 
     // (M5 r2, the first Legendary's moment, judge frame 56: ten texts piled in the centre.) In order: the dying line; the
@@ -1434,15 +1436,52 @@ public sealed partial class Prologue : ZoneRuntime
         if (first) W.Facts[WardenLegendaryFact] = true;
         string? name = null;
         int west = 0;
+        var b = B;
         foreach (var l in loot)
         {
             bool legend = l.Tier is int t && (LootTier)t is LootTier.Legendary or LootTier.Storied;
-            double a, d;
-            if (legend) { a = Math.PI + west++ * 0.5; d = 2.8; name ??= (l.Payload as ItemInstance)?.Name ?? Items.Find(l.Ref ?? "")?.Name ?? "A Legendary"; }
-            else { a = (B.Rng.Next() - 0.5) * 1.6; d = 1.5 + B.Rng.Next() * 1.5; }
-            B.Spill(l with { Persistent = true }, x + Math.Cos(a) * d, z + Math.Sin(a) * d);
+            if (legend)
+            {
+                name ??= (l.Payload as ItemInstance)?.Name ?? Items.Find(l.Ref ?? "")?.Name ?? "A Legendary";
+                // (M5 r3: its own ground, off her feet and the corpse, on the screen: LegendSpot)
+                var at = LegendSpot((x, z), (b.Player.X, b.Player.Z), west++, (px, pz) => !b.Collision.Blocked(px, pz, 0.6));
+                B.Spill(l with { Persistent = true }, at.X, at.Z);
+                continue;
+            }
+            double a = (B.Rng.Next() - 0.5) * 1.6, d = 1.5 + B.Rng.Next() * 1.5;
+            // (M5 r3, staged: the rest of the roll lands with the plain spoils, after the Legendary's banner)
+            if (hush) heldSpoils.Add((l, x + Math.Cos(a) * d, z + Math.Sin(a) * d));
+            else B.Spill(l with { Persistent = true }, x + Math.Cos(a) * d, z + Math.Sin(a) * d);
         }
         return name;
+    }
+
+    readonly List<(Loot L, double X, double Z)> heldSpoils = new();
+
+    /// <summary>(M5 r3) The play camera's safe box round her (m): a Legendary lands inside it, so its beam and name are on
+    /// the screen with margin (x across, z down the screen, which is south).</summary>
+    public const double LegendSafeX = 6, LegendSafeZ = 3.5;
+    /// <summary>(M5 r3) A Legendary lands at least this far from her (m) and from the corpse (m).</summary>
+    public const double LegendFromHer = 2.5, LegendFromCorpse = 2.8;
+
+    /// <summary>(M5 r3) Where the Warden's nth Legendary lands: the judge saw the beam land on her, the item under her feet,
+    /// its name on her head. LegendFromCorpse-4.4 m from the corpse, west first; at least LegendFromHer from her; inside the
+    /// safe box round her; on free ground. None qualifies: the free spot farthest from her within the box.</summary>
+    public static (double X, double Z) LegendSpot((double X, double Z) corpse, (double X, double Z) her, int n, Func<double, double, bool> free)
+    {
+        (double X, double Z)? best = null;
+        double bestD = -1;
+        foreach (var d in new[] { LegendFromCorpse, 3.2, 3.6, 4.0, 4.4 })
+            for (int i = 0; i < 16; i++)
+            {
+                double a = Math.PI + n * 0.5 + (i % 2 == 1 ? 1 : -1) * ((i + 1) / 2) * Math.PI / 8;
+                double cx = corpse.X + Math.Cos(a) * d, cz = corpse.Z + Math.Sin(a) * d;
+                if (Math.Abs(cx - her.X) > LegendSafeX || Math.Abs(cz - her.Z) > LegendSafeZ || !free(cx, cz)) continue;
+                double dh = Math.Sqrt((cx - her.X) * (cx - her.X) + (cz - her.Z) * (cz - her.Z));
+                if (dh >= LegendFromHer) return (cx, cz);
+                if (dh > bestD) { bestD = dh; best = (cx, cz); }
+            }
+        return best ?? (corpse.X + Math.Cos(Math.PI + n * 0.5) * LegendFromCorpse, corpse.Z + Math.Sin(Math.PI + n * 0.5) * LegendFromCorpse);
     }
 
     public const string WardenLegendaryFact = "lowford.warden_legendary";
