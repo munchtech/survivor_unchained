@@ -286,6 +286,19 @@ public partial class GameHud : CanvasLayer
         combat.AddChild(her.Under);
     }
 
+    /// <summary>M4 §3: the dash pips under her feet are showing (a step won is told there, not by the banner).</summary>
+    public bool StepShown => her.Under.Visible && underAlpha > 0.5f && irons.Dash.Max > 0;
+
+    /// <summary>M4 §3, a step of the dash won (Ev.DashStep): a charge pops the new pip in with a core glint; stride,
+    /// breath or landing glints every pip once; the step's name in small caps under the pips for 1.6 s. Nothing when
+    /// the pips are not showing (Game then announces it).</summary>
+    public void StepWon(DashStepDef step)
+    {
+        if (!StepShown) return;
+        her.Under.StepWon(ResolveMotion.StepPopsNew(step.Kind), step.Name);
+        GD.Print($"step won: {step.Id} ({step.Kind}) shown under the pips");
+    }
+
     /// <summary>The minimap's top: low enough that the day's path over its bezel clears the screen's edge.</summary>
     const float MapY = 44;
 
@@ -620,6 +633,9 @@ public partial class GameHud : CanvasLayer
         life.Shield = (float)Math.Clamp(p.Shield / max, 0, 1);
         double hpNum = Math.Ceiling(Math.Max(p.Hp, 0));
         if (hpNum != globeNum) { globeNum = hpNum; life.Number = $"{hpNum}"; }
+        // M4 §2: Resolve, heat in her hair (the veins' motion reads the meter once a frame; uniforms only on change)
+        var rs = b.Resolve;
+        life.Veins.Motion.Feed(rs.On, rs.Value, rs.Max, rs.LastReason, rs.LastAt, b.Time);
         // UI 28: what is on her, keyed across frames (StatusRow / StatusShelf: timer rings, stacks, priority, overflow)
         statusNow.Clear();
         void Status(string key, string glyph, double left, bool good, int stacks = 0) => statusNow.Add(new(key, glyph, good, left, stacks));
@@ -654,10 +670,13 @@ public partial class GameHud : CanvasLayer
         xpLast = !ember && lv >= SurvivorUnchained.Rpg.Character.MaxLevel;
         xpNeed = ember ? b.EmberNext : SurvivorUnchained.Rpg.Character.XpForLevel(Math.Max(1, lv));
         xpHave = ember ? b.EmberXp : level.K * xpNeed;
-        underWanted = b.Combat && ember && p.Alive && Settings.Current.UnderBar && !lampsWide;
+        // M4 §3: in campaign fights too (the fight on: Resolve's own rule; at peace it fades out)
+        bool fightOn = b.Campaign && (b.Time - b.FightAt < ResolveMeter.FadeAfter || b.NearestHostile(p.X, p.Z, ResolveMeter.FightRadius) != null);
+        underWanted = ResolveMotion.UnderWanted(b.Combat, ember, b.Campaign, fightOn, p.Alive, Settings.Current.UnderBar, lampsWide);
 
         // --slots (DevSlots.cs): the shots' campaign build, set once a fight is on.
         DevSlots.Tick(b);
+        if (DevSlots.StepDue(b) is { } stepDue) StepWon(stepDue);
         // (M4: the pad's A is Interact only out of a fight)
         if (Controls.Instance is { } ctl) ctl.Fighting = b.Combat && p.Alive && b.NearestHostile(p.X, p.Z, FightNear) != null;
         // The six places. In the campaign (M4 §1) seat k shows slot KeyMap.SeatSlot[k] with its key; elsewhere (the

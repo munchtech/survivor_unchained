@@ -19,6 +19,8 @@ namespace SurvivorUnchained.Ui;
 ///     xp=rise:F:T T seconds after a level-up (F carried over), xp=rest:F the resting glow at F after its
 ///     gain has settled, xp=dark (or dark:F) dark after the long quiet; xptip=hold (the hold key's card, at the run's front) or
 ///     xptip=X:Y (the pointer's card, the pointer at X, Y); xpnum=LEVEL:HAVE:NEED the card's numbers.
+///     M4: resolve=0.6[:landed|taken|blocked|spent|drained|faded|full] Resolve's veins in her hair held at the level,
+///     frozen at the reason's most readable instant (ResolveMotion.Pin).
 ///   --hud-seq "state;state;..." [--hud-seq-every S]: Shots.cs steps through the states (each one applied over
 ///     --hud-pin) and saves SHOT_hud0.png, SHOT_hud1.png...
 /// </summary>
@@ -27,6 +29,10 @@ public static class HudPin
     public static float? Life, Shield, Ember, LockHeat, Art, Dash;
     /// <summary>UI 23: her hair's shine held at this front (screen run px, the idle sheen off); the coin's level.</summary>
     public static float? Shine;
+    /// <summary>M4: resolve=0.6[:landed|taken|blocked|spent|drained|faded|full]: Resolve's veins held at the level,
+    /// frozen at that reason's most readable instant (ResolveMotion.Pin).</summary>
+    public static float? Resolve;
+    public static string? ResolveWhy;
     public static int? Level;
     public static int? Draught;
     public static bool? Behind, Day;
@@ -48,7 +54,7 @@ public static class HudPin
     public static void Use(int k)
     {
         Life = Shield = Ember = LockHeat = Art = Dash = null; Draught = null; Seats = null; Behind = null; Day = null;
-        Xp = XpTip = null; XpNum = null; Shine = null; Level = null; Status = null;
+        Xp = XpTip = null; XpNum = null; Shine = null; Level = null; Status = null; Resolve = null; ResolveWhy = null;
         Parse(baseSpec);
         if (k >= 0 && k < Seq.Length) Parse(Seq[k]);
     }
@@ -77,6 +83,11 @@ public static class HudPin
                 case "xptip": XpTip = kv[1]; break;
                 case "xpnum": XpNum = Array.ConvertAll(kv[1].Split(':'), v => int.TryParse(v, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) ? n : 0); break;
                 case "status": Status = SurvivorUnchained.Play.StatusShelf.Parse(kv[1]); break;
+                case "resolve":
+                    var rp = kv[1].Split(':', 2);
+                    Resolve = float.TryParse(rp[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var rv) ? Math.Clamp(rv, 0, 1) : 0;
+                    ResolveWhy = rp.Length > 1 ? rp[1].Trim().ToLowerInvariant() : "";
+                    break;
                 case "seats": Seats = kv[1].Split(':', StringSplitOptions.TrimEntries); break;
             }
         }

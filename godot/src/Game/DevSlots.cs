@@ -27,6 +27,26 @@ public static class DevSlots
     static double traceAt;
     static Battle? resolveFor;
 
+    /// <summary>--step-won ID[@T] (pictures, M4 §3): the dash step ID granted (no banner) once the campaign fight's clock
+    /// passes T s (default 2), and the HUD's step-won motion fired for it directly (GameHud.StepWon).</summary>
+    static readonly string? StepSpec = Args.Get("step-won");
+    static readonly string StepId = StepSpec?.Split('@')[0].Trim() ?? "";
+    static readonly double StepAt = StepSpec?.Split('@') is { Length: > 1 } sp
+        && double.TryParse(sp[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var st) ? st : 2;
+    static Battle? stepFor;
+
+    /// <summary>The step due now (once a fight), or null.</summary>
+    public static Content.DashStepDef? StepDue(Battle b)
+    {
+        if (StepSpec == null || ReferenceEquals(stepFor, b) || !b.Campaign || !b.Combat) return null;
+        if (b.Time < StepAt) return null;
+        stepFor = b;
+        var step = Content.DashSteps.Find(StepId);
+        if (step == null) { GD.Print($"step-won: {StepId} unknown"); return null; }
+        GD.Print($"step-won: {step.Id} granted {(b.GrantDashStep(step.Id, announce: false) ? "yes" : "no (taken already)")} at {b.Time:0.00}");
+        return step;
+    }
+
     public static void Tick(Battle b)
     {
         if (ResolveAt.Length > 0 && b.Campaign && b.Combat)

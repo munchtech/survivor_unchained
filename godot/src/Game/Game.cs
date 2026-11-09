@@ -1227,7 +1227,8 @@ public partial class Game : Node, IZoneHost
                     break;
                 // (P7) a dash step taken in play: its card line in the fight's own announce
                 case Ev.DashStep ds when !InCinematic && Content.DashSteps.Find(ds.Id) is { } step:
-                    Announce(new Announcement(step.Name, step.Card, "info", 3.6, "The dash"));
+                    hud.StepWon(step);
+                    if (!hud.StepShown) Announce(new Announcement(step.Name, step.Card, "info", 3.6, "The dash"));
                     break;
                 case Ev.Discovery d:
                     if (!World.Codex.Contains(d.Id)) World.Codex.Add(d.Id);
