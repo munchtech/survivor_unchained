@@ -161,6 +161,14 @@ public sealed record AtmospherePreset(
     /// share of the moon's key, fill and rim given up at the pool's heart, the share of the sky's light, and the share of her
     /// light's reach where the giving starts to fade and where it is gone. Null: none (the rig's rigs.json "ember_give").</summary>
     public double[]? EmberGive { get; init; }
+    /// <summary>(L1 lead 8, S2b) Her pool painted (cel.gdshaderinc cel_pool_band): [core edge, pool edge] as shares of her light's
+    /// reach (3D, from the light), the outer step's level as a share of the core's, the edges' half-width (share of the reach), and
+    /// how much of the light's own fall stays inside the core (0 flat, 1 as Godot's). Null: her light as Godot falls it.
+    /// FROM the picked night targets 05/09/10: a gold core and one redder step out to a hard-ish painted edge (rule 5's narrow
+    /// soft edge), never the inverse-square fade (the skills judge: its dither read as a dirt stamp).</summary>
+    public double[]? EmberPool { get; init; }
+    /// <summary>(L1 lead 8, S2b) The pool's outer step's color (sRGB hex; "": the ember's own): the targets' edge, h 34-40.</summary>
+    public string EmberEdge { get; init; } = "";
     /// <summary>The moon's rim on the crowd in play, in shade as in its light (0: none, as the cinematics' presets have it).</summary>
     public double CrowdRim { get; init; }
     /// <summary>Her lamp and the sky's fill on the crowd in its own paint (vat.gdshaderinc crowd_ember/crowd_fill; 0: none, by day

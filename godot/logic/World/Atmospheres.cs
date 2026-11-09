@@ -288,6 +288,7 @@ public static class Atmospheres
             Haze = Lerp(a.Haze, b.Haze, t), Mist = Lerp(a.Mist, b.Mist, t), MistColor = Mix(a.MistColor, b.MistColor, t), Ember = Lerp(a.Ember, b.Ember, t),
             EmberColor = a.EmberColor != "" && b.EmberColor != "" ? Mix(a.EmberColor, b.EmberColor, t) : t < 0.5 ? a.EmberColor : b.EmberColor, EmberReach = Lerp(a.EmberReach, b.EmberReach, t),
             EmberGive = a.EmberGive is { Length: 4 } ga && b.EmberGive is { Length: 4 } gb ? Lerp3x(ga, gb, t) : t < 0.5 ? a.EmberGive : b.EmberGive,
+            EmberPool = t < 0.5 ? a.EmberPool : b.EmberPool, EmberEdge = t < 0.5 ? a.EmberEdge : b.EmberEdge,
             CrowdRim = Lerp(a.CrowdRim, b.CrowdRim, t), CrowdFill = Lerp(a.CrowdFill, b.CrowdFill, t), RiverLight = Lerp(a.RiverLight, b.RiverLight, t),
             RiverSky = Lerp(a.RiverSky, b.RiverSky, t), RiverBend = Lerp(a.RiverBend, b.RiverBend, t),
             RiverMoon = Lerp(a.RiverMoon, b.RiverMoon, t), GrassLampOchre = Lerp(a.GrassLampOchre, b.GrassLampOchre, t),

@@ -1141,6 +1141,10 @@ public partial class PlayerView : Node3D
             // the rig's ember_give says how much): none while her lamp is out or hidden.
             var lp = Light.GlobalPosition;
             RenderingServer.GlobalShaderParameterSet("cel_ember", new Vector4(lp.X, lp.Y, lp.Z, Visible && Light.Visible && Light.LightEnergy > 0 ? Light.OmniRange : 0));
+            // (L1 lead 8, S2b) her light's color (linear, its largest channel 1) and fall (OmniAttenuation), so the cel model knows her
+            // light among the others and paints its pool (cel.gdshaderinc cel_pool_band).
+            float lm = Mathf.Max(lc.R, Mathf.Max(lc.G, Mathf.Max(lc.B, 1e-4f)));
+            RenderingServer.GlobalShaderParameterSet("cel_pool", new Vector4(lc.R / lm, lc.G / lm, lc.B / lm, Light.OmniAttenuation));
         }
         // Unseen: a ghost, flickering.
         Visible = !Hidden && !(p.InvisibleT > 0 && (int)(time * 12) % 3 == 0);

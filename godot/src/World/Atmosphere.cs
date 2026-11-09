@@ -507,6 +507,19 @@ public partial class Atmosphere : Node3D
         // (L1 W2) how the moon gives way to her light (the rig's ember_give; her light's point and reach are PlayerView's); not under a camera rig: at the close view by night her lamp is off her, so the moon is her light (r1: night close Lp95 0.49 to 0.34 with it)
         var give = CelRigs && cam == null && p.EmberGive is [var gk, var gs, var g0, var g1] ? new Vector4((float)gk, (float)gs, (float)g0, (float)g1) : Vector4.Zero;
         RenderingServer.GlobalShaderParameterSet("cel_give", give);
+        // (L1 lead 8, S2b) her pool painted in two steps (the rig's ember_pool, ember_edge; cel.gdshaderinc cel_pool_band): the band in
+        // shares of her reach, and the outer step's tint over her light's color at the same luminance (redder, the targets' h 34-40).
+        var pool = CelRigs && cam == null && p.EmberPool is [var u1, var u2, var lv, var sw, var gr] ? new Vector4((float)u1, (float)u2, (float)lv, (float)sw) : Vector4.Zero;
+        var tint = new Vector4(1, 1, 1, pool.X > 0 && p.EmberPool is { Length: 5 } ep ? (float)ep[4] : 1);
+        if (pool.X > 0 && p.EmberEdge != "")
+        {
+            var ec = (p.EmberColor != "" ? new Color(p.EmberColor) : new Color("#ffa868")).SrgbToLinear();
+            var ed = new Color(p.EmberEdge).SrgbToLinear();
+            float le = ec.R * 0.2126f + ec.G * 0.7152f + ec.B * 0.0722f, ld = Mathf.Max(ed.R * 0.2126f + ed.G * 0.7152f + ed.B * 0.0722f, 1e-4f);
+            tint = new Vector4(ed.R / Mathf.Max(ec.R, 1e-4f), ed.G / Mathf.Max(ec.G, 1e-4f), ed.B / Mathf.Max(ec.B, 1e-4f), tint.W) * new Vector4(le / ld, le / ld, le / ld, 1);
+        }
+        RenderingServer.GlobalShaderParameterSet("cel_pool_band", pool);
+        RenderingServer.GlobalShaderParameterSet("cel_pool_tint", tint);
     }
 
     /* ---------------------------------------------------- the grade's glide (H4) -- */
