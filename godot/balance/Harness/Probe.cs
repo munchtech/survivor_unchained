@@ -251,7 +251,7 @@ public static class Probe
         double mend = st.Get(Stat.Regen) * 20 * st.Get(Stat.Healing);
         int block = MathX.RoundInt(st.Get(Stat.Block));
         double ward = block > 0 ? hp * 0.08 * (20 / new[] { 12.0, 9, 6 }[Math.Min(3, block) - 1]) : 0;
-        int vow = b.Boons.GetValueOrDefault("iron_vow");
+        int vow = b.Boons.GetValueOrDefault("boon_iron_vow");
         double barrier = vow > 0 ? hp * (vow >= 3 ? 0.24 : vow >= 2 ? 0.18 : 0.12) : 0;
         return (hp + barrier + ward) / Math.Max(0.05, mitig) + mend;
     }

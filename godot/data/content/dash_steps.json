@@ -1,0 +1,10 @@
+{
+  "_doc": "Another Breath, Long Stride and Quick Breath come from story beats and gear only; Hard Landing (the Warden's shove, the dash's ending) is the one board hearth lamp. Never from a level-up card or the ember's cards; console grants (--dash-step) until then.",
+  "_kinds": "charge (+amount pips, at most 2 from steps), length (the dash goes amount farther), recharge (charges come back amount sooner), landing (every dash ends in a shove). most: times it may be taken (1 if unset). lamp: the id the board lights (hard_landing only). from: where a step without a lamp is earned (story, gear). Loaded by logic/Content/DashSteps.cs; checked by tests/DashStepTests.cs.",
+  "steps": [
+    {"id": "second_wind_pip", "name": "Another Breath", "card": "One more dash before you must catch your breath.", "kind": "charge", "amount": 1, "most": 2, "from": ["story", "gear"]},
+    {"id": "long_stride", "name": "Long Stride", "card": "Your dash carries you 30% farther.", "kind": "length", "amount": 0.3, "from": ["story", "gear"]},
+    {"id": "quick_breath", "name": "Quick Breath", "card": "Your dashes come back 25% sooner.", "kind": "recharge", "amount": 0.25, "from": ["story", "gear"]},
+    {"id": "hard_landing", "name": "Hard Landing", "card": "Every dash ends in a shove: lesser things within 2 m are knocked aside.", "kind": "landing", "radius": 2, "knockback": 1.5, "damage": 6, "lamp": "dash.hard_landing"}
+  ]
+}

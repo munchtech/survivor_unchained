@@ -84,13 +84,13 @@ sealed class GreedyPicker(PathDef? path) : Picker
 
     public override bool Skip(Battle b, List<Offer> offers) =>
         // A full build offered nothing of its own: pass, and level sooner.
-        path != null && b.Weapons.Count >= 4 && !offers.Any(o => OnPath(o) || o.Kind is OfferKind.Rank or OfferKind.Evolve or OfferKind.Hone);
+        path != null && b.SlotsUsed >= 4 && !offers.Any(o => OnPath(o) || o.Kind is OfferKind.Rank or OfferKind.Evolve or OfferKind.Hone);
 
     public override int Banish(Battle b, List<Offer> offers)
     {
         if (path == null) return -1;
         // A new combat skill off the path, while the arsenal still has room for the path's own.
-        return offers.FindIndex(o => o.Kind == OfferKind.Weapon && !path.Weapons.Contains(o.Id) && b.Weapons.Count < Weapons.MaxWeapons - 1);
+        return offers.FindIndex(o => o.Kind == OfferKind.Weapon && !path.Weapons.Contains(o.Id) && b.SlotsUsed < Weapons.MaxWeapons - 1);
     }
 
     bool OnPath(Offer o) => path != null && o.Kind switch

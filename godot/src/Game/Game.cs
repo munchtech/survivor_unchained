@@ -696,6 +696,19 @@ public partial class Game : Node, IZoneHost
         // While a story's choice waits, its keys are its own: her art is not cast by the key that answers it.
         scene.Pressed = a => choiceUp != null && Array.IndexOf(ChoiceKeys, a) >= 0 ? Swallow(a)
             : heldOn != null ? false : (auto?.Take(a) ?? false) || (!controls.Captured && controls.Pressed(a));
+        // The skill keys held (a channel), and where the cursor meets the ground (a pressed skill's aim).
+        scene.Held = a => heldOn == null && choiceUp == null && auto == null && !controls.Captured && controls.Held(a);
+        scene.Pointer = PointerGround;
+        // --press (ScriptedPress.cs): scripted skill/dash presses, held keys, aim and dash direction (pictures; under --auto idle).
+        if (Args.Get("press") is { Length: > 0 } pressSpec)
+        {
+            var sp = new ScriptedPress(pressSpec, () => Journey.Playtime, () => Battle is { } pb ? (pb.Player.X, pb.Player.Z) : null);
+            var bMove = scene.Move; var bPressed = scene.Pressed; var bHeld = scene.Held; var bPointer = scene.Pointer;
+            scene.Move = () => sp.Move() ?? bMove();
+            scene.Pressed = x => sp.Take(x) || bPressed(x);
+            scene.Held = x => sp.Held(x) || bHeld(x);
+            scene.Pointer = () => sp.Pointer() ?? bPointer();
+        }
         scene.OnStep = dt => { if (cine is not { ZoneHeld: true }) { zone?.Step(dt); if (zone != null) SurvivorUnchained.Play.Zones.LampRise.Doors(zone, Battle); } };
         scene.OnEvents = OnEvents;
         // The Flare's view speaks to the pad, the HUD and the crowd through these (Fx/Flare/FlareFx.cs).
@@ -1216,6 +1229,10 @@ public partial class Game : Node, IZoneHost
                     if (InCinematic) break;
                     Announce(new Announcement(an.Title, an.Subtitle, an.Tone?.ToString().ToLowerInvariant() ?? "info", an.Subtitle is { Length: > 60 } ? 5 : 3.6, an.Kicker));
                     break;
+                // (P7) a dash step taken in play: its card line in the fight's own announce
+                case Ev.DashStep ds when !InCinematic && Content.DashSteps.Find(ds.Id) is { } step:
+                    Announce(new Announcement(step.Name, step.Card, "info", 3.6, "The dash"));
+                    break;
                 case Ev.Discovery d:
                     if (!World.Codex.Contains(d.Id)) World.Codex.Add(d.Id);
                     if (Content.Discoveries.All.FirstOrDefault(x => x.Id == d.Id) is { } pair) Toast(new Toast(ToastKind.Lore, $"Discovery: {pair.Name}", pair.Description, null, null, 9));
@@ -1701,19 +1718,27 @@ public partial class Game : Node, IZoneHost
         }
         else
         {
-            var vp = GetViewport();
-            var m = vp.GetMousePosition();
-            if (!vp.GetVisibleRect().HasPoint(m)) return;
-            var o = camera.ProjectRayOrigin(m);
-            var d = camera.ProjectRayNormal(m);
-            float y = (float)scene.HeightAt(b.Player.X, b.Player.Z);
-            if (Mathf.Abs(d.Y) < 1e-4f) return;
-            float t = (y - o.Y) / d.Y;
-            if (t <= 0) return;
-            var g = o + d * t;
+            if (PointerGround() is not { } g) return;
             hit = Targeting.AtPointer(b, g.X, g.Z);
         }
         if (hit != null) b.Priority = hit.Id;
+    }
+
+    /// <summary>Where the mouse's ray meets the ground at her height; null on a pad, or off the window.</summary>
+    (double X, double Z)? PointerGround()
+    {
+        if (Battle is not { } b || scene == null || controls.UsingPad) return null;
+        var vp = GetViewport();
+        var m = vp.GetMousePosition();
+        if (!vp.GetVisibleRect().HasPoint(m)) return null;
+        var o = camera.ProjectRayOrigin(m);
+        var d = camera.ProjectRayNormal(m);
+        float y = (float)scene.HeightAt(b.Player.X, b.Player.Z);
+        if (Mathf.Abs(d.Y) < 1e-4f) return null;
+        float t = (y - o.Y) / d.Y;
+        if (t <= 0) return null;
+        var g = o + d * t;
+        return (g.X, g.Z);
     }
 
     /// <summary>The night's phases, named on the clock (docs/feel S-21), as shares of the arena's length.</summary>
@@ -1889,7 +1914,7 @@ public partial class Game : Node, IZoneHost
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
     bool flareFilled, flareReadyShot;
-    bool hordeDone, dropsDone, lootDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone, fallDone, litDone, tipDone, freezeTestDone, bossKillDone;
+    bool hordeDone, dropsDone, lootDone, castDone, giveDone, grantDone, minuteDone, chestDone, barksDone, answerDone, fallDone, litDone, tipDone, freezeTestDone, bossKillDone;
     double? bossSeenAt;
     int toastI;
 
@@ -2078,6 +2103,12 @@ public partial class Game : Node, IZoneHost
                 GD.Print($"armor swap: t={sw.T.ToString(System.Globalization.CultureInfo.InvariantCulture)} {sw.Ids}");
             }
         }
+        // --grant / --grant-union / --dash-step (Sim/DevGrants.cs): pressed skills, unions and dash steps to test with.
+        if (!grantDone && Battle is { Combat: true } grb && (Args.Has("grant") || Args.Has("grant-union") || Args.Has("dash-step")))
+        {
+            grantDone = true;
+            foreach (var line in DevGrants.Apply(grb, Args.Get("grant"), Args.Get("grant-union"), Args.Get("dash-step"))) GD.Print(line);
+        }
         if (!giveDone && Args.Get("give") is string give && Battle is { } gb)
         {
             giveDone = true;
@@ -2172,12 +2203,12 @@ public partial class Game : Node, IZoneHost
         // still land and knock her down; only her health is held).
         if (Args.Has("clip") && Args.Has("court-hold") && Battle is { } holdB && holdB.Player.Alive)
             holdB.Player.Hp = Math.Max(holdB.Player.Hp, holdB.MaxHp);
-        if (Args.Has("clip") && Args.Has("flare") && Battle is { } clipB && clipB.Player.Alive)
+        if (Args.Has("clip") && (Args.Has("flare") || Args.Has("press")) && Battle is { } clipB && clipB.Player.Alive)
             clipB.Player.Hp = Math.Max(clipB.Player.Hp, clipB.MaxHp * (Args.Has("flare-hp") ? Args.Num("flare-hp", 1) : 1));
         // --clip with --flare (pictures only): no ember level-up in the shot (H7 r2: she levelled at about the press and the
         // level's title sat over the frame's center through the Flare, its flash a white orb on her after the stop); the
         // ember's next level is pushed out of reach, nothing else changes. --clip-level keeps the game's own.
-        if (Args.Has("clip") && Args.Has("flare") && !Args.Has("clip-level") && Battle is { } clipE && clipE.EmberNext < 1e8)
+        if (Args.Has("clip") && (Args.Has("flare") || Args.Has("press")) && !Args.Has("clip-level") && Battle is { } clipE && clipE.EmberNext < 1e8)
             clipE.EmberNext = 1e9;
         if (!castDone && !flareReadyShot && Args.Has("cast") && Battle != null && Journey.Playtime >= Args.Num("cast", 1) - 0.1)
         {

@@ -31,6 +31,8 @@ public sealed partial class Battle
     int rankNow;
     /// <summary>The art runs as the dash's form: it rides the dash's line and leaves its motion be.</summary>
     bool asForm;
+    /// <summary>The charge running now is the dash's form (Bull Rush): its end is the dash's landing (DashLanded).</summary>
+    bool asFormRush;
 
     /// <summary>A lamp's rule is lit for this fight.</summary>
     public bool Lamp(string rule) => Lamps.Has(rule);
@@ -58,14 +60,14 @@ public sealed partial class Battle
     }
 
     /// <summary>The dash form in hand is ready (the dash pip shows it).</summary>
-    public bool FormReady => Ability is { } k && Abilities.All[k].Movement && Player.AbilityCd <= 0;
+    public bool FormReady => Rules.DashForms && Ability is { } k && Abilities.All[k].Movement && Player.AbilityCd <= 0;
 
     /// <summary>The form rides this dash, along its line. True when the form carried her itself
     /// (a charge, a haul, a leap, a blink): the dash's own motion is not run.</summary>
     bool DashForm(double dx, double dz)
     {
         var p = Player;
-        if (!Combat || Ability is not { } kind) return false;
+        if (!Rules.DashForms || !Combat || Ability is not { } kind) return false;
         var def = Abilities.All[kind];
         if (!def.Movement) return false;
         // The second dash while an echo lives steps back into it, whatever the wait.
@@ -85,7 +87,9 @@ public sealed partial class Battle
                 // To the lamp: a 6 m charge behind a barrier of 15% of health (Iron Hide 25%).
                 Art.Barrier = MaxHp * (0.15 + (Has("iron_hide") ? 0.10 * Ward("iron_hide") : 0));
                 Barrier(Art.Barrier, 4);
-                StartRush(AbilityKind.BullRush, dx, dz, 6, 0.27);
+                // (Long Stride carries the charge as far again as it carries the dash.)
+                StartRush(AbilityKind.BullRush, dx, dz, 6 * DashStride, 0.27);
+                asFormRush = true;
                 p.SlowT = 0; p.SlowF = 1;
                 Events.Emit(new Ev.Ability { Id = def.Id, X = p.X, Z = p.Z, Angle = angle, Radius = 1.2 });
                 moved = true;
@@ -110,7 +114,7 @@ public sealed partial class Battle
         credit = was;
         if (!used) { p.AbilityCd = 0; return false; }
         Art.CdFull = Math.Max(0.1, p.AbilityCd);
-        ArtXp += 1;
+        // (No rank by use: the dash grows by its named steps, Content/DashSteps.cs.)
         Art.HotT = 3;
         Art.HotKills = 0;
         Fire(TriggerEvent.Ability, new ProcCtx { X = p.X, Z = p.Z });

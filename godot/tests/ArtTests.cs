@@ -263,7 +263,8 @@ public class ArtTests
     [Fact]
     public void An_art_grows_with_use_and_kills_made_while_it_is_fresh()
     {
-        var b = Arena(AbilityKind.Sprint);
+        // (A calling's art grows by use; a way of moving does not now, DashStepTests.)
+        var b = Arena(AbilityKind.ShieldBash);
         b.UseAbility(1, 0);
         Assert.Equal(1, b.ArtXp, 3);
         var r = Foe(b, "risen", 4, 0);
@@ -279,20 +280,21 @@ public class ArtTests
         Assert.Contains("bulwark", ch.Known);
         Assert.Contains("bull_rush", ch.Known);
         Assert.Contains("sprint", ch.Known);
-        Assert.Equal(1, ArtBook.Rank(ch, "sprint"));
-        Assert.False(ArtBook.Choose(ch, "sprint", "trample"));
-        Assert.Equal(2, ArtBook.Grow(ch, "sprint", Abilities.RankXp[1]));
-        Assert.True(ArtBook.Choose(ch, "sprint", "trample"));
-        Assert.False(ArtBook.Choose(ch, "sprint", "second_wind"));
-        Assert.False(ArtBook.Choose(ch, "sprint", "no_such_facet"));
-        ArtBook.Grow(ch, "sprint", Abilities.RankXp[3]);
-        Assert.Equal(4, ArtBook.Rank(ch, "sprint"));
-        Assert.True(ArtBook.Choose(ch, "sprint", "second_wind"));
-        Assert.True(ArtBook.Hold(ch, "sprint"));
+        // (A way of moving has no ranks now, its facets come by the dash's steps: DashStepTests. The calling's own art ranks.)
+        Assert.Equal(1, ArtBook.Rank(ch, "shield_bash"));
+        Assert.False(ArtBook.Choose(ch, "shield_bash", "wide_arc"));
+        Assert.Equal(2, ArtBook.Grow(ch, "shield_bash", Abilities.RankXp[1]));
+        Assert.True(ArtBook.Choose(ch, "shield_bash", "wide_arc"));
+        Assert.False(ArtBook.Choose(ch, "shield_bash", "concussion"));
+        Assert.False(ArtBook.Choose(ch, "shield_bash", "no_such_facet"));
+        ArtBook.Grow(ch, "shield_bash", Abilities.RankXp[3]);
+        Assert.Equal(4, ArtBook.Rank(ch, "shield_bash"));
+        Assert.True(ArtBook.Choose(ch, "shield_bash", "concussion"));
+        Assert.True(ArtBook.Hold(ch, "shield_bash"));
         var kit = Character.Kit(ch);
-        Assert.Equal(AbilityKind.Sprint, kit.Ability);
+        Assert.Equal(AbilityKind.ShieldBash, kit.Ability);
         Assert.Equal(4, kit.ArtRank);
-        Assert.Equal(new[] { "trample", "second_wind" }, kit.Facets);
+        Assert.Equal(new[] { "wide_arc", "concussion" }, kit.Facets);
         // Nobody carries what they do not know.
         Assert.False(ArtBook.Hold(ch, "wraith_walk"));
     }
@@ -349,15 +351,15 @@ public class ArtTests
     public void The_fight_writes_what_the_art_grew_to_the_survivor()
     {
         var j = Journey("warden");
-        ArtBook.Hold(j.Ch, "sprint");
+        ArtBook.Hold(j.Ch, "shield_bash");
         var b = BattleTests.Arena(9);
-        b.SetArt(AbilityKind.Sprint, 1, []);
+        b.SetArt(AbilityKind.ShieldBash, 1, []);
         b.ArtXp = Abilities.RankXp[1] + 1;
         j.BankArt(b);
         Assert.Equal(0, b.ArtXp);
-        Assert.Equal(2, ArtBook.Rank(j.Ch, "sprint"));
+        Assert.Equal(2, ArtBook.Rank(j.Ch, "shield_bash"));
         Assert.Equal(2, b.ArtRank);
-        j.ChooseFacet("sprint", "tailwind", true, b);
-        Assert.True(b.Has("tailwind"));
+        j.ChooseFacet("shield_bash", "wide_arc", true, b);
+        Assert.True(b.Has("wide_arc"));
     }
 }

@@ -159,7 +159,7 @@ public sealed partial class Journey
         {
             Seed = seed, Combat = combat, Collision = col, HeightAt = heightAt, Stats = kit.Stats,
             StartX = x, StartZ = z, StartFacing = facing, Weapons = kit.Weapons, Triggers = kit.Triggers, Ability = kit.Ability,
-            ArtRank = kit.ArtRank, Facets = kit.Facets,
+            ArtRank = kit.ArtRank, Facets = kit.Facets, DashSteps = kit.DashSteps,
             Lamps = kit.Lamps, ReflexRanks = kit.ReflexRanks, Level = Ch.Level,
             // Each skill's wick, as planned by day (Light my way where she planned none).
             Wicks = combat ? WickBook.Paths(Ch) : null,
@@ -566,6 +566,8 @@ public sealed partial class Journey
     public void BankArt(Battle? b)
     {
         if (b == null || b.ArtXp <= 0 || Ch.Ability == "") return;
+        // A way of moving grows by the dash's steps, never by use: nothing to bank, nothing said.
+        if (ArtBook.Movement(Ch.Ability)) { b.ArtXp = 0; return; }
         double xp = b.ArtXp;
         b.ArtXp = 0;
         int rank = ArtBook.Grow(Ch, Ch.Ability, xp);
@@ -575,6 +577,17 @@ public sealed partial class Journey
         bool open = ArtBook.OpenSlots(Ch, Ch.Ability) > 0;
         OnAnnounce(new Announcement($"{def.Name}, rank {rank}", open ? "A facet can be chosen (K)" : "Stronger, and sooner ready", "boon", 3.2, "Your art grows"));
         OnTouch();
+    }
+
+    /// <summary>A step of the dash's growth (Content/DashSteps.cs) taken: kept on her, and into the fight now if
+    /// one runs (Ev.DashStep, for the view to announce). The design lead's route (a lamp-post Wick, a level-up)
+    /// calls this. False if unknown or taken as often as it may be.</summary>
+    public bool GrantDashStep(string id, Battle? b)
+    {
+        if (!Ch.GrantDashStep(id)) return false;
+        b?.GrantDashStep(id);
+        OnTouch();
+        return true;
     }
 
     /// <summary>Carry another known art (somewhere safe).</summary>

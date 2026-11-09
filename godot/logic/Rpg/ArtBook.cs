@@ -72,14 +72,21 @@ public static class ArtBook
         return s;
     }
 
-    public static int Rank(CharacterData ch, string id) => Abilities.RankOf(ch.Arts.TryGetValue(id, out var s) ? s.Xp : 0);
+    /// <summary>An art's rank, from its use. A way of moving has none (rank 1): the dash grows by its named steps
+    /// (Content/DashSteps.cs; the owner, 8 Nov), not by being pressed.</summary>
+    public static int Rank(CharacterData ch, string id) =>
+        Movement(id) ? 1 : Abilities.RankOf(ch.Arts.TryGetValue(id, out var s) ? s.Xp : 0);
 
-    /// <summary>Facets opened by rank and not yet chosen.</summary>
-    public static int OpenSlots(CharacterData ch, string id) => Math.Max(0, Abilities.FacetSlots(Rank(ch, id)) - Facets(ch, id).Count);
+    /// <summary>A way of moving (the dash's form).</summary>
+    public static bool Movement(string id) => Abilities.Find(id) is { Movement: true };
 
-    /// <summary>The chosen facets that belong to the art and fit its rank.</summary>
+    /// <summary>Facets opened by rank and not yet chosen (none for a way of moving: it has none now).</summary>
+    public static int OpenSlots(CharacterData ch, string id) => Movement(id) ? 0 : Math.Max(0, Abilities.FacetSlots(Rank(ch, id)) - Facets(ch, id).Count);
+
+    /// <summary>The chosen facets that belong to the art and fit its rank;</summary>
     public static List<string> Facets(CharacterData ch, string id)
     {
+        if (Movement(id)) return new();
         if (Abilities.Find(id) is not { } def || !ch.Arts.TryGetValue(id, out var s)) return new();
         return s.Facets.Where(f => def.Facets.Any(x => x.Id == f)).Take(Abilities.FacetSlots(Rank(ch, id))).ToList();
     }
@@ -108,7 +115,7 @@ public static class ArtBook
     /// <summary>The art grows; the new rank if it rose, else 0.</summary>
     public static int Grow(CharacterData ch, string id, double xp)
     {
-        if (xp <= 0 || id == "") return 0;
+        if (xp <= 0 || id == "" || Movement(id)) return 0;
         int before = Rank(ch, id);
         State(ch, id).Xp += xp;
         int after = Rank(ch, id);
@@ -118,6 +125,7 @@ public static class ArtBook
     /// <summary>How far to the next rank, 0..1 (1 at the last).</summary>
     public static double Progress(CharacterData ch, string id)
     {
+        if (Movement(id)) return 1;
         int r = Rank(ch, id);
         if (r >= Abilities.MaxRank) return 1;
         double xp = ch.Arts.TryGetValue(id, out var s) ? s.Xp : 0;

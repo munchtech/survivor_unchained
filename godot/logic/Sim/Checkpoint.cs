@@ -91,6 +91,7 @@ public sealed partial class Battle
                 case 'E': Evolve(st.Id, st.Arg!, st.N == 1); break;
                 case 'B': AddBoon(st.Id); break;
                 case 'U': Unite(st.Id); break;
+                case 'G': GrantUnion(st.Id); break;
             }
         EmberLevel = s.EmberLevel; EmberXp = s.EmberXp; EmberNext = s.EmberNext;
         PendingLevels = s.PendingLevels;

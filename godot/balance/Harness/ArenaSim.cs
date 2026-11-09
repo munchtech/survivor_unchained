@@ -156,6 +156,9 @@ public static class ArenaSim
     /// <summary>Lamps lit past the board (--light; "{calling}" is the survivor's calling): a measuring aid,
     /// for a lamp Light my way never lights (Banked Flame).</summary>
     public static List<string> Light = new();
+    /// <summary>--grant id[:rank],... and --grant-union id: what every arena starts carrying (DevGrants).</summary>
+    public static string? Grant, GrantUnion;
+    static int grantSaid;
     /// <summary>--dark: lamps put out after the board is lit (a Flare's modifiers one at a time on the full board; their points stay unspent).</summary>
     public static List<string> Dark = new();
 
@@ -290,6 +293,9 @@ public static class ArenaSim
         string[]? onebuildKit = null;
         var b = j.StartBattle(true, map.Meta.Collision(), map.Ground.HeightAt, at.X, at.Z, at.Facing, (uint)spec.Seed, arena: true);
         if (fx?.Hand is bool handOn) b.HandsOn = handOn;
+        // --grant / --grant-union (the game's dev grants, Sim/DevGrants.cs): carried from the start.
+        if (Grant != null || GrantUnion != null)
+            foreach (var line in DevGrants.Apply(b, Grant, GrantUnion, null)) if (System.Threading.Interlocked.Increment(ref grantSaid) <= 3 || line.Contains("not ")) Console.WriteLine($"{spec.Key}: {line}");
         if (fx is { NoWicks: true }) { b.WickPaths.Clear(); foreach (var w in b.Weapons) w.Wick = null; }
         foreach (var nw in fx?.NoWick ?? []) { b.WickPaths.Remove(nw); foreach (var w in b.Weapons) if (w.Id == nw) w.Wick = null; }
         foreach (var nw in fx?.NoTurn ?? [])
@@ -414,7 +420,7 @@ public static class ArenaSim
             // marks and the kit's are read inside Steer, and a goal does not overrule them).
             if (goal == null && hold != null && hold.Leaving(b, mx, mz) && b.Blows.Count == 0 && b.ActiveTells.Count == 0)
                 (mx, mz) = human != null ? human.Steer(b, zone.BossScript, (zone.Lamp!.X, zone.Lamp.Z)) : Pilot.Steer(b, spec.Deft, zone.BossScript, goal: (zone.Lamp!.X, zone.Lamp.Z));
-            if (human != null ? human.Act(b, j, mx, mz, zone.BossScript) : Pilot.Act(b, j, mx, mz, zone.BossScript)) r.Quaffs++;
+            if (human != null ? human.Act(b, j, mx, mz, zone.BossScript) : Pilot.Act(b, j, mx, mz, zone.BossScript, presses: spec.Deft)) r.Quaffs++;
             zone.Step(Dt);
             zone.Frame(Dt);
             b.Tick(Dt, mx, mz);
@@ -486,7 +492,7 @@ public static class ArenaSim
                 r.WonAt = t / 60;
                 bossAt = t;
             }
-            if (r.CompleteAt == null && b.Weapons.Count == Weapons.MaxWeapons && b.Weapons.All(w => w.Evolution != null)) r.CompleteAt = t / 60;
+            if (r.CompleteAt == null && b.SlotsUsed == Weapons.MaxWeapons && b.Weapons.All(w => w.Evolution != null || Weapons.IsUnion(w.Id))) r.CompleteAt = t / 60;
             if ((int)(t / 60) != (int)((t - Dt) / 60))
             {
                 double dealt = b.DamageBy.Values.Sum();
