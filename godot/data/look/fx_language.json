@@ -703,7 +703,7 @@
    "ring": {
     "what": "the target: a wavefront standing at the hit radius; arcs grow to its coverage curve (s since the press), opacity with them; one flash at 1.5x width when shut",
     "lead_px": 8,
-    "trail_px": 10,
+    "trail_px": 5,
     "arcs": 3,
     "cover": [
      [
@@ -731,10 +731,11 @@
     "flash_k": 1.5
    },
    "ribbon": {
-    "what": "the blade's path through the air, splined",
+    "what": "the blade's path through the air, splined; blade: the share of the blade's own swing over her chest's arc",
     "head_px": 10,
     "life": 0.2,
-    "turn_deg": 30
+    "turn_deg": 30,
+    "blade": 0.35
    },
    "star": {
     "spikes": [

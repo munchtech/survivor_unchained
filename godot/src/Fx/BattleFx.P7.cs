@@ -174,7 +174,12 @@ public partial class BattleFx
         n.Scale = Vector3.One * half;
         AddChild(n);
         n.GlobalPosition = at;
-        if (Args.Has("clip") && bill && (GetViewport()?.GetCamera3D() is { } c3) && c3.GlobalPosition.DistanceTo(at) < 8) GD.Print($"p7 near-camera shape mode {mode} at {at} frame {Engine.GetFramesDrawn()}");
+        if (Args.Has("clip") && (GetViewport()?.GetCamera3D() is { } c3) && !c3.IsPositionBehind(at))
+        {
+            // (for the px self-check: where it lands on screen and its half-size in px at the play camera)
+            var sp = c3.UnprojectPosition(at) * (1080f / Math.Max(1f, GetViewport().GetVisibleRect().Size.Y));
+            GD.Print($"p7px mode {mode} screen {sp.X:F0},{sp.Y:F0} half {half / P7Px(at):F1}px frame {Engine.GetFramesDrawn()}");
+        }
         if (FxAfter.On) FxAfter.Adopt(n);
         var s = new P7Shape { N = n, M = m, Life = life, Step = step };
         p7Shapes.Add(s);
@@ -290,15 +295,17 @@ public partial class BattleFx
             run.Ring.M.SetShaderParameter("p7_arcs", P7D["leap.ring.arcs"]);
             run.Ring.M.SetShaderParameter("p7_cover", 0f);
             P7Brush(run.Ring.M, P7D["leap.ring.lead_px"] + P7D["leap.ring.trail_px"]);
-            // the ribbon: the blade's tip through the air, splined, its head the data's px tapering to a point
+            // the ribbon: her blade's way through the air (her chest plus the data's share of the blade's own swing: the
+            // stand-in's blade loops), splined, its head the data's px tapering to a point
             float hw = 0.5f * P7D["leap.ribbon.head_px"] * P7Px(from);
-            run.Ribbon = P7NewTrail(() => P7BladeAt(0.92f), hw, (float)e.Dur, P7D["leap.ribbon.life"]);
+            run.Ribbon = P7NewTrail(() => (PlayerPos + Vector3.Up * 1.1f).Lerp(P7BladeAt(0.92f), P7D["leap.ribbon.blade"]), hw, (float)e.Dur, P7D["leap.ribbon.life"]);
             p7Leap = run;
             return;
         }
         // Land
         P7Ev("leap_land");
         if (p7Leap?.Ribbon is { } rb) rb.Until = 0;
+        if (p7Leap?.Ring is { } rg) rg.Life = Math.Min(rg.Life, rg.Age + 1 / 60f);
         p7Leap = null;
         if (p7Shadow != null) p7Shadow.Visible = false;
         P7Slam(e.X1, e.Z1, (float)e.Radius, 1f);
