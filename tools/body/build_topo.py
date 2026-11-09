@@ -424,12 +424,17 @@ def target_joints(spec):
     return out
 
 
-def unground(spec, baked):
-    """The baked head where the ref spec has it (ground_offset's move taken off): a ref body is built in A's frame."""
-    g = spec.get("_ground_m")
-    if not g:
+def unground(spec, baked, ref=None):
+    """The baked head where the ref spec has it (ground_offset's move taken off): a ref body is built in A's frame.
+    ref (the ref spec, P1 R1 second body): the designed neck's head_move too, this spec's off and the ref's on (a body
+    whose neck sliders differ from the ref's lifts the head by its own; her_b's variants share her neck: no change)."""
+    g = np.asarray(spec.get("_ground_m") or [0.0, 0.0, 0.0], float)
+    if ref is not None:
+        g = (np.asarray(sliders_head_move(spec.get("sliders", {})), float)
+             - np.asarray(sliders_head_move(ref.get("sliders", {})), float)) + g
+    if not np.any(g):
         return baked
-    return {h: dict(v, P=v["P"] - np.asarray(g, float)[None, :]) for h, v in baked.items()}
+    return {h: dict(v, P=v["P"] - g[None, :]) for h, v in baked.items()}
 
 
 def target_joints_ref(spec, tier, z, A, baked, joints):
@@ -438,17 +443,24 @@ def target_joints_ref(spec, tier, z, A, baked, joints):
     spec "target_joints_ref" {target: ref spec path}: when this spec's sliders differ from the ref spec's, the skeleton
     is placed once on the ref spec's bone body recording each target joint's landmark there, and the target's joint is
     laid as landmark + v (joint - ref landmark) on this body (skeleton.OurLandmarks.lay). The ref spec itself (and any
-    spec with the same sliders) keeps the absolute joints: identical bytes."""
-    refs = spec.get("target_joints_ref") or {}
-    if not joints or not refs:
+    spec with the same sliders) keeps the absolute joints: identical bytes.
+    spec "ref_body" (a spec path; P1 R1 second body): a body with no target joints (her_a 0) still built against the body
+    the clips, the head and the hair were made on (her_b: A's joints), so the ref body and skeleton are written
+    (stage/ref_rest_close.npy, ref_skeleton.json) for the runtime laws that read them (publish_p1.body_laws: hand_clear,
+    carry ref_move_m); no joint of the ref is laid on this body. Absent (every spec before it): unchanged."""
+    refs = dict(spec.get("target_joints_ref") or {})
+    if not refs and spec.get("ref_body"):
+        refs = {"ref_body": spec["ref_body"]}
+    if not refs or (not joints and not spec.get("ref_body")):
         return joints, None
-    out = dict(joints)
+    out = dict(joints or {})
     info = {}
-    baked = unground(spec, baked)
+    baked0 = baked
     for tgt, ref_path in refs.items():
         if tgt == "why":
             continue
         rs = with_defaults(load_spec(os.path.join(REPO, ref_path)))
+        baked = unground(spec, baked0, rs)
         if rs.get("sliders", {}) == spec.get("sliders", {}) and (rs.get("bone_sliders") or {}) == (spec.get("bone_sliders") or {}):
             info[tgt] = f"{ref_path}: the same sliders (absolute joints)"
             continue
@@ -839,7 +851,7 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
         rs = with_defaults(load_spec(os.path.join(REPO, next(iter(refs.values())))))
         if rs.get("sliders", {}) != spec.get("sliders", {}):
             r2 = {}
-            bu = unground(spec, baked)
+            bu = unground(spec, baked, rs)
             _, Vr = stage_base(rs, tier, r2)
             Vr, ring_r, _ = stage_place(rs, z, Vr, A, bu, r2)
             Vr = stage_forms(rs, tier, z, Vr, ring_r, r2)

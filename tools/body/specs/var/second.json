@@ -1,0 +1,99 @@
+{
+ "about": "P1 R1 second body (ease-of-change proof): another woman from the same pipeline with none of A's data: her_a 0 (no A surface, normals, seam_a, crease_flat, a_hand, a_foot, a_joints), no A weight patches (weights: the general leg ramp only), no A correctives (correctives_conf null: tools/body/correctives.json), no ink pieces, no bone_sliders; the form library's r1 trunk (her_r1's designed sliders) with designed values: a tall, lean, athletic fighter in her thirties. ref_body / ground_ref her_b: the body A's clips, head and hair were made on (runtime laws, floor), not laid on her. Pictures only: body_p1_var/second.",
+ "base": "tools/body/specs/her_b.json",
+ "sliders": {
+  "arm_girth": 0.3,
+  "belly": -0.35,
+  "build": 0.55,
+  "chest_step": 1.0,
+  "bust_firmness": 0.3,
+  "bust_lift": 0.0,
+  "bust_point": 0.0,
+  "bust_set": 0.0,
+  "bust_size": -0.35,
+  "bust_spacing": 0.0,
+  "calves": 0.8,
+  "foot_size": -0.35,
+  "forearm_girth": 0.666,
+  "forearm_length": -0.4374,
+  "glute_lift": 0.0,
+  "glutes": -0.1,
+  "hand_size": -0.1764,
+  "height": 0.125,
+  "hips": -0.2,
+  "leg_length": 0.54,
+  "neck_girth": 1.0,
+  "neck_length": 1.0,
+  "shoulder_width": 0.45,
+  "thigh_length": -0.01,
+  "thighs": 0.5,
+  "torso_length": -0.5041,
+  "trap_drop": 1.0,
+  "underbust": 0.15,
+  "upperarm_length": -0.4525,
+  "waist": -0.15,
+  "weight": -0.45,
+  "shoulder_span": -0.1,
+  "trap_rise": 1.0,
+  "deltoid_cap": 1.0,
+  "chest_wall": 1.0,
+  "breast_a": 1.0,
+  "breast_settle": 1.0,
+  "upper_belly": 1.0,
+  "hourglass": 0.6,
+  "glute_form": 1.0,
+  "neck_fair": 1.0,
+  "her_a": 0.0
+ },
+ "her_a": null,
+ "target_joints_ref": null,
+ "bone_sliders": null,
+ "pieces": null,
+ "correctives_conf": null,
+ "weights": {
+  "leg": {
+   "ankle_m": [
+    -0.08,
+    0.195
+   ],
+   "ball_t": [
+    0.23,
+    1.4
+   ]
+  }
+ },
+ "seam": {
+  "rows_m": 0.05,
+  "why": "the throat seam as one surface (build_topo.seam_g1): seam angle mean 36.5 -> 2.9 deg"
+ },
+ "shapes_with": {
+  "support_lift": {
+   "breast_settle": 0.0
+  }
+ },
+ "ref_body": "tools/body/specs/her_b.json",
+ "bake": {
+  "maps": "godot/art/people/body_p1_var/second",
+  "cavity": null,
+  "publish_maps": false,
+  "size": 2048,
+  "pose": "tools/body/forms/her_topo_target_bones.json",
+  "carry": null,
+  "source_maps": "tools/body/base/targets/her_a_maps"
+ },
+ "macros": {
+  "gender": 0.0,
+  "age": 0.55,
+  "muscle": 0.75,
+  "weight": 0.5,
+  "proportions": 1.0,
+  "height": 0.5,
+  "cupsize": 0.5,
+  "firmness": 0.5,
+  "race": {
+   "african": 0.0,
+   "asian": 0.0,
+   "caucasian": 1.0
+  }
+ }
+}
