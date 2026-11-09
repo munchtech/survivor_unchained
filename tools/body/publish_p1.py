@@ -213,6 +213,8 @@ VAR = os.path.join(ROOT, "godot", "art", "people", "body_p1_var")
 # only: the same UVs on the same topology)
 MAPS_FALLBACK = ("albedo.png", "normal.png", "roughness.png", "ao.png", "curvature.png", "form_normal.png", "thickness.png",
                  "freckles.png", "region_id.png", "cavity.png", "bake.json")
+# (baked on the build's own surface: from another shape they are that shape's, never this body's)
+SHAPE_MAPS = ("normal.png", "ao.png", "curvature.png", "form_normal.png", "cavity.png", "thickness.png")
 
 
 def publish_var(src, name):
@@ -223,10 +225,29 @@ def publish_var(src, name):
     PUB = os.path.join(VAR, name)
     os.makedirs(PUB, exist_ok=True)
     publish(src)
-    for f in MAPS_FALLBACK:
-        if not os.path.exists(os.path.join(PUB, f)) and os.path.exists(os.path.join(gate, f)):
-            shutil.copy2(os.path.join(gate, f), os.path.join(PUB, f))
-            print(f"publish_p1: {name}: {f} from the gate body's folder")
+    pj = os.path.join(PUB, "publish.json")
+    with open(pj) as f:
+        out = json.load(f)
+    # (P1 R1 sliders round 5: a map this publish did not copy from the build is the gate body's, overwritten each time,
+    # so a stale earlier copy never passes for the variant's own; the shape maps (baked on a surface) said LOUDLY: on
+    # another shape they shade that shape's folds onto this one (bust_down round 4: base B's underbust line))
+    fell = [f for f in MAPS_FALLBACK if f not in out["files"] and os.path.exists(os.path.join(gate, f))]
+    for f in fell:
+        shutil.copy2(os.path.join(gate, f), os.path.join(PUB, f))
+        print(f"publish_p1: {name}: {f} from the gate body's folder")
+    shape = [f for f in fell if f in SHAPE_MAPS]
+    out["maps_own"] = not shape
+    if fell:
+        out["maps_fallback"] = {"from": os.path.relpath(gate, ROOT).replace("\\", "/"), "files": fell, "shape_maps_from_another_shape": shape,
+                                "why": out.get("maps", "")}
+    if shape:
+        bar = "!" * 100
+        print(bar, flush=True)
+        print(f"publish_p1: {name}: WARNING: its own bake did not pass; SHAPE MAPS FROM THE GATE BODY'S SHAPE: {', '.join(shape)}", flush=True)
+        print("  (pictures shot on this variant carry the gate body's folds and relief)", flush=True)
+        print(bar, flush=True)
+    with open(pj, "w") as f:
+        json.dump(out, f, indent=1)
     PUB = gate
 
 

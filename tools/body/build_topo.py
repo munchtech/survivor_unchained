@@ -732,6 +732,8 @@ def stage_export(spec, tier, z, V, ring, hv, sk, wts, A, baked, out, rep, uv=Non
         Pv, N, Jp, Wp, T, UV = Pv[src], N[src], Jp[src], Wp[src], uv["T"], uv["UV"]
         tan, tw = topo_bake.tangent_frames(Pv.astype(np.float64), N, UV, T)
         split = {"Tan": np.concatenate([tan, tw[:, None]], 1).astype(np.float32)}
+        # (the handedness is the UV winding's; where the 3D test would have flipped it the fan is crumpled: a shape note)
+        rep["frames_crumpled_vertices"] = topo_bake.frames_crumpled(Pv.astype(np.float64), N, UV, T)
     body = {"node": "Heroine", "material": spec["body_material"], "P": Pv, "N": N, "UV": UV, "T": T,
             "J": Jp, "W": Wp, **split}
     skel = {"names": sk["names"], "parents": sk["parents"], "worlds": sk["worlds"], "scale": {}}

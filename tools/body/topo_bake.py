@@ -63,9 +63,16 @@ def U(v):
 
 
 # --------------------------------------------------------------------------------------------- frames --
-def tangent_frames(P, N, UV, T):
+def tangent_frames(P, N, UV, T, w_from="uv"):
     """Per vertex (tangent xyz, w) from the UVs (glTF: v down): T along +u, the bitangent up the texture (-v); w the
-    handedness so that cross(N, T) * w is that bitangent (glTF's TANGENT rule). Per-face gradients summed by area."""
+    handedness so that cross(N, T) * w is that bitangent (glTF's TANGENT rule). Per-face gradients summed by area.
+    w_from "uv" (default; P1 R1 sliders round 5): w is the UV map's own orientation at the vertex, the area-weighted
+    winding of its triangles (the sign frame_mismatch checks; the 3D test below where the winding sums to 0). The 3D
+    test (sign of cross(N, Tt) . the summed bitangent) is the same on a sane fan but noise on a crumpled one: on every
+    her_a body 8 toe vertices (A's toes laid on B's: quads folded past 90 deg, a face standing against its vertex
+    normal) got the flipped sign, 39 triangles lit inside out in the normal map, and every her_a bake failed its
+    frames gate (frame_mismatch 39), so a variant shipped the gate body's shape maps. "geom": the 3D test (A's side:
+    its maps were decoded in those frames)."""
     e1, e2 = P[T[:, 1]] - P[T[:, 0]], P[T[:, 2]] - P[T[:, 0]]
     d1, d2 = UV[T[:, 1]] - UV[T[:, 0]], UV[T[:, 2]] - UV[T[:, 0]]
     det = d1[:, 0] * d2[:, 1] - d1[:, 1] * d2[:, 0]
@@ -80,7 +87,19 @@ def tangent_frames(P, N, UV, T):
         np.add.at(Bv, T[:, k], U(-dPv) * area)
     Tt = U(Tu - N * (Tu * N).sum(1, keepdims=True))
     w = np.where((np.cross(N, Tt) * Bv).sum(1) < 0, -1.0, 1.0)
+    if w_from == "uv":
+        sw = np.zeros(len(P))
+        fs = np.where(det < 0, 1.0, -1.0) * area[:, 0]   # (frame_mismatch's sign: glTF v down)
+        for k in range(3):
+            np.add.at(sw, T[:, k], fs)
+        w = np.where(sw > 0, 1.0, np.where(sw < 0, -1.0, w))
     return Tt, w
+
+
+def frames_crumpled(P, N, UV, T):
+    """Vertices where the 3D handedness test disagrees with the UV winding (a crumpled fan: folded quads, a face
+    against its vertex normal). Not a fault of the frames (tangent_frames takes the winding); a shape to look at."""
+    return int((tangent_frames(P, N, UV, T, "uv")[1] != tangent_frames(P, N, UV, T, "geom")[1]).sum())
 
 
 # ----------------------------------------------------------------------------------------------- A side --
@@ -124,7 +143,7 @@ class Source:
             self.N = t["N_file"]                        # per file vertex, as A's file splits them
         else:
             self.N = t["N"][inv]                        # welded (smooth across A's UV seams)
-        self.Tan, self.w = tangent_frames(self.P, self.N, self.UV, self.T)
+        self.Tan, self.w = tangent_frames(self.P, self.N, self.UV, self.T, "geom")
         self.scene = ray.scene(self.P, self.T)
         import surfdist
         self.surf = surfdist.Surface(self.P, self.T)
