@@ -1,0 +1,145 @@
+{
+ "family": "leap_land",
+ "kept": 3,
+ "n": 6,
+ "takes": [
+  {
+   "i": 0,
+   "key": "eaa4b285141df671a3de17c56e1461ff35ff257fc3fbf9c49ec3654fcc5ac100",
+   "file": null,
+   "dropped": "not among the 3 best-ranked takes",
+   "measure": {
+    "duration_s": 1.6,
+    "peak_dbfs": -1.0055273750310696,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -18.16489253724495,
+    "crest_db": 17.15936516221388,
+    "lufs": -20.498358529605294,
+    "lufs_padded": false,
+    "onset_ms": 0.5215419501133787,
+    "tail_ms": 601.2018140589569,
+    "centroid_hz": 589.2114012267688,
+    "clipped": 0,
+    "onsets": 4,
+    "clap": 0.5906,
+    "clap_neg": 0.2062,
+    "clap_margin": 0.3845
+   }
+  },
+  {
+   "i": 1,
+   "key": "0ac944d1b3c33cd80577cbf7019f9870e8f47c91fc5d850c8d32ed867f54743e",
+   "file": "leap_land_0.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 1.6,
+    "peak_dbfs": -1.0331884263456113,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -19.221895536092287,
+    "crest_db": 18.188707109746677,
+    "lufs": -20.969665302027682,
+    "lufs_padded": false,
+    "onset_ms": 0.7482993197278912,
+    "tail_ms": 935.8503401360543,
+    "centroid_hz": 1295.361796892298,
+    "clipped": 0,
+    "onsets": 5,
+    "clap": 0.6419,
+    "clap_neg": 0.2132,
+    "clap_margin": 0.4287
+   }
+  },
+  {
+   "i": 2,
+   "key": "679695233d3daf7426e36610f7f63b546ff7397823f6ce20fc5c7748aeb7d381",
+   "file": "leap_land_1.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 1.6,
+    "peak_dbfs": -1.0055273750310696,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -19.543373547885714,
+    "crest_db": 18.537846172854646,
+    "lufs": -22.85195332297589,
+    "lufs_padded": false,
+    "onset_ms": 0.3854875283446712,
+    "tail_ms": 1028.9342403628118,
+    "centroid_hz": 1138.3145676050674,
+    "clipped": 0,
+    "onsets": 6,
+    "clap": 0.747,
+    "clap_neg": 0.2356,
+    "clap_margin": 0.5114
+   }
+  },
+  {
+   "i": 3,
+   "key": "03c767406a5d294fb74e7840bd7edf8e7d53722349e92f846fc7df678c74d95d",
+   "file": null,
+   "dropped": "not among the 3 best-ranked takes",
+   "measure": {
+    "duration_s": 1.6,
+    "peak_dbfs": -1.0055273750310696,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -18.969021900698127,
+    "crest_db": 17.96349452566706,
+    "lufs": -23.82723550148241,
+    "lufs_padded": false,
+    "onset_ms": 0.4308390022675737,
+    "tail_ms": 908.9115646258504,
+    "centroid_hz": 494.81887603723374,
+    "clipped": 0,
+    "onsets": 6,
+    "clap": 0.5769,
+    "clap_neg": 0.1499,
+    "clap_margin": 0.427
+   }
+  },
+  {
+   "i": 4,
+   "key": "0e5d45efcaf50e42a4a3c5a377688cc032edac9ef2411338e3989f3f0e2888ed",
+   "file": null,
+   "dropped": "onsets 7 > 6",
+   "measure": {
+    "duration_s": 1.6,
+    "peak_dbfs": -1.01448911332626,
+    "true_peak_dbfs": -0.9999999999999997,
+    "rms_dbfs": -15.472785319555939,
+    "crest_db": 14.45829620622968,
+    "lufs": -17.189128015384465,
+    "lufs_padded": false,
+    "onset_ms": 0.3401360544217687,
+    "tail_ms": 997.4149659863946,
+    "centroid_hz": 565.9700911071757,
+    "clipped": 0,
+    "onsets": 7,
+    "clap": 0.5401,
+    "clap_neg": 0.1359,
+    "clap_margin": 0.4041
+   }
+  },
+  {
+   "i": 5,
+   "key": "22b352337a87a078e8aa81be1517ed484de4d85854422dac43697f4c6fec0587",
+   "file": "leap_land_2.wav",
+   "dropped": null,
+   "measure": {
+    "duration_s": 1.6,
+    "peak_dbfs": -1.0106423406008331,
+    "true_peak_dbfs": -1.0000000000000007,
+    "rms_dbfs": -18.328318673214287,
+    "crest_db": 17.317676332613456,
+    "lufs": -20.516054197110147,
+    "lufs_padded": false,
+    "onset_ms": 0.5442176870748299,
+    "tail_ms": 666.5986394557824,
+    "centroid_hz": 1083.8959698465944,
+    "clipped": 0,
+    "onsets": 4,
+    "clap": 0.7364,
+    "clap_neg": 0.2703,
+    "clap_margin": 0.4661
+   }
+  }
+ ]
+}
