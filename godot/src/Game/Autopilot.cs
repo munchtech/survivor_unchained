@@ -57,13 +57,13 @@ public sealed class Autopilot
     /// sim step after the keys (WorldScene.Hands), through Battle.HoldSkill/PressSkill; the Dash and the Flare stay this
     /// autopilot's own.</summary>
     readonly PressHands planHands = Args.Get("auto") == "deft" ? PressHands.Deft(7) : PressHands.Human(7, 0.4);
+    readonly Dictionary<string, bool> clipHeld = new(); // --clip: the grip state last printed (the game's keys release it each step, the plan re-holds it)
     void PlanStep(Battle b)
     {
         if (!b.Campaign || Idle || Toward || Away || Across || Talk || g.InTransit || g.InCinematic || !b.Player.Alive) return;
         if (!Args.Has("clip")) { PressPlan.Run(b, planHands); return; }
         // --clip: one line per press the plan makes (the shape of ScriptedPress's), a print only.
         var before = new Dictionary<string, int>(planHands.Presses);
-        var held = b.Weapons.ToDictionary(w => w, w => w.Held);
         var kind = b.Weapons.ToDictionary(w => w, w => w.KindledNow);
         double resolve = b.Resolve.Value;
         PressPlan.Run(b, planHands);
@@ -71,8 +71,7 @@ public sealed class Autopilot
         {
             string? k = null;
             if (planHands.Presses.GetValueOrDefault(w.Id) > before.GetValueOrDefault(w.Id)) k = kind[w] ? "kindle" : "press";
-            else if (w.Held && !held[w] && w.Hold) k = "hold-start";
-            else if (!w.Held && held[w] && w.Hold) k = "hold-end";
+            else if (w.Hold && w.Held != clipHeld.GetValueOrDefault(w.Id)) { k = w.Held ? "hold-start" : "hold-end"; clipHeld[w.Id] = w.Held; }
             if (k != null) Godot.GD.Print(string.Format(System.Globalization.CultureInfo.InvariantCulture,
                 "skill press frame {0} slot {1} t {2:0.00} skill {3} kind {4} resolve {5:0.0}/{6:0}", Godot.Engine.GetFramesDrawn(), w.Slot + 1, g.Journey.Playtime, w.Id, k, resolve, b.Resolve.Max));
         }
