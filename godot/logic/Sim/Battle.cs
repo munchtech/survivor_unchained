@@ -1826,6 +1826,13 @@ public sealed partial class Battle
     /// <summary>Hidden drops are taken underfoot only while this holds (the show-all key held).</summary>
     public bool TakeHidden;
 
+    /// <summary>(M5 r3) When a lamp-post was last lit (game seconds): no pack wakes within LampQuiet of it (the judge: n_post
+    /// rose 0.7 s after the lamp lit, its light's moment lost under the rising). Set by whoever lights one (LampRise.Light).</summary>
+    public double LampLitAt = double.NegativeInfinity;
+    public const double LampQuiet = 4;
+    /// <summary>(M5 r3) A lamp lit under LampQuiet ago: resting packs stay down (Ai) and gated packs wait (Encounters).</summary>
+    public bool LampHush => Time - LampLitAt < LampQuiet;
+
     /// <summary>The most stones left lying before the rest are gathered into one, the night's hoard
     /// stone (the genre's red gem): a late night left thousands carpeting the field, and once the
     /// pool was full the ember was simply lost.</summary>

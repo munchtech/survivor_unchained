@@ -23,6 +23,38 @@ public class EncountersTests
     });
 
     [Fact]
+    public void No_pack_wakes_within_four_seconds_of_a_lamp_lighting()
+    {
+        // (M5 r3, the judge: "n_post rises 0.7 s after the lamp lights"; a general rule, Battle.LampQuiet)
+        var s = Encounters.For("lowford")!;
+        var b = new Battle(new BattleSetup
+        {
+            Seed = 5, Collision = new CollisionWorld(260), Combat = true, Stats = BattleTests.BaseStats(), Weapons = [("oathblade", 1)], Ability = AbilityKind.ShieldBash,
+            StartX = -7.5, StartZ = 87.5,
+        });
+        var n = new Encounters(s, b, new Dictionary<string, Fact>(), 1, 0, "night");
+        n.Place();
+        Assert.True(n.Pending("n_three"));
+        // n_lone down; the lamp lit just as its breather (AfterSecs 4) runs out
+        foreach (var e in n.Standing("n_lone")) { e.Alive = false; }
+        for (double t = 0; t < 3.5; t += Dt) { b.Player.Hp = b.MaxHp; b.Tick(Dt, 0, 0); n.Tick(Dt); b.Events.Drain(); }
+        b.LampLitAt = b.Time;
+        for (double t = 0; t < 3.5; t += Dt) { b.Player.Hp = b.MaxHp; b.Tick(Dt, 0, 0); n.Tick(Dt); b.Events.Drain(); }
+        Assert.True(n.Pending("n_three"), "a gated pack rose inside the lamp's four seconds");
+        for (double t = 0; t < 0.7; t += Dt) { b.Player.Hp = b.MaxHp; b.Tick(Dt, 0, 0); n.Tick(Dt); b.Events.Drain(); }
+        Assert.False(n.Pending("n_three"));
+        // and a resting pack she walks into stays down in the lamp's moment
+        var three = n.Standing("n_three");
+        Assert.NotEmpty(three);
+        b.LampLitAt = b.Time;
+        b.Player.X = three[0].X + 4; b.Player.Z = three[0].Z;
+        for (double t = 0; t < 1; t += Dt) { b.Player.Hp = b.MaxHp; b.Player.X = three[0].X + 4; b.Player.Z = three[0].Z; b.Tick(Dt, 0, 0); n.Tick(Dt); b.Events.Drain(); }
+        Assert.DoesNotContain(three, e => e.Roused);
+        for (double t = 0; t < 3.5; t += Dt) { b.Player.Hp = b.MaxHp; b.Player.X = three[0].X + 4; b.Player.Z = three[0].Z; b.Tick(Dt, 0, 0); n.Tick(Dt); b.Events.Drain(); }
+        Assert.Contains(three, e => e.Roused);
+    }
+
+    [Fact]
     public void The_road_resets_when_she_comes_back_from_another_zone()
     {
         // (ARPG 7.3: the Low Ford's rule is "leave", zone_resets.json; a reload keeps it)

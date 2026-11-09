@@ -279,7 +279,7 @@ public sealed class Encounters
         // (the gated packs rise out of the road once the beat they wait on is down its breather)
         if (pending.Count > 0)
             foreach (var pid in pending.ToList())
-                if (S.Get(pid) is { After: { } af } pb && Cleared(af, pb.AfterSecs)) { pending.Remove(pid); PlacePack(pb, SpawnStyle.Rise); }
+                if (S.Get(pid) is { After: { } af } pb && Cleared(af, pb.AfterSecs) && !b.LampHush) { pending.Remove(pid); PlacePack(pb, SpawnStyle.Rise); }
         foreach (var (id, list) in Packs)
         {
             var bt = S.Get(id)!;

@@ -257,6 +257,7 @@ public sealed partial class Prologue
         if (B == null || !LampBook.LightPost(W, pb.Post!)) return;
         if (pb.Light >= 0) G.Look.SetLit(pb.Light, true);
         lampEventAt = B.Time;
+        B.LampLitAt = B.Time;
         B.Events.Emit(new Ev.Nova { X = pb.X, Z = pb.Z, Radius = 2.2, School = School.Fire, Duration = 0.9 });
         G.Toast(new Toast(ToastKind.World, "The road lamp burns again", "It will not go dark again. A lamp for your board.", Life: 6));
         PaceNotes.Enqueue($"day post t={B.Time:0.0} lamps={LampBook.PostLamps(W)}");

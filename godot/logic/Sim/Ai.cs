@@ -676,7 +676,8 @@ public static class Ai
             double aggro = e.Def.AggroRange ?? 60;
             // A pack at rest notices the survivor only close by; once roused it
             // hunts them as far as its leash, and rouses its own.
-            if (e.Wake > 0 && !e.Roused && d < e.Wake) b.Rouse(e);
+            // (M5 r3: not in the lamp's moment, LampQuiet after a post is lit; a blow still wakes it)
+            if (e.Wake > 0 && !e.Roused && d < e.Wake && !b.LampHush) b.Rouse(e);
             bool resting = e.Wake > 0 && !e.Roused;
             if (!resting && d < aggro && (e.Leash == 0 || Dist(p.X, p.Z, e.HomeX, e.HomeZ) < e.Leash * 1.6)) { best = -1; bd = d * 0.8; }
         }

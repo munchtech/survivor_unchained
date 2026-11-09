@@ -44,9 +44,23 @@ public class PostMenuTests
         Assert.Empty(PostMenu.Travel(w, P("lowford.watch")));
         var opts = PostMenu.Options(w, null, P("lowford.watch")).Select(o => o.Option).ToList();
         Assert.DoesNotContain(PostMenu.Option.Travel, opts);
-        Assert.Equal(new[] { PostMenu.Option.Tier, PostMenu.Option.Lamps, PostMenu.Option.Leave }, opts);
+        // (M5 r3: until the Ford is done, Rest and Leave only: no WORLD TIER II, no LAMPS at the first post)
+        Assert.Equal(new[] { PostMenu.Option.Rest, PostMenu.Option.Leave }, opts);
         w.Facts[PostMenu.TravelFact] = true;
-        Assert.Equal(PostMenu.Option.Travel, PostMenu.Options(w, null, P("lowford.watch"))[0].Option);
+        Assert.Equal(new[] { PostMenu.Option.Rest, PostMenu.Option.Travel, PostMenu.Option.Tier, PostMenu.Option.Lamps, PostMenu.Option.Leave },
+            PostMenu.Options(w, null, P("lowford.watch")).Select(o => o.Option).ToList());
+    }
+
+    [Fact]
+    public void Rest_makes_the_post_her_rise_point()
+    {
+        var w = new WorldState();
+        LampBook.LightPost(w, "lowford.watch");
+        LampBook.LightPost(w, "lowford.bank");
+        Assert.True(PostMenu.Rest(w, null, P("lowford.watch")));
+        Assert.Equal("lowford.watch", LampBook.LastPost(w, "lowford")?.Id);
+        // (an unlit post is no place to rest)
+        Assert.False(PostMenu.Rest(w, null, P("lowford.door")));
     }
 
     [Fact]
@@ -119,6 +133,7 @@ public class PostMenuTests
     public void The_lamps_open_at_a_lit_post_out_of_a_fight_and_close_in_one()
     {
         var w = new WorldState { Time = TimeOfDay.Day };
+        w.Facts[PostMenu.TravelFact] = true;
         var post = P("lowford.watch");
         var b = Fight(post.X, post.Z);
         // Unlit: no bench; and the field is not a town.

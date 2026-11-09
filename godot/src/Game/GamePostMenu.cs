@@ -61,6 +61,15 @@ public partial class Game
         });
     }
 
+    /// <summary>(M5 r3) Rest at a post: her rise point there, mended; the menu closes.</summary>
+    public void PostRest(LampPosts.Post at)
+    {
+        if (!PostMenu.Rest(World, Battle, at)) { Toast(new Toast(ToastKind.Warning, "Not with them on you")); return; }
+        CloseOverlay();
+        Toast(new Toast(ToastKind.World, "Rested", $"{at.Name}. If you fall, you will rise here.", Life: 4)); // (PLACEHOLDER copy: M6)
+        Save("post");
+    }
+
     /// <summary>The world tier picked at a post: the live fight re-scaled (PostMenu.SetTier), and saved.</summary>
     public void PostTier(int n)
     {

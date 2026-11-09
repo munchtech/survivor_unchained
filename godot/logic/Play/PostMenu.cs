@@ -16,6 +16,7 @@ namespace SurvivorUnchained.Play;
  *     refused in a fight (a foe within LampRise.Calm of the post, the Light prompt's lock).
  *   World tier: I-IV, the current one marked, the locked ones with what opens them; a pick re-scales the live fight.
  *   Lamps: the respec bench (LampBook.LayoutsOpen: a town, or a lit post out of a fight).
+ *   Rest: her rise point here, mended (out of a fight); before the Ford is done (FullMenu) the menu is Rest and Leave only.
  *   Leave. */
 public static class PostMenu
 {
@@ -109,17 +110,34 @@ public static class PostMenu
     public static bool LampsOpen(WorldState w, Battle? b, LampPosts.Post at) =>
         LampBook.LayoutsOpen(w, at.Zone, LampBook.PostLit(w, at.Id) && Calm(b, at) ? at.Id : null);
 
-    public enum Option { Travel, Tier, Lamps, Leave }
+    public enum Option { Rest, Travel, Tier, Lamps, Leave }
 
-    /// <summary>The menu's lines at the post, in order, each with why it is refused now (or null): travel only once it is
-    /// shown (TravelShown), the tier always, the Lamps, and leave.</summary>
+    /// <summary>(M5 r3) The post's full menu (travel, the world tier, the Lamps bench) opens once the Low Ford is done
+    /// (TravelFact): before it, its first post offered WORLD TIER II and LAMPS to a player who had just learned to walk.</summary>
+    public static bool FullMenu(WorldState w) => w.Fact(TravelFact).Truthy;
+
+    /// <summary>The menu's lines at the post, in order, each with why it is refused now (or null): Rest first (her rise point
+    /// here, mended out of a fight); then, once the Ford is done (FullMenu), travel, the tier and the Lamps; and leave.</summary>
     public static List<(Option Option, string? Refused)> Options(WorldState w, Battle? b, LampPosts.Post at)
     {
         var o = new List<(Option, string?)>();
-        if (TravelShown(w)) o.Add((Option.Travel, TravelRefused(b, at) ?? (Travel(w, at).Count == 0 ? "No other lamp burns yet" : null)));
-        o.Add((Option.Tier, null));
-        o.Add((Option.Lamps, LampsOpen(w, b, at) ? null : "Not with them on you"));
+        o.Add((Option.Rest, Calm(b, at) ? null : "Not with them on you"));
+        if (FullMenu(w))
+        {
+            if (TravelShown(w)) o.Add((Option.Travel, TravelRefused(b, at) ?? (Travel(w, at).Count == 0 ? "No other lamp burns yet" : null)));
+            o.Add((Option.Tier, null));
+            o.Add((Option.Lamps, LampsOpen(w, b, at) ? null : "Not with them on you"));
+        }
         o.Add((Option.Leave, null));
         return o;
+    }
+
+    /// <summary>Rest at the post (out of a fight): it is her rise point in its zone, and she is mended whole. False: refused.</summary>
+    public static bool Rest(WorldState w, Battle? b, LampPosts.Post at)
+    {
+        if (!Calm(b, at) || !LampBook.PostLit(w, at.Id)) return false;
+        LampBook.SetLastPost(w, at.Zone, at.Id);
+        if (b is { Player.Alive: true }) b.Player.Hp = b.MaxHp;
+        return true;
     }
 }

@@ -61,6 +61,9 @@ public partial class PostScreen : Overlay
             foreach (var (opt, refused) in PostMenu.Options(w, G.Battle, post))
                 switch (opt)
                 {
+                    case PostMenu.Option.Rest:
+                        menu.Add("Rest", () => { if (refused != null) G.Toast(new Toast(ToastKind.Warning, refused)); else G.PostRest(post); }, refused ?? "You will rise here");
+                        break;
                     case PostMenu.Option.Travel:
                         menu.Add("Travel", () => Go("travel", refused), refused ?? "To another lamp you have lit");
                         break;

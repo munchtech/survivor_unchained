@@ -130,6 +130,7 @@ public static class LampRise
     public static bool Light(IZoneHost g, Battle? b, LampPosts.Post p)
     {
         if (!LampBook.LightPost(g.Journey.World, p.Id)) return false;
+        if (b != null) b.LampLitAt = b.Time;
         if (p.Light >= 0) { g.Look.SetLit(p.Light, true); Flare(g, p.Light); }
         b?.Events.Emit(new Ev.Nova { X = p.X, Z = p.Z, Radius = 2.2, School = School.Fire, Duration = 0.9 });
         // (M5 r2: the kindling read as nothing at play distance: a second, wider ring after the first)
