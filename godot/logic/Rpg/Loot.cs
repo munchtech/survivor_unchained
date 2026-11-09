@@ -471,7 +471,7 @@ public static class Drops
             }
             else
             {
-                tier = k == 0 && owed && Legendaries(x).Any() ? LootTier.Legendary : RollTier(x, src, k == 0 ? Math.Max(src.Floor, x.Floor) : 0, R);
+                tier = k == 0 && (owed || x.Floor >= (int)LootTier.Legendary) && Legendaries(x).Any() ? LootTier.Legendary : RollTier(x, src, k == 0 ? Math.Max(src.Floor, x.Floor) : 0, R);
                 it = Piece(x, tier, R);
                 tier = TierOf(it);
             }

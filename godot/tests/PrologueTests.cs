@@ -305,6 +305,27 @@ public class PrologueTests
     }
 
     [Fact]
+    public void The_first_Ford_Warden_kill_leaves_one_certain_Legendary_and_sets_the_world_fact()
+    {
+        // (ARPG 7.1: "1, certain, from the Ford-Warden"; the early pool has Legendaries from level 1-3)
+        int Legends(Setup s) => s.B.Pickups.Living().Count(k => k.Kind == PickupKind.Item && k.Loot == (int)LootTier.Legendary);
+        foreach (int level in new[] { 3, 4 })
+        {
+            var s = Make();
+            Assert.False(s.J.World.Fact(Prologue.WardenLegendaryFact).Truthy);
+            var e = s.B.SpawnEnemy("wolf", s.B.Player.X + 3, s.B.Player.Z + 3, new Battle.SpawnOpts { Level = level })!;
+            s.Zone.WardenLegendary(e);
+            Assert.True(s.J.World.Fact(Prologue.WardenLegendaryFact).Truthy);
+            Assert.True(Legends(s) >= 1, $"no Legendary at level {level}");
+            // (a second kill rolls the plain Boss source: the fact stays, the certainty is spent)
+            int before = Legends(s);
+            s.Zone.WardenLegendary(e);
+            Assert.True(s.J.World.Fact(Prologue.WardenLegendaryFact).Truthy);
+            Assert.True(Legends(s) - before <= 1);
+        }
+    }
+
+    [Fact]
     public void The_warden_wakes_behind_its_lamps_falls_and_the_gate_opens_at_dawn()
     {
         // (the draft on: the dawn takes what the ember lent)

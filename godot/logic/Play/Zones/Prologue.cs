@@ -1323,6 +1323,7 @@ public sealed partial class Prologue : ZoneRuntime
         B.SpawnPickup(PickupKind.Item, e.X + 1.5, e.Z + 1, 1, "wardens_lampiron");
         B.SpawnPickup(PickupKind.Item, e.X - 1.2, e.Z + 1.6, 3, "ember_shard");
         for (int i = 0; i < 12; i++) B.SpawnPickup(PickupKind.Gold, e.X + (B.Rng.Next() - 0.5) * 4, e.Z + (B.Rng.Next() - 0.5) * 4, 4);
+        WardenLegendary(e);
         Go(Stage.Victory);
         cutT = 0;
         Objective([("Cross at the Low Ford", true, false)]);
@@ -1332,6 +1333,27 @@ public sealed partial class Prologue : ZoneRuntime
         var marks = new Dictionary<string, double[]> { ["w"] = [e.X, e.Z, 0], ["her"] = [e.X, e.Z + 4, Math.PI] };
         if (G.Cinematic("c03", HeartGone, marks)) { victoryByCine = true; wardenInCine = true; }
     }
+
+    /// <summary>ARPG 7.1: the first time she kills the Ford-Warden he leaves one Legendary for certain (a world fact);
+    /// later kills roll the plain Boss source.</summary>
+    public void WardenLegendary(Enemy e)
+    {
+        if (B == null) return;
+        bool first = !W.Fact(WardenLegendaryFact).Truthy;
+        var loot = G.Journey.Drops(new DropCtx
+        {
+            Source = DropSource.Boss, Level = e.Level, People = Drops.PeopleOf(e.Def.Family), Floor = first ? (int)LootTier.Legendary : 0,
+            Luck = B.Stats.Get(Stat.Luck), R = B.Rng.Next,
+        });
+        if (first) W.Facts[WardenLegendaryFact] = true;
+        foreach (var l in loot)
+        {
+            double a = B.Rng.Next() * Math.Tau, d = 1.5 + B.Rng.Next() * 1.5;
+            B.Spill(l with { Persistent = true }, e.X + Math.Cos(a) * d, e.Z + Math.Sin(a) * d);
+        }
+    }
+
+    public const string WardenLegendaryFact = "lowford.warden_legendary";
 
     bool victoryByCine;
 
