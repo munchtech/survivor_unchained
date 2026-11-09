@@ -1963,6 +1963,10 @@ public sealed partial class Battle
         public Action<Battle>? After;
         /// <summary>What it dealt her when it landed (after her armor; 0: missed, slipped, blocked), set before After runs.</summary>
         public double Dealt;
+        /// <summary>(M3) A boss script's own mark (the Ford-Warden's cleave and charge lane): its caster emits its telegraph
+        /// and its landing's burst, so Blow and UpdateBlows emit nothing for it; it is here so that every pair of hands that
+        /// reads marked blows (BossSense, the press plan's dash, the game's autopilot) reads it, and it deals its damage.</summary>
+        public bool OwnMark;
         public bool Hit(double x, double z, double r)
         {
             double dx = x - X, dz = z - Z, d = Math.Sqrt(dx * dx + dz * dz);
@@ -2033,7 +2037,7 @@ public sealed partial class Battle
         b.At = Time;
         blows.Add(b);
         b.MarkId = 900000 + blowIds++;
-        Events.Emit(new Ev.Telegraph
+        if (!b.OwnMark) Events.Emit(new Ev.Telegraph
         {
             Id = b.MarkId, Tell = b.Tell, Shape = b.Shape, Kind = b.Kind, X = b.X, Z = b.Z, X1 = b.X1, Z1 = b.Z1, Radius = b.Radius, Inner = b.Inner,
             Width = b.Width, Angle = b.Angle, Arc = b.Arc, Duration = b.Delay, Hostile = true, Boss = b.From?.Boss == true, Label = b.Label,
@@ -2057,7 +2061,7 @@ public sealed partial class Battle
             if (b.Damage > 0 || b.Slow > 0)
             {
                 double cx = b.Shape == TelegraphShape.Line ? (b.X + b.X1) / 2 : b.X, cz = b.Shape == TelegraphShape.Line ? (b.Z + b.Z1) / 2 : b.Z;
-                if (b.Kind == TelegraphKind.Blow) Events.Emit(new Ev.Explosion { X = cx, Z = cz, Radius = Math.Max(1.2, b.Shape == TelegraphShape.Line ? b.Width : b.Radius * 0.6), School = b.School, Power = 0.8 });
+                if (b.Kind == TelegraphKind.Blow && !b.OwnMark) Events.Emit(new Ev.Explosion { X = cx, Z = cz, Radius = Math.Max(1.2, b.Shape == TelegraphShape.Line ? b.Width : b.Radius * 0.6), School = b.School, Power = 0.8 });
                 if (p.Alive && b.Hit(p.X, p.Z, p.Radius))
                 {
                     blowLabel = b.Label;

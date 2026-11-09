@@ -22,6 +22,13 @@ public sealed class RunMeasures
     public double FlareFirst = -1, FlareShare, FlareBossShare = double.NaN;
     /// <summary>Falls: when, where and what took her.</summary>
     public List<string> Falls = new();
+    /// <summary>(M3 round 2) Each fall's last 5 s: the blows on her (marked by their label or not, their source), her life,
+    /// what she did (dash, leap, presses), the marks laid on her and dodged, and how near the boss stood.</summary>
+    public List<string> FallNotes = new();
+    /// <summary>(round 2) Her lowest life (a share of max), and the damage taken by source, in max lives (the marked kit's
+    /// blows by their label).</summary>
+    public double LowLife = 1;
+    public Dictionary<string, double> Taken = new();
     public double Minutes;
 
     /// <summary>The run line's columns.</summary>
@@ -30,7 +37,9 @@ public sealed class RunMeasures
         $"ppm {string.Join(",", PressesPerMin.OrderByDescending(kv => kv.Value).Select(kv => kv.Key + ":" + kv.Value.ToString("0.0")))} " +
         $"flare {FlareCasts}@{FlareFirst:0} {FlareShare:0}%/{(double.IsNaN(FlareBossShare) ? "-" : FlareBossShare.ToString("0"))}%boss " +
         $"dmg {string.Join(",", DamageShare.OrderByDescending(kv => kv.Value).Take(6).Select(kv => kv.Key + ":" + kv.Value.ToString("0")))}" +
-        (Falls.Count > 0 ? $" falls [{string.Join("; ", Falls)}]" : "");
+        (Falls.Count > 0 ? $" falls [{string.Join("; ", Falls)}]" : "") +
+        $" low {LowLife:0.00} taken {string.Join(",", Taken.Where(kv => kv.Key[0] != '#').OrderByDescending(kv => kv.Value).Take(6).Select(kv => kv.Key + ":" + kv.Value.ToString("0.0")))}" +
+        $" kit {string.Join(",", Taken.Where(kv => kv.Key[0] == '#').OrderBy(kv => kv.Key).Select(kv => kv.Key[1..].Replace("caught ", "c.").Replace("missed ", "m.") + ":" + kv.Value.ToString("0")))}";
 
     static double Med(IEnumerable<double> xs) { var a = xs.Where(x => !double.IsNaN(x)).OrderBy(x => x).ToList(); return a.Count == 0 ? double.NaN : a[a.Count / 2]; }
     static string F(double x, string f = "0") => double.IsNaN(x) ? "-" : x.ToString(f);
@@ -56,6 +65,17 @@ public sealed class RunMeter
 {
     readonly List<double> marksOn = new();
     double fullSec, playSec, fightSec;
+    // (round 2: the last seconds before a fall)
+    readonly Queue<(double T, string What)> recent = new();
+    readonly Queue<(double T, double Life)> life = new();
+    double lifeAt = double.NegativeInfinity;
+    /// <summary>Set by the caller's death hook (inside the step's tick): the fall is told once this step's events are read.</summary>
+    public string? PendingFall;
+    readonly List<string> notes = new();
+    readonly Dictionary<string, double> taken = new();
+    double low = 1;
+    /// <summary>What the hands were doing (the caller's word, e.g. aware or not), read into a fall's note.</summary>
+    public Func<string>? Doing;
     /// <summary>Falls are read from Ev.PlayerDeath (false: the caller tells them through Fell).</summary>
     public bool Deaths = true;
 
@@ -74,8 +94,36 @@ public sealed class RunMeter
         if (fight) fightSec += dt;
         if (b.Resolve.On && b.Resolve.Value >= b.Resolve.Max) fullSec += dt;
         foreach (var ev in evs)
-            if (ev is Ev.Telegraph { Hostile: true, Phase: TellPhase.Warn } tg && ArenaSim.Covers(tg, p.X, p.Z, p.Radius)) marksOn.Add(fightSec);
+        {
+            if (ev is Ev.Telegraph { Hostile: true, Phase: TellPhase.Warn } tg && ArenaSim.Covers(tg, p.X, p.Z, p.Radius)) { marksOn.Add(fightSec); recent.Enqueue((t, "mark")); }
             else if (Deaths && ev is Ev.PlayerDeath d) Fell(t, $"{d.Killer} @ ({p.X:0},{p.Z:0})");
+            switch (ev)
+            {
+                case Ev.PlayerHit { Dodged: true }: recent.Enqueue((t, "dodged")); break;
+                case Ev.PlayerHit h when h.Amount > 0 || h.Blocked:
+                    { string k = h.Label != null ? "[" + h.Label + "]" : h.Source; taken[k] = taken.GetValueOrDefault(k) + h.Amount / Math.Max(1, b.MaxHp); }
+                    recent.Enqueue((t, $"{(h.Blocked ? "blocked " : "")}{h.Amount:0} {h.Source}{(h.Label != null ? "[" + h.Label + "]" : h.Dot ? "(dot)" : "(unmarked)")}")); break;
+                case Ev.Dash: recent.Enqueue((t, "DASH")); break;
+                case Ev.Telegraph { Phase: TellPhase.Land, Tell: { } kind } tl:
+                    { string k = (tl.Caught ? "caught " : "missed ") + kind; taken["#" + k] = taken.GetValueOrDefault("#" + k) + 1; if (tl.Caught) recent.Enqueue((t, "CAUGHT " + kind)); } break;
+                case Ev.Leap { Phase: LeapPhase.Takeoff } lp: recent.Enqueue((t, $"LEAP {Math.Sqrt((lp.X1 - lp.X0) * (lp.X1 - lp.X0) + (lp.Z1 - lp.Z0) * (lp.Z1 - lp.Z0)):0}m")); break;
+                case Ev.Cast c when c.Weapon is not ("sunder" or "oathblade"): recent.Enqueue((t, "cast " + c.Weapon)); break;
+                case Ev.KindlePress kp: recent.Enqueue((t, "key " + kp.Weapon)); break;
+            }
+        }
+        if (p.Alive) low = Math.Min(low, p.Hp / Math.Max(1, b.MaxHp));
+        if (t - lifeAt >= 0.5) { lifeAt = t; life.Enqueue((t, p.Alive ? p.Hp / Math.Max(1, b.MaxHp) : 0)); }
+        while (recent.Count > 0 && recent.Peek().T < t - 5) recent.Dequeue();
+        while (life.Count > 0 && life.Peek().T < t - 5) life.Dequeue();
+        if (PendingFall != null)
+        {
+            var boss = b.Enemies.Living().Where(e => e.Boss || e.Named != null).OrderBy(e => (e.X - p.X) * (e.X - p.X) + (e.Z - p.Z) * (e.Z - p.Z)).FirstOrDefault();
+            string bossAt = boss == null ? "" : $" {boss.Def.Id} {Math.Sqrt((boss.X - p.X) * (boss.X - p.X) + (boss.Z - p.Z) * (boss.Z - p.Z)):0.0}m {boss.State}";
+            // (the blows and acts grouped: each as -s before the fall)
+            var acts = recent.Select(x => $"-{t - x.T:0.0} {x.What}");
+            notes.Add($"{t / 60:0.0}m {PendingFall}{bossAt}{(Doing != null ? " " + Doing() : "")} | life {string.Join(">", life.Select(l => (100 * l.Life).ToString("0")))} | {string.Join(", ", acts)}");
+            PendingFall = null;
+        }
     }
 
     readonly List<string> falls = new();
@@ -107,5 +155,8 @@ public sealed class RunMeter
         double boss = b.BossDamageBy.Values.Sum();
         if (boss > 0) m.FlareBossShare = 100 * b.BossDamageBy.GetValueOrDefault("flare") / boss;
         m.Falls.AddRange(falls);
+        m.FallNotes.AddRange(notes);
+        m.LowLife = low;
+        foreach (var (k, v) in taken) m.Taken[k] = v;
     }
 }
