@@ -161,6 +161,8 @@ public sealed class BattleSetup
     /// <summary>The art's rank and the facets chosen for it.</summary>
     public int ArtRank = 1;
     public List<string> Facets = new();
+    /// <summary>The dash's steps taken (Content/DashSteps.cs; CharacterData.DashSteps).</summary>
+    public List<string> DashSteps = new();
     public Dictionary<Faction, Faction[]>? Hostility;
     /// <summary>Carried ember from an expedition that did not end.</summary>
     public (int Level, double Xp)? Ember;
@@ -407,8 +409,11 @@ public sealed partial class Battle
         Player = new PlayerState
         {
             X = s.StartX, Z = s.StartZ, Facing = s.StartFacing, Hp = s.Hp ?? maxHp,
-            DashCharges = RoundInt(Stats.Get(Stat.DashCharges)),
+            DashCharges = MaxDashCharges,
         };
+        // The dash's steps (Content/DashSteps.cs) come in with her, silently, their pips filled.
+        foreach (var id in s.DashSteps) GrantDashStep(id, announce: false);
+        Player.DashCharges = MaxDashCharges;
         if (s.Wicks != null) WickPaths = s.Wicks;
         foreach (var (id, rank) in s.Weapons) AddWeapon(id, rank);
         foreach (var (def, source) in s.Triggers) AddTrigger(def, source);
@@ -498,10 +503,10 @@ public sealed partial class Battle
         if (p.AttackAnim != null && Time - p.AttackAnim.T > 0.6) p.AttackAnim = null;
 
         // Dash charges come back one at a time.
-        int maxCharges = RoundInt(st.Get(Stat.DashCharges));
+        int maxCharges = MaxDashCharges;
         if (p.DashCharges < maxCharges)
         {
-            p.DashRecharge += dt * DashHaste() * Rules.DashRecharge / st.Get(Stat.DashCooldown);
+            p.DashRecharge += dt * DashHaste() * DashBreath * Rules.DashRecharge / st.Get(Stat.DashCooldown);
             if (p.DashRecharge >= Abilities.Dash.Recharge) { p.DashRecharge = 0; p.DashCharges++; }
         }
 
@@ -555,6 +560,7 @@ public sealed partial class Battle
                 dashEnded = Time;
                 p.Vx = p.DashDX * Stats.Get(Stat.MoveSpeed);
                 p.Vz = p.DashDZ * Stats.Get(Stat.MoveSpeed);
+                DashLanded();
             }
             return;
         }
@@ -665,7 +671,7 @@ public sealed partial class Battle
 
     /// <summary>The dash's length: Hold Fast and Light Step shorten it (prices, kept in full by night).</summary>
     double DashLength() =>
-        (1 - Lamps.Full("hold_fast", "dash")) * (1 - Lamps.Full("light_step", "shorter"));
+        (1 - Lamps.Full("hold_fast", "dash")) * (1 - Lamps.Full("light_step", "shorter")) * DashStride;
 
     /// <summary>Stop a channel or cast in progress.</summary>
     public void Interrupt(Enemy e)
@@ -1395,7 +1401,7 @@ public sealed partial class Battle
         var p = Player;
         p.PerfectThisDash = true;
         p.DodgeWindow = 0;
-        p.DashCharges = Math.Min(RoundInt(Stats.Get(Stat.DashCharges)), p.DashCharges + 1);
+        p.DashCharges = Math.Min(MaxDashCharges, p.DashCharges + 1);
         p.Iframes = Math.Max(p.Iframes, 0.35);
         p.SureCritT = Math.Max(p.SureCritT, Abilities.Dash.Riposte + (Boons.ContainsKey("duelists_grace") ? 1 : 0));
         AddBuff("riposte", Stat.Damage, 0.3, ModKind.Inc, Abilities.Dash.Riposte + 0.5, 1);
@@ -1592,7 +1598,7 @@ public sealed partial class Battle
                 p.Rose++;
                 p.Hp = MaxHp * (ashes && ar >= 2 ? 1 : 0.5);
                 p.Iframes = ashes && ar >= 3 ? 3.5 : 2;
-                if (ashes && ar >= 3) p.DashCharges = RoundInt(Stats.Get(Stat.DashCharges));
+                if (ashes && ar >= 3) p.DashCharges = MaxDashCharges;
                 // Said first: the view draws the cold, then the fire going out (RiseBurning catches each body
                 // as its front reaches it, after the cold's beat, Delay).
                 Events.Emit(new Ev.Rise { X = p.X, Z = p.Z, Ember = ashes, Rank = ashes ? ar : 1, Grace = p.Iframes, Radius = ashes ? RiseRadius(ar) : 0, Delay = ashes ? RiseCold : 0 });
@@ -2469,8 +2475,11 @@ public sealed partial class Battle
     public WeaponInst? AddWeapon(string id, int rank = 1)
     {
         Journal('W', id, null, rank);
-        if (!Content.Weapons.All.ContainsKey(id) || Weapons.Exists(w => w.Id == id) || Weapons.Count >= Content.Weapons.MaxWeapons) return null;
-        var w = new WeaponInst(id, rank, Weapons.Count);
+        // Slots, not weapons: a union takes two (Content/Weapons.cs SlotCost), the lowest free ones.
+        if (!Content.Weapons.All.ContainsKey(id) || Weapons.Exists(w => w.Id == id) || !HasRoomFor(id)) return null;
+        var slots = FreeSlots(Content.Weapons.SlotCost(id));
+        var w = new WeaponInst(id, rank, slots[0]);
+        if (slots.Count > 1) w.Slot2 = slots[1];
         if (SkillMods.TryGetValue(id, out var sm)) Marks.Fold(w.Mods, sm);
         Relight(w, false);
         Weapons.Add(w);
@@ -2487,12 +2496,12 @@ public sealed partial class Battle
         // Its own rules, and its evolution's, go with it.
         RemoveTriggers($"weapon:{id}");
         if (w.Evolution != null) RemoveTriggers($"evo:{w.Evolution.Id}");
+        // Its slots are free again; the others keep theirs (a key means the same skill while it is carried).
         Weapons.RemoveAt(i);
-        for (int k = 0; k < Weapons.Count; k++) Weapons[k].Slot = k;
     }
 
     /// <summary>Two evolved skills become one (Content/Unions.cs): both go, the
-    /// union comes in at full rank, and a combat slot is free again.</summary>
+    /// union comes in at full rank and holds both their slots (either key sets it off).</summary>
     public WeaponInst? Unite(string union)
     {
         Journal('U', union);
@@ -2501,13 +2510,15 @@ public sealed partial class Battle
         var a = Weapons.Find(w => w.Id == u.A);
         var c = Weapons.Find(w => w.Id == u.B);
         if (a?.Evolution == null || c?.Evolution == null) return null;
+        int sa = a.Slot, sb = c.Slot;
         RemoveWeapon(u.A);
         RemoveWeapon(u.B);
         // (Part of the union: the journal has it already.)
         building++;
         var w = AddWeapon(u.Into, Content.Weapons.MaxRank);
         building--;
-        if (w != null) CarryTurns(w, a, c);
+        // It sits on both its parts' keys.
+        if (w != null) { w.Slot = Math.Min(sa, sb); w.Slot2 = Math.Max(sa, sb); CarryTurns(w, a, c); }
         Events.Emit(new Ev.Evolve { Weapon = u.Into, Into = u.Id });
         Events.Emit(new Ev.Announce { Kicker = "Union", Title = u.Name, Subtitle = u.Description, Tone = Tone.Boon });
         return w;

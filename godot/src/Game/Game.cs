@@ -692,6 +692,9 @@ public partial class Game : Node, IZoneHost
         // While a story's choice waits, its keys are its own: her art is not cast by the key that answers it.
         scene.Pressed = a => choiceUp != null && Array.IndexOf(ChoiceKeys, a) >= 0 ? Swallow(a)
             : heldOn != null ? false : (auto?.Take(a) ?? false) || (!controls.Captured && controls.Pressed(a));
+        // The skill keys held (a channel), and where the cursor meets the ground (a pressed skill's aim).
+        scene.Held = a => heldOn == null && choiceUp == null && auto == null && !controls.Captured && controls.Held(a);
+        scene.Pointer = PointerGround;
         scene.OnStep = dt => { if (cine is not { ZoneHeld: true }) zone?.Step(dt); };
         scene.OnEvents = OnEvents;
         // The Flare's view speaks to the pad, the HUD and the crowd through these (Fx/Flare/FlareFx.cs).
@@ -1631,19 +1634,27 @@ public partial class Game : Node, IZoneHost
         }
         else
         {
-            var vp = GetViewport();
-            var m = vp.GetMousePosition();
-            if (!vp.GetVisibleRect().HasPoint(m)) return;
-            var o = camera.ProjectRayOrigin(m);
-            var d = camera.ProjectRayNormal(m);
-            float y = (float)scene.HeightAt(b.Player.X, b.Player.Z);
-            if (Mathf.Abs(d.Y) < 1e-4f) return;
-            float t = (y - o.Y) / d.Y;
-            if (t <= 0) return;
-            var g = o + d * t;
+            if (PointerGround() is not { } g) return;
             hit = Targeting.AtPointer(b, g.X, g.Z);
         }
         if (hit != null) b.Priority = hit.Id;
+    }
+
+    /// <summary>Where the mouse's ray meets the ground at her height; null on a pad, or off the window.</summary>
+    (double X, double Z)? PointerGround()
+    {
+        if (Battle is not { } b || scene == null || controls.UsingPad) return null;
+        var vp = GetViewport();
+        var m = vp.GetMousePosition();
+        if (!vp.GetVisibleRect().HasPoint(m)) return null;
+        var o = camera.ProjectRayOrigin(m);
+        var d = camera.ProjectRayNormal(m);
+        float y = (float)scene.HeightAt(b.Player.X, b.Player.Z);
+        if (Mathf.Abs(d.Y) < 1e-4f) return null;
+        float t = (y - o.Y) / d.Y;
+        if (t <= 0) return null;
+        var g = o + d * t;
+        return (g.X, g.Z);
     }
 
     /// <summary>The night's phases, named on the clock (docs/feel S-21), as shares of the arena's length.</summary>
@@ -1772,7 +1783,7 @@ public partial class Game : Node, IZoneHost
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
     bool flareFilled, flareReadyShot;
-    bool hordeDone, dropsDone, lootDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone, fallDone, litDone, tipDone, freezeTestDone, bossKillDone;
+    bool hordeDone, dropsDone, lootDone, castDone, giveDone, grantDone, minuteDone, chestDone, barksDone, answerDone, fallDone, litDone, tipDone, freezeTestDone, bossKillDone;
     double? bossSeenAt;
     int toastI;
 
@@ -1960,6 +1971,12 @@ public partial class Game : Node, IZoneHost
                 Gear((j, b) => WearItems(sw.Ids));
                 GD.Print($"armor swap: t={sw.T.ToString(System.Globalization.CultureInfo.InvariantCulture)} {sw.Ids}");
             }
+        }
+        // --grant / --grant-union / --dash-step (Sim/DevGrants.cs): pressed skills, unions and dash steps to test with.
+        if (!grantDone && Battle is { Combat: true } grb && (Args.Has("grant") || Args.Has("grant-union") || Args.Has("dash-step")))
+        {
+            grantDone = true;
+            foreach (var line in DevGrants.Apply(grb, Args.Get("grant"), Args.Get("grant-union"), Args.Get("dash-step"))) GD.Print(line);
         }
         if (!giveDone && Args.Get("give") is string give && Battle is { } gb)
         {

@@ -35,7 +35,14 @@ public sealed class WeaponInst
     /// <summary>Statistics for the damage meter and for mastery.</summary>
     public double DamageDealt;
     public int Kills;
-    public int Slot;
+    /// <summary>The skill slot it sits in (key Slot+1), and a union's second (its other part's; -1 for one slot).
+    /// Slots are stable: a weapon keeps its key while it is carried (Battle.AddWeapon takes the lowest free).</summary>
+    public int Slot, Slot2 = -1;
+    /// <summary>A channel (CastMode.Channel) is running, and for how long so far; the next firing in it.</summary>
+    public bool Channeling;
+    public double ChannelT, ChannelNext;
+    /// <summary>Its key is held (Battle.HoldSkill, each sim step): a channel keeps on while it is.</summary>
+    public bool Held;
     /// <summary>For beams and orbits: active until.</summary>
     public double ActiveT;
     /// <summary>Times it has been honed (finished, in the endless dark).</summary>
@@ -88,6 +95,17 @@ public sealed class WeaponInst
     }
 
     public WeaponBehavior Behavior => evolution?.Behavior ?? Def.Behavior;
+    /// <summary>How it is set off: the evolution's own, else its skill's (a union's weapon is its own skill).</summary>
+    public CastMode Cast => evolution?.Cast ?? Def.Cast;
+    /// <summary>Waits for a press (or a hold) instead of firing itself.</summary>
+    public bool Pressed => Cast != CastMode.Auto;
+    /// <summary>A channel's longest hold, and the seconds between its firings while held.</summary>
+    public double ChannelMax => Num(s => s.ChannelTime) ?? 3;
+    public double ChannelEvery => Math.Max(0.05, Num(s => s.ChannelGap) ?? Num(s => s.TickRate) ?? 0.4);
+    /// <summary>How far ahead a press with no cursor aims (her facing times this): its range, else its reach.</summary>
+    public double AimRange => Num(s => s.Range) ?? Num(s => s.Reach) ?? 14;
+    /// <summary>On a slot (either of a union's two).</summary>
+    public bool On(int slot) => slot >= 0 && (Slot == slot || Slot2 == slot);
     /// <summary>A school Turn's school first: the Turn is what she chose for it.</summary>
     public School School => wick?.School ?? evolution?.School ?? Def.School;
     public string Art => evolution?.Art ?? Def.Art;
@@ -238,8 +256,19 @@ public static partial class Firing
                 (b.HeavyBy, b.Refiring) = (hb0, rf0);
             }
         }
+        // A pressed skill counts its wait down and never fires on its own (Battle.PressSkill sets it off).
+        if (w.Pressed) { TickPressed(b, w, dt); return; }
         if (w.Timer > 0) return;
         int kills0 = w.Kills;
+        bool fired = CastOnce(b, w);
+        // Nothing in range: look again soon rather than waiting a whole cooldown.
+        Rearm(b, w, fired, kills0);
+    }
+
+    /// <summary>One cast of the skill, as its own timer would fire it (the Hand's blow, its own heavy, its Pulse,
+    /// the arcanist's and the board's after-cast): true when it fired. The timer is the caller's.</summary>
+    static bool CastOnce(Battle b, WeaponInst w)
+    {
         b.ArcanistBeforeCast(w);
         // The warden's Hand: every few blows one is heavy, and every hit of it (HitEnemy reads HeavyBy).
         bool heavy = b.HandBeginCast(w);
@@ -258,11 +287,59 @@ public static partial class Firing
         if (fired && w.Wick is { Pulses: > 1 } pw) { w.PulseLeft = pw.Pulses - 1; w.PulseT = pw.PulseGap; }
         b.ArcanistAfterCast(w, fired);
         if (b.Lamps.Board) b.BoardAfterFire(w, fired);
-        // Nothing in range: look again soon rather than waiting a whole cooldown.
+        return fired;
+    }
+
+    /// <summary>The wait after a cast: its cooldown, or a quarter second when it found nothing.</summary>
+    static void Rearm(Battle b, WeaponInst w, bool fired, int kills0)
+    {
         w.Timer = fired ? CooldownOf(b, w) : 0.25;
         // sunderer.momentum: a melee swing that kills enough brings the skill's next swing sooner.
         if (fired && w.Tags.Has(Tag.Melee) && b.Lamp("momentum") && w.Kills - kills0 >= b.Lamps.Full("momentum", "kills", 3))
             w.Timer *= 1 - Math.Min(0.9, b.Lamps.Size("momentum", "sooner"));
+    }
+
+    /* A pressed skill's own clock: its wait runs down to ready and stays there; a channel fires on its gap while
+     * its key is held, and ends on release or at its longest hold, its cooldown starting then. */
+    static void TickPressed(Battle b, WeaponInst w, double dt)
+    {
+        if (!w.Channeling) { if (w.Timer < 0) w.Timer = 0; return; }
+        w.Timer = 0;
+        w.ChannelT += dt;
+        if (!w.Held || w.ChannelT >= w.ChannelMax) { EndChannel(b, w); return; }
+        w.ChannelNext -= dt;
+        if (w.ChannelNext > 0) return;
+        w.ChannelNext += w.ChannelEvery;
+        if (w.ChannelNext <= 0) w.ChannelNext = w.ChannelEvery;
+        CastOnce(b, w);
+    }
+
+    static void EndChannel(Battle b, WeaponInst w)
+    {
+        w.Channeling = false;
+        w.Timer = CooldownOf(b, w);
+        b.Events.Emit(new Ev.Channel { Weapon = w.Id, Slot = w.Slot, On = false, X = b.Player.X, Z = b.Player.Z });
+    }
+
+    /// <summary>Its key pressed (Battle.PressSkill): a press skill fires once if ready; a channel starts (its first
+    /// firing now) if ready and not already running. True when it went off.</summary>
+    public static bool Press(Battle b, WeaponInst w)
+    {
+        if (!w.Pressed || w.DisabledT > 0 || w.Timer > 0 || w.Channeling) return false;
+        if (w.Cast == CastMode.Channel)
+        {
+            w.Channeling = true;
+            w.ChannelT = 0;
+            w.ChannelNext = w.ChannelEvery;
+            b.Events.Emit(new Ev.Channel { Weapon = w.Id, Slot = w.Slot, On = true, X = b.Player.X, Z = b.Player.Z });
+            CastOnce(b, w);
+            return true;
+        }
+        int kills0 = w.Kills;
+        bool fired = CastOnce(b, w);
+        // (A press that found nothing stays ready: the buffer tries again for a breath.)
+        if (fired) Rearm(b, w, true, kills0);
+        return fired;
     }
 
     /// <summary>Where the skill fires from: her, or the corpse an On-kill echo rises from (Battle.FireFrom).</summary>

@@ -202,7 +202,7 @@ public sealed partial class Battle
         if (secondWindSpent || !HandRule("hand.stalker.second_wind")) return;
         secondWindSpent = true;
         var p = Player;
-        int max = RoundInt(Stats.Get(Stat.DashCharges));
+        int max = MaxDashCharges;
         if (p.DashCharges >= max) return;
         p.DashRecharge += Lamps.Full("hand.stalker.second_wind", "share", 0.25) * Abilities.Dash.Recharge;
         if (p.DashRecharge >= Abilities.Dash.Recharge) { p.DashRecharge = 0; p.DashCharges++; }

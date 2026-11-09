@@ -115,12 +115,17 @@ public sealed partial class Battle
     public void SetArt(AbilityKind? kind, int rank, IEnumerable<string> facets)
     {
         Ability = kind;
-        ArtRank = Math.Clamp(rank, 1, Abilities.MaxRank);
+        // A way of moving has no ranks (it grows by the dash's steps, Content/DashSteps.cs): no hidden power or haste.
+        ArtRank = kind is { } k && Abilities.All[k].Movement ? 1 : Math.Clamp(rank, 1, Abilities.MaxRank);
         Facets.Clear();
         Facets.UnionWith(facets);
         artFacets.Clear();
         artFacets.UnionWith(Facets);
+        KeepStepFacets();
     }
+
+    /// <summary>The art in hand grows by use (ArtXp): every art but a way of moving, which grows by steps.</summary>
+    bool ArtGrows => Ability is { } k && !Abilities.All[k].Movement;
 
     /// <summary>Q: the art in hand.</summary>
     public bool UseAbility(double dirX, double dirZ)
@@ -165,7 +170,7 @@ public sealed partial class Battle
         credit = was;
         if (!used) return false;
         Art.CdFull = Math.Max(0.1, p.AbilityCd);
-        ArtXp += 1;
+        if (ArtGrows) ArtXp += 1;
         Art.HotT = 3;
         Art.HotKills = 0;
         Fire(TriggerEvent.Ability, new ProcCtx { X = p.X, Z = p.Z });
@@ -407,6 +412,7 @@ public sealed partial class Battle
     void StartRush(AbilityKind kind, double dx, double dz, double dist, double time)
     {
         var p = Player;
+        asFormRush = false;
         Art.Rush = kind;
         Art.RushDX = dx; Art.RushDZ = dz;
         Art.RushT = time;
@@ -599,7 +605,7 @@ public sealed partial class Battle
         {
             if (Has("light_feet"))
             {
-                p.DashCharges = Math.Min(RoundInt(Stats.Get(Stat.DashCharges)), p.DashCharges + 1);
+                p.DashCharges = Math.Min(MaxDashCharges, p.DashCharges + 1);
                 AddBuff("light_feet", Stat.MoveSpeed, 0.4 * Ward("light_feet"), ModKind.Inc, 2, 1);
             }
             StalkerVaultLanded();
@@ -619,7 +625,7 @@ public sealed partial class Battle
         if (Has("aftershock")) strikes.Add(new StrikeSpec(p.X, p.Z, 4.5, 20 * power, School.Physical, SlamTags, 0.5, null, Side.Player, 1));
         if (Has("wind_at_back"))
         {
-            p.DashCharges = Math.Min(RoundInt(Stats.Get(Stat.DashCharges)), p.DashCharges + 1);
+            p.DashCharges = Math.Min(MaxDashCharges, p.DashCharges + 1);
             AddBuff("wind_at_back", Stat.MoveSpeed, 0.3, ModKind.Inc, 3, 1);
         }
     }
@@ -785,6 +791,8 @@ public sealed partial class Battle
             if (done)
             {
                 a.Rush = null;
+                // (The charge rode the dash: it lands as one, Hard Landing's shove first.)
+                if (asFormRush) { asFormRush = false; DashLanded(); }
                 if (Has("pile_driver"))
                 {
                     double held = Ward("pile_driver");
@@ -844,7 +852,7 @@ public sealed partial class Battle
         var p = Player;
         if (e.Decoy) { BreakDecoy(e); return; }
         if (!credited || e.Disposition == Disposition.Ally) return;
-        if (Art.HotT > 0 && Art.HotKills < 15) { Art.HotKills++; ArtXp += 0.2; }
+        if (Art.HotT > 0 && Art.HotKills < 15 && ArtGrows) { Art.HotKills++; ArtXp += 0.2; }
         if (e.Prey)
         {
             e.Prey = false;

@@ -23,6 +23,11 @@ namespace SurvivorUnchained.Content;
 /// <summary>How a skill fires (Sim/Weapons.cs Firing.Fire). Appended only: older keys keep their places.</summary>
 public enum WeaponBehavior { Aimed, Spray, Ring, Nova, Zone, Chain, Orbit, Storm, Bounce, Beam, Palm, Herd, Chakram, Slash, Raise, Crack, Reactive, Toll }
 
+/// <summary>How a skill is set off (skills.json "cast"): by itself on its cooldown (auto, every skill so far),
+/// once on a press when ready (press), or from a press for as long as it is held, to its ChannelTime, its cooldown
+/// starting when it ends (channel). Sim/Weapons.cs Firing.Tick and Battle.PressSkill / HoldSkill run them.</summary>
+public enum CastMode { Auto, Press, Channel }
+
 /// <summary>A weapon's numbers; unset ones fall back (in an evolution's Set,
 /// to the base).</summary>
 public sealed class WeaponStats
@@ -69,6 +74,9 @@ public sealed class WeaponStats
     public double? Barrier, DrawMost;
     /// <summary>Toll: the bell tops her barrier up to this share of max health and no further.</summary>
     public double? BarrierCap;
+    /// <summary>A channel's longest hold in seconds (CastMode.Channel; 3 if unset), and the seconds between its
+    /// firings while held (its TickRate, else 0.4).</summary>
+    public double? ChannelTime, ChannelGap;
 }
 
 /// <summary>Multiplicative on damage, cooldown, area, speed, duration; additive on counts.</summary>
@@ -89,6 +97,8 @@ public sealed class Evolution
     public School? School;
     public Tag[]? AddTags;
     public string? Art;
+    /// <summary>How it is set off, if not as its skill is.</summary>
+    public CastMode? Cast;
     /// <summary>Rules it adds to the fight, the weapon's own (what it does
     /// beyond numbers: an execute, a bolt from the sky, a raised dead).</summary>
     public TriggerDef[] Triggers = System.Array.Empty<TriggerDef>();
@@ -99,6 +109,8 @@ public sealed class WeaponDef
     public string Id = "", Name = "";
     public School School;
     public WeaponBehavior Behavior;
+    /// <summary>How it is set off: by itself (auto, the default), on a press, or held as a channel.</summary>
+    public CastMode Cast;
     public Tag[] Tags = System.Array.Empty<Tag>();
     /// <summary>The callings that may carry it (a kindred pair); absent, everyone
     /// (the valley's). A union's is never set: it is its parts' in common.</summary>
@@ -121,6 +133,7 @@ public sealed class WeaponDef
 public static class Weapons
 {
     public const int MaxRank = 8;
+    /// <summary>Skill slots (keys 1-6), not weapons: a union holds two (SlotCost).</summary>
     public const int MaxWeapons = 6;
     public const double DamageStep = 0.2, AreaStep = 0.04, DurationStep = 0.06;
     public const int ProjRankA = 4, ProjRankB = 7;
@@ -156,6 +169,16 @@ public static class Weapons
     /// test battle) carries anything.</summary>
     public static bool CanCarry(string? calling, string id) =>
         string.IsNullOrEmpty(calling) || AccessOf(id) is not { } acc || acc.Contains(calling);
+
+    /// <summary>A union's weapon (some UnionDef's Into): it holds both its parts' slots.</summary>
+    public static bool IsUnion(string id) => Unions.All.Any(u => u.Into == id);
+
+    /// <summary>The skill slots a weapon takes: two for a union (the owner, 8 Nov: "unions are 2 skills combined but
+    /// still take up both skill slots"), one otherwise. MaxWeapons counts slots, not weapons.</summary>
+    public static int SlotCost(string id) => IsUnion(id) ? 2 : 1;
+
+    /// <summary>The slots a list of weapons takes.</summary>
+    public static int SlotsOf(IEnumerable<string> ids) => ids.Sum(SlotCost);
 
     public static WeaponDef Get(string id) => All.TryGetValue(id, out var d) ? d : throw new KeyNotFoundException($"unknown weapon {id}");
 }

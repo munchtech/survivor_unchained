@@ -486,7 +486,7 @@ public static class ArenaSim
                 r.WonAt = t / 60;
                 bossAt = t;
             }
-            if (r.CompleteAt == null && b.Weapons.Count == Weapons.MaxWeapons && b.Weapons.All(w => w.Evolution != null)) r.CompleteAt = t / 60;
+            if (r.CompleteAt == null && b.SlotsUsed == Weapons.MaxWeapons && b.Weapons.All(w => w.Evolution != null || Weapons.IsUnion(w.Id))) r.CompleteAt = t / 60;
             if ((int)(t / 60) != (int)((t - Dt) / 60))
             {
                 double dealt = b.DamageBy.Values.Sum();

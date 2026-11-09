@@ -421,10 +421,11 @@ public static class LevelUp
             double near = w.Rank >= 6 && w.Evolution == null && held ? 1.3 : 1;
             combat.Add(new Cand { O = o, W = 9 * Affinity(w.Tags, tags) * near * Again(o) * RoadLeaned(b, w.Id, 1, o), Advancing = true });
         }
-        if (b.Weapons.Count < Content.Weapons.MaxWeapons)
+        if (b.SlotsUsed < Content.Weapons.MaxWeapons)
         {
-            // A small arsenal wants new weapons more than a full one does.
-            double want = b.Weapons.Count < 2 ? 2.4 : b.Weapons.Count < 4 ? 1.4 : 0.8;
+            // A small arsenal wants new weapons more than a full one does (slots, a union two).
+            int used = b.SlotsUsed;
+            double want = used < 2 ? 2.4 : used < 4 ? 1.4 : 0.8;
             foreach (var id in Content.Weapons.Pool)
             {
                 // Kindred skills are two callings' only (docs/design/CLASS_IDENTITY_AND_TALENTS.md section 2.1).

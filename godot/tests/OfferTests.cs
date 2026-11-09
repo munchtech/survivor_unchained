@@ -52,7 +52,7 @@ public class OfferTests
                             Assert.Contains(offers, o => o.Kind == OfferKind.Union);
                         // Always a combat skill, while there is one to offer.
                         bool honable(WeaponInst w) => w.Rank >= Weapons.MaxRank && (w.Evolution != null || w.Def.Evolutions.Length == 0) && w.Honed < LevelUp.MaxHone;
-                        bool newLeft = b.Weapons.Count < Weapons.MaxWeapons && Weapons.Pool.Any(id => !b.Weapons.Exists(w => w.Id == id) && !b.BannedCards.Contains(id));
+                        bool newLeft = b.SlotsUsed < Weapons.MaxWeapons && Weapons.Pool.Any(id => !b.Weapons.Exists(w => w.Id == id) && !b.BannedCards.Contains(id));
                         bool combatLeft = newLeft || b.Weapons.Any(w => w.Rank < Weapons.MaxRank || honable(w));
                         if (combatLeft) Assert.Contains(offers, o => o.Kind is OfferKind.Weapon or OfferKind.Rank or OfferKind.Evolve or OfferKind.Hone or OfferKind.Union);
                         // Until three are carried, a new one.

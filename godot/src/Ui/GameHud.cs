@@ -693,7 +693,8 @@ public partial class GameHud : CanvasLayer
 
         // The dash's charges round its glass; the draughts left.
         var dash = irons.Dash;
-        dash.Max = (int)Math.Round(b.Stats.Get(Stat.DashCharges));
+        // (the stat's charges and the dash's steps' pips, Another Breath)
+        dash.Max = b.MaxDashCharges;
         dash.Count = p.DashCharges;
         dash.Recharge = (float)Math.Clamp(p.DashRecharge / Abilities.Dash.Recharge, 0, 1);
         dash.Form = b.Ability is AbilityKind fk && Abilities.All[fk].Movement

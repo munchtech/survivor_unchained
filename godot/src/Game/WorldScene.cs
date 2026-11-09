@@ -28,6 +28,22 @@ public partial class WorldScene : Node3D, IZoneLook
     public Battle? Battle;
     readonly FollowCamera cam;
     public bool SimPaused;
+    /// <summary>The skill keys, one sim step: held state to each slot (a channel runs while held), and a press kept for
+    /// the Buffer, fired toward the cursor's ground point, or with none her facing times the skill's range.</summary>
+    void Skills(Battle b)
+    {
+        for (int i = 0; i < skillHeld.Length; i++)
+        {
+            b.HoldSkill(i, Held(Controls.Skills[i]));
+            if (Pressed(Controls.Skills[i])) skillHeld[i] = Buffer;
+            if (skillHeld[i] <= 0) continue;
+            if (b.OnSlot(i) is not { Pressed: true } w) { skillHeld[i] = 0; continue; }
+            var p = b.Player;
+            var aim = Pointer() ?? (p.X + Math.Sin(p.Facing) * w.AimRange, p.Z + Math.Cos(p.Facing) * w.AimRange);
+            skillHeld[i] = b.PressSkill(i, aim.X, aim.Z) ? 0 : skillHeld[i] - Step;
+        }
+    }
+
     /// <summary>A held camera (the title, a cutscene) instead of the follow camera.</summary>
     public (Vector3 Pos, Vector3 Look)? Showcase;
     /// <summary>A cinematic has the camera: the follow camera waits.</summary>
@@ -35,6 +51,10 @@ public partial class WorldScene : Node3D, IZoneLook
     /// <summary>What the survivor is asked to do (the controls, or the autopilot).</summary>
     public Func<(double X, double Z)> Move = () => (0, 0);
     public Func<Act, bool> Pressed = _ => false;
+    /// <summary>An action held now (the skill keys, for a channel), and the cursor's point on the ground (null with
+    /// no cursor: a pad, or the pointer off the window).</summary>
+    public Func<Act, bool> Held = _ => false;
+    public Func<(double X, double Z)?> Pointer = () => null;
     /// <summary>Each fixed step, before the fight's (the zone's own logic).</summary>
     public Action<double> OnStep = _ => { };
     /// <summary>What the fight said this frame, for the interface and the world.</summary>
@@ -59,6 +79,8 @@ public partial class WorldScene : Node3D, IZoneLook
 
     /// <summary>A dash or an art pressed a little early, kept until it can fire (seconds left).</summary>
     double dashHeld, artHeld;
+    /// <summary>Each skill slot's press, kept for the Buffer as the dash's is.</summary>
+    readonly double[] skillHeld = new double[Content.Weapons.MaxWeapons];
     const double Buffer = 0.12;
 
     /// <summary>The world slowed to under a third for a while (an evolution's first volley).</summary>
@@ -250,7 +272,12 @@ public partial class WorldScene : Node3D, IZoneLook
         fightTime += fightDt;
         if (b != null && !SimPaused) flare.Watch(b);
         // A press kept from before a pause (a draft, a chest) is not spent after it.
-        if (SimPaused) dashHeld = artHeld = 0;
+        if (SimPaused)
+        {
+            dashHeld = artHeld = 0;
+            // (the skill keys pressed in a pause are taken and dropped: a digit that picked a card casts nothing after)
+            for (int i = 0; i < skillHeld.Length; i++) { skillHeld[i] = 0; Pressed(Controls.Skills[i]); }
+        }
         if (b != null && !SimPaused)
         {
             acc += Math.Min(fightDt, 0.1);
@@ -267,6 +294,7 @@ public partial class WorldScene : Node3D, IZoneLook
                 if (dashHeld > 0) dashHeld = b.Dash(mx, mz) ? 0 : dashHeld - Step;
                 if (Pressed(Act.Flare)) artHeld = Buffer;
                 if (artHeld > 0) artHeld = b.UseFlare(mx, mz) ? 0 : artHeld - Step;
+                Skills(b);
                 OnStep(Step);
                 Perf.Begin(Perf.Part.Sim);
                 b.Tick(Step, mx, mz);

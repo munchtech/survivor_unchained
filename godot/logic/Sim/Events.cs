@@ -116,6 +116,12 @@ public static class Ev
 
     public sealed class Discovery : CombatEvent { public string Id = ""; }
     public sealed class Dash : CombatEvent { public double X0, Z0, X1, Z1; }
+    /// <summary>A step of the dash's growth taken (Content/DashSteps.cs): the view announces it by its Id.</summary>
+    public sealed class DashStep : CombatEvent { public string Id = ""; }
+    /// <summary>Hard Landing: a dash ended and shoved the lesser things round her aside.</summary>
+    public sealed class HardLanding : CombatEvent { public double X, Z, Radius; }
+    /// <summary>A channelled skill (CastMode.Channel) began (On) or ended, on its slot.</summary>
+    public sealed class Channel : CombatEvent { public string Weapon = ""; public int Slot; public bool On; public double X, Z; }
     /// <summary>She is knocked down (the kit's charge caught her, Battle.KnockPlayer): held for Seconds (after her tenacity).</summary>
     public sealed class Knockdown : CombatEvent
     {
