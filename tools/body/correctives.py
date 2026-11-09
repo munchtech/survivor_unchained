@@ -260,12 +260,13 @@ def _a_twins(mesh, glb):
     from gl import Glb
     from surfdist import Surface
     import posed_fit as pf
-    key = (glb, len(mesh.P0), float(mesh.P0[:, 1].sum()))
+    P0r = _REF.get("P0", mesh.P0)          # (P1 R1 sliders: a slider body's twins are its ref body's, which lies on A)
+    key = (glb, len(P0r), float(P0r[:, 1].sum()))
     if key not in _GK:
         A = Glb(os.path.join(REPO, glb))
         I3 = [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]
         Par, Ta = pf.skin(A, "Heroine", {"bones": {}, "skeleton": I3, "meshes": {}})
-        q, _, tri, d0 = Surface(Par, Ta).closest(mesh.P0, k=16)
+        q, _, tri, d0 = Surface(Par, Ta).closest(P0r, k=16)
         T = Ta[tri]
         x0, x1, x2 = Par[T[:, 0]], Par[T[:, 1]], Par[T[:, 2]]
         v0, v1, v2 = x1 - x0, x2 - x0, q - x0
@@ -307,7 +308,19 @@ def game_a_key(mesh, V, G, jc, kp, s):
     f = f * (1 - smooth01((tw["d0"] * 1e3 - v0_) / (v1_ - v0_)))
     side = mesh.P0[:, 0] > 1e-6 if s == "l" else mesh.P0[:, 0] < -1e-6
     f = np.where(~mesh.held & side, f, 0.0)
-    Y = X + f[:, None] * (Yt - X)
+    if _REF.get("ibm") is not None:
+        # (P1 R1 sliders: A's correction is the residual over the REF body's own skinning, the ref point posed by this pose
+        # with the ref's binds, laid on this body's own skinned point; her_b itself never reaches here: Xp = X there)
+        S = G @ _REF["ibm"]
+        M = np.zeros((len(p.Pb), 4, 4))
+        for k in range(p.J.shape[1]):
+            M += p.W[:, k, None, None] * S[p.J[:, k]]
+        M = M[mesh.first]
+        P0r = _REF["P0"]
+        Xp = (M[:, :3, :3] @ P0r[:, :, None])[:, :, 0] + M[:, :3, 3]
+        Y = X + f[:, None] * (Yt - Xp)
+    else:
+        Y = X + f[:, None] * (Yt - X)
     free = f > 1e-3
     mv = np.linalg.norm(Y - X, axis=1)
     full = f > 0.999
@@ -697,6 +710,16 @@ def run(out, only=None, tier="close", fresh=False, turn_normals=False, conf_path
         Vv, Vr = np.load(sp)["V"], np.load(rp)
         d_, i_ = _KD(Vv).query(mesh.P0)
         _REF["P0"] = np.where((d_ < 1e-5)[:, None], Vr[i_], mesh.P0)
+        rk = os.path.join(out, "stage", "ref_skeleton.json")
+        if os.path.exists(rk):
+            skr = json.load(open(rk))
+            Wr = np.asarray(skr["worlds"], float)
+            ibm = np.stack([np.linalg.inv(Wr[skr["names"].index(n)]) for n in poser.names])
+            own = json.load(open(os.path.join(out, "stage", "close_skeleton.json")))
+            Wo = np.asarray(own["worlds"], float)
+            chk = np.stack([np.linalg.inv(Wo[own["names"].index(n)]) for n in poser.names])
+            assert np.abs(chk - poser.skel.ibm).max() < 1e-4, ("ref binds: the skeleton json's worlds are not the glb's binds", np.abs(chk - poser.skel.ibm).max())
+            _REF["ibm"] = ibm
     frame = bends.Frame(poser, rig)
     body = np.nonzero(poser.piece == "body")[0]
     Pb, Tb = poser.Pb[body], poser.T[(poser.piece[poser.T] == "body").all(1)]
