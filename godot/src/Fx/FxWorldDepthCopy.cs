@@ -5,7 +5,7 @@ using Godot;
 namespace SurvivorUnchained.View;
 
 /// <summary>The copy, on the play camera (after its transparent pass: the depth is final).</summary>
-public partial class FxWorldDepthCopy : CompositorEffect
+public partial class FxWorldDepthCopy : CompositorEffect, FxWorldDepth.IRids
 {
     RenderingDevice? rd;
     Rid shader, pipe;
@@ -15,6 +15,13 @@ public partial class FxWorldDepthCopy : CompositorEffect
     {
         EffectCallbackType = EffectCallbackTypeEnum.PostTransparent;
         AccessResolvedDepth = true;
+    }
+
+    void FxWorldDepth.IRids.FreeRids(RenderingDevice rd)
+    {
+        if (shader.IsValid) rd.FreeRid(shader); // (its pipeline and cached uniform sets go with it)
+        shader = default; pipe = default;
+        this.rd = null;
     }
 
     const string Src = """
@@ -32,7 +39,7 @@ public partial class FxWorldDepthCopy : CompositorEffect
 
     public override void _RenderCallback(int effectCallbackType, RenderData renderData)
     {
-        if (failed || effectCallbackType != (int)EffectCallbackTypeEnum.PostTransparent) return;
+        if (failed || !FxWorldDepth.Live || effectCallbackType != (int)EffectCallbackTypeEnum.PostTransparent) return;
         if (renderData.GetRenderSceneBuffers() is not RenderSceneBuffersRD buf) return;
         var size = buf.GetInternalSize();
         if (size.X <= 0 || size.Y <= 0) return;
@@ -43,6 +50,7 @@ public partial class FxWorldDepthCopy : CompositorEffect
             if (!string.IsNullOrEmpty(spirv.CompileErrorCompute)) { GD.PushError("FxWorldDepth copy: " + spirv.CompileErrorCompute); failed = true; return; }
             shader = rd.ShaderCreateFromSpirV(spirv, "fx_world_depth_copy");
             pipe = rd.ComputePipelineCreate(shader);
+            FxWorldDepth.Track(this);
         }
         if (!FxWorldDepth.Tex.IsValid || size != FxWorldDepth.TexSize)
         {

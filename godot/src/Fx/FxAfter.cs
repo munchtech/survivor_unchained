@@ -199,14 +199,27 @@ void fragment() {
         };
         rect.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         AddChild(rect);
+        FxWorldDepth.Live = FxWorldDepth.On;
+        // (L1 lead 8 FX2) On the play camera before its first render. The layer is added deferred: made during a frame's
+        // process (a first cast), it is readied after every _Process of that frame and drawn before its own first one, so its
+        // camera sat at the origin (fov 75) in a 512 x 512 viewport stretched over the screen, and the play camera still drew
+        // the layer: the first after-grade shape of a session drew huge for one frame.
+        Follow();
     }
 
-    public override void _Process(double delta)
+    /// <summary>(L1 lead 8 FX2) The world-depth effects' RIDs go with the layer (at quit: before the server does).</summary>
+    public override void _ExitTree()
+    {
+        if (FxWorldDepth.On) FxWorldDepth.Release();
+    }
+
+    /// <summary>The layer camera on the play camera, the viewport at the window's size, the layer out of the play camera's
+    /// mask; no play camera: the layer is not drawn.</summary>
+    Camera3D? Follow()
     {
         var root = GetTree().Root;
-        if (root.GetCamera3D() is not { } main) { vp.RenderTargetUpdateMode = SubViewport.UpdateMode.Disabled; return; }
+        if (root.GetCamera3D() is not { } main) { vp.RenderTargetUpdateMode = SubViewport.UpdateMode.Disabled; return null; }
         vp.RenderTargetUpdateMode = SubViewport.UpdateMode.Always;
-        FollowFigures();
         if (vp.Size != root.Size) vp.Size = root.Size;
         main.CullMask &= ~RenderLayer;
         cam.GlobalTransform = main.GlobalTransform;
@@ -214,6 +227,13 @@ void fragment() {
         cam.Fov = main.Fov; cam.Size = main.Size; cam.FrustumOffset = main.FrustumOffset;
         cam.Near = main.Near; cam.Far = main.Far; cam.KeepAspect = main.KeepAspect;
         cam.HOffset = main.HOffset; cam.VOffset = main.VOffset;
+        return main;
+    }
+
+    public override void _Process(double delta)
+    {
+        if (Follow() is not { } main) return;
+        FollowFigures();
         if (FxWorldDepth.On) HookWorldDepth(main);
         // the marks over this layer: their coverage this frame (none up: the pass did not run, its mask is stale)
         bool marks = MarksOver && MarkPass.MaskLive && MarkPass.Mask.IsValid;

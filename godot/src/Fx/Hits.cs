@@ -25,7 +25,9 @@ public partial class Hits : Node3D
     {
         var droplet = new StandardMaterial3D
         {
-            ShadingMode = BaseMaterial3D.ShadingModeEnum.PerPixel, AlbedoColor = new Color("#5a0a08"), Roughness = 0.25f,
+            // (L1 lead 8 FX2) White: the spray's colour is the albedo. It was #5a0a08 (0.10 linear) times the spray's own colour
+            // (#8e0c0c, 0.27 linear): a 2.7% red albedo, black in her light and nothing in the moon's (LOOK_BIBLE 2: blood keeps its hue).
+            ShadingMode = BaseMaterial3D.ShadingModeEnum.PerPixel, AlbedoColor = Colors.White, Roughness = 0.25f,
             BillboardMode = BaseMaterial3D.BillboardModeEnum.Particles, VertexColorUseAsAlbedo = true,
         };
         var dropMesh = new SphereMesh { Radius = 0.035f, Height = 0.07f, RadialSegments = 6, Rings = 3, Material = droplet };

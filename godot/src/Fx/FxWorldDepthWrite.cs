@@ -5,7 +5,7 @@ using Godot;
 namespace SurvivorUnchained.View;
 
 /// <summary>The write, on the after-grade camera (after its opaque pass: the twins are in its depth).</summary>
-public partial class FxWorldDepthWrite : CompositorEffect
+public partial class FxWorldDepthWrite : CompositorEffect, FxWorldDepth.IRids
 {
     RenderingDevice? rd;
     Rid shader, pipe, fb, fbDepth;
@@ -15,6 +15,14 @@ public partial class FxWorldDepthWrite : CompositorEffect
     public FxWorldDepthWrite()
     {
         EffectCallbackType = EffectCallbackTypeEnum.PostOpaque;
+    }
+
+    void FxWorldDepth.IRids.FreeRids(RenderingDevice rd)
+    {
+        if (fb.IsValid && rd.FramebufferIsValid(fb)) rd.FreeRid(fb);
+        if (shader.IsValid) rd.FreeRid(shader); // (its pipelines and cached uniform sets go with it)
+        fb = default; shader = default; pipe = default; fbDepth = default; fbFormat = -1;
+        this.rd = null;
     }
 
     const string Vs = """
@@ -44,7 +52,7 @@ public partial class FxWorldDepthWrite : CompositorEffect
 
     public override void _RenderCallback(int effectCallbackType, RenderData renderData)
     {
-        if (failed || !FxWorldDepth.Tex.IsValid || effectCallbackType != (int)EffectCallbackTypeEnum.PostOpaque) return;
+        if (failed || !FxWorldDepth.Live || !FxWorldDepth.Tex.IsValid || effectCallbackType != (int)EffectCallbackTypeEnum.PostOpaque) return;
         if (renderData.GetRenderSceneBuffers() is not RenderSceneBuffersRD buf || renderData.GetRenderSceneData() is not RenderSceneDataRD data) return;
         rd ??= RenderingServer.GetRenderingDevice();
         if (!shader.IsValid)
@@ -53,16 +61,19 @@ public partial class FxWorldDepthWrite : CompositorEffect
             if (!string.IsNullOrEmpty(spirv.CompileErrorVertex) || !string.IsNullOrEmpty(spirv.CompileErrorFragment))
             { GD.PushError("FxWorldDepth write: " + spirv.CompileErrorVertex + spirv.CompileErrorFragment); failed = true; return; }
             shader = rd.ShaderCreateFromSpirV(spirv, "fx_world_depth_write");
+            FxWorldDepth.Track(this);
         }
         var depth = buf.GetDepthLayer(0);
         if (!fb.IsValid || fbDepth != depth || !rd.FramebufferIsValid(fb))
         {
+            if (fb.IsValid && rd.FramebufferIsValid(fb)) rd.FreeRid(fb);
             fbDepth = depth;
             fb = rd.FramebufferCreate(new Godot.Collections.Array<Rid> { depth });
             long fmt = rd.FramebufferGetFormat(fb);
             if (fmt != fbFormat || !pipe.IsValid)
             {
                 fbFormat = fmt;
+                if (pipe.IsValid && rd.RenderPipelineIsValid(pipe)) rd.FreeRid(pipe);
                 pipe = rd.RenderPipelineCreate(shader, fmt, RenderingDevice.InvalidFormatId, RenderingDevice.RenderPrimitive.Triangles,
                     new RDPipelineRasterizationState(), new RDPipelineMultisampleState(),
                     new RDPipelineDepthStencilState
