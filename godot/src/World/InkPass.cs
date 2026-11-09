@@ -20,7 +20,7 @@ namespace SurvivorUnchained.View;
 /// --ink-crease deg (45), --ink-fade near,far (30,60 m), --ink-dark k (0.25), --ink-rig r,g,b, --ink-dbg edges|class|code|lines (edges: as drawn; lines: before the effects' mask),
 /// --ink-time (the pass's GPU ms), --ink-test S (rows of tagged spheres for the encoding, the static row set at S s).
 /// </summary>
-public partial class InkPass : CompositorEffect
+public partial class InkPass : CompositorEffect, InkRelease.IRids
 {
     /// <summary>The rig's ink colours (the lead wires RigInk to the presets).</summary>
     public static readonly Color Night = new(0.42f, 0.45f, 0.85f), Day = new(0.85f, 0.6f, 0.5f);
@@ -91,6 +91,16 @@ public partial class InkPass : CompositorEffect
             RepeatU = RenderingDevice.SamplerRepeatMode.ClampToEdge, RepeatV = RenderingDevice.SamplerRepeatMode.ClampToEdge,
         });
         ubo = rd.UniformBufferCreate(128);
+        InkRelease.Track(this);
+    }
+
+    /// <summary>(render thread, from <see cref="InkRelease.Release"/>) frees the device RIDs; the next live frame remakes them.</summary>
+    public void FreeRids(RenderingDevice dev)
+    {
+        foreach (var r in new[] { shader, sampler, ubo })
+            if (r.IsValid) dev.FreeRid(r);
+        shader = pipe = sampler = ubo = default;
+        rd = null;
     }
 
     static RDUniform U(RenderingDevice.UniformType t, int binding, params Rid[] ids)
@@ -102,7 +112,7 @@ public partial class InkPass : CompositorEffect
 
     public override void _RenderCallback(int effectCallbackType, RenderData renderData)
     {
-        if (failed || effectCallbackType != (int)EffectCallbackTypeEnum.PostTransparent) return;
+        if (!InkRelease.Live || failed || effectCallbackType != (int)EffectCallbackTypeEnum.PostTransparent) return;
         if (rd == null) { Init(); if (failed) return; }
         if (renderData.GetRenderSceneBuffers() is not RenderSceneBuffersRD buf || renderData.GetRenderSceneData() is not RenderSceneDataRD data) return;
         var size = buf.GetInternalSize();
@@ -195,17 +205,11 @@ public partial class InkPass : CompositorEffect
         }
     }
 
-    public override void _Notification(int what)
-    {
-        if (what != NotificationPredelete || rd == null) return;
-        foreach (var r in new[] { shader, sampler, ubo })
-            if (r.IsValid) rd.FreeRid(r);
-    }
 }
 
 /// <summary>The ink's copy of the frame before the transparent pass (PreTransparent, the resolved colour into the scene
 /// buffers' ink/pre, one layer per view): InkPass takes its darkening from it, so effects drawn after carry no line.</summary>
-public partial class InkSnap : CompositorEffect
+public partial class InkSnap : CompositorEffect, InkRelease.IRids
 {
     public static readonly StringName Ctx = "ink", Name = "pre";
     /// <summary>Set on the render thread when the copy is made; InkPass consumes it the same frame.</summary>
@@ -237,7 +241,7 @@ public partial class InkSnap : CompositorEffect
 
     public override void _RenderCallback(int effectCallbackType, RenderData renderData)
     {
-        if (failed || effectCallbackType != (int)EffectCallbackTypeEnum.PreTransparent) return;
+        if (!InkRelease.Live || failed || effectCallbackType != (int)EffectCallbackTypeEnum.PreTransparent) return;
         if (rd == null)
         {
             rd = RenderingServer.GetRenderingDevice();
@@ -245,6 +249,7 @@ public partial class InkSnap : CompositorEffect
             if (!string.IsNullOrEmpty(spirv.CompileErrorCompute)) { GD.PushError($"ink snap shader: {spirv.CompileErrorCompute}"); failed = true; return; }
             shader = rd.ShaderCreateFromSpirV(spirv, "ink_snap");
             pipe = rd.ComputePipelineCreate(shader);
+            InkRelease.Track(this);
         }
         if (renderData.GetRenderSceneBuffers() is not RenderSceneBuffersRD buf) return;
         var size = buf.GetInternalSize();
@@ -285,9 +290,37 @@ public partial class InkSnap : CompositorEffect
         Fresh = true;
     }
 
-    public override void _Notification(int what)
+    public void FreeRids(RenderingDevice dev)
     {
-        if (what == NotificationPredelete && rd != null && shader.IsValid) rd.FreeRid(shader);
+        if (shader.IsValid) dev.FreeRid(shader);
+        shader = pipe = default;
+        rd = null;
+    }
+}
+
+/// <summary>(L1 lead 8) The ink effects free their device RIDs as the Ink node leaves the tree (FX2's pattern, as FxWorldDepth):
+/// their predelete came only during the C# shutdown, after the render server's teardown began, and hung the quit.</summary>
+public static class InkRelease
+{
+    public static volatile bool Live;
+    public interface IRids { void FreeRids(RenderingDevice rd); }
+    static readonly System.Collections.Generic.List<IRids> owners = new();
+    public static void Track(IRids o) { lock (owners) if (!owners.Contains(o)) owners.Add(o); }
+
+    public static void Release()
+    {
+        Live = false;
+        RenderingServer.CallOnRenderThread(Callable.From(ReleaseNow));
+    }
+
+    static void ReleaseNow()
+    {
+        var rd = RenderingServer.GetRenderingDevice();
+        if (rd == null) return;
+        IRids[] all;
+        lock (owners) { all = owners.ToArray(); owners.Clear(); }
+        foreach (var o in all) o.FreeRids(rd);
+        GD.Print($"ink: released {all.Length} effect(s)");
     }
 }
 
@@ -318,11 +351,12 @@ public partial class Ink : Node
         // a curved surface's roughness and scramble its code. (project.godot: rendering/anti_aliasing/screen_space_roughness_limiter/enabled=false)
         RenderingServer.ScreenSpaceRoughnessLimiterSetActive(false, 0.25f, 0.18f);
         RenderingServer.FramePreDraw += Sync;
+        InkRelease.Live = true;
         if (InkPass.Time) RenderingServer.ViewportSetMeasureRenderTime(GetViewport().GetViewportRid(), true);
         if (Args.Get("ink-test") is string t) testAt = float.TryParse(t, NumberStyles.Float, CultureInfo.InvariantCulture, out var s) && s > 0 ? s : 4;
     }
 
-    public override void _ExitTree() => RenderingServer.FramePreDraw -= Sync;
+    public override void _ExitTree() { RenderingServer.FramePreDraw -= Sync; InkRelease.Release(); }
 
     void Sync()
     {
