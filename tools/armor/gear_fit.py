@@ -1132,6 +1132,9 @@ def build(bodies, out_dir, only=None, bind_bodies=None, write=True):
             row["lod_file"] = "res://" + rel(os.path.join(out_dir, f"{row['outfit']}.lod.gltf"))[len("godot/"):]
         index.append(row)
     if write:
+        # (her skin's tuck and each piece's cover, native on this body: tools/armor/gear_tuck.py)
+        import gear_tuck
+        gear_tuck.write_all(out_dir, bodies["close"].glb, bodies["play"].glb, index)
         with open(os.path.join(out_dir, "gear_index.json"), "w") as f:
             json.dump({"body": bodies["close"].name, "body_hash": bodies["close"].hash, "rows": index}, f, indent=1)
     return evs
