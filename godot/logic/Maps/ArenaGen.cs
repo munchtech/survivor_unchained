@@ -77,6 +77,8 @@ public abstract class ArenaShape
     public abstract void Open(double x, double z, double inn);
     /// <summary>Cover, landmarks and lights.</summary>
     public abstract void Dress();
+    /// <summary>The place's big masses (Builder.Masses): its rock kind, and its foliage kinds (a bush and what grows at its foot).</summary>
+    public virtual (string Rock, string Bush, string Foot) MassKinds => ("boulder", "bush", "fern");
 }
 
 public static class ArenaGen
@@ -121,6 +123,7 @@ public static class ArenaGen
         b.Paint(shape);
         b.Grow(shape);
         shape.Dress();
+        b.Masses(shape);
         b.Ring();
         return b.Build();
     }
@@ -476,6 +479,68 @@ public static class ArenaGen
             }
         }
 
+        /// <summary>(L1 l9 kit, judge 1 fix 5: the arena's ground read as a bare field at 09 and 12.) The big masses, FROM
+        /// targets 09 and 12 at the play camera (a view about 23 x 14 m round her): the clearing framed by rounded rock
+        /// masses (one big boulder, one or two small ones at its foot) and foliage masses (a clump of bushes, ferns at their
+        /// foot), MB4's grouped forms, never scattered singles. Two rules, every arena place's (its kinds: ArenaShape.MassKinds):
+        /// (1) the start, where every night begins, framed as T09 frames her: two rock and three foliage masses on an ellipse
+        /// the play camera's shape (7-10 m across, 3.5-5.5 m up and down), their bearings alternating; (2) the open ground
+        /// beyond, rock masses 15 m apart and foliage 10 m apart (about two of each in a view). Off the board's fold and lanes,
+        /// the stream and what is taken (Free). Rocks block (cover, as the board's); bushes do not. Its own Rng, so every other
+        /// placement of a seed is as it was.</summary>
+        public void Masses(ArenaShape shape)
+        {
+            if (Story != null) return;  // (a story fight's place is staged to its outline)
+            var (rock, bush, foot) = shape.MassKinds;
+            var rng = new Rng((uint)Spec.Seed ^ 0x2c1b3c6du);
+            var rocks = new List<(double X, double Z)>(); var bushes = new List<(double X, double Z)>();
+            var (sx, sz) = Story != null ? Story.Place[Story.Arrive] : (0, 0);
+            void Rock(double x, double z)
+            {
+                double sc = rng.Range(0.5, 0.75);
+                PutAt(rock, x, z, rng.Range(0, Math.PI * 2), sc, 0.25);
+                Block(x, z, 1.7 * sc);
+                for (int n = rng.Int(1, 2); n > 0; n--)
+                {
+                    double a = rng.Range(0, Math.PI * 2), r = 1.9 * sc + rng.Range(0.2, 0.7), s2 = sc * rng.Range(0.35, 0.55);
+                    PutAt(rock, x + Math.Cos(a) * r, z + Math.Sin(a) * r, rng.Range(0, Math.PI * 2), s2, 0.15);
+                }
+                if (rng.Chance(0.7)) PutAt(foot, x + rng.Range(-2.2, 2.2), z + rng.Range(-2.2, 2.2), rng.Range(0, Math.PI * 2), rng.Range(0.9, 1.2));
+                rocks.Add((x, z)); Take(x, z, 2.5);
+            }
+            void Bush(double x, double z)
+            {
+                for (int n = rng.Int(3, 5); n > 0; n--)
+                    PutAt(bush, x + rng.Range(-1.4, 1.4), z + rng.Range(-1.4, 1.4), rng.Range(0, Math.PI * 2), rng.Range(1.0, 1.4));
+                for (int n = rng.Int(1, 3); n > 0; n--)
+                    PutAt(foot, x + rng.Range(-2.2, 2.2), z + rng.Range(-2.2, 2.2), rng.Range(0, Math.PI * 2), rng.Range(0.9, 1.2));
+                bushes.Add((x, z));
+            }
+            // (1) the start's frame: five slots round an ellipse, rock and foliage by turns from a random first bearing
+            double a0 = rng.Range(0, Math.PI * 2);
+            for (int k = 0; k < 5; k++)
+            {
+                for (int t = 0; t < 12; t++)
+                {
+                    double a = a0 + (k + rng.Range(-0.15, 0.15)) * Math.PI * 2 / 5, rx = rng.Range(7, 10), rz = rng.Range(3.5, 5.5);
+                    double x = sx + Math.Cos(a) * rx, z = sz + Math.Sin(a) * rz;
+                    if (!Free(x, z, 2)) continue;
+                    if (k % 2 == 0 && bushes.Count < 3) Bush(x, z); else Rock(x, z);
+                    break;
+                }
+            }
+            // (2) the open ground: darts, each kind kept its spacing from its own and 6 m from the other
+            for (int t = 0; t < 4000; t++)
+            {
+                double a = rng.Range(0, Math.PI * 2), rr = R * Math.Sqrt(rng.Range(0, 1));
+                double x = Math.Cos(a) * rr, z = Math.Sin(a) * rr;
+                bool isRock = rng.Chance(0.45);
+                if (MathX.Dist(x, z, sx, sz) < 11 || !Free(x, z, isRock ? 2.5 : 1.5)) continue;
+                if (rocks.Exists(o => MathX.Dist(o.X, o.Z, x, z) < (isRock ? 15 : 6)) || bushes.Exists(o => MathX.Dist(o.X, o.Z, x, z) < (isRock ? 6 : 10))) continue;
+                if (isRock) Rock(x, z); else Bush(x, z);
+            }
+        }
+
         /* ----------------------------------------------------------- build -- */
 
         public MapBuild Build()
@@ -492,7 +557,7 @@ public static class ArenaGen
             var start = new Area(0, AreaKind.Start, sx, sz, Outline != null ? 8 : R);
             var meta = new ZoneMeta
             {
-                Id = "arena", Size = Size, Res = Res, SplatRes = SplatRes, Leaves = 0.22, BlightGlow = "#9aff4a",
+                Id = "arena", Size = Size, Res = Res, SplatRes = SplatRes, Leaves = 0, BlightGlow = "#9aff4a",
                 Bound = Half - 4,
                 Start = new Start { X = 0, Z = 0, Facing = 0 },
                 Atmosphere = Place.Night,
