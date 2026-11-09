@@ -20,6 +20,8 @@ public sealed class PackKit(Battle b)
     readonly Dictionary<double, double> nextTell = new();
     readonly Queue<(double T, double X, double Z)> herTrail = new();
     double trailT, standReady;
+    /// <summary>(M3 round 5) Where she last moved StandMoved from, and when (the stand's length, for StandGrow).</summary>
+    double stillX, stillZ, stillAt = -1;
     /// <summary>The second charger, held its kit's spacing as the arena's Cast holds it (then cast at her).</summary>
     (Enemy E, double Seed, double At)? standSecond;
     /// <summary>(M3) Stand charges cast this run (the harness's tally).</summary>
@@ -61,11 +63,14 @@ public sealed class PackKit(Battle b)
         if (!b.Campaign || b.StoryStand is not { Stand: true } d) return;
         var p = b.Player;
         if ((trailT -= dt) <= 0) { trailT = 0.25; StandClock.Sample(herTrail, b.Time, p.X, p.Z, d.StandFor); }
+        if (stillAt < 0 || p.RootT > 0 || Math.Sqrt((p.X - stillX) * (p.X - stillX) + (p.Z - stillZ) * (p.Z - stillZ)) >= d.StandMoved)
+            { stillX = p.X; stillZ = p.Z; stillAt = b.Time; }
+        double bite = d.StandDamage * (1 + Math.Min(d.StandGrowMax, d.StandGrow * Math.Max(0, b.Time - stillAt - d.StandFor)));
         if (standSecond is var (se, ss, sat) && b.Time >= sat && held?.Invoke() != true)
         {
             if (!se.Alive || se.Seed != ss || se.State != EnemyState.Active || !p.Alive) standSecond = null;
             else if (b.KitWait("charge", se) is var sw && sw > 0) standSecond = (se, ss, b.Time + sw);
-            else { standSecond = null; b.Tell("charge", se, p.X, p.Z, d.StandScale, damageMul: d.StandDamage); }
+            else { standSecond = null; b.Tell("charge", se, p.X, p.Z, d.StandScale, damageMul: bite); }
         }
         if (b.Time < standReady || !p.Alive || held?.Invoke() == true) return;
         // Held where she is (knocked down, rooted) is not standing: the clock starts again once she can move.
@@ -81,7 +86,7 @@ public sealed class PackKit(Battle b)
         if (wait > 0) { standReady = b.Time + Math.Min(wait, 0.5); return; }
         standReady = b.Time + d.StandCooldown;
         StandCharges++;
-        b.Tell("charge", near, p.X, p.Z, d.StandScale, damageMul: d.StandDamage);
+        b.Tell("charge", near, p.X, p.Z, d.StandScale, damageMul: bite);
         if (StandClock.Second(b, d, near, may) is { } other) standSecond = (other, other.Seed, b.Time);
     }
 }

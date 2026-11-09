@@ -1,3 +1,63 @@
+# M3 bands: round 5 (9 Nov, the last): the Flare per boss fight, the first hour's human, the veteran idler
+
+Commands as round 4 (veteran: four grants + the Bladestorm union, six slots). `PressedSkills.GrantUnion` now refuses a union with no room, before it takes its parts' keys, so a command asking seven keys runs without the union; round 2's command line below is fixed to round 4's. Low Ford I at 32 seeds, II at 16; veteran 8 seeds x dead,pack (16 runs a bot). `boss life` = the Flare's share of the life the bosses lost (median of runs, min-max).
+
+The app can now hold the Flare to about one cast per campaign boss fight without dimming a press: while she fights a boss the meter fills at the campaign's boss rates, and what they held back is paid when the boss falls (her casts a run stay round 4's). It can also grow a story stand charge with the length of the stand (`standGrow`, `standGrowMax` in a world tier's `stand` row; III and IV use it).
+
+## What changed (file, field, old -> new, why)
+| where | what | old -> new | why |
+|---|---|---|---|
+| logic/Sim/Flare.cs `StoryFillBoss` (new; campaign) | boss fill per 1% of its life | FillBoss 1.8 -> 1.2 | 1.8 filled about 1.57 meters in a ruler fight (her 87% of his life after the 13% cut): a second cast about half the time, 20-23% of a map ruler. 1.2 fills about one. 0.8 tried first: the Ford-Warden often got no cast (life share 0%) |
+| Flare.cs `StoryFillHurtBoss` (new) | hurt fill per 1% while a boss fight is on (she struck a boss, or one struck her, in the last `BossFightFor` 8 s) | 0.25 -> 0.06 | the fight's other filler: a long fight's hurt could fill the second cast alone |
+| Flare.cs `bossFillOwed` (new) | what StoryFillBoss held back of 1.8 | lost -> paid when a boss falls (FlareOnKill) | without it the Low Ford human cast 3 a run (round 4: 4) and the day packs after the Warden met no Flare; with it every bot casts round 4's count again |
+| Battle.HurtPlayerRaw -> FlareOnHurt | the blow's source | none -> `from` | a boss's blow starts the boss fight |
+| logic/Content/Teeth.cs `StandGrow`, `StandGrowMax` (new, default 0); logic/Play/Zones/PackKit.cs | a story stand charge's bite | StandDamage -> StandDamage x (1 + min(StandGrowMax, StandGrow x seconds stood past StandFor)) | the clock answered a one-second stand and a ten-second one alike. Read by the story clock only (StandClock and the arena's director unchanged) |
+| world_tiers.json III / IV `stand` | standGrow / standGrowMax | 0 / 0 -> 0.4 / 0.8 | veteran idler III falls 50 -> 69%, IV 69 -> 94%; human and deft 0-6%. Grow 0.5 with standDamage 1.6 at III: idler 56%; 0.6 / 1.2: idler 62% and human III 12% falls |
+| world_tiers.json I / II | kit, stand | unchanged | see the diagnosis: every row that eased the human eased the idler with it |
+
+## The human's tier-I falls (diagnosis)
+Round 4's 9 falls in 32 (the FALL notes): every one at the Exit stage (the day packs after the Ford-Warden, 4.6-6.1 min), every one a single caught charge from 43-77% life, for 127 (wolves, boars) or 170 (Kerchiefs), marked 1.1 s ahead and not answered (BossSense.NoticePlain 0.8: the human misses one marked blow in five, by design). Not a plan fault: no press under way, nothing pressed in the 1.1 s. The 170 is the **stand clock's** charge, not a pack tell's: the kit's charge x kit 2.0 x standDamage 1.4 (kit 1.6 with standDamage 1.75 kept it at 170; standDamage 1.0 made it 121; kit 1.4 with standDamage 1.4 made it 119). She stands in melee as the idler does, so it is the stand row that kills her, and her falls are the idler's falls, rarer. With round 5's Flare (round 4's casts kept) she fell in 2 runs of 32 (93.8% no fall): a stand charge (91, a Tusker) and a 170 Pillager.
+
+## Low Ford after (I: 32 seeds; II: 16)
+| tier / bot | falls % (band) | mark gap med/worst s | Flare casts (min) / first s / boss life % |
+|---|---|---|---|
+| I standing | 100 (80+) | 26/261 | 7 (6) / 15 / 11 (0-24) |
+| I idler | 56 (70+: miss) | 32.5/176 | 5 (4) / 112.5 / 12 (0-22) |
+| I human | 6.2 (no fall 93.8: band 85+) | 23/172 | 4 (3) / 116 / 11 (11-12) |
+| I deft | 0 (no fall 100: band 95+) | 23.5/34 | 4 (3) / 114 / 11 (4-12) |
+| II standing | 100 | 35/239 | 9 (7) / 15 / 14 (10-20) |
+| II idler | 69 (70+; 77 at 48 seeds) | 34.5/302 | 5.5 (4) / 59 / 12 (0-12) |
+| II human | 19 (no fall 81; 73 at 48 seeds, round 4's build 81) | 25/72 | 4 (3) / 118.5 / 11.5 (11-12) |
+| II deft | 12.5 (no fall 87.5; 94 at 48 seeds, round 4's build 96) | 25/301 | 4 (3) / 118 / 11 (8-12) |
+
+Before (round 4's build re-run): human and deft boss life 11-12% (one cast on the Warden already), idler I 47% falls at 32 seeds, human I 72% no fall.
+
+## Veteran maps III/IV after (8 seeds x dead,pack)
+| tier / bot | falls % (band) | mark gap med/worst s (band under 60/90) | Flare casts / first s / boss life % |
+|---|---|---|---|
+| III standing | 100 (80+) | 5/13 | 1 / 99 / - (never reaches the ruler) |
+| III idler | 69 (70+: one run short) | 40/100 | 3 / 198 / 12 (0-28) |
+| III human | 0 (no fall 100) | 53.5/110 | 3 / 428 / 12 (0-24) |
+| III deft | 0 (no fall 100) | 47.5/126 | 2 / 606 / 12 (4-25) |
+| IV standing | 100 | 6/46 | 0 / - / - |
+| IV idler | 94 (70+) | 19.5/72 | 3 / 168 / 14 (12-21) |
+| IV human | 6 (no fall 94) | 48.5/121 | 2 / 368 / 12 (9-23) |
+| IV deft | 0 (no fall 100) | 48.5/85 | 2 / 582 / 13 (11-24) |
+
+The Flare on map rulers: 20-23% -> 12-14% (median). A run that meets the ruler with a nearly full meter still fits two (max 24-28%). Halving later casts on the same boss was not needed for the median and was not built.
+
+## Paths probe
+Host crowd 1134 / (0.7 x median 1568) = 1.033x, unchanged (BalanceTests on this build). Everything new sits behind `Battle.Campaign` (StoryFillBoss, StoryFillHurtBoss, the owed fill) or the story clock (StandGrow). Suite 1733 passed, 0 failed, 10 skipped.
+
+## What still misses, and why
+- **Low Ford I idler falls 56%** (band 70+). The stand clock cannot tell a melee human from the idler: both stand in reach, and the human's falls are stand charges too. Every probe moved them together: standDamage 1.0-1.25 with cooldown 0.4-0.7 took the idler to 31-41% (human 3-12%); StandGrow 0.4-1.0 at I/II took the human to 16-19% falls with the idler flat (41-56%). What separates them is the presses (the human's Groundbreaker and Leap end a pack sooner), not the stand. Lever (a design call, not taken): an idler-only signal, e.g. a stand with no skill pressed in N s bites harder; or accept 56% at the first hour's tier.
+- **Low Ford II deft 87.5% / human 81% no fall at 16 seeds** (deft band 95+): within noise of round 4's own build at 48 seeds (deft 94 vs 96, idler 77 vs 79), but the human's Exit falls rose 7 -> 13 of 48 (73% vs 81%): the Warden's fight has one cast fewer. Left: the first hour is tier I.
+- **Veteran idler III 69%** (11 of 16; band 70+): one run short. III's packs die fast; a harsher grow (0.6 / 1.2) cost human III 12% falls.
+- **Worst no-mark gap 100-126 s** on the human and deft at III and IV (band under 90): the ruler fights and the altar walks, as round 4. No pack-density change was tried (round cap).
+- **Round cap:** two passes. Pass 1 the Flare (StoryFillBoss 0.8, then 1.2 with the owed fill). Pass 2 the stand rows (one grid of five I/II rows, four growth rows, three III/IV rows, each read against one build).
+
+---
+
 # M3 bands: round 4 (9 Nov): the maps read the world tiers; the Flare's cut counted after the build
 
 Commands as round 3, with two changes. Veteran build: `map --callings warden --level 30 --people dead,pack --grant groundbreaker:8,heroic_leap:8,shield_charge:8,iron_vow:8 --grant-union bladestorm --bots standing,idler,human,deft --seeds 8 --tiers 3,4` (round 3's command asks seven keys of six: Cleaver and Watch Bell on top of the union; see the sim fault below). Run lines now print `life N%` after `boss`: the Flare's share of the life the bosses lost (`BossHealthBy`); the old `boss` share is of damage, which counts a gated boss's overflow past its Break and halved the Ford-Warden's real share.
@@ -121,7 +181,7 @@ BalanceTests (Campaign off): crowd median 1568 (dawn 1571, grave 1288, host 1134
 
 Commands (from the worktree root):
 - Low Ford: `dotnet run -c Release --project godot/balance -- zone --zone lowford --bots standing,idler,human,deft --seeds 16 --tiers 1,2,3` (add `--fullby 1` for Resolve-at-max by stage and distance to the Ford-Warden). Each run line now carries the fall notes (`FALL ...`: the last 5 s of blows, life, presses, marks), lowest life, damage taken by source, healing by source and the kit's blows caught/missed.
-- Veteran (owed, not run this round): `... -- map --callings warden --level 30 --people dead,pack --grant cleaver:8,groundbreaker:8,heroic_leap:8,shield_charge:8,iron_vow:8,watch_bell:8 --grant-union bladestorm --bots standing,idler,human,deft --seeds 8 --tiers 3,4`. Without `--callings warden` it runs every calling (512 maps); with `--people all` 16 mixes.
+- Veteran: `... -- map --callings warden --level 30 --people dead,pack --grant groundbreaker:8,heroic_leap:8,shield_charge:8,iron_vow:8 --grant-union bladestorm --bots standing,idler,human,deft --seeds 8 --tiers 3,4`. Without `--callings warden` it runs every calling (512 maps); with `--people all` 16 mixes. (Fixed in round 5: this line first asked seven keys of six slots, Cleaver and Watch Bell on top of the union; GrantUnion now refuses a union with no room, so it ran without Bladestorm.)
 
 ## What changed (file, field, old -> new, why)
 | where | what | old -> new | why |

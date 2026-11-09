@@ -1603,7 +1603,7 @@ public sealed partial class Battle
         if (Lamps.Board && !silent && !dot) BoardOnHurt(dmg, hpBefore);
         if (!silent && !dot)
         {
-            FlareOnHurt(dmg, hpBefore, source);
+            FlareOnHurt(dmg, hpBefore, source, from);
             if (p.Hp > 0) ReflexOnBlow(dmg, from);
         }
         if (!silent)
