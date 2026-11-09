@@ -7,11 +7,9 @@
 //           the caller.
 // Per material: fx_stroke_seed (each instance its own bristles) and fx_bristle.x (about one bristle per 2-4 px of the
 // stroke's width at the play camera), set by BattleFx.P7Brush. The stand-in body it replaced is in git history
-// (456025e87..f465d3e95).
+// (456025e87..f465d3e95); its p7_sw / p7_sseed are gone (the wedge's taper is fx_stroke_shape.z, the seed
+// fx_stroke_seed).
 // Needs fx_cel.gdshaderinc included first.
-
-uniform vec4 p7_sw = vec4(0.14, 0.52, 0.42, 0.75); // retired with the stand-in (kept so old SetShaderParameter calls stay harmless)
-uniform float p7_sseed = 0.0;                    // retired: fx_stroke_seed
 
 vec4 p7_stroke(float across, float along, float life) {
 	float lf = floor(clamp(life, 0.0, 1.0) * 3.0 + 1e-4) / 3.0;

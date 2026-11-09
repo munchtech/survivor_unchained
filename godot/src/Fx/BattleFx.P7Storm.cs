@@ -120,7 +120,7 @@ public partial class BattleFx
     /// <summary>A ring (mode 16) running out to `r` in `run` s: its width share `w`, its along from `a0` (near) to `a1`
     /// (at the radius), its life from 0 to `l1`; gone the frame after it arrives.</summary>
     P7Shape P7Ring(Vector3 at, float r, float run, float w, float a0, float a1, float l1, float alpha) =>
-        P7Quad(16, at, r, run + 1 / 60f, step: s =>
+        P7Brushed(2 * w * r / P7Px(at), P7Quad(16, at, r, run + 1 / 60f, step: s =>
         {
             float t = Mathf.Clamp(s.Age / run, 0, 1), prog = 1 - (1 - t) * (1 - t);
             s.M.SetShaderParameter("p7_prog", prog);
@@ -128,7 +128,13 @@ public partial class BattleFx
             s.M.SetShaderParameter("p7_lvl", Mathf.Lerp(a0, a1, prog));
             s.M.SetShaderParameter("p7_fade", l1 * prog);
             s.M.SetShaderParameter("p7_alpha", alpha);
-        });
+        }));
+
+    P7Shape P7Brushed(float widthPx, P7Shape s)
+    {
+        P7Brush(s.M, widthPx);
+        return s;
+    }
 
     /* ----------------------------------------------------------- storm -- */
 
@@ -174,6 +180,8 @@ public partial class BattleFx
     {
         var mesh = new ImmediateMesh();
         var m = P7Mat(6);
+        // the strip is 2 x (0.21..0.27 m) x hwK across at its head
+        P7Brush(m, 0.5f * hwK / P7Px(PlayerPos));
         var n = new MeshInstance3D { Mesh = mesh, MaterialOverride = m, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
         AddChild(n);
         n.GlobalTransform = Transform3D.Identity;
@@ -328,6 +336,8 @@ public partial class BattleFx
                 }
                 mesh.SurfaceEnd();
                 var m = P7Mat(7);
+                // the seam fills 0.38..1 of the strip's 2 x hwMax: brushed for its middle width
+                P7Brush(m, 2 * hwMax * 0.66f / P7Px(PlayerPos));
                 m.SetShaderParameter("p7_width", 0.38f);
                 m.SetShaderParameter("p7_alpha", 0.5f);
                 m.SetShaderParameter("p7_fade", 0f);
@@ -490,7 +500,9 @@ public partial class BattleFx
                 p7VowLevel = 0; p7VowBlows = 0; p7StoreAt = -9;
                 P7VowShapesGone(0);
                 p7DomeMesh ??= new SphereMesh { Radius = 1.2f, Height = 1.2f, IsHemisphere = true, RadialSegments = 48, Rings = 16 };
-                p7Dome = P7OnMesh(8, p7DomeMesh, feet, new Vector3(1, 1.55f, 1), 9999, step: s =>
+                // the rim: f runs 0..p7_width (~0.6) from the silhouette in, ~0.24 m of the 1.2 m dome: the stroke's
+                // full width (across -1..1, its outer half off the mesh) about twice that
+                p7Dome = P7Brushed(0.48f / P7Px(feet), P7OnMesh(8, p7DomeMesh, feet, new Vector3(1, 1.55f, 1), 9999, step: s =>
                 {
                     s.N.GlobalPosition = new Vector3(PlayerPos.X, Y(PlayerPos.X, PlayerPos.Z), PlayerPos.Z);
                     s.M.SetShaderParameter("p7_t", s.Age);
@@ -500,7 +512,7 @@ public partial class BattleFx
                     s.M.SetShaderParameter("p7_lvl", life);
                     s.M.SetShaderParameter("p7_width", (since < P7Sample ? 0.85f : 0.55f) + 0.08f * p7VowLevel);
                     s.M.SetShaderParameter("p7_alpha", 0.9f);
-                });
+                }));
                 p7Glow = P7Quad(9, P7ShieldAt(), 0.14f, 9999, bill: true, top: true, step: s =>
                 {
                     s.N.GlobalPosition = P7ShieldAt();

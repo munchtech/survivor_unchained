@@ -135,8 +135,25 @@ public partial class BattleFx
         FxCel.Apply(m, School.Physical, FxAfter.On);
         m.SetShaderParameter("p7_mode", mode);
         m.SetShaderParameter("p7_seed", R() * 10);
+        P7Brush(m, 12);
         return m;
     }
+
+    /// <summary>The brush, per instance (L1's fx_stroke): its own bristles (a fresh fx_stroke_seed) and about one bristle
+    /// per 3 px of the stroke's FULL width at the play camera (`widthPx`: across -1..1 on screen), so a thin ring gets a
+    /// few bristles and a wide smear many; never finer than a pixel (it would shimmer). Streak length, dryness and waver
+    /// stay at L1's defaults.</summary>
+    void P7Brush(ShaderMaterial m, float widthPx, float tail = 0.12f)
+    {
+        m.SetShaderParameter("fx_stroke_seed", R() * 97f);
+        m.SetShaderParameter("fx_bristle", new Vector4(Mathf.Clamp(widthPx / 3f, 1f, 24f), 12f, 0.55f, 0.2f));
+        if (tail != 0.12f) m.SetShaderParameter("fx_stroke_shape", new Vector4(0.72f, 0.3f, tail, 0.08f));
+    }
+
+    /// <summary>A quad mode's main stroke half-width as a share of the quad's half-size (0: the caller sizes it). The
+    /// star's spikes are 0.1 and its streaks 0.02 in one material: brushed for 0.045 between them (spikes ~5 px a
+    /// bristle, streaks ~1).</summary>
+    static float P7ModeHw(int mode) => mode switch { 1 => 0.045f, 4 => 0.07f, 9 => 1f, 12 => 0.2f, 17 => 0.075f, _ => 0f };
 
     /// <summary>A quad shape: flat on the ground (half-size `half`, at `at`) or facing the camera (`bill`).</summary>
     P7Shape P7Quad(int mode, Vector3 at, float half, float life, bool bill = false, bool top = false, Action<P7Shape>? step = null)
@@ -144,6 +161,7 @@ public partial class BattleFx
         p7Plane ??= new PlaneMesh { Size = new Vector2(2, 2) };
         p7Quad ??= new QuadMesh { Size = new Vector2(2, 2) };
         var m = P7Mat(mode, top);
+        if (P7ModeHw(mode) > 0) P7Brush(m, 2 * P7ModeHw(mode) * half / P7Px(at));
         if (bill) m.SetShaderParameter("p7_bill", 1f);
         var n = new MeshInstance3D { Mesh = bill ? p7Quad : p7Plane, MaterialOverride = m, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
         n.Scale = Vector3.One * half;
@@ -160,8 +178,9 @@ public partial class BattleFx
     {
         var mesh = new ImmediateMesh();
         var m = P7Mat(2);
-        // a ribbon tapers harder than the default stroke: a wedge, its width falling off all the way from the head
-        m.SetShaderParameter("p7_sw", new Vector4(0.14f, 0.52f, 0.42f, 1.4f));
+        // a ribbon tapers harder than the default stroke: a wedge (fx_stroke's tail width 0.12 -> 0.05 of the head's); a
+        // body's ribbon is 2 x `width` across, a blade's sweep about 0.4 m (0.6..0.98 of the blade)
+        P7Brush(m, (width > 0 ? 2 * width : 0.4f) / P7Px(src()), 0.05f);
         var n = new MeshInstance3D { Mesh = mesh, MaterialOverride = m, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
         AddChild(n);
         n.GlobalTransform = Transform3D.Identity;
@@ -260,10 +279,9 @@ public partial class BattleFx
                 s.M.SetShaderParameter("p7_width", Mathf.Clamp(4f * P7Px(s.N.GlobalPosition) / (float)run.R, 0.004f, 0.2f));
                 float after = s.Age - dur;
                 int k = after < 0 ? -1 : (int)(after / P7Sample);
-                s.M.SetShaderParameter("p7_sw", k == 0 ? new Vector4(0.55f, 0.8f, 0.3f, 0.75f) : new Vector4(0.3f, 0.62f, 0.35f, 0.75f));
                 s.M.SetShaderParameter("p7_fade", k <= 0 ? 0f : k == 1 ? 0.4f : 0.8f);
             });
-            run.Ring.M.SetShaderParameter("p7_sw", new Vector4(0.3f, 0.62f, 0.35f, 0.75f));
+            P7Brush(run.Ring.M, 8);
             // the ribbon: the blade's upper half swept through the air, smoothed, tapering from the blade to nothing
             run.Ribbon = P7NewTrail(() => (P7BladeAt(0.6f), P7BladeAt(0.98f)), (float)e.Dur, 2.5f * P7Sample);
             p7Leap = run;
@@ -423,12 +441,13 @@ public partial class BattleFx
                 P7LightOn(at + Vector3.Up * 0.5f, 4.5f, Flare.Night ? 3.4f : 4.5f);
                 Cam?.Kick(dir, 0.22f);
                 var sh = P7ShieldAt();
-                P7Quad(5, sh, 1.5f, 0.2f + P7Sample, bill: true, top: true, step: s =>
+                var ring = P7Quad(5, sh, 1.5f, 0.2f + P7Sample, bill: true, top: true, step: s =>
                 {
                     s.M.SetShaderParameter("p7_prog", Mathf.Clamp(s.Age / 0.2f, 0, 1));
                     s.M.SetShaderParameter("p7_width", 0.09f);
                     s.M.SetShaderParameter("p7_alpha", 1f - Mathf.Floor(s.Age / 0.05f) * 0.22f);
                 });
+                P7Brush(ring.M, 2 * 0.09f * 1.5f / P7Px(sh));
                 var feet = V(e.X, Y(e.X, e.Z), e.Z);
                 P7DustRing(feet + dir * 0.4f, 1.6f, 4, 0.9f, 0.25f);
                 p7GhostDue.Clear();
@@ -495,12 +514,13 @@ public partial class BattleFx
         P7Ev("hard_landing");
         float r = (float)e.Radius;
         var c = V(e.X, Y(e.X, e.Z), e.Z);
-        P7Quad(5, c + Vector3.Up * 0.06f, r, 0.2f, step: s =>
+        var shove = P7Quad(5, c + Vector3.Up * 0.06f, r, 0.2f, step: s =>
         {
             s.M.SetShaderParameter("p7_prog", Mathf.Clamp(s.Age / 0.2f, 0, 1));
             s.M.SetShaderParameter("p7_width", Mathf.Clamp(7f * P7Px(s.N.GlobalPosition) / r, 0.01f, 0.25f));
             s.M.SetShaderParameter("p7_alpha", 1f - Mathf.Floor(s.Age / 0.05f) * 0.25f);
         });
+        P7Brush(shove.M, 14);
         P7DustRing(c, r, 6, 0.85f, 0.3f);
     }
 
@@ -575,6 +595,8 @@ public partial class BattleFx
     {
         if (Her3D == null || !IsInstanceValid(Her3D)) return;
         var m = P7Mat(mode, ghost: true);
+        // the afterimage's rim is ~2.6 px across (one bristle); the vow's pulse band a fifth of her height (~30 px)
+        P7Brush(m, mode == 11 ? 30 : 3);
         m.SetShaderParameter("p7_alpha", 0.9f);
         m.SetShaderParameter("p7_life", life);
         var root = new Node3D { Name = "P7Ghost" };
