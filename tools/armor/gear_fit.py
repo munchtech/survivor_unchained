@@ -192,7 +192,8 @@ class Body:
         Pt = m.P.astype(np.float64)[first]
         shapes = {k: v["POSITION"].astype(np.float64)[first] for k, v in m.targets.items()}
         names = [g.nodes[j].get("name") for j in g.js["skins"][0]["joints"]]
-        return cls(Pt, z["T"], m.J[first], m.W[first], shapes, h.P, h.T, h.J, h.W, names,
+        Tt = src[z["T"]]  # (stage T indexes the glb's UV-split vertices: topology triangles are src[T])
+        return cls(Pt, Tt, m.J[first], m.W[first], shapes, h.P, h.T, h.J, h.W, names,
                    name=os.path.basename(os.path.normpath(body_dir)), glb=path, hash_=sha1(path))
 
     def with_points(self, Vnew, name):
