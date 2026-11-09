@@ -51,6 +51,9 @@ if b.returncode != 0: print(b.stdout[-3000:]); sys.exit(1)
 TURN = "demo_run: " + os.path.basename(args[0])
 if subprocess.run([sys.executable, TP, "take", "godot", TURN, "--wait", "3600", "--root", ROOT] + (["--stale-ok"] if STALE_OK else [])).returncode != 0:
     print("TURN REFUSED"); sys.exit(1)
+sys.path.insert(0, os.path.join(ROOT, "tools"))
+import freshness
+freshness.reimport_if_stale(ROOT)
 try:
     for r in runs:
         name = r["name"]; t0 = time.time(); extra = list(r["args"])
