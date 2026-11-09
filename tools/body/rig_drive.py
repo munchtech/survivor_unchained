@@ -30,6 +30,10 @@ Order (rig.json "helpers" rows run in list order, after "girdle"):
                 elevation; turned `turn` of the way the aim point (on's head + aim_m along on) swung from rest,
                 about the helper's head; scaled 1 + sp g across and 1 + sa g along its Y; moved off g (m, world,
                 turned with its parent). Neutral at and below A[0].
+  hand_clear    (rig.json "hand_clear", tools/body/hand_clear.py; after the girdle, before the rows; absent on the
+                ref body) per side, the arm opened by the least turn at its head so the hand keeps its place against
+                the thigh surface where this body's stands further out than the ref body's, by the hand's proximity.
+                hand_clear() has the formulas.
 Correctives (rig.json "correctives"; shapes are rest-space deltas added before skinning):
   "law": "flex"  the joint's absolute flexion F (deg, proximal head->joint vs joint->distal head); sorted keys
                  k_0 < ... < k_n with a shape each (null at the rest angle: no shape); between k_i and k_i+1,
@@ -518,6 +522,76 @@ def legacy_weight(c, deg):
 weight = legacy_weight
 
 
+# ---------------------------------------------------------------- hand clearance --
+def grid_at(D, t, th, t0, dt):
+    """A [t][theta] table at (t, theta): bilinear, t rows at t0 + i dt (held at the ends), theta bins centred at
+    -pi + (j + 0.5) 2 pi / n (periodic)."""
+    nt, nth = len(D), len(D[0])
+    x = min(max((t - t0) / dt, 0.0), nt - 1.0)
+    i = min(int(math.floor(x)), nt - 2)
+    fx = x - i
+    y = (th + math.pi) / (2 * math.pi) * nth - 0.5
+    j = int(math.floor(y))
+    fy = y - j
+    j0, j1 = j % nth, (j + 1) % nth
+    return ((1 - fx) * ((1 - fy) * D[i][j0] + fy * D[i][j1]) + fx * ((1 - fy) * D[i + 1][j0] + fy * D[i + 1][j1]))
+
+
+def hand_clear(poser, G, rig, s):
+    """rig.json "hand_clear" (tools/body/hand_clear.py; absent on the ref body: no change). The clips are A's on every
+    body, so where this body's thigh and hip stand further out than the ref body's (dr, read against the same side's
+    shoulder) a hand by them goes into the skin by that much. Each hand point p (its "points" heads, and the palm: the
+    mean of the "palm" heads) in the thigh's frame (q = its posed world's turn undone, from its head): t = q . axis /
+    length, rho = q across the axis, d = |rho|, theta = atan2(rho . e2, rho . e1); its gap to the ref body's surface
+    g = d - (r - dr) (grid_at). g's soft minimum (g_min - soft ln sum exp(-(g - g_min) / soft)) gives the proximity
+    k = 1 - smoothstep((g - near) / (far - near)); the change dr and the outward direction (rho's, world) are the
+    points' means by exp(-(g - g_min) / soft). The arm (its subtree) takes the least turn about its head that moves the
+    palm by k dr along that direction: the hand keeps its place against the thigh surface the clip was made on."""
+    hc = rig["hand_clear"]
+    sd = hc["sides"].get(s)
+    if not sd:
+        return
+    I = poser.index
+    th, arm = I[hc["thigh"].replace("{s}", s)], I[hc["arm"].replace("{s}", s)]
+    R, o = _unit(G[th]), G[th][:3, 3]
+    ax, e1, e2 = (np.asarray(sd[k], float) for k in ("axis", "e1", "e2"))
+    L, t0, dt = float(sd["length_m"]), float(hc["t0"]), float(hc["dt"])
+    palm_b = [I[n.replace("{s}", s)] for n in hc["palm"] if n.replace("{s}", s) in I]
+    if not palm_b:
+        return
+    palm = sum(head(G, k) for k in palm_b) / len(palm_b)
+    P = [head(G, I[n.replace("{s}", s)]) for n in hc["points"] if n.replace("{s}", s) in I] + [palm]
+    gs, drs, dirs = [], [], []
+    for p in P:
+        q = R.T @ (p - o)
+        rho = q - (q @ ax) * ax
+        d = float(np.linalg.norm(rho))
+        if d < 1e-9:
+            continue
+        t, ang = float(q @ ax) / L, math.atan2(float(rho @ e2), float(rho @ e1))
+        dr = grid_at(sd["dr"], t, ang, t0, dt)
+        gs.append(d - (grid_at(sd["r"], t, ang, t0, dt) - dr))
+        drs.append(dr)
+        dirs.append(R @ (rho / d))
+    if not gs:
+        return
+    soft = float(hc["soft_m"])
+    gm = min(gs)
+    w = [math.exp(-(g - gm) / soft) for g in gs]
+    sw = sum(w)
+    g = gm - soft * math.log(sw)
+    k = 1.0 - smooth((g - float(hc["near_m"])) / (float(hc["far_m"]) - float(hc["near_m"])))
+    if k <= 0.0:
+        return
+    dr = sum(wi * x for wi, x in zip(w, drs)) / sw
+    v = _n(sum(wi * x for wi, x in zip(w, dirs))) * (k * dr)
+    if float(np.linalg.norm(v)) < 1e-9:
+        return
+    c = head(G, arm)
+    a = palm - c
+    _apply(poser, G, arm, _about(c, _arc(_n(a), _n(a + v))))
+
+
 # --------------------------------------------------------------------- drive --
 def drive_helpers(poser, G, rig):
     G = G.copy()
@@ -527,6 +601,9 @@ def drive_helpers(poser, G, rig):
             r = girdle(poser, G, rig, s)
             info[("A", s)] = r["A"]
             info[("A0", s)] = r["A0"]
+    if "hand_clear" in rig:      # (P1 R1 sliders: after the girdle, before the helper rows; absent on the ref body)
+        for s in ("l", "r"):
+            hand_clear(poser, G, rig, s)
     for h in rig.get("helpers", []):
         for s in (("l", "r") if "{s}" in h["name"] else ("",)):
             helper(poser, G, h, s, info)

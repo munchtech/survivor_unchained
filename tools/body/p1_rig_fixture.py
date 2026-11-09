@@ -1,6 +1,9 @@
 """The C# corrective/helper driver's parity fixture (P1 F): rig_drive.drive on sampled poses of the published B.
 
     python tools/body/p1_rig_fixture.py [godot/art/people/body_p1]   -> godot/tests/fixtures/p1_rig_parity.json
+    python tools/body/p1_rig_fixture.py PUB --hand DUMP --out FILE     (P1 R1 sliders: a body with rig.json "hand_clear"
+        (a slider variant's published folder); the poses also take frames of its baked idles from the keys dump DUMP
+        (clipcheck's), hands by and on her thighs, so the hand-clearance law is held where it acts)
 
 Writes B's close skeleton (names, parents, rest worlds), the rig it drove (the published rig.json, plus three test
 rows: an "rbf" on the thigh's direction with its solved M, an "arc" along the hip's flexion and a legacy row, each with
@@ -43,8 +46,40 @@ def fk(sk, local):
     return G
 
 
+def from_dump(sk, rig, dump, clip, frames):
+    """Bone worlds (glb space) of a baked clip's frames as clipcheck.Body.pose lays them before the laws: the dump's
+    globals, bones it lacks and unkeyed helpers carried at rest local."""
+    d = json.load(open(os.path.join(dump, f"{clip}.json")))
+    names = d["b_names"]
+    mats = lambda a: np.concatenate([np.asarray(a, float).reshape(-1, 3, 4), np.tile([[[0, 0, 0, 1.0]]], (len(a), 1, 1))], 1)
+    rest_d = mats(d["b_rest"])
+    X = sk.rest[sk.index["pelvis"]] @ np.linalg.inv(rest_d[names.index("pelvis")])
+    helpers = {h["name"].replace("{s}", s) for h in rig.get("helpers", []) for s in ("l", "r")}
+    keyed = set(d["keyed"])
+    out = {}
+    for f in frames:
+        Gd = mats(d["B"][f])
+        G = sk.rest.copy()
+        got = np.zeros(len(G), bool)
+        for a, n in enumerate(names):
+            k = sk.index.get(n, -1)
+            if k >= 0:
+                G[k] = X @ Gd[a]
+                got[k] = True
+        for k in range(len(sk.names)):          # parent-first (checked)
+            pk = sk.parent[k]
+            if pk >= 0 and (not got[k] or sk.names[k] in helpers and sk.names[k] not in keyed):
+                G[k] = G[pk] @ (np.linalg.inv(sk.rest[pk]) @ sk.rest[k])
+        out[f"{clip}_{f}"] = G
+    return out
+
+
 def main():
-    pub = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "godot", "art", "people", "body_p1")
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    hand = sys.argv[sys.argv.index("--hand") + 1] if "--hand" in sys.argv else None
+    dst = sys.argv[sys.argv.index("--out") + 1] if "--out" in sys.argv else None
+    args = [a for a in args if a not in (hand, dst)]
+    pub = args[0] if args else os.path.join(ROOT, "godot", "art", "people", "body_p1")
     sk = Glb(os.path.join(pub, "body.glb")).skeleton()
     assert all(sk.parent[j] < j for j in range(len(sk.names))), "joints not parent-first"
     rig = json.load(open(os.path.join(pub, "rig.json")))
@@ -85,17 +120,22 @@ def main():
     for k in range(4):
         poses[f"random_{k}"] = {I[n]: rot(rng.normal(size=3), float(rng.uniform(0, 45))) for n in core
                                 if n not in ("root",)}
+    dumped = {}
+    if hand:
+        assert "hand_clear" in rig, f"{pub}/rig.json has no hand_clear"
+        for clip, fr in (("idle_reaver_look", (0, 45, 95)), ("idle_reaver_town", (0, 60)), ("run_warden", (5, 20))):
+            dumped.update(from_dump(sk, rig, hand, clip, fr))
     out = {"why": __doc__.split("\n")[0], "names": sk.names, "parent": [int(p) for p in sk.parent],
            "rest": [m.tolist() for m in sk.rest], "rig": rig, "poses": []}
-    for name, loc in poses.items():
-        G = fk(sk, loc)
+    for name, loc in list(poses.items()) + list(dumped.items()):
+        G = loc if isinstance(loc, np.ndarray) else fk(sk, loc)
         G2, w = rd.drive(sk, G, rig)
         if name == "rest":      # the rest is exactly neutral (the girdle's tables are relative to the rest)
             assert np.abs(G2 - G).max() < 1e-9, f"rest not identity: {np.abs(G2 - G).max()}"
         out["poses"].append({"name": name, "G": [m.tolist() for m in G], "driven": [m.tolist() for m in G2],
                              "weights": w})
         print(name, "max weight", max(w.values()) if w else 0, {k: round(v, 3) for k, v in w.items() if v > 0.01})
-    dst = os.path.join(ROOT, "godot", "tests", "fixtures", "p1_rig_parity.json")
+    dst = dst or os.path.join(ROOT, "godot", "tests", "fixtures", "p1_rig_parity.json")
     with open(dst, "w") as f:
         json.dump(out, f, separators=(",", ":"))
     print("wrote", os.path.relpath(dst, ROOT), os.path.getsize(dst) // 1024, "KB")

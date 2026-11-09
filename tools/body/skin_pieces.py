@@ -112,7 +112,33 @@ class Target:
         self.targets = glbwrite.get_targets(path, "Heroine")
         self.js, self.bin = glbwrite._read_glb(path)
 
+    def use_ref(self, build_out, tier="close"):
+        """P1 R1 sliders: a build laid from a ref body (build_topo target_joints_ref: stage/ref_rest_close.npy, the ref's
+        rest in topology order; close.npz "src" maps this glb's vertices to it) finds A's point on the REF body (where
+        A's maps carry it: the ref is the body her_a's fit was made on) and takes that triangle and barycentrics on
+        this body: carried by vertex, as weights_topo.a_lookup carries A's patches. On a height or hips slider the
+        nearest point of this body to A's point lay 9-77 mm off, on the wrong part (the hip's ink on pelvis weights)."""
+        st = os.path.join(build_out, "stage")
+        rp, zp = os.path.join(st, f"ref_rest_{tier}.npy"), os.path.join(st, f"{tier}.npz")
+        if not (os.path.exists(rp) and os.path.exists(zp)):
+            return False
+        z = np.load(zp)
+        src = z["src"]
+        if len(src) != len(self.P) or np.abs(z["V"][src] - self.P).max() > 1e-5:
+            print("skin_pieces: the build's topology map does not match its body.glb; nearest-point carry")
+            return False
+        self.Pref = np.load(rp)[src].astype(np.float64)
+        self.surf_ref = Surface(self.Pref, self.T)
+        return True
+
     def at(self, X):
+        if getattr(self, "surf_ref", None) is not None:
+            qr, _, t, d = self.surf_ref.closest(X, k=16)
+            Tv = self.T[t]
+            w = bary(qr, *(self.Pref[Tv[:, k]] for k in range(3)))
+            q = (w[:, :, None] * self.P[Tv]).sum(1)
+            n = U((w[:, :, None] * self.N[Tv]).sum(1))
+            return q, n, Tv, w, d
         q, _, t, d = self.surf.closest(X, k=16)
         Tv = self.T[t]
         w = bary(q, *(self.P[Tv[:, k]] for k in range(3)))
@@ -241,7 +267,8 @@ def run(build_out, spec):
     tgts = {"close": Target(os.path.join(build_out, "body.glb"))}
     if os.path.exists(os.path.join(build_out, "play.glb")):
         tgts["play"] = Target(os.path.join(build_out, "play.glb"))
-    files, items, rep = {}, [], {"slots": cfg.get("slots", ["ink"]), "pieces": {}}
+    by_ref = {k: t.use_ref(build_out, k) for k, t in tgts.items()}
+    files, items, rep = {}, [], {"slots": cfg.get("slots", ["ink"]), "pieces": {}, "carried_by_ref": by_ref}
     for f, node, tier in pieces_of(cfg):
         if tier not in tgts:
             continue

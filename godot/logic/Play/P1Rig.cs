@@ -528,8 +528,84 @@ public sealed class P1Rig
         return sm ? t * t * (3 - 2 * t) : t;
     }
 
+    // ------------------------------------------------------- hand clearance --
+    /// <summary>rig_drive.grid_at: a [t][theta] table, bilinear; t rows at t0 + i dt (held at the ends), theta bins
+    /// centred at -pi + (j + 0.5) 2 pi / n (periodic).</summary>
+    public static double GridAt(double[][] D, double t, double th, double t0, double dt)
+    {
+        int nt = D.Length, nth = D[0].Length;
+        double x = Math.Min(Math.Max((t - t0) / dt, 0.0), nt - 1.0);
+        int i = Math.Min((int)Math.Floor(x), nt - 2);
+        double fx = x - i;
+        double y = (th + Math.PI) / (2 * Math.PI) * nth - 0.5;
+        int j = (int)Math.Floor(y);
+        double fy = y - j;
+        int j0 = ((j % nth) + nth) % nth, j1 = (((j + 1) % nth) + nth) % nth;
+        return (1 - fx) * ((1 - fy) * D[i][j0] + fy * D[i][j1]) + fx * ((1 - fy) * D[i + 1][j0] + fy * D[i + 1][j1]);
+    }
+
+    sealed record HandSide(int Thigh, int Arm, int[] Palm, int[] Points, P1V Axis, P1V E1, P1V E2, double Length, double[][] R, double[][] Dr);
+    HandSide?[]? hands;
+
+    static double[][] Grid(JsonElement e) => e.EnumerateArray().Select(r => r.EnumerateArray().Select(x => x.GetDouble()).ToArray()).ToArray();
+
+    HandSide? HandOf(JsonElement hc, string s)
+    {
+        if (!hc.GetProperty("sides").TryGetProperty(s, out var sd)) return null;
+        int[] Bones(string key) => hc.GetProperty(key).EnumerateArray().Select(n => n.GetString()!.Replace("{s}", s))
+            .Where(Index.ContainsKey).Select(n => Index[n]).ToArray();
+        return new HandSide(Index[Sub(hc.GetProperty("thigh"), s)], Index[Sub(hc.GetProperty("arm"), s)], Bones("palm"), Bones("points"),
+            Vec(sd.GetProperty("axis")), Vec(sd.GetProperty("e1")), Vec(sd.GetProperty("e2")), sd.GetProperty("length_m").GetDouble(),
+            Grid(sd.GetProperty("r")), Grid(sd.GetProperty("dr")));
+    }
+
+    /// <summary>rig_drive.hand_clear (rig.json "hand_clear", tools/body/hand_clear.py; absent on the ref body: no
+    /// change): the arm opened by the least turn about its head so the palm moves k dr out from the thigh, dr this
+    /// body's thigh surface beyond the ref body's, k the hand's proximity to it (the points' soft-minimum gap).</summary>
+    void HandClear(P1M4[] G, JsonElement hc, int side)
+    {
+        hands ??= new[] { HandOf(hc, "l"), HandOf(hc, "r") };
+        var h = hands[side];
+        if (h == null || h.Palm.Length == 0) return;
+        var R = Unit(G[h.Thigh]); var o = Head(G, h.Thigh);
+        double t0 = hc.GetProperty("t0").GetDouble(), dt = hc.GetProperty("dt").GetDouble();
+        var palm = new P1V(0, 0, 0);
+        foreach (var k in h.Palm) palm += Head(G, k);
+        palm /= h.Palm.Length;
+        var P = h.Points.Select(k => Head(G, k)).Append(palm);
+        var gs = new List<double>(); var drs = new List<double>(); var dirs = new List<P1V>();
+        foreach (var p in P)
+        {
+            var q = R.T() * (p - o);
+            var rho = q - h.Axis * P1V.Dot(q, h.Axis);
+            double d = rho.Len();
+            if (d < 1e-9) continue;
+            double t = P1V.Dot(q, h.Axis) / h.Length, ang = Math.Atan2(P1V.Dot(rho, h.E2), P1V.Dot(rho, h.E1));
+            double dr = GridAt(h.Dr, t, ang, t0, dt);
+            gs.Add(d - (GridAt(h.R, t, ang, t0, dt) - dr));
+            drs.Add(dr);
+            dirs.Add(R * (rho / d));
+        }
+        if (gs.Count == 0) return;
+        double soft = hc.GetProperty("soft_m").GetDouble(), near = hc.GetProperty("near_m").GetDouble(), far = hc.GetProperty("far_m").GetDouble();
+        double gm = gs.Min();
+        var w = gs.Select(g => Math.Exp(-(g - gm) / soft)).ToArray();
+        double sw = 0; foreach (var x in w) sw += x;
+        double gsoft = gm - soft * Math.Log(sw);
+        double kp = 1.0 - Smooth((gsoft - near) / (far - near));
+        if (kp <= 0.0) return;
+        double drm = 0; var dir = new P1V(0, 0, 0);
+        for (int i = 0; i < w.Length; i++) { drm += w[i] * drs[i]; dir += dirs[i] * w[i]; }
+        drm /= sw;
+        var v = N(dir) * (kp * drm);
+        if (v.Len() < 1e-9) return;
+        var c = Head(G, h.Arm);
+        var a = palm - c;
+        Apply(G, h.Arm, About(c, Arc(N(a), N(a + v))));
+    }
+
     // --------------------------------------------------------------- drive --
-    /// <summary>rig_drive.drive: the girdle (per side), the helper rows in order, then the correctives' weights. The
+    /// <summary>rig_drive.drive: the girdle (per side), the hand clearance (per side, with "hand_clear"), the helper rows in order, then the correctives' weights. The
     /// input array is left as it was.</summary>
     public (P1M4[] G, Dictionary<string, double> Weights) Drive(P1M4[] input)
     {
@@ -537,6 +613,8 @@ public sealed class P1Rig
         var info = new Dictionary<string, double>();
         if (rig.TryGetProperty("girdle", out _))
             foreach (var s in new[] { "l", "r" }) { info["A" + s] = Girdle(G, s); info["A0" + s] = Elevation(Rest, s); }
+        if (rig.TryGetProperty("hand_clear", out var hc))   // (P1 R1 sliders: after the girdle, before the rows; absent on the ref body)
+            for (int side = 0; side < 2; side++) HandClear(G, hc, side);
         if (rig.TryGetProperty("helpers", out var hs))
             foreach (var h in hs.EnumerateArray())
                 foreach (var s in Sides(h.GetProperty("name").GetString()!))

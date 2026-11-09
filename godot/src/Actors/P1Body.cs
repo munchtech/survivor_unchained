@@ -138,7 +138,7 @@ public static class P1Body
     {
         if (eyesFromHead is Vector3 e) return e;
         var head = sk.GetBoneGlobalRest(sk.FindBone("Head")).Origin;
-        if (ARest("Head") is Transform3D aHead) { eyesFromHead = aHead.Origin + People.HerEyesOffset - head; return eyesFromHead.Value; }
+        if (ARestOn(sk, "Head") is Transform3D aHead) { eyesFromHead = aHead.Origin + People.HerEyesOffset - head; return eyesFromHead.Value; }
         foreach (var mi in sk.GetChildren().OfType<MeshInstance3D>())
             if (mi.Name == "HeroineEyes" && mi.Mesh != null) { var c = mi.Mesh.GetAabb().GetCenter(); eyesFromHead = c - head; return c - head; }
         return new Vector3(0, 0.082f, 0.111f);
@@ -160,6 +160,41 @@ public static class P1Body
     {
         if (!IsB(sk)) return shares.Select(s => (sk.FindBone(s.Bone), s.Share)).ToArray();
         return RoleMap(sk).Spread(shares.Select(s => (s.Bone, (double)s.Share))).Select(s => (s.B, (float)s.Share)).ToArray();
+    }
+
+    // ------------------------------------------------------------- a body's carry from its ref --
+    static Vector3? headMove;
+    static Dictionary<string, Vector3>? refMove;
+    static Vector3 V3(JsonElement e) => new((float)e[0].GetDouble(), (float)e[1].GetDouble(), (float)e[2].GetDouble());
+    static JsonElement? Carry() => FileAccess.FileExists(Dir + "publish.json") && Rig("publish.json").TryGetProperty("carry", out var c) ? c : null;
+
+    /// <summary>publish.json "carry" head_move_m (tools/body/publish_p1.py body_laws; P1 R1 sliders): the build's rigid move
+    /// of the baked head (the neck sliders' head_move + the ground: a height slider's whole head 98 mm down). Zero when
+    /// absent (the gate body, her_b: its head is A's at A's rest).</summary>
+    public static Vector3 HeadMove => headMove ??= Carry() is JsonElement c && c.TryGetProperty("head_move_m", out var h) ? V3(h) : Vector3.Zero;
+
+    /// <summary>publish.json "carry" ref_move_m: B bone's rest joint move against the ref body's (zero when absent).</summary>
+    public static Vector3 RefMove(string bName)
+    {
+        if (refMove == null)
+        {
+            refMove = new();
+            if (Carry() is JsonElement c && c.TryGetProperty("ref_move_m", out var m))
+                foreach (var kv in m.EnumerateObject()) refMove[kv.Name] = V3(kv.Value);
+        }
+        return refMove.TryGetValue(bName, out var v) ? v : Vector3.Zero;
+    }
+
+    /// <summary>An A-space point laid on B bone b (a pivot, a hair collision ball) carried by b's move against the ref
+    /// body (RefMove), so on a slider body it keeps the place against b it has on the ref body; unchanged on the ref body.</summary>
+    public static Vector3 OnB(Skeleton3D sk, int b, Vector3 aPoint) => IsB(sk) && b >= 0 ? aPoint + RefMove(sk.GetBoneName(b)) : aPoint;
+
+    /// <summary>A bone's A rest carried onto this body as OnB carries it, by the move of the B bone playing its part.</summary>
+    public static Transform3D? ARestOn(Skeleton3D sk, string aName)
+    {
+        if (ARest(aName) is not Transform3D t) return null;
+        t.Origin = OnB(sk, Bone(sk, aName), t.Origin);
+        return t;
     }
 
     /// <summary>A bone's A rest (skeleton space) as a_skeleton.json has it; null if A has none.</summary>
@@ -225,6 +260,9 @@ public static class P1Body
         if (!IsB(b) || mi.HasMeta("p1_b") || mi.HasMeta("p1_rebound") || mi.Skin is not Skin skin) return;
         mi.SetMeta("p1_rebound", true);
         var rig = RigOf(b); var map = RoleMap(b);
+        // (P1 R1 sliders: on a body whose baked head moved (HeadMove: a height slider's 98 mm), the mesh is laid where A
+        // draws it moved as the head moved, rigidly: inverse(B rest) move A rest bind; zero on the gate body)
+        var mv = P1M4.Id; var hm = HeadMove; mv[0, 3] = hm.X; mv[1, 3] = hm.Y; mv[2, 3] = hm.Z;
         var nw = new Skin();
         for (int i = 0; i < skin.GetBindCount(); i++)
         {
@@ -232,15 +270,15 @@ public static class P1Body
             int ai = nm != "" ? (A.Index.TryGetValue(nm, out int k) ? k : -1) : skin.GetBindBone(i);
             int bi = ai >= 0 && ai < A.Names.Length ? map.Role(ai) : (nm != "" ? b.FindBone(nm) : -1);
             if (ai < 0 || ai >= A.Names.Length || bi < 0) { nw.AddNamedBind(bi >= 0 ? b.GetBoneName(bi) : b.GetBoneName(0), skin.GetBindPose(i)); continue; }
-            nw.AddNamedBind(b.GetBoneName(bi), T(rig.Rest[bi].Inverse() * A.Rest[ai] * M(skin.GetBindPose(i))));
+            nw.AddNamedBind(b.GetBoneName(bi), T(rig.Rest[bi].Inverse() * mv * A.Rest[ai] * M(skin.GetBindPose(i))));
         }
         if (Args.Has("p1-probe")) HairFit(b, mi, skin, nw);
         mi.Skin = nw;
         if (Args.Has("p1-probe")) GD.Print($"p1: {mi.Name} rebound to B ({skin.GetBindCount()} binds)");
     }
 
-    /// <summary>(--p1-probe) A mesh's rest world as A draws it (old skin, A's rest) against B (new skin, B's rest): the
-    /// bounding boxes' corners and the worst vertex, mm; and its centroid from B's Head joint.</summary>
+    /// <summary>(--p1-probe) A mesh's rest world as A draws it (old skin, A's rest; moved by HeadMove) against B (new skin,
+    /// B's rest): the bounding boxes' corners and the worst vertex, mm; and its centroid from B's Head joint.</summary>
     static void HairFit(Skeleton3D b, MeshInstance3D mi, Skin was, Skin now)
     {
         var arr = mi.Mesh.SurfaceGetArrays(0);
@@ -259,7 +297,7 @@ public static class P1Body
                 int bind = bo[i * per + k];
                 string nm = sk.GetBindName(bind);
                 Transform3D rest;
-                if (onA) { int a = nm != "" && A.Index.TryGetValue(nm, out int q) ? q : sk.GetBindBone(bind); rest = a >= 0 && a < A.Names.Length ? T(A.Rest[a]) : Transform3D.Identity; }
+                if (onA) { int a = nm != "" && A.Index.TryGetValue(nm, out int q) ? q : sk.GetBindBone(bind); rest = a >= 0 && a < A.Names.Length ? new Transform3D(Basis.Identity, HeadMove) * T(A.Rest[a]) : Transform3D.Identity; }
                 else { int j = b.FindBone(nm); rest = j >= 0 ? b.GetBoneGlobalRest(j) : Transform3D.Identity; }
                 acc += wk * (rest * sk.GetBindPose(bind) * v[i]);
             }
@@ -277,7 +315,7 @@ public static class P1Body
         float box = Mathf.Max(Mathf.Max(dl.X, Mathf.Max(dl.Y, dl.Z)), Mathf.Max(dh.X, Mathf.Max(dh.Y, dh.Z)));
         var head = b.GetBoneGlobalRest(b.FindBone("Head")).Origin;
         GD.Print($"p1: hair fit {mi.Name}: {v.Length} verts, A box {hi1 - lo1} m, bbox corners off {box * 1000:F4} mm, worst vertex {worst * 1000:F4} mm; " +
-                 $"centroid from B's Head joint {(sum / v.Length - head) * 1000} mm");
+                 $"centroid from B's Head joint {(sum / v.Length - head) * 1000} mm (head move {HeadMove * 1000} mm)");
     }
 
     // ------------------------------------------------------------------ skin-tight pieces --

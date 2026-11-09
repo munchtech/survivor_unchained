@@ -96,6 +96,51 @@ def write_import(glb_import, params):
     return changed
 
 
+def body_laws(src, out):
+    """P1 R1 sliders: what a body built from a ref body (build_topo target_joints_ref: a slider variant on her_b) needs at
+    runtime of that change; none of it exists on the ref body itself (her_b: absent = no change).
+      rig.json "hand_clear"     tools/body/hand_clear.py (rig_drive.hand_clear, P1Rig.HandClear): the arm opened by
+                                the thigh surface's change, by the hand's proximity.
+      publish.json "carry"      head_move_m: the build's rigid move of the baked head (build.json; the neck sliders'
+                                head_move + the ground): P1Body.Rebind lays her hair and head pieces (A-skinned) by it,
+                                HeadTurn/GazeCarry/eyes pivots and the hair's collision balls ride it;
+                                ref_move_m {bone: [dx, dy, dz]}: each joint's rest move against the ref body's
+                                (stage/close_skeleton.json vs ref_skeleton.json, over 0.01 mm): A-space points laid
+                                on a B bone (pivots, balls) ride their bone's move (P1Body.OnB)."""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import hand_clear
+    hc = hand_clear.build(src)
+    if hc:
+        rp = os.path.join(PUB, "rig.json")
+        rig = json.load(open(rp))
+        rig["hand_clear"] = hc
+        with open(rp, "w") as f:
+            json.dump(rig, f, indent=1)
+        out["files"]["rig.json"] = sha1(rp)
+        out["laws"] = {"hand_clear": {s: hc["sides"][s]["_dr_max_mm"] for s in hc["sides"]}}
+        print(f"publish_p1: rig.json hand_clear added (dr max mm {out['laws']['hand_clear']})")
+    carry = {}
+    bj = os.path.join(src, "build.json")
+    if os.path.exists(bj):
+        hm = json.load(open(bj)).get("head_move_m")
+        if hm and max(abs(float(x)) for x in hm) > 0:
+            carry["head_move_m"] = [float(x) for x in hm]
+    sb, sr = (os.path.join(src, "stage", f) for f in ("close_skeleton.json", "ref_skeleton.json"))
+    if os.path.exists(sb) and os.path.exists(sr):
+        a, b = json.load(open(sb)), json.load(open(sr))
+        if a["names"] == b["names"]:
+            mv = {}
+            for n, wa, wb in zip(a["names"], a["worlds"], b["worlds"]):
+                d = [float(wa[k][3]) - float(wb[k][3]) for k in range(3)]
+                if max(abs(x) for x in d) > 1e-5:
+                    mv[n] = [round(x, 6) for x in d]
+            if mv:
+                carry["ref_move_m"] = mv
+    if carry:
+        out["carry"] = carry
+        print(f"publish_p1: carry head_move_m {carry.get('head_move_m')}, ref_move_m {len(carry.get('ref_move_m', {}))} bones")
+
+
 def publish(src):
     for f in FILES:
         if not os.path.exists(os.path.join(src, f)):
@@ -109,6 +154,7 @@ def publish(src):
     for f in FILES:
         shutil.copy2(os.path.join(src, f), os.path.join(PUB, f))
         out["files"][f] = sha1(os.path.join(PUB, f))
+    body_laws(src, out)
     for f in OPTIONAL:
         if os.path.exists(os.path.join(src, f)):
             shutil.copy2(os.path.join(src, f), os.path.join(PUB, f))

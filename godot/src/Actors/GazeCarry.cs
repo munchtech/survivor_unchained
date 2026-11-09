@@ -41,11 +41,11 @@ public partial class GazeCarry : SkeletonModifier3D
                 neckUp = (nr * Vector3.Up).Normalized();
                 neckLeft = (nr * Vector3.Right).Normalized();
             }
-            if (P1Body.IsB(sk) && P1Body.ARest("Head") is Transform3D ah)
+            if (P1Body.IsB(sk) && P1Body.ARestOn(sk, "Head") is Transform3D ah)
             {
                 var br = sk.GetBoneGlobalRest(head);
                 headPivot = br.Basis.Orthonormalized().Inverse() * (ah.Origin - br.Origin);
-                if (neck >= 0 && P1Body.ARest("neck_01") is Transform3D an)
+                if (neck >= 0 && P1Body.ARestOn(sk, "neck_01") is Transform3D an)
                 {
                     var nr0 = sk.GetBoneGlobalRest(neck);
                     neckPivot = nr0.Basis.Orthonormalized().Inverse() * (an.Origin - nr0.Origin);

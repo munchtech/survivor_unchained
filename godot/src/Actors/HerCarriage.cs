@@ -48,7 +48,7 @@ public partial class HerCarriage : SkeletonModifier3D
         if (x.Bone >= 0 && P1Body.IsB(sk) && P1Body.ARest(s.Bone) is Transform3D ar)
         {
             var br = sk.GetBoneGlobalRest(x.Bone);
-            pivot = br.Basis.Orthonormalized().Inverse() * (ar.Origin - br.Origin);
+            pivot = br.Basis.Orthonormalized().Inverse() * (P1Body.OnB(sk, x.Bone, ar.Origin) - br.Origin);
         }
         return (x.Bone, x.Share, pivot);
     })).ToArray();
