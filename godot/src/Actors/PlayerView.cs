@@ -154,8 +154,13 @@ public partial class PlayerView : Node3D
     /// the real light added about a third within 1.5 m and nothing past 3 m), and lights it as before by day or with --crowd-fill off.</summary>
     static readonly string CrowdOmniArg = SurvivorUnchained.Args.Get("crowd-omni") ?? "";
     static bool CrowdOmni => CrowdOmniArg == "on" || (CrowdOmniArg != "off" && !(Atmosphere.CrowdFill > 0 && Atmosphere.CrowdCurveNew));
+    /// <summary>--pool-log: her light's reach and energy printed as they change (L1 S2b-N2, the pool in metres).</summary>
+    static readonly bool PoolLog = SurvivorUnchained.Args.Has("pool-log");
+    float poolLogged = -1;
     /// <summary>--crowd-ember K, --crowd-ember-h H: her lamp's strength on the crowd by night (times the pool light's) and its point over her feet.</summary>
-    static readonly float CrowdEmberK = SurvivorUnchained.Args.Num("crowd-ember", 0.43f), CrowdEmberH = SurvivorUnchained.Args.Num("crowd-ember-h", 2.4f),
+    // (L1 lead 8, S2b-N2: 0.43 to 0.24, as her pool's light went 4.5 to 8.0 under the night rigs (W2): the crowd in her pool
+    // lit 1.78 times what it was tuned under, tan wolves on 09.)
+    static readonly float CrowdEmberK = SurvivorUnchained.Args.Num("crowd-ember", 0.24f), CrowdEmberH = SurvivorUnchained.Args.Num("crowd-ember-h", 2.4f),
         CrowdEmberIn = SurvivorUnchained.Args.Num("crowd-inner", 3f);
     /// <summary>Moves a boss or cinematic actor from people's layer to CastLayer (other bits kept), and keeps its later meshes (the folk shadow) there.</summary>
     public static void ToCast(Node n)
@@ -1141,6 +1146,7 @@ public partial class PlayerView : Node3D
             // the rig's ember_give says how much): none while her lamp is out or hidden.
             var lp = Light.GlobalPosition;
             RenderingServer.GlobalShaderParameterSet("cel_ember", new Vector4(lp.X, lp.Y, lp.Z, Visible && Light.Visible && Light.LightEnergy > 0 ? Light.OmniRange : 0));
+            if (PoolLog && Mathf.Abs(Light.OmniRange - poolLogged) > 0.25f) { poolLogged = Light.OmniRange; GD.Print($"pool: her light's reach {Light.OmniRange:0.00} m, energy {Light.LightEnergy:0.00}"); }
             // (L1 lead 8, S2b) her light's color (linear, its largest channel 1) and fall (OmniAttenuation), so the cel model knows her
             // light among the others and paints its pool (cel.gdshaderinc cel_pool_band).
             float lm = Mathf.Max(lc.R, Mathf.Max(lc.G, Mathf.Max(lc.B, 1e-4f)));

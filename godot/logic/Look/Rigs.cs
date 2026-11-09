@@ -7,12 +7,16 @@ namespace SurvivorUnchained.Look;
 
 /// <summary>(L1 B4) A lighting rig's key: where it comes from (world azimuth and elevation in degrees for the play rigs,
 /// as Atmosphere.Set reads them; for a camera rig, degrees round from the lens toward its right and up), its color
-/// (sRGB hex), intensity and cast-shadow opacity. Null: the preset's own.</summary>
-public sealed record RigKey(double? Az = null, double? El = null, string? Color = null, double? Intensity = null, double? Shadow = null);
+/// (sRGB hex), intensity and cast-shadow opacity. Null: the preset's own. (L1 lead 8, S2b-N2) Scale: a level on the key's
+/// intensity, the rig's or the preset's own (so a rig over several places, arena_night, sets the night's level and each place
+/// keeps its own moon relative to the others).</summary>
+public sealed record RigKey(double? Az = null, double? El = null, string? Color = null, double? Intensity = null, double? Shadow = null, double? Scale = null);
 
 /// <summary>The fill: the cel model's colored fill in the key's shade band (cel_fill's hue, cel_rig.y its share of the
-/// key) and the sky's light (the hemisphere's sky and ground hues, its intensity and the environment's).</summary>
-public sealed record RigFill(string? Color = null, double? Strength = null, string? Sky = null, string? Ground = null, double? Hemi = null, double? Env = null);
+/// key) and the sky's light (the hemisphere's sky and ground hues, its intensity and the environment's). (L1 lead 8, S2b-N2)
+/// SkyScale, with no hemi of the rig's own: the preset's own sky light (its hemi times its sky's luminance) kept under the
+/// rig's sky color, times this level (a rig over several places recolors their skies and sets the level; each keeps its own).</summary>
+public sealed record RigFill(string? Color = null, double? Strength = null, string? Sky = null, string? Ground = null, double? Hemi = null, double? Env = null, double? SkyScale = null);
 
 /// <summary>The stepped rim: its color (sRGB hex), strength (cel_rig.z) and width in 1 - n.v (cel_rig.w; a material
 /// class's own step and width multiply it: B2).</summary>
@@ -107,9 +111,9 @@ public sealed class RigSet
         return new LightRig(id,
             S(e, "from", null) ?? throw new FormatException($"rigs.json: {id} names no 'from'"),
             e.TryGetProperty("camera", out var ce) ? ce.GetBoolean() : b?.Camera ?? false,
-            new RigKey(D(k, "az", b?.Key.Az), D(k, "el", b?.Key.El), S(k, "color", b?.Key.Color), D(k, "intensity", b?.Key.Intensity), D(k, "shadow", b?.Key.Shadow)),
+            new RigKey(D(k, "az", b?.Key.Az), D(k, "el", b?.Key.El), S(k, "color", b?.Key.Color), D(k, "intensity", b?.Key.Intensity), D(k, "shadow", b?.Key.Shadow), D(k, "scale", b?.Key.Scale)),
             new RigFill(S(f, "color", b?.Fill.Color), D(f, "strength", b?.Fill.Strength), S(f, "sky", b?.Fill.Sky), S(f, "ground", b?.Fill.Ground),
-                D(f, "hemi", b?.Fill.Hemi), D(f, "env", b?.Fill.Env)),
+                D(f, "hemi", b?.Fill.Hemi), D(f, "env", b?.Fill.Env), D(f, "sky_scale", b?.Fill.SkyScale)),
             new RigRim(S(r, "color", b?.Rim.Color), D(r, "strength", b?.Rim.Strength), D(r, "width", b?.Rim.Width)),
             ink, D(e, "hardness", b?.Hardness), S(e, "grade", b?.Grade), D(e, "exposure", b?.Exposure), D(e, "ember", b?.Ember),
             new RigDapple(D(d, "cover", b?.Dapple.Cover), D(d, "strength", b?.Dapple.Strength), D(d, "height", b?.Dapple.Height)),
@@ -138,9 +142,9 @@ public static class Rigs
         return p with
         {
             KeyAzimuth = k.Az ?? p.KeyAzimuth, KeyElevation = k.El ?? p.KeyElevation, KeyColor = k.Color ?? p.KeyColor,
-            KeyIntensity = k.Intensity ?? p.KeyIntensity, ShadowStrength = k.Shadow ?? p.ShadowStrength,
+            KeyIntensity = (k.Intensity ?? p.KeyIntensity) * (k.Scale ?? 1), ShadowStrength = k.Shadow ?? p.ShadowStrength,
             CelFillColor = f.Color ?? p.CelFillColor, CelFill = f.Strength ?? p.CelFill,
-            HemiSky = f.Sky ?? p.HemiSky, HemiGround = f.Ground ?? p.HemiGround, HemiIntensity = f.Hemi ?? p.HemiIntensity, EnvIntensity = f.Env ?? p.EnvIntensity,
+            HemiSky = f.Sky ?? p.HemiSky, HemiGround = f.Ground ?? p.HemiGround, HemiIntensity = f.Hemi ?? (f.SkyScale is { } ss ? p.HemiIntensity * SkyLum(p.HemiSky) / Math.Max(SkyLum(f.Sky ?? p.HemiSky), 1e-4) * ss : p.HemiIntensity), EnvIntensity = f.Env ?? p.EnvIntensity,
             CelRimColor = m.Color ?? p.CelRimColor, CelRim = m.Strength ?? p.CelRim, CelRimWidth = m.Width ?? p.CelRimWidth,
             CelInk = r.Ink is { } ink ? ink : p.CelInk, CelShadow = r.Hardness ?? p.CelShadow,
             Grade = Graded(r.Grade is { } g ? Atmospheres.GradeNamed(g) ?? p.Grade : p.Grade, r),
@@ -153,6 +157,9 @@ public static class Rigs
             IsLit = true, CelTwin = null, Source = p,
         };
     }
+
+    /// <summary>(S2b-N2) An sRGB hex's linear luminance (0.05 if it is not one).</summary>
+    static double SkyLum(string hex) => SurvivorUnchained.Content.NpcDyePick.Hex(hex) is { } c ? SurvivorUnchained.Content.NpcDyePick.Lum(c) : 0.05;
 
     /// <summary>(L1 W2) The rig's grade with its tone curve and warm-source term over it (absent: the grade's own).</summary>
     static GradeSettings Graded(GradeSettings g, LightRig r) =>

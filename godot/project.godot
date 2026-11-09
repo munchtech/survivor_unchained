@@ -405,3 +405,7 @@ cel_pool_tint={
 "type": "vec4",
 "value": Vector4(1, 1, 1, 1)
 }
+cel_pool_lv={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}

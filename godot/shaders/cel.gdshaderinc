@@ -125,19 +125,23 @@ global uniform sampler2D cel_canopy : filter_linear, repeat_disable;
 // (L1 W2) Her light over the moon (bible rules 1, 3, 4: her pool is the night's warm lit mass, so within its reach the moon
 // gives way to it): cel_ember xyz her light's world point, w its reach (m, the omni's range; 0: none); cel_give x how much of
 // the moon's key, its fill and its rim give way at the pool's heart, y how much of the sky's light (the ambient, through AO),
-// z and w the share of the reach where the giving starts to fade and where it is gone (smooth between). Set by the rig
+// z and w where the giving starts to fade and where it is gone (metres from her light, smooth between; S2b-N2: was shares
+// of the reach, which gave the arena's pool twice the Low Ford's). Set by the rig
 // (rigs.json "ember_give"; Atmosphere.SetCel) and her light (PlayerView, each frame). A shader may define CEL_NO_GIVE.
 global uniform vec4 cel_ember;
 global uniform vec4 cel_give;
-// (L1 lead 8, S2b) Her pool painted (bible rules 1, 3, 5; the picked night targets 05/09/10: a gold core, one redder step,
-// a narrow soft edge, never the inverse-square fade, whose long tail under the returning moon read as a brown dither):
-// cel_pool her light's color (linear, largest channel 1; how the cel model knows her light among the others) and w its
-// fall (OmniAttenuation; 0: off); cel_pool_band x the core's edge and y the pool's, as shares of her reach (3D, from the
-// light), z the outer step's level (share of the core's), w the edges' half-width; cel_pool_tint rgb the outer step's tint
-// over her color (redder, same luminance), w how much of the light's own fall stays in the core (0 flat, 1 Godot's).
+// (L1 lead 8, S2b-N2) Her pool as light (bible rules 1, 3, 5; the picked night targets 05/09/10: a hot core at her feet
+// falling off wide through her orange to a dark red-brown and into the moon's ground, each step's edge broken by painted
+// patches, never a ring): an omni light of her color stepped in metres from the light, so every place gets the same pool.
+// cel_pool her light's color (linear, largest channel 1; how the cel model knows her light among the others) and w its fall
+// (OmniAttenuation; 0: off); cel_pool_band x the core's edge, y the middle step's, z the outer step's (metres from the
+// light), w how far the patches push an edge in and out (m); cel_pool_tint rgb the outer step's tint over her color (redder,
+// the luminance its level's), w how much of the light's own fall stays in the core (0 flat, 1 Godot's); cel_pool_lv x the
+// middle step's level and y the outer's (shares of the core's edge), z the patches' size (m), w the edges' half-width (m).
 global uniform vec4 cel_pool;
 global uniform vec4 cel_pool_band;
 global uniform vec4 cel_pool_tint;
+global uniform vec4 cel_pool_lv;
 
 // (fragment() to light(): the geometric normal, and x SPECULAR, y RIM, z RIM_TINT, w ROUGHNESS before the tag)
 // (L1 B4r2) cel_gn's length is 1 + the key's share through the canopy here (cel_dap(): 1 open sky): packed, not a varying
@@ -208,7 +212,7 @@ float cel_give_at(vec3 c_wp, float c_k) {
 	return 1.0;
 #else
 	if (cel_ember.w <= 0.0 || c_k <= 0.0) return 1.0;
-	float c_d = length(c_wp - cel_ember.xyz) / cel_ember.w;
+	float c_d = length(c_wp - cel_ember.xyz);
 	return 1.0 - c_k * cel_on * (1.0 - smoothstep(cel_give.z, max(cel_give.w, cel_give.z + 1e-3), c_d));
 #endif
 }
@@ -346,37 +350,54 @@ vec3 cel_today_cc(vec3 c_n, vec3 c_l, vec3 c_v, vec3 c_lc, float c_att, bool c_d
 }
 #endif
 
-// (L1 lead 8, S2b) Her light painted into its pool's two steps (cel_pool above): an omni light of her color, its distance
-// from the light read back from its attenuation (Godot's omni fall: (1 - u^4)^2 (u r)^-decay, u = d / r; her light casts no
-// shadow, so ATTENUATION is the fall alone), then the core at the level of the core's edge with cel_pool_tint.w of the fall
-// left in it, the outer step at cel_pool_band.z of it in the redder tint, nothing past the pool's edge.
-void cel_pool_paint(inout vec3 c_lc, inout float c_att) {
-	if (cel_pool.w <= 0.0 || cel_pool_band.x <= 0.0 || cel_ember.w <= 0.0 || c_att <= 0.0) return;
+// (S2b-N2) Painted patches over the ground at one size (rule 5: one stroke size): value noise in two octaves, -1..1.
+float cel_pool_hash(vec2 c_p) { return fract(sin(dot(c_p, vec2(127.1, 311.7))) * 43758.5453); }
+float cel_pool_vnoise(vec2 c_p) {
+	vec2 c_i = floor(c_p), c_f = fract(c_p);
+	vec2 c_s = c_f * c_f * (3.0 - 2.0 * c_f);
+	return mix(mix(cel_pool_hash(c_i), cel_pool_hash(c_i + vec2(1.0, 0.0)), c_s.x),
+		mix(cel_pool_hash(c_i + vec2(0.0, 1.0)), cel_pool_hash(c_i + vec2(1.0, 1.0)), c_s.x), c_s.y);
+}
+float cel_pool_patch(vec2 c_xz) {
+	vec2 c_p = c_xz / max(cel_pool_lv.z, 0.05);
+	return clamp((0.65 * cel_pool_vnoise(c_p) + 0.35 * cel_pool_vnoise(c_p * 2.3 + vec2(17.3, 5.1)) - 0.5) * 2.6, -1.0, 1.0);
+}
+
+// (L1 lead 8, S2b-N2) Her light painted as light (cel_pool above): an omni light of her color, its distance from the light
+// read back from its attenuation (Godot's omni fall: (1 - u^4)^2 (u r)^-decay, u = d / r; her light casts no shadow, so
+// ATTENUATION is the fall alone), the point found along the light's way (c_lw: world, toward the light), the patches moving
+// each step's edge, then three steps: the core with cel_pool_tint.w of the fall in it, the middle step in her color, the
+// outer step darker and redder, nothing past it. Called by light() before cel_shade.
+void cel_pool_paint(inout vec3 c_lc, inout float c_att, vec3 c_lw) {
+	if (cel_on <= 0.0 || cel_pool.w <= 0.0 || cel_pool_band.x <= 0.0 || cel_ember.w <= 0.0 || c_att <= 0.0) return;
 	float c_m = max(c_lc.r, max(c_lc.g, max(c_lc.b, 1e-6)));
 	if (dot(abs(c_lc / c_m - cel_pool.rgb), vec3(1.0)) > 0.02) return;
 	float c_r = cel_ember.w, c_dec = cel_pool.w;
 	float c_lo = 0.0, c_hi = 1.0;
-	for (int i = 0; i < 14; i++) {
+	for (int i = 0; i < 16; i++) {
 		float c_u = 0.5 * (c_lo + c_hi);
 		float c_q = c_u * c_u; c_q *= c_q; c_q = max(1.0 - c_q, 0.0);
 		float c_f = c_q * c_q * pow(max(c_u * c_r, 1e-4), -c_dec);
 		if (c_f > c_att) c_lo = c_u; else c_hi = c_u;
 	}
-	float c_u = 0.5 * (c_lo + c_hi);
-	float c_u1 = cel_pool_band.x, c_u2 = cel_pool_band.y, c_w = max(cel_pool_band.w, 1e-3);
-	float c_q1 = c_u1 * c_u1; c_q1 *= c_q1; c_q1 = max(1.0 - c_q1, 0.0);
-	float c_ref = c_q1 * c_q1 * pow(max(c_u1 * c_r, 1e-4), -c_dec);
-	float c_core = 1.0 - smoothstep(c_u1 - c_w, c_u1 + c_w, c_u);
-	float c_pool = 1.0 - smoothstep(c_u2 - c_w, c_u2 + c_w, c_u);
+	float c_d = 0.5 * (c_lo + c_hi) * c_r;
+	vec3 c_wp = cel_ember.xyz - normalize(c_lw) * c_d;
+	float c_dp = c_d + cel_pool_band.w * cel_pool_patch(c_wp.xz);
+	float c_w = max(cel_pool_lv.w, 1e-3);
+	float c_r1 = min(cel_pool_band.x, 0.95 * c_r);
+	float c_q1 = c_r1 / c_r; c_q1 *= c_q1; c_q1 *= c_q1; c_q1 = max(1.0 - c_q1, 0.0);
+	float c_ref = c_q1 * c_q1 * pow(max(c_r1, 1e-4), -c_dec);
+	float c_core = 1.0 - smoothstep(cel_pool_band.x - c_w, cel_pool_band.x + c_w, c_dp);
+	float c_mid = 1.0 - smoothstep(cel_pool_band.y - c_w, cel_pool_band.y + c_w, c_dp);
+	float c_out = 1.0 - smoothstep(cel_pool_band.z - c_w, cel_pool_band.z + c_w, c_dp);
 	float c_in = c_ref * pow(max(c_att, 1e-6) / c_ref, cel_pool_tint.w);
-	c_att = c_in * c_core + c_ref * cel_pool_band.z * (c_pool - c_core);
-	c_lc *= mix(cel_pool_tint.rgb, vec3(1.0), c_core);
+	c_att = c_in * c_core + c_ref * (cel_pool_lv.x * (c_mid - c_core) + cel_pool_lv.y * (c_out - c_mid));
+	c_lc *= mix(cel_pool_tint.rgb, vec3(1.0), clamp(c_mid, 0.0, 1.0));
 }
 
 // The cel model for one light, t = the band's n.l (the caller may wrap it).
 void cel_shade(vec3 c_n, vec3 c_nb, float c_t, vec3 c_l, vec3 c_v, vec3 c_lc, float c_att, bool c_dir, vec3 c_albedo, float c_metal, float c_rough,
 		float c_spec, float c_spec_amount, vec3 c_backlight, float c_rim, float c_rim_tint, inout vec3 c_dl, inout vec3 c_sl) {
-	if (!c_dir) cel_pool_paint(c_lc, c_att);
 	float c_sh = cel_shadow(c_att, c_dir);
 	vec3 c_lv = cel_level(c_t);
 	float c_lit_sh = cel_lit(c_t) * c_sh;
@@ -422,7 +443,9 @@ void light() {
 			c_sa += cel_today_cc(NORMAL, LIGHT, VIEW, LIGHT_COLOR, ATTENUATION, LIGHT_IS_DIRECTIONAL, SPECULAR_AMOUNT);
 #endif
 		}
-		if (cel_on > 0.0) cel_shade(NORMAL, c_nb, c_t, LIGHT, VIEW, LIGHT_COLOR, ATTENUATION, LIGHT_IS_DIRECTIONAL, ALBEDO, METALLIC, c_rough,
+		vec3 c_plc = LIGHT_COLOR; float c_patt = ATTENUATION;
+		if (!LIGHT_IS_DIRECTIONAL) cel_pool_paint(c_plc, c_patt, (INV_VIEW_MATRIX * vec4(LIGHT, 0.0)).xyz);
+		if (cel_on > 0.0) cel_shade(NORMAL, c_nb, c_t, LIGHT, VIEW, c_plc, c_patt, LIGHT_IS_DIRECTIONAL, ALBEDO, METALLIC, c_rough,
 				cel_mat.x, SPECULAR_AMOUNT, BACKLIGHT, cel_mat.y, cel_mat.z, c_db, c_sb);
 		DIFFUSE_LIGHT += mix(c_da, c_db, cel_on);
 		SPECULAR_LIGHT += mix(c_sa, c_sb, cel_on);

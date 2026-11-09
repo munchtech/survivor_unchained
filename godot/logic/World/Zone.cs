@@ -158,14 +158,14 @@ public sealed record AtmospherePreset(
     public string EmberColor { get; init; } = "";
     public double EmberReach { get; init; } = 1;
     /// <summary>(L1 W2) How the moon gives way to her light within its reach under the cel model (cel.gdshaderinc cel_give): the
-    /// share of the moon's key, fill and rim given up at the pool's heart, the share of the sky's light, and the share of her
-    /// light's reach where the giving starts to fade and where it is gone. Null: none (the rig's rigs.json "ember_give").</summary>
+    /// share of the moon's key, fill and rim given up at the pool's heart, the share of the sky's light, and where the giving
+    /// starts to fade and where it is gone (metres from her light; S2b-N2). Null: none (the rig's rigs.json "ember_give").</summary>
     public double[]? EmberGive { get; init; }
-    /// <summary>(L1 lead 8, S2b) Her pool painted (cel.gdshaderinc cel_pool_band): [core edge, pool edge] as shares of her light's
-    /// reach (3D, from the light), the outer step's level as a share of the core's, the edges' half-width (share of the reach), and
-    /// how much of the light's own fall stays inside the core (0 flat, 1 as Godot's). Null: her light as Godot falls it.
-    /// FROM the picked night targets 05/09/10: a gold core and one redder step out to a hard-ish painted edge (rule 5's narrow
-    /// soft edge), never the inverse-square fade (the skills judge: its dither read as a dirt stamp).</summary>
+    /// <summary>(L1 lead 8, S2b-N2) Her pool as light (cel.gdshaderinc cel_pool_paint): [core, middle, outer] step edges in metres
+    /// from her light (3D), how far painted patches move each edge in and out (m), how much of the light's own fall stays in
+    /// the core (0 flat, 1 as Godot's), the middle and outer steps' levels (shares of the core's edge), the patches' size (m)
+    /// and the edges' half-width (m). Null: her light as Godot falls it. FROM the picked night targets 05/09/10: a hot core at
+    /// her feet falling off wide through orange to a dark red-brown, each edge broken by painted patches, never a ring.</summary>
     public double[]? EmberPool { get; init; }
     /// <summary>(L1 lead 8, S2b) The pool's outer step's color (sRGB hex; "": the ember's own): the targets' edge, h 34-40.</summary>
     public string EmberEdge { get; init; } = "";

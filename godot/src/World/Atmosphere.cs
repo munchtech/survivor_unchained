@@ -113,6 +113,7 @@ public partial class Atmosphere : Node3D
     /// --crowd-moon K: the sky's fill on the crowd; --crowd-reach M: her lamp's reach on it (PlayerView: --crowd-ember K, --crowd-ember-h H).</summary>
     public static float CrowdFill;
     static readonly bool CrowdFillOn = SurvivorUnchained.Args.Get("crowd-fill") != "off";
+    const float CrowdSkyRef = 2f;
     static readonly float CrowdMoonK = SurvivorUnchained.Args.Num("crowd-moon", R4 ? 0.3f : 0.45f), CrowdEmberRange = SurvivorUnchained.Args.Num("crowd-reach", 10f);
     /// <summary>Round 2 (vat.gdshaderinc crowd_night, crowd_top): --crowd-lift L the luminance the darkest paint is lifted to (it goes
     /// into ALBEDO, so the moon's shadowed light and the ambient light it); --crowd-flat K the cut on flat, up-facing low surfaces;
@@ -399,8 +400,12 @@ public partial class Atmosphere : Node3D
         var hs = C(p.HemiSky).SrgbToLinear();
         var hg = C(p.HemiGround).SrgbToLinear();
         var hue = hs.Lerp(hg * (hs.Luminance / Mathf.Max(hg.Luminance, 1e-4f)), CrowdDirt);
-        var fill = hue * (CrowdFill * CrowdMoonK);
-        var top = hs * (CrowdFill * CrowdTopK);
+        // (L1 lead 8, S2b-N2: and at the sky's own energy, its intensity over the H2 nights' 2.0 the fill was tuned under: the
+        // rigs' sky colors (C6) are bright with a low intensity, #b5d9ff at 0.5 for the Hollow's #2a3c48 at 2.0, and the color
+        // alone lifted the crowd's fill about 15 times: pale silver wolves on 09, rule 7)
+        float skyK = (float)p.HemiIntensity / CrowdSkyRef;
+        var fill = hue * (CrowdFill * CrowdMoonK * skyK);
+        var top = hs * (CrowdFill * CrowdTopK * skyK);
         RenderingServer.GlobalShaderParameterSet("crowd_fill", new Vector4(fill.R, fill.G, fill.B, CrowdEmberRange));
         RenderingServer.GlobalShaderParameterSet("crowd_top", new Vector4(top.R, top.G, top.B, CrowdBack));
         RenderingServer.GlobalShaderParameterSet("crowd_lamp2", CrowdFill > 0 ? new Vector4(CrowdK, CrowdFull, CrowdZero, CrowdZero > 0 ? CrowdRimK : 0) : Vector4.Zero);
@@ -507,11 +512,15 @@ public partial class Atmosphere : Node3D
         // (L1 W2) how the moon gives way to her light (the rig's ember_give; her light's point and reach are PlayerView's); not under a camera rig: at the close view by night her lamp is off her, so the moon is her light (r1: night close Lp95 0.49 to 0.34 with it)
         var give = CelRigs && cam == null && p.EmberGive is [var gk, var gs, var g0, var g1] ? new Vector4((float)gk, (float)gs, (float)g0, (float)g1) : Vector4.Zero;
         RenderingServer.GlobalShaderParameterSet("cel_give", give);
-        // (L1 lead 8, S2b) her pool painted in two steps (the rig's ember_pool, ember_edge; cel.gdshaderinc cel_pool_band): the band in
-        // shares of her reach, and the outer step's tint over her light's color at the same luminance (redder, the targets' h 34-40).
-        var pool = CelRigs && cam == null && p.EmberPool is [var u1, var u2, var lv, var sw, var gr] ? new Vector4((float)u1, (float)u2, (float)lv, (float)sw) : Vector4.Zero;
-        var tint = new Vector4(1, 1, 1, pool.X > 0 && p.EmberPool is { Length: 5 } ep ? (float)ep[4] : 1);
-        if (pool.X > 0 && p.EmberEdge != "")
+        // (L1 lead 8, S2b-N2) her pool as light (the rig's ember_pool, ember_edge; cel.gdshaderinc cel_pool_band, cel_pool_lv): three
+        // steps in metres from her light, their edges moved by painted patches, the outer step's tint over her light's color at the
+        // same luminance (redder; its level makes it dark): [core, middle, outer, patch push (m), core fall kept, middle level,
+        // outer level, patch size (m), edge half-width (m)].
+        var ep = CelRigs && cam == null && p.EmberPool is { Length: 9 } e9 ? e9 : null;
+        var pool = ep != null ? new Vector4((float)ep[0], (float)ep[1], (float)ep[2], (float)ep[3]) : Vector4.Zero;
+        var lv = ep != null ? new Vector4((float)ep[5], (float)ep[6], (float)ep[7], (float)ep[8]) : Vector4.Zero;
+        var tint = new Vector4(1, 1, 1, ep != null ? (float)ep[4] : 1);
+        if (ep != null && p.EmberEdge != "")
         {
             var ec = (p.EmberColor != "" ? new Color(p.EmberColor) : new Color("#ffa868")).SrgbToLinear();
             var ed = new Color(p.EmberEdge).SrgbToLinear();
@@ -520,6 +529,7 @@ public partial class Atmosphere : Node3D
         }
         RenderingServer.GlobalShaderParameterSet("cel_pool_band", pool);
         RenderingServer.GlobalShaderParameterSet("cel_pool_tint", tint);
+        RenderingServer.GlobalShaderParameterSet("cel_pool_lv", lv);
     }
 
     /* ---------------------------------------------------- the grade's glide (H4) -- */

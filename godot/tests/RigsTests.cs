@@ -41,7 +41,7 @@ public class RigsTests
         var place = Atmospheres.Night with { KeyAzimuth = 200, KeyIntensity = 4.7, Rig = "arena_night" };
         var lit = Rigs.Lit(place, s);
         Assert.Equal(200, lit.KeyAzimuth);
-        Assert.Equal(4.7, lit.KeyIntensity);
+        Assert.Equal(4.7 * (s["arena_night"]!.Key.Scale ?? 1), lit.KeyIntensity, 9);   // (S2b-N2: the place's own moon at the rig's level)
         Assert.Equal(s["night_play"]!.Rim.Strength, lit.CelRim);
     }
 

@@ -640,7 +640,9 @@ void light() {
 		}
 		if (cel_on > 0.0) {
 			// (cel_shade's own highlight off (its specular amount 0): the kind's in its place)
-			cel_shade(NORMAL, ob_n, ob_t, LIGHT, VIEW, LIGHT_COLOR, ATTENUATION, LIGHT_IS_DIRECTIONAL, ALBEDO, METALLIC, r,
+			vec3 ob_lc = LIGHT_COLOR; float ob_att = ATTENUATION;
+			if (!LIGHT_IS_DIRECTIONAL) cel_pool_paint(ob_lc, ob_att, (INV_VIEW_MATRIX * vec4(LIGHT, 0.0)).xyz);
+			cel_shade(NORMAL, ob_n, ob_t, LIGHT, VIEW, ob_lc, ob_att, LIGHT_IS_DIRECTIONAL, ALBEDO, METALLIC, r,
 				cel_mat.x, 0.0, BACKLIGHT, cel_mat.y, cel_mat.z, db, sb);
 			sb += outfit_hl(NORMAL, LIGHT, VIEW, LIGHT_COLOR, cel_lit(ob_t) * cel_shadow(ATTENUATION, LIGHT_IS_DIRECTIONAL), r,
 				METALLIC, ALBEDO, cel_mat.x, SPECULAR_AMOUNT);

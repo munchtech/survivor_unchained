@@ -54,6 +54,21 @@ public class LightW2Tests
     }
 
     [Fact]
+    public void ARigsKeyAndSkyScaleKeepEachPlacesOwnLevelRelative()
+    {
+        // (L1 lead 8, S2b-N2) a rig over several places: the key's level times the place's own, and its sky recolored at
+        // the place's own sky energy (hemi x the sky's luminance) times the sky's level
+        var s = RigSet.Parse("""
+        { "rigs": { "a": { "from": "x", "key": { "intensity": null, "scale": 0.5 }, "fill": { "sky": "#ffffff", "hemi": null, "sky_scale": 2 } } } }
+        """);
+        var p = Atmospheres.Night with { Rig = "a", KeyIntensity = 4, HemiSky = "#808080", HemiIntensity = 1.5 };
+        var lit = Rigs.Lit(p, s);
+        Assert.Equal(2, lit.KeyIntensity, 6);
+        Assert.Equal(1.5 * 0.2158605 * 2, lit.HemiIntensity, 4);
+        Assert.Equal("#ffffff", lit.HemiSky);
+    }
+
+    [Fact]
     public void TheRealRigsCurveTheDayAndGiveTheNightsMoonToHerPool()
     {
         var s = Real();
