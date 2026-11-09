@@ -65,16 +65,16 @@ public sealed class HandsRuleTests
         var t = TaughtBuilds.Of("warden")!;
         var b = new Battle(new BattleSetup
         {
-            Seed = 2, Collision = new SurvivorUnchained.Core.CollisionWorld(120), Combat = true, Campaign = true,
+            Seed = 2, Collision = new CollisionWorld(120), Combat = true, Campaign = true,
             Stats = BattleTests.BaseStats(), Weapons = t.Slots.Select(s => (s.Skill, 1)).ToList(), Ability = AbilityKind.ShieldBash,
         });
         b.Calling = "warden";
         Assert.Equal(t.Slots.Count, TaughtBuilds.Apply(b, "warden").Count);
-        Assert.True(b.WeaponById("sunder")!.Hold);
-        Assert.Equal(CastMode.Auto, b.WeaponById("groundbreaker")!.Cast);
-        Assert.Equal(CastMode.Auto, b.WeaponById("iron_vow")!.Cast);
-        Assert.Equal(CastMode.Auto, b.WeaponById("watch_bell")!.Cast);
-        Assert.Equal(CastMode.Press, b.WeaponById("heroic_leap")!.Cast);
+        Assert.True(b.Weapons.First(x => x.Id == "sunder").Hold);
+        Assert.Equal(CastMode.Auto, b.Weapons.First(x => x.Id == "groundbreaker").Cast);
+        Assert.Equal(CastMode.Auto, b.Weapons.First(x => x.Id == "iron_vow").Cast);
+        Assert.Equal(CastMode.Auto, b.Weapons.First(x => x.Id == "watch_bell").Cast);
+        Assert.Equal(CastMode.Press, b.Weapons.First(x => x.Id == "heroic_leap").Cast);
         // The keys she actually presses beside the grip: two.
         Assert.Equal(2, b.Weapons.Count(w => w.Pressed && !w.Hold));
         // Every key does something.

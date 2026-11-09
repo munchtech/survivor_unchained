@@ -34,6 +34,8 @@ public sealed class ResolveTests
         var e = b.SpawnEnemy("footpad", x, z)!;
         e.Hp = e.MaxHp = 1e7;
         if (!hits) e.AttackT = e.RangedT = 999;
+        b.Spatial.Clear();
+        foreach (var o in b.Enemies.Items) if (o.Alive && o.State != EnemyState.Dying) b.Spatial.Insert(o.Id, o.X, o.Z);
         return e;
     }
 
@@ -142,6 +144,7 @@ public sealed class ResolveTests
         var w = b.Weapons.Single();
         Assert.Equal(CastMode.Press, w.Cast);
         var e = Dummy(b, 6, 0);
+        Pin(b, [e], [(6, 0)]);
         b.Resolve.Set(30);
         Assert.False(b.PressSkill(w.Slot, 6, 0));
         Assert.Equal(30, b.Resolve.Value, 9);
@@ -236,7 +239,7 @@ public sealed class ResolveTests
     {
         var b = Warden(("cleaver", 8), ("sunder", 8));
         b.SetWickPath("sunder", Enumerable.Range(1, 4).Select(n => $"sunder.stroke.{n}").ToArray());
-        var sunder = b.WeaponById("sunder")!;
+        var sunder = b.Weapons.First(x => x.Id == "sunder");
         Assert.NotNull(sunder.Wick);
         var lit = sunder.Wick!.Lit;
         var u = b.GrantUnion("bladestorm")!;
@@ -278,6 +281,7 @@ public sealed class ResolveTests
         var a = Dummy(b, 6, 0);
         var c = Dummy(b, 0, 6);
         var far = Dummy(b, 0, -30);
+        Pin(b, [a, c, far], [(6, 0), (0, 6), (0, -30)]);
         b.AimSkills(0.9, 6.6);
         Assert.Same(c, b.AimFor(w)!.Value.Foe);
         b.AimSkills(5.2, 0.4);
@@ -322,7 +326,8 @@ public sealed class ResolveTests
         Assert.True(b.Player.Z > 1, "she walks after it");
         // While the cast plays she walks at 70%.
         var c = Warden(("cleaver", 1));
-        Dummy(c, 0, 2);
+        var ce0 = Dummy(c, 0, 2);
+        Pin(c, [ce0], [(0, 2)]);
         c.Resolve.Set(100);
         var cw = c.Weapons.Single();
         Assert.True(c.PressSkill(cw.Slot, 0, 2));

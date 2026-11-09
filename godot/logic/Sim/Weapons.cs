@@ -327,10 +327,11 @@ public static partial class Firing
         if (w.Pressed) { TickPressed(b, w, dt); return; }
         if (w.Timer > 0) return;
         // Kindled: wait over is not enough; look again in a tenth of a second (read only when ready, so a crowd costs nothing).
-        if (w.Kindle is { } kd && !b.Kindled(kd)) { w.Timer = 0.1; return; }
-        // A kindled spender (campaign, Resolve): it waits for the whole cost too, and spends it on firing.
+        // A kindled spender (campaign, Resolve): it waits for the whole cost too (ready all the while: its key may heave
+        // with less), and spends it on firing.
         double cost = b.CostOf(w);
-        if (cost > 0 && b.Resolve.Value < cost) { w.Timer = 0.1; return; }
+        if (cost > 0 && b.Resolve.Value < cost) { w.Timer = 0; return; }
+        if (w.Kindle is { } kd && !b.Kindled(kd)) { w.Timer = 0.1; return; }
         int kills0 = w.Kills;
         bool fired = CastOnce(b, w);
         if (fired && cost > 0) b.Resolve.Spend(cost);
