@@ -121,6 +121,89 @@
           "guard": "kerchiefs"
         },
         {
+          "id": "pk2_a",
+          "kind": "pack",
+          "needs": "lowford.pockets",
+          "about": "PROVISIONAL positions: the ground lead moves these onto the pocket's real ground",
+          "x": 56,
+          "z": -62,
+          "spread": 3,
+          "wake": 9,
+          "leash": 8,
+          "levelUp": 1,
+          "foes": [
+            {
+              "def": "footpad",
+              "n": 3
+            },
+            {
+              "def": "pillager",
+              "n": 2
+            },
+            {
+              "def": "bruiser",
+              "n": 1
+            }
+          ]
+        },
+        {
+          "id": "pk2_b",
+          "kind": "pack",
+          "needs": "lowford.pockets",
+          "about": "PROVISIONAL positions: the ground lead moves these onto the pocket's real ground",
+          "x": 63,
+          "z": -68,
+          "spread": 3,
+          "wake": 9,
+          "leash": 8,
+          "levelUp": 1,
+          "foes": [
+            {
+              "def": "footpad",
+              "n": 3
+            },
+            {
+              "def": "pillager",
+              "n": 1
+            },
+            {
+              "def": "bruiser",
+              "n": 1
+            }
+          ],
+          "captain": "kerchief_captain"
+        },
+        {
+          "id": "pk2_c",
+          "kind": "pack",
+          "needs": "lowford.pockets",
+          "about": "PROVISIONAL positions: the ground lead moves these onto the pocket's real ground",
+          "x": 68,
+          "z": -74,
+          "spread": 3,
+          "wake": 9,
+          "leash": 8,
+          "levelUp": 1,
+          "foes": [
+            {
+              "def": "footpad",
+              "n": 2
+            },
+            {
+              "def": "pillager",
+              "n": 2
+            },
+            {
+              "def": "bruiser",
+              "n": 1
+            }
+          ],
+          "champion": {
+            "def": "bruiser",
+            "affixes": 1
+          }
+        },
+        {
           "id": "road_ambush",
           "kind": "ambush",
           "x": 22,
@@ -199,6 +282,83 @@
               "charging"
             ]
           }
+        },
+        {
+          "id": "pk3_a",
+          "kind": "pack",
+          "needs": "lowford.pockets",
+          "about": "PROVISIONAL positions: the ground lead moves these onto the pocket's real ground",
+          "x": -56,
+          "z": -82,
+          "spread": 3,
+          "wake": 9,
+          "leash": 8,
+          "levelUp": 1,
+          "foes": [
+            {
+              "def": "boar",
+              "n": 3
+            },
+            {
+              "def": "wolf",
+              "n": 2
+            }
+          ],
+          "tell": "charge",
+          "tellBy": "boar"
+        },
+        {
+          "id": "pk3_b",
+          "kind": "pack",
+          "needs": "lowford.pockets",
+          "about": "PROVISIONAL positions: the ground lead moves these onto the pocket's real ground",
+          "x": -62,
+          "z": -90,
+          "spread": 3,
+          "wake": 9,
+          "leash": 8,
+          "levelUp": 1,
+          "foes": [
+            {
+              "def": "boar",
+              "n": 3
+            },
+            {
+              "def": "boar_slurry",
+              "n": 1
+            }
+          ],
+          "captain": "boar_slurry",
+          "tell": "charge",
+          "tellBy": "boar"
+        },
+        {
+          "id": "pk3_c",
+          "kind": "pack",
+          "needs": "lowford.pockets",
+          "about": "PROVISIONAL positions: the ground lead moves these onto the pocket's real ground",
+          "x": -66,
+          "z": -98,
+          "spread": 3,
+          "wake": 9,
+          "leash": 8,
+          "levelUp": 1,
+          "foes": [
+            {
+              "def": "wolf",
+              "n": 4
+            },
+            {
+              "def": "boar",
+              "n": 1
+            }
+          ],
+          "champion": {
+            "def": "boar",
+            "affixes": 1
+          },
+          "tell": "charge",
+          "tellBy": "boar"
         },
         {
           "id": "track_ambush",
@@ -354,6 +514,103 @@
               "n": 2
             }
           ]
+        },
+        {
+          "id": "n_pk1_a",
+          "when": "night",
+          "kind": "pack",
+          "needs": "lowford.pockets",
+          "about": "PROVISIONAL positions: the ground lead moves these onto the pocket's real ground",
+          "x": -30,
+          "z": 48,
+          "spread": 3,
+          "wake": 8,
+          "leash": 18,
+          "levelUp": 1,
+          "foes": [
+            {
+              "def": "risen",
+              "n": 7
+            },
+            {
+              "def": "risen_archer",
+              "n": 2
+            }
+          ]
+        },
+        {
+          "id": "n_pk1_b",
+          "when": "night",
+          "kind": "pack",
+          "needs": "lowford.pockets",
+          "about": "PROVISIONAL positions: the ground lead moves these onto the pocket's real ground",
+          "x": -38,
+          "z": 40,
+          "spread": 3,
+          "wake": 8,
+          "leash": 18,
+          "levelUp": 1,
+          "foes": [
+            {
+              "def": "risen",
+              "n": 6
+            },
+            {
+              "def": "risen_archer",
+              "n": 1
+            }
+          ],
+          "captain": "risen_warrior"
+        },
+        {
+          "id": "n_pk1_c",
+          "when": "night",
+          "kind": "pack",
+          "needs": "lowford.pockets",
+          "about": "PROVISIONAL positions: the ground lead moves these onto the pocket's real ground",
+          "x": -43,
+          "z": 32,
+          "spread": 3,
+          "wake": 8,
+          "leash": 18,
+          "levelUp": 1,
+          "foes": [
+            {
+              "def": "risen",
+              "n": 8
+            },
+            {
+              "def": "risen_archer",
+              "n": 2
+            }
+          ]
+        },
+        {
+          "id": "n_pk1_d",
+          "when": "night",
+          "kind": "pack",
+          "needs": "lowford.pockets",
+          "about": "PROVISIONAL positions: the ground lead moves these onto the pocket's real ground",
+          "x": -33,
+          "z": 27,
+          "spread": 3,
+          "wake": 8,
+          "leash": 18,
+          "levelUp": 1,
+          "foes": [
+            {
+              "def": "risen",
+              "n": 6
+            },
+            {
+              "def": "risen_archer",
+              "n": 1
+            }
+          ],
+          "champion": {
+            "def": "risen_warrior",
+            "affixes": 1
+          }
         },
         {
           "id": "n_road2",

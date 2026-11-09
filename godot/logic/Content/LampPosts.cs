@@ -29,7 +29,23 @@ public static class LampPosts
         public int Light = -1;
 
         public bool Dark => Kind == "dark";
+
+        /// <summary>Where it stands once the zone holds a feature (the ground lead moves it onto real ground, and sets the
+        /// light index when it places the lamp): without that feature X, Z and Light above hold.</summary>
+        public Move? Moved;
+        double baseX, baseZ; int baseLight; bool kept;
+
+        /// <summary>Where it stands, and its lantern, given the zone's features.</summary>
+        public (double X, double Z, int Light) At(IReadOnlyCollection<string>? features)
+        {
+            if (!kept) { baseX = X; baseZ = Z; baseLight = Light; kept = true; }
+            return Moved is { } m && features?.Contains(m.Needs) == true ? (m.X, m.Z, m.Light) : (baseX, baseZ, baseLight);
+        }
+
+        internal void Resolve(IReadOnlyCollection<string>? features) => (X, Z, Light) = At(features);
     }
+
+    public sealed class Move { public string Needs = "", About = ""; public double X, Z; public int Light = -1; }
 
     sealed class File { public List<Post> Posts = new(); }
 
@@ -51,6 +67,13 @@ public static class LampPosts
     }
 
     public static void Reload() => all = null;
+
+    /// <summary>A zone is loaded with these features: its posts stand where they say (Post.Moved). Every post reads X, Z and
+    /// Light as resolved, so this runs once as the zone is made (a zone without the feature puts them back).</summary>
+    public static void Resolve(string zone, IReadOnlyCollection<string>? features)
+    {
+        foreach (var p in F) if (p.Zone == zone) p.Resolve(features);
+    }
 
     public static IReadOnlyList<Post> All => F;
     public static Post? Get(string id) => F.FirstOrDefault(p => p.Id == id);

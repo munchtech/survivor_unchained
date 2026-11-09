@@ -128,6 +128,7 @@ public sealed partial class Prologue : ZoneRuntime
 
     public Prologue(IZoneHost host, ZoneMeta meta) : base(host, meta)
     {
+        SurvivorUnchained.Content.LampPosts.Resolve(meta.Id, meta.Features);
         foreach (var p in meta.Refs.GetProperty("pylons").EnumerateArray())
             pylons.Add((p.GetProperty("x").GetDouble(), p.GetProperty("z").GetDouble(), p.GetProperty("light").GetInt32(), p.GetProperty("flame").GetString()!));
         litPylons = pylons.Select(_ => true).ToArray();
@@ -1192,7 +1193,7 @@ public sealed partial class Prologue : ZoneRuntime
     void StartNight(Battle b)
     {
         if (night != null || Encounters.For(Id) is not { } spec) return;
-        night = new Encounters(spec, b, new Dictionary<string, Fact>(), G.Journey.Ch.Level, W.Day, "night") { Held = () => G.Teaching != null, Tier = WorldTiers.Of(W) };
+        night = new Encounters(spec, b, new Dictionary<string, Fact>(), G.Journey.Ch.Level, W.Day, "night", Meta.Features) { Held = () => G.Teaching != null, Tier = WorldTiers.Of(W) };
         night.Woke = bt => PaceNotes.Enqueue($"night woke {bt.Id} t={b.Time:0.0} hp={b.Player.Hp:0}/{b.MaxHp:0} at=({b.Player.X:0.0},{b.Player.Z:0.0})");
         night.Down = bt => PaceNotes.Enqueue($"night down {bt.Id} t={b.Time:0.0} hp={b.Player.Hp:0}/{b.MaxHp:0}");
         night.Place();
@@ -1809,7 +1810,7 @@ public sealed partial class Prologue : ZoneRuntime
     {
         ["infire"] = B == null ? 0 : B.Enemies.Living().Count(e => Dist(e.X, e.Z, L("fire").X, L("fire").Z) < 1.2),
         ["stage"] = Now.ToString(), ["stageT"] = stageT, ["chestOpened"] = chestOpened, ["lit"] = LitCount, ["wardenHp"] = warden?.Hp,
-        ["wardenMode"] = ai.Mode, ["day"] = day == null ? null : string.Join(",", day.S.In("day").Select(bt => $"{bt.Id}:{(day.Done(bt.Id) || bt.Kind == "post" && LampBook.PostLit(W, bt.Post!) ? "done" : day.WokeAt.ContainsKey(bt.Id) ? "on" : "-")}")), ["checkpoint"] = $"{checkpoint.X:0.0},{checkpoint.Z:0.0}",
+        ["wardenMode"] = ai.Mode, ["day"] = day == null ? null : string.Join(",", day.S.In("day", day.Features).Select(bt => $"{bt.Id}:{(day.Done(bt.Id) || bt.Kind == "post" && LampBook.PostLit(W, bt.Post!) ? "done" : day.WokeAt.ContainsKey(bt.Id) ? "on" : "-")}")), ["checkpoint"] = $"{checkpoint.X:0.0},{checkpoint.Z:0.0}",
     };
 
     public override void Dispose()

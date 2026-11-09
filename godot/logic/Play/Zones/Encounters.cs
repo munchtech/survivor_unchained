@@ -77,6 +77,11 @@ public sealed class Encounters
         public ChampionSpec? Champion;
         /// <summary>(M5-B) Its carrier's first roll is gear of at least this tier ("rare": ARPG.md 5 lesson 6, the captain's Rare).</summary>
         public string? Loot;
+        /// <summary>(M5) A zone feature the beat needs (ZoneMeta.Features, e.g. "lowford.pockets"): without it the beat is not placed,
+        /// never springs, and GateOpen and Goal do not count it.</summary>
+        public string? Needs;
+        /// <summary>A note for the data's readers; nothing reads it.</summary>
+        public string? About;
     }
 
     public sealed class Spec
@@ -91,7 +96,8 @@ public sealed class Encounters
         /// <summary>(M5) The ember-card draft runs in the zone's night (false: its kills teach plain experience, ARPG.md 5).</summary>
         public bool Draft = true;
         /// <summary>The beats of one phase ("night" or "day"), in the data's order.</summary>
-        public IEnumerable<Beat> In(string when) => Beats.Where(b => b.When == when);
+        public IEnumerable<Beat> In(string when, IReadOnlyCollection<string>? features = null) =>
+            Beats.Where(b => b.When == when && (b.Needs == null || features?.Contains(b.Needs) == true));
         public Beat? Get(string id) => Beats.FirstOrDefault(b => b.Id == id);
     }
 
@@ -150,15 +156,21 @@ public sealed class Encounters
     /// <summary>Whether casts wait (a freeze up): none ask while it holds.</summary>
     public Func<bool>? Held;
 
-    public Encounters(Spec s, Battle battle, Dictionary<string, Fact> zoneState, int herLevel, int day, string phase = "day")
+    /// <summary>The zone's features (ZoneMeta.Features): the beats that need one it lacks are left out.</summary>
+    public readonly IReadOnlyCollection<string> Features;
+
+    public Encounters(Spec s, Battle battle, Dictionary<string, Fact> zoneState, int herLevel, int day, string phase = "day", IReadOnlyCollection<string>? features = null)
     {
-        S = s; b = battle; state = zoneState; level = herLevel; this.day = day; Phase = phase;
+        S = s; b = battle; state = zoneState; level = herLevel; this.day = day; Phase = phase; Features = features ?? [];
+        // (a post's beat stands where lamp_posts.json says: LampPosts moves it with the zone's features)
+        foreach (var bt in s.Beats)
+            if (bt.Kind == "post" && bt.Post != null && Content.LampPosts.Get(bt.Post) is { } lp) { bt.X = lp.X; bt.Z = lp.Z; bt.Light = lp.Light; }
     }
 
     public bool Done(string beat) => state.TryGetValue(Key(beat), out var f) && f.Truthy;
     public void MarkDone(string beat) => state[Key(beat)] = true;
 
-    public IEnumerable<Beat> Of(string kind) => S.In(Phase).Where(x => x.Kind == kind);
+    public IEnumerable<Beat> Of(string kind) => S.In(Phase, Features).Where(x => x.Kind == kind);
 
     /// <summary>The packs not yet down today, resting where the data puts them.</summary>
     public void Place()
@@ -406,7 +418,7 @@ public sealed class Encounters
         }
         // (round the trees to it: a footpad's bowman backs into the wood)
         if (near != null) return nd < 4 ? (near.X, near.Z, null) : Route(near.X, near.Z, null);
-        foreach (var bt in S.In(Phase))
+        foreach (var bt in S.In(Phase, Features))
         {
             switch (bt.Kind)
             {

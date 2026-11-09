@@ -169,6 +169,9 @@ public sealed class ZoneMeta
     public string BlightGlow = "#8cff5a";
     /// <summary>How far from the centre the survivor may go, each way.</summary>
     public double Bound;
+    /// <summary>(M5) What the zone's ground has, by name (e.g. "lowford.pockets"); the ground lead adds one when it lands.
+    /// Content that needs one (Encounters.Beat.Needs, LampPosts moved) is off until the zone holds it.</summary>
+    public List<string> Features = new();
     public Start Start = new();
     /// <summary>The zone's air by day (the runtime changes it with the hour).</summary>
     public AtmospherePreset Atmosphere = null!;

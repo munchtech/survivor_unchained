@@ -45,7 +45,8 @@ public class ChampionsTests
         }
         // Every champion the Low Ford names has affixes the kit has, and a def that exists.
         var s = Encounters.For("lowford")!;
-        var specs = s.Beats.Where(b => b.Champion != null).Select(b => b.Champion!).Concat(s.Placed.Values).ToList();
+        var specs = s.Beats.Where(b => b.Champion != null && b.Needs == null).Select(b => b.Champion!).Concat(s.Placed.Values).ToList();
+        // (the pockets' champions are rolled, unnamed: they are off until the ground has them)
         Assert.InRange(specs.Count, 4, 6);
         foreach (var c in specs)
         {

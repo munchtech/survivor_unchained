@@ -424,9 +424,10 @@ void ZoneRuns()
     int seeds = opt.Int("seeds", 8), seed0 = opt.Int("seed0", 1);
     var zoneId = opt.Get("zone", "lowford");
     var specs = new List<ZoneRunSpec>();
+    var feats = opt.Has("features") ? opt.List("features", "").ToArray() : null;
     foreach (var t in tiers)
         foreach (var bot in bots)
-            for (int s = 0; s < seeds; s++) specs.Add(new ZoneRunSpec(seed0 + s, zoneId, bot, t));
+            for (int s = 0; s < seeds; s++) specs.Add(new ZoneRunSpec(seed0 + s, zoneId, bot, t, Features: feats));
     // (--also 1:human,deft: more bots at another tier in the same report)
     foreach (var more in opt.List("also", "").Where(x => x.Contains(':')))
         foreach (var bot in more.Split(':')[1].Split('+', ','))

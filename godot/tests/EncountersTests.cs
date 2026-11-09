@@ -72,6 +72,69 @@ public class EncountersTests
         finally { Content.Lamps.UseV2(was); }
     }
 
+    const string Pockets = "lowford.pockets";
+
+    [Fact]
+    public void Pocket_beats_need_the_zones_feature_and_are_off_without_it()
+    {
+        var s = Encounters.For("lowford")!;
+        var pockets = s.Beats.Where(b => b.Needs != null).ToList();
+        Assert.Equal(10, pockets.Count);
+        Assert.All(pockets, b => Assert.Equal(Pockets, b.Needs));
+        Assert.All(pockets, b => Assert.Contains("PROVISIONAL", b.About));
+        // Off: not in either phase's list, not placed, and the gate is as it was.
+        Assert.DoesNotContain(s.In("day"), b => b.Needs != null);
+        Assert.DoesNotContain(s.In("night"), b => b.Needs != null);
+        var off = new Encounters(s, Road(3), new Dictionary<string, Fact>(), 2, 1);
+        off.Place();
+        var offN = new Encounters(s, Road(3), new Dictionary<string, Fact>(), 1, 0, "night");
+        offN.Place();
+        Assert.DoesNotContain(off.Packs.Keys.Concat(offN.Packs.Keys), id => s.Get(id)!.Needs != null);
+        var done = s.In("day").ToDictionary(x => Encounters.DoneKey(x.Id), _ => (Fact)true);
+        var gateOff = new Encounters(s, Road(3), done, 2, 1);
+        var gateOn = new Encounters(s, Road(3), done, 2, 1, features: [Pockets]);
+        Assert.Equal(gateOff.GateOpen, gateOn.GateOpen);
+        Assert.DoesNotContain(gateOff.Of("pack").Concat(gateOff.Of("ring")), b => b.Needs != null);
+    }
+
+    [Fact]
+    public void With_the_feature_on_the_pockets_load_and_the_goal_visits_them()
+    {
+        var s = Encounters.For("lowford")!;
+        var b = Road(4);
+        var dayDone = new Dictionary<string, Fact> { ["boars"] = true, ["kerchiefs"] = true, ["strongbox"] = true }
+            .ToDictionary(kv => Encounters.DoneKey(kv.Key), kv => kv.Value);
+        var d = new Encounters(s, b, dayDone, 2, 1, features: [Pockets]);
+        d.Place();
+        foreach (var id in new[] { "pk2_a", "pk2_b", "pk2_c", "pk3_a", "pk3_b", "pk3_c" }) Assert.True(d.Packs.ContainsKey(id), id);
+        Assert.NotNull(d.Captain("pk2_b"));
+        Assert.True(d.Champions.ContainsKey("pk2_c"));
+        b.Player.X = 40; b.Player.Z = -85;
+        Assert.Equal("pk2_a", d.Goal(_ => true, _ => null, 0).For?.Id);
+        var n = new Encounters(s, Road(4), new Dictionary<string, Fact>(), 1, 0, "night", [Pockets]);
+        n.Place();
+        foreach (var id in new[] { "n_pk1_a", "n_pk1_b", "n_pk1_c", "n_pk1_d" }) Assert.True(n.Packs.ContainsKey(id), id);
+        Assert.True(n.Champions.ContainsKey("n_pk1_d"));
+        // (the night's route: n_road1, then the first pocket pack)
+        var done = new Dictionary<string, Fact>();
+        foreach (var id in new[] { "n_lone", "n_three", "n_first", "n_cart", "n_road1" }) done["night." + id] = true;
+        var n2 = new Encounters(s, Road(4), done, 1, 0, "night", [Pockets]);
+        n2.Place();
+        Assert.Equal("n_pk1_a", n2.Goal(_ => true, _ => null, 0).For?.Id);
+    }
+
+    [Fact]
+    public void A_post_moves_with_the_feature_and_the_goal_follows()
+    {
+        var post = Content.LampPosts.Get("act1.post1")!;
+        Assert.Equal((-0.99, -86.0, 14), post.At(null));
+        Assert.Equal((-0.99, -86.0, 14), post.At([]));
+        var moved = post.At([Pockets]);
+        Assert.InRange(moved.X, 55, 70);
+        Assert.InRange(moved.Z, -75, -60);
+        Assert.Equal(-1, moved.Light);
+    }
+
     [Fact]
     public void The_stretch_runs_up_the_road_in_order_between_the_handback_and_the_gate()
     {

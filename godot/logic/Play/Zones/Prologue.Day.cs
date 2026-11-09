@@ -65,7 +65,7 @@ public sealed partial class Prologue
         // Her rise point by day: a post she lit on the night's side of the river is left behind with the night.
         if (LampBook.LastPost(W, Id) is { } lp && lp.Z > RiverZ(lp.X))
             LampBook.SetLastPost(W, Id, LampBook.PostLit(W, "lowford.bank") ? "lowford.bank" : null);
-        day = new Encounters(spec, B, W.Zone(Id), G.Journey.Ch.Level, W.Day) { Held = () => G.Teaching != null, Tier = WorldTiers.Of(W) };
+        day = new Encounters(spec, B, W.Zone(Id), G.Journey.Ch.Level, W.Day, features: Meta.Features) { Held = () => G.Teaching != null, Tier = WorldTiers.Of(W) };
         // Up again on the road, not back at the camp across the river.
         checkpoint = new XZ(spec.From[0], spec.From[1]);
         day.Woke = bt => PaceNotes.Enqueue($"day woke {bt.Id} t={B!.Time:0.0} hp={B.Player.Hp:0}/{B.MaxHp:0} at=({B.Player.X:0.0},{B.Player.Z:0.0})");

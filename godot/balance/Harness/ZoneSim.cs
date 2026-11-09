@@ -14,7 +14,7 @@ using SurvivorUnchained.World;
 namespace SurvivorUnchained.Balance;
 
 /// <summary>One run of a real zone (M5-F): the Low Ford from the Wake to the gate, by one pair of hands at a world tier.</summary>
-public sealed record ZoneRunSpec(int Seed, string Zone, string Bot, int Tier, string Calling = "warden")
+public sealed record ZoneRunSpec(int Seed, string Zone, string Bot, int Tier, string Calling = "warden", string[]? Features = null)
 {
     public string Key => $"{Zone}/T{Tier}/{Bot}/s{Seed}";
 }
@@ -28,6 +28,8 @@ public sealed class ZoneRunResult
     public int LeftLying, Discarded, Unsticks, Fodder, Elite, Champion, Boss, Packs, Champions, Falls, Rises, GearShown, Upgrades;
     public int[] Gear = new int[7];
     public int WardenGear;
+    /// <summary>(--features preview) The forced-on features' beats: packs placed, their foes, foes that landed on blocked ground, packs put down, packs left standing at the end.</summary>
+    public int PocketPacks, PocketFoes, PocketBlocked, PocketDown, PocketLeft;
     public bool WardenLegendary;
     public int LevelAtWarden, LevelAtGate, PostsLit;
     public readonly List<string> FallsAt = new(), RisesAt = new(), WardenDrops = new();
@@ -60,6 +62,8 @@ public static class ZoneSim
         }, (uint)spec.Seed);
         j.World.Facts[WorldTiers.Key] = spec.Tier;
         var meta = ZoneMeta.Load("lowford");
+        if (spec.Features != null) meta.Features.AddRange(spec.Features);
+        var pocketSeen = new HashSet<string>();
         var host = new HeadlessHost(j, spec.Seed);
         var zone = new Prologue(host, meta);
         var at = zone.ArrivalFrom(null);
@@ -120,6 +124,15 @@ public static class ZoneSim
         {
             var p = b.Player;
             var now = zone.Now;
+            if (spec.Features != null)
+                foreach (var enc in new[] { zone.Night, zone.Day })
+                    if (enc != null)
+                        foreach (var (id, foes) in enc.Packs)
+                            if (enc.S.Get(id)?.Needs != null && pocketSeen.Add(enc.Phase + id))
+                            {
+                                r.PocketPacks++; r.PocketFoes += foes.Count;
+                                r.PocketBlocked += foes.Count(f => b.Collision.Blocked(f.E.X, f.E.Z, 0.6));
+                            }
             bool held = now is Prologue.Stage.Intro or Prologue.Stage.Victory;
             bool fight = b.Enemies.Living().Any(e => e.Roused && e.Disposition == Disposition.Hostile && e.State != EnemyState.Dying && Dist(e.X, e.Z, p.X, p.Z) < 24);
             bool close = LampRise.Crowd(b, p.X, p.Z, 10) > 0;
@@ -281,6 +294,11 @@ public static class ZoneSim
         r.Stages[stage.ToString()] = r.Stages.GetValueOrDefault(stage.ToString()) + (tt - stageAt);
         if (!r.Reached && stage is Prologue.Stage.Intro or Prologue.Stage.Victory) r.FilmFallback += tt - stageAt;
         r.Seconds = tt;
+        if (spec.Features != null)
+            foreach (var enc in new[] { zone.Night, zone.Day })
+                if (enc != null)
+                    foreach (var (id, _) in enc.Packs)
+                        if (enc.S.Get(id)?.Needs != null) { if (enc.DownAt.ContainsKey(id) || enc.Done(id)) r.PocketDown++; else r.PocketLeft++; }
         r.Gold = j.Ch.Gold - gold0;
         r.LevelAtGate = j.Ch.Level;
         r.Champions = r.Champion;
@@ -432,13 +450,14 @@ public static class ZoneSim
         double roadLen = 0;
         for (int i = 1; i < road.Length; i++) roadLen += Dist(road[i][0], road[i][1], road[i - 1][0], road[i - 1][1]);
         var spec = Encounters.For("lowford")!;
-        int nightPacks = spec.In("night").Count(x => x.Kind is "pack" or "ambush" or "ring"), dayPacks = spec.In("day").Count(x => x.Kind is "pack" or "ambush" or "ring");
+        var feats = rs.Select(r => r.Spec.Features).FirstOrDefault(f => f != null);
+        int nightPacks = spec.In("night", feats).Count(x => x.Kind is "pack" or "ambush" or "ring"), dayPacks = spec.In("day", feats).Count(x => x.Kind is "pack" or "ambush" or "ring");
         // The zone's route as its goals walk it: the camp, the night's beats in order, the ford; the day's start, its beats in order
         // (the strongbox and the road lamp with them), the gate.
         var camp = meta.Place("LOWFORD", "camp"); var fordAt = meta.Place("LOWFORD", "ford"); var gateAt = meta.Place("LOWFORD", "gate");
         double Leg(IEnumerable<(double X, double Z)> pts) { var l = pts.ToList(); double s = 0; for (int i = 1; i < l.Count; i++) s += Dist(l[i].X, l[i].Z, l[i - 1].X, l[i - 1].Z); return s; }
-        double routeN = Leg(new[] { (camp.X, camp.Z) }.Concat(spec.In("night").Select(x => (x.X, x.Z))).Append((fordAt.X, fordAt.Z)));
-        double routeD = Leg(new[] { (spec.From[0], spec.From[1]) }.Concat(spec.In("day").Select(x => (x.X, x.Z))).Append((gateAt.X, gateAt.Z)));
+        double routeN = Leg(new[] { (camp.X, camp.Z) }.Concat(spec.In("night", feats).Select(x => (x.X, x.Z))).Append((fordAt.X, fordAt.Z)));
+        double routeD = Leg(new[] { (spec.From[0], spec.From[1]) }.Concat(spec.In("day", feats).Select(x => (x.X, x.Z))).Append((gateAt.X, gateAt.Z)));
         double route = routeN + routeD;
         if (hum.Count > 0)
         {
@@ -447,7 +466,7 @@ public static class ZoneSim
             int packs = nightPacks + dayPacks;
             double density = packs / route * 100;
             double for40 = 40 / density * 100, for45 = route * 45 / playMin;
-            sb.AppendLine($"- The route (the goals' walk: the camp, the night's {spec.In("night").Count()} beats, the ford; the day's start, its {spec.In("day").Count()} beats, the gate): **{routeN:0} m by night + {routeD:0} m by day = {route:0} m**. (The meta's ROAD path, the camp to the ford: {roadLen:0} m.)");
+            sb.AppendLine($"- The route (the goals' walk: the camp, the night's {spec.In("night", feats).Count()} beats, the ford; the day's start, its {spec.In("day", feats).Count()} beats, the gate): **{routeN:0} m by night + {routeD:0} m by day = {route:0} m**. (The meta's ROAD path, the camp to the ford: {roadLen:0} m.)");
             sb.AppendLine($"- Walked by the human bot (tier II median), fights' footwork included: {mN:0} m by night, {mD:0} m by day, {m:0} m in all ({m / route:0.0}x the route).");
             sb.AppendLine($"- Packs placed: {nightPacks} by night, {dayPacks} by day, {packs} in all: **{density:0.0} packs per 100 m of route** ({nightPacks * 100.0 / routeN:0.0} by night, {dayPacks * 100.0 / routeD:0.0} by day).");
             sb.AppendLine($"- The first hour's ~40 packs at today's density: **{for40:0} m** of route ({for40 - route:+0;-0} m, {40 - packs:+0;-0} packs more than today).");
@@ -458,7 +477,7 @@ public static class ZoneSim
 
         sb.AppendLine("## Seconds per beat (median; woke to down) and her level at its fall (median)");
         sb.AppendLine();
-        var beats = spec.In("night").Concat(spec.In("day")).Where(x => x.Kind is "pack" or "ambush" or "ring").Select(x => x.Id).ToList();
+        var beats = spec.In("night", feats).Concat(spec.In("day", feats)).Where(x => x.Kind is "pack" or "ambush" or "ring").Select(x => x.Id).ToList();
         sb.AppendLine("| Beat | " + string.Join(" | ", groups.Select(g => $"{Roman(g.Key.Tier)} {g.Key.Bot}")) + " |");
         sb.AppendLine("|---|" + string.Concat(groups.Select(_ => "---|")));
         foreach (var id in beats)
@@ -472,6 +491,19 @@ public static class ZoneSim
             sb.AppendLine($"| stage {s} | " + string.Join(" | ", groups.Select(g => $"{F(Median(g.Select(r => r.Stages.GetValueOrDefault(s, double.NaN))))} s")) + " |");
         sb.AppendLine();
 
+        if (feats != null)
+        {
+            var pr = rs.Where(r => r.Spec.Features != null && r.Spec.Bot == "human").ToList();
+            sb.AppendLine("## Pockets preview (features forced on: " + string.Join(", ", feats) + ")");
+            sb.AppendLine();
+            sb.AppendLine("PREVIEW ONLY: the ground is not there, the pockets' positions are provisional. Per run, human bot:");
+            sb.AppendLine();
+            sb.AppendLine("| Seed | Pocket packs placed | Pocket foes | Foes landed blocked | Packs put down | Packs left standing | Kills | Minutes | Meters | Stuck |");
+            sb.AppendLine("|---|---|---|---|---|---|---|---|---|---|");
+            foreach (var r in pr.OrderBy(r => r.Spec.Seed))
+                sb.AppendLine($"| {r.Spec.Seed} | {r.PocketPacks} | {r.PocketFoes} | {r.PocketBlocked} | {r.PocketDown} | {r.PocketLeft} | {r.Kills} | {(r.PlaySeconds + film) / 60:0.0} | {r.Meters:0} | {(r.Stuck ? "yes" : "no")} |");
+            sb.AppendLine();
+        }
         sb.AppendLine("## Falls, rises and runs that did not get through");
         sb.AppendLine();
         foreach (var g in groups)
