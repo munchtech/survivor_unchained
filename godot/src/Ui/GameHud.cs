@@ -656,19 +656,27 @@ public partial class GameHud : CanvasLayer
         xpHave = ember ? b.EmberXp : level.K * xpNeed;
         underWanted = b.Combat && ember && p.Alive && Settings.Current.UnderBar && !lampsWide;
 
-        // The six places: what fires by itself, in the order it came; the rest quiet.
+        // --slots (DevSlots.cs): the shots' campaign build, set once a fight is on.
+        DevSlots.Tick(b);
+        // (M4: the pad's A is Interact only out of a fight)
+        if (Controls.Instance is { } ctl) ctl.Fighting = b.Combat && p.Alive && b.NearestHostile(p.X, p.Z, FightNear) != null;
+        // The six places. In the campaign (M4 §1) seat k shows slot KeyMap.SeatSlot[k] with its key; elsewhere (the
+        // arena) what fires by itself, in the order it came, keyless; the rest quiet.
         var socks = irons.Sockets;
         int i = 0;
         // (the Lamps' Open wide: the six seats are the wick tabs, her carried skills, in a fight or not)
         if (lampsWide && lampsSeats != null) LampsSeats();
+        else if (b.Campaign) CampaignSeats(b, level.Level);
         else
-        foreach (var w in b.Weapons)
         {
-            if (i >= socks.Length) break;
-            bool canEvolve = w.Evolution == null && w.Rank >= Weapons.MaxRank && LevelUp.EarnedBranches(b, w.Id).Count > 0;
-            socks[i++].Show(w.Id, w.Art, ItemViews.SchoolColors[w.School], b.WeaponReady(w), w.Rank, Weapons.MaxRank, w.Evolution != null, canEvolve, w.Timer);
+            foreach (var w in b.Weapons)
+            {
+                if (i >= socks.Length) break;
+                socks[i].Unkeyed();
+                socks[i++].Show(w.Id, w.Art, ItemViews.SchoolColors[w.School], b.WeaponReady(w), w.Rank, Weapons.MaxRank, w.Evolution != null, CanEvolve(b, w), w.Timer);
+            }
+            for (; i < socks.Length; i++) { socks[i].Unkeyed(); socks[i].Empty(); }
         }
-        if (!(lampsWide && lampsSeats != null)) for (; i < socks.Length; i++) socks[i].Empty();
 
         boonWant.Clear();
         foreach (var (id, rank) in b.Boons)
@@ -1266,10 +1274,65 @@ public partial class GameHud : CanvasLayer
         {
             if (i >= socks.Length) break;
             if (!Weapons.All.TryGetValue(id, out var wd)) continue;
+            socks[i].Unkeyed();
             socks[i++].Show(id, wd.Art, ItemViews.SchoolColors[wd.School], 1, Math.Max(1, rank), Weapons.MaxRank, false, false);
         }
-        for (; i < socks.Length; i++) socks[i].Empty();
+        for (; i < socks.Length; i++) { socks[i].Unkeyed(); socks[i].Empty(); }
     }
+
+    /// <summary>Within this of her, a foe makes it a fight (the pad's A is then the grip's alone).</summary>
+    const double FightNear = 12;
+
+    /// <summary>M4 §1: the campaign's seats, [1][2][3] (coin) [4][LMB][RMB], each fed from the weapon on its slot
+    /// (w.Slot, w.Slot2: never b.Weapons' order) with its key's kind. A union shows on both its keys' seats: the first
+    /// key the union itself, the second its other part (Bladestorm: the Sunder) when it has one. Values only, each
+    /// frame; the seats redraw only on change.</summary>
+    void CampaignSeats(Battle b, int level)
+    {
+        var socks = irons.Sockets;
+        int open = SurvivorUnchained.Rpg.SkillBook.SlotsAt(Math.Max(1, level));
+        var resolve = b.Resolve;
+        for (int k = 0; k < socks.Length; k++)
+        {
+            int slot = KeyMap.SeatSlot[k];
+            var s = socks[k];
+            var w = b.OnSlot(slot);
+            if (w == null) { s.Empty(locked: slot >= open); s.Feed(new Socket.SeatState { Cost = -1 }); continue; }
+            bool second = w.Slot2 == slot;
+            var shown = second && w.Half != null ? w.Half : w;
+            // (a channel running keeps its well lit)
+            double ready = w.Channeling && !second ? 1 : b.WeaponReady(shown);
+            s.Show(shown.Id, shown.Art, ItemViews.SchoolColors[shown.School], ready, w.Rank, Weapons.MaxRank, w.Evolution != null, CanEvolve(b, w), shown.Timer);
+            double cost = b.CostOf(shown);
+            int other = w.Slot2 < 0 ? -1 : KeyMap.SeatOf(second ? w.Slot : w.Slot2);
+            // (side by side: not across the coin, which stands between seats 2 and 3)
+            bool adjacent = other >= 0 && Math.Abs(other - k) == 1 && Math.Min(other, k) != 2;
+            s.Feed(new Socket.SeatState
+            {
+                Kind = w.KindledNow ? Socket.SeatKind.Kindled : !second && w.Cast == CastMode.Channel ? Socket.SeatKind.Channeled : Socket.SeatKind.Pressed,
+                Channeling = w.Channeling && !second,
+                Cost = cost > 0 && resolve.Value < cost ? (float)(resolve.Value / cost) : -1,
+                Union = w.Slot2 >= 0,
+                ClaspLeft = adjacent && other == k - 1,
+                Rings = w.Slot2 >= 0 && !adjacent,
+                Bond = second && (w.Channeling || b.Time < w.BreakUntil),
+            });
+        }
+    }
+
+    /// <summary>Ready to evolve (its ring breathes gold): asked again only when the skill or its rank changes, or after a
+    /// second (EarnedBranches builds a list; the seats build nothing per frame).</summary>
+    bool CanEvolve(Battle b, WeaponInst w)
+    {
+        if (w.Evolution != null || w.Rank < Weapons.MaxRank) return false;
+        double now = Time.GetTicksMsec() / 1000.0;
+        if (evolveCache.TryGetValue(w, out var e) && e.Rank == w.Rank && now - e.At < 1) return e.Can;
+        bool can = LevelUp.EarnedBranches(b, w.Id).Count > 0;
+        if (evolveCache.Count > 64) evolveCache.Clear();
+        evolveCache[w] = (w.Rank, now, can);
+        return can;
+    }
+    readonly Dictionary<WeaponInst, (int Rank, double At, bool Can)> evolveCache = new(ReferenceEqualityComparer.Instance);
 
     public void LampsWide(bool on, System.Collections.Generic.IEnumerable<(string Id, int Rank)>? seats = null)
     {
