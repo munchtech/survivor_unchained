@@ -121,3 +121,13 @@ if __name__ == "__main__":
     test_blend_weights()
     test_look_rules()
     print("ok")
+
+
+def test_signed_gap_forward_hit_past_reach():
+    reach = 0.1
+    t = np.array([[0.12, -0.005, np.nan]])
+    facing = np.array([[-1.0, -1.0, 0.0]])
+    g, _, _ = gw.wc.signed_gap(t, facing, reach)
+    assert not (g < 0).any()
+    g, _, _ = gw.wc.signed_gap(np.array([[np.nan, -0.005, np.nan]]), facing, reach)
+    assert g[0] == -0.005                                        # no forward hit at all: unchanged
