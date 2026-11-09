@@ -19,3 +19,13 @@
 - **L1 (FXM):** add the painted-stroke primitive to `fx_cel.gdshaderinc` (three bands across the width: feathered amber edge, gold, a thin white-gold core; a life curve) so every school's shape shares it; the after-grade depth test is against the WORLD (tree canopies too), not only foes. Her warm night pool is the same hue as the skills and its dithered edge reads as a dirt stamp.
 - **M4 UI:** damage numbers outshine the impacts and sit on top of them.
 - **A1 Stage B (after P1's pick):** FIRST in its order the four skill clips P7 needs: the Heroic Leap (crouch, overhead launch, tuck, point-down drive, knee landing), a spin loop (Bladestorm), a brace (Iron Vow), a shield-first charge. P7's views are judged with today's stand-in clips as a known until then.
+
+## From the P7 skills judge, round 2 (9 Nov, relayed by coordinator ad002ada)
+
+Verdict verbatim: `survivorsunchained_inputs/skills_p7/judge_r2/verdict.md`. All five moves FAIL (leap and dash "medium", charge, Bladestorm, Iron Vow "far"); the long tapered strokes read, every ring/cross/crescent/disc is still a sticker. P7's round 3 rebuilds the rings on one travelling-wavefront primitive. Routes for other areas:
+
+- **M3 combat:** her basic attack's white/red arc is the biggest bright shape in several frames; run it through `fx_stroke` in gold, or halve its width and alpha. Also from M5: resting packs cannot be hit during the 4 s post-lamp breather; a fall does not reset awake packs (n_road3 is on her ~3 s after the rise); "LEVEL 4" prints at the kill instant with "The Ford-Warden falls".
+- **M4 UI:** the yellow "!" damage numbers and the gold target ellipse with its mini HP bar both read as skill gold; pick the UI a non-gold family. From M5: champion plates fade in slowly; a coat badge sits over her head after the Legendary pickup; the dawn frame stacks too much text.
+- **Combat/loot VFX:** a hard-edged cracked-earth quad stands beside the Legendary's beam when the Ford-Warden dies on land (M5 judge r4).
+- **L1:** blood as 2-3 px red-dot pepper over the gold; the night pool a dithered brown stain (both sent to L1 lead 8).
+- **M6 tutorial:** "The Lamp Board" card stays after the road lamp (the bank lamp is a checkpoint, no board point); the "Rested" toast copy.
