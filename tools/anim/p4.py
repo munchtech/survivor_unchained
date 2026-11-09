@@ -290,7 +290,12 @@ def path_of(g, sc):
     for k in ("travel", "overshoot"):
         if k in r:
             r[k] = r[k] * sc
-    return {"xz": paths.make(r, g["seconds"], KFPS).round(5).tolist(), "every": r.get("every", 1)}
+    # (heading_tps: a heading track at that rate, turns a second, + to her left: a spin's turn, Kimodo's heading)
+    tps = r.pop("heading_tps", None)
+    out = {"xz": paths.make(r, g["seconds"], KFPS).round(5).tolist(), "every": r.get("every", 1)}
+    if tps:
+        out["heading"] = (2 * np.pi * tps * np.arange(len(out["xz"])) / KFPS).round(6).tolist()
+    return out
 
 
 def jobs_of(names):
