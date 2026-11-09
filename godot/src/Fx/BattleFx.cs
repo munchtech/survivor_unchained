@@ -1221,6 +1221,7 @@ public partial class BattleFx : Node3D
             }
         }
         WgLineSwings(events);
+        P7Pre(events);
         foreach (var ev in events)
         {
             switch (ev)
@@ -1374,6 +1375,11 @@ public partial class BattleFx : Node3D
                 // under it was a pink-white ball at every moon.
                 case Ev.Explosion { Art: "moonfall" }:
                     break;
+                case Ev.Explosion { Art: "heroic_leap_heave" or "shield_charge_slam" } when !P7Off: break;
+                case Ev.Leap e: P7Leap(e); break;
+                case Ev.Charge e: P7Charge(e, b); break;
+                case Ev.HardLanding e: P7Shove(e); break;
+                case Ev.DashStep: P7Ev("dash_step"); break;
                 case Ev.Explosion { Art: "slash_quake_heave" } e:
                     WgHeave(e);
                     break;
@@ -1679,6 +1685,7 @@ public partial class BattleFx : Node3D
                 }
                 case Ev.Dash e:
                 {
+                    P7Ev("dash");
                     // Her dash: one streak of cold air where she went, thinning to its start, and dust
                     // kicked up at her heels (fourteen soft spots in a row read as a string of pearls).
                     var path = new Vector3[6];
@@ -1707,7 +1714,7 @@ public partial class BattleFx : Node3D
                         for (int i = 0; i < 8; i++) Sparks.Spawn(V(e.X, Y(e.X, e.Z) + 0.8, e.Z), new Vector3((R() - 0.5f) * 2, R() * 2, (R() - 0.5f) * 2), 0.5f, 0.25f, new Color(1.6f, 2.2f, 2.6f), drag: 3, sprite: Sprites.Of("star"), spinV: 2);
                     break;
                 case Ev.Shake e:
-                    Cam?.AddTrauma((float)e.Amount);
+                    if (!p7HushShake) Cam?.AddTrauma((float)e.Amount);
                     break;
             }
         }
@@ -1994,6 +2001,7 @@ public partial class BattleFx : Node3D
         Hits.Flush(b0 != null ? PlayerPos + Vector3.Up : null);
         StepSpikes(fdt);
         StepWardenGround(fdt);
+        StepP7(hfx, b);
         Ribbons.Step(fdt, GetViewport()?.GetCamera3D());
         Sparks.Step(hfx);
         Books.Step(fdt);
@@ -2098,7 +2106,8 @@ public partial class BattleFx : Node3D
             for (int i = 0; i < 2; i++)
                 Sparks.Spawn(feet + new Vector3((R() - 0.5f) * 0.5f, R() * 0.4f, (R() - 0.5f) * 0.5f), back * 1.2f + Vector3.Up * (1.2f + R() * 1.5f), 0.6f + R() * 0.4f, 0.07f, f.Core, f.Glow, 0.01f, -1.2f, 1.2f);
         }
-        if (a.Rush == AbilityKind.BullRush && tick)
+        // (the skill's charge, Art.Charge, is drawn by P7: BattleFx.P7.cs; the old art keeps its holy layer)
+        if (a.Rush == AbilityKind.BullRush && tick && (a.Charge == null || P7Off))
         {
             Dust(p.X, p.Z, 2, 2.5f);
             Sparks.Spawn(feet + Vector3.Up * 1.1f + new Vector3((float)a.RushDX, 0, (float)a.RushDZ) * 0.6f, Vector3.Up * 0.2f, 0.12f, 0.5f, Palette.Of(School.Holy).Glow * 0.5f, Palette.Of(School.Holy).Dim * 0.1f, 0.9f);

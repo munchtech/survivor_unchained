@@ -1186,6 +1186,10 @@ public partial class Game : Node, IZoneHost
                     if (InCinematic) break;
                     Announce(new Announcement(an.Title, an.Subtitle, an.Tone?.ToString().ToLowerInvariant() ?? "info", an.Subtitle is { Length: > 60 } ? 5 : 3.6, an.Kicker));
                     break;
+                // (P7) a dash step taken in play: its card line in the fight's own announce
+                case Ev.DashStep ds when !InCinematic && Content.DashSteps.Find(ds.Id) is { } step:
+                    Announce(new Announcement(step.Name, step.Card, "info", 3.6, "The dash"));
+                    break;
                 case Ev.Discovery d:
                     if (!World.Codex.Contains(d.Id)) World.Codex.Add(d.Id);
                     if (Content.Discoveries.All.FirstOrDefault(x => x.Id == d.Id) is { } pair) Toast(new Toast(ToastKind.Lore, $"Discovery: {pair.Name}", pair.Description, null, null, 9));

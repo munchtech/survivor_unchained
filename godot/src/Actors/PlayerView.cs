@@ -1026,6 +1026,7 @@ public partial class PlayerView : Node3D
                 var jump = vault ? "Jump_Start" : "Jump_Full_Short";
                 bool native = own.Owns(People.Clip(person, jump));
                 Full(jump, native ? 1.0 : vault ? 1.8 : 1.3);
+                if (SurvivorUnchained.Args.Has("clip") && person.Anim.HasAnimation(full.Animation)) GD.Print($"p7 jump clip {full.Animation} len {person.Anim.GetAnimation(full.Animation).Length:0.00} speed {(native ? 1.0 : vault ? 1.8 : 1.3)} air {l2.Dur:0.00}");
             }
             // Once down, the landing gives way as soon as she moves on.
             artTail = time + l2.Dur + 0.1;

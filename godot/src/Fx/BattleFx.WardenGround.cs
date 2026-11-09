@@ -47,6 +47,9 @@ public partial class BattleFx
         /// <summary>A held glow (Hold s at full, then cooling over Life - Hold), in its own colour; 0 the 4-frame edge.</summary>
         public float Hold;
         public Color Col;
+        /// <summary>(P7) A heart that cools in steps: Steps[i] (linear) until StepAt[i] s at StepE[i] of its energy, then dark.</summary>
+        public Color[]? Steps;
+        public float[]? StepAt, StepE;
     }
 
     /// <summary>A raised lip of earth along a crack's edge: up as the tip passes, sunk at the end.</summary>
@@ -612,9 +615,9 @@ public partial class BattleFx
         return V(q.X, Y(q.X, q.Y), q.Y);
     }
 
-    void WgDecalOn(Vector3 pos, float theta, Vector3 size, Texture2D? alb, Texture2D? nrm, Texture2D? emi, float life, float strength, float energy, float sear, float hold = 0, Color? col = null)
+    WgDecal? WgDecalOn(Vector3 pos, float theta, Vector3 size, Texture2D? alb, Texture2D? nrm, Texture2D? emi, float life, float strength, float energy, float sear, float hold = 0, Color? col = null)
     {
-        if (wgDecals.Count == 0) return;
+        if (wgDecals.Count == 0) return null;
         WgDecal? s = null;
         for (int k = 0; k < wgDecals.Count && s == null; k++)
         {
@@ -637,6 +640,8 @@ public partial class BattleFx
         d.Visible = true;
         s.On = true; s.Age = 0; s.Life = life; s.FadeFrom = s.Glow ? life : life * 0.45f; s.Strength = strength; s.Energy = energy; s.Sear = sear;
         s.Hold = hold; s.Col = hc;
+        s.Steps = null; s.StepAt = null; s.StepE = null;
+        return s;
     }
 
     void WgStepDecals(float dt)
@@ -650,6 +655,15 @@ public partial class BattleFx
             {
                 // Hot for 4 frames (1, 0.7, 0.4, 0.15), then dark; burning_edge: a faint warm sear after, cooling.
                 float f = s.Age * 60;
+                if (s.Steps != null && s.StepAt != null)
+                {
+                    int i = 0;
+                    while (i < s.StepAt.Length && s.Age >= s.StepAt[i]) i++;
+                    bool lit = i < s.Steps.Length;
+                    if (lit) { var sc = s.Steps[i]; s.D.Modulate = new Color(sc.R, sc.G, sc.B, 0); s.D.EmissionEnergy = s.Energy * (s.StepE?[i] ?? 1); }
+                    s.D.Visible = lit;
+                    continue;
+                }
                 if (s.Hold > 0)
                 {
                     // Held, then cooling: its energy down and its colour toward a deep red as it goes.

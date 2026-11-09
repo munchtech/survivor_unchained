@@ -134,7 +134,8 @@ public sealed partial class HerLight : Control
             if (shown == this.life && trail == this.trail && shield == this.shield && beat == this.beat && day == Cuff.Day
                 && dashMax == this.dashMax && dashCount == this.dashCount && dashRe == this.dashRe && pipFlash <= 0) return;
             // a charge back: its bead flares for PipFlash s
-            if (dashCount > this.dashCount && this.dashMax == dashMax) pipFlash = PipFlash;
+            // (a pip back flares; so does a new one, Another Breath's, as it arrives)
+            if (dashCount > this.dashCount && this.dashMax <= dashMax && this.dashMax > 0) pipFlash = PipFlash;
             else pipFlash = Math.Max(0, pipFlash - dt);
             this.dashMax = dashMax; this.dashCount = dashCount; this.dashRe = dashRe;
             this.life = shown; this.trail = trail; this.shield = shield; this.beat = beat; day = Cuff.Day;
