@@ -952,7 +952,7 @@ public partial class Game : Node, IZoneHost
     {
         // (M5 r4: the band is clear from 2 s before a champion wakes: the judge, round 3, Ser Aldric's line through his body)
         WakeSoon = () => Battle is { } b && cine == null && Play.Zones.ChampionGate.Waking(b, Play.StoryText.WakeAhead, 2),
-        TakeDown = () => { hud.SayClear(); if (narrTake != null && voice.Current == narrTake) voice.Stop(); },
+        TakeDown = () => { if (Args.Has("pace")) GD.Print($"pace saydown t={Battle?.Time ?? 0:0.00}"); hud.SayClear(); if (narrTake != null && voice.Current == narrTake) voice.Stop(); },
     };
     SurvivorUnchained.World.VoTake? narrTake;
     Play.StoryText? storyLine;
@@ -1613,7 +1613,9 @@ public partial class Game : Node, IZoneHost
             Perf.Begin(Perf.Part.Labels);
             ChampionWatch(fb2);
             // (M5 r4: no pack wakes while a lamp's menu is open, nor MenuQuiet after it)
-            if (screens.Current is PostScreen) fb2.Breather(Battle.MenuQuiet);
+            bool menuUp = screens.Current is PostScreen;
+            if (menuUp) fb2.Breather(Battle.MenuQuiet);
+            if (Args.Has("pace")) PaceBreather(fb2, menuUp);
             hud.Beyond(Overlay == null ? Offscreen(fb2) : new());
             hud.Goals(Overlay == null ? GoalScreen() : new());
             hud.Posts(Overlay == null ? PostPointers() : new());
@@ -1764,6 +1766,20 @@ public partial class Game : Node, IZoneHost
     readonly HashSet<(int, double)> championsWoke = new();
     double champWokeAt = double.NegativeInfinity;
 
+    double paceLit = double.NegativeInfinity, paceHush = double.NegativeInfinity;
+    bool paceMenu;
+    /// <summary>(M5 r4, --pace) The breather's events in game seconds, for the capture's acceptance: a lamp lit, a lamp menu
+    /// opened and closed, a rise.</summary>
+    void PaceBreather(Battle b, bool menuUp)
+    {
+        if (b.LampLitAt != paceLit) { paceLit = b.LampLitAt; GD.Print($"pace breath lamp t={b.Time:0.00}"); }
+        if (menuUp != paceMenu) { paceMenu = menuUp; GD.Print($"pace breath menu {(menuUp ? "open" : "closed")} t={b.Time:0.00}"); }
+        if (!menuUp && b.HushUntil > paceHush + 0.5 && b.HushUntil - b.Time > Battle.RiseQuiet - 0.2) GD.Print($"pace breath rise t={b.Time:0.00}");
+        paceHush = b.HushUntil;
+        if (Overlay != paceOverlay) { paceOverlay = Overlay; GD.Print($"pace overlay {Overlay ?? "-"} t={b.Time:0.00}"); }
+    }
+    string? paceOverlay;
+
     void ChampionWatch(Battle b)
     {
         championOn = false;
@@ -1772,7 +1788,11 @@ public partial class Game : Node, IZoneHost
         foreach (var e in b.Enemies.Living())
         {
             if (e.Named == null || e.Boss || !e.Roused || e.State == EnemyState.Dying) continue;
-            if (championsWoke.Add((e.Id, e.Seed))) { StoryLine.HoldNarration(Play.StoryText.WakeHold); champWokeAt = Now; }
+            if (championsWoke.Add((e.Id, e.Seed)))
+            {
+                StoryLine.HoldNarration(Play.StoryText.WakeHold); champWokeAt = Now;
+                if (Args.Has("pace")) GD.Print($"pace champ woke {e.Named} t={b.Time:0.00} say={hud.SayUp}");
+            }
             var w = new Vector3((float)e.X, (float)scene.HeightAt(e.X, e.Z) + 1, (float)e.Z);
             if (!camera.IsPositionBehind(w) && view.HasPoint(camera.UnprojectPosition(w))) championOn = true;
         }
