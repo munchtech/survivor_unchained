@@ -1,0 +1,83 @@
+using System;
+using System.Collections.Generic;
+
+namespace SurvivorUnchained.Play;
+
+/// <summary>
+/// (M5 r3) One story text channel at a time: the narrator's line (the bottom band, IZoneHost.Say) and a named speaker's
+/// line (Grimtunnel's, the Warden's: Voices' card with its name) never open over one another. The judge, round 2: the dawn
+/// narration printed on top of Grimtunnel's line and his name; at a champion's wake the narration ran through the Knight's
+/// body. So each asks here and is shown in order of asking:
+///   a narration waits while a speaker's line is up, while the hold is on (a champion's wake beat, HoldNarration), and,
+///     after one that was itself held, keeps the spacing its zone gave it from the line before (so a held "In the reeds..."
+///     is not cut short by the "Gray light..." its zone timed 4.4 s after it);
+///   a speaker's line waits while a narration is up;
+///   nothing overtakes what was asked before it.
+/// Engine-free: the game passes what is up now (the HUD's band, Voices' named cards) and the clock.
+/// </summary>
+public sealed class StoryText
+{
+    public enum Kind { Narration, Speaker }
+
+    readonly Func<double> clock;
+    readonly Func<bool> narrationUp, speakerUp;
+    readonly Queue<(Kind Kind, double Asked, Action Show, string? Who)> line = new();
+    double holdUntil = double.NegativeInfinity;
+    (double Asked, double Shown)? lastNarration;
+
+    /// <summary>A narration waits at most this long behind speakers (s); then it shows (the story is never lost).</summary>
+    public const double MostWait = 12;
+    /// <summary>A champion's wake beat is fresh this long (s): the narration band stays clear of it.</summary>
+    public const double WakeHold = 3;
+
+    public StoryText(Func<double> clock, Func<bool> narrationUp, Func<bool> speakerUp)
+    {
+        this.clock = clock; this.narrationUp = narrationUp; this.speakerUp = speakerUp;
+    }
+
+    /// <summary>Lines asked for and not yet shown.</summary>
+    public int Waiting => line.Count;
+
+    /// <summary>No narration opens before `seconds` from now (a champion's wake beat).</summary>
+    public void HoldNarration(double seconds) => holdUntil = Math.Max(holdUntil, clock() + seconds);
+
+    public bool NarrationHeld => clock() < holdUntil;
+
+    /// <summary>A line asked for: shown now if its channel is clear and nothing waits before it, else in its turn (Tick).</summary>
+    public void Ask(Kind kind, Action show, string? who = null)
+    {
+        line.Enqueue((kind, clock(), show, who));
+        Tick();
+    }
+
+    /// <summary>Show what may be shown now, in order (call every frame).</summary>
+    public void Tick()
+    {
+        while (line.Count > 0)
+        {
+            var (kind, asked, show, _) = line.Peek();
+            double now = clock();
+            if (kind == Kind.Narration)
+            {
+                bool late = now - asked >= MostWait;
+                if (!late && (speakerUp() || now < holdUntil)) return;
+                if (lastNarration is { } ln && ln.Shown > ln.Asked + 1e-6 && now < ln.Shown + (asked - ln.Asked)) return;
+                lastNarration = (asked, now);
+            }
+            else if (narrationUp()) return;
+            line.Dequeue();
+            show();
+        }
+    }
+
+    /// <summary>A speaker's lines still waiting dropped (Ev.Hush: their moment has gone).</summary>
+    public void Drop(string who)
+    {
+        var keep = new List<(Kind, double, Action, string?)>(line);
+        line.Clear();
+        foreach (var x in keep) if (x.Item4 != who) line.Enqueue(x);
+    }
+
+    /// <summary>Everything waiting dropped (a zone left, a film began).</summary>
+    public void Clear() => line.Clear();
+}

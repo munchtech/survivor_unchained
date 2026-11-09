@@ -803,6 +803,8 @@ public partial class Game : Node, IZoneHost
 
     void EnterPlay(ZoneRuntime z, string? from, Arrival? at)
     {
+        storyLine?.Clear();
+        championsWoke.Clear();
         Mode = "play";
         hudMode = null;
         screens.Close();
@@ -941,7 +943,15 @@ public partial class Game : Node, IZoneHost
     public void Apply(IEnumerable<Change> changes) => Journey.Apply(changes);
     /// <summary>The narrator (or a voice the zone names), read aloud where
     /// there is a take; the words stay up at least as long as the voice.</summary>
-    public void Say(string text, string? who = null, double seconds = 4)
+    public void Say(string text, string? who = null, double seconds = 4) =>
+        // (M5 r3: one story text at a time: a narration waits for a speaker's card to close, and for a champion's wake beat)
+        StoryLine.Ask(Play.StoryText.Kind.Narration, () => SayNow(text, who, seconds));
+
+    /// <summary>(M5 r3) The bottom band's narration and the speakers' named cards, in turn (Play/StoryText.cs).</summary>
+    Play.StoryText StoryLine => storyLine ??= new Play.StoryText(() => Now, () => hud.SayUp, () => scene?.Voices.SpeakerUp == true);
+    Play.StoryText? storyLine;
+
+    void SayNow(string text, string? who, double seconds)
     {
         var take = voice.Narrate(text);
         // (no voice: up long enough to read, 17 characters a second)
@@ -1081,7 +1091,8 @@ public partial class Game : Node, IZoneHost
     {
         var b = Battle;
         // (a story's choice waiting has the keys: no prompt beside it)
-        if (b == null || zone == null || Overlay != null || !b.Player.Alive || inTransit || cine != null || zone.Choice != null || Now < promptHush)
+        // (M5 r3: no Examine/Rest prompt while a champion is awake on the screen: three text blocks at the Knight's wake)
+        if (b == null || zone == null || Overlay != null || !b.Player.Alive || inTransit || cine != null || zone.Choice != null || Now < promptHush || championOn)
         {
             near = null;
             if (promptShown != null) hud.Prompt(promptShown = null);
@@ -1214,13 +1225,18 @@ public partial class Game : Node, IZoneHost
                     // A named voice in a fight (the Warden, Grimtunnel) is heard over everything, when its line shows
                     // (one of theirs at a time: the next waits for the last to be said).
                     var said = bk.Text;
-                    scene?.Voices.Bark(bk.Text, new Vector3((float)bk.X, (float)scene.HeightAt(bk.X, bk.Z), (float)bk.Z), bk.Speaker, bk.Speaker == null,
+                    void BarkNow() => scene?.Voices.Bark(bk.Text, new Vector3((float)bk.X, (float)scene.HeightAt(bk.X, bk.Z), (float)bk.Z), bk.Speaker, bk.Speaker == null,
                         shown: bk.Speaker != null ? () => voice.Shout(said)?.Sec ?? 0 : null, boss: bk.Boss, signature: bk.Signature);
+                    // (M5 r3: a named speaker's card waits for the narration band to close; a boss's slot line and a
+                    // signature tell keep their beat, standing where no narration is)
+                    if (bk.Speaker != null && !bk.Boss && !bk.Signature) StoryLine.Ask(Play.StoryText.Kind.Speaker, BarkNow, bk.Speaker);
+                    else BarkNow();
                     break;
                 case Ev.PlayerHit ph when ph.Dodged && Battle is { } b:
                     scene?.Voices.Bark("Dodged", new Vector3((float)b.Player.X, (float)scene.HeightAt(b.Player.X, b.Player.Z), (float)b.Player.Z), null, true);
                     break;
                 case Ev.Hush hu:
+                    storyLine?.Drop(hu.Speaker);
                     scene?.Voices.Hush(hu.Speaker);
                     break;
                 case Ev.Fade fd:
@@ -1378,6 +1394,7 @@ public partial class Game : Node, IZoneHost
     public override void _Process(double delta)
     {
         PumpAhead();
+        storyLine?.Tick();
         // Something over the game has the buttons: pad buttons mean their menu meaning first.
         controls.MenuMode = screens.Current != null || hudMode != null;
         // --pad (pictures of pad play): the pad stays in hand whatever the window's mouse does.
@@ -1571,6 +1588,7 @@ public partial class Game : Node, IZoneHost
             }
             else hud.PromptAt(null);
             Perf.Begin(Perf.Part.Labels);
+            ChampionWatch(fb2);
             hud.Beyond(Overlay == null ? Offscreen(fb2) : new());
             hud.Goals(Overlay == null ? GoalScreen() : new());
             hud.Posts(Overlay == null ? PostPointers() : new());
@@ -1696,8 +1714,11 @@ public partial class Game : Node, IZoneHost
             o.Add(new Ui.Beyond(sp, glyph, c, (float)Math.Clamp(1 - (d - 20) / 60, 0, 1)));
         }
         foreach (var e in b.Enemies.Living().Where(e => e.Boss)) Add(e.X, e.Z, "horns", Style.BloodHi);
-        foreach (var e in b.Enemies.Living().Where(e => e.Elite && !e.Boss).OrderBy(e => (e.X - px) * (e.X - px) + (e.Z - pz) * (e.Z - pz)).Take(3))
-            Add(e.X, e.Z, "skull", Style.EmberHi);
+        // (M5 r3: not while a champion is awake on the screen: the Knight's wake had a skull at the bottom edge pointing south,
+        // read as a threat behind her)
+        if (!championOn)
+            foreach (var e in b.Enemies.Living().Where(e => e.Elite && !e.Boss).OrderBy(e => (e.X - px) * (e.X - px) + (e.Z - pz) * (e.Z - pz)).Take(3))
+                Add(e.X, e.Z, "skull", Style.EmberHi);
         foreach (var p in b.Pickups.Living().Where(p => p.Kind == PickupKind.Chest).OrderBy(p => (p.X - px) * (p.X - px) + (p.Z - pz) * (p.Z - pz)).Take(2))
             Add(p.X, p.Z, "relic", Style.GoldHi);
         // A Legendary lying untaken: the screen's edge points to it, in its amber (docs/design/LOOT_DESIGN.md §8.2).
@@ -1707,6 +1728,25 @@ public partial class Game : Node, IZoneHost
             && (p.X - px) * (p.X - px) + (p.Z - pz) * (p.Z - pz) < LegendReach * LegendReach))
             Add(p.X, p.Z, "legendary", p.Loot == (int)LootTier.Storied ? ItemViews.TierColour(LootTier.Storied) : ItemViews.TierColour(LootTier.Legendary));
         return o;
+    }
+
+    /// <summary>(M5 r3) A champion (a named foe, not a boss) awake and on the screen now: the interact prompt and the
+    /// off-screen skull pointers stand down (championOn); each one's wake holds the narration band StoryText.WakeHold.</summary>
+    bool championOn;
+    readonly HashSet<(int, double)> championsWoke = new();
+
+    void ChampionWatch(Battle b)
+    {
+        championOn = false;
+        if (scene == null) return;
+        var view = new Rect2(Vector2.Zero, GetViewport().GetVisibleRect().Size);
+        foreach (var e in b.Enemies.Living())
+        {
+            if (e.Named == null || e.Boss || !e.Roused || e.State == EnemyState.Dying) continue;
+            if (championsWoke.Add((e.Id, e.Seed))) StoryLine.HoldNarration(Play.StoryText.WakeHold);
+            var w = new Vector3((float)e.X, (float)scene.HeightAt(e.X, e.Z) + 1, (float)e.Z);
+            if (!camera.IsPositionBehind(w) && view.HasPoint(camera.UnprojectPosition(w))) championOn = true;
+        }
     }
 
     /// <summary>(M5 r2) An untaken Legendary's edge pointer shows within this of her (m).</summary>
