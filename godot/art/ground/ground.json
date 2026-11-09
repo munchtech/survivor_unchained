@@ -1,7 +1,7 @@
 {
  "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
  "painted": 2,
- "inputs": "79024bcffb61",
+ "inputs": "e96e4c6463b9",
  "from": "(c) the terrain zones' seven layers as terrain.gdshader reads them (Ground.cs: the Verge, the Low Ford, the Waystation, the title's camp, C01's frost)",
  "layers": [
   {
@@ -11,9 +11,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 grass (day): golden-green big flat clumps, olive and worn, never lime; target 04's verge; rule 4",
    "mean": [
-    0.16646,
-    0.1803,
-    0.05122
+    0.14055,
+    0.20459,
+    0.04755
    ]
   },
   {
@@ -23,9 +23,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 (the floor under the spruce, day); rule 9: leaf litter as a few leaf shapes",
    "mean": [
-    0.06505,
-    0.042,
-    0.0344
+    0.05476,
+    0.04456,
+    0.03311
    ]
   },
   {
@@ -35,9 +35,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 road (day): two or three value masses, warm; target 04's road, 05's track",
    "mean": [
-    0.12664,
-    0.07332,
-    0.06855
+    0.10614,
+    0.07724,
+    0.06536
    ]
   },
   {
@@ -47,9 +47,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 road (the ruts' wet earth, a step darker than the road)",
    "mean": [
-    0.04514,
-    0.02996,
-    0.02889
+    0.03731,
+    0.03192,
+    0.02778
    ]
   },
   {
@@ -59,9 +59,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB3 (the town's rough paving as chunky planes, warm tops, cool joints); the setts' own maps are wave 2",
    "mean": [
-    0.2049,
-    0.18519,
-    0.10587
+    0.17178,
+    0.19569,
+    0.10159
    ]
   },
   {
@@ -71,9 +71,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "MB4 rock: a few big rounded planes in muted moon-blue grey, moss on the top planes",
    "mean": [
-    0.31509,
-    0.18953,
-    0.14786
+    0.21443,
+    0.21427,
+    0.12495
    ]
   },
   {
@@ -83,9 +83,9 @@
    "source": "painted (tools/look/ground_paint.py)",
    "from": "(c) the blight's burned ground, as ash masses and long dark cracks",
    "mean": [
-    0.01993,
-    0.01703,
-    0.02111
+    0.01676,
+    0.01787,
+    0.01994
    ]
   }
  ],
