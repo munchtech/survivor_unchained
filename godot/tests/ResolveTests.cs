@@ -412,7 +412,7 @@ public sealed class ResolveTests
     }
 
     [Fact]
-    public void A_kindled_spender_fires_itself_when_paid_and_its_key_heaves_with_what_she_has()
+    public void A_kindled_spender_fires_itself_only_when_full_taking_all_and_its_key_heaves_from_its_cost()
     {
         var b = Warden(("groundbreaker", 1));
         var w = b.Weapons.Single();
@@ -434,10 +434,20 @@ public sealed class ResolveTests
         w.Timer = 0;
         b.Resolve.Set(19);
         Assert.False(b.PressSkill(w.Slot, 6, 0));
-        // Paid in full with a crowd in range: it fires itself and spends.
+        // (M3) Paid but not full, a crowd in range: it waits for her key (it fires itself only when Resolve is full).
+        b.Resolve.Set(60);
+        Run(b, 1, () => Pin(b, es, at));
+        Assert.Equal(60, b.Resolve.Value, 9);
+        // Its key from its whole cost: full strength, the cost spent, and it waits only its record's wait (0.5 s), not its
+        // kindled cooldown (5 s): the cost is the gate.
+        Assert.True(b.PressSkill(w.Slot, 6, 0));
+        Assert.Equal(20, b.Resolve.Value, 9);
+        Assert.InRange(w.Timer, 0.01, 0.51);
+        // Full with a crowd in range: it fires itself, and the heave takes all of it.
+        Run(b, 1, () => Pin(b, es, at));
         b.Resolve.Set(100);
         Run(b, 0.5, () => Pin(b, es, at));
-        Assert.Equal(60, b.Resolve.Value, 9);
+        Assert.Equal(0, b.Resolve.Value, 9);
     }
 
     /* ---------------------------------------------------------- the arena -- */

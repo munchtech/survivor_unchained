@@ -25,6 +25,9 @@ public sealed class WeaponInst
     public int Rank;
     Evolution? evolution;
     public double Timer;
+    /// <summary>(M3) The timer is only a kindled skill's look-again (its condition did not hold, or nothing was in range),
+    /// not a wait: her key may still heave it (Battle.KindledPress, the press plan).</summary>
+    public bool Relooking;
     public readonly WeaponMods Mods = new();
     /// <summary>Burst shots still to go, and when.</summary>
     public int BurstLeft;
@@ -226,9 +229,11 @@ public static partial class Firing
     }
 
     /// <summary>Its cooldown before the multipliers: the campaign record's wait for a pressed skill (a spender's only
-    /// while a resource pays for it), else its base cooldown.</summary>
+    /// while a resource pays for it), else its base cooldown. (M3) A kindled spender whose key heaves (Groundbreaker, the
+    /// Disc) waits its record's wait too while Resolve pays: its cost is its gate, as the pressed form's is.</summary>
     static double BaseCooldown(Battle b, WeaponInst w) =>
-        w.Press is { Wait: { } wait } r && w.Pressed && (b.Resolve.On || (r.Resolve ?? 0) <= 0 && (r.Drain ?? 0) <= 0) ? wait : w.Def.Base.Cooldown ?? 1;
+        w.Press is { Wait: { } wait } r && (w.Pressed && (b.Resolve.On || (r.Resolve ?? 0) <= 0 && (r.Drain ?? 0) <= 0)
+            || w.KindledNow && w.KindleKey == KindlePress.Now && b.Resolve.On && (r.Resolve ?? 0) > 0) ? wait : w.Def.Base.Cooldown ?? 1;
 
     public static double AreaOf(Battle b, WeaponInst w, double baseValue)
     {
@@ -328,13 +333,16 @@ public static partial class Firing
         if (w.Timer > 0) return;
         // Kindled: wait over is not enough; look again in a tenth of a second (read only when ready, so a crowd costs nothing).
         // A kindled spender (campaign, Resolve): it waits for the whole cost too (ready all the while: its key may heave
-        // with less), and spends it on firing.
+        // with less), and spends it on firing. (M3) One whose key heaves (kindled press "now": Groundbreaker, the Disc)
+        // fires itself only when Resolve is full (ResolveMeter.SelfAt of the cap) and the heave takes all of it: her key
+        // heaves from its cost (from half, at what she has), so a hand that presses spends ~2.5x as often as one that waits.
         double cost = b.CostOf(w);
-        if (cost > 0 && b.Resolve.Value < cost) { w.Timer = 0; return; }
-        if (w.Kindle is { } kd && !b.Kindled(kd)) { w.Timer = 0.1; return; }
+        bool selfHeave = cost > 0 && w.KindledNow && w.KindleKey == KindlePress.Now;
+        if (cost > 0 && b.Resolve.Value < (selfHeave ? ResolveMeter.SelfAt * b.Resolve.Max : cost)) { w.Timer = 0; return; }
+        if (w.Kindle is { } kd && !b.Kindled(kd)) { w.Timer = 0.1; w.Relooking = true; return; }
         int kills0 = w.Kills;
         bool fired = CastOnce(b, w);
-        if (fired && cost > 0) b.Resolve.Spend(cost);
+        if (fired && cost > 0) b.Resolve.Spend(selfHeave ? b.Resolve.Value : cost);
         // Nothing in range: look again soon rather than waiting a whole cooldown.
         Rearm(b, w, fired, kills0);
     }
@@ -373,6 +381,7 @@ public static partial class Firing
     static void Rearm(Battle b, WeaponInst w, bool fired, int kills0)
     {
         w.Timer = fired ? CooldownOf(b, w) : 0.25;
+        w.Relooking = !fired;
         // sunderer.momentum: a melee swing that kills enough brings the skill's next swing sooner.
         if (fired && w.Tags.Has(Tag.Melee) && b.Lamp("momentum") && w.Kills - kills0 >= b.Lamps.Full("momentum", "kills", 3))
             w.Timer *= 1 - Math.Min(0.9, b.Lamps.Size("momentum", "sooner"));
