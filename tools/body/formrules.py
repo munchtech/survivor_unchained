@@ -7,6 +7,8 @@ Sections: "neck" (the trapezius line under the chin, the neck's girth, the slope
 surface), and, given the build's spec (--spec, else build.json beside the glb), "breast" (sculpt/breast_measure.py)
 and "glutes" (sculpt/glute_measure.py), measured on formview.body(spec) and the spec with the breast sliders at 0.
 Each rule: {"value", "band": [lo, hi], "ok"}; summary "forms: N of M rules in band" plus the misses.
+A rule with "informational": true (P1 R1 step 4: it measures a designed field that her_a overrides) is reported
+with its value and band but neither counted in N of M nor a miss.
 """
 from __future__ import annotations
 
@@ -628,7 +630,7 @@ def measure(body_glb, rules=None, spec=None):
     V, T = rest(B, guess_body(B))
     H, HT = rest(B, "HeroineHead")
     ctx = {"V": V, "T": T, "H": H, "HT": HT, "B": B, "glb": body_glb}
-    out, miss, n, skipped = {}, [], 0, []
+    out, miss, n, skipped, info_n = {}, [], 0, [], 0
     extra = spec_measures(spec, body_glb) if spec else {}
     for sec, rs in rules["sections"].items():
         if sec in ("breast", "glutes") and not spec:
@@ -643,6 +645,11 @@ def measure(body_glb, rules=None, spec=None):
         out[sec] = {"measured": m, "rules": {}}
         for key, r in rs["rules"].items():
             v = m.get(key)
+            if r.get("informational"):
+                # (P1 R1 step 4: a rule that cannot be meaningful on this kind of body: reported, never counted)
+                out[sec]["rules"][key] = {"value": v, "band": r["band"], "informational": True}
+                info_n += 1
+                continue
             if v is None:
                 miss.append(f"{sec}.{key} not measured")
                 out[sec]["rules"][key] = {"value": None, "band": r["band"], "ok": False}
@@ -654,7 +661,7 @@ def measure(body_glb, rules=None, spec=None):
             n += 1
             if not ok:
                 miss.append(f"{sec}.{key} {v} not in {r['band']}")
-    out["summary"] = f"forms: {n - len(miss)} of {n} rules in band" + (f"; MISS {'; '.join(miss)}" if miss else "") + (f" (skipped {','.join(skipped)}: no spec)" if skipped else "")
+    out["summary"] = f"forms: {n - len(miss)} of {n} rules in band" + (f" ({info_n} informational)" if info_n else "") + (f"; MISS {'; '.join(miss)}" if miss else "") + (f" (skipped {','.join(skipped)}: no spec)" if skipped else "")
     return out
 
 
