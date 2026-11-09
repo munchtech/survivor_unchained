@@ -39,6 +39,9 @@ public sealed class StoryText
     /// <summary>Seconds before a champion's wake the band is kept clear.</summary>
     public const double WakeAhead = 2;
 
+    /// <summary>Two narrations asked within this many seconds are one beat's lines: a held first keeps their spacing.</summary>
+    public const double BeatGap = 10;
+
     /// <summary>The narration shown last (to ask again if a wake comes while it is up) and whether it was already taken
     /// down once (a line is taken down once; asked again it stays).</summary>
     (Action Show, bool Again)? upNow;
@@ -91,7 +94,10 @@ public sealed class StoryText
             {
                 bool late = now - asked >= MostWait;
                 if (!late && (speakerUp() || now < holdUntil)) return;
-                if (lastNarration is { } ln && ln.Shown > ln.Asked + 1e-6 && now < ln.Shown + (asked - ln.Asked)) return;
+                // (the spacing holds only for lines of one beat: a delay never carries into a line asked long after.
+                // r4c capture: an earlier held line's delay held the Warden's heart line 12 s, to MostWait)
+                if (lastNarration is { } ln && ln.Shown > ln.Asked + 1e-6 && asked - ln.Asked <= BeatGap
+                    && now < ln.Shown + (asked - ln.Asked)) return;
                 lastNarration = (asked, now);
             }
             else if (narrationUp()) return;

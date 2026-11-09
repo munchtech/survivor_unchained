@@ -72,6 +72,21 @@ public class StoryTextTests
     }
 
     [Fact]
+    public void A_held_lines_delay_does_not_carry_into_a_line_asked_long_after()
+    {
+        var s = New();
+        Speak(s, "grim", 6);
+        Narrate(s, "intro", 3);
+        Run(s, 7);
+        Assert.Equal(new[] { "grim", "intro" }, shown);
+        // the next beat's line, a minute later, shows when asked
+        now = 70;
+        Narrate(s, "heart", 5);
+        s.Tick();
+        Assert.Equal(new[] { "grim", "intro", "heart" }, shown);
+    }
+
+    [Fact]
     public void Narrations_unheld_replace_one_another_as_their_zone_timed_them()
     {
         var s = New();
