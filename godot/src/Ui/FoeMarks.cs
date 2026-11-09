@@ -31,7 +31,7 @@ public partial class FoeMarks : Control
     float lampK;
     readonly Vector2[] poolPts = new Vector2[49];
     static readonly Color LampFill = new("#ffd07a");
-    static readonly Color Ink = new(0.043f, 0.035f, 0.024f, 0.78f), Danger = new("#b8302f"), Bronze = new("#8a6a3a"), BronzeHi = new("#c9a35c");
+    static readonly Color Ink = new(0.043f, 0.035f, 0.024f, 0.78f), Danger = new("#b8302f"), Bronze = new("#8a6a3a"), BronzeHi = new("#c9a35c"), Bone = new("#e6dcc8");
 
     public FoeMarks() { MouseFilter = MouseFilterEnum.Ignore; }
 
@@ -231,7 +231,7 @@ public partial class FoeMarks : Control
             DrawRect(r, new Color(Ink, Ink.A * a));
             var inner = r.Grow(-1 * s);
             DrawRect(new Rect2(inner.Position, new Vector2(inner.Size.X * lampK, inner.Size.Y)), LampFill);
-            DrawRect(r, new Color(Bronze, a), false, Math.Max(1, s));
+            DrawRect(r, new Color(Bone, a), false, Math.Max(1, s));
             if (lampOut)
             {
                 var font = ThemeDB.FallbackFont;
@@ -264,8 +264,8 @@ public partial class FoeMarks : Control
                 float t = i / (float)(ringPts.Length - 1) * Mathf.Tau;
                 ringPts[i] = ringAt + new Vector2(Mathf.Cos(t) * rx, Mathf.Sin(t) * ry);
             }
-            DrawPolyline(ringPts, new Color(Ink, 0.6f), 4.5f * s, true);
-            DrawPolyline(ringPts, new Color(BronzeHi, 0.65f + 0.3f * pulse), 2.5f * s, true);
+            DrawPolyline(ringPts, new Color(Ink, 0.85f), 4.5f * s, true);
+            DrawPolyline(ringPts, new Color(Bone, 0.65f + 0.3f * pulse), 2.5f * s, true);
         }
     }
 }

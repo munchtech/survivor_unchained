@@ -50,6 +50,8 @@ public partial class GameHud : CanvasLayer
     Label sayWho = null!, sayText = null!, annKicker = null!, annTitle = null!, annSub = null!;
     TextureRect sayShade = null!;
     Label bossName = null!, bossTitle = null!, bossChannel = null!;
+    TextureRect bossSheen = null!;
+    static readonly Color BossRed = new("#b0222a");
     ColorRect bossFill = null!, bossTrail = null!, bossChannelEdge = null!;
     TextureRect bossChannelFill = null!;
     Control bossTrack = null!, bossChannelBox = null!;
@@ -418,6 +420,11 @@ public partial class GameHud : CanvasLayer
         track.AddChild(bossTrail);
         bossFill = new ColorRect { Color = Hex("#b0222a"), Position = new Vector2(2, 2), Size = new Vector2(w - 4, 12), MouseFilter = Control.MouseFilterEnum.Ignore };
         track.AddChild(bossFill);
+        // Shielded: the red stays, a cool silver sheen over it (brighter top third), shown only while shielded.
+        var sheenG = new Gradient { Offsets = new[] { 0f, 0.33f, 1f }, Colors = new[] { new Color(0xd8 / 255f, 0xdd / 255f, 0xe6 / 255f, 0.35f), new Color(0xd8 / 255f, 0xdd / 255f, 0xe6 / 255f, 0.22f), new Color(0xd8 / 255f, 0xdd / 255f, 0xe6 / 255f, 0.1f) } };
+        bossSheen = new TextureRect { Texture = new GradientTexture2D { Gradient = sheenG, FillFrom = new Vector2(0, 0), FillTo = new Vector2(0, 1), Width = 4, Height = 16 }, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = Control.MouseFilterEnum.Ignore, Visible = false };
+        bossSheen.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        bossFill.AddChild(bossSheen);
         // (the bar's light: a pale line along its top and a shade along its foot, over the fill)
         track.AddChild(new ColorRect { Color = new Color(1, 0.9f, 0.85f, 0.16f), Position = new Vector2(2, 2), Size = new Vector2(w - 4, 1), MouseFilter = Control.MouseFilterEnum.Ignore });
         track.AddChild(new ColorRect { Color = new Color(0, 0, 0, 0.28f), Position = new Vector2(2, 10), Size = new Vector2(w - 4, 4), MouseFilter = Control.MouseFilterEnum.Ignore });
@@ -677,6 +684,17 @@ public partial class GameHud : CanvasLayer
         // --slots (DevSlots.cs): the shots' campaign build, set once a fight is on.
         DevSlots.Tick(b);
         if (DevSlots.StepDue(b) is { } stepDue) StepWon(stepDue);
+        // M4 §4: the level card (a campaign level-up the HUD sees itself; --level-card's staged one)
+        campaignNow = b.Campaign;
+        LevelWatch(b, level.Level, ember);
+        if (DevSlots.LevelCardDue(b) is { } cardDue)
+        {
+            // (as a campaign level-up shows it: the key's slot from the fight, the trait/attribute row; a lamp has none)
+            if (cardDue.Kind == LevelCardKind.NewKey && cardDue.Slot < 0) cardDue.Slot = b.Weapons.Find(w => w.Id == cardDue.Skill)?.Slot ?? -1;
+            if (b.Campaign && cardDue.Kind != LevelCardKind.LampLit && (GetParent() as Game)?.Journey.Ch is { } dch)
+            { cardDue.PromptKey = Act.Character; cardDue.PromptText = LevelCards.PromptFor(dch.TraitPicks); }
+            LevelCard(cardDue);
+        }
         // (M4: the pad's A is Interact only out of a fight)
         if (Controls.Instance is { } ctl) ctl.Fighting = b.Combat && p.Alive && b.NearestHostile(p.X, p.Z, FightNear) != null;
         // The six places. In the campaign (M4 §1) seat k shows slot KeyMap.SeatSlot[k] with its key; elsewhere (the
@@ -825,9 +843,12 @@ public partial class GameHud : CanvasLayer
         int tl = HudPin.Level ?? (HudPin.XpNum is { Length: 3 } tn ? tn[0] : barLevel);
         river.Light(shown, day, tl);
         // a level-up's name over the coin (judge M2), held about 2 s; the banner by night stays too (the top edge)
-        river.Title.Set((float)shown.Title, day ? $"LEVEL {tl}" : $"EMBER {tl}", day ? "" : "the ember rises", day);
+        // (M4 §4: in the campaign by day the level card names the level; the coin's title stays dark. The arena and the
+        // ember keep theirs.)
+        float title = day && campaignNow && !HudPin.Active ? 0 : (float)shown.Title;
+        river.Title.Set(title, day ? $"LEVEL {tl}" : $"EMBER {tl}", day ? "" : "the ember rises", day);
         // (the passives' beads on the crest under its subline step back while it shows; the row's own modulate is the callouts')
-        float ba = 1 - (float)shown.Title;
+        float ba = 1 - title;
         if (ba != beadsA)
         {
             beadsA = ba;
@@ -1183,7 +1204,8 @@ public partial class GameHud : CanvasLayer
         float w = BossW - 4;
         float k = (float)Math.Clamp(bar.Hp / Math.Max(1, bar.MaxHp), 0, 1);
         bossFill.Size = new Vector2(w * k, 12);
-        bossFill.Color = bar.Shielded ? Hex("#8a8a9a") : Hex("#b0222a");
+        if (bossSheen.Visible != bar.Shielded) bossSheen.Visible = bar.Shielded;
+        if (bossFill.Color != BossRed) bossFill.Color = BossRed;
         bossTrail.Size = new Vector2(Math.Max(bossTrail.Size.X - 2, w * k), 12);
         // The phase marks, built when they change rather than every frame.
         string marks = bar.Phases == null ? "" : string.Join(",", bar.Phases);
@@ -1301,6 +1323,80 @@ public partial class GameHud : CanvasLayer
 
     /// <summary>Within this of her, a foe makes it a fight (the pad's A is then the grip's alone).</summary>
     const double FightNear = 12;
+
+    SurvivorUnchained.Ui.LevelCard? levelCard;
+    int levelSeen;
+    bool campaignNow;
+
+    /// <summary>M4 §4: a level-up card (M6 and M7 call it; the campaign's own level-ups come through LevelWatch). Cards
+    /// show one at a time, waiting while banners are held (XpHoldUntil: a screen open holds them too).</summary>
+    public void LevelCard(LevelCardSpec spec)
+    {
+        if (levelCard == null)
+        {
+            levelCard = new SurvivorUnchained.Ui.LevelCard
+            {
+                Held = () => Time.GetTicksMsec() / 1000.0 < XpHoldUntil || !play.Visible,
+                FoldTo = CardFoldTo,
+                OnFold = CardFolded,
+                FootFor = CardFoot,
+                From = DgPanel.Coin,
+            };
+            play.AddChild(levelCard);
+        }
+        levelCard.Add(spec);
+        GD.Print($"level card: queued {LevelCards.Header(spec)} ({spec.Kind}{(spec.Skill != "" ? " " + spec.Skill : "")}, slot {spec.Slot + 1})");
+    }
+
+    /// <summary>The level card is showing or waiting.</summary>
+    public bool LevelCardUp => levelCard != null && levelCard.Queue.Count > 0;
+
+    /// <summary>M4 §4: the campaign's level-ups, seen by the HUD itself (her level against the last seen): each level a
+    /// card, a new key where the taught build teaches one at that level and the fight carries it (Journey.Teach has put
+    /// it on its slot before the HUD looks), else plain; the trait/attribute line on its prompt row.</summary>
+    void LevelWatch(Battle b, int lv, bool ember)
+    {
+        if (lv <= 0) return;
+        int was = levelSeen;
+        levelSeen = lv;
+        if (was <= 0 || lv <= was || !b.Campaign || ember || HudPin.Active) return;
+        var ch = (GetParent() as Game)?.Journey.Ch;
+        var build = TaughtBuilds.Of(ch?.Archetype);
+        for (int l = was + 1; l <= lv; l++)
+            LevelCard(LevelCards.ForCampaignLevel(l, build, id => b.Weapons.Find(w => w.Id == id) is { } w ? w.Slot : -1, ch?.TraitPicks ?? 0));
+    }
+
+    /// <summary>The card's foot: above the beads (the passives' row) and any statuses under its span.</summary>
+    float CardFoot(float w)
+    {
+        float foot = DgPanel.Coin.Y - DgPanel.ArchR;
+        void Clear(Control c)
+        {
+            if (!c.IsVisibleInTree()) return;
+            var r = c.GetGlobalRect();
+            if (r.Size.Y <= 0 || r.End.X < 960 - w / 2 || r.Position.X > 960 + w / 2) return;
+            foot = Math.Min(foot, r.Position.Y);
+        }
+        Clear(irons.Passives);
+        if (irons.Statuses.GetChildCount() > 0) Clear(irons.Statuses);
+        GD.Print($"level card: beads {irons.Passives.GetGlobalRect()}, statuses {irons.Statuses.GetGlobalRect()} ({irons.Statuses.GetChildCount()}), coin arch top {DgPanel.Coin.Y - DgPanel.ArchR:0}");
+        return foot - 12;
+    }
+
+    int SeatFor(LevelCardSpec s) => s.Kind == LevelCardKind.NewKey && s.Slot >= 0 ? KeyMap.SeatOf(s.Slot) : -1;
+
+    Vector2? CardFoldTo(LevelCardSpec s)
+    {
+        int k = SeatFor(s);
+        if (k < 0 || k >= irons.Sockets.Length) return irons.GetGlobalTransform() * DgPanel.Coin;
+        return irons.Sockets[k].GetGlobalRect().GetCenter();
+    }
+
+    void CardFolded(LevelCardSpec s)
+    {
+        int k = SeatFor(s);
+        if (k >= 0 && k < irons.Sockets.Length) irons.Sockets[k].Opened();
+    }
 
     /// <summary>M4 §1: the campaign's seats, [1][2][3] (coin) [4][LMB][RMB], each fed from the weapon on its slot
     /// (w.Slot, w.Slot2: never b.Weapons' order) with its key's kind. A union shows on both its keys' seats: the first
@@ -1727,8 +1823,15 @@ public partial class StepMark : Control
             return;
         }
         var d = new[] { c + new Vector2(0, -5), c + new Vector2(5, 0), c + new Vector2(0, 5), c + new Vector2(-5, 0), c + new Vector2(0, -5) };
-        if (done) DrawColoredPolygon(d[..4], Style.Gold);
+        if (done)
+        {
+            // A tick: a short stroke down, a long one up, ~10x8 px, gold, 2 px.
+            Vector2 a = c + new Vector2(-5, 0.5f), b = c + new Vector2(-1.5f, 4), e = c + new Vector2(5, -4);
+            DrawLine(a, b, new Color(0, 0, 0, 0.6f), 4, true); DrawLine(b, e, new Color(0, 0, 0, 0.6f), 4, true);
+            DrawLine(a, b, Style.Gold, 2, true); DrawLine(b, e, Style.Gold, 2, true);
+            return;
+        }
         DrawPolyline(d, new Color(0, 0, 0, 0.6f), 3, true);
-        DrawPolyline(d, done ? Style.GoldHi : ink, 1.3f, true);
+        DrawPolyline(d, ink, 1.3f, true);
     }
 }

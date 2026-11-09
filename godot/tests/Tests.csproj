@@ -20,6 +20,7 @@
     <Compile Include="../src/Ui/LampAsk.cs" LinkBase="src" />
     <Compile Include="../src/Game/KeyMap.cs" LinkBase="src" />
     <Compile Include="../src/Ui/ResolveMotion.cs" LinkBase="src" />
+    <Compile Include="../src/Ui/LevelCardModel.cs" LinkBase="src" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />

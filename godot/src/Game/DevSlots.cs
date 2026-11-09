@@ -47,6 +47,20 @@ public static class DevSlots
         return step;
     }
 
+    /// <summary>--level-card slot:SKILL:LEVEL | lamp:SKILL:LEVEL:BEFORE:AFTER | plain:LEVEL [@T] (pictures, M4 §4): that card
+    /// shown through GameHud.LevelCard once the campaign fight's clock passes T s (default 1.5).</summary>
+    static readonly (Ui.LevelCardSpec Spec, double At)? CardSpec = Args.Get("level-card") is { } lc ? Ui.LevelCards.Parse(lc) : null;
+    static Battle? cardFor;
+
+    /// <summary>The card due now (once a fight), or null.</summary>
+    public static Ui.LevelCardSpec? LevelCardDue(Battle b)
+    {
+        if (CardSpec is not { } c || ReferenceEquals(cardFor, b) || !b.Combat || b.Time < c.At) return null;
+        cardFor = b;
+        GD.Print($"level-card: {Ui.LevelCards.Header(c.Spec)} staged at {b.Time:0.00}");
+        return c.Spec;
+    }
+
     public static void Tick(Battle b)
     {
         if (ResolveAt.Length > 0 && b.Campaign && b.Combat)

@@ -49,7 +49,7 @@ public partial class Hits : Node3D
             var l = new Label3D
             {
                 Billboard = BaseMaterial3D.BillboardModeEnum.Enabled, NoDepthTest = true, FontSize = 64, OutlineSize = NumOutline,
-                PixelSize = NumPixel, Modulate = new Color(1f, 0.95f, 0.85f), OutlineModulate = new Color(0.08f, 0.03f, 0.02f), Visible = false,
+                PixelSize = NumPixel, Modulate = new Color(1f, 0.95f, 0.85f), OutlineModulate = new Color("#0b0906"), Visible = false,
                 Shaded = false, RenderPriority = 10, OutlineRenderPriority = 9,
             };
             AddChild(l);
@@ -117,7 +117,20 @@ public partial class Hits : Node3D
     }
 
     public void Number(Vector3 at, int amount, bool crit) =>
-        Text(at, crit ? $"{amount}!" : amount.ToString(), crit ? new Color(1.6f, 1.15f, 0.4f) : new Color(1, 0.94f, 0.86f), crit ? 88 : 60);
+        Text(Beside(at), amount.ToString(), crit ? NumCrit : NumBone, crit ? 76 : 46);
+
+    /// <summary>Normal numbers: bone at 85%; crits: white (M4 section 5).</summary>
+    static readonly Color NumBone = new Color("#e9dfcc", 0.85f), NumCrit = new Color(1f, 1f, 1f, 1f);
+    /// <summary>Per pool label: its colour's own alpha, and seconds since a crit's punch began (1 = none).</summary>
+    readonly float[] numA = new float[48], numPunch = Fill48();
+    static float[] Fill48() { var a = new float[48]; System.Array.Fill(a, 1f); return a; }
+
+    /// <summary>A number's spawn lifted beside the impact: 0.35 m up, 0.45 m to the camera's right.</summary>
+    Vector3 Beside(Vector3 at)
+    {
+        var cam = GetViewport()?.GetCamera3D();
+        return at + Vector3.Up * 0.35f + (cam != null ? cam.GlobalBasis.X * 0.45f : Vector3.Right * 0.45f);
+    }
 
     /// <summary>The boss's words now showing put away (the BREAK is said alone).</summary>
     public void ClearWords()
@@ -292,6 +305,9 @@ public partial class Hits : Node3D
         l.Text = text;
         l.FontSize = size;
         l.Modulate = color;
+        numA[i] = color.A;
+        numPunch[i] = 1;
+        l.Scale = Vector3.One;
         at = ClearOfNames(at + new Vector3(rng.RandfRange(-0.3f, 0.3f), 0, 0), text, size);
         at = AboveHud(at, text, size);
         l.GlobalPosition = at;
@@ -338,7 +354,13 @@ public partial class Hits : Node3D
             if (t >= 1) continue;
             t += dt / 0.75f;
             l.Position += Vector3.Up * dt * 1.4f * (1 - t);
-            var c = l.Modulate; c.A = (t < 0.7f ? 1 : 1 - (t - 0.7f) / 0.3f) * Hush; l.Modulate = c;
+            if (numPunch[i] < 0.08f)
+            {
+                numPunch[i] += dt;
+                float k = Mathf.Clamp(numPunch[i] / 0.08f, 0, 1), e = 1 - (1 - k) * (1 - k);
+                l.Scale = Vector3.One * Mathf.Lerp(1.35f, 1f, e);
+            }
+            var c = l.Modulate; c.A = (t < 0.7f ? 1 : 1 - (t - 0.7f) / 0.3f) * Hush * numA[i]; l.Modulate = c;
             l.OutlineModulate = new Color(l.OutlineModulate, c.A);
             if (t >= 1) l.Visible = false;
             numbers[i] = (l, t);

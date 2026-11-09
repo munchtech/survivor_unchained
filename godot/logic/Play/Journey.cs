@@ -285,7 +285,6 @@ public sealed partial class Journey
         if (levels > 0)
         {
             Teach(campaignFight);
-            OnAnnounce(new Announcement($"Level {Ch.Level}", Ch.TraitPicks > 0 ? "A new trait can be chosen (C)" : "Attribute points to spend (C)", "boon", 3.2, "You grow stronger"));
             Grew();
             OnTouch();
         }

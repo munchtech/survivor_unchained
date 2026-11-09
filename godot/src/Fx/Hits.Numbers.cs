@@ -131,7 +131,7 @@ public partial class Hits
             }
             if (Crowded(at)) continue;
             var t = new Tallied { Target = w.Target, Sum = w.Amount, Born = clock, Crit = w.Crit, Heavy = w.MaxHp > 0 && w.Amount > w.MaxHp * 0.2, Tint = w.Tint };
-            int i = Show(at, "", Colors.White, 60);
+            int i = Show(Beside(at), "", Colors.White, 46);
             tallies[i] = t;
             tallyOf[i] = w.Target;
             labelOfTarget[w.Target] = i;
@@ -157,6 +157,7 @@ public partial class Hits
         var l = numbers[i].Label;
         l.FontSize = 96;
         l.Modulate = new Color(1.25f, 1.05f, 0.7f);
+        numA[i] = 1;
         l.GlobalPosition = InSafe(l.GlobalPosition, l.Text, l.FontSize, safe);
     }
 
@@ -197,10 +198,13 @@ public partial class Hits
     {
         var l = numbers[i].Label;
         int n = (int)Math.Round(t.Sum);
-        l.Text = t.Crit ? $"{n}!" : n.ToString();
-        l.Modulate = t.Tint ?? (t.Crit ? new Color(1.6f, 1.15f, 0.4f) : new Color(1, 0.94f, 0.86f));
+        l.Text = n.ToString();
+        Color col = t.Tint ?? (t.Crit ? NumCrit : NumBone);
+        numA[i] = col.A;
+        l.Modulate = col;
+        if (t.Crit && t.Tint == null) { numPunch[i] = 0; l.Scale = Vector3.One * 1.35f; }
         // What burns or bleeds a body is told smaller than the blows themselves.
-        l.FontSize = t.Tint != null ? 44 : (t.Crit ? 80 : 58) + (t.Heavy ? 18 : 0);
+        l.FontSize = t.Tint != null ? 36 : (t.Crit ? 72 : 46) + (t.Heavy ? (t.Crit ? 12 : 12) : 0);
     }
 
     void StepTally(double dt) => clock += dt;

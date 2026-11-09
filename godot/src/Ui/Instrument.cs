@@ -513,6 +513,12 @@ public partial class Socket : Control
     /// <summary>It has evolved: the place swells and burns gold, settling over a second.</summary>
     public void Crown() => crown = 0;
 
+    /// <summary>M4 §4: the level card folded into this seat (its key just opened): the seat flashes warm once, settling
+    /// over 0.6 s (no swell: the crown is the evolve's).</summary>
+    public void Opened() { if (opened < 0) openedBase = Modulate; opened = 0; }
+    double opened = -1;
+    Color openedBase = Colors.White;
+
     public override void _Process(double delta)
     {
         t += delta;
@@ -525,6 +531,13 @@ public partial class Socket : Control
             Scale = Vector2.One * (1 + 0.45f * e * (0.75f + 0.25f * Mathf.Cos((float)crown * 18)));
             Modulate = Colors.White.Lerp(new Color(2.2f, 1.8f, 1.0f), e);
             if (crown >= 1.3) { crown = -1; Scale = Vector2.One; Modulate = Colors.White; }
+        }
+        else if (opened >= 0)
+        {
+            opened += delta;
+            float k = (float)Math.Clamp(opened / 0.6, 0, 1), e = (1 - k) * (1 - k);
+            Modulate = openedBase.Lerp(new Color(1.9f, 1.6f, 1.15f, openedBase.A), e);
+            if (opened >= 0.6) { opened = -1; Modulate = openedBase; }
         }
         // Where it breathes gold (ready to evolve, not yet evolved) it draws by the clock, so it goes on redrawing.
         if (dirty || (filled && ripe && !evolved)) { dirty = false; QueueRedraw(); }
