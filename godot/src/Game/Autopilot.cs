@@ -24,6 +24,7 @@ public sealed class Autopilot
     readonly Game g;
     readonly HashSet<Act> pressed = new();
     int wp = 1;
+    readonly Dictionary<string, double> lampTried = new();
     double diagT, t, orbit, dashT, abilityT, drinkT, stuckT, sideT, lastX, lastZ, postT, resultT, choiceT;
     int side = 1;
     (double X, double Z, double R)? territory;
@@ -105,7 +106,9 @@ public sealed class Autopilot
         }
         lineT = 0;
         // A chest opening is watched to its end (pictures of it).
-        if (g.Overlay == "chest") return;
+        if (g.Overlay == "chest") { if (legendSeen && !cardShot) { cardShot = true; Frame("legendary_card", 1.2); } return; }
+        // (M5 r2: the watch-post's menu, opened once, framed, then closed)
+        if (g.Overlay == "post" && menuT >= 0) { if ((menuT += dt) > 2.2 && !Shots.Pending("post_menu_watch")) { menuT = -1; g.CloseOverlay(); } return; }
         // A night's result is read, then left as a player leaves it (closing it as a screen
         // stranded the survivor on the empty field).
         if (g.Overlay == "arena")
@@ -116,7 +119,8 @@ public sealed class Autopilot
         }
         resultSeen = false;
         // The Wayfinder's table: a picture of it, then the night's offer taken (--offer N), as a player does.
-        if (g.Overlay == "maps" && GoalsOn) { Table(dt); return; }
+        // (the zone ends at the town: a run begun in the Low Ford never works the table, M5 r2)
+        if (g.Overlay == "maps" && GoalsOn && !(fromLowford && g.Zone?.Id == "waystation")) { Table(dt); return; }
         tableOpen = false;
         if (g.Overlay != null) { g.CloseOverlay(); return; }
         // A choice the story puts to her is read a while (pictures of it), then answered as --knee says
@@ -132,7 +136,9 @@ public sealed class Autopilot
         choiceT = 0;
         var b = g.Battle;
         var z = g.Zone;
+        if (z?.Id == "lowford") fromLowford = true;
         if (GoalsOn) Track(dt, b, z);
+        if (b != null && z != null) Hooks(b, z);
         // (--auto toward: walking down the screen, toward the camera, her face
         // to it: pictures of her face at play zoom)
         if (Toward && b != null && b.Player.Alive && !g.InTransit) { Move = (0, 1); return; }
@@ -156,6 +162,7 @@ public sealed class Autopilot
         if (Args.Has("clip") && z is Zones.StoryNight { Beat: Story.Doorway { Raised: false } }) return;
         if (b == null || z == null || !b.Player.Alive || g.InTransit || g.InCinematic || Idle && (spots || !(z is Zones.Prologue { Sprung: false }))) return;
         if (Talk && !z.Combat) { WalkUp(dt, b, z); return; }
+        if (fromLowford && z.Id == "waystation") { TownStop(dt, b); return; }
         if (GoalsOn && GoalWalk(dt, b, z)) return;
         if (z.Id != "lowford") { Field(dt, b); return; }
         Prologue(dt, b, z);
@@ -171,14 +178,18 @@ public sealed class Autopilot
         {
             diagT = 0;
             var kn = b.Enemies.Living().FirstOrDefault(e => e.Tag == "knight");
-            Godot.GD.Print($"autodiag t={b.Time:0.0} stage={stage} p=({p.X:0.0},{p.Z:0.0}) wp={wp} postT={postT:0.0} knight={(kn == null ? "-" : $"({kn.X:0.0},{kn.Z:0.0}) {kn.State} hp={kn.Hp:0}/{kn.HpFloor:0}")}");
+            var nightDiag = d.GetValueOrDefault("night");
+            Godot.GD.Print($"autodiag t={b.Time:0.0} stage={stage} p=({p.X:0.0},{p.Z:0.0}) wp={wp} postT={postT:0.0} knight={(kn == null ? "-" : $"({kn.X:0.0},{kn.Z:0.0}) {kn.State} hp={kn.Hp:0}/{kn.HpFloor:0}")} night={nightDiag}");
         }
         var meta = g.Scene!.Data.Meta;
         XZ Place(string n) => meta.Place("LOWFORD", n);
         double tx = p.X, tz = p.Z;
         switch (stage)
         {
-            case "Wake" or "Rising" or "Ambush":
+            // (M5: the Rising is placed beats now, n_lone and n_three up the road; it walks to them as the default does)
+            // (the Ambush, once its trap has sprung, is fought as the default does: its nearest foe, where it stands; orbiting
+            // the wagon kept her off its bowmen for good, m5 clip r1)
+            case "Wake" or "Ambush" or "Rising" when Idle || stage == "Wake" || stage == "Ambush" && z is not Zones.Prologue { Sprung: true }:
             {
                 var c = stage == "Ambush" ? Place("cart") : Place("camp");
                 orbit += dt * 0.35;
@@ -218,11 +229,34 @@ public sealed class Autopilot
                 if (Math.Sqrt((p.X - tx) * (p.X - tx) + (p.Z - tz) * (p.Z - tz)) < 1.0 && g.Prompted == "chest") Controls.Instance.Press(Act.Interact);
                 break;
             }
+            // (M5 r2) The watch-post's lamp once the Knight is down (its prompt offered then): walked to and lit, as a player
+            // does, foes near it or not (Locked waits them out; the blows land as she stands there).
+            case "Post" or "Barrow" when !Idle && WatchLamp(z) is { } wl && watchT < 40:
+            {
+                watchT += dt;
+                tx = wl.X + 1.0; tz = wl.Z + 1.0;
+                LightAt(wl, p);
+                break;
+            }
             case "Barrow" when b.Enemies.Living().FirstOrDefault(e => e.Tag == "caller") is { } caller:
             {
                 // The Grave-Caller holds the stage until it falls: close on it (it stood off down the road before).
                 orbit += dt * 0.5;
                 tx = caller.X + Math.Cos(orbit) * 3; tz = caller.Z + Math.Sin(orbit) * 3;
+                break;
+            }
+            // The Warden's fight as ZoneSim's bot plays it: a lit lamp between her and him (his charge breaks it, her blows
+            // reach it), then him (he holds at his floor until two lamps are broken: circling the ford, she never won, m5 clip r2).
+            case "Boss" when !Idle && z is Zones.Prologue pb && b.Enemies.Living().FirstOrDefault(e => e.Tag == "warden" && e.State != EnemyState.Dying) is { } w:
+            {
+                var lit = pb.LampPosts.Where(l => l.Lit).OrderBy(l => (l.X - p.X) * (l.X - p.X) + (l.Z - p.Z) * (l.Z - p.Z)).ToList();
+                if (lit.Count > 0)
+                {
+                    var l = lit[0];
+                    double dx = l.X - w.X, dz = l.Z - w.Z, dl = Math.Max(0.1, Math.Sqrt(dx * dx + dz * dz));
+                    tx = l.X + dx / dl * 1.6; tz = l.Z + dz / dl * 1.6;
+                }
+                else { tx = w.X; tz = w.Z; }
                 break;
             }
             case "Boss" or "Intro":
@@ -232,7 +266,17 @@ public sealed class Autopilot
                 tx = f.X + Math.Cos(orbit) * 9; tz = f.Z + 10 + Math.Sin(orbit) * 5;
                 break;
             }
+            // (M5 r4) The Warden's Legendary is taken at the ford once its banner has been up (the heart's beat waits for it).
+            case "Victory" when !Idle && legendSeen && (victoryLegendT += dt) > 4.5
+                && b.Pickups.Living().FirstOrDefault(k => k.Loot is (int)Rpg.LootTier.Legendary or (int)Rpg.LootTier.Storied) is { } lv:
+                tx = lv.X; tz = lv.Z;
+                break;
             case "Victory":
+                break;
+            // (M5 r2) The Warden's Legendary is taken before the day's road (it lay at the ford all day).
+            case "Dawn" or "Exit" when !Idle && b.Pickups.Living().FirstOrDefault(k => k.Loot is (int)Rpg.LootTier.Legendary or (int)Rpg.LootTier.Storied) is { } lg && legendWalkT < 25:
+                legendWalkT += dt;
+                tx = lg.X; tz = lg.Z;
                 break;
             case "Dawn" or "Exit" when z is Zones.Prologue pd && pd.DayGoal() is { } dg:
             {
@@ -260,8 +304,34 @@ public sealed class Autopilot
                 var road = meta.Paths.GetValueOrDefault("ROAD") ?? Array.Empty<double[]>();
                 while (wp < road.Length - 1 && road[wp][1] > p.Z - 3) wp++;
                 if (road.Length > 0) { tx = road[Math.Min(wp, road.Length - 1)][0]; tz = road[Math.Min(wp, road.Length - 1)][1]; }
+                // The night's beats as ZoneSim's goal walks them (ported; --auto idle keeps the plain road): the next undone
+                // beat's ground, a waking pack's foe where it stands; the beats done, down the road and to the ford.
+                if (!Idle && z is Zones.Prologue pn && pn.Night is { } nn)
+                {
+                    var gn = nn.Goal(_ => true, _ => null, Place("gate").X);
+                    if (gn.For != null || nn.Fighting) { tx = gn.X; tz = gn.Z; }
+                    else if (p.Z < Place("ford").Z + 25) { tx = Place("ford").X; tz = Place("ford").Z + 12; }
+                }
                 break;
             }
+        }
+        // A lamp-post she passes, out of a fight, is lit as a player does it: walked to, then the interact key at its prompt
+        // (the Low Ford only; not the idle/toward/across/away/talk modes, not the Warden's fight).
+        if (!Idle && stage is not ("Boss" or "Intro" or "Victory" or "Wake" or "Rising" or "Ambush"))
+        {
+            interactT -= dt;
+            bool inFight = b.Enemies.Living().Any(e => e.Roused && e.Disposition == Disposition.Hostile && e.State != EnemyState.Dying && Math.Sqrt((e.X - p.X) * (e.X - p.X) + (e.Z - p.Z) * (e.Z - p.Z)) < 24);
+            if (!inFight)
+                foreach (var i in z.Interactables)
+                    if (i.Id.StartsWith("lamppost:") && (i.When?.Invoke() ?? true) && i.Locked?.Invoke() == null
+                        && Math.Sqrt((i.X - p.X) * (i.X - p.X) + (i.Z - p.Z) * (i.Z - p.Z)) is var di && di < 14)
+                    {
+                        double since = lampTried.TryGetValue(i.Id, out var pt) ? pt : lampTried[i.Id] = t;
+                        if (t - since >= 20) continue;
+                        tx = i.X; tz = i.Z;
+                        LightAt(i, p);
+                        break;
+                    }
         }
         // Keep off the crowd.
         double rx = 0, rz = 0;
@@ -437,6 +507,72 @@ public sealed class Autopilot
     double tableT, wonT = -1, leaveT, interactT, printT;
     string lastZone = "";
 
+    /* ---- (M5 r2) capture hooks for the judge: named frames at the moments that matter, a line or two each ---- */
+    readonly HashSet<double> woke = new();
+    readonly Dictionary<double, int> tells = new();
+    readonly HashSet<object> blowsSeen = new();
+    readonly HashSet<string> lampShots = new();
+    double watchT, legendWalkT, menuT = -1, litAt = -1;
+    bool legendSeen, cardShot, menuDone, fell, wasDown;
+    double victoryLegendT;
+    static readonly bool FallOnce = Args.Has("fall-once");
+    static readonly bool JudgeHooks = Args.Has("judge-hooks");  // (the watch-post's menu dwell: only for the judge's capture, never the pacing run)
+
+    static string Slug(Enemy e) => new string((e.Named?.Title ?? e.Def.Id).Split(',')[0].Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
+
+    Interactable? WatchLamp(ZoneRuntime z) => z.Interactables.FirstOrDefault(i => i.Id == "lamppost:lowford.watch" && (i.When?.Invoke() ?? true));
+
+    /// <summary>At a post's Light prompt: its frame first, then the key; a frame after the lighting.</summary>
+    void LightAt(Interactable i, PlayerState p)
+    {
+        if (Math.Sqrt((i.X - p.X) * (i.X - p.X) + (i.Z - p.Z) * (i.Z - p.Z)) >= i.R || g.Prompted != i.Id || interactT > 0) return;
+        string id = i.Id[9..].Replace('.', '_');
+        if (lampShots.Add("p" + id)) { Frame($"light_prompt_{id}", 0.2); interactT = 0.6; return; }
+        if (Shots.Pending($"light_prompt_{id}")) return;
+        interactT = 1.5;
+        Controls.Instance.Press(Act.Interact);
+        if (lampShots.Add("l" + id)) { Frame($"light_lit_{id}", 0.5); Frame($"light_lit_{id}_b", 1.6); }
+    }
+
+    void Hooks(Battle b, ZoneRuntime z)
+    {
+        foreach (var e in b.Enemies.Living())
+        {
+            if (e.Rank == 0 || e.State == EnemyState.Dying) continue;
+            if (e.Roused && woke.Add(e.Seed)) Frame($"wake_{(e.Rank == 2 ? "champ" : "capt")}_{Slug(e)}", 1.5);
+        }
+        foreach (var bl in b.Blows)
+            if (bl.From is { Rank: 2 } ch && blowsSeen.Add(bl) && tells.GetValueOrDefault(ch.Seed) < 3)
+            {
+                int n = tells[ch.Seed] = tells.GetValueOrDefault(ch.Seed) + 1;
+                Frame($"tell_{Slug(ch)}_{n}", Math.Min(0.4, bl.Delay * 0.5));
+            }
+        if (blowsSeen.Count > 512) blowsSeen.Clear();
+        if (!legendSeen && b.Pickups.Living().FirstOrDefault(k => k.Loot is (int)Rpg.LootTier.Legendary or (int)Rpg.LootTier.Storied) is { } lg)
+        {
+            legendSeen = true;
+            Frame("legendary_ground", 0.6); Frame("legendary_ground_b", 2.0);
+        }
+        if (litAt < 0 && z.Id == "lowford" && Rpg.LampBook.PostLit(g.Journey.World, "lowford.watch")) litAt = t;
+        // The post's menu, once, 3 s after the watch-post burns, while she stands by it.
+        if (JudgeHooks && litAt >= 0 && !menuDone && t - litAt > 3)
+        {
+            menuDone = true; menuT = 0;
+            g.OpenPost("lowford.watch");
+            Frame("post_menu_watch", 0.8);
+        }
+        // --fall-once: her life to nothing once, after the watch-post burns and its menu is closed; the fall and the rise framed.
+        if (FallOnce && !fell && (menuDone || !JudgeHooks) && menuT < 0 && b.Player.Alive && t - litAt > 8)
+        {
+            fell = true;
+            Godot.GD.Print($"auto: fall-once t={b.Time:0.0}");
+            b.HurtPlayerRaw(b.Player.Hp + b.MaxHp * 10, School.Physical, "fall-once", null);
+            Frame("fall", 0.8);
+        }
+        if (fell && !b.Player.Alive) wasDown = true;
+        if (wasDown && b.Player.Alive) { wasDown = false; Frame("rise", 0.4); Frame("rise_b", 2.0); }
+    }
+
     void Frame(string tag, double seconds)
     {
         Godot.GD.Print($"auto: {tag} (frame in {seconds} s)");
@@ -509,6 +645,37 @@ public sealed class Autopilot
         Godot.GD.Print($"auto: night {n}: taking offer {pick}");
         tableOpen = false;
         g.SetOut(offers[pick]);
+    }
+
+    /// <summary>(M5 r2) The zone ends at the town: a run begun in the Low Ford, once through its gate into the Waystation
+    /// (prologue.done), walks to the square's lamp-post and stands there. No table, no map, no arena loop (the Wayfinder's
+    /// table is the arena's door, not the campaign's hand-off). Runs started elsewhere (--zone waystation --nights N) loop as before.</summary>
+    bool fromLowford, townStood;
+    void TownStop(double dt, Battle b)
+    {
+        var p = b.Player;
+        var post = SurvivorUnchained.Content.LampPosts.Get("waystation.square");
+        if (post == null) return;
+        double dx = post.X - p.X, dz = post.Z - p.Z, d = Math.Sqrt(dx * dx + dz * dz);
+        if (d < 1.8)
+        {
+            if (!townStood) { townStood = true; Godot.GD.Print($"auto: town stop at the square's lamp t={t:0.0} prologue.done={g.Journey.World.Fact("prologue.done").Truthy}"); Frame("town_stop", 1.5); }
+            return;
+        }
+        routeT -= dt;
+        if (route == null || routeT <= 0 || routeFor != (post.X, post.Z))
+        {
+            routeT = 3; routeFor = (post.X, post.Z);
+            route = SurvivorUnchained.Sim.GroundPath.Find(b.Collision, p.X, p.Z, post.X, post.Z);
+        }
+        while (route is { Count: > 1 } && Math.Sqrt((route[0].X - p.X) * (route[0].X - p.X) + (route[0].Z - p.Z) * (route[0].Z - p.Z)) < 0.8) route.RemoveAt(0);
+        double sx = dx / d, sz = dz / d;
+        if (route is { Count: > 0 })
+        {
+            double wx = route[0].X - p.X, wz = route[0].Z - p.Z, wd = Math.Max(0.01, Math.Sqrt(wx * wx + wz * wz));
+            sx = wx / wd; sz = wz / wd;
+        }
+        Steer(dt, sx, sz, p, post.X, post.Z);
     }
 
     /// <summary>Walk to the goal and use it: in the town, the first one standing; in a won arena, the way out

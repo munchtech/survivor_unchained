@@ -1,0 +1,19 @@
+{
+  "about": "Champions (docs/design/ARPG.md 5 lesson 8 and 7.1): named elites with affixes, read by logic/Content/Champions.cs and laid by Encounters (a beat's \"champion\" field, or a zone's \"placed\" one). A kit affix (kind set) casts that telegraph from data/content/telegraphs.json on its own cadence (every [min, max] s, the first firstAfter s after its pack wakes, its sizes x scale); every affix multiplies the foe's health, damage and speed. body (M5): an affix's tint and glow over its champion's, and rim (M5 r3): its hue in degrees, an emitted edge glow on its champion (the first affix's; none: looks.champion's rim, M5 r4), so it reads at night and in shade; raiser (M5 r3) is label-only (the Grave-Caller's raising is her kit), its line and rim alone; looks: a champion's and a captain's body over its kind's (scale, tint as r g b multipliers, glow), read before its plate; functional, L1 owns the final look. perTier: how many a rolled champion has at world tiers I-IV (a beat's count is its tier I count; a fixed list never grows). weight: how often a roll picks it. foes: a closing's ring, of its pack's first kind. The names and epithets are PLACEHOLDER copy for the story lead: a rolled title is \"<name> <epithet>\" when the epithet starts with \"the\", else \"<name>, <epithet>\".",
+  "affixes": {
+    "quaking": { "label": "Quaking", "kind": "ring", "every": [9, 13], "firstAfter": 2.5, "scale": 0.8, "body": { "tint": [1.12, 0.96, 0.78], "glow": 0.07, "rim": 38 } },
+    "charging": { "label": "Charging", "kind": "charge", "every": [7, 10], "firstAfter": 1.5, "body": { "tint": [1.2, 0.86, 0.74], "glow": 0.08, "rim": 8 } },
+    "grasping": { "label": "Grasping", "kind": "pull", "every": [10, 14], "firstAfter": 2.5, "scale": 0.8, "body": { "tint": [0.82, 1.06, 0.9], "glow": 0.08, "rim": 105 } },
+    "hemming": { "label": "Hemming", "kind": "closing", "every": [18, 24], "firstAfter": 4, "foes": 8, "weight": 0.5, "body": { "tint": [0.9, 0.84, 1.12], "glow": 0.08, "rim": 280 } },
+    "ironhide": { "label": "Ironhide", "health": 1.4, "body": { "tint": [0.8, 0.9, 1.12], "glow": 0.1, "rim": 205 } },
+    "swift": { "label": "Swift", "speed": 1.25, "body": { "tint": [1.06, 1.06, 0.9], "rim": 55 } },
+    "raiser": { "label": "Raiser", "weight": 0, "body": { "tint": [0.9, 1.04, 1.02], "glow": 0.06, "rim": 165 } }
+  },
+  "looks": {
+    "champion": { "scale": 1.25, "tint": [1.06, 1.0, 0.94], "glow": 0.06, "rim": 42 },
+    "captain": { "scale": 1.1, "tint": [1.04, 0.99, 0.92], "glow": 0.03 }
+  },
+  "perTier": [1, 1, 2, 3],
+  "names": ["Old Harrow", "Garrick Wade", "Tamsin Reed", "Gaunt Ossery", "Wenna Coldwater", "Hob Marrow", "Corra Ashby", "Dunstan Mire", "Elsbet Hollin", "Ketch", "Absalom Pike", "Nell Gorse"],
+  "epithets": ["the Drowned", "the Unburied", "Who Keeps the Ford", "the Ember-Eaten", "the Mudborn", "the Barrow-Sworn", "the Reed-Bound", "the Lantern-Thief", "Who Walks Under Water", "the Hollow Bell", "Twice Buried", "the Ferryman's Debt"]
+}

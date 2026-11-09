@@ -1,0 +1,754 @@
+{
+  "about": "The zones' encounters (renamed from day_stretch.json, M5): each beat's when (night | day, default day) says which run of the zone lays it (Encounters, constructed for one phase); draft (a zone's, default true): the ember-card draft runs in its night (false: the night's kills teach plain experience, ARPG.md 5). The day stretches (H4 item 10, gate N18): free day play between a night's cinematic and the next place, in a permanent zone that resets by data/content/zone_resets.json. Read by logic/Play/Zones/DayStretch.cs: the zone (Prologue for lowford) places and runs it, the balance harness (godot/balance, lowford-day) plays the same fights. Beats in the order a sensible player takes them (DayStretch.Goal, the autopilot's and the harness's route: each pack's ground, a chest once its keepers are down, the post, the ring, the gate; along GroundPath round the trees): the road's boars, the Kerchiefs' camp 44 m east (its strongbox at its back), the road lamp, the boars' wallow 42 m west, the wolf ring at the gate. Every pack's waking ring stands 20 m or more clear of the next one's (DayStretchTests). pack: foes resting round (x, z) within spread, waking within wake m of her (Verge's packs), leashed to leash m; tell: the kit kind (data/content/telegraphs.json) its foes cast, first firstAfter s after waking, then every [min, max] s, from within the kind's reach; captain: one more of that kind, a champion (elite: three times the life), who leads (a kerchief_captain rallies and calls more out of the trees).  post: a Lamps v2 lamp-post (lamps_v2.json) on the zone's light, relit by an interact within r. chest: a strongbox. ring: the Flare's save, a closing (Battle.TellClosing) of n of def round her once she comes north past z after being south of armZ; her Flare filled to flareTo of full if short; then the rest of the pack (follow: n of def, and one of elite as a champion) comes out of the trees between her and the gate followAfter s later. Foe level: 1 + (her level + day) / 2 + levelUp (the Verge's). Coordinates read off data/zones/lowford/zone.json (paths.ROAD; the road lamps are lights 13 (2,-64) and 14 (-1,-86); the gate at z -112, exitZ -104; portcullisZ (H8 N22): the gatehouse portcullis's line, -112 + 1.55 (env_props.py gatehouse zp), where the shut gate bars her and its watchman stands behind). C04 A hands back at its 'up' mark (0.45, -63). tellBy: only that kind casts the pack's tell (the wallow's sows do not charge). ring: halfWidth, it springs only within that of its x (a fight at a camp that strays north does not spring it). waves (a pack's): its next wave out of the trees round its ground (out m from it) once under or fewer of it stand, elite one more of that kind as a champion (the camp's sleepers out of the tents, the wallow's from the reeds). ambush (r3): its foes out of the trees round her (out m) once she comes within r of (x, z), after its guard (a beat's id) is done (the Kerchiefs' rear-guard on the track back from the camp, once the strongbox is open). ring (r3): its follow comes followAfter s after the ring's own foes are down (a breath, two pulses), and the gate holds until it is down (DayStretch.GateOpen). A wave's leash (r3): its foes' leash round the pack's ground (unset: the pack's plus 4); the camp's pack, its waves and those its captain calls on an 8 m leash (they hunt her within 1.6 times it of the camp, 13 m, and turn home past 1.8 times, 14 m: the fight stays on the camp's ground, not 40 m up the hill among the cliff rocks). A wave's after (r3, pulses): it comes that many s once the pack is all down (a breath), not at under (the road's boars' pair out of the trees, the wallow's from the reeds). (r3: a second Kerchief ambush on the track back from the wallow, and the camp's last few out of the tents after a breath.) The Low Ford's night (M5, ARPG.md 5, when: night; Prologue lays it from the fire to the ford, the stages advancing on its beats): n_lone, one drowned on the road by the fire (hold to swing); n_three, three on the road; n_first, the first pack and its captain, resting at the wagon's approach; n_cart, the wagon's ditch (an ambush with r 0: Prologue springs it once the wagon's line is read, its risen_warrior's charge the dash's lane); n_road1 and n_road2 between the wagon and the post; n_post, the Barrow Knight's escort (the Knight placed on its ground by Prologue, waking with it); n_road3 and n_road4 between the post and the barrow; n_ford, before the ford's door. The road between them is short (the fire to the wagon is 25 m), so some sit 8-12 m apart, each pack's waking reach clear of the last one's ground. Champions (M5-B, logic/Content/Champions.cs, data/content/champions.json): a beat's champion crowns its captain (or a ring's followElite) or spawns its own def beside the pack, with a fixed affix list or a rolled count; placed: the champions the zone spawns itself (Prologue: the Barrow Knight, the Grave-Caller). A beat's loot (a tier: rare) floors its carrier's first roll. Champion names here are PLACEHOLDER copy for the story lead.",
+  "zones": {
+    "lowford": {
+      "from": [
+        0.45,
+        -63
+      ],
+      "gateZ": -104,
+      "portcullisZ": -110.45,
+      "draft": false,
+      "beats": [
+        {
+          "id": "boars",
+          "kind": "pack",
+          "x": 2,
+          "z": -80,
+          "spread": 2,
+          "wake": 8,
+          "leash": 20,
+          "foes": [
+            {
+              "def": "boar",
+              "n": 3
+            }
+          ],
+          "captain": "boar",
+          "levelUp": 1,
+          "tell": "charge",
+          "firstAfter": 1.2,
+          "every": [
+            4.5,
+            6.5
+          ],
+          "waves": [
+            {
+              "foes": [
+                {
+                  "def": "boar",
+                  "n": 2
+                }
+              ],
+              "after": 3,
+              "out": 10
+            }
+          ]
+        },
+        {
+          "id": "kerchiefs",
+          "kind": "pack",
+          "x": 44,
+          "z": -89,
+          "spread": 3.5,
+          "wake": 9,
+          "leash": 8,
+          "foes": [
+            {
+              "def": "footpad",
+              "n": 3
+            },
+            {
+              "def": "pillager",
+              "n": 2
+            },
+            {
+              "def": "bruiser",
+              "n": 1
+            }
+          ],
+          "captain": "kerchief_captain",
+          "levelUp": 1,
+          "waves": [
+            {
+              "foes": [
+                {
+                  "def": "footpad",
+                  "n": 3
+                },
+                {
+                  "def": "pillager",
+                  "n": 1
+                },
+                {
+                  "def": "bruiser",
+                  "n": 1
+                }
+              ],
+              "under": 3,
+              "out": 9,
+              "leash": 8
+            },
+            {
+              "foes": [
+                {
+                  "def": "footpad",
+                  "n": 2
+                },
+                {
+                  "def": "pillager",
+                  "n": 1
+                }
+              ],
+              "after": 4,
+              "out": 9,
+              "leash": 8
+            }
+          ],
+          "champion": {
+            "name": "Red Tolly the Collector",
+            "affixes": [
+              "grasping"
+            ]
+          }
+        },
+        {
+          "id": "strongbox",
+          "kind": "chest",
+          "x": 45.4,
+          "z": -85.0,
+          "gold": 24,
+          "guard": "kerchiefs"
+        },
+        {
+          "id": "pk2_a",
+          "kind": "pack",
+          "needs": "lowford.pockets",
+          "about": "PROVISIONAL positions: the ground lead moves these onto the pocket's real ground",
+          "x": 56,
+          "z": -62,
+          "spread": 3,
+          "wake": 9,
+          "leash": 8,
+          "levelUp": 1,
+          "foes": [
+            {
+              "def": "footpad",
+              "n": 3
+            },
+            {
+              "def": "pillager",
+              "n": 2
+            },
+            {
+              "def": "bruiser",
+              "n": 1
+            }
+          ]
+        },
+        {
+          "id": "pk2_b",
+          "kind": "pack",
+          "needs": "lowford.pockets",
+          "about": "PROVISIONAL positions: the ground lead moves these onto the pocket's real ground",
+          "x": 63,
+          "z": -68,
+          "spread": 3,
+          "wake": 9,
+          "leash": 8,
+          "levelUp": 1,
+          "foes": [
+            {
+              "def": "footpad",
+              "n": 3
+            },
+            {
+              "def": "pillager",
+              "n": 1
+            },
+            {
+              "def": "bruiser",
+              "n": 1
+            }
+          ],
+          "captain": "kerchief_captain"
+        },
+        {
+          "id": "pk2_c",
+          "kind": "pack",
+          "needs": "lowford.pockets",
+          "about": "PROVISIONAL positions: the ground lead moves these onto the pocket's real ground",
+          "x": 68,
+          "z": -74,
+          "spread": 3,
+          "wake": 9,
+          "leash": 8,
+          "levelUp": 1,
+          "foes": [
+            {
+              "def": "footpad",
+              "n": 2
+            },
+            {
+              "def": "pillager",
+              "n": 2
+            },
+            {
+              "def": "bruiser",
+              "n": 1
+            }
+          ],
+          "champion": {
+            "def": "bruiser",
+            "affixes": 1
+          }
+        },
+        {
+          "id": "road_ambush",
+          "kind": "ambush",
+          "x": 22,
+          "z": -86.5,
+          "r": 4,
+          "guard": "strongbox",
+          "out": 8,
+          "leash": 18,
+          "foes": [
+            {
+              "def": "footpad",
+              "n": 3
+            },
+            {
+              "def": "pillager",
+              "n": 1
+            }
+          ],
+          "levelUp": 0
+        },
+        {
+          "id": "post",
+          "kind": "post",
+          "post": "act1.post1",
+          "light": 14,
+          "x": -0.99,
+          "z": -86,
+          "r": 2.6
+        },
+        {
+          "id": "wallow",
+          "kind": "pack",
+          "x": -39,
+          "z": -91.5,
+          "spread": 3.5,
+          "wake": 9,
+          "leash": 20,
+          "foes": [
+            {
+              "def": "boar",
+              "n": 3
+            },
+            {
+              "def": "boar_slurry",
+              "n": 1
+            }
+          ],
+          "captain": "boar_slurry",
+          "levelUp": 1,
+          "tell": "charge",
+          "tellBy": "boar",
+          "firstAfter": 2,
+          "every": [
+            7,
+            10
+          ],
+          "waves": [
+            {
+              "foes": [
+                {
+                  "def": "boar",
+                  "n": 2
+                },
+                {
+                  "def": "boar_slurry",
+                  "n": 1
+                }
+              ],
+              "after": 3,
+              "out": 9
+            }
+          ],
+          "champion": {
+            "name": "Mother Mire the Mudborn",
+            "affixes": [
+              "charging"
+            ]
+          }
+        },
+        {
+          "id": "pk3_a",
+          "kind": "pack",
+          "needs": "lowford.pockets",
+          "about": "PROVISIONAL positions: the ground lead moves these onto the pocket's real ground",
+          "x": -56,
+          "z": -82,
+          "spread": 3,
+          "wake": 9,
+          "leash": 8,
+          "levelUp": 1,
+          "foes": [
+            {
+              "def": "boar",
+              "n": 3
+            },
+            {
+              "def": "wolf",
+              "n": 2
+            }
+          ],
+          "tell": "charge",
+          "tellBy": "boar"
+        },
+        {
+          "id": "pk3_b",
+          "kind": "pack",
+          "needs": "lowford.pockets",
+          "about": "PROVISIONAL positions: the ground lead moves these onto the pocket's real ground",
+          "x": -62,
+          "z": -90,
+          "spread": 3,
+          "wake": 9,
+          "leash": 8,
+          "levelUp": 1,
+          "foes": [
+            {
+              "def": "boar",
+              "n": 3
+            },
+            {
+              "def": "boar_slurry",
+              "n": 1
+            }
+          ],
+          "captain": "boar_slurry",
+          "tell": "charge",
+          "tellBy": "boar"
+        },
+        {
+          "id": "pk3_c",
+          "kind": "pack",
+          "needs": "lowford.pockets",
+          "about": "PROVISIONAL positions: the ground lead moves these onto the pocket's real ground",
+          "x": -66,
+          "z": -98,
+          "spread": 3,
+          "wake": 9,
+          "leash": 8,
+          "levelUp": 1,
+          "foes": [
+            {
+              "def": "wolf",
+              "n": 4
+            },
+            {
+              "def": "boar",
+              "n": 1
+            }
+          ],
+          "champion": {
+            "def": "boar",
+            "affixes": 1
+          },
+          "tell": "charge",
+          "tellBy": "boar"
+        },
+        {
+          "id": "track_ambush",
+          "kind": "ambush",
+          "x": -20,
+          "z": -85.5,
+          "r": 4,
+          "guard": "wallow",
+          "out": 8,
+          "leash": 18,
+          "foes": [
+            {
+              "def": "footpad",
+              "n": 2
+            },
+            {
+              "def": "pillager",
+              "n": 1
+            },
+            {
+              "def": "bruiser",
+              "n": 1
+            }
+          ],
+          "levelUp": 0
+        },
+        {
+          "id": "wolves",
+          "kind": "ring",
+          "x": 0.5,
+          "z": -97,
+          "armZ": -90,
+          "halfWidth": 8,
+          "def": "wolf",
+          "n": 12,
+          "flareTo": 1,
+          "follow": [
+            {
+              "def": "wolf",
+              "n": 6
+            },
+            {
+              "def": "wolf_runner",
+              "n": 3
+            }
+          ],
+          "followElite": "wolf_howler",
+          "followAfter": 2.0,
+          "champion": {
+            "name": "Ashjaw, the Hunt's Voice",
+            "affixes": []
+          }
+        },
+        {
+          "id": "n_lone",
+          "when": "night",
+          "kind": "pack",
+          "x": -3.5,
+          "z": 84.5,
+          "spread": 0.5,
+          "wake": 4.5,
+          "leash": 14,
+          "foes": [
+            {
+              "def": "risen",
+              "n": 1
+            }
+          ]
+        },
+        {
+          "id": "n_three",
+          "when": "night",
+          "kind": "pack",
+          "after": "n_lone",
+          "afterSecs": 4,
+          "x": -1.5,
+          "z": 76,
+          "spread": 2,
+          "wake": 5,
+          "leash": 16,
+          "foes": [
+            {
+              "def": "risen",
+              "n": 3
+            }
+          ]
+        },
+        {
+          "id": "n_first",
+          "when": "night",
+          "kind": "pack",
+          "after": "n_three",
+          "afterSecs": 6,
+          "x": 3,
+          "z": 64,
+          "spread": 3.5,
+          "wake": 8,
+          "leash": 18,
+          "foes": [
+            {
+              "def": "risen",
+              "n": 7
+            }
+          ],
+          "captain": "risen_warrior",
+          "loot": "rare"
+        },
+        {
+          "id": "n_cart",
+          "when": "night",
+          "kind": "ambush",
+          "x": 5,
+          "z": 60,
+          "r": 0,
+          "out": 7,
+          "leash": 24,
+          "levelUp": 1,
+          "foes": [
+            {
+              "def": "risen",
+              "n": 8
+            },
+            {
+              "def": "risen_archer",
+              "n": 3
+            },
+            {
+              "def": "risen_warrior",
+              "n": 1
+            }
+          ],
+          "tell": "charge",
+          "tellBy": "risen_warrior",
+          "firstAfter": 2.5,
+          "every": [
+            5,
+            7
+          ]
+        },
+        {
+          "id": "n_road1",
+          "when": "night",
+          "kind": "pack",
+          "after": "n_cart",
+          "afterSecs": 4,
+          "x": 8,
+          "z": 51.5,
+          "spread": 3,
+          "wake": 7,
+          "leash": 18,
+          "levelUp": 1,
+          "foes": [
+            {
+              "def": "risen",
+              "n": 6
+            },
+            {
+              "def": "risen_archer",
+              "n": 2
+            }
+          ]
+        },
+        {
+          "id": "n_pk1_a",
+          "when": "night",
+          "kind": "pack",
+          "needs": "lowford.pockets",
+          "about": "PROVISIONAL positions: the ground lead moves these onto the pocket's real ground",
+          "x": -30,
+          "z": 48,
+          "spread": 3,
+          "wake": 8,
+          "leash": 18,
+          "levelUp": 1,
+          "foes": [
+            {
+              "def": "risen",
+              "n": 7
+            },
+            {
+              "def": "risen_archer",
+              "n": 2
+            }
+          ]
+        },
+        {
+          "id": "n_pk1_b",
+          "when": "night",
+          "kind": "pack",
+          "needs": "lowford.pockets",
+          "about": "PROVISIONAL positions: the ground lead moves these onto the pocket's real ground",
+          "x": -38,
+          "z": 40,
+          "spread": 3,
+          "wake": 8,
+          "leash": 18,
+          "levelUp": 1,
+          "foes": [
+            {
+              "def": "risen",
+              "n": 6
+            },
+            {
+              "def": "risen_archer",
+              "n": 1
+            }
+          ],
+          "captain": "risen_warrior"
+        },
+        {
+          "id": "n_pk1_c",
+          "when": "night",
+          "kind": "pack",
+          "needs": "lowford.pockets",
+          "about": "PROVISIONAL positions: the ground lead moves these onto the pocket's real ground",
+          "x": -43,
+          "z": 32,
+          "spread": 3,
+          "wake": 8,
+          "leash": 18,
+          "levelUp": 1,
+          "foes": [
+            {
+              "def": "risen",
+              "n": 8
+            },
+            {
+              "def": "risen_archer",
+              "n": 2
+            }
+          ]
+        },
+        {
+          "id": "n_pk1_d",
+          "when": "night",
+          "kind": "pack",
+          "needs": "lowford.pockets",
+          "about": "PROVISIONAL positions: the ground lead moves these onto the pocket's real ground",
+          "x": -33,
+          "z": 27,
+          "spread": 3,
+          "wake": 8,
+          "leash": 18,
+          "levelUp": 1,
+          "foes": [
+            {
+              "def": "risen",
+              "n": 6
+            },
+            {
+              "def": "risen_archer",
+              "n": 1
+            }
+          ],
+          "champion": {
+            "def": "risen_warrior",
+            "affixes": 1
+          }
+        },
+        {
+          "id": "n_road2",
+          "when": "night",
+          "kind": "pack",
+          "after": "n_road1",
+          "afterSecs": 4,
+          "x": 6,
+          "z": 46.5,
+          "spread": 3,
+          "wake": 7,
+          "leash": 18,
+          "levelUp": 1,
+          "foes": [
+            {
+              "def": "risen",
+              "n": 6
+            },
+            {
+              "def": "risen_warrior",
+              "n": 1
+            }
+          ],
+          "captain": "risen_warrior"
+        },
+        {
+          "id": "n_post",
+          "when": "night",
+          "kind": "pack",
+          "after": "n_road2",
+          "afterSecs": 4,
+          "x": 17,
+          "z": 32.5,
+          "spread": 3,
+          "wake": 8,
+          "leash": 18,
+          "levelUp": 1,
+          "foes": [
+            {
+              "def": "risen",
+              "n": 6
+            }
+          ]
+        },
+        {
+          "id": "n_road3",
+          "when": "night",
+          "kind": "pack",
+          "after": "knight",
+          "afterSecs": 4,
+          "x": 5,
+          "z": 20.5,
+          "spread": 3,
+          "wake": 8,
+          "leash": 18,
+          "levelUp": 1,
+          "foes": [
+            {
+              "def": "risen",
+              "n": 6
+            },
+            {
+              "def": "risen_archer",
+              "n": 2
+            }
+          ]
+        },
+        {
+          "id": "n_road4",
+          "when": "night",
+          "kind": "pack",
+          "after": "n_road3",
+          "afterSecs": 4,
+          "x": 6,
+          "z": 12,
+          "spread": 3,
+          "wake": 8,
+          "leash": 18,
+          "levelUp": 1,
+          "foes": [
+            {
+              "def": "risen",
+              "n": 6
+            },
+            {
+              "def": "risen_warrior",
+              "n": 1
+            }
+          ],
+          "captain": "risen_warrior"
+        },
+        {
+          "id": "n_ford",
+          "when": "night",
+          "kind": "pack",
+          "after": "caller",
+          "afterSecs": 4,
+          "x": -2,
+          "z": -13,
+          "spread": 3,
+          "wake": 9,
+          "leash": 18,
+          "levelUp": 1,
+          "foes": [
+            {
+              "def": "risen",
+              "n": 7
+            },
+            {
+              "def": "risen_archer",
+              "n": 1
+            }
+          ],
+          "captain": "risen_warrior"
+        }
+      ],
+      "placed": {
+        "knight": {
+          "def": "barrow_knight",
+          "name": "Ser Aldric, Last of the Watch",
+          "affixes": [
+            "ironhide"
+          ]
+        },
+        "caller": {
+          "def": "grave_caller",
+          "name": "Nan Sallow, Who Calls the Graves",
+          "affixes": [
+            "raiser"
+          ]
+        }
+      }
+    }
+  }
+}

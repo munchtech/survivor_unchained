@@ -21,7 +21,29 @@ public partial class EdgeMarks : Control
     /// <summary>Points these marks keep clear of (the goal's arrow): slid along the border, never drawn on them.</summary>
     public List<Vector2> Keep = new();
 
+    /// <summary>(M5 r4) The HUD's top-right block (minimap, zone header, tracker: GameHud.Header): the marks keep out of it,
+    /// cut as a notch from the border box. The judge, round 3: a clamped skull sat on "Thornhollow, south" and the map's rim.</summary>
+    public Rect2? Avoid;
+    /// <summary>A mark's reach round its point (px): the disc and its arrow.</summary>
+    const float MarkPad = 34;
+
     public EdgeMarks() { MouseFilter = MouseFilterEnum.Ignore; }
+
+    /// <summary>(M5 r4) Where the ray from the middle along d leaves the box, the Avoid block cut out of its top-right corner
+    /// (the notch: right of its left edge and above its bottom edge, MarkPad clear of both).</summary>
+    public static Vector2 Exit(Vector2 mid, Vector2 d, Rect2 box, Rect2? avoid)
+    {
+        float tx = d.X != 0 ? ((d.X > 0 ? box.End.X : box.Position.X) - mid.X) / d.X : float.MaxValue;
+        float ty = d.Y != 0 ? ((d.Y > 0 ? box.End.Y : box.Position.Y) - mid.Y) / d.Y : float.MaxValue;
+        var p = mid + d * Mathf.Min(tx, ty);
+        if (avoid is not Rect2 a) return p;
+        float left = a.Position.X - MarkPad, bottom = a.End.Y + MarkPad;
+        if (left <= mid.X || bottom >= mid.Y || !(p.X > left && p.Y < bottom)) return p;
+        // (the ray enters the notch where it is both right of its left edge and above its bottom: the later of the two)
+        float t1 = d.X > 0 ? (left - mid.X) / d.X : float.MaxValue;
+        float t2 = d.Y < 0 ? (bottom - mid.Y) / d.Y : float.MaxValue;
+        return mid + d * Mathf.Max(t1 == float.MaxValue ? 0 : t1, t2 == float.MaxValue ? 0 : t2);
+    }
 
     static GradientTexture2D? soft;
 
@@ -42,11 +64,10 @@ public partial class EdgeMarks : Control
         {
             var d = m.At - mid;
             if (d.LengthSquared() < 1) continue;
-            // Where the line from the middle meets the border.
-            float tx = d.X != 0 ? ((d.X > 0 ? box.End.X : box.Position.X) - mid.X) / d.X : float.MaxValue;
-            float ty = d.Y != 0 ? ((d.Y > 0 ? box.End.Y : box.Position.Y) - mid.Y) / d.Y : float.MaxValue;
-            var p = mid + d * Mathf.Min(tx, ty);
+            // Where the line from the middle meets the border (the HUD's top-right block cut out of it).
+            var p = Exit(mid, d, box, Avoid);
             p = Clear(p, box);
+            if (Avoid is Rect2 av && av.Grow(MarkPad - 1).HasPoint(p)) p = Exit(mid, d, box, Avoid);
             var dir = d.Normalized();
             float a = Mathf.Lerp(0.7f, 1f, m.Near);
             var c = m.Color with { A = a };

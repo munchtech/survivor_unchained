@@ -648,7 +648,8 @@ public partial class GameHud : CanvasLayer
         }
         // (UI 18: the light runs on a gain; a level-up lights all of her and, by night, names the ember through the
         // banner, its sound the ember's own level-up (SoundBridge, Ev.LevelUp); by day Journey names the level)
-        xpLight.Feed(e, lv, ember);
+        // (M5 r3: a level-up's "LEVEL N" over the coin waits while banners are held, the first Legendary's beat)
+        if (Time.GetTicksMsec() / 1000.0 >= XpHoldUntil) xpLight.Feed(e, lv, ember);
         if (xpLight.Rose && ember && !HudPin.Active) Announce(new Announcement($"Ember {lv}", "the ember rises", "ember", 2.6));
         xpLast = !ember && lv >= SurvivorUnchained.Rpg.Character.MaxLevel;
         xpNeed = ember ? b.EmberNext : SurvivorUnchained.Rpg.Character.XpForLevel(Math.Max(1, lv));
@@ -779,6 +780,8 @@ public partial class GameHud : CanvasLayer
     /// the river, or the hold key or button down: XpLight.HoldKey, pad LB).</summary>
     /// <summary>Entering a zone or loading: the experience light at its resting glow, the long quiet's clock from now.</summary>
     public void XpWake() => xpLight.Wake();
+    /// <summary>(M5 r3) The experience light (and its level-up title) holds still until this (Game.HoldBanners).</summary>
+    public double XpHoldUntil;
 
     float beadsA = 1;
 
@@ -1415,6 +1418,8 @@ public partial class GameHud : CanvasLayer
     /// <summary>Whether a narrated line, a banner, the interact prompt or a tip is on the screen now
     /// (a callout waits for them: Teach.cs).</summary>
     public bool SayUp => sayT > 0;
+    /// <summary>(M5 r4) The band taken down now (a champion about to wake: StoryText asks the line again after it).</summary>
+    public void SayClear() { sayT = 0; subtitle.Modulate = Colors.Transparent; }
     public bool BannerUp => annT < annLife;
     /// <summary>A play banner still up when a film starts goes at once (it never reads over a shot).</summary>
     public void ClearBanner() { annT = annLife; announce.Modulate = Colors.Transparent; }
@@ -1535,6 +1540,7 @@ public partial class GameHud : CanvasLayer
         if (minimap.IsVisibleInTree()) header = minimap.GetGlobalRect();
         if (corner.IsVisibleInTree()) header = header is Rect2 h0 ? h0.Merge(corner.GetGlobalRect()) : corner.GetGlobalRect();
         Header = header;
+        edges.Avoid = header;
         Toasts = toasts.GetChildCount() > 0 && toasts.IsVisibleInTree() ? toasts.GetGlobalRect() : null;
         foreach (var c in toasts.GetChildren())
         {

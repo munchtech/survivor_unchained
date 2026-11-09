@@ -65,6 +65,8 @@ public sealed class Named
     public string Title = "";
     public List<string> Carries = new();
     public string SourceHero = "";
+    /// <summary>A champion's affix labels, as drawn under its bar (Content/Champions.cs: "Quaking", "Ironhide").</summary>
+    public List<string> Affixes = new();
 }
 
 public sealed class Enemy : Pooled
@@ -113,6 +115,14 @@ public sealed class Enemy : Pooled
     public double DieT;
     /// <summary>A named creature: promoted when it killed the survivor, carrying what it took.</summary>
     public Named? Named;
+    /// <summary>(M5) Its rank in its pack, read before its plate: 1 a captain, 2 a champion (Content/Champions.Look), and
+    /// that rank's body over its kind's: a size and a tint (with a little glow), as champions.json "looks" gives them.</summary>
+    public byte Rank;
+    public double RankScale = 1, RankR = 1, RankG = 1, RankB = 1, RankGlow;
+    /// <summary>(M5 r3) A champion's affix rim: its hue in degrees (-1 none; Content/Champions.Look).</summary>
+    public double RankRim = -1;
+    /// <summary>(M5 r3) Where its trail last laid a pool (Ai: the next waits until it walks on); NaN none yet.</summary>
+    public double TrailX = double.NaN, TrailZ = double.NaN;
     /// <summary>Summons and raised dead expire.</summary>
     public double LifeT;
     /// <summary>The weapon that raised it (an ally of a raising skill), for its damage and credit.</summary>
