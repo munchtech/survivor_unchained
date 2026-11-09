@@ -56,7 +56,7 @@ Times are in samples of 1/12 s (one sample is 83 ms, five frames at 60 fps).
 
 ## 6. Known gaps (L1 fills them when P7 asks, via main)
 
-- **After-grade light has no depth from skinned figures.** `FxAfter.Occlude` makes twins for static meshes only, so a blade passing behind her draws over her. The fix is a depth twin bound to her Skeleton3D and Skin.
+- **Depth for after-grade light: her, DONE (9 Nov, e237c2c0c).** `FxAfter.OccludeFigure(root)` gives her a depth twin on every mesh (skinned on her skeleton, following her LOD, gear and blend shapes; see-through cards skipped; made only once an effect exists; `--fx-after-occlude off` for A|B). A blade passing behind her is hidden by her body (`look_l1\c\l6\twin2\ab_twin2.jpg`). Foes and folk have no twin, so light behind them still draws over them. If P7's judge flags it, L1 builds the general fix: the main pass's depth handed to the after-grade layer.
 - **Waiting on their skills:** the physical families for the other callings, and the calibration of storm, nature, arcane and shadow.
 - **Day clips:** the bands keep their hex by day, but the pool fades. Each skill's judge sees a day clip as well as a night one.
 
