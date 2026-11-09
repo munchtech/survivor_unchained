@@ -214,7 +214,7 @@ public class ChampionsTests
         {
             var b = Road(400 + s);
             var n = new Encounters(Encounters.For("lowford")!, b, new Dictionary<string, Fact>(), 1, 0, "night");
-            n.Place();
+            n.Place(); n.LayGated();
             var cap = n.Captain("n_first")!;
             List<Dropped>? rolled = null;
             n.Carried(cap, x => { x.Ch = j.Ch; x.World = j.World; rolled = Rpg.Drops.Roll(x); return Rpg.Drops.AsLoot(rolled); });
@@ -229,5 +229,22 @@ public class ChampionsTests
         DropCtx? got = null;
         n2.Carried(n2.Captain("n_road2")!, x => { got = x; return []; });
         Assert.Equal(0, got!.Floor);
+    }
+
+    [Fact]
+    public void A_champion_and_a_captain_wear_their_ranks_body()
+    {
+        // (M5 r2: the body reads before the plate; champions.json looks and the affix's body)
+        var b = Road(7);
+        var e = b.SpawnEnemy("risen_warrior", b.Player.X + 5, b.Player.Z + 5, new Battle.SpawnOpts { Level = 1 })!;
+        Champions.Look(e, 2, new[] { Champions.Get("ironhide")! });
+        Assert.Equal(2, e.Rank);
+        Assert.InRange(e.RankScale, 1.2, 1.3);
+        Assert.True(e.RankB > e.RankR, "ironhide reads cool");
+        var c = b.SpawnEnemy("risen_warrior", b.Player.X + 6, b.Player.Z + 5, new Battle.SpawnOpts { Level = 1 })!;
+        Champions.Look(c, 1);
+        Assert.Equal(1, c.Rank);
+        Assert.InRange(c.RankScale, 1.05, 1.15);
+        Assert.True(c.RankScale < e.RankScale);
     }
 }

@@ -115,7 +115,7 @@ public class PrologueTests
         Assert.True(s.B.EmberOn);
         Run(s, 12);
         Assert.Equal(Prologue.Stage.Rising, s.Zone.Now);
-        Assert.True(s.B.Enemies.Living().Count() > 6);
+        Assert.True(s.B.Enemies.Living().Count() > 6, string.Join(",", s.B.Enemies.Living().Select(e => e.Def.Id + "/" + e.Tag)));
         Assert.Equal("move", s.Host.CurrentHint?.Id ?? "move");
         // The first rise of the ember brings its first card alone; the great blessing comes on its own
         // panel later (au1 item 2).
@@ -129,6 +129,8 @@ public class PrologueTests
     /// <summary>Puts a night beat's foes down (as she would), and lets the night see it.</summary>
     static void KillPack(Setup s, string id)
     {
+        // (a gated pack rises when the beat it waits on has been down its breather, After: let the clock run it)
+        for (int i = 0; i < 60 && s.Zone.Night!.Pending(id); i++) Run(s, 0.5);
         foreach (var e in s.Zone.Night!.Standing(id)) s.B.KillEnemy(e, true, null);
         Run(s, 0.1);
         Assert.True(s.Zone.Night.Done(id));
@@ -159,7 +161,7 @@ public class PrologueTests
         int placed = s.B.Enemies.Living().Count();
         Run(s, 120);
         Assert.Equal(Prologue.Stage.Rising, s.Zone.Now);
-        Assert.True(s.B.Enemies.Living().Count() <= placed);
+        Assert.True(s.B.Enemies.Living().Count() <= placed, $"{placed} -> {s.B.Enemies.Living().Count()}: " + string.Join(",", s.B.Enemies.Living().Select(e => e.Def.Id + "/" + e.Tag + "/" + e.State)));
         KillPack(s, "n_lone");
         Assert.Equal(Prologue.Stage.Rising, s.Zone.Now);
         KillPack(s, "n_three");
@@ -260,7 +262,7 @@ public class PrologueTests
         Run(s, 25);
         Assert.Equal(Prologue.Stage.Road2, s.Zone.Now);
         Assert.True(s.Zone.Night.Done("n_cart"));
-        Assert.All(left, e => Assert.False(e.Alive && e.State != EnemyState.Dying));
+        Assert.All(left, e => Assert.False(e.Alive && e.State != EnemyState.Dying, $"{e.Def.Id} {e.State} hp {e.Hp} alive {e.Alive} t {s.B.Time}"));
     }
 
     [Fact]
@@ -378,7 +380,8 @@ public class PrologueTests
         s.B.KillEnemy(warden, true, null);
         Assert.Equal(Prologue.Stage.Victory, s.Zone.Now);
         Assert.Equal(0, s.Zone.LitCount);
-        Run(s, 14);
+        // (M5 r2: the first Legendary's beat holds the narration about 5.7 s)
+        Run(s, 20);
         Assert.Equal(Prologue.Stage.Dawn, s.Zone.Now);
         Assert.Equal(TimeOfDay.Dawn, s.J.World.Time);
         Assert.Contains(s.J.World.History, h => h.Id == "ford_warden_slain");
