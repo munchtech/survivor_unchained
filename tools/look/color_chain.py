@@ -261,6 +261,10 @@ def oklab_to_lin(L, C, h):
                      -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s])
 
 
+# (L7 S2) The night's level is held (only the moon's colors come from the boards): the boards' night panels disagree on level by
+# about 2x (MB3's setts ask the moon x2.49/1.38/1.42, LB NIGHT's setts x1.44/0.89/0.74), and the median (x2.3 key, x2.05 sky)
+# lit the play frames to Lp50 0.46 in the arena (09, 12; rule 1's band 0.15-0.30, the picked night targets 0.20-0.27).
+NIGHT_LEVEL_HOLD = True
 NIGHT_SLOPE = 0.98  # (the night cards' slope, g18 to g50 in blue: 0.156 -> 0.424 over 0.18 -> 0.5)
 SLOPE = 0.75  # (the cards' mean log-log slope of drawn over albedo, lit and shade, day and night: the refine's damping)
 
@@ -515,6 +519,11 @@ def apply_night(R, rep, cards, tag):
     key["color"], key["intensity"] = c, round(e, 4)
     new, words = shade_light(r, {}, k_sh)
     e_sky = new["hemi"] / r["fill"]["hemi"]
+    if NIGHT_LEVEL_HOLD:  # (L7 S2) the boards give the night's colors, not its level: each light's energy kept
+        key["intensity"] = round(e / e_key, 4); e_key = e_sky = 1.0
+        for a_ in ("strength", "hemi", "env"):
+            if r["fill"].get(a_) is not None: new[a_] = r["fill"][a_]
+        words += " (energies held: NIGHT_LEVEL_HOLD)"
     r["fill"].update(new)
     n["key_gain"] = kk.round(4).tolist(); n["q"] = q.round(4).tolist(); n["key_energy"] = round(e_key, 4); n["sky_energy"] = round(e_sky, 4)
     a_ = rep.get("arena", {})
