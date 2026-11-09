@@ -134,7 +134,7 @@ public static partial class Sfx
     /// <summary>A blast by its art (Ev.Explosion): a firepot's clay cracking, frost shattering.</summary>
     public static void Burst(string? art, double power, Where w)
     {
-        Explosion(power, w);
+        if (art is not ("heroic_leap_heave" or "shield_charge_slam")) Explosion(power, w);
         if (A is not { } a) return;
         if (art != null && Bank($"art.{art}.burst", w)) return;
         double p = w.Pan, g = 0.5 + 0.5 * w.Near;

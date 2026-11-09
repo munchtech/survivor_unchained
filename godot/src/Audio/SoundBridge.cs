@@ -83,6 +83,9 @@ public sealed class SoundBridge
                 case Ev.Beam bm when bm.Art?.StartsWith("beam") == true: Sfx.Lance(bm.Art, bm.Duration, At(bm.X1, bm.Z1)); break;
                 case Ev.Telegraph t when t.Tell != null && t.Phase != TellPhase.Off: Sfx.Telegraph(t.Tell, t.Phase == TellPhase.Land, t.Boss, At(t.X, t.Z), t.Duration > 0 ? t.Duration : null); break;
                 case Ev.Dash: Sfx.Dash(); break;
+                case Ev.Leap lp when lp.Phase == LeapPhase.Takeoff: Sfx.Cue("art.heroic_leap.takeoff", At(lp.X0, lp.Z0)); break;
+                case Ev.Charge ch2: Sfx.ShieldCharge(ch2.Phase, At(ch2.X, ch2.Z)); break;
+                case Ev.HardLanding hl2: Sfx.Cue("dash.hard_landing", At(hl2.X, hl2.Z)); break;
                 case Ev.PerfectDodge: Sfx.Perfect(); break;
                 case Ev.Rise r: Sfx.Rise(r.Ember); break;
                 // Loot landing where the filter lets it be heard (docs/design/LOOT_DESIGN.md §8).
