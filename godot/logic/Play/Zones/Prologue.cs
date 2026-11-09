@@ -217,14 +217,40 @@ public sealed partial class Prologue : ZoneRuntime
                 G.After(1.5 - (B.Time - lampEventAt) + 0.02, () => { lampTipWaiting.Remove(id); Tip(id, title, text, keys, life); });
             return;
         }
+        // (M5 r3: no card on a champion's wake: it waits while one is awake near her or its pack is about to wake)
+        if (B != null && !shown.Contains(id) && ChampionGate.Due(B))
+        {
+            if (champTipWaiting.Add(id)) G.After(0.5, () => { champTipWaiting.Remove(id); Tip(id, title, text, keys, life); });
+            return;
+        }
         if (!shown.Add(id)) return;
+        tipUp = (id, title, text, keys, life, B?.Time ?? 0);
         if (id == "pack") packAt = B?.Time ?? 0;
         if (id == "elite") eliteAt = B?.Time ?? 0;
         G.SetHint(new Hint(id, title, text, keys ?? new()));
-        if (life > 0) G.After(life, () => { if (G.CurrentHint?.Id == id) G.SetHint(null); });
+        double at = B?.Time ?? 0;
+        if (life > 0) G.After(life, () => { if (G.CurrentHint?.Id == id && (tipUp == null || tipUp.Value.At == at)) G.SetHint(null); });
     }
 
     string Key(string action) => G.KeyLabel(action);
+
+    readonly HashSet<string> champTipWaiting = new();
+    /// <summary>(M5 r3) The card Tip last put up, and when.</summary>
+    (string Id, string Title, string Text, List<string>? Keys, double Life, double At)? tipUp;
+    /// <summary>A card up for less than this when a champion wakes is shown again after the fight; longer, it was read.</summary>
+    const double TipRead = 5;
+
+    /// <summary>(M5 r3) A card up as a champion comes awake (or its pack 1.5 s from waking) is taken down; asked again
+    /// (after the fight, ChampionGate) if it was up less than TipRead.</summary>
+    void ChampionTipWatch()
+    {
+        if (B == null || tipUp is not { } t) return;
+        if (G.CurrentHint?.Id != t.Id) { tipUp = null; return; }
+        if (!ChampionGate.Due(B, 1.5)) return;
+        G.SetHint(null);
+        tipUp = null;
+        if (B.Time - t.At < TipRead) { shown.Remove(t.Id); Tip(t.Id, t.Title, t.Text, t.Keys, t.Life); }
+    }
 
     /* The road's words in a line (au i15): the narration and the tips between the Rising and the ford, each
      * read before the next. One comes once no line is being narrated and no callout is up, and 4 s of play
@@ -981,6 +1007,7 @@ public sealed partial class Prologue : ZoneRuntime
         if (night != null && Now < Stage.Intro) { night.Tick(dt); Ranks(night); }
         if (Draft) GreatBlessing();
         Callouts();
+        ChampionTipWatch();
         PaceWords();
         if (Now is Stage.Dawn or Stage.Exit) DayTick(dt);
         switch (Now)
@@ -1674,7 +1701,15 @@ public sealed partial class Prologue : ZoneRuntime
             });
         // F12 just after, and the day's tip after that.
         if (taught > 0) G.After(5.2, () => levelDue = true);
-        G.After(18.5, () => PacedTip("day", "By day", $"By day the ember sleeps: you fight with what you carry, your art and your feet, and every fight teaches you ({Key("character")}). The ember is for the night.", [Key("character")], 14));
+        // (M5 r3: in the dawn's breather before the boars, once the level's callout is answered; it came 2.5 s before
+        // Red Tolly's wake at 18.5 s; ChampionGate holds it off any champion's wake)
+        G.After(taught > 0 ? 5.6 : 1.0, () => DayTip(taught > 0, 0));
+    }
+
+    void DayTip(bool afterLevel, int tries)
+    {
+        if (afterLevel && !G.Taught("level") && tries < 40) { G.After(0.5, () => DayTip(afterLevel, tries + 1)); return; }
+        PacedTip("day", "By day", $"By day the ember sleeps: you fight with what you carry, your art and your feet, and every fight teaches you ({Key("character")}). The ember is for the night.", [Key("character")], 14);
     }
 
     void Finish()
