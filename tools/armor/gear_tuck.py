@@ -35,6 +35,7 @@ The cover: tools/armor/cover.py's rule (cover_of: reach 45 mm, ramp 0, deep 25 m
     python tools/armor/gear_tuck.py control [--only id,id]   native vs A's records carried onto the gate body (B)
 """
 import argparse
+import hashlib
 import json
 import os
 import struct
@@ -70,6 +71,8 @@ ENCLOSE_DIRS = 160     # rays over the sphere for the enclosure test (those with
 ENCLOSE_RAY = 0.25     # a ray that runs this far clear of the piece leaves it: her point can be seen from outside
 ENCLOSE_LEAK = 0.03    # share of her hemisphere's rays allowed out (grazing gaps between a piece's own parts: a sabaton's lames)
 GONE_IN = 0.015        # her enclosed skin not drawn only this far (along her surface) from any of her that is not
+RIGID_REACH = 0.04      # THE PLATE HIDES HER: her points whose outward ray meets a rigid face this far out (or that stand
+#   through one at rest) are under it; those of them no game camera sees as she moves (gear_seal.py hide) are not drawn
 ENCLOSE_SLOTS = ("boots", "gloves", "greaves", "bracers", "head")   # slots whose pieces wrap a limb (a top's arm holes
 #   and neck open and close as she moves: its skin keeps the tuck)
 
@@ -229,7 +232,43 @@ def enclosed_of(sk, PB, TB, foot):
     return out
 
 
-def gone_of(sk, inside):
+def under_rigid_of(sk, PB, TB, rigid):
+    """Her points under the piece's rigid parts: the ray from BACK inside her, along her outward normal, first meets a
+    rigid face within BACK + RIGID_REACH (a plate over her, or one she stands through at rest). Per vertex: bool."""
+    import trimesh
+    out = np.zeros(len(sk.P), bool)
+    if not len(TB) or rigid is None or not rigid.any():
+        return out
+    lo, hi = PB.min(0) - BOX, PB.max(0) + BOX
+    cand = np.nonzero(((sk.P >= lo) & (sk.P <= hi)).all(1))[0]
+    if not len(cand):
+        return out
+    ray = trimesh.ray.ray_pyembree.RayMeshIntersector(trimesh.Trimesh(PB, TB, process=False))
+    O = sk.P[cand] - sk.N[cand] * BACK
+    tri, ri, loc = ray.intersects_id(O, sk.N[cand], multiple_hits=False, return_locations=True)
+    ok = (np.linalg.norm(loc - O[ri], axis=1) <= BACK + RIGID_REACH) & rigid[tri]
+    out[cand[ri[ok]]] = True
+    return out
+
+
+def hidden_of(out_dir, rid, sk, PB):
+    """THE PLATE HIDES HER: gear_seal.py hide's set for the row (her points under its rigid parts that no game camera
+    sees at rest or in any frame of her clips), while the piece is the one it was measured on. Per vertex: bool, or
+    None (no set, or a stale one: said)."""
+    base = os.path.join(out_dir, "armor_hidden", rid)
+    if not os.path.exists(base + ".bin") or not os.path.exists(base + ".json"):
+        return None
+    st = json.load(open(base + ".json"))
+    h = hashlib.sha1(np.round(np.asarray(PB, np.float64) * 1e5).astype(np.int64).tobytes()).hexdigest()
+    if st.get("piece_hash") != h:
+        print(f"gear tuck: {rid}: armor_hidden is stale (the piece changed): re-run gear_seal.py hide; no plate gone")
+        return None
+    k, v = read_records(base + ".bin")
+    keys = {tuple(x) for x in k[v > 0]}
+    return np.array([tuple(x) in keys for x in np.round(sk.P * 1e5).astype(np.int64)])
+
+
+def gone_of(sk, inside, fill=True):
     """THE PIECE ENCLOSES HER: her points inside (enclosed by it), welded, holes in that set that
     touch none of her outside it filled, and only those GONE_IN or more along her surface from any of her not inside it
     (so no point that can be seen at its opening, nor one that comes into view there as she moves, is cut).
@@ -242,14 +281,16 @@ def gone_of(sk, inside):
     # (holes: her points not inside, in components that touch nothing but inside points and are small: a few of her
     # points the rays read as seen through a seam of the piece, ringed by enclosed skin)
     from scipy.sparse.csgraph import connected_components
-    o = ~ins
-    keep = o[a_] & o[b_]
-    g = sparse.csr_matrix((np.ones(int(keep.sum())), (a_[keep], b_[keep])), shape=(ng, ng))
-    nc, lab = connected_components(g, directed=False)
-    size = np.bincount(lab[o], minlength=nc)
-    big = size.max() if len(size) else 0
-    hole = o & (size[lab] < 0.01 * big)
-    ins = ins | hole
+    # (fill=False, a plate's hidden set: her skin seen through a gap between lames is seen; no hole is filled)
+    if fill:
+        o = ~ins
+        keep = o[a_] & o[b_]
+        g = sparse.csr_matrix((np.ones(int(keep.sum())), (a_[keep], b_[keep])), shape=(ng, ng))
+        nc, lab = connected_components(g, directed=False)
+        size = np.bincount(lab[o], minlength=nc)
+        big = size.max() if len(size) else 0
+        hole = o & (size[lab] < 0.01 * big)
+        ins = ins | hole
     o = ~ins
     bd = np.unique(a_[o[a_] & ins[b_]])
     if not len(bd):
@@ -330,9 +371,14 @@ def write_all(out_dir, close_glb, play_glb, rows, say=print):
         if hides.get(r["id"], True):
             tc, gz, rz = tuck_of(close, PB, TB, RB)
             tp = tuck_of(play, PB, TB, RB)[0] if play is not None else np.zeros(0)
+            gc = np.zeros(len(close.P), bool)
             if r["slot"] in ENCLOSE_SLOTS:
                 box = ((close.P >= PB.min(0) - BOX) & (close.P <= PB.max(0) + BOX)).all(1)
-                gc = gone_of(close, enclosed_of(close, PB, TB, box))
+                gc |= gone_of(close, enclosed_of(close, PB, TB, box))
+            hid = hidden_of(out_dir, r["id"], close, PB) if RB.any() else None
+            if hid is not None:
+                gc |= gone_of(close, hid & under_rigid_of(close, PB, TB, RB), fill=False)
+            if gc.any():
                 tc[gc] = GONE
                 ng = int(gc.sum())
                 if play is not None:
