@@ -75,8 +75,10 @@ public partial class P1Jiggle : SkeletonModifier3D
             using var doc = JsonDocument.Parse(FileAccess.GetFileAsString("res://data/body/springs.json"));
             var springsDoc = doc.RootElement.Clone();
             string samplesFile = springsDoc.GetProperty("bodies").GetProperty("p1").GetProperty("samples").GetString()!;
-            JsonElement? samples = FileAccess.FileExists("res://data/body/" + samplesFile)
-                ? JsonDocument.Parse(FileAccess.GetFileAsString("res://data/body/" + samplesFile)).RootElement : null;
+            // (--p1-dir: a slider variant's own samples in its folder, tools/body/spring_samples.py --out)
+            string samplesPath = P1Body.Dir != P1Body.DefaultDir && FileAccess.FileExists(P1Body.Dir + samplesFile) ? P1Body.Dir + samplesFile : "res://data/body/" + samplesFile;
+            JsonElement? samples = FileAccess.FileExists(samplesPath)
+                ? JsonDocument.Parse(FileAccess.GetFileAsString(samplesPath)).RootElement : null;
             int n = sk.GetBoneCount();
             springs = new P1Springs(springsDoc, "p1", samples,
                 Enumerable.Range(0, n).Select(i => sk.GetBoneName(i).ToString()).ToArray(),

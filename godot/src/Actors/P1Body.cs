@@ -20,7 +20,17 @@ namespace SurvivorUnchained.View;
 /// </summary>
 public static class P1Body
 {
-    public const string Dir = "res://art/people/body_p1/";
+    /// <summary>B's published folder. Pictures-only switch `--p1-dir res://art/people/body_p1_var/<name>/` (P1 R1 sliders): a slider
+    /// variant's build, published by tools/body/publish_p1.py --dest, loads from its own folder (body, play, rigs, clips, blend base,
+    /// pieces, cavity, freckles, spring samples); default the gate body's.</summary>
+    public static readonly string Dir = PickDir();
+    public const string DefaultDir = "res://art/people/body_p1/";
+    static string PickDir()
+    {
+        var d = Args.Get("p1-dir");
+        if (string.IsNullOrEmpty(d)) return DefaultDir;
+        return d.EndsWith("/") ? d : d + "/";
+    }
     /// <summary>--body p1, and a published B (with its baked clips) to load.</summary>
     public static bool On => Args.Get("body") == "p1" && ResourceLoader.Exists(Dir + "body.glb") && ResourceLoader.Exists(Dir + "clips.res");
     static PackedScene? close, play;

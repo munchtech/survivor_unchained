@@ -55,6 +55,7 @@
   "her_a": 1.0
  },
  "bone_sliders_why": "Soft tissue does not move bones, but A legs and trunk must hold their joints: read on the slider body the hip joint stood 12 mm wide of the fit and the knee 33 mm (x 154 against 121), so the bones are read on the body with her_a on. The r1 bone_sliders (the retired MakeHuman soft targets) are gone with the r1 trunk.",
+ "target_joints_ref": {"her_a": "tools/body/specs/her_b.json", "why": "P1 R1 sliders: her_a's joints (A's, absolute) ride the landmark rules on any body with other sliders: landmark + (A's joint - the landmark on her_b) (build_topo.target_joints_ref); her_b itself keeps them absolute (same sliders)."},
  "her_a": {
   "fit_spec": "tools/body/specs/her_topo.json",
   "carrier": "tools/body/out/her_ek2_final",

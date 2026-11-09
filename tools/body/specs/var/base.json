@@ -1,0 +1,31 @@
+{
+ "about": "P1 R1 sliders: her_b unchanged, its bake to body_p1_var/base (the determinism check; never the gate body)",
+ "base": "tools/body/specs/her_b.json",
+ "bake": {
+  "maps": "godot/art/people/body_p1_var/base",
+  "cavity": {
+   "line_m": [
+    [
+     0.177,
+     1.393,
+     -0.033
+    ],
+    [
+     0.159,
+     1.461,
+     0.039
+    ]
+   ],
+   "radius_mm": [
+    40.0,
+    80.0
+   ],
+   "why": "P1 R1 round 33 (S3): cavity.png, B's AO kept within radius_mm of line_m (B's rest, mirrored): from her armpit's apex (the shoulder part's lowest point; r1c/round32/s/pitmaps.py: AO .38 there) to the hollow the blot showed in at fight_stalker 358 (its pixels mapped to B's rest: 89-112 mm from the apex, AO .65-.89), white beyond; the skin's cavity_bounce reads it. Over all of B's AO the bounce lifted the shade under her breasts, her cleavage and inner elbows at the Look (r1c/round33/v/cav_diff.png)."
+  },
+  "publish_maps": false,
+  "size": 2048,
+  "pose": "tools/body/forms/her_topo_target_bones.json",
+  "carry": null,
+  "source_maps": "tools/body/base/targets/her_a_maps"
+ }
+}

@@ -27,7 +27,7 @@ namespace SurvivorUnchained.Tools;
 public partial class P1BakeRun : Node
 {
     const double Fps = 30;
-    const string Out = "res://art/people/body_p1/";
+    static string Out => P1Body.Dir;   // (--p1-dir: a slider variant bakes into its own folder)
 
     sealed partial class Grab : SkeletonModifier3D
     {
@@ -206,7 +206,7 @@ public partial class P1BakeRun : Node
                 if (dump != null)
                 {
                     dump.Append("],\n\"B\": [").Append(dumpB).Append("]}\n");
-                    var dir = ProjectSettings.GlobalizePath("res://") + "../tools/body/out/clips/";
+                    var dir = ProjectSettings.GlobalizePath("res://") + "../tools/body/out/" + (P1Body.Dir == P1Body.DefaultDir ? "clips/" : "clips_var/" + P1Body.Dir.TrimEnd('/').Split('/')[^1] + "/");
                     System.IO.Directory.CreateDirectory(dir);
                     System.IO.File.WriteAllText(dir + nm + ".json", dump.ToString());
                 }

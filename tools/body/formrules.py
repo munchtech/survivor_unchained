@@ -514,11 +514,20 @@ def spec_measures(spec_path, body_glb):
     from sliders import load_spec
     V, T, H, HT, z, rep = formview.body(spec_path)
     sl = load_spec(spec_path).get("sliders", {})
-    if sl.get("her_a"):     # (her breasts and glutes are A's, from a target: no designed slider to take off for a bare body)
-        return {}
     with tempfile.TemporaryDirectory() as tmp:
         bare = _derived(spec_path, BREAST_SLIDERS, (), tmp)
         Vb = formview.body(bare)[0]
+        if sl.get("her_a"):
+            # (P1 R1 sliders: her breasts are a target's (her_a: A's surface, a post-join move over the whole trunk), so the
+            # breast sliders at 0 leave A's breast on. The bare chest: the target's surface off the breast, OUR bare chest
+            # (breast sliders and her_a at 0) under it, blended by the breast's mass field (sliders.field of bust_size,
+            # the region the bust slider IS), so the wall around the breast is the body's own and only the breast reads)
+            from sliders import OurSliders
+            sl_ = OurSliders(str(HERE / "base" / "sliders_close.npz"))
+            assert len(sl_.V0) == len(V), ("formrules her_a bare chest: not the close tier", len(V))
+            F = sl_.field({"field": "bust_size", "field_v": 1.0, "floor": 0.1})[:, None]
+            V0b = formview.body(_derived(spec_path, BREAST_SLIDERS + ["her_a"], (), tmp))[0]
+            Vb = F * V0b + (1.0 - F) * Vb
         if sl.get("breast_a", 0) > 0 or sl.get("breast_b", 0) > 0:
             Vref = formview.body(_derived(spec_path, BREAST_SLIDERS, ("chest_wall",), tmp))[0]
         else:

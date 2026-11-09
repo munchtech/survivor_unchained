@@ -134,8 +134,11 @@ def publish(src):
         out["spec"] = json.load(open(bj)).get("spec")
         # the spec's "skin" (the placeholder skin's shader settings for this body, not a tool's number): P1Body.ApplySkin reads it
         sp = os.path.join(ROOT, out["spec"]) if out["spec"] else None
-        if sp and os.path.exists(sp) and json.load(open(sp)).get("skin"):
-            out["skin"] = json.load(open(sp))["skin"]
+        if sp and os.path.exists(sp):
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            from sliders import load_spec          # (a variant spec's "base": the skin it inherits)
+            if load_spec(sp).get("skin"):
+                out["skin"] = load_spec(sp)["skin"]
     params = import_params()
     out["import"] = {"from": "godot/art/people/heroine.glb.import", "params": params, "changed": {}}
     for f in (g for g in GLBS if g in out["files"]):
@@ -144,7 +147,7 @@ def publish(src):
             out["import"]["changed"][f] = ch
     with open(os.path.join(PUB, "publish.json"), "w") as f:
         json.dump(out, f, indent=1)
-    print(f"published {out['source']} -> godot/art/people/body_p1 ({len(out['files'])} files)")
+    print(f"published {out['source']} -> {os.path.relpath(PUB, ROOT)} ({len(out['files'])} files)")
 
 
 def godot_import():
@@ -159,10 +162,39 @@ def godot_import():
         subprocess.call([sys.executable, TURN, "give", "godot", "body-p1: import"])
 
 
+VAR = os.path.join(ROOT, "godot", "art", "people", "body_p1_var")
+# (the gate body's maps and the freckles: a variant whose own bake did not pass takes them from the gate's folder, read
+# only: the same UVs on the same topology)
+MAPS_FALLBACK = ("albedo.png", "normal.png", "roughness.png", "ao.png", "curvature.png", "form_normal.png", "thickness.png",
+                 "freckles.png", "region_id.png", "cavity.png", "bake.json")
+
+
+def publish_var(src, name):
+    """P1 R1 sliders: --dest NAME publishes to godot/art/people/body_p1_var/NAME/ (git-ignored, pictures only: the game
+    loads it with --p1-dir res://art/people/body_p1_var/NAME/); the gate body's folder is never written."""
+    global PUB
+    gate = PUB
+    PUB = os.path.join(VAR, name)
+    os.makedirs(PUB, exist_ok=True)
+    publish(src)
+    for f in MAPS_FALLBACK:
+        if not os.path.exists(os.path.join(PUB, f)) and os.path.exists(os.path.join(gate, f)):
+            shutil.copy2(os.path.join(gate, f), os.path.join(PUB, f))
+            print(f"publish_p1: {name}: {f} from the gate body's folder")
+    PUB = gate
+
+
 if __name__ == "__main__":
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    dest = None
+    if "--dest" in sys.argv:
+        dest = sys.argv[sys.argv.index("--dest") + 1]
+        args.remove(dest)
     if len(args) != 1:
         raise SystemExit(__doc__)
-    publish(os.path.abspath(args[0]))
+    if dest:
+        publish_var(os.path.abspath(args[0]), dest)
+    else:
+        publish(os.path.abspath(args[0]))
     if "--import" in sys.argv:
         godot_import()

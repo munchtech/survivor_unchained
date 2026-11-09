@@ -291,8 +291,10 @@ def main():
     ap.add_argument("--out", default=str(HERE / "out"))
     ap.add_argument("--step", type=int, default=0, help="pose every Nth key (default: about 30 poses per clip)")
     ap.add_argument("--dump", default=str(DUMP), help="the keys dump folder (default tools/body/out/clips)")
+    ap.add_argument("--p1", default=None, help="B's published folder (default godot/art/people/body_p1; a slider variant's body_p1_var/NAME)")
     ap.add_argument("--no-a", action="store_true", help="skip A's arm read")
     a = ap.parse_args()
+    P1 = Path(a.p1) if a.p1 else globals()["P1"]
     rig = json.loads((P1 / "rig.json").read_text())
     B = A = None
     report = {}

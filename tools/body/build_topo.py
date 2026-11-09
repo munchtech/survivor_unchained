@@ -398,15 +398,52 @@ def target_joints(spec):
     return out
 
 
-def stage_skeleton(V, tier, rep, head=None, moves=None, joints=None):
+def target_joints_ref(spec, tier, z, A, baked, joints):
+    """P1 R1 sliders: a designed target's joints are absolute points on the body the target was made on (her_a: A's joints
+    on her_b's body), so a slider laid on top (height, hips, legs) moved the skin and left those joints where A's are.
+    spec "target_joints_ref" {target: ref spec path}: when this spec's sliders differ from the ref spec's, the skeleton
+    is placed once on the ref spec's bone body recording each target joint's landmark there, and the target's joint is
+    laid as landmark + v (joint - ref landmark) on this body (skeleton.OurLandmarks.lay). The ref spec itself (and any
+    spec with the same sliders) keeps the absolute joints: identical bytes."""
+    refs = spec.get("target_joints_ref") or {}
+    if not joints or not refs:
+        return joints, None
+    out = dict(joints)
+    info = {}
+    for tgt, ref_path in refs.items():
+        if tgt == "why":
+            continue
+        rs = with_defaults(load_spec(os.path.join(REPO, ref_path)))
+        if rs.get("sliders", {}) == spec.get("sliders", {}) and (rs.get("bone_sliders") or {}) == (spec.get("bone_sliders") or {}):
+            info[tgt] = f"{ref_path}: the same sliders (absolute joints)"
+            continue
+        r2 = {}
+        _, Vr = stage_base(rs, tier, r2, pre=load_tier(tier))
+        Vr, ring_r, _ = stage_place(rs, z, Vr, A, baked, r2)
+        Vr = stage_forms(rs, tier, z, Vr, ring_r, r2)
+        rec = {}
+        stage_skeleton(bone_body(rs, tier, z, Vr, A, baked, r2), tier, r2, baked["HeroineHead"]["P"], rs.get("joint_moves"),
+                       target_joints(rs), rec)
+        for k in out:
+            if k in rec and not k.startswith("x:"):
+                out[k] = (out[k][0], out[k][1], rec[k])
+        info[tgt] = f"{ref_path}: relative ({sum(1 for k in out if len(out[k]) > 2)} joints)"
+    return out, info
+
+
+def stage_skeleton(V, tier, rep, head=None, moves=None, joints=None, record=None):
     import skeleton as sk
     with open(os.path.join(HERE, "skeleton.json")) as f:
         skel = json.load(f)
     with open(os.path.join(HERE, "base", "landmarks.json")) as f:
         table = json.load(f)["tiers"][tier]
-    names, par, worlds, ends, info = sk.place_skeleton_ours(skel, V, table, head, moves, joints)   # head: her baked head (Head joint)
+    names, par, worlds, ends, info = sk.place_skeleton_ours(skel, V, table, head, moves, joints, record)   # head: her baked head (Head joint)
     if joints:
-        info["target_joints"] = {k: [round(float(x) * 1e3, 1) for x in np.ravel(p)] + [v] for k, (p, v) in joints.items()}
+        info["target_joints"] = {k: [round(float(x) * 1e3, 1) for x in np.ravel(e[0])] + [e[1]] for k, e in joints.items()}
+        rel = {k: round(float(np.abs(np.asarray(e[0], float).ravel() - np.asarray(e[2], float).ravel()).max()) * 1e3, 1)
+               for k, e in joints.items() if len(e) > 2}
+        if rel:
+            info["target_joints_rel_mm"] = rel
     rep["skeleton"] = info
     return {"skel": skel, "names": names, "parents": par, "worlds": worlds, "ends": ends}
 
@@ -727,8 +764,11 @@ def run_tier(spec, tier, A, baked, out, rep, correct=True, sk_close=None):
         sk = {k: sk_close[k] for k in ("skel", "names", "parents", "worlds", "ends")}
         rep["skeleton"] = {"from": "close (build_topo P1 R2: one skeleton for both tiers)"}
     else:
+        tj, tj_info = target_joints_ref(spec, tier, z, A, baked, target_joints(spec))
         sk = stage_skeleton(bone_body(spec, tier, z, V, A, baked, rep), tier, rep, baked["HeroineHead"]["P"], spec.get("joint_moves"),
-                            target_joints(spec))
+                            tj)
+        if tj_info:
+            rep["skeleton"]["target_joints_ref"] = tj_info
         with open(os.path.join(out, "stage", "close_skeleton.json"), "w") as f:
             json.dump({k: sk[k] for k in ("skel", "names", "parents", "worlds", "ends")}, f,
                       default=lambda x: np.asarray(x).tolist())
