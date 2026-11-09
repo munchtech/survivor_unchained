@@ -256,7 +256,7 @@
       "bossDamage": 2.9,
       "art": "nova_blood",
       "description": "A sweeping graveblade that carves health out of the wound it makes.",
-      "base": { "cooldown": 2.4, "damage": 40.29, "radius": 3.25, "knockback": 0.5, "expandTime": 0.28, "heal": 3 },
+      "base": { "cooldown": 2.4, "damage": 41.9, "radius": 3.25, "knockback": 0.5, "expandTime": 0.28, "heal": 3 },
       "evolutions": [
         {
           "id": "rend_and_mend",
