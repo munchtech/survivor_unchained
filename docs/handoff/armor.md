@@ -2,6 +2,81 @@
 
 Read README ("Working lean", Safety), RESUME's top, then this page. Worktree (lead 6) `.claude/worktrees/armor-5`; earlier `.claude/worktrees/armor-1`, branch `armor-1` (godot/assets is a junction to its own public/assets: never stash, reset --hard or checkout .). Marionette work: `C:\Users\munch\Desktop\Marionette`, branch `armor-1` (main's uncommitted edits there are not ours: never commit them).
 
+## P2 GEAR LEAD 1 -> successor (9 Nov): HANDOFF READY. B wears her gear in game (--body p1); the fit, tuck, motion check and slider follow are built. Next: pauldron lames, the plate set's cuisses and helm, the Marionette tool, the judge, the flip
+**Brief:** `tools/scratch/coordinator/briefs/P2_chain.md` item 1, plus the coordinator's spawn prompt. Main approved:
+- the route, the 10 items, ~1.3-1.8M;
+- built pieces over 100 MB stay OUT of git: bindings go in git, built meshes are git-ignored and made by `gear_fit build`;
+- test with `--body p1` until item 10.
+
+Worktree `.claude/worktrees/gear-p2` (a junction to its OWN public/assets). Never stash, reset --hard, checkout . or merge without the rmdir/mklink dance in lead_brief.md. Integration has not been merged since 11fa1fb75. Scratch (briefs s1-s7, solver tools, numbers): `C:\Users\munch\AppData\Local\Temp\claude\52c6646a0254d2b9\832e8ec3-f768-4cf4-ae4e-45ed6fe4230b\scratchpad\gear` (call it SCR). At the end, back its texts up to survivorsunchained_inputs\scratch_gear_p2.
+
+**The route (built):** one binding per gear unit to the base topology, made once from A's files.
+- Each binding holds: the triangle in [topology T ; HeroineHead T], barycentrics, the offset in the local frame, and the rigid component.
+- `tools/armor/gear_fit.py bind` makes them (~3 min; A is posed into B's rest by her_a's maps).
+- `gear_fit.py build --body <published dir>` evaluates them on any body: ~45 s on her_b, 5-7 min on other bodies.
+- Output goes to `godot/art/gear/out/<body>/` (git-ignored; 464 MB on body_p1): 44 units (30 calling rows, 10 armor, 4 `<calling>.lod` play units), `gear_index.json` (rows plus `fit` ok/flagged and `fit_fail`), `armor_tuck/`, `armor_cover/` and sockets.
+- A's node and mesh names are kept, so HerWear, materials and dye work unchanged.
+- Bindings: `godot/art/gear/bind/*.npz` (52 MB). The first set went into 47a71157c and is stale (pre-fix). The CURRENT ones are uncommitted on purpose: commit them ONCE at MR, or squash, since 47a71157c's 52 MB is dead weight.
+
+**Key fix (lead, 683fb65ca):** the stage npz T indexes the glb's UV-split vertices, so the topology triangles are `src[T]`.
+
+**Game (s2, 98358b0e0..ad76a010c):**
+- Under --body p1, `ArmorIndex.GearDir` = `gear/out/<folder of P1Body.Dir>`; variant folders go by name with --p1-dir. A missing folder gives one log line and falls back to A's indexes.
+- B's pieces carry meta p1_gear: never hidden, swapped or rebound.
+- One tuck map covers both tiers (`tuck_offset` instance uniform in heroine_skin.gdshader). Full sets attach `<calling>.lod`.
+- GearIndexTests (5). dotnet is 1593/0/10 by arithmetic only: RE-RUN the full suite before the MR.
+- A's path is proven unchanged (smoke_r1 a_old/a_new).
+- Smoke sheet (half size, town: all 4 callings dressed on B, mixed, helm, swap, dye): `godot/.shots/gear_p2/smoke/sheet_half.jpg`.
+- Live swap: worst frame 448 ms, a hitch (A not measured).
+
+**Tuck and cover (gear_tuck.py, s2 + s7 3bf09ec2a):** A's general rule runs natively on B, and general rules replace A's per-piece hacks:
+- through-at-rest skin gets a full tuck;
+- skin within 6 mm of a rigid plate gets a full tuck, easing out to 10 mm;
+- enclosure "gone" for boots, gloves, greaves, bracers and head (hemisphere rays, 3% escape, 15 mm from open skin);
+- rows whose A tuck was empty tuck nothing.
+
+Run it with `python tools/armor/gear_tuck.py write|control`. **OPEN RISK, gloves:** ranger has ~2000 points not drawn (arcanist also has finger points not drawn), and the fist clips push the fingers out. Check a fist close-up: if a glove is open-fingered, its fingers vanish.
+
+**Rigid roles (data in `tools/armor/rigid_roles.json`, read by `rigid_blend`):** top rides one spine bone, pauldrons one upper-arm bone, bracers the forearm mean, greaves the calf mean. Rigid components are sized per body (per-axis scale 0.85-1.25, then an LP clear).
+
+**Motion check (`tools/armor/gear_wear.py`, s5 07fe5292f/bca702b9e):**
+- It runs B's lbs poser plus the laws over the clip dumps (`tools/body/out/clips`, 33 bridge clips; `--clips` takes the P4 pack later), with skin, control, mixed and show tests.
+- Use `--jobs 3` at most (1.8 GB each); a full run takes ~16 min. Results after s7 are in SCR\..\s7\wear1 and wear2.
+- Boots, gloves and bracers are about 0.
+- plate_cuirass_plain went from 53k to 1.7k mm2 (what's left: the clavicle shrug and Jog_Fwd).
+- **Plate pauldrons: 7.2k mm2 each at 35 mm.** Upper-arm skin comes through under the lower lames as the arm lifts, because a rigid lame can't follow the twist. Next: put each lame on the twist chain by height.
+- warden.pauldrons: 5.4k (bendy, untouched).
+- mar_her_* are unshipped A-era pieces, flagged, low priority.
+- KNOWN gear_wear bug: a forward hit past the 25 mm reach takes the face behind, so boot toes read as through. A worker can fix it.
+- **Jog_Fwd is a broken clip** (spine_03 against spine_04 bent 35-50 deg every frame): tell A1.
+- Re-measure on the P4 clips once motion-a1 packs them. Per A1's note, B has its own held frames, a girdle law, and HerShrug off.
+
+**Every slot shows:** all 43 looks pass; the lowest is reaver.bottom at 33% under ranger.top. Rulings due: plate_gstring_plain is dropped whenever a reaver or ranger belt or skirt goes on, and reaver.skirt drops under another source's belt. No proof set fills head or cloak.
+
+**Follow sliders (gear_field.py, rounds 1-3, at the cap; last commit 19b48af6d):**
+- An affine kernel field, one smooth correction solve (follow_solve), rigid parts made to measure, and refuse-or-flag per row.
+- weight body (her plus a slider): 2/24 proof rows flagged (ranger.gloves.thread 20%; reaver.bottom 31% / 17% at the butt cleft). The stress bodies (hips, bust) are mostly fine.
+- **second body (another woman): 18/24 flagged.** Mostly the body's OWN skin stretches past 2x, plus a field fold at the toe box (G's smallest singular value 0.02-0.09).
+- Lead's call: second is a pure-slider body already judged FAR at the close cameras (body.md), so its flags are correct refusals. The slider proof is her_b + weight + a third slider spec on her: hips or bust_up, built with SCR\r2\chain.sh from specs/var/*.json.
+- One cheap field fix is left if wanted: where G's smallest singular value is under half of Gk's, blend to Gk (stops the toe-box fold).
+- r3's last background runs wrote SCR\r3\final_second.json and final_stress.json; the her_b identity is measured there.
+
+**Bodies built:** `godot/art/people/body_p1_var/weight/` and `.../second/` (clips baked, rig_map, springs). Their gear is in `godot/art/gear/out/<name>/` and has not been imported yet. Inputs copied from body-p1: tools/body/out/round_36, clips, her_a_maps_work, topo.
+
+**NEXT, in order:**
+1. Pauldron lames on the twist chain (medium solver), with gear_wear before and after on the pauldrons.
+2. The gear_wear reach bug (worker).
+3. A third slider body and the in-game slider proof shots: `--body p1 --p1-dir res://art/people/body_p1_var/<name>/`, import first.
+4. The plate set's missing pieces, as the first BASE-NATIVE pieces: cuisses, and an open-face helm with `"hair": "hide"`. The design is in `survivorsunchained_inputs\scratch_armor10\b_design_spec.md`. They need a native bind path, `gear_fit bind --native <piece dir>`: a mesh at her_b's rest, `_rigid` parts and materials by name (the import contract on B). Update PIECE_SCHEMA to stamp the base topology.
+5. The mixed-look rulings, and s7's item 3.
+6. The Marionette tool: worktree `C:\Users\munch\Desktop\Marionette_gear`, branch gear-p2 off main, /api/gear/* calling gear_fit bind/build/check, plus a panel. Push both repos.
+7. Shoot the 3 sets on B at the play camera, the close-up and the Look, plus the swap, dye, helm and the slider proof. ONE su-lead-max judge at effort max, whole-frame question first.
+8. Flip the `--body p1` default (People.cs ~l.370) in the same MR. Write the merge notes, commit the bindings once, and post MR READY here and to main.
+
+Estimate left: ~0.7-1.0M.
+
+**Costs so far:** 7 solvers, ~1.65M subagent tokens (s1 234k, s2 263k, s3 221k, s4 230k, s5 217k, s6 247k, s7 242k), plus this lead at ~300k.
+
 ## Paused here (Armor 18, 22 Oct, shoulder-only session); the arm root became a BODY item
 **Update 23 Oct:** the owner approved the arm-root source fix and it ran on armor-7. Its state and next steps are in `docs/handoff/body.md` ("Arm root (Body 1)"). BJ1 passed the arm at 1:1; an owner-angle reshoot is still due. The armor items below still stand: the R1/R2 clips are unjudged, and nothing is merged.
 Worktree `.claude/worktrees/armor-7`, branch armor-7 (junction worktree). Scratch: `C:\Users\munch\AppData\Local\Temp\claude\C--Users-munch-Desktop-survivorsunchained\543ece4a-9bcd-4cea-b6df-915822bec5eb\scratchpad\armor18` (texts backed up to `survivorsunchained_inputs\scratch_543ece4a\armor18`): cj2.md and rj1.md (judge briefs), r1/r2/d1 briefs and their scripts (r1\araise.py torso A per frame; r2\hl.py, axe.py, wpn.py; d1\m1-m4.py mesh, weights, collapse), run.sh with list1-3.txt (shoots), sheet2.py.
