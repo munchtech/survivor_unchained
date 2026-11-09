@@ -1539,6 +1539,7 @@ public partial class GameHud : CanvasLayer
         if (minimap.IsVisibleInTree()) header = minimap.GetGlobalRect();
         if (corner.IsVisibleInTree()) header = header is Rect2 h0 ? h0.Merge(corner.GetGlobalRect()) : corner.GetGlobalRect();
         Header = header;
+        edges.Avoid = header;
         Toasts = toasts.GetChildCount() > 0 && toasts.IsVisibleInTree() ? toasts.GetGlobalRect() : null;
         foreach (var c in toasts.GetChildren())
         {
