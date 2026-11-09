@@ -232,6 +232,8 @@ public struct HitOpts
     public bool Dot;
     public int Depth;
     public double? BossDamage;
+    /// <summary>(M3 round 4) The most this blow takes, after every multiplier (null: no cap). The Flare's StoryBossCut.</summary>
+    public double? Cap;
     /// <summary>Damage from the survivor's summons.</summary>
     public bool Summon;
     /// <summary>Projectile direction, for frontal guards.</summary>
@@ -910,6 +912,7 @@ public sealed partial class Battle
         if (crit) dmg *= st.Get(Stat.CritDamage) * (e.Hp < e.MaxHp * 0.5 && Boons.TryGetValue("ferocity", out int tooth) ? 1 + 0.12 * tooth : 1);
         else if ((Rules.IronSkin > 0 || e.Def.IronSkin > 0) && e.Disposition == Disposition.Hostile) { dmg *= 1 - Math.Max(Rules.IronSkin, e.Def.IronSkin); blocked = true; }
         dmg = Math.Max(0.5, dmg);
+        if (o.Cap is { } cap) dmg = Math.Min(dmg, Math.Max(0.5, cap));
         LightningLeaps(e, baseDamage, school, tags, o);
 
         double before = e.Hp;

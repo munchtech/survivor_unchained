@@ -94,9 +94,13 @@ public sealed partial class Battle
     {
         var u = Content.Unions.Find(union);
         if (u == null || Weapons.Exists(w => w.Id == u.Into)) return null;
-        Journal('G', union);
         var a = Weapons.Find(w => w.Id == u.A);
         var c = Weapons.Find(w => w.Id == u.B);
+        // (M3 round 4) No room for it once its parts give up their keys: refused before a part is taken (it took the part,
+        // then failed: a veteran grant of Bladestorm on six full keys left the Warden without her Sunder).
+        int freed = (a != null ? Content.Weapons.SlotCost(u.A) : 0) + (c != null ? Content.Weapons.SlotCost(u.B) : 0);
+        if (SlotsUsed - freed + Content.Weapons.SlotCost(u.Into) > Content.Weapons.MaxWeapons) return null;
+        Journal('G', union);
         int sa = a?.Slot ?? -1, sb = c?.Slot ?? -1;
         building++;
         if (a != null) RemoveWeapon(u.A);

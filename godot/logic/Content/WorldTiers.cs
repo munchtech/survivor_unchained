@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using SurvivorUnchained.Core;
@@ -39,6 +40,11 @@ public static class WorldTiers
 
     /// <summary>Tier n (1-4); an unknown n is the default tier.</summary>
     public static Tier Get(int n) => F.Tiers.TryGetValue(n.ToString(), out var t) ? t : F.Tiers[F.Default.ToString()];
+
+    /// <summary>(M3 round 4) The row a Wayfinder's map of this chart tier presses with (its kit, kitEvery and stand only: a
+    /// map keeps its own health and damage by level): the chart's tier, past the last row the last (the lead: a map's
+    /// tier is the world tier's kit and stand rows).</summary>
+    public static Tier ForMap(int chartTier) => Get(Math.Clamp(chartTier, Numbers.First(), Numbers.Last()));
 
     /// <summary>The world's tier: its fact, else the default.</summary>
     public static int Of(WorldState w)

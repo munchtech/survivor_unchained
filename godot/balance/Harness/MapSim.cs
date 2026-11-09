@@ -96,7 +96,8 @@ public static class MapSim
         var host = new HeadlessHost(j, spec.Seed);
         var zone = new MapRun(host, map, chart);
         var at = zone.ArrivalFrom(null);
-        var b = j.StartBattle(true, map.Meta.Collision(), map.Ground.HeightAt, at.X, at.Z, at.Facing, (uint)spec.Seed);
+        // (worldTier false, as the game starts a map: Game.cs; its press is the chart tier's row, set in MapRun.Begin)
+        var b = j.StartBattle(true, map.Meta.Collision(), map.Ground.HeightAt, at.X, at.Z, at.Facing, (uint)spec.Seed, worldTier: false);
         // As the game wires it: what is picked up goes into the pack (charts and materials); gear is
         // counted and stashed, so the pack never fills and leaves a piece lying under the hands.
         var zh = zone.Hooks;
