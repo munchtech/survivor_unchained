@@ -131,3 +131,41 @@ def test_signed_gap_forward_hit_past_reach():
     assert not (g < 0).any()
     g, _, _ = gw.wc.signed_gap(np.array([[np.nan, -0.005, np.nan]]), facing, reach)
     assert g[0] == -0.005                                        # no forward hit at all: unchanged
+
+
+def _box(x0, x1, h, inward=False):
+    c = np.array([[x, y, z] for x in (x0, x1) for y in (-h, h) for z in (-h, h)], float)
+    q = [(0, 1, 3, 2), (4, 6, 7, 5), (0, 4, 5, 1), (2, 3, 7, 6), (0, 2, 6, 4), (1, 5, 7, 3)]
+    tri = []
+    for a, b, c_, d in q:
+        tri += [[a, b, c_], [a, c_, d]]
+    tri = np.array(tri)
+    # outward winding: flip any face whose normal points at the centre
+    ctr = c.mean(0)
+    out = []
+    for t in tri:
+        n = np.cross(c[t[1]] - c[t[0]], c[t[2]] - c[t[0]])
+        out.append(t[::-1] if (n * (c[t].mean(0) - ctr)).sum() < 0 else t)
+    tri = np.array(out)
+    if inward:
+        tri = tri[:, ::-1]
+    return c[tri]
+
+
+def test_full_cast_toe_box():
+    # a boot as a 2 mm shell: outer box, inner (cavity) box facing in. The toe box inner face is 30 mm ahead (past REACH).
+    outer, inner = _box(-0.012, 0.032, 0.022), _box(-0.010, 0.030, 0.020, inward=True)
+    V = np.concatenate([outer, inner])
+    reach = gw.wc.REACH
+    O, D = np.array([[0.0, 0.0, 0.0]]), np.array([[1.0, 0.0, 0.0]])
+    back = np.concatenate([outer[(outer[:, :, 0] < 0).all(1)], inner[(inner[:, :, 0] < 0).all(1)]])   # K0 misses the far wall
+    t, fa, _, _ = gw.wc.cast(O, D, back[None])
+    g0, _, go0 = gw.wc.signed_gap(t, fa, reach)
+    g, _, go, _, _ = gw.full_cast(O, D, V, reach)
+    assert g0[0] < 0 or go0[0] < 0                                # the premise: the nearest-set cast alone reads through
+    assert not (g[0] < 0) and not (go[0] < 0)                     # enclosed: inside, not through
+    # truly past the outer face (outside the shell, 8 mm beyond its toe): reads through
+    O2 = np.array([[0.040, 0.0, 0.0]])
+    D2 = np.array([[1.0, 0.0, 0.0]])
+    g2, _, go2, _, _ = gw.full_cast(O2, D2, V, reach)
+    assert go2[0] < 0 or g2[0] < 0

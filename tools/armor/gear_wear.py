@@ -114,6 +114,37 @@ def skin_tuck(recs, keys):
     return TUCK_DEPTH * amount(t), t >= T_GONE
 
 
+
+ENCLOSE_SLOTS = ("boots", "gloves", "greaves", "bracers", "head")   # mirrors gear_tuck.ENCLOSE_SLOTS
+
+
+def full_cast(O, D, V, reach, chunk=48, cull=0.20):
+    """Rays O, D [n, 3] against ALL of one piece's faces V [m, 3, 3]: g, j (face index in V), go, u, v as cast/signed_gap
+    give them. A sample in a boot's toe box finds its inner face ahead, which the K0 nearest faces miss. Samples go in
+    spatially sorted chunks, each against the faces within `cull` m of the chunk (a ray only matters to `reach`, and the
+    forward face of a toe box is a few cm on), so cost and memory stay small."""
+    n = len(O)
+    g, go = np.full(n, np.nan), np.full(n, np.nan)
+    j, u, v = np.zeros(n, int), np.zeros(n), np.zeros(n)
+    if n == 0:
+        return g, j, go, u, v
+    cen = V.mean(1)
+    kd = cKDTree(cen)
+    order = np.lexsort(np.floor(O.T[::-1] / 0.05).astype(int))
+    for a in range(0, n, chunk):
+        sl = order[a:a + chunk]
+        rad = cull + float(np.linalg.norm(O[sl] - O[sl].mean(0), axis=1).max())
+        fi = np.asarray(kd.query_ball_point(O[sl].mean(0), rad), dtype=int)
+        if len(fi) == 0:
+            continue
+        k = len(sl)
+        t, fa, uu, vv = wc.cast(O[sl], D[sl], np.broadcast_to(V[fi], (k, len(fi), 3, 3)))
+        gg, jj, gg2 = wc.signed_gap(t, fa, reach)
+        r = np.arange(k)
+        g[sl], go[sl], j[sl] = gg, gg2, fi[jj]
+        u[sl], v[sl] = uu[r, jj], vv[r, jj]
+    return g, j, go, u, v
+
 class Welded:
     """Point normals of a fixed topology, welded by rest place (computed once)."""
 
@@ -474,7 +505,7 @@ class Check:
         self.lay_cache[key] = out
         return out
 
-    def rest_footprint(self, O, D, Bid):
+    def rest_footprint(self, O, D, Bid, skin=False):
         B, P0 = self.pc[Bid], self.sc.P0
         d0, _ = B["kdv"].query(O, distance_upper_bound=REACH + 0.01)
         keep = np.nonzero(np.isfinite(d0))[0]
@@ -485,18 +516,26 @@ class Check:
             ci = ci.reshape(len(ii), -1)
             t, fa, u, v = wc.cast(O[ii], D[ii], P0[B["T"][ci]])
             g, j, go = wc.signed_gap(t, fa, REACH)
+            hit_f = ci[np.arange(len(ii)), j]
+            u, v = u[np.arange(len(ii)), j], v[np.arange(len(ii)), j]
+            if skin and self.byid[Bid]["slot"] in ENCLOSE_SLOTS:
+                fl = np.nonzero((g < 0) | (go < 0))[0]
+                if len(fl):
+                    g2, j2, go2, u2, v2 = full_cast(O[ii[fl]], D[ii[fl]], P0[B["T"]], REACH)
+                    g, go, hit_f, u, v = g.copy(), go.copy(), hit_f.copy(), u.copy(), v.copy()
+                    g[fl], go[fl], hit_f[fl], u[fl], v[fl] = g2, go2, j2, u2, v2
             ok = np.isfinite(g)
             if not ok.any():
                 continue
             rr = np.nonzero(ok)[0]
-            hit = ci[rr, j[rr]]
+            hit = hit_f[rr]
             hp = O[ii[rr]] + D[ii[rr]] * g[rr, None]
             _, cand = B["kd"].query(hp, k=min(K, len(B["T"])))
             res["idx"].append(ii[rr])
             res["gap"].append(g[rr])
             res["out"].append(go[rr])
             res["hit"].append(hit)
-            res["bary"].append(np.c_[1 - u[rr, j[rr]] - v[rr, j[rr]], u[rr, j[rr]], v[rr, j[rr]]])
+            res["bary"].append(np.c_[1 - u[rr] - v[rr], u[rr], v[rr]])
             res["cand"].append(cand.reshape(len(rr), -1))
         if not res["idx"]:
             return None
@@ -512,7 +551,7 @@ class Check:
             sv = sc.isk[~gone]
             tsv = tk[~gone]
             O = P0[sv] - self.N0[sv] * tsv[:, None]
-            fp = self.rest_footprint(O + self.N0[sv] * 1e-5, self.N0[sv], i)
+            fp = self.rest_footprint(O + self.N0[sv] * 1e-5, self.N0[sv], i, skin=True)
             if fp is None:
                 continue
             x = {"A": "skin", "B": i, "kind": "skin", "fp": fp, "sup": support_of(self.byid[i]),
@@ -662,6 +701,13 @@ class Check:
                 gl, _, gol = wc.signed_gap(t, fa, REACH_POSED)
                 gr[lost], gor[lost] = gl, gol
                 x["lost"] += int((~np.isfinite(gl)).sum())
+            if x["A"] == "skin" and self.byid[x["B"]]["slot"] in ENCLOSE_SLOTS:
+                fl = np.nonzero((gr < 0) | (gor < 0))[0]
+                if len(fl):
+                    Sv = SvB[x["B"]]
+                    g2, _, go2, _, _ = full_cast(O[r[fl]], D[r[fl]], Pp[at[Sv]], REACH_POSED)
+                    gr, gor = gr.copy(), gor.copy()
+                    gr[fl], gor[fl] = g2, go2
             g[r], go[r] = gr, gor
         if "inner0" in x:
             x["raw_min_out"] = np.minimum(x["raw_min_out"], np.where(np.isfinite(go), go, np.inf))
