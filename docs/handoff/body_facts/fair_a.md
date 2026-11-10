@@ -71,3 +71,33 @@ Probe: survivorsunchained_inputs/scratch_p1_fair_a4/pb.py (env FA = params, DIAG
 - Facts (A, girdle part pose; probes scratch_p1_l23/cap1.py, cap2.py): the notch (2) box on A is carried by clavicle 0-0.62, upperarm_share 0.16-0.63, twist_01 0.04-0.34 (upperarm_l itself 0). There A's smoothed H is NOT below rest (rest p50 5.3/m, A 19.7, P5 27.7); A's normals sit 99 deg (p50) off upperarm_l's rigid-carried rest normals.
 - First setting (chain upperarm_l + share + twists, defaults above, turn 1.0): iron_vow@72:l fires 305 pts, patch 2046 -> 5397, >45 81 -> 254 (rest 80), flips 0 -> 58, move max 35 mm, cap H/H0 p50 0.89 -> 0.72: FAIL. abd150:l fires too (292): >45 63 (rest 79), flips 0 -> 1, H/H0 p50 0.62 -> 0.84.
 - So the full rigid turn (~100 deg off posed in the blend band) tears the patch. Next: turn 0 to 0.3 (rest curvature in the posed frame), band hi 0.8, flat 0.35, rim off; then the acceptance list in the brief (iron_vow@70..74 etc.).
+
+## Attempt 8 (lead 24's solver, 10 Nov): the curvature CEILING; NOT LIVE (P5 stays bit for bit, t22_row_tol kept)
+- Code (off by default, commit a3b6309c4; key absent: tag b5c042ac971ca915 unchanged): CAP keys `ceil`/`add` (fire where the fair WITHOUT the cap, H_P5, exceeds ceil x max(H0, H_A) + add and h_min; flat/rim unused), `mode` "lap" (Fair._cap_lap: the cap kc > 0 re-solved on P5's surface by cotangent Laplacian coordinates, `reps` passes, pull `alpha` to P5, all else held), `target` "clip" (P5's own Laplacian, its normal part cut by `clip` x the excess over the ceiling: the ceiling itself) / "rest" (rest Laplacian turned by P5's rotations) / "posed" (A's own; also for mode edges), `spare` (crumple from the non-cap seeds only). Chain: clavicle_{s}, upperarm_share_{s}, upperarm_twist_01_{s}, hi 0.8. Probes: survivorsunchained_inputs/scratch_p1_l24/cap3.py (CAPS = JSON list), diag3.py, t22.py, accept.log.
+- Pose names: iron_vow@70/73/74:l are not in poses.npz; @71:l and @72:l used.
+- Mechanism found: the over-curved points (H_P5 > 1.2 max(H0, H_A), 200 on iron_vow@72:l) sit 0-4 rows from A's own bad seeds, i.e. inside P5's crumple solve (the taut core meeting the held ring). The extra >45 edges any cap setting makes are in the cap core (kc = 1; P5 48 there, rest 6).
+- Edges mode with the ceiling (turn 0 / 0.3, rest or posed targets, spare): iron_vow@72:l >45 101-288, flips 2-77: lost. Lap "rest": >45 100-112, flips 0-6: lost. Lap "posed": >45 151-193: lost.
+- Best two (lap, clip, ceil 1.0, hi 0.8). C1 = alpha 0.03, grow 2, soft 4, clip 1, reps 4; C2 = alpha 0.003, grow 3, soft 6, clip 1, reps 10. Columns P5 -> C1 / C2: >45 on the union patch, flips, move max mm, cap H/H0 p50 on the fixed over-curved set (A's own in brackets):
+| pose | >45 | flips | move max | H/H0 p50 (A) |
+|---|---|---|---|---|
+| iron_vow@72:l | 85 -> 86 / 90 | 0 -> 0 / 0 | 16.9 -> 16.9 / 16.9 | 6.21 -> 5.04 / 3.35 (2.35) |
+| iron_vow@71:l | 68 -> 69 / 70 | 1 -> 1 / 1 | 11.1 | 1.88 -> 1.71 / 1.37 (1.09) |
+| iron_vow@78:l | 71 -> 70 / 72 | 0 | 9.6 | 2.07 -> 1.93 / 1.50 (1.08) |
+| iron_vow@83:l | 6-7 -> 6 / 7 | 0 | 2.5 | 1.22 -> 1.17 / 1.10 |
+| iron_vow@86:l | 2 -> 2 / 1 | 0 | 1.9 | (no set) |
+| x:hadd40:l | 93 -> 90 / 96 | 7 -> 8 / 9 | 11.5 -> 11.6 | 3.98 -> 2.87 / 2.01 (0.61) |
+| sword_heavy@10:l | 63 -> 63 / 63 | 0 | 7.7 | 2.45 -> 2.15 / 1.87 |
+| cast_bolt@0:l | 2 -> 3 / 3 | 0 | 6.8 -> 6.7 | 5.83 -> 5.19 / 4.60 |
+| crossbow_shoot@10:r | 19 -> 19 / 19 | 0 | 6.6 | 1.80 -> 1.75 / 1.62 |
+| x:abd120:l | 44 -> 44 / 47 | 0 | 15.0 -> 14.9 | 2.11 -> 1.74 / 1.32 |
+| x:abd150:l | 42-44 -> 42 / 44 | 0 | 13.0 | FIRES (266): 5.55 -> 5.04 / 3.75 |
+| x:abd170:l | 42-45 -> 44 / 50 | 0 | 22.5 | 3.51 -> 3.03 / 2.41 |
+| x:flex170:l | 42 -> 43 / 43 | 0 | 21.1 | 3.29 -> 2.78 / 2.08 |
+| leap@6:r | 89 -> 90 / 91 | 0 | 15.4 | 2.62 -> 2.49 / 1.90 |
+| leap@9:r | 47 -> 49 / 52 | 0 | 26.8 | 1.80 -> 1.65 / 1.46 |
+| leap@12:r | 47 -> 48 / 49 | 0 | 25.2 | 2.26 -> 1.91 / 1.58 |
+| leap@19:r | 12 -> 12 / 13 | 0 | 33.3 | 4.37 -> 3.53 / 2.84 |
+- Harder pushes on iron_vow@72:l (reps 20, alpha 0.001-0.003, clip 1-1.5): H 27.5 -> 16.2 per m (A 14.2) but >45 99-110; rings 0 clip: flips 1, max 172. A monotone trade: each 1/m of H taken off the cap adds folds in its core.
+- T22 (strip_rest.cmd_turned, iron_vow@72:l): band edge P5 1.97, C1 1.97, C2 1.98 (A's own 1.81, fill 2.07), though the cap fires in pose_ref (878 points). The band edge is a STRETCH ratio along the armpit map band (posed map edge / B rest), not a curvature: the cap ceiling cannot carry the t22_row_tol removal. The suite was not run (no setting to make live).
+- Misses vs the acceptance: >45 over P5 on most rows (+1..+8), hadd40 flips 7 -> 8 / 9, abd150 fires, T22 1.97 vs the 1.96 needed (unmoved); iron_vow@72 move max 16.9 is P5's own (the cap adds 0).
+- Next (if the lid stays open): the lid is P5's crumple core itself, so fix it there (the core's tension `shrink` per crumple share, or a biharmonic core solve so the core meets its ring with slope), and judge the T22 band edge as its own stretch problem in strip_rest's lay, not in fair_a.
