@@ -9,7 +9,7 @@
 - **Nothing was merged in coordinator #3's whole run.** Integration is this branch. All eight lanes are pushed, parked on their branches, with a handoff top block written for a lead that starts cold. No lead or helper is live. The agent ids in `survivorsunchained_inputs\scratch_coord3\agents.txt` belong to the old session: a new coordinator cannot reach them, it spawns fresh from the handoff tops.
 
 **THE OWNER'S FIRST READ (the morning list; nothing here was shown overnight):**
-1. **YOUR PICK, her fighting stance (A1).** Side by side at the play camera, the closest zoom and side on: `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_motion_a1\L14\gate2_half.jpg` (A Prowl | B Dare). Today's idle beside Prowl: `...\scratch_motion_a1\L13\gate_owner_half.jpg`. It replaces the stand at attention as her one drawn idle; every cut and skill starts and ends on it. A1 and main both read Prowl as the one that looks ready. Choose Prowl, Prowl with a change (shield higher, narrower, deeper), or Dare. The answer goes to A1, P7 (job 2) and M3.
+1. **PICKED 10 Nov ~05:40: PROWL, as is** (the owner's one word: "Prowl"). It is her one drawn idle; A1 builds every cut and skill from and back to it, P7 job 2 and M3 are unblocked on it, Dare is dropped. No longer waits on the owner; the pictures, for the record: **her fighting stance (A1).** Side by side at the play camera, the closest zoom and side on: `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_motion_a1\L14\gate2_half.jpg` (A Prowl | B Dare). Today's idle beside Prowl: `...\scratch_motion_a1\L13\gate_owner_half.jpg`. It replaces the stand at attention as her one drawn idle; every cut and skill starts and ends on it. A1 and main both read Prowl as the one that looks ready. Choose Prowl, Prowl with a change (shield higher, narrower, deeper), or Dare. The answer goes to A1, P7 (job 2) and M3.
 2. **YOUR CALL, Sunder's grip.** The card says "two-handed"; in the view she holds her normal sword and shield (no weapon swap; the `sunder_blade` greatsword belongs to the Warden Flare "The Long Cut"). (a) a one-hand heavy cut with her whole body behind it and the card reworded (what A1 builds on a bet), or (b) both hands on the hilt with the shield on her forearm. The answer goes to A1 and M3 (wording).
 3. **Wording for the chained cuts (M3 drafts, nothing shipped):** `survivorsunchained_inputs\scratch_combat_m3\lead14\wording_drafts.md`, plus the card's new tail "Damage 28 = base 28 · dealt as 12 every 0.7 s". Say yes or change.
 4. **Camera shake on crowd cuts (P7):** raised so a 37-body cut is felt (4-5 px at her, nothing on small cuts). Say if it is too much when you play.
@@ -36,8 +36,8 @@
 1. **M4** (Godot): one fix round on the two musts, r3c, suite, merge. Frees a worktree slot and unblocks P3 and M3's card line.
 2. **M3** (CPU, numeric: outside the judged count): the landed form, the reds, A/B inside 3%, then MR 3.
 3. **P1** (Blender / CPU): armpit right, T17, Gate T. It unblocks A1's neck, P2's cop and P3's wolf rig.
-4. **A1** once the owner has picked the stance (cut A retune, cut B, the strip); if there is no pick yet, **L1** takes the slot (her mask and pose on 09; GPU-heavy, so no second GPU lead beside it).
-Queue, in order: L1 (if not in the wave), P7 (the 1378 worker any time; the paint solver after A1's cut; the hold after M3's merge), P2 (after P1's cap-top run), P3 (after ui-m4's merge frees a game worktree).
+4. **A1** (the stance is PICKED: Prowl): cut A retune, cut B, the strip.
+Queue, in order: L1 (her mask and pose on 09; GPU-heavy), P7 (the 1378 worker any time; the paint solver after A1's cut; the hold after M3's merge), P2 (after P1's cap-top run), P3 (after ui-m4's merge frees a game worktree).
 
 **Restart prompt (paste into a NEW top-level session on Opus, started from `C:\Users\munch\Desktop\survivorsunchained`):**
 
