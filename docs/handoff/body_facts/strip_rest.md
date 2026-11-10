@@ -76,3 +76,60 @@ p4:shield_charge@20:l, w 0.00: map = fill, 0.89..1.22, 3.8 mm).
   both sides, a quality term, a faster `Unfold.locate`. With such a lay the map's worst edges fall to about A's.
 - `cmd_sheet` is unchanged and unrun (2 columns, no A column, no numbers line, no `--under`): a worker's job.
   Commands: `python tools/body/strip_rest.py target --snap --map [--poses a,b]` (98 s for the default 19 poses).
+
+## Lay 2 (carry map only): 10 Nov, lead 19's solver. NOT at the bar on the left; right 3 of 4 clean
+The STATE line at the top is superseded: `out/shoulder/strip_rest.npz` is now LAY 2 (adds u, h per side); the old
+linear lay is `out/shoulder/strip_rest_l18.npz` (`--lay l18` loads it; it reproduces to 0.000 mm through the new code).
+B's rest, weights, order: untouched. Cells as above: edge min..max, mean, off A mm, turned. A's own is under LAY 2's edges.
+| pose (elev, w) | fill | map, lay 2 | A's own | old map (l18): max, turned |
+|---|---|---|---|---|
+| x:abd120:l (120, 1) | 0.69..2.41, 1.35, 9.3, 0 | 0.60..2.84, 1.47, 1.4, 1 | 0.64..2.87, 1.34 | 2.78, 0 |
+| x:abd150:l (150, 1) | 0.43..2.69, 1.48, 25.5, 0 | 0.42..3.15, 1.60, 1.4, 1 | 0.44..2.82, 1.43 | 3.91, 1 |
+| x:abd170:l (170, 1) | 0.39..2.83, 1.52, 31.2, 2 | 0.42..3.14, 1.63, 1.4, 1 | 0.46..2.89, 1.46 | 3.81, 1 |
+| x:flex170:l (169, 1) | 0.25..2.75, 1.52, 33.6, 3 | 0.47..3.07, 1.62, 1.4, 1 | 0.50..2.86, 1.45 | 3.67, 1 |
+| p4:iron_vow@72:l (109, 1) | 0.22..2.33, 1.12, 20.6, 12 | 0.17..2.25, 1.14, 1.4, 2 | 0.18..2.10, 1.03 | 2.98, 3 |
+| p4:heroic_leap@7:r (98, 1) | 0.33..3.17, 1.23, 16.9, 12 | 0.26..2.63, 1.34, 1.3, 0 | 0.33..2.58, 1.25 | 2.89, 1 |
+| p4:heroic_leap@9:r (123, 1) | 0.27..3.60, 1.36, 17.7, 21 | 0.19..3.00, 1.52, 1.3, 0 | 0.28..2.92, 1.41 | 3.46, 4 |
+| p4:heroic_leap@19:r (171, 1) | 0.56..3.32, 1.51, 33.5, 2 | 0.46..3.26, 1.58, 1.3, 1 | 0.50..3.41, 1.45 | 4.55, 0 |
+| p4:heroic_leap@20:r (157, 1) | 0.51..3.33, 1.48, 33.5, 12 | 0.47..3.16, 1.54, 1.3, 0 | 0.51..3.23, 1.41 | 4.42, 0 |
+| x:abd90_int60:l (90, 1) | 0.62..2.11, 1.22, 6.9, 0 | 0.55..2.49, 1.36, 1.4, 1 | 0.67..2.35, 1.24 | 2.95, 2 |
+| crossbow_shoot@10:r (75, 0.74) | 0.32..1.73, 0.97, 7.2, 0 | 0.40..2.01, 1.02, 2.2, 0 | 0.34..1.50, 0.99 | 1.60, 0 |
+| cast_bolt@3:r (67, 0.47) | 0.62..1.76, 1.10, 6.9, 0 | 0.62..1.77, 1.12, 3.7, 0 | 0.65..1.72, 1.10 | 1.66, 0 |
+| axe_heavy@7:r (67, 0.47) | 0.57..2.14, 0.98, 6.4, 0 | 0.47..2.16, 1.00, 4.1, 0 | 0.63..1.76, 1.00 | - |
+| p4:heroic_leap@5:r (65, 0.43) | 0.56..1.85, 1.10, 9.9, 3 | 0.49..1.80, 1.11, 5.7, 0 | 0.58..1.87, 1.09 | - |
+| axe_back@3:l (65, 0.43) | 0.70..1.46, 1.06, 4.8, 0 | 0.56..1.48, 1.08, 3.0, 1 | 0.65..1.51, 1.07 | - |
+| p4:idle_warden_town@126:r (65, 0.42) | 0.51..1.87, 1.14, 5.4, 0 | 0.56..1.75, 1.14, 3.8, 0 | 0.61..1.78, 1.11 | - |
+| axe_back@2:l (65, 0.41) | 0.70..1.43, 1.09, 4.0, 0 | 0.64..1.56, 1.11, 2.8, 1 | 0.78..1.61, 1.08 | - |
+| p4:heroic_leap@25:r (60, 0.27) | 0.49..1.98, 1.08, 11.4, 0 | 0.54..1.88, 1.08, 8.2, 0 | 0.49..1.83, 1.09 | 1.95, 0 |
+- PROOF (4), exact: 49 of 141 poses have elevation <= 45 deg; max |map - fill| over them 0.0. Rest l / r: elevation
+  38.3, w 0.0, |map - fill| 0.0, fill off B's rest 0.00 mm; the lay rebuilt from the stored u matches the npz to 0.000 mm.
+- (1) TURNED = 0: met on 3 of 9 (leap 7, 9, 20). 1 on abd120 / 150 / 170, flex170 and leap@19; 2 on iron_vow@72.
+  Sum over the nine 7 (old lay 11). On the LEFT one triangle is turned in EVERY pose with w > 0, the mild ones too
+  (axe_back at w 0.41): it is the lay, not A's surface. Which triangle: not located (the build's own count of rest
+  triangles turned, against A's normals, is 0; the map tests against the carried B' normals).
+- (2) WORST EDGE <= A's own + 0.15: met on 6 of 9 (abd120 -0.03, iron_vow +0.15 on the line, leap 7 +0.05, 9 +0.08,
+  19 -0.15, 20 -0.07). NOT met: abd150 +0.33, abd170 +0.25, flex170 +0.21 (old lay +0.24, +0.19, +0.15 against ITS
+  A's own of 3.67, 3.62, 3.52; in absolute terms the worst edges fell 3.91 -> 3.15, 4.55 -> 3.26). The solver ends
+  with those limits still broken on the left (74 edge-poses over, worst +0.45 on its own estimate): with the - row on
+  the line the 48 poses cannot all be met. Which edges: not located. The map's MEAN is now 0.13-0.17 over A's mean on
+  the left (old 0.03-0.07): the lay's rest edges run 0.50..2.06 of B's (l), 0.47..1.94 (r).
+- (3) TRANSITION (8 poses, w 0.27..0.74): right 6 of 6 nothing turned; left 2 of 2 have the 1 turned triangle (fill
+  0). Worst edge over the fill's + 0.15 in 1 of 8: crossbow_shoot@10:r 2.01 against 1.73 (+0.28; A's own 1.50).
+  Shortest edge under the fill's by 0.14 at axe_back@3:l (the limit is 0.13), 0.10 axe_heavy@7, <= 0.07 elsewhere.
+  x:abd90_int60:l: 1 turned, 2.49 against the fill's 2.11 (+0.38; +0.14 over A's own).
+- (5) OFF A: 1.3-1.4 mm on all nine.
+What changed in the lay (`lay2`, general core; `relay(..., design=, side=, u_given=)`):
+1. It is judged IN THE POSES IT IS USED IN: rest spring on real lengths + per pose walls (posed edge / B's rest <= A's
+   own worst under the lay's edges + 0.05, >= the smaller of A's and the fill's shortest - 0.10) + the triangle
+   barrier in every pose of the side with w > 0 (l 48, r 44 of poses.npz; THE NINE NAMED ARE AMONG THEM, no held-out set).
+2. The apex row is walked onto the line on the rest surface alone (8 steps), slides along it, then 3 pose passes. Left:
+   the - side's bridge ends (cfg "side"; the nearer + side crushes on the line: rest edge 0.18, 1 rest triangle
+   turned; the - side walks on clean, 0.72..1.43, 0 turned) and a second snapping round (11 points on the line). Right:
+   the nearer (-) side, 10 points.
+3. `Unfold.locate` tries the 16 nearest triangles, then the full search (same answers); an energy call is 21 ms.
+Commands: `python tools/body/strip_rest.py build --snap [--only l|r] [--side l=-1,r=0] [--set '{"iters": 800}']` (about
+2-4 min a side; writes strip_rest.npz); `target --snap --map [--lay l18] [--poses a,b]` (about 100 s for the 19).
+Not done: ONE mesh edge loop as the apex row (in the region's edge list the bridge ends of either side are two paths
+plus loose points, `chain_order` prints it; no single-loop row was built); the new skin is split by the energy, not by
+a rule; no run over all 141 poses; no sheet; `cmd_target` (B' as a rest) and `build --relax` not rerun; the map is not
+in `Her`. `out/shoulder/strip_rest_l19_round1.npz` = the left before its second round (3.22 / 3.22 / 3.15, iron_vow 3 turned).

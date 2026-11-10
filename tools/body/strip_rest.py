@@ -123,24 +123,40 @@ class Unfold:
     def uv_of(self, face, bary):
         return np.einsum("nk,nkj->nj", bary, self.uv[self.tri[self.inv[face]]])
 
-    def locate(self, q, chunk=1500):
-        """(patch triangle, barycentrics, how far inside it) of plane points q."""
-        a, b, c = (self.uv[self.tri[:, i]] for i in range(3))
-        v0, v1 = b - a, c - a
-        den = v0[:, 0] * v1[:, 1] - v0[:, 1] * v1[:, 0]
-        T, Bt, sc = [], [], []
-        for s in range(0, len(q), chunk):
-            d = q[s:s + chunk, None, :] - a[None]
-            l1 = (d[..., 0] * v1[:, 1] - d[..., 1] * v1[:, 0]) / den
-            l2 = (v0[:, 0] * d[..., 1] - v0[:, 1] * d[..., 0]) / den
+    def locate(self, q, chunk=1500, k=16):
+        """(patch triangle, barycentrics, how far inside it) of plane points q. The k triangles nearest by centroid
+        are tried first; a point inside none of them gets the full search (the answer is the full search's)."""
+        if not hasattr(self, "_geo"):
+            a, b, c = (self.uv[self.tri[:, i]] for i in range(3))
+            v0, v1 = b - a, c - a
+            self._geo = a, v0, v1, v0[:, 0] * v1[:, 1] - v0[:, 1] * v1[:, 0], cKDTree((a + b + c) / 3)
+        a, v0, v1, den, tree = self._geo
+        q = np.asarray(q, float)
+
+        def best(d, v0, v1, den, ids):
+            l1 = (d[..., 0] * v1[..., 1] - d[..., 1] * v1[..., 0]) / den
+            l2 = (v0[..., 0] * d[..., 1] - v0[..., 1] * d[..., 0]) / den
             B = np.stack([1 - l1 - l2, l1, l2], 2)
             score = np.where(den > 0, B.min(2), -np.inf)
-            t = score.argmax(1)
-            bt = np.clip(B[np.arange(len(t)), t], 0, 1)
-            T.append(t)
-            Bt.append(bt / bt.sum(1, keepdims=True))
-            sc.append(score.max(1))
-        return np.concatenate(T), np.concatenate(Bt), np.concatenate(sc)
+            j, r = score.argmax(1), np.arange(len(d))
+            return (ids[r, j] if ids is not None else j), B[r, j], score[r, j]
+
+        cand = tree.query(q, k=min(k, len(a)))[1].reshape(len(q), -1)
+        t, B, sc = best(q[:, None] - a[cand], v0[cand], v1[cand], den[cand], cand)
+        out = np.nonzero(sc < 0)[0]
+        for s in range(0, len(out), chunk):
+            o = out[s:s + chunk]
+            t[o], B[o], sc[o] = best(q[o, None] - a[None], v0[None], v1[None], den[None], None)
+        bt = np.clip(B, 0, 1)
+        return t, bt / bt.sum(1, keepdims=True), sc
+
+    def normals(self, V):
+        """The patch points' smooth unit normals with the reference's vertices at V (a pose)."""
+        P, out = V[self.vid], np.zeros((len(self.vid), 3))
+        nr = np.cross(P[self.tri[:, 1]] - P[self.tri[:, 0]], P[self.tri[:, 2]] - P[self.tri[:, 0]])
+        for c in range(3):
+            np.add.at(out, self.tri[:, c], nr)
+        return ct._unit(out)
 
     def lift(self, q):
         t, bt, sc = self.locate(q)
@@ -297,14 +313,152 @@ def relax(unf, cur, u, h, P0, N0, band, snap, E, tris, lim=(0.82, 1.28), wall=50
     return place(x)
 
 
+def paths(unf, qa, qb, PS, k=12):
+    """[m, e]: the lengths of the straight plane segments qa -> qb on the patch in each of its m shapes PS [m, p, 3]."""
+    s = np.linspace(0, 1, k + 1)[None, :, None]
+    t, bt, _ = unf.locate((qa[:, None] + (qb - qa)[:, None] * s).reshape(-1, 2))
+    S = np.einsum("nk,mnkj->mnj", bt, PS[:, unf.tri[t]]).reshape(len(PS), len(qa), k + 1, 3)
+    return np.linalg.norm(np.diff(S, axis=2), axis=3).sum(2)
+
+
+def chain_order(pts, E, P):
+    """(the points pts in order as ONE simple path along the edges E, or None; the path's turn at each inner point, deg
+    off straight, in the shape P; the points' count of neighbours among pts)."""
+    nb = {int(p): set() for p in pts}
+    for a, b in E[np.isin(E, pts).all(1)]:
+        nb[int(a)].add(int(b))
+        nb[int(b)].add(int(a))
+    deg = sorted(len(v) for v in nb.values())
+    ends = [p for p, v in nb.items() if len(v) == 1]
+    if len(ends) != 2 or deg[-1] > 2:
+        return None, [], deg
+    out = [ends[0]]
+    while len(out) < len(nb):
+        nx = [q for q in nb[out[-1]] if q not in out]
+        if not nx:
+            return None, [], deg
+        out.append(nx[0])
+    d = ct._unit(np.diff(P[out], axis=0))
+    return out, np.degrees(np.arccos(np.clip((d[:-1] * d[1:]).sum(1), -1, 1))).round().astype(int).tolist(), deg
+
+
+def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), walk=(0.82, 1.28), wall=50.0,
+         fold=(0.3, 0.15), margin=(0.05, 0.10), steps=8, passes=3, iters=1500, log=print):
+    """The band's plane points for a CARRY MAP: where each band point rides on the reference, chosen so the band is
+    sound IN THE POSES IT IS USED IN, not as a rest. The snapped points (the apex row) stay on the curve and slide
+    along it; they are walked onto it from their feet in `steps`.
+
+    design: [(V the reference's vertices in a pose, Xf [n, 3] the mesh's own target there (the fill), Nf [n, 3] its
+    normals, w the map's share there)]. In each pose the band is (1 - w) Xf + w (foot(u) + h normal(u)).
+    min  sum_edges l0 (r0 - 1)^2 + walls on r0 at lim                          (r0: edge / rest on the rest surface)
+       + sum_poses sum_edges l0 wall (max(0, r - hi)^2 + max(0, lo - r)^2)     (r: the posed edge / the mesh's rest)
+       + sum_surfaces sum_triangles the barrier of `relax` under fold x the rest area (rest fold[0], poses fold[1])
+    hi = the reference's own worst stretch under the lay's edges in that pose (and the fill's worst where w < 1)
+    + margin[0]; lo = the smaller of the reference's own and the fill's shortest - margin[1]: the map may open as far
+    as the reference's skin does and no further. hi, lo and the triangles' facing are re-read each pass.
+    """
+    n, bi, m = len(P0), np.nonzero(band)[0], 1 + len(design)
+    fi, si = np.nonzero(band & ~snap)[0], np.nonzero(snap)[0]
+    pf, ps = np.searchsorted(bi, fi), np.searchsorted(bi, si)
+    i, j, ne, nf = E[:, 0], E[:, 1], len(E), len(tris)
+    l0 = np.linalg.norm(P0[i] - P0[j], axis=1) * 1000
+    PS = np.stack([unf.P] + [d[0][unf.vid] for d in design])
+    NS = np.stack([unf.nv] + [unf.normals(d[0]) for d in design])
+    W = np.array([1.0] + [float(d[3]) for d in design])
+    base = np.stack([P0] + [d[1] for d in design])
+    fillr = np.linalg.norm(base[:, i] - base[:, j], axis=2) * 1000 / l0
+    base[:, bi] *= (1 - W)[:, None, None]
+    NB = np.stack([N0] + [d[2] for d in design])
+    De = sp.coo_matrix((np.r_[np.ones(ne), -np.ones(ne)], (np.r_[np.arange(ne), np.arange(ne)], np.r_[i, j])), (ne, n)).tocsr()
+    Tc = [sp.coo_matrix((np.ones(nf), (np.arange(nf), tris[:, c])), (nf, n)).tocsr() for c in range(3)]
+    a0 = 0.5 * (np.cross(P0[tris[:, 1]] - P0[tris[:, 0]], P0[tris[:, 2]] - P0[tris[:, 0]]) * ct._unit(N0[tris].sum(1))).sum(1)
+    wt = wall * np.sqrt(np.abs(a0)) * 1000
+    pr = cur.project(u0[si])
+    off0, x = u0[si] - pr, np.r_[u0[fi].ravel(), cur.param(pr)] * 1000
+
+    def place(x, tau):
+        uu = u0.copy()
+        uu[fi], uu[si] = x[:2 * len(fi)].reshape(-1, 2) / 1000, cur.at(x[2 * len(fi):] / 1000) + tau * off0
+        return uu
+
+    def points(uu, mm, jac=False):
+        t, bt, _ = unf.locate(uu[bi])
+        tr = unf.tri[t]
+        A, B = PS[:mm, tr], NS[:mm, tr]
+        nr = np.einsum("nk,mnkj->mnj", bt, B)
+        ln = np.linalg.norm(nr, axis=2, keepdims=True)
+        N, X, J = nr / ln, base[:mm].copy(), None
+        X[:, bi] += W[:mm, None, None] * (np.einsum("nk,mnkj->mnj", bt, A) + h[None, :, None] * N)
+        if jac:
+            Mi = np.linalg.inv(np.stack([unf.uv[tr[:, 1]] - unf.uv[tr[:, 0]], unf.uv[tr[:, 2]] - unf.uv[tr[:, 0]]], 2))
+            col = lambda Y: np.stack([Y[:, :, 1] - Y[:, :, 0], Y[:, :, 2] - Y[:, :, 0]], 3) @ Mi
+            dn = col(B)
+            J = col(A) + h[None, :, None, None] * (dn - N[..., None] * np.einsum("mnk,mnkc->mnc", N, dn)[:, :, None, :]) / ln[..., None]
+        return X, N, J
+
+    def areas(X, nh):
+        a, b, c = (X[:, tris[:, k]] for k in range(3))
+        return 0.5 * (np.cross(b - a, c - a) * nh).sum(2) / a0, a, b, c
+
+    for step in range(steps + passes):
+        tau = max(1 - (step + 1) / steps, 0.0)
+        mm = 1 if step < steps else m                        # the walk onto the line: on the rest surface alone
+        lm, Ws = (walk, W[:1]) if mm == 1 else (lim, W)
+        fo = np.r_[0.5 if mm == 1 else fold[0], np.full(mm - 1, fold[1])][:, None]
+        kspr = np.r_[1.0, np.zeros(mm - 1)][:, None]
+        scat = lambda M, v: (M.T @ v.transpose(1, 0, 2).reshape(M.shape[0], -1)).reshape(n, mm, 3).transpose(1, 0, 2)
+        uu = place(x, tau)
+        X, N, _ = points(uu, mm)
+        NX = NB[:mm].copy()
+        NX[:, bi] = ct._unit((1 - Ws)[:, None, None] * NX[:, bi] + Ws[:, None, None] * N)
+        nh = ct._unit(NX[:, tris].sum(2))
+        soft = areas(X, nh)[0] <= 0.05
+        hi, lo = np.full((mm, 1), lm[1]), np.full((mm, 1), lm[0])
+        if mm > 1:
+            ln = paths(unf, uu[i], uu[j], PS)
+            own = ln[1:] / ln[:1]
+            hi[1:, 0] = np.where(W[1:] >= 1, own.max(1), np.maximum(own.max(1), fillr[1:].max(1))) + margin[0]
+            lo[1:, 0] = np.maximum(np.minimum(own.min(1), fillr[1:].min(1)) - margin[1], 0.1)
+
+        def f(x):
+            X, _, J = points(place(x, tau), mm, True)
+            d = X[:, i] - X[:, j]
+            L = np.linalg.norm(d, axis=2) * 1000
+            r = L / l0
+            over, under = np.maximum(r - hi, 0), np.maximum(lo - r, 0)
+            e = (l0 * (kspr * (r - 1) ** 2 + wall * (over ** 2 + under ** 2))).sum()
+            gX = scat(De, (2 * kspr * (r - 1) + 2 * wall * (over - under))[..., None] * d * (1000 / np.maximum(L, 1e-9))[..., None])
+            q, a, b, c = areas(X, nh)
+            qc = np.maximum(q, 1e-3)
+            pen = np.maximum(np.where(soft, fo - q, fo / qc - 1), 0)
+            e += (wt * pen ** 2).sum()
+            k = (wt * pen * np.where(soft, -1.0, -fo / qc ** 2 * (q > 1e-3)) / a0 / 1000)[..., None]
+            gX += scat(Tc[0], k * np.cross(nh, c - b)) + scat(Tc[1], k * np.cross(nh, a - c)) + scat(Tc[2], k * np.cross(nh, b - a))
+            gu = np.einsum("m,mnkc,mnk->nc", Ws, J, gX[:, bi])
+            return e, np.r_[gu[pf].ravel(), (gu[ps] * cur.tangent(x[2 * len(fi):] / 1000)).sum(1)]
+
+        res = minimize(f, x, jac=True, method="L-BFGS-B", options={"maxiter": iters, "maxfun": 2 * iters, "ftol": 1e-12, "gtol": 1e-7})
+        x = res.x
+        if log and (mm > 1 or tau == 0):
+            Xn = points(place(x, tau), mm)[0]
+            rr = np.linalg.norm(Xn[:, i] - Xn[:, j], axis=2) * 1000 / l0
+            log(f"   lay2 step {step} tau {tau:.2f}: e {res.fun:.1f}, {res.nit} its; turned at start (rest, poses) {int(soft[0].sum())}, {int(soft[1:].sum())};"
+                f" rest edge {rr[0].min():.2f}..{rr[0].max():.2f}" + (f"; poses over hi {int((rr[1:] > hi[1:]).sum())} (worst by {(rr[1:] - hi[1:]).max():.2f}),"
+                f" under lo {int((rr[1:] < lo[1:]).sum())}; A's own worst over the poses {own.max():.2f}" if mm > 1 else ""), flush=True)
+    return place(x, 0.0)
+
+
 def relay(P0, edges, tris, band, bridge, face, bary, ref_V0, ref_T, reach=0.03, kappa=1.2, deg=3, ext=0.01, part=0.9,
-          rounds=4, sweeps=40, lim=(0.82, 1.28), wall=50.0, fold=0.5):
+          rounds=4, sweeps=40, lim=(0.82, 1.28), wall=50.0, fold=0.5, side=0, design=None, lay=None, u_given=None):
     """The band's points re-laid on the reference's rest surface: {"P1": the new points [n, 3], ...stats}.
 
     P0 [n, 3], edges [m, 2], tris [f, 3]: the mesh's rest points and topology; band [n] bool: the points that may move;
     bridge [nb, 2]: its edges that span the reference's fold; face, bary [n]: the rest correspondence (each point's
     reference triangle and barycentrics). kappa: an edge whose path on the reference is over kappa x its chord counts as
     bridging. part: a height is cut until the foot is the closest reference point to within this part of the height.
+    side: which bridge ends make the apex row (0: the nearer side, +1 / -1: that side of the apex line).
+    design (+ lay: lay2's keywords): the lay is lay2's (a carry map, judged in the poses of `design`).
+    u_given [n, 2]: a stored lay's plane points; nothing is solved, the result is rebuilt from them.
     """
     P0, E, tris = np.asarray(P0, float), np.asarray(edges, np.int64), np.asarray(tris, np.int64)
     V0, T = np.asarray(ref_V0, float), np.asarray(ref_T, np.int64)
@@ -325,8 +479,9 @@ def relay(P0, edges, tris, band, bridge, face, bary, ref_V0, ref_T, reach=0.03, 
     be = np.unique(bridge)
     sd0 = cur.side(u0)
     pos, neg = be[sd0[be] > 0], be[sd0[be] <= 0]
-    X = pos if np.abs(sd0[pos]).mean() <= np.abs(sd0[neg]).mean() else neg
+    X = (pos if side > 0 else neg) if side else pos if np.abs(sd0[pos]).mean() <= np.abs(sd0[neg]).mean() else neg
     sx = 1.0 if X is pos else -1.0
+    chains = {nm: chain_order(x, E, P0) + (float(np.abs(sd0[x]).mean()),) for nm, x in (("+", pos), ("-", neg))}
     Eb = E[band[E].any(1)]
     i, j = Eb[:, 0], Eb[:, 1]
     l0 = np.linalg.norm(P0[i] - P0[j], axis=1)
@@ -344,14 +499,14 @@ def relay(P0, edges, tris, band, bridge, face, bary, ref_V0, ref_T, reach=0.03, 
     u, bi = u0.copy(), np.nonzero(band)[0]
     Db = D[:, bi]
     hb = splu((Db.T @ Wd @ Db).tocsc()).solve(Db.T @ (Wd @ -(D @ np.where(band, 0.0, h0))))
-    for rnd in range(rounds):
+    for rnd in range(1 if u_given is not None else rounds):
         fi, si = np.nonzero(band & ~snap)[0], np.nonzero(snap)[0]
         Df = D[:, fi]
         K = splu((Df.T @ Wd @ Df).tocsc())
         u[si] = cur.project(u[si])
         fixed = np.ones(n, bool)
         fixed[fi] = False
-        for _ in range(sweeps):
+        for _ in range(0 if u_given is not None or design is not None else sweeps):
             rhs = Df.T @ (Wd @ (t - D @ np.where(fixed[:, None], u, 0.0)))
             u[fi] = np.stack([K.solve(np.ascontiguousarray(rhs[:, c])) for c in range(2)], 1)
             want = np.zeros((n, 2))
@@ -361,7 +516,11 @@ def relay(P0, edges, tris, band, bridge, face, bary, ref_V0, ref_T, reach=0.03, 
             step, u[si] = np.abs(new - u[si]).max(), new
             if step < 1e-7:
                 break
-        if lim is not None:                                  # real lengths decide: from the feet (no triangle turned),
+        if u_given is not None:
+            u = np.asarray(u_given, float).copy()
+        elif design is not None:
+            u = lay2(unf, cur, u0, hb, P0, N0, band, snap, Eb, tb, design, **(lay or {}))
+        elif lim is not None:                                # real lengths decide: from the feet (no triangle turned),
             u = u0.copy()                                    # the apex row WALKED onto its line (a jump turns triangles)
             off, tau, step = u0[si] - cur.project(u0[si]), 1.0, 0.25
             while tau > 0:
@@ -382,7 +541,7 @@ def relay(P0, edges, tris, band, bridge, face, bary, ref_V0, ref_T, reach=0.03, 
         s1 = cur.side(u)
         cross = (k1 > kappa) & (s1[i] * s1[j] < 0) & ~snap[i] & ~snap[j] & band[i] & band[j]
         add = np.unique(np.where(sx * s1[i[cross]] > 0, i[cross], j[cross]))
-        if not len(add) or rnd == rounds - 1:
+        if not len(add) or rnd == rounds - 1 or u_given is not None:
             break
         snap[add] = True
     Nf = N0.copy()
@@ -408,7 +567,7 @@ def relay(P0, edges, tris, band, bridge, face, bary, ref_V0, ref_T, reach=0.03, 
             "flip": int((np.sign(ct.facing(tb, P1, Nf)) != np.sign(ct.facing(tb, P0, N0))).sum()), "h": h, "cut": int(cut.sum()),
             "score": float(score.min()), "depth": depth, "apex_res": cur.res, "lscm_flipped": unf.flipped,
             "scale": np.percentile(unf.scale, [1, 50, 99]), "rounds": rnd + 1, "bridging": int(isb.sum()), "unf": unf,
-            "isb": isb, "l0": l0, "cur": cur, "ring": np.nonzero(ring)[0],
+            "isb": isb, "l0": l0, "cur": cur, "ring": np.nonzero(ring)[0], "chains": chains, "cross": int(cross.sum()), "sx": sx,
             "qual": (float(tri_quality(P0, tb).min()), float(tri_quality(P1, tb).min()))}
 
 
@@ -436,6 +595,11 @@ HER = {
     "part": 0.9,
     "lim": None,                         # None: the linear lay (the npz on disk). build --relax: (0.82, 1.28), real lengths
     "out": "strip_rest.npz",
+    "lay": 2,                            # 2: lay2, a carry map judged in the poses it is used in. 1 (--lay l18): the old
+    "old_out": "strip_rest_l18.npz",     #    linear lay, kept in this file
+    "side": {"l": -1, "r": 0},           # the apex row: 0 the nearer side's bridge ends, +1 / -1 that side of the line
+                                         # (l: the nearer side, +, crushes on the line: rest edge 0.18; - walks on clean)
+    "lay2": {},                          # lay2's keywords (lim, wall, fold, margin, steps, passes, iters)
     "map_elev": (45.0, 90.0),            # target --map: the lay's share, smoothstep of the arm's elevation over these deg
     "map_near": (45, 60, 67.5, 75, 90),  # ... also print the pose nearest each of these elevations
     "dirs": 2000,                        # outside directions of the visibility proof
@@ -461,15 +625,31 @@ class HerStrip:
         tr = np.asarray(self.md.S[s]["tr"], np.int64)
         return tr[(tr < len(self.pts[s])).all(1)]
 
-    def relay(self, s, rows):
+    def design(self, s):
+        """lay2's poses for side s: every pose of poses.npz where the map has a share (elevation over map_elev[0])."""
+        z, car, out = np.load(rt.OUT / "poses.npz"), self.h.car[s], []
+        for k in np.nonzero(np.array([str(x) for x in z["side"]]) == s)[0]:
+            w = share(elevation(self, z["G"][k], s), *self.cfg["map_elev"])
+            if w > 0:
+                Va, _ = self.h.pose_ref(z["G"][k])
+                out.append((Va, car.carry(Va), np.einsum("nij,nj->ni", car.rotations(Va), self.h.N0[self.pts[s]]), w))
+        return out
+
+    def relay(self, s, rows, u=None):
+        """The lay of side s: built (cfg["lay"]: 2 = lay2 on the design poses, 1 = the old linear lay), or rebuilt from
+        stored plane points u."""
         car, n = self.h.car[s], len(self.pts[s])
         band = ct.rows_around(n, self.E[s], np.unique(car.bridge), rows) & (np.asarray(self.md.beta) >= 1)
         c = self.cfg
+        new = c["lay"] == 2 and u is None
         return relay(self.bd.V0[self.pts[s]], self.E[s], self.tris(s), band, car.bridge, car.face, car.bary, self.Ab.V0,
-                     self.Ab.T, c["reach"], c["kappa"], c["deg"], c["ext"], c["part"], lim=c["lim"])
+                     self.Ab.T, c["reach"], c["kappa"], c["deg"], c["ext"], c["part"], lim=c["lim"],
+                     rounds=2 if new else 4, side=c["side"][s] if c["lay"] == 2 else 0,
+                     design=self.design(s) if new else None, lay=c["lay2"], u_given=u)
 
     def load(self):
         z = np.load(rt.OUT / self.cfg["out"])
+        self.u = {s: z[f"u_{s}"] for s in "lr"} if "u_l" in z.files else None
         self.loc = {s: z[f"loc_{s}"] for s in "lr"}
         self.P1 = {}
         for s in "lr":
@@ -500,15 +680,29 @@ def pct(x, q=(50, 95, 100)):
     return " / ".join(f"{v:.2f}" for v in np.percentile(x, q))
 
 
+def share(e, lo, hi):
+    """The map's share at arm elevation e: smoothstep over lo..hi deg (cmd_map's weight)."""
+    t = float(np.clip((e - lo) / (hi - lo), 0, 1))
+    return t * t * (3 - 2 * t)
+
+
 def cmd_build(hs, rows):
     import ray
     import region_shape as rs
     md, bd, cfg, out, R = hs.md, hs.bd, hs.cfg, {}, {}
+    old = np.load(rt.OUT / cfg["out"]) if cfg.get("only") else None
     for s in "lr":
-        r = R[s] = relay_s = hs.relay(s, rows)
+        r = R[s] = hs.relay(s, rows, old[f"u_{s}"] if old is not None and s not in cfg["only"] else None)
         b, ids = r["band"], md.S[s]["ids"]
         out.update({f"ids_{s}": ids[b], f"loc_{s}": b, f"V0_{s}": bd.V0[hs.pts[s]][b], f"V1_{s}": r["P1"][b],
                     f"snap_{s}": r["snap"], f"bridge_{s}": hs.h.car[s].bridge})
+        if cfg["lay"] == 2:
+            out.update({f"u_{s}": r["u"], f"h_{s}": r["h"]})
+        for nm, (order, turn, deg, off) in r["chains"].items():
+            print(f"   bridge ends on the {nm} side{' (THE APEX ROW)' if (nm == '+') == (r['sx'] > 0) else ''}: {off * 1000:.1f} mm off the line (plane); "
+                  + (f"one path {order}, turns deg {turn}" if order else f"NOT one path (neighbours among them {deg})"))
+        tq = tri_quality(r["P1"], r["tris"])
+        print(f"   edges still crossing the line with a path over kappa: {r['cross']}; triangle quality min old / new {r['qual'][0]:.3f} / {r['qual'][1]:.3f}, new under 0.2: {(tq < 0.2).sum()}")
         part = np.bincount(md.part[ids[b]], minlength=len(md.parts))
         brd = np.nonzero(np.asarray(md.why) == 1)[0]
         print(f"== {s}: band {len(b)} points moved (rows {rows}, beta min {md.beta[b].min():.2f}, rows from the region's edge min {int(md.depth[b].min())}),"
@@ -530,6 +724,8 @@ def cmd_build(hs, rows):
         feet = np.linalg.norm((hs.P1[s] - c.d0)[hs.loc[s]] - (R[s]["P1"][hs.loc[s]] - R[s]["h"][:, None] * R[s]["Nf"][hs.loc[s]]), axis=1) * 1000
         print(f"   B' carrier {s} (carried alone, no pocket): the 60 deg normal rule still names {len(c.bridge)} edges; band |d0| mm p50 / p95 / max {pct(d0)};"
               f" its feet off the laid feet max {feet.max():.2f} mm; ok False {(~c.ok[hs.loc[s]]).sum()}")
+    if cfg["lay"] == 2:                                      # a carry map only: B's rest is not changed, nothing to hide
+        return
     # hidden at rest: rays from outside, and the outline
     dirs = sphere_dirs(cfg["dirs"])
     up = dirs @ np.asarray(bd.frame.up) > cfg["game_up"]
@@ -644,7 +840,7 @@ def cmd_map(hs, poses):
     for k in sel:
         s = sides[k]
         if s not in R:
-            r = hs.relay(s, cfg["rows"])
+            r = hs.relay(s, cfg["rows"], hs.u[s] if hs.u else None)
             i, j = r["edges"][:, 0], r["edges"][:, 1]
             R[s] = (r["unf"], r["u"][i], r["u"][j], r["unf"].length(r["u"][i], r["u"][j]), float(np.abs(r["P1"] - hs.P1[s]).max()))
         Va, Xf, Nf, Xm, Nm = targets(z["G"][k], s, w[k])
@@ -792,8 +988,17 @@ def main():
     ap.add_argument("--map", action="store_true", help="target: the lay as a carry map blended in by arm elevation, B's rest kept")
     ap.add_argument("--out", default="armpit_map", help="sheet: output name")
     ap.add_argument("--poses", default="", help="comma-separated pose names, or 'named' (the config's list); none: all of poses.npz")
+    ap.add_argument("--lay", default="l19", choices=["l18", "l19"], help="l19: lay 2 (out/shoulder/strip_rest.npz); l18: the old linear lay (strip_rest_l18.npz)")
+    ap.add_argument("--side", default="", help="build: the apex row's side of the line per body side, e.g. l=-1,r=1 (0: the nearer)")
+    ap.add_argument("--only", default="", help="build: lay this side only (l or r), the other kept from the npz on disk")
+    ap.add_argument("--set", default="", help="build: lay2 keywords as JSON, e.g. {\"iters\": 800}")
     a = ap.parse_args()
     HER["lim"] = (0.82, 1.28) if a.relax else None
+    if a.lay == "l18":
+        HER["lay"], HER["out"] = 1, HER["old_out"]
+    HER["only"] = a.only
+    HER["side"].update({k: int(v) for k, v in (x.split("=") for x in a.side.split(",") if x)})
+    HER["lay2"] = {**HER["lay2"], **{k: tuple(v) if isinstance(v, list) else v for k, v in json.loads(a.set or "{}").items()}}
     print(f"carried_target: {ct.__file__}")
     hs = HerStrip()
     if a.cmd == "build":
