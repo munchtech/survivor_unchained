@@ -1,4 +1,7 @@
-"""Our own ground materials for the Godot terrain (shaders/terrain.gdshader).
+"""RETIRED (L1 C1, 5 Nov): the photo path. The ground is painted from nothing by tools/look/ground_paint.py
+(godot/data/look/ground.json); its photo-derived maps left the repo. Kept for the record only: do not run it into godot/art.
+
+Our own ground materials for the Godot terrain (shaders/terrain.gdshader).
 
     python tools/assets/env_ground.py [--only setts]
 

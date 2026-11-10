@@ -230,13 +230,26 @@ void fragment() {
         return main;
     }
 
+    /// <summary>(L1 lead 23, LINES) The quit frees MarkPass's mask on the render thread (QuitPath) and the frame after still
+    /// draws this layer: the composite's "marks" then pointed at a freed RID ("Texture (binding: 1) is not a valid texture"
+    /// at uniform_set_create, twice a frame, the 4 errors at quit since lead 21's QuitPath). Unbound first, never bound again.</summary>
+    public static void DropMarks()
+    {
+        marksDropped = true;
+        if (one == null || !IsInstanceValid(one) || one.comp == null) return;
+        one.comp.SetShaderParameter("marks_on", 0f);
+        one.comp.SetShaderParameter("marks", default(Variant));
+        one.maskTex = null;
+    }
+    static bool marksDropped;
+
     public override void _Process(double delta)
     {
         if (Follow() is not { } main) return;
         FollowFigures();
         if (FxWorldDepth.On) HookWorldDepth(main);
         // the marks over this layer: their coverage this frame (none up: the pass did not run, its mask is stale)
-        bool marks = MarksOver && MarkPass.MaskLive && MarkPass.Mask.IsValid;
+        bool marks = !marksDropped && MarksOver && MarkPass.MaskLive && MarkPass.Mask.IsValid;
         if (marks)
         {
             maskTex ??= new Texture2Drd();

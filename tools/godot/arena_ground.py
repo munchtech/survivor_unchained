@@ -1,4 +1,7 @@
-"""Each arena's own ground: photoscanned CC0 sets from Poly Haven, stacked
+"""RETIRED (L1 C1, 5 Nov): the photo path. The ground is painted from nothing by tools/look/ground_paint.py
+(godot/data/look/ground.json); its photo-derived maps left the repo. Kept for the record only: do not run it into godot/art.
+
+Each arena's own ground: photoscanned CC0 sets from Poly Haven, stacked
 per place into the texture arrays the arena's ground shader reads
 (shaders/arena_ground.gdshader, View/ArenaGround.cs).
 

@@ -638,140 +638,14 @@ def tex(species):
     print(out)
 
 
-# ---------------------------------------------------------------- step D's grass (E4h): painted clump cards
-
-GC = 256            # a grass clump's cell (the atlas: 4 x 2 cells, 1024 x 512)
-
-
-def grass_kinds():
-    import json
-    with open(os.path.join(ROOT, 'godot', 'data', 'flora_species.json'), encoding='utf-8') as f:
-        return json.load(f)['grass']['kinds']
-
-
-def grass_clump(seed, olive, cool, flowers=None, nflowers=0, form=0):
-    """One grass clump in a GC x GC cell (rgb, alpha, height): three to five blades from one root, never a fan of
-    even spokes: the roots a little apart, the clump leaning to one side (its blades' leans uneven, one or two arching
-    over), each blade tapered to a point, dark at its root (the ground's shadow in the clump) and lighter to its tip,
-    a muted olive or a blue-green per blade; two or three short dark blades at the foot bulk the base. With flowers,
-    a few small muted heads on thin stems over the clump (never confetti). Seen side-on (the card faces the camera),
-    so at the play camera a clump is a tuft leaning its own way, not a star. Drawn at twice the size and halved."""
-    import cv2
-    rng = np.random.default_rng(seed)
-    S = 2
-    W = H = GC * S
-    cimg = np.zeros((H, W, 3), np.uint8)
-    a8 = np.zeros((H, W), np.uint8)
-    h8 = np.zeros((H, W), np.uint8)
-    po, pc = [srgb(h) for h in olive], [srgb(h) for h in cool]
-
-    def shade(v, m):
-        v = float(np.clip(v, 0, 0.999)) * (len(po) - 1)
-        i = int(v); f = v - i
-        a = po[i] * (1 - f) + po[i + 1] * f
-        b = pc[i] * (1 - f) + pc[i + 1] * f
-        return a * (1 - m) + b * m
-
-    def c8(c):
-        return (np.clip(c, 0, 1) * 255).astype(int).tolist()
-
-    side = rng.choice([-1, 1])
-    cx = W / 2 + rng.uniform(-0.04, 0.04) * W
-    n = int(rng.integers(4, 6))
-    # blades: (root x, lean rad from upright, length, curl, root width, hue mix, value offset)
-    # the clump's form (a cell each, so no two read alike): 0 upright and narrow, 1 spreading and low, 2 one long
-    # blade arching over the rest, 3 leaning hard to one side
-    spread, lmin, lmax, lean0 = [(0.3, 0.6, 0.92, 0.08), (0.75, 0.38, 0.62, 0.1), (0.45, 0.45, 0.75, 0.15), (0.35, 0.5, 0.82, 0.45)][form % 4]
-    leans = np.sort(rng.uniform(-spread, spread, n)) + side * lean0 + rng.normal(0, 0.1, n)
-    hm = rng.uniform(0, 1) ** 1.6       # (mostly olive; the blue-green comes with the low ground and the night)
-    blades = []
-    for k in range(n):
-        ln = H * rng.uniform(lmin, lmax)
-        curl = np.sign(leans[k] + 1e-3) * rng.uniform(0.2, 0.7)
-        if (form % 4 == 2 and k == n - 1) or rng.random() < 0.15:      # one arching over
-            curl = side * rng.uniform(1.3, 1.8); ln = H * rng.uniform(0.75, 0.9)
-        blades.append((cx + rng.uniform(-0.06, 0.06) * W + leans[k] * 0.05 * W, leans[k], ln, curl,
-                       rng.uniform(13, 18) * S, float(np.clip(hm + rng.normal(0, 0.28), 0, 1)), rng.uniform(-0.08, 0.06)))
-    # the short dark blades at the foot (drawn first: behind)
-    foot = [(cx + rng.uniform(-0.08, 0.08) * W, rng.uniform(-0.9, 0.9), H * rng.uniform(0.2, 0.36), rng.uniform(-0.6, 0.6),
-             rng.uniform(11, 15) * S, float(np.clip(hm + rng.normal(0, 0.2), 0, 1)), -0.12) for _ in range(int(rng.integers(3, 6)))]
-    order = foot + sorted(blades, key=lambda b: b[2])
-    base_y = H - 6 * S
-    for (rx, lean, ln, curl, w0, m, vb) in order:
-        N = 28
-        pts = []
-        p = np.array([rx, base_y], np.float64)
-        for i in range(N + 1):
-            pts.append(p.copy())
-            a = lean + curl * (i / N) ** 2
-            p = p + np.array([math.sin(a), -math.cos(a)]) * ln / N
-            p[0] = np.clip(p[0], 0.06 * W, 0.94 * W); p[1] = max(p[1], 0.04 * H)
-        pts = np.array(pts)
-        tw = rng.uniform(0, 6.28)
-        wd = lambda s: w0 * 0.5 * (1 - s) ** 0.85 * (1 + 0.08 * math.sin(9 * s + tw))
-        for i in range(N):
-            s0, s1 = i / N, (i + 1) / N
-            d = pts[i + 1] - pts[i]
-            nv = np.array([-d[1], d[0]]) / max(np.linalg.norm(d), 1e-6)
-            q = np.array([pts[i] + nv * wd(s0), pts[i + 1] + nv * wd(s1), pts[i + 1] - nv * wd(s1), pts[i] - nv * wd(s0)])
-            sm = (s0 + s1) / 2
-            qi = np.round(q * 4).astype(np.int32)
-            cv2.fillConvexPoly(cimg, qi, c8(shade(0.06 + 0.86 * sm ** 0.75 + vb + rng.normal(0, 0.02), m)), cv2.LINE_AA, 2)
-            cv2.fillConvexPoly(a8, qi, 255, cv2.LINE_AA, 2)
-            cv2.fillConvexPoly(h8, qi, int(90 + 140 * sm), cv2.LINE_AA, 2)
-        # the blade's lit edge: a thin lighter stroke along one side of its upper half (painted, not a midrib)
-        for i in range(N // 2, N - 2):
-            s = i / N
-            d = pts[i + 1] - pts[i]
-            nv = np.array([-d[1], d[0]]) / max(np.linalg.norm(d), 1e-6) * (-side)
-            off = nv * wd(s) * 0.5
-            cv2.line(cimg, tuple(np.round(pts[i] + off).astype(int)), tuple(np.round(pts[i + 1] + off).astype(int)),
-                     c8(shade(0.2 + 0.86 * s ** 0.75 + vb, m) * 1.08), max(2, int(w0 * 0.2 * (1 - s))), cv2.LINE_AA)
-    if flowers and nflowers:
-        # a few small heads on thin stems, over the clump: muted cream or pale lilac (one colour a clump)
-        fc = srgb(flowers[int(rng.integers(0, len(flowers)))])
-        for k in range(nflowers):
-            fx = cx + rng.uniform(-0.22, 0.22) * W
-            top = H * rng.uniform(0.3, 0.5)
-            r0 = (int(cx + (fx - cx) * 0.3), int(base_y))
-            cv2.line(cimg, r0, (int(fx), int(top)), c8(shade(0.35, hm)), 3 * S, cv2.LINE_AA)
-            cv2.line(a8, r0, (int(fx), int(top)), 255, 3 * S, cv2.LINE_AA)
-            for j in range(int(rng.integers(4, 7))):
-                r = int(rng.uniform(3.5, 5.5) * S)
-                ctr = (int(fx + rng.normal(0, 5) * S), int(top + rng.normal(0, 3.5) * S))
-                cv2.circle(cimg, ctr, r, c8(fc * rng.uniform(0.82, 1.0)), -1, cv2.LINE_AA)
-                cv2.circle(a8, ctr, r, 255, -1, cv2.LINE_AA)
-                cv2.circle(h8, ctr, r, 230, -1, cv2.LINE_AA)
-    col = cv2.resize(cimg.astype(np.float32) / 255, (GC, GC), interpolation=cv2.INTER_AREA)
-    al = cv2.resize(a8.astype(np.float32) / 255, (GC, GC), interpolation=cv2.INTER_AREA)
-    hg = cv2.resize(h8.astype(np.float32) / 255, (GC, GC), interpolation=cv2.INTER_AREA)
-    col = np.clip(col / np.maximum(al, 1e-3)[..., None], 0, 1) * (al > 0)[..., None]
-    return col, al, cv2.GaussianBlur(hg, (5, 5), 1.2)
-
+# ---------------------------------------------------------------- the grass cards' atlas: retired here (L1 W2 wild)
+# FROM (c) L1 C1 owns grass_meadow_atlas.png (tools/look/ground_paint.py atlas, ground.json "grass_atlas": MB4's big
+# flat clumps); E4h's thin-blade painter that wrote the same file is removed, so a tree build can never overwrite it.
+# `env_trees.py tex --species grass` now runs C1's command.
 
 def grass_tex():
-    """Each grass kind's atlas (flora_species.json "grass" "kinds"): 4 x 2 clump cells, the last `flower_cells` of
-    them with a few heads; painted as the trees' sprays are (paint_tex, foliage): grass_<kind>_atlas.png. The cards
-    themselves are made in the game (World/Grass.cs), not here."""
-    sys.path.insert(0, os.path.dirname(__file__))
-    import paint_tex as pt
-    from PIL import Image
-    os.makedirs(OUT, exist_ok=True)
-    pf = pt.preset('foliage', {})
-    for ki, (name, k) in enumerate(grass_kinds().items()):
-        atlas = np.zeros((GC * 2, GC * 4, 4), np.float32)
-        nf = int(k.get('flower_cells', 0))
-        for j in range(8):
-            fl = j >= 8 - nf
-            cc, a, hh = grass_clump(700 + j * 19 + ki * 101, k['olive'], k['cool'], k.get('flowers'), 3 if fl else 0, form=j)
-            cc = bleed(cc, a)
-            p = pt.paint(cc, normals(hh, 2.0), pf)
-            r, c = j // 4, j % 4
-            atlas[r * GC:(r + 1) * GC, c * GC:(c + 1) * GC, :3] = p
-            atlas[r * GC:(r + 1) * GC, c * GC:(c + 1) * GC, 3] = a
-        out = os.path.join(OUT, f"{k['atlas']}_atlas.png")
-        Image.fromarray((np.clip(atlas, 0, 1) * 255 + 0.5).astype(np.uint8), 'RGBA').save(out)
-        print(out)
+    import subprocess
+    subprocess.run([sys.executable, os.path.join(ROOT, 'tools', 'look', 'ground_paint.py'), 'atlas'], check=True, cwd=ROOT)
 
 
 # ---------------------------------------------------------------- geometry (Blender)
@@ -1150,8 +1024,8 @@ class Oval:
         return 0.35 + 0.65 * float(smooth(0.25, 0.95, np.linalg.norm(self.rel(p))))
 
 
-def tube(b, pts, radii, sides, occ=0.6):
-    """A bark tube along pts (its radius at each), the bark strip round it, v along it."""
+def tube(b, pts, radii, sides, occ=0.6, strip=(BU, 1.0)):
+    """A bark tube along pts (its radius at each), the bark strip (or its sub-strip, strip) round it, v along it."""
     pts = [np.asarray(p, np.float64) for p in pts]
     P, N, UV = [], [], []
     Ltot = sum(np.linalg.norm(pts[k] - pts[k - 1]) for k in range(1, len(pts)))
@@ -1169,7 +1043,7 @@ def tube(b, pts, radii, sides, occ=0.6):
             a = i / sides * 2 * math.pi
             nr = a1 * math.cos(a) + a2 * math.sin(a)
             rowP.append(p + nr * radii[k]); rowN.append(nr)
-            rowU.append((BU + (1 - BU) * i / sides * 0.995, 0.01 + 0.98 * L / max(Ltot, 1e-6)))
+            rowU.append((strip[0] + (strip[1] - strip[0]) * i / sides * 0.995, 0.01 + 0.98 * L / max(Ltot, 1e-6)))
         P.append(rowP); N.append(rowN); UV.append(rowU)
     b.quad_grid(P, N, UV, sides, len(pts) - 1, [[(occ, 0.0, 0.0)] * (sides + 1)] * len(pts))
 
@@ -1562,8 +1436,1153 @@ def pack_into(dst, src, alpha):
     dst.f += [tuple(i + o for i in f) for f in src.f]
 
 
+# ---------------------------------------------------------------- the tiered spruce (L1 C3a: LOOK_BIBLE rules 9 and 10)
+# FROM (b) MB4's spruce panel (day and night: stacked flat tiers, each a skirt of jagged pointed fronds whose tips
+# flick up, a lit top and a darker underside, the trunk seen only under the lowest tier) and target 04's and 09's tree
+# masses (11-14 short tiers to a spruce, each tier one value block); (a) the play camera (34 degrees down, 23 m: a
+# tier must read as a band of 6+ px, so a tier is 0.45-0.9 m high and never thinner); (c) the sizes, the trunk, the
+# material and the shader's conventions (u > .75 the bark strip; COLOR r open, g out along the branch, b card) are
+# env_trees.py's own (E4). Each tier is a closed wedge: its top from the trunk out to the jagged rim, its underside back
+# up to the trunk, a hard rim between (the ink's silhouette and the painter's bevel stroke catch it). The atlas is the
+# painter's (tools/look/wild.py: bake_forms.py --keep-uv, paint_core.py): every tier of the three sizes has its own
+# island (its top seen from above, its underside from below at half the density), so lod1, lod2 and the shadow, which
+# keep each tier's rim and lose only rings, sample the same painted tier.
+TIER = {
+    # n: tiers; hs: the lowest tier's foot (share of H); prof: the cone's curve; drop: a tier's rim below its foot
+    # (share of its radius); th: its underside's rise at the trunk (share of its drop); notch: a notch's radius share;
+    # w: the crown's width over E4's R (MB4's spruce is 0.45 as wide as tall: 0.8 takes E4's 0.33 R / H to 0.26);
+    # lap: a tier's rim hangs at least this share of the step to the next tier down (MB4: each skirt over the next, no sky
+    # between them; round 1's upper tiers stood as thin plates on a bare stick)
+    # ridge: each frond's spine raised over its notches (share of the tier's radius, at the rim): target 04's tiers are
+    # rings of separate pointed fronds, each a lit spine and a shaded flank from above (round 1's flat star discs took one
+    # light over the whole tier)
+    # (L1 W2 wild, rule 5 "two bands, lit and shade" and the wave-1 judge: at the title camera, 01 and 03, the tiers showed
+    # triangle facets with grey speckle and by day, 04, each frond's underside striped the tier) bend: the tier top's normals
+    # are the tier's smooth cone (no lobe, no ridge) bent up by this (+bend x up, then normalised), so each top takes one
+    # light; ubend: the underside's bent down the same way, so it is one shade; ridge 0.16 -> 0.04 (the fronds' jags stay
+    # on the rim, the notches 0.5 deep, not as creases across the faces the painter's bevel and cavity striped)
+    'a': dict(n=11, hs=0.13, prof=0.95, drop=0.5, th=0.42, notch=0.5, w=0.8, lap=1.15, ridge=0.04, bend=1.2, ubend=1.5),
+    'b': dict(n=12, hs=0.12, prof=0.9, drop=0.52, th=0.42, notch=0.52, w=0.8, lap=1.15, ridge=0.04, bend=1.2, ubend=1.5),
+    'c': dict(n=14, hs=0.11, prof=1.05, drop=0.48, th=0.4, notch=0.5, w=0.8, lap=1.15, ridge=0.04, bend=1.2, ubend=1.5),
+}
+BARK_V = 8.0      # bark v: metres of trunk over the strip's height
+TIER_LOBES = (6, 12)
+
+
+def tier_plan(H, R, seed, tf):
+    """Each tier's foot height, radius, drop, lobes and the rim's points (angle, radius share, height share, tip)."""
+    rng = np.random.default_rng(seed * 7 + 3)
+    n, hs = tf['n'], tf['hs'] * H
+    R = R * tf.get('w', 1.0)
+    top = H - 0.55
+    tiers = []
+    zf = lambda t: hs + (top - hs) * (1 - (1 - t) ** 1.18)   # closer toward the top
+    for i in range(n):
+        t = i / (n - 1)
+        z = zf(t)
+        r = R * ((1 - t) ** tf['prof'] * 0.9 + 0.1) * rng.uniform(0.93, 1.05)
+        step = z - zf(max(t - 1 / (n - 1), 0.0)) if i else 0.0
+        drop = min(max(r * tf['drop'], tf.get('lap', 0.0) * step, 0.0) * rng.uniform(0.9, 1.1), z - 0.32, 1.1 * r)
+        K = int(np.clip(round(TIER_LOBES[0] + (TIER_LOBES[1] - TIER_LOBES[0]) * r / R), *TIER_LOBES))
+        a0 = rng.uniform(0, 2 * math.pi)
+        rim = []
+        for k in range(2 * K):
+            tip = k % 2 == 0
+            a = a0 + (k + (rng.uniform(-0.22, 0.22) if tip else rng.uniform(-0.1, 0.1))) * math.pi / K
+            rs = rng.uniform(0.9, 1.06) if tip else tf['notch'] * rng.uniform(0.92, 1.08)
+            hz = rng.uniform(0.92, 1.08) if tip else 0.7    # a notch hangs less: the rim zig-zags in height too
+            rim.append((a, rs, hz, tip))
+        ext = 2.0 * r * max(x[1] for x in rim) * 1.03     # (an island spans the rim's real extent, not a guess)
+        tiers.append(dict(z=z, r=r, drop=drop, th=tf['th'], K=K, rim=rim, rin=0.06 + 0.022 * H * (1 - t) ** 0.85, ext=ext,
+                          ridge=tf.get('ridge', 0.0), bend=tf.get('bend', 0.0), ubend=tf.get('ubend', 0.0)))
+    return tiers
+
+
+def tier_point(T, k, s, under=False, flick=0.07):
+    """A point of tier T at rim index k (fractional: between rim points), s 0 at the trunk to 1 at the rim."""
+    rim = T['rim']; n = len(rim)
+    k0 = int(math.floor(k)) % n; k1 = (k0 + 1) % n; w = k - math.floor(k)
+    a0 = rim[k0][0]
+    a1 = rim[k1][0] + (2 * math.pi if k1 == 0 else 0)
+    a = a0 + (a1 - a0) * w
+    rs = rim[k0][1] * (1 - w) + rim[k1][1] * w
+    hz = rim[k0][2] * (1 - w) + rim[k1][2] * w
+    tipness = (1 - w) if rim[k0][3] else w
+    rr = T['rin'] + (T['r'] * rs - T['rin']) * s
+    if not under:
+        # the top hangs (a curve bending down outward), its fronds' tips flicked up
+        dz = -T['drop'] * hz * (0.55 * s + 0.45 * s * s) + flick * T['r'] * tipness * float(smooth(0.72, 1.0, s))
+        # (each frond's spine over its notches: a crease from the trunk out, so a frond's two flanks take two lights)
+        dz += T.get('ridge', 0.0) * T['r'] * (tipness - 0.5) * min(1.0, 1.6 * s)
+    else:
+        # the underside: from the rim straight back up to the trunk, th of the drop under the foot
+        rim_dz = -T['drop'] * hz + flick * T['r'] * tipness + T.get('ridge', 0.0) * T['r'] * (tipness - 0.5)
+        dz = rim_dz * s + (-T['th'] * T['drop']) * (1 - s)
+    return np.array([math.cos(a) * rr, math.sin(a) * rr, T['z'] + dz])
+
+
+def tier_mesh(b, T, lod, isl_top, isl_under):
+    """One tier into Build b. lod 0: top rings at s .5 and .82, its underside a band from the rim to the trunk; 1: the
+    rim to the axis, top and underside; 2 (and the shadow): its top alone."""
+    n = len(T['rim'])
+    K = n // 2
+    rings_top = {0: [0.0, 0.5, 0.82, 1.0], 1: [0.0, 1.0], 2: [0.0, 1.0]}[lod]
+    rings_under = {0: [1.0, 0.0], 1: [1.0, 0.0], 2: []}[lod]
+    ext = T['ext']
+
+    def uv_of(p, isl, under):
+        u0, v0, sz = isl
+        x, y = p[0], p[1]
+        if under:
+            x = -x
+        return (u0 + (x / ext + 0.5) * sz[0], v0 + (y / ext + 0.5) * sz[1])
+
+    rsm = float(np.mean([x[1] for x in T['rim']])); hzm = float(np.mean([x[2] for x in T['rim']]))
+
+    def nrm_at(k, s, under):
+        """(L1 W2 wild) The tier's smooth cone at this angle (the rim's mean radius and hang: no lobe, ridge or flick), bent
+        up (the top) or down (the underside) by T's bend: one light a top, one shade an underside (rule 5)."""
+        p = tier_point(T, k, s, under)
+        ax = np.array([p[0], p[1], 0.0]); ax /= np.linalg.norm(ax) + 1e-9
+        run = max(T['r'] * rsm - T['rin'], 1e-3)
+        if not under:
+            slope = -T['drop'] * hzm * (0.55 + 0.9 * min(max(s, 0.0), 1.0)) / run    # dz / d(radius)
+            nn = np.array([-slope * ax[0], -slope * ax[1], 1.0]); nn /= np.linalg.norm(nn)
+            nn = nn + np.array([0.0, 0.0, T.get('bend', 0.0)])
+        else:
+            slope = (-T['drop'] * hzm + T['th'] * T['drop']) / run
+            nn = -np.array([-slope * ax[0], -slope * ax[1], 1.0]); nn /= np.linalg.norm(nn)
+            nn = nn - np.array([0.0, 0.0, T.get('ubend', 0.0)])
+        return nn / (np.linalg.norm(nn) + 1e-9)
+
+    for under, rings, isl in ((False, rings_top, isl_top), (True, rings_under, isl_under)):
+        if not rings:
+            continue
+        rows = []
+        for s in rings:
+            cnt = (K if lod == 0 else 1) if s == 0.0 else n    # the trunk ring: one point a lobe (lod 1, 2: the axis)
+            row = []
+            for i in range(cnt):
+                k = i * n / cnt
+                p = tier_point(T, k, s, under)
+                row.append(len(b.v))
+                b.v.append(p); b.n.append(nrm_at(k, s, under)); b.uv.append(uv_of(p, isl, under))
+                b.c.append((1.0, s if not under else 0.25 * s, 0.0))
+            rows.append(row)
+        for ra, rb_ in zip(rows[:-1], rows[1:]):
+            # two rings stitched round the tier by angle (their counts may differ)
+            na, nb_ = len(ra), len(rb_)
+            i = j = 0
+            while i < na or j < nb_:
+                fa = (i + 1) / na if i < na else 9
+                fb = (j + 1) / nb_ if j < nb_ else 9
+                if fa <= fb:
+                    tri = (ra[i % na], ra[(i + 1) % na], rb_[j % nb_]); i += 1
+                else:
+                    tri = (ra[i % na], rb_[(j + 1) % nb_], rb_[j % nb_]); j += 1
+                if len(set(tri)) < 3:
+                    continue    # (a one-point ring's closing step: no face)
+                # (wound so the top's front faces up and the underside's down: FRONT_FACING turns the normal)
+                b.f.append((tri[0], tri[2], tri[1]))
+
+
+def bark_tube(b, H, rb, z1, sides, rings, strip):
+    """The trunk: a tapered tube from under the ground to z1 (inside the crown), its uvs in this size's bark strip."""
+    u0, u1 = strip
+    P, N, UV = [], [], []
+    for k in range(rings + 1):
+        t = k / rings
+        z = -0.25 + (z1 + 0.25) * t
+        rad = max(0.03, rb * (1 - 0.75 * z / H))
+        flare = 1 + 0.45 * math.exp(-max(z, 0) / 0.3)
+        rowP, rowN, rowU = [], [], []
+        for i in range(sides + 1):
+            a = i / sides * 2 * math.pi
+            rowP.append(np.array([math.cos(a) * rad * flare, math.sin(a) * rad * flare, z]))
+            rowN.append(np.array([math.cos(a), math.sin(a), 0.1]) / 1.005)
+            rowU.append((u0 + (u1 - u0) * i / sides, min(0.995, 0.005 + (z + 0.25) / BARK_V)))
+        P.append(rowP); N.append(rowN); UV.append(rowU)
+    b.quad_grid(P, N, UV, sides, rings, [[(1.0, 0.0, 0.0)] * (sides + 1)] * (rings + 1))
+
+
+def leader(b, H, z0, r, isl):
+    """The leader: a five-sided spike over the top tier (its own small island)."""
+    base = len(b.v)
+    u0, v0, sz = isl
+    for i in range(5):
+        a = i / 5 * 2 * math.pi
+        b.v.append(np.array([math.cos(a) * r, math.sin(a) * r, z0])); b.n.append(np.array([math.cos(a), math.sin(a), 0.5]) / 1.118)
+        b.uv.append((u0 + (0.5 + 0.45 * math.cos(a)) * sz[0], v0 + (0.5 + 0.45 * math.sin(a)) * sz[1])); b.c.append((1.0, 0.6, 0.0))
+    b.v.append(np.array([0.0, 0.0, H])); b.n.append(np.array([0.0, 0.0, 1.0]))
+    b.uv.append((u0 + 0.5 * sz[0], v0 + 0.5 * sz[1])); b.c.append((1.0, 1.0, 0.0))
+    for i in range(5):
+        b.f.append((base + i, base + (i + 1) % 5, base + 5))
+
+
+def tier_atlas(plans, A=2048, umax=BU, gap=10, under=0.35):
+    """Islands for every size's tiers (tops at full density, undersides at `under` of it: the play camera sees a tier's
+    top and only its underside's rim) and leaders, shelf-packed into u < umax at the largest density that fits.
+    Returns ({(size, tier, part): (u0, v0, (du, dv))}, px per metre)."""
+    items = []
+    for sz, tiers in plans.items():
+        for i, T in enumerate(tiers):
+            items.append((sz, i, 'top', T['ext'], 1.0))
+            items.append((sz, i, 'under', T['ext'], under))
+        items.append((sz, -1, 'leader', 0.5, 1.0))
+    return shelf_pack(items, A, umax, gap)
+
+
+def shelf_pack(items, A=2048, umax=BU, gap=10):
+    """Square islands (key..., side in m, density share) shelf-packed into u < umax at the largest px per metre that
+    fits (a bisection). Returns ({key: (u0, v0, (du, dv))}, px per metre)."""
+    W, Hh = umax * A - gap, A - gap
+
+    def pack(ppm):
+        order = sorted(items, key=lambda it: (-it[3] * it[4], it[:3]))
+        x = y = gap; rowh = 0; out = {}
+        for it in order:
+            side = math.ceil(it[3] * it[4] * ppm)
+            if x + side > W:
+                x, y, rowh = gap, y + rowh + gap, 0
+            if y + side > Hh:
+                return None
+            out[it[:3]] = (x / A, 1 - (y + side) / A, (side / A, side / A))
+            x += side + gap; rowh = max(rowh, side)
+        return out
+    lo, hi = 10.0, 400.0
+    for _ in range(30):
+        mid = (lo + hi) / 2
+        if pack(mid):
+            lo = mid
+        else:
+            hi = mid
+    return pack(lo), lo
+
+
+def spruce_tiered(H, R, seed, lod, tf, isl, strip, shadow=False):
+    """The tiered spruce at lod 0, 1, 2 (or its shadow caster: every tier's top and a short trunk)."""
+    b = Build()
+    tiers = tier_plan(H, R, seed, tf)
+    rb = 0.022 * H + 0.05
+    # (the trunk up to the top tier, thin above the lower ones: MB4's spruce shows it between its tiers; round 1's stopped at
+    # the fourth tier, so the upper tiers floated)
+    z1 = tiers[-1]['z'] if lod < 2 and not shadow else tiers[0]['z'] + 0.2
+    bark_tube(b, H, rb, z1, 4 if shadow else (6, 5, 4)[lod], 1 if shadow else (5, 3, 1)[lod], strip)
+    b.nbark = len(b.f)
+    for i, T in enumerate(tiers):
+        if lod == 2 and not shadow and i % 2 and i != len(tiers) - 1:
+            continue
+        if lod == 2 and not shadow:
+            T = dict(T, drop=T['drop'] * 1.5)    # (every other tier, hung lower to close the gaps; uvs are x, y: unchanged)
+        tier_mesh(b, T, 2 if shadow else lod, isl[i][0], isl[i][1])
+    leader(b, H, tiers[-1]['z'] - 0.1, 0.12, isl[-1])
+    return b, tiers
+
+
+PAINT_SRC = os.path.join(ROOT, 'godot', 'art', 'world', 'painted', '_src')
+
+
+def to_blender(bpy, name, b, mats, mat_of=None):
+    """A Build as a Blender object (its uvs, normals and colours as built); mat_of(face index) picks a material slot."""
+    me = bpy.data.meshes.new(name)
+    me.from_pydata([tuple(p) for p in b.v], [], b.f)
+    assert len(me.polygons) == len(b.f), name    # (no face dropped: material slots and the bark count index them)
+    uvl = me.uv_layers.new(name='UV')
+    for poly in me.polygons:
+        for li in poly.loop_indices:
+            uvl.data[li].uv = b.uv[me.loops[li].vertex_index]
+    me.normals_split_custom_set_from_vertices([tuple(n / (np.linalg.norm(n) + 1e-9)) for n in b.n])
+    ca = me.color_attributes.new('Col', 'FLOAT_COLOR', 'POINT')
+    for i, c in enumerate(b.c):
+        ca.data[i].color = (c[0], c[1], c[2], c[3] if len(c) > 3 else 1.0)
+    me.color_attributes.active_color = ca
+    for m in mats:
+        me.materials.append(m)
+    if mat_of is not None:
+        for p in me.polygons:
+            p.material_index = mat_of(p.index)
+    ob = bpy.data.objects.new(name, me)
+    bpy.context.scene.collection.objects.link(ob)
+    return ob, sum(len(p.vertices) - 2 for p in me.polygons)
+
+
+def export_gltf(bpy, out, glb=False, select=None):
+    if select is not None:
+        bpy.ops.object.select_all(action='DESELECT')
+        for o in select:
+            o.select_set(True)
+    bpy.ops.export_scene.gltf(filepath=out, export_format='GLB' if glb else 'GLTF_SEPARATE', export_texture_dir='',
+                              export_normals=True, export_tangents=False, export_materials='EXPORT',
+                              export_image_format='AUTO', export_keep_originals=True, export_yup=True, export_apply=True,
+                              export_vertex_color='ACTIVE', use_selection=select is not None)
+
+
+def mesh_spruce_tiers():
+    """The three tiered spruces (lod0-2 and the shadow caster, one material, Leaves_OwnSpruce, on spruce_atlas.png) and
+    the painter's sheet (every size's lod0 side by side, materials 'foliage' and 'bark', the same uvs):
+    godot/art/world/painted/_src/spruce_sheet.glb (tools/look/wild.py bakes and paints it into spruce_atlas.png)."""
+    import bpy, json
+    os.makedirs(OUT, exist_ok=True); os.makedirs(PAINT_SRC, exist_ok=True)
+    plans = {sz: tier_plan(p['H'], p['R'], p['seed'], TIER[sz]) for sz, p in SPRUCE.items()}
+    isl_all, ppm = tier_atlas(plans)
+    print(f'spruce tiers: atlas {ppm:.1f} px/m (tops; undersides half)')
+    strips = {sz: (BU + (k + 0.03) * (1 - BU) / 3, BU + (k + 0.97) * (1 - BU) / 3) for k, sz in enumerate(SPRUCE)}
+    sheet = []
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    for k, (sz, p) in enumerate(SPRUCE.items()):
+        isl = [(isl_all[(sz, i, 'top')], isl_all[(sz, i, 'under')]) for i in range(len(plans[sz]))] + [isl_all[(sz, -1, 'leader')]]
+        b, _ = spruce_tiered(p['H'], p['R'], p['seed'], 0, TIER[sz], isl, strips[sz])
+        nbark = b.nbark
+        b.v = [v + np.array([16.0 * k, 0.0, 0.0]) for v in b.v]
+        sheet.append((b, nbark))
+    mf, mb = bpy.data.materials.new('foliage'), bpy.data.materials.new('bark')
+    obs = []
+    for k, (b, nbark) in enumerate(sheet):
+        ob, _ = to_blender(bpy, f'sheet_{k}', b, [mf, mb], lambda fi, nb=nbark: 1 if fi < nb else 0)
+        obs.append(ob)
+    bpy.ops.object.select_all(action='DESELECT')
+    for o in obs:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = obs[0]
+    bpy.ops.object.join()
+    obs[0].name = 'lod0'
+    export_gltf(bpy, os.path.join(PAINT_SRC, 'spruce_sheet.glb'), glb=True)
+    img_path = os.path.join(OUT, 'spruce_atlas.png')
+    report = {}
+    for k, (sz, p) in enumerate(SPRUCE.items()):
+        bpy.ops.wm.read_factory_settings(use_empty=True)
+        img = bpy.data.images.load(img_path)
+        mat = bpy.data.materials.new('Leaves_OwnSpruce'); mat.use_nodes = True
+        nt = mat.node_tree; bsdf = nt.nodes['Principled BSDF']
+        ti = nt.nodes.new('ShaderNodeTexImage'); ti.image = img
+        nt.links.new(ti.outputs['Color'], bsdf.inputs['Base Color'])
+        bsdf.inputs['Roughness'].default_value = 1.0
+        mat.use_backface_culling = False
+        isl = [(isl_all[(sz, i, 'top')], isl_all[(sz, i, 'under')]) for i in range(len(plans[sz]))] + [isl_all[(sz, -1, 'leader')]]
+        tris = []
+        for lod in range(4):
+            b, _ = spruce_tiered(p['H'], p['R'], p['seed'], min(lod, 2), TIER[sz], isl, strips[sz], shadow=lod == 3)
+            _, t = to_blender(bpy, f'lod{lod}' if lod < 3 else 'shadow', b, [mat])
+            tris.append(t)
+        export_gltf(bpy, os.path.join(OUT, f'spruce_{sz}.gltf'))
+        report[sz] = tris
+        print(f'spruce_{sz}.gltf tris lod0/1/2/shadow: {tris}')
+    print('REPORT', json.dumps(dict(spruce=report, ppm=round(ppm, 1))))
+
+
+# ---------------------------------------------------------------- the clustered alder (L1 C3a: LOOK_BIBLE rule 9)
+# FROM (b) LOOK_BIBLE rule 9 ("foliage is flat leaf clusters in two or three values, silhouette ink only"), MB4's grass
+# panel's broad leaf masses and targets 04, 09 and 10's broadleaf crowns (a crown of a dozen chunky rounded masses, each
+# a lit top over a dark underside, scalloped edges against the sky); (a) the play camera (23 m, 34 degrees down: a
+# cluster 1-1.5 m across is 30-45 px at 1080, so its scallops and its two values read); (c) the sizes, the stems, the
+# crown's oval (0.62 H, 0.38 H: flora_species.json's crown_lo/hi stay true), the bark strip (u > .75) and the material
+# Leaves_OwnAlder are env_trees.py's own (E4). Each cluster is a closed flattened dome: a scalloped rim of 6-9 rounded
+# lobes, its top domed up, its underside sagging under it, a hard rim between (the ink's silhouette and the painter's
+# bevel stroke catch it). Every cluster of the three sizes has its own island (its top from above, its underside from
+# below at 0.35 of the density), so lod1 and lod2, which keep a cluster's rim and lose only rings (lod2 the smaller
+# clusters too), sample the same painted cluster. tools/look/wild.py alder bakes and paints the atlas.
+CLUSTER = {
+    # n: clusters; rc: a cluster's radius (share of R); hc: its dome's rise, hu: its underside's sag (shares of its radius);
+    # notch: the scallops' cusp radius share; f: the cluster centres' place out in the crown's oval (share)
+    'a': dict(n=13, rc=0.52, hc=0.34, hu=0.22, notch=0.58, f=(0.5, 0.74)),
+    'b': dict(n=11, rc=0.56, hc=0.34, hu=0.22, notch=0.58, f=(0.5, 0.74)),
+    'c': dict(n=14, rc=0.52, hc=0.32, hu=0.22, notch=0.58, f=(0.5, 0.74)),
+}
+CL_LOBES = (5, 7)
+CL_SUB = 3          # rim points a lobe (its cusp, then two round its crown)
+CL_DROOP = 0.12     # the rim under the dome's foot (share of the radius): a cluster hangs at its edge
+
+
+def cluster_plan(H, R, seed, cf):
+    """The crown's clusters: each a centre, a frame (its up tilted out from the crown), a radius, a rim."""
+    rng = np.random.default_rng(seed * 11 + 5)
+    zc, hz = 0.62 * H, 0.38 * H
+    n = cf['n']
+    out = []
+    for i in range(n):
+        # a golden-angle spiral down the oval from its top, the bottom left open (the stems show under the crown)
+        zf = 0.92 - 1.62 * (i + 0.5) / n
+        a = i * 2.39996 + rng.normal(0, 0.2)
+        rxy = math.sqrt(max(0.0, 1 - zf * zf))
+        o = np.array([rxy * math.cos(a), rxy * math.sin(a), zf])
+        f = rng.uniform(*cf['f'])
+        c = np.array([0, 0, zc]) + o * np.array([R, R, hz]) * f
+        # (the masses at the crown's middle the biggest, its top and its foot smaller: the oval's silhouette)
+        # (L1 W2 wild, rule 10 "big-medium-small" and the wave-2 crop of 05: equal clusters with shallow scallops read as hex
+        # plates at play) every third cluster big, medium or small (1.25 / 0.95 / 0.7), the scallops cut to 0.58 of the radius
+        r = cf['rc'] * R * (0.78 + 0.32 * rxy) * rng.uniform(0.92, 1.08) * (1.25, 0.95, 0.7)[i % 3]
+        w = np.array([0, 0, 1.0]) + np.array([o[0], o[1], 0.0]) * 0.75 * rxy
+        w /= np.linalg.norm(w)
+        u = np.cross(w, np.array([math.cos(a + 1.3), math.sin(a + 1.3), 0.0])); u /= np.linalg.norm(u)
+        v = np.cross(w, u)
+        K = int(rng.integers(CL_LOBES[0], CL_LOBES[1] + 1))
+        a0 = rng.uniform(0, 2 * math.pi)
+        lob = rng.uniform(0.9, 1.08, K)
+        wid = rng.uniform(0.75, 1.25, K); wid /= wid.sum() / K
+        rim, acc = [], a0
+        for k in range(K):
+            span = 2 * math.pi / K * wid[k]
+            for j in range(CL_SUB):
+                ph = j / CL_SUB
+                rs = cf['notch'] + (lob[k] - cf['notch']) * math.sin(math.pi * ph) ** 0.55 if j else cf['notch']
+                rim.append((acc + span * ph, rs, 0.0, j > 0))
+            acc += span
+        ext = 2.0 * r * max(x[1] for x in rim) * 1.03
+        out.append(dict(c=c, u=u, v=v, w=w, r=r, hc=cf['hc'], hu=cf['hu'], rim=rim, ext=ext, rxy=rxy))
+    return out
+
+
+def cluster_point(C, k, s, under=False):
+    """A point of cluster C at rim index k (fractional), s 0 at its middle to 1 at its rim; and its local (x, y)."""
+    rim = C['rim']; n = len(rim)
+    k0 = int(math.floor(k)) % n; k1 = (k0 + 1) % n; wgt = k - math.floor(k)
+    a0 = rim[k0][0]
+    a1 = rim[k1][0] + (2 * math.pi if k1 == 0 else 0)
+    a = a0 + (a1 - a0) * wgt
+    rs = rim[k0][1] * (1 - wgt) + rim[k1][1] * wgt
+    rr = C['r'] * rs * s
+    x, y = math.cos(a) * rr, math.sin(a) * rr
+    s2 = s * s
+    rimz = -CL_DROOP * C['r'] * rs
+    z = rimz * s2 + (C['hc'] if not under else -C['hu']) * C['r'] * (1 - s2) ** (0.8 if not under else 1.0)
+    return C['c'] + C['u'] * x + C['v'] * y + C['w'] * z, x, y
+
+
+def cluster_mesh(b, C, lod, isl_top, isl_under):
+    """One cluster into Build b. lod 0: top rings at s .5 and .82 and its underside a fan to the middle; 1: its top fan
+    alone; 2: its top fan on one rim point a lobe (each lobe's crown)."""
+    n = len(C['rim'])
+    rings_top = {0: [0.0, 0.5, 0.82, 1.0], 1: [0.0, 1.0], 2: [0.0, 1.0]}[lod]
+    rings_under = {0: [1.0, 0.0], 1: [], 2: []}[lod]
+    ext = C['ext']
+
+    def nrm_at(k, s, under):
+        s = min(max(s, 0.05), 0.95)
+        du = cluster_point(C, k + 0.03, s, under)[0] - cluster_point(C, k - 0.03, s, under)[0]
+        ds = cluster_point(C, k, s + 0.05, under)[0] - cluster_point(C, k, s - 0.05, under)[0]
+        nn = np.cross(ds, du); nn /= np.linalg.norm(nn) + 1e-9
+        if (np.dot(nn, C['w']) < 0) != under:
+            nn = -nn
+        return nn
+
+    for under, rings, isl in ((False, rings_top, isl_top), (True, rings_under, isl_under)):
+        if not rings:
+            continue
+        u0, v0, sz = isl
+        rows = []
+        for s in rings:
+            cnt = 1 if s == 0.0 else (n // CL_SUB if lod == 2 else n)
+            row = []
+            for i in range(cnt):
+                k = i * n / cnt + (1.5 if lod == 2 else 0.0)     # (lod 2: midway between a lobe's two crown points)
+                p, x, y = cluster_point(C, k, s, under)
+                if under:
+                    x = -x
+                row.append(len(b.v))
+                b.v.append(p)
+                b.n.append(C['w'] * (1 if not under else -1) if s == 0.0 else nrm_at(k, s, under))
+                b.uv.append((u0 + (x / ext + 0.5) * sz[0], v0 + (y / ext + 0.5) * sz[1]))
+                # (r how open: the crown's outer masses 1, its inner 0.75, an underside 0.7 of it; g out to the rim)
+                op = (0.75 + 0.25 * C['rxy']) * (0.7 if under else 1.0)
+                b.c.append((op, s if not under else 0.25 * s, 0.0))
+            rows.append(row)
+        for ra, rb_ in zip(rows[:-1], rows[1:]):
+            na, nb_ = len(ra), len(rb_)
+            i = j = 0
+            while i < na or j < nb_:
+                fa = (i + 1) / na if i < na else 9
+                fb = (j + 1) / nb_ if j < nb_ else 9
+                if fa <= fb:
+                    tri = (ra[i % na], ra[(i + 1) % na], rb_[j % nb_]); i += 1
+                else:
+                    tri = (ra[i % na], rb_[(j + 1) % nb_], rb_[j % nb_]); j += 1
+                if len(set(tri)) < 3:
+                    continue    # (the middle's one-point ring's closing step: no face)
+                # (wound so the top's front faces out along w, the underside's against it)
+                fn = np.cross(b.v[tri[1]] - b.v[tri[0]], b.v[tri[2]] - b.v[tri[0]])
+                if (np.dot(fn, C['w']) < 0) != under:
+                    tri = (tri[0], tri[2], tri[1])
+                b.f.append(tri)
+
+
+def alder_clustered(H, R, seed, lod, stems, cf, isl, strip):
+    """The clustered alder at lod 0, 1, 2: its stems and main branches (as E4's, in this size's bark sub-strip), its
+    clusters (lod2: the bigger two thirds, each a little bigger)."""
+    rng = np.random.default_rng(seed)
+    b = Build()
+    zc, hz = 0.62 * H, 0.38 * H
+    sts = alder_stems(H, seed, stems)
+    for pts, rad in sts:
+        tube(b, pts, rad, (6, 5, 4)[lod], strip=strip)
+    for pts, rad in sts:
+        for i in range((int(rng.integers(3, 5)), 2, 0)[lod]):
+            f = rng.uniform(0.42, 0.72)
+            k = min(int(f * 7), 6); g = f * 7 - k
+            p0 = pts[k] * (1 - g) + pts[k + 1] * g
+            az, el = rng.uniform(0, 6.28), math.radians(rng.uniform(25, 50))
+            d = np.array([math.cos(az) * math.cos(el), math.sin(az) * math.cos(el), math.sin(el)])
+            rr = R * math.sqrt(max(0.05, 1 - ((p0[2] - zc) / hz) ** 2))
+            L = max(0.6, rr * rng.uniform(0.55, 0.75))
+            r = 0.05 * math.sqrt(H / 8)
+            tube(b, [p0, p0 + d * L * 0.5 + np.array([0, 0, 0.08 * L]), p0 + d * L], [r, r * 0.6, r * 0.3], (4, 3, 3)[lod],
+                 occ=0.5, strip=strip)
+    b.nbark = len(b.f)
+    cl = cluster_plan(H, R, seed, cf)
+    keep = sorted(range(len(cl)), key=lambda i: -cl[i]['r'])[:max(4, (2 * len(cl)) // 3)] if lod == 2 else range(len(cl))
+    for i in sorted(keep):
+        C = cl[i]
+        if lod == 2:
+            # (the kept masses a little bigger to close the gaps; the uvs are x / ext, so ext grows with them)
+            C = dict(C, r=C['r'] * 1.12, ext=C['ext'] * 1.12)
+        cluster_mesh(b, C, lod, isl[i][0], isl[i][1])
+    return b
+
+
+def mesh_alder_clusters():
+    """The three clustered alders (lod0-2; the shadow caster stays E4's lumpy proxy, alder_proxy) on one material,
+    Leaves_OwnAlder on alder_atlas.png, and the painter's sheet godot/art/world/painted/_src/alder_sheet.glb (every
+    size's lod0 16 m apart, materials 'foliage' and 'bark', the same uvs)."""
+    import bpy, json
+    os.makedirs(OUT, exist_ok=True); os.makedirs(PAINT_SRC, exist_ok=True)
+    plans = {sz: cluster_plan(p['H'], p['R'], p['seed'], CLUSTER[sz]) for sz, p in ALDER.items()}
+    items = []
+    for sz, cl in plans.items():
+        for i, C in enumerate(cl):
+            items.append((sz, i, 'top', C['ext'], 1.0))
+            items.append((sz, i, 'under', C['ext'], 0.35))
+    isl_all, ppm = shelf_pack(items)
+    print(f'alder clusters: atlas {ppm:.1f} px/m (tops; undersides 0.35)')
+    strips = {sz: (BU + (k + 0.03) * (1 - BU) / 3, BU + (k + 0.97) * (1 - BU) / 3) for k, sz in enumerate(ALDER)}
+    isls = {sz: [(isl_all[(sz, i, 'top')], isl_all[(sz, i, 'under')]) for i in range(len(plans[sz]))] for sz in ALDER}
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    mf, mb = bpy.data.materials.new('foliage'), bpy.data.materials.new('bark')
+    obs = []
+    for k, (sz, p) in enumerate(ALDER.items()):
+        b = alder_clustered(p['H'], p['R'], p['seed'], 0, p['stems'], CLUSTER[sz], isls[sz], strips[sz])
+        b.v = [v + np.array([16.0 * k, 0.0, 0.0]) for v in b.v]
+        ob, _ = to_blender(bpy, f'sheet_{k}', b, [mf, mb], lambda fi, nb=b.nbark: 1 if fi < nb else 0)
+        obs.append(ob)
+    bpy.ops.object.select_all(action='DESELECT')
+    for o in obs:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = obs[0]
+    bpy.ops.object.join()
+    obs[0].name = 'lod0'
+    export_gltf(bpy, os.path.join(PAINT_SRC, 'alder_sheet.glb'), glb=True)
+    img_path = os.path.join(OUT, 'alder_atlas.png')
+    report = {}
+    for k, (sz, p) in enumerate(ALDER.items()):
+        bpy.ops.wm.read_factory_settings(use_empty=True)
+        img = bpy.data.images.load(img_path)
+        mat = bpy.data.materials.new('Leaves_OwnAlder'); mat.use_nodes = True
+        nt = mat.node_tree; bsdf = nt.nodes['Principled BSDF']
+        ti = nt.nodes.new('ShaderNodeTexImage'); ti.image = img
+        nt.links.new(ti.outputs['Color'], bsdf.inputs['Base Color'])
+        bsdf.inputs['Roughness'].default_value = 1.0
+        mat.use_backface_culling = False
+        tris = []
+        for lod in range(4):
+            if lod < 3:
+                b = alder_clustered(p['H'], p['R'], p['seed'], lod, p['stems'], CLUSTER[sz], isls[sz], strips[sz])
+            else:
+                b = alder_proxy(p['H'], p['R'], p['seed'], p['stems'])
+            _, t = to_blender(bpy, f'lod{lod}' if lod < 3 else 'shadow', b, [mat])
+            tris.append(t)
+        export_gltf(bpy, os.path.join(OUT, f'alder_{sz}.gltf'))
+        report[sz] = tris
+        print(f'alder_{sz}.gltf tris lod0/1/2/shadow: {tris}')
+    print('REPORT', json.dumps(dict(alder=report, ppm=round(ppm, 1))))
+
+
+# ---------------------------------------------------------------- the leaf clump (L1 lead 15 helper M; rounds 2-3 lead 16 helper M2)
+# FROM the target's 09 bushes: at the play camera a bush (about 2.3 m) is a lumpy mound of 25-40 leaf CLUSTERS of
+# 0.3-0.45 m, each cluster ONE tone, every cluster's edge cut by leaf tips, a dark gap where one lies over the next.
+# (Round 1's 83 blades on a dome read as a spiky star ball; round 2's 12 smooth lobes of 0.6-1.1 m as painted boulders,
+# the tone step cutting polygon patches across each low-poly lobe: both scrapped.) So:
+#   the mound  two or three guide domes (half ellipsoids on the ground, yawed, unequal heights: a kidney), not drawn
+#   a cap      a leaf-cluster CAP on the mound (the alder crown's cluster: cluster_point; a low dome whose rim is cut
+#              into 5-7 leaf-tip scallops and droops), its axis the mound's normal turned up (top caps up, flank caps
+#              out and up), so the caps lie over one another like roof tiles from the top down. Its normals are
+#              BU_AXIS of its own axis + the rest its local smooth normal: one cap, one tone; the step falls BETWEEN
+#              caps. Its underside (lod0) faces down, COLOR.r 0.45: the gap under a rim is geometry.
+#   the core   the guide domes at BU_CORE of their size, normals turned down, COLOR.r 0.45: what shows between caps
+#              (the contact tone, never the ground, never ink).
+# No separate leaves on a clump (the outline is the caps' leaf tips). The tuft: 6 broad five-lobed leaves.
+# Vertex data (the standing leaf route's contract): COLOR.b 1 on caps and core, 0 on the tuft's leaves; COLOR.r 1 on a
+# cap's top as its baked level ring (BU_RING, shifted per cap by BU_JIT; l22), 0.55 on undersides, 0.45 on the core, on a leaf 1.0 / 0.8 by its normal; COLOR.g 0 on the mass, stem 0 to tip 1 on
+# a leaf; COLOR.a the piece. UV: a cap samples ONE point of clump_dabs.png (caps differ a step in value).
+# Species `clump`, packed: clump_a, tuft_a, clump_b (the order is the piece id).
+#     python tools/assets/env_trees.py tex --species clump                       clump_dabs.png
+#     blender -b -P tools/assets/env_trees.py -- mesh --species clump            clump.gltf (lod0-2, shadow)
+#     python tools/assets/env_trees.py sheet --species clump --out X.png         the proof picture and the numbers
+CLUMP_CAPS = {   # (l16-l22: the cap mound, kept as data: an entry with 'domes' still builds it)
+    # domes: centre (x, y), radii (x, y, z), yaw. clump_a 2.8 x 2.2 m with its caps, 1.2 m tall; clump_b 1.8 x 1.5, 0.8
+    'clump_a': {'seed': 11, 'caps': 56, 'cap': (0.20, 0.24), 'domes': [
+        {'c': (-0.36, 0.05), 'r': (0.94, 0.92, 1.14), 'yaw': 20}, {'c': (0.58, -0.12), 'r': (0.74, 0.76, 0.80), 'yaw': -35}]},
+    'tuft_a': {'seed': 23, 'tuft': (4, 2)},
+    'clump_b': {'seed': 37, 'caps': 28, 'cap': (0.19, 0.23), 'domes': [
+        {'c': (-0.22, 0.04), 'r': (0.58, 0.60, 0.74), 'yaw': 30}, {'c': (0.36, -0.08), 'r': (0.46, 0.50, 0.52), 'yaw': -20}]},
+}
+
+
+# (L1 lead 24, BUSH) The arena's undergrowth as FERNS (owner_ref_night: a fan of pinnate fronds from one crown, the
+# ground showing between, ~1-1.5 of her heights across), not the cap mound (bush_01-03: solid cauliflower mounds that
+# outweighed her). A species is FERN_FORM's parameters (a piece's 'fern' dict overrides any of them) and its crowns;
+# every frond real geometry (opaque, no alpha cut: no stipple or shimmer), drawn by kit.gdshader's leaf MASS route
+# (COLOR.b 1; COLOR.r the baked level: base < 0.7 body, mid ring 0.7-0.9, tip >= 0.9 top), the tones the rig's stand row.
+FERN_FORM = {
+    'fronds': (12, 8, 5),    # fronds a crown (times its share), lod 0/1/2
+    'pairs': (7, 5, 4),      # pinna pairs a frond, lod 0/1/2 (lod2: one triangle a pinna)
+    'segs': (14, 8, 5),      # rachis segments
+    'L': (0.80, 1.05),       # frond length (m, times the crown's scale)
+    'stipe': 0.16,           # the bare stem's share of a frond
+    'el': (35, 62),          # a frond's rise at its foot (degrees)
+    'arch': (60, 95),        # ... turned down over its length (degrees): it arches over
+    'bend': 16,              # ... and sideways (degrees, +-)
+    'fan': 250,              # a crown's fronds spread over this (degrees; 360 reads as a rosette)
+    'width': 0.32,           # a pinna's length at the blade's widest (share of L)
+    'widest': 0.36,          # where the blade is widest (share of the blade, foot to tip)
+    'fwd': 54,               # a pinna's angle forward off the rachis (degrees)
+    'base': 0.90,            # a pinna's foot along the rachis (share of its pair's spacing): the rest is gap
+    'alt': 0.32,             # the right pinna this share of a spacing past the left (alternate, not a ladder)
+    'shoulder': 0.42,        # a pinna's widest point (share of its length) and its half-width there (share of its foot)
+    'droop': 0.22,           # a pinna's tip under its blade (share of its length)
+    'rachis': 0.020,         # the rachis' half-width at its foot (m)
+    'up': 0.25,              # a normal: this share up, the rest its own face's
+    'steps': (0.52, 0.80),   # along a frond, where the level reaches 0.7 (mid) and 0.9 (top: one step lighter at the tip)
+    'jit': ((0.55, 0.0), (0.27, -0.13), (0.18, -0.30)),   # (share, level shift): lit fronds, no top, dark fronds
+    'foot': 0.24,            # a frond's tip kept this high (m): under it the stand's foot band draws contact
+}
+FERN = {
+    # crowns: (x, y, scale, fan middle (degrees), frond share)
+    'clump_a': {'seed': 11, 'fern': {}, 'crowns': [(-0.12, 0.04, 0.88, 100, 1.0), (0.66, -0.26, 0.62, -20, 0.75)]},
+    'clump_b': {'seed': 37, 'fern': {}, 'crowns': [(0.0, 0.0, 0.80, 80, 1.0)]},
+}
+CLUMP = {'clump_a': FERN['clump_a'], 'tuft_a': CLUMP_CAPS['tuft_a'], 'clump_b': FERN['clump_b']}
+
+
+def fern_level(s, F, shift):
+    """A frond's baked level at s (0 its foot, 1 its tip): 0.55 at the foot, 0.7 at steps[0], 0.9 at steps[1], 1 at the tip."""
+    a, b = F['steps']
+    lv = 0.55 + 0.15 * s / a if s < a else (0.7 + 0.2 * (s - a) / (b - a) if s < b else 0.9 + 0.1 * (s - b) / (1 - b))
+    return float(np.clip(lv + shift, 0.45, 1.0))
+
+
+def fern_normal(face_n, F):
+    n = face_n * (1 - F['up']) + _CL_UP * F['up']
+    return n / np.linalg.norm(n)
+
+
+def fern_frond(b, F, c0, az, L, el, arch, bend, shift, uv, lod, rng):
+    """One frond from c0: its rachis (a ribbon, lod < 2) and its pinnae (lanceolate leaflets, alternate, a gap between)."""
+    K = F['segs'][lod]
+    n_sub = 6 * K
+    pts = [np.array(c0, float)]
+    for i in range(n_sub):
+        s = (i + 0.5) / n_sub
+        th = math.radians(el - arch * s); a = math.radians(az + bend * s)
+        pts.append(pts[-1] + np.array([math.cos(th) * math.cos(a), math.cos(th) * math.sin(a), math.sin(th)]) * L / n_sub)
+    pts = np.array(pts)
+
+    def at(s):
+        x = min(max(s, 0.0), 1.0) * n_sub; i = min(int(x), n_sub - 1); f = x - i
+        p = pts[i] * (1 - f) + pts[i + 1] * f
+        t = pts[i + 1] - pts[i]; t = t / np.linalg.norm(t)
+        side = np.cross(_CL_UP, t); side = side / np.linalg.norm(side)
+        return p, t, side, np.cross(t, side)
+
+    def put(v, n, lv, s):
+        b.v.append(v); b.n.append(n); b.uv.append(uv); b.c.append((lv, s, 1.0))
+
+    if True:         # the rachis (every LOD: the far fronds keep their stem)
+        base = len(b.v)
+        for k in range(K + 1):
+            s = k / K
+            p, t, side, nb = at(s)
+            w = F['rachis'] * (1 - 0.65 * s)
+            n = fern_normal(nb, F)
+            for sg in (-1, 1):
+                put(p + side * w * sg, n, fern_level(s, F, shift), s)
+        for k in range(K):
+            a0 = base + 2 * k
+            b.f.append((a0, a0 + 1, a0 + 3, a0 + 2)); b.tag.append(0)
+    P = F['pairs'][lod]
+    st = F['stipe']
+    dlt = (1 - st) / (P + 0.5)
+    fw = math.radians(F['fwd'])
+    for j in range(P):
+        for sg, off in ((-1, 0.0), (1, F['alt'])):
+            sj = st + dlt * (j + 0.5 + off)
+            u = (sj - st) / (1 - st)
+            wd = F['widest']
+            e = 1 - ((u - wd) / (wd if u < wd else 1 - wd)) ** 2
+            e = max(e, 0.0) ** 0.8 * 0.85 + 0.15
+            lp = F['width'] * L * e * float(rng.uniform(0.9, 1.1))
+            pa = at(sj - F['base'] * dlt / 2)[0]
+            pb = at(sj + F['base'] * dlt / 2)[0]
+            _, t, side, nb = at(sj)
+            d = t * math.cos(fw) + side * sg * math.sin(fw)
+            tip = (pa + pb) / 2 + d * lp - _CL_UP * F['droop'] * lp
+            fn = np.cross(tip - pa, pb - pa)
+            fn = fn / (np.linalg.norm(fn) + 1e-9)
+            if fn[2] < 0:
+                fn = -fn
+            n = fern_normal(fn, F)
+            lv0 = fern_level(sj, F, shift); lv1 = fern_level(sj + 0.04, F, shift)
+            base = len(b.v)
+            if lod < 2:
+                pw = np.cross(fn, d); pw = pw / (np.linalg.norm(pw) + 1e-9)
+                if pw @ t < 0:
+                    pw = -pw          # (pw toward the frond's tip: the shoulder on pb's side)
+                sh = (pa + pb) / 2 + d * lp * F['shoulder'] - _CL_UP * F['droop'] * lp * 0.3
+                hw = np.linalg.norm(pb - pa) * F['shoulder']
+                for v, l in ((pa, lv0), (sh - pw * hw, lv0), (tip, lv1), (sh + pw * hw, lv0), (pb, lv0)):
+                    put(v, n, l, sj)
+                b.f += [(base, base + 1, base + 2), (base, base + 2, base + 3), (base, base + 3, base + 4)]
+                b.tag += [0, 0, 0]
+            else:
+                for v, l in ((pa, lv0), (tip, lv1), (pb, lv0)):
+                    put(v, n, l, sj)
+                b.f.append((base, base + 1, base + 2)); b.tag.append(0)
+    # the frond's own tip leaflet
+    p, t, side, nb = at(1.0)
+    p0 = at(1.0 - 0.6 * dlt)[0]
+    hw = F['rachis'] * 1.6 + 0.02
+    n = fern_normal(nb, F)
+    lv = fern_level(1.0, F, shift)
+    base = len(b.v)
+    for v in (p0 + side * hw, p + t * F['width'] * L * 0.33, p0 - side * hw):
+        put(v, n, lv, 1.0)
+    b.f.append((base, base + 1, base + 2)); b.tag.append(0)
+
+
+def fern_piece(prm, lod):
+    """A fern clump at a LOD (lod 3: its shadow caster, lod2's fronds): its crowns' fronds, seeded the same at every LOD."""
+    F = dict(FERN_FORM); F.update(prm.get('fern', {}))
+    b = Build(); b.tag = []
+    rng = np.random.default_rng(prm['seed'])
+    for cx, cy, sc, fan_mid, share in prm['crowns']:
+        nmax = max(1, round(F['fronds'][0] * share))
+        plan = []
+        for k in range(nmax):
+            az = fan_mid + F['fan'] * ((k + rng.uniform(0.15, 0.85)) / nmax - 0.5)
+            L = rng.uniform(*F['L']) * sc
+            el = rng.uniform(*F['el']); arch = rng.uniform(*F['arch']); bend = rng.uniform(-1, 1) * F['bend']
+            r = rng.random(); acc = 0.0; shift = F['jit'][-1][1]
+            for sh_, sv in F['jit']:
+                acc += sh_
+                if r < acc:
+                    shift = sv
+                    break
+            uv = (float(rng.uniform(0.04, 0.9)), float(rng.uniform(0.25, 0.9)))
+            plan.append((L, az, el, arch, bend, shift, uv, int(rng.integers(1 << 30))))
+        # (lower LODs keep the longest fronds; the arch eased until the tip stays over the foot band)
+        keep = sorted(range(nmax), key=lambda k: -plan[k][0])[:max(1, round(F['fronds'][min(lod, 2)] * share))]
+        for k in sorted(keep):
+            L, az, el, arch, bend, shift, uv, seed = plan[k]
+            c0 = np.array([cx, cy, 0.06]) + np.array([math.cos(math.radians(az)), math.sin(math.radians(az)), 0]) * 0.05 * sc
+            for _ in range(8):
+                z = 0.06 + sum(math.sin(math.radians(el - arch * (i + 0.5) / 40)) * L / 40 for i in range(40))
+                if z >= F['foot']:
+                    break
+                arch *= 0.85
+            fern_frond(b, F, c0, az, L, el, arch, bend, shift, uv, min(lod, 2), np.random.default_rng(seed))
+    return b
+BU_SIZES = (1.12, 1.0, 0.88)   # every third cap big, medium, small (times its 'cap' radius)
+BU_LOBES = (5, 6)     # a cap's leaf tips
+BU_NOTCH = 0.78       # the cut between two tips (share of the cap's radius)
+BU_HC, BU_HU = 0.34, 0.10      # a cap's dome over, and its underside under, its middle (share of its radius)
+BU_UP = 0.6          # a cap's axis = the mound's normal + this much up (0: flat on the mound; more: nearer level)
+BU_TURN = 14.0        # ... turned by up to this (degrees), so neighbours differ (round 4: 6 left neighbours one tone)
+BU_AXIS = 0.45        # a cap's normals: this share its axis, the rest its local smooth normal (round 4: 0.6 kept a
+                      # cap's drooping rim in its top's tone; at 0.45 the rim turns away and takes the next tone down)
+BU_OFF = (-0.02, 0.05)         # a cap's middle off the mound along its normal (m)
+BU_CORE = 0.86        # the core's share of the guide domes
+# (L1 lead 22, BUSH) A cap's TONE is baked in COLOR.r, not read from its normal (a cap is 20-30 px at the play camera, a
+# rim band of its normal 2-3 px): rows (s, level) from its middle to its rim; the standing leaf route steps at 0.9 (top)
+# and 0.7 (mid), under 0.7 the dark edge. lod0: top to s 0.68 (bush_01's 0.36 read as a flower's dot), olive to s 0.91, the edge beyond; lod1-2: one fan.
+BU_RING = {0: ((0.0, 1.0), (0.6, 0.97), (1.0, 0.62)), 1: ((0.0, 0.98), (1.0, 0.6)), 2: ((0.0, 0.98), (1.0, 0.6))}
+BU_UNDER = 0.55       # a cap's underside level (lod0): the dark edge
+BU_JIT = ((0.55, -0.04, 0.05), (0.27, 0.13, 0.15), (0.18, 0.25, 0.27))   # (share, shift lo, hi): lit, olive, dark caps
+BU_UV_CORE = (0.36, 0.50)
+CL_WIDE = 0.92        # a tuft blade's width over its length (x of CL_BLADE is in half-widths of 0.5: 0.98 x 0.92 = 0.9)
+CL_JIT = 8.0          # a tuft leaf's normal off its own (degrees, at most)
+# a tuft blade a LOD: its outline (x across, y stem to tip) and triangles. lod0 a broad five-lobed leaf, the notches
+# shallow (maple-hazel), a fan round its middle (14 triangles); lod1 an eight-corner blade (6); lod2 a kite (2)
+CL_BLADE = {
+    0: ([(0, 0), (0.45, 0.18), (0.49, 0.42), (0.37, 0.52), (0.44, 0.68), (0.33, 0.83), (0.19, 0.81), (0, 1.0),
+         (-0.19, 0.81), (-0.33, 0.83), (-0.44, 0.68), (-0.37, 0.52), (-0.49, 0.42), (-0.45, 0.18), (0, 0.45)],
+        [(14, i, (i + 1) % 14) for i in range(14)]),
+    1: ([(0, 0), (0.47, 0.24), (0.45, 0.60), (0.24, 0.86), (0, 1.0), (-0.24, 0.86), (-0.45, 0.60), (-0.47, 0.24)], [(0, i, i + 1) for i in range(1, 7)]),
+    2: ([(0, 0), (0.47, 0.40), (0, 1.0), (-0.47, 0.40)], [(0, 1, 2), (0, 2, 3)]),
+}
+_CL_UP = np.array([0.0, 0.0, 1.0])
+_cl_cache = {}
+
+
+def clump_jitter(rng, n, deg):
+    """n turned by up to deg degrees round a seeded axis across it."""
+    ax = np.cross(n, rng.normal(size=3))
+    ax /= np.linalg.norm(ax) + 1e-9
+    a = math.radians(rng.uniform(0, deg))
+    return n * math.cos(a) + np.cross(ax, n) * math.sin(a)
+
+
+def bush_dome(dm):
+    """A guide dome's centre on the ground, its yaw as a matrix, its radii."""
+    ya = math.radians(dm.get('yaw', 0))
+    return (np.array([dm['c'][0], dm['c'][1], 0.0]),
+            np.array([[math.cos(ya), -math.sin(ya), 0], [math.sin(ya), math.cos(ya), 0], [0, 0, 1.0]]), np.array(dm['r'], float))
+
+
+def bush_caps(prm):
+    """A clump's caps, seeded, the same at every LOD: cluster_point's dicts (c, u, v, w, r, hc, hu, rim) and uv."""
+    key = ('caps', prm['seed'])
+    if key in _cl_cache:
+        return _cl_cache[key]
+    domes = [bush_dome(dm) for dm in prm['domes']]
+    wgt = [r[0] * r[1] + (r[0] + r[1]) * r[2] for _, _, r in domes]
+    mult = 0.9
+    while True:
+        pts = []
+        for di, (c, R, r) in enumerate(domes):
+            nd = int(round(prm['caps'] * mult * wgt[di] / sum(wgt)))
+            for i in range(nd):
+                # a golden-angle spiral down the dome from its top to just over its foot
+                zf = 0.96 - 0.84 * (i + 0.5) / nd
+                a = i * 2.39996 + di * 1.1
+                rxy = math.sqrt(1 - zf * zf)
+                d = np.array([rxy * math.cos(a), rxy * math.sin(a), zf])
+                p = c + R @ (r * d)
+                if any(float(np.sum((R2.T @ (p - c2) / r2) ** 2)) < 1.0 for j, (c2, R2, r2) in enumerate(domes) if j != di):
+                    continue                        # (inside the other dome)
+                n = R @ (d / r)
+                pts.append((p, n / np.linalg.norm(n)))
+        if len(pts) >= prm['caps'] or mult > 3.0:
+            break
+        mult += 0.03
+    rng = np.random.default_rng(prm['seed'] + 2)
+    jr = np.random.default_rng(prm['seed'] + 5)      # (l22 BUSH) each cap's baked level shift, its own stream: BU_JIT
+    caps = []
+    for i, (p, n) in enumerate(pts):
+        r = float(rng.uniform(*prm['cap'])) * BU_SIZES[i % 3]
+        w = n + BU_UP * _CL_UP
+        w = clump_jitter(rng, w / np.linalg.norm(w), BU_TURN)
+        a = rng.uniform(0, 2 * math.pi)
+        u = np.cross(w, np.array([math.cos(a), math.sin(a), 0.3])); u /= np.linalg.norm(u)
+        v = np.cross(w, u)
+        K = int(rng.integers(BU_LOBES[0], BU_LOBES[1] + 1))
+        lob = rng.uniform(0.9, 1.08, K)
+        wid = rng.uniform(0.75, 1.25, K); wid /= wid.sum() / K
+        rim, acc = [], rng.uniform(0, 2 * math.pi)
+        for k in range(K):
+            span = 2 * math.pi / K * wid[k]
+            for j in range(CL_SUB):                 # (a tip: its cut, then two points round its crown; the alder's rim)
+                ph = j / CL_SUB
+                rim.append((acc + span * ph, BU_NOTCH + (lob[k] - BU_NOTCH) * math.sin(math.pi * ph) ** 0.55 if j else BU_NOTCH, 0.0, j > 0))
+            acc += span
+        caps.append(dict(c=p + n * rng.uniform(*BU_OFF), u=u, v=v, w=w, r=r, hc=BU_HC, hu=BU_HU, rim=rim,
+                         uv=(float(rng.uniform(0.04, 0.70)), float(rng.uniform(0.22, 0.96))), j=bu_jit(jr)))
+    _cl_cache[key] = caps
+    return caps
+
+
+def bu_jit(jr):
+    """(l22 BUSH) A cap's level shift (BU_JIT): a lit cap (its top ring shown, its size varied), an olive cap (no top)
+    or a dark cap (mostly edge), so a lit side is never one field."""
+    u, acc = float(jr.uniform()), 0.0
+    for share, lo, hi in BU_JIT:
+        acc += share
+        if u < acc:
+            return float(jr.uniform(lo, hi))
+    return 0.0
+
+
+def _bu_stitch(b, ra, rb_, w, under):
+    """Faces between two rows of vertex indices (a row may be one point), wound to face along w (under: against it)."""
+    na, nb_ = len(ra), len(rb_)
+    i = j = 0
+    while i < na or j < nb_:
+        fa = (i + 1) / na if i < na else 9
+        fb = (j + 1) / nb_ if j < nb_ else 9
+        if fa <= fb:
+            tri = (ra[i % na], ra[(i + 1) % na], rb_[j % nb_]); i += 1
+        else:
+            tri = (ra[i % na], rb_[(j + 1) % nb_], rb_[j % nb_]); j += 1
+        if len(set(tri)) < 3:
+            continue
+        fn = np.cross(b.v[tri[1]] - b.v[tri[0]], b.v[tri[2]] - b.v[tri[0]])
+        if (np.dot(fn, w) < 0) != under:
+            tri = (tri[0], tri[2], tri[1])
+        b.f.append(tri); b.tag.append(1)
+
+
+def bush_cap(b, C, lod):
+    """One cap into b. lod 0: its top (a fan from its middle to the rim) and its underside (a fan); 1: its top a fan;
+    2: a fan on one rim point a tip."""
+    n = len(C['rim'])
+
+    def own(k, s):
+        s = min(max(s, 0.05), 0.95)
+        du = cluster_point(C, k + 0.03, s)[0] - cluster_point(C, k - 0.03, s)[0]
+        ds = cluster_point(C, k, s + 0.05)[0] - cluster_point(C, k, s - 0.05)[0]
+        nn = np.cross(ds, du); nn /= np.linalg.norm(nn) + 1e-9
+        return nn if np.dot(nn, C['w']) > 0 else -nn
+    nu = -C['w'] - _CL_UP
+    nu /= np.linalg.norm(nu)
+    lvl = dict(BU_RING[lod])
+    for under, rings in ((False, tuple(r for r, _ in BU_RING[lod])), (True, (1.0, 0.0) if lod == 0 else ())):
+        rows = []
+        for s in rings:
+            mid = 0.0 < s < 1.0                     # (the level ring: one point a lobe's crown, so a cap costs about 2 x its lobes)
+            cnt = 1 if s == 0.0 else (n // CL_SUB if lod == 2 or mid else n)
+            row = []
+            for i in range(cnt):
+                k = i * n / cnt + (1.5 if lod == 2 or mid else 0.0)
+                row.append(len(b.v))
+                b.v.append(cluster_point(C, k, s, under)[0])
+                if under:
+                    b.n.append(nu); b.c.append((BU_UNDER - C['j'], 0.0, 1.0))
+                else:
+                    nn = BU_AXIS * C['w'] + (1 - BU_AXIS) * (C['w'] if s == 0.0 else own(k, s))
+                    b.n.append(nn / np.linalg.norm(nn)); b.c.append((lvl[s] - C['j'], 0.0, 1.0))
+                b.uv.append(C['uv'])
+            rows.append(row)
+        for ra, rb_ in zip(rows[:-1], rows[1:]):
+            _bu_stitch(b, ra, rb_, C['w'], under)
+
+
+def bush_core(b, dm, lod, k=BU_CORE):
+    """A guide dome at k of its size, low: normals turned down (the contact tone), COLOR.r 0.45."""
+    seg, rings = ((10, 3), (8, 2), (6, 2))[lod]
+    c, R, r = bush_dome(dm)
+    base = len(b.v)
+    rows = [[base]]
+    b.v.append(c + np.array([0, 0, r[2] * k])); b.n.append(-_CL_UP); b.uv.append(BU_UV_CORE); b.c.append((0.45, 0.0, 1.0))
+    for j in range(1, rings + 1):
+        th = 0.5 * math.pi * j / rings
+        row = []
+        for i in range(seg):
+            ph = 2 * math.pi * i / seg
+            d = np.array([math.sin(th) * math.cos(ph), math.sin(th) * math.sin(ph), math.cos(th)])
+            p = c + R @ (r * k * d)
+            if j == rings:
+                p[2] = -0.04
+            nn = R @ (d / r); nn[2] = 0.0
+            nn = nn / (np.linalg.norm(nn) + 1e-9) - 0.4 * _CL_UP
+            row.append(len(b.v))
+            b.v.append(p); b.n.append(nn / np.linalg.norm(nn)); b.uv.append(BU_UV_CORE); b.c.append((0.45, 0.0, 1.0))
+        rows.append(row)
+    for ra, rb_ in zip(rows[:-1], rows[1:]):
+        n0 = len(b.f)
+        _bu_stitch(b, ra, rb_, _CL_UP, False)
+        # (a ring's faces face out from the dome's axis, not up: wind each by its own outward direction)
+        for fi in range(n0, len(b.f)):
+            t = b.f[fi]
+            fn = np.cross(b.v[t[1]] - b.v[t[0]], b.v[t[2]] - b.v[t[0]])
+            mid = (b.v[t[0]] + b.v[t[1]] + b.v[t[2]]) / 3 - c - np.array([0, 0, 0.2 * r[2] * k])
+            if np.dot(fn, mid) < 0:
+                b.f[fi] = (t[0], t[2], t[1])
+
+
+def clump_plan(prm):
+    """The tuft's leaves, seeded, the same at every LOD: dicts stem, d (stem to tip), side, L, n (the baked normal), r, uv."""
+    key = ('tuft', prm['seed'])
+    if key in _cl_cache:
+        return _cl_cache[key]
+    rng = np.random.default_rng(prm['seed'])
+    leaves = []
+    outer, inner = prm['tuft']
+    a0 = rng.uniform(0, 2 * math.pi)
+    for ring, cnt, el, ln in ((0, outer, (10, 24), (0.44, 0.50)), (1, inner, (48, 62), (0.40, 0.46))):
+        for i in range(cnt):
+            az = a0 + ring * 0.9 + 2 * math.pi * (i + rng.uniform(-0.15, 0.15)) / cnt
+            e = math.radians(rng.uniform(*el))
+            o = np.array([math.cos(az), math.sin(az), 0.0])
+            d = o * math.cos(e) + _CL_UP * math.sin(e)
+            side = np.cross(_CL_UP, o)
+            L = float(rng.uniform(*ln))
+            stem = o * 0.03 + np.array([0, 0, 0.02])
+            # the outer leaves' normal their own upper side's (near up: the top tone); the inner ones' 50 degrees off up
+            t = e if ring == 0 else math.radians(50)
+            n = clump_jitter(rng, _CL_UP * math.cos(t) - o * math.sin(t), CL_JIT if ring == 0 else 0.0)
+            leaves.append({'stem': stem, 'd': d, 'side': side, 'L': L, 'n': n, 'r': 1.0 if n[2] > math.cos(math.radians(35)) else 0.8,
+                           'uv': (float(rng.uniform(0.04, 0.70)), float(rng.uniform(0.22, 0.96)))})
+    _cl_cache[key] = leaves
+    return leaves
+
+
+def clump_piece(prm, lod, proxy=False):
+    """A clump (core and caps: b.tag 1) or a tuft (leaves: tag 0) at a LOD, or its shadow caster (a clump: its guide
+    domes whole, low; a tuft: a lump)."""
+    b = Build()
+    b.tag = []
+    if 'crowns' in prm:
+        return fern_piece(prm, 3 if proxy else lod)
+    if 'tuft' in prm:
+        if proxy:
+            lump(b, np.random.default_rng(prm['seed'] + 7), np.array([0, 0, 0.12]), 0.36, 0.17, nu=6, nv=3)
+            return b
+        pts, tris = CL_BLADE[lod]
+        for lf in clump_plan(prm):
+            base = len(b.v)
+            for x, y in pts:
+                b.v.append(lf['stem'] + lf['side'] * x * lf['L'] * CL_WIDE + lf['d'] * y * lf['L'])
+                b.n.append(lf['n']); b.uv.append(lf['uv']); b.c.append((lf['r'], float(y), 0.0))
+            for t in tris:
+                b.f.append(tuple(base + i for i in t)); b.tag.append(0)
+        return b
+    for dm in prm['domes']:
+        bush_core(b, dm, 1 if proxy else lod, 1.0 if proxy else BU_CORE)
+    if not proxy:
+        for C in bush_caps(prm):
+            bush_cap(b, C, lod)
+    return b
+
+
+def clump_tex():
+    """clump_dabs.png: an opaque sheet of flat green-teal dabs (a lobe and its leaves sample ONE point of it: their own
+    value, none inside), its foot band dark (round 1's hull; nothing samples it now)."""
+    from PIL import Image
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from env_rocks import dab_sheet
+    N = 256
+    img = dab_sheet(N, '#5c8c70', 53, tile=2.0, scales=(0.5, 0.22), step=0.08)
+    img[int(N * 0.88):] = img[int(N * 0.88):] * 0.38
+    out = os.path.join(OUT, 'clump_dabs.png')
+    Image.fromarray((img * 255 + 0.5).astype(np.uint8)).save(out)
+    print(out)
+
+
+def mesh_clump():
+    import bpy
+    os.makedirs(OUT, exist_ok=True)
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    mat = bpy.data.materials.new('Leaves_OwnClump')
+    mat.use_nodes = True
+    nt = mat.node_tree
+    bsdf = nt.nodes['Principled BSDF']
+    ti = nt.nodes.new('ShaderNodeTexImage'); ti.image = bpy.data.images.load(os.path.join(OUT, 'clump_dabs.png'))
+    nt.links.new(ti.outputs['Color'], bsdf.inputs['Base Color'])
+    bsdf.inputs['Roughness'].default_value = 0.85
+    mat.use_backface_culling = False
+    tris = []
+    for lod in range(4):
+        b = Build()
+        for v, (nm, prm) in enumerate(CLUMP.items()):
+            pb = clump_piece(prm, min(lod, 2), proxy=lod == 3)
+            pack_into(b, pb, (v + 0.5) / 8)
+        tris.append(to_blender(bpy, f'lod{lod}' if lod < 3 else 'shadow', b, [mat])[1])
+    out = os.path.join(OUT, 'clump.gltf')
+    export_gltf(bpy, out)
+    print(f'{out} tris lod0/1/2/shadow: {tris}')
+
+
+CL_FIRE = (-0.83, -0.55)      # the sheet's fire: from the left and the camera's side (the stage's first clump)
+
+
+def clump_view(b, pitch, ppm=78.0, pad=0.25, dabs=None, yaw=0.0, fire=None):
+    """A piece (turned yaw degrees) drawn flat from 'pitch' degrees down (90: from above; the camera looks along +y),
+    the baked normal carried to every pixel. Without 'fire': three steps of the normal's rise (n.up > 0.8 top, > 0.35
+    body, else side: the numbers' classes). With it (a level direction TO the fire): the fire's side, the tops, the
+    far side, as the target's bush. Magenta: the mass seen from inside (a hole). Returns the picture (H x W x 3) and
+    the numbers (shares of the piece's pixels; 'rim': the outline's share made by leaves)."""
+    P = np.array(b.v, float); N = np.array(b.n, float); C = np.array(b.c, float)
+    N /= np.linalg.norm(N, axis=1, keepdims=True) + 1e-9
+    if yaw:
+        ya = math.radians(yaw)
+        Rz = np.array([[math.cos(ya), -math.sin(ya), 0], [math.sin(ya), math.cos(ya), 0], [0, 0, 1.0]])
+        P, N = P @ Rz.T, N @ Rz.T
+    a = math.radians(pitch)
+    up = np.array([0, math.sin(a), math.cos(a)]); fw = np.array([0, math.cos(a), -math.sin(a)])
+    sx = P[:, 0] * ppm; sy = -(P @ up) * ppm; dz = P @ fw
+    x0 = sx.min() - pad * ppm; y0 = sy.min() - pad * ppm
+    W = int(sx.max() - x0 + pad * ppm) + 1; H = int(sy.max() - y0 + pad * ppm) + 1
+    sx -= x0; sy -= y0
+    zb = np.full((H, W), 1e9); kind = np.zeros((H, W), np.uint8); val = np.ones((H, W)); nb = np.zeros((H, W, 3))
+    for fi, f in enumerate(b.f):
+        leaf = b.tag[fi] == 0
+        tone = 1.0
+        if dabs is not None:
+            u, v = b.uv[f[0]]
+            tone = float(dabs[int((1 - v) * (dabs.shape[0] - 1)), int(u * (dabs.shape[1] - 1))])
+        for t in range(1, len(f) - 1):
+            i0, i1, i2 = f[0], f[t], f[t + 1]
+            xa, ya_, xb, yb, xc, yc = sx[i0], sy[i0], sx[i1], sy[i1], sx[i2], sy[i2]
+            ar = (xb - xa) * (yc - ya_) - (xc - xa) * (yb - ya_)
+            if abs(ar) < 1e-6:
+                continue
+            k = 1 if leaf else (3 if np.cross(P[i1] - P[i0], P[i2] - P[i0]) @ fw > 0 else 2)
+            u0, u1 = max(0, int(min(xa, xb, xc))), min(W, int(max(xa, xb, xc)) + 2)
+            v0, v1 = max(0, int(min(ya_, yb, yc))), min(H, int(max(ya_, yb, yc)) + 2)
+            X, Y = np.meshgrid(np.arange(u0, u1) + 0.5, np.arange(v0, v1) + 0.5)
+            w1 = ((X - xa) * (yc - ya_) - (xc - xa) * (Y - ya_)) / ar
+            w2 = ((xb - xa) * (Y - ya_) - (X - xa) * (yb - ya_)) / ar
+            w0 = 1 - w1 - w2
+            z = w0 * dz[i0] + w1 * dz[i1] + w2 * dz[i2]
+            m = (w0 >= 0) & (w1 >= 0) & (w2 >= 0) & (z < zb[v0:v1, u0:u1])
+            zb[v0:v1, u0:u1][m] = z[m]; kind[v0:v1, u0:u1][m] = k; val[v0:v1, u0:u1][m] = tone
+            nb[v0:v1, u0:u1][m] = (w0[..., None] * N[i0] + w1[..., None] * N[i1] + w2[..., None] * N[i2])[m]
+    nb /= np.maximum(np.linalg.norm(nb, axis=2, keepdims=True), 1e-9)
+    on = kind > 0
+    cls = np.where(on, np.where(nb[..., 2] > 0.8, 1, np.where(nb[..., 2] > 0.35, 2, 3)), 0)
+    if fire is None:
+        pal = np.array([[0.19, 0.21, 0.19], [0.56, 0.76, 0.50], [0.29, 0.50, 0.42], [0.15, 0.29, 0.30]])
+        img = pal[cls] * val[..., None]
+    else:
+        lit = nb @ np.array([fire[0], fire[1], 0.0]) > 0.30
+        pal = np.array([[0.19, 0.21, 0.19], [0.62, 0.72, 0.33], [0.32, 0.46, 0.31], [0.11, 0.23, 0.26]])
+        img = pal[np.where(on, np.where(lit & (nb[..., 2] > -0.2), 1, np.where(nb[..., 2] > 0.55, 2, 3)), 0)] * val[..., None]
+    img[kind == 3] = (1.0, 0.0, 1.0)
+    edge = on & ~(np.roll(on, 1, 0) & np.roll(on, -1, 0) & np.roll(on, 1, 1) & np.roll(on, -1, 1))
+    npx = max(1, int(on.sum()))
+    num = {'top': float((cls == 1).sum()) / npx, 'body': float((cls == 2).sum()) / npx, 'side': float((cls == 3).sum()) / npx,
+           'rim': float((edge & (kind == 1)).sum()) / max(1, int(edge.sum())), 'inside': float((kind == 3).sum()) / npx,
+           'leafpx': float((kind == 1).sum()) / npx,
+           'across': (float(P[:, 0].max() - P[:, 0].min()), float(P[:, 1].max() - P[:, 1].min())), 'tall': float(P[:, 2].max())}
+    return np.clip(img, 0, 1), num
+
+
+def clump_sheet(out):
+    """The proof picture (a piece a row: from above in the numbers' classes; from the play camera's 50 degrees with
+    the fire's tones at yaw 0, yaw 140, lod1, lod2) and the numbers."""
+    from PIL import Image
+    dp = os.path.join(OUT, 'clump_dabs.png')
+    dabs = None
+    if os.path.exists(dp):
+        d = np.asarray(Image.open(dp).convert('L'), float) / 255
+        dabs = d / d[: int(d.shape[0] * 0.8)].mean()
+    rows = []
+    for nm, prm in CLUMP.items():
+        cells = []
+        for lod, pitch, yaw, fire in ((0, 90, 0, None), (0, 50, 0, CL_FIRE), (0, 50, 140, CL_FIRE), (1, 50, 0, CL_FIRE), (2, 50, 0, CL_FIRE)):
+            b = clump_piece(prm, lod)
+            img, _ = clump_view(b, pitch, dabs=dabs, yaw=yaw, fire=fire)
+            num = clump_view(b, pitch, dabs=None, yaw=yaw)[1]
+            cells.append(img)
+            nleaf = sum(1 for t in b.tag if t == 0) // len(CL_BLADE[lod][1])
+            ntri = sum(len(f) - 2 for f in b.f)
+            print(f"{nm} lod{lod} pitch {pitch} yaw {yaw}: leaves {nleaf} tris {ntri} (mass {sum(1 for t in b.tag if t == 1)}, caps {len(bush_caps(prm)) if 'caps' in prm else 0}) "
+                  f"top/body/side {num['top']:.2f}/{num['body']:.2f}/{num['side']:.2f} rim {num['rim']:.2f} leaf px {num['leafpx']:.2f} "
+                  f"inside {num['inside']:.3f} across {num['across'][0]:.2f} x {num['across'][1]:.2f} tall {num['tall']:.2f}")
+        pb = clump_piece(prm, 0, proxy=True)
+        print(f'{nm} shadow tris {sum(len(f) - 2 for f in pb.f)}')
+        h = max(c.shape[0] for c in cells)
+        rows.append(np.concatenate([np.pad(c, ((0, h - c.shape[0]), (0, 8), (0, 0)), constant_values=0.19) for c in cells], 1))
+    w = max(r.shape[1] for r in rows)
+    sheet = np.concatenate([np.pad(r, ((0, 8), (0, w - r.shape[1]), (0, 0)), constant_values=0.19) for r in rows], 0)
+    Image.fromarray((sheet * 255 + 0.5).astype(np.uint8)).save(out)
+    print(out)
+
+
 def mesh(species):
     import bpy
+    if species == 'clump':
+        return mesh_clump()
+    if species == 'spruce' and arg('--form', 'tiers') == 'tiers':
+        return mesh_spruce_tiers()   # (L1 C3a; --form real: E4's whorls of spray cards, kept to compare)
+    if species == 'alder' and arg('--form', 'clusters') == 'clusters':
+        return mesh_alder_clusters()   # (L1 C3a; --form real: E4's leaf-clump cards, kept to compare)
     os.makedirs(OUT, exist_ok=True)
     img_path = os.path.join(OUT, f'{species}_atlas.png')
     # (a packed species: one file, its pieces told apart by COLOR.a; else a file per piece)
@@ -1625,7 +2644,11 @@ def mesh(species):
 if __name__ == '__main__':
     argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else sys.argv[1:]
     species = arg('--species', 'spruce')
-    if argv and argv[0] == 'tex':
+    if argv and argv[0] == 'tex' and species == 'clump':
+        clump_tex()
+    elif argv and argv[0] == 'sheet' and species == 'clump':
+        clump_sheet(arg('--out', os.path.join(OUT, '_clump_sheet.png')))
+    elif argv and argv[0] == 'tex':
         tex(species)
     elif argv and argv[0] == 'mesh':
         mesh(species)

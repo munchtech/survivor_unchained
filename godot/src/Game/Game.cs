@@ -102,6 +102,10 @@ public partial class Game : Node, IZoneHost
         AddChild(camera);
         // --brush: the painterly post-filter (style trial; nothing is made without the flag).
         if (Brush.On is { } brush) AddChild(new Brush(brush));
+        // The ink line (L1 painted cel; --ink off: nothing is made). After Brush, so it is put first on its compositor.
+        if (InkPass.On) AddChild(new Ink());
+        // (L1 lead 21 QUIT) Every quit and the window's close go through QuitPath (early release, one frame, the guard).
+        QuitPath.Install(this);
         cam = new FollowCamera(camera);
         // --cam D: the camera this far off (closer pictures of the crowd).
         if (Args.Has("cam")) cam.Distance = cam.TargetDistance = (float)Args.Num("cam", 23);
@@ -117,6 +121,8 @@ public partial class Game : Node, IZoneHost
         screens = new Screens();
         AddChild(screens);
         AddChild(new Shots());
+        CelLib.Install(GetTree());   // (the material library's loader: every lit standard material on the cel model, L1 B2)
+        B3Maps.Install(GetTree());   // (--b3-maps: B3 texture authoring's bake-off, a painter arm's maps on named stage items)
         synth = new Synth();
         AddChild(synth);
         if (Perf.On) MeasureWith(new Perf());
@@ -138,7 +144,7 @@ public partial class Game : Node, IZoneHost
         var warmFrom = System.Diagnostics.Stopwatch.GetTimestamp();
         UiArt.Warm();
         if (Perf.On) GD.Print($"perf the interface's frames read in {System.Diagnostics.Stopwatch.GetElapsedTime(warmFrom).TotalMilliseconds:0} ms");
-        if (Args.Has("auto")) auto = new Autopilot(this) { Idle = Args.Get("auto") == "idle", Toward = Args.Get("auto") == "toward", Across = Args.Get("auto") == "across", Away = Args.Get("auto") == "away", Talk = Args.Get("auto") == "talk" };
+        if (Args.Has("auto")) auto = new Autopilot(this) { Idle = Args.Get("auto") == "idle", Toward = Args.Get("auto") == "toward", Across = Args.Get("auto") == "across", Away = Args.Get("auto") == "away", Talk = Args.Get("auto") == "talk", Stand = Args.Get("auto") == "stand" };
         // --probe: how smoothly she crosses the screen; --no-interp: drawn from the last step of the fight, as before (Interp).
         if (Args.Has("probe")) Probe = new MotionProbe();
         if (Args.Has("no-interp")) SurvivorUnchained.View.Interp.On = false;
@@ -804,7 +810,7 @@ public partial class Game : Node, IZoneHost
         StopBlend();
         var time = zone.TimeOf(World);
         air.Set(zone.AtmosphereFor(time));
-        air.Air(scene!.Data.Place?.Air);
+        air.Air(scene!.Data.Place?.Air, scene!.Data.Place?.Id ?? "", scene!.Data.Place?.Mood ?? "");
         scene.View.SetNight(time == TimeOfDay.Night);
         scene.Fx.Flare.Night = time == TimeOfDay.Night;
         scene.View.SetDusk(time == TimeOfDay.Dusk);
@@ -1521,6 +1527,7 @@ public partial class Game : Node, IZoneHost
             if (fordWideNow != fordWide) { fordWide = fordWideNow; cam.TargetDistance = fordWide ? 25f : 23f; }
             // The close view of her: the wheel in town, and the idle view anywhere quiet (GameCloseUp).
             Spots(dt);
+            Lookdev(dt); LookSwatches(); LookFx(dt);   // (L1 B2: --lookdev-swatches; B6: --lookdev-fx)
             UpdateCloseUp(dt);
             Perf.Begin(Perf.Part.Later);
             RunLater(dt);
@@ -1579,6 +1586,31 @@ public partial class Game : Node, IZoneHost
             hud.Follow(camera.IsPositionBehind(at) ? null : camera.UnprojectPosition(at));
             Probe?.Frame(camera, at, dt);
             if (Args.Has("shot")) Shots.Her = camera.IsPositionBehind(at) ? null : camera.UnprojectPosition(at + Vector3.Up * 1.1f);
+            // (L1 lead 11, R4) --stage-log: on a picture's line, her pool's center on screen (her light's foot), the ground's scale
+            // there (px per metre across the screen, and down it over across), and the foes in frame by distance from her
+            // (how many within 2 m, 2-7 m, further; the nearest; their mean bearing on screen, 0 right, 90 down, with how one-sided 0..1).
+            if (Shots.StageLog && scene.Player is { } spv)
+            {
+                var lf = spv.Light.GlobalPosition; lf.Y = at.Y;
+                var c0 = camera.UnprojectPosition(lf);
+                var fw = -camera.GlobalTransform.Basis.Z; fw.Y = 0; fw = fw.Normalized();
+                float pxm = camera.UnprojectPosition(lf + camera.GlobalTransform.Basis.X).DistanceTo(c0);
+                float pym = (camera.UnprojectPosition(lf + fw * 0.5f).DistanceTo(c0) + camera.UnprojectPosition(lf - fw * 0.5f).DistanceTo(c0));
+                int n0 = 0, n1 = 0, n2 = 0; float near = 1e9f; var dir = Vector2.Zero; var vs = GetViewport().GetVisibleRect().Size;
+                foreach (var e in fb2.Enemies.Living())
+                {
+                    var ep = new Vector3((float)e.X, at.Y, (float)e.Z);
+                    if (camera.IsPositionBehind(ep)) continue;
+                    var sp2 = camera.UnprojectPosition(ep);
+                    if (sp2.X < 0 || sp2.Y < 0 || sp2.X > vs.X || sp2.Y > vs.Y) continue;
+                    float d = new Vector2(ep.X - at.X, ep.Z - at.Z).Length();
+                    if (d < 2) n0++; else if (d < 7) n1++; else n2++;
+                    near = Mathf.Min(near, d);
+                    if ((sp2 - c0).Length() > 1) dir += (sp2 - c0).Normalized();
+                }
+                int nf = n0 + n1 + n2;
+                Shots.Stage = $" pool {c0.X:0} {c0.Y:0} pxm {pxm:0.0} aspect {pym / Mathf.Max(pxm, 1e-3f):0.000} foes {nf} (<2m {n0}, 2-7m {n1}, >7m {n2}; nearest {(nf > 0 ? near : 0):0.0} m; bearing {Mathf.RadToDeg(dir.Angle()):0} one-sided {(nf > 0 ? dir.Length() / nf : 0):0.00})";
+            }
             if (Shots.On("h6")) H6Frame(fb2);
             // (the Drowned Girl's figure fades when she, an elite or a boss, or a marked attack is behind it: their
             // middles, 1 m up, on the ground she stands on; dg2, the judge: not for the crowd, or in a horde it is
@@ -2227,7 +2259,7 @@ public partial class Game : Node, IZoneHost
             if (Args.Has("flare-hp")) fb0.Player.Hp = fb0.MaxHp * Args.Num("flare-hp", 1);
         }
         // --court-tail N: the court clip quits N frames after the door opens (the movie then closes whole).
-        if (courtOpen > 0 && Args.Has("court-tail") && Engine.GetFramesDrawn() > courtOpen + (int)Args.Num("court-tail", 150)) GetTree().Quit();
+        if (courtOpen > 0 && Args.Has("court-tail") && Engine.GetFramesDrawn() > courtOpen + (int)Args.Num("court-tail", 150)) QuitPath.Request(GetTree());
         // --clip (pictures only): she holds her health through the shot, so an idle bot can't fall before a late
         // --cast (the stalker and the arcanist did by 30 s, and the press then landed in town or not at all).
         // --court-hold (the court clip, pictures only): the same, so the standing bot lives to the fight's end (the pull and the slam

@@ -154,6 +154,15 @@ public partial class Game
     {
         if (scene?.Player is not { } pv || screens.Current != null)
         {
+            // (L7 S1d, rule 11: "the close-up and Look rigs key her from the front three-quarter"; G1 08, the Lamps by day, has
+            // her lit warm from the front: a book screen that frames her (Overlay.CameraFrame) keys her by the Look's day rig
+            // (look_day), its key only: the world keeps the town's rig, fill and rim (world: false). By night as before.)
+            if (Mode != "create")
+            {
+                if (screens.Current?.CameraFrame != null && scene?.Player is { } pb && scene.View.Night != true)
+                    CelRig("look_day", 1, cam.Camera, pb.GlobalPosition + new Vector3(0, 1.55f, 0), world: false);
+                else CelRigOff();
+            }
             closeDrives = false;
             if (scene?.Player is { } pv0) { pv0.FolkScale = 1; pv0.PoolScale = 1; pv0.LampOffHer = false; if (pv0.OwnLayer) { pv0.OwnLayer = false; scene.View.HerUnlit(false); } }
             if (scene?.Player is { } pv1 && skyShown != 1) { skyShown = 1; SurvivorUnchained.View.People.HerSkyShare(pv1.Person, 1); }
@@ -230,7 +239,7 @@ public partial class Game
             scene.AddChild(closeRimGear);
         }
         closeKey.LightColor = night ? carried != null ? CloseKeyColourNight.Lerp(carried.LightColor, warmTo) : CloseKeyColourNight : CloseKeyColourDay;
-        float want = lit ? (night ? CloseKeyNight : CloseKey) * day * share : 0;
+        float want = lit && !LookKeyHeld ? (night ? CloseKeyNight : CloseKey) * day * share : 0;
         closeKey.LightEnergy = Mathf.Lerp(closeKey.LightEnergy, want, 1 - Mathf.Exp(-3 * (float)dt));
         closeKey.Visible = closeKey.LightEnergy > 0.005f;
         closeKey.ShadowEnabled = night && CloseKeyShadow; closeKey.LightSize = 0.15f;
@@ -339,12 +348,14 @@ public partial class Game
         float en = lit && night ? day : 0;
         if (en != 0 || eyesNight != 0) { eyesNight = en; SurvivorUnchained.View.People.HerEyesNight(pv.Person, en); SurvivorUnchained.View.People.HerSkinHold(pv.Person, en); }
         // (Rendering 1: at dawn and dusk (Atmosphere.TownLit) the close view stops down CloseExposureDusk: the low sun left her face waxy at 185-189.)
-        air.SetViewExposure(lit ? Mathf.Lerp(1, night ? CloseExposureNight : SurvivorUnchained.View.Atmosphere.TownLit > 0.5f ? CloseExposureDusk : 1, day) : 1);
+        // (L1 lead 10 DAY: by day under cel the close view's own exposure, rigs.json close_day "exposure", FROM G1 13's two ground values;
+        // 1 left the town's day exposure on the close view: lit ground L 0.69, T13 0.64)
+        air.SetViewExposure(lit ? Mathf.Lerp(1, night ? CloseExposureNight : SurvivorUnchained.View.Atmosphere.TownLit > 0.5f ? CloseExposureDusk : CloseExposureDay, day) : 1);
         // (Face 48: in a cinematic its own light on her owns the highlight grade and the skin guard, GameCinemaHer.)
         if (!InCinematic) air.SetViewHighlights(lit ? (night ? day : CloseGradeDay * day) : 0, !night && CloseDayHiTint);
         // (Rendering 2: the grade's skin guard (Atmosphere.SkinGuard) by night, dawn and dusk, where warm keys turned deep skin copper.)
         if (!InCinematic) air.SetViewSkinGuard(lit && (night || SurvivorUnchained.View.Atmosphere.TownLit > 0.5f) ? day : 0);
-        float wantRim = lit && night ? CloseRimNight * day : 0;
+        float wantRim = lit && night && !LookKeyHeld ? CloseRimNight * day : 0;
         closeRim.LightEnergy = Mathf.Lerp(closeRim.LightEnergy, wantRim, 1 - Mathf.Exp(-3 * (float)dt));
         closeRim.Visible = closeRim.LightEnergy > 0.005f;
         if (closeRim.Visible)
@@ -384,6 +395,59 @@ public partial class Game
             closeBodyRim.LookAt(arms);
         }
         FolkTwins(pv.OwnLayer && CloseFolkOn, pv.GlobalPosition + new Vector3(0, 1.62f, 0));
+        if (lit) CelRig(night ? "close_night" : "close_day", day, cam.Camera, pv.GlobalPosition + new Vector3(0, 1.55f, 0)); else CelRigOff();
+        if (CelRigHeld)
+        {
+            // (L1 B4, rule 3: under cel the close view is one key, one colored fill and one rim; the seven spots split by layer
+            // (key, key gear, key hair, rim, rim gear, fill, body rim) are off, and her skin keeps the sky's whole share)
+            foreach (var l in new Light3D?[] { closeKey, closeKeyGear, closeKeyHair, closeRim, closeRimGear, closeFill, closeBodyRim, keyFolk, rimFolk, coolFolk })
+                if (l != null) { l.LightEnergy = 0; l.Visible = false; }
+            if (skyShown != 1) { skyShown = 1; SurvivorUnchained.View.People.HerSkyShare(pv.Person, 1); }
+        }
+    }
+
+    /* ------------------------------------------------ the camera rigs under cel (L1 B4) -- */
+
+    // One directional key on her (people's layer, her own layers), camera-relative from the rig (rigs.json close_*, look*:
+    // the front three-quarter, rule 11), at the rig's intensity times the world key's light; the world key off her layers
+    // while it is, so she has one key; the rig's fill and rim hold the cel globals (Atmosphere.HoldCameraRig). --cel off and
+    // --cel-rigs off: never (the spots as they were).
+    DirectionalLight3D? celKey;
+    uint celKeyMask, celWorldMask;
+    bool CelRigHeld => celKey != null && celKey.Visible;
+    const uint CelHerMask = 2 | SurvivorUnchained.View.PlayerView.CastLayer | SurvivorUnchained.View.PlayerView.HerLayer
+        | SurvivorUnchained.View.PlayerView.HerHairLayer | SurvivorUnchained.View.PlayerView.HerGearLayer;
+
+    void CelRig(string id, float k, Camera3D lens, Vector3 at, bool world = true)
+    {
+        if (!SurvivorUnchained.View.Atmosphere.CelRigs || LookKeyHeld || scene == null) { CelRigOff(); return; }
+        SurvivorUnchained.View.Atmosphere.RigsLoad();
+        if (SurvivorUnchained.Look.Rigs.Current[id] is not { Camera: true } r) { CelRigOff(); return; }
+        if (celKey == null || !IsInstanceValid(celKey) || celKey.GetParent() != scene)
+        {
+            celKey = new DirectionalLight3D { Name = "CelRigKey", ShadowEnabled = true, DirectionalShadowMode = DirectionalLight3D.ShadowMode.Orthogonal,
+                DirectionalShadowMaxDistance = 6, ShadowBias = 0.03f, LightCullMask = CelHerMask, LightSpecular = 0.5f };
+            scene.AddChild(celKey);
+        }
+        var cb = lens.GlobalTransform.Basis;
+        var back = new Vector3(cb.Z.X, 0, cb.Z.Z).Normalized();
+        var right = new Vector3(cb.X.X, 0, cb.X.Z).Normalized();
+        var (kr, ku, kb) = SurvivorUnchained.Look.Rigs.CameraKey(r.Key.Az ?? 35, r.Key.El ?? 40);
+        var dir = (right * (float)kr + Vector3.Up * (float)ku + back * (float)kb).Normalized();
+        celKey.Basis = Basis.LookingAt(-dir, Vector3.Up);
+        celKey.LightColor = new Color(r.Key.Color ?? "#ffffff");
+        celKey.LightEnergy = (float)(r.Key.Intensity ?? 1) * Mathf.Max(air.Key.LightEnergy, 0.05f) * Mathf.Clamp(k, 0, 1);
+        celKey.Visible = k > 0.01f;
+        if (!celKey.Visible) { CelRigOff(); return; }
+        if (celKeyMask == 0) { celWorldMask = air.Key.LightCullMask; celKeyMask = CelHerMask; air.Key.LightCullMask = celWorldMask & ~CelHerMask; }
+        air.HoldCameraRig(world ? r : null);
+    }
+
+    void CelRigOff()
+    {
+        if (celKey != null && IsInstanceValid(celKey)) celKey.Visible = false;
+        if (celKeyMask != 0) { air.Key.LightCullMask = celWorldMask; celKeyMask = 0; }
+        if (air.CameraRig != null) air.HoldCameraRig(null);
     }
 
     // Rendering 2: the people beside her, and an NPC the close view frames (CloseStandIn), take the rig's lights through twins of
@@ -498,6 +562,9 @@ public partial class Game
     // --close-key-sun-hold D: by day (and by moonlight) the key keeps to within D degrees of the lens on the sun's side.
     // --close-exp-dusk X: the close view's exposure at dawn and dusk against play's.
     static float CloseExposureDusk => Args.Num("close-exp-dusk", 0.85f);
+    // --close-exp-day X: the close view's exposure by day against play's (default: under cel rigs the close_day rig's exposure, else 1).
+    static float CloseExposureDay => Args.Has("close-exp-day") ? Args.Num("close-exp-day", 1f)
+        : SurvivorUnchained.View.Atmosphere.CelRigs && SurvivorUnchained.Look.Rigs.Current["close_day"] is { Exposure: double e } ? (float)e : 1f;
     static float CloseKeySunHold => Args.Num("close-key-sun-hold", 70f);
     // --close-fire-to-key K: the fire's colour on her toward the key's (0: the fire's own orange).
     static float CloseFireToKey => Args.Num("close-fire-to-key", 1f);

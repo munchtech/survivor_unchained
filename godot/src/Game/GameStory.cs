@@ -64,8 +64,8 @@ public partial class Game
     {
         StoryFile f;
         try { f = StoryFile.Load(id); }
-        catch (Exception e) { GD.PushError($"storybook: {id} not played ({e.Message})"); GetTree().Quit(1); return; }
-        storybook = new StoryPlayer(f, Host(), _ => { storybook = null; GetTree().Quit(); }, null, Args.Num("sb-from", 0));
+        catch (Exception e) { GD.PushError($"storybook: {id} not played ({e.Message})"); QuitPath.Request(GetTree(), 1, "storybook not played"); return; }
+        storybook = new StoryPlayer(f, Host(), _ => { storybook = null; QuitPath.Request(GetTree()); }, null, Args.Num("sb-from", 0));
         AddChild(storybook);
         // The HUD's fade starts black; the storybook draws its own.
         hud.Fade(0, 0);

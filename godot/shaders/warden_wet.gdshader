@@ -10,6 +10,12 @@
 // iron = 1: the base's bare fingers inside his gauntlet drawn as the gauntlet's black river-grown iron.
 shader_type spatial;
 render_mode cull_disabled, depth_draw_opaque;
+// (the material library, godot/data/look/materials.json: this shader's default class, folk_cloth: a person's clothes and gear (rule 8 class 1: people are silhouette only); L1 B2r2)
+#define CEL_INK 1
+#define CEL_SPEC vec4(9.0, 1.5, 0.0, 0.85)
+#define CEL_BUILTIN_RIM
+#define CEL_EXACT_ROUGH
+#include "res://shaders/cel.gdshaderinc"
 
 uniform sampler2D albedo_tex : source_color, filter_linear_mipmap_anisotropic, repeat_disable;
 uniform sampler2D normal_tex : hint_normal, filter_linear_mipmap_anisotropic, repeat_disable;
@@ -283,4 +289,5 @@ void fragment() {
 			ALBEDO = vec3(0.0); EMISSION = pow(dc, vec3(2.2)) * (has_id ? 1.0 : 0.2); ROUGHNESS = 1.0; SPECULAR = 0.0; METALLIC = 0.0;
 		}
 	}
+	CEL_FRAGMENT;
 }

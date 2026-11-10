@@ -34,10 +34,13 @@ public static class FlameKit
     /// <para>With <paramref name="carried"/> (a torch in a hand): faced square to the camera, its body covering what is
     /// behind it, a smaller hot card of the same flame inside it, and grown to about two and a half times its size from the play camera
     /// (a lone carried flame read as a pale wisp at chest-up and a few pixels of glint from above, judge r3).</para></summary>
-    public static Flame Add(Node3D parent, Vector3 localAt, FlameKind kind, bool cold = false, float scale = 1, bool light = true, bool carried = false)
+    /// <para>(L1 W2 C5) With <paramref name="cel"/>: its cards on the FX language's stepped flame (shaders/fx_cel_flame.gdshader,
+    /// the kit's atlas and numbers kept), each material then handed to <paramref name="cel"/> (FxCel.Flame sets its bands).</para>
+    public static Flame Add(Node3D parent, Vector3 localAt, FlameKind kind, bool cold = false, float scale = 1, bool light = true, bool carried = false,
+        System.Action<ShaderMaterial>? cel = null)
     {
         var f = new Flame { Name = kind + "Flame", Position = localAt };
-        f.Build(kind, cold, scale, light, carried);
+        f.Build(kind, cold, scale, light, carried, cel);
         parent.AddChild(f);
         return f;
     }
@@ -90,14 +93,14 @@ public partial class Flame : Node3D
     /// from the play camera (far_grow, full from 16 m).</summary>
     internal const float CarriedFarGrow = 2.4f, CarriedCoreW = 0.7f, CarriedCoreH = 0.6f;
 
-    internal void Build(FlameKind kind, bool cold, float scale, bool light, bool carried = false)
+    internal void Build(FlameKind kind, bool cold, float scale, bool light, bool carried = false, System.Action<ShaderMaterial>? cel = null)
     {
         var (h, range, e) = FlameKit.Spec(kind);
         // The card is as wide as the atlas's cell is in the world (the flame fills its cell's width).
         float w = h * FlameShader.Aspect;
         // Neighbours never in step: a phase from where it stands and who it is.
         phase = Mathf.PosMod(Position.X * 0.731f + Position.Z * 0.377f + (GetInstanceId() % 997) * 0.6180339f, 1f);
-        var shader = GD.Load<Shader>(FlameShader.Path);
+        var shader = GD.Load<Shader>(cel != null ? "res://shaders/fx_cel_flame.gdshader" : FlameShader.Path);
         (Vector3 At, float W, float H, float Ph)[] cards = kind == FlameKind.Camp
             ? new (Vector3, float, float, float)[] { (new(0, 0, 0), 1f, 1f, 0f), (new(-0.27f, 0, 0.1f), 0.85f, 0.72f, 0.37f), (new(0.25f, 0, -0.08f), 0.9f, 0.8f, 0.71f) }
             : carried
@@ -109,6 +112,7 @@ public partial class Flame : Node3D
             var mat = new ShaderMaterial { Shader = shader };
             FlameShader.Setup(mat, kind, cold, Mathf.PosMod(phase + ph, 1f), ph == 0 ? 1f : 0.75f);
             if (carried) FlameShader.Carried(mat, core: n > 0);
+            cel?.Invoke(mat);
             n++;
             mats.Add(mat);
             AddChild(new MeshInstance3D

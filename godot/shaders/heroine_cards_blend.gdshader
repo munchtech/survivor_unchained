@@ -6,6 +6,12 @@
 // (src/Actors/HairDraw.cs)
 shader_type spatial;
 render_mode blend_mix, depth_prepass_alpha, cull_disabled;
+// The cel model (cel.gdshaderinc; L1 B1b): as heroine_cards.gdshader (ink 2, a soft ramp, no stepped rim).
+#define CEL_INK 2
+#define CEL_BAND vec4(0.0, 0.15, 0.2, 0.05)
+#define CEL_NO_RIM
+#define CEL_EXACT_ROUGH
+#include "res://shaders/cel.gdshaderinc"
 
 uniform sampler2D albedo_tex : source_color, filter_linear_mipmap, repeat_enable;
 uniform vec4 albedo_color : source_color = vec4(1.0);
@@ -33,4 +39,6 @@ void fragment() {
 	}
 	ROUGHNESS = 0.8;
 	SPECULAR = mix(0.5, 0.1, skin_lit);
+	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug).
+	CEL_FRAGMENT;
 }
