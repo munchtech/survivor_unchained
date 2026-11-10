@@ -6,8 +6,9 @@
       dense rows of 8 tiles, 1:1 pixels, each tile cropped round her tracked pelvis (the log's `act: scr` lines; clamped to the
       image). Frames: 3 movie frames before the act to 0.6 s after its end, every N-th movie frame (2), every hold-every-th (6)
       inside the held loop, every frame over the act's first S seconds (bladestorm_loop: 1.0); the act's first and last frame
-      and each event's frame are always in. Labels: run time, the clip's frame at 60 fps counted from the act's start (negative
-      before, end+n after), the event that fires there. Play tiles 300x300 (larger if her box needs it), close tiles sized to
+      each event's frame and each contact frame (her_events.json) are always in. Labels: run time, the clip's frame at 60 fps
+      from its playhead in the pose shown (the log's `clip=`; `~f<n>` by the run clock on old logs, a frame early), end+n after,
+      the event that fires there. Play tiles 300x300 (larger if her box needs it), close tiles sized to
       her box over the picked frames plus 15 cm. Writes <clip>_<cam>_dense_r<k>_1to1.png and _half.jpg, one pair per row (the
       half's labels are drawn at full size). A tile's picture is the movie file f<N> of its `act: scr f=N` line (proved on
       heroic_leap play, files 28-38: the quiet and the moving frames fall on the same N in the log and in the files).
@@ -51,8 +52,19 @@ def track(log):
     return out
 
 
-def picks(tr, t0, dur, ev, hold, first, every, hold_every):
-    """[(track index, label)] of the frames a dense sheet shows."""
+def contacts(clip):
+    """The clip's contact frames (60 fps) from godot/data/anim/her_events.json (the pack's beats), or []."""
+    p = Path(__file__).resolve().parents[3] / "godot" / "data" / "anim" / "her_events.json"
+    try:
+        import json
+        return [int(c) for c in json.loads(p.read_text())["clips"][clip].get("contact", [])]
+    except Exception:
+        return []
+
+
+def picks(tr, t0, dur, ev, hold, first, every, hold_every, hits=()):
+    """[(track index, label)] of the frames a dense sheet shows; `hits` = contact frames (60 fps of the clip), always in when
+    the log carries the clip's playhead (the frame whose `clip=` lands on it)."""
     e = 1e-4
     i0 = next(i for i, r in enumerate(tr) if r["t"] >= t0 - e)
     i1 = max(i for i, r in enumerate(tr) if r["t"] <= t0 + dur + e)
@@ -62,6 +74,11 @@ def picks(tr, t0, dur, ev, hold, first, every, hold_every):
         k = next((i for i, r in enumerate(tr) if r["t"] >= te - e), None)
         if k is not None:
             fire[k] = (fire[k] + "+" if k in fire else "") + name
+    for h in hits:
+        k = next((i for i, r in enumerate(tr) if r["clip"] is not None and t0 - e <= r["t"] <= t0 + dur + e
+                  and abs(r["clip"] * 60 - h) < 0.5), None)
+        if k is not None:
+            fire[k] = (fire[k] + "+" if k in fire else "") + "contact"
     out, nxt = [], max(0, i0 - 3)
     for i in range(max(0, i0 - 3), iz + 1):
         t = tr[i]["t"]
@@ -103,7 +120,7 @@ def dense(clip, first, every, hold_every, cams):
         if not tr or not any(d.glob("f*.png")):
             print(f"{clip} {cam}: no frames or no `act: scr` lines"); continue
         t0, dur, ev, hold = act_info(log)
-        pk = picks(tr, t0, dur, ev, hold, first, every, hold_every)
+        pk = picks(tr, t0, dur, ev, hold, first, every, hold_every, contacts(clip))
         L, R, U, D, out = extents(tr, [i for i, _ in pk])
         mw, mh = (300, 300) if cam == "play" else (0, 0)
         tw, th = max(mw, 20 * math.ceil((L + R) / 20)), max(mh, 20 * math.ceil((U + D) / 20))
