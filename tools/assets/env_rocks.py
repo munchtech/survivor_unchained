@@ -972,34 +972,51 @@ def mesh(only=None):
 # own plane; drawn by OWN_ROCK's painted branch (kit.gdshader: the mesh normal as it is, no bump, no moss or lichen).
 # Vertex colour: r, g, b 0 (no baked wear: the planes carry the painting), a the variant, as every packed species.
 #     python tools/assets/env_rocks.py tex --kit night                        rock_dabs.png
-#     blender -b -P tools/assets/env_rocks.py -- mesh --preset boulder_s      (or boulder_m, boulder_l) -> <species>.gltf
-#     python tools/assets/env_rocks.py sheet --out X.png                      the kit's review sheet (the play camera's angle and
-#                                                                             size, three flat tones by normal) and its table
+#     blender -b -P tools/assets/env_rocks.py -- mesh --preset boulder_s      (or boulder_m, boulder_l, round_s, round_m,
+#                                                                             round_l) -> <species>.gltf
+#     python tools/assets/env_rocks.py sheet --kit stone --out X.png          the kit's review sheet (the play camera's angle
+#                                                                             and size, three flat tones by normal) and its table
 # A species' name carries no underscore (FloraSpecies.ByMaterial cuts a material's name at one), so the design's preset
 # boulder_s is the species 'bouldersmall' (pieces boulder_s_a, boulder_s_b), boulder_m 'bouldermid', boulder_l 'boulderlarge'.
+# TWO FORMS on the same hulls (L1 l14 S2; lead 14 on the first sheet: the blocks read as crates with lids and cut gems,
+# vertical dark walls over half of each piece, where the target's boulders are rounded lumps wider than tall):
+#   facet  boulder_s/m/l: lower blocks (height about 0.45 of the width), sides leaning back 12-22 degrees and unequal,
+#          shoulders only on a run of neighbouring sides and never under 0.15 m wide (none on the small), no corner bevel on
+#          a block under 2 m; flat normals.
+#   round  round_s/m/l -> 'roundsmall', 'roundmid', 'roundlarge' (pieces round_s_a, ...): each block a low lump, a
+#          super-ellipse footprint with two broad lobes under a gently domed top (its profile's exponent solved for 'top'),
+#          the widest ring a little over the ground and a small tuck under it; SMOOTH normals taken from the surface itself,
+#          no noise, no feature under 0.15 m. The stepped material draws its tone boundaries as curves.
 DAB_TILE = 4.0      # metres the dab sheet covers
-NIGHT = {
-    # size: a block's x, y across and its height over the ground (m); off: its place (x, y); block: how square its outline
-    # (2 an ellipse, 4 a block); sides; lean (degrees, low, high); ttilt (degrees); corner: the corner bevel's width (m, 0 none)
-    'boulder_s': dict(species='bouldersmall', top=0.4, variants=[
-        dict(seed=2101, blocks=[dict(size=(0.72, 0.58, 0.4), sides=5, lean=(3, 9), ttilt=(5, 10), block=3.0, corner=0.0)]),
-        dict(seed=2113, blocks=[dict(size=(0.88, 0.66, 0.5), sides=6, lean=(3, 9), ttilt=(5, 10), block=3.4, corner=0.0)]),
-    ]),
-    'boulder_m': dict(species='bouldermid', top=0.4, variants=[
-        dict(seed=2201, blocks=[dict(size=(1.5, 1.2, 0.85), sides=6, lean=(3, 10), ttilt=(4, 9), block=3.2, corner=0.16)]),
-        dict(seed=2213, blocks=[dict(size=(1.75, 1.3, 0.95), sides=7, lean=(3, 10), ttilt=(4, 9), block=3.6, corner=0.16)]),
-        dict(seed=2227, blocks=[dict(size=(1.3, 1.15, 1.0), sides=5, lean=(4, 10), ttilt=(5, 10), block=3.0, corner=0.18),
-                                dict(size=(0.8, 0.75, 0.5), off=(0.55, -0.35), sides=5, lean=(3, 9), ttilt=(5, 10), block=3.0, corner=0.0)]),
-    ]),
-    'boulder_l': dict(species='boulderlarge', top=0.4, variants=[
-        dict(seed=2301, blocks=[dict(size=(2.6, 2.1, 1.5), sides=7, lean=(4, 10), ttilt=(4, 8), block=3.4, corner=0.24),
-                                dict(size=(1.5, 1.3, 0.8), off=(1.15, -0.75), sides=5, lean=(3, 9), ttilt=(5, 9), block=3.0, corner=0.18)]),
-        dict(seed=2311, blocks=[dict(size=(3.1, 2.3, 1.35), sides=8, lean=(4, 10), ttilt=(3, 7), block=3.8, corner=0.26)]),
-        dict(seed=2323, blocks=[dict(size=(2.3, 2.0, 1.75), sides=6, lean=(4, 10), ttilt=(4, 8), block=3.2, corner=0.24),
-                                dict(size=(1.7, 1.2, 1.0), off=(-0.85, 0.6), sides=6, lean=(3, 9), ttilt=(5, 9), block=3.2, corner=0.18),
-                                dict(size=(1.0, 0.9, 0.55), off=(0.9, 1.0), sides=5, lean=(3, 9), ttilt=(5, 10), block=3.0, corner=0.0)]),
-    ]),
+# size: a block's x, y across and its height over the ground (m); off: its place (x, y); block: how square its outline
+# (2 an ellipse, 4 a block); sides; lean (degrees, low, high); ttilt (degrees); corner: the corner bevel's width (m, 0 none);
+# shoulders: how many neighbouring sides carry one (default half of them)
+HULLS = {
+    's': [
+        dict(seed=2101, blocks=[dict(size=(0.64, 0.50, 0.27), sides=5, lean=(12, 22), ttilt=(9, 15), block=2.6, corner=0.0, shoulders=0)]),
+        dict(seed=2113, blocks=[dict(size=(0.84, 0.62, 0.34), sides=5, lean=(12, 22), ttilt=(9, 15), block=2.8, corner=0.0, shoulders=0)]),
+    ],
+    'm': [
+        dict(seed=2201, blocks=[dict(size=(1.45, 1.15, 0.60), sides=5, lean=(12, 22), ttilt=(7, 13), block=2.8, corner=0.0)]),
+        dict(seed=2213, blocks=[dict(size=(1.55, 1.2, 0.64), sides=6, lean=(12, 22), ttilt=(7, 12), block=3.0, corner=0.0),
+                                dict(size=(0.72, 0.6, 0.32), off=(-0.62, -0.42), sides=5, lean=(12, 20), ttilt=(9, 15), block=2.6, corner=0.0, shoulders=0)]),
+        dict(seed=2227, blocks=[dict(size=(1.3, 1.1, 0.62), sides=5, lean=(12, 22), ttilt=(8, 13), block=2.8, corner=0.0),
+                                dict(size=(0.8, 0.7, 0.36), off=(0.55, -0.35), sides=5, lean=(12, 20), ttilt=(9, 15), block=2.6, corner=0.0, shoulders=0)]),
+    ],
+    'l': [
+        dict(seed=2301, blocks=[dict(size=(2.6, 2.0, 1.1), sides=6, lean=(12, 22), ttilt=(6, 11), block=3.0, corner=0.24),
+                                dict(size=(1.5, 1.2, 0.62), off=(1.15, -0.75), sides=5, lean=(12, 20), ttilt=(8, 13), block=2.8, corner=0.0)]),
+        dict(seed=2311, blocks=[dict(size=(3.0, 2.2, 1.15), sides=7, lean=(12, 22), ttilt=(5, 10), block=3.2, corner=0.26),
+                                dict(size=(1.2, 1.0, 0.5), off=(-1.2, -0.7), sides=5, lean=(12, 20), ttilt=(9, 14), block=2.6, corner=0.0)]),
+        dict(seed=2323, blocks=[dict(size=(2.3, 1.9, 1.15), sides=6, lean=(12, 22), ttilt=(6, 11), block=3.0, corner=0.24, seg=28, rings=7),
+                                dict(size=(1.7, 1.2, 0.75), off=(-0.85, 0.6), sides=5, lean=(12, 20), ttilt=(8, 13), block=2.8, corner=0.0),
+                                dict(size=(1.0, 0.9, 0.45), off=(0.9, 1.0), sides=5, lean=(12, 20), ttilt=(9, 14), block=2.6, corner=0.0, shoulders=0)]),
+    ],
 }
+_LONG = {'s': 'small', 'm': 'mid', 'l': 'large'}
+# (hz: the round form's height over the block's; a lump as low as the facet block read as a river pebble on the sheet)
+NIGHT = {f'{pre}_{k}': dict(species=f'{pre}{_LONG[k]}', form=form, top=top, hz=hz, variants=HULLS[k])
+         for pre, form, top, hz in (('boulder', 'facet', 0.42, 1.0), ('round', 'round', 0.42, 1.18)) for k in 'sml'}
 COS30 = math.cos(math.radians(30))
 COS80 = math.cos(math.radians(80))
 
@@ -1036,18 +1053,22 @@ def night_block(bp, rng, sd, sink=0.12):
     nt = np.array([math.cos(ta) * math.sin(tt), math.sin(ta) * math.sin(tt), math.cos(tt)])
     out = [(nt, nt[2] * h, 'top')]
     a0, sides = rng.uniform(0, 2 * math.pi), []
+    sh0, shn = int(rng.integers(0, n)), bp.get('shoulders', n // 2)     # (the run of sides that carry a shoulder)
     for i in range(n):
-        a = a0 + (i + rng.uniform(-0.2, 0.2)) * 2 * math.pi / n
-        r = (abs(math.cos(a) / ax) ** p + abs(math.sin(a) / ay) ** p) ** (-1 / p) * rng.uniform(0.9, 1.0)
+        a = a0 + (i + rng.uniform(-0.32, 0.32)) * 2 * math.pi / n       # (unequal sides: an even ring reads as a cut gem)
+        r = (abs(math.cos(a) / ax) ** p + abs(math.sin(a) / ay) ** p) ** (-1 / p) * rng.uniform(0.84, 1.0)
         l = math.radians(rng.uniform(*bp['lean']))
         ns = np.array([math.cos(a) * math.cos(l), math.sin(a) * math.cos(l), math.sin(l)])
         sides.append((ns, r * math.cos(l)))
         out.append((ns, r * math.cos(l), 'side'))
-        # the shoulder: through the side's point sd down from the top, its normal 48-60 degrees from up
-        ph, zq = math.radians(rng.uniform(48, 60)), h - sd * rng.uniform(0.8, 1.2)
-        q = np.array([math.cos(a), math.sin(a), 0.0]) * (r - zq * math.tan(l)) + np.array([0, 0, zq])
-        nsh = np.array([math.cos(a) * math.sin(ph), math.sin(a) * math.sin(ph), math.cos(ph)])
-        out.append((nsh, float(nsh @ q), 'shoulder'))
+        # the shoulder: through the side's point 'drop' down from the top, its normal 44-58 degrees from up; only on the
+        # run of sides, and only when it is 0.18 m wide or more before the block is fitted to its size (0.15 after: under that it is a notch)
+        ph, drop = math.radians(rng.uniform(44, 58)), sd * rng.uniform(0.8, 1.2)
+        if (i - sh0) % n < shn and drop / math.sin(ph) >= 0.18:
+            zq = h - drop
+            q = np.array([math.cos(a), math.sin(a), 0.0]) * (r - zq * math.tan(l)) + np.array([0, 0, zq])
+            nsh = np.array([math.cos(a) * math.sin(ph), math.sin(a) * math.sin(ph), math.cos(ph)])
+            out.append((nsh, float(nsh @ q), 'shoulder'))
     if bp['corner'] > 0:
         for i in range(n):
             (n1, d1), (n2, d2) = sides[i], sides[(i + 1) % n]
@@ -1070,10 +1091,18 @@ def night_piece(prm, top, name=''):
         V, F, N, K, UV = [], [], [], [], []
         for bp in prm['blocks']:
             pl = night_block(bp, rng, sd * bp['size'][2])
-            for pi, P in polytope([(nn, d) for nn, d, _ in pl]):
+            faces = polytope([(nn, d) for nn, d, _ in pl])
+            allp = np.concatenate([P for _, P in faces])
+            lo_, hi_ = allp.min(0), allp.max(0)     # (the block keeps to its size: unequal leaning sides overran it)
+            sc = np.array([bp['size'][0] / (hi_[0] - lo_[0]), bp['size'][1] / (hi_[1] - lo_[1]), 1.0])
+            c0 = np.array([(lo_[0] + hi_[0]) / 2, (lo_[1] + hi_[1]) / 2, 0.0])
+            c1 = np.array(list(bp.get('off', (0.0, 0.0))) + [0.0])
+            for pi, P in faces:
                 nn, _, kind = pl[pi]
                 if kind == 'foot':
                     continue
+                P = (P - c0) * sc + c1
+                nn = nn / sc; nn = nn / np.linalg.norm(nn)
                 u, v = chart_frame(nn)
                 uv0 = rng.uniform(0, 1, 2)
                 base = len(V)
@@ -1081,7 +1110,8 @@ def night_piece(prm, top, name=''):
                 for j in range(1, len(P) - 1):
                     F.append((base, base + j, base + j + 1)); N.append(nn); K.append(kind)
                     UV.append([uv0 + np.array([P[t] @ u, P[t] @ v]) / DAB_TILE for t in (0, j, j + 1)])
-        return dict(name=name, V=np.array(V), F=np.array(F), N=np.array(N), K=K, UV=np.array(UV), fam='stone')
+        return dict(name=name, V=np.array(V), F=np.array(F), N=np.array(N), K=K, UV=np.array(UV), fam='stone',
+                    CN=np.repeat(np.array(N)[:, None], 3, 1))
     lo, hi = 0.04, 0.6      # (the shoulder's drop, a share of the block's height: more of it, less top)
     for _ in range(12):
         mid = (lo + hi) / 2
@@ -1091,12 +1121,105 @@ def night_piece(prm, top, name=''):
         else:
             hi = mid
     pc['sd'] = round(mid, 3)
+    pc['lods'] = [pc, pc, pc]       # (a faceted boulder is under 150 triangles: one mesh at every distance)
+    return pc
+
+
+def round_block(bp, rng, e, seg, rings, sink=0.12):
+    """One block as a low lump: (V, F, VN, UV per vertex). A pole, 'rings' rings of 'seg': rings - 2 down the dome at equal
+    steps of arc to the widest ring (0.22 of the height over the ground), one on the ground under a small tuck, one 'sink'
+    under it. The normals are the surface's own (its two tangents crossed), not the mesh's, so every lod shades alike."""
+    ax, ay, h = bp['size'][0] / 2, bp['size'][1] / 2, bp['size'][2]
+    o = np.array(list(bp.get('off', (0.0, 0.0))) + [0.0])
+    p = bp.get('round', 2.5)
+    lob = [(k, rng.uniform(0.07, 0.13) * (1.0 if k == 2 else 0.75), rng.uniform(0, 2 * math.pi)) for k in (2, 3)]
+    sa, sm = rng.uniform(0, 2 * math.pi), rng.uniform(0.25, 0.5)       # (the lump leans: m sideways per m of height)
+    shx, shy = sm * math.cos(sa), sm * math.sin(sa)
+    uv0 = rng.uniform(0, 1, 2)
+    zc = 0.22 * h
+
+    def rad(th):
+        base = (np.abs(np.cos(th) / ax) ** p + np.abs(np.sin(th) / ay) ** p) ** (-1 / p)
+        return base * (1 + sum(a * np.cos(k * (th - t0)) for k, a, t0 in lob))
+    t = np.linspace(0, math.pi / 2, 400)
+    pr, pz = np.sin(t) ** (2 / e), zc + (h - zc) * np.cos(t) ** (2 / e)
+    s = np.concatenate([[0.0], np.cumsum(np.hypot(np.diff(pr) * (ax + ay) / 2, np.diff(pz)))])
+    nu = rings - 2
+    sj = s[-1] * np.arange(1, nu + 1) / nu
+    rr, zz = np.interp(sj, s, pr), np.interp(sj, s, pz)
+    dr, dz = np.interp(sj, s, np.gradient(pr, s)), np.interp(sj, s, np.gradient(pz, s))
+    bz, br = 1.6 * zc, 0.5                      # (the tuck: an arc from the widest ring to the ground)
+    t1 = math.asin(zc / bz)
+    rg = 1 - br * (1 - math.cos(t1))
+    rr, zz = np.concatenate([rr, [rg, rg]]), np.concatenate([zz, [0.0, -sink]])
+    dr, dz = np.concatenate([dr, [-br * math.sin(t1), 0.0]]), np.concatenate([dz, [-bz * math.cos(t1), -1.0]])
+    th = np.arange(seg) * 2 * math.pi / seg
+    R = rad(th); dR = (rad(th + 1e-4) - rad(th - 1e-4)) / 2e-4
+    c, sn = np.cos(th), np.sin(th)
+    V = [np.array([[shx * h, shy * h, h]])]; VN = [np.array([[0.0, 0.0, 1.0]])]
+    for j in range(rings):
+        V.append(np.stack([R * rr[j] * c + shx * zz[j], R * rr[j] * sn + shy * zz[j], np.full(seg, zz[j])], 1))
+        dth = np.stack([dR * c - R * sn, dR * sn + R * c, np.zeros(seg)], 1)
+        ds = np.stack([R * dr[j] * c + shx * dz[j], R * dr[j] * sn + shy * dz[j], np.full(seg, dz[j])], 1)
+        VN.append(np.cross(ds, dth))
+    V, VN = np.concatenate(V), np.concatenate(VN)
+    sx, sy = 2 * ax / np.ptp(V[:, 0]), 2 * ay / np.ptp(V[:, 1])        # (the lobes and the lean keep to the block's size)
+    V = V * [sx, sy, 1.0]
+    V[:, 0] -= (V[:, 0].max() + V[:, 0].min()) / 2; V[:, 1] -= (V[:, 1].max() + V[:, 1].min()) / 2
+    VN = VN / [sx, sy, 1.0]
+    VN /= np.maximum(np.linalg.norm(VN, axis=1, keepdims=True), 1e-12)
+    F = [(0, 1 + i, 1 + (i + 1) % seg) for i in range(seg)]
+    for j in range(rings - 1):
+        a0, b0 = 1 + j * seg, 1 + (j + 1) * seg
+        for i in range(seg):
+            i1 = (i + 1) % seg
+            F += [(a0 + i, b0 + i, b0 + i1), (a0 + i, b0 + i1, a0 + i1)]
+    # the dabs: the dome laid flat about its pole (each vertex its meridian's arc from the pole, along its bearing)
+    m = np.zeros(len(V)); prev = np.repeat(V[:1], seg, 0); acc = np.zeros(seg)
+    for j in range(rings):
+        ring = V[1 + j * seg:1 + (j + 1) * seg]
+        acc = acc + np.linalg.norm(ring - prev, axis=1); m[1 + j * seg:1 + (j + 1) * seg] = acc; prev = ring
+    ct, st = np.concatenate([[0.0], np.tile(c, rings)]), np.concatenate([[0.0], np.tile(sn, rings)])
+    UV = uv0 + np.stack([m * ct, m * st], 1) / DAB_TILE
+    return V + o, np.array(F), VN, UV
+
+
+def round_piece(prm, top, name='', hz=1.0):
+    """One rounded boulder: the same hull blocks as the facet form, each a lump; the dome's exponent (2 a half ellipse,
+    more a flatter top over steeper sides) solved so the tops cover 'top' of the footprint from above. lods: three."""
+    def build(e, lod=0):
+        rng = np.random.default_rng(prm['seed'] + 7)
+        V, F, CN, UV, o = [], [], [], [], 0
+        for bi, bp in enumerate(prm['blocks']):
+            bp = dict(bp, size=(bp['size'][0], bp['size'][1], bp['size'][2] * hz))
+            w = (bp['size'][0] + bp['size'][1]) / 2
+            seg = (bp.get('seg', 24 if w < 1.0 else 28 if w < 2.0 else 32) if bi == 0 else 20 if w >= 1.0 else 16)
+            rings = (bp.get('rings', 7 if w < 2.0 else 8) if bi == 0 else 5)
+            if lod:
+                seg, rings = (max(seg // 2, 10), max(rings - 2, 4)) if lod == 1 else (max(seg // 3, 8), 4)
+            v, f, vn, uv = round_block(bp, rng, e, seg, rings)
+            V.append(v); F.append(f + o); CN.append(vn[f]); UV.append(uv[f]); o += len(v)
+        CN = np.concatenate(CN)
+        N = CN.sum(1); N /= np.maximum(np.linalg.norm(N, axis=1, keepdims=True), 1e-12)
+        return dict(name=name, V=np.concatenate(V), F=np.concatenate(F), N=N, CN=CN, K=[], UV=np.concatenate(UV), fam='stone')
+    lo, hi = 2.0, 2.7        # (over 2.7 the lump is a drum: a flat lid over a wall; the share is then what it is)
+    for _ in range(10):
+        mid = (lo + hi) / 2
+        if shares(build(mid))['top'] < top:
+            lo = mid
+        else:
+            hi = mid
+    e = round(2.0 if shares(build(2.0))['top'] >= top else mid, 2)
+    pc = build(e)
+    pc['e'] = e
+    pc['lods'] = [pc, build(e, 1), build(e, 2)]
     return pc
 
 
 def night_pieces(only=None):
-    """{preset: [piece]} (the pieces' names boulder_s_a, ...)."""
-    return {nm: [night_piece(prm, pre['top'], f'{nm}_{"abcdefgh"[vi]}') for vi, prm in enumerate(pre['variants'])]
+    """{preset: [piece]} (the pieces' names boulder_s_a, ..., round_s_a, ...)."""
+    return {nm: [round_piece(prm, pre['top'], f'{nm}_{"abcdefgh"[vi]}', pre['hz']) if pre['form'] == 'round' else
+                 night_piece(prm, pre['top'], f'{nm}_{"abcdefgh"[vi]}') for vi, prm in enumerate(pre['variants'])]
             for nm, pre in NIGHT.items() if not only or nm == only}
 
 
@@ -1106,13 +1229,15 @@ _e = math.radians(50)
 PLAY = np.array([[1.0, 0, 0], [0, math.sin(_e), math.cos(_e)], [0, -math.cos(_e), math.sin(_e)]])   # (right, up, toward the eye)
 
 
-def raster(V, F, R, ppm, pad=2):
-    """An orthographic z-buffer of the triangles seen with R's rows (right, up, toward the eye): (face ids, -1 empty; x0, y0 px)."""
+def raster(V, F, R, ppm, pad=2, bary=False):
+    """An orthographic z-buffer of the triangles seen with R's rows (right, up, toward the eye): (face ids, -1 empty; x0, y0 px)
+    and, with bary, each pixel's weights of its face's first two corners."""
     P = V @ R.T
     x, y, z = P[:, 0] * ppm, -P[:, 1] * ppm, P[:, 2]
     x0, y0 = math.floor(x.min()) - pad, math.floor(y.min()) - pad
     W, H = int(math.ceil(x.max()) - x0) + pad, int(math.ceil(y.max()) - y0) + pad
     ids = -np.ones((H, W), np.int64); zb = np.full((H, W), -1e9)
+    B0, B1 = np.zeros((H, W)), np.zeros((H, W))
     for fi, (a, b, c) in enumerate(F):
         xs, ys = x[[a, b, c]] - x0, y[[a, b, c]] - y0
         i0, i1 = max(int(xs.min()), 0), min(int(math.ceil(xs.max())) + 1, W)
@@ -1128,7 +1253,9 @@ def raster(V, F, R, ppm, pad=2):
         sub = zb[j0:j1, i0:i1]
         m = (w0 >= 0) & (w1 >= 0) & (w2 >= 0) & (zz > sub)
         sub[m] = zz[m]; ids[j0:j1, i0:i1][m] = fi
-    return ids, (x0, y0)
+        if bary:
+            B0[j0:j1, i0:i1][m] = w0[m]; B1[j0:j1, i0:i1][m] = w1[m]
+    return (ids, (x0, y0), (B0, B1)) if bary else (ids, (x0, y0))
 
 
 def groups(N):
@@ -1182,13 +1309,18 @@ def sheet(rows, out, ppm=78.0, gap=0.5):
     for row in rows:
         rt = []
         for pc in row:
-            ids, _ = raster(pc['V'], pc['F'], PLAY, ppm)
-            N = pc['N']; t = N @ MOON
+            ids, _, (b0, b1) = raster(pc['V'], pc['F'], PLAY, ppm, bary=True)
+            cov = ids >= 0; f = ids[cov]
+            CN = pc['CN'] if pc.get('CN') is not None else np.repeat(pc['N'][:, None], 3, 1)
+            w0, w1 = b0[cov][:, None], b1[cov][:, None]
+            N = CN[f, 0] * w0 + CN[f, 1] * w1 + CN[f, 2] * (1 - w0 - w1)
+            N /= np.maximum(np.linalg.norm(N, axis=1, keepdims=True), 1e-12)
+            t = N @ MOON
             tone = np.where((N[:, 2] >= COS30) | (t > 0.8), 0, np.where((t < 0.1) | (N[:, 2] <= COS80), 2, 1))
-            fam = pc.get('fams') if pc.get('fams') is not None else [pc['fam']] * len(N)
-            col = np.array([TONES[f][k] for f, k in zip(fam, tone)])
+            fam = pc.get('fams') if pc.get('fams') is not None else [pc['fam']] * len(pc['F'])
+            T = np.array([TONES[x] for x in fam])
             img = np.tile(GROUND, (ids.shape[0], ids.shape[1], 1))
-            img[ids >= 0] = col[ids[ids >= 0]]
+            img[cov] = T[f, tone]
             rt.append(img)
         tiles.append(rt)
     g = int(gap * ppm)
@@ -1219,6 +1351,8 @@ def table(pc):
             if k == 'side':
                 key = tuple(np.round(n, 3)); ar[key] = ar.get(key, 0) + 0.5 * np.linalg.norm(np.cross(V[b] - V[a], V[c] - V[a]))
         line += f", side planes {sum(1 for v in ar.values() if v > 0.15 * max(ar.values()))}, shoulder {pc.get('sd')} of the height"
+    if pc.get('e'):
+        line += f", dome exponent {pc['e']}, lods {' / '.join(str(len(q['F'])) for q in pc['lods'])} tris"
     return line
 
 
@@ -1253,8 +1387,9 @@ def night_tex():
 
 
 def night_mesh(only=None):
-    """Each night preset's species file: lod0, lod1, lod2 and shadow (one mesh: a boulder is under 150 triangles), flat
-    normals, material Stone_Own<Species> on rock_dabs.png."""
+    """Each night preset's species file: lod0, lod1, lod2 and shadow (the facet form one mesh: a boulder is under 150
+    triangles; the round form three, the shadow its lod2), each corner the piece's own normal (a facet's plane or the
+    lump's surface), material Stone_Own<Species> on rock_dabs.png."""
     import bpy
     img_path = os.path.join(OUT, 'rock_dabs.png')
     for nm, pcs in night_pieces(only).items():
@@ -1265,15 +1400,17 @@ def night_mesh(only=None):
         ti = mat.node_tree.nodes.new('ShaderNodeTexImage'); ti.image = bpy.data.images.load(img_path)
         mat.node_tree.links.new(ti.outputs['Color'], bsdf.inputs['Base Color'])
         bsdf.inputs['Roughness'].default_value = 1.0
-        V, F, Nv, UV, C, o = [], [], [], [], [], 0
-        for vi, pc in enumerate(pcs):
-            # (each corner its own vertex, so a face's normal is its plane's on all three)
-            V.append(pc['V'][pc['F']].reshape(-1, 3)); Nv.append(np.repeat(pc['N'], 3, 0)); UV.append(pc['UV'].reshape(-1, 2))
-            F.append(np.arange(len(pc['F']) * 3).reshape(-1, 3) + o); o += len(pc['F']) * 3
-            C.append(np.tile([0.0, 0.0, 0.0, (vi + 0.5) / 8], (len(pc['F']) * 3, 1)))
+        for pc in pcs:
             print('  ' + table(pc))
-        V, F, Nv, UV, C = np.concatenate(V), np.concatenate(F), np.concatenate(Nv), np.concatenate(UV), np.concatenate(C)
-        for on in ('lod0', 'lod1', 'lod2', 'shadow'):
+        for on, li in (('lod0', 0), ('lod1', 1), ('lod2', 2), ('shadow', 2)):
+            V, F, Nv, UV, C, o = [], [], [], [], [], 0
+            for vi, pc0 in enumerate(pcs):
+                pc = pc0['lods'][li]
+                # (each corner its own vertex, so a corner's normal is exactly the piece's)
+                V.append(pc['V'][pc['F']].reshape(-1, 3)); Nv.append(pc['CN'].reshape(-1, 3)); UV.append(pc['UV'].reshape(-1, 2))
+                F.append(np.arange(len(pc['F']) * 3).reshape(-1, 3) + o); o += len(pc['F']) * 3
+                C.append(np.tile([0.0, 0.0, 0.0, (vi + 0.5) / 8], (len(pc['F']) * 3, 1)))
+            V, F, Nv, UV, C = np.concatenate(V), np.concatenate(F), np.concatenate(Nv), np.concatenate(UV), np.concatenate(C)
             me = bpy.data.meshes.new(on)
             me.from_pydata(V.tolist(), [], F.tolist())
             me.normals_split_custom_set_from_vertices([tuple(n) for n in Nv])
@@ -1287,13 +1424,14 @@ def night_mesh(only=None):
         bpy.ops.export_scene.gltf(filepath=os.path.join(OUT, f'{sp}.gltf'), export_format='GLTF_SEPARATE', export_texture_dir='',
                                   export_normals=True, export_tangents=False, export_materials='EXPORT', export_image_format='AUTO',
                                   export_keep_originals=True, export_yup=True, export_apply=True, export_vertex_color='ACTIVE')
-        print(f'{sp}.gltf: {len(pcs)} variants, {len(F)} tris')
+        print(f'{sp}.gltf: {len(pcs)} variants, lod0 {sum(len(q["F"]) for q in pcs)} tris')
 
 
 def kit_sheet(out, which='all'):
     rows = []
     if which in ('all', 'stone'):
-        rows.append([pc for pcs in night_pieces().values() for pc in pcs])
+        allp = night_pieces()
+        rows += [[pc for nm, pcs in allp.items() if NIGHT[nm]['form'] == form for pc in pcs] for form in ('facet', 'round')]
     if which != 'stone':
         sys.path.insert(0, os.path.dirname(__file__))
         import env_trees
