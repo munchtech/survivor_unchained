@@ -773,7 +773,7 @@ HER = {
                        # gate2 (gate3 ...): a further gate stage, opened over its own `deg` on top of the stage before
                        # (rows: an integer, or "all" = the part's whole side; body_facts/chest_fold.md section 5)
                        "support": {"eps_mm": 1.0, "rows": 4, "ring": 3, "gate_rows": 8, "wall_rows": 12, "gate_deg": [45.0, 75.0],
-                                   "gate2": {"deg": [90.0, 130.0], "rows": 16, "wall_rows": 12, "smooth": 60},
+                                   "gate2": {"deg": [90.0, 130.0], "rows": 14, "wall_rows": 12, "smooth": 60},
                                    "stiff": "upperarm_{s}", "rigid": 0.999, "gated_part": "breast", "cache": "support.npz"}},
         "neck": {"provider": "derived", "bones": ["neck_01", "neck_02", "Head"], "ref": {"neck_01": "neck_02", "Head": "Head"},
                  "root": "neck_01", "far": ["Head"], "rows": 4, "eps": 0.02, "rigid": 0.999},
@@ -934,7 +934,7 @@ class Her:
         more = [sup[k] for k in sorted((k for k in sup if re.fullmatch(r"gate\d+", k)), key=lambda k: int(k[4:]))]
         ids, closed, shares, n1 = support_region(md.adj, (MP > sup["eps_mm"]) | (MA > sup["eps_mm"]), core, stiff, gate, sup["rows"],
                                                  sup["ring"], sup["gate_rows"], sup["wall_rows"],
-                                                 [{**g, "rows": own if isinstance(g["rows"], str) else g["rows"]} for g in more])
+                                                 [{**g, "rows": own if isinstance(g["rows"], str) else own & (dg <= g["rows"])} for g in more])   # this side of the part only
         C, SH = np.zeros(md.n), np.zeros((len(shares), md.n))
         C[ids], SH[:, ids] = closed, shares
         new0 = ids[:n1][~core[ids[:n1]]]                     # the first stage's rows, then the rows the further stages add
