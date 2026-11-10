@@ -223,11 +223,27 @@ class Model:
         self.betaN = np.zeros(n)
 
 
-    def blend(self, G, side):
-        """The share of the target against the published surface per region point for the pose G of `side`, [points]:
-        today the rest-built beta whatever the pose; rows whose share follows the pose (the breast part's upper and
-        lateral rows, by the arm's elevation) answer here."""
-        return self.beta
+    def blend(self, G, side, grown=False):
+        """The share of the target against the published surface per region point for the pose G of `side`, [points].
+        self.grown[side] = {new (point ids past the list), closed, opened ([list + new] shares, the gate shut / open),
+        gate (lo, hi deg)} is set by carried_target's support region: the share = (1 - g) closed + g opened, g by the
+        arm's elevation (the breast part's upper and lateral rows open with a high arm). grown=False: the list's
+        points only (len(S[side]["ids"])); True: the list, then the new points."""
+        gr = getattr(self, "grown", {}).get(side)
+        if gr is None:                                              # no support region set: the list's rest-built beta
+            return self.beta
+        lo, hi = gr["gate"]
+        g = np.clip((self.elevation(G, side) - lo) / (hi - lo), 0.0, 1.0)
+        g = g * g * (3 - 2 * g)
+        b = (1 - g) * gr["closed"] + g * gr["opened"]
+        return b if grown else b[:len(self.S[side]["ids"])]
+
+    def elevation(self, G, side):
+        """deg: the arm's elevation in spine_05's frame (as `describe`): 0 = down along the trunk."""
+        I, R0 = self.I, self.p.rest
+        Rt = da.ortho(G[I["spine_05"]][:3, :3] @ np.linalg.inv(R0[I["spine_05"]][:3, :3]))
+        d = Rt.T @ unit(G[I[f"lowerarm_{side}"]][:3, 3] - G[I[f"upperarm_{side}"]][:3, 3])
+        return float(np.degrees(np.arccos(np.clip(-d[1], -1, 1))))
 
     def _lbs(self, sd, G):
         S = (G @ self.p.skel.ibm)[:, :3]
