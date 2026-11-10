@@ -193,8 +193,9 @@ public partial class Minimap : Control
         GD.Print($"minimap: zone {id} extent {extent:0} span {Span / extent:0.000}: the drawing's edge fades into the paper over 28 px (+-6 px wander), darkening over 70 px beyond");
     }
 
-    /// <summary>Where the survivor is and what is known, a few times a second.</summary>
-    public void Show(string seen, int n, IEnumerable<MiniMark> list, double px, double pz, double facing, bool night)
+    /// <summary>Where the survivor is and what is known, a few times a second. Nothing is built here once the marks'
+    /// icons exist (M4 lead 5: it built a list, a set and an enumerator each showing, about 370 B).</summary>
+    public void Show(string seen, int n, List<MiniMark> list, double px, double pz, double facing, bool night)
     {
         if (seen != seenNow)
         {
@@ -211,11 +212,13 @@ public partial class Minimap : Control
         you.Rotation = (float)(Math.PI - facing);
         // The marks are kept and reused, not freed and built anew each time (MR4, the HUD's redraws were
         // 3.4 ms a frame): one pool per look (kind and size; the people's dots), shown in order, the rest hidden.
-        var used = new List<Control>();
+        var used = spareMarks;
+        used.Clear();
         pooledUsed.Clear();
         float r = Diameter / 2, scale = Diameter / Span;
-        foreach (var m in list)
+        for (int li = 0; li < list.Count; li++)
         {
+            var m = list[li];
             var at = new Vector2((float)(m.X - px), (float)(m.Z - pz)) * scale;
             bool guide = m.Kind is MarkKind.Quest or MarkKind.Turn or MarkKind.Exit or MarkKind.Goal;
             bool off = at.Length() > r - 12;
@@ -235,22 +238,27 @@ public partial class Minimap : Control
                 spare.Add(icon);
                 marks.AddChild(icon);
             }
-            icon.Position = new Vector2(r, r) + at - icon.CustomMinimumSize / 2;
-            icon.Modulate = off ? Colors.White with { A = 0.85f } : Colors.White;
-            icon.Visible = true;
+            // (set when they change: a mark that has not moved on the disc is left alone)
+            var pos = new Vector2(r, r) + at - icon.CustomMinimumSize / 2;
+            if (icon.Position != pos) icon.Position = pos;
+            var mod = off ? Colors.White with { A = 0.85f } : Colors.White;
+            if (icon.Modulate != mod) icon.Modulate = mod;
+            if (!icon.Visible) icon.Visible = true;
             used.Add(icon);
         }
         // Draw order is the list's, as when each was built in turn.
         for (int i = 0; i < used.Count; i++)
             if (marks.GetChild(i) != used[i]) marks.MoveChild(used[i], i);
-        var keep = new HashSet<Control>(used);
-        foreach (var c in shownMarks) if (!keep.Contains(c)) c.Visible = false;
+        // (what was shown and is not now; the two lists change places, neither is made anew)
+        for (int i = 0; i < shownMarks.Count; i++)
+            if (!used.Contains(shownMarks[i])) shownMarks[i].Visible = false;
+        spareMarks = shownMarks;
         shownMarks = used;
     }
 
     readonly Dictionary<(MarkKind, int), List<Control>> pool = new();
     readonly Dictionary<(MarkKind, int), int> pooledUsed = new();
-    List<Control> shownMarks = new();
+    List<Control> shownMarks = new(), spareMarks = new();
 
     /// <summary>A map mark's look: painted (icons/map/KIND.png) or its glyph in its ink.</summary>
     public static Control Mark(MarkKind kind, int size)

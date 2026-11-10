@@ -9,8 +9,20 @@ using SurvivorUnchained.World;
 
 namespace SurvivorUnchained.Ui;
 
-/// <summary>What the corner map shows: the zone's drawing, the fog, the marks, the survivor.</summary>
-public sealed record MinimapView(string Zone, Texture2D Drawing, float Extent, string Seen, int N, List<MiniMark> Marks, double X, double Z, double Facing, bool Night);
+/// <summary>What the corner map shows: the zone's drawing, the fog, the marks, the survivor. One is kept and filled
+/// again for each showing (Game.MiniView), its marks' list with it: none is made per HUD frame (M4 lead 5: it was a
+/// record made anew twelve times a second, with its list).</summary>
+public sealed class MinimapView
+{
+    public string Zone = "";
+    public Texture2D Drawing = null!;
+    public float Extent;
+    public string Seen = "";
+    public int N;
+    public readonly List<MiniMark> Marks = new();
+    public double X, Z, Facing;
+    public bool Night;
+}
 
 /// <summary>What is near and can be used, as the prompt shows it.</summary>
 /// <summary>A prompt on the screen; `For` is the action whose pad button it shows (the use key's, mostly).</summary>
@@ -697,14 +709,7 @@ public partial class GameHud : CanvasLayer
         // M4 §4: the level card (a campaign level-up the HUD sees itself; --level-card's staged one)
         campaignNow = b.Campaign;
         LevelWatch(b, level.Level, ember);
-        if (DevSlots.LevelCardDue(b) is { } cardDue)
-        {
-            // (as a campaign level-up shows it: the key's slot from the fight, the trait/attribute row; a lamp has none)
-            if (cardDue.Kind == LevelCardKind.NewKey && cardDue.Slot < 0) cardDue.Slot = b.Weapons.Find(w => w.Id == cardDue.Skill)?.Slot ?? -1;
-            if (b.Campaign && (cardDue.Kind is LevelCardKind.NewKey or LevelCardKind.Plain) && (GetParent() as Game)?.Journey.Ch is { } dch)
-            { cardDue.PromptKey = Act.Character; cardDue.PromptText = LevelCards.PromptFor(dch.TraitPicks); }
-            LevelCard(cardDue);
-        }
+        if (DevSlots.LevelCardDue(b) is { } cardDue) StagedCard(b, cardDue);
         if (DevSlots.DawnDue(b) && GetParent() is Game dg)
             dg.DawnCard(Play.DawnCard.Build(["Whirling Ember", "Cinder Ward"], 4), () => { });
         // (M4: the pad's A is Interact only out of a fight)
@@ -879,7 +884,9 @@ public partial class GameHud : CanvasLayer
         // (M4 §4: in the campaign by day the level card names the level; the coin's title stays dark. The arena and the
         // ember keep theirs.)
         float title = day && campaignNow && !HudPin.Active ? 0 : (float)shown.Title;
-        river.Title.Set(title, day ? $"LEVEL {tl}" : $"EMBER {tl}", day ? "" : "the ember rises", day);
+        // (M4 lead 5: the name is written when its level or its time of day changes, not each frame)
+        if (tl != titleLevel || day != titleDay) { titleLevel = tl; titleDay = day; titleName = day ? $"LEVEL {tl}" : $"EMBER {tl}"; }
+        river.Title.Set(title, titleName, day ? "" : "the ember rises", day);
         // (the passives' beads on the crest under its subline step back while it shows; the row's own modulate is the callouts')
         float ba = 1 - title;
         if (ba != beadsA)
@@ -907,8 +914,14 @@ public partial class GameHud : CanvasLayer
         // (pictures: the card only where a pin asks for it, whatever the pointer is over)
         bool show = (HudPin.Active ? HudPin.XpTip != null : true) && XpLight.TipShown(hover, held, captured);
         var anchor = held ? new Vector2(DgPanel.Coin.X, DgPanel.Coin.Y - DgPanel.ArchR) : mouse;
-        river.Card.Set(show, anchor, XpLight.Lines(!day, lv, have, need, xpLast && day), f, day);
+        // (its lines are written only while it shows: they were four strings a frame for a hidden card)
+        river.Card.Set(show, anchor, show ? XpLight.Lines(!day, lv, have, need, xpLast && day) : default, f, day);
     }
+
+    /// <summary>The level's name over the coin as last written, and what it was written for.</summary>
+    string titleName = "";
+    int titleLevel = int.MinValue;
+    bool titleDay;
 
     /// <summary>Debug (--hud-pin, HudPin.cs): what the instrument shows held at the pinned values, never the
     /// fight. Nothing when no pin is given.</summary>
@@ -1384,6 +1397,16 @@ public partial class GameHud : CanvasLayer
         GD.Print($"level card: queued {LevelCards.Header(spec)} ({spec.Kind}{(spec.Skill != "" ? " " + spec.Skill : "")}, slot {spec.Slot + 1})");
     }
 
+    /// <summary>--level-card's staged card (DevSlots), as a campaign level-up shows it: the key's slot from the fight, the
+    /// trait/attribute row; a lamp has none. (Its own method: in Frame, its search's closure was made every HUD frame.)</summary>
+    void StagedCard(Battle b, LevelCardSpec cardDue)
+    {
+        if (cardDue.Kind == LevelCardKind.NewKey && cardDue.Slot < 0) cardDue.Slot = b.Weapons.Find(w => w.Id == cardDue.Skill)?.Slot ?? -1;
+        if (b.Campaign && (cardDue.Kind is LevelCardKind.NewKey or LevelCardKind.Plain) && (GetParent() as Game)?.Journey.Ch is { } dch)
+        { cardDue.PromptKey = Act.Character; cardDue.PromptText = LevelCards.PromptFor(dch.TraitPicks); }
+        LevelCard(cardDue);
+    }
+
     /// <summary>The level card is showing or waiting.</summary>
     public bool LevelCardUp => levelCard != null && levelCard.Queue.Count > 0;
 
@@ -1398,6 +1421,13 @@ public partial class GameHud : CanvasLayer
         int was = levelSeen;
         levelSeen = lv;
         if (was <= 0 || lv <= was || !b.Campaign || ember || HudPin.Active) return;
+        LevelsCarded(b, was, lv);
+    }
+
+    /// <summary>LevelWatch's cards, for the levels after `was` up to `lv` (its own method: its searches' closure was made
+    /// on every HUD frame, level or not).</summary>
+    void LevelsCarded(Battle b, int was, int lv)
+    {
         var journey = (GetParent() as Game)?.Journey;
         var ch = journey?.Ch;
         var build = TaughtBuilds.Of(ch?.Archetype);
@@ -1770,9 +1800,10 @@ public partial class GameHud : CanvasLayer
         Header = header;
         edges.Avoid = header;
         Toasts = toasts.GetChildCount() > 0 && toasts.IsVisibleInTree() ? toasts.GetGlobalRect() : null;
-        foreach (var c in toasts.GetChildren())
+        // (by index: GetChildren made an array each frame, 170 B with none up. A freed one leaves at the frame's end.)
+        for (int ti = 0, tn = toasts.GetChildCount(); ti < tn; ti++)
         {
-            if (c is not Notice n) continue;
+            if (toasts.GetChild(ti) is not Notice n) continue;
             // Held while a chest's opening says the same things over the world; told after it, whole.
             // (and while a callout is up: nothing else speaks over it; told after it, whole)
             bool held = HoldToasts || spotUp;
