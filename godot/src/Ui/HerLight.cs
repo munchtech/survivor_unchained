@@ -119,7 +119,7 @@ public sealed partial class HerLight : Control
         public bool Stepping => stepT < LabelTime;
         public void StepWon(bool popNew, string name) { stepPop = popNew; stepName = name; stepT = 0; QueueRedraw(); }
         /// <summary>The strap and its pips on screen now (the step's name under them while it shows); null when not
-        /// showing. The damage numbers start clear of it (Hits.ClearOfStrap).</summary>
+        /// showing. The damage numbers start clear of it (Hits.BesideHer).</summary>
         public Rect2? OnScreen => IsVisibleInTree() && Modulate.A > 0.05f
             ? new Rect2(GlobalPosition, new Vector2(W, H + (dashMax > 0 ? PipTop + Pip : 0) + (Stepping ? LabelGap + LabelSize + 2 : 0)))
             : null;

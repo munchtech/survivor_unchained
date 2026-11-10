@@ -227,7 +227,7 @@ public partial class Hits : Node3D
     void Reclear(int i)
     {
         var l = numbers[i].Label;
-        if (l.Visible) l.GlobalPosition = ClearOfStrap(AboveHud(l.GlobalPosition, l.Text, l.FontSize), l.Text, l.FontSize);
+        if (l.Visible) l.GlobalPosition = BesideHer(AboveHud(l.GlobalPosition, l.Text, l.FontSize), l.Text, l.FontSize);
         Unstack(i);
     }
 
@@ -302,7 +302,7 @@ public partial class Hits : Node3D
         l.Scale = 1;
         at = ClearOfNames(at + new Vector3(rng.RandfRange(-0.3f, 0.3f), 0, 0), text, size);
         at = AboveHud(at, text, size);
-        at = ClearOfStrap(at, text, size);
+        at = BesideHer(at, text, size);
         l.GlobalPosition = at;
         l.Visible = true;
         numbers[i] = (l, 0);

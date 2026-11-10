@@ -30,4 +30,34 @@ public static class HitsPlace
         if (x1 <= sx0 - gap || x0 >= sx1 + gap || y1 <= sy0 - gap || top >= sy1 + gap) return 0;
         return (x0 + x1) / 2 < (sx0 + sx1) / 2 ? sx0 - gap - x1 : sx1 + gap - x0;
     }
+
+    /// <summary>A rect on screen (px, y down).</summary>
+    public readonly record struct Box(float X0, float Y0, float X1, float Y1);
+
+    /// <summary>The gap kept between a number and her body (px at 1080).</summary>
+    public const float BodyGap = 4;
+    /// <summary>HerNudge's `hit`: which of her rects the number was on (or would lift into).</summary>
+    public const int HitBody = 1, HitStrap = 2;
+
+    /// <summary>How far sideways (px; 0: it stays) a number's box is moved so that neither it nor the `rise` px above it
+    /// (its first Young seconds) touches her body's rect grown by bodyGap or the strap's under her grown by strapGap
+    /// (either may be null: not on screen). Always to the side its middle is on of HER centre line `herX` (the right
+    /// when dead centre), so the numbers born on her stand in two lanes beside her; the result is clear of both rects
+    /// at once (the strap is wider than she is: a number moved off her body is moved on past the strap when it would
+    /// land there). Never up or down. `hit`: HitBody | HitStrap, the rects it was moved off.</summary>
+    public static float HerNudge(Box num, float rise, float herX, Box? body, Box? strap, out int hit, float bodyGap = BodyGap, float strapGap = StrapGap)
+    {
+        hit = 0;
+        bool right = (num.X0 + num.X1) / 2 >= herX;
+        float top = num.Y0 - Math.Max(0, rise), dx = 0;
+        // (each push goes the same way, so the second pass only confirms the first: two rects, two passes)
+        for (int pass = 0; pass < 2; pass++)
+        {
+            if (body is Box b && On(b, bodyGap)) { hit |= HitBody; dx = right ? b.X1 + bodyGap - num.X0 : b.X0 - bodyGap - num.X1; }
+            if (strap is Box s && On(s, strapGap)) { hit |= HitStrap; dx = right ? s.X1 + strapGap - num.X0 : s.X0 - strapGap - num.X1; }
+        }
+        return dx;
+
+        bool On(Box r, float gap) => !(num.X1 + dx <= r.X0 - gap || num.X0 + dx >= r.X1 + gap || num.Y1 <= r.Y0 - gap || top >= r.Y1 + gap);
+    }
 }

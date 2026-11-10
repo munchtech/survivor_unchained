@@ -60,23 +60,61 @@ public partial class Hits
         sheet = null;
     }
 
-    /// <summary>A number that would start on the strap under her, or lift into it in its first 0.3 s, starts beside it
-    /// instead (HitsPlace.StrapNudge: sideways, to the side it is on).</summary>
-    Vector3 ClearOfStrap(Vector3 at, string text, int size)
+    /// <summary>Where she stands (her feet, on the ground, as drawn: WorldScene sets it each frame); null where there is
+    /// no heroine (a tool's scene): then only the strap is kept clear.</summary>
+    public Vector3? HerFeet;
+    /// <summary>Her box in the world, for the numbers: her height with her hair (m), half her width with her arms and
+    /// shield (m, along the camera's right), and how far her boots stand toward the camera of her feet's point (m).</summary>
+    const float HerTall = 1.85f, HerHalf = 0.35f, HerToe = 0.15f;
+
+    /// <summary>Her body's rect on screen now: her feet's point and her head's (feet + HerTall up) projected, HerHalf
+    /// to each side at her middle's depth; null without her or with her behind the camera. Projected, not fixed px:
+    /// it holds at any resolution and zoom.</summary>
+    Rect2? HerBox(Camera3D cam)
+    {
+        if (HerFeet is not Vector3 f || cam.IsPositionBehind(f)) return null;
+        Vector2 feet = cam.UnprojectPosition(f), head = cam.UnprojectPosition(f + Vector3.Up * HerTall);
+        var mid = f + Vector3.Up * (HerTall / 2);
+        float half = (cam.UnprojectPosition(mid + cam.GlobalBasis.X * HerHalf) - cam.UnprojectPosition(mid)).Length();
+        // (her toes: the ground a boot's length toward the camera of her feet's point)
+        var toCam = cam.GlobalPosition - f; toCam.Y = 0;
+        float toe = toCam.LengthSquared() > 1e-6f ? cam.UnprojectPosition(f + toCam.Normalized() * HerToe).Y : feet.Y;
+        float x0 = Mathf.Min(feet.X, head.X) - half, x1 = Mathf.Max(feet.X, head.X) + half;
+        float y0 = Mathf.Min(feet.Y, head.Y), y1 = Mathf.Max(Mathf.Max(feet.Y, head.Y), toe);
+        return new Rect2(x0, y0, x1 - x0, y1 - y0);
+    }
+
+    /// <summary>A number that would start on her (her body: head, torso, legs; or the strap under her), or lift into
+    /// either in its first 0.3 s, starts beside her instead (HitsPlace.HerNudge: sideways, to the side of her centre
+    /// line it is on, clear of both at once). Every number goes through it (Show, Reclear): the foes' she strikes and
+    /// the red one for a blow she takes. M4 lead 6: at 1:1 in a crowd they were drawn on her head and torso, and she
+    /// is hard enough to find. The strap hidden, her body is still kept clear; without her, the strap alone.</summary>
+    Vector3 BesideHer(Vector3 at, string text, int size)
     {
         var cam = GetViewport()?.GetCamera3D();
-        if (cam == null || SurvivorUnchained.Ui.HerLight.Live?.Under.OnScreen is not Rect2 s) return at;
+        if (cam == null) return at;
+        Rect2? body = HerBox(cam), strap = SurvivorUnchained.Ui.HerLight.Live?.Under.OnScreen;
+        if (body == null && strap == null) return at;
         if (NumBox(cam, at, text, size) is not Rect2 b) return at;
         float rise = cam.UnprojectPosition(at).Y - cam.UnprojectPosition(at + Vector3.Up * (float)HitsPlace.RiseIn(HitsPlace.Young)).Y;
-        float dx = HitsPlace.StrapNudge(b.Position.X, b.Position.Y, b.End.X, b.End.Y, rise, s.Position.X, s.Position.Y, s.End.X, s.End.Y);
+        // (the gaps are px at 1080)
+        float k = GetViewport().GetVisibleRect().Size.Y / 1080f;
+        float herX = (body ?? strap)!.Value.GetCenter().X;
+        static HitsPlace.Box? B(Rect2? r) => r is Rect2 q ? new HitsPlace.Box(q.Position.X, q.Position.Y, q.End.X, q.End.Y) : null;
+        float dx = HitsPlace.HerNudge(B(b)!.Value, rise, herX, B(body), B(strap), out int hit, HitsPlace.BodyGap * k, HitsPlace.StrapGap * k);
         if (dx == 0) return at;
-        if (strapShots++ < 12) GD.Print($"hits: number '{text}' size {size} box ({b.Position.X:0},{b.Position.Y:0} {b.Size.X:0}x{b.Size.Y:0}) rising {rise:0} px moved {dx:0} px clear of her strap ({s.Position.X:0},{s.Position.Y:0} {s.Size.X:0}x{s.Size.Y:0})");
+        if (herShots++ < 12)
+        {
+            string on = hit == (HitsPlace.HitBody | HitsPlace.HitStrap) ? "body and strap" : hit == HitsPlace.HitBody ? "body" : "strap";
+            static string R(Rect2? r) => r is Rect2 q ? $"({q.Position.X:0},{q.Position.Y:0} {q.Size.X:0}x{q.Size.Y:0})" : "(none)";
+            GD.Print($"hits: number '{text}' size {size} box {R(b)} rising {rise:0} px moved {dx:0} px clear of her {on}: body {R(body)} strap {R(strap)}");
+        }
         float depth = (at - cam.GlobalPosition).Dot(-cam.GlobalBasis.Z);
         var c = b.GetCenter();
         return cam.ProjectPosition(new Vector2(c.X + dx, c.Y), depth);
     }
 
-    static int strapShots;
+    static int herShots;
 
     /// <summary>Draws the pool's numbers on the canvas: each at its place's point on screen, its text's middle there,
     /// at the Label3D's size (a font px is NumPixel metres at its depth), outline first.</summary>
