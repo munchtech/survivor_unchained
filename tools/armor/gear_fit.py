@@ -1309,6 +1309,19 @@ def gltf_cached(src):
 
 # ---------------------------------------------------------------- writing
 
+def stored(g, ai):
+    """The source's accessor ai as its file stores it. Gltf.accessor hands a normalized integer accessor back as
+    floats 0..1 (COLOR_0, the outfit shader's baked sky seen / piece / painted / flag, is u16 normalized out of
+    Blender): written back at its integer type unscaled, every value fell to 0 and the unit lost its piece's bake
+    (sky 0: no ambient, 0.3 of the sky's reflection, full grime; flag 0: a rolled binding all over)."""
+    a = g.js["accessors"][ai]
+    v = g.accessor(ai)
+    if a.get("normalized"):
+        dt = np.dtype(g.TYPES[a["componentType"]])
+        v = np.rint(np.asarray(v, np.float64) * np.iinfo(dt).max).astype(dt)
+    return v
+
+
 def write_unit(path, bd, ev, ref_glb):
     """<id>.gltf + .bin: B's joints and skin verbatim, A's nodes / meshes / materials with our geometry."""
     import glbwrite
@@ -1392,7 +1405,7 @@ def write_unit(path, bd, ev, ref_glb):
                 continue
             else:
                 a = ajs["accessors"][ai]
-                att[k] = out.acc(g.accessor(ai), a["type"], a["componentType"], 34962, normalized=a.get("normalized", False))
+                att[k] = out.acc(stored(g, ai), a["type"], a["componentType"], 34962, normalized=a.get("normalized", False))
         for s in range(2):
             att[f"JOINTS_{s}"] = out.acc(e["J"][:, 4 * s:4 * s + 4], "VEC4", 5123, 34962)
             att[f"WEIGHTS_{s}"] = out.acc(e["W"][:, 4 * s:4 * s + 4], "VEC4", 5126, 34962)
