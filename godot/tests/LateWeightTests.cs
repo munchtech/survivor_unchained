@@ -62,6 +62,15 @@ public sealed class LateWeightTests
                 if (HitTick < 0) { HitTick = Ticks; CutWAtHit = W.CutW; }
             }
         }
+
+        /// <summary>The crescents launched and not yet landed: their weights summed, and how many are a heavy's.</summary>
+        public (double W, int Heavies) Flying()
+        {
+            double w = 0; int heavies = 0;
+            foreach (var pr in B.Projectiles.Items)
+                if (pr.Alive && pr.Weapon == W.Id) { w += pr.W; if (pr.HeavyId != null) heavies++; }
+            return (w, heavies);
+        }
     }
 
     [Fact]
@@ -99,11 +108,33 @@ public sealed class LateWeightTests
             Assert.True(u.Hits > 50 && c.Hits > u.Hits, n);
             Assert.True(uv > 0, n);
             Assert.True(Math.Abs(c.Damage / u.Damage - 1) < 0.02, n);
-            if (!boss) Assert.True(Math.Abs(cv / uv - 1) < 0.02, n);
-            // RED: (measured 10 Nov) the boss's stagger added comes out 0.9294 of the unchained (1.3562 / 1.4592) while
-            // damage (0.9884) and the non-boss shove hold: the rule (within 2%) is not met; pinned at what was measured.
-            else Assert.True(Math.Abs(cv / uv - 0.9294) < 0.005, n);
-            if (boss) Assert.Equal(0.0, c.Shove + u.Shove);
+            if (!boss) { Assert.True(Math.Abs(cv / uv - 1) < 0.02, n); continue; }
+            Assert.Equal(0.0, c.Shove + u.Shove);
+            // (M3 MR 3 s1, the cause of the 0.9294 once pinned RED here) A boss's stagger is two things. The ROW
+            // (Battle.HitEnemy, 0.004 x knockback x the cut's weight) is a fifth of it and follows the weights as damage
+            // does. The other four fifths are the Hand's heavies (Battle.HandHeavy: 0.1 of the bar each, WHOLE, one per 6
+            // blows' worth on both records): 12 a minute, so ONE heavy is 7% of the minute's stagger. At 63.9 s both
+            // records have CAST 12; the unchained 12th landed at 63.33 s, the chained 12th (cast 63.62 s) is still in
+            // the air. As landed: 1.3562 / 1.4592 = 0.9294 = (11 x 0.1 + row) / (12 x 0.1 + row). Not a rate: the window's
+            // edge on a whole event (held 60 s 0.9978, 126 s 0.9981, 630 s 0.9912). So the row is held to the damage,
+            // the heavies are counted as cast, and the whole is measured with what is in the air added.
+            double hs = Hands.Warden.Stagger; int every = Hands.Warden.Every;
+            var (cf, uf) = (c.Flying(), u.Flying());
+            double cRow = c.Stagger - hs * c.B.HandHeavies, uRow = u.Stagger - hs * u.B.HandHeavies, per = uRow / u.Hits;
+            double cAll = c.Stagger + hs * cf.Heavies + per * cf.W, uAll = u.Stagger + hs * uf.Heavies + per * uf.W;
+            n += $"; the row {cRow:F5} / {uRow:F5} = {cRow / uRow:F4}; heavies landed {c.B.HandHeavies} / {u.B.HandHeavies}, in the air {cf.Heavies} / {uf.Heavies}, "
+                + $"cast {c.W.HandBlows / every} / {u.W.HandBlows / every}; with the air {cAll:F4} / {uAll:F4} = {cAll / uAll:F4}";
+            Assert.True(uRow > 0 && u.B.HandHeavies >= 10, n);
+            // the row: the cuts' weights, as the damage is (both 0.9884)
+            Assert.True(Math.Abs(cRow / uRow - c.Damage / u.Damage) < 0.001, n);
+            // the heavies: one per `every` blows' worth on both records, none lost (landed + in the air = cast), as many cast
+            Assert.Equal(c.W.HandBlows / every, c.B.HandHeavies + cf.Heavies);
+            Assert.Equal(u.W.HandBlows / every, u.B.HandHeavies + uf.Heavies);
+            Assert.Equal(u.W.HandBlows / every, c.W.HandBlows / every);
+            // the whole, landed and in the air: within 1% (measured 0.9975)
+            Assert.True(Math.Abs(cAll / uAll - 1) < 0.01, n);
+            // as landed, at most the one heavy in the air apart (11 v 12 here: the 0.9294)
+            Assert.True(u.B.HandHeavies - c.B.HandHeavies is 0 or 1, n);
         }
     }
 

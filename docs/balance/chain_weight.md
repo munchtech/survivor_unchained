@@ -14,6 +14,9 @@ Sunder and Oathblade are written as BLOWS (Sunder 28 every 1.6 s, Oathblade 22.8
 
 **A hit that lands after its cast carries its cut's weight.** `Projectile.W` is stamped at `Launch` (`w.CutW`) and read at the hit (`HitOpts.W`, before the weapon's live weight): Oathkeeper's crescent. An on-kill echo is a whole blow (`OnKillEcho` sets the weight to 1 round its firing).
 
+**A boss's stagger under the crescents: the 0.9294 was one heavy in the air (s1, 10 Nov; not a rate).** A boss's stagger is the weighted row (`HitEnemy`, 0.004 x knockback x weight: a fifth of it) plus the Hand's heavies (`HandHeavy`, 0.1 of the bar each, whole, one per 6 blows' worth on both records: four fifths). 12 heavies a minute, so one is 7% of the minute. At 63.9 s both records had cast 12; the unchained 12th had landed (63.33 s), the chained 12th (cast 63.62 s) was still flying: (11 x 0.1 + 0.2562) / (12 x 0.1 + 0.2592) = 0.9294. The row alone is 0.9884, as the damage; with what is in the air added 0.9975; held 60 s 0.9978, 126 s 0.9981, 630 s 0.9912 (117 v 118 landed). `tests/LateWeightTests.cs` T2 holds the row to the damage, counts the heavies as cast and bounds the whole at 1%.
+What is left is the chain's own pace under the crescents: 706.17 blows' worth against 714 in 630 s (-1.1%, the same on damage, the row and the heavies; inside the accepted Oathblade -1.6%). Its cause is not named yet.
+
 **A scheduled strike carries its cut's weight too** (`StrikeSpec.W`, stamped in `ScheduleStrike`, read by `Explode`: Bonesplitter's second strike; built at e8059e64e, its test is still skipped).
 
 **Procs fired by a cut (`Battle.Fire`, `ProcCtx.W`; main's rule, built deterministic).** The Hit / Crit ctx carries the cut's weight; a Status ctx carries the share its application stands for (`build`, with `Damage = hitDamage x build`); Kill and Freeze are whole. At weight 1 every line and draw is as before. Under 1 a trigger is one of three kinds (`TriggerDef.Weighs()`, cached):
