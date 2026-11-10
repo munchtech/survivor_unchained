@@ -109,6 +109,11 @@ public partial class GameHud : CanvasLayer
 
     static Color Hex(string h) => new(h);
 
+    /// <summary>Where the fight's damage numbers are drawn (Hits.Sheet): in `play`, just over `combat` (her strap, the
+    /// ground's names, the edge marks) and under everything else of the HUD; null with no HUD up.</summary>
+    public static Control? NumberHost { get; private set; }
+    Control numberHost = null!;
+
     public override void _Ready()
     {
         Layer = 10;
@@ -124,6 +129,11 @@ public partial class GameHud : CanvasLayer
         combat = new Control { MouseFilter = Control.MouseFilterEnum.Ignore };
         Style.Fill(combat);
         play.AddChild(combat);
+        // (M4 lead 6) the damage numbers' sheet stands here (Hits.Sheet): over her strap and the ground's names, under the HUD's own parts
+        numberHost = new Control { MouseFilter = Control.MouseFilterEnum.Ignore, Name = "NumberHost" };
+        Style.Fill(numberHost);
+        play.AddChild(numberHost);
+        NumberHost = numberHost;
         BuildBackings();
         BuildUnder();
         // Loot's names on the ground, under everything else the fight shows (docs/design/LOOT_DESIGN.md §8.1).

@@ -156,7 +156,8 @@ public partial class Hits
         Restyle(i, t);
         var l = numbers[i].Label;
         l.FontSize = 96;
-        l.Modulate = new Color(1.25f, 1.05f, 0.7f);
+        // (white-gold in the UI's own colours: on the canvas nothing is over 1, and (1.25, 1.05, 0.7) clamped is a lemon)
+        l.Modulate = TotalGold;
         numA[i] = 1;
         l.GlobalPosition = InSafe(l.GlobalPosition, l.Text, l.FontSize, safe);
     }
@@ -202,7 +203,7 @@ public partial class Hits
         Color col = t.Tint ?? (t.Crit ? NumCrit : NumBone);
         numA[i] = col.A;
         l.Modulate = col;
-        if (t.Crit && t.Tint == null) { numPunch[i] = 0; l.Scale = Vector3.One * 1.35f; }
+        if (t.Crit && t.Tint == null) { numPunch[i] = 0; l.Scale = 1.35f; }
         // What burns or bleeds a body is told smaller than the blows themselves.
         l.FontSize = t.Tint != null ? 36 : (t.Crit ? 72 : 46) + (t.Heavy ? (t.Crit ? 12 : 12) : 0);
     }
