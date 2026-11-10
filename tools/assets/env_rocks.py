@@ -1015,7 +1015,8 @@ HULLS = {
 }
 _LONG = {'s': 'small', 'm': 'mid', 'l': 'large'}
 # (hz: the round form's height over the block's; a lump as low as the facet block read as a river pebble on the sheet)
-NIGHT = {f'{pre}_{k}': dict(species=f'{pre}{_LONG[k]}', form=form, top=top, hz=hz, variants=HULLS[k])
+# (the small round stones stay low, 0.92: at 1.18 the one in her fire stood up as an egg in frame 09)
+NIGHT = {f'{pre}_{k}': dict(species=f'{pre}{_LONG[k]}', form=form, top=top, hz=hz * (0.78 if k == 's' and form == 'round' else 1.0), variants=HULLS[k])
          for pre, form, top, hz in (('boulder', 'facet', 0.42, 1.0), ('round', 'round', 0.42, 1.18)) for k in 'sml'}
 COS30 = math.cos(math.radians(30))
 COS80 = math.cos(math.radians(80))
