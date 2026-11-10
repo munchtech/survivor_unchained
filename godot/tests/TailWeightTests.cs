@@ -59,14 +59,32 @@ public sealed class TailWeightTests
 
         public double Dealt => B.DamageBy.Values.Sum();
 
+        /// <summary>Where the foe is held (x; z 0). 2: inside the swing. T3 holds it where only the strike reaches.</summary>
+        public double At = 2;
+        /// <summary>The strikes scheduled (Ev.Strike) and the last one's circle; the ticks the foe lost life on, what it
+        /// has lost in all, and what the last such tick took.</summary>
+        public int Strikes, Hits;
+        public double StrikeX = double.NaN, StrikeR = double.NaN, Lost, LastHit;
+
+        public void Step(bool held)
+        {
+            B.HoldSkill(W.Slot, held, At, 0);
+            E.X = At; E.Z = 0; E.Vx = E.Vz = 0;
+            double hp = E.Hp;
+            B.Tick(Dt, 0, 0);
+            foreach (var ev in B.Events.Drain())
+            {
+                if (ev is Ev.Slash) Cuts++;
+                if (ev is Ev.Strike st) { Strikes++; StrikeX = st.X; StrikeR = st.Radius; }
+            }
+            if (E.Hp < hp) { Hits++; LastHit = hp - E.Hp; Lost += LastHit; }
+        }
+
         public Rig Hold(Action? each = null)
         {
             for (int i = 0; i < Steps; i++)
             {
-                B.HoldSkill(W.Slot, true, E.X, E.Z);
-                E.X = 2; E.Z = 0; E.Vx = E.Vz = 0;
-                B.Tick(Dt, 0, 0);
-                foreach (var ev in B.Events.Drain()) if (ev is Ev.Slash) Cuts++;
+                Step(true);
                 each?.Invoke();
             }
             return this;
@@ -133,37 +151,74 @@ public sealed class TailWeightTests
         Assert.InRange(off, -3, 3);
     }
 
-    // RED (WIP, b5 ran out of room): the lent Bonesplitter strike never reaches the foe at (2, 0) in this rig: 62 hits
-    // with the evolution and 62 without, so the test does not yet measure StrikeSpec.W. The rig needs fixing (where the
-    // strike lands, or whether Oathblade's swing is the function at Weapons.cs ~1036), not the rule.
-    [Fact(Skip = "RED WIP: the rig's strike misses the foe; StrikeSpec.W is unmeasured")]
+    // (M3 MR 3 t3) Why b5's rig read 62 hits with the strike and 62 without: the strike lands AHEAD of the swing, a
+    // 1.8 m circle 1.4 reaches out (Weapons.cs FireSlash), and Bonesplitter's own area (x1.25) lengthens the reach it is
+    // measured from: its near edge is past a foe held at 2 m. So the foe is held at the circle's middle, where the
+    // swing does not reach and every hit on it is a strike: its damage is the strike's alone.
+    [Fact]
     public void A_strike_scheduled_by_a_cut_lands_at_the_cuts_weight()
     {
-        // Bonesplitter (the Cleaver's evolution: every swing schedules a strike 0.12 s on, Weapons.cs) lent to Oathblade,
-        // whose swing is the same function. The strike lands after the cast, when WeaponInst.CutW reads 1 again; the
-        // weight it lands at is read off a Whole rule on Hit (once per blow's worth of hits: Procs.cs), which is the
-        // same cw that sizes its shove and its stagger.
-        (Rig R, TriggerInstance Hits) Make(bool chained, bool evolved)
+        // Bonesplitter (the Cleaver's evolution: every swing schedules a strike 0.12 s on) lent to Oathblade, whose swing
+        // is the same function. The strike lands after the cast, when WeaponInst.CutW reads 1 again (StrikeSpec.W).
+        const double cw = 0.70 / 1.05;   // the chain's period over Oathblade's written wait
+        Rig Make(bool chained, bool evolved, double at)
         {
-            var r = new Rig("oathblade", chained, also: "cleaver");
-            var cleaver = r.B.Weapons[1];
-            if (evolved) r.W.Evolution = cleaver.Def.Evolutions.First(e => e.Id == "bonesplitter");
-            var def = new TriggerDef { On = TriggerEvent.Hit, Effects = [new Effect.Cooldown(0, Effect.CooldownScope.Ability)] };
-            Assert.Equal(ProcClass.Whole, def.Weighs());
-            r.B.AddTrigger(def, "test");
-            var t = r.B.Triggers[^1];
-            r.Hold(() => cleaver.Timer = 999);
-            return (r, t);
+            var r = new Rig("oathblade", chained, also: "cleaver") { At = at };
+            r.E.X = at;
+            if (evolved) r.W.Evolution = r.B.Weapons[1].Def.Evolutions.First(e => e.Id == "bonesplitter");
+            return r;
         }
-        var bare = Make(false, false);
-        var plain = Make(false, true);
-        var chain = Make(true, true);
-        output.WriteLine($"oathblade + bonesplitter over 63.9 s: hits' weight chained {chain.Hits.Count} ({chain.R.Cuts} cuts), unchained {plain.Hits.Count} ({plain.R.Cuts} blows; {bare.Hits.Count} with no strike), ratio {(double)chain.Hits.Count / plain.Hits.Count:0.0000}; damage chained {chain.R.Dealt:0.#}, unchained {plain.R.Dealt:0.#}, ratio {chain.R.Dealt / plain.R.Dealt:0.0000}");
-        Assert.True(chain.R.Cuts > plain.R.Cuts * 1.4, "the chain did not swing");
-        // the strike lands: unchained, a blow is two hits (the swing's and the strike's)
-        Assert.InRange((double)plain.Hits.Count / bare.Hits.Count, 1.9, 2.1);
-        // (before: every strike landed at weight 1, 1.5x as many as the blows': 1.25x the hits' weight)
-        Assert.InRange((double)chain.Hits.Count / plain.Hits.Count, 0.97, 1.03);
-        Assert.InRange(chain.R.Dealt / plain.R.Dealt, 0.98, 1.02);
+        void Step(Rig r, bool held) { r.B.Weapons[1].Timer = 999; r.Step(held); }
+
+        // where the strike falls: read off the first one scheduled, the foe where b5 held it
+        var probe = Make(false, true, 2);
+        for (int i = 0; i < 120 && probe.Strikes == 0; i++) Step(probe, true);
+        Assert.True(probe.Strikes > 0, "the swing scheduled no strike: W.Evolution did not reach FireSlash");
+        double far = probe.StrikeX, edge = probe.StrikeX - probe.StrikeR - probe.E.Radius;
+        output.WriteLine($"the strike: centre x {far:0.###}, radius {probe.StrikeR:0.##}, its near edge on a footpad (radius {probe.E.Radius:0.##}) at x {edge:0.###}; b5 held the foe at 2");
+        Assert.True(edge > 2, "the strike reaches a foe at 2 m: b5's miss has another cause");
+
+        // (1) one cut's strike against one written blow's: a press each, to the first hit
+        var one = new[] { Make(true, true, far), Make(false, true, far) };
+        foreach (var r in one)
+        {
+            Assert.True(r.B.PressSkill(r.W.Slot, far, 0));
+            for (int i = 0; i < 180 && r.Hits == 0; i++) Step(r, false);
+            Assert.True(r.Strikes > 0 && r.Hits == 1, $"the strike did not land ({r.Strikes} scheduled, {r.Hits} hits)");
+            Assert.Equal(1.0, r.W.CutW);
+        }
+        double cut = one[0].LastHit, written = one[1].LastHit;
+        output.WriteLine($"one strike: a cut's {cut:0.####}, a written blow's {written:0.####}, ratio {cut / written:0.00000} (cw {cw:0.00000})");
+        Assert.True(written > 0);
+        Assert.InRange(cut / written / cw, 0.995, 1.005);
+
+        // (2) held 63.9 s: the cuts' strikes give what the blows' strikes gave. What is scheduled at the close is counted
+        // (run out with the hold let go: landed + pending, as LateWeightTests T2 counts what is in the air).
+        var bare = Make(false, false, far);
+        var plain = Make(false, true, far);
+        var chain = Make(true, true, far);
+        var late = new Dictionary<Rig, (int Pending, int New, double Landed)>();
+        foreach (var r in new[] { bare, plain, chain })
+        {
+            for (int i = 0; i < Steps; i++) Step(r, true);
+            int at = r.Strikes, pending = r.Strikes - r.Hits; double landed = r.Lost;
+            for (int i = 0; i < 60 && r.Hits < r.Strikes; i++) Step(r, false);
+            late[r] = (pending, r.Strikes - at, landed);
+        }
+        output.WriteLine($"oathblade + bonesplitter over 63.9 s, the foe at the strike: chained {chain.Lost:0.#} ({chain.Cuts} cuts, {chain.Strikes} strikes, {chain.Hits} landed; at the close {late[chain].Landed:0.#} landed, {late[chain].Pending} pending, {late[chain].New} scheduled after), "
+            + $"unchained {plain.Lost:0.#} ({plain.Cuts} blows, {plain.Strikes} strikes, {plain.Hits} landed; at the close {late[plain].Landed:0.#} landed, {late[plain].Pending} pending, {late[plain].New} scheduled after), "
+            + $"ratio {chain.Lost / plain.Lost:0.0000} (as landed at the close {late[chain].Landed / late[plain].Landed:0.0000}); with no strike {bare.Lost:0.#} ({bare.Cuts} blows)");
+        // the swing does not reach her there: every hit is a strike, and every strike scheduled landed
+        Assert.Equal(0.0, bare.Lost);
+        Assert.True(bare.Cuts > 50 && bare.Strikes == 0);
+        Assert.True(chain.Cuts > plain.Cuts * 1.4, "the chain did not swing");
+        Assert.Equal(plain.Cuts, plain.Strikes);
+        Assert.Equal(chain.Cuts, chain.Strikes);
+        Assert.Equal(plain.Strikes, plain.Hits);
+        Assert.Equal(chain.Strikes, chain.Hits);
+        // nothing new is cast once the hold is let go: the run-out only lands what the window scheduled
+        Assert.Equal(0, late[plain].New + late[chain].New);
+        // (before StrikeSpec.W: every strike landed at weight 1, 1.5x as many as the blows': 1.5x the damage)
+        Assert.InRange(chain.Lost / plain.Lost, 0.98, 1.02);
     }
 }
