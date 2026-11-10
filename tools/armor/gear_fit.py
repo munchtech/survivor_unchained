@@ -1358,9 +1358,36 @@ def stamp_build(js, bin_bytes):
     return js
 
 
+def gltf_stamp_state(gltf_path):
+    """(ok, reason): the .gltf carries asset.extras.build equal to the sha1 of its .bin."""
+    bp = gltf_path[:-5] + ".bin"
+    try:
+        js = json.load(open(gltf_path, encoding="utf-8"))
+    except Exception as e:  # noqa: BLE001
+        return False, f"gltf unreadable ({e})"
+    have = js.get("asset", {}).get("extras", {}).get("build")
+    if not have:
+        return False, "gltf has no build stamp"
+    if not os.path.exists(bp):
+        return False, "no .bin beside gltf"
+    if have != sha1(bp):
+        return False, "stamp does not match the .bin"
+    return True, None
+
+
+def stamp_file(gltf_path):
+    """Write the build stamp into an existing .gltf (asset.extras.build only, the builder's formatting)."""
+    js = json.load(open(gltf_path, encoding="utf-8"))
+    stamp_build(js, open(gltf_path[:-5] + ".bin", "rb").read())
+    with open(gltf_path, "w") as f:
+        json.dump(js, f, separators=(",", ":"))
+
+
 def import_stale(gltf_path, godot_dir):
-    """None when the imported scene is fresh, else (reason, scn_mtime or None, source_mtime): the game loads
-    godot/.godot/imported/<x>.scn named by the `path=` line of <x>.gltf.import."""
+    """None when the imported scene is fresh, else (reason, scn_mtime or None, source_mtime). Decided by content:
+    the record godot/.godot/imported/<x>.md5 (same stem as the .scn named by `path=` in <x>.gltf.import) holds
+    source_md5 of the .gltf Godot imported, and the .gltf's build stamp speaks for its .bin."""
+    import hashlib as _h
     src = os.path.getmtime(gltf_path)
     bp = gltf_path[:-5] + ".bin"
     if os.path.exists(bp):
@@ -1379,12 +1406,22 @@ def import_stale(gltf_path, godot_dir):
     if not os.path.exists(sp):
         return f"imported scene missing ({scn})", None, src
     t = os.path.getmtime(sp)
-    if t < src:
-        return "imported scene older than gltf/bin", t, src
+    mp = os.path.splitext(sp)[0] + ".md5"
+    if not os.path.exists(mp):
+        return "no .md5 record", t, src
+    rec = None
+    for line in open(mp, encoding="utf-8", errors="replace"):
+        if line.startswith("source_md5="):
+            rec = line.split("=", 1)[1].strip().strip('"')
+    if rec != _h.md5(open(gltf_path, "rb").read()).hexdigest():
+        return "gltf changed since import", t, src
+    ok, why = gltf_stamp_state(gltf_path)
+    if not ok:
+        return why, t, src
     return None
 
 
-def imports_cmd(folder):
+def imports_cmd(folder, stamp=False):
     name = os.path.basename(os.path.normpath(folder))
     if name.startswith("_"):
         print("trial folder, not imported")
@@ -1392,6 +1429,11 @@ def imports_cmd(folder):
     godot_dir = os.path.join(REPO, "godot")
     files = sorted(f for f in os.listdir(folder) if f.endswith(".gltf"))
     fmt = lambda t: "none" if t is None else time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(t))
+    if stamp:
+        todo = [f for f in files if not gltf_stamp_state(os.path.join(folder, f))[0]]
+        for f in todo:
+            stamp_file(os.path.join(folder, f))
+        print(f"gear imports: stamped {len(todo)} of {len(files)} gltf")
     n = 0
     for f in files:
         r = import_stale(os.path.join(folder, f), godot_dir)
@@ -1820,11 +1862,12 @@ def main():
         if name == "build":
             p.add_argument("--no-bind", action="store_true", help="skip the stale check and rebind")
     im = sub.add_parser("imports")
+    im.add_argument("--stamp", action="store_true", help="write the build stamp into gltfs lacking a right one")
     im.add_argument("--gear", default=rel(os.path.join(OUT, os.path.basename(BIND_BODY))))
     a = ap.parse_args()
     only = [x for x in getattr(a, "only", "").split(",") if x]
     if a.cmd == "imports":
-        sys.exit(imports_cmd(a.gear if os.path.isabs(a.gear) else os.path.join(REPO, a.gear)))
+        sys.exit(imports_cmd(a.gear if os.path.isabs(a.gear) else os.path.join(REPO, a.gear), a.stamp))
     if a.cmd == "bind":
         bind_units(only)
         return
