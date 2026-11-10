@@ -98,16 +98,35 @@ class Lames(unittest.TestCase):
         self.assertGreater(float(full.height(np.array([0.3478]), th)[0]), 0.0025)   # (rolled on every edge: a bead)
         p = sh.build("lame_rigid", "steel")
         S, TH, idx = p.grid
-        n_face, n_loop = S.size, 2 * (S.shape[0] - 1) + 2 * (S.shape[1] - 1)
-        lip = p.P[n_face + 2 * n_loop:]
-        self.assertEqual(len(lip), n_loop)
-        s_l, _, rho = fr.cyl(lip)
-        top_lip = rho[s_l < 0.305]
-        # the lifted edge's lip turns in over the plate beneath (it never runs down to her skin through that plate)
-        self.assertGreater(float(top_lip.min()), 0.08 + 0.002)
-        self.assertLess(float(rho[s_l > 0.345].min()), 0.08)    # the plain bottom edge: its wall runs down to her
+        nr, nc = S.shape
+        self.assertEqual(nr, 7 + (nr - 8) + 1)                  # rows cluster on the rolled top edge only
+        wall = p.P[S.size:]
+        s_w, th_w, rho = fr.cyl(wall)
+        # the lifted edge's wall and lip stay over the plate beneath (they never run down to her skin through it)
+        self.assertGreater(float(rho[(s_w < 0.305) & (th_w > -25) & (th_w < 55)].min()), 0.08 + 0.002)
+        # the hidden bottom edge has no wall: nothing stands between her skin and the lame that laps over it
+        self.assertEqual(int(((s_w > 0.345) & (th_w > -25) & (th_w < 55)).sum()), 0)
+        full_p = full.build("lame_rigid", "steel")
+        s_f, th_f, rho_f = fr.cyl(full_p.P[full_p.grid[0].size:])
+        self.assertLess(float(rho_f[(s_f > 0.345) & (th_f > -25) & (th_f < 55)].min()), 0.08)   # a rolled edge: down to her
+        used = np.zeros(len(p.P), bool)
+        used[p.T] = True
+        self.assertTrue(used.all())                             # no point without a face
         fn = np.cross(p.P[p.T[:, 1]] - p.P[p.T[:, 0]], p.P[p.T[:, 2]] - p.P[p.T[:, 0]])
         self.assertGreater(float(np.linalg.norm(fn, axis=1).min()), 1e-12)          # no degenerate faces
+
+    def test_tapered_side(self):
+        # a side edge as a line theta(s): the plate's side runs into the lames' below it, no step in the outline
+        side = lambda s: -30 + 10 * nb.smooth((np.asarray(s, float) - 0.31) / 0.03)  # noqa: E731
+        sh, fr = self.sheet()
+        sh.t0 = side
+        p = sh.build("plate_rigid", "steel")
+        S, TH, idx = p.grid
+        np.testing.assert_allclose(TH[:, 0], side(S[:, 0]), atol=1e-6)              # its first column IS the line
+        self.assertAlmostEqual(float(TH[0, 0]), -30.0, places=5)
+        self.assertAlmostEqual(float(TH[-1, 0]), -20.0, places=5)
+        self.assertLess(float(sh.edge_d(np.array([0.345]), np.array([-25.0]))[0]), 0)   # outside the tapered side
+        self.assertGreater(float(sh.edge_d(np.array([0.302]), np.array([-25.0]))[0]), 0)
 
 
 if __name__ == "__main__":

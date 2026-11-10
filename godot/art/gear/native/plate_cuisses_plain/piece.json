@@ -22,16 +22,31 @@
  },
  "parts": {
   "plate_l_rigid": {
-   "ride": {
-    "thigh": 1
+   "bones": {
+    "thigh_twist_02_{s}": 1
    }
   },
-  "lame_l_rigid": {
-   "ride": {
-    "thigh": 0.75,
-    "calf": 0.25
-   },
-   "one_bone": true
+  "lame1_l_rigid": {
+   "bones": {
+    "thigh_twist_02_{s}": 1
+   }
+  },
+  "lame2_l_rigid": {
+   "bones": {
+    "thigh_twist_02_{s}": 0.9,
+    "calf_share_{s}": 0.1
+   }
+  },
+  "lame3_l_rigid": {
+   "bones": {
+    "thigh_twist_02_{s}": 0.8,
+    "calf_share_{s}": 0.2
+   }
+  },
+  "hip_l_rigid": {
+   "bones": {
+    "thigh_share_{s}": 1
+   }
   },
   "buckle_l_rigid": {
    "ride": {
@@ -42,20 +57,38 @@
   "tabs_l_rigid": {
    "with": "plate_l_rigid"
   },
+  "gtab_l_rigid": {
+   "with": "hip_l_rigid"
+  },
   "rivets_l_rigid": {
    "with": "plate_l_rigid"
   },
   "plate_r_rigid": {
-   "ride": {
-    "thigh": 1
+   "bones": {
+    "thigh_twist_02_{s}": 1
    }
   },
-  "lame_r_rigid": {
-   "ride": {
-    "thigh": 0.75,
-    "calf": 0.25
-   },
-   "one_bone": true
+  "lame1_r_rigid": {
+   "bones": {
+    "thigh_twist_02_{s}": 1
+   }
+  },
+  "lame2_r_rigid": {
+   "bones": {
+    "thigh_twist_02_{s}": 0.9,
+    "calf_share_{s}": 0.1
+   }
+  },
+  "lame3_r_rigid": {
+   "bones": {
+    "thigh_twist_02_{s}": 0.8,
+    "calf_share_{s}": 0.2
+   }
+  },
+  "hip_r_rigid": {
+   "bones": {
+    "thigh_share_{s}": 1
+   }
   },
   "buckle_r_rigid": {
    "ride": {
@@ -65,6 +98,9 @@
   },
   "tabs_r_rigid": {
    "with": "plate_r_rigid"
+  },
+  "gtab_r_rigid": {
+   "with": "hip_r_rigid"
   },
   "rivets_r_rigid": {
    "with": "plate_r_rigid"

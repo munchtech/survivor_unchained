@@ -210,12 +210,14 @@ class Law:
         return Law(*self.dom, self.coef, self.add + d)
 
     @classmethod
-    def envelope(cls, s, th, rho, deg=(7, 7), dom=None, iters=40, over=30.0):
+    def envelope(cls, s, th, rho, deg=(7, 7), dom=None, iters=40, over=30.0, soft=None):
         """The smooth law lying on or above every sample (s, th, rho): an asymmetric least-squares fit (a sample above
-        the law weighs `over` times one below), then lifted by the last sample still above it."""
+        the law weighs `over` times one below), then lifted by the last sample still above it. soft (bool per sample):
+        skin no plate lies over; it guides the fit across the domain and never lifts the law."""
         s, th, rho = (np.asarray(v, float).reshape(-1) for v in (s, th, rho))
+        hard = np.ones(len(s), bool) if soft is None else ~np.asarray(soft, bool).reshape(-1)
         ok = np.isfinite(rho)
-        s, th, rho = s[ok], th[ok], rho[ok]
+        s, th, rho, hard = s[ok], th[ok], rho[ok], hard[ok]
         dom = dom or (s.min(), s.max(), th.min(), th.max())
         law = cls(*dom, np.zeros(deg))
         A, B = law.basis(s, th)
@@ -224,10 +226,10 @@ class Law:
         for _ in range(iters):
             c = np.linalg.lstsq(M * w[:, None], rho * w, rcond=None)[0]
             r = rho - M @ c
-            w = np.where(r > 0, np.sqrt(over), 1.0)
+            w = np.where(hard, np.where(r > 0, np.sqrt(over), 1.0), 0.3)
         law.coef = c.reshape(deg)
-        law.add = float(max(r.max(), 0.0))
-        law.rms = float(np.sqrt((r ** 2).mean()))
+        law.add = float(max(r[hard].max(), 0.0)) if hard.any() else 0.0
+        law.rms = float(np.sqrt((r[hard] ** 2).mean())) if hard.any() else 0.0
         return law
 
 
@@ -353,31 +355,41 @@ class Sheet:
     that laps OVER the plate above it; theta: only from a on, in full from b); cap(s, th) -> the rho its outer face
     must stay under (the plate or the cop that covers it); lip: how far above the law - `clear` its inner lip ends
     (the edge wall runs down to the skin, so no void shows under an edge; under a lifted edge it is the steel's own
-    thickness and its lip turns in over the plate beneath)."""
+    thickness and its lip turns in over the plate beneath; an edge with no roll, hidden under another plate, has no
+    wall at all). t0 / t1: a number, or a line theta(s): a side edge that
+    runs into the lames below it (a taper), never a step in the outline. ridge "stop": it has faded out this far
+    before the bottom edge (the band hidden under the next lame). step / step_s: the mesh's spacing round the limb /
+    down it (rows cluster only on a rolled edge)."""
 
     def __init__(self, fr, law, t0, t1, top, bot, thick, roll=(0.0045, 0.001), ridge=None, lift=None, cap=None,
-                 clear=0.003, lip=0.0008, step=0.011, flare=None, roll_on="tb01", lift_top=None):
+                 clear=0.003, lip=0.0008, step=0.011, flare=None, roll_on="tb01", lift_top=None, step_s=None):
         self.fr, self.law, self.t0, self.t1, self.top, self.bot = fr, law, t0, t1, top, bot
         self.thick, self.roll, self.ridge, self.lift, self.cap, self.clear, self.lip, self.step, self.flare = \
             thick, roll, ridge, lift, cap, clear, lip, step, flare
-        self.roll_on, self.lift_top = roll_on, lift_top
+        self.roll_on, self.lift_top, self.step_s = roll_on, lift_top, step_s or step
+
+    def side(self, k, s):
+        """The theta of its t0 (k = 0) / t1 (k = 1) side edge at s."""
+        t = self.t1 if k else self.t0
+        return np.asarray(t(s), float) if callable(t) else np.full(np.shape(s), float(t))
 
     def roll_d(self, s, th):
         """Distance to the nearest ROLLED edge (inf when none is)."""
         s, th = np.broadcast_arrays(np.asarray(s, float), np.asarray(th, float))
         d = np.full(s.shape, np.inf)
         R = self.law(s, th)
-        for k, v in (("t", s - self.top(th)), ("b", self.bot(th) - s), ("0", np.radians(th - self.t0) * R),
-                     ("1", np.radians(self.t1 - th) * R)):
+        for k, v in (("t", s - self.top(th)), ("b", self.bot(th) - s), ("0", np.radians(th - self.side(0, s)) * R),
+                     ("1", np.radians(self.side(1, s) - th) * R)):
             if k in self.roll_on:
                 d = np.minimum(d, v)
         return d
 
     def edge_d(self, s, th):
         """Distance to the nearest edge inside the domain (negative outside)."""
+        s, th = np.broadcast_arrays(np.asarray(s, float), np.asarray(th, float))
         R = self.law(s, th)
         return np.minimum(np.minimum(s - self.top(th), self.bot(th) - s),
-                          np.minimum(np.radians(th - self.t0), np.radians(self.t1 - th)) * R)
+                          np.minimum(np.radians(th - self.side(0, s)), np.radians(self.side(1, s) - th)) * R)
 
     def height(self, s, th):
         """The outer face's height over the law at (s, theta): thickness, lift, flare, ridge and rolled edge."""
@@ -397,7 +409,7 @@ class Sheet:
         if self.ridge:
             r = self.ridge
             x = np.radians(th - r["theta"]) * R / (r["w"] / 2)
-            end = smooth(np.minimum(s - self.top(th), self.bot(th) - s) / r["fade"])
+            end = smooth(np.minimum(s - self.top(th), self.bot(th) - r.get("stop", 0.0) - s) / r["fade"])
             h = h + r["h"] * np.interp(x, RIDGE_X, RIDGE_H, left=0, right=0) * end
         if self.roll:
             d = self.roll_d(s, th) / self.roll[0]
@@ -427,33 +439,41 @@ class Sheet:
         the ridge, even between (about `step` apart)."""
         w = self.roll[0] if self.roll else 0.004
         dk = np.r_[ROLL_D * w, 1.25 * w]
-        tm = 0.5 * (self.t0 + self.t1)
+        num = lambda t, s: float(t(s)) if callable(t) else float(t)  # noqa: E731
+        tm, sm = 0.0, 0.0
+        for _ in range(3):   # (the middle of a sheet whose sides are lines theta(s))
+            tm = 0.5 * (num(self.t0, sm) + num(self.t1, sm))
+            sm = 0.5 * float(self.top(tm) + self.bot(tm))
         Lm = float(self.bot(tm) - self.top(tm))
-        Rm = float(self.law(0.5 * (self.top(tm) + self.bot(tm)), tm))
-        nv = max(int(round((Lm - 2 * dk[-1]) / self.step)), 1)
+        Rm = float(self.law(sm, tm))
+        dkt, dkb = (dk if "t" in self.roll_on else dk[:1]), (dk if "b" in self.roll_on else dk[:1])
+        nv = max(int(round((Lm - dkt[-1] - dkb[-1]) / self.step_s)), 1)
         fixed = [(self.t0, +1, dk), (self.t1, -1, dk[::-1])]
         if self.ridge:
             fixed.insert(1, (self.ridge["theta"], +1, RIDGE_X * self.ridge["w"] / 2))
+        ss = np.linspace(float(self.top(tm)), float(self.bot(tm)), 9)
+        wide = lambda t: np.array([num(t, v) for v in ss])  # noqa: E731  (a side line's thetas down the sheet)
         # columns: [edge cluster | even | ridge cluster | even | edge cluster]; each row sets its own thetas, so a
         # cluster keeps its width in metres where the limb thins
         cols = []
         for k, (tc, sg, offs) in enumerate(fixed):
             cols += [("fix", tc, sg * o) for o in offs]
             if k + 1 < len(fixed):
-                arc = np.radians(fixed[k + 1][0] - tc) * Rm - abs(offs[-1]) - abs(fixed[k + 1][2][0])
+                arc = np.radians((wide(fixed[k + 1][0]) - wide(tc)).max()) * Rm - abs(offs[-1]) - abs(fixed[k + 1][2][0])
                 n = max(int(round(arc / self.step)), 1)
                 cols += [("free", k, (i + 1) / n) for i in range(n - 1)]
-        rows = [("top", d) for d in dk] + [("mid", (i + 1) / nv) for i in range(nv - 1)] + [("bot", d) for d in dk[::-1]]
+        rows = [("top", d) for d in dkt] + [("mid", (i + 1) / nv) for i in range(nv - 1)] + [("bot", d) for d in dkb[::-1]]
         S, TH = np.zeros((len(rows), len(cols))), np.zeros((len(rows), len(cols)))
 
         def thetas(s_of):
             th = np.zeros(len(cols))
-            for _ in range(3):   # (thetas and the row's s depend on each other through the edge curves: settle)
+            th[:] = tm
+            for _ in range(6):   # (thetas and the row's s depend on each other through the edge curves: settle)
                 s = s_of(th)
                 R = np.maximum(self.law(s, th), 1e-3)
                 for j, c in enumerate(cols):
                     if c[0] == "fix":
-                        th[j] = c[1] + np.degrees(c[2] / R[j])
+                        th[j] = num(c[1], s[j]) + np.degrees(c[2] / R[j])
                 for j, c in enumerate(cols):
                     if c[0] == "free":
                         lo = max(jj for jj in range(j) if cols[jj][0] == "fix")
@@ -467,7 +487,7 @@ class Sheet:
             elif r[0] == "bot":
                 s_of = lambda th, d=r[1]: self.bot(th) - d  # noqa: E731
             else:
-                s_of = lambda th, t=r[1]: (self.top(th) + dk[-1]) * (1 - t) + (self.bot(th) - dk[-1]) * t  # noqa: E731
+                s_of = lambda th, t=r[1]: (self.top(th) + dkt[-1]) * (1 - t) + (self.bot(th) - dkb[-1]) * t  # noqa: E731
             TH[i] = thetas(s_of)
             S[i] = s_of(TH[i])
         return S, TH
@@ -525,24 +545,36 @@ class Sheet:
                  bl - e * 0.0028 + rl * np.where(under > 0.0006, under - 0.0005, -drop)[:, None]]
         Pw = np.vstack(rings)
         k0 = nr * nc
+        # (an edge no roll is on lies hidden under another plate and takes no wall: a wall there would stand between
+        # her skin and the plate over it, and the tuck's rays read its steep faces as a rim, an edge of the piece)
+        rw, cw = np.divmod(loop, nc)
+        hid = np.zeros(n_loop, bool)
+        for k, on in (("t", rw == 0), ("b", rw == nr - 1), ("0", cw == 0), ("1", cw == nc - 1)):
+            if k not in self.roll_on:
+                hid |= on & np.roll(on, -1)
         Tw = []
         prev = loop
         for k in range(3):
             cur = k0 + k * n_loop + np.arange(n_loop)
             a, b = prev, np.roll(prev, -1)
             c, d = cur, np.roll(cur, -1)
-            Tw += [np.c_[a, b, d], np.c_[a, d, c]]
+            Tw += [np.c_[a, b, d][~hid], np.c_[a, d, c][~hid]]
             prev = cur
+        n_seg = int((~hid).sum())
         Tw = np.vstack(Tw)
         Pall = np.vstack([P, Pw])
         fn = np.cross(Pall[Tw[:, 1]] - Pall[Tw[:, 0]], Pall[Tw[:, 2]] - Pall[Tw[:, 0]])
-        if (fn[:2 * n_loop] * np.r_[e, e]).sum() < 0:
+        if (fn[:2 * n_seg] * np.r_[e[~hid], e[~hid]]).sum() < 0:
             Tw = Tw[:, ::-1]
         nw = len(Pw)
         uvw = np.vstack([uv[loop]] * 3) + np.repeat(np.array([[0, 0.002], [0, 0.004], [0, 0.007]]) * repeats, n_loop, 0)
         colw = np.c_[np.repeat([0.7, 0.45, 0.3], n_loop) * ao, np.full(nw, rnd), np.zeros(nw), np.zeros(nw)]
         uv1w = np.c_[np.zeros(nw), np.repeat([0.8, 0.5, 0.5], n_loop)]
-        part = Part(name, material, Pall, np.vstack([T, Tw]), np.vstack([uv, uvw]), np.vstack([uv1, uv1w]), np.vstack([col, colw]))
+        Tall = np.vstack([T, Tw])
+        used = np.zeros(len(Pall), bool)
+        used[Tall] = True
+        part = Part(name, material, Pall[used], (np.cumsum(used) - 1)[Tall], np.vstack([uv, uvw])[used], np.vstack([uv1, uv1w])[used],
+                    np.vstack([col, colw])[used])
         part.grid = (S, TH, idx)
         return part
 
