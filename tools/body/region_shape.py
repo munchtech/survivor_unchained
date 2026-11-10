@@ -192,8 +192,16 @@ class Ctx:
     def poses(self, names):
         """Yield {name, side, G, A: (V, G)} for pose names (grouped by clip)."""
         B, A, by = self.B, self.A, {}
+        if getattr(self, "_pz", None) is None:      # poses.npz: the poses the stored carried target was computed for
+            z = np.load(OUT / "poses.npz")
+            self._pz = {str(n): (z["G"][i], str(z["side"][i])) for i, n in enumerate(z["name"])}
         for nm in names:
             core, s = (nm[:-2], nm[-1]) if nm[-2:] in (":l", ":r") else (nm, "l")
+            if nm in self._pz:                      # one source of truth: the stored G, not a rebuild
+                G, sf = self._pz[nm]
+                yield {"name": nm, "side": sf, "G": G, "A": self.a_from_B(G) if core != "rest" else (A.V0, A.G0)}
+                continue
+            print(f"pose {nm}: not in poses.npz, built live", flush=True)
             if core == "rest":
                 yield {"name": nm, "side": s, "G": B.G0, "A": (A.V0, A.G0)}
             elif core.startswith("x:"):
