@@ -823,7 +823,13 @@ HER = {
                                    # map (Her.part; body_facts/strip_rest.md): the armpit band's lay (out/shoulder/`file`,
                                    # strip_rest.HerStrip) blended into the carried fill on the band's points by the arm's
                                    # elevation, smoothstep over `elev` deg (strip_rest.map_targets). No key: the fill alone
-                                   "map": {"file": "strip_rest.npz", "elev": [45.0, 90.0]}}},
+                                   "map": {"file": "strip_rest.npz", "elev": [45.0, 90.0]},
+                                   # open (Her.gate_open; body_facts/breast_gate.md): the first gate also opens by B's
+                                   # PUBLISHED stretch on its own rows, smoothstep over `stretch` (edge ratio), the share
+                                   # the larger of it and the elevation's. NOT MET, so no key (inert): Jog's torn edges sit
+                                   # on the ramp rows (opened share 0.02-0.26), so a full first gate leaves them published.
+                                   # The rule to try: {"stretch": [1.8, 2.5]}
+                                   }},
         "neck": {"provider": "derived", "bones": ["neck_01", "neck_02", "Head"], "ref": {"neck_01": "neck_02", "Head": "Head"},
                  "root": "neck_01", "far": ["Head"], "rows": 4, "eps": 0.02, "rigid": 0.999,
                  # relax (Her.relaxed on a region with no side): no elevation, w = 1, every row open; A's own stretched
@@ -863,6 +869,7 @@ HER = {
     # `ratio` but those the published surface has over it too; Head-rigid points and the girdle regions as with it off
     "t23_poses": ["p4:idle_warden_town@126:r", "p4:idle_warden_town@122:l", "sword_heavy@10:l", "p4:shield_charge@0:r",
                   "p4:iron_vow@75:r", "axe_heavy@7:r", "Jog_Fwd@11:r"],
+    "t25_poses": ["Jog_Fwd@11:r", "Jog_Fwd@14:l"], "t25_ratio": 2.5, "t25_n": 8,   # T25: the gate's stretch opening
     "t21_poses": ["x:abd150:l", "p4:heroic_leap@9:r", "crossbow_shoot@10:r"],   # T21: the map through two paths
     "t19": {"poses": ["x:abd150:l", "x:abd170:l", "x:flex170:l"], "ref": "fold_probe/dump_t0.npz", "k": 3, "top": 12,
             "valley_deg": 1.0, "depth_mm": 0.2},
@@ -961,6 +968,7 @@ class Her:
         self.girth0 = {s: md.girth(md.S[s], md.V0) for s in sides}
         self.last = {}
         self._pose, self._parts = None, {}                  # the regions' parts of the last pose (part)
+        self.open_on, self._open = True, {}                 # the gate's stretch opening (support "open", gate_open)
         if verbose:
             print(f"carry: {cfg['carry']}; {len(self.driven)} driven bones; regions:")
             for n, r in self.regions.items():
@@ -1040,6 +1048,13 @@ class Her:
             plain = [Carrier(Ab.V0, Ab.T, bd.V0[F[x]], self.N0[F[x]], rad=cfg["rad"], k=cfg["k"], nw=cfg["nw"], pocket_rows=0) for x in news]
             rg.pts, rg.edges, rg.carrier, rg.nlist = F[allid], (A.row, A.col), Carriers([self.car[s], *plain]), len(md.S[s]["ids"])
             rg.share = lambda G, s=s: md.blend(G, s, grown=True)
+            if sup.get("open"):                             # the first gate also opens by the published stretch of its rows
+                gw = (md.grown[s]["closed"] <= 0) & (md.grown[s]["opened"] > 0)
+                ge = gw[A.row] & gw[A.col]
+                rg.open_edges = (F[allid][A.row[ge]], F[allid][A.col[ge]])
+                rg.open_stretch = tuple(sup["open"]["stretch"])
+                rg.open_L0 = np.linalg.norm(bd.V0[rg.open_edges[0]] - bd.V0[rg.open_edges[1]], axis=1)
+                md.grown[s]["open"] = lambda G, s=s: self.gate_open(G, s)
             rg.gated = gate[allid]
             rg.gate_own = F[own0 if s == s0 else md.tw[own0]]       # source vertices: what the side's gate rules (shut)
             rg.spread = spread_of(self.group, rg.pts)
@@ -1137,6 +1152,41 @@ class Her:
         cf = cf.copy()
         cf[:nl] = Xm
         return cf, w, Nm
+
+    def gate_open(self, G, side):
+        """The first gate's stretch opening (config support "open": {"stretch": [lo, hi]}), [0, 1]: the smoothstep over
+        [lo, hi] of the largest edge ratio (posed / rest) of B's PUBLISHED surface of the whole pose G on the gate's own
+        rows (closed share 0, opened share > 0: the rows the gate alone puts on the target; their edges both ends in).
+        Model.blend takes the larger of it and the elevation's: where this is at or under that, the share is bit for bit.
+        Continuous in the pose (a max of continuous edge lengths), so a clip's frames never pop. 0 with open_on False."""
+        rg = self.regions[self.cfg["out_region"].replace("{s}", side)]
+        if not self.open_on or not hasattr(rg, "open_edges"):
+            return 0.0
+        key = (np.asarray(G, float).tobytes(), side)
+        if key not in self._open:
+            if len(self._open) > 64:
+                self._open.clear()
+            Vp = self.rt.published(self.bd, G)
+            a, b = rg.open_edges
+            r = float((np.linalg.norm(Vp[a] - Vp[b], axis=1) / rg.open_L0).max()) if len(a) else 0.0
+            lo, hi = rg.open_stretch
+            g = float(np.clip((r - lo) / (hi - lo), 0.0, 1.0))
+            self._open[key] = (g * g * (3 - 2 * g), r)
+        return self._open[key][0]
+
+    def gate_shut(self, G, side):
+        """True while the side's first gate is shut: the arm under the gate's lo and the stretch opening 0."""
+        gr = self.md.grown[side]
+        return self.md.elevation(G, side) < gr["gate"][0] and self.gate_open(G, side) <= 0.0
+
+    @contextlib.contextmanager
+    def open_off(self):
+        """The gate by the arm's elevation alone (no stretch opening) inside the block; the parts' cache is cleared."""
+        on, self.open_on, self._pose = self.open_on, False, None
+        try:
+            yield
+        finally:
+            self.open_on, self._pose = on, None
 
     @contextlib.contextmanager
     def map_off(self):
@@ -1611,7 +1661,7 @@ def cmd_test(h):
         G = z["G"][names.index(nm)]
         el = {s: md.elevation(G, s) for s in sorted(md.grown)}
         for s in el:
-            if el[s] < lo[s]:
+            if h.gate_shut(G, s):
                 gd, go = h.shut(G, s)
                 line(f"T16 {nm} side {s}", gd < 1.0, f"arm elevation {el[s]:.0f} deg (gate from {lo[s]:g}; other {' '.join(f'{v:.0f}' for k, v in el.items() if k != s)}):"
                      f" the side's gated part ({len(h.regions[cfg['out_region'].replace('{s}', s)].gate_own)} points) off published by the regions under"
@@ -1645,7 +1695,7 @@ def cmd_test(h):
         G = z["G"][names.index(nm)]
         el = max(md.elevation(G, s) for s in sorted(md.grown))
         nrl, nk.relax = getattr(nk, "relax", None), []        # and the neck's relax rule (T23's) is off: stored before it
-        with h.map_off():                # the stage alone: the armpit map (45..90 deg) is T20 / T21's
+        with h.map_off(), h.open_off():  # the stage alone: the armpit map (45..90 deg) is T20 / T21's, the stretch opening T25's
             d = float(np.abs(h.compose(G, pub(bd, G))[md.first[ids_c]][ia] - old["Xc"][io[nm]][ib]).max())
         nk.relax, h._pose = nrl, None
         line(f"T18 {nm}", d == 0.0, f"elevation {el:.1f} deg: composed target - stored ({cfg['t18_stored']}) max {d * 1000:.3g} mm on"
@@ -1771,6 +1821,36 @@ def cmd_test(h):
                  f"neck set ({len(e23[0])} edges): over 2.5x with the published surface under it: {n1} (rule off {n0}); worst edge {t1.max():.2f}"
                  f" (off {t0.max():.2f}, published {pp.max():.2f}); Head-rigid points ({int(hd.sum())}) moved by the rule max {e_h!r} m,"
                  f" girdle regions outside the neck {e_g!r} m (limit exactly 0)")
+    # T25: the first gate's stretch opening (support "open", Her.gate_open; body_facts/breast_gate.md). On t25_poses, both
+    # sides, the composed target's worst edge on the gate's own rows is at most t25_ratio; on t25_n poses sampled where
+    # the opening is at or under the elevation's share on both sides, the composed target is the one with it off, bit for bit
+    if any(hasattr(r, "open_edges") for r in h.regions.values()):
+        def gel(G, s_):
+            lo_, hi_ = md.grown[s_]["gate"]
+            q = float(np.clip((md.elevation(G, s_) - lo_) / (hi_ - lo_), 0.0, 1.0))
+            return q * q * (3 - 2 * q)
+        for nm in cfg["t25_poses"]:
+            G = z["G"][names.index(nm)]
+            C = h.compose(G, pub(bd, G))
+            for s_ in cfg["sides"]:
+                g = h.regions[cfg["out_region"].replace("{s}", s_)]
+                a_, b_ = g.open_edges
+                r_ = float((np.linalg.norm(C[a_] - C[b_], axis=1) / g.open_L0).max())
+                line(f"T25 {nm} side {s_}", r_ <= cfg["t25_ratio"], f"gate rows ({len(a_)} edges): composed worst {r_:.2f} (limit"
+                     f" {cfg['t25_ratio']:g}), published {h._open[(np.asarray(G, float).tobytes(), s_)][1]:.2f}; share elevation"
+                     f" {gel(G, s_):.3f}, stretch {h.gate_open(G, s_):.3f}")
+        same = [i for i in range(len(names)) if all(h.gate_open(z["G"][i], s_) <= gel(z["G"][i], s_) for s_ in cfg["sides"])]
+        pick = [same[k] for k in np.linspace(0, len(same) - 1, min(cfg["t25_n"], len(same))).astype(int)] if same else []
+        d25 = 0.0
+        for i in pick:
+            G = z["G"][i]
+            Vp = pub(bd, G)
+            X1 = h.compose(G, Vp)
+            with h.open_off():
+                X0 = h.compose(G, Vp)
+            d25 = max(d25, float(np.abs(X1 - X0).max()))
+        line("T25 same", len(pick) > 0 and d25 == 0.0, f"{len(same)} of {len(names)} poses where the opening does not raise the"
+             f" share; on {len(pick)} of them composed with it - without max {d25!r} m (limit exactly 0)")
     print("ALL PASS" if ok_all else "SOME FAILED")
     return ok_all
 
@@ -1816,7 +1896,7 @@ def cmd_target(h, poses):
         Xr.append(C[raw_c])
         for s in sorted(lo):                                             # a shut gate: the side's gated part is published
             el = info["elev"] if s == side else h.md.elevation(G, s)     #   (each side of the pose, whatever the other does)
-            if el < lo[s]:
+            if h.gate_shut(G, s):
                 gd, go = (info["gated_d_max"], info["gated_oth_max"]) if s == side else h.shut(G, s)
                 shut.append((gd, f"{names[i]} side {s}"))
                 if poses or gd >= 1.0:
