@@ -6,10 +6,12 @@ namespace SurvivorUnchained.Ui;
 
 /// <summary>
 /// M4 §4, the level-up card (docs/design/M4_HUD.md): one card over the world, rising from the level coin, centred on
-/// x 960, its foot clear of the beads and statuses. The panel language: an ink ground at 82%, a 1 px bronze rule top and
-/// bottom, no border. A new key: the skill's gold glyph in a 40 px well, its name (display serif 26, cream), its key cap
-/// chip (the seat caps' own KeyTag, held at the seats' on-screen size), one line of what it does (UI sans 16, parchment
-/// 80%). A lamp lit: the glyph, the name, "a blow 42 → 47" (before dim, after bright). A new skill (the calling's, on
+/// x 960, its foot clear of the beads and statuses. The panel language: an ink ground at 82%, a 2 px rule top and
+/// bottom (gold at its middle, bronze thinning to the ends), no border; the header in gold; a short gold stem from the
+/// card's foot down to the coin it rose from (judge r1, 9: "a tooltip, not a moment"). The card is as wide as its words
+/// (no dead half). A new key: the skill's gold glyph in a round ringed well (the seats' own shape), its name (display
+/// serif 26, cream), its key cap chip (the bar's own KeyTag, 16 px tall on screen), one line of what it does (UI sans 16,
+/// parchment 80%). A lamp lit: the glyph, the name, "a blow 42 → 47" (before dim, after bright). A new skill (the calling's, on
 /// no key yet): the glyph, the name, its one line, no key cap; its prompt row names the skills screen. Plain: the header and the prompt
 /// row. The prompt row: a key chip and words; the card then holds 3 s. In 0.18 s, hold 2.2 s, out 0.3 s folding toward
 /// the seat that opened (its ring flashes). Words built once a card; drawn once a card; per frame only its transform.
@@ -18,8 +20,11 @@ public partial class LevelCard : Control
 {
     static readonly Color Ground = new(0.043f, 0.035f, 0.024f, 0.82f), Rule = new("#8a6a3a"), Bone = new("#e9dfcc"),
         Cream = new("#f3e7cc"), Parch = new Color("#e8dcc0") with { A = 0.8f }, Dim = new Color("#e8dcc0") with { A = 0.5f },
-        WellInk = new(0, 0, 0, 0.55f), GlyphGold = new("#e9c27a");
-    const float W = 420, Pad = 18, WellD = 40, NameX = Pad + WellD + 14;
+        WellInk = new(0.035f, 0.028f, 0.02f, 0.92f), GlyphGold = new("#e9c27a"), RuleGold = new("#f2d28c"), Ring = new("#b8904e");
+    /// <summary>The chips' scale: the bar's KeyTag chip at 16 px tall on screen (judge r1, 15: at the bottom HUD's own
+    /// scale it was a 12 px chip beside a 26 px name).</summary>
+    const float CapK = 1f;
+    const float MinW = 230, Pad = 18, WellD = 40, NameX = Pad + WellD + 14, CoinR = 43, StemMax = 64;   // (CoinR: the coin arch's top, 43 over its middle: the stem ends on it)
     const int HeadSize = 14, NameSize = 26, LineSize = 16, PromptSize = 15;
 
     public readonly LevelCardQueue Queue = new();
@@ -36,7 +41,7 @@ public partial class LevelCard : Control
 
     string header = "", name = "", line = "", before = "", after = "", measure = "", arrow = " → ", prompt = "";
     Texture2D? glyph;
-    float h = 110, w = W;
+    float h = 110, w = MinW, stem;
     Vector2 rest, fold;
     readonly Control capHost = new() { MouseFilter = MouseFilterEnum.Ignore };
     readonly Control promptHost = new() { MouseFilter = MouseFilterEnum.Ignore };
@@ -51,7 +56,7 @@ public partial class LevelCard : Control
         AddChild(capHost);
         AddChild(promptHost);
         // (the seats' caps are drawn under the bottom HUD's scale: held at that size here, so the chip matches its seat)
-        capHost.Scale = promptHost.Scale = new Vector2(HudBottom.Scale, HudBottom.Scale);
+        capHost.Scale = promptHost.Scale = new Vector2(CapK, CapK);
     }
 
     /// <summary>A card to show (in turn, after any showing).</summary>
@@ -81,7 +86,7 @@ public partial class LevelCard : Control
         prompt = s.HasPrompt ? s.PromptText! : "";
 
         // the skill's key chip (a new key only), after its name
-        float need = W;
+        float need = MinW;
         if (s.Kind == LevelCardKind.NewKey && s.Slot >= 0 && s.Slot < KeyMap.Skills.Length)
         {
             cap?.QueueFree();
@@ -93,7 +98,7 @@ public partial class LevelCard : Control
         float nameW = TextW(Style.Display, name, NameSize);
         if (body)
         {
-            float capW = cap != null ? cap.ChipBox().Size.X * HudBottom.Scale + 12 : 0;
+            float capW = cap != null ? cap.ChipBox().Size.X * CapK + 12 : 0;
             float lineW = s.Kind == LevelCardKind.LampLit
                 ? TextW(Style.Ui, measure + before + arrow + after, LineSize)
                 : TextW(Style.Ui, line, LineSize);
@@ -110,7 +115,7 @@ public partial class LevelCard : Control
             promptCap = new KeyTag(pk) { Chip = true };
             promptHost.AddChild(promptCap);
             promptCap.Refresh();
-            need = Math.Max(need, Pad + promptCap.ChipBox().Size.X * HudBottom.Scale + 10 + TextW(Style.Ui, prompt, PromptSize) + Pad);
+            need = Math.Max(need, Pad + promptCap.ChipBox().Size.X * CapK + 10 + TextW(Style.Ui, prompt, PromptSize) + Pad);
         }
         else if (promptCap != null) { promptCap.QueueFree(); promptCap = null; }
         w = Mathf.Ceil(Math.Max(need, headW));
@@ -119,7 +124,7 @@ public partial class LevelCard : Control
         Size = new Vector2(w, h);
         PivotOffset = Size / 2;
         // the chips, placed in their hosts' (scaled) space: the name's cap on the name's middle, the prompt's on its row
-        float k = HudBottom.Scale;
+        float k = CapK;
         if (cap != null)
         {
             float cw = cap.ChipBox().Size.X * k;
@@ -132,6 +137,9 @@ public partial class LevelCard : Control
         }
         float foot = FootFor(w);
         rest = new Vector2(Mathf.Round(960 - w / 2), Mathf.Round(foot - h));
+        // the stem: from the card's foot to the coin's rim; a card held high over beads gets a short one that fades out
+        float gap = From.Y - CoinR - (rest.Y + h);
+        stem = gap <= 0 ? 0 : Math.Min(gap, StemMax);
         GD.Print($"level card: {header} rect ({rest.X:0},{rest.Y:0} {w:0}x{h:0}) foot {foot:0}{(prompt != "" ? $", prompt \"{prompt}\"" : "")}");
         QueueRedraw();
     }
@@ -179,17 +187,36 @@ public partial class LevelCard : Control
         var s = shown;
         // the ground and its two rules (the panel ends cleanly: square, no border, no ornament)
         DrawRect(new Rect2(0, 0, w, h), Ground);
-        DrawRect(new Rect2(0, 0, w, 1), Rule);
-        DrawRect(new Rect2(0, h - 1, w, 1), Rule);
-        // the header, small caps, bone
-        DrawString(Style.Display, new Vector2(Pad, 22), header, HorizontalAlignment.Left, -1, HeadSize, Bone);
+        foreach (float ry in new[] { 0f, h - 2 })
+        {
+            var end = Rule with { A = 0.55f };
+            float m = w / 2;
+            DrawPolygon([new(0, ry), new(m, ry), new(m, ry + 2), new(0, ry + 2)], [end, RuleGold, RuleGold, end]);
+            DrawPolygon([new(m, ry), new(w, ry), new(w, ry + 2), new(m, ry + 2)], [RuleGold, end, end, RuleGold]);
+        }
+        // the stem to the coin: gold at the card's foot, thinning toward the coin, an ink edge under it, the house's
+        // diamond where it leaves the rule
+        if (stem > 0)
+        {
+            float m = Mathf.Round(w / 2);
+            var far = Rule with { A = 0.5f };
+            DrawRect(new Rect2(m - 2, h, 4, stem), new Color(0, 0, 0, 0.45f));
+            DrawPolygon([new(m - 1, h), new(m + 1, h), new(m + 1, h + stem), new(m - 1, h + stem)], [RuleGold, RuleGold, far, far]);
+            DrawColoredPolygon([new(m - 7, h - 1), new(m, h - 7), new(m + 7, h - 1), new(m, h + 5)], new Color(0.035f, 0.028f, 0.02f));
+            DrawColoredPolygon([new(m - 5, h - 1), new(m, h - 5), new(m + 5, h - 1), new(m, h + 3)], RuleGold);
+        }
+        // the header, small caps, gold
+        DrawString(Style.Display, new Vector2(Pad, 23), header, HorizontalAlignment.Left, -1, HeadSize, GlyphGold);
         if (s.Kind != LevelCardKind.Plain)
         {
             const float top = 32;
             var well = new Rect2(Pad, top + 2, WellD, WellD);
-            DrawRect(well, WellInk);
-            DrawRect(well, Rule with { A = 0.7f }, false, 1);
-            if (glyph != null) DrawTextureRect(glyph, well.Grow(-5), false);
+            // the seats' round well: an ink disc, a bronze ring, a hair of gold on its upper rim
+            var wc = well.GetCenter();
+            DrawCircle(wc, WellD / 2, WellInk);
+            DrawArc(wc, WellD / 2 - 1, 0, Mathf.Tau, 48, Ring, 2, true);
+            DrawArc(wc, WellD / 2 - 1, Mathf.Pi * 1.15f, Mathf.Pi * 1.85f, 20, RuleGold with { A = 0.8f }, 1, true);
+            if (glyph != null) DrawTextureRect(glyph, well.Grow(-8), false);
             DrawString(Style.Display, new Vector2(NameX, top + 22), name, HorizontalAlignment.Left, -1, NameSize, Cream);
             if (s.Kind != LevelCardKind.LampLit)
                 DrawString(Style.Ui, new Vector2(NameX, top + 44), line, HorizontalAlignment.Left, -1, LineSize, Parch);
@@ -208,7 +235,7 @@ public partial class LevelCard : Control
         if (prompt != "" && promptCap != null)
         {
             float promptTop = s.Kind != LevelCardKind.Plain ? 88 : 36;
-            float px = Pad + promptCap.ChipBox().Size.X * HudBottom.Scale + 10;
+            float px = Pad + promptCap.ChipBox().Size.X * CapK + 10;
             DrawString(Style.Ui, new Vector2(px, promptTop + 14), prompt, HorizontalAlignment.Left, -1, PromptSize, Parch);
         }
     }

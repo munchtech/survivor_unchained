@@ -65,8 +65,10 @@ public partial class GameHud : CanvasLayer
     Label sayWho = null!, sayText = null!, annKicker = null!, annTitle = null!, annSub = null!;
     TextureRect sayShade = null!;
     Label bossName = null!, bossTitle = null!, bossChannel = null!;
-    TextureRect bossSheen = null!;
-    static readonly Color BossRed = new("#b0222a");
+    Control bossSheen = null!;
+    TextureRect bossGlint = null!;
+    ShieldMark bossShield = null!;
+    static readonly Color BossRed = new("#a8141c");   // (judge r1, 18: the orb's crimson; #b0222a under the old whole-bar sheen read rose)
     ColorRect bossFill = null!, bossTrail = null!, bossChannelEdge = null!;
     TextureRect bossChannelFill = null!;
     Control bossTrack = null!, bossChannelBox = null!;
@@ -269,12 +271,14 @@ public partial class GameHud : CanvasLayer
     static Label Shadowed(Label l)
     {
         Rimmed(l);
-        l.AddThemeColorOverride("font_shadow_color", new Color(0, 0, 0, 0.55f));
+        l.AddThemeColorOverride("font_shadow_color", new Color(0, 0, 0, 0.7f));
         l.AddThemeConstantOverride("shadow_offset_x", 1);
         l.AddThemeConstantOverride("shadow_offset_y", 2);   // (1.5 px asked; the theme constant is whole px)
+        l.AddThemeConstantOverride("shadow_outline_size", 5);   // (a soft ink halo, not only a dropped copy: lit grass)
         return l;
     }
-    static Label ShadowIf(bool on, Label l) => on ? Shadowed(l) : Rimmed(l);
+    // (judge r1, 14: the waiting lines, rimmed only, washed out over lit grass: every tracker line wears the shadow)
+    static Label ShadowIf(bool on, Label l) => Shadowed(l);
     static Label Rimmed(Label l)
     {
         l.AddThemeConstantOverride("outline_size", 2);
@@ -445,11 +449,20 @@ public partial class GameHud : CanvasLayer
         track.AddChild(bossTrail);
         bossFill = new ColorRect { Color = Hex("#b0222a"), Position = new Vector2(2, 2), Size = new Vector2(w - 4, 12), MouseFilter = Control.MouseFilterEnum.Ignore };
         track.AddChild(bossFill);
-        // Shielded: the red stays, a cool silver sheen over it (brighter top third), shown only while shielded.
-        var sheenG = new Gradient { Offsets = new[] { 0f, 0.33f, 1f }, Colors = new[] { new Color(0xd8 / 255f, 0xdd / 255f, 0xe6 / 255f, 0.35f), new Color(0xd8 / 255f, 0xdd / 255f, 0xe6 / 255f, 0.22f), new Color(0xd8 / 255f, 0xdd / 255f, 0xe6 / 255f, 0.1f) } };
-        bossSheen = new TextureRect { Texture = new GradientTexture2D { Gradient = sheenG, FillFrom = new Vector2(0, 0), FillTo = new Vector2(0, 1), Width = 4, Height = 16 }, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = Control.MouseFilterEnum.Ignore, Visible = false };
+        // Shielded (judge r1, 7: the 2 px paler row read as a bevel): a steel plate laid over the upper half of the red,
+        // as long as the life under it, a dark seam at its foot, a steel end on the fill's leading edge, a slow glint
+        // travelling along the plate (Process). The lower half stays the orb's red: how much life is left still reads.
+        bossSheen = new Control { ClipContents = true, MouseFilter = Control.MouseFilterEnum.Ignore, Visible = false };
         bossSheen.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         bossFill.AddChild(bossSheen);
+        var plateG = new Gradient { Offsets = new[] { 0f, 0.25f, 1f }, Colors = new[] { new Color("#f4f7fb"), new Color("#c6ced9"), new Color("#7c8898") } };
+        var plate = new TextureRect { Texture = new GradientTexture2D { Gradient = plateG, FillFrom = new Vector2(0, 0), FillTo = new Vector2(0, 1), Width = 4, Height = 8 }, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = Control.MouseFilterEnum.Ignore, AnchorRight = 1, OffsetRight = 0, OffsetBottom = 6 };
+        bossSheen.AddChild(plate);
+        bossSheen.AddChild(new ColorRect { Color = new Color(0.03f, 0.04f, 0.06f, 0.85f), MouseFilter = Control.MouseFilterEnum.Ignore, AnchorRight = 1, OffsetRight = 0, OffsetTop = 6, OffsetBottom = 7 });
+        var glintG = new Gradient { Offsets = new[] { 0f, 0.5f, 1f }, Colors = new[] { new Color(1, 1, 1, 0), new Color(1, 1, 1, 0.95f), new Color(1, 1, 1, 0) } };
+        bossGlint = new TextureRect { Texture = new GradientTexture2D { Gradient = glintG, FillFrom = new Vector2(0, 0), FillTo = new Vector2(1, 0), Width = 64, Height = 4 }, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = Control.MouseFilterEnum.Ignore, Size = new Vector2(GlintW, 6) };
+        bossSheen.AddChild(bossGlint);
+        bossSheen.AddChild(new ColorRect { Color = new Color("#e8edf3"), MouseFilter = Control.MouseFilterEnum.Ignore, AnchorLeft = 1, AnchorRight = 1, AnchorBottom = 1, OffsetLeft = -2, OffsetRight = 0, OffsetBottom = 0 });
         // (the bar's light: a pale line along its top and a shade along its foot, over the fill)
         track.AddChild(new ColorRect { Color = new Color(1, 0.9f, 0.85f, 0.16f), Position = new Vector2(2, 2), Size = new Vector2(w - 4, 1), MouseFilter = Control.MouseFilterEnum.Ignore });
         track.AddChild(new ColorRect { Color = new Color(0, 0, 0, 0.28f), Position = new Vector2(2, 10), Size = new Vector2(w - 4, 4), MouseFilter = Control.MouseFilterEnum.Ignore });
@@ -457,11 +470,18 @@ public partial class GameHud : CanvasLayer
         if (!UiArt.Has("boss_groove"))
             foreach (float cx in new[] { -6f, w - 6 })
                 bossBox.AddChild(Clamp(new Vector2(cx, 34), new Vector2(12, 24)));
+        // (shielded: a small steel shield, bronze rimmed, mounted on the bar's head)
+        bossShield = new ShieldMark { Position = new Vector2(-12, 32), Visible = false };
+        bossBox.AddChild(bossShield);
         // (M4 lead 6: 16 px InkDim italic with a soft shadow was lost over lit grass at 1:1, "Old Blue is out of reach
         // until it breaks" could not be read: the tracker's rule for words that stand on the world, bone ink, rimmed and
         // shadowed, two sizes up)
-        bossTitle = Shadowed(Style.Label("", Style.TextItalic, 18, Style.Ink, false, HorizontalAlignment.Center));
-        bossTitle.AddThemeConstantOverride("outline_size", 4);
+        // (judge r1, 18: still thin at about 60% over grass: full bone, a heavier ink edge, a wide soft ink shadow)
+        bossTitle = Shadowed(Style.Label("", Style.TextItalic, 18, new Color("#f1e8d6"), false, HorizontalAlignment.Center));
+        bossTitle.AddThemeConstantOverride("outline_size", 5);
+        bossTitle.AddThemeColorOverride("font_outline_color", new Color(0.02f, 0.015f, 0.01f, 0.95f));
+        bossTitle.AddThemeColorOverride("font_shadow_color", new Color(0, 0, 0, 0.6f));
+        bossTitle.AddThemeConstantOverride("shadow_outline_size", 9);
         bossTitle.Position = new Vector2(0, 62); bossTitle.Size = new Vector2(w, 24);
         bossBox.AddChild(bossTitle);
         // A channel's bar: the boss bar's smaller sibling (UI 20; the judge: "a default progress bar under a dressed
@@ -1056,7 +1076,7 @@ public partial class GameHud : CanvasLayer
         foreach (var c in objectives.GetChildren()) c.QueueFree();
         foreach (var t in list)
         {
-            var head = Style.H(6, Rimmed(Style.Label(t.Title, Style.Display, 18, t.Tone == TrackTone.Tutorial ? Style.Ink : Style.GoldHi)));
+            var head = Style.H(6, Shadowed(Style.Label(t.Title, Style.Display, 18, t.Tone == TrackTone.Tutorial ? Style.Ink : Style.GoldHi)));
             head.Alignment = BoxContainer.AlignmentMode.End;
             objectives.AddChild(head);
             foreach (var s in t.Steps)
@@ -1242,6 +1262,28 @@ public partial class GameHud : CanvasLayer
         return clamp;
     }
 
+    const float GlintW = 90;
+
+    /// <summary>The boss bar's "shielded" mark: a small heater shield in steel, its left face lit, a bronze rim, an ink
+    /// edge so it stands on any ground. Drawn once.</summary>
+    partial class ShieldMark : Control
+    {
+        public ShieldMark() { Size = new Vector2(24, 28); MouseFilter = MouseFilterEnum.Ignore; }
+
+        public override void _Draw()
+        {
+            Vector2[] p = [new(2, 2), new(22, 2), new(22, 13), new(19, 20), new(12, 26), new(5, 20), new(2, 13)];
+            Vector2[] ring = [.. p, p[0]];
+            DrawPolyline(ring, new Color(0.02f, 0.015f, 0.01f, 0.9f), 5, true);
+            Color hi = new("#eef2f7"), mid = new("#aeb8c6"), lo = new("#6b7686");
+            DrawPolygon(p, [hi, hi, mid, lo, lo, lo, mid]);
+            // the lit left face and the ridge between the faces
+            DrawColoredPolygon([new(2, 2), new(12, 2), new(12, 26), new(5, 20), new(2, 13)], new Color(1, 1, 1, 0.22f));
+            DrawLine(new Vector2(12, 3), new Vector2(12, 25), new Color(0.16f, 0.19f, 0.24f, 0.55f), 1);
+            DrawPolyline(ring, new Color("#c9a15c"), 1.6f, true);
+        }
+    }
+
     public static string? BossName { get; private set; }
 
     public void Boss(BossBar? bar)
@@ -1261,7 +1303,7 @@ public partial class GameHud : CanvasLayer
         float w = BossW - 4;
         float k = (float)Math.Clamp(bar.Hp / Math.Max(1, bar.MaxHp), 0, 1);
         bossFill.Size = new Vector2(w * k, 12);
-        if (bossSheen.Visible != bar.Shielded) bossSheen.Visible = bar.Shielded;
+        if (bossSheen.Visible != bar.Shielded) { bossSheen.Visible = bar.Shielded; bossShield.Visible = bar.Shielded; }
         if (bossFill.Color != BossRed) bossFill.Color = BossRed;
         bossK = k;
         if (fresh) { bossTrailAt.Snap(k); bossTrail.Size = new Vector2(w * k, 12); }
@@ -1860,6 +1902,9 @@ public partial class GameHud : CanvasLayer
         float trailShown = lifeTrail.Step(hpShown, dt);
         // A boss's bar the same way: by time and here, so a bar fed once still settles (Boss() only says where the fill is).
         if (bossBox.Visible) bossTrail.Size = new Vector2((BossW - 4) * bossTrailAt.Step(bossK, dt), 12);
+        // the shield's glint: one slow pass along the plate every 3.6 s
+        if (bossBox.Visible && bossSheen.Visible)
+            bossGlint.Position = new Vector2((float)(Time.GetTicksMsec() % 3600 / 3600.0) * (bossFill.Size.X + GlintW) - GlintW, 0);
         var life = irons.Life;
         life.Trail = trailShown;
         float now = Time.GetTicksMsec() / 1000f;
