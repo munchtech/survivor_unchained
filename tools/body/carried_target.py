@@ -1029,6 +1029,7 @@ class Her:
             rg.spread = spread_of(self.group, rg.pts)
             rg.relax = [(*g["deg"], (np.abs(SH[1 + k][o0] - SH[k][o0]) > 1e-12) & (np.arange(len(o0)) >= rg.nlist), g["relax"])
                         for k, g in enumerate(more) if g.get("relax")]      # (lo, hi, the plain rows the stage opens, rule)
+            self.ext[s] = new                               # md point ids of Xe's rows (the npz ext_<s>; region_shape reads it)
 
     def carrier(self, side, **over):
         """The side's Carrier from the config (`over` replaces Carrier arguments: the tests' variants)."""
