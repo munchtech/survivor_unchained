@@ -18,6 +18,12 @@ public sealed class GripMeter
     /// <summary>The grip's cuts told (Ev.Slash, Held), those that struck a foe, its damage and the Resolve landed blows built.</summary>
     public int Cuts, Blows;
     public double Damage, Fill;
+    /// <summary>Gaps a chained grip's key was held into (a foe in its reach and the pad on the step before, none on this
+    /// one, the key down on both; the gap lasts until a foe is in reach again, the key up or not), and the cuts that
+    /// STARTED in such a gap (a live chain's StartAt moved: GripHoldTests (5)'s whiffed cuts, not `Struck == 0`).</summary>
+    public int Gaps, Whiffs;
+    bool wasNear, gap;
+    readonly Dictionary<string, double> cutAt = new();
     bool was;
     double since, fillSeen, dmgSeen;
     readonly HashSet<string> ids = new();
@@ -25,7 +31,7 @@ public sealed class GripMeter
     public void Step(Battle b, double dt, IReadOnlyList<CombatEvent> evs)
     {
         var p = b.Player;
-        bool any = false, held = false, near = false;
+        bool any = false, held = false, near = false, chained = false, started = false;
         double pad = PressPlan.Def.GripPad;
         foreach (var w in b.Weapons)
         {
@@ -39,6 +45,12 @@ public sealed class GripMeter
             if (g == null) continue;
             any = true; held |= h; ids.Add(g.Id);
             near |= b.NearestHostile(p.X, p.Z, (g.Num(s => s.Reach) ?? 2.6) + pad) != null;
+            // (the chain is kept on the weapon that swings: a union's half carries its own, the union's record none)
+            if (g.Chained)
+            {
+                chained = true;
+                if (g.Chain is { Live: true } c && (!cutAt.TryGetValue(g.Id, out var at) || at != c.StartAt)) { cutAt[g.Id] = c.StartAt; started = true; }
+            }
         }
         // (the fill and the damage are the battle's running sums: their steps are taken, a new fight's reset is not a loss)
         double fill = b.Resolve.LandedFill, dmg = 0;
@@ -48,6 +60,11 @@ public sealed class GripMeter
         fillSeen = fill; dmgSeen = dmg;
         foreach (var ev in evs) if (ev is Ev.Slash { Held: true } s) { Cuts++; if (s.Struck > 0) Blows++; }
         if (!any || !p.Alive) held = false;
+        // (the gap opens before its cut is counted: a cut that starts on the gap's first step is a whiff)
+        if (near) gap = false;
+        else if (chained && held && was && wasNear) { gap = true; Gaps++; }
+        if (gap && started) Whiffs++;
+        wasNear = near;
         Seconds += dt;
         if (near) InReach += dt;
         if (held) { Held += dt; if (near) HeldInReach += dt; }
@@ -71,6 +88,6 @@ public sealed class GripMeter
     {
         double min = Math.Max(1e-6, fightSec / 60), hs = Math.Max(1e-6, Held);
         return $"grip holds {Holds / min:0.0}/min med {MedianHold(now):0.00}s held {100 * HeldInReach / Math.Max(1e-6, InReach):0}%reach {100 * Held / Math.Max(1e-6, fightSec):0}%fight " +
-               $"blows {Blows / min:0.0}/min gdmg {Damage / Math.Max(1e-6, fightSec):0.0}/s gfill {Fill / Math.Max(1e-6, fightSec):0.00}/s perheld {Blows / hs:0.00}b {Damage / hs:0.0}d {Fill / hs:0.00}f";
+               $"blows {Blows / min:0.0}/min gdmg {Damage / Math.Max(1e-6, fightSec):0.0}/s gfill {Fill / Math.Max(1e-6, fightSec):0.00}/s perheld {Blows / hs:0.00}b {Damage / hs:0.0}d {Fill / hs:0.00}f gaps {Gaps} whiff {Whiffs}";
     }
 }

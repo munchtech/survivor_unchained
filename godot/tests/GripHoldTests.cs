@@ -174,6 +174,8 @@ public sealed class GripHoldTests
         public readonly List<(double T, double At)> Releases = new();
         public readonly List<(double T, double Angle, int Struck)> Slashes = new();
         public Action<Rig>? Hands;
+        /// <summary>(m1) The grip's meter, stepped after the tick as the harness steps it (RunMeter): none unless set.</summary>
+        public GripMeter? Meter;
         double last = double.NaN;
 
         public Rig(bool chained, PressHands h)
@@ -210,7 +212,9 @@ public sealed class GripHoldTests
             if (Hands != null) Hands(this); else PressPlan.Run(B, H);
             Steps.Add((t, sees, W.Held));
             B.Tick(Dt, 0, 0);
-            foreach (var ev in B.Events.Drain())
+            var evs = B.Events.Drain();
+            Meter?.Step(B, Dt, evs);
+            foreach (var ev in evs)
             {
                 if (ev is Ev.SwingRelease r) Releases.Add((B.Time, r.Time));
                 else if (ev is Ev.Slash s) Slashes.Add((B.Time, s.Angle, s.Struck));
@@ -443,6 +447,79 @@ public sealed class GripHoldTests
         Assert.True(Run(true, 2 * Dt)[^1].Held);
     }
 
+    /// <summary>(m1) The grip's meter under the union (--grant-union bladestorm): the grip is the union's half, the live
+    /// chain is the HALF's own (the union's record keeps none), and the meter reads that one. The second key held through
+    /// one gap of 0.30 s timed so one cut starts inside it: one gap, one whiffed cut; none before it, none after.</summary>
+    [Fact]
+    public void The_grips_meter_counts_a_whiffed_cut_of_the_unions_half()
+    {
+        var j = MapSim.Survivor("warden", 30, 2, 5);
+        var b = Fight(j);
+        DevGrants.Apply(b, null, "bladestorm", null);
+        var storm = b.Weapons.Single(x => x.Id == Unions.Find("bladestorm")!.Into);
+        var half = Firing.HalfOf(storm)!;
+        Assert.True(half.Chained && !storm.Chained);
+        var p = b.Player;
+        var foe = b.SpawnEnemy("footpad", p.X + 1.6, p.Z)!;
+        foe.Hp = foe.MaxHp = 1e9;
+        foe.AttackT = foe.RangedT = 999;
+        var h = PressHands.Grip(3);
+        var meter = new GripMeter();
+        // (the test's own watch, as the fixture of (5) keeps it: each cut's start, by the step and where the foe was put)
+        var starts = new List<(int Step, bool Near)>();
+        double last = double.NaN;
+        int step = 0;
+        void Run(bool near, int n)
+        {
+            for (int i = 0; i < n; i++, step++)
+            {
+                foe.X = p.X + (near ? 1.6 : 14); foe.Z = p.Z; foe.Vx = foe.Vz = 0;
+                PressPlan.Run(b, h);
+                b.Tick(Dt, 0, 0);
+                meter.Step(b, Dt, b.Events.Drain());
+                if (half.Chain is { Live: true } c && c.StartAt != last) { last = c.StartAt; starts.Add((step, near)); }
+            }
+        }
+        Run(true, 120);
+        Assert.True(storm.Held2 && starts.Count >= 3, $"{starts.Count} cuts in 2 s at a foe");
+        Assert.Null(storm.Chain);
+        Assert.Same(half, Firing.HalfOf(storm));
+        // to the step a cut starts, then at the foe until the next cut is 6 steps off: it starts a third of the way into the gap
+        int period = starts[^1].Step - starts[^2].Step, n0 = starts.Count;
+        Assert.InRange(period, 20, 60);
+        for (int i = 0; i < 200 && starts.Count == n0; i++) Run(true, 1);
+        Assert.Equal(n0 + 1, starts.Count);
+        Run(true, period - 1 - 6);
+        Assert.Equal((0, 0), (meter.Gaps, meter.Whiffs));
+        int before = starts.Count;
+        Run(false, 18);
+        Assert.True(storm.Held2, "the union's second key lifted inside the gap");
+        var inGap = starts.Skip(before).ToList();
+        Assert.True(inGap.Count == 1 && !inGap[0].Near, $"{inGap.Count} cuts started in the gap (period {period} steps)");
+        Assert.Equal((1, 1), (meter.Gaps, meter.Whiffs));
+        Run(true, 90);
+        Assert.Equal((1, 1), (meter.Gaps, meter.Whiffs));
+        Assert.EndsWith(" gaps 1 whiff 1", meter.Line(b.Time, b.Time));
+    }
+
+    /// <summary>(m1) An unchained grip has no gaps and no whiffs (its key lifts the step the foe leaves, and the counts are
+    /// a chained grip's alone), and the run line's older columns stand as they were, the two counts after them.</summary>
+    [Fact]
+    public void An_unchained_grips_meter_prints_no_gaps_and_the_older_columns_as_they_were()
+    {
+        var r = new Rig(false, PressHands.Deft(3)) { Meter = new GripMeter() };
+        r.Run(true, 2);
+        for (int k = 0; k < 12; k++) { r.Run(false, k % 2 == 0 ? 0.30 : 0.50); r.Run(true, 0.90 + k * Dt); }
+        var m = r.Meter!;
+        Assert.True(m.Holds >= 12 && m.Cuts > 0 && m.Blows > 0, $"holds {m.Holds} cuts {m.Cuts} blows {m.Blows}");
+        Assert.Equal((0, 0), (m.Gaps, m.Whiffs));
+        string line = m.Line(r.B.Time, r.B.Time);
+        // (the columns before m1, by the pattern the lead's table reads them with: all of the line but its new tail)
+        var old = System.Text.RegularExpressions.Regex.Match(line, @"^grip holds [\d.]+/min med [\d.]+s held [\d.]+%reach [\d.]+%fight blows [\d.]+/min gdmg [\d.]+/s gfill [\d.]+/s perheld [\d.]+b [\d.]+d [\d.]+f");
+        Assert.True(old.Success, line);
+        Assert.Equal(" gaps 0 whiff 0", line[old.Length..]);
+    }
+
     /// <summary>(3) The hand's lapse is not bridged: it lifts the key with a foe in reach and inside a gap alike, and a key
     /// that came up in a gap goes down again only at a foe.</summary>
     [Fact]
@@ -475,7 +552,7 @@ public sealed class GripHoldTests
     [InlineData(0.50)]
     public void A_gap_held_through_costs_at_most_one_whiffed_cut(double gapSecs)
     {
-        var r = new Rig(true, PressHands.Deft(3));
+        var r = new Rig(true, PressHands.Deft(3)) { Meter = new GripMeter() };
         r.Run(true, 2);
         int gaps = 0, most = 0, total = 0;
         for (int k = 0; k < 42; k++)
@@ -492,6 +569,14 @@ public sealed class GripHoldTests
         // (the rule is live: some gap fell on a cut; and a 0.30 s gap never releases the chain)
         Assert.True(total > 0, line);
         if (gapSecs < 0.40) Assert.True(r.Releases.Count == 0, line);
+        // (m1) the run line's two counts are this fixture's: the meter reads after the tick, the fixture places the foe
+        // before it, and gap for gap, whiff for whiff they agree (17 in 42 gaps of 0.30 s, 27 in 42 of 0.50 s)
+        var m = r.Meter!;
+        Console.WriteLine($"[m1] gaps of {gapSecs:0.00} s: the meter's gaps {m.Gaps} whiff {m.Whiffs}");
+        Assert.Equal(gaps, m.Gaps);
+        Assert.Equal(total, m.Whiffs);
+        Assert.Equal(gapSecs < 0.40 ? 17 : 27, total);
+        Assert.EndsWith($" gaps {gaps} whiff {total}", m.Line(r.B.Time, r.B.Time));
     }
 
     /// <summary>(6) An unchained record through the same script: step for step what the old hands' line gives (the key,
