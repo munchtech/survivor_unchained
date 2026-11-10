@@ -57,18 +57,21 @@ public sealed partial class Battle
         if (!WardenHand || !Content.Hands.Heavies(w.Tags)) return Lamps.Board && RiteHeavyNext(w);
         int every = Math.Max(1, HW.Every);
         // The count is of firings, not of attempts: an attempt with nothing in range is not a blow (HandEndCast).
-        return (w.HandBlows + 1) % every == 0;
+        // (M3 MR 3) A chained cut is a share of a blow (Sim/Blows.cs); the LIGHT cut's weight on purpose, so the
+        // read-ahead at the press (HandHeavyNext) and this one at the contact ask the same question.
+        return Sim.Blows.Completes(w.HandBlows, w.HandPart, every, w.BlowWeight);
     }
 
     /// <summary>Whether its next firing will be the Hand's heavy (read ahead, nothing counted: Sim/Contact.cs picks the
     /// heavy clip by it; the rites' heavies are not read ahead).</summary>
-    internal bool HandHeavyNext(WeaponInst w) => WardenHand && Content.Hands.Heavies(w.Tags) && (w.HandBlows + 1) % Math.Max(1, HW.Every) == 0;
+    internal bool HandHeavyNext(WeaponInst w) => WardenHand && Content.Hands.Heavies(w.Tags) && Sim.Blows.Completes(w.HandBlows, w.HandPart, Math.Max(1, HW.Every), w.BlowWeight);
 
     /// <summary>The firing done: a blow counted only if it fired.</summary>
     internal void HandEndCast(WeaponInst w, bool fired)
     {
         if (!fired) { w.Casts--; return; }
-        if (WardenHand && Content.Hands.Heavies(w.Tags)) w.HandBlows++;
+        // (inside the cast, Firing.CastWeighed: CutW is this firing's weight, a heavy cut's longer share included)
+        if (WardenHand && Content.Hands.Heavies(w.Tags)) Sim.Blows.CountFirstWhole(ref w.HandBlows, ref w.HandPart, w.CutW);
         else if (Lamps.Board) RiteHeavyCount(w);
     }
 
@@ -89,10 +92,11 @@ public sealed partial class Battle
         if (Lamps.Board) LinkFire("heavy");
     }
 
-    /// <summary>A Holy skill struck a champion: a Stone, once per champion per firing.</summary>
+    /// <summary>A Holy skill struck a champion: a Stone, once per champion per firing (a chain's cuts: once per
+    /// written blow's worth of them, WeaponInst.FiringKey).</summary>
     void HandStone(Enemy e, WeaponInst w)
     {
-        long key = ((long)(w.Slot + 1) << 32) | (uint)w.Casts;
+        long key = ((long)(w.Slot + 1) << 32) | (uint)w.FiringKey;
         if (e.HandStoneKey == key) return;
         e.HandStoneKey = key;
         HandStones++;
@@ -117,12 +121,13 @@ public sealed partial class Battle
     /// <summary>How long a lull before Frenzy fades: the lamp's when lit, else the Hand's.</summary>
     double FrenzyFade() => Lamps.Has("frenzy") ? Lamps.Full("frenzy", "fade", 3) : HR.Fade;
 
-    void HandReaverHit(Enemy e)
+    /// <summary>(weight: a chained cut's share of the written blow, WeaponInst.CutW; 1 for everything else.)</summary>
+    void HandReaverHit(Enemy e, double weight = 1)
     {
         if (!e.Status.Has(StatusKind.Bleed) || Time < handFrenzyGate) return;
         handFrenzyGate = Time + HR.Gate;
         double before = frenzy;
-        AddFrenzy(1);
+        AddFrenzy(weight);
         if (frenzy > before) { HandFrenzies++; HandEv(HandKind.Frenzy, e.X, e.Z, e.Id); }
     }
 
@@ -243,7 +248,7 @@ public sealed partial class Battle
                 else if (heavy && (e.Elite || e.Boss) && o.Weapon is { } hw && !o.Summon && HandRule("hand.warden.heavy_stone")) HandStone(e, hw);
                 break;
             case 2:
-                if (!o.Dot && !o.Summon && (o.Weapon != null || o.Projectile)) HandReaverHit(e);
+                if (!o.Dot && !o.Summon && (o.Weapon != null || o.Projectile)) HandReaverHit(e, o.Weapon?.CutW ?? 1);
                 break;
         }
     }

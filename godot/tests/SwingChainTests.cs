@@ -12,6 +12,9 @@ namespace SurvivorUnchained.Tests;
 /// shared data).</summary>
 public sealed class SwingChainTests
 {
+    readonly Xunit.Abstractions.ITestOutputHelper output;
+    public SwingChainTests(Xunit.Abstractions.ITestOutputHelper output) => this.output = output;
+
     const double Dt = 1 / 60.0, Eps = 1e-9;
 
     sealed record CutRec(int Cut, int Side, bool Heavy, string? Clip, double Start, double Contact, double Cancel, double Rate, double Scale, double Wait, AttackAnim Anim);
@@ -340,19 +343,25 @@ public sealed class SwingChainTests
         // outside the cast the weight is 1 again, and the count carries the part
         Assert.Equal(1.0, c.W.CutW);
         Assert.Equal(u.W.Damage, c.W.Damage);
-        Assert.Equal((0, 0), (c.W.OwnBlows, c.W.BlowN));
-        Assert.Equal(0.4375, c.W.OwnPart, 12);
+        // (the opening cut counts whole in an every-N count, Blows.CountFirstWhole; the written-blow count takes its share)
+        Assert.Equal((1, 0), (c.W.OwnBlows, c.W.BlowN));
+        Assert.Equal(0.0, c.W.OwnPart, 12);
+        Assert.Equal((1, 0.0), (c.W.HandBlows, c.W.HandPart));
         Assert.Equal(0.4375, c.W.BlowPart, 12);
         Assert.Equal(0.4375 * (c.W.Press!.Builds ?? 0), c.B.Resolve.LandedFill, 9);
     }
 
-    static (double Dmg, double Fill, int Lines, int Blows, double Whole) Hold(string id, bool chained, int pack)
+    /// <summary>Held for 63.9 s: whole written blows on both sides (the unchained Sunder's 41st lands at 64.0 s exactly).
+    /// Lines: its own heavies; Hand: the Hand's count's heavies (every Hands.Warden.Every-th blow); Heavy: the heavy
+    /// blows fired for either reason (Battle.HandHeavies is per foe struck).</summary>
+    static (double Dmg, double Fill, int Lines, int Hand, int Heavy, int Blows, double Whole) Hold(string id, bool chained, int pack)
     {
         var r = new Run(id, chained ? P70 : null, chain: chained);
         if (pack > 1) { r.Add(2, 0.7); r.Add(2, -0.7); }
-        r.Step(true, 64 * 60);
+        r.Step(true, 3834);
         if (pack > 1) Assert.All(r.Slashes, s => Assert.Equal(pack, s.S.Struck));
-        return (r.Damage, r.B.Resolve.LandedFill, r.Lines, r.Slashes.Count, r.W.BlowN + r.W.BlowPart);
+        int hand = r.W.HandBlows / Math.Max(1, SurvivorUnchained.Content.Hands.Warden.Every);
+        return (r.Damage, r.B.Resolve.LandedFill, r.Lines, hand, r.B.HandHeavies / pack, r.Slashes.Count, r.W.BlowN + r.W.BlowPart);
     }
 
     [Theory]
@@ -363,11 +372,39 @@ public sealed class SwingChainTests
     {
         var c = Hold(id, true, pack);
         var u = Hold(id, false, pack);
-        string told = $"{id} x{pack}: chained dmg {c.Dmg:F1} fill {c.Fill:F2} heavies {c.Lines} cuts {c.Blows} blows {c.Whole:F3} | unchained dmg {u.Dmg:F1} fill {u.Fill:F2} heavies {u.Lines} blows {u.Blows}";
+        string told = $"{id} x{pack}: chained dmg {c.Dmg:F1} fill {c.Fill:F2} own heavies {c.Lines} hand heavies {c.Hand} heavy blows {c.Heavy} cuts {c.Blows} blows {c.Whole:F3}"
+            + $" | unchained dmg {u.Dmg:F1} fill {u.Fill:F2} own heavies {u.Lines} hand heavies {u.Hand} heavy blows {u.Heavy} blows {u.Blows}"
+            + $" | dmg {(c.Dmg / u.Dmg - 1) * 100:+0.00;-0.00}% fill {(c.Fill / u.Fill - 1) * 100:+0.00;-0.00}%";
+        // (told on a pass too: `dotnet test --logger "console;verbosity=detailed"` shows it)
+        output.WriteLine(told);
         Assert.True(Math.Abs(c.Whole - u.Blows) <= 1, told);
         Assert.True(Math.Abs(c.Lines - u.Lines) <= 1, told);
+        Assert.True(Math.Abs(c.Hand - u.Hand) <= 1, told);
         Assert.True(Math.Abs(c.Fill / u.Fill - 1) <= 0.02, told);
         Assert.True(Math.Abs(c.Dmg / u.Dmg - 1) <= 0.02, told);
+    }
+
+    [Fact]
+    public void The_opening_cut_counts_whole_so_the_first_own_heavy_is_cut_eight()
+    {
+        // Sunder's own every 4th, unchained: the 4th blow, at 3 x 1.6 = 4.8 s. Chained at 0.70 s (weight 0.4375) the
+        // opening cut counts 1, so cut k finds 1 + (k - 2) x 0.4375 counted: 1 + 6 x 0.4375 + 0.4375 = 4.0625 >= 4 at
+        // k = 8, which starts 7 x 0.70 = 4.9 s after the first (were the opening cut a share, it would be cut 10 at 6.3 s).
+        var r = new Run("sunder", P70);
+        int every = Firing.HeavyEveryOf(r.B, r.W);
+        Assert.Equal(4, every);
+        // read ahead on the fresh count: the opening firing completes nothing at either weight
+        Assert.False(Blows.Completes(0, 0, every, r.W.BlowWeight));
+        Assert.False(Blows.Completes(0, 0, every, 1));
+        while (r.Slashes.Count < 60) r.Step(true);
+        var own = Enumerable.Range(0, 60).Where(k => r.OwnAtContact[k]).Select(k => k + 1).ToList();
+        output.WriteLine("sunder chained, own heavy cuts: " + string.Join(", ", own));
+        Assert.Equal(8, own[0]);
+        Assert.True(r.Cuts[7].Heavy);
+        Assert.Equal(r.Cuts[0].Start + 4.9, r.Cuts[7].Start, 6);
+        // the cycle after it is the weighed one: 4 blows of cuts (a heavy cut counts its longer share)
+        for (int k = 1; k < own.Count; k++) Assert.InRange(own[k] - own[k - 1], 9, 10);
+        Assert.Equal(r.OwnAtPress.Take(60), r.OwnAtContact.Take(60));
     }
 
     [Fact]

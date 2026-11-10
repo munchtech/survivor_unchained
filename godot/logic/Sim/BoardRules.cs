@@ -153,12 +153,13 @@ public sealed partial class Battle
         BoardSync();
         if (!riteHeavy || !RiteOn("heavy", w, out var r)) return false;
         int every = Math.Max(1, (int)Math.Round(r!.Arg("every", HW.Every)));
-        return (w.RiteBlows + 1) % every == 0;
+        // (M3 MR 3) a chained cut is a share of a blow: the light cut's weight, as the Hand's count (Hands.HandBeginCast)
+        return Sim.Blows.Completes(w.RiteBlows, w.RitePart, every, w.BlowWeight);
     }
 
     void RiteHeavyCount(WeaponInst w)
     {
-        if (riteHeavy && RiteOn("heavy", w, out _)) w.RiteBlows++;
+        if (riteHeavy && RiteOn("heavy", w, out _)) Sim.Blows.CountFirstWhole(ref w.RiteBlows, ref w.RitePart, w.CutW);
     }
 
     /* ----------------------------------------------------------- the blow -- */
@@ -247,8 +248,9 @@ public sealed partial class Battle
                         ApplyStatus(e, new StatusPayload(StatusKind.Bleed, 1, r.Arg("share", 0.3), 3), dmg, o.Depth + 1);
                         break;
                     case "bind":
-                        if (w.RiteBound == w.Casts) break;
-                        w.RiteBound = w.Casts;
+                        // once a firing (a chain's cuts: once a written blow's worth, WeaponInst.FiringKey)
+                        if (w.RiteBound == w.FiringKey) break;
+                        w.RiteBound = w.FiringKey;
                         double sec = r.Arg("seconds", 1) * (e.Elite || e.Boss ? 0.5 : 1);
                         ApplyStatus(e, new StatusPayload(StatusKind.Bound, 1, 1, sec), dmg, o.Depth + 1);
                         break;

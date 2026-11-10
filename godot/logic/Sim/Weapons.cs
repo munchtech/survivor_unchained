@@ -98,6 +98,11 @@ public sealed class WeaponInst
     public double CastW = 1;
     /// <summary>A chained cut's share of the written blow: the chain's period over the blow's wait (1 when not chained or no period).</summary>
     public double BlowWeight => Chained && Press!.Chain!.Period is > 0 and var p ? p / (Press.Wait ?? Def.Base.Cooldown ?? 1) : 1;
+    /// <summary>What "once per firing" keys on (the Hand's stone, the bind rite): the firing; for a chain of weighed
+    /// cuts the written blow they are parts of. BlowN is counted after a cast, so inside one it is the whole blows
+    /// before this cut: the cuts of one blow's worth share a key and the next blow's worth has a new one. (Below -1,
+    /// so a key of cuts never meets a key of firings or RiteBound's -1.)</summary>
+    public int FiringKey => BlowWeight != 1 ? -2 - BlowN : Casts;
     /// <summary>A Pulse Turn's follow-ups still to go, and when.</summary>
     public int PulseLeft;
     public double PulseT;
@@ -418,7 +423,7 @@ public static partial class Firing
         b.HeavyBy = hb;
         w.WasOwnHeavy = fired && w.OwnHeavy;
         w.OwnHeavy = false;
-        if (fired && own > 0) Blows.Count(ref w.OwnBlows, ref w.OwnPart, cw);
+        if (fired && own > 0) Blows.CountFirstWhole(ref w.OwnBlows, ref w.OwnPart, cw);
         if (fired) Blows.Count(ref w.BlowN, ref w.BlowPart, cw);
         b.HandEndCast(w, fired);
         if (fired) { w.HeavyCast = heavy; w.CastW = cw; }
