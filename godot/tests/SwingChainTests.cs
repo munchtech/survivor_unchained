@@ -307,6 +307,19 @@ public sealed class SwingChainTests
     }
 
     [Fact]
+    public void A_chain_block_loads_from_the_skills_json_with_its_period()
+    {
+        // the file's own reader (SkillsJson.Parse is Json.Parse): a press record's chain block, period and all
+        var p = SurvivorUnchained.Core.Json.Parse<PressDef>("""{"kind": "hold", "chain": {"grace": 0.40, "recover": 18, "period": 0.70}}""");
+        Assert.NotNull(p.Chain);
+        Assert.Equal((0.40, 18.0, 0.70), (p.Chain!.Grace!.Value, p.Chain.Recover!.Value, p.Chain.Period!.Value));
+        // and written back (skills.json is written from the defs)
+        Assert.Contains("\"period\"", SurvivorUnchained.Core.Json.Write(p));
+        var q = SurvivorUnchained.Core.Json.Parse<PressDef>("""{"chain": {"grace": 0.40, "recover": 18}}""");
+        Assert.Null(q.Chain!.Period);
+    }
+
+    [Fact]
     public void A_record_with_no_chain_swings_as_before()
     {
         var r = new Run("oathblade", chain: false);
