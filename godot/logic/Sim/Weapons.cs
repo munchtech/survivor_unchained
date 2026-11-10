@@ -1117,7 +1117,7 @@ public static partial class Firing
         return dx * dx + dz * dz > 0.01 ? Math.Atan2(dz, dx) : Math.Atan2(Math.Cos(b.Player.Facing), Math.Sin(b.Player.Facing));
     }
 
-    static bool ConeHit(Battle b, WeaponInst w, double a, double arc, double reach, double dmg)
+    static bool ConeHit(Battle b, WeaponInst w, double a, double arc, double reach, double dmg, HashSet<int>? seen = null)
     {
         var p = At(b);
         var cut = new Ev.Slash { X = p.X, Z = p.Z, Angle = a, Arc = arc, Reach = reach, School = w.School, Art = w.Art, Rank = w.Rank, Held = w.Hold, Side = w.NextSide(), Cut = w.Chain is { Live: true } ch ? ch.Cut : 0 };
@@ -1134,6 +1134,7 @@ public static partial class Firing
             any = true;
             last = e;
             cut.Struck++;
+            if (seen == null || seen.Add(e.Id)) cut.Fresh++;
             // (the view's contact: the body the edge meets, the one nearest the cut's line, not one pressed against her side)
             if (d < nearest) nearest = d;
             double off = Math.Abs(da) + (d < 0.7 ? 1 : 0);
@@ -1187,10 +1188,11 @@ public static partial class Firing
         double arc = b.SkillArc(w, w.Num(s => s.Arc) ?? 2.2);
         int n = CountOf(b, w, 1);
         b.RuleChopBegin(w);
+        var seen = n > 1 ? new HashSet<int>() : null; // (bodies struck by this swing's earlier arcs: a cut's struck are distinct)
         for (int i = 0; i < n; i++)
         {
             double ai = a + (i == 0 ? 0 : (i % 2 == 1 ? 1 : -1) * Math.Ceiling(i / 2.0) * arc * 0.85);
-            ConeHit(b, w, ai, arc, reach, w.Damage * b.RuleCutMul(w));
+            ConeHit(b, w, ai, arc, reach, w.Damage * b.RuleCutMul(w), seen);
             b.RuleCrossCut(w, ai, arc, reach);
         }
         // Blades hit things as well as creatures: barrels, brambles, a boss's lamps.

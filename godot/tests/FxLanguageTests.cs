@@ -117,7 +117,9 @@ public class FxLanguageTests
         // (L1 lead 7) fx_stroke(across, along, life), the one painted-stroke primitive every skill shape uses: its colors are
         // the school's family only (edge, mid, core, the glow), never a color of its own; its edge is a brush (the bristles)
         var src = File.ReadAllText(Path.Combine(Root(), "shaders", "fx_cel.gdshaderinc"));
-        var body = FunctionBody(src, "vec4 fx_stroke(float across, float along, float life)");
+        // (P7 r3 fix) the body lives in fx_stroke_at (a caller's bristle offset); fx_stroke is it at offset 0
+        Assert.Contains("fx_stroke_at(across, along, life, vec2(0.0))", FunctionBody(src, "vec4 fx_stroke(float across, float along, float life)"));
+        var body = FunctionBody(src, "vec4 fx_stroke_at(float across, float along, float life, vec2 grain_at)");
         foreach (var u in new[] { "fx_edge", "fx_mid", "fx_core", "fx_glow_color", "fx_stroke_shape", "fx_bristle", "fx_stroke_seed" })
             Assert.Contains(u, body);
         foreach (var u in new[] { "uniform vec4 fx_stroke_shape", "uniform vec4 fx_bristle", "uniform float fx_stroke_seed" })

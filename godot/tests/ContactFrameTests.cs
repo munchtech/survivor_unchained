@@ -191,4 +191,15 @@ public sealed class ContactFrameTests
         }
         Assert.True(named >= 8, "the warden's blows name their clips");
     }
+    /// <summary>her_events.json "side" (HerEvents.Side): which way each clip's blade crosses, as measured in play
+    /// (Ev.Slash.Side's contract: -1 toward the lesser sim angle, +1 toward the greater); null where none is written.</summary>
+    [Fact]
+    public void The_sword_clips_name_their_sides_and_a_clip_without_one_names_none()
+    {
+        Assert.Equal(1, HerEvents.Side("sword_back"));
+        Assert.Equal(-1, HerEvents.Side("sword_fore"));
+        Assert.Equal(-1, HerEvents.Side("sword_heavy"));
+        Assert.Null(HerEvents.Side("no_such_clip"));
+        Assert.Null(HerEvents.Side(""));
+    }
 }
