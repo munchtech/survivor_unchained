@@ -1,16 +1,19 @@
 # Where we are: read this after README.md, before your handoff
 
-## 10 November 2026 (afternoon): coordinator #6 handoff. NEXT COORDINATOR (Opus high, normal rules): START HERE, then #5's block below
+## 10 November 2026 (afternoon, updated 14:30): coordinator #6 handoff. NEXT COORDINATOR (Opus high, normal rules): START HERE, then #5's block below
 
-**Reports:** unchanged: one line per lead in `survivorsunchained_inputs\scratch_coord5\inbox.md`, rulings as `RULING <lane>:` lines; Monitor `tail -n0 -F <inbox> | grep -v ^RULING`, 30 min, re-armed. Lead ids: `survivorsunchained_inputs\scratch_coord6\agents.txt` (reachable only from #6's session; leads read the inbox for rulings). Nothing merged in #6's run.
+**Reports:** unchanged: one line per lead in `survivorsunchained_inputs\scratch_coord5\inbox.md`, rulings as `RULING <lane>:` lines; Monitor `tail -n0 -F <inbox> | grep -v ^RULING`, 30 min, re-armed. Lead ids: `survivorsunchained_inputs\scratch_coord6gents.txt` (reachable only from #6's session; a new coordinator spawns successors from each handoff top block).
 
-**Live leads at 13:30 (4 judged = the cap; L1 the one GPU-heavy):**
-- **P1 body-p1b lead 23** (lane ~2.55M, ~0.40M its own): B's neck_01/spine_04 source weight relax + T11/T18 baselines, left-pit rows "<= faired A's own", full rerun, own look, one max judge on a PASS bet, GATE T READY with A|B half sheets (owner sees the bare shape).
-- **P2 gear-p2 lead 16** (lane 2.3M, est. lands ~2.24M): gore bar + etched tier built ON the installed top (cups byte-identical), reshoot, own look, judge on a PASS bet, MR READY. FAR = HANDOFF READY, lane closed. Told: L1 set her plate's base materials to gunmetal + gold trim.
-- **A1 motion-a1 lead 17** (lane 2.1M): A->B->A shot 12:52, own look NOT a bet (B's contact = straight level arm over an upright trunk; A's wind parks ~0.3 s). RULED one fix round here as a rebuild of B's contact beat + A's wind; still no bet = HANDOFF READY, no second round. In parallel: the owner's shield-and-spear lunge as the authored 09 pose for L1 (+ Jog_Fwd spine_04 row). Was at ~150k context at 13:20: a handoff is near.
-- **L1 look-l1 lead 24** (new line 0.35M; lead 23 HANDOFF READY 13:21 at d72004a70, ~0.90M): red RigsTests shadow/dapple pin, red bushes REBUILT as leaves/ferns (lead 23's look FAR), wolves + ground to the night coloring, her metal-only trim keep / skin glint / normal bake under 0.3 s, integration merge, suite, cost pass, M4 rows (a) minimap ink (b) hold ring decal. RULED: the red bar at her feet is HER life bar by design (the owner's ref shows it): no row. Her plate is blued gunmetal + gold tie now (material data, ruled YES). No HER judge until A1's pose lands.
+**Merged in #6's run (14:30):** L1 look-l1@6996b5857 (ferns, gold trim lift, normals bake 780->89 ms; known ~0.7 s spawn frame) and P2 gear-p2@7596a4991 (gore bar, etched tier, steel finish; judge CLOSE on straps ~2 cm off the shoulder, pre-existing). Integration c9126f35a, suite 2034/0/10, pushed. look-l1 and gear-p2 worktrees KEPT for their successors (6 on disk).
 
-**Queue:** P7 skills-p7 (merge integration first; HitShake one-liner su-worker job), P3 (needs a game worktree; 6 on disk), then skills and NPC leads, each when a judged slot frees. C: 133 GB free at 12:40.
+**OWNER QUESTION OPEN (14:30):** P2 says the outfit shape is FAR from owner_ref_shield_braid (a full gunmetal+gold kit: plunging bodice + side plates, pauldrons, vambraces, belt + hip plates, plated boots; ours a plate bikini that reads near-nude at play). Asked: build a new kit (today's cups as a lower tier)? Strap fix (lay the top 8-10 cm of each strap within 2 mm of skin) + etch on the bar + a front play frame go to the P2 successor either way. No P2 lead live until the answer.
+
+**Live leads at 14:30 (3 judged; L1 the one GPU-heavy):**
+- **P1 body-p1b lead 24** (0.22M): Gate T's one open mark iron_vow@72:l (shoulder cap flat lid, cross-body): sweep solver with a curvature ceiling on clavicle/upperarm_share/twist_01, rerun, re-judge those rows on a bet. PASS = GATE T READY (show the owner the A|B half sheets). Fail = scrap; main decides whether it ships KNOWN. 19/20 rows PASS at max.
+- **A1 motion-a1 lead 19** (line 0.55M): sheets.py one-frame lag fixed (labels by the clip's playhead); cut B close-out (contact blade 30-40 deg, wind not parked), judge on a bet, MR; then four general Marionette fit.py tools (knee pole, pelvis tilt, heel-pivot sole, uneven leg split; ruled +0.15M) and the owner's lunge POSE09 (round 2 at e316cfcd6 still a crouch) -> "POSE09 READY <hold>" for L1.
+- **L1 look-l1 lead 25** (line 0.55M): pool fern + warm plate + trim +0.12 + skin glint; wolves lit from her side + moon glints; import-time hashed normals cache; cost pass 2; M4 rows (a) minimap ink (b) hold ring decal. No HER judge until POSE09 READY.
+
+**Queue:** P2 successor once the owner answers; P7 skills-p7 (merge integration first; HitShake one-liner su-worker job); P3 (needs a game worktree); then skills and NPC leads, each when a judged slot frees.
 
 ## 10 November 2026 (night): coordinator #5 handoff. NEXT COORDINATOR (Opus high, normal rules): START HERE, then #4's block below, then #3's for the lanes
 
