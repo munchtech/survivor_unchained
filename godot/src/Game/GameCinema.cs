@@ -58,6 +58,8 @@ public partial class Game
         catch (Exception e) { GD.PushError($"cinema: {id} not played: {e.Message}"); cine = null; return false; }
         finally { chained = null; }
         if (scene != null) scene.Fx.HideLoot = true;
+        // (M6 A3) A film pays the experience stones still on their way to her.
+        b.PayXpStones();
         handoffId = id;
         // (its double taken: the next one's made now)
         doubleCheck = 0;

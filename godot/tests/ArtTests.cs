@@ -326,6 +326,7 @@ public class ArtTests
         var f = Foe(day, "wolf", 3, 0);
         day.KillEnemy(f, true, null);
         j.Killed(f, true);
+        day.PayXpStones();   // (M6 A3: by day the lessons come as stones, paid as they land)
         Assert.True(j.Ch.Xp > xp || j.Ch.Level > before);
     }
 

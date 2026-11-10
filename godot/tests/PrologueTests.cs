@@ -598,7 +598,7 @@ public class PrologueTests
         foreach (var e in s.Zone.Night!.Standing("n_lone")) { s.B.Player.X = e.X; s.B.Player.Z = e.Z + 9; s.B.KillEnemy(e, true, null); s.J.Killed(e, true); }
         Run(s, 0.2);
         var c = Offered(s, "ember_ground");
-        Assert.Equal(("Ember", "The light the dead carry. Gather it, and it makes you stronger.", CalloutKind.Freeze), (c.Title, c.Line, c.Kind));
+        Assert.Equal(("Ember", "The light the dead carry. It comes to you, and it makes you stronger.", CalloutKind.Freeze), (c.Title, c.Line, c.Kind));
         Assert.NotEmpty(c.Target.World!());
     }
 
@@ -612,6 +612,10 @@ public class PrologueTests
         Run(s, 0.05);
         foreach (var e in s.Zone.Night!.Standing("n_lone")) { s.B.KillEnemy(e, true, null); s.J.Killed(e, true); }
         Run(s, 0.2);
+        // (the lone one's stone is held at rest until A3 closes; A3b comes on the first stone landed)
+        Assert.DoesNotContain(s.Host.Asked, c => c.Id == "ember_ring");
+        s.Host.TaughtIds.Add("ember_ground");
+        Run(s, 1.5);
         var c = Offered(s, "ember_ring");
         Assert.Equal(("Your level", "Ember fills this ring. When it's full, you rise a level.", CalloutKind.Arrow), (c.Title, c.Line, c.Kind));
         Assert.Equal("chain_fill", c.Target.Hud);
@@ -622,6 +626,7 @@ public class PrologueTests
     {
         Run(s, 4);
         foreach (var e in s.Zone.Night!.Standing("n_lone").ToList()) { s.B.KillEnemy(e, true, null); s.J.Killed(e, true); }
+        s.B.PayXpStones();   // (M6 A3: the lone one's stone landed, as if A3 had closed)
         for (int i = 0; i < 200 && s.Zone.Night!.Standing("n_three").Count(e => e.State != EnemyState.Rising) < 3; i++) { Near(s, "n_three", 2); Run(s, 0.1); }
         Run(s, 0.1);
         Assert.DoesNotContain(s.Host.Asked, c => c.Id == "resolve");

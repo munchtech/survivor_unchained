@@ -286,16 +286,70 @@ public sealed partial class Prologue
                     Ring = () => chargeFrom is { Alive: true } cf ? [Up(cf.X, cf.Z, 0.6)] : [], RingRadius = 1.0,
                 }, "dash", overHint: true, patience: 0.6, urgent: true, markInk: "#ff3b3b");
         // (the captain's "Pick your target", day_hover, retired: A10, the Grave-Caller's, keeps the one hover lesson)
-        // The ring: the wolves on its band, the Flare full; frozen before they rush.
+        // A13 (skills-p7's seam): the wolves' ring closed round her and Heroic Leap on a seat: its seat, then a point
+        // outside the ring; answered by its key. Without the Leap, the old lesson: dash out through the gap. (The Flare's
+        // lesson here, day_flare, is gone: the Flare is not hers by day until the Waystation lights it, A12/A14.)
         if (day.RingAt >= 0 && B.Time - day.RingAt < 1.3 && DayBeat("wolves") is { } wb)
         {
-            if (B.Flare is { } fl && B.FlareReady)
-                Teach("day_flare", CalloutKind.Freeze, fl.Name, $"{Key("flare")}: your Flare. It clears the ring.",
-                    new Aim { Hud = "art", World = () => day?.Standing(wb.Id).Select(e => Up(e.X, e.Z, 0.6)).ToList() ?? [], Each = true }, "flare", overHint: true, patience: 1.2, urgent: true);
-            else if (B.Flare == null)
+            if (Seated(LeapId) is { } leap)
+            {
+                string act = $"Skill{leap.Slot + 1}";
+                Teach("leap", CalloutKind.Freeze, leap.Def.Name, $"{Key(act.ToLowerInvariant())}: leap where you aim. Over them and out of the ring.",
+                    new Aim { Hud = "seat:" + act, World = () => OutOfRing(day?.Standing(wb.Id) ?? [], leap) }, act.ToLowerInvariant(), overHint: true, patience: 1.2, urgent: true);
+            }
+            else
                 Teach("day_gap", CalloutKind.Freeze, "The ring", $"{Key("dash")}: out through the gap before they close.", Aim.At("dash"), "dash", overHint: true, patience: 1.2, urgent: true);
         }
+        // A13b (skills-p7's seam): Shield Charge on a seat and the next pack within ChargeNear; its seat, the pack ringed,
+        // answered by its key. (day_charge above is the boars' charge, theirs to dodge: another lesson, kept.)
+        if (Seated(ChargeId) is { } sc && NextPack(p, ChargeNear) is { Count: > 0 } pack)
+        {
+            string act = $"Skill{sc.Slot + 1}";
+            Teach("charge", CalloutKind.Freeze, sc.Def.Name, $"{Key(act.ToLowerInvariant())}: charge into the pack. The first one you hit is stunned.",
+                new Aim { Hud = "seat:" + act, World = () => NextPack(B!.Player, ChargeNear).Select(e => Up(e.X, e.Z, 1.0)).ToList(), Each = true }, act.ToLowerInvariant(), urgent: true);
+        }
     }
+
+    /// <summary>(A13, A13b) skills-p7's skills, by id.</summary>
+    public const string LeapId = "heroic_leap", ChargeId = "shield_charge";
+    /// <summary>(A13b) How near the next pack is when Shield Charge is shown (m).</summary>
+    public const double ChargeNear = 10;
+
+    /// <summary>The skill carried on a seat (a pressed key, Skill1 to Skill4), else null.</summary>
+    WeaponInst? Seated(string id) => B?.Weapons.FirstOrDefault(w => w.Id == id && w.Slot is >= 0 and < 4);
+
+    /// <summary>(A13b) The nearest pack of the stretch with a foe standing within `near` of her: its foes standing.</summary>
+    List<Enemy> NextPack(PlayerState p, double near)
+    {
+        if (day == null) return [];
+        List<Enemy> best = []; double bd = near;
+        foreach (var id in day.Packs.Keys)
+            foreach (var e in day.Standing(id))
+            {
+                double d = Dist(e.X, e.Z, p.X, p.Z);
+                if (d <= bd) { bd = d; best = day.Standing(id); }
+            }
+        return best;
+    }
+
+    /// <summary>(A13) A point outside the ring the foes stand on, on her side of it (past the band by RingClear), within
+    /// the Leap's reach of her: where the arrow sends her.</summary>
+    IReadOnlyList<(double X, double Y, double Z)> OutOfRing(IReadOnlyList<Enemy> ring, WeaponInst leap)
+    {
+        var p = B!.Player;
+        if (ring.Count == 0) return [];
+        double cx = ring.Average(e => e.X), cz = ring.Average(e => e.Z);
+        double r = ring.Max(e => Dist(e.X, e.Z, cx, cz)) + RingClear;
+        double dx = p.X - cx, dz = p.Z - cz, n = Math.Sqrt(dx * dx + dz * dz);
+        if (n < 0.5) { dx = Math.Sin(p.Facing); dz = Math.Cos(p.Facing); n = 1; }
+        double tx = cx + dx / n * r, tz = cz + dz / n * r;
+        double reach = leap.AimRange, td = Dist(tx, tz, p.X, p.Z);
+        if (td > reach) { tx = p.X + (tx - p.X) / td * reach; tz = p.Z + (tz - p.Z) / td * reach; }
+        return [Up(tx, tz, 0.1)];
+    }
+
+    /// <summary>(A13) How far past the ring's band the Leap's point lies (m).</summary>
+    public const double RingClear = 2.5;
 
     /// <summary>A lane's points on the ground, nearest her first (the arrow lands where she stands in it).</summary>
     IReadOnlyList<(double X, double Y, double Z)> Lane(Battle.EnemyBlow lb)

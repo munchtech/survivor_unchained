@@ -63,6 +63,8 @@ public static class Pilot
         {
             if (!k.Alive || !(k.Kind == PickupKind.Ember || onward != null && k.Kind is PickupKind.Item or PickupKind.Material or PickupKind.Gold or PickupKind.Chest)) continue;
             if (Leaves != null && Leaves(k)) continue;
+            // (M6 A3) Experience stones come to her by themselves; nothing to walk to.
+            if (k.Kind == PickupKind.Ember && k.Ref == Battle.XpStoneRef) continue;
             double d = (k.X - p.X) * (k.X - p.X) + (k.Z - p.Z) * (k.Z - p.Z);
             if (d < sd) { sd = d; stone = k; }
         }

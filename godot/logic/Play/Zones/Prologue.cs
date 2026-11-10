@@ -569,6 +569,10 @@ public sealed partial class Prologue : ZoneRuntime
 
     /* M6's beats A1-A4b: their state (the moment each first held). */
     double xpAtStart = -1; int levelAtStart; bool emberGroundAsked, resolveDue;
+    /// <summary>(A3) The first stone's hold asked for (once a zone), and when the held stone was first seen held.</summary>
+    bool stoneHoldSet; double heldSince = -1;
+    /// <summary>(A3) The longest the first stone is held when A3 is not up over it (seconds).</summary>
+    public const double StoneHoldMax = 10;
     double landedAtThree = -1, resolveSeenAt = double.MaxValue;
 
     /// <summary>The movement keys from her bindings, as one word ("WASD").</summary>
@@ -592,14 +596,22 @@ public sealed partial class Prologue : ZoneRuntime
         if (Now is Stage.Wake or Stage.Rising && AwakeOf("n_lone").Any(e => Dist(e.X, e.Z, p.X, p.Z) <= 7))
             Teach("swing", CalloutKind.Freeze, "Swing", $"Hold {Key("skill1")} to swing at what's under the cursor. You walk as you swing.",
                 new Aim { Hud = "seat:Skill1", World = () => AwakeOf("n_lone").Select(e => Up(e.X, e.Z, 1.0)).ToList(), Safe = true }, "skill1", urgent: true);
-        // A3: the first ember stone near her on the ground (the lone one's), well inside the screen. (Stones fall only
-        // while the ember burns, Battle.EmberOn: with the draft off, the Low Ford's kills pay experience straight, and this waits.)
+        // A3: the first ember stone near her on the ground (the lone one's), well inside the screen. With the draft off the
+        // dead still spill their light (Journey.Killed, Battle.DropXpStones): each stone rests, then flies to her and pays
+        // her experience as it lands. The journey's first is held at rest until A3 closes (Battle.HoldNextStone); a hold
+        // A3 never takes up (tips off, the stone off the screen) lets go after StoneHoldMax, so nothing waits on it.
+        if (!stoneHoldSet && !B.EmberOn && !G.Taught("ember_ground")) { stoneHoldSet = true; B.HoldNextStone = true; }
+        if (B.HeldStone != null)
+        {
+            if (heldSince < 0) heldSince = B.Time;
+            if (G.Taught("ember_ground") || G.Teaching?.Id != "ember_ground" && B.Time - heldSince > StoneHoldMax) B.ReleaseStone();
+        }
         if (Now is Stage.Rising or Stage.Road && B.EmbersLying > 0 && NearEmbers().Count > 0)
         {
             emberGroundAsked = true;
-            Teach("ember_ground", CalloutKind.Freeze, "Ember", "The light the dead carry. Gather it, and it makes you stronger.", new Aim { World = NearEmbers, Safe = true });
+            Teach("ember_ground", CalloutKind.Freeze, "Ember", "The light the dead carry. It comes to you, and it makes you stronger.", new Aim { World = NearEmbers, Safe = true });
         }
-        // A3b: the first ember gathered (her first experience), 0.6 s after A3 closes (when A3 was asked); the coin's ring.
+        // A3b: the first ember landed (her first experience), 0.6 s after A3 closes (when A3 was asked); the coin's ring.
         if (Now < Stage.Intro && (ch.Xp > xpAtStart || ch.Level > levelAtStart || B.EmberXp > 0 || B.EmberLevel > 1))
             Teach("ember_ring", CalloutKind.Arrow, "Your level", "Ember fills this ring. When it's full, you rise a level.", Aim.At("chain_fill"),
                 after: emberGroundAsked ? "ember_ground" : null, gap: 0.6, overHint: true);
