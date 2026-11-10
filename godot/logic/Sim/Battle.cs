@@ -263,6 +263,9 @@ public struct ProcCtx
     public WeaponInst? Weapon;
     public StatusKind? Applied;
     public int? Depth;
+    /// <summary>(M3 MR 3) The share of a written blow the event stands for: a chained cut's weight, or what a status a
+    /// cut landed builds. Null (every other event) reads 1. Under 1, Damage is the share and Damage / W the blow.</summary>
+    public double? W;
 }
 
 public sealed partial class Battle
@@ -1045,7 +1048,7 @@ public sealed partial class Battle
         int depth = o.Depth;
         if (!o.NoProcs && depth < 3)
         {
-            var ctx = new ProcCtx { Target = e, X = e.X, Z = e.Z, Damage = dmg, School = school, Tags = tags, Crit = crit, Weapon = o.Weapon, Depth = depth + 1 };
+            var ctx = new ProcCtx { Target = e, X = e.X, Z = e.Z, Damage = dmg, School = school, Tags = tags, Crit = crit, Weapon = o.Weapon, Depth = depth + 1, W = cw };
             Fire(TriggerEvent.Hit, ctx);
             if (crit) Fire(TriggerEvent.Crit, ctx);
         }
@@ -1315,7 +1318,10 @@ public sealed partial class Battle
         ReaverAfterStatus(e, p, hitDamage, depth);
         StalkerAfterStatus(e, p, hitDamage, depth);
         Events.Emit(new Ev.Status { Target = e.Id, Kind = p.Kind, X = e.X, Z = e.Z });
-        if (depth < 3) Fire(TriggerEvent.Status, new ProcCtx { Target = e, X = e.X, Z = e.Z, Damage = hitDamage, School = School.Physical, Tags = Array.Empty<Tag>(), Applied = p.Kind, Depth = depth + 1 });
+        // (M3 MR 3) what a cut landed stands for a share of a blow (build): the rules it sets off weigh it as a cut's hit
+        // (build is 1 unchained and for hard control: the line as it was)
+        double sw = build > 0 && build < 1 ? build : 1;
+        if (depth < 3) Fire(TriggerEvent.Status, new ProcCtx { Target = e, X = e.X, Z = e.Z, Damage = hitDamage * sw, School = School.Physical, Tags = Array.Empty<Tag>(), Applied = p.Kind, Depth = depth + 1, W = sw });
     }
 
     static readonly Tag[] DotBurn = [Tag.Dot, Tag.Fire], DotBleed = [Tag.Dot, Tag.Physical], DotSear = [Tag.Dot, Tag.Holy], DotPoison = [Tag.Dot, Tag.Nature];
@@ -2930,6 +2936,9 @@ public sealed partial class Battle
 
     public void Fire(TriggerEvent on, ProcCtx ctx)
     {
+        // (M3 MR 3) the share of a written blow the event stands for: under 1 only for a chained cut's hit and for a
+        // status a cut landed. At 1 every line below is as it was.
+        double w = ctx.W is { } cw && cw > 0 && cw < 1 ? cw : 1;
         // By index: an effect may add a trigger (a summon's boon), never remove one.
         for (int i = 0; i < Triggers.Count; i++)
         {
@@ -2938,9 +2947,39 @@ public sealed partial class Battle
             if (t.Cd > 0) continue;
             if (t.Def.Chance is { } ch && Rng.Next() >= ch) continue;
             if (t.Def.When != null && !Matches(t.Def.When, ctx)) continue;
-            if (t.Def.Icd is { } icd && icd != 0) t.Cd = icd;
+            if (w == 1)
+            {
+                if (t.Def.Icd is { } icd && icd != 0) t.Cd = icd;
+                t.Begun = true;
+                t.Count++;
+                RunEffects(t, ctx);
+                continue;
+            }
+            // A cut. Cuts come 1 / w as often as the blows they are shares of, so the rule's own clock runs at their
+            // pace: the cuts under icd x w are the blows under icd, scaled in time.
+            if (t.Def.Icd is { } cd && cd != 0) t.Cd = cd * w;
+            var kind = t.Def.Weighs();
+            if (kind == ProcClass.Whole)
+            {
+                // Once per blow's worth of would-fires (counted, never rolled), and it sees the blow. The first is whole.
+                if (!t.Begun) t.Begun = true;
+                else
+                {
+                    t.Part += w;
+                    if (t.Part < 1 - Sim.Blows.Eps) continue;
+                    t.Part = Math.Max(0, t.Part - 1);
+                }
+                var blow = ctx;
+                blow.Damage = ctx.Damage / w;
+                blow.W = null;
+                t.Count++;
+                RunEffects(t, blow);
+                continue;
+            }
+            // Sized by the hit (the share is its size already; a status it applies is weighed by the status step), or an
+            // execute (a threshold, not a rate): on every cut.
             t.Count++;
-            RunEffects(t, ctx);
+            RunEffects(t, ctx, kind == ProcClass.Sized ? w : 1);
         }
     }
 
@@ -2961,23 +3000,31 @@ public sealed partial class Battle
         return true;
     }
 
-    void RunEffects(TriggerInstance t, ProcCtx ctx)
+    /// <param name="weight">(M3 MR 3) What a status the rule applies rides (statusW): a cut's weight for a rule sized by
+    /// the hit, 1 for everything else. Set for the rule's own effects only, so a cut's weight never leaks from the hit
+    /// that set a whole rule off.</param>
+    void RunEffects(TriggerInstance t, ProcCtx ctx, double weight = 1)
     {
         int depth = ctx.Depth ?? 1;
-        var (was, wasWeapon) = (credit, ctxWeapon);
+        var (was, wasWeapon, wasW) = (credit, ctxWeapon, statusW);
         credit = t.Credit ?? t.Source;
         ctxWeapon = t.Credit;
+        statusW = weight;
         foreach (var fx in t.Def.Effects) RunEffect(fx, ctx, depth);
-        (credit, ctxWeapon) = (was, wasWeapon);
+        (credit, ctxWeapon, statusW) = (was, wasWeapon, wasW);
     }
 
     double BaseOf(double damage, Basis basis, ProcCtx ctx) => basis switch
     {
         Basis.Hit => damage * (ctx.Damage ?? 0),
         Basis.MaxHp => damage * (ctx.Target?.MaxHp ?? 0),
-        Basis.Weapon => damage * (ctx.Weapon?.Damage ?? WeaponById(ctxWeapon)?.Damage ?? 0),
+        Basis.Weapon => damage * (Written(ctx.Weapon) ?? Written(WeaponById(ctxWeapon)) ?? 0),
         _ => damage * (1 + 0.08 * (EmberLevel - 1)),
     };
+
+    /// <summary>(M3 MR 3) The weapon's written damage: inside a chained cut's cast WeaponInst.Damage is the cut's share,
+    /// and a rule sized on the weapon is sized on the blow.</summary>
+    static double? Written(WeaponInst? w) => w == null ? null : w.CutW > 0 && w.CutW < 1 ? w.Damage / w.CutW : w.Damage;
 
     /// <summary>The weapon whose rule is running (an evolution's), for Basis.Weapon
     /// when the event that set it off carried none (a kill by a status).</summary>
@@ -2993,7 +3040,8 @@ public sealed partial class Battle
                 if (fx.Status != null) ForEachHostileInRadius(x, z, fx.Radius, (e, _) => ApplyStatus(e, fx.Status, BaseOf(fx.Damage, fx.Basis, ctx), depth));
                 break;
             case Effect.Apply fx:
-                if (fx.OnHit && ctx.Target != null) ApplyStatus(ctx.Target, fx.Payload, ctx.Damage ?? 10, depth);
+                // (M3 MR 3: a status is sized on the blow; on a cut the hit is its share, and statusW weighs what it builds)
+                if (fx.OnHit && ctx.Target != null) ApplyStatus(ctx.Target, fx.Payload, (ctx.W is { } aw && aw > 0 && aw < 1 ? ctx.Damage / aw : ctx.Damage) ?? 10, depth);
                 else if (!fx.OnHit)
                 {
                     var list = HostilesInRadius(x, z, fx.Radius);

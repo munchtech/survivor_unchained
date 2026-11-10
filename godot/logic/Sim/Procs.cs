@@ -77,7 +77,41 @@ public sealed class TriggerDef
     public Effect[] Effects = System.Array.Empty<Effect>();
     /// <summary>Shown in tooltips so the player can see what the rule does.</summary>
     public string? Text;
+
+    ProcClass? weighs;
+
+    /// <summary>(M3 MR 3) How the rule takes a chained cut (Battle.Fire at a weight under 1), read once from its
+    /// effects. A method, not a property: nothing of it is written with the record.</summary>
+    public ProcClass Weighs() => weighs ??= ClassOf(Effects);
+
+    static ProcClass ClassOf(Effect[] effects)
+    {
+        bool sized = true, execute = effects.Length > 0;
+        foreach (var fx in effects)
+        {
+            if (fx is not Effect.Execute) execute = false;
+            sized &= fx switch
+            {
+                Effect.Explode f => f.Basis == Basis.Hit && f.Status == null,
+                Effect.Missiles f => f.Basis == Basis.Hit && f.Status == null,
+                Effect.Chain f => f.Basis == Basis.Hit,
+                Effect.Strike f => f.Basis == Basis.Hit,
+                Effect.Heal f => f.Basis == Basis.Hit,
+                Effect.Nova f => f.Basis == Basis.Hit && f.Knockback == 0,
+                Effect.Apply => true,
+                _ => false,
+            };
+        }
+        return execute ? ProcClass.Execute : sized ? ProcClass.Sized : ProcClass.Whole;
+    }
 }
+
+/// <summary>(M3 MR 3) A chained cut is a share of a written blow and comes that much more often. Per second a rule
+/// must give what it gave under the blows:
+/// Sized: every effect is a fraction of the hit, or a status (weighed by the status step itself): it runs on every
+/// cut, share-sized. Execute: a threshold, not a rate: it runs on every cut. Whole: everything else (a stack, ember,
+/// a flat heal, seconds off a cooldown, a zone; a mix): it fires once per blow's worth of cuts and sees the blow.</summary>
+public enum ProcClass { Whole, Sized, Execute }
 
 public sealed class TriggerInstance
 {
@@ -89,5 +123,10 @@ public sealed class TriggerInstance
     public double Cd;
     /// <summary>Rank scales damage-bearing effects.</summary>
     public int Rank = 1;
+    /// <summary>Times its effects ran (under chained cuts a Whole rule's firings, not its would-fires).</summary>
     public int Count;
+    /// <summary>(M3 MR 3) A Whole rule under chained cuts: the share of a blow its would-fires have counted since it
+    /// last ran, and whether it has ever run (the first is a whole one, as an every-N count's opening cut is).</summary>
+    public double Part;
+    public bool Begun;
 }
