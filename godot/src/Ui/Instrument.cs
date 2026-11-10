@@ -601,9 +601,11 @@ public partial class Socket : Control
                 var gr = new Rect2(c - new Vector2(gi + 2 * DgGold.Pad, gi + 2 * DgGold.Pad) / 2, new Vector2(gi + 2 * DgGold.Pad, gi + 2 * DgGold.Pad));
                 var warm = new Color(1f, 0.62f, 0.24f).Lerp(school, 0.45f);
                 if (glow > 0.003 && !Numbered) DrawTextureRect(glowTex, gr, false, warm with { A = (float)glow });
-                var tone = Colors.White.Lerp(new Color(0.66f, 0.60f, 0.52f), (float)cool);
-                // (fix A, 5: under a wait number the glyph cools to a quarter, so the number is the one thing read)
-                DrawTextureRect(gold, gr, false, (tone * Colors.White.Lerp(school, 0.10f)) with { A = Numbered ? 0.25f : 1 });
+                // (fix A, 5: under a wait number the glyph cools to a quarter, so the number is the one thing read; M4 lead 9:
+                // in every other waiting frame, a fast cycle, a brief wait, a held key, it stays at 80% of lit)
+                bool num = Numbered;
+                var tone = num ? Colors.White.Lerp(new Color(0.66f, 0.60f, 0.52f), (float)cool) : Colors.White;
+                DrawTextureRect(gold, gr, false, (tone * Colors.White.Lerp(school, 0.10f)) with { A = num ? 0.25f : 1f - 0.2f * (float)cool });
             }
             else if (art != null)
             {
@@ -612,7 +614,7 @@ public partial class Socket : Control
             }
             // coming back (round 2): the well fills from its foot, lit in the element, dark above (DgMeters.Level)
             // (under a kindled seat's flare the level is held dark and round, and a brief wait shows none: SeatKeys.WaitLevel)
-            if (cooling && WaitLevel() is var lv and >= 0) DgMeters.Level(this, c, hr + 0.5f, lv, school);
+            if (cooling && WaitLevel() is var lv and >= 0) DgMeters.Level(this, c, hr + 0.5f, lv, school, Numbered ? 0.80f : 0.25f);
         }
         // (UI 23: only the ring's inner edge, the well's rim shading, inside the plate's baked bezel)
         if (DgRiver.RingInner(Index, DgPanel.WellR) is { } ring)

@@ -35,7 +35,7 @@ public static partial class DgMeters
     /// <summary>A well of radius r at c coming back (ready 0..1): above what has come back the well is dark; below
     /// it the glass is lit in the element (tint), brightest at its surface and fading to the foot, so the eye reads a
     /// level rising, not a line drawn across.</summary>
-    public static void Level(CanvasItem ci, Vector2 c, float r, float ready, Color tint)
+    public static void Level(CanvasItem ci, Vector2 c, float r, float ready, Color tint, float darkA = 0.80f)
     {
         // (the points and colours are written into kept arrays of the draws' exact lengths: a waiting seat is redrawn at
         // each change of its level, and each redraw made 41 points, a quad and its colours anew; Godot copies them at the call)
@@ -52,7 +52,7 @@ public static partial class DgMeters
                 float a = a0 + (-Mathf.Pi - 2 * a0) * k / n;
                 pts[k] = c + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * r;
             }
-            ci.DrawColoredPolygon(pts, new Color(0.010f, 0.010f, 0.016f, 0.80f));
+            ci.DrawColoredPolygon(pts, new Color(0.010f, 0.010f, 0.016f, darkA));
         }
         if (ready <= 0.01f) return;
         // the lit glass: rows from the surface to the foot, each quad its own colours (bright at the surface)

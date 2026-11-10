@@ -252,8 +252,7 @@ public partial class Socket
         if (vis != capVisible) { capVisible = vis; Cap.Visible = vis; }
         if (!vis) return;
         Color c = !filled ? new Color(1, 1, 1, CapAlphaOpen)
-            : bd ? new Color(1.18f + 0.25f * breath, 1.08f + 0.18f * breath, 0.82f + 0.08f * breath)
-            : Colors.White;
+            : Colors.White;   // (M4 lead 9: no bond tint over 1.0 here: it pushed the bone cap's fill to pale yellow; the bond ring breathes)
         if (c != capShown) { capShown = c; Cap.Modulate = c; }
         if (Cap.Quiet != (kindled && !bd)) Cap.Quiet = kindled && !bd;
         if (Cap.Down != held) Cap.Down = held;
@@ -333,6 +332,8 @@ public partial class SeatFx : Control
     public Texture2D? Glyph;
     public int GlyphSize;
     static readonly Color Head = new("#fbf1d8"), Spin = new("#f9b214");
+    /// <summary>M4 lead 9: the held ring's gold (#ffcd5a) and its head bead (#fff4d6).</summary>
+    static readonly Color HeldGold = new("#ffcd5a"), HeldBead = new("#fff4d6");
     public static readonly Color FlareCore = new("#ffe9a8"), FlareMid = new("#f9b214"), FlareRim = new("#ca6e06"), InkDark = new("#1a1410");
 
     /// <summary>The flare's colour at d of the well's radius (0 its middle .. 1 its rim): the hot core held to 0.18,
@@ -396,12 +397,12 @@ public partial class SeatFx : Control
                     float a0 = -Mathf.Pi / 2 - 1.2f + i * 0.2f;
                     DrawArc(c, hr + 2.5f, a0, a0 + 0.21f, 6, Spin.Lerp(Head, i / 5f) with { A = 0.15f + 0.17f * i }, 3, true);
                 }
-                DrawArc(c, hr + 2.5f, -Mathf.Pi / 2 - 0.05f, -Mathf.Pi / 2 + 0.35f, 8, Head, 3.5f, true);
+                DrawArc(c, hr + 2.5f, -Mathf.Pi / 2 - 0.05f, -Mathf.Pi / 2 + 0.35f, 8, HeldBead, 3.5f, true);
                 break;
             case Mode.Press:
                 // the key down: the well warm, the ring fully lit (added light)
                 DrawTextureRect(DgMeters.Disc, new Rect2(c - Vector2.One * hr * 1.15f, Vector2.One * hr * 2.3f), false, new Color(1f, 0.66f, 0.28f, 0.6f));
-                DrawArc(c, hr + 2.5f, 0, Mathf.Tau, 64, Spin with { A = 0.85f }, 2.5f, true);
+                DrawArc(c, hr + 2.5f, 0, Mathf.Tau, 64, HeldGold with { A = 0.85f }, 2.5f, true);
                 DrawArc(c, hr + 5f, 0, Mathf.Tau, 64, Style.EmberHi with { A = 0.3f }, 4, true);
                 break;
             case Mode.Bond:
