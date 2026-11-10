@@ -93,11 +93,13 @@ public sealed class ResolveMeter
     }
 
     /// <summary>A builder's swing struck `foes` (at least one).</summary>
-    internal void Landed(PressDef r, int foes, bool heavy)
+    internal void Landed(PressDef r, int foes, bool heavy, double weight = 1)
     {
         if (!On || foes <= 0) return;
         double g = (r.Builds ?? 0) + Math.Min(r.BuildsMost ?? 9, (r.BuildsEach ?? 3) * (foes - 1));
-        if (heavy) g *= r.HeavyMul ?? 1.5;
+        // (M3 MR 3) a chained cut gives its share of the blow's Resolve; a heavy's extra lands whole
+        double hm = heavy ? r.HeavyMul ?? 1.5 : 1;
+        g = weight == 1 ? g * hm : g * (weight + (hm - 1));
         LandedFill += g;
         Add(g, ResolveReason.Landed);
     }

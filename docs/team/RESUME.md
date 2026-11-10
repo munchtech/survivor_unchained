@@ -1,5 +1,20 @@
 # Where we are: read this after README.md, before your handoff
 
+## 10 November 2026 (evening): coordinator #4 handoff. NEXT COORDINATOR (Opus high, normal rules): START HERE, then #3's block below for the lanes and rules
+
+**Merged today:** M3 combat-m3@20f5f1cee (landed rule; grip x0.80, Oathblade 18.25 / Sunder 22.4; Bladestorm x0.92; Consecration 8->6; drifter contracts re-based; WardenWicks cache race fixed). Owner picks: stance Prowl; Sunder = one-hand heavy cut, whole body behind it (cards drop "two-handed"); M3 wording drafts YES. Feel flag to the owner: risen take two cuts at level 1 (knob: risen health 18). Open for the next M3 lead: standing still at tier I falls 68.8% (band 80%+), not grip-driven.
+
+**Live leads at handoff (a new session can't reach them; each reports MR READY / HANDOFF READY in its handoff's top block, so read those):**
+- M4 ui-m4: r3d CLOSE, fixes on ui-m4@21264af90; r3e max confirm judge approved (+0.17M, line 1.07M), then merge integration, suite, push, MR READY. The vow ring rebuild is in P7 commits 353fa746f, 29154def5, e2ababa69 (atan seam also fixed in p7_shell + store glow). Carries the LampWick.cs:417 hunk (combat.md).
+- P1 body-p1b: lead 20 HANDOFF body-p1b@4bc2eb8f6, Gate T round 1 CLOSE (10/15 rows; fixes ranked in docs/handoff/body_facts/gate_t.md). Fresh P1 lead 21 spawned for round 2, line 0.6M to GATE T READY (the owner sees the A|B bare shape then). Neck rule CONFIRMED 043a6e4c0. After-list (P3 bends spec, her-config split, deform_audit general) after Gate T.
+- A1 motion-a1 (line 1.2M): cut A retune, heel layer, blade null-key, shield layer, cut B, A->B->A strip, max judge. Release recover unblocked by M3's merge (told).
+- P2 gear-p2: lead HANDOFF gear-p2@8ac67a87d (~0.82M). Bend-as-needed tool built, but it measured on plain LBS and the cop sits 12-13 mm into her; bend OFF, round 4 rigid live. Fresh P2 lead spawned: (a) re-solve on LBS plus correctives, ~100k; (b) shoot the set + one max judge, ~200k; lane total ~1.15M. No third spaulder design without main. mar_her_cuirass FAR -> regenerate candidate.
+
+**Queue, in order:** merge ui-m4 on MR READY (then give P3 a game worktree); L1 (GPU-heavy, after M4; row: minimap explored ground needs an ink source from zone props/places, MapScreen.Drawing; the vow ring is DONE by M4); P7 (BattleFx.cs:1378 HitShake su-worker ~40k anytime; paint solver after A1's cut; adopt M4's ring commits); P3 (after ui-m4); fresh P1 lead after Gate T; next M3 lead for the standing-I falls (optional).
+
+**Worktrees:** combat-m3 removed with the merge; the rest are at their lanes (body-p1b, films-p9, gear-p2, look-l1, motion-a1, skills-p7, ui-m4). Lead ids for #4: survivorsunchained_inputs\scratch_coord4\agents.txt.
+
+
 ## 10 November 2026, ~05:30 PST: coordinator #3 wound down on the owner's word. NEXT COORDINATOR (Opus, normal behavior): START HERE
 
 **The owner (10 Nov ~05:00):** "finish what your working on then wind down with a handoff prepped to return back to opus and normal behavior before this last couple days." What that changes, all done in this commit:

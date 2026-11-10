@@ -110,26 +110,16 @@ public class BattleTests
     [Fact]
     public void A_minute_of_fighting_kills_levels_and_stays_finite()
     {
+        // The drifter (Oathblade rank 1, no presses) is a "fights at all" floor, not a strength bar. It read 133 kills
+        // before bands round 8; grip damage x0.80 (d5d195064) put a whole cut (18.25) under a level-1 risen's 20 health,
+        // so every risen takes two cuts: 39 kills. Passive play is meant to lose under the bands (docs/balance/m3_bands.md round 8).
         var b = Arena(1);
         Simulate(b, 60);
-        Assert.True(b.KillCount > 40, $"kills {b.KillCount}");
-        Assert.True(b.EmberLevel > 3, $"level {b.EmberLevel}");
+        Assert.True(b.KillCount > 35, $"kills {b.KillCount}");
+        // (the same "fights at all" floor: level 2 with 39 kills under the bands)
+        Assert.True(b.EmberLevel > 1, $"level {b.EmberLevel}");
         foreach (var e in b.Enemies.Items) if (e.Alive) { Assert.True(double.IsFinite(e.X)); Assert.True(double.IsFinite(e.Z)); }
         Assert.True(double.IsFinite(b.Player.X));
-    }
-
-    [Fact]
-    public void A_crowd_is_dangerous_not_lethal()
-    {
-        // One seed is a coin toss; the contract is about the odds (75%: 16 seeds, the draft pool is large).
-        int alive = 0;
-        for (uint seed = 1; seed <= 16; seed++)
-        {
-            var b = Arena(seed);
-            Simulate(b, 60);
-            if (b.Player.Alive) alive++;
-        }
-        Assert.True(alive >= 12, $"survived {alive} of 16");
     }
 
     [Fact]
@@ -401,5 +391,26 @@ public class DraftTests
         Assert.True(combat > 0);
         Assert.True(passive > 0);
         Assert.Equal(Boons.MaxPassives, LevelUp.PassivesHeld(b));
+    }
+}
+
+/// <summary>The survival contract runs the zone harness (48 runs), so it sits in the Balance collection and runs alone.</summary>
+[Collection("Balance")]
+public class BattleBalanceTests(Xunit.Abstractions.ITestOutputHelper log)
+{
+    [Fact]
+    public void A_crowd_is_dangerous_not_lethal()
+    {
+        // The old drifter contract (>= 12 of 16 survive) read 10 of 16 after 473daac72 ("M3 MR 3 clock: every wait exact
+        // to the instant") and 5 of 16 after grip x0.80 (d5d195064); main ruled (10 Nov) it moves to the human bot at the
+        // band's low edge: the bands' own measure, `zone --zone lowford --bots human --seeds 48 --tiers 1`
+        // (human no-fall I 85+; 87.5% = 42/48 at round 8).
+        var results = new System.Collections.Concurrent.ConcurrentBag<SurvivorUnchained.Balance.ZoneRunResult>();
+        System.Threading.Tasks.Parallel.For(1, 49, seed =>
+            results.Add(SurvivorUnchained.Balance.ZoneSim.Play(new SurvivorUnchained.Balance.ZoneRunSpec(seed, "lowford", "human", 1))));
+        int noFall = results.Count(r => r.Falls == 0);
+        string line = $"Low Ford, human bot, tier I: no fall in {noFall} of 48 runs; mean kills {results.Average(r => r.Kills):0.0}, mean minutes {results.Average(r => r.PlaySeconds / 60):0.0}";
+        log.WriteLine(line);
+        Assert.True(noFall >= 41, line + " (need >= 85%)");
     }
 }

@@ -14,6 +14,10 @@ public sealed partial class Battle
     /// range): the behaviors read it and clamp it to their own reach.</summary>
     public (double X, double Z)? SkillAim;
 
+    /// <summary>(M3 MR 3) When a spin union's second key was last pressed out of a storm (its half's swing asked): the
+    /// grip's meter reads a key pressed every step as a key held (Sim/GripMeter.cs).</summary>
+    public double HalfPressAt { get; private set; } = double.NegativeInfinity;
+
     readonly bool[] heldSlots = new bool[Content.Weapons.MaxWeapons];
     /// <summary>When each key last went down (NaN: never told; a press then is fresh): a fresh press against a grip held,
     /// or a press buffered, from before.</summary>
@@ -60,6 +64,7 @@ public sealed partial class Battle
         {
             bool fresh = double.IsNaN(downAt[slot]) || downAt[slot] >= w.StormAt;
             if (Firing.InStorm(this, w)) return fresh && Firing.SpinBreak(this, w);
+            HalfPressAt = Time;
             return Firing.SwingHalf(this, w);
         }
         return Firing.Press(this, w);

@@ -393,7 +393,8 @@ public sealed class BarrowLord : ArenaBoss
     {
         // Down, holy hastens his laying; it is not a channel to break (the bar's line is the
         // survivor's to fill, and a holy blow took it away).
-        if (laying) { if (school == School.Holy) holyT = 0.5; return; }
+        // (M3 MR 3 l2) a chained cut opens its weight's share of the window (a whole hit 0.5 s, as before)
+        if (laying) { if (school == School.Holy) holyT = Math.Max(holyT, 0.5 * B.HitW); return; }
         base.OnHit(e, school, dmg);
     }
 }
