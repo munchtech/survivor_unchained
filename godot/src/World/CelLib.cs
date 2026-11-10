@@ -333,8 +333,17 @@ public static class CelLib
             if (last == null) first = m; else last.NextPass = m;
             last = m;
         }
+        // (L1 lead 22, R2INK) the interior ink (hero_ink.gdshader): the chain's last pass, on her own visible pixels, cut as the
+        // hull is on hair; named as the line so every walk of the chain (take off, floor_y) treats it as the line's
+        if (InkOn)
+        {
+            var ink = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/hero_ink.gdshader"), ResourceName = LineName };
+            if (cutBy != null) LineCutBy(ink, cutBy);
+            last!.NextPass = ink;
+        }
         return first!;
     }
+    static readonly bool InkOn = string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("SU_HERO_INK_OFF"));
 
     static bool IsLine(Material? m) => m is ShaderMaterial { ResourceName: LineName };
 
