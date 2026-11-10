@@ -1,3 +1,4 @@
+using SurvivorUnchained.Play.Pilots;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -130,7 +131,7 @@ public class ArenaPlay(ITestOutputHelper log)
             else if (nearest != null && Dist(nearest.X, nearest.Z, p.X, p.Z) > 6) { mx = nearest.X - p.X; mz = nearest.Z - p.Z; }
             else if (nearest != null) { ang += dt; mx = -(nearest.Z - p.Z); mz = nearest.X - p.X; }
             else { mx = -p.X; mz = -p.Z; }
-            if (c.Deft) SurvivorUnchained.Balance.Pilot.Deft(b, press.Count >= 2 || stone != null, ref mx, ref mz);
+            if (c.Deft) Pilot.Deft(b, press.Count >= 2 || stone != null, ref mx, ref mz);
             double far = Math.Sqrt(p.X * p.X + p.Z * p.Z);
             if (far > 60) { mx = mx * 0.3 - p.X / far; mz = mz * 0.3 - p.Z / far; }
             if (b.Collision.Blocked(p.X + mx * 0.1, p.Z + mz * 0.1, p.Radius)) { (mx, mz) = (-mz, mx); }

@@ -5,7 +5,7 @@ using SurvivorUnchained.Play;
 using SurvivorUnchained.Play.Bosses;
 using SurvivorUnchained.Sim;
 
-namespace SurvivorUnchained.Balance;
+namespace SurvivorUnchained.Play.Pilots;
 
 /// <summary>A plain-minded survivor's hands (the tests' ArenaPlay bot, kept
 /// as it was so the numbers mean the same): give ground when pressed, go to
@@ -129,9 +129,10 @@ public static class Pilot
     /// <summary>The hands that are not the feet: a dash out of a crush, the art
     /// on a crowd, a draught when low.</summary>
     /// <returns>Whether a draught was drunk.</returns>
+    /// <param name="drinks">Off: the hands never drink (the game's --no-drink, a draught's lesson waiting).</param>
     /// <param name="rooted">Read the kit's telegraphs (Sim/Tells.cs): rooted in a marked blow, dash out; dragged into a
     /// pull's heart past walking out, dash out. A caller with hands that did not see it passes false.</param>
-    public static bool Act(Battle b, Journey j, double mx, double mz, SurvivorUnchained.Play.Bosses.ArenaBoss? boss = null, bool lunges = true, bool aimsFlare = true, bool rooted = true, bool crush = true, bool presses = false, PressHands? hands = null)
+    public static bool Act(Battle b, Journey j, double mx, double mz, SurvivorUnchained.Play.Bosses.ArenaBoss? boss = null, bool lunges = true, bool aimsFlare = true, bool rooted = true, bool crush = true, bool presses = false, PressHands? hands = null, bool drinks = true)
     {
         var p = b.Player;
         if (rooted && b.ActiveTells.Count > 0) KitDash(b, mx, mz);
@@ -189,7 +190,7 @@ public static class Pilot
             }
         }
         else readyIn = null;
-        if (p.Hp >= b.MaxHp * 0.33) return false;
+        if (!drinks || p.Hp >= b.MaxHp * 0.33) return false;
         double before = p.Hp;
         j.Quaff(b);
         return p.Hp > before;
