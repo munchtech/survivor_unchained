@@ -30,8 +30,12 @@ was authored joined must stay joined:
 - a fitting rides what it sits on: the plain mean of her skin's weights over its own footprint (no slot roles: a
   buckle over the clavicle follows the clavicle as the strap under it does), placed by the join field below.
 - the join field: a bendy vertex (or a fitting's point) at a fitted plate takes that plate's move and its blend of
-  weights, fading to her skin's own over the plate's fade length (the mismatch at its seam over JOIN "strain", kept in
-  JOIN "fade_m"), so a strap's end stays on its cup at rest and in motion and the strap stretches no more than that.
+  weights, fading to her skin's own by a STRAIGHT ramp over the plate's fade length (its largest mismatch with the
+  bendy the fade reaches, over JOIN "strain", kept in JOIN "fade_m"), so a strap's end stays on its cup at rest and
+  in motion and the strap runs taut from the plate to where it lies on her: its stretch even along it, no more than
+  JOIN "strain", wherever a fitting sits on it. (An eased ramp sized by the seam's mismatch alone put up to 19 %
+  squeeze and a bend at the ramp's middle, at the shoulder buckle: the strap zigzagged there seen edge on.) Where
+  plates' fields overlap each counts by g / (1 - g): a point at a plate is on that plate alone.
 """
 import json
 import os
@@ -291,8 +295,15 @@ class Joins:
             d = tree.query(self.Xb)[0]
             seam = d <= JOIN["weld_m"] if (d <= JOIN["weld_m"]).any() else d <= JOIN["link_m"]
             if seam.any():
-                gap = float(np.linalg.norm((self.Xb[seam] - ca) @ M.T + cb - self.Yb[seam], axis=1).max())
-                fade = float(np.clip(1.5 * gap / JOIN["strain"], lo, hi))
+                # (the mismatch is the largest over the bendy the fade reaches, not the seam's alone: at the seam her
+                # skin still goes with the plate, further along a strap it does not, and the strap takes it all)
+                mis = np.linalg.norm((self.Xb - ca) @ M.T + cb - self.Yb, axis=1)
+                for _ in range(8):
+                    gap = float(mis[d <= JOIN["weld_m"] + fade].max())
+                    f = float(np.clip(gap / JOIN["strain"], lo, hi))
+                    if f <= fade:
+                        break
+                    fade = f
         self.rows[int(c)] = dict(tree=tree, M=M, ca=ca, cb=cb, fade=fade, gap=gap)
 
     def bridge(self, X):
@@ -323,9 +334,13 @@ class Joins:
         Y, G, gs = np.zeros_like(X), np.zeros(len(X)), np.zeros(len(X))
         near = np.full(len(X), -1)
         for c, r in self.rows.items():
-            g = _smooth(1.0 - np.maximum(0.0, r["tree"].query(X)[0] - JOIN["weld_m"]) / r["fade"])
-            Y += g[:, None] * ((X - r["ca"]) @ r["M"].T + r["cb"])
-            gs += g
+            # (a straight ramp: a strap between a plate and where it lies on her is taut, its stretch even along it;
+            # an eased ramp put half as much again at its middle, where a buckle sits, and the strap zigzagged there)
+            g = np.clip(1.0 - np.maximum(0.0, r["tree"].query(X)[0] - JOIN["weld_m"]) / r["fade"], 0.0, 1.0)
+            # (where plates' fields overlap each counts by g / (1 - g): a point at a plate is on that plate alone)
+            w = g / (1.0 - g + 1e-6)
+            Y += w[:, None] * ((X - r["ca"]) @ r["M"].T + r["cb"])
+            gs += w
             near = np.where(g > G, c, near)
             G = np.maximum(G, g)
         on = gs > 0

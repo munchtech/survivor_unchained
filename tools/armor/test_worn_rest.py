@@ -205,3 +205,43 @@ def test_bridge_lift_is_none_at_the_plate_and_bounded_by_strain():
     assert np.allclose(jn.reach(span), 0.0, atol=1e-12)
     far = span + np.array([0.0, 0.5, 0.0])
     assert jn.reach(far, skip=2) is None                              # (linked to no plate: no bridge)
+
+
+def _strap_on_a_plate():
+    """A plate (a small grid at the origin) and a strap of bendy points running 0.2 m up from it; the plate moves
+    25 mm up, her skin carries the strap's first 20 mm with it and nothing further along (a cup under a shoulder strap)."""
+    g = np.linspace(-0.01, 0.01, 5)
+    plate = np.array([[x, y, 0.0] for x in g for y in g])
+    s = np.arange(0.0, 0.2, 0.002)
+    strap = np.c_[np.zeros(len(s)), 0.01 + s, np.zeros(len(s))]
+    up = np.array([0.0, 0.025, 0.0])
+    skin = strap + np.clip(1 - s / 0.02, 0, 1)[:, None] * up * 0.6
+    jn = worn_rest.Joins(strap, skin)
+    jn.add(0, plate, np.eye(3), np.zeros(3), up)
+    return jn, plate, strap, skin, s, up
+
+
+def test_join_fade_is_measured_along_the_strap_and_its_ramp_is_straight():
+    jn, plate, strap, skin, s, up = _strap_on_a_plate()
+    J = worn_rest.JOIN
+    # the mismatch is the whole 25 mm (past where her skin stops going with the plate), not the seam's 10 mm
+    assert jn.rows[0]["gap"] == pytest.approx(0.025, abs=1e-4)
+    assert jn.rows[0]["fade"] == pytest.approx(0.025 / J["strain"], abs=1e-3)
+    Y, G, near = jn.field(strap, skin)
+    assert G[0] == 1.0 and np.allclose(Y[0], strap[0] + up)             # (its end is on the plate)
+    far = s > J["weld_m"] + jn.rows[0]["fade"]
+    assert np.allclose(Y[far], skin[far]) and (G[far] == 0).all()        # (past the fade it is her skin's own)
+    # taut: the strap's stretch is even along it (no step squeezed more than JOIN strain, no fold, no zigzag)
+    step = np.diff(Y[:, 1]) / np.diff(strap[:, 1])
+    free = (s[:-1] > 0.03) & (s[1:] < jn.rows[0]["fade"])               # (her skin's own move is over by 20 mm)
+    assert np.ptp(step[free]) < 1e-6 and step[free].min() == pytest.approx(1 - J["strain"], abs=1e-6)
+    assert step.min() > 0.5 and step.max() < 1 + 1e-6                    # (no fold anywhere, her skin's own squeeze included)
+
+
+def test_join_fields_that_overlap_leave_a_seam_on_its_own_plate():
+    jn, plate, strap, skin, s, up = _strap_on_a_plate()
+    other = plate + [0.05, 0.0, 0.0]                                       # (a second plate 50 mm off, moving sideways)
+    jn.add(1, other, np.eye(3), np.zeros(3), np.array([0.02, 0.0, 0.0]))
+    Y, G, near = jn.field(strap, skin)
+    assert near[0] == 0 and np.linalg.norm(Y[0] - (strap[0] + up)) < 1e-6
+    assert np.abs(np.diff(Y - strap, axis=0)).max() < 0.002              # (and the blend between them has no jump)
