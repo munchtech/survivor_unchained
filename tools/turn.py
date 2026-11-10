@@ -265,6 +265,18 @@ if __name__ == "__main__":
                 print("Not taking the turn: a shot from here would show old art. Fix the above, or add "
                       "--stale-ok if this shot doesn't need current art (say so in any sheet you make).")
                 sys.exit(2)
+        elif kind == "godot":
+            # --stale-ok skips the full check, but a stale UI texture import (10 Nov: a rebaked vein mask hid from every judged frame) still warns
+            try:
+                sys.path.insert(0, str(Path(__file__).resolve().parent))
+                from freshness import stale_ui, toplevel
+                root = a[a.index("--root") + 1] if "--root" in a else toplevel(Path.cwd())
+                if root and (bad := stale_ui(root)):
+                    print(f"WARNING: {len(bad)} godot/art/ui texture(s) have a STALE Godot import, so a shot would show OLD art: "
+                          + ", ".join(bad[:8]) + ("..." if len(bad) > 8 else ""))
+                    print("WARNING: Fix: Godot_console.exe --headless --path godot --import  (the turn is still granted)")
+            except Exception as e:
+                print(f"freshness: UI texture warning not run ({type(e).__name__}: {e})")
         wait = float(a[a.index("--wait") + 1]) * 60 if "--wait" in a else 0
         end = time.time() + wait
         while (why := try_take(kind, who)) and time.time() < end:
