@@ -589,14 +589,14 @@
 		"source": "keyed (tools/anim/crowd.py)"
 	},
 	"m_talk": {
-		"changes": "retargeted to her skeleton, feet locked, looped, in place; the chest carried as m_idle's in the mean (one constant turn shared by the three spine bones, each about its own left-right axis, tip back +15.8 degrees; the take's own sway kept); the neck and the Head carried as m_idle's in the mean (one constant turn each about its own ear-to-ear axis, tip back -2.7 and -31.2 degrees; the take's own bob kept)",
+		"changes": "retargeted to her skeleton, feet locked, looped, in place; a keyed talk laid over it (tools/anim/data/folk_talk.json: the right hand raised to 12 cm above its hang, the left hand raised to 12 cm above its hang, the head nodding to 5 degrees; the upper arms' lines, the trunk and the legs as the clip has them)",
 		"layer": "full",
-		"length": 3.59999990463257,
-		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+		"length": 10.8666667938232,
+		"licence": "Mixamo (Adobe)",
 		"loop": true,
 		"note": "townsfolk (men)",
-		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: talk_man_2.bvh",
-		"speed": 0.0040299481281598
+		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_weight_shift_idle.bvh",
+		"speed": 0.000000085943207402705
 	},
 	"m_wade_drag": {
 		"changes": "retargeted to her skeleton, feet locked, travel taken out, looped (seam spread)",
