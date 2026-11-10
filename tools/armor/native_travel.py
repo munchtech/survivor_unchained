@@ -101,3 +101,41 @@ def on_skin(ref, S, index, M, X, reach=0.07):
     d0 = X - ref.V[vs][loc]
     slide0 = np.linalg.norm(d0 - (d0 * ref.N[vs][loc]).sum(1)[:, None] * ref.N[vs][loc], axis=1)
     return off - off0, np.maximum(slide - slide0, 0.0)
+
+
+# ---------------------------------------------------------------- the reach rule: a rigid part against her moving skin
+
+def clip_frames(clips="all"):
+    """The frames of `clips` ("all", "four", or names): a bool per frame of frames()."""
+    z = frames()
+    if clips in (None, "all"):
+        return np.ones(len(z["S"]), bool)
+    names = FOUR if clips == "four" else tuple(clips)
+    missing = [c for c in names if c not in set(z["clip"])]
+    if missing:
+        raise SystemExit(f"native_travel: no clip {missing} among her clips")
+    return np.isin(z["clip"], names)
+
+
+def sink(ref, X, rule, clips="all", reach=0.07, chunk=120):
+    """(sink [n], where [n]): the most each point X of a RIGID part riding `rule` ({bone: share}) comes down toward
+    her moving skin over the clips' frames (m, 0 = never lower than at rest), and the frame (an index of frames())
+    where it does. A plate reaches only as far as this stays under a limit (the reach rule: any part, any recipe)."""
+    z = frames()
+    on = np.flatnonzero(clip_frames(clips))
+    X = np.asarray(X, float).reshape(-1, 3)
+    out, where = np.zeros(len(X)), np.full(len(X), on[0] if len(on) else 0)
+    for a in range(0, len(on), chunk):
+        f = on[a:a + chunk]
+        off, _ = on_skin(ref, z["S"][f], z["index"], ride(z["S"][f], z["index"], rule), X, reach)
+        m, k = -off.min(0), f[off.argmin(0)]
+        where, out = np.where(m > out, k, where), np.maximum(out, m)
+    return out, where
+
+
+def past(ref, X, rule, limit, clips="all"):
+    """The reach rule on a part's points: {"sink_mm" (its most), "past" (points over `limit`), "worst" [clip, frame]}."""
+    z = frames()
+    s, w = sink(ref, X, rule, clips)
+    k = int(np.argmax(s))
+    return {"sink_mm": round(float(s[k]) / 0.001, 2), "past": int((s > limit).sum()), "worst": [str(z["clip"][w[k]]), int(z["frame"][w[k]])]}

@@ -453,5 +453,64 @@ class ShoulderTop(unittest.TestCase):
             self.assertIn(cfg["materials"].get("arming", "darkleather"), have)
 
 
+class Reach(unittest.TestCase):
+    """The reach rule (cop.reach) and the yoke (arming.yoke) on her own body and clips."""
+
+    @classmethod
+    def setUpClass(cls):
+        import hashlib
+        import tempfile
+        cls.sha = lambda cls, f: hashlib.sha256(open(f, "rb").read()).hexdigest()
+        cls.ref = nb.Ref.her()
+        cls.cfg = sp.resolve(json.load(open(os.path.join(nb.NATIVE, "plate_spaulders_plain", "build.json"), encoding="utf-8")))
+        cls.tmp = tempfile.mkdtemp()
+
+    REACH = {"sink_max": 0.005, "clips": ["daggers_heavy", "run_reaver", "sword_heavy", "cast_flick"], "margin": 0.004, "start": -0.016}
+    YOKE = {"to": -0.112, "strap": {"theta": 100}}
+
+    def plain(self, reach=None, yoke=None):
+        """The plain recipe (no reach, no yoke); with `reach` / `yoke`: those keys in, cop.close out."""
+        c = json.loads(json.dumps(self.cfg))
+        if reach:
+            c["cop"].pop("close", None)
+            c["cop"]["reach"] = dict(reach)
+        if yoke:
+            c["arming"]["yoke"] = dict(yoke)
+        return c
+
+    def test_no_key_builds_what_it_built_before(self):
+        d = os.path.join(self.tmp, "plain")
+        sp.spaulder("plate_spaulders_plain", self.plain(), out=d, ref=self.ref)
+        self.assertTrue(self.sha(os.path.join(d, "plate_spaulders_plain.glb")).startswith("fd5b39002a33c79c"))
+        self.assertTrue(self.sha(os.path.join(d, "plate_spaulders_plain.lod1.glb")).startswith("848c4f6ad8714113"))
+
+    def test_a_higher_limit_moves_the_line_toward_her_neck(self):
+        c = self.plain()
+        lay = sp.layout(c, self.ref)
+        fr = {sd: L["fr"] for sd, L in lay.items()}
+        laws = {sd: L["law"] for sd, L in lay.items()}
+        t0, t1 = c["theta"]
+        rc = dict(self.REACH, passes=1)
+        arch, bot = lay["l"]["top"][0], lay["l"]["bot"][0]
+        a = sp.reach_line(self.ref, fr, laws, arch, bot, t0, t1, dict(rc, sink_max=0.003))
+        b = sp.reach_line(self.ref, fr, laws, arch, bot, t0, t1, dict(rc, sink_max=0.009))
+        self.assertTrue((b["line"] <= a["line"] + 1e-9).all())
+        self.assertLess(b["line"].min(), a["line"].min() - 0.003)
+        self.assertTrue((a["line"] >= a["arch"] - 1e-9).all())     # (never past the uncut edge)
+
+    def test_a_plate_past_its_line_fails_the_build_with_its_name(self):
+        # (10 Nov: at 5 mm over the four clips the plain cop's back end still sinks past the limit on its cut ride:
+        # the state the rule was left in; when the recipes carry a passing reach, give this test a tighter limit)
+        c = self.plain(self.REACH, self.YOKE)
+        d = os.path.join(self.tmp, "past")
+        with self.assertRaises(SystemExit) as e:
+            sp.spaulder("plate_spaulders_plain", c, out=d, ref=self.ref)
+        self.assertIn("cop.reach", str(e.exception))
+        self.assertIn("cop_l_rigid", str(e.exception))
+        rep = json.load(open(os.path.join(d, "build_report.json")))
+        self.assertTrue(rep["reach"]["past"])
+        self.assertFalse(os.path.exists(os.path.join(d, "plate_spaulders_plain.glb")))
+
+
 if __name__ == "__main__":
     unittest.main()

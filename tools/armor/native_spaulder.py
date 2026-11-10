@@ -337,12 +337,13 @@ def layout(cfg, ref, step=None, step_s=None, roll=True, laws=None):
     out = {}
     frames = {sd: Frame.bones(ref, cfg["frame"]["from"].replace("*", sd), cfg["frame"]["to"].replace("*", sd), hand)
               for sd, hand in (("l", 1), ("r", -1))}
-    ov = cp.get("over")
+    ov, yk = cp.get("over"), (am or {}).get("yoke")
+    up0 = min(float(E[0]), yk["to"]) if yk else E[0]     # (how far up the leather goes: the yoke's neck line)
     if ov:
         # the cop crowns her shoulder: the frame's centres stay under her skin's crest line up past the joint, read
         # from her skin (one drop for her two sides, the larger: the plates stay mirrors); the arm's own from lame 1 on
         keep = float(E[1] - (lap[1] if n > 1 else 0.0))
-        crest = {sd: crest_line(ref, fr, E[0] - past[0] - 0.05, keep) for sd, fr in frames.items()}
+        crest = {sd: crest_line(ref, fr, up0 - past[0] - 0.05, keep) for sd, fr in frames.items()}
         drops = {sd: crest_drop(s, r, keep, ov.get("depth"), ov.get("ease", 0.006)) for sd, (s, r) in crest.items()}
         if mirror:
             drops = dict.fromkeys(drops, np.maximum(drops["l"], drops["r"]))
@@ -351,7 +352,7 @@ def layout(cfg, ref, step=None, step_s=None, roll=True, laws=None):
         th_a, th_b = min(t0, lt0), max(t1, lt1)
         plate = side_laws(ref, frames, (E[0] - 0.012, E[-1] + 0.012, th_a - 12, th_b + 12), clear, cfg.get("ease", 0.6), mirror,
                           cfg.get("grid", (0.002, 2.0)))
-        arm = side_laws(ref, frames, (E[0] - past[0] - 0.012, E[-1] + past[1] + 0.012, th_a - past[2] - 12, th_b + past[2] + 12),
+        arm = side_laws(ref, frames, (up0 - past[0] - 0.012, E[-1] + past[1] + 0.012, th_a - past[2] - 12, th_b + past[2] + 12),
                         am.get("clear", 0.0012), am.get("ease", 0.6), mirror, am.get("grid", (0.004, 4.0))) if am else {"l": None, "r": None}
         laws = {sd: {"law": plate[sd], "arm_law": arm[sd]} for sd in frames}
     bot = [lambda th, k=k: E[k + 1] + arcf(th) for k in range(n)]
@@ -371,7 +372,7 @@ def layout(cfg, ref, step=None, step_s=None, roll=True, laws=None):
     if wings:
         bot[0] = bot0
 
-    def top0(th):
+    def arch0(th):
         """The cop's upper edge: E[0], or with "arch" a rounded outline: E[0] at its middle, coming down to `span`
         above its lower edge at its two ends."""
         th = np.asarray(th, float)
@@ -379,6 +380,12 @@ def layout(cfg, ref, step=None, step_s=None, roll=True, laws=None):
             return np.full(th.shape, float(E[0]))
         v = np.clip(np.abs(2.0 * th - t0 - t1) / (t1 - t0), 0, 1)
         return E[0] + (s_end - E[0]) * v ** ar.get("power", 2.6)
+    # "reach": the cop reaches toward her neck only as far as her skin rides with it (reach_line: measured on her clips)
+    rc = cp.get("reach")
+    R = None if not rc else (laws[next(iter(frames))].get("reach")
+                             or reach_line(ref, frames, {sd: laws[sd]["law"] for sd in frames}, arch0, bot[0], t0, t1, rc, mirror))
+    hang = (cp.get("roll", cfg.get("roll", (0.0045, 0.001)))[0] + cfg.get("lip", 0.0012)) if rc else 0.0   # (its roll and wall hang past its edge)
+    top0 = arch0 if R is None else (lambda th: np.maximum(arch0(th), np.interp(np.asarray(th, float), R["th"], R["line"]) + hang))
     top = [top0] + [lambda th, k=k: E[k] - lap[k] + arcf(th) for k in range(1, n)]
     reach = [(t0, t1)] + [(lt0, lt1)] * (n - 1)
     crown = dome(top[0], bot[0], t0, t1, cp.get("apex", 0.014), cp.get("shape", (2.4, 2.4)))
@@ -420,6 +427,14 @@ def layout(cfg, ref, step=None, step_s=None, roll=True, laws=None):
                         on = (arm_law(s, th) + am_out) if arm_law is not None else base(s, th) - clear
                         kk = closed(s, th)
                         v = v * (1 - kk) + np.minimum(on + cl.get("room", 0.001), v) * kk
+                    if R is not None:   # (its neck rim stands off her by what it sinks at its line, over the leather)
+                        a = top0(th)
+                        on = (arm_law(a, th) + am_out) if arm_law is not None else base(a, th) - clear
+                        # (the lowest thing at its edge is its wall's foot, `lip` under its inner face)
+                        need = np.maximum(on + np.interp(np.asarray(th, float), R["th"], R["sink"]) + rc.get("room", 0.001)
+                                          + cfg.get("lip", 0.0012) - base(a, th) - stand(a, th), 0.0)
+                        x = np.clip((np.asarray(s, float) - a) / max(rc.get("len", 0.02), 1e-6), 0, 1)
+                        v = v + need * (1 - x * x * (3 - 2 * x))
                 return v
             return law if (flare or k == 0) else base
 
@@ -453,15 +468,157 @@ def layout(cfg, ref, step=None, step_s=None, roll=True, laws=None):
             w = lambda s: sm((np.asarray(s, float) - E[1]) / 0.012)  # noqa: E731  (0 beside the cop, 1 beside the lames)
             ww = lambda s: sm((np.asarray(s, float) - s_end - w_end) / max(E[1] - s_end - w_end, 1e-6))  # noqa: E731  (down a wing's corner)
             w0, w1 = (ww if (lt0, t0) in wings else w), (ww if (lt1, t1) in wings else w)
+            atop = lambda th: np.min([top[0](np.clip(np.asarray(th, float) + d, t0, t1))  # noqa: E731
+                                      for d in np.linspace(-past[2], past[2], 5)], axis=0) - past[0]
+            if yk:   # (the yoke: the leather runs on up her trapezius to its neck line, an arch down to the cop's ends)
+                cap_top = atop
+                atop = lambda th: np.minimum(cap_top(th), yk["to"] + (s_end - past[0] - yk["to"])  # noqa: E731
+                                             * np.clip(np.abs(2.0 * np.asarray(th, float) - t0 - t1) / (t1 - t0), 0, 1) ** yk.get("power", 2.2))
             arming = Sheet(fr, laws[sd]["arm_law"], lambda s: t0 - past[2] + (lt0 - t0) * w0(s),
-                           lambda s: t1 + past[2] + (lt1 - t1) * w1(s),
-                           lambda th: np.min([top[0](np.clip(np.asarray(th, float) + d, t0, t1))
-                                              for d in np.linspace(-past[2], past[2], 5)], axis=0) - past[0],
+                           lambda s: t1 + past[2] + (lt1 - t1) * w1(s), atop,
                            lambda th: E[-1] + past[1] + arcf(np.clip(th, lt0, lt1)), am.get("thick", 0.0012), roll=arl,
                            clear=am.get("clear", 0.0012), lip=am.get("lip", 0.0003), step=step or am.get("step", 0.009),
                            step_s=step_s or am.get("step", 0.009), roll_on="tb01" if roll else "")
         out[sd] = {"fr": fr, "law": base, "arm_law": laws[sd]["arm_law"], "sheets": sheets, "names": part_names(n, sd),
                    "spans": spans, "top": top, "bot": bot, "theta": reach, "foot": foot, "lap": lap, "arming": arming}
+        if R is not None:
+            out[sd]["reach"] = R
+
+    return out
+
+
+# ---------------------------------------------------------------- the reach rule, the yoke
+
+def reach_line(ref, frames, laws, arch, bot, t0, t1, rc, mirror=True):
+    """The reach rule on the cop ("cop.reach" {"sink_max", "clips" ("all" | "four" | [names]), "margin", "len", "room",
+    "zone"}): a rigid plate reaches only as far as her skin rides with it. On an (s, theta) grid of the plate's law
+    surface (riding the mean ride of its own outline) native_travel.sink reads how far each point comes down toward
+    her MOVING skin over the clips; per column, from its seat (its least-travel row on the arm's side of the joint)
+    toward her neck, the last row still under `sink_max` is the LINE: the cop's upper edge is cut back to it (+ margin;
+    her two sides' larger; a running max and an ease round theta). The ride changes with the cut, so the line is read
+    `passes` times from the joint. Returns {"th", "line" (s per column), "sink" (the travel at the line: what the rim
+    stands off by), "arch" (the uncut edge), "no_seat" (columns with no row under the limit), "sides"}."""
+    import native_travel as nt
+    from scipy import ndimage
+    lim, clips = rc["sink_max"], rc.get("clips", "all")
+    th = np.linspace(t0, t1, int(rc.get("columns", 27)))
+    ss = np.arange(float(np.min(arch(th))), float(np.max(bot(th))) + 1e-9, rc.get("ds", 0.004))
+    SS, TH = np.meshgrid(ss, th, indexing="ij")
+    own = (SS >= arch(TH) - 1e-9) & (SS <= bot(TH) + 1e-9)
+    line, info, bad = np.maximum(arch(th), rc.get("start", 0.0)), {}, set()
+    cut = lambda ln: (lambda t: np.maximum(arch(t), np.interp(np.asarray(t, float), th, ln)))  # noqa: E731
+    for _ in range(int(rc.get("passes", 3))):
+        cols, bad = [], set()
+        for sd, fr in frames.items():
+            rule = mean_ride(ref, footprint(ref, fr, cut(line), bot, t0, t1))
+            sk = nt.sink(ref, fr.pt(SS, TH, laws[sd](SS, TH)).reshape(-1, 3), rule, clips)[0].reshape(SS.shape)
+            col = np.zeros(len(th))
+            for j in range(len(th)):
+                rows = np.flatnonzero(own[:, j])
+                arm = rows[ss[rows] >= 0.0] if (ss[rows] >= 0.0).any() else rows
+                i = int(arm[np.argmin(sk[arm, j])])
+                if sk[i, j] > lim:
+                    bad.add(round(float(th[j]), 1))
+                while i > rows[0] and sk[i - 1, j] <= lim:
+                    i -= 1
+                col[j] = ss[i]
+            cols.append(col)
+            info[sd] = {"ride": rule, "raw_mm": (col / MM).round(1).tolist()}
+        raw = ndimage.maximum_filter1d(np.max(cols, axis=0), 3, mode="nearest")
+        line = np.maximum(arch(th), ndimage.gaussian_filter1d(raw, rc.get("ease", 1.0), mode="nearest") + rc.get("margin", 0.004))
+    at = []
+    for sd, fr in frames.items():
+        rule = mean_ride(ref, footprint(ref, fr, cut(line), bot, t0, t1))
+        at.append(nt.sink(ref, fr.pt(line, th, laws[sd](line, th)), rule, clips)[0])
+    return {"th": th, "line": line, "sink": ndimage.maximum_filter1d(np.max(at, axis=0), 3, mode="nearest"), "arch": arch(th),
+            "no_seat": sorted(bad), "sides": info}
+
+
+def reach_report(cfg, lay, by, rim_of, rules, ref, rep):
+    """The reach rule on what was BUILT: rep["reach"] (the line, the travel at it, each checked part's sink over the
+    clips), and the reasons the build fails (a plate past its line: its edge beyond it, or its edge zone sinking more
+    than the limit; a rigid extra part over the limit)."""
+    rc = (cfg.get("cop") or {}).get("reach")
+    if not rc:
+        return []
+    import native_travel as nt
+    R = next(iter(lay.values()))["reach"]
+    lim, clips, zone = rc["sink_max"], rc.get("clips", "all"), rc.get("zone", 0.012)
+    line = lambda t: np.interp(t, R["th"], R["line"])  # noqa: E731
+    mm = lambda v: [round(float(x) / MM, 1) for x in v]  # noqa: E731
+    out = rep["reach"] = {"limit_mm": lim / MM, "clips": clips, "theta": R["th"].round(1).tolist(), "line_mm": mm(R["line"]),
+                          "uncut_mm": mm(R["arch"]), "cut_mm_max": round(float((R["line"] - R["arch"]).max()) / MM, 1),
+                          "sink_at_line_mm": mm(R["sink"]), "no_seat_theta": R["no_seat"], "sides": {}, "past": []}
+    over = [f"no row of the cop under {lim / MM} mm at theta {t}" for t in R["no_seat"]]
+    for sd, L in lay.items():
+        fr, name = L["fr"], L["names"][0]
+        o = out["sides"][sd] = {"line_ride": R["sides"][sd]["ride"], "line_raw_mm": R["sides"][sd]["raw_mm"]}
+        P = np.vstack([by[name].P] + [by[r].P for r, h in rim_of.items() if h == name])
+        s, th, _ = fr.cyl(P)
+        edge = P[s < line(th) + zone]
+        q, n, _ = ref.closest(edge)
+        res = nt.past(ref, edge, rules[name]["bones"], lim, clips)
+        res.update({"edge_past_line_mm": round(float((line(th) - s).max()) / MM, 2),
+                    "rim_rest_standoff_mm": round(float(((edge - q) * n).sum(1).min()) / MM, 2)})
+        if rc.get("report_all", True) and clips != "all":
+            res["all_clips"] = nt.past(ref, edge, rules[name]["bones"], lim, "all")
+        o[name] = res
+        if res["past"] or res["edge_past_line_mm"] > 1.5:
+            over.append(f"{name}: its neck edge sinks {res['sink_mm']} mm into her (limit {lim / MM}) at {res['worst']}, "
+                        f"{res['edge_past_line_mm']} mm past its line")
+        for nm in L.get("extra_rules") or {}:
+            o[nm] = nt.past(ref, by[nm].P, rules[nm]["bones"], lim, clips)
+            if o[nm]["past"]:
+                over.append(f"{nm}: sinks {o[nm]['sink_mm']} mm into her (limit {lim / MM}) at {o[nm]['worst']}")
+    out["past"] = over
+    return over
+
+
+def yoke_names(sd):
+    """The yoke's parts of a side: its leather, its bound edge, the strap that hangs the cop, the strap's buckle."""
+    return [f"yoke_{sd}_cap", f"yokebind_{sd}_cap", f"yokestrap_{sd}_cap", f"yokebuckle_{sd}_cap"]
+
+
+def _sub(p, name, material, T):
+    used = np.zeros(len(p.P), bool)
+    used[T] = True
+    return Part(name, material, p.P[used], (np.cumsum(used) - 1)[T], p.uv0[used], p.uv1[used], p.col[used], p.N[used])
+
+
+def yoke_parts(cfg, L, sd, p, ref=None):
+    """ "arming.yoke" {"to", "power", "under", "strap" {"theta", "len", "tuck", "width", "thick", "buckle"}}: the
+    arming cap GROWN up her trapezius to the line s = `to` (an arch down to the cop's ends), as parts of the one
+    built sheet `p`: the arming cap as it was (under the plates), the YOKE (all of it above the cop's upper edge and
+    `under` in under that edge, materials.yoke: the leather's own colour step), its BOUND edge (the sheet's rolled
+    edge there, materials.binding), and with a body the STRAP that hangs the cop (from `len` up the yoke to `tuck`
+    under the cop's rim, materials.strap) and its BUCKLE (skinned too: a rigid buckle on its own skin's mean ride
+    sank 8-12 mm there, past the reach rule). None of these has a rule: they are skinned, they ride her skin. Nothing of hers is trimmed."""
+    am, mats = cfg["arming"], cfg.get("materials", {})
+    yk, fr, top, cop = am["yoke"], L["fr"], L["top"][0], L["sheets"][0]
+    n = yoke_names(sd)
+    s, th, _ = fr.cyl(p.P[p.T].mean(1))
+    up = s < top(np.clip(th, cop.t0, cop.t1)) + yk.get("under", 0.01)
+    roll = (p.col[p.T, 3] < 0.5).all(1)
+    out = [_sub(p, p.name, p.material, p.T[~up]), _sub(p, n[0], mats.get("yoke", "brownleather"), p.T[up & ~roll])]
+    if (up & roll).any():
+        out.append(_sub(p, n[1], mats.get("binding", p.material), p.T[up & roll]))
+    st = yk.get("strap")
+    if st and ref is not None:
+        t, a = st.get("theta", 100.0), float(top(np.array(st.get("theta", 100.0))))
+        ss = np.linspace(a - st.get("len", 0.035), a + st.get("tuck", 0.008), 12)
+        tt = np.full(len(ss), t)
+        leather = am.get("clear", 0.0012) + am.get("thick", 0.0012)
+        strap, _ = nb.skin_band(ref, fr.pt(ss, tt, L["arm_law"](ss, tt)), st.get("width", 0.016), st.get("thick", 0.0016), n[2],
+                                mats.get("strap", p.material), lift=leather + 0.0004)
+        out.append(strap)
+        sb = np.array(a - st.get("buckle", 0.014))
+        q, nq, _ = ref.closest(fr.pt(sb, np.array(t), L["arm_law"](sb, np.array(t)))[None])
+        c = q[0] + nq[0] * (leather + st.get("thick", 0.0016))
+        m = np.array([fr.hand, 1.0, 1.0])
+        b = nb.buckle(c * m, nq[0] * m, -fr.a * m, w=st.get("width", 0.016) + 0.007, h=0.015, name=n[3], material=mats.get("rim", mats.get("plate", "steel")))
+        if fr.hand < 0:
+            b.P, b.N, b.T = b.P * m, b.N * m, b.T[:, ::-1]
+        out.append(b)
     return out
 
 
@@ -527,7 +684,10 @@ def build_parts(cfg, lay, ref=None, rivets=True):
                 rims[rim.name] = name
         if sd in raw["arming"]:
             p = raw["arming"][sd]
-            parts.append(Part(p.name, p.material, p.P, p.T, p.uv0, p.uv1, p.col, p.N))
+            if (cfg.get("arming") or {}).get("yoke"):
+                parts += yoke_parts(cfg, L, sd, p, ref if rivets else None)
+            else:
+                parts.append(Part(p.name, p.material, p.P, p.T, p.uv0, p.uv1, p.col, p.N))
     return parts, rims
 
 
@@ -585,6 +745,10 @@ def spaulder(pid, cfg, out=None, ref=None, laws=None):
                                   "under_plates_mm": arming_room(L)}
     for rim, name in rim_of.items():
         rules[rim] = {"with": name}
+    for L in lay.values():      # (the yoke's buckle: a rigid part on its own skin's mean ride)
+        for name, rule in (L.get("extra_rules") or {}).items():
+            rules[name] = {**rule, "carry": lm.get("carry", "none")}
+    over = reach_report(cfg, lay, by, rim_of, rules, ref, rep)
     for sd in lay:
         for name in lay[sd]["names"]:
             rep["sides"][sd][name]["tris"] = int(len(by[name].T)) + int(sum(len(by[r].T) for r, h in rim_of.items() if h == name))
@@ -603,6 +767,11 @@ def spaulder(pid, cfg, out=None, ref=None, laws=None):
                                         "recipe": cfg["recipe"]}, "parts": rules})
     sj = {"id": pid, "slot": piece["slot"], "body_hash": ref.hashes.get("close"),
           "space": "glTF / Godot: Y up, metres, her_b's rest (native_build)", "sockets": sockets, "rims": rims, "fixings": []}
+    if over:     # (a plate past its line: no piece is written, the report says which and by how much)
+        d = out or os.path.join(nb.NATIVE, pid)
+        os.makedirs(d, exist_ok=True)
+        json.dump(rep, open(os.path.join(d, "build_report.json"), "w"), indent=1)
+        raise SystemExit("native_spaulder: past the reach rule's line (cop.reach): " + "; ".join(over))
     d = nb.write_piece(pid, piece, parts, sj, out)
     rep["dir"] = os.path.relpath(d, nb.REPO).replace("\\", "/")
     rep["tris"] = int(sum(len(p.T) for p in parts))
@@ -610,7 +779,8 @@ def spaulder(pid, cfg, out=None, ref=None, laws=None):
     # the play tier's mesh: the same faces at a coarse step, no rolled edges, walls or rivets
     pl = cfg.get("play") or {}
     lod, _ = build_parts(cfg, layout(cfg, ref, pl.get("step", 0.014), pl.get("step_s", 0.012), roll=False,
-                                     laws={sd: {"law": L["law"], "arm_law": L["arm_law"]} for sd, L in lay.items()}), ref, rivets=False)
+                                     laws={sd: {"law": L["law"], "arm_law": L["arm_law"], **({"reach": L["reach"]} if "reach" in L else {})}
+                                           for sd, L in lay.items()}), ref, rivets=False)
     import gear_native as gn
     gn.write_glb(os.path.join(d, f"{pid}.lod1.glb"), [p.node() for p in lod], {"native_build": {"piece": pid, "tier": "play"}})
     rep["play_tris"] = int(sum(len(p.T) for p in lod))
