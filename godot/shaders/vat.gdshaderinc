@@ -129,7 +129,7 @@ global uniform vec4 crowd_moon;
 #define CF_UP 0.2
 #define CF_AMB 0.006
 #define CF_TOP 0.85
-#define CF_TOP_OUT vec3(0.0074, 0.018, 0.051)
+#define CF_TOP_OUT vec3(0.02, 0.026, 0.038)   // (l25: a cool value step, was (0.0074, 0.018, 0.051) blue)
 #define CF_TOP_IN vec3(0.055, 0.018, 0.036)
 #define CF_RIM vec3(0.06, 0.36, 0.54)
 // (the warm step's tone, whole: target 09's L 0.49 h 32-36 orange-brown at level crowd_fire.x x crowd_fire.y = 0.35)
@@ -140,8 +140,8 @@ global uniform vec4 crowd_moon;
 #define CF_GOLD_PX 2.5
 #define CF_BODY_IN 0.5
 // (a violet lift on every face of the body, so its unlit side also stands over the floor and the moon's blue is calmed)
-#define CF_LIFT vec3(0.014, 0.009, 0.02)
-#define CF_WARM_ON vec2(0.3, 0.6)
+#define CF_LIFT vec3(0.013, 0.011, 0.011)   // (L1 l25 WORLD: neutral-warm, was violet (0.014, 0.009, 0.02): the lavender streaks)
+#define CF_WARM_ON vec2(0.15, 0.45)   // (l25: the warm side further out, was (0.3, 0.6))
 #define CF_RIM_GONE 0.35
 // (a silhouette edge c_px screen pixels wide from n.v and its screen derivative, on grazing faces only)
 float vat_edge_px(vec3 c_n, vec3 c_v, float c_px) {
