@@ -8,7 +8,7 @@ Brief: `tools/scratch/coordinator/briefs/M3_combat_lead1.md` + main's re-scope f
 **Next (MR 3, settled contract):** cuts 42 f at 60 fps, contact 14, cancel 22; heavy 54 / 20 / 30; release recovers in at most 18 f; grace 0.40 s; the grip's interval toward 0.70 s a cut with per-second damage and Resolve HELD (re-measure the bands after). Sim side only; view-side hunks go through main. One `su-lead-high` solver per narrow job with the facts inlined, runners for suites and measures.
 **Uncommitted on purpose:** the `.import`/`.uid` churn. Scratch `scratchpad\combat_m3\l9\` (in lead 9's session scratchpad: suite_tip.log, suite_merged.log, strip6b.py, shoot_vet2.out, planted_vet2min.txt; lead 8's scripts copied in).
 **Cost so far:** lead 9 ~75k; 3 runners 81k; $0 API.
-**MR READY combat-m3@SHA_PLACEHOLDER** (MR 2, systems only)
+**MR READY combat-m3@ed7de07a5** (MR 2, systems only; the branch tip is this line's own commit, one docs line later)
 
 ## M3 combat systems, lead 8 (combat-m3, 10 Nov small hours): HANDOFF READY at ~190k. MR 2 still open; suite GREEN 1746/0/10 at c0e479eb0 (NOT rerun on 61ae9cdd9); the veteran clip's fault found and fixed; the swing's arc scrapped once and half rebuilt; no clip to the owner, no judge
 Brief: `tools/scratch/coordinator/briefs/M3_combat_lead1.md` + main's re-scope (9 Nov): the bot's walk does NOT gate MR 2; every trace, run and shoot goes to a runner or solver; MR 3 goes to a successor. Lead 8 worked that way (8 helpers, own context on decisions).
