@@ -344,12 +344,17 @@ public partial class Minimap : Control
             drawn = clamp((drawn - vec3(0.275, 0.157, 0.055) * age) / (1.0 - age), 0.0, 1.0);
             return smoothstep(0.047, 0.054, (drawn.r - drawn.g) / max(drawn.r + drawn.g + drawn.b, 0.05));
         }
+        // (M4 lead 12: the lattice hash is sin-free: fract(sin(dot)*43758) turns a 1-ulp difference between two evaluations of the
+        // same lattice point (fma or not, 0.001 at args of 14000) into a 0.1 to 0.25 jump, so the warp tore along lattice lines)
+        float hash2(vec2 p) {
+            vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+            p3 += dot(p3, p3.yzx + 33.33);
+            return fract((p3.x + p3.y) * p3.z);
+        }
         float vnoise(vec2 p) {
             vec2 i0 = floor(p), f0 = fract(p);
             f0 = f0 * f0 * (3.0 - 2.0 * f0);
-            float h00 = fract(sin(dot(i0, vec2(127.1, 311.7))) * 43758.5453), h10 = fract(sin(dot(i0 + vec2(1.0, 0.0), vec2(127.1, 311.7))) * 43758.5453);
-            float h01 = fract(sin(dot(i0 + vec2(0.0, 1.0), vec2(127.1, 311.7))) * 43758.5453), h11 = fract(sin(dot(i0 + vec2(1.0, 1.0), vec2(127.1, 311.7))) * 43758.5453);
-            return mix(mix(h00, h10, f0.x), mix(h01, h11, f0.x), f0.y);
+            return mix(mix(hash2(i0), hash2(i0 + vec2(1.0, 0.0)), f0.x), mix(hash2(i0 + vec2(0.0, 1.0)), hash2(i0 + vec2(1.0, 1.0)), f0.x), f0.y);
         }
         void fragment() {
             vec2 d = UV - 0.5;
