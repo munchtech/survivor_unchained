@@ -10,8 +10,7 @@ Probes: `survivorsunchained_inputs/scratch_p1_notch/` (probe.py, neck.py, wjump.
   > 0.5 (y 1510-1544; the left the same). The neck region's delta alternates with it: 30-34 mm on the
   neck_01 points, 1-3 mm on the spine_04 points (share 1.00, core, not stiff; neck relax on = off, cf = cr).
 - Numbers, box of 179 edges, max dihedral / edges over 45: @6 published 153/26, composed 136/22, girdles only 147/27;
-  @9 published 148/5, composed 124/17, neck only 137/15 (the neck region adds 12 on @9); @12 pub 77/4 -> 35/0;
-  iron_vow@72:l 68/8 -> 18/0; cast_bolt@3, add0 flat.
+  @9 published 148/5, composed 124/17, neck only 137/15 (the neck region adds 12 on @9); @12 pub 77/4 -> 35/0; iron_vow@72:l 68/8 -> 18/0.
 - Since when: not fair_a (on = off to the degree), not the map (map_off = on), not the neck relax (stretch rule, never
   fires: the edges are folded, not stretched), not a girdle border (girdle_r share 1.00 both ends). Not in A (own mesh).
 - Cure: fix at the source: a weight relax on B's published skin where one bone chain's weight jumps > 0.5 between
@@ -24,8 +23,7 @@ Probes: `survivorsunchained_inputs/scratch_p1_notch/` (probe.py, neck.py, wjump.
   5889-8236 177 / -126 / 177 / -51 (10); 5889-8237 173 / 74 / 173 / 69; 5890-8237 -159 / -90; 5722-5723 -153 / -47;
   5664-5723 135 / -54; 5831-5891 -133 / -44; 5772-5832 -114 / -28. girdle_l share 1.00, delta 31-61 mm; neck share
   0.16-0.84 with 0.0 delta (no border). Box over 45: on 74, off 121, map_off 72, pub 134; flips on 84 / off 124.
-- So fair_a halves the count but makes a short line of near-folded edges (135-177) at the cap front where it was
-  47-126: the faired patch's ring meeting the unfaired crumple (the fair's edge, the step). map only touches 5664-5665.
+- So fair_a halves the count but makes a short line of near-folded edges (135-177) at the cap front where it was 47-126: the faired patch's ring meeting the unfaired crumple (the fair's edge, the step). map only touches 5664-5665.
 - Cure: in fair_a, blend the faired offset out over the soft rings by fold severity, or grow the patch (`grow` 1 -> 2,
   `rings` 3 -> 4) until the seed core is inside; or seed on the posed dihedral excess, not only > 45. Size: a keyword
   sweep first (small); if the core still folds, a solver job on the core's fairing (alpha_core 0.02).
