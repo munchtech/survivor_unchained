@@ -604,8 +604,10 @@ public partial class Socket : Control
                 // (fix A, 5: under a wait number the glyph cools to a quarter, so the number is the one thing read; M4 lead 9:
                 // in every other waiting frame, a fast cycle, a brief wait, a held key, it stays at 80% of lit)
                 bool num = Numbered;
-                var tone = num ? Colors.White.Lerp(new Color(0.66f, 0.60f, 0.52f), (float)cool) : Colors.White;
-                DrawTextureRect(gold, gr, false, (tone * Colors.White.Lerp(school, 0.10f)) with { A = num ? 0.25f : 1f - 0.2f * (float)cool });
+                // (M4 lead 10: short of its cost and not held, the glyph goes dull bronze at 60%: "not yet")
+                bool short_ = !num && CostShort && !st.Held;
+                var tone = (num || short_) ? Colors.White.Lerp(new Color(0.66f, 0.60f, 0.52f), (float)cool) : Colors.White;
+                DrawTextureRect(gold, gr, false, (tone * Colors.White.Lerp(school, 0.10f)) with { A = num ? 0.25f : 1f - (short_ ? 0.40f : 0.2f) * (float)cool });
             }
             else if (art != null)
             {
