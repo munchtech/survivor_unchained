@@ -35,6 +35,8 @@ public sealed class RunMeasures
     public double LowLife = 1;
     public Dictionary<string, double> Taken = new();
     public double Minutes;
+    /// <summary>(M3 MR 3) The grip's column (Sim/GripMeter.cs): holds, the median hold, the share held, blows, damage and Resolve built.</summary>
+    public string Grip = "";
 
     /// <summary>The run line's columns.</summary>
     public string Line() =>
@@ -45,7 +47,7 @@ public sealed class RunMeasures
         (Falls.Count > 0 ? $" falls [{string.Join("; ", Falls)}]" : "") +
         $" low {LowLife:0.00} taken {string.Join(",", Taken.Where(kv => kv.Key[0] is not ('#' or '+')).OrderByDescending(kv => kv.Value).Take(6).Select(kv => kv.Key + ":" + kv.Value.ToString("0.0")))}" +
         $" healed {string.Join(",", Taken.Where(kv => kv.Key[0] == '+').OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key[1..] + ":" + kv.Value.ToString("0.0")))}" +
-        $" kit {string.Join(",", Taken.Where(kv => kv.Key[0] == '#').OrderBy(kv => kv.Key).Select(kv => kv.Key[1..].Replace("caught ", "c.").Replace("missed ", "m.") + ":" + kv.Value.ToString("0")))}";
+        $" kit {string.Join(",", Taken.Where(kv => kv.Key[0] == '#').OrderBy(kv => kv.Key).Select(kv => kv.Key[1..].Replace("caught ", "c.").Replace("missed ", "m.") + ":" + kv.Value.ToString("0")))}" + (Grip.Length > 0 ? " " + Grip : "");
 
     static double Med(IEnumerable<double> xs) { var a = xs.Where(x => !double.IsNaN(x)).OrderBy(x => x).ToList(); return a.Count == 0 ? double.NaN : a[a.Count / 2]; }
     static string F(double x, string f = "0") => double.IsNaN(x) ? "-" : x.ToString(f);
@@ -71,6 +73,7 @@ public sealed class RunMeter
 {
     readonly List<double> marksOn = new();
     double fullSec, playSec, fightSec;
+    readonly GripMeter grip = new();
     // (round 2: the last seconds before a fall)
     readonly Queue<(double T, string What)> recent = new();
     readonly Queue<(double T, double Life)> life = new();
@@ -99,6 +102,7 @@ public sealed class RunMeter
         playSec += dt;
         if (fight) fightSec += dt;
         if (b.Resolve.On && b.Resolve.Value >= b.Resolve.Max) fullSec += dt;
+        if (b.Campaign && fight) grip.Step(b, dt, evs as IReadOnlyList<CombatEvent> ?? evs.ToList());
         foreach (var ev in evs)
         {
             if (ev is Ev.Telegraph { Hostile: true, Phase: TellPhase.Warn } tg && ArenaSim.Covers(tg, p.X, p.Z, p.Radius)) { marksOn.Add(fightSec); recent.Enqueue((t, "mark")); }
@@ -150,6 +154,7 @@ public sealed class RunMeter
         }
         double min = Math.Max(1e-6, playSec / 60);
         m.Minutes = playSec / 60;
+        if (b.Campaign) m.Grip = grip.Line(fightSec, b.Time);
         m.ResolveSpentPerMin = b.Resolve.Spent / min;
         m.ResolveFullPct = 100 * fullSec / Math.Max(1e-6, playSec);
         if (hands != null) foreach (var (k, v) in hands.Presses) m.PressesPerMin[k] = v / min;
