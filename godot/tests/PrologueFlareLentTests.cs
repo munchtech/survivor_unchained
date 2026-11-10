@@ -172,7 +172,7 @@ public class PrologueFlareLentTests
     [Fact]
     public void Sb_dawn_is_one_plate_over_the_dawn_line()
     {
-        var f = StoryFile.Load("sb_dawn");
+        var f = StoryFile.Load("sb_dawn")!;
         Assert.Empty(f.Problems());
         Assert.Equal("sb_stay_where_they_reach", f.Conversation);
         var plate = Assert.Single(f.Plates);

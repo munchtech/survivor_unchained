@@ -475,7 +475,6 @@ public sealed partial class Prologue : ZoneRuntime
         if (B == null) return;
         var p = B.Player;
         KnightWatch();
-        if (B.FlareGreatsHeld && (G.Taught("art") || Now >= Stage.ToFord)) B.FlareGreatsHeld = false;
         // A1-A4b (TUTORIAL_COPY.md, M6): the Low Ford teaches the ARPG's hands. Each is asked every frame its moment holds;
         // the Teacher shows it once a profile, never inside a cinematic, a narrated line or an open screen.
         ArpgCallouts(p);
@@ -1317,7 +1316,7 @@ public sealed partial class Prologue : ZoneRuntime
         caller = B.SpawnEnemy("grave_caller", barrow.X - 3, barrow.Z, new Battle.SpawnOpts { Level = 2, Tag = "caller", Elite = true, Home = home, Wake = BarrowWake });
         if (caller != null) night?.Crown(caller, "caller");
         // It can't fall before F8 has pointed at it (or a while has passed): the art is taught on it.
-        if (!G.Taught("raiser")) { caller.HpFloor = caller.MaxHp * 0.2; callerAt = B.Time; }
+        if (caller != null && !G.Taught("raiser")) { caller.HpFloor = caller.MaxHp * 0.2; callerAt = B.Time; }
         for (int i = 0; i < 5; i++)
         {
             double a = i / 5.0 * Math.PI * 2;
@@ -1693,12 +1692,19 @@ public sealed partial class Prologue : ZoneRuntime
             shown.Add("grimGone");
             Taken();
         }
-        if (cutT > 13)
+        // A12, the dawn page, on the in-play path as on the film's (HeartGone): after the heart is gone, before the
+        // dawn; it takes the Flare, and its banner shows as play resumes (C04 A, if it plays later, does not repeat it).
+        if (cutT > 13 && shown.Add("dawnPage"))
         {
             G.Showcase(null);
             G.Capture(false);
-            dawnK = 0;
-            Dawnbreak();
+            G.Storybook("sb_dawn", () =>
+            {
+                TakeFlare();
+                dawnK = 0;
+                Dawnbreak();
+                if (!Draft) FlareOutBanner();
+            });
         }
     }
 
@@ -1855,8 +1861,14 @@ public sealed partial class Prologue : ZoneRuntime
     }
 
     /// <summary>As play resumes at dawn: the Flare's banner (TUTORIAL_COPY.md "The dawn page").</summary>
-    void FlareOutBanner() =>
+    void FlareOutBanner()
+    {
+        if (flareBannerShown) return;
+        flareBannerShown = true;
         G.Announce(new Announcement("The Flare goes out", "Lent for the night. It burns again at the Waystation's lamp.", "boon", 4.5));
+    }
+
+    bool flareBannerShown;
 
     /// <summary>The nearest of his lit lamps to her (A11b's world point).</summary>
     IReadOnlyList<(double X, double Y, double Z)> NearestLitLamp()
@@ -1940,8 +1952,8 @@ public sealed partial class Prologue : ZoneRuntime
         }, new Held { Forearm = "shield_round" }, man.X, man.Z, 2.2, "Death_A");
         if (Draft) G.SetDraftTip(DraftTip);
         startWeapons = b.Weapons.Count;
-        // (no great blessing offers to grow a Flare she hasn't met: F8 teaches it, au1 item 3)
-        b.FlareGreatsHeld = !G.Taught("art");
+        // (M6: no hold on the Flare's great blessings: LevelUp offers them only with a Flare, and she has none till it
+        // is lent at C02's hand-back)
         // (M6, TUTORIAL_COPY.md A11b/A12/A14) The Flare is lent: none on the road, the ember's at C02's hand-back
         // (LendFlare), taken at the dawn page (FlareOut), lit for good at the Waystation's lamp. A save past the
         // prologue keeps hers.

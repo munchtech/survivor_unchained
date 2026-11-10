@@ -192,7 +192,7 @@ public class PrologueArpgTeachTests
         Assert.True(s.Zone.Sprung);
         for (int i = 0; i < 300 && !s.Host.Asked.Any(c => c.Id == "dash"); i++)
         {
-            if (s.Zone.Night!.Standing("n_cart").FirstOrDefault(e => e.Def.Id == "risen_warrior") is { } w) Stand(s, w.X + 1.2, w.Z);
+            if (s.Zone.Night!.Standing("n_cart").FirstOrDefault(e => e.Def.Id == "risen_warrior") is { } w) Stand(s, w.X + 5, w.Z);
             Run(s, 0.1);
         }
         var c = Offered(s, "dash");
