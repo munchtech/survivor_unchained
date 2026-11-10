@@ -236,8 +236,9 @@ public sealed partial class Battle
 
     /* ------------------------------------------------------------- on a hit -- */
 
-    /// <summary>What her Hand does as a blow lands (after its damage; before procs see it).</summary>
-    void HandOnHit(Enemy e, in HitOpts o, bool heavy)
+    /// <summary>What her Hand does as a blow lands (after its damage; before procs see it). cw: the hit's weight as
+    /// HitEnemy read it (a projectile's stamp, else the cast's CutW): one read, never a second of the weapon's live CutW.</summary>
+    void HandOnHit(Enemy e, in HitOpts o, bool heavy, double cw)
     {
         if (heavy) HandHeavy(e);
         switch (HandKindNow())
@@ -248,7 +249,7 @@ public sealed partial class Battle
                 else if (heavy && (e.Elite || e.Boss) && o.Weapon is { } hw && !o.Summon && HandRule("hand.warden.heavy_stone")) HandStone(e, hw);
                 break;
             case 2:
-                if (!o.Dot && !o.Summon && (o.Weapon != null || o.Projectile)) HandReaverHit(e, o.Weapon?.CutW ?? 1);
+                if (!o.Dot && !o.Summon && (o.Weapon != null || o.Projectile)) HandReaverHit(e, cw);
                 break;
         }
     }

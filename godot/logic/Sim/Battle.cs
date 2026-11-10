@@ -1053,7 +1053,7 @@ public sealed partial class Battle
         ReaverOnHit(e, o);
         ArcanistOnHit(e, school, tags, o, dmg);
         StalkerOnHit(e, o, dmg);
-        if (heavy || HandKindNow() != 0) HandOnHit(e, o, heavy);
+        if (heavy || HandKindNow() != 0) HandOnHit(e, o, heavy, cw);
         if (Lamps.Board) BoardOnHit(e, school, tags, o, dmg, heavy, crit);
         if (handTrue && crit) { HandTrues++; HandEv(HandKind.True, e.X, e.Z, e.Id); if (Lamps.Board) HandSecondWind(); }
         FlareOnHit(e, o, dmg);
@@ -2349,7 +2349,7 @@ public sealed partial class Battle
         if (pr.Heal != 0) HealPlayer(pr.Heal, "weapon", true);
         pr.HitCount++;
         ArcanistOnProjectileHit(pr, e, weapon);
-        if (pr.Splash > 0) Explode(pr.X, pr.Z, pr.Splash, pr.Damage * 0.75, pr.School, pr.Tags, weapon, pr.Depth, e.Id);
+        if (pr.Splash > 0) Explode(pr.X, pr.Z, pr.Splash, pr.Damage * 0.75, pr.School, pr.Tags, weapon, pr.Depth, e.Id, pr.W);
         if (pr.GroundOnHit is { } g)
         {
             var zn = SpawnZone(Side.Player, pr.X, pr.Z, g.Radius * Stats.Get(Stat.Area), g.Duration, pr.Damage * g.DpsPct, pr.School);
@@ -2365,7 +2365,7 @@ public sealed partial class Battle
                 if (c == null) continue;
                 c.Y = pr.Y; c.Vx = Math.Cos(a) * sp; c.Vz = Math.Sin(a) * sp; c.Speed = sp; c.Tags = pr.Tags; c.Radius = pr.Radius * 0.7;
                 c.Pierce = 0; c.Life = 0.9; c.Homing = Math.Max(pr.Homing, 3); c.Weapon = pr.Weapon; c.Art = pr.Art; c.Status = pr.Status;
-                c.Depth = pr.Depth + 1; c.Rank = pr.Rank;
+                c.Depth = pr.Depth + 1; c.Rank = pr.Rank; c.W = pr.W;
                 c.AimAlongVelocity();
                 c.Hits.Add(e.Id); c.HitTimes.Add(Time);
             }
@@ -2415,12 +2415,13 @@ public sealed partial class Battle
             }
         }
         else if (pr.Splash > 0 && hitWall && pr.Owner == Side.Player)
-            Explode(pr.X, pr.Z, pr.Splash, pr.Damage * 0.75, pr.School, pr.Tags, null, pr.Depth, -1);
+            Explode(pr.X, pr.Z, pr.Splash, pr.Damage * 0.75, pr.School, pr.Tags, null, pr.Depth, -1, pr.W);
         Projectiles.Release(pr);
     }
 
-    /// <summary>An area blast from the survivor's side. Raises Explode for procs.</summary>
-    public void Explode(double x, double z, double r, double dmg, School school, Tag[] tags, WeaponInst? weapon, int depth = 0, int skip = -1)
+    /// <summary>An area blast from the survivor's side. Raises Explode for procs. w: the weight of a blast that goes
+    /// off after its cast (a projectile's splash carries its stamp, HitOpts.W); null: the weapon's live CutW.</summary>
+    public void Explode(double x, double z, double r, double dmg, School school, Tag[] tags, WeaponInst? weapon, int depth = 0, int skip = -1, double? w = null)
     {
         Events.Emit(new Ev.Explosion { X = x, Z = z, Radius = r, School = school, Power = Math.Min(2, dmg / 40), Art = weapon?.Art, Rank = weapon?.Rank ?? 0 });
         var t2 = tags.Has(Tag.Explosion) ? tags : [.. tags, Tag.Explosion];
@@ -2430,7 +2431,7 @@ public sealed partial class Battle
         {
             if (e.Id == skip) return;
             double dd = d == 0 ? 1 : d;
-            HitEnemy(e, dmg, school, t2, new HitOpts { Weapon = weapon, Knockback = 0.5, DirX = (e.X - x) / dd, DirZ = (e.Z - z) / dd, Depth = depth + 1, Status = status });
+            HitEnemy(e, dmg, school, t2, new HitOpts { Weapon = weapon, W = w, Knockback = 0.5, DirX = (e.X - x) / dd, DirZ = (e.Z - z) / dd, Depth = depth + 1, Status = status });
         });
         foreach (var c in Collision.Within(x, z, r)) if (c.Tag != null) Hooks.OnHitProp?.Invoke(c.Tag, c.Id, school, dmg, x, z);
         if (depth < 3) Fire(TriggerEvent.Explode, new ProcCtx { X = x, Z = z, Damage = dmg, School = school, Tags = t2, Depth = depth + 1 });
