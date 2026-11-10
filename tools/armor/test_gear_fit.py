@@ -378,3 +378,42 @@ def test_standoff_floor_rest_min(tmp_path, monkeypatch):
     f = _gf.standoff_floor(bd, ms, ev, str(fp))
     assert np.allclose(f[[0, 1, 3]], [0.008, 0.001, 0.001]) and np.isnan(f[2])
 
+
+def test_rim_rides_its_plate(tmp_path, monkeypatch):
+    """A small rigid group lying along a larger one (a plate's rim) pairs with it by geometry at the authored rest and
+    joins its group; a plate hanging below does not; the roles file's keys switch a slot off or name / free a pair."""
+    import json as _json
+
+    def grid(x0, x1, z0, z1, y, n):
+        xs, zs = np.meshgrid(np.linspace(x0, x1, n), np.linspace(z0, z1, n), indexing="ij")
+        P = np.c_[xs.ravel(), np.full(n * n, y), zs.ravel()]
+        q = np.array([[i * n + j, (i + 1) * n + j, i * n + j + 1] for i in range(n - 1) for j in range(n - 1)]
+                     + [[(i + 1) * n + j, (i + 1) * n + j + 1, i * n + j + 1] for i in range(n - 1) for j in range(n - 1)])
+        return P, q
+    parts = [grid(0.0, 0.10, 0.0, 0.10, 1.50, 11),      # 0: the plate, 100 x 100 mm
+             grid(0.0, 0.10, 0.0, 0.02, 1.499, 11),     # 1: its rim, a strip 1 mm under one edge (area x0.2)
+             grid(0.0, 0.07, 0.0, 0.07, 1.485, 11)]     # 2: a lame 15 mm below (area x0.49, far)
+    X = np.vstack([p for p, _ in parts])
+    T = np.vstack([q + 121 * k for k, (_, q) in enumerate(parts)])
+    comp = np.repeat(np.arange(3), 121)
+    lead = np.arange(3)
+    pairs = gf.rim_pairs(X, T, comp)
+    assert list(pairs) == [1] and pairs[1][0] == 0 and abs(pairs[1][2] - 1.0) < 0.01 and abs(pairs[1][4] - 0.2) < 1e-6
+    assert gf.rim_pairs(X, T, comp, ratio=0.1) == {} and gf.rim_pairs(X, T, comp, near_m=0.0005) == {}
+    assert gf.rim_leads(lead, pairs).tolist() == [0, 0, 2] and gf.rim_leads(lead, {}) is lead
+
+    class _Bd:
+        id, meta, z = "u", {"row": {"slot": "pauldrons"}}, {}
+    ms = [{"i": 0, "node": "n0", "tier": "close"}]
+    for roles, want in (({}, {1: 0}), ({"slots": {"pauldrons": {"rims": False}}}, {}),
+                        ({"rims": {"ratio": 0.1}}, {}), ({"rim_of": {"u": {"close/1": None, "close/2": 0}}}, {2: 0}),
+                        ({"slots": {"pauldrons": {"rims": {"near_mm": 20, "share": 0.5}}}}, {1: 0, 2: 0})):
+        rp = tmp_path / f"roles{len(_json.dumps(roles))}.json"
+        rp.write_text(_json.dumps(roles))
+        monkeypatch.setenv("GEAR_ROLES", str(rp))
+        got = gf.rim_hosts(_Bd, ms, X, comp, lead, T=T)
+        assert {a: v[0] for a, v in got.items()} == want, roles
+
+    class _Native:
+        id, meta, z = "u", {"kind": "native", "row": {"slot": "pauldrons"}}, {}
+    assert gf.rim_hosts(_Native, ms, X, comp, lead, T=T) == {}
