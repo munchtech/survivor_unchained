@@ -26,7 +26,10 @@ public static class HeroNormals
     static int nDump; static double tFirst = -1, tLast; static double msStall; static readonly object tLock = new();
     static readonly Dictionary<ulong, ArrayMesh?> made = new();
     static readonly HashSet<ulong> outs = new();
-    static readonly Dictionary<ulong, (ArrayMesh Src, Godot.Collections.Array[] Arr, Task<(float[][][]? Out, float Ms)> Job)> jobs = new();
+    static readonly Dictionary<ulong, Task<(ArrayMesh? Copy, float Ms, float CopyMs, int Verts)>> jobs = new();
+    static readonly List<MeshInstance3D> hidden = new(); static readonly HashSet<ulong> hiddenIds = new(); static double msHeld;
+    /// <summary>(BAKE) A mesh waiting for its bake is not drawn (server visibility only; the node is untouched), so she never shows raw normals.</summary>
+    static void Hide(MeshInstance3D mi) { if (hiddenIds.Add(mi.GetInstanceId())) { hidden.Add(mi); RenderingServer.InstanceSetVisible(mi.GetInstance(), false); } }
     static readonly List<MeshInstance3D> waiting = new();
     static readonly List<MeshInstance3D> early = new();   // visited before the radius was set: baked when it is (Step)
     static readonly HashSet<ulong> earlyIds = new();
@@ -40,17 +43,18 @@ public static class HeroNormals
         ulong id = am.GetInstanceId();
         if (outs.Contains(id)) return;
         if (made.TryGetValue(id, out var copy)) { if (copy != null) mi.Mesh = copy; return; }
-        if (jobs.ContainsKey(id)) { if (!waiting.Contains(mi)) waiting.Add(mi); return; }
+        if (jobs.ContainsKey(id)) { if (!waiting.Contains(mi)) waiting.Add(mi); Hide(mi); return; }
+        var vt = System.Diagnostics.Stopwatch.StartNew();
         int n = am.GetSurfaceCount();
         var arr = new Godot.Collections.Array[n];
         for (int s = 0; s < n; s++)
         {
             if (mi.GetActiveMaterial(s) is ShaderMaterial { Shader: { } sh } && sh.ResourcePath.Contains("heroine_hair")) { made[id] = null; return; }
             if (am.SurfaceGetPrimitiveType(s) != Mesh.PrimitiveType.Triangles) { made[id] = null; return; }
-            arr[s] = am.SurfaceGetArrays(s);
-            if (arr[s][(int)Mesh.ArrayType.Custom0].VariantType != Variant.Type.Nil)
+            long fm = (long)am.SurfaceGetFormat(s);   // (BAKE: the format, not the arrays: the read itself is the worker's)
+            if ((fm & (long)Mesh.ArrayFormat.FormatCustom0) != 0)
             { made[id] = null; nLeft++; GD.Print($"hero normals: {mi.Name} left as is (a CUSTOM0 of its own on surface {s})"); return; }
-            if (arr[s][(int)Mesh.ArrayType.Tangent].VariantType == Variant.Type.Nil && am.GetBlendShapeCount() > 0)
+            if ((fm & (long)Mesh.ArrayFormat.FormatTangent) == 0 && am.GetBlendShapeCount() > 0)
             { made[id] = null; nLeft++; GD.Print($"hero normals: {mi.Name} left as is (blend shapes without tangents on surface {s})"); return; }
         }
         // (BAKE, lead 24) only a mesh whose shader reads the bake: FxAfter's depth-only twins, eyes, teeth, lashes skip
@@ -58,17 +62,15 @@ public static class HeroNormals
         bool reads = false;
         for (int s = 0; s < n && !reads; s++) reads = mi.GetActiveMaterial(s) is ShaderMaterial { Shader: { } sh2 } && ReadsBake(sh2);
         if (!reads) return;
-        var P = new Vector3[n][]; var N = new Vector3[n][]; var T = new float[]?[n]; var I = new int[n][];
-        for (int s = 0; s < n; s++)
-        {
-            P[s] = arr[s][(int)Mesh.ArrayType.Vertex].AsVector3Array();
-            N[s] = arr[s][(int)Mesh.ArrayType.Normal].AsVector3Array();
-            T[s] = arr[s][(int)Mesh.ArrayType.Tangent].VariantType == Variant.Type.Nil ? null! : arr[s][(int)Mesh.ArrayType.Tangent].AsFloat32Array();
-            var iv = arr[s][(int)Mesh.ArrayType.Index];
-            I[s] = iv.VariantType == Variant.Type.Nil ? System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Range(0, P[s].Length)) : iv.AsInt32Array();
-        }
+        // (BAKE) the copy's inputs read here (the main thread); the conversion, the bake and the copy itself run on a worker
+        int nShapes = am.GetBlendShapeCount(); var shapeNames = new StringName[nShapes];
+        for (int k = 0; k < nShapes; k++) shapeNames[k] = am.GetBlendShapeName(k);
+        var bsa = new Godot.Collections.Array<Godot.Collections.Array>[n]; var smat = new Material[n]; var snm = new string[n]; var sfm = new long[n];
+        for (int s = 0; s < n; s++) { bsa[s] = nShapes > 0 ? am.SurfaceGetBlendShapeArrays(s) : new Godot.Collections.Array<Godot.Collections.Array>(); smat[s] = am.SurfaceGetMaterial(s); snm[s] = am.SurfaceGetName(s); sfm[s] = (long)am.SurfaceGetFormat(s); }
+        var mode = am.BlendShapeMode; var aabb = am.CustomAabb; var shadowMesh = am.ShadowMesh; var rname = am.ResourceName;
         float r = Radius;
         if (!wall.IsRunning) wall.Start();
+        if (hidden.Count == 0) msHeld = wall.Elapsed.TotalMilliseconds;
         if (mi.Name.ToString().StartsWith("her_merge")) nMerged++;
         string? dumpTo = null;
         if (!string.IsNullOrEmpty(Dump))
@@ -80,14 +82,56 @@ public static class HeroNormals
             System.IO.Directory.CreateDirectory(Dump);
             System.IO.File.WriteAllText(dumpTo + ".txt", $"{mi.Name} scale {sc.X:0.####},{sc.Y:0.####},{sc.Z:0.####}\n" + string.Join("\n", mats) + "\n");
         }
-        jobs[id] = (am, arr, Task.Run(() =>
+        jobs[id] = Task.Run(() =>
         {
             double t0 = wall.Elapsed.TotalMilliseconds;
-            var sw = System.Diagnostics.Stopwatch.StartNew(); var o = Bake(P, N, T, I, r, dumpTo); float ms = (float)sw.Elapsed.TotalMilliseconds;
+            for (int s = 0; s < n; s++) arr[s] = am.SurfaceGetArrays(s);   // (BAKE: off the main thread; the server serves it)
+            var P = new Vector3[n][]; var N = new Vector3[n][]; var T = new float[]?[n]; var I = new int[n][];
+            for (int s = 0; s < n; s++)
+            {
+                P[s] = arr[s][(int)Mesh.ArrayType.Vertex].AsVector3Array();
+                N[s] = arr[s][(int)Mesh.ArrayType.Normal].AsVector3Array();
+                T[s] = arr[s][(int)Mesh.ArrayType.Tangent].VariantType == Variant.Type.Nil ? null! : arr[s][(int)Mesh.ArrayType.Tangent].AsFloat32Array();
+                var iv = arr[s][(int)Mesh.ArrayType.Index];
+                I[s] = iv.VariantType == Variant.Type.Nil ? System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Range(0, P[s].Length)) : iv.AsInt32Array();
+            }
+            var sw = System.Diagnostics.Stopwatch.StartNew(); var cs = Bake(P, N, T, I, r, dumpTo); float ms = (float)sw.Elapsed.TotalMilliseconds;
+            ArrayMesh? copy = null; float cms = 0; int verts = 0;
+            if (cs != null)
+            {
+                var ct = System.Diagnostics.Stopwatch.StartNew();
+                copy = new ArrayMesh { BlendShapeMode = mode, CustomAabb = aabb, ShadowMesh = shadowMesh, ResourceName = rname };
+                foreach (var sn in shapeNames) copy.AddBlendShape(sn);
+                for (int s = 0; s < n; s++)
+                {
+                    arr[s][(int)Mesh.ArrayType.Custom0] = cs[s][0];
+                    if (cs[s][1] is { } ft) arr[s][(int)Mesh.ArrayType.Tangent] = ft;   // (a mesh without tangents: the frame's own fallback)
+                    verts += cs[s][0].Length / 4;
+                    long keep = sfm[s] & ((long)Mesh.ArrayFormat.FlagUse8BoneWeights | (0xFFFL << (int)Mesh.ArrayFormat.FormatCustom0Shift));
+                    keep &= ~((long)Mesh.ArrayFormat.FormatCustomMask << (int)Mesh.ArrayFormat.FormatCustom0Shift);
+                    keep |= (long)Mesh.ArrayCustomFormat.RgbaFloat << (int)Mesh.ArrayFormat.FormatCustom0Shift;
+                    copy.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arr[s], bsa[s], null, (Mesh.ArrayFormat)keep);
+                    copy.SurfaceSetMaterial(s, smat[s]);
+                    copy.SurfaceSetName(s, snm[s]);
+                }
+                cms = (float)ct.Elapsed.TotalMilliseconds;
+            }
             lock (tLock) { if (tFirst < 0 || t0 < tFirst) tFirst = t0; tLast = Math.Max(tLast, wall.Elapsed.TotalMilliseconds); }
-            return (o, ms);
-        }));
+            return (copy, ms, cms, verts);
+        });
+        Hide(mi);
         waiting.Add(mi);
+        msVisit += vt.Elapsed.TotalMilliseconds; Frame(vt.Elapsed.TotalMilliseconds);
+    }
+
+    // (BAKE) the main thread's ms on the bake, per process frame: the bound is no frame over 8 ms
+    static ulong lastTick; static double gapMax;   // (BAKE: the longest real frame interval while a bake is pending, every cost on the main thread included)
+    static double msVisit, msCopy, msFrameNow, msFrameMax; static ulong frameNow;
+    static void Frame(double ms)
+    {
+        ulong f = Engine.GetProcessFrames();
+        if (f != frameNow) { frameNow = f; msFrameNow = 0; }
+        msFrameNow += ms; msFrameMax = Math.Max(msFrameMax, msFrameNow);
     }
 
     static readonly Dictionary<ulong, bool> readsBake = new();
@@ -119,50 +163,35 @@ public static class HeroNormals
             foreach (var mi in e) if (GodotObject.IsInstanceValid(mi)) Visit(mi);
         }
         if (jobs.Count == 0) return;
-        // (NORM2) every bake is done before the frame that shows her: the Gaussian bake takes tens of ms, so wait for it
+        ulong now = Time.GetTicksUsec(); if (lastTick != 0 && hidden.Count > 0) gapMax = Math.Max(gapMax, (now - lastTick) / 1000.0); lastTick = now;
+        // (BAKE) never wait: a finished job's copy is worn; its meshes stay hidden until every pending bake is in
         var st = System.Diagnostics.Stopwatch.StartNew();
-        var all = new List<Task>(); foreach (var j in jobs.Values) all.Add(j.Job);
-        try { Task.WaitAll(all.ToArray()); } catch (AggregateException) { }
         int done = 0;
         foreach (var id in new List<ulong>(jobs.Keys))
         {
-            var (src, arr, job) = jobs[id];
+            var job = jobs[id];
             if (!job.IsCompleted) continue;
             jobs.Remove(id); done++;
             ArrayMesh? copy = null;
-            if (job.Status != TaskStatus.RanToCompletion) GD.PushError($"hero normals: {src.ResourceName} bake failed: {job.Exception?.GetBaseException().Message}");
-            if (job.Status == TaskStatus.RanToCompletion && job.Result.Out is { } cs && GodotObject.IsInstanceValid(src))
-            {
-                msBake += job.Result.Ms;
-                copy = new ArrayMesh { BlendShapeMode = src.BlendShapeMode, CustomAabb = src.CustomAabb, ShadowMesh = src.ShadowMesh, ResourceName = src.ResourceName };
-                bool shapes = src.GetBlendShapeCount() > 0;
-                if (shapes) for (int k = 0; k < src.GetBlendShapeCount(); k++) copy.AddBlendShape(src.GetBlendShapeName(k));
-                for (int s = 0; s < arr.Length; s++)
-                {
-                    arr[s][(int)Mesh.ArrayType.Custom0] = cs[s][0];
-                    if (cs[s][1] is { } ft) arr[s][(int)Mesh.ArrayType.Tangent] = ft;   // (a mesh without tangents: the frame's own fallback)
-                    nVerts += cs[s][0].Length / 4;
-                    long keep = (long)src.SurfaceGetFormat(s) & ((long)Mesh.ArrayFormat.FlagUse8BoneWeights | (0xFFFL << (int)Mesh.ArrayFormat.FormatCustom0Shift));
-                    keep &= ~((long)Mesh.ArrayFormat.FormatCustomMask << (int)Mesh.ArrayFormat.FormatCustom0Shift);
-                    keep |= (long)Mesh.ArrayCustomFormat.RgbaFloat << (int)Mesh.ArrayFormat.FormatCustom0Shift;
-                    copy.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arr[s], shapes ? src.SurfaceGetBlendShapeArrays(s) : new Godot.Collections.Array<Godot.Collections.Array>(), null, (Mesh.ArrayFormat)keep);
-                    copy.SurfaceSetMaterial(s, src.SurfaceGetMaterial(s));
-                    copy.SurfaceSetName(s, src.SurfaceGetName(s));
-                }
-                outs.Add(copy.GetInstanceId());
-                nBaked++;
-            }
+            if (job.Status != TaskStatus.RanToCompletion) GD.PushError($"hero normals: a bake failed: {job.Exception?.GetBaseException().Message}");
+            else if (job.Result.Copy is { } c) { copy = c; msBake += job.Result.Ms; msCopy += job.Result.CopyMs; nVerts += job.Result.Verts; outs.Add(c.GetInstanceId()); nBaked++; }
             made[id] = copy;
         }
-        msStall += st.Elapsed.TotalMilliseconds;
+        msStall += st.Elapsed.TotalMilliseconds; Frame(st.Elapsed.TotalMilliseconds);
         while (checks.TryDequeue(out var cl)) GD.Print(cl);
         if (done > 0)
-            GD.Print($"hero normals: {nBaked} meshes baked ({nMerged} of them her_merge), {nVerts} verts, {msBake:0} ms of bake on workers, {tLast - tFirst:0} ms bake wall (first start to last end), {msStall:0} ms main-thread stall in Step, {wall.Elapsed.TotalMilliseconds:0} ms since the first visit; {nLeft} left as is, {jobs.Count} still baking, {early.Count} waiting for the radius; radius {Radius:0.###} m");
+            GD.Print($"hero normals: {nBaked} meshes baked ({nMerged} of them her_merge), {nVerts} verts, {msBake:0} ms of bake on workers, {tLast - tFirst:0} ms bake wall (first start to last end), {msStall:0} ms main-thread stall in Step, {wall.Elapsed.TotalMilliseconds:0} ms since the first visit; main thread: {msVisit:0} ms reading arrays in Visit, {msCopy:0} ms building copies, worst frame {msFrameMax:0.0} ms on the bake, longest frame interval while pending {gapMax:0.0} ms; {nLeft} left as is, {jobs.Count} still baking, {early.Count} waiting for the radius; radius {Radius:0.###} m");
         for (int i = waiting.Count - 1; i >= 0; i--)
         {
             var mi = waiting[i];
             if (!GodotObject.IsInstanceValid(mi) || mi.Mesh is not ArrayMesh am) { waiting.RemoveAt(i); continue; }
             if (made.TryGetValue(am.GetInstanceId(), out var c)) { if (c != null) mi.Mesh = c; waiting.RemoveAt(i); }
+        }
+        if (jobs.Count == 0 && hidden.Count > 0)
+        {
+            foreach (var mi in hidden) if (GodotObject.IsInstanceValid(mi)) RenderingServer.InstanceSetVisible(mi.GetInstance(), mi.IsVisibleInTree());
+            GD.Print($"hero normals: {hidden.Count} meshes shown, held {wall.Elapsed.TotalMilliseconds - msHeld:0} ms after their first visit");
+            hidden.Clear(); hiddenIds.Clear(); lastTick = 0;
         }
     }
 
