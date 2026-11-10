@@ -32,6 +32,7 @@ from clips.generated import make  # noqa: E402
 from keyed import Rig  # noqa: E402
 from retarget import carry_chest, carry_head  # noqa: E402
 from rig import DATA, REPO, Skeleton, write_clip  # noqa: E402
+from talk import lay, spec_of  # noqa: E402
 
 OUT = Path(__file__).resolve().parent / "out" / "folk"
 
@@ -52,14 +53,14 @@ FOLK = {
              "m": ("kimodo", "walk_man_2.bvh", dict(loop=True, place="line", head="idle"))},
     # Standing: weight shifting from foot to foot.
     "idle": {"fm": ("mixamo", "folk_weight_shift_idle.bvh", STAND)},
-    # Talking: hers with both hands, his the general conversation.
-    # His (animation A1, 10 Nov): Mixamo's conversation stooped at the dialogue camera (chest 9 degrees forward of his
-    # idle's, the head 14 off to one side, the hands low and wide: 0.77 m apart in the mean). Kimodo's talk_man_2 is the
-    # take of the three whose feet stay planted (2 mm) and whose hands stay nearest (0.59 m apart, in front of him); it
-    # stoops as well (chest -14), so chest="idle" straightens the back to his idle's in the mean
-    # (retarget.carry_chest) and head="idle" carries the neck and the Head as his idle does.
+    # Talking: hers with both hands (a take). His (animation A1, 10 Nov) is KEYED: every take of a man talking, on
+    # this body, stooped and winged the elbows out (Mixamo's conversation: chest 9 degrees forward of his idle's, hands
+    # 0.77 m apart; Kimodo's talk_man_2: five open-palm gestures in a 3.6 s loop, an agitated man at the dialogue
+    # camera). So his talk is his own idle (the same take, the 8 to 12 s of it that closes best) with a few small
+    # gestures and nods keyed over it (talk.py; the keys are data: tools/anim/data/folk_talk.json "m_talk"): the
+    # elbows stay at the idle's hang, the trunk, the legs and the feet are the idle's.
     "talk": {"f": ("kimodo", "talk_0.bvh", STAND),
-             "m": ("kimodo", "talk_man_2.bvh", dict(loop=True, place="line", chest="idle", head="idle"))},
+             "m": ("mixamo", "folk_weight_shift_idle.bvh", dict(loop=True, place="line", cycle=(8.0, 12.0), talk="m_talk"))},
     # His holds the Head 30 degrees back of his idle's (+22.6 against -7.2), as his walk did: head="idle".
     "arms_crossed": {"f": ("kimodo", "arms_crossed_0.bvh", STAND),
                      "m": ("kimodo", "arms_crossed_0.bvh", dict(loop=True, place="line", head="idle"))},
@@ -89,6 +90,7 @@ def build(want):
             opts["warp_"] = opts.pop("warp", None)
             head = opts.pop("head", None)
             chest = opts.pop("chest", None)
+            talk = opts.pop("talk", None)
             t0 = time.time()
             clip = make(rig, f"{sex}_{name}", source, file, note=f"townsfolk ({'women' if sex == 'f' else 'men'})", **opts)
             if clip is None:
@@ -115,6 +117,10 @@ def build(want):
                 clip.meta["changes"] += (f"; the neck and the Head carried as {sex}_{head}'s in the mean (one constant turn "
                                          f"each about its own ear-to-ear axis, tip back {neck:+.1f} and {hd:+.1f} degrees; "
                                          f"the take's own bob kept)")
+            if talk:
+                # A keyed talk laid over the clip (talk.py): small gestures and nods, added to its own motion.
+                clip.rot, said = lay(sk, clip.rot, clip.pos, spec_of(talk), clip.fps)
+                clip.meta["changes"] += said
             write_clip(clip, sk, OUT)
             made.append(clip.name)
             print(f"  {clip.name:16s} {clip.frames:4d} frames {clip.length:5.2f} s  speed {clip.meta.get('speed', 0):.2f}  "
