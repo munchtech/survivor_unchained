@@ -200,6 +200,28 @@ public static class Dressing
     /// narrower side (a round footprint in a square box), and the least height m that casts one.</summary>
     const float StandCastFeet = 0.7f, StandCastMin = 0.35f;
 
+    /// <summary>(L1 lead 19, SH3) The box of each piece in a packed file's mesh (a vertex's piece is its color's alpha,
+    /// (piece + 0.5) / 8: kit.gdshader hides the others by it). Null where a piece has no vertex (or the mesh no colors).</summary>
+    static Aabb?[] VariantBoxes(Mesh m)
+    {
+        var boxes = new Aabb?[8];
+        for (int su = 0; su < m.GetSurfaceCount(); su++)
+        {
+            var arr = m.SurfaceGetArrays(su);
+            var vs = arr[(int)Mesh.ArrayType.Vertex].AsVector3Array();
+            var cv = arr[(int)Mesh.ArrayType.Color];
+            if (cv.VariantType != Godot.Variant.Type.PackedColorArray) continue;
+            var cs = cv.AsColorArray();
+            if (cs.Length != vs.Length) continue;
+            for (int i = 0; i < vs.Length; i++)
+            {
+                int v = Mathf.Clamp(Mathf.FloorToInt(cs[i].A * 8f), 0, 7);
+                boxes[v] = boxes[v] is { } b ? b.Expand(vs[i]) : new Aabb(vs[i], Vector3.Zero);
+            }
+        }
+        return boxes;
+    }
+
     public static Node3D Flora(ZoneData z)
     {
         var root = new Node3D { Name = "Flora" };
@@ -282,12 +304,18 @@ public static class Dressing
             {
                 if (!sp.Shadow || sp.Kind is "pine" or "broadleaf" or "dead" || hide.Contains(sp.Name) || hide.Contains(sp.Kind) || LodsOf(file)[0] is not Mesh m0) continue;
                 var box = m0.GetAabb();
+                // (SH3) a packed file's pieces each cast by their OWN box (a tuft beside two clumps in one file), not the file's
+                var own = sp.Packed ? VariantBoxes(m0) : null;
                 int was = casts.Count;
-                foreach (var t in at)
+                for (int i = 0; i < at.Count; i++)
                 {
-                    float s = t.Basis.Y.Length(), h = box.End.Y * s, w = Mathf.Min(box.Size.X, box.Size.Z) * s * StandCastFeet;
+                    var t = at[i];
+                    var bx = own != null && vars[i] >= 0 && vars[i] < own.Length && own[vars[i]] is { } ob ? ob : box;
+                    float s = t.Basis.Y.Length(), h = bx.End.Y * s, w = Mathf.Min(bx.Size.X, bx.Size.Z) * s * StandCastFeet;
                     if (h >= StandCastMin) casts.Add((t.Origin, h, w));
                 }
+                if (own != null && SurvivorUnchained.Args.Has("stand-proof"))
+                    for (int v = 0; v < own.Length; v++) if (own[v] is { } pb) GD.Print($"fire casts: {file} piece {v} box {pb.Size.X:0.00} x {pb.End.Y:0.00} x {pb.Size.Z:0.00} m, centre {pb.GetCenter().X:0.00}, {pb.GetCenter().Z:0.00}");
                 if (SurvivorUnchained.Args.Has("stand-proof")) GD.Print($"fire casts: {file} ({sp.Kind}) box {box.Size.X:0.00} x {box.End.Y:0.00} x {box.Size.Z:0.00} m, {casts.Count - was} of {at.Count}");
             }
             if (casts.Count > 0)

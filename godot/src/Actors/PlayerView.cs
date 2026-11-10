@@ -179,7 +179,7 @@ public partial class PlayerView : Node3D
     /// and its shape, m (--her-cast-long, --her-cast-wide: its length from her feet and its width at them).</summary>
     MultiMeshInstance3D? herCast;
     const float HerCastTall = 1.7f;
-    static readonly float HerCastLong = SurvivorUnchained.Args.Num("her-cast-long", 0.6f), HerCastWide = SurvivorUnchained.Args.Num("her-cast-wide", 0.7f);
+    static readonly float HerCastLong = SurvivorUnchained.Args.Num("her-cast-long", 1.2f), HerCastWide = SurvivorUnchained.Args.Num("her-cast-wide", 0.4f);   // (SH3: a short tapered trail her stance wide, not a disc)
     readonly OwnClips own = OwnClips.Her;
     readonly HerCarriage? carriage;
     float runSpeed;

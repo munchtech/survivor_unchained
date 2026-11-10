@@ -99,7 +99,12 @@ void fragment() {
 	float gate = gt.x;
 	float r = length(wp.xz - cel_ember.xz);
 	if (cel_floor_band.x > 0.0) {
-		ALBEDO = crowd_shade.rgb * gt.y;
+		// (L1 lead 19, SH3: the tone is the table's leaf-shade tone at ONE ring, the pool's edge (crowd_moon.z x the reach:
+		// rigs.json "foe_moon" value 7; crowd_shade is the table's own far shade, so this is the table's tone there exactly):
+		// the glow dimmed, a dark warm violet, the same at every distance. Not the fragment's own ring (the glow itself
+		// inside 2.5 m) and not the far lit floor (blue).
+		float ring = crowd_moon.z > 0.0 ? clamp(crowd_moon.z, 0.0, 1.0) : 1.0;
+		ALBEDO = crowd_shade.rgb * texture(cel_floor_turn, vec2((ring * 63.0 + 0.5) / 64.0, 0.75)).rgb * gt.y;
 		gate *= 1.0 - texture(cel_floor_turn, vec2((clamp(r / cel_floor_band.x, 0.0, 1.0) * 63.0 + 0.5) / 64.0, 0.75)).a;
 	} else {
 		vec3 ramp = texture(cel_pool_ramp, vec2((clamp(r / cel_pool_band.x, 0.0, 1.0) * 63.0 + 0.5) / 64.0, 0.5)).rgb;
