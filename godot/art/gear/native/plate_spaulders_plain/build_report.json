@@ -26,7 +26,7 @@
     },
     "skin_under_mm": {
      "top": [
-      4.6,
+      3.8,
       8.7
      ],
      "bottom": [
@@ -42,12 +42,12 @@
       14.4
      ],
      "face": [
-      4.6,
+      3.8,
       21.2
      ]
     },
     "tris": 2816,
-    "rest_clear_mm_min": 1.77,
+    "rest_clear_mm_min": 1.2,
     "inside": 0
    },
    "lame1_l_rigid": {
@@ -198,7 +198,7 @@
      ]
     },
     "under_plates_mm": {
-     "cop_l_rigid": 2.21,
+     "cop_l_rigid": 1.0,
      "lame1_l_rigid": 4.04,
      "lame2_l_rigid": 3.86,
      "lame3_l_rigid": 3.71
@@ -230,7 +230,7 @@
     },
     "skin_under_mm": {
      "top": [
-      4.7,
+      3.8,
       9.0
      ],
      "bottom": [
@@ -246,12 +246,12 @@
       14.4
      ],
      "face": [
-      4.7,
-      22.2
+      3.8,
+      21.2
      ]
     },
     "tris": 2816,
-    "rest_clear_mm_min": 2.05,
+    "rest_clear_mm_min": 1.22,
     "inside": 0
    },
    "lame1_r_rigid": {
@@ -402,7 +402,7 @@
      ]
     },
     "under_plates_mm": {
-     "cop_r_rigid": 2.21,
+     "cop_r_rigid": 1.0,
      "lame1_r_rigid": 4.04,
      "lame2_r_rigid": 3.86,
      "lame3_r_rigid": 3.71

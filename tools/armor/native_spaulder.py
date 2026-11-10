@@ -33,7 +33,15 @@ lies on the trapezius; a rim standing off her there shows from the neck side as 
 that edge the plate has no "rim" stand-off and no crown and sits `drop` under the plates' own clearance, easing up to
 its dome over `len` down from the edge, so it leaves the edge along her skin, never as a wall. Full where the upper
 edge is highest (the arch's middle), nothing at the arch's two ends (the cop's front and back edges are as they
-were; no arch: the whole edge)};
+were; no arch: the whole edge), "close" {"len", "flat", "room", "fade"}: its NECK END IS CLOSED: a real cop's neck
+end is a plate lying on the arming leather over the trapezius, and its dome stands over the point of the shoulder;
+a dome that starts at the neck edge is a wall facing the neck (from the other shoulder's side: a fin, a plate
+hovering, its edge wall a dark slot). Along its upper edge the plate's inner face LANDS `room` over the arming
+cap's outer face (no arming cap: over her skin's own surface), it lies that low for `flat` down from the edge, then
+eases up to its dome over `len`; so the edge wall (Sheet: it runs down past the inner face) ends in the leather and
+nothing shows under it. In full wherever the upper edge runs `fade` or more above the level of the arch's two ends,
+nothing at those ends (no arch: the whole edge). It lands on what the arming cap IS, not `drop` under a clearance:
+with it "lie" is not needed};
 "arming" {"clear", "thick", "roll", "past" [up, down, round (degrees)]: how far it shows beyond the plates' outline
 (the cop's arch, the cop's sides, then in to the lames' sides), "step"} (absent or null: no arming cap; its material
 must be a key some gear source carries painted, gear_native.material_templates: "darkleather"; a bare key is white); "rivet" {"r", "h", "in"}: the articulation rivets, at the two ends of every
@@ -386,10 +394,20 @@ def layout(cfg, ref, step=None, step_s=None, roll=True, laws=None):
         g = np.clip((s_end - top0(th)) / max(s_end - float(E[0]), 1e-6), 0, 1) if ar else 1.0
         k = g * (1 - x * x * (3 - 2 * x))
         return v * (1 - k) - lie.get("drop", 0.0) * k
+    cl = cp.get("close")
+    am_out = (am or {}).get("thick", 0.0012)
+
+    def closed(s, th):
+        """ "close": how far down on her the cop is at (s, theta), 0..1: 1 along its upper edge and for `flat` down
+        from it, easing to 0 over `len`; in full where that edge runs `fade` or more above the arch's ends' level."""
+        x = np.clip((np.asarray(s, float) - top0(th) - cl.get("flat", 0.0)) / max(cl.get("len", 0.04), 1e-6), 0, 1)
+        g = np.clip((s_end - top0(th)) / max(cl.get("fade", 0.03), 1e-6), 0, 1) if ar else 1.0
+        return g * g * (3 - 2 * g) * (1 - x * x * (3 - 2 * x))
     for sd, fr in frames.items():
         base = laws[sd]["law"]
+        arm_law = laws[sd]["arm_law"] if am else None
 
-        def law_of(k, base=base):
+        def law_of(k, base=base, arm_law=arm_law):
             flare = bool(tf and k in tf.get("lames", []) and tf.get("rise"))
 
             def law(s, th):
@@ -398,6 +416,10 @@ def layout(cfg, ref, step=None, step_s=None, roll=True, laws=None):
                     v = v + tf["rise"] * np.clip((tf["from"] - np.asarray(th, float)) / (tf["from"] - tf["to"]), 0, 1.2) ** tf.get("power", 2.0)
                 if k == 0:      # (the cop: a standing dome over its rim's surface)
                     v = v + stand(s, th)
+                    if cl:      # (its neck end down on the arming cap's outer face, or her skin's own surface)
+                        on = (arm_law(s, th) + am_out) if arm_law is not None else base(s, th) - clear
+                        kk = closed(s, th)
+                        v = v * (1 - kk) + np.minimum(on + cl.get("room", 0.001), v) * kk
                 return v
             return law if (flare or k == 0) else base
 

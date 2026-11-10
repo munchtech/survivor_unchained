@@ -7,7 +7,7 @@
  "clear": 0.004, "thick": 0.004, "roll": [0.006, 0.0018], "lip": 0.003, "ease": 2.5, "step": 0.0083, "step_s": 0.006,
  "materials": {"plate": "plainsteel", "rim": "plainsteel", "arming": "darkleather"},
  "cop": {"apex": 0.012, "rim": 0.0015, "shape": [2.4, 2.4], "roll": [0.007, 0.0024],
-         "over": {"ease": 0.006}, "arch": {"span": 0.034, "power": 2.2}, "wing": {"end": 0.008, "curl": 1.0}, "lie": {"len": 0.045, "drop": 0.003},
+         "over": {"ease": 0.006}, "arch": {"span": 0.034, "power": 2.2}, "wing": {"end": 0.008, "curl": 1.0}, "close": {"len": 0.05, "flat": 0.018, "room": 0.001, "fade": 0.045},
          "ridge": {"theta": 96, "h": 0.0025, "w": 0.03, "fade": 0.02}},
  "lames": {"edges": [-0.088, 0.036, 0.076, 0.116, 0.154], "theta": [21, 172], "arc": 0.005,
            "overlap": [0, 0.022, 0.014, 0.014],

@@ -417,6 +417,34 @@ class ShoulderTop(unittest.TestCase):
         self.assertAlmostEqual(float(plain.law(top + 0.041, mid)), float(lying.law(top + 0.041, mid)), places=6)
         self.assertAlmostEqual(float(plain.law(plain.top(end), end)), float(lying.law(lying.top(end), end)), places=6)
 
+    def test_close_lands_the_cops_neck_end_on_the_arming_cap_and_leaves_its_ends(self):
+        cfg = json.loads(json.dumps(CFG))
+        cfg["cop"] = dict(cfg["cop"], arch={"span": 0.03, "power": 2.2})
+        ref = arms()
+        plain = sp.layout(cfg, ref)["l"]
+        shut = sp.layout({**cfg, "cop": dict(cfg["cop"], close={"len": 0.04, "flat": 0.01, "room": 0.001, "fade": 0.03})}, ref)["l"]
+        a, b, am = plain["sheets"][0], shut["sheets"][0], shut["arming"]
+        mid, end = np.array(0.5 * (a.t0 + a.t1)), np.array(float(a.t0))
+        top = a.top(mid)
+        # at the arch's middle the upper edge's inner face lands `room` over the arming cap's own outer face, and
+        # lies there for `flat` (the plate's shingle ramp alone lifts it: under a millimetre here) ...
+        self.assertAlmostEqual(float(b.law(top, mid) - am.law(top, mid) - am.thick), 0.001, places=5)
+        self.assertLess(float(b.inner(top + 0.009, mid) - am.law(top + 0.009, mid) - am.thick), 0.002)
+        self.assertGreater(float(a.law(top, mid) - b.law(top, mid)), 0.002)
+        # ... all along the edge that runs `fade` above the arch's ends ...
+        for t in (50.0, 75.0, 120.0, 150.0):
+            t = np.array(t)
+            self.assertAlmostEqual(float(b.law(b.top(t), t) - am.law(b.top(t), t) - am.thick), 0.001, places=5)
+        # ... it is the same dome from `flat` + `len` down, the same plate at the arch's ends, never higher anywhere
+        self.assertAlmostEqual(float(a.law(top + 0.051, mid)), float(b.law(top + 0.051, mid)), places=6)
+        self.assertAlmostEqual(float(a.law(a.top(end), end)), float(b.law(b.top(end), end)), places=6)
+        S, TH = grid(a, 9, 27)
+        self.assertLessEqual(float((b.law(S, TH) - a.law(S, TH)).max()), 1e-9)
+        # (no arming cap: on her skin's own surface)
+        bare = sp.layout({**{k: v for k, v in cfg.items() if k != "arming"},
+                          "cop": dict(cfg["cop"], close={"len": 0.04, "room": 0.001})}, ref)["l"]
+        self.assertAlmostEqual(float(bare["sheets"][0].law(top, mid) - bare["law"](top, mid)), 0.001 - cfg["clear"], places=5)
+
     def test_the_arming_caps_material_has_a_painted_template(self):
         have = {m.get("name") for _, g in gn.material_templates() for m in g.get("materials", [])
                 if "baseColorTexture" in m.get("pbrMetallicRoughness", {})}
