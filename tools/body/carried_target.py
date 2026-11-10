@@ -820,9 +820,10 @@ HER = {
     # T22: the armpit map's bar, strip_rest.cmd_turned's numbers: turned triangles 0 and the worst band edge at most A's own
     # worst + 0.15 (the first list) or the fill's worst + 0.15 (the second: where A's own is the harder pose)
     "t22_own": ["x:abd120:l", "x:abd150:l", "x:abd170:l", "x:flex170:l", "p4:iron_vow@72:l", "p4:heroic_leap@7:r",
-                "p4:heroic_leap@9:r", "p4:heroic_leap@19:r", "p4:heroic_leap@20:r"],
+                "p4:heroic_leap@9:r", "p4:heroic_leap@19:r", "p4:heroic_leap@20:r",
+                "crossbow_shoot@0:r", "crossbow_shoot@2:r", "cast_flick@8:r"],      # + lay 8's rows (lead 22)
     "t22_fill": ["crossbow_shoot@10:r", "cast_bolt@3:r", "axe_heavy@7:r", "p4:heroic_leap@5:r", "p4:idle_warden_town@126:r",
-                 "p4:heroic_leap@25:r"],
+                 "p4:heroic_leap@25:r", "cast_bolt@6:l", "p4:heroic_leap@6:r", "p4:heroic_leap@0:l", "p4:heroic_leap@30:l"],
     "t22_tol": 0.15,
     # T23: the neck's relax rule (head-piece patches, body_facts/neck_edges.md): on these poses the neck set has no edge over
     # `ratio` but those the published surface has over it too; Head-rigid points and the girdle regions as with it off
