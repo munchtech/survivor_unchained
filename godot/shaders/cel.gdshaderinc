@@ -592,7 +592,33 @@ vec3 cel_hero_land(vec3 c_rgb, float c_lt, float c_k) {
 	float c_f = mix(1.0, c_to / c_l, c_k);
 	return c_rgb * (c_f * c_f * c_f);
 }
-vec3 cel_hero_paint(vec3 c_wn, vec3 c_alb, float c_w, float c_near) {
+// (L1 lead 22, R1HAIR) THE HAIR CLASS'S COLOR: class 0 (hair) with cel_hero_class_hair (hero_pool 45-48: the Oklab C
+// of the emission at the class's lit L, at its shade L, the strands' breakup, the strands' mean share of the dye) lands
+// every texel at the class's L times its own L over the dye's (c_ref, CEL_HERO_REF: the hair's own data color times the
+// share), to the power of the breakup (0 = one flat tone), at the step's saturation C / L, in ITS OWN hue (a texel too
+// grey to hold one takes the dye's): darker strands are the same red, darker. No hue term: the hue is the hair's data.
+// A row without them (zeros): as before. CEL_HERO_REF defaults to ALBEDO (no other material changes).
+global uniform vec4 cel_hero_class_hair;
+vec3 cel_hero_ok(vec3 c_rgb) {
+	vec3 c_lms = pow(max(mat3(vec3(0.4122214708, 0.2119034982, 0.0883024619), vec3(0.5363325363, 0.6806995451, 0.2817188376), vec3(0.0514459929, 0.1073969566, 0.6299787005)) * max(c_rgb, vec3(0.0)), vec3(0.0)), vec3(1.0 / 3.0));
+	return mat3(vec3(0.2104542553, 1.9779984951, 0.0259040371), vec3(0.7936177850, -2.4285922050, 0.7827717662), vec3(-0.0040720468, 0.4505937099, -0.8086757660)) * c_lms;
+}
+vec3 cel_hero_lin(vec3 c_ok) {
+	vec3 c_l = mat3(vec3(1.0, 1.0, 1.0), vec3(0.3963377774, -0.1055613458, -0.0894841775), vec3(0.2158037573, -0.0638541728, -1.2914855480)) * c_ok;
+	return mat3(vec3(4.0767416621, -1.2684380046, -0.0041960863), vec3(-3.3077115913, 2.6097574011, -0.7034186147), vec3(0.2309699292, -0.3413193965, 1.7076147010)) * (c_l * c_l * c_l);
+}
+vec3 cel_hero_hair(vec3 c_tone, vec3 c_reft, float c_ratio, float c_lt, float c_ct) {
+	vec3 c_o = cel_hero_ok(c_tone), c_r = cel_hero_ok(c_reft);
+	float c_s = length(c_o.yz) / max(c_o.x, 0.0001);
+	vec2 c_dir = normalize(mix(c_r.yz / max(length(c_r.yz), 0.000001), c_o.yz / max(length(c_o.yz), 0.000001), smoothstep(0.04, 0.1, c_s)) + vec2(0.000001));
+	float c_l = c_lt * clamp(pow(max(c_ratio, 0.0001), cel_hero_class_hair.z), 0.4, 1.6);
+	vec3 c_out = cel_hero_lin(vec3(c_l, c_dir * c_l * c_ct / max(c_lt, 0.0001)));
+	// (the gamut's edge: no channel under zero, the chroma pulled toward the grey of the same L at the same hue)
+	float c_lo = min(c_out.r, min(c_out.g, c_out.b));
+	if (c_lo < 0.0) { vec3 c_g = vec3(c_l * c_l * c_l); c_out = mix(c_g, c_out, clamp(c_g.r / max(c_g.r - c_lo, 0.000001), 0.0, 1.0)); }
+	return max(c_out, vec3(0.0));
+}
+vec3 cel_hero_paint(vec3 c_wn, vec3 c_alb, float c_w, float c_near, vec3 c_ref) {
 	// (round 2) FORM FROM ABOVE: the side is read from the plane's LEAN alone (n.xz normalized, down to the least lean
 	// cel_hero_own.z, value 27), so at the play camera, where her planes point up, the side away from the foot still
 	// takes the mid and the anchor as one connected side.
@@ -602,6 +628,12 @@ vec3 cel_hero_paint(vec3 c_wn, vec3 c_alb, float c_w, float c_near) {
 	float c_ck = cel_hero_chroma.x > 0.0 ? c_near : 1.0;
 	vec3 c_lit = cel_hero_land(cel_hero_gain(cel_hero_local(cel_hero_lit.rgb, c_alb), cel_hero_chroma.x, c_near), cel_hero_class_pick(cel_hero_class_lit), c_ck);
 	vec3 c_md = cel_hero_land(cel_hero_gain(cel_hero_local(cel_hero_mid.rgb, c_alb), cel_hero_chroma.y, c_near), cel_hero_class_pick(cel_hero_class_shade), c_ck);
+	// (R1HAIR) the hair class at its own colored C / L, its strands' breakup kept
+	if (int(round(cel_hero_class)) == 0 && cel_hero_class_hair.x > 0.0 && cel_hero_class_lit.x > 0.0 && c_ck > 0.0) {
+		float c_hr = cel_hero_ok_l(c_alb) / max(cel_hero_ok_l(c_ref * max(cel_hero_class_hair.w, 0.001)), 0.0001);
+		c_lit = mix(c_lit, cel_hero_hair(cel_hero_local(cel_hero_lit.rgb, c_alb), cel_hero_local(cel_hero_lit.rgb, c_ref), c_hr, cel_hero_class_lit.x, cel_hero_class_hair.x), c_ck);
+		c_md = mix(c_md, cel_hero_hair(cel_hero_local(cel_hero_mid.rgb, c_alb), cel_hero_local(cel_hero_mid.rgb, c_ref), c_hr, max(cel_hero_class_shade.x, 0.0001), cel_hero_class_hair.y), c_ck);
+	}
 	vec3 c_t = mix(c_lit, c_md, c_mid);
 	float c_dark = max(smoothstep(cel_hero.z - c_w, cel_hero.z + c_w, c_s), 1.0 - smoothstep(cel_hero_tone.w - c_w, cel_hero_tone.w + c_w, c_wn.y));
 	return mix(c_t, cel_hero_tone.rgb, c_dark);
@@ -610,7 +642,10 @@ vec3 cel_hero_paint(vec3 c_wn, vec3 c_alb, float c_w, float c_near) {
 // zero and nothing changes): a material's own flat ID color in place of the painted tone, on exactly the fragments the
 // hero paint (and the held piece's) covers, so one frame shows which pixels of her the row paints, material by material.
 uniform vec4 cel_hero_id = vec4(0.0);
-#define CEL_HERO_FRAGMENT { if (cel_hero_on()) { vec3 c_hn = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz); if (cel_hero_abs()) { EMISSION = cel_hero_paint(c_hn, ALBEDO, 0.02, cel_hero_near(-VERTEX.z, PROJECTION_MATRIX)); if (cel_hero_id.a > 0.5) EMISSION = cel_hero_id.rgb; ALBEDO = vec3(0.0); METALLIC = 0.0; SPECULAR = 0.0; } else { float c_hm = cel_hero_mask(c_hn, 0.02); ALBEDO *= 1.0 - c_hm; EMISSION = mix(EMISSION, cel_hero_tone.rgb, c_hm); } } }
+#ifndef CEL_HERO_REF
+#define CEL_HERO_REF ALBEDO
+#endif
+#define CEL_HERO_FRAGMENT { if (cel_hero_on()) { vec3 c_hn = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz); if (cel_hero_abs()) { EMISSION = cel_hero_paint(c_hn, ALBEDO, 0.02, cel_hero_near(-VERTEX.z, PROJECTION_MATRIX), CEL_HERO_REF); if (cel_hero_id.a > 0.5) EMISSION = cel_hero_id.rgb; ALBEDO = vec3(0.0); METALLIC = 0.0; SPECULAR = 0.0; } else { float c_hm = cel_hero_mask(c_hn, 0.02); ALBEDO *= 1.0 - c_hm; EMISSION = mix(EMISSION, cel_hero_tone.rgb, c_hm); } } }
 #define CEL_HERO_LIGHT { if (cel_hero_abs()) { DIFFUSE_LIGHT = vec3(0.0); SPECULAR_LIGHT = vec3(0.0); } else { SPECULAR_LIGHT *= 1.0 - cel_hero_mask(normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz), 0.02); } }
 #ifdef CEL_HERO_ARM
 // (L1 lead 19, HER3; lead 20, HER4) A HELD PIECE of the hero (her shield, her blade: CelLib.Hero binds her own copies of

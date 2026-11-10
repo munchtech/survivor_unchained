@@ -663,6 +663,8 @@ public partial class Atmosphere : Node3D
         RenderingServer.GlobalShaderParameterSet("cel_hero_class_lit", new Vector4((float)hk[0], (float)hk[2], (float)hk[4], (float)hk[6]));
         RenderingServer.GlobalShaderParameterSet("cel_hero_class_shade", new Vector4((float)hk[1], (float)hk[3], (float)hk[5], (float)hk[7]));
         RenderingServer.GlobalShaderParameterSet("cel_hero_class_keep", (float)hk[8]);
+        var hh = SurvivorUnchained.Look.Rigs.HeroClassHair(hm);   // (L1 lead 22, R1HAIR) values 45-48: the hair class's color (cel_hero_hair); zeros without them
+        RenderingServer.GlobalShaderParameterSet("cel_hero_class_hair", new Vector4((float)hh[0], (float)hh[1], (float)hh[2], (float)hh[3]));
     }
     /// <summary>(L1 lead 20, HER5) Her LINE (hero_line.gdshader; CelLib.LineStep hangs it on her meshes): the row's value 8 = its
     /// width in px at 1080p, value 9 = its level against the anchor's tone. On as cel_hero is on; else 0 and nothing is drawn.</summary>

@@ -21,6 +21,7 @@
 #define CEL_NO_RIM
 #define CEL_OWN_LIGHT
 #define CEL_HERO   // (L1 l19 her2: the hero in her pool, one anchor tone on her shade side)
+#define CEL_HERO_REF colour   // (L1 l22 r1hair: the hair class's color and breakup are read against her dye, cel.gdshaderinc)
 #include "res://shaders/cel.gdshaderinc"
 uniform float shade_hue : hint_range(0.0, 1.0) = 0.6;   // (cel: how much the half-tone and fill take the dye's hue)
 uniform vec2 shine_band = vec2(0.42, 0.58);              // (cel: the highlight band's edges on the sheen term, 0..1)

@@ -243,6 +243,11 @@ public static class Rigs
     /// figure renders as before; a zero pair leaves that class as before.</summary>
     public static double[] HeroClass(double[]? heroPool) => heroPool is { Length: >= 45 } ? heroPool[36..45] : new double[9];
 
+    /// <summary>(L1 lead 22, R1HAIR) The hair class's color, values 45-48 of a hero_pool row: the Oklab C of the emission at the
+    /// hair's lit L, at its shade L, the strands' breakup (the power on a texel's L over the dye's; 0 = one flat tone), the strands'
+    /// mean share of the dye (cel.gdshaderinc cel_hero_hair). A row without them: zeros, the hair as before.</summary>
+    public static double[] HeroClassHair(double[]? heroPool) => heroPool is { Length: >= 49 } ? heroPool[45..49] : new double[4];
+
     /// <summary>(HERPAIR) A hero material's class from its shader's file and its outfit kind (heroine_outfit.gdshaderinc
     /// `kind`: 0 leather, 1 metal, 2 cloth, 3 gloss, 4 twill, 5 satin; -1 none): 0 hair, 1 skin, 2 outfit leather / cloth,
     /// 3 outfit metal, -1 anything else (painted as before).</summary>
