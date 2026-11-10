@@ -10,6 +10,7 @@
                                               encoded ONCE into the embedding cache (only with 18 GB of RAM free), then
                                               the diffusion model alone makes the takes from the cache (take the gpu
                                               turn first) -> TAKES_DIR/<clip>__p<i>_<k>.bvh
+    python tools/anim/p4.py strip <clip|built.json> [--every 2] [--views game,side] [--spin tps]   an offline pose strip (p4_strip.py)
     python tools/anim/p4.py takes [clips]     every take through the core with the spec's post, measured against its bands
                                               (motion/measures.py), logged in specs/<clip>.takes.json; the best is imported
     python tools/anim/p4.py check [clips]     tools/body/clipcheck.py's measures on the built clips (pops, seam, feet,
@@ -817,7 +818,21 @@ def main():
     j.add_argument("--on", default="")
     j.add_argument("--list", action="store_true")
     j.add_argument("--clear", action="store_true")
+    st = sub.add_parser("strip", help="an offline pose strip of a built clip (p4_strip.py): PNG + JPEG under tools/anim/out/strips")
+    st.add_argument("clip", help="a built clip's name, or a path to a built JSON (a candidate)")
+    st.add_argument("--every", type=int, default=2, help="every n-th 30 fps frame (beat frames are always drawn)")
+    st.add_argument("--from", dest="frm", type=int, default=None)
+    st.add_argument("--to", type=int, default=None)
+    st.add_argument("--views", default="game,side", help="game, side, front")
+    st.add_argument("--cols", type=int, default=12)
+    st.add_argument("--tile", default="165x240")
+    st.add_argument("--spin", type=float, default=0.0, help="turns/s: yaw her about the node's vertical axis (to her left), as the game does a de-rotated loop")
+    st.add_argument("--pitch", type=float, default=None, help="the game view's pitch, deg down (default: FollowCamera.cs Pitch)")
+    st.add_argument("--out", default="")
     a = ap.parse_args()
+    if a.cmd == "strip":
+        import p4_strip
+        return p4_strip.run(sys.modules[__name__], a)
     {"judged": cmd_judged, "import": cmd_import, "build": cmd_build, "check": cmd_check, "gen": cmd_gen, "takes": cmd_takes}[a.cmd](a)
 
 
