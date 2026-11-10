@@ -86,9 +86,11 @@ public static class Hands
 
     /// <summary>The card's line for a skill in a calling's hand ("In a warden's hand: ..."), or null when her Hand
     /// doesn't bend it. One function, so the draft and the day's card say the same.</summary>
-    public static string? Line(string? calling, WeaponDef w) => Line(calling, w.Tags, w.School);
+    public static string? Line(string? calling, WeaponDef w) => Line(calling, w.Tags, w.School,
+        w.Press?.Chain is { Period: > 0 } ? (w.Base.Cooldown ?? 0) : 0);
 
-    public static string? Line(string? calling, Tag[] tags, School school)
+    /// <summary>chainWait: a chained skill's written wait in seconds (0: not chained).</summary>
+    public static string? Line(string? calling, Tag[] tags, School school, double chainWait = 0)
     {
         var parts = new List<string>(2);
         switch (calling)
@@ -97,7 +99,9 @@ public static class Hands
             {
                 var h = Warden;
                 if (Heavies(tags))
-                    parts.Add($"every {Ordinal(h.Every)} blow is heavy (a {h.Stun:0.#} s stun and {Times(h.Knockback)} the knockback; it builds a boss's stagger)");
+                    parts.Add(chainWait > 0
+                        ? $"about every {System.Math.Round(h.Every * chainWait):0} seconds of cutting, a cut is heavy (a {h.Stun:0.#} s stun and {Times(h.Knockback)} the knockback; it builds a boss's stagger)"
+                        : $"every {Ordinal(h.Every)} blow is heavy (a {h.Stun:0.#} s stun and {Times(h.Knockback)} the knockback; it builds a boss's stagger)");
                 if (tags.Has(Tag.Holy) || school == School.Holy)
                     parts.Add($"each champion it strikes lays a Stone; {h.Stones} loose a rebuke");
                 break;
