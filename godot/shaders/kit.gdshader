@@ -1281,7 +1281,11 @@ void fragment() {
 				st_rim = 0.6 * step(0.9, COLOR.r) * (1.0 - smoothstep(1.0, 2.0, st_tip))
 					* smoothstep(0.05, 0.25, dot(st_nv.xy, normalize(st_kv.xy + vec2(1e-5))));
 			}
-			if (COLOR.b > 0.5) EMISSION = kit_leaf_base(wp, v_org, wn, v_foot, cel_lum(col), st_rim, COLOR.r, st_m, st_f);
+			// (l22 BUSH round 2) the baked level arrives LOWER than exported (probe bush_03p: the 0.9 step sat at s 0.3 of a
+			// cap, not 0.62; the imported mesh's arrays hold the exported values), read as an sRGB-to-linear decode on the way
+			// to the shader: encoded back here, one rule for the level, never for a color
+			float st_lv = COLOR.r <= 0.0031308 ? 12.92 * COLOR.r : 1.055 * pow(COLOR.r, 1.0 / 2.4) - 0.055;
+			if (COLOR.b > 0.5) EMISSION = kit_leaf_base(wp, v_org, wn, v_foot, cel_lum(col), st_rim, st_lv, st_m, st_f);
 			else EMISSION = cel_stand_base(wp, v_org, wn, v_foot, cel_lum(col), st_rim, st_m, st_f);
 			float st_gv = 1.0 - 0.8 * clamp(3.0 * cel_lum(st_f) / max(cel_lum(cel_stand_tone(5).rgb), 1e-5), 0.0, 1.0);
 			EMISSION *= st_gv;
