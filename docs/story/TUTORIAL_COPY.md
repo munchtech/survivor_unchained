@@ -19,8 +19,8 @@ The copy and the moments for the first hour's teaching (`docs/design/ARPG.md` se
 |---|---|---|---|---|---|---|
 | A1 | `move` | `Wake`, 1.2 s after C01 hands back, she stands by the fire | the movement keys' chip; no world point | arrow | Move | `Key(move)`: walk. The road runs north, out of the firelight. |
 | A2 | `swing` | the lone drowned one (`n_lone`) awake, within 7 m and well on screen | the Skill1 seat, and the drowned one ringed | freeze, answer Skill1 | Swing | Hold `Key(Skill1)` to swing at what's under the cursor. You walk as you swing. |
-| A3 | `ember_ground` | the first ember stone near her on the ground (the lone one's) | the nearest ember stone | freeze | Ember | The light the dead carry. Gather it, and it makes you stronger. |
-| A3b | `ember_ring` | the first ember gathered, 0.6 s after A3 closes | the coin's experience ring | arrow | Your level | Ember fills this ring. When it's full, you rise a level. |
+| A3 | `ember_ground` | the lone one's ember, held at rest on the ground until A3 closes (every kill's ember rests 0.35 s, then flies to her and pays her experience as it lands) | the ember stone | freeze | Ember | The light the dead carry. It comes to you, and it makes you stronger. |
+| A3b | `ember_ring` | the first ember landed, 0.6 s after A3 closes | the coin's experience ring | arrow | Your level | Ember fills this ring. When it's full, you rise a level. |
 | A4 | `resolve` | the three on the road (`n_three`), her first landed swing on them | the Resolve hair (the Drowned Girl's figure) | arrow | Resolve | Every blow that lands builds Resolve. Your skills burn it. |
 | A4b | `groundbreaker` | Resolve at or past Groundbreaker's cost, two or more of the three within its reach, 2 s after A4 | the Skill2 seat, and the pack under the cursor ringed | freeze, answer Skill2 | Groundbreaker | When Resolve is full, it heaves itself at the pack. `Key(Skill2)`: heave now. |
 | A5 | `captain` | the first pack's captain (`n_first`) awake, in the open, within 14 m | the captain (its plate and its body) | freeze | Captain | Packs travel with a captain. The captain carries the better gear. |
@@ -42,7 +42,7 @@ Seam beats (A5a, A6, A6b, A13, A13b) are wired to wait on their lanes' events an
 
 ## The dawn page (A12)
 
-**One plate, SB00's P5 "First light"** (`art/storybook/sb00/p5`: the risen fold at dawn, the light sinking into the ground, the Watchman's lamp guttering), its own camera tilt and touches, over its own line and take: *"At first light it sinks into the ground and takes back what it lent. No more than that."* (`sb_stay_where_they_reach` `.dawn`). The player hears the tale's rule a second time, and this time it happens to her. About 9 s, skippable as SB00 is. No new art or voice.
+**One plate, SB00's P5 "First light"** (plate `ink_p3d`, `art/storybook/sb00/p3d/dawn.png`: the risen fold at dawn, the light sinking into the ground, the Watchman's lamp guttering), its own camera tilt and touches, over its own line and take: *"At first light it sinks into the ground and takes back what it lent. No more than that."* (`sb_stay_where_they_reach` `.dawn`). The player hears the tale's rule a second time, and this time it happens to her. About 9 s, skippable as SB00 is. No new art or voice.
 
 Then, as play resumes at dawn, the existing banner: **The Flare goes out** over *Lent for the night. It burns again at the Waystation's lamp.* The Flare's key goes dark. Nothing else is taken.
 
