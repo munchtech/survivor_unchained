@@ -118,17 +118,31 @@ global uniform vec4 crowd_moon;
 // past crowd_fire.z. All steps are hard, their edges one screen derivative wide. S3 itself is off on a foe (vat_s3k 0).)
 #define CF_KNEE 0.135
 #define CF_REACH 0.04
-#define CF_UP 0.35
+// (L1 lead 21, W3, the tuning round. Main's word: a MID blue-violet body one clear step OVER the floor's shade in the dark
+// (crowd_moon.x up), an orange rim on the fire side, no coral or pink patch, nothing cool lighter than her. The pink was two
+// things: the warm step ADDED over the blue body (now the body gives way under the warm step and the gold edge: each is its
+// own tone, whole), and a HALF-warm step over the 1.4 m where the glow fades (now the step comes on whole over CF_WARM_ON of
+// the glow, a narrow band; the gold line alone fades with the glow). The warm planes are slivers toward the light's foot
+// (CF_UP down, crowd_fire.w up), the gold line CF_GOLD_PX wide carries the fire side. Inside the glow the moon on the body
+// gives way to CF_BODY_IN of itself (the body stays under the lit floor's value). The cyan rim is the px edge alone (one
+// clean line; S3's own edge was the patches) and is gone by CF_RIM_GONE of the glow.)
+#define CF_UP 0.2
 #define CF_AMB 0.006
 #define CF_TOP 0.85
-#define CF_TOP_OUT vec3(0.0105, 0.0255, 0.073)
-#define CF_TOP_IN vec3(0.037, 0.0165, 0.038)
-#define CF_RIM vec3(0.075, 0.43, 0.64)
-// (the warm step's hue: target 09's L 0.49 h 32 at level 0.335; the ramp's own hue out there runs to magenta)
-#define CF_WARM vec3(1.0, 0.18, 0.065)
-// (the gold edge's hue, target 09's L 0.72 h 62; the cyan rim's width in screen pixels where S3's own edge is thinner)
-#define CF_GOLD vec3(1.0, 0.384, 0.083)
+#define CF_TOP_OUT vec3(0.0074, 0.018, 0.051)
+#define CF_TOP_IN vec3(0.055, 0.018, 0.036)
+#define CF_RIM vec3(0.06, 0.36, 0.54)
+// (the warm step's tone, whole: target 09's L 0.49 h 32-36 orange-brown at level crowd_fire.x x crowd_fire.y = 0.35)
+#define CF_WARM vec3(1.0, 0.125, 0.04)
+// (the gold edge's tone, whole: target 09's L 0.72 h 62 at level crowd_fire.x; never greener: h 78 is lemon)
+#define CF_GOLD vec3(1.0, 0.35, 0.04)
 #define CF_RIM_PX 2.0
+#define CF_GOLD_PX 2.5
+#define CF_BODY_IN 0.5
+// (a violet lift on every face of the body, so its unlit side also stands over the floor and the moon's blue is calmed)
+#define CF_LIFT vec3(0.014, 0.009, 0.02)
+#define CF_WARM_ON vec2(0.3, 0.6)
+#define CF_RIM_GONE 0.35
 // (a silhouette edge c_px screen pixels wide from n.v and its screen derivative, on grazing faces only)
 float vat_edge_px(vec3 c_n, vec3 c_v, float c_px) {
 	float c_nv = clamp(dot(c_n, c_v), 0.0, 1.0);
@@ -494,20 +508,22 @@ void fragment() {
 			float cf_t = dot(cw_n, normalize(vec3(cf_dir.x, CF_UP, cf_dir.y)));
 			float cf_w = fwidth(cf_t) * 0.75 + 0.01;
 			float cf_b1 = smoothstep(crowd_fire.z - cf_w, crowd_fire.z + cf_w, cf_t), cf_b2 = smoothstep(crowd_fire.w - cf_w, crowd_fire.w + cf_w, cf_t);
-			float cf_warm = cf_b2 * cf_g;
-			float cf_edge = cf_b1 * cf_g * vat_edge_px(NORMAL, VIEW, cel_s3_shape.z) * (1.0 - busy);
+			float cf_warm = cf_b2 * smoothstep(CF_WARM_ON.x, CF_WARM_ON.y, cf_g);
+			float cf_edge = cf_b1 * cf_g * vat_edge_px(NORMAL, VIEW, CF_GOLD_PX) * (1.0 - busy);
 			float cf_give = cf_b2 * cel_give.x * (1.0 - smoothstep(cel_give.z, max(cel_give.w, cel_give.z + 1e-3), cw_h));
+			// (W3: the body gives way whole under the warm step and the gold edge, and to CF_BODY_IN of itself inside the glow)
+			float cf_keep = (1.0 - max(cf_give, max(cf_warm, cf_edge) * cf_alive)) * mix(1.0, CF_BODY_IN, cf_g);
 			// (the moon's own steps on a foe: the top step and the rim, in place of S3's)
 			float cf_tm = dot(cw_n, normalize(mix(cel_key.xyz, vec3(0.0, 1.0, 0.0), cel_s3_shape.y)));
 			float cf_tw = fwidth(cf_tm) * 0.75 + 0.01;
-			float cf_top = smoothstep(CF_TOP - cf_tw, CF_TOP + cf_tw, cf_tm) * (1.0 - cf_warm);
+			float cf_top = smoothstep(CF_TOP - cf_tw, CF_TOP + cf_tw, cf_tm) * (1.0 - max(cf_warm, cf_edge));
 			float cf_ms = smoothstep(-0.1, 0.3, dot(NORMAL, normalize((VIEW_MATRIX * vec4(cel_key.xyz, 0.0)).xyz)));
-			float cf_rim = max(cel_s3_edge(NORMAL, VIEW, VIEW_MATRIX), vat_edge_px(NORMAL, VIEW, CF_RIM_PX) * cf_ms) * (1.0 - cf_g) * (1.0 - busy);
+			float cf_rim = vat_edge_px(NORMAL, VIEW, CF_RIM_PX) * cf_ms * (1.0 - smoothstep(0.0, CF_RIM_GONE, cf_g)) * (1.0 - busy);
 			e += mix(mix(CF_TOP_OUT, CF_TOP_IN, cf_g) * cf_top, CF_RIM, cf_rim) * cf_alive;
 			e += cf_hue * (CF_AMB * cf_g * cf_alive);
 			e += mix(CF_WARM * (crowd_fire.y * cf_warm), CF_GOLD, cf_edge) * (crowd_ember.w * crowd_fire.x * cf_alive);
-			e += c * (crowd_fill.rgb + crowd_top.rgb * cn_head) * (1.0 - cf_give);
-			cn_k = 1.0 - cf_give;
+			e += (c * (crowd_fill.rgb + crowd_top.rgb * cn_head) + CF_LIFT * cf_alive) * cf_keep;
+			cn_k = cf_keep;
 			vat_s3k = 0.0;
 		} else if (crowd_lamp2.z > 0.0) {
 			// (r5: the flat and the dead lose only the lamp, not the moon or the fill; the crowd close to her takes a share of it
