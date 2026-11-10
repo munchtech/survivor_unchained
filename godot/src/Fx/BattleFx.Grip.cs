@@ -289,13 +289,13 @@ public partial class BattleFx
         if (oath && AaFxOff) return;
         GripSettle();
         // (round 4) a swing of several arcs calls this once an arc in one frame, each re-arming the trail: the bodies
-        // struck are the CUT's (summed over its arcs), not its last arc's
+        // struck are the CUT's DISTINCT bodies (the arcs' Fresh summed), not its last arc's
         var arc0 = gripLive is { Contact: >= 0, FlashOwed: true } gl && gl.Contact == gripClock ? gl : null;
         if (gripLive is not { Contact: < 0 } tr) { tr = new GripTrail { Oath = oath, Tail = gripClock - 5 / 60.0 }; GripArm(tr); }
         tr.Oath = oath; tr.Contact = gripClock; tr.SimSide = e.Side;
         if (e.Struck > 0)
         {
-            tr.FlashOwed = true; tr.Struck = e.Struck; tr.Killed = e.Killed;
+            tr.FlashOwed = true; tr.Struck = e.Fresh; tr.Killed = e.Killed;
             tr.Body = V(e.HitX, Y(e.HitX, e.HitZ) + 1.0, e.HitZ);
             // (one number a cut, by raise-to: a swing of several arcs calls this once an arc and still shakes once)
             HitShake(P7D[oath ? "hit_budget.grip_shake_oath" : "hit_budget.grip_shake", oath ? 0.02f : 0.06f], "grip");
