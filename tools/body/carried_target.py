@@ -577,7 +577,10 @@ class Her:
         pts = md.first[md.S[side]["ids"]]
         kw = {"rad": cfg["rad"], "k": cfg["k"], "nw": cfg["nw"], "edges": np.stack(self.edges[side], 1),
               "bridge_deg": cfg["bridge_deg"], "pocket_rows": cfg["pocket_rows"], "frame_passes": cfg["frame_passes"],
-              "pocket_weight": cfg["pocket_weight"], **over}
+              "pocket_weight": cfg["pocket_weight"], "pocket_mode": cfg.get("pocket_mode", "fill"), **over}
+        if kw["pocket_mode"] == "slide":                                 # the band stays off the region's blended border
+            tr = np.asarray(md.S[side]["tr"], np.int64)
+            kw = {"hold": np.asarray(md.beta) < 1, "tris": tr[(tr < len(pts)).all(1)], **kw}
         return Carrier(self.Ab.V0, self.Ab.T, bd.V0[pts], self.N0[pts], **kw)
 
     def pose_ref(self, G):
@@ -614,6 +617,8 @@ class Her:
             pmin, pmax, _ = edge_ratio(MC, md.V0[ids], pk.edges[:, 0], pk.edges[:, 1])
             pd = surface_distance(MC[pk.p], VaM, Ab.T) * 1000           # what the fill loses: how far it spans off A's hollow
             pinfo = {"pk_edge_min": pmin, "pk_edge_max": pmax, "pk_d_p50": float(np.percentile(pd, 50)), "pk_d_max": float(pd.max())}
+            st = self.car[side].stats                                   # the slide's own account (empty for the fill)
+            pinfo.update({f"pk_{k}": float(st[k]) for k in ("iters", "step", "rim", "flip") if k in st})
         Y = Vp[md.first].copy()
         Y[ids] = X
         g = md.girth(sd, Y)
