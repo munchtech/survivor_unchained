@@ -417,42 +417,42 @@
   "cop_l_rigid": [
    531,
    958,
-   "steel"
+   "plainsteel"
   ],
   "rim0_l_rigid": [
    996,
    1786,
-   "steel"
+   "plainsteel"
   ],
   "lame1_l_rigid": [
    203,
    339,
-   "steel"
+   "plainsteel"
   ],
   "rim1_l_rigid": [
    426,
    749,
-   "steel"
+   "plainsteel"
   ],
   "lame2_l_rigid": [
    209,
    349,
-   "steel"
+   "plainsteel"
   ],
   "rim2_l_rigid": [
    426,
    749,
-   "steel"
+   "plainsteel"
   ],
   "lame3_l_rigid": [
    152,
    255,
-   "steel"
+   "plainsteel"
   ],
   "rim3_l_rigid": [
    417,
    733,
-   "steel"
+   "plainsteel"
   ],
   "arming_l_cap": [
    992,
@@ -462,42 +462,42 @@
   "cop_r_rigid": [
    531,
    958,
-   "steel"
+   "plainsteel"
   ],
   "rim0_r_rigid": [
    996,
    1786,
-   "steel"
+   "plainsteel"
   ],
   "lame1_r_rigid": [
    203,
    339,
-   "steel"
+   "plainsteel"
   ],
   "rim1_r_rigid": [
    426,
    749,
-   "steel"
+   "plainsteel"
   ],
   "lame2_r_rigid": [
    209,
    349,
-   "steel"
+   "plainsteel"
   ],
   "rim2_r_rigid": [
    426,
    749,
-   "steel"
+   "plainsteel"
   ],
   "lame3_r_rigid": [
    152,
    255,
-   "steel"
+   "plainsteel"
   ],
   "rim3_r_rigid": [
    417,
    733,
-   "steel"
+   "plainsteel"
   ],
   "arming_r_cap": [
    992,

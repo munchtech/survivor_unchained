@@ -189,3 +189,39 @@ class Legwear(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_plain_natives_name_bare_steel_and_it_has_a_template():
+    """The plain plate natives' plate is `plainsteel` (bare steel, provisional: outfit_materials.json's note), never
+    `steel` (the Warden's navy enamel, metal_finishes.json), and write_src gives it a painted material: its row's
+    "template" key's glTF material from a gear source, under its own name. The Warden's spaulders keep `steel`."""
+    import json
+    import os
+    import tempfile
+    import numpy as np
+    import gear_native as gn
+    table = json.load(open(gn.MATERIALS, encoding="utf-8"))
+    row = table["plainsteel"]
+    assert (row["kind"], row["zone"], row["template"]) == ("metal", "metal", "steel") and "template" not in table["steel"]
+    fin = json.load(open(os.path.join(os.path.dirname(gn.MATERIALS), "metal_finishes.json"), encoding="utf-8"))
+    assert "plainsteel" not in fin and fin["steel"] == "enamel"
+    nat = os.path.join(gn.REPO, "godot", "art", "gear", "native")
+    for pid in ("plate_spaulders_plain", "plate_cuisses_plain"):
+        names = {p["material"] for p in gn.read_parts(os.path.join(nat, pid, pid + ".glb"))}
+        assert "plainsteel" in names and "steel" not in names, (pid, names)
+    names = {p["material"] for p in gn.read_parts(os.path.join(nat, "plate_spaulders_warden", "plate_spaulders_warden.glb"))}
+    assert "steel" in names and "plainsteel" not in names, names
+    tri = {"P": np.eye(3, dtype=np.float32), "N": np.tile(np.float32([0, 0, 1]), (3, 1)), "T": np.array([[0, 1, 2]], np.uint32),
+           "uv0": None, "uv1": None, "col": None, "material": "plainsteel", "name": "t"}
+    piece = {"id": "t_plain", "slot": "legwear"}
+    with tempfile.TemporaryDirectory(dir=os.path.join(gn.REPO, "godot", "art", "gear")) as td:
+        out = os.path.join(td, "t.src.glb")
+        gn.write_src(out, piece, gn.merge_parts(piece, [tri]))
+        js = gn.gf().read_glb(out)[0] if hasattr(gn.gf(), "read_glb") else None
+        if js is None:
+            import struct
+            b = open(out, "rb").read()
+            js = json.loads(b[20:20 + struct.unpack("<I", b[12:16])[0]])
+    m = [m for m in js["materials"] if m["name"] == "plainsteel"]
+    assert len(m) == 1 and "baseColorTexture" in m[0]["pbrMetallicRoughness"] and "normalTexture" in m[0], js["materials"]
+    assert any("outfit_steel_diff" in im["uri"] for im in js["images"])

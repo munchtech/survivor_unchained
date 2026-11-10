@@ -192,32 +192,32 @@
   "rivets_l_rigid": [
    75,
    120,
-   "steel"
+   "plainsteel"
   ],
   "plate_l_rigid": [
    1434,
    2720,
-   "steel"
+   "plainsteel"
   ],
   "lame1_l_rigid": [
    748,
    1376,
-   "steel"
+   "plainsteel"
   ],
   "lame2_l_rigid": [
    672,
    1232,
-   "steel"
+   "plainsteel"
   ],
   "lame3_l_rigid": [
    785,
    1464,
-   "steel"
+   "plainsteel"
   ],
   "buckle_l_rigid": [
    120,
    60,
-   "steel"
+   "plainsteel"
   ],
   "straps_r": [
    564,
@@ -232,32 +232,32 @@
   "rivets_r_rigid": [
    75,
    120,
-   "steel"
+   "plainsteel"
   ],
   "plate_r_rigid": [
    1434,
    2720,
-   "steel"
+   "plainsteel"
   ],
   "lame1_r_rigid": [
    748,
    1376,
-   "steel"
+   "plainsteel"
   ],
   "lame2_r_rigid": [
    672,
    1232,
-   "steel"
+   "plainsteel"
   ],
   "lame3_r_rigid": [
    785,
    1464,
-   "steel"
+   "plainsteel"
   ],
   "buckle_r_rigid": [
    120,
    60,
-   "steel"
+   "plainsteel"
   ]
  }
 }

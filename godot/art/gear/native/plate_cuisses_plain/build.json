@@ -2,6 +2,7 @@
  "recipe": "limb_plate",
  "piece": {"name": "Plain cuisses", "slot": "legwear", "style": "cuisses", "tier": 1, "covers": ["legwear"],
            "dye": ["metal", "leather"]},
+ "materials": {"plate": "plainsteel", "strap": "darkleather"},
  "frame": {"from": "thigh_*", "to": "calf_*"},
  "ride": {"bones": {"thigh_twist_02_{s}": 1}},
  "theta": [-35, 115],

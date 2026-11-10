@@ -5,7 +5,7 @@
  "frame": {"from": "upperarm_*", "to": "lowerarm_*"},
  "theta": [20, 175], "mirror": true,
  "clear": 0.004, "thick": 0.004, "roll": [0.006, 0.0018], "lip": 0.003, "ease": 2.5, "step": 0.0075, "step_s": 0.006,
- "materials": {"plate": "steel", "rim": "steel", "arming": "darkleather"},
+ "materials": {"plate": "plainsteel", "rim": "plainsteel", "arming": "darkleather"},
  "cop": {"apex": 0.012, "rim": 0.0015, "shape": [2.4, 2.4], "roll": [0.007, 0.0024],
          "over": {"ease": 0.006}, "arch": {"span": 0.034, "power": 2.6},
          "ridge": {"theta": 96, "h": 0.0025, "w": 0.03, "fade": 0.02}},

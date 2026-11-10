@@ -4,6 +4,13 @@
   "repeats": 2.5,
   "zone": "metal"
  },
+ "plainsteel": {
+  "kind": "metal",
+  "repeats": 2.5,
+  "zone": "metal",
+  "template": "steel",
+  "note": "provisional (P2 gear, 10 Nov): bare steel so the plate set's form can be judged; L1 owns the final read. Steel's own textures (template: the glTF material of that key, gear_native.write_src); no finish in metal_finishes.json, so it draws bare (finish 0)."
+ },
  "darksteel": {
   "kind": "metal",
   "repeats": 2.5,
