@@ -101,3 +101,72 @@ def test_hidden_set_stale_when_the_piece_moves(tmp_path):
     h = gt.hidden_of(str(tmp_path), "p", sk, PB)
     assert h is not None and h.sum() == 5
     assert gt.hidden_of(str(tmp_path), "p", sk, PB + 0.001) is None
+
+
+# ---------------------------------------------------------------- DEPTH AS DATA (the law's tuck_depth_mm)
+
+def _law(monkeypatch, law):
+    import gear_fit
+    monkeypatch.setattr(gear_fit, "standoff_law", lambda slot, roles=None: law)
+
+
+def _edge_dist(sk, t):
+    """Per point: the distance along her skin in from the border of the tucked set's footprint (the plate's rays)."""
+    from scipy.sparse import csr_matrix
+    from scipy.sparse.csgraph import dijkstra
+    G = csr_matrix((sk.l, (sk.a, sk.b)), shape=(sk.ng, sk.ng))
+    return dijkstra(G, directed=False, indices=np.nonzero(t <= 0)[0], min_only=True)
+
+
+def test_base_is_the_shaders_tuck_and_gear_wears():
+    import re
+    import gear_wear as gw
+    src = open(os.path.join(gt.REPO, "godot", "shaders", "heroine_skin.gdshader"), encoding="utf-8").read()
+    assert float(re.search(r"uniform float tuck = ([0-9.]+);", src).group(1)) == gt.BASE == gw.TUCK_DEPTH
+    k = [(0, 0, 0), (1, 0, 0)]
+    d, gone = gw.skin_tuck({k[0]: 0.5, k[1]: 0.98}, k)
+    assert np.allclose(d, [0.005, 0.010]) and not gone.any()
+    assert np.allclose(gw.skin_tuck({k[0]: 0.5, k[1]: 0.98}, k, 18.0)[0], [0.009, 0.018])
+
+
+def test_depth_law_default_is_today(monkeypatch):
+    sk, PB, TB = shoulder()
+    R = np.ones(len(TB), bool)
+    _law(monkeypatch, None)
+    t0 = gt.tuck_of(sk, PB, TB, R, "pauldrons")[0]
+    assert t0.max() >= 0.9 and gt.depth_of(R, "pauldrons") == gt.BASE
+    _law(monkeypatch, {"cap_mm": 8, "tuck_depth_mm": 10})
+    assert np.array_equal(gt.tuck_of(sk, PB, TB, R, "pauldrons")[0], t0)
+    _law(monkeypatch, {"tuck_depth_mm": 18})
+    assert gt.depth_of(R, "pauldrons") == 0.018 and gt.depth_of(~R, "pauldrons") == gt.BASE   # (no rigid face: BASE)
+
+
+def test_depth_law_deep_inside_shallow_at_the_open_edge(monkeypatch):
+    sk, PB, TB = shoulder()
+    R = np.ones(len(TB), bool)
+    _law(monkeypatch, {"tuck_depth_mm": 18, "tuck_full_mm": 14, "tuck_zero_mm": 20, "tuck_step": 1.0, "tuck_slope": 1.0,
+                       "tuck_edge_mm": 10})
+    t = gt.tuck_of(sk, PB, TB, R, "pauldrons")[0]
+    mm = 18.0 * np.where(t > 0.973, 1.0, t)
+    x = _edge_dist(sk, t) * 1000
+    assert mm.max() == 18.0 and (mm[sk.P[:, 1] > 0.08] == 18.0).all()          # (the crown: all of the law's depth)
+    assert (mm[x <= 10] <= 0.3 * x[x <= 10] + 1e-6).all()                      # (the open edge: SLOPE's ramp, 3 mm at 10)
+    assert (mm <= 3.0 + 1.0 * np.maximum(x - 10, 0) + 1.0 * 4.0 + 1e-6).all()  # (past it: the law's slope; one edge of slack)
+    assert not (t[sk.P[:, 1] < -0.045] > 0).any()                              # (nothing outside the plate)
+    # (without tuck_slope the whole ramp is SLOPE's: the depth is held by the distance to the edge)
+    _law(monkeypatch, {"tuck_depth_mm": 18, "tuck_full_mm": 14, "tuck_zero_mm": 20})
+    t1 = gt.tuck_of(sk, PB, TB, R, "pauldrons")[0]
+    x1 = _edge_dist(sk, t1) * 1000
+    assert (18.0 * np.where(t1 > 0.973, 1.0, t1) <= 0.3 * x1 + 1e-6).all()
+
+
+def test_reach_follows_the_law(monkeypatch):
+    sk, _, _ = shoulder()
+    cap = trimesh.creation.icosphere(subdivisions=4, radius=0.115)                # (a plate standing 15 mm off her)
+    keep = cap.vertices[cap.faces].mean(1)[:, 1] > -0.03
+    PB, TB = np.asarray(cap.vertices, float), np.asarray(cap.faces[keep], np.int64)
+    R = np.ones(len(TB), bool)
+    _law(monkeypatch, None)
+    assert gt.tuck_of(sk, PB, TB, R, "pauldrons")[0].max() == 0.0                 # (past REACH: today, nothing)
+    _law(monkeypatch, {"tuck_full_mm": 16, "tuck_zero_mm": 22})
+    assert gt.tuck_of(sk, PB, TB, R, "pauldrons")[0].max() >= 0.9

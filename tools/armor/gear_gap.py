@@ -30,6 +30,7 @@ BAND_MM = 8.0      # a rigid group joins the band above it when their mean heigh
 EDGE_MM = 3.0      # a band's leading edge: its points this close to the furthest point of their direction
 BINS = 24          # directions around the stack
 RING_MM = 15.0     # the visible dent: her skin this far outside the footprint, beside a rigid plate
+RIM_MM = 10.0      # the open edge: her skin under the piece this close to skin that is not
 UP = 0.5           # her skin faces up: its normal's Y above this
 
 
@@ -82,7 +83,8 @@ def gap(out_dir, bodies, row):
                                            gf.load_bodies(os.path.join(REPO, bd.meta["bind_body"]))))
     dn, nn = cKDTree(Xe).query(P[rv])
     X, side, band = P[rv], se[nn], be[nn]
-    tk, gone = gw.skin_tuck(gw.read_records(os.path.join(out_dir, "armor_tuck", row["id"] + ".bin")), gw.keys_of(B.V))
+    tk, gone = gw.skin_tuck(gw.read_records(os.path.join(out_dir, "armor_tuck", row["id"] + ".bin")), gw.keys_of(B.V),
+                             row.get("tuck_depth_mm"))
     wet = SimpleNamespace(V=B.V - B.N * tk[:, None], T=B.T, N=B.N)
     wet.surf = gf.Surface(wet.V, wet.T)
     c1 = gear_field.signed_clear(wet, X, k=16)[0] * 1000
@@ -114,6 +116,11 @@ def gap(out_dir, bodies, row):
         ring = ~foot & (cKDTree(B.V[under]).query(B.V)[0] <= RING_MM / 1000.0)
     res["dent_out_mm"] = round(float(tk[ring].max() * 1000), 1) if ring.any() else 0.0
     res["dent_out_points"] = int((tk[ring] > 0.001).sum())
+    # (the open edge: the deepest and median tuck of her skin under the piece within RIM_MM of skin that is not)
+    rim = foot & (cKDTree(B.V[~foot]).query(B.V)[0] <= RIM_MM / 1000.0) if foot.any() and not foot.all() else foot & False
+    res["dent_rim_mm"] = ([round(float(tk[rim].max() * 1000), 1), round(float(np.median(tk[rim]) * 1000), 1)]
+                          if rim.any() else [0.0, 0.0])
+    res["tuck_depth_mm"] = row.get("tuck_depth_mm", 10.0)
     res["dent_under_mm"] = round(float(tk[under].max() * 1000), 1) if under.any() else 0.0
     return res
 
@@ -121,7 +128,8 @@ def gap(out_dir, bodies, row):
 def table(res):
     L = [f"{res['id']}: {res['rigid_points']} rigid points (bands laid within {res['band_fit_mm']} mm), "
          f"{res['tucked_points']} skin points tucked, {res['gone_points']} gone; dent outside the footprint "
-         f"{res['dent_out_mm']} mm ({res['dent_out_points']} points over 1 mm), under the plates {res['dent_under_mm']} mm",
+         f"{res['dent_out_mm']} mm ({res['dent_out_points']} points over 1 mm), under the plates {res['dent_under_mm']} mm (full scale {res['tuck_depth_mm']} mm), "
+         f"within {RIM_MM:.0f} mm inside its edge max / median {res['dent_rim_mm'][0]} / {res['dent_rim_mm'][1]} mm",
          "  side band  points | clear min  med | raw min  med | edge min  med | top (rendered / raw)"]
     f = lambda v: "    -" if v is None else f"{v:5.1f}"
     for r in res["bands"]:

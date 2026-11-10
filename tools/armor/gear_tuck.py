@@ -56,6 +56,7 @@ sys.path.insert(0, os.path.join(REPO, "tools", "anim"))
 import cover as cv  # noqa: E402
 
 REACH = 0.012
+BASE = 0.010           # a record's full scale unless its row says "tuck_depth_mm": heroine_skin.gdshader's `tuck` (10 mm)
 LIFT = 0.0005
 GRAZE = 0.5
 SLOPE = 30.0
@@ -101,9 +102,13 @@ class Skin:
         self.kd = cKDTree(self.P)
 
 
-def tuck_bound(sk, t, hard=None, under=None, step=None):
+def tuck_bound(sk, t, hard=None, under=None, step=None, scale=1.0, slope=None, edge=0.0):
     """heroine_outfits.tuck_bound on this body's welded graph (per vertex in, per vertex out); `step` the most the tuck
-    may rise over one edge in from the edge of the skin it covers (STEP, or a rigid slot's stand-off law)."""
+    may rise over one edge in from the edge of the skin it covers (STEP, or a rigid slot's stand-off law).
+    DEPTH AS DATA: `t` and the result are marks of the row's own full scale (`scale` x BASE: a rigid slot's law
+    "tuck_depth_mm"); SLOPE and STEP stay what they are in millimetres (0.3 mm a mm of skin, 1.5 mm an edge) at any
+    scale. `slope` (marks of BASE a metre, a law's "tuck_slope") replaces SLOPE only on edges whose both ends lie
+    `edge` m or more (along her skin) in from the footprint's border: the open edge keeps the general rule's ramp."""
     gid, ng, a_, b_, l_ = sk.gid, sk.ng, sk.a, sk.b, sk.l
     need = np.zeros(ng)
     np.maximum.at(need, gid, t)
@@ -117,6 +122,17 @@ def tuck_bound(sk, t, hard=None, under=None, step=None):
         return t
     inn = U[a_] & U[b_]
     lw_ = np.minimum(SLOPE * l_, STEP if step is None else step)
+    if slope is not None and slope != SLOPE:
+        b0 = np.unique(a_[~U[a_] & U[b_]])
+        s0 = U.copy()
+        s0[b0] = True
+        k0 = s0[a_] & s0[b_]
+        x_ = dijkstra(sparse.csr_matrix((l_[k0], (a_[k0], b_[k0])), shape=(ng, ng)), directed=False, indices=b0,
+                      min_only=True) if len(b0) else np.full(ng, np.inf)
+        deep = (x_[a_] >= edge) & (x_[b_] >= edge)
+        lw_ = np.where(deep, np.minimum(slope * l_, STEP if step is None else step), lw_)
+    if scale != 1.0:
+        lw_ = lw_ / scale
     ai, bi, li = a_[inn], b_[inn], lw_[inn]
     s = need.copy()
     deg = np.bincount(bi, minlength=ng).astype(float)
@@ -144,13 +160,26 @@ def tuck_bound(sk, t, hard=None, under=None, step=None):
 
 
 def rigid_tuck_law(slot):
-    """(full m, zero m, step) of the UNDER A RIGID PLATE rule for a slot: RIGID_FULL, RIGID_ZERO, STEP, or the slot's
-    stand-off law (tools/armor/rigid_roles.json slots "standoff": "tuck_full_mm", "tuck_zero_mm", "tuck_step"): a plate
-    made to stand off her where she moves keeps its full tuck that much further out."""
+    """The UNDER A RIGID PLATE rule for a slot: RIGID_FULL, RIGID_ZERO, STEP, BASE, SLOPE, or the slot's stand-off law
+    (tools/armor/rigid_roles.json slots "standoff"): "tuck_full_mm" / "tuck_zero_mm" (the plate this close: the full
+    depth; this far: none; a plate made to stand off her keeps its tuck that much further out, and the rule's REACH
+    follows tuck_zero_mm), "tuck_step" (the most the tuck rises over one skin edge, as a share of 10 mm),
+    "tuck_depth_mm" (the full depth: 10 = the shader's; more = her hidden skin yields deeper, and the row's record is
+    marks of that scale: gear_index "tuck_depth_mm"), "tuck_slope" (mm of depth a mm of skin, 0.3 = SLOPE) past
+    "tuck_edge_mm" (10) in from the footprint's border; within it the ramp is SLOPE's whatever the law says.
+    {full, zero, step, depth (m), slope (marks of BASE a metre), edge (m)}."""
     import gear_fit
     law = gear_fit.standoff_law(slot) or {}
-    return (law.get("tuck_full_mm", RIGID_FULL * 1000) / 1000.0, law.get("tuck_zero_mm", RIGID_ZERO * 1000) / 1000.0,
-            law.get("tuck_step", STEP))
+    return {"full": law.get("tuck_full_mm", RIGID_FULL * 1000) / 1000.0,
+            "zero": law.get("tuck_zero_mm", RIGID_ZERO * 1000) / 1000.0, "step": law.get("tuck_step", STEP),
+            "depth": law.get("tuck_depth_mm", BASE * 1000) / 1000.0,
+            "slope": law["tuck_slope"] / BASE if "tuck_slope" in law else SLOPE,
+            "edge": law.get("tuck_edge_mm", 10.0) / 1000.0}
+
+
+def depth_of(rigid, slot):
+    """A row's full scale (m): its slot's law depth when it has rigid faces, else BASE."""
+    return rigid_tuck_law(slot)["depth"] if rigid is not None and rigid.any() else BASE
 
 
 def tuck_of(sk, PB, TB, rigid=None, slot=None):
@@ -179,24 +208,32 @@ def tuck_of(sk, PB, TB, rigid=None, slot=None):
     d = np.linalg.norm(loc - O[ri], axis=1)
     fn = mesh.face_normals[tri]
     cos = np.abs((fn * sk.N[cand[ri]]).sum(1))
-    near = d <= REACH
+    law = rigid_tuck_law(slot) if rigid is not None and rigid.any() else None
+    scale = law["depth"] / BASE if law else 1.0
+    near0 = d <= REACH
+    # (REACH follows the law: a rigid face out to tuck_zero_mm still marks her skin under it)
+    near = near0 | (rigid[tri] & (d <= law["zero"])) if law else near0
     face_on = near & (cos >= GRAZE)
     grazed = int((near & ~face_on).sum())
     v = cand[ri[face_on]]
     under = np.zeros(len(sk.P), bool)
     under[v] = True
     t[v] = 0.8 * np.clip((0.005 - d[face_on] - LIFT) / 0.004, 0, 1)
+    full = FULL   # (what says "all of BASE" in this row's marks: the general rule and through-at-rest keep their mm)
+    if scale != 1.0:
+        t[v] = np.minimum(t[v] / scale, FULL)
+        full = min(FULL, 1.0 / scale)
     raised = 0
-    if rigid is not None and rigid.any():
+    if law:
         rg = rigid[tri[face_on]]
-        rf, rz, _ = rigid_tuck_law(slot)
+        rf, rz = law["full"], law["zero"]
         tr = FULL * np.clip((rz - (d[face_on] + LIFT)) / (rz - rf), 0, 1)
         up = rg & (tr > t[v])
         t[v[up]] = tr[up]
         raised += int(up.sum())
     # (through at rest: her inward ray meets a face that looks back at it, i.e. the piece's outside, close behind her)
     infront = np.zeros(len(sk.P), bool)
-    infront[cand[ri[near]]] = True
+    infront[cand[ri[near0]]] = True
     tb, rb, lb = ray.intersects_id(sk.P[cand] + sk.N[cand] * LIFT, -sk.N[cand], multiple_hits=False, return_locations=True)
     db = np.linalg.norm(lb - (sk.P[cand[rb]] + sk.N[cand[rb]] * LIFT), axis=1)
     outer = (mesh.face_normals[tb] * sk.N[cand[rb]]).sum(1) > 0
@@ -204,11 +241,12 @@ def tuck_of(sk, PB, TB, rigid=None, slot=None):
     thr = thr[~infront[thr]]
     hard = np.zeros(len(sk.P), bool)
     hard[thr] = True
-    raised += int((t[thr] < FULL).sum())
-    t[thr] = FULL
+    raised += int((t[thr] < full).sum())
+    t[thr] = np.maximum(t[thr], full)
     under[thr] = True
-    step = rigid_tuck_law(slot)[2] if rigid is not None and rigid.any() else None
-    return tuck_bound(sk, t, hard, under | (t > 0), step), grazed, raised
+    if not law:
+        return tuck_bound(sk, t, hard, under | (t > 0)), grazed, raised
+    return tuck_bound(sk, t, hard, under | (t > 0), law["step"], scale, law["slope"], law["edge"]), grazed, raised
 
 
 def fib_dirs(n):
@@ -407,6 +445,11 @@ def write_all(out_dir, close_glb, play_glb, rows, say=print):
         nc = write_records(os.path.join(out_dir, "armor_cover", f"{r['id']}.bin"), close.P, c)
         r["tuck"] = f"armor_tuck/{r['id']}.bin"
         r["tuck_count"] = nt
+        # (DEPTH AS DATA: the record's full scale, said only when it is not the shader's 10 mm)
+        dm = round(depth_of(RB, r["slot"]) * 1000, 3) if hides.get(r["id"], True) else BASE * 1000
+        r.pop("tuck_depth_mm", None)
+        if dm != BASE * 1000:
+            r["tuck_depth_mm"] = dm
         r["cover_count"] = nc
         st = {"tuck_close": int(len(np.unique(np.round(close.P[tc > 0] * 1e5), axis=0))), "tuck_all": nt, "cover": nc,
               "full": int((tc >= 0.98).sum()), "gone": int((tc >= 0.995).sum()), "grazed": gz, "raised": rz,

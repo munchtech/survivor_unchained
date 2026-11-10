@@ -315,8 +315,8 @@ def test_standoff_floor_law(tmp_path):
     try:
         f = gf.standoff_floor(_Bd, [{"i": 0, "node": "n0"}], ev, path=str(fp))
         assert abs(f[0] - 0.010) < 1e-9 and np.isnan(f[1]) and abs(f[2] - 0.005) < 1e-9 and np.isnan(f[3])
-        assert gt.rigid_tuck_law("pauldrons") == (0.012, 0.018, 0.5)
-        assert gt.rigid_tuck_law("top") == (gt.RIGID_FULL, gt.RIGID_ZERO, gt.STEP)
+        assert [gt.rigid_tuck_law("pauldrons")[k] for k in ("full", "zero", "step")] == [0.012, 0.018, 0.5]
+        assert [gt.rigid_tuck_law("top")[k] for k in ("full", "zero", "step", "depth")] == [gt.RIGID_FULL, gt.RIGID_ZERO, gt.STEP, gt.BASE]
     finally:
         gf.rigid_roles = old
 
@@ -340,7 +340,7 @@ def test_seat_cap_and_roles_override(tmp_path, monkeypatch):
     monkeypatch.setenv("GEAR_ROLES", str(rp))
     assert gf.roles_path() == str(rp) and gf.standoff_law("pauldrons")["seat_cap_mm"] == 3
     import gear_tuck as gt
-    assert gt.rigid_tuck_law("pauldrons") == (gt.RIGID_FULL, gt.RIGID_ZERO, gt.STEP)
+    assert [gt.rigid_tuck_law("pauldrons")[k] for k in ("full", "zero", "step", "depth")] == [gt.RIGID_FULL, gt.RIGID_ZERO, gt.STEP, gt.BASE]
 
     class _Bd:
         id, meta, z = "u", {"row": {"slot": "pauldrons"}}, {"lead_close": lead}
@@ -355,7 +355,7 @@ def test_seat_cap_and_roles_override(tmp_path, monkeypatch):
     rp2.write_text(_json.dumps({"slots": {"pauldrons": {"standoff": {"cap_mm": 0, "tuck_step": 1.0}}}}))
     monkeypatch.setenv("GEAR_ROLES", str(rp2))
     assert gf.standoff_floor(_Bd, ms, ev, path=str(fp)) is None
-    assert gt.rigid_tuck_law("pauldrons")[2] == 1.0
+    assert gt.rigid_tuck_law("pauldrons")["step"] == 1.0
     monkeypatch.delenv("GEAR_ROLES")
     assert gf.roles_path() == gf.ROLES_PATH
 

@@ -122,10 +122,11 @@ def keys_of(P):
     return [tuple(k) for k in np.round(np.asarray(P, np.float64) * 1e5).astype(np.int64)]
 
 
-def skin_tuck(recs, keys):
-    """The shader's tuck of her skin under one piece: depth (m) and not drawn, per point."""
+def skin_tuck(recs, keys, depth_mm=None):
+    """The shader's tuck of her skin under one piece: depth (m) and not drawn, per point. `depth_mm`: the record's
+    full scale (its row's gear_index "tuck_depth_mm"; None: the shader's 10 mm, TUCK_DEPTH)."""
     t = np.array([recs.get(k, 0.0) for k in keys])
-    return TUCK_DEPTH * amount(t), t >= T_GONE
+    return (TUCK_DEPTH if depth_mm is None else depth_mm / 1000.0) * amount(t), t >= T_GONE
 
 
 
@@ -599,7 +600,7 @@ class Check:
         for i in ids:
             if i not in self.pc:
                 continue
-            tk, gone = skin_tuck(self.recs[i], sc.keys)
+            tk, gone = skin_tuck(self.recs[i], sc.keys, self.byid[i].get("tuck_depth_mm"))
             sv = sc.isk[~gone]
             tsv = tk[~gone]
             O = P0[sv] - self.N0[sv] * tsv[:, None]
