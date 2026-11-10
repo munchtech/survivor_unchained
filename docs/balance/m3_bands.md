@@ -1,3 +1,23 @@
+# M3 bands: round 6 (9 Nov late night, lead 6): the stand clock that knows a fighter's plant, the bands re-pointed (main's option A)
+
+The rule (lead 5, `world_tiers.json` `stand.standSwing` 2.4 on every tier): the story stand clock counts only feet still with no cut landing; each landed cut of her held swing holds it for its own wait, up to 2.4 s at one spot; a 0.6 m step gives the allowance back; a swing at the air earns nothing. Lead 6 fixed the feet under it (`Pilot.StepLead` 0.6: the plant ends with 0.6 s of the clock left, because Sunder's own heavy holds her feet 0.3 s; a plant's end is always a step; the step clears the clock's own spot, `Battle.StandSpot`). No tier row was tuned this round.
+
+**The bands as re-pointed (main, option A):** the passive player is the STANDER (falls 80%+). The idler ("holds the swing, dodges marks, presses nothing") is a fighter who does not press: she is no longer measured on falls but on being SLOW against the human at the same tier: **kills a minute at most 0.90x the human's, and time through at least 1.10x the human's median.** Why these: a press plan has to be worth a tenth of the run even in the first hour, where she owns one spender and about 70% of a Low Ford run is walking (in reach 86 s of about 310 s), so the fight measure (kills a minute) is the firm one and the time-through floor is low; set a wider floor on the veteran maps (full kit) once they are measured under this clock.
+
+**Low Ford, 48 seeds, tiers I / II** (`zone --zone lowford --bots standing,idler,human,deft --seeds 48 --tiers 1,2`, at 09b64d949):
+
+| bot | band | I | II |
+|---|---|---|---|
+| human, no fall | I 85+, II 78-85 | 85.4% | 85.4% (0.4 over the top, inside the noise of 48) |
+| deft, no fall | 95+ | 95.8% | 100% |
+| standing, falls | 80+ | 87.5% (4.06 falls a run) | 97.9% (4.29) |
+| idler, kills a minute vs human | at most 0.90x | 25.8 / 29.3 = 0.88x | 24.4 / 27.7 = 0.88x |
+| idler, time through vs human (median) | at least 1.10x | 5.40 / 5.10 = 1.06x (MISS by 0.04) | 6.00 / 5.30 = 1.13x |
+| idler, no fall (not a band now) | - | 77.1% | 66.7% |
+| human stand charges a run / stood / net turn | - | 1.4 / 70% / -0.02 | 1.6 / 67% / -0.02 |
+
+**What still misses, and why:** (1) the idler's tier-I time through (1.06x): not tuned; first measure it on fight time, the walk dilutes it. (2) Every stand charge left on the human and deft (22 of 22 read with `SU_STANDDBG`, 8 seeds, II) is at ONE place: the day's Exit beat, the kerchiefs near (44..49, -84..-93) at 273-306 s: Pilot.Steer's `close` (20) or `stone` (2) walks her straight at a foe or a pickup 5.7-9.6 m off with a wall on the ray (or a prop near (44,-89) holding her at 0.00 m with the ray clear), so her feet are still and the clock charges. The same place is the harness's STUCK runs (6 of 384, e.g. T2/deft/s3 at (48,-106); they read as no-fall in this table). Not a feet fault: the walk has no way round a wall inside the clock's second (ZoneSim's unstick waits 8 s). (3) Veteran maps III/IV are not re-measured under standSwing.
+
 # M3 bands: round 5 (9 Nov, the last): the Flare per boss fight, the first hour's human, the veteran idler
 
 Commands as round 4 (veteran: four grants + the Bladestorm union, six slots). `PressedSkills.GrantUnion` now refuses a union with no room, before it takes its parts' keys, so a command asking seven keys runs without the union; round 2's command line below is fixed to round 4's. Low Ford I at 32 seeds, II at 16; veteran 8 seeds x dead,pack (16 runs a bot). `boss life` = the Flare's share of the life the bosses lost (median of runs, min-max).
