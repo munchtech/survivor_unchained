@@ -448,8 +448,120 @@ def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), w
     return place(x, 0.0)
 
 
+def lay_faults(P0, P, N, E, tris, lim, qrel, amin):
+    """The faults of a lay P (points on the reference, N the reference's normals at their feet) against the mesh's rest
+    P0: per triangle the signed area against the feet's normals / the rest area (the mesh's winding faces along the
+    reference's normals) and tri_quality lay, rest; per edge lay / rest length. Faulty: a triangle with area under
+    amin (under 0: turned) or quality under qrel x its rest quality; an edge outside lim.
+    -> (area [f], quality [f], rest quality [f], ratio [e], faulty triangles [f] bool, faulty edges [e] bool)."""
+    cr = lambda X: np.cross(X[tris[:, 1]] - X[tris[:, 0]], X[tris[:, 2]] - X[tris[:, 0]])
+    sa = (cr(P) * ct._unit(N[tris].sum(1))).sum(1) / np.linalg.norm(cr(P0), axis=1)
+    q, q0 = tri_quality(P, tris), tri_quality(P0, tris)
+    r = np.linalg.norm(P[E[:, 0]] - P[E[:, 1]], axis=1) / np.linalg.norm(P0[E[:, 0]] - P0[E[:, 1]], axis=1)
+    return sa, q, q0, r, (sa < amin) | (q < qrel * q0), (r < lim[0]) | (r > lim[1])
+
+
+def untangle(unf, u, h, P0, N0, band, hold, E, tris, lim=(0.6, 1.6), qrel=0.5, amin=0.25, grow=2, sweeps=30, dirs=16,
+             tol=1e-4, stop=1e-5):
+    """A lay's faults repaired in place: (the plane points u with the faulty points re-placed, a report).
+
+    u [n, 2]: the lay (plane points of the unfold `unf`); h [band points]: their heights; P0 [n, 3]: the mesh's rest;
+    N0 [n, 3]: the reference's normals at the rest feet (used for the points outside the band, which stay at P0);
+    band [n] bool: the points of the lay; hold [n] bool: band points that never move (the snapped row); E, tris: the
+    edges and triangles that touch the band. The points outside the band (the fixed ring) never move.
+
+    Faults as lay_faults names them. Their free points are re-placed one at a time, on the reference's surface (a
+    pattern search in the plane, lifted back with the point's height): first until every triangle at the point is sound
+    (area >= amin, quality >= qrel x rest), then to the least worst deviation max(r, 1 / r) - 1 of the edges at the
+    point with those triangles kept sound. A move is taken only if it betters the point's own score by tol, so a
+    sound point stays where it is and the worst deviation over the band never rises. While faults remain, the free
+    set grows by one ring of neighbours, `grow` times at most. No point is named here."""
+    n, bi = len(P0), np.nonzero(band)[0]
+    hh = np.zeros(n)
+    hh[bi] = h
+    u = np.asarray(u, float).copy()
+    P, N = P0.copy(), N0.copy()
+    S, Nb, _ = unf.lift(u[bi])
+    P[bi], N[bi] = S + h[:, None] * Nb, Nb
+    Pin = P.copy()
+    l0 = np.linalg.norm(P0[E[:, 0]] - P0[E[:, 1]], axis=1)
+    a0 = np.linalg.norm(np.cross(P0[tris[:, 1]] - P0[tris[:, 0]], P0[tris[:, 2]] - P0[tris[:, 0]]), axis=1)
+    q0 = tri_quality(P0, tris)
+    pe, pt = [[] for _ in range(n)], [[] for _ in range(n)]
+    for x, (a, b) in enumerate(E):
+        pe[a].append(x)
+        pe[b].append(x)
+    for x, t in enumerate(tris):
+        for c in t:
+            pt[c].append(x)
+    dev = lambda r: np.maximum(r, 1 / np.maximum(r, 1e-9)) - 1
+    ang = np.arange(dirs) * 2 * np.pi / dirs
+    ring = np.stack([np.cos(ang), np.sin(ang)], 1)
+
+    def score(p, q):
+        """Per candidate plane point q [k, 2] of point p: (the triangles' shortfall, the worst edge deviation, the
+        lay points, the normals)."""
+        Sq, Nq, sc = unf.lift(q)
+        C = Sq + hh[p] * Nq
+        ep = np.array(pe[p])
+        o = np.where(E[ep, 0] == p, E[ep, 1], E[ep, 0])
+        d = dev(np.linalg.norm(C[:, None] - P[o][None], axis=2) / l0[ep]).max(1)
+        short = np.where(sc < -1e-9, np.inf, 0.0)
+        for t in pt[p]:
+            X = np.repeat(P[tris[t]][None], len(q), 0)
+            Nn = np.repeat(N[tris[t]][None], len(q), 0)
+            c = int(np.nonzero(tris[t] == p)[0][0])
+            X[:, c], Nn[:, c] = C, Nq
+            nr = np.cross(X[:, 1] - X[:, 0], X[:, 2] - X[:, 0])
+            sa = (nr * ct._unit(Nn.sum(1))).sum(1) / a0[t]
+            ql = 2 * np.sqrt(3) * np.linalg.norm(nr, axis=1) / ((X[:, 1] - X[:, 0]) ** 2 + (X[:, 2] - X[:, 1]) ** 2 + (X[:, 0] - X[:, 2]) ** 2).sum(1)
+            short += np.maximum(amin - sa, 0) + np.maximum(qrel * q0[t] - ql, 0)
+        return short, d, C, Nq
+
+    better = lambda s, d, s0, d0: (s < s0 - tol) if s0 > 0 else (s <= 0) & (d < d0 - tol)
+    first = lay_faults(P0, P, N, E, tris, lim, qrel, amin)
+    free = np.zeros(n, bool)
+    rounds = 0
+    for g in range(grow + 1):
+        sa, q, _, r, ft, fe = lay_faults(P0, P, N, E, tris, lim, qrel, amin)
+        if not (ft.any() or fe.any()):
+            break
+        seed = np.zeros(n, bool)
+        seed[tris[ft].ravel()] = True
+        seed[E[fe].ravel()] = True
+        if g:                                                # the faults that stayed: their points' neighbours too
+            seed |= free
+            near = np.zeros(n, bool)
+            near[E[seed[E].any(1)].ravel()] = True
+            seed |= near
+        free = seed & band & ~hold
+        rounds = g + 1
+        for _ in range(sweeps):
+            moved = 0.0
+            for p in np.nonzero(free)[0]:
+                ep = np.array(pe[p])
+                rad = 0.5 * np.linalg.norm(u[E[ep, 0]] - u[E[ep, 1]], axis=1).mean()
+                s0, d0, _, _ = (x[0] for x in score(p, u[p][None]))
+                while rad > stop:
+                    cand = u[p] + np.r_[rad * ring, 0.5 * rad * ring]
+                    s, d, C, Nq = score(p, cand)
+                    key = np.where(s > 0, 1e6 + s, d) if s0 <= 0 else s * 1e6 + d * (s <= 0)
+                    k = int(key.argmin())
+                    if better(s[k], d[k], s0, d0):
+                        moved = max(moved, float(np.linalg.norm(C[k] - P[p])))
+                        u[p], P[p], N[p], s0, d0 = cand[k], C[k], Nq[k], s[k], d[k]
+                    else:
+                        rad *= 0.5
+            if moved < stop:
+                break
+    last = lay_faults(P0, P, N, E, tris, lim, qrel, amin)
+    mv = np.linalg.norm(P - Pin, axis=1)
+    return u, {"moved": np.nonzero(mv > 1e-9)[0], "mm": mv[mv > 1e-9] * 1000, "free": np.nonzero(free)[0], "rounds": rounds,
+               "before": first, "after": last, "lim": lim, "qrel": qrel, "amin": amin}
+
+
 def relay(P0, edges, tris, band, bridge, face, bary, ref_V0, ref_T, reach=0.03, kappa=1.2, deg=3, ext=0.01, part=0.9,
-          rounds=4, sweeps=40, lim=(0.82, 1.28), wall=50.0, fold=0.5, side=0, design=None, lay=None, u_given=None):
+          rounds=4, sweeps=40, lim=(0.82, 1.28), wall=50.0, fold=0.5, side=0, design=None, lay=None, u_given=None, repair=None):
     """The band's points re-laid on the reference's rest surface: {"P1": the new points [n, 3], ...stats}.
 
     P0 [n, 3], edges [m, 2], tris [f, 3]: the mesh's rest points and topology; band [n] bool: the points that may move;
@@ -459,6 +571,7 @@ def relay(P0, edges, tris, band, bridge, face, bary, ref_V0, ref_T, reach=0.03, 
     side: which bridge ends make the apex row (0: the nearer side, +1 / -1: that side of the apex line).
     design (+ lay: lay2's keywords): the lay is lay2's (a carry map, judged in the poses of `design`).
     u_given [n, 2]: a stored lay's plane points; nothing is solved, the result is rebuilt from them.
+    repair: untangle's keywords ({} = its defaults); the lay (solved or given) is untangled, the snapped row held.
     """
     P0, E, tris = np.asarray(P0, float), np.asarray(edges, np.int64), np.asarray(tris, np.int64)
     V0, T = np.asarray(ref_V0, float), np.asarray(ref_T, np.int64)
@@ -544,8 +657,24 @@ def relay(P0, edges, tris, band, bridge, face, bary, ref_V0, ref_T, reach=0.03, 
         if not len(add) or rnd == rounds - 1 or u_given is not None:
             break
         snap[add] = True
+    fix = None
+    if repair is not None:                                   # the lay's own faults (turned, slivers, edges out of lim)
+        u, fix = untangle(unf, u, h, P0, N0, band, snap, Eb, tb, **repair)
+        S, N, score = unf.lift(u[bi])
+        for _ in range(24):
+            bad = ct.surface_distance(S + h[:, None] * N, V0, T) < part * np.abs(h) - 1e-7
+            if not bad.any():
+                break
+            h[bad] *= 0.7
+            cut |= bad
+        P1 = P0.copy()
+        P1[bi] = S + h[:, None] * N
+        k1 = unf.length(u[i], u[j]) / np.maximum(np.linalg.norm(P1[i] - P1[j], axis=1), 1e-12)
     Nf = N0.copy()
     Nf[bi] = N
+    own = np.zeros((n, 3))                                   # the mesh's own rest normals: which way its triangles face
+    for c in range(3):
+        np.add.at(own, tris[:, c], np.cross(P0[tris[:, 1]] - P0[tris[:, 0]], P0[tris[:, 2]] - P0[tris[:, 0]]))
     # the skin budget across the fold: per bridge, the chain ring - bridge - ring along the mesh's edges
     side_e = sd0[i] * sd0[j] > 0
     G = sp.coo_matrix((l0[side_e], (i[side_e], j[side_e])), (n, n)).tocsr()
@@ -564,7 +693,8 @@ def relay(P0, edges, tris, band, bridge, face, bary, ref_V0, ref_T, reach=0.03, 
     l1 = np.linalg.norm(P1[i] - P1[j], axis=1)
     return {"P1": P1, "band": bi, "snap": np.nonzero(snap)[0], "u0": u0, "u": u, "edges": Eb, "tris": tb, "Nf": Nf,
             "budget": np.array(bud), "move": np.linalg.norm(P1 - P0, axis=1)[bi], "len": l1 / l0, "k0": k0, "k1": k1,
-            "flip": int((np.sign(ct.facing(tb, P1, Nf)) != np.sign(ct.facing(tb, P0, N0))).sum()), "h": h, "cut": int(cut.sum()),
+            "flip": int((np.sign(ct.facing(tb, P1, Nf)) != np.sign(ct.facing(tb, P0, own))).sum()), "fix": fix, "N0": N0,
+            "flip_feet": int((np.sign(ct.facing(tb, P1, Nf)) != np.sign(ct.facing(tb, P0, N0))).sum()), "h": h, "cut": int(cut.sum()),
             "score": float(score.min()), "depth": depth, "apex_res": cur.res, "lscm_flipped": unf.flipped,
             "scale": np.percentile(unf.scale, [1, 50, 99]), "rounds": rnd + 1, "bridging": int(isb.sum()), "unf": unf,
             "isb": isb, "l0": l0, "cur": cur, "ring": np.nonzero(ring)[0], "chains": chains, "cross": int(cross.sum()), "sx": sx,
@@ -599,6 +729,7 @@ HER = {
     "old_out": "strip_rest_l18.npz",     #    linear lay, kept in this file
     "side": {"l": -1, "r": 0},           # the apex row: 0 the nearer side's bridge ends, +1 / -1 that side of the line
                                          # (l: the nearer side, +, crushes on the line: rest edge 0.18; - walks on clean)
+    "untangle": {},                      # untangle's keywords (lim, qrel, amin, grow): the lay's own faults repaired
     "lay2": {},                          # lay2's keywords (lim, wall, fold, margin, steps, passes, iters)
     "map_elev": (45.0, 90.0),            # target --map: the lay's share, smoothstep of the arm's elevation over these deg
     "map_near": (45, 60, 67.5, 75, 90),  # ... also print the pose nearest each of these elevations
@@ -635,7 +766,7 @@ class HerStrip:
                 out.append((Va, car.carry(Va), np.einsum("nij,nj->ni", car.rotations(Va), self.h.N0[self.pts[s]]), w))
         return out
 
-    def relay(self, s, rows, u=None):
+    def relay(self, s, rows, u=None, repair=False):
         """The lay of side s: built (cfg["lay"]: 2 = lay2 on the design poses, 1 = the old linear lay), or rebuilt from
         stored plane points u."""
         car, n = self.h.car[s], len(self.pts[s])
@@ -645,7 +776,8 @@ class HerStrip:
         return relay(self.bd.V0[self.pts[s]], self.E[s], self.tris(s), band, car.bridge, car.face, car.bary, self.Ab.V0,
                      self.Ab.T, c["reach"], c["kappa"], c["deg"], c["ext"], c["part"], lim=c["lim"],
                      rounds=2 if new else 4, side=c["side"][s] if c["lay"] == 2 else 0,
-                     design=self.design(s) if new else None, lay=c["lay2"], u_given=u)
+                     design=self.design(s) if new else None, lay=c["lay2"], u_given=u,
+                     repair=c["untangle"] if c["lay"] == 2 and (new or repair) else None)
 
     def load(self):
         z = np.load(rt.OUT / self.cfg["out"])
@@ -690,9 +822,21 @@ def cmd_build(hs, rows):
     import ray
     import region_shape as rs
     md, bd, cfg, out, R = hs.md, hs.bd, hs.cfg, {}, {}
-    old = np.load(rt.OUT / cfg["out"]) if cfg.get("only") else None
+    old = np.load(rt.OUT / cfg["out"]) if cfg.get("only") or cfg.get("repair") else None
     for s in "lr":
-        r = R[s] = hs.relay(s, rows, old[f"u_{s}"] if old is not None and s not in cfg["only"] else None)
+        r = R[s] = hs.relay(s, rows, old[f"u_{s}"] if old is not None and s not in cfg["only"] else None, bool(cfg.get("repair")))
+        if r["fix"]:
+            fx, e, tb, pid = r["fix"], r["edges"], r["tris"], hs.pts[s]
+            ids = lambda v: "/".join(str(int(x)) for x in v) + " (mesh " + "/".join(str(int(pid[x])) for x in v) + ")"
+            for nm, (sa, q, q0, rr, ft, fe) in (("before", fx["before"]), ("after", fx["after"])):
+                print(f"   untangle {s} {nm}: triangles turned {(sa <= 0).sum()}, faulty (area < {fx['amin']} or quality < {fx['qrel']} x rest) {ft.sum()},"
+                      f" edges outside {fx['lim']} {fe.sum()}; rest edge {rr.min():.2f}..{rr.max():.2f}, least area {sa.min():+.2f}, least quality / rest {(q / q0).min():.2f}")
+                for t in np.nonzero(ft)[0]:
+                    print(f"      tri {t} {ids(tb[t])}: area {sa[t]:+.2f}, quality {q[t]:.2f} (rest {q0[t]:.2f})")
+                for x in np.nonzero(fe)[0]:
+                    print(f"      edge {x} {ids(e[x])}: {rr[x]:.2f}")
+            print(f"   untangle {s}: {fx['rounds']} round(s), free points {len(fx['free'])}, moved {len(fx['moved'])}: "
+                  + ", ".join(f"{int(p)} (mesh {int(pid[p])}) {m:.1f} mm" for p, m in zip(fx["moved"], fx["mm"])))
         b, ids = r["band"], md.S[s]["ids"]
         out.update({f"ids_{s}": ids[b], f"loc_{s}": b, f"V0_{s}": bd.V0[hs.pts[s]][b], f"V1_{s}": r["P1"][b],
                     f"snap_{s}": r["snap"], f"bridge_{s}": hs.h.car[s].bridge})
@@ -713,7 +857,7 @@ def cmd_build(hs, rows):
               f" points off the patch {int(r['score'] < -1e-6)}; apex fit residual {r['apex_res'] * 1000:.2f} mm; groove depth under the bridges p50 / max {np.median(r['depth']) * 1000:.1f} / {r['depth'].max() * 1000:.1f} mm")
         print(f"   move mm p50 / p95 / max {pct(r['move'] * 1000)}; rest edge new / old {r['len'].min():.2f}..{r['len'].max():.2f} (p50 {np.median(r['len']):.2f});"
               f" path / chord max {r['k0'].max():.2f} -> {r['k1'].max():.2f} (over {cfg['kappa']}: {(r['k0'] > cfg['kappa']).sum()} -> {(r['k1'] > cfg['kappa']).sum()});"
-              f" rest triangles turned over {r['flip']}; heights mm p5 / p50 / p95 {pct(r['h'] * 1000, (5, 50, 95))}, cut {r['cut']}")
+              f" rest triangles turned over {r['flip']} (against the sign of B's rest at A's foot normals, the old count: {r['flip_feet']}); heights mm p5 / p50 / p95 {pct(r['h'] * 1000, (5, 50, 95))}, cut {r['cut']}")
         print(f"   A's rest path / B's p50 / max {np.median(r['budget'][:, 0]):.2f} / {r['budget'][:, 0].max():.2f}  ->  A's / B' {np.median(r['budget'][:, 1]):.2f} / {r['budget'][:, 1].max():.2f}")
     np.savez_compressed(rt.OUT / cfg["out"], params=json.dumps({**{k: v for k, v in cfg.items()}, "rows": rows}), **out)
     print(f"wrote {rt.OUT / cfg['out']}")
@@ -1056,12 +1200,15 @@ def main():
     ap.add_argument("--lay", default="l19", choices=["l18", "l19"], help="l19: lay 2 (out/shoulder/strip_rest.npz); l18: the old linear lay (strip_rest_l18.npz)")
     ap.add_argument("--side", default="", help="build: the apex row's side of the line per body side, e.g. l=-1,r=1 (0: the nearer)")
     ap.add_argument("--only", default="", help="build: lay this side only (l or r), the other kept from the npz on disk")
+    ap.add_argument("--repair", action="store_true", help="build: no solve; the npz's lay untangled (its faults repaired) and stored")
+    ap.add_argument("--fix", default="", help="build: untangle keywords as JSON, e.g. {\"lim\": [0.6, 1.6]}")
     ap.add_argument("--set", default="", help="build: lay2 keywords as JSON, e.g. {\"iters\": 800}")
     a = ap.parse_args()
     HER["lim"] = (0.82, 1.28) if a.relax else None
     if a.lay == "l18":
         HER["lay"], HER["out"] = 1, HER["old_out"]
-    HER["only"] = a.only
+    HER["only"], HER["repair"] = a.only, a.repair
+    HER["untangle"] = {k: tuple(v) if isinstance(v, list) else v for k, v in json.loads(a.fix or "{}").items()}
     HER["side"].update({k: int(v) for k, v in (x.split("=") for x in a.side.split(",") if x)})
     HER["lay2"] = {**HER["lay2"], **{k: tuple(v) if isinstance(v, list) else v for k, v in json.loads(a.set or "{}").items()}}
     print(f"carried_target: {ct.__file__}")

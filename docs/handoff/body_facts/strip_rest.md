@@ -168,3 +168,66 @@ Run on abd150, abd170, flex170, abd90_int60, axe_back@3, iron_vow@72 (l), leap@1
 - NOT DONE: no trial move was run (the helper's budget ended). Untested reading: point 2386 (l) lies across the line
   2326-2327 and 1.3-1.85 x too far from 2385 / 2446 / 2327; putting it back on its own side and nearer those three
   should clear tri 275 and edges 173 / 206 / 208 together. Right: 2445 against the 2385-2386 edge, 2455 toward 2456r.
+
+## Lay 3 (lay 2 repaired): 10 Nov, builder. NOT at the bar; WORSE than lay 2 on the nine. Lay 2 is back as strip_rest.npz
+`out/shoulder/strip_rest_l19_lay3.npz` = the repaired lay (measured below); `strip_rest.npz` = lay 2 again (byte copy of
+`strip_rest_l19_lay2.npz`); `strip_rest_l18.npz` untouched. B's rest, weights, order: untouched.
+New in `strip_rest.py` (general core, no ids): `lay_faults` (per triangle signed area against A's normals at the feet /
+B's rest area, quality lay and rest; per edge lay / rest) and `untangle` (the faulty points re-placed one at a time on
+A's surface by a pattern search in the unfold's plane: first every triangle at the point sound, then the least worst
+max(r, 1 / r) - 1 of its edges; ring and apex row never move; the free set grows a ring while faults remain).
+`relay(..., repair={})` runs it; `build --repair [--fix '{"lim": [0.6, 1.6], "qrel": 0.5, "amin": 0.25, "grow": 2}']`
+untangles the npz's lay without a solve (about 1 min); a fresh lay 2 build runs it after the solve.
+- THE BUILD'S COUNT, traced and fixed: relay compared the lay's facing with the sign of B's REST triangle against A's
+  normals at B's rest feet. B's rest tri 275 (l) bridges the fold and faces against those normals, so the inverted lay
+  triangle "agreed". Now against B's own rest normals: lay 2 l counts 1 (tri 275, area -1.12 x B's by lay_faults),
+  after the repair 0; the old measure is printed beside it (it says 1 AFTER the repair). `lay2`'s barrier divides by
+  the same signed a0, so it HELD tri 275 inverted: that is the cause of the fault. lay2 NOT changed, not rerun.
+- REST, lay 2 -> lay 3 (default limits): l turned 1 -> 0, faulty triangles 30 -> 0, edges outside 0.6..1.6 14 -> 2
+  (131 2261-2262 0.50, 204 2384-2385 0.59, both between held points), rest edge 0.50..2.06 -> 0.50..1.48; r turned 0,
+  faulty 21 -> 0, edges out 6 -> 0, 0.47..1.94 -> 0.67..1.50 (tri 290 and edge 262 repaired at rest).
+  COST: the default quality floor (0.5 x rest) names 30 / 21 triangles, not the located few: 91 points moved on the l
+  (3 rounds), 64 on the r (2 rounds), mostly 0.1-2.8 mm (the full per-point list is the build's stdout; max not read off).
+- POSES (target --snap --map, lay 3). Cells: edge min..max, mean, off A mm, turned. A's own is under LAY 3's edges.
+| pose (elev, w) | fill | map, lay 3 | A's own | bar |
+|---|---|---|---|---|
+| x:abd120:l | 0.69..2.41, 1.35, 9.3, 0 | 0.60..3.13, 1.43, 1.4, 0 | 0.64..2.78, 1.35 | edge +0.35 FAIL |
+| x:abd150:l | 0.43..2.69, 1.48, 25.5, 0 | 0.42..4.54, 1.56, 1.4, 1 | 0.44..3.50, 1.44 | 1 turned, +1.04 FAIL |
+| x:abd170:l | 0.39..2.83, 1.52, 31.2, 2 | 0.42..4.47, 1.60, 1.4, 1 | 0.46..3.44, 1.47 | 1 turned, +1.03 FAIL |
+| x:flex170:l | 0.25..2.75, 1.52, 33.6, 3 | 0.47..4.32, 1.58, 1.4, 1 | 0.50..3.33, 1.46 | 1 turned, +0.99 FAIL |
+| p4:iron_vow@72:l | 0.22..2.33, 1.12, 20.6, 12 | 0.17..2.29, 1.13, 1.4, 5 | 0.16..2.10, 1.05 | 5 turned, +0.19 FAIL |
+| p4:heroic_leap@7:r | 0.33..3.17, 1.23, 16.9, 12 | 0.20..2.73, 1.32, 1.3, 0 | 0.22..2.56, 1.25 | 0 turned, +0.17 FAIL |
+| p4:heroic_leap@9:r | 0.27..3.60, 1.36, 17.7, 21 | 0.26..3.38, 1.51, 1.3, 3 | 0.29..2.91, 1.43 | 3 turned, +0.47 FAIL |
+| p4:heroic_leap@19:r | 0.56..3.32, 1.51, 33.5, 2 | 0.46..4.21, 1.58, 1.3, 0 | 0.50..3.56, 1.47 | 0 turned, +0.65 FAIL |
+| p4:heroic_leap@20:r | 0.51..3.33, 1.48, 33.5, 12 | 0.47..4.04, 1.54, 1.3, 0 | 0.48..3.37, 1.43 | 0 turned, +0.67 FAIL |
+| x:abd90_int60:l (w 1) | 0.62..2.11, 1.22, 6.9, 0 | 0.62..2.38, 1.32, 1.4, 1 | 0.60..2.28, 1.24 | 1 turned, fill +0.27 FAIL |
+| crossbow_shoot@10:r (0.74) | 0.32..1.73, 0.97, 7.2, 0 | 0.26..1.65, 1.01, 2.2, 0 | 0.28..1.56, 0.98 | met |
+| cast_bolt@3:r (0.47) | 0.62..1.76, 1.10, 6.9, 0 | 0.62..1.77, 1.11, 3.7, 0 | 0.61..1.69, 1.09 | met |
+| axe_heavy@7:r (0.47) | 0.57..2.14, 0.98, 6.4, 0 | 0.43..1.82, 1.00, 4.1, 0 | 0.63..1.77, 1.00 | met |
+| p4:heroic_leap@5:r (0.43) | 0.56..1.85, 1.10, 9.9, 3 | 0.60..1.80, 1.11, 5.8, 0 | 0.50..1.87, 1.09 | met |
+| axe_back@3:l (0.43) | 0.70..1.46, 1.06, 4.8, 0 | 0.76..1.48, 1.07, 2.9, 0 | 0.65..1.51, 1.07 | met |
+| p4:idle_warden_town@126:r (0.42) | 0.51..1.87, 1.14, 5.4, 0 | 0.59..1.75, 1.14, 3.2, 0 | 0.59..1.77, 1.11 | met |
+| axe_back@2:l (0.41) | 0.70..1.43, 1.09, 4.0, 0 | 0.77..1.49, 1.10, 2.6, 0 | 0.80..1.61, 1.08 | met |
+| p4:heroic_leap@25:r (0.27) | 0.49..1.98, 1.08, 11.4, 0 | 0.54..2.00, 1.08, 8.4, 0 | 0.49..1.88, 1.10 | met |
+- THE NINE: 0 of 9 at the bar (lay 2: turned 3 of 9, edge 6 of 9). The worst posed edges ROSE (abd150 3.15 -> 4.54,
+  leap@19 3.26 -> 4.21): the repair judges the REST alone; lay 2 was balanced in the poses, and moving 91 / 64 points by
+  rest criteria broke that balance. A rest-only untangle with these limits is the wrong tool for the pose bar.
+- TRANSITION: 8 of 8 met (nothing turned, worst edge <= the fill's + 0.15; the two left poses no longer carry a turned
+  triangle; crossbow_shoot@10:r 2.01 -> 1.65). x:abd90_int60:l NOT met (1 turned, +0.27 on the fill).
+- PROOF: 49 of 141 poses have elevation <= 45 deg; max |map - fill| over them 0.0. Rest l / r: w 0.0, |map - fill|
+  0.0; relay vs the npz 0.000 mm. OFF A: 1.3-1.4 mm on the nine.
+- Tri 275 (l) is gone in every pose. The left's one turned triangle is now tri 274 = 2325 / 2386b / 2385A (mesh 5550 /
+  5611 / 5610): it lies ACROSS A's fold at rest in lay 3 (its normal . A's rest carriers +0.59 / -0.30 / +0.03,
+  carriers' mutual dot -0.73), positive only on the SUMMED foot normals that lay_faults uses: the measure passes a
+  triangle that straddles the apex. The test wanted: positive against EACH corner's carrier normal.
+- Tri 110 at p4:iron_vow@72:l: no longer turned (not in the list). The 5 turned there: tri 109 2385A/2386b/2446. (fill
+  turned too; carriers' least mutual dot in the pose -0.75: A's own fold), 141 2503/2504/2564 (-0.44: A's fold), 274
+  (the one above; -0.03), 253 2259/2326A/2325 (0.48; lay rest -0.12 on the apex point), 289 2381/2442/2441 (0.11).
+  A's own triangles turned under them: NOT counted (the carriers' mutual dots are the only evidence).
+Commands: `python tools/body/strip_rest.py build --snap --repair` (reads and rewrites strip_rest.npz: copy
+strip_rest_l19_lay2.npz over it first), `target --snap --map`, `turned --snap --poses a,b`.
+Not done: a narrow run (`--fix '{"qrel": 0.25, "grow": 0}'`, or only turned triangles + edges over a limit: few points
+moved; the located reading of point 2386 l is still untested as a small move); the pose walls of lay2 inside the
+untangle; the per-corner facing test; lay2's signed a0 fixed and the left re-solved (the direct cure of tri 275); the
+structural road (apex row through the mesh row that does not change at 2386): not started; turned on all nine (run on
+iron_vow@72, abd150, leap@19 only; leap@9's 3 turned not located); all 141 poses.
