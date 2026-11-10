@@ -20,6 +20,8 @@ namespace SurvivorUnchained.View;
 public static class HeroNormals
 {
     public static float Radius;
+    static readonly bool Check = OS.GetEnvironment("SU_HERO_SN_CHECK") == "1";   // (NORM2: log the new bake against lead 22's diffusion per mesh)
+    static readonly System.Collections.Concurrent.ConcurrentQueue<string> checks = new();
     static readonly Dictionary<ulong, ArrayMesh?> made = new();
     static readonly HashSet<ulong> outs = new();
     static readonly Dictionary<ulong, (ArrayMesh Src, Godot.Collections.Array[] Arr, Task<(float[][][]? Out, float Ms)> Job)> jobs = new();
@@ -31,6 +33,7 @@ public static class HeroNormals
     public static void Visit(MeshInstance3D mi)
     {
         if (mi.Mesh is not ArrayMesh am) return;
+        if (mi.CastShadow == GeometryInstance3D.ShadowCastingSetting.ShadowsOnly) return;   // (NORM2: a shadow-only mesh shades nothing)
         if (Radius <= 0f) { if (earlyIds.Add(mi.GetInstanceId())) early.Add(mi); return; }
         ulong id = am.GetInstanceId();
         if (outs.Contains(id)) return;
@@ -73,6 +76,9 @@ public static class HeroNormals
             foreach (var mi in e) if (GodotObject.IsInstanceValid(mi)) Visit(mi);
         }
         if (jobs.Count == 0) return;
+        // (NORM2) every bake is done before the frame that shows her: the Gaussian bake takes tens of ms, so wait for it
+        var all = new List<Task>(); foreach (var j in jobs.Values) all.Add(j.Job);
+        try { Task.WaitAll(all.ToArray()); } catch (AggregateException) { }
         int done = 0;
         foreach (var id in new List<ulong>(jobs.Keys))
         {
@@ -104,6 +110,7 @@ public static class HeroNormals
             }
             made[id] = copy;
         }
+        while (checks.TryDequeue(out var cl)) GD.Print(cl);
         if (done > 0)
             GD.Print($"hero normals: {nBaked} meshes baked ({nMerged} of them her_merge), {nVerts} verts, {msBake:0} ms of bake on workers, {wall.Elapsed.TotalMilliseconds:0} ms wall; {nLeft} left as is, {jobs.Count} still baking, {early.Count} waiting for the radius; radius {Radius:0.###} m");
         for (int i = waiting.Count - 1; i >= 0; i--)
@@ -117,54 +124,22 @@ public static class HeroNormals
     /// <summary>The smoothed normal per vertex as CUSTOM0 (frame xyz, w 1), every surface; no Godot calls (a worker).</summary>
     static float[][][]? Bake(Vector3[][] P, Vector3[][] N, float[]?[] T, int[][] I, float radius)
     {
-        var weld = new Dictionary<(long, long, long), int>();
-        var wid = new int[P.Length][];
-        var sum = new List<Vector3>();
+        // (NORM2) the smoothed normal: SmoothNormals' Gaussian (sigma = the radius) over the mesh's surfaces as one
+        int nv = 0; foreach (var ps in P) nv += ps.Length;
+        var fp = new float[nv * 3]; var fn = new float[nv * 3]; var ti = new List<int>(); int at = 0;
+        var baseOf = new int[P.Length];
         for (int s = 0; s < P.Length; s++)
         {
-            wid[s] = new int[P[s].Length];
-            for (int v = 0; v < P[s].Length; v++)
-            {
-                var p = P[s][v];
-                var k = ((long)MathF.Round(p.X * 1e4f), (long)MathF.Round(p.Y * 1e4f), (long)MathF.Round(p.Z * 1e4f));
-                if (!weld.TryGetValue(k, out int w)) { weld[k] = w = sum.Count; sum.Add(Vector3.Zero); }
-                wid[s][v] = w;
-                sum[w] += N[s][v];
-            }
+            baseOf[s] = at;
+            for (int v = 0; v < P[s].Length; v++, at++) { fp[3 * at] = P[s][v].X; fp[3 * at + 1] = P[s][v].Y; fp[3 * at + 2] = P[s][v].Z; fn[3 * at] = N[s][v].X; fn[3 * at + 1] = N[s][v].Y; fn[3 * at + 2] = N[s][v].Z; }
+            foreach (int i in I[s]) ti.Add(baseOf[s] + i);
         }
-        int W = sum.Count;
-        if (W == 0) return null;
-        var edges = new HashSet<long>();
-        double el = 0; long ec = 0;
-        var pos = new Vector3[W];
-        for (int s = 0; s < P.Length; s++) for (int v = 0; v < P[s].Length; v++) pos[wid[s][v]] = P[s][v];
-        for (int s = 0; s < P.Length; s++)
-            for (int t = 0; t + 2 < I[s].Length; t += 3)
-                for (int e = 0; e < 3; e++)
-                {
-                    int a = wid[s][I[s][t + e]], b = wid[s][I[s][t + (e + 1) % 3]];
-                    if (a == b) continue;
-                    if (edges.Add(((long)Math.Min(a, b) << 32) | (uint)Math.Max(a, b))) { el += pos[a].DistanceTo(pos[b]); ec++; }
-                }
-        var deg = new int[W + 1];
-        foreach (var e in edges) { deg[(int)(e >> 32) + 1]++; deg[(int)(e & 0xFFFFFFFF) + 1]++; }
-        for (int i = 0; i < W; i++) deg[i + 1] += deg[i];
-        var adj = new int[deg[W]]; var fill = (int[])deg.Clone();
-        foreach (var e in edges) { int a = (int)(e >> 32), b = (int)(e & 0xFFFFFFFF); adj[fill[a]++] = b; adj[fill[b]++] = a; }
-        var n0 = new Vector3[W]; var n1 = new Vector3[W];
-        for (int i = 0; i < W; i++) n0[i] = sum[i].LengthSquared() > 1e-12f ? sum[i].Normalized() : Vector3.Up;
-        float mean = ec > 0 ? (float)(el / ec) : 0.01f;
-        int K = Math.Clamp((int)MathF.Round(2f * (radius / Math.Max(mean, 1e-4f)) * (radius / Math.Max(mean, 1e-4f))), 1, 400);
-        for (int it = 0; it < K; it++)
-        {
-            for (int i = 0; i < W; i++)
-            {
-                var a = n0[i];
-                for (int j = deg[i]; j < deg[i + 1]; j++) a += n0[adj[j]];
-                n1[i] = a.LengthSquared() > 1e-12f ? a.Normalized() : n0[i];
-            }
-            (n0, n1) = (n1, n0);
-        }
+        if (nv == 0) return null;
+        var sm = Check ? SurvivorUnchained.Look.SmoothNormals.Diffuse(fp, fn, ti.ToArray(), radius) : null;
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var fs = SurvivorUnchained.Look.SmoothNormals.Smooth(fp, fn, ti.ToArray(), radius);
+        float smMs = (float)sw.Elapsed.TotalMilliseconds;
+        if (sm != null) { var d = SurvivorUnchained.Look.SmoothNormals.AnglesDeg(fs, sm); checks.Enqueue($"hero normals CHECK vs the old diffusion: {nv} verts, new bake {smMs:0} ms, median {d[d.Length / 2]:0.0} p90 {d[(int)(d.Length * 0.9)]:0.0} deg"); }
         var outv = new float[P.Length][][];
         for (int s = 0; s < P.Length; s++)
         {
@@ -180,7 +155,7 @@ public static class HeroNormals
                 tt = tt.LengthSquared() > 1e-8f ? tt.Normalized() : nn.Cross(MathF.Abs(nn.Y) < 0.99f ? Vector3.Up : Vector3.Right).Normalized();
                 if (ft != null) { ft[4 * v] = tt.X; ft[4 * v + 1] = tt.Y; ft[4 * v + 2] = tt.Z; ft[4 * v + 3] = 1f; }
                 var bb = nn.Cross(tt);
-                var sn = n0[wid[s][v]];
+                int fv = 3 * (baseOf[s] + v); var sn = new Vector3(fs[fv], fs[fv + 1], fs[fv + 2]);
                 o[4 * v] = sn.Dot(tt); o[4 * v + 1] = sn.Dot(bb); o[4 * v + 2] = sn.Dot(nn); o[4 * v + 3] = 1f;
             }
         }
