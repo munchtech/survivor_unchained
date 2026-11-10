@@ -2,11 +2,14 @@
 
     python tools/body/region_shape.py shift --provider pub|target|lbs_base|a [--poses a,b | --only train,held,extreme | --clip NAME]
     python tools/body/region_shape.py pops  --provider ... --clips run_warden,sword_heavy,p4:bladestorm_loop
-  NOT BUILT YET (context cap): silhouette, sheets.
+    python tools/body/region_shape.py silhouette --provider P [--poses a,b | --only ...] [--views front,back,side,top,game_front,game_back]
+    python tools/body/region_shape.py sheets --provider P --poses a,b,c [--views front34,back34,top34,under] [--gate]
 
 Pose names: rest[:s] | x:<extreme>[:s] | <clip>@<frame>[:s] (p4:<clip>@f too); side l by default. Out: tools/body/out/shoulder.
 Providers (pose -> whole-body B vertices): pub = published B; target = region_target live (full_target), or target.npz +
-  region.npz when the pose is in it; lbs_base = the target's base LBS blended by beta; a = A's own surface (test: 0).
+  region.npz when the pose is in it; lbs_base = the target's base LBS blended by beta; a = A's own surface (test: 0);
+  carried = target_a.npz only (same layout as target.npz; a pose not in the file is an ERROR, never the live target);
+  a_self (silhouette, sheets) = the transferred A itself (test: silhouette all 0).
 A in the same pose: library clips = A's own dump frame; extremes and p4 clips = A posed by B's driven bone turns from rest
   (A spine_01/02/03 <- B spine_02/03/05, the rest by name).
 shift: per band point, the signed distance (mm, + outward) to A's posed surface along A's interpolated normal, minus the
@@ -20,6 +23,17 @@ Bands (B rest, left topology points inside the region; the right = the twins; di
   deltoid_cap             within 0.12 m of the shoulder joint, lateral of it, rest normal not facing down (n.up > -0.3)
   trap_line               outside that ball, 30 mm from the midline to the joint, above the joint - 30 mm, n.up > 0.6
   breast_edge             region points within 7 rows (the border ring 3 + blend 4) of the left breast part
+silhouette: does the provider keep A's outline? A is ALWAYS A posed by B's bone turns (a_from_B: same bone pose, only shape
+  differs), brought onto B at the chest. Binary masks of both in one orthographic window about B's posed shoulder joint
+  (SIL: +-0.20 m, 1000 px/m; the camera turns with B's chest). Per outline pixel of the provider's mask inside the window:
+  the distance (mm) to the nearest outline pixel of A's mask, + where the pixel lies outside A's mask, - inside. Both masks
+  are rendered SIL["margin"] wider than the window so A's nearest outline is never cut by the window's edge. Columns
+  p05 / p50 / p95 / min / max; "reg" = the same over the outline pixels whose B triangle touches the shoulder region (the
+  whole-window numbers also see the neck, jaw, breast and whatever hand or forearm crosses the window). The REST row (B
+  published at rest against A at rest) is printed beside each pose: B's rest outline is not A's, subtract by eye.
+  Out: silhouette_<provider>.json {rest, poses, summary}.
+sheets: clay pictures, B published | the provider | A (transferred, aligned at the chest), one PNG a pose (rows = views) in
+  out/shoulder/sheets plus _half.jpg; --gate adds gate_<provider>_half.jpg (rows = poses, front34 only, 260 px panels).
 """
 from __future__ import annotations
 
@@ -29,11 +43,14 @@ import sys
 from pathlib import Path
 
 import numpy as np
+from scipy.ndimage import distance_transform_edt
 from scipy.spatial import cKDTree
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+import bends  # noqa: E402
 import deform_audit as da  # noqa: E402
+import ray  # noqa: E402
 import region_target as rt  # noqa: E402
 from surfdist import closest_on_tris  # noqa: E402
 
@@ -42,6 +59,14 @@ BANDS = ["fold_front", "fold_back", "deltoid_cap", "trap_line", "breast_edge"]
 ANCHOR = {"fold_front": "chest", "fold_back": "chest", "deltoid_cap": "upperarm", "trap_line": "clavicle", "breast_edge": "chest"}
 RAD, K = 0.05, 64
 SPINE = {"spine_01": "spine_02", "spine_02": "spine_03", "spine_03": "spine_05"}
+# Her-only choices of silhouette and sheets (the next job moves these to a config). Views are in body coords: (lateral, away
+# from the midline on the pose's side; up; front), the direction the camera sits in.
+SIL = {"half": 0.20, "px": 1000, "margin": 0.06, "anchor": "chest", "center": "upperarm",
+       "views": {"front": (0, 0, 1), "back": (0, 0, -1), "side": (1, 0, 0), "top": (0, 1, 0),
+                 "game_front": (0, 0.77, 0.64), "game_back": (0, 0.77, -0.64)}}
+SHEET = {"half": 0.20, "panel": 520, "gate_panel": 260, "gate_view": "front34", "default": ["front34", "back34"], "jpg": 88,
+         "views": {"front34": (0.5, 0.2, 0.8), "back34": (0.5, 0.3, -0.8), "top34": (0.3, 0.85, 0.4), "under": (0.6, -0.5, 0.6)}}
+A_KINDS = ("a", "a_self")
 turn = lambda G, R0, j: da.ortho(G[j][:3, :3] @ np.linalg.inv(R0[j][:3, :3]))
 
 
@@ -99,7 +124,8 @@ class Ctx:
                 v = md.first[self.bands[b][s]]
                 nr = self.near[b, s] = Near(B.V0[v], N0[v], A)
                 self.sd0[b, s], self.q0[b, s] = nr.signed(B.V0[v], A.V0)
-        self._tz = None
+        self._tz = self._cz = self._regtri = None
+        self._pub = (None, None)
 
     def _bands(self):
         B, md = self.B, self.md
@@ -180,7 +206,9 @@ class Ctx:
     # -------------------------------------------------------------- providers --
     def surface(self, kind, pose):
         B, md, G, s = self.B, self.md, pose["G"], pose["side"]
-        Vp = rt.published(B, G)
+        if self._pub[0] is not G:
+            self._pub = (G, rt.published(B, G))
+        Vp = self._pub[1]
         if kind == "pub":
             return Vp
         sd = md.S[s]
@@ -193,6 +221,8 @@ class Ctx:
                 self._ti = {str(n): i for i, n in enumerate(self._tz.get("name", []))}
             i = self._ti.get(pose["name"] if pose["name"][-2:] in (":l", ":r") else pose["name"] + ":l")
             X = self._tz["X"][i] if i is not None and self._tz["X"].shape[1] == nr else md.target(G, Vp[md.first], s)
+        elif kind == "carried":
+            X = self._carried(pose, nr)
         else:
             raise KeyError(kind)
         g = np.nonzero(sd["loc"][md.src] >= 0)[0]
@@ -200,6 +230,77 @@ class Ctx:
         V = Vp.copy()
         V[g] = X[sd["loc"][md.src[g]]]
         return V
+
+    def _carried(self, pose, nr):
+        """The carried target of a pose from target_a.npz; no fallback."""
+        f = OUT / "target_a.npz"
+        if self._cz is None:
+            if not f.exists():
+                raise FileNotFoundError(f"provider carried: {f} does not exist")
+            z = np.load(f)
+            self._cz = (z["X"], {str(n): i for i, n in enumerate(z["name"])})
+        X, ix = self._cz
+        nm = pose["name"] if pose["name"][-2:] in (":l", ":r") else pose["name"] + ":l"
+        if nm not in ix:
+            raise KeyError(f"provider carried: pose {nm!r} is not in {f.name} ({len(ix)} poses); there is no live fallback")
+        if X.shape[1] != nr:
+            raise ValueError(f"provider carried: {f.name} has {X.shape[1]} points a pose, the region has {nr}")
+        return X[ix[nm]]
+
+    # ------------------------------------------------- silhouette and sheets --
+    def a_on_B(self, pose):
+        """A posed by B's bone turns of this pose, brought onto B's skeleton at the chest: [n, 3]."""
+        Va, Ga = self.a_from_B(pose["G"])
+        M = self.align({**pose, "A": (Va, Ga)}, SIL["anchor"])
+        return Va @ M[:3, :3].T + M[:3, 3]
+
+    def mesh(self, kind, pose, Va):
+        """(V, T) of a provider's whole surface; Va = a_on_B(pose) for the A kinds."""
+        return (Va, self.A.T) if kind in A_KINDS else (self.surface(kind, pose), self.B.T)
+
+    def view(self, pose, v, half, px):
+        """The orthographic window about B's posed shoulder joint, camera direction v (body coords) turned with the chest."""
+        B, fr, G, s = self.B, self.B.frame, pose["G"], pose["side"]
+        R = turn(G, B.p.rest, B.p.index[self.anch[s][SIL["anchor"]][0]])
+        c = np.asarray(G[B.p.index[B.role(SIL["center"], s)]])[:3, 3]
+        return chest_view(c, R, self.sg[s] * np.asarray(fr.lat), np.asarray(fr.up), np.asarray(fr.front), v, half, px)
+
+    def regtri(self, s):
+        """[B triangles] bool: touches the side's shoulder region."""
+        if self._regtri is None:
+            self._regtri = {}
+            for k in "lr":
+                loc = self.md.S[k]["loc"][self.md.src]
+                self._regtri[k] = ((loc >= 0) & (loc < len(self.md.S[k]["ids"])))[self.B.T].any(1)
+        return self._regtri[s]
+
+    def silhouette(self, kind, pose, views):
+        """{view: {"all": [p05, p50, p95, min, max] mm, "reg": the same on the region's outline or None, "n": pixels}}."""
+        Va = self.a_on_B(pose)
+        V, T = self.mesh(kind, pose, Va)
+        sp, sa = ray.scene(V, T), ray.scene(Va, self.A.T)
+        px, k, out = SIL["px"], int(round(SIL["margin"] * SIL["px"])), {}
+        for vn in views:
+            vw = self.view(pose, SIL["views"][vn], SIL["half"] + SIL["margin"], px)
+            pid = vw.cast(sp)[0]
+            d = outline_signed(pid >= 0, vw.cast(sa)[0] >= 0) * 1000.0 / px
+            ok = np.zeros(d.shape, bool)
+            ok[k:-k, k:-k] = True
+            ok &= np.isfinite(d)
+            reg = ok & self.regtri(pose["side"])[np.maximum(pid, 0)] if T is self.B.T else None
+            out[vn] = {"all": sil_stats(d[ok]), "reg": None if reg is None else sil_stats(d[reg]), "n": int(ok.sum())}
+        return out
+
+    def panels(self, kind, pose, views):
+        """{view: [B published, the provider, A] clay panels (uint8 [h, w, 3])}, one window and light for the three."""
+        Va = self.a_on_B(pose)
+        cols = [(self.surface("pub", pose), self.B.T), None if kind == "pub" else self.mesh(kind, pose, Va), (Va, self.A.T)]
+        out = {}
+        for vn in views:
+            vw = self.view(pose, SHEET["views"][vn], SHEET["half"], SHEET["panel"] / (2 * SHEET["half"]))
+            im = [None if c is None else clay_rgb(c[0], c[1], vw) for c in cols]
+            out[vn] = [im[0], im[0] if im[1] is None else im[1], im[2]]
+        return out
 
     def align(self, pose, anchor):
         """4x4 taking A's posed surface onto B's by the anchor bone."""
@@ -243,15 +344,142 @@ def stats(x):
     return [round(float(v), 2) for v in (np.median(x), max(-np.percentile(x, 5), 0), max(-x.min(), 0), max(x.max(), 0))]
 
 
-def cmd_shift(cx, a):
+# ------------------------------------------------------ measuring, on arrays --
+def chest_view(center, R, lat, up, front, v, half, px):
+    """ray.View of a square window (+-half m, px pixels a metre) about `center`; the camera sits along v = (lat, up, front)
+    in the body's rest axes turned by R (the chest's turn from rest). Image up = the body's up, or its front seen from
+    straight above or below; image x = up x camera, so the picture is never mirrored."""
+    d = np.asarray(v, float)
+    cw = R @ da.unit(d[0] * lat + d[1] * up + d[2] * front)
+    u = R @ up
+    ey = bends.perp(u if abs(u @ cw) < 0.95 else R @ front, cw)
+    return ray.View(center, np.cross(ey, cw), ey, cw, px, -half, half, -half, half)
+
+
+def outline(m):
+    """The mask's own edge pixels (4-neighbour); where the mask runs off the image is not an edge."""
+    p = np.pad(m, 1, mode="edge")
+    return m & ~(p[:-2, 1:-1] & p[2:, 1:-1] & p[1:-1, :-2] & p[1:-1, 2:])
+
+
+def outline_signed(mp, ma):
+    """[h, w] px: at each outline pixel of mask mp, the distance to the nearest outline pixel of mask ma, + outside ma and
+    - inside it (identical masks: 0); nan off mp's outline, or everywhere when ma has no outline."""
+    oa = outline(ma)
+    if not oa.any():
+        return np.full(ma.shape, np.nan)
+    d = distance_transform_edt(~oa)
+    return np.where(outline(mp), np.where(ma, -d, d), np.nan)
+
+
+def sil_stats(x):
+    """[p05, p50, p95, min, max] or None."""
+    return [round(float(v), 2) for v in (*np.percentile(x, [5, 50, 95]), x.min(), x.max())] if len(x) else None
+
+
+def clay_rgb(V, T, view):
+    img, _ = bends.clay(V, T, view)
+    return np.repeat((np.clip(img, 0, 1) * 255).astype(np.uint8)[..., None], 3, 2)
+
+
+def sheet(rows, labels, panel):
+    """PIL image: rows of square panels (resized to `panel` px), one line of small text under each."""
+    from PIL import Image, ImageDraw, ImageFont
+    try:
+        font = ImageFont.truetype("arial.ttf", 13 if panel >= 400 else 11)
+    except OSError:
+        font = ImageFont.load_default()
+    gap, txt, nc = 4, 20 if panel >= 400 else 16, max(len(r) for r in rows)
+    im = Image.new("RGB", (nc * panel + (nc - 1) * gap, len(rows) * (panel + txt)), (120, 120, 120))
+    dr = ImageDraw.Draw(im)
+    for i, (row, lab) in enumerate(zip(rows, labels)):
+        for j, (g, t) in enumerate(zip(row, lab)):
+            x, y = j * (panel + gap), i * (panel + txt)
+            g = Image.fromarray(g)
+            im.paste(g if g.size == (panel, panel) else g.resize((panel, panel), Image.LANCZOS), (x, y))
+            dr.rectangle([x, y + panel, x + panel - 1, y + panel + txt - 1], fill=(255, 255, 255))
+            dr.text((x + 4, y + panel + 2), t, fill=(0, 0, 0), font=font)
+    return im
+
+
+def save_half(im, path):
+    from PIL import Image
+    im.resize((im.width // 2, im.height // 2), Image.LANCZOS).save(path, quality=SHEET["jpg"])
+
+
+def pose_names(a):
     if a.poses:
-        names = a.poses.split(",")
-    elif a.clip:
+        return a.poses.split(",")
+    if a.clip:
         n = da.load_clip(a.clip)["frames"]
-        names = [f"{a.clip}@{f}:{s}" for f in range(n) for s in "lr"]
-    else:
-        z = np.load(OUT / "poses.npz")
-        names = [str(n) for n, k in zip(z["name"], z["kind"]) if str(k) in a.only.split(",")]
+        return [f"{a.clip}@{f}:{s}" for f in range(n) for s in "lr"]
+    z = np.load(OUT / "poses.npz")
+    return [str(n) for n, k in zip(z["name"], z["kind"]) if str(k) in a.only.split(",")]
+
+
+def cmd_silhouette(cx, a):
+    kind, views = a.provider, (a.views or ",".join(SIL["views"])).split(",")
+    names, rk = pose_names(a), a.provider if a.provider in A_KINDS else "pub"
+    fmt = lambda v: "-" if v is None else "/".join(f"{x:.1f}" for x in v)
+    print(f"silhouette {kind} against A (B's bone turns, chest-aligned): mm, + outside A's outline, - inside; "
+          f"p05/p50/p95/min/max | reg = on the shoulder region | rest = {rk} at rest")
+    rest, rows = {}, {}
+    for pose in cx.poses(names):
+        s = pose["side"]
+        if s not in rest:
+            rest[s] = cx.silhouette(rk, {"name": f"rest:{s}", "side": s, "G": cx.B.G0}, views)
+        rows[pose["name"]] = r = cx.silhouette(kind, pose, views)
+        if len(names) <= 40:
+            for vn in views:
+                print(f"{pose['name']:26s} {vn:10s} {fmt(r[vn]['all']):32s} reg {fmt(r[vn]['reg']):32s} | rest {fmt(rest[s][vn]['all']):30s}"
+                      f" reg {fmt(rest[s][vn]['reg'])}", flush=True)
+    summ = {}
+    print(f"{kind}: {len(rows)} poses. view: worst p95 (pose) / worst min (pose) / worst max (pose), whole window then region"
+          f" | rest {sorted(rest)[0] if rest else ''} p05/p50/p95/min/max")
+    for vn in views:
+        summ[vn] = {}
+        for key in ("all", "reg"):
+            v = [(n, r[vn][key]) for n, r in rows.items() if r[vn][key] is not None]
+            if not v:
+                continue
+            p95, mn, mx = (f(v, key=lambda e: e[1][i]) for f, i in ((max, 2), (min, 3), (max, 4)))
+            summ[vn][key] = {"p95": [p95[1][2], p95[0]], "min": [mn[1][3], mn[0]], "max": [mx[1][4], mx[0]]}
+        line = " || ".join(f"{k}: " + " / ".join(f"{e[0]:.1f} ({e[1]})" for e in d.values()) for k, d in summ[vn].items())
+        print(f"  {vn:10s} {line} | rest {fmt(rest[sorted(rest)[0]][vn]['all']) if rest else '-'}")
+    (OUT / f"silhouette_{kind}.json").write_text(json.dumps({"provider": kind, "window": {k: SIL[k] for k in ("half", "px", "margin")},
+                                                             "cols": ["p05", "p50", "p95", "min", "max"], "rest": rest, "poses": rows, "summary": summ}))
+    print("wrote", OUT / f"silhouette_{kind}.json")
+
+
+def cmd_sheets(cx, a):
+    if not a.poses:
+        raise SystemExit("sheets needs --poses")
+    kind, views = a.provider, a.views.split(",") if a.views else SHEET["default"]
+    gv, col = SHEET["gate_view"], ["B published", a.provider, "A (B's bone turns)"]
+    out = OUT / "sheets"
+    out.mkdir(parents=True, exist_ok=True)
+    gate = []
+    for pose in cx.poses(a.poses.split(",")):
+        nm = pose["name"]
+        P = cx.panels(kind, pose, views + ([gv] if a.gate and gv not in views else []))
+        im = sheet([P[vn] for vn in views], [[f"{c} | {nm} | {vn}" for c in col] for vn in views], SHEET["panel"])
+        f = out / f"{kind}_{nm.replace(':', '_').replace('@', '_f')}.png"
+        im.save(f)
+        save_half(im, f.with_name(f.stem + "_half.jpg"))
+        print("wrote", f, "+ _half.jpg", flush=True)
+        if a.gate:
+            gate.append((nm, P[gv]))
+    if a.gate:
+        order = {n: i for i, n in enumerate(a.poses.split(","))}
+        gate.sort(key=lambda e: order[e[0]])
+        im = sheet([p for _, p in gate], [[f"{c} | {n}" for c in col] for n, _ in gate], SHEET["gate_panel"])
+        f = out / f"gate_{kind}_half.jpg"
+        im.save(f, quality=SHEET["jpg"])
+        print("wrote", f)
+
+
+def cmd_shift(cx, a):
+    names = pose_names(a)
     print("bands:", {b: len(v["l"]) for b, v in cx.bands.items()}, "| cols per band: p50 / in95 / inmax / outmax mm (+ outward)")
     rows = {}
     for pose in cx.poses(names):
@@ -306,14 +534,16 @@ def cmd_pops(cx, a):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["shift", "pops"])
+    ap.add_argument("cmd", choices=["shift", "pops", "silhouette", "sheets"])
     ap.add_argument("--provider", default="pub")
     ap.add_argument("--poses", default="")
     ap.add_argument("--only", default="train,held,extreme")
     ap.add_argument("--clip", default="")
     ap.add_argument("--clips", default="run_warden,sword_heavy,p4:bladestorm_loop")
+    ap.add_argument("--views", default="")
+    ap.add_argument("--gate", action="store_true")
     a = ap.parse_args()
-    {"shift": cmd_shift, "pops": cmd_pops}[a.cmd](Ctx(), a)
+    {"shift": cmd_shift, "pops": cmd_pops, "silhouette": cmd_silhouette, "sheets": cmd_sheets}[a.cmd](Ctx(), a)
 
 
 if __name__ == "__main__":
