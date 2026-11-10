@@ -234,4 +234,29 @@ public class RigsTests
         Assert.Equal(144.0, (double)a.Dapple.Clusters!);
         Assert.Equal(0.46, (double)a.Dapple.Cover!, 6);
     }
+
+    // (L1 lead 12, S3) What stands in the night's light is arena_night's alone: the moon's top band and rim (moon_top), the
+    // foes on the ground's fire ramp (foe_fire), their night paint and own shadow (foe_moon). No other rig carries the keys,
+    // so cel_s3, crowd_fire, crowd_moon and crowd_shade stay zero under them and every shader term behind those draws nothing.
+    [Fact]
+    public void WhatStandsIsArenaNightsAlone()
+    {
+        var s = Real();
+        foreach (var (id, r) in s.Rigs)
+        {
+            if (id == "arena_night") continue;
+            Assert.True(r.MoonTop == null && r.FoeFire == null && r.FoeMoon == null, id);
+        }
+        foreach (var place in new[] { Atmospheres.LowFordNight, Atmospheres.WaystationDay })
+        {
+            var lit = Rigs.Lit(place, s);
+            Assert.Null(lit.MoonTop);
+            Assert.Null(lit.FoeFire);
+            Assert.Null(lit.FoeMoon);
+        }
+        var a = s["arena_night"]!;
+        Assert.Equal(new[] { 0.32, 60, 175, 235, 0.84, 0.5, 1.5, 0.15 }, a.MoonTop);
+        Assert.Equal(new[] { 1.15, 0.35, 0.5, 0.12 }, a.FoeFire);
+        Assert.Equal(new[] { 0.24, 0.8, 0.016, 58, 48, 92, 0.02 }, a.FoeMoon);
+    }
 }

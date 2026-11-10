@@ -14,6 +14,9 @@
 //       #define CEL_NO_RIM         no stepped rim (ground, grass and cards, whose normals are not a silhouette)
 //       #define CEL_BUILTIN_RIM    the shader writes Godot's RIM / RIM_TINT (the crowd, folk): light() reproduces it
 //       #define CEL_OWN_LIGHT      the shader writes its own light() (see 4); the include then defines none
+//       #define CEL_S3             a STANDING form: it takes the moon's top band and rim (rule R5, cel_s3 below) and its
+//                          unlit side sits on the one shade; with CEL_OWN_LIGHT, add cel_s3_add(...) to SPECULAR_LIGHT
+//                          and take cel_s3_unlit(sh, dir) as the key's least share yourself
 //       #define CEL_MID / CEL_FORM / CEL_SPEC / CEL_NMAP   the material defaults of cel_mid, cel_form, cel_spec, cel_nmap
 //       #define CEL_EXACT_ROUGH    the default light() lights by the roughness fragment() wrote, not the tagged one
 //                          (cel_mat.w; the tag's step is up to 0.04 rougher): today's look exact at cel_on 0
@@ -172,6 +175,19 @@ global uniform sampler2D cel_pool_ramp : filter_linear, repeat_disable;
 // both; whole from z on), w how much of the moon's give-way a leaf's shade undoes (1: under a leaf the moon is whole, so the
 // shade in her pool is the night's one shade (R3) plus the fire's residue, never black, never orange).
 global uniform vec4 cel_pool_shade;
+// (L1 lead 12, S3: rule R5) What STANDS shows the moon's top step. One stepped term (on or off, a hard edge, no gradient)
+// that any standing shader takes by `#define CEL_S3` before the include: a TOP band on planes facing the moon (the key's
+// way leaned up by cel_s3_shape.y, so backs, shoulders, crown tops and rock tops take it; on from cel_s3_shape.x of that
+// n.m) and a narrow RIM on the form's moon-side silhouette edge (cel_s3_shape.z screen pixels wide). It is authored as a
+// screen level and hue (rigs.json "moon_top": [level, R, G, B, top, up, rim px, unlit]; cel_s3 rgb the color x level as
+// scene light, a 1: on), not as more light on the albedo: where it stands, the key's own diffuse on that albedo is taken
+// back, so it lands on the one step whatever the paint. It obeys the one shade (R3: none under a leaf's shade or a cast
+// shadow) and gives way to her fire with the moon (cel_gv; a shader may give a share of its own, CEL_S3_SHARE: the crowd,
+// none on a face her fire lights). cel_s3_shape.w: the key's share on a standing form's UNLIT side (R3: a form's unlit
+// side is the one shade too, never black; the darker of it and a cast shadow, never the product). cel_s3.a 0: the rig has
+// not opted in and nothing here draws (every rig but arena_night).
+global uniform vec4 cel_s3;
+global uniform vec4 cel_s3_shape;
 
 // (fragment() to light(): the geometric normal, and x SPECULAR, y RIM, z RIM_TINT, w ROUGHNESS before the tag)
 // (L1 B4r2) cel_gn's length is 1 + the key's share through the canopy here (cel_dap(): 1 open sky): packed, not a varying
@@ -180,6 +196,15 @@ global uniform vec4 cel_pool_shade;
 // light() is not interpolated, so the packing is exact to about 1e-4)
 varying vec3 cel_gn;
 varying vec4 cel_mat;
+#ifdef CEL_S3
+varying vec2 cel_s3v;   // (x the moon-side rim here, 0..1; y the shader's own share of S3, CEL_S3_SHARE)
+#ifndef CEL_S3_SHARE
+#define CEL_S3_SHARE 1.0
+#endif
+#define CEL_FRAG_S3 cel_s3v = vec2(cel_s3_edge(NORMAL, VIEW, VIEW_MATRIX), CEL_S3_SHARE)
+#else
+#define CEL_FRAG_S3
+#endif
 #ifdef CEL_CLEARCOAT
 varying vec2 cel_cc;   // (CLEARCOAT, CLEARCOAT_ROUGHNESS)
 #endif
@@ -280,7 +305,7 @@ float cel_fires_at(vec3 c_wp, float c_k) {
 	return min(cel_fire_one(c_wp.xz, cel_fire0, c_k * cel_on), min(cel_fire_one(c_wp.xz, cel_fire1, c_k * cel_on), cel_fire_one(c_wp.xz, cel_fire2, c_k * cel_on)));
 #endif
 }
-#define CEL_FRAGMENT { vec3 c_fw = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz; float c_fd = cel_dapple_at(c_fw); float c_fb = cel_back_at(c_fw, c_fd); cel_gn = normalize(NORMAL) * (1.01 + 0.98 * c_fd + 2.0 * round(1000.0 * cel_give_of(c_fb, cel_give.x) * cel_fires_at(c_fw, cel_fire_give.x))); AO *= cel_give_of(c_fb, cel_give.y) * cel_fires_at(c_fw, cel_fire_give.y); } CEL_FRAG_ALB; CEL_FRAG_MAT; ROUGHNESS = cel_tag(ROUGHNESS, cel_ink); if (cel_dbg > 0.5) { EMISSION = cel_dbg > 2.5 ? vec3(CEL_SKIN_V) : cel_dbg > 1.5 ? cel_ink_rgb(cel_ink) : vec3(0.0); ALBEDO = vec3(0.0); SPECULAR = 0.0; METALLIC = 0.0; }
+#define CEL_FRAGMENT { vec3 c_fw = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz; float c_fd = cel_dapple_at(c_fw); float c_fb = cel_back_at(c_fw, c_fd); cel_gn = normalize(NORMAL) * (1.01 + 0.98 * c_fd + 2.0 * round(1000.0 * cel_give_of(c_fb, cel_give.x) * cel_fires_at(c_fw, cel_fire_give.x))); AO *= cel_give_of(c_fb, cel_give.y) * cel_fires_at(c_fw, cel_fire_give.y); } CEL_FRAG_ALB; CEL_FRAG_MAT; CEL_FRAG_S3; ROUGHNESS = cel_tag(ROUGHNESS, cel_ink); if (cel_dbg > 0.5) { EMISSION = cel_dbg > 2.5 ? vec3(CEL_SKIN_V) : cel_dbg > 1.5 ? cel_ink_rgb(cel_ink) : vec3(0.0); ALBEDO = vec3(0.0); SPECULAR = 0.0; METALLIC = 0.0; }
 
 float cel_lum(vec3 c_c) { return dot(c_c, vec3(0.2126, 0.7152, 0.0722)); }
 float cel_schlick(float c_u) { float c_m = 1.0 - c_u; float c_m2 = c_m * c_m; return c_m2 * c_m2 * c_m; }
@@ -364,6 +389,39 @@ vec3 cel_rim_add(vec3 c_nb, vec3 c_v, vec3 c_lc, float c_t, float c_sh, bool c_d
 	return cel_rim * mix(vec3(1.0), c_albedo, 0.5) * (cel_lum(c_lc) * cel_rig.z * cel_rim_k * c_r / PI);
 #endif
 }
+
+#ifdef CEL_S3
+// (L1 lead 12, S3) The moon-side rim, in fragment() (CEL_FRAGMENT): the silhouette's distance in screen pixels from n.v and
+// its screen derivative, whole inside cel_s3_shape.z pixels of the edge, on the side of the form the key is on.
+float cel_s3_edge(vec3 c_n, vec3 c_v, mat4 c_vm) {
+	if (cel_s3.a <= 0.0 || cel_s3_shape.z <= 0.0) return 0.0;
+	vec3 c_nn = normalize(c_n);
+	float c_e = max(dot(c_nn, c_v), 0.0);
+	float c_px = c_e / max(fwidth(c_e), 1e-4);
+	vec3 c_kv = (c_vm * vec4(cel_key.xyz, 0.0)).xyz;
+	float c_side = smoothstep(0.05, 0.25, dot(c_nn.xy, normalize(c_kv.xy + vec2(1e-5))));
+	return (1.0 - smoothstep(cel_s3_shape.z - 0.5, cel_s3_shape.z + 0.5, c_px)) * (1.0 - smoothstep(0.55, 0.65, c_e)) * c_side;
+}
+// The key's share on a standing form's unlit side (0: the rig has not opted in).
+float cel_s3_unlit(float c_sh, bool c_dir) { return c_dir && cel_s3.a > 0.0 ? min(cel_s3_shape.w, c_sh) : 0.0; }
+// The S3 term in light(), for the key (the directional light along cel_key), as SPECULAR_LIGHT: the top band or the rim,
+// in open moonlight only, at the rig's level (the key's diffuse on this albedo taken back). c_iv: INV_VIEW_MATRIX.
+vec3 cel_s3_add(vec3 c_l, vec3 c_lc, float c_t, float c_att, bool c_dir, vec3 c_albedo, mat4 c_iv) {
+	if (!c_dir || cel_s3.a <= 0.0 || cel_on <= 0.0 || dot((c_iv * vec4(c_l, 0.0)).xyz, cel_key.xyz) < 0.98) return vec3(0.0);
+	float c_q = cel_gq();
+	float c_leaf = 1.0;
+	if (cel_key.w > 0.0) c_leaf = clamp((clamp((length(cel_gn) - 1.01 - 2.0 * c_q) / 0.98, 0.0, 1.0) - (1.0 - cel_key.w)) / cel_key.w, 0.0, 1.0);
+	float c_raw = cel_oneshade.x > 0.0 ? clamp(1.0 - (1.0 - c_att) / cel_oneshade.x, 0.0, 1.0) : c_att;
+	float c_open = smoothstep(0.42, 0.58, c_raw) * smoothstep(0.4, 0.6, c_leaf) * clamp(c_q * 0.001, 0.0, 1.0);
+	vec3 c_nw = normalize((c_iv * vec4(normalize(cel_gn), 0.0)).xyz);
+	float c_nm = dot(c_nw, normalize(mix(cel_key.xyz, vec3(0.0, 1.0, 0.0), cel_s3_shape.y)));
+	float c_m = max(smoothstep(cel_s3_shape.x - 0.02, cel_s3_shape.x + 0.02, c_nm), cel_s3v.x) * cel_s3v.y * c_open;
+	if (c_m <= 0.0) return vec3(0.0);
+	float c_sh = cel_shadow(c_att, c_dir);
+	vec3 c_key = c_lc * max(cel_level(c_t) * c_sh, vec3(cel_s3_unlit(c_sh, c_dir))) / PI;
+	return c_m * max(cel_s3.rgb - c_albedo * c_key, vec3(0.0));
+}
+#endif
 
 // Godot 4.5.1's built-in light for one light (scene_forward_lights_inc.glsl light_compute, not LIGHT_CODE_USED):
 // Burley diffuse, Schlick-GGX specular, f0 = mix(0.16 specular^2, albedo, metallic), the BACKLIGHT transmission
@@ -470,7 +528,12 @@ void cel_shade(vec3 c_n, vec3 c_nb, float c_t, vec3 c_l, vec3 c_v, vec3 c_lc, fl
 	vec3 c_lv = cel_level(c_t);
 	float c_lit_sh = cel_lit(c_t) * c_sh;
 	if (c_metal < 1.0) {
+#ifdef CEL_S3
+		// (L1 lead 12, S3: a standing form's unlit side on the one shade, cel_s3_shape.w)
+		c_dl += c_lc * max(c_lv * c_sh, vec3(cel_s3_unlit(c_sh, c_dir))) / PI;
+#else
 		c_dl += c_lc * c_lv * (c_sh / PI);
+#endif
 		c_dl += c_lc * cel_trans(c_backlight, c_t, 0.0) * (c_sh / PI);
 	}
 	c_dl += cel_fill_add(c_lc, c_lit_sh, c_dir);
@@ -515,6 +578,9 @@ void light() {
 		if (!LIGHT_IS_DIRECTIONAL) cel_pool_paint(c_plc, c_patt, (INV_VIEW_MATRIX * vec4(LIGHT, 0.0)).xyz);
 		if (cel_on > 0.0) cel_shade(NORMAL, c_nb, c_t, LIGHT, VIEW, c_plc, c_patt, LIGHT_IS_DIRECTIONAL, ALBEDO, METALLIC, c_rough,
 				cel_mat.x, SPECULAR_AMOUNT, BACKLIGHT, cel_mat.y, cel_mat.z, c_db, c_sb);
+#ifdef CEL_S3
+		c_sb += cel_s3_add(LIGHT, LIGHT_COLOR, c_t, ATTENUATION, LIGHT_IS_DIRECTIONAL, ALBEDO, INV_VIEW_MATRIX);
+#endif
 		DIFFUSE_LIGHT += mix(c_da, c_db, cel_on);
 		SPECULAR_LIGHT += mix(c_sa, c_sb, cel_on);
 	}

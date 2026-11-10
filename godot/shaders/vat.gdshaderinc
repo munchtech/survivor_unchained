@@ -12,6 +12,10 @@
 #define CEL_OWN_ALB
 // (L1 l9 PACK2: the moon stays on the pack inside her pool, as target 09's cool bodies by her: only the ground gives way)
 #define CEL_NO_GIVE
+// (L1 lead 12, S3: the crowd STANDS: the moon's top band and rim from the rig (cel.gdshaderinc cel_s3), none on a face her
+// fire lights (vat_s3k, set in fragment()); only a rig with "moon_top" draws any of it)
+#define CEL_S3
+#define CEL_S3_SHARE vat_s3k
 // (L1 lead 9: the fur class has no highlight, crowd_fur cel.spec z 0, bible rule 6; the fallback equals the class)
 #define CEL_SPEC vec4(9.0, 1.5, 0.0, 0.85)
 #include "res://shaders/cel.gdshaderinc"
@@ -90,6 +94,17 @@ global uniform float crowd_amb;
 // which from the play camera covered most of a body and made the pack pale smears); y: the crowd's specular by night;
 // z: Godot's per-light RIM by night (a scale of rim_amount); w: on (arena nights, Atmosphere.Set).
 global uniform vec4 crowd_r4;
+// (L1 lead 12, what stands in the night's light; rigs.json "foe_fire" and "foe_moon" on arena_night; zero: the rig has not
+// opted in (or --crowd-r4 off / --crowd-fill off) and the crowd is lit as before.) crowd_fire: her fire on a foe is the
+// GROUND's ramp (cel_pool_ramp at the foe's ground distance from her light's foot), in two hard bands on faces turned
+// toward her: x the bright band's level (a multiplier of the ramp x her lamp, crowd_ember.w), y the second band's share of
+// it, z and w the bands' edges in n.l toward her (level: backs and tops take none). The moon gives way on those faces only.
+// crowd_moon: x the luminance every foe's paint is pulled to by night (so a moonlit foe reads lighter than its ground,
+// about S2 + 0.1) and y how far (0 none, 1 whole); z the fire's residue in a foe's own shadow (crowd_blob_cast.gdshader).
+// On a fire face the moon gives way by the ground's own rule (cel_give: wholly inside z metres, none past w). The R4 soft edges (the moon's both-sides rim, the warm rim toward her, Godot's RIM) are off under it: the moon's
+// rim is S3's.
+global uniform vec4 crowd_fire;
+global uniform vec4 crowd_moon;
 // (whole by 1 - NdotV 0.92: a soft 2-4 px edge on a body at the play camera, not a hairline)
 #define CROWD_EDGE_END 0.92
 // (the fur and hair cards take crowd_lamp3.w of the edge: both-sided cards at grazing angles lit it as white sparkle)
@@ -247,6 +262,10 @@ void fragment() {
 	// (L1 W2, B2: the crowd fur class's albedo control, materials.json "albedo", after the night lift and before the copy's own
 	// tint, so the dead's darkening and the mud still read; LOOK_BIBLE rule 7: mid-dark bodies, never pale silver)
 	c = cel_alb_apply(c);
+	// (L1 lead 12, B3: every foe's paint pulled to one night luminance, its hue kept: crowd_moon)
+	bool cf_on = crowd_fire.x > 0.0 && crowd_night.w > 0.5 && cel_pool_band.x > 0.0;
+	float vat_s3k = 1.0;
+	if (cf_on && crowd_moon.y > 0.0) c *= pow(crowd_moon.x / max(dot(c, vec3(0.2126, 0.7152, 0.0722)), 1e-4), crowd_moon.y);
 	// (L1 l9 B2: --crowd-dbg-mode 8, the grey card: the paint's luminance only, every light as it is, to find a hue's root)
 	if (crowd_night.w > 7.5 && crowd_night.w < 8.5) c = vec3(dot(c, vec3(0.2126, 0.7152, 0.0722)));
 	c *= abs(COLOR.rgb);
@@ -406,7 +425,7 @@ void fragment() {
 		e += ch_c * ch_k * (1.0 - fx.y);
 	}
 	// The moon's rim, in shade as in its light: strongest on the side toward the key, a breath on the far side.
-	if (crowd_rim.a > 0.0) {
+	if (crowd_rim.a > 0.0 && !cf_on) {
 		vec3 kv = normalize((VIEW_MATRIX * vec4(key_dir.xyz, 0.0)).xyz);
 		float side = 0.3 + 0.7 * clamp(dot(NORMAL, kv) * 0.5 + 0.5, 0.0, 1.0);
 		vec3 cr_c = mix(crowd_rim.rgb, cel_edge_hue.rgb * dot(crowd_rim.rgb, vec3(0.2126, 0.7152, 0.0722)), cel_edge_hue.a * cel_on);
@@ -430,7 +449,22 @@ void fragment() {
 		cn_flat = smoothstep(0.55, 0.9, cw_n.y) * (1.0 - smoothstep(0.9, 1.4, vat_local.y));
 		float cn_k = 1.0 - crowd_night.y * cn_flat;
 		float cn_head = smoothstep(1.2, 1.6, vat_local.y) * clamp(cw_n.y, 0.0, 1.0);
-		if (crowd_lamp2.z > 0.0) {
+		if (cf_on) {
+			// (L1 lead 12, B2: her fire on the foe from the ground's ramp at its ground distance from her light's foot, two hard
+			// bands by n.l toward her (level with the ground: a back or a top takes none), the dead by their darkening; leaf
+			// shade does not cut it (a foe stands up out of the ground's shade); the moon, its fill and S3 give way on those
+			// faces only, as the ground's moon does by distance (cel_give))
+			vec4 cf_rp = cel_pool_at(cw_h);
+			vec2 cf_to = crowd_ember.xz - cw_p.xz;
+			float cf_t = dot(cw_n.xz, cf_to / max(length(cf_to), 1e-3));
+			float cf_w = fwidth(cf_t) * 0.75 + 0.01;
+			float cf_b1 = smoothstep(crowd_fire.z - cf_w, crowd_fire.z + cf_w, cf_t), cf_b2 = smoothstep(crowd_fire.w - cf_w, crowd_fire.w + cf_w, cf_t);
+			float cf_give = cf_b2 * cel_give.x * (1.0 - smoothstep(cel_give.z, max(cel_give.w, cel_give.z + 1e-3), cw_h));
+			e += cf_rp.rgb * (crowd_ember.w * crowd_fire.x * mix(crowd_fire.y * cf_b2, 1.0, cf_b1) * clamp(dot(abs(COLOR.rgb), vec3(0.333)), 0.0, 1.0));
+			e += c * (crowd_fill.rgb + crowd_top.rgb * cn_head) * (1.0 - cf_give);
+			cn_k = 1.0 - cf_give;
+			vat_s3k = 1.0 - cf_give;
+		} else if (crowd_lamp2.z > 0.0) {
 			// (r5: the flat and the dead lose only the lamp, not the moon or the fill; the crowd close to her takes a share of it
 			// so she reads over the ring; a warm rim on the side toward her)
 			float cw_near = mix(crowd_lamp3.y, 1.0, smoothstep(crowd_lamp3.x, crowd_lamp3.x + 1.0, cw_h));
@@ -447,7 +481,7 @@ void fragment() {
 		if (crowd_floor.a > 0.0 && dot(abs(COLOR.rgb), vec3(0.333)) >= 0.6)
 			e += crowd_floor.rgb * crowd_floor.a * pow(rim, 3.0) * smoothstep(0.78, 0.97, rim) * (1.0 - cw_f) * (1.0 - busy) * (1.0 - cn_flat * 0.6);
 		ALBEDO *= cn_k;
-		if (crowd_r4.w > 0.5) { SPECULAR = crowd_r4.y * (1.0 - busy); RIM = rim_amount * crowd_r4.z * (1.0 - busy); }
+		if (crowd_r4.w > 0.5) { SPECULAR = crowd_r4.y * (1.0 - busy); RIM = cf_on ? 0.0 : rim_amount * crowd_r4.z * (1.0 - busy); }
 		// (the moon wrapped round the body in its own shadowed light (Godot's backlight: the far side takes what the near
 		// side would), so under the canopy's dark the bodies sink with the dirt and in its pools they take it as the dirt does)
 		BACKLIGHT = vec3(crowd_top.a);

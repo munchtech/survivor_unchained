@@ -1232,6 +1232,10 @@ public partial class VatCrowd : MultiMeshInstance3D
             blobMat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/crowd_blob.gdshader") };
             // --blob-strength K: how dark the ground goes under a body (pictures; the shader's 0.6 by default).
             if (SurvivorUnchained.Args.Has("blob-strength")) blobMat.SetShaderParameter("strength", SurvivorUnchained.Args.Num("blob-strength", 0.6f));
+            // (L1 lead 12, B4: the second pass, a foe's own hard shadow inside her fire; draws only under a rig with "foe_moon" (crowd_shade))
+            var cast = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/crowd_blob_cast.gdshader") };
+            if (SurvivorUnchained.Args.Has("blob-strength")) cast.SetShaderParameter("strength", SurvivorUnchained.Args.Num("blob-strength", 0.6f));
+            blobMat.NextPass = cast;
         }
         blobSize = Math.Clamp(asset.Height * 0.62f, 0.7f, 2.4f);
         blobs = new MultiMeshInstance3D

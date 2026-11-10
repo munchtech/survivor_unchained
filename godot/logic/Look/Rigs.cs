@@ -41,7 +41,8 @@ public sealed record RigDapple(double? Cover = null, double? Strength = null, do
 public sealed record LightRig(string Id, string From, bool Camera, RigKey Key, RigFill Fill, RigRim Rim, double[]? Ink,
     double? Hardness, string? Grade, double? Exposure, double? Ember, RigDapple Dapple, double? Fires = null,
     double? EmberReach = null, string? EmberColor = null, double[]? Curve = null, double? WarmKeep = null, double[]? EmberGive = null, double? SceneColor = null, double? SceneMoon = null,
-    double[]? EmberPool = null, string? EmberEdge = null, double[]? FireGive = null, bool? ShadowLevel = null, bool? EmberSmooth = null, double[]? EmberShade = null)
+    double[]? EmberPool = null, string? EmberEdge = null, double[]? FireGive = null, bool? ShadowLevel = null, bool? EmberSmooth = null, double[]? EmberShade = null,
+    double[]? MoonTop = null, double[]? FoeFire = null, double[]? FoeMoon = null)   // (L1 lead 12, S3: what stands in the night's light; rigs.json "moon_top", "foe_fire", "foe_moon")
 {
     /// <summary>(L1 lead 11, R3 one shade; rigs.json "shadow_level") The key's shadow is a level: a cast shadow keeps exactly
     /// 1 - key.shadow of the key, and the canopy's dapple is the same shade (its strength is key.shadow, whatever
@@ -133,7 +134,8 @@ public sealed class RigSet
             A(e, "grade_curve", b?.Curve), D(e, "warm_keep", b?.WarmKeep), A(e, "ember_give", b?.EmberGive), D(e, "scene_color", b?.SceneColor), D(e, "scene_moon", b?.SceneMoon),
             A(e, "ember_pool", b?.EmberPool), S(e, "ember_edge", b?.EmberEdge), A(e, "fire_give", b?.FireGive),
             e.TryGetProperty("shadow_level", out var sl) ? sl.GetBoolean() : b?.ShadowLevel,
-            e.TryGetProperty("ember_smooth", out var es) ? es.ValueKind == JsonValueKind.True : b?.EmberSmooth, A(e, "ember_shade", b?.EmberShade));   // (L1 lead 12, R4 round 4: her fire a smooth field, the leaf shade across it)
+            e.TryGetProperty("ember_smooth", out var es) ? es.ValueKind == JsonValueKind.True : b?.EmberSmooth, A(e, "ember_shade", b?.EmberShade),
+            A(e, "moon_top", b?.MoonTop), A(e, "foe_fire", b?.FoeFire), A(e, "foe_moon", b?.FoeMoon));   // (L1 lead 12, R4 round 4: her fire a smooth field, the leaf shade across it)
     }
 }
 
@@ -164,6 +166,7 @@ public static class Rigs
             Grade = Graded(r.Grade is { } g ? Atmospheres.GradeNamed(g) ?? p.Grade : p.Grade, r),
             EmberGive = r.EmberGive ?? p.EmberGive, FireGive = r.FireGive ?? p.FireGive,
             EmberPool = r.EmberPool ?? p.EmberPool, EmberEdge = r.EmberEdge ?? p.EmberEdge, EmberSmooth = r.EmberSmooth ?? p.EmberSmooth, EmberShade = r.EmberShade ?? p.EmberShade,
+            MoonTop = r.MoonTop ?? p.MoonTop, FoeFire = r.FoeFire ?? p.FoeFire, FoeMoon = r.FoeMoon ?? p.FoeMoon,
             Exposure = r.Exposure ?? p.Exposure, Ember = r.Ember ?? p.Ember,
             EmberReach = r.EmberReach ?? p.EmberReach, EmberColor = r.EmberColor ?? p.EmberColor,
             DappleCover = r.Dapple.Cover ?? p.DappleCover, DappleStrength = r.OneShade ? k.Shadow ?? p.ShadowStrength : r.Dapple.Strength ?? p.DappleStrength,

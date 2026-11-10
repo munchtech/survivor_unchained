@@ -385,6 +385,26 @@ cel_pool_shade={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+cel_s3={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+cel_s3_shape={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+crowd_fire={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+crowd_moon={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+crowd_shade={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 cel_canopy_r={
 "type": "vec4",
 "value": Vector4(-150, -150, 0.00333, 0.00333)

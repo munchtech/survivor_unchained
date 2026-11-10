@@ -13,6 +13,9 @@ global uniform vec4 crowd_ember;
 global uniform vec4 crowd_fill;
 global uniform vec4 crowd_lamp;
 global uniform vec4 crowd_night;
+// (L1 lead 12, B4: under a rig with "foe_moon" the soft dark is off: each foe stands on its own hard shadow, the moon's cast one
+// outside her fire and crowd_blob_cast.gdshader's inside it; a soft multiplied dark over leaf shade was a product, rule R3)
+global uniform vec4 crowd_shade;
 #define BLOB_WIDE 0.25
 #define BLOB_DARK 0.2
 #define BLOB_AWAY 0.25
@@ -34,5 +37,6 @@ void fragment() {
 	float d = length(UV - 0.5) * 2.0;
 	float a = 1.0 - smoothstep(0.0, 1.0, d);
 	a *= a;
+	if (crowd_shade.a > 0.0) a = 0.0;
 	ALBEDO = vec3(1.0 - a * min(strength * (1.0 + BLOB_DARK * pool), 0.95) * COLOR.a);
 }

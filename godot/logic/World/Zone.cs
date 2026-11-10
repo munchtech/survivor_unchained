@@ -189,6 +189,18 @@ public sealed record AtmospherePreset(
     /// where the shade is whole (m), how much of the moon's give-way a leaf's shade undoes (1: the moon whole under a leaf)]
     /// (cel_pool_shade). Null: her light uncut and the moon's shade as it was.</summary>
     public double[]? EmberShade { get; init; }
+    /// <summary>(L1 lead 12, S3, rule R5; rigs.json "moon_top") The moon's top step on what stands: [level (scene light; the
+    /// screen level is tuned at the frame), R, G, B (sRGB 0-255), the top band's edge in n.m, how far m leans up from the key
+    /// (0 the key's way, 1 straight up), the rim's width (screen px), the key's share on a standing form's unlit side]
+    /// (cel_s3, cel_s3_shape; a shader takes it by CEL_S3). Null: none.</summary>
+    public double[]? MoonTop { get; init; }
+    /// <summary>(L1 lead 12; rigs.json "foe_fire") Her fire on the foes from the ground's ramp: [the bright band's level, the
+    /// second band's share, the bright band's edge in n.l toward her, the second's] (crowd_fire). Null: the crowd's smooth lamp.</summary>
+    public double[]? FoeFire { get; init; }
+    /// <summary>(L1 lead 12; rigs.json "foe_moon") The foes' moon read and their own shadow: [the luminance their paint is pulled to, how
+    /// far (0-1), then each foe's hard shadow inside her fire: its level (scene light; 0: none), R, G, B (sRGB 0-255), the
+    /// fire's residue in it (a share of the ground's ramp)] (crowd_moon, crowd_shade). Read only with FoeFire.</summary>
+    public double[]? FoeMoon { get; init; }
     /// <summary>(L1 lead 8, S2b) The pool's outer step's color (sRGB hex). Retired by lead 9 (B1: the ramp's stops carry the colors); read, unused.</summary>
     public string EmberEdge { get; init; } = "";
     /// <summary>The moon's rim on the crowd in play, in shade as in its light (0: none, as the cinematics' presets have it).</summary>

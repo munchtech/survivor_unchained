@@ -336,7 +336,8 @@ public partial class Atmosphere : Node3D
                 // (S2b-N3: her pool, the moon's give, and the canopy's dapple, for a sweep in one build: pool=a/b/..., give=a/b/c/d)
                 EmberPool = V("pool", p.EmberPool ?? []) is { Length: > 0 } tp ? tp : p.EmberPool, EmberGive = V("give", p.EmberGive ?? []) is { Length: > 0 } tg ? tg : p.EmberGive,
                 FireGive = V("fgive", p.FireGive ?? []) is { Length: > 0 } tf ? tf : p.FireGive,   // (L1 lead 9, NIGHT2: fgive=key/sky/start/gone)
-                EmberEdge = H("edge", p.EmberEdge), EmberSmooth = T("psmooth", p.EmberSmooth ? 1 : 0) > 0, EmberShade = V("pshade", p.EmberShade ?? []) is { Length: > 0 } tsh ? tsh : p.EmberShade,   // (L1 lead 12, R4 round 4: psmooth=1, pshade=cut/from/to/moon)
+                EmberEdge = H("edge", p.EmberEdge), EmberSmooth = T("psmooth", p.EmberSmooth ? 1 : 0) > 0, EmberShade = V("pshade", p.EmberShade ?? []) is { Length: > 0 } tsh ? tsh : p.EmberShade,
+                MoonTop = V("s3", p.MoonTop ?? []) is { Length: > 0 } ts3 ? ts3 : p.MoonTop, FoeFire = V("ffire", p.FoeFire ?? []) is { Length: > 0 } tff ? tff : p.FoeFire, FoeMoon = V("fmoon", p.FoeMoon ?? []) is { Length: > 0 } tfm ? tfm : p.FoeMoon,   // (L1 lead 12, S3: s3=level/R/G/B/top/up/rimpx/unlit, ffire=level/second/edge1/edge2, fmoon=lum/pull/shade level/R/G/B/residue; s3=0 or ffire=0: off)   // (L1 lead 12, R4 round 4: psmooth=1, pshade=cut/from/to/moon)
                 DappleCover = T("dcover", p.DappleCover), DappleStrength = T("dstr", p.DappleStrength), DappleSize = T("dsize", p.DappleSize), DappleFloor = T("dfloor", p.DappleFloor),
                 // (L1 lead 11: the dapple's edge (px) and the leaf cookie's shapes: dedge=2,dclusters=300,dleaf=1.2/3.5,dleaves=2/4)
                 DappleEdge = T("dedge", p.DappleEdge), DappleClusters = T("dclusters", p.DappleClusters),
@@ -525,6 +526,28 @@ public partial class Atmosphere : Node3D
         RenderingServer.GlobalShaderParameterSet("cel_oneshade", new Vector4(CelRigs && cam == null && p.ShadowLevel ? (float)p.ShadowStrength : 0f, (float)p.DappleEdge, 0, 0));
         // (L1 lead 12, R4 round 4) the canopy's leaf shade across her fire: the share of the fire a leaf's shade takes, the canopy's opening over her (m: none inside, whole from), the moon kept under a leaf (--air-tune pshade=a/b/c/d). Zero: the rig has not opted in.
         RenderingServer.GlobalShaderParameterSet("cel_pool_shade", CelRigs && cam == null && p.EmberShade is [var sc, var sf, var st, var sm] ? new Vector4((float)sc, (float)sf, (float)st, (float)sm) : Vector4.Zero);
+        // (L1 lead 12, S3, R5) the moon's top band and rim on what stands (cel_s3: the color x level, on; cel_s3_shape: top edge, up lean, rim px, the unlit side's share), and the foes on it
+        // (crowd_fire, crowd_moon: her fire from the ground's ramp in two bands, the paint's night luminance). Zero: the rig has not opted in (every rig but arena_night), a camera rig, or the crowd's R4 or fill off.
+        bool s3On = CelRigs && cam == null && p.MoonTop is { Length: 8 } && p.MoonTop[0] > 0;
+        if (s3On)
+        {
+            var mt = p.MoonTop!;
+            var sc3 = new Color((float)mt[1] / 255f, (float)mt[2] / 255f, (float)mt[3] / 255f).SrgbToLinear();
+            float sm3 = Mathf.Max(sc3.R, Mathf.Max(sc3.G, Mathf.Max(sc3.B, 1e-4f))), sl3 = (float)mt[0];
+            RenderingServer.GlobalShaderParameterSet("cel_s3", new Vector4(sc3.R / sm3 * sl3, sc3.G / sm3 * sl3, sc3.B / sm3 * sl3, 1));
+            RenderingServer.GlobalShaderParameterSet("cel_s3_shape", new Vector4((float)mt[4], (float)mt[5], (float)mt[6], (float)mt[7]));
+        }
+        else { RenderingServer.GlobalShaderParameterSet("cel_s3", Vector4.Zero); RenderingServer.GlobalShaderParameterSet("cel_s3_shape", Vector4.Zero); }
+        bool foeOn = CelRigs && cam == null && R4 && CrowdFill > 0 && p.FoeFire is { Length: 4 } && p.FoeFire[0] > 0;
+        RenderingServer.GlobalShaderParameterSet("crowd_fire", foeOn ? new Vector4((float)p.FoeFire![0], (float)p.FoeFire[1], (float)p.FoeFire[2], (float)p.FoeFire[3]) : Vector4.Zero);
+        if (foeOn && p.FoeMoon is [var fl, var fp, var fsl, var fsr, var fsg, var fsb, var fres])
+        {
+            var fsc = new Color((float)fsr / 255f, (float)fsg / 255f, (float)fsb / 255f).SrgbToLinear();
+            float fsm = Mathf.Max(fsc.R, Mathf.Max(fsc.G, Mathf.Max(fsc.B, 1e-4f))) / (float)fsl;
+            RenderingServer.GlobalShaderParameterSet("crowd_moon", new Vector4((float)fl, (float)fp, (float)fres, 0));
+            RenderingServer.GlobalShaderParameterSet("crowd_shade", fsl > 0 ? new Vector4(fsc.R / fsm, fsc.G / fsm, fsc.B / fsm, 1) : Vector4.Zero);
+        }
+        else { RenderingServer.GlobalShaderParameterSet("crowd_moon", Vector4.Zero); RenderingServer.GlobalShaderParameterSet("crowd_shade", Vector4.Zero); }
         if (CelRigs) CanopyCookie.Shape((int)p.DappleClusters, p.DappleLeaf, p.DappleLeaves, p.DappleMass);
         static Vector3 Hue(Color c)
         {
