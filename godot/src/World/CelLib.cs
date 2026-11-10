@@ -150,6 +150,7 @@ public static class CelLib
             if (k != key) { live.RemoveAt(sweep); if (Why(m) is null) Bind(m, cls); }
         }
         LineStep();
+        if (HeroId) HeroIdStep();
     }
 
     /// <summary>A mesh's materials as the renderer picks them: the override (over every surface) or each surface's
@@ -379,6 +380,80 @@ public static class CelLib
             float y = at.GlobalPosition.Y;
             foreach (var first in lineOver.Values.Append(line).Append(lineHair))
                 for (Material? p = first; IsLine(p); p = p!.NextPass) ((ShaderMaterial)p!).SetShaderParameter("floor_y", y);
+        }
+    }
+
+    /* -------------------------------------------------------------------- her ID -- */
+
+    /// <summary>(L1 lead 21, HERMASK) A dev instrument, off unless the environment has SU_HERO_ID: every material on a mesh
+    /// under the player's view that goes through the hero paint (the uniform cel_hero_id of cel.gdshaderinc's CEL_HERO
+    /// block) is drawn as ONE flat color, its ID; whatever of her does not go through it stays as rendered. The table goes
+    /// to the log (lines HERO_ID: mesh, slot, pass, material, shader, the mesh's state), once and again on a change.</summary>
+    static readonly bool HeroId = !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("SU_HERO_ID"));
+    static readonly Dictionary<ulong, int> heroIds = new();   // (material -> its ID; -1: a shader with no hero paint)
+    static readonly Dictionary<string, string> heroIdSaid = new();
+    static int heroIdNext;
+    // (22 colors that stay apart after the tonemap and off the floor's orange and the line's dark: six hues and a grey
+    // at levels a factor 4 apart; yellow, red and violet land on the floor or on each other. More materials than
+    // colors: the ids wrap and the log says so.)
+    static readonly float[][] HeroIdHues = { new[] { 0f, 1f, 0f }, new[] { 1f, 0f, 1f }, new[] { 0f, 1f, 1f }, new[] { 0f, 0f, 1f },
+        new[] { 0f, 1f, 0.45f }, new[] { 0f, 0.45f, 1f }, new[] { 1f, 1f, 1f } };
+    static readonly (int Hue, float Level)[] HeroIdTable = Enumerable.Range(0, 7).Select(h => (h, 1.2f)).Concat(Enumerable.Range(0, 7).Select(h => (h, 0.3f)))
+        .Concat(Enumerable.Range(0, 6).Select(h => (h, 0.075f))).Concat(Enumerable.Range(0, 2).Select(h => (h, 0.019f))).ToArray();
+    static Vector4 HeroIdColor(int id)
+    {
+        var (hue, k) = HeroIdTable[id % HeroIdTable.Length];
+        var h = HeroIdHues[hue];
+        return new Vector4(h[0] * k, h[1] * k, h[2] * k, 1f);
+    }
+
+    static void HeroIdStep()
+    {
+        foreach (var (g, her) in lined)
+        {
+            if (!GodotObject.IsInstanceValid(g) || !GodotObject.IsInstanceValid(her) || !g.IsInsideTree() || g.Mesh == null) continue;
+            uint mask = g.GetViewport()?.GetCamera3D()?.CullMask ?? 0;
+            // (only a mesh the play camera draws takes an ID: her hidden pieces and the layer 20 copies use none of the 25 colors)
+            bool drawn = g.IsVisibleInTree() && g.CastShadow != GeometryInstance3D.ShadowCastingSetting.ShadowsOnly && (g.Layers & mask) != 0;
+            string state = $"vis {g.IsVisibleInTree()} cast {g.CastShadow} layers {g.Layers} cam_mask {mask} fade {g.Transparency}";
+            foreach (var (m, where) in Slots(g))
+            {
+                int k = -1;
+                for (Material? p = m; p != null; p = p.NextPass)
+                {
+                    k++;
+                    if (IsLine(p)) continue;
+                    var mid = p.GetInstanceId();
+                    if (!heroIds.TryGetValue(mid, out int id)) id = -1;
+                    if (id < 0 && !heroIds.ContainsKey(mid) && drawn)
+                    {
+                        if (p is ShaderMaterial { Shader: { } sh } sm)
+                        {
+                            // (an unshaded variant, the hair's erase pass, has the uniform and never writes the paint)
+                            if (!Unshaded.IsMatch(sh.Code))
+                                foreach (var d in RenderingServer.GetShaderParameterList(sh.GetRid()))
+                                    if (d["name"].AsString() == "cel_hero_id") { id = heroIdNext++; break; }
+                            heroIds[mid] = id;
+                            if (id >= 0) sm.SetShaderParameter("cel_hero_id", HeroIdColor(id));
+                        }
+                        else if (p is BaseMaterial3D b && b.HasMeta(HeroMeta) && b.HasMeta(Meta)) heroIds[mid] = id = heroIdNext++;   // (her held piece's own variant)
+                    }
+                    if (id >= 0 && p is BaseMaterial3D held) RenderingServer.MaterialSetParam(held.GetRid(), "cel_hero_id", HeroIdColor(id));   // (a bind sets its parameters again)
+                    string wears = p switch
+                    {
+                        ShaderMaterial { Shader: { } x } => (x.ResourcePath.Length > 0 ? x.ResourcePath.GetFile() : "(built)") + " [" + Regex.Match(x.Code, @"render_mode[^;]*").Value + "]",
+                        BaseMaterial3D b => "std transp " + b.Transparency + " shading " + b.ShadingMode,
+                        _ => p.GetClass(),
+                    };
+                    if (id == HeroIdTable.Length && heroIdSaid.TryAdd("wrapped", "")) GD.Print("HERO_ID WRAPPED: more painted materials than the ", HeroIdTable.Length, " colors; ids share colors from here");
+                    var c = id >= 0 ? HeroIdColor(id) : default;
+                    string say = FormattableString.Invariant($"id {id} rgb {c.X:0.###} {c.Y:0.###} {c.Z:0.###} | {where} pass {k} | {p.ResourceName} | {wears} | {state}");
+                    string key = g.GetInstanceId() + "|" + where + "|" + k;
+                    if (heroIdSaid.TryGetValue(key, out var was) && was == say) continue;
+                    heroIdSaid[key] = say;
+                    GD.Print($"HERO_ID {Engine.GetFramesDrawn()} {her.GetPathTo(g)} : {say}");
+                }
+            }
         }
     }
 

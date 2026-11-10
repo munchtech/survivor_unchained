@@ -573,7 +573,11 @@ vec3 cel_hero_paint(vec3 c_wn, vec3 c_alb, float c_w, float c_near) {
 	float c_dark = max(smoothstep(cel_hero.z - c_w, cel_hero.z + c_w, c_s), 1.0 - smoothstep(cel_hero_tone.w - c_w, cel_hero_tone.w + c_w, c_wn.y));
 	return mix(c_t, cel_hero_tone.rgb, c_dark);
 }
-#define CEL_HERO_FRAGMENT { if (cel_hero_on()) { vec3 c_hn = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz); if (cel_hero_abs()) { EMISSION = cel_hero_paint(c_hn, ALBEDO, 0.02, cel_hero_near(-VERTEX.z, PROJECTION_MATRIX)); ALBEDO = vec3(0.0); METALLIC = 0.0; SPECULAR = 0.0; } else { float c_hm = cel_hero_mask(c_hn, 0.02); ALBEDO *= 1.0 - c_hm; EMISSION = mix(EMISSION, cel_hero_tone.rgb, c_hm); } } }
+// (L1 lead 21, HERMASK) THE ID INSTRUMENT (dev; CelLib sets it only with SU_HERO_ID in the environment, else it is
+// zero and nothing changes): a material's own flat ID color in place of the painted tone, on exactly the fragments the
+// hero paint (and the held piece's) covers, so one frame shows which pixels of her the row paints, material by material.
+uniform vec4 cel_hero_id = vec4(0.0);
+#define CEL_HERO_FRAGMENT { if (cel_hero_on()) { vec3 c_hn = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz); if (cel_hero_abs()) { EMISSION = cel_hero_paint(c_hn, ALBEDO, 0.02, cel_hero_near(-VERTEX.z, PROJECTION_MATRIX)); if (cel_hero_id.a > 0.5) EMISSION = cel_hero_id.rgb; ALBEDO = vec3(0.0); METALLIC = 0.0; SPECULAR = 0.0; } else { float c_hm = cel_hero_mask(c_hn, 0.02); ALBEDO *= 1.0 - c_hm; EMISSION = mix(EMISSION, cel_hero_tone.rgb, c_hm); } } }
 #define CEL_HERO_LIGHT { if (cel_hero_abs()) { DIFFUSE_LIGHT = vec3(0.0); SPECULAR_LIGHT = vec3(0.0); } else { SPECULAR_LIGHT *= 1.0 - cel_hero_mask(normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz), 0.02); } }
 #ifdef CEL_HERO_ARM
 // (L1 lead 19, HER3; lead 20, HER4) A HELD PIECE of the hero (her shield, her blade: CelLib.Hero binds her own copies of
@@ -588,7 +592,7 @@ vec3 cel_hero_paint(vec3 c_wn, vec3 c_alb, float c_w, float c_near) {
 global uniform vec4 cel_hero_arm;
 bool cel_hero_arm_on() { return cel_hero_abs() && cel_hero_arm.rgb != vec3(0.0); }
 #define CEL_HERO_ARM_VERTEX { if (cel_hero_arm_on()) { float c_ad = -(MODELVIEW_MATRIX * vec4(VERTEX, 1.0)).z; VERTEX += NORMAL * (0.5 * cel_hero_lit.w * 2.0 * c_ad / (PROJECTION_MATRIX[1][1] * VIEWPORT_SIZE.y * length(MODEL_MATRIX[0].xyz))); } }
-#define CEL_HERO_ARM_FRAGMENT { if (cel_hero_arm_on()) { vec3 c_ap = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz - NODE_POSITION_WORLD; float c_am = smoothstep(cel_hero_arm.w - 0.01, cel_hero_arm.w + 0.01, -dot(c_ap.xz, cel_hero.xy)); vec3 c_aa = ALBEDO; float c_ak = cel_hero_near(-VERTEX.z, PROJECTION_MATRIX); EMISSION = mix(cel_hero_gain(cel_hero_local(cel_hero_lit.rgb * (cel_hero_own.w > 0.0 ? cel_hero_own.w : 1.0), c_aa), cel_hero_chroma.x, c_ak), cel_hero_gain(cel_hero_local(cel_hero_arm.rgb, c_aa), cel_hero_chroma.y, c_ak), c_am); ALBEDO = vec3(0.0); METALLIC = 0.0; SPECULAR = 0.0; AO = 0.0; } }
+#define CEL_HERO_ARM_FRAGMENT { if (cel_hero_arm_on()) { vec3 c_ap = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz - NODE_POSITION_WORLD; float c_am = smoothstep(cel_hero_arm.w - 0.01, cel_hero_arm.w + 0.01, -dot(c_ap.xz, cel_hero.xy)); vec3 c_aa = ALBEDO; float c_ak = cel_hero_near(-VERTEX.z, PROJECTION_MATRIX); EMISSION = mix(cel_hero_gain(cel_hero_local(cel_hero_lit.rgb * (cel_hero_own.w > 0.0 ? cel_hero_own.w : 1.0), c_aa), cel_hero_chroma.x, c_ak), cel_hero_gain(cel_hero_local(cel_hero_arm.rgb, c_aa), cel_hero_chroma.y, c_ak), c_am); if (cel_hero_id.a > 0.5) EMISSION = cel_hero_id.rgb; ALBEDO = vec3(0.0); METALLIC = 0.0; SPECULAR = 0.0; AO = 0.0; } }
 #define CEL_HERO_ARM_LIGHT { if (cel_hero_arm_on()) { DIFFUSE_LIGHT = vec3(0.0); SPECULAR_LIGHT = vec3(0.0); } }
 #endif
 #endif
