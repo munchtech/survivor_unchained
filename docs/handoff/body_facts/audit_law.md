@@ -12,8 +12,8 @@ Test `test_clavicle_law_and_frozen` (13 green). A's side untouched; `out/audit/a
 - `... --only none --out tools/body/out/audit_law --compare tools/body/out/audit/audit.json --compare-out tools/body/out/audit/overhead_old_new.txt`
 - `python tools/body/deform_brief.py tools/body/out/audit_law/audit.json > tools/body/out/audit/brief_law.txt`
 
-**NOT re-measured** (rows in the tables are copies of the old numbers): the four idles (`--p4 idle_fight_a,idle_fight_b,
-idle_warden,idle_warden_town`, about 12 min; started, cut off by the context cap), p4 on B.nocorr / B.nolaws / Bplay
+**NOT re-measured** (rows in the tables are copies of the old numbers): (the four idles on B.full WERE re-measured after this was written, about 12 min, and both tables refreshed: their rows
+are in overhead_old_new.txt, not summarized here; idle_fight_a / _b have no old row) p4 on B.nocorr / B.nolaws / Bplay
 (`--only p4 --cols B.nocorr,B.nolaws,Bplay.full`, about 50 min), the 33 library dumps (their clavicle: not checked here).
 
 **B.full, old (frozen) | new (law) | A.full** (full table, Bplay too: `out/audit/overhead_old_new.txt`)
