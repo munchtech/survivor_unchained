@@ -358,3 +358,37 @@ band point at foot(u) + h N on its own unfold triangle; the B' carrier (car1, wh
 closest triangle for that rest point, at the fold often the other wall. So positions differ, not only normals. Next: make
 lay2's posed points the carrier's (carry the rest lay point with car1's face / bary / d0, rebuilt each pass, held as a
 fixed linear map within a pass), or make car1 keep the lay's own foot face (the HerStrip carrier given face = the unfold's).
+
+## Lay 6b (lead 21's max solver): 10 Nov. NOT MET; nothing promoted; active `strip_rest.npz` stays lay 5 (untouched)
+CAUSE (a)/(b) CHECKED AND WRONG (`verify` on lay 5, live module): car1 re-binds only 5 of 147 right band points (3 of 147
+left) to an A triangle other than the lay's own unfold triangle, none to the other wall (face normal dot >= 0.5 on all 8);
+car1's posed point vs lay2's own model (foot + h N) differs at most 0.26 / 0.29 / 0.48 / 0.49 / 1.13 / 0.93 mm at
+crossbow@0 / @2 / cast_flick@8 / leap@6 / @9 / @19:r, and the count is THE SAME under both placements (1 / 1 / 1 / 3 vs 2 /
+0 / 0; cast_bolt@6:l 3 vs 3). So a lay-face carrier changes nothing. What differs is the NORMALS: with lay2's own normals
+(A's at the foot) lay 5 has 0 turned at crossbow@0 / @2 / cast_flick@8. Lay 6's `judge` uses the count's normals, but it
+reads them only at each pass's START. The triangles left turned straddle A's crease (`_a`: tri 290 r 2445/2386A/2385b,
+rest quality 0.22 against B's 0.91, its corners' A normals mutual dot -0.03 / -0.57 in crossbow@2 / cast_flick@8; tri 117 /
+291 at leap@6, 323 at leap@9, 305 at cast_bolt@6:l: A's own surface under them turned). Their facing flips with the lay's
+own rest normals between passes.
+Method change (`strip_rest.py` lay2, off at defaults, old builds unchanged): `boost` / `extra` (with `judge`). The shipped
+count is re-read at each pass's END. Every triangle it still turns (any where w >= 0.5; where w < 0.5, those the fill does
+not turn) gets weight x boost, and every posed edge under the guard gets its guard wall x boost (cap 1000 x). Up to
+`extra` more passes run until the count sees none. `gwm` replaces the guard wall scalar.
+Run `_l21b` (start lay 5, both sides, lay 5 `_h` settings + judge, guard 0.8, guardwall 50, boost 4, extra 8; 8 min; logs
+`out/shoulder/build_l21b.log`, `turned_l21b_all.log` (+ `.tsv`), baseline `turned_l21_lay5_all.log`; backup
+`survivorsunchained_inputs\body\p1b_l21_lays\`). Left: lay2's own count reached 0 at step 5. Right: stuck at 4 turned in
+3 poses; the weights capped, L-BFGS 0 its, e 35k -> 404k, rest edges 0.40..2.00.
+| req | lay 5 | `_l21b` |
+|---|---|---|
+| (1) turned where w >= 0.5 | crossbow@0:r 1, @2:r 1, cast_flick@8:r 1, cast_bolt@6:l 3, leap@6:r 3 | crossbow@0 and cast_bolt@6:l cured; @2:r 1, cast_flick@8:r 1, leap@6:r 2; NEW x:hadd40:l 1 (lay2's own count says 0: the model's 1 mm / height-cut gap) |
+| (1) w < 0.5, map = the fill's own | axe_back@0:r 4 (w 0.18), @1:r 1 (0.08), warden_look@150:l 4 (0.02), iron_vow@8:r 4 (0.01), cast_bolt@11:l 1 (0.08), reaver_look@27:l 1 (0.13, fill 3) | the same |
+| (2) guard, least map / A's own (w > 0) | 0.64 crossbow@2:r | 0.66 warden_look@150:l: NOT MET (0.8) |
+| (4) FOLD max deg leap@5/6/7/9/12/14/16/17/18/19/20:r | 123/143/110/137/122/47/62/54/75/87/71 | 128/158/108/145/128/48/63/57/80/93/77: WORSE |
+| (3) T22, (5), (6) | | not run: the candidate fails (1), (2) and (4) |
+FINDING: on the right, more weight on the count's triangles crumples the hollow (FOLD up 6 to 14 deg). Those triangles
+span A's own closed crease (A's normals -0.9 to -1.0 apart under one triangle). A carry map that rides A's surface
+inherits the crease. The bowl the judge asks for needs the band OFF A's crease walls in the arm-behind poses: a band
+point placed by a smooth surface over the pec and lat ridges (a hull or membrane of A's posed hollow), not by foot + h N.
+Next: build that posed bowl as the map's target (then the count's normals come from a smooth surface), or cure the
+right's crease on A first (judge fix 1's depinch at the armpit). The left half of `_l21b` (cast_bolt@6:l 3 -> 0) is not
+kept: it adds x:hadd40:l 1 and moves the guard on the left (warden_look@150:l 0.66).

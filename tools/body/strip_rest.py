@@ -360,7 +360,7 @@ def chain_order(pts, E, P):
 def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), walk=(0.82, 1.28), wall=50.0,
          fold=(0.3, 0.15), margin=(0.05, 0.10), steps=8, passes=3, iters=1500, start=None, ratchet=True, capm=0.10,
          qmin=0.0, qwall=1.0, capwall=1.0, lo_own=0.0, lowall=1.0, hiwall=1.0, rest_wall=1.0, ring_lim=None, judge=None,
-         guard=0.0, guardwall=1.0, turnwall=1.0, log=print):
+         guard=0.0, guardwall=1.0, turnwall=1.0, boost=0.0, extra=0, log=print):
     """The band's plane points for a CARRY MAP: where each band point rides on the reference, chosen so the band is
     sound IN THE POSES IT IS USED IN, not as a rest. The snapped points (the apex row) stay on the curve and slide
     along it; they are walked onto it from their feet in `steps`.
@@ -396,6 +396,11 @@ def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), w
     (1 - w) fill + w Nb, signed against B's rest facing, re-read each pass; a triangle the fill itself turns in a pose
     is held at w x its weight there (the map can only move w of it), every other one at turnwall x its weight. guard, the minimum-width guard: in every pose
     no edge under guard x the reference's own shortest there, wall guardwall x wall (slivers).
+    Lay 6b's rule (off at its default): boost (with judge), THE SHIPPED COUNT AT EACH PASS'S END: the judge is re-read
+    on the pass's result and every triangle the count still turns there (any triangle where w >= 0.5, one the fill does
+    not turn itself where w < 0.5) has its weight x boost, every posed edge under the guard its guard wall x boost
+    (capped at 1000 x); up to `extra` passes more until the count sees none. (Within a pass the judge's normals are
+    fixed: a triangle that straddles A's crease flips with the lay's own rest normals between passes.)
     """
     n, bi, m = len(P0), np.nonzero(band)[0], 1 + len(design)
     fi, si = np.nonzero(band & ~snap)[0], np.nonzero(snap)[0]
@@ -461,7 +466,8 @@ def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), w
     if judge is not None:                                    # the fill's own turned triangles per pose (fixed)
         ft = np.stack([ct.facing(tris, d[1], d[2]) for d in design])
         ft0 = None
-    for step in range(steps + passes):
+    gwm = np.full((m, ne), float(guardwall))
+    for step in range(steps + passes + (extra if judge is not None and boost > 1 else 0)):
         tau = max(1 - (step + 1) / steps, 0.0) if steps else 0.0
         mm = 1 if step < steps else m                        # the walk onto the line: on the rest surface alone
         lm, Ws = (walk, W[:1]) if mm == 1 else (lim, W)
@@ -507,7 +513,7 @@ def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), w
             L = np.linalg.norm(d, axis=2) * 1000
             r = L / l0
             over, under = np.maximum(r - hi, 0), np.maximum(lo - r, 0)
-            ug, wg = np.maximum(glo[:mm] - r, 0), guardwall * wall
+            ug, wg = np.maximum(glo[:mm] - r, 0), gwm[:mm] * wall
             e = (l0 * (kspr * (r - 1) ** 2 + wl * over ** 2 + wu * under ** 2 + wg * ug ** 2)).sum()
             gX = scat(De, (2 * kspr * (r - 1) + 2 * (wl * over - wu * under - wg * ug))[..., None] * d * (1000 / np.maximum(L, 1e-9))[..., None])
             if qmin:                                         # the rest lay's slivers (row 0 = the rest surface)
@@ -530,6 +536,23 @@ def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), w
 
         res = minimize(f, x, jac=True, method="L-BFGS-B", options={"maxiter": iters, "maxfun": 2 * iters, "ftol": 1e-12, "gtol": 1e-7})
         x = res.x
+        if judge is not None and mm > 1 and boost > 1:      # the shipped count on this pass's result: what it still sees
+            ue = place(x, tau)
+            Xe, Ne, _ = points(ue, mm)
+            Nje, _ = judge(Xe[0])
+            NXe = NB[:mm].copy()
+            NXe[:, bi] = ct._unit((1 - W)[:, None, None] * NXe[:, bi] + W[:, None, None] * Ne)
+            NXe[1:, bi] = ct._unit((1 - W[1:])[:, None, None] * NB[1:][:, bi] + W[1:, None, None] * Nje)
+            te = (areas(Xe, ct._unit(NXe[:, tris].sum(2)), ue)[0][1:] <= 0) & ((W[1:, None] >= 0.5) | ~ft0)
+            re = np.linalg.norm(Xe[1:, i] - Xe[1:, j], axis=2) * 1000 / l0
+            ge = re < glo[1:] - 1e-9
+            wtm[1:] = np.where(te, np.minimum(wtm[1:] * boost, 1000 * wt[None]), wtm[1:])
+            gwm[1:] = np.where(ge, np.minimum(gwm[1:] * boost, 1000 * guardwall), gwm[1:])
+            if log:
+                log(f"   lay2 step {step} END (the count re-read): turned {int(te.sum())} in {int(te.any(1).sum())} poses"
+                    f" (w >= 0.5: {int(te[W[1:] >= 0.5].sum())}), under the guard {int(ge.sum())} edges in {int(ge.any(1).sum())} poses", flush=True)
+            if step >= steps + passes - 1 and not te.any() and not ge.any():
+                break
         if log and (mm > 1 or tau == 0):
             Xn = points(place(x, tau), mm)[0]
             rr = np.linalg.norm(Xn[:, i] - Xn[:, j], axis=2) * 1000 / l0
