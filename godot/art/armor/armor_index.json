@@ -193,9 +193,6 @@
   "file": "res://art/armor/plate_top_etched.gltf",
   "tier": 2,
   "base": "plate_top_plain",
-  "finish": {
-   "steel": "plainsteel"
-  },
   "body_glb": "66182af6",
   "built_on": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
  },
