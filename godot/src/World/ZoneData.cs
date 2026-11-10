@@ -210,6 +210,23 @@ public sealed class ZoneData
             // standing material paints it by the rig's levels. --flora-kit, or a rig without the key: the kit's, as before.
             if (arena && Dressing.FloraOwn && Atmosphere.StandRig(m.Place!.Night.Rig))
             {
+                // (L1 lead 17, M3) flora_species.json "own_stand" first: the kit's bushes as our leaf clump, at the clump's
+                // own size (a copy's jitter, its scale over its kind's base, held to the map's range: a hazel's place is
+                // scaled for a 4-5 m mass, the clump is the target's 2.4 m bush as built); the kit's ferns dropped.
+                if (FloraSpecies.StandOwn(key.Piece) is { } so)
+                {
+                    if (so.Pieces.Length == 0) continue;
+                    var at = list.Select(t =>
+                    {
+                        float s = t.Basis.Scale.X;
+                        return new Transform3D(t.Basis.Scaled(Vector3.One * (Mathf.Clamp(s / (float)k.Scale, so.Lo, so.Hi) / s)), t.Origin);
+                    }).ToArray();
+                    if (System.Environment.GetEnvironmentVariable("FLORA_COUNT") != null)
+                        GD.Print($"flora stand {key.Kind} {key.Piece} -> {string.Join('|', so.Pieces)}: {at.Length}; from the start (dx,dz,scale): " + string.Join(' ',
+                            at.Select(t => $"{t.Origin.X - m.Meta.Start.X:0.0},{t.Origin.Z - m.Meta.Start.Z:0.0},{t.Basis.Scale.X:0.00}")));
+                    Flora.Add(new FloraGroup(key.Kind, "own:" + string.Join('|', so.Pieces), at, new KitLook.Look((float)k.Wind, null, null, 0, (float)k.Moss)));
+                    continue;
+                }
                 if (Dressing.Own(key.Piece, Id, key.Kind) is { } own)
                     Flora.Add(new FloraGroup(key.Kind, own, list.ToArray(), new KitLook.Look((float)k.Wind, null, null, 0, (float)k.Moss)));
                 continue;

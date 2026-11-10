@@ -85,6 +85,26 @@ public static class FloraSpecies
         return map.TryGetValue(kitPiece, out var o) ? o : null;
     }
 
+    /// <summary>(L1 lead 17, M3) flora_species.json "own_stand": the kit piece as an arena under a standing rig draws it
+    /// (its own pieces, none: dropped) and the range its copies' jitter is held to (they keep the piece's own size);
+    /// null: the piece is not in that map (the zone's "own" decides, as everywhere).</summary>
+    public static (string[] Pieces, float Lo, float Hi)? StandOwn(string kitPiece)
+    {
+        Ensure();
+        if (standOwn == null)
+        {
+            standOwn = new();
+            if (Load(Path).TryGetProperty("own_stand", out var s))
+            {
+                OwnMap(s, standOwn);
+                if (s.TryGetProperty("size", out var z) && z.GetArrayLength() == 2) standSize = (z[0].GetSingle(), z[1].GetSingle());
+            }
+        }
+        return standOwn.TryGetValue(kitPiece, out var o) ? (o, standSize.Lo, standSize.Hi) : null;
+    }
+    static Dictionary<string, string[]>? standOwn;
+    static (float Lo, float Hi) standSize = (1, 1);
+
     /// <summary>The one stone's data (flora_species.json "stone": its sheet, palette and OWN_ROCK's parameters).</summary>
     public static JsonElement Stone => stone ??= Load(Path).GetProperty("stone").Clone();
     static JsonElement? stone;

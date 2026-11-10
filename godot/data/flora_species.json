@@ -73,6 +73,18 @@
     "Pebble_Round_5": ["pebbles_a", "pebbles_c", "pebbles_b", "pebbles_d"], "Pebble_Square_1": ["pebbles_b", "pebbles_d", "pebbles_a", "pebbles_c"],
     "Pebble_Square_2": ["pebbles_c", "pebbles_a", "pebbles_d", "pebbles_b"], "Pebble_Square_3": ["pebbles_d", "pebbles_b", "pebbles_c", "pebbles_a"]
   },
+  "own_stand": {
+    "_doc": ["(L1 lead 17, M3; docs/design/NIGHT_KIT.md) An ARENA under a rig with 'stand' (ZoneData; never a zone, never --flora-kit): these",
+             "kit pieces draw as the pieces of 'own' here instead of the game's 'own' above ([]: dropped). A copy drawn so keeps its piece's own",
+             "size: its scale is its jitter (its scale over its kind's base scale) held to 'size' [lo, hi]. The bushes are the leaf clump (the",
+             "target's bush, about 2.4 m across); the kit's ferns are dropped until a small plant of ours is good enough to multiply."],
+    "size": [0.85, 1.25],
+    "own": {
+      "Bush_Common": ["clump_a", "clump_a", "clump_b"],
+      "Bush_Common_Flowers": ["clump_b", "clump_a"],
+      "Fern_1": [], "Plant_1_Big": []
+    }
+  },
   "stone": {
     "_doc": ["The one stone (look bible 07: the castle, the town's footings and the river's stones share it): tools/assets/env_rocks.py tex",
              "paints its sheet from 'palette' (dark to light, sRGB), 'warm' and 'cool' (its patches); kit.gdshader's OWN_ROCK draws it",
