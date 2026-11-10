@@ -2,20 +2,23 @@
 // shadow of a foe is real (the crowd casts) and lands on the one shade through the ground's cel model, but inside her fire
 // the moon has given way and her light casts none: there a foe stood on a soft olive patch (crowd_blob's multiplied dark
 // over the orange). This pass paints the fire's shadow instead: one hard-edged shape per body, long, pointing AWAY from her
-// light's foot, at the night's ONE shade as an authored level and hue (rigs.json "foe_moon": [.., shade level, R, G, B,
-// residue]; crowd_shade rgb the color x level as scene light, a 1: on) plus the fire's residue there (crowd_moon.z of the
-// ground's ramp: the same violet-brown as a leaf's shade in her pool, never olive, never black). Whole where her fire is
-// the stronger light (inside the middle of the moon's return, cel_give z to w), none past it: there the moon's own shadow
-// stands. Zero crowd_shade: nothing draws (every rig but arena_night).
-// (L1 lead 18, SH) Under a rig with the floor's tone table (rigs.json "ember_floor": cel_floor_band x over 0) the shadow's
-// tone is the FLOOR'S OWN at that distance: the night's one shade (crowd_shade, what the floor's shade is away from the
-// fire) times the table's leaf-shade turn there (cel_floor_turn row 1), so a body's shadow DIMS the glow to exactly what a
-// leaf's shade shows at that ring and is the floor's plain shade where the table ends; and it gives way as her fire's
-// share does (1 - the moon's return, the table's a), per fragment, so it has no outer rim. (Before: the one shade plus a
-// residue of the old ramp, whole to 3.6 m: on the table's floor the pack's discs merged into one foot_on-black mass with a
-// hard edge against the orange from 2 m.) No tone lives here: the rig's table.
+// light's foot. Zero crowd_shade: nothing draws (every rig but arena_night).
+// (L1 lead 18, SH) The TONE is the floor's own at that distance: the night's one shade (crowd_shade: rigs.json "foe_moon"
+// values 3-6, what the floor's shade is away from the fire) times the table's leaf-shade turn there (cel_floor_turn row 1),
+// so a body's shadow DIMS the glow to exactly what a leaf's shade shows at that ring and is the floor's plain shade where
+// the table ends; and it gives way as her fire's share does (1 - the moon's return, the table's a), per fragment, so it
+// has no outer rim and is nothing under a canopy mass (the floor there is already that tone). No tone lives here.
+// (L1 lead 19, SH2) The SHAPE, one rule for three users (a foe: Vat.cs; what stands: Dressing.cs; her: PlayerView.cs; the
+// last two through World/FireCast.cs): a tapered trail from the feet, away from her light's foot. Per instance, the origin
+// is the feet and COLOR is r: the body's height m, g: its width at the feet m, b: 0 or a fixed length m, a: how much it
+// shows. The trail is as wide as the body at the feet and CAST_TIP of that at its tip, round at both ends, and
+// L = d x h / (H - h) long (d the feet's ground distance from the light's foot, H the light's height over the feet: where
+// the top of the body's shadow falls), held between CAST_MIN and CAST_MAX body heights and under CAST_FAR m. The edge is
+// hard (one pixel by fwidth of the shape's own distance in metres: analytic, so it neither blurs nor shimmers as the pack
+// moves). A FIXED cast (b over 0) is the light's own bearer: the light is over her, the rule gives nothing, so her shadow is
+// b long along the instance's own z axis and one step deeper in tone, the rig's (foe_moon value 8, crowd_moon.w).
 shader_type spatial;
-render_mode unshaded, blend_mix, depth_draw_never, cull_disabled, shadows_disabled, fog_disabled;
+render_mode unshaded, blend_mix, depth_draw_never, cull_disabled, shadows_disabled, fog_disabled, world_vertex_coords;
 
 uniform float strength = 0.6;
 global uniform vec4 crowd_ember;
@@ -26,42 +29,76 @@ global uniform vec4 cel_pool_band;
 global uniform sampler2D cel_pool_ramp : filter_linear, repeat_disable;
 global uniform vec4 cel_floor_band;
 global uniform sampler2D cel_floor_turn : filter_linear, repeat_disable;
-#define CAST_LONG 1.7
-#define CAST_AWAY 0.12
-#define CAST_R 0.78
-varying float pool;
-varying float foot_on;
+// (the shape's numbers; no tone)
+#define CAST_TIP 0.3
+#define CAST_MIN 1.5
+#define CAST_MAX 3.2
+#define CAST_FAR 4.0
+// (the far end's rise per metre, so a gentle slope does not cut the trail; and the quad's margin round the shape, m)
+#define CAST_LIFT 0.02
+#define CAST_PAD 0.06
 varying vec3 wp;
+varying flat vec4 seg;
+varying flat vec3 dim;
+varying flat vec2 gt;
 
 void vertex() {
-	pool = 0.0; foot_on = 0.0;
-	if (crowd_shade.a > 0.0 && crowd_ember.w > 0.0 && cel_pool_band.x > 0.0) {
-		vec3 o = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-		vec2 away = o.xz - crowd_ember.xz;
-		float d = length(away);
-		float rx = mix(cel_give.z, cel_give.w, 0.5);
-		foot_on = smoothstep(0.3, 0.6, d);
-		pool = (1.0 - smoothstep(rx - 0.3, rx + 0.3, d)) * foot_on;
-		vec2 a = d > 1e-3 ? away / d : vec2(1.0, 0.0);
-		VERTEX.xz += a * (dot(VERTEX.xz, a) * (CAST_LONG - 1.0) + 0.5 * (CAST_LONG - 1.0) + CAST_AWAY);
+	vec3 o = MODEL_MATRIX[3].xyz;
+	wp = o;
+	seg = vec4(o.xz, 1.0, 0.0); dim = vec3(1.0, 0.1, 0.03); gt = vec2(0.0, 1.0);
+	vec2 away = o.xz - crowd_ember.xz;
+	float d = length(away);
+	bool table = cel_floor_band.x > 0.0;
+	bool bearer = COLOR.b > 0.0;
+	// (past the fire's reach nothing is drawn at all: the four corners stay on the feet)
+	float reach = table ? cel_floor_band.x : cel_give.w + 0.3;
+	if (crowd_shade.a > 0.0 && crowd_ember.w > 0.0 && cel_pool_band.x > 0.0 && COLOR.a > 0.0 && (bearer || d < reach)) {
+		float h = COLOR.r;
+		float r1 = max(0.5 * COLOR.g, 0.02), r2 = r1 * CAST_TIP;
+		float g = COLOR.a, tone = 1.0, len;
+		vec2 a;
+		if (bearer) {
+			vec2 z = MODEL_MATRIX[2].xz;
+			a = dot(z, z) > 1e-6 ? normalize(z) : vec2(0.0, -1.0);
+			len = COLOR.b;
+			if (crowd_moon.w > 0.0) tone = crowd_moon.w;
+		} else {
+			a = d > 1e-3 ? away / d : vec2(1.0, 0.0);
+			float top = crowd_ember.y - o.y;
+			len = clamp(d * h / max(top - h, 0.05), CAST_MIN * h, min(CAST_MAX * h, CAST_FAR));
+			g *= smoothstep(0.3, 0.6, d);
+			if (!table) { float rx = mix(cel_give.z, cel_give.w, 0.5); g *= 1.0 - smoothstep(rx - 0.3, rx + 0.3, d); }
+		}
+		// (the two circles' centres are len apart: the far end of the trail is len + the tip's radius from the feet)
+		len = max(len - r2, r1);
+		seg = vec4(o.xz, a); dim = vec3(len, r1, r2); gt = vec2(g, tone);
+		float along = mix(-r1 - CAST_PAD, len + r2 + CAST_PAD, UV.y);
+		float across = (UV.x - 0.5) * 2.0 * (r1 + CAST_PAD);
+		vec2 xz = o.xz + a * along + vec2(-a.y, a.x) * across;
+		wp = vec3(xz.x, o.y + CAST_LIFT * max(along, 0.0), xz.y);
 	}
-	wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	VERTEX = wp;
 }
 
 void fragment() {
-	bool table = cel_floor_band.x > 0.0;
-	float gate = table ? foot_on : pool;
-	if (gate <= 0.0) discard;
-	float d = length(UV - 0.5) * 2.0;
-	float w = fwidth(d) * 0.75 + 1e-3;
+	if (gt.x <= 0.0) discard;
+	// (the shape's distance, m: two circles and their outer tangents, along the trail from the feet)
+	vec2 q = wp.xz - seg.xy;
+	vec2 p = vec2(abs(q.x * seg.w - q.y * seg.z), dot(q, seg.zw));
+	float b = (dim.y - dim.z) / dim.x;
+	float c = sqrt(max(1.0 - b * b, 0.0));
+	float k = dot(p, vec2(-b, c));
+	float sd = k < 0.0 ? length(p) - dim.y : (k > c * dim.x ? length(p - vec2(0.0, dim.x)) - dim.z : dot(p, vec2(c, b)) - dim.y);
+	float w = fwidth(sd) * 0.75 + 1e-4;
+	float gate = gt.x;
 	float r = length(wp.xz - crowd_ember.xz);
-	if (table) {
+	if (cel_floor_band.x > 0.0) {
 		vec4 ts = texture(cel_floor_turn, vec2((clamp(r / cel_floor_band.x, 0.0, 1.0) * 63.0 + 0.5) / 64.0, 0.75));
-		ALBEDO = crowd_shade.rgb * ts.rgb;
+		ALBEDO = crowd_shade.rgb * ts.rgb * gt.y;
 		gate *= 1.0 - ts.a;
 	} else {
 		vec3 ramp = texture(cel_pool_ramp, vec2((clamp(r / cel_pool_band.x, 0.0, 1.0) * 63.0 + 0.5) / 64.0, 0.5)).rgb;
-		ALBEDO = crowd_shade.rgb + ramp * (crowd_ember.w * crowd_moon.z);
+		ALBEDO = (crowd_shade.rgb + ramp * (crowd_ember.w * crowd_moon.z)) * gt.y;
 	}
-	ALPHA = (1.0 - smoothstep(CAST_R - w, CAST_R + w, d)) * gate * COLOR.a * step(0.001, strength);
+	ALPHA = (1.0 - smoothstep(-w, w, sd)) * gate * step(0.001, strength);
 }

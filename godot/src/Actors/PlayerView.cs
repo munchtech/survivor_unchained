@@ -175,6 +175,11 @@ public partial class PlayerView : Node3D
     float lamp = 1;
     // Their own clips (hers, or his) and carriage.
     readonly bool mine;
+    /// <summary>(L1 lead 19, SH2) Her own fire shadow: one cast quad (World/FireCast.cs, shaders/crowd_blob_cast.gdshader)
+    /// and its shape, m (--her-cast-long, --her-cast-wide: its length from her feet and its width at them).</summary>
+    MultiMeshInstance3D? herCast;
+    const float HerCastTall = 1.7f;
+    static readonly float HerCastLong = SurvivorUnchained.Args.Num("her-cast-long", 0.6f), HerCastWide = SurvivorUnchained.Args.Num("her-cast-wide", 0.7f);
     readonly OwnClips own = OwnClips.Her;
     readonly HerCarriage? carriage;
     float runSpeed;
@@ -372,6 +377,8 @@ public partial class PlayerView : Node3D
         AddChild(Light);
         FolkLight = new OmniLight3D { LightColor = new Color(SurvivorUnchained.Args.Get("ember-folk-color") ?? "#ffc08a"), LightEnergy = 0, OmniRange = 11, ShadowEnabled = false, LightCullMask = 2u | HerLayers, Position = new Vector3(0, FolkH, FolkZ) };
         AddChild(FolkLight);
+        // (L1 lead 19, SH2) Her own short shadow under her fire (FireCast: one quad; placed every frame below).
+        if (mine) { herCast = FireCast.Make("HerCast", 1); AddChild(herCast); }
         Reflections = new Reflections(lo);
         AddChild(Reflections);
         Gather(this);
@@ -1156,6 +1163,14 @@ public partial class PlayerView : Node3D
             float ce = !LampOffHer && Visible && Atmosphere.CrowdFill > 0 ? Light.LightEnergy * Atmosphere.CrowdFill * CrowdEmberK : 0;
             var at = GlobalPosition + new Vector3(0, CrowdEmberH, 0);
             RenderingServer.GlobalShaderParameterSet("crowd_ember", new Vector4(at.X, at.Y, at.Z, ce));
+            // (L1 lead 19, SH2) She stands on her own short shadow: the light is over her, so the cast's rule gives next to
+            // nothing; a fixed short trail from her feet, away from the light's foot (the light sits a little toward the
+            // camera), a little wider than her stance. Its tone is the rig's (foe_moon value 8), the shape the shader's.
+            if (herCast != null)
+            {
+                var lf = Light.GlobalPosition; var me = GlobalPosition;
+                FireCast.Set(herCast.Multimesh, 0, me, HerCastTall, HerCastWide, ce > 0 ? 1 : 0, HerCastLong, new Vector2(me.X - lf.X, me.Z - lf.Z));
+            }
             var lc = Light.LightColor.SrgbToLinear();
             RenderingServer.GlobalShaderParameterSet("crowd_lamp", new Vector4(lc.R, lc.G, lc.B, CrowdEmberIn));
             // (L1 W2) Her light's point and reach for the cel model, where the moon gives way to her pool (cel.gdshaderinc cel_ember;

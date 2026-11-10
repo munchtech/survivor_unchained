@@ -585,11 +585,12 @@ public partial class Atmosphere : Node3D
         else { RenderingServer.GlobalShaderParameterSet("cel_stand", Vector4.Zero); RenderingServer.GlobalShaderParameterSet("cel_stand_fire", Vector4.Zero); }
         bool foeOn = CelRigs && cam == null && R4 && CrowdFill > 0 && p.FoeFire is { Length: 4 } && p.FoeFire[0] > 0;
         RenderingServer.GlobalShaderParameterSet("crowd_fire", foeOn ? new Vector4((float)p.FoeFire![0], (float)p.FoeFire[1], (float)p.FoeFire[2], (float)p.FoeFire[3]) : Vector4.Zero);
-        if (foeOn && p.FoeMoon is [var fl, var fp, var fsl, var fsr, var fsg, var fsb, var fres])
+        // (L1 lead 19, SH2: an eighth value, her own fire shadow's tone against a foe's (one step deeper), rides in crowd_moon.w: crowd_blob_cast)
+        if (foeOn && p.FoeMoon is [var fl, var fp, var fsl, var fsr, var fsg, var fsb, var fres, ..])
         {
             var fsc = new Color((float)fsr / 255f, (float)fsg / 255f, (float)fsb / 255f).SrgbToLinear();
             float fsm = Mathf.Max(fsc.R, Mathf.Max(fsc.G, Mathf.Max(fsc.B, 1e-4f))) / (float)fsl;
-            RenderingServer.GlobalShaderParameterSet("crowd_moon", new Vector4((float)fl, (float)fp, (float)fres, 0));
+            RenderingServer.GlobalShaderParameterSet("crowd_moon", new Vector4((float)fl, (float)fp, (float)fres, p.FoeMoon.Length > 7 ? (float)p.FoeMoon[7] : 0));
             RenderingServer.GlobalShaderParameterSet("crowd_shade", fsl > 0 ? new Vector4(fsc.R / fsm, fsc.G / fsm, fsc.B / fsm, 1) : Vector4.Zero);
         }
         else { RenderingServer.GlobalShaderParameterSet("crowd_moon", Vector4.Zero); RenderingServer.GlobalShaderParameterSet("crowd_shade", Vector4.Zero); }

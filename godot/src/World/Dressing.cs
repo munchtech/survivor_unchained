@@ -196,6 +196,10 @@ public static class Dressing
         return list;
     }
 
+    /// <summary>(L1 lead 19, SH2) A standing piece's fire shadow (Flora, below): its width at the feet against its box's
+    /// narrower side (a round footprint in a square box), and the least height m that casts one.</summary>
+    const float StandCastFeet = 0.7f, StandCastMin = 0.35f;
+
     public static Node3D Flora(ZoneData z)
     {
         var root = new Node3D { Name = "Flora" };
@@ -267,6 +271,33 @@ public static class Dressing
                 var refs = OwnFlora(root, sp, file, look, at, vars, true, out var tipY);
                 if (refs != null) CanopyLog.Register(root, sp, at, refs, tipY);
             }
+        // (L1 lead 19, SH2) What stands throws its own shadow away from her fire (FireCast, crowd_blob_cast.gdshader: the
+        // crowd's rule and tone): one cast quad per standing piece of ours that casts by day (a stone, a clump, a bush; not
+        // a tree: its crown is a canopy mass, the moon's business), set once from the piece's box (its height, and its
+        // narrower side as its width at the feet), all in one MultiMesh. Nothing of it draws but inside her fire under a
+        // rig with "foe_moon".
+        {
+            var casts = new List<(Vector3 At, float H, float W)>();
+            foreach (var ((file, look), (sp, at, vars)) in merged)
+            {
+                if (!sp.Shadow || sp.Kind is "pine" or "broadleaf" or "dead" || hide.Contains(sp.Name) || hide.Contains(sp.Kind) || LodsOf(file)[0] is not Mesh m0) continue;
+                var box = m0.GetAabb();
+                int was = casts.Count;
+                foreach (var t in at)
+                {
+                    float s = t.Basis.Y.Length(), h = box.End.Y * s, w = Mathf.Min(box.Size.X, box.Size.Z) * s * StandCastFeet;
+                    if (h >= StandCastMin) casts.Add((t.Origin, h, w));
+                }
+                if (SurvivorUnchained.Args.Has("stand-proof")) GD.Print($"fire casts: {file} ({sp.Kind}) box {box.Size.X:0.00} x {box.End.Y:0.00} x {box.Size.Z:0.00} m, {casts.Count - was} of {at.Count}");
+            }
+            if (casts.Count > 0)
+            {
+                var mmi = FireCast.Make("StandCasts", casts.Count);
+                for (int i = 0; i < casts.Count; i++) FireCast.Set(mmi.Multimesh, i, casts[i].At, casts[i].H, casts[i].W);
+                root.AddChild(mmi);
+            }
+            GD.Print($"fire casts: {casts.Count} standing pieces, one MultiMesh (one draw call)");
+        }
         // (a stone darkened under a crown (sky_dark, the pebbles) reads the ground's exposure, as the ground's litter does)
         int skySet = 0;
         if (z.Place == null && merged.Keys.Any(k => merged[k].Sp.Stone && merged[k].Sp.Shader.ContainsKey("sky_dark")))
