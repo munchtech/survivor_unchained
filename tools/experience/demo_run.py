@@ -53,6 +53,8 @@ if subprocess.run([sys.executable, TP, "take", "godot", TURN, "--wait", "3600", 
     print("TURN REFUSED"); sys.exit(1)
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 import freshness
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import hang_stacks
 freshness.reimport_if_stale(ROOT)
 try:
     for r in runs:
@@ -76,6 +78,8 @@ try:
                         tag = ln.split()[2]; snap(os.path.join(OUT, f"snap_{name}_{tag}")); print(f"[{name}] step saved: {tag}", flush=True)
                 seen = len(lines)
                 if time.time() > deadline:
+                    hp = hang_stacks.dump(p.pid, LOGS, name)
+                    if hp: print(f"{name} HANG STACKS: {hp}", flush=True)
                     subprocess.run(["taskkill", "/F", "/T", "/PID", str(p.pid)], capture_output=True); print(name, "TIMEOUT (stopped by its PID)"); break
         if r.get("snap"): snap(os.path.join(OUT, "snap_" + name))
         sd = os.path.join(G, ".shots")
