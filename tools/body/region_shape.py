@@ -4,6 +4,8 @@
     python tools/body/region_shape.py pops  --provider ... --clips run_warden,sword_heavy,p4:bladestorm_loop
     python tools/body/region_shape.py silhouette --provider P [--poses a,b | --only ...] [--views front,back,side,top,game_front,game_back]
     python tools/body/region_shape.py sheets --provider P --poses a,b,c [--views front34,back34,top34,under] [--gate]
+    python tools/body/region_shape.py edges --provider carried [--poses a,b] [--over 2.5]     (why edges stretch: cmd_edges,
+        classify_edges; the poses and sides of poses.npz, the target of target_a.npz; out edges_carried.json)
 
 Pose names: rest[:s] | x:<extreme>[:s] | <clip>@<frame>[:s] (p4:<clip>@f too); side l by default. Out: tools/body/out/shoulder.
 Providers (pose -> whole-body B vertices): pub = published B; target = region_target live (full_target), or target.npz +
@@ -534,9 +536,243 @@ def cmd_pops(cx, a):
     (OUT / f"pops_{a.provider}.json").write_text(json.dumps(res))
 
 
+# ---------------------------------------------------------------------- edges --
+EDGE_CLASSES = ["pocket", "published", "A's own", "border blend", "bridge", "carrier"]
+EDGE = {"tol": 0.15, "bridge": 2.0, "tiny": 0.25, "geo_rad": 0.15, "turns": ["spine_05", "neck_01", "neck_02", "head", "clavicle_{s}", "upperarm_{s}"]}
+
+
+def edge_len(X, ei, ej):
+    return np.linalg.norm(X[ei] - X[ej], axis=1)
+
+
+def tri_stretch(V0, V, tri):
+    """The largest principal stretch rest -> posed of the triangles tri [m, 3]."""
+    U, W = (np.stack([x[tri[:, 1]] - x[tri[:, 0]], x[tri[:, 2]] - x[tri[:, 0]]], 2) for x in (V0, V))
+    return np.linalg.svd(W @ np.linalg.pinv(U), compute_uv=False)[:, 0]
+
+
+def classify_edges(t, p, c, a, inp, bmin, bmax, bridge, over, tol=EDGE["tol"]):
+    """One class (index into EDGE_CLASSES) per edge whose target ratio t is over `over`, -1 for the others. All inputs
+    per edge, read at the edge's worst pose: t / p / c / a = the ratio of the target, the published surface, the carried
+    surface before the border blend, the reference's own; inp = an end in the pocket; bmin / bmax = the ends' border
+    share; bridge = the rest bridge measure fails. The first rule that holds, in this order:
+      pocket        an end in the pocket
+      published     both ends at share 0 (the target IS the published surface there)
+      A's own       the carried ratio explains the target (c >= (1 - tol) t) and the reference stretches as much at the
+                    same place (a >= (1 - tol) c)
+      border blend  an end with share < 1, and neither the carried nor the published ratio reaches (1 - tol) t
+      bridge        the ends' matched reference points lie over EDGE["bridge"] x apart along the reference's rest surface,
+                    measured against the longer of the edge's rest length and the matched points' straight gap
+      carrier       none of the above (carrier_note says what it looks like)"""
+    lab = np.full(len(t), -1)
+    cls = np.select([inp, bmax <= 0, (c >= (1 - tol) * t) & (a >= (1 - tol) * c), (bmin < 1) & (np.maximum(c, p) < (1 - tol) * t), bridge],
+                    [0, 1, 2, 3, 4], 5)
+    lab[t > over] = cls[t > over]
+    return lab
+
+
+def carrier_note(t, p, c, a, bmin, tol=EDGE["tol"]):
+    """What a `carrier` edge looks like: the carry stretches where the reference does not (offset turn), the published
+    surface's own stretch on a blend row, or neither surface explains it at full share."""
+    return np.select([(c >= (1 - tol) * t) & (a < (1 - tol) * c), (bmin < 1) & (p >= (1 - tol) * t)],
+                     ["carry over A (offsets / frames)", "published-led blend row"], "unexplained")
+
+
+class EdgeProbe:
+    """Edges (ei, ej) of rest points P0 against their match (tri [n, 3], bary [n, 3]) on a reference mesh at rest ref_V0."""
+
+    def __init__(self, P0, ei, ej, tri, bary, ref_V0, tiny=EDGE["tiny"]):
+        self.ei, self.ej, self.tri, self.bary, self.V0 = ei, ej, tri, bary, np.asarray(ref_V0, float)
+        self.l0 = np.maximum(edge_len(P0, ei, ej), 1e-12)
+        self.q0 = np.einsum("nk,nkj->nj", bary, self.V0[tri])
+        self.g0 = edge_len(self.q0, ei, ej)
+        self.small = self.g0 < tiny * self.l0
+
+    def ratio(self, X):
+        return edge_len(X, self.ei, self.ej) / self.l0
+
+    def own(self, ref_V):
+        """The reference's own ratio at each edge: the matched points' posed distance over their rest distance; where
+        the rest distance is tiny (under `tiny` of the edge), the larger principal stretch of the two matched triangles."""
+        r = edge_len(np.einsum("nk,nkj->nj", self.bary, ref_V[self.tri]), self.ei, self.ej) / np.maximum(self.g0, 1e-12)
+        k = np.nonzero(self.small)[0]
+        if len(k):
+            r[k] = np.maximum(tri_stretch(self.V0, ref_V, self.tri[self.ei[k]]), tri_stretch(self.V0, ref_V, self.tri[self.ej[k]]))
+        return r
+
+    def along(self, T, sel, rad=EDGE["geo_rad"], weld=1e-6):
+        """[len(sel)] m: the matched points' distance along the reference's rest surface for the edges sel (paths over
+        the welded vertex graph, corner to corner; faces that share an edge or are one: the straight gap; `rad` = cap)."""
+        from scipy.sparse.csgraph import dijkstra
+        import scipy.sparse as sp
+        V0 = self.V0
+        _, grp = np.unique(np.round(V0 / weld).astype(np.int64), axis=0, return_inverse=True)
+        grp = np.asarray(grp).ravel()
+        n = int(grp.max()) + 1
+        rep = np.zeros(n, np.int64)
+        rep[grp] = np.arange(len(V0))
+        E = np.unique(np.sort(grp[np.concatenate([T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]])], 1), axis=0)
+        E = E[E[:, 0] != E[:, 1]]
+        Gr = sp.coo_matrix((np.linalg.norm(V0[rep[E[:, 0]]] - V0[rep[E[:, 1]]], axis=1), (E[:, 0], E[:, 1])), (n, n)).tocsr()
+        out = np.empty(len(sel))
+        for a in range(0, len(sel), 96):
+            k = sel[a:a + 96]
+            ti, tj = self.tri[self.ei[k]], self.tri[self.ej[k]]
+            src, inv = np.unique(grp[ti], return_inverse=True)
+            D = dijkstra(Gr, directed=False, indices=src, limit=rad)[np.asarray(inv).reshape(ti.shape)]         # [m, 3, n]
+            d = np.take_along_axis(D, np.broadcast_to(grp[tj][:, None, :], (len(k), 3, 3)), 2)
+            da_, db_ = (np.linalg.norm(self.q0[e][:, None] - V0[t], axis=2) for e, t in ((self.ei[k], ti), (self.ej[k], tj)))
+            path = np.minimum((da_[:, :, None] + d + db_[:, None, :]).reshape(len(k), 9).min(1), rad)
+            share = (grp[ti][:, :, None] == grp[tj][:, None, :]).any(2).sum(1)
+            out[a:a + 96] = np.where(share >= 2, self.g0[k], np.maximum(path, self.g0[k]))
+        return out
+
+
+def edge_zones(h):
+    """A zone name per region point (local index, the left side's; the right = the twins): the named band, else for
+    the border rows (share < 1) what bounds them (why_names of the nearest outside point) + top / front / back by the
+    rest normal, else inner + top / front / back."""
+    md, fr, sd = h.md, h.bd.frame, h.md.S["l"]
+    ids = sd["ids"]
+    N = h.N0[md.first[ids]]
+    fbt = np.where(N @ np.asarray(fr.up) > 0.6, "top", np.where(N @ np.asarray(fr.front) > 0, "front", "back"))
+    out = np.nonzero(md.why >= 0)[0]
+    why = md.why[out[cKDTree(md.V0[out]).query(md.V0[ids])[1]]]
+    z = np.array([f"{'border ' + md.why_names[w] if b < 1 else 'inner'} {f}" for w, b, f in zip(why, md.beta, fbt)], object)
+    bz = np.load(OUT / "bands.npz")
+    for b in BANDS[::-1]:
+        z[sd["loc"][bz[f"{b}_l"]]] = b
+    return z
+
+
+def edge_rows(h, pr, G, s, X=None):
+    """One pose and side: {t, p, c, a: ratio per edge of the target (X, or the live blend), the published surface, the
+    carried surface before the blend, A's own; dis: per point |carried - published| m; stale: max |X - live blend| m}."""
+    md = h.md
+    MC, _, VaM = h.carried(G, s)
+    Vp = h.rt.published(h.bd, G)[md.first[md.S[s]["ids"]]]
+    b = md.blend(G, s)[:, None]
+    live = b * MC + (1 - b) * Vp
+    X = live if X is None else X
+    return {"t": pr.ratio(X), "p": pr.ratio(Vp), "c": pr.ratio(MC), "a": pr.own(VaM), "dis": np.linalg.norm(MC - Vp, axis=1),
+            "stale": float(np.abs(X - live).max())}
+
+
+def edge_probe(h, s):
+    car = h.car[s]
+    return EdgeProbe(h.md.V0[h.md.S[s]["ids"]], *h.edges[s], car.tri, car.bary, h.Ab.V0)
+
+
+def cmd_edges(a):
+    """edges: why is the carried target stretched? Per pose and side, per region edge: the ratio (posed / rest length) of
+    the target (target_a.npz), the published surface, the carried surface before the border blend, A's own at the same
+    place, and at rest the matched A points' distance along A's surface. Every edge over --over in some pose gets one
+    class at its worst pose (classify_edges states the rule). Table zone x class; out: edges_<provider>.json."""
+    import carried_target as ct
+    if a.provider != "carried":
+        raise SystemExit("edges: --provider carried only")
+    h = ct.Her(verbose=False)
+    md, bd, over = h.md, h.bd, a.over
+    z, tz = np.load(OUT / "poses.npz"), np.load(OUT / "target_a.npz")
+    names, tix = [str(x) for x in z["name"]], {str(n): i for i, n in enumerate(tz["name"])}
+    sel = [names.index(p) for p in a.poses.split(",")] if a.poses else list(range(len(names)))
+    zone, beta = edge_zones(h), md.beta
+    pr = {s: edge_probe(h, s) for s in "lr"}
+    acc = {s: {k: [] for k in ("t", "p", "c", "a", "dis", "name", "i")} for s in "lr"}
+    stale = 0.0
+    for i in sel:
+        s = str(z["side"][i])
+        r = edge_rows(h, pr[s], z["G"][i], s, tz["X"][tix[names[i]]])
+        stale = max(stale, r["stale"])
+        for k in ("t", "p", "c", "a", "dis"):
+            acc[s][k].append(r[k])
+        acc[s]["name"].append(names[i])
+        acc[s]["i"].append(i)
+    print(f"edges {a.provider}: {len(sel)} poses, over {over:g}; target_a.npz against the live blend: max {stale * 1000:.3f} mm"
+          f" | A rest edge p50 {np.median(edge_len(h.Ab.V0, h.Ab.T[:, 0], h.Ab.T[:, 1])) * 1000:.1f} mm, B region edge p50 {np.median(pr['l'].l0) * 1000:.1f} mm")
+    rows, cells, zworst = [], {}, {}
+    for s in "lr":
+        if not acc[s]["t"]:
+            continue
+        R = {k: np.array(acc[s][k]) for k in ("t", "p", "c", "a", "dis")}
+        nm, p_, (ei, ej) = acc[s]["name"], pr[s], h.edges[s]
+        w = R["t"].argmax(0)
+        t, p, c, av = (R[k][w, np.arange(len(w))] for k in ("t", "p", "c", "a"))
+        inp = np.zeros(len(beta), bool)
+        if h.car[s].pocket is not None:
+            inp[h.car[s].pocket.p] = True
+        ov = np.nonzero(t > over)[0]
+        geo = np.full(len(t), np.nan)
+        geo[ov] = p_.along(h.Ab.T, ov)
+        bmin, bmax = np.minimum(beta[ei], beta[ej]), np.maximum(beta[ei], beta[ej])
+        bridge = geo > EDGE["bridge"] * np.maximum(p_.l0, p_.g0)
+        lab = classify_edges(t, p, c, av, inp[ei] | inp[ej], bmin, bmax, bridge, over)
+        note = carrier_note(t, p, c, av, bmin)
+        ez = zone[np.where(beta[ei] <= beta[ej], ei, ej)]
+        dis = np.maximum(R["dis"][w, ei], R["dis"][w, ej])
+        need = np.minimum(dis / np.maximum((over - np.maximum(c, p)) * p_.l0, 1e-9), 99.0)
+        mid = (md.V0[md.S[s]["ids"]][ei] + md.V0[md.S[s]["ids"]][ej]) * 500
+        for e in ov:
+            cl = EDGE_CLASSES[lab[e]]
+            rows.append({"side": s, "edge": [int(ei[e]), int(ej[e])], "zone": ez[e], "class": cl, "note": str(note[e]) if cl == "carrier" else "",
+                         "pose": nm[w[e]], "t": round(float(t[e]), 3), "p": round(float(p[e]), 3), "c": round(float(c[e]), 3), "a": round(float(av[e]), 3),
+                         "along_over_l0": round(float(geo[e] / p_.l0[e]), 2), "gap_over_l0": round(float(p_.g0[e] / p_.l0[e]), 2),
+                         "beta": [round(float(beta[ei[e]]), 2), round(float(beta[ej[e]]), 2)], "l0_mm": round(float(p_.l0[e] * 1000), 2),
+                         "dis_mm": round(float(dis[e] * 1000), 1), "rows_need": round(float(need[e]), 1), "poses_over": int((R["t"][:, e] > over).sum()),
+                         "rest_mm": [round(float(x), 1) for x in mid[e]]})
+            cells.setdefault((ez[e], cl), {"l": 0, "r": 0, "worst": 0.0, "pose": "", "poses": set(), "rest_mm": None, "dis": [], "need": [], "l0": [], "notes": {}})
+            ce = cells[ez[e], cl]
+            ce[s] += 1
+            ce["poses"] |= {nm[k] for k in np.nonzero(R["t"][:, e] > over)[0]}
+            ce["dis"].append(dis[e] * 1000), ce["need"].append(need[e]), ce["l0"].append(p_.l0[e] * 1000)
+            if cl == "carrier":
+                ce["notes"][str(note[e])] = ce["notes"].get(str(note[e]), 0) + 1
+            if t[e] > ce["worst"]:
+                ce["worst"], ce["pose"], ce["rest_mm"] = float(t[e]), nm[w[e]], rows[-1]["rest_mm"]
+        for zn in set(ez[ov]):
+            m = ov[ez[ov] == zn]
+            for k in range(len(nm)):
+                v = float(R["t"][k, m].max())
+                if v > over:
+                    zworst.setdefault(zn, []).append((v, nm[k], acc[s]["i"][k], int((R["t"][k, m] > over).sum())))
+    P, rest = bd.p, bd.p.rest
+
+    def turns(i):
+        G, s, o = z["G"][i], str(z["side"][i]), {}
+        for b in EDGE["turns"]:
+            b = b.replace("{s}", s)
+            if b in P.index:
+                j = P.index[b]
+                Rl = turn(G, rest, j) @ (turn(G, rest, P.parent[j]).T if P.parent[j] >= 0 else np.eye(3))
+                o[b] = round(float(np.degrees(np.arccos(np.clip((np.trace(Rl) - 1) / 2, -1, 1)))), 1)
+        return o
+    print(f"{'zone':34s} {'class':13s} edges l/r   worst  pose                        poses  rest mm (x, y, z)     blend: dis mm p50/max, rows p50/max")
+    table = []
+    for (zn, cl), ce in sorted(cells.items(), key=lambda e: (e[0][0], EDGE_CLASSES.index(e[0][1]))):
+        d = {"zone": zn, "class": cl, "edges_l": ce["l"], "edges_r": ce["r"], "worst": round(ce["worst"], 2), "worst_pose": ce["pose"], "poses_over": len(ce["poses"]),
+             "rest_mm": ce["rest_mm"], "dis_mm": [round(float(np.median(ce["dis"])), 1), round(float(np.max(ce["dis"])), 1)],
+             "rows_need": [round(float(np.median(ce["need"])), 1), round(float(np.max(ce["need"])), 1)], "l0_mm_p50": round(float(np.median(ce["l0"])), 2), "notes": ce["notes"]}
+        table.append(d)
+        ex = f"{d['dis_mm'][0]:.1f}/{d['dis_mm'][1]:.1f}, {d['rows_need'][0]:.1f}/{d['rows_need'][1]:.1f}" if cl == "border blend" else " ".join(f"{k}: {v}" for k, v in ce["notes"].items())
+        print(f"{zn:34s} {cl:13s} {ce['l']:4d} /{ce['r']:4d}  {ce['worst']:5.2f}  {ce['pose']:27s} {len(ce['poses']):4d}   {str(ce['rest_mm']):22s} {ex}")
+    worst = {}
+    print("the five worst poses per zone: ratio pose (edges over) | local turns from rest, deg")
+    for zn, v in sorted(zworst.items()):
+        worst[zn] = [{"ratio": round(r, 2), "pose": n, "edges_over": k, "turns_deg": turns(i)} for r, n, i, k in sorted(v, reverse=True)[:5]]
+        for e in worst[zn]:
+            print(f"  {zn:34s} {e['ratio']:5.2f} {e['pose']:27s} ({e['edges_over']:3d}) | " + " ".join(f"{k} {x:.0f}" for k, x in e["turns_deg"].items()))
+    tot = {c: sum(1 for r in rows if r["class"] == c) for c in EDGE_CLASSES}
+    print("classes:", tot, "of", len(rows), "edges over")
+    f = OUT / f"edges_{a.provider}.json"
+    f.write_text(json.dumps({"provider": a.provider, "over": over, "params": EDGE, "classes": EDGE_CLASSES, "poses": len(sel), "stale_mm": stale * 1000,
+                             "totals": tot, "table": table, "worst_poses": worst, "edges": rows}))
+    print("wrote", f)
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["shift", "pops", "silhouette", "sheets"])
+    ap.add_argument("cmd", choices=["shift", "pops", "silhouette", "sheets", "edges"])
+    ap.add_argument("--over", type=float, default=2.5)
     ap.add_argument("--provider", default="pub")
     ap.add_argument("--poses", default="")
     ap.add_argument("--only", default="train,held,extreme")
@@ -545,6 +781,8 @@ def main():
     ap.add_argument("--views", default="")
     ap.add_argument("--gate", action="store_true")
     a = ap.parse_args()
+    if a.cmd == "edges":
+        return cmd_edges(a)
     {"shift": cmd_shift, "pops": cmd_pops, "silhouette": cmd_silhouette, "sheets": cmd_sheets}[a.cmd](Ctx(), a)
 
 

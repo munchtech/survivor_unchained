@@ -34,6 +34,30 @@ def test_a_is_zero(cx):
             assert np.nanpercentile(np.abs(v), 99) < 2e-5, (nm, b, np.nanmax(np.abs(v)))
 
 
+def test_edges_rest_is_one():
+    import carried_target as ct
+    h = ct.Her(verbose=False)
+    for s in "lr":
+        pr = rs.edge_probe(h, s)
+        r = rs.edge_rows(h, pr, h.bd.G0, s)
+        for k, tol in (("c", 1e-6), ("a", 1e-6), ("p", 1e-3), ("t", 1e-3)):    # the published surface at rest sits a few
+            assert np.abs(r[k] - 1).max() < tol, (s, k, np.abs(r[k] - 1).max())    # um off the rest points (4e-4 of an edge)
+        z = np.zeros(len(r["t"]), bool)
+        assert (rs.classify_edges(r["t"], r["p"], r["c"], r["a"], z, z + 1.0, z + 1.0, z, 2.5) == -1).all()
+
+
+def test_edge_classes_partition():
+    rng = np.random.default_rng(3)
+    n = 4000
+    t, p, c, a = (rng.uniform(0.5, 6, n) for _ in range(4))
+    inp, bridge = rng.random(n) < 0.1, rng.random(n) < 0.2
+    b = rng.choice([0, 0.3, 1.0], (2, n))
+    lab = rs.classify_edges(t, p, c, a, inp, b.min(0), b.max(0), bridge, 2.5)
+    assert ((lab >= 0) == (t > 2.5)).all() and lab.max() < len(rs.EDGE_CLASSES)
+    assert set(lab[lab >= 0]) == set(range(len(rs.EDGE_CLASSES)))          # every class is reached, each edge has one
+    assert (lab[inp & (t > 2.5)] == 0).all() and (lab[~inp & (b.max(0) <= 0) & (t > 2.5)] == 1).all()
+
+
 def test_offset_reads(cx):
     pose = next(cx.poses(["rest"]))
     B = cx.B
