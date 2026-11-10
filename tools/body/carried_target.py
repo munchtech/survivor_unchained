@@ -558,6 +558,122 @@ def edge_ratio(X, X0, ei, ej):
     return float(r.min()), float(r.max()), r
 
 
+# ------------------------------------------------------------------------------------------------- REGIONS --
+# A region = any bone set of the source rig, with its points, their border share and its rigid border anchors.
+def s01(x):
+    x = np.clip(x, 0.0, 1.0)
+    return x * x * (3 - 2 * x)
+
+
+def weld_points(V0, tol=1e-6):
+    """(group [nv], first [ng]): vertices at one rest position are one point; first = its lowest vertex index."""
+    _, first, group = np.unique(np.round(np.asarray(V0) / tol).astype(np.int64), axis=0, return_index=True, return_inverse=True)
+    return np.asarray(group).ravel(), first
+
+
+def rows_from(adj, seed, cap=1 << 30):
+    """[n] the count of edges to the nearest seed point (0 on the seed; cap where none is reached)."""
+    d = np.where(seed, 0, cap)
+    front, k = seed.copy(), 0
+    while front.any():
+        k += 1
+        front = (adj @ front > 0) & (d == cap)
+        d[front] = k
+    return d
+
+
+def spread_of(group, pts):
+    """(raw, loc): every vertex welded to one of the points `pts` (vertex ids) and that point's local index."""
+    loc = -np.ones(group.max() + 1, np.int64)
+    loc[group[pts]] = np.arange(len(pts))
+    raw = np.nonzero(loc[group] >= 0)[0]
+    return raw, loc[group[raw]]
+
+
+def derive_region(V0, T, J, W, bones, far=(), rows=4, eps=0.02, rigid=0.999):
+    """A region's points and border share DERIVED from a bone set of a skin (V0, T, J, W; all its pieces).
+
+    core = the points the set's weights reach (their sum > eps) that are not rigid to a far anchor (`far`: one bone
+    set per far anchor; weight >= rigid). The region = the core grown by `rows` rows. The share is 0 on the outer row
+    and on every far-rigid point and rises over `rows` rows from either (1 on the core towards the root: the ramp lies
+    in the grown rows there; inside the core towards a far anchor, whose rigid points must stay the source's own).
+    Returns {pts (vertex ids, one per welded point), share, edges [m, 2] local, core, stiff (far-rigid) [points]}.
+    """
+    group, first = weld_points(V0)
+    n = len(first)
+    e = np.unique(np.sort(group[np.concatenate([T[:, [0, 1]], T[:, [1, 2]], T[:, [2, 0]]])], 1), axis=0)
+    e = e[e[:, 0] != e[:, 1]]
+    adj = sp.coo_matrix((np.ones(2 * len(e)), (np.r_[e[:, 0], e[:, 1]], np.r_[e[:, 1], e[:, 0]])), (n, n)).tocsr()
+    Jf, Wf = J[first], W[first]
+    stiff = np.zeros(n, bool)
+    for b in far:
+        stiff |= (Wf * np.isin(Jf, sorted(b))).sum(1) >= rigid
+    core = ((Wf * np.isin(Jf, sorted(bones))).sum(1) > eps) & ~stiff
+    reg = core.copy()
+    for _ in range(rows):
+        reg |= adj @ reg > 0
+    d = np.minimum(rows_from(adj, ~reg), 1 + rows_from(adj, stiff))
+    ids = np.nonzero(reg)[0]
+    loc = -np.ones(n, np.int64)
+    loc[ids] = np.arange(len(ids))
+    ed = loc[e[reg[e].all(1)]]
+    return {"pts": first[ids], "share": s01((d[ids] - 1) / rows), "edges": ed, "core": core[ids], "stiff": stiff[ids]}
+
+
+def follow_field(pose, V0, pivot, bone, deg=0.5):
+    """[nv] in 0..1: how much each vertex of a posed mesh follows a bone, MEASURED (no weights read: any poser).
+
+    pose(turns) -> vertices; the bone is turned `deg` about each axis through `pivot` (its rest joint) and the field is
+    the least-squares share of the rigid displacement each vertex takes: for a blend skin, the bone's subtree weight.
+    """
+    from scipy.spatial.transform import Rotation
+    num, den = np.zeros(len(V0)), np.zeros(len(V0))
+    for ax in np.eye(3):
+        R = Rotation.from_rotvec(ax * np.radians(deg)).as_matrix()
+        r = (V0 - pivot) @ (R - np.eye(3)).T
+        num += ((pose([(bone, R)]) - V0) * r).sum(1)
+        den += (r * r).sum(1)
+    return np.clip(num / np.maximum(den, 1e-30), 0.0, 1.0)
+
+
+def register(Va, Ms, F):
+    """The reference's posed vertices registered rigidly at each anchor (Ms: 4x4 per anchor, the root first) and blended
+    by the far anchors' fields F [nv, anchors - 1] (the root takes the rest: the fields sum to at most 1)."""
+    out = Va @ Ms[0][:3, :3].T + Ms[0][:3, 3]
+    base = out.copy()
+    for a, M in enumerate(Ms[1:]):
+        out += F[:, a, None] * (Va @ M[:3, :3].T + M[:3, 3] - base)
+    return out
+
+
+class Region:
+    """A bone set of the source rig as a carried region. bones: source bone ids (their LOCAL transforms make the part
+    pose). ref_map {reference bone: source bone} and order: how the reference is posed (transfer_turns). anchors
+    [(source bone, reference bone)]: the rigid borders, the root first. field [reference vertices, far anchors].
+    pts (source vertex ids), share ([points] or a function of the pose), edges (ei, ej) local, carrier, spread
+    (spread_of: every source vertex of the points)."""
+
+    def __init__(self, name, **kw):
+        self.name = name
+        self.__dict__.update(kw)
+
+    def share_at(self, G):
+        return self.share(G) if callable(self.share) else self.share
+
+
+def compose(Vp, parts):
+    """The target of a pose on every source vertex: the published surface plus the regions' relative deltas.
+    parts {region name: (raw, loc, delta [points, 3])}. THE RULE: the deltas ADD, each under its own share (a blend skin
+    is exactly additive over sibling chains off one anchor, so shares are not normalised: that would halve the
+    reference's deformation where regions overlap), summed in the order of the regions' names: the listing order
+    never matters, bit for bit."""
+    X = np.array(Vp, float)
+    for name in sorted(parts):
+        raw, loc, d = parts[name]
+        X[raw] += d[loc]
+    return X
+
+
 # ================================================================================================= HER CONFIG ==
 HER = {
     "source": "B",                       # deform_audit body keys
@@ -570,12 +686,30 @@ HER = {
                   + [f"{b}_{s}" for s in "lr" for b in ("clavicle", "upperarm", "lowerarm", "hand")],
     "anchor_child": "clavicle_{s}",      # the anchor = this bone's parent, on each skeleton
     "carry": "relative",                 # "relative": A lends the girdle's own deformation only; "absolute": the whole pose
-    # the region's own bones: their LOCAL transforms make the part pose (the rig's driver adds scapula, twists, muscles)
-    "girdle": ["clavicle_{s}", "upperarm_{s}", "lowerarm_{s}", "hand_{s}"],
+    # THE REGIONS ({s}: one per side). bones: the region's own, their LOCAL transforms make the part pose (the rig's
+    # driver adds scapula, twists, muscles). ref: reference bone <- source bone, a chain to a chain (A's neck is 2 bones
+    # for B's 3: A's neck_01 sits on B's neck_02 joint, so the END's turn against the root anchor is the source's).
+    # root: the root anchor = this source bone's parent (on the reference: the parent of its first posed bone).
+    # far: the far rigid border anchors. explicit: points, share, pocket from region_target.Model; derived: derive_region.
+    "sides": ["l", "r"],
+    "out_region": "girdle_{s}",          # a pose of side s is written on this region's points
+    "regions": {
+        "girdle_{s}": {"provider": "explicit", "bones": ["clavicle_{s}", "upperarm_{s}", "lowerarm_{s}", "hand_{s}"],
+                       "ref": {b: b for b in ("clavicle_{s}", "upperarm_{s}", "lowerarm_{s}", "hand_{s}")},
+                       "root": "clavicle_{s}", "far": []},
+        "neck": {"provider": "derived", "bones": ["neck_01", "neck_02", "Head"], "ref": {"neck_01": "neck_02", "Head": "Head"},
+                 "root": "neck_01", "far": ["Head"], "rows": 4, "eps": 0.02, "rigid": 0.999},
+    },
+    # the bones the source's driver places (never read from a pose): her rig's helpers but the "unroll" kind, and the scapula
+    "driven": [b + "_{s}" for b in (
+        "scap", "upperarm_twist_01", "upperarm_twist_02", "upperarm_twist_03", "upperarm_twist_04", "upperarm_share", "delt",
+        "trap", "lowerarm_twist_01", "lowerarm_twist_02", "lowerarm_share", "lowerarm_point", "pec", "lat", "thigh_twist_01",
+        "thigh_twist_02", "thigh_share", "glute", "calf_twist_01", "calf_twist_02", "calf_share", "calf_point")],
     "sig_lo": 0.15,                      # relative_place's guard: B's girdle-only skin matrix under sig_hi hands over to
     "sig_hi": 0.35,                      #   the blend of relative turns (141 poses: the smallest sigma is far above it)
-    # T9's pose: local turns in degrees about seeded random axes, the girdle's locals at rest
-    "t9_turns": {"spine_02": 20, "spine_03": 25, "spine_05": 30, "neck_01": 30, "neck_02": 25, "Head": 20},
+    # T9's pose: local turns in degrees about seeded random axes of bones outside EVERY region (all regions' locals at rest)
+    "t9_turns": {"spine_02": 20, "spine_03": 25, "spine_05": 30},
+    "t12_turns": {"neck_01": 30, "neck_02": 25, "Head": 20},             # T12: the neck alone
     "rad": 0.05,
     "k": 64,
     "nw": 0.0,                           # the normal term: tried at 0.2, it does not cure the armpit-apex bridge
@@ -611,28 +745,54 @@ class Her:
         self.order, left = transfer_order(self.ref_names, Ab.p.parent, bd.p.index, cfg["bone_map"],
                                           only=set(cfg["pose_bones"]))
         self.N0 = bd._normals(bd.V0)
-        self.car, self.anchor, self.edges = {}, {}, {}
-        for s in "lr":
-            ids = md.S[s]["ids"]
-            A = sp.triu(md.adj[ids][:, ids], 1).tocoo()
-            self.edges[s] = (A.row, A.col)
-            self.car[s] = self.carrier(s)
-            ch = cfg["anchor_child"].replace("{s}", s)
-            ra, ja = Ab.p.parent[Ab.p.index[ch]], bd.p.parent[bd.p.index[ch]]
-            rn, sn = self.ref_names[ra], bd.p.names[ja]
-            assert cfg["bone_map"].get(rn, rn) == sn, f"anchor: reference {rn} does not map to source {sn}"
-            self.anchor[s] = (ja, ra)
-        self.girth0 = {s: md.girth(md.S[s], md.V0) for s in "lr"}
-        # the relative carry: the girdle's bones per side, and the bones B's driver places (never read from a pose)
-        I, rig = bd.p.index, bd.rig
-        drv = [x["name"] for x in rig.get("helpers", []) if x.get("kind") != "unroll"] + [rig.get("girdle", {}).get("scap", "")]
-        self.driven = sorted({I[n.replace("{s}", s)] for n in drv for s in "lr" if n.replace("{s}", s) in I})
+        self.car, self.anchor, self.edges, self.regions = {}, {}, {}, {}
+        I, AI, sides = bd.p.index, Ab.p.index, cfg["sides"]
+        self.group = weld_points(bd.V0)[0]
+        # the bones the source's driver places, by name from the config (never read from a pose)
+        self.driven = sorted({I[n.replace("{s}", s)] for n in cfg["driven"] for s in sides})
         self.main = set(range(len(bd.p.names))) - set(self.driven)
-        self.girdle = {s: {I[b.replace("{s}", s)] for b in cfg["girdle"]} for s in "lr"}
+        for key, rc in cfg["regions"].items():
+            for s in (sides if "{s}" in key else [""]):
+                def nm(x, s=s):
+                    return x.replace("{s}", s)
+                ref = {nm(a_): nm(b_) for a_, b_ in rc["ref"].items()}
+                order = transfer_order(self.ref_names, Ab.p.parent, I, ref, only=set(ref))[0]
+                ja, ra = bd.p.parent[I[nm(rc["root"])]], Ab.p.parent[AI[order[0]]]
+                rn, sn = self.ref_names[ra], bd.p.names[ja]
+                assert cfg["bone_map"].get(rn, rn) == sn, f"anchor: reference {rn} does not map to source {sn}"
+                anchors = [(ja, ra)] + [(I[nm(x)], AI[next(a_ for a_, b_ in ref.items() if b_ == nm(x))]) for x in rc["far"]]
+                field = np.zeros((len(Ab.V0), len(rc["far"])))
+                for k, (_, rf) in enumerate(anchors[1:]):   # a far anchor's field: how far the reference follows its chain
+                    top = rf
+                    while self.ref_names[Ab.p.parent[top]] in ref:
+                        top = Ab.p.parent[top]
+                    field[:, k] = follow_field(lambda t: Ab.pose_turns(t)[0], Ab.V0, Ab.G0[top][:3, 3], self.ref_names[top])
+                rg = Region(nm(key), side=s, bones={I[nm(x)] for x in rc["bones"]}, ref_map=ref, order=order, anchors=anchors,
+                            field=field)
+                if rc["provider"] == "explicit":            # today's shoulder: region_target.Model's points, seam and pocket
+                    ids = md.S[s]["ids"]
+                    A = sp.triu(md.adj[ids][:, ids], 1).tocoo()
+                    self.edges[s] = (A.row, A.col)
+                    self.car[s], self.anchor[s] = self.carrier(s), (ja, ra)
+                    rg.pts, rg.share, rg.edges, rg.carrier = md.first[ids], (lambda G, s=s: md.blend(G, s)), self.edges[s], self.car[s]
+                else:
+                    d = derive_region(bd.V0, bd.T, bd.J, bd.W, rg.bones, [set(bd.p.subtree(j)) | {j} for j, _ in anchors[1:]],
+                                      rc["rows"], rc["eps"], rc["rigid"])
+                    rg.pts, rg.share, rg.edges, rg.core, rg.stiff = d["pts"], d["share"], (d["edges"][:, 0], d["edges"][:, 1]), d["core"], d["stiff"]
+                    rg.carrier = Carrier(Ab.V0, Ab.T, bd.V0[rg.pts], self.N0[rg.pts], rad=cfg["rad"], k=cfg["k"], nw=cfg["nw"], pocket_rows=0)
+                rg.spread = spread_of(self.group, rg.pts)
+                self.regions[rg.name] = rg
+        own = {n: set(r.spread[0].tolist()) for n, r in self.regions.items()}
+        self.touch = {n: [m for m in self.regions if m != n and own[n] & own[m]] for n in self.regions}
+        self.girth0 = {s: md.girth(md.S[s], md.V0) for s in sides}
         self.last = {}
         if verbose:
-            print(f"carry: {cfg['carry']}; girdle {' '.join(b.replace('{s}', 'l') for b in cfg['girdle'])}; {len(self.driven)} driven bones")
-            for s in "lr":
+            print(f"carry: {cfg['carry']}; {len(self.driven)} driven bones; regions:")
+            for n, r in self.regions.items():
+                print(f"  {n}: bones {' '.join(bd.p.names[k] for k in sorted(r.bones))}; reference {r.ref_map}; anchors (source, reference)"
+                      f" {[(bd.p.names[j], self.ref_names[k]) for j, k in r.anchors]}; {len(r.pts)} points, share 1 on"
+                      f" {int((r.share_at(bd.p.rest) == 1).sum())}, carrier not ok {int((~r.carrier.ok).sum())}; touches {self.touch[n]}")
+            for s in cfg["sides"]:
                 c = self.car[s]
                 print(f"pocket {s}: {len(c.bridge)} bridge edges, {0 if c.pocket is None else len(c.pocket.p)} pocket points"
                       f" of {len(md.S[s]['ids'])} (bridge_deg {cfg['bridge_deg']}, rows {cfg['pocket_rows']}, weight {cfg['pocket_weight']})")
@@ -662,17 +822,17 @@ class Her:
         """B's driver on a pose whose driven bones ride their parents at rest local (how every stored pose was made)."""
         return self.bd.p.driver.drive(self.bd.p, np.array(G, float), self.bd.rig)[0]
 
-    def girdle_pose(self, G, side):
-        """(Gg, memory): B's globals with only the side's girdle turned as in G (their LOCAL transforms, so a clavicle
+    def part_pose(self, G, bones):
+        """(Gr, memory): B's globals with only the bone set `bones` turned as in G (their LOCAL transforms, so a clavicle
         the girdle law turned is taken as it stands in G; every other bone at rest; the driven bones by the driver).
 
         The driver gives back a stored pose from its main bones' locals but for what a driven bone holds of the pose
         before it was driven (her trap keeps the clavicle's roll: "clavicle_roll_keep"). That offset, the stored bone
-        against the driver's rerun of the whole pose, goes onto the same bone here if the girdle moves it, so a pose with
-        the trunk at rest IS its girdle pose. memory: the largest such offset (matrix entries).
+        against the driver's rerun of the whole pose, goes onto the same bone here if the set moves it, so a pose with
+        every other bone at rest IS its part pose. memory: the largest such offset (matrix entries).
         """
         p, order = self.bd.p, self.bd.order
-        Gg = self.drive(local_pose(G, p.rest, p.parent, order, self.girdle[side]))
+        Gg = self.drive(local_pose(G, p.rest, p.parent, order, bones))
         Df = self.drive(local_pose(G, p.rest, p.parent, order, self.main))
         mem = 0.0
         for k in self.driven:
@@ -681,50 +841,77 @@ class Her:
                 Gg[k] = Gg[k] @ np.linalg.inv(Df[k]) @ G[k]
         return Gg, mem
 
-    def carried(self, G, side, Vp=None, carry=None):
-        """(filled, carried alone, the reference's posed vertices), all on the source's skeleton, for one pose and side.
+    def girdle_pose(self, G, side):
+        return self.part_pose(G, self.regions[self.cfg["out_region"].replace("{s}", side)].bones)
+
+    def part(self, G, name):
+        """One region's account of the pose G: its part pose, the reference posed by it (the region's chain map),
+        registered at each anchor and blended by the fields, carried onto the region's points (cf filled, cr alone: in
+        the part pose's frame), B's own surface of the part pose Pg and the placement M (relative_place)."""
+        bd, p, Ab, cfg, rg = self.bd, self.bd.p, self.Ab, self.cfg, self.regions[name]
+        Gr, mem = self.part_pose(G, rg.bones)
+        Va, Ga = Ab.pose_turns(transfer_turns(Gr, p.rest, p.index, Ab.p.index, Ab.p.parent, rg.ref_map, rg.order))
+        Vr = register(Va, [anchor_align(Gr[ja], p.rest[ja], Ab.G0[ra], Ga[ra]) for ja, ra in rg.anchors], rg.field)
+        cf, cr = rg.carrier.carry(Vr, both=True)
+        ibm = p.skel.ibm
+        M, sig, u = relative_place(G @ ibm, Gr @ ibm, bd.J[rg.pts], bd.W[rg.pts], cfg["sig_lo"], cfg["sig_hi"])
+        return {"M": M, "cf": cf, "cr": cr, "Pg": self.rt.published(bd, Gr)[rg.pts], "Va": Vr, "Va_own": Va, "Gr": Gr,
+                "sig": float(sig.min()), "guard": int((u < 1).sum()), "mem": mem}
+
+    def delta(self, G, name):
+        """A region's relative delta on its points [points, 3], under its share: share M (c - published(part pose))."""
+        P = self.part(G, name)
+        return self.regions[name].share_at(G)[:, None] * np.einsum("nij,nj->ni", P["M"], P["cf"] - P["Pg"])
+
+    def compose(self, G, Vp=None, regions=None):
+        """The whole target [source vertices, 3] of the pose G: published + the deltas of `regions` (names; None: all)."""
+        Vp = self.rt.published(self.bd, G) if Vp is None else Vp
+        return compose(Vp, {n: (*self.regions[n].spread, self.delta(G, n)) for n in (self.regions if regions is None else regions)})
+
+    def carried(self, G, side, Vp=None, carry=None, regions=None):
+        """(filled, carried alone, the reference's posed vertices), all on the source's skeleton, for one pose and side:
+        the side's own region (config "out_region") before its border share.
 
         "relative" (the module docstring): the two carried surfaces are placed per point by B's own skinning (Vp: B's
-        published vertices of G, computed if None); the reference's vertices are its girdle-only pose moved rigidly with
+        published vertices of G, computed if None); the reference's vertices are its part pose moved rigidly with
         the anchor (their edge lengths are what the target carries). "absolute": the reference posed by the whole pose
-        and aligned by the anchor. `carry` overrides the config. self.last: cf, Va (the filled surface and the
-        reference in one frame, for distances between them), sig, guard, mem (relative_place's and the driver's account).
+        and aligned by the anchor (the side's region alone, nothing composed). `carry` overrides the config.
+        self.last: cf, Va (the filled surface and the reference in one frame, for distances between them), sig, guard,
+        mem (relative_place's and the driver's account), others [points, 3]: the deltas of the regions that touch this
+        one (`regions`: names composed, None = all), which the target adds whole.
         """
         bd, p, cfg, car = self.bd, self.bd.p, self.cfg, self.car[side]
         ja, ra = self.anchor[side]
+        name = cfg["out_region"].replace("{s}", side)
+        pts = self.regions[name].pts
         if (carry or cfg["carry"]) == "absolute":
             Va, Ga = self.pose_ref(G)
             M = anchor_align(G[ja], p.rest[ja], self.Ab.G0[ra], Ga[ra])
             Xf, Xr, Va = (x @ M[:3, :3].T + M[:3, 3] for x in (*car.carry(Va, both=True), Va))
-            self.last = {"cf": Xf, "Va": Va, "sig": 1.0, "guard": 0, "mem": 0.0}
+            self.last = {"cf": Xf, "Va": Va, "sig": 1.0, "guard": 0, "mem": 0.0, "others": np.zeros((len(pts), 3))}
             return Xf, Xr, Va
-        pts = self.md.first[self.md.S[side]["ids"]]
         if Vp is None:
             Vp = self.rt.published(bd, G)
-        Gg, mem = self.girdle_pose(G, side)
-        Va, Ga = self.pose_ref(Gg)
-        M = anchor_align(Gg[ja], p.rest[ja], self.Ab.G0[ra], Ga[ra])    # the identity while the anchor's chain is at rest
-        Va = Va @ M[:3, :3].T + M[:3, 3]
-        cf, cr = car.carry(Va, both=True)                                # in the rest trunk frame, the pocket filled there
-        Pg = self.rt.published(bd, Gg)[pts]                              # B's own surface of the girdle-only pose
-        ibm = p.skel.ibm
-        M, sig, u = relative_place(G @ ibm, Gg @ ibm, bd.J[pts], bd.W[pts], cfg["sig_lo"], cfg["sig_hi"])
+        P = self.part(G, name)
+        oth = compose(np.zeros((len(bd.V0), 3)), {n: (*self.regions[n].spread, self.delta(G, n)) for n in self.touch[name]
+                                                  if regions is None or n in regions})[pts]
         T = G[ja] @ np.linalg.inv(p.rest[ja])
-        self.last = {"cf": cf, "Va": Va, "sig": float(sig.min()), "guard": int((u < 1).sum()), "mem": mem}
-        return tuple(Vp[pts] + np.einsum("nij,nj->ni", M, c - Pg) for c in (cf, cr)) + (Va @ T[:3, :3].T + T[:3, 3],)
+        self.last = {"cf": P["cf"], "Va": P["Va"], "sig": P["sig"], "guard": P["guard"], "mem": P["mem"], "others": oth}
+        return tuple(Vp[pts] + np.einsum("nij,nj->ni", P["M"], c - P["Pg"]) for c in (P["cf"], P["cr"])) + (P["Va"] @ T[:3, :3].T + T[:3, 3],)
 
-    def target(self, G, side, Vp=None, carry=None):
-        """(X [region points, 3], info) for one pose of B's globals G and one side."""
+    def target(self, G, side, Vp=None, carry=None, regions=None):
+        """(X [region points, 3], info) for one pose of B's globals G and one side: the composed target (published + every
+        region's delta; `regions`: the names composed, None = all) on the points of the side's region."""
         bd, Ab, md = self.bd, self.Ab, self.md
         sd = md.S[side]
         ids = sd["ids"]
         pts = md.first[ids]
         if Vp is None:
             Vp = self.rt.published(bd, G)
-        MC, MR, _ = self.carried(G, side, Vp, carry)                     # carried and filled, carried alone
+        MC, MR, _ = self.carried(G, side, Vp, carry, regions)            # carried and filled, carried alone
         last = self.last
         b = md.blend(G, side)[:, None]                                   # the border's share, by row and by pose
-        X = b * MC + (1 - b) * Vp[pts]
+        X = b * MC + (1 - b) * Vp[pts] + last["others"]                  # + the regions that touch this one (compose's rule)
         d = np.linalg.norm(MC - Vp[pts], axis=1) * 1000
         db, d = d[md.beta < 1], d[md.beta == 1]                          # what the border rows must hide; the interior
         emin, emax, _ = edge_ratio(X, md.V0[ids], *self.edges[side])
@@ -936,9 +1123,9 @@ def cmd_target(h, poses):
     if cfg["carry"] != HER["carry"]:                                     # never over the default's file
         out = out.with_name(f"{out.stem}_{cfg['carry']}.npz")
     params = {**{k: v for k, v in cfg.items()}, "method": "carried_target", "posed": h.order,
-              "not_ok": {s: int((~h.car[s].ok).sum()) for s in "lr"}}
+              "not_ok": {n: int((~r.carrier.ok).sum()) for n, r in h.regions.items()}}
     pocket = {}
-    for s in "lr":                       # local indices into the side's region points (md.S[s]["ids"] order)
+    for s in cfg["sides"]:                       # local indices into the side's region points (md.S[s]["ids"] order)
         c = h.car[s]
         pocket[f"pocket_{s}"] = np.zeros(0, np.int64) if c.pocket is None else c.pocket.p
         pocket[f"bridge_{s}"] = c.bridge
