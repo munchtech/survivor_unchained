@@ -166,6 +166,9 @@ public sealed class PressDef
 public sealed class ChainDef
 {
     public double? Grace, Recover, Period;
+    /// <summary>(M3 J12) The wait after a block's answer, in seconds before the multipliers (json "answer"); null: the
+    /// written blow's wait (the answer is a whole blow for a whole wait). Only a chain with a period reads it.</summary>
+    public double? Answer;
 }
 
 /// <summary>A skill's kindled option (PressDef.Kindled): the condition (KindleDef's fields; none set, the skill's own

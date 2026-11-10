@@ -79,11 +79,16 @@ public sealed partial class Battle
         if (opening > 0) p.SureCritT = Math.Max(p.SureCritT, opening);
         // bulwark.oathblade.shield_and_edge: Oathblade swings at once. (M3 J12) A chain's answer never starts before its
         // running cut's cancel beat (the chain's own rule, Firing.LandBlow), and a chain of weighed cuts is owed one
-        // whole blow (WeaponInst.AnswerDue: the next cut to start is it). Unchained: the wait is zeroed, as it was.
+        // whole blow (WeaponInst.AnswerDue: the next cut to start is it). Unchained, or a chain with no period: the wait
+        // is zeroed, as it was.
         if (l.Has("oathblade.shield_and_edge") && WeaponById("oathblade") is { } edge)
         {
-            edge.Timer = edge.Chain is { Live: true } ch ? Math.Min(edge.Timer, Math.Max(0, ch.CancelAt - Time)) : 0;
-            if (edge.BlowWeight != 1) edge.AnswerDue = true;
+            if (edge.BlowWeight == 1) edge.Timer = 0;
+            else
+            {
+                edge.Timer = edge.Chain is { Live: true } ch ? Math.Min(edge.Timer, Math.Max(0, ch.CancelAt - Time)) : 0;
+                edge.AnswerDue = true;
+            }
         }
         // Rebuke: the block strikes back (within its gap).
         RebukeOnBlow(from);

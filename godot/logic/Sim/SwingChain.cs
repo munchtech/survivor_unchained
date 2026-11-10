@@ -117,7 +117,9 @@ public sealed partial class Battle
         // beats (period and rate below are the cut's), so only the wait takes the factor.
         bool whole = w.AnswerDue && w.BlowWeight != 1;
         w.AnswerDue = false;
-        double wait = whole ? 1 / w.BlowWeight : scale;
+        // (the chain's "answer", when written: that wait in place of the blow's, over the cut's period, so haste and the
+        // other multipliers apply to it as they do to the written wait)
+        double wait = !whole ? scale : r.Chain is { Answer: > 0 and var aw, Period: > 0 and var cp } ? aw / cp : 1 / w.BlowWeight;
         // Held on from the last cut, it starts on the instant the wait ran out (inside this step), not on the step.
         double start = go && c.ReadyStep == Time ? Time - c.Overshoot : Time;
         double rate = Math.Max(1e-3, beats.Len / period);
