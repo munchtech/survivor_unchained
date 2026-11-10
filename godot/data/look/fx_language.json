@@ -831,7 +831,7 @@
    }
   },
   "hit_budget": {
-   "what": "P7 lead 5 (main, 9 Nov): one source (the hits of one art and school in one frame) that strikes more than n bodies throws its hit burst only on the n nearest the middle of what it struck; crits always show and take a place first; the rest throw none (src/Fx/BattleFx.cs HitSparkBudget). Numbers and gore are not touched.",
+   "what": "P7 lead 7 (main's ruling, 10 Nov): one source (the hits of one art and school in one frame) that lands more than n hits shows only n of them: crits take the places first (the n nearest her when there are more crits than places), plain hits fill the rest nearest the middle of what was struck (the blade's contact for the held cut, else the centroid). A hushed hit, plain or crit, throws no hit burst, no crit burst and no gore chips (logic/Look/HitBudget.cs, src/Fx/BattleFx.cs HitSparkBudget). A source of n hits or fewer is untouched; numbers and a kill's gore are never touched.",
    "n": 4
   },
   "grip": {
