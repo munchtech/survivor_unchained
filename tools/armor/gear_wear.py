@@ -107,9 +107,12 @@ SWEEP_NEAR, SWEEP_REACH, SWEEP_K, SWEEP_ALONG, SWEEP_SQUARE, SWEEP_MIN, SWEEP_CO
 # THE REST COVER (P2 lead 7): cloth (a SKINNED component of the piece: its vertices carry more than one bone blend) moves
 # with the skin it lies on, so skin it never covered at rest is beside it, not through it (a bare arm hanging against a
 # top's side read 7,000 mm^2). Her skin within COVER_REACH of the skinned faces by closest point FROM THE PIECE (not a ray
-# on her normal: the inner arm's does hit torso cloth), widened by COVER_MARGIN over her skin; points outside it are
-# never swept against skinned faces. A RIGID component (one bone blend: a plate) keeps the posed sweep for every point,
-# less a closest point on the piece's open border (SWEEP_BORDER): a point off a sheet's edge is beside it.
+# on her normal: the inner arm's does hit torso cloth), widened by COVER_MARGIN over her skin; cloth is swept only for
+# the points UNDER it at rest (the footprint) inside that cover. Skin beside a cloth rim is never read against cloth: it
+# is not tucked, so it stands proud of the rim by design, and an arm lowered over an armhole is a body part on the
+# garment, not skin through it. A RIGID component (one bone blend: a plate) keeps the posed sweep for every point (skin
+# does slide over a plate from beside it). No face counts from a closest point on the piece's open border
+# (SWEEP_BORDER): a point off a sheet's edge is beside it.
 COVER_REACH, COVER_MARGIN, SWEEP_BORDER = 0.060, 0.012, 0.0005
 
 
@@ -755,9 +758,10 @@ class Check:
             if x["swSkin"].any():
                 dc, jc = cKDTree(P0[sc.isk]).query(cover_samples(P0, x["sweepT"][x["swSkin"]]), distance_upper_bound=COVER_REACH)
                 cov[jc[np.isfinite(dc)]] = True
-            cov[np.nonzero(~gone)[0][fp["idx"]]] = True
-            dc, _ = cKDTree(P0[sc.isk[cov]]).query(P0[x["pts"]], distance_upper_bound=COVER_MARGIN)
-            x["cover"] = np.isfinite(dc)
+            x["cover"] = np.zeros(len(x["pts"]), bool)
+            if cov.any():
+                dc, _ = cKDTree(P0[sc.isk[cov]]).query(P0[x["pts"][:x["nfp"]]], distance_upper_bound=COVER_MARGIN)
+                x["cover"][:x["nfp"]] = np.isfinite(dc)
             self._add(x)
 
     def add_pair(self, a, b, kind, tuck_ok=True):
@@ -891,7 +895,7 @@ class Check:
         if "swSkin" in x:
             sk = x["swSkin"][cs]
             cand &= ~(sk & ~x["cover"][rows][:, None])          # (outside the rest cover: never against cloth)
-            r_, c_ = np.nonzero(cand & ~sk)                     # (a plate: not from a closest point on its open border)
+            r_, c_ = np.nonzero(cand)                           # (not from a closest point on the piece's open border)
             if len(r_) and x["swBE"].any():
                 fc, q, tri = cs[r_, c_], Q[r_, c_], F[r_, c_]
                 on = np.zeros(len(r_), bool)
