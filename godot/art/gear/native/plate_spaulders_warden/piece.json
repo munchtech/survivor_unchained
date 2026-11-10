@@ -26,40 +26,26 @@
  "parts": {
   "cop_l_rigid": {
    "bones": {
-    "upperarm_share_l": 0.5783,
-    "trap_l": 0.311,
-    "spine_04": 0.07,
-    "upperarm_twist_02_l": 0.0208,
-    "upperarm_twist_01_l": 0.0104,
-    "Head": 0.0044,
-    "clavicle_l": 0.0028,
-    "scap_l": 0.0022
+    "upperarm_twist_01_l": 1.0
    },
-   "carry": "part"
+   "carry": "none"
   },
   "lame1_l_rigid": {
    "bones": {
-    "upperarm_twist_02_l": 0.6993,
-    "upperarm_share_l": 0.2694,
-    "upperarm_twist_03_l": 0.0128,
-    "upperarm_twist_01_l": 0.006,
-    "trap_l": 0.0037,
-    "scap_l": 0.0032,
-    "spine_04": 0.0028,
-    "clavicle_l": 0.0027
+    "upperarm_twist_01_l": 1.0
    },
-   "carry": "part"
+   "carry": "none"
   },
   "lame2_l_rigid": {
    "bones": {
-    "upperarm_twist_02_l": 0.5098,
-    "upperarm_twist_03_l": 0.4789,
-    "upperarm_share_l": 0.0083,
-    "clavicle_l": 0.0012,
-    "scap_l": 0.0007,
-    "spine_04": 0.0005,
+    "upperarm_twist_03_l": 0.5171,
+    "upperarm_twist_02_l": 0.4758,
+    "upperarm_share_l": 0.005,
+    "clavicle_l": 0.0009,
     "delt_l": 0.0004,
-    "spine_05": 0.0002
+    "scap_l": 0.0004,
+    "spine_04": 0.0003,
+    "spine_05": 0.0001
    },
    "carry": "part"
   },
@@ -75,40 +61,26 @@
   },
   "cop_r_rigid": {
    "bones": {
-    "upperarm_share_r": 0.5837,
-    "trap_r": 0.3076,
-    "spine_04": 0.0681,
-    "upperarm_twist_02_r": 0.0213,
-    "upperarm_twist_01_r": 0.0103,
-    "Head": 0.0039,
-    "clavicle_r": 0.0028,
-    "scap_r": 0.0023
+    "upperarm_twist_01_r": 1.0
    },
-   "carry": "part"
+   "carry": "none"
   },
   "lame1_r_rigid": {
    "bones": {
-    "upperarm_twist_02_r": 0.703,
-    "upperarm_share_r": 0.2666,
-    "upperarm_twist_03_r": 0.0118,
-    "upperarm_twist_01_r": 0.006,
-    "trap_r": 0.0037,
-    "scap_r": 0.0033,
-    "clavicle_r": 0.0028,
-    "spine_04": 0.0028
+    "upperarm_twist_01_r": 1.0
    },
-   "carry": "part"
+   "carry": "none"
   },
   "lame2_r_rigid": {
    "bones": {
-    "upperarm_twist_02_r": 0.5164,
-    "upperarm_twist_03_r": 0.4721,
-    "upperarm_share_r": 0.0084,
-    "clavicle_r": 0.0013,
-    "scap_r": 0.0007,
-    "spine_04": 0.0005,
+    "upperarm_twist_03_r": 0.5007,
+    "upperarm_twist_02_r": 0.4917,
+    "upperarm_share_r": 0.0054,
+    "clavicle_r": 0.0009,
+    "spine_04": 0.0004,
     "delt_r": 0.0004,
-    "spine_05": 0.0002
+    "scap_r": 0.0004,
+    "spine_05": 0.0001
    },
    "carry": "part"
   },

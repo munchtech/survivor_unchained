@@ -53,7 +53,9 @@ along its length (it covers her where no steel is, e.g. the deltoid's front and 
 `round` is past whichever plate is at that s; absent: the cop's sides easing in to lame 1's), "step"} (absent or null: no arming cap; its material
 must be a key some gear source carries painted, gear_native.material_templates: "darkleather"; a bare key is white); "rivet" {"r", "h", "in"}: the articulation rivets, at the two ends of every
 lap; "tip_flare" {"lames" [k ..], "from", "to", "rise"}: those parts' front tips stand `rise` further off her from
-theta `from` to `to` (her pec and front armpit skin ride over anything in front of 45); "mirror" (true): one shape for
+theta `from` to `to` (her pec and front armpit skin ride over anything in front of 45); "lift" [per part, m]: that plate (the cop, then the lames) stands this much further off her
+than its law, its shape kept (a clearance-first spaulder: cop_field.py's need over its footprint on its own ride);
+"rides" may be a list mixing "mean" and rules, "_*" in a rule's bone names is the side; "mirror" (true): one shape for
 her two shoulders, on the law lying over both sides' skin; "materials" {"plate", "rim", "arming"}: the rolled rims are
 their own parts on their plate ("with"), so a set may trim them; "play" {"step", "step_s"}: the play tier's mesh
 (<id>.lod1.glb, counted; see the report); "like": another piece's id: its build.json's params under this one's own keys
@@ -351,6 +353,7 @@ def layout(cfg, ref, step=None, step_s=None, roll=True, laws=None):
     tf = cfg.get("tip_flare") or {}
     mirror = cfg.get("mirror", True)
     tm, arc = 0.5 * (lt0 + lt1), lm.get("arc", 0.0)
+    lift = [float(x) for x in (cfg.get("lift") or [])]
 
     def arcf(th, j=1):
         """The curve of the edge E[j] (the lames' edges: their ends rise `arc`), on the reach of the lame below it."""
@@ -460,7 +463,10 @@ def layout(cfg, ref, step=None, step_s=None, roll=True, laws=None):
                         x = np.clip((np.asarray(s, float) - a) / max(rc.get("len", 0.02), 1e-6), 0, 1)
                         v = v + need * (1 - x * x * (3 - 2 * x))
                 return v
-            return law if (flare or k == 0) else base
+            out = law if (flare or k == 0) else base
+            up = lift[k] if k < len(lift) else 0.0
+            # ("lift": that plate stands this much further off her, its shape kept: a clearance-first sizing)
+            return (lambda s, th, out=out, up=up: out(s, th) + up) if up else out
 
         kw = dict(clear=clear, lip=cfg.get("lip", 0.0012), step=step or cfg.get("step", 0.008),
                   step_s=step_s or cfg.get("step_s", 0.006))
@@ -777,7 +783,10 @@ def spaulder(pid, cfg, out=None, ref=None, laws=None):
             rep["lap_cut_mm"] = {str(k): [round(v / MM, 1) for v in ab] for k, ab in L["lap_cut"].items()}
         for k, (sh, name) in enumerate(zip(L["sheets"], L["names"])):
             given = lm.get("rides", "mean")
-            rule = {"bones": mean_ride(ref, L["foot"][k])} if given == "mean" else json.loads(json.dumps(given[k]))
+            given = given[k] if isinstance(given, list) else given
+            # ("mean": her skin's own blend over its footprint; else a rule, "*" in a bone's name = the side)
+            rule = ({"bones": mean_ride(ref, L["foot"][k])} if given == "mean" else
+                    json.loads(json.dumps(given).replace("_*\"", f"_{sd}\"")))
             if "bones" in rule:
                 rule.setdefault("carry", lm.get("carry", "none"))
                 bend = part_bend(cfg, k)

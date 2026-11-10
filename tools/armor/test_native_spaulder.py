@@ -337,7 +337,8 @@ class Built(unittest.TestCase):
             self.assertEqual(piece["slot"], "pauldrons")
             for sd in "lr":
                 for nm in sp.part_names(len(rep["sides"][sd]) - 2, sd):
-                    self.assertEqual(piece["parts"][nm]["carry"], "part")
+                    # ("mean" rides carry "part"; a rule naming its own bones carries what it says, l14 cop: "none")
+                    self.assertIn(piece["parts"][nm]["carry"], ("part", "none"))
                     self.assertEqual(rep["sides"][sd][nm]["inside"], 0)
             parts = {p["name"]: p for p in gn.read_parts(os.path.join(d, pid + ".glb"))}
             for nm, p in parts.items():
