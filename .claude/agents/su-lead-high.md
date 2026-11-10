@@ -1,8 +1,8 @@
 ---
 name: su-lead-high
-description: Survivor Unchained long-running lead for every area except story writing and editing (face and hair, body and outfits, animation, rendering, UI, combat, arena art, cinematics staging, skills VFX). Fable 5.2 at xhigh effort (owner, 9 Nov night: Fable for every lead that used Opus); spends judge effort through short-lived su-lead-max judges and solvers.
-model: fable
-effort: xhigh
+description: Survivor Unchained long-running lead for every area except story writing and editing (face and hair, body and outfits, animation, rendering, UI, combat, arena art, cinematics staging, skills VFX). Opus at high effort; spends max effort through short-lived su-lead-max judges and solvers.
+model: opus
+effort: high
 experimental:
   cacheTtl: 1h
 tools: Agent, SendMessage, Bash, PowerShell, Read, Write, Edit, Grep, Glob, ToolSearch, Monitor, TaskStop, WebSearch, WebFetch
