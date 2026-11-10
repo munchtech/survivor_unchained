@@ -48,7 +48,8 @@
     "boulderlarge": {"pieces": ["boulder_l_a", "boulder_l_b", "boulder_l_c"], "packed": true, "kind": "rock", "lod": [40, 100], "cell": 48, "shadow": true, "wind": 0, "shader": {"moss_amount": 0}},
     "roundsmall": {"pieces": ["round_s_a", "round_s_b"], "packed": true, "kind": "rock", "lod": [40, 100], "cell": 48, "shadow": true, "wind": 0, "shader": {"moss_amount": 0}},
     "roundmid": {"pieces": ["round_m_a", "round_m_b", "round_m_c"], "packed": true, "kind": "rock", "lod": [40, 100], "cell": 48, "shadow": true, "wind": 0, "shader": {"moss_amount": 0}},
-    "roundlarge": {"pieces": ["round_l_a", "round_l_b", "round_l_c"], "packed": true, "kind": "rock", "lod": [40, 100], "cell": 48, "shadow": true, "wind": 0, "shader": {"moss_amount": 0}}
+    "roundlarge": {"pieces": ["round_l_a", "round_l_b", "round_l_c"], "packed": true, "kind": "rock", "lod": [40, 100], "cell": 48, "shadow": true, "wind": 0, "shader": {"moss_amount": 0}},
+    "clump": {"pieces": ["clump_a", "tuft_a"], "packed": true, "kind": "clump", "lod": [40, 100], "cell": 48, "shadow": true, "wind": 0, "shader": {"stand_leaf": 1, "up_bend": 0}}
   },
   "own": {
     "Pine_1": "spruce_a", "Pine_3": "spruce_a", "Pine_2": "spruce_b", "Pine_5": "spruce_b", "Pine_4": "spruce_c",

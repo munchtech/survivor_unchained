@@ -1994,8 +1994,291 @@ def mesh_alder_clusters():
     print('REPORT', json.dumps(dict(alder=report, ppm=round(ppm, 1))))
 
 
+# ---------------------------------------------------------------- the leaf clump (L1 lead 15, helper M)
+# FROM the target's 09 bushes: clusters of big pointed lobed leaves, each leaf ONE flat tone, the tones following the
+# bush's form (lit on top, darker on the flanks, ink between). So a leaf is opaque GEOMETRY (no alpha, no card), flat,
+# its own vertices, and every vertex of it carries ONE normal: the dome's outward normal at its stem (jittered a
+# little a leaf). The standing material's hard steps then give a leaf one tone and the dome three. Inside, a dark
+# hull at CL_HULL of the dome closes the gaps (ink, never the ground). Species `clump`, packed: clump_a, tuft_a.
+#     python tools/assets/env_trees.py tex --species clump                       clump_dabs.png
+#     blender -b -P tools/assets/env_trees.py -- mesh --species clump            clump.gltf (lod0-2, shadow)
+#     python tools/assets/env_trees.py sheet --species clump --out X.png         the proof picture and the numbers
+CLUMP = {
+    'clump_a': {'seed': 11, 'leaf': (0.38, 0.50), 'domes': [
+        {'c': (-0.40, 0.05), 'r': (0.74, 0.66, 1.12), 'yaw': 20},
+        {'c': (0.62, -0.20), 'r': (0.55, 0.50, 0.80), 'yaw': -35}]},
+    'tuft_a': {'seed': 23, 'tuft': (5, 3)},
+}
+# a dome's leaf rows: (the baked normal's angle from up, the blade's elevation (degrees; under 0 = tip down),
+# the gap between stems in leaf widths, COLOR.r)
+CLUMP_ROWS = [
+    (9, 10, 0.70, 1.0), (21, -4, 0.62, 1.0), (31, -12, 0.58, 1.0),     # the cap's rings: top
+    (50, -22, 0.62, 0.8), (64, -32, 0.58, 0.8),                        # the flank rows: their tips make the outline
+    (84, -60, 0.90, 0.45),                                             # the skirt
+]
+CL_HULL = 0.72        # the inner hull's share of the dome's radii
+CL_JIT = 12.0         # a leaf's normal off the dome's (degrees, at most)
+CL_BACK = 0.35        # a leaf's stem sits this share of its length back up its own direction (so its middle is on the dome)
+CL_WIDE = 0.95        # a blade's width over its length (x of CL_BLADE is in half-widths of 0.5)
+CL_UV_HULL = (0.36, 0.05)
+# a blade a LOD: its outline (x across, y stem to tip) and triangles. lod0 a five-lobed pointed blade, a fan round its
+# middle (10 triangles); lod1 three lobes (4); lod2 a kite (2)
+CL_BLADE = {
+    0: ([(0, 0), (0.46, 0.22), (0.17, 0.34), (0.47, 0.70), (0.13, 0.68), (0, 1.0), (-0.13, 0.68), (-0.47, 0.70), (-0.17, 0.34), (-0.46, 0.22), (0, 0.42)],
+        [(10, i, (i + 1) % 10) for i in range(10)]),
+    1: ([(0, 0), (0.47, 0.52), (0.14, 0.60), (0, 1.0), (-0.14, 0.60), (-0.47, 0.52)], [(0, 1, 2), (0, 2, 4), (2, 3, 4), (0, 4, 5)]),
+    2: ([(0, 0), (0.40, 0.48), (0, 1.0), (-0.40, 0.48)], [(0, 1, 2), (0, 2, 3)]),
+}
+
+
+def clump_support(dm, m):
+    """The point of a dome (a half ellipsoid on the ground, yawed) whose outward normal is m (world), and its centre."""
+    ya = math.radians(dm.get('yaw', 0))
+    R = np.array([[math.cos(ya), -math.sin(ya), 0], [math.sin(ya), math.cos(ya), 0], [0, 0, 1.0]])
+    r = np.array(dm['r'], float)
+    ml = R.T @ m
+    c = np.array([dm['c'][0], dm['c'][1], 0.0])
+    return c + R @ (r * r * ml / math.sqrt(float(np.sum(r * r * ml * ml)))), c
+
+
+def clump_inside(dm, p, k=1.0):
+    ya = math.radians(dm.get('yaw', 0))
+    R = np.array([[math.cos(ya), -math.sin(ya), 0], [math.sin(ya), math.cos(ya), 0], [0, 0, 1.0]])
+    q = R.T @ (p - np.array([dm['c'][0], dm['c'][1], 0.0])) / (np.array(dm['r'], float) * k)
+    return float(q @ q) < 1.0
+
+
+def clump_jitter(rng, n, deg):
+    """n turned by up to deg degrees round a seeded axis across it."""
+    ax = np.cross(n, rng.normal(size=3))
+    ax /= np.linalg.norm(ax) + 1e-9
+    a = math.radians(rng.uniform(0, deg))
+    return n * math.cos(a) + np.cross(ax, n) * math.sin(a)
+
+
+def clump_plan(prm):
+    """A piece's leaves, seeded, the same at every LOD: dicts stem, d (stem to tip), side, L, n (the baked normal), r, uv."""
+    rng = np.random.default_rng(prm['seed'])
+    leaves = []
+
+    def uv():
+        return (float(rng.uniform(0.04, 0.70)), float(rng.uniform(0.22, 0.96)))
+
+    if 'tuft' in prm:
+        outer, inner = prm['tuft']
+        a0 = rng.uniform(0, 2 * math.pi)
+        for ring, cnt, el, ln in ((0, outer, (18, 32), (0.36, 0.45)), (1, inner, (58, 74), (0.38, 0.45))):
+            for i in range(cnt):
+                az = a0 + ring * 0.6 + 2 * math.pi * (i + rng.uniform(-0.18, 0.18)) / cnt
+                e = math.radians(rng.uniform(*el))
+                o = np.array([math.cos(az), math.sin(az), 0.0])
+                d = o * math.cos(e) + np.array([0, 0, 1.0]) * math.sin(e)
+                side = np.cross(np.array([0, 0, 1.0]), o)
+                L = float(rng.uniform(*ln))
+                stem = o * 0.03 + np.array([0, 0, 0.02])
+                n = stem + d * L * 0.5 - np.array([0, 0, -0.25])
+                n = clump_jitter(rng, n / np.linalg.norm(n), CL_JIT)
+                leaves.append({'stem': stem, 'd': d, 'side': side, 'L': L, 'n': n, 'r': 1.0 if n[2] > math.cos(math.radians(35)) else 0.8, 'uv': uv()})
+        return leaves
+    domes = prm['domes']
+    for di, dm in enumerate(domes):
+        for ri, (al, el, gap, r) in enumerate(CLUMP_ROWS):
+            a = math.radians(al)
+            ring = [clump_support(dm, np.array([math.sin(a) * math.cos(t), math.sin(a) * math.sin(t), math.cos(a)]))[0] for t in np.linspace(0, 2 * math.pi, 33)]
+            circ = sum(np.linalg.norm(ring[i + 1] - ring[i]) for i in range(32))
+            cnt = max(3, int(round(circ / (gap * CL_WIDE * 0.5 * sum(prm['leaf'])))))
+            ph0 = rng.uniform(0, 2 * math.pi)
+            for i in range(cnt):
+                ph = ph0 + 2 * math.pi * (i + rng.uniform(-0.2, 0.2)) / cnt
+                m = np.array([math.sin(a) * math.cos(ph), math.sin(a) * math.sin(ph), math.cos(a)])
+                p, c = clump_support(dm, m)
+                L = float(rng.uniform(*prm['leaf'])) * (0.85 if r < 0.5 else 1.0) * (0.9 if di else 1.0)
+                o = np.array([m[0], m[1], 0.0])
+                o /= np.linalg.norm(o) + 1e-9
+                e = math.radians(el + rng.uniform(-7, 7))
+                roll = math.radians(rng.uniform(-12, 12))
+                while True:
+                    d = o * math.cos(e) + np.array([0, 0, 1.0]) * math.sin(e)
+                    stem = p - d * L * CL_BACK
+                    if (stem + d * L)[2] > 0.04 or e > 0:
+                        break
+                    e += math.radians(6)
+                side = np.cross(np.array([0, 0, 1.0]), o)
+                up = np.cross(d, side)
+                side = side * math.cos(roll) + up * math.sin(roll)
+                if any(clump_inside(o2, stem + d * L * 0.5, 0.92) for j, o2 in enumerate(domes) if j != di):
+                    rng.uniform(); continue          # (its middle inside the other dome: not seen)
+                n = clump_jitter(rng, m, CL_JIT)
+                leaves.append({'stem': stem, 'd': d, 'side': side, 'L': L, 'n': n,
+                               'r': r if r < 0.5 else (1.0 if n[2] > math.cos(math.radians(35)) else 0.8), 'uv': uv()})
+    return leaves
+
+
+def clump_hull(b, dm, lod):
+    """A dome's inner hull: flat quads, their own vertices, each face's normal its own outward one kept horizontal."""
+    nu, nv = ((10, 4), (8, 3), (6, 2))[lod]
+    for jv in range(nv):
+        for iu in range(nu):
+            quad = []
+            for dj, di in ((0, 0), (0, 1), (1, 1), (1, 0)):
+                th = 0.5 * math.pi * (1 - (jv + dj) / nv)        # (from the foot's rim up to the pole)
+                ph = 2 * math.pi * (iu + di) / nu
+                l = np.array([math.sin(th) * math.cos(ph), math.sin(th) * math.sin(ph), math.cos(th)]) * np.array(dm['r'], float) * CL_HULL
+                ya = math.radians(dm.get('yaw', 0))
+                quad.append(np.array([dm['c'][0] + l[0] * math.cos(ya) - l[1] * math.sin(ya), dm['c'][1] + l[0] * math.sin(ya) + l[1] * math.cos(ya), l[2]]))
+            mid = sum(quad) / 4 - np.array([dm['c'][0], dm['c'][1], 0.0])
+            n = np.array([mid[0], mid[1], 0.0])
+            n /= np.linalg.norm(n) + 1e-9
+            base = len(b.v)
+            for p in quad:
+                b.v.append(p); b.n.append(n); b.uv.append(CL_UV_HULL); b.c.append((0.45, 0.0, 0.0))
+            b.f.append((base, base + 1, base + 2, base + 3)); b.tag.append(1)
+
+
+def clump_piece(prm, lod, proxy=False):
+    """A clump or a tuft at a LOD (b.tag: 0 a leaf's face, 1 the hull's), or its shadow caster (lumps)."""
+    b = Build()
+    b.tag = []
+    if proxy:
+        rng = np.random.default_rng(prm['seed'] + 7)
+        if 'tuft' in prm:
+            lump(b, rng, np.array([0, 0, 0.12]), 0.30, 0.17, nu=6, nv=3)
+        for dm in prm.get('domes', []):
+            lump(b, rng, np.array([dm['c'][0], dm['c'][1], 0.0]), 0.5 * (dm['r'][0] + dm['r'][1]) + 0.12, dm['r'][2] + 0.04, nu=8, nv=6)
+        return b
+    pts, tris = CL_BLADE[lod]
+    for lf in clump_plan(prm):
+        base = len(b.v)
+        for x, y in pts:
+            b.v.append(lf['stem'] + lf['side'] * x * lf['L'] * CL_WIDE + lf['d'] * y * lf['L'])
+            b.n.append(lf['n']); b.uv.append(lf['uv']); b.c.append((lf['r'], float(y), 0.0))
+        for t in tris:
+            b.f.append(tuple(base + i for i in t)); b.tag.append(0)
+    for dm in prm.get('domes', []):
+        clump_hull(b, dm, lod)
+    return b
+
+
+def clump_tex():
+    """clump_dabs.png: an opaque sheet of flat green-teal dabs (a leaf samples ONE point of it: its own value, none
+    inside it), its foot band dark (the hull's)."""
+    from PIL import Image
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from env_rocks import dab_sheet
+    N = 256
+    img = dab_sheet(N, '#5c8c70', 53, tile=2.0, scales=(0.5, 0.22), step=0.08)
+    img[int(N * 0.88):] = img[int(N * 0.88):] * 0.38
+    out = os.path.join(OUT, 'clump_dabs.png')
+    Image.fromarray((img * 255 + 0.5).astype(np.uint8)).save(out)
+    print(out)
+
+
+def mesh_clump():
+    import bpy
+    os.makedirs(OUT, exist_ok=True)
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    mat = bpy.data.materials.new('Leaves_OwnClump')
+    mat.use_nodes = True
+    nt = mat.node_tree
+    bsdf = nt.nodes['Principled BSDF']
+    ti = nt.nodes.new('ShaderNodeTexImage'); ti.image = bpy.data.images.load(os.path.join(OUT, 'clump_dabs.png'))
+    nt.links.new(ti.outputs['Color'], bsdf.inputs['Base Color'])
+    bsdf.inputs['Roughness'].default_value = 0.85
+    mat.use_backface_culling = False
+    tris = []
+    for lod in range(4):
+        b = Build()
+        for v, (nm, prm) in enumerate(CLUMP.items()):
+            pb = clump_piece(prm, min(lod, 2), proxy=lod == 3)
+            pack_into(b, pb, (v + 0.5) / 8)
+        tris.append(to_blender(bpy, f'lod{lod}' if lod < 3 else 'shadow', b, [mat])[1])
+    out = os.path.join(OUT, 'clump.gltf')
+    export_gltf(bpy, out)
+    print(f'{out} tris lod0/1/2/shadow: {tris}')
+
+
+def clump_view(b, pitch, ppm=78.0, pad=0.25, dabs=None):
+    """A piece drawn flat from 'pitch' degrees down (90: from above; the camera looks along +y), each leaf one tone
+    from its baked normal in three steps (n.up > 0.8 top, > 0.35 body, else side), the hull ink. Returns the picture
+    (H x W x 3, 0-1) and its numbers."""
+    P = np.array(b.v, float); N = np.array(b.n, float); C = np.array(b.c, float)
+    N /= np.linalg.norm(N, axis=1, keepdims=True) + 1e-9
+    a = math.radians(pitch)
+    up = np.array([0, math.sin(a), math.cos(a)]); fw = np.array([0, math.cos(a), -math.sin(a)])
+    sx = P[:, 0] * ppm; sy = -(P @ up) * ppm; dz = P @ fw
+    x0 = sx.min() - pad * ppm; y0 = sy.min() - pad * ppm
+    W = int(sx.max() - x0 + pad * ppm) + 1; H = int(sy.max() - y0 + pad * ppm) + 1
+    sx -= x0; sy -= y0
+    zb = np.full((H, W), 1e9); cls = np.zeros((H, W), np.uint8); gg = np.zeros((H, W)); val = np.ones((H, W))
+    for fi, f in enumerate(b.f):
+        hull = b.tag[fi] == 1
+        k = 4 if hull else (1 if N[f[0], 2] > 0.8 else 2 if N[f[0], 2] > 0.35 else 3)
+        tone = 1.0
+        if dabs is not None and not hull:
+            u, v = b.uv[f[0]]
+            tone = float(dabs[int((1 - v) * (dabs.shape[0] - 1)), int(u * (dabs.shape[1] - 1))])
+        for t in range(1, len(f) - 1):
+            i0, i1, i2 = f[0], f[t], f[t + 1]
+            xa, ya, xb, yb, xc, yc = sx[i0], sy[i0], sx[i1], sy[i1], sx[i2], sy[i2]
+            ar = (xb - xa) * (yc - ya) - (xc - xa) * (yb - ya)
+            if abs(ar) < 1e-6:
+                continue
+            u0, u1 = max(0, int(min(xa, xb, xc))), min(W, int(max(xa, xb, xc)) + 2)
+            v0, v1 = max(0, int(min(ya, yb, yc))), min(H, int(max(ya, yb, yc)) + 2)
+            X, Y = np.meshgrid(np.arange(u0, u1) + 0.5, np.arange(v0, v1) + 0.5)
+            w1 = ((X - xa) * (yc - ya) - (xc - xa) * (Y - ya)) / ar
+            w2 = ((xb - xa) * (Y - ya) - (X - xa) * (yb - ya)) / ar
+            w0 = 1 - w1 - w2
+            z = w0 * dz[i0] + w1 * dz[i1] + w2 * dz[i2]
+            m = (w0 >= 0) & (w1 >= 0) & (w2 >= 0) & (z < zb[v0:v1, u0:u1])
+            zb[v0:v1, u0:u1][m] = z[m]; cls[v0:v1, u0:u1][m] = k; val[v0:v1, u0:u1][m] = tone
+            gg[v0:v1, u0:u1][m] = (w0 * C[i0, 1] + w1 * C[i1, 1] + w2 * C[i2, 1])[m]
+    pal = np.array([[0.19, 0.21, 0.19], [0.56, 0.76, 0.50], [0.29, 0.50, 0.42], [0.15, 0.29, 0.30], [0.04, 0.07, 0.08]])
+    img = pal[cls] * val[..., None]
+    leaf = (cls >= 1) & (cls <= 3)
+    on = cls > 0
+    edge = on & ~(np.roll(on, 1, 0) & np.roll(on, -1, 0) & np.roll(on, 1, 1) & np.roll(on, -1, 1))
+    nl = max(1, int(leaf.sum()))
+    num = {'top': float((cls == 1).sum()) / nl, 'body': float((cls == 2).sum()) / nl, 'side': float((cls == 3).sum()) / nl,
+           'ink': float((cls == 4).sum()) / max(1, int(on.sum())),
+           'tips': float((edge & leaf & (gg > 0.45)).sum()) / max(1, int(edge.sum())),
+           'across': (float(P[:, 0].max() - P[:, 0].min()), float(P[:, 1].max() - P[:, 1].min())), 'tall': float(P[:, 2].max())}
+    return np.clip(img, 0, 1), num
+
+
+def clump_sheet(out):
+    """The proof picture (a piece a row: from above, from the play camera's 50 degrees, lod1, lod2) and the numbers."""
+    from PIL import Image
+    dp = os.path.join(OUT, 'clump_dabs.png')
+    dabs = None
+    if os.path.exists(dp):
+        d = np.asarray(Image.open(dp).convert('L'), float) / 255
+        dabs = d / d[: int(d.shape[0] * 0.8)].mean()
+    rows = []
+    for nm, prm in CLUMP.items():
+        cells = []
+        for lod, pitch in ((0, 90), (0, 50), (1, 50), (2, 50)):
+            b = clump_piece(prm, lod)
+            img, num = clump_view(b, pitch, dabs=dabs)
+            cells.append(img)
+            nleaf = sum(1 for t in b.tag if t == 0) // len(CL_BLADE[lod][1])
+            ntri = sum(len(f) - 2 for f in b.f)
+            print(f"{nm} lod{lod} pitch {pitch}: leaves {nleaf} tris {ntri} top/body/side {num['top']:.2f}/{num['body']:.2f}/{num['side']:.2f} "
+                  f"ink {num['ink']:.2f} outline by leaf tips {num['tips']:.2f} across {num['across'][0]:.2f} x {num['across'][1]:.2f} tall {num['tall']:.2f}")
+        pb = clump_piece(prm, 0, proxy=True)
+        print(f'{nm} shadow tris {sum(len(f) - 2 for f in pb.f)}')
+        h = max(c.shape[0] for c in cells)
+        rows.append(np.concatenate([np.pad(c, ((0, h - c.shape[0]), (0, 8), (0, 0)), constant_values=0.19) for c in cells], 1))
+    w = max(r.shape[1] for r in rows)
+    sheet = np.concatenate([np.pad(r, ((0, 8), (0, w - r.shape[1]), (0, 0)), constant_values=0.19) for r in rows], 0)
+    Image.fromarray((sheet * 255 + 0.5).astype(np.uint8)).save(out)
+    print(out)
+
+
 def mesh(species):
     import bpy
+    if species == 'clump':
+        return mesh_clump()
     if species == 'spruce' and arg('--form', 'tiers') == 'tiers':
         return mesh_spruce_tiers()   # (L1 C3a; --form real: E4's whorls of spray cards, kept to compare)
     if species == 'alder' and arg('--form', 'clusters') == 'clusters':
@@ -2061,7 +2344,11 @@ def mesh(species):
 if __name__ == '__main__':
     argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else sys.argv[1:]
     species = arg('--species', 'spruce')
-    if argv and argv[0] == 'tex':
+    if argv and argv[0] == 'tex' and species == 'clump':
+        clump_tex()
+    elif argv and argv[0] == 'sheet' and species == 'clump':
+        clump_sheet(arg('--out', os.path.join(OUT, '_clump_sheet.png')))
+    elif argv and argv[0] == 'tex':
         tex(species)
     elif argv and argv[0] == 'mesh':
         mesh(species)
