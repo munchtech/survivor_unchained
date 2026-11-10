@@ -19,7 +19,8 @@ public static class FireCast
     /// fire's reach (the others are drawn as nothing: the shader leaves their four corners on the feet).</summary>
     public static readonly bool Count = SurvivorUnchained.Args.Has("cast-count");
     static Vector3 foot;
-    static float reach;
+    /// <summary>The floor table's reach, m (Atmosphere sets it with cel_floor_band; 0: no table).</summary>
+    public static float Reach;
     static int crowd, crowdAll, crowdMeshes, frames;
     static readonly System.Collections.Generic.List<Vector3> stands = new();
 
@@ -33,22 +34,21 @@ public static class FireCast
             if (buf[q + 15] <= 0) continue;
             crowdAll++;
             float dx = buf[q + 3] - foot.X, dz = buf[q + 11] - foot.Z;
-            if (dx * dx + dz * dz < reach * reach) crowd++;
+            if (dx * dx + dz * dz < Reach * Reach) crowd++;
         }
     }
 
-    /// <summary>Her place this frame; the count goes to the log every 120 frames.</summary>
+    /// <summary>Her light's point this frame; the count goes to the log every 120 frames.</summary>
     public static void Report(Vector3 her)
     {
         if (++frames % 120 == 0)
         {
             int near = 0;
-            foreach (var s in stands) if (new Vector2(s.X - foot.X, s.Z - foot.Z).Length() < reach) near++;
-            GD.Print($"fire casts drawn: crowd {crowd} of {crowdAll} (in {crowdMeshes} MultiMeshes, the blobs' second pass), standing {near} of {stands.Count} (one MultiMesh), her 1 (one MultiMesh); reach {reach:0.0} m");
+            foreach (var s in stands) if (new Vector2(s.X - foot.X, s.Z - foot.Z).Length() < Reach) near++;
+            GD.Print($"fire casts drawn: crowd {crowd} of {crowdAll} (in {crowdMeshes} MultiMeshes, the blobs' second pass), standing {near} of {stands.Count} (one MultiMesh), her 1 (one MultiMesh); reach {Reach:0.0} m");
         }
         crowd = crowdAll = crowdMeshes = 0;
         foot = her;
-        reach = RenderingServer.GlobalShaderParameterGet("cel_floor_band").AsVector4().X;
     }
 
     /// <summary>A MultiMesh of n cast quads, none showing until Set.</summary>

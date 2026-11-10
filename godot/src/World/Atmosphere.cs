@@ -629,6 +629,7 @@ public partial class Atmosphere : Node3D
         var turn = ramp != null ? FloorTurn(p.EmberFloor) : null;
         RenderingServer.GlobalShaderParameterSet("cel_floor_band", turn is { } ft ? new Vector4(ft.Reach, ft.Lit.X, ft.Lit.Y, ft.Lit.Z) : Vector4.Zero);
         RenderingServer.GlobalShaderParameterSet("cel_floor_unit", turn is { } ft1 ? new Vector4(ft1.Shade.X, ft1.Shade.Y, ft1.Shade.Z, 0) : Vector4.Zero);
+        FireCast.Reach = turn?.Reach ?? 0;   // (L1 lead 19, SH2: a C# copy of the table's reach for --cast-count)
         if (turn is { } ft2) RenderingServer.GlobalShaderParameterSet("cel_floor_turn", ft2.Tex);
     }
 

@@ -3,11 +3,15 @@
 // the moon has given way and her light casts none: there a foe stood on a soft olive patch (crowd_blob's multiplied dark
 // over the orange). This pass paints the fire's shadow instead: one hard-edged shape per body, long, pointing AWAY from her
 // light's foot. Zero crowd_shade: nothing draws (every rig but arena_night).
-// (L1 lead 18, SH) The TONE is the floor's own at that distance: the night's one shade (crowd_shade: rigs.json "foe_moon"
-// values 3-6, what the floor's shade is away from the fire) times the table's leaf-shade turn there (cel_floor_turn row 1),
-// so a body's shadow DIMS the glow to exactly what a leaf's shade shows at that ring and is the floor's plain shade where
-// the table ends; and it gives way as her fire's share does (1 - the moon's return, the table's a), per fragment, so it
-// has no outer rim and is nothing under a canopy mass (the floor there is already that tone). No tone lives here.
+// (L1 lead 18, SH) Under a rig with the floor's tone table (rigs.json "ember_floor": cel_floor_band x over 0) the shadow
+// gives way as her fire's share does (1 - the moon's return, the table's a), per fragment, so it has no outer rim.
+// (L1 lead 19, SH2) The TONE is the night's floor with her fire taken away: the floor's own LIT tone out past the table
+// (the night's one shade, crowd_shade: rigs.json "foe_moon" values 3-6, what the floor's shade is away from the fire,
+// times the floor's lit light over its shade's: cel_floor_band yzw / cel_floor_unit rgb), the same at every distance: a
+// dark violet-navy on the orange, one step lighter than a foe's own body, and exactly what the floor turns into where the
+// table ends. (Lead 18's tone, the table's leaf-shade turn at the fragment's distance, is what a LEAF's shade shows there:
+// a leaf cuts the moon and leaves the fire, so inside 2.5 m it is the glow itself, L 0.48 C 0.16 h 30 at 2 m and L 0.60
+// gold at her feet: shot as l19_01, the casts were red and lighter than the floor beside them.) No tone lives here.
 // (L1 lead 19, SH2) The SHAPE, one rule for three users (a foe: Vat.cs; what stands: Dressing.cs; her: PlayerView.cs; the
 // last two through World/FireCast.cs): a tapered trail from the feet, away from her light's foot. Per instance, the origin
 // is the feet and COLOR is r: the body's height m, g: its width at the feet m, b: 0 or a fixed length m, a: how much it
@@ -16,7 +20,8 @@
 // the top of the body's shadow falls), held between CAST_MIN and CAST_MAX body heights and under CAST_FAR m. The edge is
 // hard (one pixel by fwidth of the shape's own distance in metres: analytic, so it neither blurs nor shimmers as the pack
 // moves). A FIXED cast (b over 0) is the light's own bearer: the light is over her, the rule gives nothing, so her shadow is
-// b long along the instance's own z axis and one step deeper in tone, the rig's (foe_moon value 8, crowd_moon.w).
+// b long, away from the light's foot as every cast is (along the instance's own z axis when she stands on the foot itself),
+// and one step deeper in tone, the rig's (foe_moon value 8, crowd_moon.w).
 shader_type spatial;
 render_mode unshaded, blend_mix, depth_draw_never, cull_disabled, shadows_disabled, fog_disabled, world_vertex_coords;
 
@@ -27,7 +32,9 @@ global uniform vec4 crowd_moon;
 global uniform vec4 cel_give;
 global uniform vec4 cel_pool_band;
 global uniform sampler2D cel_pool_ramp : filter_linear, repeat_disable;
+global uniform vec4 cel_ember;
 global uniform vec4 cel_floor_band;
+global uniform vec4 cel_floor_unit;
 global uniform sampler2D cel_floor_turn : filter_linear, repeat_disable;
 // (the shape's numbers; no tone)
 #define CAST_TIP 0.3
@@ -46,20 +53,21 @@ void vertex() {
 	vec3 o = MODEL_MATRIX[3].xyz;
 	wp = o;
 	seg = vec4(o.xz, 1.0, 0.0); dim = vec3(1.0, 0.1, 0.03); gt = vec2(0.0, 1.0);
-	vec2 away = o.xz - crowd_ember.xz;
+	// (her light's foot is the cel model's point, cel_ember, the one the floor's table is laid round: never her own place)
+	vec2 away = o.xz - cel_ember.xz;
 	float d = length(away);
 	bool table = cel_floor_band.x > 0.0;
 	bool bearer = COLOR.b > 0.0;
 	// (past the fire's reach nothing is drawn at all: the four corners stay on the feet)
 	float reach = table ? cel_floor_band.x : cel_give.w + 0.3;
-	if (crowd_shade.a > 0.0 && crowd_ember.w > 0.0 && cel_pool_band.x > 0.0 && COLOR.a > 0.0 && (bearer || d < reach)) {
+	if (crowd_shade.a > 0.0 && crowd_ember.w > 0.0 && cel_ember.w > 0.0 && cel_pool_band.x > 0.0 && COLOR.a > 0.0 && (bearer || d < reach)) {
 		float h = COLOR.r;
 		float r1 = max(0.5 * COLOR.g, 0.02), r2 = r1 * CAST_TIP;
 		float g = COLOR.a, tone = 1.0, len;
 		vec2 a;
 		if (bearer) {
 			vec2 z = MODEL_MATRIX[2].xz;
-			a = dot(z, z) > 1e-6 ? normalize(z) : vec2(0.0, -1.0);
+			a = d > 0.05 ? away / d : (dot(z, z) > 1e-6 ? normalize(z) : vec2(0.0, -1.0));
 			len = COLOR.b;
 			if (crowd_moon.w > 0.0) tone = crowd_moon.w;
 		} else {
@@ -91,11 +99,10 @@ void fragment() {
 	float sd = k < 0.0 ? length(p) - dim.y : (k > c * dim.x ? length(p - vec2(0.0, dim.x)) - dim.z : dot(p, vec2(c, b)) - dim.y);
 	float w = fwidth(sd) * 0.75 + 1e-4;
 	float gate = gt.x;
-	float r = length(wp.xz - crowd_ember.xz);
+	float r = length(wp.xz - cel_ember.xz);
 	if (cel_floor_band.x > 0.0) {
-		vec4 ts = texture(cel_floor_turn, vec2((clamp(r / cel_floor_band.x, 0.0, 1.0) * 63.0 + 0.5) / 64.0, 0.75));
-		ALBEDO = crowd_shade.rgb * ts.rgb * gt.y;
-		gate *= 1.0 - ts.a;
+		ALBEDO = crowd_shade.rgb * cel_floor_band.yzw / max(cel_floor_unit.rgb, vec3(1e-5)) * gt.y;
+		gate *= 1.0 - texture(cel_floor_turn, vec2((clamp(r / cel_floor_band.x, 0.0, 1.0) * 63.0 + 0.5) / 64.0, 0.75)).a;
 	} else {
 		vec3 ramp = texture(cel_pool_ramp, vec2((clamp(r / cel_pool_band.x, 0.0, 1.0) * 63.0 + 0.5) / 64.0, 0.5)).rgb;
 		ALBEDO = (crowd_shade.rgb + ramp * (crowd_ember.w * crowd_moon.z)) * gt.y;

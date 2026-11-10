@@ -1170,7 +1170,7 @@ public partial class PlayerView : Node3D
             {
                 var lf = Light.GlobalPosition; var me = GlobalPosition;
                 FireCast.Set(herCast.Multimesh, 0, me, HerCastTall, HerCastWide, ce > 0 ? 1 : 0, HerCastLong, new Vector2(me.X - lf.X, me.Z - lf.Z));
-                if (FireCast.Count) FireCast.Report(me);
+                if (FireCast.Count) FireCast.Report(lf);
             }
             var lc = Light.LightColor.SrgbToLinear();
             RenderingServer.GlobalShaderParameterSet("crowd_lamp", new Vector4(lc.R, lc.G, lc.B, CrowdEmberIn));
