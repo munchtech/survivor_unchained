@@ -50,8 +50,11 @@ def taper(th_a, th_b, s_b, over):
 
 def limb_plate(pid, cfg, out=None, ref=None):
     """build.json: "theta" [t0, t1] and "top" {"through": [[theta, s], ..]} the plate (its top edge runs through its
-    points); "bottom" {"rim_of", "nodes", "below"}: the piece ends `below` under another built piece's rim (the spec
-    bottom); "spec_top" {"points"}: the top its length is counted from; "lames" {"count", "plate_share" (the plate's
+    points); "bottom" {"rim_of", "nodes", "below", "dip"}: the piece ends `below` under another built piece's rim (the
+    spec bottom: the lames' lines are counted to it); "dip" {"points": [[theta, m], ..]}: the LAST lame's own bottom
+    edge runs this much lower still (further under that piece: the lame's lapping band, where it stands furthest off
+    her, stays where it is, and her skin's tuck is full a border's ramp above the new edge);
+    "spec_top" {"points"}: the top its length is counted from; "lames" {"count", "plate_share" (the plate's
     share of the spec length), "under" (the plate's hidden band under the first lame), "overlap", "theta", "taper"
     (the plate's sides ease to the lames' over its lowest `taper`), "rides" [a part rule each], "clear" / "gap" /
     "slide" (a number, or one a lame: its clearance, the room between its lapping band and the sheet above, how far
@@ -83,19 +86,23 @@ def limb_plate(pid, cfg, out=None, ref=None):
         rim_s = np.array([sg[cut & (np.abs(thg - b) < 7)].min() if (cut & (np.abs(thg - b) < 7)).any() else np.nan for b in bins])
         ok = np.isfinite(rim_s)
         rim = nb.edge_curve(bins[ok], rim_s[ok], deg=4)
-        end = lambda th: rim(th) + rim_cfg.get("below", 0.0)  # noqa: E731
+        end0 = lambda th: rim(th) + rim_cfg.get("below", 0.0)  # noqa: E731  (the spec bottom)
+        dip = nb.edge_points(*np.array(rim_cfg["dip"]["points"], float).T) if rim_cfg.get("dip") else (lambda th: 0.0 * np.asarray(th, float))
+        end = lambda th: end0(th) + dip(th)  # noqa: E731  (the last lame's bottom edge)
         pts = np.array(cfg["top"]["through"], float)
         top = nb.edge_points(pts[:, 0], pts[:, 1])
         if n_l:
             sp = np.array(cfg["spec_top"]["points"], float)
             tt = np.linspace(th_lo, th_hi, 24)
             spec = np.interp(tt, sp[:, 0], sp[:, 1])
-            a1 = nb.edge_curve(tt, spec + lm["plate_share"] * (end(tt) - spec), deg=4)   # the plate's visible end
-            line = lambda k: (lambda th, k=k: a1(th) + (k / n_l) * (end(th) - a1(th)))  # noqa: E731
+            a1 = nb.edge_curve(tt, spec + lm["plate_share"] * (end0(tt) - spec), deg=4)   # the plate's visible end
+            line = lambda k: (lambda th, k=k: a1(th) + (k / n_l) * (end0(th) - a1(th)))  # noqa: E731
             bot = lambda th: a1(th) + lm["under"]  # noqa: E731
         else:
             a1 = bot = end
         r["top_mm"], r["plate_end_mm"], r["end_mm"], r["rim_mm"] = mm(top(at5)), mm(a1(at5)), mm(end(at5)), mm(rim(at5))
+        if rim_cfg.get("dip"):
+            r["dip_mm"] = mm(dip(at5))
         # --- her limb's surface and the smooth law above it (the skin a part lies over shapes it; the rest guides it)
         hip_lines = []
         for h in hips:

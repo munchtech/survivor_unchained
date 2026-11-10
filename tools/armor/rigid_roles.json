@@ -24,7 +24,7 @@
   "greaves": {"ride": {"calf": "mean"}},
   "legwear": {"ride": {"thigh": 1}, "one_bone": true,
               "standoff": {"cap_mm": 6, "rest_min_mm": 1, "margin_mm": 1,
-                           "tuck_full_mm": 10, "tuck_zero_mm": 14, "tuck_step": 1.0,
+                           "tuck_full_mm": 18, "tuck_zero_mm": 22, "tuck_step": 1.0,
                            "tuck_depth_mm": 18, "tuck_slope": 1.0, "tuck_edge_mm": 10}}
  }
 }

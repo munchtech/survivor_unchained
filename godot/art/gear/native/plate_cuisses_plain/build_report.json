@@ -17,9 +17,9 @@
     338.8
    ],
    "end_mm": [
-    461.9,
-    450.7,
-    464.7,
+    481.9,
+    470.7,
+    484.7,
     500.1,
     490.0
    ],
@@ -30,6 +30,13 @@
     486.1,
     476.0
    ],
+   "dip_mm": [
+    20.0,
+    20.0,
+    20.0,
+    0.0,
+    0.0
+   ],
    "law": {
     "rms_mm": 1.35,
     "lift_mm": 0.45,
@@ -39,7 +46,7 @@
     11,
     0,
     0,
-    1
+    0
    ],
    "garter_mm": 245,
    "plate_l_rigid": {
@@ -70,16 +77,16 @@
     "inside": 0
    },
    "lame3_l_rigid": {
-    "tris": 1342,
+    "tris": 1464,
     "grid": [
-     18,
-     24
+     21,
+     23
     ],
-    "rest_clear_mm_min": 1.2,
+    "rest_clear_mm_min": 2.01,
     "inside": 0
    },
    "end_under_rim_mm_min": 0.8,
-   "end_tucked_rows": 8
+   "end_tucked_rows": 11
   },
   "r": {
    "top_mm": [
@@ -97,9 +104,9 @@
     338.1
    ],
    "end_mm": [
-    462.2,
-    450.1,
-    464.9,
+    482.2,
+    470.1,
+    484.9,
     500.0,
     489.1
    ],
@@ -110,6 +117,13 @@
     486.0,
     475.1
    ],
+   "dip_mm": [
+    20.0,
+    20.0,
+    20.0,
+    0.0,
+    0.0
+   ],
    "law": {
     "rms_mm": 1.34,
     "lift_mm": 0.43,
@@ -119,7 +133,7 @@
     11,
     0,
     0,
-    1
+    0
    ],
    "garter_mm": 246,
    "plate_r_rigid": {
@@ -150,20 +164,20 @@
     "inside": 0
    },
    "lame3_r_rigid": {
-    "tris": 1342,
+    "tris": 1464,
     "grid": [
-     18,
-     24
+     21,
+     23
     ],
-    "rest_clear_mm_min": 1.2,
+    "rest_clear_mm_min": 1.95,
     "inside": 0
    },
    "end_under_rim_mm_min": 0.8,
-   "end_tucked_rows": 8
+   "end_tucked_rows": 11
   }
  },
  "dir": "godot/art/gear/native/plate_cuisses_plain",
- "tris": 15248,
+ "tris": 15492,
  "parts": {
   "straps_l": [
    564,
@@ -196,8 +210,8 @@
    "steel"
   ],
   "lame3_l_rigid": [
-   722,
-   1342,
+   785,
+   1464,
    "steel"
   ],
   "buckle_l_rigid": [
@@ -236,8 +250,8 @@
    "steel"
   ],
   "lame3_r_rigid": [
-   722,
-   1342,
+   785,
+   1464,
    "steel"
   ],
   "buckle_r_rigid": [
