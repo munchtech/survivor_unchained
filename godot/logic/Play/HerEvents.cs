@@ -79,6 +79,17 @@ public static class HerEvents
         return sb.ToString();
     }
 
+    /// <summary>The file after a pack: `packed` (the pack's clips with beats) over `file` (what was there), less every
+    /// entry of a clip the pack built (`built`: a packed clip that lost its beats loses its entry). Clips the pack does
+    /// not build keep their entries (M3's measured contacts).</summary>
+    public static Dictionary<string, Beats> Merge(IReadOnlyDictionary<string, Beats> file, IReadOnlyDictionary<string, Beats> packed, IEnumerable<string> built)
+    {
+        var gone = new HashSet<string>(built, StringComparer.Ordinal);
+        var res = file.Where(k => !gone.Contains(k.Key)).ToDictionary(k => k.Key, k => k.Value);
+        foreach (var k in packed) res[k.Key] = k.Value;
+        return res;
+    }
+
     /// <summary>The file's text read back: per clip its beats (frames; seconds through Beats members). Bad text gives none.</summary>
     public static Dictionary<string, Beats> Load(string text)
     {

@@ -152,14 +152,23 @@ public sealed partial class Journey
     {
         // The kit goes on with the place: the night's wherever the ember burns, where its coals work.
         Kits.Wear(Ch, combat && (arena || ember) ? KitKind.Night : KitKind.Day);
+        // (M3) A campaign fight: her calling's taught build is what she carries (taught_builds.json), its levels granted.
+        bool campaign = combat && !arena && !ember;
+        if (campaign) Content.TaughtBuilds.Grant(Ch, Ch.Level);
         var kit = Character.Kit(Ch, combat && (arena || ember));
         InArena = arena;
         var exp = combat && !arena ? Expedition : null;
         var b = new Battle(new BattleSetup
         {
             Seed = seed, Combat = combat, Collision = col, HeightAt = heightAt, Stats = kit.Stats,
-            StartX = x, StartZ = z, StartFacing = facing, Weapons = kit.Weapons, Triggers = kit.Triggers, Ability = kit.Ability,
-            ArtRank = kit.ArtRank, Facets = kit.Facets,
+            // The campaign (ARPG.md 3.1): story fights press their skills; the arena keeps every skill self-firing, and so
+            // does a night the ember burns in (the prologue's: the survivors' ruleset, the arena's in all but name, until
+            // the ARPG tutorial replaces it).
+            Campaign = campaign,
+            StartX = x, StartZ = z, StartFacing = facing,
+            // (M3) In the campaign the taught build takes the first keys (the grip on the first), a worn skill it does not name after.
+            Weapons = campaign ? Content.TaughtBuilds.KeyOrder(Ch.Archetype, kit.Weapons.Concat(kit.Learned)) : kit.Weapons, Triggers = kit.Triggers, Ability = kit.Ability,
+            ArtRank = kit.ArtRank, Facets = kit.Facets, DashSteps = kit.DashSteps,
             Lamps = kit.Lamps, ReflexRanks = kit.ReflexRanks, Level = Ch.Level,
             // Each skill's wick, as planned by day (Light my way where she planned none).
             Wicks = combat ? WickBook.Paths(Ch) : null,
@@ -173,7 +182,7 @@ public sealed partial class Journey
         if (WorldTierOn)
         {
             var wt = Content.WorldTiers.Get(Content.WorldTiers.Of(World));
-            b.WorldHealth = wt.Health; b.WorldDamage = wt.Damage; b.KitDamageMul = wt.Kit;
+            b.WorldHealth = wt.Health; b.WorldDamage = wt.Damage; b.KitDamageMul = wt.Kit; b.KitEveryMul = wt.KitEvery; b.StoryStand = wt.Stand;
         }
         b.EmberOn = combat && (arena || ember);
         EmberLit = b.EmberOn && !arena;
@@ -181,6 +190,8 @@ public sealed partial class Journey
         GearWeapons = kit.Weapons.Select(w => w.Id).ToHashSet();
         b.Favours.UnionWith(Callings.Archetype(Ch.Archetype).Favours);
         b.Calling = Ch.Archetype;
+        // The campaign runs each carried skill in its taught form (taught_builds.json: the grip held, the rest kindled or pressed).
+        if (b.Campaign) Content.TaughtBuilds.Apply(b, b.Calling);
         b.CallingPaths.UnionWith(Content.Paths.All.Where(p => p.Callings.Contains(Ch.Archetype)).Select(p => p.Id));
         // What is carried by day is attuned for the night (offered first, a
         // rank or two up); what is only learned comes a little more often.
@@ -200,8 +211,9 @@ public sealed partial class Journey
         if (b.EmberOn)
             for (int i = 0; i < kit.StartLevels; i++) b.GainEmber(b.EmberNext);
         // By day, the skills learned for it.
-        else if (combat)
+        else if (combat && !campaign)
             foreach (var (id, rank) in kit.Learned) b.AddWeapon(id, rank);
+        campaignFight = campaign ? b : null;
         return b;
     }
 
@@ -272,10 +284,35 @@ public sealed partial class Journey
         int levels = Character.GainXp(Ch, xp);
         if (levels > 0)
         {
+            Teach(campaignFight);
             OnAnnounce(new Announcement($"Level {Ch.Level}", Ch.TraitPicks > 0 ? "A new trait can be chosen (C)" : "Attribute points to spend (C)", "boon", 3.2, "You grow stronger"));
             Grew();
             OnTouch();
         }
+    }
+
+    /// <summary>The campaign fight running (its levels teach the taught build into it), else null.</summary>
+    Battle? campaignFight;
+
+    /// <summary>(M3) Levels reached in the campaign teach the taught build's slots of those levels (TaughtBuilds.Grant),
+    /// each into the fight running in its taught form (a worn skill the build does not name gives up its key if the keys
+    /// are full), with an Ev.Taught for the views and the tutorial. What was taught.</summary>
+    public List<Content.TaughtSlot> Teach(Battle? b)
+    {
+        var got = Content.TaughtBuilds.Grant(Ch, Ch.Level);
+        foreach (var s in got)
+        {
+            int slot = -1;
+            if (b != null && b.Campaign && !b.Weapons.Exists(w => w.Id == s.Skill))
+            {
+                if (!b.HasRoomFor(s.Skill) && Content.TaughtBuilds.Of(Ch.Archetype) is { } t
+                    && b.Weapons.LastOrDefault(w => t.Slots.All(x => x.Skill != w.Id)) is { } spare)
+                    b.RemoveWeapon(spare.Id);
+                if (b.AddWeapon(s.Skill, SkillBook.Rank(Ch)) is { } w) { b.SetForm(s.Skill, s.Cast); slot = w.Slot; }
+            }
+            b?.Events.Emit(new Ev.Taught { Skill = s.Skill, Cast = s.Cast, Slot = slot, Level = Ch.Level });
+        }
+        return got;
     }
 
     /// <summary>The survivor has grown: their calling may teach them a skill
@@ -566,6 +603,8 @@ public sealed partial class Journey
     public void BankArt(Battle? b)
     {
         if (b == null || b.ArtXp <= 0 || Ch.Ability == "") return;
+        // A way of moving grows by the dash's steps, never by use: nothing to bank, nothing said.
+        if (ArtBook.Movement(Ch.Ability)) { b.ArtXp = 0; return; }
         double xp = b.ArtXp;
         b.ArtXp = 0;
         int rank = ArtBook.Grow(Ch, Ch.Ability, xp);
@@ -575,6 +614,17 @@ public sealed partial class Journey
         bool open = ArtBook.OpenSlots(Ch, Ch.Ability) > 0;
         OnAnnounce(new Announcement($"{def.Name}, rank {rank}", open ? "A facet can be chosen (K)" : "Stronger, and sooner ready", "boon", 3.2, "Your art grows"));
         OnTouch();
+    }
+
+    /// <summary>A step of the dash's growth (Content/DashSteps.cs) taken: kept on her, and into the fight now if
+    /// one runs (Ev.DashStep, for the view to announce). The design lead's route (a lamp-post Wick, a level-up)
+    /// calls this. False if unknown or taken as often as it may be.</summary>
+    public bool GrantDashStep(string id, Battle? b)
+    {
+        if (!Ch.GrantDashStep(id)) return false;
+        b?.GrantDashStep(id);
+        OnTouch();
+        return true;
     }
 
     /// <summary>Carry another known art (somewhere safe).</summary>

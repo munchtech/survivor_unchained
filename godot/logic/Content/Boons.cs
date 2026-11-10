@@ -74,7 +74,7 @@ public static class Boons
     public static readonly string[] Great =
     [
         "hunters_mark", "momentum", "bloodthirst", "spirit_companion", "arcane_overflow", "glass_cannon",
-        "duelists_grace", "restless_hands", "cinderwake", "iron_vow", "ember_tithe", "stormborn",
+        "duelists_grace", "restless_hands", "cinderwake", "boon_iron_vow", "ember_tithe", "stormborn",
         "from_the_ashes", "grounding", "rootbind", "go_for_the_throat",
         "hold_the_crossing", "blood_up", "second_reading", "hunters_blind",
     ];
@@ -93,7 +93,7 @@ public static class Boons
         ["momentum"] = GreatRole.Power, ["arcane_overflow"] = GreatRole.Power, ["glass_cannon"] = GreatRole.Power,
         ["duelists_grace"] = GreatRole.Power, ["cinderwake"] = GreatRole.Power, ["stormborn"] = GreatRole.Power,
         ["spirit_companion"] = GreatRole.Power,
-        ["bloodthirst"] = GreatRole.Ward, ["iron_vow"] = GreatRole.Ward, ["from_the_ashes"] = GreatRole.Ward, ["grounding"] = GreatRole.Ward,
+        ["bloodthirst"] = GreatRole.Ward, ["boon_iron_vow"] = GreatRole.Ward, ["from_the_ashes"] = GreatRole.Ward, ["grounding"] = GreatRole.Ward,
         ["hunters_mark"] = GreatRole.Answer, ["rootbind"] = GreatRole.Answer, ["go_for_the_throat"] = GreatRole.Answer,
         ["restless_hands"] = GreatRole.Tempo, ["ember_tithe"] = GreatRole.Tempo,
         ["bright_hour"] = GreatRole.Power, ["ember_answers_twice"] = GreatRole.Ward, ["short_wick"] = GreatRole.Tempo, ["called_shot"] = GreatRole.Answer,
@@ -283,7 +283,7 @@ public static class Boons
             Text = "Your dash leaves a line of fire behind it, and comes back a fifth sooner.",
             Mods = _ => [More(Stat.DashCooldown, -0.2, "syn:cinderwake")],
             DeeperText = ["The fire is wider and burns longer.", "What stands in it is slowed, and set burning."] },
-        new() { Id = "iron_vow", Name = "Iron Vow", Icon = "aegis", Rarity = Rarity.Legendary, Max = 3, Kind = BoonKind.Blessing,
+        new() { Id = "boon_iron_vow", Name = "Iron Vow", Icon = "aegis", Rarity = Rarity.Legendary, Max = 3, Kind = BoonKind.Blessing,
             Text = "A barrier of 12% of your health, back whenever you go 5 s unstruck.",
             DeeperText = ["18% of your health, back after 4 s.", "24%, and when it breaks it throws back everything near you."] },
         // The wards and answers the paths were missing: a ward for fire and for

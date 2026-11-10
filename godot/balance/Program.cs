@@ -117,6 +117,11 @@ if (opt.Has("over"))
     var read = DataFiles.Text;
     DataFiles.Text = rel => File.Exists(Path.Combine(over, rel)) ? File.ReadAllText(Path.Combine(over, rel)) : read(rel);
 }
+// --dashforms 1|0: do the movement arts ride the dash (the old forms)? Off is the game now (MapRules.DashForms).
+// --grant id[:rank],... / --grant-union id: every arena carries these from its start (the game's dev grants).
+if (opt.Has("grant")) SurvivorUnchained.Balance.ArenaSim.Grant = opt.Get("grant", "");
+if (opt.Has("grant-union")) SurvivorUnchained.Balance.ArenaSim.GrantUnion = opt.Get("grant-union", "");
+if (opt.Has("dashforms")) SurvivorUnchained.Sim.MapRules.DashFormsDefault = opt.Get("dashforms", "1") != "0";
 string cmd = args.Length > 0 && !args[0].StartsWith("--") ? args[0] : "help";
 // The content is read once, before the runs share it.
 _ = Callings.Archetypes; _ = Items.All; _ = Weapons.All; _ = Boons.All;
@@ -443,7 +448,7 @@ void ZoneRuns()
         try { r = ZoneSim.Play(spec); }
         catch (Exception e) { Console.Error.WriteLine($"{spec.Key}: {e}"); return; }
         results.Add(r);
-        lock (gate) Console.WriteLine($"[{++done}/{specs.Count} {sw.Elapsed:mm\\:ss}] {spec.Key}: {(r.Reached ? "through" : r.Stuck ? "STUCK " + r.StuckAt : "capped")} {r.PlaySeconds / 60:0.0} min kills {r.Kills} packs {r.Packs} champs {r.Champions} falls {r.Falls} rises {r.Rises} shown {r.GearShown} L{r.LevelAtWarden}/{r.LevelAtGate}");
+        lock (gate) Console.WriteLine($"[{++done}/{specs.Count} {sw.Elapsed:mm\\:ss}] {spec.Key}: {(r.Reached ? "through" : r.Stuck ? "STUCK " + r.StuckAt : "capped")} {r.PlaySeconds / 60:0.0} min kills {r.Kills} packs {r.Packs} champs {r.Champions} falls {r.Falls} rises {r.Rises} shown {r.GearShown} L{r.LevelAtWarden}/{r.LevelAtGate} {r.Measures.Line()}{(opt.Has("fullby") ? " fullby " + string.Join(",", r.FullByStage.Select(kv => $"{kv.Key}:{kv.Value:0}")) : "")}{string.Concat(r.Measures.FallNotes.Select(n => Environment.NewLine + "    FALL " + n))}");
     });
     var all = results.OrderBy(r => r.Spec.Key).ToList();
     var md = ZoneSim.Report(all, opt.Get("cmd", "dotnet run -c Release --project godot/balance -- zone " + string.Join(" ", args.Skip(1))));
@@ -554,13 +559,18 @@ void Maps()
     var tiers = opt.List("tiers", "1").Select(int.Parse).ToArray();
     var mods = opt.Get("mods", "") is { Length: > 0 } m ? m.Split('+') : Array.Empty<string>();
     var specs = new List<MapRunSpec>();
+    // (M3) --bot human|deft|careless|standing|idler|plain (or a list: --bots human,deft); --grant / --grant-union as the arena's.
+    var bots = opt.Has("bots") ? opt.List("bots", "deft") : [opt.Get("bot", "deft")];
+    if (opt.Has("grant")) SurvivorUnchained.Balance.MapSim.Grant = opt.Get("grant", "");
+    if (opt.Has("grant-union")) SurvivorUnchained.Balance.MapSim.GrantUnion = opt.Get("grant-union", "");
+    foreach (var bot in bots)
     foreach (var c in Callers())
         foreach (int tier in tiers)
             foreach (var people in peoples)
                 for (int s = 0; s < seeds; s++)
                 {
                     int level = opt.Get("level", "tier") == "tier" ? Math.Min(30, 8 + 2 * tier) : opt.Int("level", 10);
-                    specs.Add(new MapRunSpec(seed0 + s, c, tier, people, level, opt.Int("gear", 2), mods, opt.Get("bot", "deft") == "deft", opt.Double("cap", 25)));
+                    specs.Add(new MapRunSpec(seed0 + s, c, tier, people, level, opt.Int("gear", 2), mods, bot, opt.Double("cap", 25)));
                 }
     Console.WriteLine($"{specs.Count} maps, {opt.Int("par", 16)} at a time");
     var results = new ConcurrentBag<MapRunResult>();
@@ -576,7 +586,7 @@ void Maps()
         lock (gate)
         {
             done++;
-            Console.WriteLine($"[{done}/{specs.Count} {sw.Elapsed:mm\\:ss}] {spec.Key}: {(r.Cleared ? $"cleared {r.Minutes:0.0}" : r.Closed ? $"closed {r.Minutes:0.0} ({r.KilledBy})" : $"walking {r.Minutes:0.0}")} falls {r.Falls} packs {r.PacksCleared}/{r.Packs} boss {(r.BossTtk is double bt ? $"{bt:0}s" : $"phase {r.BossPhase} left {r.BossLeft:0.00}")} low {r.LowHp:0.00}  {r.Build}");
+            Console.WriteLine($"[{done}/{specs.Count} {sw.Elapsed:mm\\:ss}] {spec.Key}: {(r.Cleared ? $"cleared {r.Minutes:0.0}" : r.Closed ? $"closed {r.Minutes:0.0} ({r.KilledBy})" : $"walking {r.Minutes:0.0}")} falls {r.Falls} packs {r.PacksCleared}/{r.Packs} boss {(r.BossTtk is double bt ? $"{bt:0}s" : $"phase {r.BossPhase} left {r.BossLeft:0.00}")} low {r.LowHp:0.00}  {r.Build}\n    {r.Measures.Line()}");
         }
     });
     var md = MapSim.Report(results.OrderBy(r => r.Spec.Key).ToList());

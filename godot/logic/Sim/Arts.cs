@@ -14,6 +14,8 @@ public sealed class ArtRun
     /// <summary>A charge or a haul on a chain: the survivor carried along a line.</summary>
     public AbilityKind? Rush;
     public double RushT, RushDX, RushDZ, RushSpeed, RushX0, RushZ0;
+    /// <summary>A charge's numbers while it runs (the art's Bull Rush or the Shield Charge skill: one path, Battle.ChargeStep).</summary>
+    public ChargeRun? Charge;
     public Enemy? Hooked;
     public double HookedAt = -99, Barrier;
     /// <summary>The wait the last use began, for the ring round the art.</summary>
@@ -30,9 +32,27 @@ public sealed class ArtRun
     public void Clear()
     {
         SprintT = WraithT = CinderT = EchoT = RushT = HotT = 0;
-        Rush = null; Hooked = null; Echo = null;
+        Rush = null; Hooked = null; Echo = null; Charge = null;
         Struck.Clear(); Trail.Clear();
     }
+}
+
+/// <summary>What a charge does as it runs (Battle.ChargeStep): what it strikes and how hard, what stops it, what it
+/// leaves. The art's Bull Rush fills it from its lamps (Has), the Shield Charge skill from its numbers and its rules.</summary>
+public sealed class ChargeRun
+{
+    /// <summary>The skill charging (credit, procs, the Hand's heavy), or null for the art.</summary>
+    public WeaponInst? Weapon;
+    public bool Heavy;
+    public Tag[] Tags = [], SlamTags = [];
+    public double Damage, Knockback, ChampionMul = 1, ChampionStun, BossStun;
+    public StatusPayload? Bleed;
+    /// <summary>Unbroken: barrier for each thing struck (a share of max health), held to Barrier + this cap.</summary>
+    public double PerStruck, StruckCap, StruckHold = 3;
+    /// <summary>The end-slam (Pile Driver), when Slam is set.</summary>
+    public bool Slam;
+    public double SlamRadius, SlamDamage, SlamKnockback, SlamStun, SlamBossStun;
+    public int Struck;
 }
 
 public sealed partial class Battle
@@ -115,12 +135,16 @@ public sealed partial class Battle
     public void SetArt(AbilityKind? kind, int rank, IEnumerable<string> facets)
     {
         Ability = kind;
-        ArtRank = Math.Clamp(rank, 1, Abilities.MaxRank);
+        // A way of moving has no ranks (it grows by the dash's steps, Content/DashSteps.cs): no hidden power or haste.
+        ArtRank = kind is { } k && Abilities.All[k].Movement ? 1 : Math.Clamp(rank, 1, Abilities.MaxRank);
         Facets.Clear();
         Facets.UnionWith(facets);
         artFacets.Clear();
         artFacets.UnionWith(Facets);
     }
+
+    /// <summary>The art in hand grows by use (ArtXp): every art but a way of moving, which grows by steps.</summary>
+    bool ArtGrows => Ability is { } k && !Abilities.All[k].Movement;
 
     /// <summary>Q: the art in hand.</summary>
     public bool UseAbility(double dirX, double dirZ)
@@ -165,7 +189,7 @@ public sealed partial class Battle
         credit = was;
         if (!used) return false;
         Art.CdFull = Math.Max(0.1, p.AbilityCd);
-        ArtXp += 1;
+        if (ArtGrows) ArtXp += 1;
         Art.HotT = 3;
         Art.HotKills = 0;
         Fire(TriggerEvent.Ability, new ProcCtx { X = p.X, Z = p.Z });
@@ -399,6 +423,17 @@ public sealed partial class Battle
         Art.Barrier = MaxHp * (0.18 + (Has("iron_hide") ? 0.12 * Ward("iron_hide") : 0));
         Barrier(Art.Barrier, 4);
         StartRush(AbilityKind.BullRush, ax, az, 9, 0.4);
+        double power = ArtPower;
+        bool gore = Has("gore");
+        Art.Charge = new ChargeRun
+        {
+            Tags = RushTags, SlamTags = SlamTags, Damage = 18 * power, Knockback = 2.2,
+            ChampionMul = gore ? NightCut("gore", 1.5, 1) : 1, ChampionStun = 1.2, BossStun = 0.4,
+            Bleed = gore ? new StatusPayload(StatusKind.Bleed, 1, 0.8, 4) : null,
+            PerStruck = Has("unbroken") ? 0.02 * Ward("unbroken") : 0, StruckCap = 0.2,
+            Slam = Has("pile_driver"), SlamRadius = 3, SlamDamage = 28 * power, SlamKnockback = 1.4,
+            SlamStun = Ward("pile_driver"), SlamBossStun = 0.3 * Ward("pile_driver"),
+        };
         p.SlowT = 0; p.SlowF = 1;
         Events.Emit(new Ev.Ability { Id = def.Id, X = p.X, Z = p.Z, Angle = angle, Radius = 1.2 });
         return true;
@@ -407,6 +442,7 @@ public sealed partial class Battle
     void StartRush(AbilityKind kind, double dx, double dz, double dist, double time)
     {
         var p = Player;
+        asFormRush = false;
         Art.Rush = kind;
         Art.RushDX = dx; Art.RushDZ = dz;
         Art.RushT = time;
@@ -595,11 +631,12 @@ public sealed partial class Battle
     void LandLeap(Leap leap)
     {
         var p = Player;
+        if (leap.Weapon != null) { LandSkillLeap(leap); return; }
         if (leap.Kind == AbilityKind.Vault)
         {
             if (Has("light_feet"))
             {
-                p.DashCharges = Math.Min(RoundInt(Stats.Get(Stat.DashCharges)), p.DashCharges + 1);
+                p.DashCharges = Math.Min(MaxDashCharges, p.DashCharges + 1);
                 AddBuff("light_feet", Stat.MoveSpeed, 0.4 * Ward("light_feet"), ModKind.Inc, 2, 1);
             }
             StalkerVaultLanded();
@@ -619,7 +656,7 @@ public sealed partial class Battle
         if (Has("aftershock")) strikes.Add(new StrikeSpec(p.X, p.Z, 4.5, 20 * power, School.Physical, SlamTags, 0.5, null, Side.Player, 1));
         if (Has("wind_at_back"))
         {
-            p.DashCharges = Math.Min(RoundInt(Stats.Get(Stat.DashCharges)), p.DashCharges + 1);
+            p.DashCharges = Math.Min(MaxDashCharges, p.DashCharges + 1);
             AddBuff("wind_at_back", Stat.MoveSpeed, 0.3, ModKind.Inc, 3, 1);
         }
     }
@@ -758,46 +795,9 @@ public sealed partial class Battle
         p.Vx = a.RushDX * a.RushSpeed * 0.35; p.Vz = a.RushDZ * a.RushSpeed * 0.35;
         a.RushT -= dt;
         bool done = a.RushT <= 0 || walled;
-        if (a.Rush == AbilityKind.BullRush)
+        if (a.Rush == AbilityKind.BullRush && a.Charge is { } run)
         {
-            p.SlowF = 1;
-            double power = ArtPower;
-            bool gore = Has("gore"), unbroken = Has("unbroken");
-            Enemy? stopper = null;
-            ForEachHostileInRadius(p.X, p.Z, p.Radius + 0.6, (e, _) =>
-            {
-                if (stopper != null || !a.Struck.Add(e.Id)) return;
-                var bleed = gore ? new StatusPayload(StatusKind.Bleed, 1, 0.8, 4) : null;
-                if (e.Elite || e.Boss)
-                {
-                    stopper = e;
-                    HitEnemy(e, 18 * power * (gore ? NightCut("gore", 1.5, 1) : 1), School.Physical, RushTags, new HitOpts { Status = bleed });
-                    ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, e.Boss ? 0.4 : 1.2), 0);
-                    Interrupt(e);
-                    return;
-                }
-                double side = (e.X - p.X) * a.RushDZ - (e.Z - p.Z) * a.RushDX;
-                double sx = side >= 0 ? a.RushDZ : -a.RushDZ, sz = side >= 0 ? -a.RushDX : a.RushDX;
-                HitEnemy(e, 18 * power, School.Physical, RushTags, new HitOpts { Knockback = 2.2, DirX = sx * 0.85 + a.RushDX * 0.5, DirZ = sz * 0.85 + a.RushDZ * 0.5, Status = bleed });
-                if (unbroken && p.Shield < a.Barrier + MaxHp * 0.2) { p.Shield += MaxHp * 0.02 * Ward("unbroken"); p.ShieldT = Math.Max(p.ShieldT, 3); }
-            });
-            if (stopper != null) { done = true; Events.Emit(new Ev.Shake { Amount = 0.4 }); }
-            if (done)
-            {
-                a.Rush = null;
-                if (Has("pile_driver"))
-                {
-                    double held = Ward("pile_driver");
-                    Events.Emit(new Ev.Explosion { X = p.X, Z = p.Z, Radius = 3, School = School.Physical, Power = 1.1 });
-                    Events.Emit(new Ev.Shake { Amount = 0.5 });
-                    ForEachHostileInRadius(p.X, p.Z, 3, (e, d) =>
-                    {
-                        double dd = d == 0 ? 1 : d;
-                        HitEnemy(e, 28 * power, School.Physical, SlamTags, new HitOpts { Knockback = 1.4, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd });
-                        ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, (e.Boss ? 0.3 : 1) * held), 0);
-                    });
-                }
-            }
+            ChargeStep(run, done);
             return true;
         }
         // A haul on the chain: untouchable on the way, a blow on arrival.
@@ -844,7 +844,7 @@ public sealed partial class Battle
         var p = Player;
         if (e.Decoy) { BreakDecoy(e); return; }
         if (!credited || e.Disposition == Disposition.Ally) return;
-        if (Art.HotT > 0 && Art.HotKills < 15) { Art.HotKills++; ArtXp += 0.2; }
+        if (Art.HotT > 0 && Art.HotKills < 15 && ArtGrows) { Art.HotKills++; ArtXp += 0.2; }
         if (e.Prey)
         {
             e.Prey = false;

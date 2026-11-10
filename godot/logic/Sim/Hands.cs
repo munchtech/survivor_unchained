@@ -60,6 +60,10 @@ public sealed partial class Battle
         return (w.HandBlows + 1) % every == 0;
     }
 
+    /// <summary>Whether its next firing will be the Hand's heavy (read ahead, nothing counted: Sim/Contact.cs picks the
+    /// heavy clip by it; the rites' heavies are not read ahead).</summary>
+    internal bool HandHeavyNext(WeaponInst w) => WardenHand && Content.Hands.Heavies(w.Tags) && (w.HandBlows + 1) % Math.Max(1, HW.Every) == 0;
+
     /// <summary>The firing done: a blow counted only if it fired.</summary>
     internal void HandEndCast(WeaponInst w, bool fired)
     {
@@ -202,7 +206,7 @@ public sealed partial class Battle
         if (secondWindSpent || !HandRule("hand.stalker.second_wind")) return;
         secondWindSpent = true;
         var p = Player;
-        int max = RoundInt(Stats.Get(Stat.DashCharges));
+        int max = MaxDashCharges;
         if (p.DashCharges >= max) return;
         p.DashRecharge += Lamps.Full("hand.stalker.second_wind", "share", 0.25) * Abilities.Dash.Recharge;
         if (p.DashRecharge >= Abilities.Dash.Recharge) { p.DashRecharge = 0; p.DashCharges++; }

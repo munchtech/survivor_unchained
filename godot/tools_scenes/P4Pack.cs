@@ -83,11 +83,15 @@ public partial class P4Pack : Node
         }
         var err = ResourceSaver.Save(outLib, P1Body.Dir + "p4_clips.res", ResourceSaver.SaverFlags.Compress);
         GD.Print($"p4-pack: wrote p4_clips.res ({files.Length} clips, track path {skelPath}): {err}");
-        // The clips' beats as data (a clip's top-level "beats", clip seconds -> frames at 60 fps): written whole at each pack, this is its only writer.
+        // The clips' beats as data (a clip's top-level "beats", clip seconds -> frames at 60 fps). The pack owns the
+        // entries of the clips it packs (each replaced, or dropped when the clip has no beats now); every other clip's
+        // entry is kept as it stands (M3's measured contacts of the bridge swings: tools/anim/contact_measure.py).
         var evPath = ProjectSettings.GlobalizePath("res://data/anim/her_events.json");
         DirAccess.MakeDirRecursiveAbsolute(evPath.GetBaseDir());
-        using (var ef = FileAccess.Open(evPath, FileAccess.ModeFlags.Write)) ef.StoreString(HerEvents.Serialize(events));
-        GD.Print($"p4-pack: wrote data/anim/her_events.json ({events.Count} clips with beats)");
+        var kept = HerEvents.Load(FileAccess.FileExists(evPath) ? FileAccess.GetFileAsString(evPath) : "");
+        var all = HerEvents.Merge(kept, events, outLib.GetAnimationList().Select(n => n.ToString()));
+        using (var ef = FileAccess.Open(evPath, FileAccess.ModeFlags.Write)) ef.StoreString(HerEvents.Serialize(all));
+        GD.Print($"p4-pack: wrote data/anim/her_events.json ({events.Count} packed clips with beats, {all.Count - events.Count} other clips kept)");
         GetTree().Quit();
     }
 }

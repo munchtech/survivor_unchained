@@ -80,7 +80,8 @@ public class WorldTiersTests
         var story = j.StartBattle(true, new CollisionWorld(120), (_, _) => 0, 0, 0, 0, 1);
         Assert.Equal(6, story.WorldHealth);
         Assert.Equal(3, story.WorldDamage);
-        Assert.Equal(1.3, story.KitDamageMul);
+        Assert.Equal(2.0, story.KitDamageMul); // (M3 r2: world_tiers.json IV kit 1.3 -> 2.0)
+        Assert.Equal(0.7, story.KitEveryMul); // (M3 r4: IV kitEvery 0.45 -> 0.7)
         Assert.True(j.WorldTierOn);
         var map = j.StartBattle(true, new CollisionWorld(120), (_, _) => 0, 0, 0, 0, 1, worldTier: false);
         Assert.Equal(1, map.WorldHealth);

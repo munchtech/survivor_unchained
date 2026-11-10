@@ -25,6 +25,10 @@ public enum Act
     Experience,
     /// <summary>The day's book's Lamps tab (L): the board and the wicks (docs/design/LAMPS_SCREEN_BRIEF.md §10).</summary>
     Lamps,
+    /// <summary>The six skill slots' keys (1-6): a pressed or channelled skill on that slot goes off (Battle.PressSkill,
+    /// HoldSkill); an auto skill ignores them. The draft's Pick1-4 share Digit1-4: a press a menu takes is never also a
+    /// skill's (Down), and WorldScene drops any kept through a pause.</summary>
+    Skill1, Skill2, Skill3, Skill4, Skill5, Skill6,
 }
 
 /// <summary>
@@ -51,7 +55,11 @@ public partial class Controls : Node
         [Act.TabNext] = ["BracketRight"], [Act.TabPrev] = ["BracketLeft"], [Act.Arts] = ["KeyK"], [Act.Skip] = ["KeyV"],
         [Act.Alt] = ["Delete"], [Act.Alt2] = [], [Act.SubPrev] = ["Comma"], [Act.SubNext] = ["Period"], [Act.Answer] = ["KeyN"],
         [Act.Expand] = ["KeyZ"], [Act.Experience] = [XpLight.HoldKey], [Act.Lamps] = ["KeyL"],
+        [Act.Skill1] = ["Digit1"], [Act.Skill2] = ["Digit2"], [Act.Skill3] = ["Digit3"], [Act.Skill4] = ["Digit4"], [Act.Skill5] = ["Digit5"], [Act.Skill6] = ["Digit6"],
     };
+
+    /// <summary>The skill slots' keys in slot order (slot i is Skills[i]).</summary>
+    public static readonly Act[] Skills = [Act.Skill1, Act.Skill2, Act.Skill3, Act.Skill4, Act.Skill5, Act.Skill6];
 
     public static readonly Act[] Rebindable = [Act.Up, Act.Left, Act.Down, Act.Right, Act.Dash, Act.Flare, Act.Draught, Act.Interact, Act.Inventory, Act.Character, Act.Arts, Act.Lamps, Act.Journal, Act.Map, Act.Reroll, Act.Banish, Act.Skip, Act.Answer, Act.Experience];
     static readonly string[] Reserved = ["Escape", "Enter", "NumpadEnter", "Backspace", "Digit1", "Digit2", "Digit3", "Digit4", "BracketLeft", "BracketRight", "Comma", "Period", "Delete"];
@@ -72,6 +80,8 @@ public partial class Controls : Node
         [Act.Expand] = [JoyButton.RightStick],
         // (UI 18: held in play, the level's card; LB turns the book's pages only in a menu)
         [Act.Experience] = [JoyButton.LeftShoulder],
+        // (Skill1-6 are left unbound on the pad for now: its face buttons are taken; the pad's skill layout is the
+        // design lead's, with the pressed skills)
     };
 
     /// <summary>In a menu one button means its menu meaning first: A is
@@ -145,6 +155,8 @@ public partial class Controls : Node
             if (handled) continue;
             foreach (var l in listeners.ToList()) if (l(a)) { handled = true; break; }
         }
+        // A key a menu took (the draft's 1-4) is not also a skill's press once the menu closes.
+        if (handled) foreach (var s in Skills) latched.Remove(s);
     }
 
     public override void _Input(InputEvent e)

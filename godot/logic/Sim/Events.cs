@@ -28,6 +28,13 @@ public enum Tone { Danger, Info, Boon, Story }
 /// Release (the key pose ends: time returns, the camera eases back), Blow (each toll, cut, ember or pulse; carries its
 /// hitstop), Kill (a blow of it, or anything while a Stand holds, killed a boss: the last blow's slow orbit), End.</summary>
 public enum FlarePhase { Ready, Press, Blow, End, Release, Kill }
+/// <summary>The pressed Warden skills' event phases (Ev.Leap, Ev.Charge, Ev.Spin, Ev.SpinLine).</summary>
+public enum LeapPhase { Takeoff, Land }
+public enum ChargePhase { Start, Impact, Stop, End, Slam }
+public enum SpinPhase { Start, Tick, End, Break }
+public enum SpinLinePhase { Thrown, Split, Faded }
+/// <summary>Iron Vow's phases (Ev.Brace).</summary>
+public enum BracePhase { Start, Store, Burst }
 
 public static class Ev
 {
@@ -108,6 +115,9 @@ public static class Ev
     /// <summary>Loot landed where the filter lets it be seen: Tier is Rpg.LootTier (its beam and its sound).</summary>
     public sealed class Drop : CombatEvent { public int Tier; public double X, Z; public bool Emphasised, Quiet; public PickupKind Kind; }
     public sealed class LevelUp : CombatEvent { public int Level; }
+    /// <summary>(M3) Her calling taught a slot of its build (taught_builds.json) at a level reached in the campaign: the
+    /// skill, the slot it went to (-1: carried by day but not in this fight), its cast form.</summary>
+    public sealed class Taught : CombatEvent { public string Skill = "", Cast = ""; public int Slot = -1, Level; }
     /// <summary>A weapon evolved; out of a chest, the chest's opening shows it, not this.</summary>
     public sealed class Evolve : CombatEvent { public string Weapon = "", Into = ""; public bool Chest; }
 
@@ -116,6 +126,40 @@ public static class Ev
 
     public sealed class Discovery : CombatEvent { public string Id = ""; }
     public sealed class Dash : CombatEvent { public double X0, Z0, X1, Z1; }
+    /// <summary>A step of the dash's growth taken (Content/DashSteps.cs): the view announces it by its Id.</summary>
+    public sealed class DashStep : CombatEvent { public string Id = ""; }
+    /// <summary>Hard Landing: a dash ended and shoved the lesser things round her aside.</summary>
+    public sealed class HardLanding : CombatEvent { public double X, Z, Radius; }
+    /// <summary>A channelled skill (CastMode.Channel) began (On) or ended, on its slot.</summary>
+    /// <summary>Resolve moved a whole point or more since the last told (Sim/Resolve.cs: M4's bar).</summary>
+    public sealed class Resolve : CombatEvent { public double Value, Max, Delta; public ResolveReason Reason; }
+    /// <summary>A campaign press went off (Battle.CastPose): her walk at Walk for Time seconds, her feet planted Plant
+    /// seconds first (a heavy commit), aimed at (X, Z); Heavy, its own heavy swing.</summary>
+    public sealed class Cast : CombatEvent { public string Weapon = ""; public int Slot; public double Walk, Time, Plant, X, Z; public bool Heavy; }
+    /// <summary>A kindled skill's key pressed (Battle.KindledPress): what it did (now, riposte, flare, command) and until when.</summary>
+    public sealed class KindlePress : CombatEvent { public string Weapon = ""; public int Slot; public Content.KindlePress Mode; public double Until; }
+    public sealed class Channel : CombatEvent { public string Weapon = ""; public int Slot; public bool On; public double X, Z; }
+    /// <summary>Heroic Leap (Sim/PressedWarden.cs). Takeoff: she leaves (X0, Z0) for (X1, Z1), Dur seconds in the air,
+    /// and lands in a ring of Radius there (the view draws the ring at once: everything in it at landing is struck, and
+    /// nothing outside). Land: she is down at (X1, Z1) and the ring strikes (Hit things struck; a heave and a shake
+    /// come with it).</summary>
+    public sealed class Leap : CombatEvent { public LeapPhase Phase; public double X0, Z0, X1, Z1, Dur, Radius; public int Hit; }
+    /// <summary>Shield Charge (Sim/PressedWarden.cs). Start: from (X, Z) along (DX, DZ) to (X1, Z1) (where it would end
+    /// unstopped), Dur seconds. Impact: Target struck and thrown aside at (X, Z). Stop: Target (a champion or boss) stopped
+    /// her and is stunned. End: she is done at (X, Z). Slam: the Turn's slam, Radius round (X, Z).</summary>
+    public sealed class Charge : CombatEvent { public ChargePhase Phase; public double X, Z, DX, DZ, X1, Z1, Dur, Radius; public int Target = -1; }
+    /// <summary>Bladestorm's spin (Sim/PressedWarden.cs). Start, then a Tick each blow of the storm (Heavy: the Hand's or
+    /// its own heavy count; a heavy tick throws a line), End (released or out of time: it may still be broken for a breath),
+    /// Break (the second key: a heavy blow of Radius round her, the storm over; Grow: what the storm spent made of it, x1
+    /// at half a second to x1.6 at its longest, on its damage and its Radius).</summary>
+    public sealed class Spin : CombatEvent { public SpinPhase Phase; public double X, Z, Radius; public bool Heavy; public double Grow = 1; }
+    /// <summary>A Sunder line Bladestorm threw (Id: the same line through its life): Thrown pending on the ground, Split at
+    /// the break (it strikes all along it), Faded unbroken (it deals nothing).</summary>
+    public sealed class SpinLine : CombatEvent { public SpinLinePhase Phase; public int Id; public double X0, Z0, X1, Z1, Width; }
+    /// <summary>Iron Vow (Sim/PressedWarden.cs). Start: she plants at (X, Z) and braces (Radius: the ring it will burst in).
+    /// Store: a blow on her in the brace, halved, a share kept (Stored: the store so far; at most one each 0.15 s). Burst: the
+    /// brace is over and the store comes out in a ring of Radius round (X, Z) (Stored: the final store; Hit: how many it struck).</summary>
+    public sealed class Brace : CombatEvent { public BracePhase Phase; public double X, Z, Radius, Stored; public int Hit; }
     /// <summary>She is knocked down (the kit's charge caught her, Battle.KnockPlayer): held for Seconds (after her tenacity).</summary>
     public sealed class Knockdown : CombatEvent
     {

@@ -22,6 +22,15 @@
       "hold": [22, 26],
       "cancel": 26,
       "events": {"launch": 4, "impact": 22}
+    },
+    "sword_back": {
+      "contact": [4]
+    },
+    "sword_fore": {
+      "contact": [5]
+    },
+    "sword_heavy": {
+      "contact": [6]
     }
   }
 }

@@ -95,7 +95,7 @@ public class BlessingTests
     public void Iron_vow_comes_back_while_nothing_reaches_you()
     {
         var b = BattleTests.Arena(9);
-        for (int r = 0; r < 3; r++) b.AddBoon("iron_vow");
+        for (int r = 0; r < 3; r++) b.AddBoon("boon_iron_vow");
         Tick(b, 4.2);
         Assert.Equal(b.MaxHp * 0.24, b.Player.Shield, 1);
         var r1 = b.SpawnEnemy("risen", b.Player.X + 1.5, b.Player.Z)!;

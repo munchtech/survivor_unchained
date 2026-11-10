@@ -5,6 +5,7 @@
       "name": "Oathblade",
       "school": "physical",
       "behavior": "slash",
+      "press": { "kind": "hold", "builds": 10, "buildsEach": 3, "buildsMost": 9, "heavyMul": 1.5, "clip": ["sword_back", "sword_fore"], "clipHeavy": "sword_heavy", "clipRate": 1.6, "clipHeavyRate": 1.5 },
       "tags": ["melee", "steel", "physical", "area"],
       "findable": true,
       "bossDamage": 1.8,
@@ -44,6 +45,7 @@
       "name": "Butcher's Cleaver",
       "school": "physical",
       "behavior": "slash",
+      "press": { "kind": "press", "wait": 0.4, "resolve": 20, "clip": ["sword_heavy"], "clipHeavy": "sword_heavy", "clipRate": 1.5, "clipHeavyRate": 1.5 },
       "tags": ["melee", "steel", "physical", "area"],
       "access": ["warden", "reaver"],
       "findable": true,
@@ -60,15 +62,6 @@
         "status": { "kind": "bleed", "chance": 0.35, "power": 0.3, "duration": 3 }
       },
       "evolutions": [
-        {
-          "id": "whirlwind",
-          "name": "Whirlwind",
-          "catalysts": ["fleetfoot", "ferocity"],
-          "description": "The chop becomes a full turn: everything around you, every time.",
-          "art": "slash_spin",
-          "mods": { "damage": 1.15, "cooldown": 0.8 },
-          "set": { "arc": 6.283 }
-        },
         {
           "id": "bonesplitter",
           "name": "Bonesplitter",
@@ -93,6 +86,7 @@
       "name": "Sunder",
       "school": "physical",
       "behavior": "slash",
+      "press": { "kind": "hold", "plant": 0.3, "builds": 12, "buildsEach": 3, "buildsMost": 9, "heavyMul": 1.5, "clip": ["sword_heavy"], "clipHeavy": "sword_heavy", "clipRate": 1.5, "clipHeavyRate": 1.5 },
       "tags": ["melee", "steel", "physical", "area", "heavy"],
       "access": ["warden"],
       "findable": true,
@@ -118,6 +112,7 @@
       "name": "Groundbreaker",
       "school": "physical",
       "behavior": "crack",
+      "press": { "kind": "press", "kindled": { "when": "crowd", "radius": 10, "count": 3, "press": "now" }, "castTime": 0.45, "plant": 0.3, "wait": 0.5, "resolve": 40, "clip": ["sword_heavy"], "clipHeavy": "sword_heavy", "clipRate": 1.5, "clipHeavyRate": 1.5 },
       "tags": ["melee", "physical", "area", "heavy"],
       "access": ["warden"],
       "findable": true,
@@ -133,6 +128,7 @@
       "name": "Rebuke",
       "school": "holy",
       "behavior": "reactive",
+      "press": { "kind": "kindle", "kindled": { "when": "block", "press": "riposte", "wait": 5 }, "aim": "self" },
       "tags": ["holy", "nova", "shield"],
       "access": ["warden"],
       "findable": true,
@@ -148,6 +144,8 @@
       "name": "Watch Bell",
       "school": "holy",
       "behavior": "toll",
+      "kindle": { "when": "crowd", "count": 4, "radius": 8 },
+      "press": { "kind": "press", "kindled": { "press": "now" }, "aim": "self" },
       "tags": ["aura", "holy", "shield", "area"],
       "access": ["warden"],
       "findable": true,
@@ -222,6 +220,7 @@
       "name": "Iron Palms",
       "school": "physical",
       "behavior": "palm",
+      "press": { "kind": "press" },
       "tags": ["melee", "physical", "area"],
       "access": ["warden", "reaver"],
       "findable": true,
@@ -264,7 +263,7 @@
       "bossDamage": 2.9,
       "art": "nova_blood",
       "description": "A sweeping graveblade that carves health out of the wound it makes.",
-      "base": { "cooldown": 2.4, "damage": 40.29, "radius": 3.25, "knockback": 0.5, "expandTime": 0.28, "heal": 3 },
+      "base": { "cooldown": 2.4, "damage": 41.9, "radius": 3.25, "knockback": 0.5, "expandTime": 0.28, "heal": 3 },
       "evolutions": [
         {
           "id": "rend_and_mend",
@@ -383,6 +382,7 @@
       "name": "Gale Chakram",
       "school": "physical",
       "behavior": "chakram",
+      "press": { "kind": "press" },
       "tags": ["projectile", "thrown", "steel", "physical"],
       "access": ["stalker", "warden"],
       "findable": true,
@@ -418,6 +418,7 @@
       "name": "Judgement Disc",
       "school": "holy",
       "behavior": "bounce",
+      "press": { "kind": "press", "kindled": { "when": "crowd", "radius": 10, "count": 1, "press": "now" }, "wait": 0.3, "resolve": 25 },
       "tags": ["projectile", "thrown", "bounce", "holy"],
       "access": ["stalker", "warden"],
       "findable": true,
@@ -979,6 +980,7 @@
       "name": "Dawnpulse",
       "school": "holy",
       "behavior": "nova",
+      "press": { "kind": "press", "kindled": { "when": "crowd", "radius": 4, "count": 3, "press": "flare", "wait": 6 }, "aim": "self", "wait": 0.4, "resolve": 30 },
       "tags": ["nova", "area", "spell", "holy"],
       "access": ["warden", "arcanist"],
       "findable": true,
@@ -1020,6 +1022,7 @@
       "name": "Hallowed Ground",
       "school": "holy",
       "behavior": "zone",
+      "press": { "kind": "kindle", "kindled": { "when": "crowd", "radius": 5, "count": 3, "press": "flare", "wait": 8 }, "aim": "self" },
       "tags": ["zone", "area", "aura", "holy"],
       "access": ["warden", "arcanist"],
       "findable": true,
@@ -1373,6 +1376,7 @@
       "name": "Dawn's Judgement",
       "school": "holy",
       "behavior": "bounce",
+      "press": { "kind": "press", "wait": 0.3, "resolve": 25 },
       "tags": ["projectile", "thrown", "bounce", "nova", "holy"],
       "bossDamage": 2.2,
       "art": "disc_reckon",
@@ -1468,6 +1472,93 @@
           ]
         }
       ]
+    },
+    {
+      "id": "heroic_leap",
+      "name": "Heroic Leap",
+      "school": "physical",
+      "behavior": "leap",
+      "cast": "press",
+      "press": { "kind": "press", "aim": "point" },
+      "tags": ["melee", "physical", "area", "heavy"],
+      "access": ["warden"],
+      "bossDamage": 1.5,
+      "art": "heroic_leap",
+      "description": "You leap where you aim, untouchable in the air, and come down blade first: everything in the ring is struck, thrown back and knocked down.",
+      "base": { "cooldown": 8, "damage": 130, "range": 9, "minRange": 3, "radius": 3.5, "air": 0.62, "knockback": 2.5, "stun": 0.8, "stagger": 0.3 },
+      "evolutions": []
+    },
+    {
+      "id": "shield_charge",
+      "name": "Shield Charge",
+      "school": "physical",
+      "behavior": "charge",
+      "cast": "press",
+      "press": { "kind": "press", "aim": "point" },
+      "tags": ["melee", "physical", "shield"],
+      "access": ["warden"],
+      "art": "shield_charge",
+      "description": "Shield first, you charge 8 m with a barrier of 15% of your health: what stands in the way is struck and thrown aside, and a champion that stops you is stunned.",
+      "base": { "cooldown": 7, "damage": 40, "range": 8, "rushTime": 0.3, "barrier": 0.15, "duration": 4, "knockback": 2.2, "stun": 1 },
+      "evolutions": [
+        {
+          "id": "pile_driver",
+          "name": "Pile Driver",
+          "catalysts": ["ironhide"],
+          "description": "The charge ends in a slam: everything within 3 m is struck harder and stunned for 1 s.",
+          "art": "shield_charge_slam",
+          "set": { "radius": 3, "slam": 1.4 }
+        }
+      ]
+    },
+    {
+      "id": "iron_vow",
+      "name": "Iron Vow",
+      "school": "physical",
+      "behavior": "brace",
+      "kindle": { "any": [ { "when": "windup", "big": true, "radius": 3, "within": 0.6 }, { "when": "crowd", "count": 5, "radius": 3 } ] },
+      "press": { "kind": "press", "kindled": { "press": "now" }, "aim": "self", "plant": 0.3 },
+      "tags": ["shield", "physical", "area"],
+      "access": ["warden"],
+      "bossDamage": 1.2,
+      "art": "iron_vow",
+      "description": "You plant your feet and swear it: for 2 s every blow on you lands at half, and a fifth of each is kept. Then it all comes back out of you in a ring.",
+      "base": { "cooldown": 10, "damage": 30, "radius": 5, "knockback": 1.2, "stun": 0.4, "brace": 2, "plant": 0.3, "store": 0.2, "storeMul": 3, "halve": 0.5 },
+      "evolutions": []
+    },
+    {
+      "id": "bladestorm",
+      "name": "Bladestorm",
+      "school": "physical",
+      "behavior": "spin",
+      "cast": "channel",
+      "press": { "kind": "channel", "aim": "self", "wait": 0, "drain": 28 },
+      "tags": ["melee", "steel", "physical", "area", "heavy"],
+      "bossDamage": 1.6,
+      "art": "slash_spin",
+      "description": "Hold the Cleaver's key and you spin, blade out, cutting everything around you; every fourth turn throws a Sunder line. Press Sunder's key to break the storm with one great blow, the greater the longer you spun, and every line splits at once. Out of the storm, Sunder's key swings Sunder.",
+      "_doc": "In the campaign with the Warden's Resolve (Sim/Resolve.cs) the spin drains press.drain Resolve a second while held, with no cap and no cooldown (press.wait 0), and ends at 0; its break grows with the Resolve the storm spent (x1 at none to breakGrow at breakSpent, 100). cooldown, channelTime and breakFrom are the arena's (self-firing) and a campaign without Resolve's.",
+      "base": {
+        "cooldown": 6,
+        "damage": 10.8,
+        "radius": 3.2,
+        "knockback": 0.3,
+        "channelTime": 3,
+        "channelGap": 0.3,
+        "pace": 0.85,
+        "heavyEvery": 4,
+        "line": 7,
+        "beamWidth": 1.2,
+        "maxLines": 6,
+        "lineDamage": 33.6,
+        "breakDamage": 60,
+        "breakRadius": 4,
+        "breakStun": 0.5,
+        "breakKnockback": 1.5,
+        "breakWindow": 1,
+        "breakFrom": 0.5,
+        "breakGrow": 1.6
+      }
     }
   ],
   "unions": [
@@ -1542,6 +1633,14 @@
       "b": "moonbrand",
       "into": "starfall",
       "description": "Moons fall among them and break into motes that hunt the strongest."
+    },
+    {
+      "id": "bladestorm",
+      "name": "Bladestorm",
+      "a": "cleaver",
+      "b": "sunder",
+      "into": "bladestorm",
+      "description": "Cleaver and Sunder become one storm of steel: she spins, blade out, through the crowd, and everything around her is cut, again and again."
     }
   ]
 }

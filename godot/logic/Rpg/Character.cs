@@ -161,10 +161,24 @@ public sealed class CharacterData
     public List<string> Discovered = new();
     /// <summary>Combat skills learned for the day (Rpg/SkillBook.cs), and those carried.</summary>
     public List<string> Skills = new(), Slotted = new();
+    /// <summary>(M3) The taught build's levels granted so far (Content/TaughtBuilds.Grant): a slot the player took off
+    /// is not put back.</summary>
+    public int TaughtUpTo;
     /// <summary>Every art the survivor knows (Rpg/ArtBook.cs).</summary>
     public List<string> Known = new();
     /// <summary>How far each art has come, and its facets.</summary>
     public Dictionary<string, ArtState> Arts = new();
+    /// <summary>The dash's steps taken (Content/DashSteps.cs), in the order taken; a repeatable one once a time.</summary>
+    public List<string> DashSteps = new();
+
+    /// <summary>Take a step of the dash's growth (the design lead's route calls this, a Wick or a level-up; or
+    /// Journey.GrantDashStep, which also tells the fight). False if unknown or already taken as often as it may be.</summary>
+    public bool GrantDashStep(string id)
+    {
+        if (!Content.DashSteps.CanTake(DashSteps, id)) return false;
+        DashSteps.Add(id);
+        return true;
+    }
     /// <summary>The Lamps lit, in three layouts (Rpg/LampBook.cs); null in a save from before them.</summary>
     public LampState? Lamps;
     public List<Condition> Conditions = new();
@@ -563,6 +577,8 @@ public sealed class CombatKit
     public AbilityKind Ability;
     public int ArtRank = 1;
     public List<string> Facets = new();
+    /// <summary>The dash's steps taken (CharacterData.DashSteps), into BattleSetup.DashSteps.</summary>
+    public List<string> DashSteps = new();
     /// <summary>What the lit lamps bring (by day or by night), and the reflexes' ranks (ArtBook's).</summary>
     public LampLoadout Lamps = LampLoadout.None;
     public Dictionary<string, int> ReflexRanks = new();
@@ -693,12 +709,13 @@ public static class Character
     {
         var a = Callings.Archetype(ch.Archetype);
         var lamps = LampBook.Loadout(ch, night);
-        // The art in hand is the dash form. The calling's Kin takes its facets from the lamps alone; a
-        // learned form keeps the facets its ranks opened (ArtBook).
+        // The art in hand is the dash form. A way of moving takes its facets from the lamps and the dash's
+        // steps alone (the steps ride BattleSetup.DashSteps); any other art keeps the facets its ranks opened (ArtBook).
         var kit = new CombatKit
         {
             Ability = ch.AbilityKind, ArtRank = ArtBook.Rank(ch, ch.Ability), Lamps = lamps,
-            Facets = ch.Ability == lamps.Kin ? new() : ArtBook.Facets(ch, ch.Ability),
+            Facets = ch.Ability == lamps.Kin || ArtBook.Movement(ch.Ability) ? new() : ArtBook.Facets(ch, ch.Ability),
+            DashSteps = ch.DashSteps.ToList(),
         };
         foreach (var r in lamps.Reflexes) kit.ReflexRanks[r.Art] = ArtBook.Rank(ch, r.Art);
         var st = kit.Stats;
@@ -800,7 +817,7 @@ public static class Character
     {
         // Skills the gear grants, while there is room for them.
         foreach (var ar in it.Affixes)
-            if (Items.Affix(ar.Id)?.Grants is { } g && SkillBook.Carries(ch, g) && into.All(w => w.Id != g) && into.Count < Content.Weapons.MaxWeapons)
+            if (Items.Affix(ar.Id)?.Grants is { } g && SkillBook.Carries(ch, g) && into.All(w => w.Id != g) && Content.Weapons.SlotsOf(into.Select(w => w.Id)) + Content.Weapons.SlotCost(g) <= Content.Weapons.MaxWeapons)
                 into.Add((g, 1 + ar.Tier / 2));
         // A weapon whose skill the calling may not carry is worn for its numbers; its skill lies idle.
         if (def.Weapon != null && s is (EquipSlot.Weapon or EquipSlot.Offhand) && SkillBook.Carries(ch, def.Weapon.Id))
@@ -819,10 +836,10 @@ public static class Character
         var gear = new List<(string Id, int Rank)>();
         foreach (var s in Items.EquipSlots)
             if (ch.Equipment[s] is { } it) GearSkills(ch, it, Items.Get(it.Def), s, gear);
-        // Battle.AddWeapon's rule: a known skill, once, MaxWeapons at most.
+        // Battle.AddWeapon's rule: a known skill, once, MaxWeapons slots at most (a union takes two).
         var o = new List<(string Id, int Rank)>();
         foreach (var (id, rank) in gearOnly ? gear : gear.Concat(SkillBook.Carried(ch)))
-            if (o.Count < Content.Weapons.MaxWeapons && o.All(w => w.Id != id) && Content.Weapons.All.ContainsKey(id)) o.Add((id, rank));
+            if (o.All(w => w.Id != id) && Content.Weapons.All.ContainsKey(id) && Content.Weapons.SlotsOf(o.Select(w => w.Id)) + Content.Weapons.SlotCost(id) <= Content.Weapons.MaxWeapons) o.Add((id, rank));
         return o;
     }
 

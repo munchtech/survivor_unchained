@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using SurvivorUnchained.Content;
 using SurvivorUnchained.Play;
 using SurvivorUnchained.Play.Bosses;
 using SurvivorUnchained.Sim;
@@ -93,7 +94,9 @@ public static class Pilot
             if (Dist(gx, gz, p.X, p.Z) > 1.2) { mx = gx - p.X; mz = gz - p.Z; } else { mx = 0; mz = 0; }
         }
         else if (stone != null && near > engage + 1) { mx = stone.X - p.X; mz = stone.Z - p.Z; }
-        else if (nearest != null && near > engage) { mx = nearest.X - p.X; mz = nearest.Z - p.Z; }
+        // (M3: in the campaign the engage distance is to its edge: a boss's girth is not walked into, where his touch hurts;
+        // the arena keeps the center, byte-same)
+        else if (nearest != null && near - (b.Campaign ? nearest.Radius : 0) > engage) { mx = nearest.X - p.X; mz = nearest.Z - p.Z; }
         // In the press the wall stands: still, where Planted and The Wall Holds pay and every blow is a chance at a stone.
         else if (nearest != null && wall) { mx = 0; mz = 0; }
         else if (nearest != null) { mx = -(nearest.Z - p.Z); mz = nearest.X - p.X; }
@@ -128,11 +131,19 @@ public static class Pilot
     /// <returns>Whether a draught was drunk.</returns>
     /// <param name="rooted">Read the kit's telegraphs (Sim/Tells.cs): rooted in a marked blow, dash out; dragged into a
     /// pull's heart past walking out, dash out. A caller with hands that did not see it passes false.</param>
-    public static bool Act(Battle b, Journey j, double mx, double mz, SurvivorUnchained.Play.Bosses.ArenaBoss? boss = null, bool lunges = true, bool aimsFlare = true, bool rooted = true, bool crush = true)
+    public static bool Act(Battle b, Journey j, double mx, double mz, SurvivorUnchained.Play.Bosses.ArenaBoss? boss = null, bool lunges = true, bool aimsFlare = true, bool rooted = true, bool crush = true, bool presses = false, PressHands? hands = null)
     {
         var p = b.Player;
         if (rooted && b.ActiveTells.Count > 0) KitDash(b, mx, mz);
-        if (rooted && b.ActiveTells.Count > 0) ClosingDash(b);
+        if (rooted && b.ActiveTells.Count > 0) ClosingDash(b, presses || hands is { GripOnly: false });
+        // The campaign's grips (ARPG.md 3.1): anyone holds the swing on what is near; a pressing hand presses the rest.
+        // (M3: a hand on the one press plan, data/content/press_plan.json, grips and presses through it)
+        if (hands != null) PressPlan.Run(b, hands, rooted);
+        else
+        {
+            if (b.Campaign) Grips(b);
+            if (presses) PressSkills(b, rooted);
+        }
         // A champion winding up a lunge close by: dash across its line, as anyone with a dash learns to.
         // (Not a boss: its blows are marked on the ground, and Boss reads them by their shape.)
         if (p.DashCharges > 0 && lunges)
@@ -329,13 +340,120 @@ public static class Pilot
     }
 
     /// <summary>Inside a closing, near its way out: dash through it.</summary>
-    static void ClosingDash(Battle b)
+    static void ClosingDash(Battle b, bool leaps = false)
     {
         var p = b.Player;
-        if (p.DashCharges <= 0 || p.DashT > 0 || GapOut(b, lastDeft) is not var (gx, gz)) return;
+        if (p.DashT > 0 || GapOut(b, lastDeft) is not var (gx, gz)) return;
         double dx = gx - p.X, dz = gz - p.Z;
-        if (dx * dx + dz * dz < 8.5 * 8.5) b.Dash(dx, dz);
+        if (dx * dx + dz * dz >= 8.5 * 8.5) return;
+        if (p.DashCharges > 0) { b.Dash(dx, dz); return; }
+        // No dash left: a carried Heroic Leap goes out the same way.
+        if (leaps && b.Weapons.Find(w => w.Behavior == WeaponBehavior.Leap && w.Timer <= 0) is { } lw)
+        {
+            double l = Math.Max(0.01, Math.Sqrt(dx * dx + dz * dz));
+            b.PressSkill(lw.Slot, p.X + dx / l * 9, p.Z + dz / l * 9);
+        }
     }
+
+    /// <summary>The pressed skills a player carries (P7: Heroic Leap, Shield Charge, Bladestorm), pressed as one who
+    /// knows them would: the leap at a pack of five or more within 9 m (its center), the charge into four or more in
+    /// the 8 m line ahead, the storm held while four or more stand within 3.5 m and broken once two lines are pending,
+    /// with half a second left, or as the crowd thins with a line down (out of a storm, Sunder's key swung at what is near); Iron Vow when three or more stand within 3 m, or
+    /// (one who reads the marks: sees) a marked blow about to land on her.</summary>
+    /// <summary>The campaign's held swings (a hold record: Sunder, Oathblade): held at the nearest foe within its reach and
+    /// a step, released with none.</summary>
+    static void Grips(Battle b)
+    {
+        var p = b.Player;
+        foreach (var w in b.Weapons)
+        {
+            if (!w.Hold) continue;
+            double reach = (w.Num(s => s.Reach) ?? 2.6) + 1.5;
+            var near = b.NearestHostile(p.X, p.Z, reach);
+            if (near == null) b.HoldSkill(w.Slot, false);
+            else b.HoldSkill(w.Slot, true, near.X, near.Z);
+        }
+    }
+
+    /// <summary>A campaign press the hand knows no better rule for (a spender, a wait): at the nearest foe in its reach
+    /// when ready and paid for.</summary>
+    static bool PressPlain(Battle b, WeaponInst w)
+    {
+        if (w.Press == null || w.Hold || w.Cast != CastMode.Press || w.Timer > 0) return false;
+        if (b.Resolve.On && b.Resolve.Value < (w.Press.Resolve ?? 0)) return false;
+        var p = b.Player;
+        double reach = w.Press.Aim == PressAim.Self ? (w.Num(s => s.Radius) ?? 3.5) : w.Press.Reach ?? w.AimRange;
+        var near = b.NearestHostile(p.X, p.Z, reach);
+        return near != null && b.PressSkill(w.Slot, near.X, near.Z);
+    }
+
+    static void PressSkills(Battle b, bool sees = true)
+    {
+        var p = b.Player;
+        if (p.Leap != null || b.Art.Rush != null || p.DashT > 0) return;
+        foreach (var w in b.Weapons)
+        {
+            if (!w.Pressed || w.DisabledT > 0) continue;
+            if (w.Behavior == WeaponBehavior.Leap && w.Timer <= 0)
+            {
+                var near = b.HostilesInRadius(p.X, p.Z, 9);
+                if (near.Count < 5) continue;
+                Enemy? best = null; int most = 0;
+                foreach (var e in near)
+                {
+                    int n = 0;
+                    foreach (var o in near) if ((o.X - e.X) * (o.X - e.X) + (o.Z - e.Z) * (o.Z - e.Z) <= 3.5 * 3.5) n++;
+                    if (n > most) { most = n; best = e; }
+                }
+                if (best == null || most < 5) continue;
+                double cx = 0, cz = 0; int k = 0;
+                foreach (var o in near) if ((o.X - best.X) * (o.X - best.X) + (o.Z - best.Z) * (o.Z - best.Z) <= 3.5 * 3.5) { cx += o.X; cz += o.Z; k++; }
+                b.PressSkill(w.Slot, cx / k, cz / k);
+                return;
+            }
+            if (w.Behavior == WeaponBehavior.Charge && w.Timer <= 0)
+            {
+                double fx = Math.Sin(p.Facing), fz = Math.Cos(p.Facing);
+                int n = 0;
+                foreach (var e in b.HostilesInRadius(p.X + fx * 4, p.Z + fz * 4, 4.6))
+                {
+                    double ax = e.X - p.X, az = e.Z - p.Z, along = ax * fx + az * fz, side = Math.Abs(ax * fz - az * fx);
+                    if (along > 0 && along <= 8 && side <= 1.2 + e.Radius) n++;
+                }
+                if (n >= 4) { b.PressSkill(w.Slot, p.X + fx * 8, p.Z + fz * 8); return; }
+                continue;
+            }
+            if (w.Behavior == WeaponBehavior.Brace)
+            {
+                if (w.Timer > 0 || b.Bracing) continue;
+                bool crowd = b.HostilesInRadius(p.X, p.Z, 3).Count >= 3;
+                bool blow = false;
+                if (sees) foreach (var bl in b.Blows) if (bl.Kind == TelegraphKind.Blow && bl.T <= 0.6 && bl.Hit(p.X, p.Z, p.Radius + 0.3)) { blow = true; break; }
+                if (crowd || blow) { b.PressSkill(w.Slot, p.X, p.Z); return; }
+                continue;
+            }
+            if (w.Behavior == WeaponBehavior.Spin)
+            {
+                int n = b.HostilesInRadius(p.X, p.Z, 3.5).Count;
+                if (w.Channeling)
+                {
+                    bool late = w.ChannelMax - w.ChannelT <= 0.5;
+                    if (w.Slot2 >= 0 && (w.Lines.Count >= 2 || late || (n < 4 && w.Lines.Count > 0))) { b.HoldSkill(w.Slot, false); b.PressSkill(w.Slot2, p.X, p.Z); }
+                    else b.HoldSkill(w.Slot, n >= 4);
+                }
+                else if (w.Timer <= 0 && n >= 4) { b.HoldSkill(w.Slot, true); b.PressSkill(w.Slot, p.X + Math.Sin(p.Facing) * 2, p.Z + Math.Cos(p.Facing) * 2); }
+                else
+                {
+                    b.HoldSkill(w.Slot, false);
+                    // Out of a storm (on its cooldown, or too few for one), Sunder's key swings Sunder at what is in reach.
+                    if (w.Slot2 >= 0 && !Firing.InStorm(b, w) && b.HostilesInRadius(p.X, p.Z, 3.5).Count > 0) b.PressSkill(w.Slot2, p.X, p.Z);
+                }
+                continue;
+            }
+            if (w.Behavior is not (WeaponBehavior.Leap or WeaponBehavior.Charge or WeaponBehavior.Brace) && PressPlain(b, w)) return;
+        }
+    }
+
 
     /// <summary>The kit's telegraphs that only a dash answers: rooted inside a marked blow, or dragged into a pull's
     /// heart faster than she can walk out of it before it lands. Out, away from its heart (seen as Steer saw it).</summary>

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using SurvivorUnchained.Play;
 using Xunit;
@@ -59,5 +60,24 @@ public class HerEventsTests
         Assert.Empty(HerEvents.Load(text));
         Assert.Empty(HerEvents.Load("not json"));
         Assert.Empty(HerEvents.Load(""));
+    }
+
+    // The pack and M3's contact measure share the file: a pack replaces its own clips' entries and keeps the others.
+    [Fact]
+    public void APackKeepsTheClipsItDoesNotBuild()
+    {
+        var none = System.Array.Empty<(string, int)>();
+        var file = new Dictionary<string, HerEvents.Beats>
+        {
+            ["sword_fore"] = new(new[] { 5 }, null, null, null, none),
+            ["heroic_leap"] = new(new[] { 40 }, null, null, null, none),
+            ["old_p4"] = new(new[] { 9 }, null, null, null, none),
+        };
+        var packed = new Dictionary<string, HerEvents.Beats> { ["heroic_leap"] = new(new[] { 44 }, new[] { 44, 48 }, 58, null, none) };
+        var all = HerEvents.Merge(file, packed, new[] { "heroic_leap", "old_p4", "idle_warden" });
+        Assert.Equal(new[] { "heroic_leap", "sword_fore" }, all.Keys.OrderBy(k => k, System.StringComparer.Ordinal).ToArray());
+        Assert.Equal(new[] { 44 }, all["heroic_leap"].Contact);
+        Assert.Equal(new[] { 5 }, all["sword_fore"].Contact);
+        Assert.Equal(HerEvents.Serialize(all), HerEvents.Serialize(HerEvents.Load(HerEvents.Serialize(all))));
     }
 }

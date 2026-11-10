@@ -68,8 +68,7 @@ public sealed partial class ArenaRun
         if ((sampleT -= dt) <= 0)
         {
             sampleT = 0.25;
-            herTrail.Enqueue((Seconds, p.X, p.Z));
-            while (herTrail.Count > 0 && herTrail.Peek().T < Seconds - d.StandFor - 0.3) herTrail.Dequeue();
+            StandClock.Sample(herTrail, Seconds, p.X, p.Z, d.StandFor);
         }
         CutOff(d);
         if (!on) { leaders.Clear(); return; }
@@ -274,38 +273,15 @@ public sealed partial class ArenaRun
         var p = B!.Player;
         // Held where she is (knocked down, rooted) is not standing: the clock starts again once she can move.
         if (p.RootT > 0) { standReady = Seconds + d.StandFor; return; }
-        // (a full window behind her, all of it within StandMoved of where she is)
-        if (herTrail.Peek().T > Seconds - d.StandFor) return;
-        foreach (var (_, x, z) in herTrail) if (Dist(x, z, p.X, p.Z) >= d.StandMoved) return;
-        // The nearest fodder at least StandFrom off (one at her elbow dies in its windup to the stander's own weapons,
-        // and a felled charger's lane is called off); none that far, the nearest.
-        Enemy? near = null, close = null;
-        double nd = double.MaxValue, cd = double.MaxValue;
-        foreach (var e in B.HostilesInRadius(p.X, p.Z, d.StandNear))
-        {
-            if (e.Boss || e.Elite || e.Scripted || e.HoldUntil > B.Time || e.State != EnemyState.Active) continue;
-            double dd = Dist(e.X, e.Z, p.X, p.Z);
-            if (dd >= d.StandFrom && dd < nd) { nd = dd; near = e; }
-            if (dd < cd) { cd = dd; close = e; }
-        }
-        near ??= close;
+        // (a full window behind her, all of it within StandMoved of where she is: StandClock, shared with the story fights)
+        if (!StandClock.Still(herTrail, Seconds, p.X, p.Z, d)) return;
+        var near = StandClock.First(B, d);
         if (near == null) return;
         standReady = Seconds + d.StandCooldown;
         StandCharges++;
         Cast("charge", near, p.X, p.Z, scale: d.StandScale);
         // A second from another side (StandPair): one step answers both lanes only if she reads both.
-        if (d.StandPair < 2) return;
-        double a0 = Math.Atan2(near.Z - p.Z, near.X - p.X);
-        Enemy? other = null; double od = double.MaxValue;
-        foreach (var e in B.HostilesInRadius(p.X, p.Z, d.StandNear))
-        {
-            if (e == near || e.Boss || e.Elite || e.Scripted || e.HoldUntil > B.Time || e.State != EnemyState.Active) continue;
-            double da = Math.Abs(Math.Atan2(Math.Sin(Math.Atan2(e.Z - p.Z, e.X - p.X) - a0), Math.Cos(Math.Atan2(e.Z - p.Z, e.X - p.X) - a0)));
-            if (da < Math.PI / 2) continue;
-            double dd = Dist(e.X, e.Z, p.X, p.Z);
-            if (dd < d.StandFrom) dd += 1000;
-            if (dd < od) { od = dd; other = e; }
-        }
+        var other = StandClock.Second(B, d, near);
         if (other != null) Cast("charge", other, p.X, p.Z, scale: d.StandScale);
     }
 

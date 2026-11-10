@@ -28,6 +28,29 @@ public partial class WorldScene : Node3D, IZoneLook
     public Battle? Battle;
     readonly FollowCamera cam;
     public bool SimPaused;
+    /// <summary>The skill keys, one sim step: held state to each slot (a channel runs while held), and a press kept for
+    /// the Buffer, fired toward the cursor's ground point, or with none her facing times the skill's range.</summary>
+    void Skills(Battle b)
+    {
+        // The pointer each step (with none, her facing ahead): a held skill (the grips, campaign) repeats at it.
+        var pt = Pointer();
+        {
+            var p0 = b.Player;
+            b.AimSkills(pt?.X ?? p0.X + Math.Sin(p0.Facing) * 6, pt?.Z ?? p0.Z + Math.Cos(p0.Facing) * 6);
+        }
+        for (int i = 0; i < skillHeld.Length; i++)
+        {
+            b.HoldSkill(i, Held(Controls.Skills[i]));
+            if (Pressed(Controls.Skills[i])) skillHeld[i] = Buffer;
+            if (skillHeld[i] <= 0) continue;
+            // (A kindled skill's key too, in the campaign: its riposte, flare or now.)
+            if (b.OnSlot(i) is not { Keyed: true } w) { skillHeld[i] = 0; continue; }
+            var p = b.Player;
+            var aim = Pointer() ?? (p.X + Math.Sin(p.Facing) * w.AimRange, p.Z + Math.Cos(p.Facing) * w.AimRange);
+            skillHeld[i] = b.PressSkill(i, aim.X, aim.Z) ? 0 : skillHeld[i] - Step;
+        }
+    }
+
     /// <summary>A held camera (the title, a cutscene) instead of the follow camera.</summary>
     public (Vector3 Pos, Vector3 Look)? Showcase;
     /// <summary>A cinematic has the camera: the follow camera waits.</summary>
@@ -35,6 +58,13 @@ public partial class WorldScene : Node3D, IZoneLook
     /// <summary>What the survivor is asked to do (the controls, or the autopilot).</summary>
     public Func<(double X, double Z)> Move = () => (0, 0);
     public Func<Act, bool> Pressed = _ => false;
+    /// <summary>An action held now (the skill keys, for a channel), and the cursor's point on the ground (null with
+    /// no cursor: a pad, or the pointer off the window).</summary>
+    public Func<Act, bool> Held = _ => false;
+    /// <summary>(M3) Hands on the sim each step after the keys (the autopilot's press plan: Sim/PressPlan.cs): what they hold
+    /// and press goes through Battle.HoldSkill/PressSkill, as the keys' do.</summary>
+    public Action<Battle>? Hands;
+    public Func<(double X, double Z)?> Pointer = () => null;
     /// <summary>Each fixed step, before the fight's (the zone's own logic).</summary>
     public Action<double> OnStep = _ => { };
     /// <summary>What the fight said this frame, for the interface and the world.</summary>
@@ -53,12 +83,15 @@ public partial class WorldScene : Node3D, IZoneLook
     double acc, hitstop, hitstopCd, fightTime, viewTime, damageFlash, slowmo, fall;
     // Her auto-attack's first hit (BattleFx.FirstHitStop): a short hitstop that lands as the blade meets the body.
     double stopDue = -1, stopLen;
+    bool chargeHitStopped;
     // (--aa-beats: the beats are shot with hitstops on, whatever the saved Motion setting)
     static readonly bool AaBeats = Args.Has("aa-beats");
     static readonly bool WorldClockLive = Args.Has("world-clock-live");
 
     /// <summary>A dash or an art pressed a little early, kept until it can fire (seconds left).</summary>
     double dashHeld, artHeld;
+    /// <summary>Each skill slot's press, kept for the Buffer as the dash's is.</summary>
+    readonly double[] skillHeld = new double[Content.Weapons.MaxWeapons];
     const double Buffer = 0.12;
 
     /// <summary>The world slowed to under a third for a while (an evolution's first volley).</summary>
@@ -250,7 +283,12 @@ public partial class WorldScene : Node3D, IZoneLook
         fightTime += fightDt;
         if (b != null && !SimPaused) flare.Watch(b);
         // A press kept from before a pause (a draft, a chest) is not spent after it.
-        if (SimPaused) dashHeld = artHeld = 0;
+        if (SimPaused)
+        {
+            dashHeld = artHeld = 0;
+            // (the skill keys pressed in a pause are taken and dropped: a digit that picked a card casts nothing after)
+            for (int i = 0; i < skillHeld.Length; i++) { skillHeld[i] = 0; Pressed(Controls.Skills[i]); }
+        }
         if (b != null && !SimPaused)
         {
             acc += Math.Min(fightDt, 0.1);
@@ -267,6 +305,8 @@ public partial class WorldScene : Node3D, IZoneLook
                 if (dashHeld > 0) dashHeld = b.Dash(mx, mz) ? 0 : dashHeld - Step;
                 if (Pressed(Act.Flare)) artHeld = Buffer;
                 if (artHeld > 0) artHeld = b.UseFlare(mx, mz) ? 0 : artHeld - Step;
+                Skills(b);
+                Hands?.Invoke(b);
                 OnStep(Step);
                 Perf.Begin(Perf.Part.Sim);
                 b.Tick(Step, mx, mz);
@@ -282,6 +322,7 @@ public partial class WorldScene : Node3D, IZoneLook
                 {
                     if (e is Ev.Muzzle shot) Player?.OnMuzzle(shot.Angle);
                     else if (e is Ev.Flare fl && fl.Phase == FlarePhase.Press) Player?.OnFlarePress(fl, b);
+                    else if (e is Ev.Spin or Ev.Brace) Player?.OnP7(e);
                     else if (e is Ev.Knockdown kd) { Player?.OnKnockdown(kd.Seconds); SurvivorUnchained.Play.Story.CourtTrace.Say("knock"); }
                     else if (e is Ev.Ability ab)
                     {
@@ -336,6 +377,14 @@ public partial class WorldScene : Node3D, IZoneLook
             // Her arts land with their own weight (S-17): the leap's landing, the rush's stop, the bash.
             else if (e is Ev.Ability a && a.Id is "shield_bash" or "bull_rush") s = Math.Max(s, 0.05);
             else if (e is Ev.Ability l && l.Id == "leap") s = Math.Max(s, 0.06);
+            // (P7) the skills' weight: 2-3 frames, the charge's first impact only, the champion's stop heavier
+            else if (e is Ev.Leap { Phase: LeapPhase.Land }) s = Math.Max(s, 0.045);
+            else if (e is Ev.Charge { Phase: ChargePhase.Stop }) s = Math.Max(s, 0.05);
+            else if (e is Ev.Charge { Phase: ChargePhase.Slam }) s = Math.Max(s, 0.04);
+            else if (e is Ev.Charge { Phase: ChargePhase.Impact } && !chargeHitStopped) { chargeHitStopped = true; s = Math.Max(s, 0.034); }
+            else if (e is Ev.Charge { Phase: ChargePhase.Start }) chargeHitStopped = false;
+            // (P7) the storm's break and the vow's burst: 3 frames
+            else if (e is Ev.Spin { Phase: SpinPhase.Break } || e is Ev.Brace { Phase: BracePhase.Burst }) s = Math.Max(s, 0.05);
         }
         if (s > 0) { hitstop = s; hitstopCd = s + 0.3; return; }
         // Her auto-attack's first hit only (one a swing: its hits all land in one step), on the blade's contact.
@@ -383,6 +432,7 @@ public partial class WorldScene : Node3D, IZoneLook
             Crowd.Update(b, HeightAt, viewTime);
             Perf.End(Perf.Part.Crowd);
             Fx.PlayerPos = HerDrawn;
+            Fx.Her3D = Player;
             Fx.Drawn = Drawn;
             Perf.Begin(Perf.Part.Fx);
             Fx.Update(b, FxStill ? 0 : fightDt, fightTime, FxStill ? 0 : dt);
