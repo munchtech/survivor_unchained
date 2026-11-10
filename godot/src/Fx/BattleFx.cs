@@ -375,10 +375,16 @@ public partial class BattleFx : Node3D
     {
         // (the held cut's sparks rank from where the blade met them: HeldContacts reads the frame's Ev.Slash.HitX/HitZ)
         Look.HitBudget.HeldContacts(events, sparkContact);
-        Look.HitBudget.Choose(events, (int)P7D["hit_budget.n", 4], b.Player.X, b.Player.Z, sparkless, HitBudgetSay ? sparkTally : null, sparkContact);
-        if (HitBudgetSay)
-            foreach (var t in sparkTally)
+        Look.HitBudget.Choose(events, (int)P7D["hit_budget.n", 4], b.Player.X, b.Player.Z, sparkless, sparkTally, sparkContact);
+        // The hushed hits land as ONE shared impact (main, 10 Nov: a cut through 37 bodies showing 4 bursts must still
+        // feel like 37; no specks come back): the camera's trauma grows with the hits the budget hushed, capped. (The
+        // held cut's contact mark grows with the bodies struck the same way: BattleFx.Grip.cs GripContact.)
+        foreach (var t in sparkTally)
+        {
+            Cam?.AddTrauma(Math.Min(P7D["hit_budget.shake_cap", 0.1f], P7D["hit_budget.shake_per", 0.003f] * t.Hushed));
+            if (HitBudgetSay)
                 GD.Print($"hit budget frame {Engine.GetFramesDrawn()} art {t.Art ?? "auto"} {t.School} struck {t.Struck} crits {t.Crits} crits shown {t.CritsShown} plain shown {t.PlainShown} hushed {t.Hushed}");
+        }
     }
 
     public void Burst(Vector3 at, School school, int n, float speed, float up = 1.5f, float size = 0.09f, float life = 0.45f, float gravity = 6)
