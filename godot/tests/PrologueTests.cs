@@ -549,6 +549,12 @@ public class PrologueTests
         return asked[0];
     }
 
+    /// <summary>Hold her away from a beat for a while (her own skills fire on their own, and would kill what the test waits on).</summary>
+    static void Away(Setup s, string beat, double back, double seconds)
+    {
+        for (double t = 0; t < seconds; t += 0.1) { Near(s, beat, back); Run(s, 0.1); }
+    }
+
     static void Near(Setup s, string beat, double back)
     {
         var bt = Play.Zones.Encounters.For("lowford")!.Get(beat)!;
@@ -573,8 +579,8 @@ public class PrologueTests
     public void A2_swing_waits_for_the_lone_one_awake_and_close()
     {
         var s = Make();
-        Run(s, 4);
-        Assert.DoesNotContain(s.Host.Asked, c => c.Id == "swing");
+        Away(s, "n_lone", 30, 1.0);
+        Assert.DoesNotContain(s.Host.Asked, c => c.Id == "swing");   // (she is far from the lone one)
         Near(s, "n_lone", 3);
         for (int i = 0; i < 100 && !s.Host.Asked.Any(c => c.Id == "swing"); i++) { Near(s, "n_lone", 3); Run(s, 0.1); }
         var c = Offered(s, "swing");
@@ -590,10 +596,10 @@ public class PrologueTests
     {
         // (stones lie only while the ember burns, Battle.EmberOn: the draft's night here)
         var s = Make(draft: true);
-        Run(s, 4);
-        Near(s, "n_lone", 3);
-        for (int i = 0; i < 100 && s.Zone.Night!.Standing("n_lone").Count == 0; i++) Run(s, 0.1);
-        foreach (var e in s.Zone.Night!.Standing("n_lone")) { s.B.Player.X = e.X; s.B.Player.Z = e.Z + 3; s.B.KillEnemy(e, true, null); s.J.Killed(e, true); }
+        Away(s, "n_lone", 30, 4);   // (the Rising, the lone one still standing)
+        Near(s, "n_lone", 9);
+        Run(s, 0.05);
+        foreach (var e in s.Zone.Night!.Standing("n_lone")) { s.B.Player.X = e.X; s.B.Player.Z = e.Z + 9; s.B.KillEnemy(e, true, null); s.J.Killed(e, true); }
         Run(s, 0.2);
         var c = Offered(s, "ember_ground");
         Assert.Equal(("Ember", "The light the dead carry. Gather it, and it makes you stronger.", CalloutKind.Freeze), (c.Title, c.Line, c.Kind));
@@ -604,10 +610,10 @@ public class PrologueTests
     public void A3b_ember_ring_comes_with_her_first_experience()
     {
         var s = Make();
-        Run(s, 4);
+        Away(s, "n_lone", 30, 4);
         Assert.DoesNotContain(s.Host.Asked, c => c.Id == "ember_ring");
         Near(s, "n_lone", 3);
-        for (int i = 0; i < 100 && s.Zone.Night!.Standing("n_lone").Count == 0; i++) Run(s, 0.1);
+        Run(s, 0.05);
         foreach (var e in s.Zone.Night!.Standing("n_lone")) { s.B.KillEnemy(e, true, null); s.J.Killed(e, true); }
         Run(s, 0.2);
         var c = Offered(s, "ember_ring");
@@ -647,7 +653,7 @@ public class PrologueTests
         LandOnTheThree(s);
         s.Host.TaughtIds.Add("resolve");
         s.B.Resolve.Set(s.B.Resolve.Max);
-        Run(s, 1.0);
+        Away(s, "n_three", 25, 1.0);   // (A4 seen under 2 s ago, and she is out of reach)
         Assert.DoesNotContain(s.Host.Asked, c => c.Id == "groundbreaker");
         for (int i = 0; i < 30 && !s.Host.Asked.Any(c => c.Id == "groundbreaker"); i++)
         {
