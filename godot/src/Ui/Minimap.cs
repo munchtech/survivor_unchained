@@ -304,6 +304,12 @@ public partial class Minimap : Control
         uniform sampler2D seen : filter_linear, repeat_disable;
         uniform vec2 centre = vec2(0.5);
         uniform float span = 0.2;
+        float roadMask(vec2 uv) {
+            vec3 drawn = texture(drawing, uv).rgb;
+            float age = smoothstep(0.3, 0.72, length(uv - 0.5)) * 0.5;
+            drawn = clamp((drawn - vec3(0.275, 0.157, 0.055) * age) / (1.0 - age), 0.0, 1.0);
+            return smoothstep(0.047, 0.054, (drawn.r - drawn.g) / max(drawn.r + drawn.g + drawn.b, 0.05));
+        }
         void fragment() {
             vec2 d = UV - 0.5;
             float r = length(d) * 2.0;
@@ -313,18 +319,29 @@ public partial class Minimap : Control
             // ride on it within +-8); what is drawn on it is ink at full contrast (36,28,18): the roads (the drawing's
             // dirt, told by its hue once the sheet's aged edge is taken back out) and, as a wash, the water.
             vec3 panel = vec3(0.110, 0.090, 0.075);
-            vec3 vellum = vec3(0.471, 0.412, 0.314);
-            vec3 ink = vec3(0.141, 0.110, 0.071);
+            // (fix C2: something above the disc multiplies what it shows by about 0.64, so every explored value is
+            // written 1/0.64 over what is meant to be seen; the panel is left as it was)
+            const float K = 1.5625;
+            vec3 vellum = vec3(0.471, 0.412, 0.314) * K;
+            vec3 ink = vec3(0.141, 0.110, 0.071) * K;
+            vec3 roadFill = vec3(1.0, 0.906, 0.726);
+            vec3 roadEdge = vec3(36.0, 28.0, 18.0) / 255.0 * K;
+            float px = max(fwidth(uv.x), fwidth(uv.y));
             vec3 drawn = texture(drawing, uv).rgb;
             float age = smoothstep(0.3, 0.72, length(uv - 0.5)) * 0.5;
             drawn = clamp((drawn - vec3(0.275, 0.157, 0.055) * age) / (1.0 - age), 0.0, 1.0);
             float sum = max(drawn.r + drawn.g + drawn.b, 0.05);
-            float road = smoothstep(0.026, 0.048, (drawn.r - drawn.g) / sum);
+            // The road: its total width is the mask (the dirt hue) as before, its lower threshold raised so the
+            // drawing's fine contour lines no longer pass; the fill is the mask shrunk by 1 px, the ring left is the ink edge.
+            float road = roadMask(uv);
+            float core = min(min(roadMask(uv + vec2(px, 0.0)), roadMask(uv - vec2(px, 0.0))), min(roadMask(uv + vec2(0.0, px)), roadMask(uv - vec2(0.0, px))));
+            core = min(core, road);
             float water = smoothstep(0.030, 0.070, (drawn.b - drawn.r) / sum);
             float luma = dot(drawn, vec3(0.299, 0.587, 0.114));
             vec3 seenCol = vellum + vec3(clamp((luma - 0.72) * 0.25, -0.03, 0.03));
             seenCol = mix(seenCol, mix(vellum, ink, 0.55) + vec3(-0.02, 0.01, 0.03), water);
-            seenCol = mix(seenCol, ink, road);
+            seenCol = mix(seenCol, roadEdge, road);
+            seenCol = mix(seenCol, roadFill, core);
             // The fog's edge: the explored grid (cells of about 10 px here) is blurred over its neighbours, not drawn
             // as cells, and crossed in 6 to 8 px: no stair steps.
             vec2 cell = 1.0 / vec2(textureSize(seen, 0));
@@ -335,7 +352,6 @@ public partial class Minimap : Control
             float known = smoothstep(0.23, 0.77, s / 16.0);
             // Beyond the drawing's edge the plate is the panel dark; the edge itself never shows (UI 20: a dead-straight
             // line where the drawing stopped): the drawing fades into it over ~28 screen px, the line wandering +-6 px.
-            float px = max(fwidth(uv.x), fwidth(uv.y));
             float e = min(min(uv.x, uv.y), min(1.0 - uv.x, 1.0 - uv.y)) / max(px, 1e-6);
             vec2 q = uv / max(px, 1e-6) / 40.0;
             vec2 i0 = floor(q), f0 = fract(q);
