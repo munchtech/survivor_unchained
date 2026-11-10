@@ -358,3 +358,23 @@ def test_seat_cap_and_roles_override(tmp_path, monkeypatch):
     assert gt.rigid_tuck_law("pauldrons")[2] == 1.0
     monkeypatch.delenv("GEAR_ROLES")
     assert gf.roles_path() == gf.ROLES_PATH
+
+
+def test_standoff_floor_rest_min(tmp_path, monkeypatch):
+    """rest_min_mm: every rigid point gets at least the rest floor (a point without a target included, a loose point
+    not); without the key the law is as it was (no target, no floor)."""
+    import json as _json
+    from types import SimpleNamespace as _NS
+    import gear_fit as _gf
+    fp = tmp_path / "x.json"
+    fp.write_text(_json.dumps({"targets": {"n": [[0, 0.02], [1, 0.0005]]}}))
+    bd = _NS(meta={"row": {"slot": "pauldrons"}}, id="x")
+    ms = [{"i": 0, "node": "n", "tier": "close"}]
+    ev = {0: {"X": np.zeros((4, 3)), "comp": np.array([0, 0, -1, 0])}}
+    monkeypatch.setattr(_gf, "standoff_law", lambda slot, roles=None: {"cap_mm": 8})
+    f = _gf.standoff_floor(bd, ms, ev, str(fp))
+    assert np.allclose(f[:2], [0.008, 0.0005]) and np.isnan(f[2]) and np.isnan(f[3])
+    monkeypatch.setattr(_gf, "standoff_law", lambda slot, roles=None: {"cap_mm": 8, "rest_min_mm": 1})
+    f = _gf.standoff_floor(bd, ms, ev, str(fp))
+    assert np.allclose(f[[0, 1, 3]], [0.008, 0.001, 0.001]) and np.isnan(f[2])
+

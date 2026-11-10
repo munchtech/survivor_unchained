@@ -879,7 +879,9 @@ def standoff_floor(bd, ms, ev, path=None):
     clearance m]). A measured need over the cap is held at the cap (a plate that stands further off floats); "cap_mm" 0 is no
     stand-off (the law's tuck keys alone). "seat_cap_mm" (optional) is the cap of the TOPMOST rigid plates of each side
     (a pauldron's cop and what rides it: top_groups), so the cop stays seated on the shoulder top while the lames below
-    it may stand off to "cap_mm"."""
+    it may stand off to "cap_mm". "rest_min_mm" (optional) is THE REST FLOOR: every rigid point, measured need or not,
+    stands at least this far off her untucked skin at rest (a point the clips never drove through has no target, and
+    sat under her skin where the form the plate was made on was smaller than she is)."""
     law = standoff_law(bd.meta["row"].get("slot"))
     fp = path or os.path.join(STANDOFF, f"{bd.id}.json")
     if not law or not os.path.isfile(fp):
@@ -888,6 +890,7 @@ def standoff_floor(bd, ms, ev, path=None):
     cap = float(law.get("cap_mm", 20.0)) / 1000.0
     if cap <= 0:
         return None
+    rest = float(law.get("rest_min_mm", 0.0)) / 1000.0
     caps = [np.full(len(ev[m["i"]]["X"]), cap) for m in ms]
     if ms and law.get("seat_cap_mm") is not None:
         comp = np.concatenate([ev[m["i"]]["comp"] for m in ms])
@@ -900,6 +903,8 @@ def standoff_floor(bd, ms, ev, path=None):
         for u, c in tg.get(m["node"], []):
             if 0 <= int(u) < len(f):
                 f[int(u)] = min(float(c), caps[len(out)][int(u)])
+        if rest > 0:
+            f = np.where(np.isfinite(f), np.maximum(f, rest), rest)
         f[ev[m["i"]]["comp"] < 0] = np.nan
         out.append(f)
     out = np.concatenate(out) if out else np.zeros(0)
