@@ -46,6 +46,18 @@ public sealed class WeaponInst
     public double ChannelT, ChannelNext;
     /// <summary>Its key is held (Battle.HoldSkill, each sim step): a channel keeps on while it is.</summary>
     public bool Held;
+    /// <summary>The cuts it has thrown (every Ev.Slash of its own), and the side of the next: -1, +1, -1 ... from that count alone.
+    /// The view mirrors each cut's arc from it (Ev.Slash.Side).</summary>
+    public int Cuts;
+    public int NextSide() { int s = ClipSide != 0 ? ClipSide : (Cuts & 1) == 0 ? -1 : 1; Cuts++; return s; }
+    /// <summary>The side of the clip its pending blow swings (Battle.DeferBlow, from her_events.json "side": the cut's side is
+    /// TRUE to the clip she plays, so a one-clip grip holds its side and a chain's clips each name theirs); 0: no clip names
+    /// one (the arena, an echo), and the count alternates.</summary>
+    public int ClipSide;
+    /// <summary>Its chain (Sim/SwingChain.cs): set once a chained record's first cut starts; null for every other skill.</summary>
+    public SwingChain? Chain;
+    /// <summary>Its swings are a chain: its record has a chain block and it runs in its pressed form (campaign).</summary>
+    public bool Chained => Press?.Chain != null && !KindledNow;
     /// <summary>A spin (Bladestorm): its ticks this storm, the Sunder lines it has thrown and holds pending (split by its
     /// break, else faded), and the time it may still be broken after the spin ended (-1: not).</summary>
     public int SpinTicks;
@@ -299,6 +311,7 @@ public static partial class Firing
         if (w.Behavior == WeaponBehavior.Reactive) return;
         // Oath and Bell: a stagger owed the bell a toll; it goes off now, its own timer untouched.
         if (w.Behavior == WeaponBehavior.Toll && b.BellOwed) b.TollOwed(w);
+        if (w.Chain != null) ChainReady(b, w, dt);
         w.Timer -= dt;
         if (w.BurstLeft > 0)
         {
@@ -362,9 +375,19 @@ public static partial class Firing
         b.HeavyBy = heavy ? w : null;
         // A builder in the campaign (Resolve on): count what this swing struck (Battle.HitEnemy adds to StruckBy's set).
         bool builds = b.Resolve.On && w.Press?.Builds is > 0 && b.StruckBy == null;
-        if (builds) { b.StruckBy = w; b.Struck.Clear(); }
+        // (M3) The held swing in the campaign: a cut that struck a foe is a fighter's (Battle.SwingLanded, the stand clock's).
+        bool swing = b.Campaign && w.Hold && b.StruckBy == null;
+        if (builds || swing) { b.StruckBy = w; b.Struck.Clear(); }
         bool fired = Fire(b, w);
-        if (builds) { b.StruckBy = null; if (fired && b.Struck.Count > 0) b.Resolve.Landed(w.Press!, b.Struck.Count, heavy); }
+        if (builds || swing)
+        {
+            b.StruckBy = null;
+            if (fired && b.Struck.Count > 0)
+            {
+                if (builds) b.Resolve.Landed(w.Press!, b.Struck.Count, heavy);
+                if (swing) b.SwingLanded += CooldownOf(b, w);
+            }
+        }
         b.HeavyBy = hb;
         w.WasOwnHeavy = fired && w.OwnHeavy;
         w.OwnHeavy = false;
@@ -890,7 +913,9 @@ public static partial class Firing
     static bool ConeHit(Battle b, WeaponInst w, double a, double arc, double reach, double dmg)
     {
         var p = At(b);
-        b.Events.Emit(new Ev.Slash { X = p.X, Z = p.Z, Angle = a, Arc = arc, Reach = reach, School = w.School, Art = w.Art, Rank = w.Rank });
+        var cut = new Ev.Slash { X = p.X, Z = p.Z, Angle = a, Arc = arc, Reach = reach, School = w.School, Art = w.Art, Rank = w.Rank, Held = w.Hold, Side = w.NextSide(), Cut = w.Chain is { Live: true } ch ? ch.Cut : 0 };
+        b.Events.Emit(cut);
+        double nearest = double.MaxValue, inLine = double.MaxValue;
         double kb = w.Num(s => s.Knockback) ?? 0;
         bool any = false;
         Enemy? last = null;
@@ -901,12 +926,18 @@ public static partial class Firing
             if (Math.Abs(da) > arc / 2 + Math.Atan2(e.Radius, Math.Max(d, 0.1))) return;
             any = true;
             last = e;
+            cut.Struck++;
+            // (the view's contact: the body the edge meets, the one nearest the cut's line, not one pressed against her side)
+            if (d < nearest) nearest = d;
+            double off = Math.Abs(da) + (d < 0.7 ? 1 : 0);
+            if (off < inLine) { inLine = off; cut.HitX = e.X; cut.HitZ = e.Z; }
             double dd = d == 0 ? 1 : d;
             b.HitEnemy(e, dmg, w.School, w.Tags, new HitOpts
             {
                 Weapon = w, Knockback = kb, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd, Status = hitStatus, BossDamage = w.Def.BossDamage,
                 Heavy = b.RuleBeforeCut(w, e),
             });
+            if (!e.Alive) cut.Killed++;
             b.RuleAfterCut(w, e, p.X, p.Z);
         });
         if (last != null) b.HookLast(w, last); // chainbound.the_long_chain

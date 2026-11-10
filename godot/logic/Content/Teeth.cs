@@ -67,6 +67,11 @@ public static class Teeth
         /// damage (x StandDamage), at most StandGrowMax. A mover's short stand in a melee is answered at StandDamage; the
         /// idler's long one at up to (1 + StandGrowMax) x. Read only by the story clock (PackKit); the arena's never.</summary>
         public double StandGrow, StandGrowMax;
+        /// <summary>(M3) A fighter's plant is not a stand: each cut of her held swing that LANDS on a foe holds the story
+        /// clock off for its own length (the cut's wait), up to StandSwing s at one spot (about one chain); past it, and
+        /// for a swing at the air, standing is standing. A step of StandMoved gives the spot's allowance back. 0: off (the
+        /// clock as it was). Read only by the story clock (PackKit); the arena's never.</summary>
+        public double StandSwing;
         /// <summary>A stander's chargers are the nearest fodder at least StandFrom m off (the nearest if none is): one at her
         /// elbow died in its windup to her own weapons, its lane called off, so standing drew no charge that landed (H6 tuning).</summary>
         public double StandFrom;

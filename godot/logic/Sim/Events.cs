@@ -83,7 +83,26 @@ public static class Ev
     public sealed class Chain : CombatEvent { public double[] Points = System.Array.Empty<double>(); public School School; public string? Art; public int Rank; }
     public sealed class Beam : CombatEvent { public double X0, Z0, X1, Z1, Width; public School School; public double Duration; public string? Art; public int Rank; }
     public sealed class Strike : CombatEvent { public double X, Z, Radius; public School School; public double Delay; public string? Art; public int Rank; }
-    public sealed class Slash : CombatEvent { public double X, Z, Angle, Arc, Reach; public School School; public string? Art; public int Rank; }
+    public sealed class Slash : CombatEvent
+    {
+        public double X, Z, Angle, Arc, Reach; public School School; public string? Art; public int Rank; /* the swing of a skill held as the grip (campaign) */ public bool Held;
+        /// <summary>Which way the blade crosses, as the sim's angles run: -1 toward the lesser angle, +1 toward the greater. A blow
+        /// that lands on its clip's contact takes the CLIP's side (data/anim/her_events.json "side", WeaponInst.ClipSide), so it
+        /// is true to what she plays and a chain's cuts each name theirs; any other cut alternates from the weapon's own count
+        /// (WeaponInst.Cuts; its first is -1). The view's old crescents mirror from this; the grip's trail follows the blade.</summary>
+        public int Side = -1;
+        /// <summary>How many it struck, and the one of them nearest the cut's line (a body within 0.7 m of her only when no
+        /// other was struck): where the view draws the contact; set as the cut lands.</summary>
+        public int Struck; public double HitX, HitZ;
+        /// <summary>How many of the struck it killed (the view's contact is larger for a kill).</summary>
+        public int Killed;
+        /// <summary>A chain's cut (Sim/SwingChain.cs): its 0-based index in the live chain; 0 for every other cut.</summary>
+        public int Cut;
+    }
+    /// <summary>A chain's grip let go (Sim/SwingChain.cs): told at Time = the later of the key's release and the last cut's
+    /// cancel beat (never when the grip is held again by then; once a cut). Cut and Side are the last cut's; Recover the
+    /// recover's length in seconds (the record's frames / 60, over the last cut's clip rate).</summary>
+    public sealed class SwingRelease : CombatEvent { public string Weapon = ""; public int Slot, Cut, Side; public double Time, Recover; }
     public sealed class Muzzle : CombatEvent { public double X, Z, Angle; public School School; public string Weapon = ""; public string? Art; public int Rank; }
 
     public sealed class Telegraph : CombatEvent
