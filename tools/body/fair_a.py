@@ -401,3 +401,23 @@ def her_hook(h, rg, Va):
     out, info = F.cached(Va, used, HERE / "out" / "fair_a")
     h._fair_info = {**getattr(h, "_fair_info", {}), rg.name: info}
     return out
+
+
+def ref_hook(h, Va):
+    """strip_rest's hook on the whole pose's A surface (Her.pose_ref): the same rule as her_hook, seeds limited to the A
+    vertices every listed region's carrier reads (both girdles). Key absent or h.fair_on False: Va as it is."""
+    c = h.cfg.get("fair_a")
+    if not c or not getattr(h, "fair_on", True):
+        return Va
+    names = [x.replace("{s}", s) for x in c.get("regions", []) for s in "lr"]
+    F = getattr(h, "_fair_a", None)
+    if F is None:
+        F = h._fair_a = Fair(h.Ab.V0, h.Ab.T, **c.get("params", {}))
+    used = np.zeros(len(Va), bool)
+    for n in names:
+        if n in h.regions:
+            car = h.regions[n].carrier
+            used[np.concatenate([x.tri.ravel() for x in getattr(car, "parts", [car])])] = True
+    out, info = F.cached(Va, used, HERE / "out" / "fair_a")
+    h._fair_info = {**getattr(h, "_fair_info", {}), "pose_ref": info}
+    return out

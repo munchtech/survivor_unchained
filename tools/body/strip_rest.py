@@ -870,6 +870,16 @@ HER = {
 }
 
 
+
+def pose_a(h, G):
+    """A posed by the whole pose (Her.pose_ref), faired by HER's "fair_a" rule when the key is on (fair_a.ref_hook,
+    seeds on both girdle carriers' A vertices). Key absent (as in --snap's frozen copy) or h.fair_on False: as it was."""
+    Va, Ga = h.pose_ref(G)
+    if getattr(h, "cfg", {}).get("fair_a"):
+        import fair_a
+        Va = fair_a.ref_hook(h, Va)
+    return Va, Ga
+
 class HerStrip:
     def __init__(self, cfg=HER, h=None):
         self.cfg, self.h = cfg, (ct.Her(verbose=False) if h is None else h)    # h: an existing Her (Her's own map loader)
@@ -888,7 +898,7 @@ class HerStrip:
             el = elevation(self, z["G"][k], s)
             w = share(el, *self.cfg["map_elev"])
             if w > 0:
-                Va, _ = self.h.pose_ref(z["G"][k])
+                Va, _ = pose_a(self.h, z["G"][k])
                 out.append((Va, car.carry(Va), np.einsum("nij,nj->ni", car.rotations(Va), self.h.N0[self.pts[s]]), w,
                             el <= self.cfg["fill_bar"]))
         return out
@@ -1072,7 +1082,7 @@ def cmd_target(hs, poses):
     rows = {}
     for k in sel:
         s, G = str(z["side"][k]), z["G"][k]
-        Va, _ = h.pose_ref(G)
+        Va, _ = pose_a(h, G)
         res = []
         for car, P, N0 in ((h.car[s], bd.V0[hs.pts[s]], h.N0[hs.pts[s]]), (hs.car1[s], hs.P1[s], hs.N1[hs.pts[s]])):
             X = car.carry(Va)
@@ -1138,7 +1148,7 @@ def cmd_map(hs, poses):
     R = {}
 
     def targets(G, s, wk):
-        Va, _ = h.pose_ref(G)
+        Va, _ = pose_a(h, G)
         return (Va, *map_targets(hs, Va, s, wk))
 
     def stats(X, N, s, Va):
@@ -1222,7 +1232,7 @@ def cmd_sheet(hs, rows_arg="", out_name="armpit_map"):
         G, s = pose["G"], pose["side"]
         V = cx.surface("pub" if pname.startswith("rest") else "carried", pose)
         Vp = cx.surface("pub", pose)
-        Va, Ga = h.pose_ref(G)
+        Va, Ga = pose_a(h, G)
         ja, ra = h.anchor[s]
         M = ct.anchor_align(G[ja], bd.p.rest[ja], hs.Ab.G0[ra], Ga[ra])
         b = md.blend(G, s)[:, None]
@@ -1339,7 +1349,7 @@ def cmd_turned(hs, poses, top=4):
         tb = hs.tris(s)
         tb = tb[np.isin(tb, b).any(1)]
         wk = share(elevation(hs, G, s), *cfg["map_elev"])
-        Va, _ = h.pose_ref(G)
+        Va, _ = pose_a(h, G)
         Xf, Nf = h.car[s].carry(Va), np.einsum("nij,nj->ni", h.car[s].rotations(Va), N0)
         Xb, Nb = c1.carry(Va), np.einsum("nij,nj->ni", c1.rotations(Va), hs.N1[hs.pts[s]])
 
