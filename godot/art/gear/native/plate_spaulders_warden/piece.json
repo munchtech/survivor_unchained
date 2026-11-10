@@ -24,170 +24,106 @@
   "recipe": "spaulder"
  },
  "parts": {
-  "collar_l_rigid": {
+  "cop_l_rigid": {
    "bones": {
-    "trap_l": 0.7259,
-    "upperarm_share_l": 0.161,
-    "spine_04": 0.0774,
-    "upperarm_twist_01_l": 0.0342,
-    "clavicle_l": 0.0008,
-    "scap_l": 0.0007
+    "upperarm_share_l": 0.5644,
+    "trap_l": 0.3224,
+    "spine_04": 0.0696,
+    "upperarm_twist_02_l": 0.0236,
+    "upperarm_twist_01_l": 0.0128,
+    "clavicle_l": 0.0031,
+    "scap_l": 0.0029,
+    "neck_02": 0.0012
    },
    "carry": "part"
   },
   "lame1_l_rigid": {
    "bones": {
-    "upperarm_share_l": 0.752,
-    "trap_l": 0.1985,
-    "spine_04": 0.0216,
-    "upperarm_twist_01_l": 0.013,
-    "scap_l": 0.0082,
-    "clavicle_l": 0.0068
+    "upperarm_twist_02_l": 0.7137,
+    "upperarm_share_l": 0.2583,
+    "upperarm_twist_03_l": 0.0129,
+    "upperarm_twist_01_l": 0.0043,
+    "trap_l": 0.0034,
+    "scap_l": 0.0032,
+    "clavicle_l": 0.0027,
+    "spine_04": 0.0015
    },
    "carry": "part"
   },
   "lame2_l_rigid": {
    "bones": {
-    "upperarm_share_l": 0.9866,
-    "upperarm_twist_02_l": 0.0083,
-    "clavicle_l": 0.0036,
-    "scap_l": 0.0014,
-    "upperarm_twist_01_l": 0.0001
+    "upperarm_twist_02_l": 0.5102,
+    "upperarm_twist_03_l": 0.4792,
+    "upperarm_share_l": 0.0078,
+    "clavicle_l": 0.0013,
+    "scap_l": 0.0006,
+    "delt_l": 0.0004,
+    "spine_04": 0.0004,
+    "spine_05": 0.0002
    },
    "carry": "part"
   },
   "lame3_l_rigid": {
    "bones": {
-    "upperarm_share_l": 0.9018,
-    "upperarm_twist_02_l": 0.092,
-    "clavicle_l": 0.0029,
-    "upperarm_twist_01_l": 0.0019,
-    "trap_l": 0.0014
+    "upperarm_twist_03_l": 0.7934,
+    "upperarm_twist_04_l": 0.1339,
+    "delt_l": 0.0473,
+    "upperarm_twist_02_l": 0.0253,
+    "upperarm_share_l": 0.0002
    },
    "carry": "part"
   },
-  "lame4_l_rigid": {
+  "cop_r_rigid": {
    "bones": {
-    "upperarm_twist_02_l": 0.575,
-    "upperarm_share_l": 0.4024,
-    "upperarm_twist_01_l": 0.0102,
-    "trap_l": 0.0074,
-    "scap_l": 0.0026,
-    "neck_01": 0.001,
-    "delt_l": 0.0009,
-    "clavicle_l": 0.0006
-   },
-   "carry": "part"
-  },
-  "lame5_l_rigid": {
-   "bones": {
-    "upperarm_twist_02_l": 0.8223,
-    "upperarm_share_l": 0.1584,
-    "scap_l": 0.005,
-    "upperarm_twist_01_l": 0.0038,
-    "clavicle_l": 0.0036,
-    "upperarm_twist_03_l": 0.0028,
-    "trap_l": 0.0023,
-    "neck_01": 0.0017
-   },
-   "carry": "part"
-  },
-  "lame6_l_rigid": {
-   "bones": {
-    "upperarm_twist_02_l": 0.7956,
-    "upperarm_twist_03_l": 0.1638,
-    "upperarm_share_l": 0.0329,
-    "clavicle_l": 0.0038,
-    "scap_l": 0.0027,
-    "spine_04": 0.0006,
-    "spine_05": 0.0003,
-    "neck_01": 0.0002
-   },
-   "carry": "part"
-  },
-  "collar_r_rigid": {
-   "bones": {
-    "trap_r": 0.7262,
-    "upperarm_share_r": 0.1606,
-    "spine_04": 0.0775,
-    "upperarm_twist_01_r": 0.0342,
-    "clavicle_r": 0.0008,
-    "scap_r": 0.0007
+    "upperarm_share_r": 0.5665,
+    "trap_r": 0.3212,
+    "spine_04": 0.0694,
+    "upperarm_twist_02_r": 0.0228,
+    "upperarm_twist_01_r": 0.0126,
+    "clavicle_r": 0.0032,
+    "scap_r": 0.0029,
+    "neck_02": 0.0012
    },
    "carry": "part"
   },
   "lame1_r_rigid": {
    "bones": {
-    "upperarm_share_r": 0.7284,
-    "trap_r": 0.2175,
-    "spine_04": 0.0237,
-    "upperarm_twist_01_r": 0.0143,
-    "scap_r": 0.009,
-    "clavicle_r": 0.0071
+    "upperarm_twist_02_r": 0.7139,
+    "upperarm_share_r": 0.2583,
+    "upperarm_twist_03_r": 0.0129,
+    "upperarm_twist_01_r": 0.0041,
+    "trap_r": 0.0033,
+    "scap_r": 0.0032,
+    "clavicle_r": 0.0027,
+    "spine_04": 0.0015
    },
    "carry": "part"
   },
   "lame2_r_rigid": {
    "bones": {
-    "upperarm_share_r": 0.9865,
-    "upperarm_twist_02_r": 0.0084,
-    "clavicle_r": 0.0036,
-    "scap_r": 0.0014,
-    "upperarm_twist_01_r": 0.0001
+    "upperarm_twist_02_r": 0.5108,
+    "upperarm_twist_03_r": 0.4785,
+    "upperarm_share_r": 0.0079,
+    "clavicle_r": 0.0013,
+    "scap_r": 0.0006,
+    "delt_r": 0.0004,
+    "spine_04": 0.0004,
+    "spine_05": 0.0002
    },
    "carry": "part"
   },
   "lame3_r_rigid": {
    "bones": {
-    "upperarm_share_r": 0.9012,
-    "upperarm_twist_02_r": 0.0926,
-    "clavicle_r": 0.003,
-    "upperarm_twist_01_r": 0.0018,
-    "trap_r": 0.0013
-   },
-   "carry": "part"
-  },
-  "lame4_r_rigid": {
-   "bones": {
-    "upperarm_twist_02_r": 0.5656,
-    "upperarm_share_r": 0.4119,
-    "upperarm_twist_01_r": 0.0104,
-    "trap_r": 0.0077,
-    "scap_r": 0.0021,
-    "neck_01": 0.001,
-    "delt_r": 0.0008,
-    "clavicle_r": 0.0006
-   },
-   "carry": "part"
-  },
-  "lame5_r_rigid": {
-   "bones": {
-    "upperarm_twist_02_r": 0.8209,
-    "upperarm_share_r": 0.1591,
-    "scap_r": 0.0051,
-    "upperarm_twist_01_r": 0.004,
-    "clavicle_r": 0.0038,
-    "upperarm_twist_03_r": 0.0028,
-    "trap_r": 0.0025,
-    "neck_01": 0.0018
-   },
-   "carry": "part"
-  },
-  "lame6_r_rigid": {
-   "bones": {
-    "upperarm_twist_02_r": 0.798,
-    "upperarm_twist_03_r": 0.1596,
-    "upperarm_share_r": 0.0349,
-    "clavicle_r": 0.0037,
-    "scap_r": 0.0027,
-    "spine_04": 0.0006,
-    "spine_05": 0.0003,
-    "neck_01": 0.0002
+    "upperarm_twist_03_r": 0.7993,
+    "upperarm_twist_04_r": 0.1248,
+    "delt_r": 0.0485,
+    "upperarm_twist_02_r": 0.0272,
+    "upperarm_share_r": 0.0002
    },
    "carry": "part"
   },
   "rim0_l_rigid": {
-   "with": "collar_l_rigid"
+   "with": "cop_l_rigid"
   },
   "rim1_l_rigid": {
    "with": "lame1_l_rigid"
@@ -198,17 +134,8 @@
   "rim3_l_rigid": {
    "with": "lame3_l_rigid"
   },
-  "rim4_l_rigid": {
-   "with": "lame4_l_rigid"
-  },
-  "rim5_l_rigid": {
-   "with": "lame5_l_rigid"
-  },
-  "rim6_l_rigid": {
-   "with": "lame6_l_rigid"
-  },
   "rim0_r_rigid": {
-   "with": "collar_r_rigid"
+   "with": "cop_r_rigid"
   },
   "rim1_r_rigid": {
    "with": "lame1_r_rigid"
@@ -218,15 +145,6 @@
   },
   "rim3_r_rigid": {
    "with": "lame3_r_rigid"
-  },
-  "rim4_r_rigid": {
-   "with": "lame4_r_rigid"
-  },
-  "rim5_r_rigid": {
-   "with": "lame5_r_rigid"
-  },
-  "rim6_r_rigid": {
-   "with": "lame6_r_rigid"
   }
  }
 }
