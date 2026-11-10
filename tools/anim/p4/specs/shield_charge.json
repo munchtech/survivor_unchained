@@ -284,7 +284,7 @@
    ]
   }
  },
- "notes": "A1 actions (solver B): keyed beats from one native rush (chnat2 pick 4, its own placement kept: launch f31, mid-stride f35, impact f38, absorbed f48; the sword hand trailing low by IK), the start its f16 with idle_warden's hands, fight-ready (rdpose) at 0.8 s. Job frames = clip frames + 8 (crop). The travel launch->impact is stripped (the game moves her).",
+ "notes": "A1 actions (solver B): keyed beats from one native rush (chnat2 pick 4, its own placement kept: launch f31, mid-stride f35, impact f38, absorbed f48; the sword hand trailing low by IK), the start its f16 with idle_warden's hands, fight-ready (rdpose) at 0.8 s. Job frames = clip frames + 8 (crop). The travel launch->impact is stripped (the game moves her). Solver F6: blade.roll straight (roll_smooth 1): the sword hand turned about the blade's own line toward the straightest wrist through the run: wrist flex 47.6 -> 12.6 deg, deviation 68.6 -> 55.5 (every frame lower), twist 38 -> 51; the clear layer at 12 mm keeps the sword 14.0 mm and the shield 11.9 mm clear.",
  "bands": {
   "lean_deg@0.2": [
    15,
@@ -469,6 +469,8 @@
    "ease": "through",
    "frame": "heading",
    "twist_smooth": 3,
+   "roll": "straight",
+   "roll_smooth": 1,
    "keys": [
     [
      0.0,
