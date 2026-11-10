@@ -93,6 +93,31 @@ public static class GripPaint
         return (a.S + (b.S - a.S) * f, a.Base + (b.Base - a.Base) * f + rz, a.White + (b.White - a.White) * f, rz);
     }
 
+    /// <summary>(take 9) WHICH samples are the stroke. Samples lo..n-1; a segment `k` runs from sample k-1 to k:
+    /// `cutting(k)` its tip fast and going the cut's way, `still(k)` its tip at rest, `sweep(k)` its radians round her
+    /// the cut's way. Until the stroke is BORN (`from` under 0) the newest run of cutting segments is tried: once the
+    /// cut has landed (`cut`) the walk back to it passes samples that move without cutting, never a still blade (a pose
+    /// that snapped to rest before the swing is not this cut: it drew a bow tie), and the run is a stroke only when it
+    /// has swept `birth` radians in all (the blade lifting into the swing does not sweep: it drew a squared chip).
+    /// Once born its start is `from` for good: nothing laid is dropped, whatever the later samples do. Returns the
+    /// run's first sample, its last cutting sample, and whether it draws.</summary>
+    public static (int I0, int Hi, bool Any) Run(int lo, int n, int from, bool cut, bool sided, float birth, Func<int, bool> cutting, Func<int, bool> still, Func<int, double> sweep)
+    {
+        int j = n - 1;
+        if (from >= 0)
+        {
+            while (j > from && !cutting(j)) j--;
+            return (from, j, n - 1 > from);
+        }
+        if (cut) while (j > lo && !cutting(j) && !still(j)) j--;
+        int hi = j;
+        while (j > lo && cutting(j)) j--;
+        if (hi <= j) return (j, j, false);
+        double sum = 0;
+        for (int k = j + 1; k <= hi; k++) sum += sweep(k);
+        return !sided || sum >= birth ? (j, hi, true) : (j, j, false);
+    }
+
     /// <summary>The cap's outline (the shader's grip_front is this, line for line): how far AHEAD of the blade's line the
     /// paint runs at `a` across the stroke (0 the tip's path, 1 the inner edge), in stroke widths. cap = [its length, the
     /// nose's place across, how far BEHIND the blade's line the inner edge starts, the outer corner's round-off (share of

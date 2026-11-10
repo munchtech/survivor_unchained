@@ -850,6 +850,8 @@
    "lead_frames": 2,
    "slow": 4,
    "snap": 90,
+   "_doc_birth_sweep": "rad the tip must have gone round her, the cut's way, over a run of cutting samples before that run is a stroke (GripPaint.Run): the blade lifting from rest into the swing is fast but does not sweep (it drew a squared chip a frame before the stroke). Once born the stroke's start is kept: nothing laid is dropped.",
+   "birth_sweep": 0.14,
    "min_len": 0.05,
    "kink": [1.0, 0.35, 0.7],
    "kink_run": [1.0],

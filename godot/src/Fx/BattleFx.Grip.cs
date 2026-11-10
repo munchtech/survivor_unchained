@@ -57,7 +57,9 @@ public partial class BattleFx
         return n;
     }
 
-    readonly record struct GripAt(Vector3 Hilt, Vector3 Tip, double At);
+    /// <summary>(take 9) Her: where she stood when the sample was taken (the sweep round her is measured there, so a
+    /// sample's cutting or not never changes as she moves on).</summary>
+    readonly record struct GripAt(Vector3 Hilt, Vector3 Tip, double At, Vector3 Her);
     readonly List<GripAt> gripRing = new(40);
     Node3D? gripBlade;
     Skeleton3D? gripSkel;
@@ -76,6 +78,8 @@ public partial class BattleFx
         /// <summary>In the watch's clock: the oldest sample drawn, the contact (-1: not yet), and when a trail still
         /// waiting for its cut gives up.</summary>
         public double Tail, Contact = -1, Until;
+        /// <summary>(take 9) The watch's clock of the stroke's first sample, kept from the frame it is born (-1: not yet).</summary>
+        public double From = -1;
         /// <summary>The contact (the stroke's own bite), owed until the blade's line has crossed the struck body (or the wait is up).</summary>
         public bool FlashOwed;
         public int FlashTries, Struck, Killed;
@@ -208,8 +212,8 @@ public partial class BattleFx
     {
         if (GripBladeNow() is not { } now) return;
         GripSettle();
-        if (gripRing.Count > 0 && gripRing[^1].At >= gripClock - 1e-6) gripRing[^1] = new GripAt(now.Hilt, now.Tip, gripClock);
-        else gripRing.Add(new GripAt(now.Hilt, now.Tip, gripClock));
+        if (gripRing.Count > 0 && gripRing[^1].At >= gripClock - 1e-6) gripRing[^1] = new GripAt(now.Hilt, now.Tip, gripClock, PlayerPos);
+        else gripRing.Add(new GripAt(now.Hilt, now.Tip, gripClock, PlayerPos));
         if (gripRing.Count > 36) gripRing.RemoveRange(0, gripRing.Count - 36);
         if (gripWarm > 0) GripWarm();
         // A held cut's swing has begun (the sim's AttackAnim: its clip and rate): the trail is owed two frames before
@@ -287,21 +291,25 @@ public partial class BattleFx
         GripSettle();
         // (round 4) a swing of several arcs calls this once an arc in one frame, each re-arming the trail: the bodies
         // struck are the CUT's DISTINCT bodies (the arcs' Fresh summed), not its last arc's
-        var arc0 = gripLive is { Contact: >= 0, FlashOwed: true } gl && gl.Contact == gripClock ? gl : null;
-        if (gripLive is not { Contact: < 0 } tr) { tr = new GripTrail { Oath = oath, Tail = gripClock - 5 / 60.0 }; GripArm(tr); }
+        // (take 9) A further arc of THIS frame's cut is the same stroke. It used to arm a NEW trail: the armed trail
+        // and what it had laid were thrown away on the cut's frame, and the new one looked 5 frames back, past the
+        // arming, where a pose snapping to rest (64 m/s, under grip.snap) read as a cut: night cut 0's bow tie.
+        GripTrail tr;
+        bool again = false;
+        string how = "born";
+        if (gripLive is { Contact: >= 0 } gl && gl.Contact == gripClock) { tr = gl; again = true; how = "same cut"; }
+        else if (gripLive is { Contact: < 0 } armed) { tr = armed; how = "armed"; }
+        else { tr = new GripTrail { Oath = oath, Tail = gripClock - 5 / 60.0 }; GripArm(tr); }
+        if (GripSayAll) GD.Print($"grip arc frame {Engine.GetFramesDrawn()} {how} struck {e.Struck} fresh {e.Fresh} laid {tr.Laid.Count}");
+        int struck0 = again && tr.FlashOwed ? tr.Struck : 0, killed0 = again && tr.FlashOwed ? tr.Killed : 0;
         tr.Oath = oath; tr.Contact = gripClock; tr.SimSide = e.Side; tr.Reach = reach;
         if (tr.Side == 0) tr.Side = e.Side;   // (take 8) before this frame's stroke is drawn, not after it
         if (e.Struck > 0)
         {
-            tr.FlashOwed = true; tr.Struck = e.Fresh; tr.Killed = e.Killed;
+            tr.FlashOwed = true; tr.Struck = struck0 + e.Fresh; tr.Killed = killed0 + e.Killed;
             tr.Body = V(e.HitX, Y(e.HitX, e.HitZ) + 1.0, e.HitZ);
             // (one number a cut, by raise-to: a swing of several arcs calls this once an arc and still shakes once)
             HitShake(P7D[oath ? "hit_budget.grip_shake_oath" : "hit_budget.grip_shake", oath ? 0.02f : 0.06f], "grip");
-        }
-        if (arc0 != null && arc0 != tr)
-        {
-            if (!tr.FlashOwed) tr.Body = arc0.Body;
-            tr.FlashOwed = true; tr.Struck += arc0.Struck; tr.Killed += arc0.Killed;
         }
         float r = Mathf.Clamp(reach * 0.62f, 1.7f, 2.1f), mid = (float)e.Angle;
         double tx = e.X + Mathf.Cos(mid) * r * 0.9f, tz = e.Z + Mathf.Sin(mid) * r * 0.9f;
@@ -464,9 +472,14 @@ public partial class BattleFx
     /// <summary>How far the tip went round her between sample `k - 1` and `k`, as the sim's angles run (radians).</summary>
     double GripSweep(int k)
     {
-        var a = gripRing[k - 1].Tip - PlayerPos; var b = gripRing[k].Tip - PlayerPos;
+        // (take 9) round where she stood at each sample, not where she stands now
+        var a = gripRing[k - 1].Tip - gripRing[k - 1].Her; var b = gripRing[k].Tip - gripRing[k].Her;
         return Mathf.Wrap(Mathf.Atan2(b.Z, b.X) - Mathf.Atan2(a.Z, a.X), -Mathf.Pi, Mathf.Pi);
     }
+
+    /// <summary>Whether the blade's tip was at rest between sample `j - 1` and `j`.</summary>
+    bool GripStill(int j, float slow)
+        => gripRing[j].Tip.DistanceTo(gripRing[j - 1].Tip) < slow * Math.Max(1e-4, gripRing[j].At - gripRing[j - 1].At);
 
     /// <summary>A drawn rib: hilt side, tip, the laid path's metres (U), how much the blade's own sweep, its limit where
     /// the path turns on screen, this frame's metres from the drawn tail (M), and its LAID press, whiteness and raise.</summary>
@@ -601,14 +614,21 @@ public partial class BattleFx
         float slow = P7D["grip.slow"];
         int n = gripRing.Count, lo = 0;
         while (lo < n - 1 && gripRing[lo].At < tr.Tail - 1e-6) lo++;
-        int j = n - 1;
-        if (age >= 0) while (j > lo && !GripCutting(j, slow, tr.Side)) j--;
-        int hi = j;
-        while (j > lo && GripCutting(j, slow, tr.Side)) j--;
-        int i0 = j;
-        bool any = hi > i0;
-        if (any) tr.EndTan = (gripRing[hi].Tip - gripRing[hi - 1].Tip).Normalized();
-        if (any && hi == n - 1 && gripRing[hi].At > tr.SweptAt) { tr.SweptAt = gripRing[hi].At; tr.Swept += GripSweep(hi); }
+        // (take 9) the stroke's samples (GripPaint.Run): born once its newest run of cutting samples has SWEPT round
+        // her, and its start kept from then on (a segment was drawn on one frame and dropped on the next)
+        int from = -1;
+        if (tr.From >= 0) { from = lo; while (from < n - 1 && gripRing[from].At < tr.From - 1e-6) from++; }
+        var (i0, hi, any) = GripPaint.Run(lo, n, from, age >= 0, tr.Side != 0, P7D["grip.birth_sweep"],
+            k => GripCutting(k, slow, tr.Side), k => GripStill(k, slow), k => GripSweep(k) * tr.Side);
+        if (any && tr.From < 0)
+        {
+            tr.From = gripRing[i0].At;
+            if (GripSayAll) GD.Print($"grip born frame {Engine.GetFramesDrawn()} from {n - 1 - i0} samples back, swept {Mathf.RadToDeg(GripSweep(hi)):0} deg on the newest");
+        }
+        if (hi > i0) tr.EndTan = (gripRing[hi].Tip - gripRing[hi - 1].Tip).Normalized();
+        if (any)
+            for (int k = i0 + 1; k <= hi; k++)
+                if (gripRing[k].At > tr.SweptAt) { tr.SweptAt = gripRing[k].At; tr.Swept += GripSweep(k); }
         if (age >= -1e-6 && !tr.CutSaid)
         {
             // the cut's first frame: its side is its clip's (her_events.json), else the sim's count; the blade's own

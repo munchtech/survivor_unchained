@@ -124,6 +124,41 @@ public class FxP7Tests
     /// whole, lifts as the blade slows); the contact presses the ribs round the crossing once, where they lie; the thick
     /// section stays there while the head moves on, and only settles with its own age. The tines and the thrown streaks
     /// follow the cut's distinct struck: none for an air cut, a handful for a crowd.</summary>
+    /// <summary>(take 9, lead 10's list A1-A3) The stroke's birth, on the samples take 8's log gave (m/s, degrees round
+    /// her the cut's way; a segment k runs from sample k - 1 to k). Night cut 0: a pose snapped to rest 3 frames before
+    /// the cut (64 m/s, the cut's way), the blade lifted from rest (wrong way, then 2 degrees), then swept.</summary>
+    [Fact]
+    public void TheStrokeIsBornOnItsSweepAndKeepsItsStart()
+    {
+        (int, int, bool) Run(float[] v, float[] deg, int lo, int n, int from, bool cut, bool sided = true)
+            => GripPaint.Run(lo, n, from, cut, sided, 0.14f,
+                k => v[k] >= 4 && v[k] <= 90 && deg[k] * MathF.PI / 180 > -0.02f, k => v[k] < 4, k => deg[k] * MathF.PI / 180);
+        // samples 0..9 = frames 298..307
+        float[] v = { 0, 0, 64, 0, 0, 36.5f, 26.2f, 38.4f, 56.2f, 56.8f };
+        float[] d = { 0, 0, 40, 0, 0, -14, 2, 22, 36, 39 };
+        // a trail born on the contact looks 5 frames back (lo 0); the armed one from its arming (lo 3): neither draws the snap
+        foreach (int lo in new[] { 0, 3 })
+        {
+            Assert.False(Run(v, d, lo, 6, -1, true).Item3, "303: the snap to rest before a still blade is not this cut (the bow tie)");
+            Assert.False(Run(v, d, lo, 7, -1, true).Item3, "304: the blade lifting has not swept (the squared chip)");
+            Assert.Equal((5, 7, true), Run(v, d, lo, 8, -1, true));
+        }
+        // born: its start is kept, whatever the samples after do (nothing laid is dropped)
+        Assert.Equal((5, 8, true), Run(v, d, 0, 9, 5, true));
+        float[] v2 = { 0, 0, 64, 0, 0, 36.5f, 26.2f, 38.4f, 2, 56.8f, 30 }, d2 = { 0, 0, 40, 0, 0, -14, 2, 22, 0, 39, -30 };
+        Assert.Equal((5, 9, true), Run(v2, d2, 0, 10, 5, true));
+        Assert.Equal((5, 9, true), Run(v2, d2, 0, 11, 5, true));
+        Assert.Equal((5, 7, true), Run(v2, d2, 0, 9, 5, false));
+        // day cut 0: the pose snaps into the clip (122 m/s) and sweeps at once: born before the cut, on its first swept frame
+        Assert.Equal((1, 2, true), Run(new[] { 0, 121.9f, 47.7f }, new[] { 0, 0, 33f }, 1, 3, -1, false));
+        // cut 1 (481): rest, the lift on the cut's frame (no stroke), the sweep (born, the lift its tail)
+        float[] v1 = { 0, 0, 36.3f, 26, 38.3f }, d1 = { 0, 0, -14, 2, 21 };
+        Assert.False(Run(v1, d1, 1, 4, -1, true).Item3);
+        Assert.Equal((2, 4, true), Run(v1, d1, 1, 5, -1, true));
+        // a cut whose side is not known is born on its first fast run, as before
+        Assert.True(Run(v1, d1, 1, 4, -1, true, false).Item3);
+    }
+
     [Fact]
     public void TheHeldCutsPressStaysWhereItWasLaid()
     {
