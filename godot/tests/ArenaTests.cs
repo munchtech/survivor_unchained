@@ -162,7 +162,11 @@ public class ArenaTests
         Assert.True(again.Boss);
         Assert.Equal(first * (1 + ArenaRun.ReturnGrowth), again.MaxHp, 0);
         Assert.Contains(s.Host.Announced, a => a.Kicker == "Again");
-        int chests = s.B.Pickups.Items.Count(p => p.Alive && p.Kind == PickupKind.Chest && p.Ref == "boss");
+        // Its hoards: those on the ground and those opened. (A hoard falls where the boss dies; one
+        // that dies at her feet, as its last lunge can bring it, opens there at once.)
+        int Hoards() => s.B.Pickups.Items.Count(p => p.Alive && p.Kind == PickupKind.Chest && p.Ref == "boss")
+            + s.Host.Announced.Count(a => a.Title.EndsWith("'s hoard"));
+        int chests = Hoards();
         for (int i = 0; i < 400 && again.Alive && again.State != EnemyState.Dying; i++)
         {
             s.B.HitEnemy(again, again.MaxHp * 0.25, School.Physical, [Tag.Physical]);
@@ -170,7 +174,7 @@ public class ArenaTests
         }
         Assert.Contains(s.Host.Announced, a => a.Title.EndsWith("is down again"));
         Assert.Null(s.Host.ArenaResult);
-        Assert.True(s.B.Pickups.Items.Count(p => p.Alive && p.Kind == PickupKind.Chest && p.Ref == "boss") > chests);
+        Assert.True(Hoards() > chests);
     }
 
     /// <summary>An oath's pay in ember ("half again the ember") was never paid: the dead left

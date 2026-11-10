@@ -231,7 +231,7 @@ public static class Boons
             Mods = _ => [Inc(Stat.DamageOf(School.Holy), 0.4, "syn:sanctify")] },
         new() { Id = "consecration", Name = "Consecration", Icon = "consecrate", Rarity = Rarity.Rare, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Holy, Tag.Zone],
             Text = "The seared leave hallowed ground where they fall.", Requires = new(Status: Sear),
-            Triggers = [T(TriggerEvent.Kill, [new Effect.Zone(1.8, 3, 8, Basis.Flat, School.Holy, "zone_holy")], new() { TargetStatus = Sear }, chance: 0.35)] },
+            Triggers = [T(TriggerEvent.Kill, [new Effect.Zone(1.8, 3, 6, Basis.Flat, School.Holy, "zone_holy")], new() { TargetStatus = Sear }, chance: 0.35)] },
         new() { Id = "soul_harvest", Name = "They Get Up", Icon = "risen", Rarity = Rarity.Epic, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Summon, Tag.Shadow],
             Text = "What dies near you sometimes gets up again, on your side, for 14 s (up to six at once).",
             Triggers = [T(TriggerEvent.Kill, [new Effect.Raise(Effect.RaiseKind.Ghoul, 14, 6)], chance: 0.06)] },

@@ -103,6 +103,9 @@ public sealed class Enemy : Pooled
     public string? LastWeapon;
     /// <summary>The last blow: how hard, whether it crit, which way it went.</summary>
     public double LastBlow;
+    /// <summary>(M3 MR 3) How much of the Shock on it chained cuts have eaten, in blows (a Shock is eaten by one
+    /// blow's worth; Battle.HitEnemy). 0 with no Shock, a fresh one, or only whole blows.</summary>
+    public double ShockEaten;
     public bool LastCrit;
     /// <summary>The last blow was a tick of something in it (a burn, a poison): drawn as no blow.</summary>
     public bool LastDot;
@@ -203,6 +206,9 @@ public sealed class Enemy : Pooled
     public long HandStoneKey;
     /// <summary>Lamps v2 (Sim/BoardRules.cs): when blue.poachers_mercy last doubled its bleed.</summary>
     public double PoachedAt = double.NegativeInfinity;
+    /// <summary>How long that doubling shuts the next one out: 1 s, times the weight of the hit that doubled (a chained
+    /// cut's share of its blow: the gate runs at the cut's pace, as an icd a cut starts).</summary>
+    public double PoachedFor = 1;
     /// <summary>Quickened by its own kind's aura (pace and blows), and warded (less taken), for a while.</summary>
     public double HasteT, Haste = 1, WardT, Ward;
     /// <summary>The verbs' own clocks, what it is casting and where, the runs left in a
@@ -253,6 +259,12 @@ public sealed class Projectile : Pooled
     /// <summary>The volley's rule is whole (the Crowded Sky looses its extra motes): it bars a second strike. Otherwise it only steers.</summary>
     public bool VolleyHard;
     public double BossDamage = 1;
+    /// <summary>(M3 MR 3) The share of a written blow each of its hits stands for (the cast's CutW at the launch: a
+    /// chained cut's projectile lands after its cast, when the weapon's live weight is 1 again); 1 for everything else.</summary>
+    public double W = 1;
+    /// <summary>(M3 MR 3 b1) The banked chained cut it was loosed in (Firing.CutBill): its hits pay it, its expiry with
+    /// none refunds it. Null for everything else.</summary>
+    internal Firing.CutBill? Bill;
     /// <summary>Which way it is going (frontal guards).</summary>
     public double DirX, DirZ = 1;
     /// <summary>What its damage is credited to when no weapon threw it (a blessing's missiles).</summary>
@@ -271,7 +283,7 @@ public sealed class Projectile : Pooled
         Homing = 0; Seek = null; Target = -2; Weapon = null; Art = "bolt"; Status = null; Splash = 0; SplitOnHit = 0;
         Heal = 0; Knockback = 0; Chakram = false; Returning = false; Lob = false; LandX = LandZ = 0; GroundOnHit = null;
         Hits.Clear(); HitTimes.Clear(); Rehit = 0; HitCount = 0; OrbitR = OrbitW = OrbitA = 0; SlotId = -1; Rank = 1;
-        Depth = 0; Volley = 0; VolleyHard = false; BossDamage = 1; DirX = 0; DirZ = 1; Credit = null; HeavyId = null; Echo = false;
+        Depth = 0; Volley = 0; VolleyHard = false; BossDamage = 1; W = 1; DirX = 0; DirZ = 1; Credit = null; HeavyId = null; Echo = false; Bill = null;
     }
 
     /// <summary>Point DirX, DirZ along its velocity.</summary>

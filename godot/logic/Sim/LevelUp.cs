@@ -195,7 +195,7 @@ public static class LevelUp
 
     /// <summary>A skill's description, and the line her calling's Hand adds to it (Content/Hands.Line) when it bends it.</summary>
     public static string WithHand(Battle b, WeaponDef d) =>
-        Battle.Hands && Content.Hands.Line(b.Calling, d) is { } line ? $"{d.Description} {line}" : d.Description;
+        Battle.Hands && Content.Hands.Line(b.Calling, d, brief: true) is { } line ? $"{d.Description} {line}" : d.Description;
 
     static string Names(IEnumerable<string> ids)
     {

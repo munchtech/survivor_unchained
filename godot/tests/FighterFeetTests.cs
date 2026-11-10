@@ -73,7 +73,7 @@ public sealed class FighterFeetTests
     /* ---------------------------------------------------------- campaign -- */
 
     /// <summary>A campaign fight under the Pilot and the stand clock: what her feet did.</summary>
-    sealed class Fight
+    internal sealed class Fight
     {
         public readonly Battle B;
         public readonly PackKit Kit;
@@ -85,7 +85,15 @@ public sealed class FighterFeetTests
         /// <summary>The longest she stood in one place (her feet's hands at rest), by the fight's clock.</summary>
         public double LongestStill;
 
-        public Fight(double seconds, int foes = 2)
+        /// <summary>(M3 MR 3, the feet) The stand clock's steps: when, and the chained cut's beats then (NaN: none live);
+        /// cuts dropped (each once); dashes begun; her place each half second (the trace two runs are compared on).</summary>
+        public readonly List<(double At, double Stood, double Start, double Cancel, double End)> Steps = new();
+        public int Dropped, Dashes, ChainedTicks;
+        public readonly System.Text.StringBuilder Trace = new();
+
+        /// <summary>dummy: the foes never attack (no telegraph, no lunge: nothing to dodge). unchained: her grips' chain
+        /// blocks stripped off the weapons' own copies (the swing of Sim/Contact.cs).</summary>
+        public Fight(double seconds, int foes = 2, bool dummy = false, bool unchained = false)
         {
             var j = MapSim.Survivor("warden", 30, 2, 5);
             B = j.StartBattle(true, new CollisionWorld(80), (_, _) => 0, 0, 0, 0, 7, worldTier: false);
@@ -103,8 +111,10 @@ public sealed class FighterFeetTests
                 e.Hp = e.MaxHp = 1e7;
                 pack.Add(e);
             }
-            int plants = 0;
-            double stillSince = 0;
+            if (unchained) foreach (var w in B.Weapons) if (w.Press?.Chain != null) w.Press = w.Press.WithChain(null);
+            int plants = 0, steps = 0;
+            double stillSince = 0, droppedAt = double.NaN;
+            bool dashing = false;
             for (int i = 0; i * Dt < seconds; i++)
             {
                 var p = B.Player;
@@ -120,15 +130,28 @@ public sealed class FighterFeetTests
                 }
                 if (mx != 0 || mz != 0) stillSince = B.Time;
                 LongestStill = Math.Max(LongestStill, B.Time - stillSince);
+                if (dummy) foreach (var e in pack) { e.AttackT = e.RangedT = 999; }
+                if (m.Steps > steps) { steps = m.Steps; Steps.Add((m.StepAt, m.StepStood, m.StepCutStart, m.StepCancel, m.StepEnd)); }
                 Pilot.Act(B, j, mx, mz, drinks: false);
                 B.Tick(Dt, mx, mz);
                 B.Events.Drain();
+                if (B.Swing is { } sw)
+                {
+                    ChainedTicks++;
+                    if (sw.Dropped && sw.StartAt != droppedAt) { Dropped++; droppedAt = sw.StartAt; }
+                }
+                if (p.DashT > 0 && !dashing) Dashes++;
+                dashing = p.DashT > 0;
+                if (i % 30 == 0) Trace.Append($"{B.Time:0.000}:{p.X:0.0000},{p.Z:0.0000};");
                 // (the fight is her feet's, not her life's: she is kept whole, so no branch turns on her health)
                 p.Hp = B.MaxHp;
                 Kit.Stand(Dt, null, () => pack);
             }
         }
     }
+
+    /// <summary>The fight, for the feet-on-cuts tests.</summary>
+    internal static Fight FightFor(double seconds, int foes = 2, bool dummy = false, bool unchained = false) => new(seconds, foes, dummy, unchained);
 
     [Fact]
     public void In_a_campaign_fight_she_plants_and_swings_and_the_clock_leaves_her_be()
@@ -172,6 +195,85 @@ public sealed class FighterFeetTests
             + string.Join(", ", shy.Take(6).Select(pl => $"planted at {pl.At:0.00} s, stepped at {pl.StepAt:0.00} s, came {pl.Far:0.00} m")));
         // And a plant is never stood past the clock's own time (the step comes first).
         Assert.True(f.LongestStill < Pilot.PlantMost + 0.1, $"she stood {f.LongestStill:0.00} s in one plant");
+    }
+}
+
+/// <summary>(M3 MR 3, the feet) Under a chained grip the stand clock's step goes in a cut's dead part (Pilot.StepsOnCuts): from
+/// its cancel beat to its period's end, never before its contact; the hands' dodges are never held; an unchained grip's
+/// steps are what they were.</summary>
+[Collection("PilotFeet")]
+public sealed class FeetOnCutsTests
+{
+    [Fact]
+    public void A_held_chained_grip_steps_in_the_cuts_dead_part_and_drops_nothing()
+    {
+        var f = FighterFeetTests.FightFor(60, dummy: true);
+        string saw = $"{f.Steps.Count} steps, {f.Dropped} cuts dropped, {f.Dashes} dashes, {f.ChainedTicks} ticks chained; stand charges {f.Kit.StandCharges}; "
+            + string.Join(" ", f.Steps.Take(8).Select(s => $"[{s.At:0.000} in {s.Start:0.000}/{s.Cancel:0.000}/{s.End:0.000}]"));
+        Assert.True(f.ChainedTicks > 60 * 60 / 2, "her grip was not chained most of the fight: " + saw);
+        var chained = f.Steps.Where(s => !double.IsNaN(s.Cancel)).ToList();
+        Assert.True(chained.Count >= 8, "too few steps under a live chain: " + saw);
+        // (a step due with the cut before its cancel beat is held to it unless the wait would leave the clock under
+        // StepHoldLeft s: the opening cut, begun with the clock already counting, may be one)
+        var late = chained.Where(s => s.At >= s.End).ToList();
+        Assert.True(late.Count == 0, $"{late.Count} steps past their cut's period: " + saw);
+        var early = chained.Where(s => s.At < s.Cancel - 1e-9).ToList();
+        Assert.True(early.All(s => s.Stood + (s.Cancel - s.At) > f.Clock.StandFor - Pilot.StepHoldLeft), "a step before its cut's cancel beat that could have waited: " + saw);
+        var off = early.Where(s => s.At > 1).ToList();
+        Assert.True(off.Count == 0, $"{off.Count} of {chained.Count} chained steps outside the cut's dead part: " + string.Join(" ", off.Take(6).Select(s => $"[{s.At:0.000} in {s.Start:0.000}/{s.Cancel:0.000}/{s.End:0.000}]")) + "; " + saw);
+        Assert.Equal(0, f.Dashes);
+        Assert.True(f.Dropped == 0, "cuts dropped: " + saw);
+        Assert.True(f.Kit.StandCharges == 0, "the clock charged her: " + saw);
+    }
+
+    [Fact]
+    public void A_danger_dodge_is_not_held_for_a_pending_cut()
+    {
+        var j = MapSim.Survivor("warden", 30, 2, 5);
+        var b = j.StartBattle(true, new CollisionWorld(80), (_, _) => 0, 0, 0, 0, 7, worldTier: false);
+        b.StoryStand = WorldTiers.Get(WorldTiers.Default).Stand!;
+        var foe = b.SpawnEnemy("footpad", 1.8, 0)!;
+        foe.Hp = foe.MaxHp = 1e7;
+        foe.AttackT = foe.RangedT = 999;
+        // Her chain started, a cut before its contact beat: a champion close by winds up its lunge.
+        bool armed = false;
+        for (int i = 0; i < 600 && !armed; i++)
+        {
+            var (mx, mz) = Pilot.Steer(b);
+            Pilot.Act(b, j, mx, mz, drinks: false);
+            b.Tick(1 / 60.0, mx, mz);
+            b.Events.Drain();
+            foe.AttackT = foe.RangedT = 999;
+            armed = b.Swing is { } c && b.Time < c.ContactAt && c.StartAt > 0.5 && b.Player.DashCharges > 0 && b.Player.DashT <= 0;
+        }
+        Assert.True(armed, "no chained cut before its contact beat in 10 s");
+        var cut = b.Swing!;
+        double start = cut.StartAt;
+        foe.Elite = true;
+        foe.State = EnemyState.Windup;
+        foe.StateT = 0;
+        var (x, z) = Pilot.Steer(b);
+        Pilot.Act(b, j, x, z, drinks: false);
+        Assert.True(b.Player.DashT > 0, "the dodge waited for her cut");
+        Assert.True(b.Swing is { } c2 && c2.StartAt == start && c2.Dropped, "the dodge did not drop the pending cut (the accepted cost)");
+    }
+
+    [Fact]
+    public void An_unchained_grip_steps_as_before()
+    {
+        bool was = Pilot.StepsOnCuts;
+        try
+        {
+            Pilot.StepsOnCuts = false;
+            var before = FighterFeetTests.FightFor(30, unchained: true);
+            Pilot.StepsOnCuts = true;
+            var now = FighterFeetTests.FightFor(30, unchained: true);
+            Assert.Equal(0, now.ChainedTicks);
+            Assert.True(now.Steps.Count >= 4, $"{now.Steps.Count} steps");
+            Assert.Equal(string.Join(" ", before.Steps.Select(s => s.At.ToString("R"))), string.Join(" ", now.Steps.Select(s => s.At.ToString("R"))));
+            Assert.Equal(before.Trace.ToString(), now.Trace.ToString());
+        }
+        finally { Pilot.StepsOnCuts = was; }
     }
 }
 

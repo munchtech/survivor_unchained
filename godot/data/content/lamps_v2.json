@@ -9562,7 +9562,7 @@
     "sunderer.s4"
    ],
    "gate": 8,
-   "text": "A melee swing that kills three makes that skill's next swing come 25% sooner.",
+   "text": "Three kills in quick succession with a melee skill make its next cuts come 25% sooner.",
    "feeds": [
     "sunder",
     "oathblade"

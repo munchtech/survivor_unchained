@@ -481,7 +481,9 @@ public sealed class BarrowLordStory : StoryBoss, IBound
     public override void OnHit(Enemy e, School school, double dmg)
     {
         // Down, holy hastens his laying down (it is not a channel to break).
-        if (laying) { if (school == School.Holy) holyT = 0.5; return; }
+        // (M3 MR 3 l2) A chained cut opens the share of the window its weight is of a blow (the open share of a second
+        // holds); a whole hit opens 0.5 s as before (holyT never stands above 0.5).
+        if (laying) { if (school == School.Holy) holyT = Math.Max(holyT, 0.5 * B.HitW); return; }
         // On the front, holy on him makes it give a step (once in three seconds).
         if (front && school == School.Holy && gaveT <= 0 && frontR < LandingHalf)
         {
