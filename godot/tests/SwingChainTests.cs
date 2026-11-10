@@ -129,7 +129,8 @@ public sealed class SwingChainTests
         {
             var c = r.Cuts[k];
             Assert.Equal(k, c.Cut);
-            Assert.Equal(k % 2 == 0 ? 1 : -1, c.Side);
+            // (sw2) the weapon's count's rule: the first cut from -1, as an unchained hold's first blow
+            Assert.Equal(k % 2 == 0 ? -1 : 1, c.Side);
             // the cut's clip: the heavy's own on a heavy, else the record's clips in turn
             bool heavyClip = c.Heavy && press.ClipHeavy != null;
             string light = press.Clip![k % press.Clip.Length];
@@ -184,13 +185,13 @@ public sealed class SwingChainTests
         var (rt, rel) = r.Releases.Single();
         Assert.Equal(c.Cancel, rel.Time, 9);
         Assert.InRange(rt, c.Cancel - Eps, c.Cancel + Dt + Eps);
-        Assert.Equal((0, 1, r.W.Id), (rel.Cut, rel.Side, rel.Weapon));
+        Assert.Equal((0, -1, r.W.Id), (rel.Cut, rel.Side, rel.Weapon));
         Assert.Equal(18 / 60.0 / c.Rate, rel.Recover, 9);
         // past the grace the chain is over: the next tap is cut 0 on the first side again
         Assert.Null(r.B.Swing);
         Assert.True(r.Tap());
         r.Note();
-        Assert.Equal((0, 1), (r.Cuts[1].Cut, r.Cuts[1].Side));
+        Assert.Equal((0, -1), (r.Cuts[1].Cut, r.Cuts[1].Side));
     }
 
     [Fact]
@@ -214,7 +215,7 @@ public sealed class SwingChainTests
         r.Step(false, 12);
         Assert.NotNull(r.B.Swing);
         while (r.Cuts.Count < 2) r.Step(true);
-        Assert.Equal((1, -1), (r.Cuts[1].Cut, r.Cuts[1].Side));
+        Assert.Equal((1, 1), (r.Cuts[1].Cut, r.Cuts[1].Side));
         Assert.Equal(c0.Start + c0.Wait, r.Cuts[1].Start, 9);
         // let go and wait out the cut and the grace: the chain is over, and a new hold starts at cut 0
         r.Step(false, 150);
@@ -222,7 +223,7 @@ public sealed class SwingChainTests
         Assert.Equal(Math.Max(r.Cuts[1].Cancel, r.Releases[1].R.Time), r.Releases[1].R.Time, 9);
         Assert.Null(r.B.Swing);
         r.Step(true, 2);
-        Assert.Equal((0, 1), (r.Cuts[2].Cut, r.Cuts[2].Side));
+        Assert.Equal((0, -1), (r.Cuts[2].Cut, r.Cuts[2].Side));
     }
 
     [Fact]
@@ -256,7 +257,7 @@ public sealed class SwingChainTests
         Assert.Empty(r.Slashes);
         Assert.Equal(0, r.Hits);
         Assert.Equal(0, r.B.Resolve.LandedFill);
-        Assert.Equal((1, -1), (r.Cuts[1].Cut, r.Cuts[1].Side));
+        Assert.Equal((1, 1), (r.Cuts[1].Cut, r.Cuts[1].Side));
         Assert.Equal(c0.Start + c0.Wait, r.Cuts[1].Start, 9);
     }
 

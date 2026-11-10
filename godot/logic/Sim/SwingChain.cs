@@ -34,7 +34,7 @@ public sealed class SwingChain
 {
     /// <summary>A chain is live: cuts were thrown and the grace after a release has not run out.</summary>
     public bool Live { get; internal set; }
-    /// <summary>The current (or last) cut: its 0-based index in the chain, its side (+1 on even cuts, -1 on odd, or the
+    /// <summary>The current (or last) cut: its 0-based index in the chain, its side (-1 on even cuts, +1 on odd, or the
     /// clip's written side), whether it is a heavy, and its clip (null: the record names none).</summary>
     public int Cut { get; internal set; }
     public int Side { get; internal set; }
@@ -128,7 +128,9 @@ public sealed partial class Battle
         double start = go && c.ReadyStep == Time ? Time - c.Overshoot : Time;
         double rate = Math.Max(1e-3, beats.Len / period);
         c.Live = true; c.Cut = cut; c.Heavy = heavy; c.Clip = clip;
-        c.Side = (clip != null ? HerEvents.Side(clip) : null) ?? ((cut & 1) == 0 ? 1 : -1);
+        // (sw2) the weapon's own count's rule (WeaponInst.NextSide: -1 first), so a hold's first cut swings the record's
+        // first clip from the side the unchained first blow did, and alternates from there
+        c.Side = (clip != null ? HerEvents.Side(clip) : null) ?? ((cut & 1) == 0 ? -1 : 1);
         c.StartAt = start; c.Rate = rate; c.PeriodScale = wait; c.Whole = whole;
         c.ContactAt = start + beats.Contact / rate; c.CancelAt = start + beats.Cancel / rate; c.PeriodEnd = start + cd * wait;
         c.Landed = c.Dropped = c.Told = false;

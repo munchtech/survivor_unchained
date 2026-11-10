@@ -36,13 +36,23 @@ public sealed class ContactFrameTests
         return e;
     }
 
-    /// <summary>The clip's contact delay in game seconds for this press (its rate from the press record).</summary>
-    static double Delay(WeaponDef d, string clip)
+    /// <summary>The clip's contact delay in game seconds for this press. An unchained record: the clip's contact over its
+    /// rate from the press record (clipRate, clipHeavyRate). A chained record (press `chain`; Sim/SwingChain.cs): the cut's
+    /// contact beat less its start, from the chain's own beats: the clip fills the cut's period (the skill's wait,
+    /// Firing.CooldownOf; a heavy on its heavy clip a period longer by its clip's length over the cut's), so the rate is
+    /// the clip's length over the period and the blow lands contact / rate after the cut starts.</summary>
+    static double Delay(Battle b, WeaponInst w, string clip)
     {
-        var r = d.Press!;
+        var r = w.Press!;
         bool heavy = clip == r.ClipHeavy && !(r.Clip?.Contains(clip) ?? false);
-        double rate = heavy ? r.ClipHeavyRate ?? 1.5 : r.ClipRate ?? 1.6;
-        return HerEvents.ContactFrame(clip)!.Value / HerEvents.Fps / rate;
+        if (r.Chain == null)
+        {
+            double rate = heavy ? r.ClipHeavyRate ?? 1.5 : r.ClipRate ?? 1.6;
+            return HerEvents.ContactFrame(clip)!.Value / HerEvents.Fps / rate;
+        }
+        var beats = HerEvents.ChainBeats(clip, heavy);
+        double scale = heavy && r.Clip is { Length: > 0 } cs ? beats.Len / HerEvents.ChainBeats(cs[0], false).Len : 1;
+        return beats.Contact / (beats.Len / (Firing.CooldownOf(b, w) * scale));
     }
 
     /// <summary>Press the skill at the dummy and step until its first hit: (the clip she swung, seconds from the press to the hit).</summary>
@@ -65,18 +75,31 @@ public sealed class ContactFrameTests
         throw new Exception("the blow never landed");
     }
 
-    [Fact]
-    public void A_campaign_press_strikes_on_its_clips_contact()
+    /// <summary>(sw2) Both contracts on the same two records: as shipped (chained since the switch: the blow lands on the
+    /// chain's contact beat) and with the chain stripped off the weapon's own copy (`WithChain(null)`: the old contract,
+    /// the clip's contact over the press record's clip rate). The expected delay is worked from the record each time, with
+    /// one step of slack: the blow lands on the first step at or after its beat.</summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void A_campaign_press_strikes_on_its_clips_contact(bool shipped)
     {
         var b = Fight(true, ("sunder", 1), ("oathblade", 1));
         var e = Dummy(b, 2, 0);
         foreach (var id in new[] { "oathblade", "sunder" })
         {
             var w = b.Weapons.First(x => x.Id == id);
+            // (the switch: the shipped record carries a chain; the old contract is tested on the same record without it)
+            Assert.NotNull(w.Press!.Chain);
+            if (!shipped) w.Press = w.Press.WithChain(null);
+            Assert.Equal(shipped, w.Chained);
             var (clip, after) = PressAndLand(b, w, e);
-            Assert.Contains(clip, w.Def.Press!.Clip!);
-            double d = Delay(w.Def, clip);
+            Assert.Contains(clip, w.Press!.Clip!);
+            double d = Delay(b, w, clip);
             Assert.True(d > Dt, $"{id}: a contact of {d:0.000} s");
+            // (a chained cut: the chain's own clock says the same beat)
+            if (shipped) Assert.Equal(d, w.Chain!.ContactAt - w.Chain.StartAt, 9);
+            else Assert.Null(w.Chain);
             Assert.InRange(after, d - 1e-9, d + Dt + 1e-9);
             Assert.Equal(0, b.PendingBlows);
             // (ready again for the next)
@@ -98,7 +121,9 @@ public sealed class ContactFrameTests
         Assert.Equal(0.70 / 1.6, w.BlowWeight, 12);
         var (clip, after) = PressAndLand(b, w, e);
         Assert.Equal(w.Def.Press!.ClipHeavy, clip);
-        double d = HerEvents.ContactFrame(clip)!.Value / HerEvents.Fps / (w.Def.Press.ClipHeavyRate ?? 1.5);
+        // (sw2) a chained record's heavy lands on the chain's beat too: the same reading as the press above
+        double d = Delay(b, w, clip);
+        Assert.Equal(d, w.Chain!.ContactAt - w.Chain.StartAt, 9);
         Assert.InRange(after, d - 1e-9, d + Dt + 1e-9);
         Assert.True(w.WasOwnHeavy);
         Assert.Equal(every, w.OwnBlows);

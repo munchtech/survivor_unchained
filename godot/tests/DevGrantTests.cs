@@ -98,9 +98,11 @@ public class DevGrantTests
         foe.Hp = foe.MaxHp = 1e7;
         double hp0 = foe.Hp, resolve0 = b.Resolve.Value;
         int held = 0, steps = 0;
+        double seenAt = double.NaN;
         for (double t = 0; t < 4; t += 1 / 60.0)
         {
             foe.X = p.X + 1.6; foe.Z = p.Z;
+            seenAt = b.Time;
             PressPlan.Run(b, hands);
             steps++;
             if (hands.HalfGrip == "sunder") held++;
@@ -111,8 +113,39 @@ public class DevGrantTests
         Assert.True(held > 0.9 * steps, $"Sunder's key held {held} of {steps} steps");
         Assert.True(foe.Hp < hp0, "Sunder never landed");
         Assert.True(b.Resolve.Value > resolve0, "the grip built no Resolve");
-        // With nothing in reach the key is let go.
-        foe.X = p.X + 30;
+        // With nothing in reach the key is let go: by the hands' gap rule (GripGaps, Sim/PressPlan.cs). (sw2) Sunder ships
+        // chained, so its key stays down through the chain's grace, counted from the last step a foe stood in its reach
+        // (these hands have no lapse), and is up on the first step past it.
+        double grace = GripGaps.Grace(Firing.HalfOf(storm));
+        Assert.Equal(0.40, grace);
+        int inGrace = 0;
+        for (int k = 1; ; k++)
+        {
+            Assert.True(k < 60, "the key never came up");
+            foe.X = p.X + 30; foe.Z = p.Z; foe.Vx = foe.Vz = 0;
+            double gap = b.Time - seenAt;
+            PressPlan.Run(b, hands);
+            if (gap <= grace)
+            {
+                // inside the grace: the half's key is still held (the first such step is the step after the foe left)
+                Assert.Equal("sunder", hands.HalfGrip);
+                inGrace++;
+            }
+            else
+            {
+                // one step past the grace: let go
+                Assert.InRange(gap, grace, grace + 1 / 60.0 + 1e-9);
+                Assert.Null(hands.HalfGrip);
+                break;
+            }
+            b.Tick(1 / 60.0, 0, 0);
+            b.Events.Drain();
+            Assert.False(storm.Channeling);
+        }
+        // (0.40 s of 1/60 s steps)
+        Assert.Equal(24, inGrace);
+        // and it stays up: a key that came up goes down again only at a foe
+        b.Tick(1 / 60.0, 0, 0);
         PressPlan.Run(b, hands);
         Assert.Null(hands.HalfGrip);
     }
