@@ -2015,7 +2015,7 @@ def mesh_alder_clusters():
 #     python tools/assets/env_trees.py tex --species clump                       clump_dabs.png
 #     blender -b -P tools/assets/env_trees.py -- mesh --species clump            clump.gltf (lod0-2, shadow)
 #     python tools/assets/env_trees.py sheet --species clump --out X.png         the proof picture and the numbers
-CLUMP = {
+CLUMP_CAPS = {   # (l16-l22: the cap mound, kept as data: an entry with 'domes' still builds it)
     # domes: centre (x, y), radii (x, y, z), yaw. clump_a 2.8 x 2.2 m with its caps, 1.2 m tall; clump_b 1.8 x 1.5, 0.8
     'clump_a': {'seed': 11, 'caps': 56, 'cap': (0.20, 0.24), 'domes': [
         {'c': (-0.36, 0.05), 'r': (0.94, 0.92, 1.14), 'yaw': 20}, {'c': (0.58, -0.12), 'r': (0.74, 0.76, 0.80), 'yaw': -35}]},
@@ -2023,6 +2023,171 @@ CLUMP = {
     'clump_b': {'seed': 37, 'caps': 28, 'cap': (0.19, 0.23), 'domes': [
         {'c': (-0.22, 0.04), 'r': (0.58, 0.60, 0.74), 'yaw': 30}, {'c': (0.36, -0.08), 'r': (0.46, 0.50, 0.52), 'yaw': -20}]},
 }
+
+
+# (L1 lead 24, BUSH) The arena's undergrowth as FERNS (owner_ref_night: a fan of pinnate fronds from one crown, the
+# ground showing between, ~1-1.5 of her heights across), not the cap mound (bush_01-03: solid cauliflower mounds that
+# outweighed her). A species is FERN_FORM's parameters (a piece's 'fern' dict overrides any of them) and its crowns;
+# every frond real geometry (opaque, no alpha cut: no stipple or shimmer), drawn by kit.gdshader's leaf MASS route
+# (COLOR.b 1; COLOR.r the baked level: base < 0.7 body, mid ring 0.7-0.9, tip >= 0.9 top), the tones the rig's stand row.
+FERN_FORM = {
+    'fronds': (8, 6, 4),     # fronds a crown (times its share), lod 0/1/2
+    'pairs': (7, 5, 3),      # pinna pairs a frond, lod 0/1/2 (lod2: one triangle a pinna, no rachis)
+    'segs': (14, 8, 5),      # rachis segments
+    'L': (0.80, 1.05),       # frond length (m, times the crown's scale)
+    'stipe': 0.16,           # the bare stem's share of a frond
+    'el': (24, 50),          # a frond's rise at its foot (degrees)
+    'arch': (50, 78),        # ... turned down over its length (degrees): it arches over
+    'bend': 16,              # ... and sideways (degrees, +-)
+    'fan': 250,              # a crown's fronds spread over this (degrees; 360 reads as a rosette)
+    'width': 0.21,           # a pinna's length at the blade's widest (share of L)
+    'widest': 0.36,          # where the blade is widest (share of the blade, foot to tip)
+    'fwd': 54,               # a pinna's angle forward off the rachis (degrees)
+    'base': 0.74,            # a pinna's foot along the rachis (share of its pair's spacing): the rest is gap
+    'alt': 0.32,             # the right pinna this share of a spacing past the left (alternate, not a ladder)
+    'shoulder': 0.42,        # a pinna's widest point (share of its length) and its half-width there (share of its foot)
+    'droop': 0.22,           # a pinna's tip under its blade (share of its length)
+    'rachis': 0.020,         # the rachis' half-width at its foot (m)
+    'up': 0.5,               # a normal: this share up, the rest its own face's
+    'steps': (0.52, 0.80),   # along a frond, where the level reaches 0.7 (mid) and 0.9 (top: one step lighter at the tip)
+    'jit': ((0.55, 0.0), (0.27, -0.13), (0.18, -0.30)),   # (share, level shift): lit fronds, no top, dark fronds
+    'foot': 0.24,            # a frond's tip kept this high (m): under it the stand's foot band draws contact
+}
+FERN = {
+    # crowns: (x, y, scale, fan middle (degrees), frond share)
+    'clump_a': {'seed': 11, 'fern': {}, 'crowns': [(-0.15, 0.05, 1.0, 100, 1.0), (0.82, -0.30, 0.72, -20, 0.75)]},
+    'clump_b': {'seed': 37, 'fern': {}, 'crowns': [(0.0, 0.0, 0.88, 80, 1.0)]},
+}
+CLUMP = {'clump_a': FERN['clump_a'], 'tuft_a': CLUMP_CAPS['tuft_a'], 'clump_b': FERN['clump_b']}
+
+
+def fern_level(s, F, shift):
+    """A frond's baked level at s (0 its foot, 1 its tip): 0.55 at the foot, 0.7 at steps[0], 0.9 at steps[1], 1 at the tip."""
+    a, b = F['steps']
+    lv = 0.55 + 0.15 * s / a if s < a else (0.7 + 0.2 * (s - a) / (b - a) if s < b else 0.9 + 0.1 * (s - b) / (1 - b))
+    return float(np.clip(lv + shift, 0.45, 1.0))
+
+
+def fern_normal(face_n, F):
+    n = face_n * (1 - F['up']) + _CL_UP * F['up']
+    return n / np.linalg.norm(n)
+
+
+def fern_frond(b, F, c0, az, L, el, arch, bend, shift, uv, lod, rng):
+    """One frond from c0: its rachis (a ribbon, lod < 2) and its pinnae (lanceolate leaflets, alternate, a gap between)."""
+    K = F['segs'][lod]
+    n_sub = 6 * K
+    pts = [np.array(c0, float)]
+    for i in range(n_sub):
+        s = (i + 0.5) / n_sub
+        th = math.radians(el - arch * s); a = math.radians(az + bend * s)
+        pts.append(pts[-1] + np.array([math.cos(th) * math.cos(a), math.cos(th) * math.sin(a), math.sin(th)]) * L / n_sub)
+    pts = np.array(pts)
+
+    def at(s):
+        x = min(max(s, 0.0), 1.0) * n_sub; i = min(int(x), n_sub - 1); f = x - i
+        p = pts[i] * (1 - f) + pts[i + 1] * f
+        t = pts[i + 1] - pts[i]; t = t / np.linalg.norm(t)
+        side = np.cross(_CL_UP, t); side = side / np.linalg.norm(side)
+        return p, t, side, np.cross(t, side)
+
+    def put(v, n, lv, s):
+        b.v.append(v); b.n.append(n); b.uv.append(uv); b.c.append((lv, s, 1.0))
+
+    if lod < 2:      # the rachis
+        base = len(b.v)
+        for k in range(K + 1):
+            s = k / K
+            p, t, side, nb = at(s)
+            w = F['rachis'] * (1 - 0.65 * s)
+            n = fern_normal(nb, F)
+            for sg in (-1, 1):
+                put(p + side * w * sg, n, fern_level(s, F, shift), s)
+        for k in range(K):
+            a0 = base + 2 * k
+            b.f.append((a0, a0 + 1, a0 + 3, a0 + 2)); b.tag.append(0)
+    P = F['pairs'][lod]
+    st = F['stipe']
+    dlt = (1 - st) / (P + 0.5)
+    fw = math.radians(F['fwd'])
+    for j in range(P):
+        for sg, off in ((-1, 0.0), (1, F['alt'])):
+            sj = st + dlt * (j + 0.5 + off)
+            u = (sj - st) / (1 - st)
+            wd = F['widest']
+            e = 1 - ((u - wd) / (wd if u < wd else 1 - wd)) ** 2
+            e = max(e, 0.0) ** 0.8 * 0.85 + 0.15
+            lp = F['width'] * L * e * float(rng.uniform(0.9, 1.1))
+            pa = at(sj - F['base'] * dlt / 2)[0]
+            pb = at(sj + F['base'] * dlt / 2)[0]
+            _, t, side, nb = at(sj)
+            d = t * math.cos(fw) + side * sg * math.sin(fw)
+            tip = (pa + pb) / 2 + d * lp - _CL_UP * F['droop'] * lp
+            fn = np.cross(tip - pa, pb - pa)
+            fn = fn / (np.linalg.norm(fn) + 1e-9)
+            if fn[2] < 0:
+                fn = -fn
+            n = fern_normal(fn, F)
+            lv0 = fern_level(sj, F, shift); lv1 = fern_level(sj + 0.04, F, shift)
+            base = len(b.v)
+            if lod < 2:
+                pw = np.cross(fn, d); pw = pw / (np.linalg.norm(pw) + 1e-9)
+                if pw @ t < 0:
+                    pw = -pw          # (pw toward the frond's tip: the shoulder on pb's side)
+                sh = (pa + pb) / 2 + d * lp * F['shoulder'] - _CL_UP * F['droop'] * lp * 0.3
+                hw = np.linalg.norm(pb - pa) * F['shoulder']
+                for v, l in ((pa, lv0), (sh - pw * hw, lv0), (tip, lv1), (sh + pw * hw, lv0), (pb, lv0)):
+                    put(v, n, l, sj)
+                b.f += [(base, base + 1, base + 2), (base, base + 2, base + 3), (base, base + 3, base + 4)]
+                b.tag += [0, 0, 0]
+            else:
+                for v, l in ((pa, lv0), (tip, lv1), (pb, lv0)):
+                    put(v, n, l, sj)
+                b.f.append((base, base + 1, base + 2)); b.tag.append(0)
+    # the frond's own tip leaflet
+    p, t, side, nb = at(1.0)
+    p0 = at(1.0 - 0.6 * dlt)[0]
+    hw = F['rachis'] * 1.6 + 0.02
+    n = fern_normal(nb, F)
+    lv = fern_level(1.0, F, shift)
+    base = len(b.v)
+    for v in (p0 + side * hw, p + t * F['width'] * L * 0.33, p0 - side * hw):
+        put(v, n, lv, 1.0)
+    b.f.append((base, base + 1, base + 2)); b.tag.append(0)
+
+
+def fern_piece(prm, lod):
+    """A fern clump at a LOD (lod 3: its shadow caster, lod2's fronds): its crowns' fronds, seeded the same at every LOD."""
+    F = dict(FERN_FORM); F.update(prm.get('fern', {}))
+    b = Build(); b.tag = []
+    rng = np.random.default_rng(prm['seed'])
+    for cx, cy, sc, fan_mid, share in prm['crowns']:
+        nmax = max(1, round(F['fronds'][0] * share))
+        plan = []
+        for k in range(nmax):
+            az = fan_mid + F['fan'] * ((k + rng.uniform(0.15, 0.85)) / nmax - 0.5)
+            L = rng.uniform(*F['L']) * sc
+            el = rng.uniform(*F['el']); arch = rng.uniform(*F['arch']); bend = rng.uniform(-1, 1) * F['bend']
+            r = rng.random(); acc = 0.0; shift = F['jit'][-1][1]
+            for sh_, sv in F['jit']:
+                acc += sh_
+                if r < acc:
+                    shift = sv
+                    break
+            uv = (float(rng.uniform(0.04, 0.9)), float(rng.uniform(0.25, 0.9)))
+            plan.append((L, az, el, arch, bend, shift, uv, int(rng.integers(1 << 30))))
+        # (lower LODs keep the longest fronds; the arch eased until the tip stays over the foot band)
+        keep = sorted(range(nmax), key=lambda k: -plan[k][0])[:max(1, round(F['fronds'][min(lod, 2)] * share))]
+        for k in sorted(keep):
+            L, az, el, arch, bend, shift, uv, seed = plan[k]
+            c0 = np.array([cx, cy, 0.06]) + np.array([math.cos(math.radians(az)), math.sin(math.radians(az)), 0]) * 0.05 * sc
+            for _ in range(8):
+                z = 0.06 + sum(math.sin(math.radians(el - arch * (i + 0.5) / 40)) * L / 40 for i in range(40))
+                if z >= F['foot']:
+                    break
+                arch *= 0.85
+            fern_frond(b, F, c0, az, L, el, arch, bend, shift, uv, min(lod, 2), np.random.default_rng(seed))
+    return b
 BU_SIZES = (1.12, 1.0, 0.88)   # every third cap big, medium, small (times its 'cap' radius)
 BU_LOBES = (5, 6)     # a cap's leaf tips
 BU_NOTCH = 0.78       # the cut between two tips (share of the cap's radius)
@@ -2252,6 +2417,8 @@ def clump_piece(prm, lod, proxy=False):
     domes whole, low; a tuft: a lump)."""
     b = Build()
     b.tag = []
+    if 'crowns' in prm:
+        return fern_piece(prm, 3 if proxy else lod)
     if 'tuft' in prm:
         if proxy:
             lump(b, np.random.default_rng(prm['seed'] + 7), np.array([0, 0, 0.12]), 0.36, 0.17, nu=6, nv=3)
