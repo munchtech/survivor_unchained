@@ -2,6 +2,34 @@
  "id": "plate_cuisses_plain",
  "sides": {
   "l": {
+   "plate_end_owned_mm": [
+    424,
+    435,
+    421,
+    381,
+    378
+   ],
+   "lame_end_owned_mm": [
+    454,
+    452,
+    441,
+    411,
+    438
+   ],
+   "bot_mm": [
+    423,
+    423,
+    413,
+    378,
+    375
+   ],
+   "lame_bot_mm": [
+    453,
+    445,
+    435,
+    411,
+    434
+   ],
    "owned_line_mm": [
     208,
     208,
@@ -40,24 +68,52 @@
     "no_hit": 497
    },
    "seated_points": [
-    12,
-    11
+    19,
+    14
    ],
    "garter_mm": 176,
    "plate_l_rigid": {
-    "tris": 4920,
-    "rest_clear_mm_min": 0.5,
-    "inside": 0
-   },
-   "lame_l_rigid": {
-    "tris": 1208,
+    "tris": 4712,
     "rest_clear_mm_min": 0.49,
     "inside": 0
    },
-   "lame_under_cop_mm_min": 1.56,
+   "lame_l_rigid": {
+    "tris": 1288,
+    "rest_clear_mm_min": 0.5,
+    "inside": 0
+   },
+   "lame_under_cop_mm_min": 7.32,
    "lame_tucked_rows": 7
   },
   "r": {
+   "plate_end_owned_mm": [
+    424,
+    435,
+    421,
+    381,
+    378
+   ],
+   "lame_end_owned_mm": [
+    454,
+    452,
+    441,
+    411,
+    438
+   ],
+   "bot_mm": [
+    423,
+    423,
+    413,
+    378,
+    375
+   ],
+   "lame_bot_mm": [
+    453,
+    444,
+    435,
+    411,
+    434
+   ],
    "owned_line_mm": [
     208,
     208,
@@ -96,30 +152,30 @@
     "no_hit": 497
    },
    "seated_points": [
-    12,
-    11
+    19,
+    14
    ],
    "garter_mm": 177,
    "plate_r_rigid": {
-    "tris": 4920,
-    "rest_clear_mm_min": 0.5,
-    "inside": 0
-   },
-   "lame_r_rigid": {
-    "tris": 1208,
+    "tris": 4712,
     "rest_clear_mm_min": 0.49,
     "inside": 0
    },
-   "lame_under_cop_mm_min": 1.44,
+   "lame_r_rigid": {
+    "tris": 1288,
+    "rest_clear_mm_min": 0.49,
+    "inside": 0
+   },
+   "lame_under_cop_mm_min": 7.31,
    "lame_tucked_rows": 7
   }
  },
  "dir": "godot/art/gear/native/plate_cuisses_plain",
- "tris": 14472,
+ "tris": 14288,
  "parts": {
   "straps_l": [
-   516,
-   770,
+   540,
+   806,
    "darkleather"
   ],
   "tabs_l_rigid": [
@@ -133,13 +189,13 @@
    "steel"
   ],
   "plate_l_rigid": [
-   2549,
-   4920,
+   2443,
+   4712,
    "steel"
   ],
   "lame_l_rigid": [
-   645,
-   1208,
+   687,
+   1288,
    "steel"
   ],
   "buckle_l_rigid": [
@@ -148,8 +204,8 @@
    "steel"
   ],
   "straps_r": [
-   516,
-   770,
+   540,
+   806,
    "darkleather"
   ],
   "tabs_r_rigid": [
@@ -163,13 +219,13 @@
    "steel"
   ],
   "plate_r_rigid": [
-   2549,
-   4920,
+   2443,
+   4712,
    "steel"
   ],
   "lame_r_rigid": [
-   645,
-   1208,
+   687,
+   1288,
    "steel"
   ],
   "buckle_r_rigid": [

@@ -47,8 +47,19 @@ def limb_plate(pid, cfg, out=None, ref=None):
         rim_s = np.array([sg[cut & (np.abs(thg - b) < 7)].min() if (cut & (np.abs(thg - b) < 7)).any() else np.nan for b in bins])
         ok = np.isfinite(rim_s)
         rim = nb.edge_curve(bins[ok], rim_s[ok], deg=4)
-        bot = lambda th: rim(th) - rim_cfg["above"]  # noqa: E731
         tt = np.linspace(t0, t1, 16)
+        scan = np.linspace(0.5 * L, 1.15 * L, 120)
+        ends = {}
+        for key, o, deflt in (("plate", rim_cfg.get("own"), rim(tt) - rim_cfg["above"]),
+                              ("lame", cfg["lame"].get("own"), rim(tt) + cfg["lame"]["visible"] - rim_cfg["above"])):
+            if o:   # (no further down than the skin its role owns: past it the joint's skin comes through a rigid plate)
+                held = nb.owned_line(ref, fr, o["role"], o["share"], tt, scan, last=True) - o["margin"]
+                r[f"{key}_end_owned_mm"] = [round(float(v) / MM) for v in held[[0, 4, 8, 12, 15]]]
+                deflt = np.minimum(deflt, held)
+            ends[key] = nb.edge_curve(tt, deflt, deg=4, side=-1 if o else 0)
+        bot, lame_bot = ends["plate"], ends["lame"]
+        r["bot_mm"] = [round(float(v) / MM) for v in bot(np.array([t0, 0.0, 45.0, 90.0, t1]))]
+        r["lame_bot_mm"] = [round(float(v) / MM) for v in lame_bot(np.array([t0, 0.0, 45.0, 90.0, t1]))]
         pts = np.array(cfg["top"]["points"], float)
         s_top = np.interp(tt, pts[:, 0], pts[:, 1])
         own = cfg["top"].get("own")
@@ -81,7 +92,7 @@ def limb_plate(pid, cfg, out=None, ref=None):
             inner = plate.law(s, th) + lift["h"] * nb.smooth(1 - (plate.bot(th) - s) / lift["band"]) - 0.0003
             return np.where(s < plate.bot(th), inner, cop)
 
-        knee = Sheet(fr, env.plus(lame["clear"]), t0, t1, lambda th: bot(th) - lame["overlap"], lambda th: rim(th) + under,
+        knee = Sheet(fr, env.plus(lame["clear"]), t0, t1, lambda th: bot(th) - lame["overlap"], lame_bot,
                      lame["thick"], roll=tuple(cfg["roll"]), cap=cap, clear=lame["clear"], lip=0.0004, step=cfg.get("step", 0.011),
                      flare={"h": lame["flare"], "band": 0.008})
         p_plate = plate.build(f"plate_{sd}_rigid", mats["plate"])

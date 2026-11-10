@@ -243,15 +243,18 @@ def edge_curve(th, s, deg=4, side=0, dom=None):
     return lambda t: np.polynomial.chebyshev.chebval(x(t), c)
 
 
-def owned_line(ref, fr, role, share, th, s_scan, rmax=0.3):
+def owned_line(ref, fr, role, share, th, s_scan, rmax=0.3, last=False):
     """Where a role comes to own the skin along each theta: the first s (down the frame's axis) from which the role's
-    share of the skin weights stays >= `share`. The line a rigid plate riding that role may start from."""
+    share of the skin weights stays >= `share`. The line a rigid plate riding that role may start from. last: where
+    it stops owning it instead (the last s of the scan before its share falls under `share`): where the plate ends."""
     Tn = near(ref.V, ref.T, fr, s_scan.min() - 0.05, s_scan.max() + 0.05, rmax)
     S, TH = np.meshgrid(s_scan, th, indexing="ij")
     _, i = radial(ref.V, Tn, fr, S, TH, rmax)
     w = ref.share(role, "l" if fr.hand > 0 else "r")
     wt = np.where(i >= 0, w[Tn[np.maximum(i, 0)]].mean(-1), 0.0)
     below = wt < share
+    if last:
+        return s_scan[np.maximum(np.where(below.any(0), below.argmax(0), len(s_scan)) - 1, 0)]
     last = np.where(below.any(0), len(s_scan) - 1 - below[::-1].argmax(0), -1)
     return s_scan[np.minimum(last + 1, len(s_scan) - 1)]
 
@@ -306,9 +309,9 @@ def outward(P, T, D):
 
 def grid_tris(nr, nc, close=False):
     i, j = np.meshgrid(np.arange(nr - 1), np.arange(nc if close else nc - 1), indexing="ij")
-    a, b = i * nc + j, i * nc + (j + 1) % nc
+    a, b = (i * nc + j).reshape(-1), (i * nc + (j + 1) % nc).reshape(-1)
     c, d = a + nc, b + nc
-    return np.r_[np.c_[a, b, d].reshape(-1, 3), np.c_[a, d, c].reshape(-1, 3)]
+    return np.r_[np.c_[a, b, d], np.c_[a, d, c]]
 
 
 ROLL_D = np.array([0.0, 0.133, 0.333, 0.667, 0.867, 1.0])      # a rolled edge's knots, in its widths from the edge
