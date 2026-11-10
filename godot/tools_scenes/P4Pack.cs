@@ -9,8 +9,9 @@ using SurvivorUnchained.View;
 namespace SurvivorUnchained.Tools;
 
 /// <summary>
-/// P4 clips packed for the game (tools/anim/p4_pack.sh runs tools_scenes/p4_pack.gd, which runs this): every
-/// art/people/body_p1/p4/*.json (tools/anim/p4.py build: local rotations of B's keyed bones as Godot quaternions
+/// P4 clips packed for the game (tools/anim/p4_pack.sh runs tools_scenes/p4_pack.gd, which runs this): every JUDGED
+/// (P4Gate: p4.py judged) art/people/body_p1/p4/*.json; the unjudged are skipped so they cannot replace a shipped bridge
+/// clip, and a review pack (p4_pack.sh --review: unjudged included, for shots and judges, never to commit) takes all: (tools/anim/p4.py build: local rotations of B's keyed bones as Godot quaternions
 /// [x, y, z, w], root and pelvis local positions, frames at fps, a loop's last frame its first) into
 /// art/people/body_p1/p4_clips.res, an AnimationLibrary: a rotation track per keyed bone, position tracks for root and
 /// pelvis, the loop mode from the clip, length (frames-1)/fps, step 1/fps. The skeleton track path is the bridge clips'
@@ -36,6 +37,13 @@ public partial class P4Pack : Node
         // t^-1 q, and t (t^-1 q) = q: the clip plays exactly as built while the bridge clips need the base.
         var baseTurn = P1Body.BlendBase().ToDictionary(x => x.Bone, x => x.Turn);
         var outLib = new AnimationLibrary();
+        bool review = P4Gate.Review(OS.GetCmdlineUserArgs());
+        if (review)
+        {
+            outLib.SetMeta("review", true);
+            GD.Print("p4-pack: REVIEW PACK: unjudged clips included. For shots and judges in this worktree only; never commit or hand its her_events.json on");
+        }
+        int skipped = 0;
         var events = new Dictionary<string, HerEvents.Beats>();
         var files = DirAccess.GetFilesAt(dir).Where(f => f.EndsWith(".json")).OrderBy(f => f).ToArray();
         foreach (var file in files)
@@ -43,6 +51,12 @@ public partial class P4Pack : Node
             using var d = JsonDocument.Parse(FileAccess.GetFileAsString(dir + file));
             var r = d.RootElement;
             string name = r.GetProperty("name").GetString()!;
+            if (!P4Gate.Takes(r, review))
+            {
+                skipped++;
+                GD.Print($"p4-pack: SKIPPED {name}: not judged (the bridge clip keeps playing; a review pack takes it: p4_pack.sh --review)");
+                continue;
+            }
             double fps = r.GetProperty("fps").GetDouble();
             int frames = r.GetProperty("frames").GetInt32();
             bool loop = r.GetProperty("loop").GetBoolean();
@@ -82,7 +96,7 @@ public partial class P4Pack : Node
                      (missing.Length > 0 ? $"; NOT KEYED under the blend base (they land on t): {string.Join(" ", missing)}" : ""));
         }
         var err = ResourceSaver.Save(outLib, P1Body.Dir + "p4_clips.res", ResourceSaver.SaverFlags.Compress);
-        GD.Print($"p4-pack: wrote p4_clips.res ({files.Length} clips, track path {skelPath}): {err}");
+        GD.Print($"p4-pack: wrote p4_clips.res ({files.Length - skipped} packed, {skipped} skipped, track path {skelPath}): {err}");
         // The clips' beats as data (a clip's top-level "beats", clip seconds -> frames at 60 fps). The pack owns the
         // entries of the clips it packs (each replaced, or dropped when the clip has no beats now); every other clip's
         // entry is kept as it stands (M3's measured contacts of the bridge swings: tools/anim/contact_measure.py).

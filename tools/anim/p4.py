@@ -20,6 +20,8 @@ The rig is tools/body/rig/{b_skeleton,soma_to_b}.json (tools/body/rig_map.py).
 from __future__ import annotations
 
 import argparse
+import datetime
+import hashlib
 import json
 import os
 import sys
@@ -47,6 +49,40 @@ KFPS = 30
 def specs(names):
     allp = sorted(p for p in (P4 / "specs").glob("*.json") if not p.stem.endswith(".takes"))
     return [p for p in allp if not names or p.stem in names]
+
+
+PLAYS = ("name", "fps", "frames", "loop", "rot", "pos", "beats", "speed_mps")   # what P4Pack reads: all that plays
+
+
+def clip_hash(built):
+    """The pack gate's fingerprint of a built clip: sha256 (first 16 hex) of what plays (not notes, not `judged`)."""
+    obj = {k: built[k] for k in PLAYS[:6] if k in built}
+    for k in PLAYS[6:]:
+        if built.get(k) is not None:
+            obj[k] = built[k]
+    return hashlib.sha256(json.dumps(obj, sort_keys=True, separators=(",", ":")).encode()).hexdigest()[:16]
+
+
+def judged_state(spec, built):
+    """"judged" (spec flag matches the build), "stale" (flag present, build changed) or "not judged" (no flag)."""
+    j = spec.get("judged")
+    if not j:
+        return "not judged"
+    return "judged" if j.get("build") == clip_hash(built) else "stale"
+
+
+def judged_note(name, spec, built):
+    """Writes (or strips) the top-level `judged` in `built` by the state; returns the printed line."""
+    st = judged_state(spec, built)
+    built.pop("judged", None)
+    if st == "judged":
+        j = spec["judged"]
+        built["judged"] = j
+        return f"p4: {name}: judged ({j.get('by')}, {j.get('on')}), build matches"
+    if st == "stale":
+        return (f"p4: {name}: JUDGED FLAG STALE: the build changed since its judge ({spec['judged'].get('build')} -> "
+                f"{clip_hash(built)}); the pack will skip it")
+    return f"p4: {name}: not judged (the pack skips it; review packs only)"
 
 
 def cmd_import(a):
@@ -500,8 +536,10 @@ def cmd_build(a):
     OUT.mkdir(parents=True, exist_ok=True)
     for p in specs(a.clips):
         r = build_one(p)
-        MC.write(r.clip, OUT / f"{p.stem}.json")
         sp = json.loads(p.read_text())
+        line = judged_note(p.stem, sp, r.clip)
+        MC.write(r.clip, OUT / f"{p.stem}.json")
+        print(line)
         if sp.get("bands"):
             m = measure(r, sp)
             ok = measures.passes(m, sp["bands"])
@@ -628,6 +666,7 @@ def cmd_check(a):
         if not built.exists():
             print(f"{p.stem}: not built"); continue
         c = MC.read(built)
+        print(f"{p.stem}: " + judged_state(json.loads(p.read_text()), c)+ " (pack gate)")
         r = build_one(p)                       # (in memory: SOMA's side, for the contact windows and fidelity)
         rig = r.rig
         G, P = MC.globals_of(c, rig)
@@ -681,6 +720,34 @@ def cmd_check(a):
     (out / "p4check.json").write_text(json.dumps(rows, indent=1))
 
 
+def cmd_judged(a):
+    ps = specs(a.clips)
+    if a.list or not a.clips:
+        for p in ps:
+            b = OUT / f"{p.stem}.json"
+            st = "not built" if not b.exists() else {"judged": "judged", "not judged": "NOT JUDGED", "stale": "STALE"}[
+                judged_state(json.loads(p.read_text()), MC.read(b))]
+            print(f"{p.stem}: {st}")
+        return
+    for p in ps:
+        b = OUT / f"{p.stem}.json"
+        if not b.exists():
+            sys.exit(f"{p.stem}: not built (build it first)")
+        sp, built = json.loads(p.read_text()), MC.read(b)
+        sp.pop("judged", None)
+        built.pop("judged", None)
+        if a.clear:
+            print(f"{p.stem}: judged flag cleared")
+        else:
+            if not a.by:
+                sys.exit("--by is required")
+            sp["judged"] = {"by": a.by, "on": a.on or datetime.date.today().isoformat(), "verdict": a.verdict, "build": clip_hash(built)}
+            built["judged"] = sp["judged"]
+            print(f"{p.stem}: judged, build {sp['judged']['build']}")
+        p.write_text(json.dumps(sp, indent=1) + "\n")
+        MC.write(built, b)
+
+
 def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -697,8 +764,15 @@ def main():
         s.add_argument("clips", nargs="*")
         if nm == "takes":
             s.add_argument("--match", default="")
+    j = sub.add_parser("judged")
+    j.add_argument("clips", nargs="*")
+    j.add_argument("--by", default="")
+    j.add_argument("--verdict", default="PASS")
+    j.add_argument("--on", default="")
+    j.add_argument("--list", action="store_true")
+    j.add_argument("--clear", action="store_true")
     a = ap.parse_args()
-    {"import": cmd_import, "build": cmd_build, "check": cmd_check, "gen": cmd_gen, "takes": cmd_takes}[a.cmd](a)
+    {"judged": cmd_judged, "import": cmd_import, "build": cmd_build, "check": cmd_check, "gen": cmd_gen, "takes": cmd_takes}[a.cmd](a)
 
 
 
