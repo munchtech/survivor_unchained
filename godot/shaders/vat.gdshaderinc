@@ -105,6 +105,32 @@ global uniform vec4 crowd_r4;
 // rim is S3's.
 global uniform vec4 crowd_fire;
 global uniform vec4 crowd_moon;
+// (L1 lead 18, W2: the foes' VALUE PLAN by night, target 09. Lead 12's rule "a moonlit foe reads lighter than its ground" is
+// withdrawn: the pack was a flat bright-blue cutout (S3's top band lay over a whole back from the play camera) and the
+// frame's top contrast, where SHE should be. Now, under crowd_fire (cf_on): OUT IN THE DARK a foe's body sits at the floor's
+// shade value (the paint's night luminance, crowd_moon.x), a narrow TOP step on its back (CF_TOP: n toward the leaned-up
+// moon, far tighter than S3's edge) and a thin cyan RIM on its moon-side silhouette (S3's edge, cel_s3_shape.z px) say
+// "wolf". INSIDE HER GLOW (whole where the ground ramp's level is above CF_KNEE, about 3.6 m, none under CF_REACH, about 5 m)
+// the body turns grey-violet (a breath of the fire on every face, CF_AMB; the top step's violet, CF_TOP_IN), the cyan rim
+// goes, and the faces turned to her (n toward her, leaned up by CF_UP, past crowd_fire.w) take ONE warm step: CF_WARM's
+// hue at a fixed tone (crowd_fire.x x crowd_fire.y: a cel tone, not the ramp's falloff, which left a foe
+// 3 m out a faint brown), with a thin gold edge (the pool's core hue at crowd_fire.x) on her-side silhouettes of faces
+// past crowd_fire.z. All steps are hard, their edges one screen derivative wide. S3 itself is off on a foe (vat_s3k 0).)
+#define CF_KNEE 0.135
+#define CF_REACH 0.04
+#define CF_UP 0.35
+#define CF_AMB 0.006
+#define CF_TOP 0.90
+#define CF_TOP_OUT vec3(0.0105, 0.0255, 0.073)
+#define CF_TOP_IN vec3(0.037, 0.0165, 0.038)
+#define CF_RIM vec3(0.075, 0.43, 0.64)
+// (the warm step's hue: target 09's L 0.49 h 32 at level 0.335; the ramp's own hue out there runs to magenta)
+#define CF_WARM vec3(1.0, 0.144, 0.08)
+// (a silhouette edge c_px screen pixels wide from n.v and its screen derivative, on grazing faces only)
+float vat_edge_px(vec3 c_n, vec3 c_v, float c_px) {
+	float c_nv = clamp(dot(c_n, c_v), 0.0, 1.0);
+	return (1.0 - smoothstep(c_px - 0.5, c_px + 0.5, c_nv / max(fwidth(c_nv), 1e-4))) * (1.0 - smoothstep(0.55, 0.65, c_nv));
+}
 // (whole by 1 - NdotV 0.92: a soft 2-4 px edge on a body at the play camera, not a hairline)
 #define CROWD_EDGE_END 0.92
 // (the fur and hair cards take crowd_lamp3.w of the edge: both-sided cards at grazing angles lit it as white sparkle)
@@ -454,16 +480,33 @@ void fragment() {
 			// bands by n.l toward her (level with the ground: a back or a top takes none), the dead by their darkening; leaf
 			// shade does not cut it (a foe stands up out of the ground's shade); the moon, its fill and S3 give way on those
 			// faces only, as the ground's moon does by distance (cel_give))
+			// (L1 lead 18, W2: the value plan above)
 			vec4 cf_rp = cel_pool_at(cw_h);
+			float cf_mx = max(cf_rp.r, max(cf_rp.g, cf_rp.b));
+			vec3 cf_hue = cf_rp.rgb / max(cf_mx, 1e-4);
+			vec4 cf_core = cel_pool_at(0.0);
+			vec3 cf_gold = cf_core.rgb / max(max(cf_core.r, max(cf_core.g, cf_core.b)), 1e-4);
+			float cf_g = clamp((cf_mx - CF_REACH) / (CF_KNEE - CF_REACH), 0.0, 1.0) * step(0.001, crowd_ember.w);
+			float cf_alive = clamp(dot(abs(COLOR.rgb), vec3(0.333)), 0.0, 1.0);
 			vec2 cf_to = crowd_ember.xz - cw_p.xz;
-			float cf_t = dot(cw_n.xz, cf_to / max(length(cf_to), 1e-3));
+			vec2 cf_dir = cf_to / max(length(cf_to), 1e-3);
+			float cf_t = dot(cw_n, normalize(vec3(cf_dir.x, CF_UP, cf_dir.y)));
 			float cf_w = fwidth(cf_t) * 0.75 + 0.01;
 			float cf_b1 = smoothstep(crowd_fire.z - cf_w, crowd_fire.z + cf_w, cf_t), cf_b2 = smoothstep(crowd_fire.w - cf_w, crowd_fire.w + cf_w, cf_t);
+			float cf_warm = cf_b2 * cf_g;
+			float cf_edge = cf_b1 * cf_g * vat_edge_px(NORMAL, VIEW, cel_s3_shape.z) * (1.0 - busy);
 			float cf_give = cf_b2 * cel_give.x * (1.0 - smoothstep(cel_give.z, max(cel_give.w, cel_give.z + 1e-3), cw_h));
-			e += cf_rp.rgb * (crowd_ember.w * crowd_fire.x * mix(crowd_fire.y * cf_b2, 1.0, cf_b1) * clamp(dot(abs(COLOR.rgb), vec3(0.333)), 0.0, 1.0));
+			// (the moon's own steps on a foe: the top step and the rim, in place of S3's)
+			float cf_tm = dot(cw_n, normalize(mix(cel_key.xyz, vec3(0.0, 1.0, 0.0), cel_s3_shape.y)));
+			float cf_tw = fwidth(cf_tm) * 0.75 + 0.01;
+			float cf_top = smoothstep(CF_TOP - cf_tw, CF_TOP + cf_tw, cf_tm) * (1.0 - cf_warm);
+			float cf_rim = cel_s3_edge(NORMAL, VIEW, VIEW_MATRIX) * (1.0 - cf_g) * (1.0 - busy);
+			e += mix(mix(CF_TOP_OUT, CF_TOP_IN, cf_g) * cf_top, CF_RIM, cf_rim) * cf_alive;
+			e += cf_hue * (CF_AMB * cf_g * cf_alive);
+			e += mix(CF_WARM * (crowd_fire.y * cf_warm), cf_gold, cf_edge) * (crowd_ember.w * crowd_fire.x * cf_alive);
 			e += c * (crowd_fill.rgb + crowd_top.rgb * cn_head) * (1.0 - cf_give);
 			cn_k = 1.0 - cf_give;
-			vat_s3k = 1.0 - cf_give;
+			vat_s3k = 0.0;
 		} else if (crowd_lamp2.z > 0.0) {
 			// (r5: the flat and the dead lose only the lamp, not the moon or the fill; the crowd close to her takes a share of it
 			// so she reads over the ring; a warm rim on the side toward her)
