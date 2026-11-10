@@ -23,7 +23,7 @@ public partial class BattleFx
     /// <summary>The stroke's numbers by weapon: the head's half-width (a share of the blade's reach), the stroke's
     /// longest length (radians), how long the blade takes across the cut, and the star's half-size and spikes.</summary>
     readonly record struct GripLook(float Hw, float Len, float Cross, float Star, int Spikes);
-    static readonly GripLook GripSunder = new(0.11f, 1.7f, 0.09f, 0.7f, 5), GripOath = new(0.085f, 1.9f, 0.07f, 0.5f, 4);
+    static readonly GripLook GripSunder = new(0.11f, 1.7f, 0.09f, 0.85f, 5), GripOath = new(0.085f, 1.9f, 0.07f, 0.6f, 4);
     /// <summary>After the blade has crossed: a breath whole, then a step every GripStep (core, gold, amber out).</summary>
     const float GripHold = 0.02f, GripStep = 0.035f;
 
@@ -80,7 +80,7 @@ public partial class BattleFx
             var body = V(e.HitX, Y(e.HitX, e.HitZ) + 1.0, e.HitZ);
             var to = new Vector3(at.X - body.X, 0, at.Z - body.Z);
             if (to.LengthSquared() > 0.01f) body += to.Normalized() * 0.25f;
-            P7Star(body, look.Star * Mathf.Min(g, 1.2f), look.Spikes, 3 / 60f, bill: true, step: 0.04f);
+            P7Star(body, look.Star * Mathf.Min(g, 1.2f), look.Spikes, 4 / 60f, bill: true, step: 0.04f);
             if (!oath) Cam?.AddTrauma(0.03f);
         }
         float mid = (float)e.Angle;
