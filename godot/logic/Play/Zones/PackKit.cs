@@ -75,7 +75,8 @@ public sealed class PackKit(Battle b)
         bool fighter = d.StandSwing > 0;
         if (fighter)
         {
-            if (moved) { stood = 0; swingLeft = d.StandSwing; heldUntil = 0; }
+            // (a step keeps the hold of the cut that landed before it: the wait to her next cut is that cut's, not a stand)
+            if (moved) { stood = 0; swingLeft = d.StandSwing; }
             else if (p.RootT > 0) stood = 0;
             double cut = Math.Min(swingLeft, b.SwingLanded - swingSeen);
             if (cut > 0) { heldUntil = Math.Max(heldUntil, b.Time) + cut; swingLeft -= cut; }
@@ -93,7 +94,7 @@ public sealed class PackKit(Battle b)
         if (b.Time < standReady || !p.Alive || held?.Invoke() == true) return;
         // Held where she is (knocked down, rooted) is not standing: the clock starts again once she can move.
         if (p.RootT > 0) { standReady = b.Time + d.StandFor; return; }
-        if (!StandClock.Still(herTrail, b.Time, p.X, p.Z, d) || fighter && stood < d.StandFor) return;
+        if (!StandClock.Still(herTrail, b.Time, p.X, p.Z, d) || fighter && (stood < d.StandFor || b.Time < heldUntil)) return;
         var set = awake();
         if (set.Count == 0) return;
         Func<Enemy, bool> may = set.Contains;
