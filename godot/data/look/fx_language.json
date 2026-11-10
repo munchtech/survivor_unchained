@@ -923,9 +923,9 @@
     "comb": 0.3,
     "dry": [0.3, 0.8]
    },
-   "_doc_dry_out": "(take 7, iii) leaving: the dry gaps' share of each lane by s since the contact (the last three drawn frames before retract's end: gaps open along the WHOLE length, the last frame mostly streaks). dry_tail = (take 10) before that, from the middle of the life: the share of the GROOVES (grip.fill.groove) open as thin dry gaps at the drawn tail (none past the stroke's middle), by s since the contact. shed_white = leaving: [whiteness added along the tip's path (the white runs on), taken along the inner edge (the gold lies there)].",
+   "_doc_dry_out": "(take 7, iii) leaving: the dry gaps' share of each lane by s since the contact (the last three drawn frames before retract's end: gaps open along the WHOLE length, the last frame mostly streaks). dry_tail = (take 10) before that, from the middle of the life: the share of the GROOVES (grip.fill.groove) open as thin dry gaps at the drawn tail (none past the stroke's middle), by s since the contact (the contact's own frame is already about 0.05 s: the clock starts at the cut, the crossing waits; +0.0167 a frame, gone at 0.15). shed_white = leaving: [whiteness added along the tip's path (the white runs on), taken along the inner edge (the gold lies there)].",
    "dry_out": [[0.1, 0], [0.15, 0.62]],
-   "dry_tail": [[0.02, 0], [0.05, 1.0]],
+   "dry_tail": [[0.07, 0], [0.1, 1.0]],
    "shed_white": [0.3, 0.75],
    "splay": {
     "_doc": "(take 7, iv) THE CONTACT SPLAYS: out = the pressed ribs' outer edge past the tip's path (a share of the blade at the raise's most); tines = [for one body, for a crowd (contact.by_struck[0])] short fanned tines rooted on the pressed section's outer edge (none for an air cut); len = a tine's length out [m least, most]; root = its half width at the root [PIXELS, take 8: hair-thin flicks, not thorns]; slant = its lean the travel's way [m along per m out]; frames = the tines' share by drawn frame since the contact (take 10: the contact's frame only: the outer edge is clean from the frame after).",
