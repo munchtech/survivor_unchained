@@ -1380,7 +1380,8 @@ public partial class BattleFx : Node3D
                     }
                     Hits.Text(at + Vector3.Up * 0.2f, ((int)Math.Round(e.Amount)).ToString(), new Color(2f, 0.35f, 0.3f), 58);
                     Spray(at, Vector3.Up, null, 0.4f);
-                    Cam?.AddTrauma((float)Math.Min(0.5, 0.12 + e.Amount / 60));
+                    // a hit on her raises the shake to its size, never sums (crowd hits and a crit's raise do not stack toward 1.0)
+                    HitShake((float)Math.Min(0.5, 0.12 + e.Amount / 60), "her");
                     OnDamageFlash((float)Math.Min(1, 0.35 + e.Amount / 40));
                     break;
                 }
