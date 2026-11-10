@@ -68,7 +68,8 @@ public sealed partial class Battle
         if (!Campaign) return false;
         // The blow it will be, read ahead of its cast (CastOnce decides it again on the contact, the same way).
         int own = Firing.HeavyEveryOf(this, w);
-        bool ownHeavy = own > 0 && (w.OwnBlows + 1) % own == 0;
+        // (Sim.Blows: inside Battle the bare name is its own list of enemy blows)
+        bool ownHeavy = Sim.Blows.Completes(w.OwnBlows, w.OwnPart, own, w.BlowWeight);
         bool heavy = ownHeavy || HandHeavyNext(w);
         // (a chained record's cut: its own clock and clip beats, Sim/SwingChain.cs)
         if (w.Chained) return DeferCut(w, heavy, ownHeavy, mul);
@@ -113,9 +114,10 @@ public static partial class Firing
     internal static void LandBlow(Battle b, WeaponInst w, double since, bool cut = false)
     {
         int kills0 = w.Kills;
-        bool fired = CastOnce(b, w);
-        w.ClipSide = 0;
         var c = cut ? w.Chain : null;
+        // (a chain's heavy cut is a longer share of the blow: its weight grows with its period)
+        bool fired = CastOnce(b, w, c?.PeriodScale ?? 1);
+        w.ClipSide = 0;
         if (c != null) c.Landed = true;
         if (!fired) return;
         Rearm(b, w, true, kills0);

@@ -25,7 +25,13 @@ public sealed class SwingChainTests
         public readonly List<(double T, Ev.Slash S)> Slashes = new();
         public readonly List<(double T, Ev.SwingRelease R)> Releases = new();
         public int Hits;
-        double last = double.NaN;
+        // (the blow's weight) more foes held in place, the own-heavy lines thrown, each hit's damage on E, and the
+        // weapon's own-heavy flag as read at each cut's press and at each blow's contact
+        public readonly List<(Enemy E, double X, double Z)> More = new();
+        public readonly List<double> Dealt = new();
+        public readonly List<bool> OwnAtPress = new(), OwnAtContact = new();
+        public int Lines;
+        double last = double.NaN, hp = 1e9;
 
         public Run(string id, Func<PressDef, PressDef>? shape = null, bool chain = true)
         {
@@ -50,6 +56,16 @@ public sealed class SwingChainTests
 
         public double Wait => Firing.CooldownOf(B, W);
 
+        public void Add(double x, double z)
+        {
+            var e = B.SpawnEnemy("footpad", x, z)!;
+            e.Hp = e.MaxHp = 1e9;
+            e.AttackT = e.RangedT = 999;
+            More.Add((e, x, z));
+        }
+
+        public double Damage => 1e9 - E.Hp + More.Sum(m => 1e9 - m.E.Hp);
+
         public void Step(bool held, int steps = 1)
         {
             for (int i = 0; i < steps; i++)
@@ -64,6 +80,7 @@ public sealed class SwingChainTests
         public void Tick()
         {
             E.X = 2; E.Z = 0; E.Vx = E.Vz = 0;
+            foreach (var (e, x, z) in More) { e.X = x; e.Z = z; e.Vx = e.Vz = 0; }
             B.Tick(Dt, 0, 0);
             Note();
         }
@@ -72,13 +89,16 @@ public sealed class SwingChainTests
         {
             foreach (var ev in B.Events.Drain())
             {
-                if (ev is Ev.Slash s) Slashes.Add((B.Time, s));
+                if (ev is Ev.Slash s) { Slashes.Add((B.Time, s)); OwnAtContact.Add(W.WasOwnHeavy); }
                 else if (ev is Ev.SwingRelease r) Releases.Add((B.Time, r));
                 else if (ev is Ev.Hit) Hits++;
+                else if (ev is Ev.Beam { Art: { } art } && art.EndsWith("_line")) Lines++;
             }
+            if (E.Hp < hp) { Dealt.Add(hp - E.Hp); hp = E.Hp; }
             if (W.Chain is { Live: true } c && c.StartAt != last)
             {
                 last = c.StartAt;
+                OwnAtPress.Add(W.WasOwnHeavy);
                 Cuts.Add(new CutRec(c.Cut, c.Side, c.Heavy, c.Clip, c.StartAt, c.ContactAt, c.CancelAt, c.Rate, c.PeriodScale, Wait, B.Player.AttackAnim!));
             }
         }
@@ -297,5 +317,79 @@ public sealed class SwingChainTests
         for (int k = 0; k < r.Slashes.Count; k++) Assert.Equal(k % 2 == 0 ? -1 : 1, r.Slashes[k].S.Side);
         Assert.Equal(0, r.B.Player.AttackAnim?.Cut ?? 0);
         foreach (var d in SurvivorUnchained.Content.Weapons.All.Values) Assert.Null(d.Press?.Chain);
+    }
+
+    // ---- the cut's weight (M3 MR 3): a chain with a period makes each cut a share of the written blow ----
+
+    static PressDef P70(PressDef p) { p.Chain = new ChainDef { Grace = 0.40, Recover = 18, Period = 0.70 }; return p; }
+
+    [Fact]
+    public void A_cut_with_a_period_weighs_its_share_of_the_blow_and_only_inside_its_cast()
+    {
+        var c = new Run("sunder", P70);
+        var u = new Run("sunder", chain: false);
+        Assert.Equal(0.4375, c.W.BlowWeight, 12);
+        Assert.Equal(1.0, u.W.BlowWeight);
+        Assert.Equal(1.0, new Run("sunder").W.BlowWeight);
+        Assert.Equal(u.W.Damage, c.W.Damage);
+        Assert.Equal(u.Wait * 0.4375, c.Wait, 12);
+        while (c.Dealt.Count == 0) c.Step(true);
+        while (u.Dealt.Count == 0) u.Step(true);
+        Assert.False(c.Cuts[0].Heavy);
+        Assert.Equal(0.4375, c.Dealt[0] / u.Dealt[0], 6);
+        // outside the cast the weight is 1 again, and the count carries the part
+        Assert.Equal(1.0, c.W.CutW);
+        Assert.Equal(u.W.Damage, c.W.Damage);
+        Assert.Equal((0, 0), (c.W.OwnBlows, c.W.BlowN));
+        Assert.Equal(0.4375, c.W.OwnPart, 12);
+        Assert.Equal(0.4375, c.W.BlowPart, 12);
+        Assert.Equal(0.4375 * (c.W.Press!.Builds ?? 0), c.B.Resolve.LandedFill, 9);
+    }
+
+    static (double Dmg, double Fill, int Lines, int Blows, double Whole) Hold(string id, bool chained, int pack)
+    {
+        var r = new Run(id, chained ? P70 : null, chain: chained);
+        if (pack > 1) { r.Add(2, 0.7); r.Add(2, -0.7); }
+        r.Step(true, 64 * 60);
+        if (pack > 1) Assert.All(r.Slashes, s => Assert.Equal(pack, s.S.Struck));
+        return (r.Damage, r.B.Resolve.LandedFill, r.Lines, r.Slashes.Count, r.W.BlowN + r.W.BlowPart);
+    }
+
+    [Theory]
+    [InlineData("sunder", 1)]
+    [InlineData("oathblade", 1)]
+    [InlineData("sunder", 3)]
+    public void Held_a_minute_the_chain_of_cuts_gives_what_the_written_blows_gave(string id, int pack)
+    {
+        var c = Hold(id, true, pack);
+        var u = Hold(id, false, pack);
+        string told = $"{id} x{pack}: chained dmg {c.Dmg:F1} fill {c.Fill:F2} heavies {c.Lines} cuts {c.Blows} blows {c.Whole:F3} | unchained dmg {u.Dmg:F1} fill {u.Fill:F2} heavies {u.Lines} blows {u.Blows}";
+        Assert.True(Math.Abs(c.Whole - u.Blows) <= 1, told);
+        Assert.True(Math.Abs(c.Lines - u.Lines) <= 1, told);
+        Assert.True(Math.Abs(c.Fill / u.Fill - 1) <= 0.02, told);
+        Assert.True(Math.Abs(c.Dmg / u.Dmg - 1) <= 0.02, told);
+    }
+
+    [Fact]
+    public void A_dashed_off_heavy_comes_on_the_next_cut_and_press_and_contact_agree()
+    {
+        var r = new Run("sunder", p => { p = P70(p); p.Clip = null; p.ClipHeavy = null; return p; });
+        (r.W.OwnBlows, r.W.OwnPart) = (3, 0.6);
+        r.Step(true, 3);
+        Assert.True(r.OwnAtPress.Single());
+        Assert.True(r.B.Time < r.Cuts[0].Contact);
+        Assert.True(r.B.Dash(0, -1));
+        Assert.True(r.W.Chain!.Dropped);
+        while (r.Cuts.Count < 2) r.Step(true);
+        Assert.Empty(r.Slashes);
+        Assert.Equal((3, 0.6), (r.W.OwnBlows, r.W.OwnPart));
+        Assert.True(r.OwnAtPress[1]);
+
+        // held for 100 cuts: what the press read ahead is what the contact decided, every cut
+        var h = new Run("sunder", P70);
+        while (h.Slashes.Count < 100) h.Step(true);
+        Assert.Equal(h.OwnAtPress.Take(100), h.OwnAtContact.Take(100));
+        Assert.InRange(h.OwnAtContact.Take(100).Count(x => x), 10, 11);
+        Assert.Equal(h.OwnAtContact.Count(x => x), h.Lines);
     }
 }

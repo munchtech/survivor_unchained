@@ -88,6 +88,16 @@ public sealed class WeaponInst
     /// firing now is its own heavy one (only within a cast: a Pulse's follow-up or an echo never is).</summary>
     public int OwnBlows;
     public bool OwnHeavy;
+    /// <summary>(M3 MR 3) A chained cut is a share of the written blow (Sim/Blows.cs): the part of a blow each count
+    /// carries; the whole written blows it has fired; the weight of the firing now (1 outside a cast, as FireMul is);
+    /// and the last cast's weight (its Pulse follow-ups and burst shots carry it).</summary>
+    public double OwnPart, HandPart, RitePart;
+    public int BlowN;
+    public double BlowPart;
+    public double CutW = 1;
+    public double CastW = 1;
+    /// <summary>A chained cut's share of the written blow: the chain's period over the blow's wait (1 when not chained or no period).</summary>
+    public double BlowWeight => Chained && Press!.Chain!.Period is > 0 and var p ? p / (Press.Wait ?? Def.Base.Cooldown ?? 1) : 1;
     /// <summary>A Pulse Turn's follow-ups still to go, and when.</summary>
     public int PulseLeft;
     public double PulseT;
@@ -215,7 +225,7 @@ public sealed class WeaponInst
             double d = (Def.Base.Damage ?? 0) * (1 + Def.Growth * (Rank - 1)) * Mods.Damage;
             if (evolution != null) d *= evolution.Mods.Damage ?? 1;
             if (wick != null) d *= wick.Damage;
-            return d * FireMul * AuraMul;
+            return d * FireMul * AuraMul * CutW;
         }
     }
 
@@ -244,6 +254,8 @@ public static partial class Firing
     /// while a resource pays for it), else its base cooldown. (M3) A kindled spender whose key heaves (Groundbreaker, the
     /// Disc) waits its record's wait too while Resolve pays: its cost is its gate, as the pressed form's is.</summary>
     static double BaseCooldown(Battle b, WeaponInst w) =>
+        // (M3 MR 3) a chained cut with a period waits its period: a share of the blow, as its weight is
+        w.Chained && w.Press!.Chain!.Period is > 0 and var p ? p :
         w.Press is { Wait: { } wait } r && (w.Pressed && (b.Resolve.On || (r.Resolve ?? 0) <= 0 && (r.Drain ?? 0) <= 0)
             || w.KindledNow && w.KindleKey == KindlePress.Now && b.Resolve.On && (r.Resolve ?? 0) > 0) ? wait : w.Def.Base.Cooldown ?? 1;
 
@@ -322,7 +334,8 @@ public static partial class Firing
                 w.BurstT = 0.07;
                 var hb0 = b.HeavyBy;
                 b.HeavyBy = w.HeavyCast ? w : null;
-                FireBurstShot(b, w);
+                var c0 = w.CutW; w.CutW = w.CastW;
+                try { FireBurstShot(b, w); } finally { w.CutW = c0; }
                 b.HeavyBy = hb0;
             }
         }
@@ -337,7 +350,8 @@ public static partial class Firing
                 var (hb0, rf0) = (b.HeavyBy, b.Refiring);
                 b.HeavyBy = w.HeavyCast ? w : null;
                 b.Refiring = true;
-                Fire(b, w);
+                var c0 = w.CutW; w.CutW = w.CastW;
+                try { Fire(b, w); } finally { w.CutW = c0; }
                 (b.HeavyBy, b.Refiring) = (hb0, rf0);
             }
         }
@@ -362,14 +376,27 @@ public static partial class Firing
 
     /// <summary>One cast of the skill, as its own timer would fire it (the Hand's blow, its own heavy, its Pulse,
     /// the arcanist's and the board's after-cast): true when it fired. The timer is the caller's.</summary>
-    static bool CastOnce(Battle b, WeaponInst w)
+    static bool CastOnce(Battle b, WeaponInst w, double scale = 1)
+    {
+        // (M3 MR 3) A chained cut is a share of the written blow (scale: a heavy cut's longer period): its weight lives
+        // only inside this cast (WeaponInst.CutW, read by Damage), 1 again after it.
+        // (a chain with no period: every cut a whole blow, the heavy's too, as before)
+        if (!(w.Chained && w.Press!.Chain!.Period is > 0)) scale = 1;
+        double cw = w.BlowWeight * scale, cw0 = w.CutW;
+        w.CutW = cw;
+        try { return CastWeighed(b, w, cw, scale); }
+        finally { w.CutW = cw0; }
+    }
+
+    static bool CastWeighed(Battle b, WeaponInst w, double cw, double scale)
     {
         b.ArcanistBeforeCast(w);
         // The warden's Hand: every few blows one is heavy, and every hit of it (HitEnemy reads HeavyBy).
         bool heavy = b.HandBeginCast(w);
         // Its own count (Sunder's): a firing heavy for either reason is just heavy; its own count also drives its line.
+        // (the LIGHT cut's weight on purpose: the read-ahead at the press, Battle.DeferBlow, asks the same question)
         int own = HeavyEveryOf(b, w);
-        w.OwnHeavy = own > 0 && (w.OwnBlows + 1) % own == 0;
+        w.OwnHeavy = Blows.Completes(w.OwnBlows, w.OwnPart, own, w.BlowWeight);
         heavy |= w.OwnHeavy;
         var hb = b.HeavyBy;
         b.HeavyBy = heavy ? w : null;
@@ -384,16 +411,17 @@ public static partial class Firing
             b.StruckBy = null;
             if (fired && b.Struck.Count > 0)
             {
-                if (builds) b.Resolve.Landed(w.Press!, b.Struck.Count, heavy);
-                if (swing) b.SwingLanded += CooldownOf(b, w);
+                if (builds) b.Resolve.Landed(w.Press!, b.Struck.Count, heavy, cw);
+                if (swing) b.SwingLanded += CooldownOf(b, w) * scale;
             }
         }
         b.HeavyBy = hb;
         w.WasOwnHeavy = fired && w.OwnHeavy;
         w.OwnHeavy = false;
-        if (fired && own > 0) w.OwnBlows++;
+        if (fired && own > 0) Blows.Count(ref w.OwnBlows, ref w.OwnPart, cw);
+        if (fired) Blows.Count(ref w.BlowN, ref w.BlowPart, cw);
         b.HandEndCast(w, fired);
-        if (fired) w.HeavyCast = heavy;
+        if (fired) { w.HeavyCast = heavy; w.CastW = cw; }
         if (fired && w.Wick is { Pulses: > 1 } pw) { w.PulseLeft = pw.Pulses - 1; w.PulseT = pw.PulseGap; }
         b.ArcanistAfterCast(w, fired);
         if (b.Lamps.Board) b.BoardAfterFire(w, fired);

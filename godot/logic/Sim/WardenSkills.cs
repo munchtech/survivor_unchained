@@ -28,6 +28,13 @@ public static partial class Firing
     /// swing's full damage (heavy too: the firing's HeavyBy is this skill). burning_edge: it sears.</summary>
     static void HeavyLine(Battle b, WeaponInst w, double x, double z, double a, double length)
     {
+        // (M3 MR 3) a heavy's extras land whole: the line strikes at the written blow's damage, whatever the cut's share
+        var c0 = w.CutW; w.CutW = 1;
+        try { HeavyLineWhole(b, w, x, z, a, length); } finally { w.CutW = c0; }
+    }
+
+    static void HeavyLineWhole(Battle b, WeaponInst w, double x, double z, double a, double length)
+    {
         double len = AreaOf(b, w, length), width = AreaOf(b, w, w.Num(s => s.BeamWidth) ?? 1.2);
         double x1 = x + Math.Cos(a) * len, z1 = z + Math.Sin(a) * len;
         b.Events.Emit(new Ev.Beam { X0 = x, Z0 = z, X1 = x1, Z1 = z1, Width = width, School = w.School, Duration = 0.4, Art = w.Art + "_line", Rank = w.Rank });
