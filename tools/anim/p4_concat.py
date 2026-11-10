@@ -15,6 +15,19 @@ def deg(a, b):
     return math.degrees(2 * math.acos(min(1.0, d)))
 
 
+def qrot(q, v):
+    x, y, z, w = q
+    u = (x, y, z); c = lambda a, b: (a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0])
+    t = c(u, v); t = tuple(2 * k for k in t); t2 = c(u, t)
+    return tuple(v[i] + w * t[i] + t2[i] for i in range(3))
+
+
+def pelvis_world(c, f):
+    """Pelvis world position at frame f: root position + root rotation applied to the pelvis' local position."""
+    r = qrot(c["rot"]["root"][f], tuple(c["pos"]["pelvis"][f]))
+    return tuple(a + b for a, b in zip(c["pos"]["root"][f], r))
+
+
 def main(out, names):
     cl = [json.load(open(D / f"{n}.json")) for n in names]
     r = cl[0]
@@ -32,9 +45,10 @@ def main(out, names):
         assert c["fps"] == r["fps"] and c["bones"] == bones, "fps/bones differ"
         worst = max(deg(rot[b][-1], c["rot"][b][0]) for b in rot)
         pstep = {b: math.dist(pos[b][-1], c["pos"][b][0]) * 100 for b in pos}
+        pw = math.dist(pelvis_world(prev, -1), pelvis_world(c, 0)) * 100
         drop = 1 if worst <= 0.1 else 0
         print(f"join {prev['name']} -> {c['name']}: last/first max {worst:.3f} deg, pos step cm "
-              + ", ".join(f"{b} {v:.2f}" for b, v in pstep.items()) + (" : duplicate frame dropped" if drop else " : NOT equal, no frame dropped"))
+              + ", ".join(f"{b} {v:.2f}" for b, v in pstep.items()) + f", pelvis WORLD {pw:.2f}" + (" : duplicate frame dropped" if drop else " : NOT equal, no frame dropped"))
         for b in rot: rot[b] += c["rot"][b][drop:]
         for b in pos: pos[b] += c["pos"][b][drop:]
         off = total - drop
