@@ -26,8 +26,8 @@
     },
     "skin_under_mm": {
      "top": [
-      7.4,
-      9.1
+      4.6,
+      8.7
      ],
      "bottom": [
       9.1,
@@ -42,12 +42,12 @@
       14.4
      ],
      "face": [
-      7.4,
+      4.6,
       21.2
      ]
     },
     "tris": 2816,
-    "rest_clear_mm_min": 4.82,
+    "rest_clear_mm_min": 1.77,
     "inside": 0
    },
    "lame1_l_rigid": {
@@ -174,34 +174,34 @@
     "inside": 0
    },
    "arming_l_cap": {
-    "tris": 1956,
+    "tris": 1904,
     "skin_under_mm": {
      "top": [
-      2.2,
-      2.9
+      2.1,
+      2.8
      ],
      "bottom": [
-      2.8,
+      2.7,
       3.0
      ],
      "front": [
       2.8,
-      2.9
+      3.0
      ],
      "back": [
-      2.6,
-      2.9
+      2.7,
+      2.8
      ],
      "face": [
-      2.2,
+      2.1,
       3.1
      ]
     },
     "under_plates_mm": {
-     "cop_l_rigid": 5.24,
-     "lame1_l_rigid": 3.96,
-     "lame2_l_rigid": 3.78,
-     "lame3_l_rigid": 3.63
+     "cop_l_rigid": 2.21,
+     "lame1_l_rigid": 4.04,
+     "lame2_l_rigid": 3.86,
+     "lame3_l_rigid": 3.71
     }
    }
   },
@@ -230,8 +230,8 @@
     },
     "skin_under_mm": {
      "top": [
-      7.7,
-      10.2
+      4.7,
+      9.0
      ],
      "bottom": [
       9.1,
@@ -246,12 +246,12 @@
       14.4
      ],
      "face": [
-      7.7,
+      4.7,
       22.2
      ]
     },
     "tris": 2816,
-    "rest_clear_mm_min": 5.03,
+    "rest_clear_mm_min": 2.05,
     "inside": 0
    },
    "lame1_r_rigid": {
@@ -378,7 +378,7 @@
     "inside": 0
    },
    "arming_r_cap": {
-    "tris": 1956,
+    "tris": 1904,
     "skin_under_mm": {
      "top": [
       2.4,
@@ -386,15 +386,15 @@
      ],
      "bottom": [
       3.1,
-      4.2
+      4.1
      ],
      "front": [
       2.8,
-      3.7
+      3.6
      ],
      "back": [
       2.7,
-      3.4
+      3.2
      ],
      "face": [
       2.4,
@@ -402,17 +402,17 @@
      ]
     },
     "under_plates_mm": {
-     "cop_r_rigid": 5.24,
-     "lame1_r_rigid": 3.96,
-     "lame2_r_rigid": 3.78,
-     "lame3_r_rigid": 3.63
+     "cop_r_rigid": 2.21,
+     "lame1_r_rigid": 4.04,
+     "lame2_r_rigid": 3.86,
+     "lame3_r_rigid": 3.71
     }
    }
   }
  },
  "mirror_mm_max": 0.0,
  "dir": "godot/art/gear/native/plate_spaulders_warden",
- "tris": 15828,
+ "tris": 15724,
  "parts": {
   "cop_l_rigid": [
    552,
@@ -455,8 +455,8 @@
    "gold"
   ],
   "arming_l_cap": [
-   1032,
-   1956,
+   1005,
+   1904,
    "darkleather"
   ],
   "cop_r_rigid": [
@@ -500,8 +500,8 @@
    "gold"
   ],
   "arming_r_cap": [
-   1032,
-   1956,
+   1005,
+   1904,
    "darkleather"
   ]
  },

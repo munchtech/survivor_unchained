@@ -28,7 +28,12 @@ above its lower edge at its two ends: a rounded outline, never a box), "wing" {"
 the cop's reach runs round past the lames' ends (by "min" degrees or more, 8) that end of it is a WING: its lower
 corner is rounded (its lower edge rises from the lames' end to leave its side edge `end` long), and it curls back in
 over the end of lame 1 (curl 1: down to its own surface at its tip, so no slot shows under it from the front; 0: it
-keeps the lame's room all the way)};
+keeps the lame's room all the way), "lie" {"len", "drop"}: its upper edge LIES DOWN along her (a real cop's neck edge
+lies on the trapezius; a rim standing off her there shows from the neck side as a fin with a dark slot under it): at
+that edge the plate has no "rim" stand-off and no crown and sits `drop` under the plates' own clearance, easing up to
+its dome over `len` down from the edge, so it leaves the edge along her skin, never as a wall. Full where the upper
+edge is highest (the arch's middle), nothing at the arch's two ends (the cop's front and back edges are as they
+were; no arch: the whole edge)};
 "arming" {"clear", "thick", "roll", "past" [up, down, round (degrees)]: how far it shows beyond the plates' outline
 (the cop's arch, the cop's sides, then in to the lames' sides), "step"} (absent or null: no arming cap; its material
 must be a key some gear source carries painted, gear_native.material_templates: "darkleather"; a bare key is white); "rivet" {"r", "h", "in"}: the articulation rivets, at the two ends of every
@@ -369,6 +374,18 @@ def layout(cfg, ref, step=None, step_s=None, roll=True, laws=None):
     top = [top0] + [lambda th, k=k: E[k] - lap[k] + arcf(th) for k in range(1, n)]
     reach = [(t0, t1)] + [(lt0, lt1)] * (n - 1)
     crown = dome(top[0], bot[0], t0, t1, cp.get("apex", 0.014), cp.get("shape", (2.4, 2.4)))
+    lie = cp.get("lie")
+
+    def stand(s, th):
+        """The cop over its law: its rim's stand-off and its crown; with "lie" both eased in from its upper edge, the
+        edge itself `drop` under the law (by the arch's height there: nothing at the arch's ends)."""
+        v = cp.get("rim", 0.0) + crown(s, th)
+        if not lie:
+            return v
+        x = np.clip((np.asarray(s, float) - top0(th)) / lie.get("len", 0.03), 0, 1)
+        g = np.clip((s_end - top0(th)) / max(s_end - float(E[0]), 1e-6), 0, 1) if ar else 1.0
+        k = g * (1 - x * x * (3 - 2 * x))
+        return v * (1 - k) - lie.get("drop", 0.0) * k
     for sd, fr in frames.items():
         base = laws[sd]["law"]
 
@@ -380,7 +397,7 @@ def layout(cfg, ref, step=None, step_s=None, roll=True, laws=None):
                 if flare:
                     v = v + tf["rise"] * np.clip((tf["from"] - np.asarray(th, float)) / (tf["from"] - tf["to"]), 0, 1.2) ** tf.get("power", 2.0)
                 if k == 0:      # (the cop: a standing dome over its rim's surface)
-                    v = v + cp.get("rim", 0.0) + crown(s, th)
+                    v = v + stand(s, th)
                 return v
             return law if (flare or k == 0) else base
 

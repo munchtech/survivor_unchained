@@ -403,6 +403,20 @@ class ShoulderTop(unittest.TestCase):
         s1, e = np.array(float(bot(lt0)) - 0.004), np.array(lt0)                     # (at the lame's end it still stands on it)
         self.assertGreaterEqual(float(cop.inner(s1, e) - low.outer(s1, e)), cfg["lames"]["gap"] - 1e-5)
 
+    def test_lie_lays_the_cops_upper_edge_down_and_leaves_its_ends(self):
+        cfg = json.loads(json.dumps(CFG))
+        cfg["cop"] = dict(cfg["cop"], arch={"span": 0.03, "power": 2.2})
+        ref = arms()
+        plain = sp.layout(cfg, ref)["l"]["sheets"][0]
+        lying = sp.layout({**cfg, "cop": dict(cfg["cop"], lie={"len": 0.04, "drop": 0.002})}, ref)["l"]["sheets"][0]
+        mid, end = np.array(0.5 * (plain.t0 + plain.t1)), np.array(float(plain.t0))
+        top = plain.top(mid)
+        # at the arch's middle the upper edge sits `drop` under the plates' law (no rim stand-off, no crown) ...
+        self.assertAlmostEqual(float(plain.law(top, mid) - lying.law(top, mid)), cfg["cop"].get("rim", 0.0) + 0.002, places=5)
+        # ... it is the same dome from `len` down, and the same plate at the arch's ends
+        self.assertAlmostEqual(float(plain.law(top + 0.041, mid)), float(lying.law(top + 0.041, mid)), places=6)
+        self.assertAlmostEqual(float(plain.law(plain.top(end), end)), float(lying.law(lying.top(end), end)), places=6)
+
     def test_the_arming_caps_material_has_a_painted_template(self):
         have = {m.get("name") for _, g in gn.material_templates() for m in g.get("materials", [])
                 if "baseColorTexture" in m.get("pbrMetallicRoughness", {})}
