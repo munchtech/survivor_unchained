@@ -70,14 +70,28 @@ public sealed partial class Battle
         int own = Firing.HeavyEveryOf(this, w);
         // (Sim.Blows: inside Battle the bare name is its own list of enemy blows)
         // (M3 J12: a block's answer owed, the next firing is a whole blow: WeaponInst.NextW)
-        // (M3 MR 3 o2: a chained cut that starts on a press carries the rest its grip had, Battle.RestOf: the counts are
-        // asked at the LIGHT cut's rested weight, here and again at the contact, WeaponInst.CastAsk)
-        double rest = w.AnswerDue ? 0 : RestOf(w);
-        double ask = rest > 0 ? Sim.Blows.Rested(w.NextW, rest) : w.NextW;
+        // (M3 MR 3 b1, the landed rule: a chained cut weighs what its grip's bank has earned since its last LANDED cut,
+        // Battle.BankOf: the counts are asked at the LIGHT cut's weight from it, here and again at the contact,
+        // WeaponInst.CastAsk)
+        bool banks = w.Chained && w.BlowWeight != 1;
+        var bank = banks ? BankOf(w, CutStartOf(w)) : (From: double.NaN, Earned: 0.0, W: 0.0);
+        double earned = w.AnswerDue ? 0 : bank.Earned;
+        double ask = earned > 0 ? Sim.Blows.Rested(w.NextW, earned) : w.NextW;
         bool ownHeavy = Sim.Blows.Completes(w.OwnBlows, w.OwnPart, own, ask);
         bool heavy = ownHeavy || HandHeavyNext(w, ask);
         // (a chained record's cut: its own clock and clip beats, Sim/SwingChain.cs)
-        if (w.Chained) return DeferCut(w, heavy, ownHeavy, mul, rest);
+        if (w.Chained)
+        {
+            if (DeferCut(w, heavy, ownHeavy, mul, bank)) return true;
+            // (b1) it casts at once (no aim, a refire): the same bank, staged for that cast (Firing.CastOnce takes it on
+            // this step only; the light cut's weight, its wait the written one from now)
+            if (banks)
+            {
+                w.CastFrom = bank.From; w.CastRest = earned; w.CastStage = Time;
+                w.CastPayTo = Math.Min(bank.From + Sim.Blows.Rested(w.BlowWeight, earned) * bank.W, Time + Firing.CooldownOf(this, w));
+            }
+            return false;
+        }
         if (!ContactOf(w, heavy, out var clip, out var rate, out var delay)) return false;
         var aim = CastAt!.Value;
         var p = Player;
@@ -127,8 +141,10 @@ public static partial class Firing
         // counts ask at the light cut's rested weight. Not through PeriodScale: that is the WAIT's factor.)
         w.WholeCast = c?.Whole ?? false;
         w.CastRest = c?.Rest ?? 0;
+        // (M3 MR 3 b1: and its bank's stamp, paid at the cast only if the cut strikes a body: Firing.CastOnce)
+        if (c != null && w.BlowWeight != 1) (w.CastFrom, w.CastPayTo, w.CastStage) = (c.From, c.PayTo, b.Time);
         try { fired = CastOnce(b, w, c?.PeriodScale ?? 1); }
-        finally { w.WholeCast = false; w.CastRest = 0; }
+        finally { w.WholeCast = false; w.CastRest = 0; w.CastFrom = double.NaN; }
         w.ClipSide = 0;
         if (c != null) c.Landed = true;
         if (!fired) return;

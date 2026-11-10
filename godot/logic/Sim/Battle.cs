@@ -2356,6 +2356,7 @@ public sealed partial class Battle
 
     void ProjectileStrikes(Projectile pr, Enemy e)
     {
+        if (pr.Bill is { } bl) bl.Hit = true;
         var weapon = WeaponById(pr.Weapon);
         HitEnemy(e, pr.Damage, pr.School, pr.Tags, new HitOpts
         {
@@ -2433,6 +2434,8 @@ public sealed partial class Battle
         }
         else if (pr.Splash > 0 && hitWall && pr.Owner == Side.Player)
             Explode(pr.X, pr.Z, pr.Splash, pr.Damage * 0.75, pr.School, pr.Tags, null, pr.Depth, -1, pr.W);
+        // (b1) a banked cut's projectile gone: the last of its cut's, with nothing struck, refunds the cut's weight
+        if (pr.Bill is { } bl) { pr.Bill = null; bl.Gone(); }
         Projectiles.Release(pr);
     }
 

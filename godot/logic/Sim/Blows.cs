@@ -25,11 +25,11 @@ public static class Blows
     public static void CountFirstWhole(ref int n, ref double part, double w) =>
         Count(ref n, ref part, n == 0 && part == 0 && w < 1 ? 1 : w);
 
-    /// <summary>(M3 MR 3 o2) A cut that starts on a press carries the rest its grip had: its own share (what it pays
-    /// forward: the time until the grip is free again, over the written wait) plus the idle time since the grip was
-    /// last free, in written blows. Never under its own share, never over one whole blow (an unchained wait runs down
-    /// to ready and no further).</summary>
-    public static double Rested(double own, double rest) => Math.Max(own, Math.Min(1, own + rest));
+    /// <summary>(M3 MR 3 b1, the landed rule) A chained cut weighs what the wait has earned since its grip's last cut
+    /// that LANDED (Battle.BankOf: `earned`, in written blows), at most one whole blow, never under its own share (the
+    /// cut's share of the written blow, times a heavy's longer period). Earned within 1e-9 of the share (the held
+    /// chain on its beat) is the share to the bit.</summary>
+    public static double Rested(double own, double earned) => earned <= own + 1e-9 ? own : Math.Max(own, Math.Min(1, earned));
 
     /// <summary>A per-blow chance as a per-cut chance: the cuts of one blow's worth compound to c.</summary>
     public static double Chance(double c, double w) => w == 1 || c <= 0 || c >= 1 ? c : 1 - Math.Pow(1 - c, w);

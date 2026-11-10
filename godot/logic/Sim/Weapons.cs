@@ -109,6 +109,12 @@ public sealed class WeaponInst
     /// cut's (a heavy's longer share never decides whether it is a heavy), rested as its press asked them
     /// (Battle.DeferBlow); a block's answer 1.</summary>
     public double CastRest;
+    /// <summary>(M3 MR 3 b1, the landed rule) The time this grip's LANDED weight has paid up to (Battle.BankOf): NaN until
+    /// its first cut lands, read as a full bank. Per grip (a union's half has its own).</summary>
+    public double PaidTo = double.NaN;
+    /// <summary>(b1) The bank's stamp for the cast about to land (set by Firing.LandBlow round a chain's cut, or by
+    /// Battle.DeferBlow for a chained press that casts at once; Firing.CastOnce takes it once, on the step it was set).</summary>
+    internal double CastFrom = double.NaN, CastPayTo, CastStage = double.NaN;
     public double CastAsk => WholeCast ? 1 : CastRest > 0 ? Blows.Rested(BlowWeight, CastRest) : BlowWeight;
     /// <summary>(M3 J12b) The written blow (BlowN) whose Linger ground is laid: under a chain one zone per written blow
     /// (Firing.LaysGround). Never written on a skill whose BlowWeight is 1.</summary>
@@ -414,16 +420,58 @@ public static partial class Firing
         // (a chain with no period: every cut a whole blow, the heavy's too, as before)
         if (!(w.Chained && w.Press!.Chain!.Period is > 0)) scale = 1;
         // (M3 J12: a block's answer is one whole blow, exactly; its scale, 1 / BlowWeight, is the wait's and the stand clock's)
-        // (M3 MR 3 o2: a cut that started on a press carries the rest its grip had on top of its share, at most a whole
-        // blow, WeaponInst.CastRest; the held chain's cut on its beat has none and weighs its share, as ever)
+        // (M3 MR 3 b1, the landed rule: a chained cut weighs what its grip's bank has earned, at most a whole blow, never
+        // under its own share, WeaponInst.CastRest; the held chain's cut on its beat has earned its share and weighs it)
         double own = w.BlowWeight * scale;
-        double cw = w.WholeCast ? 1 : w.CastRest > 0 ? Blows.Rested(own, w.CastRest) : own, cw0 = w.CutW;
+        // (the bank's stamp is taken here, once: a cast inside this cast, an after-cast, never reads it again)
+        bool banked = !double.IsNaN(w.CastFrom) && w.CastStage == b.Time;
+        double from = w.CastFrom, payTo = w.CastPayTo;
+        // (a stamp left from another step was never cast: drop it and its earned weight)
+        if (!banked && !double.IsNaN(from)) w.CastRest = 0;
+        w.CastFrom = double.NaN;
+        double cw = w.WholeCast ? 1 : banked ? Blows.Rested(own, w.CastRest) : own, cw0 = w.CutW;
         w.CutW = cw;
-        try { return CastWeighed(b, w, cw, scale); }
-        finally { w.CutW = cw0; }
+        var bl0 = b.Billing;
+        var bill = banked ? new CutBill(w) : null;
+        b.Billing = bill;
+        bool fired;
+        try { fired = CastWeighed(b, w, cw, scale, bill); }
+        finally { w.CutW = cw0; b.Billing = bl0; if (banked) w.CastRest = 0; }
+        // (b1) It pays only if it struck a body, once however many: PaidTo moves to from + weight x W (its own period's
+        // end at most). A crescent or other projectile still in the air RESERVES it (paid as if struck) and refunds it
+        // if every one of them expires having struck nothing (Battle.ExpireProjectile, CutBill.Refund).
+        if (bill != null && (bill.Hit || bill.Live > 0))
+        {
+            // (from is max(PaidTo, start - W) at the cut's start; a refund between its start and its contact can only
+            // have lowered PaidTo since, so the base is from. Added: what the bill moved, so a refund puts PaidTo back.)
+            double p0 = double.IsNaN(w.PaidTo) ? from : w.PaidTo;
+            w.PaidTo = Math.Max(p0, from) + (payTo - from);
+            bill.Added = w.PaidTo - p0;
+            bill.Settled = true;
+        }
+        return fired;
     }
 
-    static bool CastWeighed(Battle b, WeaponInst w, double cw, double scale)
+    /// <summary>(M3 MR 3 b1, the landed rule) A banked chained cut's account while its cast runs and its projectiles
+    /// fly: whether anything struck a body, how many of its projectiles are still in the air, and what it moved its
+    /// grip's PaidTo by (Firing.CastOnce). Every projectile of it expiring having struck nothing refunds that.</summary>
+    internal sealed class CutBill
+    {
+        public readonly WeaponInst W;
+        public bool Hit, Settled;
+        public int Live;
+        public double Added;
+        public CutBill(WeaponInst w) { W = w; }
+        /// <summary>One of its projectiles is gone (Battle.ExpireProjectile): the last, with nothing struck, refunds.</summary>
+        public void Gone()
+        {
+            if (--Live > 0 || Hit || !Settled) return;
+            W.PaidTo -= Added;
+            Added = 0; Settled = false;
+        }
+    }
+
+    static bool CastWeighed(Battle b, WeaponInst w, double cw, double scale, CutBill? bill = null)
     {
         b.ArcanistBeforeCast(w);
         // The warden's Hand: every few blows one is heavy, and every hit of it (HitEnemy reads HeavyBy).
@@ -441,9 +489,15 @@ public static partial class Firing
         bool builds = b.Resolve.On && w.Press?.Builds is > 0 && b.StruckBy == null;
         // (M3) The held swing in the campaign: a cut that struck a foe is a fighter's (Battle.SwingLanded, the stand clock's).
         bool swing = b.Campaign && w.Hold && b.StruckBy == null;
-        if (builds || swing) { b.StruckBy = w; b.Struck.Clear(); }
+        // (b1: a banked chained cut learns whether it struck a body: the bank pays only then)
+        bool bank = bill != null && b.StruckBy == null;
+        if (builds || swing || bank) { b.StruckBy = w; b.Struck.Clear(); }
         bool fired = Fire(b, w);
-        if (builds || swing)
+        if (bank && fired && b.Struck.Count > 0) bill!.Hit = true;
+        // (b1) A banked cut that struck nothing (and has nothing in the air) spent nothing: its counts, its follow-ups and
+        // its after-casts take its own share, as the chain's cut always did; one that struck takes its weight.
+        if (bill != null && !bill.Hit && bill.Live == 0) { cw = w.BlowWeight * scale; w.CutW = cw; }
+        if (builds || swing || bank)
         {
             b.StruckBy = null;
             if (fired && b.Struck.Count > 0)
@@ -726,6 +780,8 @@ public static partial class Firing
                 pr.GroundOnHit = new GroundSpec(1.8, Marks.Lerp(2, 5, star), 0.25);
             pr.Rank = w.Rank;
             pr.BossDamage = w.BossDamage; pr.W = w.CutW;
+            // (b1) a banked cut's projectile carries its bill: the cut's weight is reserved while it flies
+            if (b.Billing is { } bl && ReferenceEquals(bl.W, w)) { pr.Bill = bl; bl.Live++; }
             pr.AimAlongVelocity();
             if (herd) pr.Rehit = 0.6;
         }
