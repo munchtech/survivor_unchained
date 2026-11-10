@@ -972,7 +972,7 @@ public partial class PlayerView : Node3D
             // whole-body clip (a fall, a roll, a flourish) keeps its own head, as play leaves it.
             string hn = hold[0];
             bool moveClip = hn.StartsWith("idle_") || hn.StartsWith("run_") || hn.StartsWith("sprint_") || hn.StartsWith("stop_") || hn.StartsWith("walk_");
-            if (carriage != null) carriage.HeadLevel = upperOnly || moveClip || stance ? HeadLevel : 0;
+            if (carriage != null) carriage.HeadLevel = upperOnly || moveClip || stance || HoldHead ? HeadLevel : 0;
             if (person.Pose != null) person.Pose.Native = 1;
             // (--close-turn R with it: turned from the close view's lens as its idle turns her, so a held pose can be
             // seen from her front; without it she keeps her heading, as before.)
@@ -1541,6 +1541,9 @@ public partial class PlayerView : Node3D
     static readonly bool HoldTurn = SurvivorUnchained.Args.Has("close-turn");
     /// <summary>--hold-mirror with a hold (L1 lead 22, pictures only): the held frame mirrored left for right (PoseMirror).</summary>
     static readonly bool HoldMirror = SurvivorUnchained.Args.Has("hold-mirror");
+    // (L1 lead 22, p2stand) --hold-head: a whole-body hold keeps her head carried up (HeadLevel) as an idle does, so the
+    // face, not the crown, shows at the play camera. View only, off by default.
+    static readonly bool HoldHead = SurvivorUnchained.Args.Has("hold-head");
     PoseMirror? mirror;
     bool mirrorSaid;
     /// <summary>--facing DEG read for a held frame (the Hold branch): her heading in radians, null without the flag.</summary>
