@@ -243,6 +243,29 @@ def edge_curve(th, s, deg=4, side=0, dom=None):
     return lambda t: np.polynomial.chebyshev.chebval(x(t), c)
 
 
+def edge_points(th, s):
+    """A smooth edge s(theta) THROUGH its control points: a C1 monotone cubic (no overshoot between points), clamped
+    outside their theta range. An edge drawn where the measures say it must run (edge_curve is a fit, this is the line)."""
+    th, s = np.asarray(th, float), np.asarray(s, float)
+    o = np.argsort(th)
+    th, s = th[o], s[o]
+    h, d = np.diff(th), np.diff(s) / np.diff(th)
+    m = np.zeros(len(th))
+    m[0], m[-1] = d[0], d[-1]
+    for k in range(1, len(th) - 1):   # (the harmonic mean of the two slopes, 0 where they change sign: Fritsch-Carlson)
+        if d[k - 1] * d[k] > 0:
+            w1, w2 = 2 * h[k] + h[k - 1], h[k] + 2 * h[k - 1]
+            m[k] = (w1 + w2) / (w1 / d[k - 1] + w2 / d[k])
+
+    def f(t):
+        t = np.clip(np.asarray(t, float), th[0], th[-1])
+        k = np.clip(np.searchsorted(th, t, side="right") - 1, 0, len(th) - 2)
+        x = (t - th[k]) / h[k]
+        return ((2 * x ** 3 - 3 * x ** 2 + 1) * s[k] + (x ** 3 - 2 * x ** 2 + x) * h[k] * m[k]
+                + (-2 * x ** 3 + 3 * x ** 2) * s[k + 1] + (x ** 3 - x ** 2) * h[k] * m[k + 1])
+    return f
+
+
 def owned_line(ref, fr, role, share, th, s_scan, rmax=0.3, last=False):
     """Where a role comes to own the skin along each theta: the first s (down the frame's axis) from which the role's
     share of the skin weights stays >= `share`. The line a rigid plate riding that role may start from. last: where
@@ -323,16 +346,32 @@ RIDGE_H = np.array([0.0, 0.52, 0.96, 1.0, 0.96, 0.52, 0.0])    # a tent with a c
 class Sheet:
     """A plate or a lame: the surface `law` + its height over the domain theta in [t0, t1], s in [top(th), bot(th)].
 
-    thick; roll (width, height): a rolled edge on every edge; ridge {theta, h, w, fade}; lift {band, h}: its last
-    `band` before the bottom edge stands `h` further out (room for the lame under it); cap(s, th) -> the rho its outer
-    face must stay under (the plate or the cop that covers it); lip: how far above the law - `clear` its inner lip
-    ends (the edge wall runs down to the skin, so no void shows under an edge)."""
+    thick; roll (width, height): a rolled edge on the edges named in `roll_on` ("t" top, "b" bottom, "0" / "1" the
+    theta t0 / t1 side: an edge hidden under another plate takes none); ridge {theta, h, w, fade}; lift {band, h}:
+    its last `band` before the bottom edge stands `h` further out (room for the lame under it); lift_top {band, h,
+    ease, theta [a, b]}: its first `band` after the TOP edge stands `h` further out, easing back over `ease` (a lame
+    that laps OVER the plate above it; theta: only from a on, in full from b); cap(s, th) -> the rho its outer face
+    must stay under (the plate or the cop that covers it); lip: how far above the law - `clear` its inner lip ends
+    (the edge wall runs down to the skin, so no void shows under an edge; under a lifted edge it is the steel's own
+    thickness and its lip turns in over the plate beneath)."""
 
     def __init__(self, fr, law, t0, t1, top, bot, thick, roll=(0.0045, 0.001), ridge=None, lift=None, cap=None,
-                 clear=0.003, lip=0.0008, step=0.011, flare=None):
+                 clear=0.003, lip=0.0008, step=0.011, flare=None, roll_on="tb01", lift_top=None):
         self.fr, self.law, self.t0, self.t1, self.top, self.bot = fr, law, t0, t1, top, bot
         self.thick, self.roll, self.ridge, self.lift, self.cap, self.clear, self.lip, self.step, self.flare = \
             thick, roll, ridge, lift, cap, clear, lip, step, flare
+        self.roll_on, self.lift_top = roll_on, lift_top
+
+    def roll_d(self, s, th):
+        """Distance to the nearest ROLLED edge (inf when none is)."""
+        s, th = np.broadcast_arrays(np.asarray(s, float), np.asarray(th, float))
+        d = np.full(s.shape, np.inf)
+        R = self.law(s, th)
+        for k, v in (("t", s - self.top(th)), ("b", self.bot(th) - s), ("0", np.radians(th - self.t0) * R),
+                     ("1", np.radians(self.t1 - th) * R)):
+            if k in self.roll_on:
+                d = np.minimum(d, v)
+        return d
 
     def edge_d(self, s, th):
         """Distance to the nearest edge inside the domain (negative outside)."""
@@ -349,13 +388,19 @@ class Sheet:
             h = h + self.lift["h"] * smooth(1 - (self.bot(th) - s) / self.lift["band"])
         if self.flare:
             h = h + self.flare["h"] * smooth(1 - (self.bot(th) - s) / self.flare["band"])
+        if self.lift_top:
+            lt = self.lift_top
+            k = smooth(1 - (s - self.top(th) - lt["band"]) / lt.get("ease", lt["band"]))
+            if lt.get("theta"):
+                k = k * smooth((th - lt["theta"][0]) / (lt["theta"][1] - lt["theta"][0]))
+            h = h + lt["h"] * k
         if self.ridge:
             r = self.ridge
             x = np.radians(th - r["theta"]) * R / (r["w"] / 2)
             end = smooth(np.minimum(s - self.top(th), self.bot(th) - s) / r["fade"])
             h = h + r["h"] * np.interp(x, RIDGE_X, RIDGE_H, left=0, right=0) * end
         if self.roll:
-            d = self.edge_d(s, th) / self.roll[0]
+            d = self.roll_d(s, th) / self.roll[0]
             h = h + self.roll[1] * np.interp(d, ROLL_D, ROLL_B, left=0, right=0)
         if self.cap is not None:
             h = np.maximum(np.minimum(h, self.cap(s, th) - R), 0.4 * self.thick)
@@ -434,6 +479,7 @@ class Sheet:
         Rl = self.law(S, TH)
         H = self.height(S, TH)
         D = np.maximum(self.edge_d(S, TH), 0.0)
+        Dr = np.maximum(self.roll_d(S, TH), 0.0)   # (the shader's rolled-edge data: only where an edge is rolled)
         P = fr.pt(S, TH, Rl + H).reshape(-1, 3)
         base = fr.pt(S, TH, Rl)
         rad = fr.radial(TH)
@@ -442,14 +488,14 @@ class Sheet:
         # the shader's data: edge distance (m), convexity (0.5 flat, high on a crest, low in a crease)
         conv = np.full(S.shape, 0.5)
         if self.roll:
-            x = D / w
+            x = Dr / w
             conv = np.where(x < 1.0, 0.5 + 0.4 * np.interp(x, ROLL_D, ROLL_B), conv)
             conv = np.where(np.abs(x - 1.0) < 0.05, 0.15, conv)
         if self.ridge:
             x = np.abs(np.radians(TH - self.ridge["theta"]) * Rl / (self.ridge["w"] / 2))
             conv = np.where(x < 0.1, 0.95, np.where(np.abs(x - 1) < 0.05, np.minimum(conv, 0.3), conv))
-        aov = np.where(np.abs(D - w) < 1e-5, 0.7, 1.0) * ao if self.roll else np.full(S.shape, ao)
-        flag = (D > w + 1e-6).astype(float)
+        aov = np.where(np.abs(Dr - w) < 1e-5, 0.7, 1.0) * ao if self.roll else np.full(S.shape, ao)
+        flag = (Dr > w + 1e-6).astype(float)
         # arc-length UVs (metres x the material's repeats): u round the limb at each row, v down it
         du = np.linalg.norm(np.diff(P.reshape(nr, nc, 3), axis=1), axis=2)
         uu = np.c_[np.zeros(nr), np.cumsum(du, 1)]
@@ -471,9 +517,12 @@ class Sheet:
         e = e * np.sign((e * (P[loop] - P[inner])).sum(1, keepdims=True))   # out of the sheet, along the surface
         hb = H.reshape(-1)[loop]
         drop = max(self.clear - self.lip, 0.0)
-        rings = [bl + e * 0.25 * self.thick + rl * (0.45 * hb)[:, None],
-                 bl - e * 0.0002 - rl * 0.0002,
-                 bl - e * 0.0028 - rl * drop]
+        # (an edge lifted over another plate: its wall is the steel's own thickness and its lip turns in under it,
+        # above the plate beneath; any other edge: the wall runs down to her skin)
+        under = np.maximum(hb - self.thick, 0.0)
+        rings = [bl + e * 0.25 * self.thick + rl * (under + 0.45 * np.minimum(hb, self.thick))[:, None],
+                 bl - e * 0.0002 + rl * (under - 0.0002)[:, None],
+                 bl - e * 0.0028 + rl * np.where(under > 0.0006, under - 0.0005, -drop)[:, None]]
         Pw = np.vstack(rings)
         k0 = nr * nc
         Tw = []

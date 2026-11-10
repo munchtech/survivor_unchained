@@ -30,7 +30,45 @@ def piece_dir(root, pid="t_piece", nodes=None, **over):
     return d
 
 
+def strip_indices(glb):
+    """Rewrite a .glb with its primitives' indices removed (what an exporter set to non-indexed writes)."""
+    import struct
+    raw = open(glb, "rb").read()
+    n = struct.unpack_from("<I", raw, 12)[0]
+    js = json.loads(raw[20:20 + n])
+    for m in js["meshes"]:
+        for pr in m["primitives"]:
+            pr.pop("indices", None)
+    jb = json.dumps(js, separators=(",", ":")).encode()
+    jb += b" " * (-len(jb) % 4)
+    rest = raw[20 + n:]
+    with open(glb, "wb") as f:
+        f.write(struct.pack("<III", 0x46546C67, 2, 20 + len(jb) + len(rest)) + struct.pack("<II", len(jb), 0x4E4F534A) + jb + rest)
+
+
 class Native(unittest.TestCase):
+    def test_no_indices_refused(self):
+        with tempfile.TemporaryDirectory() as r:
+            d = piece_dir(r)
+            strip_indices(os.path.join(d, "t_piece.glb"))
+            why = self.check(d)
+            self.assertTrue(why and all("has no indices" in w for w in why), why)
+
+    def test_bones_rule(self):
+        # an articulated lame: its blend named bone by bone, on the side its skin leans to; it leads its own group
+        piece = {"parts": {"lame_rigid": {"bones": {"thigh_twist_02_{s}": 0.9, "calf_share_{s}": 0.1}},
+                           "rivets_rigid": {"with": "lame_rigid"}}}
+        self.assertEqual(gn.part_rule(piece, "rivets_rigid"), piece["parts"]["lame_rigid"])
+        self.assertEqual(gn.lead_part(piece, "rivets_rigid"), "lame_rigid")
+        names = ["pelvis", "thigh_twist_02_l", "thigh_twist_02_r", "calf_share_l", "calf_share_r"]
+        D = np.array([0.1, 0.1, 0.6, 0.0, 0.2])
+        np.testing.assert_allclose(gn.bones_blend(names, D, piece["parts"]["lame_rigid"]["bones"]), [0, 0, 0.9, 0, 0.1])
+        with self.assertRaises(SystemExit):
+            gn.bones_blend(names, D, {"knee_{s}": 1})
+        with tempfile.TemporaryDirectory() as r:
+            d = piece_dir(r, nodes=[quad("lame_rigid", "steel"), quad("rivets_rigid", "steel")], parts=piece["parts"])
+            self.assertEqual(self.check(d), [])
+
     def check(self, d, **kw):
         return gn.validate(d, rest_hash=STAMP, materials=MATS, **kw)
 

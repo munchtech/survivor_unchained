@@ -8,7 +8,10 @@ measure), `gear_fit stale` covers it, and the index row is its piece.json. A new
 A piece dir (godot/art/gear/native/<id>/):
     piece.json   id, name, slot, style, tier, layer, covers, optional hair ("hide"), dye zones,
                  "native": {"rest_body": "godot/art/people/body_p1", "rest_hash": {"close": sha1, "play": sha1}},
-                 "parts": {part name: {"ride": {role: share}, "one_bone": bool} | {"with": part name}}
+                 "parts": {part name: {"ride": {role: share}, "one_bone": bool} | {"bones": {bone: share}}
+                           | {"with": part name}}   ("bones": the blend named bone by bone, "{s}" = the part's side:
+                           an articulated lame rides exactly the bones its skin follows, e.g. thigh_twist_02_{s} 0.9
+                           + calf_share_{s} 0.1)
     <id>.glb     one node per part and material, at her_b's rest (glTF axes, metres, identity transforms), each a single
                  primitive whose material NAME is an entry of godot/art/people/outfit_materials.json. A part named
                  `*_rigid` never bends: it rides one blend of bones, its "ride" rule (roles as tools/armor/
@@ -128,7 +131,8 @@ def read_parts(glb):
         get = lambda k: g.accessor(a[k]).astype(np.float32) if k in a else None  # noqa: E731
         mi = pr.get("material")
         out.append({"name": n.get("name", ""), "prims": len(prims), "P": get("POSITION"), "N": get("NORMAL"),
-                    "T": g.accessor(pr["indices"]).reshape(-1, 3).astype(np.int64), "uv0": get("TEXCOORD_0"),
+                    "T": g.accessor(pr["indices"]).reshape(-1, 3).astype(np.int64) if "indices" in pr else None,
+                    "uv0": get("TEXCOORD_0"),
                     "uv1": get("TEXCOORD_1"), "col": get("COLOR_0"),
                     "material": js["materials"][mi].get("name", "") if mi is not None else "",
                     "transform": any(k in n for k in ("translation", "rotation", "scale", "matrix"))})
@@ -148,14 +152,31 @@ def part_rule(piece, name, seen=()):
     r = (piece.get("parts") or {}).get(name)
     if not r or name in seen:
         return None
-    if "ride" in r:
+    if "ride" in r or "bones" in r:
         return r
     return part_rule(piece, r.get("with", ""), seen + (name,)) if r.get("with", "").endswith("_rigid") else None
 
 
 def lead_part(piece, name):
     r = (piece.get("parts") or {}).get(name) or {}
-    return lead_part(piece, r["with"]) if "ride" not in r and r.get("with") in (piece.get("parts") or {}) else name
+    own = "ride" in r or "bones" in r
+    return lead_part(piece, r["with"]) if not own and r.get("with") in (piece.get("parts") or {}) else name
+
+
+def bones_blend(names, D, bones):
+    """A rigid part's blend named bone by bone: {bone: share} ("{s}" = the side its skin leans to, by the mean weights
+    D over its bound points) -> dense weights over `names`, normalised. A bone this body has not is refused."""
+    side = np.array([n[-2:] for n in names])
+    lean = "l" if D[side == "_l"].sum() >= D[side == "_r"].sum() else "r"
+    out = np.zeros(len(names))
+    for b, v in bones.items():
+        n = b.replace("{s}", lean)
+        if n not in names:
+            raise SystemExit(f"gear_native: a part's \"bones\" names '{n}', a bone this body has not")
+        out[list(names).index(n)] += float(v)
+    if out.sum() <= 0:
+        raise SystemExit("gear_native: a part's \"bones\" shares sum to nothing")
+    return out / out.sum()
 
 
 def open_scalp(parts, head_P, head_N, mask):
@@ -212,8 +233,12 @@ def validate(d, rest_hash=None, head=None, mask=None, materials=None):
             why.append(f"part '{p['name']}': unknown material '{p['material']}' (a name from outfit_materials.json)")
         if p["N"] is None:
             why.append(f"part '{p['name']}' has no normals")
+        if p["T"] is None:
+            why.append(f"part '{p['name']}' has no indices (export an indexed triangle list)")
         if p["name"].endswith("_rigid") and part_rule(piece, p["name"]) is None:
             why.append(f"rigid part '{p['name']}' has no role: piece.json parts needs its \"ride\" or the part it is fixed \"with\"")
+    if any(p["T"] is None for p in parts):
+        return why
     P = np.vstack([p["P"] for p in parts])
     if P[:, 1].min() < -0.05 or P[:, 1].max() > 2.0 or np.abs(P[:, [0, 2]]).max() > 0.6:
         why.append(f"bounds {P.min(0).round(2).tolist()}..{P.max(0).round(2).tolist()} miss her body (metres, Y up, feet on y = 0)")
@@ -390,8 +415,13 @@ def part_blends(bd, bodies, ev):
         if not p["rule"] or not (comp == p["comp"]).any():
             continue
         own = comp == p["comp"]
-        j, w = g.rigid_blend(body, trs[own], ws[own], "_", roles={"roles": rr.get("roles", {}), "anchors": rr.get("anchors", {}),
-                                                                 "slots": {"_": p["rule"]}})
+        if "bones" in p["rule"]:
+            names = body.joint_names
+            jj, ww = g.top_k(bones_blend(names, g.dense_weights(body, trs[own], ws[own], len(names)).mean(0), p["rule"]["bones"])[None])
+            j, w = jj[0], ww[0]
+        else:
+            j, w = g.rigid_blend(body, trs[own], ws[own], "_", roles={"roles": rr.get("roles", {}), "anchors": rr.get("anchors", {}),
+                                                                     "slots": {"_": p["rule"]}})
         for m in ms:
             e = ev[m["node"]]
             ci = z[f"comp{m['i']}"]

@@ -70,5 +70,45 @@ class Build(unittest.TestCase):
         self.assertEqual(len(nb.buckle(np.array([0, 0.5, 0.08]), [0, 0, 1.0], [0, 1.0, 0]).T), 60)
 
 
+class Lames(unittest.TestCase):
+    """An articulated lame: an edge through its measured points, its top lapping OVER the plate above it."""
+
+    def sheet(self, **kw):
+        fr = nb.Frame([0, 1.0, 0], [0, 0.5, 0])
+        law = nb.Law(0.0, 0.5, -90, 90, np.array([[0.08]]))
+        top, bot = (lambda th: 0.30 + 0 * np.asarray(th, float)), (lambda th: 0.35 + 0 * np.asarray(th, float))
+        return nb.Sheet(fr, law, -30, 60, top, bot, 0.002, **kw), fr
+
+    def test_edge_points(self):
+        th, s = np.array([-35, 5, 45, 72, 115.0]), np.array([0.232, 0.180, 0.100, 0.079, 0.078])
+        f = nb.edge_points(th, s)
+        np.testing.assert_allclose(f(th), s, atol=1e-12)
+        x = f(np.linspace(-35, 115, 400))
+        self.assertTrue((np.diff(x) <= 1e-12).all())            # monotone data: no overshoot between the points
+        np.testing.assert_allclose(f(np.array([-60.0, 140.0])), [0.232, 0.078])   # clamped outside
+
+    def test_lapping_lame(self):
+        lift = {"band": 0.014, "h": 0.003, "ease": 0.010}
+        sh, fr = self.sheet(roll_on="t01", lift_top=lift)
+        th = np.array([10.0])
+        # the top band stands the lift further out, the bottom (hidden under the next lame) is plain steel: no bead
+        self.assertAlmostEqual(float(sh.height(np.array([0.310]), th)[0]), 0.002 + 0.003, places=6)
+        self.assertAlmostEqual(float(sh.height(np.array([0.3478]), th)[0]), 0.002, places=6)
+        full, _ = self.sheet()
+        self.assertGreater(float(full.height(np.array([0.3478]), th)[0]), 0.0025)   # (rolled on every edge: a bead)
+        p = sh.build("lame_rigid", "steel")
+        S, TH, idx = p.grid
+        n_face, n_loop = S.size, 2 * (S.shape[0] - 1) + 2 * (S.shape[1] - 1)
+        lip = p.P[n_face + 2 * n_loop:]
+        self.assertEqual(len(lip), n_loop)
+        s_l, _, rho = fr.cyl(lip)
+        top_lip = rho[s_l < 0.305]
+        # the lifted edge's lip turns in over the plate beneath (it never runs down to her skin through that plate)
+        self.assertGreater(float(top_lip.min()), 0.08 + 0.002)
+        self.assertLess(float(rho[s_l > 0.345].min()), 0.08)    # the plain bottom edge: its wall runs down to her
+        fn = np.cross(p.P[p.T[:, 1]] - p.P[p.T[:, 0]], p.P[p.T[:, 2]] - p.P[p.T[:, 0]])
+        self.assertGreater(float(np.linalg.norm(fn, axis=1).min()), 1e-12)          # no degenerate faces
+
+
 if __name__ == "__main__":
     unittest.main()
