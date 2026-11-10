@@ -1,3 +1,4 @@
+using GripPaint = SurvivorUnchained.Look.GripPaint;
 using System;
 using System.Collections.Generic;
 using Godot;
@@ -36,38 +37,22 @@ public partial class BattleFx
     static readonly bool GripStrokeOn = FxCel.On && !P7Off && !Args.Has("grip-old");
     static readonly bool GripSay = Args.Has("clip") || Args.Has("grip-say"), GripSayAll = Args.Has("grip-say");
     const string GripShader = "res://shaders/fx_grip_stroke.gdshader";
-    /// <summary>The margin drawn past the tip (a share of the blade: the glow, the edge's antialiasing).</summary>
-    static float GripOver => gripOver ??= 0.12f + P7D.All("grip.contact.swell")[1] * P7D.All("grip.contact.by_struck")[1];
-    static float? gripOver;
+    /// <summary>The margin drawn past the tip's path (a share of the blade: the pressed ribs' outer edge and the splay's tines).</summary>
+    const float GripOver = 0.35f;
+    /// <summary>(take 7) The laying's numbers (fx_language.json p7 grip.press).</summary>
+    static GripPaint.Press GripPress => gripPress ??= new GripPaint.Press(P7D.All("grip.press.rise"), P7D.All("grip.press.lift"), P7D.All("grip.press.contact"), P7D["grip.press.white"]);
+    static GripPaint.Press? gripPress;
 
-    /// <summary>The look by weapon (fx_language.json p7 grip.sunder / grip.oath): the comma's width at the blade (a share
-    /// of it), the power its inner edge runs out by, the longest drawn (m of the tip's path), the bands' ends across
-    /// the width by step of leaving, how far back the core and the mid reach, the width by step of leaving, the
-    /// contact's size.</summary>
-    /// <remarks>(take 6) Knots = the three bands' ends (core, mid, end) as one line each across the width: 4 knots of
-    /// [across, share of the length] per band (a shorter list's last knot repeated); Streaks = the tail's lanes,
-    /// [width share, share of the tail kept] each.</remarks>
-    readonly record struct GripLook(float Head, float P, float MaxLen, float[] Knots, float[] Streaks, float Taper, float Flash);
+    /// <summary>The look by weapon (fx_language.json p7 grip.sunder / grip.oath): the stroke's width at press 1 (a share
+    /// of the blade), the longest drawn (m of the tip's path), the contact's size.</summary>
+    readonly record struct GripLook(float Head, float MaxLen, float Flash);
     static GripLook? gripSunder, gripOath;
 
     static GripLook GripLookOf(bool oath)
     {
         if ((oath ? gripOath : gripSunder) is { } l) return l;
         string k = oath ? "grip.oath." : "grip.sunder.";
-        var knots = new float[24];
-        string[] bands = { "core", "mid", "end" };
-        for (int b = 0; b < 3; b++)
-        {
-            var src = P7D.All(k + bands[b]);
-            int last = Math.Max(0, src.Length / 2 - 1);
-            for (int j = 0; j < 4 && src.Length >= 2; j++)
-            {
-                int s = Math.Min(j, last) * 2;
-                knots[b * 8 + j * 2] = src[s];
-                knots[b * 8 + j * 2 + 1] = src[s + 1];
-            }
-        }
-        var n = new GripLook(P7D[k + "head"], P7D[k + "p"], P7D[k + "max_len"], knots, P7D.All(k + "streaks"), P7D[k + "taper"], P7D[k + "flash"]);
+        var n = new GripLook(P7D[k + "head"], P7D[k + "max_len"], P7D[k + "flash"]);
         if (oath) gripOath = n; else gripSunder = n;
         return n;
     }
@@ -94,15 +79,19 @@ public partial class BattleFx
         /// <summary>The contact (the stroke's own bite), owed until the blade's line has crossed the struck body (or the wait is up).</summary>
         public bool FlashOwed;
         public int FlashTries, Struck, Killed;
-        /// <summary>The bite, the contact IN the stroke: when the blade crossed the body (the watch's clock; -1: not yet),
-        /// its size by the bodies struck, the frame it began (it lasts grip.contact.frames drawn frames).</summary>
+        /// <summary>The contact: when the blade crossed the body (the watch's clock; -1: not yet) and its size by the
+        /// bodies struck.</summary>
         public double BiteAt = -1;
         public float Bite;
-        public int BiteFrame;
-        /// <summary>(round 4) The drawn frame the stroke's path first kinked on screen (-1: never): the part before the
-        /// kink runs out from then (grip.kink). Whether the stroke has been drawn yet (grip.min_seen holds only before).</summary>
+        /// <summary>(take 7) THE LAID RIBS: each stores its own press and whiteness when the blade lays it (GripPaint);
+        /// the contact's stamp on them (pressed once, in place), the tip's distance from her then and the cut's reach
+        /// (the throw's streaks run out to it).</summary>
+        public readonly List<GripPaint.Rib> Laid = new(96);
+        public GripPaint.Stamp Stamp;
+        public float StampR, Reach;
+        /// <summary>The drawn frame the stroke's path first kinked on screen (-1: never): the part before the kink runs
+        /// out from then (grip.kink).</summary>
         public int KinkFrame = -1;
-        public bool Shown;
         public Vector3 Body;
         /// <summary>Which way it crosses (the clip's, then the blade's own measured on the contact), and the sim's.</summary>
         public int Side, SimSide;
@@ -139,6 +128,8 @@ public partial class BattleFx
     int gripWarm;
     readonly List<(Vector3 H, Vector3 T)> gripPts = new(200);
     readonly List<float> gripCum = new(200);
+    /// <summary>Each path point's time in the watch's clock (the laid ribs' key).</summary>
+    readonly List<double> gripAtT = new(200);
 
     public override void _EnterTree()
     {
@@ -292,7 +283,7 @@ public partial class BattleFx
         // struck are the CUT's DISTINCT bodies (the arcs' Fresh summed), not its last arc's
         var arc0 = gripLive is { Contact: >= 0, FlashOwed: true } gl && gl.Contact == gripClock ? gl : null;
         if (gripLive is not { Contact: < 0 } tr) { tr = new GripTrail { Oath = oath, Tail = gripClock - 5 / 60.0 }; GripArm(tr); }
-        tr.Oath = oath; tr.Contact = gripClock; tr.SimSide = e.Side;
+        tr.Oath = oath; tr.Contact = gripClock; tr.SimSide = e.Side; tr.Reach = reach;
         if (e.Struck > 0)
         {
             tr.FlashOwed = true; tr.Struck = e.Fresh; tr.Killed = e.Killed;
@@ -366,14 +357,10 @@ public partial class BattleFx
         var o = PlayerPos + Vector3.Down * 0.3f;
         gripMesh.ClearSurfaces(); gripEdgeMesh.ClearSurfaces();
         if (gripWarm <= 0) { gripNode.Visible = false; gripEdgeNode.Visible = false; return; }
-        gripMesh.SurfaceBegin(Mesh.PrimitiveType.TriangleStrip);
-        for (int i = 0; i < 2; i++)
-        {
-            gripMesh.SurfaceSetUV(new Vector2(i * 0.02f, 0)); gripMesh.SurfaceAddVertex(o + new Vector3(i * 0.02f, 0, 0));
-            gripMesh.SurfaceSetUV(new Vector2(i * 0.02f, 1)); gripMesh.SurfaceAddVertex(o + new Vector3(i * 0.02f, 0, 0.02f));
-        }
+        gripMesh.SurfaceBegin(Mesh.PrimitiveType.Triangles);
+        for (int i = 0; i < 3; i++) { gripMesh.SurfaceSetColor(new Color(1, 0, 0)); gripMesh.SurfaceSetUV(new Vector2(0.01f, 0.9f)); gripMesh.SurfaceSetUV2(new Vector2(1, 1)); gripMesh.SurfaceAddVertex(o + new Vector3(i == 1 ? 0.02f : 0, 0, i == 2 ? 0.02f : 0)); }
         gripMesh.SurfaceEnd();
-        GripSet(GripLookOf(false), 0.02f, 0, 0, 0.02f, 0, o);
+        GripSet(GripLookOf(false), 0.02f, 0, 0.02f, 0, 0, o, null, 0);
         gripNode.Visible = true;
         GripEdgeQuads(o, o + new Vector3(0.02f, 0, 0), 0);
     }
@@ -404,77 +391,47 @@ public partial class BattleFx
         if (gripNode != null && IsInstanceValid(gripNode)) gripNode.Visible = false;
     }
 
-    void GripSet(GripLook look, float total, float thread, float blade, float age, float seed, Vector3 her, float seen = -1, float biteU = 0, float biteK = 0)
+    /// <summary>(take 7) The stroke's material for this frame: `total` and `tailU` are the laid path's metres at the blade
+    /// and at the drawn tail; `age` s since the contact (under 0: not yet); the spikes (GripPaint.Spikes), the first
+    /// `tines` of them the splay's.</summary>
+    void GripSet(GripLook look, float total, float tailU, float blade, float age, float seed, Vector3 her, float[]? spikes, int tines)
     {
         var m = gripMat!;
-        float px = P7Px(her);
-        blade = Mathf.Max(blade, 0.05f);
-        var lit = P7D.All("grip.lit");
-        var pt = P7D.All("grip.point");
-        var jit = P7D.All("grip.lane.jitter");
-        var fp = P7D.All("grip.lane.point");
-        var gap = P7D.All("grip.lane.gap");
-        var ge = P7D.All("grip.glow_end");
-        var shed = P7D.All("grip.shed_at");
-        // a short stroke is the comma small, a wedge: its head no wider than `aspect` of its own length
-        float body = Mathf.Max(total - thread, 0.01f);
-        // (round 3) short is short ON SCREEN (`seen`: the path's length as the camera sees it, m at her): the width follows
-        // that length, the tail is drawn to a point (grip.short) and the streaks wait until it can carry them (lane.carry)
-        float seenLen = seen < 0 ? body : Mathf.Min(body, seen);
-        var sh = P7D.All("grip.short"); var cy = P7D.All("grip.lane.carry");
-        float pointK = Mathf.SmoothStep(sh[0], sh[1], seenLen), carry = Mathf.SmoothStep(cy[0], cy[1], seenLen);
-        float head = GripHead(look, seenLen, blade);
-        float tail = Mathf.Min(P7D["grip.tail_px"] * px / blade, head * 0.25f);
-        // the lit blade: from the comma's head down toward the guard as the stroke grows
-        float full = Mathf.Clamp((body - lit[1]) / Mathf.Max(lit[2] - lit[1], 1e-3f), 0, 1);
-        // (take 6) the bands: one ragged line each across the width; lanes only in the tail (its streaks)
-        var lanes = new float[16];
-        Array.Copy(look.Streaks, lanes, Math.Min(16, look.Streaks.Length));
-        m.SetShaderParameter("grip_knot", look.Knots);
-        m.SetShaderParameter("grip_lanes", lanes);
-        m.SetShaderParameter("grip_lane_n", Math.Min(8, look.Streaks.Length / 2));
-        m.SetShaderParameter("grip_lane", new Vector4(jit[0], jit[1], look.Taper, look.P));
-        var tl = P7D.All("grip.lane.tail");
-        m.SetShaderParameter("grip_tips", new Vector4(tl[0], fp[0], fp[1], P7D["grip.lane.slant"]));
-        m.SetShaderParameter("grip_tail", tl[1] * carry);
-        m.SetShaderParameter("grip_short", new Vector2(pointK, carry));
-        var cl = P7D.All("grip.band.clumps");
-        var td = P7D.All("grip.band.depth");
-        m.SetShaderParameter("grip_clump", new Vector4(cl[0], cl[1], P7D["grip.band.uneven"], P7D["grip.band.ratio"]));
-        m.SetShaderParameter("grip_tooth", new Vector4(td[0], td[1], P7D["grip.band.round"], P7D["grip.band.back"]));
-        m.SetShaderParameter("grip_narrow", P7D["grip.shed_to"]);
-        var rim = P7D.All("grip.shed_rim"); var push = P7D.All("grip.shed_push");
-        m.SetShaderParameter("grip_rim", new Vector4(rim[0], rim[1], rim[2], rim[3]));
-        m.SetShaderParameter("grip_push", new Vector2(push[0], push[1]));
-        // the bite: the contact in the stroke (its place along the ribbon, its strength this frame)
-        var sw = P7D.All("grip.contact.swell"); var rc = P7D.All("grip.contact.reach");
-        // (round 4) the swell follows the stroke: its reaches are at most shares of the length seen (a short stroke
-        // swells whole, a short fat comma, never a block on a stick); the white runs on its own line (grip.contact.white)
-        var rm = P7D.All("grip.contact.reach_most"); var wh = P7D.All("grip.contact.white");
-        m.SetShaderParameter("grip_bite", new Vector4(biteU, biteK, Mathf.Min(rc[0], seenLen * rm[0]), Mathf.Min(rc[1], seenLen * rm[1])));
-        m.SetShaderParameter("grip_swell", new Vector4(sw[0], sw[1], wh[0], wh[1]));
-        m.SetShaderParameter("grip_inner", wh[2]);
-        // (a switch, not a blend: a clump's step at a fifth of its depth is a pixel stair)
-        var jag = P7D.All("grip.band.jag");
-        m.SetShaderParameter("grip_step", seenLen >= P7D["grip.band.short"] ? 1f : 0f);
-        m.SetShaderParameter("grip_jag", new Vector2(jag[0], jag[1]));
-        m.SetShaderParameter("grip_gap", new Vector4(gap[0], gap[1], gap[2], gap[3]));
-        m.SetShaderParameter("grip_shed", new Vector4(age, shed[0], shed[1], P7D["grip.lane.shed"]));
-        m.SetShaderParameter("grip_seed", seed);
+        var shed = P7D.All("grip.shed_at"); var pt = P7D.All("grip.point"); var cap = P7D.All("grip.cap"); var rag = P7D.All("grip.cap_rag");
+        var tone = P7D.All("grip.fill.tone"); var st = P7D.All("grip.fill.streak"); var dr = P7D.All("grip.fill.dry"); var tn = P7D.All("grip.fill.tine"); var ct = P7D.All("grip.fill.cut");
+        var sw = P7D.All("grip.shed_white"); var tc = P7D.All("grip.throw.color");
         m.SetShaderParameter("grip_total", total);
-        m.SetShaderParameter("grip_thread", thread);
-        m.SetShaderParameter("grip_blade", blade);
-        m.SetShaderParameter("grip_shape", new Vector3(tail, head, look.P));
-        m.SetShaderParameter("grip_dry", new Vector3(ge[0], 0, ge[1]));
-        m.SetShaderParameter("grip_lit", new Vector2(lit[0] * px, full));
-        m.SetShaderParameter("grip_glow", P7D["grip.glow"]);
-        m.SetShaderParameter("grip_point", Mathf.Min(pt[0], total * pt[1]));
-        m.SetShaderParameter("grip_px", px);
-        gripNode!.CustomAabb = new Aabb(her - new Vector3(5, 3, 5), new Vector3(10, 7, 10));
+        m.SetShaderParameter("grip_tail_u", tailU);
+        m.SetShaderParameter("grip_blade", Mathf.Max(blade, 0.05f));
+        m.SetShaderParameter("grip_head", look.Head);
+        m.SetShaderParameter("grip_point", new Vector2(pt[0], pt[1]));
+        m.SetShaderParameter("grip_cap", new Vector4(cap[0], cap[1], cap[2], cap[3]));
+        m.SetShaderParameter("grip_cap2", new Vector2(cap[4], cap[5]));
+        m.SetShaderParameter("grip_rag", new Vector3(rag[0], rag[1], rag[2]));
+        m.SetShaderParameter("grip_px", P7Px(her));
+        m.SetShaderParameter("grip_seed", seed);
+        m.SetShaderParameter("grip_narrow", P7D["grip.shed_to"]);
+        // leaving: the shed (the whole stroke thins) and the dry gaps (the last three drawn frames: mostly streaks at the end)
+        m.SetShaderParameter("grip_leave", age < 0 ? Vector2.Zero : new Vector2(Mathf.Clamp((age - shed[0]) / Mathf.Max(shed[1] - shed[0], 1e-4f), 0, 1), P7D.Curve("grip.dry_out", age)));
+        m.SetShaderParameter("grip_fill", new Vector4(P7D["grip.fill.lanes"], tone[0], tone[1], P7D["grip.fill.comb"]));
+        m.SetShaderParameter("grip_streak", new Vector4(st[0], st[1], dr[0], dr[1]));
+        m.SetShaderParameter("grip_tine", new Vector4(tn[0], tn[1], ct[0], ct[1]));
+        m.SetShaderParameter("grip_shedw", new Vector2(sw[0], sw[1]));
+        m.SetShaderParameter("grip_out", P7D["grip.splay.out"]);
+        // (vii) the stroke's own white (sRGB in the data; the bands are linear), by day and by night
+        var w = P7D.All(Flare.Night ? "grip.white.night" : "grip.white.day");
+        m.SetShaderParameter("grip_white", new Vector3(GripLin(w[0]), GripLin(w[1]), GripLin(w[2])));
+        var sp = new float[48];
+        int ns = Math.Min(12, (spikes?.Length ?? 0) / 4);
+        if (spikes != null) Array.Copy(spikes, sp, ns * 4);
+        m.SetShaderParameter("grip_spike", sp);
+        m.SetShaderParameter("grip_spike_n", ns);
+        m.SetShaderParameter("grip_tine_n", Math.Min(tines, ns));
+        m.SetShaderParameter("grip_throw", new Vector2(tc[0], tc[1]));
+        gripNode!.CustomAabb = new Aabb(her - new Vector3(8, 3, 8), new Vector3(16, 7, 16));
     }
 
-    /// <summary>The head's width (a share of the blade): the look's, no wider than grip.aspect of the length seen.</summary>
-    static float GripHead(GripLook look, float seenLen, float blade) => Mathf.Min(look.Head, seenLen * P7D["grip.aspect"] / Mathf.Max(blade, 0.05f));
+    static float GripLin(float c) => c <= 0.04045f ? c / 12.92f : Mathf.Pow((c + 0.055f) / 1.055f, 2.4f);
 
     /// <summary>Whether the blade's tip was fast between sample `j - 1` and `j`.</summary>
     bool GripFast(int j, float slow)
@@ -495,7 +452,10 @@ public partial class BattleFx
         return Mathf.Wrap(Mathf.Atan2(b.Z, b.X) - Mathf.Atan2(a.Z, a.X), -Mathf.Pi, Mathf.Pi);
     }
 
-    readonly List<(Vector3 H, Vector3 T, float U, float Real, float Cap)> gripRibs = new();
+    /// <summary>A drawn rib: hilt side, tip, the laid path's metres (U), how much the blade's own sweep, its limit where
+    /// the path turns on screen, this frame's metres from the drawn tail (M), and its LAID press, whiteness and raise.</summary>
+    struct GripRibV { public Vector3 H, T; public float U, Real, Cap, M, Press, White, Raise; }
+    readonly List<GripRibV> gripRibs = new();
     Vector2[] gripRibP = new Vector2[64], gripRibD = new Vector2[64];
     float[] gripRibW = new float[64], gripRibL = new float[64], gripRibC = new float[64];
 
@@ -504,10 +464,11 @@ public partial class BattleFx
     /// two cross, the one whose crossing lies farther along it ends there, x grip.kink[0]), so where the tip's path turns
     /// the stroke is held inside the turn and pinches at a sharp kink; it never lies over itself. Returns the path's
     /// metres at the last KINK (a rib held under grip.kink[1] of the stroke's own width there), -1 if none.</summary>
-    float GripLay(GripLook look, float start, float len, float body, float blade, Camera3D? faceCam, Vector3 faceBack, float[] face, float[] kk, out float seen, out float way, out float shown, out float after)
+    float GripLay(GripTrail tr, GripLook look, float start, float len, Camera3D? faceCam, Vector3 faceBack, float[] face, float[] kk, out float seen, out float way, out float shown, out float after)
     {
         after = 0;
         gripRibs.Clear();
+        var hold = P7D.All("grip.press.hold");
         int s = 0;
         while (s < gripPts.Count - 2 && gripCum[s + 1] <= start) s++;
         // the stroke's length as the camera sees it (m at her): a cut swept toward the camera is short on screen
@@ -538,11 +499,12 @@ public partial class BattleFx
         {
             var (h, t) = gripPts[i];
             float u = gripCum[i] - start;
+            double laidAt = gripAtT[i];
             if (i == s && u < 0)
             {
                 // the drawn tail's own point, between two of the path's
                 float f = -u / Mathf.Max(1e-5f, gripCum[i + 1] - gripCum[i]);
-                h = h.Lerp(gripPts[i + 1].H, f); t = t.Lerp(gripPts[i + 1].T, f); u = 0;
+                h = h.Lerp(gripPts[i + 1].H, f); t = t.Lerp(gripPts[i + 1].T, f); u = 0; laidAt += (gripAtT[i + 1] - laidAt) * f;
             }
             float real = 1;
             var side = faceBack.Cross(gripPts[Math.Min(i + 1, gripPts.Count - 1)].T - gripPts[Math.Max(i - 1, 0)].T);
@@ -558,23 +520,22 @@ public partial class BattleFx
                     h = t + (dir.LengthSquared() > 1e-4f ? dir.Normalized() : side) * rlen;
                 }
             }
-            gripRibs.Add((h, t, u, real, 1f));
+            // (take 7) the rib's paint is what was LAID at its place: its metres, its press, its whiteness
+            var lv = GripPaint.At(tr.Laid, laidAt, Engine.GetFramesDrawn(), hold);
+            gripRibs.Add(new GripRibV { H = h, T = t, U = lv.S, Real = real, Cap = 1f, M = u, Press = lv.Press, White = lv.White, Raise = lv.Raise });
         }
         int n = gripRibs.Count;
         if (faceCam == null || kk[0] <= 0 || n < 3) return -1;
         if (gripRibP.Length < n) { int m = n * 2; gripRibP = new Vector2[m]; gripRibD = new Vector2[m]; gripRibW = new float[m]; gripRibL = new float[m]; gripRibC = new float[m]; }
-        // the ribs on screen (px): from the tip toward the hilt, as long as the stroke is wide there (its taper; the bite's swell)
-        float seenLen = Mathf.Min(body, seen);
-        var sh = P7D.All("grip.short");
-        float head = GripHead(look, seenLen, blade), taper = look.Taper * Mathf.SmoothStep(sh[0], sh[1], seenLen);
-        float swell = 1 + P7D.All("grip.contact.swell")[0] * P7D.All("grip.contact.by_struck")[1];
+        // the ribs on screen (px): from the tip toward the hilt, as long as the stroke is wide there (its laid press)
+        const float swell = 1f;
         for (int i = 0; i < n; i++)
         {
             var rb = gripRibs[i];
             var p = faceCam.UnprojectPosition(rb.T); var d = faceCam.UnprojectPosition(rb.H) - p;
-            float l = d.Length(), t = Mathf.Clamp((len - rb.U) / body, 0, 1);
+            float l = d.Length();
             gripRibP[i] = p; gripRibL[i] = l; gripRibD[i] = l > 1e-3f ? d / l : Vector2.Zero;
-            gripRibW[i] = head * (1 - (1 - taper) * Mathf.Pow(t, look.P)) * l;
+            gripRibW[i] = Mathf.Min(look.Head * rb.Press, 0.98f) * l;
             gripRibC[i] = float.MaxValue;
         }
         for (int i = 0; i < n - 1; i++)
@@ -598,8 +559,9 @@ public partial class BattleFx
         {
             if (gripRibC[i] == float.MaxValue) continue;
             var rb = gripRibs[i];
-            gripRibs[i] = (rb.H, rb.T, rb.U, rb.Real, Mathf.Min(1f, gripRibC[i] * kk[0] / Mathf.Max(gripRibL[i], 1e-3f)));
-            if (gripRibC[i] < kk[1] * gripRibW[i]) { kink = start + rb.U; at = i; }
+            rb.Cap = Mathf.Min(1f, gripRibC[i] * kk[0] / Mathf.Max(gripRibL[i], 1e-3f));
+            gripRibs[i] = rb;
+            if (gripRibC[i] < kk[1] * gripRibW[i]) { kink = start + rb.M; at = i; }
         }
         // the stroke AFTER the kink, as long as the camera sees it (m at her)
         for (int i = Math.Max(at, 0); at >= 0 && i < n - 1; i++) after += gripRibP[i + 1].DistanceTo(gripRibP[i]);
@@ -649,9 +611,8 @@ public partial class BattleFx
             var d = s1.Tip - PlayerPos;
             GD.Print($"grip frame {Engine.GetFramesDrawn()} age {age * 60:0.0}f cut {cut:0.00} samples {n - i0} fast {hi - i0} tip az {Mathf.RadToDeg(Mathf.Atan2(d.Z, d.X)):0} r {new Vector2(d.X, d.Z).Length():0.00} y {d.Y:0.00} speed {s1.Tip.DistanceTo(s0.Tip) / Math.Max(1e-4, s1.At - s0.At):0.0} m/s step {(s1.At - s0.At) * 1000:0.0} ms linked {tr.Linked} px/m {1 / P7Px(PlayerPos):0}");
         }
-        gripPts.Clear(); gripCum.Clear();
+        gripPts.Clear(); gripCum.Clear(); gripAtT.Clear();
         if (!any) { gripNode.Visible = false; return; }
-        float biteIdx = -1;   // the bite's place among the path's points (the blade's crossing; -1: not on this ribbon)
         for (int k = i0; k < n - 1; k++)
         {
             var a = gripRing[k]; var b = gripRing[k + 1];
@@ -660,24 +621,55 @@ public partial class BattleFx
             float la = da.Length(), lb = db.Length();
             da /= la; db /= lb; dpa = dpa.Normalized(); dpb = dpb.Normalized();
             int sub = Mathf.Clamp(Mathf.CeilToInt(Mathf.RadToDeg(da.AngleTo(db)) / 4f), 1, 20);
-            if (tr.BiteAt >= a.At && tr.BiteAt <= b.At && b.At > a.At) biteIdx = gripPts.Count + (float)((tr.BiteAt - a.At) / (b.At - a.At)) * sub;
             for (int q = 0; q < sub; q++)
             {
                 float t = q / (float)sub;
                 var h = a.Hilt.CubicInterpolate(b.Hilt, pa.Hilt, pb.Hilt, t);
                 var dir = da.CubicInterpolate(db, dpa, dpb, t).Normalized();
                 gripPts.Add((h, h + dir * Mathf.Lerp(la, lb, t)));
+                gripAtT.Add(a.At + (b.At - a.At) * t);
             }
         }
         var last = gripRing[n - 1];
         gripPts.Add((last.Hilt, last.Tip));
-        if (tr.BiteAt >= 0 && tr.BiteAt >= last.At) biteIdx = gripPts.Count - 1;
+        gripAtT.Add(last.At);
         int linkN = tr.Linked ? GripThread(tr) : 0;
-        if (biteIdx >= 0) biteIdx += linkN;
+        for (int i = 0; i < linkN; i++) gripAtT.Insert(0, gripAtT[0]);
         float cum = 0;
         gripCum.Add(0);
         for (int i = 1; i < gripPts.Count; i++) { cum += gripPts[i].T.DistanceTo(gripPts[i - 1].T); gripCum.Add(cum); }
         float thread = gripCum[linkN];
+        // (take 7) THE LAYING: what the blade has passed since the last drawn frame is laid now, each rib with its own press
+        // (GripPaint: the brush lands, is whole, lifts as the blade slows) and whiteness. The contact presses the ribs
+        // round the crossing ONCE, where they lie. Nothing laid is ever moved or pressed again: it only ages.
+        var faceCam = GetViewport()?.GetCamera3D();
+        int frame = Engine.GetFramesDrawn(), laid0 = tr.Laid.Count;
+        var press = GripPress;
+        float pxm = P7Px(PlayerPos);
+        for (int i = linkN; i < gripPts.Count; i++)
+        {
+            double at = gripAtT[i];
+            if (tr.Laid.Count > 0 && at <= tr.Laid[^1].At + 1e-7) continue;
+            float ds = 0, dq = 0;
+            if (i > linkN && tr.Laid.Count > 0)
+            {
+                ds = gripPts[i].T.DistanceTo(gripPts[i - 1].T);
+                dq = faceCam != null ? faceCam.UnprojectPosition(gripPts[i].T).DistanceTo(faceCam.UnprojectPosition(gripPts[i - 1].T)) * pxm : ds;
+            }
+            // the tip's speed here: this frame's, run in from the frame before's (no step in the press at a frame's joint)
+            int k1 = n - 1;
+            while (k1 > 1 && gripRing[k1 - 1].At >= at) k1--;
+            double dt1 = Math.Max(1e-4, gripRing[k1].At - gripRing[k1 - 1].At);
+            float v1 = (float)(gripRing[k1].Tip.DistanceTo(gripRing[k1 - 1].Tip) / dt1), v0 = v1;
+            if (k1 > i0 + 1) v0 = (float)(gripRing[k1 - 1].Tip.DistanceTo(gripRing[k1 - 2].Tip) / Math.Max(1e-4, gripRing[k1 - 1].At - gripRing[k1 - 2].At));
+            GripPaint.Lay(tr.Laid, at, ds, dq, Mathf.Lerp(v0, v1, Mathf.Clamp((float)((at - gripRing[k1 - 1].At) / dt1), 0, 1)), frame, press, tr.Stamp);
+        }
+        if (tr.BiteAt >= 0 && tr.Stamp.Size <= 0 && tr.Laid.Count > 0)
+        {
+            tr.Stamp = GripPaint.Strike(tr.Laid, GripPaint.At(tr.Laid, tr.BiteAt, frame, P7D.All("grip.press.hold")).S, tr.Bite, frame, press);
+            var hd = last.Tip - PlayerPos;
+            tr.StampR = new Vector2(hd.X, hd.Z).Length();
+        }
         // the drawn length: capped, and run up toward the head as it leaves
         float len = Mathf.Min(cum, look.MaxLen), start = cum - len;
         if (len < P7D["grip.min_len"]) { gripNode.Visible = false; return; }
@@ -686,7 +678,6 @@ public partial class BattleFx
         // line shows less than grip.face[1] of itself across the path on screen, the ribbon is turned toward the camera
         // (wholly under face[0]), head and all, always to ONE side for the whole stroke (no twist); each vertex carries how
         // much it is still the blade's own sweep (COLOR.r: the lit blade is drawn only there, so it never leaves the sword).
-        var faceCam = GetViewport()?.GetCamera3D();
         var faceBack = faceCam != null ? faceCam.GlobalBasis.Z.Normalized() : Vector3.Up;
         var face = P7D.All("grip.face");
         // (round 4) laid, and if the tip's path kinks on screen laid again from nearer the kink: the part before it (swept
@@ -698,7 +689,7 @@ public partial class BattleFx
         float seen = len, way = 0, shown = 0, kinkAt = -1;
         for (int pass = 0; pass < 2; pass++)
         {
-            float k = GripLay(look, start, len, Mathf.Max(len - Mathf.Max(0, thread - start), 0.01f), bladeNow, faceCam, faceBack, face, kk, out seen, out way, out shown, out float after);
+            float k = GripLay(tr, look, start, len, faceCam, faceBack, face, kk, out seen, out way, out shown, out float after);
             if (pass == 0) kinkAt = k;
             if (pass == 1 || k < 0 || after < kk[2]) break;
             if (tr.KinkFrame < 0) tr.KinkFrame = Engine.GetFramesDrawn();
@@ -707,47 +698,81 @@ public partial class BattleFx
             if (to <= start + 1e-3f) break;
             start = to; len = cum - start;
         }
-        // (round 4) a stroke too short on screen to be a comma is not drawn yet (a chip at the tip reads as a glitch)
-        if (!tr.Shown && seen < P7D["grip.min_seen"]) { gripNode.Visible = false; return; }
-        tr.Shown = true;
-        gripMesh.ClearSurfaces();
-        gripMesh.SurfaceBegin(Mesh.PrimitiveType.TriangleStrip);
-        foreach (var rb in gripRibs)
+        // (take 7, v) no stroke is held back for being short: it is born on its first drawn frame as the cap and a point
+        if (gripRibs.Count < 2) { gripNode.Visible = false; return; }
+        if (tr.Seed == 0) tr.Seed = 1f + R() * 96f;
+        // (iv) the splay's tines and the thrown streaks: rooted round the stamp, counted by the cut's distinct struck,
+        // the streaks out to the cut's reach, both shed by drawn frame
+        float[]? spikes = null;
+        int tines = 0, streaks = 0;
+        float sheet0 = 1, sheet1 = 0, far = 0;
+        if (tr.Stamp.Size > 0)
         {
-            gripMesh.SurfaceSetColor(new Color(rb.Real, 0, 0)); gripMesh.SurfaceSetUV(new Vector2(rb.U, 0)); gripMesh.SurfaceSetUV2(new Vector2(rb.Cap, 0)); gripMesh.SurfaceAddVertex(rb.H);
-            gripMesh.SurfaceSetColor(new Color(rb.Real, 0, 0)); gripMesh.SurfaceSetUV(new Vector2(rb.U, 1 + GripOver)); gripMesh.SurfaceSetUV2(new Vector2(rb.Cap, 0)); gripMesh.SurfaceAddVertex(rb.T + (rb.T - rb.H) * GripOver);
+            int since = frame - tr.Stamp.Frame;
+            var sf = P7D.All("grip.splay.frames"); var tf = P7D.All("grip.throw.frames");
+            float ks = since < sf.Length ? sf[since] : 0, kt = since < tf.Length ? tf[since] : 0;
+            if (ks > 0) tines = GripPaint.Tines(tr.Struck, P7D.All("grip.splay.tines"), P7D.All("grip.contact.by_struck")[0]);
+            if (kt > 0) streaks = GripPaint.Streaks(tr.Struck, P7D["grip.throw.per_struck"], P7D["grip.throw.most"]);
+            far = Mathf.Max(P7D["grip.throw.min"], tr.Reach - tr.StampR);
+            spikes = GripPaint.Spikes(tr.Stamp, tines, streaks, press, P7D.All("grip.splay.len"), P7D.All("grip.splay.root"), P7D.All("grip.splay.slant"),
+                P7D["grip.throw.px"] * pxm, P7D.All("grip.throw.len"), P7D.All("grip.throw.slant"), far, tr.Seed, ks, kt);
+            for (int i = tines; i < tines + streaks; i++)
+            {
+                float u0 = spikes[i * 4], u1 = u0 + spikes[i * 4 + 3] * spikes[i * 4 + 2];
+                if (sheet1 < sheet0) { sheet0 = u0; sheet1 = u1; }
+                sheet0 = Mathf.Min(sheet0, u0); sheet1 = Mathf.Max(sheet1, u1);
+            }
+            sheet0 -= 0.15f; sheet1 += 0.15f;
         }
-        // a few centimetres past the head, for the head's own edge
-        if (gripRibs.Count >= 2)
+        // (i) the cap: one more rib, the head's own carried straight on along the path's tangent (the shader cuts the nose)
+        var hr = gripRibs[^1];
+        var tan = tr.EndTan;
+        for (int i = gripRibs.Count - 2; i >= 0; i--)
+            if (gripRibs[i].T.DistanceSquaredTo(hr.T) > 0.0064f) { tan = (hr.T - gripRibs[i].T).Normalized(); break; }
+        float ext = P7D.All("grip.cap")[0] * look.Head * hr.Press * bladeNow + P7D.All("grip.cap_rag")[1] + 0.06f;
+        var cr = hr;
+        cr.H += tan * ext; cr.T += tan * ext; cr.U += ext; cr.M += ext;
+        gripRibs.Add(cr);
+        // ONE mesh: the ribbon (guard side to the margin past the tip's path) and, along the pressed section, the
+        // throw's sheet on from the margin, out from her to the cut's reach
+        float raiseMost = Mathf.Max(press.Contact[0] * P7D.All("grip.contact.by_struck")[1], 1e-3f), farV = far / Mathf.Max(bladeNow, 0.05f);
+        var her = PlayerPos;
+        void Put(in GripRibV r, Vector3 p, float v)
         {
-            var ra = gripRibs[^2]; var rb = gripRibs[^1];
-            float f = 0.05f / Mathf.Max(0.005f, rb.T.DistanceTo(ra.T));
-            Vector3 h = rb.H + (rb.H - ra.H) * f, t = rb.T + (rb.T - ra.T) * f;
-            gripMesh.SurfaceSetColor(new Color(rb.Real, 0, 0)); gripMesh.SurfaceSetUV(new Vector2(len + 0.05f, 0)); gripMesh.SurfaceSetUV2(new Vector2(rb.Cap, 0)); gripMesh.SurfaceAddVertex(h);
-            gripMesh.SurfaceSetColor(new Color(rb.Real, 0, 0)); gripMesh.SurfaceSetUV(new Vector2(len + 0.05f, 1 + GripOver)); gripMesh.SurfaceSetUV2(new Vector2(rb.Cap, 0)); gripMesh.SurfaceAddVertex(t + (t - h) * GripOver);
+            gripMesh.SurfaceSetColor(new Color(Mathf.Clamp(r.White / 2.5f, 0, 1), Mathf.Clamp(r.Raise / raiseMost, 0, 1), 0));
+            gripMesh.SurfaceSetUV(new Vector2(r.U, v)); gripMesh.SurfaceSetUV2(new Vector2(r.Cap, r.Press)); gripMesh.SurfaceAddVertex(p);
+        }
+        Vector3 Thrown(Vector3 m)
+        {
+            var d = new Vector3(m.X - her.X, 0, m.Z - her.Z);
+            var o = m + (d.LengthSquared() > 1e-6f ? d.Normalized() : Vector3.Right) * far;
+            o.Y = Mathf.Max(o.Y, her.Y + 0.8f);
+            return o;
+        }
+        gripMesh.ClearSurfaces();
+        gripMesh.SurfaceBegin(Mesh.PrimitiveType.Triangles);
+        float peak = 0, peakU = 0;
+        for (int i = 0; i + 1 < gripRibs.Count; i++)
+        {
+            var a = gripRibs[i]; var b = gripRibs[i + 1];
+            if (a.Press > peak) { peak = a.Press; peakU = a.U; }
+            Vector3 am = a.T + (a.T - a.H) * GripOver, bm = b.T + (b.T - b.H) * GripOver;
+            Put(a, a.H, 0); Put(a, am, 1 + GripOver); Put(b, b.H, 0);
+            Put(b, b.H, 0); Put(a, am, 1 + GripOver); Put(b, bm, 1 + GripOver);
+            if (streaks == 0 || a.U < sheet0 || b.U > sheet1) continue;
+            Vector3 ao = Thrown(am), bo = Thrown(bm);
+            Put(a, am, 1 + GripOver); Put(a, ao, 1 + GripOver + farV); Put(b, bm, 1 + GripOver);
+            Put(b, bm, 1 + GripOver); Put(a, ao, 1 + GripOver + farV); Put(b, bo, 1 + GripOver + farV);
         }
         gripMesh.SurfaceEnd();
-        // the stroke keeps its length while it leaves: the shader sheds it lane by lane (grip.shed_at, grip.lane.shed)
-        if (tr.Seed == 0) tr.Seed = 1f + R() * 96f;
-        // the bite: where the blade crossed, along this ribbon, for the frames its strength lasts (drawn frames: it
-        // swells and settles inside a hitstop's hold too); gone with the ribbon, nothing of it is left behind
-        float biteU = 0, biteK = 0;
-        int since = Engine.GetFramesDrawn() - tr.BiteFrame;
-        var bf = P7D.All("grip.contact.frames");
-        if (biteIdx >= 0 && since >= 0 && since < bf.Length)
-        {
-            int b0 = Math.Min((int)biteIdx, gripCum.Count - 1), b1 = Math.Min(b0 + 1, gripCum.Count - 1);
-            biteU = Mathf.Lerp(gripCum[b0], gripCum[b1], biteIdx - b0) - start;
-            biteK = tr.Bite * bf[since];
-        }
-        GripSet(look, len, Mathf.Max(0, thread - start), bladeNow, (float)age, tr.Seed, PlayerPos, seen, biteU, biteK);
+        GripSet(look, hr.U, gripRibs[0].U, bladeNow, (float)age, tr.Seed, PlayerPos, spikes, tines);
         if (GripSayAll && tr.Said <= 16 && faceCam != null)
         {
-            // (--grip-say) the ribbon as the camera sees it: the samples' tips on screen (px), the turn's side, the bite
+        // (--grip-say) the ribbon as the camera sees it: the samples' tips on screen (px), the turn's side, the bite
             var said = new System.Text.StringBuilder();
             for (int k = i0; k < n; k++) { var p = faceCam.UnprojectPosition(gripRing[k].Tip); said.Append($" {p.X:0},{p.Y:0}"); }
             var hp = faceCam.UnprojectPosition(last.Hilt);
-            GD.Print($"grip ribbon frame {Engine.GetFramesDrawn()} len {len:0.00} cum {cum:0.00} seen {seen:0.00} way {way:0} shown {shown:0.00} kink {(kinkAt < 0 ? -1 : kinkAt - (cum - len)):0.00} bite {biteU:0.00} x{biteK:0.00} hilt {hp.X:0},{hp.Y:0} tips{said}");
+            GD.Print($"grip ribbon frame {Engine.GetFramesDrawn()} len {len:0.00} cum {cum:0.00} seen {seen:0.00} way {way:0} shown {shown:0.00} kink {(kinkAt < 0 ? -1 : kinkAt - (cum - len)):0.00} laid {tr.Laid.Count} (+{tr.Laid.Count - laid0}) press {peak:0.00} at {peakU - gripRibs[0].U:0.00} of {hr.U - gripRibs[0].U:0.00} tines {tines} streaks {streaks} far {far:0.00} hilt {hp.X:0},{hp.Y:0} tips{said}");
         }
         gripNode.Visible = true;
     }
@@ -840,7 +865,7 @@ public partial class BattleFx
         var by = P7D.All("grip.contact.by_struck");
         float size = look.Flash * Mathf.Min(by[1], Mathf.Lerp(1f, by[1], Mathf.Clamp((tr.Struck - 1) / Mathf.Max(by[0] - 1, 1f), 0f, 1f)) * (tr.Killed > 0 ? P7D["grip.contact.kill"] : 1f));
         if (GripSay) GD.Print($"grip contact frame {Engine.GetFramesDrawn()} struck {tr.Struck} killed {tr.Killed} oath {tr.Oath} size {size:0.00} on blade {kb:0.00} crossed {(found ? 1 : 0)} waited {waited} at {at}");
-        tr.BiteAt = when; tr.Bite = size; tr.BiteFrame = Engine.GetFramesDrawn();
+        tr.BiteAt = when; tr.Bite = size;
     }
 
     /// <summary>The hot edge, the ribbon at rest: while the chain lives, a core line on the real blade and a glint at its

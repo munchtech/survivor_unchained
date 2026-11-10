@@ -1,24 +1,22 @@
-// Her held grip's cut (src/Fx/BattleFx.Grip.cs, take 4): the STROKE her blade leaves, the contact where it meets a body,
-// and the hot edge her blade keeps between a chain's cuts. Steel family (fx_cel.gdshaderinc: fx_core white-gold, fx_mid
-// gold, fx_edge amber), drawn after the grade (FxCel.Apply): flat bands, hard steps, never added light.
-// Mode 0, the stroke: a ribbon built each frame from the blade's own samples. UV.x = metres along the tip's path from the
-// drawn tail (0) to the head (grip_total: the blade now); UV.y = 0 at the guard, 1 at the tip, and a margin past it.
-//   TAKE 6 (P7 lead 7; round 3, lead 8): the three colors are CONTINUOUS BANDS. Each band's end (the white's, the
-//   gold's, the paint's own) is ONE line across the stroke's width (grip_knot: the white reaching furthest along the
-//   tip's path: nested commas), laid by the brush's 3-4 BRISTLE CLUMPS of unequal width: each ends at its own length,
-//   a step off its neighbour's of its OWN depth (uneven, now and then the longer of the two), its sides along the
-//   travel, its end ROUNDED where it stands proud of a neighbour, the notch between two sharp (grip_band; never a
-//   slanted side: a row of V's is a zigzag at any depth; never even square steps: stairs). Lanes are only the TAIL's:
-//   the paint's last grip_tail share, across grip_tips.x of the width from the tip's path, is 3-5 dry streaks of
-//   uneven width and length, each run out along one of its sides, one or two skipping (grip_laid): the only points in
-//   the stroke; a stroke too short on screen to carry them has none and ends on its band's line, its tail drawn to
-//   a point (grip_short: the comma small). Leaving (grip_shed): the whole stroke THINS toward the tip's path, its
-//   inner side first, to grip_narrow of its width; the white runs on along the tip's path and the gold lies ALONG
-//   THE INNER EDGE (grip_rim, grip_push), the amber at the tail's end (never a white fan, never the gold bunched at
-//   the tail). THE CONTACT IS IN THE STROKE (grip_bite, no second object): round the blade's crossing along the
-//   ribbon the stroke swells (its inner side in, its tip's side out, by grip_swell of its own width) and the white
-//   runs on toward the gold's end there (round 4: on its own uneven line, never a flat flood), for the 2-3 frames the strength lasts. COLOR.r = how much the ribbon is
-//   the blade's own sweep here (0: turned to the camera for an edge-on cut: no lit blade there).
+// Her held grip's cut (src/Fx/BattleFx.Grip.cs; the pure parts: logic/Look/GripPaint.cs): the STROKE her blade lays and
+// the hot edge her blade keeps between a chain's cuts. Steel family (fx_mid gold, fx_edge amber; the white is the
+// stroke's own, grip_white), drawn after the grade (FxCel.Apply): hard cel edges, no soft alpha, no glow.
+// Mode 0, the stroke, TAKE 7 (P7 lead 9): ONE brush stroke of paint, one mesh, one material, one draw.
+//   UV.x = metres along the LAID path (anchored where each rib was laid: the fill never swims), grip_tail_u at the
+//   drawn tail, grip_total at the blade now, more past it (the cap). UV.y = 0 at the guard, 1 on the tip's path, more
+//   past it (the margin, then the throw's sheet). UV2 = (the rib's limit where the path turns on screen, the rib's
+//   PRESS: laid with the rib, raised once where the blade crossed the bodies, never moved). COLOR = (whiteness / 2.5,
+//   the contact's raise on this rib as a share).
+//   (i) THE CAP: past the blade's line the paint runs on along the path's tangent to a convex nose near the tip's path
+//   (grip_cap), its edge the bristles' tips (grip_rag: hashed, each tip rounded); from the nose the leading edge sweeps
+//   BACK behind the blade's line to the inner edge on a concave curve: a fang. The blade's line is never an edge.
+//   (ii) the width at a rib is grip_head x its press: it stays where it was laid. (iii) THE FILL: bristle lanes across
+//   the width, each its own value (2-3 close ones, in streaks along the sweep), its own threshold on the rib's
+//   whiteness (so the white's, the gold's and the amber's ends are tines along the sweep, never a line across), its
+//   own start (the tail's comb), and as the stroke leaves its own dry gaps along the WHOLE length (grip_leave.y).
+//   Leaving (grip_leave.x): the whole stroke thins toward the tip's path, the gold along the inner edge, and the
+//   cap's inner edge retreats (the head closes to a point). (iv) THE SPLAY AND THE THROW: spikes rooted on the pressed
+//   ribs' outer edge (grip_spike: the fanned tines, then the streaks thrown out to the cut's reach), the same paint.
 // Mode 2, the hot edge (a quad on the blade facing the camera; UV.x 0 guard to 1 tip, UV.y pixels across; COLOR.r 1:
 //   the tip's glint, UV -1..1): a core line grip_size.x px wide, stepping out gold, then amber (grip_thin 1, 2).
 shader_type spatial;
@@ -26,225 +24,124 @@ render_mode unshaded, blend_mix, depth_draw_never, cull_disabled, shadows_disabl
 #include "res://shaders/fx_cel.gdshaderinc"
 
 uniform int grip_mode = 0;
-uniform float grip_total = 1.0;
-uniform float grip_thread = 0.0;  // the link's thread at the tail (m of grip_total)
-uniform float grip_u0 = 0.0;      // the path's metres at the drawn tail (the bristles' place)
+uniform float grip_total = 1.0;   // the laid path's metres at the blade now
+uniform float grip_tail_u = 0.0;  // the laid path's metres at the drawn tail
 uniform float grip_blade = 1.0;   // the blade's length guard to tip (m)
-uniform vec3 grip_shape = vec3(0.03, 0.6, 1.5);     // the tail's width, the head's (shares of the blade), the power it runs out by
-uniform vec3 grip_bands = vec3(0.48, 0.68, 0.74);   // across (shares of the width in from the tip's path): the core's end, the mid's, where the amber runs dry
-uniform vec3 grip_reach = vec3(0.62, 0.9, 2.0);     // how far back from the head the core and the mid reach (shares of the length), the power they close by
-uniform vec3 grip_dry = vec3(0.4, 0.05, 0.92);      // the tail's dry metres, the brush's along at the tail's end, and in the body
-uniform vec2 grip_lit = vec2(0.04, 1.0);            // the lit blade at the head: its thickness (m), how far down the blade (0 none, 1 to the guard)
-uniform vec2 grip_grain = vec2(3.0, 0.45);               // a bristle (px across), a streak (m along)
-uniform float grip_glow = 0.28;   // the glow's unit (m): fx_glow's width and reach are shares of it
-uniform float grip_point = 0.12;  // the tail's last metres, drawn to a point
+uniform float grip_head = 0.6;    // the stroke's width at press 1 (a share of the blade, in from the tip's path)
+uniform vec2 grip_point = vec2(0.5, 1.2);                // the tail: its first metres run to a point, the power
+uniform vec4 grip_cap = vec4(0.7, 0.24, 0.55, 0.45);     // the cap, in stroke widths: its length past the blade's line, the nose's place across, how far behind the blade's line the inner edge starts, the outer corner's round-off (share of the length)
+uniform vec2 grip_cap2 = vec2(0.6, 1.2);                 // the cap's inner curve's power (under 1: concave), the inner edge's further retreat at the shed's end (widths)
+uniform vec3 grip_rag = vec3(5.0, 0.03, 0.6);            // the cap's bristle tips: a bristle (px across), the tips' variation (m), a tip's rounding (share of the bristle)
 uniform float grip_thin = 0.0;    // mode 2: 0 hot, 1, 2 stepping out
 uniform float grip_px = 0.012;    // a pixel here (m)
 uniform float grip_seed = 0.0;
 uniform vec2 grip_size = vec2(1.5, 0.5);
-uniform float grip_knot[24];      // the three bands' ends (the core's, the mid's, the paint's own), 4 knots each: across (0 the tip's path, 1 the inner edge), share of the length
-uniform float grip_lanes[16];     // the tail's streaks, from the tip's path in: width share, the share of the tail it keeps (1: to the paint's end)
-uniform int grip_lane_n = 4;
-uniform vec4 grip_lane = vec4(0.12, 0.04, 0.8, 1.3);     // jitter of a streak's width (share of it), of its end (share of the length); the comma's width at the tail (share of the head's), its power
-uniform vec4 grip_tips = vec4(0.5, 0.4, 0.5, 0.1);       // the streaks lie across this share of the width from the tip's path; a streak's point (m, at most this share of the tail); a skip's slant (m)
-uniform float grip_tail = 0.28;   // the paint's last share laid as streaks
-uniform vec4 grip_clump = vec4(3.0, 4.0, 0.6, 1.5);      // a band end's clumps across the width (fewest, most), how uneven their widths (0: even), a step's depth at most this many of the narrower clump's width
-uniform vec4 grip_tooth = vec4(0.07, 0.42, 0.12, 0.3);   // a step's depth along the stroke (m: least, most; each step its own between them), a clump end's rounding (m), the chance a clump is the longer of two
 uniform float grip_narrow = 0.2;  // leaving: the stroke's width at the shed's end (share of its own)
-uniform vec4 grip_gap = vec4(0.5, 0.14, 0.26, 0.62);     // a lane's chance to skip; the skip's metres (least, most); where it starts (share of the finger)
-uniform vec4 grip_shed = vec4(-1.0, 0.084, 0.117, 0.03); // s since the contact; the amber out, the gold out, each lane's own offset
-uniform vec4 grip_bite = vec4(0.0, 0.0, 0.35, 0.6);      // the contact, in the stroke: its place (m along, as UV.x), its strength now (0: none; by the bodies struck, stepping out), its reach toward the head and toward the tail (m)
-uniform vec4 grip_swell = vec4(0.12, 0.08, 0.45, 0.8);   // the bite at strength 1: the width it adds on the inner side and past the tip's path (shares of the stroke's own width there); how far the white runs on toward the gold's end there (share of the way), and at most
-uniform float grip_inner = 0.7;   // the bite's white at the stroke's inner edge: this share less (the gold stays along it)
-uniform float grip_step = 1.0;    // a band end's clumps: 0 none (a short stroke: the band ends on its own line), 1 whole
-uniform vec2 grip_jag = vec2(0.4, 1.9);                  // a step's depth: its line's own, times between these (a hash each: no two alike, never stairs)
-uniform vec2 grip_short = vec2(1.0, 1.0);                // a stroke short on screen: its tail's width (0 a point, 1 the look's taper), its streaks (0 none yet, 1 whole)
-uniform vec4 grip_rim = vec4(0.45, 0.35, 0.12, 0.3);     // leaving: the gold's share of the width along the inner edge, the share of the shed by which it is that wide, where it starts behind the head and the length it widens over (shares of the length)
-uniform vec2 grip_push = vec2(0.8, 0.5);                 // leaving: how far the white's end runs on toward the gold's, the gold's toward the paint's (shares, at the shed's end)
+uniform vec2 grip_leave = vec2(0.0, 0.0);                // leaving: the shed (0 whole, 1 its end), the dry gaps' share of each lane
+uniform vec4 grip_fill = vec4(11.0, 0.93, 0.85, 0.3);    // the fill: bristle lanes across, the two darker values, the comb (a lane starts at its own whiteness up to this)
+uniform vec4 grip_streak = vec4(0.35, 0.9, 0.3, 0.8);    // a value streak's length (m: least, most), a dry gap's cell (m: least, most)
+uniform vec4 grip_tine = vec4(0.3, 0.25, 0.34, 0.68);    // a lane's own threshold (+-), its slant across the lane; the whiteness at which amber turns gold, gold turns white
+uniform vec2 grip_shedw = vec2(0.3, 0.75);               // leaving: whiteness added along the tip's path, taken along the inner edge
+uniform float grip_out = 0.1;     // the pressed ribs' outer edge, past the tip's path (a share of the blade at the raise's most)
+uniform vec3 grip_white = vec3(1.0, 0.92, 0.72);         // the stroke's own white (grip.white.day / night; linear, as fx_core is)
+uniform float grip_spike[48];     // the spikes on the pressed section's outer edge, 4 each: the root's place (m along), its half width (m along), its length out (m), its slant (m along per m out)
+uniform int grip_spike_n = 0;
+uniform int grip_tine_n = 0;      // the first of them are the splay's tines; the rest the thrown streaks
+uniform vec2 grip_throw = vec2(0.55, 0.85);              // a thrown streak: white to this share of its length, gold to this, amber after
 
 float grip_in(float edge, float x) { return 1.0 - fx_hard(edge, x, 0.0); }
 
-// 0,0 -> k.xy -> k.zw -> 1,1, straight between
-float grip_knots(float x, vec4 k) {
-	return x < k.x ? x * k.y / max(k.x, 1e-4)
-		: x < k.z ? k.y + (x - k.x) * (k.w - k.y) / max(k.z - k.x, 1e-4)
-		: k.w + (x - k.z) * (1.0 - k.w) / max(1.0 - k.z, 1e-4);
+// The cap's outline (logic/Look/GripPaint.cs CapFront, line for line): how far AHEAD of the blade's line the paint runs
+// at a across (0 the tip's path, 1 the inner edge), in stroke widths: convex to the nose, concave from it back to
+// behind the blade's line at the inner edge.
+float grip_front(float a, float shed) {
+	float an = grip_cap.y, back = grip_cap.z + grip_cap2.y * shed;
+	if (a <= an) {
+		float x = 1.0 - clamp(a / max(an, 1e-4), 0.0, 1.0);
+		return grip_cap.x * (1.0 - grip_cap.w * x * x);
+	}
+	return grip_cap.x - (grip_cap.x + back) * pow(clamp((a - an) / max(1.0 - an, 1e-4), 0.0, 1.0), grip_cap2.x);
 }
 
-// a band's own line at `a` across (0 the tip's path, 1 the inner edge): straight between its knots, a share of the length
-float grip_line(int k, float a) {
-	int o = k * 8;
-	float tb = grip_knot[o + 1];
-	for (int j = 0; j < 3; j++) {
-		float a0 = grip_knot[o + j * 2], a1 = grip_knot[o + j * 2 + 2];
-		if (a > a0 && a1 > a0) tb = mix(grip_knot[o + j * 2 + 1], grip_knot[o + j * 2 + 3], min((a - a0) / (a1 - a0), 1.0));
+// One bristle lane's paint (li: the lane, ll: 0..1 across it) at u m of the laid path: its color and its cover.
+// f = a pixel of (the whiteness, the lanes, the across); fu = a pixel of u.
+vec4 grip_lane(float li, float ll, float u, float a, float white, float shed, float dry, vec3 f, float fu) {
+	float h1 = fx_hash(vec2(li + 3.1, grip_seed)), h2 = fx_hash(vec2(li + 17.7, grip_seed)), h3 = fx_hash(vec2(li + 29.3, grip_seed));
+	// its own threshold on the rib's whiteness, slanted across the lane: the colors end in tines along the sweep.
+	// Leaving: the white runs on along the tip's path, the gold lies along the inner edge.
+	float w = white + grip_tine.x * (2.0 * h1 - 1.0) + grip_tine.y * (ll - 0.5) + shed * mix(grip_shedw.x, -grip_shedw.y, a);
+	float fw = f.x + abs(grip_tine.y) * f.y + shed * (grip_shedw.x + grip_shedw.y) * f.z;
+	vec3 c = mix(fx_edge, fx_mid, clamp((w - grip_tine.z) / fw + 0.5, 0.0, 1.0));
+	c = mix(c, grip_white, clamp((w - grip_tine.w) / fw + 0.5, 0.0, 1.0));
+	// 2-3 close values in streaks along the sweep, anchored where they were laid
+	float sl = mix(grip_streak.x, grip_streak.y, h2);
+	float tone = fx_hash(vec2(li + 41.9, floor((u + 5.0 * h3) / sl + 0.3 * (ll - 0.5)) + grip_seed));
+	c *= tone < 0.4 ? 1.0 : tone < 0.75 ? grip_fill.y : grip_fill.z;
+	// the comb: each lane starts at its own whiteness (the lane on the tip's path whole: the comma's point)
+	float st = li < 0.5 ? -1.0 : grip_fill.w * h3;
+	float cov = clamp((white - st) / f.x + 0.5, 0.0, 1.0);
+	// leaving: dry-brush gaps along the whole length (a value noise along the lane, anchored where it was laid)
+	if (dry > 0.0) {
+		float cl = mix(grip_streak.z, grip_streak.w, h2);
+		float x = (u + 9.0 * h1) / cl + 0.5 * (ll - 0.5), i = floor(x), t = x - i;
+		t = t * t * (3.0 - 2.0 * t);
+		float nz = mix(fx_hash(vec2(li + 53.0, i + grip_seed)), fx_hash(vec2(li + 53.0, i + 1.0 + grip_seed)), t);
+		cov *= clamp((nz - dry) / max(1.5 * fu / cl, 1e-5) + 0.5, 0.0, 1.0);
 	}
-	return tb;
+	return vec4(c, cov);
 }
 
-// One band's end at `a` across the width, a share of the length: the brush's bristle clumps (3-4, unequal widths), each
-// ending at its own length: its line's at the clump's middle (a short stroke: the line itself, grip_step), then held to a
-// step off the clump before it of its OWN depth (grip_tooth.x to .y m, a hash each: uneven, never stairs), no deeper
-// than grip_clump.w of the narrower of the two is wide (wm: the stroke's width in m), and now and then (grip_tooth.w)
-// the LONGER of the two. The side between two clumps runs along the travel (never a slant: a V). A clump's end is
-// rounded (grip_tooth.z) where it stands proud of its neighbour or of the stroke's inner edge; the notch stays sharp.
-float grip_band(int k, float a, float wm, float body) {
-	float fk = float(k) * 7.0;
-	int n = min(4, int(grip_clump.x) + int(fx_hash(vec2(fk + 21.7, grip_seed)) * (grip_clump.y - grip_clump.x + 0.999)));
-	float w[4];
-	float ws = 0.0;
-	for (int i = 0; i < n; i++) {
-		w[i] = 1.0 + grip_clump.z * (2.0 * fx_hash(vec2(fk + float(i) + 23.3, grip_seed)) - 1.0);
-		ws += w[i];
-	}
-	float lo = 0.0, wl = 1.0, tp = 0.0;
-	float val = 0.0, vl = 0.0, vr = -1.0, dl = 1e3, dr = 1e3, wa = 1.0;
-	int at = -5;
-	for (int i = 0; i < n; i++) {
-		float fi = fk + float(i), wi = w[i] / ws;
-		float ti = grip_line(k, lo + 0.5 * wi);
-		if (i > 0) {
-			// (round 4) each step its own depth INSIDE what its clump can carry (the cap was one number for a narrow
-			// stroke's every step: stairs), and its line's own drop scaled by a hash (equal drops were stairs too)
-			float top = min(grip_tooth.y, grip_clump.w * min(wl, wi) * wm), low = min(grip_tooth.x, top);
-			float cap = mix(low, top, fx_hash(vec2(fi + 31.9, grip_seed)));
-			float d = tp - ti;
-			float mag = clamp(abs(d) * body * mix(grip_jag.x, grip_jag.y, fx_hash(vec2(fi + 41.3, grip_seed))), low, cap) / body;
-			bool longer = (d < 0.0) != (fx_hash(vec2(fi + 37.3, grip_seed)) < grip_tooth.w);
-			ti = max(tp + (longer ? mag : -mag), 0.0);
-		}
-		if (i == at + 1) vr = ti;
-		if (at < 0 && (a < lo + wi || i == n - 1)) {
-			at = i;
-			val = ti;
-			vl = i > 0 ? tp : ti;
-			vr = -1.0;   // (the last clump: the stroke's inner edge is its neighbour)
-			dl = i > 0 ? a - lo : 1e3;
-			dr = lo + wi - a;
-			wa = wi;
-		}
-		lo += wi;
-		wl = wi;
-		tp = ti;
-	}
-	float rw = min(grip_tooth.z / max(wm, 1e-4), 0.5 * wa), rt = grip_tooth.z / body;
-	float drop = 0.0;
-	if (dl < rw && vl < val) {
-		float x = 1.0 - max(dl, 0.0) / rw;
-		drop = min(rt, val - vl) * (1.0 - sqrt(max(1.0 - x * x, 0.0)));
-	}
-	if (dr < rw && vr < val) {
-		float x = 1.0 - max(dr, 0.0) / rw;
-		drop = max(drop, min(rt, val - vr) * (1.0 - sqrt(max(1.0 - x * x, 0.0))));
-	}
-	return mix(grip_line(k, a), max(val - drop, 0.0), grip_step);
-}
-
-// the share of the tail the i-th streak keeps (jittered per stroke)
-float grip_keep(int i) {
-	return clamp(grip_lanes[i * 2 + 1] + grip_lane.y / max(grip_tail, 1e-3) * (2.0 * fx_hash(vec2(float(i) + 5.71, grip_seed)) - 1.0), 0.0, 1.0);
-}
-
-// The paint whose end is `end` here (fe: a pixel of it) and `e0` on the tip's path. Inside grip_tips.x of the width it
-// is whole to the tail's start (e0's last grip_tail share), then the brush's dry streaks: uneven widths, each keeping
-// its own share of the tail, run out along ONE of its sides over its last metres (the outermost along the tip's
-// path: the comma's point), some skipping (bare ground cut on a slant, the paint back after it; never the outermost).
-// Past it (ax: grip_tips.x, wider as the stroke thins): no lanes, the paint ends on its band's own line.
-float grip_laid(float end, float fe, float e0, float ax, float a, float t, float fa, float ft, float body) {
-	float cov = clamp((end - t) / fe + 0.5, 0.0, 1.0) * clamp(min(a - ax, 1.0 - a) / fa + 0.5, 0.0, 1.0);
-	if (a > ax + fa || e0 <= 1e-3) return cov;
-	float ts = e0 * (1.0 - grip_tail), slant = grip_tips.w / body;
-	float wsum = 0.0;
-	for (int i = 0; i < grip_lane_n; i++) wsum += grip_lanes[i * 2] * (1.0 + grip_lane.x * (2.0 * fx_hash(vec2(float(i) + 0.37, grip_seed)) - 1.0));
-	float lo = 0.0;
-	for (int i = 0; i < grip_lane_n; i++) {
-		float fi = float(i);
-		float w = ax * grip_lanes[i * 2] * (1.0 + grip_lane.x * (2.0 * fx_hash(vec2(fi + 0.37, grip_seed)) - 1.0)) / wsum;
-		float l = (a - lo) / w;   // 0..1 across this streak
-		lo += w;
-		float e = mix(ts, e0, grip_keep(i));
-		float hp = fx_hash(vec2(fi + 7.3, grip_seed));
-		float p = i == 0 ? 0.0 : hp < 0.5 ? 0.36 * hp : 1.0 - 0.36 * (1.0 - hp);
-		float pl = min(min(grip_tips.y / body, grip_tips.z * (e0 - ts)), e - ts);
-		float f = clamp((e - t) / max(pl, 1e-4), 0.0, 1.0);
-		float l0 = p * (1.0 - f), l1 = p + (1.0 - p) * f, pxl = w / fa;
-		float c = clamp(min(l - l0, l1 - l) * pxl + 0.5, 0.0, 1.0) * clamp((l1 - l0) * pxl, 0.0, 1.0) * clamp((e - t) / ft + 0.5, 0.0, 1.0);
-		float g0 = mix(ts, e, grip_gap.w * fx_hash(vec2(fi + 11.1, grip_seed)));
-		float g1 = g0 + mix(grip_gap.y, grip_gap.z, fx_hash(vec2(fi + 13.9, grip_seed))) / body;
-		if (i > 0 && fx_hash(vec2(fi + 9.7, grip_seed)) < grip_gap.x && g1 < e - 1.5 * slant) {
-			float tg = t - slant * (l - 0.5);
-			c *= 1.0 - clamp(min(tg - g0, g1 - tg) / ft + 0.5, 0.0, 1.0);
-		}
-		cov += c;
-	}
-	return min(cov, 1.0);
-}
-
-vec4 grip_trail(vec2 uv, float real, float cap) {
-	float u = uv.x;
-	float sb = grip_total - u;   // metres behind the blade (negative: past it)
-	float body = max(grip_total - grip_thread, 1e-3);
-	float t = clamp(sb / body, 0.0, 1.0);   // 0 the head (the blade now), 1 the stroke's tail
-	// the bite (the contact, in the stroke): 1 x its strength at the blade's crossing, down to 0 a reach either way
-	float bk = 0.0;
-	if (grip_bite.y > 0.0) {
-		float x = clamp(abs(u - grip_bite.x) / max(u > grip_bite.x ? grip_bite.z : grip_bite.w, 1e-3), 0.0, 1.0);
-		bk = grip_bite.y * (1.0 - x * x) * (1.0 - x * x);
-	}
-	// leaving (grip_shed): the stroke thins toward the tip's path, its inner side first, its bands with it
-	float shed = clamp((grip_shed.x - grip_shed.y + grip_shed.w) / max(grip_shed.z - grip_shed.y + 2.0 * grip_shed.w, 1e-4), 0.0, 1.0);
+vec4 grip_trail(vec2 uv, vec2 lay, vec2 rib) {
+	float u = uv.x, sb = grip_total - u;   // metres behind the blade's line (negative: the cap, past it)
+	float white = rib.x * 2.5, shed = grip_leave.x, dry = grip_leave.y;
 	float thin = mix(1.0, grip_narrow, shed);
-	float taper = grip_lane.z * grip_short.x;
-	float flat_w = grip_shape.y * thin * (1.0 - (1.0 - taper) * pow(t, grip_lane.w));
-	// (the swell: the brush pressed harder; its inner side never past the guard)
-	float vm = 1.0 - uv.y + flat_w * grip_swell.y * bk;   // shares of the blade in from the stroke's outer edge (negative: past it)
-	// (round 4: `cap`, the ribbon's own limit here, shares of the blade in from the tip's path: where the path turns on
-	// screen the stroke is held inside the turn, it pinches and never lies over itself)
-	float wide = max(min(min(flat_w * (1.0 + grip_swell.x * bk), 0.98), cap) + flat_w * grip_swell.y * bk, 1e-4);
-	float a = vm / wide;     // 0 the tip's path, 1 the inner edge
-	float fa = max(fwidth(a), 1e-5), ft = max(fwidth(sb) / body, 1e-5);
-	float wm = grip_shape.y * thin * 0.5 * (1.0 + taper) * grip_blade;   // the stroke's width (m) at its middle
-	float ax = grip_short.y > 0.01 ? mix(grip_tips.x, 1.0, 1.0 - thin) : 0.0;   // the streaks take more of a thinner stroke's width (none yet: no lanes)
-	// the three bands' ends here, and the paint's own on the tip's path
-	float tm = grip_band(1, a, wm, body);
-	float te = min(grip_band(2, a, wm, body), 1.0);
-	float tc = min(grip_band(0, a, wm, body), max(te, tm));
-	tm = clamp(tm, tc, 1.0);
-	te = clamp(te, tm, 1.0);
-	// (round 4) the bite is THIS stroke pressed harder: at the crossing the white runs on toward the gold's end, on its
-	// own uneven line (never a flat flood, never the whole way: the gold and the amber stay), less along the inner edge
-	tc = mix(tc, tm, min(grip_swell.z * bk, grip_swell.w) * (1.0 - grip_inner * clamp(a, 0.0, 1.0)));
-	float x0 = min(grip_band(2, 0.0, wm, body), 1.0);
-	// leaving: the white runs on toward the tail, the gold after it
-	tc = mix(tc, tm, grip_push.x * shed);
-	tm = mix(tm, te, grip_push.y * shed);
-	float dc = tc - t, dm = tm - t, de = te - t;
-	float fc = max(fwidth(dc), 1e-5), fm = max(fwidth(dm), 1e-5), fe = max(fwidth(de), 1e-5);
-	float cov = grip_laid(te, fe, x0, ax, a, t, fa, ft, body);
-	// leaving: the gold lies along the inner edge, from a point behind the head, widening to its share of the width
-	float rim = grip_rim.x * clamp(shed / max(grip_rim.y, 1e-3), 0.0, 1.0) * clamp((t - grip_rim.z) / max(grip_rim.w, 1e-3), 0.0, 1.0);
-	float rimc = rim > 1e-4 ? clamp((a - (1.0 - rim)) / fa + 0.5, 0.0, 1.0) : 0.0;
-	// the bands: flat, hard, continuous across the width
-	vec3 col = mix(fx_edge, fx_mid, clamp(dm / fm + 0.5, 0.0, 1.0));
-	col = mix(col, fx_core, clamp(dc / fc + 0.5, 0.0, 1.0) * (1.0 - rimc));
-	// the paint's end on the tip's path (the outermost streak's): where the glow dies
-	float e0 = x0 * (1.0 - grip_tail * (1.0 - grip_keep(0)));
-	// a link's thread (the first grip_thread metres; hidden while grip.link.on is 0): the tail's width, to a point
-	if (grip_thread > 1e-4 && u < grip_thread) {
-		cov = grip_in(grip_shape.x * sqrt(clamp(u / max(grip_point, 1e-3), 0.0, 1.0)), vm) * step(0.0, vm);
-		col = fx_edge;
+	// the tail: the first metres from the drawn tail run to a point (the brush landing; a short stroke: its whole length)
+	float tw = pow(clamp((u - grip_tail_u) / max(min(grip_point.x, 1.25 * (grip_total - grip_tail_u)), 1e-3), 0.0, 1.0), grip_point.y);
+	float po = grip_out * rib.y;           // the pressed ribs' outer edge splays out past the tip's path
+	float vm = 1.0 - uv.y + po;            // shares of the blade in from the stroke's outer edge (negative: past it)
+	// (lay.x: the rib's own limit where the path turns on screen: the stroke pinches inside the turn, never over itself)
+	float wide = max(min(min(grip_head * lay.y * thin * tw, 0.98), lay.x) + po, 1e-4);
+	float fv = max(fwidth(uv.y), 1e-5), fu = max(fwidth(u), 1e-5);
+	float cov = 0.0;
+	vec3 col = grip_white;
+	if (vm > -fv) {
+		float a = clamp(vm / wide, 0.0, 1.0), wm = wide * grip_blade;
+		// the cap: the leading edge, the bristles' tips on it (each its own length, its end rounded)
+		float lead = sb + grip_front(a, shed) * wm;   // metres inside the leading edge
+		float bw = grip_rag.x * grip_px, bx = vm * grip_blade / bw, bi = floor(bx), bl = 2.0 * (bx - bi) - 1.0;
+		float rag = grip_rag.y * (2.0 * fx_hash(vec2(bi + 61.7, grip_seed)) - 1.0) - grip_rag.z * bw * (1.0 - sqrt(max(1.0 - bl * bl, 0.0)));
+		float front = clamp((lead + rag) / max(fwidth(lead), 1e-5) + 0.5, 0.0, 1.0);
+		float edge = clamp(vm / fv + 0.5, 0.0, 1.0) * clamp((wide - vm) / fv + 0.5, 0.0, 1.0) * clamp(wide / fv, 0.0, 1.0);
+		// the fill: bristle lanes of uneven width across, each its own paint; two lanes blended over their border's pixel
+		float ln = grip_fill.x * a + 0.45 * sin(6.2832 * (2.3 * a + fx_hash(vec2(7.7, grip_seed))));
+		float li = floor(ln), ll = ln - li;
+		vec3 f = vec3(max(fwidth(white), 1e-5), max(fwidth(ln), 1e-5), max(fwidth(a), 1e-5));
+		vec4 p0 = grip_lane(li, ll, u, a, white, shed, dry, f, fu);
+		float dpx = min(ll, 1.0 - ll) / f.y;
+		if (dpx < 0.5) {
+			vec4 p1 = grip_lane(ll < 0.5 ? li - 1.0 : li + 1.0, ll < 0.5 ? 1.0 : 0.0, u, a, white, shed, dry, f, fu);
+			float k = 0.5 - dpx, ca = mix(p0.a, p1.a, k);
+			p0 = vec4(mix(p0.rgb * p0.a, p1.rgb * p1.a, k) / max(ca, 1e-4), ca);
+		}
+		col = p0.rgb;
+		cov = p0.a * edge * front * step(grip_tail_u, u);
 	}
-	// past the tip's path: the house glow off the clean edge, as far as the tip's own lane is painted (never in a gap)
-	float alb = grip_dry.z * smoothstep(0.0, 1.0, (e0 - t) * body / max(grip_dry.x, 1e-3));
-	vec4 g = fx_cel(fx_t.x - max(-vm, 0.0) * grip_blade / grip_glow - 1e-3, alb);
-	g.a *= smoothstep(0.0, 0.25, alb) * step(vm, 0.0);
-	vec4 c4 = vec4(mix(g.rgb, col, cov), max(cov, g.a * (1.0 - cov)));
-	c4.a *= grip_in(0.0, -sb) * step(0.0, u);
-	// the lit blade: white on the blade's own line from the tip's path through the head and on down toward the guard
-	float lit_end = grip_shape.y + (1.0 - grip_shape.y) * grip_lit.y;
-	float kl = clamp((vm - grip_shape.y) / max(lit_end - grip_shape.y, 1e-4), 0.0, 1.0);
-	float lit = real * grip_in(0.5 * grip_lit.x * (1.0 - 0.8 * kl), abs(sb)) * step(0.0, vm) * step(vm, lit_end) * step(1e-3, grip_lit.y);
-	return vec4(mix(c4.rgb, fx_core, lit), max(c4.a, lit));
+	// the splay and the throw: spikes rooted on the pressed section's outer edge, each run out to a point
+	if (grip_spike_n > 0 && vm < fv) {
+		float o = max(-vm * grip_blade, 0.0), sp = 0.0, far = 0.0;
+		for (int i = 0; i < grip_spike_n; i++) {
+			float len = grip_spike[i * 4 + 2];
+			if (o >= len) continue;
+			float x = o / len;
+			float c = clamp((grip_spike[i * 4 + 1] * pow(1.0 - x, 0.7) - abs(u - grip_spike[i * 4] - grip_spike[i * 4 + 3] * o)) / fu + 0.5, 0.0, 1.0);
+			if (c > sp) { sp = c; far = i < grip_tine_n ? 0.0 : x; }
+		}
+		if (sp > cov) {
+			col = far < grip_throw.x ? grip_white : far < grip_throw.y ? fx_mid : fx_edge;
+			cov = sp;
+		}
+	}
+	return vec4(col, cov);
 }
 
 vec4 grip_edge(vec2 uv, float glint) {
@@ -263,7 +160,7 @@ vec4 grip_edge(vec2 uv, float glint) {
 }
 
 void fragment() {
-	vec4 c = grip_mode == 0 ? grip_trail(UV, COLOR.r, UV2.x) : grip_edge(UV, COLOR.r);
+	vec4 c = grip_mode == 0 ? grip_trail(UV, UV2, COLOR.rg) : grip_edge(UV, COLOR.r);
 	if (c.a < 0.004) discard;
 	ALBEDO = fx_out(c.rgb, c.a);
 	ALPHA = c.a;
