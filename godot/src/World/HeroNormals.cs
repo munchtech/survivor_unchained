@@ -34,6 +34,7 @@ public static class HeroNormals
     static readonly List<MeshInstance3D> early = new();   // visited before the radius was set: baked when it is (Step)
     static readonly HashSet<ulong> earlyIds = new();
     static int nCached, nCachedVerts, nStale, nShown;   // (CACHE)
+    static readonly bool UseCache = OS.GetEnvironment("SU_HERO_SN_CACHE") == "1";   // (CACHE2: OFF by default: VERIFY failed at cache2_02 (her_merge_0/4/6 max |d| ~2, cached boots_steel 0.006); off = every keyed mesh is stale and baked the runtime way)
     static readonly bool Verify = OS.GetEnvironment("SU_HERO_SN_VERIFY") == "1";   // (CACHE: each cached or CUSTOM0 mesh baked again on a worker and compared, per vertex)
     /// <summary>(CACHE) The check of a mesh carrying CUSTOM0: its arrays read back, baked the runtime way from them and the
     /// stored CUSTOM0 compared per vertex (max |d| of xyz, the share over 1e-3). Readback cost: only with SU_HERO_SN_VERIFY=1.</summary>
@@ -85,7 +86,7 @@ public static class HeroNormals
         if (am.HasMeta(Meta))
         {
             string key = am.GetMeta(Meta).AsString();
-            if (key.EndsWith(" " + Params(Radius)))
+            if (UseCache && key.EndsWith(" " + Params(Radius)))
             {
                 made[id] = null; nCached++; nCachedVerts += am.GetMeta(Meta + "_verts", 0).AsInt32();
                 if (Verify) VerifyLater(mi, am);
