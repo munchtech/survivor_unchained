@@ -653,14 +653,19 @@ public class PrologueTests
         var gb = s.B.Weapons.FirstOrDefault(w => w.Id == "groundbreaker") ?? s.B.AddWeapon("groundbreaker")!;
         LandOnTheThree(s);
         s.Host.TaughtIds.Add("resolve");
-        s.B.Resolve.Set(s.B.Resolve.Max);
+        // (Resolve held at its cost, under ResolveMeter.SelfAt of the cap: at full, Groundbreaker heaves itself at the pack
+        // she stands on (Weapons selfHeave) and the three are down before the 2 s pass; the callout is for the window
+        // between its cost and full, when her key can heave it)
+        double cost = s.B.CostOf(gb);
+        Assert.True(cost < ResolveMeter.SelfAt * s.B.Resolve.Max);
+        s.B.Resolve.Set(cost);
         Away(s, "n_three", 25, 1.0);   // (A4 seen under 2 s ago, and she is out of reach)
         Assert.DoesNotContain(s.Host.Asked, c => c.Id == "groundbreaker");
         for (int i = 0; i < 30 && !s.Host.Asked.Any(c => c.Id == "groundbreaker"); i++)
         {
             var three = s.Zone.Night!.Standing("n_three");
             s.B.Player.X = three.Average(e => e.X); s.B.Player.Z = three.Average(e => e.Z) + 1;
-            s.B.Resolve.Set(s.B.Resolve.Max);
+            s.B.Resolve.Set(cost);
             Run(s, 0.1, safe: true);
         }
         var c = Offered(s, "groundbreaker");
