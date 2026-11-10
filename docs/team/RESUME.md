@@ -2,6 +2,8 @@
 
 ## 10 November 2026 (evening): coordinator #4 handoff. NEXT COORDINATOR (Opus high, normal rules): START HERE, then #3's block below for the lanes and rules
 
+**Restart (owner said "Yes, restart"):** the live leads P1 (body-p1b, line 1.75M), A1 (motion-a1, 1.4M) and P2 (gear-p2, 1.4M) keep running but now report by appending to `survivorsunchained_inputs\scratch_coord5\inbox.md` and their handoff tops. Watch it with Monitor, and answer as `RULING <lane>: ...` lines there. Queue to start (one judged slot free; 6 worktrees on disk): L1 (GPU), P7, P3.
+
 **Merged today:** M3 combat-m3@20f5f1cee (landed rule; grip x0.80, Oathblade 18.25 / Sunder 22.4; Bladestorm x0.92; Consecration 8->6; drifter contracts re-based; WardenWicks cache race fixed). Owner picks: stance Prowl; Sunder = one-hand heavy cut, whole body behind it (cards drop "two-handed"); M3 wording drafts YES. Feel flag to the owner: risen take two cuts at level 1 (knob: risen health 18). Open for the next M3 lead: standing still at tier I falls 68.8% (band 80%+), not grip-driven.
 
 **Live leads at handoff (a new session can't reach them; each reports MR READY / HANDOFF READY in its handoff's top block, so read those):**
