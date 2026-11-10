@@ -168,6 +168,8 @@ public static class Pilot
     /// with no clock), or after StepMax s (walled, held, slowed). A player who has learnt how long she may stand: the clock
     /// sees a stand only when something holds her past the plant.</summary>
     public static double PlantShare = 0.65, PlantFor = 0.7, StepClear = 1.6, StepWide = 1.0, StepMax = 0.45;
+    /// <summary>The longest plant under a clock that counts (StandSwing): a chain and a breath, whatever the count says.</summary>
+    public static double PlantMost = 4;
     /// <summary>Under this share of her health a crush is run from (the arena's away-and-round), not stood in.</summary>
     public static double CrushRun = 0.5;
 
@@ -201,6 +203,7 @@ public static class Pilot
         public int Side = 1;
         public readonly FeetMeter M = new();
         double seen = -9, plantUntil, stepUntil, plantX, plantZ, stepWide, lastT = -1, lastA;
+        bool planted;
         Enemy? lastFoe;
 
         /// <summary>Whether she is planted now. Come into reach: a plant; the plant over: a step; the step over: the
@@ -213,18 +216,26 @@ public static class Pilot
             // The step is over once it has carried her clear of where she stood; one that has not in StepMax s (walled,
             // held by a heave, slowed) is tried to the other hand, never stood through: the clock would see the stand.
             bool clear = Math.Sqrt((p.X - plantX) * (p.X - plantX) + (p.Z - plantZ) * (p.Z - plantZ)) >= stepWide;
-            if (!fresh && now >= stepUntil && !clear) { Side = -Side; stepUntil = now + StepMax; }
-            else if (fresh || now >= plantUntil && clear)
+            var clock = b.StoryStand is { Stand: true } d ? d : null;
+            // (the clock that knows a fighter's plant, StandSwing: she plants while it has counted her standing under
+            // PlantShare of its StandFor, a chain's length while her cuts land, and at most PlantMost s)
+            bool counted = clock is { StandSwing: > 0 };
+            if (counted && !fresh && planted && (b.StoodFor >= clock!.StandFor * PlantShare || now >= plantUntil))
+                { planted = false; plantUntil = now; stepUntil = now + StepMax; }
+            if (!fresh && !planted && now >= stepUntil && !clear) { Side = -Side; stepUntil = now + StepMax; }
+            else if (fresh || !planted && now >= plantUntil && clear)
             {
                 if (!fresh) Side = -Side;
-                plantUntil = now + (b.StoryStand is { Stand: true } d ? d.StandFor * PlantShare : PlantFor);
+                plantUntil = now + (counted ? PlantMost : clock != null ? clock.StandFor * PlantShare : PlantFor);
                 stepUntil = plantUntil + StepMax;
-                stepWide = b.StoryStand is { Stand: true } m ? m.StandMoved * StepClear : StepWide;
+                stepWide = clock != null ? clock.StandMoved * StepClear : StepWide;
                 plantX = p.X; plantZ = p.Z;
+                planted = true;
                 M.Plants++;
             }
+            if (!counted && now >= plantUntil) planted = false;
             seen = now;
-            return now < plantUntil;
+            return planted;
         }
 
         public void Measure(Battle b, Enemy? foe, bool inReach, bool moved, string took)

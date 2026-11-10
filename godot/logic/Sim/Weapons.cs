@@ -362,9 +362,19 @@ public static partial class Firing
         b.HeavyBy = heavy ? w : null;
         // A builder in the campaign (Resolve on): count what this swing struck (Battle.HitEnemy adds to StruckBy's set).
         bool builds = b.Resolve.On && w.Press?.Builds is > 0 && b.StruckBy == null;
-        if (builds) { b.StruckBy = w; b.Struck.Clear(); }
+        // (M3) The held swing in the campaign: a cut that struck a foe is a fighter's (Battle.SwingLanded, the stand clock's).
+        bool swing = b.Campaign && w.Hold && b.StruckBy == null;
+        if (builds || swing) { b.StruckBy = w; b.Struck.Clear(); }
         bool fired = Fire(b, w);
-        if (builds) { b.StruckBy = null; if (fired && b.Struck.Count > 0) b.Resolve.Landed(w.Press!, b.Struck.Count, heavy); }
+        if (builds || swing)
+        {
+            b.StruckBy = null;
+            if (fired && b.Struck.Count > 0)
+            {
+                if (builds) b.Resolve.Landed(w.Press!, b.Struck.Count, heavy);
+                if (swing) b.SwingLanded += CooldownOf(b, w);
+            }
+        }
         b.HeavyBy = hb;
         w.WasOwnHeavy = fired && w.OwnHeavy;
         w.OwnHeavy = false;

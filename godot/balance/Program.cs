@@ -55,6 +55,10 @@ Pilot.ReadsBosses = opt.Get("bossread", "1") != "0";
 Pilot.Banks = opt.Get("bank", "1") != "0";
 // (--strafe: the campaign feet before M3's step-and-stand, for the numbers before)
 Pilot.StepsAndStands = !opt.Has("strafe");
+// (--stand-swing <s>: every world tier's `stand.standSwing` for this run (0: the clock before a fighter's plant; 99: no cap))
+if (opt.Get("stand-swing", "") is { Length: > 0 } ssw)
+    foreach (int tn in SurvivorUnchained.Content.WorldTiers.Numbers)
+        if (SurvivorUnchained.Content.WorldTiers.Get(tn).Stand is { } tsd) tsd.StandSwing = double.Parse(ssw, System.Globalization.CultureInfo.InvariantCulture);
 Pilot.PhaseAware = opt.Get("phaseaware", "1") != "0";
 Pilot.AimsFlare = opt.Get("flareboss", "1") != "0";
 Pilot.UsesFlare = opt.Get("flareuse", "1") != "0";
