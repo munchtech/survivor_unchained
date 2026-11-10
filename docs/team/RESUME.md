@@ -1,5 +1,14 @@
 # Where we are: read this after README.md, before your handoff
 
+## 9 November 2026, evening: coordinator #3 (Fable 5.2) RUNNING. A successor reads this block, then the block below for the handoff shas
+
+- **Step 1 done:** `model: fable` resolves to `claude-fable-5-2`; no pin needed in the agent frontmatters.
+- **Owner (9 Nov evening), on L1 continue-or-rethink:** "whatever you think is best! I want aaa quality. casually badass character with epic effects, a solid pipeline for armor creation and npc creation with marionette and a unique art style that were working on. whatever we need to get there". Coordinator's call: **L1 RETHINK = night lighting first as one system** (the FAR frames are mostly night: 03, 05, 06, 09, 10, 12), one night frame to a bet-on-PASS, then rolled out; cap ~0.6M, one half-size pair to the owner at the first frame, stop-and-report at the cap.
+- **Live leads (background su-lead-high, in their worktrees):** M4 UI lead 4, P2 gear lead 4, A1 Stage B lead 8, L1 look lead 11 (the four judged slots), M3 combat lead 3 (systems, exempt). P7 skills lead 4 QUEUED on A1's judge verdict.
+- **Accepted by the coordinator:** M4 to ~1.65M (1.85M with a judge r2) against the 1.3M line; P2 ~0.35M over its 1.1M line with one more lead after lead 4. P2 item 8 (`--body p1` default flip) needs main's word when reached.
+- **Open between M4 and M3:** `Grew()`'s "A new skill" banner vs the level card. M3 picks A (keep the calling grant; M4 makes a named ~3-line Journey.cs hook: no Announce in a campaign fight + `CallingTaught`) or B (drop the calling grant in the campaign; M3's change). Relay M3's answer to M4.
+- **Relays owed:** A1's packed sha of the four clips -> P2; M3's one-liner on the circling clip -> the owner.
+
 ## 9 November 2026, ~16:30 PST: coordinator #2 wound down on the owner's word (the Fable 5.2 reset). Coordinator #3: START HERE
 
 **Owner decisions this block (9 Nov night):** (1) "wind down and prep a handoff so I can use the new 5.2 fable": the next coordinator runs on **Fable 5.2**. (2) **Fable 5.2 xhigh for every lead that used Opus**: `su-lead-high` and `su-lead-max` are `model: fable`, `effort: xhigh` (20935ff0e). (3) **"solvers high"**: coding and numeric solvers spawn as `su-lead-high` at `effort: "high"`; judges and hard solvers `su-lead-max` (xhigh); `su-worker` Sonnet and `su-runner` Haiku unchanged (lead_brief Helpers line and the live briefs, 56ee68094). (4) "please only report milestones and decisions" stands. **Step 1 for coordinator #3:** `model: fable` is an alias. Spawn one `su-lead-high` with the prompt "report your exact model id and stop"; if it answers 5.1, pin 5.2's exact id in both agent frontmatters before any lead starts (a wrong id breaks every spawn: test with one).
