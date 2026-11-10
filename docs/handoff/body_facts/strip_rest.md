@@ -441,3 +441,19 @@ FINDING (left): the three turned triangles (hadd40 tri 258, flex120 287, iron_vo
 so it inherits A's own fold there. lay2 sees them (END count 4 in 3 poses) but boost cannot clear them: boost 3 / extra 8 (`_l22h`) blew
 abd120-flex170 to +0.23..+0.42; guard 0.6 (`_l22l`) cured hadd40 but turned 3 rest corners. Next: cure at A (fair P5's left at
 hadd40 / flex120 / iron_vow@72, the triangles above), or let the bar read "<= A's own turned" at w = 1 as it reads "<= the fill's" at w < 0.5.
+
+## Lay 9 / fair_a attempt 6 (lead 22): 10 Nov, numeric solver. NOT MET; nothing live, no re-lay; active `strip_rest.npz` stays lay 5 (41be13363b7a)
+Diagnosis (scripts `survivorsunchained_inputs\scratch_p1_fair_a6\`: diag.py, meas.py, geo.py, exp.py; whole-pose A = `pose_a`):
+- Not outside `where` and not a stale cache: every A vertex under the turned band triangles is IN fair_a's patch (hadd40 2042 pts, flex120 1956,
+  iron_vow@72 7820); cached = fresh bit for bit. The fair cures raw A's own turned (hadd40 [92, 266], flex120 [122, 253], iron [115, 116, 141, 291])
+  and leaves / makes one each: hadd40 259, flex120 287, iron 109 (= the map's 258 / 287 / 109).
+- Shape: each is a TIGHT CREASE in faired A, the band triangle's feet 2-3 A rows apart, 9-13 mm apart at rest, 1.4-4.3 mm posed, foot normals
+  opposed (-0.76..-0.96). Spread over 2-3 rows, the per-edge test (>45 and > rest + 20) sees only part of it (faired edges 79-155 there).
+- The job-1 probe (pb.py) reads A posed by the GIRDLE ONLY (`part_pose`); strip_rest rides A posed by the WHOLE pose (`pose_ref`). On the
+  whole pose P5 is not at cap: hadd40 >45 88 (cap 81) flip 6, iron_vow 252 (cap 229) flip 1, flex120 59 (cap 84) flip 0. hadd40 / flex120 are not in the job-1 nine.
+Tried on the three (whole pose): rounds 10; grow 2; iters 12; a biharmonic / harmonic re-fill of the leftovers (`mend`, 2-6 rows: it bridges the
+crease and adds 2-20 flips; code removed); the map's turned A points as extra seeds, iterated, grow 0-3, c_core 2, alpha_core 0 (cures one pose, never all three);
+shrink 0.35 (hadd40 turned 0 but flips 3, flex120 2 turned, iron 2; not stable across runs). None met.
+Kept: `Fair.fair(V, where, extra)` / `cached(..., extra)` (caller's seed points; None: the old result and key). Next: the crease is A posed by the
+whole pose closing the pit (two walls 1-4 mm apart): a crease-aware seed (normal turn over 2-3 rows) with a contact-flattened target, or the bar
+reading "<= A's own turned" at w = 1 there; re-run the job-1 nine on `pose_ref` first (the acceptance surface differs from the ridden one).

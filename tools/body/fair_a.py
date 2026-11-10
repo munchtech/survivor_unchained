@@ -310,8 +310,10 @@ class Fair:
             Y = Z[p]
         return Y, info
 
-    def fair(self, V, where=None):
-        """(V', info). V [nraw, 3] posed; where [nraw] bool (None: everywhere) limits the seeds. No seed: V itself."""
+    def fair(self, V, where=None, extra=None):
+        """(V', info). V [nraw, 3] posed; where [nraw] bool (None: everywhere) limits the seeds; extra [nraw] bool (None:
+        none): points that are seeds whatever the measures say (a caller's own count, e.g. strip_rest's turned map
+        triangles' A points). No seed: V itself."""
         V = np.asarray(V, float)
         prm = self.prm
         X = V[self.first]
@@ -323,10 +325,15 @@ class Fair:
             wh[self.grp[np.asarray(where, bool)]] = True
             eb &= wh[self.E[self.ie]].all(1)
             fl &= wh[self.T].all(1)
+        ex = np.zeros(self.n, bool)
+        if extra is not None:
+            ex[self.grp[np.asarray(extra, bool)]] = True
         info = {"seed_edges": int(eb.sum()), "seed_flips": int(fl.sum()), "rounds": 0}
-        if not eb.any() and not fl.any():
+        if extra is not None:
+            info["seed_extra"] = int(ex.sum())
+        if not eb.any() and not fl.any() and not ex.any():
             return V, info
-        seed = self._seed_mask(eb, fl)
+        seed = self._seed_mask(eb, fl) | ex
         Xf, self._extra, keep = X.copy(), 0, None
         for rnd in range(int(prm["rounds"])):
             for _ in range(32 if prm["close"] else 0):          # the closure: a bad element on the patch or its ring is a seed
@@ -368,13 +375,16 @@ class Fair:
         info["raw"] = raw
         return out, info
 
-    def cached(self, V, where=None, folder=None):
-        """fair(V, where), the patch kept in folder / <key>.npz (key: the posed bytes, where, the mesh and params)."""
+    def cached(self, V, where=None, folder=None, extra=None):
+        """fair(V, where, extra), the patch kept in folder / <key>.npz (key: the posed bytes, where, extra, the mesh and
+        params)."""
         V = np.asarray(V, float)
         if folder is None:
-            return self.fair(V, where)
+            return self.fair(V, where, extra)
         h = hashlib.sha1(np.ascontiguousarray(V).tobytes())
         h.update(b"-" if where is None else np.packbits(np.asarray(where, bool)).tobytes())
+        if extra is not None:
+            h.update(b"x" + np.packbits(np.asarray(extra, bool)).tobytes())
         f = Path(folder) / f"{self.tag}_{h.hexdigest()[:24]}.npz"
         if f.exists():
             c = np.load(f, allow_pickle=False)
@@ -385,7 +395,7 @@ class Fair:
             out[c["raw"]] = c["X"]
             info["raw"] = c["raw"]
             return out, info
-        out, info = self.fair(V, where)
+        out, info = self.fair(V, where, extra)
         raw = info.get("raw", np.zeros(0, np.int64))
         f.parent.mkdir(parents=True, exist_ok=True)
         np.savez_compressed(f, raw=np.asarray(raw, np.int32), X=out[raw], info=json.dumps({k: v for k, v in info.items() if k != "raw"}))
