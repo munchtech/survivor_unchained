@@ -311,7 +311,7 @@ def main():
     geo = json.load(open(gp))
     geo["resolve"] = {
         "tex": "lamp_veins.png", "crown": [round(crown[1] / 2, 2), round(crown[0] / 2, 2)],
-        "tip_cost": round(dmax / 2, 1), **{k: v for k, v in P.items() if k != "back_box" and not k.startswith(("join_", "clamp_", "lone_"))},   # (the join's own: bake only)
+        "tip_cost": round(dmax / 2, 1), **{k: v for k, v in P.items() if k != "back_box" and not k.startswith(("join_", "clamp_", "lone_", "drop_"))},   # (the join's own: bake only)
     }
     json.dump(geo, open(gp, "w"), indent=1)
     print(f"veins: {img.size[0]}x{img.size[1]} crown (1080 px in the quad) {geo['resolve']['crown']} tips at {dmax / 2:.0f} px")
