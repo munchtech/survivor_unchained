@@ -19,6 +19,19 @@ Posing the reference like the source, for a reference skeleton that is driven by
     turns = transfer_turns(G, rest, index, ref_index, ref_parent, bone_map, order)
     M = anchor_align(G[a], rest[a], refG0[ra], refG[ra])  # the reference's posed surface onto the source's skeleton
 
+THE RELATIVE CARRY (the default, "carry": "relative"). The reference lends only the deformation of a region's OWN
+bones; every other bone's deformation stays the source's own skinning. Per pose: Gp = the PART pose (the rest with the
+local transforms of the region's bones only, local_pose, then the rig's driver), c = the reference posed by Gp's turns
+and carried (pocket filled), all in the rest frame of the region's parent; then per point
+
+    X = published(G) + M (c - published(Gp)),   M = L(G) L(Gp)^-1   (relative_place; L = the point's blended skin matrix)
+
+which is L(G) L(Gp)^-1 c plus the source's own shape correctives that the other bones drive. A point skinned to the
+region's bones alone gets the parent's rigid motion; wherever the reference and the source agree with the region's
+bones moved alone, X is the published surface, whatever the trunk and neck do. ("absolute": the reference posed by the
+whole pose and aligned by one rigid anchor, as before 10 Nov: the two bodies' trunk and neck skinning then disagree by
+centimetres at the region's border.)
+
 The top of this file is the general core: arrays in, arrays out, no body, bone or path names (it runs on any rigged
 mesh). The bottom is HER CONFIG: her body B's shoulder region against her old body A, and the CLI.
 
@@ -498,6 +511,47 @@ def anchor_align(G_anchor, rest_anchor, refG0_anchor, refG_anchor):
     return M
 
 
+def local_pose(G, rest, parent, order, keep):
+    """The globals [nb, 4, 4] of the rest pose with the LOCAL transforms of the bones in `keep` taken from the pose G.
+
+    order: the bones parents first. Every other bone rides its parent at its rest local (a rig's driven bones are then
+    placed by its driver, which expects them so).
+    """
+    out = np.array(rest, float)
+    for k in order:
+        pk = parent[k]
+        src = G if k in keep else rest
+        L = np.linalg.inv(src[pk]) @ src[k] if pk >= 0 else src[k]
+        out[k] = out[pk] @ L if pk >= 0 else L
+    return out
+
+
+def blend_skin(S, J, W):
+    """Each point's blended skin matrix [n, 4, 4] = sum_k W[:, k] S[J[:, k]] (S [nb, 4, 4]: globals @ inverse binds)."""
+    return np.einsum("nk,nkij->nij", W, S[J])
+
+
+def relative_place(Sf, Sp, J, W, lo=0.15, hi=0.35):
+    """(M [n, 3, 3], sigma [n], share [n]): what takes a point's offset in a PART pose into the FULL pose by the points'
+    own skinning: M = L_full L_part^-1 (the 3x3 parts of blend_skin; Sf, Sp [nb, 4, 4] the two poses' skin matrices).
+
+    A point skinned to bones that the two poses move alike by one rigid motion gets that motion's rotation; a point
+    whose bones are where the part pose left them at rest gets L_full itself. THE GUARD: where the part pose's weights
+    mix far-apart turns, L_part collapses (sigma, its smallest singular value, goes to 0) and the inverse blows up.
+    Under sigma = hi the blend of the bones' own relative turns sum_k W (Sf Sp^-1)[J] takes over (never singular: a
+    blend of neighbouring turns), wholly at sigma <= lo. share = the part of M that is the exact inverse (1: unguarded).
+    """
+    Lf, Lp = blend_skin(Sf, J, W)[:, :3, :3], blend_skin(Sp, J, W)[:, :3, :3]
+    sig = np.linalg.svd(Lp, compute_uv=False)[:, -1]
+    u = np.clip((sig - lo) / (hi - lo), 0.0, 1.0)
+    u = u * u * (3 - 2 * u)
+    M = Lf @ np.linalg.inv(np.where((u > 0)[:, None, None], Lp, np.eye(3)))
+    if (u < 1).any():
+        D = blend_skin(Sf @ np.linalg.inv(Sp), J, W)[:, :3, :3]
+        M = u[:, None, None] * M + (1 - u)[:, None, None] * D
+    return M, sig, u
+
+
 def edge_ratio(X, X0, ei, ej):
     """(min, max) of posed / rest length over the edges (ei, ej)."""
     r = np.linalg.norm(X[ei] - X[ej], axis=1) / np.maximum(np.linalg.norm(X0[ei] - X0[ej], axis=1), 1e-12)
@@ -515,6 +569,13 @@ HER = {
     "pose_bones": ["pelvis", "spine_01", "spine_02", "spine_03", "neck_01", "neck_02", "head"]
                   + [f"{b}_{s}" for s in "lr" for b in ("clavicle", "upperarm", "lowerarm", "hand")],
     "anchor_child": "clavicle_{s}",      # the anchor = this bone's parent, on each skeleton
+    "carry": "relative",                 # "relative": A lends the girdle's own deformation only; "absolute": the whole pose
+    # the region's own bones: their LOCAL transforms make the part pose (the rig's driver adds scapula, twists, muscles)
+    "girdle": ["clavicle_{s}", "upperarm_{s}", "lowerarm_{s}", "hand_{s}"],
+    "sig_lo": 0.15,                      # relative_place's guard: B's girdle-only skin matrix under sig_hi hands over to
+    "sig_hi": 0.35,                      #   the blend of relative turns (141 poses: the smallest sigma is far above it)
+    # T9's pose: local turns in degrees about seeded random axes, the girdle's locals at rest
+    "t9_turns": {"spine_02": 20, "spine_03": 25, "spine_05": 30, "neck_01": 30, "neck_02": 25, "Head": 20},
     "rad": 0.05,
     "k": 64,
     "nw": 0.0,                           # the normal term: tried at 0.2, it does not cure the armpit-apex bridge
@@ -528,8 +589,9 @@ HER = {
     "d0_p95_stop_mm": 4.0,
     "dev_poses": ["x:abd150:l", "x:add0:l", "cast_bolt@0:l", "crossbow_shoot@0:r"],
 }
-INFO = ["d_pub_p50", "d_pub_p95", "d_pub_max", "edge_min", "edge_max", "edge_raw_max", "edge_car_max", "pk_edge_min", "pk_edge_max",
-        "pk_d_p50", "pk_d_max", "vol", "girth_mid_deltoid", "girth_insertion"]
+INFO = ["d_pub_p50", "d_pub_p95", "d_pub_max", "d_bor_p50", "d_bor_max", "edge_min", "edge_max", "edge_raw_max", "edge_car_max",
+        "pk_edge_min", "pk_edge_max", "pk_d_p50", "pk_d_max", "vol", "girth_mid_deltoid", "girth_insertion",
+        "rel_sig_min", "rel_guard", "drv_mem"]
 
 
 class Her:
@@ -561,7 +623,15 @@ class Her:
             assert cfg["bone_map"].get(rn, rn) == sn, f"anchor: reference {rn} does not map to source {sn}"
             self.anchor[s] = (ja, ra)
         self.girth0 = {s: md.girth(md.S[s], md.V0) for s in "lr"}
+        # the relative carry: the girdle's bones per side, and the bones B's driver places (never read from a pose)
+        I, rig = bd.p.index, bd.rig
+        drv = [x["name"] for x in rig.get("helpers", []) if x.get("kind") != "unroll"] + [rig.get("girdle", {}).get("scap", "")]
+        self.driven = sorted({I[n.replace("{s}", s)] for n in drv for s in "lr" if n.replace("{s}", s) in I})
+        self.main = set(range(len(bd.p.names))) - set(self.driven)
+        self.girdle = {s: {I[b.replace("{s}", s)] for b in cfg["girdle"]} for s in "lr"}
+        self.last = {}
         if verbose:
+            print(f"carry: {cfg['carry']}; girdle {' '.join(b.replace('{s}', 'l') for b in cfg['girdle'])}; {len(self.driven)} driven bones")
             for s in "lr":
                 c = self.car[s]
                 print(f"pocket {s}: {len(c.bridge)} bridge edges, {0 if c.pocket is None else len(c.pocket.p)} pocket points"
@@ -588,15 +658,62 @@ class Her:
         return Ab.pose_turns(transfer_turns(G, bd.p.rest, bd.p.index, Ab.p.index, Ab.p.parent,
                                             self.cfg["bone_map"], self.order))
 
-    def carried(self, G, side):
-        """(filled, carried alone, the reference's posed vertices), all on the source's skeleton, for one pose and side."""
-        Va, Ga = self.pose_ref(G)
-        ja, ra = self.anchor[side]
-        M = anchor_align(G[ja], self.bd.p.rest[ja], self.Ab.G0[ra], Ga[ra])
-        Xf, Xr = self.car[side].carry(Va, both=True)
-        return tuple(x @ M[:3, :3].T + M[:3, 3] for x in (Xf, Xr, Va))
+    def drive(self, G):
+        """B's driver on a pose whose driven bones ride their parents at rest local (how every stored pose was made)."""
+        return self.bd.p.driver.drive(self.bd.p, np.array(G, float), self.bd.rig)[0]
 
-    def target(self, G, side, Vp=None):
+    def girdle_pose(self, G, side):
+        """(Gg, memory): B's globals with only the side's girdle turned as in G (their LOCAL transforms, so a clavicle
+        the girdle law turned is taken as it stands in G; every other bone at rest; the driven bones by the driver).
+
+        The driver gives back a stored pose from its main bones' locals but for what a driven bone holds of the pose
+        before it was driven (her trap keeps the clavicle's roll: "clavicle_roll_keep"). That offset, the stored bone
+        against the driver's rerun of the whole pose, goes onto the same bone here if the girdle moves it, so a pose with
+        the trunk at rest IS its girdle pose. memory: the largest such offset (matrix entries).
+        """
+        p, order = self.bd.p, self.bd.order
+        Gg = self.drive(local_pose(G, p.rest, p.parent, order, self.girdle[side]))
+        Df = self.drive(local_pose(G, p.rest, p.parent, order, self.main))
+        mem = 0.0
+        for k in self.driven:
+            if np.abs(Gg[k] - p.rest[k]).max() > 1e-9:
+                mem = max(mem, float(np.abs(Df[k] - G[k]).max()))
+                Gg[k] = Gg[k] @ np.linalg.inv(Df[k]) @ G[k]
+        return Gg, mem
+
+    def carried(self, G, side, Vp=None, carry=None):
+        """(filled, carried alone, the reference's posed vertices), all on the source's skeleton, for one pose and side.
+
+        "relative" (the module docstring): the two carried surfaces are placed per point by B's own skinning (Vp: B's
+        published vertices of G, computed if None); the reference's vertices are its girdle-only pose moved rigidly with
+        the anchor (their edge lengths are what the target carries). "absolute": the reference posed by the whole pose
+        and aligned by the anchor. `carry` overrides the config. self.last: cf, Va (the filled surface and the
+        reference in one frame, for distances between them), sig, guard, mem (relative_place's and the driver's account).
+        """
+        bd, p, cfg, car = self.bd, self.bd.p, self.cfg, self.car[side]
+        ja, ra = self.anchor[side]
+        if (carry or cfg["carry"]) == "absolute":
+            Va, Ga = self.pose_ref(G)
+            M = anchor_align(G[ja], p.rest[ja], self.Ab.G0[ra], Ga[ra])
+            Xf, Xr, Va = (x @ M[:3, :3].T + M[:3, 3] for x in (*car.carry(Va, both=True), Va))
+            self.last = {"cf": Xf, "Va": Va, "sig": 1.0, "guard": 0, "mem": 0.0}
+            return Xf, Xr, Va
+        pts = self.md.first[self.md.S[side]["ids"]]
+        if Vp is None:
+            Vp = self.rt.published(bd, G)
+        Gg, mem = self.girdle_pose(G, side)
+        Va, Ga = self.pose_ref(Gg)
+        M = anchor_align(Gg[ja], p.rest[ja], self.Ab.G0[ra], Ga[ra])    # the identity while the anchor's chain is at rest
+        Va = Va @ M[:3, :3].T + M[:3, 3]
+        cf, cr = car.carry(Va, both=True)                                # in the rest trunk frame, the pocket filled there
+        Pg = self.rt.published(bd, Gg)[pts]                              # B's own surface of the girdle-only pose
+        ibm = p.skel.ibm
+        M, sig, u = relative_place(G @ ibm, Gg @ ibm, bd.J[pts], bd.W[pts], cfg["sig_lo"], cfg["sig_hi"])
+        T = G[ja] @ np.linalg.inv(p.rest[ja])
+        self.last = {"cf": cf, "Va": Va, "sig": float(sig.min()), "guard": int((u < 1).sum()), "mem": mem}
+        return tuple(Vp[pts] + np.einsum("nij,nj->ni", M, c - Pg) for c in (cf, cr)) + (Va @ T[:3, :3].T + T[:3, 3],)
+
+    def target(self, G, side, Vp=None, carry=None):
         """(X [region points, 3], info) for one pose of B's globals G and one side."""
         bd, Ab, md = self.bd, self.Ab, self.md
         sd = md.S[side]
@@ -604,10 +721,12 @@ class Her:
         pts = md.first[ids]
         if Vp is None:
             Vp = self.rt.published(bd, G)
-        MC, MR, VaM = self.carried(G, side)                              # carried and filled, carried alone, A posed
+        MC, MR, _ = self.carried(G, side, Vp, carry)                     # carried and filled, carried alone
+        last = self.last
         b = md.blend(G, side)[:, None]                                   # the border's share, by row and by pose
         X = b * MC + (1 - b) * Vp[pts]
-        d = np.linalg.norm(MC - Vp[pts], axis=1)[md.beta == 1] * 1000
+        d = np.linalg.norm(MC - Vp[pts], axis=1) * 1000
+        db, d = d[md.beta < 1], d[md.beta == 1]                          # what the border rows must hide; the interior
         emin, emax, _ = edge_ratio(X, md.V0[ids], *self.edges[side])
         ecar = edge_ratio(MC, md.V0[ids], *self.edges[side])[1]         # before the border blend: what T5 judges
         eraw = edge_ratio(MR, md.V0[ids], *self.edges[side])[1]         # the carry alone: the bridge shows here
@@ -615,7 +734,7 @@ class Her:
         pinfo = {"pk_edge_min": 1.0, "pk_edge_max": 1.0, "pk_d_p50": 0.0, "pk_d_max": 0.0}
         if pk is not None:
             pmin, pmax, _ = edge_ratio(MC, md.V0[ids], pk.edges[:, 0], pk.edges[:, 1])
-            pd = surface_distance(MC[pk.p], VaM, Ab.T) * 1000           # what the fill loses: how far it spans off A's hollow
+            pd = surface_distance(last["cf"][pk.p], last["Va"], Ab.T) * 1000   # what the fill loses: how far it spans off A's hollow
             pinfo = {"pk_edge_min": pmin, "pk_edge_max": pmax, "pk_d_p50": float(np.percentile(pd, 50)), "pk_d_max": float(pd.max())}
             st = self.car[side].stats                                   # the slide's own account (empty for the fill)
             pinfo.update({f"pk_{k}": float(st[k]) for k in ("iters", "step", "rim", "flip") if k in st})
@@ -623,14 +742,17 @@ class Her:
         Y[ids] = X
         g = md.girth(sd, Y)
         info = {"d_pub_p50": float(np.percentile(d, 50)), "d_pub_p95": float(np.percentile(d, 95)), "d_pub_max": float(d.max()),
+                "d_bor_p50": float(np.percentile(db, 50)), "d_bor_max": float(db.max()),
                 "edge_min": emin, "edge_max": emax, "edge_raw_max": eraw, "edge_car_max": ecar, **pinfo,
                 "vol": md.volume(sd, Y) / sd["vol0"],
-                **{f"girth_{k}": float(g[k] / self.girth0[side][k]) for k in ("mid_deltoid", "insertion")}}
+                **{f"girth_{k}": float(g[k] / self.girth0[side][k]) for k in ("mid_deltoid", "insertion")},
+                "rel_sig_min": last["sig"], "rel_guard": float(last["guard"]), "drv_mem": last["mem"]}
         return X, info
 
 
 def fmt(i):
-    return (f"d_pub {i['d_pub_p50']:.1f}/{i['d_pub_p95']:.1f}/{i['d_pub_max']:.1f} mm  edge {i['edge_min']:.2f}..{i['edge_max']:.2f}"
+    return (f"d_pub {i['d_pub_p50']:.1f}/{i['d_pub_p95']:.1f}/{i['d_pub_max']:.1f} border {i['d_bor_p50']:.1f}/{i['d_bor_max']:.1f} mm"
+            f"  edge {i['edge_min']:.2f}..{i['edge_max']:.2f}"
             f" (carried alone max {i['edge_raw_max']:.2f}, filled max {i['edge_car_max']:.2f})"
             f"  pocket edge {i['pk_edge_min']:.2f}..{i['pk_edge_max']:.2f} off A {i['pk_d_p50']:.1f}/{i['pk_d_max']:.1f} mm"
             f"  vol {i['vol']:.3f}  girth mid {i['girth_mid_deltoid']:.3f} ins {i['girth_insertion']:.3f}")
@@ -705,6 +827,10 @@ def cmd_test(h):
         line(f"T5 {nm}", info["edge_car_max"] <= 3 and not out.any() and np.isfinite(X).all(),
              f"edge max carried alone {info['edge_raw_max']:.2f} -> filled {info['edge_car_max']:.2f}; torn edges (over"
              f" {cfg['torn']:g}) {int(torn.sum())}, outside the pocket {int(out.sum())} | {fmt(info)}")
+        ia = h.target(z["G"][i], s, carry="absolute")[1]                # the whole-pose carry | the carry as configured
+        print("     absolute | " + cfg["carry"] + ": " + "  ".join(f"{k} {ia[k]:.2f} | {info[k]:.2f}" for k in (
+            "d_bor_max", "d_pub_p95", "d_pub_max", "edge_max", "edge_car_max", "pk_edge_max", "pk_d_max", "vol", "girth_mid_deltoid",
+            "girth_insertion")) + f"  sigma min {info['rel_sig_min']:.3f} guarded {info['rel_guard']:.0f} driver memory {info['drv_mem']:.4f}")
         for e in np.nonzero(out)[0][:8]:
             a, b_ = ei[e], ej[e]
             print(f"     OUTSIDE edge {a}-{b_} ratio {rr[e]:.2f} in pocket {inp[a]} {inp[b_]}"
@@ -735,6 +861,42 @@ def cmd_test(h):
         e2 = np.abs(car.pocket.fill(P0 @ R.T + t, np.broadcast_to(R, (len(P0), 3, 3)), car.frame_passes) - (P0 @ R.T + t)).max()
         line(f"T7 {s}", e < 1e-6 and e2 < 1e-6, f"fill(rest) - rest max {e:.2e} m; under a rigid motion {e2:.2e} m"
              f" ({len(car.bridge)} bridge edges, {npk} pocket points, {len(car.pocket.b)} holding)")
+    # T9: the trunk and neck turned, the girdle's locals at rest: the target is the published surface (B's own skinning)
+    from scipy.spatial.transform import Rotation
+    p, pub = bd.p, h.rt.published
+    Gt = p.rest.copy()
+    for k in bd.order:
+        L, pk = bd.rl[k].copy(), p.parent[k]
+        if p.names[k] in cfg["t9_turns"]:
+            L[:3, :3] = L[:3, :3] @ Rotation.from_rotvec(_unit(rng.normal(size=3)) * np.radians(cfg["t9_turns"][p.names[k]])).as_matrix()
+        Gt[k] = Gt[pk] @ L if pk >= 0 else L
+    Gt = h.drive(Gt)
+    Vt = pub(bd, Gt)
+
+    def shapes(G, s):                    # the correctives the other bones drive: X against the bare L(G) L(Gp)^-1 c, max m
+        pts = md.first[md.S[s]["ids"]]
+        Gg = h.girdle_pose(G, s)[0]
+        M = relative_place(G @ p.skel.ibm, Gg @ p.skel.ibm, bd.J[pts], bd.W[pts], cfg["sig_lo"], cfg["sig_hi"])[0]
+        return float(np.abs((pub(bd, G) - p._skin(G, {}))[pts] - np.einsum("nij,nj->ni", M, (pub(bd, Gg) - p._skin(Gg, {}))[pts])).max())
+
+    for s in "lr":
+        pts = md.first[md.S[s]["ids"]]
+        e = np.abs(h.target(Gt, s, Vt)[0] - Vt[pts]).max()
+        ea = np.abs(h.target(Gt, s, Vt, carry="absolute")[0] - Vt[pts]).max()
+        moved = np.abs(Vt[pts] - md.V0[md.S[s]["ids"]]).max()
+        line(f"T9 {s}", e < 1e-4, f"trunk and neck turned ({' '.join(f'{k} {v}' for k, v in cfg['t9_turns'].items())} deg), girdle locals at"
+             f" rest: X - published max {e * 1000:.4f} mm (absolute carry {ea * 1000:.1f} mm; the region moves {moved * 1000:.0f} mm;"
+             f" correctives the trunk drives there {shapes(Gt, s) * 1000:.3f} mm)")
+    # T10: a rigid motion of the whole body moves the target with it; the same pose twice is the same target
+    Q = np.eye(4)
+    Q[:3, :3], Q[:3, 3] = R, t
+    for nm in cfg["dev_poses"][::3]:
+        i = names.index(nm)
+        s, G = str(z["side"][i]), z["G"][i]
+        X1, X2, X3 = h.target(G, s)[0], h.target(G, s)[0], h.target(Q @ G, s)[0]
+        e = np.abs(X3 - (X1 @ R.T + t)).max()
+        line(f"T10 {nm}", e < 1e-6 and (X1 == X2).all(), f"whole-body rigid motion: max {e:.2e} m; twice the same: {bool((X1 == X2).all())};"
+             f" correctives the other bones drive in the region {shapes(G, s) * 1000:.3f} mm")
     print("ALL PASS" if ok_all else "SOME FAILED")
     return ok_all
 
@@ -771,6 +933,8 @@ def cmd_target(h, poses):
             print(f"{names[i]:28s} {fmt(info)}")
     cfg = h.cfg
     out = h.OUT / (cfg["dev_out"] if poses else cfg["out"])
+    if cfg["carry"] != HER["carry"]:                                     # never over the default's file
+        out = out.with_name(f"{out.stem}_{cfg['carry']}.npz")
     params = {**{k: v for k, v in cfg.items()}, "method": "carried_target", "posed": h.order,
               "not_ok": {s: int((~h.car[s].ok).sum()) for s in "lr"}}
     pocket = {}
@@ -788,8 +952,9 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("cmd", choices=["test", "target"])
     ap.add_argument("--poses", default="", help="comma-separated pose names: a subset, written to the dev file")
+    ap.add_argument("--carry", default=HER["carry"], choices=["relative", "absolute"], help="see the module docstring")
     a = ap.parse_args()
-    h = Her()
+    h = Her({**HER, "carry": a.carry})
     if a.cmd == "test":
         sys.exit(0 if cmd_test(h) else 1)
     cmd_target(h, [p for p in a.poses.split(",") if p])
