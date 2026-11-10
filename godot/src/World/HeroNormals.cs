@@ -33,6 +33,40 @@ public static class HeroNormals
     static readonly List<MeshInstance3D> waiting = new();
     static readonly List<MeshInstance3D> early = new();   // visited before the radius was set: baked when it is (Step)
     static readonly HashSet<ulong> earlyIds = new();
+    static int nCached, nCachedVerts, nStale, nShown;   // (CACHE)
+    static readonly bool Verify = OS.GetEnvironment("SU_HERO_SN_VERIFY") == "1";   // (CACHE: each cached or CUSTOM0 mesh baked again on a worker and compared, per vertex)
+    /// <summary>(CACHE) The check of a mesh carrying CUSTOM0: its arrays read back, baked the runtime way from them and the
+    /// stored CUSTOM0 compared per vertex (max |d| of xyz, the share over 1e-3). Readback cost: only with SU_HERO_SN_VERIFY=1.</summary>
+    static void VerifyLater(MeshInstance3D mi, ArrayMesh am)
+    {
+        if (mi.GetActiveMaterial(0) is not ShaderMaterial { Shader: { } sh } || !ReadsBake(sh)) return;
+        string name = mi.Name; bool cached = am.HasMeta(Meta); float r = Radius; int n = am.GetSurfaceCount();
+        Task.Run(() =>
+        {
+            var arr = new Godot.Collections.Array[n];
+            for (int s = 0; s < n; s++) arr[s] = am.SurfaceGetArrays(s);
+            var P = new Vector3[n][]; var N = new Vector3[n][]; var T = new float[]?[n]; var I = new int[n][];
+            for (int s = 0; s < n; s++)
+            {
+                P[s] = arr[s][(int)Mesh.ArrayType.Vertex].AsVector3Array(); N[s] = arr[s][(int)Mesh.ArrayType.Normal].AsVector3Array();
+                T[s] = arr[s][(int)Mesh.ArrayType.Tangent].VariantType == Variant.Type.Nil ? null : arr[s][(int)Mesh.ArrayType.Tangent].AsFloat32Array();
+                var iv = arr[s][(int)Mesh.ArrayType.Index];
+                I[s] = iv.VariantType == Variant.Type.Nil ? System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Range(0, P[s].Length)) : iv.AsInt32Array();
+            }
+            var cs = Bake(P, N, T, I, r);
+            double dmax = 0; int over = 0, nv = 0;
+            for (int s = 0; s < n && cs != null; s++)
+            {
+                var c0 = arr[s][(int)Mesh.ArrayType.Custom0].AsFloat32Array(); var b = cs[s][0];
+                for (int v = 0; v < b.Length / 4; v++, nv++)
+                {
+                    double d = 0; for (int k = 0; k < 3; k++) d = Math.Max(d, Math.Abs(c0[4 * v + k] - b[4 * v + k]));
+                    dmax = Math.Max(dmax, d); if (d > 1e-3) over++;
+                }
+            }
+            checks.Enqueue($"hero normals VERIFY {name} ({(cached ? "cached" : "CUSTOM0, no key")}): {nv} verts, max |d| {dmax:0.000000}, {over} over 1e-3");
+        });
+    }
     static int nBaked, nLeft, nVerts, nMerged; static float msBake; static readonly System.Diagnostics.Stopwatch wall = new();
 
     public static void Visit(MeshInstance3D mi)
@@ -45,6 +79,20 @@ public static class HeroNormals
         if (made.TryGetValue(id, out var copy)) { if (copy != null) mi.Mesh = copy; return; }
         if (jobs.ContainsKey(id)) { if (!waiting.Contains(mi)) waiting.Add(mi); Hide(mi); return; }
         var vt = System.Diagnostics.Stopwatch.StartNew();
+        // (CACHE, lead 25) an import-time bake (tools_scenes/HeroNormalsImport.cs) whose key's parameters match: nothing to do
+        // (no readback, no copy, no hold); a stale one (another radius or bake version) is baked over by the runtime path
+        bool stale = false;
+        if (am.HasMeta(Meta))
+        {
+            string key = am.GetMeta(Meta).AsString();
+            if (key.EndsWith(" " + Params(Radius)))
+            {
+                made[id] = null; nCached++; nCachedVerts += am.GetMeta(Meta + "_verts", 0).AsInt32();
+                if (Verify) VerifyLater(mi, am);
+                msVisit += vt.Elapsed.TotalMilliseconds; Frame(vt.Elapsed.TotalMilliseconds); return;
+            }
+            stale = true; nStale++;
+        }
         int n = am.GetSurfaceCount();
         var arr = new Godot.Collections.Array[n];
         for (int s = 0; s < n; s++)
@@ -52,8 +100,8 @@ public static class HeroNormals
             if (mi.GetActiveMaterial(s) is ShaderMaterial { Shader: { } sh } && sh.ResourcePath.Contains("heroine_hair")) { made[id] = null; return; }
             if (am.SurfaceGetPrimitiveType(s) != Mesh.PrimitiveType.Triangles) { made[id] = null; return; }
             long fm = (long)am.SurfaceGetFormat(s);   // (BAKE: the format, not the arrays: the read itself is the worker's)
-            if ((fm & (long)Mesh.ArrayFormat.FormatCustom0) != 0)
-            { made[id] = null; nLeft++; GD.Print($"hero normals: {mi.Name} left as is (a CUSTOM0 of its own on surface {s})"); return; }
+            if ((fm & (long)Mesh.ArrayFormat.FormatCustom0) != 0 && !stale)
+            { if (Verify) VerifyLater(mi, am); made[id] = null; nLeft++; GD.Print($"hero normals: {mi.Name} left as is (a CUSTOM0 of its own on surface {s})"); return; }
             if ((fm & (long)Mesh.ArrayFormat.FormatTangent) == 0 && am.GetBlendShapeCount() > 0)
             { made[id] = null; nLeft++; GD.Print($"hero normals: {mi.Name} left as is (blend shapes without tangents on surface {s})"); return; }
         }
@@ -86,38 +134,9 @@ public static class HeroNormals
         {
             double t0 = wall.Elapsed.TotalMilliseconds;
             for (int s = 0; s < n; s++) arr[s] = am.SurfaceGetArrays(s);   // (BAKE: off the main thread; the server serves it)
-            var P = new Vector3[n][]; var N = new Vector3[n][]; var T = new float[]?[n]; var I = new int[n][];
-            for (int s = 0; s < n; s++)
-            {
-                P[s] = arr[s][(int)Mesh.ArrayType.Vertex].AsVector3Array();
-                N[s] = arr[s][(int)Mesh.ArrayType.Normal].AsVector3Array();
-                T[s] = arr[s][(int)Mesh.ArrayType.Tangent].VariantType == Variant.Type.Nil ? null! : arr[s][(int)Mesh.ArrayType.Tangent].AsFloat32Array();
-                var iv = arr[s][(int)Mesh.ArrayType.Index];
-                I[s] = iv.VariantType == Variant.Type.Nil ? System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Range(0, P[s].Length)) : iv.AsInt32Array();
-            }
-            var sw = System.Diagnostics.Stopwatch.StartNew(); var cs = Bake(P, N, T, I, r, dumpTo); float ms = (float)sw.Elapsed.TotalMilliseconds;
-            ArrayMesh? copy = null; float cms = 0; int verts = 0;
-            if (cs != null)
-            {
-                var ct = System.Diagnostics.Stopwatch.StartNew();
-                copy = new ArrayMesh { BlendShapeMode = mode, CustomAabb = aabb, ShadowMesh = shadowMesh, ResourceName = rname };
-                foreach (var sn in shapeNames) copy.AddBlendShape(sn);
-                for (int s = 0; s < n; s++)
-                {
-                    arr[s][(int)Mesh.ArrayType.Custom0] = cs[s][0];
-                    if (cs[s][1] is { } ft) arr[s][(int)Mesh.ArrayType.Tangent] = ft;   // (a mesh without tangents: the frame's own fallback)
-                    verts += cs[s][0].Length / 4;
-                    long keep = sfm[s] & ((long)Mesh.ArrayFormat.FlagUse8BoneWeights | (0xFFFL << (int)Mesh.ArrayFormat.FormatCustom0Shift));
-                    keep &= ~((long)Mesh.ArrayFormat.FormatCustomMask << (int)Mesh.ArrayFormat.FormatCustom0Shift);
-                    keep |= (long)Mesh.ArrayCustomFormat.RgbaFloat << (int)Mesh.ArrayFormat.FormatCustom0Shift;
-                    copy.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arr[s], bsa[s], null, (Mesh.ArrayFormat)keep);
-                    copy.SurfaceSetMaterial(s, smat[s]);
-                    copy.SurfaceSetName(s, snm[s]);
-                }
-                cms = (float)ct.Elapsed.TotalMilliseconds;
-            }
+            var res = Make(arr, shapeNames, bsa, smat, snm, sfm, mode, aabb, shadowMesh, rname, r, dumpTo);
             lock (tLock) { if (tFirst < 0 || t0 < tFirst) tFirst = t0; tLast = Math.Max(tLast, wall.Elapsed.TotalMilliseconds); }
-            return (copy, ms, cms, verts);
+            return res;
         });
         Hide(mi);
         waiting.Add(mi);
@@ -125,6 +144,90 @@ public static class HeroNormals
     }
 
     // (BAKE) the main thread's ms on the bake, per process frame: the bound is no frame over 8 ms
+    /// <summary>(CACHE, lead 25) The bake's version: bump it whenever <see cref="Bake"/> or SmoothNormals changes what it
+    /// writes, so every import-time cache goes stale and the runtime bake takes over until the next import.</summary>
+    public const int Version = 1;
+    /// <summary>(CACHE) The key's parameter part: the version, the radius and the smoothing's constants.</summary>
+    public static string Params(float radius) => $"v{Version} r{radius:R} tiny{SurvivorUnchained.Look.SmoothNormals.TinyPart:R} brute{SurvivorUnchained.Look.SmoothNormals.BruteMax}";
+    /// <summary>(CACHE) The mesh meta an import-time bake leaves: "hash params" (hash = the source vertex and index data).</summary>
+    public const string Meta = "hero_sn";
+    /// <summary>(CACHE) FNV-1a 64 over every surface's positions, normals, tangents and indices (the bake's whole input).</summary>
+    public static ulong Hash(Godot.Collections.Array[] arr)
+    {
+        ulong h = 14695981039346656037UL;
+        void F(ReadOnlySpan<byte> b) { foreach (var x in b) { h ^= x; h *= 1099511628211UL; } }
+        foreach (var a in arr)
+        {
+            F(System.Runtime.InteropServices.MemoryMarshal.AsBytes<Vector3>(a[(int)Mesh.ArrayType.Vertex].AsVector3Array()));
+            F(System.Runtime.InteropServices.MemoryMarshal.AsBytes<Vector3>(a[(int)Mesh.ArrayType.Normal].AsVector3Array()));
+            if (a[(int)Mesh.ArrayType.Tangent].VariantType != Variant.Type.Nil) F(System.Runtime.InteropServices.MemoryMarshal.AsBytes<float>(a[(int)Mesh.ArrayType.Tangent].AsFloat32Array()));
+            if (a[(int)Mesh.ArrayType.Index].VariantType != Variant.Type.Nil) F(System.Runtime.InteropServices.MemoryMarshal.AsBytes<int>(a[(int)Mesh.ArrayType.Index].AsInt32Array()));
+        }
+        return h;
+    }
+    /// <summary>(CACHE) The import tool's call: the baked copy of a whole mesh (its arrays read here), with the key as meta;
+    /// null when the runtime would not bake it either (not triangles, a CUSTOM0 of its own, blend shapes without tangents).</summary>
+    public static ArrayMesh? BakeMesh(ArrayMesh am, float radius, out int verts)
+    {
+        verts = 0;
+        int n = am.GetSurfaceCount(); if (n == 0) return null;
+        for (int s = 0; s < n; s++)
+        {
+            if (am.SurfaceGetPrimitiveType(s) != Mesh.PrimitiveType.Triangles) return null;
+            long fm = (long)am.SurfaceGetFormat(s);
+            if ((fm & (long)Mesh.ArrayFormat.FormatCustom0) != 0) return null;
+            if ((fm & (long)Mesh.ArrayFormat.FormatTangent) == 0 && am.GetBlendShapeCount() > 0) return null;
+        }
+        int nShapes = am.GetBlendShapeCount(); var shapeNames = new StringName[nShapes];
+        for (int k = 0; k < nShapes; k++) shapeNames[k] = am.GetBlendShapeName(k);
+        var arr = new Godot.Collections.Array[n]; var bsa = new Godot.Collections.Array<Godot.Collections.Array>[n]; var smat = new Material[n]; var snm = new string[n]; var sfm = new long[n];
+        for (int s = 0; s < n; s++) { arr[s] = am.SurfaceGetArrays(s); bsa[s] = nShapes > 0 ? am.SurfaceGetBlendShapeArrays(s) : new Godot.Collections.Array<Godot.Collections.Array>(); smat[s] = am.SurfaceGetMaterial(s); snm[s] = am.SurfaceGetName(s); sfm[s] = (long)am.SurfaceGetFormat(s); }
+        ulong h = Hash(arr);
+        var res = Make(arr, shapeNames, bsa, smat, snm, sfm, am.BlendShapeMode, am.CustomAabb, am.ShadowMesh, am.ResourceName, radius, null);
+        if (res.Copy == null) return null;
+        res.Copy.SetMeta(Meta, $"{h:x16} {Params(radius)}"); res.Copy.SetMeta(Meta + "_verts", res.Verts);
+        verts = res.Verts; return res.Copy;
+    }
+
+    /// <summary>The arrays' conversion, the bake and the copy (the source's surfaces, blend shapes, materials, names plus
+    /// CUSTOM0); no Godot server calls but the copy's upload. The runtime worker and the import tool both run it.</summary>
+    static (ArrayMesh? Copy, float Ms, float CopyMs, int Verts) Make(Godot.Collections.Array[] arr, StringName[] shapeNames, Godot.Collections.Array<Godot.Collections.Array>[] bsa,
+        Material[] smat, string[] snm, long[] sfm, Mesh.BlendShapeMode mode, Aabb aabb, ArrayMesh? shadowMesh, string rname, float r, string? dumpTo)
+    {
+        int n = arr.Length;
+        var P = new Vector3[n][]; var N = new Vector3[n][]; var T = new float[]?[n]; var I = new int[n][];
+        for (int s = 0; s < n; s++)
+        {
+            P[s] = arr[s][(int)Mesh.ArrayType.Vertex].AsVector3Array();
+            N[s] = arr[s][(int)Mesh.ArrayType.Normal].AsVector3Array();
+            T[s] = arr[s][(int)Mesh.ArrayType.Tangent].VariantType == Variant.Type.Nil ? null! : arr[s][(int)Mesh.ArrayType.Tangent].AsFloat32Array();
+            var iv = arr[s][(int)Mesh.ArrayType.Index];
+            I[s] = iv.VariantType == Variant.Type.Nil ? System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Range(0, P[s].Length)) : iv.AsInt32Array();
+        }
+        var sw = System.Diagnostics.Stopwatch.StartNew(); var cs = Bake(P, N, T, I, r, dumpTo); float ms = (float)sw.Elapsed.TotalMilliseconds;
+        ArrayMesh? copy = null; float cms = 0; int verts = 0;
+        if (cs != null)
+        {
+            var ct = System.Diagnostics.Stopwatch.StartNew();
+            copy = new ArrayMesh { BlendShapeMode = mode, CustomAabb = aabb, ShadowMesh = shadowMesh, ResourceName = rname };
+            foreach (var sn in shapeNames) copy.AddBlendShape(sn);
+            for (int s = 0; s < n; s++)
+            {
+                arr[s][(int)Mesh.ArrayType.Custom0] = cs[s][0];
+                if (cs[s][1] is { } ft) arr[s][(int)Mesh.ArrayType.Tangent] = ft;   // (a mesh without tangents: the frame's own fallback)
+                verts += cs[s][0].Length / 4;
+                long keep = sfm[s] & ((long)Mesh.ArrayFormat.FlagUse8BoneWeights | (0xFFFL << (int)Mesh.ArrayFormat.FormatCustom0Shift));
+                keep &= ~((long)Mesh.ArrayFormat.FormatCustomMask << (int)Mesh.ArrayFormat.FormatCustom0Shift);
+                keep |= (long)Mesh.ArrayCustomFormat.RgbaFloat << (int)Mesh.ArrayFormat.FormatCustom0Shift;
+                copy.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arr[s], bsa[s], null, (Mesh.ArrayFormat)keep);
+                copy.SurfaceSetMaterial(s, smat[s]);
+                copy.SurfaceSetName(s, snm[s]);
+            }
+            cms = (float)ct.Elapsed.TotalMilliseconds;
+        }
+        return (copy, ms, cms, verts);
+    }
+
     static ulong lastTick; static double gapMax;   // (BAKE: the longest real frame interval while a bake is pending, every cost on the main thread included)
     static double msVisit, msCopy, msFrameNow, msFrameMax; static ulong frameNow;
     static void Frame(double ms)
@@ -161,6 +264,12 @@ public static class HeroNormals
         {
             var e = new List<MeshInstance3D>(early); early.Clear(); earlyIds.Clear();
             foreach (var mi in e) if (GodotObject.IsInstanceValid(mi)) Visit(mi);
+        }
+        while (checks.TryDequeue(out var cl0)) GD.Print(cl0);
+        if (nCached + nLeft != nShown)
+        {
+            nShown = nCached + nLeft;
+            GD.Print($"hero normals: {nCached} meshes from the import-time cache ({nCachedVerts} verts), {nStale} stale (baked at runtime), {nLeft} left as is (a CUSTOM0 of their own, merges of cached meshes included); main thread: {msVisit:0.0} ms in Visit, worst frame {msFrameMax:0.0} ms on the bake; radius {Radius:0.###} m");
         }
         if (jobs.Count == 0) return;
         ulong now = Time.GetTicksUsec(); if (lastTick != 0 && hidden.Count > 0) gapMax = Math.Max(gapMax, (now - lastTick) / 1000.0); lastTick = now;
