@@ -945,7 +945,8 @@ public partial class KeyTag : Control
             float g = PadGlyph, t = Math.Max(1, Mathf.Round(g * 3 / 11)), arm = (g - t) / 2;
             float gx = Mathf.Round(tx), gy = Mathf.Round(ty - g);
             string which = padName!.Length > 6 ? padName[6..] : "";
-            var dim = ink with { A = 0.42f };
+            // (M4 lead 7: the rest a ghost, 0.24: at 0.42 the cross read as a plain "+" at 1:1 and the arm meant was lost)
+            var dim = ink with { A = 0.24f };
             Color Of(string a) => which == "" || which == a ? ink : dim;
             DrawRect(new Rect2(gx + arm, gy + arm, t, t), which == "" ? ink : dim, true);
             DrawRect(new Rect2(gx + arm, gy, t, arm), Of("up"), true);

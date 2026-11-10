@@ -103,7 +103,11 @@ public partial class LevelCard : Control
         if (s.HasPrompt)
         {
             promptCap?.QueueFree();
-            promptCap = new KeyTag(s.PromptKey!.Value) { Chip = true };
+            // On a pad the book's pages have no button of their own (KeyMap.Pad): View opens the book and the bumpers
+            // turn to the page, so the cap is View's, never a keyboard's "C" in a pad player's hands (M4 lead 7).
+            var pk = s.PromptKey!.Value;
+            if (Controls.Instance is { UsingPad: true } ctl && !System.Linq.Enumerable.Any(ctl.PadLabels(pk))) pk = Act.Inventory;
+            promptCap = new KeyTag(pk) { Chip = true };
             promptHost.AddChild(promptCap);
             promptCap.Refresh();
             need = Math.Max(need, Pad + promptCap.ChipBox().Size.X * HudBottom.Scale + 10 + TextW(Style.Ui, prompt, PromptSize) + Pad);
