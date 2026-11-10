@@ -345,6 +345,14 @@ public partial class MapScreen : Overlay
     // open is set, not glided, so the map never opens sliding onto bare paper)
     float zoomTo = -1, openZoom = 1;
     double builtAt = -1;
+    // (M4 lead 14, r3d look) a row hovered only once the mouse has moved since the map opened: a cursor resting where a
+    // row appears is not a choice, and it would pull the opening view off her and the goal
+    bool moved;
+    public override void _Input(InputEvent e)
+    {
+        base._Input(e);
+        if (e is InputEventMouseMotion m && m.Relative.LengthSquared() > 4) moved = true;
+    }
     Control? ring;
     double t;
     float extent = 1;
@@ -505,6 +513,7 @@ public partial class MapScreen : Overlay
         var entries = zone.MapMarks().Where(m => m.Kind is MarkKind.Exit or MarkKind.Quest || Seen(m.X, m.Z)).Select(m => new Entry(m.X, m.Z, m.Kind, m.Label, m.Objective)).ToList();
         foreach (var gp in G.GoalPins()) entries.Add(new Entry(gp.X, gp.Z, MarkKind.Goal, gp.Def.Label));
         if (G.Journey.World.Corpse is { } corpse && corpse.Zone == zone.Id) entries.Add(new Entry(corpse.X, corpse.Z, MarkKind.Danger, $"{corpse.HeroName}'s belongings"));
+        int marksAt = world.GetChildCount();
         foreach (var m in entries.OrderByDescending(m => m.Kind == MarkKind.Place)) Mark(world, Px(m.X, m.Z), m.Label, m.Kind, m.Objective);
         if (measure) GD.Print($"MAPMEASURE build: drawing {drawMs:F1} ms, fog {fogMs:F1} ms, {entries.Count} marks {sw.Elapsed.TotalMilliseconds - mark0:F1} ms, extent {extent:F0}, zone {zone.Id}");
         // The ring that marks what the list has chosen.
@@ -513,6 +522,9 @@ public partial class MapScreen : Overlay
         var rs = Style.Box(new Color(0, 0, 0, 0), new Color("#3a2414"), 3, 23, 0);
         ring.AddThemeStyleboxOverride("panel", rs);
         world.AddChild(ring);
+        // (M4 lead 14, r3d look: the ring under the marks, so a name's parchment outline knocks the ring out where they cross,
+        // as a printed map's label knocks out a line, and never an ink circle struck through the name)
+        world.MoveChild(ring, marksAt);
         // You.
         if (G.Battle is { } b)
         {
@@ -525,6 +537,7 @@ public partial class MapScreen : Overlay
         Fit(seen);
         openZoom = zoom;
         builtAt = t;
+        moved = false;
         Place(F);
         // A compass in the window's corner, the way the old maps had one.
         var rose = Glyphs.Icon("compass", 56, Style.Gold with { A = 0.75f });
@@ -537,6 +550,10 @@ public partial class MapScreen : Overlay
 
         var p0 = G.Battle?.Player;
         IEnumerable<Entry> Near(IEnumerable<Entry> items) => items.OrderBy(e => p0 == null ? 0 : Math.Sqrt((e.X - p0.X) * (e.X - p0.X) + (e.Z - p0.Z) * (e.Z - p0.Z)));
+        // (M4 lead 14, r3d look) opened on her and the first step of her road (the list's first row, ringed), in every input
+        // mode: Nav runs a row's focus at a build only in key mode, so with the mouse the map opened on the explored ground alone
+        if (Near(entries.Where(e => e.Kind is MarkKind.Quest or MarkKind.Turn or MarkKind.Exit or MarkKind.Goal)).Select(e => (Entry?)e).FirstOrDefault() is { } road0)
+            FrameWith(road0.X, road0.Z, Px(road0.X, road0.Z));
         // The legend, in the marks' own look (the corner map's too).
         Control Legend(int columns, bool road = false)
         {
@@ -697,7 +714,7 @@ public partial class MapScreen : Overlay
         b.AddChild(row);
         b.Pressed += Go;
         Nav.Mark(b, $"mark:{e.Label}", Go, focus: Frame);
-        b.MouseEntered += () => { name.AddThemeColorOverride("font_color", Style.EmberHi); Frame(); };
+        b.MouseEntered += () => { if (!moved) return; name.AddThemeColorOverride("font_color", Style.EmberHi); Frame(); };
         b.MouseExited += () => name.AddThemeColorOverride("font_color", Style.Ink);
         return b;
     }
