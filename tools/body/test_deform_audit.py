@@ -81,3 +81,33 @@ def test_a_bend_is_seen(bd):
     out, _ = bd.measure(V, G, inside=False)
     assert out["knee_l"][da.MET.index("st99")] > 10
     assert out["knee_r"][da.MET.index("st99")] < 1
+
+
+def test_clavicle_law_and_frozen():
+    """A p4-style clip whose clavicle track sits at rest is posed with a moving clavicle under "law" (the game) and a
+    still one under "frozen"; a clip that really keys the clavicle stays as keyed under both; a ROM pose keys nothing."""
+    from scipy.spatial.transform import Rotation
+    b = da.body("B")
+    b.set_layer("full")
+    p, gd = b.p, b.rig["girdle"]
+    cl, ua = (p.index[gd[k].replace("{s}", "l")] for k in ("clavicle", "arm"))
+    quat = lambda R: Rotation.from_matrix(R).as_quat().tolist()
+    Rp = p.rest[p.parent[ua]][:3, :3]
+    up = [quat(Rp.T @ rot(b.frame.front, a) @ p.rest[ua][:3, :3]) for a in (100.0, -100.0)]   # one of the two lifts the arm
+    still = [quat(b.rl[cl][:3, :3])] * 2
+    keyed = [quat(b.rl[cl][:3, :3] @ rot(np.array([0.0, 0, 1]), 5.0))] * 2
+    deg = lambda G: float(da._turn_deg(G[None, cl, :3, :3], p.rest[cl][:3, :3])[0])
+    turn = lambda d: max(deg(G) for _, _, G in b.clip_frames(d, 1))
+    clip = lambda c: {"bones": [p.names[cl], p.names[ua]], "frames": 2, "rot": {p.names[cl]: c, p.names[ua]: up}}
+    row = next(r for r in da.rom_list(b) if r[0] == "sh_abd135" and r[2] == "l")
+    try:
+        b.clavicle = "law"
+        assert turn(clip(still)) > 3.0
+        assert turn(clip(keyed)) == pytest.approx(5.0, abs=1e-3)
+        assert deg(da.rom_pose(b, row)[1]) > 3.0
+        b.clavicle = "frozen"
+        assert turn(clip(still)) < 1e-3
+        assert turn(clip(keyed)) == pytest.approx(5.0, abs=1e-3)
+        assert deg(da.rom_pose(b, row)[1]) < 1e-3
+    finally:
+        b.clavicle = "frozen"

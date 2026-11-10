@@ -151,6 +151,7 @@ class Body:
             self.J, self.W, self.corr = p.body.Jv, p.body.W, p.body.corr
         self.T, self.piece = p.T, p.piece
         self.layer = None
+        self.clavicle = "frozen"                # "law": pose_rig's rule (the audit's runs set it; importers keep the rig as is)
         self.set_layer("full")
         self.V0, self.G0 = self.pose_turns([])
         self.frame = bends.Frame(p, self.rig)
@@ -170,8 +171,26 @@ class Body:
         else:
             self.p.body.corr = self.corr if layer == "full" else {}
 
+    def pose_rig(self, d=None):
+        """The rig a pose is driven with. clavicle "law" and a rig that holds the clavicle still offline ("clavicle_by"):
+        where nothing keys the clavicle (the rig's girdle names it; a ROM pose, d None, keys nothing; a clip by `unkeyed`)
+        the girdle law drives it, as the game does at runtime. Else (and with "frozen") the rig as written."""
+        gd = self.rig.get("girdle", {}) if self.kind == "lbs" else {}
+        if self.clavicle != "law" or "clavicle_by" not in gd:
+            return self.rig
+        if d is not None and not unkeyed(d, [gd["clavicle"].replace("{s}", s) for s in "lr"], self.p, self.rl):
+            return self.rig
+        return law_rig(self)
+
     def pose_turns(self, turns):
-        V, G, _ = self.p.pose(turns)
+        if self.kind != "lbs":
+            return self.p.pose(turns)[:2]
+        rig = self.p.rig
+        try:
+            self.p.rig = self.pose_rig()
+            V, G, _ = self.p.pose(turns)
+        finally:
+            self.p.rig = rig
         return V, G
 
     def _blend(self, G):
@@ -187,6 +206,7 @@ class Body:
     def clip_frames(self, d, step=1):
         """(frame, V, G) of a clip: a keys dump (tools/body/out/clips) or one of A1's p4 clips (B only)."""
         p = self.p
+        rig = self.pose_rig(d)
         if "bones" in d:                                            # p4: B local rotations (x, y, z, w) by bone
             n = d["frames"]
             for f in range(0, n, step):
@@ -199,7 +219,7 @@ class Body:
                     if nm in d.get("pos", {}):
                         L[:3, 3] = d["pos"][nm][f]
                     G[k] = G[p.parent[k]] @ L if p.parent[k] >= 0 else L
-                G, w = p.driver.drive(p, G, self.rig)
+                G, w = p.driver.drive(p, G, rig)
                 yield f, p._skin(G, w), G
         elif self.kind == "lbs":                                    # the dump's B globals (clipcheck.Body.pose)
             names, keyed = d["b_names"], set(d["keyed"])
@@ -217,7 +237,7 @@ class Body:
                     pk, n = p.parent[k], p.names[k]
                     if pk >= 0 and (not got[k] or n in self.helpers and n not in keyed):
                         G[k] = G[pk] @ self.rl[k]
-                G, w = p.driver.drive(p, G, self.rig)
+                G, w = p.driver.drive(p, G, rig)
                 yield f, p._skin(G, w), G
         else:                                                       # A: the dump's globals -> local turns -> the game poser
             import skin
@@ -525,9 +545,10 @@ def load_clip(name):
 
 
 def run_clip(task):
-    key, layer, name, step = task
+    key, layer, name, step, *mode = task
     bd = body(key)
     bd.set_layer(layer)
+    bd.clavicle = mode[0] if mode else "law"
     d = load_clip(name)
     best = {r: [[0.0, -1] for _ in CLIPMET] for r in bd.reg}
     hist = {r: [] for r in bd.reg}
@@ -635,12 +656,16 @@ def rom_pose(bd, row):
 
 
 def run_rom(task):
-    key, layer = task
+    key, layer, *opt = task                     # opt: clavicle mode, pose-name prefixes (empty = every pose)
     bd = body(key)
     bd.set_layer(layer)
+    bd.clavicle = opt[0] if opt else "law"
+    pre = tuple(opt[1]) if len(opt) > 1 else ()
     res = {}
     for row in rom_list(bd):
         nm, joints, s, strip, deg, extra = row
+        if pre and not nm.startswith(pre):
+            continue
         V, G = rom_pose(bd, row)
         out, _ = bd.measure(V, G)
         want = [r.replace("{s}", s) for j in joints for r in JOINTS[j]]
@@ -759,6 +784,43 @@ def lr_notes(A):
     return out
 
 
+def old_new(O, N, path, cols=("B.full", "Bplay.full")):
+    """The shoulder rows of two audits side by side (O: clavicle frozen, N: by the law) and A: ROM arm poses (worst side by
+    score) and each p4 clip (each metric's worst over the clip and both sides; the frames are the ball's st99 frames)."""
+    ball, ax = "shoulder_{s}", "shoulder_{s}.axilla"
+    ms = [(ball, "st99"), (ball, "kink99"), (ball, "kinkmax"), (ball, "flip"), (ball, "bad"), (ax, "st99"), (ax, "flip"),
+          (ax, "bad"), (ax, "at_mm"), (ax, "ins_mm")]
+    i = MET.index
+    fmt = lambda v: "-" if v is None else " ".join(f"{x:.3g}" for x in v)
+    dif = lambda o, n: "-" if o is None or n is None else " ".join(f"{x - y:+.3g}" for x, y in zip(o, n))
+
+    def rom(Aud, col, ps):
+        v = [[e["regions"][r.replace("{s}", k[-1])][i(m)] for r, m in ms] for k, e in Aud["rom"].get(col, {}).items()
+             if k.split("|")[0] == ps and ball.replace("{s}", k[-1]) in e["regions"]]
+        return max(v, key=lambda x: x[3] * 10 + x[4] + x[0] / 100) if v else None
+
+    def clip(Aud, col, n):
+        e = Aud["clips"].get(col, {}).get(n)
+        if not e:
+            return None, "@-"
+        b = max((e["regions"][ball.replace("{s}", s)][i("st99")] for s in "lr"), key=lambda x: x[0])
+        return [max(e["regions"][r.replace("{s}", s)][i(m)][0] for s in "lr") for r, m in ms], f"@{b[1]}"
+
+    L = ["old = clavicle frozen at rest (the audit of 9 Nov); new = clavicle by the girdle law where unkeyed (the game).",
+         "values: ball st99% kink99 kinkmax flip% bad% | axilla st99% flip% bad% at_mm ins_mm, in that order.",
+         "overstated = old - new (+ : the old audit read worse than the pose the game shows; - : it read better).", ""]
+    for col in cols:
+        L += [f"== {col}: row | old | new | A.full | overstated"]
+        for ps in dict.fromkeys(k.split("|")[0] for k in N["rom"].get(col, {}) if k.startswith("sh_")):
+            o, n = rom(O, col, ps), rom(N, col, ps)
+            L.append(f"{ps:13s} | {fmt(o)} | {fmt(n)} | {fmt(rom(N, 'A.full', ps))} | {dif(o, n)}")
+        for c in sorted(k for k in N["clips"].get(col, {}) if k.startswith("p4:")):
+            (o, fo), (n, fn) = clip(O, col, c), clip(N, col, c)
+            L.append(f"{c + ' old' + fo + ' new' + fn:34s} | {fmt(o)} | {fmt(n)} | - (A has no p4) | {dif(o, n)}")
+        L.append("")
+    path.write_text("\n".join(L), encoding="utf-8")
+
+
 # ----------------------------------------------------------------- sheets --
 def frame_of(bd, clip, f):
     for g, V, G in bd.clip_frames(load_clip(clip), 1):
@@ -857,6 +919,13 @@ def main():
     ap.add_argument("--step", type=int, default=1)
     ap.add_argument("--out", default=str(OUT))
     ap.add_argument("--clips", default="")
+    ap.add_argument("--clavicle", default="law", choices=("law", "frozen"),
+                    help="law: B's unkeyed clavicle by the girdle law (the game); frozen: held at rest (the audit before 10 Nov)")
+    ap.add_argument("--cols", default="", help="only these columns (B.full,Bplay.full,...)")
+    ap.add_argument("--p4", default="", help="only these p4 clips (stems)")
+    ap.add_argument("--rom", default="", help="only the ROM poses with these name prefixes (sh_,...): merged into the json")
+    ap.add_argument("--compare", default="", help="an older audit.json: write old | new | A shoulder rows to --compare-out")
+    ap.add_argument("--compare-out", default="")
     a = ap.parse_args()
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -867,10 +936,15 @@ def main():
     tasks = []
     names = a.clips.split(",") if a.clips else sorted(p.stem for p in DUMP.glob("*.json"))
     if "clips" in only:
-        tasks += [(k, l, n, a.step) for n in names for k in BODIES for l in BODIES[k][3]]
+        tasks += [(k, l, n, a.step, a.clavicle) for n in names for k in BODIES for l in BODIES[k][3]]
     if "p4" in only and P4.exists():
-        tasks += [(k, l, n, 1) for n in p4_clips() for k in ("B", "Bplay") for l in BODIES[k][3]]
-    rt = [(k, l) for k in BODIES for l in BODIES[k][3]] if "rom" in only else []
+        pn = [n for n in p4_clips() if not a.p4 or n[3:] in a.p4.split(",")]
+        tasks += [(k, l, n, 1, a.clavicle) for n in pn for k in ("B", "Bplay") for l in BODIES[k][3]]
+    pre = [x for x in a.rom.split(",") if x]
+    rt = [(k, l, a.clavicle, pre) for k in BODIES for l in BODIES[k][3]] if "rom" in only else []
+    if a.cols:
+        tasks = [t for t in tasks if f"{t[0]}.{t[1]}" in a.cols.split(",")]
+        rt = [t for t in rt if f"{t[0]}.{t[1]}" in a.cols.split(",")]
     if tasks or rt:
         with Pool(a.procs) as pool:
             rr = pool.imap_unordered(run_rom, rt)
@@ -880,10 +954,15 @@ def main():
                     print(f"clips {i + 1}/{len(tasks)}", flush=True)
                     jp.write_text(json.dumps(A, separators=(",", ":")))
             for col, res in rr:
-                A["rom"][col] = res
+                if pre:
+                    A["rom"].setdefault(col, {}).update(res)
+                else:
+                    A["rom"][col] = res
                 print("rom", col, flush=True)
         A["lr"] = lr_notes(A)
         jp.write_text(json.dumps(A, separators=(",", ":")))
+    if a.compare:
+        old_new(drop_excluded(json.loads(Path(a.compare).read_text())), A, Path(a.compare_out or out / "overhead_old_new.txt"))
     if "md" in only:
         A["lr"] = lr_notes(A)
         write_md(A, out)
