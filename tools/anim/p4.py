@@ -18,6 +18,11 @@
                                               and the freeze: `statue: n frames (fa-fb)` (measures.statue; MISS over 2
                                               on a one-shot) and `quiet: n%`; bands may use statue_frames, quiet_pct
 
+The law bones (LAW_BONES: the clavicles, B's girdle law's): a build DROPS a law bone's track that never leaves rest
+(`law tracks dropped: clavicle_l, clavicle_r`: the game reads a track there as keyed), and build, pose and check print
+a MISS for a law bone that leaves rest (a P4 clip never keys the clavicle); check says STALE for a built file that
+still carries one at rest (built before the drop).
+
 The rig is tools/body/rig/{b_skeleton,soma_to_b}.json (tools/body/rig_map.py).
 """
 from __future__ import annotations
@@ -200,17 +205,42 @@ def action_of(spec):
     return act, beats
 
 
+# The bones a body law OWNS on B: the game drives them at run time and reads a clip's TRACK on one as keyed. Today the
+# clavicles: rig.json girdle "clavicle": "clavicle_{s}" (P1Rig.Girdle / ClavicleTurn lay the girdle law on it; A's
+# ClavicleLift is the same rule on A). Not the scapula and the other helper rows' bones (P1Rig.Helpers: the core never
+# keys them), not the "unroll" rows' lowerarm / calf (keyed limb bones). The export's rule (run_post, so build, check,
+# takes and pose share it): a law bone's track that is at rest on every frame is DROPPED (the core keys the clavicles
+# NEUTRAL, B's rest local), and a law bone that leaves rest is a MISS (a P4 clip never keys the clavicle).
+LAW_BONES = ("clavicle_l", "clavicle_r")
+LAW_TOL_DEG = 0.05       # at rest: every frame within this of B's rest local (a 7-digit key's noise is ~1e-5 deg)
+
+
+def law_lines(clip, rig, dropped=()):
+    """The law bones' lines for a clip as it stands (a build's clip after run_post's drop; check's built file):
+    the tracks dropped, then per law bone still tracked a MISS where it leaves rest, or STALE where the track sits at
+    rest (a file built before the drop: the game would read it as keyed until a rebuild takes it out)."""
+    L = [f"  law tracks dropped: {', '.join(dropped)}"] if dropped else []
+    for b, (deg, f) in MC.off_rest(clip, rig, LAW_BONES).items():
+        if deg > LAW_TOL_DEG:
+            L.append(f"  law bone {b}: keyed, {deg:.2f} deg off rest @f{f} MISS (a body law owns it: a clip never keys it)")
+        else:
+            L.append(f"  law bone {b}: a track at rest in the built clip STALE (built before the drop: a rebuild takes it out)")
+    return L
+
+
 def run_post(src, spec, name):
     """The core on one source with the spec's post steps (loop, in place, whole cycles, the gait lock, an action's
-    post) and its fit."""
+    post) and its fit; then the export's law rule (LAW_BONES): r.law = (dropped, {bone: (deg, frame)} off rest)."""
     po = spec.get("post", {})
     act, beats = action_of(spec)
     cyc = po.get("cycle_s")
-    return MC.run(src, RIG, loop=po.get("loop", spec.get("loop", False)), inplace=po.get("inplace", spec.get("inplace", False)),
-                  name=name, gait=po.get("gait", False), duty=po.get("duty"),
-                  cycle=(int(round(cyc[0] * KFPS)), int(round(cyc[1] * KFPS))) if cyc else None,
-                  crop=tuple(po["crop"]) if po.get("crop") else None, fit=fit_of(spec),
-                  body=body_field() if "clear" in spec.get("fit", {}) else None, action=act, beats=beats)
+    r = MC.run(src, RIG, loop=po.get("loop", spec.get("loop", False)), inplace=po.get("inplace", spec.get("inplace", False)),
+               name=name, gait=po.get("gait", False), duty=po.get("duty"),
+               cycle=(int(round(cyc[0] * KFPS)), int(round(cyc[1] * KFPS))) if cyc else None,
+               crop=tuple(po["crop"]) if po.get("crop") else None, fit=fit_of(spec),
+               body=body_field() if "clear" in spec.get("fit", {}) else None, action=act, beats=beats)
+    r.law = MC.drop_rest(r.clip, r.rig, LAW_BONES, LAW_TOL_DEG)
+    return r
 
 
 def build_one(p):
@@ -608,6 +638,8 @@ def cmd_build(a):
         line = judged_note(p.stem, sp, r.clip)
         MC.write(r.clip, OUT / f"{p.stem}.json")
         print(line)
+        for ln in law_lines(r.clip, r.rig, r.law[0]):
+            print(ln)
         if sp.get("bands"):
             m = measure(r, sp)
             ok = measures.passes(m, sp["bands"])
@@ -784,6 +816,8 @@ def cmd_pose(a):
         print(f"  fit {L['layer']}: " + ", ".join(f"{k} {v}" for k, v in L.items() if k != "layer"))
     for nt in r.prep.notes:
         print(f"  note: {nt}")
+    for ln in law_lines(r.clip, r.rig, r.law[0]):
+        print(ln)
     import p4_strip
     mid = r.clip["frames"] // 2
     held_ = spec.get("held", [])
@@ -974,7 +1008,10 @@ def cmd_check(a):
                      "slide_mm": [round(x * 1000, 2) for x in sl], "fidelity": fid,
                      "locked_frames": [sum(w[1] for w in ws) for ws in r.wins],
                      "skate": skate(r, sj, G, P), "skate_line_cm": SKATE_CM, "floors": floors(r, G, P),
-                     "spot": spot_off(rig, G, P, sj), "statue": statue_of(c, G, P, rig, at=True), "loop": c["loop"]})
+                     "spot": spot_off(rig, G, P, sj), "statue": statue_of(c, G, P, rig, at=True), "loop": c["loop"],
+                     # (the built file's law bones: the tracks it still carries, and what a build now drops)
+                     "law": {"lines": law_lines(c, rig), "dropped_by_build": r.law[0],
+                             "tracks": {b: [round(v[0], 3), v[1]] for b, v in MC.off_rest(c, rig, LAW_BONES).items()}}})
     for R in rows:
         f, b = R["feet"], R["contact"]
         print(f"\n{R['clip']}: {R['frames']} frames, pops {R['pops']} (worst step {R['worst_step'][0]} deg {R['worst_step'][1]} "
@@ -993,6 +1030,8 @@ def cmd_check(a):
             print(f"  spot: start off idle L {so['start'][0]:.1f} R {so['start'][1]:.1f} pelvis {so['start'][2]:.1f} cm; "
                   f"end off idle max {so['end']:.1f} cm{' MISS' if so['end'] > 0.5 else ''}")
         for ln in statue_lines(R["statue"], R["loop"]):
+            print(ln)
+        for ln in R["law"]["lines"] or [f"  law bones: no track ({', '.join(LAW_BONES)}: the law's, at rest under it)"]:
             print(ln)
         import p4_contact                      # (the blade's contact measure: contact on the crossing, the blend rule)
         R["blade"] = p4_contact.of_built(sys.modules[__name__], R["clip"])
