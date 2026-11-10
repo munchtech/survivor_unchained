@@ -607,7 +607,8 @@ public partial class Socket : Control
                 DrawTextureRect(art, new Rect2(c - new Vector2(g, g) / 2 - new Vector2(0, 2), new Vector2(g, g)), false, col2);
             }
             // coming back (round 2): the well fills from its foot, lit in the element, dark above (DgMeters.Level)
-            if (cooling) DgMeters.Level(this, c, hr + 0.5f, (float)ready, school);
+            // (under a kindled seat's flare the level is held dark and round, and a brief wait shows none: SeatKeys.WaitLevel)
+            if (cooling && WaitLevel() is var lv and >= 0) DgMeters.Level(this, c, hr + 0.5f, lv, school);
         }
         // (UI 23: only the ring's inner edge, the well's rim shading, inside the plate's baked bezel)
         if (DgRiver.RingInner(Index, DgPanel.WellR) is { } ring)

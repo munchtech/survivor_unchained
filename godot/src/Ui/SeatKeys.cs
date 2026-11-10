@@ -107,11 +107,33 @@ public partial class Socket
         return FlareFrom + (1 - FlareFrom) * (1 - (1 - k) * (1 - k));
     }
 
+    /// <summary>The wait's level and the lantern's flare (M4 lead 5). The level's surface is a straight line across the
+    /// well (DgMeters.Level), and it showed through the flare as the flare settled: a square-cornered lighter box
+    /// climbing the lit disc (a short wait's level runs the whole well in the settle's 0.3 s). So under the flare the
+    /// well holds no level: all of it dark, a round shade the lantern dims down to; when the flare has gone the level
+    /// rises from the foot to where the wait stands in LevelRise. A wait known to be over about when the flare is
+    /// (BriefWait) shows no level at all, as a fast cycle shows none.</summary>
+    public const double LevelRise = 0.15, BriefWait = FlareHold + FlareSettle + 0.25;
+    double levelRiseT = -1;
+    bool briefWait;
+
+    /// <summary>The level the well draws while it waits (0 all dark .. 1); -1: none drawn.</summary>
+    float WaitLevel()
+    {
+        if (briefWait && waiting) return -1;
+        if (flareT >= 0) return 0;
+        float r = (float)ready;
+        return levelRiseT >= 0 ? r * Mathf.SmoothStep(0, 1, (float)(levelRiseT / LevelRise)) : r;
+    }
+
     /// <summary>A kindled seat that fired itself (its wait began): the lantern catches.</summary>
     void FiredItself()
     {
+        briefWait = false;
+        levelRiseT = -1;
         if (!keyed || st.Kind != SeatKind.Kindled) return;
         flareT = 0;
+        briefWait = waitSecs >= 0 && waitSecs <= BriefWait;
         // (--slots-trace: a frame of the flare is picked by this line: the well is at the mid band for 0.25 s from here)
         if (Trace) GD.Print($"seat {Index}: {Id} flare begins (kindled, fired itself) frame {Engine.GetFramesDrawn()}");
     }
@@ -183,16 +205,24 @@ public partial class Socket
                     }
                     // (its own amber spills a little further over the bezel while it burns)
                     col = col.Lerp(Edge with { A = 0.62f }, k);
-                    if (k <= 0) flareT = -1;
+                    // (the flare gone: the wait's level, held dark under it, rises from the foot: WaitLevel)
+                    if (k <= 0) { flareT = -1; levelRiseT = 0; dirty = true; }
                 }
                 lantern.Modulate = col;
             }
             else if (flareT >= 0 || (flare?.Visible ?? false))
             {
                 flareT = -1;
+                dirty = true;
                 if (flare != null) flare.Visible = false;
                 if (ink != null) ink.Visible = false;
             }
+        }
+        if (levelRiseT >= 0)
+        {
+            levelRiseT += dt;
+            if (levelRiseT >= LevelRise) levelRiseT = -1;
+            dirty = true;
         }
         bool spin = keyed && filled && st.Channeling;
         if (Trace && (spin != (spinner?.Visible ?? false) || st.Bond != (bond?.Visible ?? false))) GD.Print($"seat {Index}: spin {spin} bond {st.Bond} keyed {keyed} filled {filled}");
