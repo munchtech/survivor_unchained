@@ -1069,7 +1069,7 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                 cnt = np.bincount(lead[comp[comp >= 0]], minlength=len(lead))
                 order = sorted(np.unique(lead[comp[comp >= 0]]), key=lambda c: (not plate[c], -cnt[c]))
                 jn = worn_rest.Joins(Xa[comp < 0], Xn[comp < 0])
-                join = dict(jn=jn, mean=set(), Xa=Xa, Xn=Xn)
+                join = dict(jn=jn, mean=set(), Xa=Xa, Xn=Xn, lift=None)
             for c in order:
                 # made to measure: rotation + translation + a scale per own principal axis (never bends: one blend
                 # of weights), then the smallest translation that clears it (and stands off where she moves)
@@ -1091,17 +1091,32 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                 if jl:
                     Yb = jn.bridge(Xa[own])
                     Bt = Bt if Yb is None else Yb
-                # (a bridge is held by its plates and displaces what is between them: it is not cleared by itself, her
-                # skin under it is the tuck's, as under any plate)
+                # (a bridge keeps its joints on its plates: it is fitted to their moves, then rested on her worn skin by
+                # the smallest hinge about the line through its joints; its lift follows below, worn_rest "THE JOINS")
                 creq = c0s[grp] if Yb is None else np.full(int(grp.sum()), -1.0)
+                M, ca, cb, info = gear_field.rigid_fit_clear(body if wr is None else wr.body, Xa[own], Bt, Xa[grp], creq, fg)
                 if Yb is not None:
                     bridges.add(int(c))
-                M, ca, cb, info = gear_field.rigid_fit_clear(body if wr is None else wr.body, Xa[own], Bt, Xa[grp], creq, fg)
+                    Q, p0, hi = worn_rest.bridge_hinge(wr.body, (Xa[grp] - ca) @ M.T + cb, jn.reach(Xa[grp]),
+                                                       np.minimum(c0s[grp], gear_field.RIGID["clear_m"]), c0s[grp] >= 0)
+                    M, cb = Q @ M, Q @ (cb - p0) + p0
+                    info.update(hi)
                 rots[int(c)] = (M, ca, cb)
                 if jl:
                     jn.add(int(c), Xa[grp], M, ca, cb)
                     info.update(bridge=Yb is not None, fade_mm=round(jn.rows[int(c)]["fade"] * 1000, 1), seam_gap_mm=round(jn.rows[int(c)]["gap"] * 1000, 1))
                 fit["rigid"][f"{tier}/{int(c)}"] = info
+            for c in sorted(bridges):
+                # (the bridge's lift, over everything that ended in its group: what the hinge could not clear)
+                grp = (comp >= 0) & (lead[np.maximum(comp, 0)] == c)
+                M, ca, cb = rots[c]
+                L, Rl, li = worn_rest.bridge_lift(wr.body, (Xa[grp] - ca) @ M.T + cb, join["jn"].reach(Xa[grp], skip=c),
+                                                  np.minimum(c0s[grp], gear_field.RIGID["clear_m"]), c0s[grp] >= 0)
+                fit["rigid"][f"{tier}/{c}"].update(li)
+                if L is not None:
+                    if join["lift"] is None:
+                        join["lift"] = (np.zeros_like(Xa), np.tile(np.eye(3), (len(Xa), 1, 1)))
+                    join["lift"][0][grp], join["lift"][1][grp] = L, Rl
         rots_tier[tier] = rots
         if bbody is not None:
             # one smooth correction over every mesh of the tier at once (gear_field.follow_solve: each edge keeps the
@@ -1146,6 +1161,11 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                     X[sel] = (e["Xbind"][sel] - ca) @ M.T + cb
                     sv = sel[inv]
                     N[sv] = Nb[sv] @ np.linalg.inv(M)
+                if join is not None and join["lift"] is not None:
+                    # (a bridge's lift, worn_rest.bridge_lift: its points raised off her, their normals turned with them)
+                    k0 = int(sum(len(ev[mm["i"]]["comp"]) for mm in ms[:ms.index(m)]))
+                    X += join["lift"][0][k0:k0 + len(X)]
+                    N = np.einsum("nij,nj->ni", join["lift"][1][k0:k0 + len(X)][inv], N)
             # weights and shapes
             J, W = body_weights(body, e["tri"], e["w"])
             Tv = body.T[e["tri"]]

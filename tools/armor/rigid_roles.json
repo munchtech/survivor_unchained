@@ -16,7 +16,7 @@
  "anchors": {"spine": "spine_04", "neck": "neck_01", "clavicle": "clavicle_{s}", "upperarm": "upperarm_{s}",
              "lowerarm": "lowerarm_{s}", "hand": "hand_{s}", "thigh": "thigh_{s}", "calf": "calf_{s}", "foot": "foot_{s}"},
  "slots": {
-  "top": {"ride": {"spine": 1}, "one_bone": true, "worn_rest": "top"},
+  "top": {"ride": {"spine": 1}, "one_bone": true, "worn_rest": "top", "joins": true},
   "pauldrons": {"ride": {"upperarm": 1}, "one_bone": true, "rims": false,
                 "standoff": {"cap_mm": 6, "seat_cap_mm": 4, "rest_min_mm": 1, "margin_mm": 1,
                              "tuck_full_mm": 10, "tuck_zero_mm": 14, "tuck_step": 1.0,

@@ -18,9 +18,15 @@ was authored joined must stay joined:
   buckle, a clasp, a strap's rivet).
 - a plate is fitted to her worn skin, the largest first; a plate within JOIN "link_m" of plates already fitted is a
   bridge (a gore between two cups) and is fitted to THEIR moves instead (each of its points to the nearer plate's).
-  A bridge is held by its plates, so it is NOT cleared by itself: steel between two plates displaces what is between
-  them (a gore sits on her sternum and parts her breasts), and her skin under it is the tuck's, as under any plate.
-  (Cleared by itself, the one move the fit has pushed the gore 16 mm forward, 19 mm proud of its cups.)
+  A bridge keeps its JOINTS on its plates (its points within "link_m" of them) and its span rests ON her worn skin
+  between them, as a gore does on a pushed-up bust (it does not tack to the sternum: it floats on the tissue the cups
+  press together). Its span clears her worn skin by the plates' own stand-off (gear_field RIGID "clear_m") with the
+  least motion: first a rigid HINGE about the line through its joints (bridge_hinge: the smallest turn, within JOIN
+  "turn", that leaves nothing a lift cannot finish), then, for what a hinge cannot clear, a smooth LIFT off her that is
+  zero at the joints and never steeper than JOIN "strain" (bridge_lift; the steel is shaped to her at the build and
+  rides one blend, it never bends in motion). What is still under after both (a point too near a joint) is the tuck's.
+  (Not cleared at all, her pressed-in breasts stood 8 mm through the gore's ends and the tuck left 4 to 6 mm; cleared
+  as one rigid part by one translation it went 16 mm forward, 19 mm proud of its cups.)
 - a fitting rides what it sits on: the plain mean of her skin's weights over its own footprint (no slot roles: a
   buckle over the clavicle follows the clavicle as the strap under it does), placed by the join field below.
 - the join field: a bendy vertex (or a fitting's point) at a fitted plate takes that plate's move and its blend of
@@ -39,7 +45,8 @@ for d in ("body", "anim"):
     if os.path.join(REPO, "tools", d) not in sys.path:
         sys.path.insert(0, os.path.join(REPO, "tools", d))
 DOWN = np.array([0.0, -1.0, 0.0])
-JOIN = {"weld_m": 0.002, "weld_n": 3, "link_m": 0.010, "strain": 0.25, "fade_m": (0.03, 0.12), "host": 0.5}
+JOIN = {"weld_m": 0.002, "weld_n": 3, "link_m": 0.010, "strain": 0.25, "fade_m": (0.03, 0.12), "host": 0.5,
+        "turn": 0.5, "turn_n": 50, "lift_rounds": 8, "lift_cos": 0.5, "lift_k": 12}
 SHAPES = ("form_support_lift", "form_support_press", "form_support_fill")
 
 
@@ -303,6 +310,13 @@ class Joins:
             wsum += w
         return Y / wsum[:, None]
 
+    def reach(self, X, skip=None):
+        """Each point's distance to the nearest fitted plate it is linked to (as bridge links them; `skip`: the row
+        that is these points' own); None when none."""
+        ds = [r["tree"].query(X)[0] for c, r in self.rows.items() if c != skip]
+        ds = [d for d in ds if d.min() <= JOIN["link_m"]]
+        return np.min(ds, axis=0) if ds else None
+
     def field(self, X, Ys):
         """Points X (authored; Ys as her skin alone carries them) -> (their worn targets, each one's share of a plate's
         move 0..1, the plate it is nearest by that share or -1)."""
@@ -318,3 +332,96 @@ class Joins:
         out = Ys.copy()
         out[on] = (1 - G[on])[:, None] * Ys[on] + G[on][:, None] * Y[on] / gs[on][:, None]
         return out, G, near
+
+
+# ---------------------------------------------------------------- a bridge on her worn skin
+
+def _lift_cap(d):
+    """What a bridge point may lift: JOIN "strain" of its distance to the plate it is joined to (none at the plate)."""
+    return JOIN["strain"] * np.maximum(0.0, d)
+
+
+def bridge_hinge(body, Y, d, tgt, ok):
+    """The smallest turn of a bridge about the line through its joints that rests its span on her worn skin.
+    Y: the bridge's points as its plates carry them; d: each one's authored distance to the nearest plate it is linked
+    to (its joints: d <= JOIN "link_m"); tgt: the clearance each must reach on `body` (her worn skin); ok: the points
+    held to it (those clear on the bind). A turn is as good as the best one when the root mean square of what it leaves
+    short is within 0.1 mm of the best's; the smallest such is taken (the lift, bridge_lift, is for what is left).
+    Returns (Q [3, 3], p0 [3]: Y -> (Y - p0) Q^T + p0, info)."""
+    import gear_field
+    info = {"turn_deg": 0.0}
+    jt = d <= JOIN["link_m"]
+    if jt.sum() < 3 or not ok.any():
+        return np.eye(3), Y.mean(0), info
+    p0 = Y[jt].mean(0)
+    ax = np.linalg.svd(Y[jt] - p0, full_matrices=False)[2][0]
+    K = np.array([[0, -ax[2], ax[1]], [ax[2], 0, -ax[0]], [-ax[1], ax[0], 0]])
+    n = max(1, int(ok.sum()))
+
+    def at(a):
+        Q = np.eye(3) + np.sin(a) * K + (1 - np.cos(a)) * K @ K
+        c = gear_field.signed_clear(body, (Y - p0) @ Q.T + p0, k=16)[0]
+        e = np.maximum(0.0, tgt - c)[ok]
+        return Q, float(np.sqrt((e * e).sum() / n))
+    angs = np.linspace(-JOIN["turn"], JOIN["turn"], 2 * JOIN["turn_n"] + 1)
+    cost = np.array([at(a)[1] for a in angs])
+    if os.environ.get("GEAR_BRIDGE_DEBUG"):
+        print("bridge_hinge rms mm by deg:", " ".join(f"{np.degrees(a):+.0f}:{c * 1000:.2f}" for a, c in list(zip(angs, cost))[::5]))
+    lim = cost.min() + 1e-4
+    good = np.nonzero(cost <= lim)[0]
+    k = good[np.argmin(np.abs(angs[good]))]
+    a = angs[k]
+    if abs(a) > 1e-9:
+        lo = angs[k - 1] if a > 0 else angs[k + 1]      # (the grid step toward no turn: not as good)
+        for _ in range(8):
+            mid = 0.5 * (lo + a)
+            if at(mid)[1] <= lim:
+                a = mid
+            else:
+                lo = mid
+    info.update(turn_deg=round(float(np.degrees(a)), 2), hinge_rms_mm=[round(float(cost[len(angs) // 2]) * 1000, 2), round(at(a)[1] * 1000, 2)])
+    return at(a)[0], p0, info
+
+
+def bridge_lift(body, Y, d, tgt, ok):
+    """The smooth lift that finishes a hinged bridge: each point still short of its clearance is raised along the one
+    way off her under the bridge (her worn skin's mean normal there), as a smooth bump that takes its neighbours with it
+    (never steeper than JOIN "strain"), nothing at the joints (_lift_cap), in rounds until clear or at the cap.
+    Returns (L [n, 3] the lift, R [n, 3, 3] each point's turn for its normal, info); (None, None, info) for no lift."""
+    import gear_field
+    from scipy.spatial import cKDTree
+    from scipy.spatial.distance import cdist
+    c, fn = gear_field.signed_clear(body, Y, k=16)
+    need = np.where(ok, tgt - c, 0.0)
+    info = {"under_hinged": int((ok & (c < 0)).sum()), "deep_hinged_mm": round(float(max(0.0, -c[ok].min() if ok.any() else 0.0)) * 1000, 2)}
+    cap = _lift_cap(d)
+    if not ((need > 1e-5) & (cap > 1e-6)).any():
+        return None, None, info
+    n = fn[ok].mean(0)
+    n = n / max(np.linalg.norm(n), 1e-12)
+    D = cdist(Y, Y)
+    h = np.zeros(len(Y))
+    for _ in range(JOIN["lift_rounds"]):
+        c, fn = gear_field.signed_clear(body, Y + h[:, None] * n, k=16)
+        need = np.where(ok, tgt - c, 0.0)
+        up = (need > 1e-5) & (h < cap - 1e-6)
+        if not up.any():
+            break
+        h = h + np.where(up, need / np.maximum(fn @ n, JOIN["lift_cos"]), 0.0)
+        r = np.maximum(1.5 * h / JOIN["strain"], JOIN["link_m"])
+        h = np.minimum(cap, (h[None, :] * _smooth(1.0 - D / r[None, :])).max(1))
+    L = h[:, None] * n
+    c = gear_field.signed_clear(body, Y + L, k=16)[0]
+    # (each point's normal turns as its neighbourhood did)
+    nb = cKDTree(Y).query(Y, k=min(JOIN["lift_k"], len(Y)))[1]
+    A, B = Y[nb], (Y + L)[nb]
+    A, B = A - A.mean(1, keepdims=True), B - B.mean(1, keepdims=True)
+    u, _, vt = np.linalg.svd(np.einsum("nki,nkj->nij", A, B))
+    R = np.einsum("nji,nkj->nik", vt, u)
+    flip = np.linalg.det(R) < 0
+    if flip.any():
+        vt[flip, 2] *= -1
+        R = np.einsum("nji,nkj->nik", vt, u)
+    info.update(lift_mm=round(float(h.max()) * 1000, 2), lifted=int((h > 1e-5).sum()), under=int((ok & (c < 0)).sum()),
+                deep_mm=round(float(max(0.0, -c[ok].min() if ok.any() else 0.0)) * 1000, 2))
+    return L, R, info

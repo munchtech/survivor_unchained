@@ -174,11 +174,34 @@ def test_joins_keep_the_piece_joined(bodies, tmp_path, monkeypatch):
     gap = np.linalg.norm(Pw[~rg][seam] - Pw[rg][j0[seam]], axis=1)
     at_cup = np.isin(grp[rg][j0[seam]], cups)
     assert at_cup.sum() > 30 and gap[at_cup].max() < 0.0025 and gap.max() < 0.006
-    # the bridge: with its plates (its close pairs keep their distance), and no further off her skin than authored
+    # the bridge: with its plates (its close pairs keep their distance), and resting ON her worn skin (hinge + lift:
+    # what is left under is the tuck's, under 2 mm on a few points; unhinged it was 8 mm on 389 of 967)
     b = grp == bridges[0]
     for c in cups:
         d, j = cKDTree(Xa[grp == c]).query(Xa[b])
         k = d < 0.010
         dw = np.linalg.norm(Pw[b][k] - Pw[grp == c][j[k]], axis=1)
         assert k.sum() > 20 and np.abs(dw - d[k]).max() < 0.006
-    assert np.median(gf.signed_clear(wr.body, Pw[b])[0]) < np.median(gf.signed_clear(body, Xa[b])[0]) + 0.002
+    cb_ = gf.signed_clear(wr.body, Pw[b])[0]
+    assert cb_.min() > -0.002 and (cb_ < 0).mean() < 0.05
+
+
+def test_bridge_lift_is_none_at_the_plate_and_bounded_by_strain():
+    """The bridge rule's bound (worn_rest "THE JOINS"): a bridge point may lift JOIN "strain" of its distance to the
+    plate it is joined to, nothing at the plate, and a bridge's own row never counts as the plate it reaches for."""
+    import numpy as np
+    import worn_rest as wr
+    d = np.linspace(0.0, 0.05, 51)
+    cap = wr._lift_cap(d)
+    assert cap[0] == 0.0 and np.all(np.diff(cap) >= 0)
+    assert np.all(np.diff(cap) / np.diff(d) <= wr.JOIN["strain"] + 1e-9)
+    assert np.all(wr._lift_cap(np.array([-0.001])) == 0.0)
+    plate = np.c_[np.linspace(0, 0.02, 30), np.zeros(30), np.zeros(30)]
+    span = plate + np.array([0.0, 0.004, 0.0])
+    jn = wr.Joins(np.zeros((0, 3)), np.zeros((0, 3)))
+    jn.add(1, plate, np.eye(3), np.zeros(3), np.zeros(3))
+    jn.add(2, span, np.eye(3), np.zeros(3), np.zeros(3))
+    assert np.allclose(jn.reach(span, skip=2), 0.004, atol=1e-9)      # (its plate, not itself)
+    assert np.allclose(jn.reach(span), 0.0, atol=1e-12)
+    far = span + np.array([0.0, 0.5, 0.0])
+    assert jn.reach(far, skip=2) is None                              # (linked to no plate: no bridge)
