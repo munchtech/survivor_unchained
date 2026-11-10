@@ -739,6 +739,114 @@ def edge_probe(h, s):
     return EdgeProbe(h.md.V0[np.r_[ids, h.ext.get(s, ids[:0])]], *rg.edges, rg.carrier.tri, rg.carrier.bary, h.Ab.V0)
 
 
+class InnerSet:
+    """The edges of a region that is no side's out region (her neck: the name comes from the config) with NO end in an
+    out region, judged on the stored composed surface (Xc by md point, Xr by source vertex: a derived region is built on
+    the whole source mesh, the model on its body part) against rest. A's own = the reference as the carry reads it
+    (posed by the region's part pose, registered at the anchors and blended by the far fields); a_unreg = the same before
+    the registration (the reference's skin alone). Per edge over `over` at its worst pose: the ratio
+    of the target, the published surface, the region's carry at share 1 (c), the reference's own (n/a where an end has
+    no candidate on the reference: Carrier.ok), the ends' share, top 3 skin weights, mesh pieces and open boundary.
+    Classes: classify_edges' own where they hold (no pocket here); what it leaves as `carrier` is split into
+      seam             an end on a piece's open boundary, or welded to two pieces, or the ends on different pieces
+      <region> ramp    an end with share under 1
+      <region> interior  share 1 at both ends"""
+
+    def __init__(self, h, name, tz):
+        bd, md, rg = h.bd, h.md, h.regions[name]
+        self.h, self.name, self.rg = h, name, rg
+        pts, (ei, ej) = rg.pts, rg.edges
+        outg = np.unique(np.concatenate([h.group[out_region(h, s).spread[0]] for s in h.cfg["sides"]]))
+        self.keep = keep = ~np.isin(h.group[pts], outg)
+        k = keep[ei] & keep[ej]
+        self.ei, self.ej = ei[k], ej[k]
+        self.inmd = m = pts < len(md.src)                   # the model has a point for it; else the source vertex itself
+        lut = np.full(md.n, -1, np.int64)
+        lut[tz["ids_c"]] = np.arange(len(tz["ids_c"]))
+        rawc = tz["raw_c"]
+        self.rc, self.rr = lut[md.src[pts[m]]], np.minimum(np.searchsorted(rawc, pts[~m]), len(rawc) - 1)
+        assert (self.rc >= 0).all() and np.array_equal(rawc[self.rr], pts[~m]), f"{name}: a region point is not in the stored file"
+        self.Xc, self.Xr = tz["Xc"], tz["Xr"]
+        self.kinds = {"md-md": int((m[self.ei] & m[self.ej]).sum()), "md-raw": int((m[self.ei] != m[self.ej]).sum()),
+                      "raw-raw": int((~m[self.ei] & ~m[self.ej]).sum())}
+        self.pr = EdgeProbe(bd.V0[pts], self.ei, self.ej, rg.carrier.tri, rg.carrier.bary, h.Ab.V0)
+        pc = [set() for _ in pts]                           # the pieces of every source vertex welded to the point
+        for v, l in zip(*rg.spread):
+            pc[l].add(str(bd.piece[v]))
+        self.piece = np.array(["+".join(sorted(x)) for x in pc], object)
+        g, pid = h.group[bd.T], np.unique(bd.piece[bd.T[:, 0]], return_inverse=True)[1]
+        E = np.concatenate([np.c_[np.sort(g[:, [i, j]], 1), pid] for i, j in ((0, 1), (1, 2), (2, 0))])
+        u, cnt = np.unique(E[E[:, 0] != E[:, 1]], axis=0, return_counts=True)
+        bnd = np.zeros(int(h.group.max()) + 1, bool)        # a piece's open boundary: an edge of ONE of its triangles
+        bnd[u[cnt == 1][:, :2].ravel()] = True
+        self.open = bnd[h.group[pts]]
+        self.acc, self.names, self.stale = {k: [] for k in ("t", "p", "c", "a", "u", "sh")}, [], 0.0
+
+    def add(self, nm, G, row):
+        h, rg, pr = self.h, self.rg, self.pr
+        Vp = h.rt.published(h.bd, G)[rg.pts]
+        P = h.part(G, self.name)                            # this pose's part (cached by Her.part)
+        D = np.einsum("nij,nj->ni", P["M"], P["cf"] - P["Pg"])
+        sh = rg.share_at(G)
+        X = np.empty_like(Vp)
+        X[self.inmd], X[~self.inmd] = self.Xc[row][self.rc], self.Xr[row][self.rr]
+        self.stale = max(self.stale, float(np.abs(X - (Vp + sh[:, None] * D))[self.keep].max()))
+        for k, v in (("t", pr.ratio(X)), ("p", pr.ratio(Vp)), ("c", pr.ratio(Vp + D)), ("a", pr.own(P["Va"])), ("u", pr.own(P["Va_own"])), ("sh", sh)):
+            self.acc[k].append(v)
+        self.names.append(nm)
+
+    def report(self, over, top=15):
+        h, bd, rg, pr, name, ei, ej, nm = self.h, self.h.bd, self.rg, self.pr, self.name, self.ei, self.ej, self.names
+        R = {k: np.array(v) for k, v in self.acc.items()}
+        w, ar = R["t"].argmax(0), np.arange(len(ei))
+        t, p, c, av, au = (R[k][w, ar] for k in ("t", "p", "c", "a", "u"))     # au: the reference posed, BEFORE it is registered at the anchors
+        na = ~(rg.carrier.ok[ei] & rg.carrier.ok[ej])
+        av = np.where(na, np.nan, av)
+        ov = np.nonzero(t > over)[0]
+        geo = np.full(len(t), np.nan)
+        if len(ov):
+            geo[ov] = pr.along(h.Ab.T, ov)
+        bi, bj = R["sh"][w, ei], R["sh"][w, ej]
+        bmin = np.minimum(bi, bj)
+        lab = classify_edges(t, p, c, av, np.zeros(len(t), bool), bmin, np.maximum(bi, bj),
+                             ~na & (geo > EDGE["bridge"] * np.maximum(pr.l0, pr.g0)), over)
+        multi = np.array(["+" in x for x in self.piece])
+        seam = self.open[ei] | self.open[ej] | multi[ei] | multi[ej] | (self.piece[ei] != self.piece[ej])
+        classes = EDGE_CLASSES[:-1] + ["seam", f"{name} ramp", f"{name} interior"]
+        lab = np.where(lab == len(EDGE_CLASSES) - 1, np.where(seam, lab, np.where(bmin < 1, lab + 1, lab + 2)), lab)
+        fr, P0, N = bd.frame, bd.V0[rg.pts], h.N0[rg.pts]
+        n = da.unit(N[ei] + N[ej])
+        fb = np.where(n @ np.asarray(fr.up) > 0.6, "top", np.where(n @ np.asarray(fr.up) < -0.6, "under", np.where(n @ np.asarray(fr.front) > 0.5, "front", np.where(n @ np.asarray(fr.front) < -0.5, "back", "side"))))
+        mid = (P0[ei] + P0[ej]) * 500
+
+        def end(k):
+            v = rg.pts[k]
+            o = np.argsort(-bd.W[v])[:3]
+            return {"vertex": int(v), "md": bool(self.inmd[k]), "piece": str(self.piece[k]), "open": bool(self.open[k]),
+                    "y_mm": round(float(P0[k][1] * 1000), 1), "weights": [[bd.p.names[bd.J[v][q]], round(float(bd.W[v][q]), 2)] for q in o if bd.W[v][q] > 0]}
+        rows = []
+        for e in ov[np.argsort(-t[ov])]:
+            rows.append({"edge": [int(ei[e]), int(ej[e])], "set": name, "class": classes[lab[e]], "pose": nm[w[e]], "t": round(float(t[e]), 3),
+                         "p": round(float(p[e]), 3), "c": round(float(c[e]), 3), "a": None if na[e] else round(float(av[e]), 3), "a_unreg": None if na[e] else round(float(au[e]), 3),
+                         "share": [round(float(bi[e]), 2), round(float(bj[e]), 2)], "seam": bool(seam[e]), "side": str(fb[e]),
+                         "rest_mm": [round(float(x), 1) for x in mid[e]], "l0_mm": round(float(pr.l0[e] * 1000), 2),
+                         "poses_over": int((R["t"][:, e] > over).sum()), "p_max": round(float(R["p"][:, e].max()), 3), "ends": [end(ei[e]), end(ej[e])]})
+        tot = {cl: sum(1 for r in rows if r["class"] == cl) for cl in classes}
+        byp = {nm[k]: [round(float(R["t"][k].max()), 3), int((R["t"][k] > over).sum()), round(float(R["p"][k].max()), 3)] for k in range(len(nm))}
+        print(f"  {name.upper()} set (both ends in the region {name}, no end in an out region: {len(ei)} edges, {self.kinds};"
+              f" stored against live max {self.stale * 1000:.3f} mm):", {k: v for k, v in tot.items() if v}, "of", len(rows))
+        print(f"  {name}: carrier without a candidate on the reference (A's own n/a) at {int((~rg.carrier.ok[self.keep]).sum())} of {int(self.keep.sum())} points;"
+              f" seam-touching edges over: {sum(r['seam'] for r in rows)}; A's own only after the registration (unregistered A under {1 - EDGE['tol']:g} of it): {sum(1 for r in rows if r['a'] and r['a_unreg'] < (1 - EDGE['tol']) * r['a'])}; worst poses (target, edges over, published): "
+              + "; ".join(f"{k} {v[0]:.2f} ({v[1]}) pub {v[2]:.2f}" for k, v in sorted(byp.items(), key=lambda e: -e[1][0])[:5]))
+        wt = lambda d: ("*" if d["open"] else "") + d["piece"] + ("" if d["md"] else "(raw)") + " " + " ".join(f"{b} {x:.2f}" for b, x in d["weights"])
+        print(f"  {name}: the {top} worst | ratio  pub  A own (unregistered)  class | pose | y mm, side, rest (x, y, z) | share | end: [*open] piece, top weights")
+        for r in rows[:top]:
+            print(f"   {r['t']:6.2f} {r['p']:5.2f} {'  n/a' if r['a'] is None else format(r['a'], '5.2f')} ({'n/a' if r['a'] is None else format(r['a_unreg'], '.2f')})  {r['class']:14s} {r['pose']:27s} y {r['rest_mm'][1]:7.1f} {r['side']:5s}"
+                  f" {str(r['rest_mm']):24s} {r['share'][0]:.2f}/{r['share'][1]:.2f} | {wt(r['ends'][0])} | {wt(r['ends'][1])}")
+        return {f"totals_{name}": tot, f"edges_{name}": len(ei), f"kinds_{name}": self.kinds, f"stale_{name}_mm": self.stale * 1000,
+                f"poses_{name}": byp, f"table_{name}": rows}
+
+
 def cmd_edges(a):
     """edges: why is the carried target stretched? Per pose and side, per region edge: the ratio (posed / rest length) of
     the target (target_a.npz), the published surface, the carried surface before the border blend, A's own at the same
@@ -773,9 +881,15 @@ def cmd_edges(a):
     acc = {s: {k: [] for k in ("t", "p", "c", "a", "dis", "share", "name", "i")} for s in "lr"}
     nocrack = {}
     stale = 0.0
+    outs = {out_region(h, s).name for s in h.cfg["sides"]}     # the regions no side is written on: their own interior set
+    inner = [InnerSet(h, n, tz) for n in h.regions if n not in outs] if "Xc" in tz.files else []
+    if not inner:
+        print(f"edges: {CARRIED['file']} has no composed surface (Xc): the other regions' interior sets are not judged")
     for i in sel:
         s = str(z["side"][i])
         r = edge_rows(h, pr[s], z["G"][i], s, np.concatenate([TX[tix[names[i]]], TE[tix[names[i]]]]))
+        for q in inner:
+            q.add(names[i], z["G"][i], tix[names[i]])
         stale = max(stale, r["stale"])
         for k in ("t", "p", "c", "a", "dis", "share"):
             acc[s][k].append(r[k])
@@ -868,8 +982,11 @@ def cmd_edges(a):
     wk, ws = (max(nocrack, key=lambda n: nocrack[n][j]) for j in (0, 1))
     print(f"no crack: list-to-grown edges worst {nocrack[wk][0]:.2f} ({wk}); outer row off published max {nocrack[ws][1]:.2e} mm"
           f" ({ws}; over 0 = another region's delta on the outer row)")
+    extra = {}
+    for q in inner:
+        extra.update(q.report(over))
     f = OUT / (f"edges_{a.provider}_dev.json" if a.poses else f"edges_{a.provider}.json")     # a subset never over the full run's file
-    f.write_text(json.dumps({"provider": a.provider, "over": over, "params": EDGE, "classes": EDGE_CLASSES, "poses": len(sel), "stale_mm": stale * 1000,
+    f.write_text(json.dumps({**extra, "provider": a.provider, "over": over, "params": EDGE, "classes": EDGE_CLASSES, "poses": len(sel), "stale_mm": stale * 1000,
                              "totals": tot, "totals_old": told, "totals_new": tnew, "edges_old": nold, "edges_new": nnew, "no_crack": nocrack,
                              "target": CARRIED["file"], "table": table, "worst_poses": worst, "edges": rows}))
     print("wrote", f)
