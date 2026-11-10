@@ -274,10 +274,16 @@ public partial class BattleFx
             case "palm" or "palm_temple": core = Hdr("#fff2d0", 2.6f); glow = Hdr("#ffb24a", 1.8f); hue = Hdr("#ffa040", 1.15f); depth = 0.26f; sweep = 0.06f; drain = 0.12f; break;
             case "palm_storm": core = Palette.Of(School.Storm).Core; glow = Palette.Of(School.Storm).Glow; hue = Hdr("#5a96ff", 1.2f); depth = 0.26f; sweep = 0.06f; drain = 0.12f; break;
         }
-        mirror = !mirror;
-        if (IsOath(art)) { OathSweep(e, at, facing, reach, g); return; }
+        // Which way the blade crosses is the sim's (Ev.Slash.Side, from the weapon's count of cuts), not a toggle here.
+        mirror = e.Side < 0;
+        // Held as her grip, the Oathblade's cut is the grip's stroke too (BattleFx.Grip.cs); pressed or kindled, its sweep.
+        if (IsOath(art)) { if (e.Held && GripStrokeOn) GripCut(e, at, reach, g, true); else OathSweep(e, at, facing, reach, g); return; }
         // Sunder's heavy swing that splits the ground: the line is its blow (no crescent, sparks or chop crack over its base).
         if (art == "slash_heavy" && WgLineSwing(e)) return;
+        // Her held grip (the generator) in steel, smaller than a spender's chop: half depth and echo, no crack scar or clods.
+        bool grip = e.Held && art == "slash_heavy";
+        if (grip && GripStrokeOn) { GripCut(e, at, reach, g, false); return; }
+        if (grip) { core = SteelWhite; glow = OathGold * 0.55f; hue = Hdr("#d8a24a", 0.95f); depth = 0.22f; }
         // The blade's path, cut fast: a hot edge at the reach and the smear of
         // its colour behind it (a painted fan read as a flat disc of beige, and
         // ribbons laid round it showed their joins), with a fainter echo inside
@@ -285,10 +291,11 @@ public partial class BattleFx
         float sweepSpan = spin ? Mathf.Tau * 1.02f : (float)e.Arc * 1.1f;
         float rich = Mathf.Min(g, 1.35f);
         Blades.Add(at, facing, reach, sweepSpan, mirror, sweep, drain, hue * (0.9f + 0.1f * g), depth * rich);
-        Blades.Add(at + Vector3.Down * 0.1f, facing, reach * 0.78f, sweepSpan * 0.92f, mirror, sweep * 1.1f, drain * 0.8f, hue * 0.55f, depth * 0.55f * rich, 0.03f);
+        Blades.Add(at + Vector3.Down * 0.1f, facing, reach * 0.78f, sweepSpan * 0.92f, mirror, sweep * 1.1f, drain * 0.8f, hue * (grip ? 0.3f : 0.55f), depth * 0.55f * rich, 0.03f);
         if (spin) Blades.Add(at, facing + Mathf.Pi, reach * 0.9f, sweepSpan * 0.6f, mirror, sweep * 0.8f, drain, hue * 0.7f, depth * 0.7f * rich, 0.05f);
         // Sparks struck off the edge, flung along the swing.
         int n = Math.Min(14, (int)(5 * g) + (heavy ? 4 : 0));
+        if (grip) n /= 2;
         float a0 = (float)e.Angle - (float)e.Arc / 2, span = spin ? Mathf.Tau : (float)e.Arc;
         for (int i = 0; i < n; i++)
         {
@@ -304,9 +311,9 @@ public partial class BattleFx
             float mid = (float)e.Angle;
             var tip = new Vector3(Mathf.Cos(mid), 0, Mathf.Sin(mid)) * reach * 0.8f;
             double tx = e.X + tip.X, tz = e.Z + tip.Z;
-            Dust(tx, tz, 8, 3.5f * g);
-            Cam?.AddTrauma(0.05f);
-            if (art != "slash_spin")
+            if (grip) { Dust(tx, tz, 4, 1.8f * g); Cam?.AddTrauma(0.02f); }
+            else { Dust(tx, tz, 8, 3.5f * g); Cam?.AddTrauma(0.05f); }
+            if (art != "slash_spin" && !grip)
             {
                 // The chop bites the ground: a crack where it ends, a few clods thrown.
                 Scars.Add("crack", V(tx, Y(tx, tz), tz), 0.9f * g, 4f, 0);

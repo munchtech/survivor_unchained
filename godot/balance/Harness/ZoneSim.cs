@@ -1,3 +1,4 @@
+using SurvivorUnchained.Play.Pilots;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -25,6 +26,10 @@ public sealed class ZoneRunResult
     public bool Reached, BossReached, WardenDown, Stuck;
     public string? StuckAt;
     public double Seconds, FilmFallback, Meters, MetersNight, MetersDay, Fighting, Gold, GoldDropped;
+    /// <summary>(M3 lead 7, the walk) Times her hands asked to walk and her feet came no further than WalkedLeast m in
+    /// StallFor s (a wall, a prop: not her own plant or a hold), and the seconds of it. The stand clock charges on these.</summary>
+    public int Stalls;
+    public double StallSec;
     public int LeftLying, Discarded, Unsticks, Fodder, Elite, Champion, Boss, Packs, Champions, Falls, Rises, GearShown, Upgrades;
     public int[] Gear = new int[7];
     public int WardenGear;
@@ -36,6 +41,8 @@ public sealed class ZoneRunResult
     public PressHands? Hands;
     public Dictionary<string, double> DamageBy = new();
     public double ResolveSpent, ResolveFullSec, FlareFirst = -1, MarkGapMax;
+    /// <summary>(M3) What her feet did in the fights (Pilot.Meter): the share of in-reach seconds stood, the turns round her foe.</summary>
+    public Pilot.FeetMeter Feet = new();
     /// <summary>(M3) Seconds Resolve sat at its cap, by stage.</summary>
     public readonly Dictionary<string, double> FullByStage = new();
     public int FlareCasts;
@@ -61,6 +68,11 @@ public sealed class ZoneRunResult
 public static class ZoneSim
 {
     public const double Cap = 3600, StuckAfter = 300;
+    /// <summary>(the walk's stalls) Under WalkedLeast m made in StallFor s with the hands asking: a stall. SU_WALKDBG=1 prints each.</summary>
+    public const double StallFor = 0.8, WalkedLeast = 0.25;
+    static readonly bool WalkDbg = Environment.GetEnvironmentVariable("SU_WALKDBG") == "1";
+    /// <summary>SU_WALKTRACE=lowford/T1/human/s1@280-286: every tick of that run between those seconds, as the stalls print.</summary>
+    static readonly string? WalkTrace = Environment.GetEnvironmentVariable("SU_WALKTRACE");
 
     static double Dist(double ax, double az, double bx, double bz) => Math.Sqrt((ax - bx) * (ax - bx) + (az - bz) * (az - bz));
 
@@ -151,6 +163,7 @@ public static class ZoneSim
         var underfoot = new Dictionary<Pickup, double>(ReferenceEqualityComparer.Instance);
         // (the gear she walks to out of a fight: Pilot.Steer's nearest within 12 m, how near she has come and since when)
         Pickup? chase = null; double chaseBest = 0, chaseSince = 0, chaseX = 0, chaseZ = 0;
+        var walked = new Queue<(double T, double X, double Z)>(); double askedSince = 0; bool stalled = false; int chargesSeen = 0;
 
         while (tt < Cap)
         {
@@ -293,6 +306,34 @@ public static class ZoneSim
 
             // The measures.
             p = b.Player;
+            void Where(string what)
+            {
+                var foe = b.Enemies.Living().Where(e => e.Disposition == Disposition.Hostile && e.State != EnemyState.Dying && e.Roused).MinBy(e => Dist(e.X, e.Z, p.X, p.Z));
+                var pick = b.Pickups.Living().MinBy(k => Dist(k.X, k.Z, p.X, p.Z));
+                string Ray(double x, double z) => SurvivorUnchained.Sim.GroundPath.Clear(b.Collision, (p.X, p.Z), (x, z), p.Radius) ? "clear" : "WALL";
+                Console.Error.WriteLine($"{what} {spec.Key} t {tt:0.0} {zone.Now} at ({p.X:0.00},{p.Z:0.00}) r {p.Radius:0.00} hands ({mx:0.00},{mz:0.00}) last {Pilot.Meter(b).Last} to ({to.X:0.0},{to.Z:0.0}) {Ray(to.X, to.Z)} fight {fight} side {sideUntil > tt}"
+                    + $" foe {(foe == null ? "-" : $"{foe.Def.Id}@({foe.X:0.0},{foe.Z:0.0}) {Dist(foe.X, foe.Z, p.X, p.Z):0.0} {Ray(foe.X, foe.Z)}")} pick {(pick == null ? "-" : $"{pick.Kind}@({pick.X:0.0},{pick.Z:0.0}) {Dist(pick.X, pick.Z, p.X, p.Z):0.0} {Ray(pick.X, pick.Z)}")}"
+                    + " | near " + string.Join(" ", b.Collision.Within(p.X, p.Z, 3).Select(c => $"{c.Kind}{(c.Soft ? "/soft" : "")}{(c.PlayerOnly ? "/player" : "")}{(c.Gap ? "/gap" : "")}[{c.Tag}]@({c.X:0.00},{c.Z:0.00}) {(c.Kind == ColliderKind.Circle ? $"r{c.R:0.00}" : $"{c.Hw:0.00}x{c.Hd:0.00} rot {c.Rot:0.00}")}")));
+            }
+            if (WalkTrace != null && WalkTrace.StartsWith(spec.Key + "@") && WalkTrace[(spec.Key.Length + 1)..].Split('-') is { Length: 2 } wtr && tt >= double.Parse(wtr[0], CultureInfo.InvariantCulture) && tt <= double.Parse(wtr[1], CultureInfo.InvariantCulture)) Where("TRACE");
+            int chargesNow = (zone.Night?.StandCharges ?? 0) + (zone.Day?.StandCharges ?? 0);
+            if (WalkDbg && chargesNow > chargesSeen) Where("CHARGE");
+            chargesSeen = chargesNow;
+            // (the walk's stalls: hands asking, feet free, and no ground made)
+            bool asks = (mx != 0 || mz != 0) && p.Alive && !held && p.RootT <= 0 && p.PlantT <= 0;
+            if (!asks) { askedSince = tt; stalled = false; }
+            walked.Enqueue((tt, p.X, p.Z));
+            while (walked.Count > 0 && tt - walked.Peek().T > StallFor) walked.Dequeue();
+            if (asks && tt - askedSince >= StallFor && walked.Count > 0 && Dist(walked.Peek().X, walked.Peek().Z, p.X, p.Z) < WalkedLeast)
+            {
+                r.StallSec += dt;
+                if (!stalled)
+                {
+                    stalled = true; r.Stalls++;
+                    if (WalkDbg) Where("WALKDBG");
+                }
+            }
+            else if (stalled && walked.Count > 0 && Dist(walked.Peek().X, walked.Peek().Z, p.X, p.Z) > 0.6) stalled = false;
             double step = Dist(p.X, p.Z, lastX, lastZ);
             if (step < 2) { r.Meters += step; if (zone.Now >= Prologue.Stage.Dawn) r.MetersDay += step; else r.MetersNight += step; }
             lastX = p.X; lastZ = p.Z;
@@ -385,6 +426,8 @@ public static class ZoneSim
         r.LevelAtGate = j.Ch.Level;
         r.Champions = r.Champion;
         if (!quiet && !r.Reached) Console.Error.WriteLine($"{spec.Key}: not through at {tt:0}s: {(r.Stuck ? "stuck " + r.StuckAt : "capped")} {zone.Now}");
+        r.Feet = Pilot.Meter(b);
+        r.Feet.StandCharges = (zone.Night?.StandCharges ?? 0) + (zone.Day?.StandCharges ?? 0);
         return r;
     }
 

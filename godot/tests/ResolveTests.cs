@@ -277,6 +277,30 @@ public sealed class ResolveTests
         Assert.Empty(Run(b, 3, () => Pin(b, es, at)).OfType<Ev.Slash>());
     }
 
+    /// <summary>The view mirrors a cut's arc from the sim's side, never a toggle of its own: -1, +1, -1 ... from the
+    /// weapon's count of cuts, the same on every run; and a cut that lands names the nearest body it struck.</summary>
+    [Fact]
+    public void A_held_cut_alternates_its_side_from_the_weapons_count()
+    {
+        List<Ev.Slash> Cuts()
+        {
+            var b = Warden(("sunder", 1));
+            var w = b.Weapons.Single();
+            var at = new List<(double, double)> { (2, 0), (2.6, 0.4) };
+            var es = at.Select(a => Dummy(b, a.Item1, a.Item2)).ToList();
+            b.HoldSkill(w.Slot, true, 2, 0);
+            var cuts = Run(b, 6, () => { Pin(b, es, at); b.HoldSkill(w.Slot, true, 2, 0); }).OfType<Ev.Slash>().ToList();
+            Assert.Equal(cuts.Count, w.Cuts);
+            return cuts;
+        }
+        var a = Cuts();
+        Assert.True(a.Count >= 3, $"{a.Count} cuts held");
+        for (int i = 0; i < a.Count; i++) Assert.Equal(i % 2 == 0 ? -1 : 1, a[i].Side);
+        Assert.Equal(a.Select(s => s.Side), Cuts().Select(s => s.Side));
+        Assert.All(a, s => Assert.True(s.Held));
+        Assert.Contains(a, s => s.Struck > 0 && Math.Abs(s.HitX - 2) < 0.5 && Math.Abs(s.HitZ) < 0.5);
+    }
+
     [Fact]
     public void Hover_aim_picks_the_foe_under_the_point_within_reach()
     {

@@ -18,7 +18,7 @@ namespace SurvivorUnchained.Sim;
 
 /// <summary>Her swing for the view: the skill, its angle, when it started, heavy; and (a campaign blow that lands on its
 /// contact, Sim/Contact.cs) the clip she swings and its rate, which the view plays as given.</summary>
-public sealed record AttackAnim(string Weapon, double Angle, double T, bool Heavy, string? Clip = null, double Rate = 1);
+public sealed record AttackAnim(string Weapon, double Angle, double T, bool Heavy, string? Clip = null, double Rate = 1, int Cut = 0);
 /// <summary>A leap through the air (the art's, a Vault's, or a leap skill's: Weapon set, it lands in a ring of Radius, heavy
 /// if its cast was).</summary>
 public sealed class Leap { public double T, Dur, X0, Z0, X1, Z1; public AbilityKind Kind = AbilityKind.Leap; public WeaponInst? Weapon; public double Radius; public bool Heavy; }
@@ -470,6 +470,7 @@ public sealed partial class Battle
         {
             RunOnKills();
             if (pendingBlows.Count > 0) LandBlows();
+            if (chains.Count > 0) StepChains();
             foreach (var w in Weapons.ToArray()) Firing.Tick(this, w, dt);
             TickVow(dt);
             Resolve.Tick(dt);
@@ -522,7 +523,7 @@ public sealed partial class Battle
         if (p.ShieldT > 0) { p.ShieldT -= dt; if (p.ShieldT <= 0) p.Shield = 0; }
         p.UnstruckT += dt;
         if (Boons.TryGetValue("boon_iron_vow", out int vow)) Vow(vow);
-        if (p.AttackAnim != null && Time - p.AttackAnim.T > 0.6) p.AttackAnim = null;
+        if (p.AttackAnim != null && Time - p.AttackAnim.T > 0.6 && !CutHolds(p.AttackAnim)) p.AttackAnim = null;
 
         // Dash charges come back one at a time.
         int maxCharges = MaxDashCharges;
@@ -677,6 +678,7 @@ public sealed partial class Battle
         p.WakeX = p.X; p.WakeZ = p.Z;
         p.PerfectThisDash = false;
         p.DashCharges--;
+        if (chains.Count > 0) DropCuts();
         // A dash is the answer to a root (the kit's ring).
         p.RootT = 0;
         double x0 = p.X, z0 = p.Z;

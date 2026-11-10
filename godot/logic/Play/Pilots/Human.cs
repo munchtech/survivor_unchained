@@ -5,7 +5,7 @@ using SurvivorUnchained.Play;
 using SurvivorUnchained.Play.Bosses;
 using SurvivorUnchained.Sim;
 
-namespace SurvivorUnchained.Balance;
+namespace SurvivorUnchained.Play.Pilots;
 
 /// <summary>A human's hands, late (H1 combat teeth, docs/team/hook/H1_combat_teeth.md item 1): the Pilot knows every
 /// mark the moment it is made and answers it at once, and a player does neither. These hands see each threat (a
@@ -109,8 +109,8 @@ public sealed class Human
 
     /// <summary>The hands that are not the feet, as the Pilot's, with a champion's lunge dashed only when read and seen,
     /// and (careless) no Flare saved for a boss.</summary>
-    public bool Act(Battle b, Journey j, double mx, double mz, ArenaBoss? boss) =>
-        Pilot.Act(b, j, mx, mz, boss, lunges: lastAware, aimsFlare: !Careless, rooted: lastAware, presses: Hands == null && !Careless && !Idle, hands: Hands);
+    public bool Act(Battle b, Journey j, double mx, double mz, ArenaBoss? boss, bool drinks = true) =>
+        Pilot.Act(b, j, mx, mz, boss, lunges: lastAware, aimsFlare: !Careless, rooted: lastAware, presses: Hands == null && !Careless && !Idle, hands: Hands, drinks: drinks);
     /// <summary>(M3) The hands on the press plan (campaign): pressed through this human's React; null, the old presses.</summary>
     public PressHands? Hands;
 
