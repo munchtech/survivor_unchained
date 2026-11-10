@@ -33,9 +33,11 @@ PARAMS = dict(
     flow_sigma=6.0,    # px (2x): the strands' direction smoothed over this
     # the back of her head (lead 9 fix D): the bronze there is dull, so a lock's ridge dips under the floor every few px
     # and read as dashes. Inside back_box the ridges are joined along the strands before the gain, dilate and clamps.
-    back_box=(598, 60, 949, 345),  # px (2x) x0, y0, x1, y1: the hair behind the front locks, down to the bar
+    back_box=(598, 60, 949, 516),  # px (2x) x0, y0, x1, y1: the hair behind the front locks, down to the canvas foot (D2: was 345)
     join_gap=12,       # px (2x): a ridge is carried this far along the strand from each end (a gap of twice this closes)
     join_min=70,       # px (2x): a joined ridge shorter than this is speckle, not a lock: dropped
+    join_split=345,    # px (2x): a line that starts at or below this (D2: the hair's lower strands) is judged by join_min_low
+    join_min_low=40,   # px (2x): the lower strands are shorter, so 40 px not 70 (a line starting above join_split keeps join_min)
     join_seen=0.35,    # a joined ridge must already be vein over this share of its length (no vein where no strand is)
 )
 
@@ -110,7 +112,9 @@ def join_ridges(ridge, flow, hair, P):
     length = ndimage.sum(sk, lab, ids)
     seen = ndimage.sum(sk & (ridge > 0), lab, ids) / np.maximum(length, 1)
     inbox = ndimage.sum(sk & box, lab, ids) / np.maximum(length, 1)
-    good = (length >= P["join_min"]) & (seen >= P["join_seen"])
+    top = np.array(ndimage.minimum(yy, lab, ids)) if n else np.zeros(0)
+    lower = (inbox > 0.5) & (top >= P["join_split"])
+    good = (length >= np.where(lower, P["join_min_low"], P["join_min"])) & (seen >= P["join_seen"])
     keep = np.isin(lab, ids[good])
     # the front locks' own level and half width (the lines outside the box)
     core = ridge * P["ridge_gain"] > 0.5
