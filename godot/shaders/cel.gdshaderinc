@@ -618,11 +618,37 @@ vec3 cel_hero_hair(vec3 c_tone, vec3 c_reft, float c_ratio, float c_lt, float c_
 	if (c_lo < 0.0) { vec3 c_g = vec3(c_l * c_l * c_l); c_out = mix(c_g, c_out, clamp(c_g.r / max(c_g.r - c_lo, 0.000001), 0.0, 1.0)); }
 	return max(c_out, vec3(0.0));
 }
+// (L1 lead 22, R3FORM) THE TERMINATOR, HER THIRD VALUE STEP: two value planes per material read as a blocky mannequin;
+// a form turns in three (lit, a thin dark band where it turns away, the shade beyond). Per class a terminator L
+// (cel_hero_term_l, hero_pool 49-52, Oklab L of the emission, class 0..3; 0 = no band on that class) and its chroma lift
+// (cel_hero_term_c, 53-56: the band's C / L over the shade step's, same hue; 0 or 1 = the shade's), drawn as a band
+// cel_hero_term.x px wide (57; 0 = off) on screen at the mid edge (value 24), a share cel_hero_term.y (58) of it past the
+// edge on the shade side (0 = all of it on the lit side: the lit plane gives the band its width). The width is in
+// SCREEN px (fwidth of the side term), so a plane that turns slowly takes no broad dark patch and a limb's turn a line
+// of the same 1-2 px at any size. The band's tone is the class's shade tone scaled to the band's L (every texel's
+// relation, the hair's breakup and C / L kept), then its C / L lifted: no hue term. A row without them: zeros, as before.
+global uniform vec4 cel_hero_term_l;
+global uniform vec4 cel_hero_term_c;
+global uniform vec4 cel_hero_term;
+vec3 cel_hero_term_tone(vec3 c_md, float c_ls, float c_lt, float c_lift) {
+	float c_l = c_ls > 0.0 ? c_ls : max(cel_hero_ok_l(c_md), 0.0001);
+	float c_f = c_lt / c_l;
+	vec3 c_in = max(c_md * (c_f * c_f * c_f), vec3(0.0));
+	if (c_lift <= 0.0 || abs(c_lift - 1.0) < 0.0001) return c_in;
+	vec3 c_o = cel_hero_ok(c_in);
+	c_o.yz *= c_lift;
+	vec3 c_out = cel_hero_lin(c_o);
+	// (the gamut's edge: no channel under zero, the lift stops where the color is pure, at the same hue)
+	float c_lo = min(c_out.r, min(c_out.g, c_out.b));
+	if (c_lo < 0.0) { float c_was = min(c_in.r, min(c_in.g, c_in.b)); c_out = mix(c_in, c_out, clamp(c_was / max(c_was - c_lo, 0.000001), 0.0, 1.0)); }
+	return max(c_out, vec3(0.0));
+}
 vec3 cel_hero_paint(vec3 c_wn, vec3 c_alb, float c_w, float c_near, vec3 c_ref) {
 	// (round 2) FORM FROM ABOVE: the side is read from the plane's LEAN alone (n.xz normalized, down to the least lean
 	// cel_hero_own.z, value 27), so at the play camera, where her planes point up, the side away from the foot still
 	// takes the mid and the anchor as one connected side.
 	float c_s = -dot(c_wn.xz, cel_hero.xy) / max(length(c_wn.xz), max(cel_hero_own.z, 0.001));
+	float c_sfw = max(fwidth(c_s), 0.0001);   // (R3FORM: the side term's change per screen px, taken in uniform flow)
 	float c_mid = cel_hero_mid.rgb != vec3(0.0) ? smoothstep(cel_hero_mid.w - c_w, cel_hero_mid.w + c_w, c_s) : 0.0;
 	// (HERPAIR) the class's landing is whole at the play camera, none in a close shot (the chroma rule's px band), whole without it
 	float c_ck = cel_hero_chroma.x > 0.0 ? c_near : 1.0;
@@ -635,6 +661,13 @@ vec3 cel_hero_paint(vec3 c_wn, vec3 c_alb, float c_w, float c_near, vec3 c_ref) 
 		c_md = mix(c_md, cel_hero_hair(cel_hero_local(cel_hero_mid.rgb, c_alb), cel_hero_local(cel_hero_mid.rgb, c_ref), c_hr, max(cel_hero_class_shade.x, 0.0001), cel_hero_class_hair.y), c_ck);
 	}
 	vec3 c_t = mix(c_lit, c_md, c_mid);
+	// (R3FORM) the terminator band at the mid edge, cel_hero_term.x screen px wide, in the class's own tone
+	float c_tl = cel_hero_class_pick(cel_hero_term_l);
+	if (c_tl > 0.0 && cel_hero_term.x > 0.0 && cel_hero_mid.rgb != vec3(0.0) && c_ck > 0.0) {
+		float c_bw = cel_hero_term.x * c_sfw, c_e1 = cel_hero_mid.w + clamp(cel_hero_term.y, 0.0, 1.0) * c_bw, c_e0 = c_e1 - c_bw, c_bh = 0.5 * c_sfw;
+		float c_band = smoothstep(c_e0 - c_bh, c_e0 + c_bh, c_s) * (1.0 - smoothstep(c_e1 - c_bh, c_e1 + c_bh, c_s));
+		c_t = mix(c_t, cel_hero_term_tone(c_md, cel_hero_class_pick(cel_hero_class_shade), c_tl, cel_hero_class_pick(cel_hero_term_c)), c_band * c_ck);
+	}
 	float c_dark = max(smoothstep(cel_hero.z - c_w, cel_hero.z + c_w, c_s), 1.0 - smoothstep(cel_hero_tone.w - c_w, cel_hero_tone.w + c_w, c_wn.y));
 	return mix(c_t, cel_hero_tone.rgb, c_dark);
 }

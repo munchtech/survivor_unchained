@@ -233,7 +233,7 @@ public class RigsTests
         Assert.Equal(new[] { 1, 1.4, 5.0, 1 }, a.EmberShade);   // (L1 l16 d3) a leaf takes all of her fire (no pink leaf patches); the canopy opens 1.4-5.0 m, read at each leaf cluster's center (CanopyField)
         Assert.Equal(0, (a.EmberFloor!.Length - 9) % 8); Assert.Equal(1.0, a.EmberFloor[^7]); Assert.InRange(a.EmberFloorLift![0], 0.01, 0.2);   // (L1 l17 p) her fire on the floor: 9 heads, stops of 8, the moon whole at the last
         // (L1 l19 her2) the hero in her pool: 10 values; the fire's foot BESIDE her and off her feet (at least 0.5 m away), the anchor dark and WARM (red over blue), never black
-        var hp4 = a.HeroPool!; Assert.Contains(hp4.Length, new[] { 36, 45, 49 });   // (36 the chroma rule, 45 + the class pairs, 49 + the hair class's color)
+        var hp4 = a.HeroPool!; Assert.Contains(hp4.Length, new[] { 36, 45, 49, 59 });   // (36 the chroma rule, 45 + the class pairs, 49 + the hair class's color, 59 + the terminator)
         // (L1 l21 chroma) the hero chroma rule: gains over 1 and no wilder than 2.5, a floor over grey, a cap over twice the floor, whole at the play camera (78 px/m), none in a close shot; a row without the six values: zeros, the figure as before
         var hc4 = Rigs.HeroChroma(hp4); Assert.Equal(hp4[29..36], hc4); Assert.True(hc4[6] > 0.3 && hc4[6] < 1.2 /* (round 2) a colored material's lightest level */); Assert.True(hc4[0] > 1 && hc4[0] <= 2.5 && hc4[1] > 1 && hc4[1] <= 2.5 && hc4[2] > 0.02 && hc4[3] > 2 * hc4[2] && hc4[3] < 0.6 && hc4[4] > 78 && hc4[5] > hc4[4]);
         Assert.Equal(new double[7], Rigs.HeroChroma(hp4[..29])); Assert.Equal(new double[7], Rigs.HeroChroma(null));
@@ -242,7 +242,9 @@ public class RigsTests
         if (hp4.Length >= 45) { var hk = Rigs.HeroClass(hp4); Assert.Equal(hp4[36..45], hk); for (int i = 0; i < 8; i += 2) Assert.True(hk[i] == 0 || (hk[i] > hk[i + 1] && hk[i + 1] > 0 && hk[i] < 1.2)); Assert.True(hk[8] >= 0 && hk[8] <= 1); Assert.True(hk[2] > hk[0] /* her lit skin over her hair */); }
         // (L1 lead 22, R1HAIR) the hair class's color, values 45-48: a row without them is zeros (the hair as before); with them, lit C over shade C, both under the gamut's reach, breakup 0-2, a mean share in (0, 1]
         Assert.Equal(new double[4], Rigs.HeroClassHair(hp4[..45])); Assert.Equal(new double[4], Rigs.HeroClassHair(null));
-        if (hp4.Length >= 49) { var hh = Rigs.HeroClassHair(hp4); Assert.Equal(hp4[45..49], hh); Assert.True(hh[0] == 0 || (hh[0] > hh[1] && hh[1] > 0 && hh[0] < 0.4 && hh[2] >= 0 && hh[2] <= 2 && hh[3] > 0 && hh[3] <= 1)); }
+        if (hp4.Length >= 49) { var hh = Rigs.HeroClassHair(hp4); Assert.Equal(hp4[45..49], hh); Assert.True(hh[0] == 0 || (hh[0] > hh[1] && hh[1] > 0 && hh[0] < 0.4 && hh[2] >= 0 && hh[2] <= 4 && hh[3] > 0 && hh[3] <= 1)); }
+        Assert.Equal(new double[10], Rigs.HeroTerm(hp4[..49])); Assert.Equal(new double[10], Rigs.HeroTerm(null));   // (R3FORM) a row of 49 renders as before
+        if (hp4.Length >= 59) { var ht = Rigs.HeroTerm(hp4); var hk3 = Rigs.HeroClass(hp4); Assert.Equal(hp4[49..59], ht); for (int i = 0; i < 4; i++) { Assert.True(ht[i] == 0 || (ht[i] > 0.1 && (hk3[2 * i + 1] == 0 || ht[i] < hk3[2 * i + 1]))); /* the band darker than the class's shade */ Assert.True(ht[4 + i] >= 0 && ht[4 + i] <= 2); } Assert.True(ht[8] >= 0 && ht[8] <= 4 && ht[9] >= 0 && ht[9] <= 1); }
         Assert.Equal(0, Rigs.HeroClassOf("heroine_hair_over.gdshader", -1)); Assert.Equal(1, Rigs.HeroClassOf("heroine_skin.gdshader", -1));
         Assert.Equal(2, Rigs.HeroClassOf("heroine_outfit.gdshader", 0)); Assert.Equal(3, Rigs.HeroClassOf("heroine_outfit.gdshader", 1));
         Assert.Equal(3, Rigs.HeroClassOf("heroine_outfit_metal.gdshader", 1)); Assert.Equal(-1, Rigs.HeroClassOf("sunder_steel.gdshader", -1));

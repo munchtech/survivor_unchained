@@ -248,6 +248,13 @@ public static class Rigs
     /// mean share of the dye (cel.gdshaderinc cel_hero_hair). A row without them: zeros, the hair as before.</summary>
     public static double[] HeroClassHair(double[]? heroPool) => heroPool is { Length: >= 49 } ? heroPool[45..49] : new double[4];
 
+    /// <summary>(L1 lead 22, R3FORM) Her terminator, the third value step, values 49-58 of a hero_pool row: the band's Oklab L
+    /// of the emission for class 0 hair, 1 skin, 2 outfit leather / cloth, 3 outfit metal (0 = no band on that class), its
+    /// chroma lift per class (C / L over the shade step's, same hue; 0 or 1 = the shade's), its width in screen px at the mid
+    /// edge (0 = off), the share of it past the edge on the shade side (cel.gdshaderinc cel_hero_term_tone). A row without
+    /// them: zeros, the figure renders as before.</summary>
+    public static double[] HeroTerm(double[]? heroPool) => heroPool is { Length: >= 59 } ? heroPool[49..59] : new double[10];
+
     /// <summary>(HERPAIR) A hero material's class from its shader's file and its outfit kind (heroine_outfit.gdshaderinc
     /// `kind`: 0 leather, 1 metal, 2 cloth, 3 gloss, 4 twill, 5 satin; -1 none): 0 hair, 1 skin, 2 outfit leather / cloth,
     /// 3 outfit metal, -1 anything else (painted as before).</summary>

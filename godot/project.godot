@@ -485,6 +485,18 @@ cel_hero_class_hair={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+cel_hero_term_l={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+cel_hero_term_c={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+cel_hero_term={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 cel_give={
 "type": "vec4",
 "value": Vector4(0, 0, 0.25, 0.6)
