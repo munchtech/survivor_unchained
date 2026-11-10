@@ -162,9 +162,9 @@ public sealed class Autopilot
             if (kd < 40 && (lyD < 0 || kd < lyD)) lyD = kd;
         }
         Godot.GD.Print(string.Format(System.Globalization.CultureInfo.InvariantCulture,
-            "pilot trace t {0:0.0} x {1:0.00} z {2:0.00} near {3:0.00} foe {4} piloted {5} inreach {6:0.00} turn {7:0.000} absturn {8:0.000} near22 {9:0.00} togo {10:0.0} ruler {11} hp {12:0.00} lying {13:0.0} left {14} move {15:0.00},{16:0.00} to {17:0.0},{18:0.0} ember {19:0.0}",
+            "pilot trace t {0:0.0} x {1:0.00} z {2:0.00} near {3:0.00} foe {4} piloted {5} inreach {6:0.00} turn {7:0.000} absturn {8:0.000} near22 {9:0.00} togo {10:0.0} ruler {11} hp {12:0.00} lying {13:0.0} left {14} move {15:0.00},{16:0.00} to {17:0.0},{18:0.0} ember {19:0.0} stood {20:0.00} feet-turns {21:0.00}",
             now, p.X, p.Z, ne == null ? -1 : nd, ne?.Def.Id ?? "-", piloted ? 1 : 0, trIn, trNet, trAbs, trNear, togo,
-            g.Zone is MapRun m2 ? (m2.Cleared ? "down" : m2.Boss != null ? "up" : "no") : "-", p.Hp / Math.Max(1, b.MaxHp), lyD, lyLeft, Move.X, Move.Z, trTo.X, trTo.Z, emD));
+            g.Zone is MapRun m2 ? (m2.Cleared ? "down" : m2.Boss != null ? "up" : "no") : "-", p.Hp / Math.Max(1, b.MaxHp), lyD, lyLeft, Move.X, Move.Z, trTo.X, trTo.Z, emD, Pilot.Meter(b).StoodShare, Pilot.Meter(b).TurnsPer10));
         trIn = trNet = trAbs = trNear = 0;
     }
 

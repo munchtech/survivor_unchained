@@ -37,6 +37,8 @@ public sealed class ZoneRunResult
     public PressHands? Hands;
     public Dictionary<string, double> DamageBy = new();
     public double ResolveSpent, ResolveFullSec, FlareFirst = -1, MarkGapMax;
+    /// <summary>(M3) What her feet did in the fights (Pilot.Meter): the share of in-reach seconds stood, the turns round her foe.</summary>
+    public Pilot.FeetMeter Feet = new();
     /// <summary>(M3) Seconds Resolve sat at its cap, by stage.</summary>
     public readonly Dictionary<string, double> FullByStage = new();
     public int FlareCasts;
@@ -386,6 +388,8 @@ public static class ZoneSim
         r.LevelAtGate = j.Ch.Level;
         r.Champions = r.Champion;
         if (!quiet && !r.Reached) Console.Error.WriteLine($"{spec.Key}: not through at {tt:0}s: {(r.Stuck ? "stuck " + r.StuckAt : "capped")} {zone.Now}");
+        r.Feet = Pilot.Meter(b);
+        r.Feet.StandCharges = (zone.Night?.StandCharges ?? 0) + (zone.Day?.StandCharges ?? 0);
         return r;
     }
 

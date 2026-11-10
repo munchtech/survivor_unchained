@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using SurvivorUnchained.Content;
 using SurvivorUnchained.Play;
@@ -75,11 +76,21 @@ public static class Pilot
         double bigD = close ? 2.2 : 4.5;
         foreach (var e in b.HostilesInRadius(p.X, p.Z, bigD))
             if ((e.Boss || e.Elite) && (!close || p.Hp < b.MaxHp * 0.5)) { big = e; break; }
+        // (M3, the campaign: a fighter's feet. With a foe in her reach she plants and swings, then takes one short step,
+        // the side changing each time, and plants again: the owner's "running in circles" was the strafe below, a full
+        // turn round the foe every four seconds and never a stand. The plant is kept under the story's stand clock.)
+        var meter = b.Campaign ? State(b) : null;
+        var feet = StepsAndStands ? meter : null;
+        bool inReach = nearest != null && near - (b.Campaign ? nearest.Radius : 0) <= engage;
+        bool plant = false;
+        if (feet != null && !wall && (inReach || press.Count >= crowded)) plant = feet.Plant(b);
+        string took;
         if (big != null)
         {
             double cx = big.X - p.X, cz = big.Z - p.Z;
             double cl = Math.Max(0.01, Math.Sqrt(cx * cx + cz * cz));
             mx = -cx / cl * 0.8 - cz / cl * 0.6; mz = -cz / cl * 0.8 + cx / cl * 0.6;
+            took = "big";
         }
         else if (press.Count >= crowded && !wall)
         {
@@ -87,22 +98,43 @@ public static class Pilot
             double cl = Math.Max(0.01, Math.Sqrt(cx * cx + cz * cz));
             // Away and round: a quarter turn off straight back.
             mx = -cx / cl * 0.7 - cz / cl * 0.7; mz = -cz / cl * 0.7 + cx / cl * 0.7;
+            took = "crush";
+            // (M3, the campaign) With the health to, she holds her ground in the crush and swings, and gives it a step at
+            // a time, to either hand; under CrushRun of her health she runs from it as before.
+            if (feet != null && p.Hp >= b.MaxHp * CrushRun)
+            {
+                if (plant) { mx = 0; mz = 0; took = "crush-plant"; }
+                else { mx = -cx / cl * 0.7 - cz / cl * 0.7 * feet.Side; mz = -cz / cl * 0.7 + cx / cl * 0.7 * feet.Side; took = "crush-step"; }
+            }
         }
         // The stage's goal when nothing is at her throat: a player with a thing to do does it, and lets
         // the weapons fire on the way (a fire takes two seconds of standing to light).
         else if (goal is var (gx, gz))
         {
             if (Dist(gx, gz, p.X, p.Z) > 1.2) { mx = gx - p.X; mz = gz - p.Z; } else { mx = 0; mz = 0; }
+            took = "goal";
         }
-        else if (stone != null && near > engage + 1) { mx = stone.X - p.X; mz = stone.Z - p.Z; }
+        else if (stone != null && near > engage + 1) { mx = stone.X - p.X; mz = stone.Z - p.Z; took = "stone"; }
         // (M3: in the campaign the engage distance is to its edge: a boss's girth is not walked into, where his touch hurts;
         // the arena keeps the center, byte-same)
-        else if (nearest != null && near - (b.Campaign ? nearest.Radius : 0) > engage) { mx = nearest.X - p.X; mz = nearest.Z - p.Z; }
+        else if (nearest != null && !inReach) { mx = nearest.X - p.X; mz = nearest.Z - p.Z; took = "close"; }
         // In the press the wall stands: still, where Planted and The Wall Holds pay and every blow is a chance at a stone.
-        else if (nearest != null && wall) { mx = 0; mz = 0; }
-        else if (nearest != null) { mx = -(nearest.Z - p.Z); mz = nearest.X - p.X; }
-        else if (onward is var (ox, oz)) { mx = ox - p.X; mz = oz - p.Z; }
-        else { mx = -p.X; mz = -p.Z; }
+        else if (nearest != null && wall) { mx = 0; mz = 0; took = "wall"; }
+        else if (nearest != null && feet != null)
+        {
+            if (plant) { mx = 0; mz = 0; took = "plant"; }
+            else
+            {
+                // The step: across her foe, a quarter turn; the other hand where this one is walled.
+                mx = -(nearest.Z - p.Z) * feet.Side; mz = (nearest.X - p.X) * feet.Side;
+                double sl = Math.Max(0.01, Math.Sqrt(mx * mx + mz * mz));
+                if (b.Collision.Blocked(p.X + mx / sl * 0.6, p.Z + mz / sl * 0.6, p.Radius)) { feet.Side = -feet.Side; mx = -mx; mz = -mz; }
+                took = "step";
+            }
+        }
+        else if (nearest != null) { mx = -(nearest.Z - p.Z); mz = nearest.X - p.X; took = "strafe"; }
+        else if (onward is var (ox, oz)) { mx = ox - p.X; mz = oz - p.Z; took = "onward"; }
+        else { mx = -p.X; mz = -p.Z; took = "home"; }
         double far = Math.Sqrt(p.X * p.X + p.Z * p.Z);
         if (far > 60 && onward == null && goal == null) { mx = mx * 0.3 - p.X / far; mz = mz * 0.3 - p.Z / far; }
         if (deft) Deft(b, press.Count >= 2 || stone != null, ref mx, ref mz);
@@ -124,7 +156,95 @@ public static class Pilot
         if (Debug) Console.Error.WriteLine($"   PILOT near {(nearest == null ? "-" : $"{nearest.Def.Id} {near:0.0}")} big {big != null} press {press.Count} goal {goal} stone {stone != null} hands ({hx:0.00},{hz:0.00}) after boss ({mx:0.00},{mz:0.00})");
         double ml = Math.Sqrt(mx * mx + mz * mz);
         if (ml > 1e-6) { mx /= ml; mz /= ml; }
+        meter?.Measure(b, nearest, inReach, ml > 1e-6, took);
         return (mx, mz);
+    }
+
+    /// <summary>(M3) The fighter's feet, in the campaign's fights (the arena's hands circle as they did, byte-same).
+    /// Off: the strafe everywhere, for the numbers before (the harness's --strafe).</summary>
+    public static bool StepsAndStands = true;
+    /// <summary>The plant, as a share of the story's stand clock (world_tiers.json `stand.standFor`; PlantFor s with no clock
+    /// on). The step ends once it has carried her StepClear x the clock's `standMoved` from where she was planted (StepWide m
+    /// with no clock), or after StepMax s (walled, held, slowed). A player who has learnt how long she may stand: the clock
+    /// sees a stand only when something holds her past the plant.</summary>
+    public static double PlantShare = 0.65, PlantFor = 0.7, StepClear = 1.6, StepWide = 1.0, StepMax = 0.45;
+    /// <summary>Under this share of her health a crush is run from (the arena's away-and-round), not stood in.</summary>
+    public static double CrushRun = 0.5;
+
+    static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Battle, Feet> feetOf = new();
+    static Feet State(Battle b) => feetOf.GetOrCreateValue(b);
+    /// <summary>(M3) What her feet did in this battle's fights (the campaign under the Pilot or the Human; zeros elsewhere):
+    /// the number for "does she circle", read by the harness's reports and the game's --clip trace.</summary>
+    public static FeetMeter Meter(Battle b) => State(b).M;
+
+    public sealed class FeetMeter
+    {
+        /// <summary>Seconds with a foe in her reach; of them, seconds her feet were still; the angle she swept round that
+        /// foe (radians, summed without sign, and with it); plants begun; seconds by the rule that moved her.</summary>
+        public double InReach, Stood, AbsTurn, NetTurn;
+        public int Plants;
+        /// <summary>The story stand clock's charges on her (set by the harness at a run's end): what the plant is kept under.</summary>
+        public int StandCharges;
+        /// <summary>The rules that moved her over the last steps, newest last (a trace).</summary>
+        public string Last = "";
+        public readonly System.Collections.Generic.Dictionary<string, double> By = new();
+        /// <summary>Full turns round her foe each ten seconds in reach (the strafe: 2.2-2.3).</summary>
+        public double TurnsPer10 => InReach > 0 ? AbsTurn / (2 * Math.PI) / InReach * 10 : 0;
+        public double NetPer10 => InReach > 0 ? NetTurn / (2 * Math.PI) / InReach * 10 : 0;
+        public double StoodShare => InReach > 0 ? Stood / InReach : 0;
+        public override string ToString() => $"in reach {InReach:0.0} s, stood {StoodShare * 100:0}%, {TurnsPer10:0.00} turns per 10 s (net {NetPer10:0.00}), {Plants} plants; "
+            + string.Join(" ", By.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Key} {kv.Value:0.0}"));
+    }
+
+    sealed class Feet
+    {
+        public int Side = 1;
+        public readonly FeetMeter M = new();
+        double seen = -9, plantUntil, stepUntil, plantX, plantZ, stepWide, lastT = -1, lastA;
+        Enemy? lastFoe;
+
+        /// <summary>Whether she is planted now. Come into reach: a plant; the plant over: a step; the step over: the
+        /// other hand next, and a plant. Out of reach for half a second (the foe fell, she walked on) begins again.</summary>
+        public bool Plant(Battle b)
+        {
+            double now = b.Time;
+            var p = b.Player;
+            bool fresh = now - seen > 0.5;
+            // The step is over once it has carried her clear of where she stood; one that has not in StepMax s (walled,
+            // held by a heave, slowed) is tried to the other hand, never stood through: the clock would see the stand.
+            bool clear = Math.Sqrt((p.X - plantX) * (p.X - plantX) + (p.Z - plantZ) * (p.Z - plantZ)) >= stepWide;
+            if (!fresh && now >= stepUntil && !clear) { Side = -Side; stepUntil = now + StepMax; }
+            else if (fresh || now >= plantUntil && clear)
+            {
+                if (!fresh) Side = -Side;
+                plantUntil = now + (b.StoryStand is { Stand: true } d ? d.StandFor * PlantShare : PlantFor);
+                stepUntil = plantUntil + StepMax;
+                stepWide = b.StoryStand is { Stand: true } m ? m.StandMoved * StepClear : StepWide;
+                plantX = p.X; plantZ = p.Z;
+                M.Plants++;
+            }
+            seen = now;
+            return now < plantUntil;
+        }
+
+        public void Measure(Battle b, Enemy? foe, bool inReach, bool moved, string took)
+        {
+            double now = b.Time, dt = lastT < 0 ? 0 : Math.Clamp(now - lastT, 0, 0.1);
+            lastT = now;
+            M.By[took] = M.By.GetValueOrDefault(took) + dt;
+            if (!M.Last.EndsWith(took)) M.Last = (M.Last.Length > 60 ? M.Last[^60..] : M.Last) + ">" + took;
+            if (foe == null || !inReach) { lastFoe = null; return; }
+            var p = b.Player;
+            double a = Math.Atan2(p.Z - foe.Z, p.X - foe.X);
+            M.InReach += dt;
+            if (!moved) M.Stood += dt;
+            if (lastFoe == foe)
+            {
+                double da = Math.Atan2(Math.Sin(a - lastA), Math.Cos(a - lastA));
+                M.AbsTurn += Math.Abs(da); M.NetTurn += da;
+            }
+            lastFoe = foe; lastA = a;
+        }
     }
 
     /// <summary>The hands that are not the feet: a dash out of a crush, the art

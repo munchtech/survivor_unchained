@@ -25,6 +25,8 @@ public sealed class MapRunResult
     public MapRunSpec Spec = null!;
     public bool Cleared, Closed;
     public double Minutes, LowHp = 1, DamageTaken;
+    /// <summary>(M3) What her feet did in the fights (Pilot.Meter).</summary>
+    public Pilot.FeetMeter Feet = new();
     public int Falls, Kills, Packs, PacksCleared, Quaffs, Items, Charts, Gold;
     /// <summary>What crafting reads (docs/CRAFTING_DESIGN.md 20.1): the people's own material and the
     /// ember shards picked up, the old iron the gear would break down to, and the rulers' Marks.</summary>
@@ -233,6 +235,8 @@ public static class MapSim
         r.Material = j.Ch.Materials.Where(m => m.Key != Crafting.Shard && m.Key != Crafting.Iron).Sum(m => m.Value);
         r.Marks = marks;
         meter.Finish(b, t, r.Measures, hands);
+        r.Feet = Pilot.Meter(b);
+        r.Feet.StandCharges = zone.StandCharges;
         return r;
     }
 
