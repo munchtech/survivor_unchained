@@ -455,7 +455,7 @@ void ZoneRuns()
         try { r = ZoneSim.Play(spec); }
         catch (Exception e) { Console.Error.WriteLine($"{spec.Key}: {e}"); return; }
         results.Add(r);
-        lock (gate) Console.WriteLine($"[{++done}/{specs.Count} {sw.Elapsed:mm\\:ss}] {spec.Key}: {(r.Reached ? "through" : r.Stuck ? "STUCK " + r.StuckAt : "capped")} {r.PlaySeconds / 60:0.0} min kills {r.Kills} packs {r.Packs} champs {r.Champions} falls {r.Falls} rises {r.Rises} shown {r.GearShown} L{r.LevelAtWarden}/{r.LevelAtGate} {r.Measures.Line()}{(opt.Has("fullby") ? " fullby " + string.Join(",", r.FullByStage.Select(kv => $"{kv.Key}:{kv.Value:0}")) : "")}{(opt.Has("feet") ? Environment.NewLine + "    FEET " + r.Feet : "")}{string.Concat(r.Measures.FallNotes.Select(n => Environment.NewLine + "    FALL " + n))}");
+        lock (gate) Console.WriteLine($"[{++done}/{specs.Count} {sw.Elapsed:mm\\:ss}] {spec.Key}: {(r.Reached ? "through" : r.Stuck ? "STUCK " + r.StuckAt : "capped")} {r.PlaySeconds / 60:0.0} min kills {r.Kills} packs {r.Packs} champs {r.Champions} falls {r.Falls} rises {r.Rises} stalls {r.Stalls}/{r.StallSec:0.0}s charges {r.Feet.StandCharges} shown {r.GearShown} L{r.LevelAtWarden}/{r.LevelAtGate} {r.Measures.Line()}{(opt.Has("fullby") ? " fullby " + string.Join(",", r.FullByStage.Select(kv => $"{kv.Key}:{kv.Value:0}")) : "")}{(opt.Has("feet") ? Environment.NewLine + "    FEET " + r.Feet : "")}{string.Concat(r.Measures.FallNotes.Select(n => Environment.NewLine + "    FALL " + n))}");
     });
     var all = results.OrderBy(r => r.Spec.Key).ToList();
     FeetLines(all.Select(r => (r.Spec.Bot + " tier " + r.Spec.Tier, r.Feet)));
