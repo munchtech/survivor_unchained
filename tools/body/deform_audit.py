@@ -2,6 +2,7 @@
 through the clips and through pure range-of-motion sweeps, with B's layers switched off one at a time.
 
     python tools/body/deform_audit.py [--only clips,p4,rom,md,sheets] [--procs 5] [--step 1] [--out tools/body/out/audit]
+    (--step N samples every Nth frame of the 33 dumps; A1's p4 clips are always read at every frame)
 
 Bodies:  B = body_p1/body.glb + rig.json (lbs poser + rig_drive), layers full | nocorr (blend shapes off) |
          nolaws (girdle and hand_clear only: helpers ride their parents at rest local, no shapes);
@@ -20,6 +21,9 @@ Metrics per region and posed frame, against the rest pose (the poser's own pose 
              over 12 mm from the point's rest place (bends.true_depth's rule, among the 64 nearest)
   at_n/at_mm (axilla only) upper-arm points (first 40%) under the torso skin: count / depth mm (clipcheck's measure)
   slide50/95/max  the residual after the best rigid fit (Kabsch) of the region rest -> posed, mm: what a rigid plate sees
+  sb50/95/max     (deltoid and clav = the trap slope only) slide_bone: each point against where the region's reference
+             bone ALONE would carry it rigidly (deltoid: upperarm_share_{s}, else the upper arm; clav: clavicle_{s}), mm:
+             what a rigid pauldron riding that bone sees (the Kabsch slide over the whole ball includes the bend itself)
   pop99/popmax    (clips) per point second difference across frames in the region's rigid-fit frame, mm / frame^2
   ROM only: girth and area ratio at bends' stations (elbow, knee, shoulder abd/flex, hip flex).
 Out (git-ignored): audit.json, audit.md, sheet_<joint>.png (+ _half.jpg): B | A, clay and flagged (orange bad, red flipped).
@@ -53,12 +57,12 @@ BODIES = {"B": (P1 / "body.glb", P1 / "rig.json", "lbs", ("full", "nocorr", "nol
           "A": (REPO / "godot/art/people/heroine.glb", None, "game", ("full", "nocorr"))}
 COLS = ["B.full", "B.nocorr", "B.nolaws", "Bplay.full", "A.full", "A.nocorr"]
 MET = ["st50", "st99", "ext99", "cp99", "bad", "flip", "kink99", "kinkmax", "ins_n", "ins_mm", "slide50", "slide95",
-       "slidemax", "at_n", "at_mm"]
+       "slidemax", "at_n", "at_mm", "sb50", "sb95", "sbmax"]
 CLIPMET = MET + ["pop99", "popmax"]
 JOINTS = {"shoulder": ["shoulder_{s}", "shoulder_{s}.deltoid", "shoulder_{s}.axilla", "clav_{s}"], "elbow": ["elbow_{s}"],
           "forearm": ["forearm_{s}"], "wrist": ["wrist_{s}"], "hip": ["hip_{s}", "hip_{s}.front", "hip_{s}.glute", "hip_{s}.groin"],
           "knee": ["knee_{s}", "knee_{s}.front", "knee_{s}.back"], "ankle": ["ankle_{s}"], "neck": ["neck"],
-          "trunk": ["trunk", "trunk.waist"]}
+          "trunk": ["trunk", "trunk.waist", "trunk.core"]}
 P4_TWIN = {"walk": "Jog_Fwd", "run": "run_warden", "idle": "idle_warden_town", "p4_proof_walk": "Jog_Fwd",
            "p4_proof_idle": "idle_warden_town"}
 CAM = {"shoulder": (0.5, 0.2, 0.8), "elbow": (0.6, 0.0, -0.8), "forearm": (0.7, 0, 0.7), "wrist": (0.7, 0, 0.7),
@@ -229,7 +233,7 @@ class Body:
             clip = skin.Clip(d["name"], d["fps"], rotq, pos, False)
             st = {}
             for f in range(0, d["frames"], step):
-                G = b.globals(clip, f, st, 1 / d["fps"])
+                G = b.globals(clip, f, st, step / d["fps"])
                 yield f, b.pose(G), G
 
     # ---------------------------------------------------------------- topology --
@@ -337,6 +341,8 @@ class Body:
         h, hh = (c - Hp) @ up, (Ht - Hp) @ up
         M["trunk"] = body & (h > 0) & (h < hh) & (armw[T].mean(1) < 0.5) & (np.abs((c - Hp) @ lat) < 0.22)
         M["trunk.waist"] = M["trunk"] & (np.abs(h - 0.45 * hh) < 0.06)
+        # the trunk away from the shoulder girdle: no triangle within 0.17 m of either shoulder joint (the armpit wall out)
+        M["trunk.core"] = M["trunk"] & np.all([np.linalg.norm(c - self.head(self.role("upperarm", s)), axis=1) > 0.17 for s in "lr"], 0)
         gi = [k for k, n in enumerate(p.names) if n.startswith(("clavicle", "scap", "trap", "delt", "upperarm"))]
         legs = sub(self.role("calf", "l")) + sub(self.role("calf", "r"))
         self.torso = np.nonzero((self.piece == "body") & (armw + p.D[:, gi].sum(1) < 1 / 3) & (legs < 0.5)
@@ -350,6 +356,15 @@ class Body:
             vw = np.unique(self.Tw[tr])
             di = np.nonzero(m[self.it[:, 0]] & m[self.it[:, 1]])[0]
             self.reg[name] = {"tris": tr, "edges": np.unique(self.tri_e[tr]), "dih": di, "vw": vw, "v": self.rep[vw]}
+            ref = None                                              # slide_bone's reference bone
+            if name.endswith(".deltoid"):
+                s = name[9]
+                ref = f"upperarm_share_{s}" if f"upperarm_share_{s}" in p.index else self.role("upperarm", s)
+            elif name.startswith("clav_"):
+                s = name[5]
+                ref = f"clavicle_{s}" if f"clavicle_{s}" in p.index else p.names[p.parent[p.index[self.role("upperarm", s)]]]
+            if ref is not None:
+                self.reg[name]["ref"] = p.index[ref]
             im[name] = m
         self.mask = im
         allv = np.unique(np.concatenate([r["v"] for r in self.reg.values()]))
@@ -414,7 +429,12 @@ class Body:
             k = dd[r["dih"]] if len(r["dih"]) else np.zeros(1)
             row = [np.percentile(ae, 50) * 100, np.percentile(ae, 99) * 100, max(np.percentile(e, 99), 0) * 100,
                    max(np.percentile(-e, 99), 0) * 100, bad[r["tris"]].mean() * 100, flip[r["tris"]].mean() * 100,
-                   np.percentile(k, 99), k.max(), 0, 0, np.percentile(res, 50), np.percentile(res, 95), res.max(), 0, 0]
+                   np.percentile(k, 99), k.max(), 0, 0, np.percentile(res, 50), np.percentile(res, 95), res.max(), 0, 0, 0, 0, 0]
+            if "ref" in r:                                          # slide_bone: the reference bone's own rigid carry
+                j = r["ref"]
+                Rj = ortho(G[j][:3, :3] @ np.linalg.inv(self.G0[j][:3, :3]))
+                sb = np.linalg.norm(V[r["v"]] - ((self.V0[r["v"]] - self.G0[j][:3, 3]) @ Rj.T + G[j][:3, 3]), axis=1) * 1000
+                row[15:18] = [np.percentile(sb, 50), np.percentile(sb, 95), sb.max()]
             if inside:
                 dv = dep[r["v"]]
                 row[8], row[9] = int((dv > 2).sum()), float(max(dv.max(), 0))
@@ -623,6 +643,8 @@ def write_md(A, out):
             for i, mname in enumerate(CLIPMET):
                 if mname.startswith("at_") and not rg.endswith("axilla"):
                     continue
+                if mname.startswith("sb") and not (rg.endswith("deltoid") or rg.startswith("clav")):
+                    continue
                 cs = [cell(c, rs, i, dumps) for c in COLS]
                 pc = cell("B.full", rs, i, p4)
                 f = lambda b: "-" if b[0] is None else f"{b[0]:.4g}"
@@ -647,6 +669,8 @@ def write_md(A, out):
                         continue
                     b = max(rows, key=score)
                     txt = "/".join(f"{b[i]:.3g}" for i in ix) + (f"/{b[MET.index('at_mm')]:.3g}" if rg.endswith("axilla") else "")
+                    if rg.endswith("deltoid") or rg.startswith("clav"):
+                        txt += f" sb{b[MET.index('sb95')]:.3g}"
                     if rg == regs[0]:
                         g = [e.get("girth") for k, e in A["rom"][c].items() if k.split("|")[0] == ps and e.get("girth")]
                         if g:
@@ -783,7 +807,7 @@ def main():
     if "clips" in only:
         tasks += [(k, l, n, a.step) for n in names for k in BODIES for l in BODIES[k][3]]
     if "p4" in only and P4.exists():
-        tasks += [(k, l, "p4:" + p.stem, a.step) for p in sorted(P4.glob("*.json")) for k in ("B", "Bplay") for l in BODIES[k][3]]
+        tasks += [(k, l, "p4:" + p.stem, 1) for p in sorted(P4.glob("*.json")) for k in ("B", "Bplay") for l in BODIES[k][3]]
     rt = [(k, l) for k in BODIES for l in BODIES[k][3]] if "rom" in only else []
     if tasks or rt:
         with Pool(a.procs) as pool:
@@ -792,6 +816,7 @@ def main():
                 A["clips"].setdefault(col, {})[name] = res
                 if i % 20 == 0:
                     print(f"clips {i + 1}/{len(tasks)}", flush=True)
+                    jp.write_text(json.dumps(A, separators=(",", ":")))
             for col, res in rr:
                 A["rom"][col] = res
                 print("rom", col, flush=True)
