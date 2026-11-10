@@ -493,6 +493,14 @@ public partial class Atmosphere : Node3D
         rigsLoaded = true;
         SurvivorUnchained.Look.Rigs.Current = SurvivorUnchained.Look.RigSet.Parse(Godot.FileAccess.GetFileAsString(SurvivorUnchained.Args.Get("rigs-file") ?? "res://data/look/rigs.json"));
     }
+    /// <summary>(L1 lead 14, K1; docs/design/NIGHT_KIT.md) True when this rig carries the standing material's levels
+    /// (rigs.json "stand") under the cel rigs: an arena lit by it draws our own flora (ZoneData), not the kit's.</summary>
+    public static bool StandRig(string rig)
+    {
+        if (!CelRigs || rig == "") return false;
+        RigsLoad();
+        return SurvivorUnchained.Look.Rigs.Current[rig] is { Stands: true };
+    }
     /// <summary>(L1 B4) A camera rig in force (the close-up, the Look: GameCloseUp, GameFront): its fill and rim over the
     /// air's while it is, and the canopy's dapple held off (its key is the lens's, not the moon's). Null: the air's.</summary>
     public SurvivorUnchained.Look.LightRig? CameraRig { get; private set; }

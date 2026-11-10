@@ -205,6 +205,15 @@ public sealed class ZoneData
             // An ember arena's crowns are dark and cold against the night:
             // they frame the fight and never outshine it.
             bool arena = m.Place != null;
+            // (L1 lead 14, K1; docs/design/NIGHT_KIT.md) Under a rig with "stand" an arena draws our own flora, as the zones
+            // do (Dressing.Own; a kit piece with no own piece is dropped), with no dark recolor and no Shade cut: the
+            // standing material paints it by the rig's levels. --flora-kit, or a rig without the key: the kit's, as before.
+            if (arena && Dressing.FloraOwn && Atmosphere.StandRig(m.Place!.Night.Rig))
+            {
+                if (Dressing.Own(key.Piece, Id, key.Kind) is { } own)
+                    Flora.Add(new FloraGroup(key.Kind, own, list.ToArray(), new KitLook.Look((float)k.Wind, null, null, 0, (float)k.Moss)));
+                continue;
+            }
             var look = new KitLook.Look((float)k.Wind, arena ? new Color("#24382e").SrgbToLinear() : k.LeavesA is string a ? new Color(a).SrgbToLinear() : null,
                 arena ? new Color("#2e3a26").SrgbToLinear() : k.LeavesB is string b ? new Color(b).SrgbToLinear() : null, arena ? 0.7f : (float)k.LeavesAmount, (float)k.Moss,
                 arena ? 0.42f : 1f);

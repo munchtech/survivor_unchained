@@ -42,8 +42,21 @@ public sealed record LightRig(string Id, string From, bool Camera, RigKey Key, R
     double? Hardness, string? Grade, double? Exposure, double? Ember, RigDapple Dapple, double? Fires = null,
     double? EmberReach = null, string? EmberColor = null, double[]? Curve = null, double? WarmKeep = null, double[]? EmberGive = null, double? SceneColor = null, double? SceneMoon = null,
     double[]? EmberPool = null, string? EmberEdge = null, double[]? FireGive = null, bool? ShadowLevel = null, bool? EmberSmooth = null, double[]? EmberShade = null,
-    double[]? MoonTop = null, double[]? FoeFire = null, double[]? FoeMoon = null)   // (L1 lead 12, S3: what stands in the night's light; rigs.json "moon_top", "foe_fire", "foe_moon")
+    double[]? MoonTop = null, double[]? FoeFire = null, double[]? FoeMoon = null,   // (L1 lead 12, S3: what stands in the night's light; rigs.json "moon_top", "foe_fire", "foe_moon")
+    double[]? Stand = null)
 {
+    /// <summary>(L1 lead 14, K1; docs/design/NIGHT_KIT.md; rigs.json "stand") The standing material's levels: what stands on
+    /// the board (stone, leaf, bark) painted in hard steps as the rig's levels, not the albedo's luck. Four rows, flattened:
+    /// stone, leaf, bark, each <see cref="StandRow"/> numbers = seven tones [level, R, G, B] (contact, side, body, top, rim
+    /// under the moon as scene light: the sRGB color at its largest channel 1 x level; fire mid, fire top as a share and tint
+    /// of her ramp at the fragment's distance on the ground) then [the paint's luminance the dabs are read against, the dabs'
+    /// contrast, the rim: 1 on any moon-side edge, 0 on tops only, spare]; then the shape row [top edge, side edge (both the
+    /// normal's dot with the key leaned up), up lean, foot band m, fire edge 1, fire edge 2 (the normal's dot toward her
+    /// light), rim px, spare]. Null: none (every rig but arena_night; Atmosphere sets cel_stand zero and arenas keep the
+    /// kit's flora).</summary>
+    public const int StandRow = 32, StandShape = 8, StandLength = 3 * StandRow + StandShape;
+    public bool Stands => Stand is { Length: StandLength } && Stand[^StandShape] != 0;
+
     /// <summary>(L1 lead 11, R3 one shade; rigs.json "shadow_level") The key's shadow is a level: a cast shadow keeps exactly
     /// 1 - key.shadow of the key, and the canopy's dapple is the same shade (its strength is key.shadow, whatever
     /// dapple.strength says; overlaps take the darker). False (the day rigs, tuned on it): the old switch.</summary>
@@ -135,7 +148,7 @@ public sealed class RigSet
             A(e, "ember_pool", b?.EmberPool), S(e, "ember_edge", b?.EmberEdge), A(e, "fire_give", b?.FireGive),
             e.TryGetProperty("shadow_level", out var sl) ? sl.GetBoolean() : b?.ShadowLevel,
             e.TryGetProperty("ember_smooth", out var es) ? es.ValueKind == JsonValueKind.True : b?.EmberSmooth, A(e, "ember_shade", b?.EmberShade),
-            A(e, "moon_top", b?.MoonTop), A(e, "foe_fire", b?.FoeFire), A(e, "foe_moon", b?.FoeMoon));   // (L1 lead 12, R4 round 4: her fire a smooth field, the leaf shade across it)
+            A(e, "moon_top", b?.MoonTop), A(e, "foe_fire", b?.FoeFire), A(e, "foe_moon", b?.FoeMoon), A(e, "stand", b?.Stand));   // (L1 lead 12, R4 round 4: her fire a smooth field, the leaf shade across it)
     }
 }
 
