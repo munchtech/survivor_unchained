@@ -267,9 +267,12 @@ public sealed class LingerChainTests
             r.Block();
             Assert.True(r.W.AnswerDue);
             r.Hold(600);
-            int a = r.Landed.FindIndex(l => Math.Abs(l.CastW - 1) < 1e-9);
+            // (M3 MR 3 landed rule) the battle's first cut is whole (the bank starts full): cast 0 weighs 1 too, so the
+            // answer is the one whole cast after it
+            Assert.Equal(1.0, r.Landed[0].CastW, 9);
+            int a = r.Landed.FindIndex(1, l => Math.Abs(l.CastW - 1) < 1e-9);
             Assert.Equal(k + 1, a);
-            Assert.Single(r.Landed, l => Math.Abs(l.CastW - 1) < 1e-9);
+            Assert.Single(r.Landed.Skip(1), l => Math.Abs(l.CastW - 1) < 1e-9);
             // the answer's own cast lays one ground, the written blow's
             Assert.Equal(1, r.Landed[a].Laid);
             Assert.Equal(blow, r.Landed[a].Dps, 6);

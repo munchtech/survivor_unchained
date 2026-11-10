@@ -135,8 +135,12 @@ public sealed class CutLeakTests
         // the pull alone: what the lamp takes off the skill's own push (the same casts, lit and unlit)
         double Pull(bool chained, out int cuts, out double push)
         {
-            var bare = new Rig(id, chained).Hold();
-            var lit = new Rig(id, chained).Lit(Chain()).Hold();
+            // (M3 MR 3 landed rule) the battle's first cut is whole (the bank starts full): sunder's 92 cuts land 1 + 91 x
+            // 0.4375 = 40.8125 blows against 40 (c / a 1.0203125, the opening's rest, not a leak). What a second holds is
+            // the measure, so the chained grip's bank is spent first (PaidTo = now) and every cut weighs as a held one
+            Rig Make() { var r = new Rig(id, chained); if (chained) r.W.PaidTo = r.B.Time; return r; }
+            var bare = Make().Hold();
+            var lit = Make().Lit(Chain()).Hold();
             Assert.Equal(bare.Cuts, lit.Cuts);
             cuts = lit.Cuts; push = bare.Kb;
             return bare.Kb - lit.Kb;

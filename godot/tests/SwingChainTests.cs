@@ -387,6 +387,10 @@ public sealed class SwingChainTests
         Assert.Equal(1.0, new Run("sunder").W.BlowWeight);
         Assert.Equal(u.W.Damage, c.W.Damage);
         Assert.Equal(u.Wait * 0.4375, c.Wait, 12);
+        // (M3 MR 3 landed rule) the battle's first cut is whole (the bank starts full: ratio 1, not 0.4375); a held cut
+        // weighs its share (RestedOpeningTests). The share's cast is what this reads, so the chained grip's bank is spent
+        // first (PaidTo = now)
+        c.W.PaidTo = c.B.Time;
         while (c.Dealt.Count == 0) c.Step(true);
         while (u.Dealt.Count == 0) u.Step(true);
         Assert.False(c.Cuts[0].Heavy);

@@ -39,7 +39,10 @@ public sealed class MomentumChainTests
         double last = double.NaN;
 
         /// <param name="period">0.70: the chain of weighed cuts; null: unchained.</param>
-        public Run(double? period = 0.70, bool lit = true, int need = 3, bool hand = false, bool answer = false)
+        /// <param name="spent">(M3 MR 3 landed rule) the grip's bank spent at the start (PaidTo = now): the battle's first
+        /// cut weighs its share as every held cut after it does, not whole, so the written blows run two cuts, one, two ...
+        /// from cut 0 as these rigs were written.</param>
+        public Run(double? period = 0.70, bool lit = true, int need = 3, bool hand = false, bool answer = false, bool spent = false)
         {
             this.need = need;
             B = new Battle(new BattleSetup
@@ -60,6 +63,7 @@ public sealed class MomentumChainTests
             E = B.SpawnEnemy("footpad", 2, 0)!;
             E.Hp = E.MaxHp = 1e9;
             E.AttackT = E.RangedT = 999;
+            if (spent) W.PaidTo = B.Time;
         }
 
         public double Wait => Firing.CooldownOf(B, W);
@@ -132,7 +136,9 @@ public sealed class MomentumChainTests
 
     static Run Fed(params (int Cut, int N)[] feed)
     {
-        var r = new Run();
+        // (M3 MR 3 landed rule) the battle's first cut is whole (the bank starts full), so it would be a blow alone and
+        // shift every key by a cut ([0, 1, 1, 2, 3, 3, ...]): the bank is spent first, and the keys are the written ones
+        var r = new Run(spent: true);
         foreach (var (c, n) in feed) r.Feed[c] = n;
         r.ToCuts(9);
         // (no Hand: plain cuts at 2/3 of a blow, so the written blows are two cuts, one cut, two, one ...)
@@ -265,7 +271,8 @@ public sealed class MomentumChainTests
     [Fact] // T9
     public void A_cut_of_a_paid_blow_dropped_by_a_dash_leaves_the_rest_of_that_blow_paid()
     {
-        var r = new Run();
+        // (M3 MR 3 landed rule) a whole first cut shifts the keys by a cut ([2, 2, 3, 4] here): the bank is spent first
+        var r = new Run(spent: true);
         r.Feed[2] = 3;
         while (r.Cuts.Count < 4) r.Step();
         Assert.Equal(1, r.B.PendingBlows);
@@ -325,7 +332,9 @@ public sealed class MomentumChainTests
     [Fact] // (J12a's answer under J12c)
     public void A_blocks_answer_in_a_paid_blow_waits_the_blows_wait_less_the_share_and_its_kills_are_its_blows()
     {
-        var r = new Run(answer: true);
+        // (M3 MR 3 landed rule) a whole first cut shifts the keys by a cut (the answer's key 3, not cut 3's 2): the bank
+        // is spent first
+        var r = new Run(answer: true, spent: true);
         r.Feed[2] = 3;
         while (r.Cuts.Count < 4) r.Step();
         r.Block();

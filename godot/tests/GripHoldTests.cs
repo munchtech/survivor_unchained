@@ -521,8 +521,9 @@ public sealed class GripHoldTests
         Assert.StartsWith($" gaps 0 whiff 0 opens 0 drop 0 cutw {m.Blows:0.00} bank 0.00 fmin ", line[old.Length..]);
     }
 
-    /// <summary>(m3) Opens, landed weight and bank: the battle's first cut opens a chain and banks a whole blow less its
-    /// weight; each landed cut weighs 0.70 / 1.6; a chain reopened after a short rest banks rest / wait less the weight.</summary>
+    /// <summary>(m3) Opens, landed weight and bank: the battle's first cut opens a chain (whole under the landed rule, so it
+    /// banks nothing); each held cut after it weighs 0.70 / 1.6; a chain reopened after a short rest weighs what the rest
+    /// earned, so it banks nothing either.</summary>
     [Fact]
     public void The_grips_meter_counts_openings_their_bank_and_the_landed_weight()
     {
@@ -532,9 +533,11 @@ public sealed class GripHoldTests
         r.Run(true, 2);
         Assert.Equal(cw, r.W.CastW, 12);
         Assert.Equal(1, m.Opens);
-        Assert.Equal(1 - cw, m.Bank, 9);
+        // (M3 MR 3 landed rule) the battle's first cut is whole (the bank starts full): it weighs 1, so it banks nothing
+        // (1 - 1) and the landed weight is 1 for it plus the share for each held cut after it
+        Assert.Equal(0.0, m.Bank, 9);
         Assert.True(m.Blows >= 2);
-        Assert.Equal(m.Blows * cw, m.CutW, 9);
+        Assert.Equal(1 + (m.Blows - 1) * cw, m.CutW, 9);
         // out of reach until the chain has ended, then back: a new chain, its rest under a whole wait
         for (int i = 0; i < 300 && r.C is { Live: true }; i++) r.Step(false);
         Assert.False(r.C!.Live);
@@ -544,7 +547,10 @@ public sealed class GripHoldTests
         Assert.Equal(2, m.Opens);
         double rest = r.C.StartAt - s0, wait = Firing.CooldownOf(r.B, r.W) / r.W.BlowWeight;
         Assert.InRange(rest / wait, cw + 0.01, 0.99);
-        Assert.Equal(1 - cw + rest / wait - cw, m.Bank, 9);
+        // (M3 MR 3 landed rule) the reopening cut weighs what the wait earned since the last LANDED cut (at least
+        // rest / wait, never under the share), so no rest is left unpaid: the bank column stays 0
+        Assert.True(r.C.Weight >= Math.Min(1, rest / wait) - 1e-9, $"weight {r.C.Weight} rest/wait {rest / wait}");
+        Assert.Equal(0.0, m.Bank, 9);
         Assert.Equal(0, m.Drops);
         Assert.Matches(@" opens 2 drop 0 cutw [\d.]+ bank [\d.]+ fmin [\d.]+$", m.Line(r.B.Time, r.B.Time));
     }

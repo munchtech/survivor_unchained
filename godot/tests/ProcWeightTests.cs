@@ -106,9 +106,10 @@ public sealed class ProcWeightTests
         return def;
     }
 
-    (int C, int U, string Told) Firings(string what, double? icd, int pack)
+    (int C, int U, string Told) Firings(string what, double? icd, int pack, bool spent = false)
     {
         var c = new Rig("sunder", true, pack: pack);
+        if (spent) c.W.PaidTo = c.B.Time;
         var u = new Rig("sunder", false, pack: pack);
         var tc = c.Rule("test:flat", Flat(TriggerEvent.Hit, icd));
         var tu = u.Rule("test:flat", Flat(TriggerEvent.Hit, icd));
@@ -126,7 +127,11 @@ public sealed class ProcWeightTests
         Assert.True(Math.Abs((double)c / u - 1) <= 0.02, told);
         // icd 4: the blows fire it every third (4.8 s); the cuts' clock is 4 x 0.4375 = 1.75 s, every third cut (2.1 s),
         // and a blow's worth of those is 2.1 / 0.4375 = 4.8 s
-        (c, u, told) = Firings("flat on hit, icd 4", 4, 1);
+        // (M3 MR 3 landed rule) the battle's first cut is whole (the bank starts full): it fires whole and sets a whole
+        // icd (4 s), so the share-cuts' would-fires start at 4.2 s with the part at 0: 29 to 63.0 s, 1 + floor(29 x 0.4375)
+        // = 13 against the blows' 14 (part left 0.6875: a window-end tooth, -7%). The cuts' clock is what this measures,
+        // so the chained grip's bank is spent first (PaidTo = now) and its first cut weighs its share, as before.
+        (c, u, told) = Firings("flat on hit, icd 4", 4, 1, spent: true);
         Assert.True(Math.Abs((double)c / u - 1) <= 0.05, told);
         // three foes in the cut, icd 1: one firing a blow (the icd eats the other two foes' hits) on both sides
         (c, u, told) = Firings("flat on hit, three foes, icd 1", 1, 3);

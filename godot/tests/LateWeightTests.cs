@@ -78,6 +78,9 @@ public sealed class LateWeightTests
     public void A_crescent_that_lands_after_its_cast_carries_its_cuts_weight()
     {
         var c = new Rig(true); var u = new Rig(false);
+        // (M3 MR 3 landed rule) the battle's first cut is whole (the bank starts full), so its crescent would weigh 1 and
+        // say nothing: the chained grip's bank is spent first (PaidTo = now), so this cut weighs its share, as a held cut does
+        c.W.PaidTo = c.B.Time;
         foreach (var r in new[] { c, u })
         {
             Assert.True(r.B.PressSkill(r.W.Slot, Far, 0));

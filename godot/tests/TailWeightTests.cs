@@ -196,6 +196,9 @@ public sealed class TailWeightTests
 
         // (1) one cut's strike against one written blow's: a press each, to the first hit
         var one = new[] { Make(true, true, far), Make(false, true, far) };
+        // (M3 MR 3 landed rule) the battle's first cut is whole (the bank starts full): it would weigh 1 (ratio 1.5 over cw).
+        // The chained grip's bank is spent first (PaidTo = now), so the cut weighs its share, as a held cut does.
+        one[0].W.PaidTo = one[0].B.Time;
         foreach (var r in one)
         {
             Assert.True(r.B.PressSkill(r.W.Slot, far, 0));

@@ -74,8 +74,9 @@ public sealed class ResolveTests
         var es = at.Select(a => Dummy(b, a.Item1, a.Item2)).ToList();
         Pin(b, es, at);
         // Held at the pack: one swing, three struck: 12 + 3 + 3 a written blow. (sw1) Sunder is chained: the swing is
-        // one cut of the blow, its share 0.70 / 1.6 = 0.4375 of that: 18 x 0.4375 = 7.875.
-        const double cut = 18 * (0.70 / 1.6);
+        // one cut of the blow, its share 0.70 / 1.6 = 0.4375 of that.
+        // (M3 MR 3 landed rule) the battle's first cut is whole (the bank starts full): this one weighs 1, so 18 x 1.
+        const double cut = 18 * 1.0;
         Assert.Equal(0.70 / 1.6, w.BlowWeight, 12);
         b.HoldSkill(w.Slot, true, 2, 0);
         var evs = Run(b, Land, () => Pin(b, es, at));
@@ -237,8 +238,9 @@ public sealed class ResolveTests
         Assert.False(Firing.InStorm(b, w));
         Assert.True(b.PressSkill(w.Slot2, 2, 0));
         Run(b, Land, () => Pin(b, [e], at));
-        // (sw1) the half is Sunder's shipped record, chained: one cut builds its share of the blow's 12 (0.70 / 1.6)
-        Assert.Equal(12 * (0.70 / 1.6), b.Resolve.Value, 6);
+        // (sw1) the half is Sunder's shipped record, chained: one cut builds its weight's part of the blow's 12.
+        // (M3 MR 3 landed rule) the battle's first cut is whole (the bank starts full): weight 1, so 12 x 1.
+        Assert.Equal(12 * 1.0, b.Resolve.Value, 6);
         Assert.True(e.Hp < e.MaxHp);
     }
 
