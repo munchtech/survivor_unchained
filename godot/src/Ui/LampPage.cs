@@ -55,16 +55,17 @@ public partial class LampPage : Control
         MouseFilter = MouseFilterEnum.Pass;
         CustomMinimumSize = new Vector2(0, Height);
         SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        bool night = w?.Time == TimeOfDay.Night;
+        bool night = w?.Time == TimeOfDay.Night;   // the look (the world's clock)
+        bool readOnly = w?.Arena != null;          // the board's rule: read-only in the arena only
         // C: the page's own backdrop under everything on it (no townsfolk through the board; her side untouched)
         if (!wide) AddChild(backdrop = new LampWindow(night));
         AddChild(Header = new LampHeader(ch, w, zone, wide));
         AddChild(Board = new LampBoard(ch, w) { Wide = wide });
         if (wide) Board.Fe = new Vector4(0, 40, 0, FieldBottom - 900);
         Board.Visit = visit ?? new LampSession(ch);
-        Board.Night = night;
+        Board.ReadOnly = readOnly;
         Board.Safe = safe;
-        Board.AtPost = !night && LampBook.LayoutsOpen(w, zone);
+        Board.AtPost = !readOnly && LampBook.LayoutsOpen(w, zone);
         AddChild(Wick = new LampWick(ch) { Visible = false, Safe = safe });
         AddChild(Tabs = new WickTabs(ch));
         if (wide) { Wick.SetWide(wickRect.Size); Tabs.SetSeats(seats ?? new()); }
@@ -74,8 +75,8 @@ public partial class LampPage : Control
         AddChild(prompts);
         Tabs.Clicked += OpenWick;
         Wick.Picked += sk => { Wick.Open(sk); SetPrompts(); };
-        // by night the board is read-only and the night's growth is the wicks: the page opens on the first one
-        openAtStart = night;
+        // in the arena the board is read-only and the growth is the wicks: the page opens on the first one
+        openAtStart = readOnly;
         layoutShown = LampBook.State(ch).Active;
         Board.LampsChanged += Changed;
         Header.Hovered += i => ShowCoinCard(i, false);
@@ -164,7 +165,7 @@ public partial class LampPage : Control
 
     /* ------------------------------------------------------------- the wick (§8, §16) -- */
 
-    /// <summary>The foot row (§16, the build lead's input of 2 November): by day the board's, with the wick open the
+    /// <summary>The foot row (§16, the build lead's input of 2 November): out of the arena the board's, with the wick open the
     /// wick's.</summary>
     Container Prompts()
     {
@@ -259,7 +260,7 @@ public partial class LampPage : Control
         string road = Lamps.Roads.TryGetValue(l.Type, out var r) ? r.Name : "";
         string type = road.StartsWith("Road of the ") ? "The " + road[12..] : road == "" ? "Not yet walked" : road;
         string flare = Lamps.Flare(l.Flare)?.Name ?? "";
-        bool open = LampBook.LayoutsOpen(w, zone), pad = Play.Controls.Instance?.UsingPad == true, active = i == st.Active;
+        bool ro = w?.Arena != null, open = !ro && LampBook.LayoutsOpen(w, zone), pad = Play.Controls.Instance?.UsingPad == true, active = i == st.Active;
         // §9: the glyphs of all its carried skills (the active layout's are her seats now)
         var carried = (active ? SkillBook.Carried(ch).Select(c => c.Id) : l.Carried ?? new()).Where(Weapons.All.ContainsKey).Distinct().ToList();
         var glyphs = carried.Select(s => (Glyphs.ForSkill(s, Weapons.All[s].Art), true)).ToList();
@@ -283,9 +284,9 @@ public partial class LampPage : Control
     (string State, List<(string, string)> Prompts) CoinWords(int i, bool pad)
     {
         var st = LampBook.State(ch);
-        bool open = LampBook.LayoutsOpen(w, zone), active = i == st.Active;
+        bool ro = w?.Arena != null, open = !ro && LampBook.LayoutsOpen(w, zone), active = i == st.Active;
         var others = Enumerable.Range(0, 3).Where(k => k != st.Active).ToArray();
-        string stateLine = active ? "The layout she walks" : open ? "Take it up: the whole build" : "Layouts change by day at a lamp-post";
+        string stateLine = ro ? "In the arena the board is read-only" : active ? "The layout she walks" : open ? "Take it up: the whole build" : "Layouts change at a lamp-post";
         var pr = new List<(string, string)>();
         if (active && open)
         {
@@ -299,6 +300,7 @@ public partial class LampPage : Control
     void Pick(int i, bool right)
     {
         var st = LampBook.State(ch);
+        if (i <= 2 && w?.Arena != null) { Board.Deny("In the arena the board is read-only"); return; }
         if (i <= 2)
         {
             if (right) Copy(i);
@@ -316,8 +318,9 @@ public partial class LampPage : Control
 
     void Copy(int to)
     {
+        if (w?.Arena != null) { Board.Deny("In the arena the board is read-only"); return; }
         if (LampAsk.CopyLayout(ch, to, w, zone)) { Sound.Sfx.Pick(); GD.Print($"LAMPBOARD copy {LampBook.State(ch).Active + 1} to {to + 1}"); Header.Refresh(); }
-        else Board.Deny("Layouts change by day at a lamp-post");
+        else Board.Deny("Layouts change at a lamp-post");
     }
 
     void OpenWideNow()
@@ -916,8 +919,8 @@ public static class LampInk
 /// <summary>
 /// The header row (§4, §9, §12 C; skins/c.py header()): left, the three layout coins (32 px, I II III, the active one
 /// lit) and the layout's name (Alegreya 700 17, her type's: "The Sunderer"); center, "3 LAMPS TO LIGHT" (Cinzel 700 30
-/// and 600 16 letterspaced, warm gold), under it what was earned (Alegreya Sans 14, dim) and by day at a town's
-/// lamp-post the warm italic line (by night, the board is read-only); right, Light my way and Open wide with their caps.
+/// and 600 16 letterspaced, warm gold), under it what was earned (Alegreya Sans 14, dim) and at a town's
+/// lamp-post the warm italic line (in the arena, the board is read-only); right, Light my way and Open wide with their caps.
 /// </summary>
 public partial class LampHeader : Control
 {
@@ -967,8 +970,8 @@ public partial class LampHeader : Control
         if (atlas > 0) parts.Add($"{atlas} from the atlas");
         if (posts > 0) parts.Add($"{posts} from the lamp-posts");
         sub = $"{lit} lit  ·  {string.Join(", ", parts)}";
-        bool isNight = w?.Time == TimeOfDay.Night;
-        if (isNight) night = "By night the board is read-only";
+        bool inArena = w?.Arena != null;
+        if (inArena) night = "In the arena the board is read-only";
         else if (LampBook.LayoutsOpen(w, zone))
             post = $"At the {Style.Cap1(zone ?? "")}’s lamp-post: lamps go out free";
         else post = null;
