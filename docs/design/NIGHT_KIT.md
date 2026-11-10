@@ -17,6 +17,16 @@ target's. Every piece is designed for that framing: no feature under 12 px (0.15
 a fifth of the piece's footprint, a thin bright rim line on its moon side. A read that fails at the play camera is
 fixed with rim and value separation, never with zoom.
 
+## Amended by the slice (L1 lead 14, 9 Nov night; this wins over the text below)
+One boulder was taken all the way into frame 09 in two forms (`...\look_l1\c\l13\s2_04\`). At the play camera the
+ROUND form (a low lump with soft pressed flats, SMOOTH normals, 300-700 triangles) reads as the target's boulders: the
+shader steps the tones on the smooth normal and draws curved, painted terminators. The FACET form (flat facets, hard
+creases) reads as crates and cut gems and is dropped. So for stone, "tones step where normals step" means the SHADER's
+steps on a smooth normal, not the mesh's facets; `round_s/m/l` (species `roundsmall`, `roundmid`, `roundlarge`) are the
+kit's stones and `boulder_s/m/l` (the facet species) retire. The rim line must be 3-4 px at 1:1 (2 px is lost at half
+size). Her fire and the moon's give-way are read once at the piece's foot (per fragment they drew a gradient across a
+face). Every further family (leaf, bark) is proven the same way before it is widened: one piece in a frame of 09.
+
 ## K1 Three tones and a line, as levels (the standing material)
 Every standing piece is painted in hard steps, never a gradient, measured FROM target 09
 (`survivorsunchained_inputs\look_l1\g1\full\pick2_09_arena_night.png`; Oklab L / C / hue on screen, after the grade):
