@@ -627,8 +627,14 @@ public partial class Socket : Control
         {
             // a long wait's seconds over the well, gold (the concept's figures); short ones show only the level
             double total = waitSecs > 0 && ready < 0.98 ? waitSecs / Math.Max(0.02, 1 - ready) : 0;
+            // (the number is the ceiling of w.Timer, the sim's own countdown to its next firing, as of the last HUD frame)
             if (cooling && total >= 3.5 && waitSecs >= 1)
-                DgMeters.Numeral(this, c, ((int)Math.Ceiling(waitSecs)).ToString(), 20, DgMeters.Gold, 4);
+            {
+                int n = (int)Math.Ceiling(waitSecs);
+                DgMeters.Numeral(this, c, n.ToString(), 20, DgMeters.Gold, 4);
+                TraceWait(n);
+            }
+            else TraceWait(-1);
             // the rank (UI 23): a small dark chip at half past one over the bezel (DgPanel.Marks.Chip), gold-rimmed
             // when it can evolve or has. (M4 lead 4: only on a seat with no key cap, the Lamps' wide view and the arena:
             // in play the cap, the wait's seconds and a rank were three numerals a seat; the rank is read on the Lamps)

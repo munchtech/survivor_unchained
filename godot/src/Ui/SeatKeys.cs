@@ -93,7 +93,26 @@ public partial class Socket
     bool CostShort => keyed && filled && st.Cost >= 0;
 
     /// <summary>A kindled seat that fired itself (its wait began): the well flares to the mid band.</summary>
-    void FiredItself() { if (keyed && st.Kind == SeatKind.Kindled) flareT = 0; }
+    void FiredItself()
+    {
+        if (!keyed || st.Kind != SeatKind.Kindled) return;
+        flareT = 0;
+        // (--slots-trace: a frame of the flare is picked by this line: the well is at the mid band for 0.25 s from here)
+        if (Trace) GD.Print($"seat {Index}: {Id} flare begins (kindled, fired itself) frame {Engine.GetFramesDrawn()}");
+    }
+
+    int tracedWait = -1;
+
+    /// <summary>--slots-trace: the wait number the seat draws, logged when it changes (n: the numeral; -1 none drawn), with
+    /// the timer it was the ceiling of. A frame's facts are the last such line before its "saved" line: the trace's own
+    /// lines come only every 0.3 s, and a shot's "at N s" is the shot's clock, about 0.4 s ahead of the fight's.</summary>
+    void TraceWait(int n)
+    {
+        if (!Trace || n == tracedWait) return;
+        tracedWait = n;
+        if (n >= 0) GD.Print($"seat {Index}: {Id} wait number {n} (timer {waitSecs:0.00}) frame {Engine.GetFramesDrawn()}");
+        else GD.Print($"seat {Index}: {Id} wait number none frame {Engine.GetFramesDrawn()}");
+    }
 
     SeatFx Fx(SeatFx.Mode m)
     {
