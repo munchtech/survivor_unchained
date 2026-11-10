@@ -37,6 +37,9 @@ public sealed class PressHands
     readonly Dictionary<WeaponInst, (double Since, bool Missed)> due = new(ReferenceEqualityComparer.Instance);
     double gripRollAt = double.NegativeInfinity, ignoreRollAt = double.NegativeInfinity;
     bool gripOn = true, ignoring;
+    /// <summary>A union's second key held as the grip this step (Bladestorm on Sunder's key, out of a storm with a foe in
+    /// reach: the key is pressed every step, a hold): the half's id, else null. What the game's --clip prints as the grip's hold.</summary>
+    public string? HalfGrip;
     /// <summary>Presses that went off, by skill id (the harness's presses per minute).</summary>
     public readonly Dictionary<string, int> Presses = new();
 
@@ -87,6 +90,7 @@ public static class PressPlan
         var p = b.Player;
         if (!b.Campaign || !p.Alive) return;
         var d = Def;
+        h.HalfGrip = null;
         // The grip: held at the nearest foe in its reach.
         foreach (var w in b.Weapons)
         {
@@ -103,7 +107,7 @@ public static class PressPlan
             foreach (var w in b.Weapons)
                 if (w.Slot2 >= 0 && !w.Channeling && d.For(w.Id).Aim == "storm" && !Firing.InStorm(b, w)
                     && b.NearestHostile(p.X, p.Z, (w.Num(s => s.Reach) ?? 2.6) + d.GripPad) is { } nf && h.GripHeld(b.Time))
-                    b.PressSkill(w.Slot2, nf.X, nf.Z);
+                { h.HalfGrip = Firing.HalfOf(w)?.Id; b.PressSkill(w.Slot2, nf.X, nf.Z); }
             return;
         }
         if (p.Leap != null || b.Art.Rush != null || p.DashT > 0) return;
@@ -156,7 +160,7 @@ public static class PressPlan
         h.Clear(w);
         b.HoldSkill(w.Slot, false);
         // Out of a storm, Sunder's key swings Sunder at what is near.
-        if (w.Slot2 >= 0 && !Firing.InStorm(b, w) && n > 0) b.PressSkill(w.Slot2, p.X, p.Z);
+        if (w.Slot2 >= 0 && !Firing.InStorm(b, w) && n > 0) { h.HalfGrip = Firing.HalfOf(w)?.Id; b.PressSkill(w.Slot2, p.X, p.Z); }
         return false;
     }
 

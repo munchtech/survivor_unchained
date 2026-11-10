@@ -22,6 +22,11 @@ public sealed class PackKit(Battle b)
     double trailT, standReady;
     /// <summary>(M3 round 5) Where she last moved StandMoved from, and when (the stand's length, for StandGrow).</summary>
     double stillX, stillZ, stillAt = -1;
+    /// <summary>When no foe that may charge was last awake (the stand counts from then).</summary>
+    double quietAt = -99;
+    /// <summary>(M3) A fighter's plant (Teeth.Director.StandSwing): the seconds the clock has counted her standing at this
+    /// spot, the spot's allowance of landed cuts left, until when a landed cut holds the clock, and the landed cuts read.</summary>
+    double stood, swingLeft, heldUntil, swingSeen;
     /// <summary>The second charger, held its kit's spacing as the arena's Cast holds it (then cast at her).</summary>
     (Enemy E, double Seed, double At)? standSecond;
     /// <summary>(M3) Stand charges cast this run (the harness's tally).</summary>
@@ -56,16 +61,37 @@ public sealed class PackKit(Battle b)
     /// <summary>(M3) The stand clock (H6's rule, StandClock, the arena director's): with the campaign on and the world tier's
     /// `stand` numbers (Battle.StoryStand), a woken pack's foe within StandNear charges her (the kit's charge, marked,
     /// at StandScale; a second from another side with StandPair 2) when she has not moved StandMoved in StandFor s, at most
-    /// once each StandCooldown. Champions, bosses and the scripted never do. `awake`: the woken packs' live foes (asked
+    /// once each StandCooldown. A fighter's plant is not a stand (StandSwing: her held swing's landed cuts hold the clock,
+    /// up to about one chain at one spot). Champions, bosses and the scripted never do. `awake`: the woken packs' live foes (asked
     /// only once she has stood). Off (no numbers, or the campaign off): nothing.</summary>
     public void Stand(double dt, Func<bool>? held, Func<HashSet<Enemy>> awake)
     {
         if (!b.Campaign || b.StoryStand is not { Stand: true } d) return;
         var p = b.Player;
-        if ((trailT -= dt) <= 0) { trailT = 0.25; StandClock.Sample(herTrail, b.Time, p.X, p.Z, d.StandFor); }
-        if (stillAt < 0 || p.RootT > 0 || Math.Sqrt((p.X - stillX) * (p.X - stillX) + (p.Z - stillZ) * (p.Z - stillZ)) >= d.StandMoved)
-            { stillX = p.X; stillZ = p.Z; stillAt = b.Time; }
-        double bite = d.StandDamage * (1 + Math.Min(d.StandGrowMax, d.StandGrow * Math.Max(0, b.Time - stillAt - d.StandFor)));
+        // (M3 lead 7) A stand is a stand in a fight: the clock counts from when a foe that may charge is awake (read with her
+        // trail, four times a second). Stood on a pack's ground between its waves with nothing up, the next wave's first
+        // step charged her on the tick it walked out: 45% of the human's and the deft's charges at 48 seeds.
+        bool sample = (trailT -= dt) <= 0;
+        if (sample) { trailT = 0.25; StandClock.Sample(herTrail, b.Time, p.X, p.Z, d.StandFor); if (awake().Count == 0) quietAt = b.Time; }
+        bool moved = stillAt < 0 || Math.Sqrt((p.X - stillX) * (p.X - stillX) + (p.Z - stillZ) * (p.Z - stillZ)) >= d.StandMoved;
+        if (moved || p.RootT > 0) { stillX = p.X; stillZ = p.Z; stillAt = b.Time; }
+        b.StandSpot = (stillX, stillZ);
+        // (M3) A fighter's plant is not a stand: a cut of her held swing that landed on a foe holds the clock for its own
+        // length, up to StandSwing s at one spot (a step of StandMoved gives the allowance back; held where she is does
+        // not). What the clock counts is the rest: her feet still and no cut landing.
+        bool fighter = d.StandSwing > 0;
+        if (fighter)
+        {
+            // (a step keeps the hold of the cut that landed before it: the wait to her next cut is that cut's, not a stand)
+            if (moved) { stood = 0; swingLeft = d.StandSwing; }
+            else if (p.RootT > 0) stood = 0;
+            double cut = Math.Min(swingLeft, b.SwingLanded - swingSeen);
+            if (cut > 0) { heldUntil = Math.Max(heldUntil, b.Time) + cut; swingLeft -= cut; }
+            if (!moved && p.RootT <= 0 && b.Time >= heldUntil) stood += dt;
+        }
+        swingSeen = b.SwingLanded;
+        b.StoodFor = fighter ? stood : b.Time - stillAt;
+        double bite = d.StandDamage * (1 + Math.Min(d.StandGrowMax, d.StandGrow * Math.Max(0, b.StoodFor - d.StandFor)));
         if (standSecond is var (se, ss, sat) && b.Time >= sat && held?.Invoke() != true)
         {
             if (!se.Alive || se.Seed != ss || se.State != EnemyState.Active || !p.Alive) standSecond = null;
@@ -75,7 +101,8 @@ public sealed class PackKit(Battle b)
         if (b.Time < standReady || !p.Alive || held?.Invoke() == true) return;
         // Held where she is (knocked down, rooted) is not standing: the clock starts again once she can move.
         if (p.RootT > 0) { standReady = b.Time + d.StandFor; return; }
-        if (!StandClock.Still(herTrail, b.Time, p.X, p.Z, d)) return;
+        if (!StandClock.Still(herTrail, b.Time, p.X, p.Z, d) || fighter && (stood < d.StandFor || b.Time < heldUntil)) return;
+        if (b.Time - quietAt < d.StandFor) return;
         var set = awake();
         if (set.Count == 0) return;
         Func<Enemy, bool> may = set.Contains;
