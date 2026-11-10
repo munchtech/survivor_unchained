@@ -183,6 +183,53 @@ float hl_noise(vec3 p) {
 		mix(mix(hl_hash(i + vec3(0, 0, 1)), hl_hash(i + vec3(1, 0, 1)), f.x), mix(hl_hash(i + vec3(0, 1, 1)), hl_hash(i + vec3(1, 1, 1)), f.x), f.y), f.z);
 }
 
+// (L1 lead 23, LOCKS) THE LOCK-SCALE BREAKUP: at the play camera a strand texture blurs to one flat plateau (a cap, not
+// hair). Her hair is drawn as a few BIG LOCKS in her head's rest space (hl_at): the crown cut into cel_hero_locks.y locks
+// over a half turn about her head's front-back axis, each a rope with its OWN turn (its cylinder normal across its width
+// against her light, cel_hero.xy, 40 degrees up): under cel_hero_locks.z of the light it takes the shade-lock value
+// (x, an Oklab L factor), a dark gap line (w, L factor; 1 px at a lock's edge, and where the cards lie deep, COLOR.r; the
+// scalp cap under the cards is all gap), and one hard sheen band (cel_hero_locks2.x, L factor, its width y) where a lit
+// lock's normal meets the half-vector, each lock's band shifted by its number. VALUE ONLY: the emission is scaled by
+// the cube of the L factor (Oklab hue and C / L kept exactly; the sheen stops at the gamut's top). Whole at the play
+// camera, none in a close shot (c_near, as the class landing). hero_pool 72-77; zeros: as before.
+global uniform vec4 cel_hero_locks;
+global uniform vec2 cel_hero_locks2;
+vec3 hair_locks(vec3 e, vec3 p, float deep, bool scalp, vec3 pw, vec3 cam, mat3 to_world, float near) {
+	if (near <= 0.0) return e;
+	float y0 = 0.05;
+	vec3 q = p + vec3(0.0, y0, 0.0);
+	float a = atan(q.x, q.y) / 3.14159265 * max(cel_hero_locks.y, 1.0);   // (locks over a half turn)
+	float wob = 0.18 * sin(q.z * 23.0 + floor(a) * 1.7);                  // (a lock's edge not a ruled line)
+	a += wob;
+	float li = floor(a), u = a - li, h = hl_hash(vec3(li, 3.1, 7.7));
+	vec3 nr = normalize(q);
+	vec3 tl = normalize(cross(vec3(0.0, 0.0, 1.0), nr) + vec3(1e-5));
+	float th = (u - 0.5) * 2.4;                                          // (across the rope: its normal turns +-69 degrees)
+	vec3 nl = normalize(to_world * (nr * cos(th) - tl * sin(th)));
+	vec2 hx = cel_hero.xy / max(length(cel_hero.xy), 1e-4);
+	vec3 ld = normalize(vec3(hx.x, 0.84, hx.y));
+	float lit = dot(nl, ld) + (h - 0.5) * 0.3;                          // (each lock a little its own)
+	float fw = max(fwidth(lit), 1e-4);
+	float f = mix(cel_hero_locks.x, 1.0, smoothstep(cel_hero_locks.z - 0.5 * fw, cel_hero_locks.z + 0.5 * fw, lit));
+	// (the gap: 1 px at a lock's edge, deep cards, the scalp)
+	float ue = min(u, 1.0 - u), uw = max(fwidth(a), 1e-4);
+	float gap = max(1.0 - smoothstep(0.5 * uw, 1.5 * uw, ue), smoothstep(0.88, 0.8, deep));
+	if (scalp) gap = 1.0;
+	f *= mix(1.0, cel_hero_locks.w > 0.0 ? cel_hero_locks.w : 1.0, gap);
+	// (the sheen: a hard band on a lit lock where its normal meets the half-vector, shifted lock to lock)
+	if (cel_hero_locks2.x > 0.0) {
+		vec3 hv = normalize(ld + normalize(cam - pw));
+		float s = dot(normalize(to_world * nr), hv) + (h - 0.5) * 0.12;
+		float sw = max(fwidth(s), 1e-4), e0 = 1.0 - cel_hero_locks2.y;
+		float band = smoothstep(e0 - 0.5 * sw, e0 + 0.5 * sw, s) * smoothstep(cel_hero_locks.z - 0.5 * fw, cel_hero_locks.z + 0.5 * fw, lit - 0.1) * (1.0 - gap);
+		f *= mix(1.0, cel_hero_locks2.x, band);
+	}
+	f = mix(1.0, f, near);
+	vec3 o = e * (f * f * f);
+	float m = max(o.r, max(o.g, o.b));
+	return (f > 1.0 && m > 1.0) ? e * max(1.0, 1.0 / max(max(e.r, max(e.g, e.b)), 1e-4)) : o;
+}
+
 vec3 turned(vec4 q, vec3 v) {
 	return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
 }
@@ -369,6 +416,7 @@ void fragment() {
 	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug; none on the unshaded erase).
 	CEL_FRAGMENT;
 	CEL_HERO_FRAGMENT;
+	if (cel_hero_abs() && cel_hero_id.a < 0.5 && cel_hero_locks.x > 0.0 && !tie) EMISSION = hair_locks(EMISSION, hl_at, depth, cap && COLOR.b < 0.5, (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz, CAMERA_POSITION_WORLD, mat3(MODEL_MATRIX) * head_turn, cel_hero_chroma.x > 0.0 ? cel_hero_near(-VERTEX.z, PROJECTION_MATRIX) : 1.0);
 #endif
 }
 

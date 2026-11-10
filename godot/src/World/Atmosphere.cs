@@ -675,6 +675,9 @@ public partial class Atmosphere : Node3D
         var hg = SurvivorUnchained.Look.Rigs.HeroGlint(hm);   // (L1 lead 23, GLINT) values 64-71: her hot specular per class (cel_hero_glint); zeros without them
         RenderingServer.GlobalShaderParameterSet("cel_hero_glint_skin", new Vector4((float)hg[0], (float)hg[1], (float)hg[2], (float)hg[7]));
         RenderingServer.GlobalShaderParameterSet("cel_hero_glint_metal", new Vector4((float)hg[3], (float)hg[4], (float)hg[5], (float)hg[6]));
+        var hl = SurvivorUnchained.Look.Rigs.HeroLocks(hm);   // (L1 lead 23, LOCKS) values 72-77: her hair's lock-scale breakup (hair_locks); zeros without them
+        RenderingServer.GlobalShaderParameterSet("cel_hero_locks", new Vector4((float)hl[0], (float)hl[1], (float)hl[2], (float)hl[3]));
+        RenderingServer.GlobalShaderParameterSet("cel_hero_locks2", new Vector2((float)hl[4], (float)hl[5]));
     }
     /// <summary>(L1 lead 20, HER5) Her LINE (hero_line.gdshader; CelLib.LineStep hangs it on her meshes): the row's value 8 = its
     /// width in px at 1080p, value 9 = its level against the anchor's tone. On as cel_hero is on; else 0 and nothing is drawn.</summary>

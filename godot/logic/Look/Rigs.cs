@@ -263,6 +263,10 @@ public static class Rigs
     /// its dark reflected band (67-70), the key's elevation (71: the light vector's y before normalizing, with the xz toward
     /// her light's foot). A row without them: zeros, the figure renders as before.</summary>
     public static double[] HeroGlint(double[]? heroPool) => heroPool is { Length: >= 72 } ? heroPool[64..72] : new double[8];
+    /// <summary>(L1 lead 23, LOCKS) hero_pool values 72-77: her hair's lock-scale breakup (heroine_hair.gdshaderinc hair_locks): the
+    /// shade-lock Oklab L factor (0 = off), locks over a half turn of her head, the lit threshold on a lock's own turn, the gap
+    /// line's L factor, the sheen band's L factor and its width. Value only. A row without them: zeros, the hair as before.</summary>
+    public static double[] HeroLocks(double[]? heroPool) => heroPool is { Length: >= 78 } ? heroPool[72..78] : new double[6];
 
     /// <summary>(HERPAIR) A hero material's class from its shader's file and its outfit kind (heroine_outfit.gdshaderinc
     /// `kind`: 0 leather, 1 metal, 2 cloth, 3 gloss, 4 twill, 5 satin; -1 none): 0 hair, 1 skin, 2 outfit leather / cloth,
