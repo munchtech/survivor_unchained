@@ -275,6 +275,7 @@ public static class CelLib
     static readonly HashSet<ulong> lineIds = new();
     static readonly Dictionary<ulong, bool> lineShader = new();
     static ShaderMaterial? line, lineHair;
+    static readonly Dictionary<Material, ShaderMaterial> lineOver = new();   // (another's overlay -> our passes with it after them)
     static bool lineWas;
 
     static ShaderMaterial LineChain(bool hair)
@@ -299,7 +300,9 @@ public static class CelLib
     static bool LineFits(MeshInstance3D g, out bool hair)
     {
         hair = false;
-        if (g.Mesh == null || g.CastShadow == GeometryInstance3D.ShadowCastingSetting.ShadowsOnly || g.MaterialOverride != null) return false;
+        // (lead 21) a mesh the camera does not draw takes no line: hidden in the tree, a shadow-only proxy, a ghost's fade
+        if (g.Mesh == null || !g.IsVisibleInTree() || g.CastShadow == GeometryInstance3D.ShadowCastingSetting.ShadowsOnly || g.MaterialOverride != null || g.Transparency > 0) return false;
+        if (g.GetViewport()?.GetCamera3D() is { } cam && (g.Layers & cam.CullMask) == 0) return false;   // (on no layer the view's camera draws)
         int n = g.Mesh.GetSurfaceCount();
         for (int s = 0; s < n; s++)
         {
@@ -321,6 +324,24 @@ public static class CelLib
         return n > 0;
     }
 
+    /// <summary>(lead 21) A dev print, off unless the environment has SU_HERO_LINE_PRINT: each lined mesh once per change of
+    /// state (its path, whether it is drawn, its shadow mode, layers, fade, skin, overlay passes, first surface's shader).</summary>
+    static readonly bool LinePrint = !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("SU_HERO_LINE_PRINT"));
+    static readonly Dictionary<ulong, string> lineSaid = new();
+    static void LineSay(MeshInstance3D g, bool want, bool hair, Material? ov)
+    {
+        var m = g.Mesh == null || g.Mesh.GetSurfaceCount() == 0 ? null : (g.GetSurfaceOverrideMaterialCount() > 0 ? g.GetSurfaceOverrideMaterial(0) : null) ?? g.Mesh.SurfaceGetMaterial(0);
+        string sh = m switch { ShaderMaterial { Shader: { } x } => x.ResourcePath + " [" + (Regex.Match(x.Code, @"render_mode[^;]*").Value) + "]", BaseMaterial3D b => "std " + b.ResourceName + " transp " + b.Transparency, null => "none", _ => m.GetClass() };
+        string passes = "";
+        for (var p = ov; p != null; p = p.NextPass) passes += (p is ShaderMaterial { Shader: { } o } ? (IsLine(p) ? "line" : o.ResourcePath.GetFile()) : p.GetClass()) + ">";
+        var cam = g.GetViewport()?.GetCamera3D();
+        string say = $"want {want} hair {hair} vis {g.Visible}/{g.IsVisibleInTree()} cast {g.CastShadow} layers {g.Layers} cam_mask {cam?.CullMask} fade {g.Transparency} skin {g.Skin != null} surfs {g.Mesh?.GetSurfaceCount()} overlay {passes} | {sh}";
+        var id = g.GetInstanceId();
+        if (lineSaid.TryGetValue(id, out var was) && was == say) return;
+        lineSaid[id] = say;
+        GD.Print($"HERO_LINE {Engine.GetFramesDrawn()} {g.GetPath()} : {say}");
+    }
+
     static void LineStep()
     {
         bool on = Atmosphere.HeroLinePx > 0;
@@ -335,21 +356,29 @@ public static class CelLib
             at = her;
             bool hair = false, want = on && LineFits(g, out hair);
             var ov = g.MaterialOverlay;
+            if (LinePrint) LineSay(g, want, hair, ov);
             if (ov == null) { if (want) g.MaterialOverlay = hair ? lineHair ??= LineChain(true) : line ??= LineChain(false); }
-            else if (IsLine(ov)) { if (!want) g.MaterialOverlay = null; }
-            else
+            else if (IsLine(ov)) { if (!want) { Material? under = ov; while (IsLine(under)) under = under!.NextPass; g.MaterialOverlay = under; } }
+            else if (want)
             {
-                Material last = ov;
-                while (last.NextPass != null && !IsLine(last.NextPass)) last = last.NextPass;
-                var then = want ? line ??= LineChain(false) : null;
-                if (last.NextPass != then) last.NextPass = then;
+                // (lead 21) another's overlay (her x-ray, a wraith's walk): OUR passes first, its own after them, as this mesh's
+                // overlay. Never a pass hung on ITS material: the x-ray's one material is also the overlay of meshes the line
+                // must not reach (each mesh's FxAfterHole copy, drawn for another camera on layer 20: the fill of her5_01).
+                if (!lineOver.TryGetValue(ov, out var over))
+                {
+                    lineOver[ov] = over = LineChain(false);
+                    Material last = over;
+                    while (last.NextPass != null) last = last.NextPass;
+                    last.NextPass = ov;
+                }
+                g.MaterialOverlay = over;
             }
         }
         if (on && at != null && at.IsInsideTree())
         {
             float y = at.GlobalPosition.Y;
-            foreach (var first in new[] { line, lineHair })
-                for (Material? p = first; p != null; p = p.NextPass) ((ShaderMaterial)p).SetShaderParameter("floor_y", y);
+            foreach (var first in lineOver.Values.Append(line).Append(lineHair))
+                for (Material? p = first; IsLine(p); p = p!.NextPass) ((ShaderMaterial)p!).SetShaderParameter("floor_y", y);
         }
     }
 
