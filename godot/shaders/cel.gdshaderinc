@@ -490,20 +490,43 @@ float cel_hero_mask(vec3 c_wn, float c_w) {
 	float c_under = 1.0 - smoothstep(cel_hero_tone.w - c_w, cel_hero_tone.w + c_w, c_wn.y);
 	return max(c_side, c_under);
 }
-#define CEL_HERO_FRAGMENT { float c_hm = cel_hero_mask(normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz), 0.02); ALBEDO *= 1.0 - c_hm; EMISSION = mix(EMISSION, cel_hero_tone.rgb, c_hm); }
-#define CEL_HERO_LIGHT { SPECULAR_LIGHT *= 1.0 - cel_hero_mask(normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz), 0.02); }
-#ifdef CEL_HERO_ARM
-// (L1 lead 19, HER3) A HELD PIECE of the hero (her shield, her blade: CelLib.Hero binds her own copies of their standard
-// materials with CEL_HERO + CEL_HERO_ARM) is a BODY: one dark warm tone one step over the anchor on every face but the
-// ones turned well toward the pool light's foot, which take the rig's one warm light (the shield's lit rim as one line,
-// the blade's one lit edge). No albedo, no lights: the two tones are absolute. Row values 10-19 (Atmosphere.SetCel):
-// cel_hero_arm = the body (linear rgb x level), the arm's side edge; cel_hero_lit = the warm light (linear rgb x level),
-// the least screen width in px (CEL_HERO_ARM_VERTEX pushes each vertex half of it along its normal).
-global uniform vec4 cel_hero_arm;
+// (L1 lead 20, HER4) SHE IS A LIGHT FIGURE: with the row's light (values 15-18) the whole figure is painted in the rig's
+// ABSOLUTE tones, no lights on her: the warm LIGHT on every plane but the ones turned away from the foot, a MID step
+// (values 20-24: level, r, g, b, its side edge) between, and the anchor only as a narrow accent past its own side edge
+// (value 6) and on under planes (value 7). Each material keeps ITS OWN color inside the light and the mid: the hue of
+// its albedo by the share cel_hero_own.x (value 25), its value as pow(v, cel_hero_own.y) (value 26: 0 = one level for
+// every material, navy as light as skin). The anchor stays one tone (one connected dark mass). A row without the light
+// (under 20 values): the lead 19 form (the anchor over the material's own lit side).
 global uniform vec4 cel_hero_lit;
-bool cel_hero_arm_on() { return cel_hero.w > 0.5 && cel_ember.w > 0.0 && cel_hero_arm.rgb != vec3(0.0); }
+global uniform vec4 cel_hero_mid;
+global uniform vec4 cel_hero_own;
+bool cel_hero_on() { return cel_hero.w > 0.5 && cel_ember.w > 0.0; }
+bool cel_hero_abs() { return cel_hero_on() && cel_hero_lit.rgb != vec3(0.0); }
+vec3 cel_hero_local(vec3 c_tone, vec3 c_alb) {
+	float c_v = clamp(max(c_alb.r, max(c_alb.g, c_alb.b)), 0.02, 1.0);
+	vec3 c_own = clamp(c_alb / c_v, 0.0, 1.0);
+	return c_tone * mix(vec3(1.0), c_own, cel_hero_own.x) * pow(c_v, cel_hero_own.y);
+}
+vec3 cel_hero_paint(vec3 c_wn, vec3 c_alb, float c_w) {
+	float c_s = -dot(c_wn.xz, cel_hero.xy);
+	float c_mid = cel_hero_mid.rgb != vec3(0.0) ? smoothstep(cel_hero_mid.w - c_w, cel_hero_mid.w + c_w, c_s) : 0.0;
+	vec3 c_t = mix(cel_hero_local(cel_hero_lit.rgb, c_alb), cel_hero_local(cel_hero_mid.rgb, c_alb), c_mid);
+	return mix(c_t, cel_hero_tone.rgb, cel_hero_mask(c_wn, c_w));
+}
+#define CEL_HERO_FRAGMENT { if (cel_hero_on()) { vec3 c_hn = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz); if (cel_hero_abs()) { EMISSION = cel_hero_paint(c_hn, ALBEDO, 0.02); ALBEDO = vec3(0.0); METALLIC = 0.0; SPECULAR = 0.0; } else { float c_hm = cel_hero_mask(c_hn, 0.02); ALBEDO *= 1.0 - c_hm; EMISSION = mix(EMISSION, cel_hero_tone.rgb, c_hm); } } }
+#define CEL_HERO_LIGHT { if (cel_hero_abs()) { DIFFUSE_LIGHT = vec3(0.0); SPECULAR_LIGHT = vec3(0.0); } else { SPECULAR_LIGHT *= 1.0 - cel_hero_mask(normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz), 0.02); } }
+#ifdef CEL_HERO_ARM
+// (L1 lead 19, HER3; lead 20, HER4) A HELD PIECE of the hero (her shield, her blade: CelLib.Hero binds her own copies of
+// their standard materials with CEL_HERO + CEL_HERO_ARM) is a LIT FORM in its OWN color at two absolute levels, no
+// lights: the rig's warm light on the whole piece, its shade (values 10-13, never under the anchor) only on its away
+// side, read from the POSITION (past value 14 metres from the piece's origin, away from the foot) and never from the
+// normal: a flat disc facing the camera is lit, a plane is one tone (no speckle of rivets). Both carry the albedo's
+// own color (cel_hero_local). cel_hero_arm = the shade (linear rgb x level), the away edge in m; cel_hero_lit.w = the
+// least screen width in px (CEL_HERO_ARM_VERTEX pushes each vertex half of it along its normal).
+global uniform vec4 cel_hero_arm;
+bool cel_hero_arm_on() { return cel_hero_abs() && cel_hero_arm.rgb != vec3(0.0); }
 #define CEL_HERO_ARM_VERTEX { if (cel_hero_arm_on()) { float c_ad = -(MODELVIEW_MATRIX * vec4(VERTEX, 1.0)).z; VERTEX += NORMAL * (0.5 * cel_hero_lit.w * 2.0 * c_ad / (PROJECTION_MATRIX[1][1] * VIEWPORT_SIZE.y * length(MODEL_MATRIX[0].xyz))); } }
-#define CEL_HERO_ARM_FRAGMENT { if (cel_hero_arm_on()) { vec3 c_an = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz); float c_am = smoothstep(cel_hero_arm.w - 0.02, cel_hero_arm.w + 0.02, -dot(c_an.xz, cel_hero.xy)); ALBEDO = vec3(0.0); METALLIC = 0.0; SPECULAR = 0.0; AO = 0.0; EMISSION = mix(cel_hero_lit.rgb, cel_hero_arm.rgb, c_am); } }
+#define CEL_HERO_ARM_FRAGMENT { if (cel_hero_arm_on()) { vec3 c_ap = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz - NODE_POSITION_WORLD; float c_am = smoothstep(cel_hero_arm.w - 0.01, cel_hero_arm.w + 0.01, -dot(c_ap.xz, cel_hero.xy)); EMISSION = mix(cel_hero_local(cel_hero_lit.rgb, ALBEDO), cel_hero_local(cel_hero_arm.rgb, ALBEDO), c_am); ALBEDO = vec3(0.0); METALLIC = 0.0; SPECULAR = 0.0; AO = 0.0; } }
 #define CEL_HERO_ARM_LIGHT { if (cel_hero_arm_on()) { DIFFUSE_LIGHT = vec3(0.0); SPECULAR_LIGHT = vec3(0.0); } }
 #endif
 #endif

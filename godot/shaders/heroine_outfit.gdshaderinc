@@ -655,6 +655,7 @@ void light() {
 		DIFFUSE_LIGHT += mix(da, db, cel_on);
 		SPECULAR_LIGHT += mix(sa, sb, cel_on);
 	}
+	CEL_HERO_LIGHT;   // (L1 l20 her4: the base cloth too; the figure's absolute tones take no light)
 }
 #endif
 

@@ -647,6 +647,13 @@ public partial class Atmosphere : Node3D
         Color armTone = HeroTone(10), litTone = HeroTone(15);
         RenderingServer.GlobalShaderParameterSet("cel_hero_arm", new Vector4(armTone.R, armTone.G, armTone.B, ha != null ? (float)ha[14] : 0));
         RenderingServer.GlobalShaderParameterSet("cel_hero_lit", new Vector4(litTone.R, litTone.G, litTone.B, ha != null ? (float)ha[19] : 0));
+        // (L1 lead 20, HER4) she is a LIGHT figure: with the light the whole figure is the rig's absolute tones (CEL_HERO_FRAGMENT).
+        // Values 20-26 = the mid step's level, r, g, b, its side edge, the share of a material's own hue, of its own value. Value 14
+        // is now the held piece's away edge in metres. A row of 20: no mid, every material at the light's one color.
+        var hm = ha is { Length: >= 27 } ? ha : null;
+        var midTone = hm != null ? HeroTone(20) : new Color(0, 0, 0);
+        RenderingServer.GlobalShaderParameterSet("cel_hero_mid", new Vector4(midTone.R, midTone.G, midTone.B, hm != null ? (float)hm[24] : 0));
+        RenderingServer.GlobalShaderParameterSet("cel_hero_own", hm != null ? new Vector4((float)hm[25], (float)hm[26], 0, 0) : Vector4.Zero);
     }
     /// <summary>(L1 lead 19, HER2) Where her pool light's foot sits, in metres from her (x, z): the rig's hero_pool, else (0, 0.4).</summary>
     public static Vector2 HeroFoot = new(0, 0.4f);
