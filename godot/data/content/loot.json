@@ -19,6 +19,9 @@
   "material": 0.1, "iron": 0.2,
   "belt": 20,
   "upgradeMargin": 1.05,
+  "_plusSkills": "(M9, ARPG.md 9) The skills a '+1 to a skill' suffix is made for (Ring, Amulet, Head, Relic; Rare and up; one more lamp lit on its wick while worn), and the short name each goes by in the suffix's name ('of the Leap'); without one, the skill's own name.",
+  "plusSkills": ["sunder", "groundbreaker", "oathblade", "cleaver", "heroic_leap", "shield_charge", "iron_vow", "watch_bell", "dawnpulse"],
+  "plusNames": { "sunder": "Sunderer", "groundbreaker": "Groundbreaker", "oathblade": "Oath", "cleaver": "Cleaver", "heroic_leap": "Leap", "shield_charge": "Charge", "iron_vow": "Vow", "watch_bell": "Bell", "dawnpulse": "Daybreak" },
   "_power": "What a unit of each stat is worth to the power score (never shown): 'stat:kind', 'stat', or 'prefix.*'. Fractions are the stats' own (0.05 is 5%).",
   "power": {
     "armor": 1, "maxHealth": 0.12, "maxHealth:inc": 30, "moveSpeed:inc": 50, "critChance": 60, "critDamage": 8,

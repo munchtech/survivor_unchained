@@ -367,7 +367,7 @@ public static partial class Crafting
         q.Before = Line(a.Id, a.Tier);
         Hot(it, q);
         if (q.Blocked != null) return q;
-        if (def?.Kindled != null || def?.Grants != null) { q.Blocked = "A coal or a worn skill has no grades."; return q; }
+        if (def?.Kindled != null || def?.Grants != null || def?.Plus != null) { q.Blocked = "A coal or a worn skill has no grades."; return q; }
         if (def?.Mark == true) { q.Blocked = "A mark is as fine as what it came from. A finer one comes from a harder map."; return q; }
         if (a.Tier >= Cap(it)) { q.Blocked = $"Grade {Grade(a.Tier)} is as high as {Article(Inventory.RarityName(it).ToLowerInvariant())} piece goes."; return q; }
         var step = Rules.Temper[Math.Clamp(a.Tier, 0, Rules.Temper.Count - 1)];
@@ -730,7 +730,7 @@ public static partial class Crafting
 
     /// <summary>A power that can be lifted out of one piece into another: a plain affix. Coals are
     /// the forge's, a worn skill is its piece's, a trophy's power and the slurry's will not let go.</summary>
-    public static bool Bindable(AffixDef? d) => d != null && d.Kindled == null && d.Grants == null && !d.Unique;
+    public static bool Bindable(AffixDef? d) => d != null && d.Kindled == null && d.Grants == null && d.Plus == null && !d.Unique;
 
     /// <summary>What the survivor carries that could give this piece a power: each piece in the pack and
     /// the place of a bindable affix in it that this kind of piece takes.</summary>

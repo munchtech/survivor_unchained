@@ -72,6 +72,10 @@ public static class SkillBook
     /// <summary>A learned skill's rank by day: it grows with the survivor.</summary>
     public static int Rank(CharacterData ch) => Math.Min(Weapons.MaxRank, 1 + (ch.Level - 1) / 3);
 
+    /// <summary>(M9) A carried skill's rank by day with what her gear adds (Character.SkillPlus), to MaxRank:
+    /// rank is lit lamps on its wick, so a "+1" lights one more.</summary>
+    public static int RankOf(CharacterData ch, string skill) => Math.Min(Weapons.MaxRank, Rank(ch) + Character.SkillPlus(ch, skill));
+
     public static bool Slot(CharacterData ch, string id)
     {
         if (!Knows(ch, id) || !Carries(ch, id) || ch.Slotted.Contains(id) || ch.Slotted.Count >= Slots(ch)) return false;
@@ -85,7 +89,7 @@ public static class SkillBook
     /// calling's to carry (one that is not lies idle, as one not measured up to
     /// does: an old save keeps it, unused), within the slots.</summary>
     public static IEnumerable<(string Id, int Rank)> Carried(CharacterData ch) =>
-        ch.Slotted.Where(id => Weapons.All.ContainsKey(id) && Knows(ch, id) && Meets(ch, id) && Carries(ch, id)).Take(Slots(ch)).Select(id => (id, Rank(ch)));
+        ch.Slotted.Where(id => Weapons.All.ContainsKey(id) && Knows(ch, id) && Meets(ch, id) && Carries(ch, id)).Take(Slots(ch)).Select(id => (id, RankOf(ch, id)));
 
     /// <summary>The skills attuned for the night: those carried by day (and
     /// measured up to). In an arena the ember offers them in its first drafts,

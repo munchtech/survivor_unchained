@@ -509,7 +509,7 @@ public static class LampBook
         {
             if (!Weapons.All.ContainsKey(skill) || !SkillBook.Carries(ch, skill)) return false;
             if (link) return true;
-            var w = WickBook.Weapon(ch, skill, SkillBook.Rank(ch));
+            var w = WickBook.Weapon(ch, skill, SkillBook.RankOf(ch, skill));
             return scoped.Any(e => LampLoadout.Covers(e, w.Def.Id, w.Tags));
         }
         var names = scoped.Where(e => e.Skill != null).Select(e => e.Skill!).Concat(d.Feeds).Where(Wakes).Distinct().ToList();

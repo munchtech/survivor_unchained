@@ -307,7 +307,7 @@ public sealed partial class Journey
                 if (!b.HasRoomFor(s.Skill) && Content.TaughtBuilds.Of(Ch.Archetype) is { } t
                     && b.Weapons.LastOrDefault(w => t.Slots.All(x => x.Skill != w.Id)) is { } spare)
                     b.RemoveWeapon(spare.Id);
-                if (b.AddWeapon(s.Skill, SkillBook.Rank(Ch)) is { } w) { b.SetForm(s.Skill, s.Cast); slot = w.Slot; }
+                if (b.AddWeapon(s.Skill, SkillBook.RankOf(Ch, s.Skill)) is { } w) { b.SetForm(s.Skill, s.Cast); slot = w.Slot; }
             }
             b?.Events.Emit(new Ev.Taught { Skill = s.Skill, Cast = s.Cast, Slot = slot, Level = Ch.Level });
         }
@@ -583,6 +583,13 @@ public sealed partial class Journey
         foreach (var id in GearWeapons) if (!kitIds.Contains(id)) b.RemoveWeapon(id);
         foreach (var (id, rank) in kit.Weapons) if (!b.Weapons.Any(x => x.Id == id)) b.AddWeapon(id, rank);
         GearWeapons = kitIds;
+        // (M9) A campaign fight's carried skills at their rank with the gear worn now ("+1 to a skill" on or off).
+        if (b.Campaign)
+        {
+            var carried = SkillBook.Carried(Ch).ToDictionary(c => c.Id, c => c.Rank);
+            foreach (var w in b.Weapons.ToList())
+                if (carried.TryGetValue(w.Id, out var r)) b.SetRank(w.Id, r);
+        }
         b.GearIds.Clear(); b.GearIds.UnionWith(kit.GearIds);
         b.GearStatuses.Clear(); b.GearStatuses.UnionWith(kit.GearStatuses);
         b.Player.Hp = Math.Min(b.Player.Hp, b.MaxHp);

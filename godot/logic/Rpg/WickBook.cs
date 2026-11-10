@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using SurvivorUnchained.Content;
@@ -146,7 +147,7 @@ public static class WickBook
     public static int RankIn(CharacterData ch, string skill, bool night)
     {
         foreach (var (id, rank) in Character.DaySkills(ch, gearOnly: true)) if (id == skill) return rank;
-        return night ? SkillBook.NightRank(ch) : SkillBook.Rank(ch);
+        return night ? Math.Min(Weapons.MaxRank, SkillBook.NightRank(ch) + Character.SkillPlus(ch, skill)) : SkillBook.RankOf(ch, skill);
     }
 
     /// <summary>§14.8: the wick's whole sum for one skill's damage, the number its blows start from in the fight

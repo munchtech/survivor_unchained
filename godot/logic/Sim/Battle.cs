@@ -2722,6 +2722,18 @@ public sealed partial class Battle
         Relight(w, true);
     }
 
+    /// <summary>(M9) A weapon set to a rank (1 to MaxRank) and its wick relit to it, quietly: gear's "+1 to a skill"
+    /// put on or taken off in a fight (Journey.RefreshKit). Not a build step (never journaled): the kit sets it again.</summary>
+    public void SetRank(string id, int rank)
+    {
+        var w = Weapons.Find(x => x.Id == id);
+        if (w == null) return;
+        rank = Math.Clamp(rank, 1, Content.Weapons.MaxRank);
+        if (w.Rank == rank) return;
+        w.Rank = rank;
+        Relight(w, false);
+    }
+
     /// <summary>A finished weapon honed (the endless dark's draft): a little more damage each time.</summary>
     public void Hone(string id)
     {

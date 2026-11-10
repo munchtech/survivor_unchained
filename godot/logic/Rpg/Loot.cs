@@ -104,6 +104,10 @@ public sealed class LootRules
     /// <summary>Each source's terms, by its key ("champion", "mapRuler").</summary>
     public Dictionary<string, SourceRule> Sources = new();
     public Dictionary<string, SetDef> Sets = new();
+    /// <summary>(M9) The skills a "+1 to a skill" suffix is made for (Items.Affixes), and the short name
+    /// it goes by in the affix's name ("of the Leap"); without one, the skill's own name.</summary>
+    public List<string> PlusSkills = new();
+    public Dictionary<string, string> PlusNames = new();
 }
 
 /// <summary>Everything a drop roll needs to know about where it falls.</summary>
@@ -285,7 +289,7 @@ public static class Drops
             s += Weight(m) * m.Value * (m.When != null ? 0.5 : 1);
         s += (def.Triggers?.Count ?? 0) * 5;
         foreach (var a in it.Affixes)
-            if (Items.Affix(a.Id) is { } ad) s += ad.Kindled != null ? 4 : ad.Grants != null ? 6 : 0;
+            if (Items.Affix(a.Id) is { } ad) s += ad.Kindled != null ? 4 : ad.Grants != null ? 6 : ad.Plus != null ? 5 : 0;
         if (def.Weapon != null) s += 8 * Inventory.WeaponRank(it);
         return s;
     }
