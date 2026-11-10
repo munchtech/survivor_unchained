@@ -2035,8 +2035,8 @@ BU_OFF = (-0.02, 0.05)         # a cap's middle off the mound along its normal (
 BU_CORE = 0.86        # the core's share of the guide domes
 # (L1 lead 22, BUSH) A cap's TONE is baked in COLOR.r, not read from its normal (a cap is 20-30 px at the play camera, a
 # rim band of its normal 2-3 px): rows (s, level) from its middle to its rim; the standing leaf route steps at 0.9 (top)
-# and 0.7 (mid), under 0.7 the dark edge. lod0: top 1.0 to s 0.36, olive to s 0.81, the edge beyond; lod1-2: one fan.
-BU_RING = {0: ((0.0, 1.0), (0.5, 0.86), (1.0, 0.6)), 1: ((0.0, 0.98), (1.0, 0.6)), 2: ((0.0, 0.98), (1.0, 0.6))}
+# and 0.7 (mid), under 0.7 the dark edge. lod0: top to s 0.68 (bush_01's 0.36 read as a flower's dot), olive to s 0.91, the edge beyond; lod1-2: one fan.
+BU_RING = {0: ((0.0, 1.0), (0.6, 0.97), (1.0, 0.62)), 1: ((0.0, 0.98), (1.0, 0.6)), 2: ((0.0, 0.98), (1.0, 0.6))}
 BU_UNDER = 0.55       # a cap's underside level (lod0): the dark edge
 BU_JIT = ((0.55, -0.04, 0.05), (0.27, 0.13, 0.15), (0.18, 0.25, 0.27))   # (share, shift lo, hi): lit, olive, dark caps
 BU_UV_CORE = (0.36, 0.50)

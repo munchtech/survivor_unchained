@@ -40,8 +40,8 @@ render_mode diffuse_burley, specular_schlick_ggx;
 // 0.6 its edge, the whole cap shifted by BU_JIT), not read from its normal: a cap is 20-30 px at the play camera and its
 // normal's rim band 2-3 px, so the normal drew two flat fields. The normal still says WHICH SIDE (toward her fire: the
 // fire's first band; else the moon's), the level says which tone there: fire top (>= 0.9, tone 6) / olive mid (>= 0.7,
-// tone 5) / dark edge (tone 5 x texel 7.w); moon top (>= 0.9 on key-lit faces off the side, tone 3) / body or side by the
-// normal (>= 0.7) / side (the edge). Foot band, rim line, the fire's give-way and the dabs as cel_stand_base.
+// tone 5) / dark edge (tone 5 x texel 7.w); moon top (>= 0.7 on key-lit faces off the side, tone 3) over body or side by the
+// normal (bush_01: the edge forced to side drew the moon half one dark slab). Foot band, rim line, the fire's give-way and the dabs as cel_stand_base.
 vec3 kit_leaf_base(vec3 c_wp, vec2 c_org, vec3 c_wn, float c_foot, float c_lum, float c_rim, float c_lv, out vec3 c_moon, out vec3 c_fire) {
 	vec4 c_x = cel_stand_tone(7);
 	float c_dab = c_x.y > 0.0 ? clamp(pow(max(c_lum, 1e-4) / max(c_x.x, 1e-4), c_x.y), 0.5, 1.5) : 1.0;
@@ -50,9 +50,8 @@ vec3 kit_leaf_base(vec3 c_wp, vec2 c_org, vec3 c_wn, float c_foot, float c_lum, 
 	float c_kl = cel_stand_step(dot(c_wn, cel_key.xyz), 0.2);
 	float c_hi = cel_stand_step(c_lv, 0.9), c_md = cel_stand_step(c_lv, 0.7);
 	float c_side = 1.0 - cel_stand_step(c_d, cel_stand.y);
-	vec3 c_base = mix(cel_stand_tone(1).rgb, mix(cel_stand_tone(2).rgb, cel_stand_tone(1).rgb, c_side), c_md);
-	c_base = mix(c_base, cel_stand_tone(0).rgb, c_ft);
-	float c_top = c_hi * c_kl * (1.0 - c_side) * (1.0 - c_ft);
+	vec3 c_base = mix(mix(cel_stand_tone(2).rgb, cel_stand_tone(1).rgb, c_side), cel_stand_tone(0).rgb, c_ft);
+	float c_top = c_md * c_kl * (1.0 - c_side) * (1.0 - c_ft);
 	vec3 c_lit = mix(c_base, cel_stand_tone(3).rgb, c_top);
 	c_lit = mix(c_lit, cel_stand_tone(4).rgb, c_rim * (1.0 - c_ft) * mix(c_top, c_kl, clamp(c_x.z, 0.0, 1.0)));
 	float c_g = 1.0;
