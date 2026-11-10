@@ -1,6 +1,6 @@
 {
  "kind": "idle",
- "rules": "POSE09 (A1 lead 17, 10 Nov): the owner's shield-and-sword lunge (owner_ref_10nov, function not a literal copy; mirrored to her kit: sword right, shield left) as a held still for L1's 09 look shot. Feet very wide and flat, toes out, both knees deep, the pelvis low, the weight a little to the shield leg; trunk forward, chest and face to the play camera; shield out front-left at chest height, face out; sword low at the right hip trailing forward-right, level to slightly down. Ease, not strain",
+ "rules": "POSE09 (A1 lead 17, 10 Nov): the owner's shield-and-sword lunge (owner_ref_10nov, function not a literal copy; mirrored to her kit: sword right, shield left) as a held still for L1's 09 look shot. Feet very wide and flat, toes out, both knees deep, the pelvis low, the weight a little to the shield leg; chest up and open (no rounded spine), head stacked, chest and face to the play camera; shield out in front to her left-front, boss near shoulder height, face clear, face out; sword low at the right hip the elbow drawn back, the blade pointing forward-right, level. Ease, not strain",
  "bands": {
   "shoulder_lift_l_cm": [
    -3,
@@ -15,16 +15,16 @@
    1.5
   ],
   "blade_below_deg": [
-   8,
-   25
+   -12,
+   10
   ],
   "blade_tip_cm": [
-   35,
-   65
+   70,
+   100
   ],
   "shield_top_cm": [
-   125,
-   142
+   132,
+   150
   ]
  },
  "gen": {
@@ -123,21 +123,21 @@
    "drop_cm": 23,
    "roll_deg": -6,
    "yaw_deg": -10,
-   "turn_l": 48,
-   "turn_r": -48,
+   "turn_l": 45,
+   "turn_r": -45,
    "foot_l": [
-    0.08,
+    0.11,
     0,
     0.15
    ],
    "foot_r": [
-    -0.07,
+    -0.1,
     0,
     -0.1
    ]
   },
   "lean": {
-   "deg": 14,
+   "deg": 6,
    "side_deg": 0
   },
   "shoulders": {
@@ -158,9 +158,9 @@
   "limbs": {
    "hand_r": {
     "at": [
-     -0.3,
-     -0.04,
-     0.14
+     -0.34,
+     0.03,
+     0.05
     ],
     "pole": [
      -0.5,
@@ -171,18 +171,18 @@
   },
   "blade": {
    "dir": [
-    -0.75,
-    -0.32,
-    0.55
+    -0.6,
+    0.05,
+    0.8
    ],
    "keep": 0
   },
   "shield": {
    "solve": true,
    "boss": [
-    0.38,
-    0.25,
-    0.28
+    0.37,
+    0.31,
+    0.33
    ],
    "open_deg": 62,
    "tilt_deg": -10,
@@ -219,7 +219,7 @@
   },
   "look": {
    "yaw_deg": 15,
-   "pitch_deg": 4,
+   "pitch_deg": 6,
    "split": [
     20,
     30,
