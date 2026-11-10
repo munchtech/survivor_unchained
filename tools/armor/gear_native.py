@@ -227,11 +227,14 @@ def bend_blend(Ds, j, w, K):
     return B, Wr, Wt
 
 
-def bend_heights(body, S, index, groups, alphas, chunk=96, reach=0.07):
+def bend_heights(body, S, index, groups, alphas, chunk=96, reach=0.07, cw=None):
     """Per group (need [n], low [n]): over each group's clips' frames, the alpha each point needs to stand its clear
-    height over her moving skin (linear blend, no corrective shapes: native_travel.skin) and its lowest height at its
-    current alphas. LBS is linear in the weights, so a point's pose at alpha a is (1-a) P_ride + a P_skin exactly; a
-    point's need over a frame is a + (L - h_a) / (h_skin - h_ride) where it is under L and bending lifts it. L = the
+    height over her moving skin and its lowest height at its current alphas. cw ({shape: [F]}, aligned with S): her
+    skin is the game's, LBS of her rest plus her corrective shapes (native_travel.skin(.., cw)), and the plate is as
+    bend_parts writes it: its carried shapes (gr["carry"] {shape: (ride's rigid carry [n, 3], skin's smoothed delta
+    [n, 3])}) lerped by alpha in rest space, then the alpha-lerped blend: P_a = LBS_{(1-a)Wr + a Wt}(X + sum_k w_k
+    ((1-a) r_k + a s_k)). cw None: plain LBS, no shapes on either. A point's need over a frame is a + (L - h_a) /
+    (h_skin - h_ride) (h_ride, h_skin: its heights at alpha 0 and 1) where it is under L and bending lifts it. L = the
     rule's "clear", or the point's own height at rest when that is less (no point is asked to stand higher than it is
     built)."""
     import native_travel as nt
@@ -247,13 +250,20 @@ def bend_heights(body, S, index, groups, alphas, chunk=96, reach=0.07):
         out.append({"L": np.minimum(gr["spec"]["clear"], h0), "need": np.zeros(len(gr["X"])), "low": np.full(len(gr["X"]), np.inf)})
     for c0 in range(0, len(S), chunk):
         Sf = S[c0:c0 + chunk]
-        V, N = nt.skin(body, Sf, index, vs)
+        cwf = None if cw is None else {k: np.asarray(w)[c0:c0 + chunk] for k, w in cw.items()}
+        V, N = nt.skin(body, Sf, index, vs, cw=cwf)
         P = []
         for gr, a in zip(groups, alphas):
             Sb = Sf[:, jm[gr["B"]]]
-            pos = np.einsum("fkij,nj->fnki", Sb[:, :, :3, :3], gr["X"]) + Sb[:, None, :, :3, 3]
-            Pr, Pt = np.einsum("fnki,nk->fni", pos, gr["Wr"]), np.einsum("fnki,nk->fni", pos, gr["Wt"])
-            P.append((Pr, Pt, (1 - a)[None, :, None] * Pr + a[None, :, None] * Pt))
+            pos = lambda Xq: np.einsum("fkij,fnj->fnki", Sb[:, :, :3, :3], Xq) + Sb[:, None, :, :3, 3]  # noqa: E731
+            car = [k for k in gr.get("carry", {}) if cwf is not None and k in cwf]
+            X0 = np.broadcast_to(gr["X"], (len(Sf),) + gr["X"].shape)
+            dR = sum((cwf[k][:, None, None] * gr["carry"][k][0][None] for k in car), np.zeros_like(X0))
+            dT = sum((cwf[k][:, None, None] * gr["carry"][k][1][None] for k in car), np.zeros_like(X0))
+            pa = pos(X0 + (1 - a)[None, :, None] * dR + a[None, :, None] * dT)
+            Pr, Pt = np.einsum("fnki,nk->fni", pos(X0 + dR), gr["Wr"]), np.einsum("fnki,nk->fni", pos(X0 + dT), gr["Wt"])
+            Pa = (1 - a)[None, :, None] * np.einsum("fnki,nk->fni", pa, gr["Wr"]) + a[None, :, None] * np.einsum("fnki,nk->fni", pa, gr["Wt"])
+            P.append((Pr, Pt, Pa))
         for fi in range(len(Sf)):
             t = cKDTree(V[fi])
             for gr, a, o, (Pr, Pt, Pa) in zip(groups, alphas, out, P):
@@ -274,15 +284,16 @@ def bend_heights(body, S, index, groups, alphas, chunk=96, reach=0.07):
     return out
 
 
-def bend_solve(body, groups, S=None, index=None, passes=3):
+def bend_solve(body, groups, S=None, index=None, passes=3, cw=None):
     """The alpha field per group ([n] in [0, max]): a bent part's points move (1-a) with its ride and a with her
     skin's own weights (smoothed), and a is only as large as her moving skin asks: alpha = K @ maxfilter(need) (>= the
     need by construction, smooth at the kernel's radius); each pass re-measures the need at the new field and keeps
-    the larger (so alpha never drops and never creeps past the need's own reach). Returns (alphas, stats) where stats per group has the passes' lowest heights."""
+    the larger (so alpha never drops and never creeps past the need's own reach). S None: her clips (native_travel) with
+her corrective shapes' weights (the game's skin, bend_heights); cw with an explicit S: those weights. Returns (alphas, stats) where stats per group has the passes' lowest heights."""
     if S is None:
         import native_travel as nt
         z = nt.frames()
-        S, index = z["S"], z["index"]
+        S, index, cw = z["S"], z["index"], z["cw"]
         for gr in groups:
             gr.setdefault("frames", nt.clip_frames(gr["spec"]["clips"]))
     for gr in groups:
@@ -291,12 +302,12 @@ def bend_solve(body, groups, S=None, index=None, passes=3):
     needs = [np.zeros(len(gr["X"])) for gr in groups]
     lows = [[] for _ in groups]
     for _ in range(passes):
-        res = bend_heights(body, S, index, groups, alphas)
+        res = bend_heights(body, S, index, groups, alphas, cw=cw)
         for k, (gr, o) in enumerate(zip(groups, res)):
             lows[k].append(float(o["low"].min()))
             needs[k] = np.maximum(needs[k], o["need"])     # (the need is kept, never the smoothed field: no creep)
             alphas[k] = np.clip(np.asarray(gr["K"] @ max_filter(needs[k], gr["pairs"])).ravel(), 0.0, gr["spec"]["max"])
-    res = bend_heights(body, S, index, groups, alphas)
+    res = bend_heights(body, S, index, groups, alphas, cw=cw)
     for k, o in enumerate(res):
         lows[k].append(float(o["low"].min()))
     return alphas, [{"low_by_pass_mm": [round(v * 1000, 2) for v in lw], "low": res[k]["low"],
@@ -597,8 +608,15 @@ def bend_parts(bd, body, ev, ms, comp, lead, trs, ws, off, bent, S=None, index=N
         K, pairs = bend_kernel(X, float(spec["smooth"]))
         Ds = g.dense_weights(body, trs[gsel], ws[gsel], nj)
         B, Wr, Wt = bend_blend(Ds, j, w, K)
+        Tg = body.T[trs[gsel]]
+        carry = {}
+        for nm, dP in body.shapes.items():                 # (what bend_parts writes: ride's rigid carry, skin's delta)
+            if nm.startswith(CARRY_SHAPES):
+                sk = np.asarray(K @ (ws[gsel][:, :, None] * dP[Tg]).sum(1))
+                rig = X @ fits[nm][0].T + fits[nm][1] - X if nm in fits else np.zeros_like(X)
+                carry[nm] = (rig, sk)
         groups.append({"part": p["part"], "spec": spec, "gsel": gsel, "X": X, "K": K, "pairs": pairs, "B": B, "Wr": Wr,
-                       "Wt": Wt, "j": j, "w": w, "fits": fits})
+                       "Wt": Wt, "j": j, "w": w, "fits": fits, "carry": carry})
     alphas, stats = bend_solve(body, groups, S, index)
     rep = BEND_REPORT.setdefault(bd.meta.get("id", "?"), {})
     for gr, a, st in zip(groups, alphas, stats):
@@ -606,7 +624,10 @@ def bend_parts(bd, body, ev, ms, comp, lead, trs, ws, off, bent, S=None, index=N
         au[gr["gsel"]] = a
         rows = np.full(len(Xall), -1)
         rows[gr["gsel"]] = np.arange(len(gr["gsel"]))
-        Tg = body.T[trs[gr["gsel"]]]
+        if os.environ.get("GEAR_BEND_DUMP"):          # (the plate model's inputs, for a check against the built glb)
+            np.savez_compressed(os.path.join(os.environ["GEAR_BEND_DUMP"], f"{bd.meta.get('id', '?')}.{gr['part']}.npz"), X=gr["X"], a=a,
+                                B=gr["B"], Wr=gr["Wr"], Wt=gr["Wt"], names=np.array(list(gr["carry"]), dtype=str),
+                                r=np.array([v[0] for v in gr["carry"].values()]), s=np.array([v[1] for v in gr["carry"].values()]))
         for i, m in enumerate(ms):
             e = ev[m["node"]]
             r = rows[off[i]:off[i + 1]][e["inv"]]
@@ -618,12 +639,8 @@ def bend_parts(bd, body, ev, ms, comp, lead, trs, ws, off, bent, S=None, index=N
             D[:, gr["B"]] = (1 - av)[:, None] * gr["Wr"][rs] + av[:, None] * gr["Wt"][rs]
             e["J"][sel], e["W"][sel] = g.top_k(D)
             X = e["Xu"][e["inv"]][sel]
-            for nm, dP in body.shapes.items():
-                if not nm.startswith(CARRY_SHAPES):
-                    continue
-                sk = np.asarray(gr["K"] @ (ws[gr["gsel"]][:, :, None] * dP[Tg]).sum(1))[rs]
-                rig = X @ gr["fits"][nm][0].T + gr["fits"][nm][1] - X if nm in gr["fits"] else 0.0
-                d = (1 - av)[:, None] * rig + av[:, None] * sk
+            for nm, (rig, sk) in gr["carry"].items():
+                d = (1 - av)[:, None] * rig[rs] + av[:, None] * sk[rs]
                 if nm not in e["shapes"]:
                     if np.abs(d).max() <= 1e-5:
                         continue

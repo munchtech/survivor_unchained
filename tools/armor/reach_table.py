@@ -5,7 +5,8 @@ changes a recipe).
 
 The reading (P2 lead 11, spaulder): a plate point may come toward her as far as its OWN REST STANDOFF minus the
 leather (2.4 mm): limit = rest height - leather, so past = leather - its least height over her skin in motion. Her
-skin is the skin the engine shows under that piece: linear blend (native_travel's frames, no corrective shapes),
+skin is the skin the engine shows under that piece: linear blend of her rest plus her corrective shapes at each
+frame's weights (native_travel's frames and their rig_drive.corrective_weights; --no-shapes: plain linear blend),
 each vertex pulled in along its posed stored normal by the piece's tuck record (gear_wear.skin_tuck), and under a
 held top her springs at their worn equilibrium in every frame with the hold's form_support shapes (gear_wear.WornTop).
 Heights are nearest-vertex along that vertex's normal (the rule's, native_travel.on_skin), her skin within REACH of
@@ -89,6 +90,8 @@ def plates(meshes, min_cm2=10.0, bent=False, top=8):
     [n, k] (its own glTF weights, top `top`, summing to 1) and "bent" (its blend varies); a varying one's "rule" is its
     MODE row (the ride its unbent points keep). Without bent the rows are exactly as before."""
     P = np.concatenate([m[0] for m in meshes]).astype(float)
+    snames = sorted({k for m in meshes if len(m) > 5 for k in m[5]})
+    Fk = {k: np.concatenate([m[5][k] if len(m) > 5 and k in m[5] else np.zeros((len(m[0]), 3)) for m in meshes]).astype(float) for k in snames}
     F = np.concatenate([m[4] if len(m) > 4 else np.zeros((len(m[0]), 3)) for m in meshes]).astype(float) if bent else None
     base = np.cumsum([0] + [len(m[0]) for m in meshes])
     T = np.concatenate([m[1] + b for m, b in zip(meshes, base)])
@@ -126,6 +129,8 @@ def plates(meshes, min_cm2=10.0, bent=False, top=8):
             Jv = np.argsort(-Dv, axis=1)[:, :top]
             Wv = np.take_along_axis(Dv, Jv, 1)
             q.update(Xf=X + F[first[vs]], J=Jv, W=Wv / np.maximum(Wv.sum(1, keepdims=True), 1e-12), bent=bool(varies))
+            if snames:                                  # (its carried shapes per point: the frame's form is Xf + sum w Fs)
+                q["Fs"] = {k: v[first[vs]] for k, v in Fk.items() if np.abs(v[first[vs]]).max() > 1e-7}
         out.append(q)
     return sorted(out, key=lambda q: -q["cm2"])
 
@@ -207,8 +212,9 @@ def piece_ids(rows, name, also=()):
     return [r["id"] for r in rows if r["id"].startswith(name + "_") or r["id"] in also]
 
 
-def run(gear, ids, clips="all", min_cm2=10.0, leather_mm=LEATHER_MM, log=print):
-    """[row ..] for the pieces `ids` of `gear`, sorted by worst past-line; (rows, notes)."""
+def run(gear, ids, clips="all", min_cm2=10.0, leather_mm=LEATHER_MM, log=print, shapes=True):
+    """[row ..] for the pieces `ids` of `gear`, sorted by worst past-line; (rows, notes). shapes: her corrective shapes
+    at each frame's weights on her skin and on every plate that carries them (its own glTF targets, per vertex)."""
     import gear_wear as gw
     import native_travel as nt
     from gl import Glb
@@ -231,12 +237,14 @@ def run(gear, ids, clips="all", min_cm2=10.0, leather_mm=LEATHER_MM, log=print):
         bends = part_bends(pid)
         wt = gw.worn_top(sc, row)
         wgt = gw.support_weights(gw.support_of(row)) if wt is not None else None
-        ms = [(m.P, m.T, col[m.J], m.W.astype(float)) + ((formed(m, wgt),) if bends else ()) for m in g.meshes if m.node in row["meshes"] and m.J is not None]
-        pl = plates(ms, min_cm2, bent=bool(bends))
+        cwn = [k for k in z["cw"]] if shapes else []
+        ms = [(m.P, m.T, col[m.J], m.W.astype(float)) + ((formed(m, wgt), {k: m.targets[k]["POSITION"].astype(float) for k in cwn if k in m.targets})
+                                                         if bends or shapes else ()) for m in g.meshes if m.node in row["meshes"] and m.J is not None]
+        pl = plates(ms, min_cm2, bent=bool(bends) or shapes)
         for q in [q for q in pl if q.get("bent")]:      # a varying blend reads only as a plate whose part bends
             part = role_of({names[b]: v for b, v in q["rule"].items()}, bends, tol=0.01)
             if part is None:
-                pl.remove(q)
+                pl = [u for u in pl if u is not q]      # (by identity: the rows hold arrays)
             else:
                 q["part"] = part
         sig = json.dumps([[np.round(q["X"].mean(0), 4).tolist(), len(q["X"]), sorted(q["rule"])] for q in pl])
@@ -257,23 +265,28 @@ def run(gear, ids, clips="all", min_cm2=10.0, leather_mm=LEATHER_MM, log=print):
             tk = gw.skin_tuck(recs, [sc.keys[i] for i in vs], row.get("tuck_depth_mm"))[0]
             sub, nsub = sc.restrict(vs), sc.restrict(vs, sc.ntargets)
 
-            def skin(S, vs=vs, tk=tk, sub=sub, nsub=nsub):
-                V = sc.lbs(S, sc.rest(vs, wgt, sub), sc.J[vs], sc.W[vs])
-                N = sc.stored_normals(S, wgt, vs, nsub)
+            def skin(S, vs=vs, tk=tk, sub=sub, nsub=nsub, f=None):
+                wts = dict(wgt or {})
+                if shapes and f is not None:            # (her correctives at frame f of frames(); the support's stay)
+                    for k, w in z["cw"].items():
+                        wts[k] = wts.get(k, 0.0) + float(w[f])
+                V = sc.lbs(S, sc.rest(vs, wts, sub), sc.J[vs], sc.W[vs])
+                N = sc.stored_normals(S, wts, vs, nsub)
                 return V - N * tk[:, None], N
             bones, share = np.array(sorted(q["rule"])), np.array([q["rule"][b] for b in sorted(q["rule"])])
             share = share / share.sum()
             ride = lambda S, X: np.einsum("b,bij,nj->ni", share, S[bones][:, :3, :], np.c_[X, np.ones(len(X))])  # noqa: E731
             X = q["X"]
-            if q.get("bent"):                           # per vertex: its own weights and shapes, the game's form
+            if q.get("bent") or shapes:                 # per vertex: its own weights and shapes, the game's form
                 X = q["Xf"]
                 ride = lambda S, X, q=q: gw.Scene.lbs(S, X, q["J"], q["W"])  # noqa: E731
+            Xk = lambda k, X=X, q=q: X + sum((float(z["cw"][n][on[k]]) * d for n, d in q.get("Fs", {}).items() if n in z["cw"]), np.zeros_like(X)) if shapes else X  # noqa: E731
             V0, N0 = skin(S0)
             Xr = ride(S0, X)
             inn, border = inner_face(Xr, q["T"], V0, N0)
             at = np.full(len(Xr), -1)
             at[inn] = np.arange(len(inn))
-            r = measure(Xr[inn], ((ride(S_all[k], X)[inn], k) for k in range(len(on))), V0, N0, lambda k: skin(S_all[k]))
+            r = measure(Xr[inn], ((ride(S_all[k], Xk(k))[inn], k) for k in range(len(on))), V0, N0, lambda k: skin(S_all[k], f=on[k]))
             s = summary(r)
             wf = lambda k: f"{z['clip'][on[k]]}@{int(z['frame'][on[k]])}" if k is not None and k != -1 else "-"  # noqa: E731
             cl = {str(z["clip"][on[k]]) for k in r["hits"]}
@@ -315,12 +328,13 @@ def main(argv=None):
     ap.add_argument("--clips", default="all", help='"all", "four" (the fight clips) or names, comma separated')
     ap.add_argument("--min-cm2", type=float, default=10.0)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--no-shapes", action="store_true", help="plain linear blend: no corrective shapes on her skin or the plates")
     a = ap.parse_args(argv)
     try:
         import gear_wear as gw
         ids = [i for i in a.only.split(",") if i] or piece_ids(gw.load_rows(a.gear)[1], a.set, [i for i in a.also.split(",") if i])
         clips = a.clips if a.clips in ("all", "four") else a.clips.split(",")
-        rows, notes = run(a.gear, ids, clips, a.min_cm2)
+        rows, notes = run(a.gear, ids, clips, a.min_cm2, shapes=not a.no_shapes)
         os.makedirs(a.out, exist_ok=True)
         json.dump({"set": a.set, "clips": a.clips, "leather_mm": LEATHER_MM, "rows": rows, "notes": notes}, open(os.path.join(a.out, "reach.json"), "w"), indent=1, default=str)
         open(os.path.join(a.out, "reach.md"), "w", encoding="utf-8").write(markdown(rows, notes, f"({a.set}, clips {a.clips}, {len(rows)} plates)"))

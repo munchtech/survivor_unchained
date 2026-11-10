@@ -169,6 +169,7 @@ class Body:
         self.shapes = {k: np.vstack([v, np.zeros((len(Ph), 3))]) for k, v in shapes.items()}
         wid = np.r_[np.arange(self.nt), self.nt + weld_ids(np.asarray(Ph, np.float64))]
         self.N = vertex_normals(self.V, self.T, wid)
+        self.wid = wid
         self.joint_names = joint_names
         self.name, self.glb, self.hash = name, glb, hash_
         self._surf = None

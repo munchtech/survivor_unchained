@@ -1,5 +1,7 @@
 """Her clips as the builder reads them: every clip's bones' skinning matrices (posed once by gear_wear's poser, cached
-beside the clips), her skin under them (linear blend only: no corrective shapes), and what a rigid ride does over them.
+beside the clips) with her corrective shapes' weights in each frame (rig_drive.corrective_weights, the game's driver),
+her skin under them (linear blend; skin(.., cw=) adds her corrective shapes in rest space before skinning, as Godot
+does), and what a rigid ride does over them.
 A plate that must slide under another (native_spaulder's "shell") takes its lap from this travel, measured at build
 time: a new clip, a new rig or a new body re-derives it.
 
@@ -17,7 +19,8 @@ _MEM = {}
 
 
 def poses():
-    """{"names": [bone ..], "clips": {clip: [F, B, 4, 4]}}: read from the cache beside the clips when it answers the
+    """{"names": [bone ..], "clips": {clip: [F, B, 4, 4]}, "shapes": [shape ..], "cw": {clip: [F, k]} (her corrective
+    shapes' weights per frame)}: read from the cache beside the clips when it answers the
     clips and the body as they are on disk (names, sizes, times), posed again (about 25 s) when not."""
     if "poses" in _MEM:
         return _MEM["poses"]
@@ -27,27 +30,35 @@ def poses():
     stamp = lambda p: [os.path.basename(p), os.path.getsize(p), os.stat(p).st_mtime_ns]  # noqa: E731
     seen = [stamp(os.path.join(gw.CLIPS, fn)) for fn in files]
     seen += [stamp(os.path.join(body, fn)) for fn in sorted(os.listdir(body))] if os.path.isdir(body) else [stamp(body)]
-    key = json.dumps(seen)
+    key = json.dumps(["cw1"] + seen)
     cache = os.path.join(os.path.dirname(gw.CLIPS), "clip_poses.npz")
     if os.path.exists(cache):
         z = np.load(cache)
         if str(z["key"]) == key:
-            out = _MEM["poses"] = {"names": [str(n) for n in z["names"]],
-                                   "clips": {c[5:]: z[c].astype(float) for c in z.files if c.startswith("clip_")}}
+            out = _MEM["poses"] = {"names": [str(n) for n in z["names"]], "shapes": [str(n) for n in z["shapes"]],
+                                   "clips": {c[5:]: z[c].astype(float) for c in z.files if c.startswith("clip_")},
+                                   "cw": {c[3:]: z[c].astype(float) for c in z.files if c.startswith("cw_")}}
             return out
     sc = gw.build_scene(body, [])
-    clips = {}
+    clips, ws = {}, {}
     for fn in files:
         cp = gw.ClipPoser(sc, json.load(open(os.path.join(gw.CLIPS, fn))))
-        clips[fn[:-5]] = np.stack([cp.frame(f)[0] for f in range(cp.n)])
-    np.savez_compressed(cache, key=np.array(key), names=np.array(sc.poser.names), **{"clip_" + c: v.astype(np.float32) for c, v in clips.items()})
-    out = _MEM["poses"] = {"names": list(sc.poser.names), "clips": {c: v.astype(np.float32).astype(float) for c, v in clips.items()}}
+        fr = [cp.frame(f) for f in range(cp.n)]
+        clips[fn[:-5]] = np.stack([S for S, _ in fr])
+        ws[fn[:-5]] = fr
+    shapes = sorted({k for fr in ws.values() for _, w in fr for k in w})
+    cw = {c: np.array([[float(w.get(k, 0.0) or 0.0) for k in shapes] for _, w in fr]).reshape(len(fr), len(shapes)) for c, fr in ws.items()}
+    np.savez_compressed(cache, key=np.array(key), names=np.array(sc.poser.names), shapes=np.array(shapes, dtype=str),
+                        **{"clip_" + c: v.astype(np.float32) for c, v in clips.items()}, **{"cw_" + c: v.astype(np.float32) for c, v in cw.items()})
+    out = _MEM["poses"] = {"names": list(sc.poser.names), "shapes": shapes, "cw": {c: v.astype(np.float32).astype(float) for c, v in cw.items()},
+                           "clips": {c: v.astype(np.float32).astype(float) for c, v in clips.items()}}
     return out
 
 
 def frames(skip=SKIP, four=FOUR):
     """{"S" [F, B, 4, 4], "index" {bone: column}, "four" [F] (the frame is one of the four fight clips'), "clip" [F]
-    (its clip's name), "frame" [F] (its number in it), "clips" n}: every clip but `skip`, end to end."""
+    (its clip's name), "frame" [F] (its number in it), "clips" n, "cw" {shape: [F]} (her corrective shapes' weights)}:
+    every clip but `skip`, end to end."""
     k = ("frames", tuple(skip), tuple(four))
     if k not in _MEM:
         z = poses()
@@ -56,6 +67,8 @@ def frames(skip=SKIP, four=FOUR):
                    "four": np.concatenate([np.full(len(z["clips"][c]), c in four) for c in names]),
                    "clip": np.concatenate([np.full(len(z["clips"][c]), c) for c in names]),
                    "frame": np.concatenate([np.arange(len(z["clips"][c])) for c in names]), "clips": len(names)}
+        cw = np.concatenate([z["cw"][c] for c in names]) if names else np.zeros((0, len(z["shapes"])))
+        _MEM[k]["cw"] = {n: cw[:, i] for i, n in enumerate(z["shapes"]) if np.abs(cw[:, i]).max() > 0}
     return _MEM[k]
 
 
@@ -69,17 +82,52 @@ def move(M, X):
     return np.einsum("fij,nj->fni", M[:, :3, :3], X) + M[:, None, :3, 3]
 
 
-def skin(ref, S, index, vs):
-    """(V [F, n, 3], N [F, n, 3]): her skin's vertices `vs` and their normals over the frames, linear blend."""
+def skin(ref, S, index, vs, cw=None):
+    """(V [F, n, 3], N [F, n, 3]): her skin's vertices `vs` and their normals over the frames, linear blend. cw
+    ({shape: [F] weights}, the frames' own: frames()["cw"] sliced like S): her corrective shapes added in rest space
+    before skinning (the game's skin: LBS(V + sum_k w_k dP_k)), the normals then the deformed mesh's own (area-weighted
+    face normals over every triangle touching vs, welded as ref.N is). cw None: linear blend of ref.N, as before."""
+    if cw is not None:
+        cw = {k: np.asarray(w, float) for k, w in cw.items() if k in ref.shapes and np.abs(w).max() > 0}
+    if cw is None:
+        jm = np.array([index[n] for n in ref.joint_names])
+        J, W = jm[np.asarray(ref.J)[vs]], np.asarray(ref.W, float)[vs]
+        Vh = np.c_[ref.V[vs], np.ones(len(vs))]
+        V, N = np.zeros((len(S), len(vs), 3)), np.zeros((len(S), len(vs), 3))
+        for k in range(J.shape[1]):
+            Sk = S[:, J[:, k]]
+            V += W[None, :, k, None] * np.einsum("fvij,vj->fvi", Sk[:, :, :3, :], Vh)
+            N += W[None, :, k, None] * np.einsum("fvij,vj->fvi", Sk[:, :, :3, :3], ref.N[vs])
+        return V, N / np.maximum(np.linalg.norm(N, axis=2, keepdims=True), 1e-12)
+    vs = np.asarray(vs)
+    T = np.asarray(ref.T)
+    wid = np.asarray(getattr(ref, "wid", np.arange(len(ref.V))))
+    inv = wid[vs]                                        # every vertex sharing a weld id with vs, and their triangles
+    mates = np.flatnonzero(np.isin(wid, inv))
+    tri = T[np.isin(T, mates).any(1)]
+    ext = np.unique(np.r_[vs, tri.ravel()])
+    at = np.full(len(ref.V), -1)
+    at[ext] = np.arange(len(ext))
+    R = np.broadcast_to(ref.V[ext], (len(S), len(ext), 3)).copy()
+    for nm, w in cw.items():
+        R += w[:, None, None] * np.asarray(ref.shapes[nm], float)[ext][None]
     jm = np.array([index[n] for n in ref.joint_names])
-    J, W = jm[np.asarray(ref.J)[vs]], np.asarray(ref.W, float)[vs]
-    Vh = np.c_[ref.V[vs], np.ones(len(vs))]
-    V, N = np.zeros((len(S), len(vs), 3)), np.zeros((len(S), len(vs), 3))
+    J, W = jm[np.asarray(ref.J)[ext]], np.asarray(ref.W, float)[ext]
+    V = np.zeros((len(S), len(ext), 3))
     for k in range(J.shape[1]):
+        if not W[:, k].any():
+            continue
         Sk = S[:, J[:, k]]
-        V += W[None, :, k, None] * np.einsum("fvij,vj->fvi", Sk[:, :, :3, :], Vh)
-        N += W[None, :, k, None] * np.einsum("fvij,vj->fvi", Sk[:, :, :3, :3], ref.N[vs])
-    return V, N / np.maximum(np.linalg.norm(N, axis=2, keepdims=True), 1e-12)
+        V += W[None, :, k, None] * (np.einsum("fvij,fvj->fvi", Sk[:, :, :3, :3], R) + Sk[:, :, :3, 3])
+    Tl = at[tri]
+    fn = np.cross(V[:, Tl[:, 1]] - V[:, Tl[:, 0]], V[:, Tl[:, 2]] - V[:, Tl[:, 0]])
+    ids, wl = np.unique(wid[ext], return_inverse=True)
+    wl = wl.reshape(-1)
+    N = np.zeros((len(S), len(ids), 3))
+    for c in range(3):
+        np.add.at(N, (slice(None), wl[Tl[:, c]]), fn)
+    N = N[:, wl[at[vs]]]
+    return V[:, at[vs]], N / np.maximum(np.linalg.norm(N, axis=2, keepdims=True), 1e-12)
 
 
 def on_skin(ref, S, index, M, X, reach=0.07):

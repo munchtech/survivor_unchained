@@ -103,7 +103,7 @@ def test_spaulder_row_is_lead_11s():
     import gear_wear as gw
     if not os.path.isfile(os.path.join(gw.GEAR, "plate_spaulders_plain.gltf")):
         pytest.skip("no built spaulders")
-    rows, _ = rt.run(gw.GEAR, ["plate_spaulders_plain"], "four", log=lambda *_: None)
+    rows, _ = rt.run(gw.GEAR, ["plate_spaulders_plain"], "four", log=lambda *_: None, shapes=False)   # (plain LBS: lead 11's reading)
     cop = {s["plate"].split()[3]: s for s in rows if s["plate"].split()[2] == "cop"}
     # (10 Nov: the split cop was built and scrapped; the plain spaulders are round 4's one cop again, rigid: 20.6 / 16.2)
     assert abs(cop["l"]["past"] - 20.6) < 1.0 and cop["l"]["at"].startswith("sword_heavy") and cop["l"]["part"] == "cop_l_rigid"
