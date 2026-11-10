@@ -19,6 +19,8 @@ public sealed partial class Battle
         public WeaponInst W;
         public double Due, At, Mul;
         public (double X, double Z, Enemy? Foe)? Aim;
+        /// <summary>A chain's cut (Sim/SwingChain.cs): a dash before its contact drops it.</summary>
+        public bool Cut;
     }
 
     readonly List<PendingBlow> pendingBlows = new(4);
@@ -37,7 +39,11 @@ public sealed partial class Battle
     }
 
     /// <summary>Drop every blow not yet landed (she died, or was knocked down).</summary>
-    public void DropBlows() => pendingBlows.Clear();
+    public void DropBlows()
+    {
+        foreach (var pb in pendingBlows) if (pb.Cut && pb.W.Chain is { } c) { c.Dropped = true; pb.W.ClipSide = 0; }
+        pendingBlows.Clear();
+    }
 
     /// <summary>Whether this press waits for its clip's contact: campaign, a Slash or Crack, an aim, and a clip with a
     /// contact for the blow it will be. Its clip, rate and delay out.</summary>
@@ -64,6 +70,8 @@ public sealed partial class Battle
         int own = Firing.HeavyEveryOf(this, w);
         bool ownHeavy = own > 0 && (w.OwnBlows + 1) % own == 0;
         bool heavy = ownHeavy || HandHeavyNext(w);
+        // (a chained record's cut: its own clock and clip beats, Sim/SwingChain.cs)
+        if (w.Chained) return DeferCut(w, heavy, ownHeavy, mul);
         if (!ContactOf(w, heavy, out var clip, out var rate, out var delay)) return false;
         var aim = CastAt!.Value;
         var p = Player;
@@ -71,6 +79,7 @@ public sealed partial class Battle
         double a = dx * dx + dz * dz > 0.01 ? Math.Atan2(dz, dx) : Math.Atan2(Math.Cos(p.Facing), Math.Sin(p.Facing));
         w.WasOwnHeavy = ownHeavy;
         p.AttackAnim = new AttackAnim(w.Id, a, Time, heavy || w.Behavior == WeaponBehavior.Crack, clip, rate);
+        w.ClipSide = HerEvents.Side(clip) ?? 0;
         clipSwing++;
         // Ready again after its wait from the press (the contact's rules may shorten it: Firing.LandBlow).
         w.Timer = Firing.CooldownOf(this, w);
@@ -91,7 +100,7 @@ public sealed partial class Battle
             CastAt = pb.Aim;
             pb.W.FireMul = fm * pb.Mul;
             Landing = true;
-            try { Firing.LandBlow(this, pb.W, Time - pb.At); }
+            try { Firing.LandBlow(this, pb.W, Time - pb.At, pb.Cut); }
             finally { CastAt = aim0; pb.W.FireMul = fm; Landing = false; }
         }
     }
@@ -101,12 +110,19 @@ public static partial class Firing
 {
     /// <summary>A pending blow's contact (Battle.LandBlows): the cast its press held back, then its wait's rules (momentum,
     /// the cleaver's next cut) as a press would have set them, less the time since the press.</summary>
-    internal static void LandBlow(Battle b, WeaponInst w, double since)
+    internal static void LandBlow(Battle b, WeaponInst w, double since, bool cut = false)
     {
         int kills0 = w.Kills;
         bool fired = CastOnce(b, w);
+        w.ClipSide = 0;
+        var c = cut ? w.Chain : null;
+        if (c != null) c.Landed = true;
         if (!fired) return;
         Rearm(b, w, true, kills0);
+        // (a chain's heavy cut waits its own longer period)
+        if (c != null) w.Timer *= c.PeriodScale;
         w.Timer = Math.Max(0, w.Timer - since);
+        // (a chain's next cut never starts before this one's cancel beat, whatever shortened its wait)
+        if (c != null) { w.Timer = Math.Max(w.Timer, c.CancelAt - b.Time); c.PeriodEnd = b.Time + w.Timer; }
     }
 }

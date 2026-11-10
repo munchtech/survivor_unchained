@@ -150,6 +150,20 @@ public sealed class PressDef
     public string[]? Clip;
     public string? ClipHeavy;
     public double? ClipRate, ClipHeavyRate;
+    /// <summary>The held swing as a chain (M3 MR 3, campaign; Sim/SwingChain.cs): absent, every press is its own swing, as
+    /// before. Present, its cuts are one chain: each cut's clip fills the cut's period (the skill's wait), the blow lands
+    /// on the clip's contact beat, sides alternate, and she recovers only on release.</summary>
+    public ChainDef? Chain;
+
+    /// <summary>This record with another chain block (a copy: the skill's own record is shared data).</summary>
+    public PressDef WithChain(ChainDef? chain) { var r = (PressDef)MemberwiseClone(); r.Chain = chain; return r; }
+}
+
+/// <summary>A chain's own numbers (skills.json press "chain"): grace, the seconds the chain's index and side live after
+/// a release (0.40); recover, the release recover's length in frames at 60 fps (18), told on Ev.SwingRelease.</summary>
+public sealed class ChainDef
+{
+    public double? Grace, Recover;
 }
 
 /// <summary>A skill's kindled option (PressDef.Kindled): the condition (KindleDef's fields; none set, the skill's own

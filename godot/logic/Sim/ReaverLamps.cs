@@ -144,7 +144,7 @@ public sealed partial class Battle
     {
         var p = Player;
         double a = Math.Atan2(t.Z - p.Z, t.X - p.X), d = Dist(t.X, t.Z, p.X, p.Z);
-        Events.Emit(new Ev.Slash { X = p.X, Z = p.Z, Angle = a, Arc = 0.6, Reach = d + 0.4, School = w.School, Art = w.Art, Rank = w.Rank });
+        Events.Emit(new Ev.Slash { X = p.X, Z = p.Z, Angle = a, Arc = 0.6, Reach = d + 0.4, School = w.School, Art = w.Art, Rank = w.Rank, Side = w.NextSide() });
         HitEnemy(t, w.Damage, w.School, w.Tags, new HitOpts { Weapon = w, Knockback = w.Num(s => s.Knockback) ?? 0, DirX = (t.X - p.X) / Math.Max(0.1, d), DirZ = (t.Z - p.Z) / Math.Max(0.1, d), Status = status, BossDamage = w.Def.BossDamage });
     }
 
