@@ -59,3 +59,15 @@ with bone shares they must be seated in the stance and still fail. PUB (today's 
 - No mesh: boxes are skin-point boxes, not plate outlines; 12-20 points per cap piece (mesh resolution).
 - The skin-fitted ride is the floor of each piece's own points; a runtime rivet on 3-4 vertices is assumed close (not measured).
 - NEW is P1's target, not a skin; no weights exist yet.
+
+## 6. Follow-up: the game's own rigid-part form on PUB (`--partition`; partition_game.txt / .json; 12 s)
+Form = gear_native.part_blends: mean_ride (area-weighted mean skin weights, top 8) + "carry": "part" (each shape one rigid
+fit of its delta, times its per-frame weight from rig_drive.corrective_weights, the same source as ride_travel's `pub`).
+Rest points match the tracks to 0.0001 mm. "all shapes non-zero on the footprint" = exactly the arm_hang_/elbow_ set here
+(7-9 shapes per piece, 2 on L5): variants (ii) and (iii) are identical. Spread L/R, PUB, first (measured):
+A floor 26.1/38.4, mean 47.0/50.2, +carry 31.4/33.6 | B 4.7/5.7, 28.6/36.6, 6.0/6.4 | C 5.3/6.6, 23.1/36.1, 8.5/13.3
+D 12.2/10.9, 18.9/31.4, 11.0/26.2 | L1 11.0/11.8, 20.3/24.7, 13.4/13.3 | L2 8.0/10.0, 9.6/12.3, 9.4/12.3
+L3 4.2/4.0, 3.0/3.9, 4.4/4.2 | L4 2.5/2.3, 2.6/2.1, 2.7/2.5 | L5 2.0/2.2, 2.9/2.2, 2.1/2.5
+Within 2 mm of the floor: mean_ride alone on L3-L5; +carry on B, C-left, D-left, L1-L5 (L1 R 1.5, L2 2.3 R just over).
+Misses: C-right +6.7, D-right +15.3, A (PUB's neck end fails even the floor: A is not steel on today's skin).
+Rest: same picture (B 5.9/5.5 vs floor 6.1/5.5; D-right 17.7 vs 11.3; A 34 vs 35).

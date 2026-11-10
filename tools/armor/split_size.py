@@ -18,6 +18,8 @@ With ref first the rides are each bone's motion FROM the clip's first frame (the
 
     python tools/armor/split_size.py                      (first run builds a cache of the tracks, about 5 minutes)
     python tools/armor/split_size.py --out DIR --sph-surfaces new
+    python tools/armor/split_size.py --partition          the skin-fitted pieces: FLOOR vs the game's rigid-part form
+                                                          (mean_ride, + carried shapes) on PUB, and edge openings
 
 Outputs (--out, default godot/.shots/gear_p2/split_size): tracks.npz (cache), sweep.json, table.txt, partition.json.
 """
@@ -186,11 +188,129 @@ def candidates():
     return cs
 
 
+# ------------------------------------------------------------- the game's rigid-part form (gear_native.part_blends)
+
+PIECES = {"A": (-45, -10, 35, 172), "B": (-10, 10, 70, 150), "C": (10, 30, 70, 150), "D": (30, 50, 70, 150),
+          "L1": (50, 70, 21, 172), "L2": (70, 90, 21, 172), "L3": (90, 110, 21, 172), "L4": (110, 130, 21, 172),
+          "L5": (130, 154, 21, 172)}                                       # the skin-fitted partition (facts.md section 2)
+CARRY_SHAPES = ("arm_hang_", "elbow_")                                    # gear_native.CARRY_SHAPES
+
+
+def build_game_cache(path):
+    """Per frame (her_tracks' order): her bone skinning matrices S = G @ ibm and her corrective shapes' weights (the
+    `pub` surface's own: region_target.published = poser._skin(G, rig_drive.corrective_weights)); per side the patch
+    vertices' rest points, skin weights, areas and the shapes' deltas on them."""
+    sys.path.insert(0, str(P1 / "tools" / "body"))
+    import carried_target as ct
+    import deform_audit as da
+    import ride_travel as rtv
+    cfg = dict(rtv.HER)
+    cfg["patch"] = dict(cfg["patch"], s=S_EXT)
+    h = ct.Her(verbose=False)
+    B, pz = h.bd, h.bd.p
+    T = np.asarray(B.T, np.int64)
+    frs = rtv.shoulder_frames(B.V0, T, B.head, cfg)
+    area = rtv.vertex_area(B.V0, T)
+    S, CW = [], []
+    for c in cfg["clips"]:
+        for f, _, G in B.clip_frames(da.load_clip(c), 1):
+            S.append(np.array(G) @ pz.skel.ibm)
+            CW.append(B.rd.corrective_weights(pz, np.array(G), B.rig))
+    names = sorted(pz.targets)
+    out = {"S": np.array(S), "cw": np.array([[float(w.get(k, 0.0) or 0.0) for k in names] for w in CW]), "shapes": np.array(names)}
+    inv = {v: k for k, v in pz.index.items()} if hasattr(pz, "index") else {}
+    out["joints"] = np.array([inv.get(i, str(i)) for i in range(out["S"].shape[1])])
+    for s in SIDES:
+        ids = rtv.footprint(B.V0, T, frs[s], *cfg["patch"]["s"], *cfg["patch"]["theta"], cfg["patch"]["rmax"])
+        out[f"{s}_X"], out[f"{s}_J"], out[f"{s}_W"], out[f"{s}_A"] = pz.Pb[ids], pz.J[ids], pz.W[ids], area[ids]
+        out[f"{s}_dP"] = np.array([pz.targets[k][ids] for k in names])
+    np.savez_compressed(path, **out)
+
+
+def game_ride(g, s, sel, shapes, top=8):
+    """([F, 4, 4] the part's ride from rest, shapes carried, {bone: share}): native_spaulder.mean_ride (the area-
+    weighted mean of her skin weights over its points, top 8 bones) of S, after her shapes each as ONE rigid motion (the
+    rigid fit of its delta over the points) scaled by its weight in the frame. shapes: "none", "carry" (CARRY_SHAPES),
+    "all" (every shape non-zero on the points)."""
+    X, J, W, A = g[f"{s}_X"][sel], g[f"{s}_J"][sel], g[f"{s}_W"][sel], g[f"{s}_A"][sel]
+    D = np.zeros(g["S"].shape[1])
+    np.add.at(D, J.reshape(-1), (W * A[:, None]).reshape(-1))
+    j = [int(a) for a in np.argsort(-D)[:top] if D[a] > 0]
+    sh = D[j] / D[j].sum()
+    M = np.einsum("j,fjab->fab", sh, g["S"][:, j])
+    Aff, nf = np.tile(np.eye(4), (len(M), 1, 1)), 0
+    for k, nm in enumerate(g["shapes"]):
+        dP = g[f"{s}_dP"][k][sel]
+        if shapes == "none" or np.abs(dP).max() <= 1e-5 or not (shapes == "all" or str(nm).startswith(CARRY_SHAPES)):
+            continue
+        R, t = rigid_fit(X, X + dP, A)
+        Af = np.zeros((4, 4))
+        Af[:3, :3], Af[:3, 3] = R - np.eye(3), t
+        Aff = Aff + g["cw"][:, k, None, None] * Af           # X + sum w (X R^T + t - X): one affine map per frame
+        nf += 1
+    return M @ Aff, nf, {str(g["joints"][a]): round(float(v), 3) for a, v in zip(j, sh)}
+
+
+def floor_Q(c, sel, X):
+    Q = np.empty((c.F, X.sum(), 3))
+    for f in range(c.F):
+        R, t = rigid_fit(c.X0[f][sel], c.P[f][sel], c.area[sel])
+        Q[f] = c.X0[f][X] @ R.T + t
+    return Q
+
+
+def partition(z, out, refs):
+    """The skin-fitted partition (PIECES): per piece the FLOOR, the game's form (mean_ride; + CARRY_SHAPES; + all her
+    shapes) on PUB, and the neighbours' opening at each shared s edge (both skin-fitted, points within 6 mm)."""
+    gp = out / "game.npz"
+    if not gp.exists():
+        build_game_cache(gp)
+    g = dict(np.load(gp))
+    res, lines = [], ["piece box | ref side | FLOOR sink/gap/spread | mean_ride | +carry(n) | +all(n)  (PUB; mm)"]
+    for ref in refs:
+        for s in SIDES:
+            cs = Case(z, "pub", s, ref)
+            chk = float(np.abs(g[f"{s}_X"] - z[f"pub_{s}_P0"]).max()) * 1e3
+            M, _, _ = game_ride(g, s, np.ones(len(cs.s), bool), "none")
+            lines.append(f"check {ref} {s}: rest points vs tracks {chk:.4f} mm")
+            for nm, bx in PIECES.items():
+                sel = cs.mask(*bx)
+                r = {"ref": ref, "side": s, "piece": nm, "box": bx, "n": int(sel.sum()), "floor": cs.floor(sel)}
+                for v in ("none", "carry", "all"):
+                    M, nf, sh = game_ride(g, s, sel, v)
+                    if ref == "first":
+                        M = M @ np.linalg.inv(M[cs.first])
+                    Q = np.einsum("fij,fnj->fni", M[:, :3, :3], cs.X0[:, sel]) + M[:, None, :3, 3]
+                    r[v] = {**cs.nums(sel, Q), "shapes": nf, "ride": sh if v == "none" else None}
+                res.append(r)
+                f = r["floor"]
+                lines.append(f"{nm:3s} {bx} | {ref:5s} {s} | {f['sink']:5.1f}/{f['gap']:5.1f}/{f['spread']:5.1f} | " +
+                             " | ".join(f"{r[v]['sink']:5.1f}/{r[v]['gap']:5.1f}/{r[v]['spread']:5.1f}" + (f"({r[v]['shapes']})" if v != "none" else "")
+                                        for v in ("none", "carry", "all")))
+            for k in KINDS:
+                c2 = Case(z, k, s, ref)
+                ks = list(PIECES)
+                for a_, b_ in zip(ks, ks[1:]):
+                    A_, B_ = PIECES[a_], PIECES[b_]
+                    e = A_[1]
+                    ed = c2.mask(e - 6, e + 6, max(A_[2], B_[2]), min(A_[3], B_[3]))
+                    if not ed.any():
+                        continue
+                    d = floor_Q(c2, c2.mask(*A_), ed) - floor_Q(c2, c2.mask(*B_), ed)
+                    o = (round(float(np.linalg.norm(d, axis=2).max() * 1e3), 1), round(float(np.abs((d * c2.N[:, ed]).sum(2)).max() * 1e3), 1))
+                    res.append({"ref": ref, "side": s, "surface": k, "edge": f"{a_}|{b_}", "s": e, "n": int(ed.sum()), "open_mm": o})
+                    lines.append(f"edge {k} {ref} {s} {a_}|{b_} s{e}: n{int(ed.sum())} open {o[0]} / normal {o[1]}")
+    (out / "partition_game.json").write_text(json.dumps(res, indent=1, default=list))
+    (out / "partition_game.txt").write_text("\n".join(lines))
+    print("\n".join(lines))
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--out", default=str(ROOT / "godot" / ".shots" / "gear_p2" / "split_size"))
     ap.add_argument("--sph-surfaces", nargs="+", default=list(KINDS), help="surfaces the sphere-turn scan runs on (11 LPs each)")
     ap.add_argument("--refs", nargs="+", default=["first", "rest"])
+    ap.add_argument("--partition", action="store_true", help="only the skin-fitted partition: floor vs the game's form, edges")
     a = ap.parse_args()
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -199,6 +319,10 @@ def main():
         build_cache(out / "tracks.npz")
     z = dict(np.load(out / "tracks.npz"))
     print(f"tracks: {len(z['frames'])} frames, patch l {len(z['s_l'])} / r {len(z['s_r'])} points, s {z['s_l'].min()*1e3:.0f}..{z['s_l'].max()*1e3:.0f} mm ({time.time()-t0:.0f} s)")
+    if a.partition:
+        partition(z, out, a.refs)
+        print(f"wrote {out} ({time.time()-t0:.0f} s)")
+        return
     rows = []
     for ref in a.refs:
         for k in KINDS:
