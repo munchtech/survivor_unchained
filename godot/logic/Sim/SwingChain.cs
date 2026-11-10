@@ -111,7 +111,11 @@ public sealed partial class Battle
         string? clip = heavyClip ? r.ClipHeavy : light;
         var beats = HerEvents.ChainBeats(clip, heavyClip || heavy && clip == null);
         double scale = heavy && (heavyClip && light != null || clip == null) ? beats.Len / HerEvents.ChainBeats(light, false).Len : 1;
-        double period = Firing.CooldownOf(this, w) * scale;
+        // (M3 J12c) sunderer.momentum: a cut of a written blow the blow before paid for takes (1 - sooner) on its period
+        // (BlowN at a cut's start is its blow), so its rate, its beats and its wait all follow; the same factor again at
+        // its contact (Firing.Rearm). 1 when not lit.
+        double cd = Firing.CooldownOf(this, w) * Firing.MomentumMul(this, w, w.BlowN);
+        double period = cd * scale;
         // (M3 J12) A block's answer (WeaponInst.AnswerDue, taken here: after the returns above, so a press that lands at
         // once does not eat it) is one whole blow: the wait after it is the blow's. Its clip keeps the cut's rate and
         // beats (period and rate below are the cut's), so only the wait takes the factor.
@@ -126,7 +130,7 @@ public sealed partial class Battle
         c.Live = true; c.Cut = cut; c.Heavy = heavy; c.Clip = clip;
         c.Side = (clip != null ? HerEvents.Side(clip) : null) ?? ((cut & 1) == 0 ? 1 : -1);
         c.StartAt = start; c.Rate = rate; c.PeriodScale = wait; c.Whole = whole;
-        c.ContactAt = start + beats.Contact / rate; c.CancelAt = start + beats.Cancel / rate; c.PeriodEnd = start + Firing.CooldownOf(this, w) * wait;
+        c.ContactAt = start + beats.Contact / rate; c.CancelAt = start + beats.Cancel / rate; c.PeriodEnd = start + cd * wait;
         c.Landed = c.Dropped = c.Told = false;
         c.Held = ChainHeld(w);
         c.Released = false; c.GraceUntil = double.NaN;
@@ -140,7 +144,7 @@ public sealed partial class Battle
         w.WasOwnHeavy = ownHeavy;
         p.AttackAnim = new AttackAnim(w.Id, a, start, heavy || w.Behavior == WeaponBehavior.Crack, clip, rate, cut);
         w.ClipSide = c.Side;
-        w.Timer = Math.Max(0, Firing.CooldownOf(this, w) * wait - (Time - start));
+        w.Timer = Math.Max(0, cd * wait - (Time - start));
         pendingBlows.Add(new PendingBlow { W = w, Due = c.ContactAt, At = start, Mul = mul, Aim = aim, Cut = true });
         return true;
     }

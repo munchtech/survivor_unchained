@@ -114,7 +114,7 @@ public static partial class Firing
     /// the cleaver's next cut) as a press would have set them, less the time since the press.</summary>
     internal static void LandBlow(Battle b, WeaponInst w, double since, bool cut = false)
     {
-        int kills0 = w.Kills;
+        int kills0 = w.Kills, key0 = w.BlowN;
         var c = cut ? w.Chain : null;
         // (a chain's heavy cut is a longer share of the blow: its weight grows with its period)
         // (M3 J12: a block's answer is a whole blow: PeriodScale is 1 / BlowWeight, and the heavy counts ask at weight 1)
@@ -125,7 +125,7 @@ public static partial class Firing
         w.ClipSide = 0;
         if (c != null) c.Landed = true;
         if (!fired) return;
-        Rearm(b, w, true, kills0);
+        Rearm(b, w, true, kills0, key0);
         // (a chain's heavy cut waits its own longer period)
         if (c != null) w.Timer *= c.PeriodScale;
         w.Timer = Math.Max(0, w.Timer - since);

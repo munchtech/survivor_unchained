@@ -381,7 +381,7 @@ public static partial class Firing
         if (b.FireFrom != null || b.Refiring) return false;
         // (a chain's cut never starts mid-dash, in a leap or a rush: Sim/SwingChain.cs)
         if (b.CutBarred(h)) return false;
-        int kills0 = h.Kills;
+        int kills0 = h.Kills, key0 = h.BlowN;
         var aim0 = b.CastAt;
         b.CastAt = b.AimFor(h);
         bool fired, later = false;
@@ -389,7 +389,7 @@ public static partial class Firing
         try { later = b.DeferBlow(h); fired = later || CastOnce(b, h); }
         finally { b.CastAt = aim0; }
         if (later) { b.CastPose(h); return true; }
-        if (fired) { Rearm(b, h, true, kills0); b.CastPose(h); }
+        if (fired) { Rearm(b, h, true, kills0, key0); b.CastPose(h); }
         return fired;
     }
 

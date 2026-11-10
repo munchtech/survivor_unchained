@@ -106,6 +106,12 @@ public sealed class WeaponInst
     /// <summary>(M3 J12b) The written blow (BlowN) whose Linger ground is laid: under a chain one zone per written blow
     /// (Firing.LaysGround). Never written on a skill whose BlowWeight is 1.</summary>
     public int GroundKey = -1;
+    /// <summary>(M3 J12c) sunderer.momentum under a chain of weighed cuts, counted per WRITTEN blow: the blow being counted
+    /// (BlowN before its cuts' casts), the kills its cuts have made so far, and whether that blow is itself a paid one
+    /// (the blow before it reached the count: every cut of it waits less, Firing.MomentumMul). Never written on a skill
+    /// whose BlowWeight is 1.</summary>
+    public int MomKey = int.MinValue, MomKills;
+    public bool MomFast;
     /// <summary>(M3 J12) The weight of its NEXT firing, for the heavy read-aheads at a press (Battle.DeferBlow, HandHeavyNext):
     /// a whole blow when a block's answer is owed, else the cut's share.</summary>
     public double NextW => AnswerDue && BlowWeight != 1 ? 1 : BlowWeight;
@@ -385,11 +391,11 @@ public static partial class Firing
         bool selfHeave = cost > 0 && w.KindledNow && w.KindleKey == KindlePress.Now;
         if (cost > 0 && b.Resolve.Value < (selfHeave ? ResolveMeter.SelfAt * b.Resolve.Max : cost)) { w.Timer = 0; return; }
         if (w.Kindle is { } kd && !b.Kindled(kd)) { w.Timer = 0.1; w.Relooking = true; return; }
-        int kills0 = w.Kills;
+        int kills0 = w.Kills, key0 = w.BlowN;
         bool fired = CastOnce(b, w);
         if (fired && cost > 0) b.Resolve.Spend(selfHeave ? b.Resolve.Value : cost);
         // Nothing in range: look again soon rather than waiting a whole cooldown.
-        Rearm(b, w, fired, kills0);
+        Rearm(b, w, fired, kills0, key0);
     }
 
     /// <summary>One cast of the skill, as its own timer would fire it (the Hand's blow, its own heavy, its Pulse,
@@ -449,14 +455,43 @@ public static partial class Firing
     }
 
     /// <summary>The wait after a cast: its cooldown, or a quarter second when it found nothing.</summary>
-    static void Rearm(Battle b, WeaponInst w, bool fired, int kills0)
+    /// <param name="key0">(M3 J12c) BlowN read before the cast: the written blow the cast is part of.</param>
+    static void Rearm(Battle b, WeaponInst w, bool fired, int kills0, int key0)
     {
         w.Timer = fired ? CooldownOf(b, w) : 0.25;
         w.Relooking = !fired;
         // sunderer.momentum: a melee swing that kills enough brings the skill's next swing sooner.
-        if (fired && w.Tags.Has(Tag.Melee) && b.Lamp("momentum") && w.Kills - kills0 >= b.Lamps.Full("momentum", "kills", 3))
-            w.Timer *= 1 - Math.Min(0.9, b.Lamps.Size("momentum", "sooner"));
+        if (w.BlowWeight == 1)
+        {
+            if (fired && w.Tags.Has(Tag.Melee) && b.Lamp("momentum") && w.Kills - kills0 >= b.Lamps.Full("momentum", "kills", 3))
+                w.Timer *= 1 - Math.Min(0.9, b.Lamps.Size("momentum", "sooner"));
+        }
+        // (M3 J12c) Under a chain of weighed cuts the kills are counted per WRITTEN blow (all the cuts of one blow's worth)
+        // and the payout is the NEXT written blow's: every cut of it waits x (1 - sooner), once (MomentumMul; the same
+        // factor is on the cut's period at its start, Battle.DeferCut, so the clip's rate and beats follow).
+        else if (fired && w.Tags.Has(Tag.Melee) && b.Lamp("momentum"))
+        {
+            if (key0 != w.MomKey)
+            {
+                w.MomFast = key0 == w.MomKey + 1 && w.MomKills >= b.Lamps.Full("momentum", "kills", 3);
+                w.MomKey = key0; w.MomKills = 0;
+            }
+            w.MomKills += w.Kills - kills0;
+            w.Timer *= MomentumMul(b, w, key0);
+        }
         b.RuleRearm(w, fired);
+    }
+
+    /// <summary>(M3 J12c) sunderer.momentum under a chain of weighed cuts: (1 - sooner) when the cut of written blow
+    /// `key` (BlowN before its cast) is paid for by the blow before it, else 1. Pure: read at the cut's start
+    /// (Battle.DeferCut: its period) and again at its contact (Rearm: its wait), the same both times. 1 for a skill whose
+    /// BlowWeight is 1 (unchained, a chain with no period: Rearm's own rule, as ever). Not in CooldownOf: the card, the
+    /// ready ring and Rebuke read the written wait.</summary>
+    internal static double MomentumMul(Battle b, WeaponInst w, int key)
+    {
+        if (w.BlowWeight == 1 || !w.Tags.Has(Tag.Melee) || !b.Lamp("momentum")) return 1;
+        bool fast = key == w.MomKey ? w.MomFast : key == w.MomKey + 1 && w.MomKills >= b.Lamps.Full("momentum", "kills", 3);
+        return fast ? 1 - Math.Min(0.9, b.Lamps.Size("momentum", "sooner")) : 1;
     }
 
     /* A pressed skill's own clock: its wait runs down to ready and stays there; a channel fires on its gap while
@@ -520,7 +555,7 @@ public static partial class Firing
             CastOnce(b, w);
             return true;
         }
-        int kills0 = w.Kills;
+        int kills0 = w.Kills, key0 = w.BlowN;
         var aim0 = b.CastAt;
         b.CastAt = b.AimFor(w);
         bool fired;
@@ -537,7 +572,7 @@ public static partial class Firing
         // (A press that found nothing stays ready: the buffer tries again for a breath.)
         if (fired)
         {
-            Rearm(b, w, true, kills0);
+            Rearm(b, w, true, kills0, key0);
             if (cost > 0) b.Resolve.Spend(cost);
             b.CastPose(w);
         }
@@ -548,9 +583,9 @@ public static partial class Firing
     /// then its wait. True when it went off.</summary>
     internal static bool CastNow(Battle b, WeaponInst w)
     {
-        int kills0 = w.Kills;
+        int kills0 = w.Kills, key0 = w.BlowN;
         bool fired = CastOnce(b, w);
-        if (fired) Rearm(b, w, true, kills0);
+        if (fired) Rearm(b, w, true, kills0, key0);
         return fired;
     }
 
