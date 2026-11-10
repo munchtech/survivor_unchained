@@ -774,8 +774,7 @@ public partial class KeyTag : Control
         get => underline;
         set { if (value == underline) return; underline = value; QueueRedraw(); }
     }
-    // (fix C, 2: one chip height on the bar. The mouse is its own chip, the key chip's 16 tall, on an ink halo)
-    const float MouseW = 13, MouseH = Instrument.TagH;
+    const float MouseW = 13, MouseH = 17, MouseChip = 21;
     /// <summary>Fix A (judge r1, 1): every cap in lining figures. Alegreya Sans' default numerals are old-style, 7 px
     /// tall at 16 beside the letters' 11: the skill keys were the smallest text on the bar.</summary>
     static Font CapFont => Vessel.Figures;
@@ -796,8 +795,9 @@ public partial class KeyTag : Control
     {
         float mid = cx - Position.X;
         if (padView != null) return new Rect2(padView.Position, padView.Size * padView.Scale);
+        if (Square) { float q = SquareS; return new Rect2(Mathf.Round(mid - q / 2), 0, q, q); }
         if (Chip && padName != null) { float pw = PadCapW(); return new Rect2(Mathf.Round(mid - pw / 2), 0, pw, Instrument.TagH); }
-        if (mouse >= 0) return new Rect2(Mathf.Round(mid - MouseW / 2), 0, MouseW, MouseH);
+        if (mouse >= 0) return new Rect2(Mathf.Round(mid - MouseChip / 2), Mathf.Round(Instrument.TagH / 2 - MouseChip / 2), MouseChip, MouseChip);
         float cw = Math.Max(18, ChipTextW(Shown) + 9);
         return new Rect2(Mathf.Round(mid - cw / 2), 0, cw, Instrument.TagH);
     }
@@ -819,7 +819,7 @@ public partial class KeyTag : Control
     {
         cx = x; cy = y;
         // (a chip on whole px, its box and its text placed about the true middle in _Draw: the mock's round(cx - w / 2))
-        Position = Chip ? new Vector2(Mathf.Floor(x - Size.X / 2), Mathf.Round(y)) : new Vector2(x - Size.X / 2, y + (ring ? -3 : 2));
+        Position = Chip ? new Vector2(Mathf.Floor(x - Size.X / 2), Mathf.Round(y) - (Square ? Mathf.Round(SquareS - Instrument.TagH) : 0)) : new Vector2(x - Size.X / 2, y + (ring ? -3 : 2));
     }
 
     float ChipTextW(string s)
@@ -833,6 +833,7 @@ public partial class KeyTag : Control
     {
         if (Chip) Size = new Vector2(Math.Max(Math.Max(52, w), Mathf.Ceil(Math.Max(18, ChipTextW(Shown) + 9)) + 4), Instrument.TagH);
         if (Chip && padName != null) Size = new Vector2(Math.Max(52, Mathf.Ceil(PadCapW()) + 4), Instrument.TagH);
+        if (Square) Size = new Vector2(Math.Max(52, Mathf.Ceil(SquareS) + 4), SquareS);
         Place(cx, cy);
         QueueRedraw();
     }
@@ -880,31 +881,28 @@ public partial class KeyTag : Control
     void DrawMouse()
     {
         var chip = ChipBox();
-        // the mouse is the chip: as tall as a key's chip, a full bone outline on the chip's ground, the button meant
-        // solid bone, the other ink; under it an ink halo 2 wide so the ring behind never eats its body (gold when held)
-        var r = chip;
-        var halo = new StyleBoxFlat { BgColor = new Color(10 / 255f, 8 / 255f, 6 / 255f, 0.92f), BorderColor = down ? Rim : new Color(10 / 255f, 8 / 255f, 6 / 255f, 0.92f), AntiAliasing = true };
-        halo.SetBorderWidthAll(1);
-        halo.CornerRadiusTopLeft = halo.CornerRadiusTopRight = 8;
-        halo.CornerRadiusBottomLeft = halo.CornerRadiusBottomRight = 7;
-        DrawStyleBox(halo, r.Grow(2));
+        var plate = new StyleBoxFlat { BgColor = Ground, BorderColor = Rim, AntiAliasing = true };
+        plate.SetBorderWidthAll(1); plate.SetCornerRadiusAll(3);
+        DrawStyleBox(plate, chip);
+        // the mouse: 13 x 17, a full bone outline on ink, the button meant solid bone, the other ink
+        var r = new Rect2(chip.Position + new Vector2((MouseChip - MouseW) / 2, (MouseChip - MouseH) / 2), new Vector2(MouseW, MouseH));
         var bone = Bone;
-        var body = new StyleBoxFlat { BgColor = down ? Ground : new Color(10 / 255f, 8 / 255f, 6 / 255f), BorderColor = bone, AntiAliasing = true };
+        var body = new StyleBoxFlat { BgColor = new Color(10 / 255f, 8 / 255f, 6 / 255f), BorderColor = bone, AntiAliasing = true };
         body.SetBorderWidthAll(1);
         body.CornerRadiusTopLeft = body.CornerRadiusTopRight = 6;
         body.CornerRadiusBottomLeft = body.CornerRadiusBottomRight = 5;
         DrawStyleBox(body, r);
-        float split = r.Position.Y + 7, midX = r.Position.X + 6;
+        float split = r.Position.Y + 8, midX = r.Position.X + 6;
         if (mouse == 1)
-            DrawRect(new Rect2(midX - 1, r.Position.Y + 2, 3, 4), bone, true);
+            DrawRect(new Rect2(midX - 1, r.Position.Y + 2, 3, 5), bone, true);
         else
         {
             bool left = mouse == 0;
             var btn = new StyleBoxFlat { BgColor = bone, AntiAliasing = true };
             btn.CornerRadiusTopLeft = left ? 6 : 0;
             btn.CornerRadiusTopRight = left ? 0 : 6;
-            DrawStyleBox(btn, new Rect2(left ? r.Position.X : midX + 1, r.Position.Y, 6, 7));
-            DrawRect(new Rect2(midX, r.Position.Y + 1, 1, 6), bone, true);
+            DrawStyleBox(btn, new Rect2(left ? r.Position.X : midX + 1, r.Position.Y, 6, 8));
+            DrawRect(new Rect2(midX, r.Position.Y + 1, 1, 7), bone, true);
         }
         DrawRect(new Rect2(r.Position.X + 1, split, MouseW - 2, 1), bone, true);
     }
@@ -926,6 +924,11 @@ public partial class KeyTag : Control
         return t != null ? ChipTextW(t + tail) : PadGlyph + (tail != "" ? HudBottom.Keep(0.6f) + ChipTextW(tail) : 0);
     }
 
+    /// <summary>(fix E, 2) The D-pad's chip alone is square, 17 x 17 px on screen: it sits under the flask, not in the
+    /// seats' row, and a 13 tall chip cannot hold a cross whose up arm reads. Its foot stays where the 16 tall one's was.</summary>
+    bool Square => Chip && padName != null && PadCapText(padName) == null;
+    static float SquareS => HudBottom.Keep(17);
+
     float PadCapW() => Math.Max(18, PadInnerW() + (PadCapText(padName!) == null ? 6 : 9));
 
     /// <summary>M4 lead 6: on a pad the cap is a key's cap, not the menu's button scaled down: the same chip (16 tall,
@@ -941,16 +944,16 @@ public partial class KeyTag : Control
         string? name = PadCapText(padName!);
         float tw = PadInnerW();
         float mid = cx - Position.X;
-        float cw = PadCapW(), cx0 = Mathf.Round(mid - cw / 2);
+        float cw = Square ? SquareS : PadCapW(), cx0 = Mathf.Round(mid - cw / 2);
         var box = lit
             ? new StyleBoxFlat { BgColor = new Color(70 / 255f, 34 / 255f, 8 / 255f, 245 / 255f), BorderColor = new Color(1f, 190 / 255f, 90 / 255f), AntiAliasing = true }
             : new StyleBoxFlat { BgColor = Ground, BorderColor = Rim, AntiAliasing = true };
         box.SetBorderWidthAll(1); box.SetCornerRadiusAll(3);
-        DrawStyleBox(box, new Rect2(cx0, 0, cw, Instrument.TagH));
+        DrawStyleBox(box, new Rect2(cx0, 0, cw, Square ? SquareS : Instrument.TagH));
         float tx = mid - tw / 2;
         float ty = Instrument.TagH / 2 + 0.5f + (cf.GetAscent(cfs) - cf.GetDescent(cfs)) / 2;
         var ink = lit ? new Color(1f, 236 / 255f, 196 / 255f) : Bone;
-        string label = lit ? "  READY" : "";
+        string label = lit && !Square ? "  READY" : "";
         if (name != null)
         {
             var own = !lit && Style.PadFace(padName!) is { } face ? face.Lerp(ink, 0.5f) : ink;
@@ -963,14 +966,14 @@ public partial class KeyTag : Control
         }
         else
         {
-            // the cross: its foot on the letters' baseline, three arms' width to eleven
-            float g = PadGlyph, t = 6, arm = (g - t) / 2;
-            float gx = Mathf.Round(tx), gy = 1;
+            // (fix E, 2) the cross inside the square's rim, whole screen px: arms 5 thick and 5 long (15 across in 17),
+            // the up arm full bone, the other three and the centre at 0.45
+            float k = HudBottom.Keep(1), t = 5 * k, arm = 5 * k, g = t + 2 * arm;
+            float gx = Mathf.Round(cx0 + k), gy = k;
             string which = padName!.Length > 6 ? padName[6..] : "";
-            // (M4 lead 7: the rest a ghost, 0.24: at 0.42 the cross read as a plain "+" at 1:1 and the arm meant was lost)
             var dim = ink with { A = 0.45f };
             Color Of(string a) => which == "" || which == a ? ink : dim;
-            DrawRect(new Rect2(gx + arm, gy + arm, t, t), which == "" ? ink : dim, true);   // (fix A, 4: 13 px, arms 5 thick, the rest at 0.45)
+            DrawRect(new Rect2(gx + arm, gy + arm, t, t), which == "" ? ink : dim, true);
             DrawRect(new Rect2(gx + arm, gy, t, arm), Of("up"), true);
             DrawRect(new Rect2(gx + arm, gy + arm + t, t, arm), Of("down"), true);
             DrawRect(new Rect2(gx, gy + arm, arm, t), Of("left"), true);

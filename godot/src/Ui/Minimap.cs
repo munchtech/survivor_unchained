@@ -313,14 +313,21 @@ public partial class Minimap : Control
             vec2 d = UV - 0.5;
             float r = length(d) * 2.0;
             vec2 uv = centre + d * span;
-            vec3 paper = vec3(0.85, 0.796, 0.66);
-            vec3 col = texture(drawing, uv).rgb;
+            // (fix E, 4) the plate is the HUD's own dark, not khaki: unexplored ground the panel's ink-brown #1c1713 at 0.86,
+            // explored one step lighter, #3a3026; the drawing's dark ink (roads, outlines) turns bone at 0.6, its other
+            // colours ride on the explored ground
+            vec3 panel = vec3(0.110, 0.090, 0.075);
+            vec3 lit = vec3(0.227, 0.188, 0.149);
+            vec3 bone = vec3(0.914, 0.875, 0.800);
+            vec3 drawn = texture(drawing, uv).rgb;
             float s = texture(seen, uv).r;
-            // Unwalked ground is blank parchment, as on the big map; beyond the zone's edge, darker.
-            col = mix(col, paper * 0.97, 1.0 - smoothstep(0.2, 0.7, s));
-            // Beyond the drawing's edge, darker paper; the edge itself never shows (UI 20: a dead-straight line where the
-            // drawing stopped): the drawing fades into the paper over ~28 screen px, the line wandering +-6 px along
-            // its length, then the paper darkens slowly away from it.
+            float known = smoothstep(0.2, 0.7, s);
+            float luma = dot(drawn, vec3(0.299, 0.587, 0.114));
+            float inkness = clamp((0.62 - luma) / 0.42, 0.0, 1.0);
+            vec3 hue = (drawn - vec3(luma)) * 0.5;
+            vec3 seenCol = mix(lit + hue * 0.6, bone * 0.6 * dim, inkness);
+            // Beyond the drawing's edge the plate is the panel dark; the edge itself never shows (UI 20: a dead-straight
+            // line where the drawing stopped): the drawing fades into it over ~28 screen px, the line wandering +-6 px.
             float px = max(fwidth(uv.x), fwidth(uv.y));
             float e = min(min(uv.x, uv.y), min(1.0 - uv.x, 1.0 - uv.y)) / max(px, 1e-6);
             vec2 q = uv / max(px, 1e-6) / 40.0;
@@ -329,10 +336,11 @@ public partial class Minimap : Control
             float h00 = fract(sin(dot(i0, vec2(127.1, 311.7))) * 43758.5453), h10 = fract(sin(dot(i0 + vec2(1.0, 0.0), vec2(127.1, 311.7))) * 43758.5453);
             float h01 = fract(sin(dot(i0 + vec2(0.0, 1.0), vec2(127.1, 311.7))) * 43758.5453), h11 = fract(sin(dot(i0 + vec2(1.0, 1.0), vec2(127.1, 311.7))) * 43758.5453);
             e += (mix(mix(h00, h10, f0.x), mix(h01, h11, f0.x), f0.y) - 0.5) * 12.0;
-            vec3 beyond = mix(paper * 0.97, paper * 0.6, smoothstep(0.0, 70.0, -e));
-            col = mix(beyond, col, smoothstep(-4.0, 28.0, e));
-            col *= mix(1.0, 0.86, smoothstep(0.7, 1.0, r)) * dim;
-            COLOR = vec4(col, 1.0 - smoothstep(0.965, 1.0, r));
+            known *= smoothstep(-4.0, 28.0, e);
+            vec3 col = mix(panel, seenCol, known);
+            col *= mix(1.0, 0.86, smoothstep(0.7, 1.0, r));
+            float ground = mix(0.86, 1.0, known);
+            COLOR = vec4(col, ground * (1.0 - smoothstep(0.965, 1.0, r)));
         }
         """;
 }

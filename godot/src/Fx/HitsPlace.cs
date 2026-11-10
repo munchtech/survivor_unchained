@@ -13,6 +13,14 @@ public static class HitsPlace
     public const double Young = 0.3;
     public const float StrapGap = 6;
 
+    /// <summary>(fix E, 3) A damage number's font size, one rule: a normal blow 46, a heavy one (a fifth of its target) +12, so
+    /// no normal number passes NormalMost = 58; a crit starts at 80 (1.38 x that), +12 when heavy. At the same depth a crit is
+    /// therefore never under 1.35 x the largest normal. (Before: crit 72 against a heavy normal's 58 = 1.24, and a crit's
+    /// 1.35 punch scale lasts only the first 0.08 s, so a frame shot later showed the font sizes alone.)</summary>
+    public const int NormalSize = 46, HeavyAdd = 12, NormalMost = NormalSize + HeavyAdd, CritSize = 80;
+    public const float CritOverNormal = 1.35f;
+    public static int NumberSize(bool crit, bool heavy) => (crit ? CritSize : NormalSize) + (heavy ? HeavyAdd : 0);
+
     /// <summary>How far a number has lifted (m) `secs` into its life: the integral of Lift x (1 - t / Life).</summary>
     public static double RiseIn(double secs)
     {

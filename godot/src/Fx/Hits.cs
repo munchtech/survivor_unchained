@@ -109,7 +109,7 @@ public partial class Hits : Node3D
     }
 
     public void Number(Vector3 at, int amount, bool crit) =>
-        Text(Beside(at), amount.ToString(), crit ? NumCrit : NumBone, crit ? 76 : 46);
+        Text(Beside(at), amount.ToString(), crit ? NumCrit : NumBone, HitsPlace.NumberSize(crit, false));
 
     /// <summary>Normal numbers: bone at 85%; crits: white (M4 section 5).</summary>
     static readonly Color NumBone = new Color("#e9dfcc", 0.85f), NumCrit = new Color(1f, 1f, 1f, 1f);

@@ -205,7 +205,7 @@ public partial class Hits
         l.Modulate = col;
         if (t.Crit && t.Tint == null) { numPunch[i] = 0; l.Scale = 1.35f; }
         // What burns or bleeds a body is told smaller than the blows themselves.
-        l.FontSize = t.Tint != null ? 36 : (t.Crit ? 72 : 46) + (t.Heavy ? (t.Crit ? 12 : 12) : 0);
+        l.FontSize = t.Tint != null ? 36 : HitsPlace.NumberSize(t.Crit, t.Heavy);
     }
 
     void StepTally(double dt) => clock += dt;

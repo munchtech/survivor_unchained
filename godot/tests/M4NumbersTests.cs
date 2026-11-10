@@ -15,6 +15,19 @@ public class M4NumbersTests
         HitsPlace.StrapNudge(x0, y0, x1, y1, rise, Sx0, Sy0, Sx1, Sy1);
 
     [Fact]
+    public void A_crit_is_at_least_135_percent_of_the_largest_normal_number_at_every_size()
+    {
+        Assert.Equal(58, HitsPlace.NormalMost);
+        foreach (bool heavy in new[] { false, true })
+        {
+            Assert.True(HitsPlace.NumberSize(false, heavy) <= HitsPlace.NormalMost);
+            foreach (bool critHeavy in new[] { false, true })
+                Assert.True(HitsPlace.NumberSize(true, critHeavy) >= HitsPlace.CritOverNormal * HitsPlace.NumberSize(false, heavy));
+        }
+        Assert.True(HitsPlace.NumberSize(true, false) >= HitsPlace.CritOverNormal * HitsPlace.NormalMost);
+    }
+
+    [Fact]
     public void A_number_clear_of_the_strap_stays()
     {
         Assert.Equal(0, Nudge(700, 550, 780, 590));          // well to its left
