@@ -7,10 +7,9 @@ One honest attempt at the lay fix (solver, 10 Nov) passes the edge limits on the
 It is in the code behind `build --relax` (off by default) and was never written to the npz. No second design made.
 
 ## Method (general core: lscm, Unfold, Curve, relay, relax)
-A's patch under the band unfolded flat (LSCM, 0 flipped); per bridge the apex = where A's normal is halfway
-between the two mouths; a cubic through them (residual 0.3 mm); the bridge ends on the nearer side go ONTO the apex
-line; the rest of the band by least squares on the unfolded edge vectors (weights 1 / rest length); lifted back with
-heights from the band's neighbours, cut until the foot is the closest A point. Band = rows 4 & beta == 1.
+A's patch under the band unfolded flat (LSCM); per bridge the apex = where A's normal is halfway between the two
+mouths; a cubic through them; the bridge ends on the nearer side go ONTO the apex line; the rest by least squares
+on the unfolded edge vectors; lifted back with heights from the band's neighbours. Band = rows 4 & beta == 1.
 
 ## Why the old lay has 0.34..1.80 rest edges (measured, both sides)
 - The least squares runs on PLANE lengths, and the unfold's scale is not 1 (plane / surface 0.32..1.41). Where the
@@ -39,12 +38,20 @@ Unknowns stay plane points (apex row slides along its line), but the energy is R
   rest visibility. The old lay's rest visibility stands (re-run today, unchanged): outline front 3/4 2 px, back
   3/4 and side 0; depth change over 0.5 mm 5.3 / 4.5 cm2 front 3/4, 6.4 / 6.8 back 3/4, 6.0 / 6.4 under (l / r).
 
-## Posed edges 3.7-4.5x (defect 2): NOT MEASURED, one untested reading
-Not run: the per-edge print and A's own stretch (helpers written, never run: `Unfold.length(V=)`,
-`Unfold.stretch`). Reading from the rest numbers only: posed ratios are against B' rest, and the bridging edges
-sit at 0.49-0.73 of their old length across the apex-to-wall step, so a wall that opens 1.9-2.7x (A's own
-1.8-2.0 mean, 2.8-3.6 single) would read 3.7-4.5 on them. That would make them the lay's fault. It is a guess
-until the worst edges are printed with their rest new / old beside A's matched stretch.
+## Posed edges 3.7-4.5x (defect 2): MEASURED on the old lay, 3 poses. They are mostly A's OWN
+A's own = A's skin under the same edge (`Unfold.length(V=)`: the path between the edge's two feet, posed / rest)
+and the principal stretch of A's triangle at the edge's middle (`Unfold.stretch`). All worst edges leave the apex
+row up a wall (apex-to-wall, bridging or not): A's groove floor opens that much.
+| pose | B' edge min..max, mean | A's own path min..max, mean | edges over A + 0.15 | over 3.0 (rest under 0.75) |
+|---|---|---|---|---|
+| x:abd150:l | 0.55..3.80, 1.44 | 0.58..3.67, 1.43 | 6 of 330 | 12 (4) |
+| x:flex170:l | 0.58..3.73, 1.47 | 0.60..3.52, 1.46 | 6 of 330 | 11 (4) |
+| p4:heroic_leap@19:r | 0.60..4.50, 1.49 | 0.64..4.28, 1.47 | 16 of 332 | 15 (6) |
+Worst edges (rest new / old; posed x new; A's path; A's triangle): l 2333-2393 0.75; 3.80; 3.20; 3.40 |
+2386-2446 0.70; 3.76; 3.67; 3.28 | 2445-2446 1.04; 3.61; 3.51; 3.28 | 2327-2387 0.85; 3.58; 3.44; 3.46.
+r 2326-2386 0.34; 4.50; 4.28; 4.53 | 2267-2333 0.71; 3.93; 3.33; 3.79 | 2266-2332 0.63; 3.83; 3.53; 4.17.
+So: A itself is at 3.2-4.3 there; the lay's short rest edges add 0.1-0.6 on 6 (l) / 16 (r) edges. A lay inside
+0.75..1.35 would bring the worst to about A's 3.5-3.7 (l) and 4.3 (r), not under the fill's 2.7-3.3.
 
 ## Fill | B' on the OLD lay (unchanged; 9 named poses; band edges against each one's own rest)
 | pose | fill edge, off A mm, turned | B' edge, off A mm, turned |
@@ -58,16 +65,16 @@ until the worst edges are printed with their rest new / old beside A's matched s
 | p4:heroic_leap@9:r | 0.27..3.60, 17.7, 21 | 0.39..3.26, 1.3, 4 |
 | p4:heroic_leap@19:r | 0.56..3.32, 33.5, 2 | 0.60..4.50, 1.3, 0 |
 | p4:heroic_leap@20:r | 0.51..3.33, 33.5, 12 | 0.57..4.41, 1.3, 0 |
-No A's-own column, no means, no pass counts against A + 0.15: not computed.
+A's-own for the other 6 poses, and pass counts over all 9, are not computed (`cmd_target` does not print them).
 
 ## Is B' better than the fill on every count? NO
-B' wins off-A (33 mm -> 1.4 mm) and turned triangles; it LOSES worst edge on l (3.7-3.8 against 2.7-2.8) and at
-leap 19 / 20 (4.4-4.5 against 3.3), and its rest lay is outside 0.75..1.35 on both sides (old) or on l (relaxed).
+B' wins off-A (33 mm -> 1.4 mm), turned triangles, and follows A (mean 1.44-1.49 against A's 1.43-1.47). It LOSES
+worst edge to the fill on l (3.7-3.8 against 2.7-2.8) and at leap 19 / 20 (4.5 against 3.3), because A's own floor
+is there; and its rest lay is outside 0.75..1.35 on both sides (old) or on l (relaxed).
 
 ## What the next attempt needs (not built)
 - The apex row must be a row the mesh HAS: on l the bridge ends change mesh row at 2386, so the line gets a 3.5 mm
-  edge along it. Either pick the row by mesh topology (one edge loop) or let the short edge leave the line.
-- Split the new skin over both sides (move the far side's first row too), or widen the near side (`--rows`).
-- A quality term (the area barrier alone lets r fall 0.423 -> 0.295), and a faster `Unfold.locate` (brute force).
-- `cmd_sheet` was read, NOT fixed and NOT run: it still makes 2 columns (no A column, no numbers line, no
-  `--under` flag). `target --snap` and `sheet --snap` run as before on the old npz; neither shows a fixed lay.
+  edge along it. Pick the row by mesh topology (one edge loop) or let the short edge leave the line. Split the
+  new skin over both sides. A quality term (r falls 0.423 -> 0.295). A faster `Unfold.locate` (brute force).
+- `cmd_sheet` was read, NOT fixed, NOT run: 2 columns, no A column, no numbers line, no `--under`. `target --snap`
+  and `sheet --snap` run as before on the old npz; neither shows a fixed lay.
