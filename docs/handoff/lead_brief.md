@@ -6,6 +6,7 @@ You are a fresh successor lead. The coordinator is the main session: report with
 
 ## Usage rules (the owner, 9 Nov: "all those changes are great please do them")
 Waste was work built twice and docs read six times, not model tier or judge cost.
+**No budget (the owner, 9 Nov evening): "don't worry about the cost. stay efficient with handoffs and or compactions but for now no budget just make it awesome."** Area budget lines and token caps are lifted: take the remake over the patch, the second design take, the extra judge round whenever it makes the thing better, without asking main. The six rules below stay: they stop waste, they don't cap spend.
 1. **Own look before every max judge.** Check the 1:1 frames (play camera, close zoom) and the numbers yourself first. A max judge (150-200k) runs only when you would bet on PASS.
 2. **Scrap at the first FAR.** A FAR verdict means the block is rebuilt (shader, clip beats, rig, preset), never a fix round. The three-round cap is for CLOSE marks only. Report cost (helpers, tokens, API dollars) with every failed round.
 3. **Orientation cap 60k.** A lead not building by 80k stops and reports to main. A successor reads only the handoff's top block and its brief; it re-derives nothing.
