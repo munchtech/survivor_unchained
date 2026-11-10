@@ -830,6 +830,66 @@ def vine_band(surf, rim, d0, d1, ad, sky, conv, lift, matte=False, edge_min=0.00
     return ground, vine, st
 
 
+def motif_film(surf, rim, d0, ad, sky, conv, lift, matte, edge_min):
+    """The cup's motif (`motif` {h, w}, mm; P2 lead 14: a band alone did not read at 1:1 at the close camera): an
+    upright blackened fleur rising from the band's inner line at the rim's lowest point, toward the cup's apex (the
+    lower cup is the far side from it): a pointed shield of ground `h` tall, `w` wide, with a bright lancet and two
+    bright side leaves left in it (gaps in the film). On a grid of inward rows 0.5 mm apart, each row's own arc
+    length from the anchor's column across, so its shape is true mm on the plate."""
+    mo = ad.get("motif") or {}
+    H, Wd = float(mo.get("h", 22.0)), float(mo.get("w", 18.0))
+    P0, O0, N0, _ = rim_line(rim, 0.0005)
+    ia = int(np.argmin(P0[:, 1]))
+    rows = [fair(surf, inward(surf, P0, O0, N0, d0 + v / 1000)) for v in np.arange(0, H + 0.6, 0.5)]
+    G = np.stack([r[0] for r in rows], 1)
+    ns, nr = G.shape[:2]
+    seg = np.linalg.norm(np.roll(G, -1, 0) - G, axis=2) * 1000           # (ns, nr) mm
+    U = np.zeros((ns, nr))
+    k = (np.arange(ns) - ia) % ns
+    k = np.where(k > ns // 2, k - ns, k)
+    order = np.argsort(k)
+    cum = np.cumsum(seg[order], 0)
+    U[order] = cum - cum[np.searchsorted(k[order], 0)]
+    V = np.repeat((np.arange(nr) * 0.5)[None], ns, 0)
+    cols = np.where(np.abs(k) * 0.5 < Wd / 2 + 6)[0]
+    cols = cols[np.argsort(k[cols])]
+
+    def shape(u, v):
+        t = np.clip(v / H, 0, 1)
+        inside = np.abs(u) < Wd / 2 * np.cos(np.pi / 2 * t) ** 0.6
+        s = (v - 3.0) / (H - 8.0)
+        lance = (s > 0) & (s < 1) & (np.abs(u) < 1.4 * np.clip(np.sin(np.pi * np.clip(s, 0, 1)), 0, 1) ** 0.8)
+        leaves = np.zeros_like(inside)
+        for sg in (1, -1):
+            a = np.radians(35.0)
+            du, dv = u - sg * 0.24 * Wd, v - 0.34 * H
+            x = du * np.cos(a) + sg * dv * np.sin(a)
+            y = -sg * du * np.sin(a) + dv * np.cos(a)
+            leaves |= (x / (0.2 * Wd)) ** 2 + (y / 1.6) ** 2 < 1
+        return inside & ~lance & ~leaves
+    idx = np.arange(ns * nr).reshape(ns, nr)
+    T = []
+    for a_, b_ in zip(cols[:-1], cols[1:]):
+        if k[b_] - k[a_] != 1:
+            continue
+        for j in range(nr - 1):
+            q = [idx[a_, j], idx[b_, j], idx[b_, j + 1], idx[a_, j + 1]]
+            for tri in ((q[0], q[1], q[2]), (q[0], q[2], q[3])):
+                uu = np.mean([U.ravel()[t_] for t_ in tri]); vv = np.mean([V.ravel()[t_] for t_ in tri])
+                if shape(np.array([uu]), np.array([vv]))[0]:
+                    T.append(tri)
+    T = np.array(T, int).reshape(-1, 3)
+    used = np.unique(T)
+    re = -np.ones(ns * nr, int)
+    re[used] = np.arange(len(used))
+    P = np.stack([r[0] for r in rows], 1).reshape(-1, 3)[used]
+    N = np.stack([r[3] for r in rows], 1).reshape(-1, 3)[used]
+    F = np.stack([r[1] for r in rows], 1).ravel()[used]
+    B = np.stack([r[2] for r in rows], 1).reshape(-1, 3)[used]
+    T = fix_winding(P, re[T], N)
+    return film_from(surf, P, N, F, B, T, sky, conv, lift, matte, edge_min), {"motif_tris": int(len(T)), "h_mm": H, "w_mm": Wd}
+
+
 def matte_ground(ad):
     return ad.get("ground") is not None and mats_table().get(ad["ground"], {}).get("kind") == "leather"
 
@@ -868,6 +928,10 @@ def etch(surf, sock, ad, lod):
                 # with the arms overhead)
                 parts.append(film_strip(surf, rim, l0, l1, 0.002, 2, sky, conv, lift * 1.2, mt, em))
                 stats["lines"] += 1
+            if ad.get("motif"):
+                mfilm, mst = motif_film(surf, rim, lines[-1][1], ad, sky, conv, lift * 1.2, mt, em)
+                parts.append(mfilm)
+                stats.setdefault("motif", []).append(mst)
         stats["bands"] += 1
     return parts, vines, stats
 
@@ -1336,6 +1400,9 @@ def build(pid, post=False):
         rows = [r for r in rows if r["id"] != pid]
         row = dict(brow, id=pid, meshes=sorted(m["name"] for m in full), tuck=f"armor_tuck/{pid}.bin", file=f"res://art/armor/{pid}.gltf",
                    tier=piece.get("tier"), base=src_id)
+        row.pop("finish", None)                    # (a variant's finish is its own piece's, never its base's)
+        if piece.get("finish"):
+            row["finish"] = piece["finish"]
         if piece.get("covers"):
             row["covers"] = piece["covers"]
         if piece.get("hold"):

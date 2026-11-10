@@ -28,15 +28,18 @@
    "r": 0.0014
   },
   "gore": {
-   "top": 0.014,
-   "drop": 0.02,
+   "top": 0.016,
+   "drop": -0.002,
    "hw_tip": 0.005,
    "lift": 0.0005,
-   "thick": 0.0025,
+   "thick": 0.0035,
    "roll": [
-    0.0035,
-    0.0006
-   ]
+    0.004,
+    0.0011
+   ],
+   "bar": {
+    "camber": 0.0015
+   }
   },
   "cup_budget": 2600,
   "leather_budget": 900,
@@ -66,5 +69,8 @@
  "hold": {
   "amount": 0.55,
   "squash": 0
+ },
+ "finish": {
+  "steel": "plainsteel"
  }
 }
