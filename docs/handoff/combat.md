@@ -1,5 +1,24 @@
 # Handoff: combat (skills' mechanics, enemies, encounters, bosses, balance, the maps, the story's nights)
 
+## M3 combat systems, lead 16 (combat-m3, 10 Nov): the landed rule, the clock, the feet and bands round 8 are built and measured; the merge, the suite and MR 3 are the lead's next step
+**Facts:** `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_combat_m3\lead16\` (b1-b6 results, r8*.out). Design: `docs/balance/chain_weight.md` (top section), `docs/balance/m3_bands.md` (round 8).
+**Done this shift (all pushed):** 7f3afe5aa + 63cabde97 (the landed rule, its invariant and tests), b52164678 (17 reds re-pinned), 473daac72 (the clock), aa2e88aa6 (the feet), 2dc6fe208 (the split by source, harness only), c00c385d2 / 8a333c28e / bc137f193 (the wording), d5d195064 (grip damage x0.80 + re-pins).
+**Numbers:** the invariant holds (400 patterns per record; the real path at most 0.39 Oathblade, 0.48 / 0.65 Sunder, chained never above stripped). Clock: exact, 1.6 s was 97 steps. Answer at 0.85: 0.9885 / 1.0019 / 1.0014. A/B chained v stripped grip dmg/s: Low Ford II deft +20.6%, human +15.6%; veteran III deft +9.8%, human +2.3%; cause = the old record's waste (unchained whiff re-arms a whole wait). Tune x0.80 (Oathblade 18.25, Sunder 22.4): every band met except standing I falls 68.8% (band 80+, flat across the trials); human II 85.4% as round 7.
+**Main's rulings this shift:**
+- The landed rule is the form (weight = max(own share, min(1, earned)); answer 1; a whiff spends and counts nothing).
+- Numbers acceptance closes MR 3; no max judge.
+- The A/B excess is a feel gain, not overpay; the bands size a grip cut x0.80.
+- Wording landed: Sunder "Huge cuts while you hold. About every 6 seconds of cutting, a heavy one splits the ground in a line ahead of you.", the Hand's seconds line, Momentum's line; the draft card drops the Hand's parenthetical.
+- The `LampWick.cs:417` hunk still waits for ui-m4's merge.
+**NOT done:**
+- The merge, the full suite and the MR (the lead does it next).
+- The two look clips (commands in lead 15's block, item 6).
+- Standing tier I falls (68.8%): cause open, owner M3's next lead.
+- The feet do not touch drops: drops come from the crush dash, and under the landed rule a drop costs nothing.
+- Docs owed: none.
+- Open from b2: heavy count vs held can differ by one (phase); a whiffed cut's later-missing strike keeps its counts.
+**Cost:** lead 16 about 170k, helpers about 0.8M.
+
 ## M3 combat systems, lead 15 (combat-m3, 10 Nov 05:00, WIND-DOWN on the owner's word): HANDOFF READY. MR 3: THE SWITCH is live and was green (1846 / 0 / 10 at e4d6b1ebf); the real-path A/B then showed the chain LOSES 22-24% of the grip's damage at the veteran map; the fix (a rested cut carries its rest) is HALF BUILT at the tip (WIP, reds standing, NOT main's final form); the card's data is in; the clock, the feet, bands round 8, the look clip and the merge are NOT done
 **Start cold here.** Worktree `.claude/worktrees/combat-m3`, branch combat-m3. MR 3 = "Sunder and Oathblade cut every 0.70 s as a chain, every per-second rate held by the cut's weight" (weight = period / written wait: Sunder 0.70 / 1.6 = 0.4375, Oathblade 0.70 / 1.05 = 0.6667). Brief: `tools/scratch/coordinator/briefs/M3_combat_lead1.md`; design notes `docs/balance/chain_weight.md` (behind: see "Docs owed"). Scratch with every result and facts file of this shift: `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_combat_m3\lead15\`. Lead 14's block below holds the older decisions (block answer, Linger, momentum, the hands' gap rule) and is still true except where this block says otherwise. No Godot turn was taken this shift; nothing went to the owner.
 **State at the tip (code = 225a17360; this block's commit is docs only):** the full suite is RED: 1859 passed / 17 failed / 10 skipped (7 m 30 s, `lead15\suite_rested_1.log`). All 17 are existing tests that the WIP rested cut moved; NONE is re-pinned or read yet: MomentumChainTests x7, ResolveTests x2 (`Resolve_fills_on_landed_blows...` 7.875 -> 18, `Out_of_a_storm...` 5.25 -> 12: the first cut is whole now), GripHoldTests' meter bank test (0.5625 -> 0), SwingChainTests `A_cut_with_a_period_weighs_its_share...` (0.4375 -> 1), BlockAnswerTests `A_block_while_a_cut_is_pending...` (22.81 -> 15.2067, NOT understood: read before re-pinning), LateWeightTests (crescent), TailWeightTests (scheduled strike), CutLeakTests (the long chain, sunder), ProcWeightTests (flat proc), LingerChainTests (the answer's ground). The last green tip is e4d6b1ebf (1846 / 0 / 10); c0a61ec2f (meters + card, before the rested cut) was not run whole.
