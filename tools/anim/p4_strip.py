@@ -11,6 +11,10 @@ Views (her travel direction, clip +Z, points screen-RIGHT in both):
   side   a pure profile from HER RIGHT at floor level (the camera looks along +X: screen right = +Z, up = +Y)
   game   the play camera's pitch (FollowCamera.cs `Pitch`, or --pitch) from the same side: she faces screen-right
   front  from in front of her (screen right = +X, her left)
+  quarter  three-quarter from her front-RIGHT (45 deg between front and side), level: her forward and her left both
+           run screen-right
+
+pose_sheet(): p4.py pose's sheet: one row of four large tiles (game, front, side, quarter) per clip frame, rows stacked.
 """
 from __future__ import annotations
 
@@ -44,6 +48,9 @@ def basis(view, pitch):
     """Rows: screen right, screen up, away from the camera (clip space)."""
     if view == "front":
         return np.array([[1.0, 0, 0], [0, 1, 0], [0, 0, -1]])
+    if view == "quarter":
+        c = np.sqrt(0.5)
+        return np.array([[c, 0, c], [0, 1.0, 0], [c, 0, -c]])
     p = np.radians(pitch if view == "game" else 0.0)
     return np.array([[0, 0, 1.0], [np.sin(p), np.cos(p), 0], [np.cos(p), -np.sin(p), 0]])
 
@@ -305,3 +312,62 @@ def run(p4, a):
     print(f"{name}: {len(frames)} tiles x {len(views)} views ({', '.join(views)}), {s:.1f} px/m, game pitch {pitch:g} deg, {time.time() - t0:.1f} s")
     print(out)
     print(jpg)
+
+
+POSE_VIEWS = (("game", "GAME pitch {p:g}, from her right"), ("front", "FRONT (her left = screen right)"),
+              ("side", "SIDE from her right"), ("quarter", "3/4 from her front-right, level"))
+
+
+def pose_sheet(p4, rows, tile, out, pitch=None):
+    """p4.py pose's sheet: each row = one frame of one clip in FOUR tiles (POSE_VIEWS: game, front, side, quarter), rows
+    stacked, a label over each tile (the row's name and the view), nothing else: the JPEG is 4 tiles wide, one tile
+    high per row. rows: [(label, built JSON path, frame, held list)]. One scale and one camera per view for ALL rows
+    (rows compare), her skin loaded once (p4.body_field's cache; a Scene per held set)."""
+    from PIL import Image, ImageDraw, ImageFont
+    t0 = time.time()
+    pitch = game_pitch(p4.REPO) if pitch is None else pitch
+    W, H = (int(x) for x in tile.lower().split("x"))
+    Hd = H - LABEL
+    scenes, posed = {}, []
+    for label, path, frame, held in rows:
+        sc = scenes.get(tuple(held)) or scenes.setdefault(tuple(held), Scene(p4, list(held)))
+        G, P = p4.MC.globals_of(p4.MC.read(path), sc.rig)
+        f = min(max(0, frame), len(G) - 1)
+        posed.append((label, sc, sc.verts(G[f], P[f])))
+    views = [v for v, _ in POSE_VIEWS]
+    Bs = {v: basis(v, pitch).astype(np.float32) for v in views}
+    lo = {v: np.min([(V @ Bs[v][:2].T).min(0) for _, _, V in posed] + [[0, -0.07]], 0) for v in views}
+    hi = {v: np.max([(V @ Bs[v][:2].T).max(0) for _, _, V in posed] + [[0, 0.0]], 0) for v in views}
+    s = min(min((W - 6) / (hi[v][0] - lo[v][0]), (Hd - 6) / (hi[v][1] - lo[v][1])) for v in views)
+    sheet = Image.new("RGB", (len(views) * W, len(posed) * H), (255, 255, 255))
+    d = ImageDraw.Draw(sheet)
+    try:
+        fnt = ImageFont.truetype("C:/Windows/Fonts/arialbd.ttf", 11)
+    except OSError:
+        fnt = ImageFont.load_default()
+    Ws, Hs = W * SS, Hd * SS
+    for k, (v, what) in enumerate(POSE_VIEWS):
+        mid = (lo[v] + hi[v]) / 2
+        back = backdrop(v, pitch, Ws, Hs, s * SS, mid)
+        for i, (label, sc, V) in enumerate(posed):
+            X = V @ Bs[v].T
+            xy = np.stack([Ws / 2 + (X[:, 0] - mid[0]) * s * SS, Hs / 2 - (X[:, 1] - mid[1]) * s * SS], 1)[sc.T]
+            tv = X[sc.T]
+            nr = np.cross(tv[:, 1] - tv[:, 0], tv[:, 2] - tv[:, 0])
+            nr /= np.linalg.norm(nr, axis=1, keepdims=True) + 1e-12
+            nr[nr[:, 2] > 0] *= -1                                  # (toward the camera)
+            shade = 0.36 + 0.64 * np.clip(nr @ LIGHT, 0, 1)
+            img, zb = back.copy(), np.full(Ws * Hs, np.inf, np.float32)
+            raster(xy, tv[:, :, 2], (sc.C * shade[:, None]).astype(np.float32), Ws, Hs, zb, img)
+            outline(img, zb, Ws, Hs)
+            x0, y0 = k * W, i * H
+            sheet.paste(Image.fromarray(img.reshape(Hs, Ws, 3).clip(0, 255).astype(np.uint8)).resize((W, Hd), Image.BOX), (x0, y0 + LABEL))
+            d.rectangle([x0, y0, x0 + W - 1, y0 + LABEL - 1], fill=(255, 226, 150) if i == 0 else (232, 232, 228))
+            d.text((x0 + 3, y0 + 1), f"{label}  |  {what.format(p=pitch)}", fill=INK, font=fnt)
+            d.rectangle([x0, y0, x0 + W - 1, y0 + H - 1], outline=(150, 150, 150))
+    out = Path(out).with_suffix(".jpg")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    sheet.save(out, quality=90)
+    print(f"pose sheet: {len(posed)} row(s) x {len(views)} views ({', '.join(views)}), {sheet.width}x{sheet.height}, {s:.1f} px/m, "
+          f"game pitch {pitch:g} deg, {time.time() - t0:.1f} s")
+    return out

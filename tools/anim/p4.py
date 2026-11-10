@@ -625,13 +625,137 @@ def cmd_build(a):
 
 
 POSE_OUT = REPO / "tools/anim/out/pose"      # git-ignored (/tools/anim/out/): nothing packs or judges it
+POSE_AXES = ("node frame: +Y up, +Z her heading (the node's forward), +X her LEFT; every yaw / heading / facing is about the "
+             "vertical against +Z, + = toward her left unless the key says right; cm and deg")
+
+
+def _ang(u, v):
+    return float(np.degrees(np.arccos(np.clip(u @ v / (np.linalg.norm(u) * np.linalg.norm(v) + 1e-12), -1, 1))))
+
+
+def _turn(R):
+    return float(np.degrees(np.arccos(np.clip((np.trace(R) - 1) / 2, -1, 1))))
+
+
+def pose_measures(rig, G, P, f, held=("sword", "shield")):
+    """A STANCE's numbers on one frame of B's FK (G, P: (F,J,3,3), (F,J,3) world; the held pieces mounted as the game
+    seats them, pieces()). Everything is in the NODE's frame (POSE_AXES), never the pelvis's. {group: {key: value}}:
+      feet    stagger_fwd_cm (left heel z - right heel z), across_cm (left heel x - right heel x), turnout_l/r_deg (the
+              heel->ball line about the vertical against +Z, + = toes OUT on each side)
+      pelvis  height_cm, drop_cm (B's rest height - now), yaw_deg (+ toward her left), roll_deg (+ = left hip up),
+              weight_to_back_pct (the pelvis head along the heel-to-heel line: 0 over the front heel, 100 over the back
+              heel, 50 centred), back_foot
+      knees   flex_l/r_deg (thigh against calf, 0 = straight)
+      trunk   lean_fwd_deg / lean_left_deg (pelvis->neck_01 against the vertical), chest_yaw_deg (spine_05's world turn
+              against its rest), head_yaw_deg, head_roll_deg (+ = left ear up), head_pitch_deg (+ = chin down) (the
+              Head's world turn against its rest: G @ R0.T, as fit.head)
+      arm_l/r elbow_flex_deg (0 = straight), elbow_out_cm (the elbow joint's x from the shoulder joint's, + = out from
+              the body), shoulder_lift_cm (measures.idle's: the shoulder joint over neck_01 against rest)
+      sword   hand_right/up/fwd_cm (hand_r against the pelvis head), heading_right_deg (the blade about the vertical
+              from +Z, + = toward her RIGHT, 180 = straight back), below_deg (under the horizontal), tip_x/y/z_cm,
+              crosses_front_leg + past_leg_edge_cm: the blade's base (past the guard), middle and tip against the
+              LEADING leg's knee and ankle x: yes when a point is beyond both on the side away from the sword hand,
+              or within 6 cm of their x-span while in front (z) of the knee-ankle line at its height;
+              past_leg_edge_cm = the worst point's x past the leg's edge nearest the sword hand (- = short of it)
+      shield  boss_y_cm, top_cm, bottom_cm (max / min y of its points), facing_deg (the outward face normal's heading,
+              + toward her left), rim_low_to_thigh_l_cm (the lowest point's horizontal distance to the left
+              hip-joint->knee line at that point's height, clamped to the segment; its _left_cm / _fwd_cm parts)
+      collar  spine05_local_deg / spine05_rest_deg / spine05_diff_deg (spine_05's LOCAL turn angle: nobody keys the
+              collar, the diff must read 0), clavicle_l/r_vs_rest_deg (local against rest: 0)"""
+    from motion import fit as FIT
+    I = rig.index
+    gp = {k: v[f] for k, v in FIT.ground_points(rig, G, P).items()}
+    G, P = G[f], P[f]
+    r1 = lambda x: round(float(x), 1)
+    cm = lambda x: round(100 * float(x), 1)
+    hd = lambda x, z: float(np.degrees(np.arctan2(x, z)))
+    up = lambda y, x, z: float(np.degrees(np.arctan2(y, np.hypot(x, z))))
+    rel = lambda b: G[I[b]] @ rig.R0[I[b]].T
+    out = {}
+    hl, hr = gp["heel_l"], gp["heel_r"]
+    dl, dr = gp["ball_l"] - hl, gp["ball_r"] - hr
+    out["feet"] = {"stagger_fwd_cm": cm(hl[2] - hr[2]), "across_cm": cm(hl[0] - hr[0]),
+                   "turnout_l_deg": r1(hd(dl[0], dl[2])), "turnout_r_deg": r1(-hd(dr[0], dr[2]))}
+    pv = I["pelvis"]
+    Rp = rel("pelvis")
+    back = "l" if hl[2] < hr[2] else "r"
+    hb, hf = (hl, hr) if back == "l" else (hr, hl)
+    ab = (hb - hf)[[0, 2]]
+    out["pelvis"] = {"height_cm": cm(P[pv, 1]), "drop_cm": cm(rig.head[pv][1] - P[pv, 1]), "yaw_deg": r1(hd(Rp[0, 2], Rp[2, 2])),
+                     "roll_deg": r1(up(Rp[1, 0], Rp[0, 0], Rp[2, 0])),
+                     "weight_to_back_pct": r1(100 * ((P[pv] - hf)[[0, 2]] @ ab) / (ab @ ab + 1e-12)), "back_foot": back}
+    out["knees"] = {f"flex_{s}_deg": r1(_ang(P[I[f"calf_{s}"]] - P[I[f"thigh_{s}"]], P[I[f"foot_{s}"]] - P[I[f"calf_{s}"]])) for s in "lr"}
+    nk = I["neck_01"]
+    v = P[nk] - P[pv]
+    Rc, Rh = rel("spine_05"), rel("Head")
+    out["trunk"] = {"lean_fwd_deg": r1(hd(v[2], v[1])), "lean_left_deg": r1(hd(v[0], v[1])), "chest_yaw_deg": r1(hd(Rc[0, 2], Rc[2, 2])),
+                    "head_yaw_deg": r1(hd(Rh[0, 2], Rh[2, 2])), "head_roll_deg": r1(up(Rh[1, 0], Rh[0, 0], Rh[2, 0])),
+                    "head_pitch_deg": r1(-up(Rh[1, 2], Rh[0, 2], Rh[2, 2]))}
+    for s, sx in (("l", 1.0), ("r", -1.0)):
+        S, E, Wr = P[I[f"upperarm_{s}"]], P[I[f"lowerarm_{s}"]], P[I[f"hand_{s}"]]
+        lift = (S[1] - P[nk, 1]) - (rig.head[I[f"upperarm_{s}"]][1] - rig.head[nk][1])
+        out[f"arm_{s}"] = {"elbow_flex_deg": r1(_ang(E - S, Wr - E)), "elbow_out_cm": cm(sx * (E[0] - S[0])), "shoulder_lift_cm": cm(lift)}
+    pc = pieces()
+    if "sword" in held:
+        h = I["hand_r"]
+        at, dr0, tl = np.array(pc["blade"]["at"]), np.array(pc["blade"]["dir"]), pc["blade"]["tip"]
+        d = G[h] @ dr0
+        grip = P[h] + G[h] @ at
+        tip = grip + d * tl
+        al = (pc["sword"] - at) @ dr0
+        g0 = float(al[np.argmax(np.linalg.norm((pc["sword"] - at) - np.outer(al, dr0), axis=1))]) + 0.015    # (past the guard)
+        lead = "r" if back == "l" else "l"
+        K, A = P[I[f"calf_{lead}"]], P[I[f"foot_{lead}"]]
+        sg = float(np.sign((K[0] + A[0]) / 2 - P[h, 0])) or 1.0
+        near, far = min(sg * K[0], sg * A[0]), max(sg * K[0], sg * A[0])
+        past, hit = [], []
+        for p in (grip + d * g0, grip + d * (g0 + tl) / 2, tip):
+            t = float(np.clip((K[1] - p[1]) / (K[1] - A[1] + 1e-12), 0, 1))
+            u = sg * p[0]
+            past.append(u - near)
+            hit.append(bool(u > far or (near - 0.06 <= u <= far + 0.06 and p[2] > K[2] + t * (A[2] - K[2]))))
+        hp = P[h] - P[pv]
+        out["sword"] = {"hand_right_cm": cm(-hp[0]), "hand_up_cm": cm(hp[1]), "hand_fwd_cm": cm(hp[2]),
+                        "heading_right_deg": r1(hd(-d[0], d[2])), "below_deg": r1(up(-d[1], d[0], d[2])),
+                        "tip_x_cm": cm(tip[0]), "tip_y_cm": cm(tip[1]), "tip_z_cm": cm(tip[2]),
+                        "crosses_front_leg": "yes" if any(hit) else "no", "front_leg": lead,
+                        "past_leg_edge_cm": cm(max(p for p, k in zip(past, hit) if k) if any(hit) else max(past))}
+    if "shield" in held:
+        la = I["lowerarm_l"]
+        pts = pc["shield"] @ G[la].T + P[la]
+        n = G[la] @ np.array(pc["shieldp"]["face"])
+        low = pts[np.argmin(pts[:, 1])]
+        Hj, K = P[I["thigh_l"]], P[I["calf_l"]]
+        q = Hj + float(np.clip((Hj[1] - low[1]) / (Hj[1] - K[1] + 1e-12), 0, 1)) * (K - Hj)
+        out["shield"] = {"boss_y_cm": cm((P[la] + G[la] @ np.array(pc["shieldp"]["at"]))[1]), "top_cm": cm(pts[:, 1].max()),
+                         "bottom_cm": cm(pts[:, 1].min()), "facing_deg": r1(hd(n[0], n[2])),
+                         "rim_low_to_thigh_l_cm": cm(np.hypot(low[0] - q[0], low[2] - q[2])),
+                         "rim_low_left_cm": cm(low[0] - q[0]), "rim_low_fwd_cm": cm(low[2] - q[2])}
+    loc = lambda b: G[rig.parent[I[b]]].T @ G[I[b]]
+    a, b = _turn(loc("spine_05")), _turn(rig.Lr0[I["spine_05"]])
+    out["collar"] = {"spine05_local_deg": r1(a), "spine05_rest_deg": r1(b), "spine05_diff_deg": r1(a - b),
+                     **{f"clavicle_{s}_vs_rest_deg": r1(_turn(rig.Lr0[I[f"clavicle_{s}"]].T @ loc(f"clavicle_{s}"))) for s in "lr"}}
+    return out
+
+
+def pose_lines(pm):
+    """pose_measures as print lines: one per group, and the plain blade line."""
+    L = [f"  {g}: " + ", ".join(f"{k} {v}" for k, v in d.items()) for g, d in pm.items()]
+    if "sword" in pm:
+        s = pm["sword"]
+        L.append(f"  blade crosses front leg (front view): {s['crosses_front_leg']}"
+                 + (f", by {s['past_leg_edge_cm']} cm past leg_{s['front_leg']}'s near edge" if s["crosses_front_leg"] == "yes"
+                    else f" (nearest blade point {-s['past_leg_edge_cm']} cm short of leg_{s['front_leg']}'s near edge in x)"))
+    return L
 
 
 def cmd_pose(a):
     """A spec built as a short STILL for a pose loop (seconds, not minutes): `--frames` source frames around `--at`
     (default: the middle of post.crop), loop off, no cycle search, fit.clear dropped unless --clear (so body_field()
     is not built for the fit). Writes tools/anim/out/pose/<clip>.json (never OUT), prints the build's measures and
-    fit notes, and draws the middle frame large in the game, front and side views (p4_strip) -> <clip>.jpg."""
+    fit notes, then the STANCE's own numbers on the middle frame (pose_measures -> <clip>.measures.json), and draws
+    that frame as one row of four large tiles: game, front, side, three-quarter (p4_strip.pose_sheet) -> <clip>.jpg.
+    --beside a,b: frame 0 of the built clips a, b (OUT) as rows under it, same cameras and scale."""
     import time
     import types
     t0 = time.time()
@@ -662,12 +786,22 @@ def cmd_pose(a):
         print(f"  note: {nt}")
     import p4_strip
     mid = r.clip["frames"] // 2
-    png = POSE_OUT / f"{a.clip}.png"
-    p4_strip.run(sys.modules[__name__], types.SimpleNamespace(
-        clip=str(out), every=1, frm=mid, to=mid, views="game,front,side", cols=12, tile=a.tile, spin=0.0, pitch=None,
-        out=str(png)))
-    png.unlink(missing_ok=True)              # (JPEG only)
-    print(f"pose {a.clip}: {time.time() - t0:.1f} s in all -> {png.with_suffix('.jpg')}")
+    held_ = spec.get("held", [])
+    pm = pose_measures(r.rig, *MC.globals_of(MC.read(out), r.rig), mid, held_)     # (the written clip: what the sheet draws)
+    print(f"  stance (frame {mid}; node frame: +X her left, +Y up, +Z her heading):")
+    print("\n".join("  " + L for L in pose_lines(pm)))
+    (POSE_OUT / f"{a.clip}.measures.json").write_text(json.dumps(
+        {"clip": a.clip, "frame": mid, "source_frames": po["crop"], "axes": POSE_AXES, "measures": pm}, indent=1))
+    rows = [(f"{a.clip} pose f{mid}", out, mid, held_)]
+    for nm in [x.strip() for x in (a.beside or "").split(",") if x.strip()]:
+        bp, sp = OUT / f"{nm}.json", P4 / "specs" / f"{nm}.json"
+        if not bp.exists():
+            print(f"  beside {nm}: no built clip at {bp.relative_to(REPO).as_posix()}, skipped")
+            continue
+        # (a spec without `held` is a sheathed clip: nothing in the hands)
+        rows.append((f"{nm} f0", bp, 0, json.loads(sp.read_text()).get("held", []) if sp.exists() else ["sword", "shield"]))
+    jpg = p4_strip.pose_sheet(sys.modules[__name__], rows, a.tile, POSE_OUT / f"{a.clip}.jpg")
+    print(f"pose {a.clip}: {time.time() - t0:.1f} s in all -> {jpg}")
 
 
 def clearance(G, P, held, target_mm=10.0, n=None, pts=800):
@@ -933,7 +1067,7 @@ def main():
     st.add_argument("--every", type=int, default=2, help="every n-th 30 fps frame (beat frames are always drawn)")
     st.add_argument("--from", dest="frm", type=int, default=None)
     st.add_argument("--to", type=int, default=None)
-    st.add_argument("--views", default="game,side", help="game, side, front")
+    st.add_argument("--views", default="game,side", help="game, side, front, quarter")
     st.add_argument("--cols", type=int, default=12)
     st.add_argument("--tile", default="165x240")
     st.add_argument("--spin", type=float, default=0.0, help="turns/s: yaw her about the node's vertical axis (to her left), as the game does a de-rotated loop")
@@ -945,6 +1079,7 @@ def main():
     ps.add_argument("--frames", type=int, default=10)
     ps.add_argument("--clear", action="store_true", help="run fit.clear anyway (slow: her skin field)")
     ps.add_argument("--tile", default="330x480")
+    ps.add_argument("--beside", default="", help="built clips (comma list): frame 0 of each as a row under the candidate's")
     a = ap.parse_args()
     if a.cmd == "pose":
         return cmd_pose(a)
