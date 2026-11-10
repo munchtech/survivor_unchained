@@ -392,3 +392,31 @@ point placed by a smooth surface over the pec and lat ridges (a hull or membrane
 Next: build that posed bowl as the map's target (then the count's normals come from a smooth surface), or cure the
 right's crease on A first (judge fix 1's depinch at the armpit). The left half of `_l21b` (cast_bolt@6:l 3 -> 0) is not
 kept: it adds x:hadd40:l 1 and moves the guard on the left (warden_look@150:l 0.66).
+
+## Lay 7 (faired A, lead 21): 10 Nov, lead 21's max solver. NOT MET; NOT PROMOTED; active `strip_rest.npz` stays lay 5 (41be13363b7a)
+Run: `build --start strip_rest_l20_h.npz --file strip_rest_l21c_a.npz --set` lay 5 `_h` keys + `judge` true, `guard` 0.8,
+`guardwall` 50, `boost` 4, `extra` 8 (the `_l21b` recipe), both sides, LIVE (HER["fair_a"] on: design poses = faired A);
+17m41 (first fairs; cache out/fair_a now warm). Candidate `strip_rest_l21c.npz` = `_l21c_a` (sha1 43cc9215b675).
+Measured live (no `--snap`), all 141 poses: `turned_l21c_all.log`; baseline lay 5 on faired A `turned_l21c_lay5fair_all.log`
+(+ `build_l21c_a.log`; backup with parse.py / check.py in `survivorsunchained_inputs\body\p1b_l21_lays\`).
+RIGHT CONVERGED (lay2's count 0 turned, 0 under the guard at step 5); LEFT DID NOT (step 11: 4 turned in 2 poses,
+20 edges under the guard, e 150k -> 3.0M, poses over hi 243 by up to 0.96: the boost escalates and L-BFGS stalls).
+| req | lay 5 on faired A | `_l21c` |
+|---|---|---|
+| (1) turned, w >= 0.5 | crossbow@0:r 1, cast_flick@8:r 2, leap@7:r 1, leap@9:r 1 (total 68) | right 0 everywhere; LEFT x:hadd40:l 2 (fill 9), x:flex120:l 1 (fill 1) (total 64) |
+| (1) w < 0.5 | = fill's own | all <= the fill's own (24 poses, all w <= 0.18; axe_back@0:r 5 vs fill 6) |
+| (2) guard, least map / A's own, w > 0 | 0.61 axe_back@0:r | 0.54 warden_look@150:l (w 0.02), 0.74 iron_vow@72:l, 0.77 flex120:l: NOT MET |
+| (3) T22 right 9 + the new right 5 | leap@7 / @9 FAIL, crossbow@0 / cast_flick turned | ALL MET: leap@7 -0.13, @9 +0.10, @19 0.00, @20 -0.01, crossbow@0 +0.01, @2 +0.02, cast_flick@8 -0.05 (own); crossbow@10 -0.02, cast_bolt@3 -0.05, axe_heavy -0.27, leap@5 -0.07, warden@126 -0.16, leap@25 -0.04, leap@6:r +0.06 (fill) |
+| (3) T22 left | abd120 +0.21, iron_vow +0.56 FAIL | abd120 +0.61, abd150 +0.86, abd170 +0.85, flex170 +0.81, iron_vow@72 +0.37, leap@0:l +0.17 FAIL; cast_bolt@6:l +0.04, leap@30:l +0.09 ok |
+| (4) FOLD max leap@5/6/7/9/12/14/16/17/18/19/20:r | 123/152/167/159/80/47/62/54/76/90/72 | 127/144/148/124/84/60/76/69/78/68/72 |
+| (4) frame-to-frame FOLD jump (max over the 11) | 79.2 deg | 39.6 deg |
+| (5) rest corner facing off A | l 0, r 0 | r 0, l 2 (tri 107, 291): NOT MET |
+(4) NOT MET as written: @6 -8, @7 -19, @9 -35, @19 -22 deg, but @5 +3, @12 +5, @14 +13, @16 +14, @17 +15, @18 +2
+(the bowl spreads into the late frames). (5)'s <= 45 deg proof and (6) not run: (1)-(4) fail. T22 split used here
+(w = 1 own, w < 1 fill, as the lists are): own + crossbow_shoot@0:r, @2:r, cast_flick@8:r; fill + cast_bolt@6:l,
+p4:heroic_leap@6:r, @0:l, @30:l. carried_target.py NOT edited (no promotion; the active lay would fail the new rows).
+FINDING: on faired A the right's crease is gone and the `_l21b` recipe converges there (every right row at the bar,
+the leap's worst jump halved). The left breaks: faired A's left poses (abd / flex / iron_vow) leave hi + boost unmet.
+Next: lay the left alone with lay 6 `_a`'s recipe (judge, guard 0.8, guardwall 50, no boost) on faired A:
+`build --only l --start strip_rest_l21c.npz --file strip_rest_l21d.npz`; then (4) on the right's late frames
+(@14-@17: a FOLD cap or `fold` [0.3, 0.3]); the composite's left must also clear tri 107 / 291 at rest.
