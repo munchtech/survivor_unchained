@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using Godot;
 using SurvivorUnchained.Core;
 
@@ -15,59 +14,30 @@ namespace SurvivorUnchained.Ui;
 /// </summary>
 public static class Glyphs
 {
-    static Dictionary<string, string>? all;
     static readonly Dictionary<string, ImageTexture> cache = new();
 
-    static Dictionary<string, string> All => all ??= Core.Json.Parse<Dictionary<string, string>>(Core.Json.ReadContent("glyphs.json"));
+    /// <summary>The path for any key: exact, an item's stand-in, by family, or a neutral mark (GlyphPaths).</summary>
+    public static string PathFor(string key) => GlyphPaths.PathFor(key);
 
-    /// <summary>What an item icon with no glyph of its own is drawn as.</summary>
-    static readonly Dictionary<string, string> Items = new()
-    {
-        ["chest"] = "relic", ["picks"] = "key", ["lamp"] = "campfire", ["lantern"] = "campfire", ["helm_light"] = "helm", ["circlet"] = "ring",
-        ["armor_light"] = "armor", ["armor_heavy"] = "armor", ["root"] = "thorn", ["vial"] = "drop", ["vial_orange"] = "drop", ["potion"] = "heart",
-        ["antidote"] = "drop", ["bandage"] = "heart", ["pelt"] = "cloak", ["hide"] = "cloak", ["kerchief"] = "mask", ["wand_dark"] = "wand",
-        ["ember"] = "flame", ["fang"] = "claw", ["seed"] = "leaf", ["dust"] = "smoke", ["bomb"] = "shatter", ["bone"] = "skull",
-        ["flower"] = "perennial", ["lens"] = "eye",
-    };
+    /// <summary>The key whose painted icon an art key shows (itself, or the one it borrows: GlyphPaths.Borrowed).</summary>
+    public static string IconKey(string key) => GlyphPaths.IconKey(key);
 
-    static readonly (Regex Re, string Glyph)[] Families =
-    {
-        (new("slash|blade|oath|edge|grave"), "slash"), (new("axe|gyre|wheel"), "axe"), (new("dagger|knife|steel|cuts"), "dagger"),
-        (new("arrow|volley|bow"), "arrow"), (new("mote|star|arcane"), "arcane"), (new("cinder|flame|fire|pyre|hell"), "flame"),
-        (new("shard|frost|ice|rime|winter|hail|glacier"), "frost"), (new("arc|storm|sky|tempest|thunder"), "bolt"),
-        (new("nova|dawn|sun|sanct|holy|ring"), "sun"), (new("beam|lance|gaze"), "spear"), (new("tether|siphon|coil|umbral|ruin|shadow"), "drain"),
-        (new("blight|plague|rot"), "plague"), (new("thorn|bloom|root|briar"), "thorn"), (new("moon"), "moon"), (new("disc|aegis|reckon"), "disc"),
-        (new("palm|temple"), "palm"), (new("herd|hunt"), "herd"), (new("chakram|gale|razor"), "chakram"), (new("zone|ground"), "retaura"),
-    };
-
-    /// <summary>The path for any key: exact, an item's stand-in, by family, or a neutral mark.</summary>
-    public static string PathFor(string key)
-    {
-        if (All.TryGetValue(key, out var p)) return p;
-        if (Items.TryGetValue(key, out var alias) && All.TryGetValue(alias, out var ap)) return ap;
-        var k = key.ToLowerInvariant();
-        foreach (var (re, g) in Families) if (re.IsMatch(k)) return All[g];
-        return All["arcane"];
-    }
+    /// <summary>The glyph key a skill shows on a HUD seat and on the level card (GlyphPaths.ForSkill).</summary>
+    public static string ForSkill(string id, string art) => GlyphPaths.ForSkill(id, art);
 
     /// <summary>A glyph as a texture, at a size in pixels. A painted icon
     /// (art/ui/icons/glyph/KEY.png, white on transparent) is tinted the same
-    /// way and wins, so painted icons keep every state colour the glyphs had.</summary>
-    /// <summary>Art keys that show another key's icon until they get their own (empty since UI 24 gave Rebuke and Watch
-    /// Bell theirs: line glyphs in glyphs.json and paintings in icons/glyph_color).</summary>
-    static readonly Dictionary<string, string> Borrowed = new();
-
-    /// <summary>The key whose icon an art key shows (itself, or the one it borrows).</summary>
-    public static string IconKey(string key) => Borrowed.TryGetValue(key, out var lent) ? lent : key;
-
+    /// way and wins, so painted icons keep every state colour the glyphs had. A painting may be borrowed (IconKey);
+    /// the drawn line is the key's own glyph where glyphs.json has one, and only else the borrowed key's.</summary>
     public static Texture2D Texture(string key, int size, Color color, float stroke = 1.6f, bool line = false)
     {
-        key = IconKey(key);
+        string paint = IconKey(key);
+        key = GlyphPaths.LineKey(key);
         // Full-colour paintings (icons/glyph_color/KEY.png) keep their colours; asked for in a
         // dim tint (not ready, not known), they are greyed and darkened instead. line: the drawn
         // glyph only, so a set of them reads as one hand where only some are painted.
-        if (!line && UiArt.Icon("glyph_color", key) is { } colour) return color.Luminance < 0.5f || color.A < 0.6f ? Tinted(key + "|dim", Grey(colour), color.Lightened(0.6f)) : colour;
-        if (!line && UiArt.Icon("glyph", key) is { } painted) return Tinted(key, painted, color);
+        if (!line && UiArt.Icon("glyph_color", paint) is { } colour) return color.Luminance < 0.5f || color.A < 0.6f ? Tinted(paint + "|dim", Grey(colour), color.Lightened(0.6f)) : colour;
+        if (!line && UiArt.Icon("glyph", paint) is { } painted) return Tinted(paint, painted, color);
         var ck = $"{key}|{size}|{color.ToHtml()}|{stroke}";
         if (cache.TryGetValue(ck, out var t)) return t;
         var svg = $"""<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#{color.ToHtml(false)}" stroke-opacity="{color.A:0.###}" stroke-width="{stroke:0.##}" stroke-linecap="round" stroke-linejoin="round"><path d="{PathFor(key)}"/></svg>""";

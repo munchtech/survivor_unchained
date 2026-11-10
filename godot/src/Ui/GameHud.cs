@@ -712,7 +712,7 @@ public partial class GameHud : CanvasLayer
             {
                 if (i >= socks.Length) break;
                 socks[i].Unkeyed();
-                socks[i++].Show(w.Id, w.Art, ItemViews.SchoolColors[w.School], b.WeaponReady(w), w.Rank, Weapons.MaxRank, w.Evolution != null, CanEvolve(b, w), w.Timer);
+                socks[i++].Show(w.Id, Glyphs.ForSkill(w.Id, w.Art), ItemViews.SchoolColors[w.School], b.WeaponReady(w), w.Rank, Weapons.MaxRank, w.Evolution != null, CanEvolve(b, w), w.Timer);
             }
             for (; i < socks.Length; i++) { socks[i].Unkeyed(); socks[i].Empty(); }
         }
@@ -1319,7 +1319,7 @@ public partial class GameHud : CanvasLayer
             if (i >= socks.Length) break;
             if (!Weapons.All.TryGetValue(id, out var wd)) continue;
             socks[i].Unkeyed();
-            socks[i++].Show(id, wd.Art, ItemViews.SchoolColors[wd.School], 1, Math.Max(1, rank), Weapons.MaxRank, false, false);
+            socks[i++].Show(id, Glyphs.ForSkill(id, wd.Art), ItemViews.SchoolColors[wd.School], 1, Math.Max(1, rank), Weapons.MaxRank, false, false);
         }
         for (; i < socks.Length; i++) { socks[i].Unkeyed(); socks[i].Empty(); }
     }
@@ -1421,7 +1421,7 @@ public partial class GameHud : CanvasLayer
             var shown = second && w.Half != null ? w.Half : w;
             // (a channel running keeps its well lit)
             double ready = w.Channeling && !second ? 1 : b.WeaponReady(shown);
-            s.Show(shown.Id, shown.Art, ItemViews.SchoolColors[shown.School], ready, w.Rank, Weapons.MaxRank, w.Evolution != null, CanEvolve(b, w), shown.Timer);
+            s.Show(shown.Id, Glyphs.ForSkill(shown.Id, shown.Art), ItemViews.SchoolColors[shown.School], ready, w.Rank, Weapons.MaxRank, w.Evolution != null, CanEvolve(b, w), shown.Timer);
             double cost = b.CostOf(shown);
             int other = w.Slot2 < 0 ? -1 : KeyMap.SeatOf(second ? w.Slot : w.Slot2);
             // (side by side: not across the coin, which stands between seats 2 and 3)

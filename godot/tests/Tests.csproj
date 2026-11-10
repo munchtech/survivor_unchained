@@ -21,6 +21,7 @@
     <Compile Include="../src/Game/KeyMap.cs" LinkBase="src" />
     <Compile Include="../src/Ui/ResolveMotion.cs" LinkBase="src" />
     <Compile Include="../src/Ui/LevelCardModel.cs" LinkBase="src" />
+    <Compile Include="../src/Ui/GlyphPaths.cs" LinkBase="src" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />

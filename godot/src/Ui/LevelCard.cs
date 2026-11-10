@@ -71,7 +71,7 @@ public partial class LevelCard : Control
         if (body && Content.Weapons.All.TryGetValue(s.Skill, out var wd))
         {
             name = wd.Name;
-            glyph = Glyphs.Texture(wd.Art, 80, GlyphGold, line: true);
+            glyph = Glyphs.Texture(Glyphs.ForSkill(s.Skill, wd.Art), 80, GlyphGold, line: true);
             if (s.Kind == LevelCardKind.NewKey) line = s.Line ?? LevelCards.Line(wd.Description);
         }
         else if (body) name = s.Skill;
