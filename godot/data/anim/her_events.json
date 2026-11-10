@@ -6,18 +6,21 @@
       "contact": [
         4
       ],
+      "side": 1,
       "len": 48
     },
     "sword_fore": {
       "contact": [
         5
       ],
+      "side": -1,
       "len": 48
     },
     "sword_heavy": {
       "contact": [
         6
       ],
+      "side": -1,
       "len": 60
     }
   }
