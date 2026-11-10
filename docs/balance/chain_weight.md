@@ -14,6 +14,18 @@ Sunder and Oathblade are written as BLOWS (Sunder 28 every 1.6 s, Oathblade 22.8
 
 **A hit that lands after its cast carries its cut's weight.** `Projectile.W` is stamped at `Launch` (`w.CutW`) and read at the hit (`HitOpts.W`, before the weapon's live weight): Oathkeeper's crescent. An on-kill echo is a whole blow (`OnKillEcho` sets the weight to 1 round its firing).
 
+**A scheduled strike carries its cut's weight too** (`StrikeSpec.W`, stamped in `ScheduleStrike`, read by `Explode`: Bonesplitter's second strike; built at e8059e64e, its test is still skipped).
+
+**Procs fired by a cut (`Battle.Fire`, `ProcCtx.W`; main's rule, built deterministic).** The Hit / Crit ctx carries the cut's weight; a Status ctx carries the share its application stands for (`build`, with `Damage = hitDamage x build`); Kill and Freeze are whole. At weight 1 every line and draw is as before. Under 1 a trigger is one of three kinds (`TriggerDef.Weighs()`, cached):
+- SIZED (every effect sized on the hit with no flat rider, or an Apply): left alone. It fires per cut on the share, with the status weight live inside (an Apply reads the blow and builds by the weight, so a chance 1 status never gaps).
+- EXECUTE (only Execute effects): every cut (a threshold, not a rate).
+- WHOLE (everything else: buffs, ember, flat heals, cooldown seconds, zones, mixed): once per blow's worth of would-fires (`TriggerInstance.Part`, the first one whole), seeing the blow (`Damage / w`, statuses inside at weight 1). No new RNG draw: the trigger's own chance is rolled as written, the weight is counted.
+- An icd started by a cut is `icd x weight` (the trigger's clock runs at the cut's pace: the cut train under icd x w is the blow train under icd), started at the would-fire.
+- `Basis.Weapon` reads the written blow.
+Measured (63.9 s, Sunder, chained against unchained, `tests/ProcWeightTests.cs`): a flat proc 50 v 50, with icd 4: 14 v 14, three foes and icd 1: 40 v 40; a 0.5 x hit nova under icd 1 +0.62%; an on-hit burn's stacks +0.46%; a flat rule on a bleed's Status -5.56% as counted (-2.86% with the part still held when the run stops; the rest sits in how many bleeds the cuts land, see the statuses' -1.7%).
+
+**The board and the Flare read the blow** (`BoardOnHit`, `FlareOnHit` run inside the weighted window on `blowDmg`, e8059e64e): the rite's bleed 0.9997 chained against unchained on both skills. Poacher's Mercy's doubling is thinned by the weight, but its once-a-second gate still blocks the cut after each doubling (0.80 at crit 0.5): the gate is to run at `1 s x weight` like an icd (decided, not built).
+
 **Rule for lamp and wick writers (owed, logged by the coordinator).** Code counts a blow's worth, never cuts: "every third blow" is 3 blows' worth of cuts (6.86 Sunder cuts, 4.5 Oathblade cuts), and what it throws is blow-sized. So lamp WORDS must never say "every third swing", "once a swing" or "in one swing": a player counts cuts and the number will not match. Say a time ("every 3 s of cutting throws a crescent"), or name the heavy ("each heavy cut"), which the player can see. A "kills N in one swing" lamp is counted over one blow's worth of cuts.
 
 Design and audit: `survivorsunchained_inputs\scratch_combat_m3\lead10\s3_weight_design.md`, `s3_audit_A.md`; the first audit `lead9\s3_audit.md`. Acceptance (crit off, 63.9 s held, chained against unchained): Sunder one foe damage +0.50%, Resolve +0.54%; Sunder three foes +0.50% / +0.54%; Oathblade -1.61% / -1.49%; heavies equal.
