@@ -16,7 +16,7 @@
              "lowerarm": "lowerarm_{s}", "hand": "hand_{s}", "thigh": "thigh_{s}", "calf": "calf_{s}", "foot": "foot_{s}"},
  "slots": {
   "top": {"ride": {"spine": 1}, "one_bone": true},
-  "pauldrons": {"ride": {"upperarm": 1}, "one_bone": true,
+  "pauldrons": {"ride": {"upperarm": 1}, "one_bone": true, "rims": false,
                 "standoff": {"cap_mm": 6, "seat_cap_mm": 4, "rest_min_mm": 1, "margin_mm": 1,
                              "tuck_full_mm": 10, "tuck_zero_mm": 14, "tuck_step": 1.0,
                              "tuck_depth_mm": 18, "tuck_slope": 1.0, "tuck_edge_mm": 10}},
