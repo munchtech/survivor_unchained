@@ -2015,7 +2015,7 @@ def mesh_alder_clusters():
 #     python tools/assets/env_trees.py sheet --species clump --out X.png         the proof picture and the numbers
 CLUMP = {
     # lobes: (centre x, y, z; radii x, y, z; yaw). clump_a a kidney 3.2 x 2.6 m, 1.4 m tall (its notch at +y)
-    'clump_a': {'seed': 11, 'leaves': 20, 'leaf': (0.50, 0.65), 'lobes': [
+    'clump_a': {'seed': 11, 'leaves': 25, 'leaf': (0.50, 0.65), 'lobes': [
         (-1.12, 0.12, 0.20, 0.50, 0.44, 0.40, 15), (-0.78, -0.60, 0.26, 0.54, 0.46, 0.46, -20),
         (-0.02, -0.88, 0.18, 0.44, 0.40, 0.36, 5), (0.66, -0.62, 0.24, 0.55, 0.48, 0.44, 30),
         (1.18, 0.02, 0.18, 0.44, 0.40, 0.36, -10), (0.78, 0.74, 0.22, 0.48, 0.44, 0.40, 40),
@@ -2024,7 +2024,7 @@ CLUMP = {
         (0.02, -0.38, 0.52, 0.46, 0.42, 0.38, 0),                                                   # (the second tier)
         (-0.30, 0.28, 1.00, 0.48, 0.44, 0.40, 20)]},                                                # (the top)
     'tuft_a': {'seed': 23, 'tuft': (4, 2)},
-    'clump_b': {'seed': 37, 'leaves': 18, 'leaf': (0.50, 0.60), 'lobes': [
+    'clump_b': {'seed': 37, 'leaves': 20, 'leaf': (0.50, 0.60), 'lobes': [
         (-0.62, 0.05, 0.18, 0.36, 0.33, 0.32, 20), (-0.25, -0.45, 0.18, 0.38, 0.33, 0.32, -15),
         (0.35, -0.42, 0.20, 0.40, 0.35, 0.34, 35), (0.66, 0.10, 0.18, 0.34, 0.32, 0.30, 0),
         (0.20, 0.45, 0.20, 0.38, 0.34, 0.32, -40), (-0.30, 0.42, 0.18, 0.34, 0.32, 0.30, 10),
@@ -2033,19 +2033,19 @@ CLUMP = {
 CL_SEG = {0: (12, 5), 1: (8, 3), 2: (6, 2)}       # a lobe's (segments round, rings pole to foot) a LOD
 CL_SINK = 0.04        # a ground lobe's last ring sits this far under the ground
 CL_FOOT = 20.0        # ... and its normals turn this far down off the level (the contact tone)
-CL_LUMP = (0.04, 0.09)     # a lobe's outline off the ellipse (the share of its radius, two waves round it)
+CL_LUMP = (0.07, 0.13)     # a lobe's outline off the ellipse (the share of its radius, two waves round it)
 CL_LEAN = 0.18        # a lobe leans at most this (m sideways a m of height)
 CL_WIDE = 0.92        # a blade's width over its length (x of CL_BLADE is in half-widths of 0.5: 0.98 x 0.92 = 0.9)
-CL_OUT = (0.35, 0.50)      # the share of a rim leaf that sticks out of the mass
+CL_OUT = (0.40, 0.58)      # the share of a rim leaf that sticks out of the mass
 CL_EL = (22.0, 0.6, 8.0)   # a rim leaf's elevation (degrees) = [0] - [1] x its lobe normal's angle from up, +- [2]
-CL_GAP = 0.45         # two rim leaves' middles are never nearer than this (m)
+CL_GAP = 0.32         # two rim leaves' middles are never nearer than this (m)
 CL_JIT = 8.0          # a tuft leaf's normal off its own (degrees, at most)
 # a blade a LOD: its outline (x across, y stem to tip) and triangles. lod0 a broad five-lobed leaf, the notches
-# shallow (maple-hazel), a fan round its middle (18 triangles); lod1 an eight-corner blade (6); lod2 a kite (2)
+# shallow (maple-hazel), a fan round its middle (14 triangles); lod1 an eight-corner blade (6); lod2 a kite (2)
 CL_BLADE = {
-    0: ([(0, 0), (0.26, 0.04), (0.47, 0.22), (0.49, 0.42), (0.37, 0.52), (0.44, 0.68), (0.33, 0.83), (0.19, 0.81), (0.10, 0.96), (0, 1.0),
-         (-0.10, 0.96), (-0.19, 0.81), (-0.33, 0.83), (-0.44, 0.68), (-0.37, 0.52), (-0.49, 0.42), (-0.47, 0.22), (-0.26, 0.04), (0, 0.45)],
-        [(18, i, (i + 1) % 18) for i in range(18)]),
+    0: ([(0, 0), (0.45, 0.18), (0.49, 0.42), (0.37, 0.52), (0.44, 0.68), (0.33, 0.83), (0.19, 0.81), (0, 1.0),
+         (-0.19, 0.81), (-0.33, 0.83), (-0.44, 0.68), (-0.37, 0.52), (-0.49, 0.42), (-0.45, 0.18), (0, 0.45)],
+        [(14, i, (i + 1) % 14) for i in range(14)]),
     1: ([(0, 0), (0.47, 0.24), (0.45, 0.60), (0.24, 0.86), (0, 1.0), (-0.24, 0.86), (-0.45, 0.60), (-0.47, 0.24)], [(0, i, i + 1) for i in range(1, 7)]),
     2: ([(0, 0), (0.47, 0.40), (0, 1.0), (-0.47, 0.40)], [(0, 1, 2), (0, 2, 3)]),
 }
@@ -2062,7 +2062,7 @@ def clump_lobes(prm):
         la, lm = rng.uniform(0, 2 * math.pi), rng.uniform(0, CL_LEAN)
         out.append({'c': np.array([cx, cy, cz], float), 'r': np.array([rx, ry, rz], float),
                     'R': np.array([[math.cos(ya), -math.sin(ya), 0], [math.sin(ya), math.cos(ya), 0], [0, 0, 1.0]]),
-                    'lump': [(k, rng.uniform(*CL_LUMP), rng.uniform(0, 2 * math.pi)) for k in (2, 3)],
+                    'lump': [(k, rng.uniform(*CL_LUMP), rng.uniform(0, 2 * math.pi)) for k in (3, 5)],
                     'lean': np.array([lm * math.cos(la), lm * math.sin(la)]),
                     'uv': (float(rng.uniform(0.04, 0.70)), float(rng.uniform(0.22, 0.96)))})
     return out
