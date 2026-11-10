@@ -1057,9 +1057,11 @@ public sealed partial class Battle
         ArcanistOnHit(e, school, tags, o, dmg);
         StalkerOnHit(e, o, dmg);
         if (heavy || HandKindNow() != 0) HandOnHit(e, o, heavy, cw);
-        if (Lamps.Board) BoardOnHit(e, school, tags, o, dmg, heavy, crit);
+        // (M3 MR 3) the board's and the Flare's statuses ride the hit like its own: sized on the blow, weighed as the cut
+        // (at weight 1 blowDmg is dmg and statusW is what it was: the lines as they were)
+        if (Lamps.Board) { double w1 = statusW; statusW = cw; BoardOnHit(e, school, tags, o, blowDmg, heavy, crit, cw); statusW = w1; }
         if (handTrue && crit) { HandTrues++; HandEv(HandKind.True, e.X, e.Z, e.Id); if (Lamps.Board) HandSecondWind(); }
-        FlareOnHit(e, o, dmg);
+        { double w1 = statusW; statusW = cw; FlareOnHit(e, o, blowDmg); statusW = w1; }
         if (e.Boss) Hooks.OnBossHit?.Invoke(e, school, dmg);
         if (e.Hp <= 0 && e.Alive && e.State != EnemyState.Dying)
         {
@@ -2018,7 +2020,8 @@ public sealed partial class Battle
 
     public void ScheduleStrike(double x, double z, double r, double dmg, School school, Tag[] tags, double delay, WeaponInst? weapon, Side owner = Side.Player, int depth = 0)
     {
-        strikes.Add(new StrikeSpec(x, z, r, dmg, school, tags, delay, weapon, owner, depth) { Credit = credit, Echo = Echoing });
+        // (M3 MR 3) made inside a chained cut it lands after the cast, when CutW reads 1 again: it carries the cut's weight
+        strikes.Add(new StrikeSpec(x, z, r, dmg, school, tags, delay, weapon, owner, depth) { Credit = credit, Echo = Echoing, W = weapon?.CutW ?? 1 });
         Events.Emit(new Ev.Strike { X = x, Z = z, Radius = r, School = school, Delay = delay, Art = weapon?.Art, Rank = weapon?.Rank ?? 0 });
         if (owner == Side.Enemy) Events.Emit(new Ev.Telegraph { Id = -1, Shape = TelegraphShape.Circle, X = x, Z = z, Radius = r, Duration = delay, Hostile = true, School = school == School.Physical ? null : school });
     }
@@ -2526,7 +2529,7 @@ public sealed partial class Battle
                 var (was, ech) = (credit, Echoing);
                 credit = s.Credit; Echoing = ech || s.Echo;
                 if (s.Heave && s.Weapon != null) { if (Weapons.Contains(s.Weapon)) Heave(s.Weapon, s.X, s.Z, s.R, s.Dmg); }
-                else Explode(s.X, s.Z, s.R, s.Dmg, s.School, s.Tags, s.Weapon, s.Depth);
+                else Explode(s.X, s.Z, s.R, s.Dmg, s.School, s.Tags, s.Weapon, s.Depth, -1, s.W);
                 (credit, Echoing) = (was, ech);
             }
         }
@@ -3237,6 +3240,8 @@ sealed class StrikeSpec
     public School School;
     public Tag[] Tags;
     public WeaponInst? Weapon;
+    /// <summary>(M3 MR 3) The weight of the cut that made it (WeaponInst.CutW then); 1 for a whole blow or no weapon.</summary>
+    public double W = 1;
     public Side Owner;
     public int Depth;
     public string? Credit;

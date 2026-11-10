@@ -228,7 +228,10 @@ public sealed partial class Battle
     bool BoardNoTrue => Lamp("blue.feral");
 
     /// <summary>After a blow lands: the rites that ride it, tags.status, and the blues that read a struck thing.</summary>
-    void BoardOnHit(Enemy e, School school, Tag[] tags, in HitOpts o, double dmg, bool heavy, bool crit)
+    /// <param name="dmg">(M3 MR 3) The BLOW's damage (a cut's hit is a share of it): what its statuses are sized on.</param>
+    /// <param name="cw">The hit's weight (a chained cut's share of its blow; 1 otherwise). The caller holds statusW at
+    /// it for the call, so every ApplyStatus here builds and rolls as the cut's.</param>
+    void BoardOnHit(Enemy e, School school, Tag[] tags, in HitOpts o, double dmg, bool heavy, bool crit, double cw)
     {
         BoardSync();
         var l = Lamps;
@@ -252,7 +255,10 @@ public sealed partial class Battle
                         if (w.RiteBound == w.FiringKey) break;
                         w.RiteBound = w.FiringKey;
                         double sec = r.Arg("seconds", 1) * (e.Elite || e.Boss ? 0.5 : 1);
+                        // (counted once a written blow already: it lands whole, not as the cut's share)
+                        statusW = 1;
                         ApplyStatus(e, new StatusPayload(StatusKind.Bound, 1, 1, sec), dmg, o.Depth + 1);
+                        statusW = cw;
                         break;
                     case "mark":
                         ApplyStatus(e, new StatusPayload(StatusKind.Mark, 1, 1, r.Arg("seconds", 4)), dmg, o.Depth + 1);
@@ -267,8 +273,16 @@ public sealed partial class Battle
                 if (!Covers(fx, w!.Def.Id, w.Tags)) continue;
                 StatusKind? k = fx.Status ?? (fx.Word("status") is { } ws && Enum.TryParse<StatusKind>(ws, true, out var sk) ? sk : null);
                 if (k is not { } kind) continue;
-                if (Rng.Next() >= fx.Arg("chance", 0.1) * SmallSize) continue;
+                // (M3 MR 3) on a cut the chance is weighed the way ApplyStatus weighs its own: hard control by the cut's
+                // share (as many a minute), every other kind so the cuts of one blow's worth compound to the blow's
+                // chance; what lands then builds cw x chance / roll of a blow (hard control: whole). At weight 1: as it was.
+                double chance = fx.Arg("chance", 0.1) * SmallSize;
+                bool hard = kind is StatusKind.Stun or StatusKind.Fear or StatusKind.Charm;
+                double roll = cw == 1 ? chance : hard ? chance * cw : Sim.Blows.Chance(chance, cw);
+                if (Rng.Next() >= roll) continue;
+                if (cw != 1) statusW = hard || roll <= 0 ? 1 : cw * Math.Min(1, chance) / Math.Min(1, roll);
                 ApplyStatus(e, new StatusPayload(kind, 1, 1, fx.Arg("seconds", 3)), dmg, o.Depth + 1);
+                statusW = cw;
             }
         // blue.unsetting_sun: holy skills sear what they strike.
         if (blow && l.Has("blue.unsetting_sun") && (w!.Tags.Has(Tag.Holy) || w.School == School.Holy))
@@ -283,7 +297,9 @@ public sealed partial class Battle
             return;
         }
         // blue.poachers_mercy: a blow that strikes true on a bleeding thing doubles its bleed (once a second a thing).
-        if (crit && bleed != null && bleed.T > 0 && l.Has("blue.poachers_mercy") && Time - e.PoachedAt >= 1)
+        // (M3 MR 3: a true strike is rolled a cut, so on a chain it doubles as a blow's share; no draw at weight 1.
+        // The draw comes last: a cut that could not double takes none.)
+        if (crit && bleed != null && bleed.T > 0 && l.Has("blue.poachers_mercy") && Time - e.PoachedAt >= 1 && (cw == 1 || Rng.Next() < cw))
         {
             e.PoachedAt = Time;
             bleed.Power *= 1 + (l.Full("blue.poachers_mercy", "mul", 2) - 1) * GiftSize;
