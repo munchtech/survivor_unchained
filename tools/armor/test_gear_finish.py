@@ -117,5 +117,11 @@ def test_the_plain_authored_pieces_ask_for_bare_steel():
         assert rows[pid].get("finish") == {"steel": "plainsteel"}, pid
     for pid, r in rows.items():
         assert all(k in table for k in (r.get("finish") or {}).values()), pid
-        if not pid.endswith("_plain"):
+        if not pid.endswith("_plain") and pid not in TIER_FINISH:
             assert "finish" not in r, pid
+    # (P2 ruling, 10 Nov: the etched tier keeps bare steel; a tier row carries its OWN piece's finish, never its base's)
+    for pid, fin in TIER_FINISH.items():
+        assert rows[pid].get("finish") == fin, pid
+
+
+TIER_FINISH = {"plate_top_etched": {"steel": "plainsteel"}}
