@@ -93,7 +93,7 @@
       "growth": 0.16,
       "bossDamage": 2.2,
       "art": "slash_heavy",
-      "description": "Huge cuts, one after another while you hold. About every 6 seconds of cutting, a heavy one splits the ground in a line ahead of you.",
+      "description": "Huge cuts while you hold. About every 6 seconds of cutting, a heavy one splits the ground in a line ahead of you.",
       "base": {
         "cooldown": 1.6,
         "damage": 28,

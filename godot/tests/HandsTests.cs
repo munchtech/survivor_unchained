@@ -255,7 +255,7 @@ public sealed class HandsTests
 
         // The draft's card carries it, for her calling only.
         var b = Fight("warden");
-        Assert.EndsWith(Hands.Line("warden", W["oathblade"])!, LevelUp.WithHand(b, W["oathblade"]));
+        Assert.EndsWith(Hands.Line("warden", W["oathblade"], brief: true)!, LevelUp.WithHand(b, W["oathblade"]));
         b.Calling = "stalker";
         Assert.DoesNotContain("warden", LevelUp.WithHand(b, W["oathblade"]));
         Assert.Equal(W["seeking_motes"].Description, LevelUp.WithHand(Fight("warden"), W["seeking_motes"]));
