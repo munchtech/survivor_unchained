@@ -67,6 +67,13 @@ public partial class LifeLamp : Control
     /// <summary>Her figure on the HUD now.</summary>
     public static LifeLamp? Live;
 
+    /// <summary>M4: Resolve's veins in her hair (GameHud.Frame feeds Veins.Motion).</summary>
+    public readonly ResolveVeins Veins;
+    /// <summary>The crown (geo "resolve": dg_resolve_veins.py), where the gauge starts and full's glint shows.</summary>
+    static Vector2 ResolveCrown() => Geo.TryGetValue("resolve", out var r) && r.AsGodotDictionary() is { } d
+        && d.TryGetValue("crown", out var c) && c.AsGodotArray() is { Count: 2 } a
+        ? new Vector2((float)a[0].AsDouble(), (float)a[1].AsDouble()) : new Vector2(253.5f, 9.5f);
+
     readonly ShaderMaterial mat;
     /// <summary>Her figure's shader.</summary>
     public ShaderMaterial Mat => mat;
@@ -96,6 +103,8 @@ public partial class LifeLamp : Control
         // (UI 28: the barrier's ring round the glass, under her figure so it passes behind the fingers cradling it)
         AddChild(ward = new Ward(this, false));
         AddChild(new ColorRect { Material = mat, MouseFilter = MouseFilterEnum.Ignore, Size = Canvas });
+        // (M4: Resolve, heat rising through her hair: one quad over her, in her own transform)
+        AddChild(Veins = new ResolveVeins(Canvas, UiArt.Tex($"{Dir}/lamp_cold.png", false), ResolveCrown()));
         if (UiArt.Tex("dg_river/xp_light.png", false) is { } hm) mat.SetShaderParameter("hair_mask", hm);
         else GD.PushError("LifeLamp: dg_river/xp_light.png did not load: her hair's shine draws blank");
         var hg = HairGeo();
@@ -168,6 +177,7 @@ public partial class LifeLamp : Control
         if (Behind != wasBehind && Args.Has("shot")) GD.Print($"dg fade {(Behind ? "on" : "off")} at {Time.GetTicksMsec() / 1000.0:0.00}");
         wasBehind = Behind;
         if (figA != sFigA) { sFigA = figA; mat.SetShaderParameter(UFigA, figA); }
+        Veins.Tick(dt, figA, FadeTo);
         OrbCopy();
         // (dg3, the judge: the fade shown working live: with --shot, the first frame a real trigger (not HudPin's
         // behind=1) has taken her to FadeTo is saved as SHOT_livefade.png)

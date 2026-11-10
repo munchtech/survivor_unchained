@@ -249,7 +249,7 @@ public partial class DraftPanel : Control
         strip.AddChild(Style.Label("YOUR BUILD", Style.UiHeavy, Style.Caption, Style.Gold));
         foreach (var w in b.Weapons)
         {
-            var chip = Chip(w.Art, ItemViews.SchoolColors[w.School], $"{w.Rank}", w.Evolution != null);
+            var chip = Chip(Glyphs.ForSkill(w.Id, w.Art), ItemViews.SchoolColors[w.School], $"{w.Rank}", w.Evolution != null);
             buildChips[w.Id] = chip;
             strip.AddChild(chip);
         }
@@ -341,7 +341,7 @@ public partial class DraftPanel : Control
         v2.AddChild(ribbon);
         // The icon on a disc of its colour.
         var art = new CenterContainer { CustomMinimumSize = new Vector2(v2.Size.X, ArtFull), MouseFilter = MouseFilterEnum.Ignore };
-        Func<int, Medallion> make = sz => new Medallion(sz, "", o.Icon) { Ring = color, Ink = color.Lightened(0.15f), Core = color.Darkened(0.82f), Name = "Medal" };
+        Func<int, Medallion> make = sz => new Medallion(sz, "", Glyphs.ForOffer(o)) { Ring = color, Ink = color.Lightened(0.15f), Core = color.Darkened(0.82f), Name = "Medal" };
         art.AddChild(make(124));
         arts.Add((art, make));
         v2.AddChild(art);

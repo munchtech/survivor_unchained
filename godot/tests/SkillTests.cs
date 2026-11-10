@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using SurvivorUnchained.Content;
 using SurvivorUnchained.Play;
@@ -83,6 +84,66 @@ public class SkillTests
         while (j.Ch.Level < 8) Character.GainXp(j.Ch, Character.XpForLevel(j.Ch.Level) - j.Ch.Xp + 1);
         Assert.Equal(5, SkillBook.Slots(j.Ch));
         Assert.Equal(3, SkillBook.Rank(j.Ch));
+    }
+
+    /// <summary>A stalker at the third level with skills of its kind seen: the calling teaches one when Grew is called.</summary>
+    static Journey AtThird(List<Announcement> said)
+    {
+        var j = Make("stalker");
+        j.OnAnnounce = said.Add;
+        // (everything seen: the calling has one of its kind to teach at the third level and again at the sixth)
+        foreach (var id in Weapons.All.Keys) j.Ch.Discovered.Add(id);
+        return j;
+    }
+
+    static void GrowTo(Journey j, int level)
+    {
+        while (j.Ch.Level < level) Character.GainXp(j.Ch, Character.XpForLevel(j.Ch.Level) - j.Ch.Xp + 1);
+    }
+
+    [Fact]
+    public void Out_of_a_campaign_fight_the_calling_announces_its_skill()
+    {
+        var said = new List<Announcement>();
+        var j = AtThird(said);
+        GrowTo(j, 3);
+        var taught = j.Grew();
+        Assert.NotNull(taught);
+        var a = Assert.Single(said, x => x.Kicker == "A new skill");
+        Assert.Equal(Weapons.All[taught!].Name, a.Title);
+        Assert.Equal("Your calling teaches it to you. Put it on a key (K)", a.Sub);
+        Assert.Null(j.CallingTaught);
+
+        // an arena's fight is not the campaign's: the banner still
+        said.Clear();
+        var k = AtThird(said);
+        k.StartBattle(true, new CollisionWorld(60), (_, _) => 0, 0, 0, 0, 3, arena: true);
+        GrowTo(k, 3);
+        Assert.NotNull(k.Grew());
+        Assert.Single(said, x => x.Kicker == "A new skill");
+        Assert.Null(k.CallingTaught);
+    }
+
+    [Fact]
+    public void In_a_campaign_fight_the_callings_skill_goes_to_the_level_card_without_a_banner()
+    {
+        var said = new List<Announcement>();
+        var j = AtThird(said);
+        var b = Day(j);
+        Assert.True(b.Campaign);
+        GrowTo(j, 3);
+        var taught = j.Grew();
+        Assert.NotNull(taught);
+        Assert.DoesNotContain(said, x => x.Kicker == "A new skill");
+        Assert.Equal((3, taught!), j.CallingTaught);
+
+        // the fight after it is an arena's: the campaign's is no longer running, and the banner is back
+        j.StartBattle(true, new CollisionWorld(60), (_, _) => 0, 0, 0, 0, 3, arena: true);
+        GrowTo(j, 6);
+        var next = j.Grew();
+        Assert.NotNull(next);
+        Assert.Single(said, x => x.Kicker == "A new skill" && x.Title == Weapons.All[next!].Name);
+        Assert.Equal((3, taught), j.CallingTaught);
     }
 
     [Fact]

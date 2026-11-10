@@ -6,31 +6,6 @@ using Godot;
 
 namespace SurvivorUnchained.Play;
 
-/// <summary>What the player can ask for, whatever key or button means it.</summary>
-public enum Act
-{
-    Up, Down, Left, Right, Dash, Flare, Draught, Interact, Inventory, Character, Journal, Map,
-    Pause, Confirm, Cancel, Reroll, Banish, Pick1, Pick2, Pick3, Pick4, TabNext, TabPrev, Arts, Skip,
-    /// <summary>A menu's second and third thing to do with what has focus (pad X and Y).</summary>
-    Alt, Alt2,
-    /// <summary>A page within a screen (pad LT and RT): the journal's sections, the map's zoom.</summary>
-    SubPrev, SubNext,
-    /// <summary>Held at night in the town or the wood: answer the night, the ember pulling her to
-    /// the night's fight (docs/design/STORY_NIGHTS_AND_TIME.md).</summary>
-    Answer,
-    /// <summary>The book's Journal or Map opened wide over the world, or folded back into its panel.</summary>
-    Expand,
-    /// <summary>Held in play (the Drowned Girl HUD): her level and experience (by night the ember) on the river's card,
-    /// readable without a mouse (UI 18, XpLight).</summary>
-    Experience,
-    /// <summary>The day's book's Lamps tab (L): the board and the wicks (docs/design/LAMPS_SCREEN_BRIEF.md §10).</summary>
-    Lamps,
-    /// <summary>The six skill slots' keys (1-6): a pressed or channelled skill on that slot goes off (Battle.PressSkill,
-    /// HoldSkill); an auto skill ignores them. The draft's Pick1-4 share Digit1-4: a press a menu takes is never also a
-    /// skill's (Down), and WorldScene drops any kept through a pause.</summary>
-    Skill1, Skill2, Skill3, Skill4, Skill5, Skill6,
-}
-
 /// <summary>
 /// Input (src/core/input.ts): keyboard, mouse and gamepad folded into named
 /// actions. The simulation never reads keys: it reads Move (a vector, analog
@@ -44,44 +19,27 @@ public enum Act
 public partial class Controls : Node
 {
     /// <summary>A binding: a physical key ('KeyW', as the web game names
-    /// them, so saved bindings carry over) or a mouse button ('Mouse2').</summary>
-    public static readonly Dictionary<Act, string[]> Defaults = new()
-    {
-        [Act.Up] = ["KeyW", "ArrowUp"], [Act.Down] = ["KeyS", "ArrowDown"], [Act.Left] = ["KeyA", "ArrowLeft"], [Act.Right] = ["KeyD", "ArrowRight"],
-        [Act.Dash] = ["Space", "ShiftLeft"], [Act.Flare] = ["KeyQ", "Mouse2"], [Act.Draught] = ["KeyR"], [Act.Interact] = ["KeyE", "KeyF"],
-        [Act.Inventory] = ["KeyI", "Tab"], [Act.Character] = ["KeyC"], [Act.Journal] = ["KeyJ"], [Act.Map] = ["KeyM"],
-        [Act.Pause] = ["Escape", "KeyP"], [Act.Confirm] = ["Enter", "NumpadEnter"], [Act.Cancel] = ["Escape", "Backspace"],
-        [Act.Reroll] = ["KeyX"], [Act.Banish] = ["KeyB"], [Act.Pick1] = ["Digit1"], [Act.Pick2] = ["Digit2"], [Act.Pick3] = ["Digit3"], [Act.Pick4] = ["Digit4"],
-        [Act.TabNext] = ["BracketRight"], [Act.TabPrev] = ["BracketLeft"], [Act.Arts] = ["KeyK"], [Act.Skip] = ["KeyV"],
-        [Act.Alt] = ["Delete"], [Act.Alt2] = [], [Act.SubPrev] = ["Comma"], [Act.SubNext] = ["Period"], [Act.Answer] = ["KeyN"],
-        [Act.Expand] = ["KeyZ"], [Act.Experience] = [XpLight.HoldKey], [Act.Lamps] = ["KeyL"],
-        [Act.Skill1] = ["Digit1"], [Act.Skill2] = ["Digit2"], [Act.Skill3] = ["Digit3"], [Act.Skill4] = ["Digit4"], [Act.Skill5] = ["Digit5"], [Act.Skill6] = ["Digit6"],
-    };
+    /// them, so saved bindings carry over) or a mouse button ('Mouse2'). The data is KeyMap's (M4).</summary>
+    public static Dictionary<Act, string[]> Defaults => KeyMap.Defaults;
 
     /// <summary>The skill slots' keys in slot order (slot i is Skills[i]).</summary>
-    public static readonly Act[] Skills = [Act.Skill1, Act.Skill2, Act.Skill3, Act.Skill4, Act.Skill5, Act.Skill6];
+    public static readonly Act[] Skills = KeyMap.Skills;
 
-    public static readonly Act[] Rebindable = [Act.Up, Act.Left, Act.Down, Act.Right, Act.Dash, Act.Flare, Act.Draught, Act.Interact, Act.Inventory, Act.Character, Act.Arts, Act.Lamps, Act.Journal, Act.Map, Act.Reroll, Act.Banish, Act.Skip, Act.Answer, Act.Experience];
-    static readonly string[] Reserved = ["Escape", "Enter", "NumpadEnter", "Backspace", "Digit1", "Digit2", "Digit3", "Digit4", "BracketLeft", "BracketRight", "Comma", "Period", "Delete"];
+    public static readonly Act[] Rebindable = KeyMap.Rebindable;
 
-    /// <summary>The standard pad layout: View opens the pack, whose tabs
-    /// (LB, RB) reach the self, the arts, the journal and the map; Menu
-    /// pauses. In a menu, A confirms, B goes back, X and Y act on what has
-    /// focus, the triggers turn a screen's pages.</summary>
-    static readonly Dictionary<Act, JoyButton[]> Pad = new()
+    /// <summary>The pad (KeyMap.Pad, M4 §1) as the engine's buttons; LT and RT are axes (PadTrig: 1 LT, 2 RT).</summary>
+    static readonly Dictionary<Act, JoyButton[]> Pad = KeyMap.Pad.ToDictionary(kv => kv.Key, kv => kv.Value.Select(ButtonOf).Where(b => b != JoyButton.Invalid).ToArray());
+    static readonly Dictionary<Act, int> PadTrig = KeyMap.Pad.ToDictionary(kv => kv.Key, kv => (kv.Value.Contains("LT") ? 1 : 0) | (kv.Value.Contains("RT") ? 2 : 0));
+    /// <summary>What LT and RT mean in play (their menu meaning, SubPrev and SubNext, is MenuPoll's).</summary>
+    static readonly Act[] PlayLT = KeyMap.Pad.Where(kv => kv.Value.Contains("LT") && kv.Key is not (Act.SubPrev or Act.SubNext)).Select(kv => kv.Key).ToArray();
+    static readonly Act[] PlayRT = KeyMap.Pad.Where(kv => kv.Value.Contains("RT") && kv.Key is not (Act.SubPrev or Act.SubNext)).Select(kv => kv.Key).ToArray();
+
+    static JoyButton ButtonOf(string name) => name switch
     {
-        [Act.Dash] = [JoyButton.A], [Act.Flare] = [JoyButton.Y], [Act.Draught] = [JoyButton.X], [Act.Interact] = [JoyButton.B],
-        [Act.Confirm] = [JoyButton.A], [Act.Cancel] = [JoyButton.B], [Act.Inventory] = [JoyButton.Back], [Act.Pause] = [JoyButton.Start],
-        [Act.Up] = [JoyButton.DpadUp], [Act.Down] = [JoyButton.DpadDown], [Act.Left] = [JoyButton.DpadLeft], [Act.Right] = [JoyButton.DpadRight],
-        [Act.TabNext] = [JoyButton.RightShoulder], [Act.TabPrev] = [JoyButton.LeftShoulder], [Act.Reroll] = [JoyButton.X], [Act.Banish] = [JoyButton.Y],
-        [Act.Skip] = [JoyButton.RightStick], [Act.Answer] = [JoyButton.LeftStick],
-        [Act.Alt] = [JoyButton.X], [Act.Alt2] = [JoyButton.Y],
-        // (the right stick's click is the skip in play; in the book it opens a page wide)
-        [Act.Expand] = [JoyButton.RightStick],
-        // (UI 18: held in play, the level's card; LB turns the book's pages only in a menu)
-        [Act.Experience] = [JoyButton.LeftShoulder],
-        // (Skill1-6 are left unbound on the pad for now: its face buttons are taken; the pad's skill layout is the
-        // design lead's, with the pressed skills)
+        "A" => JoyButton.A, "B" => JoyButton.B, "X" => JoyButton.X, "Y" => JoyButton.Y, "LB" => JoyButton.LeftShoulder, "RB" => JoyButton.RightShoulder,
+        "View" => JoyButton.Back, "Menu" => JoyButton.Start, "D-pad up" => JoyButton.DpadUp, "D-pad down" => JoyButton.DpadDown,
+        "D-pad left" => JoyButton.DpadLeft, "D-pad right" => JoyButton.DpadRight, "L3" => JoyButton.LeftStick, "R3" => JoyButton.RightStick,
+        _ => JoyButton.Invalid,
     };
 
     /// <summary>In a menu one button means its menu meaning first: A is
@@ -92,8 +50,19 @@ public partial class Controls : Node
 
     public static Controls Instance { get; private set; } = null!;
 
-    public Dictionary<Act, string[]> Bindings = Defaults.ToDictionary(kv => kv.Key, kv => kv.Value.ToArray());
+    public Dictionary<Act, string[]> Bindings = KeyMap.Fresh();
+    /// <summary>The keys page's layout (KeyMap.PresetNames: 0 "Mouse and 1-4", 1 "Q E R F"), saved beside the bindings.</summary>
+    public int Preset { get; private set; }
+    /// <summary>Counts every change of the bindings (a rebind, a preset, a reset, a load): the HUD's key caps re-label
+    /// when it moves (an int compared each frame, nothing built).</summary>
+    public int Version { get; private set; }
+    /// <summary>A fight is on round her (GameHud.Frame sets it): the pad's A is the grip's alone, not also Interact.</summary>
+    public bool Fighting;
     readonly HashSet<string> down = new();
+    /// <summary>Keys and buttons whose press a listener took (a menu, a word with someone): while they stay down they
+    /// hold no skill (a tap of A that opened a chest does not also swing).</summary>
+    readonly HashSet<string> taken = new();
+    readonly HashSet<JoyButton> padTaken = new();
     readonly HashSet<Act> latched = new();
     readonly List<Func<Act, bool>> listeners = new();
     /// <summary>Movement intent, length at most 1 (x east, z south, as the sim has it).</summary>
@@ -133,7 +102,14 @@ public partial class Controls : Node
 
     public Controls() { Instance = this; ProcessPriority = -100; }
 
-    public override void _Ready() => LoadBindings();
+    public override void _Ready()
+    {
+        LoadBindings();
+        // (--keys-preset N, pictures: that layout on, and saved as a player's pick would be)
+        if (Args.Get("keys-preset") is string kp && int.TryParse(kp, out int pi)) ApplyPreset(pi);
+        // (--pad: the prompts and the seats' caps as a pad's from the first frame, a picture's)
+        if (Args.Has("pad")) UsingPad = true;
+    }
 
     /// <summary>The interface hears actions as they happen (menus move on a
     /// press). A listener returning true takes it.</summary>
@@ -155,8 +131,8 @@ public partial class Controls : Node
             if (handled) continue;
             foreach (var l in listeners.ToList()) if (l(a)) { handled = true; break; }
         }
-        // A key a menu took (the draft's 1-4) is not also a skill's press once the menu closes.
-        if (handled) foreach (var s in Skills) latched.Remove(s);
+        // A key a menu took (the draft's 1-4) is not also a skill's press once the menu closes, nor a held one.
+        if (handled) { foreach (var s in Skills) latched.Remove(s); taken.Add(code); }
     }
 
     public override void _Input(InputEvent e)
@@ -174,26 +150,36 @@ public partial class Controls : Node
                 // A key held in a menu repeats (the system's own rate); in play it is held, not repeated.
                 if (k.Echo && !(MenuMode && ActsFor(code).Any(a => Directions.Contains(a)))) return;
                 if (k.Pressed) { UsingPad = false; Down(code); }
-                else down.Remove(code);
+                else { down.Remove(code); taken.Remove(code); }
                 break;
             case InputEventMouseButton m:
                 var mc = m.ButtonIndex switch { MouseButton.Left => "Mouse0", MouseButton.Middle => "Mouse1", MouseButton.Right => "Mouse2", _ => null };
                 if (mc == null) return;
-                if (m.Pressed) { UsingPad = false; foreach (var a in ActsFor(mc)) latched.Add(a); down.Add(mc); }
-                else down.Remove(mc);
+                if (m.Pressed)
+                {
+                    UsingPad = false;
+                    // (M4: LMB and RMB are skills; a click on the interface, or in a menu, is not a swing)
+                    bool onUi = MenuMode || Captured || GetViewport()?.GuiGetHoveredControl() is { MouseFilter: Control.MouseFilterEnum.Stop };
+                    foreach (var a in ActsFor(mc)) if (!(onUi && KeyMap.IsSkill(a))) latched.Add(a);
+                    down.Add(mc);
+                    if (onUi) taken.Add(mc);
+                }
+                else { down.Remove(mc); taken.Remove(mc); }
                 break;
             case InputEventMouseMotion mm when mm.Relative.Length() > 6:
                 UsingPad = false;
                 break;
             case InputEventJoypadButton j:
-                if (!j.Pressed) return;
+                if (!j.Pressed) { padTaken.Remove(j.ButtonIndex); return; }
                 UsingPad = true;
-                bool taken = false;
+                bool tookIt = false;
                 foreach (var a in PadActs(j.ButtonIndex))
                 {
                     latched.Add(a);
-                    if (!taken) foreach (var l in listeners.ToList()) if (l(a)) { taken = true; break; }
+                    if (!tookIt) foreach (var l in listeners.ToList()) if (l(a)) { tookIt = true; break; }
                 }
+                // (as a key: a press a listener took is no skill's, now or while held)
+                if (tookIt) { foreach (var s in Skills) latched.Remove(s); padTaken.Add(j.ButtonIndex); }
                 if (MenuMode && PadActs(j.ButtonIndex).Where(Directions.Contains).Cast<Act?>().FirstOrDefault() is Act dir) { heldDir = dir; heldT = 0; }
                 break;
         }
@@ -203,7 +189,9 @@ public partial class Controls : Node
     IEnumerable<Act> PadActs(JoyButton b)
     {
         var acts = Pad.Where(kv => kv.Value.Contains(b)).Select(kv => kv.Key);
-        return MenuMode ? acts.OrderBy(a => Array.IndexOf(MenuFirst, a) is int i and >= 0 ? i : 99) : acts;
+        // (M4: A is Interact only out of a fight; in play Interact is offered before the grip, so a chest takes it)
+        if (!MenuMode && Fighting) acts = acts.Where(a => a != Act.Interact);
+        return MenuMode ? acts.OrderBy(a => Array.IndexOf(MenuFirst, a) is int i and >= 0 ? i : 99) : acts.OrderBy(a => KeyMap.IsSkill(a) ? 1 : 0);
     }
 
     /// <summary>An action fired as a fresh press (a repeat, a trigger).</summary>
@@ -217,7 +205,7 @@ public partial class Controls : Node
     public override void _Notification(int what)
     {
         // Away from the window, nothing stays held.
-        if (what == NotificationApplicationFocusOut) down.Clear();
+        if (what == NotificationApplicationFocusOut) { down.Clear(); taken.Clear(); padTaken.Clear(); }
     }
 
     // (The pads plugged in, asked of the engine once a frame: each ask is a new tracked Godot array, and Held asks per
@@ -234,10 +222,17 @@ public partial class Controls : Node
 
     public bool Held(Act a)
     {
-        foreach (var c in Bindings[a]) if (down.Contains(c)) return true;
-        if (Pad.TryGetValue(a, out var bs)) foreach (var b in bs) foreach (var dev in Pads()) if (Input.IsJoyButtonPressed(dev, b)) return true;
+        bool skill = KeyMap.IsSkill(a);
+        foreach (var c in Bindings[a]) if (down.Contains(c) && !(skill && taken.Contains(c))) return true;
+        // (M4: in play the d-pad is the draught and the level's card, not movement; the stick moves her)
+        if (!MenuMode && a is Act.Up or Act.Down or Act.Left or Act.Right) return false;
+        if (Pad.TryGetValue(a, out var bs)) foreach (var b in bs) foreach (var dev in Pads()) if (Input.IsJoyButtonPressed(dev, b) && !(skill && padTaken.Contains(b))) return true;
+        if (!MenuMode && PadTrig.TryGetValue(a, out int tr) && tr != 0)
+            foreach (var dev in Pads())
+                if ((tr & 1) != 0 && Input.GetJoyAxis(dev, JoyAxis.TriggerLeft) > TriggerOn || (tr & 2) != 0 && Input.GetJoyAxis(dev, JoyAxis.TriggerRight) > TriggerOn) return true;
         return false;
     }
+    const float TriggerOn = 0.5f;
 
     /// <summary>True once per press; takes the latch.</summary>
     public bool Pressed(Act a) => latched.Remove(a);
@@ -254,7 +249,22 @@ public partial class Controls : Node
     public override void _Process(double delta)
     {
         Poll();
-        if (MenuMode) MenuPoll(delta); else heldDir = null;
+        if (MenuMode) MenuPoll(delta); else { heldDir = null; PlayTriggers(); }
+    }
+
+    /// <summary>In play (M4): LT and RT pressed are their play actions' presses (the Flare, Skill4).</summary>
+    void PlayTriggers()
+    {
+        bool l = false, r = false;
+        foreach (var dev in Pads())
+        {
+            float lt = Input.GetJoyAxis(dev, JoyAxis.TriggerLeft), rt = Input.GetJoyAxis(dev, JoyAxis.TriggerRight);
+            l |= lt > 0.6f || triggerL && lt > 0.3f;
+            r |= rt > 0.6f || triggerR && rt > 0.3f;
+        }
+        if (l && !triggerL) foreach (var a in PlayLT) Fire(a);
+        if (r && !triggerR) foreach (var a in PlayRT) Fire(a);
+        triggerL = l; triggerR = r;
     }
 
     /// <summary>In a menu: the left stick moves focus like the D-pad, a held
@@ -328,19 +338,27 @@ public partial class Controls : Node
     /// mouse button stays). A key means one of the rebindable actions only.</summary>
     public bool Rebind(Act a, string code)
     {
-        if (!Rebindable.Contains(a) || Reserved.Contains(code)) return false;
-        foreach (var b in Rebindable) if (b != a) Bindings[b] = Bindings[b].Where(c => c != code).ToArray();
-        var list = Bindings[a].ToList();
-        int i = list.FindIndex(c => !c.StartsWith("Mouse"));
-        if (i >= 0) list[i] = code; else list.Insert(0, code);
-        Bindings[a] = list.Distinct().ToArray();
+        if (!KeyMap.Rebind(Bindings, a, code)) return false;
+        Version++;
         SaveBindings();
         return true;
     }
 
     public void ResetBindings()
     {
-        Bindings = Defaults.ToDictionary(kv => kv.Key, kv => kv.Value.ToArray());
+        Bindings = KeyMap.Fresh();
+        Preset = 0;
+        Version++;
+        SaveBindings();
+    }
+
+    /// <summary>The keys page's layout (M4 §1): its keys on, saved; the HUD's caps re-label at once (Version).</summary>
+    public void ApplyPreset(int preset)
+    {
+        preset = Math.Clamp(preset, 0, KeyMap.PresetNames.Length - 1);
+        KeyMap.ApplyPreset(Bindings, preset);
+        Preset = preset;
+        Version++;
         SaveBindings();
     }
 
@@ -355,6 +373,10 @@ public partial class Controls : Node
                 if (saved.TryGetValue(Key(a), out var v) && v.Length > 0) Bindings[a] = v;
                 else if (a == Act.Flare && saved.TryGetValue("ability", out var oldArt) && oldArt.Length > 0) Bindings[a] = oldArt;
                 else if (a == Act.Draught && saved.TryGetValue("ultimate", out var old) && old.Length > 0) Bindings[a] = old;
+            if (saved.TryGetValue("preset", out var pr) && pr.Length > 0 && int.TryParse(pr[0], out var pi)) Preset = Math.Clamp(pi, 0, KeyMap.PresetNames.Length - 1);
+            // (an old save: the skills' keys are theirs; the Flare's old RMB goes)
+            foreach (var line in KeyMap.Sanitize(Bindings)) GD.Print($"bindings: {line}");
+            Version++;
         }
         catch (JsonException) { /* nothing sensible in it */ }
     }
@@ -362,6 +384,7 @@ public partial class Controls : Node
     void SaveBindings()
     {
         var o = Rebindable.ToDictionary(Key, a => Bindings[a]);
+        o["preset"] = [Preset.ToString(System.Globalization.CultureInfo.InvariantCulture)];
         using var f = FileAccess.Open(SaveFile, FileAccess.ModeFlags.Write);
         f?.StoreString(JsonSerializer.Serialize(o));
     }
@@ -401,19 +424,7 @@ public partial class Controls : Node
     public string KeyLabel(Act a) => Label(Bindings[a].FirstOrDefault() ?? "");
     public IEnumerable<string> KeyLabels(Act a) => Bindings[a].Select(Label);
 
-    static readonly Dictionary<JoyButton, string> PadNames = new()
-    {
-        [JoyButton.A] = "A", [JoyButton.B] = "B", [JoyButton.X] = "X", [JoyButton.Y] = "Y", [JoyButton.LeftShoulder] = "LB", [JoyButton.RightShoulder] = "RB",
-        [JoyButton.Back] = "View", [JoyButton.Start] = "Menu", [JoyButton.DpadUp] = "D-pad up", [JoyButton.DpadDown] = "D-pad down",
-        [JoyButton.DpadLeft] = "D-pad left", [JoyButton.DpadRight] = "D-pad right", [JoyButton.LeftStick] = "L3", [JoyButton.RightStick] = "R3",
-    };
-
-    public IEnumerable<string> PadLabels(Act a) => a switch
-    {
-        Act.SubPrev => ["LT"],
-        Act.SubNext => ["RT"],
-        _ => Pad.TryGetValue(a, out var bs) ? bs.Select(b => PadNames.TryGetValue(b, out var n) ? n : $"B{(int)b}") : [],
-    };
+    public IEnumerable<string> PadLabels(Act a) => KeyMap.Pad.TryGetValue(a, out var bs) ? bs : [];
 
     /// <summary>The one key or button that means this now, for a prompt.</summary>
     public string PromptLabel(Act a) => UsingPad ? PadLabels(a).FirstOrDefault() ?? KeyLabel(a) : KeyLabel(a);

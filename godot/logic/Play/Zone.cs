@@ -43,7 +43,7 @@ public sealed record StoryChoice(string Who, string Title, IReadOnlyList<ChoiceA
 public readonly record struct Arrival(double X, double Z, double Facing = 0);
 
 public enum MarkKind { Place, Quest, Turn, Exit, Danger, Person, Mystery, Goal }
-public sealed record MapMark(double X, double Z, string Label, MarkKind Kind);
+public sealed record MapMark(double X, double Z, string Label, MarkKind Kind, bool Objective = false);
 
 /// <summary>The bar over a fight worth one: where its phases turn, what it
 /// is calling up (break it!), whether something is shielding it.</summary>

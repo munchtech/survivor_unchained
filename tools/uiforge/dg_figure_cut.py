@@ -76,6 +76,14 @@ CHEEK = (545.0, 238.0, 38.0, 44.0)      # source px (dg4_hand.png, already padde
 SHOULDER_E = (650.0, 590.0, 110.0, 70.0)
 
 
+def ridge_map(L, scale=1.0):
+    """The raised edges (the bronze lighter than round it): Ls (L lightly blurred) and the ridge strength 0..1. The
+    bronze pass's highlights; dg_resolve_veins.py reads the hair's veins from the same map."""
+    import cv2
+    Ls = cv2.GaussianBlur(L, (0, 0), 1.2 * scale)
+    return Ls, np.clip((Ls - cv2.GaussianBlur(L, (0, 0), 3.5 * scale)) / 0.06 - 0.25, 0, 1)
+
+
 def bronze_pass(g, a, smooth_mask=None, scale=1.0, ridge_k=None, round_mask=None, verd_k=None):
     """g: graded RGB (0..1), a: alpha; scale: source px per the figure's source px (the river's are coarser).
     The verdigris kept only in the hollows (where the bronze is darker than round it), bronzed elsewhere at its own
@@ -113,8 +121,7 @@ def bronze_pass(g, a, smooth_mask=None, scale=1.0, ridge_k=None, round_mask=None
     cav = cv2.GaussianBlur(cav, (0, 0), 1.3 * scale)
     gr = np.clip((g[..., 1] - g[..., 0]) * 6.0 + 0.25, 0, 1)
     gr = cv2.GaussianBlur(gr, (0, 0), 2.5 * scale)
-    Ls = cv2.GaussianBlur(L, (0, 0), 1.2 * scale)
-    ridge = np.clip((Ls - cv2.GaussianBlur(L, (0, 0), 3.5 * scale)) / 0.06 - 0.25, 0, 1)
+    Ls, ridge = ridge_map(L, scale)
     vk = BZ["verd_cav"] if verd_k is None else verd_k
     vw = np.clip(np.maximum(np.clip((cav - BZ["cav_t"]) / 0.4, 0, 1) * vk, gr * BZ["verd_src"]) * (1 - ridge), 0, 1) * on
     Lv = np.maximum(L, BZ["verd_floor"])
@@ -258,7 +265,8 @@ def fit_circle(alpha, box):
     return cx, cy, float(r), len(P)
 
 
-def main():
+def main(info_only=False):
+    """info_only: no files written; returns the hair mask (source px) and the 2x canvas's box (dg_resolve_veins.py)."""
     check = sys.argv[sys.argv.index("--check") + 1] if "--check" in sys.argv else None
     rgb = np.asarray(Image.open(os.path.join(SRC, f"{NAME}.png")).convert("RGB"), np.float32) / 255
     alpha = np.asarray(Image.open(os.path.join(SRC, f"{NAME}_cut.png")).convert("RGBA"), np.float32)[..., 3] / 255
@@ -374,6 +382,8 @@ def main():
     pm = np.dstack([rgba[..., :3] * rgba[..., 3:], rgba[..., 3:]])
     im = Image.fromarray((np.clip(pm, 0, 1) * 255 + 0.5).astype(np.uint8), "RGBA")
     box = (x0, y0, x0 + cw2 / (2 * s), y0 + ch2 / (2 * s))
+    if info_only:
+        return dict(hair_l=hair_l, alpha=alpha, a=a, held=held, box=box, size=(cw2, ch2), s=s, x0=x0, y0=y0)
     im = im.transform((cw2, ch2), Image.EXTENT, box, Image.BICUBIC) if False else \
         im.resize((cw2, ch2), Image.LANCZOS, box=box)
     o = np.asarray(im, np.float32) / 255
@@ -426,7 +436,11 @@ def main():
         "oil_top": round(oc[1] - r * s, 2), "oil_bot": round(oc[1] + r * s, 2),
         "font_x": [round(oc[0] - r * s, 2), round(oc[0] + r * s, 2)], "skip": [0, 0],
     }
-    json.dump(geo, open(os.path.join(OUT, "lamp_geo.json"), "w"), indent=1)
+    # (M4: dg_resolve_veins.py's "resolve" block kept)
+    gp = os.path.join(OUT, "lamp_geo.json")
+    if os.path.exists(gp) and "resolve" in (old := json.load(open(gp))):
+        geo["resolve"] = old["resolve"]
+    json.dump(geo, open(gp, "w"), indent=1)
     print(json.dumps(geo))
     if check:
         bg = Image.new("RGBA", out.size, (60, 58, 70, 255))

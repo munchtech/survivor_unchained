@@ -16,12 +16,13 @@ public static class DgGold
 {
     /// <summary>The padding round the glyph in the textures, in shown px (draw them g + 2 * Pad across).</summary>
     public const int Pad = 4;
-    static readonly Dictionary<string, (ImageTexture Gold, ImageTexture Glow)> cache = new();
+    // (keyed by the glyph and its size as a pair, not a made string: a seat asks at each redraw, M4 lead 5)
+    static readonly Dictionary<(string Key, int Size), (ImageTexture Gold, ImageTexture Glow)> cache = new();
     static readonly Color Lo = new(0.42f, 0.29f, 0.12f), Mid = new(0.86f, 0.69f, 0.40f), Hi = new(1f, 0.95f, 0.78f);
 
     public static (Texture2D Gold, Texture2D Glow) Of(string key, int size)
     {
-        var ck = $"{key}|{size}";
+        var ck = (key, size);
         if (cache.TryGetValue(ck, out var hit)) return hit;
         int s2 = size * 2, pad = Pad * 2, w = s2 + 2 * pad;
         var src = Glyphs.Texture(key, s2, Colors.White, 2.1f, line: true).GetImage();

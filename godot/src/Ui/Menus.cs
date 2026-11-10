@@ -112,10 +112,12 @@ public partial class ControlsPanel : VBoxContainer
 {
     static readonly (string Label, Act[] Acts, string? Pad)[] Rows =
     {
+        ("Skill 1, the grip", [Act.Skill1], null), ("Skill 2", [Act.Skill2], null), ("Skill 3", [Act.Skill3], null),
+        ("Skill 4", [Act.Skill4], null), ("Skill 5", [Act.Skill5], null), ("Skill 6", [Act.Skill6], null),
         ("Move", [Act.Up, Act.Left, Act.Down, Act.Right], "Left stick"), ("Dash", [Act.Dash], null), ("Flare", [Act.Flare], null),
         ("Draught", [Act.Draught], null), ("Talk, use, pick up", [Act.Interact], null), ("Pack", [Act.Inventory], "View"),
         ("Self", [Act.Character], "View, then RB"), ("Arts", [Act.Arts], "View, then RB"), ("Lamps", [Act.Lamps], "View, then RB"), ("Journal", [Act.Journal], "View, then RB"), ("Map", [Act.Map], "View, then RB"), ("Answer the night (hold)", [Act.Answer], "L3"),
-        ("Level and experience (hold)", [Act.Experience], "LB, in play"),
+        ("Level and experience (hold)", [Act.Experience], "D-pad down, in play"),
         ("Look closer, in town", [], "Right stick up / down"), ("Pause", [Act.Pause], null),
         ("Turn the book's pages", [Act.TabPrev, Act.TabNext], "LB / RB"), ("A screen's own pages", [Act.SubPrev, Act.SubNext], "LT / RT"),
         ("In menus: choose, back", [Act.Confirm, Act.Cancel], "A, B"), ("In menus: more", [Act.Alt], "X, Y"),
@@ -143,11 +145,82 @@ public partial class ControlsPanel : VBoxContainer
         return b;
     }
 
+    /// <summary>M4 §1: the "Skill keys" row first: the two layouts as choice chips over a miniature of the bar's six caps
+    /// in seat order ([1][2][3] (coin) [4][LMB][RMB]), the pad's buttons under them. Picking one re-labels the HUD at
+    /// once (Controls.Version).</summary>
+    Control SkillKeys(Controls c)
+    {
+        var col = Style.V(6);
+        var head = Style.H(Style.Gap4);
+        var name = Style.Label("Skill keys", Style.UiBold, 15, Kit.Ink2, false, HorizontalAlignment.Left, false);
+        name.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        name.CustomMinimumSize = new Vector2(150, 0);
+        head.AddChild(name);
+        for (int i = 0; i < KeyMap.PresetNames.Length; i++)
+        {
+            int pick = i;
+            head.AddChild(Choice(KeyMap.PresetNames[i], c.Preset == i, () => { c.ApplyPreset(pick); waiting = null; Build(); }));
+        }
+        col.AddChild(head);
+        var bar = Style.H(4);
+        bar.AddChild(new Control { CustomMinimumSize = new Vector2(150 + Style.Gap4 - 4, 0) });
+        for (int k = 0; k < KeyMap.SeatSlot.Length; k++)
+        {
+            if (k == 3)
+            {
+                // the coin between the hands' keys
+                var coin = new Panel { CustomMinimumSize = new Vector2(18, 18), SizeFlagsVertical = SizeFlags.ShrinkBegin, MouseFilter = MouseFilterEnum.Ignore };
+                coin.AddThemeStyleboxOverride("panel", Style.Box(new Color("#16120e"), Style.GoldDim, 1, 9, 0));
+                var hold = new MarginContainer();
+                hold.AddThemeConstantOverride("margin_top", 6);
+                hold.AddChild(coin);
+                bar.AddChild(hold);
+            }
+            var act = Controls.Skills[KeyMap.SeatSlot[k]];
+            var seat = Style.V(3);
+            var capHold = new Control { CustomMinimumSize = new Vector2(44, 22), MouseFilter = MouseFilterEnum.Ignore };
+            var cap = new KeyTag(act) { Chip = true, KeysOnly = true };
+            capHold.AddChild(cap);
+            cap.Refresh();
+            cap.Place(22, 3);
+            seat.AddChild(capHold);
+            var padHold = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+            var pb = Style.PadButton(c.PadLabels(act).FirstOrDefault() ?? "?");
+            pb.Scale = new Vector2(0.8f, 0.8f);
+            var pbBox = new Control { CustomMinimumSize = pb.GetCombinedMinimumSize() * 0.8f, MouseFilter = MouseFilterEnum.Ignore };
+            pbBox.AddChild(pb);
+            padHold.AddChild(pbBox);
+            seat.AddChild(padHold);
+            bar.AddChild(seat);
+        }
+        col.AddChild(bar);
+        return col;
+    }
+
+    /// <summary>A layout's choice chip: chosen, gold-rimmed and bright; else quiet.</summary>
+    static Control Choice(string text, bool on, Action pick)
+    {
+        var b = new Button { FocusMode = FocusModeEnum.None, Flat = true, MouseDefaultCursorShape = CursorShape.PointingHand, Text = "" };
+        foreach (var st in new[] { "normal", "hover", "pressed", "focus" }) b.AddThemeStyleboxOverride(st, new StyleBoxEmpty());
+        var chip = new PanelContainer { MouseFilter = MouseFilterEnum.Ignore };
+        chip.AddThemeStyleboxOverride("panel", Style.Box(on ? new Color("#2a2016") : new Color("#16120e"), on ? Style.Gold : Style.GoldDim with { A = 0.6f }, 1, 4, 10));
+        var l = Style.Label(text, Style.UiHeavy, 14, on ? Style.GoldHi : Kit.Dim, false, HorizontalAlignment.Center, false);
+        chip.AddChild(l);
+        b.AddChild(chip);
+        b.CustomMinimumSize = chip.GetCombinedMinimumSize();
+        b.Ready += () => b.CustomMinimumSize = chip.GetCombinedMinimumSize();
+        b.MouseEntered += () => chip.Modulate = new Color(1.2f, 1.15f, 1.05f);
+        b.MouseExited += () => chip.Modulate = Colors.White;
+        b.Pressed += pick;
+        return b;
+    }
+
     void Build()
     {
         foreach (var old in GetChildren()) { RemoveChild(old); old.QueueFree(); }
         AddThemeConstantOverride("separation", Style.Gap3);
         var c = Controls.Instance;
+        AddChild(SkillKeys(c));
         var grid = new GridContainer { Columns = 3 };
         grid.AddThemeConstantOverride("h_separation", Style.Gap6);
         grid.AddThemeConstantOverride("v_separation", 5);
@@ -180,7 +253,7 @@ public partial class ControlsPanel : VBoxContainer
             grid.AddChild(p);
         }
         AddChild(grid);
-        var note = Style.Label(waiting != null ? "Press the new key, or Escape to leave it." : "Click a gold key to change it. Most attacks fire on their own.", Style.TextItalic, 15, waiting != null ? Style.EmberHi : Kit.Dim, false, HorizontalAlignment.Left, false);
+        var note = Style.Label(waiting != null ? (KeyMap.IsSkill(waiting.Value) ? "Press the new key or click a mouse button, or Escape to leave it." : "Press the new key, or Escape to leave it.") : "Click a gold key to change it.", Style.TextItalic, 15, waiting != null ? Style.EmberHi : Kit.Dim, false, HorizontalAlignment.Left, false);
         note.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         var defaults = Kit.Word("Back to the defaults", () => { c.ResetBindings(); waiting = null; Build(); }, Kit.Ink2, 15);
         AddChild(Style.H(Style.Gap4, note, defaults));
@@ -188,6 +261,16 @@ public partial class ControlsPanel : VBoxContainer
 
     public override void _Input(InputEvent e)
     {
+        // (M4: a skill's key may be a mouse button)
+        if (waiting is Act ma && KeyMap.IsSkill(ma) && e is InputEventMouseButton { Pressed: true } mb
+            && (mb.ButtonIndex switch { MouseButton.Left => "Mouse0", MouseButton.Middle => "Mouse1", MouseButton.Right => "Mouse2", _ => null }) is string mc)
+        {
+            GetViewport().SetInputAsHandled();
+            Controls.Instance.Rebind(ma, mc);
+            waiting = null;
+            CallDeferred(MethodName.Build);
+            return;
+        }
         if (waiting is not Act a || e is not InputEventKey { Pressed: true, Echo: false } k) return;
         GetViewport().SetInputAsHandled();
         if (k.PhysicalKeycode != Godot.Key.Escape && Controls.CodeOf(k.PhysicalKeycode) is string code) Controls.Instance.Rebind(a, code);
@@ -207,7 +290,12 @@ public partial class PauseScreen : Overlay
     string panel = "";
     readonly MenuList menu;
 
-    public PauseScreen(Game g) : base(g) { menu = new MenuList(Refresh, 20); }
+    public PauseScreen(Game g) : base(g)
+    {
+        menu = new MenuList(Refresh, 20);
+        // (--pause-panel controls|settings: the shots' keys page)
+        if (Args.Get("pause-panel") is "controls" or "settings") panel = Args.Get("pause-panel")!;
+    }
 
     /// <summary>The ember on a line of the menu (back from the credits, on the credits).</summary>
     public void FocusOn(string label)
