@@ -223,6 +223,12 @@ public partial class BattleFx
                 gripDue = aa.T + ct / Math.Max(0.1, aa.Rate);
                 gripSeen = (time - aa.T) * 60; gripCt = (gripDue - aa.T) * 60;
                 gripDueSide = HerEvents.Side(clip) ?? 0;
+                // (take 8, F5) the side is known when the trail is armed (the sim's own next side, read, not taken): a
+                // trail of side 0 drew the wind-up's sweep back for its first frames, then dropped it (a chip, a dead frame)
+                if (gripDueSide == 0)
+                    foreach (var w in b.Weapons)
+                        if (w.Id == aa.Weapon) { gripDueSide = w.ClipSide != 0 ? w.ClipSide : (w.Cuts & 1) == 0 ? -1 : 1; break; }
+                if (GripSayAll) GD.Print($"grip due frame {Engine.GetFramesDrawn()} clip {clip} side {gripDueSide} (clip's {HerEvents.Side(clip) ?? 0})");
             }
         }
         double lead = P7D["grip.lead_frames"] / 60.0;
@@ -284,6 +290,7 @@ public partial class BattleFx
         var arc0 = gripLive is { Contact: >= 0, FlashOwed: true } gl && gl.Contact == gripClock ? gl : null;
         if (gripLive is not { Contact: < 0 } tr) { tr = new GripTrail { Oath = oath, Tail = gripClock - 5 / 60.0 }; GripArm(tr); }
         tr.Oath = oath; tr.Contact = gripClock; tr.SimSide = e.Side; tr.Reach = reach;
+        if (tr.Side == 0) tr.Side = e.Side;   // (take 8) before this frame's stroke is drawn, not after it
         if (e.Struck > 0)
         {
             tr.FlashOwed = true; tr.Struck = e.Fresh; tr.Killed = e.Killed;
@@ -327,11 +334,9 @@ public partial class BattleFx
         if (gripNode != null && IsInstanceValid(gripNode)) return;
         (gripNode, gripMesh, gripMat) = GripNewNode("GripTrail", 0);
         (gripEdgeNode, gripEdgeMesh, gripEdgeMat) = GripNewNode("GripEdge", 2);
-        // the brush as the stroke takes it: the across and the along are the stroke's own (the comma's shape is the
-        // shader's), the bristles laid by the shader in pixels and metres, the boundaries' waver small (the across
-        // magnifies it in the white)
-        gripMat.SetShaderParameter("fx_stroke_shape", new Vector4(1f, 0.3f, 1f, 0f));
-        gripMat.SetShaderParameter("fx_bristle", new Vector4(24f, 12f, P7D.All("grip.dry")[4], P7D["grip.waver"]));
+        // (take 8, F0) the stroke's shader is its own (fx_grip_stroke: the bristles are its lanes, grip.fill); the brush
+        // include's fx_stroke_shape / fx_bristle are not its uniforms, and the dead key read here (grip.dry) threw before
+        // the warm-up was ever asked for: the first cut paid the first use
         gripWarm = 3;
     }
 
@@ -394,12 +399,13 @@ public partial class BattleFx
     /// <summary>(take 7) The stroke's material for this frame: `total` and `tailU` are the laid path's metres at the blade
     /// and at the drawn tail; `age` s since the contact (under 0: not yet); the spikes (GripPaint.Spikes), the first
     /// `tines` of them the splay's.</summary>
-    void GripSet(GripLook look, float total, float tailU, float blade, float age, float seed, Vector3 her, float[]? spikes, int tines)
+    void GripSet(GripLook look, float total, float tailU, float blade, float age, float seed, Vector3 her, float[]? spikes, int tines, int since = -1)
     {
         var m = gripMat!;
         var shed = P7D.All("grip.shed_at"); var pt = P7D.All("grip.point"); var cap = P7D.All("grip.cap"); var rag = P7D.All("grip.cap_rag");
-        var tone = P7D.All("grip.fill.tone"); var st = P7D.All("grip.fill.streak"); var dr = P7D.All("grip.fill.dry"); var tn = P7D.All("grip.fill.tine"); var ct = P7D.All("grip.fill.cut");
-        var sw = P7D.All("grip.shed_white"); var tc = P7D.All("grip.throw.color");
+        var share = P7D.All("grip.fill.share"); var vals = P7D.All(Flare.Night ? "grip.fill.values_night" : "grip.fill.values_day"); var gold = P7D.All("grip.fill.gold"); var dense = P7D.All("grip.fill.press");
+        var st = P7D.All("grip.fill.streak"); var dr = P7D.All("grip.fill.dry"); var tn = P7D.All("grip.fill.tine"); var ct = P7D.All("grip.fill.cut");
+        var sw = P7D.All("grip.shed_white");
         m.SetShaderParameter("grip_total", total);
         m.SetShaderParameter("grip_tail_u", tailU);
         m.SetShaderParameter("grip_blade", Mathf.Max(blade, 0.05f));
@@ -412,8 +418,11 @@ public partial class BattleFx
         m.SetShaderParameter("grip_seed", seed);
         m.SetShaderParameter("grip_narrow", P7D["grip.shed_to"]);
         // leaving: the shed (the whole stroke thins) and the dry gaps (the last three drawn frames: mostly streaks at the end)
-        m.SetShaderParameter("grip_leave", age < 0 ? Vector2.Zero : new Vector2(Mathf.Clamp((age - shed[0]) / Mathf.Max(shed[1] - shed[0], 1e-4f), 0, 1), P7D.Curve("grip.dry_out", age)));
-        m.SetShaderParameter("grip_fill", new Vector4(P7D["grip.fill.lanes"], tone[0], tone[1], P7D["grip.fill.comb"]));
+        m.SetShaderParameter("grip_leave", age < 0 ? Vector3.Zero : new Vector3(Mathf.Clamp((age - shed[0]) / Mathf.Max(shed[1] - shed[0], 1e-4f), 0, 1), P7D.Curve("grip.dry_out", age), P7D.Curve("grip.dry_tail", age)));
+        m.SetShaderParameter("grip_fill", new Vector4(P7D["grip.fill.lanes"], share[0], share[1], P7D["grip.fill.comb"]));
+        m.SetShaderParameter("grip_gold", new Vector3(gold[0], gold[1], gold[2]));
+        m.SetShaderParameter("grip_dense", new Vector2(dense[0], dense[1]));
+        m.SetShaderParameter("grip_loaded", P7D["grip.press.loaded"]);
         m.SetShaderParameter("grip_streak", new Vector4(st[0], st[1], dr[0], dr[1]));
         m.SetShaderParameter("grip_tine", new Vector4(tn[0], tn[1], ct[0], ct[1]));
         m.SetShaderParameter("grip_shedw", new Vector2(sw[0], sw[1]));
@@ -421,13 +430,20 @@ public partial class BattleFx
         // (vii) the stroke's own white (sRGB in the data; the bands are linear), by day and by night
         var w = P7D.All(Flare.Night ? "grip.white.night" : "grip.white.day");
         m.SetShaderParameter("grip_white", new Vector3(GripLin(w[0]), GripLin(w[1]), GripLin(w[2])));
+        // (take 8, iii) the fill's two deeper values: the white x these, in sRGB (steps the eye reads at 1:1)
+        m.SetShaderParameter("grip_val1", new Vector3(GripLin(w[0] * vals[0]), GripLin(w[1] * vals[1]), GripLin(w[2] * vals[2])));
+        m.SetShaderParameter("grip_val2", new Vector3(GripLin(w[0] * vals[3]), GripLin(w[1] * vals[4]), GripLin(w[2] * vals[5])));
         var sp = new float[48];
         int ns = Math.Min(12, (spikes?.Length ?? 0) / 4);
         if (spikes != null) Array.Copy(spikes, sp, ns * 4);
         m.SetShaderParameter("grip_spike", sp);
         m.SetShaderParameter("grip_spike_n", ns);
         m.SetShaderParameter("grip_tine_n", Math.Min(tines, ns));
-        m.SetShaderParameter("grip_throw", new Vector2(tc[0], tc[1]));
+        // (take 8, iv) a thrown streak FLIES as it is shed: its near end leaves the root, it breaks into dashes
+        var fl = P7D.All("grip.throw.fly"); var da = P7D.All("grip.throw.dash");
+        int sf = Math.Clamp(since, 0, fl.Length - 1);
+        m.SetShaderParameter("grip_fly", new Vector4(since < 0 ? 0 : fl[sf], since < 0 ? 1 : da[Math.Min(sf, da.Length - 1)], P7D["grip.throw.dash_m"], P7D["grip.throw.bend"]));
+        m.SetShaderParameter("grip_throw_gold", P7D["grip.throw.color"]);
         gripNode!.CustomAabb = new Aabb(her - new Vector3(8, 3, 8), new Vector3(16, 7, 16));
     }
 
@@ -715,14 +731,15 @@ public partial class BattleFx
             if (kt > 0) streaks = GripPaint.Streaks(tr.Struck, P7D["grip.throw.per_struck"], P7D["grip.throw.most"]);
             far = Mathf.Max(P7D["grip.throw.min"], tr.Reach - tr.StampR);
             spikes = GripPaint.Spikes(tr.Stamp, tines, streaks, press, P7D.All("grip.splay.len"), P7D.All("grip.splay.root"), P7D.All("grip.splay.slant"),
-                P7D["grip.throw.px"] * pxm, P7D.All("grip.throw.len"), P7D.All("grip.throw.slant"), far, tr.Seed, ks, kt);
+                P7D["grip.throw.px"], P7D.All("grip.throw.len"), P7D.All("grip.throw.slant"), far, tr.Seed, ks, kt, P7D["grip.throw.span"]);
             for (int i = tines; i < tines + streaks; i++)
             {
                 float u0 = spikes[i * 4], u1 = u0 + spikes[i * 4 + 3] * spikes[i * 4 + 2];
-                if (sheet1 < sheet0) { sheet0 = u0; sheet1 = u1; }
-                sheet0 = Mathf.Min(sheet0, u0); sheet1 = Mathf.Max(sheet1, u1);
+                if (sheet1 < sheet0) { sheet0 = Mathf.Min(u0, u1); sheet1 = Mathf.Max(u0, u1); }
+                sheet0 = Mathf.Min(sheet0, Mathf.Min(u0, u1)); sheet1 = Mathf.Max(sheet1, Mathf.Max(u0, u1));
             }
-            sheet0 -= 0.15f; sheet1 += 0.15f;
+            float pad = 0.2f + 1.6f * P7D["grip.throw.bend"] * far;   // (a streak's lean may run against the travel, and it bends)
+            sheet0 -= pad; sheet1 += pad;
         }
         // (i) the cap: one more rib, the head's own carried straight on along the path's tangent (the shader cuts the nose)
         var hr = gripRibs[^1];
@@ -765,7 +782,7 @@ public partial class BattleFx
             Put(b, bm, 1 + GripOver); Put(a, ao, 1 + GripOver + farV); Put(b, bo, 1 + GripOver + farV);
         }
         gripMesh.SurfaceEnd();
-        GripSet(look, hr.U, gripRibs[0].U, bladeNow, (float)age, tr.Seed, PlayerPos, spikes, tines);
+        GripSet(look, hr.U, gripRibs[0].U, bladeNow, (float)age, tr.Seed, PlayerPos, spikes, tines, tr.Stamp.Size > 0 ? frame - tr.Stamp.Frame : -1);
         if (GripSayAll && tr.Said <= 16 && faceCam != null)
         {
         // (--grip-say) the ribbon as the camera sees it: the samples' tips on screen (px), the turn's side, the bite

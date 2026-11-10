@@ -861,7 +861,7 @@
    "shed_to": 0.2,
    "sunder": {
     "what": "head = the stroke's width at press 1 (a share of the blade, in from the tip's path); max_len = the longest drawn (m); flash = the contact's size",
-    "head": 0.62,
+    "head": 0.46,
     "max_len": 2.7,
     "flash": 1.0
    },
@@ -895,53 +895,64 @@
     "out_frames": 2
    },
    "press": {
-    "_doc": "(take 7, ii) THE PRESS IS LAID. A rib's press (x the look's head = its width) is stored when the blade lays it and never moves along the stroke. rise = [m SEEN from the stroke's start over which the press rises (the brush lands: a pointed start), its power, the press at the very start]; lift = [the tip's m/s under which the brush has lifted, at which it is whole, the press's share when lifted] (the blade slowing at the swing's end: the stroke tapers at both ends); contact = [the press added at size 1 where the blade crossed the bodies, its reach toward the head (m), toward the tail (m), the whiteness added at size 1]; hold = the raise's share by drawn frame of the RIB's own age since it was pressed (whole for three: the thick section stays where it was laid while the head moves on; it only settles, never to nothing: the finished stroke is fattest at the contact); white = m seen from the start over which a rib's whiteness rises 0 to 1 (amber, gold, then white: the tail's colors are laid, not carried).",
-    "rise": [1.1, 1.4, 0.22],
+    "_doc": "(take 7, ii) THE PRESS IS LAID. A rib's press (x the look's head = its width) is stored when the blade lays it and never moves along the stroke. rise = [m SEEN from the stroke's start over which the press rises (the brush lands: a pointed start), its power, the press at the very start]; lift = [the tip's m/s under which the brush has lifted, at which it is whole, the press's share when lifted] (the blade slowing at the swing's end: the stroke tapers at both ends); contact = [the press added at size 1 where the blade crossed the bodies, its reach toward the head (m), toward the tail (m), the whiteness added at size 1]; hold = the raise's share by drawn frame of the RIB's own age since it was pressed (whole for three: the thick section stays where it was laid while the head moves on; it only settles, never to nothing: the finished stroke is fattest at the contact); white = m seen from the start over which a rib's whiteness rises 0 to 1 (amber, gold, then white: the tail's colors are laid, not carried). (take 8) rise[2] is high: the brush LANDS LOADED (frame 1 is a comma: a round head, the tail's point is grip.point's); the contact's raise is local and at most about 1.4x its neighbours (sunder.head 0.46: the body is a stroke, not a sail); loaded = the head is white for this many m behind the blade's line whatever was laid there.",
+    "rise": [0.6, 1.2, 0.6],
     "lift": [3.0, 9.0, 0.45],
-    "contact": [0.26, 0.45, 0.7, 0.5],
-    "hold": [1, 1, 1, 0.85, 0.72, 0.6],
-    "white": 0.9
+    "contact": [0.16, 0.32, 0.45, 0.25],
+    "hold": [1, 1, 1, 0.8, 0.62, 0.48],
+    "white": 0.7,
+    "loaded": 0.35
    },
    "_doc_cap": "(take 7, i) THE HEAD IS A BRUSH CAP AHEAD OF THE BLADE, in stroke widths at the head: cap = [its length past the blade's line along the path's tangent, the nose's place across (0 the tip's path, 1 the inner edge), how far BEHIND the blade's line the inner edge starts, the outer corner's round-off (share of the length), the inner curve's power (under 1: concave: a fang), the inner edge's further retreat at the shed's end (vi: the head closes to a point)]. cap_rag = the cap's edge is bristle tips: [a bristle px across, the tips' variation (m), a tip's rounding (share of the bristle)].",
    "cap": [0.7, 0.24, 0.55, 0.45, 0.6, 1.2],
    "cap_rag": [5, 0.03, 0.6],
    "fill": {
-    "_doc": "(take 7, iii) THE BODY IS BRUSHED. lanes = bristle lanes across the width (uneven); tone = the two darker values beside the full one (each lane changes value in streaks along the sweep); streak = a value streak's length [m least, most]; tine = [a lane's own threshold on the rib's whiteness (+-), its slant across the lane]: the white's, the gold's and the amber's ends are tines along the sweep, never a line across; cut = the whiteness at which [amber turns gold, gold turns white]; comb = a lane starts at its own whiteness up to this (the tail's comb tines; the lane on the tip's path whole: the comma's point); dry = a dry gap's cell along a lane [m least, most]. All anchored to the laid path's metres: nothing swims.",
-    "lanes": 11,
-    "tone": [0.93, 0.85],
+    "_doc": "(take 7, iii) THE BODY IS BRUSHED. lanes = bristle lanes across the width (uneven); (take 8) share = a lane's share of its length [at the stroke's white, up to the second value; the rest the third] (each lane changes value in streaks along the sweep, hard ends); values_day / values_night = the second and the third value as the white x [r, g, b, r, g, b] in sRGB: FAR ENOUGH APART TO READ at 1:1 (take 7's 0.93 / 0.85 in linear could not be seen); gold = the inner edge's band [its share of the width (the innermost lanes are gold), the light gold's green x the gold's, the next lane's share in gold (the band's border steps in and out)]; press = THE PRESS IS MORE PAINT [the values' shares shift toward the deeper ones by this at the raise's most, a lane splits in two finer ones from this raise (+0.3 x its own number)]; streak = a value streak's length [m least, most]; tine = [a lane's own threshold on the rib's whiteness (+-), its slant across the lane]: the white's, the gold's and the amber's ends are tines along the sweep, never a line across; cut = the whiteness at which [amber turns gold, gold turns white]; comb = a lane starts at its own whiteness up to this (the tail's comb tines; the lane on the tip's path whole: the comma's point); dry = a dry gap's cell along a lane [m least, most]. All anchored to the laid path's metres: nothing swims.",
+    "lanes": 8,
+    "share": [0.5, 0.8],
+    "values_day": [0.98, 0.9, 0.74, 0.95, 0.82, 0.58],
+    "values_night": [0.96, 0.93, 0.86, 0.9, 0.84, 0.72],
+    "gold": [0.2, 1.9, 0.4],
+    "press": [0.25, 0.12],
     "streak": [0.35, 0.9],
     "tine": [0.3, 0.25],
-    "cut": [0.34, 0.68],
+    "cut": [0.22, 0.6],
     "comb": 0.3,
     "dry": [0.3, 0.8]
    },
-   "_doc_dry_out": "(take 7, iii) leaving: the dry gaps' share of each lane by s since the contact (the last three drawn frames before retract's end: gaps open along the WHOLE length, the last frame mostly streaks). shed_white = leaving: [whiteness added along the tip's path (the white runs on), taken along the inner edge (the gold lies there)].",
+   "_doc_dry_out": "(take 7, iii) leaving: the dry gaps' share of each lane by s since the contact (the last three drawn frames before retract's end: gaps open along the WHOLE length, the last frame mostly streaks). dry_tail = (take 8) before that, from the middle of the life: the share of some lanes that is dry gap at the drawn tail (none past the stroke's middle), by s since the contact. shed_white = leaving: [whiteness added along the tip's path (the white runs on), taken along the inner edge (the gold lies there)].",
    "dry_out": [[0.1, 0], [0.15, 0.62]],
+   "dry_tail": [[0.04, 0], [0.1, 0.28]],
    "shed_white": [0.3, 0.75],
    "splay": {
-    "_doc": "(take 7, iv) THE CONTACT SPLAYS: out = the pressed ribs' outer edge past the tip's path (a share of the blade at the raise's most); tines = [for one body, for a crowd (contact.by_struck[0])] short fanned tines rooted on the pressed section's outer edge (none for an air cut); len = a tine's length out [m least, most]; root = its half width at the root [m along]; slant = its lean the travel's way [m along per m out]; frames = the tines' share by drawn frame since the contact (then gone).",
-    "out": 0.1,
-    "tines": [3, 5],
-    "len": [0.12, 0.26],
-    "root": [0.05, 0.09],
-    "slant": [0.25, 0.8],
-    "frames": [1, 0.9, 0.65, 0.35]
+    "_doc": "(take 7, iv) THE CONTACT SPLAYS: out = the pressed ribs' outer edge past the tip's path (a share of the blade at the raise's most); tines = [for one body, for a crowd (contact.by_struck[0])] short fanned tines rooted on the pressed section's outer edge (none for an air cut); len = a tine's length out [m least, most]; root = its half width at the root [PIXELS, take 8: hair-thin flicks, not thorns]; slant = its lean the travel's way [m along per m out]; frames = the tines' share by drawn frame since the contact (three press frames, then the outer edge is clean again).",
+    "out": 0.03,
+    "tines": [2, 4],
+    "len": [0.08, 0.3],
+    "root": [0.9, 1.6],
+    "slant": [0.1, 0.9],
+    "frames": [1, 0.8, 0.45]
    },
    "throw": {
-    "_doc": "(take 7, iv) THE PAINT REACHES THE CUT'S HIT RADIUS: thin streaks rooted on the pressed section's outer edge, thrown out from her inside the cut's arc toward the sim's reach (Ev.Slash.Reach), continuous lines of the stroke's own mesh and material (never specks). per_struck = streaks per DISTINCT body struck (at least one for a hit, none for an air cut), most = at most; px = a streak's half width at its root; len = its length [least, most] as a share of the way from the tip's path to the reach; min = that way's least (m); slant = its lean the travel's way; frames = its length and width by drawn frame since the contact (shed in three); color = a streak is white to [0] of its length, gold to [1], amber after.",
+    "_doc": "(take 7, iv) THE PAINT REACHES THE CUT'S HIT RADIUS: thin streaks rooted on the pressed section's outer edge, thrown out from her inside the cut's arc toward the sim's reach (Ev.Slash.Reach), continuous lines of the stroke's own mesh and material (never specks). per_struck = streaks per DISTINCT body struck (at least one for a hit, none for an air cut), most = at most; px = a streak's half width at its root (PIXELS however far the sheet fans; never under a pixel wide); len = its length [least, most] as a share of the way from the tip's path to the reach; min = that way's least (m); slant = its lean the travel's way; (take 8) slant may run against the travel (they FAN past their radials); span = the roots' spread as a share of the contact's reaches; frames = its width by drawn frame since the contact (shed in three); a shed streak FLIES: fly = its near end's place by frame (share of its length: it leaves the root), dash = its dashes' share by frame, dash_m = a dash's cell (m), bend = its bend with the sweep (m along per m out at its end); color = a streak is white to this share of its length, gold after (never amber: a thin amber line over the ground read black).",
     "per_struck": 0.5,
     "most": 6,
-    "px": 2.2,
-    "len": [0.55, 1.0],
+    "px": 1.6,
+    "len": [0.4, 1.0],
     "min": 0.4,
-    "slant": [0.08, 0.25],
-    "frames": [1, 0.75, 0.4],
-    "color": [0.55, 0.85]
+    "slant": [-0.12, 0.3],
+    "frames": [1, 0.85, 0.6],
+    "fly": [0, 0.22, 0.5],
+    "dash": [1, 0.78, 0.5],
+    "dash_m": 0.35,
+    "bend": 0.06,
+    "span": 1.3,
+    "color": 0.7
    },
    "white": {
-    "_doc": "(take 7, vii) THE STROKE'S OWN WHITE (sRGB 0-1), not the steel family's cream core (her ground ring's): day, and night (hotter and more golden, so it is not the ring's twin on dark ground).",
+    "_doc": "(take 7, vii) THE STROKE'S OWN WHITE (sRGB 0-1), not the steel family's cream core (her ground ring's): day, and night (take 8: WHITER than the ring's cream core, sRGB 1 / 0.90 / 0.59: the gold is the inner band's and the tail's, so the ring and the stroke are two things).",
     "day": [1.0, 0.97, 0.88],
-    "night": [1.0, 0.9, 0.62]
+    "night": [1.0, 0.97, 0.9]
    }
   },
   "dash": {

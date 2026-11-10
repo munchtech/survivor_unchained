@@ -64,13 +64,14 @@ public class FxP7Tests
         foreach (var k in new[] { "grip.lead_frames", "grip.slow", "grip.snap", "grip.min_len", "grip.face", "grip.point", "grip.retract", "grip.shed_at", "grip.shed_to",
             "grip.kink", "grip.kink_run", "grip.link.on", "grip.contact.wait_frames", "grip.contact.k_min", "grip.contact.kill", "grip.contact.by_struck", "grip.contact.grit",
             "grip.press.rise", "grip.press.lift", "grip.press.contact", "grip.press.hold", "grip.press.white", "grip.cap", "grip.cap_rag",
-            "grip.fill.lanes", "grip.fill.tone", "grip.fill.streak", "grip.fill.tine", "grip.fill.cut", "grip.fill.comb", "grip.fill.dry", "grip.dry_out", "grip.shed_white",
+            "grip.fill.lanes", "grip.fill.share", "grip.fill.values_day", "grip.fill.values_night", "grip.fill.gold", "grip.fill.press", "grip.dry_tail", "grip.press.loaded",
+            "grip.throw.fly", "grip.throw.dash", "grip.throw.dash_m", "grip.throw.bend", "grip.throw.span", "grip.fill.streak", "grip.fill.tine", "grip.fill.cut", "grip.fill.comb", "grip.fill.dry", "grip.dry_out", "grip.shed_white",
             "grip.splay.out", "grip.splay.tines", "grip.splay.len", "grip.splay.root", "grip.splay.slant", "grip.splay.frames",
             "grip.throw.per_struck", "grip.throw.most", "grip.throw.px", "grip.throw.len", "grip.throw.min", "grip.throw.slant", "grip.throw.frames", "grip.throw.color",
             "grip.white.day", "grip.white.night", "grip.sunder.head", "grip.sunder.max_len", "grip.sunder.flash", "grip.oath.head", "grip.oath.max_len", "grip.oath.flash" })
             Assert.True(p.Has(k), "fx_language.json p7 lacks " + k);
         foreach (var k in new[] { "grip.min_seen", "grip.aspect", "grip.lit", "grip.glow", "grip.short", "grip.band.clumps", "grip.lane.tail", "grip.shed_rim", "grip.shed_push",
-            "grip.contact.swell", "grip.contact.white", "grip.contact.frames", "grip.contact.flood", "grip.sunder.core", "grip.sunder.streaks", "grip.oath.taper" })
+            "grip.contact.swell", "grip.contact.white", "grip.contact.frames", "grip.contact.flood", "grip.sunder.core", "grip.sunder.streaks", "grip.oath.taper", "grip.fill.tone", "grip.dry", "grip.waver" })
             Assert.False(p.Has(k), k + ": a dead take's key");
         // the cap: half to the whole of the stroke's width long; convex to its nose near the tip's path; from the nose the
         // leading edge falls back, concave, to BEHIND the blade's line at the inner edge (it crosses the line once)
@@ -101,9 +102,14 @@ public class FxP7Tests
         var rag = p.All("grip.cap_rag");
         Assert.True(rag.Length == 3 && rag[0] >= 3 && rag[0] <= 8 && rag[1] >= 0.015f && rag[1] <= 0.06f, "grip.cap_rag: bristle tips, a few px of variation");
         // the fill: 2-3 close values, the colors' ends tines along the sweep, dry gaps over the last three frames
-        var tone = p.All("grip.fill.tone");
-        Assert.True(tone.Length == 2 && tone[0] < 1 && tone[1] < tone[0] && tone[1] >= 0.78f, "grip.fill.tone: close values");
-        Assert.InRange(p["grip.fill.lanes"], 8f, 16f);
+        foreach (var vk in new[] { "grip.fill.values_day", "grip.fill.values_night" })
+        {
+            var v = p.All(vk);
+            Assert.True(v.Length == 6 && v[1] <= 0.95f && v[4] <= v[1] - 0.05f && v[4] >= 0.7f && v[2] <= 0.9f && v[5] < v[2], vk + ": three values far enough apart to read at 1:1, none dark");
+        }
+        Assert.InRange(p["grip.fill.lanes"], 6f, 12f);
+        Assert.InRange(p.All("grip.fill.gold")[0], 0.15f, 0.3f);
+        Assert.True(p.Curve("grip.dry_tail", 0.1f) > 0.1f && p.Curve("grip.dry_tail", 0.1f) < 0.4f, "grip.dry_tail: a few dry gaps in the tail half before the last three frames");
         Assert.True(p.All("grip.fill.tine")[0] >= 0.15f, "grip.fill.tine: the colors interleave");
         float end = 0;
         while (p.Curve("grip.retract", end) < 0.999f && end < 1) end += 1 / 240f;
@@ -111,7 +117,7 @@ public class FxP7Tests
         Assert.InRange(p.Curve("grip.dry_out", end), 0.5f, 0.75f);
         // its own white, by day and by night
         float[] day = p.All("grip.white.day"), night = p.All("grip.white.night");
-        Assert.True(day.Length == 3 && night.Length == 3 && Math.Abs(day[2] - night[2]) > 0.1f, "grip.white: day and night");
+        Assert.True(day.Length == 3 && night.Length == 3 && night[1] >= 0.94f && night[2] >= 0.8f, "grip.white: by night whiter than the ring's cream core (sRGB blue 0.59)");
     }
 
     /// <summary>(P7 take 7) THE PRESS IS LAID, NOT CARRIED: a rib stores its press when it is laid (the brush lands, is
@@ -138,7 +144,7 @@ public class FxP7Tests
         int at0 = Fattest(10);
         Assert.Equal(1.9f, ribs[at0].S, 0.05f);
         float peak = GripPaint.At(ribs, ribs[at0].At, 10, hold).Press;
-        Assert.True(peak > 1.3f, "the contact raises the press");
+        Assert.True(peak > 1.3f && peak <= 1.4f, "the contact raises the press, at most about 1.4x its neighbours");
         // the head moves on (40 more ribs over the next frames, the last ones slow): the thick section has not moved
         for (int i = 40; i < 80; i++) GripPaint.Lay(ribs, i / 600.0, 0.05f, 0.05f, i < 70 ? fast : press.Lift[0], 11 + (i - 40) / 14, press, stamp);
         Assert.Equal(at0, Fattest(12));
@@ -147,27 +153,48 @@ public class FxP7Tests
         Assert.True(GripPaint.At(ribs, ribs[at0].At, 30, hold).Press < peak, "it settles with its age");
         // a rib laid after the contact inside its reach is laid pressed; past the reach it is not; both ends are thin
         Assert.True(ribs[42].Raise > 0 && ribs[^1].Raise == 0);
-        Assert.True(ribs[0].Base < 0.3f && ribs[^1].Base < 0.7f && ribs[20].Base > 0.8f, "tapered at both ends");
+        Assert.True(ribs[0].Base >= 0.5f && ribs[0].Base < 0.8f && ribs[^1].Base < 0.7f && ribs[20].Base > 0.8f, "laid loaded at the start (a comma: the tail's point is the shader's), lifted at the end");
         Assert.True(ribs[0].White == 0 && ribs[at0].White > 1, "the tail is laid amber, the contact white");
         // the splay and the throw, by the cut's DISTINCT struck
         var tn = p.All("grip.splay.tines");
         float crowd = p.All("grip.contact.by_struck")[0], per = p["grip.throw.per_struck"], most = p["grip.throw.most"];
         Assert.Equal(0, GripPaint.Tines(0, tn, crowd));
         Assert.Equal(0, GripPaint.Streaks(0, per, most));
-        Assert.Equal(3, GripPaint.Tines(1, tn, crowd));
-        Assert.Equal(5, GripPaint.Tines(40, tn, crowd));
+        Assert.Equal((int)tn[0], GripPaint.Tines(1, tn, crowd));
+        Assert.Equal((int)tn[1], GripPaint.Tines(40, tn, crowd));
         Assert.Equal(1, GripPaint.Streaks(1, per, most));
         Assert.InRange(GripPaint.Streaks(40, per, most), 4, 7);
         Assert.True(GripPaint.Tines(40, tn, crowd) + GripPaint.Streaks(40, per, most) <= 12, "the shader carries 12 spikes");
         Assert.InRange(p.All("grip.throw.frames").Length, 2, 3);
-        var sp = GripPaint.Spikes(stamp, 5, 6, press, p.All("grip.splay.len"), p.All("grip.splay.root"), p.All("grip.splay.slant"), 0.03f, p.All("grip.throw.len"), p.All("grip.throw.slant"), 2.5f, 7f, 1f, 1f);
+        var sp = GripPaint.Spikes(stamp, 5, 6, press, p.All("grip.splay.len"), p.All("grip.splay.root"), p.All("grip.splay.slant"), 0.03f, p.All("grip.throw.len"), p.All("grip.throw.slant"), 2.5f, 7f, 1f, 1f, p["grip.throw.span"]);
         Assert.Equal(44, sp.Length);
         for (int i = 0; i < 11; i++)
         {
-            Assert.InRange(sp[i * 4], stamp.S - press.Contact[2], stamp.S + press.Contact[1]);
+            float sr = i < 5 ? 1f : p["grip.throw.span"];
+            Assert.InRange(sp[i * 4], stamp.S - sr * press.Contact[2], stamp.S + sr * press.Contact[1]);
+            Assert.True(sp[i * 4 + 1] <= 3f, "a spike's root is hair-thin (pixels)");
             Assert.True(sp[i * 4 + 1] > 0 && sp[i * 4 + 2] > 0);
-            if (i < 5) Assert.True(sp[i * 4 + 2] <= 0.3f, "a tine is short"); else Assert.InRange(sp[i * 4 + 2], 1.2f, 2.5f);
+            if (i < 5) Assert.True(sp[i * 4 + 2] <= 0.3f, "a tine is short"); else Assert.InRange(sp[i * 4 + 2], 0.9f, 2.5f);
         }
+    }
+
+    /// <summary>(take 8, F0) Every literal p7 grip key the held cut's view reads is in the data (a renamed key threw once
+    /// a run, and the warm-up after it never ran).</summary>
+    [Fact]
+    public void EveryGripKeyTheViewReadsIsThere()
+    {
+        var p = Real();
+        var d = new DirectoryInfo(AppContext.BaseDirectory);
+        while (d != null && !File.Exists(Path.Combine(d.FullName, "project.godot"))) d = d.Parent;
+        Assert.NotNull(d);
+        string src = File.ReadAllText(Path.Combine(d!.FullName, "src", "Fx", "BattleFx.Grip.cs"));
+        int n = 0;
+        foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(src, "\"(grip\\.[a-z0-9_.]*[a-z0-9_])\""))
+        {
+            n++;
+            Assert.True(p.Has(m.Groups[1].Value), "BattleFx.Grip.cs reads " + m.Groups[1].Value + ": not in fx_language.json p7");
+        }
+        Assert.True(n > 40, "the scan found the view's keys");
     }
 
     /// <summary>A band's end at `a` across the width (knots [across, share of the length], straight between).</summary>

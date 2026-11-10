@@ -117,22 +117,24 @@ public static class GripPaint
     /// <summary>The spikes rooted on the pressed section's outer edge, 4 numbers each: [its root's place along the laid
     /// path (m), its root's half width (m along), its length out from the edge (m), its slant (m along per m out, the
     /// travel's way)]. First the tines (short, fat: the fanned bristles; len / root / slant = [least, most]), then the
-    /// thrown streaks (long, thin: `throwRoot` m half width, throwLen = [least, most] share of `far` m, the way to the
+    /// thrown streaks (long, thin: `throwRoot` half width; (take 8) the widths are PIXELS, a streak keeps its length while it is shed: the shader flies it; throwLen = [least, most] share of `far` m, the way to the
     /// cut's reach). Spread over the contact's reaches, no two on one place; `k` and `kt` are the tines' and the streaks'
     /// shares now (they are shed by drawn frame).</summary>
     public static float[] Spikes(in Stamp c, int tines, int streaks, in Press p, float[] len, float[] root, float[] slant,
-        float throwRoot, float[] throwLen, float[] throwSlant, float far, float seed, float k, float kt)
+        float throwRoot, float[] throwLen, float[] throwSlant, float far, float seed, float k, float kt, float throwSpan = 1f)
     {
         var o = new float[(tines + streaks) * 4];
         float lo = c.S - 0.7f * p.Contact[2], span = 0.7f * (p.Contact[1] + p.Contact[2]);
+        // (take 8) the streaks are rooted along the whole pressed span and a little past it (they fan), unevenly
+        float tlo = c.S - throwSpan * p.Contact[2], tspan = throwSpan * (p.Contact[1] + p.Contact[2]);
         for (int i = 0; i < tines + streaks; i++)
         {
             bool tine = i < tines;
             int j = tine ? i : i - tines, n = tine ? tines : streaks;
             float h0 = Hash(i + 1.3f, seed), h1 = Hash(i + 5.7f, seed), h2 = Hash(i + 9.1f, seed);
-            o[i * 4] = lo + span * (j + 0.15f + 0.7f * h0) / n;
+            o[i * 4] = tine ? lo + span * (j + 0.15f + 0.7f * h0) / n : tlo + tspan * (j + 0.05f + 0.9f * h0) / n;
             o[i * 4 + 1] = tine ? (root[0] + (root[1] - root[0]) * h1) * MathF.Sqrt(k) : throwRoot * kt;
-            o[i * 4 + 2] = tine ? (len[0] + (len[1] - len[0]) * h2) * k : far * (throwLen[0] + (throwLen[1] - throwLen[0]) * h2) * kt;
+            o[i * 4 + 2] = tine ? (len[0] + (len[1] - len[0]) * h2) * k : far * (throwLen[0] + (throwLen[1] - throwLen[0]) * h2);
             o[i * 4 + 3] = tine ? slant[0] + (slant[1] - slant[0]) * h1 : throwSlant[0] + (throwSlant[1] - throwSlant[0]) * h1;
         }
         return o;
