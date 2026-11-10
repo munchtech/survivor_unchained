@@ -10,9 +10,12 @@ build.json: "frame" {"from", "to"} the arm's bones ("*" = the side); "theta" [t0
 "thick" the plates' steel; "roll" [width, height] a rolled edge; "lip"; "ease" (the skin law's smoothing, grid cells: a
 plate keeps her shoulder's shape, not her skin's small relief), "grid" [ds, dtheta] the law's grid (2 mm, 2 degrees);
 "lames" {"edges" [e0 .. en]: the EXPOSED bands along the arm from its joint (m; part 0, the cop, is e0..e1, lame k is
-ek..ek+1), "theta" [a, b] the lames' reach (the cop's when absent), "arc": the lames' edges (and the cop's lower edge)
-rise this far toward the shoulder at the lames' two ends (a curved edge, never a ruled band), "overlap" [per part]: how
-far a lame runs up past its band, UNDER the plate above it, "gap": the room between a lapping band's inner face and the
+ek..ek+1), "theta" [a, b] the lames' reach (the cop's when absent) or a list [[a, b] one a lame, from the cop down]: each
+lame its own reach (a SPLINTED spaulder: narrow top lames over the shoulder, full-wrap ones down the arm; the rivets sit
+at the two ends of the lap, where both plates are), "arc": the lames' edges (and the cop's lower edge) rise this far
+toward the shoulder at the two ends of the lame below the edge (a curved edge, never a ruled band), "overlap" [per
+part]: how far a lame runs up past its band, UNDER the plate above it (never past that plate's own exposed band less
+`margin`: a longer one is cut to it and reported, build_report "lap_cut_mm" {part: [asked, built]}), "gap": the room between a lapping band's inner face and the
 outer face of the part beneath (a number or one a part), "margin", "last_flare": the last lame's lower edge stands this
 far further off her, "rides": "mean" (each plate rides the area-weighted mean of her skin weights over its footprint,
 top 8: derived here from the body, so a changed body re-derives it; the footprint is her skin under its exposed band
@@ -43,7 +46,9 @@ nothing shows under it. In full wherever the upper edge runs `fade` or more abov
 nothing at those ends (no arch: the whole edge). It lands on what the arming cap IS, not `drop` under a clearance:
 with it "lie" is not needed};
 "arming" {"clear", "thick", "roll", "past" [up, down, round (degrees)]: how far it shows beyond the plates' outline
-(the cop's arch, the cop's sides, then in to the lames' sides), "step"} (absent or null: no arming cap; its material
+(the cop's arch, the cop's sides, then in to the lames' sides), "theta" [a, b]: its own least reach round the arm all
+along its length (it covers her where no steel is, e.g. the deltoid's front and back beside narrow top plates; then
+`round` is past whichever plate is at that s; absent: the cop's sides easing in to lame 1's), "step"} (absent or null: no arming cap; its material
 must be a key some gear source carries painted, gear_native.material_templates: "darkleather"; a bare key is white); "rivet" {"r", "h", "in"}: the articulation rivets, at the two ends of every
 lap; "tip_flare" {"lames" [k ..], "from", "to", "rise"}: those parts' front tips stand `rise` further off her from
 theta `from` to `to` (her pec and front armpit skin ride over anything in front of 45); "mirror" (true): one shape for
@@ -321,18 +326,34 @@ def layout(cfg, ref, step=None, step_s=None, roll=True, laws=None):
     rows; the sides' laws as read: {side: {"law", "arm_law"}})."""
     t0, t1 = cfg["theta"]
     lm, cp, am = cfg["lames"], cfg.get("cop") or {}, cfg.get("arming")
-    lt0, lt1 = lm.get("theta", cfg["theta"])
     E = np.asarray(lm["edges"], float)
     n = len(E) - 1
+    lth = lm.get("theta", cfg["theta"])
+    # (each lame's own reach round the arm: one [a, b] for them all, or a list, one a lame from the cop down)
+    pth = [tuple(map(float, x)) for x in lth] if np.ndim(lth) == 2 else [tuple(map(float, lth))] * max(n - 1, 1)
+    assert len(pth) == max(n - 1, 1), "lames.theta: one [a, b] or one a lame"
+    lt0, lt1 = pth[0]            # (lame 1's: the cop's wings are its ends past lame 1's)
     lap = list(lm.get("overlap") or [0.0] * n)
     per = lambda key, k, d: (lm[key][k] if isinstance(lm.get(key), list) else lm.get(key, d))  # noqa: E731
     clear, thick, margin = cfg["clear"], cfg["thick"], lm.get("margin", 0.002)
+    # a lame laps under the plate above it only: never up past that plate's own exposed band (it would run under the
+    # plate above that one too, inside its lap); a longer overlap asked is cut to it (reported: "lap_cut")
+    lap_cut = {}
+    for k in range(1, n):
+        room_k = float(E[k] - E[k - 1]) - margin
+        if lap[k] > room_k:
+            lap_cut[k] = (lap[k], room_k)
+            lap[k] = room_k
     rl = tuple(cfg.get("roll", (0.0045, 0.001))) if roll else None
     crl = tuple(cp.get("roll", cfg.get("roll", (0.0045, 0.001)))) if roll else None
     tf = cfg.get("tip_flare") or {}
     mirror = cfg.get("mirror", True)
-    tm, half, arc = 0.5 * (lt0 + lt1), 0.5 * (lt1 - lt0), lm.get("arc", 0.0)
-    arcf = lambda th: -arc * ((np.asarray(th, float) - tm) / half) ** 2  # noqa: E731  (the edges' curve: ends up)
+    tm, arc = 0.5 * (lt0 + lt1), lm.get("arc", 0.0)
+
+    def arcf(th, j=1):
+        """The curve of the edge E[j] (the lames' edges: their ends rise `arc`), on the reach of the lame below it."""
+        a, b = pth[min(max(j, 1), n - 1) - 1] if n > 1 else pth[0]
+        return -arc * ((np.asarray(th, float) - 0.5 * (a + b)) / (0.5 * (b - a))) ** 2
     past = list((am or {}).get("past", (0.008, 0.010, 6.0)))
     out = {}
     frames = {sd: Frame.bones(ref, cfg["frame"]["from"].replace("*", sd), cfg["frame"]["to"].replace("*", sd), hand)
@@ -349,13 +370,14 @@ def layout(cfg, ref, step=None, step_s=None, roll=True, laws=None):
             drops = dict.fromkeys(drops, np.maximum(drops["l"], drops["r"]))
         frames = {sd: ShoulderFrame(fr, crest[sd][0], drops[sd]) for sd, fr in frames.items()}
     if laws is None:
-        th_a, th_b = min(t0, lt0), max(t1, lt1)
+        th_a = min([t0] + [a for a, _ in pth] + [((am or {}).get("theta") or [t0])[0]])
+        th_b = max([t1] + [b for _, b in pth] + [((am or {}).get("theta") or [0, t1])[1]])
         plate = side_laws(ref, frames, (E[0] - 0.012, E[-1] + 0.012, th_a - 12, th_b + 12), clear, cfg.get("ease", 0.6), mirror,
                           cfg.get("grid", (0.002, 2.0)))
         arm = side_laws(ref, frames, (up0 - past[0] - 0.012, E[-1] + past[1] + 0.012, th_a - past[2] - 12, th_b + past[2] + 12),
                         am.get("clear", 0.0012), am.get("ease", 0.6), mirror, am.get("grid", (0.004, 4.0))) if am else {"l": None, "r": None}
         laws = {sd: {"law": plate[sd], "arm_law": arm[sd]} for sd in frames}
-    bot = [lambda th, k=k: E[k + 1] + arcf(th) for k in range(n)]
+    bot = [lambda th, k=k: E[k + 1] + arcf(th, k + 1) for k in range(n)]
     ar = cp.get("arch")
     s_end = float(min(bot[0](t0), bot[0](t1))) - (ar or {}).get("span", 0.03)
     # the cop's wings: an end of it that reaches round past the lames' (lames' end, its own end), its corner rounded
@@ -386,8 +408,8 @@ def layout(cfg, ref, step=None, step_s=None, roll=True, laws=None):
                              or reach_line(ref, frames, {sd: laws[sd]["law"] for sd in frames}, arch0, bot[0], t0, t1, rc, mirror))
     hang = (cp.get("roll", cfg.get("roll", (0.0045, 0.001)))[0] + cfg.get("lip", 0.0012)) if rc else 0.0   # (its roll and wall hang past its edge)
     top0 = arch0 if R is None else (lambda th: np.maximum(arch0(th), np.interp(np.asarray(th, float), R["th"], R["line"]) + hang))
-    top = [top0] + [lambda th, k=k: E[k] - lap[k] + arcf(th) for k in range(1, n)]
-    reach = [(t0, t1)] + [(lt0, lt1)] * (n - 1)
+    top = [top0] + [lambda th, k=k: E[k] - lap[k] + arcf(th, k) for k in range(1, n)]
+    reach = [(t0, t1)] + pth[:n - 1]
     crown = dome(top[0], bot[0], t0, t1, cp.get("apex", 0.014), cp.get("shape", (2.4, 2.4)))
     lie = cp.get("lie")
 
@@ -474,13 +496,28 @@ def layout(cfg, ref, step=None, step_s=None, roll=True, laws=None):
                 cap_top = atop
                 atop = lambda th: np.minimum(cap_top(th), yk["to"] + (s_end - past[0] - yk["to"])  # noqa: E731
                                              * np.clip(np.abs(2.0 * np.asarray(th, float) - t0 - t1) / (t1 - t0), 0, 1) ** yk.get("power", 2.2))
-            arming = Sheet(fr, laws[sd]["arm_law"], lambda s: t0 - past[2] + (lt0 - t0) * w0(s),
-                           lambda s: t1 + past[2] + (lt1 - t1) * w1(s), atop,
-                           lambda th: E[-1] + past[1] + arcf(np.clip(th, lt0, lt1)), am.get("thick", 0.0012), roll=arl,
+            a_lo = lambda s: t0 - past[2] + (lt0 - t0) * w0(s)  # noqa: E731
+            a_hi = lambda s: t1 + past[2] + (lt1 - t1) * w1(s)  # noqa: E731
+            if am.get("theta"):
+                # its own reach: at least "theta" round the arm all along (it covers her where no steel is: the
+                # deltoid's front and back beside narrow top plates), and `past` round beyond whichever plate is at s
+                ca, cb = am["theta"]
+                R0, R1 = np.array([r[0] for r in reach]), np.array([r[1] for r in reach])
+
+                def side_at(s, R):
+                    s = np.asarray(s, float)
+                    return np.mean([R[np.clip(np.searchsorted(E, s + d, side="right") - 1, 0, n - 1)]
+                                    for d in np.linspace(-0.006, 0.006, 5)], axis=0)
+                a_lo = lambda s: np.minimum(ca, side_at(s, R0) - past[2])  # noqa: E731
+                a_hi = lambda s: np.maximum(cb, side_at(s, R1) + past[2])  # noqa: E731
+            lr = pth[-1]
+            arming = Sheet(fr, laws[sd]["arm_law"], a_lo, a_hi, atop,
+                           lambda th: E[-1] + past[1] + arcf(np.clip(th, *lr), n), am.get("thick", 0.0012), roll=arl,
                            clear=am.get("clear", 0.0012), lip=am.get("lip", 0.0003), step=step or am.get("step", 0.009),
                            step_s=step_s or am.get("step", 0.009), roll_on="tb01" if roll else "")
         out[sd] = {"fr": fr, "law": base, "arm_law": laws[sd]["arm_law"], "sheets": sheets, "names": part_names(n, sd),
-                   "spans": spans, "top": top, "bot": bot, "theta": reach, "foot": foot, "lap": lap, "arming": arming}
+                   "spans": spans, "top": top, "bot": bot, "theta": reach, "foot": foot, "lap": lap, "arming": arming,
+                   "lap_cut": lap_cut}
         if R is not None:
             out[sd]["reach"] = R
 
@@ -667,7 +704,8 @@ def build_parts(cfg, lay, ref=None, rivets=True):
             if rivets and k + 1 < n:
                 # the articulation rivets: on the band lapping the lame beneath, at that lame's two ends
                 w = sh.roll[0] if sh.roll else 0.0
-                a, b = L["theta"][k + 1]
+                # (the lap's two ends: where both plates are)
+                a, b = max(L["theta"][k][0], L["theta"][k + 1][0]), min(L["theta"][k][1], L["theta"][k + 1][1])
                 for th_e, sgn in ((a, 1), (b, -1)):
                     th_r = np.array(th_e + sgn * np.degrees(r_in / float(sh.law(L["spans"][k][1], th_e))))
                     s_r = np.array(float(sh.bot(th_r)) - max(0.5 * L["lap"][k + 1], w + r_riv + 0.0015))
@@ -724,6 +762,8 @@ def spaulder(pid, cfg, out=None, ref=None, laws=None):
     for sd, L in lay.items():
         r = rep["sides"][sd] = {"law": {"no_hit": L["law"].no_hit, "eased_mm": round(L["law"].eased / MM, 2),
                                         "lift_mm": round(L["law"].add / MM, 2), "sides_differ_mm": getattr(L["law"], "sides_mm", None)}}
+        if L.get("lap_cut"):
+            rep["lap_cut_mm"] = {str(k): [round(v / MM, 1) for v in ab] for k, ab in L["lap_cut"].items()}
         for k, (sh, name) in enumerate(zip(L["sheets"], L["names"])):
             given = lm.get("rides", "mean")
             rule = {"bones": mean_ride(ref, L["foot"][k])} if given == "mean" else json.loads(json.dumps(given[k]))

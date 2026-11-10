@@ -259,9 +259,12 @@ def floor_Q(c, sel, X):
     return Q
 
 
-def partition(z, out, refs):
+def partition(z, out, refs, pieces=None, tag=""):
     """The skin-fitted partition (PIECES): per piece the FLOOR, the game's form (mean_ride; + CARRY_SHAPES; + all her
-    shapes) on PUB, and the neighbours' opening at each shared s edge (both skin-fitted, points within 6 mm)."""
+    shapes) on PUB, and the neighbours' opening at each shared s edge (both skin-fitted, points within 6 mm). pieces:
+    {name: (s0, s1, t0, t1)} in order along the arm (PIECES when None); tag: the output files' suffix. The line's
+    NEW column is the FLOOR on the `new` surface (P1's carried target)."""
+    pieces = pieces or PIECES
     gp = out / "game.npz"
     if not gp.exists():
         build_game_cache(gp)
@@ -273,9 +276,11 @@ def partition(z, out, refs):
             chk = float(np.abs(g[f"{s}_X"] - z[f"pub_{s}_P0"]).max()) * 1e3
             M, _, _ = game_ride(g, s, np.ones(len(cs.s), bool), "none")
             lines.append(f"check {ref} {s}: rest points vs tracks {chk:.4f} mm")
-            for nm, bx in PIECES.items():
+            cn = Case(z, "new", s, ref)
+            for nm, bx in pieces.items():
                 sel = cs.mask(*bx)
-                r = {"ref": ref, "side": s, "piece": nm, "box": bx, "n": int(sel.sum()), "floor": cs.floor(sel)}
+                r = {"ref": ref, "side": s, "piece": nm, "box": bx, "n": int(sel.sum()), "floor": cs.floor(sel),
+                     "floor_new": cn.floor(cn.mask(*bx))}
                 for v in ("none", "carry", "all"):
                     M, nf, sh = game_ride(g, s, sel, v)
                     if ref == "first":
@@ -286,12 +291,12 @@ def partition(z, out, refs):
                 f = r["floor"]
                 lines.append(f"{nm:3s} {bx} | {ref:5s} {s} | {f['sink']:5.1f}/{f['gap']:5.1f}/{f['spread']:5.1f} | " +
                              " | ".join(f"{r[v]['sink']:5.1f}/{r[v]['gap']:5.1f}/{r[v]['spread']:5.1f}" + (f"({r[v]['shapes']})" if v != "none" else "")
-                                        for v in ("none", "carry", "all")))
+                                        for v in ("none", "carry", "all")) + f" | NEW floor {r['floor_new']['spread']:5.1f}")
             for k in KINDS:
                 c2 = Case(z, k, s, ref)
-                ks = list(PIECES)
+                ks = list(pieces)
                 for a_, b_ in zip(ks, ks[1:]):
-                    A_, B_ = PIECES[a_], PIECES[b_]
+                    A_, B_ = pieces[a_], pieces[b_]
                     e = A_[1]
                     ed = c2.mask(e - 6, e + 6, max(A_[2], B_[2]), min(A_[3], B_[3]))
                     if not ed.any():
@@ -299,9 +304,22 @@ def partition(z, out, refs):
                     d = floor_Q(c2, c2.mask(*A_), ed) - floor_Q(c2, c2.mask(*B_), ed)
                     o = (round(float(np.linalg.norm(d, axis=2).max() * 1e3), 1), round(float(np.abs((d * c2.N[:, ed]).sum(2)).max() * 1e3), 1))
                     res.append({"ref": ref, "side": s, "surface": k, "edge": f"{a_}|{b_}", "s": e, "n": int(ed.sum()), "open_mm": o})
+                    if k == "pub":                   # the game's form: the two parts' own rides (mean_ride + carry) at the edge
+                        def gq(bx):
+                            M = game_ride(g, s, cs.mask(*bx), "carry")[0]
+                            if ref == "first":
+                                M = M @ np.linalg.inv(M[cs.first])
+                            return np.einsum("fij,fnj->fni", M[:, :3, :3], cs.X0[:, ed]) + M[:, None, :3, 3]
+                        d = gq(A_) - gq(B_)
+                        og = (round(float(np.linalg.norm(d, axis=2).max() * 1e3), 1), round(float(np.abs((d * c2.N[:, ed]).sum(2)).max() * 1e3), 1))
+                        dn = (d * c2.N[:, ed]).sum(2)    # (+: the upper part off the lower, -: the lower up into it)
+                        cl = (round(float(max(-dn.min(), 0) * 1e3), 1), round(float(max(dn.max(), 0) * 1e3), 1))
+                        res[-1]["open_game_mm"], res[-1]["close_lift_mm"] = og, cl
+                        lines.append(f"edge game {ref} {s} {a_}|{b_} s{e}: n{int(ed.sum())} open {og[0]} / normal {og[1]}"
+                                     f" (lower into upper {cl[0]}, upper off {cl[1]})")
                     lines.append(f"edge {k} {ref} {s} {a_}|{b_} s{e}: n{int(ed.sum())} open {o[0]} / normal {o[1]}")
-    (out / "partition_game.json").write_text(json.dumps(res, indent=1, default=list))
-    (out / "partition_game.txt").write_text("\n".join(lines))
+    (out / f"partition_game{tag}.json").write_text(json.dumps(res, indent=1, default=list))
+    (out / f"partition_game{tag}.txt").write_text("\n".join(lines))
     print("\n".join(lines))
 
 
@@ -311,6 +329,8 @@ def main():
     ap.add_argument("--sph-surfaces", nargs="+", default=list(KINDS), help="surfaces the sphere-turn scan runs on (11 LPs each)")
     ap.add_argument("--refs", nargs="+", default=["first", "rest"])
     ap.add_argument("--partition", action="store_true", help="only the skin-fitted partition: floor vs the game's form, edges")
+    ap.add_argument("--pieces", help='candidate boxes for --partition, JSON {"name": [s0, s1, t0, t1], ..} in order along the arm')
+    ap.add_argument("--tag", default="", help="--partition's output files' suffix")
     a = ap.parse_args()
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -320,7 +340,7 @@ def main():
     z = dict(np.load(out / "tracks.npz"))
     print(f"tracks: {len(z['frames'])} frames, patch l {len(z['s_l'])} / r {len(z['s_r'])} points, s {z['s_l'].min()*1e3:.0f}..{z['s_l'].max()*1e3:.0f} mm ({time.time()-t0:.0f} s)")
     if a.partition:
-        partition(z, out, a.refs)
+        partition(z, out, a.refs, {k: tuple(v) for k, v in json.loads(a.pieces).items()} if a.pieces else None, a.tag)
         print(f"wrote {out} ({time.time()-t0:.0f} s)")
         return
     rows = []

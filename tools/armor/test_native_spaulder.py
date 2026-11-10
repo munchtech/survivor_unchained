@@ -462,7 +462,9 @@ class Reach(unittest.TestCase):
         import tempfile
         cls.sha = lambda cls, f: hashlib.sha256(open(f, "rb").read()).hexdigest()
         cls.ref = nb.Ref.her()
-        cls.cfg = sp.resolve(json.load(open(os.path.join(nb.NATIVE, "plate_spaulders_plain", "build.json"), encoding="utf-8")))
+        # (10 Nov: the plain spaulders became the split, articulated one; the reach rule and the yoke are tested on
+        # the one-cop recipe they were made for, frozen here: it also holds that the old keys build what they built)
+        cls.cfg = sp.resolve(json.load(open(os.path.join(os.path.dirname(__file__), "testdata", "spaulder_one_cop.json"), encoding="utf-8")))
         cls.tmp = tempfile.mkdtemp()
 
     REACH = {"sink_max": 0.005, "clips": ["daggers_heavy", "run_reaver", "sword_heavy", "cast_flick"], "margin": 0.004, "start": -0.016}

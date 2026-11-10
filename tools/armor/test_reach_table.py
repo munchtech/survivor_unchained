@@ -74,5 +74,7 @@ def test_spaulder_row_is_lead_11s():
         pytest.skip("no built spaulders")
     rows, _ = rt.run(gw.GEAR, ["plate_spaulders_plain"], "four", log=lambda *_: None)
     cop = {s["plate"].split()[3]: s for s in rows if s["plate"].split()[2] == "cop"}
-    assert abs(cop["l"]["past"] - 20.6) < 1.0 and cop["l"]["at"].startswith("sword_heavy") and cop["l"]["part"] == "cop_l_rigid"
-    assert abs(cop["r"]["past"] - 16.2) < 1.0 and cop["r"]["at"].startswith("daggers_heavy") and cop["r"]["part"] == "cop_r_rigid"
+    # (10 Nov: the plain spaulders became the split one, a small cop over s -10..+10 mm; its row re-read on the four
+    # clips: left +1.2 sword_heavy@10, right -0.8 cast_flick@6. The one-cop numbers above were 20.6 / 16.2)
+    assert abs(cop["l"]["past"] - 1.2) < 1.0 and cop["l"]["at"].startswith("sword_heavy") and cop["l"]["part"] == "cop_l_rigid"
+    assert abs(cop["r"]["past"] + 0.8) < 1.0 and cop["r"]["at"].startswith("cast_flick") and cop["r"]["part"] == "cop_r_rigid"
