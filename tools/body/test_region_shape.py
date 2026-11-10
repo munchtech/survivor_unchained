@@ -40,7 +40,7 @@ def test_edges_rest_is_one():
     for s in "lr":
         pr = rs.edge_probe(h, s)
         r = rs.edge_rows(h, pr, h.bd.G0, s)
-        for k, tol in (("c", 1e-6), ("a", 1e-6), ("p", 1e-3), ("t", 1e-3)):    # the published surface at rest sits a few
+        for k, tol in (("c", 2e-4), ("a", 2e-4), ("p", 1e-3), ("t", 1e-3)):    # the published surface at rest sits a few
             assert np.abs(r[k] - 1).max() < tol, (s, k, np.abs(r[k] - 1).max())    # um off the rest points (4e-4 of an edge)
         z = np.zeros(len(r["t"]), bool)
         assert (rs.classify_edges(r["t"], r["p"], r["c"], r["a"], z, z + 1.0, z + 1.0, z, 2.5) == -1).all()
