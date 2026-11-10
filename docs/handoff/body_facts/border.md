@@ -13,11 +13,8 @@ Scripts (not in git): `tools/body/out/shoulder/border_scratch/measure.py`, `prot
 | breast edge | 42 | 84.9 / 98.2 | 38.3 / 59.9 | 52.3 / 67.8 | 1.00 / 0.00 / 1.00 | 42 |
 | trap line | 21 | 75.1 / 93.5 | 18.8 / 24.7 | 55.3 / 69.4 | 0.82 / 0.63 / 0.99 | 21 |
 Motion over 5 mm on the border rows: 105 of 105 (the stop line was 80%). Two causes:
-- **Trunk back: B does not move there (weight 0), A does**: A's back skin follows its arm 28-49 mm at 150-180 deg, and that
-  motion reaches 31 rows past the list (why no row count cured it).
-- **Trap line and breast edge are both the BREAST PART's top rows.** Outside the list B's surface moves only the arm and the
-  breast part's first 8 rows (clavicle weight; Jog_Fwd@11:r row 1 mean 36 / max 99 mm, row 6 10 / 52, row 8 1 / 11). A moves
-  the WHOLE breast part with a high arm (abd170 rows 10-12: A 25 / 33 mm, published 0; row 20: 11 / 16).
+- **Trunk back: B does not move there (weight 0), A does**: A's back skin follows its arm 28-49 mm at 150-180 deg, and that motion reaches 31 rows past the list (why no row count cured it).
+- **Trap line and breast edge are both the BREAST PART's top rows.** Outside the list B's surface moves only the arm and the breast part's first 8 rows (clavicle weight; Jog_Fwd@11:r row 1 mean 36 / max 99 mm, row 6 10 / 52, row 8 1 / 11). A moves the WHOLE breast part with a high arm (abd170 rows 10-12: A 25 / 33 mm, published 0; row 20: 11 / 16).
 Motion support of one girdle (points either surface moves over eps; the explicit list is 3764 a side):
 | eps mm | B published | A carried | breast part (586 points, 24 rows) | trunk past the list (rows out) | across the midline (rows) |
 |---|---|---|---|---|---|
@@ -27,19 +24,11 @@ Motion support of one girdle (points either surface moves over eps; the explicit
 Both also move the arm and hand past the list (3804 points): left out (below). 339 list points move under 0.5 mm.
 
 ## The design: `support_region(adj, moved, core, stiff, gated, rows, ring, gate_rows, wall_rows)` (no names, any set)
-- **Support** `moved`: points B's published OR A's carried surface moves over eps 1.0 mm under the girdle's part poses. The
-  pose set itself (each pose on its side, mirrored), not probe turns: the driver's elevation law is not linear (lat and pec
-  act only at high arms). 85 s for 141 poses: cache it.
-- **Region** = (moved | the list as core) grown 4 rows; share 0 on the outer row, 1 from 4 rows in. The ramp lies in rows
-  nothing moves: outer row = published by construction, the ramp hides under eps.
-- **Far border** `stiff`: points rigid (>= 0.999) to the upper arm's subtree outside the list (first row past the list: min
-  weight 1.0000). Nothing grows into them; share 0 within `ring` 3 rows, rising over 4 = today's beta (measured: equal).
-- **Breast rule** `gated` = the breast part, both sides: a WALL, share 0, the share rising over `wall_rows` 12 away from it.
-  Gate shut: the whole part is published. Gate open: the wall stands back `gate_rows` 8 rows from the list (so only upper
-  and lateral rows): the blend rows. Share(G) = (1 - g) closed + g opened, g = s01((elevation - lo) / (hi - lo)), the arm's
-  elevation in spine_05's frame (as `region_target.describe`): this is `Model.blend`.
-- **Jog's keyed clavicle does not open the gate**: T16 binds it (Jog_Fwd@11:r: elevation 43, clavicle 40 deg, the only pose
-  with clavicle > 20 under 45), and opening would cut the breast's top rows from 99 to 37 mm of motion in a jog.
+- **Support** `moved`: points B's published OR A's carried surface moves over eps 1.0 mm under the girdle's part poses. The pose set itself (each pose on its side, mirrored), not probe turns: the driver's elevation law is not linear (lat and pec act only at high arms). 85 s for 141 poses: cache it.
+- **Region** = (moved | the list as core) grown 4 rows; share 0 on the outer row, 1 from 4 rows in. The ramp lies in rows nothing moves: outer row = published by construction, the ramp hides under eps.
+- **Far border** `stiff`: points rigid (>= 0.999) to the upper arm's subtree outside the list (first row past the list: min weight 1.0000). Nothing grows into them; share 0 within `ring` 3 rows, rising over 4 = today's beta (measured: equal).
+- **Breast rule** `gated` = the breast part, both sides: a WALL, share 0, the share rising over `wall_rows` 12 away from it. Gate shut: the whole part is published. Gate open: the wall stands back `gate_rows` 8 rows from the list (so only upper and lateral rows): the blend rows. Share(G) = (1 - g) closed + g opened, g = s01((elevation - lo) / (hi - lo)), the arm's elevation in spine_05's frame (as `region_target.describe`): this is `Model.blend`.
+- **Jog's keyed clavicle does not open the gate**: T16 binds it (Jog_Fwd@11:r: elevation 43, clavicle 40 deg, the only pose with clavicle > 20 under 45), and opening would cut the breast's top rows from 99 to 37 mm of motion in a jog.
 
 ## Prototype, dev poses (eps 1, rows 4, gate rows 8, wall rows 12): ramp edges over 2.5x / not explained by A's or the
 published surface's own stretch + 0.15, worst ramp edge
@@ -64,19 +53,12 @@ New: breast rows 339 (225 cm2), back 282 (111 cm2), front incl. the trap line 59
 / clavicle weight; the breast's top 8 rows join the fit.
 
 ## Wiring left
-1. `Her.__init__`, explicit provider: cache the max motion per md point (`out/shoulder/support.npz`, keyed by the pose
-   names); `support_region(md.adj, moved, list mask, stiff, md.part == breast)`; region points = the list first, then the new
-   ids; carrier = the list's (pocket) + a plain Carrier on the new ids; edges over all.
-2. `Model.blend(G, side, grown=False)` = (1 - g) closed + g opened (False: the list's 3764, so region_shape runs as is).
-   `Her.carried(.., full=False)` likewise; `Her.target` returns X on the list and keeps the grown rows; `cmd_target` adds
-   `ext_l`, `ext_r` (md ids) and `Xe`; `region_shape.surface("carried")` must write `Xe` too or sheets crack at the list's
-   border; `edges` needs the grown edges to class the new ramp.
+1. `Her.__init__`, explicit provider: cache the max motion per md point (`out/shoulder/support.npz`, keyed by the pose names); `support_region(md.adj, moved, list mask, stiff, md.part == breast)`; region points = the list first, then the new ids; carrier = the list's (pocket) + a plain Carrier on the new ids; edges over all.
+2. `Model.blend(G, side, grown=False)` = (1 - g) closed + g opened (False: the list's 3764, so region_shape runs as is). `Her.carried(.., full=False)` likewise; `Her.target` returns X on the list and keeps the grown rows; `cmd_target` adds `ext_l`, `ext_r` (md ids) and `Xe`; `region_shape.surface("carried")` must write `Xe` too or sheets crack at the list's border; `edges` needs the grown edges to class the new ramp.
 3. T11 with the old share (beta, list only) for the identity-turn experiment; T15-T17 as briefed.
 Full run after that, unchanged commands: `python tools/body/carried_target.py target`, `python tools/body/region_shape.py edges --provider carried`.
 
 ## Needs a decision
-- **Gate range.** Idle / run / jog poses reach 65 deg (idle_warden_town@126:r 65, run_warden@13:l 60, Jog_Fwd@14:l 54, six
-  idles 48-55). "Idle and walk within 1 mm" needs lo >= 65; T16 alone allows 45. 65-95 costs cast_bolt and Jog@14 (table).
-- **Jog_Fwd@11:r is not cured at wall rows 12** (5 edges, 3.05): B's clavicle weight on the breast's top rows, which the rule
-  keeps published in a jog. Wall 16 cures it and costs the abd poses 0.9x; or leave it "published" until the weight fit.
+- **Gate range.** Idle / run / jog poses reach 65 deg (idle_warden_town@126:r 65, run_warden@13:l 60, Jog_Fwd@14:l 54, six idles 48-55). "Idle and walk within 1 mm" needs lo >= 65; T16 alone allows 45. 65-95 costs cast_bolt and Jog@14 (table).
+- **Jog_Fwd@11:r is not cured at wall rows 12** (5 edges, 3.05): B's clavicle weight on the breast's top rows, which the rule keeps published in a jog. Wall 16 cures it and costs the abd poses 0.9x; or leave it "published" until the weight fit.
 - eps: 0.5 mm adds about 194 points a side (120 across the midline), 2.0 removes about 209.
