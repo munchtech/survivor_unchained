@@ -284,7 +284,7 @@
    ]
   }
  },
- "notes": "A1 actions (solver B): keyed beats from one native rush (chnat2 pick 4, its own placement kept: launch f31, mid-stride f35, impact f38, absorbed f48; the sword hand trailing low by IK), the start its f16 with idle_warden's hands, fight-ready (rdpose) at 0.8 s. Job frames = clip frames + 8 (crop). The travel launch->impact is stripped (the game moves her). Solver F6: blade.roll straight (roll_smooth 1): the sword hand turned about the blade's own line toward the straightest wrist through the run: wrist flex 47.6 -> 12.6 deg, deviation 68.6 -> 55.5 (every frame lower), twist 38 -> 51; the clear layer at 12 mm keeps the sword 14.0 mm and the shield 11.9 mm clear.",
+ "notes": "A1 actions (solver B): keyed beats from one native rush (chnat2 pick 4, its own placement kept: launch f31, mid-stride f35, impact f38, absorbed f48; the sword hand trailing low by IK), the start its f16 with idle_warden's hands, fight-ready (rdpose) at 0.8 s. Job frames = clip frames + 8 (crop). The travel launch->impact is stripped (the game moves her). Solver F6: blade.roll straight (roll_smooth 1): the sword hand turned about the blade's own line toward the straightest wrist through the run: wrist flex 47.6 -> 12.6 deg, deviation 68.6 -> 55.5 (every frame lower), twist 38 -> 51; the clear layer at 12 mm keeps the sword 14.0 mm and the shield 11.9 mm clear. Solver S2 (the spot): fit.end.spot true: the whole clip moved on the ground (a constant shift, -25.4, -29.6 cm) so the last frame stands on idle_warden's place (end off idle 39.0 -> 0.2 cm). The offset was the source frame's origin, not the travel strip: her pelvis was on one spot at f0, the impact and the end, and now that spot is the idle's pelvis (f0 pelvis off idle 0.0); the start's lunge stance stands 69 / 34 cm off the idle's feet (not changed).",
  "bands": {
   "lean_deg@0.2": [
    15,
@@ -540,7 +540,8 @@
    "over": [
     0.45,
     0.8
-   ]
+   ],
+   "spot": true
   },
   "pop": {
    "cap": {},

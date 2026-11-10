@@ -154,6 +154,8 @@ def fit_of(spec):
         f["end"]["pose"] = end_pose(f["end"]["clip"], f["end"].get("frame", 0))
         if f.get("shield", {}).get("hand") == "end":    # (the shield hand held at the end pose's local all through)
             f["shield"]["hand_rot"] = f["end"]["pose"]["rot"]["hand_l"]
+    if "start" in f:                # (an action's blend in from a built clip's frame (fit.start: the mirror of end))
+        f["start"]["pose"] = end_pose(f["start"]["clip"], f["start"].get("frame", 0))
     if "clear" in f:
         # (the game's mount on B: the pieces' points in their bones' spaces, a fixed sample)
         pc, bones = pieces(), {"sword": ("hand_r", "r"), "shield": ("lowerarm_l", "l")}
@@ -166,13 +168,16 @@ def fit_of(spec):
 
 def end_pose(clip, frame=0):
     """A built clip's pose at one frame (OUT/<clip>.json): {rot: {bone: [x, y, z, w] local}, pelvis_rot: its world turn,
-    pelvis_y: its world height}."""
+    pelvis_y: its world height, spot: {pelvis, heel_l, ball_l, heel_r, ball_r: [x, z]} where it stands in the node's
+    frame, m (fit.end.spot: an action ends there)}."""
+    from motion import fit as FIT
     from motion.rig import Rig
     c = MC.read(OUT / f"{clip}.json")
     G, P = MC.globals_of(c, Rig(RIG))
     pv = Rig(RIG).index["pelvis"]
     return {"rot": {b: q[frame] for b, q in c["rot"].items()}, "pelvis_rot": G[frame, pv].tolist(),
-            "pelvis_y": float(P[frame, pv, 1])}
+            "pelvis_y": float(P[frame, pv, 1]),
+            "spot": {k: [float(v[frame][0]), float(v[frame][2])] for k, v in FIT.ground_points(Rig(RIG), G, P).items()}}
 
 
 def action_of(spec):
@@ -617,6 +622,8 @@ def skate(r, spec, G=None, P=None):
         hb = rig.head[rig.index[f"ball_{s}"]][1]
         on = (np.abs(ball[:, 1] - hb) < GROUND_CM / 100) & (np.abs(heel[:, 1]) < GROUND_CM / 100)
         pl = {(ws + k) % m for ws, ln, _ in _contacts(r, si) for k in range(ln)}
+        pl |= set((getattr(r, "rides", None) or [[], []])[si])   # (a push-off foot riding the travel strip on the floor
+        #                                                          (plant ride): still in the world, the node carries her)
         tot, worst, cnt = 0.0, (0.0, 0), 0
         for f in range(m if r.clip["loop"] else n - 1):
             g = (f + 1) % m if r.clip["loop"] else f + 1
@@ -660,6 +667,22 @@ def floors(r, G=None, P=None):
                            "ball_cm": big(ball[fr, 1] - rig.head[ba][1]), "tilt_deg": round(float(tilt[fr].max()), 1),
                            "reach": round(float(reach[fr].max()), 3)})
     return out
+
+
+def spot_off(rig, G, P, sj):
+    """Where an action with an `end` clip stands against that clip's place (the node's frame, cm): its first frame's
+    heels and pelvis, and the largest miss of its last frame's pelvis, heels and balls (over 0.5 = a slide when the
+    game crossfades to the idle on her node). Explicit fit.end.spot points are the targets where given."""
+    from motion import fit as FIT
+    e = (sj.get("fit") or {}).get("end") or {}
+    if not e.get("clip") or not (OUT / f"{e['clip']}.json").exists():
+        return None
+    tg = end_pose(e["clip"], e.get("frame", 0))["spot"]
+    if isinstance(e.get("spot"), dict):
+        tg.update({k: v for k, v in e["spot"].items() if k in FIT.SPOTS})
+    pts = FIT.ground_points(rig, G, P)
+    off = lambda k, f: round(100 * float(np.hypot(pts[k][f][0] - tg[k][0], pts[k][f][2] - tg[k][1])), 2)  # noqa: E731
+    return {"start": [off(k, 0) for k in ("heel_l", "heel_r", "pelvis")], "end": max(off(k, -1) for k in tg)}
 
 
 def m44(R, P):
@@ -707,7 +730,8 @@ def cmd_check(a):
                      "seam_deg": round(seam[0], 4) if c["loop"] else None, "feet": ft, "contact": ct,
                      "slide_mm": [round(x * 1000, 2) for x in sl], "fidelity": fid,
                      "locked_frames": [sum(w[1] for w in ws) for ws in r.wins],
-                     "skate": skate(r, sj, G, P), "skate_line_cm": SKATE_CM, "floors": floors(r, G, P)})
+                     "skate": skate(r, sj, G, P), "skate_line_cm": SKATE_CM, "floors": floors(r, G, P),
+                     "spot": spot_off(rig, G, P, sj)})
     for R in rows:
         f, b = R["feet"], R["contact"]
         print(f"\n{R['clip']}: {R['frames']} frames, pops {R['pops']} (worst step {R['worst_step'][0]} deg {R['worst_step'][1]} "
@@ -721,6 +745,10 @@ def cmd_check(a):
             print("  floor (a spin; skate counts its planted windows in the world): " + "  ".join(
                 f"{s.upper()} ball {v['ball_cm'][0]:+}..{v['ball_cm'][1]:+} cm over rest, lowest sole point {v['low_cm']:+} cm @{v['low_at']}"
                 for s, v in R["skate"].items()))
+        if R["spot"]:
+            so = R["spot"]
+            print(f"  spot: start off idle L {so['start'][0]:.1f} R {so['start'][1]:.1f} pelvis {so['start'][2]:.1f} cm; "
+                  f"end off idle max {so['end']:.1f} cm{' MISS' if so['end'] > 0.5 else ''}")
         for s, ws in R["floors"].items():
             for w in ws:
                 print(f"  planted {s} f{w['frames'][0]}-{w['frames'][1]}: ankle {w['ankle_cm']:+} cm, ball {w['ball_cm']:+} cm over rest, "

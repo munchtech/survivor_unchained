@@ -301,13 +301,53 @@
    ],
    "planted": {
     "foot_l": [
-     ["start", "takeoff"],
-     ["land", 1.1333, "ball", {"foot": "flat", "at": "first", "ease": 1}]
+     [
+      "start",
+      "takeoff",
+      "ball",
+      {
+       "foot": "flat",
+       "sink": true,
+       "ride": 3
+      }
+     ],
+     [
+      "land",
+      1.1333,
+      "ball",
+      {
+       "foot": "flat",
+       "at": "first",
+       "ease": 1
+      }
+     ]
     ],
     "foot_r": [
-     ["start", "takeoff"],
-     ["land", 0.9, "ball", {"foot": "ball", "knee": "keep", "ease": 1}],
-     [1.2, "end", "ball", "last"]
+     [
+      "start",
+      "takeoff",
+      "ball",
+      {
+       "foot": "flat",
+       "sink": true
+      }
+     ],
+     [
+      "land",
+      0.9,
+      "ball",
+      {
+       "foot": "ball",
+       "knee": "keep",
+       "ease": 1
+      }
+     ],
+     [
+      1.2,
+      "end",
+      "ball",
+      "last"
+     ]
     ]
    },
    "arc": {
@@ -319,7 +359,7 @@
    }
   }
  },
- "notes": "A1 actions (solver A): the first P4 action. Generation free (no Root2D: the take's leap travels; post strips the horizontal travel between the takeoff and the landing, the pelvis height kept). Solver F6 (feet): the take's kneel hung over the floor (left ankle +10.7 / ball +14.0 cm, right ball +13.1 cm). Landing and hold: the LEFT (front) foot FLAT on the floor where it lands (planted \"flat\", at first: its sole was 18 deg off flat in the air, a front foot under a raised knee stands flat), the RIGHT (rear) foot ON ITS BALL, toes tucked (planted \"ball\", knee keep: its own 79 deg heel-up pose brought down by a turn about the hip-knee line, thigh and knee unmoved); ease 1, both touch down on the land frame. Recovery: the right foot STEPS from its pin to idle's spot (0.9-1.2 s, 60.6 cm, 8 cm lift, step \"pinned\") and holds idle's foot to the end (\"last\"); the left stays planted to 1.1333 then PIVOTS ON ITS HEEL onto idle's heading (24.5 deg, toes 3 cm up); the end anchored on the left heel from the landing (anchor_from 0.7333). Left as the take has them: the start windows (f0-3 stand 2-8 cm over the floor) and the push-off foot riding the travel strip (f4-6). Sword wrist deviation 58 deg at f6 left: fit.wrist dev 35 turn was tried and dropped (it raised f2-4 from 4-18 to 35 and moved the hand up to 34 cm in the recovery).",
+ "notes": "A1 actions (solver A): the first P4 action. Generation free (no Root2D: the take's leap travels; post strips the horizontal travel between the takeoff and the landing, the pelvis height kept). Solver F6 (feet): the take's kneel hung over the floor (left ankle +10.7 / ball +14.0 cm, right ball +13.1 cm). Landing and hold: the LEFT (front) foot FLAT on the floor where it lands (planted \"flat\", at first: its sole was 18 deg off flat in the air, a front foot under a raised knee stands flat), the RIGHT (rear) foot ON ITS BALL, toes tucked (planted \"ball\", knee keep: its own 79 deg heel-up pose brought down by a turn about the hip-knee line, thigh and knee unmoved); ease 1, both touch down on the land frame. Recovery: the right foot STEPS from its pin to idle's spot (0.9-1.2 s, 60.6 cm, 8 cm lift, step \"pinned\") and holds idle's foot to the end (\"last\"); the left stays planted to 1.1333 then PIVOTS ON ITS HEEL onto idle's heading (24.5 deg, toes 3 cm up); the end anchored on the left heel from the landing (anchor_from 0.7333). Left as the take has them: the start windows (f0-3 stand 2-8 cm over the floor) and the push-off foot riding the travel strip (f4-6). Sword wrist deviation 58 deg at f6 left: fit.wrist dev 35 turn was tried and dropped (it raised f2-4 from 4-18 to 35 and moved the hand up to 34 cm in the recovery). Solver S2 (the spot): fit.end.spot over [0.2333, 0.7333]: the end stood 30.5 cm off idle_warden's place (anchored on the left heel where she landed); the residual (-30.4, +2.7 cm) is taken out IN THE AIR (f7-f22, smootherstep, the whole body by the root): the push-off stays where it was, the landing, kneel and recovery are only translated, the last frame is on the idle's spot (0.0 cm). The start windows ON THE FLOOR (planted flat with sink: both feet at ankle / ball +0.0 over rest f0-3; the left leg could not reach at f0, so the pelvis comes down 1.8 cm at f0 and 0.7 at f1 instead of the heel rising); the left (push-off) foot RIDES the travel strip f4-6 on the floor (ride 3: flat, its heading held, sliding back by the strip so it is still in the world) and leaves at f7; the right leaves at f4 as the take has it.",
  "bands": {
   "pelvis_cm@takeoff": [
    -25,
@@ -506,98 +546,98 @@
    "passes": 8
   },
   "shield": {
-    "solve": true,
-    "branch": -1,
-    "frame": "chest",
-    "hand": "end",
-    "keys": [
-      [
-        0.0,
-        [
-          0.18,
-          0.17,
-          0.15
-        ],
-        50,
-        -5
-      ],
-      [
-        0.1667,
-        [
-          0.18,
-          0.17,
-          0.15
-        ],
-        50,
-        -5,
-        "still"
-      ],
-      [
-        0.2667,
-        [
-          0.38,
-          0.08,
-          0.1
-        ],
-        85,
-        -5
-      ],
-      [
-        0.4,
-        [
-          0.53,
-          -0.12,
-          -0.1
-        ],
-        125,
-        -6,
-        "still"
-      ],
-      [
-        0.4333,
-        [
-          0.544,
-          -0.189,
-          -0.078
-        ],
-        121,
-        1,
-        "still"
-      ],
-      [
-        0.6333,
-        [
-          0.505,
-          -0.068,
-          0.098
-        ],
-        93,
-        -15,
-        "still"
-      ],
-      [
-        0.7333,
-        [
-          0.471,
-          0.003,
-          0.025
-        ],
-        100,
-        -24,
-        "still"
-      ],
-      [
-        1.0,
-        [
-          0.503,
-          -0.126,
-          0.165
-        ],
-        89,
-        -11,
-        "still"
-      ]
+   "solve": true,
+   "branch": -1,
+   "frame": "chest",
+   "hand": "end",
+   "keys": [
+    [
+     0.0,
+     [
+      0.18,
+      0.17,
+      0.15
+     ],
+     50,
+     -5
+    ],
+    [
+     0.1667,
+     [
+      0.18,
+      0.17,
+      0.15
+     ],
+     50,
+     -5,
+     "still"
+    ],
+    [
+     0.2667,
+     [
+      0.38,
+      0.08,
+      0.1
+     ],
+     85,
+     -5
+    ],
+    [
+     0.4,
+     [
+      0.53,
+      -0.12,
+      -0.1
+     ],
+     125,
+     -6,
+     "still"
+    ],
+    [
+     0.4333,
+     [
+      0.544,
+      -0.189,
+      -0.078
+     ],
+     121,
+     1,
+     "still"
+    ],
+    [
+     0.6333,
+     [
+      0.505,
+      -0.068,
+      0.098
+     ],
+     93,
+     -15,
+     "still"
+    ],
+    [
+     0.7333,
+     [
+      0.471,
+      0.003,
+      0.025
+     ],
+     100,
+     -24,
+     "still"
+    ],
+    [
+     1.0,
+     [
+      0.503,
+      -0.126,
+      0.165
+     ],
+     89,
+     -11,
+     "still"
     ]
+   ]
   },
   "limbs": {
    "hand_r": {
@@ -754,11 +794,31 @@
     1.3
    ],
    "anchor": "heel_l",
-   "anchor_from": 0.7333
+   "anchor_from": 0.7333,
+   "spot": {
+    "over": [
+     0.2333,
+     0.7333
+    ]
+   }
   },
   "step": {
-   "foot_r": [[0.9, 1.2, 8, "pinned"]],
-   "foot_l": [[1.1333, 1.3, 3, "heel"]]
+   "foot_r": [
+    [
+     0.9,
+     1.2,
+     8,
+     "pinned"
+    ]
+   ],
+   "foot_l": [
+    [
+     1.1333,
+     1.3,
+     3,
+     "heel"
+    ]
+   ]
   },
   "lean": {
    "keys": [

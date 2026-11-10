@@ -299,7 +299,7 @@
     ],
     "foot_r": [
      [
-      "start",
+      "plant",
       2.4667,
       "ball",
       "flat"
@@ -329,11 +329,11 @@
    }
   }
  },
- "notes": "A1 actions (solver B): keyed beats from native takes: the fight-ready start (rdpose, hands on idle_warden's), the brace (vwpose_brace pick 1 f37, the sword hand drawn back by IK) keyed through the loop, the shove (vwpose_shove pick 4 f32, feet on the brace's) at the burst and the hold, fight-ready at 2.0 s. Job frames = clip frames + 6 (crop). Fit (solver F2): loop 2.0 s by retime (pairs: the loop's end on the take's last brace key f39), the brace frozen with one breath (brace layer: the trunk 1.2 cm up on the legs, 2 deg extension), the sword drawn back low point forward (blade keys, heading frame), the sword hand held back at the hip through the burst (limbs keys), the end onto idle_warden anchored on the left foot, both pieces cleared 11 mm. Solver F4: the shield seated by keys through the brace (carried low at the start, boss [0.22, 0.20, 0.36], raised to [0.16, 0.30, 0.36] pelvis frame, 15 deg open, 5 tilt; shoved to [0.08, 0.30, 0.44] at the burst and held into the end blend), the shield hand on idle's hand (hand: end); the sword hand out at [-0.28, 0.08, 0.15] and the blade aimed outward ([-0.25, -0.2, 0.95] braced, [-0.7, -0.5, 0.5] low): both pieces 17+ mm clear through the brace before the clear layer, which then only works the start (f0-6) and the recovery (f80-86). pelvis_cm@3.0 retired for end_deg. Solver F5 (feet): both feet ON THE FLOOR through the brace (planted windows \"flat\": rest foot under the window's heading, ball pinned x, y, z; the back heel rises 15 deg about the ball through the burst so the leg stays at reach 0.985 and the pin holds); the right foot STEPS from its pinned spot to idle's (2.4667-2.8333 s, 36.5 cm, 6 cm lift, step \"pinned\") and is held on idle's foot pose to 3.0 (\"last\"); the left foot stays planted to 2.7667 then PIVOTS ON ITS HEEL onto idle's heading (31 deg, toes 3 cm up, step \"heel\"); the end's anchor is the left HEEL, held on its brace spot (anchor_from 2.3: the take's left foot shuffled 6 cm through the recovery and carried the hips with it). No pop clamp needed (0 pops without it).",
+ "notes": "A1 actions (solver B): keyed beats from native takes: the fight-ready start (rdpose, hands on idle_warden's), the brace (vwpose_brace pick 1 f37, the sword hand drawn back by IK) keyed through the loop, the shove (vwpose_shove pick 4 f32, feet on the brace's) at the burst and the hold, fight-ready at 2.0 s. Job frames = clip frames + 6 (crop). Fit (solver F2): loop 2.0 s by retime (pairs: the loop's end on the take's last brace key f39), the brace frozen with one breath (brace layer: the trunk 1.2 cm up on the legs, 2 deg extension), the sword drawn back low point forward (blade keys, heading frame), the sword hand held back at the hip through the burst (limbs keys), the end onto idle_warden anchored on the left foot, both pieces cleared 11 mm. Solver F4: the shield seated by keys through the brace (carried low at the start, boss [0.22, 0.20, 0.36], raised to [0.16, 0.30, 0.36] pelvis frame, 15 deg open, 5 tilt; shoved to [0.08, 0.30, 0.44] at the burst and held into the end blend), the shield hand on idle's hand (hand: end); the sword hand out at [-0.28, 0.08, 0.15] and the blade aimed outward ([-0.25, -0.2, 0.95] braced, [-0.7, -0.5, 0.5] low): both pieces 17+ mm clear through the brace before the clear layer, which then only works the start (f0-6) and the recovery (f80-86). pelvis_cm@3.0 retired for end_deg. Solver F5 (feet): both feet ON THE FLOOR through the brace (planted windows \"flat\": rest foot under the window's heading, ball pinned x, y, z; the back heel rises 15 deg about the ball through the burst so the leg stays at reach 0.985 and the pin holds); the right foot STEPS from its pinned spot to idle's (2.4667-2.8333 s, 36.5 cm, 6 cm lift, step \"pinned\") and is held on idle's foot pose to 3.0 (\"last\"); the left foot stays planted to 2.7667 then PIVOTS ON ITS HEEL onto idle's heading (31 deg, toes 3 cm up, step \"heel\"); the end's anchor is the left HEEL, held on its brace spot (anchor_from 2.3: the take's left foot shuffled 6 cm through the recovery and carried the hips with it). No pop clamp needed (0 pops without it). Solver S2 (the spot): the clip STARTS AND ENDS ON idle_warden's spot. fit.start (the mirror of end): f0 is idle_warden's legs and pelvis (turn, height), blended into the take over 0-0.3 s, anchored on the left heel at its brace spot; the RIGHT foot STEPS BACK into the brace (0-0.3 s, 36.4 cm, 5 cm lift, step \"pinned\", landing on the plant event f9 and pinned from there: its planted window now starts at plant), the left turns on its HEEL from idle's heading to the brace's (31 deg, toes 3 cm up), the pelvis travels 13 cm back and 17 cm down over the same frames. fit.end.spot true: the whole clip shifted (-22.6, -12.1 cm) so the end is on the idle's place (0.0 cm); the left heel stays within 0.8 cm of idle's left-heel spot from f0 to the end. BAND pelvis_cm@plant moved from [-15, -8] to [-22.5, -15.5]: it measures the drop from frame 0, and frame 0 is now idle's height (106.0 cm, was the take's 98.5); the brace itself is where it was (pelvis 88.9 cm).",
  "bands": {
   "pelvis_cm@plant": [
-   -15,
-   -8
+   -22.5,
+   -15.5
   ],
   "stance_cm@plant": [
    55,
@@ -478,7 +478,8 @@
     3.0
    ],
    "anchor": "heel_l",
-   "anchor_from": 2.3
+   "anchor_from": 2.3,
+   "spot": true
   },
   "limbs": {
    "hand_r": {
@@ -597,6 +598,12 @@
   "step": {
    "foot_r": [
     [
+     0.0,
+     0.3,
+     5,
+     "pinned"
+    ],
+    [
      2.4667,
      2.8333,
      6,
@@ -605,12 +612,28 @@
    ],
    "foot_l": [
     [
+     0.0,
+     0.3,
+     3,
+     "heel"
+    ],
+    [
      2.7667,
      3.0,
      3,
      "heel"
     ]
    ]
+  },
+  "start": {
+   "clip": "idle_warden",
+   "frame": 0,
+   "over": [
+    0.0,
+    0.3
+   ],
+   "anchor": "heel_l",
+   "anchor_to": 0.3
   }
  }
 }
