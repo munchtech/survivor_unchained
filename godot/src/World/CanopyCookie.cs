@@ -26,24 +26,42 @@ public static class CanopyCookie
     /// ruts, the dig), so the floor never roofs a place the H2 places left open.</summary>
     public static bool Floored { get; private set; } = true;
 
+    // (L1 lead 11) The leaf shapes as knobs (rigs.json dapple "clusters", "leaf", "leaves"; --air-tune dclusters, dleaf, dleaves):
+    // the defaults draw the tile as it was (the same random run).
+    static (int Clusters, float LenMin, float LenMax, int LeavesMin, int LeavesMax) shape = (420, 0.8f, 2.4f, 3, 5), built;
+    /// <summary>The cookie's shapes (0 or null: the default); the tile is redrawn, and set again where it is in use, when they change.</summary>
+    public static void Shape(int clusters, double[]? leafLen, double[]? leaves)
+    {
+        bool lenOk = leafLen is { Length: 2 } && leafLen[0] > 0 && leafLen[1] >= leafLen[0];
+        bool numOk = leaves is { Length: 2 } && leaves[0] >= 1 && leaves[1] >= leaves[0];
+        var s = (clusters > 0 ? Math.Min(clusters, 4000) : 420, lenOk ? (float)leafLen![0] : 0.8f, lenOk ? (float)Math.Min(leafLen![1], 12) : 2.4f,
+            numOk ? (int)leaves![0] : 3, numOk ? (int)Math.Min(leaves![1], 12) : 5);
+        if (s == shape) return;
+        shape = s;
+        GD.Print($"canopy cookie: {s.Item1} clusters, leaves {s.Item4}-{s.Item5} of {s.Item2:0.##}-{s.Item3:0.##} m");
+        if (leaf == null) return;
+        RenderingServer.GlobalShaderParameterSet("cel_cookie", Leaf());
+    }
+
     static Texture2D Leaf()
     {
-        if (leaf != null) return leaf;
+        if (leaf != null && built == shape) return leaf;
+        built = shape;
         var px = new byte[TilePx * TilePx];
         Array.Fill(px, (byte)255);
         var rnd = new Random(20261104);
         float m = TilePx / Tile;
-        int clusters = 420;
+        int clusters = shape.Clusters;
         for (int c = 0; c < clusters; c++)
         {
             byte rank = (byte)(4 + c * 247 / clusters);
             float cx = (float)rnd.NextDouble() * TilePx, cy = (float)rnd.NextDouble() * TilePx;
             float baseA = (float)(rnd.NextDouble() * Math.PI * 2);
-            int leaves = 3 + rnd.Next(3);
+            int leaves = shape.LeavesMin + rnd.Next(shape.LeavesMax - shape.LeavesMin + 1);
             for (int l = 0; l < leaves; l++)
             {
                 float a = baseA + (l - (leaves - 1) * 0.5f) * (0.55f + (float)rnd.NextDouble() * 0.25f);
-                float len = (0.8f + (float)rnd.NextDouble() * 1.6f) * m, wid = len * (0.32f + (float)rnd.NextDouble() * 0.12f);
+                float len = (shape.LenMin + (float)rnd.NextDouble() * (shape.LenMax - shape.LenMin)) * m, wid = len * (0.32f + (float)rnd.NextDouble() * 0.12f);
                 float ox = cx + MathF.Cos(a) * len * 0.45f, oy = cy + MathF.Sin(a) * len * 0.45f;
                 float ca = MathF.Cos(a), sa = MathF.Sin(a);
                 int r = (int)(len * 0.6f) + 2;

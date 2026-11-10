@@ -24,7 +24,10 @@ public sealed record RigRim(string? Color = null, double? Strength = null, doubl
 
 /// <summary>The moon through a canopy (bible rule 9): how much of the sky the crowns close where the canopy stands (0: no
 /// dapple), how dark a leaf's shadow is (1: the key wholly off), and the crowns' height over the ground (m).</summary>
-public sealed record RigDapple(double? Cover = null, double? Strength = null, double? Height = null, double? Size = null, double? Floor = null);
+/// (L1 lead 11) Edge: the dapple's edge width in screen pixels (1: hard). Clusters, Leaf [shortest, longest, m] and Leaves
+/// [fewest, most a cluster]: the leaf cookie's shapes (CanopyCookie; absent: 420, 0.8-2.4 m, 3-5).
+public sealed record RigDapple(double? Cover = null, double? Strength = null, double? Height = null, double? Size = null, double? Floor = null,
+    double? Edge = null, double? Clusters = null, double[]? Leaf = null, double[]? Leaves = null);
 
 /// <summary>One rig (godot/data/look/rigs.json): what it is FROM, its key, fill, rim, the ink rig color (B5's, linear rgb),
 /// shadow hardness (cel_rig.x), the grade (a named GradeSettings, Atmospheres.GradeNamed), the exposure and her ember's
@@ -36,8 +39,12 @@ public sealed record RigDapple(double? Cover = null, double? Strength = null, do
 public sealed record LightRig(string Id, string From, bool Camera, RigKey Key, RigFill Fill, RigRim Rim, double[]? Ink,
     double? Hardness, string? Grade, double? Exposure, double? Ember, RigDapple Dapple, double? Fires = null,
     double? EmberReach = null, string? EmberColor = null, double[]? Curve = null, double? WarmKeep = null, double[]? EmberGive = null, double? SceneColor = null, double? SceneMoon = null,
-    double[]? EmberPool = null, string? EmberEdge = null, double[]? FireGive = null)
+    double[]? EmberPool = null, string? EmberEdge = null, double[]? FireGive = null, bool? ShadowLevel = null)
 {
+    /// <summary>(L1 lead 11, R3 one shade; rigs.json "shadow_level") The key's shadow is a level: a cast shadow keeps exactly
+    /// 1 - key.shadow of the key, and the canopy's dapple is the same shade (its strength is key.shadow, whatever
+    /// dapple.strength says; overlaps take the darker). False (the day rigs, tuned on it): the old switch.</summary>
+    public bool OneShade => ShadowLevel ?? false;
     /// <summary>(B4r2) The fires' light under this rig, a share of their own (1: as built; rule 3, one warm light a scene:
     /// by day the sun is it, and a fire burning by day is a glow at its flames, not a light on her across the square).</summary>
     public double FireShare => Fires ?? 1;
@@ -116,10 +123,13 @@ public sealed class RigSet
                 D(f, "hemi", b?.Fill.Hemi), D(f, "env", b?.Fill.Env), D(f, "sky_scale", b?.Fill.SkyScale)),
             new RigRim(S(r, "color", b?.Rim.Color), D(r, "strength", b?.Rim.Strength), D(r, "width", b?.Rim.Width)),
             ink, D(e, "hardness", b?.Hardness), S(e, "grade", b?.Grade), D(e, "exposure", b?.Exposure), D(e, "ember", b?.Ember),
-            new RigDapple(D(d, "cover", b?.Dapple.Cover), D(d, "strength", b?.Dapple.Strength), D(d, "height", b?.Dapple.Height), D(d, "size", b?.Dapple.Size), D(d, "floor", b?.Dapple.Floor)),
+            new RigDapple(D(d, "cover", b?.Dapple.Cover), D(d, "strength", b?.Dapple.Strength), D(d, "height", b?.Dapple.Height), D(d, "size", b?.Dapple.Size), D(d, "floor", b?.Dapple.Floor),
+                D(d, "edge", b?.Dapple.Edge), D(d, "clusters", b?.Dapple.Clusters), d.ValueKind == JsonValueKind.Object ? A(d, "leaf", b?.Dapple.Leaf) : b?.Dapple.Leaf,
+                d.ValueKind == JsonValueKind.Object ? A(d, "leaves", b?.Dapple.Leaves) : b?.Dapple.Leaves),
             D(e, "fires", b?.Fires), D(e, "ember_reach", b?.EmberReach), S(e, "ember_color", b?.EmberColor),
             A(e, "grade_curve", b?.Curve), D(e, "warm_keep", b?.WarmKeep), A(e, "ember_give", b?.EmberGive), D(e, "scene_color", b?.SceneColor), D(e, "scene_moon", b?.SceneMoon),
-            A(e, "ember_pool", b?.EmberPool), S(e, "ember_edge", b?.EmberEdge), A(e, "fire_give", b?.FireGive));
+            A(e, "ember_pool", b?.EmberPool), S(e, "ember_edge", b?.EmberEdge), A(e, "fire_give", b?.FireGive),
+            e.TryGetProperty("shadow_level", out var sl) ? sl.GetBoolean() : b?.ShadowLevel);
     }
 }
 
@@ -152,7 +162,8 @@ public static class Rigs
             EmberPool = r.EmberPool ?? p.EmberPool, EmberEdge = r.EmberEdge ?? p.EmberEdge,
             Exposure = r.Exposure ?? p.Exposure, Ember = r.Ember ?? p.Ember,
             EmberReach = r.EmberReach ?? p.EmberReach, EmberColor = r.EmberColor ?? p.EmberColor,
-            DappleCover = r.Dapple.Cover ?? p.DappleCover, DappleStrength = r.Dapple.Strength ?? p.DappleStrength,
+            DappleCover = r.Dapple.Cover ?? p.DappleCover, DappleStrength = r.OneShade ? k.Shadow ?? p.ShadowStrength : r.Dapple.Strength ?? p.DappleStrength,
+            ShadowLevel = r.OneShade, DappleEdge = r.Dapple.Edge ?? p.DappleEdge, DappleClusters = r.Dapple.Clusters ?? p.DappleClusters, DappleLeaf = r.Dapple.Leaf ?? p.DappleLeaf, DappleLeaves = r.Dapple.Leaves ?? p.DappleLeaves,
             DappleHeight = r.Dapple.Height ?? p.DappleHeight, DappleSize = r.Dapple.Size ?? p.DappleSize, DappleFloor = r.Dapple.Floor ?? p.DappleFloor,
             IsLit = true, CelTwin = null, Source = p,
         };

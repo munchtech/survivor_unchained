@@ -377,6 +377,10 @@ cel_dapple={
 "type": "vec4",
 "value": Vector4(0, 9, 32, 0)
 }
+cel_oneshade={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 cel_canopy_r={
 "type": "vec4",
 "value": Vector4(-150, -150, 0.00333, 0.00333)

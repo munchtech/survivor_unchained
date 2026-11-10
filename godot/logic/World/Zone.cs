@@ -234,6 +234,14 @@ public sealed record AtmospherePreset(
     /// <summary>(S2b-N3) The canopy's cover floor (0-1): at least this much of the sky closed everywhere, the clearings too.</summary>
     public double DappleFloor { get; init; }
     /// <summary>(L1 B4) This air is already its rig's light (Rigs.Lit's output); Source is the preset it came from.</summary>
+    /// <summary>(L1 lead 11, R3) The key's shadow is a level and the dapple the same shade (LightRig.OneShade; cel_oneshade.x).</summary>
+    public bool ShadowLevel { get; init; }
+    /// <summary>(L1 lead 11) The dapple's edge width (screen px; 0 or 1: hard) and the leaf cookie's shapes: clusters a tile (0: 420),
+    /// leaf length [shortest, longest] m (null: 0.8-2.4), leaves a cluster [fewest, most] (null: 3-5). CanopyCookie.Shape.</summary>
+    public double DappleEdge { get; init; }
+    public double DappleClusters { get; init; }
+    public double[]? DappleLeaf { get; init; }
+    public double[]? DappleLeaves { get; init; }
     public bool IsLit { get; init; }
     public AtmospherePreset? Source { get; init; }
     /// <summary>(L1 B4) A blend's light under cel: the blend of its two presets' rigs (Atmospheres.Blend sets it).</summary>

@@ -337,6 +337,9 @@ public partial class Atmosphere : Node3D
                 EmberPool = V("pool", p.EmberPool ?? []) is { Length: > 0 } tp ? tp : p.EmberPool, EmberGive = V("give", p.EmberGive ?? []) is { Length: > 0 } tg ? tg : p.EmberGive,
                 FireGive = V("fgive", p.FireGive ?? []) is { Length: > 0 } tf ? tf : p.FireGive,   // (L1 lead 9, NIGHT2: fgive=key/sky/start/gone)
                 EmberEdge = H("edge", p.EmberEdge), DappleCover = T("dcover", p.DappleCover), DappleStrength = T("dstr", p.DappleStrength), DappleSize = T("dsize", p.DappleSize), DappleFloor = T("dfloor", p.DappleFloor),
+                // (L1 lead 11: the dapple's edge (px) and the leaf cookie's shapes: dedge=2,dclusters=300,dleaf=1.2/3.5,dleaves=2/4)
+                DappleEdge = T("dedge", p.DappleEdge), DappleClusters = T("dclusters", p.DappleClusters),
+                DappleLeaf = V("dleaf", p.DappleLeaf ?? []) is { Length: 2 } tl ? tl : p.DappleLeaf, DappleLeaves = V("dleaves", p.DappleLeaves ?? []) is { Length: 2 } tv ? tv : p.DappleLeaves,
                 Grade = p.Grade with
                 {
                     TintStrength = T("tint", p.Grade.TintStrength), Contrast = T("contrast", p.Grade.Contrast), Toe = T("toe", p.Grade.Toe),
@@ -349,6 +352,8 @@ public partial class Atmosphere : Node3D
                     PaintLift = T("plift", p.Grade.PaintLift), PaintHi = T("phi", p.Grade.PaintHi), PaintShadowSkin = T("pshskin", p.Grade.PaintShadowSkin),
                 },
             };
+            // (L1 lead 11, R3 one shade: under a level shadow the dapple's strength is the shadow's, unless dstr is given)
+            if (p.ShadowLevel && !Tune.ContainsKey("dstr")) p = p with { DappleStrength = p.ShadowStrength };
             if (front) FrontTuned = p;
         }
         Current = p;
@@ -403,7 +408,7 @@ public partial class Atmosphere : Node3D
                 + $"key={p.KeyColor} {p.KeyIntensity:0.###} (energy {Key.LightEnergy:0.###}) el={p.KeyElevation:0.#} az={p.KeyAzimuth:0.#} shadow={p.ShadowStrength:0.###} "
                 + $"fill={p.CelFillColor} {p.CelFill:0.####} hemi={p.HemiSky}/{p.HemiGround} {p.HemiIntensity:0.###} env={p.EnvIntensity:0.###} "
                 + $"exposure={p.Exposure:0.###} (tonemap {Env.TonemapExposure:0.###}) hardness={p.CelShadow:0.##} "
-                + $"dapple=cover {p.DappleCover:0.##} strength {p.DappleStrength:0.###} size {p.DappleSize:0.#} floor {p.DappleFloor:0.##}");
+                + $"dapple=cover {p.DappleCover:0.##} strength {p.DappleStrength:0.###} size {p.DappleSize:0.#} floor {p.DappleFloor:0.##} edge {p.DappleEdge:0.#} one_shade={(p.ShadowLevel ? 1 : 0)}");
             if (line != lightLogged) { lightLogged = line; GD.Print(line); }
         }
         SurvivorUnchained.View.MistLayers.Tint(C(p.MistColor), (float)p.Mist, C(p.KeyColor).SrgbToLinear() * ((float)p.KeyIntensity / Mathf.Pi));
@@ -514,6 +519,9 @@ public partial class Atmosphere : Node3D
         float dap = CelRigs && cam == null && CanopyCookie.Shown && p.DappleCover > 0 ? (float)p.DappleStrength : 0f;
         RenderingServer.GlobalShaderParameterSet("cel_key", new Vector4(keyToward.X, keyToward.Y, keyToward.Z, dap));
         RenderingServer.GlobalShaderParameterSet("cel_dapple", new Vector4((float)p.DappleCover, CanopyCookie.PlaneY + (float)p.DappleHeight, (float)(p.DappleSize > 0 ? p.DappleSize : CanopyCookie.Tile), (float)(CanopyCookie.Floored ? p.DappleFloor : 0)));
+        // (L1 lead 11, R3) the key's shadow as a level (cel_oneshade.x: its opacity; 0: the old switch), the dapple's edge (px), and the cookie's shapes
+        RenderingServer.GlobalShaderParameterSet("cel_oneshade", new Vector4(CelRigs && cam == null && p.ShadowLevel ? (float)p.ShadowStrength : 0f, (float)p.DappleEdge, 0, 0));
+        if (CelRigs) CanopyCookie.Shape((int)p.DappleClusters, p.DappleLeaf, p.DappleLeaves);
         static Vector3 Hue(Color c)
         {
             float l = Mathf.Max(c.R * 0.2126f + c.G * 0.7152f + c.B * 0.0722f, 1e-4f);

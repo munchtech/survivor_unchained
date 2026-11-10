@@ -82,6 +82,29 @@ public class RigsTests
         Assert.True(dark.Air.MistDensity > still.Air.MistDensity);
     }
 
+    /// <summary>(L1 lead 11, R3 one shade) A rig whose shadow is a level ("shadow_level") has one shade number: key.shadow,
+    /// and the canopy's dapple lands on it (its data agrees and Lit derives it). No day or dawn rig opts in (their shadow
+    /// values were tuned on the old switch, and their look must not change).</summary>
+    [Fact]
+    public void AShadowLevelRigHasOneShadeAndTheDayRigsKeepTheSwitch()
+    {
+        var s = Real();
+        Assert.True(s["arena_night"]!.OneShade);
+        foreach (var r in s.Rigs.Values)
+        {
+            if (r.Id.StartsWith("day") || r.Id.StartsWith("dawn") || r.Camera) Assert.False(r.OneShade, r.Id);
+            if (!r.OneShade) continue;
+            Assert.NotNull(r.Key.Shadow);
+            if (r.Dapple.Strength is { } ds) Assert.Equal(r.Key.Shadow!.Value, ds, 9);
+        }
+        var place = SurvivorUnchained.Maps.ArenaPlaces.For(new SurvivorUnchained.Maps.MapSpec { Arena = true, People = "pack" });
+        var lit = Rigs.Lit(place.Night, s);
+        Assert.True(lit.ShadowLevel);
+        Assert.Equal(lit.ShadowStrength, lit.DappleStrength, 12);
+        Assert.False(Rigs.Lit(Atmospheres.WaystationDay, s).ShadowLevel);
+        Assert.False(Rigs.Lit(Atmospheres.LowFordNight, s).ShadowLevel);   // (night_play: not solved at its frames yet)
+    }
+
     [Fact]
     public void TheDaysFiresAreAGlowAndTheNightsBurnWhole()
     {

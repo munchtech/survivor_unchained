@@ -125,6 +125,13 @@ global uniform float cel_dbg;
 global uniform vec4 cel_key;
 global uniform vec4 cel_dapple;
 global uniform vec4 cel_canopy_r;
+// (L1 lead 11, R3 one shade) cel_oneshade x: the key's cast shadow as a LEVEL, the key's shadow opacity (rigs.json key.shadow on
+// a rig with "shadow_level": true): the raw shadow is hardened first, then the opacity applied, so a cast shadow keeps
+// exactly 1 - x of the key, and where the canopy's dapple falls too the darker one stands (min), never the product; the
+// dapple's strength is the same number (Rigs.Lit), so both land on one shade. 0: the rig has not opted in (the day rigs,
+// the other nights, a camera rig): the attenuation hardened after the opacity (a switch round 0.5), times the dapple, as
+// before. y: the dapple's edge width (screen pixels; under 1: one pixel, as before).
+global uniform vec4 cel_oneshade;
 global uniform sampler2D cel_cookie : filter_linear_mipmap, repeat_enable;
 global uniform sampler2D cel_canopy : filter_linear, repeat_disable;
 // (L1 W2) Her light over the moon (bible rules 1, 3, 4: her pool is the night's warm lit mass, so within its reach the moon
@@ -217,8 +224,9 @@ float cel_dapple_at(vec3 c_wp) {
 	vec2 c_p = c_wp.xz + cel_key.xz * (max(cel_dapple.y - c_wp.y, 0.0) / max(cel_key.y, 0.2));
 	float c_cov = max(texture(cel_canopy, (c_p - cel_canopy_r.xy) * cel_canopy_r.zw).r, cel_dapple.w) * cel_dapple.x;
 	if (c_cov <= 0.004) return 1.0;
-	float c_f = texture(cel_cookie, c_p / cel_dapple.z).r;
-	float c_w = fwidth(c_f) * 0.5 + 0.01;
+	float c_e = max(cel_oneshade.y, 1.0);
+	float c_f = texture(cel_cookie, c_p / cel_dapple.z, log2(c_e)).r;
+	float c_w = fwidth(c_f) * 0.5 * c_e + 0.01;
 	return mix(1.0, smoothstep(c_cov - c_w, c_cov + c_w, c_f), cel_key.w);
 }
 // (L1 lead 9, B1) Her pool's ramp at r metres from her light's foot (past its last stop: the last stop's).
@@ -268,7 +276,15 @@ float cel_dap() { float c_q = cel_gq(); return clamp((length(cel_gn) - 1.01 - 2.
 float cel_gv() { return clamp(cel_gq() * 0.001, 0.0, 1.0); }
 // The key's cast shadow hardened (directional lights); omni and spot as they are.
 // (L1 B4: and the canopy's dapple, cel_dap, on the directional key)
-float cel_shadow(float c_att, bool c_dir) { return c_dir ? mix(c_att, smoothstep(0.42, 0.58, c_att), cel_rig.x) * cel_dap() : c_att; }
+// (L1 lead 11, R3: under cel_oneshade.x the shadow is a level and the dapple the same shade: see cel_oneshade)
+float cel_shadow(float c_att, bool c_dir) {
+	if (!c_dir) return c_att;
+	if (cel_oneshade.x <= 0.0) return mix(c_att, smoothstep(0.42, 0.58, c_att), cel_rig.x) * cel_dap();
+	float c_q = cel_gq();
+	float c_raw = clamp(1.0 - (1.0 - c_att) / cel_oneshade.x, 0.0, 1.0);
+	float c_cast = 1.0 - cel_oneshade.x * (1.0 - mix(c_raw, smoothstep(0.42, 0.58, c_raw), cel_rig.x));
+	return min(c_cast, clamp((length(cel_gn) - 1.01 - 2.0 * c_q) / 0.98, 0.0, 1.0)) * (c_q * 0.001);
+}
 // The lit band's coverage (the hard terminator) at n.l t.
 float cel_lit(float c_t) {
 	float c_hw = max(cel_band.y * cel_tune.x, 1e-4);
