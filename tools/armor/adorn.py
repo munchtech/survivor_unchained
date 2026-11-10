@@ -87,12 +87,17 @@ class Model:
         for i, m in enumerate(self.js["meshes"]):
             if len(m["primitives"]) != 1:
                 raise SystemExit(f"ADORN: {m['name']} has {len(m['primitives'])} primitives (one each expected)")
-            if m["primitives"][0].get("targets"):
-                # (a followed piece's shoulder shapes: this writer keeps none, so adorn runs before the follow,
-                # tools/armor/piece_ship.py; never a silent drop)
-                raise SystemExit(f"ADORN: {m['name']} has morph targets (a followed piece): adorn it before the follow (piece_ship.py)")
             mat, attrs, tris = self.g.prims(i)[0]
-            self.meshes.append({"name": m["name"], "mat": mat, "attrs": {k: [np.array(v[0]), v[1]] for k, v in attrs.items()},
+            at = {k: [np.array(v[0]), v[1]] for k, v in attrs.items()}
+            # (a followed piece's shoulder shapes (P2 l16): each morph target's deltas ride as pseudo-attributes
+            # "_T<nn>P" / "_T<nn>N" (position / normal), so every copy, drop and compaction carries them with the
+            # vertices; append() gives new geometry deltas carried from the base shell (carry_deltas), save() writes
+            # them back as sparse targets. Never a silent drop.)
+            for ti, tg in enumerate(m["primitives"][0].get("targets") or []):
+                for key in ("POSITION", "NORMAL"):
+                    if key in tg:
+                        at[f"_T{ti:02d}{key[0]}"] = [read_acc(self.g, tg[key]).astype(np.float32), False]
+            self.meshes.append({"name": m["name"], "mat": mat, "attrs": at, "weights": m.get("weights"),
                                 "tris": tris, "extras": copy.deepcopy(m.get("extras", {})), "node": None})
         for k, n in enumerate(self.js["nodes"]):
             if "mesh" in n:
@@ -141,6 +146,23 @@ class Model:
             accs.append(a)
             return len(accs) - 1
 
+        def add_sparse(D):
+            """A morph target's deltas as a sparse accessor (the rows that move), as the follow wrote them."""
+            D = np.ascontiguousarray(D, np.float32)
+            idx = np.nonzero(np.any(D != 0, axis=1))[0].astype(np.uint32)
+            a = {"componentType": 5126, "count": len(D), "type": "VEC3",
+                 "min": D.min(0).tolist() if len(D) else [0, 0, 0], "max": D.max(0).tolist() if len(D) else [0, 0, 0]}
+            if len(idx):
+                for arr in (idx, D[idx]):
+                    while len(out) % 4:
+                        out.append(0)
+                    views.append({"buffer": 0, "byteOffset": len(out), "byteLength": arr.nbytes})
+                    out.extend(np.ascontiguousarray(arr).tobytes())
+                a["sparse"] = {"count": int(len(idx)), "indices": {"bufferView": len(views) - 2, "componentType": 5125},
+                               "values": {"bufferView": len(views) - 1}}
+            accs.append(a)
+            return len(accs) - 1
+
         ibm = self.g.acc(js["skins"][0]["inverseBindMatrices"])[0]
         js["skins"][0]["inverseBindMatrices"] = add(ibm.astype(np.float32))
         meshes, nodes = [], js["nodes"]
@@ -152,9 +174,17 @@ class Model:
                 if key in m["attrs"]:
                     arr, norm = m["attrs"][key]
                     p["attributes"][key] = add(arr, norm, 34962, minmax=key == "POSITION")
+            tkeys = target_keys(m["attrs"])
+            if tkeys:
+                p["targets"] = []
+                for ti in sorted({k[2:4] for k in tkeys}):
+                    p["targets"].append({key: add_sparse(m["attrs"][f"_T{ti}{key[0]}"][0])
+                                         for key in ("POSITION", "NORMAL") if f"_T{ti}{key[0]}" in m["attrs"]})
             t = m["tris"].ravel()
             p["indices"] = add(t.astype(np.uint32 if len(m["attrs"]["POSITION"][0]) > 65535 else np.uint16), False, 34963)
             meshes.append({"name": m["name"], "primitives": [p], "extras": m["extras"]})
+            if m.get("weights") and tkeys:
+                meshes[-1]["weights"] = m["weights"]
             if m["node"] is None:
                 nodes.append({"name": m["name"], "skin": 0})
                 nodes[self.parent].setdefault("children", []).append(len(nodes) - 1)
@@ -249,6 +279,61 @@ def weight_sets(attrs):
     while f"JOINTS_{n}" in attrs and f"WEIGHTS_{n}" in attrs:
         n += 1
     return n
+
+
+def read_acc(g, i):
+    """An accessor as an array, a sparse one (a morph target's) filled in over its base (or zeros)."""
+    a = g.js["accessors"][i]
+    if "bufferView" in a:
+        out = np.array(g.acc(i)[0])
+    else:
+        out = np.zeros((a["count"], hl._NC[a["type"]]), np.dtype(hl._CT[a["componentType"]]))
+    sp = a.get("sparse")
+    if sp:
+        ib, vb = sp["indices"], sp["values"]
+        idt, dt = np.dtype(hl._CT[ib["componentType"]]), out.dtype
+        bv = g.js["bufferViews"][ib["bufferView"]]
+        idx = np.frombuffer(g.bin, idt, count=sp["count"], offset=bv.get("byteOffset", 0) + ib.get("byteOffset", 0))
+        bv = g.js["bufferViews"][vb["bufferView"]]
+        val = np.frombuffer(g.bin, dt, count=sp["count"] * out.shape[1], offset=bv.get("byteOffset", 0) + vb.get("byteOffset", 0))
+        out[idx.astype(np.int64)] = val.reshape(-1, out.shape[1])
+    return out
+
+
+def target_keys(attrs):
+    """A mesh's morph-target pseudo-attributes ("_T<nn>P" / "_T<nn>N"), in order."""
+    return tuple(sorted(k for k in attrs if k.startswith("_T")))
+
+
+CARRY = {}      # (the base shell new geometry's target deltas are carried from: carry_source(model) sets it)
+
+
+def carry_source(model):
+    """Every shell mesh's triangles and target deltas (the model as loaded): what new geometry's deltas are carried
+    from (its closest point's, barycentric), so a film, trim or element moves with the plate under it."""
+    V, F, D, base, keys = [], [], [], 0, None
+    for m in model.meshes:
+        tk = target_keys(m["attrs"])
+        if not tk:
+            continue
+        V.append(m["attrs"]["POSITION"][0].astype(np.float64))
+        F.append(m["tris"] + base)
+        D.append(np.concatenate([m["attrs"][k][0] for k in tk], 1).astype(np.float64))
+        base += len(V[-1])
+        keys = tk
+    CARRY["src"] = (np.vstack(V), np.vstack(F), np.vstack(D), keys) if V else None
+    return CARRY["src"]
+
+
+def carry_deltas(P, keys):
+    """Target deltas for new points P (as `keys`), from the base shell's closest point (carry_source)."""
+    src = CARRY.get("src")
+    if src is None or tuple(src[3]) != tuple(keys):
+        raise SystemExit(f"ADORN: new geometry needs target deltas {keys[:2]}.. but no base shell carries them")
+    V, F, D, _ = src
+    _, f, w = closest(np.asarray(P, np.float64), V, F)
+    out = np.einsum("nk,nkd->nd", w, D[F[f]]).astype(np.float32)
+    return {k: out[:, 3 * i:3 * i + 3] for i, k in enumerate(keys)}
 
 
 def weight_keys(attrs):
@@ -997,6 +1082,8 @@ def append(m, parts, nb):
     # (as many weight sets as the mesh has: a followed shell's eight weights a point are all kept, none dropped)
     for i, (J, Wt) in enumerate(top4(W, sets) if sets > 1 else [top4(W)]):
         new[f"JOINTS_{i}"], new[f"WEIGHTS_{i}"] = J, Wt
+    if target_keys(have):
+        new.update(carry_deltas(P, target_keys(have)))
     for k, (arr, norm) in list(have.items()):
         if k not in new:
             raise SystemExit(f"ADORN: {m['name']} has {k}, which an adornment can't fill")
@@ -1013,7 +1100,7 @@ def append(m, parts, nb):
 
 def new_mesh(model, name, mat, like, extras):
     m = {"name": name, "mat": mat, "attrs": {}, "tris": np.zeros((0, 3), np.int64), "extras": extras, "node": None}
-    for k in ("POSITION", "NORMAL", "TEXCOORD_0", "TEXCOORD_1", "COLOR_0") + weight_keys(like["attrs"]):
+    for k in ("POSITION", "NORMAL", "TEXCOORD_0", "TEXCOORD_1", "COLOR_0") + weight_keys(like["attrs"]) + target_keys(like["attrs"]):
         arr, norm = like["attrs"][k]
         m["attrs"][k] = [np.zeros((0, arr.shape[1]), arr.dtype), norm]
     model.meshes.append(m)
@@ -1195,6 +1282,7 @@ def build(pid, post=False):
         if not own:
             return {"id": pid, "post": "nothing to add"}
         model = Model(os.path.join(ART, f"{pid}.gltf"))
+        carry_source(model)
         sock = json.load(open(os.path.join(ART, f"{pid}.sockets.json"), encoding="utf-8"))
         shell_id = pid
         dropped_rows = {}
@@ -1208,6 +1296,7 @@ def build(pid, post=False):
             raise SystemExit(f"ADORN: {pid} is a {slot}, its base {src_id} a {base_piece['slot']}")
         model = Model(os.path.join(ART, f"{src_id}.gltf"))
         base_model = Model(os.path.join(ART, f"{src_id}.gltf"))
+        carry_source(base_model)
         sock = json.load(open(os.path.join(ART, f"{src_id}.sockets.json"), encoding="utf-8"))
         shell_id = src_id
         model.rename(src_id, pid)
