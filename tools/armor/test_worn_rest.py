@@ -69,7 +69,7 @@ def test_plate_top_cups_clear_her_worn_skin_at_rest(bodies):
         if m["tier"] != "close":
             continue
         o = ev[m["node"]]
-        rg = (o["comp"] >= 0)[o["inv"]]
+        rg = ((o["comp"] >= 0) & ~np.isin(o["lead"][np.maximum(o["comp"], 0)], o["bridges"]))[o["inv"]]   # (a bridge: the tuck's)
         if not rg.any():
             continue
         X = o["Xu"][o["inv"]].copy()
@@ -130,3 +130,55 @@ def test_unpose_each_lands():
     d = rng.normal(size=(5, 3)) * 0.01
     X0, _ = w.unpose_each(Y, J, Wt, {"s": d})
     assert np.allclose(wr_.pose(S, {"s": 0.5}, X0, J, Wt, {"s": d}), Y, atol=1e-12)
+
+
+def test_joins_keep_the_piece_joined(bodies, tmp_path, monkeypatch):
+    """The join law (slots.top.joins) on the plate top, as the engine poses the stored points in her worn rest: the
+    stored points land on the fit, a strap's end stays on its cup, a buckle on its strap, and the gore (a bridge) stays
+    between its cups and is not pushed proud of them. eval_unit's "Xbind" stays the authored points (on the bind body it
+    was the stored array itself, which made an as-worn check read the cups' 42 mm move as 16)."""
+    import copy
+    import json
+    from scipy.spatial import cKDTree
+    roles = copy.deepcopy(gf.rigid_roles())
+    roles["slots"]["top"]["joins"] = True
+    path = tmp_path / "roles.json"
+    path.write_text(json.dumps(roles), encoding="utf-8")
+    monkeypatch.setenv("GEAR_ROLES", str(path))
+    body = bodies["close"]
+    bd = next(iter(gf.bindings(["plate_top_plain"])))
+    wr = worn_rest.worn(body, bd.meta["row"], gf.rigid_roles())
+    ev = gf.eval_unit(bd, bodies, None)
+    ms = [m for m in bd.meta["meshes"] if m["tier"] == "close"]
+    Xa = np.vstack([gf.eval_points(body, bd.z[f"tri{m['i']}"], bd.z[f"bw{m['i']}"], bd.z[f"off{m['i']}"])[0] for m in ms])
+    assert np.abs(np.vstack([ev[m["node"]]["Xbind"] for m in ms]) - Xa).max() == 0
+    Pw, comp = [], []
+    for m in ms:
+        o = ev[m["node"]]
+        first = np.zeros(len(o["Xu"]), np.int64)
+        first[o["inv"]] = np.arange(len(o["inv"]))
+        Pw.append(worn_rest.pose(wr.S, wr.weights, o["Xu"], o["J"][first], o["W"][first], {k: v[first] for k, v in o["shapes"].items()}))
+        comp.append(o["comp"])
+        lead, bridges = o["lead"], o["bridges"]
+    Pw, comp = np.vstack(Pw), np.concatenate(comp)
+    rg = comp >= 0
+    grp = np.where(rg, lead[np.maximum(comp, 0)], -1)
+    assert len(bridges) == 1
+    sizes = np.bincount(grp[rg])
+    cups = [c for c in np.argsort(-sizes)[:2]]
+    for c in cups:      # the cups moved to her worn breasts (about 42 mm at most), their rims with them
+        assert 0.035 < np.linalg.norm(Pw[grp == c] - Xa[grp == c], axis=1).max() < 0.05
+    # seams: a bendy point that touched a rigid one still does
+    d0, j0 = cKDTree(Xa[rg]).query(Xa[~rg])
+    seam = d0 < 0.002
+    gap = np.linalg.norm(Pw[~rg][seam] - Pw[rg][j0[seam]], axis=1)
+    at_cup = np.isin(grp[rg][j0[seam]], cups)
+    assert at_cup.sum() > 30 and gap[at_cup].max() < 0.0025 and gap.max() < 0.006
+    # the bridge: with its plates (its close pairs keep their distance), and no further off her skin than authored
+    b = grp == bridges[0]
+    for c in cups:
+        d, j = cKDTree(Xa[grp == c]).query(Xa[b])
+        k = d < 0.010
+        dw = np.linalg.norm(Pw[b][k] - Pw[grp == c][j[k]], axis=1)
+        assert k.sum() > 20 and np.abs(dw - d[k]).max() < 0.006
+    assert np.median(gf.signed_clear(wr.body, Pw[b])[0]) < np.median(gf.signed_clear(body, Xa[b])[0]) + 0.002

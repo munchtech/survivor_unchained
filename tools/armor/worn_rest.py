@@ -18,6 +18,9 @@ was authored joined must stay joined:
   buckle, a clasp, a strap's rivet).
 - a plate is fitted to her worn skin, the largest first; a plate within JOIN "link_m" of plates already fitted is a
   bridge (a gore between two cups) and is fitted to THEIR moves instead (each of its points to the nearer plate's).
+  A bridge is held by its plates, so it is NOT cleared by itself: steel between two plates displaces what is between
+  them (a gore sits on her sternum and parts her breasts), and her skin under it is the tuck's, as under any plate.
+  (Cleared by itself, the one move the fit has pushed the gore 16 mm forward, 19 mm proud of its cups.)
 - a fitting rides what it sits on: the plain mean of her skin's weights over its own footprint (no slot roles: a
   buckle over the clavicle follows the clavicle as the strap under it does), placed by the join field below.
 - the join field: a bendy vertex (or a fitting's point) at a fitted plate takes that plate's move and its blend of

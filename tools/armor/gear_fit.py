@@ -1027,7 +1027,8 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
             i = m["i"]
             tri, bq, off = z[f"tri{i}"], z[f"bw{i}"], z[f"off{i}"]
             X, F = eval_points(body, tri, bq, off)
-            Xbind, Fbind = (X, F) if bbody is None else eval_points(bbody, tri, bq, off)
+            # (Xbind stays the authored points: X is moved in place below, and on the bind body they were one array)
+            Xbind, Fbind = (X.copy(), F) if bbody is None else eval_points(bbody, tri, bq, off)
             ev[i] = dict(X=X, F=F, Xbind=Xbind, Fbind=Fbind, w=unq(bq), tri=tri.astype(np.int64), comp=z[f"comp{i}"])
             if bbody is not None:
                 # the follow field (gear_field): exact on the skin (1 mm), the body's smoothed move beyond; c0 is the
@@ -1049,7 +1050,7 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
         flo = standoff_floor(bd, ms, ev, lead=lead)
         # (the worn rest, rigid_roles.json slots "worn_rest": the body her support rests her in under this piece)
         wr = worn_rest.worn(body, bd.meta["row"], rigid_roles()) if (comp >= 0).any() else None
-        join = None
+        join, bridges = None, set()
         if (comp >= 0).any() and (bbody is not None or flo is not None or wr is not None):
             Xa = np.vstack([ev[m["i"]]["Xbind"] for m in ms])
             Xn = np.vstack([ev[m["i"]]["X"] for m in ms])
@@ -1090,7 +1091,12 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                 if jl:
                     Yb = jn.bridge(Xa[own])
                     Bt = Bt if Yb is None else Yb
-                M, ca, cb, info = gear_field.rigid_fit_clear(body if wr is None else wr.body, Xa[own], Bt, Xa[grp], c0s[grp], fg)
+                # (a bridge is held by its plates and displaces what is between them: it is not cleared by itself, her
+                # skin under it is the tuck's, as under any plate)
+                creq = c0s[grp] if Yb is None else np.full(int(grp.sum()), -1.0)
+                if Yb is not None:
+                    bridges.add(int(c))
+                M, ca, cb, info = gear_field.rigid_fit_clear(body if wr is None else wr.body, Xa[own], Bt, Xa[grp], creq, fg)
                 rots[int(c)] = (M, ca, cb)
                 if jl:
                     jn.add(int(c), Xa[grp], M, ca, cb)
@@ -1201,7 +1207,7 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                     N[sv] = np.einsum("nij,nj->ni", np.einsum("nij,njk->nik", Li, Ms)[ia[inv[sv]]], N[sv])
             out[m["node"]] = {"Xu": X, "inv": inv, "N": U(N), "J": J[inv], "W": W[inv],
                               "shapes": {k: v[inv] for k, v in shapes.items()}, "tier": tier, "comp": comp_i,
-                              "Xbind": e["Xbind"], "h": z[f"off{i}"][:, 2], "lead": lead}
+                              "Xbind": e["Xbind"], "h": z[f"off{i}"][:, 2], "lead": lead, "bridges": sorted(bridges)}
             if "beta" in e:
                 out[m["node"]].update(beta=e["beta"], G=e["G"], Gk=e["Gk"])
     if "aux_tri" in z:
