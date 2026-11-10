@@ -30,6 +30,7 @@ from build import GODOT  # noqa: E402
 from clips import folk_armed, rook, warden  # noqa: E402
 from clips.generated import make  # noqa: E402
 from keyed import Rig  # noqa: E402
+from retarget import carry_head  # noqa: E402
 from rig import DATA, REPO, Skeleton, write_clip  # noqa: E402
 
 OUT = Path(__file__).resolve().parent / "out" / "folk"
@@ -45,7 +46,10 @@ STAND = dict(loop=True, place="line")
 FOLK = {
     # Walking about town: the women's walk with a sway, the men's easy stride.
     "walk": {"f": ("mixamo", "folk_walk_feminine.bvh", dict(loop="cycle", place="line")),
-             "m": ("kimodo", "walk_man_2.bvh", dict(loop=True, place="line"))},
+             # Kimodo's take holds his Head 29 degrees back of his own stand (walk +21.8 against the idle's -7.2 mean
+             # pitch: at the dialogue camera his chin lifts and the collar gapes): head="idle" carries the neck and
+             # the Head as his idle does, in the mean, the walk's bob kept (retarget.carry_head).
+             "m": ("kimodo", "walk_man_2.bvh", dict(loop=True, place="line", head="idle"))},
     # Standing: weight shifting from foot to foot.
     "idle": {"fm": ("mixamo", "folk_weight_shift_idle.bvh", STAND)},
     # Talking: hers with both hands, his the general conversation.
@@ -75,11 +79,22 @@ def build(want):
             source, file, opts = row
             opts = dict(opts)
             opts["warp_"] = opts.pop("warp", None)
+            head = opts.pop("head", None)
             t0 = time.time()
             clip = make(rig, f"{sex}_{name}", source, file, note=f"townsfolk ({'women' if sex == 'f' else 'men'})", **opts)
             if clip is None:
                 print(f"  {sex}_{name}: {file} not on this machine")
                 continue
+            if head:
+                # The head carried as another of this body's clips carries it (the mean only: retarget.carry_head).
+                rs, rf, ro = next(r for k, r in FOLK[head].items() if sex in k)
+                ref = make(rig, f"{sex}_{head}", rs, rf, **ro)
+                if ref is None:
+                    raise SystemExit(f"{sex}_{name}: its head is carried as {sex}_{head}'s, and {rf} is not on this machine")
+                clip.rot, neck, hd = carry_head(sk, clip.rot, clip.pos, ref.rot, ref.pos)
+                clip.meta["changes"] += (f"; the neck and the Head carried as {sex}_{head}'s in the mean (one constant turn "
+                                         f"each about its own ear-to-ear axis, tip back {neck:+.1f} and {hd:+.1f} degrees; "
+                                         f"the take's own bob kept)")
             write_clip(clip, sk, OUT)
             made.append(clip.name)
             print(f"  {clip.name:16s} {clip.frames:4d} frames {clip.length:5.2f} s  speed {clip.meta.get('speed', 0):.2f}  "

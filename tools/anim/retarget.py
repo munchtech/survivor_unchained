@@ -666,6 +666,59 @@ def lean_neck(rig, local):
     return L
 
 
+def carriage(sk: Skeleton, local, pos=None):
+    """How a clip carries the head: per frame, the chest's, the neck's and the Head's pitch (degrees, the elevation of
+    each bone's rest-forward axis, the world's +Z at rest: + is tipped back, chin up)."""
+    g, _ = sk.fk(local, pos)
+    rg = sk.rest_globals()[0][0]
+    out = {}
+    for b in ("spine_03", "neck_01", "Head"):
+        j = sk.i(b)
+        f = qrot(qmul(g[:, j], qinv(rg[j])), [0, 0, 1.0])
+        out[b] = np.degrees(np.arcsin(np.clip(f[:, 1], -1, 1)))
+    return out
+
+
+def carry_head(sk: Skeleton, local, pos, ref_local, ref_pos):
+    """A take's head and neck carried as a reference clip carries them, in the MEAN only: the neck set on the chest
+    as the reference's (mean neck pitch less the chest's), then the Head's mean pitch brought to the reference's. Each
+    bone is turned by ONE angle, the same at every frame, about its own ear-to-ear axis (the world's left-right at
+    rest), after its own motion: the take's bob, turns and tilts stay as they were, and a loop's seam is untouched (a
+    constant turn of the local track). For a take that holds the head back of the body's own stand (Kimodo's man's
+    walk on the kit's man: 29 degrees back of his idle at the dialogue camera).
+    Returns the new locals and the two angles (degrees, + = tipped back)."""
+    want = carriage(sk, ref_local, ref_pos)
+    want_neck = float(np.mean(want["neck_01"] - want["spine_03"]))
+    want_head = float(np.mean(want["Head"]))
+    rg = sk.rest_globals()[0][0]
+    L = local.copy()
+    turned = {}
+    for bone, target, measure in (("neck_01", want_neck, lambda c: float(np.mean(c["neck_01"] - c["spine_03"]))),
+                                  ("Head", want_head, lambda c: float(np.mean(c["Head"])))):
+        j = sk.i(bone)
+        axis = qrot(qinv(rg[j]), [1.0, 0, 0])
+        axis = axis / np.linalg.norm(axis)
+        base = L[:, j].copy()
+
+        def at(deg):
+            # + about the left-right axis nods forward: the angle is given as the tip back, so it is turned by -deg.
+            half = math.radians(-deg) / 2
+            M = L.copy()
+            M[:, j] = qmul(base, np.array([*(axis * math.sin(half)), math.cos(half)]))
+            return M
+
+        lo, hi = -60.0, 60.0
+        for _ in range(40):
+            mid = (lo + hi) / 2
+            if measure(carriage(sk, at(mid), pos)) < target:
+                lo = mid
+            else:
+                hi = mid
+        turned[bone] = (lo + hi) / 2
+        L = at(turned[bone])
+    return L, turned["neck_01"], turned["Head"]
+
+
 def spread_twist(sk: Skeleton, local, share=0.5):
     """A take's forearm roll moved half into the forearm. Performers' rigs
     put the roll of the forearm (the radius turning over the ulna) at the

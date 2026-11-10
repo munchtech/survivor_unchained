@@ -609,7 +609,7 @@
 		"speed": 0.968388726222036
 	},
 	"m_walk": {
-		"changes": "retargeted to her skeleton, feet locked, looped, in place",
+		"changes": "retargeted to her skeleton, feet locked, looped, in place; the neck and the Head carried as m_idle's in the mean (one constant turn each about its own ear-to-ear axis, tip back -4.0 and -25.2 degrees; the take's own bob kept)",
 		"layer": "full",
 		"length": 3.59999990463257,
 		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
