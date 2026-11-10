@@ -40,7 +40,7 @@ def test_a_push_up_rests_her_breasts_higher_and_nothing_else(bodies):
     names = list(body.joint_names)
     legs = np.array([n.startswith(("thigh", "calf", "foot", "ball")) for n in names])
     leg_skin = (body.W * legs[body.J]).sum(1) > 0.99
-    assert leg_skin.any() and d[leg_skin].max() < 1e-9
+    assert leg_skin.any() and d[leg_skin].max() < 1e-6      # (float32 binds)
 
 
 def test_unpose_inverts_the_engines_pose(bodies):
