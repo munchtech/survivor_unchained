@@ -846,6 +846,10 @@ public sealed partial class Battle
     /// was caught, and how much more it takes from what strikes an area.</summary>
     public const double BoundSlack = 0.8, BoundArea = 0.2;
 
+    /// <summary>(M3 MR 3) The weight of the hit whose statuses are being applied (a chained cut's share of its blow); 1 at
+    /// every other moment.</summary>
+    double statusW = 1;
+
     /// <summary>Everything the survivor's side does to a creature passes through here.</summary>
     public double HitEnemy(Enemy e, double baseDamage, School school, Tag[] tags, HitOpts o = default)
     {
@@ -856,6 +860,10 @@ public sealed partial class Battle
         // fight is a choice, not a stray spark.
         if (e.Disposition == Disposition.Ally || (e.Disposition == Disposition.Neutral && !e.Provoked && !o.Provoke)) return 0;
         FightAt = Time;
+        // (M3 MR 3) A chained cut is a share of the written blow (WeaponInst.CutW, set only inside its cast; a tick of
+        // damage over time and everything unchained read 1). dmg arrives as the share already (WeaponInst.Damage): the
+        // flat per-hit rows below take the weight; the per-blow events keep the blow.
+        double cw = o.Dot ? 1 : o.Weapon?.CutW ?? 1;
         if (StruckBy != null && o.Weapon == StruckBy) Struck.Add(e.Id);
         if (Lamps.Board) BoardBeforeHit(e, school, tags, o);
         var st = Stats;
@@ -870,7 +878,20 @@ public sealed partial class Battle
         if (s.Has(StatusKind.Frozen)) dmg *= Boons.ContainsKey("deep_chill") ? 1.35 : 1.15;
         if (s.Has(StatusKind.Sear) && school == School.Holy) dmg *= 1.3;
         if (s.Has(StatusKind.Bound) && tags.Has(Tag.Area)) dmg *= 1 + BoundArea;
-        if (s.Has(StatusKind.Shock) && !o.Dot) { dmg *= 1.35 + st.Get(Stat.ShockBonus); if (!Boons.ContainsKey("static_charge")) s.Remove(StatusKind.Shock); }
+        if (s.Has(StatusKind.Shock) && !o.Dot)
+        {
+            if (cw == 1) { dmg *= 1.35 + st.Get(Stat.ShockBonus); if (!Boons.ContainsKey("static_charge")) { s.Remove(StatusKind.Shock); e.ShockEaten = 0; } }
+            else if (Boons.ContainsKey("static_charge")) dmg *= 1.35 + st.Get(Stat.ShockBonus);
+            else
+            {
+                // A Shock is eaten by one blow's worth of cuts: each takes the multiplier on the share of it still
+                // uneaten (the cut that finishes it only on what was left), so the cuts together give one blow's bonus.
+                double part = Math.Min(cw, Math.Max(0, 1 - e.ShockEaten)) / cw;
+                dmg *= 1 + (1.35 + st.Get(Stat.ShockBonus) - 1) * part;
+                e.ShockEaten += cw;
+                if (e.ShockEaten >= 1 - Sim.Blows.Eps) { s.Remove(StatusKind.Shock); e.ShockEaten = 0; }
+            }
+        }
         if (e.SunderUntil > Time) dmg *= 1 + e.Sunder;
         if (e.AirUntil > Time) dmg *= 1 + e.AirMore;
         dmg *= e.TakenMul;
@@ -899,21 +920,36 @@ public sealed partial class Battle
         bool crit = o.Crit && !noTrue;
         // The stalker's Hand: just after a dash, a blow on a champion strikes true.
         bool handTrue = !noTrue && StalkerHand && HandTrue(e, o);
+        // (M3 MR 3) The opener (the Hunters' Blind's share of the roll) is a moment: it lands whole on the cut that rolls it.
+        bool opener = false;
+        double blindAdd = 0;
         if (!crit && !o.NoCrit && !o.Dot)
         {
             double chance = st.Get(Stat.CritChance) + (!noTrue && Player.SureCritT > 0 ? 1 : 0) + (o.Weapon?.CritBonus ?? 0) + (noTrue ? 0 : StalkerCritAdd(e, tags, o)) + (handTrue ? 1 : 0);
             // The Hunters' Blind: the first blow on anything unhurt.
-            if (e.Hp >= e.MaxHp && Boons.TryGetValue("hunters_blind", out int blind)) chance += blind >= 2 ? 1 : 0.5;
+            if (e.Hp >= e.MaxHp && Boons.TryGetValue("hunters_blind", out int blind)) { blindAdd = blind >= 2 ? 1 : 0.5; chance += blindAdd; }
             // Night-Eyes: the far ones, in the dark, are seen best.
             if (Boons.TryGetValue("precision", out int eyes) && Dist(e.X, e.Z, Player.X, Player.Z) > 6) chance += 0.03 * eyes;
             if (Lamps.Board) chance += BoardCritAdd(e, o);
-            crit = Rng.Next() < chance;
+            double roll = Rng.Next();
+            crit = roll < chance;
+            // The build's own chance is the low part of the roll (a rolled crit: the cut's share, right in expectation);
+            // what the Blind added is the rest (the opener).
+            opener = crit && blindAdd > 0 && roll >= chance - blindAdd;
         }
         // blue.feral's price: she can't strike true.
         if (crit && Lamps.Board && BoardNoTrue) crit = false;
-        if (crit) dmg *= st.Get(Stat.CritDamage) * (e.Hp < e.MaxHp * 0.5 && Boons.TryGetValue("ferocity", out int tooth) ? 1 + 0.12 * tooth : 1);
+        // The opener's bonus is the whole blow's (the cut's damage plus the blow's crit bonus); 0 without one.
+        double bonus = 0;
+        if (crit && opener && cw != 1)
+        {
+            double critMul = st.Get(Stat.CritDamage) * (e.Hp < e.MaxHp * 0.5 && Boons.TryGetValue("ferocity", out int tooth1) ? 1 + 0.12 * tooth1 : 1);
+            bonus = dmg / cw * (critMul - 1);
+            dmg += bonus;
+        }
+        else if (crit) dmg *= st.Get(Stat.CritDamage) * (e.Hp < e.MaxHp * 0.5 && Boons.TryGetValue("ferocity", out int tooth) ? 1 + 0.12 * tooth : 1);
         else if ((Rules.IronSkin > 0 || e.Def.IronSkin > 0) && e.Disposition == Disposition.Hostile) { dmg *= 1 - Math.Max(Rules.IronSkin, e.Def.IronSkin); blocked = true; }
-        dmg = Math.Max(0.5, dmg);
+        dmg = Math.Max(0.5 * cw, dmg);
         if (o.Cap is { } cap) dmg = Math.Min(dmg, Math.Max(0.5, cap));
         LightningLeaps(e, baseDamage, school, tags, o);
 
@@ -931,7 +967,9 @@ public sealed partial class Battle
         if (dx == 0 && dz == 0) { dx = e.X - Player.X; dz = e.Z - Player.Z; }
         double dl = Len(dx, dz);
         if (dl == 0) dl = 1;
-        e.LastBlow = before > 0 ? dmg / Math.Max(1, before) : 0;
+        // A cut is judged as the blow it is a share of (the death burst reads LastBlow); statuses are sized on it too.
+        double blowDmg = cw == 1 ? dmg : (dmg - bonus) / cw + bonus;
+        e.LastBlow = before > 0 ? blowDmg / Math.Max(1, before) : 0;
         e.LastCrit = crit;
         e.LastDot = o.Dot;
         e.LastDx = dx / dl; e.LastDz = dz / dl;
@@ -976,20 +1014,24 @@ public sealed partial class Battle
         if (ls > 0 && !o.Dot) HealPlayer(dmg * ls, "lifesteal", true);
 
         // Knockback: heavier things move less, bosses not at all.
-        if (o.Knockback != 0 && e.Boss) AddStagger(e, 0.004 * o.Knockback * st.Get(Stat.Knockback));
+        if (o.Knockback != 0 && e.Boss) AddStagger(e, 0.004 * o.Knockback * st.Get(Stat.Knockback) * cw);
         // The warden's Hand: a heavy blow (every few firings of a Melee or Thrown skill; all of its hits).
         bool heavy = !o.Dot && (o.Heavy || (HeavyBy != null && o.Weapon == HeavyBy));
         if (o.Knockback != 0 && !e.Boss && e.Def.Behavior != Behavior.Stationary)
         {
-            double k = o.Knockback * (heavy ? HW.Knockback : 1) * st.Get(Stat.Knockback) * 7 / Math.Max(0.5, e.Mass) * (e.Elite ? 0.35 : 1);
+            double k = o.Knockback * (heavy ? (cw == 1 ? HW.Knockback : cw + HW.Knockback - 1) : cw) * st.Get(Stat.Knockback) * 7 / Math.Max(0.5, e.Mass) * (e.Elite ? 0.35 : 1);
             e.Kbx += o.DirX * k;
             e.Kbz += o.DirZ * k;
         }
 
         // Status payloads ride the hit.
+        // (M3 MR 3) Sized on the blow (damage over time is kept by its worst rate and refreshed); statusW tells
+        // ApplyStatus the hit was a cut of that weight.
         statusWeapon = o.Weapon;
-        if (o.Status != null) ApplyStatus(e, o.Status, dmg, o.Depth, by);
-        if (o.Weapon?.Wick is { Statuses.Count: > 0 } wst) WickStatuses(e, wst, dmg, o.Depth, by);
+        statusW = cw;
+        if (o.Status != null) ApplyStatus(e, o.Status, blowDmg, o.Depth, by);
+        if (o.Weapon?.Wick is { Statuses.Count: > 0 } wst) WickStatuses(e, wst, blowDmg, o.Depth, by);
+        statusW = 1;
         statusWeapon = null;
 
         int depth = o.Depth;
@@ -1233,6 +1275,7 @@ public sealed partial class Battle
                 cur.From ??= from;
                 cur.T = Math.Max(cur.T, dur);
                 cur.Power = Math.Max(cur.Power, p.Power);
+                if (p.Kind == StatusKind.Shock) e.ShockEaten = 0;
                 if (p.Kind == StatusKind.Sear && e.Def.Family == Family.Undead) cur.Power = Math.Max(cur.Power, dps != 0 ? dps : 2);
                 break;
             }
@@ -1743,7 +1786,7 @@ public sealed partial class Battle
             Collision.Resolve(ref nx, ref nz, e.Radius);
             e.X = nx; e.Z = nz;
         }
-        e.Burst = false; e.LastBlow = 0; e.LastCrit = false; e.LastDot = false;
+        e.Burst = false; e.LastBlow = 0; e.LastCrit = false; e.LastDot = false; e.ShockEaten = 0;
         e.Status.Clear();
         e.Flash = 0;
         e.Laid = false;

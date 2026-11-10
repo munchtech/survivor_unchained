@@ -357,6 +357,8 @@ public sealed class SwingChainTests
     static (double Dmg, double Fill, int Lines, int Hand, int Heavy, int Blows, double Whole) Hold(string id, bool chained, int pack)
     {
         var r = new Run(id, chained ? P70 : null, chain: chained);
+        // crit off: it holds in expectation (a cut rolls as a blow does) and is not what this measures
+        r.B.Stats.Add(new StatMod(Stat.CritChance, ModKind.Flat, -r.B.Stats.Get(Stat.CritChance), "test"));
         if (pack > 1) { r.Add(2, 0.7); r.Add(2, -0.7); }
         r.Step(true, 3834);
         if (pack > 1) Assert.All(r.Slashes, s => Assert.Equal(pack, s.S.Struck));

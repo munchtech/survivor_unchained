@@ -103,6 +103,9 @@ public sealed class Enemy : Pooled
     public string? LastWeapon;
     /// <summary>The last blow: how hard, whether it crit, which way it went.</summary>
     public double LastBlow;
+    /// <summary>(M3 MR 3) How much of the Shock on it chained cuts have eaten, in blows (a Shock is eaten by one
+    /// blow's worth; Battle.HitEnemy). 0 with no Shock, a fresh one, or only whole blows.</summary>
+    public double ShockEaten;
     public bool LastCrit;
     /// <summary>The last blow was a tick of something in it (a burn, a poison): drawn as no blow.</summary>
     public bool LastDot;
