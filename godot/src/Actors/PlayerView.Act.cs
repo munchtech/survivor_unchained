@@ -41,6 +41,7 @@ public partial class PlayerView
     {
         actInit = true;
         actT0 = time - 0;   // (time has run this frame's dt already: the run's clock counts from here)
+        MeasInit();
         if (!HasHer(ActClip!)) { GD.PrintErr($"act: no clip '{ActClip}' in her library"); return; }
         var anim = person.Anim.GetAnimation(own.Prefix + ActClip);
         HerEvents.Beats? beats = null;
@@ -55,14 +56,18 @@ public partial class PlayerView
         if (beats == null) GD.Print($"act: {ActClip} has no beats in her_events.json");
     }
 
-    // ---- the blend's foot travel (cm, x and z, her node's frame and the world), per act pass ----
+    // ---- the blend's foot travel (cm, x and z), per act pass: her skeleton's frame (the clips' own frame and units: the
+    // numbers tools/anim/p4.py's checks print) and the world (her node carries the skeleton at her scale, 1.04 on B) ----
+    // The points are read where the skeleton has run its modifiers (SkeletonUpdated): outside that, GetBoneGlobalPose is the
+    // mixer's pose, and on B a P4 clip's keys under P1BlendBase are stored pre-turned (P4Pack), so the mixer's pose is not hers.
     static readonly string[] MeasBones = { "ball_l", "ball_r", "foot_l", "foot_r", "pelvis" };
     readonly int[] measIdx = new int[5];
     readonly Vector3[] measNode = new Vector3[5], measWorld = new Vector3[5];     // this frame's reading
     readonly Vector3[] measPrevNode = new Vector3[5], measPrevWorld = new Vector3[5];
     readonly Vector3[] measStartNode = new Vector3[5], measStartWorld = new Vector3[5];
     readonly float[] measPathNode = new float[5], measPathWorld = new float[5];
-    bool measInit, measOk;
+    readonly Vector3[] measPose = new Vector3[5];   // the shown pose's origins (skeleton space), cached each SkeletonUpdated
+    bool measInit, measOk, measHave;
     int measStage;   // 0 idle, 1 blend-in window, 2 clip running, 3 blend-back window
     double measT;    // the clock at the stage's start
     double measEndAt;
@@ -70,28 +75,47 @@ public partial class PlayerView
     static string Cm(float m) => (m * 100f).ToString("0.0", CultureInfo.InvariantCulture);
     static string Xz(Vector3 v) => $"({Cm(v.X)}, {Cm(v.Z)})";
 
-    /// <summary>Reads the five points off the skeleton's current global poses. Called at the top of ActTick, so it sees the pose the
-    /// last tree.Advance left and the node transform ActApply left: one frame behind the pose this frame will show, consistently.</summary>
-    bool MeasRead()
+    void MeasInit()
     {
-        if (!measInit)
-        {
-            measInit = true; measOk = true;
-            for (int i = 0; i < 5; i++)
-            {
-                measIdx[i] = person.Skeleton.FindBone(MeasBones[i]);
-                if (measIdx[i] < 0) { GD.PrintErr($"act: measure: no bone '{MeasBones[i]}' in her skeleton: foot travel not measured"); measOk = false; break; }
-            }
-        }
-        if (!measOk) return false;
-        var skel = person.Skeleton;
-        var inv = GlobalTransform.AffineInverse();
+        if (measInit) return;
+        measInit = true; measOk = true;
         for (int i = 0; i < 5; i++)
         {
-            var w = skel.GlobalTransform * skel.GetBoneGlobalPose(measIdx[i]).Origin;
-            measWorld[i] = w; measNode[i] = inv * w;
+            measIdx[i] = person.Skeleton.FindBone(MeasBones[i]);
+            if (measIdx[i] < 0) { GD.PrintErr($"act: measure: no bone '{MeasBones[i]}' in her skeleton: foot travel not measured"); measOk = false; break; }
         }
+        if (measOk) person.Skeleton.SkeletonUpdated += MeasCache;
+    }
+
+    /// <summary>After every modifier (B's blend base, laws, carriage): the pose that is shown.</summary>
+    void MeasCache()
+    {
+        for (int i = 0; i < 5; i++) measPose[i] = person.Skeleton.GetBoneGlobalPose(measIdx[i]).Origin;
+        measHave = true;
+    }
+
+    /// <summary>The five points of the pose last shown (measPose), in her skeleton's frame (measNode) and in the world. Called at the
+    /// top of ActTick, so it sees the pose the last tree.Advance left and the node transform ActApply left: one frame behind the
+    /// pose this frame will show, consistently.</summary>
+    bool MeasRead()
+    {
+        MeasInit();
+        if (!measOk || !measHave) return false;
+        var skel = person.Skeleton;
+        for (int i = 0; i < 5; i++) { measNode[i] = measPose[i]; measWorld[i] = skel.GlobalTransform * measPose[i]; }
         return true;
+    }
+
+    /// <summary>--act-raw: the same points off the mixer's pose (GetBoneGlobalPose outside the skeleton's update), in her node's
+    /// frame: what this measure read before it was moved to SkeletonUpdated. Not the pose that is shown.</summary>
+    string MeasRaw()
+    {
+        var skel = person.Skeleton;
+        var inv = GlobalTransform.AffineInverse();
+        var v = new Vector3[5];
+        for (int i = 0; i < 5; i++) v[i] = inv * (skel.GlobalTransform * skel.GetBoneGlobalPose(measIdx[i]).Origin);
+        var x = inv * skel.GlobalTransform;
+        return $"{MeasPoints(v)} [the mixer's pose, node frame; skeleton in her node: scale {x.Basis.Scale.X:0.###}, origin {Xz(x.Origin)}, yaw {Mathf.RadToDeg(x.Basis.GetEuler().Y):0.#} deg]";
     }
 
     string MeasPoints(Vector3[] v) =>
@@ -124,20 +148,21 @@ public partial class PlayerView
         double c = actClock();
         if (measStage == 1 && c >= measT + 0.25)
         {
-            GD.Print($"act: {ActClip} blend-in 0.25 s: {MeasPaths(measPathNode, measStartNode, measNode)} [node frame]");
+            GD.Print($"act: {ActClip} blend-in 0.25 s: {MeasPaths(measPathNode, measStartNode, measNode)} [skeleton frame]");
             measStage = 2;
         }
         if (measStage == 2 && c >= measEndAt)
         {
-            GD.Print($"act: {ActClip} end: {MeasPoints(measNode)} [node frame]");
+            GD.Print($"act: {ActClip} end: {MeasPoints(measNode)} [skeleton frame]");
             for (int i = 0; i < 5; i++) { measStartNode[i] = measNode[i]; measStartWorld[i] = measWorld[i]; measPathNode[i] = measPathWorld[i] = 0; }
             measStage = 3; measT = c;
         }
         else if (measStage == 3 && c >= measT + 0.60)
         {
             GD.Print($"act: {ActClip} blend-back 0.60 s: {MeasPaths(measPathWorld, measStartWorld, measWorld)} [world]");
-            GD.Print($"act: {ActClip} blend-back 0.60 s: {MeasPaths(measPathNode, measStartNode, measNode)} [node frame]");
-            GD.Print($"act: {ActClip} after: {MeasPoints(measNode)} [node frame]");
+            GD.Print($"act: {ActClip} blend-back 0.60 s: {MeasPaths(measPathNode, measStartNode, measNode)} [skeleton frame]");
+            GD.Print($"act: {ActClip} after: {MeasPoints(measNode)} [skeleton frame]");
+            if (Args.Has("act-raw")) GD.Print($"act: {ActClip} after, raw: {MeasRaw()}");
             measStage = 0;
         }
     }
@@ -148,7 +173,8 @@ public partial class PlayerView
         if (measStage == 3) GD.Print($"act: {ActClip} blend-back cut short by the next pass");
         measStage = 0;
         if (!MeasRead()) return;
-        GD.Print($"act: {ActClip} before: {MeasPoints(measNode)} [node frame]");
+        GD.Print($"act: {ActClip} before: {MeasPoints(measNode)} [skeleton frame]");
+        if (Args.Has("act-raw")) GD.Print($"act: {ActClip} before, raw: {MeasRaw()}");
         for (int i = 0; i < 5; i++)
         {
             measStartNode[i] = measPrevNode[i] = measNode[i]; measStartWorld[i] = measPrevWorld[i] = measWorld[i];
