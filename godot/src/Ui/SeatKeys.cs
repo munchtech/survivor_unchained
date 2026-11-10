@@ -67,7 +67,7 @@ public partial class Socket
     public void Feed(in SeatState s)
     {
         keyed = true;
-        float cq = s.Cost < 0 ? -1 : Mathf.Floor(Mathf.Clamp(s.Cost, 0, 1) * 96) / 96;
+        float cq = SeatCost.Shown(s.Cost);
         // (the cost met: the arc goes and the ready glow plays once)
         if (costShown >= 0 && cq < 0 && filled && !waiting) cue = 0;
         if (cq != costShown || s.Kind != st.Kind || s.Union != st.Union || s.ClaspLeft != st.ClaspLeft || s.Rings != st.Rings || s.Held != st.Held) dirty = true;
@@ -231,8 +231,10 @@ public partial class Socket
         // (fix A, 6: a key down, whatever the seat's kind: the ring lit, the well warm, and the bright head turning on
         // the arc, so held is never quieter than invited)
         bool held = keyed && filled && st.Held;
-        if (held && press == null) press = Fx(SeatFx.Mode.Press);
-        if (press != null && press.Visible != held) press.Visible = held;
+        // (M4 lead 13, r3b M2: held while short, the ring says the key is down but the well stays the short one)
+        bool warm = SeatCost.WarmWell(held, CostShort);
+        if (warm && press == null) press = Fx(SeatFx.Mode.Press);
+        if (press != null && press.Visible != warm) press.Visible = warm;
         bool spin = keyed && filled && (st.Channeling || st.Held);
         if (Trace && (spin != (spinner?.Visible ?? false) || st.Bond != (bond?.Visible ?? false))) GD.Print($"seat {Index}: spin {spin} bond {st.Bond} keyed {keyed} filled {filled}");
         // (fix A2: a held seat's ring and bead are one Mix-blend node above the added layers; a channeling seat not held

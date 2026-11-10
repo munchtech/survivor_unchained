@@ -237,7 +237,7 @@ public partial class Minimap : Control
                 if (taken < spare.Count) icon = spare[taken];
                 else
                 {
-                    icon = m.Kind == MarkKind.Person ? Dot(new Color("#3a2414")) : objective ? new GoalDiamond() : Mark(m.Kind, key.Item2);
+                    icon = m.Kind == MarkKind.Person ? Dot(new Color("#3a2414")) : objective ? new GoalDiamond() : m.Kind == MarkKind.Exit ? new ExitBead() : Mark(m.Kind, key.Item2);
                     spare.Add(icon);
                     marks.AddChild(icon);
                 }
@@ -296,7 +296,34 @@ public partial class Minimap : Control
     }
 
     /// <summary>The objective's pin: the tracker's diamond (GameHud StepMark), heavier: an open bone diamond on an ink edge, ink-dimmed centre.</summary>
-    partial class GoalDiamond : Control
+    /// <summary>M4 lead 13 (r3b S3): an exit that is not the objective, as a lesser pin that reads at 1:1: a bone bead with
+    /// an ink edge and one ink shape, an arch (a gate in a wall) in 2 px strokes, the diamond's hand. The painted exit.png
+    /// went to a grey-green blot at 14 px.</summary>
+    internal partial class ExitBead : Control
+    {
+        public ExitBead()
+        {
+            CustomMinimumSize = new Vector2(18, 18);
+            Size = new Vector2(18, 18);
+            MouseFilter = MouseFilterEnum.Ignore;
+        }
+
+        public override void _Draw()
+        {
+            var c = Size / 2;
+            var ink = new Color("#241c12");
+            DrawCircle(c, 8.6f, ink, true, -1, true);
+            DrawCircle(c, 7.4f, new Color("#e8dcc4"), true, -1, true);
+            // the arch: two posts and a round head, the way out
+            float w = 3.2f, top = -0.6f, foot = 4.6f;
+            DrawLine(c + new Vector2(-w, foot), c + new Vector2(-w, top), ink, 2.1f, true);
+            DrawLine(c + new Vector2(w, foot), c + new Vector2(w, top), ink, 2.1f, true);
+            DrawArc(c + new Vector2(0, top), w, Mathf.Pi, Mathf.Tau, 12, ink, 2.1f, true);
+            DrawLine(c + new Vector2(-w - 1.6f, foot), c + new Vector2(w + 1.6f, foot), ink, 1.6f, true);
+        }
+    }
+
+    internal partial class GoalDiamond : Control
     {
         public GoalDiamond()
         {

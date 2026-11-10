@@ -590,7 +590,7 @@ public partial class Socket : Control
         if (filled)
         {
             // (round 2: the element's light in the well's glass, so neighbours read apart by more than shape)
-            bool shortNow = CostShort && !st.Held && !Numbered;
+            bool shortNow = SeatCost.ShortLook(CostShort, Numbered);
             DrawTextureRect(DgMeters.Disc, new Rect2(c - Vector2.One * hr * 1.15f + new Vector2(0, hr * 0.25f), Vector2.One * hr * 2.3f), false, school with { A = 0.42f });
             // (M4 lead 11: short of its cost = a dark veil over the well, then a dull glyph at 55%: "not yet")
             if (shortNow) DrawCircle(c, hr - 0.5f, new Color(0.02f, 0.015f, 0.01f, 0.58f * (float)cool), true, -1, true);

@@ -24,6 +24,7 @@
     <Compile Include="../src/Ui/LevelCardModel.cs" LinkBase="src" />
     <Compile Include="../src/Ui/GlyphPaths.cs" LinkBase="src" />
     <Compile Include="../src/Fx/HitsPlace.cs" LinkBase="src" />
+    <Compile Include="../src/Ui/SeatCostModel.cs" LinkBase="src" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />

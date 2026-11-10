@@ -353,7 +353,7 @@ public partial class MapScreen : Overlay
     public override (float Pitch, float Distance, float Height)? CameraFrame => wide ? null : BookFrame;
 
     /// <summary>A mark the list can name: where, what, and its words.</summary>
-    readonly record struct Entry(double X, double Z, MarkKind Kind, string Label);
+    readonly record struct Entry(double X, double Z, MarkKind Kind, string Label, bool Objective = false);
 
     /// <summary>The triggers zoom (or , and .); Y finds you; Z (R3) opens it wide or folds it back; focus
     /// on a line of the list glides the map to it.</summary>
@@ -480,10 +480,10 @@ public partial class MapScreen : Overlay
         }
         Vector2 Px(double x, double z) => new((float)((x / extent + 0.5) * F), (float)((z / extent + 0.5) * F));
         double mark0 = sw.Elapsed.TotalMilliseconds;
-        var entries = zone.MapMarks().Where(m => m.Kind is MarkKind.Exit or MarkKind.Quest || Seen(m.X, m.Z)).Select(m => new Entry(m.X, m.Z, m.Kind, m.Label)).ToList();
+        var entries = zone.MapMarks().Where(m => m.Kind is MarkKind.Exit or MarkKind.Quest || Seen(m.X, m.Z)).Select(m => new Entry(m.X, m.Z, m.Kind, m.Label, m.Objective)).ToList();
         foreach (var gp in G.GoalPins()) entries.Add(new Entry(gp.X, gp.Z, MarkKind.Goal, gp.Def.Label));
         if (G.Journey.World.Corpse is { } corpse && corpse.Zone == zone.Id) entries.Add(new Entry(corpse.X, corpse.Z, MarkKind.Danger, $"{corpse.HeroName}'s belongings"));
-        foreach (var m in entries.OrderByDescending(m => m.Kind == MarkKind.Place)) Mark(world, Px(m.X, m.Z), m.Label, m.Kind);
+        foreach (var m in entries.OrderByDescending(m => m.Kind == MarkKind.Place)) Mark(world, Px(m.X, m.Z), m.Label, m.Kind, m.Objective);
         if (measure) GD.Print($"MAPMEASURE build: drawing {drawMs:F1} ms, fog {fogMs:F1} ms, {entries.Count} marks {sw.Elapsed.TotalMilliseconds - mark0:F1} ms, extent {extent:F0}, zone {zone.Id}");
         // The ring that marks what the list has chosen.
         ring = new Panel { Size = new Vector2(46, 46), PivotOffset = new Vector2(23, 23), MouseFilter = MouseFilterEnum.Ignore, Visible = false };
@@ -683,15 +683,16 @@ public partial class MapScreen : Overlay
     /// <summary>Each mark's name on the drawing: where its mark stands, the words, what it is, how wide.</summary>
     readonly List<(Control Node, Label Text, MarkKind Kind, float W)> names = new();
 
-    void Mark(Control parent, Vector2 at, string label, MarkKind kind)
+    void Mark(Control parent, Vector2 at, string label, MarkKind kind, bool objective = false)
     {
         bool place = kind == MarkKind.Place;
         var (_, color) = Minimap.Look(kind);
         var node = new Control { Position = at, MouseFilter = MouseFilterEnum.Ignore };
         if (!place)
         {
-            var icon = Minimap.Mark(kind, 22);
-            icon.Position = new Vector2(-11, -11);
+            // (M4 lead 13, r3b: the one place sought wears the minimap's and the tracker's diamond here too, not quest.png)
+            Control icon = objective ? new Minimap.GoalDiamond() : Minimap.Mark(kind, 22);
+            icon.Position = -icon.Size / 2;
             node.AddChild(icon);
         }
         var font = place ? Style.Display : Style.TextBold;

@@ -26,6 +26,7 @@ public static class DevSlots
     static int resolveNext;
     static double traceAt;
     static Battle? resolveFor;
+    static bool resolvePinTold;
 
     /// <summary>--step-won ID[@T] (pictures, M4 §3): the dash step ID granted (no banner) once the campaign fight's clock
     /// passes T s (default 2), and the HUD's step-won motion fired for it directly (GameHud.StepWon).</summary>
@@ -94,6 +95,13 @@ public static class DevSlots
                 GD.Print($"slots: resolve set to {ResolveAt[resolveNext].V} at {b.Time:0.00}");
                 resolveNext++;
             }
+        }
+        // (M4 lead 13, r3b M1: a picture's hair pin, --hud-pin resolve=F, holds the sim's Resolve at F of the cap every tick,
+        // so the hair, the seats' cost arcs and their short looks read one Resolve; a spend comes straight back to F)
+        if (SurvivorUnchained.Ui.HudPin.Resolve is float rp && b.Campaign && b.Combat && Math.Abs(b.Resolve.Value - rp * b.Resolve.Max) > 1e-6)
+        {
+            if (!resolvePinTold) { resolvePinTold = true; GD.Print($"slots: resolve held at {rp * b.Resolve.Max:0.#} (the hair pin) from {b.Time:0.00}"); }
+            b.Resolve.Set(rp * b.Resolve.Max);
         }
         if (Args.Has("slots-trace") && b.Campaign && b.Combat && b.Time >= traceAt)
         {

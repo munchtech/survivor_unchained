@@ -1572,8 +1572,8 @@ public partial class GameHud : CanvasLayer
                 Kind = w.KindledNow ? Socket.SeatKind.Kindled : !second && w.Cast == CastMode.Channel ? Socket.SeatKind.Channeled : Socket.SeatKind.Pressed,
                 Channeling = w.Channeling && !second,
                 Held = second ? w.Held2 : w.Held,
-                Cost = HudPin.CostSeat is { } pc && pc.Seat == k ? pc.Fraction
-                    : cost > 0 && resolve.Value < cost ? (float)(resolve.Value / cost) : -1,
+                // (M4 lead 13, r3b M1: one rule on the one Resolve the hair reads: SeatCost)
+                Cost = HudPin.CostSeat is { } pc && pc.Seat == k ? SeatCost.Shown(pc.Fraction) : SeatCost.Arc(resolve.Value, cost),
                 Union = w.Slot2 >= 0,
                 ClaspLeft = adjacent && other == k - 1,
                 Rings = w.Slot2 >= 0 && !adjacent,
