@@ -1888,7 +1888,9 @@ public partial class Game : Node, IZoneHost
     // MiniView's own (M4 lead 5: it made a view, a list and the zone's marks anew each HUD frame, 1.9 KB): the one view
     // it fills, and what its marks were last asked for. The marks are asked of the zone and the goals again when the
     // place, the fog, the goals' set or her fallen belongings change, and otherwise on every MiniMarksEvery-th asking
-    // (half a second at the HUD's twelve a second: the zone's MapMarks builds its list each time it is asked).
+    // (half a second at the HUD's twelve a second: the zone's MapMarks builds its list each time it is asked). No mark
+    // walks (fixed places, scars, people who stand and only jump with their routine, goals pinned to fixed things;
+    // tests/MiniMarksTests fails if one ever glides): were one to, this cadence would have to follow moves.
     readonly MinimapView miniView = new();
     ZoneRuntime? miniZone;
     WorldScene? miniScene;
