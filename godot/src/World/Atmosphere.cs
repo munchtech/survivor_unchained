@@ -665,7 +665,7 @@ public partial class Atmosphere : Node3D
             Vector3 l = OkLin(tl[j].Lerp(tl[j + 1], t)) / linL, s = OkLin(ts[j].Lerp(ts[j + 1], t)) / linS;
             img.SetPixel(x, 0, new Color(l.X, l.Y, l.Z, a)); img.SetPixel(x, 1, new Color(s.X, s.Y, s.Z, a));
         }
-        floorTurn = (ImageTexture.CreateFromImage(img), reach, linL / unit, linS / unit);
+        floorTurn = (ImageTexture.CreateFromImage(img), reach, linL / unit, Vector3.Zero);   // (under a leaf the sky stays whole and she adds nothing: cel_floor_back)
         return floorTurn;
     }
     static double[]? floorTurnOf;

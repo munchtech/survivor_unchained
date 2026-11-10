@@ -330,7 +330,9 @@ float cel_floor_back(vec3 c_wp, float c_dap, inout vec3 c_turn) {
 	float c_leaf = cel_key.w > 0.0 ? clamp((1.0 - c_dap) / cel_key.w, 0.0, 1.0) : 0.0;
 	vec4 c_t = cel_floor_at(c_r, 0.25);
 	c_turn = mix(c_t.rgb, cel_floor_at(c_r, 0.75).rgb, c_leaf);
-	return c_t.a;
+	// (p_01: her stand-in under a leaf came out a third of the shade's tone, a near-black mass beside the orange. Under a
+	// leaf the sky stays whole instead, so the shade there is the floor's own shade times its turn: the table's tone exactly.)
+	return mix(c_t.a, 1.0, c_leaf);
 }
 #define CEL_FRAG_TURN0 vec3 c_ft = vec3(1.0);
 #define CEL_FRAG_BACK(c_p, c_d) cel_floor_back(c_p, c_d, c_ft)
