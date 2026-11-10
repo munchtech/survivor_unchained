@@ -557,6 +557,6 @@ public partial class Perf : Node
         GD.Print($"perf {name}: {hitches.Count} hitches; wrote {dir}/{name}.json");
         foreach (var h in hitches.Take(12)) GD.Print($"perf hitch {h}");
         if (Args.Has("perf-dump")) Dump();
-        GetTree().Quit();
+        QuitPath.Request(GetTree());
     }
 }

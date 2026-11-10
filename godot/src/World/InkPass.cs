@@ -320,8 +320,12 @@ public static class InkRelease
         IRids[] all;
         lock (owners) { all = owners.ToArray(); owners.Clear(); }
         foreach (var o in all) o.FreeRids(rd);
+        // (QUIT, lead 21: QuitPath releases at the quit request, then the Ink node again as it leaves the tree: one line)
+        if (all.Length == 0 && said) return;
+        said = true;
         GD.Print($"ink: released {all.Length} effect(s)");
     }
+    static bool said;
 }
 
 static class RDUniformX

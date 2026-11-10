@@ -104,6 +104,8 @@ public partial class Game : Node, IZoneHost
         if (Brush.On is { } brush) AddChild(new Brush(brush));
         // The ink line (L1 painted cel; --ink off: nothing is made). After Brush, so it is put first on its compositor.
         if (InkPass.On) AddChild(new Ink());
+        // (L1 lead 21 QUIT) Every quit and the window's close go through QuitPath (early release, one frame, the guard).
+        QuitPath.Install(this);
         cam = new FollowCamera(camera);
         // --cam D: the camera this far off (closer pictures of the crowd).
         if (Args.Has("cam")) cam.Distance = cam.TargetDistance = (float)Args.Num("cam", 23);
@@ -2223,7 +2225,7 @@ public partial class Game : Node, IZoneHost
             if (Args.Has("flare-hp")) fb0.Player.Hp = fb0.MaxHp * Args.Num("flare-hp", 1);
         }
         // --court-tail N: the court clip quits N frames after the door opens (the movie then closes whole).
-        if (courtOpen > 0 && Args.Has("court-tail") && Engine.GetFramesDrawn() > courtOpen + (int)Args.Num("court-tail", 150)) GetTree().Quit();
+        if (courtOpen > 0 && Args.Has("court-tail") && Engine.GetFramesDrawn() > courtOpen + (int)Args.Num("court-tail", 150)) QuitPath.Request(GetTree());
         // --clip (pictures only): she holds her health through the shot, so an idle bot can't fall before a late
         // --cast (the stalker and the arcanist did by 30 s, and the press then landed in town or not at all).
         // --court-hold (the court clip, pictures only): the same, so the standing bot lives to the fight's end (the pull and the slam

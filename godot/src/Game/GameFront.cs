@@ -681,7 +681,7 @@ public partial class Game
     {
         if (Mode == "play") Save("quit");
         hud.Fade(1, 0.4);
-        Wait(0.45, () => GetTree().Quit());
+        Wait(0.45, () => QuitPath.Request(GetTree()));
     }
 
     /// <summary>The autopilot at the title: through the notice, and a new journey.</summary>

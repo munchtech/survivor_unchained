@@ -154,7 +154,7 @@ public partial class Shots : Node
                 GetViewport().GetTexture().GetImage().SavePng(hf);
                 GD.Print($"saved {hf} at {time:0.00}s (hud state {hudNext}: {Ui.HudPin.Seq[hudNext]}){Ui.HerLight.Note()}");
                 hudNext++; hudPhase = 0;
-                if (hudNext >= Ui.HudPin.Seq.Length && until <= 0 && taken >= count) { GetTree().Quit(); return; }
+                if (hudNext >= Ui.HudPin.Seq.Length && until <= 0 && taken >= count) { QuitPath.Request(GetTree()); return; }
             }
         }
         // --geom-normals (dent d3, a developer's test): 1.5 s before the picture her skin's stored normals are swapped
@@ -208,7 +208,7 @@ public partial class Shots : Node
             GD.Print($"saved {f} at {time:0.00}s frame {Engine.GetFramesDrawn()}{HerAt()}");
             CamLines();
         }
-        if (until > 0 && time >= until) { GetTree().Quit(); return; }
+        if (until > 0 && time >= until) { QuitPath.Request(GetTree()); return; }
         if (taken >= count) return;
         var due = seconds + taken * every;
         if (time < due) return;
@@ -225,7 +225,7 @@ public partial class Shots : Node
         // --navcheck: the open screen's focus routes walked as the picture is taken.
         if (Args.Has("navcheck")) Audit(GetTree().Root);
         taken++;
-        if (taken >= count && until <= 0) GetTree().Quit();
+        if (taken >= count && until <= 0) QuitPath.Request(GetTree());
     }
 
     /// <summary>Where her chest is on the screen this frame (the game sets it while pictures are taken), for crops of her.</summary>
