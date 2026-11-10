@@ -82,6 +82,12 @@ def measure(gear, pieces, clips, jobs=3, step=2, say=print):
         mg = float(law.get("margin_mm", 1.0)) / 1000.0
         mo = np.min([r[pc]["minout"] for r in rs], 0)
         hitv, area = rs[0][pc]["hitv"], rs[0][pc]["area"]
+        # (gear_wear's sweep adds her points near the piece that were never under it at rest, after the samples under
+        # it: they have no hit vertices and set no target; they are counted apart)
+        n_fp = len(hitv)
+        swept = -mo[n_fp:] > OUT_MM / 1000.0
+        swept_mm2 = float(area[n_fp:][swept].sum() * 1e6)
+        mo, area = mo[:n_fp], area[:n_fp]
         short = -mo - OUT_MM / 1000.0
         bad = short > 0
         fp = os.path.join(gf.STANDOFF, f"{pc}.json")
@@ -131,8 +137,9 @@ def measure(gear, pieces, clips, jobs=3, step=2, say=print):
         with open(fp, "w") as f:
             json.dump(out, f)
         res[pc] = {"out2_mm2": round(float(area[bad].sum() * 1e6), 1), "worst_mm": round(float(-mo.min() * 1000), 1),
-                   "targets": sum(len(v) for v in tg.values())}
-        say(f"gear_standoff {pc}: out2 {res[pc]['out2_mm2']} mm2, worst {res[pc]['worst_mm']} mm, "
+                   "targets": sum(len(v) for v in tg.values()), "swept_out2_mm2": round(swept_mm2, 1)}
+        say(f"gear_standoff {pc}: out2 {res[pc]['out2_mm2']} mm2, worst {res[pc]['worst_mm']} mm (under it at rest; "
+            f"swept in from beside it: {res[pc]['swept_out2_mm2']} mm2, no target), "
             f"{res[pc]['targets']} targeted vertices -> {os.path.relpath(fp, REPO)}")
     return res
 
