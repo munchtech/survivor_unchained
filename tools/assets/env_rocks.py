@@ -960,9 +960,359 @@ def mesh(only=None):
     print('REPORT', json.dumps(report))
 
 
+# ---------------------------------------------------------------- the night kit's boulders (L1 l13 K2: docs/design/NIGHT_KIT.md)
+# FROM (a) the play camera (78 px per metre, 50 degrees above: a plane must be a tone the eye can count, so few and large);
+# (b) target 09's boulders: block-rounded, a pale flat top, dark planar sides, a hard step between; (c) K1's contract, "tones
+# step where normals step": every face is FLAT (its plane's normal on every corner, never the sculpt's), so the standing
+# material picks one tone a plane. A boulder is one to three convex blocks, each the cut of a few planes: a near-level top
+# (within 'ttilt' degrees of up), 'sides' planar sides leaning back 'lean' degrees, a shoulder bevel over each side (its
+# normal 48-60 degrees from up: the body tone between the top and a side) and a corner bevel between two sides ('corner' m
+# wide). The shoulder's size is solved so the tops cover 'top' of the footprint seen from above (the design's 35-45%).
+# Albedo: rock_dabs.png, a tiling sheet of flat low-contrast dabs (no cracks, no noise), each face projected onto it in its
+# own plane; drawn by OWN_ROCK's painted branch (kit.gdshader: the mesh normal as it is, no bump, no moss or lichen).
+# Vertex colour: r, g, b 0 (no baked wear: the planes carry the painting), a the variant, as every packed species.
+#     python tools/assets/env_rocks.py tex --kit night                        rock_dabs.png
+#     blender -b -P tools/assets/env_rocks.py -- mesh --preset boulder_s      (or boulder_m, boulder_l) -> <species>.gltf
+#     python tools/assets/env_rocks.py sheet --out X.png                      the kit's review sheet (the play camera's angle and
+#                                                                             size, three flat tones by normal) and its table
+# A species' name carries no underscore (FloraSpecies.ByMaterial cuts a material's name at one), so the design's preset
+# boulder_s is the species 'bouldersmall' (pieces boulder_s_a, boulder_s_b), boulder_m 'bouldermid', boulder_l 'boulderlarge'.
+DAB_TILE = 4.0      # metres the dab sheet covers
+NIGHT = {
+    # size: a block's x, y across and its height over the ground (m); off: its place (x, y); block: how square its outline
+    # (2 an ellipse, 4 a block); sides; lean (degrees, low, high); ttilt (degrees); corner: the corner bevel's width (m, 0 none)
+    'boulder_s': dict(species='bouldersmall', top=0.4, variants=[
+        dict(seed=2101, blocks=[dict(size=(0.72, 0.58, 0.4), sides=5, lean=(3, 9), ttilt=(5, 10), block=3.0, corner=0.0)]),
+        dict(seed=2113, blocks=[dict(size=(0.88, 0.66, 0.5), sides=6, lean=(3, 9), ttilt=(5, 10), block=3.4, corner=0.0)]),
+    ]),
+    'boulder_m': dict(species='bouldermid', top=0.4, variants=[
+        dict(seed=2201, blocks=[dict(size=(1.5, 1.2, 0.85), sides=6, lean=(3, 10), ttilt=(4, 9), block=3.2, corner=0.16)]),
+        dict(seed=2213, blocks=[dict(size=(1.75, 1.3, 0.95), sides=7, lean=(3, 10), ttilt=(4, 9), block=3.6, corner=0.16)]),
+        dict(seed=2227, blocks=[dict(size=(1.3, 1.15, 1.0), sides=5, lean=(4, 10), ttilt=(5, 10), block=3.0, corner=0.18),
+                                dict(size=(0.8, 0.75, 0.5), off=(0.55, -0.35), sides=5, lean=(3, 9), ttilt=(5, 10), block=3.0, corner=0.0)]),
+    ]),
+    'boulder_l': dict(species='boulderlarge', top=0.4, variants=[
+        dict(seed=2301, blocks=[dict(size=(2.6, 2.1, 1.5), sides=7, lean=(4, 10), ttilt=(4, 8), block=3.4, corner=0.24),
+                                dict(size=(1.5, 1.3, 0.8), off=(1.15, -0.75), sides=5, lean=(3, 9), ttilt=(5, 9), block=3.0, corner=0.18)]),
+        dict(seed=2311, blocks=[dict(size=(3.1, 2.3, 1.35), sides=8, lean=(4, 10), ttilt=(3, 7), block=3.8, corner=0.26)]),
+        dict(seed=2323, blocks=[dict(size=(2.3, 2.0, 1.75), sides=6, lean=(4, 10), ttilt=(4, 8), block=3.2, corner=0.24),
+                                dict(size=(1.7, 1.2, 1.0), off=(-0.85, 0.6), sides=6, lean=(3, 9), ttilt=(5, 9), block=3.2, corner=0.18),
+                                dict(size=(1.0, 0.9, 0.55), off=(0.9, 1.0), sides=5, lean=(3, 9), ttilt=(5, 10), block=3.0, corner=0.0)]),
+    ]),
+}
+COS30 = math.cos(math.radians(30))
+COS80 = math.cos(math.radians(80))
+
+
+def polytope(planes):
+    """planes [(n, d)], the solid n.x <= d: its faces [(plane index, polygon k x 3, counter-clockwise from outside)]."""
+    Nn = np.array([p[0] for p in planes], float); Dd = np.array([p[1] for p in planes], float)
+    m = len(planes)
+    I = np.array([(i, j, k) for i in range(m) for j in range(i + 1, m) for k in range(j + 1, m)])
+    A = Nn[I]
+    ok = np.abs(np.linalg.det(A)) > 1e-7
+    X = np.linalg.solve(A[ok], Dd[I[ok]][..., None])[..., 0]
+    X = X[(X @ Nn.T <= Dd[None] + 1e-6).all(1)]
+    faces = []
+    for i in range(m):
+        P = X[np.abs(X @ Nn[i] - Dd[i]) < 1e-6]
+        if len(P) < 3:
+            continue
+        P = P[np.unique(np.round(P, 4), axis=0, return_index=True)[1]]
+        if len(P) < 3:
+            continue
+        u, v = chart_frame(Nn[i])
+        c = P.mean(0)
+        faces.append((i, P[np.argsort(np.arctan2((P - c) @ v, (P - c) @ u))]))
+    return faces
+
+
+def night_block(bp, rng, sd, sink=0.12):
+    """One block's planes [(n, d, kind)]: top, sides, a shoulder over each side set sd m down it, corner bevels, the foot."""
+    ax, ay, h = bp['size'][0] / 2, bp['size'][1] / 2, bp['size'][2]
+    o = np.array(list(bp.get('off', (0.0, 0.0))) + [0.0])
+    n, p = bp['sides'], bp['block']
+    ta, tt = rng.uniform(0, 2 * math.pi), math.radians(rng.uniform(*bp['ttilt']))
+    nt = np.array([math.cos(ta) * math.sin(tt), math.sin(ta) * math.sin(tt), math.cos(tt)])
+    out = [(nt, nt[2] * h, 'top')]
+    a0, sides = rng.uniform(0, 2 * math.pi), []
+    for i in range(n):
+        a = a0 + (i + rng.uniform(-0.2, 0.2)) * 2 * math.pi / n
+        r = (abs(math.cos(a) / ax) ** p + abs(math.sin(a) / ay) ** p) ** (-1 / p) * rng.uniform(0.9, 1.0)
+        l = math.radians(rng.uniform(*bp['lean']))
+        ns = np.array([math.cos(a) * math.cos(l), math.sin(a) * math.cos(l), math.sin(l)])
+        sides.append((ns, r * math.cos(l)))
+        out.append((ns, r * math.cos(l), 'side'))
+        # the shoulder: through the side's point sd down from the top, its normal 48-60 degrees from up
+        ph, zq = math.radians(rng.uniform(48, 60)), h - sd * rng.uniform(0.8, 1.2)
+        q = np.array([math.cos(a), math.sin(a), 0.0]) * (r - zq * math.tan(l)) + np.array([0, 0, zq])
+        nsh = np.array([math.cos(a) * math.sin(ph), math.sin(a) * math.sin(ph), math.cos(ph)])
+        out.append((nsh, float(nsh @ q), 'shoulder'))
+    if bp['corner'] > 0:
+        for i in range(n):
+            (n1, d1), (n2, d2) = sides[i], sides[(i + 1) % n]
+            mm = n1 + n2; mm /= np.linalg.norm(mm)
+            beta = 0.5 * math.acos(float(np.clip(n1 @ n2, -1, 1)))
+            try:    # the corner's line at half height
+                cxy = np.linalg.solve(np.array([n1[:2], n2[:2]]), np.array([d1 - n1[2] * h / 2, d2 - n2[2] * h / 2]))
+            except np.linalg.LinAlgError:
+                continue
+            cpt = np.array([cxy[0], cxy[1], h / 2])
+            out.append((mm, float(mm @ cpt) - 0.5 * bp['corner'] * rng.uniform(0.8, 1.2) * math.tan(beta), 'bevel'))
+    out.append((np.array([0, 0, -1.0]), sink, 'foot'))
+    return [(nn, d + float(nn @ o), k) for nn, d, k in out]
+
+
+def night_piece(prm, top, name=''):
+    """One boulder: dict(name, V, F, N per face, K kinds per face, UV per corner). Flat: each face's corners are its own."""
+    def build(sd):
+        rng = np.random.default_rng(prm['seed'])
+        V, F, N, K, UV = [], [], [], [], []
+        for bp in prm['blocks']:
+            pl = night_block(bp, rng, sd * bp['size'][2])
+            for pi, P in polytope([(nn, d) for nn, d, _ in pl]):
+                nn, _, kind = pl[pi]
+                if kind == 'foot':
+                    continue
+                u, v = chart_frame(nn)
+                uv0 = rng.uniform(0, 1, 2)
+                base = len(V)
+                V += list(P)
+                for j in range(1, len(P) - 1):
+                    F.append((base, base + j, base + j + 1)); N.append(nn); K.append(kind)
+                    UV.append([uv0 + np.array([P[t] @ u, P[t] @ v]) / DAB_TILE for t in (0, j, j + 1)])
+        return dict(name=name, V=np.array(V), F=np.array(F), N=np.array(N), K=K, UV=np.array(UV), fam='stone')
+    lo, hi = 0.04, 0.6      # (the shoulder's drop, a share of the block's height: more of it, less top)
+    for _ in range(12):
+        mid = (lo + hi) / 2
+        pc = build(mid)
+        if shares(pc)['top'] > top:
+            lo = mid
+        else:
+            hi = mid
+    pc['sd'] = round(mid, 3)
+    return pc
+
+
+def night_pieces(only=None):
+    """{preset: [piece]} (the pieces' names boulder_s_a, ...)."""
+    return {nm: [night_piece(prm, pre['top'], f'{nm}_{"abcdefgh"[vi]}') for vi, prm in enumerate(pre['variants'])]
+            for nm, pre in NIGHT.items() if not only or nm == only}
+
+
+# ---- measuring and the review sheet (numpy; shared with env_trees.py's kit pieces)
+TOPDOWN = np.eye(3)
+_e = math.radians(50)
+PLAY = np.array([[1.0, 0, 0], [0, math.sin(_e), math.cos(_e)], [0, -math.cos(_e), math.sin(_e)]])   # (right, up, toward the eye)
+
+
+def raster(V, F, R, ppm, pad=2):
+    """An orthographic z-buffer of the triangles seen with R's rows (right, up, toward the eye): (face ids, -1 empty; x0, y0 px)."""
+    P = V @ R.T
+    x, y, z = P[:, 0] * ppm, -P[:, 1] * ppm, P[:, 2]
+    x0, y0 = math.floor(x.min()) - pad, math.floor(y.min()) - pad
+    W, H = int(math.ceil(x.max()) - x0) + pad, int(math.ceil(y.max()) - y0) + pad
+    ids = -np.ones((H, W), np.int64); zb = np.full((H, W), -1e9)
+    for fi, (a, b, c) in enumerate(F):
+        xs, ys = x[[a, b, c]] - x0, y[[a, b, c]] - y0
+        i0, i1 = max(int(xs.min()), 0), min(int(math.ceil(xs.max())) + 1, W)
+        j0, j1 = max(int(ys.min()), 0), min(int(math.ceil(ys.max())) + 1, H)
+        d = (ys[1] - ys[2]) * (xs[0] - xs[2]) + (xs[2] - xs[1]) * (ys[0] - ys[2])
+        if i1 <= i0 or j1 <= j0 or abs(d) < 1e-9:
+            continue
+        gx, gy = np.meshgrid(np.arange(i0, i1) + 0.5, np.arange(j0, j1) + 0.5)
+        w0 = ((ys[1] - ys[2]) * (gx - xs[2]) + (xs[2] - xs[1]) * (gy - ys[2])) / d
+        w1 = ((ys[2] - ys[0]) * (gx - xs[2]) + (xs[0] - xs[2]) * (gy - ys[2])) / d
+        w2 = 1 - w0 - w1
+        zz = w0 * z[a] + w1 * z[b] + w2 * z[c]
+        sub = zb[j0:j1, i0:i1]
+        m = (w0 >= 0) & (w1 >= 0) & (w2 >= 0) & (zz > sub)
+        sub[m] = zz[m]; ids[j0:j1, i0:i1][m] = fi
+    return ids, (x0, y0)
+
+
+def groups(N):
+    """Each face's tone group by its baked normal: 0 top (within 30 degrees of up), 1 body, 2 inner or low (80 degrees or more)."""
+    return np.where(N[:, 2] >= COS30, 0, np.where(N[:, 2] > COS80, 1, 2))
+
+
+def shares(pc, ppm=60):
+    """From straight above: the footprint's area (m2), the share of it each group shows, and the share of its hull left open."""
+    ids, _ = raster(pc['V'], pc['F'], TOPDOWN, ppm)
+    cov = ids >= 0
+    g = groups(pc['N'])[ids[cov]]
+    ys, xs = np.nonzero(cov)
+    pts = sorted(set(zip(xs.tolist(), ys.tolist())))
+    def half(ps):
+        h = []
+        for q in ps:
+            while len(h) >= 2 and (h[-1][0] - h[-2][0]) * (q[1] - h[-2][1]) - (h[-1][1] - h[-2][1]) * (q[0] - h[-2][0]) <= 0:
+                h.pop()
+            h.append(q)
+        return h
+    hull = half(pts)[:-1] + half(pts[::-1])[:-1]
+    ha = 0.5 * abs(sum(hull[i][0] * hull[(i + 1) % len(hull)][1] - hull[(i + 1) % len(hull)][0] * hull[i][1] for i in range(len(hull))))
+    n = max(int(cov.sum()), 1)
+    return dict(area=round(n / ppm ** 2, 2), top=float((g == 0).mean()), body=float((g == 1).mean()), low=float((g == 2).mean()),
+                gaps=round(1 - n / max(ha, 1), 3))
+
+
+def oklch(L, C, h):
+    a, b = C * math.cos(math.radians(h)), C * math.sin(math.radians(h))
+    l, m, s = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3, (L - 0.1055613458 * a - 0.0638541728 * b) ** 3, (L - 0.0894841775 * a - 1.291485548 * b) ** 3
+    lin = np.array([4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+                    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s]).clip(0, 1)
+    return np.where(lin <= 0.0031308, 12.92 * lin, 1.055 * lin ** (1 / 2.4) - 0.055)
+
+
+# (the design's table, NIGHT_KIT.md K1: S1 side, S2 body, S3 top per family, as sRGB; the sheet's ground the moonlit S2)
+TONES = {'stone': [oklch(0.43, 0.12, 255), oklch(0.27, 0.085, 261), oklch(0.18, 0.05, 268)],
+         'leaf': [oklch(0.355, 0.075, 237), oklch(0.23, 0.063, 250), oklch(0.14, 0.035, 254)],
+         'bark': [oklch(0.28, 0.05, 268), oklch(0.20, 0.05, 272), oklch(0.15, 0.035, 262)]}
+GROUND = oklch(0.27, 0.073, 255)
+MOON = np.array([-0.55, 0.45, 0.70]) / np.linalg.norm([-0.55, 0.45, 0.70])     # (to the moon: up, from the left, behind)
+
+
+def sheet(rows, out, ppm=78.0, gap=0.5):
+    """The kit's review sheet: rows of pieces side by side from the play camera's angle (50 degrees above) at its size
+    (78 px per metre), flat-lit in three tones a family by each face's baked normal (a stand-in for K1's rule, not the
+    shader: top within 30 degrees of up or square to the moon; side facing away from it or low; body the rest)."""
+    from PIL import Image
+    tiles = []
+    for row in rows:
+        rt = []
+        for pc in row:
+            ids, _ = raster(pc['V'], pc['F'], PLAY, ppm)
+            N = pc['N']; t = N @ MOON
+            tone = np.where((N[:, 2] >= COS30) | (t > 0.8), 0, np.where((t < 0.1) | (N[:, 2] <= COS80), 2, 1))
+            fam = pc.get('fams') if pc.get('fams') is not None else [pc['fam']] * len(N)
+            col = np.array([TONES[f][k] for f, k in zip(fam, tone)])
+            img = np.tile(GROUND, (ids.shape[0], ids.shape[1], 1))
+            img[ids >= 0] = col[ids[ids >= 0]]
+            rt.append(img)
+        tiles.append(rt)
+    g = int(gap * ppm)
+    W = max(sum(t.shape[1] for t in rt) + g * (len(rt) + 1) for rt in tiles)
+    H = sum(max(t.shape[0] for t in rt) for rt in tiles) + g * (len(tiles) + 1)
+    can = np.tile(GROUND, (H, W, 1))
+    y = g
+    for rt in tiles:
+        hh = max(t.shape[0] for t in rt); x = g
+        for t in rt:
+            can[y + hh - t.shape[0]:y + hh, x:x + t.shape[1]] = t
+            x += t.shape[1] + g
+        y += hh + g
+    os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
+    Image.fromarray((can * 255 + 0.5).astype(np.uint8)).save(out)
+    print(out, f'{W}x{H}')
+
+
+def table(pc):
+    s = shares(pc)
+    V = pc['V']; above = V[V[:, 2] > -1e-6] if (V[:, 2] > 0).any() else V
+    kinds = pc.get('K')
+    line = f"{pc['name']}: {np.ptp(V[:, 0]):.2f} x {np.ptp(V[:, 1]):.2f} m, z {max(V[:, 2].min(), 0):.2f}-{V[:, 2].max():.2f} m, {len(pc['F'])} tris, " \
+           f"from above top {s['top']:.0%} body {s['body']:.0%} low {s['low']:.0%}, gaps {s['gaps']:.0%}"
+    if kinds:
+        ar = {}
+        for (a, b, c), k, n in zip(pc['F'], kinds, pc['N']):
+            if k == 'side':
+                key = tuple(np.round(n, 3)); ar[key] = ar.get(key, 0) + 0.5 * np.linalg.norm(np.cross(V[b] - V[a], V[c] - V[a]))
+        line += f", side planes {sum(1 for v in ar.values() if v > 0.15 * max(ar.values()))}, shoulder {pc.get('sd')} of the height"
+    return line
+
+
+def dab_sheet(N, base, seed, tile=DAB_TILE, scales=(0.7, 0.25), step=0.05, warm=None, wrap=True):
+    """A flat painted field (N x N x 3, sRGB 0-1): 'base' with angular dabs at two sizes (m across), each one flat value
+    step up or down (and a breath of 'warm'); no noise, no gradient. Tiles when wrap."""
+    import cv2
+    rng = np.random.default_rng(seed)
+    img = np.tile(srgb(base), (N, N, 1)).astype(np.float32)
+    ppm = N / tile
+    for si, s in enumerate(scales):
+        for _ in range(int((0.9, 0.55)[min(si, 1)] * (tile / s) ** 2)):
+            c = rng.uniform(0, N, 2)
+            k = int(rng.integers(4, 7))
+            ang = np.sort(rng.uniform(0, 2 * math.pi, k))
+            rad = s * ppm * 0.5 * rng.uniform(0.7, 1.25, k)
+            poly = np.stack([c[0] + rad * np.cos(ang) * 1.3, c[1] + rad * np.sin(ang)], 1)
+            col = srgb(base) * (1 + step * rng.choice([-1.0, -0.5, 0.5, 1.0]))
+            if warm is not None and rng.random() < 0.3:
+                col = col * 0.9 + srgb(warm) * 0.1
+            for ox in ((-N, 0, N) if wrap else (0,)):
+                for oy in ((-N, 0, N) if wrap else (0,)):
+                    cv2.fillPoly(img, [np.round(poly + [ox, oy]).astype(np.int32)], [float(x) for x in col], cv2.LINE_AA)
+    return np.clip(img, 0, 1)
+
+
+def night_tex():
+    from PIL import Image
+    out = os.path.join(OUT, 'rock_dabs.png')
+    Image.fromarray((dab_sheet(1024, '#6c6f72', 71, warm='#8c7560') * 255 + 0.5).astype(np.uint8)).save(out)
+    print(out)
+
+
+def night_mesh(only=None):
+    """Each night preset's species file: lod0, lod1, lod2 and shadow (one mesh: a boulder is under 150 triangles), flat
+    normals, material Stone_Own<Species> on rock_dabs.png."""
+    import bpy
+    img_path = os.path.join(OUT, 'rock_dabs.png')
+    for nm, pcs in night_pieces(only).items():
+        sp = NIGHT[nm]['species']
+        bpy.ops.wm.read_factory_settings(use_empty=True)
+        mat = bpy.data.materials.new(f'Stone_Own{sp.capitalize()}'); mat.use_nodes = True
+        bsdf = mat.node_tree.nodes['Principled BSDF']
+        ti = mat.node_tree.nodes.new('ShaderNodeTexImage'); ti.image = bpy.data.images.load(img_path)
+        mat.node_tree.links.new(ti.outputs['Color'], bsdf.inputs['Base Color'])
+        bsdf.inputs['Roughness'].default_value = 1.0
+        V, F, Nv, UV, C, o = [], [], [], [], [], 0
+        for vi, pc in enumerate(pcs):
+            # (each corner its own vertex, so a face's normal is its plane's on all three)
+            V.append(pc['V'][pc['F']].reshape(-1, 3)); Nv.append(np.repeat(pc['N'], 3, 0)); UV.append(pc['UV'].reshape(-1, 2))
+            F.append(np.arange(len(pc['F']) * 3).reshape(-1, 3) + o); o += len(pc['F']) * 3
+            C.append(np.tile([0.0, 0.0, 0.0, (vi + 0.5) / 8], (len(pc['F']) * 3, 1)))
+            print('  ' + table(pc))
+        V, F, Nv, UV, C = np.concatenate(V), np.concatenate(F), np.concatenate(Nv), np.concatenate(UV), np.concatenate(C)
+        for on in ('lod0', 'lod1', 'lod2', 'shadow'):
+            me = bpy.data.meshes.new(on)
+            me.from_pydata(V.tolist(), [], F.tolist())
+            me.normals_split_custom_set_from_vertices([tuple(n) for n in Nv])
+            ca = me.color_attributes.new('Col', 'FLOAT_COLOR', 'POINT')
+            ca.data.foreach_set('color', C.astype(np.float32).ravel())
+            me.color_attributes.active_color = ca
+            uvl = me.uv_layers.new(name='UVMap')
+            uvl.data.foreach_set('uv', np.stack([UV[:, 0], 1 - UV[:, 1]], 1).astype(np.float32).ravel())
+            me.materials.append(mat)
+            bpy.context.scene.collection.objects.link(bpy.data.objects.new(on, me))
+        bpy.ops.export_scene.gltf(filepath=os.path.join(OUT, f'{sp}.gltf'), export_format='GLTF_SEPARATE', export_texture_dir='',
+                                  export_normals=True, export_tangents=False, export_materials='EXPORT', export_image_format='AUTO',
+                                  export_keep_originals=True, export_yup=True, export_apply=True, export_vertex_color='ACTIVE')
+        print(f'{sp}.gltf: {len(pcs)} variants, {len(F)} tris')
+
+
+def kit_sheet(out, which='all'):
+    rows = []
+    if which in ('all', 'stone'):
+        rows.append([pc for pcs in night_pieces().values() for pc in pcs])
+    if which != 'stone':
+        sys.path.insert(0, os.path.dirname(__file__))
+        import env_trees
+        rows += env_trees.kit_rows(which)
+    for row in rows:
+        for pc in row:
+            print(table(pc))
+    sheet(rows, out)
+
+
 if __name__ == '__main__':
     argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else sys.argv[1:]
-    if argv and argv[0] == 'tex':
+    if argv and argv[0] == 'tex' and arg('--kit', '') == 'night':
+        night_tex()
+    elif argv and argv[0] == 'sheet':
+        kit_sheet(arg('--out', os.path.join(ROOT, 'kit_sheet.png')), arg('--kit', 'all'))
+    elif argv and argv[0] == 'mesh' and arg('--preset', '') in NIGHT:
+        night_mesh(arg('--preset', None))
+    elif argv and argv[0] == 'tex':
         tex()
     elif argv and argv[0] == 'mesh' and arg('--form', 'planes') == 'planes':
         mesh_planes(arg('--preset', None))   # (L1 C3a; --form sculpt: E5's sculpted pieces on the triplanar sheet, kept to compare)
