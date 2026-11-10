@@ -7,7 +7,7 @@ namespace SurvivorUnchained.Play;
 /// P4 clips (SOMA motion retargeted onto B: tools/anim/p4.py, packed into body_p1/p4_clips.res) laid over B's bridge
 /// clips (her_clips.res, A's clips baked onto B). The rules: a P4 clip with a bridge clip's name wins (the rebuilt clip
 /// replaces the baked one, nothing else changes); a P4 clip with a new name is added; and the dev flag
-/// --p4-as target=p4clip[,...] plays a P4 clip under a name the game already asks for (idle_warden_town=p4_proof_idle)
+/// --p4-as target=p4clip[,...] plays a P4 clip under a name the game already asks for (idle_warden_town=p4_demo_idle)
 /// without renaming files or touching the animation tree. An alias to a missing P4 clip is ignored (reported).
 /// Derivation: (a) the A1 brief (P4 core + first proof on B).
 /// </summary>

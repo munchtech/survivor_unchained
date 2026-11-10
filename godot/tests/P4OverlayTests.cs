@@ -12,9 +12,9 @@ public class P4OverlayTests
     [Fact]
     public void SameNameWinsNewNameAdds()
     {
-        var plan = P4Overlay.Plan(Bridge, new[] { "run_warden", "p4_proof_idle" }, null);
+        var plan = P4Overlay.Plan(Bridge, new[] { "run_warden", "p4_demo_idle" }, null);
         Assert.Equal("run_warden", plan["run_warden"]);
-        Assert.Equal("p4_proof_idle", plan["p4_proof_idle"]);
+        Assert.Equal("p4_demo_idle", plan["p4_demo_idle"]);
         Assert.False(plan.ContainsKey("idle_warden_town"));   // (bridge clips not named by P4 stay the bridge's)
         Assert.Equal(2, plan.Count);
     }
@@ -23,10 +23,10 @@ public class P4OverlayTests
     public void AliasPlaysAP4ClipUnderATargetName()
     {
         var bad = new List<string>();
-        var plan = P4Overlay.Plan(Bridge, new[] { "p4_proof_idle", "p4_proof_walk" },
-            "idle_warden_town=p4_proof_idle, walk_warden_town=p4_proof_walk,run_warden=missing,junk", bad);
-        Assert.Equal("p4_proof_idle", plan["idle_warden_town"]);
-        Assert.Equal("p4_proof_walk", plan["walk_warden_town"]);
+        var plan = P4Overlay.Plan(Bridge, new[] { "p4_demo_idle", "p4_demo_walk" },
+            "idle_warden_town=p4_demo_idle, walk_warden_town=p4_demo_walk,run_warden=missing,junk", bad);
+        Assert.Equal("p4_demo_idle", plan["idle_warden_town"]);
+        Assert.Equal("p4_demo_walk", plan["walk_warden_town"]);
         Assert.False(plan.ContainsKey("run_warden"));
         Assert.Equal(new[] { "run_warden=missing" }, bad);
     }

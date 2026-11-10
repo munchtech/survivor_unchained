@@ -1,8 +1,0 @@
-{
- "notes": "",
- "loop": true,
- "inplace": false,
- "source": "src/p4_proof_idle.npz",
- "bvh": "her_hip_idle_0.bvh",
- "sha1": "772d839ab88478e6c1140489f17852959d652078"
-}
