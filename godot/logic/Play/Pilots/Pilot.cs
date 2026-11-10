@@ -61,6 +61,7 @@ public static class Pilot
         foreach (var k in b.Pickups.Items)
         {
             if (!k.Alive || !(k.Kind == PickupKind.Ember || onward != null && k.Kind is PickupKind.Item or PickupKind.Material or PickupKind.Gold or PickupKind.Chest)) continue;
+            if (Leaves != null && Leaves(k)) continue;
             double d = (k.X - p.X) * (k.X - p.X) + (k.Z - p.Z) * (k.Z - p.Z);
             if (d < sd) { sd = d; stone = k; }
         }
@@ -291,6 +292,10 @@ public static class Pilot
     /// <summary>Off (--flareuse 0): hands that never press the Flare (today's game measured as before the Flare).</summary>
     public static bool UsesFlare = true;
     public static bool PhaseAware = true;
+    /// <summary>The game's (src/Game/Autopilot.cs; never set by the harness, whose pack never fills and whose filter hides nothing):
+    /// a thing lying that her hands cannot take (hidden by the loot filter, refused by a full pack) is not walked to.
+    /// Without it she stood on one, in the quiet of a map, until the twenty seconds' rule walked her off.</summary>
+    public static Func<Pickup, bool>? Leaves;
     /// <summary>Whether the last Steer was deft (Act reads the kit's telegraphs with the same eyes).</summary>
     [ThreadStatic] static bool lastDeft;
 

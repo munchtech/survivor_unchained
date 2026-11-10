@@ -57,6 +57,7 @@ public sealed class Autopilot
         pilotHuman = deft ? null : new Human(7, false);
         planHands = pilotHuman != null ? PressHands.Human(7, pilotHuman.React) : PressHands.Deft(7);
         if (pilotHuman != null) pilotHuman.Hands = planHands;
+        Pilot.Leaves = Left;
     }
 
     /// <summary>(M3) One set of feet: a campaign fight under --auto (the human) and --auto deft is moved and played by the
@@ -119,6 +120,7 @@ public sealed class Autopilot
     double trAt = -1, trLast = -1, trIn, trNet, trAbs, trNear, trAng, trSeed;
     int trFoe = -1;
     bool trHad;
+    (double X, double Z) trTo;
 
     /// <summary>Where she is, the nearest hostile that is up (alive, not dying, not resting), whether the Pilot has her feet;
     /// and over the last second: the time a foe stood within her reach (the Pilot's Reach, to its edge), the angle she
@@ -148,14 +150,46 @@ public sealed class Autopilot
         if (now - trAt < 1) return;
         trAt = now;
         double togo = g.Zone is MapRun mr ? NavFor(mr, b).ToGo(p.X, p.Z) : double.NaN;
+        // (the nearest gear, material, gold or chest lying that she would walk to, -1 with none in 40 m; how many she leaves)
+        double lyD = -1; int lyLeft = 0;
+        double emD = -1;
+        foreach (var k in b.Pickups.Items) if (k.Alive && k.Kind == PickupKind.Ember) { double kd = Math.Sqrt((k.X - p.X) * (k.X - p.X) + (k.Z - p.Z) * (k.Z - p.Z)); if (emD < 0 || kd < emD) emD = kd; }
+        foreach (var k in b.Pickups.Items)
+        {
+            if (!k.Alive || k.Kind is not (PickupKind.Item or PickupKind.Material or PickupKind.Gold or PickupKind.Chest)) continue;
+            if (Left(k)) { lyLeft++; continue; }
+            double kd = Math.Sqrt((k.X - p.X) * (k.X - p.X) + (k.Z - p.Z) * (k.Z - p.Z));
+            if (kd < 40 && (lyD < 0 || kd < lyD)) lyD = kd;
+        }
         Godot.GD.Print(string.Format(System.Globalization.CultureInfo.InvariantCulture,
-            "pilot trace t {0:0.0} x {1:0.00} z {2:0.00} near {3:0.00} foe {4} piloted {5} inreach {6:0.00} turn {7:0.000} absturn {8:0.000} near22 {9:0.00} togo {10:0.0} ruler {11} hp {12:0.00}",
+            "pilot trace t {0:0.0} x {1:0.00} z {2:0.00} near {3:0.00} foe {4} piloted {5} inreach {6:0.00} turn {7:0.000} absturn {8:0.000} near22 {9:0.00} togo {10:0.0} ruler {11} hp {12:0.00} lying {13:0.0} left {14} move {15:0.00},{16:0.00} to {17:0.0},{18:0.0} ember {19:0.0}",
             now, p.X, p.Z, ne == null ? -1 : nd, ne?.Def.Id ?? "-", piloted ? 1 : 0, trIn, trNet, trAbs, trNear, togo,
-            g.Zone is MapRun m2 ? (m2.Cleared ? "down" : m2.Boss != null ? "up" : "no") : "-", p.Hp / Math.Max(1, b.MaxHp)));
+            g.Zone is MapRun m2 ? (m2.Cleared ? "down" : m2.Boss != null ? "up" : "no") : "-", p.Hp / Math.Max(1, b.MaxHp), lyD, lyLeft, Move.X, Move.Z, trTo.X, trTo.Z, emD));
         trIn = trNet = trAbs = trNear = 0;
     }
 
     /* ---- (M3) the Pilot's feet ---- */
+    /// <summary>What lies that her hands cannot take, by where it lay when it was refused (Battle.Collect sets its Age to
+    /// -2 when the pack has no room: Journey.PickedUp false). A pooled pickup come back elsewhere is a new one.</summary>
+    readonly Dictionary<Pickup, (double X, double Z)> refused = new();
+
+    /// <summary>(Pilot.Leaves) A thing lying that walking onto will not take: hidden by the loot filter (Battle.UpdatePickups
+    /// takes none it hides), not yet takeable (a set piece laid for a picture: Age below zero), or refused by a full pack.
+    /// The harness has none of these (MapSim stashes gear, no filter), so its Pilot never met one.</summary>
+    bool Left(Pickup k)
+    {
+        if (g.Battle is not { } b) return false;
+        if (k.Look == Verdict.Hidden && !b.TakeHidden) return true;
+        if (k.Kind is PickupKind.Ember or PickupKind.Gold or PickupKind.Heal or PickupKind.Magnet) return false;
+        if (k.Age < 0) { refused[k] = (k.X, k.Z); return true; }
+        if (refused.TryGetValue(k, out var at))
+        {
+            if ((at.X - k.X) * (at.X - k.X) + (at.Z - k.Z) * (at.Z - k.Z) < 0.25) return true;
+            refused.Remove(k);
+        }
+        return false;
+    }
+
     MapRun? navFor;
     NavField? nav;
     double navBest, navStuckUntil;
@@ -179,7 +213,9 @@ public sealed class Autopilot
     /// 22 m): the way round what is solid (GroundPath, as GoalWalk's; `routed` false on a map, whose NavField is the way),
     /// standing once she is there (the Pilot's onward never stops), and the wedged sidestep of Steer.</summary>
     /// <param name="onto">The goal is a thing on the ground to walk onto (the Pilot stops 1.2 m short of a goal).</param>
-    void PilotMove(double dt, Battle b, (double X, double Z)? to, bool asGoal, ArenaBoss? boss, bool routed = true, bool onto = false)
+    /// <param name="arrives">`to` is a place to stand at (off on a map: its NavField's next point down the way is never one. Stopping
+    /// 0.45 m short of it, where a straight line on was not yet clear, stood her still until the twenty seconds' rule).</param>
+    void PilotMove(double dt, Battle b, (double X, double Z)? to, bool asGoal, ArenaBoss? boss, bool routed = true, bool onto = false, bool arrives = true)
     {
         var p = b.Player;
         bool quiet = true;
@@ -188,6 +224,7 @@ public sealed class Autopilot
             if (e.Disposition != Disposition.Hostile || e.State == EnemyState.Dying || e.Wake > 0 && !e.Roused) continue;
             if ((e.X - p.X) * (e.X - p.X) + (e.Z - p.Z) * (e.Z - p.Z) < 22 * 22) { quiet = false; break; }
         }
+        trTo = to ?? (double.NaN, double.NaN);
         var aim = to;
         double td = 0;
         if (to is var (tx, tz))
@@ -221,7 +258,7 @@ public sealed class Autopilot
         // (no way onward: the Pilot's quiet walk is to the ground's heart, as the harness's)
         var (qx, qz) = to ?? (0.0, 0.0);
         if (to == null) td = Math.Sqrt(p.X * p.X + p.Z * p.Z);
-        if (td < 0.45 && mx * (qx - p.X) + mz * (qz - p.Z) > 0.7 * td - 1e-9) { Move = (0, 0); return; }
+        if (arrives && td < 0.45 && mx * (qx - p.X) + mz * (qz - p.Z) > 0.7 * td - 1e-9) { Move = (0, 0); return; }
         Steer(dt, mx, mz, p, qx, qz);
     }
 
@@ -251,7 +288,7 @@ public sealed class Autopilot
             else navHolds = 0;
             if (!double.IsNaN(along)) navBest = Math.Min(navBest, along);
         }
-        PilotMove(dt, b, onward, false, boss, routed: false);
+        PilotMove(dt, b, onward, false, boss, routed: false, arrives: false);
         if (b.Time < navStuckUntil)
         {
             double mx = onward.X - p.X, mz = onward.Z - p.Z, ml = Math.Max(1e-6, Math.Sqrt(mx * mx + mz * mz));
