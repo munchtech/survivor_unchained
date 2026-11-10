@@ -472,7 +472,7 @@ public partial class Game : Node, IZoneHost
         var s = Settings.Current;
         s.ApplyWindow();
         cam.ShakeScale = s.ShakeLevel;
-        if (scene != null) { scene.Fx.Gore.Level = s.GoreLevel; scene.Hitstop = s.Hitstop; scene.Fx.Flare.Motion = s.Motion switch { "off" => 0, "reduced" => 0.5f, _ => 1 }; }
+        if (scene != null) { scene.Fx.Gore.Level = s.GoreLevel; scene.Hitstop = s.Hitstop && !Args.Has("no-hitstop") /* P7 debug: a shoot with no hitstop */; scene.Fx.Flare.Motion = s.Motion switch { "off" => 0, "reduced" => 0.5f, _ => 1 }; }
         Graphics.Apply(s, air, GetViewport(), scene);
         AudioServer.SetBusVolumeDb(0, s.Volume <= 0 ? -80 : Mathf.LinearToDb(s.Volume));
         voice?.Apply();

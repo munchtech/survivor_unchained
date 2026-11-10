@@ -364,6 +364,7 @@ public partial class BattleFx : Node3D
     // shows and takes a place first; the rest throw none. So a wide skill over a crowd is a few clean bursts, not 150 specks
     // (a Sunder cut that struck 37 threw 4 sparks from each). The numbers, the gore and the Flare's own hits are not touched.
     // A source = the hits of one art and school in one frame's events. fx_language.json p7 hit_budget.n.
+    static readonly bool HitBudgetSay = Args.Has("clip") || Args.Has("grip-say");
     readonly HashSet<Ev.Hit> sparkless = new();
     readonly Dictionary<(string?, School), (double X, double Z, int N, int Crits)> sparkMid = new();
     readonly List<(Ev.Hit H, double D)> sparkRank = new();
@@ -389,6 +390,7 @@ public partial class BattleFx : Node3D
                     sparkRank.Add((h, (h.X - cx) * (h.X - cx) + (h.Z - cz) * (h.Z - cz)));
             sparkRank.Sort((p, q) => p.D.CompareTo(q.D));
             for (int i = Math.Max(0, budget - m.Crits); i < sparkRank.Count; i++) sparkless.Add(sparkRank[i].H);
+            if (HitBudgetSay) GD.Print($"hit budget frame {Engine.GetFramesDrawn()} art {k.Item1 ?? "auto"} {k.Item2} struck {m.N} crits {m.Crits} plain shown {Math.Min(sparkRank.Count, Math.Max(0, budget - m.Crits))} hushed {Math.Max(0, sparkRank.Count - Math.Max(0, budget - m.Crits))}");
         }
     }
 
