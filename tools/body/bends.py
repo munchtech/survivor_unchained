@@ -466,6 +466,9 @@ def _arc3(a, b):
 # (e) delt_out_mm / delt_down_mm: the deltoid's lateral point (the outermost body point within 3 cm of the joint's
 # height at rest) moved out / down.
 TOP_X = 0.03
+RING_SLICE_M = 0.010    # closed-mesh neck fallback: height of one slice (m)
+RING_MIN_PTS = 8        # a slice needs at least this many points to count as a ring
+RING_RANGE_FRAC = 0.5   # the search runs from the shoulder joints up this fraction of the way to the top point
 
 
 def _neck_ring(poser):
@@ -480,7 +483,27 @@ def _neck_ring(poser):
         u, c = np.unique(E, axis=0, return_counts=True)
         idx = body[np.isin(inv, np.unique(u[c == 1].ravel()))]
         sh = 0.5 * (poser.rest[poser.index["upperarm_l"]][1, 3] + poser.rest[poser.index["upperarm_r"]][1, 3])
-        poser._neck_ring = idx[poser.P0[idx, 1] > sh]
+        ring = idx[poser.P0[idx, 1] > sh]
+        poser._neck_ring_kind = "boundary"
+        if len(ring) == 0:
+            # closed mesh (no open boundary): the narrowest horizontal slice above the shoulder joints
+            y = poser.P0[body, 1]
+            y_top = float(y.max())
+            sel = body[(y > sh) & (y <= sh + RING_RANGE_FRAC * (y_top - sh))]
+            best = None
+            if len(sel):
+                k = np.floor((poser.P0[sel, 1] - sh) / RING_SLICE_M).astype(int)
+                for v in np.unique(k):
+                    m = sel[k == v]
+                    if len(m) >= RING_MIN_PTS:
+                        w = float(np.ptp(poser.P0[m, 0]))
+                        if best is None or w < best[0]:
+                            best = (w, m)
+            if best is None:
+                raise ValueError("bends: no neck ring: no body points above the shoulder joints")
+            ring = best[1]
+            poser._neck_ring_kind = "narrowest"
+        poser._neck_ring = ring
     return poser._neck_ring
 
 
