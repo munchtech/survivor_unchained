@@ -389,7 +389,7 @@ public static partial class Firing
         try { later = b.DeferBlow(h); fired = later || CastOnce(b, h); }
         finally { b.CastAt = aim0; }
         if (later) { b.CastPose(h); return true; }
-        if (fired) { Rearm(b, h, true, kills0, key0); b.CastPose(h); }
+        if (fired) { Rearm(b, h, true, kills0, key0); if (Late(b, h) > 0) h.Timer = Math.Max(0, h.Timer - Late(b, h)); b.CastPose(h); }
         return fired;
     }
 
@@ -397,8 +397,9 @@ public static partial class Firing
     static void TickHalf(Battle b, WeaponInst w, double dt)
     {
         if (HalfOf(w) is not { } h) return;
-        if (h.Chain != null) ChainReady(b, h, dt);
-        if (h.Timer > 0) h.Timer = Math.Max(0, h.Timer - dt);
+        if (h.Chain != null) { ChainReady(b, h, dt); if (h.Timer > 0) h.Timer = Math.Max(0, h.Timer - dt); }
+        // (M3 MR 3 clock: the unchained half notes the instant its wait runs out, Firing.CountDown)
+        else if (h.Timer > 0) { CountDown(b, h, dt); h.Timer = Math.Max(0, h.Timer); }
         if (w.Held2 && h.Timer <= 0) SwingHalf(b, w);
     }
 

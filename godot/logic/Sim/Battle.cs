@@ -475,7 +475,7 @@ public sealed partial class Battle
         if (Combat)
         {
             RunOnKills();
-            if (pendingBlows.Count > 0) LandBlows();
+            if (pendingBlows.Count > 0) LandBlows(dt);
             if (chains.Count > 0) StepChains();
             foreach (var w in Weapons.ToArray()) Firing.Tick(this, w, dt);
             TickVow(dt);

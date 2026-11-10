@@ -242,13 +242,13 @@ public sealed class ProcWeightTests
             + $"; firings + the part left: chained {bc.Counted:F3} ({(bc.Counted / bu.Mean - 1) * 100:+0.00;-0.00}%); bleeds landed: chained {bc.Landed:F3} | unchained {bu.Landed:F3}";
         output.WriteLine(toldB);
         Assert.True(3 * se <= 0.03, "too few seeds: " + toldB);
-        // The measure (main): firings PLUS the part the rule still holds at the close, within 3%. Measured (600 seeds,
-        // 63.9 s) -2.86%, and its cause is named (s4, 200 seeds held 630 s; docs/balance/chain_weight.md):
-        // (1) -1.61% is blows' worth CAST, 61.000 against 62. The chain keeps the written wait to the instant (600.000
-        //     worth in 630 s, 1.0500 s each); the UNCHAINED swing runs a part of a 1/60 s step fast (603 blows, 62.77
-        //     steps each where 1.05 s is 63: -0.50% for good), and its 62nd blow lands on step 3833 of this window's
-        //     3834 (the edge, -1.1%: the worth ratio is 0.9839 here, 0.9917 at 126 s, 0.9950 at 630 s).
-        // (2) the rest is the 0.35 roll's noise (se 0.98% here): per blow's worth cast the rule counts the same on both
+        // The measure (main): firings PLUS the part the rule still holds at the close, within 3%. Measured (700 seeds,
+        // 63.9 s) -0.80% (-2.44% at 600 seeds before the clock commit), and its cause is named (docs/balance/chain_weight.md):
+        // (1) the window's edge in blows' worth CAST, 61.333 against 61 (+0.55%). (M3 MR 3 clock) Both records keep the
+        //     written wait to the instant now: 600 blows in 630 s on both (the unchained swing ran 603, 62.77 steps
+        //     each, before the clock: ClockTests), so the old -0.50% "for good" is gone; in 63.9 s the unchained 62nd
+        //     blow starts at 64.05 s, out of the window.
+        // (2) the rest is the 0.35 roll's noise (se 0.93% here): per blow's worth cast the rule counts the same on both
         //     records, chained over unchained 1.0132 at 126 s, 0.9996 at 315 s, 0.9998 at 630 s.
         // So the law is held per blow's worth cast (2.5 se of this run), and the whole count to the decided 3%.
         double perWorth = bc.Counted / bc.Worth / (bu.Mean / bu.Worth);
@@ -258,5 +258,7 @@ public sealed class ProcWeightTests
         Assert.True(Math.Abs(perWorth - 1) <= 2.5 * se, toldB);
     }
 
-    const int SeedsB = 600;
+    // (M3 MR 3 clock) 600 -> 700: the honest unchained count (61 blows in the window, not 62) put the ratio's se at
+    // 1.01% at 600 seeds, over the 3-se guard's 1%; 700 holds it (the 3% line itself is unchanged)
+    const int SeedsB = 700;
 }

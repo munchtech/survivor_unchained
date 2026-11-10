@@ -303,13 +303,14 @@ public sealed class MomentumChainTests
         Assert.Equal((int.MinValue, 0, false), (r.W.MomKey, r.W.MomKills, r.W.MomFast));
         Assert.Contains(r.Casts, k => k.Kills == 2);
         // the old rule: the swing that killed three has its OWN wait x 0.75 (press to press), every other the whole wait.
-        // (tighten to the written wait after the clock commit: today's unchained deferred swing runs a step short on some blows)
+        // (M3 MR 3 clock) tightened to the written wait at the instant (was within a step: the unchained deferred swing
+        // ran a step short on some blows; its press is backdated now and its wait restated from it, Firing.LandBlow)
         int paid = 0;
         for (int i = 0; i + 1 < r.Casts.Count; i++)
         {
             bool p = r.Casts[i].Kills >= 3;
             double want = r.Wait * (p ? Fast : 1), got = r.Casts[i + 1].T - r.Casts[i].T;
-            Assert.True(Math.Abs(got - want) < Dt + 1e-9, $"swing {i} ({r.Casts[i].Kills} kills): next after {got:R}, want {want:R}");
+            Assert.True(Math.Abs(got - want) < 1e-9, $"swing {i} ({r.Casts[i].Kills} kills): next after {got:R}, want {want:R}");
             if (p) paid++;
         }
         output.WriteLine($"unchained: {r.Casts.Count} swings, {paid} paid");

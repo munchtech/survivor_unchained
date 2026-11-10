@@ -112,6 +112,10 @@ public sealed class WeaponInst
     /// <summary>(M3 MR 3 b1, the landed rule) The time this grip's LANDED weight has paid up to (Battle.BankOf): NaN until
     /// its first cut lands, read as a full bank. Per grip (a union's half has its own).</summary>
     public double PaidTo = double.NaN;
+    /// <summary>(M3 MR 3 clock) An unchained skill's wait ran out inside the step at Time = ReadyStep, Overshoot before
+    /// the step's end (Firing.CountDown, the chain's ChainReady way): a firing on that step is backdated to the instant,
+    /// so every wait is its written length on average, a hasted one too (no whole-step breakpoints).</summary>
+    internal double ReadyStep = double.NaN, Overshoot;
     /// <summary>(b1) The bank's stamp for the cast about to land (set by Firing.LandBlow round a chain's cut, or by
     /// Battle.DeferBlow for a chained press that casts at once; Firing.CastOnce takes it once, on the step it was set).</summary>
     internal double CastFrom = double.NaN, CastPayTo, CastStage = double.NaN;
@@ -360,8 +364,9 @@ public static partial class Firing
         if (w.Behavior == WeaponBehavior.Reactive) return;
         // Oath and Bell: a stagger owed the bell a toll; it goes off now, its own timer untouched.
         if (w.Behavior == WeaponBehavior.Toll && b.BellOwed) b.TollOwed(w);
-        if (w.Chain != null) ChainReady(b, w, dt);
-        w.Timer -= dt;
+        // (M3 MR 3 clock: an unchained wait notes the instant it runs out inside the step, as the chain's does)
+        if (w.Chain != null) { ChainReady(b, w, dt); w.Timer -= dt; }
+        else CountDown(b, w, dt);
         if (w.BurstLeft > 0)
         {
             w.BurstT -= dt;
@@ -409,7 +414,22 @@ public static partial class Firing
         if (fired && cost > 0) b.Resolve.Spend(selfHeave ? b.Resolve.Value : cost);
         // Nothing in range: look again soon rather than waiting a whole cooldown.
         Rearm(b, w, fired, kills0, key0);
+        // (M3 MR 3 clock) the next wait runs from the instant this one ran out, not from the step's end
+        if (fired && Late(b, w) > 0) w.Timer = Math.Max(0, w.Timer - Late(b, w));
     }
+
+    /// <summary>(M3 MR 3 clock) An unchained skill's wait counts down a step (Firing.Tick, TickHalf): the step it runs
+    /// out on is noted, and how far into it (WeaponInst.ReadyStep, Overshoot), a hair's float residue counted as run out
+    /// (a wait of whole steps is never a step late).</summary>
+    internal static void CountDown(Battle b, WeaponInst w, double dt)
+    {
+        if (w.Timer > 0 && w.Timer <= dt + 1e-9) { w.ReadyStep = b.Time; w.Overshoot = Math.Max(0, dt - w.Timer); w.Timer = Math.Min(0, w.Timer - dt); }
+        else w.Timer -= dt;
+    }
+
+    /// <summary>(M3 MR 3 clock) How long before this step's end an unchained skill's wait ran out, if it ran out on this
+    /// step (0 otherwise, and always for a chained one: SwingChain carries its own): a firing now is backdated by it.</summary>
+    internal static double Late(Battle b, WeaponInst w) => w.Chain == null && w.ReadyStep == b.Time ? w.Overshoot : 0;
 
     /// <summary>One cast of the skill, as its own timer would fire it (the Hand's blow, its own heavy, its Pulse,
     /// the arcanist's and the board's after-cast): true when it fired. The timer is the caller's.</summary>
@@ -640,6 +660,8 @@ public static partial class Firing
         if (fired)
         {
             Rearm(b, w, true, kills0, key0);
+            // (M3 MR 3 clock) from the instant its wait ran out
+            if (Late(b, w) > 0) w.Timer = Math.Max(0, w.Timer - Late(b, w));
             if (cost > 0) b.Resolve.Spend(cost);
             b.CastPose(w);
         }

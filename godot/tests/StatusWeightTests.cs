@@ -199,7 +199,14 @@ public sealed class StatusWeightTests
         double Own(bool ch) => new Rig("sunder", ch, 1, StatusKind.Stun, null, boss: true).Hold().Stagger;
         double ownC = Own(true), ownU = Own(false);
         output.WriteLine($"sunder's own stagger on a boss: chained {ownC:F3} | unchained {ownU:F3}");
-        Within2("sunder stun rider's stagger on a boss at chance 0.8", Seeds4, (ch, seed) => new Rig("sunder", ch, seed, StatusKind.Stun, stun, boss: true).Hold().Stagger - (ch ? ownC : ownU));
+        // (M3 MR 3 clock) per blow's worth cast: the window's edge (the chained run is 40.25 blows' worth against 40, +0.6%)
+        // taken out, as ProcWeightTests does. Per window it read +1.96% (se 0.55%) before the clock and +2.00% after
+        // (the unchained Sunder's 40 blows are the same; 0.04% is the roll), the 2% line left as it was.
+        Within2("sunder stun rider's stagger per blow's worth on a boss at chance 0.8", Seeds4, (ch, seed) =>
+        {
+            var r = new Rig("sunder", ch, seed, StatusKind.Stun, stun, boss: true).Hold();
+            return (r.Stagger - (ch ? ownC : ownU)) / (r.W.BlowN + r.W.BlowPart);
+        });
     }
 
     // Seeds: the bleed's ratio has se 0.91% at 400 seeds, so 1200; a 20% stun's had se 0.53% at 6000 (2.5 minutes a
