@@ -29,12 +29,20 @@ public static class DevGrants
                 if (b.Weapons.Find(w => w.Id == id) is { } held) { held.Rank = Math.Max(held.Rank, rank); said.Add($"grant: {id} ranked to {held.Rank}"); continue; }
                 var w = b.AddWeapon(id, rank);
                 if (w != null && parts.Length > 2 && double.TryParse(parts[2], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var wait)) w.Timer = wait;
-                said.Add(w != null ? $"grant: {id} rank {rank} on slot {w.Slot + 1}" : $"grant: {id} not added (unknown, or no slot free: {b.SlotsUsed}/{Content.Weapons.MaxWeapons})");
+                // (what happened, said as it is: a union holds two keys; an unknown id is not "no slot free")
+                said.Add(w != null ? $"grant: {id} rank {rank} on slot {w.Slot + 1}{(w.Slot2 >= 0 ? $" and {w.Slot2 + 1}" : "")}"
+                    : !Content.Weapons.All.ContainsKey(id) ? $"grant: {id} not added (no such skill)"
+                    : $"grant: {id} not added (needs {Content.Weapons.SlotCost(id)} of the keys, {Content.Weapons.MaxWeapons - b.SlotsUsed} free: {b.SlotsUsed}/{Content.Weapons.MaxWeapons} held)");
             }
         if (!string.IsNullOrWhiteSpace(union))
         {
+            var u = Content.Unions.Find(union.Trim());
+            var had = u == null ? null : b.Weapons.Find(x => x.Id == u.Into);
             var w = b.GrantUnion(union.Trim());
-            said.Add(w != null ? $"grant-union: {union} on slots {w.Slot + 1} and {w.Slot2 + 1}" : $"grant-union: {union} not added (unknown, carried, or no two slots free)");
+            said.Add(w != null ? $"grant-union: {union} on slots {w.Slot + 1} and {w.Slot2 + 1}"
+                : u == null ? $"grant-union: {union} not added (no such union)"
+                : had != null ? $"grant-union: {union} already carried on slots {had.Slot + 1} and {had.Slot2 + 1}"
+                : $"grant-union: {union} not added (no two keys free once its parts give theirs: {b.SlotsUsed}/{Content.Weapons.MaxWeapons} held)");
         }
         if (!string.IsNullOrWhiteSpace(steps))
             foreach (var id in steps.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))

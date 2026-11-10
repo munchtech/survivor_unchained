@@ -36,7 +36,8 @@ public class DevGrantTests
         else { Assert.NotNull(gripNow); Assert.Equal(0, gripNow!.Slot); }
         // A second ask changes nothing more.
         int carried = b.Weapons.Count;
-        DevGrants.Apply(b, null, "bladestorm", null);
+        Assert.Contains(DevGrants.Apply(b, null, "bladestorm", null), l => l.StartsWith("grant-union: bladestorm already carried on slots"));
         Assert.Equal(carried, b.Weapons.Count);
+        Assert.Contains(DevGrants.Apply(b, "no_such_skill", "no_such_union", null), l => l == "grant: no_such_skill not added (no such skill)");
     }
 }
