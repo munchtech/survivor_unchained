@@ -499,7 +499,7 @@ public sealed class GripHoldTests
         Assert.Equal((1, 1), (meter.Gaps, meter.Whiffs));
         Run(true, 90);
         Assert.Equal((1, 1), (meter.Gaps, meter.Whiffs));
-        Assert.EndsWith(" gaps 1 whiff 1", meter.Line(b.Time, b.Time));
+        Assert.Contains(" gaps 1 whiff 1 opens ", meter.Line(b.Time, b.Time));
     }
 
     /// <summary>(m1) An unchained grip has no gaps and no whiffs (its key lifts the step the foe leaves, and the counts are
@@ -517,7 +517,51 @@ public sealed class GripHoldTests
         // (the columns before m1, by the pattern the lead's table reads them with: all of the line but its new tail)
         var old = System.Text.RegularExpressions.Regex.Match(line, @"^grip holds [\d.]+/min med [\d.]+s held [\d.]+%reach [\d.]+%fight blows [\d.]+/min gdmg [\d.]+/s gfill [\d.]+/s perheld [\d.]+b [\d.]+d [\d.]+f");
         Assert.True(old.Success, line);
-        Assert.Equal(" gaps 0 whiff 0", line[old.Length..]);
+        Assert.Equal((0, 0, 0.0, (double)m.Blows), (m.Opens, m.Drops, m.Bank, m.CutW));
+        Assert.StartsWith($" gaps 0 whiff 0 opens 0 drop 0 cutw {m.Blows:0.00} bank 0.00 fmin ", line[old.Length..]);
+    }
+
+    /// <summary>(m3) Opens, landed weight and bank: the battle's first cut opens a chain and banks a whole blow less its
+    /// weight; each landed cut weighs 0.70 / 1.6; a chain reopened after a short rest banks rest / wait less the weight.</summary>
+    [Fact]
+    public void The_grips_meter_counts_openings_their_bank_and_the_landed_weight()
+    {
+        var r = new Rig(true, PressHands.Deft(3)) { Meter = new GripMeter() };
+        var m = r.Meter!;
+        double cw = 0.70 / 1.6;
+        r.Run(true, 2);
+        Assert.Equal(cw, r.W.CastW, 12);
+        Assert.Equal(1, m.Opens);
+        Assert.Equal(1 - cw, m.Bank, 9);
+        Assert.True(m.Blows >= 2);
+        Assert.Equal(m.Blows * cw, m.CutW, 9);
+        // out of reach until the chain has ended, then back: a new chain, its rest under a whole wait
+        for (int i = 0; i < 300 && r.C is { Live: true }; i++) r.Step(false);
+        Assert.False(r.C!.Live);
+        // (the last cut's start: the key was held into the gap, so it may be one swung at nothing)
+        double s0 = r.C.StartAt;
+        for (int i = 0; i < 300 && m.Opens == 1; i++) r.Step(true);
+        Assert.Equal(2, m.Opens);
+        double rest = r.C.StartAt - s0, wait = Firing.CooldownOf(r.B, r.W) / r.W.BlowWeight;
+        Assert.InRange(rest / wait, cw + 0.01, 0.99);
+        Assert.Equal(1 - cw + rest / wait - cw, m.Bank, 9);
+        Assert.Equal(0, m.Drops);
+        Assert.Matches(@" opens 2 drop 0 cutw [\d.]+ bank [\d.]+ fmin [\d.]+$", m.Line(r.B.Time, r.B.Time));
+    }
+
+    /// <summary>(m3) Drops: a dash before a cut's contact drops that cut, counted once however long the flag stands.</summary>
+    [Fact]
+    public void The_grips_meter_counts_a_cut_dropped_by_a_dash_once()
+    {
+        var r = new Rig(true, PressHands.Deft(3)) { Meter = new GripMeter() };
+        r.ToStart();
+        Assert.Equal(0, r.Meter!.Drops);
+        Assert.True(r.B.Dash(0, -1));
+        r.Step(true);
+        Assert.True(r.C!.Dropped);
+        Assert.Equal(1, r.Meter.Drops);
+        r.Run(true, 0.2);
+        Assert.Equal(1, r.Meter.Drops);
     }
 
     /// <summary>(3) The hand's lapse is not bridged: it lifts the key with a foe in reach and inside a gap alike, and a key
@@ -576,7 +620,7 @@ public sealed class GripHoldTests
         Assert.Equal(gaps, m.Gaps);
         Assert.Equal(total, m.Whiffs);
         Assert.Equal(gapSecs < 0.40 ? 17 : 27, total);
-        Assert.EndsWith($" gaps {gaps} whiff {total}", m.Line(r.B.Time, r.B.Time));
+        Assert.Contains($" gaps {gaps} whiff {total} opens ", m.Line(r.B.Time, r.B.Time));
     }
 
     /// <summary>(6) An unchained record through the same script: step for step what the old hands' line gives (the key,

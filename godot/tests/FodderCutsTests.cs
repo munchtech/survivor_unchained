@@ -91,7 +91,7 @@ public sealed class FodderCutsTests
         Assert.EndsWith(" cuts/fodder mean 3.00 med 3 n 1 uncut 1", m.Grip);
         Assert.EndsWith(m.Grip, m.Line());
         // (the grip's column still leads it, its two counts before this one)
-        Assert.Matches(@"^grip holds .* gaps \d+ whiff \d+ cuts/fodder ", m.Grip);
+        Assert.Matches(@"^grip holds .* gaps \d+ whiff \d+ opens \d+ drop \d+ cutw [\d.]+ bank [\d.]+ fmin [\d.]+ cuts/fodder ", m.Grip);
     }
 
     /// <summary>The count by its parts: a status tick, a Flare's hit and another skill's are no cuts; an elite's death and
