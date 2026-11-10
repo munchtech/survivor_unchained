@@ -659,6 +659,10 @@ public partial class Atmosphere : Node3D
         var hc = SurvivorUnchained.Look.Rigs.HeroChroma(hm);   // (L1 lead 21, CHROMA) values 29-34: the hero chroma rule (cel_hero_gain); zeros without them
         RenderingServer.GlobalShaderParameterSet("cel_hero_chroma", new Vector4((float)hc[0], (float)hc[1], (float)hc[2], (float)hc[3]));
         RenderingServer.GlobalShaderParameterSet("cel_hero_chroma_px", new Vector4((float)hc[4], (float)hc[5], (float)hc[6], 0));
+        var hk = SurvivorUnchained.Look.Rigs.HeroClass(hm);   // (L1 lead 22, HERPAIR) values 36-44: her value pairs by material class (cel_hero_land); zeros without them
+        RenderingServer.GlobalShaderParameterSet("cel_hero_class_lit", new Vector4((float)hk[0], (float)hk[2], (float)hk[4], (float)hk[6]));
+        RenderingServer.GlobalShaderParameterSet("cel_hero_class_shade", new Vector4((float)hk[1], (float)hk[3], (float)hk[5], (float)hk[7]));
+        RenderingServer.GlobalShaderParameterSet("cel_hero_class_keep", (float)hk[8]);
     }
     /// <summary>(L1 lead 20, HER5) Her LINE (hero_line.gdshader; CelLib.LineStep hangs it on her meshes): the row's value 8 = its
     /// width in px at 1080p, value 9 = its level against the anchor's tone. On as cel_hero is on; else 0 and nothing is drawn.</summary>

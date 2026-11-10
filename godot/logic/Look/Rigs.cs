@@ -237,6 +237,25 @@ public static class Rigs
     /// over which it is none, the lightest Oklab L a colored material is painted at; cel.gdshaderinc cel_hero_gain). A row without them: zeros, and the figure renders as before.</summary>
     public static double[] HeroChroma(double[]? heroPool) => heroPool is { Length: >= 36 } ? heroPool[29..36] : new double[7];
 
+    /// <summary>(L1 lead 22, HERPAIR) Her value pairs by material class, values 36-44 of a hero_pool row: (lit L, shade L) as
+    /// Oklab L of the emission for class 0 hair, 1 skin, 2 outfit leather / cloth, 3 outfit metal (CelLib.HeroClassOf), then the
+    /// share of a material's own L kept (0 = landed exactly). cel.gdshaderinc cel_hero_land. A row without them: zeros, and the
+    /// figure renders as before; a zero pair leaves that class as before.</summary>
+    public static double[] HeroClass(double[]? heroPool) => heroPool is { Length: >= 45 } ? heroPool[36..45] : new double[9];
+
+    /// <summary>(HERPAIR) A hero material's class from its shader's file and its outfit kind (heroine_outfit.gdshaderinc
+    /// `kind`: 0 leather, 1 metal, 2 cloth, 3 gloss, 4 twill, 5 satin; -1 none): 0 hair, 1 skin, 2 outfit leather / cloth,
+    /// 3 outfit metal, -1 anything else (painted as before).</summary>
+    public static int HeroClassOf(string shaderFile, int kind)
+    {
+        var f = shaderFile.ToLowerInvariant();
+        if (f.Contains("hair")) return 0;
+        if (f.Contains("heroine_skin")) return 1;
+        if (f.Contains("outfit_metal")) return 3;
+        if (f.Contains("outfit")) return kind == 1 ? 3 : 2;
+        return -1;
+    }
+
     /// <summary>sRGB hex to linear rgb (the ink rig's and the tests' colors).</summary>
     public static (double R, double G, double B) Linear(string hex) => Atmospheres.Linear(hex);
 }

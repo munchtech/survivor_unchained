@@ -150,7 +150,42 @@ public static class CelLib
             if (k != key) { live.RemoveAt(sweep); if (Why(m) is null) Bind(m, cls); }
         }
         LineStep();
+        HeroClassStep();
         if (HeroId) HeroIdStep();
+    }
+
+    /// <summary>(L1 lead 22, HERPAIR) Every material on a mesh under the player's view that goes through the hero paint
+    /// (the uniform cel_hero_class of cel.gdshaderinc's CEL_HERO block) gets its CLASS once (Rigs.HeroClassOf: its shader's
+    /// file and its outfit kind): the rig's value pair per class (hero_pool values 36-44) lands it. The ID's walk.</summary>
+    static readonly Dictionary<ulong, int> heroClasses = new();
+    static readonly Dictionary<ulong, bool> heroClassShader = new();
+    static void HeroClassStep()
+    {
+        foreach (var (g, _) in lined)
+        {
+            if (!GodotObject.IsInstanceValid(g) || !g.IsInsideTree()) continue;
+            foreach (var (m, _) in Slots(g))
+                for (Material? p = m; p != null; p = p.NextPass)
+                {
+                    if (p is not ShaderMaterial { Shader: { } sh } sm || heroClasses.ContainsKey(p.GetInstanceId())) continue;
+                    var sid = sh.GetInstanceId();
+                    if (!heroClassShader.TryGetValue(sid, out bool has))
+                    {
+                        has = false;
+                        foreach (var d in RenderingServer.GetShaderParameterList(sh.GetRid()))
+                            if (d["name"].AsString() == "cel_hero_class") { has = true; break; }
+                        heroClassShader[sid] = has;
+                    }
+                    int cls = -1;
+                    if (has)
+                    {
+                        var kv = sm.GetShaderParameter("kind");
+                        cls = SurvivorUnchained.Look.Rigs.HeroClassOf(sh.ResourcePath.GetFile(), kv.VariantType == Variant.Type.Int ? kv.AsInt32() : -1);
+                        if (cls >= 0) sm.SetShaderParameter("cel_hero_class", (float)cls);
+                    }
+                    heroClasses[p.GetInstanceId()] = cls;
+                }
+        }
     }
 
     /// <summary>A mesh's materials as the renderer picks them: the override (over every surface) or each surface's
@@ -512,7 +547,7 @@ public static class CelLib
                     };
                     if (id == HeroIdTable.Length && heroIdSaid.TryAdd("wrapped", "")) GD.Print("HERO_ID WRAPPED: more painted materials than the ", HeroIdTable.Length, " colors; ids share colors from here");
                     var c = id >= 0 ? HeroIdColor(id) : default;
-                    string say = FormattableString.Invariant($"id {id} rgb {c.X:0.###} {c.Y:0.###} {c.Z:0.###} | {where} pass {k} | {p.ResourceName} | {wears} | {state}");
+                    string say = FormattableString.Invariant($"id {id} rgb {c.X:0.###} {c.Y:0.###} {c.Z:0.###} | {where} pass {k} | {p.ResourceName} | {wears} | {state} | class {(heroClasses.TryGetValue(mid, out int hcl) ? hcl : -1)}");
                     string key = g.GetInstanceId() + "|" + where + "|" + k;
                     if (heroIdSaid.TryGetValue(key, out var was) && was == say) continue;
                     heroIdSaid[key] = say;

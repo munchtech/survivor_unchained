@@ -563,13 +563,46 @@ vec3 cel_hero_gain(vec3 c_rgb, float c_gain, float c_k) {
 	if (c_lo < 0.0) { float c_was = min(c_in.r, min(c_in.g, c_in.b)); c_out = mix(c_in, c_out, clamp(c_was / max(c_was - c_lo, 0.000001), 0.0, 1.0)); }
 	return c_out;
 }
+// (L1 lead 22, HERPAIR) HER VALUE PAIRS BY MATERIAL CLASS: one shared level cannot put her hair a step under the floor
+// and her lit skin over it (they share the floor's hue and close albedo values). Each hero material has a CLASS
+// (cel_hero_class, set by CelLib.HeroClassStep from its shader: 0 hair, 1 skin, 2 outfit leather / cloth, 3 outfit
+// metal; -1 = none) and the rig a VALUE pair per class (hero_pool values 36-43: lit L, shade L, as Oklab L of the
+// emission; cel_hero_class_lit / _shade, x..w = class 0..3; 0 = that class as before). The painted tone (its own hue,
+// its C / L after the chroma gain) is landed at the class's L by scaling its linear rgb (Oklab L, a, b all scale by the
+// cube root: hue and C / L are kept exactly; no hue term, the rig never sets her color). cel_hero_class_keep (value 44)
+// = the share of the material's own L kept, geometric (0 = every texel at the class's L, 1 = as before), so a darker
+// leather stays under a lighter steel in the same class. The anchor (the dark share) is untouched.
+uniform float cel_hero_class = -1.0;
+global uniform vec4 cel_hero_class_lit;
+global uniform vec4 cel_hero_class_shade;
+global uniform float cel_hero_class_keep;
+float cel_hero_ok_l(vec3 c_rgb) {
+	vec3 c_lms = pow(max(mat3(vec3(0.4122214708, 0.2119034982, 0.0883024619), vec3(0.5363325363, 0.6806995451, 0.2817188376), vec3(0.0514459929, 0.1073969566, 0.6299787005)) * max(c_rgb, vec3(0.0)), vec3(0.0)), vec3(1.0 / 3.0));
+	return dot(vec3(0.2104542553, 0.7936177850, -0.0040720468), c_lms);
+}
+float cel_hero_class_pick(vec4 c_v) {
+	int c_k = int(round(cel_hero_class));
+	return c_k == 0 ? c_v.x : c_k == 1 ? c_v.y : c_k == 2 ? c_v.z : c_k == 3 ? c_v.w : 0.0;
+}
+vec3 cel_hero_land(vec3 c_rgb, float c_lt, float c_k) {
+	if (c_lt <= 0.0 || c_k <= 0.0) return c_rgb;
+	float c_l = cel_hero_ok_l(c_rgb);
+	if (c_l < 0.0001) return c_rgb;
+	float c_to = pow(c_lt, 1.0 - clamp(cel_hero_class_keep, 0.0, 1.0)) * pow(c_l, clamp(cel_hero_class_keep, 0.0, 1.0));
+	float c_f = mix(1.0, c_to / c_l, c_k);
+	return c_rgb * (c_f * c_f * c_f);
+}
 vec3 cel_hero_paint(vec3 c_wn, vec3 c_alb, float c_w, float c_near) {
 	// (round 2) FORM FROM ABOVE: the side is read from the plane's LEAN alone (n.xz normalized, down to the least lean
 	// cel_hero_own.z, value 27), so at the play camera, where her planes point up, the side away from the foot still
 	// takes the mid and the anchor as one connected side.
 	float c_s = -dot(c_wn.xz, cel_hero.xy) / max(length(c_wn.xz), max(cel_hero_own.z, 0.001));
 	float c_mid = cel_hero_mid.rgb != vec3(0.0) ? smoothstep(cel_hero_mid.w - c_w, cel_hero_mid.w + c_w, c_s) : 0.0;
-	vec3 c_t = mix(cel_hero_gain(cel_hero_local(cel_hero_lit.rgb, c_alb), cel_hero_chroma.x, c_near), cel_hero_gain(cel_hero_local(cel_hero_mid.rgb, c_alb), cel_hero_chroma.y, c_near), c_mid);
+	// (HERPAIR) the class's landing is whole at the play camera, none in a close shot (the chroma rule's px band), whole without it
+	float c_ck = cel_hero_chroma.x > 0.0 ? c_near : 1.0;
+	vec3 c_lit = cel_hero_land(cel_hero_gain(cel_hero_local(cel_hero_lit.rgb, c_alb), cel_hero_chroma.x, c_near), cel_hero_class_pick(cel_hero_class_lit), c_ck);
+	vec3 c_md = cel_hero_land(cel_hero_gain(cel_hero_local(cel_hero_mid.rgb, c_alb), cel_hero_chroma.y, c_near), cel_hero_class_pick(cel_hero_class_shade), c_ck);
+	vec3 c_t = mix(c_lit, c_md, c_mid);
 	float c_dark = max(smoothstep(cel_hero.z - c_w, cel_hero.z + c_w, c_s), 1.0 - smoothstep(cel_hero_tone.w - c_w, cel_hero_tone.w + c_w, c_wn.y));
 	return mix(c_t, cel_hero_tone.rgb, c_dark);
 }
