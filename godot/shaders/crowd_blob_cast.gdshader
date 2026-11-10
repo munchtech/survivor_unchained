@@ -5,11 +5,10 @@
 // light's foot. Zero crowd_shade: nothing draws (every rig but arena_night).
 // (L1 lead 18, SH) Under a rig with the floor's tone table (rigs.json "ember_floor": cel_floor_band x over 0) the shadow
 // gives way as her fire's share does (1 - the moon's return, the table's a), per fragment, so it has no outer rim.
-// (L1 lead 19, SH2) The TONE is the night's floor with her fire taken away: the floor's own LIT tone out past the table
-// (the night's one shade, crowd_shade: rigs.json "foe_moon" values 3-6, what the floor's shade is away from the fire,
-// times the floor's lit light over its shade's: cel_floor_band yzw / cel_floor_unit rgb), the same at every distance: a
-// dark violet-navy on the orange, one step lighter than a foe's own body, and exactly what the floor turns into where the
-// table ends. (Lead 18's tone, the table's leaf-shade turn at the fragment's distance, is what a LEAF's shade shows there:
+// (L1 lead 19, SH2) The TONE is the night's floor with her fire taken away: the floor's own LIT tone out past the table,
+// authored in the rig (crowd_shade: rigs.json "foe_moon" values 3-6, level and color as an unshaded pass writes it; the
+// ember_floor row's first tone, L 0.33 C 0.085 h 260), the same at every distance: a dark violet-navy on the orange, one
+// step lighter than a foe's own body, and what the floor turns into where the table ends. (Lead 18's tone, the table's leaf-shade turn at the fragment's distance, is what a LEAF's shade shows there:
 // a leaf cuts the moon and leaves the fire, so inside 2.5 m it is the glow itself, L 0.48 C 0.16 h 30 at 2 m and L 0.60
 // gold at her feet: shot as l19_01, the casts were red and lighter than the floor beside them.) No tone lives here.
 // (L1 lead 19, SH2) The SHAPE, one rule for three users (a foe: Vat.cs; what stands: Dressing.cs; her: PlayerView.cs; the
@@ -34,7 +33,6 @@ global uniform vec4 cel_pool_band;
 global uniform sampler2D cel_pool_ramp : filter_linear, repeat_disable;
 global uniform vec4 cel_ember;
 global uniform vec4 cel_floor_band;
-global uniform vec4 cel_floor_unit;
 global uniform sampler2D cel_floor_turn : filter_linear, repeat_disable;
 // (the shape's numbers; no tone)
 #define CAST_TIP 0.3
@@ -101,7 +99,7 @@ void fragment() {
 	float gate = gt.x;
 	float r = length(wp.xz - cel_ember.xz);
 	if (cel_floor_band.x > 0.0) {
-		ALBEDO = crowd_shade.rgb * cel_floor_band.yzw / max(cel_floor_unit.rgb, vec3(1e-5)) * gt.y;
+		ALBEDO = crowd_shade.rgb * gt.y;
 		gate *= 1.0 - texture(cel_floor_turn, vec2((clamp(r / cel_floor_band.x, 0.0, 1.0) * 63.0 + 0.5) / 64.0, 0.75)).a;
 	} else {
 		vec3 ramp = texture(cel_pool_ramp, vec2((clamp(r / cel_pool_band.x, 0.0, 1.0) * 63.0 + 0.5) / 64.0, 0.5)).rgb;
