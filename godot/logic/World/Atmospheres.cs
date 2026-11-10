@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using SurvivorUnchained.Look;
 
 namespace SurvivorUnchained.World;
 
@@ -21,7 +22,7 @@ public static class Atmospheres
     public static readonly AtmospherePreset Night = new(
         new SkySettings("#040814", "#1c2a4c", "#07090f", "#4a6ea8", 20, 1, 1),
         "#a9c4ff", 3.4, 50, 128, 0.7,
-        "#4a6699", "#2a241c", 1.25, 0.8, "#16243a", 0.008, 1.6, "#9fc0ff", 0.6, NightGrade);
+        "#4a6699", "#2a241c", 1.25, 0.8, "#16243a", 0.008, 1.6, "#9fc0ff", 0.6, NightGrade) { Rig = "night_wild" };
 
     /// <summary>Night inside walls: the moon is a cold wash, and what light
     /// there is comes from lamps, doorways and braziers.</summary>
@@ -43,6 +44,7 @@ public static class Atmospheres
         // the lift 0.016/0.024/0.05 to 0.024/0.034/0.064 (that right half p50 8 to 12))
         // (Rendering r2, judge r1 E4: no pool showed at 1.7: 3, a soft pool round her (the pool now 0.75x its reach))
         Ember = 3.0,
+        Rig = "night_town",
     };
 
     // The golden hour going blue: a low warm sun with long shadows, the shade lifted toward violet,
@@ -67,7 +69,7 @@ public static class Atmospheres
         new SkySettings("#4f74a6", "#c4ccd0", "#34302c", "#fff0d0", 8, 0, 0),
         "#ffeccc", 3.8, 46, 55, 0.82,
         "#9cb2cc", "#463626", 1.0, 0.85, "#a4aeb4", 0.0055, 1.0, "#e6eef8", 0.18,
-        new([0.01, 0.014, 0.026], [1.0, 1.0, 1.0], [1.04, 1.01, 0.96], "#3a5872", "#ffd9a0", 0.2, 1.05, 0.16, 1.12));
+        new([0.01, 0.014, 0.026], [1.0, 1.0, 1.0], [1.04, 1.01, 0.96], "#3a5872", "#ffd9a0", 0.2, 1.05, 0.16, 1.12)) { Rig = "day_wild" };
 
     /* ------------------------------------------------- play's own (E1) -- */
     // Play's presets (look bible 1c, "The trick"): a low key that models the ground from the high
@@ -92,7 +94,19 @@ public static class Atmospheres
 
     /// <summary>The title and the Look: night, with the grade's toe held whole, so her irises, brows and dark hair keep
     /// their colour at the camera that judges them.</summary>
-    public static readonly AtmospherePreset Front = Night with { KeyIntensity = 2.55, Grade = PlayNightGrade with { MoonTop = 0.6, MoonWidth = 0.2, MoonSkin = 1 } };
+    public static readonly AtmospherePreset Front = Night with { KeyIntensity = 2.55, Grade = PlayNightGrade with { MoonTop = 0.6, MoonWidth = 0.2, MoonSkin = 1 }, Rig = "" };
+
+    /// <summary>(L1 lead 9, night) The title: the Low Ford's camp under the game's night (rigs.json title_night, FROM target 01_r4),
+    /// the first screen lit as play is. Front stays the Look's (creation; GameFront.NewJourney sets it): its face protections
+    /// (the skin guard, the neutral highlight tint, Atmosphere.Own) are for her face up close, and at the title they took the
+    /// fire's pool to cream (C 0.056 against T01's 0.142) and the moonlit clearing to grey (judge 1, 9 Nov).</summary>
+    public static readonly AtmospherePreset Title = Front with { Rig = "title_night" };
+
+    /// <summary>(L1 lead 9, night) The cinematics' night ("preset": "cineNight"; C01 at the Low Ford's camp): the night rig's
+    /// fill, rim, ink and moon grade (rigs.json cine_night, FROM target 03), the key's direction and level, the sky light and
+    /// the exposure the shot's own (the cue's tuning over Night's: the rig leaves them null). Under night_wild's rig the cue's
+    /// staging was dropped and the old wilds grade left C01's shade mauve (h 309 against T03's 262).</summary>
+    public static readonly AtmospherePreset CineNight = Night with { Rig = "cine_night" };
     // (P1 R1 round 33, S4: skin's hues spared the moon's step (GradeSettings.MoonSkin): the far side of her neck under her
     // jaw, in shade at L 0.5 and C/L 0.09, took the moon's silver-blue, a blue-grey patch on A and B alike (gate judge 2).)
     // (H2 R3: the play night's paint grade, its toe whole (Toe 1); the paint terms are the close view's (Atmosphere.Own). The
@@ -153,6 +167,7 @@ public static class Atmospheres
         // (Low Ford lf5p, judge lf4: the night bushes too saturated; her pool tipped the meadow ground olive-chartreuse)
         BushNightSat = 0.4, GroundEmberOchre = 0.6,
         Frost = 1,
+        Rig = "night_play",
     };
 
     static readonly GradeSettings PlayDawnGrade = new([0, 0, 0], [1.0, 1.0, 1.02], [1.0, 1.0, 1.0],
@@ -174,6 +189,7 @@ public static class Atmospheres
         FogColor = "#8c9cb4", FogDensity = 0.003, Exposure = 1.25, Rim = "#ffd8b0", RimStrength = 0.25,
         Grade = PlayDawnGrade, Haze = 0.004, Mist = 0.14, MistColor = "#7a8aa2", CrowdRim = 0.05, Ember = 0.5,
         Frost = 0.5, FrostThaw = 1,
+        Rig = "dawn",
     };
 
     /// <summary>The Low Ford's morning (H4 item 10), what the day stretch's sun climbs to from LowFordDawn's over its
@@ -184,19 +200,24 @@ public static class Atmospheres
     /// frost burnt off. The grade, the sky and the fill are the dawn's: only the sun moves.</summary>
     public static readonly AtmospherePreset LowFordMorning = LowFordDawn with
     {
-        KeyColor = "#ffdfc2", KeyIntensity = 6.6, KeyElevation = 34, Frost = 0,
+        KeyColor = "#ffdfc2", KeyIntensity = 6.6, KeyElevation = 34, Frost = 0, Rig = "dawn_morning",
     };
 
     /// <summary>The day stretch's light k of the way (0 to 1) from LowFordDawn to LowFordMorning: the thaw held at the
     /// dawn's sun while its frost goes (no ground bake a degree).</summary>
-    public static AtmospherePreset Morning(double k) =>
-        k <= 0 ? LowFordDawn : k >= 1 ? LowFordMorning : Blend(LowFordDawn, LowFordMorning, k) with { ThawElevation = LowFordDawn.KeyElevation };
+    public static AtmospherePreset Morning(double k)
+    {
+        if (k <= 0) return LowFordDawn;
+        if (k >= 1) return LowFordMorning;
+        var p = Blend(LowFordDawn, LowFordMorning, k);
+        return p with { ThawElevation = LowFordDawn.KeyElevation, CelTwin = p.CelTwin! with { ThawElevation = LowFordDawn.KeyElevation } };
+    }
 
     /// <summary>The Waystation at dawn: the sun 14 degrees up a little north of east, raking its streets
     /// (azimuth -10, so the day's arc runs on through the day's 290 to dusk's 200 without crossing the camera).</summary>
     public static readonly AtmospherePreset WaystationDawn = LowFordDawn with
     {
-        KeyElevation = 14, KeyAzimuth = -10, Haze = 0.003, Frost = 0, FrostThaw = 0,
+        KeyElevation = 14, KeyAzimuth = -10, Haze = 0.003, Frost = 0, FrostThaw = 0, Rig = "dawn_waystation",
     };
 
     static readonly GradeSettings PlayDayGrade = new([0, 0, 0], [1.0, 1.0, 1.0], [1.01, 1.0, 0.99],
@@ -220,6 +241,7 @@ public static class Atmospheres
         // 0.45 (Atmosphere.Paint), and the square's shade sits at L 0.32-0.37, so 0.55 gave a weight of 0.08-0.19: chroma 0.7 to
         // 2.5. 1.6: the shade a cool slate (L 32-37 kept, C 2.0-4.6, h 262-274); the sunlit stone L 45 h 60 C 2.8 to 2.65.)
         Exposure = 1.05, RimStrength = 0.18, Grade = PlayDayGrade with { PaintShadow = "#34589a", PaintShadowK = 1.6 }, Haze = 0.004, Mist = 0.05, MistColor = "#a8acb4", Ember = 0.5,
+        Rig = "day_town",
     };
 
     /// <summary>Play's night going to dawn by k (0 to 1), where no C04 A brings the sun up: the moon sets and the
@@ -227,15 +249,22 @@ public static class Atmospheres
     /// and fades in as the sun; a blended key wheeled its shadows 280 degrees round her.</summary>
     public static AtmospherePreset Dawning(double k)
     {
-        var p = Blend(LowFordNight, LowFordDawn, k);
-        var from = k < 0.5 ? LowFordNight : LowFordDawn;
+        var p = DawningOf(LowFordNight, LowFordDawn, k);
+        return p with { CelTwin = DawningOf(LitAsIs(LowFordNight), LitAsIs(LowFordDawn), k) };
+    }
+
+    // (the moon sets as the sun comes up: each keeps its own way, and the key fades out and in through the turn)
+    static AtmospherePreset DawningOf(AtmospherePreset night, AtmospherePreset dawn, double k)
+    {
+        var p = Blend(night, dawn, k);
+        var from = k < 0.5 ? night : dawn;
         double w = Math.Abs(2 * k - 1);
         return p with { KeyAzimuth = from.KeyAzimuth, KeyElevation = from.KeyElevation, KeyIntensity = from.KeyIntensity * w * w * (3 - 2 * w) };
     }
 
     public static AtmospherePreset ByName(string name) => name switch
     {
-        "night" => Night, "nightTown" => NightTown, "dusk" => Dusk, "dawn" => Dawn, "day" => Day,
+        "night" => Night, "cineNight" => CineNight, "title" => Title, "nightTown" => NightTown, "dusk" => Dusk, "dawn" => Dawn, "day" => Day,
         _ => throw new ArgumentException($"no atmosphere {name}"),
     };
 
@@ -244,7 +273,8 @@ public static class Atmospheres
 
     /// <summary>a blended toward b by t (colours mixed in linear light, as
     /// three.js mixes them).</summary>
-    public static AtmospherePreset Blend(AtmospherePreset a, AtmospherePreset b, double t) => new(
+    // (L1 B4: at its ends a blend is its preset, so a preset's rig twin is made only between two)
+    public static AtmospherePreset Blend(AtmospherePreset a, AtmospherePreset b, double t) => t >= 1 ? b : t <= 0 ? a : new AtmospherePreset(
         new SkySettings(Mix(a.Sky.Top, b.Sky.Top, t), Mix(a.Sky.Horizon, b.Sky.Horizon, t), Mix(a.Sky.Bottom, b.Sky.Bottom, t),
             Mix(a.Sky.Glow, b.Sky.Glow, t), Lerp(a.Sky.GlowPower, b.Sky.GlowPower, t), Lerp(a.Sky.Stars, b.Sky.Stars, t), Lerp(a.Sky.Moon, b.Sky.Moon, t)),
         Mix(a.KeyColor, b.KeyColor, t), Lerp(a.KeyIntensity, b.KeyIntensity, t), Lerp(a.KeyElevation, b.KeyElevation, t),
@@ -266,16 +296,99 @@ public static class Atmospheres
             PaintShadow = MixOr(a.Grade.PaintShadow, b.Grade.PaintShadow, t),
             PaintShadowK = Lerp(a.Grade.PaintShadowK, b.Grade.PaintShadowK, t), PaintLift = Lerp(a.Grade.PaintLift, b.Grade.PaintLift, t),
             PaintShadowSkin = Lerp(a.Grade.PaintShadowSkin, b.Grade.PaintShadowSkin, t), PaintVibDark = Lerp(a.Grade.PaintVibDark, b.Grade.PaintVibDark, t),
+            Curve = CurveMix(a.Grade.Curve, b.Grade.Curve, t), WarmKeep = Lerp(a.Grade.WarmKeep, b.Grade.WarmKeep, t),
+            WarmHue = Lerp(a.Grade.WarmHue, b.Grade.WarmHue, t), WarmWidth = Lerp(a.Grade.WarmWidth, b.Grade.WarmWidth, t),
         })
         {
             Haze = Lerp(a.Haze, b.Haze, t), Mist = Lerp(a.Mist, b.Mist, t), MistColor = Mix(a.MistColor, b.MistColor, t), Ember = Lerp(a.Ember, b.Ember, t),
             EmberColor = a.EmberColor != "" && b.EmberColor != "" ? Mix(a.EmberColor, b.EmberColor, t) : t < 0.5 ? a.EmberColor : b.EmberColor, EmberReach = Lerp(a.EmberReach, b.EmberReach, t),
+            EmberGive = a.EmberGive is { Length: 4 } ga && b.EmberGive is { Length: 4 } gb ? Lerp3x(ga, gb, t) : t < 0.5 ? a.EmberGive : b.EmberGive,
+            FireGive = a.FireGive is { Length: 4 } fa && b.FireGive is { Length: 4 } fb ? Lerp3x(fa, fb, t) : t < 0.5 ? a.FireGive : b.FireGive,
+            EmberPool = t < 0.5 ? a.EmberPool : b.EmberPool, EmberSmooth = t < 0.5 ? a.EmberSmooth : b.EmberSmooth, EmberShade = t < 0.5 ? a.EmberShade : b.EmberShade, EmberFloor = t < 0.5 ? a.EmberFloor : b.EmberFloor, EmberFloorLift = t < 0.5 ? a.EmberFloorLift : b.EmberFloorLift, HeroPool = t < 0.5 ? a.HeroPool : b.HeroPool,
+            MoonTop = t < 0.5 ? a.MoonTop : b.MoonTop, FoeFire = t < 0.5 ? a.FoeFire : b.FoeFire, FoeMoon = t < 0.5 ? a.FoeMoon : b.FoeMoon, EmberEdge = t < 0.5 ? a.EmberEdge : b.EmberEdge,
             CrowdRim = Lerp(a.CrowdRim, b.CrowdRim, t), CrowdFill = Lerp(a.CrowdFill, b.CrowdFill, t), RiverLight = Lerp(a.RiverLight, b.RiverLight, t),
             RiverSky = Lerp(a.RiverSky, b.RiverSky, t), RiverBend = Lerp(a.RiverBend, b.RiverBend, t),
             RiverMoon = Lerp(a.RiverMoon, b.RiverMoon, t), GrassLampOchre = Lerp(a.GrassLampOchre, b.GrassLampOchre, t),
             BushNightSat = Lerp(a.BushNightSat, b.BushNightSat, t), GroundEmberOchre = Lerp(a.GroundEmberOchre, b.GroundEmberOchre, t),
             Frost = Lerp(a.Frost, b.Frost, t), FrostThaw = Lerp(a.FrostThaw, b.FrostThaw, t),
-        };
+            CelOn = Lerp(a.CelOn, b.CelOn, t), CelShadow = Lerp(a.CelShadow, b.CelShadow, t), CelFill = Lerp(a.CelFill, b.CelFill, t),
+            CelRim = Lerp(a.CelRim, b.CelRim, t), CelRimWidth = Lerp(a.CelRimWidth, b.CelRimWidth, t),
+            CelFillColor = a.CelFillColor != "" && b.CelFillColor != "" ? Mix(a.CelFillColor, b.CelFillColor, t) : t < 0.5 ? a.CelFillColor : b.CelFillColor,
+            CelRimColor = a.CelRimColor != "" && b.CelRimColor != "" ? Mix(a.CelRimColor, b.CelRimColor, t) : t < 0.5 ? a.CelRimColor : b.CelRimColor,
+            CelInk = a.CelInk is { } ia && b.CelInk is { } ib ? Lerp3(ia, ib, t) : t < 0.5 ? a.CelInk : b.CelInk,
+            DappleCover = Lerp(a.DappleCover, b.DappleCover, t), DappleStrength = Lerp(a.DappleStrength, b.DappleStrength, t),
+            DappleHeight = Lerp(a.DappleHeight, b.DappleHeight, t), DappleSize = t < 0.5 ? a.DappleSize : b.DappleSize, DappleFloor = Lerp(a.DappleFloor, b.DappleFloor, t),
+            Rig = t < 0.5 ? a.Rig : b.Rig, IsLit = a.IsLit && b.IsLit,
+        } is var r && (r.IsLit || (a.Rig == "" && b.Rig == "" && a.CelTwin == null && b.CelTwin == null)) ? r
+          : r with { CelTwin = Blend(LitAsIs(a), LitAsIs(b), t) };
+
+    /// <summary>(L1 B4) A preset as the cel model lights it, marked lit even when it names no rig (a blend's twin).</summary>
+    public static AtmospherePreset LitAsIs(AtmospherePreset p) => Rigs.Lit(p) is { IsLit: true } l ? l : p with { IsLit = true, Source = p, CelTwin = null };
+
+    /// <summary>(L1 W2) Two tone curves blended: each sampled at 17 points of L and the outputs lerped (none: the identity).</summary>
+    public static double[]? CurveMix(double[]? a, double[]? b, double t)
+    {
+        if (a == null && b == null) return null;
+        if (t <= 0) return a; if (t >= 1) return b;
+        var r = new double[34];
+        for (int i = 0; i <= 16; i++) { double x = i / 16.0; r[2 * i] = x; r[2 * i + 1] = Lerp(ToneCurve(a, x), ToneCurve(b, x), t); }
+        return r;
+    }
+    static double[] Lerp3x(double[] a, double[] b, double t) { var r = new double[a.Length]; for (int i = 0; i < a.Length; i++) r[i] = Lerp(a[i], b[i], t); return r; }
+
+    /// <summary>(L1 W2) A tone curve at x: the monotone cubic (Fritsch-Carlson) through its (in, out) pairs; null or empty, x.
+    /// Outside the first and last points, the line from (0, 0) or to (1, 1).</summary>
+    public static double ToneCurve(double[]? c, double x)
+    {
+        if (c == null || c.Length < 4) return x;
+        int n = c.Length / 2;
+        double X(int i) => c[2 * i]; double Y(int i) => c[2 * i + 1];
+        if (x <= X(0)) return X(0) > 0 ? Y(0) * x / X(0) : Y(0);
+        if (x >= X(n - 1)) return X(n - 1) < 1 ? Y(n - 1) + (1 - Y(n - 1)) * (x - X(n - 1)) / (1 - X(n - 1)) : Y(n - 1);
+        var d = new double[n - 1]; var m = new double[n];
+        for (int i = 0; i < n - 1; i++) d[i] = (Y(i + 1) - Y(i)) / Math.Max(X(i + 1) - X(i), 1e-9);
+        m[0] = d[0]; m[n - 1] = d[n - 2];
+        for (int i = 1; i < n - 1; i++) m[i] = d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2;
+        for (int i = 0; i < n - 1; i++)
+        {
+            if (d[i] == 0) { m[i] = m[i + 1] = 0; continue; }
+            double al = m[i] / d[i], be = m[i + 1] / d[i], s = al * al + be * be;
+            if (s > 9) { double k = 3 / Math.Sqrt(s); m[i] = k * al * d[i]; m[i + 1] = k * be * d[i]; }
+        }
+        int j = 0; while (j < n - 2 && x > X(j + 1)) j++;
+        double h = X(j + 1) - X(j), u = (x - X(j)) / h, u2 = u * u, u3 = u2 * u;
+        return (2 * u3 - 3 * u2 + 1) * Y(j) + (u3 - 2 * u2 + u) * h * m[j] + (-2 * u3 + 3 * u2) * Y(j + 1) + (u3 - u2) * h * m[j + 1];
+    }
+
+    /// <summary>(L1 B4) The grades a rig names (rigs.json "grade"): the presets' own, by name.</summary>
+    /// <summary>(L1 C2) "name@K": the named grade with its contrast times K (a rig's own contrast, as data).</summary>
+    public static GradeSettings? GradeNamed(string name) => name.IndexOf('@') is var at and > 0
+        && double.TryParse(name[(at + 1)..], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var k)
+        && GradeNamed(name[..at]) is { } g ? g with { Contrast = g.Contrast * k } : GradeNamed0(name);
+    static GradeSettings? GradeNamed0(string name) => name switch
+    {
+        "night" => NightGrade, "play_night" => PlayNightGrade, "lowford_night" => LowFordNight.Grade, "town_night" => NightTown.Grade,
+        "close_night" => CloseNightPaint, "front" => Front.Grade, "play_dawn" => PlayDawnGrade, "dawn" => Dawn.Grade,
+        "play_day" => PlayDayGrade, "waystation_day" => WaystationDay.Grade, "day" => Day.Grade, "dusk" => Dusk.Grade,
+        // (B4r2: the night rig's grade, the Low Ford's with the Moon step's chroma up so what the moon lights reads moon-blue,
+        // rule 1's cold 60%+ of the chroma; the lookdev stage's play night cold 28% to 49% at 0.45 with the rig's key)
+        "rig_night" => LowFordNight.Grade with { MoonSat = 0.12 },   // (L1 l10 NIGHT: 0.45 -> 0.12, the moon light carries the blue now; rigs.json night_play)
+        // (L1 S2b-N3: the arena's night, the night rig's grade with the Moon step's hue 240 to 262, FROM the picked target 09's
+        // violet moon (shade h 263; at 240 the Hollow read h 254, cyan-blue); the Low Ford's 05/06 keep 240 (targets h 251/257))
+        "rig_arena_night" => LowFordNight.Grade with { MoonSat = 0.12, MoonHue = 262 },   // (L1 l10 NIGHT: 0.45 -> 0.12)
+        // (B4r3: the dawn rig's grade, the Low Ford's dawn with its contrast 1.14 to 1.4, from LB_light's DAWN panel (key 1.76 on
+        // the panel; the stage's play dawn 1.50 to 1.6 with the rig's key; the panel's top sky, which the play camera never sees,
+        // holds the rest))
+        "rig_dawn" => PlayDawnGrade with { Contrast = 1.4, MoonHue = 325, MoonSat = 0.087, MoonTop = 0.62 },  // (L1 lead 7 S2: MoonTop 0.45 to 0.62, the stage's dawn shade sits at L 0.40-0.55, over LB's 0.36; under scene_color the step after it (rigs.json scene_moon) gives the shade its color: LB DAWN's shade setts, Oklab L 0.357 C 0.031 h 325 (lilac): the hue, and C/L 0.087)
+        // (L1 W2 C6, the color chain: the day rigs' grades with the highlight tint neutral (#bcbcbc: linear 0.5, the tint adds
+        // tint - 0.5). The warm-source term (WarmKeep) was never on by day; the warmth past the sun's own was the paint grade's
+        // highlight tint (#ffd49a at 0.25; the wild's #ffd9a0 at 0.2), which pushed every lit surface warm as if the sun were a
+        // warm source: a neutral 0.18 card under the town's sun read R/B 3.1 against the pale-gold sun's own 2.5 (#f3d9a0,
+        // rule 3). Warm belongs to sources (rule 3): the sun's color is the rig's key, not the grade's.)
+        "rig_day" => WaystationDay.Grade with { HighlightTint = "#bcbcbc" },
+        "rig_day_wild" => Day.Grade with { HighlightTint = "#bcbcbc" },
+        _ => null,
+    };
 
     /* ------------------------------------------------------------ colour -- */
 

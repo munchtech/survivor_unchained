@@ -88,6 +88,66 @@ public sealed class WeaponInst
     /// firing now is its own heavy one (only within a cast: a Pulse's follow-up or an echo never is).</summary>
     public int OwnBlows;
     public bool OwnHeavy;
+    /// <summary>(M3 MR 3) A chained cut is a share of the written blow (Sim/Blows.cs): the part of a blow each count
+    /// carries; the whole written blows it has fired; the weight of the firing now (1 outside a cast, as FireMul is);
+    /// and the last cast's weight (its Pulse follow-ups and burst shots carry it).</summary>
+    public double OwnPart, HandPart, RitePart;
+    public int BlowN;
+    public double BlowPart;
+    public double CutW = 1;
+    public double CastW = 1;
+    /// <summary>(M3 J12) A block owes this chained skill one whole blow (bulwark.oathblade.shield_and_edge): set at the block,
+    /// kept through a pending cut's landing, taken by the next cut to start (Battle.DeferCut). Never set on a skill whose
+    /// BlowWeight is 1 (unchained, or a chain with no period).</summary>
+    public bool AnswerDue;
+    /// <summary>(M3 J12) The cast now landing is a block's answer, a whole blow (set round the cast by Firing.LandBlow from the
+    /// chain cut's Whole): the heavy counts' questions inside the cast are asked at weight 1, as its press asked them.</summary>
+    public bool WholeCast;
+    /// <summary>(M3 MR 3 o2) The rest the cast now landing carries, in written blows (set round the cast by Firing.LandBlow
+    /// from the chain cut's Rest; 0 outside a cast, on the held chain's beat, and for an answer): its weight is its share
+    /// plus this (Sim.Blows.Rested). And the weight the heavy counts' questions are asked at inside the cast: the LIGHT
+    /// cut's (a heavy's longer share never decides whether it is a heavy), rested as its press asked them
+    /// (Battle.DeferBlow); a block's answer 1.</summary>
+    public double CastRest;
+    /// <summary>(M3 MR 3 b1, the landed rule) The time this grip's LANDED weight has paid up to (Battle.BankOf): NaN until
+    /// its first cut lands, read as a full bank. Per grip (a union's half has its own).</summary>
+    public double PaidTo = double.NaN;
+    /// <summary>(M3 lead 16 b6, harness-only: nothing reads it in play) This grip's LANDED weight by source, tallied by
+    /// Firing.CastOnce on its own cuts (not after-casts): [0] cuts landed; [1] the held share (unchained: a whole blow on
+    /// ready); [2] a heavy's extra (share x (scale - 1)); [3] rest over its own (unchained: a whole opening blow, more than
+    /// 1.25 waits since the last); [4] a block's answer (1); [5] a chained cut that carried no bank stamp (weight paid
+    /// nowhere); [6] weight landed and not paid into PaidTo (the period-end clamp: an answer's short wait, momentum);
+    /// [7] answers without a stamp; [8] own cuts that struck nothing (a chained whiff spends no bank; an unchained one its wait). GripMeter.SrcLine prints them.</summary>
+    public readonly double[] Src = new double[9];
+    internal double SrcLast = double.NaN;
+    internal bool SrcHit;
+    /// <summary>(M3 MR 3 clock) An unchained skill's wait ran out inside the step at Time = ReadyStep, Overshoot before
+    /// the step's end (Firing.CountDown, the chain's ChainReady way): a firing on that step is backdated to the instant,
+    /// so every wait is its written length on average, a hasted one too (no whole-step breakpoints).</summary>
+    internal double ReadyStep = double.NaN, Overshoot;
+    /// <summary>(b1) The bank's stamp for the cast about to land (set by Firing.LandBlow round a chain's cut, or by
+    /// Battle.DeferBlow for a chained press that casts at once; Firing.CastOnce takes it once, on the step it was set).</summary>
+    internal double CastFrom = double.NaN, CastPayTo, CastStage = double.NaN;
+    public double CastAsk => WholeCast ? 1 : CastRest > 0 ? Blows.Rested(BlowWeight, CastRest) : BlowWeight;
+    /// <summary>(M3 J12b) The written blow (BlowN) whose Linger ground is laid: under a chain one zone per written blow
+    /// (Firing.LaysGround). Never written on a skill whose BlowWeight is 1.</summary>
+    public int GroundKey = -1;
+    /// <summary>(M3 J12c) sunderer.momentum under a chain of weighed cuts, counted per WRITTEN blow: the blow being counted
+    /// (BlowN before its cuts' casts), the kills its cuts have made so far, and whether that blow is itself a paid one
+    /// (the blow before it reached the count: every cut of it waits less, Firing.MomentumMul). Never written on a skill
+    /// whose BlowWeight is 1.</summary>
+    public int MomKey = int.MinValue, MomKills;
+    public bool MomFast;
+    /// <summary>(M3 J12) The weight of its NEXT firing, for the heavy read-aheads at a press (Battle.DeferBlow, HandHeavyNext):
+    /// a whole blow when a block's answer is owed, else the cut's share.</summary>
+    public double NextW => AnswerDue && BlowWeight != 1 ? 1 : BlowWeight;
+    /// <summary>A chained cut's share of the written blow: the chain's period over the blow's wait (1 when not chained or no period).</summary>
+    public double BlowWeight => Chained && Press!.Chain!.Period is > 0 and var p ? p / (Press.Wait ?? Def.Base.Cooldown ?? 1) : 1;
+    /// <summary>What "once per firing" keys on (the Hand's stone, the bind rite): the firing; for a chain of weighed
+    /// cuts the written blow they are parts of. BlowN is counted after a cast, so inside one it is the whole blows
+    /// before this cut: the cuts of one blow's worth share a key and the next blow's worth has a new one. (Below -1,
+    /// so a key of cuts never meets a key of firings or RiteBound's -1.)</summary>
+    public int FiringKey => BlowWeight != 1 ? -2 - BlowN : Casts;
     /// <summary>A Pulse Turn's follow-ups still to go, and when.</summary>
     public int PulseLeft;
     public double PulseT;
@@ -215,7 +275,7 @@ public sealed class WeaponInst
             double d = (Def.Base.Damage ?? 0) * (1 + Def.Growth * (Rank - 1)) * Mods.Damage;
             if (evolution != null) d *= evolution.Mods.Damage ?? 1;
             if (wick != null) d *= wick.Damage;
-            return d * FireMul * AuraMul;
+            return d * FireMul * AuraMul * CutW;
         }
     }
 
@@ -244,6 +304,8 @@ public static partial class Firing
     /// while a resource pays for it), else its base cooldown. (M3) A kindled spender whose key heaves (Groundbreaker, the
     /// Disc) waits its record's wait too while Resolve pays: its cost is its gate, as the pressed form's is.</summary>
     static double BaseCooldown(Battle b, WeaponInst w) =>
+        // (M3 MR 3) a chained cut with a period waits its period: a share of the blow, as its weight is
+        w.Chained && w.Press!.Chain!.Period is > 0 and var p ? p :
         w.Press is { Wait: { } wait } r && (w.Pressed && (b.Resolve.On || (r.Resolve ?? 0) <= 0 && (r.Drain ?? 0) <= 0)
             || w.KindledNow && w.KindleKey == KindlePress.Now && b.Resolve.On && (r.Resolve ?? 0) > 0) ? wait : w.Def.Base.Cooldown ?? 1;
 
@@ -311,8 +373,9 @@ public static partial class Firing
         if (w.Behavior == WeaponBehavior.Reactive) return;
         // Oath and Bell: a stagger owed the bell a toll; it goes off now, its own timer untouched.
         if (w.Behavior == WeaponBehavior.Toll && b.BellOwed) b.TollOwed(w);
-        if (w.Chain != null) ChainReady(b, w, dt);
-        w.Timer -= dt;
+        // (M3 MR 3 clock: an unchained wait notes the instant it runs out inside the step, as the chain's does)
+        if (w.Chain != null) { ChainReady(b, w, dt); w.Timer -= dt; }
+        else CountDown(b, w, dt);
         if (w.BurstLeft > 0)
         {
             w.BurstT -= dt;
@@ -322,7 +385,8 @@ public static partial class Firing
                 w.BurstT = 0.07;
                 var hb0 = b.HeavyBy;
                 b.HeavyBy = w.HeavyCast ? w : null;
-                FireBurstShot(b, w);
+                var c0 = w.CutW; w.CutW = w.CastW;
+                try { FireBurstShot(b, w); } finally { w.CutW = c0; }
                 b.HeavyBy = hb0;
             }
         }
@@ -337,7 +401,8 @@ public static partial class Firing
                 var (hb0, rf0) = (b.HeavyBy, b.Refiring);
                 b.HeavyBy = w.HeavyCast ? w : null;
                 b.Refiring = true;
-                Fire(b, w);
+                var c0 = w.CutW; w.CutW = w.CastW;
+                try { Fire(b, w); } finally { w.CutW = c0; }
                 (b.HeavyBy, b.Refiring) = (hb0, rf0);
             }
         }
@@ -353,23 +418,118 @@ public static partial class Firing
         bool selfHeave = cost > 0 && w.KindledNow && w.KindleKey == KindlePress.Now;
         if (cost > 0 && b.Resolve.Value < (selfHeave ? ResolveMeter.SelfAt * b.Resolve.Max : cost)) { w.Timer = 0; return; }
         if (w.Kindle is { } kd && !b.Kindled(kd)) { w.Timer = 0.1; w.Relooking = true; return; }
-        int kills0 = w.Kills;
+        int kills0 = w.Kills, key0 = w.BlowN;
         bool fired = CastOnce(b, w);
         if (fired && cost > 0) b.Resolve.Spend(selfHeave ? b.Resolve.Value : cost);
         // Nothing in range: look again soon rather than waiting a whole cooldown.
-        Rearm(b, w, fired, kills0);
+        Rearm(b, w, fired, kills0, key0);
+        // (M3 MR 3 clock) the next wait runs from the instant this one ran out, not from the step's end
+        if (fired && Late(b, w) > 0) w.Timer = Math.Max(0, w.Timer - Late(b, w));
     }
+
+    /// <summary>(M3 MR 3 clock) An unchained skill's wait counts down a step (Firing.Tick, TickHalf): the step it runs
+    /// out on is noted, and how far into it (WeaponInst.ReadyStep, Overshoot), a hair's float residue counted as run out
+    /// (a wait of whole steps is never a step late).</summary>
+    internal static void CountDown(Battle b, WeaponInst w, double dt)
+    {
+        if (w.Timer > 0 && w.Timer <= dt + 1e-9) { w.ReadyStep = b.Time; w.Overshoot = Math.Max(0, dt - w.Timer); w.Timer = Math.Min(0, w.Timer - dt); }
+        else w.Timer -= dt;
+    }
+
+    /// <summary>(M3 MR 3 clock) How long before this step's end an unchained skill's wait ran out, if it ran out on this
+    /// step (0 otherwise, and always for a chained one: SwingChain carries its own): a firing now is backdated by it.</summary>
+    internal static double Late(Battle b, WeaponInst w) => w.Chain == null && w.ReadyStep == b.Time ? w.Overshoot : 0;
 
     /// <summary>One cast of the skill, as its own timer would fire it (the Hand's blow, its own heavy, its Pulse,
     /// the arcanist's and the board's after-cast): true when it fired. The timer is the caller's.</summary>
-    static bool CastOnce(Battle b, WeaponInst w)
+    static bool CastOnce(Battle b, WeaponInst w, double scale = 1)
+    {
+        // (M3 MR 3) A chained cut is a share of the written blow (scale: a heavy cut's longer period): its weight lives
+        // only inside this cast (WeaponInst.CutW, read by Damage), 1 again after it.
+        // (a chain with no period: every cut a whole blow, the heavy's too, as before)
+        if (!(w.Chained && w.Press!.Chain!.Period is > 0)) scale = 1;
+        // (M3 J12: a block's answer is one whole blow, exactly; its scale, 1 / BlowWeight, is the wait's and the stand clock's)
+        // (M3 MR 3 b1, the landed rule: a chained cut weighs what its grip's bank has earned, at most a whole blow, never
+        // under its own share, WeaponInst.CastRest; the held chain's cut on its beat has earned its share and weighs it)
+        double own = w.BlowWeight * scale;
+        // (the bank's stamp is taken here, once: a cast inside this cast, an after-cast, never reads it again)
+        bool banked = !double.IsNaN(w.CastFrom) && w.CastStage == b.Time;
+        double from = w.CastFrom, payTo = w.CastPayTo;
+        // (a stamp left from another step was never cast: drop it and its earned weight)
+        if (!banked && !double.IsNaN(from)) w.CastRest = 0;
+        w.CastFrom = double.NaN;
+        double cw = w.WholeCast ? 1 : banked ? Blows.Rested(own, w.CastRest) : own, cw0 = w.CutW;
+        w.CutW = cw;
+        var bl0 = b.Billing;
+        var bill = banked ? new CutBill(w) : null;
+        b.Billing = bill;
+        bool fired;
+        int depth = ++b.CastDepth;
+        if (depth == 1) w.SrcHit = false;
+        try { fired = CastWeighed(b, w, cw, scale, bill); }
+        finally { w.CutW = cw0; b.Billing = bl0; if (banked) w.CastRest = 0; b.CastDepth--; }
+        // (b1) It pays only if it struck a body, once however many: PaidTo moves to from + weight x W (its own period's
+        // end at most). A crescent or other projectile still in the air RESERVES it (paid as if struck) and refunds it
+        // if every one of them expires having struck nothing (Battle.ExpireProjectile, CutBill.Refund).
+        if (bill != null && (bill.Hit || bill.Live > 0))
+        {
+            // (from is max(PaidTo, start - W) at the cut's start; a refund between its start and its contact can only
+            // have lowered PaidTo since, so the base is from. Added: what the bill moved, so a refund puts PaidTo back.)
+            double p0 = double.IsNaN(w.PaidTo) ? from : w.PaidTo;
+            w.PaidTo = Math.Max(p0, from) + (payTo - from);
+            bill.Added = w.PaidTo - p0;
+            bill.Settled = true;
+        }
+        if (depth == 1 && w.Hold && fired) TallySrc(b, w, bill, cw, own, banked, from, payTo);
+        return fired;
+    }
+
+    /// <summary>(M3 lead 16 b6, harness-only) WeaponInst.Src: the landed weight of the grip's own cut by source.</summary>
+    static void TallySrc(Battle b, WeaponInst w, CutBill? bill, double cw, double own, bool banked, double from, double payTo)
+    {
+        var s = w.Src;
+        bool landed = bill != null ? bill.Hit || bill.Live > 0 : w.SrcHit;
+        if (!landed) { s[8]++; return; }
+        s[0]++;
+        double wt = CooldownOf(b, w) / w.BlowWeight;
+        bool chained = w.Chained && w.Press!.Chain!.Period is > 0;
+        if (!chained) s[double.IsNaN(w.SrcLast) || b.Time - w.SrcLast > 1.25 * wt ? 3 : 1] += 1;
+        else if (!banked) { s[5] += cw; if (w.WholeCast) s[7]++; }
+        else if (w.WholeCast) { s[4] += cw; s[6] += cw - (payTo - from) / wt; }
+        else { s[1] += w.BlowWeight; s[2] += own - w.BlowWeight; s[3] += cw - own; s[6] += cw - (payTo - from) / wt; }
+        w.SrcLast = b.Time;
+    }
+
+    /// <summary>(M3 MR 3 b1, the landed rule) A banked chained cut's account while its cast runs and its projectiles
+    /// fly: whether anything struck a body, how many of its projectiles are still in the air, and what it moved its
+    /// grip's PaidTo by (Firing.CastOnce). Every projectile of it expiring having struck nothing refunds that.</summary>
+    internal sealed class CutBill
+    {
+        public readonly WeaponInst W;
+        public bool Hit, Settled;
+        public int Live;
+        public double Added;
+        public CutBill(WeaponInst w) { W = w; }
+        /// <summary>One of its projectiles is gone (Battle.ExpireProjectile): the last, with nothing struck, refunds.</summary>
+        public void Gone()
+        {
+            if (--Live > 0 || Hit || !Settled) return;
+            W.PaidTo -= Added;
+            Added = 0; Settled = false;
+        }
+    }
+
+    static bool CastWeighed(Battle b, WeaponInst w, double cw, double scale, CutBill? bill = null)
     {
         b.ArcanistBeforeCast(w);
         // The warden's Hand: every few blows one is heavy, and every hit of it (HitEnemy reads HeavyBy).
         bool heavy = b.HandBeginCast(w);
         // Its own count (Sunder's): a firing heavy for either reason is just heavy; its own count also drives its line.
+        // (the LIGHT cut's weight on purpose: the read-ahead at the press, Battle.DeferBlow, asks the same question; a
+        // block's answer asks both at its whole blow's weight, WeaponInst.NextW at the press and WholeCast here)
         int own = HeavyEveryOf(b, w);
-        w.OwnHeavy = own > 0 && (w.OwnBlows + 1) % own == 0;
+        // (o2: a rested press asks both at the light cut's rested weight, Battle.DeferBlow there and CastAsk here)
+        w.OwnHeavy = Blows.Completes(w.OwnBlows, w.OwnPart, own, w.CastAsk);
         heavy |= w.OwnHeavy;
         var hb = b.HeavyBy;
         b.HeavyBy = heavy ? w : null;
@@ -377,38 +537,77 @@ public static partial class Firing
         bool builds = b.Resolve.On && w.Press?.Builds is > 0 && b.StruckBy == null;
         // (M3) The held swing in the campaign: a cut that struck a foe is a fighter's (Battle.SwingLanded, the stand clock's).
         bool swing = b.Campaign && w.Hold && b.StruckBy == null;
-        if (builds || swing) { b.StruckBy = w; b.Struck.Clear(); }
+        // (b1: a banked chained cut learns whether it struck a body: the bank pays only then)
+        bool bank = bill != null && b.StruckBy == null;
+        if (builds || swing || bank) { b.StruckBy = w; b.Struck.Clear(); }
         bool fired = Fire(b, w);
-        if (builds || swing)
+        if (bank && fired && b.Struck.Count > 0) bill!.Hit = true;
+        // (b2, a whiff counts nothing) A banked cut that struck nothing (and has nothing in the air or on the ground to
+        // come) spent nothing and counts nothing: weight 0 for its counts (its own, BlowN, the Hand's, a rite's), its
+        // follow-ups (no pulses) and its after-casts, so flailing in a gap never brings the next heavy sooner. The
+        // read-ahead asked at the bank's weight; the count stands, and the next landed cut is asked again.
+        if (bill != null && !bill.Hit && bill.Live == 0) { cw = 0; w.CutW = 0; }
+        if (builds || swing || bank)
         {
             b.StruckBy = null;
             if (fired && b.Struck.Count > 0)
             {
-                if (builds) b.Resolve.Landed(w.Press!, b.Struck.Count, heavy);
-                if (swing) b.SwingLanded += CooldownOf(b, w);
+                if (b.CastDepth == 1) w.SrcHit = true;
+                if (builds) b.Resolve.Landed(w.Press!, b.Struck.Count, heavy, cw);
+                if (swing) b.SwingLanded += CooldownOf(b, w) * scale;
             }
         }
         b.HeavyBy = hb;
         w.WasOwnHeavy = fired && w.OwnHeavy;
         w.OwnHeavy = false;
-        if (fired && own > 0) w.OwnBlows++;
+        if (fired && own > 0) Blows.CountFirstWhole(ref w.OwnBlows, ref w.OwnPart, cw);
+        if (fired) Blows.Count(ref w.BlowN, ref w.BlowPart, cw);
         b.HandEndCast(w, fired);
-        if (fired) w.HeavyCast = heavy;
-        if (fired && w.Wick is { Pulses: > 1 } pw) { w.PulseLeft = pw.Pulses - 1; w.PulseT = pw.PulseGap; }
+        if (fired) { w.HeavyCast = heavy; w.CastW = cw; }
+        if (fired && cw > 0 && w.Wick is { Pulses: > 1 } pw) { w.PulseLeft = pw.Pulses - 1; w.PulseT = pw.PulseGap; }
         b.ArcanistAfterCast(w, fired);
         if (b.Lamps.Board) b.BoardAfterFire(w, fired);
         return fired;
     }
 
     /// <summary>The wait after a cast: its cooldown, or a quarter second when it found nothing.</summary>
-    static void Rearm(Battle b, WeaponInst w, bool fired, int kills0)
+    /// <param name="key0">(M3 J12c) BlowN read before the cast: the written blow the cast is part of.</param>
+    static void Rearm(Battle b, WeaponInst w, bool fired, int kills0, int key0)
     {
         w.Timer = fired ? CooldownOf(b, w) : 0.25;
         w.Relooking = !fired;
         // sunderer.momentum: a melee swing that kills enough brings the skill's next swing sooner.
-        if (fired && w.Tags.Has(Tag.Melee) && b.Lamp("momentum") && w.Kills - kills0 >= b.Lamps.Full("momentum", "kills", 3))
-            w.Timer *= 1 - Math.Min(0.9, b.Lamps.Size("momentum", "sooner"));
+        if (w.BlowWeight == 1)
+        {
+            if (fired && w.Tags.Has(Tag.Melee) && b.Lamp("momentum") && w.Kills - kills0 >= b.Lamps.Full("momentum", "kills", 3))
+                w.Timer *= 1 - Math.Min(0.9, b.Lamps.Size("momentum", "sooner"));
+        }
+        // (M3 J12c) Under a chain of weighed cuts the kills are counted per WRITTEN blow (all the cuts of one blow's worth)
+        // and the payout is the NEXT written blow's: every cut of it waits x (1 - sooner), once (MomentumMul; the same
+        // factor is on the cut's period at its start, Battle.DeferCut, so the clip's rate and beats follow).
+        else if (fired && w.Tags.Has(Tag.Melee) && b.Lamp("momentum"))
+        {
+            if (key0 != w.MomKey)
+            {
+                w.MomFast = key0 == w.MomKey + 1 && w.MomKills >= b.Lamps.Full("momentum", "kills", 3);
+                w.MomKey = key0; w.MomKills = 0;
+            }
+            w.MomKills += w.Kills - kills0;
+            w.Timer *= MomentumMul(b, w, key0);
+        }
         b.RuleRearm(w, fired);
+    }
+
+    /// <summary>(M3 J12c) sunderer.momentum under a chain of weighed cuts: (1 - sooner) when the cut of written blow
+    /// `key` (BlowN before its cast) is paid for by the blow before it, else 1. Pure: read at the cut's start
+    /// (Battle.DeferCut: its period) and again at its contact (Rearm: its wait), the same both times. 1 for a skill whose
+    /// BlowWeight is 1 (unchained, a chain with no period: Rearm's own rule, as ever). Not in CooldownOf: the card, the
+    /// ready ring and Rebuke read the written wait.</summary>
+    internal static double MomentumMul(Battle b, WeaponInst w, int key)
+    {
+        if (w.BlowWeight == 1 || !w.Tags.Has(Tag.Melee) || !b.Lamp("momentum")) return 1;
+        bool fast = key == w.MomKey ? w.MomFast : key == w.MomKey + 1 && w.MomKills >= b.Lamps.Full("momentum", "kills", 3);
+        return fast ? 1 - Math.Min(0.9, b.Lamps.Size("momentum", "sooner")) : 1;
     }
 
     /* A pressed skill's own clock: its wait runs down to ready and stays there; a channel fires on its gap while
@@ -451,6 +650,8 @@ public static partial class Firing
     public static bool Press(Battle b, WeaponInst w)
     {
         if (!w.Pressed || w.DisabledT > 0 || w.Timer > 0 || w.Channeling || b.BlowPending(w)) return false;
+        // (a chain's cut never starts mid-dash, in a leap or a rush: Sim/SwingChain.cs)
+        if (b.CutBarred(w)) return false;
         // A spender (campaign, Resolve) fires only with its whole cost, and spends it on firing.
         double cost = b.CostOf(w);
         if (cost > 0 && b.Resolve.Value < cost) return false;
@@ -470,7 +671,7 @@ public static partial class Firing
             CastOnce(b, w);
             return true;
         }
-        int kills0 = w.Kills;
+        int kills0 = w.Kills, key0 = w.BlowN;
         var aim0 = b.CastAt;
         b.CastAt = b.AimFor(w);
         bool fired;
@@ -487,7 +688,9 @@ public static partial class Firing
         // (A press that found nothing stays ready: the buffer tries again for a breath.)
         if (fired)
         {
-            Rearm(b, w, true, kills0);
+            Rearm(b, w, true, kills0, key0);
+            // (M3 MR 3 clock) from the instant its wait ran out
+            if (Late(b, w) > 0) w.Timer = Math.Max(0, w.Timer - Late(b, w));
             if (cost > 0) b.Resolve.Spend(cost);
             b.CastPose(w);
         }
@@ -498,9 +701,9 @@ public static partial class Firing
     /// then its wait. True when it went off.</summary>
     internal static bool CastNow(Battle b, WeaponInst w)
     {
-        int kills0 = w.Kills;
+        int kills0 = w.Kills, key0 = w.BlowN;
         bool fired = CastOnce(b, w);
-        if (fired) Rearm(b, w, true, kills0);
+        if (fired) Rearm(b, w, true, kills0, key0);
         return fired;
     }
 
@@ -514,8 +717,10 @@ public static partial class Firing
         var (from, rf, ech, hb, mul) = (b.FireFrom, b.Refiring, b.Echoing, b.HeavyBy, w.FireMul);
         b.FireFrom = (x, z); b.Refiring = true; b.Echoing = true; b.HeavyBy = null;
         w.FireMul = w.Wick?.OnKillDamage ?? 1;
+        // (M3 MR 3) an echo is per KILL, so it is a whole blow even when the kill was a chained cut's (its cast still open)
+        double cw0 = w.CutW; w.CutW = 1;
         try { return Fire(b, w); }
-        finally { (b.FireFrom, b.Refiring, b.Echoing, b.HeavyBy, w.FireMul) = (from, rf, ech, hb, mul); }
+        finally { (b.FireFrom, b.Refiring, b.Echoing, b.HeavyBy, w.FireMul) = (from, rf, ech, hb, mul); w.CutW = cw0; }
     }
 
     /// <summary>moonweaver.the_echo: the spell fires again.</summary>
@@ -627,7 +832,9 @@ public static partial class Firing
             if (pr.GroundOnHit == null && w.Id == "cinderfall" && b.Marked(Marks.FallingStar, out double star))
                 pr.GroundOnHit = new GroundSpec(1.8, Marks.Lerp(2, 5, star), 0.25);
             pr.Rank = w.Rank;
-            pr.BossDamage = w.BossDamage;
+            pr.BossDamage = w.BossDamage; pr.W = w.CutW;
+            // (b1) a banked cut's projectile carries its bill: the cut's weight is reserved while it flies
+            if (b.Billing is { } bl && ReferenceEquals(bl.W, w)) { pr.Bill = bl; bl.Live++; }
             pr.AimAlongVelocity();
             if (herd) pr.Rehit = 0.6;
         }
@@ -947,6 +1154,22 @@ public static partial class Firing
         return any;
     }
 
+    /// <summary>(M3 J12b) Does this swing lay its Linger ground? Unchained (and a chain with no period): every swing, as
+    /// ever. Under a chain of weighed cuts: one per written blow, so the grounds per second are the unchained skill's.
+    /// The first cut to read a new BlowN lays that blow's (BlowN is counted after the cast, so every cut of one blow's
+    /// worth reads the same number; a dropped cut never casts, and the next one lays it). A block's answer is a whole
+    /// blow and lays its own always: when the blow it reads has its ground already, it takes the next blow's, so the
+    /// count holds. An On-kill echo is per kill, outside the count: it lays one as an unchained echo does.</summary>
+    static bool LaysGround(Battle b, WeaponInst w)
+    {
+        if (w.BlowWeight == 1 || b.Echoing) return true;
+        if (w.GroundKey != w.BlowN) { w.GroundKey = w.BlowN; return true; }
+        // (M3 MR 3 o2: so does a press rested to a whole blow, an opening after a full wait: it lays its own as the answer does)
+        if (w.CastAsk < 1 - Blows.Eps) return false;
+        w.GroundKey = w.BlowN + 1;
+        return true;
+    }
+
     static bool FireSlash(Battle b, WeaponInst w)
     {
         // An On-kill echo swings from the corpse, at the nearest creature to the corpse within the swing's reach (the
@@ -982,10 +1205,11 @@ public static partial class Firing
         // Its own heavy swing splits the ground ahead (Sunder's line).
         if (w.OwnHeavy && w.Num(s => s.Line) is { } line) HeavyLine(b, w, p.X, p.Z, a, line);
         // Linger: the swing leaves its ground where the arc's middle fell.
-        if (w.Wick?.Ground is { } g)
+        // (M3 J12b) Under a chain: one ground per WRITTEN blow, at the blow's size (LaysGround), not one per cut at its share.
+        if (w.Wick?.Ground is { } g && LaysGround(b, w))
         {
             double gx = p.X + Math.Cos(a) * reach * 0.55, gz = p.Z + Math.Sin(a) * reach * 0.55;
-            var zn = b.SpawnZone(Side.Player, gx, gz, AreaOf(b, w, g.Radius), DurationOf(b, w, g.Duration), w.Damage * g.DpsPct, w.School);
+            var zn = b.SpawnZone(Side.Player, gx, gz, AreaOf(b, w, g.Radius), DurationOf(b, w, g.Duration), (w.BlowWeight != 1 && w.CutW > 0 ? w.Damage / w.CutW : w.Damage) * g.DpsPct, w.School);
             if (zn != null) { zn.Tags = w.Tags; zn.Art = w.Art + "_ground"; zn.Weapon = w.Id; }
         }
         w.Swing++;

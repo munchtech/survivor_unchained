@@ -46,6 +46,19 @@ public static class Boards
         public double Dress = 4;
         /// <summary>The small warm lights at both sides of each gap, so the gaps read as doors (none if Energy is 0).</summary>
         public DoorDef Door = new();
+        /// <summary>The wild kit's boulders on the wall (none: the place's own pieces only): this share of its spots
+        /// (gap posts too) is one big rock, so the fight at the lamp is framed by them (L1 Stage C wave 2).</summary>
+        public RocksDef? Rocks;
+    }
+    /// <summary>The fold wall's kit boulders: the flora kind, the share of wall spots, the scale range and the sink in
+    /// metres; From says what the numbers are from (the pipeline's derivation rule).</summary>
+    public sealed class RocksDef
+    {
+        public string Kind = "boulder";
+        public double Share = 0;
+        public double[] Scale = [1.2, 1.6];
+        public double Sink = 0.2;
+        public string From = "";
     }
     /// <summary>A gap's door lights: their colour, energy, reach in metres, and height over the ground.</summary>
     public sealed class DoorDef

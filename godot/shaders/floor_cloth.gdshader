@@ -1,5 +1,8 @@
 shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
+// (the material library, godot/data/look/materials.json: this shader's default class; matte, rule 6: no highlight)
+#define CEL_SPEC vec4(9.0, 1.5, 0.0, 0.85)
+#include "res://shaders/cel.gdshaderinc"
 
 // (E9c3) What lies on a house's floor (Insides.cs): a wool rug (rug) or strewn rushes (else), a flat card 2 x 2 in its
 // own frame, scaled by its transform (so its half sizes in metres are its x and z scales). The rug: woven wool in
@@ -118,4 +121,6 @@ void fragment() {
 	ALBEDO = col;
 	ROUGHNESS = rough;
 	SPECULAR = 0.2;
+	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug).
+	CEL_FRAGMENT;
 }

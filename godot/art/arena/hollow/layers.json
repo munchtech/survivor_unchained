@@ -1,74 +1,97 @@
 {
+ "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
+ "painted": 2,
+ "inputs": "cbb84e14a2b3",
+ "from": "(c) the Deep Shaw's layers (ArenaGround.cs order: litter, rot, roots, mud, bed, needles, face); (b) targets 09, 10, 12 and MB4 night",
  "layers": [
   {
    "name": "litter",
-   "source": "dry_decay_leaves",
-   "metres": 2.0,
+   "surface": "forest_floor",
+   "metres": 5.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "targets 09 and 10 (the Deep Shaw's floor: mid-value under the moon, never black; warm where her pool lights it); MB4 night; rule 9 leaf litter as a few leaf shapes",
    "mean": [
-    0.17158,
-    0.07566,
-    0.035
+    0.13474,
+    0.1065,
+    0.08438
    ]
   },
   {
    "name": "rot",
-   "source": "forest_ground_06",
-   "metres": 2.11,
+   "surface": "rot",
+   "metres": 4.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "(c) the Shaw's black earth under the litter (ArenaGround: 'the rot is black earth'), a few old leaves",
    "mean": [
-    0.10284,
-    0.05824,
-    0.02811
+    0.04057,
+    0.04655,
+    0.0278
    ]
   },
   {
    "name": "roots",
-   "source": "roots",
-   "metres": 1.67,
+   "surface": "roots",
+   "metres": 4.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "(c) the roots' runs; rule 9 (wood as a few long strokes)",
    "mean": [
-    0.17377,
-    0.11554,
-    0.05814
+    0.05264,
+    0.05536,
+    0.02988
    ]
   },
   {
    "name": "mud",
-   "source": "mud_forest",
-   "metres": 2.35,
+   "surface": "den_mud",
+   "metres": 4.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "(c) the den's mud, trodden smooth (ArenaGround: 'at the scan's own contrast the den's floor read as asphalt')",
    "mean": [
-    0.03817,
-    0.0193,
-    0.00681
+    0.03332,
+    0.03722,
+    0.02204
    ]
   },
   {
    "name": "bed",
-   "source": "river_small_rocks",
-   "metres": 2.9,
+   "surface": "stream_bed",
+   "metres": 4.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "MB4 water and rock: the bed's stones as rounded flat planes, moon-grey",
    "mean": [
-    0.19302,
-    0.15207,
-    0.10636
+    0.07229,
+    0.06582,
+    0.05512
    ]
   },
   {
    "name": "needles",
-   "source": "forest_leaves_04",
-   "metres": 1.5,
+   "surface": "needles",
+   "metres": 4.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "MB4 spruce (the needle litter under the tiers), as needle tufts",
    "mean": [
-    0.22627,
-    0.11783,
-    0.04669
+    0.13384,
+    0.10612,
+    0.084
    ]
   },
   {
    "name": "face",
-   "source": "mossy_rock",
-   "metres": 3.0,
+   "surface": "bank",
+   "metres": 6.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "MB4 rock (the banks and steep faces as big planes)",
    "mean": [
-    0.15713,
-    0.15117,
-    0.09807
+    0.06171,
+    0.08598,
+    0.04937
    ]
   }
- ]
+ ],
+ "moss": {
+  "lit": "#49522f",
+  "shade": "#263b2a",
+  "from": "PROVISIONAL (L1 W2 ground, mark 5, before the final rigs): MB4 rock's moss, natural olive (rule 4: never acid or lime), Oklab lit L 0.42 C 0.055 h 120, crease L 0.33 C 0.040 h 150; re-set in mark 6 as MB4 / the rig"
+ }
 }

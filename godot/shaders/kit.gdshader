@@ -12,7 +12,65 @@
 // whole instead (the house fade, below; E9c).
 shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
+// The cel model (cel.gdshaderinc, L1 B1a): ink 0 (full) on kit pieces, walls, roofs and rocks; the foliage ink 1
+// (silhouette only), its own light() (below) banded with its wrap and back light kept, and no rim (card normals).
+// (the material library, godot/data/look/materials.json: this shader's default class; matte, rule 6: no highlight)
+#define CEL_SPEC vec4(9.0, 1.5, 0.0, 0.85)
+#if defined(OWN_FOLIAGE)
+#define CEL_INK 1
+#define CEL_NO_RIM
+#define CEL_OWN_LIGHT
+#endif
+// (L1 lead 14, K1; docs/design/NIGHT_KIT.md) KIT_STAND: the standing material (cel.gdshaderinc's standing block) on our own
+// stone under a rig with "stand" (KitLook's Look.Stand); the family row 0, stone.
+#ifdef KIT_STAND
+#define CEL_STAND
+// (L1 lead 15, S) KIT_STAND_LEAF: a leaf-geometry piece (env_trees.py's species kind "clump": opaque leaves, each leaf one
+// baked normal, COLOR.r 1 top leaf / 0.8 flank / 0.45 skirt, g 0 stem to 1 tip) through the same path as family 1, leaf.
+#ifdef KIT_STAND_LEAF
+#define CEL_STAND_FAM 1
+#else
+#define CEL_STAND_FAM 0
+#endif
+#endif
+#include "res://shaders/cel.gdshaderinc"
 #include "res://shaders/world_clock.gdshaderinc"
+#ifdef KIT_STAND_LEAF
+// (L1 lead 22, BUSH) The leaf MASS's tone is BAKED per cap in COLOR.r (env_trees.py BU_RING: 1 its middle, 0.86 a ring,
+// 0.6 its edge, the whole cap shifted by BU_JIT), not read from its normal: a cap is 20-30 px at the play camera and its
+// normal's rim band 2-3 px, so the normal drew two flat fields. The normal still says WHICH SIDE (toward her fire: the
+// fire's first band; else the moon's), the level says which tone there: fire top (>= 0.9, tone 6) / olive mid (>= 0.7,
+// tone 5) / dark edge (tone 5 x texel 7.w); moon top (>= 0.7 on key-lit faces off the side, tone 3) over body or side by the
+// normal (bush_01: the edge forced to side drew the moon half one dark slab). Foot band, rim line, the fire's give-way and the dabs as cel_stand_base.
+const float KIT_LEAF_MOON_MID = 0.45;
+vec3 kit_leaf_base(vec3 c_wp, vec2 c_org, vec3 c_wn, float c_foot, float c_lum, float c_rim, float c_lv, out vec3 c_moon, out vec3 c_fire) {
+	vec4 c_x = cel_stand_tone(7);
+	float c_dab = c_x.y > 0.0 ? clamp(pow(max(c_lum, 1e-4) / max(c_x.x, 1e-4), c_x.y), 0.5, 1.5) : 1.0;
+	float c_d = dot(c_wn, normalize(mix(cel_key.xyz, vec3(0.0, 1.0, 0.0), cel_stand.z)));
+	float c_ft = 1.0 - cel_stand_step(c_foot, cel_stand.w);
+	float c_kl = cel_stand_step(dot(c_wn, cel_key.xyz), 0.2);
+	float c_hi = cel_stand_step(c_lv, 0.9), c_md = cel_stand_step(c_lv, 0.7);
+	float c_side = 1.0 - cel_stand_step(c_d, cel_stand.y);
+	vec3 c_base = mix(mix(cel_stand_tone(2).rgb, cel_stand_tone(1).rgb, c_side), cel_stand_tone(0).rgb, c_ft);
+	// (L1 lead 23, FOLIAGE) three moon steps, not two (owner_ref_night's maples and ferns: a dark wine body, a red mid, an
+	// orange top): the mid ring (>= 0.7) takes KIT_LEAF_MOON_MID of the top tone over the body, the middle (>= 0.9) all of it.
+	float c_top = mix(c_md * KIT_LEAF_MOON_MID, 1.0, c_hi) * c_kl * (1.0 - c_side) * (1.0 - c_ft);
+	vec3 c_lit = mix(c_base, cel_stand_tone(3).rgb, c_top);
+	c_lit = mix(c_lit, cel_stand_tone(4).rgb, c_rim * (1.0 - c_ft) * mix(c_top, c_kl, clamp(c_x.z, 0.0, 1.0)));
+	float c_g = 1.0;
+	c_fire = vec3(0.0);
+	if (cel_ember.w > 0.0 && cel_pool_band.x > 0.0) {
+		float c_fd = dot(c_wn, normalize(cel_ember.xyz - c_wp));
+		float c_m1 = cel_stand_step(c_fd, cel_stand_fire.x);
+		vec3 c_mid = cel_stand_tone(5).rgb;
+		vec3 c_t = mix(c_mid * c_x.w, mix(c_mid, cel_stand_tone(6).rgb, c_hi), c_md);
+		c_fire = c_t * (c_m1 * c_dab * cel_lum(cel_pool_at(length(c_org - cel_ember.xz)).rgb));
+		c_g = mix(1.0, cel_give_of(cel_back_at(vec3(c_org.x, c_wp.y, c_org.y), cel_dapple_at(c_wp)), cel_give.x), c_m1);
+	}
+	c_moon = max(c_lit - c_base, vec3(0.0)) * (c_g * c_dab);
+	return c_base * (c_g * c_dab);
+}
+#endif
 
 #include "res://shaders/flare_world.gdshaderinc"
 
@@ -58,6 +116,11 @@ uniform bool packed = false;
 // grime from the foot, and under the water's height a dark wet band (flora_species.json "stone": every value here).
 uniform sampler2D stone_tex : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2D stone_nor : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
+// (L1 C3a, the plane rocks: painted > 0.5 draws the piece's own painted map (albedo_tex at its uvs: tools/look/wild.py,
+// B3's painter, the light painted in) in place of the triplanar sheet, its bump, rims, macro patches, lichen, litter, foot
+// soil and grime, which the painter's blocks, bevel stroke and cavity replace; moss caps, the wet band and the sky's
+// shade stay)
+uniform float painted = 0.0;
 // (where the zone's water stands: x its height, w 1 if it has any; ZoneView sets it)
 global uniform vec4 water_level;
 uniform float tile = 1.9;
@@ -137,6 +200,9 @@ varying float v_top;
 varying vec3 v_wpos;
 varying vec3 v_wnrm;
 varying float v_foot;
+#ifdef KIT_STAND
+varying flat vec2 v_org;   // (the copy's foot on the ground, xz: the standing material reads her ramp there)
+#endif
 #endif
 
 #ifdef OWN_FOLIAGE
@@ -222,6 +288,9 @@ uniform float wrap = 1.0;
 uniform float sky_amb = 0.45;
 // (its sun-facing half lifted by this much by day, the shade side as it was: judge E4 r3, the town alder darker and cooler than the square)
 uniform float sun_lift = 0.1;
+// (L1 W2 wild) how far a broadleaf's leaf normals are bent up to the sky (judge E4c's dome, 0.6: the bush and the
+// bracken as before); the clustered alder's own normals are its clusters' domes, so it takes its own (flora_species.json)
+uniform float up_bend = 0.6;
 #endif
 
 float hue_of(vec3 c) {
@@ -551,6 +620,9 @@ void vertex() {
 	v_wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	v_wnrm = normalize(MODEL_NORMAL_MATRIX * NORMAL);
 	v_foot = v_wpos.y - MODEL_MATRIX[3].y;
+#ifdef KIT_STAND
+	v_org = MODEL_MATRIX[3].xz;
+#endif
 	v_top = MODEL_MATRIX[3].y + wet_top * length(MODEL_MATRIX[1].xyz);
 #endif
 #ifdef OWN_WALL
@@ -1000,7 +1072,7 @@ void fragment() {
 #ifdef OWN_BROADLEAF
 	// (an alder's crown is a dome of leaves facing every way: its normals bent up toward the sky, so its
 	// top takes the sun whole and its sides most of it; judge E4c: its sun-side half alone read lit)
-	if (UV.x < 0.75) NORMAL = normalize(NORMAL + (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz * 0.6);
+	if (UV.x < 0.75) NORMAL = normalize(NORMAL + (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz * up_bend);
 #endif
 	float night = flora_light.x, low_sun = flora_light.y;
 	float open_ = mix(1.0, COLOR.r, core);
@@ -1120,6 +1192,12 @@ void fragment() {
 		vec2 nx = texture(stone_nor, ux).rg * 2.0 - 1.0, ny = texture(stone_nor, uy).rg * 2.0 - 1.0, nz = texture(stone_nor, uz).rg * 2.0 - 1.0;
 		vec3 bn = normalize(wn + bump * (vec3(0.0, nx.y, nx.x) * bw.x + vec3(ny.x, 0.0, ny.y) * bw.y + vec3(nz.x, nz.y, 0.0) * bw.z));
 		vec3 col = st.rgb * stone_tint;
+		bool pnt = painted > 0.5;
+		if (pnt) {
+			col = texture(albedo_tex, UV).rgb * (1.0 + inst_val * (2.0 * v_jit - 1.0));
+			st = vec4(col, 0.5);
+			bn = wn;
+		} else {
 		// (a broad value patch over many repeats, so a cliff's sheet does not read as tiles; each copy its own shade)
 		float mac = texture(stone_tex, wp.xz / (tile * 7.3) + vec2(0.37, 0.11)).a;
 		col *= mix(1.0 - macro, 1.0 + macro, mac) * (1.0 + inst_val * (2.0 * v_jit - 1.0));
@@ -1132,6 +1210,7 @@ void fragment() {
 		col *= (1.0 + edge_light * COLOR.r) * (1.0 - cavity_dark * COLOR.g) * (1.0 - occl_dark * COLOR.b);
 		// grime from the foot up, its line broken by the sheet's patches
 		if (grime_h > 0.0) col *= mix(1.0 - grime_dark, 1.0, smoothstep(0.0, grime_h, v_foot + 0.3 * grime_h * (st.a - 0.5)));
+		}
 		if (sky_dark > 0.0) col *= mix(1.0 - sky_dark, 1.0, smoothstep(0.42, 0.82, textureLod(expo_tex, (wp.xz + zone_size * 0.5) / zone_size, 0.0).r));
 		// moss on what faces up (and toward moss_side), in patches, more in the hollows, less on worn rims
 		vec2 ms = moss_side / max(length(moss_side), 1e-4);
@@ -1139,7 +1218,7 @@ void fragment() {
 		float mz = smoothstep(moss_face.x, moss_face.y, face) * smoothstep(0.35, 0.75, st.a + 0.3 * COLOR.g + 0.2 * COLOR.b - moss_edge * COLOR.r);
 		// lichen: pale spots on its tops and sides
 		float lich = texture(stone_tex, wp.zx / (tile * 0.37) + 0.5).a;
-		float lz = smoothstep(0.7, 0.8, lich) * smoothstep(-0.2, 0.4, bn.y) * lichen_amount;
+		float lz = pnt ? 0.0 : smoothstep(0.7, 0.8, lich) * smoothstep(-0.2, 0.4, bn.y) * lichen_amount;
 		// wet: under the water's height + wet_above, dark and glossy, its edge ragged; no moss or lichen there
 		float wy = water_level.w > 0.5 ? water_level.x : -1e5;
 		float w0 = wet_share > 0.0 ? wy + wet_share * mix(0.45, 1.35, fract(v_jit * 7.13)) * (v_top - wy) - 0.02 : wy + wet_above * 0.5;
@@ -1149,12 +1228,12 @@ void fragment() {
 		lz *= 1.0 - wet;
 		col = mix(col, moss_color.rgb * (0.75 + 0.5 * st.a), mz);
 		col = mix(col, lichen_color.rgb * (0.85 + 0.3 * st.r), lz);
-		if (litter > 0.0) {
+		if (litter > 0.0 && !pnt) {
 			float lsp = texture(stone_tex, wp.xz / (tile * 0.53) + vec2(0.21, 0.67)).a;
 			float lt = smoothstep(0.78, 0.95, bn.y) * smoothstep(0.15, 0.5, COLOR.g + COLOR.b + 0.35 * mz) * smoothstep(0.55, 0.7, lsp) * (1.0 - wet);
 			col = mix(col, litter_color.rgb * (0.7 + 0.6 * st.r), litter * lt);
 		}
-		if (foot_soil > 0.0) {
+		if (foot_soil > 0.0 && !pnt) {
 			float fl = texture(stone_tex, wp.xz / (tile * 0.61) + vec2(0.43, 0.19)).a;
 			float fs = 1.0 - smoothstep(0.35 * foot_soil_h, foot_soil_h, v_foot + 0.6 * foot_soil_h * (fl - 0.5) + 0.3 * foot_soil_h * (st.a - 0.5));
 			float gz = smoothstep(1.0 - foot_grass - 0.08, 1.0 - foot_grass + 0.08, texture(stone_tex, wp.zx / (tile * 0.29) + vec2(0.17, 0.71)).a);
@@ -1167,7 +1246,14 @@ void fragment() {
 			float ab = smoothstep(wy - 0.02, wy - 0.005, wp.y) * (1.0 - smoothstep(wy + algae_w * (0.5 + 0.8 * st.a), wy + algae_w * (0.9 + 1.0 * st.a), wp.y));
 			col = mix(col, algae_color.rgb * (0.8 + 0.4 * st.a), algae * ab);
 		}
-		col *= mix(vec3(1.0), night_tint, flora_light.x);
+		// (L1 lead 14, K1) Under a rig with "stand" the old night terms (night_tint, night_fill, the ambient) are replaced by
+		// the standing material's tones, below; any other rig: as it was.
+#ifdef KIT_STAND
+		bool stand = cel_stand_on();
+#else
+		const bool stand = false;
+#endif
+		if (!stand) col *= mix(vec3(1.0), night_tint, flora_light.x);
 		ALBEDO = col;
 		ROUGHNESS = mix(mix(stone_rough, wet_rough, wet), wet_rough, damp_gloss * damp / max(top_damp, 1e-3));
 		SPECULAR = mix(0.35, 0.5, wet);
@@ -1175,7 +1261,55 @@ void fragment() {
 		AO_LIGHT_AFFECT = 0.0;
 		NORMAL = normalize((VIEW_MATRIX * vec4(bn, 0.0)).xyz);
 		// its shade keeps colour: a little of its own albedo given back, cool by day, more under the moon
-		EMISSION += col * shade * mix(shade_floor, night_fill, flora_light.x);
+		if (!stand) EMISSION += col * shade * mix(shade_floor, night_fill, flora_light.x);
+#ifdef KIT_STAND
+		// (the base tone as EMISSION by the smooth normal wn, never the bumped one; the ambient and the gloss off; the moon's
+		// and her fire's adds handed to light(); the albedo stays for any other light)
+		vec3 st_m = vec3(0.0), st_f = vec3(0.0);
+		if (stand) {
+			vec3 st_nv = normalize((VIEW_MATRIX * vec4(wn, 0.0)).xyz);
+#ifdef KIT_STAND_LEAF
+			// (L1 lead 16, S2) Two routes through the ONE leaf row. The MASS (COLOR.b > 0.5: the bush's lumpy body, smooth
+			// normals): stone's true moon-side edge, on front faces only (a back face has n.v 0, all edge). A RIM LEAF
+			// (COLOR.b < 0.5: one baked normal, the same on both faces, no n.v silhouette): the tip band of a TOP leaf
+			// (COLOR.r >= 0.9, COLOR.g toward 1) whose normal leans to the moon's side of the screen, 1.5 px at 0.6 (a full
+			// rim on every tip read as stars). Under her fire the leaf's moon tones give way by 0.8 x the fire's strength
+			// (the add over the mid tone, x 3), so the fire tones land olive ON the leaf, not on a blue body.
+			float st_rim;
+			if (COLOR.b > 0.5) {
+				st_rim = FRONT_FACING ? cel_stand_edge(st_nv, VIEW, VIEW_MATRIX) : 0.0;
+			} else {
+				vec3 st_kv = (VIEW_MATRIX * vec4(cel_key.xyz, 0.0)).xyz;
+				float st_tip = (1.0 - COLOR.g) / max(fwidth(COLOR.g), 1e-4);
+				st_rim = 0.6 * step(0.9, COLOR.r) * (1.0 - smoothstep(1.0, 2.0, st_tip))
+					* smoothstep(0.05, 0.25, dot(st_nv.xy, normalize(st_kv.xy + vec2(1e-5))));
+			}
+			// (l22 BUSH round 2) the baked level arrives LOWER than exported (probe bush_03p: the 0.9 step sat at s 0.3 of a
+			// cap, not 0.62; the imported mesh's arrays hold the exported values), read as an sRGB-to-linear decode on the way
+			// to the shader: encoded back here, one rule for the level, never for a color
+			float st_lv = COLOR.r <= 0.0031308 ? 12.92 * COLOR.r : 1.055 * pow(COLOR.r, 1.0 / 2.4) - 0.055;
+			if (COLOR.b > 0.5) EMISSION = kit_leaf_base(wp, v_org, wn, v_foot, cel_lum(col), st_rim, st_lv, st_m, st_f);
+			else EMISSION = cel_stand_base(wp, v_org, wn, v_foot, cel_lum(col), st_rim, st_m, st_f);
+			float st_gv = 1.0 - 0.8 * clamp(3.0 * cel_lum(st_f) / max(cel_lum(cel_stand_tone(5).rgb), 1e-5), 0.0, 1.0);
+			EMISSION *= st_gv;
+			st_m *= st_gv;
+			// (L1 l25 WORLD) --cel-dbg stand (cel_dbg -1, inert elsewhere: every other use reads > 0.5): the fire's factors
+			// unlit. (world_01 drew r = c_m1, g = the pool's level ratio, b = distance / 4 m: c_m1 = 1 everywhere.)
+			if (cel_dbg < -0.5) {
+				// (l25 WORLD2: now r = st_gv only; g, b come from her light, cel_stand_light)
+				EMISSION = vec3(st_gv, 0.0, 0.0);
+				st_m = vec3(0.0); st_f = vec3(0.0);
+			}
+#else
+			EMISSION = cel_stand_base(wp, v_org, wn, v_foot, cel_lum(col), cel_stand_edge(st_nv, VIEW, VIEW_MATRIX), st_m, st_f);
+#endif
+			SPECULAR = 0.0;
+			AO = 0.0;
+			NORMAL = st_nv;
+		}
+		cel_stm = st_m;
+		cel_stf = st_f;
+#endif
 	}
 #endif
 
@@ -1185,20 +1319,36 @@ void fragment() {
 		flare_prop((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz, NORMAL, INV_VIEW_MATRIX, fl_a, fl_r, fl_e);
 		ALBEDO = fl_a; ROUGHNESS = fl_r; EMISSION = fl_e;
 	}
+	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug).
+	CEL_FRAGMENT;
 }
 
 #ifdef OWN_BROADLEAF
 // The alder's own light (its leaves take only part of the key's shadow, self_shadow): Lambert with the
 // built-in back light's transmission, wrapped (wrap) and floored; its bark (u > .75) the shadow whole.
 void light() {
-	float att = LIGHT_IS_DIRECTIONAL && UV.x < 0.75 ? mix(1.0, ATTENUATION, self_shadow) : ATTENUATION;
+	// (cel: the band on the wrapped n.l of the band's normal, over the same 0.45 floor; the key's shadow hardened before
+	// the leaves' self_shadow share of it)
+	vec3 nb = cel_nb(NORMAL);
+	float tw = (dot(nb, LIGHT) + wrap) / (1.0 + wrap);
+	vec3 dbg = vec3(0.0);
+	if (cel_dbg_light(nb, tw, ATTENUATION, LIGHT_IS_DIRECTIONAL, dbg)) { SPECULAR_LIGHT += dbg; } else {
+	float sh = cel_shadow(ATTENUATION, LIGHT_IS_DIRECTIONAL);
+	float att = LIGHT_IS_DIRECTIONAL && UV.x < 0.75 ? mix(1.0, mix(ATTENUATION, sh, cel_on), self_shadow) : mix(ATTENUATION, sh, cel_on);
+	// (L1 lead 9, B1: her pool's ramp, as on the ground)
+	vec3 plc = LIGHT_COLOR;
+	if (!LIGHT_IS_DIRECTIONAL && cel_on > 0.0) { float patt = ATTENUATION; cel_pool_paint(plc, patt, (INV_VIEW_MATRIX * vec4(LIGHT, 0.0)).xyz); att = patt; }
 	// (leaves pass light round the crown: wrapped, so its far side from the sun is lit low, not the sky's blue alone)
 	float d = max(clamp((dot(NORMAL, LIGHT) + wrap) / (1.0 + wrap), 0.0, 1.0), 0.45);
+	vec3 dd = cel_on > 0.0 ? mix(vec3(d), max(cel_level(tw), vec3(0.45)), cel_on) : vec3(d);
 	// (the engine multiplies it by the albedo after; the back light's transmission as the built-in's)
 	float lift = LIGHT_IS_DIRECTIONAL && UV.x < 0.75 ? 1.0 + sun_lift * smoothstep(0.55, 0.9, d) * (1.0 - flora_light.x) * (1.0 - flora_light.y) : 1.0;
 	// (by day only, not under a low sun: at 0.7 it took the dawn alder's sunlit top to hue 86, under its floor of 90)
-	DIFFUSE_LIGHT += LIGHT_COLOR * att * (d * lift + BACKLIGHT * (1.0 - d)) / PI;
+	// (B1c: under cel the light through the leaves only at the terminator's thin edge, capped: cel_trans)
+	vec3 tr = mix(BACKLIGHT * (1.0 - dd), cel_trans(BACKLIGHT, tw, 0.0), cel_on);
+	DIFFUSE_LIGHT += plc * att * (dd * lift + tr) / PI + cel_on * cel_fill_add(plc, cel_lit(tw) * att, LIGHT_IS_DIRECTIONAL);
 	// (no highlight: matte leaves; a GGX one here blew the crown out cream by day)
+	}
 }
 #endif
 
@@ -1208,8 +1358,22 @@ void light() {
 // them, not lime. No highlight (SPECULAR was 0.12: the moon's specks read as frost).
 void light() {
 	vec3 lc = LIGHT_COLOR;
+	// (L1 lead 9, B1: her pool's ramp, as on the ground)
+	float patt = ATTENUATION;
+	if (!LIGHT_IS_DIRECTIONAL && cel_on > 0.0) cel_pool_paint(lc, patt, (INV_VIEW_MATRIX * vec4(LIGHT, 0.0)).xyz);
 	if (!LIGHT_IS_DIRECTIONAL && UV.x < 0.75) lc *= vec3(1.0, 1.0 - lamp_green, 1.0 - 0.5 * lamp_green) * lamp_gain;
+	vec3 nb = cel_nb(NORMAL);
+	float t = dot(nb, LIGHT);
+	vec3 dbg = vec3(0.0);
+	if (cel_dbg_light(nb, t, ATTENUATION, LIGHT_IS_DIRECTIONAL, dbg)) { SPECULAR_LIGHT += dbg; } else {
 	float d = max(dot(NORMAL, LIGHT), 0.0);
-	DIFFUSE_LIGHT += lc * ATTENUATION * (d + BACKLIGHT * (1.0 - d)) / PI;
+	// (cel: the band and the hardened key shadow in place of Lambert and the soft one, the back light kept)
+	float sh = cel_shadow(ATTENUATION, LIGHT_IS_DIRECTIONAL);
+	vec3 dd = cel_on > 0.0 ? mix(vec3(d), cel_level(t), cel_on) : vec3(d);
+	float att = LIGHT_IS_DIRECTIONAL ? mix(ATTENUATION, sh, cel_on) : mix(ATTENUATION, patt, cel_on);
+	// (B1c: under cel the light through the needles only at the terminator's thin edge, capped: cel_trans)
+	vec3 tr = mix(BACKLIGHT * (1.0 - dd), cel_trans(BACKLIGHT, t, 0.0), cel_on);
+	DIFFUSE_LIGHT += lc * att * (dd + tr) / PI + cel_on * cel_fill_add(LIGHT_COLOR, cel_lit(t) * sh, LIGHT_IS_DIRECTIONAL);
+	}
 }
 #endif

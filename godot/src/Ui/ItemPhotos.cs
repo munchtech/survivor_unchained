@@ -61,7 +61,7 @@ public partial class ItemPhotos : Node
         }
         if (todo.Count == 0 || DisplayServer.GetName() == "headless")
         {
-            if (quitAfter) host.GetTree().Quit();
+            if (quitAfter) QuitPath.Request(host.GetTree());
             return;
         }
         DirAccess.MakeDirRecursiveAbsolute("user://icons");
@@ -294,7 +294,7 @@ public partial class ItemPhotos : Node
         foreach (var c in holder.GetChildren()) c.QueueFree();
         studio = null;
         waiting.Clear();
-        if (quitAfter) { GetTree().Quit(); return; }
+        if (quitAfter) { QuitPath.Request(GetTree()); return; }
         QueueFree();
     }
 }

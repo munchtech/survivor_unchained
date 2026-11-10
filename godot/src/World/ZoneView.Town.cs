@@ -69,7 +69,7 @@ public partial class ZoneView
             lights[li].OmniAttenuation = LampAtt;
             specs[li] = specs[li] with { At = mid, Intensity = specs[li].Intensity * WallLampEnergy };
             lights[li].Position = mid;
-            lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi;
+            lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi * shareShown;
             unwired.Remove(g);
         }
         Bakery(cages);
@@ -120,7 +120,7 @@ public partial class ZoneView
         var spill = new OmniLight3D
         {
             Name = "BakerySpill", LightColor = new Color("#ff8a38"), OmniRange = BakeryRange, OmniAttenuation = 1.3f,
-            LightEnergy = BakeryEnergy, ShadowEnabled = false, Position = wall + face * 1.6f + Vector3.Down * 1.1f,
+            LightEnergy = BakeryEnergy * shareShown, ShadowEnabled = false, Position = wall + face * 1.6f + Vector3.Down * 1.1f,
         };
         lightRoot.AddChild(spill);
         bakery = spill;

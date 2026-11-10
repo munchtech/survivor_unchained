@@ -5,6 +5,14 @@
 // a travelling wind.
 shader_type spatial;
 render_mode cull_disabled, diffuse_burley, world_vertex_coords;
+#define CEL_INK 2
+#define CEL_BAND vec4(0.0, 0.15, 0.2, 0.05)
+#define CEL_NO_RIM
+// (the material library, godot/data/look/materials.json: this shader's default class; matte, rule 6: no highlight)
+#define CEL_SPEC vec4(9.0, 1.5, 0.0, 0.85)
+// (L1 C1: the band sees none of the ground's normal map: the Stage B judge, ground and terrain cel_nmap 0, no orange peel)
+#define CEL_NMAP 0.0
+#include "res://shaders/cel.gdshaderinc"
 #include "res://shaders/world_clock.gdshaderinc"
 
 #include "res://shaders/flare_world.gdshaderinc"
@@ -41,6 +49,12 @@ global uniform vec4 ground_frost;
 // the brightest thing at night: look bible 1c).
 uniform float frost_tone = 1.7;
 uniform float frost_cap = 0.1;
+// (L1 W2 ground, mark 4: FROM target 03, where the moonlit ground is mid-dark blue (Oklab L50 about 0.28) and the
+// fire's pool is the light, and rule 1 (the brightest area is a source or what it lights, never bare ground): the rime
+// is the ground's own color lifted at most frost_lift times, keeping frost_own of its hue, so under the moon it never
+// outshines the pool. (The 3 Nov rime went to a neutral white at frost_cap, which a blue moon lit as the brightest thing.)
+uniform float frost_lift = 1.2;
+uniform float frost_own = 0.65;
 uniform vec4 warm_at[4];
 uniform float meadow_amt = 1.0;
 // 4: the frost as the ground's debug_view 4 shows it.
@@ -150,8 +164,9 @@ void fragment() {
 	gb = mix(gb, straw, v_dry * straw_mix);
 	// Rime on the tips: down the blade as far as the night's cold reaches.
 	float fr = v_frost * smoothstep(mix(1.0, 0.35, v_frost), 1.0, t);
-	float fl = min(dot(gb, vec3(0.2126, 0.7152, 0.0722)) * frost_tone, frost_cap);
-	gb = mix(gb, vec3(0.86, 0.93, 1.0) * fl, fr * 0.8);
+	float fl0 = max(dot(gb, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
+	float fl = min(min(fl0 * frost_tone, frost_cap), fl0 * frost_lift);
+	gb = mix(gb, mix(vec3(0.86, 0.93, 1.0), gb / fl0, frost_own) * fl, fr * 0.8);
 	ALBEDO = debug_view == 4 ? vec3(fr * 0.8, 0.0, 1.0 - fr * 0.8) : gb;
 	// Both faces of a blade take the ground's normal: lit as the meadow is,
 	// not half of it from below.
@@ -166,4 +181,6 @@ void fragment() {
 		flare_blade((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz, t, fl_a, fl_r, fl_e);
 		ALBEDO = fl_a; ROUGHNESS = fl_r; EMISSION = fl_e;
 	}
+	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug).
+	CEL_FRAGMENT;
 }

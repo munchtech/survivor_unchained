@@ -5,8 +5,8 @@ using Godot;
 namespace SurvivorUnchained.View;
 
 /// <summary>
-/// An ember arena's ground: its place's seven photoscanned materials
-/// (art/arena/PLACE, tools/godot/arena_ground.py) through
+/// An ember arena's ground: its place's seven painted layers
+/// (art/arena/PLACE, tools/look/ground_paint.py; L1 C1, no photo or scan) through
 /// shaders/arena_ground.gdshader, painted by the arena's two paints.
 /// Each photograph is brought into the place's own light here (Tones), and
 /// the whole ground held below the living (Value, Sat): the creatures, the
@@ -81,14 +81,9 @@ public static class ArenaGround
         ["dig"] = (new Color("#3d4228"), 0.22f, 0f),
     };
 
-    /// <summary>A ground's sheet, painted (H2 R2, bible rules 5 and 6: tools/assets/paint_tex.py ground,
-    /// the gravel painted out, two or three value masses, one brush in the world) where it has been;
-    /// --ground-raw shows the scans as they were. Ground.cs uses it for the terrain too.</summary>
-    public static string Sheet(string dir, string k)
-    {
-        string p = $"{dir}/{k}_paint.jpg";
-        return !SurvivorUnchained.Args.Has("ground-raw") && ResourceLoader.Exists(p) ? p : $"{dir}/{k}.jpg";
-    }
+    /// <summary>A ground's sheet: the painted ground (L1 C1, tools/look/ground_paint.py from godot/data/look/ground.json:
+    /// two or three value masses and big flat shapes, no photo or scan). The terrain's (Ground.cs) and the arenas' alike.</summary>
+    public static string Sheet(string dir, string k) => $"{dir}/{k}.png";
 
     /// <summary>A place's layers as its ground shader takes them: texture repeats a metre
     /// (1 / its metres x Look.Size), the tone that brings its photograph's mean (Y, linear) to
@@ -99,6 +94,7 @@ public static class ArenaGround
     {
         using var meta = JsonDocument.Parse(FileAccess.GetFileAsString($"res://art/arena/{place}/layers.json"));
         var looks = Looks[place];
+        bool painted = meta.RootElement.TryGetProperty("painted", out _);
         var list = new List<LayerTone>();
         int k = 0;
         foreach (var l in meta.RootElement.GetProperty("layers").EnumerateArray())
@@ -106,7 +102,9 @@ public static class ArenaGround
             var m = l.GetProperty("mean");
             float y = Mathf.Max(0.2126f * m[0].GetSingle() + 0.7152f * m[1].GetSingle() + 0.0722f * m[2].GetSingle(), 0.004f);
             var look = looks[k++];
-            // (The Legion's slabs drawn larger than the scan's cobbles: a road built by an empire.)
+            // (L1 C1: a painted layer is drawn at its own albedo, set by hand in ground.json: no tone, saturation or
+            // contrast pulled on it here, which were the photographs' corrections; its size is ground.json's metres. Its lift and bump stay the place's.)
+            if (painted) look = look with { Y = y, Sat = 1, Con = 1, Size = 1 };
             list.Add(new LayerTone(1f / (l.GetProperty("metres").GetSingle() * look.Size), look.Y / y, y, look));
         }
         return list;
@@ -123,6 +121,14 @@ public static class ArenaGround
         if (z.Splat3 != null) mat.SetShaderParameter("splat3", Mipped(z.Splat3));
         var (moss, slurry, fox) = Growth[place.Id];
         mat.SetShaderParameter("moss_color", moss);
+        mat.SetShaderParameter("moss_shade", moss * 0.6f);
+        // (L1 W2 ground: the painted ground's moss, lit top and cool crease, from ground.json's set via layers.json, FROM MB4.)
+        using (var meta = JsonDocument.Parse(FileAccess.GetFileAsString($"{dir}/layers.json")))
+            if (meta.RootElement.TryGetProperty("moss", out var mj))
+            {
+                mat.SetShaderParameter("moss_color", new Color(mj.GetProperty("lit").GetString()!));
+                mat.SetShaderParameter("moss_shade", new Color(mj.GetProperty("shade").GetString()!));
+            }
         mat.SetShaderParameter("slurry_glow", slurry);
         mat.SetShaderParameter("slurry_body", place.Id == "dig" ? 1f : 0f);
         mat.SetShaderParameter("fox_glow", fox);
@@ -177,17 +183,22 @@ public static class ArenaGround
 
     static readonly Dictionary<string, GrassLook> Grasses = new()
     {
+        // (L1 l10 grass, FROM targets 09 and 12: the arena's ground is leafy ground with a few low bushes and no blades, so the
+        // tussocks are accents at about a third of their old density where a place keeps grass at all, and none in the
+        // Hollow, whose shaw floor is litter.)
+        // (L1 C1, MB4 'grass as big flat clumps': each tussock 8-11 broad blades, 8-9 cm across at the root, where
+        // 12-26 blades of 3-4 cm read as a carpet of scratches at the play camera; arena_grass.gdshader steps them.)
         // The barrow field's long dead grass, olive-brown and its tips gone
         // to pale straw under the moon: the field's whole face.
         // (Its tips warm and mid-toned: pale straw tips under a blue moon read from above as a
         // field of grey stars, one sticker per tussock.)
-        ["barrow"] = new(1f, 26, 0.016f, 0.42f, new(0.4f, 0.9f), 1.3f, "#0c0a07", "#4e3e26", "#8c7448", "#3e462a", 0.3f),
+        ["barrow"] = new(0.3f, 11, 0.042f, 0.42f, new(0.4f, 0.9f), 1.3f, "#0c0a07", "#4e3e26", "#8c7448", "#3e462a", 0.3f),
         // Sparse and low where the canopy opens.
-        ["hollow"] = new(0.5f, 12, 0.02f, 0.55f, new(0.2f, 0.45f), 0.8f, "#0a0b07", "#38402a", "#6c7048", "#2e4626", 0.6f),
+        ["hollow"] = new(0f, 8, 0.045f, 0.55f, new(0.2f, 0.45f), 0.8f, "#0a0b07", "#38402a", "#6c7048", "#2e4626", 0.6f),
         // The verges: greener, trodden shorter toward the road.
-        ["ruts"] = new(1f, 24, 0.016f, 0.45f, new(0.3f, 0.7f), 1.2f, "#0a0b07", "#40482a", "#8e8a5c", "#34502a", 0.55f),
+        ["ruts"] = new(0.3f, 10, 0.042f, 0.45f, new(0.3f, 0.7f), 1.2f, "#0a0b07", "#40482a", "#8e8a5c", "#34502a", 0.55f),
         // Dry yellow tufts on the working's spoil and edges, where nobody walks.
-        ["dig"] = new(0.8f, 12, 0.022f, 0.55f, new(0.25f, 0.6f), 0.9f, "#0e0a06", "#6a5632", "#c4a466", "#4a4a2a", 0.1f),
+        ["dig"] = new(0.25f, 8, 0.045f, 0.55f, new(0.25f, 0.6f), 0.9f, "#0e0a06", "#6a5632", "#c4a466", "#4a4a2a", 0.1f),
     };
 
     public static GrassLook GrassOf(string place) => Grasses[place];

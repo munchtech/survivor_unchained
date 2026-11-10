@@ -26,15 +26,14 @@ public sealed partial class Battle
         "heroic_leap.henge", "heroic_leap.iron_comet", "cleaver.cross_cut", "iron_vow.full_measure", "iron_vow.unyielding",
         "shield_charge.landslide", "shield_charge.stampede",
     };
-    static readonly Dictionary<string, bool> cleaves = new();
+    // Concurrent: the balance probes run battles in parallel and share this cache.
+    static readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> cleaves = new();
 
     /// <summary>The Cleaver, or a union whose first part (its spin) is the Cleaver's: Bladestorm.</summary>
     internal static bool Cleaves(WeaponInst w)
     {
         if (w.Def.Id == "cleaver") return true;
-        if (!cleaves.TryGetValue(w.Def.Id, out var c))
-            cleaves[w.Def.Id] = c = Unions.All.Any(u => u.Into == w.Def.Id && u.A == "cleaver");
-        return c;
+        return cleaves.GetOrAdd(w.Def.Id, id => Unions.All.Any(u => u.Into == id && u.A == "cleaver"));
     }
 
     /// <summary>A P7 rule lamp ("heroic_leap.crater") lit and at work on this skill.</summary>

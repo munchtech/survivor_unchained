@@ -5,6 +5,11 @@
 // UV.x: 0 at the hole to 1 at the edge, whatever the edge's shape.
 shader_type spatial;
 render_mode cull_disabled;
+// (the material library, godot/data/look/materials.json: this shader's default class, iron: a thrown steel blade; L1 B2r2)
+#define CEL_SPEC vec4(7.0, 1.0, 1.0, 1.0)
+#define CEL_NMAP 0.20   // (L1 C2: the class's cel_nmap)
+#define CEL_EXACT_ROUGH
+#include "res://shaders/cel.gdshaderinc"
 
 #include "res://shaders/hero_clear.gdshaderinc"
 
@@ -19,4 +24,5 @@ void fragment() {
 	ROUGHNESS = 0.55;
 	SPECULAR = 0.25;
 	EMISSION = COLOR.rgb * (hone * 1.1 + lip * 0.18) * hero_clear(VERTEX, VIEW_MATRIX, PROJECTION_MATRIX, VIEWPORT_SIZE);
+	CEL_FRAGMENT;
 }

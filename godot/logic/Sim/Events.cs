@@ -47,6 +47,9 @@ public static class Ev
         public double X, Z, Amount; public bool Crit; public School School; public int Target;
         public bool Dot, Blocked; public Family? Family; public string? Def; public double MaxHp, Dx, Dz;
         public string? Art; public int Rank;
+        /// <summary>The skill that landed it (its weapon's id; null for a hit with no weapon: a status tick, a proc). The
+        /// harness's per-skill counts read it (RunMeter's cuts per fodder); nothing in the game does.</summary>
+        public string? Weapon;
         /// <summary>Landed by the Flare (the view stages the Flare's own hits and deaths).</summary>
         public bool ByFlare;
     }

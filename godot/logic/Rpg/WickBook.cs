@@ -7,7 +7,12 @@ namespace SurvivorUnchained.Rpg;
 
 /// <summary>"Damage 142 = 100 base · rank 3 ×1.20 · wicks +12% · Turn: Twin Swing ×1.10": the stat's name, its total,
 /// then every part in order as (what, worded value), the Turn's line last when one is lit (WickBook.Sum).</summary>
-public sealed record WickSumView(string Stat, double Total, IReadOnlyList<(string What, string Value)> Parts);
+public sealed record WickSumView(string Stat, double Total, IReadOnlyList<(string What, string Value)> Parts)
+{
+    /// <summary>A chained skill by day: the damage of one cut, and the seconds between cuts. Null otherwise.</summary>
+    public double? Cut { get; init; }
+    public double? Every { get; init; }
+}
 
 /// <summary>Why a wick lamp can't be planned or unplanned (None: it can).</summary>
 public enum WickNo { None, NoWick, Unknown, Planned, Unplanned, Order, Turn, Full, Holds }
@@ -167,7 +172,10 @@ public static class WickBook
                 parts.Add(("Turn:", t.Damage != 1 ? $"{t.Name} ×{t.Damage.ToString("0.00", inv)}" : t.Name));
             foreach (var t in fx.Dark.Select(Wicks.Turn)) parts.Add(("Turn (dark):", t.Name));
         }
-        return new WickSumView("Damage", w.Damage, parts);
+        var view = new WickSumView("Damage", w.Damage, parts);
+        if (!night && def.Press?.Chain?.Period is > 0 and var period)
+            view = view with { Cut = w.Damage * period / (def.Press.Wait ?? def.Base.Cooldown ?? 1), Every = period };
+        return view;
     }
 
     /// <summary>Every wick's path for a fight (BattleSetup.Wicks), or null when the fights read none.</summary>

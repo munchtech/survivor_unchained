@@ -48,7 +48,9 @@ vec4 p7_shell(vec2 uv, vec3 n, vec3 v) {
 	float hb = p7_wy - p7_y0;
 	px = min(px, hb / max(fwidth(p7_wy), 1e-5));
 	float ang = atan(n.y, n.x);
-	float along = 0.8 + 0.06 * fx_gnoise(vec2(ang * 3.0, p7_seed)) + 0.04 * fx_gnoise(vec2(ang * 11.0, p7_seed + 2.0));
+	// (M4 lead 14, r3d: every angle-driven term sampled on a circle, so it closes on itself; atan's jump at -x cut the band)
+	vec2 cs = vec2(cos(ang), sin(ang));
+	float along = 0.8 + 0.06 * fx_gnoise(cs * 3.0 + vec2(p7_seed, 0.0)) + 0.04 * fx_gnoise(cs * 11.0 + vec2(p7_seed + 2.0, 0.0));
 	vec4 o = p7_stroke(px / max(p7_width, 0.5), along, p7_lvl);
 	o.a *= p7_alpha;
 	return o;
@@ -57,7 +59,7 @@ vec4 p7_shell(vec2 uv, vec3 n, vec3 v) {
 // the store's glow on the shield
 vec4 p7_store(vec2 p) {
 	float r = length(p), a = atan(p.y, p.x);
-	float along = 0.82 + 0.08 * fx_noise(vec2(a * 1.3, p7_seed));
+	float along = 0.82 + 0.08 * fx_noise(vec2(cos(a), sin(a)) * 1.3 + vec2(p7_seed, 0.0)); // (M4 lead 14: on a circle, no seam at -x)
 	vec4 o = p7_stroke(r, along, p7_lvl);
 	o.a *= p7_alpha;
 	return o;

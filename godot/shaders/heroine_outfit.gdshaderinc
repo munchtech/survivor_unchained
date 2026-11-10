@@ -1,5 +1,28 @@
 // The body of her outfits' shader (heroine_outfit.gdshader, and heroine_outfit_metal.gdshader for
 // every metal key, which defines OUTFIT_METAL_LIGHT: the same, with metal's own light and reflection).
+// The cel model (cel.gdshaderinc; L1 B1b, from the bible v2 and the MB1/MB2 boards): ink 0 (silhouette and creases).
+// Each variant has its own light(): today's look as it was (the base's is Godot's own: cel_today, its clearcoat and
+// RIM, by the roughness fragment() wrote), and the cel model's band, hardened key shadow, fill and stepped rim, with
+// each kind's highlight (outfit_hl): leather one of 9 degrees at 0.6, gloss 7 at 0.8, cloth and twill matte (the band
+// and the rim only), metal two bands (a broad 20 at 0.35 in the sky's color, a hard 7 at 1.0 in the key's), satin's
+// streak cut hard.
+#define CEL_INK 0
+#define CEL_BUILTIN_RIM
+#define CEL_EXACT_ROUGH
+#define CEL_OWN_LIGHT
+// (S2b-N3) her pool's steps on her gear, never its gain or gold: her skin (heroine_skin, its own light) takes her plain light,
+// so her gear and skin read alike in her own pool and she stands dark-on-bright over the core (rule 1)
+#define CEL_POOL_PLAIN
+// (the library's leather, rule 6: the fallback only; her own light draws each kind's highlight, outfit_hl)
+#define CEL_SPEC vec4(9.0, 1.5, 0.6, 0.85)
+#define CEL_NMAP 0.20   // (L1 C2: the class's cel_nmap)
+#if !defined(OUTFIT_METAL_LIGHT) && !defined(OUTFIT_SATIN_LIGHT)
+#define OUTFIT_BASE_LIGHT
+#define CEL_CLEARCOAT
+#endif
+#define CEL_HERO   // (L1 l19 her2: the hero in her pool, one anchor tone on her shade side)
+#include "res://shaders/cel.gdshaderinc"
+#define OUTFIT_HL_ROUGH 0.3
 
 uniform int kind = 0;                              // 0 leather, 1 metal, 2 cloth, 3 gloss, 4 twill, 5 satin
 uniform sampler2D albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
@@ -127,6 +150,8 @@ uniform float dyed_ao = 0.35;                      // (and in what the sky can't
 uniform float metal_env = 0.50;                    // (the sky's reflection kept: no probe, the rest is the dark around her; metal r3: was 0.55)
 uniform float metal_env_horizon = 0.8;             // (and less at the horizon, where trees, walls and the camp stand; metal r3: was 0.5)
 uniform float metal_ground = 1.0;                  // (metal r3: the lit ground it reflects below the horizon, Atmosphere's ground_bounce; the sky's lower half is near black, so in shade plate read as rubber)
+uniform float metal_ground_edge = 0.35;            // (P2 l14: how far below the horizon the ground's reflection is full; a wider fade on a convex cup, no chrome sky/ground split; outfit_materials row "ground_edge")
+uniform float metal_ground_sat = 1.0;             // (P2 l14: the ground's colour kept, 0 grey: a tan cobble ground read on the cups as a skin-coloured band; row "ground_sat")
 uniform float metal_env_graze = 0.3;               // (metal r3: at grazing angles at least this much of the sky kept, the sheen that tells plate in shade from rubber)
 uniform vec4 piece_id = vec4(-1.0);                // (up to four pieces of this key with a finish of their own: their baked piece number, People.PieceNumber; -1 none.
 uniform vec4 piece_rough = vec4(-1.0);             //  Each piece's metal_rough and metal_env_graze, -1 the key's own; art/people/metal_finishes.json "pieces".
@@ -213,6 +238,7 @@ void vertex() {
 		vec3 cam = (inverse(MODEL_MATRIX) * vec4(CAMERA_POSITION_WORLD, 1.0)).xyz;
 		VERTEX += normalize(cam - VERTEX) * view_pull;
 	}
+	CEL_HERO_VERTEX;   // (L1 l22 p1norm: the smoothed shading normal)
 }
 
 // (a piece's baked number as the shader sees it: the vertex colour comes in as 8 bits, truncated, not rounded
@@ -460,8 +486,8 @@ void fragment() {
 		if (finish == 3) keep *= mix(1.0, dyed_env * mix(dyed_ao, 1.0, smoothstep(0.2, 0.8, sky)), (1.0 - gold) * (1.0 - bare));
 		// Below the horizon it sees the ground, lit by the key (the sky's lower half is near black):
 		// that light added as its own radiance (mix(env, rgb, a): rgb * a is what is added).
-		float down = smoothstep(0.0, 0.35, -rw.y);
-		vec3 ground = ground_bounce.rgb * metal_ground * down * mix(0.45, 1.0, sky) * (1.0 - grime);
+		float down = smoothstep(0.0, metal_ground_edge, -rw.y);
+		vec3 ground = mix(vec3(dot(ground_bounce.rgb, vec3(0.2126, 0.7152, 0.0722))), ground_bounce.rgb, metal_ground_sat) * metal_ground * down * mix(0.45, 1.0, sky) * (1.0 - grime);
 		if (look_metal_env > 0.0 && look_rig > 0.0) {
 			// (as emission: the Look's world gives no reflection to add it to)
 			vec3 rv = reflect(-VIEW, NORMAL);
@@ -587,7 +613,54 @@ void fragment() {
 	if (debug_view == 12) { ALBEDO = vec3(0.0); ROUGHNESS = 1.0; METALLIC = 0.0; SPECULAR = 0.0; EMISSION = (NORMAL * 0.5 + 0.5) * 0.6; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }   // (armor 17 N5: its interpolated vertex normal, view space, as colour)
 	if (debug_view == 13) { ALBEDO = vec3(0.0); ROUGHNESS = 1.0; METALLIC = 0.0; SPECULAR = 0.0; EMISSION = vec3(fract(UV * 8.0), 0.0) * 0.6; NORMAL_MAP = vec3(0.5, 0.5, 1.0); }   // (and its UV, as colour)
 	if (test_flat) { ALBEDO = vec3(0.0); METALLIC = 0.0; ROUGHNESS = 1.0; SPECULAR = 0.0; RIM = 0.0; EMISSION = vec3(0.5); }
+	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, roughness before the tag, the tag, debug).
+	CEL_FRAGMENT;
+	CEL_HERO_FRAGMENT;
 }
+
+// The cel model's highlight by kind (see the header), as SPECULAR_LIGHT; lit_sh the lit band times the key's shadow.
+vec3 outfit_hl(vec3 n, vec3 l, vec3 v, vec3 lc, float lit_sh, float r, float mt, vec3 alb, float sp, float amt) {
+	// (L1 C2, rule 6 and the Stage B judge: her metal's highlight was a white smear: the disc's strength faded with the
+	// roughness map, pixel by pixel. Metal and gloss draw theirs by the kind's fixed roughness (OUTFIT_HL_ROUGH: under the
+	// fade, so the 20 degree sky band at 0.35 and the 7 degree key highlight at 1.0 are whole shapes); leather keeps its map)
+	if (kind == 1 || kind == 3) r = OUTFIT_HL_ROUGH;
+	if (kind == 1) return cel_spec_disc(vec4(20.0, 4.0, 0.35, 1.0), cel_sky * cel_lum(lc), n, l, v, lit_sh, r, mt, alb, sp, amt)
+		+ cel_spec_disc(vec4(7.0, 1.0, 1.0, 1.0), lc, n, l, v, lit_sh, r, mt, alb, sp, amt);
+	if (kind == 0) return cel_spec_disc(vec4(9.0, 1.5, 0.6, 1.0), lc, n, l, v, lit_sh, r, mt, alb, sp, amt);
+	if (kind == 3) return cel_spec_disc(vec4(7.0, 1.0, 0.8, 1.0), lc, n, l, v, lit_sh, r, mt, alb, sp, amt);
+	return vec3(0.0);
+}
+
+#ifdef OUTFIT_BASE_LIGHT
+// Leather, cloth, gloss and twill: Godot's own light as it was (A), the cel model's with each kind's highlight (B).
+void light() {
+	vec3 ob_n = cel_nb(NORMAL);
+	float ob_t = dot(ob_n, LIGHT);
+	vec3 ob_g = vec3(0.0);
+	if (cel_dbg_light(ob_n, ob_t, ATTENUATION, LIGHT_IS_DIRECTIONAL, ob_g)) { SPECULAR_LIGHT += ob_g; }
+	else {
+		float r = cel_mat.w;
+		vec3 da = vec3(0.0), sa = vec3(0.0), db = vec3(0.0), sb = vec3(0.0);
+		if (cel_on < 1.0) {
+			cel_today(NORMAL, LIGHT, VIEW, LIGHT_COLOR, ATTENUATION, LIGHT_IS_DIRECTIONAL, ALBEDO, METALLIC, r,
+				cel_mat.x, SPECULAR_AMOUNT, BACKLIGHT, cel_mat.y, cel_mat.z, da, sa);
+			sa += cel_today_cc(NORMAL, LIGHT, VIEW, LIGHT_COLOR, ATTENUATION, LIGHT_IS_DIRECTIONAL, SPECULAR_AMOUNT);
+		}
+		if (cel_on > 0.0) {
+			// (cel_shade's own highlight off (its specular amount 0): the kind's in its place)
+			vec3 ob_lc = LIGHT_COLOR; float ob_att = ATTENUATION;
+			if (!LIGHT_IS_DIRECTIONAL) cel_pool_paint(ob_lc, ob_att, (INV_VIEW_MATRIX * vec4(LIGHT, 0.0)).xyz);
+			cel_shade(NORMAL, ob_n, ob_t, LIGHT, VIEW, ob_lc, ob_att, LIGHT_IS_DIRECTIONAL, ALBEDO, METALLIC, r,
+				cel_mat.x, 0.0, BACKLIGHT, cel_mat.y, cel_mat.z, db, sb);
+			sb += outfit_hl(NORMAL, LIGHT, VIEW, LIGHT_COLOR, cel_lit(ob_t) * cel_shadow(ATTENUATION, LIGHT_IS_DIRECTIONAL), r,
+				METALLIC, ALBEDO, cel_mat.x, SPECULAR_AMOUNT);
+		}
+		DIFFUSE_LIGHT += mix(da, db, cel_on);
+		SPECULAR_LIGHT += mix(sa, sb, cel_on);
+	}
+	CEL_HERO_LIGHT;   // (L1 l20 her4: the base cloth too; the figure's absolute tones take no light)
+}
+#endif
 
 #ifdef OUTFIT_METAL_LIGHT
 // Metal's light: Godot's own (Burley diffuse for its dull share, GGX specular with Schlick
@@ -596,16 +669,21 @@ void fragment() {
 // luminance only, so it keeps the light's hue (the fire orange, the moon cool). Without it a
 // satin dome by a fire blew out (C01 s10/s11).
 void light() {
+	vec3 ob_n = cel_nb(NORMAL);
+	float ob_t = dot(ob_n, LIGHT);
+	vec3 ob_g = vec3(0.0);
+	if (cel_dbg_light(ob_n, ob_t, ATTENUATION, LIGHT_IS_DIRECTIONAL, ob_g)) { SPECULAR_LIGHT += ob_g; }
+	else {
 	float cNdotL = max(dot(NORMAL, LIGHT), 0.0);
 	float cNdotV = max(dot(NORMAL, VIEW), 1e-4);
 	vec3 H = normalize(VIEW + LIGHT);
 	float cNdotH = clamp(dot(NORMAL, H), 0.0, 1.0);
 	float cLdotH = clamp(dot(LIGHT, H), 0.0, 1.0);
-	float r = ROUGHNESS;
+	float r = cel_mat.w;   // (as fragment() wrote it, before the ink tag)
 	float fd90 = 2.0 * cLdotH * cLdotH * r - 0.5;
 	float fdv = 1.0 + fd90 * pow(1.0 - cNdotV, 5.0);
 	float fdl = 1.0 + fd90 * pow(1.0 - cNdotL, 5.0);
-	DIFFUSE_LIGHT += LIGHT_COLOR * ATTENUATION * (1.0 / PI) * fdv * fdl * cNdotL;
+	vec3 dm = LIGHT_COLOR * ATTENUATION * (1.0 / PI) * fdv * fdl * cNdotL;
 	float a = r * r;
 	float ah = cNdotH * a;
 	float kd = a / (1.0 - cNdotH * cNdotH + ah * ah);
@@ -615,6 +693,16 @@ void light() {
 	float f90 = mix(clamp(50.0 * f0.g, 0.0, 1.0), enamel_f90, v_paint);
 	vec3 F = f0 + (f90 - f0) * pow(1.0 - cLdotH, 5.0);
 	vec3 s = cNdotL * D * G * F * LIGHT_COLOR * ATTENUATION * SPECULAR_AMOUNT;
+	float ob_sh = ATTENUATION;
+	if (cel_on > 0.0) {
+		// (cel: the band, the hardened key shadow, the fill, and metal's two highlight bands in place of GGX; the
+		// shoulder, mute and finish below hold them as they held it; the stepped rim after)
+		ob_sh = cel_shadow(ATTENUATION, LIGHT_IS_DIRECTIONAL);
+		float lit_sh = cel_lit(ob_t) * ob_sh;
+		dm = mix(dm, LIGHT_COLOR * cel_level(ob_t) * (ob_sh / PI) + cel_fill_add(LIGHT_COLOR, lit_sh, LIGHT_IS_DIRECTIONAL), cel_on);
+		s = mix(s, outfit_hl(NORMAL, LIGHT, VIEW, LIGHT_COLOR, lit_sh, r, v_metal, ALBEDO, 0.5, SPECULAR_AMOUNT), cel_on);
+	}
+	DIFFUSE_LIGHT += dm;
 	vec3 lw = vec3(0.2126, 0.7152, 0.0722);
 	float cap = mix(metal_spec_cap, mix(enamel_gloss_cap, enamel_spec_cap, smoothstep(0.38, 0.52, r)), v_paint) * dot(LIGHT_COLOR, lw) * ATTENUATION * SPECULAR_AMOUNT * (1.0 / PI);
 	float knee = metal_spec_knee * cap;
@@ -627,6 +715,9 @@ void light() {
 	s = mix(s, vec3(dot(s, lw)) * spec_mute_tint, v_spec_mute);
 	if (finish == 3) s *= mix(1.0, dyed_sheen, smoothstep(0.36, 0.5, r));   // (dyed metal's brushed plate: the sun's broad lobe muted (an edge-on pauldron at full read as a pale glassy cap); the polished cups keep theirs)
 	SPECULAR_LIGHT += s;
+	if (cel_on > 0.0) SPECULAR_LIGHT += cel_on * cel_rim_add(ob_n, VIEW, LIGHT_COLOR, ob_t, ob_sh, LIGHT_IS_DIRECTIONAL, ALBEDO);
+	}
+	CEL_HERO_LIGHT;
 }
 #endif
 
@@ -635,16 +726,21 @@ void light() {
 // and its sheen, an anisotropic GGX whose highlight runs along the form (v_axis) as a long soft streak,
 // eased toward a cap so a near lamp never blows it to white.
 void light() {
+	vec3 ob_n = cel_nb(NORMAL);
+	float ob_t = dot(ob_n, LIGHT);
+	vec3 ob_g = vec3(0.0);
+	if (cel_dbg_light(ob_n, ob_t, ATTENUATION, LIGHT_IS_DIRECTIONAL, ob_g)) { SPECULAR_LIGHT += ob_g; }
+	else {
 	float cNdotL = max(dot(NORMAL, LIGHT), 0.0);
 	float cNdotV = max(dot(NORMAL, VIEW), 1e-4);
 	vec3 H = normalize(VIEW + LIGHT);
 	float cNdotH = clamp(dot(NORMAL, H), 0.0, 1.0);
 	float cLdotH = clamp(dot(LIGHT, H), 0.0, 1.0);
-	float r = ROUGHNESS;
+	float r = cel_mat.w;   // (as fragment() wrote it, before the ink tag)
 	float fd90 = 2.0 * cLdotH * cLdotH * r - 0.5;
 	float fdv = 1.0 + fd90 * pow(1.0 - cNdotV, 5.0);
 	float fdl = 1.0 + fd90 * pow(1.0 - cNdotL, 5.0);
-	DIFFUSE_LIGHT += LIGHT_COLOR * ATTENUATION * (1.0 / PI) * fdv * fdl * cNdotL;
+	vec3 dm = LIGHT_COLOR * ATTENUATION * (1.0 / PI) * fdv * fdl * cNdotL;
 	// the sheen: anisotropic GGX (Burley's), rough along the axis, smooth across it
 	vec3 T = normalize(v_axis - NORMAL * dot(v_axis, NORMAL) + 1e-6);
 	vec3 B = cross(NORMAL, T);
@@ -656,6 +752,17 @@ void light() {
 	float G = 0.5 / mix(2.0 * cNdotL * cNdotV, cNdotL + cNdotV, sqrt(at * ab));
 	float F = 0.04 + 0.96 * pow(1.0 - cLdotH, 5.0);
 	vec3 s = cNdotL * D * G * F * satin_sheen * 6.0 * mix(vec3(1.0), ALBEDO, 0.35) * LIGHT_COLOR * ATTENUATION * SPECULAR_AMOUNT;
+	float ob_sh = ATTENUATION;
+	if (cel_on > 0.0) {
+		// (cel: the band, the hardened key shadow and the fill; the streak cut hard where its term passes 0.35 of its
+		// peak (1 / (PI at ab)), at 0.5 in the light's color and a third of the satin's own)
+		ob_sh = cel_shadow(ATTENUATION, LIGHT_IS_DIRECTIONAL);
+		float lit_sh = cel_lit(ob_t) * ob_sh;
+		dm = mix(dm, LIGHT_COLOR * cel_level(ob_t) * (ob_sh / PI) + cel_fill_add(LIGHT_COLOR, lit_sh, LIGHT_IS_DIRECTIONAL), cel_on);
+		float streak = smoothstep(0.3, 0.4, D * PI * at * ab) * step(1e-4, satin_sheen);
+		s = mix(s, streak * 0.5 * lit_sh * mix(vec3(1.0), ALBEDO, 0.35) * LIGHT_COLOR * SPECULAR_AMOUNT / PI, cel_on);
+	}
+	DIFFUSE_LIGHT += dm;
 	vec3 lw = vec3(0.2126, 0.7152, 0.0722);
 	float cap = satin_spec_cap * dot(LIGHT_COLOR, lw) * ATTENUATION * SPECULAR_AMOUNT * (1.0 / PI);
 	float knee = 0.6 * cap;
@@ -665,5 +772,8 @@ void light() {
 		s *= (knee + over * (1.0 - exp(-(sl - knee) / over))) / sl;
 	}
 	SPECULAR_LIGHT += s;
+	if (cel_on > 0.0) SPECULAR_LIGHT += cel_on * cel_rim_add(ob_n, VIEW, LIGHT_COLOR, ob_t, ob_sh, LIGHT_IS_DIRECTIONAL, ALBEDO);
+	}
+	CEL_HERO_LIGHT;
 }
 #endif

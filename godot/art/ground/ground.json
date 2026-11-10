@@ -1,40 +1,92 @@
 {
- "by": "tools/assets/env_ground.py (ours; CC0 Poly Haven sets as raw grain only)",
+ "by": "tools/look/ground_paint.py (L1 C1: painted from nothing; godot/data/look/ground.json)",
+ "painted": 2,
+ "inputs": "1730ea135985",
+ "from": "(c) the terrain zones' seven layers as terrain.gdshader reads them (Ground.cs: the Verge, the Low Ford, the Waystation, the title's camp, C01's frost)",
  "layers": [
   {
    "name": "grass",
-   "raw": "sparse_grass",
-   "metres": 2.0
+   "surface": "meadow",
+   "metres": 4.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "MB4 grass (day) and target 07's lawn: golden-green big flat clumps in three values (a cool dark under-mass, the body, a lit spiky crown toward the light), overlapping like scales over three soft masses; olive, never lime (rule 4)",
+   "mean": [
+    0.05198,
+    0.10066,
+    0.0387
+   ]
   },
   {
    "name": "leaves",
-   "raw": "forest_leaves_02",
-   "metres": 3.0
+   "surface": "litter_day",
+   "metres": 4.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "MB4 (the floor under the spruce, day); rule 9: leaf litter as a few leaf shapes",
+   "mean": [
+    0.08665,
+    0.07139,
+    0.05644
+   ]
   },
   {
    "name": "dirt",
-   "raw": "forest_ground_04",
-   "metres": 3.15
+   "surface": "road",
+   "metres": 5.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "MB4 road (day): two or three value masses, warm; target 04's road, 05's track",
+   "mean": [
+    0.16861,
+    0.12321,
+    0.11489
+   ]
   },
   {
    "name": "mud",
-   "raw": "mud_forest",
-   "metres": 2.35
+   "surface": "mud",
+   "metres": 4.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "MB4 road (the ruts' wet earth, a step darker than the road)",
+   "mean": [
+    0.05929,
+    0.05173,
+    0.04761
+   ]
   },
   {
    "name": "stone",
-   "raw": "none (procedural; cobblestone_05 grain)",
-   "metres": 4.0
+   "surface": "cobble",
+   "metres": 4.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "MB3 (the town's rough paving as chunky planes, warm tops, cool joints); the setts' own maps are wave 2",
+   "mean": [
+    0.27126,
+    0.3286,
+    0.17622
+   ]
   },
   {
    "name": "rock",
-   "raw": "mossy_rock",
-   "metres": 3.0
+   "surface": "rock_moss",
+   "metres": 4.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "MB4 rock: a few big rounded planes in muted moon-blue grey, moss on the top planes",
+   "mean": [
+    0.20503,
+    0.20249,
+    0.14455
+   ]
   },
   {
    "name": "blight",
-   "raw": "burned_ground_01",
-   "metres": 1.5
+   "surface": "blight",
+   "metres": 3.0,
+   "source": "painted (tools/look/ground_paint.py)",
+   "from": "(c) the blight's burned ground, as ash masses and long dark cracks",
+   "mean": [
+    0.02651,
+    0.02944,
+    0.03467
+   ]
   }
  ],
  "setts": {

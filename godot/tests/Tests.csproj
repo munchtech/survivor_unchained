@@ -18,6 +18,15 @@
     <Compile Include="../src/Ui/LampBoardModel.cs" LinkBase="src" />
     <Compile Include="../src/Ui/LampNav.cs" LinkBase="src" />
     <Compile Include="../src/Ui/LampAsk.cs" LinkBase="src" />
+    <Compile Include="../src/QuitGuard.cs" LinkBase="src" />
+    <Compile Include="../src/Ui/LampPrompts.cs" LinkBase="src" />
+    <Compile Include="../src/Game/KeyMap.cs" LinkBase="src" />
+    <Compile Include="../src/Ui/ResolveMotion.cs" LinkBase="src" />
+    <Compile Include="../src/Ui/LevelCardModel.cs" LinkBase="src" />
+    <Compile Include="../src/Ui/GlyphPaths.cs" LinkBase="src" />
+    <Compile Include="../src/Fx/HitsPlace.cs" LinkBase="src" />
+    <Compile Include="../src/Ui/SeatCostModel.cs" LinkBase="src" />
+    <Compile Include="../src/Ui/RoadKeep.cs" LinkBase="src" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />

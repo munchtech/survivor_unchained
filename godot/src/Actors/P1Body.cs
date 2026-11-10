@@ -34,6 +34,25 @@ public static class P1Body
     /// <summary>--body p1, and a published B (with its baked clips) to load.</summary>
     public static bool On => Args.Get("body") == "p1" && ResourceLoader.Exists(Dir + "body.glb") && ResourceLoader.Exists(Dir + "clips.res");
     static PackedScene? close, play;
+
+    /// <summary>Meta on a mesh laid from a built body's gear (HerWear.Lay, HerLod.Attach with B's play-tier unit): B's own
+    /// piece, never hidden, swapped or rebound by P1Laws; it follows its body's blend shapes.</summary>
+    public const string GearMeta = "p1_gear";
+
+    /// <summary>B's built gear folder under art/ (tools/armor/gear_fit.py build --body ...: gear/out/BODY, BODY the published
+    /// folder's name: body_p1, or a --p1-dir variant's), or null without --body p1. Null too, with one log line, when that
+    /// folder has no gear_index.json (A's indexes are read and A's pieces stay off B, as before the refit).</summary>
+    public static string? GearDir()
+    {
+        if (!On) return null;
+        string body = Dir.TrimEnd('/');
+        body = body[(body.LastIndexOf('/') + 1)..];
+        string dir = $"gear/out/{body}";
+        if (FileAccess.FileExists($"res://art/{dir}/gear_index.json")) return dir;
+        string src = Dir.StartsWith("res://") ? "godot/" + Dir["res://".Length..].TrimEnd('/') : Dir;
+        GD.Print($"gear: no built gear for {body}: run python tools/armor/gear_fit.py build --body {src}");
+        return null;
+    }
     static readonly Dictionary<string, JsonDocument> rigs = new();
     static AnimationLibrary? clips, herClips;
 
@@ -517,6 +536,7 @@ public partial class P1Laws : SkeletonModifier3D
             sk.SetBonePoseScale(j, sc);
         }
         lastG = G2; weights = w;
+        if (LawsDump != "" && Engine.GetProcessFrames() % (ulong)LawsEvery == 0) DumpLaws(G, G2, w);
         // held mounts laid in A's bone frame (Follow)
         for (int i = follow.Count - 1; i >= 0; i--)
         {
@@ -551,6 +571,27 @@ public partial class P1Laws : SkeletonModifier3D
                 if (lod.FindBlendShapeByName(kv.Key) is int k and >= 0) lod.SetBlendShapeValue(k, (float)kv.Value);
     }
 
+    // --p1-laws-dump FILE (checks only; tools/armor/engine_check.py): every --pose-probe-every'th frame (default 30) one JSON
+    // line: the laws' input (every bone's skeleton-space pose as the clip and the layers left it, helpers at rest local) and
+    // their output, 12 numbers a bone (three rows of four), and the corrective weights. The check runs rig_drive on the input
+    // and lays it on the output: P1Rig.cs and rig_drive.py out of step show as degrees.
+    static readonly string LawsDump = Args.Get("p1-laws-dump") ?? "";
+    static readonly int LawsEvery = System.Math.Max(1, (int)Args.Num("pose-probe-every", 30));
+    static bool lawsTruncated;
+
+    void DumpLaws(P1M4[] pre, P1M4[] post, Dictionary<string, double> w)
+    {
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        string M(P1M4[] g) => "[" + string.Join(",", g.Select(m => "[" + string.Join(",", Enumerable.Range(0, 12).Select(k => m.A[k].ToString("R", inv))) + "]")) + "]";
+        var sb = new System.Text.StringBuilder();
+        sb.Append("{\"frame\":").Append(Engine.GetProcessFrames()).Append(",\"names\":[").Append(string.Join(",", rig!.Names.Select(n => "\"" + n + "\"")));
+        sb.Append("],\"pre\":").Append(M(pre)).Append(",\"post\":").Append(M(post)).Append(",\"weights\":{");
+        sb.Append(string.Join(",", w.Select(kv => "\"" + kv.Key + "\":" + kv.Value.ToString("R", inv))));
+        sb.Append("}}" + (char)10);
+        if (!lawsTruncated) { lawsTruncated = true; System.IO.File.WriteAllText(LawsDump, ""); }
+        System.IO.File.AppendAllText(LawsDump, sb.ToString());
+    }
+
     public override void _Process(double delta)
     {
         if (sk == null) return;
@@ -563,6 +604,15 @@ public partial class P1Laws : SkeletonModifier3D
         foreach (var mi in sk.GetChildren().OfType<MeshInstance3D>())
         {
             if (mi.HasMeta("p1_b") || mi.HasMeta("p1_rebound") || mi.HasMeta("p1_piece") || mi.Skin == null) continue;
+            // (a piece of B's built gear (P1Body.GearMeta): B's own skin; it rides its tier's body's shapes)
+            if (mi.HasMeta(P1Body.GearMeta))
+            {
+                string n = mi.Name.ToString();
+                bool playTier = n.StartsWith("lod_") || n.StartsWith("her_merge") || n.Contains("_lod1_") || n.EndsWith("_shadow");
+                Wear(mi, playTier);
+                mi.SetMeta("p1_piece", playTier ? "play" : "close");
+                continue;
+            }
             // (her hair and a head piece rebound; A's skin-tight pieces (the ink slot) worn as B's carries of them; A's
             // other outfit pieces are cut from A's surface and stay off B till P1's refit)
             bool hair = mi.GetChildren().OfType<HairSway>().Any(), head = mi.Name.ToString().Contains("_head_");

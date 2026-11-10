@@ -1,0 +1,1328 @@
+{
+ "what": "The painted ground (L1 C1): every zone's and arena's ground layers as painted surfaces, ours from nothing (no photo or scan). tools/look/ground_paint.py builds each set's texture arrays (godot/art/ground/, godot/art/arena/<place>/: albedo.png, normal.png, arh.png, seven 1K layers stacked in the order the shaders read them) and checks them (rule 9). A surface is two or three value masses at a large world scale plus big flat shapes (grass clumps, leaves, stones, ruts, chips), each shape one color inside its class's range. Colors are sRGB albedo, set by hand from the boards' and targets' lit and shade colors over the rig's light (the judge's method).",
+ "from": "(b) the Stage B judge, verdict_sb_r1 'B3's source' and Stage C's order 1 (5 Nov): 'The terrain gets its own painted splat: two or three value masses, big flat clumps, no photo noise'; LOOK_BIBLE rules 1, 4, 5, 8, 9; boards MB4 (wild) and MB3 (town); targets 01, 03, 04, 05, 07, 09, 10, 12. (a) the play camera: 5-8 px per 6-10 cm brush, nothing under about 3 cm.",
+ "light": [
+  -0.45,
+  -0.89
+ ],
+ "light_what": "the painted-in light's direction in the texture (u = world +x, v = world +z): from the screen's top, a little left (rule 9: the top-lit side, the lit bevel)",
+ "spread_L": 0.05,
+ "min_cm": 3.0,
+ "mass_sizes": {
+  "from": "rule 10 (shape language: big-medium-small) and the wave-1 judge (04, 05: one size of camo blob); the big masses at 1.6 x a surface's scale_m, islands of the next value at 0.6 x (16% of the tile) and 0.3 x (10%)",
+  "big": 1.6,
+  "medium": 0.6,
+  "small": 0.3,
+  "medium_share": 0.16,
+  "small_share": 0.1
+ },
+ "sets": {
+  "terrain": {
+   "dir": "godot/art/ground",
+   "from": "(c) the terrain zones' seven layers as terrain.gdshader reads them (Ground.cs: the Verge, the Low Ford, the Waystation, the title's camp, C01's frost)",
+   "layers": [
+    {
+     "name": "grass",
+     "surface": "meadow",
+     "metres": 4.0
+    },
+    {
+     "name": "leaves",
+     "surface": "litter_day",
+     "metres": 4.0
+    },
+    {
+     "name": "dirt",
+     "surface": "road",
+     "metres": 5.0
+    },
+    {
+     "name": "mud",
+     "surface": "mud",
+     "metres": 4.0
+    },
+    {
+     "name": "stone",
+     "surface": "cobble",
+     "metres": 4.0
+    },
+    {
+     "name": "rock",
+     "surface": "rock_moss",
+     "metres": 4.0
+    },
+    {
+     "name": "blight",
+     "surface": "blight",
+     "metres": 3.0
+    }
+   ]
+  },
+  "hollow": {
+   "dir": "godot/art/arena/hollow",
+   "from": "(c) the Deep Shaw's layers (ArenaGround.cs order: litter, rot, roots, mud, bed, needles, face); (b) targets 09, 10, 12 and MB4 night",
+   "layers": [
+    {
+     "name": "litter",
+     "surface": "forest_floor",
+     "metres": 5.0
+    },
+    {
+     "name": "rot",
+     "surface": "rot",
+     "metres": 4.0
+    },
+    {
+     "name": "roots",
+     "surface": "roots",
+     "metres": 4.0
+    },
+    {
+     "name": "mud",
+     "surface": "den_mud",
+     "metres": 4.0
+    },
+    {
+     "name": "bed",
+     "surface": "stream_bed",
+     "metres": 4.0
+    },
+    {
+     "name": "needles",
+     "surface": "needles",
+     "metres": 4.0
+    },
+    {
+     "name": "face",
+     "surface": "bank",
+     "metres": 6.0
+    }
+   ],
+   "moss": {
+    "lit": "#49522f",
+    "shade": "#263b2a",
+    "from": "PROVISIONAL (L1 W2 ground, mark 5, before the final rigs): MB4 rock's moss, natural olive (rule 4: never acid or lime), Oklab lit L 0.42 C 0.055 h 120, crease L 0.33 C 0.040 h 150; re-set in mark 6 as MB4 / the rig"
+   }
+  },
+  "ruts": {
+   "dir": "godot/art/arena/ruts",
+   "from": "(c) the Ruts' layers (verge, churn, ruts, wet, camp, metal, face); (b) MB4 road, targets 04 and 05",
+   "layers": [
+    {
+     "name": "verge",
+     "surface": "verge",
+     "metres": 4.0
+    },
+    {
+     "name": "churn",
+     "surface": "churn",
+     "metres": 4.0
+    },
+    {
+     "name": "ruts",
+     "surface": "rut_mud",
+     "metres": 4.5
+    },
+    {
+     "name": "wet",
+     "surface": "wet",
+     "metres": 4.0
+    },
+    {
+     "name": "camp",
+     "surface": "chips",
+     "metres": 3.0
+    },
+    {
+     "name": "metal",
+     "surface": "gravel",
+     "metres": 3.0
+    },
+    {
+     "name": "face",
+     "surface": "cut_bank",
+     "metres": 6.0
+    }
+   ],
+   "moss": {
+    "lit": "#49522f",
+    "shade": "#263b2a",
+    "from": "PROVISIONAL (L1 W2 ground, mark 5, before the final rigs): MB4 rock's moss, natural olive (rule 4: never acid or lime), Oklab lit L 0.42 C 0.055 h 120, crease L 0.33 C 0.040 h 150; re-set in mark 6 as MB4 / the rig"
+   }
+  },
+  "barrow": {
+   "dir": "godot/art/arena/barrow",
+   "from": "(c) the Barrow's layers (turf, bare, way, grave, ash, rubble, face); (b) MB4 night, rock and grass",
+   "layers": [
+    {
+     "name": "turf",
+     "surface": "turf",
+     "metres": 4.0
+    },
+    {
+     "name": "bare",
+     "surface": "bare",
+     "metres": 4.0
+    },
+    {
+     "name": "way",
+     "surface": "slabs",
+     "metres": 5.0
+    },
+    {
+     "name": "grave",
+     "surface": "grave",
+     "metres": 4.0
+    },
+    {
+     "name": "ash",
+     "surface": "ash",
+     "metres": 3.0
+    },
+    {
+     "name": "rubble",
+     "surface": "rubble",
+     "metres": 3.0
+    },
+    {
+     "name": "face",
+     "surface": "barrow_face",
+     "metres": 6.0
+    }
+   ],
+   "moss": {
+    "lit": "#49522f",
+    "shade": "#263b2a",
+    "from": "PROVISIONAL (L1 W2 ground, mark 5, before the final rigs): MB4 rock's moss, natural olive (rule 4: never acid or lime), Oklab lit L 0.42 C 0.055 h 120, crease L 0.33 C 0.040 h 150; re-set in mark 6 as MB4 / the rig"
+   }
+  },
+  "dig": {
+   "dir": "godot/art/arena/dig",
+   "from": "(c) the Dig's layers (clay, spoil, ballast, slurry, rust, burnt, face); (b) MB4 rock and road",
+   "layers": [
+    {
+     "name": "clay",
+     "surface": "clay",
+     "metres": 5.0
+    },
+    {
+     "name": "spoil",
+     "surface": "spoil",
+     "metres": 3.0
+    },
+    {
+     "name": "ballast",
+     "surface": "ballast",
+     "metres": 3.0
+    },
+    {
+     "name": "slurry",
+     "surface": "slurry",
+     "metres": 4.0
+    },
+    {
+     "name": "rust",
+     "surface": "rust",
+     "metres": 4.0
+    },
+    {
+     "name": "burnt",
+     "surface": "burnt",
+     "metres": 3.0
+    },
+    {
+     "name": "face",
+     "surface": "clay_face",
+     "metres": 6.0
+    }
+   ],
+   "moss": {
+    "lit": "#49522f",
+    "shade": "#263b2a",
+    "from": "PROVISIONAL (L1 W2 ground, mark 5, before the final rigs): MB4 rock's moss, natural olive (rule 4: never acid or lime), Oklab lit L 0.42 C 0.055 h 120, crease L 0.33 C 0.040 h 150; re-set in mark 6 as MB4 / the rig"
+   }
+  },
+  "setts": {
+   "dir": "godot/art/ground",
+   "prefix": "setts_",
+   "from": "(c) the town's setts arrays (terrain.gdshader s_alb/s_nor/s_arh, three variants of 4 m: Ground.cs and the terrain manifest's 'setts' entry); L1 W2 town replaces the photo setts (env_ground.py)",
+   "layers": [
+    {
+     "name": "setts_a",
+     "surface": "setts",
+     "metres": 4.0,
+     "variant": 0
+    },
+    {
+     "name": "setts_b",
+     "surface": "setts",
+     "metres": 4.0,
+     "variant": 1
+    },
+    {
+     "name": "setts_c",
+     "surface": "setts",
+     "metres": 4.0,
+     "variant": 2
+    }
+   ]
+  }
+ },
+ "surfaces": {
+  "meadow": {
+   "class": "grass",
+   "from": "MB4 grass (day) and target 07's lawn: golden-green big flat clumps in three values (a cool dark under-mass, the body, a lit spiky crown toward the light), overlapping like scales over three soft masses; olive, never lime (rule 4)",
+   "masses": {
+    "colors": [
+     "#3a5334",
+     "#405937",
+     "#47603b"
+    ],
+    "split": [
+     0.33,
+     0.68
+    ],
+    "scale_m": 2.2
+   },
+   "stamps": [
+    {
+     "shape": "brush",
+     "per_m2": 260,
+     "size_cm": [
+      6,
+      10
+     ],
+     "lit_share": 0.5,
+     "lit_dL": 0.022,
+     "dark_dL": -0.026,
+     "tips": 0.6,
+     "squash": 0.5,
+     "height": 0.5
+    }
+   ],
+   "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.602, 0.716, 0.972] per channel (linear) = the terrain grass anchor 'grass' target / its mean [0.106, 0.1244, 0.0373]; target = MB4_grass_day paint [0.2114, 0.2035, 0.0381] / the day key (day_play grass) [3.313, 2.284, 1.051] = [0.0638, 0.0891, 0.0362]. Replaces C1's r1 calib (a lift read off frames).",
+   "c6": "L1 W2 C6 (the color chain): x[1.024, 0.924, 0.36] per channel (linear) = the grass class's chain albedo / its old mid (materials.json).",
+   "l9": "L1 l9 grass (9 Nov, judge 1 fix 6): the star stamps (4.5/m2, 26-48 cm) replaced by mounds (ground_paint.py mounds); hue turned from 135 to 141-145 so the lit lawn lands at h 106-112 under the boards' sun (T04 110, T07 109)",
+   "l10": "L1 l10 grass (judge 1 fix 6 again, FAR: a rebuild): the lawn IS the ground, FROM targets 04 and 07 (a golden-green painted surface in close values with a soft brush): three masses 0.02-0.025 L apart, a 6-10 cm brush (ground_paint brushes: a dab in the mass under it moved -0.026 or +0.022 L, its light side broken into grass points), no mounds or stars; the tufts are sparse accents placed by rule (grass_own.gdshader accent)"
+  },
+  "litter_day": {
+   "class": "soil",
+   "from": "MB4 (the floor under the spruce, day); rule 9: leaf litter as a few leaf shapes",
+   "masses": {
+    "colors": [
+     "#413d3a",
+     "#4d4841",
+     "#594f46"
+    ],
+    "split": [
+     0.35,
+     0.7
+    ],
+    "scale_m": 1.2
+   },
+   "stamps": [
+    {
+     "shape": "leaf",
+     "per_m2": 26,
+     "size_cm": [
+      8,
+      15
+     ],
+     "colors": [
+      "#6a5445",
+      "#766254",
+      "#5c4e43",
+      "#79775b"
+     ],
+     "height": 0.7
+    }
+   ],
+   "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.267, 0.263, 0.6] per channel (linear) = the terrain soil anchor 'dirt' target / its mean [0.2132, 0.1275, 0.0784]; target = MB4_road_day paint [0.1876, 0.0762, 0.0498] / the day key (day_play road; the earth under the crowns takes the road's gain) [3.301, 2.274, 1.058] = [0.0568, 0.0335, 0.0471]. Replaces C1's r1 calib (a lift read off frames).",
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+  },
+  "road": {
+   "class": "road",
+   "from": "MB4 road (day): two or three value masses, warm; target 04's road, 05's track",
+   "masses": {
+    "colors": [
+     "#655454",
+     "#71625e",
+     "#7e6e69"
+    ],
+    "split": [
+     0.3,
+     0.68
+    ],
+    "scale_m": 1.8
+   },
+   "stamps": [
+    {
+     "shape": "stone",
+     "per_m2": 1.2,
+     "size_cm": [
+      5,
+      11
+     ],
+     "colors": [
+      "#7e7f88",
+      "#6e7175"
+     ],
+     "height": 0.8
+    }
+   ],
+   "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.267, 0.263, 0.6] per channel (linear) = the terrain road anchor 'dirt' target / its mean [0.2132, 0.1275, 0.0784]; target = MB4_road_day paint [0.1876, 0.0762, 0.0498] / the day key (day_play road) [3.301, 2.274, 1.058] = [0.0568, 0.0335, 0.0471]. Replaces C1's r1 calib (a lift read off frames).",
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the road class's chain albedo / its old mid (materials.json)."
+  },
+  "mud": {
+   "class": "road",
+   "from": "MB4 road (the ruts' wet earth, a step darker than the road)",
+   "masses": {
+    "colors": [
+     "#3d3836",
+     "#46423f",
+     "#4e4946"
+    ],
+    "split": [
+     0.4,
+     0.78
+    ],
+    "scale_m": 1.3
+   },
+   "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.267, 0.263, 0.6] per channel (linear) = the terrain road anchor 'dirt' target / its mean [0.2132, 0.1275, 0.0784]; target = MB4_road_day paint [0.1876, 0.0762, 0.0498] / the day key (day_play road) [3.301, 2.274, 1.058] = [0.0568, 0.0335, 0.0471]. Replaces C1's r1 calib (a lift read off frames).",
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the road class's chain albedo / its old mid (materials.json)."
+  },
+  "cobble": {
+   "class": "road",
+   "from": "MB3 (the town's rough paving as chunky planes, warm tops, cool joints); the setts' own maps are wave 2",
+   "cells": {
+    "size_cm": 26,
+    "colors": [
+     "#99a77c",
+     "#a9b98a",
+     "#8c9970"
+    ],
+    "joint": "#5a5d46",
+    "joint_cm": 3.0,
+    "lit": 0.05,
+    "round": 0.0
+   },
+   "masses": {
+    "colors": [
+     "#63684c",
+     "#707354"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 1.5
+   },
+   "w2": "L1 W2 ground, mark 6: kept at C1's colors (the town's stone layer is the town kit's, 07/13)",
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the road class's chain albedo / its old mid (materials.json)."
+  },
+  "rock_moss": {
+   "class": "rock",
+   "from": "MB4 rock: a few big rounded planes in muted moon-blue grey, moss on the top planes",
+   "cells": {
+    "size_cm": 55,
+    "colors": [
+     "#848274",
+     "#938d7e",
+     "#777669"
+    ],
+    "joint": "#58564e",
+    "joint_cm": 3.5,
+    "lit": 0.06,
+    "round": 0.0
+   },
+   "masses": {
+    "colors": [
+     "#58564e",
+     "#656457"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 1.5
+   },
+   "patches": {
+    "colors": [
+     "#69743c",
+     "#798443"
+    ],
+    "share": 0.28,
+    "scale_m": 0.9
+   },
+   "c6": "L1 W2 C6 (the color chain): x[1.006, 0.992, 1.008] per channel (linear) = the rock class's chain albedo / its old mid (materials.json)."
+  },
+  "blight": {
+   "class": "soil",
+   "from": "(c) the blight's burned ground, as ash masses and long dark cracks",
+   "masses": {
+    "colors": [
+     "#25272b",
+     "#2d3134",
+     "#36383e"
+    ],
+    "split": [
+     0.35,
+     0.7
+    ],
+    "scale_m": 1.0
+   },
+   "stamps": [
+    {
+     "shape": "stroke",
+     "per_m2": 1.0,
+     "size_cm": [
+      3,
+      5
+     ],
+     "length_cm": [
+      30,
+      80
+     ],
+     "colors": [
+      "#1b1c22"
+     ],
+     "height": 0.1
+    }
+   ],
+   "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.267, 0.263, 0.6] per channel (linear) = the terrain soil anchor 'dirt' target / its mean [0.2132, 0.1275, 0.0784]; target = MB4_road_day paint [0.1876, 0.0762, 0.0498] / the day key (day_play road; the earth under the crowns takes the road's gain) [3.301, 2.274, 1.058] = [0.0568, 0.0335, 0.0471]. Replaces C1's r1 calib (a lift read off frames).",
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+  },
+  "forest_floor": {
+   "class": "soil",
+   "from": "targets 09 and 10 (the Deep Shaw's floor: mid-value under the moon, never black; warm where her pool lights it); MB4 night; rule 9 leaf litter as a few leaf shapes",
+   "masses": {
+    "colors": [
+     "#58504a",
+     "#655a52",
+     "#706559"
+    ],
+    "split": [
+     0.33,
+     0.7
+    ],
+    "scale_m": 1.6
+   },
+   "stamps": [
+    {
+     "shape": "leaf",
+     "per_m2": 10,
+     "size_cm": [
+      9,
+      17
+     ],
+     "colors": [
+      "#7b5e49",
+      "#856c54",
+      "#6b5746",
+      "#897c5d"
+     ],
+     "height": 0.7
+    }
+   ],
+   "from_w2": "L1 W2 ground, mark 3: the leaf stamps halved (20 -> 10 a square metre), the wave-1 judge at 09 (busy leaf speckle)",
+   "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.785, 0.829, 0.952] per channel (linear) = the hollow soil anchor 'litter' target / its mean [0.171, 0.1279, 0.088]; target = (T09_floor [0.0044, 0.015, 0.0566] + T10_floor [0.005, 0.0202, 0.0503]) / 2 / the arena moon [0.035, 0.166, 0.638] = [0.1343, 0.106, 0.0838]. Replaces C1's r1 calib (a lift read off frames).",
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json).",
+   "l9_arena": "L1 lead 9 ARENA (9 Nov): back on the day chain, at the root. Its built mean albedo was [0.398, 0.418, 0.206] (Y 0.398), 3.6x the soil class's [0.134, 0.106, 0.084] (materials.json; MB4's day earth through the road's chain response gives Y 0.07-0.13, the road class 0.13, turf 0.060, verge 0.086, rut_mud 0.085): lifted to make up for the hollow's canopy-cut moon. Every color x[0.337, 0.254, 0.408] per channel (linear) = the soil class / the built mean, so the layer's mean is the soil class's; the one arena moon (ArenaPlaces.OneMoon, rigs.json arena_night) lights it."
+  },
+  "rot": {
+   "class": "soil",
+   "from": "(c) the Shaw's black earth under the litter (ArenaGround: 'the rot is black earth'), a few old leaves",
+   "masses": {
+    "colors": [
+     "#313629",
+     "#383d30",
+     "#414433"
+    ],
+    "split": [
+     0.4,
+     0.75
+    ],
+    "scale_m": 1.2
+   },
+   "stamps": [
+    {
+     "shape": "leaf",
+     "per_m2": 5,
+     "size_cm": [
+      8,
+      14
+     ],
+     "colors": [
+      "#4b4a31",
+      "#555335"
+     ],
+     "height": 0.6
+    }
+   ],
+   "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.785, 0.829, 0.952] per channel (linear) = the hollow soil anchor 'litter' target / its mean [0.171, 0.1279, 0.088]; target = (T09_floor [0.0044, 0.015, 0.0566] + T10_floor [0.005, 0.0202, 0.0503]) / 2 / the arena moon [0.035, 0.166, 0.638] = [0.1343, 0.106, 0.0838]. Replaces C1's r1 calib (a lift read off frames).",
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json).",
+   "l9_arena": "L1 lead 9 ARENA (9 Nov): the hollow's layers keep their value steps under the litter: every color x0.2789 (linear, the litter's own step back to the soil class, 0.111/0.398), which lands them on ArenaGround.Looks' designed hollow values (rot 0.04, roots 0.075, mud 0.035, bed 0.1, face 0.07; the painted layers had lifted all seven about 3.6x)."
+  },
+  "roots": {
+   "class": "soil",
+   "from": "(c) the roots' runs; rule 9 (wood as a few long strokes)",
+   "masses": {
+    "colors": [
+     "#383a2c",
+     "#414330"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 1.2
+   },
+   "stamps": [
+    {
+     "shape": "stroke",
+     "per_m2": 1.6,
+     "size_cm": [
+      4,
+      9
+     ],
+     "length_cm": [
+      60,
+      160
+     ],
+     "colors": [
+      "#59593c",
+      "#4e4e35"
+     ],
+     "lit_edge": 0.05,
+     "height": 0.9
+    }
+   ],
+   "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.785, 0.829, 0.952] per channel (linear) = the hollow soil anchor 'litter' target / its mean [0.171, 0.1279, 0.088]; target = (T09_floor [0.0044, 0.015, 0.0566] + T10_floor [0.005, 0.0202, 0.0503]) / 2 / the arena moon [0.035, 0.166, 0.638] = [0.1343, 0.106, 0.0838]. Replaces C1's r1 calib (a lift read off frames).",
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json).",
+   "l9_arena": "L1 lead 9 ARENA (9 Nov): the hollow's layers keep their value steps under the litter: every color x0.2789 (linear, the litter's own step back to the soil class, 0.111/0.398), which lands them on ArenaGround.Looks' designed hollow values (rot 0.04, roots 0.075, mud 0.035, bed 0.1, face 0.07; the painted layers had lifted all seven about 3.6x)."
+  },
+  "den_mud": {
+   "class": "soil",
+   "from": "(c) the den's mud, trodden smooth (ArenaGround: 'at the scan's own contrast the den's floor read as asphalt')",
+   "masses": {
+    "colors": [
+     "#2d3126",
+     "#343729",
+     "#3b3d2d"
+    ],
+    "split": [
+     0.4,
+     0.8
+    ],
+    "scale_m": 1.4
+   },
+   "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.785, 0.829, 0.952] per channel (linear) = the hollow soil anchor 'litter' target / its mean [0.171, 0.1279, 0.088]; target = (T09_floor [0.0044, 0.015, 0.0566] + T10_floor [0.005, 0.0202, 0.0503]) / 2 / the arena moon [0.035, 0.166, 0.638] = [0.1343, 0.106, 0.0838]. Replaces C1's r1 calib (a lift read off frames).",
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json).",
+   "l9_arena": "L1 lead 9 ARENA (9 Nov): the hollow's layers keep their value steps under the litter: every color x0.2789 (linear, the litter's own step back to the soil class, 0.111/0.398), which lands them on ArenaGround.Looks' designed hollow values (rot 0.04, roots 0.075, mud 0.035, bed 0.1, face 0.07; the painted layers had lifted all seven about 3.6x)."
+  },
+  "stream_bed": {
+   "class": "rock",
+   "from": "MB4 water and rock: the bed's stones as rounded flat planes, moon-grey",
+   "cells": {
+    "size_cm": 22,
+    "colors": [
+     "#514e47",
+     "#5c5750",
+     "#4a483f"
+    ],
+    "joint": "#383430",
+    "joint_cm": 4.0,
+    "lit": 0.06,
+    "round": 0.55
+   },
+   "masses": {
+    "colors": [
+     "#383430",
+     "#403b33"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 1.0
+   },
+   "calib": "r1 (L1 C1, 5 Nov): +0.06 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)",
+   "c6": "L1 W2 C6 (the color chain): x[1.006, 0.992, 1.008] per channel (linear) = the rock class's chain albedo / its old mid (materials.json).",
+   "s1c": "L7 S1c (ground check values90 10 > 9): rule 9, each block inside its class's range: the cells' top at or under the rock class's albedo L top (0.72, materials.json); the joint and the masses (the ground between the stones) 0.11 L under the darkest cell, the depth the rock-class surfaces that pass hold (ballast 0.109, spoil 0.116; MB4 rock's chunky planes). Was {\"cells\": [\"#a29f83\", \"#b5b08f\", \"#959177\"], \"joint\": \"#5e5849\", \"masses\": [\"#5e5849\", \"#6b6350\"]}.",
+   "l9_arena": "L1 lead 9 ARENA (9 Nov): the hollow's layers keep their value steps under the litter: every color x0.2789 (linear, the litter's own step back to the soil class, 0.111/0.398), which lands them on ArenaGround.Looks' designed hollow values (rot 0.04, roots 0.075, mud 0.035, bed 0.1, face 0.07; the painted layers had lifted all seven about 3.6x)."
+  },
+  "needles": {
+   "class": "soil",
+   "from": "MB4 spruce (the needle litter under the tiers), as needle tufts",
+   "masses": {
+    "colors": [
+     "#5a514a",
+     "#665a51",
+     "#6f655a"
+    ],
+    "split": [
+     0.35,
+     0.72
+    ],
+    "scale_m": 1.3
+   },
+   "stamps": [
+    {
+     "shape": "tuft",
+     "per_m2": 14,
+     "size_cm": [
+      10,
+      18
+     ],
+     "blades": [
+      5,
+      8
+     ],
+     "colors": [
+      "#7f6f5a",
+      "#736551"
+     ],
+     "under": "#514744",
+     "height": 0.7
+    }
+   ],
+   "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.785, 0.829, 0.952] per channel (linear) = the hollow soil anchor 'litter' target / its mean [0.171, 0.1279, 0.088]; target = (T09_floor [0.0044, 0.015, 0.0566] + T10_floor [0.005, 0.0202, 0.0503]) / 2 / the arena moon [0.035, 0.166, 0.638] = [0.1343, 0.106, 0.0838]. Replaces C1's r1 calib (a lift read off frames).",
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json).",
+   "l9_arena": "L1 lead 9 ARENA (9 Nov): back on the day chain, at the root. Its built mean albedo was [0.401, 0.414, 0.179] (Y 0.394), 3.6x the soil class's [0.134, 0.106, 0.084] (materials.json; MB4's day earth through the road's chain response gives Y 0.07-0.13, the road class 0.13, turf 0.060, verge 0.086, rut_mud 0.085): lifted to make up for the hollow's canopy-cut moon. Every color x[0.334, 0.256, 0.469] per channel (linear) = the soil class / the built mean, so the layer's mean is the soil class's; the one arena moon (ArenaPlaces.OneMoon, rigs.json arena_night) lights it."
+  },
+  "bank": {
+   "class": "soil",
+   "from": "MB4 rock (the banks and steep faces as big planes)",
+   "cells": {
+    "size_cm": 70,
+    "colors": [
+     "#485640",
+     "#526046",
+     "#404a39"
+    ],
+    "joint": "#33382d",
+    "joint_cm": 4.0,
+    "lit": 0.05,
+    "round": 0.0
+   },
+   "masses": {
+    "colors": [
+     "#33382d",
+     "#3c4431"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 2.0
+   },
+   "w2": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): x[0.785, 0.829, 0.952] per channel (linear) = the hollow soil anchor 'litter' target / its mean [0.171, 0.1279, 0.088]; target = (T09_floor [0.0044, 0.015, 0.0566] + T10_floor [0.005, 0.0202, 0.0503]) / 2 / the arena moon [0.035, 0.166, 0.638] = [0.1343, 0.106, 0.0838]. Replaces C1's r1 calib (a lift read off frames).",
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json).",
+   "l9_arena": "L1 lead 9 ARENA (9 Nov): the hollow's layers keep their value steps under the litter: every color x0.2789 (linear, the litter's own step back to the soil class, 0.111/0.398), which lands them on ArenaGround.Looks' designed hollow values (rot 0.04, roots 0.075, mud 0.035, bed 0.1, face 0.07; the painted layers had lifted all seven about 3.6x)."
+  },
+  "verge": {
+   "class": "grass",
+   "from": "MB4 grass and road (the verge: golden-green clumps, worn); targets 04 and 05",
+   "masses": {
+    "colors": [
+     "#3d512c",
+     "#44582f",
+     "#4b5f32"
+    ],
+    "split": [
+     0.35,
+     0.7
+    ],
+    "scale_m": 1.4
+   },
+   "stamps": [
+    {
+     "shape": "brush",
+     "per_m2": 260,
+     "size_cm": [
+      6,
+      10
+     ],
+     "lit_share": 0.5,
+     "lit_dL": 0.022,
+     "dark_dL": -0.026,
+     "tips": 0.6,
+     "squash": 0.5,
+     "height": 0.5
+    }
+   ],
+   "calib": "r1 (L1 C1, 5 Nov): +0.04 Oklab L on every color, from frames r1 against targets 04/09 (the floor too dark under today's rigs; C2's rig marks not landed)",
+   "c6": "L1 W2 C6 (the color chain): x[1.024, 0.924, 0.36] per channel (linear) = the grass class's chain albedo / its old mid (materials.json).",
+   "l10": "L1 l10 grass (judge 1 fix 6 again, FAR: a rebuild): the lawn IS the ground, FROM targets 04 and 07 (a golden-green painted surface in close values with a soft brush): three masses 0.02-0.025 L apart, a 6-10 cm brush (ground_paint brushes: a dab in the mass under it moved -0.026 or +0.022 L, its light side broken into grass points), no mounds or stars; the tufts are sparse accents placed by rule (grass_own.gdshader accent) (the same preset as the meadow: this class's own mid kept)"
+  },
+  "churn": {
+   "class": "road",
+   "from": "MB4 road (the churned earth: masses and a few clods)",
+   "masses": {
+    "colors": [
+     "#67613e",
+     "#766e46",
+     "#857d4e"
+    ],
+    "split": [
+     0.35,
+     0.72
+    ],
+    "scale_m": 1.2
+   },
+   "stamps": [
+    {
+     "shape": "stone",
+     "per_m2": 3,
+     "size_cm": [
+      5,
+      10
+     ],
+     "colors": [
+      "#8c8254",
+      "#9d915c"
+     ],
+     "height": 0.7
+    }
+   ],
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the road class's chain albedo / its old mid (materials.json)."
+  },
+  "rut_mud": {
+   "class": "road",
+   "from": "MB4 road: ruts as long strokes, darker",
+   "masses": {
+    "colors": [
+     "#534e30",
+     "#635c39"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 1.2
+   },
+   "stamps": [
+    {
+     "shape": "stroke",
+     "per_m2": 0.9,
+     "size_cm": [
+      10,
+      20
+     ],
+     "length_cm": [
+      150,
+      300
+     ],
+     "along": true,
+     "colors": [
+      "#454329",
+      "#4d492e"
+     ],
+     "lit_edge": 0.04,
+     "height": 0.2
+    }
+   ],
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the road class's chain albedo / its old mid (materials.json)."
+  },
+  "wet": {
+   "class": "road",
+   "from": "MB4 road (the wet earth by the puddles)",
+   "masses": {
+    "colors": [
+     "#595941",
+     "#67684a"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 1.3
+   },
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the road class's chain albedo / its old mid (materials.json)."
+  },
+  "chips": {
+   "class": "soil",
+   "from": "(c) the camp's wood chips, as flat chips (rule 9: wood as long strokes)",
+   "masses": {
+    "colors": [
+     "#6a613e",
+     "#7c7246"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 0.9
+   },
+   "stamps": [
+    {
+     "shape": "chip",
+     "per_m2": 40,
+     "size_cm": [
+      5,
+      10
+     ],
+     "colors": [
+      "#ae9d54",
+      "#96814c",
+      "#c2b560"
+     ],
+     "height": 0.7
+    }
+   ],
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+  },
+  "gravel": {
+   "class": "road",
+   "from": "MB4 road (the metalled way: small rounded stones in masses)",
+   "cells": {
+    "size_cm": 9,
+    "colors": [
+     "#9d9f72",
+     "#aeb57f",
+     "#888860"
+    ],
+    "joint": "#636141",
+    "joint_cm": 3.0,
+    "lit": 0.05,
+    "round": 0.5
+   },
+   "masses": {
+    "colors": [
+     "#636141",
+     "#716e4b"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 0.8
+   },
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the road class's chain albedo / its old mid (materials.json)."
+  },
+  "cut_bank": {
+   "class": "soil",
+   "from": "MB4 road (the cut bank's earth as big planes)",
+   "cells": {
+    "size_cm": 70,
+    "colors": [
+     "#7f7d51",
+     "#8f885b",
+     "#716e4a"
+    ],
+    "joint": "#5a5739",
+    "joint_cm": 4.0,
+    "lit": 0.05,
+    "round": 0.0
+   },
+   "masses": {
+    "colors": [
+     "#5a5739",
+     "#676243"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 2.0
+   },
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+  },
+  "turf": {
+   "class": "grass",
+   "from": "MB4 grass (night: the barrow's grey-green turf as flat clumps)",
+   "masses": {
+    "colors": [
+     "#34412e",
+     "#3b4733",
+     "#424d38"
+    ],
+    "split": [
+     0.35,
+     0.7
+    ],
+    "scale_m": 1.4
+   },
+   "stamps": [
+    {
+     "shape": "brush",
+     "per_m2": 260,
+     "size_cm": [
+      6,
+      10
+     ],
+     "lit_share": 0.5,
+     "lit_dL": 0.022,
+     "dark_dL": -0.026,
+     "tips": 0.6,
+     "squash": 0.5,
+     "height": 0.5
+    }
+   ],
+   "c6": "L1 W2 C6 (the color chain): x[1.024, 0.924, 0.36] per channel (linear) = the grass class's chain albedo / its old mid (materials.json).",
+   "l10": "L1 l10 grass (judge 1 fix 6 again, FAR: a rebuild): the lawn IS the ground, FROM targets 04 and 07 (a golden-green painted surface in close values with a soft brush): three masses 0.02-0.025 L apart, a 6-10 cm brush (ground_paint brushes: a dab in the mass under it moved -0.026 or +0.022 L, its light side broken into grass points), no mounds or stars; the tufts are sparse accents placed by rule (grass_own.gdshader accent) (the same preset as the meadow: this class's own mid kept)"
+  },
+  "bare": {
+   "class": "soil",
+   "from": "(c) the barrow's bare earth: masses",
+   "masses": {
+    "colors": [
+     "#6d6e4f",
+     "#7c7f5c",
+     "#8c8e66"
+    ],
+    "split": [
+     0.35,
+     0.72
+    ],
+    "scale_m": 1.5
+   },
+   "stamps": [
+    {
+     "shape": "stone",
+     "per_m2": 1.5,
+     "size_cm": [
+      5,
+      10
+     ],
+     "colors": [
+      "#9daa7f"
+     ],
+     "height": 0.8
+    }
+   ],
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+  },
+  "slabs": {
+   "class": "rock",
+   "from": "MB4 rock and MB3 setts (the old way's slabs: chunky planes, warm tops, cool joints)",
+   "cells": {
+    "size_cm": 50,
+    "colors": [
+     "#878172",
+     "#968b7c",
+     "#7b7567"
+    ],
+    "joint": "#4e483f",
+    "joint_cm": 3.5,
+    "lit": 0.05,
+    "round": 0.0
+   },
+   "masses": {
+    "colors": [
+     "#4e483f",
+     "#59534a"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 1.5
+   },
+   "c6": "L1 W2 C6 (the color chain): x[1.006, 0.992, 1.008] per channel (linear) = the rock class's chain albedo / its old mid (materials.json)."
+  },
+  "grave": {
+   "class": "soil",
+   "from": "(c) the graves' turned earth, dark",
+   "masses": {
+    "colors": [
+     "#4d4f3a",
+     "#5c5d45",
+     "#67684c"
+    ],
+    "split": [
+     0.4,
+     0.75
+    ],
+    "scale_m": 1.0
+   },
+   "stamps": [
+    {
+     "shape": "stone",
+     "per_m2": 4,
+     "size_cm": [
+      5,
+      9
+     ],
+     "colors": [
+      "#6d6e4f",
+      "#7c7f5b"
+     ],
+     "height": 0.7
+    }
+   ],
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+  },
+  "ash": {
+   "class": "soil",
+   "from": "(c) ash, grey masses",
+   "masses": {
+    "colors": [
+     "#5e644e",
+     "#6d775c",
+     "#7c8569"
+    ],
+    "split": [
+     0.35,
+     0.72
+    ],
+    "scale_m": 1.0
+   },
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+  },
+  "rubble": {
+   "class": "rock",
+   "from": "MB4 rock (rubble as rounded flat stones)",
+   "cells": {
+    "size_cm": 16,
+    "colors": [
+     "#847e6f",
+     "#93897a",
+     "#747062"
+    ],
+    "joint": "#565046",
+    "joint_cm": 3.5,
+    "lit": 0.06,
+    "round": 0.5
+   },
+   "masses": {
+    "colors": [
+     "#565046",
+     "#625a51"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 1.0
+   },
+   "c6": "L1 W2 C6 (the color chain): x[1.006, 0.992, 1.008] per channel (linear) = the rock class's chain albedo / its old mid (materials.json).",
+   "s1c": "L7 S1c (ground check values90 10 > 9): rule 9, each block inside its class's range: the cells' top at or under the rock class's albedo L top (0.72, materials.json); the joint and the masses (the ground between the stones) 0.11 L under the darkest cell, the depth the rock-class surfaces that pass hold (ballast 0.109, spoil 0.116; MB4 rock's chunky planes). Was {\"cells\": [\"#878168\", \"#969073\", \"#76725c\"], \"joint\": \"#4c4638\", \"masses\": [\"#4c4638\", \"#575041\"]}."
+  },
+  "barrow_face": {
+   "class": "rock",
+   "from": "MB4 rock (steep faces as big planes)",
+   "cells": {
+    "size_cm": 70,
+    "colors": [
+     "#5d574e",
+     "#6c6557",
+     "#534c42"
+    ],
+    "joint": "#423e35",
+    "joint_cm": 4.0,
+    "lit": 0.05,
+    "round": 0.0
+   },
+   "masses": {
+    "colors": [
+     "#423e35",
+     "#4c463d"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 2.0
+   },
+   "c6": "L1 W2 C6 (the color chain): x[1.006, 0.992, 1.008] per channel (linear) = the rock class's chain albedo / its old mid (materials.json)."
+  },
+  "clay": {
+   "class": "soil",
+   "from": "MB4 road (the working's ochre clay, worn earths: rule 4)",
+   "masses": {
+    "colors": [
+     "#b5994e",
+     "#c8aa56",
+     "#dbbd64"
+    ],
+    "split": [
+     0.33,
+     0.7
+    ],
+    "scale_m": 1.8
+   },
+   "stamps": [
+    {
+     "shape": "stone",
+     "per_m2": 1.2,
+     "size_cm": [
+      5,
+      11
+     ],
+     "colors": [
+      "#c8c785"
+     ],
+     "height": 0.8
+    }
+   ],
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+  },
+  "spoil": {
+   "class": "rock",
+   "from": "MB4 rock (the spoil's coal lumps as chunky planes, a shade lighter than coal)",
+   "cells": {
+    "size_cm": 14,
+    "colors": [
+     "#6e685d",
+     "#7c766a",
+     "#635b53"
+    ],
+    "joint": "#423d36",
+    "joint_cm": 3.0,
+    "lit": 0.06,
+    "round": 0.35
+   },
+   "masses": {
+    "colors": [
+     "#423d36",
+     "#4c463f"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 1.0
+   },
+   "c6": "L1 W2 C6 (the color chain): x[1.006, 0.992, 1.008] per channel (linear) = the rock class's chain albedo / its old mid (materials.json)."
+  },
+  "ballast": {
+   "class": "rock",
+   "from": "MB4 rock (broken stone, grey-brown over the clay)",
+   "cells": {
+    "size_cm": 10,
+    "colors": [
+     "#847962",
+     "#93846d",
+     "#776b57"
+    ],
+    "joint": "#584c3d",
+    "joint_cm": 3.0,
+    "lit": 0.05,
+    "round": 0.4
+   },
+   "masses": {
+    "colors": [
+     "#584c3d",
+     "#635646"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 0.8
+   },
+   "c6": "L1 W2 C6 (the color chain): x[1.006, 0.992, 1.008] per channel (linear) = the rock class's chain albedo / its old mid (materials.json)."
+  },
+  "slurry": {
+   "class": "soil",
+   "from": "(c) the slurry's mud, a little darker than the clay (ArenaGround's note)",
+   "masses": {
+    "colors": [
+     "#8c824b",
+     "#9d9154",
+     "#a99f5c"
+    ],
+    "split": [
+     0.4,
+     0.8
+    ],
+    "scale_m": 1.4
+   },
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+  },
+  "rust": {
+   "class": "soil",
+   "from": "(c) rust-stained clay, as light as the clay: a shift of hue, never a darker blot",
+   "masses": {
+    "colors": [
+     "#c4924c",
+     "#d7a751",
+     "#e7b556"
+    ],
+    "split": [
+     0.35,
+     0.72
+    ],
+    "scale_m": 1.4
+   },
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+  },
+  "burnt": {
+   "class": "soil",
+   "from": "(c) burnt ground, ash and char",
+   "masses": {
+    "colors": [
+     "#494c36",
+     "#575841",
+     "#636448"
+    ],
+    "split": [
+     0.4,
+     0.75
+    ],
+    "scale_m": 1.0
+   },
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+  },
+  "clay_face": {
+   "class": "soil",
+   "from": "MB4 rock and road (the cut walls' ochre as big planes)",
+   "cells": {
+    "size_cm": 70,
+    "colors": [
+     "#ae9d54",
+     "#c2ae5e",
+     "#9d894c"
+    ],
+    "joint": "#766a44",
+    "joint_cm": 4.0,
+    "lit": 0.05,
+    "round": 0.0
+   },
+   "masses": {
+    "colors": [
+     "#766a44",
+     "#82784b"
+    ],
+    "split": [
+     0.5
+    ],
+    "scale_m": 2.0
+   },
+   "c6": "L1 W2 C6 (the color chain): x[1.003, 1.009, 0.991] per channel (linear) = the soil class's chain albedo / its old mid (materials.json)."
+  },
+  "setts": {
+   "class": "setts",
+   "from": "(b) MB3 SETTS (day): coursed rounded-rectangle setts, chunky planes with warm tops and cool joints, a few long courses; rule 9 (one color varied +-spread, lit bevel to the light, cool darker bevel and joints), rule 10 (big-medium-small: stone, bevel, joint; nothing under 3 cm). (a) the play camera of 07/13: a sett 28 x 18 cm is about 14 x 9 px (setts' own 4 m tile, 1024 px).",
+   "courses": {
+    "row_cm": 27,
+    "row_jit": 0.12,
+    "len_cm": 45,
+    "len_jit": 0.28,
+    "joint_cm": 3.0,
+    "corner_cm": 5.0,
+    "bevel_cm": 5.0,
+    "wobble_cm": 0.8,
+    "tilt": 0.3,
+    "lit": 0.035,
+    "spread": 0.03,
+    "colors": [
+     "#6c6977",
+     "#726972",
+     "#68677b",
+     "#73707f"
+    ],
+    "joint": "#535263"
+   },
+   "l9": "L1 l9 kit (judge 1 fix 7: 07's lit setts busy, q80-q20 0.14 against T07's 0.085): FROM T07 at the play camera (her ~80 px tall in both), its setts ~34 x 15 px against ours ~22 x 11, so courses 20 -> 27 cm and stones 30 -> 45 cm (x1.35, x1.5); MB3's joints low contrast, so the joint x[0.58,0.6,0.68] of #6c6977 (was x0.4) and the lit/cool bevel 0.06 -> 0.035 over a 5 cm bevel and corner; the stones' own spread 0.05 -> 0.03 and tilt 0.5 -> 0.3 ('spread', ground_paint.py courses).",
+   "w2": "L1 W2 town (C4): base #5a4962 = MB3_setts_day all_lin [0.3381, 0.1515, 0.1288] (look_l1/c/w2/town/board_town.json) / the day rig's terrain response (the road class, the same terrain.gdshader: resp/final day_play lit [3.3006, 2.274, 1.0575]) = [0.1024, 0.0666, 0.1218], as the ground helper's mark 6; siblings by hand x[1.12,1.0,0.9] warm, x[0.92,0.97,1.08] cool, x1.15 light; joint x[0.38,0.4,0.5] (MB3's joints: about 0.4 of the stone, bluer). Known: the rig's shade response [0.296, 0.308, 0.768] draws this base #312756 in shade against the board's #75545d (the day fill, the light helper's).",
+   "c6": "L1 W2 C6 (the color chain): x[1.006, 0.997, 0.994] per channel (linear) = the setts class's chain albedo / its old mid (materials.json)."
+  }
+ },
+ "grass_atlas": {
+  "kind": "meadow",
+  "out": "godot/art/world/flora/grass_meadow_atlas.png",
+  "from": "MB4 grass ('grass as big flat clumps': broad blades massed into a mound, a lit top and a cool underside, three flat values); rule 4 (olive and worn, never lime); replaces env_trees.py's thin-blade grass atlas (L1 C1)",
+  "colors": {
+   "under": "#314b33",
+   "body": "#405936",
+   "lit": "#586d39"
+  },
+  "flowers": [
+   "#a39c7e",
+   "#857c95"
+  ],
+  "flower_cells": 2,
+  "c6": "L7 S1d (the color chain): the clump's body FROM the grass class's mid #3c5133, the lit top and the underside at their ratios to it.",
+  "form": "tuft2",
+  "aspect": 0.75,
+  "l9": "L1 l9 grass: low wide tufts (cells 256 x 128, twice as wide as tall) in three flat values by depth, FROM target 07's tufts: a dark mass behind, the body, a lit crown in front; replaces the 7-11 tall blades",
+  "l10": "L1 l10 grass: the tuft as an accent (atlas_tuft2, cells 256 x 192): 11-15 narrow upright blades in three close values (a cool base, the body at the lawn's mid L 0.40, lit upper halves L 0.47), no dark root mass and no wide fan (lead 9's 'tuft' read as agave rosettes at the play camera)"
+ }
+}

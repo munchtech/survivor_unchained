@@ -1,0 +1,324 @@
+{
+ "about": "The four-step night (L1 lead 11, rule R1), measured from the owner's picked G1 night targets by tools/look/night_values.py plan; check a frame with `night_values.py check IMG --rig NAME --hud`. Bands are [lo, hi] in Oklab (hues in degrees, a hue band may wrap through 360; null = no bound).",
+ "warm_cold": "warm = chroma >= 0.02 and hue in 300..360 or 0..150; cold = the rest (neutrals included)",
+ "rigs": {
+  "arena_night": {
+   "from": "Measured 09_shaw_horde, 10_pack_mother, 12_hud (the G1 targets) on 9 Nov 2026; each band is the targets' spread, widened to the least half-width in night_values.py BANDS (L +/-0.03; shares and separations are minimums). 12_hud left out of s4/lit/step/sep*: painted with the HUD (masked); a gold telegraph lane runs through its pool (no witness for the fire) and its ground has no crown shade (no witness for the two-step split)",
+   "sources": {
+    "09_shaw_horde": {
+     "file": "a2/r1/09_v2.png",
+     "hud_masked": false,
+     "measured": {
+      "s1_L": 0.1873,
+      "s1_C": 0.0528,
+      "s1_h": 262.8054,
+      "s2_L": 0.2758,
+      "s2_C": 0.0773,
+      "s2_h": 262.1512,
+      "lit": 0.468,
+      "step": 0.0885,
+      "sep": 2.2586,
+      "s3_L": 0.4563,
+      "s3_h": 245.2264,
+      "s3_share": 0.0166,
+      "s4_share": 0.1331,
+      "s4_core_L": 0.725,
+      "s4_core_h": 57.8561,
+      "s4_mid_L": 0.4319,
+      "s4_mid_h": 31.9174,
+      "s4_edge_L": 0.3151,
+      "s4_edge_h": 329.0978,
+      "floor": 0.0897
+     }
+    },
+    "10_pack_mother": {
+     "file": "a2/r4/10_r4.png",
+     "hud_masked": false,
+     "measured": {
+      "s1_L": 0.2146,
+      "s1_C": 0.0481,
+      "s1_h": 253.2622,
+      "s2_L": 0.3237,
+      "s2_C": 0.0654,
+      "s2_h": 246.9711,
+      "lit": 0.3146,
+      "step": 0.1091,
+      "sep": 3.9151,
+      "s3_L": 0.6288,
+      "s3_h": 235.9568,
+      "s3_share": 0.0422,
+      "s4_share": 0.1002,
+      "s4_core_L": 0.7084,
+      "s4_core_h": 52.9849,
+      "s4_mid_L": 0.4244,
+      "s4_mid_h": 31.877,
+      "s4_edge_L": 0.2991,
+      "s4_edge_h": 348.3041,
+      "floor": 0.1575
+     }
+    },
+    "12_hud": {
+     "file": "a2/r4/12_r4.png",
+     "hud_masked": true,
+     "measured": {
+      "s1_L": 0.2236,
+      "s1_C": 0.0522,
+      "s1_h": 252.8009,
+      "s2_L": 0.2853,
+      "s2_C": 0.0548,
+      "s2_h": 253.7268,
+      "lit": 0.3179,
+      "step": 0.0618,
+      "sep": 2.364,
+      "s3_L": 0.4552,
+      "s3_h": 248.9375,
+      "s3_share": 0.0258,
+      "s4_share": 0.1282,
+      "s4_core_L": 0.7188,
+      "s4_core_h": 54.4552,
+      "s4_mid_L": 0.4358,
+      "s4_mid_h": 46.6582,
+      "s4_edge_L": 0.3504,
+      "s4_edge_h": 43.5797,
+      "floor": 0.1764
+     }
+    }
+   },
+   "bands": {
+    "s1_L": [
+     0.1754,
+     0.2354
+    ],
+    "s1_C": [
+     0.0354,
+     0.0654
+    ],
+    "s1_h": [
+     248.3,
+     264.3
+    ],
+    "s2_L": [
+     0.2697,
+     0.3297
+    ],
+    "s2_C": [
+     0.051,
+     0.081
+    ],
+    "s2_h": [
+     246.3,
+     262.3
+    ],
+    "lit": [
+     0.2913,
+     0.4913
+    ],
+    "step": [
+     0.0752,
+     null
+    ],
+    "sep": [
+     1.9198,
+     null
+    ],
+    "s3_L": [
+     0.4552,
+     0.6288
+    ],
+    "s3_h": [
+     233.4,
+     253.4
+    ],
+    "s3_share": [
+     0.0083,
+     null
+    ],
+    "s4_share": [
+     0.09,
+     0.17
+    ],
+    "s4_core_L": [
+     0.6867,
+     0.7467
+    ],
+    "s4_core_h": [
+     47.4,
+     63.4
+    ],
+    "s4_mid_L": [
+     0.3982,
+     0.4582
+    ],
+    "s4_mid_h": [
+     23.9,
+     39.9
+    ],
+    "s4_edge_L": [
+     0.2771,
+     0.3371
+    ],
+    "s4_edge_h": [
+     328.7,
+     348.7
+    ],
+    "floor": [
+     0.0897,
+     0.1764
+    ]
+   },
+   "pool": {
+    "from": "Her pool's end in 09_shaw_horde (her light's foot at 775,520 px, ground aspect 0.849): the warm share of each 0.04-wide ring (r in frame heights) and the frame's magenta share (hue 300..350, chroma over 0.05). A frame's rings must come within 0.1 of these (check --center X,Y) and its magenta share may not pass max (the target's plus 0.01).",
+    "ring_warm": {
+     "0.26": 0.592,
+     "0.30": 0.453,
+     "0.34": 0.29,
+     "0.38": 0.066
+    },
+    "ring_tol": 0.1,
+    "magenta": {
+     "target": 0.0271,
+     "max": 0.0371
+    }
+   }
+  },
+  "night_play": {
+   "from": "Measured 05_ford_night, 06_warden (the G1 targets) on 9 Nov 2026; each band is the targets' spread, widened to the least half-width in night_values.py BANDS (L +/-0.03; shares and separations are minimums). ",
+   "sources": {
+    "05_ford_night": {
+     "file": "a2/r4/05_r4.png",
+     "hud_masked": false,
+     "measured": {
+      "s1_L": 0.1613,
+      "s1_C": 0.0376,
+      "s1_h": 247.8768,
+      "s2_L": 0.226,
+      "s2_C": 0.044,
+      "s2_h": 246.9536,
+      "lit": 0.3698,
+      "step": 0.0647,
+      "sep": 2.548,
+      "s3_L": 0.3793,
+      "s3_h": 230.1167,
+      "s3_share": 0.0083,
+      "s4_share": 0.1686,
+      "s4_core_L": 0.6952,
+      "s4_core_h": 48.6854,
+      "s4_mid_L": 0.3299,
+      "s4_mid_h": 19.7803,
+      "s4_edge_L": 0.2556,
+      "s4_edge_h": 324.8865,
+      "floor": 0.1176
+     }
+    },
+    "06_warden": {
+     "file": "a2/r4/06_r4.png",
+     "hud_masked": false,
+     "measured": {
+      "s1_L": 0.1813,
+      "s1_C": 0.0382,
+      "s1_h": 255.9392,
+      "s2_L": 0.2358,
+      "s2_C": 0.0442,
+      "s2_h": 256.1044,
+      "lit": 0.3836,
+      "step": 0.0545,
+      "sep": 2.5418,
+      "s3_L": 0.4235,
+      "s3_h": 261.6186,
+      "s3_share": 0.0129,
+      "s4_share": 0.1376,
+      "s4_core_L": 0.7232,
+      "s4_core_h": 54.7171,
+      "s4_mid_L": 0.4001,
+      "s4_mid_h": 36.11,
+      "s4_edge_L": 0.2845,
+      "s4_edge_h": 336.5915,
+      "floor": 0.1522
+     }
+    }
+   },
+   "bands": {
+    "s1_L": [
+     0.1413,
+     0.2013
+    ],
+    "s1_C": [
+     0.0229,
+     0.0529
+    ],
+    "s1_h": [
+     243.9,
+     259.9
+    ],
+    "s2_L": [
+     0.2009,
+     0.2609
+    ],
+    "s2_C": [
+     0.0291,
+     0.0591
+    ],
+    "s2_h": [
+     243.5,
+     259.5
+    ],
+    "lit": [
+     0.2767,
+     0.4767
+    ],
+    "step": [
+     0.0463,
+     null
+    ],
+    "sep": [
+     2.1605,
+     null
+    ],
+    "s3_L": [
+     0.3714,
+     0.4314
+    ],
+    "s3_h": [
+     230.1,
+     261.6
+    ],
+    "s3_share": [
+     0.0042,
+     null
+    ],
+    "s4_share": [
+     0.0454,
+     null
+    ],
+    "s4_core_L": [
+     0.6792,
+     0.7392
+    ],
+    "s4_core_h": [
+     43.7,
+     59.7
+    ],
+    "s4_mid_L": [
+     0.3299,
+     0.4001
+    ],
+    "s4_mid_h": [
+     19.8,
+     36.1
+    ],
+    "s4_edge_L": [
+     0.24,
+     0.3
+    ],
+    "s4_edge_h": [
+     320.7,
+     340.7
+    ],
+    "floor": [
+     0.1049,
+     0.1649
+    ]
+   }
+  }
+ }
+}

@@ -311,14 +311,11 @@ public class XpLightTests
         Assert.True(XpLight.TipShown(hover: true, held: false, captured: false));
         Assert.False(XpLight.TipShown(hover: true, held: true, captured: true));
         Assert.False(XpLight.TipShown(false, false, false));
-        // the key is bound to the hold alone, and the pad's LB only means the book's pages in a menu
-        string src = File.ReadAllText(Path.Combine(Root(), "src", "Game", "Controls.cs"));
-        int start = src.IndexOf("Defaults = new()", StringComparison.Ordinal), end = src.IndexOf("};", start, StringComparison.Ordinal);
-        string defaults = src[start..end];
-        Assert.Contains("[Act.Experience] = [XpLight.HoldKey]", defaults);
-        Assert.DoesNotContain($"\"{XpLight.HoldKey}\"", defaults);
-        Assert.Matches(new Regex(@"\[Act\.Experience\] = \[JoyButton\.LeftShoulder\]"), src);
-        Assert.Equal("LB", XpLight.HoldPad);
+        // the key is bound to the hold alone; on the pad (M4) the hold is d-pad down (LB is the dash)
+        Assert.Equal(new[] { XpLight.HoldKey }, KeyMap.Defaults[Act.Experience]);
+        Assert.DoesNotContain(KeyMap.Defaults, kv => kv.Key != Act.Experience && kv.Value.Contains(XpLight.HoldKey));
+        Assert.Equal(new[] { XpLight.HoldPad }, KeyMap.Pad[Act.Experience]);
+        Assert.Equal("D-pad down", XpLight.HoldPad);
     }
 
     static string Root()

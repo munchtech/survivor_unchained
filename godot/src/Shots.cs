@@ -57,6 +57,13 @@ public partial class Shots : Node
     int hudNext, hudPhase;
     double hudAt;
     double time;
+    bool opened;
+    static Play.Game? FindGame(Node n)
+    {
+        if (n is Play.Game g) return g;
+        foreach (var c in n.GetChildren()) if (FindGame(c) is { } f) return f;
+        return null;
+    }
     static Shots? live;
     /// <summary>The pictures' own clock (seconds since they began), for what changes between pictures.</summary>
     public static double Clock => live?.time ?? 0;
@@ -143,6 +150,14 @@ public partial class Shots : Node
     public override void _Process(double delta)
     {
         time += delta;
+        // --open SCREEN@T (M4 lead 13, pictures): the game's screen SCREEN ('map', 'journal'...) opened T s into the shot, as its key would
+        if (!opened && Args.Get("open") is string op && op.Split('@') is { Length: 2 } oa && time >= double.Parse(oa[1], System.Globalization.CultureInfo.InvariantCulture))
+        {
+            opened = true;
+            var g = FindGame(GetTree().Root);
+            GD.Print(g != null ? $"open: {oa[0]} at {time:0.00}s (mode {g.Mode})" : "open: no Game node");
+            g?.Open(oa[0]);
+        }
         if (Ui.HudPin.Seq.Length > 0 && hudNext < Ui.HudPin.Seq.Length)
         {
             if (hudPhase == 0 && time >= seconds + hudNext * Args.Num("hud-seq-every", 1.5f)) { Ui.HudPin.Use(hudNext); hudAt = time; hudPhase = 1; }
@@ -154,7 +169,7 @@ public partial class Shots : Node
                 GetViewport().GetTexture().GetImage().SavePng(hf);
                 GD.Print($"saved {hf} at {time:0.00}s (hud state {hudNext}: {Ui.HudPin.Seq[hudNext]}){Ui.HerLight.Note()}");
                 hudNext++; hudPhase = 0;
-                if (hudNext >= Ui.HudPin.Seq.Length && until <= 0 && taken >= count) { GetTree().Quit(); return; }
+                if (hudNext >= Ui.HudPin.Seq.Length && until <= 0 && taken >= count) { QuitPath.Request(GetTree()); return; }
             }
         }
         // --geom-normals (dent d3, a developer's test): 1.5 s before the picture her skin's stored normals are swapped
@@ -189,6 +204,7 @@ public partial class Shots : Node
             DirAccess.MakeDirRecursiveAbsolute(d);
             var f = $"{d}/{name}_{tag}_{k}.png";
             GetViewport().GetTexture().GetImage().SavePng(f);
+            View.CelLib.AuditPrint(System.IO.Path.GetFileNameWithoutExtension(f));   // (--cel-audit, L1 B2)
             GD.Print($"saved {f} at {time:0.00}s frame {Engine.GetFramesDrawn()}{HerAt()}{(Ui.HerLight.Live is { } hl ? $" life {hl.LifeNow:0.000}" : "")}");
             // (the camera, so a mark's ground can be found in the frame and measured)
             CamLines();
@@ -203,10 +219,11 @@ public partial class Shots : Node
             DirAccess.MakeDirRecursiveAbsolute(d);
             var f = $"{d}/{name}_{tag}_{k}.png";
             GetViewport().GetTexture().GetImage().SavePng(f);
+            View.CelLib.AuditPrint(System.IO.Path.GetFileNameWithoutExtension(f));   // (--cel-audit, L1 B2)
             GD.Print($"saved {f} at {time:0.00}s frame {Engine.GetFramesDrawn()}{HerAt()}");
             CamLines();
         }
-        if (until > 0 && time >= until) { GetTree().Quit(); return; }
+        if (until > 0 && time >= until) { QuitPath.Request(GetTree()); return; }
         if (taken >= count) return;
         var due = seconds + taken * every;
         if (time < due) return;
@@ -214,6 +231,7 @@ public partial class Shots : Node
         DirAccess.MakeDirRecursiveAbsolute(dir);
         var file = every > 0 ? $"{dir}/{name}_{taken:00}.png" : $"{dir}/{name}.png";
         GetViewport().GetTexture().GetImage().SavePng(file);
+        View.CelLib.AuditPrint(System.IO.Path.GetFileNameWithoutExtension(file));   // (--cel-audit, L1 B2)
         GD.Print($"saved {file} at {time:0.00}s{HerAt()}{Ui.HerLight.Note()}");
         // (E9b4: the camera, so a frame's pixel can be traced back to the world)
         CamLines();
@@ -222,12 +240,15 @@ public partial class Shots : Node
         // --navcheck: the open screen's focus routes walked as the picture is taken.
         if (Args.Has("navcheck")) Audit(GetTree().Root);
         taken++;
-        if (taken >= count && until <= 0) GetTree().Quit();
+        if (taken >= count && until <= 0) QuitPath.Request(GetTree());
     }
 
     /// <summary>Where her chest is on the screen this frame (the game sets it while pictures are taken), for crops of her.</summary>
     public static Vector2? Her;
-    static string HerAt() => Her is { } h ? $" her {h.X:0} {h.Y:0}" : "";
+    static string HerAt() => (Her is { } h ? $" her {h.X:0} {h.Y:0}" : "") + (StageLog ? Stage : "");
+    /// <summary>(L1 lead 11, R4) --stage-log: her pool's center on screen, the ground's scale there and the foes in frame, on each picture's line (Game sets Stage).</summary>
+    public static readonly bool StageLog = Args.Has("stage-log");
+    public static string Stage = "";
 
     /// <summary>--dump-her PATH (dent d3, a developer's measure): her skin surfaces skinned on the CPU at the picture's
     /// frame (shipped weights and pose; blend shapes listed, not applied), per surface PATH_sK.bin: int nv, int ni, then per

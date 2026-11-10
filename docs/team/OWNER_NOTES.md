@@ -1,5 +1,9 @@
 # The owner's notes waiting for the leads
 
+## 10 November 2026, ~05:40 PST: the stance pick
+
+- **Her fighting stance: "Prowl".** Picked from A Prowl | B Dare (`survivorsunchained_inputs\scratch_motion_a1\L14\gate2_half.jpg`). Prowl as shown is her one drawn idle; every cut and skill starts and ends on it. Dare is dropped. Goes to A1 (cuts, carries), P7 (job 2), M3.
+
 ## 9 Nov (evening, coordinator #3): HER RUN READS RIGID (A1); L1 RETHINK; the owner's bar restated
 - **Locomotion (A1, open):** "I'm still worried about how rigid they are. running still looks slightly awkward - the arm always held 90 degrees instead of casually holding the sword outward downward etc". For: the run is the most-seen clip and the sword arm is locked at a right angle all cycle. Bar: effortlessly badass, a relaxed low carry, the arm alive through the stride. The design is A1's; "outward downward" is an example. Check walk/jog/idle carries for the same locked arm. Coordinator's call: locomotion is the first item after the MR of the four skill clips.
 - **BODY FIXES MUST IMPROVE MARIONETTE TOO (9 Nov ~23:00; P1 / P3, open).** The owner: "we are also improving marionette as we improve our body right? so that when we make creatures and stuff they will rig and animate easier?" What it is for: the body rebuild was meant to buy a pipeline, not one good body. True state when asked: only partly (the motion core and the NPC pipe live in Marionette; the body build and its checks are her-only scripts in the game's tools/body). The coordinator's call: P1's deformation audit, pose-target weight re-solve and helper / corrective law are written once as GENERAL tools (any mesh, any skeleton, a pose set, a region mask), callable as Marionette stages; her-only choices live in a config; the wolf and the dressed NPCs are their first other customers (P3 builds no second solver).

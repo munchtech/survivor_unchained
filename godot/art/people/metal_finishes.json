@@ -1,7 +1,8 @@
 {
  "_": "Her metal's finish by material key (outfit_materials.json kind metal; shaders/heroine_outfit_metal.gdshader's finish). Any key not here is bare: as built. blued: blued steel, deep blue-black, chipped back to bright steel at its worn edges (the look bible's armor-metal page, item 4). enamel: blue enamel chipped at its worn edges to bright steel (item 4's other finish; body 16: fully metallic blued steel read pale glassy silver edge-on to a bright sky, paint holds its navy at every angle; a dye recolours the paint).",
- "steel": "enamel",
- "darksteel": "enamel",
+ "_l23": "L1 lead 23 (TUNE, the owner 10 Nov): her steel and darksteel to BLUED gunmetal (bare read warm grey under her key, C 0.013 h 48) (dark cool plate, gold trim brighter and warmer, one hot edge glint); the blue enamel was finish 2. Any value but blued / enamel is bare.",
+ "steel": "blued",
+ "darksteel": "blued",
  "_dye_paint": "Keys bare as built when undyed; a colour dye paints them like the enamel (finish 2), a metal dye gives dyed metal (finish 3): fully metallic iron in a dye read as glassy coloured chrome edge-on.",
  "dye_paint": ["iron", "blacksteel"],
  "pieces": {

@@ -9,13 +9,13 @@ namespace SurvivorUnchained.Ui;
 /// <summary>
 /// The arts the survivor knows (Rpg/ArtBook.cs), on the day's book's panel at the right with her in
 /// the world beside it, as Self and the Pack are (approved: the book is one panel; no boxes). Its two
-/// pages turn under the book's tabs: the art in hand, and the skills by day.
+/// pages turn under the book's tabs: the art in hand, and the skills.
 ///
 /// The art in hand: the arts known in a row of marks, the rest of the calling's faint with how they
 /// are learned (Hades II's locked silhouettes); the art chosen, named large, its rank as a line of
 /// nodes (the road to mastery), its facets as ruled lines of type, each set, to choose, or waiting
 /// on a rank. An art is taken in hand, and a set facet changed, only where it is safe (out of a
-/// fight); a facet newly opened by rank can be chosen anywhere. Skills by day: what is learned and
+/// fight); a facet newly opened by rank can be chosen anywhere. Skills: what is learned and
 /// carried, each a line, and the one chosen read out beside the list.
 /// </summary>
 public partial class ArtsScreen : Overlay
@@ -42,7 +42,7 @@ public partial class ArtsScreen : Overlay
     public static bool BoardOn => SurvivorUnchained.Args.Has("board") || System.Environment.GetEnvironmentVariable("SU_BOARD") == "1";
     /// <summary>v2's Lamps are their own tab on the book's chain (LampsScreen); --board keeps the functional pages here.</summary>
     static int Pages => BoardOn ? 4 : 2;
-    static readonly string[] PageNames = ["The art in hand", "Skills by day", "Lamps", "Wicks"];
+    static readonly string[] PageNames = ["The art in hand", "Skills", "Lamps", "Wicks"];
 
     public ArtsScreen(Game g) : base(g) { }
 
@@ -257,7 +257,7 @@ public partial class ArtsScreen : Overlay
             {
                 bool done = false;
                 if (Safe) G.Gear((j, _) => done = LampBook.Switch(j.Ch, k, j.World, G.Zone?.Id));
-                status = done || k == st.Active ? "" : "Change layouts by day, in town.";
+                status = done || k == st.Active ? "" : "Change layouts at a lamp-post.";
                 Refresh();
             }, i == st.Active ? Style.EmberHi : Kit.Ink2));
         }
@@ -419,7 +419,7 @@ public partial class ArtsScreen : Overlay
     static System.Func<string, string> PathName(string skill) => id =>
         Wicks.Lamp(skill, id) is { } ln ? (ln.N == Wicks.PerStrand ? $"{ln.Strand.TurnDef.Name} (Turn)" : $"{ln.Strand.TurnDef.Name} {Ranks[ln.N]}") : id;
 
-    /* ------------------------------------------------------ skills by day -- */
+    /* --------------------------------------------------------------- skills -- */
 
     static readonly string[] Ranks = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
     string? selSkill;
@@ -433,7 +433,7 @@ public partial class ArtsScreen : Overlay
         var list = Style.V(4);
         list.CustomMinimumSize = new Vector2(330, 0);
         list.AddChild(Kit.Head("Learned", $"carrying {SkillBook.Carried(ch).Count()} of {SkillBook.Slots(ch)}"));
-        if (ch.Skills.Count == 0) list.AddChild(Style.Label("None yet. What burns in the arenas can be learned by day.", Style.TextItalic, 15, Kit.Dim, true));
+        if (ch.Skills.Count == 0) list.AddChild(Style.Label("None yet. Your calling teaches the first as you grow.", Style.TextItalic, 15, Kit.Dim, true));
         foreach (var id in ch.Skills) list.AddChild(SkillEntry(ch, id, true));
         if (seen.Count > 0)
         {
@@ -456,12 +456,12 @@ public partial class ArtsScreen : Overlay
     static void HowSkillsCome(VBoxContainer d)
     {
         d.AddChild(Style.Label("HOW A SKILL COMES TO YOU", Style.Display, 24, Kit.Ink));
-        d.AddChild(Style.Label("The night's arenas burn with skills the ember lends you. By day you can keep them.", Style.Text, 17, Kit.Ink2, true));
+        d.AddChild(Style.Label("Your calling teaches you skills as you grow, and tomes teach the rest. What you put on a key is yours in every fight.", Style.Text, 17, Kit.Ink2, true));
         foreach (var (glyph, title, text) in new[]
         {
-            ("flame", "Seen", "An arena shows it to you: the ember offers it in a draft, and you use it."),
+            ("flame", "Seen", "An arena's ember may show you one you have not learned: use it there, and look for its tome."),
             ("book", "Learned", "A tome teaches it: a story fight won, Vonnra's Curiosities; your calling may teach one as you grow."),
-            ("embers", "Carried", "Carry it by day and it is banked: the ember offers it in the night's first drafts, at a higher rank."),
+            ("embers", "Carried", "Put it on a key and it is yours in every fight."),
         })
         {
             var icon = Glyphs.Icon(glyph, 26, Style.Gold);
@@ -483,7 +483,7 @@ public partial class ArtsScreen : Overlay
         b.Pressed += () => { selSkill = id; Sound.Sfx.Click(); Refresh(); };
         Nav.Id(b, $"skill:{id}");
         var col = ItemViews.SchoolColors[w.School];
-        var r = Style.H(12, Glyphs.Icon(w.Art, 26, known ? col : col with { A = 0.45f }));
+        var r = Style.H(12, Glyphs.Icon(Glyphs.ForSkill(w.Id, w.Art), 26, known ? col : col with { A = 0.45f }));
         string attr = SkillBook.Attribute(id);
         var words = Style.V(0, Style.Label(w.Name + (carried ? (meets ? "  ·  carried" : "  ·  idle") : ""), Style.DisplayLight, 16, known ? (carried ? Kit.Ink : Kit.Ink2) : Kit.Dim),
             Style.Label($"asks {SkillBook.Need} {attr}  ·  you have {SkillBook.Have(ch, attr)}", Style.Ui, 13, meets ? Style.Good : Style.Bad));
@@ -500,17 +500,17 @@ public partial class ArtsScreen : Overlay
         d.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         bool known = SkillBook.Knows(ch, w.Id), carried = ch.Slotted.Contains(w.Id), meets = SkillBook.Meets(ch, w.Id);
         var col = ItemViews.SchoolColors[w.School];
-        var m = new Medallion(88, "", w.Art) { Ink = col, Ring = carried ? Style.Ember : Style.Gold, Lit = carried };
+        var m = new Medallion(88, "", Glyphs.ForSkill(w.Id, w.Art)) { Ink = col, Ring = carried ? Style.Ember : Style.Gold, Lit = carried };
         m.SizeFlagsVertical = SizeFlags.ShrinkBegin;
         d.AddChild(Style.H(Style.Gap4, m, Style.V(2, Style.Label(w.Name.ToUpperInvariant(), Style.Display, 28, Kit.Ink),
             Style.Label($"{w.School.ToString().ToLowerInvariant()}  ·  {string.Join(", ", w.Tags.Select(t => t.ToString().ToLowerInvariant()))}", Style.UiBold, 14, col))));
         d.AddChild(Style.Label(w.Description, Style.Text, 17, Kit.Ink2, true));
-        // What her calling's Hand does to it, in her hands by day and by night (plain text; the look is the UI lead's).
+        // What her calling's Hand does to it, in her hands in every fight (plain text; the look is the UI lead's).
         if (Content.Hands.Line(ch.Archetype, w) is { } hand) d.AddChild(Style.Label(hand, Style.Text, 16, Kit.Ink2, true));
         string attr = SkillBook.Attribute(w.Id);
         d.AddChild(Style.Label($"It asks {SkillBook.Need} {attr} of whoever uses it. You have {SkillBook.Have(ch, attr)}.{(meets ? "" : " Until you measure up (points, a respec), it lies idle.")}",
             Style.UiBold, 15, meets ? Style.Good : Style.Bad, true));
-        d.AddChild(Style.Label($"By day it is rank {Ranks[SkillBook.Rank(ch)]}, and grows with you (every third level). In the night's arenas the ember starts from nothing, but what you carry by day is banked: it comes in at rank {Ranks[SkillBook.NightRank(ch)]}" +
+        d.AddChild(Style.Label($"It is rank {Ranks[SkillBook.Rank(ch)]}, and grows with you (every third level). In the arenas the ember starts from nothing, but what you carry is banked: it comes in at rank {Ranks[SkillBook.NightRank(ch)]}" +
             (ch.Level < 10 ? " (rank III from the tenth level)." : "."), Style.Ui, 14, Kit.Dim, true));
         if (!known)
             d.AddChild(Style.Label("You have seen it burn. Learn it from a tome (a story fight won, Vonnra's Curiosities), or your calling may teach it as you grow.", Style.TextItalic, 15, Kit.Dim, true));

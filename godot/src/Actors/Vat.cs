@@ -1219,7 +1219,10 @@ public partial class VatCrowd : MultiMeshInstance3D
     {
         Asset = asset;
         Name = $"crowd:{asset.Key}";
-        Layers = 2 | SurvivorUnchained.View.PlayerView.CrowdLayer;
+        // (L1 l9 B2, rule 7: the crowd's own layer only, not people's (2): her FolkLight (#ffc08a, 5x her lamp, mask 2 | HerLayers)
+        // lit every wolf within 11 m pale peach, the pack's tan (09 crowd L50 0.45 h 46; the ember term, the lift, the fill and the
+        // grey card left it, the lit paint carried it). Her lamp reaches the crowd in its own paint only (crowd_ember, vat.gdshaderinc).)
+        Layers = SurvivorUnchained.View.PlayerView.CrowdLayer;
         CastShadow = ShadowCastingSetting.On;
         // They go everywhere: never culled as a whole (each is small; the GPU is not the limit here).
         CustomAabb = new Aabb(new Vector3(-1e4f, -1e4f, -1e4f), new Vector3(2e4f, 2e4f, 2e4f));
@@ -1229,6 +1232,11 @@ public partial class VatCrowd : MultiMeshInstance3D
             blobMat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/crowd_blob.gdshader") };
             // --blob-strength K: how dark the ground goes under a body (pictures; the shader's 0.6 by default).
             if (SurvivorUnchained.Args.Has("blob-strength")) blobMat.SetShaderParameter("strength", SurvivorUnchained.Args.Num("blob-strength", 0.6f));
+            // (L1 lead 12, B4: the second pass, a foe's own hard shadow inside her fire; draws only under a rig with "foe_moon" (crowd_shade))
+            // (L1 lead 19, SH2: a tapered trail away from her light's foot, by the body's height and width in the blob's color: Push)
+            var cast = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/crowd_blob_cast.gdshader") };
+            if (SurvivorUnchained.Args.Has("blob-strength")) cast.SetShaderParameter("strength", SurvivorUnchained.Args.Num("blob-strength", 0.6f));
+            blobMat.NextPass = cast;
         }
         blobSize = Math.Clamp(asset.Height * 0.62f, 0.7f, 2.4f);
         blobs = new MultiMeshInstance3D
@@ -1325,8 +1333,14 @@ public partial class VatCrowd : MultiMeshInstance3D
         bb[q] = w; bb[q + 1] = 0; bb[q + 2] = 0; bb[q + 3] = at.Origin.X;
         bb[q + 4] = 0; bb[q + 5] = 1; bb[q + 6] = 0; bb[q + 7] = at.Origin.Y + 0.06f;
         bb[q + 8] = 0; bb[q + 9] = 0; bb[q + 10] = w; bb[q + 11] = at.Origin.Z;
-        bb[q + 12] = 1; bb[q + 13] = 1; bb[q + 14] = 1; bb[q + 15] = 1 - dissolve;
+        // (L1 lead 19, SH2: the second pass, its fire shadow (crowd_blob_cast), reads the body in the blob's color: r its
+        // height m, g its width at the feet m, b zero (the trail's length is the rule's); the first pass reads a alone)
+        bb[q + 12] = Asset.Height * b.Y.Length(); bb[q + 13] = w * CastFeet; bb[q + 14] = 0; bb[q + 15] = 1 - dissolve;
     }
+
+    /// <summary>(L1 lead 19, SH2) A body's width at the feet, where its fire shadow starts, against the soft blob's (a
+    /// wolf's blob is as wide as the wolf is long; toward her it is about half that across).</summary>
+    const float CastFeet = 0.6f;
 
     public void End()
     {
@@ -1347,6 +1361,7 @@ public partial class VatCrowd : MultiMeshInstance3D
         Multimesh.VisibleInstanceCount = shown = top;
         RenderingServer.MultimeshSetBuffer(blobs.Multimesh.GetRid(), new ReadOnlySpan<float>(blobBuf, 0, capacity * BlobStride));
         blobs.Multimesh.VisibleInstanceCount = top;
+        if (FireCast.Count) FireCast.Tally(blobBuf, top, BlobStride);
         blobs.Visible = Visible;
     }
 }

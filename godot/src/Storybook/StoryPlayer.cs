@@ -423,6 +423,6 @@ public partial class StoryPlayer : Node
         GetViewport().GetTexture().GetImage().SavePng(f);
         GD.Print($"saved {f} at {t:0.00}s");
         shotDue = null;
-        if (shots.Count == 0 && Args.Has("storybook")) GetTree().Quit();
+        if (shots.Count == 0 && Args.Has("storybook")) QuitPath.Request(GetTree());
     }
 }

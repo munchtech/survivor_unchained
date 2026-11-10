@@ -116,6 +116,33 @@ public sealed record GradeSettings(double[] Lift, double[] Gamma, double[] Gain,
     public double PaintShadowSkin { get; init; }
     /// <summary>The vibrance's share in the darks (Oklab L 0.44 and under; all of it from L 0.52): G1 r2's 0.2.</summary>
     public double PaintVibDark { get; init; } = 0.2;
+    /// <summary>(L1 W2) The tone curve on Oklab L, last in the grade: (in, out) pairs from 0 to 1, flattened, through which a
+    /// monotone cubic runs (null: none). Lightness only: a darkened pixel keeps its chroma's share of its L (C x L'/L), a
+    /// lightened one its chroma, so the curve's contrast never raises the surfaces' chroma (the per-channel Contrast did:
+    /// by day x1.6 took midC 0.065 to 0.090). From a rig's "grade_curve".</summary>
+    public double[]? Curve { get; init; }
+    /// <summary>(L1 W2) The warm-source term (0: none): what a warm light lit (Oklab hue WarmHue +-WarmWidth, chroma over
+    /// 0.10-0.18 of its L: her ember's pool, a lamp's, a fire's) keeps WarmKeep of the chroma and hue the renderer gave it,
+    /// past the grade's mute, moon step and vibrance; the light's own color, not a vibrance raise on the surfaces.</summary>
+    public double WarmKeep { get; init; }
+    public double WarmHue { get; init; } = 58;
+    public double WarmWidth { get; init; } = 32;
+    /// <summary>(L1 lead 7, S1 daycast) The scene's color (0: none; 1: the day rigs, rigs.json "scene_color"): the drawn color
+    /// keeps the hue and the chroma's share of its L (Oklab; the linear channel ratios) of what was lit, the light times the
+    /// surface as it reached the tone mapper; AgX and the grade give its lightness only. Last in the grade, after the tone
+    /// curve. Why: AgX's per-channel sigmoid pulls a color's channels together (the neutral 0.18 card's lit side under the
+    /// #f3d9a0 sun: the scene's R/B 2.26 drawn 1.72), and the day grade's chroma terms (saturation and vibrance, PaintVib 0.75,
+    /// PaintHi 0.7, the per-channel contrast) pushed it back past the light's own (R/B 2.95, red near its ceiling on the 0.5
+    /// card), so the color chain's per-channel division of the boards drew every warm surface pink-mauve (bible rules 3-4:
+    /// the color is the light's and the surface's, never a grade push the chain must divide out).</summary>
+    public double SceneColor { get; init; }
+    /// <summary>(L1 lead 7, S2) Under SceneColor, the Moon step after it (1) rather than before (0, where SceneColor overrides it).
+    /// Why: the boards and the picked night targets paint what the moon lights moon-blue whatever its albedo (MB4's night grass
+    /// teal, MB3's setts and plaster blue, the targets' cold 73-86% of the chroma, shade h 251-263), which no light gives a warm
+    /// or olive albedo (under scene_color alone the Deep Shaw's moonlit ground read C 0.03, grey, and the shade h 313, gray 24%);
+    /// and LB DAWN's shade is lilac on every surface. The step re-hues only the weakly colored and the dark (MoonLo..MoonHi,
+    /// MoonTop), so what her ember, a lamp or a fire lights keeps the scene's own color.</summary>
+    public double SceneMoon { get; init; }
 }
 
 public sealed record AtmospherePreset(
@@ -135,6 +162,64 @@ public sealed record AtmospherePreset(
     /// its base (1: as built). The arena's night: a paler gold, so her pool lights the brown litter amber, not rust.</summary>
     public string EmberColor { get; init; } = "";
     public double EmberReach { get; init; } = 1;
+    /// <summary>(L1 W2) How the moon gives way to her light within its reach under the cel model (cel.gdshaderinc cel_give): the
+    /// share of the moon's key, fill and rim given up at the pool's heart, the share of the sky's light, and where the giving
+    /// starts to fade and where it is gone (metres from her light; S2b-N2). Null: none (the rig's rigs.json "ember_give").</summary>
+    public double[]? EmberGive { get; init; }
+    /// <summary>(L1 lead 9, NIGHT2) How the moon gives way to the zone's fires and lamps (the nearest few lit warm lights,
+    /// ZoneView.CelFires; cel.gdshaderinc cel_fires_at), as to her light (bible rule 3, T01/T05/T06: each lamp and the camp
+    /// fire throws its own warm pool, the moon giving way inside it): the share of the moon's key, fill and rim given up at a
+    /// source's foot, the share of the sky's light, and where the giving starts to fade and where it is gone (shares of the
+    /// source's own range, on the ground). Null: none (the rig's rigs.json "fire_give").</summary>
+    public double[]? FireGive { get; init; }
+    /// <summary>(L1 lead 9, B1) Her pool as light, a ramp in metres from her light's foot (cel.gdshaderinc cel_pool_paint;
+    /// Atmosphere.PoolRamp): [how much of the canopy's dapple stays in it at its edge and at its core (target 09: the leaf shapes
+    /// cut its edge, its core whole), then stops of r (m, rising), level (over her light's
+    /// energy; the last 0), color (sRGB 0-255, its largest channel taken as 1)], linear between stops; the moon gives way along
+    /// it (ember_give x and y at the core's level). FROM targets 09 and 12 (judge 1, verdict section 3): a gold core falling off
+    /// from 0.5 m through orange and dusk into the moon's ground by 3.25 m, no plateau, no ring. Null: her light as Godot
+    /// falls it.</summary>
+    public double[]? EmberPool { get; init; }
+    /// <summary>(L1 lead 12, R4 round 4; rigs.json "ember_smooth") Her pool's ramp runs smooth through its stops (a monotone
+    /// cubic, flat at her feet and at its end; Atmosphere.PoolRamp) instead of straight between them: a field with no kink
+    /// and no edge. (Retired with it: lead 11's ember_break and ember_brush, a shaped end that drew a disc.)</summary>
+    public bool EmberSmooth { get; init; }
+    /// <summary>(L1 lead 12, R4 round 4; rigs.json "ember_shade") The canopy's leaf shade across her fire: [the share of her
+    /// fire a leaf's shade takes, the canopy's opening over her fire (m from her light's foot: no leaf shade inside this),
+    /// where the shade is whole (m), how much of the moon's give-way a leaf's shade undoes (1: the moon whole under a leaf)]
+    /// (cel_pool_shade). Null: her light uncut and the moon's shade as it was.</summary>
+    public double[]? EmberShade { get; init; }
+    /// <summary>(L1 lead 17, P; rigs.json "ember_floor") Her fire on the floor as a table of TONES (Oklab L, C, hue in degrees,
+    /// as the frame shows them): [the floor's own lit tone and its shade's away from her fire (L, C, h x 2), what the floor
+    /// shows under one unit of her light (linear r, g, b), then stops of (r m, the moon's return 0..1, the lit gap's tone,
+    /// the leaf shade's tone) x n, r rising; the last stop is where the floor is its own again (its tones are not read)].
+    /// Atmosphere.FloorTurn builds cel_floor_turn from it. Null: the floor takes ember_pool as before.</summary>
+    public double[]? EmberFloor { get; init; }
+    /// <summary>(L1 lead 20, MASS; rigs.json "ember_floor_lift") [the floor's reference albedo luminance]: inside her fire the
+    /// floor's own dark patches are lifted toward it before the tone table's turn (cel.gdshaderinc cel_floor_lift), so the
+    /// pool never cuts to black on a dark material. Null: no lift, the floor as before.</summary>
+    public double[]? EmberFloorLift { get; init; }
+    /// <summary>(L1 lead 19, HER2; rigs.json "hero_pool") The hero figure in her lit pool, so a 40 px figure is the first thing
+    /// the eye lands on: [the pool light's foot dx, dz (m from her: the fire sits BESIDE her, so her shade side faces the
+    /// camera), the anchor's level and color (sRGB 0-255: the one dark warm tone her shade side takes), the side edge (the
+    /// anchor's hard step in n.xz away from the foot), the under edge (n.y under it is anchor), the hero ink's width (px)
+    /// and strength]. PlayerView places her light by it; Atmosphere sets cel_hero / cel_hero_tone (cel.gdshaderinc CEL_HERO).
+    /// Null: the light over her at (0, 0.4) and no anchor, as before.</summary>
+    public double[]? HeroPool { get; init; }
+    /// <summary>(L1 lead 12, S3, rule R5; rigs.json "moon_top") The moon's top step on what stands: [level (scene light; the
+    /// screen level is tuned at the frame), R, G, B (sRGB 0-255), the top band's edge in n.m, how far m leans up from the key
+    /// (0 the key's way, 1 straight up), the rim's width (screen px), the key's share on a standing form's unlit side]
+    /// (cel_s3, cel_s3_shape; a shader takes it by CEL_S3). Null: none.</summary>
+    public double[]? MoonTop { get; init; }
+    /// <summary>(L1 lead 12; rigs.json "foe_fire") Her fire on the foes from the ground's ramp: [the bright band's level, the
+    /// second band's share, the bright band's edge in n.l toward her, the second's] (crowd_fire). Null: the crowd's smooth lamp.</summary>
+    public double[]? FoeFire { get; init; }
+    /// <summary>(L1 lead 12; rigs.json "foe_moon") The foes' moon read and their own shadow: [the luminance their paint is pulled to, how
+    /// far (0-1), then each foe's hard shadow inside her fire: its level (scene light; 0: none), R, G, B (sRGB 0-255), the
+    /// fire's residue in it (a share of the ground's ramp)] (crowd_moon, crowd_shade). Read only with FoeFire.</summary>
+    public double[]? FoeMoon { get; init; }
+    /// <summary>(L1 lead 8, S2b) The pool's outer step's color (sRGB hex). Retired by lead 9 (B1: the ramp's stops carry the colors); read, unused.</summary>
+    public string EmberEdge { get; init; } = "";
     /// <summary>The moon's rim on the crowd in play, in shade as in its light (0: none, as the cinematics' presets have it).</summary>
     public double CrowdRim { get; init; }
     /// <summary>Her lamp and the sky's fill on the crowd in its own paint (vat.gdshaderinc crowd_ember/crowd_fill; 0: none, by day
@@ -159,6 +244,49 @@ public sealed record AtmospherePreset(
     /// <summary>The sun's elevation the thaw is baked for, when not the key's (below 0: the key's): a sun climbing
     /// over minutes (Atmospheres.Morning) keeps its dawn's thaw while the frost burns off, not a bake a degree.</summary>
     public double ThawElevation { get; init; } = -1;
+    /// <summary>(L1 B1a) The painted-cel shading model (shaders/cel.gdshaderinc) under this air: CelOn 0 lights as before,
+    /// 1 the cel model; CelShadow the key's cast-shadow hardness (0 the PCF penumbra, 1 a narrow step); CelFill the key's
+    /// fill in the shadow band (0..0.25, of the key's luminance); CelRim the stepped rim's strength and CelRimWidth its
+    /// width in 1 - n.v; CelFillColor and CelRimColor their hues ("": the sky's, HemiSky, and the moon's or sun's rim, Rim).</summary>
+    public double CelOn { get; init; } = 1;
+    public double CelShadow { get; init; } = 0.85;
+    public double CelFill { get; init; } = 0.06;
+    public double CelRim { get; init; } = 0.35;
+    public double CelRimWidth { get; init; } = 0.25;
+    public string CelFillColor { get; init; } = "";
+    public string CelRimColor { get; init; } = "";
+    /// <summary>(L1 B4) The lighting rig this air is lit by under the cel model (godot/data/look/rigs.json; logic/Look/Rigs.cs;
+    /// "": none, the preset's own light). The rig's numbers replace the preset's key, fill, rim, ink, hardness, grade,
+    /// exposure, ember and dapple under cel; --cel off lights by the preset as it is.</summary>
+    public string Rig { get; init; } = "";
+    /// <summary>(L1 B4) The ink rig color (linear rgb, B5's InkPass.SetRig; null: the night's).</summary>
+    public double[]? CelInk { get; init; }
+    /// <summary>(L1 B4) The moon through the canopy (bible rule 9; cel.gdshaderinc cel_dapple): how much of the sky the crowns
+    /// close where the canopy stands (0: none), how dark a leaf's shadow is, and the crowns' height (m).</summary>
+    public double DappleCover { get; init; }
+    public double DappleStrength { get; init; } = 1;
+    public double DappleHeight { get; init; } = 9;
+    /// <summary>(S2b-N3) The leaf tile's size (m; 0: CanopyCookie.Tile, 32): larger, the moon's patches and the leaves' shade
+    /// grow together, the big painted shapes of target 09's clearing.</summary>
+    public double DappleSize { get; init; }
+    /// <summary>(S2b-N3) The canopy's cover floor (0-1): at least this much of the sky closed everywhere, the clearings too.</summary>
+    public double DappleFloor { get; init; }
+    /// <summary>(L1 B4) This air is already its rig's light (Rigs.Lit's output); Source is the preset it came from.</summary>
+    /// <summary>(L1 lead 11, R3) The key's shadow is a level and the dapple the same shade (LightRig.OneShade; cel_oneshade.x).</summary>
+    public bool ShadowLevel { get; init; }
+    /// <summary>(L1 lead 11) The dapple's edge width (screen px; 0 or 1: hard) and the leaf cookie's shapes: clusters a tile (0: 420),
+    /// leaf length [shortest, longest] m (null: 0.8-2.4), leaves a cluster [fewest, most] (null: 3-5). CanopyCookie.Shape.</summary>
+    public double DappleEdge { get; init; }
+    public double DappleClusters { get; init; }
+    public double[]? DappleLeaf { get; init; }
+    public double[]? DappleLeaves { get; init; }
+    /// <summary>(L1 lead 12, F4) Leaf masses: each cluster a lobed mass this wide [narrowest, widest] m with small leaves round
+    /// its rim (DappleLeaf their length, DappleLeaves the lobes a mass). Null: the fans of big leaves. CanopyCookie.Shape.</summary>
+    public double[]? DappleMass { get; init; }
+    public bool IsLit { get; init; }
+    public AtmospherePreset? Source { get; init; }
+    /// <summary>(L1 B4) A blend's light under cel: the blend of its two presets' rigs (Atmospheres.Blend sets it).</summary>
+    public AtmospherePreset? CelTwin { get; init; }
 }
 
 public sealed class ZoneMeta

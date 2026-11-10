@@ -1,0 +1,63 @@
+{
+ "items": [
+  {
+   "node": "own_barrel",
+   "maps": {
+    "plank": {
+     "albedo": "res://art/world/painted/barrel/albedo.png",
+     "normal": "res://art/world/painted/barrel/normal.png",
+     "rough": "res://art/world/painted/barrel/rough.png"
+    },
+    "wrought": {
+     "albedo": "res://art/world/painted/barrel/albedo.png",
+     "normal": "res://art/world/painted/barrel/normal.png",
+     "rough": "res://art/world/painted/barrel/rough.png"
+    }
+   },
+   "at": [
+    0.1,
+    5.3,
+    20
+   ],
+   "near": [
+    0.95,
+    1.4,
+    20
+   ],
+   "mesh": "res://art/world/painted/barrel/mesh.glb"
+  },
+  {
+   "node": "own_boulder_b",
+   "maps": {
+    "rock": {
+     "albedo": "res://art/world/painted/boulder/albedo.png",
+     "normal": "res://art/world/painted/boulder/normal.png",
+     "rough": "res://art/world/painted/boulder/rough.png"
+    }
+   },
+   "at": [
+    6.8,
+    4.1,
+    30
+   ],
+   "near": [
+    -2.9,
+    3.6,
+    30
+   ],
+   "mesh": "res://art/world/painted/boulder/mesh.glb"
+  },
+  {
+   "node": "LookSetts",
+   "maps": {
+    "setts": {
+     "albedo": "res://art/world/painted/setts/albedo.png",
+     "normal": "res://art/world/painted/setts/normal.png",
+     "rough": "res://art/world/painted/setts/rough.png"
+    }
+   },
+   "tile": 4.0,
+   "name": "setts_b3"
+  }
+ ]
+}

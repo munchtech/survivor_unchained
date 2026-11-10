@@ -430,6 +430,7 @@ public partial class WorldScene : Node3D, IZoneLook
             Crowd.Update(b, HeightAt, viewTime);
             Perf.End(Perf.Part.Crowd);
             Fx.PlayerPos = HerDrawn;
+            Fx.Hits.HerFeet = HerDrawn;
             Fx.Her3D = Player;
             Fx.Drawn = Drawn;
             Perf.Begin(Perf.Part.Fx);

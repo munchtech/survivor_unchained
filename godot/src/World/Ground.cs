@@ -5,7 +5,7 @@ namespace SurvivorUnchained.View;
 
 /// <summary>
 /// The zone's ground: a heightfield mesh from the exported heights, shaded by
-/// shaders/terrain.gdshader with the photoscanned materials in art/ground.
+/// shaders/terrain.gdshader with the painted layers in art/ground (L1 C1, tools/look/ground_paint.py).
 /// </summary>
 public static class Ground
 {
@@ -86,9 +86,10 @@ public static class Ground
         // Style r2 (--setts-paint): the painted setts (env_ground.py --paint; the same sizes and layers) and their mud.
         bool sp = SurvivorUnchained.Args.Has("setts-paint");
         string st = sp ? "res://art/ground/setts_paint_" : "res://art/ground/setts_";
-        mat.SetShaderParameter("s_alb", GD.Load<TextureLayered>(setts ? st + "albedo.jpg" : ArenaGround.Sheet("res://art/ground", "albedo")));
-        mat.SetShaderParameter("s_nor", GD.Load<TextureLayered>(setts ? st + "normal.jpg" : ArenaGround.Sheet("res://art/ground", "normal")));
-        mat.SetShaderParameter("s_arh", GD.Load<TextureLayered>(setts ? st + "arh.jpg" : ArenaGround.Sheet("res://art/ground", "arh")));
+        string sx = sp ? ".jpg" : ".png";  // (L1 W2 town: the painted setts, tools/look/ground_paint.py build setts)
+        mat.SetShaderParameter("s_alb", GD.Load<TextureLayered>(setts ? st + "albedo" + sx : ArenaGround.Sheet("res://art/ground", "albedo")));
+        mat.SetShaderParameter("s_nor", GD.Load<TextureLayered>(setts ? st + "normal" + sx : ArenaGround.Sheet("res://art/ground", "normal")));
+        mat.SetShaderParameter("s_arh", GD.Load<TextureLayered>(setts ? st + "arh" + sx : ArenaGround.Sheet("res://art/ground", "arh")));
         // Picture switches for the sweeps (look bible 1f); the defaults are the chosen values.
         mat.SetShaderParameter("h_amp", SurvivorUnchained.Args.Num("ground-h-amp", 1.0f));
         mat.SetShaderParameter("h_depth", SurvivorUnchained.Args.Num("ground-h-depth", 0.08f));

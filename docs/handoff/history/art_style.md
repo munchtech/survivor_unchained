@@ -2,13 +2,284 @@
 
 Moved 9 Nov 2026 from docs/handoff/art_style.md, nothing edited.
 
+## L1 lead 8 (9 Nov, coordinator ad002ada): FXM verified; the arena night's roots fixed, her pool not; integration merged; the 13 frames shot; the judge next (HANDOFF READY look-l1, the commit that adds this section)
+Briefs and results: `survivorsunchained_inputs\look_l1\work\brief_l8_*`, runs under `look_l1\c\l8\`. Main approved 1.9M to G2 (all 13 frames, the arena night included; tell main past 2.3M). Lead 8's spend: about 1.0M in helpers plus 265k for lead 8; $0 API.
+
+- **Done:**
+  - **FXM B and C verified on screen** (fxv\ab_scout: the world and foes hide the after-grade stroke; the danger marks sit over it). Merged into look-l1; main and P7 told.
+  - **FX2 on fx-lang:** the quit crash (9efa8685f: world-depth RIDs freed from `FxAfter._ExitTree`), the after-layer's first-frame shape (the same commit: its camera synced in `_Ready`), blood keeps its hue (8bfe43d57). fx-lang is pushed at 8bfe43d57; its worktree is removed.
+  - **The arena night's roots:**
+    - Its places kept their own H2 moons, 3.4 times night_play's. `Rigs.cs` now has a key `scale` and a fill `sky_scale` over each place's moon. `arena_night` has its own grade (Moon step hue 262), a violet moon #7a92ff, and a canopy dapple with `size` and `floor`.
+    - The crowd's fill was 15 times too bright: it is now times hemi / `CrowdSkyRef`, and `CrowdEmberK` is 0.24.
+    - 09: Lp50 0.20, key 2.22, shade h 263, cold 83% (target 0.24 / 2.10 / 263 / 81). Commits 03ff97dc1, eea080076, fd6ebcce2, 5a3a317de, 1b2d9a6fc.
+  - **Integration merged** (5ea603fab, 33bf86eab): P1's picked body, M5, P7. `MoonSkin` acts under `scene_moon`. Suite 1682/0/10.
+  - **The 13 frames are shot:** `look_l1\c\l8\shoot1` (frames, `palette.md`, `pairs\`, `sheet.jpg`). The Low Ford run quit cleanly there (exit 0) for the first time since FX2.
+- **Open (lead 8's own half-size looks, against target 09):**
+  1. **Her pool reads as a round orange-red disc or stain, not light.** `cel_pool_paint` has 13 knobs and three rounds behind it: the scrap line is crossed (main agrees). Rebuild it FROM target 09's radial color profile (a ramp over distance in metres, multiplying the ground and keeping its pattern), unless the judge rules it within one round. Numbers: the core is right (q95 0.75); the middle is too dark and red (q80 0.58 h 37 against 0.67 h 48; q20 0.31 h 32 against 0.45 h 34). The skills judge reads it as a stain too.
+  2. **The pack reads tan-brown, its rim white,** not the target's gray-blue with a cool rim. The root is unconfirmed: the wolf albedo or the crowd lift's dirt hue.
+  3. **The barrow and the ruts run dark** (Lp50 0.17, 0.14), and the barrow's pool blows out (q95 0.92). S2b-N3 proposes a key "keep" exponent and a pool gain scaled by the ground's albedo.
+  4. The arena kit's small dark albedo litter (B3); an 8 px stair-step on the dapple and pool edges at 1:1 (the render scale is the suspect).
+  5. Blood reads as 2-3 px red "pepper" over the gold FX (P7's judge, round 2): it needs the droplet and stroke language.
+  6. **Not started** (brief ready: `brief_l8_s2b_day.md`):
+     - `close_day`'s old gold key (13);
+     - her day skin shade at h 325;
+     - dawn: lead 8's call is that the board wins, so the dawn sun comes FROM LB DAWN, h about 56, and rule 3 is rewritten with its FROM;
+     - lamps' `ember_give` (far: `cel_ember` is one global, so it needs the nearest N sources).
+  7. **The Low Ford quit hang:** 3 of 3 runs hung before the integration merge; one clean run after it. The ink release (eee011180, FX2's pattern for `InkPass`) stays in. Run two more full ford runs before calling it closed.
+- **Next, in order:**
+  1. The judge: `su-lead-max`, foreground, effort max, brief `look_l1\work\judge_l8_c13.md` (filled: what changed, the open list). It writes `c\l8\judge1\verdict.md` and returns a 350-word summary.
+  2. One fix round on its ranked blocks (the pool ramp first), then Stage D, then GATE G2 READY with the A|B pairs in `look_l1\g2\`.
+- **Learned:**
+  - `frames.py` has no `--help`: any call shoots.
+  - Tell runners that `frames.py` takes the godot turn itself, never `turn.py take gpu` (one stalled on the GPU queue).
+  - Run `cmd /c rmdir` for the junction alone in its own PowerShell call: combined with a `Move-Item`, it was blocked.
+  - Freeing other agents' stale turns is blocked by the permission system: leave them to the 3-hour expiry.
+  - `godot/tests/CorvaneTests.cs.uid` is tracked now (the untracked copy is in `c\l8\aside`).
+
+## L1 lead 7 (9 Nov, coordinator ad002ada): the day's color fixed at its root; S2 partial, FXM landed unverified; verify FXM, S2b, the shoot, the judge, Stage D and G2 next (HANDOFF READY look-l1, the commit that adds this section)
+The owner, 8 Nov: "visually stunning cel shading painterly with vibrant colors". Briefs and results are in `survivorsunchained_inputs\look_l1\work\` (`brief_l7_*`). Report to main only at the judge's verdict and at GATE G2 READY, plus the fx-lang shas.
+
+- **Done (P12: the app can now light the day from one sun, with the grade giving lightness only, and calibrate every class in closed loop against the picked targets):**
+  - **The grade's `scene_color`** (S1): by day, AgX's channel pull and the chroma terms no longer bend color. A neutral card had read R/B 2.95 against the sun's 2.55.
+  - **One sun, the boards' own #ffc296** (S1c). The picked G1 07's setts sit 0.027 from it. Bible rule 3 is moved; dawn keeps #f3d9a0. `board_sun` is the identity.
+  - **The town-day sun at az 120, behind the camera's left shoulder** (S1c r2). G1 07's house shadows point up the screen and G1 13's fronts are lit. Rule 5 is edited.
+  - **`calibration.json`, Oklab per class** (S1c, S1d). The boards' p70 plus the kits' lit strokes had counted the light twice.
+    - Grass, setts, plaster and road are within accept on both day targets.
+    - The grass cards' atlas follows its class.
+    - `day_wild` is solved from the same sun.
+  - **08's `look_day` rig** keys her in book screens (S1d).
+  - **Cloth** is undyed tan (#917f68).
+  - **Rock by day** stays neutral (rule 9).
+  - **The ground check passes.**
+  - **`color_chain.py all`** ends with the Godot import, and every shoot re-imports stale textures (`freshness.reimport_if_stale`, 796e39e07).
+  - **Bible bands FROM the picked targets:** day key 1.35+, Lp50 0.35-0.55, midC 0.05-0.08.
+  - **The steel's chroma and the fair vibrance rule:** fx-lang@48391c087, look-l1@9c48999bd. A pixel counts as saturated at C ≥ 0.15 or at 90% of the sRGB ceiling.
+  - Commits f673c21b9..66693e01f, all pushed. Suite 1600/0/10.
+- **Left in the day (for the judge to rank):**
+  - spruce shade green h 130, not blue (the fill under the foliage; medium);
+  - no roof reference (rule 1 excludes 07's amber; medium);
+  - 07's shade share 0.56 against about 0.40 (el 32-35 untried);
+  - 04's busy camo meadow structure (B3; the judge's);
+  - `close_day` still has the old gold key.
+  - Pairs: `c\l7\s1d\pairs\`.
+- **S2, the night (c1f187e89, fd54a720b, pushed; partial, unjudged, pairs not yet looked at: `c\l7\s2\pairs\`):**
+  - **The brown's root, fixed:** AgX plus the night grade's chroma terms. Night and dawn now run `scene_color`, plus one grade term after it, `scene_moon` (the Moon step).
+    - FROM: the boards paint everything the moon lights blue, whatever its albedo.
+    - The moon re-solved: key #6ca1ff, fill #6694ff, sky #b5d9ff. `ember_reach` 1.0.
+    - `color_chain.py` gained `night` and `apply_dawn`, and `all` writes the night again. `NIGHT_LEVEL_HOLD`: the boards give the night its colors, not its level.
+  - **05 is in band:** key 1.96, pool 0.30, the pool core L 0.67 C 0.157. The shade sits at h 248-253 on every frame.
+  - **Left:**
+    - **The arena night (09, 12): far.** Lp50 0.42-0.46 and warm 22-27%, against the targets' 0.24 and 8-11%. The cause is unknown: torches or braziers under `scene_color`, or the arena's moon. 09's last run crashed (exit 3221225477).
+    - **The pool's edge** is yellow-brown, against the targets' h 34-40. S2's proposal: a two-step redder outer band in `cel_shade`'s omni. This also answers the skills judge's "dither reads as a dirt stamp".
+    - `ember_give` for torches and lamps.
+    - **Dawn: medium-far.** MoonTop 0.62 is unmeasured. LB DAWN implies an orange sun (h 56) against rule 3's gold: lead 8's call.
+    - **Not started:** the pack's fur, and her skin shade at h 325. For the fur, the likely lift is `vat.gdshaderinc`'s emission (`crowd_fill`/`crowd_top`, around lines 227 and 395-421).
+- **FXM, on fx-lang** (worktree `.claude\worktrees\fx-lang`, left in place: its own junction, assume-unchanged):
+  - **A, a278b6482:** `fx_stroke(across, along, life)`, painted, with bristle uniforms `fx_stroke_shape`, `fx_bristle`, `fx_stroke_seed`. FXM told main.
+  - **B, aca1da040:** after-grade light behind the world's depth, through FxWorldDepthCopy and FxWorldDepthWrite. `--fx-after-world off`. A one-frame lag, so her twins stay.
+  - **C, e552685b6:** the danger marks' mask, so after-grade light sits under them. `--fx-marks-over off`, plus a debug stroke `--fx-debug-stroke 1`.
+  - Suite 1580/0/10 on fx-lang. 05 and 09 are unchanged off against on.
+  - **NOT VERIFIED ON SCREEN:** none of B's or C's runtime paths has rendered yet, and the overlap A|B is a null result. First thing after merging fx-lang into look-l1: shoot with `--fx-debug-stroke 1` against `--fx-marks-over off --fx-after-world off`, at a moment with a mark up, a tree and a foe.
+- **Next, in order:**
+  1. Merge fx-lang into look-l1 by the junction rule, and verify B and C on screen (a runner, then your own half-size look). Send main B's and C's shas once they work.
+  2. **S2b:** the arena night's level, the pool's two-step edge, `ember_give`, dawn, the fur and rim, her skin.
+  3. The 13-frame shoot (`brief_l7_shoot.md`).
+  4. The max judge (`judge_l7_c13.md`; fill its "What changed" from this block).
+  5. Stage D, then GATE G2 READY.
+  6. Remove the fx-lang worktree (`wt_remove.ps1`) once P7 and look-l1 have both merged it.
+- **Cost, lead 7:** about 285k. Solvers: S1+S1b 223k, S1c 209k, S1d 189k, S2 198k, FXM 186k, workers 35k and 47k. $0 API.
+
+## L1 lead 6 (9 Nov, coordinator ad002ada): FX language out, fx-lang published, her depth twin; the color chain NOT started (HANDOFF READY look-l1, the commit that adds this section)
+The owner, 8 Nov: "visually stunning cel shading painterly with vibrant colors". Brief: `tools/scratch/coordinator/briefs/L1_lead6.md`. The coordinator accepted ~1.4-1.9M to G2 ("cost does not matter for the art, building blocks do") and wants reports only at the judge's verdict and at GATE G2 READY. Lead 6 ran out of context at onboarding plus the skills lead's needs, so steps 1-4 of the brief are all still ahead.
+- **Start here (lead 7):**
+  1. Spawn **S1** in the foreground: `su-lead-high`, effort medium, brief `survivorsunchained_inputs\look_l1\work\brief_l6_s1_daycast.md`, self-contained. Its job: the day key's warm cast fixed at its root (a neutral card reads R/B 2.86 against the sun's 2.55), then `color_chain.py all`, the kits rebuilt, the Hollow and Barrow ground check, the day frames, and an A|B against wave 2.
+  2. Then **S2**: `survivorsunchained_inputs\look_l1\work\brief_l6_s2_night.md`. It covers the warm sources (the pool from brown 0.23 to ember 0.35+, the key to 2.0+), dawn, her skin shade at h 325, and the pack's silver fur. Paste S1's numbers into it.
+  3. The 13-frame shoot (a runner), then ONE max judge (`su-lead-max`, foreground): the whole-frame question first, "would this ship in a AAA game, and is it the G1 sheet's game?", on all 13 as one game, against `survivorsunchained_inputs\look_l1\g1\00_targets_overview_half.jpg`. Its notes go to the blocks, never to a frame. Then Stage D, and **GATE G2 READY** with the A|B pairs at half size in `survivorsunchained_inputs\look_l1\g2\`.
+- **Done by lead 6:**
+  - **Merge:** integration in at 514693b8e and fx-lang at 9977a2482; Godot's .uid files are committed (a45765ea4). `--import` was re-run after the incident below.
+  - **The junction incident:** the first merge aborted on untracked .uid files, and its rollback rewrote `godot/assets` and emptied look-l1's own `public/assets`. Restored with `git ls-files -d | git checkout-index --stdin` (writes only missing files, overwrites nothing), and the junction remade. Main's assets were intact. lead_brief now spells out the sequence: rmdir the link, run git, mklink it back, set assume-unchanged.
+  - **`docs/design/FX_LANGUAGE.md`** (006491cf0, d3a8461d2), for the skills lead:
+    - Light versus matter: light is drawn after the grade in the school's hex, the most saturated thing in the frame at C 0.13-0.18.
+    - Colors by school, the ink and effects, and cast/travel/hit timings and budgets.
+    - The vibrance number: `fx_measure.py shot`, saturated share 40%+.
+    - Sketches for Heroic Leap, the Cyclone and the charge.
+    - **Physical is now the Warden's steel:** amber #c7701a, gold #f4b43a, white-gold #fbf1d8, sparks #f6d389. It is authored in `fx_language.json` "authored"; `fx_measure.py build` keeps authored families and `calib_dE`, and FxLanguageTests pin it.
+  - **Her depth twin** (e237c2c0c): `FxAfter.OccludeFigure(p.Root)` from `People.cs`. Skinned twins follow her LOD, gear and blend shapes; see-through cards are skipped; twins are made lazily; `--fx-after-occlude off` turns them off. Verified A|B: `survivorsunchained_inputs\look_l1\c\l6\twin2\ab_twin2.jpg`. Foes have no twin. If P7's judge flags that, build the general fix: hand the main pass's depth to the after-grade layer. The lag that fix brings shows only at the close-up.
+  - **`fx-lang`** @21232041e, pushed: integration 7fda30bc4 plus only the FX files (15 files plus one line in People.cs), for the skills lead to merge. Its C#-only export fails the same 42 tests as integration's own export, which lacks the art files; FxLanguageTests pass 7/7, and the full suite on look-l1 is 1600/0/10.
+- **Seen at half size (lookdev, night):** the ground is a heavy royal blue, the pool sandy orange-beige, and the plaster pink-lit. That matches lead 5's read, so S1 and S2 are the right next steps.
+- **Cost, lead 6:** ~265k (onboarding, the incident, FX, fx-lang), the twin worker 53k, $0 API.
+
+## L1 the art direction as a SYSTEM: Stage C wave 2 BUILT as WIP, unjudged (look-l1 art director 5, 5 Nov; HANDOFF READY look-l1, the commit that adds this section)
+The coordinator (`local_6d561d13-50ec-4fb6-82c8-1d75710bfa18`, the last one this week) called the hand-off at the next clean commit; no successor runs this week. Wave 2's eight helpers all finished; everything is committed and pushed, nothing is judged since wave 1 (lead 5 ran no judge, $0 API). The branch is WIP: its latest 13 frames are `survivorsunchained_inputs\look_l1\c\w2\chain\r1\` (pairs `pairs_sheet_half.jpg`). **The art director's read of that sheet against G1:** structure moved toward the targets (04's road and verge, 09/12 ringed and lit, 07's painted setts and tiled roofs, 06's water banded, 01's flame stepped), but the color is not yet the targets'. By day a mauve-lilac cast sits on every warm surface (13's walls, 07/08's setts) and 04 is murky olive camo, not a sunlit meadow. By night the pool is brown-orange, not ember, and the campfire's light barely lands (01). The pack still reads pale silver (09, 12). Only 02 would ship.
+- **Start here (lead 6):**
+  1. Merge integration (the junction rule: `cmd /c rmdir godot\assets`, merge, remake it to OUR `public\assets`, `git update-index --assume-unchanged godot/assets`; `git ls-tree` 120000), `--import`, suite (last green 1593/0/10 at 6ea1df233).
+  2. **The day key's warm cast, at its root (one solver, medium; the chain's brief `look_l1\work\brief_w2_chain.md` steps 2-3 and 8).** After the chain, a neutral 0.18 card under the day key reads R/B 2.86 against the sun's own linear 2.55 (#f3d9a0). The chain divided the boards' lit sides by that warm response, so its day albedos came out pink-mauve: setts #8e7588, plaster #e09393, stone #91727b, roof #79565e. Trace the rest of the warm cast through the grade (`rig_day`/`rig_day_wild` in `Atmospheres.cs`, the tone curve, any tint), make the key's measured response the sun's own color, wire `color_chain.py all`, then re-solve, apply and rebuild the kits (`ground_paint.py build all`, `wild.py all --no-mesh`, `town.py all --no-mesh`).
+  3. **The chain's undone steps:** step 5, the warm sources: her ember, torches, lamps and the campfire. Today the pool is 0.23 against 0.35+, the night key 1.6-1.7 against 2.0+, and the pool brown-orange. Step 6: dawn (scope the dawn grade's Moon step first) and her skin shade h 325. The pack's fur: `crowd_fur`'s `albedo_ctl` says L 0.30, but 09 and 12 still show pale silver bodies, so check that the VAT crowd's emission reads it.
+  4. **`ground_paint.py check all` FAILS** on the Hollow and the Barrow since the chain's gains (the values90 counts). Fix it at the source (the gains or the check's band), never by hand.
+  5. **Then the kits' open marks:**
+     - The alder, medium-far: round lobes (3-5 rim points per lobe, about +10% tris) and a lit top at night.
+     - The props (`env_props` barrel, crate, cart): not started; `town.py` has no `props` yet.
+     - The setts' bright top-left lip (MB3).
+     - The river's strokes x1.5 (10), with 06 and 05 reshot after the water's x0.42.
+     - The rock at night in 10 reads saturated blue (rule 9).
+     - The lookdev side camera: the spruce covers the boulder.
+     - 03's lake is P9's (the line below).
+  6. **Then the plan as lead 4 wrote it:** one 13-frame shoot, the judge (Item: Stage C wave 1 has rounds 2-3 left; xhigh API, `node tools/ai/api_agent.cjs`), Stage D (one max judge, "the same game?", the whole-frame gate, each frame at 1:1 against G1), `GATE G2 READY` with the owner's A|B at half size in `look_l1\g2\`.
+- **Lead 5 did** (every commit `L1 W2 <block>:`, WIP and unjudged; the briefs are `look_l1\work\brief_w2_*.md`, the common one first, each a model for the next):
+  - **Merge:** integration at 662132e20 (the C2 design; PIPELINE P4 theirs, P5 ours). Import 0 errors; suite 1589/0/10.
+  - **Light** (b32bdf7b5, RIGS FINAL):
+    - What it built: `grade_curve` (the grade's tone curve on Oklab L, FROM LB DAY's ground: lit 0.77, shade 0.34), `warm_keep` (the grade keeps a warm light's chroma, 0 by day), `ember_give` (inside her reach the moon gives way, 75% of its key, fill and rim), and `albedo_ctl` (a class's albedo as data, the crowd's paint too).
+    - The arena ember went from #ffcc9c 4.5 to #ff8a3a 8.0 x1.5. The peach one was the beige pools.
+    - Open: the day key; torches and lamps don't give way yet.
+  - **Ground** (25edf7306, 14090271e):
+    - What it built: the meadow's photo-era multiply removed; masses at three sizes; 09's leaves halved; 03's rime a bounded lift; the moss in two flat values.
+    - Open: 03's frost ground (far; the 03 rig's moon on it) and 04's camo (medium).
+  - **Wild** (802295eb5, a659b707b, 6bf0d56a9, 7cc9d4a11):
+    - What it built: `env_trees.py`'s grass atlas runs `ground_paint.py atlas`; spruce tier normals (close: one olive top, jagged rim, no zebra); rock planes creased (medium); the alder re-meshed big-medium-small (medium-far); `kit.gdshader` OWN_BROADLEAF `up_bend` as a uniform. `wild.py` now fails when Blender errors.
+    - Known: the spruce's lod2 is 15-45 tris over budget, as in wave 1.
+  - **Staging** (369d04252, 1d595b3fa):
+    - What it built: `--auto stand` (pictures only: she plants and fights); the Hollow's fold-wall kit boulders as board data (`boards.json` fold.rocks, FROM target 10; this changes the tier-1 Hollow's layout); the moments for 03, 04, 09, 10 and 12.
+    - Distance: 04 and 09 close; 10 and 12 medium; 03 far (no C01 camera shows a lake).
+    - Known: the 09 run saves its frame and then idles to the 600 s timeout; under stand she dies about 25 s in.
+  - **Town** (8a2df483e, d576feac4):
+    - What it built: `python tools/look/town.py setts|houses|roofs|all [--no-mesh]`. Painted coursed setts as a `ground_paint.py` set (the photo setts `git rm`'d; `terrain.gdshader`'s `setts_painted` gates the photo-era layers). The walls' and roofs' trim sheets painted from nothing, per region (`town.json`). Timbers x1.35. The roof's `cel_nmap` is 0.
+    - Distance: walls far (the lilac fronts, step 2 above); setts and roofs medium; props not started.
+  - **FX** (7bf962808, 97218983d, 20f6c5483, 01047e5a0, 7c241fdb2):
+    - What it built: `FxAfter.cs` (spells and the campfire drawn after the grade in the boards' own hex; the flame behind its logs as depth); the bolt (head 0.6x, sparks 5-35, bites 3-11); the stepped campfire (`fx_cel_flame`, `campfire.steps` from MB5's shares); water as bands of the sky (`water_cel`, `godot/data/look/water.json`, `Water.Cover`); the UI panel's bronze as data in `ui_language.json` (#684422, bevel #b68852, 22 px, band 0.27; a swatch for the UI lead at `c\w2\fx\ui\panel.png`).
+    - `FxCel` is on by default under cel (lead 5 confirmed). Frame time is 0.10-0.42 ms per 100 bolts.
+    - Distance: the flame close, the bolt close-medium, the water medium, the UI data close.
+    - Known: a character in front of the campfire draws behind the flame.
+  - **Chain** (a1eba49e2, 8206e2814, 6ea1df233):
+    - What it built: `python tools/look/color_chain.py measure|boards|solve|check|apply` with `godot/data/look/swatches.json` (the boards' lit and shade patches). It measures grey cards on the lookdev stage with her ember off. The day fill comes FROM the boards' median shade/lit (#beb5ff 0.098, sky #dce6ff, hemi 0.28), the night moon FROM the boards' night sides over the albedos (key #70b3ff 2.0, sky #c3ebff 0.55), and the day grade's highlight tint is neutral. It writes the class albedos (v4) and the class marks through `albedo_ctl`.
+    - The relit check's median dE is 0.109. MB4's night grass and spruce are painted teal, which no light gives an olive albedo; the rule wins.
+- **For P9 (via main):** target 03 needs a C01 shot from her rear left looking north at the water and the moon, with the fire low right. The camp (z about 90) is about 130 m from the ford's water (z about -40), so it needs a shore camera there or water near the camp.
+- **Machine:** `turn.py give` without its label refuses when several turns are held, so give every turn back by its label. On 5 Nov, three stale wild turns blocked P9 for up to 95 minutes; they are freed.
+- **Housekeeping done:** the two stray 1 Nov `info.info.json` files (the path slip under `C:\c\Users\munch\Desktop\survivorsunchained_inputs\vfx_refs\`) went to the Recycle Bin with their empty folders; lead 5's scratch is backed up to `survivorsunchained_inputs\scratch_look_l1\` and cleared.
+- **Not committed, on purpose:** Godot's own `.uid` files and the line-ending-only `.import` changes, as lead 4 left them.
+- **Cost, lead 5:**
+  - Helpers ~1.81M: light 219k, ground 202k, wild 365k (with its resume), staging 175k, town 223k, FX 205k + 186k, chain 231k.
+  - Lead 5 ~0.23M.
+  - $0 API.
+  - Stage C so far is about 3.2M + $2.13 API, over the accepted 2.2-3.0M.
+  - Left to GATE G2 about 1.0M + $12-17: the warm cast and the chain's warm sources ~0.25M; the alder, props and setts ~0.3M; a shoot, the wave judge and a fix round ~0.3M; D ~0.1M + $10-15.
+
+## L1 the art direction as a SYSTEM: Stage C wave 1 BUILT, wave 2 next (look-l1 art director 4, 5 Nov; HANDOFF READY look-l1, the commit that adds this section)
+Stage B's judge FAILED B3 at its source, so Stage C rebuilds the world from shape. Wave 1 is built: the painted ground, eight of the eleven marks, and the wild kit. **The wave-1 judge (xhigh API, $0.96, `c\w1\verdict_w1_r1.md`): ON TRACK WITH FIXES.** The painted ground, the spruce, the alder and the rocks are the right sources (medium, marks): no photo noise, night no longer murky, the spruce reads as spruce. What is left is color (the kit's colors were set before C2's rigs: day reads acid yellow and lime, her pool salmon or beige, not ember orange) and staging (09, 10, 12, 03 shot at the wrong moment or camera). Only 02 would ship today; 01, 04, 05, 09 moved far -> medium. Paths are under `survivorsunchained_inputs\look_l1\`.
+- **Start here (lead 5):** (1) Read the wave-1 verdict `c\w1\verdict_w1_r1.md`. Its per-frame table and wave 2's order are your list, along with wave 1's knowns below. (2) Wave 1b: the knowns first, one solver each, through the briefs here. (3) Wave 2. (4) One 13-frame shoot, a judge, then Stage D. Report to main (coordinator 88131549 relays) at a judge, a block, `GATE G2 READY` or a handoff.
+- **Lead 4 did:**
+  - Merged integration at 3300d6af2 (100 commits). Eight shader conflicts resolved both ways: our cel block plus H7's `world_clock` include and its flare-mark globals.
+  - Import 0 errors; suite 1589/0/10.
+  - The Stage B judge (xhigh API, $1.17, `c0\verdict_sb_r1.md`): FAIL on B3 only, FAR at its source (it painted today's flat forms and the photo ground; its albedo came out lifted and pink). B1, B2, B4 and B6 are medium (marks); B5 is close.
+  - Main approved the rebuild from shape and the re-estimate of 2.2-3.0M, with three conditions: (a) everything lands as pipeline data and build steps (generator presets, `tools/look/*`), never a hand fix; (b) every block carries its FROM line in PIPELINE's P5 and P12 rows (done, at this commit); (c) one command re-runs a zone through each new system. P9, the films lead, is building the Vault hall through today's `env_props`/`paint_tex`, and its set is re-run through our commands after look-l1's merge.
+  - Hair half-tone stays at 0.12 (the judge saw no difference at the game's cameras).
+- **Stage C's baseline:** `c0\` holds every block on today's maps at 3300d6af2: frames, `palette.md`, `targets_palette.md` (the G1 targets' own numbers) and `pairs\` (game | target). The lookdev stage is in `lookdev\c0\`. The pairs come from `python tools/style/pairs.py FRAMES_DIR OUT LABEL`.
+- **Wave 1, as built (unjudged until the verdict above):**
+  - **C1, the painted ground** (`L1 C1:` 8134d42b7..d718b0320). `python tools/look/ground_paint.py build all|<set>`, with `check all` and `--twice` (byte-identical). It paints from nothing: value masses, Voronoi stones and slabs with a lit and a cool bevel, and flat stamps (clumps, needles, leaves, ruts). Each surface's FROM is in `godot/data/look/ground.json`. It is installed for the terrain and the four arena biomes, the 60 photo jpgs are `git rm`'d, `cel_nmap` is 0 on every ground shader, and the tussocks are 8-11 broad blades in three flat values.
+    - Known: 04's verge reads khaki, from an old noise multiply in `terrain.gdshader`'s meadow block (about lines 513-540; remove it, don't tune it). 03's frost and 07 are untouched beyond the new maps. Perf and identity are unmeasured. `env_trees.py`'s grass-atlas path would overwrite C1's flat-clump atlas: retire it or point it at `ground_paint.py atlas`.
+  - **C2, the marks** (`L1 C2:` 2d337b962 night rigs, 3743f2006 day rigs, a3ab45c70 B1).
+    - Night: `arena_night` owns the moon hue #5a9cff, the sky and the grade `rig_night`. 09's Lp50 went 0.11 -> 0.25 (midC 0.089). 12 (lamp out) went 0.07 -> 0.17. The dapple is at 0.55. Her ember went 3.5 -> 8 with a 1.5x reach: 05 reaches pool 0.35, warm 18%.
+    - Day: the sun is up and the fill more violet, with grade contrast x1.6. The key is about 1.30-1.38: the light alone can't reach 1.6, because the grade's curve and the surfaces' median hold it.
+    - B1: `cel_nmap` is 0.10 on skin and 0.20 on gear, and her metal and gloss highlights use a fixed roughness of 0.3.
+    - New: rigs carry `ember_reach`/`ember_color`, and grades can be named with a contrast scale (`"name@K"`).
+    - **Not done:** dawn (mark 11); her day skin shade h 337 -> 325 (mark 10, shot but unmeasured); and the B2 albedo marks (`crowd_fur` to L 0.30, her navy gear's chroma, `folk_cloth` capped at L 0.75). Those need a per-class albedo control in the cel model and in `vat.gdshaderinc`'s crowd emission. Identity is unmeasured: shoot 08 and 13 at `--cel off --ink off` at 3300d6af2 against now. The night set as committed was never shot whole (09 was measured with the old fill). Scripts: `c\c2\vr.py` and `run.sh`.
+  - **C3a, the wild kit** (`L1 C3a:` a2e3e316a..5a6489386). `python tools/look/wild.py spruce|alder|rocks|all [--no-mesh]` runs the generator, then `bake_forms --keep-uv`, then `paint_core` with its check. The spruce is 11-14 closed tiers; the alder is new, flat scalloped clusters; the rocks are an ellipsoid with crown, shoulder and side planes on `rock_atlas.png`. Base colors were set by hand from MB4: bark #6a4f36, foliage #7b853b, rock #807468. Budgets are within today's (the spruce's lod2 is 15-45 tris over); +10.9 MB of texture.
+    - Known: recalibrate the three colors on C2's day rig (3743f2006 landed after them), then `wild.py all --no-mesh`. The alder is pale at night (`flora_species.json`'s OWN_BROADLEAF bends its normals up by 0.6). The denser spruce hides the lookdev stage's `post_lantern` and alder (the stage layout is in `GameLookdev.cs`). `--cel off` can't be identical after a mesh remake (mean 7.1/7.7 on 08/13), which is expected. Continuation brief: `work\brief_c3a_cont.md`.
+    - `godot/art/world/painted/{spruce,alder,rocks,_src}/` committed as WIP at hand-off (judged on track at wave 1; `wild.py` regenerates them).
+- **Wave 2, in the judge's order** (merged with lead 4's plan; one solver per numbered item, briefs like `work\brief_c*.md`, the common brief first):
+  1. **The color pass on C2's rigs, for everything wave 1 built.** Re-set each class's base colors by hand from the boards' shade side divided by the new fill (no least-squares fit): the ground zones, grass and moss (C1's `ground.json`), and the spruce, alder and rocks (`materials.json` bark, foliage, rock; then `wild.py all --no-mesh`).
+     - The forms: spruce tier normals bent up and smoothed, so each tier bands as one lit top over one dark underside, with jags on the rim silhouette and the color a darker teal, olive not yellow. Rock normals creased between the crown, shoulder and side planes, the base MB4's moon-blue grey. The alder in three values per cluster on a darker base; if it still reads as hex blobs at play, the cluster mesh is the source to redo.
+     - The ground: remove `terrain.gdshader`'s meadow noise multiply; vary the mass sizes; halve 09's leaf speckle; work 03's frost so it sits below the pool.
+     - The light: the day grade's curve to key 1.6+ with midC 0.07 or less, and the violet fill under foliage (04's shade is green). Her pool to ember orange: her light dominates the moon within its reach, and the vibrance clamp comes off the pool (night midC 0.09-0.12, warm 20%+).
+     - C2's open marks: the per-class albedo control for `crowd_fur` L 0.30, her navy gear's chroma, `folk_cloth` capped at L 0.75 and plaster lit cream; dawn; her day skin shade h 325; identity.
+     - This moves 01, 03, 04, 05, 07, 09, 10 and 13.
+  2. **Staging to the targets** (cheap, five frames; `tools/style/frames.py`'s moments and cameras, `--scout`): 09 and 12 with her ember lit, the pack ringing her and no telegraph over her; 10 with the Pack Mother and the boulders in shot; 03 with the fire light low right and the lake; 04 with the road and verge as in 04_r4. 06 waits for the Grave-Caller (R12/P3).
+  3. **The town kit through B3** (R8; 07, 08, 13): chunky setts, warm plaster, walls with thicker beams (`env_house`), tiled roofs with `cel_nmap` 0 (`env_roof`; the roofs still stripe), and the props (`env_props`: the barrel's thick hoops and rivets, the crate, the cart), each with one rebuild command per zone.
+  4. Then water as bands of the sky (R7: 03, 06, 10), the campfire's stepped flame and B6's bolt marks (draw after the grade, the head at 0.6x, MB5's three steps, 10-12 bites, 10-16 sparks), and the UI panel's bronze as data for the UI lead (a 20-24 px bevel band plus the ink).
+  5. One 13-frame shoot, a judge (Item: Stage C wave 1 has rounds 2-3 left), then Stage D: one max judge ("the same game?", the whole-frame gate), then `GATE G2 READY` with the owner's A|B at half size in `look_l1\g2\`.
+- **Briefs** (each a model for the next): `work\brief_c_common.md` (the rules every helper shares; one command per zone), `brief_c1_ground.md`, `brief_c2_marks.md`, `brief_c3a_wild.md`, `brief_c3a_cont.md`. Judges: `work\judge_sb.md` (Item: Stage B, round 1 of 3), `work\judge_w1.md` (Item: Stage C wave 1, round 1 of 3).
+- **Routing already sent to main:** `hero_clear` goes to the FX owner; the Warden and the Grave-Caller to R12/P3; the folk to their generator; her surfaces to P1/P2/R10.
+- **For main (not ours):** two stray `info.info.json` files from 1 Nov under `C:\c\Users\munch\Desktop\survivorsunchained_inputs\vfx_refs\` (a VFX reference download's path slip). C1's empty folders in that tree are removed.
+- **Cost, lead 4:**
+  - Helpers ~0.87M: C1 237k, C2 191k, C3a 212k, and the C3a continuation 232k.
+  - Lead 4 ~300k.
+  - API: $1.17 (Stage B judge) + $0.96 (the wave-1 judge).
+
+## L1 the art direction as a SYSTEM: Stage B BUILT, Stage C next (look-l1 art director 3, 5 Nov; HANDOFF READY look-l1@05525cf8b)
+The owner picked G1 on 5 Nov ("love it", no notes): the G1 target set as it stands is the look the blocks build to. Stage A is closed: A5 round 3 PASS WITH KNOWN ($0.65, `g1\verdict_a5_r3.md`; 08_r5 and 07_r5 stand; 07_r6, the fallback, drifted; KA_r4's face is known; bible lines in rules 1, 5 and 11). Stage B is built; what is left of it is one judge on its sheets and B6's bolt. Briefs that worked: `survivorsunchained_inputs\look_l1\work\brief_b2*.md`, `brief_b3*.md`, `brief_b4*.md`, `brief_b5fx.md`, `brief_b6*.md`.
+- **Start here (lead 4):** (1) merge integration (the worktree is 15+ commits behind; B3 r3 and B6 r2 shot with `--stale-ok`): `cmd /c rmdir godot\assets`, merge, remake the junction to OUR `public\assets`, `git update-index --assume-unchanged godot/assets`, then `--import` (the godot turn). (2) One xhigh API judge on Stage B's sheets (list below), the whole-frame question first, and ask its distance to the bar. (3) Stage C, then D, per `tools/scratch/coordinator/briefs/L1_lead3.md` steps 4-5. Report to main (coordinator e05b5408, which relays): routing needs in one line each, GATE G2 READY, HANDOFF.
+- **The blocks** (each names its FROM in its data; `--cel off` / `--ink off` = today's frame, means under 1/255 on 08 and 13; the maxes are run-to-run chimney smoke, a HUD marker and the right edge):
+  - **B2 the material library, DONE** (871dec114..799636d4a): `godot/data/look/materials.json` (classes from the bible rules and boards MB1-MB4, board boxes in the JSON, `tools/style/board_measure.py`), `logic/Look/MaterialLibrary.cs` + tests; the loader `src/World/StdCelCode.cs` (a port of Godot 4.5.1's BaseMaterial3D generator) + `CelLib.cs` (one NodeAdded hook, a 30-frame revisit and a 24-mesh watch for late materials), so every lit StandardMaterial3D is on the model; the custom shaders adopted (glowing, crystal, keeper_iron, chakram, sunder_steel, far_castle, warden_wet/face); `--cel-audit` is 0 in all 13 frames; the crowd fur's rim is the class's `cel_edge` (R4's crowd edge UNDONE); the shaders' `CEL_*` fallbacks equal their classes (a test); the swatch row `--lookdev-swatches`. Hair's half-tone 0.25 -> 0.12 by rule 5 (A|B `lookdev\b2r2\hair\hair_ab.jpg`, not yet looked at: the D judge rules on it).
+  - **B4 the lighting rigs, DONE in 3 rounds** (99e2f5a80, 51ccbce81, 654fa6024, 284a7fb51, 8e200b17f): `godot/data/look/rigs.json` + `logic/Look/Rigs.cs` + tests; presets name a rig (`--cel-rigs off`, `--rigs-file`, `--rig-fires-off`); the close-up's 7 per-layer spots and the Look's 7 lights UNDONE under cel (one camera-relative key at 35,40, the rig's fill and rim); her shade: close night h 282 dL 0.275, close day h 337 dL 0.264, Look day h 315 dL 0.262 (`look_day` has its own fill #c848b8 from MB1), Look night h 256 dL 0.359; `fires` by day 0.2 (rule 3) everywhere through `ZoneView.FireShare`; the moon dapple is a canopy cookie in `cel.gdshaderinc` masked by `CanopyCookie.cs` (+0.16 ms); the day fill is now #7789ff at 0.106 (B3 r3's joint solve). Known: the day key is a frame number (Stage C, cast shadows from the real buildings, rule 5); dawn_morning's warm share 81% vs LB's 55%.
+  - **B3 texture authoring, 3 rounds, closes with knowns** (4d9c171b0..fa665f9f8): `docs/design/look/TEXTURE_AUTHORING.md` (world side in this repo; character side a Marionette forge job `/api/forge/paint` on the same core `tools/look/paint_core.py`, spec'd and proved end to end on her current mesh as a stand-in, `b3r3\stand_in\`); the tools table picked our procedural painter (AI arms: no gain at 1:1, grain under 3 cm breaks rule 9); the build `python tools/look/build.py <asset>|all [--twice]` (deterministic, `paint_core.py --check`), installed by `--b3-painted` (`B3Maps.cs`); albedo solved jointly with the day fill over the boards' lit and shade samples (`tools/look/joint.py`, `calib.py`); iron split into `wrought` (world, MB3) and `iron` (gear, MB2); setts layout from 13 and MB3. Relit check: day lit 22/24, day shade 6/12 (iron's reflection, bark, plank), night 0/10 unsolved (no moonlit shade samples on any board: Stage C judges the night frames against their targets). **Unjudged built art, uncommitted:** `godot/art/world/painted/` (barrel, boulder, setts).
+  - **B5 the ink, fixed over effects** (4f9e40a10): masked by a pre-transparent copy (`InkSnap`), so effects carry no ink; her silhouette unchanged (93,946 -> 93,926 px); +0.03 ms; `--ink-mask off` for A|B.
+  - **B6 the FX and UI language, round 2 of 3** (2a28ea925, be7534c5a): `godot/data/look/fx_language.json` + `FxLanguage.cs` + `fx_cel.gdshaderinc` (fire, frost, holy calibrated to MB5 within dE 0.03; storm, nature, arcane, shadow, physical marked DERIVED AND UNCALIBRATED); the cinder bolt `fx_cel_bolt.gdshader` opt-in `--fx-cel on` (the right kind of shape, not MB5's yet: head too big and pale, too few bites and sparks; 27% saturated vs MB5's 55%; 0.004 ms a bolt). H7 was told (via main) to read the bands, not adopt the include until the proof passes. UI: `ui_language.json` + `ui_cel_panel.gdshader` on a tools scene only (`tools_scenes/ui_panel.gd`; the frame reads redder and flatter than the targets' brown bronze): data for the UI lead, handed over through main once judged.
+- **Stage B's judge sheets:** `b3r3\sheet_{barrel,boulder,setts}.png`, `lookdev\b6r2\bolt.jpg`, `lookdev\b6r2\ui\ui_sheet.jpg`, `lookdev\b2r2\swatches.jpg`, `lookdev\b2r2\hair\hair_ab.jpg`, `lookdev\b4r2\` (the after set) with `b4r2\palette.md`.
+- **Routing needs (send to main, one line each):** `hero_clear` sizes its clear radius from her screen height, so at the close camera every effect draws at 1/3-2/3 strength (the FX owner's); then Stage C's remakes: the arena floor and the square through B3 (ours), the Warden and the Grave-Caller to R12/P3, the folk to their generator, her surfaces to P1/P2/R10.
+- **Bible changes this lead:** rule 1 (07 is the shade-share target, not the key's), rule 5 (cast shadows from the rig's sun and real buildings), rule 11 (KA's face known), rule 4 (night midC 0.09-0.12 from the picked night targets; the 3 Nov 0.045-0.07 holds by day).
+- **Cost, lead 3:** helpers about 2.8M (driver 105k; B2 240k + 250k workers, B2r2 203k; B4 234k, B4r2 201k, B4r3 148k; B3 215k, B3r2 234k + 57k, B3r3 192k + 188k + 63k; B6 188k, B6r2 201k; B5fx 97k), lead 3 about 280k, API $0.65, ChatGPT 1 image. Stage B ran about 2x its estimate (multiple rounds on B3 and B4). Re-estimate to GATE G2: Stage C about 0.9-1.2M, D about 0.1M + $10-15.
+
+## L1 the art direction as a SYSTEM: GATE G1 READY look-l1@ad67062b3 (look-l1 art director 2, 4 Nov)
+GATE G1 READY look-l1@ad67062b3. The sheet: `survivorsunchained_inputs\look_l1\g1\`. A5 round 1 (`g1\verdict_a5.md`, $2.68): PASS WITH FIXES, all fixes made in round 4. A5 round 2 (`g1\verdict_a5_r2.md`, $1.78): PASS WITH FIXES, 9 of 11 in. Round 5 (`a2\r5\`) fixed 08 (leaner, no lines inside the skin) and 07 (the long shadows). KA's face edit failed (ChatGPT edited the attached MB1 instead), so KA stays KA_r4 by the judge's own fallback. MB1 is the face law (rule 11) for P1 and the Look camera. Round cap: one A5 round left. Waiting on the owner's pick; B2-B6 and C stay closed until the coordinator relays it.
+- **The job:** painted cel built as a system. The owner, 4 Nov: "art is a big deal, not a patch", "cost does not matter - implementation building blocks etc matter"; Marvel Rivals is the reference KIND, never a copy; her look is "casual badassery and sexyness"; "if they need to be redone so be it". Rule 4 of PIPELINE.md "How a lead works" applies: each block names what it is derived FROM, and no block is fitted to today's maps; the frames are rebuilt to the blocks. The plan, approved: A direction, G1 (the owner picks), B blocks, C the 13 frames rebuilt, D a judge and the owner's A|B.
+- **Stage A, done:**
+  - A1: `docs/design/look/REFERENCES.md`.
+  - A2/A3 targets, all in `survivorsunchained_inputs\look_l1\a2\`, listed in `targets.json`, provenance in `r1/r2\PROVENANCE.txt` (ChatGPT, the owner's account):
+    - round 1: 9 images, frames 09, 07 and 13 in V1 restrained, V2 bold and V3 inked;
+    - the lead is V2, with the ground kept quiet and the saturation in the light (`work\chatgpt\prompts_r2.md` VARIANT);
+    - round 2: 17 images, every frame plus the key art and the boards MB1 her, MB2 gear, MB3 town, MB4 wild, MB5 fire, LB light;
+    - round 3: 5 edits in their own chats: 05 and 12 had HUD ornaments painted as people, 10 gained the pack mother, MB1 got clean skin, MB4 was simplified.
+    - round 4 (`a2\r4\`, `work\chatgpt\prompts_r4.md`): the A5 judge's 11 fixes. 08 was redone in a new chat; KA's edit was refused in its own chat and remade in a new chat from the image; the rest were edits. 06 is the Grave-Caller moment, not the Warden (my round-2 line had invented an armored brute). STYLE CORE and VARIANT now ink buildings too. The G1 picks are KA, 09 and 13.
+  - A4: `docs/design/LOOK_BIBLE.md` is rewritten: 14 rules with their as-built numbers, carriers and derivation. The v2 draft was folded in and removed.
+  - The G1 sheet is in `look_l1\g1\`: `00_targets_overview`, `01_variants_r1`, `02_boards`, `pairs\NN_id.jpg` (today | target, half size), and `full\` (the 3 picks: the key art, 09 the arena night, 07 the square).
+- **Blocks built during Stage A** (each tested with `--cel off` / `--ink off`, which give today's frame):
+  - B1 `shaders/cel.gdshaderinc` (B1a d8e70cf05):
+    - adopted by kit, terrain, the ground, grass, scatter, vat (the crowd), person, npc_dye and the props;
+    - args `--cel off|on|0-1`, `--cel-rig`, `--cel-tune`, `--cel-dbg band|ink`;
+    - cost +0.10-0.13 ms.
+  - B1b, her shaders (694a339b7): skin, hair, outfit (leather, metal, satin), eye, teeth, tongue, cards, paint, with her ink classes.
+  - B1c, the shade band stays the shade (f8cbbb39e): transmission is held to the terminator's thin edge (capped at 0.15 of the key); omni and spot lights get a soft band on skin; kit foliage is matte with no rim. The fixture `--lookdev-key AZ,EL[,1]` exists. Night shade passes (h 279, 0.30 L under the lit band). Open: her day shade hue is h 24 against MB1's mauve h about 325, which is B4's colored day fill.
+  - B5 `src/World/InkPass.cs` (fc546bff5):
+    - a compute pass at PostTransparent, before TAA;
+    - the ink class lives in the roughness byte (`cel_tag`), verified by readback;
+    - args `--ink off`, `--ink-px`, `--ink-depth`, `--ink-crease`, `--ink-fade`, `--ink-dark`, `--ink-rig`, `--ink-dbg edges|class|code`, `--ink-time`;
+    - cost 0.07-0.22 ms.
+  - B0, the lookdev stage (ba5cc9693):
+    - `python tools/style/lookdev.py shoot --out DIR [--rigs night,day,dawn,arena|all] [--extra ...]`, and `check` (frame numbers);
+    - her, the crowd, folk, a town corner and setts, the wild row, fire and lantern, and five spheres, at the play, close and side cameras;
+    - shoots in `look_l1\lookdev\`: r0 (off), b1 and b1b.
+  - Integration is merged (11f301a11, fresh). Suite 1517/0/10.
+- **Known, for B2-B4:**
+  - Standard-material props (lamp posts, stalls, carts, barrels, seated folk, her shield, dead trunks) are outside the model and draw as ink class 3. B2's loader converts them.
+  - The close-up and lookdev rigs key her from behind. B4 keys the close-up and Look from the front three-quarter.
+  - R4's crowd edge is inherited (look-r4); B2 folds it into the crowd's preset.
+  - Godot crashes (signal 11) on exit after the lookdev run, via `HerToTheView` in `GameCloseUp.cs`; the frames are saved first.
+  - Frames 05 and 09 differ run to run (the gameplay moment), so pixel checks use 08 and 13.
+  - `frames.py --stale-ok` exists (added by B5).
+- **Sent once:**
+  - To P1: the bake targets and `docs/design/look/her_paint_regions.json` v1. P1's answer: it never touches heroine_* shaders (L1's); it lays the zones as data; the face paint stays as-is for its gate (flat face albedo is R10's); hair cards belong to the hair lead.
+  - To H7: what the ramp does to spells.
+- **Next** (the specs are staged in `survivorsunchained_inputs\look_l1\work\post_g1_specs.md`; turn each into a brief like `work\brief_b1c.md`):
+  1. Wait for the owner's G1 pick. B2-B6 and C stay closed until the coordinator relays it.
+  2. Then B2 the material library (presets as data plus a loader for every StandardMaterial3D), B3 texture authoring (painted-block maps from form maps; confirm the regions v1 for P1), B4 the lighting rigs, B6 the VFX and UI language as data (tell H7 when its band rules exist).
+  3. Then C: the 13 frames rebuilt through the blocks (today | blocks on today's maps | blocks with re-authored maps), with remakes routed: the arena floor and the square through B3, the Warden to R12, the folk to their generator, her surfaces to P1/P2/R10.
+  4. Then D: a max judge, then the owner's A|B.
+- **Cost so far:**
+  - helpers about 1.37M: the ChatGPT driver 150k + 234k, B1a 188k, B5 205k, B0 185k, B0b 176k, B1b 227k;
+  - plus B1c 191k and the driver's rounds 3-4 (about 55k more);
+  - lead 1 about 250k, lead 2 about 290k (it hands off at the gate);
+  - plus the round-5 driver 138k;
+  - API: A5 round 1 $2.68, round 2 $1.78;
+  - ChatGPT: 45 images on the owner's subscription.
+
+HANDOFF READY: docs/handoff/art_style.md on look-l1 (the successor takes B2 onward once the owner's pick is relayed).
+
 ## H2 step 2, R1 + R3: SHIPPED (look-r1 lead, 3 Nov; judge round 2 SHIP)
 - **What changed (data, plus two small hooks):** `logic/Maps/ArenaPlaces.cs` arena nights on `Atmospheres.PlayNightGrade` (made `internal`): the moon step widened to the brown litter (MoonLo/Hi 0.12/0.24, MoonDrop 0.7, MoonSat 0.13, MoonTop 0.44), a navy shadow tint (#2c4870 at 0.15, toe 0.5), a deep paint shade (#1c3060 at 0.95, no lift), vibrance 0.3, `PaintShadowSkin = 1`. The moon is 0.85x and bluer per place. Her ember is 4.5x in a paler gold, reaching 1.3x as far: new preset fields `EmberColor`/`EmberReach` (`Zone.cs`, read in `PlayerView`, blended in `Atmospheres.Blend`). `CrowdRim` 0.2, `CrowdFill` 1 to 0.65. R3: `Atmospheres.Front` = Night with the play grade (its moon step fades out by L 0.6, so her lit skin at the Look is kept), moon 3.4 to 2.55. `--air-tune` now reaches arena nights and Front (`Atmosphere.Set`; Front's Own paint and skin guard follow it via `FrontTuned`). This lets you sweep without a build.
 - **Numbers, r0 to shipped** (palette.py world crop; Lp50 / key / pool / shC / shH / gray% / midC / cold%): 01 title 0.27/1.95/0.38/0.021/217/41/0.040/45 to 0.25/2.02/0.39/0.024/240/28/0.038/74. 09 Shaw 0.18/1.64/0.34/0.018/66/43/0.040/0 to 0.19/2.28/0.47/0.034/264/5/0.065/79. 10 Pack-Mother 0.14/1.83/0.47/0.013/92/62/0.050/3 to 0.14/1.78/0.44/0.031/261/9/0.052/97. 12 HUD 0.18/1.76/0.39/0.017/70/46/0.069/1 to 0.18/2.19/0.47/0.035/263/5/0.064/85. Her face at the Look: hue 32.2 to 34.3, C 0.103 to 0.087 (r0's pink flush calmed), L 0.604 to 0.572.
 - **Judge (su-lead-max, max; 2 rounds):** round 1: better everywhere, R3 close, R1 medium, four must-fixes (rust pool, lost moon masses, fire must own the title, the horde's fill). Round 2: SHIP, all four landed, nothing broke. No frame passes the AAA gate yet. Distance: 01 and the Look close (R2), 09 medium (R2 then R4), 12 medium (R5), 10 far (R11 then R4).
 - **Sheets:** `survivorsunchained_inputs\look_h2\r1\` (round 1, all 13 frames, `sheet.jpg`, `ab\ab_sheet.jpg`), `look_h2\r1_2\` (shipped: 01/09/10/11/12 re-shot, others as r1; `ab\ab_sheet.jpg`, `look_r1_2_half.jpg`, `look_face_strip.jpg` r0 | r1 | r1_2).
-1\` (round 1, all 13 frames, `sheet.jpg`, `abb_sheet.jpg`), `look_h2
-1_2\` (shipped: 01/09/10/11/12 re-shot, others as r1; `abb_sheet.jpg`, `look_r1_2_half.jpg`, `look_face_strip.jpg` r0 | r1 | r1_2).
+1\` (round 1, all 13 frames, `sheet.jpg`, `ab\ab_sheet.jpg`), `look_h2
+1_2\` (shipped: 01/09/10/11/12 re-shot, others as r1; `ab\ab_sheet.jpg`, `look_r1_2_half.jpg`, `look_face_strip.jpg` r0 | r1 | r1_2).
 - **For R2/R4 and the rest next:** R2: the litter's red-brown albedo holds her pool at hue 46 (target 50-55) and the ground is one navy hue with photographic speckle; it needs two or three painted value masses with some local color. Also the title/Look cylinder log with its blue end cap, and the ravine bank speckle in 10. R4: the pale wolves are the brightest non-sources in 09/10/12 (dark bodies, a moon rim). R5: the bronze now sits warm on navy and competes more. R11: the Pack-Mother. Ruts and dig were measured only, not judged: midC 0.08 at round 1. Re-measure them after R2.
 - **H1's lamps:** they plug in as `B.Glow(x, z, "#ffd07a", 6-8, height ~2.7)` lights in the arena builders (as `Arenas/Dig.cs`): real sources the grade already treats as warm (C/L over 0.24 keeps its own under the moon step). Frame 10 needs one most: the boss halves her light on purpose (`ArenaBosses.OnHard`, `Greymuzzle` long hunt), so no light preset can give it a pool.
 - **Not done:** the campfire's own strength on the title (it is the Low Ford camp's fire, shared with frame 05). Front's paint terms are hard-wired to `CloseNightPaint` (`Atmosphere.Own`), so title-only shade/vibrance needs a code split.

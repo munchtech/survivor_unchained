@@ -285,7 +285,6 @@ public sealed partial class Journey
         if (levels > 0)
         {
             Teach(campaignFight);
-            OnAnnounce(new Announcement($"Level {Ch.Level}", Ch.TraitPicks > 0 ? "A new trait can be chosen (C)" : "Attribute points to spend (C)", "boon", 3.2, "You grow stronger"));
             Grew();
             OnTouch();
         }
@@ -315,13 +314,17 @@ public sealed partial class Journey
         return got;
     }
 
+    /// <summary>(M4) What the calling last taught in a campaign fight, and at which level: the HUD's level card prints it.</summary>
+    public (int Level, string Skill)? CallingTaught;
+
     /// <summary>The survivor has grown: their calling may teach them a skill
     /// they have seen burn (every third level). What it taught, or null.</summary>
     public string? Grew()
     {
         if (SkillBook.Calling(Ch) is not { } id) return null;
         var wd = Content.Weapons.All[id];
-        OnAnnounce(new Announcement(wd.Name, $"Your calling teaches it to you. Carry it by day (K)", "boon", 3.8, "A new skill"));
+        if (campaignFight is { Campaign: true }) CallingTaught = (Ch.Level, id);
+        else OnAnnounce(new Announcement(wd.Name, "Your calling teaches it to you. Put it on a key (K)", "boon", 3.8, "A new skill"));
         return id;
     }
 

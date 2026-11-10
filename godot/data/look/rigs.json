@@ -1,0 +1,330 @@
+{
+  "what": "The lighting rigs (L1 B4; docs/design/LOOK_BIBLE.md rules 1-3, 5, 7-9, 11). Every scene under the cel model is lit by the rig its preset names (AtmospherePreset.Rig; logic/Look/Rigs.cs). A rig changes only what it names; 'base' is the rig it starts from. Play rigs: the key in world degrees (Atmosphere.Set: azimuth round from +x toward +z, elevation up). Camera rigs (the close-up, the Look): the key camera-relative, degrees round from the lens toward its right and up. Colors are sRGB hex; ink is linear rgb (B5's --ink-rig). --cel off lights by the presets as they were (no rig).",
+  "rigs": {
+    "night_play": {
+      "from": "LB_light NIGHT and targets 09/10: a moon-blue key from the road's far end (Low Ford's corridor, so what stands on the road throws its shadow toward the camera), the sky's indigo fill coloring the shade band (rule 2, h 220-290), her ember the one warm pool in a cold dark (rules 1, 3: key 2.0+, pool 0.35+, Lp50 0.15-0.30, cold 60%+); the moon through the canopy in big leaf shapes (rule 9, 09 and 10). Start: LowFordNight (G1 r3). Tuned (B4r2, the lookdev stage's play night): the moon bluer and up (#80b6f2 1.7 to #6aa8ff 2.4), the fill bluer (#4a5fc0 to #3a6ae0) and the grade's Moon step at chroma 0.45 (rig_night): shade h 314 to 261, cold 28% to 52%, key 2.18, pool 0.42, Lp50 0.27; the stage's camp fire pool (18 m) holds the rest of the chroma. C2 (the Stage B judge on the frames: 09 Lp50 0.13 and 12 0.07, midC 0.05-0.07, black leaf stencils, 05 warm 7%; rules 1, 4, 9): the moon's floor and its chroma from the light, not the surfaces: the key bluer (#5a9cff) and its cast shadow 0.8 to 0.6, the fill bluer (#2c5cf4) at 0.12 to 0.4, the sky #2c4c8c at hemi 1.6 to 2.4; the dapple's dark clamped to the moon-shade band (strength 1.0 to 0.55: under the leaves 45% of the moon, two blues); her ember the pool (3.5 to 8.0, its reach x1.5, #ff8a3a) at exposure 1.3 to 1.15. 05: Lp50 0.20 to 0.21, Lp95 0.38 to 0.45, key 1.96 to 2.17, pool 0.31 to 0.35, midC 0.046 to 0.070, warm 7% to 18% (target 05: 0.20, 0.43, 2.17, 0.35, 0.119, 20%). W2 (the wave-1 judge: the pool salmon or beige, warm 2-16%, night midC 0.036-0.070; rules 1, 3, 4, MB5's EMBER #ff8a3a): within her light's reach the moon gives way to it (ember_give: 75% of its key, fill and rim and 60% of the sky's light at the heart, fading from 25% of the reach to none at 60%, cel.gdshaderinc cel_give), and the grade keeps the warm light's own chroma and hue (warm_keep 0.85: the warm-source term, GradeSettings.WarmKeep; no vibrance raise on the surfaces). C6 (the color chain, tools/look/color_chain.py; godot/data/look/swatches.json; rules 2-4): the moon FROM the boards' night sides over the classes' albedos (one albedo serves day and night): the median gain lit [1.3202, 1.0111, 0.5711] over 9 swatches (far off: setts, stone, roof, grass, spruce, rock, road), shade [1.3021, 0.6847, 0.2281] over 12 (far off: leather, cloth, setts, plaster, stone, roof, grass, spruce, rock, road, lb_setts); the shade's share of the lit side's light [0.1725, 0.2847, 0.4362] (the neutral 0.5 card), so the key x[1.324, 1.141, 0.8364]: #5a9cff 2.4 -> #70b3ff 2.0075; the shade light x[1.3021, 0.6847, 0.2281]: fill #2c5cf4 0.4 -> #6fa1ff 0.0912; sky #2c4c8c ground #1e1a14 hemi 2.4 env 0.6 -> #c3ebff #91602d 0.5474 0.1369. (The arena's own cards gave lit None, shade None: the red channel sits in the night grade's toe, 0.006-0.06 on the cards, where a gain is noise.) C6 (the color chain, tools/look/color_chain.py; godot/data/look/swatches.json; rules 2-4): the moon FROM the boards' night sides over the classes' albedos (one albedo serves day and night): the median gain lit [1.9969, 1.7999, 2.2612] over 9 swatches (far off: plaster, grass, lb_setts), shade [1.7344, 1.7175, 2.0543] over 11 (far off: leather, plaster, wood, grass, spruce); the shade's share of the lit side's light [0.3601, 0.2485, 0.2138] (the neutral 0.5 card), so the key x[2.1446, 1.8271, 2.3175]: #70b3ff 2.0075 -> #6ca1ff 4.6523; the shade light x[1.7344, 1.7175, 2.0543]: fill #6fa1ff 0.0912 -> #6694ff 0.1874; sky #c3ebff ground #91602d hemi 0.5474 env 0.1369 -> #b5d9ff #86582d 1.1245 0.2812. (The arena's own cards gave lit [1.1976, 1.0075, 1.2209], shade [1.3628, 1.1159, 1.1835]: the red channel sits in the night grade's toe, 0.006-0.06 on the cards, where a gain is noise.) L7 S2: the energies held at their pre-S2 values (color_chain NIGHT_LEVEL_HOLD: the boards give the colors; the x2.3 level lit 09/12 to Lp50 0.46). L7 S2: ember_reach 1.5 to 1.0 FROM the picked night targets' warm area (05, 09, 10, 12: 8-11% of the world; at 1.5 under scene_color 09 and 12 read 26-27%, Lp50 0.42). L1 l10 NIGHT (one moon colour FROM T09 and T06 on the day-chain albedos): every night target lands its moonlit and shaded ground at h 250-265, C/L 0.2-0.27, whatever the albedo; the pale #b5d9ff sky drew the grass teal (h 168 on the turf class) and the brown floor grey (C 0.014), the #6ca1ff key the grass h 228, and the grade's moon step (MoonSat 0.45) painted chroma onto any near-neutral pixel, so the blue lived in the grade and drew a saturated ring where her pool crosses neutral (06). The moon now carries the blue itself: key, fill and sky #2c7cff/#2c7cff/#2a88ff (a saturated blue that puts the soil class at h ~261 and the grass at ~252, C/L 0.26/0.20: T09 0.27, T06 0.20), the grade's moon step 0.45 -> 0.12 (Atmospheres rig_night, rig_arena_night). Swept with --air-tune at 09 and the ford (c/l10/night/s1-s3): 09 ground lit L 0.274 C 0.076 h 261, shade 0.171 C 0.039 h 269 (T09 0.269/0.073/255, 0.163/0.043/262); 06 grass shade 0.233 h 253, lit 0.270 h 256 (T06 0.174/254, 0.225/252) at key 3.38 (#3078ff) hemi 1.44: here x0.8 (key 2.6, hemi 1.15) toward T06's level. ember_give under the ramp: the moon gives way wholly inside 1.5 m and none past 3.25 m (the ramp's warm stops and its tail; cel_give_at), not along the ramp's level (half the moon back at 1 m drew the pool pink under a saturated moon).",
+      "key": {
+        "az": 250,
+        "el": 48,
+        "color": "#2c7cff",
+        "intensity": 2.6,
+        "shadow": 0.6
+      },
+      "fill": {
+        "color": "#2c7cff",
+        "strength": 0.0912,
+        "sky": "#2a88ff",
+        "ground": "#86582d",
+        "hemi": 1.15,
+        "env": 0.1369
+      },
+      "rim": {
+        "color": "#9fc0ff",
+        "strength": 0.35,
+        "width": 0.25
+      },
+      "ink": [0.42, 0.45, 0.85],
+      "hardness": 0.85,
+      "grade": "rig_night",
+      "exposure": 1.15,
+      "ember": 8.0,
+      "ember_reach": 1.0,
+      "ember_color": "#ff8a3a",
+      "dapple": {
+        "cover": 0.6,
+        "strength": 0.55,
+        "height": 9
+      },
+      "ember_give": [1.0, 0.9, 1.5, 3.25],
+      "fire_give": [1.0, 0.9, 0.15, 0.35],
+      "ember_pool": [1.0, 0.3, 0, 0.54, 255, 136, 6, 0.5, 0.53, 255, 135, 8, 0.75, 0.40, 255, 132, 14, 1.0, 0.27, 255, 130, 20, 1.25, 0.20, 255, 128, 25, 1.5, 0.155, 255, 126, 32, 1.75, 0.13, 250, 122, 45, 2.0, 0.12, 240, 118, 64, 2.5, 0.085, 200, 120, 135, 3.0, 0.03, 170, 130, 180, 3.4, 0, 170, 130, 180],
+      "warm_keep": 0.85,
+      "scene_color": 1,
+      "scene_moon": 1
+    },
+    "night_town": {
+      "base": "night_play",
+      "from": "LB_light NIGHT (the square): the same moon and sky as the wild's night; inside walls the lamps and windows carry the warm (rule 3), the moon a cold wash from the town's south-east (the square's shadows as the town's buildings stand). Start: NightTown (E9d r2, Rendering r1-r2). C6 (the color chain, tools/look/color_chain.py; godot/data/look/swatches.json; rules 2-4): the boards' one moon: night_play's derived key and sky colors, this rig's own energies x0.8364 (key) and x0.2281 (sky): #a4b8ec 1.8 sky #3a4a7c hemi 0.82 -> #70b3ff 1.5056 sky #c3ebff hemi 0.187. C6 (the color chain, tools/look/color_chain.py; godot/data/look/swatches.json; rules 2-4): the boards' one moon: night_play's derived key and sky colors, this rig's own energies x2.3175 (key) and x2.0543 (sky): #70b3ff 1.5056 sky #c3ebff hemi 0.187 -> #6ca1ff 3.4892 sky #b5d9ff hemi 0.3841. L7 S2: the energies held at their pre-S2 values (color_chain NIGHT_LEVEL_HOLD: the boards give the colors; the x2.3 level lit 09/12 to Lp50 0.46).",
+      "key": {
+        "az": 128,
+        "el": 48,
+        "color": "#6ca1ff",
+        "intensity": 1.5056,
+        "shadow": 0.55
+      },
+      "fill": {
+        "sky": "#b5d9ff",
+        "ground": "#1e0f04",
+        "hemi": 0.187,
+        "env": 0.1186
+      },
+      "rim": {
+        "color": "#86a4e8"
+      },
+      "grade": "town_night",
+      "exposure": 1.32,
+      "ember": 3.0
+    },
+    "night_wild": {
+      "base": "night_play",
+      "from": "the night rig on the generic wild's night (the Verge by night, the cinematics' 'night'): its moon high in the south-east as the preset has it, the night rig's fill, rim, ink and dapple. Start: Night. C6 (the color chain, tools/look/color_chain.py; godot/data/look/swatches.json; rules 2-4): the boards' one moon: night_play's derived key and sky colors, this rig's own energies x0.8364 (key) and x0.2281 (sky): #a9c4ff 3.4 sky #4a6699 hemi 1.25 -> #70b3ff 2.8439 sky #c3ebff hemi 0.2851. C6 (the color chain, tools/look/color_chain.py; godot/data/look/swatches.json; rules 2-4): the boards' one moon: night_play's derived key and sky colors, this rig's own energies x2.3175 (key) and x2.0543 (sky): #70b3ff 2.8439 sky #c3ebff hemi 0.2851 -> #6ca1ff 6.5906 sky #b5d9ff hemi 0.5857. L7 S2: the energies held at their pre-S2 values (color_chain NIGHT_LEVEL_HOLD: the boards give the colors; the x2.3 level lit 09/12 to Lp50 0.46).",
+      "key": {
+        "az": 128,
+        "el": 50,
+        "color": "#6ca1ff",
+        "intensity": 2.8439,
+        "shadow": 0.7
+      },
+      "fill": {
+        "sky": "#b5d9ff",
+        "ground": "#2a1808",
+        "hemi": 0.2851,
+        "env": 0.1825
+      },
+      "grade": "night",
+      "exposure": 1.6,
+      "ember": 1.0
+    },
+    "arena_night": {
+   "ember_pool": [0, 0, 0, 1, 255, 168, 52, 0.36, 0.95, 255, 168, 52, 0.54, 0.86, 255, 162, 48, 0.9, 0.7, 255, 146, 38, 1.26, 0.55, 255, 142, 36, 1.62, 0.36, 255, 122, 30, 1.98, 0.235, 255, 100, 30, 2.34, 0.135, 255, 80, 38, 2.7, 0.082, 255, 62, 60, 3.12, 0.05, 255, 54, 92, 3.64, 0.024, 235, 54, 120, 4.23, 0, 235, 54, 120],
+   "ember_give": [1, 0.9, 1.6, 3.6],
+   "ember_smooth": true,
+   "ember_shade": [1, 0.9, 3.3, 1],
+   "ember_floor_lift": [0.105], "ember_floor": [0.33, 0.085, 260, 0.22, 0.055, 263, 1.05, 0.74, 0.4, 0.0, 0, 0.6, 0.155, 36, 0.555, 0.14, 34, 0.5, 0, 0.6, 0.155, 35, 0.55, 0.14, 33, 0.9, 0, 0.575, 0.145, 33, 0.525, 0.12, 31, 1.3, 0.05, 0.525, 0.115, 30, 0.475, 0.105, 28, 1.7, 0.2, 0.46, 0.095, 25, 0.41, 0.08, 22, 2.1, 0.4, 0.4, 0.072, 12, 0.35, 0.056, 5, 2.5, 0.6, 0.36, 0.058, 340, 0.3, 0.047, 318, 2.9, 0.8, 0.34, 0.058, 312, 0.27, 0.048, 292, 3.3, 0.9, 0.33, 0.065, 290, 0.24, 0.052, 275, 3.8, 1, 0.33, 0.075, 272, 0.225, 0.055, 266, 4.5, 1, 0.33, 0.085, 260, 0.22, 0.055, 263],
+   "hero_pool": [0.9, -0.3, 0.0335, 255, 130, 112, 1.5, -0.6, 2.0, 0.38, 0.28, 255, 244, 232, 0.14, 3.2, 255, 244, 232, 1.5, 0.85, 255, 244, 232, 0.2, 1.0, 0.6, 0.5, 0.42, 1.9, 1.5, 0.15, 0.34, 120, 300, 0.42, 0.57, 0.41, 0.93, 0.67, 0, 0, 0.62, 0.50, 0, 0.24, 0.15, 3.0, 0.45, 0, 0.5, 0, 0.29, 0, 1.3, 0, 1.15, 1.0, 1.0, 0.85, 0.06, 0, 0, 0, 14, 1.5, 5, 3.5, 0.7, 1.3, 0.45, 0.8, 0.88, 8, 0.15, 0.8, 1.12, 0.05, 1.7, 0.006, 0.016, 1.5, 0.08, 0.03],
+   "moon_top": [0.32, 60, 175, 235, 0.84, 0.5, 1.5, 0.15],
+   "foe_fire": [0.85, 0.41, 0.3, 0.55],
+   "foe_moon": [0.055, 1.0, 0.0342, 94, 147, 255, 0.53, 0.66],
+   "stand": [
+    [0.0056, 80, 130, 255, 0.0175, 100, 148, 255, 0.031, 99, 151, 255, 0.277, 52, 146, 255, 0.7512, 18, 187, 255, 0.08, 255, 150, 160, 0.4, 255, 129, 53, 0.2, 0, 1, 0],
+    [0.012, 255, 40, 130, 0.04, 255, 25, 95, 0.075, 255, 25, 105, 0.3, 255, 62, 35, 0.55, 255, 110, 50, 0.45, 255, 80, 65, 0.55, 255, 130, 80, 0.2, 0.15, 0, 0.7],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0.6, 0.25, 0.5, 0.15, 0.15, 0.6, 3.5, 0.22]
+   ],
+      "base": "night_play",
+      "from": "LB_light ARENA and target 09: the night rig's fill, rim, ink, hardness and dapple on every arena; each place keeps its own moon, sky and exposure (ArenaPlaces: the barrow's open sky, the Hollow's low broken moon), so one rig and one pack preset (rule 7) under four moons. C2 (09 Lp50 0.13, 12 0.07; rules 1, 4): the moon's hue, its cast shadow, the sky's color and the floor (hemi 2.2) and the grade (rig_night: the moon step's chroma) are the rig's now; each place keeps its moon's way and strength, its ground and exposure. 09: Lp50 0.11 to 0.25, midC 0.064 to 0.089, cold 73% to 86%; 12 (her lamp out): 0.07 to 0.17, midC 0.059 to 0.089 (targets 0.24, 0.118/0.094). W2: her ember is the night rig's (8.0, reach x1.5, #ff8a3a, rule 3); the arena places' own #ffcc9c (Oklab C 0.085, h 65: pale peach) at 4.5 was the beige pool of 09, 10 and 12. C6 (the color chain, tools/look/color_chain.py; godot/data/look/swatches.json; rules 2-4): the boards' one moon: night_play's derived key and sky colors, this rig's own energies x0.8364 (key) and x0.2281 (sky): #5a9cff None sky #2c4c8c hemi 2.2 -> #70b3ff None sky #c3ebff hemi 0.5018 (the places keep their own moon strengths). C6 (the color chain, tools/look/color_chain.py; godot/data/look/swatches.json; rules 2-4): the boards' one moon: night_play's derived key and sky colors, this rig's own energies x2.3175 (key) and x2.0543 (sky): #70b3ff None sky #c3ebff hemi 0.5018 -> #6ca1ff None sky #b5d9ff hemi 1.0308 (the places keep their own moon strengths). L7 S2: the energies held at their pre-S2 values (color_chain NIGHT_LEVEL_HOLD: the boards give the colors; the x2.3 level lit 09/12 to Lp50 0.46). L7 S2: ember_reach 1.5 to 1.0 FROM the picked night targets' warm area (05, 09, 10, 12: 8-11% of the world; at 1.5 under scene_color 09 and 12 read 26-27%, Lp50 0.42). L8 S2b: her pool painted (ember_pool, cel.gdshaderinc cel_pool_paint) FROM the picked targets 05/09/10 (gold core h 53-60, one redder step out to h 34-40, a narrow soft edge; warm area 9.7% on 09_v2): core to 0.22 and pool to 0.29 of her reach, outer step 0.6 in #ff5a30 (Oklab h 35), the moon given back at the pool edge (ember_give 0.26-0.31); 09 (with key 1.2, exposure 1.15, hemi 0.3 as a trial): pool core h 53, edge h 34-36, warm area 22% to 13.5%, cold 55% to 81%. L1 l10 NIGHT: night_play's one moon colour (#2c7cff key, #2a88ff sky; no arena hue of its own), key scale 0.617 -> 0.894 (the same luminance as #7a92ff at 0.617: 09 ground lit L 0.274, shade 0.171, T09 0.269/0.163), sky_scale 2.55 kept (luminance-kept by the rig), the cast shadow 0.6 -> 0.3 (the crowns' cast shadow under the canopy's dapple drew near-black blobs; shade share 64% -> 57%, T09 62%). (L1 lead 11, R2, 9 Nov: the levels are the rig's, absolute: key.intensity 4.2 (was the place's 4.7 x scale 0.894), hemi 0.84 (was the place's sky light x sky_scale 2.55 = 0.845), env 0.85 (was the place's own: hollow 0.85, barrow and ruts 0.8, dig 0.75), exposure 1.15 as before; no place and no mood scales them (the 'moonless' mood cut the Deep Shaw's key x0.55 and its sky x0.7); a place keeps its moon's az and el, its air, cover and props.) (L1 lead 11, R3 one shade, 9 Nov: shadow_level true: key.shadow is a level, 0.85 (was 0.3 on the old switch = cast shadows off), and the dapple's strength is the same number (0.85 as before): a cast shadow and a leaf's shade both keep 0.15 of the key, overlaps the darker; cover 0.6 to 0.54 because the cast shadows now count as shade (shade share of the cold ground at the real 09: 65% at 0.6). Solved at the real 09 by m09.sh against T09's ground: lit L 0.27 h 250-262, shade 0.16-0.175, share 50-62%.) (L1 lead 11, night 2A, R4, WIP unjudged) Her pool REBUILT from target 09's radial profile in FRAME SHARE at the play camera, not tuned in metres: the play camera draws 77.9 px per metre at her light's foot at 1080p (ground aspect 0.907; Shots --stage-log), so 1 frame height = 13.86 m, and T09's stops (r/H: L, hue) 0.06: 0.70 h53, 0.10: 0.65 h50, 0.14: 0.57 h49, 0.18: 0.49 h47, 0.22: 0.43 h38, 0.26: 0.365 h9, 0.30: 0.36 h345, 0.34: 0.35 h331, end 0.365 are the ember_pool stops at 0.83, 1.38, 1.94, 2.49, 3.05, 3.60, 4.15, 4.71 m, held to 4.90 and ended at 5.05 m (was night_play's ramp, 3.4 m: T09's metres, 0.4 of its picture area). ember_pool[0..1] 0, 0: no under-leaf cut of the fire. ember_give 3.05 to 4.15 m (was 1.5 to 3.25): the moon gives way through the gold and orange and is back by 0.30 H, so the outer band is fire over the moon's two blues. ember_break 0.3 (new): under a leaf, as the moon returns, the ramp reaches that share less far, so the end is broken by the leaf shapes (T09's warm share of each ring falls 74, 59, 44, 29, 7 percent from 0.22 to 0.38 H: a round end cannot). Measured at the re-staged 09 (c/l11/2a_02): 0.06-0.18 within 0.017 L and 5 deg, 0.30-0.34 within 0.024 L and 8 deg; 0.22 and 0.26 still 0.05-0.065 dark, warm share 20.4%. (L1 lead 11, night 2A round 2, WIP unjudged) Round 1's pool was FAR at the lead's own look: a flat orange disc with a compass edge inside a pink ring (its outer stops carried pink, 255/80/115, held as a band). Rebuilt as a FALLING fire: the stops keep T09's profile to 0.22 H, then fall on to nothing at 5.1 m, their color red-orange all the way (255/110/46; no violet stop: violet is only the weak tail over the moon's blue); ember_brush (new) [0.28, 2.49, 4.0, 0.28]: the ground's dab field pushes the ramp's radius 0.28 m in or out (dabs 0.28 m wide), so every band's boundary is a broken brush edge, and the break under a leaf grows from nothing at 2.49 m to full at 4.0 m (was: times the moon's share, a ring); ember_break 0.4 (was 0.3); ember_give 3.05 to 4.6 m, along the same painted radius, so the moon is back wherever the fire has ended. Measured with these values as a tune (c/l11/r2_01): rings 0.06-0.18 within 0.005 L and 5 deg, 0.22 0.069 dark; warm share of the rings 0.26-0.38: 63, 55, 36, 4 percent (T09 59, 45, 29, 7); magenta 2.26 percent (T09 2.71). A second tune (orange body held to 3.35 m, tail to 5.6 m, break 0.45 full at 3.6 m, give 3.2-4.4 m; shot from the rig's data with no tune, c/l11/r2_02) was worse and is not kept: 0.22 H 0.097 dark, ring 0.34 47 percent, magenta 3.65 percent. Open: 0.22 H is 0.07 dark, the tail at 0.30 H is 0.04 L bright and 0.02 chroma strong (reads mauve-pink on open ground), warm share 18.5 percent against a 9-17 band. (L1 lead 12, R4 round 3, WIP unjudged) Her pool's tail REPLACES the moon to its painted end instead of adding to it (round 2's mauve-pink halo was the red tail on a moon that came back from 3.05 m; magenta share 2.26% -> 0.34%): ember_give 3.05/4.6 -> 4.5/4.6 (the moon is back only across the last 0.1 m, where the ramp falls from its end level to 0, level-matched to the moonlit ground: open ground reads L 0.26-0.30 on both sides); ember_pool ended at 4.6 m (was 5.1), its body held up (2.95 m 0.33 -> 0.36, 3.3 m 0.285 -> 0.33) and its tail falling 3.7 m 0.28, 4.1 m 0.22 red-brown, 4.36 m 0.165, 4.5 m 0.125 dark wine-red (was 3.9 m 0.17, 4.5 m 0.085, 5.1 m 0, all orange-red); ember_break 0.4 -> 0.46 and ember_brush push 0.28 -> 0.38 m (the end more broken; rings 57/53/21/1% against T09's 59/45/29/7). Measured at 09 (c/l12/r3_04): s4_share 17.0%, mid L 0.438 h 39, magenta 0.34%, rings pass; edge L 0.248 h 18 still misses (the darkest fifth of the warm pixels is the pack inside the pool: the ground alone reads 0.292 h 10). (L1 lead 12, R4 round 4, WIP unjudged) Her fire on the ground REBUILT as a field, not a disc: three rounds fitted a ramp with a shaped end and each drew a disc (a ring, a halo, a crust). ember_break 0.46 and ember_brush [0.38, 2.49, 4.0, 0.28] are retired (the under-leaf break and the dab-field push, the code with them). ember_smooth true: the ramp runs on a monotone cubic through its stops, flat at her feet and at its end, so no stop draws a contour. ember_pool is one fall FROM the target's lit ground by ring (T09 lit patches, ring medians: 0.06 H L 0.73, 0.10 H 0.656, 0.14 H 0.583, 0.18 H 0.503, 0.22 H 0.425 h 28, 0.26 H 0.373 h 4, 0.30 H 0.340 h 316, 0.34 H 0.317 h 291, moonlit 0.305): level 1.0 at her feet, 0.64 at 1.39 m, 0.33 at 2.5 m, 0.115 at 3.6 m, 0.036 at 4.7 m, a thin tail to 0 at 5.9 m, its color gold to orange (the mauve is the SUM with the moon, never a stop color: was wine-red and magenta stops). ember_give 4.5/4.6 -> 0.6/6.3: the moon comes back smoothly from the core on and is whole only where the tail has ended, so lit ground passes orange, orange-brown, dusty wine (0.26 H L 0.374 C 0.053 h 3), mauve (0.30 H L 0.342 h 321) and blue with no step. ember_shade [0.955, 1.4, 2.4, 1]: the canopy opens over her fire (no leaf shade inside 1.4 m, whole by 2.4 m), beyond it a leaf shade takes 95.5% of the fire and keeps the whole moon, so the shade in her pool is the one shade plus a warm residue (L 0.20-0.21, h 271-286) and the pool's outline is leaf shade. dapple clusters 260, leaf 0.25-0.6 m, leaves (lobes) 2-4, mass 1.5-3.5 m: leaf MASSES with small serrated rims in place of the fans of 0.8-2.4 m leaves. Measured at 09 (c/l12/r4_05, the give then starting at 0.3 m; moved to 0.6 m for the mid hue): core L 0.733 h 59, mid 0.411 h 23, edge 0.279 h 349 (pack-free side 0.321 h 326), s4_share 14.9%, magenta 2.23%, rings 53/49/26/4% (all pass), lit 32.2%. (L1 lead 12, R4 round 5, WIP unjudged) The fix round on round 4's field: the fire read as a pale gold lamp. ember_pool: gold only in the heart (to 0.83 m), then the stops' own color deepens, orange (255,146,38) at 1.39 m to orange-red (255,118,36) at 3.05 m and (255,108,50) in the tail (were gold (255,168,52) to 1.94 m and (255,140,46) in the tail), levels 0.70 at 1.39 m, 0.55 at 1.94, 0.37 at 2.5, 0.265 at 3.05, 0.15 at 3.6, 0.066 at 4.16, 0.039 at 4.7. ember_give 0.6/6.3 -> 1.8/5.2: the moon is held off through the body (its blue grayed the orange to tan from 0.6 m) and is whole where the target's is (0.38 H). ember_shade [0.955, 1.4, 2.4, 1] -> [0.975, 1.9, 2.8, 1]: the canopy's opening over her reaches the body's width (the half-strength leaves from 1.4 m made the bright part a 1.3 m disc), and a leaf takes 97.5% of the fire, so the shade in her pool is cold violet as the target's (h 286-267), not warm brown. Under a part-faded leaf the moon comes back by the cube of the leaf's shade (cel.gdshaderinc cel_back_at: the plain share laid olive over the orange). dapple cover 0.54 -> 0.46, clusters 260 -> 144, leaf 0.25-0.6 -> 0.25-0.5, mass 1.5-3.5 -> 2-4 m, and the cookie's masses redrawn (CanopyCookie.Masses): each keeps clear of the ones ranked under it, the rim is straight-sided pointed teeth foot to foot (were fat overlapping leaves: scallops), a loose leaf or two off a mass. Measured at 09 on the pack-free side, lit ground L/C/hue by ring against T09: 0.10 H 0.654/0.165/52 (0.656/0.168/51), 0.14 H 0.580/0.151/50 (0.583/0.143/54), 0.18 H 0.464/0.117/42 (0.503/0.119/45), 0.22 H 0.414/0.099/29 (0.425/0.087/28), 0.26 H 0.368/0.075/0 (0.373/0.064/4), 0.30 H 0.338/0.064/318 (0.340/0.062/316), 0.34 H 0.302/0.064/293 (0.317/0.071/291). (L1 lead 12, S3 round 1, WIP unjudged) What STANDS in the night's light (R5, R4 for standing forms). moon_top [level 0.32, color (60,175,235), top edge 0.84 in n.m, m leaned 0.5 up from the key, rim 1.5 px, unlit side 0.15 of the key]: the moon's stepped top band and rim on any shader that defines CEL_S3 (cel.gdshaderinc cel_s3; the crowd first), authored as a level, none under leaf shade or a cast shadow. foe_fire [1.15, 0.35, 0.5, 0.12]: her fire on the foes is the ground's ramp at their ground distance in two hard bands on faces turned to her (was the smooth lamp crowd_ember.w with a soft both-sides edge), the moon giving way on those faces by ember_give. foe_moon [0.24, 0.8, 0.016, (58,48,92), 0.02]: every foe's paint pulled 0.8 of the way to luminance 0.24 (a moonlit wolf lighter than its ground), and each foe's own hard shadow inside her fire at the one shade plus 2% of the ramp (crowd_blob_cast.gdshader; the soft multiplied blob is off under this rig). Measured at 09 on the crowd's pixels: S3 L 0.53 h 245-248 on 11% of them (was none: L 0.33 on 0.2% of the frame), the bright fire band L 0.735 at 0.8-2 m, 0.61 at 2-3 m, 0.48 at 3-4 m (the ground's 0.65, 0.58-0.46, 0.41-0.37), the cool body L 0.22/0.28 (p10/p50; was 0.14/0.195). (L1 lead 14, D2) The canopy shade is a FIELD (dapple mass [shortest, longest lit field m, run, lit share], CanopyField): the shade is the connected phase and the moonlight compact leaf-edged islands, as the target has them (lead 12's masses were the inverse: shade islands of 3-5 m, lit lanes), and it opens over her fire by pulling back whole leaves (ember_shade y to z: the cover falls toward her, read at each leaf's stem), no fade. (L1 lead 14, S1, K1's slice) stand: the standing material's levels for STONE only (leaf and bark rows zero, not built): contact, side, body, top and rim from target 09's stone row (the pipeline is near identity at these levels: shoot s1_02 read body 0.26/0.078/266, top 0.44/0.122/256); fire mid and fire top are first guesses; this key also turns the arena's flora to our own species.",
+      "key": {
+        "az": null,
+        "el": null,
+        "color": "#3c88ff",
+        "intensity": 6.0,
+        "shadow": 0.6
+      },
+      "fill": {
+        "sky": "#2a78ff",
+        "ground": null,
+        "hemi": 1.5,
+        "env": 1.5
+      },
+      "shadow_level": true,
+      "grade": "rig_arena_night",
+      "exposure": 1.15,
+      "dapple": {"cover": 0.5, "strength": 0.6, "floor": 1.0, "leaf": [0.45, 0.7], "leaves": [3, 4], "mass": [3, 5, 100, 0.48]},
+      "ember": 8.0,
+      "ember_reach": 1.0,
+      "ember_color": "#ff8a3a"
+    },
+    "title_night": {
+      "base": "night_play",
+      "from": "target 01_r4 (the title, G1 picked) and judge 1 fix 3 (9 Nov): the title is the game's night, lit by the play night's rig (key, fill, rim, ink, grade, exposure) through the same system as play; the moon's direction stays the title preset's (Atmospheres.Title: high in the south-east, over the camp's right). It was off the rigs (Atmospheres.Front, Rig ''): moon ground C 0.026 (T01 0.059), fire-lit ground cream C 0.056 (T01 0.142), pines teal h 191 (T01 249).",
+      "key": {
+        "az": null,
+        "el": null
+      }
+    },
+    "cine_night": {
+      "base": "night_play",
+      "from": "target 03 (C01 shot 12, G1) and judge 1 fix 3 (9 Nov): the cinematics' night at the Low Ford's camp (Atmospheres.CineNight, 'preset': 'cineNight') under the night rig's fill, rim, ink and moon grade, the moon step's hue FROM T03's shade (h 262, shC 0.038; rig_arena_night's 262, the picked violet moon); the key's direction and level, the sky light and the exposure the shot's own (null: Night's under the cue's tuning, as the shots were staged). Under night_wild (the wilds' old grade, no moon step) C01's shade read mauve, h 309, shC 0.021.",
+      "key": {
+        "az": null,
+        "el": null,
+        "intensity": null
+      },
+      "fill": {
+        "hemi": null,
+        "env": null,
+        "sky_scale": 1.0
+      },
+      "exposure": null,
+      "grade": "rig_arena_night"
+    },
+    "day_town": {
+      "from": "LB_light DAY and target 07 (its shade share, violet-blue shade and ink; not its key): a pale-gold sun (#f3d9a0, rule 3) where the game's stands (r0 07: her shadow falls down-left, rule 5), the blue sky's violet-blue fill coloring the shade band (rule 2: h 240-310; on her skin mauve, MB1 h about 325); key 1.6+, Lp50 0.40-0.60 (rule 1). Start: WaystationDay (G1 r2). B4r2: fires 0.2 (rule 3, one warm light a scene: by day the sun; the lookdev stage's camp fire at its night strength, 6.7 m off, was the warm half of her shade at the close view, h 4 to 322 with it at 0.2). Key, sky and grade as they were: the stage's play-day key (p95/p50) held at 1.15-1.23 across sun 6.6-10, sky 0.35-0.7 and contrast 1.3-1.6 (lit ground is its median), so it is checked on 07 in Stage C. B3r3 (tools/look/joint.py): the fill solved with every class's albedo over the boards' lit and shade samples (MB2-MB4, 07's shade): #6a5ce0 0.12 to #7789ff 0.1063 (the shade sides at the boards' share of the lit). C2 (the Stage B judge: 07 key 1.21, Lp95 0.57; rule 1 day key 1.6+, about Lp95 0.70; the sun where the game's stands, rule 5): the sun 6.6 to 11, the sky's floor down (hemi 0.7 to 0.4, env 0.55 to 0.3) and the violet fill up (0.1063 to 0.14) so the shade keeps its share, and the grade's contrast x1.6 ('name@K', Atmospheres.GradeNamed: by day the key held at 1.19 across sun 6.6-11, the grade's curve, not the light). 07: Lp95 0.62 to 0.72, key 1.22 to 1.30, midC 0.065 to 0.090; 13: Lp95 0.68 to 0.77 (targets 07 0.71/1.37, 13 0.76/1.62). The rest of the key is the surfaces' (the lit setts are the median: C1). W2 (rule 1 day key 1.6+ and Lp50 0.40-0.60, rule 4 day midC 0.045-0.07; 04 1.32/0.090, 07 1.30/0.090, 13 1.57/0.071): the per-channel contrast x1.6 (which raised the surfaces' chroma: midC 0.065 to 0.090) is replaced by a tone curve on Oklab L (grade_curve, GradeSettings.Curve: lightness only), FROM LB DAY's ground (lit setts L50 0.77, shade setts L50 0.34 C 0.053 h 289: a lit/shade ratio of 2.26): the lit band lifted toward 0.77-0.80 (0.75 to 0.80), the mid-darks taken down (0.45 to 0.38, 0.25 to 0.20), pivoted near 0.6; the fill from royal blue #7789ff (Oklab C 0.174, h 274) to a violet #8c7fdc (toward LB's shade h 289-309, 07's 294), so the town's wall shade loses its saturated royal blue. C6 (the color chain, tools/look/color_chain.py; godot/data/look/swatches.json; rules 2-4): the shade FROM the boards: the median day shade/lit per channel over 15 day swatches [0.0972, 0.1598, 0.5138] (spread [0.039, 0.033, 0.032]-[0.235, 0.44, 3.813]; outliers skin, hair, cloth, beam, wood, road); the neutral 0.18 card's shade/lit was [0.0991, 0.1425, 0.7371]: the shade light x[0.9854, 1.0914, 0.6984] per channel: fill #8c7fdc 0.14 -> #beb5ff 0.0978; sky #a9a9e5 ground #605245 hemi 0.4 env 0.3 -> #dce6ff #7f724e 0.2794 0.2095. The grade rig_day: the highlight tint neutral (the sun's color is the key's, rule 3). L7 S1 (the day's warm cast at its root): scene_color 1, the grade gives lightness only (GradeSettings.SceneColor): the drawn color keeps the channel ratios of the light times the surface. AgX's per-channel sigmoid had pulled a neutral 0.18 card's lit side from the scene's R/B 2.26 to 1.72, and the day grade's chroma terms (saturation and vibrance, PaintVib 0.75, PaintHi 0.7, the per-channel contrast) pushed it to 2.95, past the sun's own 2.55 (#f3d9a0), with red near its ceiling on the 0.5 card: the chain's per-channel division of the boards through that curve drew the day's warm surfaces pink-mauve. The saturated color lives in the light and the albedos (rule 4), not in a grade push the chain must divide out. C6 (the color chain, tools/look/color_chain.py; godot/data/look/swatches.json; rules 2-4): the shade FROM the boards: the median day shade/lit per channel over 15 day swatches [0.0972, 0.1598, 0.5138] (spread [0.039, 0.033, 0.032]-[0.235, 0.44, 3.813]; outliers skin, hair, cloth, beam, wood, road); the neutral 0.18 card's shade/lit was [0.1014, 0.1533, 0.4412]: the shade light x[0.9887, 1.0278, 1.0284] per channel: fill #a4b7ff 0.1394 -> #a1b7ff 0.1434; sky #bfe8ff ground #6e734e hemi 0.398 env 0.2984 -> #bce8ff #6c734e 0.4093 0.3069. L7 S1: the key FROM rule 3, the neutral card's sunlit side the sun's own #f3d9a0 (under scene_color, the drawn ratios are the light's): the lit side x[1.0317, 0.9944, 0.892], the shade's share of it [0.0303, 0.0513, 0.1172], so the key x[1.0331, 0.9927, 0.8766]: key #f3d9a0 11.0 -> #ffe09c 10.1714. The grade rig_day: the highlight tint neutral (the sun's color is the key's, rule 3). C6 (the color chain, tools/look/color_chain.py; godot/data/look/swatches.json; rules 2-4): the shade FROM the boards: the median day shade/lit per channel over 14 day swatches [0.1074, 0.1742, 0.5638] (spread [0.044, 0.052, 0.139]-[0.235, 0.44, 3.813]; outliers skin, hair, beam, wood, road); the neutral 0.18 card's shade/lit was [0.0997, 0.1603, 0.513]: the shade light x[1.2914, 0.9673, 1.0533] per channel: fill #a1b7ff 0.1434 -> #b1b0ff 0.151; sky #bce8ff ground #6c734e hemi 0.4093 env 0.3069 -> #cedfff #776f4e 0.4311 0.3233. L7 S1c: the key FROM the boards' sun #ffc296 (read on rock, stone, lb_setts; lead 7, one sun), the neutral card's sunlit side that sun's color (under scene_color, the drawn ratios are the light's): the lit side x[1.2959, 0.8893, 0.976], the shade's share of it [0.0308, 0.0544, 0.125], so the key x[1.2961, 0.8852, 0.9659]: key #ffe09c 10.1714 -> #ffbd88 13.189. The grade rig_day: the highlight tint neutral (the sun's color is the key's, rule 3). L7 S1c (lead 7, 9 Nov): the town-day sun moved to the camera's side, behind its left shoulder: az 120 (the play camera stands at +Z of her, yaw 0, looking -Z; the key's direction (cos el cos az, sin el, cos el sin az) puts the sun 30 degrees left of straight behind it), so at 07 the shadows fall up the screen and a little right, and the facades the camera sees take the lit band. FROM G1 07's house shadows (up the screen) and G1 13's lit fronts (picked), and (a) the close-up and Look cameras see the facades; az 330 backlit every front (13's fronts and her back lavender). el 28 kept (the ground's lit side, sin el, and the chain's key solve unchanged). C6 (the color chain, tools/look/color_chain.py; godot/data/look/swatches.json; rules 2-4): the shade FROM the boards: the median day shade/lit per channel over 14 day swatches [0.1074, 0.1742, 0.5638] (spread [0.044, 0.052, 0.139]-[0.235, 0.44, 3.813]; outliers skin, hair, beam, wood, road); the neutral 0.18 card's shade/lit was [0.0997, 0.1847, 0.5773]: the shade light x[1.0548, 0.9505, 0.8736] per channel: fill #b1b0ff 0.151 -> #c1b7ff 0.1319; sky #cedfff ground #776f4e hemi 0.4311 env 0.3233 -> #e0e7ff #82734e 0.3766 0.2824. L7 S1c: the key FROM the boards' sun #ffc296 (read on rock, stone, lb_setts; lead 7, one sun), the neutral card's sunlit side that sun's color (under scene_color, the drawn ratios are the light's): the lit side x[1.0058, 1.0054, 0.8753], the shade's share of it [0.0289, 0.0556, 0.1277], so the key x[1.0044, 1.0089, 0.8755]: key #ffbd88 13.189 -> #ffbd80 13.2815. The grade rig_day: the highlight tint neutral (the sun's color is the key's, rule 3). C6 (the color chain, tools/look/color_chain.py; godot/data/look/swatches.json; rules 2-4): the shade FROM the boards: the median day shade/lit per channel over 14 day swatches [0.1074, 0.1742, 0.5638] (spread [0.044, 0.052, 0.139]-[0.235, 0.44, 3.813]; outliers skin, hair, beam, wood, road); the neutral 0.18 card's shade/lit was [0.0997, 0.1847, 0.5773]: the shade light x[1.0548, 0.9505, 0.8736] per channel: fill #c1b7ff 0.1319 -> #d2beff 0.1152; sky #e0e7ff ground #82734e hemi 0.3766 env 0.2824 -> #f3f0ff #8e784e 0.329 0.2467. L7 S1c: the key FROM the boards' sun #ffc296 (read on rock, stone, lb_setts; lead 7, one sun), the neutral card's sunlit side that sun's color (under scene_color, the drawn ratios are the light's): the lit side x[1.0058, 1.0054, 0.8753], the shade's share of it [0.0289, 0.0556, 0.1277], so the key x[1.0044, 1.0089, 0.8755]: key #ffbd80 13.2815 -> #ffbd78 13.3774. The grade rig_day: the highlight tint neutral (the sun's color is the key's, rule 3). L1 l9 DAY (judge 1 fix 2, one day sun family): the key IS the boards' sun #ffc296 (rule 3), not a color solved so the neutral card's lit side draws it: the chain's apply_day multiplied the key by a lit-side gain from cached grey cards (measure() keeps cards it finds), so each `all` stepped it again (#ffbd88, #ffbd80, #ffbd78 = h 66 on stale cards); the sky's violet on the lit side is the painted look's, kept. key #ffbd78 13.3774 -> #ffc296 12.722 (the same luminance). L1 l9 DAY (judge 1 fix 7, FROM G1 07's shade share 39%/9%): az 120 kept; el 28 -> 37 (a sweep at the play camera: el 34 L<0.45 43%, 38 37%; 07 at 28 read 52%/22%) and the shade light x1.3 so the deep shade lifts (L<0.30 15% at el 38): fill 0.1152 hemi 0.329 env 0.2467 -> 0.1498 0.4277 0.3207.",
+      "key": {
+        "az": 120,
+        "el": 37,
+        "color": "#ffc296",
+        "intensity": 12.722,
+        "shadow": 0.95
+      },
+      "fill": {
+        "color": "#d2beff",
+        "strength": 0.1498,
+        "sky": "#f3f0ff",
+        "ground": "#8e784e",
+        "hemi": 0.4277,
+        "env": 0.3207
+      },
+      "rim": {
+        "color": "#f3d9a0",
+        "strength": 0.3,
+        "width": 0.25
+      },
+      "ink": [0.85, 0.6, 0.5],
+      "hardness": 0.85,
+      "grade": "rig_day",
+      "exposure": 1.05,
+      "ember": 0.5,
+      "fires": 0.2,
+      "dapple": {
+        "cover": 0
+      },
+      "grade_curve": [
+        [0, 0],
+        [0.25, 0.2],
+        [0.45, 0.38],
+        [0.62, 0.6],
+        [0.75, 0.8],
+        [0.9, 0.93],
+        [1, 1]
+      ],
+      "scene_color": 1
+    },
+    "day_wild": {
+      "base": "day_town",
+      "from": "the day rig in the wild (the Verge, 04): the same pale-gold sun and violet-blue sky, the sun where the Verge's stands (its north-east, as the preset has it). Start: Day. C2 (04 key 1.46, shade h 146; rules 1, 2): the sun 3.8 to 6.5, the sky's floor down (hemi 1.0 to 0.55, env 0.85 to 0.45), the violet fill 0.1063 to 0.24 into the shade, the grade's contrast x1.6. 04: Lp95 0.60 to 0.69, key 1.30 to 1.38, midC 0.060 to 0.093 (target 0.66/1.55); its shade stays green (h 141): under the foliage the shade is the leaves' own green albedo (C3a's kit), not the light. W2: the day grade's tone curve (day_town's, inherited) in place of x1.6; the canopy's cast shadows by day as the crowns' hard leaf shapes (rule 5; dapple cover 0.6 at 0.8 of the sun, the crowns in 'crowns'), not the shadow map's blurred bars. C6 (the color chain, tools/look/color_chain.py; godot/data/look/swatches.json; rules 2-4): the shade FROM the boards: the median day shade/lit per channel over 15 day swatches [0.0972, 0.1598, 0.5138] (spread [0.039, 0.033, 0.032]-[0.235, 0.44, 3.813]; outliers skin, hair, cloth, beam, wood, road); the neutral 0.18 card's shade/lit was [0.0991, 0.1425, 0.7371]: the shade light x[0.9854, 1.0914, 0.6984] per channel: fill #beb5ff 0.24 -> #ddddff 0.1676; sky #dce6ff ground #463626 hemi 0.55 env 0.45 -> #e9ffe8 #4b3d22 0.475 0.3886. The grade rig_day_wild: the highlight tint neutral (the sun's color is the key's, rule 3). C6 (the color chain, tools/look/color_chain.py; godot/data/look/swatches.json; rules 2-4): the shade FROM the boards: the median day shade/lit per channel over 15 day swatches [0.0972, 0.1598, 0.5138] (spread [0.039, 0.033, 0.032]-[0.235, 0.44, 3.813]; outliers skin, hair, cloth, beam, wood, road); the neutral 0.18 card's shade/lit was [0.1014, 0.1533, 0.4412]: the shade light x[0.9887, 1.0278, 1.0284] per channel: fill #a1b7ff 0.2388 -> #9eb7ff 0.2456; sky #bce8ff ground #403e22 hemi 0.6766 env 0.5535 -> #b9e8ff #3f3e22 0.6958 0.5692. L7 S1: the key FROM rule 3, the neutral card's sunlit side the sun's own #f3d9a0 (under scene_color, the drawn ratios are the light's): the lit side x[1.0317, 0.9944, 0.892], the shade's share of it [0.0303, 0.0513, 0.1172], so the key x[1.0331, 0.9927, 0.8766]: key #f3d9a0 6.5 -> #ffe09c 6.0104. The grade rig_day_wild: the highlight tint neutral (the sun's color is the key's, rule 3). C6 (the color chain, tools/look/color_chain.py; godot/data/look/swatches.json; rules 2-4): the shade FROM the boards: the median day shade/lit per channel over 14 day swatches [0.1074, 0.1742, 0.5638] (spread [0.044, 0.052, 0.139]-[0.235, 0.44, 3.813]; outliers skin, hair, beam, wood, road); the neutral 0.18 card's shade/lit was [0.0997, 0.1603, 0.513]: the shade light x[1.2914, 0.9673, 1.0533] per channel: fill #b1b0ff 0.2456 -> #c2a9ff 0.2587; sky #cedfff ground #3f3e22 hemi 0.6958 env 0.5692 -> #e1d7ff #463b22 0.7329 0.5995. L7 S1c: the key FROM the boards' sun #ffc296 (read on rock, stone, lb_setts; lead 7, one sun), the neutral card's sunlit side that sun's color (under scene_color, the drawn ratios are the light's): the lit side x[1.2959, 0.8893, 0.976], the shade's share of it [0.0308, 0.0544, 0.125], so the key x[1.2961, 0.8852, 0.9659]: key #ffe09c 6.0104 -> #ffbd88 7.7935. The grade rig_day_wild: the highlight tint neutral (the sun's color is the key's, rule 3). C6 (the color chain, tools/look/color_chain.py; godot/data/look/swatches.json; rules 2-4): the shade FROM the boards: the median day shade/lit per channel over 14 day swatches [0.1074, 0.1742, 0.5638] (spread [0.044, 0.052, 0.139]-[0.235, 0.44, 3.813]; outliers skin, hair, beam, wood, road); the neutral 0.18 card's shade/lit was [0.0997, 0.1847, 0.5773]: the shade light x[1.0548, 0.9505, 0.8736] per channel: fill #c1b7ff 0.2587 -> #d2beff 0.226; sky #e0e7ff ground #463b22 hemi 0.7329 env 0.5995 -> #f3f0ff #4d3e22 0.6403 0.5237. L7 S1c: the key FROM the boards' sun #ffc296 (read on rock, stone, lb_setts; lead 7, one sun), the neutral card's sunlit side that sun's color (under scene_color, the drawn ratios are the light's): the lit side x[1.0058, 1.0054, 0.8753], the shade's share of it [0.0289, 0.0556, 0.1277], so the key x[1.0044, 1.0089, 0.8755]: key #ffbd88 7.7935 -> #ffbd80 7.8481. The grade rig_day_wild: the highlight tint neutral (the sun's color is the key's, rule 3). C6 (the color chain, tools/look/color_chain.py; godot/data/look/swatches.json; rules 2-4): the shade FROM the boards: the median day shade/lit per channel over 14 day swatches [0.1074, 0.1742, 0.5638] (spread [0.044, 0.052, 0.139]-[0.235, 0.44, 3.813]; outliers skin, hair, beam, wood, road); the neutral 0.18 card's shade/lit was [0.0997, 0.1847, 0.5773]: the shade light x[1.0548, 0.9505, 0.8736] per channel: fill #d2beff 0.226 -> #e4c5ff 0.1974; sky #f3f0ff ground #4d3e22 hemi 0.6403 env 0.5237 -> #fff1f6 #513e20 0.6053 0.4951. L7 S1c: the key FROM the boards' sun #ffc296 (read on rock, stone, lb_setts; lead 7, one sun), the neutral card's sunlit side that sun's color (under scene_color, the drawn ratios are the light's): the lit side x[1.0058, 1.0054, 0.8753], the shade's share of it [0.0289, 0.0556, 0.1277], so the key x[1.0044, 1.0089, 0.8755]: key #ffbd80 7.8481 -> #ffbd78 7.9047. The grade rig_day_wild: the highlight tint neutral (the sun's color is the key's, rule 3). L7 S1d (one sun, lead 7: the open ground's lit response in the wild is the town's; color_chain.py wild_key): the neutral cards' top face at the play camera read [0.0512, 0.3258, 0.6706, 0.8222] (0.05/0.18/0.5/0.8, luminance) under wild against [0.0803, 0.4077, 0.7546, 0.8764] under day_town: the whole light x1.3428 (the wild's own shade share kept): key 7.9047, fill 0.1974, hemi 0.6053, env 0.4951 -> key 10.6144, fill 0.2651, hemi 0.8128, env 0.6648. L1 l9 DAY (judge 1 fix 2): the wild's shade was its near-white sky #f3f0ff at hemi 0.81 and env 0.66 over a brown ground #513e20 (04 shade h 72 olive, T04 318): the wild takes the town's whole shade light (fill #d2beff, sky, ground, hemi, env), one family; its own sun's az, el and level kept. fill {'strength': 0.2651, 'ground': '#513e20', 'hemi': 0.8128, 'env': 0.6648} -> the town's. L1 l9 DAY: the key's shadow 0.82 -> 0.95, the town's (one family: 04's road shade read L 0.40-0.43 against T04's 0.34).",
+      "key": {
+        "az": 55,
+        "el": 46,
+        "intensity": 10.6144,
+        "shadow": 0.95
+      },
+      "grade": "rig_day_wild",
+      "exposure": 1.0,
+      "dapple": {
+        "cover": 0.6,
+        "strength": 0.8,
+        "height": 9
+      }
+    },
+    "dawn": {
+      "from": "LB_light DAWN: a low warm sun (pale gold toward peach, rule 3) from the Low Ford's east, long shadows, the shade lilac (rule 2); the dawn's frost and thaw stay the preset's air. Start: LowFordDawn (G1 r2-r3). B4r3, from LB_light DAWN (measured: Lp50 0.44, key 1.76, shC 0.046, shH 333, midC 0.079, warm 55%, cold 5%): the key 10 to 14, the fill bluer-lilac and up (#8a6ad0 0.10 to #9a64d2 0.18: shC 0.034 to 0.042, the lilac shade held at h 335), the grade's contrast 1.14 to 1.4 (rig_dawn: key 1.55 to 1.6; the panel's sunrise sky, out of the play camera's view, holds the rest), fires 0.5 (rule 3: the low sun is the warm light; the stage's camp fire at night strength took warm to 76% of chroma, the panel's 55). L7 S2 (color_chain.py apply_dawn, dawn FROM LB DAWN, chain step 6; under scene_color the drawn ratios are the light's): LB DAWN's setts lit [0.91378, 0.31207, 0.07741] and shade [0.05907, 0.03806, 0.05978] (linear; the shade lilac, Oklab h ~325) over the setts albedo #6c6977: one lilac shade light #ffd8ea (fill and sky; the ground side its own bounce) x0.3805 in luminance; the key rule 3's dawn sun #f3d9a0 x1.1409 (the shade's share of the lit side 0.2937): dawn key #ffd6b0 14.0 -> #f3d9a0 16.2576; dawn fill #9a64d2 0.18 -> #ffd8ea 0.0185; dawn sky #7b91c0 ground #2c3446 hemi 1.08 env 0.7 -> sky #ffd8ea ground #2c3446 hemi 0.1522 env 0.0987; dawn_morning key #ffdfc2 9.5 -> #f3d9a0 11.8602; dawn_morning fill #9068d6 None -> #ffd8ea None. L1 l9 DAY (lead 8's call, the board wins): the dawn sun FROM LB DAWN, its sunlit setts over the setts albedo #6c6977 (as board_sun reads the day's): #ffa24a (Oklab h 61, C 0.149; the setts draw LB's L 0.76 C 0.142 h 56) for rule 3's old pale gold: key #f3d9a0 16.2576 -> #ffa24a 24.3269 (the same luminance, the rig's level kept).",
+      "key": {
+        "az": -60,
+        "el": 18,
+        "color": "#ffa24a",
+        "intensity": 24.3269,
+        "shadow": 0.95
+      },
+      "fill": {
+        "color": "#ffd8ea",
+        "strength": 0.0185,
+        "sky": "#ffd8ea",
+        "ground": "#2c3446",
+        "hemi": 0.1522,
+        "env": 0.0987
+      },
+      "rim": {
+        "color": "#ffd8b0",
+        "strength": 0.3,
+        "width": 0.25
+      },
+      "ink": [0.7, 0.55, 0.7],
+      "hardness": 0.85,
+      "grade": "rig_dawn",
+      "exposure": 1.25,
+      "ember": 0.5,
+      "fires": 0.5,
+      "dapple": {
+        "cover": 0
+      },
+      "scene_color": 1,
+      "scene_moon": 1
+    },
+    "dawn_morning": {
+      "base": "dawn",
+      "from": "the dawn rig an hour on (Atmospheres.Morning's end): the sun higher and paler. Start: LowFordMorning. B4r3: the dawn rig's key 14 at its old share (6.6 of 10: 9.5), the fill a step bluer (#9068d6; the higher sun warms the shade: h 354 to 332, LB DAWN 333), fires 0.3 (toward the day's 0.2). L1 l9 DAY (lead 8's call, the board wins): the dawn sun FROM LB DAWN, its sunlit setts over the setts albedo #6c6977 (as board_sun reads the day's): #ffa24a (Oklab h 61, C 0.149; the setts draw LB's L 0.76 C 0.142 h 56) for rule 3's old pale gold: key #f3d9a0 11.8602 -> #ffa24a 17.7469 (the same luminance, the rig's level kept).",
+      "key": {
+        "el": 34,
+        "color": "#ffa24a",
+        "intensity": 17.7469
+      },
+      "fill": {
+        "color": "#ffd8ea"
+      },
+      "fires": 0.3
+    },
+    "dawn_waystation": {
+      "base": "dawn",
+      "from": "the dawn rig over the Waystation: the sun low in the town's north-east, as the town's buildings stand. Start: WaystationDawn.",
+      "key": {
+        "az": -10,
+        "el": 14
+      }
+    },
+    "close_night": {
+      "camera": true,
+      "from": "rule 11 and MB1 NIGHT: one key from the front three-quarter (35 round, 40 up), so her face and front carry the band (B4r2: at 1.4 of the world key, 1.0 left her band 0.21 L over her shade; rule 11's 0.25+); moon-cold, warmed toward her ember's or a near fire's color (the scene's source); the night rig's colored fill in her shade (rule 2: night h 220-290) and its stepped moon rim on her lit edge (rule 7). One key, one fill, one rim (rule 3).",
+      "key": {
+        "az": 35,
+        "el": 40,
+        "color": "#c8d4ff",
+        "intensity": 1.4
+      },
+      "rim": {
+        "strength": 0.35
+      }
+    },
+    "close_day": {
+      "camera": true,
+      "from": "rule 11 and MB1 DAY: one pale-gold key (#f3d9a0) from the front three-quarter (35, 40); the day rig's violet-blue fill turns her skin's shade mauve (MB1 h about 325, rule 2) by its color alone; the pale-gold rim on her lit edge. L1 l9 DAY (judge 1 fix 2): the key the boards' sun #ffc296 for the old gold #f3d9a0 (13 read sepia); the fill day_town's violet #d2beff, named. L1 l10 DAY (FROM G1 13's two ground values, lit L 0.641 h 30, shade L 0.450 h 301): the close view's own exposure by day (GameCloseUp.CloseExposureDay, was 1) 0.68, the fill 0.1498 (day_town's) -> 0.55 (the key-to-fill ratio: shade/lit linear 0.13 -> 0.37, T13 0.37), her key 1.0 -> 1.25 (her hair under the lower exposure). 13: lit setts L 0.746 h 45 -> 0.638 h 42, cast shade L 0.301 C 0.041 h 289 -> 0.440 C 0.071 h 292; hair L 0.49 C 0.110.",
+      "exposure": 0.68,
+      "key": {
+        "az": 35,
+        "el": 40,
+        "color": "#ffc296",
+        "intensity": 1.25
+      },
+      "rim": {
+        "strength": 0.3
+      },
+      "fill": {
+        "color": "#d2beff",
+        "strength": 0.55
+      }
+    },
+    "look": {
+      "camera": true,
+      "from": "rule 11 at the Look camera (the title's camp at night): her key from the front three-quarter (35, 40) in the camp fire's warmth, the night rig's indigo fill in her shade and its moon rim; KA and 08 follow MB1's face.",
+      "key": {
+        "az": 35,
+        "el": 40,
+        "color": "#ffd2a8",
+        "intensity": 1.0
+      },
+      "rim": {
+        "strength": 0.35
+      }
+    },
+    "look_day": {
+      "base": "look",
+      "from": "rule 11 at the Look by day (--look-time day) and MB1 (the face board, the Look camera's law): the close-up's day key (#f3d9a0, 35, 40) and a fill of its own, so her skin's shade band reads MB1's mauve (h about 325). B4r3: the day rig's fill (#6a5ce0, h 283, at 0.12) left her shade h 275 here (the close view h 322): the Look's day is the open-sky Day (the Verge's air, not the town's) and its camp fire is culled off her at the portrait (GameFront: the stand-in fades to 0), so no warm source reaches her shade and the sky's cold light is most of it (her shade L 0.46 to the lit 0.71); by toggles the grade (waystation_day), the sky share (hemi 0.7, env 0.55, ground #605245) and the sky reflections each moved that hue under 1 degree; only the fill's own hue moves it. A magenta-mauve fill (#c848b8, h 333) at 0.08, and the key at 1.15 so the band holds 0.25 L over the cold sky light: shade h 315, C 0.034, dL 0.262 (at 0.12-0.18 the fill reached the hue but lifted the shade to dL 0.20-0.23). L7 S1d (one sun, lead 7; rule 3 now the boards' #ffc296): the key's color the town key's (#ffbd78, day_town, which draws the boards' sun on the neutral card) for #f3d9a0. A book screen that frames her by day (the Lamps, G1 08; GameCloseUp.HerToTheView) takes this rig's key only, the world keeping the town rig. L1 l9 DAY (judge 1 fix 2): one day: the key the boards' sun #ffc296 and the fill day_town's violet #d2beff for the magenta #c848b8 (08's chalky skin and the magenta disc on her cup); was ('#ffbd78', '#c848b8', 0.08). L1 l9 DAY: the key 1.15 -> 0.6: at 08 her lit skin sat in AgX's shoulder (q80 0.86-0.88, C50 0.047-0.058, chalky; T08 0.71, 0.139); a sweep 0.85/0.70/0.55 gave q80 0.86/0.83/0.79, C50 0.055/0.065/0.080. L1 l9 SKIN: her skin's chalk was her albedo's chroma (the skin shader's cel_tone, People.HerCelTone, FROM MB1's lit chip and T08) and her lit band in the grade's shoulder (q80 0.80-0.83 flat, R pegged): the key 0.6 to 0.35 with cel_tone (08 skin L50 0.54 to 0.62, q80 0.80 to 0.73, C50 0.070 to 0.097, h 58 to 52; key 0.45: 0.57/0.78/0.081). The fill's strength here moved nothing (0.08 and 0.16 identical).",
+      "key": {
+        "color": "#ffc296",
+        "intensity": 0.35
+      },
+      "fill": {
+        "color": "#d2beff",
+        "strength": 0.08
+      }
+    }
+  },
+  "crowns": {
+    "pine": [3.2, 0.9],
+    "broadleaf": [4.2, 0.95],
+    "autumn": [4.0, 0.85],
+    "dead": [3.0, 0.35],
+    "spruce": [3.0, 0.9],
+    "alder": [3.6, 0.9]
+  }
+}

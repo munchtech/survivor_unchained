@@ -10,6 +10,17 @@
 // that moves on it (g_tone, g_sat), and the ember's glow keeps to the char.
 shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
+#define CEL_INK 2
+#define CEL_BAND vec4(0.0, 0.15, 0.2, 0.05)
+#define CEL_NO_RIM
+// (the material library, godot/data/look/materials.json: this shader's default class; matte, rule 6: no highlight)
+#define CEL_SPEC vec4(9.0, 1.5, 0.0, 0.85)
+// (L1 C1: the band sees none of the ground's normal map: the Stage B judge, ground and terrain cel_nmap 0, no orange peel)
+#define CEL_NMAP 0.0
+// (L1 lead 17, P: a floor: under her fire it takes the rig's tone table, cel.gdshaderinc cel_floor_turn)
+#define CEL_FLOOR
+#define CEL_FLOOR_LUM fl_lum
+#include "res://shaders/cel.gdshaderinc"
 #include "res://shaders/world_clock.gdshaderinc"
 
 #include "res://shaders/flare_world.gdshaderinc"
@@ -23,7 +34,14 @@ uniform sampler2D splat : filter_linear_mipmap, repeat_disable;
 uniform sampler2D splat2 : filter_linear_mipmap, repeat_disable;
 // R moss, G the slurry's light, B foxfire, A open to the sky.
 uniform sampler2D splat3 : filter_linear_mipmap, repeat_disable;
+// (L1 W2 ground, mark 5: the moss is two flat values, a cushion's lit top (moss_color) and its cool crease (moss_shade),
+// each cushion one color varied by at most moss_var (rule 9: one color in its class's range; rule 4: natural moss, never
+// acid or lime). Both from godot/data/look/ground.json's set "moss" (via layers.json; ArenaGround.cs), FROM MB4.
+// The 3 Nov moss pushed each cushion toward yellow (x1.25, 1.1, 0.6) and ran a fine fibre noise through it: 10's
+// saturated green blobs.)
 uniform vec3 moss_color : source_color = vec3(0.05, 0.1, 0.02);
+uniform vec3 moss_shade : source_color = vec3(0.03, 0.05, 0.03);
+uniform float moss_var = 0.08;
 // The slurry the Dig cooks: "warm, faintly glowing", a sick yellow-green.
 uniform vec3 slurry : source_color = vec3(0.52, 0.62, 0.16);
 uniform float slurry_glow = 0.0;
@@ -164,6 +182,15 @@ vec4 tex2(sampler2DArray s, vec2 uv, int i, Pick p) {
 	return mix(a, b, p.t);
 }
 
+// (L1 C1) The two copies cut, not crossfaded, where the noise crosses between them: the taller copy's painted shape
+// wins whole (a crossfade of two painted sheets shows every leaf and stone doubled, half see-through).
+Pick cut(vec2 uv, int i, Pick p) {
+	float ha = textureGrad(g_arh, vec3(uv + p.a, float(i)), p.dx, p.dy).b;
+	float hb = textureGrad(g_arh, vec3(uv + p.b, float(i)), p.dx, p.dy).b;
+	p.t = smoothstep(0.44, 0.56, p.t + (hb - ha) * 0.5);
+	return p;
+}
+
 vec3 nor2(vec2 uv, int i, Pick p) {
 	return normalize(tex2(g_nor, uv, i, p).xyz * 2.0 - 1.0);
 }
@@ -211,6 +238,7 @@ void fragment() {
 	// cut stone by stone reads as a pixelated one.
 	const float BLEND_DEPTH = 0.22;
 	float hs[NL];
+	float cut_t[NL];
 	vec4 arhs[NL];
 	float best = 0.0;
 	for (int k = 0; k < NL; k++) {
@@ -218,7 +246,8 @@ void fragment() {
 		if (gw[k] < 0.003) continue;
 		mat3 tbn;
 		vec2 uv = g_uv(k, w_pos, n_geo, tbn);
-		Pick pk = pick(uv, w, k);
+		Pick pk = cut(uv, k, pick(uv, w, k));
+		cut_t[k] = pk.t;
 		arhs[k] = tex2(g_arh, uv, k, pk);
 		Pick coarse = pk;
 		coarse.dx *= 12.0;
@@ -234,19 +263,21 @@ void fragment() {
 	}
 	vec3 albedo = vec3(0.0);
 	vec3 n_w = vec3(0.0);
-	float rough = 0.0, ao = 0.0, hgt = 0.0, H = 0.0;
+	float rough = 0.0, ao = 0.0, hgt = 0.0, H = 0.0, fl_m = 0.0;
 	for (int k = 0; k < NL; k++) {
 		float wk = gw[k] / tot;
 		if (wk < 0.004) continue;
 		mat3 tbn;
 		vec2 uv = g_uv(k, w_pos, n_geo, tbn);
 		Pick p = pick(uv, w, k);
+		p.t = cut_t[k];
 		vec4 arh = arhs[k];
 		vec3 a = tex2(g_alb, uv, k, p).rgb;
 		float la = dot(a, vec3(0.2126, 0.7152, 0.0722));
 		a *= pow(max(la, 1e-4) / g_mean[k], g_con[k] - 1.0);
 		a = mix(vec3(dot(a, vec3(0.2126, 0.7152, 0.0722))), a, g_sat[k]);
 		albedo += a * g_tone[k] * wk;
+		fl_m += g_mean[k] * g_tone[k] * wk;
 		H += wk * (g_lift[k] + (arh.b - 0.5) * g_bump[k]);
 		n_w += tbn * nor2(uv, k, p) * wk;
 		rough += arh.g * wk;
@@ -254,6 +285,8 @@ void fragment() {
 		hgt += arh.b * wk;
 	}
 	vec3 n = normalize(n_w);
+	// (L1 lead 20, MASS) The grain here: this pixel's albedo over its materials' mean (g_mean x g_tone by their shares).
+	float fl_g = dot(albedo, vec3(0.2126, 0.7152, 0.0722)) / max(fl_m, 1e-4);
 
 	// Slow variation over tens of metres, so a field is never one colour.
 	albedo *= 0.78 + 0.3 * nL.r;
@@ -292,11 +325,8 @@ void fragment() {
 		float big = step(0.22 + 0.55 * hb.y, m) * (1.0 - smoothstep(0.22, 0.55, db));
 		float small = step(0.12 + 0.7 * ha.y, m) * (1.0 - smoothstep(0.2, 0.5, da));
 		mo = max(core, max(big, small * 0.9));
-		vec3 mc = moss_color * mix(vec3(1.25, 1.1, 0.6), vec3(0.8, 1.0, 0.95), hb.x) * (0.75 + 0.5 * ha.y);
-		// Velvet, not bubbles: the domes shade the cushion gently, and a fine fibre runs
-		// through it (from thirty metres up, strong round highlights read as bubble wrap).
-		float fib = texture(noise_tex, w * 3.3 + 0.17).g * 0.6 + texture(noise_tex, w * 8.1 + 0.53).b * 0.4;
-		mc *= (0.55 + 0.55 * smoothstep(0.15, 0.95, dome)) * (0.72 + 0.56 * fib);
+		// Two values: the dome's top lit, its rim and the creases between in the cool shade, a narrow soft edge.
+		vec3 mc = mix(moss_shade, moss_color, smoothstep(0.42, 0.58, dome)) * (1.0 + moss_var * (hb.x - 0.5) * 2.0);
 		albedo = mix(albedo, mc, mo);
 		rough = mix(rough, 0.95, mo);
 		// A cushion stands a hand high, each dome a little higher.
@@ -305,6 +335,10 @@ void fragment() {
 		n = normalize(mix(n, normalize(n_geo - vec3(ra.x + rb.x * 0.6, 0.0, ra.y + rb.y * 0.6) * 0.5), mo * 0.5));
 	}
 
+	// (L1 lead 20, MASS) The floor's luminance here without its grain (materials, slow variation, value masses, moss; before
+	// the trodden, wet and burnt marks, which stay as drawn): what her fire lifts toward the floor's reference inside her pool
+	// (cel.gdshaderinc CEL_FLOOR_LUM, cel_floor_paint: both ways since MASS3), so a patch goes as one mass and keeps its grain.
+	float fl_lum = dot(albedo, vec3(0.2126, 0.7152, 0.0722)) / mix(clamp(fl_g, 0.5, 2.0), 1.0, mo);
 	// Trodden flat: darker, smoother.
 	float trod = s2.b * (0.8 + 0.4 * nF.r);
 	albedo *= 1.0 - 0.22 * trod;
@@ -472,4 +506,6 @@ void fragment() {
 		flare_ground((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz, fl_a, fl_r, fl_s, fl_n, fl_e, VIEW_MATRIX, INV_VIEW_MATRIX);
 		ALBEDO = fl_a; ROUGHNESS = fl_r; SPECULAR = fl_s; NORMAL = fl_n; EMISSION = fl_e;
 	}
+	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug).
+	CEL_FRAGMENT;
 }

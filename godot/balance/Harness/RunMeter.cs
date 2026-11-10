@@ -35,6 +35,10 @@ public sealed class RunMeasures
     public double LowLife = 1;
     public Dictionary<string, double> Taken = new();
     public double Minutes;
+    /// <summary>(M3 MR 3) The grip's column (Sim/GripMeter.cs): holds, the median hold, the share held, blows, damage and Resolve built.</summary>
+    public string Grip = "";
+    /// <summary>(M3 lead 16 b6, harness-only) The grips' landed weight by source (GripMeter.SrcLine).</summary>
+    public string Src = "";
 
     /// <summary>The run line's columns.</summary>
     public string Line() =>
@@ -45,7 +49,7 @@ public sealed class RunMeasures
         (Falls.Count > 0 ? $" falls [{string.Join("; ", Falls)}]" : "") +
         $" low {LowLife:0.00} taken {string.Join(",", Taken.Where(kv => kv.Key[0] is not ('#' or '+')).OrderByDescending(kv => kv.Value).Take(6).Select(kv => kv.Key + ":" + kv.Value.ToString("0.0")))}" +
         $" healed {string.Join(",", Taken.Where(kv => kv.Key[0] == '+').OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key[1..] + ":" + kv.Value.ToString("0.0")))}" +
-        $" kit {string.Join(",", Taken.Where(kv => kv.Key[0] == '#').OrderBy(kv => kv.Key).Select(kv => kv.Key[1..].Replace("caught ", "c.").Replace("missed ", "m.") + ":" + kv.Value.ToString("0")))}";
+        $" kit {string.Join(",", Taken.Where(kv => kv.Key[0] == '#').OrderBy(kv => kv.Key).Select(kv => kv.Key[1..].Replace("caught ", "c.").Replace("missed ", "m.") + ":" + kv.Value.ToString("0")))}" + (Grip.Length > 0 ? " " + Grip : "") + (Src.Length > 0 ? " " + Src : "");
 
     static double Med(IEnumerable<double> xs) { var a = xs.Where(x => !double.IsNaN(x)).OrderBy(x => x).ToList(); return a.Count == 0 ? double.NaN : a[a.Count / 2]; }
     static string F(double x, string f = "0") => double.IsNaN(x) ? "-" : x.ToString(f);
@@ -66,11 +70,52 @@ public sealed class RunMeasures
     }
 }
 
+/// <summary>(M3 MR 3 m2) Cuts per fodder: the grip's cuts (Sunder's and Oathblade's hits: Ev.Hit.Weapon; not a status
+/// tick, not the Flare's) that LANDED on each body before it died, whoever dealt the last blow (two cuts and a
+/// Groundbreaker that finishes it count two). Told for fodder (not elite, not boss) the survivor's side killed, the
+/// Flare's kills left out; fodder no cut touched is counted apart.</summary>
+public sealed class FodderCuts
+{
+    readonly Dictionary<int, int> on = new();
+    /// <summary>Each fodder killed with a cut on it: its cuts.</summary>
+    public readonly List<int> Counts = new();
+    /// <summary>Fodder killed that no cut touched.</summary>
+    public int Uncut;
+
+    public static bool IsCut(Ev.Hit h) => !h.Dot && !h.ByFlare && h.Amount > 0 && h.Weapon is "sunder" or "oathblade";
+
+    /// <summary>One drained event, in the battle's order (a killing hit is told before its kill).</summary>
+    public void Read(CombatEvent ev)
+    {
+        switch (ev)
+        {
+            case Ev.Hit h when IsCut(h): on[h.Target] = on.GetValueOrDefault(h.Target) + 1; break;
+            // (ids are pool slots: a death clears its count, the survivor's or not, and so does a new body in the slot)
+            case Ev.Spawn s: on.Remove(s.Enemy); break;
+            case Ev.Kill k:
+                bool cut = on.Remove(k.Enemy, out int n);
+                if (!k.ByPlayer || k.Elite || k.Boss) break;
+                if (!cut) Uncut++;
+                else if (!k.ByFlare) Counts.Add(n);
+                break;
+        }
+    }
+
+    public double Mean => Counts.Count == 0 ? double.NaN : Counts.Average();
+    /// <summary>The median (the upper of two middles, as the report's medians).</summary>
+    public double Median { get { if (Counts.Count == 0) return double.NaN; var a = Counts.OrderBy(x => x).ToList(); return a[a.Count / 2]; } }
+
+    /// <summary>The run line's column, after the grip's.</summary>
+    public string Line() => Counts.Count == 0 ? $"cuts/fodder mean - med - n 0 uncut {Uncut}" : $"cuts/fodder mean {Mean:0.00} med {Median:0} n {Counts.Count} uncut {Uncut}";
+}
+
 /// <summary>Steps alongside a run: the events drained each step and the meter's state.</summary>
 public sealed class RunMeter
 {
     readonly List<double> marksOn = new();
     double fullSec, playSec, fightSec;
+    readonly GripMeter grip = new();
+    readonly FodderCuts cuts = new();
     // (round 2: the last seconds before a fall)
     readonly Queue<(double T, string What)> recent = new();
     readonly Queue<(double T, double Life)> life = new();
@@ -99,10 +144,12 @@ public sealed class RunMeter
         playSec += dt;
         if (fight) fightSec += dt;
         if (b.Resolve.On && b.Resolve.Value >= b.Resolve.Max) fullSec += dt;
+        if (b.Campaign && fight) grip.Step(b, dt, evs as IReadOnlyList<CombatEvent> ?? evs.ToList());
         foreach (var ev in evs)
         {
             if (ev is Ev.Telegraph { Hostile: true, Phase: TellPhase.Warn } tg && ArenaSim.Covers(tg, p.X, p.Z, p.Radius)) { marksOn.Add(fightSec); recent.Enqueue((t, "mark")); }
             else if (Deaths && ev is Ev.PlayerDeath d) Fell(t, $"{d.Killer} @ ({p.X:0},{p.Z:0})");
+            if (b.Campaign) cuts.Read(ev);
             switch (ev)
             {
                 case Ev.PlayerHit { Dodged: true }: recent.Enqueue((t, "dodged")); break;
@@ -150,6 +197,7 @@ public sealed class RunMeter
         }
         double min = Math.Max(1e-6, playSec / 60);
         m.Minutes = playSec / 60;
+        if (b.Campaign) { m.Grip = grip.Line(fightSec, b.Time) + " " + cuts.Line(); m.Src = grip.SrcLine(fightSec); }
         m.ResolveSpentPerMin = b.Resolve.Spent / min;
         m.ResolveFullPct = 100 * fullSec / Math.Max(1e-6, playSec);
         if (hands != null) foreach (var (k, v) in hands.Presses) m.PressesPerMin[k] = v / min;

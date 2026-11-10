@@ -48,5 +48,21 @@
  "skip": [
   0,
   0
- ]
+ ],
+ "resolve": {
+  "tex": "lamp_veins.png",
+  "crown": [
+   253.5,
+   9.5
+  ],
+  "tip_cost": 148.7,
+  "mask_on": 0.35,
+  "ridge_gain": 1.6,
+  "ridge_floor": 0.12,
+  "dilate": 1,
+  "g_blur": 4.0,
+  "tip_pct": 99.0,
+  "along": 0.55,
+  "flow_sigma": 6.0
+ }
 }

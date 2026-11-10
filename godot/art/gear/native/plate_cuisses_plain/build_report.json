@@ -1,0 +1,263 @@
+{
+ "id": "plate_cuisses_plain",
+ "sides": {
+  "l": {
+   "top_mm": [
+    233.6,
+    188.1,
+    123.2,
+    122.0,
+    122.0
+   ],
+   "plate_end_mm": [
+    333.3,
+    325.1,
+    328.3,
+    345.8,
+    338.8
+   ],
+   "end_mm": [
+    481.9,
+    470.7,
+    484.7,
+    500.1,
+    490.0
+   ],
+   "rim_mm": [
+    447.9,
+    436.7,
+    450.7,
+    486.1,
+    476.0
+   ],
+   "dip_mm": [
+    20.0,
+    20.0,
+    20.0,
+    0.0,
+    0.0
+   ],
+   "law": {
+    "rms_mm": 1.3,
+    "lift_mm": 0.43,
+    "no_hit": 0
+   },
+   "seated_points": [
+    15,
+    0,
+    0,
+    0
+   ],
+   "garter_mm": 245,
+   "plate_l_rigid": {
+    "tris": 2720,
+    "grid": [
+     24,
+     48
+    ],
+    "rest_clear_mm_min": 1.2,
+    "inside": 0
+   },
+   "lame1_l_rigid": {
+    "tris": 1376,
+    "grid": [
+     16,
+     32
+    ],
+    "rest_clear_mm_min": 1.56,
+    "inside": 0
+   },
+   "lame2_l_rigid": {
+    "tris": 1232,
+    "grid": [
+     16,
+     28
+    ],
+    "rest_clear_mm_min": 1.74,
+    "inside": 0
+   },
+   "lame3_l_rigid": {
+    "tris": 1464,
+    "grid": [
+     21,
+     23
+    ],
+    "rest_clear_mm_min": 1.98,
+    "inside": 0
+   },
+   "end_under_rim_mm_min": 0.8,
+   "end_tucked_rows": 11
+  },
+  "r": {
+   "top_mm": [
+    233.6,
+    188.1,
+    123.2,
+    122.0,
+    122.0
+   ],
+   "plate_end_mm": [
+    333.5,
+    324.6,
+    328.4,
+    345.7,
+    338.1
+   ],
+   "end_mm": [
+    482.2,
+    470.1,
+    484.9,
+    500.0,
+    489.1
+   ],
+   "rim_mm": [
+    448.2,
+    436.1,
+    450.9,
+    486.0,
+    475.1
+   ],
+   "dip_mm": [
+    20.0,
+    20.0,
+    20.0,
+    0.0,
+    0.0
+   ],
+   "law": {
+    "rms_mm": 1.3,
+    "lift_mm": 0.41,
+    "no_hit": 0
+   },
+   "seated_points": [
+    16,
+    0,
+    0,
+    0
+   ],
+   "garter_mm": 246,
+   "plate_r_rigid": {
+    "tris": 2720,
+    "grid": [
+     24,
+     48
+    ],
+    "rest_clear_mm_min": 1.2,
+    "inside": 0
+   },
+   "lame1_r_rigid": {
+    "tris": 1376,
+    "grid": [
+     16,
+     32
+    ],
+    "rest_clear_mm_min": 1.52,
+    "inside": 0
+   },
+   "lame2_r_rigid": {
+    "tris": 1232,
+    "grid": [
+     16,
+     28
+    ],
+    "rest_clear_mm_min": 1.73,
+    "inside": 0
+   },
+   "lame3_r_rigid": {
+    "tris": 1464,
+    "grid": [
+     21,
+     23
+    ],
+    "rest_clear_mm_min": 1.93,
+    "inside": 0
+   },
+   "end_under_rim_mm_min": 0.8,
+   "end_tucked_rows": 11
+  }
+ },
+ "dir": "godot/art/gear/native/plate_cuisses_plain",
+ "tris": 15772,
+ "parts": {
+  "straps_l": [
+   564,
+   842,
+   "darkleather"
+  ],
+  "tabs_l_rigid": [
+   52,
+   72,
+   "darkleather"
+  ],
+  "rivets_l_rigid": [
+   75,
+   120,
+   "plainsteel"
+  ],
+  "plate_l_rigid": [
+   1434,
+   2720,
+   "plainsteel"
+  ],
+  "lame1_l_rigid": [
+   748,
+   1376,
+   "plainsteel"
+  ],
+  "lame2_l_rigid": [
+   672,
+   1232,
+   "plainsteel"
+  ],
+  "lame3_l_rigid": [
+   785,
+   1464,
+   "plainsteel"
+  ],
+  "buckle_l_rigid": [
+   120,
+   60,
+   "plainsteel"
+  ],
+  "straps_r": [
+   564,
+   842,
+   "darkleather"
+  ],
+  "tabs_r_rigid": [
+   52,
+   72,
+   "darkleather"
+  ],
+  "rivets_r_rigid": [
+   75,
+   120,
+   "plainsteel"
+  ],
+  "plate_r_rigid": [
+   1434,
+   2720,
+   "plainsteel"
+  ],
+  "lame1_r_rigid": [
+   748,
+   1376,
+   "plainsteel"
+  ],
+  "lame2_r_rigid": [
+   672,
+   1232,
+   "plainsteel"
+  ],
+  "lame3_r_rigid": [
+   785,
+   1464,
+   "plainsteel"
+  ],
+  "buckle_r_rigid": [
+   120,
+   60,
+   "plainsteel"
+  ]
+ }
+}

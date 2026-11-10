@@ -529,6 +529,13 @@ public partial class BattleFx
                 // at all: a cream streak.)
                 bool ice = art == "frostfire", star = art == "star" || ice, small = art == "living_flame";
                 float s = (star ? 1.25f : small ? 0.55f : 0.85f) * g;
+                // (L1 B6) Under cel the cinder is the FX language's bolt (MB5's FIRE): its bands, glow and painted sparks
+                // are the shader's, so none of the soft orbs, coal sprite, ribbon, filmed puffs or round sparks below.
+                if (celBolts != null && art == "cinder")
+                {
+                    celBolts.Add(FxCel.BoltAt(at, fwd, s), new Color((p.Id % 97) / 97f, 0, 0, 1));
+                    return true;
+                }
                 // Its heart yellow-hot, not white: past the tone curve's knee a coal read as a cream pill.
                 Shade(at, s * 2.2f, 0.5f);
                 orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 0.3f), at), ice ? Hdr("#9fd4ff", 1.6f) : star ? Hdr("#ffd890", 2.0f) : Hdr("#ffa840", 1.7f));
@@ -1119,10 +1126,11 @@ public partial class BattleFx
     readonly System.Collections.Generic.List<Spike> spikes = new();
     Batch? iceSpikes, thornSpikes, stoneSpikes;
 
-    /// <summary>The cut-crystal look (shaders/crystal.gdshader): ice at facet 1, stone and thorn near 0.</summary>
-    static Material Crystal(float emit, float rim, float gloss, float facet)
+    /// <summary>The cut-crystal look (shaders/crystal.gdshader): ice at facet 1, stone and thorn near 0. The name picks
+    /// its class in the material library (godot/data/look/materials.json: crystal_stone rock, crystal_thorn bark, else glass).</summary>
+    static Material Crystal(float emit, float rim, float gloss, float facet, string name = "crystal_ice")
     {
-        var m = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/crystal.gdshader") };
+        var m = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/crystal.gdshader"), ResourceName = name };
         m.SetShaderParameter("emit", emit);
         m.SetShaderParameter("rim", rim);
         m.SetShaderParameter("gloss", gloss);
@@ -1215,8 +1223,8 @@ public partial class BattleFx
         // A five-sided point (ice), a four-sided hook of a thorn, a blunt shard of stone; each one unit tall about its origin.
         Mesh Point(int sides, float top) => new CylinderMesh { TopRadius = top, BottomRadius = 0.5f, Height = 1, RadialSegments = sides, Rings = 1, CapBottom = false };
         iceSpikes = Add(new Batch(Point(5, 0), 400, Crystal(0.35f, 1.6f, 0.05f, 1f), true));
-        thornSpikes = Add(new Batch(Point(4, 0), 400, Crystal(0.12f, 1.4f, 0.5f, 0.15f), true));
-        stoneSpikes = Add(new Batch(Point(5, 0.12f), 200, Crystal(0.02f, 0.4f, 0.8f, 0.25f), true));
+        thornSpikes = Add(new Batch(Point(4, 0), 400, Crystal(0.12f, 1.4f, 0.5f, 0.15f, "crystal_thorn"), true));
+        stoneSpikes = Add(new Batch(Point(5, 0.12f), 200, Crystal(0.02f, 0.4f, 0.8f, 0.25f, "crystal_stone"), true));
     }
 
     /// <summary>A ring of spikes round (x, z) between radii r0 and r1, leaning out.</summary>

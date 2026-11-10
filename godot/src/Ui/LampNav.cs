@@ -123,7 +123,7 @@ public sealed class LampSession
         return got;
     }
 
-    /// <summary>Can this lamp go out here (atPost: by day at a town's lamp-post), and if so, the lamps that go with it,
+    /// <summary>Can this lamp go out here (atPost: not by night, where LampBook.LayoutsOpen), and if so, the lamps that go with it,
     /// tips first and it last (a lamp others hang on takes its branch).</summary>
     public OutNo CanOut(string id, bool night, bool atPost, out List<string> order)
     {

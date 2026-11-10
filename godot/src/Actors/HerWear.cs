@@ -69,7 +69,8 @@ public static class HerWear
         // (a calling whose index row is stood in for (a row's "replaces") takes the piece path too, or her outfit file would
         // draw the replaced piece; --standin 0: the outfit file as before, for an ABAB)
         bool standIn = StandIns && ix.Calling(calling).Any(kv => ix.Find(kv.Value) is { } r && r.Outfit != calling);
-        if (w.Count == 0 && Override == null && (hide == null || hide.Count == 0) && !standIn) return null;
+        // (B's built gear, --body p1: always the piece path; her outfit file is A's)
+        if (w.Count == 0 && Override == null && (hide == null || hide.Count == 0) && !standIn && ArmorIndex.GearDir == null) return null;
         var notes = new List<string>();
         var look = Wear.Look(w, calling, ix, notes, hide);
         foreach (var n in notes) GD.PushWarning(n);
@@ -326,7 +327,11 @@ public static class HerWear
         }
 
         bool full = Wear.IsCallingSet(look, calling, ix);
-        bool lodFile = full && ResourceLoader.Exists($"res://art/people/heroine_outfit_{calling}_lod.gltf");
+        // (B's gear, --body p1: the calling's play-tier unit is its built body's own (ArmorPiece.LodFile), and B's body has no
+        // tuck channels: its tuck is always the map)
+        bool gear = rows.Any(r => r.Gear);
+        string? gearLod = gear ? rows.Select(r => r.LodFile).FirstOrDefault(f => f != null && ResourceLoader.Exists(f)) : null;
+        bool lodFile = !gear && full && ResourceLoader.Exists($"res://art/people/heroine_outfit_{calling}_lod.gltf");
         if (lodFile)
         {
             // (her gameplay body shares her skin's materials and its own vertices have no tuck map: one calling's
@@ -338,7 +343,8 @@ public static class HerWear
         }
         else TuckMap(p, rows, under);
         if (Prof) GD.Print($"wear prof: tuck map {ap.Elapsed.TotalMilliseconds:F1} ms");
-        if (full) HerLod.Attach(p, calling);
+        if (full && !gear) HerLod.Attach(p, calling);
+        else if (full && gearLod != null) HerLod.Attach(p, calling, gearLod);
         if (lodPairs.Count > 0 || lodShadows.Count > 0)
         {
             var lod = HerLod.For(p);
@@ -380,6 +386,8 @@ public static class HerWear
         mi.Skeleton = "..";
         mi.Layers = 2;
         mi.SetMeta(Meta, id);
+        // (a built body's own piece (B's gear): P1Laws never hides, swaps or rebinds it, and keeps it on its body's shapes)
+        if (ArmorIndex.Shared.Find(id) is { Gear: true }) mi.SetMeta(P1Body.GearMeta, true);
     }
 
     static List<MeshInstance3D> Of(Dictionary<string, List<MeshInstance3D>> d, string id) =>
@@ -892,10 +900,11 @@ public static class HerWear
     /// at each of her points.</summary>
     static IReadOnlyList<(long Key, float T)> Footprint(ArmorPiece r)
     {
-        var path = $"res://art/{r.Dir}/armor_cover/{r.Id}.bin";
+        var path = r.CoverPath;
         if (tucks.TryGetValue("foot:" + path, out var f)) return f;
         var d = new Dictionary<long, float>();
-        if (r.Tuck != null) foreach (var (k, t) in Records($"res://art/{r.Dir}/{r.Tuck}")) d[k] = t;
+        // (its tuck as 10 mm marks, SkinTuck.Foot: the lay amount follows the depth, not the row's scale)
+        if (r.TuckPath is string tp) foreach (var (k, t) in Records(tp)) d[k] = SkinTuck.Foot(t, r.TuckDepth);
         if (FileAccess.FileExists(path))
             foreach (var (k, t) in Records(path))
                 if (!d.TryGetValue(k, out var o) || t > o) d[k] = t;
@@ -1132,32 +1141,41 @@ public static class HerWear
     /// (and `under`: her points under garment-tucked pieces).</summary>
     static void TuckMap(People.Person p, List<ArmorPiece> rows, Dictionary<long, float>? under = null)
     {
-        var at = new Dictionary<long, float>();
+        // (in millimetres, SkinTuck: a row's record is marks of its own full scale (ArmorPiece.TuckDepth), the deepest at
+        // a point wins, and the look's deepest scale is the shader's `tuck`; `under` is 10 mm marks)
+        var worn = new List<(float DepthMm, IEnumerable<(long Key, float T)> Records)>();
         foreach (var r in rows)
-        {
-            if (r.Tuck == null) continue;
-            foreach (var (k, t) in Records($"res://art/{r.Dir}/{r.Tuck}"))
-                if (!at.TryGetValue(k, out var o) || t * TuckScale > o) at[k] = t * TuckScale;
-        }
-        if (under != null)
-            foreach (var (k, t) in under)
-                if (!at.TryGetValue(k, out var o) || t > o) at[k] = t;
+            if (r.TuckPath is string tp)
+                worn.Add((r.TuckDepth, Records(tp).Select(x => (x.Item1, x.Item2 * TuckScale))));
+        float lookMm = SkinTuck.LookMm(worn.Select(w => w.DepthMm), under != null);
+        if (under != null) worn.Add((SkinTuck.BaseMm, under.Select(kv => (kv.Key, kv.Value))));
+        var at = SkinTuck.Merge(worn, lookMm);
         var bodies = p.Skeleton.GetChildren().OfType<MeshInstance3D>().Where(People.TuckBody).ToList();
         var seen = new HashSet<long>();
         foreach (var mi in bodies)
         {
             var keys = KeysOf(mi.Mesh);
+            // (B, --body p1: its play body (lod_p1_body) wears the close body's materials (P1Laws.PlaySwitch), so one map holds
+            // both, the play body's values after the close body's, read at its instance's tuck_offset; gear_tuck.py keys the
+            // records on both tiers' points)
+            if (P1Body.IsB(p.Skeleton) && mi.Name == "Heroine" && p.Skeleton.GetNodeOrNull<MeshInstance3D>("lod_p1_body") is { Mesh: not null } lb
+                && keys.Length == 1 && lb.Mesh.GetSurfaceCount() == 1)
+            {
+                lb.SetInstanceShaderParameter("tuck_offset", keys[0].Length);
+                keys = new[] { keys[0].Concat(KeysOf(lb.Mesh)[0]).ToArray() };
+            }
             for (int s = 0; s < keys.Length && s < mi.GetSurfaceOverrideMaterialCount(); s++)
             {
                 if (mi.GetSurfaceOverrideMaterial(s) is not ShaderMaterial m || !People.IsSkin(m)) continue;
+                m.SetShaderParameter("tuck", SkinTuck.Uniform(lookMm));
                 var ks = keys[s];
                 var v = new float[ks.Length];
                 bool any = false;
                 for (int i = 0; i < ks.Length; i++)
                     if (at.TryGetValue(ks[i], out var t))
                     {
-                        // (as her vertex colours hold a channel's mark: eight bits)
-                        v[i] = MathF.Round(Math.Clamp(t, 0f, 1f) * 255f) / 255f;
+                        // (SkinTuck.Merge: a row's mark as her vertex colours hold a channel's, eight bits, then of the look's scale)
+                        v[i] = t;
                         any |= v[i] > 0;
                         seen.Add(ks[i]);
                     }
@@ -1169,6 +1187,8 @@ public static class HerWear
                 m.SetShaderParameter("tuck_map", ImageTexture.CreateFromImage(img));
                 m.SetShaderParameter("tuck_map_width", w);
                 m.SetShaderParameter("tuck_channel", -2);
+                // (--shot: what this body surface's shader got, read back from its material: the look's scale and the marks over 1, the deep look's not-drawn points)
+                if (Args.Has("shot")) GD.Print($"her tuck: {mi.Name}[{s}] tuck {m.GetShaderParameter("tuck").AsSingle() * 1000:0.###} mm (look {lookMm:0.###} mm; rows {string.Join(" ", rows.Where(r => r.TuckPath != null).Select(r => $"{r.Id}:{r.TuckDepth:0.#}"))}{(under != null ? " under:10" : "")}); marks {v.Count(x => x > 0)} of {ks.Length} points, {v.Count(x => x > 0.973f && x <= 1f)} full, {v.Count(x => x >= 0.995f)} not drawn, {v.Count(x => x > 1f)} over 1, max {v.Max():0.####}");
             }
         }
         int miss = at.Keys.Count(k => !seen.Contains(k));
