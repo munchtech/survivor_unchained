@@ -17,7 +17,9 @@ namespace SurvivorUnchained.View;
 /// Every rendered frame of an act run: `act: scr f=F t=T pelvis=x,y head=x,y foot=x,y box=x0,y0,x1,y1 ppm=P`, her place in the
 /// window's pixels (the movie frame's) from the shown pose through the active camera: F the engine's process frame (the movie
 /// writer's file index: one file per iteration from 0), T the run clock, her pelvis, the top of her head, the ball of her lower
-/// foot, the box round every bone and every held piece (not padded for flesh), the pixels a meter spans at her pelvis.
+/// foot, the box round every bone but the parentless `root` and every held piece (not padded for flesh), the pixels a meter
+/// spans at her pelvis; then `by=` who makes the box's left, top, right, bottom (a bone, `crown`, a held piece) and, when a
+/// parentless bone is off its rest, `off=<bone>:x,y,z cm@px` (skeleton frame, and where it lands in the picture).
 /// --act-rigid (shots): the camera is carried with her root during the run, no follow lag (WorldScene.Draw); play's camera
 /// is not touched without it.
 /// </summary>
@@ -153,11 +155,30 @@ public partial class PlayerView
             return new Vector2((c.X * iw * 0.5f + 0.5f) * win.X, (-c.Y * iw * 0.5f + 0.5f) * win.Y);
         }
         var lo = new Vector2(float.MaxValue, float.MaxValue); var hi = new Vector2(float.MinValue, float.MinValue);
-        void Add(Vector2 p) { lo = new Vector2(Mathf.Min(lo.X, p.X), Mathf.Min(lo.Y, p.Y)); hi = new Vector2(Mathf.Max(hi.X, p.X), Mathf.Max(hi.Y, p.Y)); }
+        // (who makes each side of the box: left, top, right, bottom; a bone's name, "crown", or a held piece's node name)
+        var who = new string[4];
+        void Add(Vector2 p, string name)
+        {
+            if (p.X < lo.X) who[0] = name; if (p.Y < lo.Y) who[1] = name; if (p.X > hi.X) who[2] = name; if (p.Y > hi.Y) who[3] = name;
+            lo = new Vector2(Mathf.Min(lo.X, p.X), Mathf.Min(lo.Y, p.Y)); hi = new Vector2(Mathf.Max(hi.X, p.X), Mathf.Max(hi.Y, p.Y));
+        }
         int top = 0;
-        for (int b = 0; b < scrPose.Length; b++) { Add(Px(x * scrPose[b])); if (scrPose[b].Y > scrPose[top].Y) top = b; }
+        // (a parentless bone, her `root`, is no part of her figure: a clip may key it metres from her (heroic_leap leaves it 2.5 m
+        // behind her from takeoff to the blend back), so it stays out of the box and the line says where it is when it is off its rest)
+        string off = "";
+        for (int b = 0; b < scrPose.Length; b++)
+        {
+            if (skel.GetBoneParent(b) < 0)
+            {
+                var d = scrPose[b] - skel.GetBoneGlobalRest(b).Origin;
+                if (d.Length() > 0.01f) off += $" off={skel.GetBoneName(b)}:{F1(d.X * 100)},{F1(d.Y * 100)},{F1(d.Z * 100)}cm@{P2(Px(x * scrPose[b]))}";
+                continue;
+            }
+            Add(Px(x * scrPose[b]), skel.GetBoneName(b));
+            if (scrPose[b].Y > scrPose[top].Y) top = b;
+        }
         var head = Px(x * (scrHead >= 0 ? scrPose[scrHead] + scrHeadUp * ScrHeadTop : scrPose[top]));
-        Add(head);
+        Add(head, "crown");
         // (what she holds and wears on a bone: sword, shield, sheath; each piece's own box)
         foreach (var n in skel.GetChildren())
         {
@@ -166,7 +187,7 @@ public partial class PlayerView
             {
                 if (m is not MeshInstance3D mi || mi.Mesh == null || !mi.IsVisibleInTree()) continue;
                 var bx = mi.GetAabb(); var g = mi.GlobalTransform;
-                for (int k = 0; k < 8; k++) Add(Px(g * bx.GetEndpoint(k)));
+                for (int k = 0; k < 8; k++) Add(Px(g * bx.GetEndpoint(k)), $"{att.Name}/{mi.Name}");
             }
         }
         var pelvisW = x * measPose[4];
@@ -175,7 +196,7 @@ public partial class PlayerView
         var foot = Px(lf.Y <= rf.Y ? lf : rf);
         float ppm = (Px(pelvisW + cam.GlobalBasis.X) - pelvis).Length();
         GD.Print($"act: scr f={Engine.GetProcessFrames()} t={actClock().ToString("0.000", CultureInfo.InvariantCulture)} pelvis={P2(pelvis)} head={P2(head)} foot={P2(foot)} " +
-                 $"box={P2(lo)},{P2(hi)} ppm={F1(ppm)}");
+                 $"box={P2(lo)},{P2(hi)} ppm={F1(ppm)} by={string.Join(",", who)}{off}");
     }
 
     /// <summary>The five points of the pose last shown (measPose), in her skeleton's frame (measNode) and in the world. Called at the
