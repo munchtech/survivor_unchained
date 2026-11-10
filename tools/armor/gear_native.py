@@ -165,7 +165,7 @@ def open_scalp(parts, head_P, head_N, mask):
     P = np.vstack([p["P"] for p in parts]).astype(np.float64)
     T = np.vstack([p["T"] + o for p, o in zip(parts, np.cumsum([0] + [len(p["P"]) for p in parts[:-1]]))])
     x, n = head_P[mask], head_N[mask]
-    q = Surface(P, T).closest(x, k=24)[0]
+    q = Surface(P, T).closest(x, k=min(24, len(T)))[0]
     d = q - x
     return int(((np.linalg.norm(d, axis=1) > SCALP_COVER_M) | ((d * n).sum(1) < -1e-4)).sum())
 
