@@ -32,6 +32,8 @@ public partial class Socket
         /// <summary>One of a union's two seats; the clasp drawn by this seat to its left neighbour; the linked rings
         /// (the two seats not side by side); the bond's "press now" on the second key.</summary>
         public bool Union, ClaspLeft, Rings, Bond;
+        /// <summary>Fix A (6): its key is down (the sim's own Held of the skill on this seat): the pressed state.</summary>
+        public bool Held;
     }
 
     /// <summary>Its key cap (Instrument makes it); null: no keys (the arena).</summary>
@@ -41,14 +43,14 @@ public partial class Socket
     bool keyed, locked;
     float costShown = -1;
     double flareT = -1;
-    SeatFx? lantern, spinner, bond, flare, ink;
+    SeatFx? lantern, spinner, bond, flare, ink, press;
     string inkKey = "";
     Color capShown = new(-1, -1, -1, -1);
     bool capVisible = true;
 
     static readonly bool Trace = Args.Has("slots-trace");
     static readonly Color Edge = new("#ca6e06"), Mid = new("#f9b214");
-    const float CapAlphaKindled = 0.5f, CapAlphaOpen = 0.3f;
+    const float CapAlphaOpen = 0.3f;
 
     /// <summary>The cap hung on the seat: its chip centred on the seat's 12 o'clock, straddling the plate's top line and
     /// the ring's top (DgPanel.TopY, the ring at SeatR).</summary>
@@ -68,7 +70,7 @@ public partial class Socket
         float cq = s.Cost < 0 ? -1 : Mathf.Floor(Mathf.Clamp(s.Cost, 0, 1) * 96) / 96;
         // (the cost met: the arc goes and the ready glow plays once)
         if (costShown >= 0 && cq < 0 && filled && !waiting) cue = 0;
-        if (cq != costShown || s.Kind != st.Kind || s.Union != st.Union || s.ClaspLeft != st.ClaspLeft || s.Rings != st.Rings) dirty = true;
+        if (cq != costShown || s.Kind != st.Kind || s.Union != st.Union || s.ClaspLeft != st.ClaspLeft || s.Rings != st.Rings || s.Held != st.Held) dirty = true;
         costShown = cq;
         st = s;
         st.Cost = cq;
@@ -224,7 +226,12 @@ public partial class Socket
             if (levelRiseT >= LevelRise) levelRiseT = -1;
             dirty = true;
         }
-        bool spin = keyed && filled && st.Channeling;
+        // (fix A, 6: a key down, whatever the seat's kind: the ring lit, the well warm, and the bright head turning on
+        // the arc, so held is never quieter than invited)
+        bool held = keyed && filled && st.Held;
+        if (held && press == null) press = Fx(SeatFx.Mode.Press);
+        if (press != null && press.Visible != held) press.Visible = held;
+        bool spin = keyed && filled && (st.Channeling || st.Held);
         if (Trace && (spin != (spinner?.Visible ?? false) || st.Bond != (bond?.Visible ?? false))) GD.Print($"seat {Index}: spin {spin} bond {st.Bond} keyed {keyed} filled {filled}");
         if (spin && spinner == null) spinner = Fx(SeatFx.Mode.Spinner);
         if (spinner != null)
@@ -246,9 +253,10 @@ public partial class Socket
         if (!vis) return;
         Color c = !filled ? new Color(1, 1, 1, CapAlphaOpen)
             : bd ? new Color(1.18f + 0.25f * breath, 1.08f + 0.18f * breath, 0.82f + 0.08f * breath)
-            : kindled ? new Color(1, 1, 1, CapAlphaKindled)
             : Colors.White;
         if (c != capShown) { capShown = c; Cap.Modulate = c; }
+        if (Cap.Quiet != (kindled && !bd)) Cap.Quiet = kindled && !bd;
+        if (Cap.Down != held) Cap.Down = held;
         bool ul = filled && st.Kind == SeatKind.Channeled;
         if (Cap.Underline != ul) Cap.Underline = ul;
     }
@@ -269,6 +277,16 @@ public partial class Socket
             // a 2 px gold arc at the well's edge, filling clockwise from 12 o'clock as Value / cost (its dark track under it)
             DrawArc(c, hr - 1.5f, 0, Mathf.Tau, 64, new Color(0, 0, 0, 0.45f), 3, true);
             if (st.Cost > 0.005f) DrawArc(c, hr - 1.5f, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * st.Cost, Math.Max(4, (int)(64 * st.Cost)), DgMeters.Gold, 2, true);
+            // (fix A, 12: near full it read as a selection ring: a dark tick at 12 o'clock breaks it where it starts,
+            // and a bright bead rides its head)
+            DrawLine(c + new Vector2(0, -(hr - 5.5f)), c + new Vector2(0, -(hr + 2f)), new Color(0.03f, 0.02f, 0.01f, 0.95f), 3);
+            if (st.Cost > 0.005f)
+            {
+                float ha = -Mathf.Pi / 2 + Mathf.Tau * st.Cost;
+                var hp = c + new Vector2(Mathf.Cos(ha), Mathf.Sin(ha)) * (hr - 1.5f);
+                DrawCircle(hp, 3.6f, new Color(0.03f, 0.02f, 0.01f, 0.8f), true, -1, true);
+                DrawCircle(hp, 2.6f, new Color("#fbf1d8"), true, -1, true);
+            }
         }
     }
 
@@ -307,7 +325,7 @@ public partial class Socket
 /// channel's turning arc, the bond's breathing gold ring. Drawn once; the seat changes its Modulate, Scale or Rotation.</summary>
 public partial class SeatFx : Control
 {
-    public enum Mode { Lantern, Spinner, Bond, Flare, Ink }
+    public enum Mode { Lantern, Spinner, Bond, Flare, Ink, Press }
     readonly Mode mode;
     readonly float hr;
     public float Hr => hr;
@@ -379,6 +397,12 @@ public partial class SeatFx : Control
                     DrawArc(c, hr + 2.5f, a0, a0 + 0.21f, 6, Spin.Lerp(Head, i / 5f) with { A = 0.15f + 0.17f * i }, 3, true);
                 }
                 DrawArc(c, hr + 2.5f, -Mathf.Pi / 2 - 0.05f, -Mathf.Pi / 2 + 0.35f, 8, Head, 3.5f, true);
+                break;
+            case Mode.Press:
+                // the key down: the well warm, the ring fully lit (added light)
+                DrawTextureRect(DgMeters.Disc, new Rect2(c - Vector2.One * hr * 1.15f, Vector2.One * hr * 2.3f), false, new Color(1f, 0.66f, 0.28f, 0.6f));
+                DrawArc(c, hr + 2.5f, 0, Mathf.Tau, 64, Spin with { A = 0.85f }, 2.5f, true);
+                DrawArc(c, hr + 5f, 0, Mathf.Tau, 64, Style.EmberHi with { A = 0.3f }, 4, true);
                 break;
             case Mode.Bond:
                 // the second key's "press now": a gold light in the well and a bright ring, breathing (the seat's Modulate)
