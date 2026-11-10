@@ -587,8 +587,8 @@ float cel_hero_class_pick(vec4 c_v) {
 // (L1 lead 24, TRIM) GOLD OVER GUNMETAL: with the keep at 0 every metal texel lands at one L, so her gold trim sat at
 // the plate's value. cel_hero_gold (hero_pool 78-81), class 3 only, per texel from the tone itself: its GOLD share = the
 // tone over its light (lit or mid), Oklab (a, b) along the gold axis (h 60) over its L, smoothstep(y, z) (a cool gunmetal tone has none and lands as
-// before); a gold texel lands at the class's L times x (both the lit and the shade pair), its C / L times w (0 or 1 = its
-// own). Value and chroma only: the hue is the tone's own. Zeros: as before.
+// before); a gold texel lands at the class's L times x (both the lit and the shade pair) and never under it (a floor, whole
+// at any c_k), its C / L times w (0 or 1 = its own). Value and chroma only: the hue is the tone's own. Zeros: as before.
 global uniform vec4 cel_hero_gold;
 vec3 cel_hero_gold_ok(vec3 c_rgb) {   // (Oklab of linear rgb: cel_hero_ok's math, declared here as land comes first)
 	vec3 c_lms = pow(max(mat3(vec3(0.4122214708, 0.2119034982, 0.0883024619), vec3(0.5363325363, 0.6806995451, 0.2817188376), vec3(0.0514459929, 0.1073969566, 0.6299787005)) * max(c_rgb, vec3(0.0)), vec3(0.0)), vec3(1.0 / 3.0));
@@ -613,9 +613,15 @@ vec3 cel_hero_land(vec3 c_rgb, float c_lt, float c_k) {
 	float c_to = pow(c_lt, 1.0 - clamp(cel_hero_class_keep, 0.0, 1.0)) * pow(c_l, clamp(cel_hero_class_keep, 0.0, 1.0));
 	float c_f = mix(1.0, c_to / c_l, c_k);
 	vec3 c_o = c_rgb * (c_f * c_f * c_f);
+	// (gold's L is a FLOOR at the lifted class L, whole at any c_k: at the stand camera the landing is partial (c_near ~0.4),
+	// so a landing alone left gold at its own L, the plate's lit pair already near it; the floor never darkens a brighter texel)
+	if (c_gs > 0.0) {
+		float c_lo = cel_hero_ok_l(c_o);
+		if (c_lo > 0.0001 && c_lo < c_lt) { float c_fg = mix(1.0, c_lt / c_lo, c_gs); c_o *= c_fg * c_fg * c_fg; }
+	}
 	if (c_gs > 0.0 && cel_hero_gold.w > 0.0 && cel_hero_gold.w != 1.0) {
 		vec3 c_q = cel_hero_gold_ok(c_o);
-		c_q.yz *= mix(1.0, cel_hero_gold.w, c_gs * c_k);
+		c_q.yz *= mix(1.0, cel_hero_gold.w, c_gs);
 		vec3 c_g = cel_hero_gold_lin(c_q);
 		if (min(c_g.r, min(c_g.g, c_g.b)) >= 0.0) c_o = c_g;
 	}
