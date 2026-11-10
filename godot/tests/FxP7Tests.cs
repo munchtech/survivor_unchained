@@ -61,7 +61,7 @@ public class FxP7Tests
         var p = Real();
         foreach (var k in new[] { "grip.lead_frames", "grip.slow", "grip.min_len", "grip.aspect", "grip.tail_px", "grip.point", "grip.grain", "grip.waver", "grip.glow",
             "grip.dry", "grip.lit", "grip.retract", "grip.shed_at", "grip.contact.wait_frames", "grip.contact.k_min", "grip.contact.lift", "grip.contact.kill",
-            "grip.contact.crowd", "grip.contact.tears", "grip.contact.grit", "grip.contact.slit", "grip.snap", "grip.link.on" })
+            "grip.contact.crowd", "grip.contact.tears", "grip.contact.grit", "grip.contact.slit", "grip.snap", "grip.face", "grip.link.on" })
             Assert.True(p.Has(k), "fx_language.json p7 lacks " + k);
         Assert.Equal(5, p.All("grip.dry").Length);
         Assert.Equal(3, p.All("grip.lit").Length);

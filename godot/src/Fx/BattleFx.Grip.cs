@@ -470,6 +470,13 @@ public partial class BattleFx
         if (len > tr.FullLen) { tr.FullLen = len; tr.FullFrame = Engine.GetFramesDrawn(); }
         int s = 0;
         while (s < gripPts.Count - 2 && gripCum[s + 1] <= start) s++;
+        // A cut whose blade sweeps a plane the camera sees edge-on (sword_fore's, at the play camera) left a stroke one
+        // pixel wide: behind the head the ribbon's inner side is pushed out across the screen until it shows at least
+        // grip.face[0] of the blade's length (blended in over face[1] m behind the head: the head stays the real blade).
+        var faceCam = GetViewport()?.GetCamera3D();
+        var faceBack = faceCam != null ? faceCam.GlobalBasis.Z.Normalized() : Vector3.Up;
+        var face = P7D.All("grip.face");
+        var chest = PlayerPos + Vector3.Up * 1.1f;
         gripMesh.ClearSurfaces();
         gripMesh.SurfaceBegin(Mesh.PrimitiveType.TriangleStrip);
         for (int i = s; i < gripPts.Count; i++)
@@ -481,6 +488,19 @@ public partial class BattleFx
                 // the drawn tail's own point, between two of the path's
                 float f = -u / Mathf.Max(1e-5f, gripCum[i + 1] - gripCum[i]);
                 h = h.Lerp(gripPts[i + 1].H, f); t = t.Lerp(gripPts[i + 1].T, f); u = 0;
+            }
+            if (face[0] > 0)
+            {
+                var side = faceBack.Cross(gripPts[Math.Min(i + 1, gripPts.Count - 1)].T - gripPts[Math.Max(i - 1, 0)].T);
+                if (side.LengthSquared() > 1e-8f)
+                {
+                    side = side.Normalized();
+                    var real = h - t;
+                    float shown = real.Dot(side);
+                    float way = Mathf.Abs(shown) > 0.15f * real.Length() ? Mathf.Sign(shown) : side.Dot(chest - t) < 0 ? -1 : 1;
+                    float need = face[0] * real.Length() - shown * way;
+                    if (need > 0) h += side * (way * need * Mathf.Clamp((len - u) / Mathf.Max(face[1], 1e-3f), 0, 1));
+                }
             }
             gripMesh.SurfaceSetUV(new Vector2(u, 0)); gripMesh.SurfaceAddVertex(h);
             gripMesh.SurfaceSetUV(new Vector2(u, 1 + GripOver)); gripMesh.SurfaceAddVertex(t + (t - h) * GripOver);

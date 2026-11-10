@@ -835,15 +835,16 @@
    "n": 4
   },
   "grip": {
-   "what": "P7 lead 5, the held swing's arc, take 4 (src/Fx/BattleFx.Grip.cs, shaders/fx_grip_stroke.gdshader): the STROKE her blade leaves (one brushed sweep, a heavy-headed comma in three nested bands), the contact on the blade, the link between a chain's cuts. px at the play camera, m in the world, s of real time (the fight's through a hitstop). Colors stay the steel family's. lead_frames = how long before the contact the stroke may show; slow = the tip's speed (m/s) under which no stroke is left, snap = above which it is no cut (the pose snapping from rest into the clip); min_len = the shortest stroke drawn (m); aspect = a short stroke's head is at most this x its length wide (a small wedge); tail_px = the narrowest the tail is painted (under it the tail is cut: never a hairline); point = the tail's last [m, at most this share of the length] drawn to a point; grain = a bristle [px across, m along]; dry = the tail's last dry [m, at most this share of the length], the brush's along [at the tail's end, in the body], the brush's dryness; lit = the lit blade at the head [px thick, the stroke's length (m) at which it starts, at which it reaches the guard].",
+   "what": "P7 lead 5, the held swing's arc, take 4 (src/Fx/BattleFx.Grip.cs, shaders/fx_grip_stroke.gdshader): the STROKE her blade leaves (one brushed sweep, a heavy-headed comma in three nested bands), the contact on the blade, the link between a chain's cuts. px at the play camera, m in the world, s of real time (the fight's through a hitstop). Colors stay the steel family's. lead_frames = how long before the contact the stroke may show; slow = the tip's speed (m/s) under which no stroke is left, snap = above which it is no cut (the pose snapping from rest into the clip); min_len = the shortest stroke drawn (m); face = a stroke the camera sees edge-on is turned to show at least [this share of the blade's length] across the screen, blended in over [m] behind the head (0: off); aspect = a short stroke's head is at most this x its length wide (a small wedge); tail_px = the narrowest the tail is painted (under it the tail is cut: never a hairline); point = the tail's last [m, at most this share of the length] drawn to a point; grain = a bristle [px across, m along]; dry = the tail's last dry [m, at most this share of the length], the brush's along [at the tail's end, in the body], the brush's dryness; lit = the lit blade at the head [px thick, the stroke's length (m) at which it starts, at which it reaches the guard].",
    "lead_frames": 2,
    "slow": 4,
    "snap": 90,
    "min_len": 0.2,
    "aspect": 0.5,
+   "face": [0.5, 0.3],
    "tail_px": 3,
    "point": [0.3, 0.4],
-   "grain": [5, 0.5],
+   "grain": [3.5, 0.4],
    "waver": 0.13,
    "glow": 0.28,
    "dry": [0.45, 0.3, 0.05, 0.92, 0.6],
@@ -852,10 +853,10 @@
    "shed_at": [0.084, 0.117],
    "sunder": {
     "what": "head = the comma's width at the blade (a share of the blade, in from the tip's path), p = the power it runs out by along the length, max_len = the longest drawn (m of the tip's path), bands = across the width from the tip's path [the core's end, the mid's end, where the amber runs dry] for the whole stroke, then with the amber stepped out, then the gold, reach = how far back from the head [the core, the mid] reach (shares of the length) and the power they close by, width = the head's by step of leaving, flash = the contact's size",
-    "head": 0.7,
+    "head": 0.75,
     "p": 1.3,
     "max_len": 2.7,
-    "bands": [[0.44, 0.57, 0.61], [0.6, 0.93, 0.96], [0.93, 0.975, 0.99]],
+    "bands": [[0.44, 0.52, 0.55], [0.6, 0.93, 0.96], [0.93, 0.975, 0.99]],
     "reach": [0.45, 0.68, 2],
     "width": [1, 0.8, 0.55],
     "flash": 1.0
@@ -864,7 +865,7 @@
     "head": 0.48,
     "p": 1.5,
     "max_len": 2.5,
-    "bands": [[0.5, 0.66, 0.7], [0.64, 0.93, 0.96], [0.93, 0.975, 0.99]],
+    "bands": [[0.5, 0.63, 0.66], [0.64, 0.93, 0.96], [0.93, 0.975, 0.99]],
     "reach": [0.4, 0.75, 2],
     "width": [1, 0.8, 0.55],
     "flash": 0.8
@@ -872,7 +873,7 @@
    "contact": {
     "what": "slit = the cut-through [m ahead of its kernel, m behind, half-width, the kernel] at size 1 (a hard spike, not a hairline); grit = the heavy blade's dust puffs under the cut (0: none). The slit on the blade where its line crosses the struck body: looked for from the contact for wait_frames, then laid on the blade as it is; k_min = the nearest to the guard it sits; lift = toward the camera (m); larger for a kill or a crowd (3+ struck); tears = [fewest, most]",
     "grit": 0,
-    "slit": [0.6, 0.35, 0.1, 0.12],
+    "slit": [0.75, 0.45, 0.07, 0.05],
     "wait_frames": 3,
     "k_min": 0.35,
     "lift": 0.3,
