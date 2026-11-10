@@ -965,7 +965,9 @@ public partial class PlayerView : Node3D
             // (--close-turn R with it: turned from the close view's lens as its idle turns her, so a held pose can be
             // seen from her front; without it she keeps her heading, as before.)
             if (HoldTurn && Turned is float th) Rotation = new Vector3(0, th, 0);
-            return;
+            // (L1 lead 21, stage) A held clip keeps her carried light: the branch returned here, so the light below never stepped (no energy,
+            // cel_ember's reach 0) and a held frame lost her whole pool. Her pose is all that is held; the light runs as on any frame.
+            goto carriedLight;
         }
         if (!p.Alive || fallen)
         {
@@ -1127,6 +1129,7 @@ public partial class PlayerView : Node3D
         if (mine) Carry((float)dt, sp);
         if (mine) SurvivorUnchained.Play.TurnRun.Log(b.Time, p.StickX, p.StickZ, p.Vx, p.Vz, Rotation.Y, carriage?.Bank ?? 0, speed, p.X, p.Z);
         else tree.Set(BlendPosition, speed);
+        carriedLight:
         // The carried light: steadier at full health, guttering when hurt.
         double hp = p.Hp / b.MaxHp;
         flare = Mathf.Max(0, flare - dt * 0.8);
