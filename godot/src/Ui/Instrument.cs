@@ -167,14 +167,8 @@ public partial class Instrument : Control
         draughtKey.Refresh();
         dashKey.Refresh();
         artKey.Refresh();
-        // (M4 §1: the seats' caps, then where each stands from its rank chip: within a pixel, the chip moves to 4:30)
-        foreach (var s in Sockets) { s.Cap?.Refresh(); s.Measure(); }
-        if (Args.Has("shot") || Args.Has("seat-measure"))
-        {
-            var line = new System.Text.StringBuilder("seat caps:");
-            foreach (var s in Sockets) line.Append($" [{s.Index}] {s.Cap?.Shown2}: gap {s.CapGap:0.0}{(s.RankLow ? " rank->4:30" : "")}");
-            GD.Print(line.ToString());
-        }
+        // (M4 §1: the seats' caps. A seat that wears a cap draws no rank chip, so nothing is measured against it)
+        foreach (var s in Sockets) s.Cap?.Refresh();
     }
 
     /// <summary>The Lamps' Open wide (§4): the flask and the dash (no wicks) drop to 45%; off, back to full.</summary>
@@ -636,8 +630,9 @@ public partial class Socket : Control
             if (cooling && total >= 3.5 && waitSecs >= 1)
                 DgMeters.Numeral(this, c, ((int)Math.Ceiling(waitSecs)).ToString(), 20, DgMeters.Gold, 4);
             // the rank (UI 23): a small dark chip at half past one over the bezel (DgPanel.Marks.Chip), gold-rimmed
-            // when it can evolve or has
-            if (rank > 0) DgPanel.Marks.Chip(this, RankAt(c), rank.ToString(), evolved || ripe);
+            // when it can evolve or has. (M4 lead 4: only on a seat with no key cap, the Lamps' wide view and the arena:
+            // in play the cap, the wait's seconds and a rank were three numerals a seat; the rank is read on the Lamps)
+            if (rank > 0 && !keyed) DgPanel.Marks.Chip(this, c + DgPanel.ChipOff, rank.ToString(), evolved || ripe);
         }
     }
 }

@@ -12,7 +12,7 @@ namespace SurvivorUnchained.Ui;
 ///   runs; kindled: the cap at half, the well lit like a lantern (breathing, flaring when it fires itself).
 /// A spender short of Resolve: a gold arc fills clockwise from 12 o'clock as Value / cost. A union: both rings' inner
 /// edges gold, a clasp across the gap of adjacent seats (linked rings at 10:30 otherwise), the second key breathing
-/// gold while the bond is live. Empty: locked = no cap; open = the cap at 30%.
+/// gold while the bond is live. Empty: locked = no cap; open = the cap at 30%. A seat that wears a cap draws no rank chip (lead 4).
 /// What moves by the clock (the lantern, the turning arc, the bond's breath) is a small child changed by its
 /// Modulate or Rotation, never a redraw of the seat.
 /// </summary>
@@ -35,10 +35,6 @@ public partial class Socket
 
     /// <summary>Its key cap (Instrument makes it); null: no keys (the arena).</summary>
     public KeyTag? Cap;
-    /// <summary>The rank chip at half past four instead of half past one: the cap came within a pixel of it (Measure).</summary>
-    public bool RankLow;
-    /// <summary>The last measure: the cap's box to the 1:30 rank chip's edge, in the art's px (negative: overlapping).</summary>
-    public float CapGap { get; private set; } = float.NaN;
 
     SeatState st = new() { Cost = -1 };
     bool keyed, locked;
@@ -163,23 +159,6 @@ public partial class Socket
         bool ul = filled && st.Kind == SeatKind.Channeled;
         if (Cap.Underline != ul) Cap.Underline = ul;
     }
-
-    /// <summary>Where the cap's chip and the 1:30 rank chip stand apart (the art's px): within a pixel, the rank chip
-    /// moves to 4:30 (M4 §1, "measure"). Called when the caps re-label.</summary>
-    public void Measure()
-    {
-        if (Cap == null) return;
-        var box = Cap.ChipBox();
-        box.Position += Cap.Position;
-        var cc = Size / 2 + DgPanel.ChipOff;
-        float dx = Math.Max(Math.Max(box.Position.X - cc.X, 0), cc.X - box.End.X), dy = Math.Max(Math.Max(box.Position.Y - cc.Y, 0), cc.Y - box.End.Y);
-        CapGap = Mathf.Sqrt(dx * dx + dy * dy) - DgPanel.ChipR;
-        bool low = true; // M4 lead 3: the cap owns 12 o'clock, the rank sits at 4:30, so a key "1" and a rank "1" never stand side by side
-        if (low != RankLow) { RankLow = low; dirty = true; }
-    }
-
-    /// <summary>The rank chip's middle: 1:30, or 4:30 when the cap would touch it.</summary>
-    Vector2 RankAt(Vector2 c) => c + (RankLow ? new Vector2(DgPanel.ChipOff.X, -DgPanel.ChipOff.Y) : DgPanel.ChipOff);
 
     /// <summary>The seat's marks over the well (DrawRing, after the ring's inner edge): the union's gold edge, its clasp or
     /// linked rings, and the cost arc.</summary>
