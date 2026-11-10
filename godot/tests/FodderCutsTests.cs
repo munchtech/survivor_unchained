@@ -89,7 +89,9 @@ public sealed class FodderCutsTests
         var m = new RunMeasures();
         meter.Finish(b, t, m);
         Assert.EndsWith(" cuts/fodder mean 3.00 med 3 n 1 uncut 1", m.Grip);
-        Assert.EndsWith(m.Grip, m.Line());
+        // (b6: the harness-only source split follows the grip's column, and is the run line's last)
+        Assert.EndsWith(m.Grip + " " + m.Src, m.Line());
+        Assert.Matches(@"^src sunder n [\d.]+ sh [\d.]+ hx [-\d.]+ rest [-\d.]+ ans [\d.]+ unb [\d.]+ unpaid [-\d.]+ whiff [\d.]+ inv [\d.]+ reachw [\d.]+$", m.Src);
         // (the grip's column still leads it, its two counts before this one)
         Assert.Matches(@"^grip holds .* gaps \d+ whiff \d+ opens \d+ drop \d+ cutw [\d.]+ bank [\d.]+ fmin [\d.]+ cuts/fodder ", m.Grip);
     }

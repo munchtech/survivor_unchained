@@ -112,6 +112,15 @@ public sealed class WeaponInst
     /// <summary>(M3 MR 3 b1, the landed rule) The time this grip's LANDED weight has paid up to (Battle.BankOf): NaN until
     /// its first cut lands, read as a full bank. Per grip (a union's half has its own).</summary>
     public double PaidTo = double.NaN;
+    /// <summary>(M3 lead 16 b6, harness-only: nothing reads it in play) This grip's LANDED weight by source, tallied by
+    /// Firing.CastOnce on its own cuts (not after-casts): [0] cuts landed; [1] the held share (unchained: a whole blow on
+    /// ready); [2] a heavy's extra (share x (scale - 1)); [3] rest over its own (unchained: a whole opening blow, more than
+    /// 1.25 waits since the last); [4] a block's answer (1); [5] a chained cut that carried no bank stamp (weight paid
+    /// nowhere); [6] weight landed and not paid into PaidTo (the period-end clamp: an answer's short wait, momentum);
+    /// [7] answers without a stamp; [8] own cuts that struck nothing (a chained whiff spends no bank; an unchained one its wait). GripMeter.SrcLine prints them.</summary>
+    public readonly double[] Src = new double[9];
+    internal double SrcLast = double.NaN;
+    internal bool SrcHit;
     /// <summary>(M3 MR 3 clock) An unchained skill's wait ran out inside the step at Time = ReadyStep, Overshoot before
     /// the step's end (Firing.CountDown, the chain's ChainReady way): a firing on that step is backdated to the instant,
     /// so every wait is its written length on average, a hasted one too (no whole-step breakpoints).</summary>
@@ -455,8 +464,10 @@ public static partial class Firing
         var bill = banked ? new CutBill(w) : null;
         b.Billing = bill;
         bool fired;
+        int depth = ++b.CastDepth;
+        if (depth == 1) w.SrcHit = false;
         try { fired = CastWeighed(b, w, cw, scale, bill); }
-        finally { w.CutW = cw0; b.Billing = bl0; if (banked) w.CastRest = 0; }
+        finally { w.CutW = cw0; b.Billing = bl0; if (banked) w.CastRest = 0; b.CastDepth--; }
         // (b1) It pays only if it struck a body, once however many: PaidTo moves to from + weight x W (its own period's
         // end at most). A crescent or other projectile still in the air RESERVES it (paid as if struck) and refunds it
         // if every one of them expires having struck nothing (Battle.ExpireProjectile, CutBill.Refund).
@@ -469,7 +480,24 @@ public static partial class Firing
             bill.Added = w.PaidTo - p0;
             bill.Settled = true;
         }
+        if (depth == 1 && w.Hold && fired) TallySrc(b, w, bill, cw, own, banked, from, payTo);
         return fired;
+    }
+
+    /// <summary>(M3 lead 16 b6, harness-only) WeaponInst.Src: the landed weight of the grip's own cut by source.</summary>
+    static void TallySrc(Battle b, WeaponInst w, CutBill? bill, double cw, double own, bool banked, double from, double payTo)
+    {
+        var s = w.Src;
+        bool landed = bill != null ? bill.Hit || bill.Live > 0 : w.SrcHit;
+        if (!landed) { s[8]++; return; }
+        s[0]++;
+        double wt = CooldownOf(b, w) / w.BlowWeight;
+        bool chained = w.Chained && w.Press!.Chain!.Period is > 0;
+        if (!chained) s[double.IsNaN(w.SrcLast) || b.Time - w.SrcLast > 1.25 * wt ? 3 : 1] += 1;
+        else if (!banked) { s[5] += cw; if (w.WholeCast) s[7]++; }
+        else if (w.WholeCast) { s[4] += cw; s[6] += cw - (payTo - from) / wt; }
+        else { s[1] += w.BlowWeight; s[2] += own - w.BlowWeight; s[3] += cw - own; s[6] += cw - (payTo - from) / wt; }
+        w.SrcLast = b.Time;
     }
 
     /// <summary>(M3 MR 3 b1, the landed rule) A banked chained cut's account while its cast runs and its projectiles
@@ -524,6 +552,7 @@ public static partial class Firing
             b.StruckBy = null;
             if (fired && b.Struck.Count > 0)
             {
+                if (b.CastDepth == 1) w.SrcHit = true;
                 if (builds) b.Resolve.Landed(w.Press!, b.Struck.Count, heavy, cw);
                 if (swing) b.SwingLanded += CooldownOf(b, w) * scale;
             }

@@ -58,7 +58,12 @@ public sealed class GripMeter
             }
             if (g == null) continue;
             any = true; held |= h; ids.Add(g.Id); grips.Add(g);
-            near |= b.NearestHostile(p.X, p.Z, (g.Num(s => s.Reach) ?? 2.6) + pad) != null;
+            bool gNear = b.NearestHostile(p.X, p.Z, (g.Num(s => s.Reach) ?? 2.6) + pad) != null;
+            near |= gNear;
+            // (b6, harness-only) the grip's battle clock, its written wait and its own reach seconds, for SrcLine
+            var sr = seen.TryGetValue(g, out var sv) ? sv : new SrcSeen();
+            sr.T = b.Time; sr.W = Firing.CooldownOf(b, g) / g.BlowWeight; if (gNear) sr.Reach += dt;
+            seen[g] = sr;
             // (the chain is kept on the weapon that swings: a union's half carries its own, the union's record none)
             if (g.Chained)
             {
@@ -106,6 +111,28 @@ public sealed class GripMeter
         if (held && !was) { Holds++; since = b.Time - dt; }
         else if (!held && was) HoldLens.Add(b.Time - dt - since);
         was = held;
+    }
+
+    sealed class SrcSeen { public double T, W, Reach; }
+    readonly Dictionary<WeaponInst, SrcSeen> seen = new();
+
+    /// <summary>(M3 lead 16 b6, harness-only) Each grip's landed weight by source (WeaponInst.Src), per minute of
+    /// `fightSec`: `src ID n N sh S hx H rest R ans A unb U unpaid P whiff F inv I reachw Q` (inv: landed weight over
+    /// the sum of its battles' (T + W) / W, the real-path invariant, at most 1; reachw: landed over its own reach
+    /// seconds / W, the rate a body in reach could have bought).</summary>
+    public string SrcLine(double fightSec)
+    {
+        double min = Math.Max(1e-6, fightSec / 60);
+        var sb = new System.Text.StringBuilder();
+        foreach (var grp in seen.GroupBy(kv => kv.Key.Id).OrderBy(g => g.Key))
+        {
+            var t = new double[9]; double cap = 0, reach = 0;
+            foreach (var (w, sr) in grp) { for (int i = 0; i < 9; i++) t[i] += w.Src[i]; cap += (sr.T + sr.W) / sr.W; reach += sr.Reach / sr.W; }
+            double land = t[1] + t[2] + t[3] + t[4] + t[5];
+            if (sb.Length > 0) sb.Append(' ');
+            sb.Append($"src {grp.Key} n {t[0] / min:0.0} sh {t[1] / min:0.00} hx {t[2] / min:0.00} rest {t[3] / min:0.00} ans {t[4] / min:0.00} unb {t[5] / min:0.00} unpaid {t[6] / min:0.00} whiff {t[8] / min:0.0} inv {land / Math.Max(1e-9, cap):0.000} reachw {land / Math.Max(1e-9, reach):0.000}");
+        }
+        return sb.ToString();
     }
 
     /// <summary>The median hold (s; a hold still on counts with what it has), NaN with none.</summary>

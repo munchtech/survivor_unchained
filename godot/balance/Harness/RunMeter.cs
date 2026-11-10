@@ -37,6 +37,8 @@ public sealed class RunMeasures
     public double Minutes;
     /// <summary>(M3 MR 3) The grip's column (Sim/GripMeter.cs): holds, the median hold, the share held, blows, damage and Resolve built.</summary>
     public string Grip = "";
+    /// <summary>(M3 lead 16 b6, harness-only) The grips' landed weight by source (GripMeter.SrcLine).</summary>
+    public string Src = "";
 
     /// <summary>The run line's columns.</summary>
     public string Line() =>
@@ -47,7 +49,7 @@ public sealed class RunMeasures
         (Falls.Count > 0 ? $" falls [{string.Join("; ", Falls)}]" : "") +
         $" low {LowLife:0.00} taken {string.Join(",", Taken.Where(kv => kv.Key[0] is not ('#' or '+')).OrderByDescending(kv => kv.Value).Take(6).Select(kv => kv.Key + ":" + kv.Value.ToString("0.0")))}" +
         $" healed {string.Join(",", Taken.Where(kv => kv.Key[0] == '+').OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key[1..] + ":" + kv.Value.ToString("0.0")))}" +
-        $" kit {string.Join(",", Taken.Where(kv => kv.Key[0] == '#').OrderBy(kv => kv.Key).Select(kv => kv.Key[1..].Replace("caught ", "c.").Replace("missed ", "m.") + ":" + kv.Value.ToString("0")))}" + (Grip.Length > 0 ? " " + Grip : "");
+        $" kit {string.Join(",", Taken.Where(kv => kv.Key[0] == '#').OrderBy(kv => kv.Key).Select(kv => kv.Key[1..].Replace("caught ", "c.").Replace("missed ", "m.") + ":" + kv.Value.ToString("0")))}" + (Grip.Length > 0 ? " " + Grip : "") + (Src.Length > 0 ? " " + Src : "");
 
     static double Med(IEnumerable<double> xs) { var a = xs.Where(x => !double.IsNaN(x)).OrderBy(x => x).ToList(); return a.Count == 0 ? double.NaN : a[a.Count / 2]; }
     static string F(double x, string f = "0") => double.IsNaN(x) ? "-" : x.ToString(f);
@@ -195,7 +197,7 @@ public sealed class RunMeter
         }
         double min = Math.Max(1e-6, playSec / 60);
         m.Minutes = playSec / 60;
-        if (b.Campaign) m.Grip = grip.Line(fightSec, b.Time) + " " + cuts.Line();
+        if (b.Campaign) { m.Grip = grip.Line(fightSec, b.Time) + " " + cuts.Line(); m.Src = grip.SrcLine(fightSec); }
         m.ResolveSpentPerMin = b.Resolve.Spent / min;
         m.ResolveFullPct = 100 * fullSec / Math.Max(1e-6, playSec);
         if (hands != null) foreach (var (k, v) in hands.Presses) m.PressesPerMin[k] = v / min;

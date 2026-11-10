@@ -270,6 +270,8 @@ public struct ProcCtx
 
 public sealed partial class Battle
 {
+    /// <summary>(M3 lead 16 b6, harness-only) Firing.CastOnce's nesting: 1 for a skill's own cast, more for a cast inside it.</summary>
+    internal int CastDepth;
     /// <summary>Copies of a many-at-once kind vary their pace (EnemyDef.Spread) and weave (EnemyDef.Weave) here: set by a
     /// story zone that shows a pack close (the Low Ford, NPC 17). Off, every kind keeps the old +-8% and its straight
     /// line, so the arenas' seeded fights and their balance are as they were.</summary>
