@@ -174,6 +174,13 @@ public static class Pilot
     /// feet 0.3 s (Battle.MaxPlant) as the step begins, and the step itself takes a quarter second from rest. (A share of
     /// the clock, PlantShare, left 0.35 s: a heavy at the plant's end and the clock charged a fighter mid-step.)</summary>
     public static double StepLead = 0.6;
+    /// <summary>(M3 MR 3, the feet) Under a chained grip (Battle.Swing live) the stand clock's step is timed into a cut's dead
+    /// part, from its cancel beat to its period's end (SwingChain.CancelAt, PeriodEnd): once the step is due within one cut,
+    /// it is taken in that cut's dead part, and one due while a cut is before its cancel beat waits for it, unless the wait
+    /// would leave the clock under StepHoldLeft s (then it is taken at once, as before). Off: StepLead alone, as before.
+    /// (Only the stand clock's step: the hands' dashes out of telegraphs, lunges and crushes are never held.)</summary>
+    public static bool StepsOnCuts = true;
+    public static double StepHoldLeft = 0.35;
     /// <summary>Under this share of her health a crush is run from (the arena's away-and-round), not stood in.</summary>
     public static double CrushRun = 0.5;
 
@@ -193,6 +200,10 @@ public static class Pilot
         public int StandCharges;
         /// <summary>The rules that moved her over the last steps, newest last (a trace).</summary>
         public string Last = "";
+        /// <summary>(M3 MR 3, the feet) The stand clock's steps begun; the last one's instant and, under a chained grip, the
+        /// running cut's beats then (NaN with no chain live); of the steps, how many a chained cut's cancel beat held back.</summary>
+        public int Steps, StepsHeld;
+        public double StepAt = double.NaN, StepStood, StepCutStart = double.NaN, StepCancel = double.NaN, StepEnd = double.NaN;
         public readonly System.Collections.Generic.Dictionary<string, double> By = new();
         /// <summary>Full turns round her foe each ten seconds in reach (the strafe: 2.2-2.3).</summary>
         public double TurnsPer10 => InReach > 0 ? AbsTurn / (2 * Math.PI) / InReach * 10 : 0;
@@ -206,9 +217,9 @@ public static class Pilot
     {
         public int Side = 1;
         public readonly FeetMeter M = new();
-        double seen = -9, plantUntil, stepUntil, plantX, plantZ, stepWide, lastT = -1, lastA;
+        double seen = -9, plantUntil, stepUntil, plantX, plantZ, stepWide, lastT = -1, lastA, lastStood;
         (double X, double Z)? spot;
-        bool planted;
+        bool planted, held;
         Enemy? lastFoe;
 
         /// <summary>Whether she is planted now. Come into reach: a plant; the plant over: a step; the step over: the
@@ -228,8 +239,29 @@ public static class Pilot
             // (and under it the step must clear the clock's own spot, not only the hands': pushed about in a plant, a
             // step back across where the clock last saw her move reached 0.96 m and was still a stand to it)
             if (counted && spot is var (sx, sz)) clear &= Math.Sqrt((p.X - sx) * (p.X - sx) + (p.Z - sz) * (p.Z - sz)) >= clock!.StandMoved;
-            if (counted && !fresh && planted && (b.StoodFor >= clock!.StandFor - StepLead || now >= plantUntil))
+            bool due = counted && (b.StoodFor >= clock!.StandFor - StepLead || now >= plantUntil);
+            // (M3 MR 3, the feet: under a chained grip the step goes in a cut's dead part, StepsOnCuts)
+            var cut = counted && StepsOnCuts && b.Swing is { } sw0 && now >= sw0.StartAt && now < sw0.PeriodEnd ? sw0 : null;
+            bool growing = b.StoodFor > lastStood;
+            lastStood = b.StoodFor;
+            if (cut != null && !fresh && planted)
             {
+                // In the dead part: due now, or due before the next cut's cancel beat with the clock counting and that wait
+                // too long to hold (the next cut taken as long to its cancel beat as this one); before the cancel beat:
+                // held to it while the clock keeps StepHoldLeft s.
+                if (now >= cut.CancelAt)
+                    due |= growing && b.StoodFor + (cut.PeriodEnd - now) + (cut.CancelAt - cut.StartAt) > clock!.StandFor - StepHoldLeft;
+                else if (due && b.StoodFor + (cut.CancelAt - now) <= clock!.StandFor - StepHoldLeft)
+                {
+                    if (!held) { held = true; M.StepsHeld++; }
+                    due = false;
+                }
+            }
+            if (counted && !fresh && planted && due)
+            {
+                held = false;
+                M.Steps++; M.StepAt = now; M.StepStood = b.StoodFor;
+                (M.StepCutStart, M.StepCancel, M.StepEnd) = b.Swing is { } sw1 ? (sw1.StartAt, sw1.CancelAt, sw1.PeriodEnd) : (double.NaN, double.NaN, double.NaN);
                 // The plant's end is always a step, from where she is now (a mark dodged in a plant left her far from
                 // where it began: "clear" at once, and the next plant followed with no step, 4.45 s of hands at rest).
                 planted = false; plantUntil = now; stepUntil = now + StepMax;
@@ -245,7 +277,7 @@ public static class Pilot
                 stepUntil = plantUntil + StepMax;
                 stepWide = clock != null ? clock.StandMoved * StepClear : StepWide;
                 plantX = p.X; plantZ = p.Z; spot = null;
-                planted = true;
+                planted = true; held = false;
                 M.Plants++;
             }
             if (!counted && now >= plantUntil) planted = false;
