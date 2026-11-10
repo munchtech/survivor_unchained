@@ -482,7 +482,7 @@ public partial class Atmosphere : Node3D
     static readonly float[]? CelRigArg = SurvivorUnchained.Args.Get("cel-rig") is string ? Floats("cel-rig", 0, 0, 0, 0) : null;
     static readonly float[] CelTune = Floats("cel-tune", 1, 1, 1, 1);
     /// <summary>--cel-dbg band|ink|skin: the key's band level as gray, each material's ink class unlit (0 white, 1 yellow, 2 blue, 3 red), or her skin white (CEL_SKIN; the mask for measuring, L1 B1c).</summary>
-    static readonly float CelDbg = SurvivorUnchained.Args.Get("cel-dbg") switch { "band" => 1f, "ink" => 2f, "skin" => 3f, _ => 0f };
+    static readonly float CelDbg = SurvivorUnchained.Args.Get("cel-dbg") switch { "band" => 1f, "ink" => 2f, "skin" => 3f, "stand" => -1f, _ => 0f };
 
     /// <summary>(L1 B4) The rigs light the presets: cel on (not --cel off). --cel-rigs off: cel on, the presets' own light.</summary>
     public static readonly bool CelRigs = (CelArg ?? 1f) > 0f && SurvivorUnchained.Args.Get("cel-rigs") is not ("off" or "0");
@@ -680,6 +680,8 @@ public partial class Atmosphere : Node3D
         RenderingServer.GlobalShaderParameterSet("cel_hero_locks2", new Vector2((float)hl[4], (float)hl[5]));
         var hgo = SurvivorUnchained.Look.Rigs.HeroGold(hm);   // (L1 lead 24, TRIM) values 78-81: her gold trim over the gunmetal plate (cel_hero_land, class 3); zeros without them
         RenderingServer.GlobalShaderParameterSet("cel_hero_gold", new Vector4((float)hgo[0], (float)hgo[1], (float)hgo[2], (float)hgo[3]));
+        var hwa = SurvivorUnchained.Look.Rigs.HeroWarm(hm);   // (L1 lead 25, PLATE) values 82-83: her plate warm under her fire (cel_hero_land, class 3); zeros without them
+        RenderingServer.GlobalShaderParameterSet("cel_hero_warm", new Vector4((float)hwa[0], (float)hwa[1], 0, 0));
     }
     /// <summary>(L1 lead 20, HER5) Her LINE (hero_line.gdshader; CelLib.LineStep hangs it on her meshes): the row's value 8 = its
     /// width in px at 1080p, value 9 = its level against the anchor's tone. On as cel_hero is on; else 0 and nothing is drawn.</summary>

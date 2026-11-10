@@ -521,6 +521,10 @@ cel_hero_gold={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+cel_hero_warm={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 cel_give={
 "type": "vec4",
 "value": Vector4(0, 0, 0.25, 0.6)

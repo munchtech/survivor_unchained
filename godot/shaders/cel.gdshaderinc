@@ -590,6 +590,11 @@ float cel_hero_class_pick(vec4 c_v) {
 // before); a gold texel lands at the class's L times x (both the lit and the shade pair) and never under it (a floor, whole
 // at any c_k), its C / L times w (0 or 1 = its own). Value and chroma only: the hue is the tone's own. Zeros: as before.
 global uniform vec4 cel_hero_gold;
+// (L1 lead 25, PLATE) WARM UNDER HER FIRE: the gunmetal plate read neutral silver-grey under her own pool. cel_hero_warm
+// (hero_pool 82-83), class 3 only, the non-gold share of a texel: its Oklab (a, b) turn to her fire's hue (cel_hero_tone, her
+// anchor: the row's own warm tone, no new hue) at C / L = x on the lit pair, y on the shade pair (0 = that pair as before),
+// whole at any c_k (as the gold floor). Chroma only, L kept; the anchor (her dark blued share) is not landed and stays cool.
+global uniform vec4 cel_hero_warm;
 vec3 cel_hero_gold_ok(vec3 c_rgb) {   // (Oklab of linear rgb: cel_hero_ok's math, declared here as land comes first)
 	vec3 c_lms = pow(max(mat3(vec3(0.4122214708, 0.2119034982, 0.0883024619), vec3(0.5363325363, 0.6806995451, 0.2817188376), vec3(0.0514459929, 0.1073969566, 0.6299787005)) * max(c_rgb, vec3(0.0)), vec3(0.0)), vec3(1.0 / 3.0));
 	return mat3(vec3(0.2104542553, 1.9779984951, 0.0259040371), vec3(0.7936177850, -2.4285922050, 0.7827717662), vec3(-0.0040720468, 0.4505937099, -0.8086757660)) * c_lms;
@@ -603,6 +608,7 @@ vec3 cel_hero_land(vec3 c_rgb, float c_lt, float c_k) {
 	float c_l = cel_hero_ok_l(c_rgb);
 	if (c_l < 0.0001) return c_rgb;
 	float c_gs = 0.0;
+	bool c_onlit = abs(c_lt - cel_hero_class_lit.w) < 0.00001;   // (PLATE) the lit pair or the shade pair, before gold lifts c_lt
 	if (int(round(cel_hero_class)) == 3 && cel_hero_gold.x > 0.0) {
 		// (the tone over its light, the lit or the mid by which pair L it lands at: the material's own share, the light's hue out)
 		vec3 c_li = abs(c_lt - cel_hero_class_lit.w) < 0.00001 ? cel_hero_lit.rgb : cel_hero_mid.rgb;
@@ -624,6 +630,18 @@ vec3 cel_hero_land(vec3 c_rgb, float c_lt, float c_k) {
 		c_q.yz *= mix(1.0, cel_hero_gold.w, c_gs);
 		vec3 c_g = cel_hero_gold_lin(c_q);
 		if (min(c_g.r, min(c_g.g, c_g.b)) >= 0.0) c_o = c_g;
+	}
+	// (PLATE) the plate's share turns to her fire's hue at the pair's C / L (L kept; a texel out of gamut keeps its own)
+	float c_wc = c_onlit ? cel_hero_warm.x : cel_hero_warm.y;
+	if (int(round(cel_hero_class)) == 3 && c_wc > 0.0 && c_gs < 1.0) {
+		vec3 c_fo = cel_hero_gold_ok(cel_hero_tone.rgb);
+		float c_fc = length(c_fo.yz);
+		if (c_fc > 0.0001) {
+			vec3 c_q = cel_hero_gold_ok(c_o);
+			c_q.yz = mix(c_q.yz, c_fo.yz / c_fc * c_wc * c_q.x, 1.0 - c_gs);
+			vec3 c_g = cel_hero_gold_lin(c_q);
+			if (min(c_g.r, min(c_g.g, c_g.b)) >= 0.0) c_o = c_g;
+		}
 	}
 	return c_o;
 }
@@ -798,6 +816,12 @@ global uniform sampler2D cel_stand_pal : filter_nearest, repeat_disable;
 #endif
 varying vec3 cel_stm;   // (fragment to light: the moon's add here, top or rim over the base)
 varying vec3 cel_stf;   // (fragment to light: her fire's add here per unit of her light's energy over PI)
+// (L1 l25 WORLD) a leaf (CEL_STAND_FAM 1) in her light's SHADOW keeps cel_stt of her fire: probe world_01 read the fire-facing
+// step c_m1 = 1 on every frond of the pool fern and its pool level whole, yet the back fronds drew dark wine: the omni's shadow
+// (the front fronds' cast on the ones behind) cut the add whole while the moon's give-way (st_gv) had already dimmed the
+// base. Thin fronds pass firelight on; the share is CEL_STAND_THRU inside her pool's reach, none past it (the caller sets it).
+varying float cel_stt;
+#define CEL_STAND_THRU 0.7
 bool cel_stand_on() { return cel_on > 0.0 && cel_stand.x != 0.0; }
 vec4 cel_stand_tone(int c_i) { return texelFetch(cel_stand_pal, ivec2(c_i, CEL_STAND_FAM), 0); }
 // A hard step of c_v at c_e, one pixel wide (fragment() only).
@@ -869,7 +893,12 @@ bool cel_stand_light(vec3 c_l, vec3 c_lc, float c_att, bool c_dir, mat4 c_iv, in
 	if (cel_pool.w <= 0.0 || cel_pool_band.x <= 0.0 || cel_ember.w <= 0.0) return false;
 	float c_m = max(c_lc.r, max(c_lc.g, max(c_lc.b, 1e-6)));
 	if (dot(abs(c_lc / c_m - cel_pool.rgb), vec3(1.0)) > 0.02) return false;
-	if (c_att > 0.0) c_sl += cel_stf * (c_m / PI) * (1.0 - cel_pool_shade.x * (1.0 - c_leaf));
+#if CEL_STAND_FAM == 1
+	float c_sh = c_att > 0.0 ? 1.0 : cel_stt;
+#else
+	float c_sh = c_att > 0.0 ? 1.0 : 0.0;
+#endif
+	c_sl += cel_stf * (c_m / PI) * c_sh * (1.0 - cel_pool_shade.x * (1.0 - c_leaf));
 	return true;
 }
 #endif
