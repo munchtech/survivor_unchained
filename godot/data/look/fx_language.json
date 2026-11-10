@@ -852,15 +852,17 @@
     "slant": 0.1,
     "point": [0.4, 0.5],
     "gap": [0.5, 0.14, 0.26, 0.62],
-    "shed": 0.03
+    "shed": 0.03,
+    "carry": [1.5, 2.2]
    },
    "band": {
     "what": "(take 6, lead 7) the three colors are CONTINUOUS bands: each band's end is ONE line across the stroke's width (per weapon: core / mid / end = its knots [across: 0 the tip's path, 1 the inner edge; share of the length], straight between them, at most 4), laid by the brush's BLUNT clumps: clumps = [fewest, most] across the width per line, uneven = their widths' spread (0 even); each clump ends square at its own length, a step off its neighbour's of depth [m least, most] (10-20 px at 75 px a metre), never more than ratio x the narrower clump's width; the side between two clumps runs along the travel (never a slant: a row of V's is a zigzag), round = its corners' radius (m). Leaving (grip.shed_to): from lane.shed before shed_at[0] to lane.shed after shed_at[1] the whole stroke thins toward the tip's path to shed_to of its width, its bands with it (every shed frame a thinner copy of the whole one; never a white fan).",
-    "clumps": [2, 3],
-    "uneven": 0.4,
-    "depth": [0.14, 0.27],
-    "ratio": 1.0,
-    "round": 0.04
+    "clumps": [3, 4],
+    "uneven": 0.6,
+    "depth": [0.07, 0.42],
+    "ratio": 1.5,
+    "round": 0.12,
+    "back": 0.3
    },
    "glow": 0.28,
    "glow_end": [0.45, 0.92],
@@ -868,6 +870,9 @@
    "retract": [[0.05, 0], [0.15, 1]],
    "shed_at": [0.084, 0.117],
    "shed_to": 0.2,
+   "shed_rim": [0.45, 0.35, 0.12, 0.3],
+   "shed_push": [0.8, 0.5],
+   "short": [0.5, 1.4],
    "sunder": {
     "what": "head = the stroke's width at the blade (a share of the blade, in from the tip's path); taper = its width at the tail as a share of the head's, p = the power it narrows by; max_len = the longest drawn (m); core / mid / end = the white's, the gold's and the paint's own end as ONE line across the width (grip.band.what); streaks = the tail's 3-5 dry streaks from the tip's path in, each [width (share of the tail's across), the share of the tail it keeps (1 = to the paint's end)]; flash = the contact's size",
     "head": 0.75,
@@ -892,15 +897,15 @@
     "flash": 0.9
    },
    "contact": {
-    "what": "(TAKE 6: ONE shared impact, a blunt dab of cream in a gold rim lying in the stroke along the tip's travel, no chips: mark = [its length for one body as a share of the stroke's head width, its width as a share of its length, the rim (m), the cream = the core's share toward the mid]; by_struck = [bodies at the cap, the size there (x one body's)]: it grows with the bodies struck, x kill for a kill, never past the cap. kite / shards / fan / fly / tears / crowd below are gone.) (lead 7) the mark = where the edge bit, in the stroke's own hand: it lies IN the stroke (along the tip's travel at the crossing, across as the stroke's ribbon is there), smaller than the stroke's head. kite = one gold chisel, its fat end ON the blade white [m ahead along the travel, m behind, half-width, the white's share of its length (the Oathblade's x0.6)] at size 1; whole for full_frames, then two steps at steps' sizes, then gone; shards = up to tears[1] short hard chips thrown on along the travel at fly m/s [length least, most, width at the fat end least, most (m)], leaning at most fan degrees off the travel; grit = the heavy blade's dust puffs under the cut (0: none). The mark sits on the blade where its line crosses the struck body: looked for from the contact for wait_frames, then laid on the blade as it is; k_min = the nearest to the guard it sits; lift = toward the camera (m); larger for a kill or a crowd (3+ struck); tears = [fewest, most] barbs",
+    "what": "(TAKE 6 ROUND 3, lead 8: THE CONTACT IS IN THE STROKE, no second object in any form. On the frame the blade crosses the struck body (wait_frames at most for the crossing; k_min = the least share up the blade the log's point sits) the ribbon itself swells and whitens round the crossing's place: swell = [the width added on the inner side, past the tip's path] as shares of the stroke's own width there at size 1; reach = [m toward the head, m toward the tail]; flood = how far past the place the core takes the gold's share (share of the tail reach); frames = the strength by drawn frame since the crossing (then gone; it rides the ribbon, so nothing is left behind). Size: by_struck = [bodies at the cap, the size there (x one body's)], x kill for a kill, never past the cap, x the weapon's flash. grit = the heavy blade's dust puffs (0). ALSO ROUND 3, outside this block: grip.short = [m on screen under which the tail is a point, at which it is the look's taper] and the width follows the SEEN length (aspect); lane.carry = [m seen under which the tail has no streaks, at which they are whole]; shed_rim = leaving, the gold along the inner edge [its share of the width, the share of the shed by which it is that wide, where it starts behind the head, the length it widens over (shares of the length)]; shed_push = leaving, [the white's end toward the gold's, the gold's toward the paint's]; band: 3-4 clumps, each step its own depth between depth[0] and depth[1], round = a clump end's rounding where it stands proud (m), back = the chance a clump is the longer of two (bristles, not stairs).)",
     "grit": 0,
-    "mark": [0.5, 0.42, 0.05, 0.25],
+    "swell": [0.22, 0.12],
+    "reach": [0.35, 0.6],
+    "flood": 0.5,
+    "frames": [1, 0.7, 0.4],
     "by_struck": [12, 2.0],
-    "full_frames": 3,
-    "steps": [0.7, 0.42],
     "wait_frames": 3,
     "k_min": 0.35,
-    "lift": 0.3,
     "kill": 1.3
    },
    "link": {

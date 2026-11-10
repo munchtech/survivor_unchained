@@ -55,34 +55,48 @@ public class FxP7Tests
     }
 
     /// <summary>(P7 lead 7, take 6) The held cut's stroke: a comma in three CONTINUOUS bands (each band's end one ragged
-    /// line across the width: 2-3 uneven teeth, none deeper than it is wide, never a needle per lane), steel first, 3-5
-    /// uneven dry streaks only in the tail; the contact ONE blunt dab sized by the bodies struck, never a line, chips or a crown.</summary>
+    /// line across the width: 3-4 uneven bristle clumps, never a needle per lane, never even stairs), steel first, 3-5
+    /// uneven dry streaks only in the tail of a stroke long enough to carry them; (round 3) the contact is the stroke's
+    /// own swell, sized by the bodies struck: no second object in any form.</summary>
     [Fact]
     public void TheHeldCutsStrokeIsACommaInThreeBands()
     {
         var p = Real();
         foreach (var k in new[] { "grip.lead_frames", "grip.slow", "grip.min_len", "grip.aspect", "grip.tail_px", "grip.point", "grip.glow", "grip.glow_end",
             "grip.lit", "grip.retract", "grip.shed_at", "grip.lane.jitter", "grip.lane.tail", "grip.lane.slant", "grip.lane.point", "grip.lane.gap", "grip.lane.shed",
-            "grip.contact.wait_frames", "grip.contact.k_min", "grip.contact.lift", "grip.contact.kill",
-            "grip.contact.grit", "grip.contact.full_frames", "grip.contact.steps", "grip.band.clumps", "grip.band.uneven", "grip.band.depth", "grip.band.ratio",
-            "grip.contact.mark", "grip.contact.by_struck", "grip.band.round", "grip.shed_to", "grip.snap", "grip.face", "grip.link.on" })
+            "grip.contact.wait_frames", "grip.contact.k_min", "grip.contact.kill", "grip.contact.swell", "grip.contact.reach", "grip.contact.flood", "grip.contact.frames",
+            "grip.contact.grit", "grip.short", "grip.lane.carry", "grip.shed_rim", "grip.shed_push", "grip.band.back", "grip.band.clumps", "grip.band.uneven", "grip.band.depth", "grip.band.ratio",
+            "grip.contact.by_struck", "grip.band.round", "grip.shed_to", "grip.snap", "grip.face", "grip.link.on" })
             Assert.True(p.Has(k), "fx_language.json p7 lacks " + k);
         Assert.Equal(3, p.All("grip.lit").Length);
         Assert.Equal(2, p.All("grip.point").Length);
         Assert.Equal(4, p.All("grip.lane.gap").Length);
         float jit = p.All("grip.lane.jitter")[1];
-        var mark = p.All("grip.contact.mark");
+        var sw = p.All("grip.contact.swell");
         var by = p.All("grip.contact.by_struck");
-        // the bands' ends: 2-3 BLUNT clumps across the width (never 5-6 even ones), uneven; a step between two deep
-        // enough to see at 1:1 and no deeper than a clump is wide (10-20 px at 75 px a metre); its sides run along the
-        // travel (no slant: no V), only its corners rounded, by under a third of the least step
+        // the bands' ends: 3-4 BRISTLE clumps across the width, uneven in width and in depth (each step its own depth,
+        // the deepest 3 times the least or more: never even stairs), now and then the longer of two; the sides run along
+        // the travel (no slant: no V); a clump's end is rounded by 6 px or more at 75 px a metre (a square 3 px corner
+        // read as a digital step)
         var clumps = p.All("grip.band.clumps");
         var depth = p.All("grip.band.depth");
-        Assert.True(clumps.Length == 2 && clumps[0] >= 2 && clumps[1] <= 3 && clumps[0] <= clumps[1], "grip.band.clumps: 2 to 3");
-        Assert.InRange(p["grip.band.uneven"], 0.25f, 0.6f);
-        Assert.True(depth.Length == 2 && depth[0] >= 0.13f && depth[0] < depth[1] && depth[1] <= 0.28f, "grip.band.depth");
-        Assert.InRange(p["grip.band.ratio"], 0.5f, 1f);
-        Assert.InRange(p["grip.band.round"], 0.02f, depth[0] / 3);
+        Assert.True(clumps.Length == 2 && clumps[0] >= 3 && clumps[1] <= 4 && clumps[0] <= clumps[1], "grip.band.clumps: 3 to 4");
+        Assert.InRange(p["grip.band.uneven"], 0.4f, 0.8f);
+        Assert.True(depth.Length == 2 && depth[0] >= 0.05f && depth[1] >= 3 * depth[0] && depth[1] <= 0.45f, "grip.band.depth");
+        Assert.InRange(p["grip.band.ratio"], 1f, 2f);
+        Assert.InRange(p["grip.band.round"], 0.08f, 0.16f);
+        Assert.InRange(p["grip.band.back"], 0.15f, 0.4f);
+        // a short stroke (as the camera sees it) is the comma small: a point for a tail, no streaks until it can carry
+        // them, and they are whole before the shortest look's longest stroke
+        var shortAt = p.All("grip.short");
+        var carry = p.All("grip.lane.carry");
+        Assert.True(shortAt.Length == 2 && shortAt[0] < shortAt[1] && carry.Length == 2 && carry[0] < carry[1] && carry[0] >= shortAt[0], "grip.short / grip.lane.carry");
+        Assert.True(carry[1] <= Math.Min(p["grip.sunder.max_len"], p["grip.oath.max_len"]), "grip.lane.carry: the streaks never whole");
+        // leaving: the gold lies along the inner edge (a third to under two thirds of the thinned width), the white runs on
+        var rim = p.All("grip.shed_rim");
+        var push = p.All("grip.shed_push");
+        Assert.True(rim.Length == 4 && rim[0] >= 0.3f && rim[0] <= 0.6f && rim[1] > 0 && rim[1] <= 0.5f && rim[2] >= 0.05f && rim[2] + rim[3] <= 0.6f, "grip.shed_rim");
+        Assert.True(push.Length == 2 && push[0] >= 0.5f && push[0] <= 1 && push[1] >= 0 && push[1] <= push[0], "grip.shed_push");
         // leaving: the stroke thins to a sliver on the tip's path (never a white fan)
         Assert.InRange(p["grip.shed_to"], 0.15f, 0.3f);
         // the tail: streaks across the outer part of the width only, over the paint's last quarter or so
@@ -128,14 +142,21 @@ public class FxP7Tests
             // a comma, not the whole blade's fin
             Assert.InRange(p[$"grip.{w}.head"], 0.3f, 0.75f);
             Assert.InRange(p[$"grip.{w}.taper"], 0.5f, 1f);
-            // (take 6) the mark: ONE blunt dab, about half the head's width for one body, about the head's at its cap
-            Assert.InRange(mark[0] * p[$"grip.{w}.flash"], 0.4f, 0.6f);
-            Assert.InRange(mark[0] * by[1] * p[$"grip.{w}.flash"], 0.85f, 1.1f);
+            // (round 3) the contact is the stroke's own swell: a fifth to a half wider for one body, under twice as wide at the cap
+            Assert.InRange((sw[0] + sw[1]) * p[$"grip.{w}.flash"], 0.2f, 0.5f);
+            Assert.InRange((sw[0] + sw[1]) * by[1] * p[$"grip.{w}.flash"], 0.5f, 1f);
         }
-        // blunt, never a line: its width over a third of its length; a gold rim of 3 px or more; its cream under the core
-        Assert.True(mark.Length == 4 && mark[1] >= 0.35f && mark[1] <= 0.6f && mark[2] >= 0.04f && mark[2] <= 0.08f && mark[3] >= 0.15f && mark[3] <= 0.4f, "grip.contact.mark");
+        // no second object: the mark's keys are gone; the swell is mostly inward (the tip's path stays the clean edge), a
+        // local bulge (under a metre and a half end to end, longer toward the tail), 2-3 frames, stepping down
+        foreach (var dead in new[] { "mark", "steps", "full_frames", "lift", "kite", "shards" }) Assert.False(p.Has("grip.contact." + dead), "grip.contact." + dead + ": the contact is in the stroke");
+        var reach = p.All("grip.contact.reach");
+        var frames = p.All("grip.contact.frames");
+        Assert.True(sw.Length == 2 && sw[0] > sw[1] && sw[1] > 0, "grip.contact.swell");
+        Assert.True(reach.Length == 2 && reach[0] > 0 && reach[0] < reach[1] && reach[0] + reach[1] <= 1.5f, "grip.contact.reach");
+        Assert.True(frames.Length is >= 2 and <= 3 && frames[0] == 1 && frames[^1] > 0 && frames[^1] < frames[0], "grip.contact.frames");
+        Assert.InRange(p["grip.contact.flood"], 0f, 1f);
         // sized by the bodies struck, capped at 8 to 16 of them; a kill is larger, never past the cap (GripContact clamps)
-        Assert.True(by.Length == 2 && by[0] >= 8 && by[0] <= 16 && p["grip.contact.kill"] > 1 && p["grip.contact.kill"] <= by[1] && p["grip.contact.full_frames"] >= 3, "grip.contact.by_struck");
+        Assert.True(by.Length == 2 && by[0] >= 8 && by[0] <= 16 && p["grip.contact.kill"] > 1 && p["grip.contact.kill"] <= by[1], "grip.contact.by_struck");
         // the Oathblade's is the thinner stroke
         Assert.True(p["grip.oath.head"] < p["grip.sunder.head"]);
         // the link's thread: a brush tail, not a hairline; its point capped by a share of a short stroke
