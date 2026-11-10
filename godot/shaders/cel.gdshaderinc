@@ -465,9 +465,14 @@ float cel_stand_step(float c_v, float c_e) { float c_w = 0.5 * fwidth(c_v) + 1e-
 float cel_stand_edge(vec3 c_nv, vec3 c_v, mat4 c_vm) {
 	if (cel_stand_fire.z <= 0.0) return 0.0;
 	float c_e = max(dot(c_nv, c_v), 0.0);
-	float c_px = c_e / max(fwidth(c_e), 1e-4);
+	// (l16 R2) the distance to the outline in pixels from n.v SQUARED: on a round form n.v goes as the root of that distance,
+	// so n.v over its own derivative read twice the distance (a 3.5 px ask drew under 2 px); its square is linear in it. The
+	// gradient's length, not fwidth (that over-reads a diagonal). The outline is taken where n.v is 0.15, not 0: a coarse
+	// lump's smooth normal never reaches 0 at its mesh outline, which broke the line into dashes.
+	float c_e2 = max(c_e * c_e - 0.0225, 0.0);
+	float c_px = c_e2 / max(length(vec2(dFdx(c_e2), dFdy(c_e2))), 1e-5);
 	vec3 c_kv = (c_vm * vec4(cel_key.xyz, 0.0)).xyz;
-	float c_side = smoothstep(0.05, 0.25, dot(c_nv.xy, normalize(c_kv.xy + vec2(1e-5))));
+	float c_side = smoothstep(-0.05, 0.15, dot(c_nv.xy, normalize(c_kv.xy + vec2(1e-5))));
 	return (1.0 - smoothstep(cel_stand_fire.z - 0.5, cel_stand_fire.z + 0.5, c_px)) * (1.0 - smoothstep(0.55, 0.65, c_e)) * c_side;
 }
 // fragment(): the base tone at a world point (EMISSION), and the moon's and her fire's adds for light() (c_moon, c_fire:
@@ -478,9 +483,18 @@ vec3 cel_stand_base(vec3 c_wp, vec2 c_org, vec3 c_wn, float c_foot, float c_lum,
 	vec4 c_x = cel_stand_tone(7);
 	float c_dab = c_x.y > 0.0 ? clamp(pow(max(c_lum, 1e-4) / max(c_x.x, 1e-4), c_x.y), 0.5, 1.5) : 1.0;
 	float c_d = dot(c_wn, normalize(mix(cel_key.xyz, vec3(0.0, 1.0, 0.0), cel_stand.z)));
-	float c_ft = 1.0 - cel_stand_step(c_foot, cel_stand.w);
+	// (l16 R2) stone's own foot band (the shape row's spare, cel_stand_fire.w; 0: the shared one) and a wider margin under
+	// the top (0.35: a lump's facets shadow themselves before the smooth normal turns from the moon)
+#if CEL_STAND_FAM == 0
+	float c_fb = cel_stand_fire.w > 0.0 ? cel_stand_fire.w : cel_stand.w;
+	const float c_km = 0.35;
+#else
+	float c_fb = cel_stand.w;
+	const float c_km = 0.2;
+#endif
+	float c_ft = 1.0 - cel_stand_step(c_foot, c_fb);
 	// (the top and the rim only on normals the key lights, with a margin: their edge is this step, not the shadow map's terminator)
-	float c_kl = cel_stand_step(dot(c_wn, cel_key.xyz), 0.2);
+	float c_kl = cel_stand_step(dot(c_wn, cel_key.xyz), c_km);
 	float c_top = cel_stand_step(c_d, cel_stand.x) * (1.0 - c_ft) * c_kl;
 	float c_side = 1.0 - cel_stand_step(c_d, cel_stand.y);
 	vec3 c_base = mix(mix(cel_stand_tone(2).rgb, cel_stand_tone(1).rgb, c_side), cel_stand_tone(0).rgb, c_ft);
