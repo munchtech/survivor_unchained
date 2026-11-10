@@ -236,6 +236,7 @@ public sealed class HandsTests
         var W = Weapons.All;
         Assert.StartsWith("In a warden's hand: about every 6 seconds of cutting, a cut is heavy", Hands.Line("warden", W["oathblade"]));
         Assert.Contains("about every 10 seconds of cutting", Hands.Line("warden", W["sunder"]));
+        Assert.EndsWith("about every 10 s of cutting, a cut is heavy.", Hands.Line("warden", W["sunder"], brief: true));
         Assert.Contains($"every {Content.Hands.Warden.Every}th blow is heavy", Hands.Line("warden", W["judgement_disc"]));
         Assert.Contains("lays a Stone", Hands.Line("warden", W["judgement_disc"]));
         Assert.Contains("heavy", Hands.Line("warden", W["judgement_disc"]));

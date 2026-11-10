@@ -100,7 +100,7 @@ public static class Hands
                 var h = Warden;
                 if (Heavies(tags))
                     parts.Add(chainWait > 0
-                        ? $"about every {System.Math.Round(h.Every * chainWait):0}{(brief ? " s" : " seconds")} of cutting, a cut is heavy (a {h.Stun:0.#} s stun and {Times(h.Knockback)} the knockback; it builds a boss's stagger)"
+                        ? $"about every {System.Math.Round(h.Every * chainWait):0}{(brief ? " s" : " seconds")} of cutting, a cut is heavy{(brief ? "" : $" (a {h.Stun:0.#} s stun and {Times(h.Knockback)} the knockback; it builds a boss's stagger)")}"
                         : $"every {Ordinal(h.Every)} blow is heavy (a {h.Stun:0.#} s stun and {Times(h.Knockback)} the knockback; it builds a boss's stagger)");
                 if (tags.Has(Tag.Holy) || school == School.Holy)
                     parts.Add($"each champion it strikes lays a Stone; {h.Stones} loose a rebuke");
