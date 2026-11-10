@@ -81,10 +81,15 @@ def summary(r, stray=STRAY):
     return out
 
 
-def plates(meshes, min_cm2=10.0):
-    """The rigid components of a piece. meshes: [(P [n, 3], T [m, 3], J [n, k] bone columns, W [n, k])]. Returns
-    [{"X": its welded points, "T": its triangles (rows of X), "rule": {bone column: share}, "cm2"}], by size."""
+def plates(meshes, min_cm2=10.0, bent=False, top=8):
+    """The rigid components of a piece. meshes: [(P [n, 3], T [m, 3], J [n, k] bone columns, W [n, k][, F [n, 3]])]
+    (F: the mesh's carried shapes at the game's form, summed; zeros when absent). Returns [{"X": its welded points,
+    "T": its triangles (rows of X), "rule": {bone column: share}, "cm2"}], by size.
+    bent: every component (blend varying or not) also carries per point "Xf" (X + F, the formed rest), "J" / "W"
+    [n, k] (its own glTF weights, top `top`, summing to 1) and "bent" (its blend varies); a varying one's "rule" is its
+    MODE row (the ride its unbent points keep). Without bent the rows are exactly as before."""
     P = np.concatenate([m[0] for m in meshes]).astype(float)
+    F = np.concatenate([m[4] if len(m) > 4 else np.zeros((len(m[0]), 3)) for m in meshes]).astype(float) if bent else None
     base = np.cumsum([0] + [len(m[0]) for m in meshes])
     T = np.concatenate([m[1] + b for m, b in zip(meshes, base)])
     nb = 1 + max(int(m[2].max()) for m in meshes)
@@ -106,11 +111,22 @@ def plates(meshes, min_cm2=10.0):
         Dc = D[np.flatnonzero(lab[weld] == c)]
         X = P[first[vs]]
         a = 0.5 * np.linalg.norm(np.cross(P[first[tri[:, 1]]] - P[first[tri[:, 0]]], P[first[tri[:, 2]]] - P[first[tri[:, 0]]]), axis=1).sum()
-        if np.abs(Dc - Dc[0]).max() > 2e-3 or a * 1e4 < min_cm2:
+        varies = np.abs(Dc - Dc[0]).max() > 2e-3
+        if (varies and not bent) or a * 1e4 < min_cm2:
             continue
         at = np.full(n, -1)
         at[vs] = np.arange(len(vs))
-        out.append({"X": X, "T": at[tri], "rule": {int(b): float(Dc[0][b]) for b in np.flatnonzero(Dc[0] > 1e-4)}, "cm2": float(a * 1e4)})
+        row = Dc[0]
+        if varies:
+            u, inv, cnt = np.unique(np.round(Dc * 1e3).astype(np.int64), axis=0, return_inverse=True, return_counts=True)
+            row = Dc[np.flatnonzero(inv.reshape(-1) == int(np.argmax(cnt)))[0]]
+        q = {"X": X, "T": at[tri], "rule": {int(b): float(row[b]) for b in np.flatnonzero(row > 1e-4)}, "cm2": float(a * 1e4)}
+        if bent:
+            Dv = D[first[vs]]
+            Jv = np.argsort(-Dv, axis=1)[:, :top]
+            Wv = np.take_along_axis(Dv, Jv, 1)
+            q.update(Xf=X + F[first[vs]], J=Jv, W=Wv / np.maximum(Wv.sum(1, keepdims=True), 1e-12), bent=bool(varies))
+        out.append(q)
     return sorted(out, key=lambda q: -q["cm2"])
 
 
@@ -150,6 +166,25 @@ def part_roles(pid):
         return {}
     parts = json.load(open(path, encoding="utf-8")).get("parts") or {}
     return {k: v["bones"] for k, v in parts.items() if isinstance(v, dict) and v.get("bones")}
+
+
+def part_bends(pid):
+    """{part name: {bone: share}} of the native parts whose rule has "bend" (their plates bend: per vertex the weights
+    lerp from that ride toward her skin; the plate keeps the ride where it does not bend)."""
+    path = os.path.join(os.path.dirname(os.path.dirname(HERE)), "godot", "art", "gear", "native", pid, "piece.json")
+    if not os.path.isfile(path):
+        return {}
+    parts = json.load(open(path, encoding="utf-8")).get("parts") or {}
+    return {k: v["bones"] for k, v in parts.items() if isinstance(v, dict) and v.get("bones") and v.get("bend")}
+
+
+def formed(m, weights):
+    """[n, 3]: a glTF mesh's carried shapes at the game's form (`weights` {shape: w}, the worn top's support), summed."""
+    F = np.zeros((len(m.P), 3))
+    for k, w in (weights or {}).items():
+        if w and k in m.targets:
+            F += w * m.targets[k]["POSITION"].astype(float)
+    return F
 
 
 def role_of(rule, roles, tol=0.003):
@@ -193,15 +228,22 @@ def run(gear, ids, clips="all", min_cm2=10.0, leather_mm=LEATHER_MM, log=print):
             continue
         g = Glb(row["path"])
         col = np.array([sc.poser.index[g.nodes[j]["name"]] for j in g.js["skins"][0]["joints"]])
-        ms = [(m.P, m.T, col[m.J], m.W.astype(float)) for m in g.meshes if m.node in row["meshes"] and m.J is not None]
-        pl = plates(ms, min_cm2)
+        bends = part_bends(pid)
+        wt = gw.worn_top(sc, row)
+        wgt = gw.support_weights(gw.support_of(row)) if wt is not None else None
+        ms = [(m.P, m.T, col[m.J], m.W.astype(float)) + ((formed(m, wgt),) if bends else ()) for m in g.meshes if m.node in row["meshes"] and m.J is not None]
+        pl = plates(ms, min_cm2, bent=bool(bends))
+        for q in [q for q in pl if q.get("bent")]:      # a varying blend reads only as a plate whose part bends
+            part = role_of({names[b]: v for b, v in q["rule"].items()}, bends, tol=0.01)
+            if part is None:
+                pl.remove(q)
+            else:
+                q["part"] = part
         sig = json.dumps([[np.round(q["X"].mean(0), 4).tolist(), len(q["X"]), sorted(q["rule"])] for q in pl])
         if not pl or sig in seen:
             notes.append(f"{pid}: " + ("no rigid plate (every component is skinned or under the size floor)" if not pl else f"shares {seen[sig]}'s plates (same shapes, same rides): skipped"))
             continue
         seen[sig] = pid
-        wt = gw.worn_top(sc, row)
-        wgt = gw.support_weights(gw.support_of(row)) if wt is not None else None
         if wt is not None and wt.key not in worn_S:
             worn_S[wt.key] = np.stack([wt.carry(z["S"][f]) for f in on])
         S_all = worn_S[wt.key] if wt is not None else z["S"][on]
@@ -222,20 +264,24 @@ def run(gear, ids, clips="all", min_cm2=10.0, leather_mm=LEATHER_MM, log=print):
             bones, share = np.array(sorted(q["rule"])), np.array([q["rule"][b] for b in sorted(q["rule"])])
             share = share / share.sum()
             ride = lambda S, X: np.einsum("b,bij,nj->ni", share, S[bones][:, :3, :], np.c_[X, np.ones(len(X))])  # noqa: E731
+            X = q["X"]
+            if q.get("bent"):                           # per vertex: its own weights and shapes, the game's form
+                X = q["Xf"]
+                ride = lambda S, X, q=q: gw.Scene.lbs(S, X, q["J"], q["W"])  # noqa: E731
             V0, N0 = skin(S0)
-            Xr = ride(S0, q["X"])
+            Xr = ride(S0, X)
             inn, border = inner_face(Xr, q["T"], V0, N0)
             at = np.full(len(Xr), -1)
             at[inn] = np.arange(len(inn))
-            r = measure(Xr[inn], ((ride(S_all[k], q["X"])[inn], k) for k in range(len(on))), V0, N0, lambda k: skin(S_all[k]))
+            r = measure(Xr[inn], ((ride(S_all[k], X)[inn], k) for k in range(len(on))), V0, N0, lambda k: skin(S_all[k]))
             s = summary(r)
             wf = lambda k: f"{z['clip'][on[k]]}@{int(z['frame'][on[k]])}" if k is not None and k != -1 else "-"  # noqa: E731
             cl = {str(z["clip"][on[k]]) for k in r["hits"]}
             c = Xr[inn].mean(0)
             rule = {names[b]: round(float(v), 3) for b, v in zip(bones, share)}
-            part = role_of({names[b]: float(v) for b, v in zip(bones, share)}, roles)
+            part = q.get("part") or role_of({names[b]: float(v) for b, v in zip(bones, share)}, roles)
             name = f"{pid} #{n_pl + 1} {role_word(part) or max(rule, key=rule.get)} " + ("mid" if abs(c[0]) < 0.02 else "l" if c[0] > 0 else "r") + f" y{c[1] * 100:.0f} {q['cm2']:.0f}cm2"
-            s.update(piece=pid, plate=name, part=part, bones=rule, cm2=round(q["cm2"], 1), leather=leather_mm, worn=wt is not None, at=wf(s["at"]),
+            s.update(piece=pid, plate=name + (" bent" if q.get("bent") else ""), **({"bent": True} if q.get("bent") else {}), part=part, bones=rule, cm2=round(q["cm2"], 1), leather=leather_mm, worn=wt is not None, at=wf(s["at"]),
                      place=place(Xr[inn], s.pop("worst_point"), at[border]), clips_past=len(cl), clips=len(set(z["clip"][on])), frames=len(on),
                      clips_past_names=sorted(cl))
             if "stray" in s:

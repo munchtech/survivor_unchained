@@ -58,6 +58,37 @@ def test_plates_are_the_one_blend_components():
     assert len(pl) == 1 and pl[0]["rule"] == {3: 1.0} and abs(pl[0]["cm2"] - 100) < 1e-6
 
 
+def test_a_bent_plate_reads_per_vertex():
+    """A plate whose part bends: its blend varies (rows lerp from the ride {3: 1} toward bone 4), so the rigid reading
+    drops it; with bent it stays, its rule is the mode row (the ride), and it is posed per vertex from its own weights
+    on its formed rest (X + F). Rigid plates read the same either way."""
+    import gear_wear as gw
+    x = np.arange(0.0, 0.1001, 0.02)
+    strip = np.array([[a, b, 0.0] for a in x for b in (0.0, 0.1)])          # 12 points, 10 triangles, 100 cm2
+    T = np.array([[2 * i, 2 * i + 2, 2 * i + 3] for i in range(5)] + [[2 * i, 2 * i + 3, 2 * i + 1] for i in range(5)])
+    alpha = np.clip((strip[:, 0] - 0.05) / 0.05, 0, 1) * 0.5                 # 0 on the first half, to 0.5 at the end
+    J = np.tile([3, 4], (len(strip), 1))
+    W = np.c_[1 - alpha, alpha]
+    F = np.tile([0.0, 0.0, 0.001], (len(strip), 1))                          # its carried shapes at the form: +1 mm z
+    sq = np.array([[0, 0, 0], [0.1, 0, 0], [0.1, 0.1, 0], [0, 0.1, 0]], float) + [0.5, 0, 0]
+    rigid = (sq, np.array([[0, 1, 2], [0, 2, 3]]), np.tile([3, 0], (4, 1)), np.tile([1.0, 0.0], (4, 1)))
+    bent = (strip, T, J, W, F)
+    assert [q["rule"] for q in rt.plates([rigid, bent[:4]])] == [{3: 1.0}]
+    pl = rt.plates([rigid + (np.zeros((4, 3)),), bent], bent=True)
+    b = [q for q in pl if q["bent"]]
+    r = [q for q in pl if not q["bent"]]
+    old = rt.plates([rigid, bent[:4]])[0]
+    assert len(b) == 1 and len(r) == 1 and r[0]["rule"] == old["rule"] and np.array_equal(r[0]["X"], old["X"]) and np.array_equal(r[0]["T"], old["T"])
+    q = b[0]
+    assert q["rule"] == {3: 1.0} and np.allclose(q["Xf"], q["X"] + [0, 0, 0.001]) and q["J"].shape == (12, 5)
+    S = np.broadcast_to(np.eye(4), (5, 4, 4)).copy()
+    S[4, :3, 3] = [0, 0, -0.01]                                             # bone 4 sinks 10 mm, bone 3 stays
+    P = gw.Scene.lbs(S, q["Xf"], q["J"], q["W"])
+    a = np.clip((q["X"][:, 0] - 0.05) / 0.05, 0, 1) * 0.5
+    assert np.allclose(P[:, 2], 0.001 - 0.01 * a)                            # each vertex by its own share
+    assert rt.role_of({"b3": 1.0}, {"cop_l_rigid": {"b3": 1.0}}, tol=0.01) == "cop_l_rigid"
+
+
 def test_spaulder_row_is_lead_11s():
     """Lead 11 (room.py, the four fight clips, 91 frames) read the cop 18.3 mm past on the left (sword_heavy f13), 15.0
     on the right (daggers_heavy f0); this table reads 20.6 / 16.2. Traced (10 Nov) on the same frames: ride (mesh
