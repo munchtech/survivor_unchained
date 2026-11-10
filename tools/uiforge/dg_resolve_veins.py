@@ -48,9 +48,12 @@ PARAMS = dict(
     # the lone ticks (lead 10 fix B): the dark hair between the front locks and back_box holds short ridges on no line
     # (a 7 px stroke at frame (671, 947), a bright dash at (666, 990), flecks). Each lit as a lone tick. drop_lone() takes
     # them out of R before the clamp; the long lines that cross the box are never touched (they are not short).
-    lone_box=(538, 20, 598, 312),  # px (2x) x0, y0, x1, y1: frame x 654-677, y 897-1005 at the HUD's 0.85; a vein must lie wholly inside
+    lone_box=(522, 20, 598, 312),  # px (2x) x0, y0, x1, y1: frame x 654-677, y 897-1005 at the HUD's 0.85; a vein must lie wholly inside
     lone_max=27,       # px (2x): a vein shorter than this (10 px on screen) ...
     lone_near=3.5,     # px (2x): ... with no longer vein within this (1.3 px on screen: nearer, it reads as that line's edge) is dropped
+    # fix B2: dim ridges (R under clamp_lo, so no vein for drop_lone) that are no line, each a box x0, y0, x1, y1 (px at 2x, x1/y1 exclusive).
+    # R over 0.15 inside a box goes to 0. (562, 230, 567, 245) = frame x 659.6-663.6, y 974-981: the dash beside the front loop's strand
+    drop_boxes=[(562, 230, 567, 245)],
 )
 
 
@@ -197,6 +200,10 @@ def drop_lone(veins, P):
             continue
         out[ndimage.binary_dilation(k, structure=s8, iterations=2) & ~(on & ~k)] = 0
         print(f"lone: DROPPED x {cx0}-{cx1} y {cy0}-{cy1} (len {ln[i - 1]}, peak {veins[k].max():.2f}, nearest longer vein {gap:.1f} px)")
+    for bx0, by0, bx1, by1 in P.get("drop_boxes", []):
+        sub = out[by0:by1, bx0:bx1]
+        print(f"drop_boxes: x {bx0}-{bx1} y {by0}-{by1}: {int((sub > 0.15).sum())} px of R (peak {sub.max():.2f}) to 0")
+        sub[sub > 0.15] = 0
     return out
 
 
