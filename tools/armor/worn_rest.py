@@ -83,10 +83,14 @@ def _between(a, b):
     return np.eye(3) + K * s + K @ K * (1 - c)
 
 
-def spring_rest(names, parent, rest, support, group, doc):
+def spring_rest(names, parent, rest, support, group, doc, posed=None):
     """The skeleton-space globals with the group's springs at their equilibrium (upright, squash 0): rest [B, 4, 4]
-    in, the posed globals out, and {spring: its tip's offset, m}."""
-    G = rest.copy()
+    in, the posed globals out, and {spring: its tip's offset, m}. `posed` [B, 4, 4]: a clip frame's globals instead of
+    the rest's (P1Springs: each spring's input is its posed local under its parent's new global, its frame the
+    parent's turn from rest, down the skeleton's): the equilibrium the springs hold in that pose, no swing."""
+    P = rest if posed is None else posed
+    pinv = None if posed is None else np.linalg.inv(posed)
+    G = P.copy()
     idx = {n: i for i, n in enumerate(names)}
     sf = doc.get("support", {}).get(group, {})
     F = lambda k: 1 + support * (sf[k] - 1) if k in sf else 1.0  # noqa: E731
@@ -117,7 +121,7 @@ def spring_rest(names, parent, rest, support, group, doc):
         rd = np.array(r.get("rest_down", [0, -1, 0]), float)
         rd /= np.linalg.norm(rd)
         Gp = new.get(par, G[par])
-        In = new[par] @ (rinv[par] @ rest[b]) if par in new else G[b]
+        In = new[par] @ ((rinv if pinv is None else pinv)[par] @ P[b]) if par in new else G[b]
         Fm = _ortho(Gp[:3, :3] @ rinv[par][:3, :3])
         eq = (Fm @ np.array([-side, 0, 0])) * (press * F("press")) + DOWN * (sag * F("sag")) \
             + (DOWN - Fm @ rd) * (tilt * F("reach")) - Fm @ (np.array([-side * press * rs, 0, 0]) + rd * (sag * rs))
@@ -131,7 +135,7 @@ def spring_rest(names, parent, rest, support, group, doc):
     depth = lambda k: 0 if parent[k] < 0 else 1 + depth(parent[k])  # noqa: E731
     for k in sorted(range(len(names)), key=depth):       # (bones under a sprung bone ride its new pose)
         if k not in new and parent[k] in new:
-            new[k] = new[parent[k]] @ (rinv[parent[k]] @ rest[k])
+            new[k] = new[parent[k]] @ ((rinv if pinv is None else pinv)[parent[k]] @ P[k])
     for k, g in new.items():
         G[k] = g
     return G, eqs
@@ -182,15 +186,27 @@ class Worn:
         return X0, N @ Li.T
 
 
-def state(glb_path, joint_names, shape_names, row, roles):
-    """(S [B, 4, 4] the worn pose's skin matrices, {shape: weight}, the springs' offsets) of a body glb under the row's
-    piece, or None (see the module doc). roles: rigid_roles.json."""
+def law(row, roles, names=None):
+    """What a row's piece does to her springs: (support_of(row), the slot's spring group, the springs file's body row),
+    or None (no switch on the slot, no hold or support, no springs row; with `names`, a body with none of the group's
+    spring bones). roles: rigid_roles.json."""
     grp = (roles.get("slots", {}).get((row or {}).get("slot"), {}) or {}).get("worn_rest")
     cfg, sup = roles.get("worn_rest"), support_of(row)
-    if not grp or not cfg or sup is None or not glb_path or not (sup[0] or any(sup[1])):
+    if not grp or not cfg or sup is None or not (sup[0] or any(sup[1])):
         return None
     doc = json.load(open(os.path.join(REPO, cfg["file"]), encoding="utf-8"))["bodies"].get(cfg["body"])
     if doc is None:
+        return None
+    if names is not None and not any(r["bone"].replace("{s}", s) in names for r in doc["springs"]
+                                     if r["group"] == grp for s in "lr"):
+        return None
+    return sup, grp, doc
+
+
+def state(glb_path, joint_names, shape_names, row, roles):
+    """(S [B, 4, 4] the worn pose's skin matrices, {shape: weight}, the springs' offsets) of a body glb under the row's
+    piece, or None (see the module doc). roles: rigid_roles.json."""
+    if not glb_path or law(row, roles) is None:
         return None
     from gl import Glb
     g = Glb(glb_path)
@@ -202,8 +218,10 @@ def state(glb_path, joint_names, shape_names, row, roles):
             if c in at:
                 parent[at[c]] = at[j]
     names = list(joint_names) if joint_names is not None else [g.nodes[j].get("name") for j in joints]
-    if not any(r["bone"].replace("{s}", s) in names for r in doc["springs"] if r["group"] == grp for s in "lr"):
+    lw = law(row, roles, names)
+    if lw is None:
         return None
+    sup, grp, doc = lw
     ibm = np.asarray(g.skeleton(0).ibm, np.float64)
     G, eqs = spring_rest(names, parent, np.linalg.inv(ibm), sup[0], grp, doc)
     weights = {nm: v for nm, v in zip(SHAPES, sup[1]) if v and nm in shape_names}

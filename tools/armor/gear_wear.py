@@ -10,9 +10,20 @@ knee flex, hip arc). The pieces ride the SAME bone matrices with their own weigh
 and the same blend-shape weights by name: the correctives they carry (arm_hang_*: a piece built over her takes her
 shapes), and form_support_lift / _press / _fill, set as HerWear does from the worn top's hold (ArmorHold: support, else
 clamp((1 - amount) / 0.45, 0, 1); lift/press/fill each default to it; no top, or a top with no hold: 0).
-NOT driven: B's springs (P1Jiggle's breast and glute bones) beyond what the dump carries (the bake's own globals for
-those bones; no live spring swing is simulated here), the face (HeroineHead's face/expression shapes stay at 0), and
-cloth (no row simulates).
+AS WORN (WornTop; tools/armor/worn_rest.py holds the law, as gear_fit fits and gear_tuck tucks by it): a top whose row
+has a hold on a slot switched in rigid_roles.json ("worn_rest") also rests B's springs (P1Jiggle's breast bones)
+elsewhere: a push-up lifts each tip about 20 mm. A skin test of such a top reads its REST (the footprint under the
+piece, the rays' faces, the cover) on her body and the piece as the engine poses them at rest under the hold (the
+shapes, then the skin with the springs at their worn equilibrium: worn_rest.spring_rest), and every clip frame carries
+the springs' worn equilibrium IN THAT FRAME's pose (worn_rest.spring_rest with the frame's globals: the press along
+her chest's frame, the sag along the skeleton's down), for her and for every piece weighted to those bones. A pair
+test (control / mixed) takes the worn frames of the top AMONG THE PAIR (as it takes its support shapes); its rest
+footprint and the garment lay are still read at the bind (the engine lays on the mesh data), and "show" is at the bind.
+A pair with no top in it is posed bare, whatever top its set has. Areas are the bind's. Frames a caller hands to
+Check.run itself (engine_check: the engine's own pose) are taken as they are.
+NOT driven: a live spring SWING (the springs sit at their equilibrium every frame: no velocity, no lag, no bounce, no
+limits or collision from P1Springs' step), the glute springs (no piece gives them support: they keep the dump's
+globals), the face (HeroineHead's face/expression shapes stay at 0), and cloth (no row simulates).
 
 Measures (per clip and per test; B's close tier):
   skin    her skin under each piece, tucked by the piece's armor_tuck record as heroine_skin.gdshader draws it on B
@@ -174,6 +185,40 @@ def support_of(row):
 
 def support_weights(sup):
     return {"form_support_lift": sup[0], "form_support_press": sup[1], "form_support_fill": sup[2]}
+
+
+class WornTop:
+    """Her springs under a worn top's hold, on the scene's skeleton (the poser's bone order): `S` the rest's skin
+    matrices as worn, carry(S) a frame's with the springs at their worn equilibrium in that pose (docstring AS WORN)."""
+
+    def __init__(self, sc, row, lw):
+        import worn_rest
+        self.sc, self.wr, self.key = sc, worn_rest, json.dumps(row.get("hold"), sort_keys=True)
+        (self.support, _), self.group, self.doc = lw
+        self.rest = np.linalg.inv(np.asarray(sc.ibm, np.float64))
+        self.parent = np.asarray(sc.poser.parent)
+        self.S = self.carry(np.broadcast_to(np.eye(4), self.rest.shape).copy(), self.rest)
+
+    def carry(self, S, G=None):
+        G = S @ self.rest if G is None else G
+        G2, _ = self.wr.spring_rest(list(self.sc.poser.names), self.parent, self.rest, self.support, self.group,
+                                    self.doc, posed=G)
+        ch = np.nonzero(np.abs(G2 - G).reshape(len(G), -1).max(1) > 0)[0]      # (only the sprung bones' rows change)
+        out = np.array(S, np.float64)
+        out[ch] = G2[ch] @ self.sc.ibm[ch]
+        return out
+
+
+def worn_top(sc, row):
+    """The WornTop of a row on this scene, or None (not a top, no hold, the slot not switched, a body without the
+    springs, a scene without a poser: posed as before)."""
+    p = getattr(sc, "poser", None)
+    if p is None or (row or {}).get("slot") != "top" or not (row or {}).get("hold"):
+        return None
+    import gear_fit
+    import worn_rest
+    lw = worn_rest.law(row, gear_fit.rigid_roles(), list(p.names))
+    return None if lw is None else WornTop(sc, row, lw)
 
 
 def read_records(path):
@@ -495,11 +540,12 @@ def dump_sources(sc, paths, step):
     for cp in paths:
         name = os.path.splitext(os.path.basename(cp))[0]
 
-        def frames(cp=cp):
+        def frames(worn=None, cp=cp):
             cpz = ClipPoser(sc, json.load(open(cp, encoding="utf-8")))
             for f in range(0, cpz.n, step):
                 S, w = cpz.frame(f)
-                yield f, S, w
+                yield f, (S if worn is None else worn.carry(S)), w
+        frames.carries = True       # (a dump's frames take a WornTop: the springs' worn equilibrium in each pose)
         out.append((name, frames))
     return out
 
@@ -654,6 +700,30 @@ class Check:
             self.sp = wc.SkinPts(P0[sc.isk], self.N0[sc.isk])
         self.lay_cache = {}
         self.tests = []
+        self.bind = {"P0": P0, "N0": self.N0, "pc": self.pc}
+        self.worns, self.rests = {}, {}
+
+    # ---- as worn (docstring AS WORN) --
+    def worn_of(self, i):
+        """The WornTop of piece i's row (one per hold), or None."""
+        if i not in self.worns:
+            wn = worn_top(self.sc, self.byid.get(i))
+            self.worns[i] = None if wn is None else next((o for o in self.worns.values() if o and o.key == wn.key), wn)
+        return self.worns[i]
+
+    def rest_of(self, wn, sup):
+        """The rest the footprints are read on: the bind, or (wn) every point as the engine poses it at rest under the
+        hold: its shapes at the support, then the skin with the springs at their worn rest."""
+        if wn is None:
+            return self.bind
+        if wn.key not in self.rests:
+            sc = self.sc
+            P0 = sc.pose(wn.S, support_weights(sup), np.arange(len(sc.P0)))
+            N0 = np.zeros_like(P0)
+            N0[sc.ish] = sc.normals_sh(P0[sc.ish])
+            pc = {i: {**c, "kd": cKDTree(P0[c["T"]].mean(1)), "kdv": cKDTree(P0[c["v"]])} for i, c in self.pc.items()}
+            self.rests[wn.key] = {"P0": P0, "N0": N0, "pc": pc}
+        return self.rests[wn.key]
 
     # ---- the garment tuck --
     def laid(self, A, outers):
@@ -686,8 +756,9 @@ class Check:
         self.lay_cache[key] = out
         return out
 
-    def rest_footprint(self, O, D, Bid, skin=False):
-        B, P0 = self.pc[Bid], self.sc.P0
+    def rest_footprint(self, O, D, Bid, skin=False, R=None):
+        R = R or self.bind
+        B, P0 = R["pc"][Bid], R["P0"]
         d0, _ = B["kdv"].query(O, distance_upper_bound=REACH + 0.01)
         keep = np.nonzero(np.isfinite(d0))[0]
         res = {"idx": [], "gap": [], "out": [], "hit": [], "bary": [], "cand": []}
@@ -724,30 +795,33 @@ class Check:
 
     # ---- tests --
     def add_skin(self, ids):
-        sc, P0 = self.sc, self.sc.P0
+        sc = self.sc
         for i in ids:
             if i not in self.pc:
                 continue
+            wn = self.worn_of(i)
+            R = self.rest_of(wn, support_of(self.byid[i]))
+            P0, N0, pcs = R["P0"], R["N0"], R["pc"]
             tk, gone = skin_tuck(self.recs[i], sc.keys, self.byid[i].get("tuck_depth_mm"))
             sv = sc.isk[~gone]
             tsv = tk[~gone]
-            O = P0[sv] - self.N0[sv] * tsv[:, None]
-            fp = self.rest_footprint(O + self.N0[sv] * 1e-5, self.N0[sv], i, skin=True)
+            O = P0[sv] - N0[sv] * tsv[:, None]
+            fp = self.rest_footprint(O + N0[sv] * 1e-5, N0[sv], i, skin=True, R=R)
             if fp is None:
                 continue
-            x = {"A": "skin", "B": i, "kind": "skin", "fp": fp, "sup": support_of(self.byid[i]),
+            x = {"A": "skin", "B": i, "kind": "skin", "fp": fp, "sup": support_of(self.byid[i]), "worn": wn,
                  "tuck": tsv[fp["idx"]], "pts": sv[fp["idx"]], "dir": sv[fp["idx"]]}
             if self.confirm:
                 # (wearcheck --confirm, armor 10 c2: a gap past the piece checked by its nearest face; a ray running along
                 # a plate (her normal at the underbust crease, the arm's inner skin beside a cuirass) reads 15-30 mm past
                 # it where the sample stands clear of every face)
-                TB = self.pc[i]["T"]
+                TB = pcs[i]["T"]
                 O0 = O[fp["idx"]]
                 F0 = P0[TB[fp["cand"]]]
                 n0 = np.cross(F0[:, :, 1] - F0[:, :, 0], F0[:, :, 2] - F0[:, :, 0])
                 # (inner: a face whose normal opposes her outward normal at rest, the signed gap's entry face; wearcheck
                 # took the faces the sample stood in front of at rest, which reads a point already through at rest as clear)
-                x["inner0"] = (n0 * self.N0[sv[fp["idx"]]][:, None]).sum(2) < 0
+                x["inner0"] = (n0 * N0[sv[fp["idx"]]][:, None]).sum(2) < 0
                 x["thick"] = float(np.median(fp["out"] - fp["gap"]))
                 x["raw_min_out"] = np.full(len(fp["idx"]), np.inf)
                 rr0 = np.nonzero(fp["gap"] < -0.0005)[0]
@@ -756,16 +830,16 @@ class Check:
                     fp["gap"], fp["out"] = fp["gap"].copy(), fp["out"].copy()
                     fp["gap"][rr0], fp["out"][rr0] = g0, go0
             # (the sweep: her drawn points near the piece at rest, beyond those under it; all of the piece's faces)
-            dn, _ = self.pc[i]["kdv"].query(O, distance_upper_bound=SWEEP_NEAR)
+            dn, _ = pcs[i]["kdv"].query(O, distance_upper_bound=SWEEP_NEAR)
             extra = np.setdiff1d(np.nonzero(np.isfinite(dn))[0], fp["idx"])
             x["nfp"] = len(fp["idx"])
             x["pts"] = np.r_[x["pts"], sv[extra]]
             x["dir"] = x["pts"]
             x["tuck"] = np.r_[x["tuck"], tsv[extra]]
-            x["sweepT"] = self.pc[i]["T"]
+            x["sweepT"] = pcs[i]["T"]
             # (the rest cover, COVER_*: closest point over ALL her skin, hidden skin too, so cloth over hidden skin does
             # not reach for the drawn skin beside it)
-            x["swSkin"], x["swBE"], x["swBV"] = piece_topology(P0, x["sweepT"], sc.J, sc.W)
+            x["swSkin"], x["swBE"], x["swBV"] = piece_topology(sc.P0, x["sweepT"], sc.J, sc.W)
             cov = np.zeros(len(sc.isk), bool)
             if x["swSkin"].any():
                 dc, jc = cKDTree(P0[sc.isk]).query(cover_samples(P0, x["sweepT"][x["swSkin"]]), distance_upper_bound=COVER_REACH)
@@ -810,7 +884,8 @@ class Check:
             found = [max(found, key=lambda f: np.median(f[2]["gap"]))]
         for A, B, fp, lay in found:
             sup = next((support_of(self.byid[x]) for x in (A, B) if self.byid[x]["slot"] == "top"), (0.0, 0.0, 0.0))
-            x = {"A": A, "B": B, "kind": kind, "fp": fp, "sup": sup, "pts": self.pc[A]["samples"][fp["idx"]],
+            wn = next((self.worn_of(x) for x in (A, B) if self.byid[x]["slot"] == "top"), None)
+            x = {"A": A, "B": B, "kind": kind, "fp": fp, "sup": sup, "worn": wn, "pts": self.pc[A]["samples"][fp["idx"]],
                  "dir": self.pc[A]["near"][fp["idx"]], "laid": None, "rigid_inner": bool(self.byid[A].get("rigid"))}
             if lay is not None:
                 loc = np.searchsorted(lay["v"], x["pts"])
@@ -842,9 +917,11 @@ class Check:
         """sources: [(clip name, frames())], frames() yielding (key frame, S [B, 4, 4], shape weights)."""
         sc = self.sc
         t0 = time.time()
-        groups = sorted({x["sup"] for x in self.tests})
-        for sup in groups:
-            group = [x for x in self.tests if x["sup"] == sup]
+        wkey = lambda x: x["worn"].key if x.get("worn") is not None else ""  # noqa: E731
+        groups = sorted({(x["sup"], wkey(x)) for x in self.tests})
+        for sup, wk in groups:
+            group = [x for x in self.tests if x["sup"] == sup and wkey(x) == wk]
+            wn = group[0].get("worn")
             need = np.unique(np.concatenate([sc.ish] + [np.r_[x["pts"], x["hitv"].ravel(), x["candv"].ravel()] for x in group]
                                             + [x["sweepT"].ravel() for x in group if "sweepT" in x]))
             at = np.full(len(sc.P0), -1)
@@ -859,7 +936,7 @@ class Check:
                 if "dA" in x:
                     x["_sub"] = sc.restrict(x["pts"])
             for cname, frames in sources:
-                for f, S, w in frames():
+                for f, S, w in (frames(wn) if wn is not None and getattr(frames, "carries", False) else frames()):
                     w = dict(w)
                     w.update(support_weights(sup))
                     Pn = sc.rest(need, w, sub)
@@ -873,7 +950,7 @@ class Check:
                     kd_frame = {}
                     for x in group:
                         self._measure(x, Pp, Np, at, S, w, SvB, kd_frame, cname, f, Ns)
-                log(f"gear_wear: support {sup} {cname} ({time.time() - t0:.0f} s)")
+                log(f"gear_wear: support {sup}{' as worn' if wn is not None else ''} {cname} ({time.time() - t0:.0f} s)")
         return time.time() - t0
 
     def _sweep(self, x, O, D, Pp, at):
@@ -1087,7 +1164,7 @@ class Check:
             fin = np.isfinite(m)
             e = {"A": A, "B": B, "kind": x["kind"],
                  "slots": f"{'skin' if A == 'skin' else self.byid[A]['slot']}->{self.byid[B]['slot']}",
-                 "support": list(x["sup"]), "footprint_mm2": round(float(ar[:x.get("nfp", len(ar))].sum() * 1e6), 1),
+                 "support": list(x["sup"]), **({"worn_rest": True} if x.get("worn") is not None else {}), "footprint_mm2": round(float(ar[:x.get("nfp", len(ar))].sum() * 1e6), 1),
                  "swept_mm2": round(float(ar.sum() * 1e6), 1) if "sweepT" in x else None,
                  "worst_in_mm": round(float(-m[fin].min() * 1000), 2) if fin.any() else None,
                  "out_worst_mm": round(float(-mo[np.isfinite(mo)].min() * 1000), 2) if np.isfinite(mo).any() else None,

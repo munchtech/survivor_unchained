@@ -315,3 +315,78 @@ def test_point_off_an_open_sheets_border_is_not_counted():
     assert not np.isfinite(sw[0]) and abs(-sw[1] - 0.0213) < 0.0005
     x["swBE"][:], x["swBV"][:] = False, False                     # (the premise: without the border rule it counts)
     assert np.isfinite(ck._sweep(x, O, D, sc.P0, at)[0])
+
+
+# ---- as worn: her springs under a top with a hold (gear_wear docstring AS WORN; the built body, skipped without it) --
+def _worn_scene(piece="plate_top_plain"):
+    import os
+    import pytest
+    if not os.path.isfile(os.path.join(gw.GEAR, "gear_index.json")):
+        pytest.skip("no built gear folder")
+    ix, rows = gw.load_rows(gw.GEAR)
+    if piece not in {r["id"] for r in rows}:
+        pytest.skip(f"{piece} is not built")
+    body = os.path.join(gw.REPO, "godot", "art", "people", ix["body"])
+    sc = gw.build_scene(body, rows, {piece, "ranger.belt"})
+    order = __import__("json").load(open(os.path.join(gw.HERE, "slot_map.json"), encoding="utf-8"))["order"]
+    return sc, gw.Check(sc, rows, order), body
+
+
+def test_worn_top_rest_is_worn_rests_body_and_piece():
+    """The rest a held top's skin test reads is gear_tuck's worn path (worn_rest.state / pose) to under 0.01 mm: her
+    skin and the piece; and the worn rest is not the bind (the springs moved her)."""
+    import os
+    import gear_tuck as gt
+    from scipy.spatial import cKDTree
+    sc, ck, body = _worn_scene()
+    row = ck.byid["plate_top_plain"]
+    wn = ck.worn_of("plate_top_plain")
+    assert wn is not None and wn.support > 0
+    R = ck.rest_of(wn, gw.support_of(row))
+    sk = gt.Skin(os.path.join(body, "body.glb"))
+    st = gt.worn_state(sk, row)
+    assert st is not None
+    ref = sk.as_worn(st).P
+    assert len(ref) == len(sc.isk)
+    assert np.abs(R["P0"][sc.isk] - ref).max() < 1e-5
+    assert np.abs(ref - sc.P0[sc.isk]).max() > 0.010                      # (a push-up: the breasts rest elsewhere)
+    Pw = gt.piece_of(gw.GEAR, row, worn=st)[0]
+    mine = R["P0"][sc.owner == "plate_top_plain"]
+    assert len(Pw) == len(mine)
+    assert cKDTree(Pw).query(mine)[0].max() < 1e-5 and cKDTree(mine).query(Pw)[0].max() < 1e-5
+    ck.add_skin(["plate_top_plain"])
+    assert ck.tests[0]["worn"] is wn
+
+
+def test_worn_top_carries_the_springs_into_a_posed_frame():
+    """A frame's springs sit at their worn equilibrium IN that pose: the rest carried is the worn rest; her whole
+    skeleton turned about the up axis carries the worn rest turned with it; only the sprung bones' rows change."""
+    sc, ck, _ = _worn_scene()
+    wn = ck.worn_of("plate_top_plain")
+    n = len(sc.ibm)
+    eye = np.broadcast_to(np.eye(4), (n, 4, 4)).copy()
+    assert np.abs(wn.carry(eye) - wn.S).max() < 1e-9
+    moved = np.abs(wn.S - eye).reshape(n, -1).max(1) > 1e-9
+    names = np.array(sc.poser.names)
+    assert moved.any() and all("breast" in b for b in names[moved])
+    a = math.radians(40)
+    Y = np.array([[math.cos(a), 0, math.sin(a), 0.1], [0, 1, 0, 0.02], [-math.sin(a), 0, math.cos(a), -0.3], [0, 0, 0, 1]])
+    S = np.broadcast_to(Y, (n, 4, 4)).copy()
+    out = wn.carry(S)
+    assert np.abs(out - Y @ wn.S).max() < 1e-9
+    assert (out[~moved] == S[~moved]).all()
+    # (a dump's frames take the WornTop; a caller's own frames are taken as they are)
+    src = gw.dump_sources(sc, gw.clip_files("Jog_Fwd"), 1000)[0][1]
+    f0, S0, _ = next(src())
+    f1, S1, _ = next(src(wn))
+    assert f0 == f1 and np.abs(S1[moved] - S0[moved]).max() > 1e-3 and (S1[~moved] == S0[~moved]).all()
+
+
+def test_no_hold_rows_are_posed_as_before():
+    """A row with no hold (and a scene with no poser) has no worn state: the bind's own rest, the frames untouched."""
+    sc, ck, _ = _worn_scene()
+    assert ck.worn_of("ranger.belt") is None
+    assert ck.rest_of(None, (0.0, 0.0, 0.0)) is ck.bind and ck.bind["P0"] is sc.P0
+    ck.add_skin(["ranger.belt"])
+    assert ck.tests[0]["worn"] is None and not ck.rests
+    assert gw.worn_top(scene()[0] if isinstance(scene(), tuple) else scene(), {"slot": "top", "hold": {"support": 1}}) is None
