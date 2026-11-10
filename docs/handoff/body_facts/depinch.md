@@ -1,33 +1,43 @@
-# De-pinch A before carrying it (judge fix 1, Gate T round 2; lead 21's solver, 10 Nov): BUILT, NOT MET, left OFF
+# De-pinch A before carrying it (judge fix 1, Gate T round 2; lead 21's max solver, 10 Nov): CAUSE FOUND, ARAP FAIR BUILT, NOT MET, key absent
 
-## What A's "pinch" is, in numbers
-Fold = fold_probe.dihedral on the model's triangles (valley +, the chest_fold.md convention; the bar is a fold of 15 deg or less = interior 165 or more). Composed target, rule off:
-| pose (elev) | (5832,5833) | (5773,5833) | (2882,2932) | list edges abs(fold) > 45 / > 90 |
-|---|---|---|---|---|
-| abd120:l (120) | -29 | -17 | 13 | 125 / 40 |
-| abd150:l (150) | 141 | 67 | 128 | 99 / 32 |
-| abd170:l (170) | 155 | 74 | 147 | 100 / 36 |
-| flex170:l (170) | -74 | 150 | 141 | 87 / 33 |
-| iron_vow@72:l (109) | -83 | -92 | -21 | 307 / 99 |
-It is not one pinched edge: the front armpit (md ids about 5770-5900 and 8220-8360) is a CRUMPLE of A's carry, valleys of 140-179 next to ridges of -100 to -170, in the fill (map off reads the same). B's published part pose is crumpled there too on iron_vow@72 (published folds up to -176). abd120's named edges are not pinched; its sharpest fill edges are (5429,5501) 168 and (5501,5564) 150. The 179-deg edge (5558,5617) at abd120 / abd150 is the armpit MAP's band (fill -18 / -5): not touched (strip_rest's).
+## The old attempt (first solver), in 6 lines
+- `Her.depinched` seeded on valley folds over B's, filled a pocket ("frames" = B's rest differentials on A's smoothed rotations, or "membrane" = least area), and gave volume back as a bump.
+- Membrane, rows 2, passes 3: the folds were cured on abd120-170 (named 11 / 3 / -1) but volume was lost: fold_front in95 21.9 (round 1 16.0), deltoid 35.0 (15.5), 62 mm moves.
+- The bump re-crumpled the patch (bump 23-26 mm). Frames made new creases. iron_vow@72:l was never cured.
+- Its finding stands: the front armpit (md 5770-5900, 8220-8360) is a CRUMPLE (valleys 140-179 next to ridges -100 to -170), not one pinched edge.
 
-## Built (tools/body/carried_target.py, inert while the key is absent)
-`Her.depinched(rg, G, cf, Vr, Pg, info=None)`, run in `Her.part` after `relaxed`, before `mapped` (Pg now computed first, same value). Config `support["depinch"]` of an explicit region (wired in `Her.grow`: `rg.depinch = (lo, hi, rule)`, `rg.tris` = the region's own triangles): seeds = edges with fold over `fold_deg` and over B's fold by `fold_deg` (`ref` "rest" (default) or published part pose; `both`: abs, ridges too), never on the map's band when the map is on; pocket = `rows` around, minus the band; `fill` "frames" (Pocket, B's rest differentials turned by A's smoothed rotations, as `relaxed`) or "membrane" (delta 0, least-area); volume given back as a bump b (L_pp b = 1, 0 on the ring) along the fill's normals so the pocket's area-weighted mean normal offset is cf's, scaled by `volume`; `passes` rounds; smoothstep of elevation over `deg`, at or under lo bit for bit. It sits in HER as `"depinch_wip"` (NOT read): today's target is unchanged, `carried_target.py test` 83 PASS (as lead 20).
+## Cause verdict: A's OWN posed skin, not the carry (`C:/Users/munch/Desktop/survivorsunchained_inputs/scratch_p1_depinch2/cause.py`)
+| pose | A's own edges under the patch, abs fold > 45 / > 90, posed (rest) | A max fold posed / rest | binding: foot n . B n p50 / p5 | feet dist / B edge p50 | abs d0 max | sharp edges of the fill that the feet-only surface has |
+|---|---|---|---|---|---|---|
+| x:abd120:l | 58 / 15 (0 / 0) | 147 / 32 | 1.00 / 0.91 | 1.00 | 2.7 mm | 106 of 114 |
+| p4:iron_vow@72:l | 101 / 29 (0 / 0) | 175 / 34 | 1.00 / 0.89 | 1.00 | 2.7 mm | 261 of 261 |
+| x:abd150:l | 24 / 7 (0 / 0) | 159 / 29 | 1.00 / 0.88 | 1.00 | 2.7 mm | 82 of 96 |
+- B's rest sits on A's to 2.7 mm. The feet are consistent at rest (0 inverted foot triangles, no jumps, carrier ok everywhere on the patch). A's LBS collapses its own triangles in the pose (8-9 foot triangles inverted posed, 0 at rest).
+- So a better binding cannot cure it. The cure is an untangle of the carried surface. B's published part pose is crumpled there too (pub folds > 45: 102 abd120, 388 iron_vow).
 
-## Sweep (composed, rule on; named edges before -> after; list abs fold > 45 / > 90 before -> after; max move)
-| variant | abd150 | abd170 | iron_vow@72:l | verdict |
-|---|---|---|---|---|
-| frames, rows 1, volume 1 | 13 / -2 / -14; new sharp 28 | 32 / 4 / -12 | -30 / -50, 353 -> 424 edges > 20, 30 mm | new creases |
-| frames, both, rows 3, passes 2 | 14 / -1 / -6; > 45 99 -> 62 | 18 / 1 / -8 | -90 / -155; > 90 99 -> 159; 82 mm | worse on iron_vow |
-| membrane, rows 2, passes 3, volume 0 | 11 / 3 / -1; 99 -> 31, 32 -> 15 | 12 / 2 / -2; 100 -> 56, 36 -> 21 | 12 / 40; 307 -> 222, 99 -> 65; 62 mm | folds best; VOLUME LOST |
-| membrane, rows 2, passes 3, volume 1 | 16 / 0 / 2; 99 -> 63, 32 -> 39 | 16 / 1 / -3 | -134 / -180; bump 23-26 mm | the bump re-crumples |
-abd120 (membrane vol 0): -29 / -17 / 13 -> 11 / 3 / 13, > 45 125 -> 34. flex170: -74 / 150 / 141 -> 28 / -3 / -1.
-Shift for the best fold variant (membrane vol 0; `carried_target.py target --poses x:abd120:l,x:abd150:l,x:abd170:l,x:flex170:l,p4:iron_vow@72:l,x:add0:l`, then `region_shape.py shift --provider carried --target target_a_dev.npz --poses <same>`): fold_front worst in95 **21.9** (round 1 16.0), deltoid_cap **35.0** (15.5), median in95 deltoid **12.9** (bar 3.0). FAILS (d). target_a_dev.npz holds that run (dev only; target_a.npz untouched).
+## Built (tools/body/carried_target.py; inert: HER has no "depinch" key, `test` ALL PASS, today's target unchanged)
+- `Pocket.fair(X, R, alpha, iters, keep)`: as-rigid-as-possible (Sorkine-Alexa local/global) from B's rest, with a data pull alpha toward X. keep = (area, normals): the area-weighted mean normal offset from X is held at 0 by a Lagrange step (measured offset 1e-15 mm).
+- `Her.depinched(rg, G, cf, Vr, mw, info)`, now run AFTER `mapped` (the map's band is held when map w > 0; T21 is untouched). Seeds: an abs fold > fold_deg beyond B's rest fold, or a triangle turned against its smoothed rotation. Pocket = union over `passes` rounds, rows + k. The first guess is the carrier's rotations smoothed (frame_passes). Blend = smoothstep of the elevation over deg (<= lo returns early, bit for bit).
+- Rule tried: `{"deg": [90, 105], "fold_deg": 20, "rows": 2, "passes": 3, "alpha": a, "iters": 20}` (scratch `meas.py` / `diag.py`, env DP).
+
+## Sweep: composed patch counts (patch = 3 rows around list edges with abs fold > 45, rule off; same edges before -> after)
+| alpha | abd120:l: >45 / >90 / flipped; named (5832,5833) (5773,5833) | iron_vow@72:l: >45 / >90 / flipped; named | move p95 / max mm |
+|---|---|---|---|
+| 0.1 | 125->93 / 40->23 / 62->36; -29->21, -17->18 | 307->253 / 99->62 / 110->104; -83->-65, -92->-65 | 8.8 / 11.6; 11.4 / 18.4 |
+| 0.01 | 125->69 / 40->17 / 62->6; -29->57, -17->41 | 307->169 / 99->57 / 110->90; -83->-47, -92->-71 | 19.3 / 25.7; 25.7 / 33.9 |
+| 0.001 | 125->64 / 40->17 / 62->6; -29->51, -17->39 | 307->152 / 99->52 / 110->68 | 25.5 / 34.9; 36.6 / 44.0 |
+- B's rest has 30 edges over 45 inside the same patch (the floor). Flipped = against a 20-pass smoothed copy's normals.
+- Cap top edges (iron_vow@72:l) stay 180 / 179 / 175.
+- Of the edges still sharp at alpha 0.1, many sit on the held map band: abd120 26 of 91, iron_vow 98 of 228. That part is strip_rest's.
+- The rest (65 / 130) are INSIDE the pocket. ARAP's local step refits its rotations to the crumple, so the folds stay as a local minimum. A lower alpha lets B's rest shape make new creases at the named edges (57 / 41).
 
 ## Acceptance
-(a) membrane vol 0 meets 15 deg on abd120/150/170 named edges, not flex170 (5832,5833) 28 or iron_vow (5773,5833) 40. (b) not run (edges). (c) 83 PASS with the rule OFF; T24 not written (no default to test). (d) FAILS (above). (e) iron_vow@72:l cap face NOT cured: its sharpest fill edges (5829,5889) 178, (5829,5830) 172, (5769,5829) 166 sit in a 300-edge crumple; no variant smooths it without a 30-80 mm move.
+- (a) NOT MET (above).
+- (b) and (c) not run: the rule is not live.
+- (d) ALL PASS with the key absent. T24 is not written: no live rule to test.
+- (e) The cap is not cured: 180 / 179 / 175.
 
-## Why it resists, and the next step (a solver)
-A pocket fill keeps the rest layout's triangulation over a tangled boundary: the harmonic solve flips triangles at the ring (worse edges with 0-1 pocket ends: 17 + 26 of 66 at abd150), and a volume bump on a narrow pocket makes a new valley. The cure needs an untangle with a volume constraint, e.g. strip_rest's `untangle` / `lay2` (a re-laid band over A's surface, as the armpit map does), or an ARAP fill of the OFFSET from a smooth reference with turned-triangle and swept-volume terms. Measuring the pinch by named edges alone is gaming: use the list's abs-fold > 45 / > 90 counts, turned triangles and the shift bands. Probe: scratch `pinch.py` (below), env `DP='{json rule}'`.
-Probe copy: C:/Users/munch/Desktop/survivorsunchained_inputs/scratch_p1_depinch/pinch.py.
-JOB 2 (cast_bolt@3:r tick) not started (context).
+## Next step (a solver)
+1. Untangle first, then fair. Solve the pocket from a smooth start (the membrane, or Taubin-smoothed cf) with the rotations fixed from the smoothed carrier and not refitted. Then run a few ARAP iterations with alpha 0 at the seed points and alpha up to 0.1 on the outer rows, keep on.
+2. Add a flip barrier (reject the step, or halve the pull, where a triangle turns).
+3. iron_vow@72's crumple is half on the map's band: it needs strip_rest's lay on the band and this rule beside it, run together.
