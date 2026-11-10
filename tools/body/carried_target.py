@@ -47,6 +47,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 from pathlib import Path
 
 import numpy as np
@@ -762,7 +763,9 @@ HER = {
     # T17: the ramp edges over 2.5x allowed per pose (none unexplained); t17_watch: printed only (border.md's table)
     "t17_poses": {"x:abd170:l": 0, "x:abd150:l": 0, "p4:iron_vow@72:l": 0, "cast_bolt@0:l": 0, "p4:heroic_leap@19:r": 1},
     "t17_watch": ["x:flex170:l", "Jog_Fwd@14:l", "Jog_Fwd@11:r", "p4:idle_warden_town@122:l", "x:add0:l"],
-    "t16_poses": ["Jog_Fwd@11:r"],       # + every dev / T14 / T17 pose under the gate
+    "t16_poses": ["Jog_Fwd@11:r"],       # + every dev / T14 / T17 pose; each side under the gate
+    # T11: the stored targets of before the border grew (frozen copies: `out` is rewritten by every full run)
+    "t11_stored": {"regions": "target_a_regions.npz", "girdles": "target_a_rel.npz"},
     "rad": 0.05,
     "k": 64,
     "nw": 0.0,                           # the normal term: tried at 0.2, it does not cure the armpit-apex bridge
@@ -778,7 +781,7 @@ HER = {
 }
 INFO = ["d_pub_p50", "d_pub_p95", "d_pub_max", "d_bor_p50", "d_bor_max", "edge_min", "edge_max", "edge_raw_max", "edge_car_max",
         "pk_edge_min", "pk_edge_max", "pk_d_p50", "pk_d_max", "vol", "girth_mid_deltoid", "girth_insertion",
-        "rel_sig_min", "rel_guard", "drv_mem", "elev", "gated_d_max", "edge_all_max"]
+        "rel_sig_min", "rel_guard", "drv_mem", "elev", "gated_d_max", "gated_oth_max", "edge_all_max"]
 
 
 class Her:
@@ -843,6 +846,7 @@ class Her:
         self.touch = {n: [m for m in self.regions if m != n and own[n] & own[m]] for n in self.regions}
         self.girth0 = {s: md.girth(md.S[s], md.V0) for s in sides}
         self.last = {}
+        self._pose, self._parts = None, {}                  # the regions' parts of the last pose (part)
         if verbose:
             print(f"carry: {cfg['carry']}; {len(self.driven)} driven bones; regions:")
             for n, r in self.regions.items():
@@ -859,7 +863,7 @@ class Her:
                   "(reference, source)")
 
     def motion(self, key, sup):
-        """(pub, ref) [md points] mm, in the first side's indexing: the most that B's published surface and the carried
+        """(pub, ref) [md points] mm, in the indexing of the first side by name: the most that B's published surface and the carried
         reference move each point under the region's part poses, over the stored poses (each on its side, the other
         sides' mirrored by the twins). Cached in OUT / sup["cache"], keyed by the pose names."""
         md, bd, Ab, p, cfg = self.md, self.bd, self.Ab, self.bd.p, self.cfg
@@ -899,6 +903,9 @@ class Her:
                                              sup["gate_rows"], sup["wall_rows"])
         C, O = np.zeros(md.n), np.zeros(md.n)
         C[ids], O[ids] = closed, opened
+        gate = md.part == md.parts.index(sup["gated_part"])
+        dg = rows_from(md.adj, core)
+        own0 = np.nonzero(gate & (dg <= dg[md.tw]))[0]       # the gated part on this side: nearer its list than the twin's
         new0 = ids[~core[ids]]
         o0 = np.r_[md.S[s0]["ids"], new0]
         md.grown = getattr(md, "grown", {})
@@ -912,7 +919,8 @@ class Her:
             plain = Carrier(Ab.V0, Ab.T, bd.V0[F[new]], self.N0[F[new]], rad=cfg["rad"], k=cfg["k"], nw=cfg["nw"], pocket_rows=0)
             rg.pts, rg.edges, rg.carrier, rg.nlist = F[allid], (A.row, A.col), Carriers([self.car[s], plain]), len(md.S[s]["ids"])
             rg.share = lambda G, s=s: md.blend(G, s, grown=True)
-            rg.gated = md.part[allid] == md.parts.index(sup["gated_part"])
+            rg.gated = gate[allid]
+            rg.gate_own = F[own0 if s == s0 else md.tw[own0]]       # source vertices: what the side's gate rules (shut)
             rg.spread = spread_of(self.group, rg.pts)
             self.ext[s] = new
 
@@ -964,14 +972,20 @@ class Her:
         registered at each anchor and blended by the fields, carried onto the region's points (cf filled, cr alone: in
         the part pose's frame), B's own surface of the part pose Pg and the placement M (relative_place)."""
         bd, p, Ab, cfg, rg = self.bd, self.bd.p, self.Ab, self.cfg, self.regions[name]
+        key = np.asarray(G, float).tobytes()                # one pose's parts are computed once: every side's target,
+        if key != self._pose:                               # the regions that touch it and the checks reuse them
+            self._pose, self._parts = key, {}
+        if name in self._parts:
+            return self._parts[name]
         Gr, mem = self.part_pose(G, rg.bones)
         Va, Ga = Ab.pose_turns(transfer_turns(Gr, p.rest, p.index, Ab.p.index, Ab.p.parent, rg.ref_map, rg.order))
         Vr = register(Va, [anchor_align(Gr[ja], p.rest[ja], Ab.G0[ra], Ga[ra]) for ja, ra in rg.anchors], rg.field)
         cf, cr = rg.carrier.carry(Vr, both=True)
         ibm = p.skel.ibm
         M, sig, u = relative_place(G @ ibm, Gr @ ibm, bd.J[rg.pts], bd.W[rg.pts], cfg["sig_lo"], cfg["sig_hi"])
-        return {"M": M, "cf": cf, "cr": cr, "Pg": self.rt.published(bd, Gr)[rg.pts], "Va": Vr, "Va_own": Va, "Gr": Gr,
-                "sig": float(sig.min()), "guard": int((u < 1).sum()), "mem": mem}
+        self._parts[name] = {"M": M, "cf": cf, "cr": cr, "Pg": self.rt.published(bd, Gr)[rg.pts], "Va": Vr, "Va_own": Va,
+                             "Gr": Gr, "sig": float(sig.min()), "guard": int((u < 1).sum()), "mem": mem}
+        return self._parts[name]
 
     def delta(self, G, name):
         """A region's relative delta on its points [points, 3], under its share: share M (c - published(part pose))."""
@@ -982,6 +996,22 @@ class Her:
         """The whole target [source vertices, 3] of the pose G: published + the deltas of `regions` (names; None: all)."""
         Vp = self.rt.published(self.bd, G) if Vp is None else Vp
         return compose(Vp, {n: (*self.regions[n].spread, self.delta(G, n)) for n in (self.regions if regions is None else regions)})
+
+    def shut(self, G, side, regions=None):
+        """(mm, mm) on the gated part of `side` (every point of the part nearer this side's list than its twin's, in a
+        region or not): how far the regions under the gate rule (the grown ones, every side's: whatever the other arm
+        does) move it off the published surface, and how far the other regions do, in rows they own inside the part
+        (their own account, not the gate's). The rule: the first is 0 while the side's gate is shut.
+        `regions`: the names composed (None: all)."""
+        own = getattr(self.regions[self.cfg["out_region"].replace("{s}", side)], "gate_own", None)
+        if own is None:
+            return 0.0, 0.0
+        out = []
+        for ruled in (True, False):
+            parts = {n: (*r.spread, self.delta(G, n)) for n, r in self.regions.items()
+                     if hasattr(r, "gate_own") == ruled and (regions is None or n in regions)}
+            out.append(float(np.linalg.norm(compose(np.zeros((len(self.bd.V0), 3)), parts)[own], axis=1).max() * 1000))
+        return tuple(out)
 
     def carried(self, G, side, Vp=None, carry=None, regions=None, full=False):
         """(filled, carried alone, the reference's posed vertices), all on the source's skeleton, for one pose and side:
@@ -1031,8 +1061,8 @@ class Her:
         last, nl = self.last, len(ids)
         b = rg.share_at(G)[:, None]                                      # the border's share, by row and by pose
         Xa = b * MC + (1 - b) * Vp[rg.pts] + last["others"]              # + the regions that touch this one (compose's rule)
-        gt = getattr(rg, "gated", np.zeros(len(rg.pts), bool))           # the gated part's rows: how far off published, mm
-        extra = {"elev": md.elevation(G, side), "gated_d_max": float(np.linalg.norm(Xa - Vp[rg.pts], axis=1)[gt].max() * 1000) if gt.any() else 0.0,
+        gd = (0.0, 0.0) if (carry or self.cfg["carry"]) == "absolute" else self.shut(G, side, None if regions is None else [*regions, rg.name])
+        extra = {"elev": md.elevation(G, side), "gated_d_max": gd[0], "gated_oth_max": gd[1],   # the side's gated part (shut)
                  "edge_all_max": edge_ratio(Xa, bd.V0[rg.pts], *rg.edges)[1]}
         X, MC, MR = Xa[:nl], MC[:nl], MR[:nl]                            # the list's points: what is returned and judged below
         last.update({"Xe": Xa[nl:], "share": b[:, 0], "cf": last["cf"][:nl], "others": last["others"][:nl]})
@@ -1208,15 +1238,34 @@ def cmd_test(h):
         e = np.abs(X3 - (X1 @ R.T + t)).max()
         line(f"T10 {nm}", e < 1e-6 and (X1 == X2).all(), f"whole-body rigid motion: max {e:.2e} m; twice the same: {bool((X1 == X2).all())};"
              f" correctives the other bones drive in the region {shapes(G, s) * 1000:.3f} mm")
-    # T11: the two girdles alone = the stored relative target (written before the regions)
+    # T11: a config without `support` is the path of before the border grew (what any other body runs). Every region
+    # composed = the stored target of that time (measured: to the bit). The two girdles alone = the stored relative
+    # target, written before the regions, to 1e-5 and not 1e-6: that file posed the reference's 13 bones by the whole
+    # map (identity turns on the 9 outside the girdle, which the transfer does not return exactly: the rest pose comes
+    # back 4e-5 off in the reference's globals); a region poses its own 4. Measured 2.5-6.7 um with the 4, 0 with the
+    # 13 as that file was written: asserted on the same line.
     gird = [n for n, r in h.regions.items() if r.side]
     h0 = Her({**cfg, "regions": {k: {a_: b_ for a_, b_ in v.items() if a_ != "support"} for k, v in cfg["regions"].items()}}, verbose=False)
-    stored = np.load(h.OUT / cfg["out"])
-    sn = [str(x) for x in stored["name"]]
-    for nm in cfg["dev_poses"] + cfg["t14_poses"] + ["Jog_Fwd@11:r"]:
-        i = names.index(nm)
-        e = np.abs(h0.target(z["G"][i], str(z["side"][i]), regions=gird)[0] - stored["X"][sn.index(nm)]).max()
-        line(f"T11 {nm}", e < 1e-6, f"girdles only, the OLD share (the list, beta: no support region) - the stored target ({cfg['out']}): max {e:.2e} m")
+    st = {k: np.load(h.OUT / f_) if (h.OUT / f_).exists() else None for k, f_ in cfg["t11_stored"].items()}
+    tp = cfg["dev_poses"] + cfg["t14_poses"] + ["Jog_Fwd@11:r"]
+
+    def off(k, nm, regs):
+        i, sn = names.index(nm), [str(x) for x in st[k]["name"]]
+        return float(np.abs(h0.target(z["G"][i], str(z["side"][i]), regions=regs)[0] - st[k]["X"][sn.index(nm)]).max())
+
+    if any(v is None for v in st.values()):
+        line("T11", False, f"a stored target is missing in {h.OUT}: {[f_ for k, f_ in cfg['t11_stored'].items() if st[k] is None]}")
+    else:
+        e = {nm: (off("regions", nm, None), off("girdles", nm, gird)) for nm in tp}
+        for n in gird:                                                   # the old transfer: every posed bone, the whole map
+            h0.regions[n].ref_map, h0.regions[n].order = cfg["bone_map"], h0.order
+        h0._pose = None
+        for nm in tp:
+            e13 = off("girdles", nm, gird)
+            line(f"T11 {nm}", e[nm][0] < 1e-9 and e[nm][1] < 1e-5 and e13 < 1e-9,
+                 f"no support region: every region - the stored target of before the border ({cfg['t11_stored']['regions']}) max {e[nm][0]:.2e} m"
+                 f" (limit 1e-9); the girdles alone - the stored relative target ({cfg['t11_stored']['girdles']}) {e[nm][1]:.2e} m (limit 1e-5),"
+                 f" with the reference's {len(h0.order)} bones posed as that file was {e13:.2e} m (limit 1e-9)")
 
     def turned(turns):
         G = p.rest.copy()
@@ -1290,7 +1339,7 @@ def cmd_test(h):
     # T15: the grown region's outer row (a neighbour outside the region) has share 0 shut and open: the region's own
     # target there IS the published surface. T16: the gate shut, the gated part is published. T17: the ramp's edges.
     lo = {s: md.grown[s]["gate"][0] for s in md.grown}
-    t16 = set(cfg["t16_poses"])
+    t16 = set(cfg["t16_poses"] + cfg["dev_poses"] + cfg["t14_poses"] + list(cfg["t17_poses"]) + cfg["t17_watch"])
     for s in md.grown:
         g, gr = h.regions[cfg["out_region"].replace("{s}", s)], md.grown[s]
         allid = np.r_[md.S[s]["ids"], gr["new"]]
@@ -1303,16 +1352,21 @@ def cmd_test(h):
             if str(z["side"][i]) == s:
                 Vp = pub(bd, z["G"][i])
                 e = max(e, float(np.abs(np.r_[h.target(z["G"][i], s, Vp, regions=[g.name])[0], h.last["Xe"]] - Vp[g.pts])[outer].max()))
-                if md.elevation(z["G"][i], s) < lo[s]:
-                    t16.add(nm)
         line(f"T15 {s}", sh == 0 and e < 1e-9, f"the region's outer row ({int(outer.sum())} of {len(allid)} points): share max {sh:g} shut and open;"
              f" the region's own target - published there max {e:.1e} m (limit 1e-9)")
+    # T16, per side and on the composed target: while a side's gate is shut (its arm under the gate, whatever the other
+    # arm does) the regions under the gate rule (every side's) leave that side's gated part on the published surface.
+    # Other regions own rows inside the part (the neck: the part map's upper rows carry the neck's weight) and move
+    # them by their own rule: printed, not the gate's.
     for nm in sorted(t16):
-        i = names.index(nm)
-        s = str(z["side"][i])
-        info = h.target(z["G"][i], s)[1]
-        line(f"T16 {nm}", info["elev"] < lo[s] and info["gated_d_max"] < 1.0, f"arm elevation {info['elev']:.0f} deg (gate from {lo[s]:g}): the gated part's"
-             f" rows in the region ({int(h.regions[cfg['out_region'].replace('{s}', s)].gated.sum())}) off published max {info['gated_d_max']:.4f} mm (limit 1)")
+        G = z["G"][names.index(nm)]
+        el = {s: md.elevation(G, s) for s in sorted(md.grown)}
+        for s in el:
+            if el[s] < lo[s]:
+                gd, go = h.shut(G, s)
+                line(f"T16 {nm} side {s}", gd < 1.0, f"arm elevation {el[s]:.0f} deg (gate from {lo[s]:g}; other {' '.join(f'{v:.0f}' for k, v in el.items() if k != s)}):"
+                     f" the side's gated part ({len(h.regions[cfg['out_region'].replace('{s}', s)].gate_own)} points) off published by the regions under"
+                     f" the gate max {gd:.4f} mm (limit 1); by the other regions in rows they own {go:.1f} mm")
     for nm in list(cfg["t17_poses"]) + cfg["t17_watch"]:
         i = names.index(nm)
         G, s = z["G"][i], str(z["side"][i])
@@ -1359,14 +1413,21 @@ def cmd_target(h, poses):
         if miss:
             sys.exit(f"not in poses.npz: {miss}")
         sel = [names.index(p) for p in poses]
-    X, Xe, infos = [], [], []
-    lo = min((g["gate"][0] for g in getattr(h.md, "grown", {}).values()), default=0.0)
+    X, Xe, infos, shut, t0 = [], [], [], [], time.time()
+    lo = {s: g["gate"][0] for s, g in getattr(h.md, "grown", {}).items()}
     for i in sel:
-        x, info = h.target(z["G"][i], str(z["side"][i]))
+        G, side = z["G"][i], str(z["side"][i])
+        x, info = h.target(G, side)
         X.append(x)
         Xe.append(h.last["Xe"])
-        if info["elev"] < lo:                                           # the gate is shut: the gated part must be published
-            print(f"gate shut {names[i]:28s} elevation {info['elev']:5.1f} deg: gated part off published max {info['gated_d_max']:.3f} mm")
+        for s in sorted(lo):                                             # a shut gate: the side's gated part is published
+            el = info["elev"] if s == side else h.md.elevation(G, s)     #   (each side of the pose, whatever the other does)
+            if el < lo[s]:
+                gd, go = (info["gated_d_max"], info["gated_oth_max"]) if s == side else h.shut(G, s)
+                shut.append((gd, f"{names[i]} side {s}"))
+                if poses or gd >= 1.0:
+                    print(f"gate shut {names[i]:28s} side {s} elevation {el:5.1f} deg: gated part off published by the regions under the gate"
+                          f" max {gd:.3f} mm; by the other regions in rows they own {go:.1f} mm")
         infos.append(info)
         if poses:
             print(f"{names[i]:28s} {fmt(info)}")
@@ -1382,8 +1443,10 @@ def cmd_target(h, poses):
         pocket[f"pocket_{s}"] = np.zeros(0, np.int64) if c.pocket is None else c.pocket.p
         pocket[f"bridge_{s}"] = c.bridge
         pocket[f"ext_{s}"] = h.ext.get(s, np.zeros(0, np.int64))   # md point ids of Xe's rows
-    shut = [i_["gated_d_max"] for i_ in infos if i_["elev"] < lo]
-    print(f"gate shut (elevation under {lo:g} deg): {len(shut)} poses, gated part off published max {max(shut, default=0.0):.3f} mm")
+    w = max(shut, default=(0.0, "-"))
+    print(f"gate shut (a side's elevation under {min(lo.values(), default=0.0):g} deg): {len(shut)} (pose, side), gated part off published by the"
+          f" regions under the gate max {w[0]:.3f} mm at {w[1]} (limit 1); {len(sel)} poses in {time.time() - t0:.0f} s"
+          f" ({(time.time() - t0) / max(len(sel), 1):.2f} s a pose)")
     np.savez_compressed(out, X=np.array(X), Xe=np.array(Xe), name=z["name"][sel], side=z["side"][sel], kind=z["kind"][sel],
                         info=json.dumps(infos), params=json.dumps(params), **pocket)
     table([names[i] for i in sel], [str(z["kind"][i]) for i in sel], infos)
