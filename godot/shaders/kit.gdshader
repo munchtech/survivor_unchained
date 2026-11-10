@@ -25,7 +25,13 @@ render_mode diffuse_burley, specular_schlick_ggx;
 // stone under a rig with "stand" (KitLook's Look.Stand); the family row 0, stone.
 #ifdef KIT_STAND
 #define CEL_STAND
+// (L1 lead 15, S) KIT_STAND_LEAF: a leaf-geometry piece (env_trees.py's species kind "clump": opaque leaves, each leaf one
+// baked normal, COLOR.r 1 top leaf / 0.8 flank / 0.45 skirt, g 0 stem to 1 tip) through the same path as family 1, leaf.
+#ifdef KIT_STAND_LEAF
+#define CEL_STAND_FAM 1
+#else
 #define CEL_STAND_FAM 0
+#endif
 #endif
 #include "res://shaders/cel.gdshaderinc"
 #include "res://shaders/world_clock.gdshaderinc"
@@ -1226,7 +1232,18 @@ void fragment() {
 		vec3 st_m = vec3(0.0), st_f = vec3(0.0);
 		if (stand) {
 			vec3 st_nv = normalize((VIEW_MATRIX * vec4(wn, 0.0)).xyz);
+#ifdef KIT_STAND_LEAF
+			// (a leaf has one baked normal, the same on both faces (v_wnrm is the vertex's, never flipped toward the viewer),
+			// so it gives no n.v silhouette: the rim is the tip band of a TOP leaf (COLOR.r >= 0.9, COLOR.g toward 1) whose
+			// normal leans to the moon's side of the screen; cel_stand_fire.z px wide by the tip coordinate's derivative)
+			vec3 st_kv = (VIEW_MATRIX * vec4(cel_key.xyz, 0.0)).xyz;
+			float st_tip = (1.0 - COLOR.g) / max(fwidth(COLOR.g), 1e-4);
+			float st_rim = step(0.9, COLOR.r) * (1.0 - smoothstep(cel_stand_fire.z - 0.5, cel_stand_fire.z + 0.5, st_tip))
+				* smoothstep(0.05, 0.25, dot(st_nv.xy, normalize(st_kv.xy + vec2(1e-5))));
+			EMISSION = cel_stand_base(wp, v_org, wn, v_foot, cel_lum(col), st_rim, st_m, st_f);
+#else
 			EMISSION = cel_stand_base(wp, v_org, wn, v_foot, cel_lum(col), cel_stand_edge(st_nv, VIEW, VIEW_MATRIX), st_m, st_f);
+#endif
 			SPECULAR = 0.0;
 			AO = 0.0;
 			NORMAL = st_nv;

@@ -253,7 +253,8 @@ public static class Dressing
                 var sp = FloraSpecies.Of(name);
                 var (file, v) = sp.FileOf(name);
                 // (our stones take no look: one material whatever the kind's moss and wind, so they merge across kinds)
-                var look = sp.Stone ? (stand ? StandStone : KitLook.Look.Plain) : g.Look with { LeafA = null, LeafB = null, LeafAmount = 0, Wind = sp.Wind ?? g.Look.Wind };
+                // (L1 lead 15, S: a leaf-geometry species under a stand rig takes the standing look too, family 1 by its material)
+                var look = sp.Stone ? (stand ? StandStone : KitLook.Look.Plain) : stand && KitLook.StandLeaf(sp) ? StandStone : g.Look with { LeafA = null, LeafB = null, LeafAmount = 0, Wind = sp.Wind ?? g.Look.Wind };
                 if (!merged.TryGetValue((file, look), out var mg)) merged[(file, look)] = mg = (sp, new(), new());
                 mg.At.Add(t); mg.Var.Add(v);
             }
