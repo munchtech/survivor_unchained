@@ -103,6 +103,9 @@ public sealed class WeaponInst
     /// <summary>(M3 J12) The cast now landing is a block's answer, a whole blow (set round the cast by Firing.LandBlow from the
     /// chain cut's Whole): the heavy counts' questions inside the cast are asked at weight 1, as its press asked them.</summary>
     public bool WholeCast;
+    /// <summary>(M3 J12b) The written blow (BlowN) whose Linger ground is laid: under a chain one zone per written blow
+    /// (Firing.LaysGround). Never written on a skill whose BlowWeight is 1.</summary>
+    public int GroundKey = -1;
     /// <summary>(M3 J12) The weight of its NEXT firing, for the heavy read-aheads at a press (Battle.DeferBlow, HandHeavyNext):
     /// a whole blow when a block's answer is owed, else the cut's share.</summary>
     public double NextW => AnswerDue && BlowWeight != 1 ? 1 : BlowWeight;
@@ -995,6 +998,21 @@ public static partial class Firing
         return any;
     }
 
+    /// <summary>(M3 J12b) Does this swing lay its Linger ground? Unchained (and a chain with no period): every swing, as
+    /// ever. Under a chain of weighed cuts: one per written blow, so the grounds per second are the unchained skill's.
+    /// The first cut to read a new BlowN lays that blow's (BlowN is counted after the cast, so every cut of one blow's
+    /// worth reads the same number; a dropped cut never casts, and the next one lays it). A block's answer is a whole
+    /// blow and lays its own always: when the blow it reads has its ground already, it takes the next blow's, so the
+    /// count holds. An On-kill echo is per kill, outside the count: it lays one as an unchained echo does.</summary>
+    static bool LaysGround(Battle b, WeaponInst w)
+    {
+        if (w.BlowWeight == 1 || b.Echoing) return true;
+        if (w.GroundKey != w.BlowN) { w.GroundKey = w.BlowN; return true; }
+        if (!w.WholeCast) return false;
+        w.GroundKey = w.BlowN + 1;
+        return true;
+    }
+
     static bool FireSlash(Battle b, WeaponInst w)
     {
         // An On-kill echo swings from the corpse, at the nearest creature to the corpse within the swing's reach (the
@@ -1029,10 +1047,11 @@ public static partial class Firing
         // Its own heavy swing splits the ground ahead (Sunder's line).
         if (w.OwnHeavy && w.Num(s => s.Line) is { } line) HeavyLine(b, w, p.X, p.Z, a, line);
         // Linger: the swing leaves its ground where the arc's middle fell.
-        if (w.Wick?.Ground is { } g)
+        // (M3 J12b) Under a chain: one ground per WRITTEN blow, at the blow's size (LaysGround), not one per cut at its share.
+        if (w.Wick?.Ground is { } g && LaysGround(b, w))
         {
             double gx = p.X + Math.Cos(a) * reach * 0.55, gz = p.Z + Math.Sin(a) * reach * 0.55;
-            var zn = b.SpawnZone(Side.Player, gx, gz, AreaOf(b, w, g.Radius), DurationOf(b, w, g.Duration), w.Damage * g.DpsPct, w.School);
+            var zn = b.SpawnZone(Side.Player, gx, gz, AreaOf(b, w, g.Radius), DurationOf(b, w, g.Duration), (w.BlowWeight != 1 && w.CutW > 0 ? w.Damage / w.CutW : w.Damage) * g.DpsPct, w.School);
             if (zn != null) { zn.Tags = w.Tags; zn.Art = w.Art + "_ground"; zn.Weapon = w.Id; }
         }
         w.Swing++;
