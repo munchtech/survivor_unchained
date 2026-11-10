@@ -13,7 +13,7 @@
  "roll": [0.0045, 0.001],
  "ridge": {"theta": 0, "h": 0.002, "w": 0.016, "fade": 0.02},
  "lames": {"count": 3, "plate_share": 0.667, "under": 0.012, "overlap": 0.022, "theta": [-25, 123], "taper": 0.08,
-           "thick": 0.0022, "clear": [0.0025, 0.0025, 0.004], "gap": [0.0012, 0.0032, 0.0037], "slide": [0.0, 0.012, 0.020],
+           "thick": 0.0022, "clear": [0.0025, 0.004, 0.004], "gap": [0.0012, 0.0032, 0.0037], "slide": [0.0, 0.012, 0.020],
            "ease": 0.012, "flare": {"h": 0.004, "band": 0.025}, "under_gap": 0.0008, "step": 0.013, "step_s": 0.007,
            "rides": [{"bones": {"thigh_twist_02_{s}": 1}},
                      {"bones": {"thigh_twist_02_{s}": 0.9, "calf_share_{s}": 0.1}},
