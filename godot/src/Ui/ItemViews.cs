@@ -437,7 +437,7 @@ void fragment() {
         var kind = Style.Label(KindLine(it), Style.Ui, 14, Kit.Dim, true);
         v.AddChild(kind);
         if (def.Weapon is { } iw && Weapons.All.TryGetValue(iw.Id, out var w))
-            v.AddChild(Style.H(6, Glyphs.Icon(w.Art, 15, SchoolColors[w.School]), Style.Label($"{w.Name}  ·  rank {Inventory.WeaponRank(it)}  ·  {w.School.ToString().ToLowerInvariant()}", Style.UiBold, 14, SchoolColors[w.School])));
+            v.AddChild(Style.H(6, Glyphs.Icon(Glyphs.ForSkill(w.Id, w.Art), 15, SchoolColors[w.School]), Style.Label($"{w.Name}  ·  rank {Inventory.WeaponRank(it)}  ·  {w.School.ToString().ToLowerInvariant()}", Style.UiBold, 14, SchoolColors[w.School])));
 
         // What wearing it would change, set beside the line that changes it; what no line explains
         // (what the worn piece gave and this does not) comes after.

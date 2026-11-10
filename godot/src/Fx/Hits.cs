@@ -11,7 +11,7 @@ namespace SurvivorUnchained.View;
 public partial class Hits : Node3D
 {
     readonly List<GpuParticles3D> sprays = new();
-    readonly List<(Label3D Label, float T)> numbers = new();
+    readonly List<(Num Label, float T)> numbers = new();
     readonly List<(MeshInstance3D Mesh, ShaderMaterial Mat, float T, float Life)> arcs = new();
     // (Names made once, not a new one every frame for the collector.)
     static readonly StringName HeadName = "head", AlphaName = "alpha";
@@ -44,17 +44,9 @@ public partial class Hits : Node3D
             AddChild(g);
             sprays.Add(g);
         }
-        for (int i = 0; i < 48; i++)
-        {
-            var l = new Label3D
-            {
-                Billboard = BaseMaterial3D.BillboardModeEnum.Enabled, NoDepthTest = true, FontSize = 64, OutlineSize = NumOutline,
-                PixelSize = NumPixel, Modulate = new Color(1f, 0.95f, 0.85f), OutlineModulate = new Color(0.08f, 0.03f, 0.02f), Visible = false,
-                Shaded = false, RenderPriority = 10, OutlineRenderPriority = 9,
-            };
-            AddChild(l);
-            numbers.Add((l, 1));
-        }
+        // (M4 lead 6: the numbers are no longer Label3Ds in the world, which the day's grade warmed to peach: each is a
+        // place in the world and what it says, drawn by the Sheet on the HUD's canvas in its UI colours: Hits.Sheet.cs)
+        for (int i = 0; i < 48; i++) numbers.Add((new Num(), 1));
         for (int i = 0; i < 8; i++)
         {
             var l = new Label3D
@@ -117,7 +109,20 @@ public partial class Hits : Node3D
     }
 
     public void Number(Vector3 at, int amount, bool crit) =>
-        Text(at, crit ? $"{amount}!" : amount.ToString(), crit ? new Color(1.6f, 1.15f, 0.4f) : new Color(1, 0.94f, 0.86f), crit ? 88 : 60);
+        Text(Beside(at), amount.ToString(), crit ? NumCrit : NumBone, HitsPlace.NumberSize(crit, false));
+
+    /// <summary>Normal numbers: bone at 85%; crits: white (M4 section 5).</summary>
+    static readonly Color NumBone = new Color("#e9dfcc", 0.85f), NumCrit = new Color(1f, 1f, 1f, 1f);
+    /// <summary>Per pool label: its colour's own alpha, and seconds since a crit's punch began (1 = none).</summary>
+    readonly float[] numA = new float[48], numPunch = Fill48();
+    static float[] Fill48() { var a = new float[48]; System.Array.Fill(a, 1f); return a; }
+
+    /// <summary>A number's spawn lifted beside the impact: 0.35 m up, 0.45 m to the camera's right.</summary>
+    Vector3 Beside(Vector3 at)
+    {
+        var cam = GetViewport()?.GetCamera3D();
+        return at + Vector3.Up * 0.35f + (cam != null ? cam.GlobalBasis.X * 0.45f : Vector3.Right * 0.45f);
+    }
 
     /// <summary>The boss's words now showing put away (the BREAK is said alone).</summary>
     public void ClearWords()
@@ -222,7 +227,7 @@ public partial class Hits : Node3D
     void Reclear(int i)
     {
         var l = numbers[i].Label;
-        if (l.Visible) l.GlobalPosition = AboveHud(l.GlobalPosition, l.Text, l.FontSize);
+        if (l.Visible) l.GlobalPosition = BesideHer(AboveHud(l.GlobalPosition, l.Text, l.FontSize), l.Text, l.FontSize);
         Unstack(i);
     }
 
@@ -292,8 +297,12 @@ public partial class Hits : Node3D
         l.Text = text;
         l.FontSize = size;
         l.Modulate = color;
+        numA[i] = color.A;
+        numPunch[i] = 1;
+        l.Scale = 1;
         at = ClearOfNames(at + new Vector3(rng.RandfRange(-0.3f, 0.3f), 0, 0), text, size);
         at = AboveHud(at, text, size);
+        at = BesideHer(at, text, size);
         l.GlobalPosition = at;
         l.Visible = true;
         numbers[i] = (l, 0);
@@ -332,17 +341,26 @@ public partial class Hits : Node3D
     {
         StepTally(delta);
         float dt = (float)delta;
+        bool live = false;
         for (int i = 0; i < numbers.Count; i++)
         {
             var (l, t) = numbers[i];
             if (t >= 1) continue;
+            live = true;
             t += dt / 0.75f;
             l.Position += Vector3.Up * dt * 1.4f * (1 - t);
-            var c = l.Modulate; c.A = (t < 0.7f ? 1 : 1 - (t - 0.7f) / 0.3f) * Hush; l.Modulate = c;
+            if (numPunch[i] < 0.08f)
+            {
+                numPunch[i] += dt;
+                float k = Mathf.Clamp(numPunch[i] / 0.08f, 0, 1), e = 1 - (1 - k) * (1 - k);
+                l.Scale = Mathf.Lerp(1.35f, 1f, e);
+            }
+            var c = l.Modulate; c.A = (t < 0.7f ? 1 : 1 - (t - 0.7f) / 0.3f) * Hush * numA[i]; l.Modulate = c;
             l.OutlineModulate = new Color(l.OutlineModulate, c.A);
             if (t >= 1) l.Visible = false;
             numbers[i] = (l, t);
         }
+        SheetFrame(live);
         for (int i = 0; i < words.Count; i++)
         {
             var (l, t, life, at) = words[i];

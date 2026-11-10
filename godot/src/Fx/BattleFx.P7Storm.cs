@@ -576,7 +576,8 @@ public partial class BattleFx
                 P7Star(P7ShieldAt(), 0.8f + 0.6f * k, 7, P7Sample, bill: true);
                 // the ring: narrows to a fifth of its width and dies by the radius; then it breaks into dust there
                 const float run = 0.3f;
-                P7Ring(c + Vector3.Up * 0.06f, r, run, 0.07f + 0.03f * k, 1f, 0.12f, 0.9f, 0.95f);
+                // (M4 lead 14, r3d S1: two thirds the width; at its youngest it was a 12 px flat hoop louder than the HUD)
+                P7Ring(c + Vector3.Up * 0.06f, r, run, 0.05f + 0.02f * k, 1f, 0.12f, 0.9f, 0.95f);
                 WgLater(run - 0.04f, () => P7DustAt(e.X, e.Z, r, 9 + (int)(5 * k)));
                 P7LightOn(c + Vector3.Up * 1.3f, r * 1.3f, (Flare.Night ? 3f : 4.2f) * (0.8f + 0.5f * k));
                 P7DustRing(e.X, e.Z, R() * Mathf.Tau, r * 0.5f, 10 + (int)(6 * k), 0.75f);

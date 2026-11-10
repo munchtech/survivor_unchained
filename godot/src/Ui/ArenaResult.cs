@@ -86,7 +86,7 @@ public partial class ArenaResultScreen : TellingScreen
             found.AddThemeConstantOverride("h_separation", 32);
             found.AddThemeConstantOverride("v_separation", 8);
             foreach (var id in r.Discovered) found.AddChild(Skill(id, true));
-            Next(Style.V(8, Mid("DISCOVERED  ·  to be learned by day, from tomes and from your calling", Kit.HeadInk, 12, Style.UiHeavy), found), Sound.Sfx.Discovery, 0.45);
+            Next(Style.V(8, Mid("DISCOVERED  ·  to be learned from tomes and from your calling", Kit.HeadInk, 12, Style.UiHeavy), found), Sound.Sfx.Discovery, 0.45);
         }
         if (r.Taught is { } taught) Next(Mid($"Your calling taught you {Weapons.All[taught].Name}", Style.Good), Sound.Sfx.Discovery);
         if (r.LevelsGained > 0) Next(Mid($"Level {G.Journey.Ch.Level}" + (r.LevelsGained > 1 ? $": {r.LevelsGained} levels in one night" : ""), Style.Good, 20), () => Sound.Sfx.LevelUp(), 0.45);
@@ -100,7 +100,7 @@ public partial class ArenaResultScreen : TellingScreen
             {
                 var w = Weapons.All[id];
                 var word = Kit.Word(w.Name, () => { if (Arenas.Inscribe(G.Journey, r, id)) { told = true; Refresh(); } }, new Color("#d8c8f0"), 16);
-                word.TooltipText = $"{w.Description} By day it asks {SkillBook.Need} {SkillBook.Attribute(id)}.";
+                word.TooltipText = $"{w.Description} It asks {SkillBook.Need} {SkillBook.Attribute(id)} of whoever uses it.";
                 pick.AddChild(word);
             }
             Next(pick, () => Sound.Sfx.Loot(true), 0.45);
@@ -167,7 +167,7 @@ public partial class ArenaResultScreen : TellingScreen
 
     static Control Skill(string id, bool fresh)
     {
-        var (icon, name, what) = Weapons.All.TryGetValue(id, out var w) ? (w.Art, w.Name, "combat skill")
+        var (icon, name, what) = Weapons.All.TryGetValue(id, out var w) ? (Glyphs.ForSkill(id, w.Art), w.Name, "combat skill")
             : Boons.Find(id) is { } bd ? (bd.Icon, bd.Name, "passive skill") : ("scroll", id, "");
         var col = fresh ? new Color("#b8a8d8") : Style.InkDim;
         return Style.H(8, Glyphs.Icon(icon, 22, col), Style.V(0, Style.Label(name, Style.UiBold, Style.Small, col), Style.Label(what, Style.TextItalic, Style.Caption, Style.InkDim)));

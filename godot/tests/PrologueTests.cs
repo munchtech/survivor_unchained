@@ -89,6 +89,43 @@ public class PrologueTests
         Assert.True(j.World.Fact("prologue.done").Truthy);
     }
 
+    [Fact]
+    public void The_gate_exit_is_the_objective_only_while_the_road_step_is_open()
+    {
+        // (M4 UI lead 12: the minimap draws the one place the tracker's first open line sends her as the open diamond)
+        Assert.False(new MapMark(0, 0, "x", MarkKind.Exit).Objective);
+        var a = Callings.Archetype("warden");
+        var j = Journey.Begin(new CreationChoice
+        {
+            Name = "Ashe", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0],
+            Ability = a.Abilities[0],
+        }, 42);
+        var meta = ZoneMeta.Load("lowford");
+        var host = new FakeHost(j, meta);
+        var zone = new Prologue(host, meta) { DayStart = true };
+        var at = zone.ArrivalFrom(null);
+        var b = j.StartBattle(true, meta.Collision(), Heightfield.Load(meta).HeightAt, at.X, at.Z, at.Facing, 5, ember: zone.Ember);
+        b.Hooks = zone.Hooks;
+        host.Battle = b;
+        zone.Begin(b);
+        var s = new Setup(j, host, zone, b, meta);
+        Run(s, 12);
+        Assert.StartsWith("Walk up the road", host.Tracked.Single(t => t.Id == "pro").Steps[0].Text);
+        Assert.Single(zone.MapMarks(), m => m.Objective);
+        Assert.Equal(MarkKind.Exit, zone.MapMarks().Single(m => m.Objective).Kind);
+        // The gate shut and told: the first line is the gate task, no mark is the objective.
+        var gate = meta.Place("LOWFORD", "gate");
+        double exitZ = meta.Places["LOWFORD"].GetProperty("exitZ").GetDouble();
+        Stand(s, gate.X + 8.7, exitZ - 1);
+        Run(s, 0.2);
+        Assert.Equal(Prologue.GateTask, host.Tracked.Single(t => t.Id == "pro").Steps[0].Text);
+        Assert.DoesNotContain(zone.MapMarks(), m => m.Objective);
+        // The night: "Survive the night", no mark is the objective.
+        var n = Make(draft: true);
+        Assert.Equal("Survive the night", n.Host.Tracked.Single().Steps[0].Text);
+        Assert.DoesNotContain(n.Zone.MapMarks(), m => m.Objective);
+    }
+
     static void Run(Setup s, double seconds, bool safe = true)
     {
         for (double t = 0; t < seconds; t += 1 / 60.0)

@@ -234,7 +234,10 @@ public sealed class HandsTests
     public void The_card_says_what_her_hand_does_and_nothing_where_it_does_nothing()
     {
         var W = Weapons.All;
-        Assert.StartsWith($"In a warden's hand: every {Content.Hands.Warden.Every}th blow is heavy", Hands.Line("warden", W["oathblade"]));
+        Assert.StartsWith("In a warden's hand: about every 6 seconds of cutting, a cut is heavy", Hands.Line("warden", W["oathblade"]));
+        Assert.Contains("about every 10 seconds of cutting", Hands.Line("warden", W["sunder"]));
+        Assert.EndsWith("about every 10 s of cutting, a cut is heavy.", Hands.Line("warden", W["sunder"], brief: true));
+        Assert.Contains($"every {Content.Hands.Warden.Every}th blow is heavy", Hands.Line("warden", W["judgement_disc"]));
         Assert.Contains("lays a Stone", Hands.Line("warden", W["judgement_disc"]));
         Assert.Contains("heavy", Hands.Line("warden", W["judgement_disc"]));
         Assert.Null(Hands.Line("warden", W["volley"]));
@@ -253,7 +256,7 @@ public sealed class HandsTests
 
         // The draft's card carries it, for her calling only.
         var b = Fight("warden");
-        Assert.EndsWith(Hands.Line("warden", W["oathblade"])!, LevelUp.WithHand(b, W["oathblade"]));
+        Assert.EndsWith(Hands.Line("warden", W["oathblade"], brief: true)!, LevelUp.WithHand(b, W["oathblade"]));
         b.Calling = "stalker";
         Assert.DoesNotContain("warden", LevelUp.WithHand(b, W["oathblade"]));
         Assert.Equal(W["seeking_motes"].Description, LevelUp.WithHand(Fight("warden"), W["seeking_motes"]));

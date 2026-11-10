@@ -389,7 +389,9 @@ public partial class ChestCeremony : Control
                 pos = pos.Lerp(HomeOf(r.It), k);
                 scale *= 1 - 0.65f * k;
                 r.Plate.Modulate = Colors.White with { A = 1 - Smooth(closeT / (Outro * 0.5)) };
-                r.M.Modulate = Colors.White with { A = 1 - Smooth((closeT - Outro * 0.7) / (Outro * 0.3)) };
+                // Down to the ground under her (gear: it lies there to be picked up), the medallion goes with its plate
+                // (M4: it read as a badge on her coat); home to the bar, it fades only as it lands.
+                r.M.Modulate = Colors.White with { A = r.It.X is double ? 1 - Smooth(closeT / (Outro * 0.5)) : 1 - Smooth((closeT - Outro * 0.7) / (Outro * 0.3)) };
             }
             r.Pos = pos;
             r.M.Position = pos - new Vector2(r.Size / 2, r.Size / 2);

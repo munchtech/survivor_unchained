@@ -253,7 +253,7 @@ public sealed class XpLight
     public static bool TipShown(bool hover, bool held, bool captured) => !captured && (hover || held);
 
     /// <summary>The hold key and pad button (Controls.Defaults and Pad).</summary>
-    public const string HoldKey = "AltLeft", HoldPad = "LB";
+    public const string HoldKey = "AltLeft", HoldPad = "D-pad down";
 
     /// <summary>The card's lines: title, percent, the count, what is left (by day her experience, by night the ember).</summary>
     public static (string Title, string Pct, string Count, string Left) Lines(bool ember, int level, double have, double need, bool last)

@@ -4,11 +4,13 @@
   (tools/turn.py take godot|blender runs it on the caller's checkout, or --root <path>,
    and refuses a stale one unless --stale-ok)
 
-Two checks, local and free (no model tokens):
+Three checks, local and free (no model tokens):
 1. Behind integration: commits on claude/vigilant-galileo-l6jqyx that touch her body, outfits,
    shaders, clips or weapons and aren't in HEAD. Fix: git merge claude/vigilant-galileo-l6jqyx
 2. Godot's import cache: a model whose .godot/imported md5 no longer matches the file
    (14 Oct: a judge saw the old body after a merge). Fix: Godot_console.exe --headless --path godot --import
+3. UI textures: a godot/art/ui PNG whose import is older than the file (10 Nov: a rebaked vein mask never
+   reached a judged frame). Same fix.
 """
 import hashlib
 import os
@@ -109,6 +111,35 @@ def reimport_if_stale(root):
     left = len(stale_imports(root)) + len(stale_textures(root))
     print(f"freshness: {left} stale after re-import", flush=True)
     return left == 0
+def stale_ui(root):
+    """godot/art/ui PNGs whose .godot/imported md5 differs from the file (or that were never imported), res-relative."""
+    g = Path(root) / "godot"
+    imp = g / ".godot" / "imported"
+    bad = []
+    if not imp.is_dir() or not (g / "art" / "ui").is_dir():
+        return bad
+    for f in sorted((g / "art" / "ui").rglob("*.png")):
+        rel = f.relative_to(g).as_posix()
+        if not Path(str(f) + ".import").exists():
+            if not any((p / ".gdignore").exists() for p in f.parents if g in p.parents or p == g):
+                bad.append(rel + " (never imported)")
+            continue
+        res = "res://" + rel
+        m = imp / f"{f.name}-{hashlib.md5(res.encode()).hexdigest()}.md5"
+        src = ""
+        if m.exists():
+            src = next((l.split('"')[1] for l in m.read_text().splitlines() if l.startswith("source_md5")), "")
+        if src != hashlib.md5(f.read_bytes()).hexdigest():
+            bad.append(rel)
+    return bad
+
+
+def ui_problem(root):
+    s = stale_ui(root)
+    if not s:
+        return ""
+    return (f"Godot import cache is stale for {len(s)} UI texture(s) ({', '.join(s[:8])}"
+            f"{'...' if len(s) > 8 else ''}). Fix: Godot_console.exe --headless --path godot --import")
 
 
 def toplevel(path):
@@ -133,6 +164,9 @@ def check(root=None, imports=True):
         if t:
             probs.append(f"Godot import cache is stale for {len(t)} texture(s) ({', '.join(t[:10])}"
                          f"{'...' if len(t) > 10 else ''}). Fix: Godot_console.exe --headless --path godot --import")
+        u = ui_problem(root)
+        if u:
+            probs.append(u)
     return probs
 
 
