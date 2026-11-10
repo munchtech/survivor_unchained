@@ -14,11 +14,19 @@ namespace SurvivorUnchained.View;
 /// root and facing are set after her other drivers have had their say, so locomotion, rest, look-at and the turn to the view
 /// do not move her; when the clip ends she blends back to what she was doing, where the act left her.
 /// One log line per act, then the run time each event is hit.
+/// Every rendered frame of an act run: `act: scr f=F t=T pelvis=x,y head=x,y foot=x,y box=x0,y0,x1,y1 ppm=P`, her place in the
+/// window's pixels (the movie frame's) from the shown pose through the active camera: F the engine's process frame (the movie
+/// writer's file index: one file per iteration from 0), T the run clock, her pelvis, the top of her head, the ball of her lower
+/// foot, the box round every bone and every held piece (not padded for flesh), the pixels a meter spans at her pelvis.
+/// --act-rigid (shots): the camera is carried with her root during the run, no follow lag (WorldScene.Draw); play's camera
+/// is not touched without it.
 /// </summary>
 public partial class PlayerView
 {
     static readonly string? ActClip = Args.Get("act");
     static bool ActOn => ActClip != null;
+    /// <summary>--act-rigid (with --act, shots only): the view carried rigidly with her root from the act's start.</summary>
+    public static readonly bool ActRigid = ActClip != null && Args.Has("act-rigid");
 
     ActPlan? actPlan;
     bool actInit;
@@ -84,14 +92,90 @@ public partial class PlayerView
             measIdx[i] = person.Skeleton.FindBone(MeasBones[i]);
             if (measIdx[i] < 0) { GD.PrintErr($"act: measure: no bone '{MeasBones[i]}' in her skeleton: foot travel not measured"); measOk = false; break; }
         }
-        if (measOk) person.Skeleton.SkeletonUpdated += MeasCache;
+        if (measOk) { person.Skeleton.SkeletonUpdated += MeasCache; ScrInit(); }
     }
 
     /// <summary>After every modifier (B's blend base, laws, carriage): the pose that is shown.</summary>
     void MeasCache()
     {
         for (int i = 0; i < 5; i++) measPose[i] = person.Skeleton.GetBoneGlobalPose(measIdx[i]).Origin;
+        for (int b = 0; b < scrPose.Length; b++) scrPose[b] = person.Skeleton.GetBoneGlobalPose(b).Origin;
+        if (scrHead >= 0) scrHeadUp = person.Skeleton.GetBoneGlobalPose(scrHead).Basis[scrHeadAxis].Normalized() * scrHeadSign;
         measHave = true;
+    }
+
+    // ---- her place on the screen, every rendered frame of an act run (the dense sheets crop round it) ----
+    Vector3[] scrPose = System.Array.Empty<Vector3>();   // every bone's origin in the shown pose (skeleton space)
+    int scrHead = -1, scrHeadAxis = 1;
+    float scrHeadSign = 1;
+    Vector3 scrHeadUp = Vector3.Up;
+    const float ScrHeadTop = 0.22f;   // from the head bone to her crown, along the bone's own up (skeleton meters)
+
+    void ScrInit()
+    {
+        var skel = person.Skeleton;
+        scrPose = new Vector3[skel.GetBoneCount()];
+        scrHead = skel.FindBone("head");
+        if (scrHead < 0) scrHead = skel.FindBone("Head");
+        if (scrHead >= 0)
+        {
+            // (the head bone's axis that stands up at rest, with its sign)
+            var r = skel.GetBoneGlobalRest(scrHead).Basis;
+            float best = 0;
+            for (int a = 0; a < 3; a++) { float y = r[a].Normalized().Y; if (Mathf.Abs(y) > Mathf.Abs(best)) { best = y; scrHeadAxis = a; } }
+            scrHeadSign = best < 0 ? -1 : 1;
+            GD.Print($"act: scr head bone '{skel.GetBoneName(scrHead)}' rest y {Cm(skel.GetBoneGlobalRest(scrHead).Origin.Y)} cm, her crown taken {Cm(ScrHeadTop)} cm up the bone");
+        }
+        else GD.PrintErr("act: scr: no head bone in her skeleton: head= is her highest bone");
+        RenderingServer.FramePreDraw += ScrDraw;
+        TreeExiting += () => RenderingServer.FramePreDraw -= ScrDraw;
+    }
+
+    static string F1(float v) => v.ToString("0.0", CultureInfo.InvariantCulture);
+    static string P2(Vector2 v) => $"{F1(v.X)},{F1(v.Y)}";
+
+    /// <summary>Just before the frame is drawn (her pose, her root and the camera are this frame's): one line of her place in it.</summary>
+    void ScrDraw()
+    {
+        if (!IsInstanceValid(this) || !IsInsideTree() || !measHave || actPlan == null) return;
+        var cam = GetViewport()?.GetCamera3D();
+        if (cam == null) return;
+        var skel = person.Skeleton;
+        var x = skel.GlobalTransform;
+        var proj = cam.GetCameraProjection();
+        var inv = cam.GetCameraTransform().AffineInverse();
+        Vector2 win = GetTree().Root.Size;
+        Vector2 Px(Vector3 w)
+        {
+            var v = inv * w;
+            var c = proj * new Vector4(v.X, v.Y, v.Z, 1);
+            float iw = Mathf.Abs(c.W) < 1e-6f ? 1e6f : 1 / c.W;
+            return new Vector2((c.X * iw * 0.5f + 0.5f) * win.X, (-c.Y * iw * 0.5f + 0.5f) * win.Y);
+        }
+        var lo = new Vector2(float.MaxValue, float.MaxValue); var hi = new Vector2(float.MinValue, float.MinValue);
+        void Add(Vector2 p) { lo = new Vector2(Mathf.Min(lo.X, p.X), Mathf.Min(lo.Y, p.Y)); hi = new Vector2(Mathf.Max(hi.X, p.X), Mathf.Max(hi.Y, p.Y)); }
+        int top = 0;
+        for (int b = 0; b < scrPose.Length; b++) { Add(Px(x * scrPose[b])); if (scrPose[b].Y > scrPose[top].Y) top = b; }
+        var head = Px(x * (scrHead >= 0 ? scrPose[scrHead] + scrHeadUp * ScrHeadTop : scrPose[top]));
+        Add(head);
+        // (what she holds and wears on a bone: sword, shield, sheath; each piece's own box)
+        foreach (var n in skel.GetChildren())
+        {
+            if (n is not BoneAttachment3D att) continue;
+            foreach (var m in att.FindChildren("*", "MeshInstance3D", true, false))
+            {
+                if (m is not MeshInstance3D mi || mi.Mesh == null || !mi.IsVisibleInTree()) continue;
+                var bx = mi.GetAabb(); var g = mi.GlobalTransform;
+                for (int k = 0; k < 8; k++) Add(Px(g * bx.GetEndpoint(k)));
+            }
+        }
+        var pelvisW = x * measPose[4];
+        var pelvis = Px(pelvisW);
+        var lf = x * measPose[0]; var rf = x * measPose[1];
+        var foot = Px(lf.Y <= rf.Y ? lf : rf);
+        float ppm = (Px(pelvisW + cam.GlobalBasis.X) - pelvis).Length();
+        GD.Print($"act: scr f={Engine.GetProcessFrames()} t={actClock().ToString("0.000", CultureInfo.InvariantCulture)} pelvis={P2(pelvis)} head={P2(head)} foot={P2(foot)} " +
+                 $"box={P2(lo)},{P2(hi)} ppm={F1(ppm)}");
     }
 
     /// <summary>The five points of the pose last shown (measPose), in her skeleton's frame (measNode) and in the world. Called at the
@@ -201,6 +285,9 @@ public partial class PlayerView
             actEvents = new List<(string, double)>(actPlan.EventsRun(actPass));
             GD.Print($"act: {ActClip} at t={actPlan.Start(actPass):0.00} travel {actPlan.Travel:0.##} m over [{actPlan.Window.A:0.000}, {actPlan.Window.B:0.000}] s, " +
                      $"hold {(actPlan.Loop is { } lp ? actPlan.Passes * (lp.B - lp.A) : 0):0.##} s, spin {actPlan.Spin:0.##} t/s (pass {actPass + 1}/{actPlan.Repeat}, {actPlan.Duration:0.00} s long)");
+            if (actPlan.Loop is { } hl)
+                GD.Print($"act: {ActClip} loop held over run [{(actPlan.Start(actPass) + hl.A).ToString("0.000", CultureInfo.InvariantCulture)}, " +
+                         $"{(actPlan.Start(actPass) + hl.A + actPlan.Passes * (hl.B - hl.A)).ToString("0.000", CultureInfo.InvariantCulture)}] s");
         }
         if (s.Active)
         {

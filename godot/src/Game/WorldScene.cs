@@ -426,6 +426,9 @@ public partial class WorldScene : Node3D, IZoneLook
             if (Player?.ActAt is Vector3 shifted) { HerDrawn = shifted; hx = shifted.X; hz = shifted.Z; y = shifted.Y; }
             // (a teaching freeze holds the camera too: the words were placed for this picture)
             if (Showcase == null && !CameraHeld && !FxStill) cam.Update((float)dt, (float)hx, y, (float)hz, (float)p.Vx, (float)p.Vz);
+            // (--act-rigid, shots only: the view carried with her root, as it stands over her at rest: no follow lag on a travelling act)
+            if (SurvivorUnchained.View.PlayerView.ActRigid && Player?.ActAt is Vector3 carried)
+                cam.Camera.GlobalPosition += carried + new Vector3(0, 0.8f, 0) - cam.LookAt;
             Perf.Begin(Perf.Part.Crowd);
             Crowd.Still = Hold;
             Crowd.Drawn = Drawn;
