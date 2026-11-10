@@ -13,8 +13,8 @@ uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
 uniform sampler2D screen_tex : hint_screen_texture, filter_nearest;
 uniform float ink_px = 1.25;            // width at 1080p, px
 uniform vec2 fade = vec2(120.0, 300.0); // px per metre: full ink below x, none from y (the chroma rule's fade, rig values 33-34)
-uniform vec2 gap = vec2(0.035, 0.07);   // m: a neighbor this much deeper (past its own slope) starts / is a full depth edge
-uniform vec2 chroma = vec2(0.06, 0.12); // chromaticity step that starts / is a full material edge
+uniform vec2 gap = vec2(0.05, 0.10);       // m: a neighbor this much deeper (past its own slope) starts / is a full depth edge
+uniform vec2 chroma = vec2(0.04, 0.09); // chromaticity step that starts / is a full material edge
 uniform float touch = 0.03;             // m: a material edge counts only between surfaces this close in depth
 uniform vec2 fold = vec2(0.45, 0.9);    // a fold: depth below both sides' mean, in px of the surface (1: a right-angle crease)
 uniform float floor_y = -1000.0;        // (set on every line pass; unused here)
@@ -66,6 +66,7 @@ void fragment() {
 			: i == 4 ? ivec2(1, 1) : i == 5 ? ivec2(-1, 1) : i == 6 ? ivec2(1, -1) : ivec2(-1, -1);
 		float zb = lin_z(depth_tex, clamp(p - o, ivec2(0), sz - 1), inv, INV_PROJECTION_MATRIX);
 		float slope = abs(z0 - zb);
+		float kb = length(chrom(texelFetch(screen_tex, clamp(p - o, ivec2(0), sz - 1), 0).rgb) - k0);   // (the step behind: an edge is a step, not a grade)
 		for (int k = 1; k <= 2; k++) {
 			if (k == 2 && i >= 4) break;
 			float cov = i >= 4 ? clamp(w - 0.414, 0.0, 1.0) : clamp(w - float(k - 1), 0.0, 1.0);
@@ -75,9 +76,9 @@ void fragment() {
 			vec3 cn = texelFetch(screen_tex, q, 0).rgb;
 			float line_n = 1.0 - smoothstep(0.02, 0.06, length(cn - ink_c) / (lum(ink_c) + 0.01) * 0.25);   // (the hull's own px)
 			float g = zn - z0;
-			float e_depth = smoothstep(gap.x, gap.y, g - 1.5 * slope * float(k)) * (1.0 - smoothstep(0.6, 1.0, g));
+			float e_depth = k == 1 ? smoothstep(gap.x, gap.y, g - 1.5 * slope) * (1.0 - smoothstep(0.6, 1.0, g)) : 0.0;   // (r2ink_02: one px only, never a blob)
 			float side = clamp(0.5 + 6.0 * (lum(cn) - l0) / (lum(cn) + l0 + 1e-4), 0.0, 1.0);
-			float e_class = smoothstep(chroma.x, chroma.y, length(chrom(cn) - k0)) * (1.0 - smoothstep(touch, touch * 2.0, abs(g))) * side;
+			float e_class = smoothstep(chroma.x, chroma.y, length(chrom(cn) - k0) - 2.0 * kb) * (1.0 - smoothstep(touch, touch * 2.0, abs(g))) * side;
 			float e = max(e_depth, e_class);
 			if (k == 1 && i < 4) {
 				float cr = (z0 - 0.5 * (zn + zb)) / px_m;
