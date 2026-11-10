@@ -132,6 +132,12 @@ public partial class Game
                 // (a slot is square: bracketed, not ringed)
                 if (hud.SocketRect(s[7..]) is Rect2 sr) areas.Add(sr);
                 break;
+            // (M6: a skill key's seat on the bar, "seat:Skill1", by M4's seats: bracketed as a socket is)
+            case var s when s.StartsWith("seat:"):
+                if (SeatSlot(s) is int sl && hud.SeatRect(sl) is Rect2 st) areas.Add(st);
+                break;
+            // (M6: Resolve, the hair of the Drowned Girl: her figure above the bar line, where the veins run)
+            case "resolve": if (hud.FigureRect is Rect2 fr) areas.Add(HudBottom.Map(fr)); break;
         }
         if (t.World != null)
         {
@@ -313,12 +319,16 @@ public partial class Game
         return pts.Count > 0 ? pts[0] : areas.Count > 0 ? areas[0].GetCenter() : null;
     }
 
+    /// <summary>A "seat:Skill2" aim's slot (Skill1 is slot 0), if it names a skill key.</summary>
+    static int? SeatSlot(string hud) => Enum.TryParse<Act>(hud[5..], true, out var a) && a is >= Act.Skill1 and <= Act.Skill6 ? a - Act.Skill1 : null;
+
     Presence Where(Callout c)
     {
         var t = c.Target;
         if (t.Hud == "card:weapon") return teachOffers?.Any(o => o.Kind == OfferKind.Weapon) == true ? Presence.Here : Presence.NotYet;
         if (t.Hud == "cards") return teachOffers is { Count: > 0 } ? Presence.Here : Presence.NotYet;
         if (t.Hud is string s && s.StartsWith("socket:") && hud.SocketOf(s[7..]) == null) return Presence.NotYet;
+        if (t.Hud is string st && st.StartsWith("seat:") && (SeatSlot(st) is not int sl || hud.SeatRect(sl) == null)) return Presence.NotYet;
         // (a HUD part that comes and goes: here while it shows)
         if (t.Hud == "prompt" && hud.PromptArea == null || t.Hud == "minimap" && hud.MinimapArea == null
             || t.Hud == "tally" && hud.TallyArea == null) return Presence.NotYet;
@@ -435,7 +445,7 @@ public partial class Game
         var view = new Ui.Callout { Night = scene?.View.Night == true || !Ui.Cuff.Day };
         hud.Callout(view);
         view.Show(new CalloutLook(c.Title, c.Line, c.Kind, answer, c.Kind == CalloutKind.Freeze ? answer ?? Act.Interact : null,
-            answer != null ? c.Title.ToLowerInvariant() switch { "dash" => "to dash", "draught" => "to drink", _ => "to use it" } : "to go on")
+            answer != null ? c.Title.ToLowerInvariant() switch { "dash" => "to dash", "draught" => "to drink", "swing" => "to swing", "groundbreaker" => "to heave", _ => "to use it" } : "to go on")
         { Headed = c.Kind == CalloutKind.Panel || c.Target.Banner != null, Mark = c.Mark, MarkInk = c.MarkInk });
         calloutShown = view;
         AimCallout();

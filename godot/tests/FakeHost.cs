@@ -61,6 +61,9 @@ sealed class FakeHost : IZoneHost
     /// <summary>The callouts asked for, in order (each frame its moment holds).</summary>
     public readonly List<Callout> Asked = new();
     public void Teach(Callout c) => Asked.Add(c);
+    /// <summary>The callouts a test marks as seen (the game's Teacher memory; none by default).</summary>
+    public readonly HashSet<string> TaughtIds = new();
+    public bool Taught(string id) => TaughtIds.Contains(id);
     public void SetAtmosphere(AtmospherePreset p, bool rebuild = true) => Air = p;
     public bool Captured;
     public (double X, double Y, double Z)? Held;

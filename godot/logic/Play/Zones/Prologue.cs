@@ -75,9 +75,6 @@ public sealed partial class Prologue : ZoneRuntime
     int startWeapons = -1;
     /// <summary>The first character level, at dawn: its banner, and whether its callout is due (after her dawn line).</summary>
     Announcement? levelAnn;
-    /// <summary>The character levels the night paid at dawn, and the traits they left to choose (F12's words).</summary>
-    int levelsTaught, traitsDue;
-    bool levelDue;
     /// <summary>The Barrow Knight's first lane: planted (its windup seen), and run (the floor under it let go).</summary>
     bool knightRan, knightWinding, barrowLineSaid;
     /// <summary>Windups the Knight has finished (his floor holds for two), when F7 ended (stage time), when the tips showed (game time).</summary>
@@ -172,7 +169,7 @@ public sealed partial class Prologue : ZoneRuntime
                 G.Apply("""[{ "give": "padded_jerkin", "rarity": 1 }, { "give": "health_draught", "qty": 2 }, { "gold": 15 }]""");
                 G.SetHint(null);
                 // (said where it's found; F8 waits for it to go, au1 item 10: the two stacked at the Post)
-                G.After(0.6, () => PacedTip("pack", "Your pack", $"What you find, you keep.{NL}The ember won't outlast the night; gear, gold and what you learn will.{NL}Press {{key:{Key("inventory")}}} to open your *pack* and wear the jerkin.", null, 11));
+                G.After(0.6, () => PacedTip("pack", "Your pack", $"What you find, you keep.{NL}Press {{key:{Key("inventory")}}} to open your *pack* and wear the jerkin.", null, 11));
                 Objective([("Search the old Watch-post", true, false), ("Wear what you found", false, true), ("Follow the road north", false, false)]);
             },
         });
@@ -490,12 +487,10 @@ public sealed partial class Prologue : ZoneRuntime
         var p = B.Player;
         KnightWatch();
         if (B.FlareGreatsHeld && (G.Taught("art") || Now >= Stage.ToFord)) B.FlareGreatsHeld = false;
-        // F1: the first ember on the ground near her (one well inside the screen: it waits for one). Asked only
-        // while one lies near (asked at any ember on the field, it was let go as gone at once and F2 came first,
-        // 43.6 s against 49.2, i14), and never after F2 (the explanation reads in order or not at all).
-        if (Now == Stage.Rising && B.EmbersLying > 0 && !G.Taught("ember_bar") && NearEmbers().Count > 0)
-            Teach("ember_ground", CalloutKind.Freeze, "Ember", "The light the dead carry. Come close and it comes to you.", new Aim { World = NearEmbers, Safe = true });
-        // F2: straight after F1 (before the first rise); without F1 only once the Rising is 30 s old.
+        // A1-A4b (TUTORIAL_COPY.md, M6): the Low Ford teaches the ARPG's hands. Each is asked every frame its moment holds;
+        // the Teacher shows it once a profile, never inside a cinematic, a narrated line or an open screen.
+        ArpgCallouts(p);
+        // F2 (the draft's night only): straight after F1 (before the first rise); without F1 only once the Rising is 30 s old.
         if (Draft && (G.Taught("ember_ground") || (B.EmberXp > 0 || B.EmberLevel > 1) && (Now != Stage.Rising || stageT > 30)))
             Teach("ember_bar", CalloutKind.Arrow, "Rising", "Ember fills this. When it's full, the ember rises.", Aim.At("chain_fill"), after: "ember_ground", gap: 0.6, overHint: true);
         // (and the journal remembers what the valley believes, once an ember is gathered)
@@ -524,7 +519,7 @@ public sealed partial class Prologue : ZoneRuntime
         // The tally (the slain and the gold): with the first gold in hand (the wagon's spilled coins), before
         // the ditch rises (the trap waits for it) or in a calm later, never in a fight. The road's words wait for it (PaceWords).
         if (B.GoldGained > 0 && TallyCalm())
-            G.Teach(new Callout("tally", CalloutKind.Arrow, "The tally", "How long you've lasted, the dead you've put down, and your gold.", Aim.At("tally"))
+            G.Teach(new Callout("tally", CalloutKind.Arrow, "The tally", "The dead you've put down, and your gold.", Aim.At("tally"))
                 { Quiet = LessonQuiet, Mark = "gold", Patience = 30, Still = TallyCalm });
         // F6: the ditch's first volley in the air at her, so the roll answers a real danger (au i15: it was
         // taught in the Rising with nothing to dodge, her health full until 2:46). Only while the bolts fly (a
@@ -537,11 +532,6 @@ public sealed partial class Prologue : ZoneRuntime
                 volley ? $"{Key("dash")}: roll through the bolts; nothing touches you mid-roll. Two charges; they come back." : $"{Key("dash")}: a roll nothing can touch. Two charges; they come back.",
                 volley ? new Aim { Hud = "dash", World = Bolts, Each = true } : Aim.At("dash"), "dash",
                 overHint: volley, patience: volley ? 0.5 : 8);
-        // F6b: her calling's art rides the dash (Forms.cs); in the Ambush, lit, with the dead close round her,
-        // 10 s after F6 at the soonest (two freezes on the dash, so each is read). The Warden's channel later
-        // asks for it by name (au1 item 4).
-        if (Now == Stage.Ambush && sprungAt >= 0 && G.Taught("dash") && B.Time - dashAt > 10 && B.FormReady && Crowd(p.X, p.Z, 6) >= 4 && B.Ability is AbilityKind fk && FormWords(fk) is string fw)
-            Teach("form", CalloutKind.Freeze, Abilities.All[fk].Name, $"When your dash is aflame, it's {fw}", Aim.At("dash"), "dash", after: "dash");
         // F7: the Barrow Knight's first red line.
         if (KnightLane().Count > 0)
             Teach("red_line", CalloutKind.Freeze, "Red line", "The Knight is about to strike along this line. Get off it.", new Aim
@@ -602,9 +592,6 @@ public sealed partial class Prologue : ZoneRuntime
                 G.Teach(new Callout("draught", CalloutKind.Freeze, "Draught", $"Drink a draught to mend: {Key("draught")}.", new Aim { Hud = "draught" }, "draught")
                     { Gap = 3, Urgent = true, Still = () => !KnightHolds() });
         }
-        // F12: the first character level, after her dawn line, at its banner (shown again under it).
-        if (levelDue && levelAnn != null && !finished && DayCalm())
-            G.Teach(new Callout("level", CalloutKind.Freeze, "What the night taught you", LevelLine(), new Aim { Hud = "banner", Banner = levelAnn }) { Mark = "traits" });
         // F13 waits for the Flare on Q (docs/design/CLASSES.md): its meter first full. Not fired yet:
         // Teach("flare", CalloutKind.Freeze, "Flare", $"{Key("flare")}: your Flare. It fills fastest when you're in trouble.", Aim.At("art"), "flare");
         DayCallouts();
@@ -660,28 +647,66 @@ public sealed partial class Prologue : ZoneRuntime
         }
     }
 
-    /// <summary>What the calling's art does when it rides the dash, in F6b's words (none: no callout).</summary>
-    static string? FormWords(AbilityKind k) => k switch
+    /* M6's beats A1-A4b: their state (the moment each first held). */
+    double xpAtStart = -1; int levelAtStart; bool emberGroundAsked, resolveDue;
+    double landedAtThree = -1, resolveSeenAt = double.MaxValue;
+
+    /// <summary>The movement keys from her bindings, as one word ("WASD").</summary>
+    string MoveKeys() => Key("up") + Key("left") + Key("down") + Key("right");
+
+    /// <summary>A beat's foes standing and up (not still rising out of the ground), once it has woken.</summary>
+    List<Enemy> AwakeOf(string beat) => night != null && night.WokeAt.ContainsKey(beat)
+        ? night.Standing(beat).Where(e => e.State is not (EnemyState.Rising or EnemyState.Dying)).ToList() : [];
+
+    void ArpgCallouts(PlayerState p)
     {
-        AbilityKind.BullRush => "a charge\nthat throws the dead aside.\nBig ones stop it, but they're stunned,\nand their spell breaks.",
-        AbilityKind.Grapple => "a hooked chain.\nIt hauls you to the first thing\nin its way, and stuns it.",
-        AbilityKind.MirrorStep => "a step\nthat leaves two reflections.\nWhat hunts you turns on them.",
-        AbilityKind.Vault => "a spring\nback through the air.\nIt leaves snares where you stood.",
-        _ => null,
-    };
+        if (B == null) return;
+        var ch = G.Journey.Ch;
+        if (xpAtStart < 0) { xpAtStart = ch.Xp; levelAtStart = ch.Level; }
+        // A1: in the Wake, 1.2 s after C01 hands back, by the fire (asked on into the Rising until the lone one wakes, so a
+        // long hand-back never lets it lapse). The keys are written from her bindings; no target (an arrow-only callout).
+        if (Now == Stage.Wake && stageT > 1.2 || Now == Stage.Rising && night != null && !night.WokeAt.ContainsKey("n_lone"))
+            Teach("move", CalloutKind.Arrow, "Move", $"{MoveKeys()}: walk. The road runs north, out of the firelight.", new Aim());
+        // A2: the lone drowned one awake, within 7 m, and well on the screen (Aim.Safe: it waits for it); the Skill1 seat
+        // bracketed and the drowned one ringed. Answered by Skill1.
+        if (Now is Stage.Wake or Stage.Rising && AwakeOf("n_lone").Any(e => Dist(e.X, e.Z, p.X, p.Z) <= 7))
+            Teach("swing", CalloutKind.Freeze, "Swing", $"Hold {Key("skill1")} to swing at what's under the cursor. You walk as you swing.",
+                new Aim { Hud = "seat:Skill1", World = () => AwakeOf("n_lone").Select(e => Up(e.X, e.Z, 1.0)).ToList(), Safe = true }, "skill1", urgent: true);
+        // A3: the first ember stone near her on the ground (the lone one's), well inside the screen. (Stones fall only
+        // while the ember burns, Battle.EmberOn: with the draft off, the Low Ford's kills pay experience straight, and this waits.)
+        if (Now is Stage.Rising or Stage.Road && B.EmbersLying > 0 && NearEmbers().Count > 0)
+        {
+            emberGroundAsked = true;
+            Teach("ember_ground", CalloutKind.Freeze, "Ember", "The light the dead carry. Gather it, and it makes you stronger.", new Aim { World = NearEmbers, Safe = true });
+        }
+        // A3b: the first ember gathered (her first experience), 0.6 s after A3 closes (when A3 was asked); the coin's ring.
+        if (Now < Stage.Intro && (ch.Xp > xpAtStart || ch.Level > levelAtStart || B.EmberXp > 0 || B.EmberLevel > 1))
+            Teach("ember_ring", CalloutKind.Arrow, "Your level", "Ember fills this ring. When it's full, you rise a level.", Aim.At("chain_fill"),
+                after: emberGroundAsked ? "ember_ground" : null, gap: 0.6, overHint: true);
+        // A4: the three on the road, her first landed swing on them (Resolve's Landed fill grows once they are up); her hair.
+        if (B.Resolve.On && landedAtThree < 0 && AwakeOf("n_three").Count > 0) landedAtThree = B.Resolve.LandedFill;
+        if (landedAtThree >= 0 && B.Resolve.LandedFill > landedAtThree) resolveDue = true;
+        if (resolveDue && Now < Stage.Intro)
+            Teach("resolve", CalloutKind.Arrow, "Resolve", "Every blow that lands builds Resolve. Your skills burn it.", Aim.At("resolve"));
+        // A4b: 2 s after A4 was seen, Resolve at or past Groundbreaker's cost and two or more of the three within its reach;
+        // its seat bracketed (by the slot it sits in) and the pack ringed. Answered by its key.
+        if (G.Taught("resolve") && resolveSeenAt == double.MaxValue) resolveSeenAt = B.Time;
+        if (B.Time - resolveSeenAt >= 2 && B.Weapons.FirstOrDefault(w => w.Id == "groundbreaker") is { } gb && B.Resolve.Value >= B.CostOf(gb))
+        {
+            double reach = gb.AimRange;
+            List<Enemy> InReach() => AwakeOf("n_three").Where(e => Dist(e.X, e.Z, p.X, p.Z) <= reach).ToList();
+            if (InReach().Count >= 2)
+            {
+                string act = $"Skill{gb.Slot + 1}";
+                Teach("groundbreaker", CalloutKind.Freeze, "Groundbreaker", $"When Resolve is full, it heaves itself at the pack. {Key(act.ToLowerInvariant())}: heave now.",
+                    new Aim { Hud = "seat:" + act, World = () => InReach().Select(e => Up(e.X, e.Z, 1.0)).ToList() }, act.ToLowerInvariant(), urgent: true);
+            }
+        }
+    }
 
     const string NL = "\n";
     static readonly string[] Numbers = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
     static string Count(int n) => n >= 0 && n < Numbers.Length ? Numbers[n] : n.ToString();
-
-    /// <summary>F12 (au1 item 13: the first level the player sees reads "Level 5", four earned unseen, and a
-    /// trait was never told from a skill): what the night paid, that it's kept, and what to do with it.</summary>
-    string LevelLine()
-    {
-        string levels = levelsTaught == 1 ? "a level" : $"{Count(levelsTaught)} levels";
-        string choose = traitsDue > 1 ? $"Press {Key("character")} to choose {Count(traitsDue)}." : traitsDue == 1 ? $"Press {Key("character")} to choose one." : $"Press {Key("character")} to spend them.";
-        return $"You gained {levels} tonight, and they're yours to keep.{NL}The ember's skills were only lent; traits stay.{NL}{choose}";
-    }
 
     /// <summary>How many of the hostile dead stand within r of a point.</summary>
     int Crowd(double x, double z, double r) => B?.Enemies.Living().Count(e => e.State is not (EnemyState.Dying or EnemyState.Rising) && e.Disposition == Disposition.Hostile && Dist(e.X, e.Z, x, z) < r) ?? 0;
@@ -1030,7 +1055,7 @@ public sealed partial class Prologue : ZoneRuntime
         switch (Now)
         {
             case Stage.Wake:
-                if (stageT > 1.2) Tip("move", "Move", "Keep *moving*. Your weapon strikes on its own.", ["W", "A", "S", "D"], 11);
+                // (the Move tip retired: A1, ArpgCallouts, says it as a callout)
                 if (stageT > 3) { Go(Stage.Rising); risingAt = B.Time; }
                 break;
             case Stage.Rising:
@@ -1111,7 +1136,7 @@ public sealed partial class Prologue : ZoneRuntime
                 foreach (var bw in bowmen)
                     if (bw.Alive && bw.Def.Id == "risen_archer" && bw.RangedT > 1.5 && boltsSpent.Add(bw.Id)) bw.Damage /= AmbushBolt;
                 // (the shield tip lands when shieldmen first stand, ~20 s into the fight)
-                if (fought > 18) PacedTip("shield", "Shieldmen", "Their *raised shields* stop your shots. Strike from the side, or up close.");
+                if (fought > 18) PacedTip("shield", "Shieldmen", "Their *raised shields* stop your blows. Strike from the side, or up close.");
                 // (M5: over when the ditch's dead are down, n_cart; or, AmbushStragglers s into the fight, when no more
                 // than two of them stand: they go back into the ditch, as the line says. m5 clip r1: two bowmen kept their
                 // range off her for good, and the night stood at the wagon for nine minutes.)
@@ -1777,21 +1802,10 @@ public sealed partial class Prologue : ZoneRuntime
             {
                 var ch = G.Journey.Ch;
                 levelAnn = new Announcement($"Level {ch.Level}", ch.TraitPicks > 1 ? $"{Count(ch.TraitPicks)} new traits to choose ({Key("character")})" : ch.TraitPicks == 1 ? $"A new trait to choose ({Key("character")})" : $"Attribute points to spend ({Key("character")})", "boon", 4.5, "What the night taught you");
-                levelsTaught = taught; traitsDue = ch.TraitPicks;
                 G.Announce(levelAnn);
                 G.Journey.Grew();
             });
-        // F12 just after, and the day's tip after that.
-        if (taught > 0) G.After(5.2, () => levelDue = true);
-        // (M5 r3: in the dawn's breather before the boars, once the level's callout is answered; it came 2.5 s before
-        // Red Tolly's wake at 18.5 s; ChampionGate holds it off any champion's wake)
-        G.After(taught > 0 ? 5.6 : 1.0, () => DayTip(taught > 0, 0));
-    }
-
-    void DayTip(bool afterLevel, int tries)
-    {
-        if (afterLevel && !G.Taught("level") && tries < 40) { G.After(0.5, () => DayTip(afterLevel, tries + 1)); return; }
-        PacedTip("day", "By day", $"By day the ember sleeps: you fight with what you carry, your art and your feet, and every fight teaches you ({Key("character")}). The ember is for the night.", [Key("character")], 14);
+        // (F12 "What the night taught you" and the By day tip are retired, TUTORIAL_COPY.md: one level, the day the same game)
     }
 
     void Finish()
