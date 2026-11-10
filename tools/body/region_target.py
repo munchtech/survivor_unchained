@@ -45,8 +45,8 @@ from surfdist import closest_on_tris  # noqa: E402
 ROUND, OUT = HERE / "out/round_36", HERE / "out/shoulder"
 M4 = np.diag([-1.0, 1, 1, 1])
 PARAMS = {"base": "rule_main", "core_w": 0.02, "t_arm": 0.50, "ring": 3, "blend": 4, "dm_iters": 8, "lam": 0.5,
-          "mu": -0.53, "gap": 0.001, "reach": 0.04, "rest_sep": 0.012, "contact_iters": 8, "skirt": 3, "fall": 0.6,
-          "vol_dead": 0.01, "w_desc": [1, 0.5, 1, 0.5, 0.25], "n_train": 64, "n_held": 64}
+          "mu": -0.53, "gap": 0.001, "reach": 0.04, "cap": 0.012, "rest_sep": 0.012, "contact_iters": 8, "skirt": 3, "fall": 0.6,
+          "vol_dead": 0.025, "guard_arm": 0.0, "w_desc": [1, 0.5, 1, 0.5, 0.25], "n_train": 64, "n_held": 64}
 MERGE = {"delt_{s}": "upperarm_twist_01_{s}", "trap_{s}": "clavicle_{s}", "pec_{s}": "spine_05", "lat_{s}": "spine_04",
          "scap_{s}": "clavicle_{s}"}
 GIRDLE = ["clavicle", "scap", "upperarm", "upperarm_twist_01", "upperarm_twist_02", "upperarm_twist_03",
@@ -181,8 +181,8 @@ class Model:
             near = np.linalg.norm(self.V0 - (H if s == "l" else H * [-1, 1, 1]), axis=1) < 0.35
             T = self.T
             sd = {"ids": sid, "ext": ext, "loc": loc, "N": N, "ei": ei, "ej": ej, "tr": loc[tr], "quads": q,
-                  "be": be, "lab": lab[be[:, 0]], "armv": armc[sid],
-                  "ttri": T[(~armc[T]).all(1) & near[T].all(1)], "atri": T[armc[T].all(1) & near[T].all(1)],
+                  "be": be, "lab": lab[be[:, 0]], "armv": armc[sid], "arm": np.clip(arm_l[ids], 0, 1),
+                  "vcls": armc.astype(int), "tcls": np.where(~near[T].all(1), -1, np.where(armc[T].all(1), 1, np.where((~armc[T]).all(1), 0, -1))),
                   "rings": {k: m(v) for k, v in self.rings.items()}}
             self.S[s] = sd
             x0 = self._lbs(sd, p.rest)
@@ -245,57 +245,43 @@ class Model:
         the rays turned with the chest so a rigid turn changes nothing)."""
         return ray.inside(ray.scene(Y, self.T), Y[pv] + off * Nv[pv], dirs=da.DIRS @ Rb.T)
 
-    def _contact(self, sd, Y, beta, iters, Rb):
-        """Arm against torso: a point is in contact when it is INSIDE the posed surface by parity (the audit's test;
-        two sheets under one another are also what a thin fold's two walls are, so nothing local can tell) and was not
-        at rest; it leaves along its closest far triangle's normal to GAP off it, the triangle giving its share."""
+    def _contact(self, sd, Y, beta, iters, Rb, Y0=None):
+        """Arm against torso: a free point is in contact when it is INSIDE the posed surface by parity, 0.3 mm off its
+        skin (the audit's test: two sheets under one another are also what a thin fold's two walls are, so nothing
+        local can tell) and was not at rest. It backs out along its own normal: the ray down its normal meets the
+        other class's skin (far at rest) t under it, and the two give t + GAP between them by their betas (a fixed
+        side gives nothing); no point leaves its place before contact (Y0) by over CAP (a deep cross-body press is
+        eased, not undone)."""
         P, ids, n = self.P, sd["ids"], self.n
         bN = np.zeros(n)
         bN[ids] = beta
+        free, tc, vc = ids[sd["free"]], sd["tcls"], sd["vcls"]
         hit = np.zeros(len(ids), bool)
+        Y0 = Y[ids].copy() if Y0 is None else Y0
         for _ in range(iters):
-            disp, ws, worst = np.zeros((n, 3)), np.zeros(n), 0.0
             Nv = np.zeros((n, 3))
             Nv[sd["ext"]] = self._normals(Y[sd["ext"]], sd["tr"])
-            for pv, tris in ((ids[sd["armv"] & sd["free"]], sd["ttri"]), (ids[~sd["armv"] & sd["free"]], sd["atri"])):
-                pv = pv[self._inside(Y, pv, Nv, Rb, P["gap"])]
-                if not len(pv):
-                    continue
-                dd, nn = cKDTree(Y[tris].mean(1)).query(Y[pv], k=24, distance_upper_bound=P["reach"])
-                ok = np.isfinite(dd)
-                nn = np.where(ok, nn, 0)
-                ok &= np.linalg.norm(self.V0[tris[nn]].mean(2) - self.V0[pv][:, None], axis=2) > P["rest_sep"]
-                qi, ki = np.nonzero(ok)
-                if not len(qi):
-                    continue
-                tv = tris[nn[qi, ki]]
-                a, b, c = Y[tv[:, 0]], Y[tv[:, 1]], Y[tv[:, 2]]
-                x = closest_on_tris(Y[pv][qi], a, b, c)
-                dist = np.linalg.norm(Y[pv][qi] - x, axis=1)
-                o = np.lexsort((dist, qi))
-                o = o[np.r_[True, qi[o][1:] != qi[o][:-1]]]
-                qi, tv, x, a, b, c = qi[o], tv[o], x[o], a[o], b[o], c[o]
-                nt = np.cross(b - a, c - a)
-                ar2 = np.maximum((nt ** 2).sum(1), 1e-30)
-                bw = np.stack([np.einsum("ij,ij->i", np.cross(c - b, x - b), nt), np.einsum("ij,ij->i", np.cross(a - c, x - c), nt),
-                               np.einsum("ij,ij->i", np.cross(b - a, x - a), nt)], 1) / ar2[:, None]
-                nt = nt / np.sqrt(ar2)[:, None]
-                pid = pv[qi]
-                amt = P["gap"] - np.einsum("ij,ij->i", Y[pid] - x, nt)
-                mp, mf = bN[pid], (bw * bN[tv]).sum(1)
-                pen = (amt > 1e-7) & (mp + mf > 1e-9)
-                if not pen.any():
-                    continue
-                worst = max(worst, float(amt[pen].max()))
-                pid, tv, bw, nt, amt = pid[pen], tv[pen], np.clip(bw[pen], 0, 1), nt[pen], amt[pen]
-                fp = mp[pen] / (mp[pen] + mf[pen])
-                np.add.at(disp, pid, (fp * amt)[:, None] * nt)
-                np.add.at(ws, pid, 1.0)
-                for k in range(3):
-                    np.add.at(disp, tv[:, k], (-(1 - fp) * amt * bw[:, k])[:, None] * nt)
-                    np.add.at(ws, tv[:, k], bw[:, k])
-            if worst < 1e-5:
+            scn = ray.scene(Y, self.T)
+            pv = free[ray.inside(scn, Y[free] + 3e-4 * Nv[free], dirs=da.DIRS @ Rb.T)]
+            if not len(pv):
                 break
+            pr, t = ray.hits(scn, Y[pv] - 1e-4 * Nv[pv], -Nv[pv])
+            ok = (pr >= 0) & (t < P["reach"])
+            pr = np.where(ok, pr, 0)
+            tri = self.T[pr]
+            mp, mf = bN[pv], bN[tri].mean(1)
+            ok &= (tc[pr] == 1 - vc[pv]) & (np.linalg.norm(self.V0[tri].mean(1) - self.V0[pv], axis=1) > P["rest_sep"]) & (mp + mf > 1e-9)
+            if not ok.any():
+                break
+            pv, tri, mp, mf = pv[ok], tri[ok], mp[ok], mf[ok]
+            amt = np.minimum(t[ok] + P["gap"], P["cap"])
+            fp = mp / (mp + mf)
+            disp, ws = np.zeros((n, 3)), np.zeros(n)
+            np.add.at(disp, pv, -(fp * amt)[:, None] * Nv[pv])
+            np.add.at(ws, pv, 1.0)
+            for k in range(3):
+                np.add.at(disp, tri[:, k], ((1 - fp) * amt)[:, None] * Nv[pv])
+                np.add.at(ws, tri[:, k], 1.0)
             got = ws[ids] > 1e-9
             hit |= got
             u = np.zeros((len(ids), 3))
@@ -306,7 +292,8 @@ class Model:
                 new = ~got & (cn > 0)
                 u[new] = P["fall"] * (A @ u)[new] / cn[new, None] * beta[new, None]
                 got = got | new
-            Y[ids] += u * (bN[ids] > 0)[:, None]
+            d = Y[ids] + u * (bN[ids] > 0)[:, None] - Y0
+            Y[ids] = Y0 + d * np.minimum(1, P["cap"] / np.maximum(np.linalg.norm(d, axis=1), 1e-12))[:, None]
         return Y, hit
 
     def target(self, G, Vp, side="l", info=None):
@@ -323,7 +310,8 @@ class Model:
         X = s[:nr] + np.einsum("nij,nj->ni", U @ Vt, sd["d"])
         Y = Vp.copy()
         Y[ids] = beta[:, None] * X + (1 - beta[:, None]) * Vp[ids]
-        v_dm = self.volume(sd, Y) / sd["vol0"]
+        v_dm, g_dm = self.volume(sd, Y) / sd["vol0"], self.girth(sd, Y)
+        Yc = Y[ids].copy()
         Rb = da.ortho(G[self.I["spine_05"]][:3, :3] @ self.Rinv[self.I["spine_05"]][:3, :3])
         Y, hit = self._contact(sd, Y, beta, P["contact_iters"], Rb)
         for _ in range(2):
@@ -334,12 +322,12 @@ class Model:
             Nv = self._normals(Y[sd["ext"]], sd["tr"])[:nr]
             fn = np.cross(Y[sd["quads"][:, 1]] - Y[sd["quads"][:, 0]], Y[sd["quads"][:, 3]] - Y[sd["quads"][:, 0]])
             area = np.bincount(sd["loc"][sd["quads"]].ravel(), np.repeat(np.linalg.norm(fn, axis=1) / 4, 4), len(sd["ext"]))[:nr]
-            phi = beta * ~hit
+            phi = beta * ~hit * (1 - (1 - P["guard_arm"]) * sd["arm"])
             Y[ids] += ((want - r) * sd["vol0"] / max(float((phi * area).sum()), 1e-12)) * phi[:, None] * Nv
-        Y, hit2 = self._contact(sd, Y, beta, 3, Rb)
+        Y, hit2 = self._contact(sd, Y, beta, 3, Rb, Yc)
         if info is not None:
             g0, g1 = self.girth(sd, self.V0), self.girth(sd, Y)
-            info.update(vol_dm=round(v_dm, 4), vol=round(self.volume(sd, Y) / sd["vol0"], 4), contact=int((hit | hit2).sum()),
+            info.update(vol_dm=round(v_dm, 4), **{f"girth_dm_{k}": round(g_dm[k] / g0[k], 4) for k in g0}, vol=round(self.volume(sd, Y) / sd["vol0"], 4), contact=int((hit | hit2).sum()),
                         **{f"girth_{k}": round(g1[k] / g0[k], 4) for k in g0})
         return Y[ids]
 
