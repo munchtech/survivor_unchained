@@ -133,3 +133,38 @@ Not done: ONE mesh edge loop as the apex row (in the region's edge list the brid
 plus loose points, `chain_order` prints it; no single-loop row was built); the new skin is split by the energy, not by
 a rule; no run over all 141 poses; no sheet; `cmd_target` (B' as a rest) and `build --relax` not rerun; the map is not
 in `Her`. `out/shoulder/strip_rest_l19_round1.npz` = the left before its second round (3.22 / 3.22 / 3.15, iron_vow 3 turned).
+
+## Lay 2: where it fails (located)
+`python tools/body/strip_rest.py turned --snap [--poses a,b] [--lay l18]` (new, read-only: per pose the turned
+triangles and the worst / over-limit band edges, ids region-local + tag (A apex row, b other bridge end, . band,
+r fixed ring) and mesh vertex ids, the split ratio = lay (lay rest edge / B's old rest) x pose, A's own along the edge).
+Run on abd150, abd170, flex170, abd90_int60, axe_back@3, iron_vow@72 (l), leap@19, crossbow_shoot@10 (r).
+- LEFT, the turned triangle: ONE, the same in all 6 left poses: tri 275 = 2326A / 2327b / 2386b (mesh 5551 / 5552 /
+  5611): one apex-row point and two bridge ends of the other (+) side, AT mesh row 2386 where the bridge ends change
+  row. It is INVERTED IN THE LAY ITSELF, at rest: signed area -1.64 x B's (against A's normals at the feet), quality
+  0.90 (a full-size triangle, not a sliver; B's own is 0.30); its normal . A's rest triangles under its 3 points =
+  -0.75, -0.86, -0.97. So the build's "rest triangles turned 0" is wrong for it (not traced why). Not a fold of A:
+  in the opened poses its 3 carriers' normals agree (least mutual dot 0.93-0.99; rest 0.49) and its normal is -0.95
+  to -1.0 against all three. Turned by the map alone at w = 1 (fill: not turned); the blend only inherits it.
+  `stats` tests the sign of ct.facing with the mixed carried vertex normals against B's rest sign; the geometric
+  test against A's carrier triangles agrees here, so the measure is right for this one.
+  iron_vow@72's second: tri 110 = 2386b / 2327b / 2387. (mesh 5611 / 5552 / 5612), the neighbour across edge
+  2327-2386; lay quality 0.24 (B 0.63), sound at rest (+0.94), turned in the fill too; there A does fold (carriers'
+  least mutual dot 0.43 / 0.00).
+- LEFT, the edges over A's worst + 0.15: all at point 2386b (mesh 5611), all the LAY'S OWN REST STRETCH times A's
+  stretch as it is (pose factor = A's own along the edge to 0.01-0.02):
+  edge 173 2327b-2386b: abd150 3.15 = lay 1.34 x 2.35 (+0.18 on the limit), abd170 3.05 (+0.01), flex170 2.96;
+  edge 206 2385A-2386b: abd150 3.12 = lay 1.66 x 1.88 (+0.16), abd170 3.14 (+0.11), flex170 3.07 (+0.07);
+  edge 208 2386b-2446.: abd90_int60 2.49 = lay 1.85 x 1.34 (the pose's worst; fill 1.68), iron_vow 2.25 = 1.85 x 1.21;
+  edge 243 2446.-2506. abd150 3.01 (+0.04) = lay 1.34 x 2.25; edge 209 2387.-2388. 2.97 = lay 1.94 x 1.53 (on the limit).
+  The lay's longest rest edges (l): 212 2388-2389 2.06, 175 2328b-2329b 2.02, 209 1.94, 156 2318r-2319 1.86.
+- RIGHT: tri 290 = 2445. / 2386A / 2385b (mesh 24628 / 24569 / 24568), again at row 2385 / 2386: a SLIVER in the lay
+  (area 0.37 x B's, quality 0.18; B's 0.91), its apex point's carrier facing off it at rest (-0.15; carriers' least
+  mutual dot 0.18: two walls). leap@19: near edge-on (its normal . A's carriers +0.06 / +0.33 / +0.13; the mixed
+  normals -0.18 on the apex point tip the count): marginal. crossbow_shoot@10: truly turned at w = 1 (-0.37 / -0.50),
+  not in the blend at w 0.74.
+  crossbow_shoot@10:r worst edge: 262 = 2455. - 2456r (mesh 24638 / 24639), a BORDER edge to the fixed ring: 2.01 =
+  lay 1.86 x 1.08 (A's own along it 1.14; fill 1.73; +0.36 on the limit). The lay's rest stretch, not A.
+- NOT DONE: no trial move was run (the helper's budget ended). Untested reading: point 2386 (l) lies across the line
+  2326-2327 and 1.3-1.85 x too far from 2385 / 2446 / 2327; putting it back on its own side and nearer those three
+  should clear tri 275 and edges 173 / 206 / 208 together. Right: 2445 against the 2385-2386 edge, 2455 toward 2456r.

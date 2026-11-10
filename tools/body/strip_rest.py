@@ -979,9 +979,74 @@ def cmd_sheet(hs, rows_arg="", out_name="armpit_map"):
     print(f"wrote {half}")
 
 
+def cmd_turned(hs, poses, top=4):
+    """turned: DIAGNOSTICS of the carry map (reads the stored lay, writes nothing). Per pose: the triangles cmd_map
+    counts as turned and the band edges over A's own worst + 0.15, with ids (region-local / mesh vertex), place
+    (A apex row, b other bridge end, . band, r the fixed ring) and the split ratio = lay (the lay's rest edge / B's
+    old rest) x pose (the posed map edge / the lay's rest edge), next to A's own stretch along that edge's path."""
+    h, bd, cfg, R = hs.h, hs.bd, hs.cfg, {}
+    z = np.load(rt.OUT / "poses.npz")
+    names, sides = [str(x) for x in z["name"]], [str(x) for x in z["side"]]
+    un = lambda t, X: np.cross(X[t[:, 1]] - X[t[:, 0]], X[t[:, 2]] - X[t[:, 0]])
+    for q in poses:
+        k = names.index(q)
+        s, G = sides[k], z["G"][k]
+        if s not in R:
+            r = hs.relay(s, cfg["rows"], hs.u[s] if hs.u else None)
+            tag = np.full(len(hs.pts[s]), "o")
+            tag[r["ring"]], tag[r["band"]] = "r", "."
+            tag[np.unique(h.car[s].bridge)] = "b"
+            tag[r["snap"]] = "A"
+            R[s] = r, tag, r["unf"].length(r["u"][r["edges"][:, 0]], r["u"][r["edges"][:, 1]])
+        r, tag, len0 = R[s]
+        e, P, N0, b, P1, c1 = r["edges"], bd.V0[hs.pts[s]], h.N0[hs.pts[s]], hs.loc[s], hs.P1[s], hs.car1[s]
+        tb = hs.tris(s)
+        tb = tb[np.isin(tb, b).any(1)]
+        wk = share(elevation(hs, G, s), *cfg["map_elev"])
+        Va, _ = h.pose_ref(G)
+        Xf, Nf = h.car[s].carry(Va), np.einsum("nij,nj->ni", h.car[s].rotations(Va), N0)
+        Xb, Nb = c1.carry(Va), np.einsum("nij,nj->ni", c1.rotations(Va), hs.N1[hs.pts[s]])
+
+        def mix(w):
+            X, N = Xf.copy(), Nf.copy()
+            X[b], N[b] = Xf[b] + w * (Xb[b] - Xf[b]), ct._unit(Nf[b] + w * (Nb[b] - Nf[b]))
+            return X, N
+
+        (Xm, Nm), (X1, N1) = mix(wk), mix(1.0)
+        ln = lambda X: np.linalg.norm(X[e[:, 0]] - X[e[:, 1]], axis=1)
+        l0 = ln(P)
+        lay, rm, r1, rf = ln(P1) / l0, ln(Xm) / l0, ln(X1) / l0, ln(Xf) / l0
+        own = r["unf"].length(r["u"][e[:, 0]], r["u"][e[:, 1]], 12, Va) / len0
+        f0 = np.sign(ct.facing(tb, P, N0))
+        tm, t1, tf = (np.sign(ct.facing(tb, X, N)) != f0 for X, N in ((Xm, Nm), (X1, N1), (Xf, Nf)))
+        fa = ct._unit(un(hs.Ab.T[c1.face], Va))                  # A's posed triangle under each B' point (its carrier)
+        fa0 = ct._unit(un(hs.Ab.T[c1.face], hs.Ab.V0))
+        ng, n1, nl = ct._unit(un(tb, Xm)), ct._unit(un(tb, X1)), ct._unit(un(tb, P1))
+        area = lambda X, N: 0.5 * (un(tb, X) * ct._unit(N[tb].sum(1))).sum(1)
+        ql, q0, q1 = area(P1, r["Nf"]) / area(P, N0), tri_quality(P, tb), tri_quality(P1, tb)
+        lim = own.max() + 0.15
+        ids = lambda v: "/".join(f"{int(x)}{tag[x]}" for x in v) + " (mesh " + "/".join(str(int(hs.pts[s][x])) for x in v) + ")"
+        print(f"== {q} ({s}) w {wk:.2f}: turned map {int(tm.sum())}, at w = 1 {int(t1.sum())}, fill {int(tf.sum())}; map edge max {rm.max():.2f}, A's own max {own.max():.2f}"
+              f" (limit {lim:.2f}), over the limit {int((rm > lim).sum())}; mean lay {lay.mean():.2f}, map {rm.mean():.2f}, A {own.mean():.2f}", flush=True)
+        for t in np.nonzero(tm | t1)[0]:
+            v = tb[t]
+            ga, ga0 = (fa[v] * ng[t]).sum(1), (fa0[v] * nl[t]).sum(1)
+            ap = min(fa[v[a]] @ fa[v[c]] for a, c in ((0, 1), (1, 2), (2, 0)))
+            print(f"   tri {t} {ids(v)}: turned map {bool(tm[t])}, w = 1 {bool(t1[t])}, fill {bool(tf[t])}; lay area / B's {ql[t]:+.2f}, quality B {q0[t]:.2f} lay {q1[t]:.2f};"
+                  f" its normal . A's carrier normals: lay rest {ga0.round(2).tolist()}, pose {ga.round(2).tolist()} (w = 1 {(fa[v] * n1[t]).sum(1).round(2).tolist()});"
+                  f" carriers' least mutual normal dot in the pose {ap:.2f} (rest {min(fa0[v[a]] @ fa0[v[c]] for a, c in ((0, 1), (1, 2), (2, 0))):.2f});"
+                  f" the mixed normals . its normal {(Nm[v] * ng[t]).sum(1).round(2).tolist()}")
+        bad = set(tb[tm | t1].ravel().tolist())
+        for x in np.argsort(-rm)[:max(top, int((rm > lim).sum()))]:
+            print(f"   edge {x} {ids(e[x])}: map {rm[x]:.2f} ({rm[x] - lim:+.2f} on the limit) = lay {lay[x]:.2f} x pose {rm[x] / lay[x]:.2f}; at w = 1 {r1[x]:.2f}; A's own along it {own[x]:.2f};"
+                  f" fill {rf[x]:.2f}; ends in a turned triangle {sum(int(p) in bad for p in e[x])}")
+        x = np.argsort(-lay)[:top]
+        print("   the lay's longest rest edges: " + "; ".join(f"{i} {ids(e[i])} {lay[i]:.2f}" for i in x))
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("cmd", choices=["build", "target", "sheet"])
+    ap.add_argument("cmd", choices=["build", "target", "sheet", "turned"])
     ap.add_argument("--snap", action="store_true", help="import carried_target from out/shoulder/snap (a frozen copy)")
     ap.add_argument("--rows", default="", help="build: lay rows (int); sheet: pose:view,pose:view,... (default: five rows, see SHEET_ROWS)")
     ap.add_argument("--relax", action="store_true", help="build: relax the lay on real lengths (slow; the left fails, see strip_rest.md)")
@@ -1004,6 +1069,8 @@ def main():
     if a.cmd == "build":
         return cmd_build(hs, int(a.rows) if a.rows else HER["rows"])
     hs.load()
+    if a.cmd == "turned":
+        return cmd_turned(hs, HER["named"] if a.poses in ("", "named") else [q for q in a.poses.split(",") if q])
     if a.cmd == "target" and a.map:
         return cmd_map(hs, HER["named"] if a.poses in ("", "named") else [q for q in a.poses.split(",") if q])
     if a.cmd == "target":
