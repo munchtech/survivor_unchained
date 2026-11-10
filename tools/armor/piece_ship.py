@@ -1,6 +1,6 @@
 """One armor piece built, carried onto the body the game ships, and installed: one recorded step (P2 l15, 10 Nov 2026).
 
-    python tools/armor/piece_ship.py <id> [<id> ...] [--src <blend>] [--body <glb>]
+    python tools/armor/piece_ship.py <id> [<id> ...] [--src <blend>] [--body <glb>] [--min <twin share, 0.95>] [--max-move <mm, 15>] [--max-strain <mm, 5>]
     python tools/armor/piece_ship.py --check            every installed piece's body stamp against the shipped body
 
 Take a blender turn first (tools/turn.py take blender ...) when any id is a Blender build (no `base`).
@@ -15,8 +15,9 @@ the 18 shoulder shapes, the pit re-mesh, the arm rest moves). So, for each id, i
      before the follow (<base stage>/pre) and runs adorn + fan_fill on it there (adorn keeps no morph targets, so a
      variant is adorned before the follow, never after).
   2. follow: tools/assets/body_follow_post.py base.glb <body> <stage> --parts armor (rest moves, eight weights, helper
-     joints, shoulder shapes, rigid shells, the tuck re-keyed). Refused when fewer than FOLLOW_MIN of base.glb's skin
-     points found their twin on the body (a different paint layout: nothing would follow).
+     joints, shoulder shapes, rigid shells, the tuck re-keyed). Refused when fewer than --min of base.glb's skin
+     points found their twin on the body, or the piece's own max move / strain pass --max-move / --max-strain (the
+     lost points go by the closest place on the body's surface). Socket points move by the same rest move.
   3. install: the piece's files into godot/art/armor, its armor_index row merged, stamped with
        body_hash  the shipped body's label (art/people/armor_index.json's, as every reader expects),
        body_glb   glb_body_hash(<body>): a stamp any tool can check against the file itself (--check),
@@ -43,7 +44,9 @@ BODY = os.path.join(ROOT, "godot", "art", "people", "heroine.glb")
 PEOPLE_INDEX = os.path.join(ROOT, "godot", "art", "people", "armor_index.json")
 SHIP = os.path.join(ROOT, ".shots", "armor2", "ship")
 FOLLOW = os.path.join(ROOT, "tools", "assets", "body_follow_post.py")
-FOLLOW_MIN = 0.95
+FOLLOW_MIN = 0.95          # --min: the share of base.glb's skin points that found a UV twin on the body
+MAX_MOVE = 15.0            # --max-move (mm): the piece's own largest rest move
+MAX_STRAIN = 5.0           # --max-strain (mm): the piece's largest "off its neighbours" figure
 
 
 def say(*a):
@@ -161,6 +164,27 @@ def follow_ratio(text):
     return (int(m.group(3)) / max(int(m.group(1)), 1)) if m else 0.0
 
 
+def piece_numbers(text, pid):
+    """(max move mm, off-neighbours mm) of the piece's own FOLLOW line, or None when it printed none."""
+    m = re.search(r"FOLLOW %s\.gltf .*?max ([\d.]+) mm, off its neighbours ([\d.]+)" % re.escape(pid), text)
+    return (float(m.group(1)), float(m.group(2))) if m else None
+
+
+def follow_verdict(ratio, nums, fmin=FOLLOW_MIN, max_move=MAX_MOVE, max_strain=MAX_STRAIN):
+    """None when the follow is acceptable, else the reason. The twin share only has to reach `fmin` (a re-meshed body
+    loses twins by design: the lost points go by the closest place on its surface); the piece's own move and strain
+    are the gates that matter."""
+    if ratio < fmin:
+        return f"twins {ratio:.1%} of base.glb's skin, {fmin:.0%} needed"
+    if nums is None:
+        return "no FOLLOW line for the piece"
+    if nums[0] > max_move:
+        return f"piece max move {nums[0]:.2f} mm over {max_move:g}"
+    if nums[1] > max_strain:
+        return f"piece strain (off neighbours) {nums[1]:.2f} mm over {max_strain:g}"
+    return None
+
+
 def latest_stage(pid):
     st = sorted(glob.glob(os.path.join(SHIP, pid, "*", "pre")))
     if not st:
@@ -168,7 +192,7 @@ def latest_stage(pid):
     return os.path.dirname(st[-1])
 
 
-def ship(pid, src, body):
+def ship(pid, src, body, fmin=FOLLOW_MIN, max_move=MAX_MOVE, max_strain=MAX_STRAIN):
     import build as bd
     piece = json.load(open(os.path.join(ART, "src", pid, "piece.json"), encoding="utf-8"))
     stage = os.path.join(SHIP, pid, time.strftime("%Y%m%d_%H%M%S"))
@@ -217,8 +241,11 @@ def ship(pid, src, body):
         if l.startswith(("FOLLOW", "Traceback")):
             say(l[:300])
     ratio = follow_ratio(text)
-    if r.returncode != 0 or ratio < FOLLOW_MIN:
-        say(f"{pid}: FOLLOW REFUSED (exit {r.returncode}, twins {ratio:.1%} of base.glb's skin, {FOLLOW_MIN:.0%} needed); nothing installed")
+    nums = piece_numbers(text, pid)
+    say(f"{pid}: follow twins {ratio:.1%}, max move {nums[0] if nums else float('nan'):.2f} mm, strain {nums[1] if nums else float('nan'):.2f} mm")
+    why = f"exit {r.returncode}" if r.returncode != 0 else follow_verdict(ratio, nums, fmin, max_move, max_strain)
+    if why:
+        say(f"{pid}: FOLLOW REFUSED ({why}); nothing installed")
         return False
     built_on = json.load(open(os.path.join(stage, "built_on.json")))["body_hash"]
     files = install(pid, sa, ART, glb_body_hash(body), shipped_label(), built_on)
@@ -230,10 +257,13 @@ def main(argv):
     if "--check" in argv:
         sys.exit(1 if check() else 0)
     import build as bd
-    src = argv[argv.index("--src") + 1] if "--src" in argv else bd.SRC
-    body = os.path.abspath(argv[argv.index("--body") + 1]) if "--body" in argv else BODY
-    ids = [a for i, a in enumerate(argv) if not a.startswith("--") and argv[i - 1] not in ("--src", "--body")]
-    bad = [p for p in ids if not ship(p, src, body)]
+    opt = {"--src": bd.SRC, "--body": BODY, "--min": FOLLOW_MIN, "--max-move": MAX_MOVE, "--max-strain": MAX_STRAIN}
+    for k in opt:
+        if k in argv:
+            opt[k] = argv[argv.index(k) + 1]
+    body = os.path.abspath(opt["--body"])
+    ids = [a for i, a in enumerate(argv) if not a.startswith("--") and (i == 0 or argv[i - 1] not in opt)]
+    bad = [p for p in ids if not ship(p, opt["--src"], body, float(opt["--min"]), float(opt["--max-move"]), float(opt["--max-strain"]))]
     sys.exit(1 if bad else 0)
 
 

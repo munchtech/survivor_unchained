@@ -67,6 +67,31 @@ def test_follow_ratio_reads_the_field_line():
     assert ps.follow_ratio(t) == pytest.approx(0.96) and ps.follow_ratio("nothing") == 0.0
 
 
+def test_follow_verdict_gates_on_the_pieces_own_numbers():
+    line = "FOLLOW p.gltf  23187 pts:  1 within 10 mm of her,  9 moved (max 10.47 mm, off its neighbours 3.67; 1 over)"
+    nums = ps.piece_numbers(line, "p")
+    assert nums == (10.47, 3.67) and ps.piece_numbers(line, "q") is None
+    assert ps.follow_verdict(0.49, nums) and ps.follow_verdict(0.49, nums, fmin=0.45) is None
+    assert "max move" in ps.follow_verdict(0.96, (16.0, 1.0)) and "strain" in ps.follow_verdict(0.96, (3.0, 5.5))
+    assert ps.follow_verdict(0.96, (16.0, 1.0), max_move=20) is None and ps.follow_verdict(0.96, None)
+
+
+def test_sockets_move_by_the_follow_move(tmp_path):
+    import types
+    sys.path.insert(0, os.path.join(ps.ROOT, "tools", "assets"))
+    import numpy as np
+    import body_follow_post as bf
+    A = types.SimpleNamespace(surface=lambda Q: (np.zeros(len(Q)), np.zeros(len(Q), int), np.tile([1.0, 0, 0], (len(Q), 1)), None, None, None),
+                              F=np.array([[0, 1, 2]]))
+    fld = types.SimpleNamespace(A=A, D=np.array([[0.004, 0, 0], [0, 0, 0], [0, 0, 0]]), bsha="b")
+    sp = tmp_path / "p.sockets.json"
+    sp.write_text(json.dumps({"sockets": {"a": {"point": [0.1, 1.0, 0.0]}}}))
+    assert bf.follow_sockets(str(sp), fld) == pytest.approx(4.0)
+    s = json.loads(sp.read_text())
+    assert s["sockets"]["a"]["point"] == pytest.approx([0.104, 1.0, 0.0]) and s["followed_onto"] == "b"
+    assert bf.follow_sockets(str(sp), fld) is None
+
+
 def _shell8(n=12, nb=12):
     rng = np.random.default_rng(3)
     J = np.stack([rng.permutation(nb)[:8] for _ in range(n)])
