@@ -91,6 +91,7 @@ public partial class QuitPath : Node
     {
         var fx = new List<CompositorEffect>();
         Dark(tree.Root, fx);
+        FxAfter.DropMarks();   // (lead 23: before MarkPass's mask is freed; the frame after still draws the layer)
         InkRelease.Release();
         if (FxWorldDepth.On) FxWorldDepth.Release();
         var own = typeof(QuitPath).Assembly;

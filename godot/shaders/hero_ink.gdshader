@@ -15,7 +15,7 @@ uniform float ink_px = 1.25;            // width at 1080p, px
 uniform vec2 fade = vec2(120.0, 300.0); // px per metre: full ink below x, none from y (the chroma rule's fade, rig values 33-34)
 uniform vec2 gap = vec2(0.05, 0.10);       // m: a neighbor this much deeper (past its own slope) starts / is a full depth edge
 uniform vec2 chroma = vec2(0.04, 0.09); // chromaticity step that starts / is a full material edge
-uniform float touch = 0.03;             // m: a material edge counts only between surfaces this close in depth
+uniform float touch = 0.02;             // m: a material edge counts only between surfaces this close in depth
 uniform vec2 fold = vec2(0.45, 0.9);    // a fold: depth below both sides' mean, in px of the surface (1: a right-angle crease)
 uniform float floor_y = -1000.0;        // (set on every line pass; unused here)
 uniform int cut_mode = 0;               // hair: as hero_line.gdshader (the strands' cut)
@@ -77,7 +77,7 @@ void fragment() {
 			float line_n = 1.0 - smoothstep(0.02, 0.06, length(cn - ink_c) / (lum(ink_c) + 0.01) * 0.25);   // (the hull's own px)
 			float g = zn - z0;
 			float e_depth = k == 1 ? smoothstep(gap.x, gap.y, g - 1.5 * slope) * (1.0 - smoothstep(0.6, 1.0, g)) : 0.0;   // (r2ink_02: one px only, never a blob)
-			float side = clamp(0.5 + 6.0 * (lum(cn) - l0) / (lum(cn) + l0 + 1e-4), 0.0, 1.0);
+			float side = step(0.04, (lum(cn) - l0) / (lum(cn) + l0 + 1e-4));   // (lead 23: the darker side only, a hard step: both sides of a grade no longer ink)
 			float e_class = smoothstep(chroma.x, chroma.y, length(chrom(cn) - k0) - 2.0 * kb) * (1.0 - smoothstep(touch, touch * 2.0, abs(g))) * side;
 			float e = max(e_depth, e_class);
 			if (k == 1 && i < 4) {

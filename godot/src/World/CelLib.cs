@@ -316,6 +316,7 @@ public static class CelLib
     // (lead 22, HAIRLINE) hair: a chain per OPAQUE surface (its first material -> our passes hung after its last pass), cut
     // like that surface; never the overlay, which would also draw the blended cap and fine hairs' whole cards
     static readonly Dictionary<Material, ShaderMaterial> lineCut = new();
+    const int LineHairPriority = 4;   // (lead 23) past the hair's blended passes (1-2) and erase (3)
     const float LineHairCut = 0.3f;   // (the strands' cover from which the hull counts them: their blended fringe's reach)
     static readonly HashSet<ulong> lineHairIds = new();
     static readonly Dictionary<Material, ShaderMaterial> lineOver = new();   // (another's overlay -> our passes with it after them)
@@ -323,12 +324,13 @@ public static class CelLib
 
     static ShaderMaterial LineChain(bool hair, ShaderMaterial? cutBy = null)
     {
-        var sh = GD.Load<Shader>("res://shaders/hero_line.gdshader");
+        // (lead 23, LINES) hair: the transparent variant, after the blended fringe (the hair's passes are priority 1-3)
+        var sh = GD.Load<Shader>(hair ? "res://shaders/hero_line_hair.gdshader" : "res://shaders/hero_line.gdshader");
         ShaderMaterial? first = null, last = null;
         for (int i = 0; i < LinePasses; i++)
         {
             float a = Mathf.Tau * i / LinePasses;   // (from 0: her sides, the long edges of a standing figure, take the full width)
-            var m = new ShaderMaterial { Shader = sh, ResourceName = LineName };
+            var m = new ShaderMaterial { Shader = sh, ResourceName = LineName, RenderPriority = hair ? LineHairPriority : 0 };
             m.SetShaderParameter("dir", new Vector2(Mathf.Cos(a), Mathf.Sin(a)));
             if (hair) m.SetShaderParameter("near_px", 250f);   // (hair cards: the hull is the card's quad, so no line in a close view)
             if (cutBy != null) LineCutBy(m, cutBy);
