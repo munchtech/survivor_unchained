@@ -365,6 +365,9 @@ public partial class BattleFx : Node3D
     // (a Sunder cut that struck 37 threw 4 sparks from each). The numbers, the gore and the Flare's own hits are not touched.
     // A source = the hits of one art and school in one frame's events. fx_language.json p7 hit_budget.n.
     static readonly bool HitBudgetSay = Args.Has("clip") || Args.Has("grip-say");
+    // (P7 lead 6, debug for one census shoot: --hit-dbg nogore = no gore chips off a hit; nocrit = crits rank inside the budget like any hit)
+    static readonly string HitDbg = Args.Get("hit-dbg") ?? "";
+    static readonly bool HitDbgNoGore = HitDbg.Contains("nogore"), HitDbgNoCrit = HitDbg.Contains("nocrit");
     readonly HashSet<Ev.Hit> sparkless = new();
     readonly Dictionary<(string?, School), (double X, double Z, int N, int Crits)> sparkMid = new();
     readonly List<(Ev.Hit H, double D)> sparkRank = new();
@@ -385,6 +388,15 @@ public partial class BattleFx : Node3D
             if (m.N <= budget) continue;
             double cx = m.X / m.N, cz = m.Z / m.N;
             sparkRank.Clear();
+            if (HitDbgNoCrit)
+            {
+                foreach (var ev in events)
+                    if (ev is Ev.Hit { Dot: false, Blocked: false, ByFlare: false } hc && hc.Art == k.Item1 && hc.School == k.Item2)
+                        sparkRank.Add((hc, (hc.X - cx) * (hc.X - cx) + (hc.Z - cz) * (hc.Z - cz)));
+                sparkRank.Sort((p, q) => p.D.CompareTo(q.D));
+                for (int i = budget; i < sparkRank.Count; i++) sparkless.Add(sparkRank[i].H);
+                continue;
+            }
             foreach (var ev in events)
                 if (ev is Ev.Hit { Dot: false, Blocked: false, ByFlare: false, Crit: false } h && h.Art == k.Item1 && h.School == k.Item2)
                     sparkRank.Add((h, (h.X - cx) * (h.X - cx) + (h.Z - cz) * (h.Z - cz)));
@@ -1320,7 +1332,7 @@ public partial class BattleFx : Node3D
                     else Burst(at, e.School, e.Crit ? 10 : 4, e.Crit ? 5 : 3, size: e.Crit ? 0.12f : 0.08f);
                     // (her auto-attacks on the dry dead: no bone-chip snow, their chip puff carries it; VFX 10 r3)
                     // (P7 solver A: the leap's and the charge's hits throw lit dust, not a speck cloud that reads as pepper at night)
-                    if (e.Family != null && !(!P7Off && e.Art is "shield_charge" or "shield_charge_slam" or "heroic_leap") && !(e.Family == Family.Undead && !e.Dot && (IsOath(e.Art) || IsDisc(e.Art) || e.Art == "watch_bell" || (e.Art == null && time == bashAt))))
+                    if (!HitDbgNoGore && e.Family != null && !(!P7Off && e.Art is "shield_charge" or "shield_charge_slam" or "heroic_leap") && !(e.Family == Family.Undead && !e.Dot && (IsOath(e.Art) || IsDisc(e.Art) || e.Art == "watch_bell" || (e.Art == null && time == bashAt))))
                     {
                         var away = new Vector3((float)e.Dx, 0, (float)e.Dz);
                         if (away.LengthSquared() < 0.01f) away = Vector3.Forward;
@@ -1328,7 +1340,7 @@ public partial class BattleFx : Node3D
                     }
                     // A critical's burst: warm gold under the tone curve's knee (white-hot, a crowd of
                     // crits bloomed white round her), three at most in a breath, and small at her elbow.
-                    if (e.Crit && (time - critBurstAt > 0.15 || critBursts < 3))
+                    if (e.Crit && !(HitDbgNoCrit && sparkless.Contains(e)) && (time - critBurstAt > 0.15 || critBursts < 3))
                     {
                         if (time - critBurstAt > 0.15) { critBurstAt = time; critBursts = 0; }
                         critBursts++;
