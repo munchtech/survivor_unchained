@@ -117,6 +117,16 @@ public partial class Game
             // (au1 item 14: the parts never taught, each by the HUD's own accessor, bracketed)
             case "prompt": if (hud.PromptArea is Rect2 pa) areas.Add(pa); break;
             case "minimap": if (hud.MinimapArea is Rect2 ma) areas.Add(ma); break;
+            // (M6 A9: a place's mark on the corner map, "map:X,Z", by the disc's own transform; off the disc, the whole map)
+            case var s when s.StartsWith("map:"):
+                if (hud.MinimapArea is Rect2 mm && Battle?.Player is { } mp && s[4..].Split(',') is [var sx, var sz]
+                    && double.TryParse(sx, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var wx)
+                    && double.TryParse(sz, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var wz))
+                {
+                    if (Minimap.OnDisc(wx - mp.X, wz - mp.Z) is Vector2 md) pts.Add(mm.Position + md);
+                    else areas.Add(mm);
+                }
+                break;
             case "tally": if (hud.TallyArea is Rect2 ta) areas.Add(ta); break;
             // (the numbers card: held up by UpdateTeach while this callout is the one showing; no area on the first frame)
             case "card": hud.TeachCard = true; if (hud.XpCardArea is Rect2 xa) areas.Add(xa); break;

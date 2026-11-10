@@ -210,6 +210,15 @@ public partial class Minimap : Control
         return tex;
     }
 
+    /// <summary>Where a world offset from her (metres) sits on the disc, from its top-left (Show's marks' transform);
+    /// null: off the disc (past the rim's margin).</summary>
+    public static Vector2? OnDisc(double dx, double dz)
+    {
+        float r = Diameter / 2;
+        var at = new Vector2((float)dx, (float)dz) * (Diameter / Span);
+        return at.Length() > r - 12 ? null : new Vector2(r, r) + at;
+    }
+
     /// <summary>A new zone: its drawing and how wide it is.</summary>
     public void Zone(string id, Texture2D drawing, float ext)
     {

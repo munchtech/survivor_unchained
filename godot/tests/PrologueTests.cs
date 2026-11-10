@@ -281,11 +281,8 @@ public class PrologueTests
         Run(s, 6);
         Assert.True(s.Zone.Sprung);
         Assert.True(s.B.Enemies.Living().Count(e => e.Def.Id == "risen_archer") >= 3);
-        // Their first volley in the air at her asks for the dash, briefly (never late, after it lands).
+        // (the volley no longer asks for the dash: A7 is the charger's lane, PrologueArpgTeachTests)
         Run(s, 4);
-        var dash = s.Host.Asked.FirstOrDefault(c => c.Id == "dash");
-        Assert.NotNull(dash);
-        Assert.True(dash!.Patience < 1);
     }
 
     [Fact]
