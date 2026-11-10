@@ -174,11 +174,7 @@ public partial class LampPage : Control
         {
             var v = new VBoxContainer { MouseFilter = MouseFilterEnum.Ignore, Alignment = BoxContainer.AlignmentMode.End };
             v.AddThemeConstantOverride("separation", 8);
-            var rows = wickOpen
-                ? pad ? new[] { new[] { ("A", "Plan") }, new[] { ("Y", "Light my way") }, new[] { ("B", "Back") } }
-                      : new[] { new[] { ("Click", "Plan") }, new[] { ("Space", "Light my way") }, new[] { ("Tab", "Back") } }
-                : pad ? new[] { new[] { ("LT", ""), ("RT", "Zoom"), ("D-pad", "Next lamp") }, new[] { ("L3", "Home"), ("R3", "The book") } }
-                      : new[] { new[] { ("Wheel", "Zoom") }, new[] { ("H", "Home"), ("Z", "The book") } };
+            var rows = LampPrompts.WideFootRows(pad, wickOpen, Board.ReadOnly, wickSafe);
             foreach (var r in rows)
             {
                 var h = LampInk.Row(r, pad, 15, 16);
@@ -192,15 +188,15 @@ public partial class LampPage : Control
             // §9: the pad's focus in the header (the lamp card hides): the focused item's prompts and the way back, so Y
             // never means both "Copy to III" and "Light my way"
             var hp = Header.Focused <= 2 ? CoinWords(Header.Focused, pad).Prompts
+                : Header.Focused == 3 && Board.ReadOnly ? []   // (read-only: Light my way only denies)
                 : [(pad ? "A" : "Enter", Header.Focused switch { 3 => "Light my way", 4 => "Find", _ => Wide ? "Close" : "Open wide" })];
             hp.Add(pad ? ("B", "Back") : ("Esc", "Back"));
             return LampInk.Row(hp, pad);
         }
-        return LampInk.Row(wickOpen
-            ? pad ? [("A", "Plan"), ("Y", "Light my way"), ("B", "Board")] : [("Click", "Plan"), ("Space", "Light my way"), ("Tab", "Board")]
-            : pad ? [("A", "Light"), ("Y", "Light my way"), ("L3", "Home"), ("R3", "Open wide")]
-                  : [("Click", "Light"), ("Space", "Light my way"), ("H", "Home"), ("F", "Find"), ("Z", "Open wide")], pad);
+        return LampInk.Row(LampPrompts.FootRow(pad, wickOpen, Board.ReadOnly, wickSafe), pad);
     }
+
+    bool wickSafe => Wick.Safe;
 
     void SetPrompts()
     {
@@ -945,8 +941,7 @@ public partial class LampHeader : Control
         bool pad = Play.Controls.Instance?.UsingPad == true;
         // (A: Light my way and Find; the way back to the book is in the lower right)
         // (A, §16: "Y Light my way · Find · B Close"; Close goes back to the book, as B does)
-        if (wide) keys = LampInk.Row(pad ? [("Y", "Light my way"), ("D-pad up", "Find"), ("B", "Close")] : [("Space", "Light my way"), ("F", "Find"), ("Esc", "Close")], pad, 16, 22);
-        else keys = LampInk.Row(pad ? [("Y", "Light my way"), ("D-pad up", "Find"), ("R3", "Open wide")] : [("Space", "Light my way"), ("F", "Find"), ("Z", "Open wide")], pad, 16, 22);
+        keys = LampInk.Row(LampPrompts.HeaderRow(pad, wide, w?.Arena != null), pad, 16, 22);
         AddChild(keys);
         Resized += Lay;
         Refresh();

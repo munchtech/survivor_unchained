@@ -1039,7 +1039,7 @@ public partial class LampBoard : Control
         {
             var pick = LampAsk.LinkPick(ch, nd.Id);
             string pn = pick != null && Weapons.All.TryGetValue(pick, out var pw) ? pw.Name : "Light my way’s pick";
-            fires = $"Fires: {pn} (change: {(pad ? "A" : "Click")})";
+            fires = night ? $"Fires: {pn}" : $"Fires: {pn} (change: {(pad ? "A" : "Click")})";   // (read-only: a click only denies)
         }
         // (a small lamp or an attribute has no name: the card's title row collapses, the place line leads)
         return new LampCardText(d != null ? d.Name : nd.Id, chip, chipC, place, d?.Text ?? "", feeds, feedsText,
