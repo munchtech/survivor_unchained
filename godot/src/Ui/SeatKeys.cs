@@ -284,9 +284,11 @@ public partial class Socket
         }
         if (st.Cost >= 0)
         {
-            // a 2 px gold arc at the well's edge, filling clockwise from 12 o'clock as Value / cost (its dark track under it)
-            DrawArc(c, hr - 1.5f, 0, Mathf.Tau, 64, new Color(0, 0, 0, 0.45f), 3, true);
-            if (st.Cost > 0.005f) DrawArc(c, hr - 1.5f, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * st.Cost, Math.Max(4, (int)(64 * st.Cost)), Color.Color8(214, 165, 84), 2, true);
+            // a 2 px deep amber arc at the well's edge, filling clockwise from 12 o'clock as Value / cost
+            // (M4 lead 11: it sits in a dark groove, with a ghost of the part still to fill)
+            DrawArc(c, hr - 1.5f, 0, Mathf.Tau, 64, new Color(0.02f, 0.015f, 0.01f, 0.9f), 4, true);
+            DrawArc(c, hr - 1.5f, 0, Mathf.Tau, 64, Color.Color8(200, 138, 48) with { A = 0.26f }, 2, true);
+            if (st.Cost > 0.005f) DrawArc(c, hr - 1.5f, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * st.Cost, Math.Max(4, (int)(64 * st.Cost)), Color.Color8(200, 138, 48), 2, true);
             // (fix A, 12: near full it read as a selection ring: a dark tick at 12 o'clock breaks it where it starts,
             // and a bright bead rides its head)
             DrawLine(c + new Vector2(0, -(hr - 5.5f)), c + new Vector2(0, -(hr + 2f)), new Color(0.03f, 0.02f, 0.01f, 0.95f), 3);

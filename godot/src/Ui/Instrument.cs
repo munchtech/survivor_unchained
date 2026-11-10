@@ -590,7 +590,10 @@ public partial class Socket : Control
         if (filled)
         {
             // (round 2: the element's light in the well's glass, so neighbours read apart by more than shape)
+            bool shortNow = CostShort && !st.Held && !Numbered;
             DrawTextureRect(DgMeters.Disc, new Rect2(c - Vector2.One * hr * 1.15f + new Vector2(0, hr * 0.25f), Vector2.One * hr * 2.3f), false, school with { A = 0.42f });
+            // (M4 lead 11: short of its cost = a dark veil over the well, then a dull glyph at 55%: "not yet")
+            if (shortNow) DrawCircle(c, hr - 0.5f, new Color(0.02f, 0.015f, 0.01f, 0.58f * (float)cool), true, -1, true);
             float g = Mathf.Min(38, hr * 2 * 0.80f);
             // (piece 5: gold inlay, the line glyph's shape, DgGold; lit and warm-lit under when ready, dull bronze-gold
             // coming back; a faint share of the school's colour in the light under it so neighbours differ)
@@ -605,13 +608,14 @@ public partial class Socket : Control
                 // in every other waiting frame, a fast cycle, a brief wait, a held key, it stays at 80% of lit)
                 bool num = Numbered;
                 // (M4 lead 10: short of its cost and not held, the glyph goes dull bronze at 60%: "not yet")
-                bool short_ = !num && CostShort && !st.Held;
+                bool short_ = shortNow;
                 var tone = (num || short_) ? Colors.White.Lerp(new Color(0.66f, 0.60f, 0.52f), (float)cool) : Colors.White;
-                DrawTextureRect(gold, gr, false, (tone * Colors.White.Lerp(school, 0.10f)) with { A = num ? 0.25f : 1f - (short_ ? 0.40f : 0.2f) * (float)cool });
+                DrawTextureRect(gold, gr, false, (tone * Colors.White.Lerp(school, 0.10f)) with { A = num ? 0.25f : 1f - (short_ ? 0.45f : 0.2f) * (float)cool });
             }
             else if (art != null)
             {
                 var col2 = new Color(1.25f, 1.25f, 1.25f).Lerp(Colors.White, (float)cool);
+                if (shortNow) col2 = Colors.White.Lerp(new Color(0.66f, 0.60f, 0.52f), (float)cool) with { A = 1f - 0.45f * (float)cool };
                 DrawTextureRect(art, new Rect2(c - new Vector2(g, g) / 2 - new Vector2(0, 2), new Vector2(g, g)), false, col2);
             }
             // coming back (round 2): the well fills from its foot, lit in the element, dark above (DgMeters.Level)
