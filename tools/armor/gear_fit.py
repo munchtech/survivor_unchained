@@ -839,7 +839,8 @@ class Binding:
         self.id = self.meta["id"]
 
 
-STANDOFF = os.path.join(GEAR, "standoff")
+# (GEAR_STANDOFF: a trial copy of the measured targets, as GEAR_ROLES is of the roles; unset = the live folder)
+STANDOFF = os.environ.get("GEAR_STANDOFF") or os.path.join(GEAR, "standoff")
 
 
 def standoff_law(slot, roles=None):
