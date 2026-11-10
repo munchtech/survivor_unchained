@@ -773,7 +773,11 @@ HER = {
                        # gate2 (gate3 ...): a further gate stage, opened over its own `deg` on top of the stage before
                        # (rows: an integer, or "all" = the part's whole side; body_facts/chest_fold.md section 5)
                        "support": {"eps_mm": 1.0, "rows": 4, "ring": 3, "gate_rows": 8, "wall_rows": 12, "gate_deg": [45.0, 75.0],
-                                   "gate2": {"deg": [90.0, 130.0], "rows": 14, "wall_rows": 12, "smooth": 60},
+                                   "gate2": {"deg": [90.0, 130.0], "rows": 14, "wall_rows": 12, "smooth": 60,
+                                             # relax (Her.relaxed): on the rows this stage opens, carried edges over
+                                             # `ratio` x rest are filled from their neighbours `rows` around, in step
+                                             # with the stage (A's own crease on the breast's rows 4-7, chest_fold.md 6)
+                                             "relax": {"ratio": 2.5, "rows": 2}},
                                    "stiff": "upperarm_{s}", "rigid": 0.999, "gated_part": "breast", "cache": "support.npz"}},
         "neck": {"provider": "derived", "bones": ["neck_01", "neck_02", "Head"], "ref": {"neck_01": "neck_02", "Head": "Head"},
                  "root": "neck_01", "far": ["Head"], "rows": 4, "eps": 0.02, "rigid": 0.999},
@@ -792,6 +796,14 @@ HER = {
     # T17: the ramp edges over 2.5x allowed per pose (none unexplained); t17_watch: printed only (border.md's table)
     "t17_poses": {"x:abd170:l": 0, "x:abd150:l": 0, "p4:iron_vow@72:l": 0, "cast_bolt@0:l": 0, "p4:heroic_leap@19:r": 1},
     "t17_watch": ["x:flex170:l", "Jog_Fwd@14:l", "Jog_Fwd@11:r", "p4:idle_warden_town@122:l", "x:add0:l"],
+    # T18: the second gate stage (and its relax rule) leaves every pose at or under its lo bit for bit: the composed
+    # target against the stored target of before the stage (a frozen copy). T19: the fold stays at A's (chest_fold.md 5, 6):
+    # on the fold set of the reference dump (fold_probe.py dump ... t0 --today), valley angle max <= A's + valley_deg and
+    # depth mean within depth_mm of A's
+    "t18_poses": ["x:add0:l", "cast_bolt@0:l", "cast_bolt@3:r", "crossbow_shoot@10:r", "x:abd90_int60:l", "Jog_Fwd@11:r"],
+    "t18_stored": "target_a_l18.npz",
+    "t19": {"poses": ["x:abd150:l", "x:abd170:l", "x:flex170:l"], "ref": "fold_probe/dump_t0.npz", "k": 3, "top": 12,
+            "valley_deg": 1.0, "depth_mm": 0.2},
     "t16_poses": ["Jog_Fwd@11:r"],       # + every dev / T14 / T17 pose; each side under the gate
     # T11: the stored targets of before the border grew (frozen copies: `out` is rewritten by every full run)
     "t11_stored": {"regions": "target_a_regions.npz", "girdles": "target_a_rel.npz"},
@@ -956,6 +968,8 @@ class Her:
             rg.gated = gate[allid]
             rg.gate_own = F[own0 if s == s0 else md.tw[own0]]       # source vertices: what the side's gate rules (shut)
             rg.spread = spread_of(self.group, rg.pts)
+            rg.relax = [(*g["deg"], (np.abs(SH[1 + k][o0] - SH[k][o0]) > 1e-12) & (np.arange(len(o0)) >= rg.nlist), g["relax"])
+                        for k, g in enumerate(more) if g.get("relax")]      # (lo, hi, the plain rows the stage opens, rule)
             self.ext[s] = new
 
     def carrier(self, side, **over):
@@ -1015,11 +1029,37 @@ class Her:
         Va, Ga = Ab.pose_turns(transfer_turns(Gr, p.rest, p.index, Ab.p.index, Ab.p.parent, rg.ref_map, rg.order))
         Vr = register(Va, [anchor_align(Gr[ja], p.rest[ja], Ab.G0[ra], Ga[ra]) for ja, ra in rg.anchors], rg.field)
         cf, cr = rg.carrier.carry(Vr, both=True)
+        cf = self.relaxed(rg, G, cf, Vr)
         ibm = p.skel.ibm
         M, sig, u = relative_place(G @ ibm, Gr @ ibm, bd.J[rg.pts], bd.W[rg.pts], cfg["sig_lo"], cfg["sig_hi"])
         self._parts[name] = {"M": M, "cf": cf, "cr": cr, "Pg": self.rt.published(bd, Gr)[rg.pts], "Va": Vr, "Va_own": Va,
                              "Gr": Gr, "sig": float(sig.min()), "guard": int((u < 1).sum()), "mem": mem}
         return self._parts[name]
+
+    def relaxed(self, rg, G, cf, Vr):
+        """The filled carry cf [region points, 3] with each gate stage's relax rule (config gate2 "relax"): on the plain
+        rows the stage opens, the edges A carries over `ratio` x rest (A's own creases, which B's published surface
+        does not have) mark a pocket of the rows within `rows` edges of them, harmonically filled from its neighbours
+        (Pocket, A's rotations smoothed); the fill is blended in by the stage's own smoothstep. At or under the stage's
+        lo, cf as it was, bit for bit."""
+        rules = getattr(rg, "relax", ())
+        if not rules:
+            return cf
+        el, P0, E = self.md.elevation(G, rg.side), self.bd.V0[rg.pts], np.stack(rg.edges, 1)
+        for lo, hi, opened, rule in rules:
+            if el <= lo:
+                continue
+            w = np.clip((el - lo) / (hi - lo), 0.0, 1.0)
+            w = w * w * (3 - 2 * w)
+            r = np.linalg.norm(cf[E[:, 0]] - cf[E[:, 1]], axis=1) / np.linalg.norm(P0[E[:, 0]] - P0[E[:, 1]], axis=1)
+            hit = (r > rule["ratio"]) & (opened[E[:, 0]] | opened[E[:, 1]])
+            if not hit.any():
+                continue
+            m = rows_around(len(P0), E, np.unique(E[hit]), rule["rows"]) & opened
+            R = np.concatenate([c.rotations(Vr) for c in getattr(rg.carrier, "parts", [rg.carrier])])
+            X = Pocket(P0, E, m, self.cfg["pocket_weight"]).fill(cf, R, self.cfg["frame_passes"])
+            cf = cf + w * (X - cf)
+        return cf
 
     def delta(self, G, name):
         """A region's relative delta on its points [points, 3], under its share: share M (c - published(part pose))."""
@@ -1420,6 +1460,32 @@ def cmd_test(h):
             line(f"T17 {nm}", int(over.sum()) <= cfg["t17_poses"][nm] and not bad.any(), txt + f" (limit {cfg['t17_poses'][nm]} over, 0 unexplained)")
         else:
             print(f"     watch {nm}: {txt}")
+    # T18: at or under the second stage's lo, the composed target is the stored one of before the stage, bit for bit
+    old = np.load(h.OUT / cfg["t18_stored"])
+    io = {str(x): i for i, x in enumerate(old["name"])}
+    raw = np.unique(np.concatenate([r.spread[0] for r in h.regions.values()]))
+    ids_c = np.unique(md.src[raw[raw < len(md.src)]])
+    common, ia, ib = np.intersect1d(ids_c, old["ids_c"], return_indices=True)
+    for nm in cfg["t18_poses"]:
+        G = z["G"][names.index(nm)]
+        el = max(md.elevation(G, s) for s in sorted(md.grown))
+        d = float(np.abs(h.compose(G, pub(bd, G))[md.first[ids_c]][ia] - old["Xc"][io[nm]][ib]).max())
+        line(f"T18 {nm}", d == 0.0, f"elevation {el:.1f} deg: composed target - stored ({cfg['t18_stored']}) max {d * 1000:.3g} mm on"
+             f" {len(common)} shared points (limit exactly 0)")
+    # T19: the fold at A's (fold_probe's measure on the reference dump's fold set)
+    import fold_probe as fp
+    c19 = cfg["t19"]
+    Z = np.load(h.OUT / c19["ref"])
+    M = fp.mesh_of(Z, sp.csr_matrix(md.adj), c19["k"])
+    for nm in c19["poses"]:
+        G, s = z["G"][names.index(nm)], str(z["side"][names.index(nm)])
+        c = fp.pose_ctx(Z, M, nm, s, c19["top"])
+        new = h.compose(G, pub(bd, G))[md.first]
+        ra = np.ones(len(M.E), bool)
+        a_, n_ = fp.stats(M, c, c.S["A"], ra), fp.stats(M, c, new, ra)
+        line(f"T19 {nm}", n_[3] <= a_[3] + c19["valley_deg"] and abs(n_[0] - a_[0]) <= c19["depth_mm"],
+             f"fold ({int(c.cl.sum())} points): valley max {n_[3]:.1f} deg (A {a_[3]:.1f} + {c19['valley_deg']:g}); depth mean {n_[0]:.2f} mm"
+             f" (A {a_[0]:.2f} +- {c19['depth_mm']:g})")
     print("ALL PASS" if ok_all else "SOME FAILED")
     return ok_all
 
