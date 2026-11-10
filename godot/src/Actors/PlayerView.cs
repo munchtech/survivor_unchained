@@ -965,6 +965,10 @@ public partial class PlayerView : Node3D
             // (--close-turn R with it: turned from the close view's lens as its idle turns her, so a held pose can be
             // seen from her front; without it she keeps her heading, as before.)
             if (HoldTurn && Turned is float th) Rotation = new Vector3(0, th, 0);
+            // (L1 lead 21, pose) --facing DEG with a hold: her heading on the held frame, set every frame, in the start facing's own
+            // degrees (Game.cs: 0 south, toward the play camera; 90 east, screen-right), so a held pose can be staged to the play
+            // camera whatever the shot did with her before. The close view's turn above wins when it is asked for.
+            else if (HoldFacing is float hf) Rotation = new Vector3(0, hf, 0);
             // (L1 lead 21, stage) A held clip keeps her carried light: the branch returned here, so the light below never stepped (no energy,
             // cel_ember's reach 0) and a held frame lost her whole pool. Her pose is all that is held; the light runs as on any frame.
             goto carriedLight;
@@ -1523,6 +1527,9 @@ public partial class PlayerView : Node3D
     static readonly float EmberH = SurvivorUnchained.Args.Num("ember-h", 1.7f), EmberK = SurvivorUnchained.Args.Num("ember-k", 1f);
     static readonly string[]? Hold = SurvivorUnchained.Args.Get("hold")?.Split('@');
     static readonly bool HoldTurn = SurvivorUnchained.Args.Has("close-turn");
+    /// <summary>--facing DEG read for a held frame (the Hold branch): her heading in radians, null without the flag.</summary>
+    static readonly float? HoldFacing = SurvivorUnchained.Args.Get("facing") is string hfa
+        ? Mathf.DegToRad(float.Parse(hfa, System.Globalization.CultureInfo.InvariantCulture)) : null;
     /// <summary>--turn-old: her facing chasing her velocity, the run blend and the lean as before N27 (before/after
     /// pictures); --face-rate R, --blend-rate R, --bank-rate R: how fast her facing meets the stick, her legs her speed, her lean its curve.</summary>
     static readonly bool TurnOld = SurvivorUnchained.Args.Has("turn-old");
