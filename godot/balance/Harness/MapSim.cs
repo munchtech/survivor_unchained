@@ -1,3 +1,4 @@
+using SurvivorUnchained.Play.Pilots;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,9 +13,11 @@ using SurvivorUnchained.Sim;
 namespace SurvivorUnchained.Balance;
 
 /// <summary>One map to play: who, how hard, with what character, under which mods.</summary>
-public sealed record MapRunSpec(int Seed, string Calling, int Tier, string People, int Level, int GearRarity, string[] Mods, bool Deft, double Cap = 25)
+public sealed record MapRunSpec(int Seed, string Calling, int Tier, string People, int Level, int GearRarity, string[] Mods, string Bot, double Cap = 25)
 {
-    public string Key => $"{Calling}/t{Tier}/{People}/s{Seed}/L{Level}/g{GearRarity}{(Mods.Length > 0 ? "/" + string.Join("+", Mods) : "")}";
+    /// <summary>(M3) The hands: human, deft, careless, standing, idler (the press plan's) or plain (the old self-firing Pilot).</summary>
+    public bool Deft => Bot == "deft";
+    public string Key => $"{Calling}/t{Tier}/{People}/{Bot}/s{Seed}/L{Level}/g{GearRarity}{(Mods.Length > 0 ? "/" + string.Join("+", Mods) : "")}";
 }
 
 public sealed class MapRunResult
@@ -22,6 +25,8 @@ public sealed class MapRunResult
     public MapRunSpec Spec = null!;
     public bool Cleared, Closed;
     public double Minutes, LowHp = 1, DamageTaken;
+    /// <summary>(M3) What her feet did in the fights (Pilot.Meter).</summary>
+    public Pilot.FeetMeter Feet = new();
     public int Falls, Kills, Packs, PacksCleared, Quaffs, Items, Charts, Gold;
     /// <summary>What crafting reads (docs/CRAFTING_DESIGN.md 20.1): the people's own material and the
     /// ember shards picked up, the old iron the gear would break down to, and the rulers' Marks.</summary>
@@ -35,6 +40,9 @@ public sealed class MapRunResult
     public double KillGap, PackGap;
     public string Build = "", KilledBy = "";
     public double MaxHp;
+    /// <summary>(M3) The press plan's hands (presses by skill) and the numbers round's measures (RunMeter).</summary>
+    public PressHands? Hands;
+    public RunMeasures Measures = new();
 }
 
 /// <summary>A Wayfinder's map played through headless (Play/Zones/MapRun.cs on MapGen's winding
@@ -55,40 +63,25 @@ public static class MapSim
             Name = "Bot", Archetype = calling, Background = "hunter", Palette = a.Palettes[0].Id,
             WeaponItem = a.Weapons[0], Ability = a.Abilities[0],
         }, (uint)seed);
-        var ch = j.Ch;
-        while (ch.Level < level) Character.GainXp(ch, Character.XpForLevel(ch.Level) - ch.Xp + 1);
-        switch (calling) { case "arcanist": ch.Attributes.Wits += ch.Points; break; case "stalker": ch.Attributes.Finesse += ch.Points; break; default: ch.Attributes.Might += ch.Points; break; }
-        ch.Points = 0;
-        var path = Content.Paths.All.Where(p => p.Callings.Contains(calling)).OrderBy(p => p.Id).ToList();
-        var pick = path[seed % path.Count];
-        foreach (var id in pick.Weapons.Concat(path.SelectMany(p => p.Weapons)).Distinct())
-        {
-            if (ch.Slotted.Count >= SkillBook.Slots(ch)) break;
-            if (!Content.Weapons.All.ContainsKey(id) || !SkillBook.Meets(ch, id) || !SkillBook.Carries(ch, id) || ch.Skills.Contains(id)) continue;
-            ch.Skills.Add(id);
-            ch.Slotted.Add(id);
-        }
-        var rng = new Rng((uint)seed * 31 + 5);
-        (EquipSlot Slot, string Def)[] dress =
-        [
-            (EquipSlot.Head, rng.Chance(0.5) ? "iron_helm" : "leather_cap"), (EquipSlot.Body, rng.Chance(0.5) ? "chain_shirt" : "padded_jerkin"),
-            (EquipSlot.Cloak, "travelers_cloak"), (EquipSlot.Amulet, "bone_amulet"), (EquipSlot.Ring1, "silver_ring"), (EquipSlot.Ring2, "copper_ring"),
-        ];
-        foreach (var (slot, def) in dress)
-            ch.Equipment[slot] = Inventory.Make(ch, def, 1, gearRarity, (uint)rng.Int(1, 1 << 30));
+        // (M3) The dressing is Play/DevVeteran.cs's, shared with the game's --veteran: one build under the same arguments.
+        // MAP_BARE=1 (a measuring aid): the game's old `--xp` veteran instead, the level alone (points unspent, no gear,
+        // the journey's one draught), to show what a clip of it was measuring.
+        if (Bare) { var ch = j.Ch; while (ch.Level < level) Character.GainXp(ch, Character.XpForLevel(ch.Level) - ch.Xp + 1); }
+        else DevVeteran.Dress(j.Ch, level, gearRarity, seed);
         return j;
     }
 
     public static MapRunResult Play(MapRunSpec spec)
     {
         var j = Survivor(spec.Calling, spec.Level, spec.GearRarity, spec.Seed);
-        for (int i = 0; i < 4; i++) Inventory.AddToPack(j.Ch, Inventory.Make(j.Ch, "health_draught", 1));
+        if (!Bare) DevVeteran.Belt(j.Ch);
         var chart = new Chart { Tier = spec.Tier, People = spec.People, Seed = spec.Seed * 7919 + spec.Tier, Mods = spec.Mods.ToList(), Rarity = spec.Mods.Length == 0 ? 0 : spec.Mods.Length <= 2 ? 1 : 2, Name = "The Harness Map" };
         var map = MapGen.Generate(chart.Map);
         var host = new HeadlessHost(j, spec.Seed);
         var zone = new MapRun(host, map, chart);
         var at = zone.ArrivalFrom(null);
-        var b = j.StartBattle(true, map.Meta.Collision(), map.Ground.HeightAt, at.X, at.Z, at.Facing, (uint)spec.Seed);
+        // (worldTier false, as the game starts a map: Game.cs; its press is the chart tier's row, set in MapRun.Begin)
+        var b = j.StartBattle(true, map.Meta.Collision(), map.Ground.HeightAt, at.X, at.Z, at.Facing, (uint)spec.Seed, worldTier: false);
         // As the game wires it: what is picked up goes into the pack (charts and materials); gear is
         // counted and stashed, so the pack never fills and leaves a piece lying under the hands.
         var zh = zone.Hooks;
@@ -110,6 +103,11 @@ public static class MapSim
         };
         host.Battle = b;
         zone.Begin(b);
+        // (M3) --grant / --grant-union / --dash-steps: the game's dev grants (Sim/DevGrants.cs), carried from the start. A grant
+        // the keys cannot hold takes the last key that is not the grip's nor the union's part.
+        if (Grant != null || GrantUnion != null) GiveGrants(b, spec);
+        // (her, one line, as the game's --auto --clip prints it: the same line, the same build)
+        if (System.Threading.Interlocked.Increment(ref herSaid) <= 2) Console.WriteLine($"{spec.Key}: {DevVeteran.Line(b, j)}");
         var r = new MapRunResult { Spec = spec, Packs = zone.PackCount, MaxHp = b.MaxHp, Build = string.Join(" ", b.Weapons.Select(w => $"{w.Id}{w.Rank}")) };
         var nav = new NavField(map, b, map.Boss.X, map.Boss.Z);
         double along = 0;
@@ -120,13 +118,36 @@ public static class MapSim
         var kills = new List<double>();
         bool trace = Environment.GetEnvironmentVariable("MAP_TRACE") == "1", blows = Environment.GetEnvironmentVariable("MAP_BLOWS") == "1";
         var packs = new List<double>();
+        // (M3) The hands on the one press plan (Sim/PressPlan.cs), as ZoneSim's.
+        var human = spec.Bot is "human" or "careless" or "idler" ? new Human(spec.Seed, spec.Bot == "careless") { Idle = spec.Bot == "idler" } : null;
+        if (human == null && spec.Bot is not ("deft" or "plain" or "standing")) throw new ArgumentException($"map sim: unknown bot {spec.Bot}");
+        uint hs = (uint)spec.Seed;
+        var hands = spec.Bot switch
+        {
+            "deft" => PressHands.Deft(hs),
+            "human" => PressHands.Human(hs, human!.React),
+            "careless" => PressHands.Careless(hs, human!.React),
+            "standing" or "idler" => PressHands.Grip(hs),
+            _ => null,
+        };
+        if (human != null) human.Hands = hands;
+        r.Hands = hands;
+        var meter = new RunMeter();
         while (t < spec.Cap * 60 && !zone.Over)
         {
             // Onward: downhill on the way's distance to the ruler, a few metres ahead, by a line
             // that is clear of what stands on the ground.
             var onward = nav.Onward(p.X, p.Z);
             along = nav.ToGo(p.X, p.Z);
-            var (mx, mz) = Pilot.Steer(b, spec.Deft, zone.BossScript, onward);
+            double reach = Math.Max(1.5, Pilot.Reach(b));
+            bool inReach = b.Enemies.Living().Any(e => e.Disposition == Disposition.Hostile && e.State != EnemyState.Dying && Dist(e.X, e.Z, p.X, p.Z) < reach);
+            var (mx, mz) = spec.Bot switch
+            {
+                "idler" => human!.Steer(b, zone.BossScript, goal: inReach ? null : onward),
+                "human" or "careless" => human!.Steer(b, zone.BossScript, onward: onward),
+                "standing" => inReach ? (0, 0) : Pilot.Steer(b, false, null, goal: onward, naive: true),
+                _ => Pilot.Steer(b, spec.Deft, zone.BossScript, onward),
+            };
             // No nearer the ruler in twenty seconds with the ruler not up (a pickup out of reach, a
             // corner, a tunneller under the ground the hands wait on): walk on, longer each time.
             if ((int)(t / 20) != (int)((t + Dt) / 20))
@@ -146,11 +167,16 @@ public static class MapSim
                 double ml = Math.Max(1e-6, Math.Sqrt(mx * mx + mz * mz));
                 (mx, mz) = (mx / ml, mz / ml);
             }
-            if (Pilot.Act(b, j, mx, mz)) r.Quaffs++;
+            bool quaff = human != null ? human.Act(b, j, mx, mz, zone.BossScript)
+                : spec.Bot == "standing" ? Pilot.Act(b, j, mx, mz, null, lunges: false, aimsFlare: true, rooted: false, crush: false, hands: hands)
+                : Pilot.Act(b, j, mx, mz, hands: hands);
+            if (quaff) r.Quaffs++;
             zone.Step(Dt);
             zone.Frame(Dt);
             b.Tick(Dt, mx, mz);
-            foreach (var ev in b.Events.Drain())
+            var evs = b.Events.Drain();
+            meter.Step(b, t, Dt, evs, RunMeter.Fighting(b));
+            foreach (var ev in evs)
                 switch (ev)
                 {
                     case Ev.Kill k when k.ByPlayer: kills.Add(t - lastKill); lastKill = t; break;
@@ -191,7 +217,23 @@ public static class MapSim
         r.Iron = iron + j.Ch.Materials.GetValueOrDefault(Crafting.Iron);
         r.Material = j.Ch.Materials.Where(m => m.Key != Crafting.Shard && m.Key != Crafting.Iron).Sum(m => m.Value);
         r.Marks = marks;
+        meter.Finish(b, t, r.Measures, hands);
+        r.Feet = Pilot.Meter(b);
+        r.Feet.StandCharges = zone.StandCharges;
         return r;
+    }
+
+    /// <summary>(M3) --grant id[:rank],... / --grant-union id: what every map starts carrying (as ArenaSim's).</summary>
+    public static string? Grant, GrantUnion;
+    static int grantSaid, herSaid;
+    static readonly bool Bare = Environment.GetEnvironmentVariable("MAP_BARE") == "1";
+
+    static void GiveGrants(Battle b, MapRunSpec spec)
+    {
+        // (the rule is the game's now, Sim/DevGrants.MakeRoom; the grip kept here is the taught build's, as it was)
+        var said = DevGrants.MakeRoom(b, Grant, GrantUnion, TaughtBuilds.Of(spec.Calling) is { } t ? new[] { t.Grip } : Array.Empty<string>());
+        said.AddRange(DevGrants.Apply(b, Grant, GrantUnion, null, makeRoom: false));
+        foreach (var line in said) if (System.Threading.Interlocked.Increment(ref grantSaid) <= 4 || line.Contains("not ")) Console.WriteLine($"{spec.Key}: {line}");
     }
 
     static double Dist(double ax, double az, double bx, double bz) => Math.Sqrt((ax - bx) * (ax - bx) + (az - bz) * (az - bz));
@@ -218,6 +260,11 @@ public static class MapSim
         foreach (var g in rs.GroupBy(x => $"tier {x.Spec.Tier}").OrderBy(g => g.Key)) Row(g.Key, g.ToList());
         foreach (var g in rs.GroupBy(x => x.Spec.Calling).OrderBy(g => g.Key)) Row(g.Key, g.ToList());
         foreach (var g in rs.GroupBy(x => x.Spec.People).OrderBy(g => g.Key)) Row(g.Key, g.ToList());
+        foreach (var g in rs.GroupBy(x => x.Spec.Bot).OrderBy(g => g.Key)) Row(g.Key, g.ToList());
+        // (M3) The press measures, per bot and tier.
+        sb.AppendLine();
+        sb.AppendLine(RunMeasures.Header);
+        foreach (var g in rs.GroupBy(x => (x.Spec.Tier, x.Spec.Bot)).OrderBy(g => g.Key)) sb.AppendLine(RunMeasures.Row($"T{g.Key.Tier} {g.Key.Bot}", g.Select(x => x.Measures).ToList()));
         return sb.ToString();
     }
 }

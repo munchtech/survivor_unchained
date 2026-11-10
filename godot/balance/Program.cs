@@ -1,3 +1,4 @@
+using SurvivorUnchained.Play.Pilots;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -52,6 +53,12 @@ using SurvivorUnchained.Rpg;
 var opt = Opts.Parse(args);
 Pilot.ReadsBosses = opt.Get("bossread", "1") != "0";
 Pilot.Banks = opt.Get("bank", "1") != "0";
+// (--strafe: the campaign feet before M3's step-and-stand, for the numbers before)
+Pilot.StepsAndStands = !opt.Has("strafe");
+// (--stand-swing <s>: every world tier's `stand.standSwing` for this run (0: the clock before a fighter's plant; 99: no cap))
+if (opt.Get("stand-swing", "") is { Length: > 0 } ssw)
+    foreach (int tn in SurvivorUnchained.Content.WorldTiers.Numbers)
+        if (SurvivorUnchained.Content.WorldTiers.Get(tn).Stand is { } tsd) tsd.StandSwing = double.Parse(ssw, System.Globalization.CultureInfo.InvariantCulture);
 Pilot.PhaseAware = opt.Get("phaseaware", "1") != "0";
 Pilot.AimsFlare = opt.Get("flareboss", "1") != "0";
 Pilot.UsesFlare = opt.Get("flareuse", "1") != "0";
@@ -448,9 +455,10 @@ void ZoneRuns()
         try { r = ZoneSim.Play(spec); }
         catch (Exception e) { Console.Error.WriteLine($"{spec.Key}: {e}"); return; }
         results.Add(r);
-        lock (gate) Console.WriteLine($"[{++done}/{specs.Count} {sw.Elapsed:mm\\:ss}] {spec.Key}: {(r.Reached ? "through" : r.Stuck ? "STUCK " + r.StuckAt : "capped")} {r.PlaySeconds / 60:0.0} min kills {r.Kills} packs {r.Packs} champs {r.Champions} falls {r.Falls} rises {r.Rises} shown {r.GearShown} L{r.LevelAtWarden}/{r.LevelAtGate}");
+        lock (gate) Console.WriteLine($"[{++done}/{specs.Count} {sw.Elapsed:mm\\:ss}] {spec.Key}: {(r.Reached ? "through" : r.Stuck ? "STUCK " + r.StuckAt : "capped")} {r.PlaySeconds / 60:0.0} min kills {r.Kills} packs {r.Packs} champs {r.Champions} falls {r.Falls} rises {r.Rises} stalls {r.Stalls}/{r.StallSec:0.0}s charges {r.Feet.StandCharges} shown {r.GearShown} L{r.LevelAtWarden}/{r.LevelAtGate} {r.Measures.Line()}{(opt.Has("fullby") ? " fullby " + string.Join(",", r.FullByStage.Select(kv => $"{kv.Key}:{kv.Value:0}")) : "")}{(opt.Has("feet") ? Environment.NewLine + "    FEET " + r.Feet : "")}{string.Concat(r.Measures.FallNotes.Select(n => Environment.NewLine + "    FALL " + n))}");
     });
     var all = results.OrderBy(r => r.Spec.Key).ToList();
+    FeetLines(all.Select(r => (r.Spec.Bot + " tier " + r.Spec.Tier, r.Feet)));
     var md = ZoneSim.Report(all, opt.Get("cmd", "dotnet run -c Release --project godot/balance -- zone " + string.Join(" ", args.Skip(1))));
     if (opt.Has("out")) File.WriteAllText(opt.Get("out", "zone.md"), md);
     Console.WriteLine(md);
@@ -559,13 +567,18 @@ void Maps()
     var tiers = opt.List("tiers", "1").Select(int.Parse).ToArray();
     var mods = opt.Get("mods", "") is { Length: > 0 } m ? m.Split('+') : Array.Empty<string>();
     var specs = new List<MapRunSpec>();
+    // (M3) --bot human|deft|careless|standing|idler|plain (or a list: --bots human,deft); --grant / --grant-union as the arena's.
+    var bots = opt.Has("bots") ? opt.List("bots", "deft") : [opt.Get("bot", "deft")];
+    if (opt.Has("grant")) SurvivorUnchained.Balance.MapSim.Grant = opt.Get("grant", "");
+    if (opt.Has("grant-union")) SurvivorUnchained.Balance.MapSim.GrantUnion = opt.Get("grant-union", "");
+    foreach (var bot in bots)
     foreach (var c in Callers())
         foreach (int tier in tiers)
             foreach (var people in peoples)
                 for (int s = 0; s < seeds; s++)
                 {
                     int level = opt.Get("level", "tier") == "tier" ? Math.Min(30, 8 + 2 * tier) : opt.Int("level", 10);
-                    specs.Add(new MapRunSpec(seed0 + s, c, tier, people, level, opt.Int("gear", 2), mods, opt.Get("bot", "deft") == "deft", opt.Double("cap", 25)));
+                    specs.Add(new MapRunSpec(seed0 + s, c, tier, people, level, opt.Int("gear", 2), mods, bot, opt.Double("cap", 25)));
                 }
     Console.WriteLine($"{specs.Count} maps, {opt.Int("par", 16)} at a time");
     var results = new ConcurrentBag<MapRunResult>();
@@ -581,12 +594,26 @@ void Maps()
         lock (gate)
         {
             done++;
-            Console.WriteLine($"[{done}/{specs.Count} {sw.Elapsed:mm\\:ss}] {spec.Key}: {(r.Cleared ? $"cleared {r.Minutes:0.0}" : r.Closed ? $"closed {r.Minutes:0.0} ({r.KilledBy})" : $"walking {r.Minutes:0.0}")} falls {r.Falls} packs {r.PacksCleared}/{r.Packs} boss {(r.BossTtk is double bt ? $"{bt:0}s" : $"phase {r.BossPhase} left {r.BossLeft:0.00}")} low {r.LowHp:0.00}  {r.Build}");
+            Console.WriteLine($"[{done}/{specs.Count} {sw.Elapsed:mm\\:ss}] {spec.Key}: {(r.Cleared ? $"cleared {r.Minutes:0.0}" : r.Closed ? $"closed {r.Minutes:0.0} ({r.KilledBy})" : $"walking {r.Minutes:0.0}")} falls {r.Falls} packs {r.PacksCleared}/{r.Packs} boss {(r.BossTtk is double bt ? $"{bt:0}s" : $"phase {r.BossPhase} left {r.BossLeft:0.00}")} low {r.LowHp:0.00}  {r.Build}\n    {r.Measures.Line()}{(opt.Has("feet") ? "\n    FEET " + r.Feet : "")}");
         }
     });
+    FeetLines(results.OrderBy(r => r.Spec.Key).Select(r => (r.Spec.Bot + " tier " + r.Spec.Tier, r.Feet)));
     var md = MapSim.Report(results.OrderBy(r => r.Spec.Key).ToList());
     if (opt.Has("out")) File.WriteAllText(opt.Get("out", "maps.md"), md);
     Console.WriteLine(md);
+}
+
+// (M3) Her feet in the fights, a line a bot and tier: the share of in-reach seconds she stood, the full turns round her
+// foe each ten seconds in reach (the strafe before: about 2.2), the rules that moved her (seconds a run).
+void FeetLines(IEnumerable<(string Label, Pilot.FeetMeter M)> rows)
+{
+    foreach (var g in rows.GroupBy(x => x.Label))
+    {
+        double inReach = g.Sum(x => x.M.InReach), n = g.Count();
+        if (inReach <= 0) continue;
+        var by = g.SelectMany(x => x.M.By).GroupBy(kv => kv.Key).OrderByDescending(k => k.Sum(kv => kv.Value)).Select(k => $"{k.Key} {k.Sum(kv => kv.Value) / n:0.0}");
+        Console.WriteLine($"feet {g.Key}: in reach {inReach / n:0.0} s a run, stood {g.Sum(x => x.M.Stood) / inReach * 100:0}%, {g.Sum(x => x.M.AbsTurn) / (2 * Math.PI) / inReach * 10:0.00} turns per 10 s (net {g.Sum(x => x.M.NetTurn) / (2 * Math.PI) / inReach * 10:0.00}), plants {g.Sum(x => x.M.Plants) / n:0} and stand charges {g.Sum(x => x.M.StandCharges) / n:0.0} a run; by rule (s a run): {string.Join(" ", by)}");
+    }
 }
 
 void ProbeAll()

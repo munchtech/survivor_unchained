@@ -1,3 +1,4 @@
+using SurvivorUnchained.Play.Pilots;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -25,6 +26,10 @@ public sealed class ZoneRunResult
     public bool Reached, BossReached, WardenDown, Stuck;
     public string? StuckAt;
     public double Seconds, FilmFallback, Meters, MetersNight, MetersDay, Fighting, Gold, GoldDropped;
+    /// <summary>(M3 lead 7, the walk) Times her hands asked to walk and her feet came no further than WalkedLeast m in
+    /// StallFor s (a wall, a prop: not her own plant or a hold), and the seconds of it. The stand clock charges on these.</summary>
+    public int Stalls;
+    public double StallSec;
     public int LeftLying, Discarded, Unsticks, Fodder, Elite, Champion, Boss, Packs, Champions, Falls, Rises, GearShown, Upgrades;
     public int[] Gear = new int[7];
     public int WardenGear;
@@ -32,6 +37,17 @@ public sealed class ZoneRunResult
     public int PocketPacks, PocketFoes, PocketBlocked, PocketDown, PocketLeft;
     public bool WardenLegendary;
     public int LevelAtWarden, LevelAtGate, PostsLit;
+    /// <summary>(M3) The hands on the press plan (their presses by skill), and her damage by source.</summary>
+    public PressHands? Hands;
+    public Dictionary<string, double> DamageBy = new();
+    public double ResolveSpent, ResolveFullSec, FlareFirst = -1, MarkGapMax;
+    /// <summary>(M3) What her feet did in the fights (Pilot.Meter): the share of in-reach seconds stood, the turns round her foe.</summary>
+    public Pilot.FeetMeter Feet = new();
+    /// <summary>(M3) Seconds Resolve sat at its cap, by stage.</summary>
+    public readonly Dictionary<string, double> FullByStage = new();
+    public int FlareCasts;
+    /// <summary>(M3) The numbers round's measures (RunMeter: mark gap, Resolve, presses, shares, Flare, falls).</summary>
+    public RunMeasures Measures = new();
     public readonly List<string> FallsAt = new(), RisesAt = new(), WardenDrops = new();
     /// <summary>Each beat put down: its seconds (woke to down) and her level then.</summary>
     public readonly Dictionary<string, (double Seconds, int Level)> Beats = new();
@@ -52,12 +68,18 @@ public sealed class ZoneRunResult
 public static class ZoneSim
 {
     public const double Cap = 3600, StuckAfter = 300;
+    /// <summary>(the walk's stalls) Under WalkedLeast m made in StallFor s with the hands asking: a stall. SU_WALKDBG=1 prints each.</summary>
+    public const double StallFor = 0.8, WalkedLeast = 0.25;
+    static readonly bool WalkDbg = Environment.GetEnvironmentVariable("SU_WALKDBG") == "1";
+    /// <summary>SU_WALKTRACE=lowford/T1/human/s1@280-286: every tick of that run between those seconds, as the stalls print.</summary>
+    static readonly string? WalkTrace = Environment.GetEnvironmentVariable("SU_WALKTRACE");
 
     static double Dist(double ax, double az, double bx, double bz) => Math.Sqrt((ax - bx) * (ax - bx) + (az - bz) * (az - bz));
 
     public static ZoneRunResult Play(ZoneRunSpec spec, bool quiet = false)
     {
         var dbg = new HashSet<string>();
+        RunMeter? meterRef = null;
         if (spec.Zone != "lowford") throw new ArgumentException($"zone sim: only lowford is built ({spec.Zone})");
         var a = Callings.Archetype(spec.Calling);
         var j = Journey.Begin(new CreationChoice
@@ -94,6 +116,7 @@ public static class ZoneSim
             j.Ch.Stats.Deaths++;
             r.Falls++;
             r.FallsAt.Add($"{zone.Now}@({b.Player.X:0},{b.Player.Z:0}) by {killer?.Def.Id ?? "the dark"}");
+            if (meterRef != null) meterRef.PendingFall = $"{zone.Now} by {killer?.Def.Id ?? "the dark"} ({killer?.State})";
             if (!zone.OnDeath(killer?.Def.Name ?? "the dark")) throw new InvalidOperationException("the zone let her go");
             return false;
         };
@@ -101,9 +124,24 @@ public static class ZoneSim
         host.Battle = b;
         zone.Begin(b);
 
-        var human = spec.Bot is "human" or "careless" ? new Human(spec.Seed, spec.Bot == "careless") : null;
+        var human = spec.Bot is "human" or "careless" or "idler" ? new Human(spec.Seed, spec.Bot == "careless") { Idle = spec.Bot == "idler" } : null;
         bool deft = spec.Bot == "deft", standing = spec.Bot == "standing";
         if (human == null && !standing && spec.Bot is not ("deft" or "plain")) throw new ArgumentException($"zone sim: unknown bot {spec.Bot}");
+        // (M3: the bots on the one press plan; plain keeps the old hands)
+        uint hs = (uint)spec.Seed;
+        var hands = spec.Bot switch
+        {
+            "deft" => PressHands.Deft(hs),
+            "human" => PressHands.Human(hs, human!.React),
+            "careless" => PressHands.Careless(hs, human!.React),
+            "standing" or "idler" => PressHands.Grip(hs),
+            _ => null,
+        };
+        if (human != null) human.Hands = hands;
+        r.Hands = hands;
+        var meter = new RunMeter { Deaths = false };
+        meterRef = meter;
+        if (human != null) meter.Doing = () => human.LastAware ? "aware" : "unaware";
         var road = meta.Paths.GetValueOrDefault("ROAD") ?? Array.Empty<double[]>();
         int wp = 0;
         var ford = meta.Place("LOWFORD", "ford");
@@ -125,6 +163,7 @@ public static class ZoneSim
         var underfoot = new Dictionary<Pickup, double>(ReferenceEqualityComparer.Instance);
         // (the gear she walks to out of a fight: Pilot.Steer's nearest within 12 m, how near she has come and since when)
         Pickup? chase = null; double chaseBest = 0, chaseSince = 0, chaseX = 0, chaseZ = 0;
+        var walked = new Queue<(double T, double X, double Z)>(); double askedSince = 0; bool stalled = false; int chargesSeen = 0;
 
         while (tt < Cap)
         {
@@ -206,16 +245,26 @@ public static class ZoneSim
             double mx = 0, mz = 0;
             if (!held && p.Alive)
             {
-                if (human != null) { (mx, mz) = human.Steer(b, null, onward: to); human.Act(b, j, mx, mz, null); }
+                if (human is { Idle: true })
+                {
+                    // (M3: the idler walks the road as its goal, and stands where a foe is in reach, stepping only out of what it read)
+                    double reach = Math.Max(1.5, Pilot.Reach(b));
+                    bool inReach = b.Enemies.Living().Any(e => e.Disposition == Disposition.Hostile && e.State != EnemyState.Dying && Dist(e.X, e.Z, p.X, p.Z) - e.Radius < reach);
+                    (mx, mz) = human.Steer(b, null, goal: inReach ? null : to);
+                    human.Act(b, j, mx, mz, null);
+                }
+                // (M3: at the Ford-Warden the lamp between them is her goal, not a way onward the Pilot drops while a foe is near:
+                // a player brings his charge through the lamps, as the fight teaches; walking past them kept the floors up)
+                else if (human != null) { (mx, mz) = now == Prologue.Stage.Boss ? human.Steer(b, null, goal: to) : human.Steer(b, null, onward: to); human.Act(b, j, mx, mz, null); }
                 else if (standing)
                 {
                     // (stands and takes it while a foe is in her reach, never stepping out of a blow; else walks on to the goal)
                     double reach = Math.Max(1.5, Pilot.Reach(b));
-                    bool inReach = b.Enemies.Living().Any(e => e.Disposition == Disposition.Hostile && e.State != EnemyState.Dying && Dist(e.X, e.Z, p.X, p.Z) < reach);
+                    bool inReach = b.Enemies.Living().Any(e => e.Disposition == Disposition.Hostile && e.State != EnemyState.Dying && Dist(e.X, e.Z, p.X, p.Z) - e.Radius < reach);
                     if (!inReach) (mx, mz) = Pilot.Steer(b, false, null, goal: to, naive: true);
-                    Bots.Act("standing", b, j, mx, mz, null);
+                    Pilot.Act(b, j, mx, mz, null, lunges: false, aimsFlare: true, rooted: false, crush: false, hands: hands);
                 }
-                else { (mx, mz) = Pilot.Steer(b, deft, null, onward: to); Pilot.Act(b, j, mx, mz); }
+                else { (mx, mz) = now == Prologue.Stage.Boss ? Pilot.Steer(b, deft, null, goal: to) : Pilot.Steer(b, deft, null, onward: to); Pilot.Act(b, j, mx, mz, hands: hands); }
             }
 
             if (Dist(p.X, p.Z, anchorX, anchorZ) > 2.5 || held) { anchorX = p.X; anchorZ = p.Z; anchorAt = tt; }
@@ -250,17 +299,48 @@ public static class ZoneSim
             }
             zone.Step(dt);
             b.Tick(dt, mx, mz);
-            b.Events.Drain();
+            meter.Step(b, tt, dt, b.Events.Drain(), fight);
             zone.Frame(dt);
             host.Pass(dt);
             tt += dt;
 
             // The measures.
             p = b.Player;
+            void Where(string what)
+            {
+                var foe = b.Enemies.Living().Where(e => e.Disposition == Disposition.Hostile && e.State != EnemyState.Dying && e.Roused).MinBy(e => Dist(e.X, e.Z, p.X, p.Z));
+                var pick = b.Pickups.Living().MinBy(k => Dist(k.X, k.Z, p.X, p.Z));
+                string Ray(double x, double z) => SurvivorUnchained.Sim.GroundPath.Clear(b.Collision, (p.X, p.Z), (x, z), p.Radius) ? "clear" : "WALL";
+                Console.Error.WriteLine($"{what} {spec.Key} t {tt:0.0} {zone.Now} at ({p.X:0.00},{p.Z:0.00}) r {p.Radius:0.00} hands ({mx:0.00},{mz:0.00}) last {Pilot.Meter(b).Last} to ({to.X:0.0},{to.Z:0.0}) {Ray(to.X, to.Z)} fight {fight} side {sideUntil > tt}"
+                    + $" foe {(foe == null ? "-" : $"{foe.Def.Id}@({foe.X:0.0},{foe.Z:0.0}) {Dist(foe.X, foe.Z, p.X, p.Z):0.0} {Ray(foe.X, foe.Z)}")} pick {(pick == null ? "-" : $"{pick.Kind}@({pick.X:0.0},{pick.Z:0.0}) {Dist(pick.X, pick.Z, p.X, p.Z):0.0} {Ray(pick.X, pick.Z)}")}"
+                    + " | near " + string.Join(" ", b.Collision.Within(p.X, p.Z, 3).Select(c => $"{c.Kind}{(c.Soft ? "/soft" : "")}{(c.PlayerOnly ? "/player" : "")}{(c.Gap ? "/gap" : "")}[{c.Tag}]@({c.X:0.00},{c.Z:0.00}) {(c.Kind == ColliderKind.Circle ? $"r{c.R:0.00}" : $"{c.Hw:0.00}x{c.Hd:0.00} rot {c.Rot:0.00}")}")));
+            }
+            if (WalkTrace != null && WalkTrace.StartsWith(spec.Key + "@") && WalkTrace[(spec.Key.Length + 1)..].Split('-') is { Length: 2 } wtr && tt >= double.Parse(wtr[0], CultureInfo.InvariantCulture) && tt <= double.Parse(wtr[1], CultureInfo.InvariantCulture)) Where("TRACE");
+            int chargesNow = (zone.Night?.StandCharges ?? 0) + (zone.Day?.StandCharges ?? 0);
+            if (WalkDbg && chargesNow > chargesSeen) Where("CHARGE");
+            chargesSeen = chargesNow;
+            // (the walk's stalls: hands asking, feet free, and no ground made)
+            bool asks = (mx != 0 || mz != 0) && p.Alive && !held && p.RootT <= 0 && p.PlantT <= 0;
+            if (!asks) { askedSince = tt; stalled = false; }
+            walked.Enqueue((tt, p.X, p.Z));
+            while (walked.Count > 0 && tt - walked.Peek().T > StallFor) walked.Dequeue();
+            if (asks && tt - askedSince >= StallFor && walked.Count > 0 && Dist(walked.Peek().X, walked.Peek().Z, p.X, p.Z) < WalkedLeast)
+            {
+                r.StallSec += dt;
+                if (!stalled)
+                {
+                    stalled = true; r.Stalls++;
+                    if (WalkDbg) Where("WALKDBG");
+                }
+            }
+            else if (stalled && walked.Count > 0 && Dist(walked.Peek().X, walked.Peek().Z, p.X, p.Z) > 0.6) stalled = false;
             double step = Dist(p.X, p.Z, lastX, lastZ);
             if (step < 2) { r.Meters += step; if (zone.Now >= Prologue.Stage.Dawn) r.MetersDay += step; else r.MetersNight += step; }
             lastX = p.X; lastZ = p.Z;
             if (fight) r.Fighting += dt;
+            // (--fullby: where she stood from the Ford-Warden, seconds by distance band)
+            if (now == Prologue.Stage.Boss && b.Enemies.Living().FirstOrDefault(e => e.Tag == "warden") is { } wdn) { double wd = Dist(wdn.X, wdn.Z, p.X, p.Z); string bk = wd < 2.3 ? "d<2.3" : wd < 4 ? "d<4" : wd < 6.5 ? "d<6.5" : "d>6.5"; r.FullByStage[bk] = r.FullByStage.GetValueOrDefault(bk) + dt; }
+            if (b.Resolve.On && b.Resolve.Value >= b.Resolve.Max) { r.ResolveFullSec += dt; r.FullByStage[zone.Now.ToString()] = r.FullByStage.GetValueOrDefault(zone.Now.ToString()) + dt; }
             if (!wasAlive && p.Alive) { r.Rises++; r.RisesAt.Add($"{zone.Now}@({p.X:0},{p.Z:0}) {LampBook.LastPost(j.World, "lowford")?.Id ?? "checkpoint"}"); }
             wasAlive = p.Alive;
             if (zone.Now != stage)
@@ -333,6 +413,10 @@ public static class ZoneSim
         r.Stages[stage.ToString()] = r.Stages.GetValueOrDefault(stage.ToString()) + (tt - stageAt);
         if (!r.Reached && stage is Prologue.Stage.Intro or Prologue.Stage.Victory) r.FilmFallback += tt - stageAt;
         r.Seconds = tt;
+        foreach (var (k, v) in b.DamageBy) r.DamageBy[k] = v;
+        r.FlareCasts = b.FlareCasts; if (b.FlareTimes.Count > 0) r.FlareFirst = b.FlareTimes[0];
+        meter.Finish(b, tt, r.Measures, hands);
+        r.Measures.Falls.AddRange(r.FallsAt);
         if (spec.Features != null)
             foreach (var enc in new[] { zone.Night, zone.Day })
                 if (enc != null)
@@ -342,6 +426,8 @@ public static class ZoneSim
         r.LevelAtGate = j.Ch.Level;
         r.Champions = r.Champion;
         if (!quiet && !r.Reached) Console.Error.WriteLine($"{spec.Key}: not through at {tt:0}s: {(r.Stuck ? "stuck " + r.StuckAt : "capped")} {zone.Now}");
+        r.Feet = Pilot.Meter(b);
+        r.Feet.StandCharges = (zone.Night?.StandCharges ?? 0) + (zone.Day?.StandCharges ?? 0);
         return r;
     }
 
@@ -386,7 +472,7 @@ public static class ZoneSim
         sb.AppendLine();
         sb.AppendLine("Kills are hers (fodder / elite / champion / boss). Packs: night and day beats put down (pack, ambush, ring). Gear: ground drops (all of it rolled: carriers, champions, the strongbox, the Warden), by tier; shown = not Hidden by the Default preset (LootFilter.Judge with the toggles on; first sightings not counted). Upgrade: a drop better than the best of its slot so far (Drops.Power over the worn piece by the upgrade margin), not worn. Fighting: a roused foe within 24 m.");
         sb.AppendLine();
-        string[] order = ["human", "careless", "deft", "plain", "standing"];
+        string[] order = ["human", "careless", "deft", "plain", "standing", "idler"];
         var groups = rs.GroupBy(r => (r.Spec.Tier, r.Spec.Bot)).OrderByDescending(g => g.Key.Tier).ThenBy(g => Array.IndexOf(order, g.Key.Bot)).ToList();
 
         sb.AppendLine("## Per bot (medians; worst case in brackets)");
@@ -404,6 +490,11 @@ public static class ZoneSim
         }
         sb.AppendLine();
 
+        sb.AppendLine("## The presses (M3; medians, presses and damage shares averaged over the runs)");
+        sb.AppendLine();
+        sb.AppendLine(RunMeasures.Header);
+        foreach (var g in groups) sb.AppendLine(RunMeasures.Row($"T{g.Key.Tier} {g.Key.Bot}", g.Select(r => r.Measures).ToList()));
+        sb.AppendLine();
         sb.AppendLine("## Per hour (medians of each run's rate; play-only / with films)");
         sb.AppendLine();
         sb.AppendLine("| Tier | Bot | Kills/hr | Packs/hr | Champions/hr | Gear shown/hr | Minutes per upgrade | Rises/hr |");

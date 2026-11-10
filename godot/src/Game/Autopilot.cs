@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using SurvivorUnchained.Play.Bosses;
+using SurvivorUnchained.Play.Pilots;
 using SurvivorUnchained.Play.Zones;
 using SurvivorUnchained.Sim;
 using SurvivorUnchained.World;
@@ -49,14 +50,296 @@ public sealed class Autopilot
     int answered;
     double standDiag;
 
-    public Autopilot(Game game) { g = game; }
+    public Autopilot(Game game)
+    {
+        g = game;
+        bool deft = Args.Get("auto") == "deft";
+        pilotHuman = deft ? null : new Human(7, false);
+        planHands = pilotHuman != null ? PressHands.Human(7, pilotHuman.React) : PressHands.Deft(7);
+        if (pilotHuman != null) pilotHuman.Hands = planHands;
+        Pilot.Leaves = Left;
+    }
+
+    /// <summary>(M3) One set of feet: a campaign fight under --auto (the human) and --auto deft is moved and played by the
+    /// balance harness's own hands (logic/Play/Pilots: Human.Steer/Act, Pilot.Steer/Act), the ones every M3 number was
+    /// measured with: in to a foe's edge, the map's way to its ruler (NavField), out of marks, a dash on a telegraph, the
+    /// Flare, a draught. Not under --auto idle/toward/across/away/talk, and not outside the campaign (an arena, a story
+    /// night: the old feet below, which other leads' shots stand on). --old-feet: the feet before this (a measure's A/B).</summary>
+    readonly Human? pilotHuman;
+    /// <summary>(M3) The one press plan's hands (data/content/press_plan.json, Sim/PressPlan.cs): the human's, pressed
+    /// through that human's reaction; `--auto deft` presses on the instant and misses nothing.</summary>
+    readonly PressHands planHands;
+    static readonly bool oldFeet = Args.Has("old-feet"), clip = Args.Has("clip");
+    /// <summary>This frame's Move is the Pilot's (PilotMove): the step's hands are the Pilot's too (PlanStep).</summary>
+    bool piloted;
+    ArenaBoss? pilotBoss;
+    bool Pilots(Battle b) => b.Campaign && !oldFeet && !Idle && !Toward && !Away && !Across && !Talk;
+
+    readonly Dictionary<string, bool> clipHeld = new(); // --clip: the grip state last printed (the game's keys release it each step, the plan re-holds it)
+    double lastDashT;
+
+    /// <summary>The hands, each sim step after the keys and before the tick (WorldScene.Hands). Piloted: the Pilot's Act (the
+    /// press plan through these hands, its dashes by Battle.Dash, the Flare by Battle.UseFlare, a draught: the calls the
+    /// game's keys make). Else, in a campaign fight, the bare press plan, as before.</summary>
+    void PlanStep(Battle b)
+    {
+        if (clip && b.Campaign && !g.InTransit && !g.InCinematic) Her(b);
+        if (!b.Campaign || Idle || Toward || Away || Across || Talk || g.InTransit || g.InCinematic || !b.Player.Alive) return;
+        if (!clip) { RunHands(b); return; }
+        // --clip: one line per press the plan makes (the shape of ScriptedPress's), a print only.
+        var before = new Dictionary<string, int>(planHands.Presses);
+        var kind = b.Weapons.ToDictionary(w => w, w => w.KindledNow);
+        double resolve = b.Resolve.Value;
+        RunHands(b);
+        foreach (var w in b.Weapons)
+        {
+            string? k = null;
+            if (planHands.Presses.GetValueOrDefault(w.Id) > before.GetValueOrDefault(w.Id)) k = kind.GetValueOrDefault(w) ? "kindle" : "press";
+            else if (w.Hold && w.Held != clipHeld.GetValueOrDefault(w.Id)) { k = w.Held ? "hold-start" : "hold-end"; clipHeld[w.Id] = w.Held; }
+            if (k != null) Godot.GD.Print(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "skill press frame {0} slot {1} t {2:0.00} skill {3} kind {4} resolve {5:0.0}/{6:0}", Godot.Engine.GetFramesDrawn(), w.Slot + 1, g.Journey.Playtime, w.Id, k, resolve, b.Resolve.Max));
+        }
+        // A union on the grip's key (Bladestorm on Sunder's): the plan holds that key as the grip out of a storm
+        // (PressHands.HalfGrip), printed as the grip's hold with the half's swings while it was held.
+        if (b.Weapons.Find(w => w.Slot2 >= 0 && w.Half != null) is { } un)
+        {
+            if (un.Half!.Timer > clipHalfTimer + 1e-9) clipHalfSwings++;
+            clipHalfTimer = un.Half.Timer;
+        }
+        if (planHands.HalfGrip != clipHalf)
+        {
+            int slot2 = b.Weapons.Find(w => w.Slot2 >= 0)?.Slot2 ?? -1;
+            if (clipHalf != null) Godot.GD.Print(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "skill press frame {0} slot {1} t {2:0.00} skill {3} kind hold-end resolve {4:0.0}/{5:0} swings {6}", Godot.Engine.GetFramesDrawn(), slot2 + 1, g.Journey.Playtime, clipHalf, resolve, b.Resolve.Max, clipHalfSwings));
+            if (planHands.HalfGrip != null) Godot.GD.Print(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "skill press frame {0} slot {1} t {2:0.00} skill {3} kind hold-start resolve {4:0.0}/{5:0}", Godot.Engine.GetFramesDrawn(), slot2 + 1, g.Journey.Playtime, planHands.HalfGrip, resolve, b.Resolve.Max));
+            clipHalf = planHands.HalfGrip; clipHalfSwings = 0;
+        }
+        // A dash the Pilot made (in its Act, or its deft Steer this frame): it did not go through Press(Act.Dash).
+        if (piloted && b.Player.DashT > lastDashT + 1e-9) DashLine(b);
+        lastDashT = b.Player.DashT;
+        Trace(b);
+    }
+
+    string? clipHalf; int clipHalfSwings; double clipHalfTimer;
+    bool herSaid, fallSaid; double herHp = -1;
+
+    /// <summary>--clip: her build once (Play/DevVeteran.Line, the line the balance harness prints: the same line, the same
+    /// build), each blow that takes 3% of her life or more (how much, by whom, whether her feet were asked still), and her fall.</summary>
+    void Her(Battle b)
+    {
+        var p = b.Player;
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        if (!herSaid && b.Time >= 1) { herSaid = true; Godot.GD.Print(DevVeteran.Line(b, g.Journey)); }
+        if (herHp >= 0 && herHp - p.Hp >= 0.03 * b.MaxHp)
+            Godot.GD.Print(string.Format(inv, "her hit t {0:0.0} lost {1:0} ({2:0.00} of life) by {3} life {4:0.00} feet {5}", b.Time, herHp - p.Hp, (herHp - p.Hp) / b.MaxHp,
+                p.LastKiller?.Def.Id ?? "-", p.Hp / b.MaxHp, Math.Abs(Move.X) + Math.Abs(Move.Z) < 0.05 ? "still" : "moving"));
+        if (!p.Alive && !fallSaid) { fallSaid = true; Godot.GD.Print(string.Format(inv, "her fall t {0:0.0} to {1}", b.Time, p.FellTo ?? p.LastKiller?.Def.Id ?? "-")); }
+        herHp = p.Hp;
+    }
+
+    void RunHands(Battle b)
+    {
+        if (!piloted) { PressPlan.Run(b, planHands); return; }
+        Pilot.UsesFlare = !g.HoldFlare;
+        bool drinks = !noDrink && !g.TeachWaiting("draught");
+        if (pilotHuman != null) pilotHuman.Act(b, g.Journey, Move.X, Move.Z, pilotBoss, drinks);
+        else Pilot.Act(b, g.Journey, Move.X, Move.Z, hands: planHands, drinks: drinks);
+    }
+
+    void DashLine(Battle db) =>
+        Godot.GD.Print(string.Format(System.Globalization.CultureInfo.InvariantCulture, "skill press frame {0} slot dash t {1:0.00} skill dash kind dash resolve {2:0.0}/{3:0}", Godot.Engine.GetFramesDrawn(), g.Journey.Playtime, db.Resolve.Value, db.Resolve.Max));
+
+    /* ---- --clip: a trace of her feet, a line a second of the fight's clock (a print only) ---- */
+    double trAt = -1, trLast = -1, trIn, trNet, trAbs, trNear, trAng, trSeed;
+    int trFoe = -1;
+    bool trHad;
+    (double X, double Z) trTo;
+
+    /// <summary>Where she is, the nearest hostile that is up (alive, not dying, not resting), whether the Pilot has her feet;
+    /// and over the last second: the time a foe stood within her reach (the Pilot's Reach, to its edge), the angle she
+    /// went round that nearest foe while it did (net, and the sum of its absolute steps: the circling's measure), the time
+    /// one stood within 22 m; on a map, the way's metres to go to its ruler.</summary>
+    void Trace(Battle b)
+    {
+        var p = b.Player;
+        double now = b.Time, sdt = trLast < 0 ? 0 : Math.Min(0.1, now - trLast);
+        trLast = now;
+        Enemy? ne = null; double nd = double.MaxValue;
+        foreach (var e in b.Enemies.Living())
+        {
+            if (e.Disposition != Disposition.Hostile || e.State == EnemyState.Dying || e.Wake > 0 && !e.Roused) continue;
+            double d = Math.Sqrt((e.X - p.X) * (e.X - p.X) + (e.Z - p.Z) * (e.Z - p.Z));
+            if (d < nd) { nd = d; ne = e; }
+        }
+        if (ne != null && nd < 22) trNear += sdt;
+        if (ne != null && nd - ne.Radius < Math.Max(1.5, Pilot.Reach(b)))
+        {
+            double a = Math.Atan2(p.Z - ne.Z, p.X - ne.X);
+            if (trHad && trFoe == ne.Id && trSeed == ne.Seed) { double da = Math.IEEERemainder(a - trAng, Math.Tau); trNet += da; trAbs += Math.Abs(da); }
+            trHad = true; trFoe = ne.Id; trSeed = ne.Seed; trAng = a; trIn += sdt;
+        }
+        else trHad = false;
+        if (trAt < 0) trAt = now;
+        if (now - trAt < 1) return;
+        trAt = now;
+        double togo = g.Zone is MapRun mr ? NavFor(mr, b).ToGo(p.X, p.Z) : double.NaN;
+        // (the nearest gear, material, gold or chest lying that she would walk to, -1 with none in 40 m; how many she leaves)
+        double lyD = -1; int lyLeft = 0;
+        double emD = -1;
+        foreach (var k in b.Pickups.Items) if (k.Alive && k.Kind == PickupKind.Ember) { double kd = Math.Sqrt((k.X - p.X) * (k.X - p.X) + (k.Z - p.Z) * (k.Z - p.Z)); if (emD < 0 || kd < emD) emD = kd; }
+        foreach (var k in b.Pickups.Items)
+        {
+            if (!k.Alive || k.Kind is not (PickupKind.Item or PickupKind.Material or PickupKind.Gold or PickupKind.Chest)) continue;
+            if (Left(k)) { lyLeft++; continue; }
+            double kd = Math.Sqrt((k.X - p.X) * (k.X - p.X) + (k.Z - p.Z) * (k.Z - p.Z));
+            if (kd < 40 && (lyD < 0 || kd < lyD)) lyD = kd;
+        }
+        Godot.GD.Print(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+            "pilot trace t {0:0.0} x {1:0.00} z {2:0.00} near {3:0.00} foe {4} piloted {5} inreach {6:0.00} turn {7:0.000} absturn {8:0.000} near22 {9:0.00} togo {10:0.0} ruler {11} hp {12:0.00} lying {13:0.0} left {14} move {15:0.00},{16:0.00} to {17:0.0},{18:0.0} ember {19:0.0} stood {20:0.00} feet-turns {21:0.00}",
+            now, p.X, p.Z, ne == null ? -1 : nd, ne?.Def.Id ?? "-", piloted ? 1 : 0, trIn, trNet, trAbs, trNear, togo,
+            g.Zone is MapRun m2 ? (m2.Cleared ? "down" : m2.Boss != null ? "up" : "no") : "-", p.Hp / Math.Max(1, b.MaxHp), lyD, lyLeft, Move.X, Move.Z, trTo.X, trTo.Z, emD, Pilot.Meter(b).StoodShare, Pilot.Meter(b).TurnsPer10));
+        trIn = trNet = trAbs = trNear = 0;
+    }
+
+    /* ---- (M3) the Pilot's feet ---- */
+    /// <summary>What lies that her hands cannot take, by where it lay when it was refused (Battle.Collect sets its Age to
+    /// -2 when the pack has no room: Journey.PickedUp false). A pooled pickup come back elsewhere is a new one.</summary>
+    readonly Dictionary<Pickup, (double X, double Z)> refused = new();
+
+    /// <summary>(Pilot.Leaves) A thing lying that walking onto will not take: hidden by the loot filter (Battle.UpdatePickups
+    /// takes none it hides), not yet takeable (a set piece laid for a picture: Age below zero), or refused by a full pack.
+    /// The harness has none of these (MapSim stashes gear, no filter), so its Pilot never met one.</summary>
+    bool Left(Pickup k)
+    {
+        if (g.Battle is not { } b) return false;
+        if (k.Look == Verdict.Hidden && !b.TakeHidden) return true;
+        if (k.Kind is PickupKind.Ember or PickupKind.Gold or PickupKind.Heal or PickupKind.Magnet) return false;
+        if (k.Age < 0) { refused[k] = (k.X, k.Z); return true; }
+        if (refused.TryGetValue(k, out var at))
+        {
+            if ((at.X - k.X) * (at.X - k.X) + (at.Z - k.Z) * (at.Z - k.Z) < 0.25) return true;
+            refused.Remove(k);
+        }
+        return false;
+    }
+
+    MapRun? navFor;
+    NavField? nav;
+    double navBest, navStuckUntil;
+    int navHolds, navBucket;
+
+    /// <summary>The map's way to its ruler (Zones/NavField.cs), built once a map.</summary>
+    NavField NavFor(MapRun m, Battle b)
+    {
+        if (navFor != m || nav == null)
+        {
+            navFor = m;
+            nav = new NavField(m.Ground, b, m.Ground.Boss.X, m.Ground.Boss.Z);
+            navBest = double.MaxValue; navHolds = 0; navStuckUntil = -1; navBucket = (int)(b.Time / 20);
+        }
+        return nav;
+    }
+
+    /// <summary>Her feet this frame are the Pilot's (the human's, or `--auto deft`'s): toward `to` as the night's goal
+    /// (`asGoal`: walked to past the foes, as the harness's ZoneSim does at the Warden's lamps) or as the way onward (taken
+    /// up when no foe is near). What is the game's own, and changes no fight, is for the quiet only (no hostile up within
+    /// 22 m): the way round what is solid (GroundPath, as GoalWalk's; `routed` false on a map, whose NavField is the way),
+    /// standing once she is there (the Pilot's onward never stops), and the wedged sidestep of Steer.</summary>
+    /// <param name="onto">The goal is a thing on the ground to walk onto (the Pilot stops 1.2 m short of a goal).</param>
+    /// <param name="arrives">`to` is a place to stand at (off on a map: its NavField's next point down the way is never one. Stopping
+    /// 0.45 m short of it, where a straight line on was not yet clear, stood her still until the twenty seconds' rule).</param>
+    void PilotMove(double dt, Battle b, (double X, double Z)? to, bool asGoal, ArenaBoss? boss, bool routed = true, bool onto = false, bool arrives = true)
+    {
+        var p = b.Player;
+        bool quiet = true;
+        foreach (var e in b.Enemies.Living())
+        {
+            if (e.Disposition != Disposition.Hostile || e.State == EnemyState.Dying || e.Wake > 0 && !e.Roused) continue;
+            if ((e.X - p.X) * (e.X - p.X) + (e.Z - p.Z) * (e.Z - p.Z) < 22 * 22) { quiet = false; break; }
+        }
+        trTo = to ?? (double.NaN, double.NaN);
+        var aim = to;
+        double td = 0;
+        if (to is var (tx, tz))
+        {
+            td = Math.Sqrt((tx - p.X) * (tx - p.X) + (tz - p.Z) * (tz - p.Z));
+            bool leg = false;
+            if (quiet && routed && td > 3)
+            {
+                routeT -= dt;
+                var (fx, fz) = routeFor;
+                if (route == null || routeT <= 0 || (fx - tx) * (fx - tx) + (fz - tz) * (fz - tz) > 1)
+                {
+                    routeT = 3; routeFor = (tx, tz);
+                    route = GroundPath.Find(b.Collision, p.X, p.Z, tx, tz);
+                }
+                while (route is { Count: > 1 } && Math.Sqrt((route[0].X - p.X) * (route[0].X - p.X) + (route[0].Z - p.Z) * (route[0].Z - p.Z)) < 0.8) route.RemoveAt(0);
+                if (route is { Count: > 1 }) { aim = route[0]; leg = true; }
+            }
+            // A goal the Pilot would stop 1.2 m short of (a leg of the way round, a thing to walk onto): set 2 m past it.
+            if (asGoal && (leg || onto) && aim is var (ax, az))
+            {
+                double dx = ax - p.X, dz = az - p.Z, dl = Math.Sqrt(dx * dx + dz * dz);
+                if (dl > 0.05) aim = (ax + dx / dl * 2, az + dz / dl * 2);
+            }
+        }
+        var (mx, mz) = pilotHuman != null
+            ? pilotHuman.Steer(b, boss, goal: asGoal ? aim : null, onward: asGoal ? null : aim)
+            : Pilot.Steer(b, true, boss, onward: asGoal ? null : aim, goal: asGoal ? aim : null);
+        piloted = true; pilotBoss = boss;
+        if (!quiet) { Move = (mx, mz); return; }
+        // (no way onward: the Pilot's quiet walk is to the ground's heart, as the harness's)
+        var (qx, qz) = to ?? (0.0, 0.0);
+        if (to == null) td = Math.Sqrt(p.X * p.X + p.Z * p.Z);
+        if (arrives && td < 0.45 && mx * (qx - p.X) + mz * (qz - p.Z) > 0.7 * td - 1e-9) { Move = (0, 0); return; }
+        Steer(dt, mx, mz, p, qx, qz);
+    }
+
+    /// <summary>A campaign zone that is not the Low Ford, under the Pilot: a map's way to its ruler as the way onward (the
+    /// harness's MapSim), any other with none (its VergeDaySim).</summary>
+    void PilotField(double dt, Battle b)
+    {
+        var p = b.Player;
+        if (pickChampion) PickChampion(b);
+        var script = g.Zone switch { ArenaRun a => a.BossScript, MapRun m => m.BossScript, StoryNight sn => sn.BossScript, _ => null };
+        var boss = script is { } s && s.E is { Alive: true } be && be.State != EnemyState.Dying ? s : null;
+        if (g.Zone is not MapRun mr) { PilotMove(dt, b, null, false, boss); return; }
+        var field = NavFor(mr, b);
+        var onward = field.Onward(p.X, p.Z);
+        double along = field.ToGo(p.X, p.Z);
+        // (MapSim's) No nearer the ruler in twenty seconds with the ruler not up (a pickup out of reach, a corner, a
+        // tunneller under the ground the hands wait on): walk straight on, longer each time (4, 8, 16, 32 s).
+        int bucket = (int)(b.Time / 20);
+        if (bucket != navBucket)
+        {
+            navBucket = bucket;
+            if (mr.Boss == null && !double.IsNaN(along) && along > navBest - 3)
+            {
+                navHolds++;
+                navStuckUntil = b.Time + 4 * Math.Pow(2, Math.Min(3, navHolds - 1));
+            }
+            else navHolds = 0;
+            if (!double.IsNaN(along)) navBest = Math.Min(navBest, along);
+        }
+        PilotMove(dt, b, onward, false, boss, routed: false, arrives: false);
+        if (b.Time < navStuckUntil)
+        {
+            double mx = onward.X - p.X, mz = onward.Z - p.Z, ml = Math.Max(1e-6, Math.Sqrt(mx * mx + mz * mz));
+            Move = (mx / ml, mz / ml);
+        }
+    }
 
     readonly Picker picker = Picker.Make(Args.Get("draft") ?? "greedy");
     readonly SurvivorUnchained.Core.Rng rng = new(7);
 
     /// <summary>A press the survivor makes this step (taken once).</summary>
     public bool Take(Act a) => pressed.Remove(a);
-    void Press(Act a) => pressed.Add(a);
+    void Press(Act a)
+    {
+        pressed.Add(a);
+        if (a == Act.Dash && clip && g.Battle is { } db) DashLine(db);
+    }
 
     double draftFor;
     static readonly double DraftHold = Args.Num("draft-hold", 0);
@@ -66,6 +349,7 @@ public sealed class Autopilot
     {
         t += dt;
         Move = (0, 0);
+        piloted = false;
         // A callout is read: a freeze answered 1.2 s (real) after it shows, with its answer or the key
         // that goes on, and a panel's words left up as long before a card is taken. (With --shot, not
         // before its frame is taken.)
@@ -137,6 +421,7 @@ public sealed class Autopilot
         var b = g.Battle;
         var z = g.Zone;
         if (z?.Id == "lowford") fromLowford = true;
+        if (g.Scene is { } sc && sc.Hands == null) sc.Hands = PlanStep;
         if (GoalsOn) Track(dt, b, z);
         if (b != null && z != null) Hooks(b, z);
         // (--auto toward: walking down the screen, toward the camera, her face
@@ -184,12 +469,25 @@ public sealed class Autopilot
         var meta = g.Scene!.Data.Meta;
         XZ Place(string n) => meta.Place("LOWFORD", n);
         double tx = p.X, tz = p.Z;
+        // (M3) Under the Pilot (as the harness's ZoneSim walks the night): the target is the night's goal (walked to past
+        // the foes) or the way onward (taken up when no foe is near); `stand`: held (the Warden's entrance, the win).
+        bool pil = Pilots(b), asGoal = false, onto = false, stand = false;
+        // (ZoneSim's: a player takes the road's packs in order: the Knight waits for the packs before the post, the
+        // Caller for those before the ford)
+        bool PackFirst(string until)
+        {
+            if (!pil || z is not Zones.Prologue { Night: { } en }) return false;
+            int Idx(string id) => en.S.Beats.FindIndex(x => x.Id == id);
+            return en.Goal(_ => true, _ => null, Place("gate").X).For is { Kind: "pack" } gf && Idx(gf.Id) < Idx(until) && !en.Done(gf.Id);
+        }
+        bool knightUp = pil && stage == "Post" && b.Enemies.Living().Any(e => e.Tag == "knight" && e.State != EnemyState.Dying);
         switch (stage)
         {
             // (M5: the Rising is placed beats now, n_lone and n_three up the road; it walks to them as the default does)
             // (the Ambush, once its trap has sprung, is fought as the default does: its nearest foe, where it stands; orbiting
             // the wagon kept her off its bowmen for good, m5 clip r1)
-            case "Wake" or "Ambush" or "Rising" when Idle || stage == "Wake" || stage == "Ambush" && z is not Zones.Prologue { Sprung: true }:
+            // (M3: under the Pilot these stages are walked as the default is, the night's goal, as ZoneSim does)
+            case "Wake" or "Ambush" or "Rising" when !pil && (Idle || stage == "Wake" || stage == "Ambush" && z is not Zones.Prologue { Sprung: true }):
             {
                 var c = stage == "Ambush" ? Place("cart") : Place("camp");
                 orbit += dt * 0.35;
@@ -197,8 +495,21 @@ public sealed class Autopilot
                 tz = c.Z + Math.Sin(orbit) * 6 + (stage == "Ambush" ? 6 : 0);
                 break;
             }
-            case "Post" when b.Enemies.Living().FirstOrDefault(e => e.Tag == "knight" && e.State != EnemyState.Dying) is { } knight:
+            case "Post" when b.Enemies.Living().FirstOrDefault(e => e.Tag == "knight" && e.State != EnemyState.Dying) is { } knight && !PackFirst("n_post"):
             {
+                // (M3) Under the Pilot: the Knight itself, the way onward (the Pilot closes to its edge and fights it). Until
+                // its red line is read, the draw to open ground is a walk there (the goal) while she is more than 4 m from it,
+                // for 12 s in all.
+                if (pil)
+                {
+                    tx = knight.X; tz = knight.Z;
+                    if (!g.Taught("red_line"))
+                    {
+                        var (ox, oz) = knightGround ??= OpenNear(knight.X, knight.Z, 1.62 * (knight.Def.Scale ?? 1));
+                        if (knightDrawT < 12 && Math.Sqrt((ox - p.X) * (ox - p.X) + (oz - p.Z) * (oz - p.Z)) > 4) { knightDrawT += dt; tx = ox; tz = oz; asGoal = true; }
+                    }
+                    break;
+                }
                 // The Barrow Knight stands between her and the chest (locked while it stands) and the road
                 // on (the Barrow waits for it): never left (walked off down the road, she outran it, it
                 // went home and the run stood still). Until its red line is read (F7, which waits for the
@@ -217,7 +528,7 @@ public sealed class Autopilot
                 }
                 break;
             }
-            case "Post" when d.GetValueOrDefault("chestOpened") is false && postT < 25:
+            case "Post" when d.GetValueOrDefault("chestOpened") is false && postT < 25 && !knightUp:
             {
                 // From the chest's far side from the dead watchman, so the prompt is the chest's
                 // (standing between them, the watchman's book was read over and over).
@@ -226,7 +537,7 @@ public sealed class Autopilot
                 var m = Place("watchman");
                 double ax = c.X - m.X, az = c.Z - m.Z, al = Math.Max(0.01, Math.Sqrt(ax * ax + az * az));
                 tx = c.X + ax / al * 1.2; tz = c.Z + az / al * 1.2;
-                if (Math.Sqrt((p.X - tx) * (p.X - tx) + (p.Z - tz) * (p.Z - tz)) < 1.0 && g.Prompted == "chest") Controls.Instance.Press(Act.Interact);
+                if (Math.Sqrt((p.X - tx) * (p.X - tx) + (p.Z - tz) * (p.Z - tz)) < (pil ? 1.5 : 1.0) && g.Prompted == "chest") Controls.Instance.Press(Act.Interact);
                 break;
             }
             // (M5 r2) The watch-post's lamp once the Knight is down (its prompt offered then): walked to and lit, as a player
@@ -238,9 +549,10 @@ public sealed class Autopilot
                 LightAt(wl, p);
                 break;
             }
-            case "Barrow" when b.Enemies.Living().FirstOrDefault(e => e.Tag == "caller") is { } caller:
+            case "Barrow" when b.Enemies.Living().FirstOrDefault(e => e.Tag == "caller") is { } caller && !PackFirst("n_ford"):
             {
                 // The Grave-Caller holds the stage until it falls: close on it (it stood off down the road before).
+                if (pil) { tx = caller.X; tz = caller.Z; break; }
                 orbit += dt * 0.5;
                 tx = caller.X + Math.Cos(orbit) * 3; tz = caller.Z + Math.Sin(orbit) * 3;
                 break;
@@ -257,8 +569,13 @@ public sealed class Autopilot
                     tx = l.X + dx / dl * 1.6; tz = l.Z + dz / dl * 1.6;
                 }
                 else { tx = w.X; tz = w.Z; }
+                asGoal = true;
                 break;
             }
+            // (M3: under the Pilot she stands through his entrance, and at a Boss stage with no Warden up, as ZoneSim holds)
+            case "Boss" or "Intro" when pil:
+                stand = true;
+                break;
             case "Boss" or "Intro":
             {
                 var f = Place("ford");
@@ -270,13 +587,16 @@ public sealed class Autopilot
             case "Victory" when !Idle && legendSeen && (victoryLegendT += dt) > 4.5
                 && b.Pickups.Living().FirstOrDefault(k => k.Loot is (int)Rpg.LootTier.Legendary or (int)Rpg.LootTier.Storied) is { } lv:
                 tx = lv.X; tz = lv.Z;
+                asGoal = onto = true;
                 break;
             case "Victory":
+                stand = pil;
                 break;
             // (M5 r2) The Warden's Legendary is taken before the day's road (it lay at the ford all day).
             case "Dawn" or "Exit" when !Idle && b.Pickups.Living().FirstOrDefault(k => k.Loot is (int)Rpg.LootTier.Legendary or (int)Rpg.LootTier.Storied) is { } lg && legendWalkT < 25:
                 legendWalkT += dt;
                 tx = lg.X; tz = lg.Z;
+                asGoal = onto = true;
                 break;
             case "Dawn" or "Exit" when z is Zones.Prologue pd && pd.DayGoal() is { } dg:
             {
@@ -285,7 +605,7 @@ public sealed class Autopilot
                 tx = dg.X; tz = dg.Z;
                 dayFight = pd.DayFighting; dayRoad = true;
                 // (--day-rush: straight up the road to the gate, past every fight: the owner's run on demo-rc2, N22)
-                if (DayRush) { tx = 0.3; tz = -110; dayFight = false; }
+                if (DayRush) { tx = 0.3; tz = -110; dayFight = false; asGoal = true; }
                 interactT -= dt;
                 if (dg.Press != null && g.Prompted == dg.Press && interactT <= 0) { interactT = 1.5; Controls.Instance.Press(Act.Interact); }
                 break;
@@ -329,9 +649,17 @@ public sealed class Autopilot
                         double since = lampTried.TryGetValue(i.Id, out var pt) ? pt : lampTried[i.Id] = t;
                         if (t - since >= 20) continue;
                         tx = i.X; tz = i.Z;
+                        asGoal = onto = false;
                         LightAt(i, p);
                         break;
                     }
+        }
+        // (M3) The Pilot's from here: its feet, and in PlanStep its dash, its Flare, its draught (the tail below is the old feet).
+        if (pil)
+        {
+            dayFight = dayRoad = false;
+            if (!stand) PilotMove(dt, b, (tx, tz), asGoal, null, onto: onto);
+            return;
         }
         // Keep off the crowd.
         double rx = 0, rz = 0;
@@ -382,6 +710,7 @@ public sealed class Autopilot
     /// practised player does (BossSense), so pictures show a fight fought.</summary>
     void Field(double dt, Battle b)
     {
+        if (Pilots(b)) { PilotField(dt, b); return; }
         var p = b.Player;
         if (pickChampion) PickChampion(b);
         if (holdLamp && g.Zone is ArenaRun ar && ar.Lamp != null && g.CurrentMap != null)
@@ -445,6 +774,7 @@ public sealed class Autopilot
     }
 
     (double X, double Z)? knightGround;
+    double knightDrawT;
 
     /// <summary>The nearest ground round a point (rings of 5, 8 and 11 m) where a figure `up` metres tall
     /// stands in the open from the camera, with the ground 3 and 6 m round it open too (a lane drawn there

@@ -1,6 +1,6 @@
 # P7 round 3 solver (su-lead-high, effort HIGH): the wavefront primitive and the r2 fixes
 
-Written by P7 lead 2 (9 Nov) for lead 3 to spawn as is (add `Context budget: 300k`, `Item: P7 round 3 build` and the reporting line inline in the Agent prompt). Worktree `C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\skills-p7` (branch skills-p7; godot/assets is a JUNCTION: never git stash / reset --hard / checkout . / merge / rebase; commit only your files by name; deletes one literal path to the Recycle Bin).
+Written by P7 lead 2 (9 Nov) for lead 3 to spawn as is (add `Context budget: 200k`, `Item: P7 round 3 build` and the reporting line inline in the Agent prompt). Worktree `C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\skills-p7` (branch skills-p7; godot/assets is a JUNCTION: never git stash / reset --hard / checkout . / merge / rebase; commit only your files by name; deletes one literal path to the Recycle Bin).
 
 ## Read first
 1. The r2 verdict, whole: `C:\Users\munch\Desktop\survivorsunchained_inputs\skills_p7\judge_r2\verdict.md`. Every numbered fix in it is a requirement, except the knowns routed elsewhere (her basic swing's arc: M3; yellow numbers and the gold target ellipse: M4; blood pepper and the night pool: L1).

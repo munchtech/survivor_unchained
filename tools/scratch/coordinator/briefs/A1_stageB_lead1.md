@@ -1,5 +1,5 @@
 Spawning: allowed
-Context budget: 300k
+Context budget: 200k
 
 ## Your area: A1 Stage B, her core motion REBUILT on P1's new rig (motion lead, Stage B lead 1)
 
@@ -13,6 +13,6 @@ Read first, by section: `docs/handoff/lead_brief.md`; `docs/team/RESUME.md` top 
 
 The job (MOTION_PLAN's Stage B, binding): her core set rebuilt on P1's rig, the Warden slice first (idle town/fight, walk, run, the armed walks, Sunder/Oathblade/Groundbreaker swings with their contact frames as data, dodge, hit, fall, the Flare recovery), as a P4 pipeline in Marionette: generate (MotionBricks/Kimodo), fit to the base rig, foot lock, contact frames, pack; a check (contact and foot-lock numbers, the bible's idle travel numbers) and one max judge per batch at 1:1 (the whole-frame question: "effortlessly badass?"); never a hand fix on a packed clip. Clips' contact frames are DATA the C2 build lead reads (its item 14): agree the file and keys with it through main in one message. The RETARGET 10 run through the same pack. CUT 37 removed from the manifest. Each batch: "P4: the app can now X; this batch cost Y; the next costs about Z."
 
-Done looks like: the Warden slice plays in game on P1's base (`--body p1` or the merged default) from Marionette's pack, the check green, the judge PASS (or PASS WITH KNOWN), the suite green, integration merged in, pushed (both repos), `MR READY motion-a1@<sha>`; the other callings' slices as later batches. Est ~4.3-6.2M (A1's own estimate). Hand off at ~300k with `HANDOFF READY motion-a1@<sha>`. Scratch: `scratchpad\motion_a1\` only; back up to `survivorsunchained_inputs\scratch_motion_a1\` and clear only that subfolder.
+Done looks like: the Warden slice plays in game on P1's base (`--body p1` or the merged default) from Marionette's pack, the check green, the judge PASS (or PASS WITH KNOWN), the suite green, integration merged in, pushed (both repos), `MR READY motion-a1@<sha>`; the other callings' slices as later batches. Est ~4.3-6.2M (A1's own estimate). hand off at ~200k with `HANDOFF READY motion-a1@<sha>`. Scratch: `scratchpad\motion_a1\` only; back up to `survivorsunchained_inputs\scratch_motion_a1\` and clear only that subfolder.
 
 Worktrees: count `.claude/worktrees` (cap 8); helpers work in YOUR worktree. Blender turns through `python tools/turn.py take blender "A1: <job>"`, Godot turns `take godot`; give back at once.

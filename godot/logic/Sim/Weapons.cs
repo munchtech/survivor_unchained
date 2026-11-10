@@ -25,6 +25,9 @@ public sealed class WeaponInst
     public int Rank;
     Evolution? evolution;
     public double Timer;
+    /// <summary>(M3) The timer is only a kindled skill's look-again (its condition did not hold, or nothing was in range),
+    /// not a wait: her key may still heave it (Battle.KindledPress, the press plan).</summary>
+    public bool Relooking;
     public readonly WeaponMods Mods = new();
     /// <summary>Burst shots still to go, and when.</summary>
     public int BurstLeft;
@@ -43,6 +46,14 @@ public sealed class WeaponInst
     public double ChannelT, ChannelNext;
     /// <summary>Its key is held (Battle.HoldSkill, each sim step): a channel keeps on while it is.</summary>
     public bool Held;
+    /// <summary>The cuts it has thrown (every Ev.Slash of its own), and the side of the next: -1, +1, -1 ... from that count alone.
+    /// The view mirrors each cut's arc from it (Ev.Slash.Side).</summary>
+    public int Cuts;
+    public int NextSide() { int s = ClipSide != 0 ? ClipSide : (Cuts & 1) == 0 ? -1 : 1; Cuts++; return s; }
+    /// <summary>The side of the clip its pending blow swings (Battle.DeferBlow, from her_events.json "side": the cut's side is
+    /// TRUE to the clip she plays, so a one-clip grip holds its side and a chain's clips each name theirs); 0: no clip names
+    /// one (the arena, an echo), and the count alternates.</summary>
+    public int ClipSide;
     /// <summary>A spin (Bladestorm): its ticks this storm, the Sunder lines it has thrown and holds pending (split by its
     /// break, else faded), and the time it may still be broken after the spin ended (-1: not).</summary>
     public int SpinTicks;
@@ -107,11 +118,50 @@ public sealed class WeaponInst
 
     public WeaponBehavior Behavior => evolution?.Behavior ?? Def.Behavior;
     /// <summary>How it is set off: the evolution's own, else its skill's (a union's weapon is its own skill).</summary>
-    public CastMode Cast => CastSet ?? evolution?.Cast ?? Def.Cast;
+    public CastMode Cast => CastSet ?? CampaignCast ?? evolution?.Cast ?? Def.Cast;
     /// <summary>Set by hand over data (a test, later a toggle): press or kindle this one regardless of its skill.</summary>
     public CastMode? CastSet;
-    /// <summary>An auto skill's kindle condition (the evolution's, else the skill's): null fires on the wait alone.</summary>
-    public KindleDef? Kindle => Unkindled ? null : evolution?.Kindle ?? Def.Kindle;
+    /// <summary>An auto skill's kindle condition (the evolution's, else the skill's): null fires on the wait alone. In its
+    /// kindled form in the campaign, its record's kindled condition first.</summary>
+    public KindleDef? Kindle => Unkindled ? null : (KindledNow ? Press!.Kindled?.Condition() : null) ?? evolution?.Kindle ?? Def.Kindle;
+
+    /// <summary>Its press record (WeaponDef.Press), set only in the campaign (Battle.AddWeapon when Battle.Campaign): null
+    /// everywhere else, and the skill is set off as "cast" says.</summary>
+    public PressDef? Press;
+    /// <summary>The campaign slot runs its kindled option (WeaponInst.SetForm "kindle"): it fires itself on its kindled
+    /// condition, and its key does the kindled press.</summary>
+    public bool KindledForm;
+    /// <summary>Kindled now: a kind-kindle skill, or one set to its kindled form (campaign only).</summary>
+    public bool KindledNow => Press != null && (KindledForm || Press.Kind == PressKind.Kindle);
+    /// <summary>How the record sets it off in the campaign: kindled, by itself; else hold and press on the key, channel held.</summary>
+    CastMode? CampaignCast => Press == null ? null : KindledNow ? CastMode.Auto : Press.Kind == PressKind.Channel ? CastMode.Channel : CastMode.Press;
+    /// <summary>A hold skill (the grips): fires whenever ready while its key is held, at the moving aim.</summary>
+    public bool Hold => Press?.Kind == PressKind.Hold && !KindledNow;
+    /// <summary>Its key does something: pressed, or kindled with a live press (campaign).</summary>
+    public bool Keyed => Pressed || KindledNow;
+    /// <summary>What a kindled skill's key does (its record's; now if unsaid).</summary>
+    public KindlePress KindleKey => Press?.Kindled?.Press ?? KindlePress.Now;
+    /// <summary>The skill is offered kindled: kind kindle, or a kindled option.</summary>
+    public static bool OfferedKindled(WeaponDef d) => d.Press is { } r && (r.Kind == PressKind.Kindle || r.Kindled != null);
+    /// <summary>The cast forms a record allows (taught_builds.json "cast"): its kind, and kindle when offered kindled.</summary>
+    public static bool Allows(WeaponDef d, string cast)
+    {
+        if (d.Press is not { } r) return cast == "auto";
+        string kind = (r.Kind ?? PressKind.Press).ToString().ToLowerInvariant();
+        return cast == kind || (cast == "kindle" && OfferedKindled(d));
+    }
+    /// <summary>Runs the slot as the record's kind or its kindled option ("kindle"; any other its kind): false when the
+    /// record does not allow it (nothing changes).</summary>
+    public bool SetForm(string cast)
+    {
+        if (Press == null || !Allows(Def, cast)) return false;
+        KindledForm = cast == "kindle" && Press.Kind != PressKind.Kindle;
+        return true;
+    }
+    /// <summary>A kindled key's own wait (riposte, flare, command), and an aura's flare: until when, and its multipliers.</summary>
+    public double PressWait, FlareUntil = -1, AuraMul = 1, AuraArea = 1;
+    /// <summary>The last cast was its own heavy one (read by the cast pose after CastOnce).</summary>
+    public bool WasOwnHeavy;
     /// <summary>Fires on its wait alone whatever its data says (tests that fire a skill by hand).</summary>
     public bool Unkindled;
     /// <summary>Waits for a press (or a hold) instead of firing itself.</summary>
@@ -161,7 +211,7 @@ public sealed class WeaponInst
             double d = (Def.Base.Damage ?? 0) * (1 + Def.Growth * (Rank - 1)) * Mods.Damage;
             if (evolution != null) d *= evolution.Mods.Damage ?? 1;
             if (wick != null) d *= wick.Damage;
-            return d * FireMul;
+            return d * FireMul * AuraMul;
         }
     }
 
@@ -179,12 +229,19 @@ public static partial class Firing
 {
     public static double CooldownOf(Battle b, WeaponInst w)
     {
-        double c = (w.Def.Base.Cooldown ?? 1) * b.Stats.Get(Stat.Cooldown) * w.Mods.Cooldown * b.ReaverCooldownMul(w) * b.ArcanistCooldownMul(w) * b.StalkerCooldownMul(w) * b.FlareCooldownMul(w);
+        double c = BaseCooldown(b, w) * b.Stats.Get(Stat.Cooldown) * w.Mods.Cooldown * b.ReaverCooldownMul(w) * b.ArcanistCooldownMul(w) * b.StalkerCooldownMul(w) * b.FlareCooldownMul(w) * b.RuleCooldownMul(w);
         if (b.Lamps.Board) c *= b.BoardCooldownMul(w);
         if (w.Evolution != null) c *= w.Evolution.Mods.Cooldown ?? 1;
         if (w.Wick != null) c *= w.Wick.Cooldown;
         return Math.Max(0.08, Math.Min(20, c));
     }
+
+    /// <summary>Its cooldown before the multipliers: the campaign record's wait for a pressed skill (a spender's only
+    /// while a resource pays for it), else its base cooldown. (M3) A kindled spender whose key heaves (Groundbreaker, the
+    /// Disc) waits its record's wait too while Resolve pays: its cost is its gate, as the pressed form's is.</summary>
+    static double BaseCooldown(Battle b, WeaponInst w) =>
+        w.Press is { Wait: { } wait } r && (w.Pressed && (b.Resolve.On || (r.Resolve ?? 0) <= 0 && (r.Drain ?? 0) <= 0)
+            || w.KindledNow && w.KindleKey == KindlePress.Now && b.Resolve.On && (r.Resolve ?? 0) > 0) ? wait : w.Def.Base.Cooldown ?? 1;
 
     public static double AreaOf(Battle b, WeaponInst w, double baseValue)
     {
@@ -195,7 +252,7 @@ public static partial class Firing
         a *= 1 + b.Lamps.SizeOn("skill.area", "inc", w.Def.Id, w.Def.Tags) + b.Lamps.SizeOn("tags.area", "inc", w.Def.Id, w.Def.Tags) + b.StormReach(w);
         // The reaver's Hand: hurt below half, her areas reach wider.
         a *= b.HandAreaMul(w);
-        return a;
+        return a * w.AuraArea;
     }
 
     /// <summary>bulwark.skill.reach: metres of reach a skill's lamp adds (Oathblade, 1.5).</summary>
@@ -203,7 +260,7 @@ public static partial class Firing
 
     /// <summary>The status a skill strikes with: its own, or the one its lamp gives (sunderer.skill.status).</summary>
     public static StatusPayload? StatusWith(Battle b, WeaponInst w) =>
-        w.StatusOf ?? (b.Lamps.HasOn("skill.status", w.Def.Id, w.Def.Tags) && b.Lamps.Each["skill.status"].Find(e => e.Status != null && (e.Skill == w.Def.Id)) is { Status: { } k } ? new StatusPayload(k, 1, 1, 3) : null);
+        b.RuleStatus(w) ?? w.StatusOf ?? (b.Lamps.HasOn("skill.status", w.Def.Id, w.Def.Tags) && b.Lamps.Each["skill.status"].Find(e => e.Status != null && (e.Skill == w.Def.Id)) is { Status: { } k } ? new StatusPayload(k, 1, 1, 3) : null);
 
     public static double DurationOf(Battle b, WeaponInst w, double baseValue)
     {
@@ -243,6 +300,9 @@ public static partial class Firing
     public static void Tick(Battle b, WeaponInst w, double dt)
     {
         if (w.DisabledT > 0) { w.DisabledT -= dt; return; }
+        // A kindled key's own wait, and an aura's flare running out (campaign only: both stay at rest elsewhere).
+        if (w.PressWait > 0) w.PressWait = Math.Max(0, w.PressWait - dt);
+        if (w.FlareUntil >= 0 && b.Time > w.FlareUntil) { w.FlareUntil = -1; w.AuraMul = w.AuraArea = 1; }
         // Rebuke never fires on its timer: a blow that reaches her strikes it (Battle.RebukeOnBlow).
         if (w.Behavior == WeaponBehavior.Reactive) return;
         // Oath and Bell: a stagger owed the bell a toll; it goes off now, its own timer untouched.
@@ -280,9 +340,17 @@ public static partial class Firing
         if (w.Pressed) { TickPressed(b, w, dt); return; }
         if (w.Timer > 0) return;
         // Kindled: wait over is not enough; look again in a tenth of a second (read only when ready, so a crowd costs nothing).
-        if (w.Kindle is { } kd && !b.Kindled(kd)) { w.Timer = 0.1; return; }
+        // A kindled spender (campaign, Resolve): it waits for the whole cost too (ready all the while: its key may heave
+        // with less), and spends it on firing. (M3) One whose key heaves (kindled press "now": Groundbreaker, the Disc)
+        // fires itself only when Resolve is full (ResolveMeter.SelfAt of the cap) and the heave takes all of it: her key
+        // heaves from its cost (from half, at what she has), so a hand that presses spends ~2.5x as often as one that waits.
+        double cost = b.CostOf(w);
+        bool selfHeave = cost > 0 && w.KindledNow && w.KindleKey == KindlePress.Now;
+        if (cost > 0 && b.Resolve.Value < (selfHeave ? ResolveMeter.SelfAt * b.Resolve.Max : cost)) { w.Timer = 0; return; }
+        if (w.Kindle is { } kd && !b.Kindled(kd)) { w.Timer = 0.1; w.Relooking = true; return; }
         int kills0 = w.Kills;
         bool fired = CastOnce(b, w);
+        if (fired && cost > 0) b.Resolve.Spend(selfHeave ? b.Resolve.Value : cost);
         // Nothing in range: look again soon rather than waiting a whole cooldown.
         Rearm(b, w, fired, kills0);
     }
@@ -300,8 +368,23 @@ public static partial class Firing
         heavy |= w.OwnHeavy;
         var hb = b.HeavyBy;
         b.HeavyBy = heavy ? w : null;
+        // A builder in the campaign (Resolve on): count what this swing struck (Battle.HitEnemy adds to StruckBy's set).
+        bool builds = b.Resolve.On && w.Press?.Builds is > 0 && b.StruckBy == null;
+        // (M3) The held swing in the campaign: a cut that struck a foe is a fighter's (Battle.SwingLanded, the stand clock's).
+        bool swing = b.Campaign && w.Hold && b.StruckBy == null;
+        if (builds || swing) { b.StruckBy = w; b.Struck.Clear(); }
         bool fired = Fire(b, w);
+        if (builds || swing)
+        {
+            b.StruckBy = null;
+            if (fired && b.Struck.Count > 0)
+            {
+                if (builds) b.Resolve.Landed(w.Press!, b.Struck.Count, heavy);
+                if (swing) b.SwingLanded += CooldownOf(b, w);
+            }
+        }
         b.HeavyBy = hb;
+        w.WasOwnHeavy = fired && w.OwnHeavy;
         w.OwnHeavy = false;
         if (fired && own > 0) w.OwnBlows++;
         b.HandEndCast(w, fired);
@@ -316,9 +399,11 @@ public static partial class Firing
     static void Rearm(Battle b, WeaponInst w, bool fired, int kills0)
     {
         w.Timer = fired ? CooldownOf(b, w) : 0.25;
+        w.Relooking = !fired;
         // sunderer.momentum: a melee swing that kills enough brings the skill's next swing sooner.
         if (fired && w.Tags.Has(Tag.Melee) && b.Lamp("momentum") && w.Kills - kills0 >= b.Lamps.Full("momentum", "kills", 3))
             w.Timer *= 1 - Math.Min(0.9, b.Lamps.Size("momentum", "sooner"));
+        b.RuleRearm(w, fired);
     }
 
     /* A pressed skill's own clock: its wait runs down to ready and stays there; a channel fires on its gap while
@@ -326,10 +411,20 @@ public static partial class Firing
     static void TickPressed(Battle b, WeaponInst w, double dt)
     {
         if (w.Behavior == WeaponBehavior.Spin && w.Slot2 >= 0) TickHalf(b, w, dt);
-        if (!w.Channeling) { if (w.Timer < 0) w.Timer = 0; if (w.Lines.Count > 0 && b.Time > w.BreakUntil) FadeLines(b, w); return; }
+        if (!w.Channeling)
+        {
+            if (w.Timer < 0) w.Timer = 0;
+            if (w.Lines.Count > 0 && b.Time > w.BreakUntil) FadeLines(b, w);
+            // Hold to repeat (campaign, the grips): ready while held, it fires again at the current aim.
+            if (w.Hold && w.Held && w.Timer <= 0 && w.DisabledT <= 0) b.PressHeld(w);
+            return;
+        }
         w.Timer = 0;
         w.ChannelT += dt;
-        if (!w.Held || w.ChannelT >= w.ChannelMax) { EndChannel(b, w); return; }
+        // Drained (campaign, Resolve): it runs while held and Resolve lasts, no cap; at 0 the storm ends.
+        double drain = b.Resolve.On ? (w.Press?.Drain ?? 0) * b.RulePayMul(w) : 0;
+        if (drain > 0 && w.Held) b.Resolve.Drain(drain * dt);
+        if (!w.Held || (drain > 0 ? b.Resolve.Value <= 0 : w.ChannelT >= w.ChannelMax)) { EndChannel(b, w); return; }
         w.ChannelNext -= dt;
         if (w.ChannelNext > 0) return;
         w.ChannelNext += w.ChannelEvery;
@@ -350,9 +445,17 @@ public static partial class Firing
     /// firing now) if ready and not already running. True when it went off.</summary>
     public static bool Press(Battle b, WeaponInst w)
     {
-        if (!w.Pressed || w.DisabledT > 0 || w.Timer > 0 || w.Channeling) return false;
+        if (!w.Pressed || w.DisabledT > 0 || w.Timer > 0 || w.Channeling || b.BlowPending(w)) return false;
+        // A spender (campaign, Resolve) fires only with its whole cost, and spends it on firing.
+        double cost = b.CostOf(w);
+        if (cost > 0 && b.Resolve.Value < cost) return false;
         if (w.Cast == CastMode.Channel)
         {
+            // A drained channel needs a breath of Resolve to start (one gap's worth).
+            if (b.Resolve.On && w.Press?.Drain is double dr && dr > 0 && b.Resolve.Value < dr * w.ChannelEvery) return false;
+            if (cost > 0) b.Resolve.Spend(cost);
+            b.Resolve.SpentInStorm = 0;
+            b.CastPose(w);
             w.Channeling = true;
             w.ChannelT = 0;
             w.ChannelNext = w.ChannelEvery;
@@ -363,8 +466,35 @@ public static partial class Firing
             return true;
         }
         int kills0 = w.Kills;
-        bool fired = CastOnce(b, w);
+        var aim0 = b.CastAt;
+        b.CastAt = b.AimFor(w);
+        bool fired;
+        // (campaign: a blow with a clip lands on its contact, Sim/Contact.cs; the press spends and poses her now)
+        bool later = false;
+        try { later = b.DeferBlow(w); fired = later || CastOnce(b, w); }
+        finally { b.CastAt = aim0; }
+        if (later)
+        {
+            if (cost > 0) b.Resolve.Spend(cost);
+            b.CastPose(w);
+            return true;
+        }
         // (A press that found nothing stays ready: the buffer tries again for a breath.)
+        if (fired)
+        {
+            Rearm(b, w, true, kills0);
+            if (cost > 0) b.Resolve.Spend(cost);
+            b.CastPose(w);
+        }
+        return fired;
+    }
+
+    /// <summary>A kindled skill's "now" (Battle.KindledPress): one cast as its timer would fire it, its condition skipped,
+    /// then its wait. True when it went off.</summary>
+    internal static bool CastNow(Battle b, WeaponInst w)
+    {
+        int kills0 = w.Kills;
+        bool fired = CastOnce(b, w);
         if (fired) Rearm(b, w, true, kills0);
         return fired;
     }
@@ -708,13 +838,14 @@ public static partial class Firing
     static bool FireBounce(Battle b, WeaponInst w)
     {
         var p = At(b);
-        var t = b.NearestHostile(p.X, p.Z, RangeOf(w));
-        if (t == null) return false;
+        // A campaign press: thrown at the hover foe, else toward the point (it hunts from there).
+        var t = b.CastAt is { } ca ? ca.Foe : b.NearestHostile(p.X, p.Z, RangeOf(w));
+        if (t == null && b.CastAt == null) return false;
         int n = CountOf(b, w);
-        double a0 = Math.Atan2(t.Z - p.Z, t.X - p.X);
+        double a0 = t != null ? Math.Atan2(t.Z - p.Z, t.X - p.X) : AimAngle(b, b.CastAt!.Value.X, b.CastAt.Value.Z);
         for (int i = 0; i < n; i++)
         {
-            var pr = Launch(b, w, a0 + (i - (n - 1) / 2.0) * 0.3, target: t.Id);
+            var pr = Launch(b, w, a0 + (i - (n - 1) / 2.0) * 0.3, target: t?.Id);
             if (pr != null) pr.Homing = 7;
         }
         return true;
@@ -742,8 +873,17 @@ public static partial class Firing
         double reach = AreaOf(b, w, w.Num(s => s.Reach) ?? 2.9) + ReachAdd(b, w);
         var targets = b.HostilesInRadius(p.X, p.Z, reach + 0.6);
         var far = b.IronReachTargets(w, reach + 0.6); // chainbound.iron_reach: Bound things out of the palm's own reach
+        // A campaign press: the palms go first at what is nearest its aim, and with nothing in reach strike at the aim.
+        if (b.CastAt is { } ca)
+        {
+            if (targets.Count == 0 && far.Count == 0) return ConeHit(b, w, AimAngle(b, ca.X, ca.Z), w.Num(s => s.Arc) ?? 1.25, reach, w.Damage) || true;
+            targets.Sort((a, c) => ((a.X - ca.X) * (a.X - ca.X) + (a.Z - ca.Z) * (a.Z - ca.Z)).CompareTo((c.X - ca.X) * (c.X - ca.X) + (c.Z - ca.Z) * (c.Z - ca.Z)));
+        }
+        else
+        {
         if (targets.Count == 0 && far.Count == 0) return false;
         targets.Sort((a, c) => ((a.X - p.X) * (a.X - p.X) + (a.Z - p.Z) * (a.Z - p.Z)).CompareTo((c.X - p.X) * (c.X - p.X) + (c.Z - p.Z) * (c.Z - p.Z)));
+        }
         int n = CountOf(b, w);
         double arc = w.Num(s => s.Arc) ?? 1.25;
         for (int i = 0; i < n && targets.Count > 0; i++)
@@ -756,10 +896,21 @@ public static partial class Firing
         return true;
     }
 
+    /// <summary>The angle (the behaviors' own: atan2(dz, dx)) from where it fires to an aim point; her facing if it is
+    /// under her feet.</summary>
+    static double AimAngle(Battle b, double x, double z)
+    {
+        var p = At(b);
+        double dx = x - p.X, dz = z - p.Z;
+        return dx * dx + dz * dz > 0.01 ? Math.Atan2(dz, dx) : Math.Atan2(Math.Cos(b.Player.Facing), Math.Sin(b.Player.Facing));
+    }
+
     static bool ConeHit(Battle b, WeaponInst w, double a, double arc, double reach, double dmg)
     {
         var p = At(b);
-        b.Events.Emit(new Ev.Slash { X = p.X, Z = p.Z, Angle = a, Arc = arc, Reach = reach, School = w.School, Art = w.Art, Rank = w.Rank });
+        var cut = new Ev.Slash { X = p.X, Z = p.Z, Angle = a, Arc = arc, Reach = reach, School = w.School, Art = w.Art, Rank = w.Rank, Held = w.Hold, Side = w.NextSide() };
+        b.Events.Emit(cut);
+        double nearest = double.MaxValue, inLine = double.MaxValue;
         double kb = w.Num(s => s.Knockback) ?? 0;
         bool any = false;
         Enemy? last = null;
@@ -770,11 +921,19 @@ public static partial class Firing
             if (Math.Abs(da) > arc / 2 + Math.Atan2(e.Radius, Math.Max(d, 0.1))) return;
             any = true;
             last = e;
+            cut.Struck++;
+            // (the view's contact: the body the edge meets, the one nearest the cut's line, not one pressed against her side)
+            if (d < nearest) nearest = d;
+            double off = Math.Abs(da) + (d < 0.7 ? 1 : 0);
+            if (off < inLine) { inLine = off; cut.HitX = e.X; cut.HitZ = e.Z; }
             double dd = d == 0 ? 1 : d;
             b.HitEnemy(e, dmg, w.School, w.Tags, new HitOpts
             {
                 Weapon = w, Knockback = kb, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd, Status = hitStatus, BossDamage = w.Def.BossDamage,
+                Heavy = b.RuleBeforeCut(w, e),
             });
+            if (!e.Alive) cut.Killed++;
+            b.RuleAfterCut(w, e, p.X, p.Z);
         });
         if (last != null) b.HookLast(w, last); // chainbound.the_long_chain
         return any;
@@ -785,16 +944,24 @@ public static partial class Firing
         // An On-kill echo swings from the corpse, at the nearest creature to the corpse within the swing's reach (the
         // same rule as her swing, measured from where it fell); none near, and the echo doesn't go off.
         var p = At(b);
-        double reach = AreaOf(b, w, w.Num(s => s.Reach) ?? 2.6) * b.SkillStillReach(w) + ReachAdd(b, w);
-        var t = b.NearestHostile(p.X, p.Z, reach + 1.2);
-        if (t == null) return false;
-        double a = Math.Atan2(t.Z - p.Z, t.X - p.X);
+        double reach = AreaOf(b, w, b.RuleReach(w, w.Num(s => s.Reach) ?? 2.6)) * b.SkillStillReach(w) + ReachAdd(b, w);
+        double a;
+        // A campaign press swings toward its aim (the hover foe, else the point), struck or not: every press is seen.
+        if (b.CastAt is { } ca) a = AimAngle(b, ca.X, ca.Z);
+        else
+        {
+            var t = b.NearestHostile(p.X, p.Z, reach + 1.2);
+            if (t == null) return false;
+            a = Math.Atan2(t.Z - p.Z, t.X - p.X);
+        }
         double arc = b.SkillArc(w, w.Num(s => s.Arc) ?? 2.2);
         int n = CountOf(b, w, 1);
+        b.RuleChopBegin(w);
         for (int i = 0; i < n; i++)
         {
             double ai = a + (i == 0 ? 0 : (i % 2 == 1 ? 1 : -1) * Math.Ceiling(i / 2.0) * arc * 0.85);
-            ConeHit(b, w, ai, arc, reach, w.Damage);
+            ConeHit(b, w, ai, arc, reach, w.Damage * b.RuleCutMul(w));
+            b.RuleCrossCut(w, ai, arc, reach);
         }
         // Blades hit things as well as creatures: barrels, brambles, a boss's lamps.
         foreach (var c in b.Collision.Within(p.X, p.Z, reach))
@@ -813,7 +980,7 @@ public static partial class Firing
             if (zn != null) { zn.Tags = w.Tags; zn.Art = w.Art + "_ground"; zn.Weapon = w.Id; }
         }
         w.Swing++;
-        if (!b.Refiring) b.Player.AttackAnim = new AttackAnim(w.Id, a, b.Time, arc > 3);
+        if (!b.Refiring && !b.Landing) b.Player.AttackAnim = new AttackAnim(w.Id, a, b.Time, arc > 3);
         // Oathkeeper: every swing throws a crescent onward.
         if (w.Evolution?.Id == "oathkeeper")
         {
@@ -857,10 +1024,15 @@ public static partial class Firing
     static bool FireChakram(Battle b, WeaponInst w)
     {
         var p = At(b);
-        var t = b.NearestHostile(p.X, p.Z, RangeOf(w) + 2);
-        if (t == null) return false;
+        double a0;
+        if (b.CastAt is { } ca) a0 = AimAngle(b, ca.X, ca.Z);
+        else
+        {
+            var t = b.NearestHostile(p.X, p.Z, RangeOf(w) + 2);
+            if (t == null) return false;
+            a0 = Math.Atan2(t.Z - p.Z, t.X - p.X);
+        }
         int n = CountOf(b, w);
-        double a0 = Math.Atan2(t.Z - p.Z, t.X - p.X);
         for (int i = 0; i < n; i++)
         {
             var pr = Launch(b, w, a0 + (i - (n - 1) / 2.0) * 0.5, chakram: true, life: DurationOf(b, w, w.Num(s => s.Life) ?? 2.6));

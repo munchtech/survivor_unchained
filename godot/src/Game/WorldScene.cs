@@ -32,12 +32,19 @@ public partial class WorldScene : Node3D, IZoneLook
     /// the Buffer, fired toward the cursor's ground point, or with none her facing times the skill's range.</summary>
     void Skills(Battle b)
     {
+        // The pointer each step (with none, her facing ahead): a held skill (the grips, campaign) repeats at it.
+        var pt = Pointer();
+        {
+            var p0 = b.Player;
+            b.AimSkills(pt?.X ?? p0.X + Math.Sin(p0.Facing) * 6, pt?.Z ?? p0.Z + Math.Cos(p0.Facing) * 6);
+        }
         for (int i = 0; i < skillHeld.Length; i++)
         {
             b.HoldSkill(i, Held(Controls.Skills[i]));
             if (Pressed(Controls.Skills[i])) skillHeld[i] = Buffer;
             if (skillHeld[i] <= 0) continue;
-            if (b.OnSlot(i) is not { Pressed: true } w) { skillHeld[i] = 0; continue; }
+            // (A kindled skill's key too, in the campaign: its riposte, flare or now.)
+            if (b.OnSlot(i) is not { Keyed: true } w) { skillHeld[i] = 0; continue; }
             var p = b.Player;
             var aim = Pointer() ?? (p.X + Math.Sin(p.Facing) * w.AimRange, p.Z + Math.Cos(p.Facing) * w.AimRange);
             skillHeld[i] = b.PressSkill(i, aim.X, aim.Z) ? 0 : skillHeld[i] - Step;
@@ -54,6 +61,9 @@ public partial class WorldScene : Node3D, IZoneLook
     /// <summary>An action held now (the skill keys, for a channel), and the cursor's point on the ground (null with
     /// no cursor: a pad, or the pointer off the window).</summary>
     public Func<Act, bool> Held = _ => false;
+    /// <summary>(M3) Hands on the sim each step after the keys (the autopilot's press plan: Sim/PressPlan.cs): what they hold
+    /// and press goes through Battle.HoldSkill/PressSkill, as the keys' do.</summary>
+    public Action<Battle>? Hands;
     public Func<(double X, double Z)?> Pointer = () => null;
     /// <summary>Each fixed step, before the fight's (the zone's own logic).</summary>
     public Action<double> OnStep = _ => { };
@@ -296,6 +306,7 @@ public partial class WorldScene : Node3D, IZoneLook
                 if (Pressed(Act.Flare)) artHeld = Buffer;
                 if (artHeld > 0) artHeld = b.UseFlare(mx, mz) ? 0 : artHeld - Step;
                 Skills(b);
+                Hands?.Invoke(b);
                 OnStep(Step);
                 Perf.Begin(Perf.Part.Sim);
                 b.Tick(Step, mx, mz);

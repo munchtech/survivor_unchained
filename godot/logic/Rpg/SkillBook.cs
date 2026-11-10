@@ -27,13 +27,14 @@ public static class SkillBook
     public static string Tome(string id) => $"tome_{id}";
 
     /// <summary>The attribute a skill leans on: spells on wits, holy and living
-    /// things on resolve, blades on might, what is thrown or shot on finesse.</summary>
+    /// things on resolve, blades and shields on might, what is thrown or shot on finesse.</summary>
     public static string Attribute(string id)
     {
         var w = Weapons.All[id];
         if (w.Tags.Contains(Tag.Spell)) return "Wits";
         if (w.School is School.Holy or School.Nature) return "Resolve";
-        if (w.Tags.Contains(Tag.Melee)) return "Might";
+        // (M3) A shield's skill too (Iron Vow, not a melee blow, leaned on finesse and lay idle on a warden).
+        if (w.Tags.Contains(Tag.Melee) || w.Tags.Contains(Tag.Shield)) return "Might";
         return "Finesse";
     }
 

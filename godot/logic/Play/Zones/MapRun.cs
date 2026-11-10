@@ -51,6 +51,8 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         public required Denizens People;
         public bool Placed, Cleared;
         public int Grade;
+        /// <summary>(M3) When the first of it was roused (B.Time; -1: resting).</summary>
+        public double Woke = -1;
         public readonly List<(Enemy E, double Seed)> Members = new();
         public bool Alive => Members.Any(m => m.E.Alive && m.E.Seed == m.Seed && m.E.State != EnemyState.Dying);
     }
@@ -176,6 +178,11 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         b.Charges.Spikes = false;
         b.Charges.Cap = 2;
         b.Charges.Tell = "";
+        // (M3 round 4) The world tier's press (world_tiers.json, the chart's tier's row: WorldTiers.ForMap): the kit's bite and
+        // cadence, and the stand clock, read by PackKit as the story fights read them. Its health and damage stay the map's own.
+        var wt = Content.WorldTiers.ForMap(Chart.Tier);
+        b.KitDamageMul = wt.Kit; b.KitEveryMul = wt.KitEvery; b.StoryStand = wt.Stand;
+        press = new PackKit(b);
         G.Announce(new Announcement(Chart.Name, Region ?? "", "zone", 3.4, "A Wayfinder's map"));
         Objectives();
     }
@@ -298,8 +305,39 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         var bc = map.Boss;
         if (!signed && Near(p, bc.X, bc.Z, bc.R + 34)) Sign(p);
         if (eventAt >= 0) Event();
+        Press(dt);
         // The ruler, in its clearing.
         if (!bossUp && !cleared && boss == null && Near(p, bc.X, bc.Z, bc.R + 2)) Ruler(false);
+    }
+
+    /* ------------------------------------------- the packs' kit (M3 round 4) -- */
+
+    PackKit? press;
+    /// <summary>(M3) Stand charges cast this run (the harness's tally).</summary>
+    public int StandCharges => press?.StandCharges ?? 0;
+    static bool Live((Enemy E, double Seed) m) => m.E.Alive && m.E.Seed == m.Seed && m.E.State != EnemyState.Dying;
+
+    /// <summary>A roused pack presses as a story fight's does (PackKit): its foes on foot (not its leader, nor an archer) charge
+    /// with the kit's charge at the story pack's waits x the tier's kitEvery, and the stand clock sends a roused pack's foe at a
+    /// stander. Campaign only (a map is a campaign fight: Journey.StartBattle).</summary>
+    void Press(double dt)
+    {
+        if (press == null || B == null || !B.Campaign) return;
+        foreach (var k in packs)
+        {
+            if (!k.Placed || k.Cleared) continue;
+            var up = k.Members.Where(Live).ToList();
+            if (k.Woke < 0) { if (up.Any(m => m.E.Roused)) k.Woke = B.Time; else continue; }
+            press.Tells("charge", up, k.Woke, PackKit.FirstAfter, PackKit.Every, e => !e.Elite && e.Def.Ranged == null, null, null);
+        }
+        press.Stand(dt, null, () =>
+        {
+            var awake = new HashSet<Enemy>();
+            foreach (var k in packs)
+                if (k.Placed && !k.Cleared && k.Woke >= 0)
+                    foreach (var m in k.Members) if (Live(m)) awake.Add(m.E);
+            return awake;
+        });
     }
 
     static bool Near(PlayerState p, double x, double z, double r) => (p.X - x) * (p.X - x) + (p.Z - z) * (p.Z - z) < r * r;

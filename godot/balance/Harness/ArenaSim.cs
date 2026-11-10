@@ -1,3 +1,4 @@
+using SurvivorUnchained.Play.Pilots;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -600,7 +601,7 @@ public static class ArenaSim
 
     /// <summary>Whether a telegraph made now covers her (a circle or ring's disc, a line's lane, a cone's wedge), with a
     /// metre's grace.</summary>
-    static bool Covers(Ev.Telegraph t, double x, double z, double r)
+    internal static bool Covers(Ev.Telegraph t, double x, double z, double r)
     {
         double dx = x - t.X, dz = z - t.Z, d = Math.Sqrt(dx * dx + dz * dz);
         switch (t.Shape)

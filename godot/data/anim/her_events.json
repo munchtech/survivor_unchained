@@ -1,0 +1,21 @@
+{
+  "_doc": "side (M3 item 9): which way the blade crosses at the contact, -1 toward the lesser sim angle, +1 toward the greater, read in play from BattleFx.Grip's `grip cut` line (--clip); a clip with none alternates from the weapon's count. M3 interim: measured from today's clips by tools/anim/contact_measure.py (the blade tip's sweep crossing her facing, else its speed peak; frames from the clip's start at 60 fps, in clip time); A1's P4 pack replaces it.",
+  "fps": 60,
+  "clips": {
+    "sword_back": {
+      "contact": [
+        4
+      ]
+    },
+    "sword_fore": {
+      "contact": [
+        5
+      ]
+    },
+    "sword_heavy": {
+      "contact": [
+        6
+      ]
+    }
+  }
+}

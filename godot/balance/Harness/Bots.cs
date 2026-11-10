@@ -1,3 +1,4 @@
+using SurvivorUnchained.Play.Pilots;
 using System;
 using SurvivorUnchained.Play;
 using SurvivorUnchained.Sim;

@@ -89,6 +89,27 @@ public sealed partial class Battle
     public const double FlareLampGlow = 0.02;
     public const double FillHurt = 0.40, FillAnswer = 35, FillPerfect = 10, FillBlock = 6, FillBoss = 1.8,
         FillChampion = 2, FillChampionRate = 0.6, FillKill = 0.1, FillKillRate = 0.65;
+    /// <summary>(M3 round 3-4) The campaign's own (Battle.Campaign: story fights and the Wayfinder's maps; nights keep the
+    /// table above): hurt fills at StoryFillHurt for each 1% (a stander filled it first, 5-6 meters a Low Ford run from hurt
+    /// alone), and one Flare takes at most StoryBossCut of a boss's max life, counted after the build's multipliers (its
+    /// blows share it; the owner's band: AoE 10-15%, single-target 15-20% of a boss). Round 4: round 3's 0.10 was counted
+    /// before the multipliers, so it took 20-28% of the Ford-Warden's life and a level-30 build's whole cast on a map ruler;
+    /// 0.13 after them is 12% of the Warden's life (one cast).</summary>
+    public const double StoryFillHurt = 0.25, StoryBossCut = 0.13;
+    /// <summary>(M3 round 5) The campaign's fill while she fights a boss (she struck one, or one struck her, within
+    /// BossFightFor s): a boss's fill per 1% of its life and hurt's per 1% of hers. The band is per fight (the owner's
+    /// 10-15% of a boss's life for the AoE Long Cut); at FillBoss 1.8 a 60-100 s ruler fight filled a second cast about
+    /// half the time (20-23% of a map ruler's life), so a boss fight now fits about one: every press keeps its look,
+    /// a boss fight gets fewer of them.</summary>
+    public const double StoryFillBoss = 1.2, StoryFillHurtBoss = 0.06, BossFightFor = 8;
+    double bossFightUntil = -1;
+    /// <summary>What StoryFillBoss held back of FillBoss's fill this boss fight (paid when a boss falls: the casts after a
+    /// boss fight are round 4's, only the fight itself gets fewer).</summary>
+    double bossFillOwed;
+    /// <summary>A campaign boss fight is on (StoryFillBoss / StoryFillHurtBoss fill the meter).</summary>
+    public bool StoryBossFight => Campaign && Time < bossFightUntil;
+    /// <summary>What is left of this cast's StoryBossCut (-1: not struck a boss yet).</summary>
+    double flareBossBudget = -1;
     bool answeredTwice;
 
     public int FlareCharges => Lamp("flare.banked") ? (int)Lamps.Full("flare.banked", "charges", 2) : 1;
@@ -128,14 +149,15 @@ public sealed partial class Battle
 
     /// <summary>A blow reached her: +0.55 for each 1% of health lost, doubled below a third; the first drop
     /// below a quarter, the ember answers (+35, once in 45 s).</summary>
-    void FlareOnHurt(double dmg, double hpBefore, string source)
+    void FlareOnHurt(double dmg, double hpBefore, string source, Enemy? from = null)
     {
         if (Flare == null) return;
+        if (from is { Boss: true }) bossFightUntil = Time + BossFightFor;
         // Always Bleeding's own bleeding never counts (§3.2).
         if (source == "always bleeding") return;
         var p = Player;
         double pct = dmg / MaxHp * 100;
-        double fill = FillHurt * pct * (p.Hp < MaxHp / 3 ? 2 : 1);
+        double fill = (StoryBossFight ? StoryFillHurtBoss : Campaign ? StoryFillHurt : FillHurt) * pct * (p.Hp < MaxHp / 3 ? 2 : 1);
         if (Lamp("flare.hurt_fill")) fill *= 1 + Lamps.Full("flare.hurt_fill", "more", 0.2);
         FillFlare(fill, "hurt");
         if (hpBefore >= MaxHp * FlareClutch && p.Hp < MaxHp * FlareClutch && p.Hp > 0)
@@ -164,15 +186,19 @@ public sealed partial class Battle
     /// <summary>Damage she dealt: a boss +1.8 for each 1% of its health (the Flare's own never refills it).</summary>
     void FlareOnDealt(Enemy e, double dealt, string by)
     {
-        if (Flare == null || by == "flare" || dealt <= 0 || e.MaxHp <= 0) return;
-        if (e.Boss) FillFlare(FillBoss * dealt / e.MaxHp * 100, "boss");
+        if (Flare == null || dealt <= 0 || e.MaxHp <= 0) return;
+        if (e.Boss) bossFightUntil = Time + BossFightFor;
+        if (by == "flare") return;
+        if (!e.Boss) return;
+        FillFlare((Campaign ? StoryFillBoss : FillBoss) * dealt / e.MaxHp * 100, "boss");
+        if (Campaign) bossFillOwed += (FillBoss - StoryFillBoss) * dealt / e.MaxHp * 100;
     }
 
     /// <summary>A kill: a champion's +2, at most +0.6 a second; the horde's +0.1 each, at most +0.65 a second; a bleed's kill with Blood for the Flare.</summary>
     void FlareOnKill(Enemy e, bool byBleed)
     {
         if (Flare == null) return;
-        if (e.Boss) return;
+        if (e.Boss) { if (bossFillOwed > 0) FillFlare(bossFillOwed, "boss"); bossFillOwed = 0; return; }
         if (e.Elite) { FillFlare(Draw(0, FillChampion, FillChampionRate, FillChampion), "champion"); return; }
         FillFlare(Draw(1, FillKill, FillKillRate, FillKillRate), "kills");
         if (byBleed && Lamp("flare.bleed_kill")) FillFlare(Draw(2, Lamps.Full("flare.bleed_kill", "fill", 0.2), FillKillRate, FillKillRate), "bleed");
@@ -227,6 +253,7 @@ public sealed partial class Battle
         flareAimAt = FlareAimSchedule(f);
         flareAim = 0;
         flareStruckBoss = false;
+        flareBossBudget = -1;
         flareKilledBoss = false;
         flareReleased = false;
         flareKey = f.BeatAt("key", flareAt.Length > 0 ? flareAt[0] : 0);

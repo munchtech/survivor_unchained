@@ -1,11 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using SurvivorUnchained.Content;
 using SurvivorUnchained.Play;
 using SurvivorUnchained.Play.Bosses;
 using SurvivorUnchained.Sim;
 
-namespace SurvivorUnchained.Balance;
+namespace SurvivorUnchained.Play.Pilots;
 
 /// <summary>A plain-minded survivor's hands (the tests' ArenaPlay bot, kept
 /// as it was so the numbers mean the same): give ground when pressed, go to
@@ -61,6 +62,7 @@ public static class Pilot
         foreach (var k in b.Pickups.Items)
         {
             if (!k.Alive || !(k.Kind == PickupKind.Ember || onward != null && k.Kind is PickupKind.Item or PickupKind.Material or PickupKind.Gold or PickupKind.Chest)) continue;
+            if (Leaves != null && Leaves(k)) continue;
             double d = (k.X - p.X) * (k.X - p.X) + (k.Z - p.Z) * (k.Z - p.Z);
             if (d < sd) { sd = d; stone = k; }
         }
@@ -74,11 +76,21 @@ public static class Pilot
         double bigD = close ? 2.2 : 4.5;
         foreach (var e in b.HostilesInRadius(p.X, p.Z, bigD))
             if ((e.Boss || e.Elite) && (!close || p.Hp < b.MaxHp * 0.5)) { big = e; break; }
+        // (M3, the campaign: a fighter's feet. With a foe in her reach she plants and swings, then takes one short step,
+        // the side changing each time, and plants again: the owner's "running in circles" was the strafe below, a full
+        // turn round the foe every four seconds and never a stand. The plant is kept under the story's stand clock.)
+        var meter = b.Campaign ? State(b) : null;
+        var feet = StepsAndStands ? meter : null;
+        bool inReach = nearest != null && near - (b.Campaign ? nearest.Radius : 0) <= engage;
+        bool plant = false;
+        if (feet != null && !wall && (inReach || press.Count >= crowded)) plant = feet.Plant(b);
+        string took;
         if (big != null)
         {
             double cx = big.X - p.X, cz = big.Z - p.Z;
             double cl = Math.Max(0.01, Math.Sqrt(cx * cx + cz * cz));
             mx = -cx / cl * 0.8 - cz / cl * 0.6; mz = -cz / cl * 0.8 + cx / cl * 0.6;
+            took = "big";
         }
         else if (press.Count >= crowded && !wall)
         {
@@ -86,20 +98,43 @@ public static class Pilot
             double cl = Math.Max(0.01, Math.Sqrt(cx * cx + cz * cz));
             // Away and round: a quarter turn off straight back.
             mx = -cx / cl * 0.7 - cz / cl * 0.7; mz = -cz / cl * 0.7 + cx / cl * 0.7;
+            took = "crush";
+            // (M3, the campaign) With the health to, she holds her ground in the crush and swings, and gives it a step at
+            // a time, to either hand; under CrushRun of her health she runs from it as before.
+            if (feet != null && p.Hp >= b.MaxHp * CrushRun)
+            {
+                if (plant) { mx = 0; mz = 0; took = "crush-plant"; }
+                else { mx = -cx / cl * 0.7 - cz / cl * 0.7 * feet.Side; mz = -cz / cl * 0.7 + cx / cl * 0.7 * feet.Side; took = "crush-step"; }
+            }
         }
         // The stage's goal when nothing is at her throat: a player with a thing to do does it, and lets
         // the weapons fire on the way (a fire takes two seconds of standing to light).
         else if (goal is var (gx, gz))
         {
             if (Dist(gx, gz, p.X, p.Z) > 1.2) { mx = gx - p.X; mz = gz - p.Z; } else { mx = 0; mz = 0; }
+            took = "goal";
         }
-        else if (stone != null && near > engage + 1) { mx = stone.X - p.X; mz = stone.Z - p.Z; }
-        else if (nearest != null && near > engage) { mx = nearest.X - p.X; mz = nearest.Z - p.Z; }
+        else if (stone != null && near > engage + 1) { mx = stone.X - p.X; mz = stone.Z - p.Z; took = "stone"; }
+        // (M3: in the campaign the engage distance is to its edge: a boss's girth is not walked into, where his touch hurts;
+        // the arena keeps the center, byte-same)
+        else if (nearest != null && !inReach) { mx = nearest.X - p.X; mz = nearest.Z - p.Z; took = "close"; }
         // In the press the wall stands: still, where Planted and The Wall Holds pay and every blow is a chance at a stone.
-        else if (nearest != null && wall) { mx = 0; mz = 0; }
-        else if (nearest != null) { mx = -(nearest.Z - p.Z); mz = nearest.X - p.X; }
-        else if (onward is var (ox, oz)) { mx = ox - p.X; mz = oz - p.Z; }
-        else { mx = -p.X; mz = -p.Z; }
+        else if (nearest != null && wall) { mx = 0; mz = 0; took = "wall"; }
+        else if (nearest != null && feet != null)
+        {
+            if (plant) { mx = 0; mz = 0; took = "plant"; }
+            else
+            {
+                // The step: across her foe, a quarter turn; the other hand where this one is walled.
+                mx = -(nearest.Z - p.Z) * feet.Side; mz = (nearest.X - p.X) * feet.Side;
+                double sl = Math.Max(0.01, Math.Sqrt(mx * mx + mz * mz));
+                if (b.Collision.Blocked(p.X + mx / sl * 0.6, p.Z + mz / sl * 0.6, p.Radius)) { feet.Side = -feet.Side; mx = -mx; mz = -mz; }
+                took = "step";
+            }
+        }
+        else if (nearest != null) { mx = -(nearest.Z - p.Z); mz = nearest.X - p.X; took = "strafe"; }
+        else if (onward is var (ox, oz)) { mx = ox - p.X; mz = oz - p.Z; took = "onward"; }
+        else { mx = -p.X; mz = -p.Z; took = "home"; }
         double far = Math.Sqrt(p.X * p.X + p.Z * p.Z);
         if (far > 60 && onward == null && goal == null) { mx = mx * 0.3 - p.X / far; mz = mz * 0.3 - p.Z / far; }
         if (deft) Deft(b, press.Count >= 2 || stone != null, ref mx, ref mz);
@@ -121,20 +156,142 @@ public static class Pilot
         if (Debug) Console.Error.WriteLine($"   PILOT near {(nearest == null ? "-" : $"{nearest.Def.Id} {near:0.0}")} big {big != null} press {press.Count} goal {goal} stone {stone != null} hands ({hx:0.00},{hz:0.00}) after boss ({mx:0.00},{mz:0.00})");
         double ml = Math.Sqrt(mx * mx + mz * mz);
         if (ml > 1e-6) { mx /= ml; mz /= ml; }
+        meter?.Measure(b, nearest, inReach, ml > 1e-6, took);
         return (mx, mz);
+    }
+
+    /// <summary>(M3) The fighter's feet, in the campaign's fights (the arena's hands circle as they did, byte-same).
+    /// Off: the strafe everywhere, for the numbers before (the harness's --strafe).</summary>
+    public static bool StepsAndStands = true;
+    /// <summary>The plant, as a share of the story's stand clock (world_tiers.json `stand.standFor`; PlantFor s with no clock
+    /// on). The step ends once it has carried her StepClear x the clock's `standMoved` from where she was planted (StepWide m
+    /// with no clock), or after StepMax s (walled, held, slowed). A player who has learnt how long she may stand: the clock
+    /// sees a stand only when something holds her past the plant.</summary>
+    public static double PlantShare = 0.65, PlantFor = 0.7, StepClear = 1.6, StepWide = 1.0, StepMax = 0.45;
+    /// <summary>The longest plant under a clock that counts (StandSwing): a chain and a breath, whatever the count says.</summary>
+    public static double PlantMost = 4;
+    /// <summary>Under a clock that counts, the plant ends with StepLead s of the clock left: her own heavy cut may hold her
+    /// feet 0.3 s (Battle.MaxPlant) as the step begins, and the step itself takes a quarter second from rest. (A share of
+    /// the clock, PlantShare, left 0.35 s: a heavy at the plant's end and the clock charged a fighter mid-step.)</summary>
+    public static double StepLead = 0.6;
+    /// <summary>Under this share of her health a crush is run from (the arena's away-and-round), not stood in.</summary>
+    public static double CrushRun = 0.5;
+
+    static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Battle, Feet> feetOf = new();
+    static Feet State(Battle b) => feetOf.GetOrCreateValue(b);
+    /// <summary>(M3) What her feet did in this battle's fights (the campaign under the Pilot or the Human; zeros elsewhere):
+    /// the number for "does she circle", read by the harness's reports and the game's --clip trace.</summary>
+    public static FeetMeter Meter(Battle b) => State(b).M;
+
+    public sealed class FeetMeter
+    {
+        /// <summary>Seconds with a foe in her reach; of them, seconds her feet were still; the angle she swept round that
+        /// foe (radians, summed without sign, and with it); plants begun; seconds by the rule that moved her.</summary>
+        public double InReach, Stood, AbsTurn, NetTurn;
+        public int Plants;
+        /// <summary>The story stand clock's charges on her (set by the harness at a run's end): what the plant is kept under.</summary>
+        public int StandCharges;
+        /// <summary>The rules that moved her over the last steps, newest last (a trace).</summary>
+        public string Last = "";
+        public readonly System.Collections.Generic.Dictionary<string, double> By = new();
+        /// <summary>Full turns round her foe each ten seconds in reach (the strafe: 2.2-2.3).</summary>
+        public double TurnsPer10 => InReach > 0 ? AbsTurn / (2 * Math.PI) / InReach * 10 : 0;
+        public double NetPer10 => InReach > 0 ? NetTurn / (2 * Math.PI) / InReach * 10 : 0;
+        public double StoodShare => InReach > 0 ? Stood / InReach : 0;
+        public override string ToString() => $"in reach {InReach:0.0} s, stood {StoodShare * 100:0}%, {TurnsPer10:0.00} turns per 10 s (net {NetPer10:0.00}), {Plants} plants; "
+            + string.Join(" ", By.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Key} {kv.Value:0.0}"));
+    }
+
+    sealed class Feet
+    {
+        public int Side = 1;
+        public readonly FeetMeter M = new();
+        double seen = -9, plantUntil, stepUntil, plantX, plantZ, stepWide, lastT = -1, lastA;
+        (double X, double Z)? spot;
+        bool planted;
+        Enemy? lastFoe;
+
+        /// <summary>Whether she is planted now. Come into reach: a plant; the plant over: a step; the step over: the
+        /// other hand next, and a plant. Out of reach for half a second (the foe fell, she walked on) begins again.</summary>
+        public bool Plant(Battle b)
+        {
+            double now = b.Time;
+            var p = b.Player;
+            bool fresh = now - seen > 0.5;
+            // The step is over once it has carried her clear of where it began; one that has not in StepMax s (walled,
+            // held by a heave, slowed) is tried to the other hand, never stood through: the clock would see the stand.
+            bool clear = Math.Sqrt((p.X - plantX) * (p.X - plantX) + (p.Z - plantZ) * (p.Z - plantZ)) >= stepWide;
+            var clock = b.StoryStand is { Stand: true } d ? d : null;
+            // (the clock that knows a fighter's plant, StandSwing: she plants while it has counted her standing with
+            // more than StepLead s of its StandFor left, a chain's length while her cuts land, and at most PlantMost s)
+            bool counted = clock is { StandSwing: > 0 };
+            // (and under it the step must clear the clock's own spot, not only the hands': pushed about in a plant, a
+            // step back across where the clock last saw her move reached 0.96 m and was still a stand to it)
+            if (counted && spot is var (sx, sz)) clear &= Math.Sqrt((p.X - sx) * (p.X - sx) + (p.Z - sz) * (p.Z - sz)) >= clock!.StandMoved;
+            if (counted && !fresh && planted && (b.StoodFor >= clock!.StandFor - StepLead || now >= plantUntil))
+            {
+                // The plant's end is always a step, from where she is now (a mark dodged in a plant left her far from
+                // where it began: "clear" at once, and the next plant followed with no step, 4.45 s of hands at rest).
+                planted = false; plantUntil = now; stepUntil = now + StepMax;
+                plantX = p.X; plantZ = p.Z; spot = b.StandSpot; clear = false;
+            }
+            // (her own heavy cut holds her feet up to 0.3 s: that is not a wall, the step's time starts when they are free)
+            if (!planted && p.PlantT > 0) stepUntil = Math.Max(stepUntil, now + p.PlantT + StepMax);
+            if (!fresh && !planted && now >= stepUntil && !clear) { Side = -Side; stepUntil = now + StepMax; }
+            else if (fresh || !planted && now >= plantUntil && clear)
+            {
+                if (!fresh) Side = -Side;
+                plantUntil = now + (counted ? PlantMost : clock != null ? clock.StandFor * PlantShare : PlantFor);
+                stepUntil = plantUntil + StepMax;
+                stepWide = clock != null ? clock.StandMoved * StepClear : StepWide;
+                plantX = p.X; plantZ = p.Z; spot = null;
+                planted = true;
+                M.Plants++;
+            }
+            if (!counted && now >= plantUntil) planted = false;
+            seen = now;
+            return planted;
+        }
+
+        public void Measure(Battle b, Enemy? foe, bool inReach, bool moved, string took)
+        {
+            double now = b.Time, dt = lastT < 0 ? 0 : Math.Clamp(now - lastT, 0, 0.1);
+            lastT = now;
+            M.By[took] = M.By.GetValueOrDefault(took) + dt;
+            if (!M.Last.EndsWith(took)) M.Last = (M.Last.Length > 60 ? M.Last[^60..] : M.Last) + ">" + took;
+            if (foe == null || !inReach) { lastFoe = null; return; }
+            var p = b.Player;
+            double a = Math.Atan2(p.Z - foe.Z, p.X - foe.X);
+            M.InReach += dt;
+            if (!moved) M.Stood += dt;
+            if (lastFoe == foe)
+            {
+                double da = Math.Atan2(Math.Sin(a - lastA), Math.Cos(a - lastA));
+                M.AbsTurn += Math.Abs(da); M.NetTurn += da;
+            }
+            lastFoe = foe; lastA = a;
+        }
     }
 
     /// <summary>The hands that are not the feet: a dash out of a crush, the art
     /// on a crowd, a draught when low.</summary>
     /// <returns>Whether a draught was drunk.</returns>
+    /// <param name="drinks">Off: the hands never drink (the game's --no-drink, a draught's lesson waiting).</param>
     /// <param name="rooted">Read the kit's telegraphs (Sim/Tells.cs): rooted in a marked blow, dash out; dragged into a
     /// pull's heart past walking out, dash out. A caller with hands that did not see it passes false.</param>
-    public static bool Act(Battle b, Journey j, double mx, double mz, SurvivorUnchained.Play.Bosses.ArenaBoss? boss = null, bool lunges = true, bool aimsFlare = true, bool rooted = true, bool crush = true, bool presses = false)
+    public static bool Act(Battle b, Journey j, double mx, double mz, SurvivorUnchained.Play.Bosses.ArenaBoss? boss = null, bool lunges = true, bool aimsFlare = true, bool rooted = true, bool crush = true, bool presses = false, PressHands? hands = null, bool drinks = true)
     {
         var p = b.Player;
         if (rooted && b.ActiveTells.Count > 0) KitDash(b, mx, mz);
-        if (rooted && b.ActiveTells.Count > 0) ClosingDash(b, presses);
-        if (presses) PressSkills(b, rooted);
+        if (rooted && b.ActiveTells.Count > 0) ClosingDash(b, presses || hands is { GripOnly: false });
+        // The campaign's grips (ARPG.md 3.1): anyone holds the swing on what is near; a pressing hand presses the rest.
+        // (M3: a hand on the one press plan, data/content/press_plan.json, grips and presses through it)
+        if (hands != null) PressPlan.Run(b, hands, rooted);
+        else
+        {
+            if (b.Campaign) Grips(b);
+            if (presses) PressSkills(b, rooted);
+        }
         // A champion winding up a lunge close by: dash across its line, as anyone with a dash learns to.
         // (Not a boss: its blows are marked on the ground, and Boss reads them by their shape.)
         if (p.DashCharges > 0 && lunges)
@@ -180,7 +337,7 @@ public static class Pilot
             }
         }
         else readyIn = null;
-        if (p.Hp >= b.MaxHp * 0.33) return false;
+        if (!drinks || p.Hp >= b.MaxHp * 0.33) return false;
         double before = p.Hp;
         j.Quaff(b);
         return p.Hp > before;
@@ -281,6 +438,10 @@ public static class Pilot
     /// <summary>Off (--flareuse 0): hands that never press the Flare (today's game measured as before the Flare).</summary>
     public static bool UsesFlare = true;
     public static bool PhaseAware = true;
+    /// <summary>The game's (src/Game/Autopilot.cs; never set by the harness, whose pack never fills and whose filter hides nothing):
+    /// a thing lying that her hands cannot take (hidden by the loot filter, refused by a full pack) is not walked to.
+    /// Without it she stood on one, in the quiet of a map, until the twenty seconds' rule walked her off.</summary>
+    public static Func<Pickup, bool>? Leaves;
     /// <summary>Whether the last Steer was deft (Act reads the kit's telegraphs with the same eyes).</summary>
     [ThreadStatic] static bool lastDeft;
 
@@ -351,6 +512,33 @@ public static class Pilot
     /// the 8 m line ahead, the storm held while four or more stand within 3.5 m and broken once two lines are pending,
     /// with half a second left, or as the crowd thins with a line down (out of a storm, Sunder's key swung at what is near); Iron Vow when three or more stand within 3 m, or
     /// (one who reads the marks: sees) a marked blow about to land on her.</summary>
+    /// <summary>The campaign's held swings (a hold record: Sunder, Oathblade): held at the nearest foe within its reach and
+    /// a step, released with none.</summary>
+    static void Grips(Battle b)
+    {
+        var p = b.Player;
+        foreach (var w in b.Weapons)
+        {
+            if (!w.Hold) continue;
+            double reach = (w.Num(s => s.Reach) ?? 2.6) + 1.5;
+            var near = b.NearestHostile(p.X, p.Z, reach);
+            if (near == null) b.HoldSkill(w.Slot, false);
+            else b.HoldSkill(w.Slot, true, near.X, near.Z);
+        }
+    }
+
+    /// <summary>A campaign press the hand knows no better rule for (a spender, a wait): at the nearest foe in its reach
+    /// when ready and paid for.</summary>
+    static bool PressPlain(Battle b, WeaponInst w)
+    {
+        if (w.Press == null || w.Hold || w.Cast != CastMode.Press || w.Timer > 0) return false;
+        if (b.Resolve.On && b.Resolve.Value < (w.Press.Resolve ?? 0)) return false;
+        var p = b.Player;
+        double reach = w.Press.Aim == PressAim.Self ? (w.Num(s => s.Radius) ?? 3.5) : w.Press.Reach ?? w.AimRange;
+        var near = b.NearestHostile(p.X, p.Z, reach);
+        return near != null && b.PressSkill(w.Slot, near.X, near.Z);
+    }
+
     static void PressSkills(Battle b, bool sees = true)
     {
         var p = b.Player;
@@ -412,7 +600,9 @@ public static class Pilot
                     // Out of a storm (on its cooldown, or too few for one), Sunder's key swings Sunder at what is in reach.
                     if (w.Slot2 >= 0 && !Firing.InStorm(b, w) && b.HostilesInRadius(p.X, p.Z, 3.5).Count > 0) b.PressSkill(w.Slot2, p.X, p.Z);
                 }
+                continue;
             }
+            if (w.Behavior is not (WeaponBehavior.Leap or WeaponBehavior.Charge or WeaponBehavior.Brace) && PressPlain(b, w)) return;
         }
     }
 

@@ -23,7 +23,7 @@
       "hpMul": 1.25,
       "minSeconds": 60,
       "backstop": 0.05,
-      "crackAfter": 45
+      "crackAfter": 45, "cleave": 2.5
     }
   },
   "story": {
