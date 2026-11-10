@@ -24,6 +24,8 @@ PICKS = {
     # Second takes.
     "slash_steel": (950, 1), "disc": (950, 0), "mote": (960, 1), "mote_cascade": (960, 2), "tether_mark": (950, 0),
     "beam_gaze": (950, 1), "consecrate": (950, 0), "bolt": (950, 1), "magnet": (950, 2),
+    # M4: the Warden's four (each its own call of four: icons.generate([KEY], seed=SEED, n=4)).
+    "heroic_leap": (2504, 0), "shield_charge": (2502, 1), "iron_vow": (2506, 0), "sunder": (2502, 2),
 }
 
 

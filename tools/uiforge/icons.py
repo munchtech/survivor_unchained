@@ -110,6 +110,17 @@ SUBJECTS = {
     # UI 24 (Classes 17's new Warden skills): their own icons, no longer Dawnpulse's.
     "rebuke": ("holy", "a dark iron kite shield seen from the front in the centre, a radiant four-pointed star of golden lamp light blazing on its face (no cross), sharp rays of golden light bursting outward all round its rim as if a blow was just turned back, the whole shield in view, no figure"),
     "watch_bell": ("holy", "a heavy old bronze watch bell swinging as it tolls, its clapper mid-strike, rings of golden light pulsing outward from its mouth, no figure"),
+    # M4 (9 Nov 2026): the Warden's other four taught skills, their own icons (they borrowed leap, shield, fist and
+    # slash_heavy). Each is its own call, icons.generate([KEY], seed=SEED, n=4), and the take named in iconpicks.PICKS:
+    # heroic_leap 2504 #0, shield_charge 2502 #1, iron_vow 2506 #0, sunder 2502 #2. A remake is the same painting to
+    # within small brush differences (the sampler is not bit-exact on this card). Earlier wordings that failed: an arc
+    # of light round the plunging sword read as slash_steel; "iron" shields and gauntlets paint black on black (hence
+    # "bright", "white", "lit white"), and a dark gauntlet open to the ground is cut hollow by fit; a ribbon of light
+    # wound round the gauntlet read as a numeral at 17 px.
+    "heroic_leap": ("physical", "a heavy bright white greatsword driven point down into the ground, upright in the centre, a wide round shockwave ring of cracked stone and dust bursting outward all round it, shards of stone thrown high into the air on both sides, seen from slightly above, no figure"),
+    "shield_charge": ("physical", "a bright steel kite shield, pointed at the bottom, seen from the front and leaning forward to the right, its whole face lit white with a dark iron rim and a round boss, three long clean horizontal streaks of white light trailing behind it to the left like speed lines, no figure, no arm"),
+    "iron_vow": ("physical", "a clenched gauntlet fist of bright polished white steel raised upright, every plate lit and pale with no black shadows, a broad band of glowing golden light bound once round its wrist like a sworn oath, a thin ring of golden light round the whole fist, the gauntlet ending at the wrist, no figure, no arm"),
+    "sunder": ("physical", "a white iron kite shield split clean in two from top to bottom, the two halves falling apart with a wide gap between them, a blinding jagged crack of white light in the gap, splinters and sparks flying, no figure, no sword"),
     "howl": ("blood", "a snarling wolf's head howling, red breath"),
     "hourglass": ("arcane", "an hourglass with sand frozen in mid fall, violet light"),
     "mark": ("blood", "a red hunter's target mark, a crosshair of claws"),
