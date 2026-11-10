@@ -161,7 +161,9 @@ public static class GripPaint
             float h0 = Hash(i + 1.3f, seed), h1 = Hash(i + 5.7f, seed), h2 = Hash(i + 9.1f, seed);
             o[i * 4] = tine ? lo + span * (j + 0.15f + 0.7f * h0) / n : tlo + tspan * (j + 0.05f + 0.9f * h0) / n;
             o[i * 4 + 1] = tine ? (root[0] + (root[1] - root[0]) * h1) * MathF.Sqrt(k) : throwRoot * kt;
-            o[i * 4 + 2] = tine ? (len[0] + (len[1] - len[0]) * h2) * k : far * (throwLen[0] + (throwLen[1] - throwLen[0]) * h2);
+            // (take 10: the flicks' lengths are SPREAD over the range, a golden step apart: long, short, middling; never four alike)
+            float hl = Hash(77.7f, seed) + j * 0.618f; hl -= MathF.Floor(hl);
+            o[i * 4 + 2] = tine ? (len[0] + (len[1] - len[0]) * h2) * k : far * (throwLen[0] + (throwLen[1] - throwLen[0]) * hl);
             o[i * 4 + 3] = tine ? slant[0] + (slant[1] - slant[0]) * h1 : throwSlant[0] + (throwSlant[1] - throwSlant[0]) * (j + 0.2f + 0.6f * h1) / n;
         }
         return o;

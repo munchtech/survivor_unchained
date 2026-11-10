@@ -149,7 +149,8 @@ vec4 grip_trail(vec2 uv, vec2 lay, vec2 rib) {
 	float thin = mix(1.0, grip_narrow, shed);
 	// the tail: the first metres from the drawn tail run to a point (the brush landing; a short stroke: its whole length)
 	float tw = pow(clamp((u - grip_tail_u) / max(min(grip_point.x, 1.25 * span), 1e-3), 0.0, 1.0), grip_point.y);
-	vec2 dr = vec2(grip_leave.y, grip_leave.z * clamp(1.0 - (u - grip_tail_u) / (0.5 * span), 0.0, 1.0));
+	// (the grooves open most over the tail's first quarter, where the stroke is already wide, none past the middle)
+	vec2 dr = vec2(grip_leave.y, grip_leave.z * clamp(2.0 - 4.0 * (u - grip_tail_u) / span, 0.0, 1.0));
 	float po = grip_out * rib.y;           // the pressed ribs' outer edge splays out past the tip's path
 	float vm = 1.0 - uv.y + po;            // shares of the blade in from the stroke's outer edge (negative: past it)
 	// (lay.x: the rib's own limit where the path turns on screen: the stroke pinches inside the turn, never over itself)
