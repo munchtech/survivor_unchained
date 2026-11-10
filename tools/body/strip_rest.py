@@ -670,60 +670,140 @@ def cmd_map(hs, poses):
     print("elevation check (name says): " + ", ".join(f"{names[k]} {el[k]:.0f}" for k in range(len(names)) if names[k].startswith("x:")))
 
 
-def cmd_sheet(hs):
+SHEET_ROWS = "rest:front34,x:abd150:l:front34,x:abd150:l:under,x:flex170:l:under,cast_bolt@3:r:under"
+
+
+def map_numbers(hs, names):
+    """{pose: (elev, w, fill, map, own)} as cmd_map prints them (its own code, its stdout read back), and the rest
+    proof lines {side: (elev, w)}."""
+    import contextlib
+    import io
+    import re
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        cmd_map(hs, names)
+    rows, rest = {}, {}
+    for ln in buf.getvalue().splitlines():
+        m = re.match(r"proof: rest (\w): elevation ([\d.]+) deg, w (?:np\.float64\()?([\d.e+-]+)", ln)
+        if m:
+            rest[m.group(1)] = (float(m.group(2)), float(m.group(3)))
+        parts = ln.split(" | ")
+        if len(parts) == 4 and parts[0].split()[0] in names:
+            nm, e, w = parts[0].split()
+            rows[nm] = (float(e), float(w), parts[1].split(), parts[2].split(), parts[3].split())
+    return rows, rest
+
+
+def cmd_sheet(hs, rows_arg="", out_name="armpit_map"):
+    """sheet: a grid, one row per pose:view, columns B fill | B map | A; the numbers of cmd_map under each row."""
     import region_shape as rs
+    from PIL import Image, ImageDraw, ImageFont
     h, md, bd, cfg = hs.h, hs.md, hs.bd, hs.cfg
-    fr, pn = bd.frame, cfg["panel"]
-    lat, up, front = np.asarray(fr.lat), np.asarray(fr.up), np.asarray(fr.front)
-    z = np.load(rt.OUT / "poses.npz")
-    k = [str(x) for x in z["name"]].index(cfg["sheet_pose"])
-    s, G = str(z["side"][k]), z["G"][k]
-    sg = 1 if s == "l" else -1
-    c0 = 0.5 * (bd.G0[bd.p.index["upperarm_l"]][:3, 3] + bd.G0[bd.p.index["upperarm_r"]][:3, 3]) - cfg["rest_drop"] * up
-    vr = rs.chest_view(c0, np.eye(3), sg * lat, up, front, cfg["views"]["front34"], cfg["rest_half"], pn / (2 * cfg["rest_half"]))
-    Vp = rt.published(bd, G)
-    Xf, _ = h.target(G, s, Vp)
-    Va, Ga = h.pose_ref(G)
-    ja, ra = h.anchor[s]
-    M = ct.anchor_align(G[ja], bd.p.rest[ja], hs.Ab.G0[ra], Ga[ra])
-    b = md.blend(G, s)[:, None]
-    X1 = b * (hs.car1[s].carry(Va) @ M[:3, :3].T + M[:3, 3]) + (1 - b) * Vp[hs.pts[s]]
-    Vf, V1 = hs.whole(Vp, {s: Xf}), hs.whole(Vp, {s: X1})
-    Rc = rs.turn(G, bd.p.rest, ja)
-    vo = rs.chest_view(G[bd.p.index[f"upperarm_{s}"]][:3, 3], Rc, sg * lat, up, front, cfg["views"]["front34"], rs.SHEET["half"], pn / (2 * rs.SHEET["half"]))
-    vu = rs.chest_view(X1[hs.loc[s]].mean(0), Rc, sg * lat, up, front, cfg["views"]["under"], cfg["pit_half"], pn / (2 * cfg["pit_half"]))
-    nb = len(hs.loc[s])
-    rows = [[rs.clay_rgb(bd.V0, bd.T, vr), rs.clay_rgb(hs.V1, bd.T, vr)], [rs.clay_rgb(Vf, bd.T, vo), rs.clay_rgb(V1, bd.T, vo)],
-            [rs.clay_rgb(Vf, bd.T, vu), rs.clay_rgb(V1, bd.T, vu)]]
-    labels = [["REST, front three-quarter: B today", f"REST, same camera: B with the armpit strip re-laid ({nb} points a side, inside the fold)"],
-              [f"arm overhead ({cfg['sheet_pose']}), front three-quarter: today's target (the fill spans the hollow)", "the target on B with the strip change (the band lies in A's hollow)"],
-              ["the same pose from under the arm: today's target", "from under the arm: the target on B with the strip change"]]
-    out = rt.OUT / "sheets" / "strip_owner.png"
-    rs.sheet(rows, labels, pn).save(out)
-    subprocess.run([sys.executable, str(HERE.parent / "half.py"), str(out)], check=True)
-    print(f"wrote {out}")
+    specs = [r.rsplit(":", 1) for r in (rows_arg or SHEET_ROWS).split(",") if r]
+    names = list(dict.fromkeys(p for p, _ in specs))
+    cx = rs.Ctx()
+    poses = {p: next(cx.poses([p])) for p in names}
+    nums, rest = map_numbers(hs, [p for p in names if p != "rest"])
+    lo, hi = cfg["map_elev"]
+    weight = lambda e: (lambda t: t * t * (3 - 2 * t))(np.clip((e - lo) / (hi - lo), 0, 1))
+    N0s = {}
+
+    def panels(pname):
+        pose = poses[pname]
+        G, s = pose["G"], pose["side"]
+        V = cx.surface("pub" if pname.startswith("rest") else "carried", pose)
+        Vp = cx.surface("pub", pose)
+        Va, Ga = h.pose_ref(G)
+        ja, ra = h.anchor[s]
+        M = ct.anchor_align(G[ja], bd.p.rest[ja], hs.Ab.G0[ra], Ga[ra])
+        b = md.blend(G, s)[:, None]
+        N0, bb = h.N0[hs.pts[s]], hs.loc[s]
+        Xf = h.car[s].carry(Va)
+        Xb = hs.car1[s].carry(Va)
+        wk = weight(elevation(hs, G, s))
+        Xm = Xf.copy()
+        Xm[bb] = Xf[bb] + wk * (Xb[bb] - Xf[bb])
+        put = lambda X: hs.whole(V, {s: b * (X @ M[:3, :3].T + M[:3, 3]) + (1 - b) * Vp[hs.pts[s]]}, band_only=True)
+        return pose, put(Xf), put(Xm)
+
+    cache, ims, labs, lines = {}, [], [], []
+    for pname, vn in specs:
+        if pname not in cache:
+            cache[pname] = panels(pname)
+        pose, Vf, Vm = cache[pname]
+        px = rs.SHEET["panel"]
+        vw = cx.view(pose, rs.SHEET["views"][vn], rs.SHEET["half"], px / (2 * rs.SHEET["half"]))
+        Va = cx.a_on_B(pose)
+        im = [rs.clay_rgb(Vf, bd.T, vw), rs.clay_rgb(Vm, bd.T, vw), rs.clay_rgb(Va, cx.A.T, vw)]
+        ims.append(im)
+        labs.append([f"{c} | {pname} | {vn}" for c in ("B fill", "B map", "A")])
+        if pname == "rest":
+            assert np.array_equal(im[0], im[1]), "rest: fill != map"
+            print("rest: fill == map")
+            e, w = rest[pose["side"]]
+            lines.append(f"elev {e:.1f}  w {w:.2f}  | fill: = B's rest | map: = B's rest (cmd_map proof) | A's own: -")
+        else:
+            e, w, f, m, o = nums[pname]
+            t = lambda a: f"edges {a[0]}, mean {a[1]}, off A {a[2]} mm, turned {a[3]}"
+            lines.append(f"elev {e:.1f}  w {w:.2f}  | fill: {t(f)} | map: {t(m)} | A's own: {o[0]} mean {o[1]}")
+        print(f"{pname}:{vn}  " + "  ".join(f"{c.mean():.1f}" for c in im), flush=True)
+        assert all(c.std() > 1 for c in im), f"blank panel in {pname}:{vn}"
+    pn = rs.SHEET["panel"]
+    try:
+        font = ImageFont.truetype("arial.ttf", 20)
+    except OSError:
+        font = ImageFont.load_default()
+    strips = []
+    for im, lab, ln in zip(ims, labs, lines):
+        r = rs.sheet([im], [lab], pn)
+        w = r.width
+        parts = [ln]
+        while len(parts) < 3 and max(font.getlength(x) for x in parts) > w - 8:
+            parts = [x for q in parts for x in ([q] if font.getlength(q) <= w - 8 else
+                                                 [q[:q.rindex(" | ", 0, len(q) // 2 + 20)], q[q.rindex(" | ", 0, len(q) // 2 + 20) + 3:]])]
+        st = Image.new("RGB", (w, 26 * len(parts) + 6), (255, 255, 255))
+        d = ImageDraw.Draw(st)
+        for i, x in enumerate(parts):
+            d.text((4, 3 + 26 * i), x, fill=(0, 0, 0), font=font)
+        strips.append((r, st))
+    W = strips[0][0].width
+    H = sum(r.height + st.height + 4 for r, st in strips)
+    big = Image.new("RGB", (W, H), (120, 120, 120))
+    y = 0
+    for r, st in strips:
+        big.paste(r, (0, y))
+        big.paste(st, (0, y + r.height))
+        y += r.height + st.height + 4
+    out = rt.OUT / "sheets" / f"{out_name}.png"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    big.save(out)
+    half = out.with_name(out.stem + "_half.jpg")
+    rs.save_half(big, half)
+    print(f"wrote {out} ({big.width}x{big.height})")
+    print(f"wrote {half}")
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("cmd", choices=["build", "target", "sheet"])
     ap.add_argument("--snap", action="store_true", help="import carried_target from out/shoulder/snap (a frozen copy)")
-    ap.add_argument("--rows", type=int, default=HER["rows"])
+    ap.add_argument("--rows", default="", help="build: lay rows (int); sheet: pose:view,pose:view,... (default: five rows, see SHEET_ROWS)")
     ap.add_argument("--relax", action="store_true", help="build: relax the lay on real lengths (slow; the left fails, see strip_rest.md)")
     ap.add_argument("--map", action="store_true", help="target: the lay as a carry map blended in by arm elevation, B's rest kept")
+    ap.add_argument("--out", default="armpit_map", help="sheet: output name")
     ap.add_argument("--poses", default="", help="comma-separated pose names, or 'named' (the config's list); none: all of poses.npz")
     a = ap.parse_args()
     HER["lim"] = (0.82, 1.28) if a.relax else None
     print(f"carried_target: {ct.__file__}")
     hs = HerStrip()
     if a.cmd == "build":
-        return cmd_build(hs, a.rows)
+        return cmd_build(hs, int(a.rows) if a.rows else HER["rows"])
     hs.load()
     if a.cmd == "target" and a.map:
         return cmd_map(hs, HER["named"] if a.poses in ("", "named") else [q for q in a.poses.split(",") if q])
     if a.cmd == "target":
         return cmd_target(hs, HER["named"] if a.poses == "named" else [p for p in a.poses.split(",") if p])
-    cmd_sheet(hs)
+    cmd_sheet(hs, a.rows, a.out)
 
 
 if __name__ == "__main__":
