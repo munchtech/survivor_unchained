@@ -64,7 +64,7 @@ public class FxP7Tests
         foreach (var k in new[] { "grip.lead_frames", "grip.slow", "grip.snap", "grip.min_len", "grip.face", "grip.point", "grip.retract", "grip.shed_at", "grip.shed_to",
             "grip.kink", "grip.kink_run", "grip.link.on", "grip.contact.wait_frames", "grip.contact.k_min", "grip.contact.kill", "grip.contact.by_struck", "grip.contact.grit",
             "grip.press.rise", "grip.press.lift", "grip.press.contact", "grip.press.hold", "grip.press.white", "grip.cap", "grip.cap_rag",
-            "grip.fill.lanes", "grip.fill.share", "grip.fill.values_day", "grip.fill.values_night", "grip.fill.gold", "grip.fill.press", "grip.dry_tail", "grip.press.loaded",
+            "grip.fill.lanes", "grip.fill.share", "grip.fill.values_day", "grip.fill.values_night", "grip.fill.gold", "grip.fill.groove", "grip.fill.press", "grip.dry_tail", "grip.press.loaded",
             "grip.throw.fly", "grip.throw.dash", "grip.throw.dash_m", "grip.throw.bend", "grip.throw.span", "grip.fill.streak", "grip.fill.tine", "grip.fill.cut", "grip.fill.comb", "grip.fill.dry", "grip.dry_out", "grip.shed_white",
             "grip.splay.out", "grip.splay.tines", "grip.splay.len", "grip.splay.root", "grip.splay.slant", "grip.splay.frames",
             "grip.throw.per_struck", "grip.throw.most", "grip.throw.px", "grip.throw.len", "grip.throw.min", "grip.throw.slant", "grip.throw.frames", "grip.throw.color",
@@ -108,8 +108,10 @@ public class FxP7Tests
             Assert.True(v.Length == 6 && v[1] <= 0.95f && v[4] <= v[1] - 0.05f && v[4] >= 0.7f && v[2] <= 0.9f && v[5] < v[2], vk + ": three values far enough apart to read at 1:1, none dark");
         }
         Assert.InRange(p["grip.fill.lanes"], 6f, 12f);
-        Assert.InRange(p.All("grip.fill.gold")[0], 0.15f, 0.3f);
-        Assert.True(p.Curve("grip.dry_tail", 0.1f) > 0.1f && p.Curve("grip.dry_tail", 0.1f) < 0.4f, "grip.dry_tail: a few dry gaps in the tail half before the last three frames");
+        Assert.InRange(p.All("grip.fill.gold")[0], 0.08f, 0.2f);   // (take 10: a fifth of the width at most)
+        var gv = p.All("grip.fill.groove");
+        Assert.True(gv.Length == 4 && gv[0] >= 0.8f && gv[0] <= 2.5f && gv[2] >= gv[0] && gv[2] <= 4f && gv[1] > 0.2f && gv[1] < 0.8f, "grip.fill.groove: hair lines on the lanes' borders, thin dry gaps");
+        Assert.True(p.Curve("grip.dry_tail", 0.1f) > 0.3f && p.Curve("grip.dry_tail", 0.1f) <= 1f && p.Curve("grip.dry_tail", 0.02f) < 0.2f, "grip.dry_tail: the grooves open into dry gaps in the tail half from the middle of the life");
         Assert.True(p.All("grip.fill.tine")[0] >= 0.15f, "grip.fill.tine: the colors interleave");
         float end = 0;
         while (p.Curve("grip.retract", end) < 0.999f && end < 1) end += 1 / 240f;
@@ -198,7 +200,7 @@ public class FxP7Tests
         Assert.Equal((int)tn[0], GripPaint.Tines(1, tn, crowd));
         Assert.Equal((int)tn[1], GripPaint.Tines(40, tn, crowd));
         Assert.Equal(1, GripPaint.Streaks(1, per, most));
-        Assert.InRange(GripPaint.Streaks(40, per, most), 4, 7);
+        Assert.InRange(GripPaint.Streaks(40, per, most), 3, 5);   // (take 10: 3-5 flicks, never a comb)
         Assert.True(GripPaint.Tines(40, tn, crowd) + GripPaint.Streaks(40, per, most) <= 12, "the shader carries 12 spikes");
         Assert.InRange(p.All("grip.throw.frames").Length, 2, 3);
         var sp = GripPaint.Spikes(stamp, 5, 6, press, p.All("grip.splay.len"), p.All("grip.splay.root"), p.All("grip.splay.slant"), 0.03f, p.All("grip.throw.len"), p.All("grip.throw.slant"), 2.5f, 7f, 1f, 1f, p["grip.throw.span"]);
@@ -206,10 +208,11 @@ public class FxP7Tests
         for (int i = 0; i < 11; i++)
         {
             float sr = i < 5 ? 1f : p["grip.throw.span"];
-            Assert.InRange(sp[i * 4], stamp.S - sr * press.Contact[2], stamp.S + sr * press.Contact[1]);
+            Assert.InRange(sp[i * 4], stamp.S - sr * press.Contact[2], stamp.S + (i < 5 ? 1f : 0.25f) * press.Contact[1]);
+            if (i > 5) Assert.True(sp[i * 4 + 3] > sp[i * 4 - 1] && sp[i * 4] > sp[i * 4 - 4], "the flicks fan: each leans more the travel's way than the one behind it");
             Assert.True(sp[i * 4 + 1] <= 3f, "a spike's root is hair-thin (pixels)");
             Assert.True(sp[i * 4 + 1] > 0 && sp[i * 4 + 2] > 0);
-            if (i < 5) Assert.True(sp[i * 4 + 2] <= 0.3f, "a tine is short"); else Assert.InRange(sp[i * 4 + 2], 0.9f, 2.5f);
+            if (i < 5) Assert.True(sp[i * 4 + 2] <= 0.3f, "a tine is short"); else Assert.InRange(sp[i * 4 + 2], 0.5f, 2.5f);
         }
     }
 

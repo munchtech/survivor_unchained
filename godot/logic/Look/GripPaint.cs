@@ -151,7 +151,9 @@ public static class GripPaint
         var o = new float[(tines + streaks) * 4];
         float lo = c.S - 0.7f * p.Contact[2], span = 0.7f * (p.Contact[1] + p.Contact[2]);
         // (take 8) the streaks are rooted along the whole pressed span and a little past it (they fan), unevenly
-        float tlo = c.S - throwSpan * p.Contact[2], tspan = throwSpan * (p.Contact[1] + p.Contact[2]);
+        // (take 10: behind the crossing and a little past it: a root is laid when the contact is stamped, so the flick
+        // is there on the contact's frame; they lean more the travel's way the nearer the head: a fan, none crossing)
+        float tlo = c.S - throwSpan * p.Contact[2], tspan = throwSpan * p.Contact[2] + 0.25f * p.Contact[1];
         for (int i = 0; i < tines + streaks; i++)
         {
             bool tine = i < tines;
@@ -160,7 +162,7 @@ public static class GripPaint
             o[i * 4] = tine ? lo + span * (j + 0.15f + 0.7f * h0) / n : tlo + tspan * (j + 0.05f + 0.9f * h0) / n;
             o[i * 4 + 1] = tine ? (root[0] + (root[1] - root[0]) * h1) * MathF.Sqrt(k) : throwRoot * kt;
             o[i * 4 + 2] = tine ? (len[0] + (len[1] - len[0]) * h2) * k : far * (throwLen[0] + (throwLen[1] - throwLen[0]) * h2);
-            o[i * 4 + 3] = tine ? slant[0] + (slant[1] - slant[0]) * h1 : throwSlant[0] + (throwSlant[1] - throwSlant[0]) * h1;
+            o[i * 4 + 3] = tine ? slant[0] + (slant[1] - slant[0]) * h1 : throwSlant[0] + (throwSlant[1] - throwSlant[0]) * (j + 0.2f + 0.6f * h1) / n;
         }
         return o;
     }
