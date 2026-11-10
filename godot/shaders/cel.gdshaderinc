@@ -584,13 +584,42 @@ float cel_hero_class_pick(vec4 c_v) {
 	int c_k = int(round(cel_hero_class));
 	return c_k == 0 ? c_v.x : c_k == 1 ? c_v.y : c_k == 2 ? c_v.z : c_k == 3 ? c_v.w : 0.0;
 }
+// (L1 lead 24, TRIM) GOLD OVER GUNMETAL: with the keep at 0 every metal texel lands at one L, so her gold trim sat at
+// the plate's value. cel_hero_gold (hero_pool 78-81), class 3 only, per texel from the tone itself: its GOLD share = the
+// tone over its light (lit or mid), Oklab (a, b) along the gold axis (h 60) over its L, smoothstep(y, z) (a cool gunmetal tone has none and lands as
+// before); a gold texel lands at the class's L times x (both the lit and the shade pair), its C / L times w (0 or 1 = its
+// own). Value and chroma only: the hue is the tone's own. Zeros: as before.
+global uniform vec4 cel_hero_gold;
+vec3 cel_hero_gold_ok(vec3 c_rgb) {   // (Oklab of linear rgb: cel_hero_ok's math, declared here as land comes first)
+	vec3 c_lms = pow(max(mat3(vec3(0.4122214708, 0.2119034982, 0.0883024619), vec3(0.5363325363, 0.6806995451, 0.2817188376), vec3(0.0514459929, 0.1073969566, 0.6299787005)) * max(c_rgb, vec3(0.0)), vec3(0.0)), vec3(1.0 / 3.0));
+	return mat3(vec3(0.2104542553, 1.9779984951, 0.0259040371), vec3(0.7936177850, -2.4285922050, 0.7827717662), vec3(-0.0040720468, 0.4505937099, -0.8086757660)) * c_lms;
+}
+vec3 cel_hero_gold_lin(vec3 c_ok) {
+	vec3 c_l = mat3(vec3(1.0, 1.0, 1.0), vec3(0.3963377774, -0.1055613458, -0.0894841775), vec3(0.2158037573, -0.0638541728, -1.2914855480)) * c_ok;
+	return mat3(vec3(4.0767416621, -1.2684380046, -0.0041960863), vec3(-3.3077115913, 2.6097574011, -0.7034186147), vec3(0.2309699292, -0.3413193965, 1.7076147010)) * (c_l * c_l * c_l);
+}
 vec3 cel_hero_land(vec3 c_rgb, float c_lt, float c_k) {
 	if (c_lt <= 0.0 || c_k <= 0.0) return c_rgb;
 	float c_l = cel_hero_ok_l(c_rgb);
 	if (c_l < 0.0001) return c_rgb;
+	float c_gs = 0.0;
+	if (int(round(cel_hero_class)) == 3 && cel_hero_gold.x > 0.0) {
+		// (the tone over its light, the lit or the mid by which pair L it lands at: the material's own share, the light's hue out)
+		vec3 c_li = abs(c_lt - cel_hero_class_lit.w) < 0.00001 ? cel_hero_lit.rgb : cel_hero_mid.rgb;
+		vec3 c_ok = cel_hero_gold_ok(c_rgb / max(c_li, vec3(0.0001)));
+		c_gs = smoothstep(cel_hero_gold.y, max(cel_hero_gold.z, cel_hero_gold.y + 0.0001), dot(c_ok.yz, vec2(0.5, 0.8660254)) / max(c_ok.x, 0.0001));
+		c_lt *= mix(1.0, cel_hero_gold.x, c_gs);
+	}
 	float c_to = pow(c_lt, 1.0 - clamp(cel_hero_class_keep, 0.0, 1.0)) * pow(c_l, clamp(cel_hero_class_keep, 0.0, 1.0));
 	float c_f = mix(1.0, c_to / c_l, c_k);
-	return c_rgb * (c_f * c_f * c_f);
+	vec3 c_o = c_rgb * (c_f * c_f * c_f);
+	if (c_gs > 0.0 && cel_hero_gold.w > 0.0 && cel_hero_gold.w != 1.0) {
+		vec3 c_q = cel_hero_gold_ok(c_o);
+		c_q.yz *= mix(1.0, cel_hero_gold.w, c_gs * c_k);
+		vec3 c_g = cel_hero_gold_lin(c_q);
+		if (min(c_g.r, min(c_g.g, c_g.b)) >= 0.0) c_o = c_g;
+	}
+	return c_o;
 }
 // (L1 lead 22, R1HAIR) THE HAIR CLASS'S COLOR: class 0 (hair) with cel_hero_class_hair (hero_pool 45-48: the Oklab C
 // of the emission at the class's lit L, at its shade L, the strands' breakup, the strands' mean share of the dye) lands

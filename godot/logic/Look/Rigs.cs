@@ -267,6 +267,10 @@ public static class Rigs
     /// shade-lock Oklab L factor (0 = off), locks over a half turn of her head, the lit threshold on a lock's own turn, the gap
     /// line's L factor, the sheen band's L factor and its width. Value only. A row without them: zeros, the hair as before.</summary>
     public static double[] HeroLocks(double[]? heroPool) => heroPool is { Length: >= 78 } ? heroPool[72..78] : new double[6];
+    /// <summary>(L1 lead 24, TRIM) hero_pool values 78-81: her GOLD over gunmetal (cel.gdshaderinc cel_hero_land, metal class only):
+    /// a gold texel's L factor over the metal class's lit / shade L (0 = off), the gold share's start and full (the tone's Oklab
+    /// (a, b) along h 60 over its L), its C / L factor (0 or 1 = its own). Value and chroma only. A row without them: zeros, as before.</summary>
+    public static double[] HeroGold(double[]? heroPool) => heroPool is { Length: >= 82 } ? heroPool[78..82] : new double[4];
 
     /// <summary>(HERPAIR) A hero material's class from its shader's file and its outfit kind (heroine_outfit.gdshaderinc
     /// `kind`: 0 leather, 1 metal, 2 cloth, 3 gloss, 4 twill, 5 satin; -1 none): 0 hair, 1 skin, 2 outfit leather / cloth,
