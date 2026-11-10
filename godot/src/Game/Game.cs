@@ -1229,7 +1229,8 @@ public partial class Game : Node, IZoneHost
                     break;
                 // (P7) a dash step taken in play: its card line in the fight's own announce
                 case Ev.DashStep ds when !InCinematic && Content.DashSteps.Find(ds.Id) is { } step:
-                    Announce(new Announcement(step.Name, step.Card, "info", 3.6, "The dash"));
+                    hud.StepWon(step);
+                    if (!hud.StepShown) Announce(new Announcement(step.Name, step.Card, "info", 3.6, "The dash"));
                     break;
                 case Ev.Discovery d:
                     if (!World.Codex.Contains(d.Id)) World.Codex.Add(d.Id);
@@ -1886,22 +1887,55 @@ public partial class Game : Node, IZoneHost
     readonly Dictionary<string, (Vector2 At, double D2, int Count, string Name, Color Col)> quietLabels = new();
     readonly List<double> labelNear = new();
 
-    /// <summary>What the corner map shows now: by day and on the story's roads, not in an arena.</summary>
+    // MiniView's own (M4 lead 5: it made a view, a list and the zone's marks anew each HUD frame, 1.9 KB): the one view
+    // it fills, and what its marks were last asked for. The marks are asked of the zone and the goals again when the
+    // place, the fog, the goals' set or her fallen belongings change, and otherwise on every MiniMarksEvery-th asking
+    // (half a second at the HUD's twelve a second: the zone's MapMarks builds its list each time it is asked). No mark
+    // walks (fixed places, scars, people who stand and only jump with their routine, goals pinned to fixed things;
+    // tests/MiniMarksTests fails if one ever glides): were one to, this cadence would have to follow moves.
+    readonly MinimapView miniView = new();
+    ZoneRuntime? miniZone;
+    WorldScene? miniScene;
+    string? miniSeen, miniGoals;
+    CorpseState? miniCorpse;
+    int miniAsked;
+    const int MiniMarksEvery = 6;
+    static readonly string MiniUnseen = new('0', Journey.FogN * Journey.FogN);
+
+    /// <summary>What the corner map shows now: by day and on the story's roads, not in an arena. The view returned is
+    /// the same one each time, filled again (nothing made while nothing changes; see the fields above).</summary>
     MinimapView? MiniView()
     {
-        if (zone == null || scene == null || zone is ArenaRun or StoryNight || Battle is not { } b || inTransit) return null;
-        float extent = MapScreen.Extent(scene.Data.Meta);
-        var seen = World.Zone(zone.Id).TryGetValue("seen", out var f) && f.Str is { Length: Journey.FogN * Journey.FogN } s ? s : new string('0', Journey.FogN * Journey.FogN);
-        bool Seen(double x, double z)
+        if (zone == null || scene == null || zone is ArenaRun or StoryNight || Battle is not { } b || inTransit)
+        {
+            // (back from an arena or a crossing: the marks asked at once)
+            miniAsked = MiniMarksEvery;
+            return null;
+        }
+        static bool SeenAt(string seen, float extent, double x, double z)
         {
             int i = (int)Math.Floor((x / extent + 0.5) * Journey.FogN), j = (int)Math.Floor((z / extent + 0.5) * Journey.FogN);
             return i >= 0 && j >= 0 && i < Journey.FogN && j < Journey.FogN && seen[j * Journey.FogN + i] == '1';
         }
-        var marks = zone.MapMarks().Where(m => m.Kind != MarkKind.Place && (m.Kind is MarkKind.Exit or MarkKind.Quest || Seen(m.X, m.Z)))
-            .Select(m => new MiniMark(m.X, m.Z, m.Kind, m.Label)).ToList();
-        marks.AddRange(GoalMiniMarks());
-        if (World.Corpse is { } corpse && corpse.Zone == zone.Id) marks.Add(new MiniMark(corpse.X, corpse.Z, MarkKind.Danger, "Your belongings"));
-        return new MinimapView(zone.Id, MapScreen.Drawing(scene.Data), extent, seen, Journey.FogN, marks, b.Player.X, b.Player.Z, b.Player.Facing, zone.TimeOf(World) == TimeOfDay.Night);
+        var v = miniView;
+        float extent = MapScreen.Extent(scene.Data.Meta);
+        var seen = World.Zone(zone.Id).TryGetValue("seen", out var f) && f.Str is { Length: Journey.FogN * Journey.FogN } s ? s : MiniUnseen;
+        var corpse = World.Corpse is { } fallen && fallen.Zone == zone.Id ? fallen : null;
+        if (++miniAsked >= MiniMarksEvery || !ReferenceEquals(zone, miniZone) || !ReferenceEquals(scene, miniScene) || !ReferenceEquals(seen, miniSeen)
+            || !ReferenceEquals(goalSet, miniGoals) || !ReferenceEquals(corpse, miniCorpse))
+        {
+            miniAsked = 0; miniZone = zone; miniScene = scene; miniSeen = seen; miniGoals = goalSet; miniCorpse = corpse;
+            var marks = v.Marks;
+            marks.Clear();
+            foreach (var m in zone.MapMarks())
+                if (m.Kind != MarkKind.Place && (m.Kind is MarkKind.Exit or MarkKind.Quest || SeenAt(seen, extent, m.X, m.Z)))
+                    marks.Add(new MiniMark(m.X, m.Z, m.Kind, m.Label, m.Objective));
+            marks.AddRange(GoalMiniMarks());
+            if (corpse != null) marks.Add(new MiniMark(corpse.X, corpse.Z, MarkKind.Danger, "Your belongings"));
+        }
+        v.Zone = zone.Id; v.Drawing = MapScreen.Drawing(scene.Data); v.Extent = extent; v.Seen = seen; v.N = Journey.FogN;
+        v.X = b.Player.X; v.Z = b.Player.Z; v.Facing = b.Player.Facing; v.Night = zone.TimeOf(World) == TimeOfDay.Night;
+        return v;
     }
 
     double tourT = 2;

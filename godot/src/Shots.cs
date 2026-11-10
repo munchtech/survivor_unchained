@@ -57,6 +57,13 @@ public partial class Shots : Node
     int hudNext, hudPhase;
     double hudAt;
     double time;
+    bool opened;
+    static Play.Game? FindGame(Node n)
+    {
+        if (n is Play.Game g) return g;
+        foreach (var c in n.GetChildren()) if (FindGame(c) is { } f) return f;
+        return null;
+    }
     static Shots? live;
     /// <summary>The pictures' own clock (seconds since they began), for what changes between pictures.</summary>
     public static double Clock => live?.time ?? 0;
@@ -143,6 +150,14 @@ public partial class Shots : Node
     public override void _Process(double delta)
     {
         time += delta;
+        // --open SCREEN@T (M4 lead 13, pictures): the game's screen SCREEN ('map', 'journal'...) opened T s into the shot, as its key would
+        if (!opened && Args.Get("open") is string op && op.Split('@') is { Length: 2 } oa && time >= double.Parse(oa[1], System.Globalization.CultureInfo.InvariantCulture))
+        {
+            opened = true;
+            var g = FindGame(GetTree().Root);
+            GD.Print(g != null ? $"open: {oa[0]} at {time:0.00}s (mode {g.Mode})" : "open: no Game node");
+            g?.Open(oa[0]);
+        }
         if (Ui.HudPin.Seq.Length > 0 && hudNext < Ui.HudPin.Seq.Length)
         {
             if (hudPhase == 0 && time >= seconds + hudNext * Args.Num("hud-seq-every", 1.5f)) { Ui.HudPin.Use(hudNext); hudAt = time; hudPhase = 1; }

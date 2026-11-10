@@ -106,7 +106,25 @@ public sealed partial class HerLight : Control
         float life = 1, trail = 1, shield, beat, shown = -1, dashRe;
         int dashMax, dashCount;
         float pipFlash;
-        const float Pip = 11, PipGap = 3, PipTop = 3, PipFlash = 0.15f;
+        public const float Pip = 11, PipGap = 3, PipTop = 3, PipFlash = 0.15f;
+        /// <summary>M4 §3, a step won (GameHud.StepWon): a charge pops the new pip in (PopTime) with a core glint; the
+        /// rest glint every pip once (left to right, GlintStagger apart, each GlintTime); the step's name in small caps
+        /// (Cinzel, LabelSize px) under the pips for LabelTime, fading over its last LabelFade.</summary>
+        public const float PopTime = 0.32f, PopGlint = 0.1f, GlintTime = 0.3f, GlintStagger = 0.06f, LabelTime = 1.6f, LabelFade = 0.5f, LabelSize = 13, LabelGap = 3;
+        float stepT = 99;
+        bool stepPop, logged;
+        string stepName = "";
+        static readonly Color StepCore = new("#fbf1d8"), StepInk = new("#f3e7cc");
+        /// <summary>The step's motion and name under the pips now.</summary>
+        public bool Stepping => stepT < LabelTime;
+        public void StepWon(bool popNew, string name) { stepPop = popNew; stepName = name; stepT = 0; QueueRedraw(); }
+        /// <summary>The strap and its pips on screen now (the step's name under them while it shows); null when not
+        /// showing. The damage numbers start clear of it (Hits.BesideHer).</summary>
+        public Rect2? OnScreen => IsVisibleInTree() && Modulate.A > 0.05f
+            ? new Rect2(GlobalPosition, new Vector2(W, H + (dashMax > 0 ? PipTop + Pip : 0) + (Stepping ? LabelGap + LabelSize + 2 : 0)))
+            : null;
+        /// <summary>The label's top under the strap (px at 1080).</summary>
+        public static float LabelTop => H + PipTop + Pip + LabelGap;
         bool day;
         static readonly Color Well = new("#120605"), RedTop = new("#e5503a"), RedFoot = new("#7e140e"), Hot = new("#ff8a5c"),
             TrailC = new("#e6cfa8"), ShieldC = new("#c6d6e6"), ShieldTop = new("#eef4fa"),
@@ -131,6 +149,7 @@ public sealed partial class HerLight : Control
             shown += (life - shown) * (1 - Mathf.Exp(-(life < shown ? 24f : 8f) * dt));
             if (Math.Abs(life - shown) < 0.0005f) shown = life;
             trail = Math.Max(trail, shown);
+            if (stepT < LabelTime) { stepT += dt; QueueRedraw(); glow.QueueRedraw(); }
             if (shown == this.life && trail == this.trail && shield == this.shield && beat == this.beat && day == Cuff.Day
                 && dashMax == this.dashMax && dashCount == this.dashCount && dashRe == this.dashRe && pipFlash <= 0) return;
             // a charge back: its bead flares for PipFlash s
@@ -231,6 +250,59 @@ public sealed partial class HerLight : Control
                 DrawCircle(rv - new Vector2(0.4f, 0.5f), 0.8f, CopperLit);
             }
             if (dashMax > 0) Pips();
+            if (dashMax > 0 && !logged)
+            {
+                logged = true;
+                var xf = GetGlobalTransformWithCanvas();
+                float sc = xf.Scale.X, vs = GetViewportRect().Size.Y / 1080f;
+                GD.Print($"pips: {dashMax} x {Pip} px (gap {PipGap}) under a {W}x{H} strap, label {LabelSize} px Cinzel; layer scale {sc:0.00}, viewport {GetViewportRect().Size.X:0}x{GetViewportRect().Size.Y:0}: a pip {Pip * sc:0.0} px at 1080, {Pip * sc * vs:0.0} px on screen");
+            }
+            if (stepT < LabelTime && stepName != "") StepLabel();
+        }
+
+        /// <summary>The step's name under the pips, small caps, cream on a soft dark halo, fading out.</summary>
+        void StepLabel()
+        {
+            float a = Math.Clamp((LabelTime - stepT) / LabelFade, 0, 1) * Math.Clamp(stepT / 0.12f, 0, 1);
+            var f = Style.Display;
+            const int fs = (int)LabelSize;
+            var sz = f.GetStringSize(stepName, HorizontalAlignment.Left, -1, fs);
+            var at = new Vector2(Mathf.Round((W - sz.X) / 2), Mathf.Round(LabelTop + f.GetAscent(fs)));
+            DrawStringOutline(f, at, stepName, HorizontalAlignment.Left, -1, fs, 5, new Color(0.02f, 0.01f, 0.01f, 0.55f * a));
+            DrawString(f, at, stepName, HorizontalAlignment.Left, -1, fs, StepInk with { A = a });
+        }
+
+        /// <summary>A step's glint on pip i (0..1 now): the popped pip's, or each pip's in turn.</summary>
+        float StepGlint(int i)
+        {
+            if (stepT >= LabelTime) return 0;
+            // (the popped pip's glint: 2-3 frames, FX_LANGUAGE §4, on the pop's peak, when the new pip is full size)
+            if (stepPop)
+            {
+                float pu = Math.Abs(stepT - PopTime * 0.55f) / (PopGlint / 2);
+                return i == dashMax - 1 && pu < 1 ? 1 - 0.5f * pu : 0;
+            }
+            float u = (stepT - i * GlintStagger) / GlintTime;
+            return u < 0 || u > 1 ? 0 : MathF.Sin(MathF.PI * u);
+        }
+
+        /// <summary>The popped pip's scale (0 to 1.25 and back to 1 over PopTime); 1 otherwise.</summary>
+        float PopScale(int i)
+        {
+            if (!stepPop || stepT >= PopTime || i != dashMax - 1) return 1;
+            float u = stepT / PopTime;
+            return u < 0.55f ? 1.25f * (u / 0.55f) : 1.25f - 0.25f * ((u - 0.55f) / 0.45f);
+        }
+
+        /// <summary>A four-point glint (the FX language's star) at c, arm length len, core color, strength k.</summary>
+        void Star(Vector2 c, float len, float k, bool heart = true)
+        {
+            if (k <= 0.01f) return;
+            var col = StepCore with { A = k };
+            DrawLine(c - new Vector2(len, 0), c + new Vector2(len, 0), col, heart ? 1.2f : 1f, true);
+            DrawLine(c - new Vector2(0, len), c + new Vector2(0, len), col, heart ? 1.2f : 1f, true);
+            DrawCircle(c, heart ? 2.2f : 1.2f, col);
+            if (heart) DrawCircle(c, 4.5f, StepCore with { A = 0.25f * k });
         }
 
         void Pips()
@@ -239,7 +311,22 @@ public sealed partial class HerLight : Control
             for (int i = 0; i < dashMax; i++)
             {
                 var c = new Vector2(Mathf.Round(px + i * (Pip + PipGap)) + r, py + r);
-                if (i < dashCount)
+                float sg = StepGlint(i), ps = PopScale(i);
+                if (ps < 0.999f)
+                {
+                    // (a charge won: the new pip pops in, lit, with a core glint over it)
+                    if (ps > 0.05f)
+                    {
+                        DrawCircle(c, (r + 1.5f) * ps, WickHot with { A = 0.35f });
+                        DrawCircle(c, r * ps, CopperFoot);
+                        DrawCircle(c, (r - 1) * ps, CopperMid);
+                        DrawCircle(c - new Vector2(0, 0.8f), Math.Max(0, (r - 2) * ps), CopperHi);
+                        DrawCircle(c - new Vector2(0.4f, 1.4f), Math.Max(0, (r - 3.6f) * ps), CopperLit);
+                        // (the new pip reads core-bright under its glint: a wide hot core while it pops)
+                        DrawCircle(c - new Vector2(0.4f, 0.9f), 2.2f * ps, WickCore);
+                    }
+                }
+                else if (i < dashCount)
                 {
                     // ready: a bead in the collars' copper, lit across its top, a bright 2 px core; the newest flares as it comes back
                     float f = i == dashCount - 1 && pipFlash > 0 ? pipFlash / PipFlash : 0;
@@ -257,6 +344,14 @@ public sealed partial class HerLight : Control
                     DrawCircle(c, r - 1, Well);
                     if (i == dashCount && dashRe > 0.01f)
                         DrawCircle(c, (r - 1.5f) * Math.Clamp(dashRe, 0, 1), CopperHi with { A = 0.8f });
+                }
+                if (sg > 0 && stepPop)
+                    // (the pop's glint: about 1.5x the pip across, set off to its upper right, so the new pip itself shows)
+                    Star(c + new Vector2(r + 1.5f, -(r + 1.5f)), Pip * (0.5f + 0.25f * sg), sg, false);
+                else if (sg > 0)
+                {
+                    DrawCircle(c, r + 3, StepCore with { A = 0.22f * sg });
+                    Star(c, 6 + 5 * sg, sg);
                 }
             }
         }

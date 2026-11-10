@@ -319,6 +319,10 @@ public static class Style
         ["A"] = new("#6bc45a"), ["B"] = new("#ec5a50"), ["X"] = new("#4a9cf0"), ["Y"] = new("#f2c440"),
     };
 
+    /// <summary>A face button's colour (A, B, X, Y), null for any other button: the HUD's caps tint the letter with it
+    /// (KeyTag's pad cap).</summary>
+    public static Color? PadFace(string name) => PadColours.TryGetValue(name, out var c) ? c : null;
+
     static readonly Dictionary<string, string> PadFiles = new()
     {
         ["A"] = "pad_a", ["B"] = "pad_b", ["X"] = "pad_x", ["Y"] = "pad_y", ["LB"] = "pad_lb", ["RB"] = "pad_rb", ["LT"] = "pad_lt", ["RT"] = "pad_rt",

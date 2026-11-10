@@ -93,6 +93,8 @@ public partial class Instrument : Control
             Sockets[i] = new Socket { Index = i };
             Sockets[i].Position = DgPanel.Seat(i) - Sockets[i].Size / 2;
             AddChild(Sockets[i]);
+            // (M4 §1: seat i shows slot KeyMap.SeatSlot[i]; its key's cap at its 12 o'clock)
+            Sockets[i].SetCap(new KeyTag(Controls.Skills[KeyMap.SeatSlot[i]]) { Chip = true });
         }
         AddChild(Draught);
         Dash = new Round(Round.Kind.Dash);
@@ -130,7 +132,13 @@ public partial class Instrument : Control
     }
 
     /// <summary>The Q chip lit "Q  READY" while the Flare is full (a change redraws it once).</summary>
-    public override void _Process(double delta) => artKey.Lit = Art.Level >= 0.999f;
+    public override void _Process(double delta)
+    {
+        artKey.Lit = Art.Level >= 0.999f;
+        // (M4: a rebind or a preset re-labels the caps and the Q chip at once)
+        if (Controls.Instance is { } c && c.Version != keysVersion) Keys();
+    }
+    int keysVersion = -1;
 
     /// <summary>Where the statuses and the art's word stood in the iron HUD (its life cuff's middle and its cuffs'
     /// top), kept so they show where they always have until the UI lead places them on the Drowned Girl.</summary>
@@ -155,9 +163,12 @@ public partial class Instrument : Control
     /// redraws only when its key or button changed.</summary>
     public void Keys()
     {
+        keysVersion = Controls.Instance?.Version ?? 0;
         draughtKey.Refresh();
         dashKey.Refresh();
         artKey.Refresh();
+        // (M4 §1: the seats' caps. A seat that wears a cap draws no rank chip, so nothing is measured against it)
+        foreach (var s in Sockets) s.Cap?.Refresh();
     }
 
     /// <summary>The Lamps' Open wide (§4): the flask and the dash (no wicks) drop to 45%; off, back to full.</summary>
@@ -209,7 +220,7 @@ public partial class Instrument : Control
             int rank = hot ? Content.Weapons.MaxRank : int.TryParse(c.AsSpan(1), out var r) ? Math.Clamp(r, 1, Content.Weapons.MaxRank) : 1;
             // (c3: filled at rank 3 and coming back, a quarter, half or three quarters ready by its place)
             double ready = c.StartsWith("c") ? 0.25 + 0.25 * (i % 3) : 1;
-            Sockets[i].Show(d.Id, d.Art, ItemViews.SchoolColors[d.School], ready, rank, Content.Weapons.MaxRank, false, hot, ready < 1 ? (1 - ready) * 8 : -1);
+            Sockets[i].Show(d.Id, Glyphs.ForSkill(d.Id, d.Art), ItemViews.SchoolColors[d.School], ready, rank, Content.Weapons.MaxRank, false, hot, ready < 1 ? (1 - ready) * 8 : -1);
         }
     }
 }
@@ -470,13 +481,16 @@ public partial class Socket : Control
             waiting = false; prevWait = -1; cue = -1; cool = ready < 0.98 ? 1 : 0; glow = ready < 0.98 ? 0 : 0.42; waitT = 0;
         }
         // The skill's own painting where there is one (the draft's card shows the same), else its drawn glyph.
-        var newArt = UiArt.Icon("glyph_color", Glyphs.IconKey(glyph)) ?? Glyphs.Texture(glyph, 78, school, line: true);
+        // (M4 lead 3: looked up when the glyph or school changes, not each frame: the path string and the key cost 6 seats x 80 B a frame)
+        var newArt = art;
+        if (art == null || glyph != glyphKey || school != this.school)
+            newArt = UiArt.Icon("glyph_color", Glyphs.IconKey(glyph)) ?? Glyphs.Texture(glyph, 78, school, line: true);
         if (glyph != glyphKey) { glyphKey = glyph; dirty = true; }
         // (redrawn only when what it shows changes: MR4, the HUD's redraws were 3.4 ms a frame)
         if (newArt != art || school != this.school || rank != this.rank || Math.Max(1, max) != this.max || evolved != this.evolved || canEvolve != ripe || ready != this.ready) dirty = true;
         art = newArt;
         this.school = school; this.rank = rank; this.max = Math.Max(1, max); this.evolved = evolved; ripe = canEvolve;
-        if (ready < lastReady - 0.4) { waiting = true; waitT = 0; }
+        if (ready < lastReady - 0.4) { waiting = true; waitT = 0; FiredItself(); }
         else if (waiting && ready >= 0.98)
         {
             // Ready again: a short wait is not cued (a fast attack stays lit); a longer one gets the envelope, and a
@@ -496,10 +510,17 @@ public partial class Socket : Control
     /// <summary>It has evolved: the place swells and burns gold, settling over a second.</summary>
     public void Crown() => crown = 0;
 
+    /// <summary>M4 §4: the level card folded into this seat (its key just opened): the seat flashes warm once, settling
+    /// over 0.6 s (no swell: the crown is the evolve's).</summary>
+    public void Opened() { if (opened < 0) openedBase = Modulate; opened = 0; }
+    double opened = -1;
+    Color openedBase = Colors.White;
+
     public override void _Process(double delta)
     {
         t += delta;
         if (filled) Settle(delta);
+        SeatTick(delta);
         if (crown >= 0)
         {
             crown += delta;
@@ -507,6 +528,13 @@ public partial class Socket : Control
             Scale = Vector2.One * (1 + 0.45f * e * (0.75f + 0.25f * Mathf.Cos((float)crown * 18)));
             Modulate = Colors.White.Lerp(new Color(2.2f, 1.8f, 1.0f), e);
             if (crown >= 1.3) { crown = -1; Scale = Vector2.One; Modulate = Colors.White; }
+        }
+        else if (opened >= 0)
+        {
+            opened += delta;
+            float k = (float)Math.Clamp(opened / 0.6, 0, 1), e = (1 - k) * (1 - k);
+            Modulate = openedBase.Lerp(new Color(1.9f, 1.6f, 1.15f, openedBase.A), e);
+            if (opened >= 0.6) { opened = -1; Modulate = openedBase; }
         }
         // Where it breathes gold (ready to evolve, not yet evolved) it draws by the clock, so it goes on redrawing.
         if (dirty || (filled && ripe && !evolved)) { dirty = false; QueueRedraw(); }
@@ -521,7 +549,7 @@ public partial class Socket : Control
     void Settle(double delta)
     {
         if (waiting) waitT += delta;
-        bool dim = ready < 0.98 && !Fast;
+        bool dim = ready < 0.98 && !Fast || CostShort;
         double c0 = cool, g0 = glow, k0 = cue;
         cool = Mathf.MoveToward((float)cool, dim ? 1f : 0f, (float)(delta / (dim ? 0.15 : 0.25)));
         if (cue >= 0)
@@ -544,6 +572,9 @@ public partial class Socket : Control
     /// wait's seconds in gold over it; the rank one numeral engraved on top of the ring (round 3: off the key tags'
     /// line, where it read as a keybind); ready to evolve, the ring's inner edge breathing gold (gold when evolved). An empty
     /// seat is the ring round a darker, empty well.</summary>
+    /// <summary>A long wait's seconds stand over the well (fix A, 5).</summary>
+    bool Numbered => filled && ready < 0.98 && !Fast && waitSecs >= 1 && waitSecs / Math.Max(0.02, 1 - ready) >= 3.5;
+
     void DrawRing()
     {
         var c = Size / 2;
@@ -559,7 +590,10 @@ public partial class Socket : Control
         if (filled)
         {
             // (round 2: the element's light in the well's glass, so neighbours read apart by more than shape)
+            bool shortNow = SeatCost.ShortLook(CostShort, Numbered);
             DrawTextureRect(DgMeters.Disc, new Rect2(c - Vector2.One * hr * 1.15f + new Vector2(0, hr * 0.25f), Vector2.One * hr * 2.3f), false, school with { A = 0.42f });
+            // (M4 lead 11: short of its cost = a dark veil over the well, then a dull glyph at 55%: "not yet")
+            if (shortNow) DrawCircle(c, hr - 0.5f, new Color(0.02f, 0.015f, 0.01f, 0.58f * (float)cool), true, -1, true);
             float g = Mathf.Min(38, hr * 2 * 0.80f);
             // (piece 5: gold inlay, the line glyph's shape, DgGold; lit and warm-lit under when ready, dull bronze-gold
             // coming back; a faint share of the school's colour in the light under it so neighbours differ)
@@ -569,17 +603,24 @@ public partial class Socket : Control
                 var (gold, glowTex) = DgGold.Of(glyphKey, gi);
                 var gr = new Rect2(c - new Vector2(gi + 2 * DgGold.Pad, gi + 2 * DgGold.Pad) / 2, new Vector2(gi + 2 * DgGold.Pad, gi + 2 * DgGold.Pad));
                 var warm = new Color(1f, 0.62f, 0.24f).Lerp(school, 0.45f);
-                if (glow > 0.003) DrawTextureRect(glowTex, gr, false, warm with { A = (float)glow });
-                var tone = Colors.White.Lerp(new Color(0.66f, 0.60f, 0.52f), (float)cool);
-                DrawTextureRect(gold, gr, false, (tone * Colors.White.Lerp(school, 0.10f)) with { A = 1 });
+                if (glow > 0.003 && !Numbered) DrawTextureRect(glowTex, gr, false, warm with { A = (float)glow });
+                // (fix A, 5: under a wait number the glyph cools to a quarter, so the number is the one thing read; M4 lead 9:
+                // in every other waiting frame, a fast cycle, a brief wait, a held key, it stays at 80% of lit)
+                bool num = Numbered;
+                // (M4 lead 10: short of its cost and not held, the glyph goes dull bronze at 60%: "not yet")
+                bool short_ = shortNow;
+                var tone = (num || short_) ? Colors.White.Lerp(new Color(0.66f, 0.60f, 0.52f), (float)cool) : Colors.White;
+                DrawTextureRect(gold, gr, false, (tone * Colors.White.Lerp(school, 0.10f)) with { A = num ? 0.25f : 1f - (short_ ? 0.45f : 0.2f) * (float)cool });
             }
             else if (art != null)
             {
                 var col2 = new Color(1.25f, 1.25f, 1.25f).Lerp(Colors.White, (float)cool);
+                if (shortNow) col2 = Colors.White.Lerp(new Color(0.66f, 0.60f, 0.52f), (float)cool) with { A = 1f - 0.45f * (float)cool };
                 DrawTextureRect(art, new Rect2(c - new Vector2(g, g) / 2 - new Vector2(0, 2), new Vector2(g, g)), false, col2);
             }
             // coming back (round 2): the well fills from its foot, lit in the element, dark above (DgMeters.Level)
-            if (cooling) DgMeters.Level(this, c, hr + 0.5f, (float)ready, school);
+            // (under a kindled seat's flare the level is held dark and round, and a brief wait shows none: SeatKeys.WaitLevel)
+            if (cooling && WaitLevel() is var lv and >= 0) DgMeters.Level(this, c, hr + 0.5f, lv, school, Numbered ? 0.80f : 0.25f);
         }
         // (UI 23: only the ring's inner edge, the well's rim shading, inside the plate's baked bezel)
         if (DgRiver.RingInner(Index, DgPanel.WellR) is { } ring)
@@ -587,6 +628,8 @@ public partial class Socket : Control
             var rs = ring.GetSize();
             DrawTextureRect(ring, new Rect2(c - rs / 2, rs), false);
         }
+        // (M4 §1: the union's gold edge and clasp, the cost arc: SeatKeys.cs)
+        DrawSeatMarks(c, hr);
         if (filled && (evolved || ripe))
         {
             float a = evolved ? 0.9f : 0.45f + 0.4f * (0.5f + 0.5f * Mathf.Sin((float)t * 4.5f));
@@ -597,11 +640,18 @@ public partial class Socket : Control
         {
             // a long wait's seconds over the well, gold (the concept's figures); short ones show only the level
             double total = waitSecs > 0 && ready < 0.98 ? waitSecs / Math.Max(0.02, 1 - ready) : 0;
-            if (cooling && total >= 3.5 && waitSecs >= 1)
-                DgMeters.Numeral(this, c, ((int)Math.Ceiling(waitSecs)).ToString(), 20, DgMeters.Gold, 4);
+            // (the number is the ceiling of w.Timer, the sim's own countdown to its next firing, as of the last HUD frame)
+            if (Numbered)
+            {
+                int n = (int)Math.Ceiling(waitSecs);
+                DgMeters.Numeral(this, c, DgMeters.Figures(n), 20, new Color(240 / 255f, 230 / 255f, 208 / 255f), 5);
+                TraceWait(n);
+            }
+            else TraceWait(-1);
             // the rank (UI 23): a small dark chip at half past one over the bezel (DgPanel.Marks.Chip), gold-rimmed
-            // when it can evolve or has
-            if (rank > 0) DgPanel.Marks.Chip(this, c + DgPanel.ChipOff, rank.ToString(), evolved || ripe);
+            // when it can evolve or has. (M4 lead 4: only on a seat with no key cap, the Lamps' wide view and the arena:
+            // in play the cap, the wait's seconds and a rank were three numerals a seat; the rank is read on the Lamps)
+            if (rank > 0 && !keyed) DgPanel.Marks.Chip(this, c + DgPanel.ChipOff, DgMeters.Figures(rank), evolved || ripe);
         }
     }
 }
@@ -659,7 +709,8 @@ public partial class Round : Control
         if (live || !shown || Count != shownCount || Max != shownMax || Recharge != shownRecharge || Form != shownForm)
         {
             shown = true; shownCount = Count; shownMax = Max; shownRecharge = Recharge; shownForm = Form;
-            foreach (var c in GetChildren()) if (c is CanvasItem ci) ci.QueueRedraw();
+            // (by index: GetChildren made an array each time, twelve a second while the dash comes back)
+            for (int i = 0, n = GetChildCount(); i < n; i++) if (GetChild(i) is CanvasItem ci) ci.QueueRedraw();
         }
     }
 
@@ -693,7 +744,8 @@ public partial class Round : Control
 
 /// <summary>HUD v2: a key on a small stamped iron tag (16 tall; 24, 32, 40 or 52 wide) hung from a ring at
 /// 6 o'clock. The key in Alegreya Sans 800 caps 14 px, bone, a 1 px dark edge; SPACE tracked 60. On a pad
-/// the button sits in the same tag (Style.PadButton, scaled to fit). Redraws only when its key or button
+/// the button sits in the same tag (Style.PadButton, scaled to fit); a chip draws the button's name as a key's
+/// cap instead (DrawPadCap), so it reads at 1:1. Redraws only when its key or button
 /// changes (Refresh). hud/tag_W.png and hud/tag_ring.png (half size) when made, else a drawn plate.</summary>
 public partial class KeyTag : Control
 {
@@ -718,6 +770,45 @@ public partial class KeyTag : Control
         set { if (value == lit) return; lit = value; Fit(); }
     }
     string Shown => lit && padName == null && text != "" ? text + "  READY" : text;
+    /// <summary>What it shows, for a log ("LMB" for the mouse glyph, the pad's name on a pad).</summary>
+    public string Shown2 => padName ?? (mouse >= 0 ? Controls.Label("Mouse" + mouse) : text);
+    /// <summary>M4 §1: a mouse button's key draws a mouse glyph (an 11 x 15 body, the pressed half bone), never "LMB";
+    /// -1 a key.</summary>
+    int mouse = -1;
+    bool underline;
+    /// <summary>M4 §1, a channeled seat's cap: a 2 px gold underline under the chip ("held down"). A change redraws it.</summary>
+    public bool Underline
+    {
+        get => underline;
+        set { if (value == underline) return; underline = value; QueueRedraw(); }
+    }
+    const float MouseW = 13, MouseH = 17, MouseChip = 21;
+    /// <summary>Fix A (judge r1, 1): every cap in lining figures. Alegreya Sans' default numerals are old-style, 7 px
+    /// tall at 16 beside the letters' 11: the skill keys were the smallest text on the bar.</summary>
+    static Font CapFont => Vessel.Figures;
+    bool quiet, down;
+    /// <summary>Fix A (3): a kindled seat's cap ("this one fires itself"): only the rim's light drops; the letter stays
+    /// at 0.85 bone (the whole cap at half could not be read).</summary>
+    public bool Quiet { get => quiet; set { if (value == quiet) return; quiet = value; QueueRedraw(); } }
+    /// <summary>Fix A (6): the key is down: the chip's rim gold, its ground warm.</summary>
+    public bool Down { get => down; set { if (value == down) return; down = value; QueueRedraw(); } }
+    Color Rim => down ? new Color(1f, 206 / 255f, 120 / 255f) : quiet ? new Color(74 / 255f, 60 / 255f, 42 / 255f) : new Color(138 / 255f, 108 / 255f, 70 / 255f);
+    Color Ground => down ? new Color(64 / 255f, 36 / 255f, 12 / 255f, 245 / 255f) : new Color(22 / 255f, 18 / 255f, 14 / 255f, 238 / 255f);
+    Color Bone => new Color(240 / 255f, 230 / 255f, 208 / 255f, quiet && !down ? 0.85f : 1f);
+    /// <summary>Its key whatever the device (the keys page's miniature, which shows the pad's buttons under it).</summary>
+    public bool KeysOnly;
+
+    /// <summary>The chip's box as drawn, in its own coordinates (the seat's measure against its rank chip).</summary>
+    public Rect2 ChipBox()
+    {
+        float mid = cx - Position.X;
+        if (padView != null) return new Rect2(padView.Position, padView.Size * padView.Scale);
+        if (Square) { float q = SquareS; return new Rect2(Mathf.Round(mid - q / 2), 0, q, q); }
+        if (Chip && padName != null) { float pw = PadCapW(); return new Rect2(Mathf.Round(mid - pw / 2), 0, pw, Instrument.TagH); }
+        if (mouse >= 0) return new Rect2(Mathf.Round(mid - MouseChip / 2), Mathf.Round(Instrument.TagH / 2 - MouseChip / 2), MouseChip, MouseChip);
+        float cw = Math.Max(18, ChipTextW(Shown) + 9);
+        return new Rect2(Mathf.Round(mid - cw / 2), 0, cw, Instrument.TagH);
+    }
 
     public KeyTag(Act act, bool ring = false)
     {
@@ -736,19 +827,21 @@ public partial class KeyTag : Control
     {
         cx = x; cy = y;
         // (a chip on whole px, its box and its text placed about the true middle in _Draw: the mock's round(cx - w / 2))
-        Position = Chip ? new Vector2(Mathf.Floor(x - Size.X / 2), Mathf.Round(y)) : new Vector2(x - Size.X / 2, y + (ring ? -3 : 2));
+        Position = Chip ? new Vector2(Mathf.Floor(x - Size.X / 2), Mathf.Round(y) - (Square ? Mathf.Round(SquareS - Instrument.TagH) : 0)) : new Vector2(x - Size.X / 2, y + (ring ? -3 : 2));
     }
 
     float ChipTextW(string s)
     {
         float tw = 0;
-        foreach (char ch in s) tw += Style.UiHeavy.GetStringSize(ch.ToString(), HorizontalAlignment.Left, -1, HudBottom.KeepFont(16)).X + HudBottom.Keep(0.6f);
+        foreach (char ch in s) tw += CapFont.GetStringSize(ch.ToString(), HorizontalAlignment.Left, -1, HudBottom.KeepFont(16)).X + HudBottom.Keep(0.6f);
         return tw - HudBottom.Keep(0.6f);
     }
 
     void Fit()
     {
         if (Chip) Size = new Vector2(Math.Max(Math.Max(52, w), Mathf.Ceil(Math.Max(18, ChipTextW(Shown) + 9)) + 4), Instrument.TagH);
+        if (Chip && padName != null) Size = new Vector2(Math.Max(52, Mathf.Ceil(PadCapW()) + 4), Instrument.TagH);
+        if (Square) Size = new Vector2(Math.Max(52, Mathf.Ceil(SquareS) + 4), SquareS);
         Place(cx, cy);
         QueueRedraw();
     }
@@ -756,22 +849,29 @@ public partial class KeyTag : Control
     public void Refresh()
     {
         var c = Controls.Instance;
-        string? pad = c != null && c.UsingPad ? System.Linq.Enumerable.FirstOrDefault(c.PadLabels(act)) : null;
+        string? pad = c != null && c.UsingPad && !KeysOnly ? System.Linq.Enumerable.FirstOrDefault(c.PadLabels(act)) : null;
         string t = pad != null ? "" : (c?.KeyLabel(act) ?? "?").ToUpperInvariant();
-        if (built && t == text && pad == padName) return;
-        built = true; text = t; padName = pad;
+        string code = c != null && c.Bindings.TryGetValue(act, out var bs) && bs.Length > 0 ? bs[0] : "";
+        int ms = pad == null && code.Length == 6 && code.StartsWith("Mouse") ? code[5] - '0' : -1;
+        if (built && t == text && pad == padName && ms == mouse) return;
+        built = true; text = t; padName = pad; mouse = ms;
         padView?.QueueFree();
         padView = null;
         if (pad != null)
         {
             w = 32;
-            padView = Style.PadButton(pad);
-            AddChild(padView);
-            var ps = padView.GetCombinedMinimumSize();
-            float k = (Instrument.TagH - 3) / Math.Max(1, ps.Y);
-            padView.Size = ps;
-            padView.Scale = new Vector2(k, k);
-            padView.Position = new Vector2((Size.X - ps.X * k) / 2, (Instrument.TagH - ps.Y * k) / 2);
+            // (a chip draws its button itself, as a key's cap: DrawPadCap. The menu's button scaled down to the
+            // tag's height could not be read at 1:1)
+            if (!Chip)
+            {
+                padView = Style.PadButton(pad);
+                AddChild(padView);
+                var ps = padView.GetCombinedMinimumSize();
+                float k = (Instrument.TagH - 3) / Math.Max(1, ps.Y);
+                padView.Size = ps;
+                padView.Scale = new Vector2(k, k);
+                padView.Position = new Vector2((Size.X - ps.X * k) / 2, (Instrument.TagH - ps.Y * k) / 2);
+            }
         }
         else
         {
@@ -784,6 +884,118 @@ public partial class KeyTag : Control
 
     float Track => text == "SPACE" ? 60 / 1000f * 14 : 0;
 
+    /// <summary>The mouse glyph (M4 §1): a dark body with the chip's bronze rim, its two buttons over its palm, the
+    /// pressed one bone (the wheel's slot lit for the middle button).</summary>
+    void DrawMouse()
+    {
+        var chip = ChipBox();
+        var plate = new StyleBoxFlat { BgColor = Ground, BorderColor = Rim, AntiAliasing = true };
+        plate.SetBorderWidthAll(1); plate.SetCornerRadiusAll(3);
+        DrawStyleBox(plate, chip);
+        // the mouse: 13 x 17, a full bone outline on ink, the button meant solid bone, the other ink
+        var r = new Rect2(chip.Position + new Vector2((MouseChip - MouseW) / 2, (MouseChip - MouseH) / 2), new Vector2(MouseW, MouseH));
+        var bone = Bone;
+        var body = new StyleBoxFlat { BgColor = new Color(10 / 255f, 8 / 255f, 6 / 255f), BorderColor = bone, AntiAliasing = true };
+        body.SetBorderWidthAll(1);
+        body.CornerRadiusTopLeft = body.CornerRadiusTopRight = 6;
+        body.CornerRadiusBottomLeft = body.CornerRadiusBottomRight = 5;
+        DrawStyleBox(body, r);
+        float split = r.Position.Y + 8, midX = r.Position.X + 6;
+        if (mouse == 1)
+            DrawRect(new Rect2(midX - 1, r.Position.Y + 2, 3, 5), bone, true);
+        else
+        {
+            bool left = mouse == 0;
+            var btn = new StyleBoxFlat { BgColor = bone, AntiAliasing = true };
+            btn.CornerRadiusTopLeft = left ? 6 : 0;
+            btn.CornerRadiusTopRight = left ? 0 : 6;
+            DrawStyleBox(btn, new Rect2(left ? r.Position.X : midX + 1, r.Position.Y, 6, 8));
+            DrawRect(new Rect2(midX, r.Position.Y + 1, 1, 7), bone, true);
+        }
+        DrawRect(new Rect2(r.Position.X + 1, split, MouseW - 2, 1), bone, true);
+    }
+
+    /// <summary>A pad button's name as a cap's text ("LB", "RT", "A"; the sticks "LS" and "RS"); null for the D-pad,
+    /// which is drawn as a cross (DrawPadCap).</summary>
+    public static string? PadCapText(string name) => name.StartsWith("D-pad") ? null
+        : name == "Left stick" ? "LS" : name == "Right stick" ? "RS" : name.ToUpperInvariant();
+
+    /// <summary>The D-pad's cross on a cap: as tall as the key caps' letters (11 px on screen), whole px.</summary>
+    static float PadGlyph => Instrument.TagH - 2;   // (fix C, 1: inside the rim: at 16 it covered the rim's top row and read as a blob)
+
+    /// <summary>What a pad cap holds, its width: the button's text or the D-pad's cross, then "  READY" when lit (as
+    /// the key's chip has it).</summary>
+    float PadInnerW()
+    {
+        string? t = PadCapText(padName!);
+        string tail = lit ? "  READY" : "";
+        return t != null ? ChipTextW(t + tail) : PadGlyph + (tail != "" ? HudBottom.Keep(0.6f) + ChipTextW(tail) : 0);
+    }
+
+    /// <summary>(fix E, 2) The D-pad's chip alone is square, 17 x 17 px on screen: it sits under the flask, not in the
+    /// seats' row, and a 13 tall chip cannot hold a cross whose up arm reads. Its foot stays where the 16 tall one's was.</summary>
+    bool Square => Chip && padName != null && PadCapText(padName) == null;
+    static float SquareS => HudBottom.Keep(17);
+
+    float PadCapW() => Math.Max(18, PadInnerW() + (PadCapText(padName!) == null ? 6 : 9));
+
+    /// <summary>M4 lead 6: on a pad the cap is a key's cap, not the menu's button scaled down: the same chip (16 tall,
+    /// radius 3, the bronze rim, the dark ground; the lit one amber), the button's name in the same Alegreya Sans 800
+    /// 16 tracked 0.6, bone. A face button keeps its colour as a tint of its letter, half way to bone (its letter
+    /// tells it; the colour only confirms). The D-pad is a cross at the letters' height, the arm meant bone, the
+    /// rest dim. A kindled seat dims it as it dims a key (the seat's Modulate).</summary>
+    void DrawPadCap()
+    {
+        var cf = CapFont;
+        int cfs = HudBottom.KeepFont(16);
+        float trk = HudBottom.Keep(0.6f);
+        string? name = PadCapText(padName!);
+        float tw = PadInnerW();
+        float mid = cx - Position.X;
+        float cw = Square ? SquareS : PadCapW(), cx0 = Mathf.Round(mid - cw / 2);
+        var box = lit
+            ? new StyleBoxFlat { BgColor = new Color(70 / 255f, 34 / 255f, 8 / 255f, 245 / 255f), BorderColor = new Color(1f, 190 / 255f, 90 / 255f), AntiAliasing = true }
+            : new StyleBoxFlat { BgColor = Ground, BorderColor = Rim, AntiAliasing = true };
+        box.SetBorderWidthAll(1); box.SetCornerRadiusAll(3);
+        DrawStyleBox(box, new Rect2(cx0, 0, cw, Square ? SquareS : Instrument.TagH));
+        float tx = mid - tw / 2;
+        float ty = Instrument.TagH / 2 + 0.5f + (cf.GetAscent(cfs) - cf.GetDescent(cfs)) / 2;
+        var ink = lit ? new Color(1f, 236 / 255f, 196 / 255f) : Bone;
+        string label = lit && !Square ? "  READY" : "";
+        if (name != null)
+        {
+            var own = !lit && Style.PadFace(padName!) is { } face ? face.Lerp(ink, 0.5f) : ink;
+            foreach (char ch in name)
+            {
+                string s = ch.ToString();
+                DrawString(cf, new Vector2(tx, ty), s, HorizontalAlignment.Left, -1, cfs, own);
+                tx += cf.GetStringSize(s, HorizontalAlignment.Left, -1, cfs).X + trk;
+            }
+        }
+        else
+        {
+            // (fix E, 2) the cross inside the square's rim, whole screen px: arms 5 thick and 5 long (15 across in 17),
+            // the up arm full bone, the other three and the centre at 0.45
+            float k = HudBottom.Keep(1), t = 5 * k, arm = 5 * k, g = t + 2 * arm;
+            float gx = Mathf.Round(cx0 + k), gy = k;
+            string which = padName!.Length > 6 ? padName[6..] : "";
+            var dim = ink with { A = 0.45f };
+            Color Of(string a) => which == "" || which == a ? ink : dim;
+            DrawRect(new Rect2(gx + arm, gy + arm, t, t), which == "" ? ink : dim, true);
+            DrawRect(new Rect2(gx + arm, gy, t, arm), Of("up"), true);
+            DrawRect(new Rect2(gx + arm, gy + arm + t, t, arm), Of("down"), true);
+            DrawRect(new Rect2(gx, gy + arm, arm, t), Of("left"), true);
+            DrawRect(new Rect2(gx + arm + t, gy + arm, arm, t), Of("right"), true);
+            tx = gx + g + trk;
+        }
+        foreach (char ch in label)
+        {
+            string s = ch.ToString();
+            DrawString(cf, new Vector2(tx, ty), s, HorizontalAlignment.Left, -1, cfs, ink);
+            tx += cf.GetStringSize(s, HorizontalAlignment.Left, -1, cfs).X + trk;
+        }
+    }
+
     float TextWidth()
     {
         var f = Style.UiHeavy;
@@ -794,9 +1006,16 @@ public partial class KeyTag : Control
 
     public override void _Draw()
     {
+        if (Chip && underline)
+        {
+            var bx = ChipBox();
+            DrawRect(new Rect2(bx.Position.X - 1, bx.End.Y + 1, bx.Size.X + 2, 2), Style.Gold, true);
+        }
+        if (Chip && padName != null) { DrawPadCap(); return; }
+        if (Chip && mouse >= 0 && padName == null) { DrawMouse(); return; }
         if (Chip && padName == null && text != "")
         {
-            var cf = Style.UiHeavy;
+            var cf = CapFont;
             int cfs = HudBottom.KeepFont(16);   // (UI 28: the key held at its 100% pixel size on screen; the chip stays the art's)
             float trk = HudBottom.Keep(0.6f);
             string label = Shown;
@@ -806,12 +1025,12 @@ public partial class KeyTag : Control
             float cw = Math.Max(18, tw + 9), cx0 = Mathf.Round(mid - cw / 2);
             var box = lit
                 ? new StyleBoxFlat { BgColor = new Color(70 / 255f, 34 / 255f, 8 / 255f, 245 / 255f), BorderColor = new Color(1f, 190 / 255f, 90 / 255f), AntiAliasing = true }
-                : new StyleBoxFlat { BgColor = new Color(22 / 255f, 18 / 255f, 14 / 255f, 238 / 255f), BorderColor = new Color(138 / 255f, 108 / 255f, 70 / 255f), AntiAliasing = true };
+                : new StyleBoxFlat { BgColor = Ground, BorderColor = Rim, AntiAliasing = true };
             box.SetBorderWidthAll(1); box.SetCornerRadiusAll(3);
             DrawStyleBox(box, new Rect2(cx0, 0, cw, Instrument.TagH));
             float tx = mid - tw / 2;
             float ty = Instrument.TagH / 2 + 0.5f + (cf.GetAscent(cfs) - cf.GetDescent(cfs)) / 2;
-            var ink = lit ? new Color(1f, 236 / 255f, 196 / 255f) : new Color(240 / 255f, 230 / 255f, 208 / 255f);
+            var ink = lit ? new Color(1f, 236 / 255f, 196 / 255f) : Bone;
             foreach (char ch in label)
             {
                 string s = ch.ToString();
