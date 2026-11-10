@@ -80,4 +80,34 @@ public class HerEventsTests
         Assert.Equal(new[] { 5 }, all["sword_fore"].Contact);
         Assert.Equal(HerEvents.Serialize(all), HerEvents.Serialize(HerEvents.Load(HerEvents.Serialize(all))));
     }
+
+    [Fact]
+    public void BlendInIsCarriedInSecondsAndReadWithADefault()
+    {
+        // (A1 blend_in: a spec's beats.blend_in, seconds, from the built clip into the file and back; additive)
+        var with = Of("{\"beats\": {\"contact\": [0.7333], \"blend_in\": 0.12}}")!;
+        Assert.Equal(0.12, with.BlendIn);
+        Assert.Null(Of("{\"beats\": {\"contact\": [0.7333]}}")!.BlendIn);
+        Assert.Null(Of("{\"beats\": {\"contact\": [0.7333], \"blend_in\": -1}}")!.BlendIn);
+        Assert.Equal(0.1, Of("{\"beats\": {\"blend_in\": 0.1}}")!.BlendIn);       // (a clip with nothing else keeps its entry)
+        var none = System.Array.Empty<(string, int)>();
+        var all = new Dictionary<string, HerEvents.Beats>
+        {
+            ["heroic_leap"] = with,
+            ["iron_vow"] = new(new[] { 144 }, null, 148, null, none),
+        };
+        string text = HerEvents.Serialize(all);
+        Assert.Contains("      \"contact\": [44],\n      \"blend_in\": 0.12\n", text);
+        Assert.Equal(1, text.Split("blend_in").Length - 1);                       // (absent where the spec has none)
+        var read = HerEvents.Load(text);
+        Assert.Equal(text, HerEvents.Serialize(read));
+        // the read the view makes: present -> used; absent (or no such clip) -> the caller's default (PlayerView: its usual fade)
+        Assert.Equal(0.12, HerEvents.BlendIn(read, "heroic_leap", 0.25));
+        Assert.Equal(0.25, HerEvents.BlendIn(read, "iron_vow", 0.25));
+        Assert.Equal(0.25, HerEvents.BlendIn(read, "no_such_clip", 0.25));
+        Assert.Equal(0.05, HerEvents.BlendIn("no_such_clip", 0.05));               // (the game's file, read once)
+        // the sim's reader of the same file (Content.HerEvents) does not mind the new key
+        var sim = SurvivorUnchained.Core.Json.Parse<SurvivorUnchained.Content.HerEvents.File>(text);
+        Assert.Equal(new[] { 44 }, sim.Clips["heroic_leap"].Contact);
+    }
 }

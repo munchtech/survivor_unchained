@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
@@ -10,7 +11,9 @@ namespace SurvivorUnchained.Play;
 /// Her clips' beats as data (godot/data/anim/her_events.json, written by the P4 pack, read by the views and M3): a built
 /// P4 clip's top-level "beats" ({contact: [s], hold: [a, b], cancel: s, loop: [a, b], events: {name: s}}, clip SECONDS,
 /// every key optional) become frames at 60 fps (round(s * 60)). The file: {"fps": 60, "clips": {clip: {...}}}, clips
-/// sorted by name, keys in the order contact, hold, cancel, loop, events (events by frame), two-space indent.
+/// sorted by name, keys in the order contact, hold, cancel, loop, events (events by frame), blend_in, two-space indent.
+/// blend_in (A1, optional) is the one key in SECONDS, in the clip and in the file: not a place in the clip but how long
+/// the view takes to blend INTO it (BlendIn; absent = the view's usual fade).
 /// Derivation: docs/team/ARPG_NOTES.md (A1 Stage B lead 4's block).
 /// </summary>
 public static class HerEvents
@@ -20,7 +23,9 @@ public static class HerEvents
     /// <summary>One clip's beats in frames; null where a key is absent.</summary>
     public sealed record Beats(int[] Contact, int[]? Hold, int? Cancel, int[]? Loop, (string Name, int Frame)[] Events)
     {
-        public bool Empty => Contact.Length == 0 && Hold == null && Cancel == null && Loop == null && Events.Length == 0;
+        /// <summary>The clip's own blend-in, seconds (a spec's beats.blend_in); null: the view's usual fade.</summary>
+        public double? BlendIn { get; init; }
+        public bool Empty => Contact.Length == 0 && Hold == null && Cancel == null && Loop == null && Events.Length == 0 && BlendIn == null;
         public static double Sec(int frame) => frame / (double)Fps;
         public double[] ContactSeconds => Contact.Select(Sec).ToArray();
         public (double A, double B)? HoldSeconds => Hold is { Length: 2 } ? (Sec(Hold[0]), Sec(Hold[1])) : null;
@@ -50,9 +55,38 @@ public static class HerEvents
         if (b.TryGetProperty("events", out var e) && e.ValueKind == JsonValueKind.Object)
             foreach (var p in e.EnumerateObject())
                 if (p.Value.ValueKind == JsonValueKind.Number) ev.Add((p.Name, Frame(p.Value.GetDouble())));
-        var beats = new Beats(contact, Pair("hold"), cancel, Pair("loop"), ev.OrderBy(x => x.Item2).ThenBy(x => x.Item1, StringComparer.Ordinal).ToArray());
+        var beats = new Beats(contact, Pair("hold"), cancel, Pair("loop"), ev.OrderBy(x => x.Item2).ThenBy(x => x.Item1, StringComparer.Ordinal).ToArray())
+            { BlendIn = Seconds(b, "blend_in") };
         return beats.Empty ? null : beats;
     }
+
+    /// <summary>A length in seconds under `key` (to 1e-4 s); null when absent, not a number or negative.</summary>
+    static double? Seconds(JsonElement o, string key) =>
+        o.TryGetProperty(key, out var v) && v.ValueKind == JsonValueKind.Number && v.GetDouble() >= 0 ? Math.Round(v.GetDouble(), 4) : null;
+
+    /// <summary>The clip's own blend-in (seconds) where `clips` gives it one, else `fallback` (the view's usual fade).</summary>
+    public static double BlendIn(IReadOnlyDictionary<string, Beats> clips, string clip, double fallback) =>
+        clips.TryGetValue(clip, out var b) && b.BlendIn is double s ? s : fallback;
+
+    /// <summary>The same from data/anim/her_events.json as the game has it (Clips).</summary>
+    public static double BlendIn(string clip, double fallback) => BlendIn(Clips, clip, fallback);
+
+    static Dictionary<string, Beats>? clipsRead;
+
+    /// <summary>data/anim/her_events.json, read once (no clips when the file is missing or bad).</summary>
+    public static IReadOnlyDictionary<string, Beats> Clips
+    {
+        get
+        {
+            if (clipsRead != null) return clipsRead;
+            try { clipsRead = Load(Core.DataFiles.Text("anim/her_events.json")); }
+            catch (System.IO.IOException) { clipsRead = new(); }
+            return clipsRead;
+        }
+    }
+
+    /// <summary>Read the file again at the next ask (a test, a pack in the same run).</summary>
+    public static void Reload() => clipsRead = null;
 
     /// <summary>The file's text for these clips (those without beats left out), sorted and indented so it diffs cleanly.</summary>
     public static string Serialize(IEnumerable<KeyValuePair<string, Beats>> clips)
@@ -71,6 +105,7 @@ public static class HerEvents
             if (bt.Cancel is int cn) parts.Add($"\"cancel\": {cn}");
             if (bt.Loop != null) parts.Add($"\"loop\": [{bt.Loop[0]}, {bt.Loop[1]}]");
             if (bt.Events.Length > 0) parts.Add("\"events\": {" + string.Join(", ", bt.Events.Select(e => $"{JsonSerializer.Serialize(e.Name)}: {e.Frame}")) + "}");
+            if (bt.BlendIn is double bi) parts.Add($"\"blend_in\": {bi.ToString("0.####", CultureInfo.InvariantCulture)}");
             sb.Append("    ").Append(JsonSerializer.Serialize(name)).Append(": {\n");
             for (int j = 0; j < parts.Count; j++) sb.Append("      ").Append(parts[j]).Append(j < parts.Count - 1 ? ",\n" : "\n");
             sb.Append("    }").Append(i < list.Count - 1 ? ",\n" : "\n");
@@ -108,7 +143,8 @@ public static class HerEvents
                 var hold = Ints("hold"); var loop = Ints("loop");
                 res[c.Name] = new Beats(Ints("contact") ?? Array.Empty<int>(), hold is { Length: 2 } ? hold : null,
                     c.Value.TryGetProperty("cancel", out var cn) && cn.ValueKind == JsonValueKind.Number ? cn.GetInt32() : null,
-                    loop is { Length: 2 } ? loop : null, ev.OrderBy(x => x.Item2).ThenBy(x => x.Item1, StringComparer.Ordinal).ToArray());
+                    loop is { Length: 2 } ? loop : null, ev.OrderBy(x => x.Item2).ThenBy(x => x.Item1, StringComparer.Ordinal).ToArray())
+                    { BlendIn = Seconds(c.Value, "blend_in") };
             }
         }
         catch (Exception ex) when (ex is JsonException or FormatException or InvalidOperationException) { res.Clear(); }

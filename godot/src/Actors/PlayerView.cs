@@ -517,6 +517,7 @@ public partial class PlayerView : Node3D
         fullSoft = false;
         tree.Set("parameters/fullScale/scale", speed);
         tree.Set("parameters/fullShot/request", (int)AnimationNodeOneShot.OneShotRequest.Fire);
+        FullBlendIn(mine && fullNative ? full.Animation.ToString()[own.Prefix.Length..] : null);
     }
 
     /// <summary>One of her own on the whole of her: soft ones (a fidget, a
@@ -524,10 +525,15 @@ public partial class PlayerView : Node3D
     /// <summary>Her clip by name: in her own library, or (--body p1) in the P1 library laid into the animation player.</summary>
     bool HasHer(string clip) => own.Has(clip) || person.Anim.HasAnimation(own.Prefix + clip);
 
+    // A1 blend_in: a clip may carry its own blend-in (her_events.json), default unchanged
+    double fullBlendIn = FullFadeIn;
+    void FullBlendIn(string? herClip) => fullShotNode.FadeInTime = fullBlendIn = herClip != null ? HerEvents.BlendIn(herClip, FullFadeIn) : FullFadeIn;
+
     bool FullHer(string clip, double speed, bool soft)
     {
         if (!mine || !HasHer(clip)) return false;
         XfadeStop();
+        FullBlendIn(clip);
         fullClip = clip;
         fullStart = time; fullSpeed = (float)speed;
         full.Animation = own.Prefix + clip;

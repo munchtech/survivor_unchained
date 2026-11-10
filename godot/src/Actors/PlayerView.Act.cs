@@ -251,9 +251,11 @@ public partial class PlayerView
             measPrevNode[i] = measNode[i]; measPrevWorld[i] = measWorld[i];
         }
         double c = actClock();
-        if (measStage == 1 && c >= measT + 0.25)
+        // (the act starts through FullHer, so its fade in is the game's: the clip's blend_in in her_events.json, else the usual fade)
+        double measIn = System.Math.Max(0.25, fullBlendIn);
+        if (measStage == 1 && c >= measT + measIn)
         {
-            GD.Print($"act: {ActClip} blend-in 0.25 s: {MeasPaths(measPathNode, measStartNode, measNode)} [skeleton frame]");
+            GD.Print(string.Create(CultureInfo.InvariantCulture, $"act: {ActClip} blend-in {fullBlendIn:0.###} s ({(HerEvents.Clips.TryGetValue(ActClip!, out var bi) && bi.BlendIn != null ? "her_events.json" : "default")}), path over the first {measIn:0.##} s: {MeasPaths(measPathNode, measStartNode, measNode)} [skeleton frame]"));
             measStage = 2;
         }
         if (measStage == 2 && c >= measEndAt)
