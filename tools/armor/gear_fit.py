@@ -873,7 +873,100 @@ def top_groups(X, comp, lead, side_m=0.02):
     return top
 
 
-def standoff_floor(bd, ms, ev, path=None):
+# A RIM RIDES ITS PLATE: a rigid group (a leader's components) that lies along a larger rigid group of the same piece at
+# the authored rest (a plate's rolled rim, a trim welded along its edge) is not fit alone: it takes its plate's fit
+# (transform, weights) and its points' needs join the plate's. "share" of the small group's points lie within "near_mm"
+# of the large group's SURFACE, and its area is at most "ratio" of the large group's. Data, rigid_roles.json (all
+# optional): "rims" {"near_mm", "share", "ratio"} replaces these; slots.<slot>."rims" the same for a slot, or false
+# (no pairing in the slot); "rim_of" {"<piece id>": {"<tier>/<leader>": <host leader> | null}} names a pair (or with
+# null lets a group fit alone) whatever the geometry. A native piece names what rides what in its piece.json ("with").
+RIMS = {"near_mm": 3.0, "share": 0.9, "ratio": 0.5}
+
+
+def rim_pairs(X, T, g, near_m=RIMS["near_mm"] / 1000.0, share=RIMS["share"], ratio=RIMS["ratio"]):
+    """{rim group: (host group, points, median mm, max mm, area ratio)} over one tier at the authored rest: X the
+    tier's points, T its triangles, g each point's rigid group (-1 bendy). A group pairs with the larger group it lies
+    closest along (least median distance); a rim of a rim rides the last plate."""
+    ids = [int(k) for k in np.unique(g[g >= 0])]
+    if len(ids) < 2:
+        return {}
+    gt_ = g[T[:, 0]]
+    ta = 0.5 * np.linalg.norm(np.cross(X[T[:, 1]] - X[T[:, 0]], X[T[:, 2]] - X[T[:, 0]]), axis=1)
+    area = {k: float(ta[gt_ == k].sum()) for k in ids}
+    box = {k: (X[g == k].min(0) - near_m, X[g == k].max(0) + near_m) for k in ids}
+    surf, found = {}, {}
+    for a in ids:
+        best = None
+        Xa = X[g == a]
+        for b in ids:
+            if b == a or area[b] <= 0 or area[a] > ratio * area[b]:
+                continue
+            inb = ((Xa >= box[b][0]) & (Xa <= box[b][1])).all(1)
+            if inb.mean() < share:
+                continue
+            if b not in surf:
+                used, inv = np.unique(T[gt_ == b], return_inverse=True)
+                surf[b] = Surface(X[used], inv.reshape(-1, 3))
+            d = surf[b].closest(Xa, k=min(12, int((gt_ == b).sum())))[3]
+            if np.quantile(d, share) > near_m:
+                continue
+            md = float(np.median(d))
+            if best is None or md < best[2]:
+                best = (b, len(Xa), md, float(d.max()), area[a] / area[b])
+        if best is not None:
+            found[a] = best
+    out = {}
+    for a, v in found.items():
+        b, seen = v[0], {a}
+        while b in found and b not in seen:
+            seen.add(b)
+            b = found[b][0]
+        out[a] = (b, v[1], round(v[2] * 1000, 2), round(v[3] * 1000, 2), round(v[4], 3))
+    return out
+
+
+def rim_hosts(bd, ms, X, comp, lead, T=None):
+    """{rim leader: (host leader, points, median mm, max mm, area ratio)} of one tier of a unit (rim_pairs under the
+    roles file's keys, see RIMS; X the tier's points on the bind body, T its triangles or None = the unit's own)."""
+    if bd.meta.get("kind") == "native":
+        return {}
+    comp = np.asarray(comp)
+    g = np.where(comp >= 0, np.asarray(lead)[np.maximum(comp, 0)], -1)
+    if len(np.unique(g[g >= 0])) < 2:
+        return {}
+    rr = rigid_roles()
+    law = dict(RIMS, **(rr.get("rims") or {}))
+    sl = (rr.get("slots", {}).get(bd.meta["row"].get("slot")) or {}).get("rims")
+    tier = ms[0]["tier"]
+    named = {int(k.split("/")[1]): v for k, v in ((rr.get("rim_of") or {}).get(bd.id) or {}).items()
+             if k.split("/")[0] == tier}
+    out = {}
+    if sl is not False:
+        law.update(sl or {})
+        if T is None:
+            cut = np.cumsum([0] + [len(bd.z[f"comp{m['i']}"]) for m in ms])
+            T = np.vstack([bd_tris(bd, m["i"]) + cut[k] for k, m in enumerate(ms)])
+        T = T[(g[T] >= 0).all(1)]
+        out = rim_pairs(X, T, g, law["near_mm"] / 1000.0, law["share"], law["ratio"])
+    for a, b in named.items():
+        if b is None:
+            out.pop(a, None)
+        else:
+            out[a] = (int(b), int((g == a).sum()), None, None, None)
+    return out
+
+
+def rim_leads(lead, rims):
+    """The leaders with each rim's components given to its host (the groups the fit, the weights and the bands use)."""
+    if not rims:
+        return lead
+    lead = np.array(lead)
+    for a, v in rims.items():
+        lead[lead == a] = v[0]
+    return lead
+
+
+def standoff_floor(bd, ms, ev, path=None, lead=None):
     """The stand-off each rigid point of a tier must reach (m; NaN where none), or None: the slot's law
     (rigid_roles.json "standoff": "cap_mm") over the unit's measured targets (godot/art/gear/standoff/<id>.json, written
     by tools/armor/gear_standoff.py from her skin's excursion under the plate over the clips: per node, [unique vertex,
@@ -882,7 +975,8 @@ def standoff_floor(bd, ms, ev, path=None):
     (a pauldron's cop and what rides it: top_groups), so the cop stays seated on the shoulder top while the lames below
     it may stand off to "cap_mm". "rest_min_mm" (optional) is THE REST FLOOR: every rigid point, measured need or not,
     stands at least this far off her untucked skin at rest (a point the clips never drove through has no target, and
-    sat under her skin where the form the plate was made on was smaller than she is)."""
+    sat under her skin where the form the plate was made on was smaller than she is). `lead`: the tier's leaders with
+    the rims given to their plates (rim_leads; None = the binding's own)."""
     law = standoff_law(bd.meta["row"].get("slot"))
     fp = path or os.path.join(STANDOFF, f"{bd.id}.json")
     if not law or not os.path.isfile(fp):
@@ -895,7 +989,8 @@ def standoff_floor(bd, ms, ev, path=None):
     caps = [np.full(len(ev[m["i"]]["X"]), cap) for m in ms]
     if ms and law.get("seat_cap_mm") is not None:
         comp = np.concatenate([ev[m["i"]]["comp"] for m in ms])
-        top = top_groups(np.vstack([ev[m["i"]]["Xbind"] for m in ms]), comp, bd.z[f"lead_{ms[0]['tier']}"])
+        top = top_groups(np.vstack([ev[m["i"]]["Xbind"] for m in ms]), comp,
+                         bd.z[f"lead_{ms[0]['tier']}"] if lead is None else lead)
         seat = np.where(top, min(cap, float(law["seat_cap_mm"]) / 1000.0), cap)
         caps = np.split(seat, np.cumsum([len(c) for c in caps])[:-1])
     out = []
@@ -917,6 +1012,7 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
     z, out = bd.z, {}
     fit = {"rigid": {}, "solve": {}}
     rots_tier = {}
+    rims_tier = {}
     for tier in TIERS:
         ms = [m for m in bd.meta["meshes"] if m["tier"] == tier]
         if not ms:
@@ -943,8 +1039,13 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                 ev[i].update(c0=c0, n0=n0, beta=bt, G=G, Gk=fld.gradient(Xbind), Re=Re, X=Xe + bt[:, None] * (Xf - Xe))
         # rigid components: transforms from all rigid uniques of the tier
         comp = np.concatenate([ev[m["i"]]["comp"] for m in ms])
+        # (a rim rides its plate, RIMS: its components join its plate's group for the fit, the weights and the bands)
+        rims = rim_hosts(bd, ms, np.vstack([ev[m["i"]]["Xbind"] for m in ms]), comp, lead) if (comp >= 0).any() else {}
+        if rims:
+            lead = rim_leads(lead, rims)
+            rims_tier[tier] = {int(a): v for a, v in rims.items()}
         # (the stand-off law, rigid_roles.json slots "standoff": each plate point's measured need, on every body)
-        flo = standoff_floor(bd, ms, ev)
+        flo = standoff_floor(bd, ms, ev, lead=lead)
         if (comp >= 0).any() and (bbody is not None or flo is not None):
             Xa = np.vstack([ev[m["i"]]["Xbind"] for m in ms])
             Xn = np.vstack([ev[m["i"]]["X"] for m in ms])
@@ -1033,7 +1134,7 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                             shapes[nm] = np.where(sel[:, None], mean, (e["w"][:, :, None] * dP[Tv]).sum(1))
             out[m["node"]] = {"Xu": X, "inv": inv, "N": U(N), "J": J[inv], "W": W[inv],
                               "shapes": {k: v[inv] for k, v in shapes.items()}, "tier": tier, "comp": comp_i,
-                              "Xbind": e["Xbind"], "h": z[f"off{i}"][:, 2]}
+                              "Xbind": e["Xbind"], "h": z[f"off{i}"][:, 2], "lead": lead}
             if "beta" in e:
                 out[m["node"]].update(beta=e["beta"], G=e["G"], Gk=e["Gk"])
     if "aux_tri" in z:
@@ -1061,6 +1162,18 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
         out["__aux__"] = {"X": X, "N": U(Nn), "Up": U(Up), "J": J, "W": W}
     if bind_bodies is not None:
         out["__fit__"] = fit
+    if rims_tier:
+        out["__rims__"] = rims_tier
+    return out
+
+
+def rim_lines(bd, ev):
+    """The build log's lines for a unit's rims: each rim group and the plate it rides, per tier."""
+    out = []
+    for tier, rims in (ev.get("__rims__") or {}).items():
+        out.append(f"gear_fit rims: {bd.id} {tier}: " + ", ".join(
+            f"{a} rides {v[0]} ({v[1]} pts" + (f", {v[2]} mm off it, max {v[3]}, area x{v[4]})" if v[2] is not None else ", named)")
+            for a, v in sorted(rims.items())))
     return out
 
 
@@ -1305,6 +1418,8 @@ def build(bodies, out_dir, only=None, bind_bodies=None, write=True):
             bind_bodies = load_bodies(os.path.join(REPO, bd.meta["bind_body"]))
         ev = eval_unit(bd, bodies, None if same else bind_bodies)
         evs[bd.id] = ev
+        for line in rim_lines(bd, ev):
+            print(line, flush=True)
         if not write:
             continue
         if same:
@@ -1504,7 +1619,7 @@ def field_metrics(bd, ev, bodies, bind_bodies):
                 why["tight_p95_mm"] = rr["tight_p95_mm"]
         rg = comp >= 0
         if rg.any():
-            lead = bd.z[f"lead_{m['tier']}"]
+            lead = e.get("lead", bd.z[f"lead_{m['tier']}"])
             rr["rigid_scale"] = {str(int(c)): fit.get("rigid", {}).get(f"{m['tier']}/{int(c)}", {}).get("scale")
                                  for c in np.unique(lead[comp[rg]])}
         rr["fail"] = fail
