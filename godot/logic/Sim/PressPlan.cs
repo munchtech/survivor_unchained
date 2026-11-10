@@ -27,6 +27,45 @@ public sealed class PressPlanDef
     public PlanRule For(string id) => Skills.TryGetValue(id, out var r) ? r : Default;
 }
 
+/// <summary>The hands' gap rule (M3 MR 3 h1): a model of the BOT'S HANDS, no rule of the game. A CHAINED grip's key
+/// stays down for up to the chain's grace (ChainDef.Grace, else Battle.ChainGrace) after the last step a foe stood in its
+/// reach and a step, as a player's would between two foes: the chain is then never released over a short gap. It only
+/// STAYS down: a key that came up (the grace ran out, the hand's lapse, another battle) goes down again only at a foe.
+/// The hand's lapse (PressHands.GripHeld) is not bridged: it lifts the key in a gap as it does at a foe. An unchained
+/// grip has no grace: bit for bit the old line (a foe in reach, and the hand holding). One memory per key, by slot.</summary>
+public sealed class GripGaps
+{
+    readonly Dictionary<int, (double At, double X, double Z)> seen = new();
+    /// <summary>(tests) The grace of a grip in place of its record's: a union's half takes its record from its def each
+    /// step (Firing.HalfOf), so no test-only chain stays on it.</summary>
+    internal Func<WeaponInst, double>? GraceOf;
+
+    /// <summary>How long the hand holds a grip's key through a gap: its chain's grace; 0 unchained (or kindled).</summary>
+    public static double Grace(WeaponInst? grip) => grip is { Chained: true } ? grip.Press?.Chain?.Grace ?? Battle.ChainGrace : 0;
+
+    /// <summary>Whether the key on `slot` is down this step, and its aim. `foe`: a foe stands in the grip's reach and a
+    /// step (at x, z: the aim, and remembered). `down`: the key is down now (it stays down, it is never pressed, in a
+    /// gap). `h`: the hand whose lapse lifts it (null: none). The same answer however often it is asked in a step.</summary>
+    internal bool Down(Battle b, int slot, WeaponInst? grip, bool foe, double x, double z, bool down, PressHands? h, out (double X, double Z) aim)
+    {
+        aim = (x, z);
+        if (foe)
+        {
+            if (h != null && !h.GripHeld(b.Time)) { seen.Remove(slot); return false; }
+            seen[slot] = (b.Time, x, z);
+            return true;
+        }
+        double grace = grip == null ? 0 : GraceOf?.Invoke(grip) ?? Grace(grip);
+        if (grace > 0 && down && seen.TryGetValue(slot, out var m) && b.Time >= m.At && b.Time - m.At <= grace && (h == null || h.GripHeld(b.Time)))
+        {
+            aim = (m.X, m.Z);
+            return true;
+        }
+        seen.Remove(slot);
+        return false;
+    }
+}
+
 /// <summary>A hand on the plan: deft (no delay, nothing missed), human (React s late, a share missed, the grip let go a
 /// share of the time), careless (conditions ignored half the time, marks unread), grip-only (standing, idler).</summary>
 public sealed class PressHands
@@ -40,6 +79,8 @@ public sealed class PressHands
     /// <summary>A union's second key held as the grip this step (Bladestorm on Sunder's key, out of a storm with a foe in
     /// reach: the key is pressed every step, a hold): the half's id, else null. What the game's --clip prints as the grip's hold.</summary>
     public string? HalfGrip;
+    /// <summary>The held keys' memory of the last foe in reach (the gap rule: GripGaps).</summary>
+    public readonly GripGaps Gaps = new();
     /// <summary>Presses that went off, by skill id (the harness's presses per minute).</summary>
     public readonly Dictionary<string, int> Presses = new();
 
@@ -91,14 +132,15 @@ public static class PressPlan
         if (!b.Campaign || !p.Alive) return;
         var d = Def;
         h.HalfGrip = null;
-        // The grip: held at the nearest foe in its reach.
+        // The grip: held at the nearest foe in its reach; a chained grip held on through a gap of up to its chain's
+        // grace, at the last foe's place (GripGaps: the hands' gap rule).
         foreach (var w in b.Weapons)
         {
             if (!w.Hold) continue;
             double reach = (w.Num(s => s.Reach) ?? 2.6) + d.GripPad;
             var near = b.NearestHostile(p.X, p.Z, reach);
-            if (near == null || !h.GripHeld(b.Time)) b.HoldSkill(w.Slot, false);
-            else b.HoldSkill(w.Slot, true, near.X, near.Z);
+            if (h.Gaps.Down(b, w.Slot, w, near != null, near?.X ?? 0, near?.Z ?? 0, w.Held, h, out var at)) b.HoldSkill(w.Slot, true, at.X, at.Z);
+            else b.HoldSkill(w.Slot, false);
         }
         // A union that took the grip's key (Bladestorm: Sunder's is its break): out of a storm that key still swings Sunder,
         // and the hand HOLDS it as it held the grip, every step, before any return below (a dash, a leap, a rush, another
@@ -106,9 +148,8 @@ public static class PressPlan
         foreach (var w in b.Weapons)
         {
             if (w.Slot2 < 0 || w.Behavior != WeaponBehavior.Spin || d.For(w.Id).Aim != "storm") continue;
-            var near = HalfFoe(b, h, w);
-            if (near == null) { b.HoldSkill(w.Slot2, false); continue; }
-            if (h.GripOnly) b.HoldSkill(w.Slot2, true, near.X, near.Z); else b.HoldSkill(w.Slot2, true, p.X, p.Z);
+            if (!HalfGrip(b, h, w, out var at)) { b.HoldSkill(w.Slot2, false); continue; }
+            if (h.GripOnly) b.HoldSkill(w.Slot2, true, at.X, at.Z); else b.HoldSkill(w.Slot2, true, p.X, p.Z);
             if (!Firing.InStorm(b, w)) h.HalfGrip = Firing.HalfOf(w)?.Id;
         }
         if (h.GripOnly) return;
@@ -139,12 +180,16 @@ public static class PressPlan
 
     static bool NeedsReading(KindleDef k) => k.When == "windup" || k.Any?.Any(NeedsReading) == true;
 
-    /// <summary>The union's grip this step (its other half held on its second key): the nearest foe in the half's reach and
-    /// the pad while the hand holds (PressHands.GripHeld: one roll each half second, the same answer all step), else null.</summary>
-    static Enemy? HalfFoe(Battle b, PressHands h, WeaponInst w)
+    /// <summary>The union's grip this step (its other half held on its second key): whether the key is down, and the
+    /// aim: the nearest foe in the half's reach and the pad while the hand holds (PressHands.GripHeld: one roll each half
+    /// second, the same answer all step); a chained half's key held on through a gap of up to its chain's grace at the
+    /// last foe's place (GripGaps: the hands' gap rule; the same answer all step, so the storm's break may ask again).</summary>
+    static bool HalfGrip(Battle b, PressHands h, WeaponInst w, out (double X, double Z) at)
     {
-        double reach = (Firing.HalfOf(w)?.Num(s => s.Reach) ?? 2.6) + Def.GripPad;
-        return b.NearestHostile(b.Player.X, b.Player.Z, reach) is { } near && h.GripHeld(b.Time) ? near : null;
+        var half = Firing.HalfOf(w);
+        double reach = (half?.Num(s => s.Reach) ?? 2.6) + Def.GripPad;
+        var near = b.NearestHostile(b.Player.X, b.Player.Z, reach);
+        return h.Gaps.Down(b, w.Slot2, half, near != null, near?.X ?? 0, near?.Z ?? 0, w.Held2, h, out at);
     }
 
     /// <summary>Bladestorm: held while its crowd stands (or Resolve is full and a foe is near), broken on its lines.</summary>
@@ -163,7 +208,7 @@ public static class PressPlan
                 b.HoldSkill(w.Slot2, false);
                 b.HoldSkill(w.Slot2, true);
                 b.PressSkill(w.Slot2, p.X, p.Z);
-                if (HalfFoe(b, h, w) == null) b.HoldSkill(w.Slot2, false);
+                if (!HalfGrip(b, h, w, out _)) b.HoldSkill(w.Slot2, false);
                 return true;
             }
             b.HoldSkill(w.Slot, n >= thin || full && n > 0);

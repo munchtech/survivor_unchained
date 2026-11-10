@@ -514,18 +514,24 @@ public static class Pilot
     /// (one who reads the marks: sees) a marked blow about to land on her.</summary>
     /// <summary>The campaign's held swings (a hold record: Sunder, Oathblade): held at the nearest foe within its reach and
     /// a step, released with none.</summary>
-    static void Grips(Battle b)
+    /// <summary>(M3 MR 3 h1) A chained grip is held on through a gap of up to its chain's grace, at the last foe's place
+    /// (the hands' gap rule: Sim/PressPlan.cs GripGaps; these hands have no lapse). Unchained: the old line.</summary>
+    internal static void Grips(Battle b)
     {
         var p = b.Player;
+        var gaps = gapsOf.GetOrCreateValue(b);
         foreach (var w in b.Weapons)
         {
             if (!w.Hold) continue;
             double reach = (w.Num(s => s.Reach) ?? 2.6) + 1.5;
             var near = b.NearestHostile(p.X, p.Z, reach);
-            if (near == null) b.HoldSkill(w.Slot, false);
-            else b.HoldSkill(w.Slot, true, near.X, near.Z);
+            if (gaps.Down(b, w.Slot, w, near != null, near?.X ?? 0, near?.Z ?? 0, w.Held, null, out var at)) b.HoldSkill(w.Slot, true, at.X, at.Z);
+            else b.HoldSkill(w.Slot, false);
         }
     }
+
+    /// <summary>The old hands' memory of the last foe in each held key's reach, by fight (the gap rule).</summary>
+    static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Battle, GripGaps> gapsOf = new();
 
     /// <summary>A campaign press the hand knows no better rule for (a spender, a wait): at the nearest foe in its reach
     /// when ready and paid for.</summary>
@@ -598,7 +604,8 @@ public static class Pilot
                 {
                     b.HoldSkill(w.Slot, false);
                     // Out of a storm (on its cooldown, or too few for one), Sunder's key swings Sunder at what is in reach.
-                    if (w.Slot2 >= 0 && !Firing.InStorm(b, w) && b.HostilesInRadius(p.X, p.Z, 3.5).Count > 0) b.PressSkill(w.Slot2, p.X, p.Z);
+                    // (the gap rule: a chained half's key pressed on for up to its chain's grace after the last foe in reach)
+                    if (w.Slot2 >= 0 && !Firing.InStorm(b, w) && gapsOf.GetOrCreateValue(b).Down(b, w.Slot2, w.Half, b.HostilesInRadius(p.X, p.Z, 3.5).Count > 0, p.X, p.Z, true, null, out _)) b.PressSkill(w.Slot2, p.X, p.Z);
                 }
                 continue;
             }

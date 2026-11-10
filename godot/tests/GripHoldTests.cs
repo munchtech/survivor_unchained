@@ -149,4 +149,306 @@ public sealed class GripHoldTests
         // lead's floor of 1.4 s: this asserts what is true today (0.6), not the floor. Raise it to 1.4 when the hold is.
         Assert.True(med >= 0.6, line);
     }
+
+    // ---- (M3 MR 3 h1) The hands' gap rule (Sim/PressPlan.cs GripGaps): a chained grip's key stays down for up to the
+    // chain's grace after the last step a foe stood in reach and a step. A model of the bot's hands: no rule of the game.
+
+    /// <summary>One Sunder (test-only chain at period 0.70, or the shipped unchained record), one foe that stays up and is
+    /// put in reach or out of reach + pad each step, the plan's hands on the key.</summary>
+    sealed class Rig
+    {
+        public readonly Battle B;
+        public readonly WeaponInst W;
+        public readonly Enemy E;
+        public readonly PressHands H;
+        public readonly double Reach;
+        /// <summary>Each step: the time the hands ran at, whether the foe stood in reach, the key after the hands.</summary>
+        public readonly List<(double T, bool Near, bool Held)> Steps = new();
+        /// <summary>Each cut started: the step's time, its index, whether a foe stood in reach (false: whiffed).</summary>
+        public readonly List<(double T, int Cut, bool Near)> Cuts = new();
+        public readonly List<(double T, double At)> Releases = new();
+        public readonly List<(double T, double Angle, int Struck)> Slashes = new();
+        public Action<Rig>? Hands;
+        double last = double.NaN;
+
+        public Rig(bool chained, PressHands h)
+        {
+            B = new Battle(new BattleSetup
+            {
+                Seed = 5, Collision = new CollisionWorld(120), Combat = true, Campaign = true, Stats = BattleTests.BaseStats(),
+                Weapons = [("sunder", 1)], Ability = AbilityKind.ShieldBash,
+            });
+            B.Calling = "warden";
+            W = B.Weapons[0];
+            W.Timer = 0;
+            if (chained) W.Press = W.Press!.WithChain(new ChainDef { Grace = 0.40, Recover = 18, Period = 0.70 });
+            Assert.Null(W.Def.Press!.Chain);
+            Assert.True(W.Hold);
+            Assert.Equal(chained, W.Chained);
+            H = h;
+            Reach = (W.Num(s => s.Reach) ?? 2.6) + PressPlan.Def.GripPad;
+            E = B.SpawnEnemy("footpad", 2, 0)!;
+            E.Hp = E.MaxHp = 1e9;
+            E.AttackT = E.RangedT = 999;
+        }
+
+        public SwingChain? C => W.Chain;
+
+        public void Step(bool near)
+        {
+            var p = B.Player;
+            E.X = p.X + (near ? 2 : Reach + 3); E.Z = p.Z; E.Vx = E.Vz = 0;
+            double t = B.Time;
+            // (what the hands see: a foe that left is gone at once, one that came back is found a step later)
+            bool sees = B.NearestHostile(p.X, p.Z, Reach) != null;
+            if (Hands != null) Hands(this); else PressPlan.Run(B, H);
+            Steps.Add((t, sees, W.Held));
+            B.Tick(Dt, 0, 0);
+            foreach (var ev in B.Events.Drain())
+            {
+                if (ev is Ev.SwingRelease r) Releases.Add((B.Time, r.Time));
+                else if (ev is Ev.Slash s) Slashes.Add((B.Time, s.Angle, s.Struck));
+            }
+            if (C is { Live: true } c && c.StartAt != last) { last = c.StartAt; Cuts.Add((t, c.Cut, near)); }
+        }
+
+        public void Run(bool near, double secs) { int n = (int)Math.Round(secs / Dt); for (int i = 0; i < n; i++) Step(near); }
+
+        /// <summary>Held at the foe until just past the cancel beat of a cut that is not the first.</summary>
+        public void ToCancel()
+        {
+            for (int i = 0; i < 900 && !(C is { Live: true, Cut: >= 1 } c && B.Time > c.CancelAt + Dt); i++) Step(true);
+            Assert.True(C is { Live: true, Cut: >= 1 } && W.Held, "no chain to stand on");
+        }
+
+        /// <summary>Held at the foe until the step a cut that is not the first starts (the next is a whole period off).</summary>
+        public void ToStart()
+        {
+            int n = Cuts.Count;
+            for (int i = 0; i < 900 && !(Cuts.Count > n && Cuts[^1].Cut >= 1); i++) { n = Cuts.Count; Step(true); }
+            Assert.True(C is { Live: true, Cut: >= 1 } && W.Held && Cuts[^1].T == Steps[^1].T, "no chain to stand on");
+        }
+    }
+
+    /// <summary>The old hands' line (before h1), on the same key: down with a foe in reach while the hand holds.</summary>
+    static void OldHands(Rig r)
+    {
+        var (b, w, p) = (r.B, r.W, r.B.Player);
+        var near = b.NearestHostile(p.X, p.Z, r.Reach);
+        if (near == null || !r.H.GripHeld(b.Time)) b.HoldSkill(w.Slot, false);
+        else b.HoldSkill(w.Slot, true, near.X, near.Z);
+    }
+
+    /// <summary>(1) A foe steps out of reach and the pad for 0.30 s and back: the chained grip's key never lifts, nothing
+    /// is released, the chain goes on with the next index; the unchained grip's key lifts the step the foe leaves.</summary>
+    [Fact]
+    public void A_chained_grips_key_stays_down_through_a_gap_shorter_than_the_grace()
+    {
+        var r = new Rig(true, PressHands.Deft(3));
+        r.ToCancel();
+        int cut = r.C!.Cut, from = r.Steps.Count;
+        r.Run(false, 0.30);
+        Assert.All(r.Steps.Skip(from), s => Assert.True(s.Held, $"the key lifted {s.T - r.Steps[from].T:0.000} s into the gap"));
+        r.Run(true, 0.30);
+        for (int i = 0; i < 120 && r.C!.Cut == cut; i++) r.Step(true);
+        Assert.All(r.Steps.Skip(from), s => Assert.True(s.Held));
+        Assert.Empty(r.Releases);
+        // (guards, true of the old hands too: the game's own grace keeps a chain over 0.30 s)
+        Assert.True(r.C!.Live);
+        Assert.Equal(cut + 1, r.C.Cut);
+
+        var u = new Rig(false, PressHands.Deft(3));
+        u.Run(true, 2);
+        Assert.True(u.W.Held);
+        from = u.Steps.Count;
+        u.Run(false, 0.30);
+        Assert.All(u.Steps.Skip(from), s => Assert.False(s.Held, "an unchained grip's key stayed down with no foe in reach"));
+        u.Run(true, 2 * Dt);
+        Assert.True(u.W.Held);
+    }
+
+    /// <summary>(2) Out for 0.50 s: the key comes up 0.40 s (the chain's grace) after the last step a foe stood in reach,
+    /// within a step, and the release is told then; it goes down again when the foe is back.</summary>
+    [Fact]
+    public void A_chained_grips_key_lifts_at_the_grace_after_the_last_step_in_reach()
+    {
+        var r = new Rig(true, PressHands.Deft(3));
+        r.ToStart();
+        double seen = r.Steps[^1].T;
+        int from = r.Steps.Count;
+        r.Run(false, 0.50);
+        var gap = r.Steps.Skip(from).ToList();
+        double lift = gap.First(s => !s.Held).T;
+        Assert.InRange(lift - seen, 0.40 - 1e-9, 0.40 + Dt + 1e-9);
+        Assert.All(gap, s => Assert.Equal(s.T < lift, s.Held));
+        // The game's release follows the key (its own grace runs from here: the chain is still live when the foe is back).
+        var rel = Assert.Single(r.Releases);
+        Assert.InRange(rel.At - seen, 0.40 - 1e-9, 0.40 + 2 * Dt + 1e-9);
+        r.Run(true, 2 * Dt);
+        Assert.True(r.W.Held);
+        Assert.True(r.C!.Live);
+    }
+
+    /// <summary>The old hands (Pilot.Grips: no plan, no lapse) keep the same rule: a chained grip held through 0.30 s,
+    /// up at the grace in a longer gap; an unchained grip step for step the old line.</summary>
+    [Fact]
+    public void The_old_hands_grip_follows_the_gap_rule()
+    {
+        var r = new Rig(true, PressHands.Deft(3)) { Hands = x => Pilot.Grips(x.B) };
+        r.ToCancel();
+        int from = r.Steps.Count;
+        r.Run(false, 0.30);
+        r.Run(true, 0.30);
+        Assert.All(r.Steps.Skip(from), s => Assert.True(s.Held));
+        Assert.Empty(r.Releases);
+        r.ToStart();
+        double seen = r.Steps[^1].T;
+        from = r.Steps.Count;
+        r.Run(false, 0.50);
+        Assert.InRange(r.Steps.Skip(from).First(s => !s.Held).T - seen, 0.40 - 1e-9, 0.40 + Dt + 1e-9);
+
+        static Rig Go(bool old)
+        {
+            var u = new Rig(false, PressHands.Deft(3));
+            u.Hands = old ? OldHands : x => Pilot.Grips(x.B);
+            for (int k = 0; k < 12; k++) { u.Run(true, 0.60 + k * 3 * Dt); u.Run(false, k % 2 == 0 ? 0.30 : 0.50); }
+            return u;
+        }
+        var (now, was) = (Go(false), Go(true));
+        Assert.Equal(was.Steps, now.Steps);
+        Assert.Equal(was.Slashes, now.Slashes);
+        Assert.Equal(was.W.Timer, now.W.Timer);
+        Assert.Contains(now.Steps, s => !s.Near && !s.Held);
+    }
+
+    /// <summary>(4) The union's second key (Bladestorm's half on Sunder's key) follows the same rule. The half takes its
+    /// record from its def each step, so the test stands in for its chain through the hands' seam (GripGaps.GraceOf);
+    /// without it (the shipped, unchained half) the key comes up the step the foe leaves.</summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void The_unions_second_key_follows_the_gap_rule(bool chained)
+    {
+        var j = MapSim.Survivor("warden", 30, 2, 5);
+        var b = Fight(j);
+        DevGrants.Apply(b, null, "bladestorm", null);
+        var storm = b.Weapons.Single(x => x.Id == Unions.Find("bladestorm")!.Into);
+        var p = b.Player;
+        var foe = b.SpawnEnemy("footpad", p.X + 1.6, p.Z)!;
+        foe.Hp = foe.MaxHp = 1e9;
+        foe.AttackT = foe.RangedT = 999;
+        var h = PressHands.Grip(3);
+        WeaponInst? asked = null;
+        if (chained) h.Gaps.GraceOf = x => { asked = x; return 0.40; };
+        List<(double T, bool Held, string? Grip)> Run(bool near, double secs)
+        {
+            var steps = new List<(double, bool, string?)>();
+            for (int i = 0, n = (int)Math.Round(secs / Dt); i < n; i++)
+            {
+                foe.X = p.X + (near ? 1.6 : 14); foe.Z = p.Z; foe.Vx = foe.Vz = 0;
+                double t = b.Time;
+                PressPlan.Run(b, h);
+                steps.Add((t, storm.Held2, h.HalfGrip));
+                b.Tick(Dt, 0, 0);
+                b.Events.Drain();
+            }
+            return steps;
+        }
+        Assert.True(Run(true, 1)[^1].Held, "the union's grip was not held at a foe");
+        var gap = Run(false, 0.30);
+        Assert.All(gap, s => Assert.Equal(chained, s.Held));
+        if (chained)
+        {
+            Assert.Same(Firing.HalfOf(storm), asked);
+            Assert.All(gap, s => Assert.Equal(asked!.Id, s.Grip));
+        }
+        double seen = Run(true, 0.5)[^1].T;
+        Assert.True(storm.Held2);
+        gap = Run(false, 0.50);
+        double lift = gap.First(s => !s.Held).T - seen;
+        if (chained) Assert.InRange(lift, 0.40 - 1e-9, 0.40 + Dt + 1e-9); else Assert.InRange(lift, Dt - 1e-9, Dt + 1e-9);
+        Assert.All(gap, s => Assert.Equal(s.T - seen < lift - 1e-9, s.Held));
+        Assert.True(Run(true, 2 * Dt)[^1].Held);
+    }
+
+    /// <summary>(3) The hand's lapse is not bridged: it lifts the key with a foe in reach and inside a gap alike, and a key
+    /// that came up in a gap goes down again only at a foe.</summary>
+    [Fact]
+    public void The_hands_lapse_lifts_a_chained_grips_key_in_a_gap_and_at_a_foe_alike()
+    {
+        var r = new Rig(true, PressHands.Deft(3));
+        r.ToCancel();
+        r.H.GripShare = 0;
+        r.Step(true);
+        Assert.False(r.Steps[^1].Held, "a lapse with a foe in reach left the key down");
+        r.H.GripShare = 1;
+        r.Run(true, 1.5);
+        r.ToCancel();
+        r.Run(false, 0.10);
+        Assert.True(r.Steps[^1].Held, "the key was not held into the gap");
+        r.H.GripShare = 0;
+        r.Step(false);
+        Assert.False(r.Steps[^1].Held, "a lapse inside a gap left the key down");
+        r.H.GripShare = 1;
+        r.Run(false, 0.10);
+        Assert.False(r.Steps[^1].Held, "the key went down again in a gap with no foe in reach");
+        r.Run(true, 2 * Dt);
+        Assert.True(r.Steps[^1].Held);
+    }
+
+    /// <summary>(5) The cost of holding through gaps: a held key with no foe in reach still swings. Gaps of 0.30 s and of
+    /// 0.50 s at every phase of the 0.70 s period: at most one cut starts with no foe in reach in any gap.</summary>
+    [Theory]
+    [InlineData(0.30)]
+    [InlineData(0.50)]
+    public void A_gap_held_through_costs_at_most_one_whiffed_cut(double gapSecs)
+    {
+        var r = new Rig(true, PressHands.Deft(3));
+        r.Run(true, 2);
+        int gaps = 0, most = 0, total = 0;
+        for (int k = 0; k < 42; k++)
+        {
+            int from = r.Cuts.Count;
+            r.Run(false, gapSecs);
+            int whiffed = r.Cuts.Skip(from).Count(c => !c.Near);
+            gaps++; total += whiffed; most = Math.Max(most, whiffed);
+            r.Run(true, 0.90 + k * Dt);
+        }
+        string line = $"gaps of {gapSecs:0.00} s: {total} whiffed cuts in {gaps} gaps, at most {most} in one, {r.Releases.Count} releases";
+        Console.WriteLine("[h1] " + line);
+        Assert.True(most <= 1, line);
+        // (the rule is live: some gap fell on a cut; and a 0.30 s gap never releases the chain)
+        Assert.True(total > 0, line);
+        if (gapSecs < 0.40) Assert.True(r.Releases.Count == 0, line);
+    }
+
+    /// <summary>(6) An unchained record through the same script: step for step what the old hands' line gives (the key,
+    /// every slash, the wait, the foe's life), with the human's lapses in; and the script does move a chained grip.</summary>
+    [Fact]
+    public void An_unchained_grip_is_step_for_step_the_old_hands()
+    {
+        static Rig Go(bool chained, bool old)
+        {
+            var r = new Rig(chained, PressHands.Human(11, 0.25));
+            if (old) r.Hands = OldHands;
+            for (int k = 0; k < 24; k++)
+            {
+                r.Run(true, 0.60 + k * 3 * Dt);
+                r.Run(false, k % 3 == 0 ? 0.30 : k % 3 == 1 ? 0.50 : 0.05 + k * Dt);
+            }
+            return r;
+        }
+        var (now, was) = (Go(false, false), Go(false, true));
+        Assert.Equal(was.Steps, now.Steps);
+        Assert.Equal(was.Slashes, now.Slashes);
+        Assert.Equal(was.W.Timer, now.W.Timer);
+        Assert.Equal(was.E.Hp, now.E.Hp);
+        Assert.Equal(was.B.Time, now.B.Time);
+        Assert.Contains(now.Steps, s => s.Near && !s.Held);
+        Assert.True(now.Slashes.Count > 10, $"{now.Slashes.Count} slashes");
+        var (chain, chainWas) = (Go(true, false), Go(true, true));
+        Assert.NotEqual(chainWas.Steps, chain.Steps);
+        Assert.True(chain.Steps.Count(s => !s.Near && s.Held) > 100, "the chained grip was not held through the script's gaps");
+        Assert.DoesNotContain(chainWas.Steps, s => !s.Near && s.Held);
+    }
 }
