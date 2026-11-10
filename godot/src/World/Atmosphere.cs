@@ -341,7 +341,7 @@ public partial class Atmosphere : Node3D
                 // (L1 lead 11: the dapple's edge (px) and the leaf cookie's shapes: dedge=2,dclusters=300,dleaf=1.2/3.5,dleaves=2/4)
                 DappleEdge = T("dedge", p.DappleEdge), DappleClusters = T("dclusters", p.DappleClusters),
                 DappleLeaf = V("dleaf", p.DappleLeaf ?? []) is { Length: 2 } tl ? tl : p.DappleLeaf, DappleLeaves = V("dleaves", p.DappleLeaves ?? []) is { Length: 2 } tv ? tv : p.DappleLeaves,
-                DappleMass = V("dmass", p.DappleMass ?? []) is { Length: 2 } tm ? tm : p.DappleMass,   // (L1 lead 12, F4: leaf masses, dmass=1.5/4)
+                DappleMass = V("dmass", p.DappleMass ?? []) is { Length: 2 or 3 } tm ? tm : p.DappleMass,   // (L1 lead 12, F4: leaf masses, dmass=1.5/4, or dmass=2/4/3: the third their random run)
                 Grade = p.Grade with
                 {
                     TintStrength = T("tint", p.Grade.TintStrength), Contrast = T("contrast", p.Grade.Contrast), Toe = T("toe", p.Grade.Toe),

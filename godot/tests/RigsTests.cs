@@ -193,4 +193,45 @@ public class RigsTests
         Assert.Equal(0.66, c.Exposure, 6);
         Assert.Equal(s["night_play"]!.Fill.Color, c.CelFillColor);
     }
+
+    // (L1 lead 12, R4 rounds 4-5) Her fire as a field is arena_night's alone. A rig that names none of its keys (ember_smooth,
+    // ember_shade, dapple mass/clusters/leaf/leaves; ember_break and ember_brush are retired) hands the air what it did before
+    // them: the ramp linear between its stops, cel_pool_shade zero (no opening over her, no leaf cut, the moon's return under a
+    // leaf untouched: every round 4-5 shader term sits behind it), the cookie's fans on their first random run, its own give
+    // and pool to the number.
+    [Fact]
+    public void HerFireAsAFieldIsArenaNightsAlone()
+    {
+        var s = Real();
+        foreach (var (id, r) in s.Rigs)
+        {
+            if (id == "arena_night") continue;
+            Assert.True(r.EmberSmooth != true, id);
+            Assert.True(r.EmberShade == null, id);
+            Assert.True(r.Dapple.Mass == null && r.Dapple.Clusters == null && r.Dapple.Leaf == null && r.Dapple.Leaves == null, id);
+        }
+        foreach (var place in new[] { Atmospheres.LowFordNight, Atmospheres.WaystationDay })
+        {
+            var lit = Rigs.Lit(place, s);
+            Assert.False(lit.EmberSmooth);
+            Assert.Null(lit.EmberShade);
+            Assert.Null(lit.DappleMass);
+            Assert.Null(lit.DappleLeaf);
+            Assert.Null(lit.DappleLeaves);
+            Assert.Equal(0.0, (double)lit.DappleClusters);
+        }
+        var night = Rigs.Lit(Atmospheres.LowFordNight, s);
+        Assert.Equal(new[] { 1.0, 0.9, 1.5, 3.25 }, night.EmberGive);
+        Assert.Equal(57, night.EmberPool!.Length);
+        Assert.Equal(new[] { 1.0, 0.3, 0, 0.54, 255, 136, 6 }, night.EmberPool[..7]);
+        Assert.Equal(new[] { 3.4, 0, 170, 130, 180 }, night.EmberPool[^5..]);
+        // and the field itself, as written (round 5)
+        var a = s["arena_night"]!;
+        Assert.True(a.EmberSmooth);
+        Assert.Equal(new[] { 0.975, 1.9, 2.8, 1 }, a.EmberShade);
+        Assert.Equal(new[] { 1, 0.9, 1.8, 5.2 }, a.EmberGive);
+        Assert.Equal(new[] { 2.0, 4 }, a.Dapple.Mass);
+        Assert.Equal(144.0, (double)a.Dapple.Clusters!);
+        Assert.Equal(0.46, (double)a.Dapple.Cover!, 6);
+    }
 }

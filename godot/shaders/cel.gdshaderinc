@@ -258,7 +258,10 @@ float cel_back_at(vec3 c_wp, float c_dap) {
 	// leaf's shade the moon stays, cel_pool_shade.w: c_dap carries the canopy's opening over her fire already)
 	float c_d = cel_pool_band.x > 0.0 ? length(c_wp.xz - cel_ember.xz) : length(c_wp - cel_ember.xyz);
 	float c_back = smoothstep(cel_give.z, max(cel_give.w, cel_give.z + 1e-3), c_d);
-	if (cel_pool_shade.w > 0.0 && cel_key.w > 0.0) c_back = mix(c_back, 1.0, cel_pool_shade.w * clamp((1.0 - c_dap) / cel_key.w, 0.0, 1.0));
+	// (round 5: by the cube of the leaf's shade. Where the canopy's opening fades a leaf in, the fire dims first and the
+	// moon's blue comes in only as the leaf closes: at half a leaf the plain share laid half the blue over half the fire,
+	// an olive smudge on the orange body; under a whole leaf nothing changes.)
+	if (cel_pool_shade.w > 0.0 && cel_key.w > 0.0) { float c_ls = clamp((1.0 - c_dap) / cel_key.w, 0.0, 1.0); c_back = mix(c_back, 1.0, cel_pool_shade.w * c_ls * c_ls * c_ls); }
 	return c_back;
 #endif
 }
