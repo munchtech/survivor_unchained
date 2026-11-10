@@ -463,6 +463,55 @@ class Body:
 _B = {}
 
 
+STILL_DEG = 0.1                                 # a track within this of the bone's rest all clip long counts as unkeyed
+
+
+def _turn_deg(R, R0):
+    """Angle of each rotation R [n, 3, 3] from R0 [3, 3], deg (columns normalized first: a dump may carry scale)."""
+    R = R / np.linalg.norm(R, axis=1, keepdims=True)
+    R0 = R0 / np.linalg.norm(R0, axis=0, keepdims=True)
+    c = (np.einsum("nij,ij->n", R, R0) - 1) / 2
+    return np.degrees(np.arccos(np.clip(c, -1, 1)))
+
+
+def track_turn(d, bone, p, rl):
+    """The largest turn of `bone`'s local rotation from its rest over the clip d, deg; None when d has no track of it.
+    p: the body's poser (names, index, parent), rl: its rest locals. A p4 clip by its rotation track, a library dump by
+    its globals against the dump's own rest."""
+    if "bones" in d:
+        if bone not in d["rot"]:
+            return None
+        return float(_turn_deg(Rotation.from_quat(np.asarray(d["rot"][bone])).as_matrix(), rl[p.index[bone]][:3, :3]).max())
+    if bone not in d["keyed"]:
+        return None
+    names = list(d["b_names"])
+    pk = p.parent[p.index[bone]]
+    if bone not in names or pk < 0 or p.names[pk] not in names:
+        return 180.0                                                # keyed, and nothing to measure it against: stays keyed
+    a, b = names.index(bone), names.index(p.names[pk])
+    G = mats(d["B"]).reshape(d["frames"], len(names), 4, 4)[:, :, :3, :3]
+    G = G / np.linalg.norm(G, axis=2, keepdims=True)
+    G0 = mats(d["b_rest"])[:, :3, :3]
+    G0 = G0 / np.linalg.norm(G0, axis=1, keepdims=True)
+    return float(_turn_deg(np.einsum("nji,njk->nik", G[:, b], G[:, a]), G0[b].T @ G0[a]).max())
+
+
+def unkeyed(d, bones, p=None, rl=None, still_deg=STILL_DEG):
+    """True when the clip d keys none of `bones`. A track that never leaves the bone's rest by more than `still_deg`
+    counts as unkeyed (an exporter that writes every bone leaves a constant rest track: 9 Nov, every p4 clip's clavicle),
+    so the law drives that bone on any rig; without p / rl only the track lists are read."""
+    keyed = d["rot"] if "bones" in d else d["keyed"]
+    if p is None:
+        return not any(b in keyed for b in bones)
+    turns = [track_turn(d, b, p, rl) for b in bones]
+    return all(t is None or t <= still_deg for t in turns)
+
+
+def law_rig(bd):
+    """The rig whose girdle law drives the clavicle too (bd.rig holds it still offline: "clavicle_by")."""
+    return {**bd.rig, "girdle": {k: v for k, v in bd.rig["girdle"].items() if k != "clavicle_by"}}
+
+
 def body(key):
     if key not in _B:
         _B[key] = Body(key)

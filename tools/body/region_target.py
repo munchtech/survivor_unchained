@@ -56,6 +56,7 @@ PARAMS = {"base": "rule_main", "core_w": 0.02, "t_arm": 0.50, "ring": 3, "blend"
           "mu": -0.53, "gap": 0.001, "reach": 0.04, "cap": 0.012, "rest_sep": 0.012, "contact_iters": 8, "skirt": 3, "fall": 0.6,
           "vol_dead": 0.025, "guard_arm": 0.0, "w_desc": [1, 0.5, 1, 0.5, 0.25], "n_train": 64, "n_held": 64,
           "poles": True,                        # the region keeps poles; only the open border is the seam (see Region)
+          "unkeyed_deg": 0.1,                   # a track within this of the bone's rest all clip long counts as unkeyed
           "apex": [0.154, 1.418, -0.03]}        # report only: her left armpit apex at rest, m (the right is its mirror)
 APEX_R = (0.03, 0.06)                           # the report's radii round the apex, m
 CLAVICLES = {"clavicle": ("clavicle_l", "clavicle_r")}      # her names of the bones the girdle law drives when unkeyed
@@ -81,12 +82,6 @@ def rows(adj, seed):
         if not nb.any():
             return d
         d[nb], cur = k, cur | nb
-
-
-def unkeyed(d, bones):
-    """True when the clip d keys none of `bones`: a p4 clip by its rotation tracks, a library dump by its keyed list."""
-    keyed = d["rot"] if "bones" in d else d["keyed"]
-    return not any(b in keyed for b in bones)
 
 
 def rule_weights():
@@ -226,6 +221,13 @@ class Model:
             N0[ext] = self._normals(self.V0[ext], sd["tr"])
             sd["free"] = ~np.any([self._inside(self.V0, sid, N0, np.eye(3), k * P["gap"]) for k in (0.3, 1, 2)], 0)
         self.betaN = np.zeros(n)
+
+
+    def blend(self, G, side):
+        """The share of the target against the published surface per region point for the pose G of `side`, [points]:
+        today the rest-built beta whatever the pose; rows whose share follows the pose (the breast part's upper and
+        lateral rows, by the arm's elevation) answer here."""
+        return self.beta
 
     def _lbs(self, sd, G):
         S = (G @ self.p.skel.ibm)[:, :3]
@@ -410,9 +412,7 @@ def clip_names():
     return sorted(q.stem for q in da.DUMP.glob("*.json")) + da.p4_clips()
 
 
-def law_rig(bd):
-    """The rig whose girdle law drives the clavicle too (bd.rig holds it still offline: "clavicle_by")."""
-    return {**bd.rig, "girdle": {k: v for k, v in bd.rig["girdle"].items() if k != "clavicle_by"}}
+law_rig = da.law_rig
 
 
 def clav_deg(D):
@@ -425,7 +425,7 @@ def cmd_poses(bd, md):
     rig = bd.rig
     for c in clip_names():
         d = da.load_clip(c)
-        law[c] = unkeyed(d, CLAVICLES["clavicle"])
+        law[c] = da.unkeyed(d, CLAVICLES["clavicle"], bd.p, bd.rl, PARAMS["unkeyed_deg"])
         try:
             if law[c]:
                 bd.rig = law_rig(bd)

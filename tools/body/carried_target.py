@@ -449,7 +449,7 @@ class Her:
         if Vp is None:
             Vp = self.rt.published(bd, G)
         MC, MR, VaM = self.carried(G, side)                              # carried and filled, carried alone, A posed
-        b = md.beta[:, None]
+        b = md.blend(G, side)[:, None]                                   # the border's share, by row and by pose
         X = b * MC + (1 - b) * Vp[pts]
         d = np.linalg.norm(MC - Vp[pts], axis=1)[md.beta == 1] * 1000
         emin, emax, _ = edge_ratio(X, md.V0[ids], *self.edges[side])
