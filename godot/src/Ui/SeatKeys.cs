@@ -43,7 +43,7 @@ public partial class Socket
     bool keyed, locked;
     float costShown = -1;
     double flareT = -1;
-    SeatFx? lantern, spinner, bond, flare, ink, press;
+    SeatFx? lantern, spinner, bond, flare, ink, press, heldRing;
     string inkKey = "";
     Color capShown = new(-1, -1, -1, -1);
     bool capVisible = true;
@@ -162,6 +162,8 @@ public partial class Socket
         // (the lantern's own light under the flare, the glyph's ink over it)
         if (lantern != null && m != SeatFx.Mode.Lantern) MoveChild(lantern, 0);
         if (ink != null && m != SeatFx.Mode.Ink) MoveChild(ink, -1);
+        // (fix A2: the held ring stays above every added layer)
+        if (heldRing != null && m != SeatFx.Mode.Held) MoveChild(heldRing, -1);
         // (the lights under the cap: the cap stays on top)
         if (Cap != null) MoveChild(Cap, -1);
         return f;
@@ -233,11 +235,20 @@ public partial class Socket
         if (press != null && press.Visible != held) press.Visible = held;
         bool spin = keyed && filled && (st.Channeling || st.Held);
         if (Trace && (spin != (spinner?.Visible ?? false) || st.Bond != (bond?.Visible ?? false))) GD.Print($"seat {Index}: spin {spin} bond {st.Bond} keyed {keyed} filled {filled}");
-        if (spin && spinner == null) spinner = Fx(SeatFx.Mode.Spinner);
+        // (fix A2: a held seat's ring and bead are one Mix-blend node above the added layers; a channeling seat not held
+        // keeps the added spinner)
+        bool spinAdd = spin && !held;
+        if (spinAdd && spinner == null) spinner = Fx(SeatFx.Mode.Spinner);
         if (spinner != null)
         {
-            if (spinner.Visible != spin) spinner.Visible = spin;
-            if (spin) spinner.Rotation = (spinner.Rotation + (float)(dt * 0.75 * Mathf.Tau)) % Mathf.Tau;
+            if (spinner.Visible != spinAdd) spinner.Visible = spinAdd;
+            if (spinAdd) spinner.Rotation = (spinner.Rotation + (float)(dt * 0.75 * Mathf.Tau)) % Mathf.Tau;
+        }
+        if (held && heldRing == null) heldRing = Fx(SeatFx.Mode.Held);
+        if (heldRing != null)
+        {
+            if (heldRing.Visible != held) heldRing.Visible = held;
+            if (held) heldRing.Rotation = (heldRing.Rotation + (float)(dt * 0.75 * Mathf.Tau)) % Mathf.Tau;
         }
         bool bd = keyed && filled && st.Bond;
         if (bd && bond == null) bond = Fx(SeatFx.Mode.Bond);
@@ -324,7 +335,7 @@ public partial class Socket
 /// channel's turning arc, the bond's breathing gold ring. Drawn once; the seat changes its Modulate, Scale or Rotation.</summary>
 public partial class SeatFx : Control
 {
-    public enum Mode { Lantern, Spinner, Bond, Flare, Ink, Press }
+    public enum Mode { Lantern, Spinner, Bond, Flare, Ink, Press, Held }
     readonly Mode mode;
     readonly float hr;
     public float Hr => hr;
@@ -373,7 +384,7 @@ public partial class SeatFx : Control
         PivotOffset = size / 2;
         // (added light: the lantern in the well; the turning arc and the bond's breath read over the union's gold edge.
         // The flare and its ink are laid over, not added: added to a lit well the flare was a flat disc with no glyph)
-        if (mode != Mode.Flare && mode != Mode.Ink) Material = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.Add };
+        if (mode != Mode.Flare && mode != Mode.Ink && mode != Mode.Held) Material = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.Add };
     }
 
     public override void _Draw()
@@ -401,9 +412,20 @@ public partial class SeatFx : Control
                 break;
             case Mode.Press:
                 // the key down: the well warm, the ring fully lit (added light)
-                DrawTextureRect(DgMeters.Disc, new Rect2(c - Vector2.One * hr * 1.15f, Vector2.One * hr * 2.3f), false, new Color(1f, 0.66f, 0.28f, 0.6f));
-                DrawArc(c, hr + 2.5f, 0, Mathf.Tau, 64, HeldGold with { A = 0.85f }, 2.5f, true);
+                DrawTextureRect(DgMeters.Disc, new Rect2(c - Vector2.One * (hr + 1f), Vector2.One * (hr + 1f) * 2), false, new Color(1f, 0.66f, 0.28f, 0.6f));
                 DrawArc(c, hr + 5f, 0, Mathf.Tau, 64, Style.EmberHi with { A = 0.3f }, 4, true);
+                break;
+            case Mode.Held:
+                // M4 lead 9 (fix A2): the held ring in NORMAL blend (added to the lit bronze it clipped to lemon): the bar's
+                // gold #ffcd5a at full alpha, above every added layer; its head bead white-gold #fff4d6 with a tail of 46
+                // degrees fading to the ring's gold. Nothing here is brighter than the bead.
+                DrawArc(c, hr + 2.5f, 0, Mathf.Tau, 64, HeldGold, 2.5f, true);
+                for (int i = 0; i < 6; i++)
+                {
+                    float a0 = -Mathf.Pi / 2 - 0.05f - 0.8f + i * (0.8f / 6);
+                    DrawArc(c, hr + 2.5f, a0, a0 + 0.8f / 6 + 0.01f, 4, HeldGold.Lerp(HeldBead, (i + 1) / 7f), 2.5f + 1f * (i + 1) / 6f, true);
+                }
+                DrawArc(c, hr + 2.5f, -Mathf.Pi / 2 - 0.05f, -Mathf.Pi / 2 + 0.35f, 8, HeldBead, 3.5f, true);
                 break;
             case Mode.Bond:
                 // the second key's "press now": a gold light in the well and a bright ring, breathing (the seat's Modulate)
