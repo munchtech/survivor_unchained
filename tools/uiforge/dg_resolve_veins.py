@@ -39,6 +39,12 @@ PARAMS = dict(
     join_split=345,    # px (2x): a line that starts at or below this (D2: the hair's lower strands) is judged by join_min_low
     join_min_low=40,   # px (2x): the lower strands are shorter, so 40 px not 70 (a line starting above join_split keeps join_min)
     join_seen=0.35,    # a joined ridge must already be vein over this share of its length (no vein where no strand is)
+    # the weight clamp, baked as A (lead 9 fix D4; it was the shader's 72-tap loop): no vein is drawn brighter than its
+    # middle clamp_px; the rest of a wide ridge is its ember edge. clamp_lo / clamp_hi are the shader's r_lo / r_hi.
+    clamp_px=7.5,      # px (2x): a vein's greatest bright width (about 3 px on screen at the HUD's 0.85)
+    clamp_lo=0.5, clamp_hi=0.85,
+    clamp_wide=3.25,   # px (2x): in back_box the clamp acts only where a disc of this radius fits in the ridge (wider than 6.5)
+    clamp_grow=4.5,    # px (2x): ... and this far round such a place (the clamp's own reach is 3.6)
 )
 
 
@@ -134,6 +140,33 @@ def join_ridges(ridge, flow, hair, P):
     return out
 
 
+def clamp_cover(R, P):
+    """A, the vein's bright middle (1) against its ember edge (0), at the texel centers. The rule the shader ran per
+    screen px until fix D4: a vein px goes if, along one of 8 lines, the vein's edge is within a of it and the vein runs
+    on more than a + clamp_px the other way. New, in back_box (the joined thin veins): only on a ridge wider than the
+    clamp. Run on every vein it also cut each joint of two thin veins (the px facing the joining vein has an edge ahead
+    and that vein behind), so a joined lock lit as pieces. Outside back_box the rule is as it was (the front locks'
+    judged weight: the same gate there lit a third more bright middle)."""
+    t = np.clip((R - P["clamp_lo"]) / (P["clamp_hi"] - P["clamp_lo"]), 0, 1)
+    s0 = t * t * (3 - 2 * t)
+    at = lambda dx, dy: ndimage.shift(s0, (-dy, -dx), order=1, mode="nearest")
+    trim = np.zeros_like(s0)
+    for i in range(8):
+        ox, oy = np.cos(i * 0.785398), np.sin(i * 0.785398)
+        for a in (1.0, 2.2, 3.6):
+            far = a + P["clamp_px"]
+            trim = np.maximum(trim, (1 - at(ox * a, oy * a)) * at(-ox * far, -oy * far) * at(-ox * far * 0.5, -oy * far * 0.5))
+    r = int(np.ceil(P["clamp_wide"]))
+    yy, xx = np.mgrid[-r:r + 1, -r:r + 1]
+    wide = ndimage.binary_opening(s0 > 0.5, structure=(xx * xx + yy * yy) <= P["clamp_wide"] ** 2)
+    x0, y0, x1, y1 = P["back_box"]
+    back = np.zeros(s0.shape, bool)
+    back[y0:y1, x0:x1] = True
+    trim = np.where((s0 > 0.02) & (~back | (ndimage.distance_transform_edt(~wide) <= P["clamp_grow"])), trim, 0)
+    print(f"clamp: {int(((trim > 0.5) & (s0 > 0.5)).sum())} vein px in an ember edge, {int(((trim <= 0.5) & (s0 > 0.5)).sum())} in a bright middle")
+    return np.clip(1 - trim, 0, 1).astype(np.float32)
+
+
 def geodesic(mask, seed, flow=None, along=0.0):
     """Distance (px) inside mask from seed (y, x), 16-connected (no octagon facets); inf where unreachable. flow
     (vx, vy, coherence): a step along the strands costs up to `along` less, so the front runs up the locks."""
@@ -216,14 +249,24 @@ def main():
     near = ndimage.distance_transform_edt(~on, return_indices=True)[1]
     gb = np.where(on, gb, gb[near[0], near[1]])
     g = np.clip(gb, 0, 1)
-    out = np.dstack([veins, g, hair])
-    img = Image.fromarray((np.clip(out, 0, 1) * 255 + 0.5).astype(np.uint8), "RGB")
+    # A: the clamp, from R as the shader reads it (8 bit)
+    core = clamp_cover(np.floor(np.clip(veins, 0, 1) * 255 + 0.5).astype(np.float32) / 255, P)
+    out = np.dstack([veins, g, hair, core])
+    img = Image.fromarray((np.clip(out, 0, 1) * 255 + 0.5).astype(np.uint8), "RGBA")
     img.save(os.path.join(fc.OUT, "lamp_veins.png"))
+    # A is data: Godot's alpha-border fix would paint R, G and B over wherever A is 0 (the ember edges)
+    ip = os.path.join(fc.OUT, "lamp_veins.png.import")
+    if os.path.exists(ip):
+        it = open(ip, newline="").read()
+        if "process/fix_alpha_border=true" in it:
+            open(ip, "w", newline="").write(it.replace("process/fix_alpha_border=true", "process/fix_alpha_border=false"))
+            print("veins: lamp_veins.png.import: process/fix_alpha_border set false (A is data)")
+    print("veins: REIMPORT before any shot (Godot --headless --import): a game run loads the old import as it is")
     gp = os.path.join(fc.OUT, "lamp_geo.json")
     geo = json.load(open(gp))
     geo["resolve"] = {
         "tex": "lamp_veins.png", "crown": [round(crown[1] / 2, 2), round(crown[0] / 2, 2)],
-        "tip_cost": round(dmax / 2, 1), **{k: v for k, v in P.items() if k != "back_box" and not k.startswith("join_")},   # (the join's own: bake only)
+        "tip_cost": round(dmax / 2, 1), **{k: v for k, v in P.items() if k != "back_box" and not k.startswith(("join_", "clamp_"))},   # (the join's own: bake only)
     }
     json.dump(geo, open(gp, "w"), indent=1)
     print(f"veins: {img.size[0]}x{img.size[1]} crown (1080 px in the quad) {geo['resolve']['crown']} tips at {dmax / 2:.0f} px")

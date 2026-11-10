@@ -1,11 +1,13 @@
 // M4 (docs/design/M4_HUD.md section 2): Resolve, heat rising through the Drowned Girl's hair. One quad over her figure
 // (LifeLamp's own transform), light drawn over the bronze: unshaded.
 // veins (tools/uiforge/dg_resolve_veins.py, lamp_veins.png at the figure's 2x): R the hair's ridges (the veins), G the
-// gauge g (1 the crown, 0 the tips: a geodesic along the locks), B the soft hair mask. A vein with g <= level is lit,
+// gauge g (1 the crown, 0 the tips: a geodesic along the locks), B the soft hair mask, A the weight clamp (1 a vein's
+// bright middle, 0 a wide ridge's ember edge). A vein with g <= level is lit,
 // and graded as heated metal is (M4 lead 8, the judge's "line art, not heat"): edge amber at the tips and the cold end,
 // mid gold up the fill, a paler hot gold in the last hot_w under the front, core white-gold only in the last core_w.
 // The bronze round a lit vein is warmed (rings of the lit veins, hotter by the front) and the hair under the front
-// takes an ember underglow. No vein is drawn wider than vein_px: a wide ridge keeps a bright middle and an ember edge.
+// takes an ember underglow. No vein is drawn wider than the bake's clamp_px: a wide ridge keeps a bright middle and an
+// ember edge (A).
 // An unlit ridge falls cold_k toward plain bronze, so 0 is cold metal. ResolveVeins.cs drives every motion through
 // the uniforms below, set only on change.
 shader_type canvas_item;
@@ -48,13 +50,12 @@ uniform float r_hi = 0.85;
 // and 25 / 60 / 100% light about that share of the veins she shows (measured at 1:1, M4 fix round)
 uniform float g_floor = 0.18;
 uniform float glow_k = 1.0;                         // the warmed bronze round a lit vein (added, hair-bound)
-// a vein's greatest width in the texture's px (2.7 of them to a screen px at the HUD's 0.85: about 3 px)
-uniform float vein_px = 7.5;
+// (a vein's greatest bright width is the bake's: clamp_px 7.5 of the texture's px, 2.7 of them to a screen px at the
+// HUD's 0.85, about 3 px; A holds it)
 // an unlit ridge's fall toward plain bronze (the bronze between her ridges, measured at 1:1 by day)
 uniform float cold_k = 0.30;
 uniform vec4 c_bronze : source_color = vec4(0.215, 0.176, 0.133, 1.0);
 
-float vein_at(vec2 uv) { return smoothstep(r_lo, r_hi, texture(veins, uv).r); }
 float gauge(float G) { return clamp((G - g_floor) / (1.0 - g_floor), 0.0, 1.0); }
 // Spent's band at g (its flash)
 float spent_at(float g) { return spent_k * step(spent.x, g) * step(g, spent.y) * step(0.001, spent.y - spent.x); }
@@ -70,32 +71,36 @@ float heat_at(vec2 uv)
 void fragment()
 {
 	vec3 V = texture(veins, UV).rgb;
-	float s0 = smoothstep(r_lo, r_hi, V.r), g = gauge(V.g), m = V.b;
+	float g = gauge(V.g), m = V.b;
+	// the vein's cover and its bright middle (the baked clamp, A), averaged over the screen px: 3 x 3 taps across the
+	// px's own footprint in the mask. One tap at the px center lit a vein thinner than a screen px (the back of her head:
+	// 2.8 mask px, 2.7 of them to a screen px) in beads; the average draws it as one even line at any HUD scale.
+	vec2 fx = dFdx(UV) / 3.0, fy = dFdy(UV) / 3.0;
+	float s0 = 0.0, s = 0.0;
+	for (int j = -1; j <= 1; j++) {
+		for (int i = -1; i <= 1; i++) {
+			vec4 t = texture(veins, UV + fx * float(i) + fy * float(j));
+			float v = smoothstep(r_lo, r_hi, t.r);
+			s0 += v;
+			s += v * t.a;
+		}
+	}
+	s0 /= 9.0;
+	s /= 9.0;
 	vec2 tp = 1.0 / tex_px;
 	float on = step(0.001, level);
 	float lit = step(g, level) * on;
 	// the warmth round the lit veins (three rings: 4, 9 and 16 tex px, about 1.5, 3.3 and 6 px on screen), and the hair
 	// mask grown 4 tex px: every added term lives in the hair (a few px beyond it), never outside (g means nothing there)
 	float gl = 0.0, mg = m;
-	// the weight clamp: a vein px goes if, along some line, the vein's edge is within a of it and the vein runs on more
-	// than a + vein_px the other way (so it lies outside the middle vein_px of a wide ridge)
-	float trim = 0.0;
 	for (int i = 0; i < 8; i++) {
 		float an = float(i) * 0.785398;
 		vec2 o = vec2(cos(an), sin(an)) * tp;
 		vec2 o2 = vec2(cos(an + 0.392699), sin(an + 0.392699)) * tp;
 		gl += heat_at(UV + o * 4.0) + 0.7 * heat_at(UV + o2 * 9.0) + 0.45 * heat_at(UV + o * 16.0);
 		mg = max(mg, texture(veins, UV + o * 4.0).b);
-		if (s0 > 0.02) {
-			for (int k = 0; k < 3; k++) {
-				float a = k == 0 ? 1.0 : (k == 1 ? 2.2 : 3.6);
-				float far = a + vein_px;
-				trim = max(trim, (1.0 - vein_at(UV + o * a)) * vein_at(UV - o * far) * vein_at(UV - o * far * 0.5));
-			}
-		}
 	}
 	gl /= 17.2;
-	float s = s0 * (1.0 - trim);
 	float hair = smoothstep(0.15, 0.6, m);
 	float near = smoothstep(0.15, 0.6, mg);
 	// the grade along the fill: amber at the tips and the cold end, mid gold up the fill, hot gold under the front,
