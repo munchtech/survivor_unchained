@@ -22,11 +22,22 @@ namespace SurvivorUnchained.View;
 /// parentless bone is off its rest, `off=<bone>:x,y,z cm@px` (skeleton frame, and where it lands in the picture).
 /// --act-rigid (shots): the camera is carried with her root during the run, no follow lag (WorldScene.Draw); play's camera
 /// is not touched without it.
+/// --act-walk DEG,SPEED (A1 lead 19; with --act): she WALKS through the whole run, from its first frame, at SPEED m/s in direction
+/// DEG from her facing (0 forward, 180 back, 90 her left, -90 her right) while her facing stays where it started (as if the aim
+/// held it). The move node plays the gait for that velocity in her facing's frame (the 2D node when she has one, else the 1D);
+/// the act's clip goes through UpperHer (the upper layer: at speed >= 0.6 its `_run` variant where there is one) and `clip=` in
+/// the scr lines reads that upper one-shot's playhead (parameters/upper/current_position). The camera follows her root as it
+/// does for any act (WorldScene shifts it by ActAt); --act-travel, --act-hold and --act-spin do nothing with it.
+/// Without it nothing changes.
 /// </summary>
 public partial class PlayerView
 {
     static readonly string? ActClip = Args.Get("act");
     static bool ActOn => ActClip != null;
+    /// <summary>--act-walk DEG,SPEED, read with --act (Move2D.ParseActWalk); null without.</summary>
+    static readonly (double Deg, double Speed)? ActWalk = ActClip != null ? SurvivorUnchained.Play.Move2D.ParseActWalk(Args.Get("act-walk")) : null;
+    (float X, float Z) actWalkWorld;
+    double actWalkLog;
     /// <summary>--act-rigid (with --act, shots only): the view carried rigidly with her root from the act's start.</summary>
     public static readonly bool ActRigid = ActClip != null && Args.Has("act-rigid");
 
@@ -51,6 +62,14 @@ public partial class PlayerView
     {
         actInit = true;
         actT0 = time - 0;   // (time has run this frame's dt already: the run's clock counts from here)
+        if (ActWalk is { } aw0)
+        {
+            // (--act-walk: she is on her way from the run's first frame; the root's start and facing are taken now)
+            actBase = Position; actBaseYaw = Rotation.Y; actShown = true;
+            actWalkWorld = SurvivorUnchained.Play.Move2D.ActWalkWorld(aw0, actBaseYaw);
+            speed = (float)aw0.Speed;
+            GD.Print($"act: walk {aw0.Deg:0.##} deg at {aw0.Speed:0.###} m/s, facing {Mathf.RadToDeg(actBaseYaw):0.#} deg, the {(move2D ? "2D" : "1D")} move node");
+        }
         MeasInit();
         if (!HasHer(ActClip!)) { GD.PrintErr($"act: no clip '{ActClip}' in her library"); return; }
         var anim = person.Anim.GetAnimation(own.Prefix + ActClip);
@@ -197,7 +216,8 @@ public partial class PlayerView
         float ppm = (Px(pelvisW + cam.GlobalBasis.X) - pelvis).Length();
         // clip= the act clip's own playhead in the pose shown (the tree's `full` node after this frame's Advance): the run clock
         // runs ahead of it (the one-shot takes its fire on one advance and starts on the next), so the sheets label by this.
-        var cp = tree.Get("parameters/full/current_position");
+        // (--act-walk: the act's clip is on the upper layer, so its playhead is the upper node's, when that shot is live)
+        var cp = ActWalk != null && (bool)tree.Get("parameters/upperShot/active") ? tree.Get("parameters/upper/current_position") : tree.Get("parameters/full/current_position");
         var clipAt = cp.VariantType is Variant.Type.Float or Variant.Type.Int ? $" clip={((double)cp).ToString("0.000", CultureInfo.InvariantCulture)}" : "";
         GD.Print($"act: scr f={Engine.GetProcessFrames()} t={actClock().ToString("0.000", CultureInfo.InvariantCulture)} pelvis={P2(pelvis)} head={P2(head)} foot={P2(foot)} " +
                  $"box={P2(lo)},{P2(hi)} ppm={F1(ppm)} by={string.Join(",", who)}{off}{clipAt}");
@@ -308,7 +328,7 @@ public partial class PlayerView
             MeasStart(actPlan.Start(s.Pass), actPlan.Duration);
             actPass = s.Pass; actEvent = 0; actPos = 0; actFading = false;
             if (!actShown) { actBase = Position; actBaseYaw = Rotation.Y; actShown = true; }
-            if (!FullHer(ActClip!, 1, false)) { GD.PrintErr($"act: {ActClip} would not start"); actPlan = null; return; }
+            if (!(ActWalk != null ? UpperHer(ActClip!, 1) : FullHer(ActClip!, 1, false))) { GD.PrintErr($"act: {ActClip} would not start"); actPlan = null; return; }
             actEvents = new List<(string, double)>(actPlan.EventsRun(actPass));
             GD.Print($"act: {ActClip} at t={actPlan.Start(actPass):0.00} travel {actPlan.Travel:0.##} m over [{actPlan.Window.A:0.000}, {actPlan.Window.B:0.000}] s, " +
                      $"hold {(actPlan.Loop is { } lp ? actPlan.Passes * (lp.B - lp.A) : 0):0.##} s, spin {actPlan.Spin:0.##} t/s (pass {actPass + 1}/{actPlan.Repeat}, {actPlan.Duration:0.00} s long)");
@@ -316,7 +336,17 @@ public partial class PlayerView
                 GD.Print($"act: {ActClip} loop held over run [{(actPlan.Start(actPass) + hl.A).ToString("0.000", CultureInfo.InvariantCulture)}, " +
                          $"{(actPlan.Start(actPass) + hl.A + actPlan.Passes * (hl.B - hl.A)).ToString("0.000", CultureInfo.InvariantCulture)}] s");
         }
-        if (s.Active)
+        if (ActWalk != null)
+        {
+            // (the upper one-shot plays at its own pace; a looping clip is let go over its last 0.2 s)
+            if (!actFading && actClock() >= actPlan.Start(actPass) + actPlan.Duration - 0.2 && upper.Animation != null
+                && person.Anim.GetAnimation(upper.Animation)?.LoopMode != Animation.LoopModeEnum.None)
+            {
+                actFading = true;
+                tree.Set("parameters/upperShot/request", (int)AnimationNodeOneShot.OneShotRequest.FadeOut);
+            }
+        }
+        else if (s.Active)
         {
             double scale = 1;
             if (s.Clip < actPos - 1e-6)
@@ -347,6 +377,20 @@ public partial class PlayerView
     void ActApply()
     {
         if (!ActOn || actPlan == null || !actShown) return;
+        if (ActWalk != null)
+        {
+            double c = System.Math.Max(0, actClock());
+            Position = actBase + new Vector3(actWalkWorld.X, 0, actWalkWorld.Z) * (float)c;
+            Rotation = new Vector3(0, actBaseYaw, 0);
+            if (carriage != null && ActLive) carriage.Aim = carriage.Bank = carriage.Tilt = carriage.HeadLevel = 0;
+            aim = 0;
+            if (c >= actWalkLog)
+            {
+                actWalkLog = c + 0.5;
+                GD.Print(string.Create(CultureInfo.InvariantCulture, $"act: walk t={c:0.000} root={Position.X:0.000},{Position.Z:0.000} moved={(Position - actBase).Length():0.000} m blend={move2dPos.X:0.00},{move2dPos.Y:0.00}"));
+            }
+            return;
+        }
         var s = actPlan.Sample(actClock());
         if (s.Pass < 0) return;
         var fwd = new Vector3(Mathf.Sin(actBaseYaw), 0, Mathf.Cos(actBaseYaw));
@@ -354,5 +398,13 @@ public partial class PlayerView
         Rotation = new Vector3(0, actBaseYaw + (float)s.Yaw, 0);
         if (carriage != null && ActLive) carriage.Aim = carriage.Bank = carriage.Tilt = carriage.HeadLevel = 0;
         aim = 0;
+    }
+
+    /// <summary>--act-walk: her velocity this frame is the walk's, in the world (the sim's is nothing), the ground speed with it.</summary>
+    void ActWalkVel(ref float sp)
+    {
+        if (!mine || ActWalk is not { } w || !actShown) return;
+        velX = actWalkWorld.X; velZ = actWalkWorld.Z;
+        sp = speed = (float)w.Speed;
     }
 }
