@@ -471,25 +471,28 @@ float cel_stand_edge(vec3 c_nv, vec3 c_v, mat4 c_vm) {
 	return (1.0 - smoothstep(cel_stand_fire.z - 0.5, cel_stand_fire.z + 0.5, c_px)) * (1.0 - smoothstep(0.55, 0.65, c_e)) * c_side;
 }
 // fragment(): the base tone at a world point (EMISSION), and the moon's and her fire's adds for light() (c_moon, c_fire:
-// the caller writes them to cel_stm, cel_stf; a varying is assigned in fragment() itself). c_wn the smooth world normal, c_foot the height over the piece's foot (m), c_lum the paint's luminance here
+// the caller writes them to cel_stm, cel_stf; a varying is assigned in fragment() itself). c_org the piece's foot on the ground (xz: her ramp
+// and the moon's give-way are read there, one level a piece, so a tone carries no gradient across a face). c_wn the smooth world normal, c_foot the height over the piece's foot (m), c_lum the paint's luminance here
 // (the dabs: the tone x (lum / the family's paint luminance) ^ dab contrast), c_rim the silhouette line (cel_stand_edge).
-vec3 cel_stand_base(vec3 c_wp, vec3 c_wn, float c_foot, float c_lum, float c_rim, out vec3 c_moon, out vec3 c_fire) {
+vec3 cel_stand_base(vec3 c_wp, vec2 c_org, vec3 c_wn, float c_foot, float c_lum, float c_rim, out vec3 c_moon, out vec3 c_fire) {
 	vec4 c_x = cel_stand_tone(7);
 	float c_dab = c_x.y > 0.0 ? clamp(pow(max(c_lum, 1e-4) / max(c_x.x, 1e-4), c_x.y), 0.5, 1.5) : 1.0;
 	float c_d = dot(c_wn, normalize(mix(cel_key.xyz, vec3(0.0, 1.0, 0.0), cel_stand.z)));
 	float c_ft = 1.0 - cel_stand_step(c_foot, cel_stand.w);
-	float c_top = cel_stand_step(c_d, cel_stand.x) * (1.0 - c_ft);
+	// (the top and the rim only on normals the key lights, with a margin: their edge is this step, not the shadow map's terminator)
+	float c_kl = cel_stand_step(dot(c_wn, cel_key.xyz), 0.2);
+	float c_top = cel_stand_step(c_d, cel_stand.x) * (1.0 - c_ft) * c_kl;
 	float c_side = 1.0 - cel_stand_step(c_d, cel_stand.y);
 	vec3 c_base = mix(mix(cel_stand_tone(2).rgb, cel_stand_tone(1).rgb, c_side), cel_stand_tone(0).rgb, c_ft);
 	vec3 c_lit = mix(c_base, cel_stand_tone(3).rgb, c_top);
-	c_lit = mix(c_lit, cel_stand_tone(4).rgb, c_rim * (1.0 - c_ft) * mix(c_top, 1.0, clamp(c_x.z, 0.0, 1.0)));
+	c_lit = mix(c_lit, cel_stand_tone(4).rgb, c_rim * (1.0 - c_ft) * mix(c_top, c_kl, clamp(c_x.z, 0.0, 1.0)));
 	float c_g = 1.0;
 	c_fire = vec3(0.0);
 	if (cel_ember.w > 0.0 && cel_pool_band.x > 0.0) {
 		float c_fd = dot(c_wn, normalize(cel_ember.xyz - c_wp));
 		float c_m1 = cel_stand_step(c_fd, cel_stand_fire.x), c_m2 = cel_stand_step(c_fd, cel_stand_fire.y);
-		c_fire = mix(cel_stand_tone(5).rgb, cel_stand_tone(6).rgb, c_m2) * (c_m1 * c_dab * cel_lum(cel_pool_at(length(c_wp.xz - cel_ember.xz)).rgb));
-		c_g = mix(1.0, cel_give_of(cel_back_at(c_wp, cel_dapple_at(c_wp)), cel_give.x), c_m1);
+		c_fire = mix(cel_stand_tone(5).rgb, cel_stand_tone(6).rgb, c_m2) * (c_m1 * c_dab * cel_lum(cel_pool_at(length(c_org - cel_ember.xz)).rgb));
+		c_g = mix(1.0, cel_give_of(cel_back_at(vec3(c_org.x, c_wp.y, c_org.y), cel_dapple_at(c_wp)), cel_give.x), c_m1);
 	}
 	c_moon = max(c_lit - c_base, vec3(0.0)) * (c_g * c_dab);
 	return c_base * (c_g * c_dab);

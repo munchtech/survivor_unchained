@@ -158,6 +158,9 @@ varying float v_top;
 varying vec3 v_wpos;
 varying vec3 v_wnrm;
 varying float v_foot;
+#ifdef KIT_STAND
+varying flat vec2 v_org;   // (the copy's foot on the ground, xz: the standing material reads her ramp there)
+#endif
 #endif
 
 #ifdef OWN_FOLIAGE
@@ -575,6 +578,9 @@ void vertex() {
 	v_wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	v_wnrm = normalize(MODEL_NORMAL_MATRIX * NORMAL);
 	v_foot = v_wpos.y - MODEL_MATRIX[3].y;
+#ifdef KIT_STAND
+	v_org = MODEL_MATRIX[3].xz;
+#endif
 	v_top = MODEL_MATRIX[3].y + wet_top * length(MODEL_MATRIX[1].xyz);
 #endif
 #ifdef OWN_WALL
@@ -1220,7 +1226,7 @@ void fragment() {
 		vec3 st_m = vec3(0.0), st_f = vec3(0.0);
 		if (stand) {
 			vec3 st_nv = normalize((VIEW_MATRIX * vec4(wn, 0.0)).xyz);
-			EMISSION = cel_stand_base(wp, wn, v_foot, cel_lum(col), cel_stand_edge(st_nv, VIEW, VIEW_MATRIX), st_m, st_f);
+			EMISSION = cel_stand_base(wp, v_org, wn, v_foot, cel_lum(col), cel_stand_edge(st_nv, VIEW, VIEW_MATRIX), st_m, st_f);
 			SPECULAR = 0.0;
 			AO = 0.0;
 			NORMAL = st_nv;
