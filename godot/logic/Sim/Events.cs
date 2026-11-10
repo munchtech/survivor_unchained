@@ -83,7 +83,16 @@ public static class Ev
     public sealed class Chain : CombatEvent { public double[] Points = System.Array.Empty<double>(); public School School; public string? Art; public int Rank; }
     public sealed class Beam : CombatEvent { public double X0, Z0, X1, Z1, Width; public School School; public double Duration; public string? Art; public int Rank; }
     public sealed class Strike : CombatEvent { public double X, Z, Radius; public School School; public double Delay; public string? Art; public int Rank; }
-    public sealed class Slash : CombatEvent { public double X, Z, Angle, Arc, Reach; public School School; public string? Art; public int Rank; /* the swing of a skill held as the grip (campaign) */ public bool Held; }
+    public sealed class Slash : CombatEvent
+    {
+        public double X, Z, Angle, Arc, Reach; public School School; public string? Art; public int Rank; /* the swing of a skill held as the grip (campaign) */ public bool Held;
+        /// <summary>Which way the blade crosses: -1 or +1, alternating from the weapon's own count of cuts (WeaponInst.Cuts; its
+        /// first is -1, the view's mirrored cut). The view mirrors its arc from this, never from a toggle of its own, so the
+        /// held chain's cut A and cut B can name their sides.</summary>
+        public int Side = -1;
+        /// <summary>How many it struck, and the nearest of them (for the view's contact flash); set as the cut lands.</summary>
+        public int Struck; public double HitX, HitZ;
+    }
     public sealed class Muzzle : CombatEvent { public double X, Z, Angle; public School School; public string Weapon = ""; public string? Art; public int Rank; }
 
     public sealed class Telegraph : CombatEvent

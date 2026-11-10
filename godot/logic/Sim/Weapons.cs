@@ -46,6 +46,10 @@ public sealed class WeaponInst
     public double ChannelT, ChannelNext;
     /// <summary>Its key is held (Battle.HoldSkill, each sim step): a channel keeps on while it is.</summary>
     public bool Held;
+    /// <summary>The cuts it has thrown (every Ev.Slash of its own), and the side of the next: -1, +1, -1 ... from that count alone.
+    /// The view mirrors each cut's arc from it (Ev.Slash.Side).</summary>
+    public int Cuts;
+    public int NextSide() => (Cuts++ & 1) == 0 ? -1 : 1;
     /// <summary>A spin (Bladestorm): its ticks this storm, the Sunder lines it has thrown and holds pending (split by its
     /// break, else faded), and the time it may still be broken after the spin ended (-1: not).</summary>
     public int SpinTicks;
@@ -900,7 +904,9 @@ public static partial class Firing
     static bool ConeHit(Battle b, WeaponInst w, double a, double arc, double reach, double dmg)
     {
         var p = At(b);
-        b.Events.Emit(new Ev.Slash { X = p.X, Z = p.Z, Angle = a, Arc = arc, Reach = reach, School = w.School, Art = w.Art, Rank = w.Rank, Held = w.Hold });
+        var cut = new Ev.Slash { X = p.X, Z = p.Z, Angle = a, Arc = arc, Reach = reach, School = w.School, Art = w.Art, Rank = w.Rank, Held = w.Hold, Side = w.NextSide() };
+        b.Events.Emit(cut);
+        double nearest = double.MaxValue;
         double kb = w.Num(s => s.Knockback) ?? 0;
         bool any = false;
         Enemy? last = null;
@@ -911,6 +917,8 @@ public static partial class Firing
             if (Math.Abs(da) > arc / 2 + Math.Atan2(e.Radius, Math.Max(d, 0.1))) return;
             any = true;
             last = e;
+            cut.Struck++;
+            if (d < nearest) { nearest = d; cut.HitX = e.X; cut.HitZ = e.Z; }
             double dd = d == 0 ? 1 : d;
             b.HitEnemy(e, dmg, w.School, w.Tags, new HitOpts
             {
