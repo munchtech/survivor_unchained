@@ -17,7 +17,9 @@
  "slots": {
   "top": {"ride": {"spine": 1}, "one_bone": true},
   "pauldrons": {"ride": {"upperarm": 1}, "one_bone": true,
-                "standoff_trial": {"cap_mm": 16, "margin_mm": 1, "tuck_full_mm": 14, "tuck_zero_mm": 20, "tuck_step": 0.4}},
+                "standoff": {"cap_mm": 6, "seat_cap_mm": 4, "rest_min_mm": 1, "margin_mm": 1,
+                             "tuck_full_mm": 10, "tuck_zero_mm": 14, "tuck_step": 1.0,
+                             "tuck_depth_mm": 18, "tuck_slope": 1.0, "tuck_edge_mm": 10}},
   "bracers": {"ride": {"lowerarm": "mean"}},
   "greaves": {"ride": {"calf": "mean"}}
  }
