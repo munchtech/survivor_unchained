@@ -183,6 +183,10 @@ public sealed record AtmospherePreset(
     /// <summary>(L1 lead 11, R4; rigs.json "ember_break") Her pool's broken end: under a leaf of the canopy's dapple the ramp reaches
     /// this share of its radius less far, so its end follows the leaf shapes (cel_oneshade.z). 0: a round end.</summary>
     public double EmberBreak { get; init; }
+    /// <summary>(L1 lead 11, R4 round 2; rigs.json "ember_brush") Her pool painted: [how far (m) the ground's dab field pushes the
+    /// ramp's radius in or out, where the break under a leaf starts (m from her light's foot), where it is full (m), the dab's
+    /// width (m)] (cel_pool_brush). Null: a compass pool, the break everywhere.</summary>
+    public double[]? EmberBrush { get; init; }
     /// <summary>(L1 lead 8, S2b) The pool's outer step's color (sRGB hex). Retired by lead 9 (B1: the ramp's stops carry the colors); read, unused.</summary>
     public string EmberEdge { get; init; } = "";
     /// <summary>The moon's rim on the crowd in play, in shade as in its light (0: none, as the cinematics' presets have it).</summary>

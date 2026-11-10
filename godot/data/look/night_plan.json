@@ -165,6 +165,20 @@
      0.0897,
      0.1764
     ]
+   },
+   "pool": {
+    "from": "Her pool's end in 09_shaw_horde (her light's foot at 775,520 px, ground aspect 0.849): the warm share of each 0.04-wide ring (r in frame heights) and the frame's magenta share (hue 300..350, chroma over 0.05). A frame's rings must come within 0.1 of these (check --center X,Y) and its magenta share may not pass max (the target's plus 0.01).",
+    "ring_warm": {
+     "0.26": 0.592,
+     "0.30": 0.453,
+     "0.34": 0.29,
+     "0.38": 0.066
+    },
+    "ring_tol": 0.1,
+    "magenta": {
+     "target": 0.0271,
+     "max": 0.0371
+    }
    }
   },
   "night_play": {

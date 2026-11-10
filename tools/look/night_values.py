@@ -3,7 +3,7 @@
     python tools/look/night_values.py measure IMG [IMG ...] [--hud] [--mask x0,y0,x1,y1]
     python tools/look/night_values.py profile IMG --center X,Y [--aspect A] [--her PX] [--hud]
     python tools/look/night_values.py plan                       -> godot/data/look/night_plan.json (from the picked G1 targets)
-    python tools/look/night_values.py check IMG [IMG ...] --rig arena_night|night_play [--hud] [--mask ...]   (exit 1 on a miss)
+    python tools/look/night_values.py check IMG [IMG ...] --rig arena_night|night_play [--hud] [--mask ...] [--center X,Y [--aspect A]]   (exit 1 on a miss)
     python tools/look/night_values.py selftest
 
 All in Oklab (tools/style/palette.py), on WORLD pixels: `--hud` cuts the game HUD's three blocks (HUD, fractions
@@ -22,6 +22,13 @@ histogram stops following the pool and starts covering the whole frame (285-295 
   S4      warm share of the world; core = median of the brightest tenth of warm (its p95), mid = its p50 (the
           40-60% slice), edge = median of the darkest fifth (its p10); each with its hue.
   floor   the 1st percentile of the world's L (rule R3: nothing under 0.10 outside ink).
+  pool    (a rig with a "pool" in the plan; lead 11, night 2A round 2) her pool's END, from the target named in POOL:
+          `magenta` = the share of the world with hue 300..350 and chroma over 0.05 (the red tail over the moon's blue: a
+          seam in the target, a pink ring when the fire's stops carry violet), at most the target's share plus one
+          point, checked on every frame; `ring 0.26..0.38` = the warm share of each 0.04-wide ring round her light's
+          foot (r in frame heights, the ground's foreshortening taken out), within 10 points of the target's, checked
+          when `--center X,Y` (her light's foot: Shots --stage-log "pool") is given: the fire dies in fragments
+          between the leaf shade, not at a compass line.
 """
 import argparse, json, os, sys
 
@@ -52,6 +59,11 @@ BANDS = {"s1_L": ("range", 0.03), "s1_C": ("range", 0.015), "s1_h": ("hue", 8), 
          "s4_mid_h": ("hue", 8), "s4_edge_L": ("range", 0.03), "s4_edge_h": ("hue", 10), "floor": ("range", 0.03)}
 # Bands set by hand over the targets' spread (lead 11, night 2A: the arena pool's warm share; T09 13.3%, T10 10.0%; was a 3.3% minimum).
 FIXED = {"arena_night": {"s4_share": [0.09, 0.17]}}
+# Her pool's end (lead 11, night 2A round 2): the target that shows it, her light's foot there (px) and the ground's
+# foreshortening (the warm pixels' moments), the rings (r/H, 0.04 wide) whose warm share a frame must come within
+# RING_TOL of, and the magenta rule (hue range, least chroma, the points allowed over the target's own share).
+POOL = {"arena_night": {"frame": "09_shaw_horde", "center": (775, 520), "aspect": 0.849, "rings": (0.26, 0.30, 0.34, 0.38)}}
+RING_W, RING_TOL, MAG_H, MAG_C, MAG_OVER = 0.04, 0.10, (300.0, 350.0), 0.05, 0.01
 # Lead 11's prose, to print beside what the targets say (the plan follows the targets).
 DESIGN = {"s1_L": 0.16, "s1_h": 260, "s2_L": 0.27, "s2_h": 255, "s3_L": 0.50, "s4_core_L": 0.67, "s4_core_h": 60,
           "s4_mid_L": 0.48, "s4_edge_L": 0.28, "floor": 0.10}
@@ -122,6 +134,24 @@ def measure(path, hud=False, masks=None):
     return measure_lab(*lab_of(path), hud=hud, masks=masks)
 
 
+def magenta_of(a, b, wm):
+    C = np.hypot(a, b); H = np.degrees(np.arctan2(b, a)) % 360
+    return float(((H >= MAG_H[0]) & (H < MAG_H[1]) & (C > MAG_C) & wm).sum() / max(wm.sum(), 1))
+
+
+def ring_warm(L, a, b, wm, center, asp, rings):
+    h, w = L.shape; cx, cy = center
+    if cx <= 1 and cy <= 1: cx, cy = cx * w, cy * h
+    yy, xx = np.mgrid[0:h, 0:w]; dx, dy = xx - cx, yy - cy; warm = warm_of(a, b) & wm
+    if asp is None:   # (as profile: the warm pixels' spread down the screen over their spread across it)
+        near = warm & (np.hypot(dx, dy) < 0.45 * h); asp = float(np.sqrt((dy[near] ** 2).mean() / (dx[near] ** 2).mean()))
+    r = np.hypot(dx, dy / asp) / h; out = {}
+    for c in rings:
+        m = (r >= c - RING_W / 2) & (r < c + RING_W / 2) & wm
+        out[c] = float((warm & m).sum() / max(m.sum(), 1))
+    return out
+
+
 def fmt(k, v):
     if v is None or v != v: return "-"
     return f"{v:.0f}" if k.endswith("_h") else f"{v * 100:.1f}%" if k in ("lit", "s3_share", "s4_share", "under10") else f"{v:.2f}" if k == "sep" else f"{v:.3f}"
@@ -187,6 +217,16 @@ def cmd_plan(_):
             "sources": {f: {"file": os.path.relpath(tg[f], __import__('pairs').L1).replace(os.sep, "/"), "hud_masked": o.get("hud", False),
                             "measured": {k: (None if r[k] != r[k] else round(r[k], 4)) for k in BANDS}} for f, o, r in ms},
             "bands": bands}
+        if rig in POOL:
+            po = POOL[rig]; L, A, B = lab_of(tg[po["frame"]]); wm = world(L.shape, False, None)
+            mg = magenta_of(A, B, wm); rw = ring_warm(L, A, B, wm, po["center"], po["aspect"], po["rings"])
+            out["rigs"][rig]["pool"] = {
+                "from": f"Her pool's end in {po['frame']} (her light's foot at {po['center'][0]},{po['center'][1]} px, ground aspect {po['aspect']}): the warm share of "
+                        f"each {RING_W}-wide ring (r in frame heights) and the frame's magenta share (hue {MAG_H[0]:.0f}..{MAG_H[1]:.0f}, chroma over {MAG_C}). "
+                        f"A frame's rings must come within {RING_TOL} of these (check --center X,Y) and its magenta share may not pass max (the target's plus {MAG_OVER}).",
+                "ring_warm": {f"{c:.2f}": round(v, 3) for c, v in rw.items()}, "ring_tol": RING_TOL,
+                "magenta": {"target": round(mg, 4), "max": round(mg + MAG_OVER, 4)}}
+            print(f"{rig} pool: magenta {mg * 100:.2f}%  rings " + "  ".join(f"{c:.2f} {v * 100:.1f}%" for c, v in rw.items()))
         print(f"\n{rig} plan:"); print("  " + "\n  ".join(f"{k:10s} {b}   design {DESIGN.get(k, '-')}" for k, b in bands.items())); print()
     os.makedirs(os.path.dirname(PLAN), exist_ok=True)
     json.dump(out, open(PLAN, "w", encoding="utf-8", newline="\n"), indent=1); print(PLAN)
@@ -201,9 +241,25 @@ def check_one(name, r, bands):
     return miss
 
 
+def check_pool(path, pool, hud, masks, center, asp):
+    """Her pool's end against the plan's "pool": the magenta share always, the rings' warm shares when her light's foot is given."""
+    L, A, B = lab_of(path); wm = world(L.shape, hud, masks); miss = 0
+    mg = magenta_of(A, B, wm); ok = mg <= pool["magenta"]["max"] + 1e-9; miss += not ok
+    print(f"  {'magenta':10s} {mg * 100:8.2f}%  [-, {pool['magenta']['max'] * 100:.2f}%]".ljust(48) + ("PASS" if ok else "MISS"))
+    if center:
+        for c, v in ring_warm(L, A, B, wm, center, asp, [float(k) for k in pool["ring_warm"]]).items():
+            t = pool["ring_warm"][f"{c:.2f}"]; ok = abs(v - t) <= pool["ring_tol"] + 1e-9; miss += not ok
+            print(f"  {'ring ' + format(c, '.2f'):10s} {v * 100:8.1f}%  [{(t - pool['ring_tol']) * 100:.1f}%, {(t + pool['ring_tol']) * 100:.1f}%]".ljust(48) + ("PASS" if ok else "MISS"))
+    print(f"  -> pool {'PASS' if not miss else f'{miss} MISS'}")
+    return miss
+
+
 def cmd_check(a):
-    bands = json.load(open(PLAN, encoding="utf-8"))["rigs"][a.rig]["bands"]
-    bad = sum(check_one(os.path.basename(p), measure(p, a.hud, a.mask), bands) > 0 for p in a.img)
+    rig = json.load(open(PLAN, encoding="utf-8"))["rigs"][a.rig]; bad = 0
+    for p in a.img:
+        miss = check_one(os.path.basename(p), measure(p, a.hud, a.mask), rig["bands"])
+        if "pool" in rig: miss += check_pool(p, rig["pool"], a.hud, a.mask, a.center, a.aspect)
+        bad += miss > 0
     sys.exit(1 if bad else 0)
 
 
@@ -290,6 +346,8 @@ def main():
     p.add_argument("--step", type=float, default=0.02); p.add_argument("--to", type=float, default=0.60)
     p = sub.add_parser("plan"); p.set_defaults(f=cmd_plan)
     p = sub.add_parser("check"); common(p); p.add_argument("--rig", required=True); p.set_defaults(f=cmd_check)
+    p.add_argument("--center", type=lambda s: tuple(float(x) for x in s.split(",")), help="her light's foot (px, or fractions when both <= 1): adds the pool's ring rows")
+    p.add_argument("--aspect", type=float, help="ground foreshortening at her light's foot (Shots --stage-log); default: from the warm pixels")
     p = sub.add_parser("selftest"); p.set_defaults(f=cmd_selftest)
     a = ap.parse_args(); a.f(a)
 

@@ -164,6 +164,12 @@ global uniform vec4 cel_fire2;
 global uniform vec4 cel_pool;
 global uniform vec4 cel_pool_band;
 global uniform sampler2D cel_pool_ramp : filter_linear, repeat_disable;
+// (L1 lead 11, R4 round 2) Her pool painted, not drawn with a compass (rigs.json "ember_brush"): cel_pool_brush x how far (m)
+// the ground's dab field pushes the ramp's radius in or out (cel_dabs: a world-space field of stretched, turned, jittered
+// cells, each dab one value, over a broad wobble: every band's boundary is a broken brush edge, and the dabs lie still on the
+// ground as she walks); y and z where her pool's end under the canopy's leaves starts (m from her light's foot: nothing
+// inside it, the heart is whole) and where it is full (cel_oneshade.z of the radius); w the dab's width (m).
+global uniform vec4 cel_pool_brush;
 
 // (fragment() to light(): the geometric normal, and x SPECULAR, y RIM, z RIM_TINT, w ROUGHNESS before the tag)
 // (L1 B4r2) cel_gn's length is 1 + the key's share through the canopy here (cel_dap(): 1 open sky): packed, not a varying
@@ -233,20 +239,56 @@ float cel_dapple_at(vec3 c_wp) {
 vec4 cel_pool_at(float c_r) {
 	return texture(cel_pool_ramp, vec2((clamp(c_r / cel_pool_band.x, 0.0, 1.0) * 63.0 + 0.5) / 64.0, 0.5));
 }
-// (L1 W2) The moon's share at a world point under her light: 1 out of its reach, 1 - cel_give.x (key) or .y (sky) at its heart.
-float cel_give_at(vec3 c_wp, float c_k) {
+// (L1 lead 11, R4 round 2) The ground's dab field at a world point, -1..1 (cel_pool_brush): dabs cel_pool_brush.w wide and
+// 2.2 times as long along one stroke direction, each one value, over a broad wobble five dabs across.
+float cel_h1(vec2 c_p) { return fract(sin(dot(c_p, vec2(127.1, 311.7))) * 43758.5453); }
+float cel_dabs(vec2 c_p) {
+	float c_s = max(cel_pool_brush.w, 0.05);
+	vec2 c_q = vec2(0.829 * c_p.x + 0.559 * c_p.y, -0.559 * c_p.x + 0.829 * c_p.y) / vec2(2.2 * c_s, c_s);
+	vec2 c_i = floor(c_q), c_f = fract(c_q);
+	float c_best = 9.0, c_v = 0.5;
+	for (int c_y = -1; c_y <= 1; c_y++) {
+		for (int c_x = -1; c_x <= 1; c_x++) {
+			vec2 c_g = vec2(float(c_x), float(c_y));
+			vec2 c_o = c_g + 0.15 + 0.7 * vec2(cel_h1(c_i + c_g), cel_h1(c_i + c_g + 19.19)) - c_f;
+			float c_d = dot(c_o, c_o);
+			if (c_d < c_best) { c_best = c_d; c_v = cel_h1(c_i + c_g + 7.31); }
+		}
+	}
+	vec2 c_b = c_p / (5.0 * c_s);
+	vec2 c_bi = floor(c_b), c_bf = fract(c_b);
+	c_bf = c_bf * c_bf * (3.0 - 2.0 * c_bf);
+	float c_w = mix(mix(cel_h1(c_bi), cel_h1(c_bi + vec2(1.0, 0.0)), c_bf.x), mix(cel_h1(c_bi + vec2(0.0, 1.0)), cel_h1(c_bi + vec2(1.0, 1.0)), c_bf.x), c_bf.y);
+	return (c_v - 0.5) * 1.1 + (c_w - 0.5) * 0.9;
+}
+// (L1 lead 11, R4 round 2) Her pool's radius as painted at a ground point: the distance from her light's foot, pushed by the
+// dab field, and under a leaf (c_leaf 1; 0 in the open) read further out from cel_pool_brush.y on, so her fire reaches
+// cel_oneshade.z of its radius less far under the canopy's leaves: the pool's outline is the leaf shapes and the dabs, and
+// its heart is whole. The ramp (light()) and the moon's give (fragment()) both read it, so the moon is back wherever the
+// fire has ended. (Was round 1: the break times the moon's share, so the leaves cut only the outer band, a ring.)
+float cel_pool_r(vec2 c_p, float c_leaf) {
+	float c_r = length(c_p - cel_ember.xz);
+	if (c_r > cel_pool_band.x * 2.0) return c_r;
+	if (cel_pool_brush.x > 0.0) c_r = max(c_r + cel_pool_brush.x * cel_dabs(c_p), 0.0);
+	float c_grow = smoothstep(cel_pool_brush.y, max(cel_pool_brush.z, cel_pool_brush.y + 1e-3), c_r);
+	return c_r / max(1.0 - cel_oneshade.z * c_leaf * c_grow, 0.2);
+}
+// (L1 W2) The moon's return at a world point under her light: 0 at its heart, 1 out of its reach (c_dap: the canopy's dapple
+// there, cel_dapple_at); cel_give_of: the moon's share from it, 1 - cel_give.x (key) or .y (sky) at the heart.
+float cel_back_at(vec3 c_wp, float c_dap) {
 #ifdef CEL_NO_GIVE
 	return 1.0;
 #else
-	if (cel_ember.w <= 0.0 || c_k <= 0.0) return 1.0;
+	if (cel_ember.w <= 0.0) return 1.0;
 	// (L1 lead 10, NIGHT: under the ramp the moon gives way on the ground from her light's foot, wholly inside cel_give z (m)
 	// and none past w, the ramp's warm stops and its tail (rigs.json ember_give). Tied to the ramp's level (lead 9: a = level
 	// over the core's, half the moon back at 1 m), a saturated moon came back inside the gold and drew the pool pink.)
-	if (cel_pool_band.x > 0.0) return 1.0 - c_k * cel_on * (1.0 - smoothstep(cel_give.z, max(cel_give.w, cel_give.z + 1e-3), length(c_wp.xz - cel_ember.xz)));
-	float c_d = length(c_wp - cel_ember.xyz);
-	return 1.0 - c_k * cel_on * (1.0 - smoothstep(cel_give.z, max(cel_give.w, cel_give.z + 1e-3), c_d));
+	// (L1 lead 11, round 2: along the pool's painted radius, cel_pool_r)
+	float c_d = cel_pool_band.x > 0.0 ? cel_pool_r(c_wp.xz, cel_key.w > 0.0 ? clamp((1.0 - c_dap) / cel_key.w, 0.0, 1.0) : 0.0) : length(c_wp - cel_ember.xyz);
+	return smoothstep(cel_give.z, max(cel_give.w, cel_give.z + 1e-3), c_d);
 #endif
 }
+float cel_give_of(float c_back, float c_k) { return 1.0 - c_k * cel_on * (1.0 - c_back); }
 // (L1 lead 9, NIGHT2) The moon's share at a world point under the zone's fires and lamps (the least of the nearest three).
 float cel_fire_one(vec2 c_p, vec4 c_f, float c_k) {
 	if (c_f.w <= 0.0) return 1.0;
@@ -261,8 +303,7 @@ float cel_fires_at(vec3 c_wp, float c_k) {
 	return min(cel_fire_one(c_wp.xz, cel_fire0, c_k * cel_on), min(cel_fire_one(c_wp.xz, cel_fire1, c_k * cel_on), cel_fire_one(c_wp.xz, cel_fire2, c_k * cel_on)));
 #endif
 }
-float cel_pack(vec3 c_wp) { return 1.01 + 0.98 * cel_dapple_at(c_wp) + 2.0 * round(1000.0 * cel_give_at(c_wp, cel_give.x) * cel_fires_at(c_wp, cel_fire_give.x)); }
-#define CEL_FRAGMENT cel_gn = normalize(NORMAL) * cel_pack((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz); AO *= cel_give_at((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz, cel_give.y) * cel_fires_at((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz, cel_fire_give.y); CEL_FRAG_ALB; CEL_FRAG_MAT; ROUGHNESS = cel_tag(ROUGHNESS, cel_ink); if (cel_dbg > 0.5) { EMISSION = cel_dbg > 2.5 ? vec3(CEL_SKIN_V) : cel_dbg > 1.5 ? cel_ink_rgb(cel_ink) : vec3(0.0); ALBEDO = vec3(0.0); SPECULAR = 0.0; METALLIC = 0.0; }
+#define CEL_FRAGMENT { vec3 c_fw = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz; float c_fd = cel_dapple_at(c_fw); float c_fb = cel_back_at(c_fw, c_fd); cel_gn = normalize(NORMAL) * (1.01 + 0.98 * c_fd + 2.0 * round(1000.0 * cel_give_of(c_fb, cel_give.x) * cel_fires_at(c_fw, cel_fire_give.x))); AO *= cel_give_of(c_fb, cel_give.y) * cel_fires_at(c_fw, cel_fire_give.y); } CEL_FRAG_ALB; CEL_FRAG_MAT; ROUGHNESS = cel_tag(ROUGHNESS, cel_ink); if (cel_dbg > 0.5) { EMISSION = cel_dbg > 2.5 ? vec3(CEL_SKIN_V) : cel_dbg > 1.5 ? cel_ink_rgb(cel_ink) : vec3(0.0); ALBEDO = vec3(0.0); SPECULAR = 0.0; METALLIC = 0.0; }
 
 float cel_lum(vec3 c_c) { return dot(c_c, vec3(0.2126, 0.7152, 0.0722)); }
 float cel_schlick(float c_u) { float c_m = 1.0 - c_u; float c_m2 = c_m * c_m; return c_m2 * c_m2 * c_m; }
@@ -422,16 +463,15 @@ void cel_pool_paint(inout vec3 c_lc, inout float c_att, vec3 c_lw) {
 		if (c_f > c_att) c_lo = c_u; else c_hi = c_u;
 	}
 	vec3 c_wp = cel_ember.xyz - normalize(c_lw) * (0.5 * (c_lo + c_hi) * c_r);
-	// (L1 lead 11, R4: a broken end. Under a leaf (the key's dapple, packed in cel_gn: 1 - cel_key.w under a leaf, 1 open; only
-	// where fragment() packed it and the moon is back) the ramp is read further out, so her pool reaches cel_oneshade.z of its
-	// radius less far there: its end is scalloped by the leaf shapes, not a compass circle, and its heart is untouched.)
+	// (L1 lead 11, R4: a painted end. Under a leaf (the key's dapple, packed in cel_gn: 1 - cel_key.w under a leaf, 1 open; only
+	// where fragment() packed it: an unpacked normal's length is 1) and over the ground's dabs the ramp is read at the pool's
+	// painted radius (cel_pool_r), the same one the moon's give read in fragment().)
 	float c_leaf = 0.0;
-	if (cel_key.w > 0.0 && cel_gq() >= 1.0) {
+	if (cel_key.w > 0.0 && length(cel_gn) > 1.005) {
 		float c_dr = clamp((length(cel_gn) - 1.01 - 2.0 * cel_gq()) / 0.98, 0.0, 1.0);
-		// (times the moon's share here: the leaf shapes come in with the moon, from nothing where it has given way)
-		c_leaf = (1.0 - clamp((c_dr - (1.0 - cel_key.w)) / cel_key.w, 0.0, 1.0)) * clamp(cel_gv(), 0.0, 1.0);
+		c_leaf = 1.0 - clamp((c_dr - (1.0 - cel_key.w)) / cel_key.w, 0.0, 1.0);
 	}
-	vec4 c_rp = cel_pool_at(length(c_wp.xz - cel_ember.xz) / max(1.0 - cel_oneshade.z * c_leaf, 0.2));
+	vec4 c_rp = cel_pool_at(cel_pool_r(c_wp.xz, c_leaf));
 	vec3 c_ramp = c_rp.rgb;
 #ifdef CEL_POOL_PLAIN
 	c_ramp /= max(cel_pool_band.y, 1e-3);
@@ -441,7 +481,7 @@ void cel_pool_paint(inout vec3 c_lc, inout float c_att, vec3 c_lw) {
 	// (lead 9's under-leaf cut of her light, for a rig not yet rebuilt (night_play: ember_pool[0..1]). The rebuilt pool
 	// (arena_night, R4) has none (0, 0): the fire is not cut by the moon's leaves; the moon comes back under it (ember_give)
 	// and its two blues, leaf shade and all, show through the outer band.)
-	if (cel_pool_band.z > 0.0) c_att = 1.0 - mix(cel_pool_band.z, cel_pool_band.w, c_rp.a) * cel_key.w * c_leaf;
+	if (cel_pool_band.z > 0.0 && cel_gq() >= 1.0) c_att = 1.0 - mix(cel_pool_band.z, cel_pool_band.w, c_rp.a) * cel_key.w * c_leaf;
 }
 
 // The cel model for one light, t = the band's n.l (the caller may wrap it).

@@ -39,6 +39,8 @@ ARENA = Q + ["--zone", "arena", "--offer", "0", "--tier", "1"]
 #   own pool off the lamp, nothing over her (under --auto she kited, the pack streamed far off, a ring lay on her).
 # 10: --auto at 29.9 +6 s, the Pack-Mother to her right in her pool, the fold's kit boulders in shot (boards.json
 #   fold.rocks, FROM target 10).)
+# (L1 lead 11, R4 round 2) 09's pack: --horde groups and their --horde-arc wedges (DEG:WIDTH:DIST:SPREAD).
+SHAW_PACK = ("7:wolf,8:wolf,9:wolf", "150:50:7.7:2.8,150:54:10.5:3.5,150:56:14:4.5")
 # The runs (several frames may share one). "scout" replaces the run's frame options in --scout mode.
 SPOTS04 = "-110,10;-95,9;-80,7;-60,9;-45,13;-25,12;-10,10;8,4;30,-2;45,-5"
 RUNS = {
@@ -58,9 +60,13 @@ RUNS = {
     # health: twelve wolves set in an arc 8-14 m out (world 140 deg +/-45: screen lower left), nothing else spawned, no banner,
     # shot at 1.2 s (before the director's stand charge draws its lane at 1.5 s). Was: minute 5's own pack at 6 s, fifteen
     # within 2 m in a closed ring on her, her life 0.67. --stage-log prints the pool's center, px/m and the foes' distances.)
-    "lk_shaw": dict(args=ARENA + ["--auto", "stand", "--minute", "5", "--horde", "12:wolf", "--horde-arc", "140:90:8:6", "--no-spawn", "--no-banners",
-                                  "--stage-log", "--seconds", "1.2", "--count", "1"], timeout=600,
-                    scout=ARENA + ["--auto", "stand", "--minute", "5", "--horde", "12:wolf", "--horde-arc", "140:90:8:6", "--no-spawn", "--no-banners",
+    # (Round 2: T09's pack is twenty-five streaming in, so twenty-four wolves in three ranks of one wedge to the lower left
+    # (world 150 deg, 50-56 deg wide, 8.3-18.5 m out: a loose column 2-13 m long at the picture, the nearest about 2 m, none
+    # on her). Two pictures, 1.2 s (the frame, lk_shaw_00) and 3.2 s (thrown away): a single picture's run quit at 1.2 s and
+    # hung there until demo_run's timeout; so does this one (the hang is at quit, after "ink: released", whatever the pictures), so its timeout is 180 s: the pictures are saved inside 70 s.)
+    "lk_shaw": dict(args=ARENA + ["--auto", "stand", "--minute", "5", "--horde", SHAW_PACK[0], "--horde-arc", SHAW_PACK[1], "--no-spawn", "--no-banners",
+                                  "--stage-log", "--seconds", "1.2", "--every", "2", "--count", "2"], timeout=180,
+                    scout=ARENA + ["--auto", "stand", "--minute", "5", "--horde", SHAW_PACK[0], "--horde-arc", SHAW_PACK[1], "--no-spawn", "--no-banners",
                                    "--stage-log", "--seconds", "0.8", "--every", "0.2", "--count", "6"]),
     "lk_pack": dict(args=ARENA + ["--auto", "--minute", "29.9", "--seconds", "6", "--count", "1"], timeout=600,
                     scout=ARENA + ["--auto", "--minute", "29.9", "--seconds", "4", "--every", "2", "--count", "12"]),
@@ -82,7 +88,7 @@ FRAMES = [
     ("06", "warden", "lk_ford", "lk_ford_01.png"),
     ("07", "town_day", "lk_town", "lk_town.png"),
     ("08", "lamps", "lk_lamps", "lk_lamps.png"),
-    ("09", "shaw_horde", "lk_shaw", "lk_shaw.png"),
+    ("09", "shaw_horde", "lk_shaw", "lk_shaw_00.png"),
     ("10", "pack_mother", "lk_pack", "lk_pack.png"),
     ("11", "result", "lk_result", "lk_result.png"),
     ("12", "hud", "lk_hud", "lk_hud.png"),
