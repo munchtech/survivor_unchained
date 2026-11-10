@@ -9,7 +9,10 @@ skin is the skin the engine shows under that piece: linear blend (native_travel'
 each vertex pulled in along its posed stored normal by the piece's tuck record (gear_wear.skin_tuck), and under a
 held top her springs at their worn equilibrium in every frame with the hold's form_support shapes (gear_wear.WornTop).
 Heights are nearest-vertex along that vertex's normal (the rule's, native_travel.on_skin), her skin within REACH of
-the plate at rest.
+the plate at rest. The points are the BUILT mesh's vertices, its rolled rims' walls included (they hang up to 4 mm
+nearer her than the plate's design face): a design sheet read on a grid (lead 11's room.py) under-reads the spaulder
+cop by 2.3 / 1.2 mm (test_spaulder_row_is_lead_11s has the trace). A native piece's plates are named by their part
+(piece.json "parts", matched by ride rule): cop, lame1.., else their main bone.
 
 A plate = a connected component of the piece's meshes whose vertices all carry ONE bone blend (gear_wear's "rigid
 component") of at least --min-cm2 of surface; its inner face (the vertices facing her) is what is measured. The row's
@@ -138,6 +141,33 @@ def place(X, i, border, edge=0.008):
     return " ".join(words) + (" edge" if on_edge else "")
 
 
+def part_roles(pid):
+    """{part name: {bone: share}}: the native build's rigid parts and their ride rules (godot/art/gear/native/<id>/
+    piece.json "parts"; {} when the piece is not native). The built gear merges its parts by material, so a plate's
+    role is read back by its ride."""
+    path = os.path.join(os.path.dirname(os.path.dirname(HERE)), "godot", "art", "gear", "native", pid, "piece.json")
+    if not os.path.isfile(path):
+        return {}
+    parts = json.load(open(path, encoding="utf-8")).get("parts") or {}
+    return {k: v["bones"] for k, v in parts.items() if isinstance(v, dict) and v.get("bones")}
+
+
+def role_of(rule, roles, tol=0.003):
+    """The part (cop_l_rigid, lame1_l_rigid, ..) whose ride rule is the plate's {bone name: share}, or None."""
+    best, err = None, tol
+    for k, b in roles.items():
+        tot = sum(b.values()) or 1.0
+        e = max(abs(rule.get(n, 0.0) - b.get(n, 0.0) / tot) for n in set(rule) | set(b))
+        if e < err:
+            best, err = k, e
+    return best
+
+
+def role_word(part):
+    """cop_l_rigid -> cop, lame2_r_rigid -> lame2, arming_l_cap -> arming."""
+    return part.split("_")[0] if part else None
+
+
 def piece_ids(rows, name, also=()):
     return [r["id"] for r in rows if r["id"].startswith(name + "_") or r["id"] in also]
 
@@ -177,6 +207,7 @@ def run(gear, ids, clips="all", min_cm2=10.0, leather_mm=LEATHER_MM, log=print):
         S_all = worn_S[wt.key] if wt is not None else z["S"][on]
         S0 = wt.S if wt is not None else eye
         recs = gw.read_records(row["tuck_path"]) if row.get("tuck_path") else {}
+        roles = part_roles(pid)
         for n_pl, q in enumerate(pl):
             vs = np.unique(np.concatenate(kd_skin.query_ball_point(q["X"], REACH)).astype(int))   # (isk is the first rows)
             if not len(vs):
@@ -202,8 +233,9 @@ def run(gear, ids, clips="all", min_cm2=10.0, leather_mm=LEATHER_MM, log=print):
             cl = {str(z["clip"][on[k]]) for k in r["hits"]}
             c = Xr[inn].mean(0)
             rule = {names[b]: round(float(v), 3) for b, v in zip(bones, share)}
-            name = f"{pid} #{n_pl + 1} {max(rule, key=rule.get)} " + ("mid" if abs(c[0]) < 0.02 else "l" if c[0] > 0 else "r") + f" y{c[1] * 100:.0f} {q['cm2']:.0f}cm2"
-            s.update(piece=pid, plate=name, bones=rule, cm2=round(q["cm2"], 1), leather=leather_mm, worn=wt is not None, at=wf(s["at"]),
+            part = role_of({names[b]: float(v) for b, v in zip(bones, share)}, roles)
+            name = f"{pid} #{n_pl + 1} {role_word(part) or max(rule, key=rule.get)} " + ("mid" if abs(c[0]) < 0.02 else "l" if c[0] > 0 else "r") + f" y{c[1] * 100:.0f} {q['cm2']:.0f}cm2"
+            s.update(piece=pid, plate=name, part=part, bones=rule, cm2=round(q["cm2"], 1), leather=leather_mm, worn=wt is not None, at=wf(s["at"]),
                      place=place(Xr[inn], s.pop("worst_point"), at[border]), clips_past=len(cl), clips=len(set(z["clip"][on])), frames=len(on),
                      clips_past_names=sorted(cl))
             if "stray" in s:

@@ -59,12 +59,20 @@ def test_plates_are_the_one_blend_components():
 
 
 def test_spaulder_row_is_lead_11s():
-    """Lead 11 (room.py, four fight clips): the left cop 18.3 mm past (sword_heavy f13); the right 15.0 on the whole
-    cop (daggers_heavy f0), 13.8 on its neck edge (cast_flick f6). Here 20.6 and 16.2, same frames and places: the built mesh with its rolled rim, not the design sheet on a grid (2.5 mm allowed)."""
+    """Lead 11 (room.py, the four fight clips, 91 frames) read the cop 18.3 mm past on the left (sword_heavy f13), 15.0
+    on the right (daggers_heavy f0); this table reads 20.6 / 16.2. Traced (10 Nov) on the same frames: ride (mesh
+    weights = room.py's mean_ride, to 1e-4), skin (stored vs vertex normals, the tuck) and leather (2.4 both) add 0.0;
+    it is all WHICH POINTS. Lead 11 sampled the cop's design inner face on a 4 mm x 27-column grid; this reads the built
+    mesh's vertices. Left: the worst vertex (th 87, 2.6 mm in from the neck edge) is on the rolled rim's wall, 3.8 mm
+    nearer her than the design face there: +3.2 (17.4 on the design face at that vertex -> 20.6 built); the grid's own
+    peak sits elsewhere on the design face: -0.9 (18.3 -> 17.4); sum +2.3. Right: the worst is on the front lower edge (th 23, no
+    rim, built within 0.1 mm of design), a peak between lead 11's grid points: +1.1 (15.0 -> 16.1 on the design face at
+    that vertex), the built face there +0.1; sum +1.2 (the rim wall puts the right neck edge at 16.0, cast_flick f6,
+    against lead 11's 13.8). Lead 11's grid under-reads; this table is the built plate's reading, held to 1 mm."""
     import gear_wear as gw
     if not os.path.isfile(os.path.join(gw.GEAR, "plate_spaulders_plain.gltf")):
         pytest.skip("no built spaulders")
     rows, _ = rt.run(gw.GEAR, ["plate_spaulders_plain"], "four", log=lambda *_: None)
-    cop = {s["plate"].split()[3]: s for s in rows[::-1] if s["cm2"] == max(x["cm2"] for x in rows if x["plate"].split()[3] == s["plate"].split()[3])}
-    assert abs(cop["l"]["past"] - 18.3) < 2.5 and cop["l"]["at"].startswith("sword_heavy")
-    assert abs(cop["r"]["past"] - 15.0) < 2.5
+    cop = {s["plate"].split()[3]: s for s in rows if s["plate"].split()[2] == "cop"}
+    assert abs(cop["l"]["past"] - 20.6) < 1.0 and cop["l"]["at"].startswith("sword_heavy") and cop["l"]["part"] == "cop_l_rigid"
+    assert abs(cop["r"]["past"] - 16.2) < 1.0 and cop["r"]["at"].startswith("daggers_heavy") and cop["r"]["part"] == "cop_r_rigid"
