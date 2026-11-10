@@ -44,6 +44,59 @@ import native_build as nb
 from native_build import MM, Frame, Part, Sheet
 
 
+# ---------------------------------------------------------------- the frame over her shoulder top
+
+class ShoulderFrame(Frame):
+    """The arm's frame with its centres let down under her shoulder top: c(s) = c + s a - drop(s) o. Past the shoulder
+    joint the arm's own axis runs out of her through her trapezius, so no ray from it meets the top of her shoulder;
+    these centres stay under her skin's crest line (theta 90) instead, the planes s = const as they were (so a ray's
+    direction is still theta's alone, and every Sheet works on it unchanged). drop is 0 from the lames on: there it
+    IS the arm's frame."""
+
+    def __init__(self, fr, s, drop):
+        self.c, self.hand, self.L, self.a, self.f, self.o = fr.c, fr.hand, fr.L, fr.a, fr.f, fr.o
+        self.ds, self.dd = np.asarray(s, float), np.asarray(drop, float)
+
+    def drop(self, s):
+        return np.interp(np.asarray(s, float), self.ds, self.dd)
+
+    def origin(self, s):
+        s = np.asarray(s, float)
+        return self.c + s[..., None] * self.a - self.drop(s)[..., None] * self.o
+
+    def pt(self, s, th, rho):
+        return self.origin(s) + np.asarray(rho, float)[..., None] * self.radial(th)
+
+    def cyl(self, P):
+        d = np.asarray(P, float) - self.c
+        s = d @ self.a
+        x, y = d @ self.f, d @ self.o + self.drop(s)
+        return s, np.degrees(np.arctan2(y, x)), np.hypot(x, y)
+
+
+def crest_line(ref, fr, s0, s1, ds=0.002, far=0.25):
+    """(s, r): her skin's height over the arm's axis along its crest line (theta 90), read from outside her (a ray
+    down each plane s = const: the outermost skin, where the axis itself lies out of her it is negative)."""
+    s = np.arange(s0, s1 + 0.5 * ds, ds)
+    Tn = nb.near(ref.V, ref.T, fr, s0 - 0.04, s1 + 0.04, 2 * far)
+    Tn = Tn[(ref.V[Tn][:, :, 0] * fr.hand > -0.01).all(1)]
+    t, _ = nb.raycast(ref.V, Tn, fr.c + s[:, None] * fr.a + far * fr.o, np.tile(-fr.o, (len(s), 1)), 3 * far)
+    ok = np.isfinite(t)
+    if not ok.any():
+        raise SystemExit("native_spaulder: no skin on the arm's crest line (the frame's bones)")
+    return s, np.interp(s, s[ok], far - t[ok])
+
+
+def crest_drop(s, r, keep, depth=None, ease=0.006, blend=0.02):
+    """drop(s): how far the centres go under the arm's axis so they stay `depth` under the crest line r(s) (her
+    skin's own depth at `keep`, where the lames start, when none is given), eased along s, 0 from `keep` on."""
+    from scipy import ndimage
+    depth = float(np.interp(keep, s, r)) if depth is None else depth
+    d = ndimage.gaussian_filter1d(np.maximum(depth - r, 0.0), ease / (s[1] - s[0]), mode="nearest")
+    k = np.clip((keep - 0.004 - s) / blend, 0.0, 1.0)
+    return d * k * k * (3 - 2 * k)
+
+
 # ---------------------------------------------------------------- her skin as a law, a lame
 
 class SkinLaw:
@@ -77,7 +130,10 @@ class SkinLaw:
         ok = (sv > s0 - 0.03) & (sv < s1 + 0.03) & (rv < rmax) & (np.abs((tv - tm + 180.0) % 360.0 - 180.0) < half)
         Tn = ref.T[ok[ref.T].any(1)]
         S, TH = np.meshgrid(s, th, indexing="ij")
-        rho, _ = nb.radial(V, Tn, fr, S, TH, rmax)
+        if hasattr(fr, "origin"):     # (a frame whose centres leave the axis: its own rays)
+            rho = nb.raycast(V, Tn, fr.origin(S.reshape(-1)), fr.radial(TH.reshape(-1)), rmax)[0].reshape(S.shape)
+        else:
+            rho, _ = nb.radial(V, Tn, fr, S, TH, rmax)
         miss = ~np.isfinite(rho)
         if miss.all():
             raise SystemExit("native_spaulder: no skin along the frame's rays (the frame's bones or its theta range)")
@@ -169,9 +225,11 @@ def vertex_area(V, T):
 
 def footprint(ref, fr, s0, s1, t0, t1, rmax=0.09):
     """Her skin under a strip of the frame: the vertices of the triangles lying wholly in s0..s1, theta t0..t1, on the
-    frame's own side of her."""
+    frame's own side of her. s0 / s1: numbers, or edge lines s(theta) (a plate's own outline)."""
     s, th, rho = fr.cyl(ref.V)
-    ok = (ref.V[:, 0] * fr.hand > 0) & (th >= t0) & (th <= t1) & (rho < rmax) & (s >= s0) & (s <= s1)
+    tc = np.clip(th, t0, t1)
+    lo, hi = (s0(tc) if callable(s0) else s0), (s1(tc) if callable(s1) else s1)
+    ok = (ref.V[:, 0] * fr.hand > 0) & (th >= t0) & (th <= t1) & (rho < rmax) & (s >= lo) & (s <= hi)
     return np.unique(ref.T[ok[ref.T].all(1)])
 
 
@@ -249,6 +307,16 @@ def layout(cfg, ref, step=None, step_s=None, roll=True, laws=None):
     out = {}
     frames = {sd: Frame.bones(ref, cfg["frame"]["from"].replace("*", sd), cfg["frame"]["to"].replace("*", sd), hand)
               for sd, hand in (("l", 1), ("r", -1))}
+    ov = cp.get("over")
+    if ov:
+        # the cop crowns her shoulder: the frame's centres stay under her skin's crest line up past the joint, read
+        # from her skin (one drop for her two sides, the larger: the plates stay mirrors); the arm's own from lame 1 on
+        keep = float(E[1] - (lap[1] if n > 1 else 0.0))
+        crest = {sd: crest_line(ref, fr, E[0] - past[0] - 0.05, keep) for sd, fr in frames.items()}
+        drops = {sd: crest_drop(s, r, keep, ov.get("depth"), ov.get("ease", 0.006)) for sd, (s, r) in crest.items()}
+        if mirror:
+            drops = dict.fromkeys(drops, np.maximum(drops["l"], drops["r"]))
+        frames = {sd: ShoulderFrame(fr, crest[sd][0], drops[sd]) for sd, fr in frames.items()}
     if laws is None:
         th_a, th_b = min(t0, lt0), max(t1, lt1)
         plate = side_laws(ref, frames, (E[0] - 0.012, E[-1] + 0.012, th_a - 12, th_b + 12), clear, cfg.get("ease", 0.6), mirror,
@@ -256,8 +324,19 @@ def layout(cfg, ref, step=None, step_s=None, roll=True, laws=None):
         arm = side_laws(ref, frames, (E[0] - past[0] - 0.012, E[-1] + past[1] + 0.012, th_a - past[2] - 12, th_b + past[2] + 12),
                         am.get("clear", 0.0012), am.get("ease", 0.6), mirror, am.get("grid", (0.004, 4.0))) if am else {"l": None, "r": None}
         laws = {sd: {"law": plate[sd], "arm_law": arm[sd]} for sd in frames}
-    top = [lambda th: np.full(np.shape(th), float(E[0]))] + [lambda th, k=k: E[k] - lap[k] + arcf(th) for k in range(1, n)]
     bot = [lambda th, k=k: E[k + 1] + arcf(th) for k in range(n)]
+    ar = cp.get("arch")
+    s_end = float(min(bot[0](t0), bot[0](t1))) - (ar or {}).get("span", 0.03)
+
+    def top0(th):
+        """The cop's upper edge: E[0], or with "arch" a rounded outline: E[0] at its middle, coming down to `span`
+        above its lower edge at its two ends."""
+        th = np.asarray(th, float)
+        if not ar:
+            return np.full(th.shape, float(E[0]))
+        v = np.clip(np.abs(2.0 * th - t0 - t1) / (t1 - t0), 0, 1)
+        return E[0] + (s_end - E[0]) * v ** ar.get("power", 2.6)
+    top = [top0] + [lambda th, k=k: E[k] - lap[k] + arcf(th) for k in range(1, n)]
     reach = [(t0, t1)] + [(lt0, lt1)] * (n - 1)
     crown = dome(top[0], bot[0], t0, t1, cp.get("apex", 0.014), cp.get("shape", (2.4, 2.4)))
     for sd, fr in frames.items():
@@ -293,14 +372,19 @@ def layout(cfg, ref, step=None, step_s=None, roll=True, laws=None):
         # (what a plate's ride reads: her skin under its exposed band and `ride_reach` up past it, not its whole lap:
         # the band hidden under the plate above is that plate's skin; the cop: its "ride_band" when it names one)
         up = lm.get("ride_reach", 0.006)
-        band = [cp.get("ride_band") or (E[0], E[1])] + [(E[k] - min(lap[k], up), E[k + 1]) for k in range(1, n)]
+        band = [cp.get("ride_band") or (top[0], bot[0])] + [(E[k] - min(lap[k], up), E[k + 1]) for k in range(1, n)]
         foot = [footprint(ref, fr, band[k][0], band[k][1], reach[k][0], reach[k][1]) for k in range(n)]
         arming = None
         if am:
-            # the arming cap: a leather shell on her skin (a bendy part), a little beyond the plates' outline
+            # the arming cap: a leather shell on her skin (a bendy part), `past` beyond the plates' OUTLINE: over the
+            # cop's upper edge as it runs, down the cop's sides, then in to the lames' (never a wide flap beside them)
             arl = tuple(am.get("roll", (0.004, 0.0008))) if roll else None
-            arming = Sheet(fr, laws[sd]["arm_law"], min(t0, lt0) - past[2], max(t1, lt1) + past[2],
-                           lambda th: np.full(np.shape(th), float(E[0] - past[0])),
+            sm = lambda x: np.clip(x, 0, 1) ** 2 * (3 - 2 * np.clip(x, 0, 1))  # noqa: E731
+            w = lambda s: sm((np.asarray(s, float) - E[1]) / 0.012)  # noqa: E731  (0 beside the cop, 1 beside the lames)
+            arming = Sheet(fr, laws[sd]["arm_law"], lambda s: t0 - past[2] + (lt0 - t0) * w(s),
+                           lambda s: t1 + past[2] + (lt1 - t1) * w(s),
+                           lambda th: np.min([top[0](np.clip(np.asarray(th, float) + d, t0, t1))
+                                              for d in np.linspace(-past[2], past[2], 5)], axis=0) - past[0],
                            lambda th: E[-1] + past[1] + arcf(np.clip(th, lt0, lt1)), am.get("thick", 0.0012), roll=arl,
                            clear=am.get("clear", 0.0012), lip=am.get("lip", 0.0003), step=step or am.get("step", 0.009),
                            step_s=step_s or am.get("step", 0.009), roll_on="tb01" if roll else "")
@@ -341,7 +425,7 @@ def build_parts(cfg, lay, ref=None, rivets=True):
     # every sheet as built, its two sides seated as one
     raw = {k: {sd: L["sheets"][k].build(L["names"][k], mats["plate"], ao=1.0 if k == 0 else 0.94) for sd, L in lay.items()}
            for k in range(n)}
-    raw["arming"] = {sd: L["arming"].build(arming_name(sd), mats.get("arming", "leather"), ao=0.85)
+    raw["arming"] = {sd: L["arming"].build(arming_name(sd), mats.get("arming", "darkleather"), ao=0.85)
                      for sd, L in lay.items() if L.get("arming") is not None}
     if ref is not None:
         for k, built in raw.items():
@@ -377,7 +461,8 @@ def build_parts(cfg, lay, ref=None, rivets=True):
 
 def edge_report(sh, ref, n=25):
     """Her skin's distance under a sheet's inner face along each edge and over its face, mm (min, max)."""
-    t = np.linspace(sh.t0, sh.t1, n)
+    ss = np.linspace(-0.2, 0.4, 61)    # (a side that is a line theta(s): the reach every s has)
+    t = np.linspace(float(np.max(sh.side(0, ss))), float(np.min(sh.side(1, ss))), n)
     X, TH = np.meshgrid(np.linspace(0, 1, 9), t, indexing="ij")
     S = sh.top(TH) + X * (sh.bot(TH) - sh.top(TH))
     X = sh.fr.pt(S, TH, sh.inner(S, TH) if hasattr(sh, "inner") else sh.law(S, TH))

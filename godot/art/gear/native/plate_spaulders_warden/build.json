@@ -3,5 +3,5 @@
  "like": "plate_spaulders_plain",
  "piece": {"name": "Warden spaulders", "slot": "pauldrons", "style": "spaulders", "tier": 1, "covers": ["pauldrons"],
            "cover_grow": [0.02, 0.025], "dye": ["metal"]},
- "materials": {"plate": "steel", "rim": "gold"}
+ "materials": {"plate": "steel", "rim": "gold", "arming": "darkleather"}
 }

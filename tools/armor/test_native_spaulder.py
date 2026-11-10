@@ -221,8 +221,12 @@ class Spaulder(unittest.TestCase):
         for sh in L["sheets"]:
             S, TH = grid(sh, 9, 27)
             self.assertGreater((sh.inner(S, TH) - am.outer(S, TH)).min(), 0.001)
-        self.assertLess(am.t0, 20 - 5)
-        self.assertGreater(am.t1, 175 + 5)
+        # (its sides: past the cop's beside the cop, in to the lames' beside the lames: never a wide flap)
+        self.assertLess(float(am.side(0, -0.03)), 20 - 5)
+        self.assertGreater(float(am.side(1, -0.03)), 175 + 5)
+        lt0, lt1 = L["theta"][1]
+        self.assertTrue(lt0 - 8 < float(am.side(0, 0.1)) < lt0 - 4)
+        self.assertTrue(lt1 + 4 < float(am.side(1, 0.1)) < lt1 + 8)
         th = np.linspace(35, 165, 9)
         self.assertTrue((am.top(th) < L["sheets"][0].top(th) - 0.005).all())
         self.assertTrue((am.bot(th) > L["sheets"][-1].bot(th) + 0.009).all())
@@ -339,6 +343,51 @@ class Built(unittest.TestCase):
             for nm, p in parts.items():
                 if "_l_" in nm:
                     self.assertLess(np.abs(p["P"] * [-1, 1, 1] - parts[nm.replace("_l_", "_r_")]["P"]).max(), 0.0005, nm)
+
+
+class ShoulderTop(unittest.TestCase):
+    """Round 2: the cop crowns the shoulder (a frame whose centres stay under her skin's crest line, an arched
+    upper edge), and the arming cap's material is one the fit can paint."""
+
+    def test_the_shoulder_frame_is_the_arms_own_from_the_lames_on_and_inverts(self):
+        fr = nb.Frame([0.19, 1.48, -0.03], [0.35, 1.28, -0.04], hand=1)
+        s = np.arange(-0.14, 0.0141, 0.002)
+        r = np.where(s < -0.05, 0.035 + (s + 0.05), 0.035)          # (the crest line falls away past the joint)
+        d = sp.crest_drop(s, r, 0.014)
+        self.assertEqual(float(d[-1]), 0.0)
+        self.assertTrue((d[s > -0.02] < 1e-4).all())
+        self.assertGreater(float(np.interp(-0.09, s, d)), 0.03)
+        sf = sp.ShoulderFrame(fr, s, d)
+        S, TH, R = np.array([-0.09, -0.05, 0.0, 0.05]), np.array([30.0, 96.0, 150.0, 170.0]), np.array([0.03, 0.04, 0.05, 0.045])
+        s2, th2, r2 = sf.cyl(sf.pt(S, TH, R))
+        self.assertLess(max(np.abs(s2 - S).max(), np.abs(r2 - R).max(), np.radians(np.abs(th2 - TH)).max()), 1e-9)
+        self.assertLess(np.abs(sf.pt(S[2:], TH[2:], R[2:]) - fr.pt(S[2:], TH[2:], R[2:])).max(), 1e-12)
+        # (a centre keeps its depth under the crest: rho at theta 90 never under the depth, where the axis left her)
+        self.assertGreater(float(np.interp(-0.09, s, r) + sf.drop(-0.09)), 0.03)
+
+    def test_the_cops_upper_edge_is_an_arch_and_its_ride_reads_its_own_outline(self):
+        cfg = json.loads(json.dumps(CFG))
+        cfg["cop"] = dict(cfg.get("cop") or {}, arch={"span": 0.03, "power": 2.6})
+        ref = arms()
+        L = sp.layout(cfg, ref)["l"]
+        t0, t1 = L["theta"][0]
+        top, bot = L["top"][0], L["bot"][0]
+        e0 = cfg["lames"]["edges"][0]
+        self.assertAlmostEqual(float(top(0.5 * (t0 + t1))), e0, places=9)
+        for te in (t0, t1):       # (its ends come down to `span` above its lower edge, or nearer)
+            self.assertGreater(float(top(te)), e0 + 0.02)
+            self.assertGreaterEqual(float(bot(te) - top(te)), 0.03 - 1e-9)
+        th = np.linspace(t0, 0.5 * (t0 + t1), 9)
+        self.assertTrue((np.diff(top(th)) < 0).all())
+        s, tv, _ = L["fr"].cyl(ref.V[L["foot"][0]])
+        self.assertTrue((s >= top(np.clip(tv, t0, t1)) - 1e-9).all())
+
+    def test_the_arming_caps_material_has_a_painted_template(self):
+        have = {m.get("name") for _, g in gn.material_templates() for m in g.get("materials", [])
+                if "baseColorTexture" in m.get("pbrMetallicRoughness", {})}
+        for pid in ("plate_spaulders_plain", "plate_spaulders_warden"):
+            cfg = sp.resolve(json.load(open(os.path.join(nb.NATIVE, pid, "build.json"), encoding="utf-8")))
+            self.assertIn(cfg["materials"].get("arming", "darkleather"), have)
 
 
 if __name__ == "__main__":
