@@ -22,6 +22,8 @@ public sealed class PackKit(Battle b)
     double trailT, standReady;
     /// <summary>(M3 round 5) Where she last moved StandMoved from, and when (the stand's length, for StandGrow).</summary>
     double stillX, stillZ, stillAt = -1;
+    /// <summary>When no foe that may charge was last awake (the stand counts from then).</summary>
+    double quietAt = -99;
     /// <summary>(M3) A fighter's plant (Teeth.Director.StandSwing): the seconds the clock has counted her standing at this
     /// spot, the spot's allowance of landed cuts left, until when a landed cut holds the clock, and the landed cuts read.</summary>
     double stood, swingLeft, heldUntil, swingSeen;
@@ -66,7 +68,11 @@ public sealed class PackKit(Battle b)
     {
         if (!b.Campaign || b.StoryStand is not { Stand: true } d) return;
         var p = b.Player;
-        if ((trailT -= dt) <= 0) { trailT = 0.25; StandClock.Sample(herTrail, b.Time, p.X, p.Z, d.StandFor); }
+        // (M3 lead 7) A stand is a stand in a fight: the clock counts from when a foe that may charge is awake (read with her
+        // trail, four times a second). Stood on a pack's ground between its waves with nothing up, the next wave's first
+        // step charged her on the tick it walked out: 45% of the human's and the deft's charges at 48 seeds.
+        bool sample = (trailT -= dt) <= 0;
+        if (sample) { trailT = 0.25; StandClock.Sample(herTrail, b.Time, p.X, p.Z, d.StandFor); if (awake().Count == 0) quietAt = b.Time; }
         bool moved = stillAt < 0 || Math.Sqrt((p.X - stillX) * (p.X - stillX) + (p.Z - stillZ) * (p.Z - stillZ)) >= d.StandMoved;
         if (moved || p.RootT > 0) { stillX = p.X; stillZ = p.Z; stillAt = b.Time; }
         b.StandSpot = (stillX, stillZ);
@@ -96,6 +102,7 @@ public sealed class PackKit(Battle b)
         // Held where she is (knocked down, rooted) is not standing: the clock starts again once she can move.
         if (p.RootT > 0) { standReady = b.Time + d.StandFor; return; }
         if (!StandClock.Still(herTrail, b.Time, p.X, p.Z, d) || fighter && (stood < d.StandFor || b.Time < heldUntil)) return;
+        if (b.Time - quietAt < d.StandFor) return;
         var set = awake();
         if (set.Count == 0) return;
         Func<Enemy, bool> may = set.Contains;
