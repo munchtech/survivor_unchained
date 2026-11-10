@@ -35,7 +35,13 @@ void fragment()
 	float fill = li * clamp((f - ang) * TAU * mid + 0.5, 0.0, 1.0);
 	float ck = exp(-pow((d - mid) / sigma, 2.0));
 	float lift = 1.0 + boost;
-	vec3 col = mix(hue, core, ck) * lift;
+	// (fix A, judge r1 20: at rest the filament at 0.6: the least urgent fact was the brightest thing on the bar; a
+	// gain's run and a level-up still show it whole)
+	// (fix C: in a storm xp never stops coming, so "rest" was never reached and the gain's lift (1 + boost) kept the
+	// filament white: measured 255 before and after fix A. Now only a level-up shows it whole; a gain lifts the
+	// filament by 0.4 of its boost and tells itself by the head's glint and the lip)
+	float rest = mix(0.6, 1.0, clamp(whole, 0.0, 1.0));
+	vec3 col = mix(hue, core, ck) * (1.0 + 0.4 * boost) * rest;
 	vec3 rgb = col * fill;
 	float a = fill;
 	rgb += hue * (li * (1.0 - fill) * (track + 0.9 * whole));
@@ -45,7 +51,7 @@ void fragment()
 	vec2 tp = c + mid * vec2(sin(ta), -cos(ta));
 	vec2 dt = p - tp;
 	float gl = exp(-dot(dt, dt) / (2.0 * glint.x * glint.x)) * step(d, r1 + 3.0);
-	rgb += core * (gl * glint.y * lift);
+	rgb += core * (gl * glint.y * (1.0 + 0.4 * boost) * rest);
 	float tk = clamp(1.2 - abs(dv.x), 0.0, 1.0) * clamp(min(d - (r0 - 1.5), (r1 + 1.5) - d) + 0.5, 0.0, 1.0) * step(dv.y, 0.0);
 	rgb = TICK * tk + rgb * (1.0 - tk);
 	a = tk + a * (1.0 - tk);

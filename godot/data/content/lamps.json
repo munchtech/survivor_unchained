@@ -1391,7 +1391,7 @@
     "oathblade"
    ],
    "gate": 6,
-   "text": "A melee swing that kills three makes that skill's next swing come 25% sooner.",
+   "text": "Three kills in quick succession with a melee skill make its next cuts come 25% sooner.",
    "effects": [
     {
      "do": "rule",

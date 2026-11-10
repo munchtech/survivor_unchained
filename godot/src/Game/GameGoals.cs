@@ -31,7 +31,7 @@ public partial class Game
     static string GoalKey(List<ActiveGoal> pins) => string.Join(",", pins.Select(p => p.Def.Id + (p.Line ? "+" : "-")));
 
     /// <summary>Corner-map marks for the goals.</summary>
-    List<MiniMark> GoalMiniMarks() => GoalPins().Select(p => new MiniMark(p.X, p.Z, MarkKind.Goal, p.Def.Label)).ToList();
+    List<MiniMark> GoalMiniMarks() => GoalPins().Select(p => new MiniMark(p.X, p.Z, MarkKind.Goal, p.Def.Label, p.Line)).ToList();
 
     /// <summary>The waypoints and edge arrows for this frame; the tracker is redone when a goal comes or goes.</summary>
     List<GoalMark> GoalScreen()

@@ -41,6 +41,21 @@ public partial class StatusRow : Control
         shelf.Update(now);
         Fill(buffs, shelf.Buffs, true);
         Fill(debuffs, shelf.Debuffs, false);
+        // (M4 lead 13, r3b S4: one side alone is centered on the bar's axis, not left standing beside it; both sides
+        // split at the axis, boons left, banes right)
+        int g = shelf.Buffs.Count, bd = shelf.Debuffs.Count;
+        for (int i = 0; i < g && i < buffs.Count; i++) buffs[i].Position = Place(true, i, g, bd) - new Vector2(D / 2, D / 2);
+        for (int i = 0; i < bd && i < debuffs.Count; i++) debuffs[i].Position = Place(false, i, g, bd) - new Vector2(D / 2, D / 2);
+    }
+
+    /// <summary>Slot i of a side given both sides' counts: a side alone is centered on the axis (x 960), boons growing
+    /// left from it, banes right; with both, Centre's split.</summary>
+    public static Vector2 Place(bool good, int i, int boons, int banes)
+    {
+        if (AtOrb || (boons > 0 && banes > 0)) return Centre(good, i);
+        int n = good ? boons : banes;
+        float x = 960 + (good ? 1 : -1) * ((n - 1) / 2f - i) * Pitch;
+        return new Vector2(x, 950);
     }
 
     void Fill(List<Mark> marks, List<StatusShelf.Slot> slots, bool good)
@@ -78,7 +93,7 @@ public partial class StatusRow : Control
             has = true;
             var col = Ink(n);
             string gk = n.Glyph + "|" + col.ToHtml();
-            if (n.Glyph != "" && gk != glyphKey) { glyphKey = gk; glyph = Glyphs.Texture(n.Glyph, 40, col, 1.6f, true); }
+            if (n.Glyph != "" && gk != glyphKey) { glyphKey = gk; glyph = Glyphs.Texture(n.Glyph, 40, col, 2.6f, true); /* (lead 13, S4: 2 px strokes at 20 px, the seat glyphs' weight) */ }
             if (!same || Math.Abs(n.Fraction - drawnF) > 0.002f) QueueRedraw();
             SetProcess(n.Pulse);
         }

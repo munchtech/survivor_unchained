@@ -115,6 +115,7 @@ public sealed partial class Prologue
         if (DayBeat("post") is { Post: { } pid } && Lamps.V2) steps.Add(new("Relight the road lamp", true, LampBook.PostLit(W, pid)));
         if (day != null && DayBeat("strongbox") != null) steps.Add(new("Find the Kerchiefs' strongbox", true, day.Done("strongbox")));
         if (day != null && DayBeat("wallow") != null) steps.Add(new("Drive the boars from the west wallow", true, day.Done("wallow")));
+        roadStep = !gateAsk;
         G.SetObjectives([new Tracked("pro", "The Road North", TrackTone.Tutorial, steps)]);
     }
 
@@ -141,6 +142,8 @@ public sealed partial class Prologue
     INpcView? gateWatch;
     int gateTorch = -1;
     bool gateTold, gateAsk;
+    /// <summary>The tracker's first open line is "Walk up the road to the Waystation": the gate exit is the objective on the map.</summary>
+    bool roadStep;
     /// <summary>The tracker's first line while the shut gate holds her (after the watchman's word).</summary>
     public const string GateTask = "The watch won't raise the gate: clear the wolves on the road";
     public const string GateBark = "Wolves on the road behind you! Clear them, and we'll raise the gate.";

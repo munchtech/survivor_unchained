@@ -341,10 +341,23 @@ public partial class MapScreen : Overlay
     float minZoom = 0.6f;
     Vector2 panTo;
     bool gliding;
+    // (M4 lead 14, r3c M4: a line chosen frames her with it: the zoom eases with the pan; the first frame after the
+    // open is set, not glided, so the map never opens sliding onto bare paper)
+    float zoomTo = -1, openZoom = 1;
+    double builtAt = -1;
+    // (M4 lead 14, r3d look) a row hovered only once the mouse has moved since the map opened: a cursor resting where a
+    // row appears is not a choice, and it would pull the opening view off her and the goal
+    bool moved;
+    public override void _Input(InputEvent e)
+    {
+        base._Input(e);
+        if (e is InputEventMouseMotion m && m.Relative.LengthSquared() > 4) moved = true;
+    }
     Control? ring;
     double t;
     float extent = 1;
     Vector2 youAt;
+    Polygon2D? you;   // her arrow: a mark the names keep clear of (r3d S3: "YOUR CAMP" was printed through it)
 
     // In the panel she stands in the world beside it, near enough that her face reads (as for the rest
     // of the book); opened wide, the view is the map's.
@@ -353,7 +366,7 @@ public partial class MapScreen : Overlay
     public override (float Pitch, float Distance, float Height)? CameraFrame => wide ? null : BookFrame;
 
     /// <summary>A mark the list can name: where, what, and its words.</summary>
-    readonly record struct Entry(double X, double Z, MarkKind Kind, string Label);
+    readonly record struct Entry(double X, double Z, MarkKind Kind, string Label, bool Objective = false);
 
     /// <summary>The triggers zoom (or , and .); Y finds you; Z (R3) opens it wide or folds it back; focus
     /// on a line of the list glides the map to it.</summary>
@@ -361,8 +374,8 @@ public partial class MapScreen : Overlay
     {
         switch (a)
         {
-            case Act.SubNext: zoom = Math.Min(4f, zoom * 1.25f); Place(F); return true;
-            case Act.SubPrev: zoom = Math.Max(minZoom, zoom / 1.25f); Place(F); return true;
+            case Act.SubNext: zoom = Math.Min(4f, zoom * 1.25f); zoomTo = -1; Place(F); return true;
+            case Act.SubPrev: zoom = Math.Max(minZoom, zoom / 1.25f); zoomTo = -1; Place(F); return true;
             case Act.Alt2: FindMe(); return true;
             case Act.Expand: Widen(); return true;
         }
@@ -386,6 +399,7 @@ public partial class MapScreen : Overlay
     /// <summary>The map moves to a place, and a ring marks it (none: just move).</summary>
     void Glide(double x, double z, Vector2? mark)
     {
+        zoomTo = -1;
         panTo = new Vector2(Math.Clamp(-(float)x / extent, -0.5f, 0.5f), Math.Clamp(-(float)z / extent, -0.5f, 0.5f));
         gliding = true;
         if (ring != null && IsInstanceValid(ring))
@@ -393,6 +407,21 @@ public partial class MapScreen : Overlay
             ring.Visible = mark != null;
             if (mark is { } m) ring.Position = m - ring.Size / 2;
         }
+    }
+
+    /// <summary>M4 lead 14 (judge r3c M4): a line chosen frames her and its mark together, 80 px clear of the window's
+    /// edge, at the zoom the map opened on or wider (at minZoom the whole zone shows, so the two always fit); right
+    /// after the open it is set at once.</summary>
+    void FrameWith(double x, double z, Vector2 at)
+    {
+        if (G.Battle is not { } b) { Glide(x, z, at); return; }
+        double px = b.Player.X, pz = b.Player.Z;
+        float du = (float)(Math.Abs(x - px) / extent) * F, dv = (float)(Math.Abs(z - pz) / extent) * F;
+        float k = Math.Min((viewSize.X - 160) / Math.Max(du, 1), (viewSize.Y - 160) / Math.Max(dv, 1));
+        float zt = Math.Clamp(Math.Min(k, openZoom), minZoom, 4f);
+        Glide((x + px) / 2, (z + pz) / 2, at);
+        if (builtAt >= 0 && t - builtAt < 0.35) { zoom = zt; pan = panTo; gliding = false; Place(F); return; }
+        zoomTo = zt;
     }
 
     // (--map-measure: what the open cost, and every frame over 50 ms while it is up, the arena's freeze check)
@@ -417,8 +446,10 @@ public partial class MapScreen : Overlay
         if (gliding)
         {
             panTo = Held(panTo);
-            pan = pan.Lerp(panTo, 1 - Mathf.Exp(-9 * (float)delta));
-            if (pan.DistanceTo(panTo) < 0.0005f) { pan = panTo; gliding = false; }
+            float ke = 1 - Mathf.Exp(-9 * (float)delta);
+            if (zoomTo > 0) zoom = Mathf.Abs(zoom - zoomTo) < 0.002f ? zoomTo : Mathf.Lerp(zoom, zoomTo, ke);
+            pan = pan.Lerp(Held(panTo), ke);
+            if (pan.DistanceTo(Held(panTo)) < 0.0005f && (zoomTo < 0 || zoom == zoomTo)) { pan = Held(panTo); gliding = false; zoomTo = -1; }
             Place(F);
         }
         if (ring != null && IsInstanceValid(ring) && ring.Visible)
@@ -480,26 +511,34 @@ public partial class MapScreen : Overlay
         }
         Vector2 Px(double x, double z) => new((float)((x / extent + 0.5) * F), (float)((z / extent + 0.5) * F));
         double mark0 = sw.Elapsed.TotalMilliseconds;
-        var entries = zone.MapMarks().Where(m => m.Kind is MarkKind.Exit or MarkKind.Quest || Seen(m.X, m.Z)).Select(m => new Entry(m.X, m.Z, m.Kind, m.Label)).ToList();
+        var entries = zone.MapMarks().Where(m => m.Kind is MarkKind.Exit or MarkKind.Quest || Seen(m.X, m.Z)).Select(m => new Entry(m.X, m.Z, m.Kind, m.Label, m.Objective)).ToList();
         foreach (var gp in G.GoalPins()) entries.Add(new Entry(gp.X, gp.Z, MarkKind.Goal, gp.Def.Label));
         if (G.Journey.World.Corpse is { } corpse && corpse.Zone == zone.Id) entries.Add(new Entry(corpse.X, corpse.Z, MarkKind.Danger, $"{corpse.HeroName}'s belongings"));
-        foreach (var m in entries.OrderByDescending(m => m.Kind == MarkKind.Place)) Mark(world, Px(m.X, m.Z), m.Label, m.Kind);
+        int marksAt = world.GetChildCount();
+        foreach (var m in entries.OrderByDescending(m => m.Kind == MarkKind.Place)) Mark(world, Px(m.X, m.Z), m.Label, m.Kind, m.Objective);
         if (measure) GD.Print($"MAPMEASURE build: drawing {drawMs:F1} ms, fog {fogMs:F1} ms, {entries.Count} marks {sw.Elapsed.TotalMilliseconds - mark0:F1} ms, extent {extent:F0}, zone {zone.Id}");
         // The ring that marks what the list has chosen.
         ring = new Panel { Size = new Vector2(46, 46), PivotOffset = new Vector2(23, 23), MouseFilter = MouseFilterEnum.Ignore, Visible = false };
-        var rs = Style.Box(new Color(0, 0, 0, 0), new Color("#a8321e"), 3, 23, 0);
+        // (M4 lead 14, r3c M4: in the drawing's own ink; the red on the map is hers alone)
+        var rs = Style.Box(new Color(0, 0, 0, 0), new Color("#3a2414"), 3, 23, 0);
         ring.AddThemeStyleboxOverride("panel", rs);
         world.AddChild(ring);
+        // (M4 lead 14, r3d look: the ring under the marks, so a name's parchment outline knocks the ring out where they cross,
+        // as a printed map's label knocks out a line, and never an ink circle struck through the name)
+        world.MoveChild(ring, marksAt);
         // You.
         if (G.Battle is { } b)
         {
             youAt = Px(b.Player.X, b.Player.Z);
-            world.AddChild(new Polygon2D { Polygon = new[] { new Vector2(0, -11), new Vector2(8, 8), new Vector2(0, 4), new Vector2(-8, 8) }, Color = new Color("#b8321e"), Position = youAt, Rotation = (float)(Math.PI - b.Player.Facing) });
+            world.AddChild(you = new Polygon2D { Polygon = new[] { new Vector2(0, -11), new Vector2(8, 8), new Vector2(0, 4), new Vector2(-8, 8) }, Color = new Color("#b8321e"), Position = youAt, Rotation = (float)(Math.PI - b.Player.Facing) });
         }
         frame.GuiInput += e => Input(e, F);
         minZoom = Math.Min(viewSize.X, viewSize.Y) / F * 0.9f;
         // Opened on what is known, whatever the zone's own focus.
         Fit(seen);
+        openZoom = zoom;
+        builtAt = t;
+        moved = false;
         Place(F);
         // A compass in the window's corner, the way the old maps had one.
         var rose = Glyphs.Icon("compass", 56, Style.Gold with { A = 0.75f });
@@ -512,12 +551,19 @@ public partial class MapScreen : Overlay
 
         var p0 = G.Battle?.Player;
         IEnumerable<Entry> Near(IEnumerable<Entry> items) => items.OrderBy(e => p0 == null ? 0 : Math.Sqrt((e.X - p0.X) * (e.X - p0.X) + (e.Z - p0.Z) * (e.Z - p0.Z)));
+        // (M4 lead 14, r3d look) opened on her and the first step of her road (the list's first row, ringed), in every input
+        // mode: Nav runs a row's focus at a build only in key mode, so with the mouse the map opened on the explored ground alone
+        if (Near(entries.Where(e => e.Kind is MarkKind.Quest or MarkKind.Turn or MarkKind.Exit or MarkKind.Goal)).Select(e => (Entry?)e).FirstOrDefault() is { } road0)
+            FrameWith(road0.X, road0.Z, Px(road0.X, road0.Z));
         // The legend, in the marks' own look (the corner map's too).
-        Control Legend(int columns)
+        Control Legend(int columns, bool road = false)
         {
             var legend = new GridContainer { Columns = columns, MouseFilter = MouseFilterEnum.Ignore };
             legend.AddThemeConstantOverride("h_separation", 22);
             legend.AddThemeConstantOverride("v_separation", 6);
+            // (M4 lead 14, r3c S5: opened wide, the diamond is named too)
+            if (road && entries.Any(e => e.Objective))
+                legend.AddChild(Style.H(6, new Minimap.GoalDiamond { CustomMinimumSize = new Vector2(18, 18), Size = new Vector2(18, 18) }, Style.Label("Your road", Style.Ui, Style.Caption, Style.Ink)));
             foreach (var (kind, text) in new[] { (MarkKind.Quest, "Someone needs you"), (MarkKind.Exit, "The way out"), (MarkKind.Danger, "Hostile"), (MarkKind.Mystery, "Unexplained") })
                 legend.AddChild(Style.H(6, Minimap.Mark(kind, 18), Style.Label(text, Style.Ui, Style.Caption, Style.Ink)));
             return legend;
@@ -600,7 +646,7 @@ public partial class MapScreen : Overlay
         scroll.SizeFlagsVertical = SizeFlags.Fill;
         col.AddChild(scroll);
         col.AddChild(Kit.RuleH());
-        col.AddChild(Legend(2));
+        col.AddChild(Legend(2, road: true));
         col.AddChild(Tools());
         col.AddChild(Hints());
         // (none of the list's words wrap, so its height is known before it is laid out)
@@ -648,13 +694,16 @@ public partial class MapScreen : Overlay
     Control Line(Entry e, Vector2 at)
     {
         void Go() { Glide(e.X, e.Z, at); zoom = Math.Max(zoom, 1.8f); Place(F); }
+        void Frame() => FrameWith(e.X, e.Z, at);
         var b = new Button { Flat = true, FocusMode = FocusModeEnum.None, MouseDefaultCursorShape = CursorShape.PointingHand, CustomMinimumSize = new Vector2(0, 34), SizeFlagsHorizontal = SizeFlags.ExpandFill };
         foreach (var s in new[] { "normal", "hover", "pressed" }) b.AddThemeStyleboxOverride(s, new LineUnder());
         b.AddThemeStyleboxOverride("focus", new StyleBoxEmpty());
         var name = Style.Label(e.Label, Style.UiBold, Style.Small, Style.Ink);
         name.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         name.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
-        var row = Style.H(10, Minimap.Mark(e.Kind, 18), name);
+        // (M4 lead 14, r3c S5: the one place sought wears the diamond the map and the corner map give it)
+        Control icon = e.Objective ? new Minimap.GoalDiamond { CustomMinimumSize = new Vector2(18, 18), Size = new Vector2(18, 18) } : Minimap.Mark(e.Kind, 18);
+        var row = Style.H(10, icon, name);
         if (G.Battle?.Player is { } p)
         {
             double dx = e.X - p.X, dz = e.Z - p.Z, d = Math.Sqrt(dx * dx + dz * dz);
@@ -665,8 +714,8 @@ public partial class MapScreen : Overlay
         row.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         b.AddChild(row);
         b.Pressed += Go;
-        Nav.Mark(b, $"mark:{e.Label}", Go, focus: () => Glide(e.X, e.Z, at));
-        b.MouseEntered += () => { name.AddThemeColorOverride("font_color", Style.EmberHi); Glide(e.X, e.Z, at); };
+        Nav.Mark(b, $"mark:{e.Label}", Go, focus: Frame);
+        b.MouseEntered += () => { if (!moved) return; name.AddThemeColorOverride("font_color", Style.EmberHi); Frame(); };
         b.MouseExited += () => name.AddThemeColorOverride("font_color", Style.Ink);
         return b;
     }
@@ -683,15 +732,16 @@ public partial class MapScreen : Overlay
     /// <summary>Each mark's name on the drawing: where its mark stands, the words, what it is, how wide.</summary>
     readonly List<(Control Node, Label Text, MarkKind Kind, float W)> names = new();
 
-    void Mark(Control parent, Vector2 at, string label, MarkKind kind)
+    void Mark(Control parent, Vector2 at, string label, MarkKind kind, bool objective = false)
     {
         bool place = kind == MarkKind.Place;
         var (_, color) = Minimap.Look(kind);
         var node = new Control { Position = at, MouseFilter = MouseFilterEnum.Ignore };
         if (!place)
         {
-            var icon = Minimap.Mark(kind, 22);
-            icon.Position = new Vector2(-11, -11);
+            // (M4 lead 13, r3b: the one place sought wears the minimap's and the tracker's diamond here too, not quest.png)
+            Control icon = objective ? new Minimap.GoalDiamond() : Minimap.Mark(kind, 22);
+            icon.Position = -icon.Size / 2;
             node.AddChild(icon);
         }
         var font = place ? Style.Display : Style.TextBold;
@@ -699,11 +749,13 @@ public partial class MapScreen : Overlay
         var l = Style.Label(label, font, size, place ? new Color("#3a2414") : color, false, HorizontalAlignment.Center, false);
         l.AddThemeColorOverride("font_outline_color", new Color("#e4d6b6"));
         l.AddThemeConstantOverride("outline_size", 5);
-        float w = font.GetStringSize(label, HorizontalAlignment.Left, -1, size).X + 8;
-        l.Size = new Vector2(w, 22);
-        l.Position = new Vector2(-w / 2, place ? -11 : 12);
         node.AddChild(l);
         parent.AddChild(node);
+        // (M4 lead 14, r3e S1: the width the label really draws at, its theme's padding and outline included;
+        // the string alone was ~32 px short, so names grew to the right of their marks and their keep-clear rects fell short)
+        float w = Mathf.Max(font.GetStringSize(label, HorizontalAlignment.Left, -1, size).X + 8, l.GetMinimumSize().X);
+        l.Size = new Vector2(w, 22);
+        l.Position = new Vector2(-w / 2, place ? -11 : 12);
         names.Add((node, l, kind, w));
     }
 
@@ -718,6 +770,7 @@ public partial class MapScreen : Overlay
         var taken = new List<Rect2>();
         foreach (var (node, _, kind, _) in names)
             if (kind != MarkKind.Place) taken.Add(new Rect2(node.GlobalPosition - new Vector2(11, 11), new Vector2(22, 22)));
+        if (you != null && IsInstanceValid(you)) { float h = 12 * you.GlobalScale.X; taken.Add(new Rect2(you.GlobalPosition - new Vector2(h, h), new Vector2(2 * h, 2 * h))); }
         static int Order(MarkKind k) => k == MarkKind.Place ? 0 : k is MarkKind.Quest or MarkKind.Exit or MarkKind.Goal ? 1 : k == MarkKind.Person ? 2 : 3;
         foreach (var (node, text, kind, w) in names.OrderBy(n => Order(n.Kind)))
         {
@@ -771,8 +824,8 @@ public partial class MapScreen : Overlay
     {
         switch (e)
         {
-            case InputEventMouseButton { ButtonIndex: MouseButton.WheelUp, Pressed: true }: zoom = Math.Min(4f, zoom * 1.18f); Place(frame); break;
-            case InputEventMouseButton { ButtonIndex: MouseButton.WheelDown, Pressed: true }: zoom = Math.Max(minZoom, zoom / 1.18f); Place(frame); break;
+            case InputEventMouseButton { ButtonIndex: MouseButton.WheelUp, Pressed: true }: zoom = Math.Min(4f, zoom * 1.18f); zoomTo = -1; Place(frame); break;
+            case InputEventMouseButton { ButtonIndex: MouseButton.WheelDown, Pressed: true }: zoom = Math.Max(minZoom, zoom / 1.18f); zoomTo = -1; Place(frame); break;
             case InputEventMouseButton { ButtonIndex: MouseButton.Left } mb:
                 dragging = mb.Pressed;
                 dragFrom = mb.Position;

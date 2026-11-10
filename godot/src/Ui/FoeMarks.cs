@@ -19,9 +19,9 @@ public partial class FoeMarks : Control
     float ringR;
     float time;
     readonly Vector2[] ringPts = new Vector2[33];
-    // A board's lamp (H1 item 6B, Battle.HeldLamp): its life bar over it when below full, and its pool's edge on the
-    // ground while she stands outside it. Functional; its look is H2's.
-    bool lampBar, lampRing, lampOut;
+    // A board's lamp (H1 item 6B, Battle.HeldLamp): its life bar over it when below full. (Its pool's edge left the HUD
+    // for L1's ground decal, M4.) Functional; its look is H2's.
+    bool lampBar, lampOut;
     Vector2 lampAt;
     // The lamp's snuffers (Enemy.Goal): a small cold-blue diamond over each, the foes to turn on to save it.
     Vector2[] snuffs = new Vector2[32];
@@ -29,9 +29,8 @@ public partial class FoeMarks : Control
     readonly Vector2[] dia = new Vector2[4], diaEdge = new Vector2[5];
     static readonly Color Snuff = new("#8fd0ff");
     float lampK;
-    readonly Vector2[] poolPts = new Vector2[49];
     static readonly Color LampFill = new("#ffd07a");
-    static readonly Color Ink = new(0.043f, 0.035f, 0.024f, 0.78f), Danger = new("#b8302f"), Bronze = new("#8a6a3a"), BronzeHi = new("#c9a35c");
+    static readonly Color Ink = new(0.043f, 0.035f, 0.024f, 0.78f), Danger = new("#b8302f"), Bronze = new("#8a6a3a"), BronzeHi = new("#c9a35c"), Bone = new("#e6dcc8");
 
     public FoeMarks() { MouseFilter = MouseFilterEnum.Ignore; }
 
@@ -56,7 +55,9 @@ public partial class FoeMarks : Control
             if (e.Disposition == Disposition.Ally) continue;
             bool isPri = i == pri;
             if (e.Boss && !isPri) continue;
-            if (!isPri && !b.Targetable(e)) continue;
+            // (M4 §5: a champion's plate names it from its first moment on screen, a lamp's breather or not: a plate names,
+            // it does not invite a hit. Targetable stays the sim's (LampHush); a hushed champion still wears its plate.)
+            if (!isPri && !b.Targetable(e) && !(e.Elite && b.HostileToPlayer(e))) continue;
             bool low = e.Hp / Math.Max(1e-6, e.MaxHp) < 0.7;
             bool wantBar = bars_ && !e.Boss && (low || e.Elite || isPri);
             bool snuff = e.Goal && b.HeldLamp is { Lit: true };
@@ -98,7 +99,7 @@ public partial class FoeMarks : Control
 
     void Lamp(Battle b, Camera3D cam, Rect2 vp)
     {
-        lampBar = lampRing = lampOut = false;
+        lampBar = lampOut = false;
         if (b.HeldLamp is not { Caught: true } l) return;
         float y = (float)b.HeightAt(l.X, l.Z);
         var top = new Vector3((float)l.X, y + (float)l.Top + 0.4f, (float)l.Z);
@@ -110,21 +111,10 @@ public partial class FoeMarks : Control
             lampAt.Y = Math.Max(lampAt.Y, 60 * vp.Size.Y / 1080f);
             lampK = l.Lit ? (float)Math.Clamp(l.Life, 0, 1) : 0;
         }
-        var p = b.Player;
-        if (!l.Lit || (p.X - l.X) * (p.X - l.X) + (p.Z - l.Z) * (p.Z - l.Z) < l.Pool * l.Pool) return;
-        for (int i = 0; i < poolPts.Length; i++)
-        {
-            double t = i / (double)(poolPts.Length - 1) * Math.Tau;
-            double x = l.X + Math.Cos(t) * l.Pool, z = l.Z + Math.Sin(t) * l.Pool;
-            var w = new Vector3((float)x, (float)b.HeightAt(x, z) + 0.05f, (float)z);
-            if (cam.IsPositionBehind(w)) return;
-            poolPts[i] = cam.UnprojectPosition(w);
-        }
-        lampRing = true;
     }
 
     /// <summary>Nothing this frame.</summary>
-    public void Show0() { if (count == 0 && snuffCount == 0 && !ring && !lampBar && !lampRing) return; count = snuffCount = 0; ring = lampBar = lampRing = false; QueueRedraw(); }
+    public void Show0() { if (count == 0 && snuffCount == 0 && !ring && !lampBar) return; count = snuffCount = 0; ring = lampBar = false; QueueRedraw(); }
 
     /// <summary>A champion's bar over its head: the lamp bar's bronze-framed ink well at a champion's size, its life
     /// in danger red lit along the top, quarter notches, a dark shadow so it holds on any ground or crowd.</summary>
@@ -181,7 +171,16 @@ public partial class FoeMarks : Control
             var sz = font.GetStringSize(n.Title, HorizontalAlignment.Left, -1, fs);
             var at = new Vector2(Mathf.Round(cx - sz.X / 2), Mathf.Round(r.Position.Y - 4 * s));
             DrawStringOutline(font, at, n.Title, HorizontalAlignment.Left, -1, fs, Math.Max(2, (int)(4 * s)), Ink with { A = 0.95f });
-            DrawString(font, at, n.Title, HorizontalAlignment.Left, -1, fs, BronzeHi);
+            // (fix C, judge r1 10: the name in bone on its ink edge: bronze on olive grass could not be read. Red only as
+            // the rank's mark: a small diamond each side of the name)
+            DrawString(font, at, n.Title, HorizontalAlignment.Left, -1, fs, new Color("#f6ecd6"));
+            float dr = Mathf.Round(4 * s), dy = at.Y - Mathf.Round(font.GetAscent(fs) * 0.36f);
+            foreach (float dx in new[] { at.X - 9 * s, at.X + sz.X + 9 * s })
+            {
+                var c = new Vector2(Mathf.Round(dx), dy);
+                DrawColoredPolygon(new[] { c + new Vector2(0, -dr - 1.5f), c + new Vector2(dr + 1.5f, 0), c + new Vector2(0, dr + 1.5f), c + new Vector2(-dr - 1.5f, 0) }, Ink with { A = 0.95f });
+                DrawColoredPolygon(new[] { c + new Vector2(0, -dr), c + new Vector2(dr, 0), c + new Vector2(0, dr), c + new Vector2(-dr, 0) }, new Color("#d8402f"));
+            }
         }
         if (n.Affixes.Count == 0) return;
         int afs = (int)(17 * s);
@@ -212,16 +211,6 @@ public partial class FoeMarks : Control
             var inner = r.Grow(-1 * s);
             DrawRect(new Rect2(inner.Position, new Vector2(inner.Size.X * b.K, inner.Size.Y)), new Color(Danger, a));
         }
-        if (lampRing)
-        {
-            // A dashed warm-white line (the place to hold), never the unbroken amber ring of a blow to leave.
-            var warm = new Color("#fff1d6");
-            for (int i = 0; i + 1 < poolPts.Length; i += 2)
-            {
-                DrawLine(poolPts[i], poolPts[i + 1], new Color(Ink, 0.4f), 4.5f * s);
-                DrawLine(poolPts[i], poolPts[i + 1], new Color(warm, 0.75f), 2.2f * s);
-            }
-        }
         if (lampBar)
         {
             // As a champion's bar, in the lamp's own light.
@@ -231,7 +220,7 @@ public partial class FoeMarks : Control
             DrawRect(r, new Color(Ink, Ink.A * a));
             var inner = r.Grow(-1 * s);
             DrawRect(new Rect2(inner.Position, new Vector2(inner.Size.X * lampK, inner.Size.Y)), LampFill);
-            DrawRect(r, new Color(Bronze, a), false, Math.Max(1, s));
+            DrawRect(r, new Color(Bone, a), false, Math.Max(1, s));
             if (lampOut)
             {
                 var font = ThemeDB.FallbackFont;
@@ -264,8 +253,8 @@ public partial class FoeMarks : Control
                 float t = i / (float)(ringPts.Length - 1) * Mathf.Tau;
                 ringPts[i] = ringAt + new Vector2(Mathf.Cos(t) * rx, Mathf.Sin(t) * ry);
             }
-            DrawPolyline(ringPts, new Color(Ink, 0.6f), 4.5f * s, true);
-            DrawPolyline(ringPts, new Color(BronzeHi, 0.65f + 0.3f * pulse), 2.5f * s, true);
+            DrawPolyline(ringPts, new Color(Ink, 0.85f), 4.5f * s, true);
+            DrawPolyline(ringPts, new Color(Bone, 0.65f + 0.3f * pulse), 2.5f * s, true);
         }
     }
 }
