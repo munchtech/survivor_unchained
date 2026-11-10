@@ -8,7 +8,9 @@
       inside the held loop, every frame over the act's first S seconds (bladestorm_loop: 1.0); the act's first and last frame
       and each event's frame are always in. Labels: run time, the clip's frame at 60 fps counted from the act's start (negative
       before, end+n after), the event that fires there. Play tiles 300x300 (larger if her box needs it), close tiles sized to
-      her box over the picked frames plus 15 cm. Writes <clip>_<cam>_dense_r<k>_1to1.png and _half.jpg, one pair per row.
+      her box over the picked frames plus 15 cm. Writes <clip>_<cam>_dense_r<k>_1to1.png and _half.jpg, one pair per row (the
+      half's labels are drawn at full size). A tile's picture is the movie file f<N> of its `act: scr f=N` line (proved on
+      heroic_leap play, files 28-38: the quiet and the moving frames fall on the same N in the log and in the files).
   sheets.py --box <clip>           her box over the act per camera from the logs alone (choosing a close zoom): no pictures read
 """
 import math, os, re, subprocess, sys
@@ -109,7 +111,13 @@ def dense(clip, first, every, hold_every, cams):
                 dr.text((j * tw + 3, 3), lab, fill=(255, 255, 255))
             f = M / clip / f"{clip}_{cam}_dense_r{k // N + 1}_1to1.png"
             row.save(f)
-            row.resize((row.width // 2, row.height // 2), Image.LANCZOS).save(str(f).replace("_1to1.png", "_half.jpg"), quality=90)
+            # (the half-size copy: the pictures halved, the labels drawn again at full size so they still read)
+            half = Image.new("RGB", (tw * N // 2, th // 2 + 18))
+            half.paste(row.crop((0, 18, row.width, row.height)).resize((tw * N // 2, th // 2), Image.LANCZOS), (0, 18))
+            hd = ImageDraw.Draw(half)
+            for j, (_, lab) in enumerate(part):
+                hd.text((j * tw // 2 + 3, 3), lab, fill=(255, 255, 255))
+            half.save(str(f).replace("_1to1.png", "_half.jpg"), quality=90)
             files.append((f, len(part)))
     for f, n in files:
         print(f"{f}  ({n} tiles)  +  {f.name.replace('_1to1.png', '_half.jpg')}")
