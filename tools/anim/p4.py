@@ -164,6 +164,8 @@ def fit_of(spec):
             f["shield"]["hand_rot"] = f["end"]["pose"]["rot"]["hand_l"]
     if "start" in f:                # (an action's blend in from a built clip's frame (fit.start: the mirror of end))
         f["start"]["pose"] = end_pose(f["start"]["clip"], f["start"].get("frame", 0))
+        if f.get("shield", {}).get("hand") == "start":  # (the shield hand held at the start pose's local all through:
+            f["shield"]["hand_rot"] = f["start"]["pose"]["rot"]["hand_l"]   # the stance's grip kept through a cut)
     if "clear" in f:
         # (the game's mount on B: the pieces' points in their bones' spaces, a fixed sample)
         pc, bones = pieces(), {"sword": ("hand_r", "r"), "shield": ("lowerarm_l", "l")}

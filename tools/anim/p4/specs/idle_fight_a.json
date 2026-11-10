@@ -218,7 +218,12 @@
   },
   "look": {
    "yaw_deg": 0,
-   "pitch_deg": 5
+   "pitch_deg": 5,
+   "split": [
+    20,
+    30,
+    50
+   ]
   },
   "hips": {
    "keys": [
