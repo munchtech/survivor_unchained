@@ -73,11 +73,12 @@ public static class HeroNormals
             foreach (var mi in e) if (GodotObject.IsInstanceValid(mi)) Visit(mi);
         }
         if (jobs.Count == 0) return;
+        int done = 0;
         foreach (var id in new List<ulong>(jobs.Keys))
         {
             var (src, arr, job) = jobs[id];
             if (!job.IsCompleted) continue;
-            jobs.Remove(id);
+            jobs.Remove(id); done++;
             ArrayMesh? copy = null;
             if (job.Status != TaskStatus.RanToCompletion) GD.PushError($"hero normals: {src.ResourceName} bake failed: {job.Exception?.GetBaseException().Message}");
             if (job.Status == TaskStatus.RanToCompletion && job.Result.Out is { } cs && GodotObject.IsInstanceValid(src))
@@ -103,8 +104,8 @@ public static class HeroNormals
             }
             made[id] = copy;
         }
-        if (jobs.Count == 0)
-            GD.Print($"hero normals: {nBaked} meshes baked ({nMerged} of them her_merge), {nVerts} verts, {msBake:0} ms of bake on workers, {wall.Elapsed.TotalMilliseconds:0} ms wall; {nLeft} left as is; radius {Radius:0.###} m");
+        if (done > 0)
+            GD.Print($"hero normals: {nBaked} meshes baked ({nMerged} of them her_merge), {nVerts} verts, {msBake:0} ms of bake on workers, {wall.Elapsed.TotalMilliseconds:0} ms wall; {nLeft} left as is, {jobs.Count} still baking, {early.Count} waiting for the radius; radius {Radius:0.###} m");
         for (int i = waiting.Count - 1; i >= 0; i--)
         {
             var mi = waiting[i];
