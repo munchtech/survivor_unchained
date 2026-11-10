@@ -9,7 +9,8 @@ namespace SurvivorUnchained.Ui;
 /// x 960, its foot clear of the beads and statuses. The panel language: an ink ground at 82%, a 1 px bronze rule top and
 /// bottom, no border. A new key: the skill's gold glyph in a 40 px well, its name (display serif 26, cream), its key cap
 /// chip (the seat caps' own KeyTag, held at the seats' on-screen size), one line of what it does (UI sans 16, parchment
-/// 80%). A lamp lit: the glyph, the name, "a blow 42 → 47" (before dim, after bright). Plain: the header and the prompt
+/// 80%). A lamp lit: the glyph, the name, "a blow 42 → 47" (before dim, after bright). A new skill (the calling's, on
+/// no key yet): the glyph, the name, its one line, no key cap; its prompt row names the skills screen. Plain: the header and the prompt
 /// row. The prompt row: a key chip and words; the card then holds 3 s. In 0.18 s, hold 2.2 s, out 0.3 s folding toward
 /// the seat that opened (its ring flashes). Words built once a card; drawn once a card; per frame only its transform.
 /// </summary>
@@ -63,8 +64,9 @@ public partial class LevelCard : Control
     {
         shown = s;
         header = LevelCards.Header(s);
-        // (the level's stinger, once the card shows: Journey's "Level N" banner, which carried it, is gone in the campaign)
-        SurvivorUnchained.Sound.Sfx.Stinger("triumph");
+        // (the level's stinger, once the card shows: Journey's "Level N" banner, which carried it, is gone in the campaign;
+        // a new skill's card that follows its level's key card is the same level-up: it does not ring twice)
+        if (s.Kind != LevelCardKind.NewSkill || s.Level > 0) SurvivorUnchained.Sound.Sfx.Stinger("triumph");
         bool body = s.Kind != LevelCardKind.Plain;
         name = line = before = after = measure = "";
         glyph = null;
@@ -72,7 +74,7 @@ public partial class LevelCard : Control
         {
             name = wd.Name;
             glyph = Glyphs.Texture(Glyphs.ForSkill(s.Skill, wd.Art), 80, GlyphGold, line: true);
-            if (s.Kind == LevelCardKind.NewKey) line = s.Line ?? LevelCards.Line(wd.Description);
+            if (s.Kind != LevelCardKind.LampLit) line = s.Line ?? LevelCards.Line(wd.Description);
         }
         else if (body) name = s.Skill;
         if (s.Kind == LevelCardKind.LampLit) { measure = s.Measure + " "; before = LevelCards.Num(s.Before); after = LevelCards.Num(s.After); }
@@ -185,7 +187,7 @@ public partial class LevelCard : Control
             DrawRect(well, Rule with { A = 0.7f }, false, 1);
             if (glyph != null) DrawTextureRect(glyph, well.Grow(-5), false);
             DrawString(Style.Display, new Vector2(NameX, top + 22), name, HorizontalAlignment.Left, -1, NameSize, Cream);
-            if (s.Kind == LevelCardKind.NewKey)
+            if (s.Kind != LevelCardKind.LampLit)
                 DrawString(Style.Ui, new Vector2(NameX, top + 44), line, HorizontalAlignment.Left, -1, LineSize, Parch);
             else
             {

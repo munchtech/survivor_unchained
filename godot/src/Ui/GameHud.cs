@@ -691,7 +691,7 @@ public partial class GameHud : CanvasLayer
         {
             // (as a campaign level-up shows it: the key's slot from the fight, the trait/attribute row; a lamp has none)
             if (cardDue.Kind == LevelCardKind.NewKey && cardDue.Slot < 0) cardDue.Slot = b.Weapons.Find(w => w.Id == cardDue.Skill)?.Slot ?? -1;
-            if (b.Campaign && cardDue.Kind != LevelCardKind.LampLit && (GetParent() as Game)?.Journey.Ch is { } dch)
+            if (b.Campaign && (cardDue.Kind is LevelCardKind.NewKey or LevelCardKind.Plain) && (GetParent() as Game)?.Journey.Ch is { } dch)
             { cardDue.PromptKey = Act.Character; cardDue.PromptText = LevelCards.PromptFor(dch.TraitPicks); }
             LevelCard(cardDue);
         }
@@ -1351,6 +1351,8 @@ public partial class GameHud : CanvasLayer
     SurvivorUnchained.Ui.LevelCard? levelCard;
     int levelSeen;
     bool campaignNow;
+    /// <summary>The calling's teaching already carded (Journey.CallingTaught, shown once).</summary>
+    (int Level, string Skill)? callingCarded;
 
     /// <summary>M4 §4: a level-up card (M6 and M7 call it; the campaign's own level-ups come through LevelWatch). Cards
     /// show one at a time, waiting while banners are held (XpHoldUntil: a screen open holds them too).</summary>
@@ -1377,17 +1379,30 @@ public partial class GameHud : CanvasLayer
 
     /// <summary>M4 §4: the campaign's level-ups, seen by the HUD itself (her level against the last seen): each level a
     /// card, a new key where the taught build teaches one at that level and the fight carries it (Journey.Teach has put
-    /// it on its slot before the HUD looks), else plain; the trait/attribute line on its prompt row.</summary>
+    /// it on its slot before the HUD looks), else plain; the trait/attribute line on its prompt row. A level at which
+    /// the calling taught a skill (Journey.CallingTaught) prints it: a plain card becomes the new skill's, a key card
+    /// is followed by the new skill's own.</summary>
     void LevelWatch(Battle b, int lv, bool ember)
     {
         if (lv <= 0) return;
         int was = levelSeen;
         levelSeen = lv;
         if (was <= 0 || lv <= was || !b.Campaign || ember || HudPin.Active) return;
-        var ch = (GetParent() as Game)?.Journey.Ch;
+        var journey = (GetParent() as Game)?.Journey;
+        var ch = journey?.Ch;
         var build = TaughtBuilds.Of(ch?.Archetype);
         for (int l = was + 1; l <= lv; l++)
-            LevelCard(LevelCards.ForCampaignLevel(l, build, id => b.Weapons.Find(w => w.Id == id) is { } w ? w.Slot : -1, ch?.TraitPicks ?? 0));
+        {
+            var card = LevelCards.ForCampaignLevel(l, build, id => b.Weapons.Find(w => w.Id == id) is { } w ? w.Slot : -1, ch?.TraitPicks ?? 0);
+            LevelCardSpec? second = null;
+            if (journey?.CallingTaught is { } taught && taught.Level == l && callingCarded != taught)
+            {
+                callingCarded = taught;
+                second = LevelCards.WithCalling(card, taught.Skill);
+            }
+            LevelCard(card);
+            if (second != null) LevelCard(second);
+        }
     }
 
     /// <summary>The card's foot: above the beads (the passives' row) and any statuses under its span.</summary>

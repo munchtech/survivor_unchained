@@ -461,7 +461,7 @@ public partial class ArtsScreen : Overlay
         {
             ("flame", "Seen", "An arena shows it to you: the ember offers it in a draft, and you use it."),
             ("book", "Learned", "A tome teaches it: a story fight won, Vonnra's Curiosities; your calling may teach one as you grow."),
-            ("embers", "Carried", "Carry it by day and it is banked: the ember offers it in the night's first drafts, at a higher rank."),
+            ("embers", "Carried", "Put it on a key and it is yours in every fight."),
         })
         {
             var icon = Glyphs.Icon(glyph, 26, Style.Gold);

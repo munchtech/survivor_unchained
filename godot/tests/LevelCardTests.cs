@@ -50,6 +50,60 @@ public sealed class LevelCardTests
     }
 
     [Fact]
+    public void The_callings_skill_takes_a_plain_levels_card_and_keeps_its_level()
+    {
+        var card = LevelCards.ForCampaignLevel(6, Warden, _ => 1, 0);
+        Assert.Equal(LevelCardKind.Plain, card.Kind);
+        Assert.Null(LevelCards.WithCalling(card, "dawnpulse"));
+        Assert.Equal(LevelCardKind.NewSkill, card.Kind);
+        Assert.Equal("dawnpulse", card.Skill);
+        Assert.Equal(6, card.Level);
+        Assert.Equal("LEVEL 6 · A NEW SKILL", LevelCards.Header(card));
+        // (it is on no key: no slot to fold to, and its prompt names the skills screen)
+        Assert.Equal(-1, card.Slot);
+        Assert.Equal(Act.Arts, card.PromptKey);
+        Assert.Equal("Put it on a key", card.PromptText);
+    }
+
+    [Fact]
+    public void The_callings_skill_follows_a_key_levels_card_on_its_own_card_without_the_level()
+    {
+        var card = LevelCards.ForCampaignLevel(9, Warden, id => id == "watch_bell" ? 5 : -1, 0);
+        Assert.Equal(LevelCardKind.NewKey, card.Kind);
+        var second = LevelCards.WithCalling(card, "dawnpulse");
+        // the key card shows as it did
+        Assert.Equal((LevelCardKind.NewKey, "watch_bell", 5), (card.Kind, card.Skill, card.Slot));
+        Assert.Equal("LEVEL 9 · A NEW KEY", LevelCards.Header(card));
+        Assert.Equal(Act.Character, card.PromptKey);
+        // and the new skill's own card follows it
+        Assert.NotNull(second);
+        Assert.Equal((LevelCardKind.NewSkill, "dawnpulse", -1), (second!.Kind, second.Skill, second.Slot));
+        Assert.Equal("A NEW SKILL", LevelCards.Header(second));
+        Assert.DoesNotContain("LEVEL", LevelCards.Header(second));
+        Assert.Equal(Act.Arts, second.PromptKey);
+        Assert.Equal("Put it on a key", second.PromptText);
+        // one after the other from the same queue
+        var q = new LevelCardQueue();
+        q.Add(card); q.Add(second);
+        q.Tick(1 / 60.0, false);
+        Assert.Same(card, q.Current);
+        Run(q, LevelCards.In + LevelCards.HoldPrompt + LevelCards.Out + 0.1);
+        Assert.Same(second, q.Current);
+    }
+
+    [Fact]
+    public void The_flag_parses_a_new_skill()
+    {
+        var k = LevelCards.Parse("skill:dawnpulse:6@2")!.Value;
+        Assert.Equal((LevelCardKind.NewSkill, "dawnpulse", 6, 2.0), (k.Spec.Kind, k.Spec.Skill, k.Spec.Level, k.At));
+        Assert.Equal("LEVEL 6 · A NEW SKILL", LevelCards.Header(k.Spec));
+        Assert.Equal(Act.Arts, k.Spec.PromptKey);
+        Assert.True(k.Spec.HasPrompt);
+        Assert.Null(LevelCards.Parse("skill:dawnpulse"));
+        Assert.Null(LevelCards.Parse("skill:dawnpulse:x"));
+    }
+
+    [Fact]
     public void The_line_is_one_short_clause()
     {
         Assert.Equal("You leap where you aim, untouchable in the air",

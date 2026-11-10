@@ -5,22 +5,22 @@ using SurvivorUnchained.Play;
 namespace SurvivorUnchained.Ui;
 
 /* M4 §4, the level-up card's pure side (no Godot: the tests compile it): what a card says (LevelCardSpec), which kind a
- * campaign level-up makes (LevelCards.ForCampaignLevel), its words built once (LevelCards.Header/Line), and its clock
+ * campaign level-up makes (LevelCards.ForCampaignLevel; WithCalling when the calling taught a skill at it), its words built once (LevelCards.Header/Line), and its clock
  * (LevelCardQueue: in 0.18 s, hold 2.2 s or 3 s with a prompt row, out 0.3 s; waiting while held). LevelCard.cs draws it. */
 
-public enum LevelCardKind : byte { NewKey, LampLit, Plain }
+public enum LevelCardKind : byte { NewKey, LampLit, Plain, NewSkill }
 
 /// <summary>One level-up card (GameHud.LevelCard; M6 and M7 call it).</summary>
 public sealed class LevelCardSpec
 {
     public LevelCardKind Kind = LevelCardKind.Plain;
     public int Level = 1;
-    /// <summary>NewKey / LampLit: the skill's id (its glyph, name and, for a new key, its one line).</summary>
+    /// <summary>NewKey / LampLit / NewSkill: the skill's id (its glyph, name and, but for a lamp, its one line).</summary>
     public string Skill = "";
     /// <summary>NewKey: the slot that opened (0-5, KeyMap.Skills[Slot] is its key; the card folds toward its seat);
     /// -1 none (the card folds toward the coin).</summary>
     public int Slot = -1;
-    /// <summary>NewKey: what it does in one line (null: the skill's description's first clause, LevelCards.Line).</summary>
+    /// <summary>NewKey / NewSkill: what it does in one line (null: the skill's description's first clause, LevelCards.Line).</summary>
     public string? Line;
     /// <summary>LampLit: the measure and its before/after ("a blow 42 -> 47").</summary>
     public string Measure = "a blow";
@@ -36,11 +36,13 @@ public static class LevelCards
 {
     public const double In = 0.18, Hold = 2.2, HoldPrompt = 3.0, Out = 0.3;
 
-    /// <summary>"LEVEL 4 · A NEW KEY", "LEVEL 6 · A LAMP LIT", "LEVEL 5".</summary>
+    /// <summary>"LEVEL 4 · A NEW KEY", "LEVEL 6 · A LAMP LIT", "LEVEL 6 · A NEW SKILL", "LEVEL 5"; a new skill's card that
+    /// follows its level's key card carries no level (Level 0): "A NEW SKILL".</summary>
     public static string Header(LevelCardSpec s) => s.Kind switch
     {
         LevelCardKind.NewKey => $"LEVEL {s.Level} · A NEW KEY",
         LevelCardKind.LampLit => $"LEVEL {s.Level} · A LAMP LIT",
+        LevelCardKind.NewSkill => s.Level > 0 ? $"LEVEL {s.Level} · A NEW SKILL" : "A NEW SKILL",
         _ => $"LEVEL {s.Level}",
     };
 
@@ -90,7 +92,26 @@ public static class LevelCards
         return spec;
     }
 
-    /// <summary>--level-card's spec: slot:SKILL:LEVEL | lamp:SKILL:LEVEL:BEFORE:AFTER | plain:LEVEL, each with an optional
+    /// <summary>A new skill's prompt row: the skills screen's key and these words (it is on no key yet).</summary>
+    public const string SkillPrompt = "Put it on a key";
+
+    /// <summary>The card of a skill the calling taught (Journey.CallingTaught): its glyph, name and one line, no key cap
+    /// (it is on none), the skills screen's prompt. Level 0: no level in its header.</summary>
+    public static LevelCardSpec NewSkill(int level, string skill) =>
+        new() { Kind = LevelCardKind.NewSkill, Level = level, Skill = skill, PromptKey = Act.Arts, PromptText = SkillPrompt };
+
+    /// <summary>The calling taught `skill` at this card's level. A plain card becomes the new skill's card, keeping its
+    /// level (null back); any other card stays as it is and the new skill's own card, without the level, is returned
+    /// to follow it in the queue.</summary>
+    public static LevelCardSpec? WithCalling(LevelCardSpec card, string skill)
+    {
+        if (card.Kind != LevelCardKind.Plain) return NewSkill(0, skill);
+        card.Kind = LevelCardKind.NewSkill; card.Skill = skill;
+        card.PromptKey = Act.Arts; card.PromptText = SkillPrompt;
+        return null;
+    }
+
+    /// <summary>--level-card's spec: slot:SKILL:LEVEL | lamp:SKILL:LEVEL:BEFORE:AFTER | plain:LEVEL | skill:SKILL:LEVEL, each with an optional
     /// @T (seconds into the fight). Null when it does not parse.</summary>
     public static (LevelCardSpec Spec, double At)? Parse(string arg)
     {
@@ -113,6 +134,8 @@ public static class LevelCards
                 return (new LevelCardSpec { Kind = LevelCardKind.LampLit, Skill = p[1], Level = l, Before = b, After = f }, at);
             case "plain" when p.Length == 2 && I(p[1]) is { } l:
                 return (new LevelCardSpec { Kind = LevelCardKind.Plain, Level = l }, at);
+            case "skill" when p.Length == 3 && I(p[2]) is { } l:
+                return (NewSkill(l, p[1]), at);
         }
         return null;
     }
