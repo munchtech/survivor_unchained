@@ -1718,5 +1718,9 @@ def main():
             print(f"{rid:24s} {node:44s} " + " ".join(f"{k}={v}" for k, v in rr.items() if k not in ("tier",)))
 
 
+# (base-native pieces, authored on her_b: tools/armor/gear_native.py joins units, bind, stale and build here)
+import gear_native  # noqa: E402
+gear_native.install(sys.modules[__name__])
+
 if __name__ == "__main__":
     main()
