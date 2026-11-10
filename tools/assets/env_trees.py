@@ -2017,10 +2017,10 @@ def mesh_alder_clusters():
 #     python tools/assets/env_trees.py sheet --species clump --out X.png         the proof picture and the numbers
 CLUMP = {
     # domes: centre (x, y), radii (x, y, z), yaw. clump_a 2.8 x 2.2 m with its caps, 1.2 m tall; clump_b 1.8 x 1.5, 0.8
-    'clump_a': {'seed': 11, 'caps': 30, 'cap': (0.25, 0.28), 'domes': [
+    'clump_a': {'seed': 11, 'caps': 56, 'cap': (0.20, 0.24), 'domes': [
         {'c': (-0.36, 0.05), 'r': (0.94, 0.92, 1.14), 'yaw': 20}, {'c': (0.58, -0.12), 'r': (0.74, 0.76, 0.80), 'yaw': -35}]},
     'tuft_a': {'seed': 23, 'tuft': (4, 2)},
-    'clump_b': {'seed': 37, 'caps': 15, 'cap': (0.24, 0.27), 'domes': [
+    'clump_b': {'seed': 37, 'caps': 28, 'cap': (0.19, 0.23), 'domes': [
         {'c': (-0.22, 0.04), 'r': (0.58, 0.60, 0.74), 'yaw': 30}, {'c': (0.36, -0.08), 'r': (0.46, 0.50, 0.52), 'yaw': -20}]},
 }
 BU_SIZES = (1.12, 1.0, 0.88)   # every third cap big, medium, small (times its 'cap' radius)
@@ -2028,8 +2028,9 @@ BU_LOBES = (5, 6)     # a cap's leaf tips
 BU_NOTCH = 0.78       # the cut between two tips (share of the cap's radius)
 BU_HC, BU_HU = 0.34, 0.10      # a cap's dome over, and its underside under, its middle (share of its radius)
 BU_UP = 0.6          # a cap's axis = the mound's normal + this much up (0: flat on the mound; more: nearer level)
-BU_TURN = 6.0         # ... turned by up to this (degrees), so neighbours differ
-BU_AXIS = 0.6         # a cap's normals: this share its axis, the rest its local smooth normal
+BU_TURN = 14.0        # ... turned by up to this (degrees), so neighbours differ (round 4: 6 left neighbours one tone)
+BU_AXIS = 0.45        # a cap's normals: this share its axis, the rest its local smooth normal (round 4: 0.6 kept a
+                      # cap's drooping rim in its top's tone; at 0.45 the rim turns away and takes the next tone down)
 BU_OFF = (-0.02, 0.05)         # a cap's middle off the mound along its normal (m)
 BU_CORE = 0.86        # the core's share of the guide domes
 BU_UV_CORE = (0.36, 0.50)
@@ -2134,7 +2135,7 @@ def _bu_stitch(b, ra, rb_, w, under):
 
 
 def bush_cap(b, C, lod):
-    """One cap into b. lod 0: its top (middle, a ring at 0.6, the rim) and its underside (a fan); 1: its top a fan;
+    """One cap into b. lod 0: its top (a fan from its middle to the rim) and its underside (a fan); 1: its top a fan;
     2: a fan on one rim point a tip."""
     n = len(C['rim'])
 
@@ -2146,7 +2147,7 @@ def bush_cap(b, C, lod):
         return nn if np.dot(nn, C['w']) > 0 else -nn
     nu = -C['w'] - _CL_UP
     nu /= np.linalg.norm(nu)
-    for under, rings in ((False, (0.0, 0.6, 1.0) if lod == 0 else (0.0, 1.0)), (True, (1.0, 0.0) if lod == 0 else ())):
+    for under, rings in ((False, (0.0, 1.0)), (True, (1.0, 0.0) if lod == 0 else ())):
         rows = []
         for s in rings:
             cnt = 1 if s == 0.0 else (n // CL_SUB if lod == 2 else n)
