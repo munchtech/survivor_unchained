@@ -934,12 +934,14 @@ public static partial class Firing
             double off = Math.Abs(da) + (d < 0.7 ? 1 : 0);
             if (off < inLine) { inLine = off; cut.HitX = e.X; cut.HitZ = e.Z; }
             double dd = d == 0 ? 1 : d;
+            bool wasDying = e.State == EnemyState.Dying;
             b.HitEnemy(e, dmg, w.School, w.Tags, new HitOpts
             {
                 Weapon = w, Knockback = kb, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd, Status = hitStatus, BossDamage = w.Def.BossDamage,
                 Heavy = b.RuleBeforeCut(w, e),
             });
-            if (!e.Alive) cut.Killed++;
+            // (a kill only sets State = Dying, Alive stays true while it falls: count the hit that moved it there)
+            if (!e.Alive || (!wasDying && e.State == EnemyState.Dying)) cut.Killed++;
             b.RuleAfterCut(w, e, p.X, p.Z);
         });
         if (last != null) b.HookLast(w, last); // chainbound.the_long_chain
