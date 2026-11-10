@@ -60,6 +60,8 @@ public sealed class SwingChain
     internal double ReadyStep = double.NaN, Overshoot;
     /// <summary>Ev.SwingRelease was told for this cut (once a cut).</summary>
     internal bool Told;
+    /// <summary>Its blow landed this step: the wait is set from PeriodEnd before the step counts it down (the landing ran first).</summary>
+    internal bool Sync;
 }
 
 public sealed partial class Battle
@@ -169,6 +171,8 @@ public static partial class Firing
     /// <summary>Before a chained skill's wait counts down a step: the step it runs out on is noted, and how far into it.</summary>
     internal static void ChainReady(Battle b, WeaponInst w, double dt)
     {
-        if (w.Timer > 0 && w.Timer <= dt && w.Chain is { } c) { c.ReadyStep = b.Time; c.Overshoot = dt - w.Timer; }
+        if (w.Chain is not { } c) return;
+        if (c.Sync) { c.Sync = false; w.Timer = Math.Max(0, c.PeriodEnd - (b.Time - dt)); }
+        if (w.Timer > 0 && w.Timer <= dt) { c.ReadyStep = b.Time; c.Overshoot = dt - w.Timer; }
     }
 }

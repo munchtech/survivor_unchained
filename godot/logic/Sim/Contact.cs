@@ -123,6 +123,6 @@ public static partial class Firing
         if (c != null) w.Timer *= c.PeriodScale;
         w.Timer = Math.Max(0, w.Timer - since);
         // (a chain's next cut never starts before this one's cancel beat, whatever shortened its wait)
-        if (c != null) { w.Timer = Math.Max(w.Timer, c.CancelAt - b.Time); c.PeriodEnd = b.Time + w.Timer; }
+        if (c != null) { w.Timer = Math.Max(w.Timer, c.CancelAt - b.Time); c.PeriodEnd = b.Time + w.Timer; c.Sync = true; }
     }
 }
