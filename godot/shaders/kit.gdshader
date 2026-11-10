@@ -42,6 +42,7 @@ render_mode diffuse_burley, specular_schlick_ggx;
 // fire's first band; else the moon's), the level says which tone there: fire top (>= 0.9, tone 6) / olive mid (>= 0.7,
 // tone 5) / dark edge (tone 5 x texel 7.w); moon top (>= 0.7 on key-lit faces off the side, tone 3) over body or side by the
 // normal (bush_01: the edge forced to side drew the moon half one dark slab). Foot band, rim line, the fire's give-way and the dabs as cel_stand_base.
+const float KIT_LEAF_MOON_MID = 0.45;
 vec3 kit_leaf_base(vec3 c_wp, vec2 c_org, vec3 c_wn, float c_foot, float c_lum, float c_rim, float c_lv, out vec3 c_moon, out vec3 c_fire) {
 	vec4 c_x = cel_stand_tone(7);
 	float c_dab = c_x.y > 0.0 ? clamp(pow(max(c_lum, 1e-4) / max(c_x.x, 1e-4), c_x.y), 0.5, 1.5) : 1.0;
@@ -51,7 +52,9 @@ vec3 kit_leaf_base(vec3 c_wp, vec2 c_org, vec3 c_wn, float c_foot, float c_lum, 
 	float c_hi = cel_stand_step(c_lv, 0.9), c_md = cel_stand_step(c_lv, 0.7);
 	float c_side = 1.0 - cel_stand_step(c_d, cel_stand.y);
 	vec3 c_base = mix(mix(cel_stand_tone(2).rgb, cel_stand_tone(1).rgb, c_side), cel_stand_tone(0).rgb, c_ft);
-	float c_top = c_md * c_kl * (1.0 - c_side) * (1.0 - c_ft);
+	// (L1 lead 23, FOLIAGE) three moon steps, not two (owner_ref_night's maples and ferns: a dark wine body, a red mid, an
+	// orange top): the mid ring (>= 0.7) takes KIT_LEAF_MOON_MID of the top tone over the body, the middle (>= 0.9) all of it.
+	float c_top = mix(c_md * KIT_LEAF_MOON_MID, 1.0, c_hi) * c_kl * (1.0 - c_side) * (1.0 - c_ft);
 	vec3 c_lit = mix(c_base, cel_stand_tone(3).rgb, c_top);
 	c_lit = mix(c_lit, cel_stand_tone(4).rgb, c_rim * (1.0 - c_ft) * mix(c_top, c_kl, clamp(c_x.z, 0.0, 1.0)));
 	float c_g = 1.0;
