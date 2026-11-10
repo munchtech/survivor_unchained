@@ -671,6 +671,38 @@ vec3 cel_hero_paint(vec3 c_wn, vec3 c_alb, float c_w, float c_near, vec3 c_ref) 
 	float c_dark = max(smoothstep(cel_hero.z - c_w, cel_hero.z + c_w, c_s), 1.0 - smoothstep(cel_hero_tone.w - c_w, cel_hero_tone.w + c_w, c_wn.y));
 	return mix(c_t, cel_hero_tone.rgb, c_dark);
 }
+// (L1 lead 23, GLINT) THE HOT SPECULAR: painted in absolute tones she had no highlight, skin and metal read matte. A
+// HARD disc round N.H from HER key (the xz toward her light's foot, cel_hero.xy, lifted by the elevation
+// cel_hero_glint_skin.w) and the eye, on her LIT planes only (off the mid step and the under planes), per class:
+// cel_hero_glint_skin (hero_pool 64-66) and cel_hero_glint_metal (67-70) = the disc's radius and soft edge in degrees,
+// its level (the tone's OWN color brought to a max channel of 1, mixed toward white, times the level, never under 1.2x
+// the tone: 0 = off); metal's w = the depth of the dark reflected band just outside its disc (the gunmetal read). The
+// edge is never under a screen px of the angle (no speckle). Hue: the tone's own; the rig sets value and chroma only.
+// Hair (class 0) and cloth (2) take none. Zeros: as before.
+global uniform vec4 cel_hero_glint_skin;
+global uniform vec4 cel_hero_glint_metal;
+float cel_hero_glint_lit(vec3 c_wn) {
+	float c_s = -dot(c_wn.xz, cel_hero.xy) / max(length(c_wn.xz), max(cel_hero_own.z, 0.001));
+	float c_m = cel_hero_mid.rgb != vec3(0.0) ? smoothstep(cel_hero_mid.w - 0.02, cel_hero_mid.w + 0.02, c_s) : smoothstep(cel_hero.z - 0.02, cel_hero.z + 0.02, c_s);
+	return (1.0 - c_m) * smoothstep(cel_hero_tone.w - 0.02, cel_hero_tone.w + 0.02, c_wn.y);
+}
+vec3 cel_hero_glint(vec3 c_t, vec3 c_wn, vec3 c_wv, int c_cls, float c_lit) {
+	vec4 c_g = c_cls == 1 ? cel_hero_glint_skin : c_cls == 3 ? cel_hero_glint_metal : vec4(0.0);
+	vec3 c_l = normalize(vec3(cel_hero.x, cel_hero_glint_skin.w, cel_hero.y));
+	float c_ang = degrees(acos(clamp(dot(c_wn, normalize(c_l + c_wv)), -1.0, 1.0)));
+	float c_fw = max(fwidth(c_ang), 0.001);   // (taken in uniform flow, before any early return)
+	if (c_g.z <= 0.0 || c_g.x <= 0.0 || c_lit <= 0.0) return c_t;
+	float c_sf = max(c_g.y, c_fw);
+	float c_d = (1.0 - smoothstep(c_g.x - c_sf, c_g.x + c_sf, c_ang)) * c_lit;
+	float c_mx = max(c_t.r, max(c_t.g, c_t.b));
+	vec3 c_hot = mix(c_t / max(c_mx, 0.0001), vec3(1.0), c_cls == 3 ? 0.65 : 0.5) * max(c_g.z, 1.2 * c_mx);
+	vec3 c_o = c_t;
+	if (c_cls == 3 && c_g.w > 0.0) {
+		float c_b = smoothstep(c_g.x + c_sf, c_g.x + 2.0 * c_sf, c_ang) * (1.0 - smoothstep(2.4 * c_g.x, 2.4 * c_g.x + c_sf, c_ang));
+		c_o *= 1.0 - clamp(c_g.w, 0.0, 1.0) * c_b * c_lit;
+	}
+	return mix(c_o, c_hot, c_d);
+}
 // (L1 lead 22, P1NORM) SMOOTH SHADING NORMALS: the steps turn her FORMS, not her mesh's bumps. HeroNormals.cs bakes, at
 // load, per mesh under her, a normal diffused over the welded surface (radius hero_pool 60, m) into CUSTOM0 as xyz in the
 // vertex's own frame (tangent, its square binormal, normal; w 1), so it is skinned with the frame. A shader writes
@@ -686,7 +718,7 @@ uniform vec4 cel_hero_id = vec4(0.0);
 #ifndef CEL_HERO_REF
 #define CEL_HERO_REF ALBEDO
 #endif
-#define CEL_HERO_FRAGMENT { if (cel_hero_on()) { vec3 c_hn = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz); if (cel_hero_abs()) { EMISSION = cel_hero_paint(c_hn, ALBEDO, 0.02, cel_hero_near(-VERTEX.z, PROJECTION_MATRIX), CEL_HERO_REF); if (cel_hero_id.a > 0.5) EMISSION = cel_hero_id.rgb; ALBEDO = vec3(0.0); METALLIC = 0.0; SPECULAR = 0.0; } else { float c_hm = cel_hero_mask(c_hn, 0.02); ALBEDO *= 1.0 - c_hm; EMISSION = mix(EMISSION, cel_hero_tone.rgb, c_hm); } } }
+#define CEL_HERO_FRAGMENT { if (cel_hero_on()) { vec3 c_hn = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz); if (cel_hero_abs()) { EMISSION = cel_hero_paint(c_hn, ALBEDO, 0.02, cel_hero_near(-VERTEX.z, PROJECTION_MATRIX), CEL_HERO_REF); EMISSION = cel_hero_glint(EMISSION, c_hn, normalize((INV_VIEW_MATRIX * vec4(VIEW, 0.0)).xyz), int(round(cel_hero_class)), cel_hero_glint_lit(c_hn)); if (cel_hero_id.a > 0.5) EMISSION = cel_hero_id.rgb; ALBEDO = vec3(0.0); METALLIC = 0.0; SPECULAR = 0.0; } else { float c_hm = cel_hero_mask(c_hn, 0.02); ALBEDO *= 1.0 - c_hm; EMISSION = mix(EMISSION, cel_hero_tone.rgb, c_hm); } } }
 #define CEL_HERO_LIGHT { if (cel_hero_abs()) { DIFFUSE_LIGHT = vec3(0.0); SPECULAR_LIGHT = vec3(0.0); } else { SPECULAR_LIGHT *= 1.0 - cel_hero_mask(normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz), 0.02); } }
 #ifdef CEL_HERO_ARM
 // (L1 lead 19, HER3; lead 20, HER4) A HELD PIECE of the hero (her shield, her blade: CelLib.Hero binds her own copies of
@@ -701,7 +733,7 @@ uniform vec4 cel_hero_id = vec4(0.0);
 global uniform vec4 cel_hero_arm;
 bool cel_hero_arm_on() { return cel_hero_abs() && cel_hero_arm.rgb != vec3(0.0); }
 #define CEL_HERO_ARM_VERTEX { if (cel_hero_arm_on()) { float c_ad = -(MODELVIEW_MATRIX * vec4(VERTEX, 1.0)).z; VERTEX += NORMAL * (0.5 * cel_hero_lit.w * 2.0 * c_ad / (PROJECTION_MATRIX[1][1] * VIEWPORT_SIZE.y * length(MODEL_MATRIX[0].xyz))); } }
-#define CEL_HERO_ARM_FRAGMENT { if (cel_hero_arm_on()) { vec3 c_ap = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz - NODE_POSITION_WORLD; float c_am = smoothstep(cel_hero_arm.w - 0.01, cel_hero_arm.w + 0.01, -dot(c_ap.xz, cel_hero.xy)); vec3 c_aa = ALBEDO; float c_ak = cel_hero_near(-VERTEX.z, PROJECTION_MATRIX); EMISSION = mix(cel_hero_gain(cel_hero_local(cel_hero_lit.rgb * (cel_hero_own.w > 0.0 ? cel_hero_own.w : 1.0), c_aa), cel_hero_chroma.x, c_ak), cel_hero_gain(cel_hero_local(cel_hero_arm.rgb, c_aa), cel_hero_chroma.y, c_ak), c_am); if (cel_hero_id.a > 0.5) EMISSION = cel_hero_id.rgb; ALBEDO = vec3(0.0); METALLIC = 0.0; SPECULAR = 0.0; AO = 0.0; } }
+#define CEL_HERO_ARM_FRAGMENT { if (cel_hero_arm_on()) { vec3 c_ap = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz - NODE_POSITION_WORLD; float c_am = smoothstep(cel_hero_arm.w - 0.01, cel_hero_arm.w + 0.01, -dot(c_ap.xz, cel_hero.xy)); vec3 c_aa = ALBEDO; float c_ak = cel_hero_near(-VERTEX.z, PROJECTION_MATRIX); EMISSION = mix(cel_hero_gain(cel_hero_local(cel_hero_lit.rgb * (cel_hero_own.w > 0.0 ? cel_hero_own.w : 1.0), c_aa), cel_hero_chroma.x, c_ak), cel_hero_gain(cel_hero_local(cel_hero_arm.rgb, c_aa), cel_hero_chroma.y, c_ak), c_am); EMISSION = cel_hero_glint(EMISSION, normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz), normalize((INV_VIEW_MATRIX * vec4(VIEW, 0.0)).xyz), 3, 1.0 - c_am); if (cel_hero_id.a > 0.5) EMISSION = cel_hero_id.rgb; ALBEDO = vec3(0.0); METALLIC = 0.0; SPECULAR = 0.0; AO = 0.0; } }
 #define CEL_HERO_ARM_LIGHT { if (cel_hero_arm_on()) { DIFFUSE_LIGHT = vec3(0.0); SPECULAR_LIGHT = vec3(0.0); } }
 #endif
 #endif

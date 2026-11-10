@@ -258,6 +258,11 @@ public static class Rigs
     /// (0 = off, 1 = the smoothed normal alone; CEL_HERO_VERTEX), the radius in metres it is diffused over at load
     /// (HeroNormals). A row without them: zeros, the figure renders as before.</summary>
     public static double[] HeroSmooth(double[]? heroPool) => heroPool is { Length: >= 61 } ? heroPool[59..61] : new double[2];
+    /// <summary>(L1 lead 23, GLINT) hero_pool values 64-71: her HOT SPECULAR (cel.gdshaderinc cel_hero_glint): skin's disc
+    /// radius and soft edge in degrees and its level (64-66; level 0 = off), metal's radius, soft edge, level and the depth of
+    /// its dark reflected band (67-70), the key's elevation (71: the light vector's y before normalizing, with the xz toward
+    /// her light's foot). A row without them: zeros, the figure renders as before.</summary>
+    public static double[] HeroGlint(double[]? heroPool) => heroPool is { Length: >= 72 } ? heroPool[64..72] : new double[8];
 
     /// <summary>(HERPAIR) A hero material's class from its shader's file and its outfit kind (heroine_outfit.gdshaderinc
     /// `kind`: 0 leather, 1 metal, 2 cloth, 3 gloss, 4 twill, 5 satin; -1 none): 0 hair, 1 skin, 2 outfit leather / cloth,

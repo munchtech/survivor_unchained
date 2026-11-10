@@ -672,6 +672,9 @@ public partial class Atmosphere : Node3D
         var hs = SurvivorUnchained.Look.Rigs.HeroSmooth(hm);   // (L1 lead 22, P1NORM) values 59-60: her smoothed shading normal's share (CEL_HERO_VERTEX), its bake radius (HeroNormals); zeros without them
         RenderingServer.GlobalShaderParameterSet("cel_hero_sn", new Vector4((float)hs[0], (float)hs[1], 0, 0));
         SurvivorUnchained.View.HeroNormals.Radius = (float)hs[1];
+        var hg = SurvivorUnchained.Look.Rigs.HeroGlint(hm);   // (L1 lead 23, GLINT) values 64-71: her hot specular per class (cel_hero_glint); zeros without them
+        RenderingServer.GlobalShaderParameterSet("cel_hero_glint_skin", new Vector4((float)hg[0], (float)hg[1], (float)hg[2], (float)hg[7]));
+        RenderingServer.GlobalShaderParameterSet("cel_hero_glint_metal", new Vector4((float)hg[3], (float)hg[4], (float)hg[5], (float)hg[6]));
     }
     /// <summary>(L1 lead 20, HER5) Her LINE (hero_line.gdshader; CelLib.LineStep hangs it on her meshes): the row's value 8 = its
     /// width in px at 1080p, value 9 = its level against the anchor's tone. On as cel_hero is on; else 0 and nothing is drawn.</summary>
