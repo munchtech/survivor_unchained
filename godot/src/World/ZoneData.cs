@@ -61,7 +61,11 @@ public sealed class ZoneData
             : FileAccess.GetFileAsString($"res://data/{rel}");
         DataFiles.Bytes = rel => FileAccess.GetFileAsBytes($"res://data/{rel}");
         SurvivorUnchained.Rpg.ArmorIndex.Text = rel => FileAccess.FileExists($"res://art/{rel}") ? FileAccess.GetFileAsString($"res://art/{rel}") : null;
+        // (--body p1: B's built gear index instead of A's two, P2 gear; A's untouched without the flag)
+        SurvivorUnchained.Rpg.ArmorIndex.GearDir = SurvivorUnchained.View.P1Body.GearDir();
         SurvivorUnchained.Rpg.ArmorIndex.Reset();
+        if (SurvivorUnchained.Rpg.ArmorIndex.GearDir is string gd)
+            GD.Print($"gear: {SurvivorUnchained.Rpg.ArmorIndex.Shared.Pieces.Count} rows from res://art/{gd}/gear_index.json (B's own pieces)");
     }
 
     /// <summary>--kit-paint DIR's folk.json over the game's: {"looks": {"4": {"tint": "#..", "under": "#.."}}}

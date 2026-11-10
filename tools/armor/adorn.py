@@ -49,9 +49,12 @@ import heroine_lod as hl  # noqa: E402
 from carry_targets import closest  # noqa: E402
 import piece_lod as pl  # noqa: E402
 
-ART = os.path.join(ROOT, "godot", "art", "armor")
-LIB = os.path.join(ART, "lib")
-TEX = os.path.join(ART, "tex")
+ART_SRC = os.path.join(ROOT, "godot", "art", "armor")
+# (ARMOR_STAGE=<dir> (tools/armor/piece_ship.py): the pieces read and written in <dir>/armor, the specs, library and
+# textures still godot/art/armor's)
+ART = os.path.join(os.path.abspath(os.environ["ARMOR_STAGE"]), "armor") if os.environ.get("ARMOR_STAGE") else ART_SRC
+LIB = os.path.join(ART_SRC, "lib")
+TEX = os.path.join(ART_SRC, "tex")
 MATS = os.path.join(ROOT, "godot", "art", "people", "outfit_materials.json")
 NATIVE = lambda ad: ad["kind"] == "row" and ad.get("mesh", "rivet") == "rivet"   # (piece_blender.py builds these)
 GEMS = {"gem_garnet": ((70, 6, 16), (205, 32, 48)), "gem_amethyst": ((52, 14, 78), (160, 70, 205)),
@@ -85,7 +88,16 @@ class Model:
             if len(m["primitives"]) != 1:
                 raise SystemExit(f"ADORN: {m['name']} has {len(m['primitives'])} primitives (one each expected)")
             mat, attrs, tris = self.g.prims(i)[0]
-            self.meshes.append({"name": m["name"], "mat": mat, "attrs": {k: [np.array(v[0]), v[1]] for k, v in attrs.items()},
+            at = {k: [np.array(v[0]), v[1]] for k, v in attrs.items()}
+            # (a followed piece's shoulder shapes (P2 l16): each morph target's deltas ride as pseudo-attributes
+            # "_T<nn>P" / "_T<nn>N" (position / normal), so every copy, drop and compaction carries them with the
+            # vertices; append() gives new geometry deltas carried from the base shell (carry_deltas), save() writes
+            # them back as sparse targets. Never a silent drop.)
+            for ti, tg in enumerate(m["primitives"][0].get("targets") or []):
+                for key in ("POSITION", "NORMAL"):
+                    if key in tg:
+                        at[f"_T{ti:02d}{key[0]}"] = [read_acc(self.g, tg[key]).astype(np.float32), False]
+            self.meshes.append({"name": m["name"], "mat": mat, "attrs": at, "weights": m.get("weights"),
                                 "tris": tris, "extras": copy.deepcopy(m.get("extras", {})), "node": None})
         for k, n in enumerate(self.js["nodes"]):
             if "mesh" in n:
@@ -134,6 +146,23 @@ class Model:
             accs.append(a)
             return len(accs) - 1
 
+        def add_sparse(D):
+            """A morph target's deltas as a sparse accessor (the rows that move), as the follow wrote them."""
+            D = np.ascontiguousarray(D, np.float32)
+            idx = np.nonzero(np.any(D != 0, axis=1))[0].astype(np.uint32)
+            a = {"componentType": 5126, "count": len(D), "type": "VEC3",
+                 "min": D.min(0).tolist() if len(D) else [0, 0, 0], "max": D.max(0).tolist() if len(D) else [0, 0, 0]}
+            if len(idx):
+                for arr in (idx, D[idx]):
+                    while len(out) % 4:
+                        out.append(0)
+                    views.append({"buffer": 0, "byteOffset": len(out), "byteLength": arr.nbytes})
+                    out.extend(np.ascontiguousarray(arr).tobytes())
+                a["sparse"] = {"count": int(len(idx)), "indices": {"bufferView": len(views) - 2, "componentType": 5125},
+                               "values": {"bufferView": len(views) - 1}}
+            accs.append(a)
+            return len(accs) - 1
+
         ibm = self.g.acc(js["skins"][0]["inverseBindMatrices"])[0]
         js["skins"][0]["inverseBindMatrices"] = add(ibm.astype(np.float32))
         meshes, nodes = [], js["nodes"]
@@ -141,13 +170,21 @@ class Model:
             n.pop("mesh", None)
         for m in self.meshes:
             p = {"attributes": {}, "material": self.material(m["mat"])}
-            for key in ("POSITION", "NORMAL", "TEXCOORD_0", "TEXCOORD_1", "TEXCOORD_2", "COLOR_0", "JOINTS_0", "WEIGHTS_0"):
+            for key in ("POSITION", "NORMAL", "TEXCOORD_0", "TEXCOORD_1", "TEXCOORD_2", "COLOR_0") + weight_keys(m["attrs"]):
                 if key in m["attrs"]:
                     arr, norm = m["attrs"][key]
                     p["attributes"][key] = add(arr, norm, 34962, minmax=key == "POSITION")
+            tkeys = target_keys(m["attrs"])
+            if tkeys:
+                p["targets"] = []
+                for ti in sorted({k[2:4] for k in tkeys}):
+                    p["targets"].append({key: add_sparse(m["attrs"][f"_T{ti}{key[0]}"][0])
+                                         for key in ("POSITION", "NORMAL") if f"_T{ti}{key[0]}" in m["attrs"]})
             t = m["tris"].ravel()
             p["indices"] = add(t.astype(np.uint32 if len(m["attrs"]["POSITION"][0]) > 65535 else np.uint16), False, 34963)
             meshes.append({"name": m["name"], "primitives": [p], "extras": m["extras"]})
+            if m.get("weights") and tkeys:
+                meshes[-1]["weights"] = m["weights"]
             if m["node"] is None:
                 nodes.append({"name": m["name"], "skin": 0})
                 nodes[self.parent].setdefault("children", []).append(len(nodes) - 1)
@@ -236,20 +273,101 @@ def gem_textures():
 
 
 # ------------------------------------------------------------------------------------ weights, data --
-def dense(m, nb):
-    j = m["attrs"]["JOINTS_0"][0].astype(np.int64)
-    w = pl.floats(*m["attrs"]["WEIGHTS_0"]).astype(np.float64)
-    out = np.zeros((len(j), nb))
-    np.add.at(out, (np.arange(len(j))[:, None].repeat(4, 1), j), w)
+def weight_sets(attrs):
+    """How many JOINTS_n/WEIGHTS_n sets the attributes carry (a followed piece has eight weights a point: two)."""
+    n = 0
+    while f"JOINTS_{n}" in attrs and f"WEIGHTS_{n}" in attrs:
+        n += 1
+    return n
+
+
+def read_acc(g, i):
+    """An accessor as an array, a sparse one (a morph target's) filled in over its base (or zeros)."""
+    a = g.js["accessors"][i]
+    if "bufferView" in a:
+        out = np.array(g.acc(i)[0])
+    else:
+        out = np.zeros((a["count"], hl._NC[a["type"]]), np.dtype(hl._CT[a["componentType"]]))
+    sp = a.get("sparse")
+    if sp:
+        ib, vb = sp["indices"], sp["values"]
+        idt, dt = np.dtype(hl._CT[ib["componentType"]]), out.dtype
+        bv = g.js["bufferViews"][ib["bufferView"]]
+        idx = np.frombuffer(g.bin, idt, count=sp["count"], offset=bv.get("byteOffset", 0) + ib.get("byteOffset", 0))
+        bv = g.js["bufferViews"][vb["bufferView"]]
+        val = np.frombuffer(g.bin, dt, count=sp["count"] * out.shape[1], offset=bv.get("byteOffset", 0) + vb.get("byteOffset", 0))
+        out[idx.astype(np.int64)] = val.reshape(-1, out.shape[1])
     return out
 
 
-def top4(d):
-    k = np.argsort(-d, 1)[:, :4]
+def target_keys(attrs):
+    """A mesh's morph-target pseudo-attributes ("_T<nn>P" / "_T<nn>N"), in order."""
+    return tuple(sorted(k for k in attrs if k.startswith("_T")))
+
+
+CARRY = {}      # (the base shell new geometry's target deltas are carried from: carry_source(model) sets it)
+
+
+def carry_source(model):
+    """Every shell mesh's triangles and target deltas (the model as loaded): what new geometry's deltas are carried
+    from (its closest point's, barycentric), so a film, trim or element moves with the plate under it."""
+    V, F, D, base, keys = [], [], [], 0, None
+    for m in model.meshes:
+        tk = target_keys(m["attrs"])
+        if not tk:
+            continue
+        V.append(m["attrs"]["POSITION"][0].astype(np.float64))
+        F.append(m["tris"] + base)
+        D.append(np.concatenate([m["attrs"][k][0] for k in tk], 1).astype(np.float64))
+        base += len(V[-1])
+        keys = tk
+    CARRY["src"] = (np.vstack(V), np.vstack(F), np.vstack(D), keys) if V else None
+    return CARRY["src"]
+
+
+def carry_deltas(P, keys):
+    """Target deltas for new points P (as `keys`), from the base shell's closest point (carry_source)."""
+    src = CARRY.get("src")
+    if src is None or tuple(src[3]) != tuple(keys):
+        raise SystemExit(f"ADORN: new geometry needs target deltas {keys[:2]}.. but no base shell carries them")
+    V, F, D, _ = src
+    _, f, w = closest(np.asarray(P, np.float64), V, F)
+    out = np.einsum("nk,nkd->nd", w, D[F[f]]).astype(np.float32)
+    return {k: out[:, 3 * i:3 * i + 3] for i, k in enumerate(keys)}
+
+
+def weight_keys(attrs):
+    return tuple(k for i in range(weight_sets(attrs)) for k in (f"JOINTS_{i}", f"WEIGHTS_{i}"))
+
+
+def joints_weights(attrs):
+    """All of a point's joints and weights, every set side by side: J (n, 4 x sets) int, W float."""
+    k = weight_sets(attrs)
+    J = np.concatenate([attrs[f"JOINTS_{i}"][0].astype(np.int64) for i in range(k)], 1)
+    W = np.concatenate([pl.floats(*attrs[f"WEIGHTS_{i}"]).astype(np.float64) for i in range(k)], 1)
+    return J, W
+
+
+def dense(m, nb):
+    j, w = joints_weights(m["attrs"])
+    out = np.zeros((len(j), nb))
+    np.add.at(out, (np.arange(len(j))[:, None].repeat(j.shape[1], 1), j), w)
+    return out
+
+
+def top4(d, sets=1):
+    """The largest 4 x sets weights a point, normalized, as `sets` (JOINTS, WEIGHTS) pairs (one by default)."""
+    n = 4 * sets
+    if d.shape[1] < n:
+        d = np.c_[d, np.zeros((len(d), n - d.shape[1]))]
+    k = np.argsort(-d, 1)[:, :n]
     w = np.take_along_axis(d, k, 1)
     w[w < 1e-4] = 0
     w /= np.maximum(w.sum(1, keepdims=True), 1e-12)
-    return k.astype(np.uint8), w.astype(np.float32)
+    jt = np.uint8 if d.shape[1] <= 256 else np.uint16
+    if sets == 1:
+        return k.astype(jt), w.astype(np.float32)
+    return [(k[:, 4 * i:4 * i + 4].astype(jt), w[:, 4 * i:4 * i + 4].astype(np.float32)) for i in range(sets)]
 
 
 def colour(m):
@@ -830,6 +948,66 @@ def vine_band(surf, rim, d0, d1, ad, sky, conv, lift, matte=False, edge_min=0.00
     return ground, vine, st
 
 
+def motif_film(surf, rim, d0, ad, sky, conv, lift, matte, edge_min):
+    """The cup's motif (`motif` {h, w}, mm; P2 lead 14: a band alone did not read at 1:1 at the close camera): an
+    upright blackened fleur rising from the band's inner line at the rim's lowest point, toward the cup's apex (the
+    lower cup is the far side from it): a pointed shield of ground `h` tall, `w` wide, with a bright lancet and two
+    bright side leaves left in it (gaps in the film). On a grid of inward rows 0.5 mm apart, each row's own arc
+    length from the anchor's column across, so its shape is true mm on the plate."""
+    mo = ad.get("motif") or {}
+    H, Wd = float(mo.get("h", 22.0)), float(mo.get("w", 18.0))
+    P0, O0, N0, _ = rim_line(rim, 0.0005)
+    ia = int(np.argmin(P0[:, 1]))
+    rows = [fair(surf, inward(surf, P0, O0, N0, d0 + v / 1000)) for v in np.arange(0, H + 0.6, 0.5)]
+    G = np.stack([r[0] for r in rows], 1)
+    ns, nr = G.shape[:2]
+    seg = np.linalg.norm(np.roll(G, -1, 0) - G, axis=2) * 1000           # (ns, nr) mm
+    U = np.zeros((ns, nr))
+    k = (np.arange(ns) - ia) % ns
+    k = np.where(k > ns // 2, k - ns, k)
+    order = np.argsort(k)
+    cum = np.cumsum(seg[order], 0)
+    U[order] = cum - cum[np.searchsorted(k[order], 0)]
+    V = np.repeat((np.arange(nr) * 0.5)[None], ns, 0)
+    cols = np.where(np.abs(k) * 0.5 < Wd / 2 + 6)[0]
+    cols = cols[np.argsort(k[cols])]
+
+    def shape(u, v):
+        t = np.clip(v / H, 0, 1)
+        inside = np.abs(u) < Wd / 2 * np.cos(np.pi / 2 * t) ** 0.6
+        s = (v - 3.0) / (H - 8.0)
+        lance = (s > 0) & (s < 1) & (np.abs(u) < 1.4 * np.clip(np.sin(np.pi * np.clip(s, 0, 1)), 0, 1) ** 0.8)
+        leaves = np.zeros_like(inside)
+        for sg in (1, -1):
+            a = np.radians(35.0)
+            du, dv = u - sg * 0.24 * Wd, v - 0.34 * H
+            x = du * np.cos(a) + sg * dv * np.sin(a)
+            y = -sg * du * np.sin(a) + dv * np.cos(a)
+            leaves |= (x / (0.2 * Wd)) ** 2 + (y / 1.6) ** 2 < 1
+        return inside & ~lance & ~leaves
+    idx = np.arange(ns * nr).reshape(ns, nr)
+    T = []
+    for a_, b_ in zip(cols[:-1], cols[1:]):
+        if k[b_] - k[a_] != 1:
+            continue
+        for j in range(nr - 1):
+            q = [idx[a_, j], idx[b_, j], idx[b_, j + 1], idx[a_, j + 1]]
+            for tri in ((q[0], q[1], q[2]), (q[0], q[2], q[3])):
+                uu = np.mean([U.ravel()[t_] for t_ in tri]); vv = np.mean([V.ravel()[t_] for t_ in tri])
+                if shape(np.array([uu]), np.array([vv]))[0]:
+                    T.append(tri)
+    T = np.array(T, int).reshape(-1, 3)
+    used = np.unique(T)
+    re = -np.ones(ns * nr, int)
+    re[used] = np.arange(len(used))
+    P = np.stack([r[0] for r in rows], 1).reshape(-1, 3)[used]
+    N = np.stack([r[3] for r in rows], 1).reshape(-1, 3)[used]
+    F = np.stack([r[1] for r in rows], 1).ravel()[used]
+    B = np.stack([r[2] for r in rows], 1).reshape(-1, 3)[used]
+    T = fix_winding(P, re[T], N)
+    return film_from(surf, P, N, F, B, T, sky, conv, lift, matte, edge_min), {"motif_tris": int(len(T)), "h_mm": H, "w_mm": Wd}
+
+
 def matte_ground(ad):
     return ad.get("ground") is not None and mats_table().get(ad["ground"], {}).get("kind") == "leather"
 
@@ -868,6 +1046,10 @@ def etch(surf, sock, ad, lod):
                 # with the arms overhead)
                 parts.append(film_strip(surf, rim, l0, l1, 0.002, 2, sky, conv, lift * 1.2, mt, em))
                 stats["lines"] += 1
+            if ad.get("motif"):
+                mfilm, mst = motif_film(surf, rim, lines[-1][1], ad, sky, conv, lift * 1.2, mt, em)
+                parts.append(mfilm)
+                stats.setdefault("motif", []).append(mst)
         stats["bands"] += 1
     return parts, vines, stats
 
@@ -892,15 +1074,24 @@ def append(m, parts, nb):
         T.append(np.asarray(p[6]) + off + n0)
         off += len(p[0])
     T = np.concatenate(T)
-    J, Wt = top4(W)
+    sets = max(weight_sets(have), 1)
     N = N / np.maximum(np.linalg.norm(N, axis=1, keepdims=True), 1e-12)
     new = {"POSITION": P.astype(np.float32), "NORMAL": N.astype(np.float32), "TEXCOORD_0": U0.astype(np.float32),
            "TEXCOORD_1": U1.astype(np.float32), "TEXCOORD_2": np.zeros((len(P), 2), np.float32),
-           "COLOR_0": np.round(np.clip(C, 0, 1) * 65535).astype(np.uint16), "JOINTS_0": J, "WEIGHTS_0": Wt}
+           "COLOR_0": np.round(np.clip(C, 0, 1) * 65535).astype(np.uint16)}
+    # (as many weight sets as the mesh has: a followed shell's eight weights a point are all kept, none dropped)
+    for i, (J, Wt) in enumerate(top4(W, sets) if sets > 1 else [top4(W)]):
+        new[f"JOINTS_{i}"], new[f"WEIGHTS_{i}"] = J, Wt
+    if target_keys(have):
+        new.update(carry_deltas(P, target_keys(have)))
     for k, (arr, norm) in list(have.items()):
+        if k not in new:
+            raise SystemExit(f"ADORN: {m['name']} has {k}, which an adornment can't fill")
         v = new[k]
         if k == "COLOR_0" and arr.dtype != np.uint16:
             v = (np.clip(C, 0, 1) * {np.dtype(np.uint8): 255}.get(arr.dtype, 1)).astype(arr.dtype)
+        elif k.startswith("WEIGHTS_") and norm and arr.dtype.kind == "u":
+            v = np.round(v * np.iinfo(arr.dtype).max)
         have[k] = [np.concatenate([arr, v.astype(arr.dtype)]), norm]
     m["tris"] = np.concatenate([m["tris"], T])
     m["extras"].setdefault("adorn_tris", []).append([int(t0), int(len(T))])
@@ -909,7 +1100,7 @@ def append(m, parts, nb):
 
 def new_mesh(model, name, mat, like, extras):
     m = {"name": name, "mat": mat, "attrs": {}, "tris": np.zeros((0, 3), np.int64), "extras": extras, "node": None}
-    for k in ("POSITION", "NORMAL", "TEXCOORD_0", "TEXCOORD_1", "COLOR_0", "JOINTS_0", "WEIGHTS_0"):
+    for k in ("POSITION", "NORMAL", "TEXCOORD_0", "TEXCOORD_1", "COLOR_0") + weight_keys(like["attrs"]) + target_keys(like["attrs"]):
         arr, norm = like["attrs"][k]
         m["attrs"][k] = [np.zeros((0, arr.shape[1]), arr.dtype), norm]
     model.meshes.append(m)
@@ -954,14 +1145,18 @@ def pose_check(shell_id, model, new_by_mesh, base_full):
         bones = [str(b) for b in z[f"{pn}__bones"]]
         mats = z[f"{pn}__mats"]
         bi = {b: i for i, b in enumerate(bones)}
+        miss = [j for j in model.joints if j not in bi]
+        if miss:
+            # (P2 l16: a followed shell carries her helper joints; a poses.npz from an older Blender build has none, so
+            # its matrices can't pose it: the P2 chain's gear_fit / gear_wear check the shipped piece instead)
+            return {"skipped": f"{os.path.relpath(f, ROOT)} lacks {len(miss)} of the shell's joints ({miss[0]}..): checked by the P2 chain (gear_wear)"}
         M = np.stack([mats[bi[j]] for j in model.joints])
         skin, skin_n = z[f"{pn}__skin"], z[f"{pn}__skin_n"]
         st = cKDTree(skin)
 
         def pose(m, sel=None, P_=None):
             P = m["attrs"]["POSITION"][0].astype(np.float64)
-            J = m["attrs"]["JOINTS_0"][0].astype(np.int64)
-            W = pl.floats(*m["attrs"]["WEIGHTS_0"]).astype(np.float64)
+            J, W = joints_weights(m["attrs"])
             if sel is not None:
                 P, J, W = P[sel], J[sel], W[sel]
             if P_ is not None:
@@ -1075,7 +1270,7 @@ def sig(ad):
 
 
 def piece_json(pid):
-    return json.load(open(os.path.join(ART, "src", pid, "piece.json"), encoding="utf-8"))
+    return json.load(open(os.path.join(ART_SRC, "src", pid, "piece.json"), encoding="utf-8"))
 
 
 def build(pid, post=False):
@@ -1092,6 +1287,7 @@ def build(pid, post=False):
         if not own:
             return {"id": pid, "post": "nothing to add"}
         model = Model(os.path.join(ART, f"{pid}.gltf"))
+        carry_source(model)
         sock = json.load(open(os.path.join(ART, f"{pid}.sockets.json"), encoding="utf-8"))
         shell_id = pid
         dropped_rows = {}
@@ -1105,6 +1301,7 @@ def build(pid, post=False):
             raise SystemExit(f"ADORN: {pid} is a {slot}, its base {src_id} a {base_piece['slot']}")
         model = Model(os.path.join(ART, f"{src_id}.gltf"))
         base_model = Model(os.path.join(ART, f"{src_id}.gltf"))
+        carry_source(base_model)
         sock = json.load(open(os.path.join(ART, f"{src_id}.sockets.json"), encoding="utf-8"))
         shell_id = src_id
         model.rename(src_id, pid)
@@ -1162,7 +1359,7 @@ def build(pid, post=False):
                     T = sub["tris"]
                     used, inv = np.unique(T.ravel(), return_inverse=True)
                     a = sub["attrs"]
-                    W = dense({"attrs": {"JOINTS_0": [a["JOINTS_0"][0][used]], "WEIGHTS_0": [a["WEIGHTS_0"][0][used], a["WEIGHTS_0"][1]]}}, nb)
+                    W = dense({"attrs": {k: [a[k][0][used], a[k][1]] for k in weight_keys(a)}}, nb)
                     full_new.setdefault(mat, []).append((a["POSITION"][0][used].astype(np.float64), a["NORMAL"][0][used].astype(np.float64),
                                                          a["TEXCOORD_0"][0][used], a["TEXCOORD_1"][0][used], colour({"attrs": {"COLOR_0": [a["COLOR_0"][0][used], a["COLOR_0"][1]]}}),
                                                          W, inv.reshape(-1, 3)))
@@ -1336,6 +1533,9 @@ def build(pid, post=False):
         rows = [r for r in rows if r["id"] != pid]
         row = dict(brow, id=pid, meshes=sorted(m["name"] for m in full), tuck=f"armor_tuck/{pid}.bin", file=f"res://art/armor/{pid}.gltf",
                    tier=piece.get("tier"), base=src_id)
+        row.pop("finish", None)                    # (a variant's finish is its own piece's, never its base's)
+        if piece.get("finish"):
+            row["finish"] = piece["finish"]
         if piece.get("covers"):
             row["covers"] = piece["covers"]
         if piece.get("hold"):

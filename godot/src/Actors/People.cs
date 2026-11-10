@@ -177,7 +177,14 @@ public static class People
         {
             if (P1Body.On) { yield return P1Body.Dir + "body.glb"; yield return P1Body.Dir + "play.glb"; }
             else yield return "res://art/people/heroine.glb";
-            if (look.Outfit.FirstOrDefault(o => o.StartsWith("her:")) is string her) yield return $"res://art/people/heroine_outfit_{her[4..]}.gltf";
+            if (look.Outfit.FirstOrDefault(o => o.StartsWith("her:")) is string her)
+            {
+                // (B's built gear: the calling's own pieces' files on that body)
+                var ix = SurvivorUnchained.Rpg.ArmorIndex.Shared;
+                var own = ix.Calling(her[4..]).Values.Select(id => ix.Find(id)).Where(r => r is { Gear: true, File: not null }).Select(r => r!.File!).Distinct().ToList();
+                if (own.Count > 0) foreach (var f in own) yield return f;
+                else yield return $"res://art/people/heroine_outfit_{her[4..]}.gltf";
+            }
             yield return $"res://art/people/heroine_hair_{(HerHairs.Contains(look.Hair) ? look.Hair! : HerHairs[0])}.gltf";
             yield break;
         }
@@ -1602,6 +1609,22 @@ public static class People
             m.SetShaderParameter("repeats", (float)entry["repeats"]);
             // (a metal key's own satin roughness, where its row names one: blacksteel, the etched tier's blackened ground at 0.3)
             if (kind == 1 && entry.ContainsKey("roughness")) m.SetShaderParameter("metal_rough", (float)entry["roughness"]);
+            // (a metal key's own ground reflection, where its row names one: P2 l14, the provisional plainsteel; METAL_KEY_TRY=key:ground,edge,sat,rough tries others on that key)
+            if (kind == 1)
+            {
+                if (entry.ContainsKey("ground")) m.SetShaderParameter("metal_ground", (float)entry["ground"]);
+                if (entry.ContainsKey("ground_edge")) m.SetShaderParameter("metal_ground_edge", (float)entry["ground_edge"]);
+                if (entry.ContainsKey("ground_sat")) m.SetShaderParameter("metal_ground_sat", (float)entry["ground_sat"]);
+                var tryKey = System.Environment.GetEnvironmentVariable("METAL_KEY_TRY");
+                if (tryKey != null && tryKey.StartsWith(key + ":"))
+                {
+                    var tv = tryKey[(key.Length + 1)..].Split(',');
+                    float T(int i) => float.Parse(tv[i], System.Globalization.CultureInfo.InvariantCulture);
+                    m.SetShaderParameter("metal_ground", T(0)); m.SetShaderParameter("metal_ground_edge", T(1)); m.SetShaderParameter("metal_ground_sat", T(2));
+                    if (tv.Length > 3) m.SetShaderParameter("metal_rough", T(3));
+                    GD.Print($"metal try {key}: {tryKey}");
+                }
+            }
             // (a leather's roughness floor, where its row names one: the arcanist bodysuit's plumleather, armor 14)
             if (kind == 0 && entry.ContainsKey("rough_floor")) m.SetShaderParameter("leather_rough_floor", (float)entry["rough_floor"]);
             if (kind == 0 && entry.ContainsKey("rough_var")) m.SetShaderParameter("leather_rough_var", (float)entry["rough_var"]);
@@ -1801,6 +1824,8 @@ public static class People
     internal static bool TuckBody(MeshInstance3D mi)
     {
         string n = mi.Name.ToString();
+        // (B's close body, --body p1 with its built gear: no tuck channels (no vertex colours), its tuck is HerWear's map)
+        if (n == "Heroine" && mi.HasMeta("p1_b")) return SurvivorUnchained.Rpg.ArmorIndex.GearDir != null;
         if (n.Contains('.') || n.Contains('_') || n.EndsWith("Head") || n.EndsWith("Tongue")) return false;
         return mi.Mesh is ArrayMesh am && (am.SurfaceGetFormat(0) & Mesh.ArrayFormat.FormatColor) != 0;
     }

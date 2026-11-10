@@ -150,6 +150,8 @@ uniform float dyed_ao = 0.35;                      // (and in what the sky can't
 uniform float metal_env = 0.50;                    // (the sky's reflection kept: no probe, the rest is the dark around her; metal r3: was 0.55)
 uniform float metal_env_horizon = 0.8;             // (and less at the horizon, where trees, walls and the camp stand; metal r3: was 0.5)
 uniform float metal_ground = 1.0;                  // (metal r3: the lit ground it reflects below the horizon, Atmosphere's ground_bounce; the sky's lower half is near black, so in shade plate read as rubber)
+uniform float metal_ground_edge = 0.35;            // (P2 l14: how far below the horizon the ground's reflection is full; a wider fade on a convex cup, no chrome sky/ground split; outfit_materials row "ground_edge")
+uniform float metal_ground_sat = 1.0;             // (P2 l14: the ground's colour kept, 0 grey: a tan cobble ground read on the cups as a skin-coloured band; row "ground_sat")
 uniform float metal_env_graze = 0.3;               // (metal r3: at grazing angles at least this much of the sky kept, the sheen that tells plate in shade from rubber)
 uniform vec4 piece_id = vec4(-1.0);                // (up to four pieces of this key with a finish of their own: their baked piece number, People.PieceNumber; -1 none.
 uniform vec4 piece_rough = vec4(-1.0);             //  Each piece's metal_rough and metal_env_graze, -1 the key's own; art/people/metal_finishes.json "pieces".
@@ -484,8 +486,8 @@ void fragment() {
 		if (finish == 3) keep *= mix(1.0, dyed_env * mix(dyed_ao, 1.0, smoothstep(0.2, 0.8, sky)), (1.0 - gold) * (1.0 - bare));
 		// Below the horizon it sees the ground, lit by the key (the sky's lower half is near black):
 		// that light added as its own radiance (mix(env, rgb, a): rgb * a is what is added).
-		float down = smoothstep(0.0, 0.35, -rw.y);
-		vec3 ground = ground_bounce.rgb * metal_ground * down * mix(0.45, 1.0, sky) * (1.0 - grime);
+		float down = smoothstep(0.0, metal_ground_edge, -rw.y);
+		vec3 ground = mix(vec3(dot(ground_bounce.rgb, vec3(0.2126, 0.7152, 0.0722))), ground_bounce.rgb, metal_ground_sat) * metal_ground * down * mix(0.45, 1.0, sky) * (1.0 - grime);
 		if (look_metal_env > 0.0 && look_rig > 0.0) {
 			// (as emission: the Look's world gives no reflection to add it to)
 			vec3 rv = reflect(-VIEW, NORMAL);

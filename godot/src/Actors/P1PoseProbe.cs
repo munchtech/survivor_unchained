@@ -13,6 +13,8 @@ namespace SurvivorUnchained.View;
 /// tools/body/pose_probe.py reads two such files and prints the table.
 /// --pose-probe-full FILE: the posed-fit ruler (tools/body/posed_fit.py): the same sampled frames, one JSON line each: the skeleton's world
 /// transform, the camera, the meshes' nonzero blend-shape weights, every bone's skeleton-space pose as 12 numbers (basis columns, origin).
+/// --pose-probe-skin DIR (with --pose-probe-full): once, at the first sampled frame from --pose-probe-skin-at (default 200), her drawn
+/// body's and gear's meshes as the engine holds them (P1MeshDump; tools/armor/engine_check.py lays them on the poser's).
 /// </summary>
 public partial class P1PoseProbe : Node
 {
@@ -26,6 +28,9 @@ public partial class P1PoseProbe : Node
     readonly string path = Args.Get("pose-probe") ?? "";
     readonly int every = (int)Args.Num("pose-probe-every", 5);
     readonly string fullPath = Args.Get("pose-probe-full") ?? "";
+    readonly string skinDir = Args.Get("pose-probe-skin") ?? "";
+    readonly int skinAt = (int)Args.Num("pose-probe-skin-at", 200);
+    bool skinDone;
     int[] bones = System.Array.Empty<int>();
     Basis[] restInv = System.Array.Empty<Basis>();
     Vector3 crown;
@@ -224,5 +229,6 @@ public partial class P1PoseProbe : Node
         }
         sb.Append("}}" + (char)10);
         System.IO.File.AppendAllText(fullPath, sb.ToString());
+        if (skinDir != "" && !skinDone && f >= skinAt) { skinDone = true; P1MeshDump.Write(sk, skinDir, f); }
     }
 }
