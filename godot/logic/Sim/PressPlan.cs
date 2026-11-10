@@ -101,15 +101,17 @@ public static class PressPlan
             else b.HoldSkill(w.Slot, true, near.X, near.Z);
         }
         // A union that took the grip's key (Bladestorm: Sunder's is its break): out of a storm that key still swings Sunder,
-        // and a grip-only hand holds it as it held the grip.
-        if (h.GripOnly)
+        // and the hand HOLDS it as it held the grip, every step, before any return below (a dash, a leap, a rush, another
+        // press going off or the storm's press waiting never lets it go), and through the storm's spin, as a player's would.
+        foreach (var w in b.Weapons)
         {
-            foreach (var w in b.Weapons)
-                if (w.Slot2 >= 0 && !w.Channeling && d.For(w.Id).Aim == "storm" && !Firing.InStorm(b, w)
-                    && b.NearestHostile(p.X, p.Z, (w.Num(s => s.Reach) ?? 2.6) + d.GripPad) is { } nf && h.GripHeld(b.Time))
-                { h.HalfGrip = Firing.HalfOf(w)?.Id; b.PressSkill(w.Slot2, nf.X, nf.Z); }
-            return;
+            if (w.Slot2 < 0 || w.Behavior != WeaponBehavior.Spin || d.For(w.Id).Aim != "storm") continue;
+            var near = HalfFoe(b, h, w);
+            if (near == null) { b.HoldSkill(w.Slot2, false); continue; }
+            if (h.GripOnly) b.HoldSkill(w.Slot2, true, near.X, near.Z); else b.HoldSkill(w.Slot2, true, p.X, p.Z);
+            if (!Firing.InStorm(b, w)) h.HalfGrip = Firing.HalfOf(w)?.Id;
         }
+        if (h.GripOnly) return;
         if (p.Leap != null || b.Art.Rush != null || p.DashT > 0) return;
         bool reads = sees && h.Reads, ignore = h.Ignoring(b.Time);
         bool full = b.Resolve.On && b.Resolve.Value >= d.SpendFullAt * b.Resolve.Max;
@@ -137,6 +139,14 @@ public static class PressPlan
 
     static bool NeedsReading(KindleDef k) => k.When == "windup" || k.Any?.Any(NeedsReading) == true;
 
+    /// <summary>The union's grip this step (its other half held on its second key): the nearest foe in the half's reach and
+    /// the pad while the hand holds (PressHands.GripHeld: one roll each half second, the same answer all step), else null.</summary>
+    static Enemy? HalfFoe(Battle b, PressHands h, WeaponInst w)
+    {
+        double reach = (Firing.HalfOf(w)?.Num(s => s.Reach) ?? 2.6) + Def.GripPad;
+        return b.NearestHostile(b.Player.X, b.Player.Z, reach) is { } near && h.GripHeld(b.Time) ? near : null;
+    }
+
     /// <summary>Bladestorm: held while its crowd stands (or Resolve is full and a foe is near), broken on its lines.</summary>
     static bool Storm(Battle b, PressHands h, WeaponInst w, PlanRule r, bool full, bool ignore)
     {
@@ -146,7 +156,16 @@ public static class PressPlan
         {
             bool late = w.ChannelMax - w.ChannelT <= (r.BreakLate ?? 0.5);
             if (w.Slot2 >= 0 && (w.Lines.Count >= (r.BreakLines ?? 2) || late || (n < thin && w.Lines.Count > 0)))
-            { b.HoldSkill(w.Slot, false); b.PressSkill(w.Slot2, p.X, p.Z); return true; }
+            {
+                // The break is a FRESH press of the second key (a grip held from before the storm never breaks it): the
+                // held key comes up and goes down again, and stays down after if the hand is holding the grip this step.
+                b.HoldSkill(w.Slot, false);
+                b.HoldSkill(w.Slot2, false);
+                b.HoldSkill(w.Slot2, true);
+                b.PressSkill(w.Slot2, p.X, p.Z);
+                if (HalfFoe(b, h, w) == null) b.HoldSkill(w.Slot2, false);
+                return true;
+            }
             b.HoldSkill(w.Slot, n >= thin || full && n > 0);
             return false;
         }
@@ -159,8 +178,7 @@ public static class PressPlan
         }
         h.Clear(w);
         b.HoldSkill(w.Slot, false);
-        // Out of a storm, Sunder's key swings Sunder at what is near.
-        if (w.Slot2 >= 0 && !Firing.InStorm(b, w) && n > 0) { h.HalfGrip = Firing.HalfOf(w)?.Id; b.PressSkill(w.Slot2, p.X, p.Z); }
+        // (Out of a storm, Sunder's key swings Sunder at what is near: held in Run, before every return.)
         return false;
     }
 
