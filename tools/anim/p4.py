@@ -378,6 +378,26 @@ def action_held(r, spec):
     if "sword" in spec.get("held", []) or "shield" in spec.get("held", []):
         for sd in "lr":                # (the hands ahead of the pelvis along her heading: a shove's reach)
             out[f"hand_{sd}_ahead_cm"] = 100 * np.einsum("fi,fi->f", P[:, rig.index[f"hand_{sd}"]] - P[:, pv], hd)
+    # (a guard's numbers, R3: each heel's ground point over the floor; the pelvis and the boss along the clip's +Z (the
+    # node's facing: a press, a punch's travel); the shoulders' yaw against the hips' (+ = the chest to her left); the
+    # blade's heading off hers (+ = to her left); the sword's closest point to the shield (a blade laid over the rim))
+    from motion import fit as FIT
+    gp = FIT.ground_points(rig, G, P)
+    for sd in "lr":
+        out[f"heel_{sd}_cm"] = 100 * gp[f"heel_{sd}"][:, 1]
+    out["pelvis_z_cm"] = 100 * P[:, pv, 2]
+    sl, hl = P[:, rig.index["upperarm_l"]] - P[:, rig.index["upperarm_r"]], P[:, rig.index["thigh_l"]] - P[:, rig.index["thigh_r"]]
+    tw = np.degrees(np.arctan2(sl[:, 2], sl[:, 0]) - np.arctan2(hl[:, 2], hl[:, 0]))
+    out["twist_deg"] = -((tw + 180.0) % 360.0 - 180.0)
+    if "sword" in spec.get("held", []):
+        dl = np.einsum("fji,fj->fi", Rp, d)
+        out["blade_yaw_deg"] = np.degrees(np.arctan2(dl[:, 0], dl[:, 2]))
+    if "shield" in spec.get("held", []):
+        out["boss_z_cm"] = 100 * boss[:, 2]
+        if "sword" in spec.get("held", []):
+            sw = np.einsum("fij,kj->fki", G[:, h], pc["sword"][::3]) + P[:, h][:, None]
+            sh = pts[:, ::2]
+            out["blade_rim_cm"] = 100 * np.array([np.linalg.norm(sw[f][:, None] - sh[f][None], axis=2).min() for f in range(len(P))])
     return out
 
 
