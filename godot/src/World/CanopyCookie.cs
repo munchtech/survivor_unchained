@@ -28,24 +28,29 @@ public static class CanopyCookie
 
     // (L1 lead 11) The leaf shapes as knobs (rigs.json dapple "clusters", "leaf", "leaves"; --air-tune dclusters, dleaf, dleaves):
     // the defaults draw the tile as it was (the same random run).
-    // (L1 lead 12, F4) Leaf MASSES (rigs.json dapple "mass" [narrowest, widest, m]; --air-tune dmass): a cluster is a lobed mass
-    // that wide (a middle lobe and "leaves" more round it, filled) with small pointed leaves ("leaf" long) all round its rim,
-    // (a third number in "mass": the masses' random run, 0 the first; another run lays the same masses out elsewhere)
-    // tips out: shade reads as serrated masses of foliage, and no single leaf is big enough to read as a leaf on the ground
-    // (the fans' 0.8-2.4 m leaves did, and bit her pool in scoops). No mass: the fans, as they were.
-    static (int Clusters, float LenMin, float LenMax, int LeavesMin, int LeavesMax, float MassMin, float MassMax, int Run) shape = (420, 0.8f, 2.4f, 3, 5, 0f, 0f, 0), built;
+    // (L1 lead 14, D2) The FIELD (rigs.json dapple "mass" [shortest, longest, run, lit]; --air-tune dmass=1.2/4/0/0.46): the
+    // tile is CanopyField's: the shade one connected canopy of leaves ("leaf" long, "leaves" points each), the moonlight
+    // compact fields left open in it, that long (m) before they grow to the lit share (the fourth number; 0.46 when left out);
+    // the third number is the random run (another run lays the same kind of ground out elsewhere). The tile then holds a
+    // cover and the way to each texel's leaf stem, not ranks (IsField; cel_dapple_at's field path). It replaced lead 12's
+    // leaf masses (Masses, Point: shade islands of 3-5 m with toothed rims and lit lanes between, the target's inverse).
+    // No mass: the fans, as they were.
+    static (int Clusters, float LenMin, float LenMax, int LeavesMin, int LeavesMax, float MassMin, float MassMax, int Run, float Lit) shape = (420, 0.8f, 2.4f, 3, 5, 0f, 0f, 0, 0.46f), built;
+    const int FieldPx = 2048;
+    /// <summary>These "mass" numbers ask for the field tile (cel_oneshade.z follows it: the shader reads the tile as covers and stems).</summary>
+    public static bool IsField(double[]? mass) => mass is { Length: >= 2 and <= 4 } && mass[0] > 0 && mass[1] >= mass[0];
     /// <summary>The cookie's shapes (0 or null: the default); the tile is redrawn, and set again where it is in use, when they change.</summary>
     public static void Shape(int clusters, double[]? leafLen, double[]? leaves, double[]? mass = null)
     {
         bool lenOk = leafLen is { Length: 2 } && leafLen[0] > 0 && leafLen[1] >= leafLen[0];
         bool numOk = leaves is { Length: 2 } && leaves[0] >= 1 && leaves[1] >= leaves[0];
-        bool massOk = mass is { Length: 2 or 3 } && mass[0] > 0 && mass[1] >= mass[0];
+        bool massOk = IsField(mass);
         var s = (clusters > 0 ? Math.Min(clusters, 4000) : 420, lenOk ? (float)leafLen![0] : 0.8f, lenOk ? (float)Math.Min(leafLen![1], 12) : 2.4f,
             numOk ? (int)leaves![0] : 3, numOk ? (int)Math.Min(leaves![1], 12) : 5,
-            massOk ? (float)mass![0] : 0f, massOk ? (float)Math.Min(mass![1], 12) : 0f, massOk && mass!.Length == 3 ? (int)mass[2] : 0);
+            massOk ? (float)mass![0] : 0f, massOk ? (float)Math.Min(mass![1], 12) : 0f, massOk && mass!.Length >= 3 ? (int)mass[2] : 0, massOk && mass!.Length == 4 ? (float)Math.Clamp(mass[3], 0.1, 0.9) : 0.46f);
         if (s == shape) return;
         shape = s;
-        GD.Print($"canopy cookie: {s.Item1} clusters, leaves {s.Item4}-{s.Item5} of {s.Item2:0.##}-{s.Item3:0.##} m" + (s.Item6 > 0 ? $", masses {s.Item6:0.##}-{s.Item7:0.##} m, run {s.Item8}" : ""));
+        GD.Print($"canopy cookie: {s.Item1} clusters, leaves {s.Item4}-{s.Item5} of {s.Item2:0.##}-{s.Item3:0.##} m" + (s.Item6 > 0 ? $", a field: lit fields {s.Item6:0.##}-{s.Item7:0.##} m, run {s.Item8}, lit {s.Item9:0.##}" : ""));
         if (leaf == null) return;
         RenderingServer.GlobalShaderParameterSet("cel_cookie", Leaf());
     }
@@ -54,13 +59,31 @@ public static class CanopyCookie
     {
         if (leaf != null && built == shape) return leaf;
         built = shape;
+        if (shape.MassMin > 0)
+        {
+            // the field: cover in R, the way to the leaf's stem in G and B (128 + 127 * m / CanopyField.Stem)
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var cov = CanopyField.Build(FieldPx, Tile, shape.MassMin, shape.MassMax, MathF.Min(shape.LenMin, 0.7f), MathF.Min(shape.LenMax, 0.7f), shape.LeavesMin, Math.Min(shape.LeavesMax, 5), shape.Run, shape.Lit, out float shade, out var stemX, out var stemY);
+            var fp = new byte[FieldPx * FieldPx * 4];
+            for (int i = 0; i < cov.Length; i++)
+            {
+                fp[i * 4] = (byte)Math.Clamp((int)MathF.Round(cov[i] * 255f), 0, 255);
+                fp[i * 4 + 1] = (byte)Math.Clamp((int)MathF.Round(128f + 127f * stemX[i] / CanopyField.Stem), 1, 255);
+                fp[i * 4 + 2] = (byte)Math.Clamp((int)MathF.Round(128f + 127f * stemY[i] / CanopyField.Stem), 1, 255);
+                fp[i * 4 + 3] = 255;
+            }
+            var fimg = Image.CreateFromData(FieldPx, FieldPx, false, Image.Format.Rgba8, fp);
+            fimg.GenerateMipmaps();
+            leaf = ImageTexture.CreateFromImage(fimg);
+            GD.Print($"canopy field: {FieldPx}px over {Tile:0} m, lit {1 - shade:0.000} at cover {CanopyField.C0:0.##}, built in {sw.ElapsedMilliseconds} ms");
+            return leaf;
+        }
         var px = new byte[TilePx * TilePx];
         Array.Fill(px, (byte)255);
         var rnd = new Random(20261104);
         float m = TilePx / Tile;
         int clusters = shape.Clusters;
-        if (shape.MassMin > 0) Masses(px, shape.Run == 0 ? rnd : new Random(20261104 + shape.Run), m);
-        else for (int c = 0; c < clusters; c++)
+        for (int c = 0; c < clusters; c++)
         {
             byte rank = (byte)(4 + c * 247 / clusters);
             float cx = (float)rnd.NextDouble() * TilePx, cy = (float)rnd.NextDouble() * TilePx;
@@ -89,111 +112,6 @@ public static class CanopyCookie
         img.GenerateMipmaps();
         leaf = ImageTexture.CreateFromImage(img);
         return leaf;
-    }
-
-    // (L1 lead 12, F4) The tile as leaf masses: see shape.
-    // (round 5) Each mass keeps clear of the ones ranked under it (the best of a few throws: those close the sky before it, so
-    // at a thin cover the masses stand apart instead of fusing into shapes over 4 m). Its rim: POINTED leaves, tips out
-    // ("leaf": how far a tooth stands out, and its foot is about as wide; straight-sided points of about 58 degrees, some with a shorter point
-    // at their side, foot to foot along the rim: the target's shade edge reads as maple points, where round 4's fat overlapping leaves read as scallops),
-    // and now and then a loose leaf lying just off it.
-    static void Masses(byte[] px, Random rnd, float m)
-    {
-        int clusters = shape.Clusters;
-        var placed = new List<(float X, float Y, float R)>();
-        for (int c = 0; c < clusters; c++)
-        {
-            byte rank = (byte)(4 + c * 247 / clusters);
-            float rad = (shape.MassMin + (float)rnd.NextDouble() * (shape.MassMax - shape.MassMin)) * 0.5f * m;
-            float cx = 0, cy = 0, best = float.NegativeInfinity;
-            for (int tr = 0; tr < 24 && best < 0; tr++)
-            {
-                float x = (float)rnd.NextDouble() * TilePx, y = (float)rnd.NextDouble() * TilePx, clear = float.MaxValue;
-                foreach (var (qx, qy, qr) in placed)
-                {
-                    float dx = MathF.Abs(x - qx), dy = MathF.Abs(y - qy);
-                    dx = MathF.Min(dx, TilePx - dx); dy = MathF.Min(dy, TilePx - dy);
-                    clear = MathF.Min(clear, MathF.Sqrt(dx * dx + dy * dy) - (rad + qr) * 0.95f);
-                }
-                if (clear > best) { best = clear; cx = x; cy = y; }
-            }
-            placed.Add((cx, cy, rad));
-            int lobes = 1 + shape.LeavesMin + rnd.Next(shape.LeavesMax - shape.LeavesMin + 1);
-            var lx = new float[lobes]; var ly = new float[lobes]; var lr = new float[lobes];
-            // (the middle lobe, the others round it and into it: one lump about 2 rad across, never a circle)
-            float turn = (float)(rnd.NextDouble() * Math.PI * 2);
-            for (int l = 0; l < lobes; l++)
-            {
-                float a = turn + (l - 1) * (float)(Math.PI * 2) / Math.Max(lobes - 1, 1) + ((float)rnd.NextDouble() - 0.5f) * 0.9f;
-                float d = l == 0 ? 0 : rad * (0.38f + 0.3f * (float)rnd.NextDouble());
-                lr[l] = rad * (l == 0 ? 0.5f + 0.1f * (float)rnd.NextDouble() : 0.26f + 0.26f * (float)rnd.NextDouble());
-                lx[l] = cx + MathF.Cos(a) * d; ly[l] = cy + MathF.Sin(a) * d;
-            }
-            for (int l = 0; l < lobes; l++)
-            {
-                int r = (int)lr[l] + 1; float r2 = lr[l] * lr[l];
-                for (int y = -r; y <= r; y++)
-                {
-                    int iy = ((int)(ly[l] + y) % TilePx + TilePx) % TilePx;
-                    int w = (int)MathF.Sqrt(MathF.Max(r2 - y * y, 0));
-                    for (int x = -w; x <= w; x++)
-                    {
-                        int i = iy * TilePx + (((int)(lx[l] + x) % TilePx + TilePx) % TilePx);
-                        if (rank < px[i]) px[i] = rank;
-                    }
-                }
-                // its rim's teeth, tips out (none where the rim runs inside another lobe)
-                float at = (float)(rnd.NextDouble() * Math.PI * 2), end = at + (float)(Math.PI * 2);
-                while (at < end)
-                {
-                    float len = (shape.LenMin + (float)rnd.NextDouble() * (shape.LenMax - shape.LenMin)) * m;
-                    float step = len * 1.1f * (0.75f + 0.25f * (float)rnd.NextDouble()) / MathF.Max(lr[l], 1f);
-                    float th = at + step * 0.5f; at += step;
-                    float a = th + ((float)rnd.NextDouble() - 0.5f) * 0.8f;
-                    float side = (float)rnd.NextDouble(), sa = 0.7f + 0.3f * (float)rnd.NextDouble(), sl = 0.55f + 0.15f * (float)rnd.NextDouble();
-                    float bx = lx[l] + MathF.Cos(th) * lr[l], by = ly[l] + MathF.Sin(th) * lr[l];
-                    bool inside = false;
-                    for (int k = 0; k < lobes && !inside; k++)
-                        if (k != l) { float ex = bx - lx[k], ey = by - ly[k], rk = MathF.Max(lr[k] - len * 0.2f, 0); inside = ex * ex + ey * ey < rk * rk; }
-                    if (inside) continue;
-                    Point(px, rank, bx, by, a, len, len * 0.55f);
-                    if (side < 0.36f) Point(px, rank, bx, by, a + (side < 0.18f ? sa : -sa), len * sl, len * sl * 0.4f);
-                }
-            }
-            // a loose leaf or two off the mass (three points and a stub)
-            for (int n = rnd.Next(3); n > 0; n--)
-            {
-                float fa = (float)(rnd.NextDouble() * Math.PI * 2), fd = rad * (1.3f + 0.35f * (float)rnd.NextDouble());
-                float len = shape.LenMin * (0.8f + 0.5f * (float)rnd.NextDouble()) * m, a = (float)(rnd.NextDouble() * Math.PI * 2);
-                float bx = cx + MathF.Cos(fa) * fd, by = cy + MathF.Sin(fa) * fd;
-                Point(px, rank, bx, by, a, len, len * 0.36f);
-                Point(px, rank, bx, by, a + 0.95f, len * 0.7f, len * 0.26f);
-                Point(px, rank, bx, by, a - 0.95f, len * 0.7f, len * 0.26f);
-                Point(px, rank, bx, by, a + MathF.PI, len * 0.3f, len * 0.3f);
-            }
-        }
-        // (for the log: what the masses ranked under half close of the tile, and all of them)
-        long shade = 0, half = 0;
-        foreach (byte b in px) { if (b < 255) shade++; if (b < 128) half++; }
-        GD.Print($"canopy cookie: masses close {100.0 * half / px.Length:0.0}% of the tile at cover 0.5, {100.0 * shade / px.Length:0.0}% at 1");
-    }
-
-    // One point of a leaf: from (bx, by) along a, len long, hw its half-width at the foot (straight sides to a sharp tip;
-    // the foot runs a quarter of its length back into the mass).
-    static void Point(byte[] px, byte rank, float bx, float by, float a, float len, float hw)
-    {
-        float ca = MathF.Cos(a), sa = MathF.Sin(a);
-        float mx = bx + ca * len * 0.375f, my = by + sa * len * 0.375f;
-        int r = (int)(len * 0.625f + hw) + 2;
-        for (int y = -r; y <= r; y++)
-            for (int x = -r; x <= r; x++)
-            {
-                float qx = mx + x - bx, qy = my + y - by;
-                float u = (qx * ca + qy * sa) / len, v = MathF.Abs(-qx * sa + qy * ca);
-                if (u < -0.25f || u > 1 || v > hw * (u < 0 ? 1 : 1 - u)) continue;
-                int i = (((int)(my + y) % TilePx + TilePx) % TilePx) * TilePx + (((int)(mx + x) % TilePx + TilePx) % TilePx);
-                if (rank < px[i]) px[i] = rank;
-            }
     }
 
     /// <summary>The canopy for a zone: its mask and the leaf tile into the globals (ZoneView, as the zone is built).</summary>

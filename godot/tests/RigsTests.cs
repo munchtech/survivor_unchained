@@ -228,11 +228,12 @@ public class RigsTests
         // and the field itself, as written (round 5)
         var a = s["arena_night"]!;
         Assert.True(a.EmberSmooth);
-        Assert.Equal(new[] { 0.975, 1.9, 2.8, 1 }, a.EmberShade);
+        Assert.Equal(new[] { 0.975, 1.5, 3.6, 1 }, a.EmberShade);
         Assert.Equal(new[] { 1, 0.9, 1.8, 5.2 }, a.EmberGive);
-        Assert.Equal(new[] { 2.0, 4 }, a.Dapple.Mass);
-        Assert.Equal(144.0, (double)a.Dapple.Clusters!);
-        Assert.Equal(0.46, (double)a.Dapple.Cover!, 6);
+        // (L1 lead 14, D2) the canopy as a field: lit fields 1.2-4 m, run 0, lit share 0.46, at the field's own cover; no clusters
+        Assert.Equal(new[] { 1.2, 4, 0, 0.46 }, a.Dapple.Mass);
+        Assert.Null(a.Dapple.Clusters);
+        Assert.Equal(0.5, (double)a.Dapple.Cover!, 6);
     }
 
     // (L1 lead 12, S3) What stands in the night's light is arena_night's alone: the moon's top band and rim (moon_top), the
