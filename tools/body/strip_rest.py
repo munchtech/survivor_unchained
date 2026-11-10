@@ -434,6 +434,7 @@ HER = {
     "kappa": 1.2,                        # path / chord over this = an edge that still bridges
     "deg": 3, "ext": 0.01,               # the apex line: a cubic through the bridges' apex points, 10 mm past both ends
     "part": 0.9,
+    "lim": None,                         # None: the linear lay (the npz on disk). build --relax: (0.82, 1.28), real lengths
     "out": "strip_rest.npz",
     "dirs": 2000,                        # outside directions of the visibility proof
     "game_up": 0.3,                      # "from the play camera's side": directions with an up part over this
@@ -463,7 +464,7 @@ class HerStrip:
         band = ct.rows_around(n, self.E[s], np.unique(car.bridge), rows) & (np.asarray(self.md.beta) >= 1)
         c = self.cfg
         return relay(self.bd.V0[self.pts[s]], self.E[s], self.tris(s), band, car.bridge, car.face, car.bary, self.Ab.V0,
-                     self.Ab.T, c["reach"], c["kappa"], c["deg"], c["ext"], c["part"])
+                     self.Ab.T, c["reach"], c["kappa"], c["deg"], c["ext"], c["part"], lim=c["lim"])
 
     def load(self):
         z = np.load(rt.OUT / self.cfg["out"])
@@ -629,8 +630,10 @@ def main():
     ap.add_argument("cmd", choices=["build", "target", "sheet"])
     ap.add_argument("--snap", action="store_true", help="import carried_target from out/shoulder/snap (a frozen copy)")
     ap.add_argument("--rows", type=int, default=HER["rows"])
+    ap.add_argument("--relax", action="store_true", help="build: relax the lay on real lengths (slow; the left fails, see strip_rest.md)")
     ap.add_argument("--poses", default="", help="comma-separated pose names, or 'named' (the config's list); none: all of poses.npz")
     a = ap.parse_args()
+    HER["lim"] = (0.82, 1.28) if a.relax else None
     print(f"carried_target: {ct.__file__}")
     hs = HerStrip()
     if a.cmd == "build":
