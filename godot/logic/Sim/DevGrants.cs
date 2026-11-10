@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SurvivorUnchained.Sim;
 
@@ -9,12 +10,16 @@ namespace SurvivorUnchained.Sim;
 ///                             wait before it may fire if given (a kindled skill held off the title card, for a clip);
 ///   --grant-union unionId     the union in at full rank holding two slots (its parts go if carried; no evolutions asked);
 ///   --dash-step id[,id...]    those dash steps taken for the fight (Content/DashSteps.cs).
+/// A grant the keys cannot hold takes the last key that is not the grip's nor the union's part (MakeRoom: a campaign
+/// survivor's taught build fills all six keys before a grant is asked).
 /// Returns what it did, a line each, for the log.</summary>
 public static class DevGrants
 {
-    public static List<string> Apply(Battle b, string? grant, string? union, string? steps)
+    /// <param name="makeRoom">Off: a caller that made the room itself (the harness's MapSim, with its own grip).</param>
+    public static List<string> Apply(Battle b, string? grant, string? union, string? steps, bool makeRoom = true)
     {
         var said = new List<string>();
+        if (makeRoom) said.AddRange(MakeRoom(b, grant, union));
         if (!string.IsNullOrWhiteSpace(grant))
             foreach (var raw in grant.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             {
@@ -34,6 +39,36 @@ public static class DevGrants
         if (!string.IsNullOrWhiteSpace(steps))
             foreach (var id in steps.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
                 said.Add(b.GrantDashStep(id) ? $"dash-step: {id}" : $"dash-step: {id} not taken (unknown, or taken as often as it may be)");
+        return said;
+    }
+
+    /// <summary>Room for what is asked: while the granted skills and the union (less its parts carried, whose keys it
+    /// takes) need more keys than are free, the last skill carried that is not kept gives up its key. Kept: what is
+    /// granted, the union's parts, and the grip.</summary>
+    /// <param name="grips">The grip's skill ids; null: the held swings (a hold record) and what is on the first key.</param>
+    public static List<string> MakeRoom(Battle b, string? grant, string? union, IEnumerable<string>? grips = null)
+    {
+        var keep = new HashSet<string>();
+        if (grips != null) foreach (var id in grips) keep.Add(id);
+        else foreach (var w in b.Weapons) if (w.Hold || w.Slot == 0) keep.Add(w.Id);
+        int need = 0;
+        foreach (var raw in (grant ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            string id = raw.Split(':')[0];
+            keep.Add(id);
+            if (Content.Weapons.All.ContainsKey(id) && !b.Weapons.Exists(w => w.Id == id)) need += Content.Weapons.SlotCost(id);
+        }
+        if (union is { Length: > 0 } un && Content.Unions.Find(un.Trim()) is { } u && !b.Weapons.Exists(w => w.Id == u.Into))
+        {
+            keep.Add(u.A); keep.Add(u.B);
+            need += Content.Weapons.SlotCost(u.Into) - b.Weapons.Count(w => w.Id == u.A || w.Id == u.B);
+        }
+        var said = new List<string>();
+        while (need > 0 && b.SlotsUsed + need > Content.Weapons.MaxWeapons && b.Weapons.LastOrDefault(w => !keep.Contains(w.Id)) is { } give)
+        {
+            b.RemoveWeapon(give.Id);
+            said.Add($"grant: {give.Id} gives up its key");
+        }
         return said;
     }
 }

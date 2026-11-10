@@ -242,27 +242,9 @@ public static class MapSim
 
     static void GiveGrants(Battle b, MapRunSpec spec)
     {
-        var keep = new HashSet<string>();
-        if (TaughtBuilds.Of(spec.Calling) is { } t) keep.Add(t.Grip);
-        int need = 0;
-        foreach (var raw in (Grant ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-        {
-            string id = raw.Split(':')[0];
-            keep.Add(id);
-            if (Content.Weapons.All.ContainsKey(id) && !b.Weapons.Exists(w => w.Id == id)) need += Content.Weapons.SlotCost(id);
-        }
-        if (GrantUnion is { Length: > 0 } un && Unions.Find(un.Trim()) is { } u && !b.Weapons.Exists(w => w.Id == u.Into))
-        {
-            keep.Add(u.A); keep.Add(u.B);
-            need += Content.Weapons.SlotCost(u.Into) - b.Weapons.Count(w => w.Id == u.A || w.Id == u.B);
-        }
-        var said = new List<string>();
-        while (need > 0 && b.SlotsUsed + need > Content.Weapons.MaxWeapons && b.Weapons.LastOrDefault(w => !keep.Contains(w.Id)) is { } give)
-        {
-            b.RemoveWeapon(give.Id);
-            said.Add($"grant: {give.Id} gives up its key");
-        }
-        said.AddRange(DevGrants.Apply(b, Grant, GrantUnion, null));
+        // (the rule is the game's now, Sim/DevGrants.MakeRoom; the grip kept here is the taught build's, as it was)
+        var said = DevGrants.MakeRoom(b, Grant, GrantUnion, TaughtBuilds.Of(spec.Calling) is { } t ? new[] { t.Grip } : Array.Empty<string>());
+        said.AddRange(DevGrants.Apply(b, Grant, GrantUnion, null, makeRoom: false));
         foreach (var line in said) if (System.Threading.Interlocked.Increment(ref grantSaid) <= 4 || line.Contains("not ")) Console.WriteLine($"{spec.Key}: {line}");
     }
 
