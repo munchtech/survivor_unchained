@@ -59,7 +59,7 @@ public partial class BattleFx
     readonly List<GripAt> gripRing = new(40);
     Node3D? gripBlade;
     Skeleton3D? gripSkel;
-    double gripClock, gripAnimT = -1, gripDue = -1, gripPressAt, gripTimeWas, gripRealWas;
+    double gripClock, gripAnimT = -1, gripDue = -1, gripPressAt, gripTimeWas, gripRealWas, gripSeen, gripCt;
     bool gripDueOath;
     int gripDueSide;
     ulong gripDrawn, gripEdgeDrawn;
@@ -84,6 +84,9 @@ public partial class BattleFx
         public int Said;
         /// <summary>The tip's sweep round her over the cut's fast frames (radians, as the sim's angles run).</summary>
         public double Swept, SweptAt;
+        /// <summary>The longest it was drawn (m) and the frame of it (the `grip end` line's `full`).</summary>
+        public float FullLen;
+        public int FullFrame;
     }
 
     /// <summary>The chain: the last cut (its weapon, side and contact), where it ended once its trail has run up, and
@@ -176,6 +179,7 @@ public partial class BattleFx
             if (!Flare.HushesSwings && HerEvents.Contact(clip) is double ct && GripHeld(b, aa.Weapon, out gripDueOath) && (gripDueOath || !aa.Heavy))
             {
                 gripDue = aa.T + ct / Math.Max(0.1, aa.Rate);
+                gripSeen = (time - aa.T) * 60; gripCt = (gripDue - aa.T) * 60;
                 gripDueSide = HerEvents.Side(clip) ?? 0;
             }
         }
@@ -222,6 +226,7 @@ public partial class BattleFx
     void GripLinkAsk(GripTrail tr)
     {
         tr.LinkAsked = true;
+        if (P7D["grip.link.on"] < 0.5f) return;
         if (gripChain is not { Ended: true, Out: < 0 } ch || ch.Oath != tr.Oath || ch.Side != -tr.Side || gripClock - ch.Contact > P7D["grip.link.window"]) return;
         tr.Linked = true; tr.LinkTip = ch.EndTip; tr.LinkTan = ch.EndTan;
     }
@@ -243,8 +248,9 @@ public partial class BattleFx
         double tx = e.X + Mathf.Cos(mid) * r * 0.9f, tz = e.Z + Mathf.Sin(mid) * r * 0.9f;
         if (!oath)
         {
-            // The heavy blade's grit where it passes nearest the ground.
-            Dust(tx, tz, 3, 1.6f * g);
+            // The heavy blade's grit where it passes nearest the ground (grip.contact.grit puffs: 0 now, by day they
+            // read as dark blobs on the stroke).
+            if ((int)P7D["grip.contact.grit"] is > 0 and var grit) Dust(tx, tz, grit, 1.6f * g);
             Cam?.AddTrauma(0.02f);
             return;
         }
@@ -319,7 +325,20 @@ public partial class BattleFx
         if (ran && gripLive is { } tr && gripChain is { Ended: false } ch && gripRing.Count > 0)
         {
             ch.Ended = true; ch.EndTip = gripRing[^1].Tip - PlayerPos; ch.EndTan = tr.EndTan;
-            if (GripSay) GD.Print($"grip end frame {Engine.GetFramesDrawn()} side {tr.Side} measured {(Math.Abs(tr.Swept) < 0.3 ? 0 : Math.Sign(tr.Swept))} swept {Mathf.RadToDeg(tr.Swept):0} deg gap {(tr.Linked ? 1 : 0)}");
+            if (GripSay)
+            {
+                // the timing's numbers (for the clip's contact, her_events.json): the frame the tip was fastest going the
+                // cut's way (a sample a frame, counted back from now) and the frame the stroke was longest
+                int n = gripRing.Count, pk = n - 1;
+                double best = 0;
+                for (int k = 1; k < n; k++)
+                {
+                    if (gripRing[k].At < tr.Tail || !GripCutting(k, 0, tr.Side)) continue;
+                    double v = gripRing[k].Tip.DistanceTo(gripRing[k - 1].Tip) / Math.Max(1e-4, gripRing[k].At - gripRing[k - 1].At);
+                    if (v > best) { best = v; pk = k; }
+                }
+                GD.Print($"grip end frame {Engine.GetFramesDrawn()} side {tr.Side} measured {(Math.Abs(tr.Swept) < 0.3 ? 0 : Math.Sign(tr.Swept))} swept {Mathf.RadToDeg(tr.Swept):0} deg gap {(tr.Linked ? 1 : 0)} peak {Engine.GetFramesDrawn() - (n - 1 - pk)} ({best:0.0} m/s) full {tr.FullFrame} ({tr.FullLen:0.00} m)");
+            }
         }
         gripLive = null;
         if (gripNode != null && IsInstanceValid(gripNode)) gripNode.Visible = false;
@@ -340,7 +359,7 @@ public partial class BattleFx
         // thread aside), its tail's width under its head's
         float body = Mathf.Max(total - thread, 0.01f);
         float head = Mathf.Min(look.Head * look.Width[step], body * P7D["grip.aspect"] / blade);
-        float tail = Mathf.Min(P7D["grip.tail_px"] * px / blade, head * 0.5f);
+        float tail = Mathf.Min(P7D["grip.tail_px"] * px / blade, head * 0.25f);
         // the lit blade: from the comma's head down toward the guard as the stroke grows, thinner as it leaves
         float full = Mathf.Clamp((body - lit[1]) / Mathf.Max(lit[2] - lit[1], 1e-3f), 0, 1);
         m.SetShaderParameter("grip_total", total);
@@ -362,6 +381,10 @@ public partial class BattleFx
     /// <summary>Whether the blade's tip was fast between sample `j - 1` and `j`.</summary>
     bool GripFast(int j, float slow) =>
         gripRing[j].Tip.DistanceTo(gripRing[j - 1].Tip) >= slow * Math.Max(1e-4, gripRing[j].At - gripRing[j - 1].At);
+
+    /// <summary>Whether the blade was CUTTING between sample `j - 1` and `j`: its tip fast, and going round her the
+    /// cut's own way (its clip's side; 0: either way). The wind-up's sweep back is fast too: it leaves no stroke.</summary>
+    bool GripCutting(int j, float slow, int side) => GripFast(j, slow) && (side == 0 || GripSweep(j) * side > -0.02);
 
     /// <summary>How far the tip went round her between sample `k - 1` and `k`, as the sim's angles run (radians).</summary>
     double GripSweep(int k)
@@ -387,9 +410,9 @@ public partial class BattleFx
         int n = gripRing.Count, lo = 0;
         while (lo < n - 1 && gripRing[lo].At < tr.Tail - 1e-6) lo++;
         int j = n - 1;
-        if (age >= 0) while (j > lo && !GripFast(j, slow)) j--;
+        if (age >= 0) while (j > lo && !GripCutting(j, slow, tr.Side)) j--;
         int hi = j;
-        while (j > lo && GripFast(j, slow)) j--;
+        while (j > lo && GripCutting(j, slow, tr.Side)) j--;
         int i0 = j;
         bool any = hi > i0;
         if (any) tr.EndTan = (gripRing[hi].Tip - gripRing[hi - 1].Tip).Normalized();
@@ -402,7 +425,7 @@ public partial class BattleFx
             if (tr.Side == 0) tr.Side = tr.SimSide;
             if (!tr.LinkAsked) GripLinkAsk(tr);
             gripChain = new GripChain { Oath = tr.Oath, Side = tr.Side, Contact = tr.Contact };
-            if (GripSay) GD.Print($"grip cut frame {Engine.GetFramesDrawn()} side {tr.Side} linked {(tr.Linked ? 1 : 0)} oath {tr.Oath}");
+            if (GripSay) GD.Print($"grip cut frame {Engine.GetFramesDrawn()} side {tr.Side} linked {(tr.Linked ? 1 : 0)} oath {tr.Oath} seen +{gripSeen:0.0}f ct {gripCt:0.0}f");
         }
         if (tr.FlashOwed && age >= -1e-6) GripContact(tr, look, i0);
         if (GripSayAll && tr.Said < 16 && n >= 2)
@@ -440,6 +463,7 @@ public partial class BattleFx
         // the drawn length: capped, and run up toward the head as it leaves
         float len = Mathf.Min(cum, look.MaxLen) * (1 - cut), start = cum - len;
         if (len < P7D["grip.min_len"]) { gripNode.Visible = false; return; }
+        if (len > tr.FullLen) { tr.FullLen = len; tr.FullFrame = Engine.GetFramesDrawn(); }
         int s = 0;
         while (s < gripPts.Count - 2 && gripCum[s + 1] <= start) s++;
         gripMesh.ClearSurfaces();
@@ -614,7 +638,7 @@ public partial class BattleFx
             step = 1 + (int)((gripClock - ch.Out) * 60 / Math.Max(1, P7D["grip.edge.out_frames"]) + 0.05);
             if (step > 2) { gripChain = null; gripEdgeNode.Visible = false; return; }
         }
-        if (GripBladeNow() is not { } now) { gripEdgeNode.Visible = false; return; }
+        if (P7D["grip.link.on"] < 0.5f || GripBladeNow() is not { } now) { gripEdgeNode.Visible = false; return; }
         GripEdgeQuads(now.Hilt, now.Tip, step);
     }
 

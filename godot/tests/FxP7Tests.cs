@@ -61,7 +61,7 @@ public class FxP7Tests
         var p = Real();
         foreach (var k in new[] { "grip.lead_frames", "grip.slow", "grip.min_len", "grip.aspect", "grip.tail_px", "grip.point", "grip.grain", "grip.waver", "grip.glow",
             "grip.dry", "grip.lit", "grip.retract", "grip.shed_at", "grip.contact.wait_frames", "grip.contact.k_min", "grip.contact.lift", "grip.contact.kill",
-            "grip.contact.crowd", "grip.contact.tears" })
+            "grip.contact.crowd", "grip.contact.tears", "grip.contact.grit", "grip.link.on" })
             Assert.True(p.Has(k), "fx_language.json p7 lacks " + k);
         Assert.Equal(5, p.All("grip.dry").Length);
         Assert.Equal(3, p.All("grip.lit").Length);
@@ -86,7 +86,7 @@ public class FxP7Tests
         var ob = p.All("grip.oath.bands");
         Assert.InRange(ob[1] - ob[0], 0.12f, 0.2f);
         // a brush tail, not a hairline; the dry tail and the point counted in metres, capped by a share of a short stroke
-        Assert.InRange(p["grip.tail_px"], 3, 6);
+        Assert.InRange(p["grip.tail_px"], 2.5f, 6);
         Assert.InRange(p.All("grip.dry")[1], 0.1f, 0.4f);
         Assert.InRange(p.All("grip.point")[1], 0.1f, 0.5f);
         // gone 0.15 s after the contact
