@@ -541,7 +541,9 @@ def gore_plate(name, cup_objs, z_top, z_tip, hw_top, hw_tip, lift, thick, roll, 
     under = np.array([ct.ray_cast(Vector(p), Vector(nn), 0.012)[0] is not None for p, nn in zip(pos, nor)])
     d_in = cKDTree(pos[under]).query(pos)[0] if under.any() else np.full(len(pos), 1.0)
     d_out = cKDTree(pos[~under]).query(pos)[0]
-    clear = np.where(under, -d_out, d_in) - 0.0015
+    # (a bar stands `clear` off the cups, past the join law's weld distance (worn_rest JOIN weld_m 2 mm) so it LINKS to them
+    # as a bridge and is not welded into one cup's group; the tongue kept 1.5 mm)
+    clear = np.where(under, -d_out, d_in) - (bar.get("clear", 0.0015) if bar is not None else 0.0015)
     x, z = pos[:, 0], pos[:, 2]
     t = np.clip((z - z_tip) / max(z_top - z_tip, 1e-6), 0, 1)
     hw = hw_tip + (hw_top - hw_tip) * np.sqrt(t)
