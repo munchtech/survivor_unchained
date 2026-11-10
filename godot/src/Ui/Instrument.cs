@@ -774,7 +774,8 @@ public partial class KeyTag : Control
         get => underline;
         set { if (value == underline) return; underline = value; QueueRedraw(); }
     }
-    const float MouseW = 13, MouseH = 17, MouseChip = 21;
+    // (fix C, 2: one chip height on the bar. The mouse is its own chip, the key chip's 16 tall, on an ink halo)
+    const float MouseW = 13, MouseH = Instrument.TagH;
     /// <summary>Fix A (judge r1, 1): every cap in lining figures. Alegreya Sans' default numerals are old-style, 7 px
     /// tall at 16 beside the letters' 11: the skill keys were the smallest text on the bar.</summary>
     static Font CapFont => Vessel.Figures;
@@ -796,7 +797,7 @@ public partial class KeyTag : Control
         float mid = cx - Position.X;
         if (padView != null) return new Rect2(padView.Position, padView.Size * padView.Scale);
         if (Chip && padName != null) { float pw = PadCapW(); return new Rect2(Mathf.Round(mid - pw / 2), 0, pw, Instrument.TagH); }
-        if (mouse >= 0) return new Rect2(Mathf.Round(mid - MouseChip / 2), Mathf.Round(Instrument.TagH / 2 - MouseChip / 2), MouseChip, MouseChip);
+        if (mouse >= 0) return new Rect2(Mathf.Round(mid - MouseW / 2), 0, MouseW, MouseH);
         float cw = Math.Max(18, ChipTextW(Shown) + 9);
         return new Rect2(Mathf.Round(mid - cw / 2), 0, cw, Instrument.TagH);
     }
@@ -879,28 +880,31 @@ public partial class KeyTag : Control
     void DrawMouse()
     {
         var chip = ChipBox();
-        var plate = new StyleBoxFlat { BgColor = Ground, BorderColor = Rim, AntiAliasing = true };
-        plate.SetBorderWidthAll(1); plate.SetCornerRadiusAll(3);
-        DrawStyleBox(plate, chip);
-        // the mouse: 13 x 17, a full bone outline on ink, the button meant solid bone, the other ink
-        var r = new Rect2(chip.Position + new Vector2((MouseChip - MouseW) / 2, (MouseChip - MouseH) / 2), new Vector2(MouseW, MouseH));
+        // the mouse is the chip: as tall as a key's chip, a full bone outline on the chip's ground, the button meant
+        // solid bone, the other ink; under it an ink halo 2 wide so the ring behind never eats its body (gold when held)
+        var r = chip;
+        var halo = new StyleBoxFlat { BgColor = new Color(10 / 255f, 8 / 255f, 6 / 255f, 0.92f), BorderColor = down ? Rim : new Color(10 / 255f, 8 / 255f, 6 / 255f, 0.92f), AntiAliasing = true };
+        halo.SetBorderWidthAll(1);
+        halo.CornerRadiusTopLeft = halo.CornerRadiusTopRight = 8;
+        halo.CornerRadiusBottomLeft = halo.CornerRadiusBottomRight = 7;
+        DrawStyleBox(halo, r.Grow(2));
         var bone = Bone;
-        var body = new StyleBoxFlat { BgColor = new Color(10 / 255f, 8 / 255f, 6 / 255f), BorderColor = bone, AntiAliasing = true };
+        var body = new StyleBoxFlat { BgColor = down ? Ground : new Color(10 / 255f, 8 / 255f, 6 / 255f), BorderColor = bone, AntiAliasing = true };
         body.SetBorderWidthAll(1);
         body.CornerRadiusTopLeft = body.CornerRadiusTopRight = 6;
         body.CornerRadiusBottomLeft = body.CornerRadiusBottomRight = 5;
         DrawStyleBox(body, r);
-        float split = r.Position.Y + 8, midX = r.Position.X + 6;
+        float split = r.Position.Y + 7, midX = r.Position.X + 6;
         if (mouse == 1)
-            DrawRect(new Rect2(midX - 1, r.Position.Y + 2, 3, 5), bone, true);
+            DrawRect(new Rect2(midX - 1, r.Position.Y + 2, 3, 4), bone, true);
         else
         {
             bool left = mouse == 0;
             var btn = new StyleBoxFlat { BgColor = bone, AntiAliasing = true };
             btn.CornerRadiusTopLeft = left ? 6 : 0;
             btn.CornerRadiusTopRight = left ? 0 : 6;
-            DrawStyleBox(btn, new Rect2(left ? r.Position.X : midX + 1, r.Position.Y, 6, 8));
-            DrawRect(new Rect2(midX, r.Position.Y + 1, 1, 7), bone, true);
+            DrawStyleBox(btn, new Rect2(left ? r.Position.X : midX + 1, r.Position.Y, 6, 7));
+            DrawRect(new Rect2(midX, r.Position.Y + 1, 1, 6), bone, true);
         }
         DrawRect(new Rect2(r.Position.X + 1, split, MouseW - 2, 1), bone, true);
     }
@@ -911,7 +915,7 @@ public partial class KeyTag : Control
         : name == "Left stick" ? "LS" : name == "Right stick" ? "RS" : name.ToUpperInvariant();
 
     /// <summary>The D-pad's cross on a cap: as tall as the key caps' letters (11 px on screen), whole px.</summary>
-    static float PadGlyph => Mathf.Round(HudBottom.Keep(13));
+    static float PadGlyph => Instrument.TagH - 2;   // (fix C, 1: inside the rim: at 16 it covered the rim's top row and read as a blob)
 
     /// <summary>What a pad cap holds, its width: the button's text or the D-pad's cross, then "  READY" when lit (as
     /// the key's chip has it).</summary>
@@ -922,7 +926,7 @@ public partial class KeyTag : Control
         return t != null ? ChipTextW(t + tail) : PadGlyph + (tail != "" ? HudBottom.Keep(0.6f) + ChipTextW(tail) : 0);
     }
 
-    float PadCapW() => Math.Max(18, PadInnerW() + 9);
+    float PadCapW() => Math.Max(18, PadInnerW() + (PadCapText(padName!) == null ? 6 : 9));
 
     /// <summary>M4 lead 6: on a pad the cap is a key's cap, not the menu's button scaled down: the same chip (16 tall,
     /// radius 3, the bronze rim, the dark ground; the lit one amber), the button's name in the same Alegreya Sans 800
@@ -937,7 +941,7 @@ public partial class KeyTag : Control
         string? name = PadCapText(padName!);
         float tw = PadInnerW();
         float mid = cx - Position.X;
-        float cw = Math.Max(18, tw + 9), cx0 = Mathf.Round(mid - cw / 2);
+        float cw = PadCapW(), cx0 = Mathf.Round(mid - cw / 2);
         var box = lit
             ? new StyleBoxFlat { BgColor = new Color(70 / 255f, 34 / 255f, 8 / 255f, 245 / 255f), BorderColor = new Color(1f, 190 / 255f, 90 / 255f), AntiAliasing = true }
             : new StyleBoxFlat { BgColor = Ground, BorderColor = Rim, AntiAliasing = true };
@@ -960,8 +964,8 @@ public partial class KeyTag : Control
         else
         {
             // the cross: its foot on the letters' baseline, three arms' width to eleven
-            float g = PadGlyph, t = Math.Max(1, Mathf.Round(g * 5 / 13)), arm = Mathf.Round((g - t) / 2);
-            float gx = Mathf.Round(tx), gy = Mathf.Round(Instrument.TagH / 2 - g / 2);
+            float g = PadGlyph, t = 6, arm = (g - t) / 2;
+            float gx = Mathf.Round(tx), gy = 1;
             string which = padName!.Length > 6 ? padName[6..] : "";
             // (M4 lead 7: the rest a ghost, 0.24: at 0.42 the cross read as a plain "+" at 1:1 and the arm meant was lost)
             var dim = ink with { A = 0.45f };

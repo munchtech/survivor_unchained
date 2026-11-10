@@ -171,7 +171,16 @@ public partial class FoeMarks : Control
             var sz = font.GetStringSize(n.Title, HorizontalAlignment.Left, -1, fs);
             var at = new Vector2(Mathf.Round(cx - sz.X / 2), Mathf.Round(r.Position.Y - 4 * s));
             DrawStringOutline(font, at, n.Title, HorizontalAlignment.Left, -1, fs, Math.Max(2, (int)(4 * s)), Ink with { A = 0.95f });
-            DrawString(font, at, n.Title, HorizontalAlignment.Left, -1, fs, BronzeHi);
+            // (fix C, judge r1 10: the name in bone on its ink edge: bronze on olive grass could not be read. Red only as
+            // the rank's mark: a small diamond each side of the name)
+            DrawString(font, at, n.Title, HorizontalAlignment.Left, -1, fs, new Color("#f6ecd6"));
+            float dr = Mathf.Round(4 * s), dy = at.Y - Mathf.Round(font.GetAscent(fs) * 0.36f);
+            foreach (float dx in new[] { at.X - 9 * s, at.X + sz.X + 9 * s })
+            {
+                var c = new Vector2(Mathf.Round(dx), dy);
+                DrawColoredPolygon(new[] { c + new Vector2(0, -dr - 1.5f), c + new Vector2(dr + 1.5f, 0), c + new Vector2(0, dr + 1.5f), c + new Vector2(-dr - 1.5f, 0) }, Ink with { A = 0.95f });
+                DrawColoredPolygon(new[] { c + new Vector2(0, -dr), c + new Vector2(dr, 0), c + new Vector2(0, dr), c + new Vector2(-dr, 0) }, new Color("#d8402f"));
+            }
         }
         if (n.Affixes.Count == 0) return;
         int afs = (int)(17 * s);
