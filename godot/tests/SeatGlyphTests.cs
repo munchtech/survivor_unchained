@@ -43,14 +43,44 @@ public sealed class SeatGlyphTests
     [Fact]
     public void A_line_render_draws_the_keys_own_glyph_before_a_borrowed_one()
     {
-        // (Heroic Leap borrows the Leap's painting; its line is its own entry. The three taught skills had no entry and no
-        // family, and drew the neutral star.)
-        Assert.Equal("leap", GlyphPaths.IconKey("heroic_leap"));
-        Assert.Equal("heroic_leap", GlyphPaths.LineKey("heroic_leap"));
-        Assert.Equal("shield", GlyphPaths.IconKey("shield_charge"));
+        // (Butcher's Cleaver shows its art's painting, slash_heavy.png; its line is its own entry. Heroic Leap, Shield
+        // Charge and Iron Vow borrowed the Leap's, the shield's and the fist's paintings until they had their own.)
+        Assert.Equal("slash_heavy", GlyphPaths.IconKey("butchers_cleaver"));
+        Assert.Equal("butchers_cleaver", GlyphPaths.LineKey("butchers_cleaver"));
+        foreach (var key in new[] { "heroic_leap", "shield_charge", "iron_vow", "sunder" })
+        {
+            Assert.Equal(key, GlyphPaths.IconKey(key));
+            Assert.Equal(key, GlyphPaths.LineKey(key));
+        }
         Assert.NotEqual(GlyphPaths.PathFor("shield"), GlyphPaths.LinePath("shield_charge"));
-        Assert.Equal("fist", GlyphPaths.IconKey("iron_vow"));
         Assert.NotEqual(GlyphPaths.PathFor("fist"), GlyphPaths.LinePath("iron_vow"));
+    }
+
+    static string GodotRoot()
+    {
+        var d = new System.IO.DirectoryInfo(System.AppContext.BaseDirectory);
+        while (d != null && !System.IO.File.Exists(System.IO.Path.Combine(d.FullName, "project.godot"))) d = d.Parent;
+        return d?.FullName ?? System.IO.Directory.GetCurrentDirectory();
+    }
+
+    /// <summary>The painted icon a skill shows on every screen: the key ForSkill gives, through IconKey.</summary>
+    static string Painted(string id) => GlyphPaths.IconKey(GlyphPaths.ForSkill(id, Weapons.All[id].Art));
+
+    [Fact]
+    public void The_wardens_skills_and_the_cleaver_each_show_a_painting_of_their_own()
+    {
+        // (picked by SKILL, not by its art: Sunder and Butcher's Cleaver are both slash_heavy and showed one painting)
+        string[] skills = ["sunder", "groundbreaker", "heroic_leap", "shield_charge", "iron_vow", "watch_bell", "cleaver"];
+        var keys = skills.Select(Painted).ToList();
+        Assert.Equal(keys.Count, keys.Distinct().Count());
+        // (none shows the Leap's, the shield's or the fist's painting any more)
+        Assert.DoesNotContain("leap", keys);
+        Assert.DoesNotContain("shield", keys);
+        Assert.DoesNotContain("fist", keys);
+        Assert.Equal("sunder", Painted("sunder"));
+        Assert.Equal("slash_heavy", Painted("cleaver"));
+        var missing = keys.Where(k => !System.IO.File.Exists(System.IO.Path.Combine(GodotRoot(), "art", "ui", "icons", "glyph_color", k + ".png"))).ToList();
+        Assert.True(missing.Count == 0, "no painting at art/ui/icons/glyph_color/ for: " + string.Join(", ", missing));
     }
 
     [Fact]

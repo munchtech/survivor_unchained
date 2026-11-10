@@ -50,11 +50,12 @@ public static class GlyphPaths
         return All[Neutral];
     }
 
-    /// <summary>Art keys that show another key's PAINTED icon until they get their own painting (M4 lead 4: the taught
-    /// build's Heroic Leap, Shield Charge and Iron Vow have line glyphs of their own and borrow these paintings).</summary>
+    /// <summary>Keys that show another key's PAINTED icon. Butcher's Cleaver's line glyph is its own (SkillLine) and its
+    /// painting is its art's, slash_heavy.png, as it always was. (M4 lead 5: Heroic Leap, Shield Charge and Iron Vow no
+    /// longer borrow the Leap's, the shield's and the fist's: they have their own, glyph_color/KEY.png, as Sunder has.)</summary>
     static readonly Dictionary<string, string> Borrowed = new()
     {
-        ["heroic_leap"] = "leap", ["shield_charge"] = "shield", ["iron_vow"] = "fist",
+        ["butchers_cleaver"] = "slash_heavy",
     };
 
     /// <summary>The key whose painted icon an art key shows (itself, or the one it borrows).</summary>

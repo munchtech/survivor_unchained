@@ -262,7 +262,7 @@ public partial class LampPage : Control
         bool open = LampBook.LayoutsOpen(w, zone), pad = Play.Controls.Instance?.UsingPad == true, active = i == st.Active;
         // §9: the glyphs of all its carried skills (the active layout's are her seats now)
         var carried = (active ? SkillBook.Carried(ch).Select(c => c.Id) : l.Carried ?? new()).Where(Weapons.All.ContainsKey).Distinct().ToList();
-        var glyphs = carried.Select(s => (Weapons.All[s].Art, true)).ToList();
+        var glyphs = carried.Select(s => (Glyphs.ForSkill(s, Weapons.All[s].Art), true)).ToList();
         string? carries = null;
         if (carried.Count > 0)
         {
@@ -723,7 +723,7 @@ public partial class LampFind : Control
         HashSet<int> Where(Func<LampDef, LampBoardModel.Node, bool> f) =>
             m.Nodes.Where(nd => Lamps.Find(nd.Id) is { } d && f(d, nd)).Select(nd => nd.I).ToHashSet();
         var carried = SkillBook.Carried(ch).Select(c => c.Id).Where(Weapons.All.ContainsKey).ToList();
-        foreach (var s in carried) chips.Add((Weapons.All[s].Name, Weapons.All[s].Art, Where((d, _) => d.Feeds.Contains(s))));
+        foreach (var s in carried) chips.Add((Weapons.All[s].Name, Glyphs.ForSkill(s, Weapons.All[s].Art), Where((d, _) => d.Feeds.Contains(s))));
         foreach (var school in carried.Select(s => Weapons.All[s].School).Distinct())
             chips.Add((Style.Cap1(school.ToString()), null, Where((d, _) => d.Feeds.Any(f => Weapons.All.TryGetValue(f, out var wd) && wd.School == school))));
         chips.Add(("Blue lamps", null, Where((_, nd) => nd.Kind == "blue")));
@@ -1093,7 +1093,7 @@ public partial class WickTabs : Control
         foreach (var (id, _) in SkillBook.Carried(ch))
         {
             if (!Weapons.All.TryGetValue(id, out var wd) || i >= 6) continue;
-            seats.Add((id, wd.Art, ItemViews.SchoolColors[wd.School]));
+            seats.Add((id, Glyphs.ForSkill(id, wd.Art), ItemViews.SchoolColors[wd.School]));
             i++;
         }
         row.AddChild(scroll);

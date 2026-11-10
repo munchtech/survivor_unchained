@@ -167,7 +167,7 @@ public partial class ArenaResultScreen : TellingScreen
 
     static Control Skill(string id, bool fresh)
     {
-        var (icon, name, what) = Weapons.All.TryGetValue(id, out var w) ? (w.Art, w.Name, "combat skill")
+        var (icon, name, what) = Weapons.All.TryGetValue(id, out var w) ? (Glyphs.ForSkill(id, w.Art), w.Name, "combat skill")
             : Boons.Find(id) is { } bd ? (bd.Icon, bd.Name, "passive skill") : ("scroll", id, "");
         var col = fresh ? new Color("#b8a8d8") : Style.InkDim;
         return Style.H(8, Glyphs.Icon(icon, 22, col), Style.V(0, Style.Label(name, Style.UiBold, Style.Small, col), Style.Label(what, Style.TextItalic, Style.Caption, Style.InkDim)));

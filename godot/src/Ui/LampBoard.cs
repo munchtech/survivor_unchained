@@ -955,7 +955,7 @@ public partial class LampBoard : Control
                 ink.Glyphs.Add(new BoardInk.Mark(g, new Rect2(at - Vector2.One * gs / 2, Vector2.One * gs), col with { A = col.A * a }));
             }
             if (nd.Kind == "link" && state[i] == 0 && LampAsk.LinkPick(ch, nd.Id) is { } pick && Weapons.All.TryGetValue(pick, out var wd))
-                ink.Glyphs.Add(new BoardInk.Mark(wd.Art, new Rect2(at + new Vector2(R + 6, -9), new Vector2(18, 18)), LampInk.Gold with { A = a }));
+                ink.Glyphs.Add(new BoardInk.Mark(Glyphs.ForSkill(wd.Id, wd.Art), new Rect2(at + new Vector2(R + 6, -9), new Vector2(18, 18)), LampInk.Gold with { A = a }));
             if (d != null && nd.Kind is "notable" or "blue" or "entry" or "ultimate" && d.Name != "")
             {
                 var text = d.Name.ToUpperInvariant();
@@ -972,7 +972,7 @@ public partial class LampBoard : Control
     }
 
     static string? FeedGlyph(LampDef? d) =>
-        d is { Feeds.Length: > 0 } && Weapons.All.TryGetValue(d.Feeds[0], out var w) && w.Art != "" ? w.Art : null;
+        d is { Feeds.Length: > 0 } && Weapons.All.TryGetValue(d.Feeds[0], out var w) && w.Art != "" ? Glyphs.ForSkill(w.Id, w.Art) : null;
 
     /* ------------------------------------------------------------- the focus card -- */
 
@@ -995,7 +995,7 @@ public partial class LampBoard : Control
         var feeds = new List<(string, bool)>();
         var names = new List<string>();
         foreach (var f in d?.Feeds ?? [])
-            if (Weapons.All.TryGetValue(f, out var wd)) { feeds.Add((wd.Art, carried.Contains(f))); names.Add(wd.Name); }
+            if (Weapons.All.TryGetValue(f, out var wd)) { feeds.Add((Glyphs.ForSkill(f, wd.Art), carried.Contains(f))); names.Add(wd.Name); }
         string? feedsText = names.Count > 0 ? "Feeds " + string.Join(", ", names) : null;
         string stateLine;
         var stateC = LampInk.Gold;

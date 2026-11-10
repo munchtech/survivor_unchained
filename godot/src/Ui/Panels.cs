@@ -249,7 +249,7 @@ public partial class DraftPanel : Control
         strip.AddChild(Style.Label("YOUR BUILD", Style.UiHeavy, Style.Caption, Style.Gold));
         foreach (var w in b.Weapons)
         {
-            var chip = Chip(w.Art, ItemViews.SchoolColors[w.School], $"{w.Rank}", w.Evolution != null);
+            var chip = Chip(Glyphs.ForSkill(w.Id, w.Art), ItemViews.SchoolColors[w.School], $"{w.Rank}", w.Evolution != null);
             buildChips[w.Id] = chip;
             strip.AddChild(chip);
         }

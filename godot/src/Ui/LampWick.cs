@@ -373,7 +373,7 @@ public partial class LampWick : Control
         if (Skill == null) return;
         // the left block: the seat, the name, the day rank, the counts
         var seat = new Vector2(X0 + 46, Y0 + 50);
-        string art = Weapons.All.TryGetValue(Skill, out var wd) ? wd.Art : "";
+        string art = Weapons.All.TryGetValue(Skill, out var wd) ? Glyphs.ForSkill(Skill, wd.Art) : "";
         WickTabs.Seat(ci, seat, 56, 0, art, wd != null ? ItemViews.SchoolColors[wd.School] : LampInk.Gold);
         string nm = (wd?.Name ?? Skill).ToUpperInvariant();
         var fnm = LampInk.F("cinzel-700", 1);
@@ -474,7 +474,7 @@ public partial class LampWick : Control
         for (int i = 0; i < learned.Count; i++)
         {
             var rc = ListRect(i);
-            string art = Weapons.All[learned[i]].Art;
+            string art = Glyphs.ForSkill(learned[i], Weapons.All[learned[i]].Art);
             var c = rc.Position + new Vector2(14, rc.Size.Y / 2);
             WickTabs.Seat(ci, c, 26, i % 6, art, ItemViews.SchoolColors[Weapons.All[learned[i]].School]);
             LampInk.Text(ci, fn, 17, c.X + 22, c.Y + 6, Weapons.All[learned[i]].Name, i == listI ? LampInk.Ink : LampInk.Body with { A = 0.85f });
