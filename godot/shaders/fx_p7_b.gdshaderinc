@@ -91,9 +91,9 @@ vec4 p7_bring(vec2 p) {
 	float x = (r - front) / max(p7_width, 1e-3);
 	vec4 o = p7_stroke(x, along, p7_fade);
 	// M4 lead 14 (HUD judge r3c, 21/22: "flat hard orange, dashed"): the stroke's outer lip feathered, and a soft wash
-	// falling off inward behind the front (the air the vow threw out), in the stroke's own heart colour at its life, so
-	// the ring reads as a front on the ground and not as a hard painted hoop. Drawn over the ground on the top shader
-	// (BattleFx.P7Ring): one occlusion rule, never cut into dashes by a rise or a fir.
+	// falling off inward behind the front (the air the vow threw out), in the stroke's own heart color at its life, so
+	// the ring reads as a front on the ground and not as a hard painted hoop. Occlusion stays the one world rule
+	// (FxWorldDepth): a canopy in front covers it; the top shader was tried and drew it over her and the firs alike.
 	// the band's real half-width in x (fx_stroke thins it toward the tail and with its stepped life)
 	float lf = floor(clamp(p7_fade, 0.0, 1.0) * 3.0 + 1e-4) / 3.0;
 	float we = max(mix(fx_stroke_shape.z, 1.0, pow(clamp(along, 0.0, 1.0), 0.7)) * (1.0 - 0.45 * lf), 0.05);
