@@ -20,6 +20,7 @@ F[heroic_leap]="--act-at 1.0 --act-travel 6";                  SEC[heroic_leap]=
 F[bladestorm_loop]="--act-at 1.0 --act-spin 2.25 --act-hold 2"; SEC[bladestorm_loop]=6;  Z[bladestorm_loop]=0.45
 F[iron_vow]="--act-at 1.0 --act-hold 2";                        SEC[iron_vow]=6;         Z[iron_vow]=0.45
 F[shield_charge]="--act-at 1.0 --act-travel 6";                 SEC[shield_charge]=6;    Z[shield_charge]=0.45
+F[sunder_aba]="--act-at 1.0";                                 SEC[sunder_aba]=5;       Z[sunder_aba]=0.45   # review chain: p4_concat.py sunder_aba sunder_cut_a sunder_cut_b sunder_cut_a
 SMOKE=0
 if [[ $1 == --clip ]]; then
   for k in "${!F[@]}"; do unset "F[$k]"; done
