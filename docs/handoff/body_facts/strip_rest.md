@@ -231,3 +231,63 @@ moved; the located reading of point 2386 l is still untested as a small move); t
 untangle; the per-corner facing test; lay2's signed a0 fixed and the left re-solved (the direct cure of tri 275); the
 structural road (apex row through the mesh row that does not change at 2386): not started; turned on all nine (run on
 iron_vow@72, abd150, leap@19 only; leap@9's 3 turned not located); all 141 poses.
+
+## Lay 4 (orientation in the plane): 10 Nov, lead 19's solver. LEFT at the bar (5 of 5 named, abd90_int60, 2 of 2 transition); right = lay 2's
+ACTIVE `out/shoulder/strip_rest.npz` = LAY 4 = the left re-solved + lay 2's right, byte for byte (copy:
+`strip_rest_l19_lay4.npz`). `strip_rest_l19_lay4_r.npz` (= `_lay4c.npz`) = the same left + the RIGHT re-solved too (NOT
+active: see below). `_lay2`, `_lay3`, `_l18` untouched (build now refuses to write them). `_lay4a` / `_lay4b`: steps on the way.
+Cells: turned; worst edge map / A's own (under lay 4's edges) / fill; excess = map - A's own (nine) or map - fill (rest); off A mm.
+| pose (w) | turned | map / A's own / fill | excess | off A | bar |
+|---|---|---|---|---|---|
+| x:abd120:l | 0 | 2.56 / 2.85 / 2.41 | -0.29 | 1.4 | met |
+| x:abd150:l | 0 | 3.03 / 2.93 / 2.69 | +0.10 | 1.4 | met |
+| x:abd170:l | 0 | 2.99 / 2.87 / 2.83 | +0.12 | 1.4 | met |
+| x:flex170:l | 0 | 2.94 / 2.89 / 2.75 | +0.05 | 1.4 | met |
+| p4:iron_vow@72:l | 0 | 2.31 / 2.27 / 2.33 | +0.04 | 1.4 | met |
+| p4:heroic_leap@7:r | 0 | 2.63 / 2.58 / 3.17 | +0.05 | 1.3 | met (lay 2's) |
+| p4:heroic_leap@9:r | 0 | 3.00 / 2.92 / 3.60 | +0.08 | 1.3 | met (lay 2's) |
+| p4:heroic_leap@19:r | 1 | 3.26 / 3.41 / 3.32 | -0.15 | 1.3 | 1 turned FAIL (lay 2's) |
+| p4:heroic_leap@20:r | 0 | 3.16 / 3.23 / 3.33 | -0.07 | 1.3 | met (lay 2's) |
+| x:abd90_int60:l (1) | 0 | 2.24 / 2.35 / 2.11 | fill +0.13 | 1.4 | met |
+| crossbow_shoot@10:r (0.74) | 0 | 2.01 / 1.50 / 1.73 | fill +0.28 | 2.2 | FAIL (lay 2's) |
+| cast_bolt@3:r (0.47) | 0 | 1.77 / 1.72 / 1.76 | fill +0.01 | 3.7 | met |
+| axe_heavy@7:r (0.47) | 0 | 2.16 / 1.76 / 2.14 | fill +0.02 | 4.1 | met |
+| p4:heroic_leap@5:r (0.43) | 0 | 1.80 / 1.87 / 1.85 | fill -0.05 | 5.7 | met |
+| axe_back@3:l (0.43) | 0 | 1.49 / 1.51 / 1.46 | fill +0.03 | 3.0 | met |
+| p4:idle_warden_town@126:r (0.42) | 0 | 1.75 / 1.78 / 1.87 | fill -0.12 | 3.8 | met |
+| axe_back@2:l (0.41) | 0 | 1.47 / 1.56 / 1.43 | fill +0.04 | 2.6 | met |
+| p4:heroic_leap@25:r (0.27) | 0 | 1.88 / 1.83 / 1.98 | fill -0.10 | 8.2 | met |
+- THE NINE, active lay 4: 8 of 9 (lay 2: turned 3 of 9, edge 6 of 9). Left turned sum 6 -> 0, excess +0.33 / +0.25 / +0.21
+  -> +0.10 / +0.12 / +0.05. Left lay rest: plane rule 0 turned, no corner facing off A, rest edge 0.49..1.99 (mean 1.11).
+- PROOF: 49 of 141 poses have elevation <= 45 deg; max |map - fill| over them 0.0. Rest l / r: w 0.0, |map - fill| 0.0,
+  relay vs the npz 0.000 mm (run on `_lay4_r`, whose left is the active left; the right lines on lay 2's right in the first lay 4 run).
+- TURNED LEFT in the active lay, with A's own count (A's own = the same triangle with its feet on A, no height, A's
+  normals; `turned` prints it per pose): ONE, tri 290 r at leap@19 (lay 2's sliver). A's own under it: NOT turned
+  (corners +0.04 / +0.28 / +0.14, edge-on in A too), A's own count in that pose 0, fill not turned: the lay's, not A's
+  fold. Tri 110 / 109 / 141 at iron_vow@72:l: not turned in lay 4 (map 0; A's own count there 0 turned, 14 with a corner
+  facing off; fill 12). At w = 1 only (not in the blend): tri 290 at crossbow_shoot@10:r; tri 98 / 100 / 271 at leap@5:r
+  (A's own turned under 98 and 271, 100 turned in the fill). A's own count: leap@9:r 1 (tri 292), leap@5:r 2, leap@25:r 1; else 0.
+- `_lay4_r` (right re-solved from lay 2's, same settings): the nine 9 OF 9 (leap@7 0, 2.63 / 2.58 +0.05; @9 0, 2.98 /
+  2.92 +0.06; @19 0 TURNED, 3.32 / 3.31 +0.01; @20 0, 3.14 / 3.13 +0.01). NOT made active, by the storing rule: its
+  excess is higher than lay 2's on @19 (-0.15 -> +0.01) and @20 (-0.07 -> +0.01), inside the bar; crossbow_shoot@10:r
+  is worse (2.07 against the fill's 1.73, +0.34); shortest edge at leap@7 0.11 (A's own 0.19; lay 2 0.26 / 0.33); rest
+  edges r 0.42..2.35 (lay 2 0.47..1.94). Edge 2455-2456 not cured. Transition 7 of 8 in both. The lead's call.
+What changed (`strip_rest.py`):
+1. ONE orientation rule, `plane_area`: a lay triangle is right when its signed area in the unfold's plane is over 0
+   (A's own unfolded triangles' sign); `corner_facing` per corner where there is no plane. lay2's barrier: the plane at
+   rest, the carried normals in a pose, both over B's UNSIGNED rest area (the signed one held tri 275 inverted). The
+   build's count, `lay_faults`, `untangle` (now a safety net on turned triangles only; it moved 0 points) use it;
+   `turned` prints the rule against the map count's measure at rest: AGREE on lay 2 (1: tri 275), lay 4 (0), both sides.
+2. lay2: `start` (from a stored lay and its stored apex row, no walk); `ratchet` (a pose's limit never rises between
+   passes: A's own worst is read under the lay's edges and moved with the lay, 2.88 -> 3.14 -> 2.95, so the limit chased
+   it); poses up to 90 deg are also held to the fill's worst + capm (cfg `fill_bar`); run with wall 150.
+3. `--file` (which lay npz), `--start`; stored `snap` is used on reload (lay 3 had lost its 11th apex point).
+Commands: `build --snap --file X.npz --only l --start strip_rest_l19_lay2.npz` (lay 4a) -> `--start 4a --set '{"passes":
+4, "wall": 150}'` (4b) -> both sides `--start 4b --set '{"passes": 3, "wall": 150, "capm": 0.05}'` (4c = `_lay4_r`);
+`target --snap --map [--file X.npz]`; `turned --snap [--file X.npz] --poses a,b`. Logs: `out/shoulder/build_l19_lay4*.log`,
+`map_l19_lay4c.log`, `turned_l19_lay4.log` (the active file, 18 poses).
+Not done: `target --map` not rerun on the composite active file (its left rows are `_lay4_r`'s, its right rows lay 2's;
+`turned` WAS run on it and gives the same turned / worst-edge numbers); the first start put one slid apex point 13 mm back
+on the line's end (fixed before 4c; 4a / 4b began from that jolt); the right alone for tri 290 without the cost above;
+edge 2455-2456; lay 3's left as a second start; per-corner barrier in the poses; all 141 poses; a fresh build from B's
+feet under the new rule; the sheet; the map is not in `Her`.
