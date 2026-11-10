@@ -205,11 +205,53 @@ public sealed class ZoneData
             // An ember arena's crowns are dark and cold against the night:
             // they frame the fight and never outshine it.
             bool arena = m.Place != null;
+            // (L1 lead 14, K1; docs/design/NIGHT_KIT.md) Under a rig with "stand" an arena draws our own flora, as the zones
+            // do (Dressing.Own; a kit piece with no own piece is dropped), with no dark recolor and no Shade cut: the
+            // standing material paints it by the rig's levels. --flora-kit, or a rig without the key: the kit's, as before.
+            if (arena && Dressing.FloraOwn && Atmosphere.StandRig(m.Place!.Night.Rig))
+            {
+                // (L1 lead 17, M3) flora_species.json "own_stand" first: the kit's bushes as our leaf clump, at the clump's
+                // own size (a copy's jitter, its scale over its kind's base, held to the map's range: a hazel's place is
+                // scaled for a 4-5 m mass, the clump is the target's 2.4 m bush as built); the kit's ferns dropped.
+                if (FloraSpecies.StandOwn(key.Piece) is { } so)
+                {
+                    if (so.Pieces.Length == 0) continue;
+                    var at = list.Select(t =>
+                    {
+                        float s = t.Basis.Scale.X;
+                        return new Transform3D(t.Basis.Scaled(Vector3.One * (Mathf.Clamp(s / (float)k.Scale, so.Lo, so.Hi) / s)), t.Origin);
+                    }).ToArray();
+                    if (System.Environment.GetEnvironmentVariable("FLORA_COUNT") != null)
+                        GD.Print($"flora stand {key.Kind} {key.Piece} -> {string.Join('|', so.Pieces)}: {at.Length}; from the start (dx,dz,scale): " + string.Join(' ',
+                            at.Select(t => $"{t.Origin.X - m.Meta.Start.X:0.0},{t.Origin.Z - m.Meta.Start.Z:0.0},{t.Basis.Scale.X:0.00}")));
+                    Flora.Add(new FloraGroup(key.Kind, "own:" + string.Join('|', so.Pieces), at, new KitLook.Look((float)k.Wind, null, null, 0, (float)k.Moss)));
+                    continue;
+                }
+                if (Dressing.Own(key.Piece, Id, key.Kind) is { } own)
+                    Flora.Add(new FloraGroup(key.Kind, own, list.ToArray(), new KitLook.Look((float)k.Wind, null, null, 0, (float)k.Moss)));
+                continue;
+            }
             var look = new KitLook.Look((float)k.Wind, arena ? new Color("#24382e").SrgbToLinear() : k.LeavesA is string a ? new Color(a).SrgbToLinear() : null,
                 arena ? new Color("#2e3a26").SrgbToLinear() : k.LeavesB is string b ? new Color(b).SrgbToLinear() : null, arena ? 0.7f : (float)k.LeavesAmount, (float)k.Moss,
                 arena ? 0.42f : 1f);
             Flora.Add(new FloraGroup(key.Kind, key.Piece, list.ToArray(), look));
         }
+        // (L1 lead 14, S1) --stand-proof "piece@dx,dz[,yaw_deg[,scale]];piece@...": a developer's staging switch. Our own
+        // pieces (flora_species.json names) set down in an arena at offsets in meters from the start, on the ground, each
+        // a group of its own (kind "stand_proof"): the night kit's proofs at frame 09 (docs/design/NIGHT_KIT.md).
+        if (m.Place != null && SurvivorUnchained.Args.Get("stand-proof") is string proof)
+            foreach (var e in proof.Split(';', System.StringSplitOptions.RemoveEmptyEntries | System.StringSplitOptions.TrimEntries))
+            {
+                var at = e.Split('@');
+                var n = at.Length == 2 ? at[1].Split(',') : [];
+                if (n.Length < 2) { GD.PushWarning($"--stand-proof: '{e}' is not piece@dx,dz[,yaw_deg[,scale]]"); continue; }
+                float F(int i, float d) => i < n.Length && float.TryParse(n[i], System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : d;
+                float x = (float)m.Meta.Start.X + F(0, 0), z = (float)m.Meta.Start.Z + F(1, 0);
+                Flora.Add(new FloraGroup("stand_proof", "own:" + at[0], [new Transform3D(new Basis(Vector3.Up, Mathf.DegToRad(F(2, 0))).Scaled(Vector3.One * F(3, 1)),
+                    new Vector3(x, (float)m.Ground.HeightAt(x, z), z))], KitLook.Look.Plain));
+                GD.Print($"stand-proof {at[0]} at {x:0.00},{z:0.00} yaw {F(2, 0):0} scale {F(3, 1):0.00}");
+            }
         foreach (var p in m.Props)
         {
             PropHouse.Add(-1);

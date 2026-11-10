@@ -7,6 +7,11 @@
 // pitting as bump, and the whole a little wet.
 shader_type spatial;
 render_mode blend_mix, cull_back, depth_draw_opaque;
+// (the material library, godot/data/look/materials.json: this shader's default class, iron: old black iron; L1 B2r2)
+#define CEL_SPEC vec4(7.0, 1.0, 1.0, 1.0)
+#define CEL_NMAP 0.20   // (L1 C2: the class's cel_nmap)
+#define CEL_EXACT_ROUGH
+#include "res://shaders/cel.gdshaderinc"
 
 uniform sampler2D masks : filter_linear_mipmap_anisotropic, repeat_enable;
 // Repeats of the mask per model unit.
@@ -170,4 +175,5 @@ void fragment() {
 			: COLOR.g < 0.35 ? vec3(0.0, 0.0, 1.0) : vec3(1.0);
 		ALBEDO = vec3(0.0); EMISSION = dc * 0.5; ROUGHNESS = 1.0; SPECULAR = 0.0; METALLIC = 0.0;
 	}
+	CEL_FRAGMENT;
 }

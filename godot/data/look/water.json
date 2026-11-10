@@ -1,0 +1,80 @@
+{
+ "what": "L1 W2 C5: water as bands of the sky (bible rules 6 and 9; MB4 WATER, day and night; targets 03, 05, 06, 10). shaders/water_cel.gdshader under cel (Water.cs for the zones' rivers and fords, ArenaEdge.Stream for the arena's stream); --cel off: water.gdshader and slurry_stream.gdshader as before. The water's color is the rig's sky: each band is a reflectance of the sky's own light (Godot's ambient from the zone's sky, the same light the cel world's shade takes), so it follows every rig with no color of its own; two or three stepped bands by depth and view angle, a few soft painted strokes a step lighter, the shore's foam one flat band, the key's light a scatter of soft dashes (never a disc), warm lights as soft vertical strokes of dashes. No normal noise, no ink (class 2).",
+ "from": "MB4 WATER (a2/r2/MB4_wild_r3.png; look_l1/c/w2/fx/water_board.py: 3-level k-means on Oklab L): night box [1440,640,1650,860]: deep L 0.309 C 0.069 h 252 #113253 (0.36 of the water), mid L 0.381 C 0.093 h 252 #13416e (0.58), strokes L 0.786 C 0.109 h 226 #68d2f6 (0.06); day box [1440,250,1650,440]: deep L 0.469 C 0.023 h 232 #4c5d65 (0.33), mid L 0.587 C 0.056 h 214 #6d7a79 (0.54), strokes and sand L 0.83 (0.12); the rows top to bottom flat at night (0.36 0.36 0.36 0.35 0.36): the bands step with depth from the bank, not up the frame",
+ "bands": {
+  "what": "s = depth (0 at the bank, 1 at 'deep' m) x depth_w + (1 - N.V) x view_w; bands cut at s 'at' (rising): each a reflectance of the sky's light. FROM the board's lightness ratios: deep over mid in linear light = (0.309 / 0.381)^3 = 0.53 (night) and (0.469 / 0.587)^3 = 0.51 (day): 0.53 kept; the shallow band one step over mid as the board's shallows read (its sand by day is the bed, shown through: 'shallow_alpha'); the mid band's reflectance set on the stage so it lands at the board's mid L (0.38 at night); the arena's stream (mode 1: UV2.x 0 at a bank to 1 in its middle, a shallow stream) reads its depth x stream_depth, so its middle sits in the mid band (r1: all deep, L 0.18 flat across against the board's 0.31-0.38)",
+  "deep": 1.6,
+  "depth_w": 1.0,
+  "view_w": 0.8,
+  "cuts": [
+   0.22,
+   0.6
+  ],
+  "reflect": [
+   0.42,
+   0.26,
+   0.14
+  ],
+  "tint": "#d4e4ff",
+  "shallow_alpha": 0.55,
+  "stream_depth": 0.55,
+  "w2b": "L1 W2 C5b: the color chain's new night sky lifted the water to L 0.40 over its bank's 0.30 (r5, frame 10); target 10's river sits at its bank's lightness (water 0.223, bank 0.221: ratio 1.01, ours 1.35): every band's reflectance x (1.01 / 1.35)^3 = 0.42 (1.0/0.62/0.33 -> 0.42/0.26/0.14; the board's deep-over-mid 0.53 kept)"
+ },
+ "strokes": {
+  "what": "a few soft painted strokes: long dashes across the view (the board's are horizontal on the picture), a step lighter than the band under them (lift, of the band's reflectance), in a share 'cover' of the water; they drift with the flow",
+  "size": [
+   3.2,
+   0.32
+  ],
+  "cover": 0.12,
+  "lift": 5.1,
+  "drift": 0.35,
+  "w2b": "L1 W2 C5b: FROM target 10 (a2/r4/10_r4.png, its river [5,40,125,900], water_board.py): body L 0.230 (85%), strokes L 0.441 C 0.07 h 217 (12%), glints L 0.866 (3%); our r2 river's body L 0.233 is on it, its strokes were absent (the cover bug, Water.Cover). cover 0.1 -> 0.12 (the target's share); lift 0.55 -> 6.0: a stroke is a ripple's face turned to the brighter sky toward the horizon, (0.441 / 0.230)^3 = 7.05x the body's light in linear = 1 + 6.05; r3 (frame 10): body L 0.252, strokes 0.503 (10%) at 8.1x: lift 6.0 -> 5.1 (7 x 7.05 / 8.1 - 1). On a stream they run along the flow, 0.15 x 1.2 m (target 10's streaks: 2-3 x 10-25 px on a river about 120 px = 6 m wide at its 20 px/m; r3 across the view at the top-down camera drew long diagonal slashes), drifting 0.5 m/s; r4 at 0.15 x 1.2 m: the river went to L 0.43 over 63% (the fine dashes minified into a haze, 8:1 anisotropic mips): r3's sizes turned along the flow, 0.4 x 3.2 m (strokes) and 0.2 x 1.6 m (glints)",
+  "stream_size": [
+   0.4,
+   3.2
+  ],
+  "stream_flow": 0.5
+ },
+ "foam": {
+  "what": "the shore's foam: one flat band where the water is under 'depth' m deep in front of what breaks it (the scene's depth), lit by the key in one step; board: the pale rim at the stones (day L ~0.8, night ~0.55); r1: at 0.09 m the Low Ford's whole shallow ford went foam (06: L 0.85-0.99 over a third of the water): 0.03 m, reflect 0.9 to 0.45 (the night board's rim L ~0.55)",
+  "depth": 0.03,
+  "reflect": 0.45,
+  "key": 0.35
+ },
+ "key": {
+  "what": "the key's light on water (rule 6: never a hard disc): soft dashes where its reflection's lobe falls, the lobe 'across' and 'along' wide (in half-vector units), the dashes the strokes' pattern at a finer scale; 'gain' of the key's light; FROM the night board's cyan dashes (L 0.79, 6% of the water)",
+  "across": 0.35,
+  "along": 0.6,
+  "size": [
+   1.6,
+   0.16
+  ],
+  "cover": 0.03,
+  "gain": 1.4,
+  "floor": 0.8,
+  "w2b": "L1 W2 C5b: FROM target 10's glints (L 0.866, 3% of the river, scattered down its whole length under the top-down camera) and MB4 night's cyan dashes (L 0.79, 6%): cover 0.12 -> 0.03 (now a true share, Water.Cover); floor 0.6: the dashes take 0.6 of the key off its lobe (a painted river's moon glints, not a mirror's); gain 0.9 -> 2.0 to reach L ~0.85 over the body (set on the r3 shot's numbers); r3: glints 7% at L 0.93 in a chain down the middle (the lobe): gain 2.0 -> 1.4 ((0.866/0.931)^3 = 0.80 of the light, the rest for the overlap), floor 0.6 -> 0.8 (scattered as the target's, the lobe a mild lift); on a stream 0.08 x 0.5 m along the flow",
+  "stream_size": [
+   0.2,
+   1.6
+  ]
+ },
+ "lights": {
+  "what": "warm lights (her ember, a fire, a lamp) on the water: soft vertical strokes, a column of dashes toward the viewer; no diffuse pool (the W1 verdict: her pool reads salmon on the water in 05 and 06). The column 'across' narrow and 'along' long (half-vector units); 'gain' of the light at the water",
+  "across": 0.06,
+  "along": 0.35,
+  "gain": 0.5,
+  "cover": 0.4,
+  "w2b": "L1 W2 C5b: r3's columns (06: her ember, the Warden's lamps) were solid bars and beams across the whole ford (a 0.35 floor between the key's sparse dashes): now broken into their own dashes, 'cover' 0.4 of the column (rule 6: soft vertical strokes, never a sheet; MB4 night's dashes), shorter: along 0.5 -> 0.35"
+ },
+ "slurry": {
+  "what": "the arena's stream carries the Dig's slurry (slurry_stream.gdshader's story: warm, faintly glowing, 'a little like a wound'): under cel two or three long soft strokes down its deep middle in the slurry's hue, not flecks; 'glow' its light",
+  "color": "#b8c84a",
+  "glow": 0.12,
+  "cover": 0.22,
+  "size": [
+   0.9,
+   9.0
+  ]
+ }
+}

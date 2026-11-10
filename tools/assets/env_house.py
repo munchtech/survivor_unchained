@@ -302,6 +302,7 @@ def beam(m, a, b, w, z0, d, rng, sag=0.012, reg='timber', col=(1.0, 0.0, 1.0, 1.
     """A timber in the wall's face plane from a to b (x, y), w wide, from z0 out to z0 + d; it sags and
     leans a little (two lengths, its middle off the line). (E9b6 r4) Its end faces left out by default (they butt
     other timbers, 3-5 cm deep: the house under 25k triangles); a beam whose end shows passes skip=('-z',)."""
+    w *= BEAM_K; d *= BEAM_D
     a, b = np.array([a[0], a[1], 0.0]), np.array([b[0], b[1], 0.0])
     L = np.linalg.norm(b - a)
     ax = (b - a) / L
@@ -466,6 +467,7 @@ def band(m, mat, rng):
 
 PW = 0.17   # a post's width (half on each panel)
 TD = 0.035  # a timber's reach out of the plaster
+BEAM_K, BEAM_D = 1.35, 1.4  # (L1 W2 town: MB3 PLASTER & BEAMS' beams are chunkier, rule 10: every timber x1.35 wide, x1.4 proud)
 
 
 def pattern(m, pat, rng, op=None, base=False):

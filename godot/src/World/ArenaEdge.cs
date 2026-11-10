@@ -39,7 +39,8 @@ public static class ArenaEdge
         foreach (var g in z.Gates) root.AddChild(Gate(z, g, ember));
         // (A story place is a cut under the wood's edge: more of its sky is open. At 0.7 of the
         // wood's cover a quarter of its opening frame was flat black.)
-        if (place.Air.Dapple > 0 && z.Splat3 != null) root.AddChild(Canopy(z, (float)place.Air.Dapple * (z.Story ? 0.5f : 1f)));
+        // (L1 B4: under the cel rigs the canopy's dapple is the leaf cookie on the key, CanopyCookie; this sheet's shadow is today's)
+        if (place.Air.Dapple > 0 && z.Splat3 != null && !Atmosphere.CelRigs) root.AddChild(Canopy(z, (float)place.Air.Dapple * (z.Story ? 0.5f : 1f)));
         return root;
     }
 
@@ -523,8 +524,10 @@ public static class ArenaEdge
         var mesh = new ArrayMesh();
         mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
         // The Dig's slurry in it (shaders/slurry_stream.gdshader).
-        var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/slurry_stream.gdshader") };
+        var mat = new ShaderMaterial { Shader = GD.Load<Shader>(Water.CelOn ? Water.CelPath : "res://shaders/slurry_stream.gdshader") };
         mat.SetShaderParameter("noise_tex", NoiseTex.Get());
+        // (L1 W2 C5) under cel: water as bands of the sky, the slurry as long soft strokes (water_cel mode 1)
+        if (Water.CelOn) Water.Cel(mat, 1);
         return new MeshInstance3D { Name = "Stream", Mesh = mesh, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
     }
 }

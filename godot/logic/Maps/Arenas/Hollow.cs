@@ -334,6 +334,13 @@ public sealed class Hollow : ArenaShape
     {
         var (ax, az) = ArenaGen.Builder.Along(rot);
         double cx = -az, cz = ax;
+        // (the board's kit boulders, Boards.FoldDef.Rocks: one big rock for this spot, bramble at its foot)
+        if (B.BoardDef?.Fold.Rocks is { Share: > 0 } rk && Rng.Chance(rk.Share))
+        {
+            B.Put(rk.Kind, x, z, Rng.Range(rk.Scale[0], rk.Scale[1]), rk.Sink);
+            if (Rng.Chance(0.6)) B.Put("bramble", x + cx * Rng.Range(-1.2, 1.2), z + cz * Rng.Range(-1.2, 1.2), Rng.Range(1.0, 1.3));
+            return;
+        }
         if (post)
         {
             B.Put(Rng.Chance(0.5) ? "scan_stump" : "scan_mossrock", x, z, Rng.Range(1.4, 1.7), 0.15);

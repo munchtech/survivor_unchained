@@ -1,0 +1,57 @@
+{
+ "what": "L1 W2 town (C4/R8): the town kit's trim sheets and look, painted by tools/look/town.py (its docstring). Colors: each region's class paint.albedo.mid (materials.json, hand-set from MB3 over the day rig's measured response, the arithmetic in the class's w2 line) times the region's hand gains here.",
+ "from": "(b) MB3 SETTS, PLASTER & BEAMS, STONE, ROOF, WOOD (day); LOOK_BIBLE rules 9 (one color per block +-0.06, lit bevel, cool joints, nothing under 3 cm) and 10 (chunky: big-medium-small, bigger bevels, rounder stones); (a) the play and town cameras (07, 13); (c) the regions and their metres are env_house_atlas.py's and env_roof_atlas.py's (house_atlas.json, roof_atlas.json), kept so env_house.py's and env_roof.py's UVs fit.",
+ "sheets": {
+  "house": {"atlas": "house_atlas.json", "albedo": "house_albedo.jpg", "normal": "house_normal.png", "aux": "house_aux.png",
+   "from": "the walls' trim sheet (E9b1's regions), repainted from nothing (the rubble's CC0 photo source retired)",
+   "regions": {
+    "rubble": {"class": "stone", "tint_class": 0.0, "gains": [[1, 1, 1], [1.08, 1.02, 0.95], [0.92, 0.95, 1.05], [1.15, 1.12, 1.1]],
+     "blocks": {"row_cm": 24, "row_jit": 0.3, "len_cm": 38, "len_jit": 0.45, "joint_cm": 3.5, "corner_cm": 7, "bevel_cm": 5, "wobble_cm": 3, "tilt": 0.7, "lit": 0.07, "joint": [0.42, 0.42, 0.52]},
+     "from": "MB3 STONE: rounded coursed blocks, lavender-grey with warmer and lighter ones, deep cool joints"},
+    "plaster": {"class": "plaster", "tint_class": 1.0, "mass": 0.35, "mass_cells": 4, "from": "MB3 PLASTER & BEAMS: flat warm plaster, two or three big soft masses"},
+    "timber": {"class": "plank", "tint_class": 0.5, "gains": [[0.194, 0.254, 0.453]],
+     "blocks": {"row_cm": 25, "len_cm": 200, "len_jit": 0.3, "joint_cm": 3, "corner_cm": 2, "bevel_cm": 3, "lit": 0.05, "joint": [0.6, 0.6, 0.7]},
+     "strokes": [{"n": 3, "w_cm": 3, "len_m": [0.8, 2.5], "dL": -0.04}, {"n": 2, "w_cm": 3, "len_m": [0.5, 1.5], "dL": 0.03}],
+     "from": "MB3 PLASTER & BEAMS' beams: dark oak, a few long strokes; gains = MB3_beam_day all_lin [0.1344, 0.0469, 0.0278] / day lit [3.3618, 2.3067, 1.0555] = [0.04, 0.0203, 0.0263], over plank's mid #7e5046 (lin [0.206, 0.080, 0.058])"},
+    "ashlar": {"class": "stone", "tint_class": 0.0, "gains": [[1.12, 1.1, 1.08]], "mass": 0.3, "from": "MB3 STONE's dressed arch stones, a step lighter than the rubble (joints are geometry)"},
+    "iron": {"class": "wrought", "tint_class": 0.0, "rough": 0.7, "from": "MB3 STONE's door ring and straps (wrought)"},
+    "glass": {"class": "wrought", "tint_class": 0.0, "gains": [[0.55, 0.7, 1.0]], "rough": 0.45, "from": "07/13 targets' windows: dark, cool"},
+    "planks": {"class": "plank", "tint_class": 0.5, "gains": [[0.3, 0.33, 0.5]],
+     "blocks": {"row_cm": 18.75, "len_cm": 300, "len_jit": 0.2, "joint_cm": 3, "corner_cm": 1.5, "bevel_cm": 3, "lit": 0.05, "joint": [0.5, 0.5, 0.6]},
+     "strokes": [{"n": 4, "w_cm": 3, "len_m": [0.6, 2.0], "dL": -0.035}], "from": "MB3 STONE's door boards: dark brown boards, their seams"}
+   }},
+  "roof": {"atlas": "roof_atlas.json", "albedo": "roof_albedo.jpg", "normal": "roof_normal.png", "aux": "roof_aux.png",
+   "from": "the roof trim sheet (E9b2's regions), repainted from nothing",
+   "regions": {
+    "pantile": {"class": "roof", "tint_class": 1.0, "gains": [[1, 1, 1], [1.1, 1.0, 0.92], [0.9, 0.92, 1.0]],
+     "blocks": {"row_cm": 31.25, "len_cm": 33.333, "len_jit": 0.06, "off_jit": 0.05, "joint_cm": 3, "corner_cm": 6, "bevel_cm": 6, "wobble_cm": 1, "tilt": 0.5, "lit": 0.07, "under": 0.08, "under_w": 0.35, "joint": [0.35, 0.33, 0.45]},
+     "from": "MB3 ROOF: chunky tile rows, each tile one color, its lit lip, the lap's cool band (env_roof.py's course 0.3125 m, 12 across)"},
+    "shingle": {"class": "roof", "tint_class": 0.75, "gains": [[0.8, 0.85, 0.8], [0.88, 0.9, 0.84], [0.74, 0.78, 0.78]],
+     "blocks": {"row_cm": 25, "len_cm": 18, "len_jit": 0.45, "off_jit": 0.5, "joint_cm": 3, "corner_cm": 2, "bevel_cm": 3, "tilt": 0.4, "lit": 0.06, "under": 0.06, "under_w": 0.3, "joint": [0.35, 0.33, 0.45]},
+     "from": "07 target's roofs (warm brown-red); MB3 ROOF's rows (env_roof.py's 0.25 m course)"},
+    "ridge": {"class": "roof", "tint_class": 1.0, "blocks": {"row_cm": 37.5, "len_cm": 40, "joint_cm": 3, "corner_cm": 8, "bevel_cm": 8, "tilt": 0.4, "lit": 0.07, "joint": [0.45, 0.45, 0.55]}, "from": "MB3 ROOF: half-round caps, 10 across"},
+    "boards": {"class": "plank", "tint_class": 0.5, "gains": [[0.194, 0.254, 0.453]],
+     "blocks": {"row_cm": 25, "len_cm": 200, "len_jit": 0.3, "joint_cm": 3, "corner_cm": 2, "bevel_cm": 3, "lit": 0.05, "joint": [0.6, 0.6, 0.7]},
+     "strokes": [{"n": 3, "w_cm": 3, "len_m": [0.8, 2.5], "dL": -0.04}], "from": "as the walls' timber (MB3 beams)"},
+    "soffit": {"class": "plank", "tint_class": 0.5, "gains": [[0.23, 0.3, 0.5]],
+     "blocks": {"row_cm": 12.5, "len_cm": 250, "len_jit": 0.3, "joint_cm": 3, "corner_cm": 1.5, "bevel_cm": 3, "lit": 0.04, "joint": [0.6, 0.6, 0.7]}, "from": "the eaves' boarding, a step lighter than the beams"},
+    "brick": {"class": "roof", "tint_class": 0.0, "gains": [[1.05, 1.02, 1.0], [0.92, 0.92, 0.98]],
+     "blocks": {"row_cm": 7.8125, "len_cm": 22, "len_jit": 0.1, "joint_cm": 3, "corner_cm": 1, "bevel_cm": 3, "lit": 0.05, "joint": [0.5, 0.5, 0.6]}, "from": "chimney brick in the roof's clay (MB3 ROOF's hue)"},
+    "stone": {"class": "stone", "tint_class": 0.0, "gains": [[1, 1, 1], [1.08, 1.02, 0.95]],
+     "blocks": {"row_cm": 20.83, "row_jit": 0.2, "len_cm": 30, "len_jit": 0.4, "joint_cm": 3, "corner_cm": 5, "bevel_cm": 4, "wobble_cm": 2, "tilt": 0.6, "lit": 0.07, "joint": [0.42, 0.42, 0.52]}, "from": "as the walls' rubble (MB3 STONE)"},
+    "endgrain": {"class": "plank", "tint_class": 0.5, "gains": [[0.3, 0.33, 0.5]], "from": "a rafter's end, the beams' oak a step lighter"},
+    "iron": {"class": "wrought", "tint_class": 0.0, "rough": 0.7, "from": "wrought"},
+    "lead": {"class": "stone", "tint_class": 0.0, "gains": [[0.7, 0.75, 0.9]], "from": "lead: a cool dark grey off the stone"},
+    "pot": {"class": "roof", "tint_class": 0.0, "from": "a chimney pot's clay"}
+   }}
+ },
+ "house_look": {
+  "_from": "L1 W2 town (C4): tints near white (the trim sheet carries each class's hand-set color; houses vary +-4% only), the photo-era weathering off (grime, splash, stains, the ground storey's rise, broad noise, mottle, lost plaster; roof soot, moss, ridge soot, eave moss, the clay's desaturation): rule 9 (one color varied inside its range), MB3 (clean painted surfaces)",
+  "walls_keys": ["plaster_tints", "timber_tints", "grime_dark", "splash_dark", "stain_dark", "house_rise", "val_noise", "house_val", "plaster_mottle", "lost_plaster", "big_lost"],
+  "roof_keys": ["clay_tints", "shingle_tints", "tile_val", "tile_warm", "roof_val_noise", "roof_house_val", "soot_dark", "stack_soot", "roof_moss", "ridge_soot", "eave_moss", "clay_sat"],
+  "plaster_tints": ["#ffffff", "#fff8ee", "#f6f2ee", "#fffaf2", "#f2eeea", "#fbf6ef"], "timber_tints": ["#ffffff", "#f0ece8", "#fff4ee"],
+  "grime_dark": 0.0, "splash_dark": 0.0, "stain_dark": 0.0, "house_rise": 0.0, "val_noise": 0.0, "house_val": 0.03, "plaster_mottle": 0.0, "lost_plaster": 0.0, "big_lost": 0.0,
+  "clay_tints": ["#ffffff", "#f4ecea", "#fff4ec", "#ece8ea"], "shingle_tints": ["#ffffff", "#f4ecea", "#fff4ec", "#ece8ea"],
+  "tile_val": 0.03, "tile_warm": 0.0, "roof_val_noise": 0.0, "roof_house_val": 0.03, "soot_dark": 0.0, "stack_soot": 0.3, "roof_moss": 0.0, "ridge_soot": 0.0, "eave_moss": 0.0, "clay_sat": 1.0
+ }
+}

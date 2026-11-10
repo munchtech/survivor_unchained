@@ -29,13 +29,15 @@ public static class KitLook
 
     /// <param name="Shade">How much light the leaves give back: under an ember
     /// arena's night they stand as dark crowns round the fight, not lit lawns.</param>
-    public sealed record Look(float Wind, Color? LeafA, Color? LeafB, float LeafAmount, float Moss, float Shade = 1)
+    /// <param name="Stand">(L1 lead 14, K1) Painted by the standing material (kit.gdshader's KIT_STAND, the rig's "stand"
+    /// levels): our own stone in an arena under such a rig (Dressing).</param>
+    public sealed record Look(float Wind, Color? LeafA, Color? LeafB, float LeafAmount, float Moss, float Shade = 1, bool Stand = false)
     {
         /// <summary>A piece as it comes: still, its own colours.</summary>
         public static readonly Look Plain = new(0, null, null, 0, 0);
     }
 
-    static Shader? solid, twoSided, solidRim, twoSidedRim, own, ownLeaf, ownRock, ownRockRim, ownWall, ownRoof;
+    static Shader? solid, twoSided, solidRim, twoSidedRim, own, ownLeaf, ownRock, ownRockRim, ownRockStand, ownRockStandRim, ownWall, ownRoof;
     static readonly Dictionary<string, ShaderMaterial> cache = new();
 
     /// <summary>--see-debug (a developer's switch): the kit's pieces tinted green where whole and
@@ -105,6 +107,9 @@ public static class KitLook
     /// <summary>A kit material as the web game shades it.</summary>
     /// <param name="foot">Darker toward the piece's foot (the village kit
     /// and the game's own models).</param>
+    /// <summary>Our own rocks, walls and roofs take their class (and their window passes with them), when the library acts.</summary>
+    static ShaderMaterial Lib(ShaderMaterial m, string cls) => CelLib.On ? CelLib.Apply(m, cls) : m;
+
     public static Material For(Material src, Look look, bool foot = false)
     {
         if (src is not StandardMaterial3D s) return src;
@@ -114,11 +119,14 @@ public static class KitLook
         solid ??= SeeDebug || SeeFix != "" ? new Shader { Code = Fixed(GD.Load<Shader>("res://shaders/kit.gdshader").Code).Replace(Whole, SeeDebug ? WholeDebug : Whole) } : GD.Load<Shader>("res://shaders/kit.gdshader");
         twoSided ??= new Shader { Code = solid.Code.Replace("render_mode diffuse_burley", "render_mode cull_disabled, diffuse_burley") };
         // (our own rocks, tools/assets/env_rocks.py: Stone_Own<Species>, the one stone, OWN_ROCK)
-        if (s.ResourceName.StartsWith("Stone_Own")) return cache[key] = Rock(s, look);
+        if (s.ResourceName.StartsWith("Stone_Own") && !(look.Stand && StandLeaf(FloraSpecies.ByMaterial(s.ResourceName)))) return cache[key] = Lib(Rock(s, look), "rock");
+        // (L1 lead 15, S: a leaf-geometry species (kind "clump", or shader key "stand_leaf") under a rig with "stand" goes
+        // through the stone's standing path as family 1, leaf, two-sided; under any other rig it falls to own foliage, below)
+        if (look.Stand && StandLeaf(FloraSpecies.ByMaterial(s.ResourceName))) return cache[key] = Lib(Rock(s, look, true), "rock");
         // (our own town walls, tools/assets/env_house.py: Wall_Own, the trim sheet, OWN_WALL)
-        if (s.ResourceName.StartsWith("Wall_Own")) return cache[key] = Wall();
+        if (s.ResourceName.StartsWith("Wall_Own")) return cache[key] = Lib(Wall(), "plaster");
         // (our own roofs, tools/assets/env_roof.py: Roof_Own, the roof sheet, OWN_ROOF)
-        if (s.ResourceName.StartsWith("Roof_Own")) return cache[key] = Roof();
+        if (s.ResourceName.StartsWith("Roof_Own")) return cache[key] = Lib(Roof(), "roof");
         // (our own trees, tools/assets/env_trees.py: Leaves_Own*, one material for bark and needles)
         bool mine = foliage && s.ResourceName.Contains("Own");
         own ??= new Shader { Code = twoSided.Code.Replace("shader_type spatial;", "shader_type spatial;\n#define OWN_FOLIAGE") };
@@ -170,6 +178,12 @@ public static class KitLook
         m.SetShaderParameter("jitter", mine ? 0f : foliage ? 0.14f : 0.08f);  // (ours: OWN_FOLIAGE jitters each tree itself)
         m.SetShaderParameter("foot", foot);
         m.SetShaderParameter("leaves", foliage);
+        // The cel model's per-material numbers from the material library (L1 B2, godot/data/look/materials.json): the
+        // class by the material's name (foliage: ink 1, matte, no rim; RoundTiles roof; Wood plank ...), the kit's default
+        // class (stone) otherwise. (Replaces B1a/B1c's foliage lines, which set the same three numbers here by hand.)
+        // At --cel off nothing of the library is set: B1's lines stand, so today's frames are exact.
+        if (CelLib.On) CelLib.Apply(m, CelLib.ClassOf("res://shaders/kit.gdshader" + (mine ? "#OWN_FOLIAGE" : ""), s.ResourceName, s.ResourcePath));
+        else if (foliage && !mine) { m.SetShaderParameter("cel_ink", 1); m.SetShaderParameter("cel_spec", new Vector4(9f, 1.5f, 0f, 0.85f)); m.SetShaderParameter("cel_rim_k", 0f); }
         // The window's rim, drawn again over what the piece's own pass left open: every
         // parameter the same, so the rim is the piece itself, fading.
         // (our own trees have none: the canopy fade, the whole tree faded, in its own pass; E3 au1-5)
@@ -349,16 +363,38 @@ public static class KitLook
 
     /// <summary>Our own stone (kit.gdshader's OWN_ROCK): the sheet and parameters of flora_species.json's "stone", its
     /// species' "shader" over them; drawn with the see-through window's rim like the rest.</summary>
-    static ShaderMaterial Rock(StandardMaterial3D s, Look look)
+    /// <summary>(L1 lead 15, S) A leaf-geometry species the standing material paints as family 1, leaf (kit.gdshader's
+    /// KIT_STAND_LEAF): flora_species.json kind "clump", or "shader": {"stand_leaf": 1}.</summary>
+    public static bool StandLeaf(FloraSpecies.Species? sp) => sp != null && (sp.Kind == "clump" || sp.Shader.ContainsKey("stand_leaf")
+        // (--stand-leaf SPECIES: a developer's switch, this species pushed through the leaf variant, to tune the leaf row on any piece)
+        || sp.Name == SurvivorUnchained.Args.Get("stand-leaf"));
+    static Shader? ownLeafStand, ownLeafStandRim;
+
+    static ShaderMaterial Rock(StandardMaterial3D s, Look look, bool leaf = false)
     {
         ownRock ??= new Shader { Code = solid!.Code.Replace("shader_type spatial;", "shader_type spatial;\n#define OWN_ROCK") };
         ownRockRim ??= Rim(ownRock);
+        // (L1 lead 14, K1: the standing material's variant, a shader of its own, so every other rig's stone is the old code)
+        if (look.Stand)
+        {
+            ownRockStand ??= new Shader { Code = ownRock.Code.Replace("#define OWN_ROCK", "#define OWN_ROCK\n#define KIT_STAND") };
+            ownRockStandRim ??= Rim(ownRockStand);
+        }
         var st = FloraSpecies.Stone;
         stoneTex ??= GD.Load<Texture2D>(st.GetProperty("albedo").GetString()!);
         stoneNor ??= GD.Load<Texture2D>(st.GetProperty("normal").GetString()!);
-        var m = new ShaderMaterial { Shader = ownRock };
+        if (leaf)
+        {
+            // (culling off; the baked normal is the same on both faces, so a leaf's tone does not turn with the viewer)
+            ownLeafStand ??= new Shader { Code = ownRockStand!.Code.Replace("#define KIT_STAND", "#define KIT_STAND\n#define KIT_STAND_LEAF")
+                .Replace("render_mode diffuse_burley", "render_mode cull_disabled, diffuse_burley") };
+            ownLeafStandRim ??= Rim(ownLeafStand);
+        }
+        var m = new ShaderMaterial { Shader = leaf ? ownLeafStand : look.Stand ? ownRockStand : ownRock };
         m.SetShaderParameter("stone_tex", stoneTex);
         m.SetShaderParameter("stone_nor", stoneNor);
+        // (L1 C3a: a piece with its own map, env_rocks.py's plane rocks on rock_atlas.png, B3's painter, is drawn from it, OWN_ROCK's painted)
+        if (s.AlbedoTexture != null) { m.SetShaderParameter("albedo_tex", s.AlbedoTexture); m.SetShaderParameter("painted", 1f); }
         m.SetShaderParameter("use_vcolor", false);
         m.SetShaderParameter("jitter", 0f);
         m.SetShaderParameter("wind", 0f);
@@ -381,8 +417,10 @@ public static class KitLook
                     m.SetShaderParameter(kv.Split('=')[0], float.Parse(kv.Split('=')[1], System.Globalization.CultureInfo.InvariantCulture));
             if (sp.Packed) m.SetShaderParameter("packed", true);
         }
-        Rocks.Add(m);
-        var rim = new ShaderMaterial { Shader = ownRockRim };
+        // (a leaf piece: the painted branch only, no moss, and not one of the "stones" cue's)
+        if (leaf) { m.SetShaderParameter("moss_amount", 0f); if (s.AlbedoTexture == null) m.SetShaderParameter("painted", 0f); }
+        else Rocks.Add(m);
+        var rim = new ShaderMaterial { Shader = leaf ? ownLeafStandRim : look.Stand ? ownRockStandRim : ownRockRim };
         foreach (var u in m.Shader.GetShaderUniformList())
         {
             var name = (string)u.AsGodotDictionary()["name"];

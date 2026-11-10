@@ -15,6 +15,12 @@
 // so the teeth from there on are as before.
 shader_type spatial;
 render_mode cull_disabled;
+// The cel model (cel.gdshaderinc; L1 B1b): ink 2 (no line), no stepped rim (no white edge round a tooth in her
+// mouth's shade); the default light() by the roughness fragment() wrote.
+#define CEL_INK 2
+#define CEL_NO_RIM
+#define CEL_EXACT_ROUGH
+#include "res://shaders/cel.gdshaderinc"
 
 uniform sampler2D paint : source_color, filter_linear_mipmap, hint_default_white;
 uniform float lit : hint_range(0.0, 1.0) = 1.0;
@@ -133,4 +139,6 @@ void fragment() {
 	}
 	if (debug > 0.5) { ALBEDO = vec3(0.0); SPECULAR = 0.0; AO = 0.0; AO_LIGHT_AFFECT = 1.0; EMISSION = vec3(0.0, 2.0, 0.0); }
 	if (debug < -0.5) { ALBEDO = vec3(0.0); SPECULAR = 0.0; EMISSION = 2.0 * vec3(bw, lw, f); }
+	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug).
+	CEL_FRAGMENT;
 }

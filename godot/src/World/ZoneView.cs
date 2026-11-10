@@ -118,6 +118,8 @@ public partial class ZoneView : Node3D
         int rocks = BattleFx.TagRocks(this);
         if (Shots.On("h6")) GD.Print($"h6 rocks tagged {rocks}");
         yield return "own props";
+        // (L1 B4) The canopy's mask for the moon's dapple under cel (CanopyCookie; cel.gdshaderinc).
+        CanopyCookie.For(z);
         // An ember arena's ring, its mist and its streams.
         if (z.Place != null)
         {
@@ -135,9 +137,10 @@ public partial class ZoneView : Node3D
 
         var meta = z.Meta;
         specs = new List<ZoneData.LightSpec>(z.Lights);
+        var zatt = ZoneLightTune(specs);
         lightRoot = new Node3D { Name = "Lights" };
         AddChild(lightRoot);
-        for (int i = 0; i < meta.Lights.Count; i++) { MakeLight(z.Lights[i]); yield return null; }
+        for (int i = 0; i < meta.Lights.Count; i++) { MakeLight(specs[i]); if (zatt.TryGetValue(i, out var za)) lights[i].OmniAttenuation = za; yield return null; }
         for (int i = 0; i < meta.Lights.Count; i++) if (meta.Lights[i].Core > 0) Core(i, meta.Lights[i]);
         var fx = new Node3D { Name = "Fires" };
         AddChild(fx);
@@ -213,6 +216,23 @@ public partial class ZoneView : Node3D
         return best;
     }
 
+    /// <summary>(L1 lead 9, NIGHT2; pictures) --zlight I=#color/intensity/distance[/attenuation][,...]: a zone light's spec
+    /// as tuned, for a sweep in one build. Returns the attenuations given.</summary>
+    static Dictionary<int, float> ZoneLightTune(List<ZoneData.LightSpec> specs)
+    {
+        var att = new Dictionary<int, float>();
+        if (SurvivorUnchained.Args.Get("zlight") is not { } zl) return att;
+        var ic = System.Globalization.CultureInfo.InvariantCulture;
+        foreach (var e in zl.Split(','))
+        {
+            var kv = e.Split('='); if (kv.Length != 2 || !int.TryParse(kv[0], out int i) || i < 0 || i >= specs.Count) continue;
+            var f = kv[1].Split('/');
+            specs[i] = specs[i] with { Color = new Color(f[0]), Intensity = f.Length > 1 ? float.Parse(f[1], ic) : specs[i].Intensity, Distance = f.Length > 2 ? float.Parse(f[2], ic) : specs[i].Distance };
+            if (f.Length > 3) att[i] = float.Parse(f[3], ic);
+        }
+        return att;
+    }
+
     OmniLight3D MakeLight(ZoneData.LightSpec l)
     {
         int i = lights.Count;
@@ -222,7 +242,7 @@ public partial class ZoneView : Node3D
         {
             Name = $"Light{i}", Position = l.At, LightColor = l.Color,
             // three.js's intensity I lights to I/pi what Godot's energy E lights to E.
-            LightEnergy = l.Intensity / Mathf.Pi,
+            LightEnergy = l.Intensity / Mathf.Pi * shareShown,
             OmniRange = l.Distance > 0 ? l.Distance : 60, OmniAttenuation = 1.7f,
             // The big lights (fires, lanterns) cast shadows near the camera, at dusk and by night (Shadows).
             ShadowEnabled = false, DistanceFadeShadow = 28, DistanceFadeEnabled = true,
@@ -292,7 +312,7 @@ public partial class ZoneView : Node3D
         if (light < 0 || light >= lights.Count) return;
         levels[light] = (level, flickerRate);
         if (color is Color c) lights[light].LightColor = c;
-        if (specs[light].Flicker <= 0 || driven.Contains(light)) lights[light].LightEnergy = specs[light].Intensity / Mathf.Pi * level;
+        if (specs[light].Flicker <= 0 || driven.Contains(light)) lights[light].LightEnergy = specs[light].Intensity / Mathf.Pi * level * shareShown;
     }
 
     readonly Dictionary<int, (float Level, float Rate)> levels = new();
@@ -477,7 +497,7 @@ public partial class ZoneView : Node3D
                 specs[li] = specs[li] with { Intensity = specs[li].Intensity * own.Energy };
                 if (own.Day < 1) dayDim[li] = own.Day;
             }
-            lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi * (Night || !dayDim.TryGetValue(li, out var dd0) ? 1 : dd0);
+            lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi * (Night || !dayDim.TryGetValue(li, out var dd0) ? 1 : dd0) * shareShown;
             glowLight.Remove(best);
         }
         // (E9d) the wall lanterns by the doors: a flame and glass in the kit's cage, its light moved into it (ZoneView.Town)
@@ -543,7 +563,7 @@ public partial class ZoneView : Node3D
                 lights[li].OmniAttenuation = FordAtt;
                 specs[li] = specs[li] with { At = at + Vector3.Up * FordLightUp, Intensity = specs[li].Intensity * FordEnergy };
                 lights[li].Position = specs[li].At;
-                lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi;
+                lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi * shareShown;
             }
         }
     }
@@ -640,6 +660,58 @@ public partial class ZoneView : Node3D
         return best;
     }
 
+    /// <summary>(L1 B4r3) The rig's share of the zone's fire and lamp light (rigs.json "fires"; rule 3, one warm light a
+    /// scene: by day the sun, a fire or lamp a glow at 0.2). Atmosphere.Set sets it from the air's rig (1 for a rig without
+    /// one, every night rig, and under --cel off or --cel-rigs off); each zone takes it on its next frame, its steady lights
+    /// here and its flickering ones in the flicker (a lamp's flame drives from the energy set here: Flame.Drive).</summary>
+    public static float FireShare = 1;
+    float shareShown = 1;
+
+    void ShareFires()
+    {
+        shareShown = FireShare;
+        for (int i = 0; i < lights.Count && i < specs.Count; i++)
+        {
+            if (specs[i].Flicker > 0 && !driven.Contains(i)) continue;
+            float level = levels.TryGetValue(i, out var lv) ? lv.Level : 1f;
+            lights[i].LightEnergy = specs[i].Intensity / Mathf.Pi * level * (Night || !dayDim.TryGetValue(i, out var dd) ? 1 : dd) * shareShown;
+        }
+        if (bakery != null) bakery.LightEnergy = BakeryEnergy * shareShown;
+    }
+
+    /// <summary>(L1 lead 9, NIGHT2) The nearest three lit warm lights (the camp fire, the lamps and lanterns) to where the
+    /// camera looks, for the cel model: within each one's reach the moon gives way to it (cel.gdshaderinc cel_fires_at; how
+    /// much: the rig's fire_give), so a lamp throws its own warm pool instead of adding orange over the moon (bible rule 3;
+    /// T01, T05, T06). Each frame; a light out, hidden or dark is skipped.</summary>
+    void CelFires()
+    {
+        var cam = GetViewport()?.GetCamera3D();
+        Vector3 at = Vector3.Zero;
+        if (cam != null)
+        {
+            var o = cam.GlobalPosition; var f = -cam.GlobalBasis.Z;
+            at = f.Y < -0.05f ? o + f * (o.Y / -f.Y) : o + f * 10f;
+        }
+        System.Span<int> best = stackalloc int[3] { -1, -1, -1 };
+        System.Span<float> bd = stackalloc float[3] { float.MaxValue, float.MaxValue, float.MaxValue };
+        for (int i = 0; i < lights.Count && i < lit.Count; i++)
+        {
+            var l = lights[i];
+            if (!lit[i] || l.LightEnergy <= 0 || !l.IsVisibleInTree() || l.LightColor.R <= l.LightColor.B) continue;
+            var lp = l.GlobalPosition;
+            float d = new Vector2(lp.X - at.X, lp.Z - at.Z).LengthSquared();
+            for (int k = 0; k < 3; k++)
+                if (d < bd[k]) { for (int j = 2; j > k; j--) { bd[j] = bd[j - 1]; best[j] = best[j - 1]; } bd[k] = d; best[k] = i; break; }
+        }
+        for (int k = 0; k < 3; k++)
+        {
+            var v = Vector4.Zero;
+            if (best[k] >= 0) { var l = lights[best[k]]; var lp = l.GlobalPosition; v = new Vector4(lp.X, lp.Y, lp.Z, l.OmniRange); }
+            RenderingServer.GlobalShaderParameterSet(CelFireKeys[k], v);
+        }
+    }
+    static readonly StringName[] CelFireKeys = { "cel_fire0", "cel_fire1", "cel_fire2" };
+
     /// <summary>After dark or not: night-only pieces show, moths come to the
     /// lamps, chimney smoke goes dark.</summary>
     public void SetNight(bool on)
@@ -649,7 +721,7 @@ public partial class ZoneView : Node3D
         foreach (var (l, p) in moths) p.Emitting = on && lit[l];
         foreach (var c in chimneys) PlumeLook(c, on);
         foreach (var (h, f) in ownTorches) { f.Visible = on; Lamps.SetLit(h, on); }
-        foreach (var (li, dk) in dayDim) if (li < lights.Count && li < specs.Count) lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi * (on ? 1 : dk);
+        foreach (var (li, dk) in dayDim) if (li < lights.Count && li < specs.Count) lights[li].LightEnergy = specs[li].Intensity / Mathf.Pi * (on ? 1 : dk) * shareShown;
         Shadows();
     }
 
@@ -690,6 +762,7 @@ public partial class ZoneView : Node3D
     public override void _ExitTree()
     {
         foreach (var l in lights) ShadowLamp.Withdraw(l);
+        foreach (var k in CelFireKeys) RenderingServer.GlobalShaderParameterSet(k, Vector4.Zero);
     }
 
     /// <summary>How far the blight has drawn back (0..1): the ground's veins
@@ -812,6 +885,8 @@ public partial class ZoneView : Node3D
     {
         time += delta;
         float t = (float)time;
+        if (shareShown != FireShare) ShareFires();
+        CelFires();
         TownTick();
         if (SurvivorUnchained.Args.Has("lamp-debug") && (lampDebugAt ??= new Queue<float>(System.Array.ConvertAll((SurvivorUnchained.Args.Get("lamp-debug-at") ?? "9").Split(','), x => float.Parse(x, System.Globalization.CultureInfo.InvariantCulture)))).Count > 0 && t > lampDebugAt.Peek())
         {
@@ -881,7 +956,7 @@ public partial class ZoneView : Node3D
             var (level, rate) = levels.TryGetValue(i, out var lv) ? lv : (1f, 1f);
             float ft = t * rate;
             float f = 1 + (Mathf.Sin(ft * 8.3f + ph) * 0.5f + Mathf.Sin(ft * 19.7f + ph * 1.7f) * 0.3f + Mathf.Sin(ft * 3.1f + ph) * 0.2f) * l.Flicker;
-            lights[i].LightEnergy = l.Intensity / Mathf.Pi * f * level;
+            lights[i].LightEnergy = l.Intensity / Mathf.Pi * f * level * shareShown;
             // Energy only, never position (look bible 10: the light bobbed 4 mm and the shadows swam), unless a
             // cinematic asks a burnt-down fire to sway (SetFire). --fire-trace: the fire's light per frame.
             lights[i].Position = l.At + Vector3.Down * lightDrop.GetValueOrDefault(i);

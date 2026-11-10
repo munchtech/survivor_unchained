@@ -57,7 +57,8 @@ public partial class FlareBits : MultiMeshInstance3D
         Shader sh;
         if (mixed) sh = mixShader ??= new Shader { Code = code.Replace("render_mode unshaded, ", "render_mode ").Replace("blend_add", "blend_mix") };
         else sh = addShader ??= GD.Load<Shader>("res://shaders/flare_bits.gdshader");
-        var mat = new ShaderMaterial { Shader = sh, RenderPriority = mixed ? -2 : 2 };
+        // (the name: the material library's exclusion of the Flares' own FX, rule 13; the mixed batch's shader is an inline copy, no path; L1 B2r2)
+        var mat = new ShaderMaterial { Shader = sh, RenderPriority = mixed ? -2 : 2, ResourceName = mixed ? "flare_bits_mix" : "flare_bits_add" };
         Multimesh = new MultiMesh
         {
             TransformFormat = MultiMesh.TransformFormatEnum.Transform3D,

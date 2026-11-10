@@ -154,8 +154,13 @@ public partial class PlayerView : Node3D
     /// the real light added about a third within 1.5 m and nothing past 3 m), and lights it as before by day or with --crowd-fill off.</summary>
     static readonly string CrowdOmniArg = SurvivorUnchained.Args.Get("crowd-omni") ?? "";
     static bool CrowdOmni => CrowdOmniArg == "on" || (CrowdOmniArg != "off" && !(Atmosphere.CrowdFill > 0 && Atmosphere.CrowdCurveNew));
+    /// <summary>--pool-log: her light's reach and energy printed as they change (L1 S2b-N2, the pool in metres).</summary>
+    static readonly bool PoolLog = SurvivorUnchained.Args.Has("pool-log");
+    float poolLogged = -1;
     /// <summary>--crowd-ember K, --crowd-ember-h H: her lamp's strength on the crowd by night (times the pool light's) and its point over her feet.</summary>
-    static readonly float CrowdEmberK = SurvivorUnchained.Args.Num("crowd-ember", 0.43f), CrowdEmberH = SurvivorUnchained.Args.Num("crowd-ember-h", 2.4f),
+    // (L1 lead 8, S2b-N2: 0.43 to 0.24, as her pool's light went 4.5 to 8.0 under the night rigs (W2): the crowd in her pool
+    // lit 1.78 times what it was tuned under, tan wolves on 09.)
+    static readonly float CrowdEmberK = SurvivorUnchained.Args.Num("crowd-ember", 0.24f), CrowdEmberH = SurvivorUnchained.Args.Num("crowd-ember-h", 2.4f),
         CrowdEmberIn = SurvivorUnchained.Args.Num("crowd-inner", 3f);
     /// <summary>Moves a boss or cinematic actor from people's layer to CastLayer (other bits kept), and keeps its later meshes (the folk shadow) there.</summary>
     public static void ToCast(Node n)
@@ -170,6 +175,11 @@ public partial class PlayerView : Node3D
     float lamp = 1;
     // Their own clips (hers, or his) and carriage.
     readonly bool mine;
+    /// <summary>(L1 lead 19, SH2) Her own fire shadow: one cast quad (World/FireCast.cs, shaders/crowd_blob_cast.gdshader)
+    /// and its shape, m (--her-cast-long, --her-cast-wide: its length from her feet and its width at them).</summary>
+    MultiMeshInstance3D? herCast;
+    const float HerCastTall = 1.7f;
+    static readonly float HerCastLong = SurvivorUnchained.Args.Num("her-cast-long", 1.2f), HerCastWide = SurvivorUnchained.Args.Num("her-cast-wide", 0.4f);   // (SH3: a short tapered trail her stance wide, not a disc)
     readonly OwnClips own = OwnClips.Her;
     readonly HerCarriage? carriage;
     float runSpeed;
@@ -367,6 +377,8 @@ public partial class PlayerView : Node3D
         AddChild(Light);
         FolkLight = new OmniLight3D { LightColor = new Color(SurvivorUnchained.Args.Get("ember-folk-color") ?? "#ffc08a"), LightEnergy = 0, OmniRange = 11, ShadowEnabled = false, LightCullMask = 2u | HerLayers, Position = new Vector3(0, FolkH, FolkZ) };
         AddChild(FolkLight);
+        // (L1 lead 19, SH2) Her own short shadow under her fire (FireCast: one quad; placed every frame below).
+        if (mine) { herCast = FireCast.Make("HerCast", 1); AddChild(herCast); }
         Reflections = new Reflections(lo);
         AddChild(Reflections);
         Gather(this);
@@ -944,16 +956,34 @@ public partial class PlayerView : Node3D
             person.Anim.Seek(double.Parse(hold[1], System.Globalization.CultureInfo.InvariantCulture), true);
             person.Anim.Pause();
             foreach (var (bi, p0, r0) in legs) { sk.SetBonePosePosition(bi, p0); sk.SetBonePoseRotation(bi, r0); }
+            // (L1 lead 22, mirror) --hold-mirror: the held frame reflected across her own sagittal plane, left and right
+            // swapped (PoseMirror), and the held piece moved into the hand that grips after the mirror. View only.
+            if (HoldMirror)
+            {
+                if (mirror == null)
+                {
+                    mirror = new PoseMirror(sk);
+                    GD.Print($"hold-mirror: {mirror.Paired} paired bones of {sk.GetBoneCount()}, plane normal {mirror.Normal}");
+                }
+                mirror.Apply();
+                if (!mirror.Piece(P1Body.BoneName(sk, "hand_r"), P1Body.BoneName(sk, "hand_l")) && !mirrorSaid) { mirrorSaid = true; GD.Print("hold-mirror: no piece in her right hand to move"); }
+            }
             // Her head carried up as play carries it (HeadLevel) through a swing and her idles and runs; a
             // whole-body clip (a fall, a roll, a flourish) keeps its own head, as play leaves it.
             string hn = hold[0];
             bool moveClip = hn.StartsWith("idle_") || hn.StartsWith("run_") || hn.StartsWith("sprint_") || hn.StartsWith("stop_") || hn.StartsWith("walk_");
-            if (carriage != null) carriage.HeadLevel = upperOnly || moveClip || stance ? HeadLevel : 0;
+            if (carriage != null) carriage.HeadLevel = upperOnly || moveClip || stance || HoldHead ? HeadLevel : 0;
             if (person.Pose != null) person.Pose.Native = 1;
             // (--close-turn R with it: turned from the close view's lens as its idle turns her, so a held pose can be
             // seen from her front; without it she keeps her heading, as before.)
             if (HoldTurn && Turned is float th) Rotation = new Vector3(0, th, 0);
-            return;
+            // (L1 lead 21, pose) --facing DEG with a hold: her heading on the held frame, set every frame, in the start facing's own
+            // degrees (Game.cs: 0 south, toward the play camera; 90 east, screen-right), so a held pose can be staged to the play
+            // camera whatever the shot did with her before. The close view's turn above wins when it is asked for.
+            else if (HoldFacing is float hf) Rotation = new Vector3(0, hf, 0);
+            // (L1 lead 21, stage) A held clip keeps her carried light: the branch returned here, so the light below never stepped (no energy,
+            // cel_ember's reach 0) and a held frame lost her whole pool. Her pose is all that is held; the light runs as on any frame.
+            goto carriedLight;
         }
         if (!p.Alive || fallen)
         {
@@ -1115,6 +1145,7 @@ public partial class PlayerView : Node3D
         if (mine) Carry((float)dt, sp);
         if (mine) SurvivorUnchained.Play.TurnRun.Log(b.Time, p.StickX, p.StickZ, p.Vx, p.Vz, Rotation.Y, carriage?.Bank ?? 0, speed, p.X, p.Z);
         else tree.Set(BlendPosition, speed);
+        carriedLight:
         // The carried light: steadier at full health, guttering when hurt.
         double hp = p.Hp / b.MaxHp;
         flare = Mathf.Max(0, flare - dt * 0.8);
@@ -1144,15 +1175,49 @@ public partial class PlayerView : Node3D
         }
         // (Every frame while on: her level of detail and her wear make meshes of their own on layer 2.)
         if (OwnLayer || ownShown) { Relayer(this, OwnLayer, person.Hair); ownShown = OwnLayer; }
-        Light.Position = new Vector3(0, EmberH, 0.4f);
+        // (L1 lead 19, HER2) the rig's hero_pool: her fire's foot beside her; (0, 0.4) in her own frame without the row.
+        // (L1 lead 21, FOOT) With the row the foot is a point on the GROUND of the view: her ground position + (dx along
+        // screen-right, dz along screen-down), whatever her heading, clip or hold (it was local to her, so the pool, her cast and
+        // her shade side swung round her as she turned). The light node carries the point: cel_ember, her cast and the casts'
+        // report below read Light.GlobalPosition, and the hero's shade side is told the same direction (Atmosphere.HeroFootWorld).
+        if (Atmosphere.HeroFootRig)
+        {
+            var right = GetViewport()?.GetCamera3D() is { } vc ? vc.GlobalBasis.X : Vector3.Right;
+            right = new Vector3(right.X, 0, right.Z);
+            right = right.LengthSquared() > 1e-6f ? right.Normalized() : Vector3.Right;
+            var down = right.Cross(Vector3.Up);   // along the ground toward the camera = down the screen (+Z at yaw 0)
+            var foot = right * Atmosphere.HeroFoot.X + down * Atmosphere.HeroFoot.Y;
+            var own = GlobalBasis.Inverse() * foot;
+            Light.Position = new Vector3(own.X, EmberH, own.Z);
+            if (mine) Atmosphere.HeroFootWorld(new Vector2(foot.X, foot.Z));
+        }
+        else Light.Position = new Vector3(Atmosphere.HeroFoot.X, EmberH, Atmosphere.HeroFoot.Y);
         // Her lamp on the crowd by night, in its own paint (Atmosphere.CrowdFill, vat.gdshaderinc): from over her, with the pool's flicker.
         if (mine)
         {
             float ce = !LampOffHer && Visible && Atmosphere.CrowdFill > 0 ? Light.LightEnergy * Atmosphere.CrowdFill * CrowdEmberK : 0;
             var at = GlobalPosition + new Vector3(0, CrowdEmberH, 0);
             RenderingServer.GlobalShaderParameterSet("crowd_ember", new Vector4(at.X, at.Y, at.Z, ce));
+            // (L1 lead 19, SH2) She stands on her own short shadow: the light is over her, so the cast's rule gives next to
+            // nothing; a fixed short trail from her feet, away from the light's foot (the light sits a little toward the
+            // camera), a little wider than her stance. Its tone is the rig's (foe_moon value 8), the shape the shader's.
+            if (herCast != null)
+            {
+                var lf = Light.GlobalPosition; var me = GlobalPosition;
+                FireCast.Set(herCast.Multimesh, 0, me, HerCastTall, HerCastWide, ce > 0 ? 1 : 0, HerCastLong, new Vector2(me.X - lf.X, me.Z - lf.Z));
+                if (FireCast.Count) FireCast.Report(lf);
+            }
             var lc = Light.LightColor.SrgbToLinear();
             RenderingServer.GlobalShaderParameterSet("crowd_lamp", new Vector4(lc.R, lc.G, lc.B, CrowdEmberIn));
+            // (L1 W2) Her light's point and reach for the cel model, where the moon gives way to her pool (cel.gdshaderinc cel_ember;
+            // the rig's ember_give says how much): none while her lamp is out or hidden.
+            var lp = Light.GlobalPosition;
+            RenderingServer.GlobalShaderParameterSet("cel_ember", new Vector4(lp.X, lp.Y, lp.Z, Visible && Light.Visible && Light.LightEnergy > 0 ? Light.OmniRange : 0));
+            if (PoolLog && Mathf.Abs(Light.OmniRange - poolLogged) > 0.25f) { poolLogged = Light.OmniRange; GD.Print($"pool: her light's reach {Light.OmniRange:0.00} m, energy {Light.LightEnergy:0.00}"); }
+            // (L1 lead 8, S2b) her light's color (linear, its largest channel 1) and fall (OmniAttenuation), so the cel model knows her
+            // light among the others and paints its pool (cel.gdshaderinc cel_pool_band).
+            float lm = Mathf.Max(lc.R, Mathf.Max(lc.G, Mathf.Max(lc.B, 1e-4f)));
+            RenderingServer.GlobalShaderParameterSet("cel_pool", new Vector4(lc.R / lm, lc.G / lm, lc.B / lm, Light.OmniAttenuation));
         }
         // Unseen: a ghost, flickering.
         Visible = !Hidden && !(p.InvisibleT > 0 && (int)(time * 12) % 3 == 0);
@@ -1474,6 +1539,16 @@ public partial class PlayerView : Node3D
     static readonly float EmberH = SurvivorUnchained.Args.Num("ember-h", 1.7f), EmberK = SurvivorUnchained.Args.Num("ember-k", 1f);
     static readonly string[]? Hold = SurvivorUnchained.Args.Get("hold")?.Split('@');
     static readonly bool HoldTurn = SurvivorUnchained.Args.Has("close-turn");
+    /// <summary>--hold-mirror with a hold (L1 lead 22, pictures only): the held frame mirrored left for right (PoseMirror).</summary>
+    static readonly bool HoldMirror = SurvivorUnchained.Args.Has("hold-mirror");
+    // (L1 lead 22, p2stand) --hold-head: a whole-body hold keeps her head carried up (HeadLevel) as an idle does, so the
+    // face, not the crown, shows at the play camera. View only, off by default.
+    static readonly bool HoldHead = SurvivorUnchained.Args.Has("hold-head");
+    PoseMirror? mirror;
+    bool mirrorSaid;
+    /// <summary>--facing DEG read for a held frame (the Hold branch): her heading in radians, null without the flag.</summary>
+    static readonly float? HoldFacing = SurvivorUnchained.Args.Get("facing") is string hfa
+        ? Mathf.DegToRad(float.Parse(hfa, System.Globalization.CultureInfo.InvariantCulture)) : null;
     /// <summary>--turn-old: her facing chasing her velocity, the run blend and the lean as before N27 (before/after
     /// pictures); --face-rate R, --blend-rate R, --bank-rate R: how fast her facing meets the stick, her legs her speed, her lean its curve.</summary>
     static readonly bool TurnOld = SurvivorUnchained.Args.Has("turn-old");

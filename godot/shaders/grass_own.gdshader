@@ -8,6 +8,16 @@
 // night (`night`). Wind, her pushing through, frost and the Flare as the kit grass (grass.gdshader).
 shader_type spatial;
 render_mode cull_disabled, diffuse_burley, world_vertex_coords;
+// The cel model (cel.gdshaderinc, L1 B1a): ink 2 (none), a soft ramp (no stripes on the ground), no rim; its own light() below.
+#define CEL_INK 2
+#define CEL_BAND vec4(0.0, 0.15, 0.2, 0.05)
+#define CEL_NO_RIM
+#define CEL_OWN_LIGHT
+// (the material library, godot/data/look/materials.json: this shader's default class; matte, rule 6: no highlight)
+#define CEL_SPEC vec4(9.0, 1.5, 0.0, 0.85)
+// (L1 C1: the band sees none of the ground's normal map: the Stage B judge, ground and terrain cel_nmap 0, no orange peel)
+#define CEL_NMAP 0.0
+#include "res://shaders/cel.gdshaderinc"
 #include "res://shaders/world_clock.gdshaderinc"
 
 #include "res://shaders/flare_world.gdshaderinc"
@@ -52,10 +62,33 @@ global uniform vec4 ground_frost;
 global uniform vec4 flora_light;
 uniform float frost_tone = 1.7;
 uniform float frost_cap = 0.1;
+// (L1 W2 ground, mark 4: FROM target 03, where the moonlit ground is mid-dark blue (Oklab L50 about 0.28) and the
+// fire's pool is the light, and rule 1 (the brightest area is a source or what it lights, never bare ground): the rime
+// is the ground's own color lifted at most frost_lift times, keeping frost_own of its hue, so under the moon it never
+// outshines the pool. (The 3 Nov rime went to a neutral white at frost_cap, which a blue moon lit as the brightest thing.)
+uniform float frost_lift = 1.2;
+uniform float frost_own = 0.65;
 uniform vec4 warm_at[4];
 uniform float meadow_amt = 1.0;
+// (L1 l9 grass: as terrain.gdshader's: no bare patches in the meadow, and the paint's light wear under trod_floor grows grass)
+uniform float meadow_bare = 0.0;
+uniform float trod_floor = 0.4;
 uniform int debug_view = 0;
 uniform vec4 bare_at[4];
+// (L1 l10 grass, judge 1 fix 6 rebuilt, FROM targets 04 and 07: the lawn is the painted ground; tufts are sparse accents
+// placed by rule, never a carpet.) accent 1: a cell grows a tuft by where it is, not by the drifts: accent_open across an
+// open lawn (a few percent), accent_road along the fringe of a made way (the paint's trodden earth rising sp.r 0.03-0.4),
+// accent_hard along the border of setts, mud or blight, accent_near round anything standing (trunks, props, fences,
+// walls: GroundPaint's Near G within accent_reach m), each broken into twos and threes by a 1-2 m field; near things and
+// at the wild edges they grow up to near_size times. 0: the drifts as lead 9 left them.
+uniform sampler2D near_tex : filter_linear, repeat_disable, hint_default_white;
+uniform float accent = 0.0;
+uniform float accent_open = 0.06;
+uniform float accent_road = 0.5;
+uniform float accent_hard = 0.4;
+uniform float accent_near = 0.6;
+uniform float accent_reach = 0.9;
+uniform float near_size = 1.4;
 
 varying float v_t;
 varying vec3 v_tint;
@@ -142,23 +175,35 @@ void vertex() {
 	// None on setts, mud or blight; over trodden earth it thins (grass.gdshader's masks).
 	float hard = max(sp.g, max(sp.b, sp.a));
 	float dens = (1.0 - smoothstep(0.12, 0.45, hard + (nz.g - 0.5) * 0.35))
-		* (1.0 - smoothstep(0.15, 0.8, sp.r + (nz.g - 0.5) * 0.35) * 0.85);
+		* (1.0 - smoothstep(0.15, 0.8, (trod_floor > 0.0 ? max(sp.r - trod_floor, 0.0) / (1.0 - trod_floor) : sp.r) + (nz.g - 0.5) * 0.35) * 0.85);
 	// Drifts: the ground's clump field (terrain.gdshader, the same noise), cut between drift.x and drift.y, so a
 	// drift is grass to its heart and thins to single clumps at its edge, with bare ground between; the ground's
 	// bare patches bare.
 	vec4 nF = texture(noise_tex, wp * 0.29 + 0.71), nM = texture(noise_tex, wp * 0.061 + 0.37);
 	vec4 nC = texture(noise_tex, wp * 0.0213 + 0.13), nL = texture(noise_tex, wp * 0.011);
-	float bare_p = smoothstep(0.62, 0.76, nM.b * 0.45 + nC.b * 0.55) * smoothstep(0.45, 0.68, nL.b) * meadow_amt;
+	float bare_p = smoothstep(0.62, 0.76, nM.b * 0.45 + nC.b * 0.55) * smoothstep(0.45, 0.68, nL.b) * meadow_amt * meadow_bare;
 	// (half the ground's own clump field, so a drift lies on the ground's darker green hearts, half a field with more
 	// contrast, 4 m blobs and 6 m swells; lo-hi 0.46-0.54 covers 48% of an open meadow, 39% bare: env10's drift_sim.py)
 	float clump = (nM.r * 0.45 + nM.g * 0.35 + nF.r * 0.2) * 0.5 + (nM.r * 0.55 + nC.g * 0.3 + nF.r * 0.15) * 0.5;
 	float cover = smoothstep(drift.x, drift.y, clump) * (1.0 - bare_p);
-	dens *= mix(1.0, cover, meadow_amt);
+	float e_near = 0.0;
+	if (accent > 0.0) {
+		vec4 nr = textureLod(near_tex, zuv, 0.0);
+		float e_road = smoothstep(0.03, 0.1, sp.r) * (1.0 - smoothstep(0.3, 0.45, sp.r));
+		float e_hard = smoothstep(0.02, 0.07, hard) * (1.0 - smoothstep(0.18, 0.3, hard));
+		e_near = (1.0 - smoothstep(accent_reach * 0.5, accent_reach, nr.g * 2.0 + (nF.b - 0.5) * 0.3)) * step(nr.g, 0.99);
+		float brk = smoothstep(0.35, 0.6, nM.a * 0.55 + nF.g * 0.45);
+		float p_ac = max(accent_open * (0.4 + 1.2 * nF.r), max(accent_road * e_road, max(accent_hard * e_hard, accent_near * e_near)) * (0.35 + 0.65 * brk));
+		dens *= mix(1.0, p_ac, accent);
+		cover = mix(cover, 1.0, accent);
+	} else {
+		dens *= mix(1.0, cover, meadow_amt);
+	}
 	vec4 pm = textureLod(paint_mask, zuv, 0.0);
 	dens *= max(1.0 - smoothstep(0.5, 0.75, pm.r), smoothstep(0.86, 0.97, pm.r) * 0.6) * (1.0 - smoothstep(0.1, 0.4, pm.g));
 	float leafy = smoothstep(0.42, 0.78, nL.g * 0.7 + nM.a * 0.3 + leaves - 0.5);
 	dens *= 1.0 - leafy * 0.5;
-	dens *= mix(1.0, 0.3, smoothstep(0.82, 0.42, textureLod(expo_tex, zuv, 0.0).r));
+	dens *= mix(1.0, mix(0.3, 0.8, accent), smoothstep(0.82, 0.42, textureLod(expo_tex, zuv, 0.0).r));
 	float tr = 0.0;
 	if (trod > 0.0) {
 		float tn = texture(noise_tex, wp * 0.13 + 0.53).r * 0.7 + nF.a * 0.3;
@@ -174,7 +219,7 @@ void vertex() {
 	// thins out to its own w times its radius)
 	for (int i = 0; i < 4; i++) keep *= step(h4, smoothstep(bare_at[i].z, bare_at[i].z * (bare_at[i].w > 0.0 ? bare_at[i].w : clear), length(wp - bare_at[i].xy)));
 	// Size: smaller at a drift's edge, each clump its own.
-	float sz = mix(0.5, 1.15, smoothstep(0.0, 0.8, cover)) * (1.0 + size_var * (2.0 * (0.6 * gh(wp * 6.3 + 1.0) + 0.4 * nF.a) - 1.0) * 1.3) * keep;
+	float sz = mix(0.5, 1.15, smoothstep(0.0, 0.8, cover)) * mix(1.0, (1.0 + (near_size - 1.0) * e_near) / 1.15, accent) * (1.0 + size_var * (2.0 * (0.6 * gh(wp * 6.3 + 1.0) + 0.4 * nF.a) - 1.0) * 1.3) * keep;
 	{
 		float hb = gh(wp * 6.9 + 13.0);
 		sz *= hb < big_share ? mix(1.3, 1.65, hb / max(big_share, 1e-4)) : (hb > 1.0 - small_share ? mix(0.78, 0.5, (hb - 1.0 + small_share) / max(small_share, 1e-4)) : 1.0);
@@ -253,8 +298,9 @@ void fragment() {
 	// (a flower's pale head no brighter than the moonlit road: dimmed by night)
 	gb *= 1.0 - 0.5 * flora_light.x * smoothstep(0.2, 0.4, dot(tx.rgb, vec3(0.2126, 0.7152, 0.0722)));
 	float fr = v_frost * smoothstep(mix(1.0, 0.35, v_frost), 1.0, t);
-	float fl = min(dot(gb, vec3(0.2126, 0.7152, 0.0722)) * frost_tone, frost_cap);
-	gb = mix(gb, vec3(0.86, 0.93, 1.0) * fl, fr * 0.8);
+	float fl0 = max(dot(gb, vec3(0.2126, 0.7152, 0.0722)), 1e-4);
+	float fl = min(min(fl0 * frost_tone, frost_cap), fl0 * frost_lift);
+	gb = mix(gb, mix(vec3(0.86, 0.93, 1.0), gb / fl0, frost_own) * fl, fr * 0.8);
 	ALBEDO = debug_view == 4 ? vec3(fr * 0.8, 0.0, 1.0 - fr * 0.8) : gb;
 	// (--ground-debug 5: the grass alone, flat magenta, a mask for measuring its pixels in a frame shot the same)
 	if (debug_view == 5) { ALBEDO = vec3(0.0); EMISSION = vec3(1.0, 0.0, 1.0) * 4.0; }
@@ -274,6 +320,8 @@ void fragment() {
 		flare_blade(v_wp, t, fl_a, fl_r, fl_e);
 		ALBEDO = fl_a; ROUGHNESS = fl_r; EMISSION = fl_e;
 	}
+	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug).
+	CEL_FRAGMENT;
 }
 
 // The key's light on the blades as the built-in gives it (Burley, and the back light through them), its sunlit upper
@@ -284,15 +332,23 @@ void fragment() {
 global uniform float flora_lamp;
 uniform vec3 lamp_ochre = vec3(1.0, 0.74, 0.40);
 void light() {
+	vec3 nb = cel_nb(NORMAL);
+	float t = dot(nb, LIGHT);
+	vec3 dbg = vec3(0.0);
+	if (cel_dbg_light(nb, t, ATTENUATION, LIGHT_IS_DIRECTIONAL, dbg)) { SPECULAR_LIGHT += dbg; } else {
 	float cnl = max(dot(NORMAL, LIGHT), 0.0);
 	float cnv = max(dot(NORMAL, VIEW), 1e-3);
 	float clh = max(dot(LIGHT, normalize(LIGHT + VIEW)), 0.0);
 	float fd90m1 = 2.0 * clh * clh * ROUGHNESS - 0.5;
 	float fl = 1.0 + fd90m1 * pow(1.0 - cnl, 5.0), fv = 1.0 + fd90m1 * pow(1.0 - cnv, 5.0);
-	float d = fl * fv * cnl;
-	vec3 lc = LIGHT_COLOR * ATTENUATION;
+	// (cel: the band and the hardened key shadow in place of Burley and the soft one; the back light, sun and ochre kept)
+	float sh = cel_shadow(ATTENUATION, LIGHT_IS_DIRECTIONAL);
+	vec3 d = cel_on > 0.0 ? mix(vec3(fl * fv * cnl), cel_level(t), cel_on) : vec3(fl * fv * cnl);
+	vec3 lc = LIGHT_COLOR * mix(ATTENUATION, sh, cel_on);
+	// (L1 lead 9, B1: her pool's ramp on the blades as on the ground, never Godot's raw fall under her light)
+	if (!LIGHT_IS_DIRECTIONAL && cel_on > 0.0) { vec3 plc = LIGHT_COLOR; float patt = ATTENUATION; cel_pool_paint(plc, patt, (INV_VIEW_MATRIX * vec4(LIGHT, 0.0)).xyz); lc = plc * patt; }
 	if (LIGHT_IS_DIRECTIONAL) lc *= mix(vec3(1.0), sun_body * mix(vec3(1.0), sun_tip, smoothstep(0.3, 0.85, v_t)), 1.0 - flora_light.x);
-	vec3 add = lc * (d + BACKLIGHT * max(1.0 - d, 0.0)) / PI;
+	vec3 add = lc * (d + BACKLIGHT * max(vec3(1.0) - d, vec3(0.0))) / PI;
 	if (!LIGHT_IS_DIRECTIONAL && flora_lamp > 0.0) {
 		float warmth = clamp((lc.r - lc.b) / max(lc.r, 1e-4) * 2.0, 0.0, 1.0);
 		vec3 lum = vec3(0.2126, 0.7152, 0.0722);
@@ -301,5 +357,6 @@ void light() {
 		vec3 och = lamp_ochre * (dot(lit, lum) / dot(lamp_ochre, lum));
 		add = mix(lit, och, flora_lamp * warmth) / a;
 	}
-	DIFFUSE_LIGHT += add;
+	DIFFUSE_LIGHT += add + cel_on * cel_fill_add(LIGHT_COLOR, cel_lit(t) * sh, LIGHT_IS_DIRECTIONAL);
+	}
 }

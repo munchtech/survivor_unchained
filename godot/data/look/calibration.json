@@ -1,0 +1,29 @@
+{
+ "what": "L7 S1c (lead 7, 9 Nov: the class mids calibrated in closed loop): a class's mid comes off its board (color_chain.py solve), then the kits paint the light in (the top gradient, the lit bevel, the cool cavity), so the mid from the boards' lit tops counted the light twice. Per class, the in-game lit read (the frame's lit blocks at the play zoom, the kits' painting on) against its reference (the picked G1 day targets where they show the class; the targets rule the mid, the boards the painting inside the block): gain = reference / read per channel (linear), times the gain before. color_chain.py solve multiplies the class's albedo by it. Re-calibrate: shoot, read, update. (r2: in Oklab, not per channel: per channel the grass's tiny blue ratio blew up to 1.75 and sent it teal #3b5456): the albedo's L x L_ref/L_read, C x C_ref/C_read, h + (h_ref - h_read); a near-neutral class (C under 0.02) keeps its hue.)",
+ "classes": {
+  "grass": {
+   "from": "G1 07's lit grass (a fresh mid green; MB4's lit tops are yellower and lighter: the target rules the mid): target 07_r5 box [200, 150, 500, 350] lit (0.549, 0.091, 107) against the game's 07 (c/l7/s1c, box [100, 150, 600, 450]) lit (0.744, 0.144, 94), mask {'h': [80, 160], 'lit': True}",
+   "L": 0.7379,
+   "C": 0.6319,
+   "dh": 13
+  },
+  "setts": {
+   "from": "G1 07's lit setts up the road (warm sandy-beige): target 07_r5 box [720, 100, 960, 340] lit (0.714, 0.085, 46) against the game's 07 (c/l7/s1c, box [800, 100, 1100, 400]) lit (0.8, 0.072, 52), mask {'lit': True} | L7 S1d: the lit reads (L, C, h) of G1 07, 13 [(0.672, 0.067, 37), (0.712, 0.079, 42)] against the game's (c/l7/s1c/r2) [(0.659, 0.058, 53), (0.688, 0.061, 48)], boxes by eye at half size (scratch boxes.py, the middle 60% by L): L x1.027, C x1.227, dh -11 on {'L': 0.8925, 'C': 1.1806, 'dh': -6}",
+   "L": 0.917,
+   "C": 1.4485,
+   "dh": -17
+  },
+  "plaster": {
+   "L": 0.7105,
+   "C": 0.872,
+   "dh": -44,
+   "from": "L7 S1d: the lit reads (L, C, h) of G1 13 [(0.674, 0.083, 47)] against the game's (c/l7/s1c/r2) [(0.864, 0.1, 70)], boxes by eye at half size (scratch boxes.py, the middle 60% by L): L x0.780, C x0.830, dh -23 on {'L': 1.0, 'C': 1.0, 'dh': 0} | L7 S1d: the lit reads (L, C, h) of G1 13 [(0.674, 0.083, 47)] against the game's (c/l7/s1d/r1) [(0.74, 0.079, 68)], boxes by eye at half size (scratch boxes.py, the middle 60% by L): L x0.911, C x1.051, dh -21 on {'L': 0.7801, 'C': 0.83, 'dh': -23}"
+  },
+  "road": {
+   "L": 1.1741,
+   "C": 1.0943,
+   "dh": 17,
+   "from": "L7 S1d: the lit reads (L, C, h) of G1 04 [(0.526, 0.058, 65)] against the game's (c/l7/s1d/r1) [(0.448, 0.053, 48)], boxes by eye at half size (scratch boxes.py, the middle 60% by L): L x1.174, C x1.094, dh +17 on {'L': 1.0, 'C': 1.0, 'dh': 0}"
+  }
+ }
+}

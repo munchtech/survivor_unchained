@@ -42,6 +42,11 @@ public sealed class Autopilot
     /// <summary>In a town, walk to the nearest one who can be talked to and stand there, never pressing
     /// (--auto talk): pictures of the talk prompt and its lesson (au1 item 14).</summary>
     public bool Talk;
+    /// <summary>Plant where she stands when it begins and fight from there (--auto stand): never kite, dash or Flare;
+    /// step only out of a telegraphed zone and back, and drink when low. A switch for pictures: the pack closes and rings
+    /// her in her own ember's pool, off the lamp (L1 Stage C wave 2; FROM targets 09 and 12, LOOK_BIBLE rule 1).</summary>
+    public bool Stand;
+    (double X, double Z)? plant;
     double talkT;
     public (double X, double Z) Move { get; private set; }
     public readonly List<string> Log = new();
@@ -73,7 +78,7 @@ public sealed class Autopilot
     /// <summary>This frame's Move is the Pilot's (PilotMove): the step's hands are the Pilot's too (PlanStep).</summary>
     bool piloted;
     ArenaBoss? pilotBoss;
-    bool Pilots(Battle b) => b.Campaign && !oldFeet && !Idle && !Toward && !Away && !Across && !Talk;
+    bool Pilots(Battle b) => b.Campaign && !oldFeet && !Idle && !Toward && !Away && !Across && !Talk && !Stand;
 
     readonly Dictionary<string, bool> clipHeld = new(); // --clip: the grip state last printed (the game's keys release it each step, the plan re-holds it)
     double lastDashT;
@@ -84,7 +89,7 @@ public sealed class Autopilot
     void PlanStep(Battle b)
     {
         if (clip && b.Campaign && !g.InTransit && !g.InCinematic) Her(b);
-        if (!b.Campaign || Idle || Toward || Away || Across || Talk || g.InTransit || g.InCinematic || !b.Player.Alive) return;
+        if (!b.Campaign || Idle || Toward || Away || Across || Talk || Stand || g.InTransit || g.InCinematic || !b.Player.Alive) return; // (L1) stand: a Leap would take her off her mark; frames 09 and 12 shoot from it
         if (!clip) { RunHands(b); return; }
         // --clip: one line per press the plan makes (the shape of ScriptedPress's), a print only.
         var before = new Dictionary<string, int>(planHands.Presses);
@@ -429,6 +434,7 @@ public sealed class Autopilot
         if (Toward && b != null && b.Player.Alive && !g.InTransit) { Move = (0, 1); return; }
         if (Away && b != null && b.Player.Alive && !g.InTransit) { Move = (0, -1); return; }
         if (Across && b != null && b.Player.Alive && !g.InTransit) { Move = ((int)(t / 6) % 2 == 0 ? 1 : -1, 0); return; }
+        if (Stand && b != null && z != null && b.Player.Alive && !g.InTransit && !g.InCinematic) { StandFight(dt, b); return; }
         // (never during a film: j08 r2's walked her to the road's boars under C04 A, and its hand-back cut on a fight's pose)
         // (idle in the Prologue walks the road like the pilot until the Ambush's trap springs, then stands:
         // the worst player in its first real fight, MR5 item 11); under --spots (pictures of fixed places) it stands where it is set down)
@@ -831,7 +837,24 @@ public sealed class Autopilot
         if (best != null) b.Priority = best.Id;
     }
 
-    bool GoalsOn => !Idle && !Toward && !Away && !Across && !Talk && !Args.Has("no-goals");
+    bool GoalsOn => !Idle && !Toward && !Away && !Across && !Talk && !Stand && !Args.Has("no-goals");
+
+    /// <summary>--auto stand: held at her plant; out of a foe's telegraphed zone (as Field steps out), back after.</summary>
+    void StandFight(double dt, Battle b)
+    {
+        var p = b.Player;
+        var (px, pz) = plant ??= (p.X, p.Z);
+        double mx = (px - p.X) * 0.5, mz = (pz - p.Z) * 0.5;
+        foreach (var zn in b.Zones.Living())
+        {
+            if (zn.Owner is Side.Player or Side.Ally) continue;
+            double dx = p.X - zn.X, dz = p.Z - zn.Z, dd = Math.Max(0.01, Math.Sqrt(dx * dx + dz * dz));
+            if (dd < zn.Radius + 0.8) { mx += dx / dd * 3; mz += dz / dd * 3; }
+        }
+        Steer(dt, mx, mz, p, px, pz);
+        drinkT -= dt;
+        if (p.Hp < b.MaxHp * 0.33 && !noDrink && drinkT <= 0 && !g.TeachWaiting("draught")) { Controls.Instance.Press(Act.Draught); drinkT = 1.5; }
+    }
     bool resultSeen, tableOpen, townShot, leaving, tableEnded;
     int nightsEnded, arenasEntered, backFor;
     double tableT, wonT = -1, leaveT, interactT, printT;

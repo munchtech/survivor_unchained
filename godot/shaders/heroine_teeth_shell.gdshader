@@ -7,6 +7,12 @@
 // (No shadows on it: inside the teeth, their own shadow fell on it, the gaps black again)
 shader_type spatial;
 render_mode cull_front, shadows_disabled;
+// The cel model (cel.gdshaderinc; L1 B1b): ink 2 (no line), no stepped rim; the default light() by the roughness
+// fragment() wrote.
+#define CEL_INK 2
+#define CEL_NO_RIM
+#define CEL_EXACT_ROUGH
+#include "res://shaders/cel.gdshaderinc"
 
 uniform sampler2D paint : source_color, filter_linear_mipmap, hint_default_white;
 uniform sampler2D upper_mask : filter_nearest, hint_default_black;
@@ -48,4 +54,6 @@ void fragment() {
 	AO = f;
 	AO_LIGHT_AFFECT = 1.0;
 	EMISSION = bc * band_glow * f;
+	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug).
+	CEL_FRAGMENT;
 }

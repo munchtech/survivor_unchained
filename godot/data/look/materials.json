@@ -1,0 +1,2193 @@
+{
+ "what": "The material library (L1 B2): every lit surface's cel class, the only place a class's numbers live. cel: the per-material uniforms of shaders/cel.gdshaderinc (band, mid, form, spec, nmap, ink, rim_k; see its header); sheen: a metal's second, sky-colored band (rule 6) where a shader carries it; edge: the crowd's own rim (width in 1-n.v, step). paint: B3's painted-block parameters, the colors measured from the boards by tools/style/board_measure.py (boxes in board pixels with optional Oklab masks; re-run it to re-measure): paint.lit as painted on the board (lit paint), paint.albedo (v2, B3r2) the board's samples over the game's own response to each class (tools/look/calib.py: the swatch row at albedo 1 under the day and night rigs, solved per channel, then iterated on the swatches redrawn in it). B3 paints from albedo. shaders: each adopting shader's default class (its CEL_* defines must equal it: godot/tests/MaterialLibraryTests.cs). assign: material to class, first match wins (shader path, material name and asset path as .NET regexes; all given must match). exclude: what is not converted, by design.",
+ "version": 1,
+ "boards_root": "survivorsunchained_inputs",
+ "boards": {
+  "MB1": "look_l1/a2/r2/MB1_her_r3.png",
+  "MB2": "look_l1/a2/r4/MB2_gear_r4.png",
+  "MB3": "look_l1/a2/r2/MB3_town.png",
+  "MB4": "look_l1/a2/r2/MB4_wild_r3.png",
+  "T09": "look_l1/a2/r1/09_v2.png",
+  "LB": "look_l1/a2/r2/LB_light.png",
+  "T07": "look_l1/a2/r5/07_r5.png"
+ },
+ "fallback": "stone",
+ "classes": {
+  "skin": {
+   "from": "rules 5 (skin half-tone 0.85,0.45,0.38 at 0.8; edge 0.08 B1b, judged), 6 (6 deg at 0.5, 85% key color), 8 (class 1), 11; MB1 chips (C2: cel_nmap 0.1; the Stage B judge: the terminator followed the normal maps and her abs, cups and arms broke into islands, rule 5)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.08],
+    "mid": [0.85, 0.45, 0.38, 0.8],
+    "form": 0.3,
+    "spec": [6.0, 1.0, 0.5, 0.85],
+    "nmap": 0.1,
+    "ink": 1,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 6,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 325,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB1",
+      "box": [254, 708, 270, 724],
+      "role": "highlight"
+     },
+     {
+      "board": "MB1",
+      "box": [254, 776, 270, 792],
+      "role": "lit"
+     },
+     {
+      "board": "MB1",
+      "box": [254, 844, 270, 860],
+      "role": "transition"
+     },
+     {
+      "board": "MB1",
+      "box": [254, 912, 270, 928],
+      "role": "shade"
+     }
+    ],
+    "lit": {
+     "L": [0.6314, 0.6931, 0.7597],
+     "C": [0.1238, 0.1265, 0.1282],
+     "h": [45.2, -7.5, 7.9],
+     "mid": "#dc8156",
+     "n": 512,
+     "roles": {"highlight": "#fdc388", "lit": "#ee9962", "transition": "#cb6c4f", "shade": "#684f68"}
+    },
+    "albedo": {
+     "L": [0.678, 0.6828, 0.6862],
+     "C": [0.1503, 0.1512, 0.1523],
+     "h": [42.6, -0.4, 0.4],
+     "mid": "#e47546",
+     "n": 512,
+     "roles": {"highlight": "#ff8854", "lit": "#e47546", "transition": "#e57546", "shade": "#e47546"},
+     "v": 2,
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
+     "samples": ["day lit"],
+     "linear": [0.7775, 0.1784, 0.0616],
+     "fit_dE": 0.0058
+    }
+   }
+  },
+  "hair": {
+   "from": "rules 5 (the half-tone narrower than skin's 0.2: 0.12, the terminator's own full soft width 2 x 0.06 (about 7 deg of n.l), so the copper keeps one warm turn at each clump's terminator and no second band; B1b's 0.25 was wider than skin's, against rule 5; B2r2), 6 (one hard band per clump, its own light), 8 (class 1), 11; MB1 chips",
+   "cel": {
+    "band": [0.0, 0.06, 0.12, 0.06],
+    "mid": [0.72, 0.72, 0.72, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 1.0, 0.85],
+    "nmap": 0.35,
+    "ink": 1,
+    "rim_k": 0.0
+   },
+   "paint": {
+    "brush_cm": 6,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 325,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB1",
+      "box": [1032, 708, 1048, 724],
+      "role": "highlight"
+     },
+     {
+      "board": "MB1",
+      "box": [1032, 776, 1048, 792],
+      "role": "lit"
+     },
+     {
+      "board": "MB1",
+      "box": [1032, 844, 1048, 860],
+      "role": "transition"
+     },
+     {
+      "board": "MB1",
+      "box": [1032, 912, 1048, 928],
+      "role": "shade"
+     }
+    ],
+    "lit": {
+     "L": [0.5528, 0.5728, 0.597],
+     "C": [0.134, 0.137, 0.1401],
+     "h": [44.2, -1.6, 1.7],
+     "mid": "#b8592b",
+     "n": 512,
+     "roles": {"highlight": "#fcbd7a", "lit": "#c05f2d", "transition": "#b3542b", "shade": "#533f58"}
+    },
+    "albedo": {
+     "L": [0.5028, 0.5085, 0.5133],
+     "C": [0.1456, 0.147, 0.1486],
+     "h": [39.5, -0.3, 0.3],
+     "mid": "#a83f16",
+     "n": 512,
+     "roles": {"highlight": "#c1491a", "lit": "#a83f16", "transition": "#a83f16", "shade": "#a83f16"},
+     "v": 2,
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
+     "samples": ["day lit"],
+     "linear": [0.3909, 0.0501, 0.008],
+     "fit_dE": 0.0225
+    }
+   }
+  },
+  "eye": {
+   "from": "rule 8 (class 2: eyes, teeth, tongue), their own light (B1b); added: her eye, teeth and tongue shaders need a class to own their fallbacks",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 1.0, 0.85],
+    "nmap": 0.35,
+    "ink": 2,
+    "rim_k": 0.0
+   },
+   "paint": {
+    "brush_cm": 6,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [],
+    "note": "her shaders paint these; no board block"
+   }
+  },
+  "lash": {
+   "from": "rule 8 (class 2: lashes), rule 5 ground-soft band so thin cards never stripe (B1b); added: her brow and lash cards",
+   "cel": {
+    "band": [0.0, 0.15, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 1.0, 0.85],
+    "nmap": 0.35,
+    "ink": 2,
+    "rim_k": 0.0
+   },
+   "paint": {
+    "brush_cm": 6,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [],
+    "note": "her shaders paint these; no board block"
+   }
+  },
+  "leather": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (9 deg at 0.6), 7, 8 (class 0: gear), 9 (two-tone, sheen on the lit edge); MB2 leather (day) (C2: cel_nmap 0.2; the Stage B judge: the terminator followed the normal maps and her abs, cups and arms broke into islands, rule 5)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.6, 0.85],
+    "nmap": 0.2,
+    "ink": 0,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 6,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB2",
+      "box": [395, 630, 465, 662],
+      "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     }
+    ],
+    "lit": {
+     "L": [0.3211, 0.3366, 0.6784],
+     "C": [0.0594, 0.0668, 0.1455],
+     "h": [40.5, -7.8, 6.2],
+     "mid": "#542a1b",
+     "n": 1152,
+     "roles": {"lit": "#542a1b"}
+    },
+    "albedo": {
+     "L": [0.2388, 0.387, 0.5352],
+     "C": [0, 0.034, 0.0682],
+     "h": [46, -4.2, 2.9],
+     "mid": "#543f35",
+     "n": 1152,
+     "roles": {"lit": "#421b09"},
+     "v": 4,
+     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'leather': [0.0888, 0.0495, 0.0357]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #543f35 (lin [0.0888, 0.0495, 0.0357]); one albedo serves day and night (the night rigs' moon is solved over it). Was #543f35.",
+     "samples": ["day lit"],
+     "linear": [0.0888, 0.0495, 0.0357],
+     "fit_dE": 0.0135
+    }
+   }
+  },
+  "cloth": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (matte: no highlight), 7, 8 (class 0), 9 (soft planes); MB2 cloth (day)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.35,
+    "ink": 0,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 8,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB2",
+      "box": [700, 640, 800, 720],
+      "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     },
+     {
+      "board": "MB2",
+      "box": [700, 640, 800, 720],
+      "role": "shade",
+      "mask": {
+       "L": [0.28, 0.4]
+      },
+      "what": "the folds' shade"
+     }
+    ],
+    "lit": {
+     "L": [0.368, 0.4661, 0.7712],
+     "C": [0.0671, 0.0835, 0.0954],
+     "h": [277.3, -2.0, 2.1],
+     "mid": "#4e5588",
+     "n": 4000,
+     "roles": {"lit": "#4e5588", "shade": "#2c315a"}
+    },
+    "albedo": {
+     "L": [0.442, 0.607, 0.772],
+     "C": [0.0294, 0.04, 0.0506],
+     "h": [75, -1.9, 2.5],
+     "mid": "#917f68",
+     "n": 4000,
+     "roles": {"lit": "#3a3e6e", "shade": "#4c507f"},
+     "v": 4,
+     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'plank L, C 0.04, h 75': \"MB3's plank (the beam and barrel, undyed wood's tan) lightness; C 0.04 and h 75 the middle of lead 7's undyed band (h 60-80, C 0.03-0.05); no picked board or target shows a lit undyed cloth that divides clean (G1 13's lit sacks give h 97, C 0.068)\"} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #917f68 (lin [0.2819, 0.2133, 0.1382]); one albedo serves day and night (the night rigs' moon is solved over it). Was #917f68.",
+     "samples": ["day lit", "day shade"],
+     "linear": [0.2819, 0.2133, 0.1382],
+     "fit_dE": 0.0336
+    }
+   }
+  },
+  "satin": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (a hard streak: no number in the bible, so the leather disc hardened to a 0.75 deg edge), 7, 8; MB2 her skirt (day, navy) (C2: cel_nmap 0.2; the Stage B judge: the terminator followed the normal maps and her abs, cups and arms broke into islands, rule 5)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 0.75, 0.6, 0.85],
+    "nmap": 0.2,
+    "ink": 0,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 6,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB2",
+      "box": [60, 395, 170, 470],
+      "role": "lit",
+      "mask": {
+       "h": [240, 300]
+      }
+     }
+    ],
+    "lit": {
+     "L": [0.2237, 0.2709, 0.3066],
+     "C": [0.0306, 0.0461, 0.0535],
+     "h": [284.2, -3.7, 8.4],
+     "mid": "#24233c",
+     "n": 3922,
+     "roles": {"lit": "#24233c"}
+    },
+    "albedo": {
+     "L": [0.1715, 0.2078, 0.2352],
+     "C": [0.0235, 0.0353, 0.0411],
+     "h": [283.0, -4.0, 8.2],
+     "mid": "#161627",
+     "n": 3922,
+     "roles": {"lit": "#161527"},
+     "v": 2,
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
+     "samples": ["day lit"],
+     "linear": [0.008, 0.008, 0.0206],
+     "fit_dE": 0.0307
+    }
+   }
+  },
+  "gloss": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (one hard shaped highlight; no number, so skin's 6 deg at full strength, 0.75 edge), 7, 8; MB2 the pauldron's lacquered plate (day) (C2: cel_nmap 0.2; the Stage B judge: the terminator followed the normal maps and her abs, cups and arms broke into islands, rule 5)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [6.0, 0.75, 1.0, 0.85],
+    "nmap": 0.2,
+    "ink": 0,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 6,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB2",
+      "box": [990, 620, 1110, 700],
+      "role": "lit",
+      "mask": {
+       "h": [240, 300]
+      }
+     }
+    ],
+    "lit": {
+     "L": [0.3075, 0.3498, 0.4285],
+     "C": [0.0489, 0.0568, 0.0642],
+     "h": [284.8, -7.6, 10.9],
+     "mid": "#373657",
+     "n": 7721,
+     "roles": {"lit": "#373657"}
+    },
+    "albedo": {
+     "L": [0.2396, 0.2724, 0.3323],
+     "C": [0.0697, 0.0798, 0.0879],
+     "h": [282.9, -5.2, 6.3],
+     "mid": "#262352",
+     "n": 7721,
+     "roles": {"lit": "#23204c"},
+     "v": 2,
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
+     "samples": ["day lit"],
+     "linear": [0.0195, 0.0171, 0.0845],
+     "fit_dE": 0.0005
+    }
+   }
+  },
+  "iron": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (metal: 7 deg at 1.0 in the key's color, plus a 20 deg band at 0.35 in the sky's: sheen), 7, 8, 9 (broad bands); MB2 shield boss and rim (day); B3r3: the gear's polished iron only (weapons, armor, the shield's boss); the world's iron is 'wrought' (MB3) (C2: cel_nmap 0.2; the Stage B judge: the terminator followed the normal maps and her abs, cups and arms broke into islands, rule 5)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [7.0, 1.0, 1.0, 1.0],
+    "nmap": 0.2,
+    "ink": 0,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 6,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB2",
+      "box": [1300, 660, 1370, 720],
+      "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     },
+     {
+      "board": "MB2",
+      "box": [1205, 620, 1225, 760],
+      "role": "lit",
+      "mask": {
+       "C": [0, 0.05],
+       "lit": true
+      }
+     },
+     {
+      "board": "MB2",
+      "box": [1342, 672, 1358, 706],
+      "role": "shade",
+      "mask": {
+       "L": [0.42, 0.6]
+      },
+      "what": "the shield boss's shade half"
+     }
+    ],
+    "lit": {
+     "L": [0.5, 0.6346, 0.949],
+     "C": [0.0183, 0.0334, 0.0477],
+     "h": [30.4, -28.3, 29.3],
+     "mid": "#9e837e",
+     "n": 3139,
+     "roles": {"lit": "#9e837e", "shade": "#7d6066"}
+    },
+    "albedo": {
+     "L": [0.4787, 0.5938, 0.8387],
+     "C": [0.0406, 0.0488, 0.0774],
+     "h": [286.8, -25.6, 31.4],
+     "mid": "#888baa",
+     "n": 3139,
+     "roles": {"lit": "#7c7a9b", "shade": "#878bac"},
+     "v": 2,
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
+     "samples": ["day lit", "day shade"],
+     "linear": [0.2446, 0.2601, 0.4028],
+     "fit_dE": 0.1066
+    }
+   },
+   "sheen": [20.0, 4.0, 0.35, 1.0]
+  },
+  "wrought": {
+   "from": "B3r3: world iron, wrought (rule 6 as iron; MB3's barrel hoops and fittings, dark and matte-edged); the gear's polished iron is 'iron' (MB2). Split because one iron measured off MB2's polished boss came out near-white on MB3's dark hoops.",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [7.0, 1.0, 1.0, 1.0],
+    "nmap": 0.35,
+    "ink": 0,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 6,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB3",
+      "box": [1560, 174, 1590, 198],
+      "role": "lit",
+      "mask": {
+       "L": [0.4, 0.56]
+      },
+      "what": "the barrel's upper hoop, lit"
+     },
+     {
+      "board": "MB3",
+      "box": [1560, 318, 1590, 342],
+      "role": "lit",
+      "mask": {
+       "L": [0.4, 0.56]
+      },
+      "what": "the barrel's lower hoop, lit"
+     },
+     {
+      "board": "MB3",
+      "box": [1455, 186, 1475, 206],
+      "role": "shade",
+      "mask": {
+       "L": [0.26, 0.36]
+      },
+      "what": "the upper hoop's shade side"
+     },
+     {
+      "board": "MB3",
+      "box": [1455, 326, 1475, 350],
+      "role": "shade",
+      "mask": {
+       "L": [0.22, 0.32]
+      },
+      "what": "the lower hoop's shade side"
+     }
+    ],
+    "lit": {
+     "L": [0.4087, 0.4556, 0.5173],
+     "C": [0.0389, 0.0451, 0.0627],
+     "h": [2.5, -25.5, 22.3],
+     "mid": "#6d4c55",
+     "n": 1037,
+     "roles": {"lit": "#6d4c55", "shade": "#29233a"}
+    },
+    "albedo": {
+     "L": [0.3432, 0.3607, 0.4072],
+     "C": [0.0356, 0.0396, 0.0511],
+     "h": [352.0, -17.9, 23.5],
+     "mid": "#513741",
+     "n": 1037,
+     "roles": {"lit": "#4e353f", "shade": "#513742"},
+     "v": 2,
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
+     "samples": ["day lit", "day shade"],
+     "linear": [0.0821, 0.0379, 0.0533],
+     "fit_dE": 0.0304
+    }
+   },
+   "sheen": [20.0, 4.0, 0.35, 1.0]
+  },
+  "bronze": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (metal), 7, 8, 9; MB2 the pauldron's trim (day) (C2: cel_nmap 0.2; the Stage B judge: the terminator followed the normal maps and her abs, cups and arms broke into islands, rule 5)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [7.0, 1.0, 1.0, 1.0],
+    "nmap": 0.2,
+    "ink": 0,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 6,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB2",
+      "box": [960, 600, 1170, 800],
+      "role": "lit",
+      "mask": {
+       "h": [40, 90],
+       "C": [0.06, 1]
+      }
+     }
+    ],
+    "lit": {
+     "L": [0.3811, 0.6028, 0.7976],
+     "C": [0.0837, 0.127, 0.1456],
+     "h": [53.0, -10.9, 15.2],
+     "mid": "#bb692e",
+     "n": 5851,
+     "roles": {"lit": "#bb692e"}
+    },
+    "albedo": {
+     "L": [0.3319, 0.5228, 0.6827],
+     "C": [0.0885, 0.1341, 0.1513],
+     "h": [51.0, -7.3, 11.7],
+     "mid": "#a95816",
+     "n": 5851,
+     "roles": {"lit": "#a44e05"},
+     "v": 2,
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
+     "samples": ["day lit"],
+     "linear": [0.3944, 0.0977, 0.008],
+     "fit_dE": 0.0099
+    }
+   },
+   "sheen": [20.0, 4.0, 0.35, 1.0]
+  },
+  "gold": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (metal), 7, 8, 9; MB2 her outfit's trim and studs (day) (C2: cel_nmap 0.2; the Stage B judge: the terminator followed the normal maps and her abs, cups and arms broke into islands, rule 5)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [7.0, 1.0, 1.0, 1.0],
+    "nmap": 0.2,
+    "ink": 0,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 6,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB2",
+      "box": [40, 380, 200, 480],
+      "role": "lit",
+      "mask": {
+       "h": [60, 100],
+       "C": [0.06, 1],
+       "L": [0.6, 1]
+      }
+     }
+    ],
+    "lit": {
+     "L": [0.7398, 0.7966, 0.874],
+     "C": [0.119, 0.1333, 0.1447],
+     "h": [69.1, -8.3, 13.7],
+     "mid": "#f4ac54",
+     "n": 645,
+     "roles": {"lit": "#f4ac54"}
+    },
+    "albedo": {
+     "L": [0.6864, 0.7369, 0.8015],
+     "C": [0.1382, 0.1482, 0.1557],
+     "h": [64.4, -7.0, 11.8],
+     "mid": "#e99637",
+     "n": 645,
+     "roles": {"lit": "#e99331"},
+     "v": 2,
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
+     "samples": ["day lit"],
+     "linear": [0.818, 0.3053, 0.0379],
+     "fit_dE": 0.0078
+    }
+   },
+   "sheen": [20.0, 4.0, 0.35, 1.0]
+  },
+  "plank": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (matte: no highlight), 7, 8 (class 0: props), 9 (a few long strokes); MB2 shield boards, MB3 wood (day)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.35,
+    "ink": 0,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 8,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB2",
+      "box": [1235, 620, 1265, 690],
+      "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     },
+     {
+      "board": "MB3",
+      "box": [1460, 140, 1560, 360],
+      "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     },
+     {
+      "board": "MB3",
+      "box": [1452, 222, 1478, 314],
+      "role": "shade",
+      "mask": {
+       "L": [0.28, 0.4]
+      },
+      "what": "the barrel's shade side, between its hoops"
+     }
+    ],
+    "lit": {
+     "L": [0.4035, 0.4881, 0.6908],
+     "C": [0.0418, 0.0823, 0.1309],
+     "h": [32.6, -56.2, 14.9],
+     "mid": "#884d41",
+     "n": 12052,
+     "roles": {"lit": "#884d41", "shade": "#432a37"}
+    },
+    "albedo": {
+     "L": [0.5052, 0.607, 0.7088],
+     "C": [0, 0.029, 0.0583],
+     "h": [77, -69.6, 16.2],
+     "mid": "#8c806f",
+     "n": 12052,
+     "roles": {"lit": "#74443d", "shade": "#7a4e45"},
+     "v": 4,
+     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'beam': [0.3151, 0.3419, 0.2675], 'wood': [0.22, 0.1375, 0.0944]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #8c806f (lin [0.2633, 0.2168, 0.1589]); one albedo serves day and night (the night rigs' moon is solved over it). Was #8c806f.",
+     "samples": ["day lit", "day shade"],
+     "linear": [0.2633, 0.2168, 0.1589],
+     "fit_dE": 0.0961
+    }
+   }
+  },
+  "bark": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (matte: no highlight), 8 (class 0), 9; MB4 spruce trunk (day); albedo v3 by hand on RIGS FINAL, MB4 over the measured response: paint.albedo.method (L1 W2 wild)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.35,
+    "ink": 0,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 8,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB4",
+      "box": [555, 330, 575, 440],
+      "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     },
+     {
+      "board": "MB4",
+      "box": [555, 720, 575, 830],
+      "role": "lit_night",
+      "panel": "moon",
+      "mask": {
+       "lit": true
+      }
+     },
+     {
+      "board": "MB4",
+      "box": [555, 330, 575, 440],
+      "role": "shade",
+      "mask": {
+       "L": [0.27, 0.36]
+      },
+      "what": "the trunk's shade side"
+     }
+    ],
+    "lit": {
+     "L": [0.3381, 0.4777, 0.6137],
+     "C": [0.0269, 0.077, 0.1089],
+     "h": [72.0, -45.9, 35.2],
+     "mid": "#785527",
+     "n": 1101,
+     "roles": {"lit": "#785527", "lit_night": "#2a2b39", "shade": "#372b28"}
+    },
+    "albedo": {
+     "L": [0.268, 0.3869, 0.5057],
+     "C": [0.0031, 0.0421, 0.0811],
+     "h": [81.3, -38.7, 30.8],
+     "mid": "#50422a",
+     "n": 1101,
+     "roles": {"lit": "#8f642b", "shade": "#2d2424"},
+     "v": 3,
+     "method": "L1 W2 wild (hand-set on RIGS FINAL b32bdf7b5, no fit; look_l1/c/w2/wild/colors.py): divisor = the ground helper's measured rock-row response (c/w2/ground/resp/final/response.json, gray 0.181, play camera; one cel model for bark, foliage and rock), day R_lit [3.47, 2.336, 1.051], R_shade [0.326, 0.316, 0.785]; a = sqrt(a_lit a_shade): MB4 day lit #785527 / R_lit and day shade #372b28 / R_shade; -> #50422a (lin [0.0796, 0.0545, 0.0228]): predicted day lit #8f642b, day shade #2d2424, night lit #2d1917 (night is carried by the rig and OWN_FOLIAGE's night terms, not the albedo)",
+     "samples": ["day shade"],
+     "linear": [0.0796, 0.0545, 0.0228]
+    }
+   }
+  },
+  "stone": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (matte: no highlight), 8 (class 0: buildings), 9; MB3 stone (day)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.35,
+    "ink": 0,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 10,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB3",
+      "box": [920, 120, 1080, 380],
+      "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     },
+     {
+      "board": "MB3",
+      "box": [920, 510, 1080, 770],
+      "role": "lit_night",
+      "panel": "moon",
+      "mask": {
+       "lit": true,
+       "h": [195, 320]
+      }
+     },
+     {
+      "board": "MB3",
+      "box": [1000, 290, 1100, 400],
+      "role": "shade",
+      "mask": {
+       "L": [0.33, 0.5],
+       "h": [260, 330]
+      },
+      "what": "the wall's lower right in shade"
+     }
+    ],
+    "lit": {
+     "L": [0.5774, 0.6489, 0.8051],
+     "C": [0.0509, 0.0665, 0.1048],
+     "h": [41.3, -20.9, 20.6],
+     "mid": "#b2826f",
+     "n": 20800,
+     "roles": {"lit": "#b2826f", "lit_night": "#3b3f64", "shade": "#47405d"}
+    },
+    "albedo": {
+     "L": [0.4704, 0.567, 0.6636],
+     "C": [0.0051, 0.011, 0.0169],
+     "h": [308, -28.9, 36.6],
+     "mid": "#78757c",
+     "n": 20800,
+     "roles": {"lit": "#554a67", "shade": "#554a67"},
+     "v": 4,
+     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'stone': [0.1886, 0.1778, 0.2001]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #78757c (lin [0.1886, 0.1778, 0.2001]); one albedo serves day and night (the night rigs' moon is solved over it). Was #78757c.",
+     "samples": ["day lit", "day shade"],
+     "linear": [0.1886, 0.1778, 0.2001],
+     "fit_dE": 0.0106,
+     "w2": "L1 W2 town (C4), by hand, no fit: MB3_stone_day all_lin [0.3003, 0.1575, 0.1429] / day lit [3.2966, 2.2805, 1.0513] = [0.0911, 0.0691, 0.1359] (look_l1/c/w2/town/board_town.json over look_l1/c/w2/town/resp/r1/response.json (day_play lit)); replaces B3r3's least-squares mid; the ranges' widths kept"
+    }
+   }
+  },
+  "rock": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (matte: no highlight), 8 (class 0), 9 (a few big rounded planes, muted moon-blue grey); MB4 rock (day); albedo v3 by hand on RIGS FINAL, MB4 over the measured response: paint.albedo.method (L1 W2 wild)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.35,
+    "ink": 0,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 10,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB4",
+      "box": [780, 250, 960, 400],
+      "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     },
+     {
+      "board": "MB4",
+      "box": [780, 640, 960, 790],
+      "role": "lit_night",
+      "panel": "moon",
+      "mask": {
+       "lit": true
+      }
+     },
+     {
+      "board": "MB4",
+      "box": [720, 290, 790, 380],
+      "role": "shade",
+      "mask": {
+       "L": [0.33, 0.47],
+       "h": [250, 330]
+      },
+      "what": "the boulder's shade face"
+     }
+    ],
+    "lit": {
+     "L": [0.4541, 0.5486, 0.7519],
+     "C": [0.0269, 0.0319, 0.0978],
+     "h": [32.9, -97.0, 26.8],
+     "mid": "#836b65",
+     "n": 13519,
+     "roles": {"lit": "#836b65", "lit_night": "#2d3c5f", "shade": "#3d3b4a"}
+    },
+    "albedo": {
+     "L": [0.466, 0.591, 0.716],
+     "C": [0, 0.004, 0.0085],
+     "h": [337, -60.1, 90.4],
+     "mid": "#7f7d7e",
+     "n": 13519,
+     "roles": {"lit": "#998060", "shade": "#303054"},
+     "v": 4,
+     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'rock': [0.2135, 0.2034, 0.2103]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #7f7d7e (lin [0.2135, 0.2034, 0.2103]); one albedo serves day and night (the night rigs' moon is solved over it). Was #7f7d7e.",
+     "samples": ["day shade"],
+     "linear": [0.2135, 0.2034, 0.2103]
+    }
+   }
+  },
+  "plaster": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (matte: no highlight), 8 (class 0), 9 (plaster and beams flat); MB3 plaster (day)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.35,
+    "ink": 0,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 10,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB3",
+      "box": [590, 240, 700, 380],
+      "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     },
+     {
+      "board": "MB3",
+      "box": [590, 630, 700, 770],
+      "role": "lit_night",
+      "panel": "moon",
+      "mask": {
+       "lit": true,
+       "h": [195, 320]
+      }
+     },
+     {
+      "board": "MB3",
+      "box": [440, 100, 480, 200],
+      "role": "shade",
+      "what": "the upper-left panel in the beam's shade"
+     }
+    ],
+    "lit": {
+     "L": [0.6257, 0.8419, 0.8675],
+     "C": [0.0652, 0.0988, 0.1099],
+     "h": [57.0, -44.7, 11.1],
+     "mid": "#fdbb8b",
+     "n": 7703,
+     "roles": {"lit": "#fdbb8b", "lit_night": "#635370", "shade": "#7b6176"}
+    },
+    "albedo": {
+     "L": [0.3643, 0.476, 0.5877],
+     "C": [0.0047, 0.016, 0.0273],
+     "h": [95, -51.5, 12.6],
+     "mid": "#5f5d53",
+     "n": 7703,
+     "roles": {"lit": "#8e7d82", "shade": "#8e7d82"},
+     "v": 4,
+     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'plaster': [0.3159, 0.3024, 0.2521]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #5f5d53 (lin [0.1147, 0.1084, 0.0859]); one albedo serves day and night (the night rigs' moon is solved over it). Was #6c6a60.",
+     "samples": ["day lit", "day shade"],
+     "linear": [0.1147, 0.1084, 0.0859],
+     "fit_dE": 0.0132,
+     "w2": "L1 W2 town (C4), by hand, no fit: MB3_plaster_day all_lin [0.9078, 0.4722, 0.2376] / day lit [3.3332, 2.2838, 1.0617] = [0.2724, 0.2068, 0.2238] (look_l1/c/w2/town/board_town.json over look_l1/c/w2/town/resp/r1/response.json (day_play lit)); replaces B3r3's least-squares mid; the ranges' widths kept"
+    }
+   }
+  },
+  "roof": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (matte: no highlight), 8 (class 0), 9; MB3 roof (day)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.0,
+    "ink": 0,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 8,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB3",
+      "box": [1150, 140, 1400, 380],
+      "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     },
+     {
+      "board": "MB3",
+      "box": [1150, 530, 1400, 770],
+      "role": "lit_night",
+      "panel": "moon",
+      "mask": {
+       "lit": true,
+       "h": [195, 320]
+      }
+     },
+     {
+      "board": "MB3",
+      "box": [1150, 140, 1400, 380],
+      "role": "shade",
+      "mask": {
+       "L": [0.27, 0.38]
+      },
+      "what": "the tiles' shaded under-sides"
+     },
+     {
+      "board": "T07",
+      "box": [1500, 650, 1620, 800],
+      "role": "shade",
+      "panel": "day",
+      "mask": {
+       "L": [0.28, 0.4]
+      },
+      "what": "07: the right house's roof in its own shade"
+     }
+    ],
+    "lit": {
+     "L": [0.4488, 0.54, 0.7132],
+     "C": [0.075, 0.0976, 0.1349],
+     "h": [22.8, -32.5, 20.4],
+     "mid": "#a05654",
+     "n": 30001,
+     "roles": {"lit": "#a05654", "lit_night": "#29376b", "shade": "#452a42"}
+    },
+    "albedo": {
+     "L": [0.3708, 0.482, 0.5932],
+     "C": [0.0075, 0.033, 0.0585],
+     "h": [355, -27.7, 19.6],
+     "mid": "#6e575f",
+     "n": 30001,
+     "roles": {"lit": "#5d3b4e", "shade": "#5d3b4e"},
+     "v": 4,
+     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'roof': [0.1559, 0.095, 0.1151]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #6e575f (lin [0.1559, 0.095, 0.1151]); one albedo serves day and night (the night rigs' moon is solved over it). Was #6e575f.",
+     "samples": ["day lit", "day shade"],
+     "linear": [0.1559, 0.095, 0.1151],
+     "fit_dE": 0.0171,
+     "w2": "L1 W2 town (C4), by hand, no fit: MB3_roof_day all_lin [0.3662, 0.1001, 0.0796] / day lit [3.3087, 2.2805, 1.0575] = [0.1107, 0.0439, 0.0753] (look_l1/c/w2/town/board_town.json over look_l1/c/w2/town/resp/r1/response.json (day_play lit)); replaces B3r3's least-squares mid; the ranges' widths kept"
+    }
+   },
+   "w2_cel": "L1 W2 town: cel nmap 0.35 -> 0 (the verdict: the roofs stripe; the band carried by the roof's planes and courses)"
+  },
+  "setts": {
+   "from": "rule 5 (ground: half-width 0.15), rule 6 (matte: no highlight), 8 (class 2: ground), 9 (chunky planes, warm tops, cool joints); MB3 setts (day)",
+   "cel": {
+    "band": [0.0, 0.15, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.35,
+    "ink": 2,
+    "rim_k": 0.0
+   },
+   "paint": {
+    "brush_cm": 10,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB3",
+      "box": [120, 120, 360, 380],
+      "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     },
+     {
+      "board": "MB3",
+      "box": [120, 510, 360, 770],
+      "role": "lit_night",
+      "panel": "moon",
+      "mask": {
+       "lit": true,
+       "h": [195, 320]
+      }
+     },
+     {
+      "board": "T07",
+      "box": [745, 615, 775, 672],
+      "role": "shade",
+      "panel": "day",
+      "mask": {
+       "L": [0.33, 0.45]
+      },
+      "what": "07: the setts in her cast shadow"
+     }
+    ],
+    "lit": {
+     "L": [0.6073, 0.6519, 0.7458],
+     "C": [0.0631, 0.0773, 0.1144],
+     "h": [39.5, -17.9, 11.6],
+     "mid": "#b9806c",
+     "n": 31201,
+     "roles": {"lit": "#b9806c", "lit_night": "#3e4575", "shade": "#4a3c64"}
+    },
+    "albedo": {
+     "L": [0.4703, 0.528, 0.5857],
+     "C": [0.0109, 0.022, 0.0331],
+     "h": [297, -24.9, 24.3],
+     "mid": "#6c6977",
+     "n": 31201,
+     "roles": {"lit": "#5a4962", "shade": "#5a4962"},
+     "v": 4,
+     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'setts': [0.1578, 0.1293, 0.1587], 'lb_setts': [0.2375, 0.2675, 0.3029]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #6c6977 (lin [0.1508, 0.1409, 0.1833]); one albedo serves day and night (the night rigs' moon is solved over it). Was #6c6977.",
+     "samples": ["day lit", "day shade"],
+     "linear": [0.1508, 0.1409, 0.1833],
+     "fit_dE": 0.0165,
+     "w2": "L1 W2 town (C4), by hand, no fit: MB3_setts_day all_lin [0.3381, 0.1515, 0.1288] / the terrain's day lit [3.3006, 2.274, 1.0575] = [0.1024, 0.0666, 0.1218] (ground.json setts) (look_l1/c/w2/town/board_town.json over look_l1/c/w2/town/resp/r1/response.json (day_play lit)); replaces B3r3's least-squares mid; the ranges' widths kept"
+    },
+    "layout": {
+     "course_m": [0.34, 0.46],
+     "length_courses": [1.5, 2.0],
+     "joint_m": 0.035,
+     "from": "B3r2: target 13 (13_r4.png, the square by day): the setts beside the woman in purple, at her depth (her 1.7 m = 272 px, so 160 px/m across), measure 100-125 px wide (0.62-0.78 m) and 25-30 px deep, which her camera's foreshortening (about 30 px/m in depth there) makes about as deep as wide or more; MB3's setts panel gives the shape: about 1.5-2 times as long as their course is deep, rounded oblongs, uneven courses. So courses 0.34-0.46 m deep and stones 1.5-2.0 courses long (0.5-0.9 m), against round 1's 0.24-0.34 m and 1.2-2.2. tools/look/bake_forms.py setts reads it."
+    }
+   }
+  },
+  "soil": {
+   "from": "rule 5 (ground), rule 6 (matte: no highlight), 8 (class 2), 9; MB4 the road's earth verge (day); L1 C1: cel nmap 0 (the Stage B judge: the band follows the normal maps into orange peel; ground and terrain 0.0), the painted ground's surfaces of this class in godot/data/look/ground.json",
+   "cel": {
+    "band": [0.0, 0.15, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.0,
+    "ink": 2,
+    "rim_k": 0.0
+   },
+   "paint": {
+    "brush_cm": 10,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB4",
+      "box": [1030, 330, 1110, 450],
+      "role": "lit",
+      "mask": {
+       "lit": true,
+       "h": [20, 100]
+      }
+     },
+     {
+      "board": "MB4",
+      "box": [1030, 720, 1110, 840],
+      "role": "lit_night",
+      "panel": "moon",
+      "mask": {
+       "lit": true,
+       "h": [20, 100]
+      }
+     }
+    ],
+    "lit": {
+     "L": [0.419, 0.4613, 0.4701],
+     "C": [0.0444, 0.0627, 0.0674],
+     "h": [38.9, -7.3, 3.2],
+     "mid": "#774c3e",
+     "n": 3810,
+     "roles": {"lit": "#774c3e"}
+    },
+    "albedo": {
+     "mid": "#665c52",
+     "linear": [0.134, 0.106, 0.084],
+     "v": 3,
+     "method": "L1 W2 ground, mark 6 (RIGS FINAL b32bdf7b5): targets 09 and 10's moonlit floor (linear [0.0044,0.015,0.0566], [0.005,0.0202,0.0503]) / the arena moon's response (lookdev arena_play floor over the litter's mean: [0.035,0.166,0.638]), averaged; a division by the measured rig, no fit (look_l1/c/w2/ground/ground_colors.py). Was v2 #593831 (joint.py least squares)"
+    }
+   }
+  },
+  "road": {
+   "from": "rule 5 (ground), rule 6 (matte: no highlight), 8 (class 2), 9 (two or three value masses); MB4 road (day); L1 C1: cel nmap 0 (the Stage B judge: the band follows the normal maps into orange peel; ground and terrain 0.0), the painted ground's surfaces of this class in godot/data/look/ground.json",
+   "cel": {
+    "band": [0.0, 0.15, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.0,
+    "ink": 2,
+    "rim_k": 0.0
+   },
+   "paint": {
+    "brush_cm": 10,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB4",
+      "box": [1110, 200, 1200, 280],
+      "role": "lit",
+      "mask": {
+       "lit": true,
+       "h": [20, 100]
+      }
+     },
+     {
+      "board": "MB4",
+      "box": [1110, 590, 1200, 670],
+      "role": "lit_night",
+      "panel": "moon",
+      "mask": {
+       "lit": true,
+       "h": [20, 100]
+      }
+     }
+    ],
+    "lit": {
+     "L": [0.5056, 0.5809, 0.5952],
+     "C": [0.0699, 0.0959, 0.0997],
+     "h": [46.8, -4.8, 2.1],
+     "mid": "#a96847",
+     "n": 3498,
+     "roles": {"lit": "#a96847"}
+    },
+    "albedo": {
+     "mid": "#71625f",
+     "linear": [0.1665, 0.1217, 0.1138],
+     "v": 4,
+     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'road': [0.1049, 0.0749, 0.0697]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #71625f (lin [0.1665, 0.1217, 0.1138]); one albedo serves day and night (the night rigs' moon is solved over it). Was #5b4d4b.",
+     "L": [0.48, 0.51, 0.54],
+     "C": [0.011, 0.021, 0.031],
+     "h": [31, 0, 0]
+    }
+   }
+  },
+  "grass": {
+   "from": "rule 5 (ground), rule 6 (matte: no highlight), 8 (class 2), 9 (big flat clumps); MB4 grass (day); L1 C1: cel nmap 0 (the Stage B judge: the band follows the normal maps into orange peel; ground and terrain 0.0), the painted ground's surfaces of this class in godot/data/look/ground.json",
+   "cel": {
+    "band": [0.0, 0.15, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.0,
+    "ink": 2,
+    "rim_k": 0.0
+   },
+   "paint": {
+    "brush_cm": 10,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB4",
+      "box": [100, 220, 400, 420],
+      "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     },
+     {
+      "board": "MB4",
+      "box": [100, 610, 400, 810],
+      "role": "lit_night",
+      "panel": "moon",
+      "mask": {
+       "lit": true
+      }
+     },
+     {
+      "board": "MB4",
+      "box": [100, 220, 400, 420],
+      "role": "shade",
+      "mask": {
+       "L": [0.33, 0.45],
+       "h": [110, 170]
+      },
+      "what": "the blades' shaded sides"
+     },
+     {
+      "board": "T07",
+      "box": [1150, 350, 1350, 500],
+      "role": "shade",
+      "panel": "day",
+      "mask": {
+       "L": [0.27, 0.36]
+      },
+      "what": "07: the grass in the house's shadow"
+     }
+    ],
+    "lit": {
+     "L": [0.5119, 0.6946, 0.7664],
+     "C": [0.0791, 0.1256, 0.1357],
+     "h": [104.1, -15.0, 19.5],
+     "mid": "#aaa036",
+     "n": 30003,
+     "roles": {"lit": "#aaa036", "lit_night": "#286770", "shade": "#1c374f"}
+    },
+    "albedo": {
+     "mid": "#3c5133",
+     "linear": [0.0448, 0.0819, 0.0335],
+     "v": 4,
+     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'grass': [0.1378, 0.1985, 0.0529]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #3c5133 (lin [0.0448, 0.0819, 0.0335]); one albedo serves day and night (the night rigs' moon is solved over it). Was #3c5133.",
+     "L": [0.378, 0.408, 0.438],
+     "C": [0.044, 0.054, 0.064],
+     "h": [137, 0, 0]
+    }
+   }
+  },
+  "foliage": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (matte: no highlight), 8 (class 1: silhouette), 9 (flat leaf clusters, two or three values; spruce as stacked tiers); no rim (card normals, B1c); MB4 spruce (day); albedo v3 by hand on RIGS FINAL, MB4 over the measured response: paint.albedo.method (L1 W2 wild)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.35,
+    "ink": 1,
+    "rim_k": 0.0
+   },
+   "paint": {
+    "brush_cm": 10,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB4",
+      "box": [460, 200, 640, 440],
+      "role": "lit",
+      "mask": {
+       "C": [0.05, 1],
+       "lit": true
+      }
+     },
+     {
+      "board": "MB4",
+      "box": [460, 590, 640, 830],
+      "role": "lit_night",
+      "panel": "moon",
+      "mask": {
+       "C": [0.05, 1],
+       "lit": true
+      }
+     },
+     {
+      "board": "MB4",
+      "box": [460, 200, 640, 440],
+      "role": "shade",
+      "mask": {
+       "L": [0.33, 0.5],
+       "h": [90, 160],
+       "C": [0.03, 1]
+      },
+      "what": "the spruce's shaded tiers"
+     }
+    ],
+    "lit": {
+     "L": [0.5934, 0.6834, 0.7829],
+     "C": [0.1017, 0.1195, 0.1339],
+     "h": [97.5, -11.8, 13.0],
+     "mid": "#ae9936",
+     "n": 8267,
+     "roles": {"lit": "#ae9936", "lit_night": "#23676d", "shade": "#3f4b2c"}
+    },
+    "albedo": {
+     "L": [0.436, 0.516, 0.596],
+     "C": [0.0637, 0.074, 0.0843],
+     "h": [122, -9.3, 9.5],
+     "mid": "#606f3d",
+     "n": 8267,
+     "roles": {"lit": "#7d8a3c", "shade": "#263434"},
+     "v": 4,
+     "method": "L1 W2 C6 (tools/look/color_chain.py, the color chain): the boards' DAY lit side {'spruce': [0.1175, 0.1585, 0.047]} (swatches.json; per swatch the neutral grey card's day lit curve inverted per channel, the grade in it; a class two swatches give is their geometric mean) -> #606f3d (lin [0.1175, 0.1585, 0.047]); one albedo serves day and night (the night rigs' moon is solved over it). Was #606f3d.",
+     "samples": ["day shade"],
+     "linear": [0.1175, 0.1585, 0.047]
+    }
+   }
+  },
+  "water": {
+   "from": "rule 5 (ground), rule 6 (bands of the sky, never a disc), 8 (class 2), 9; MB4 water (day)",
+   "cel": {
+    "band": [0.0, 0.15, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.35,
+    "ink": 2,
+    "rim_k": 0.0
+   },
+   "paint": {
+    "brush_cm": 10,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB4",
+      "box": [1450, 240, 1640, 400],
+      "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     },
+     {
+      "board": "MB4",
+      "box": [1450, 630, 1640, 790],
+      "role": "lit_night",
+      "panel": "moon",
+      "mask": {
+       "lit": true
+      }
+     }
+    ],
+    "lit": {
+     "L": [0.5571, 0.5782, 0.8689],
+     "C": [0.0138, 0.0657, 0.0847],
+     "h": [207.3, -132.5, 37.9],
+     "mid": "#46858e",
+     "n": 15200,
+     "roles": {"lit": "#46858e", "lit_night": "#06497b"}
+    },
+    "albedo": {
+     "L": [0.489, 0.5113, 0.7438],
+     "C": [0.0166, 0.0594, 0.1169],
+     "h": [257.0, -161.1, 3.1],
+     "mid": "#6c7b99",
+     "n": 15200,
+     "roles": {"lit": "#506889"},
+     "v": 2,
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
+     "samples": ["day lit"],
+     "linear": [0.1493, 0.1971, 0.318],
+     "fit_dE": 0.0029
+    }
+   }
+  },
+  "glass": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (one hard highlight; skin's 6 deg at full strength), 8 (off on light sources: class 2); MB3 the night lantern",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [6.0, 0.75, 1.0, 0.85],
+    "nmap": 0.35,
+    "ink": 2,
+    "rim_k": 0.0
+   },
+   "paint": {
+    "brush_cm": 6,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB3",
+      "box": [700, 590, 740, 650],
+      "role": "lit",
+      "mask": {
+       "L": [0.6, 1]
+      }
+     }
+    ],
+    "emissive": true,
+    "lit": {
+     "L": [0.6622, 0.7958, 0.9506],
+     "C": [0.1028, 0.1559, 0.1724],
+     "h": [72.9, -20.2, 29.3],
+     "mid": "#f8aa30",
+     "n": 1067,
+     "roles": {"lit": "#f8aa30"}
+    },
+    "albedo": {
+     "L": [0.6622, 0.7958, 0.9506],
+     "C": [0.1028, 0.1559, 0.1724],
+     "h": [72.9, -20.2, 29.3],
+     "mid": "#f8aa30",
+     "n": 1067,
+     "roles": {"lit": "#f8aa30"}
+    }
+   }
+  },
+  "crowd_fur": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (its strength is the crowd's night specular, B4), 7 (mid-dark bodies, the rim their own edge: width 0.25, a 0.04 step; color and strength B4's rigs), 8 (class 1); target 09 (the pack)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.35,
+    "ink": 1,
+    "rim_k": 0.0
+   },
+   "paint": {
+    "brush_cm": 8,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "T09",
+      "box": [150, 620, 230, 660],
+      "role": "lit"
+     },
+     {
+      "board": "T09",
+      "box": [300, 840, 380, 880],
+      "role": "lit"
+     }
+    ],
+    "lit": {
+     "L": [0.1377, 0.2338, 0.3335],
+     "C": [0.029, 0.0592, 0.0842],
+     "h": [268.1, -8.2, 16.0],
+     "mid": "#121c39",
+     "n": 6400,
+     "roles": {"lit": "#121c39"}
+    },
+    "albedo": {
+     "L": [0.1021, 0.1762, 0.2437],
+     "C": [0.011, 0.0248, 0.0414],
+     "h": [266.8, -22.6, 54.5],
+     "mid": "#16161e",
+     "n": 6400,
+     "roles": {"lit": "#0c101c"},
+     "v": 2,
+     "method": "B3r2 (tools/look/calib.py): the board's samples over the game's own response, per channel, least squares over the samples (rig_cam: side)",
+     "samples": ["night lit"],
+     "linear": [0.008, 0.008, 0.0129],
+     "fit_dE": 0.1243
+    }
+   },
+   "edge": [0.25, 0.04],
+   "edge_color": "#2abbec",
+   "albedo_ctl": {
+    "target": 0.45,
+    "pull": 0.7,
+    "cap": 0.55,
+    "chroma": 1.0,
+    "hue": [266, 0.025, 0.85],
+    "from": "L1 W2 C6: rule 7: the pack mid-dark, never pale silver (it read pale silver in 09 and 12); L1 l9 PACK2: the fur's hue pulled cold neutral FROM target 09 (bodies h 260-268: the wolf paint's own h 50 read tan), its glossy band gone (rule 6: spec 0)"
+   }
+  },
+  "folk_skin": {
+   "from": "as skin (rules 5, 6, 8 class 1) on folk; MB1 chips",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.08],
+    "mid": [0.85, 0.45, 0.38, 0.8],
+    "form": 0.3,
+    "spec": [6.0, 1.0, 0.5, 0.85],
+    "nmap": 0.35,
+    "ink": 1,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 8,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 325,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB1",
+      "box": [254, 776, 270, 792],
+      "role": "lit"
+     },
+     {
+      "board": "MB1",
+      "box": [254, 844, 270, 860],
+      "role": "transition"
+     }
+    ],
+    "lit": {
+     "L": [0.6314, 0.6931, 0.7597],
+     "C": [0.1238, 0.1265, 0.1282],
+     "h": [45.2, -7.5, 7.9],
+     "mid": "#dc8156",
+     "n": 512,
+     "roles": {"lit": "#ee9962", "transition": "#cb6c4f"}
+    },
+    "albedo": {
+     "L": [0.675, 0.6798, 0.6831],
+     "C": [0.1557, 0.1566, 0.1577],
+     "h": [42.1, -0.4, 0.4],
+     "mid": "#e67242",
+     "n": 512,
+     "roles": {"lit": "#e67242", "transition": "#e67242"},
+     "v": 2,
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
+     "samples": ["day lit"],
+     "linear": [0.7886, 0.1688, 0.0546],
+     "fit_dE": 0.0115
+    }
+   }
+  },
+  "folk_cloth": {
+   "from": "rule 5 (band, half-tone, form, nmap), rule 6 (matte: no highlight), 7, 8 (class 1: folk); MB2 cloth (day)",
+   "cel": {
+    "band": [0.0, 0.06, 0.2, 0.05],
+    "mid": [0.55, 0.55, 0.6, 1.0],
+    "form": 0.3,
+    "spec": [9.0, 1.5, 0.0, 0.85],
+    "nmap": 0.35,
+    "ink": 1,
+    "rim_k": 1.0
+   },
+   "paint": {
+    "brush_cm": 8,
+    "spread_L": 0.06,
+    "edge": {
+     "dL": 0.05,
+     "width_cm": 1.5
+    },
+    "cavity": {
+     "dL": -0.05,
+     "h": 265,
+     "C": 0.015
+    },
+    "boxes": [
+     {
+      "board": "MB2",
+      "box": [700, 640, 800, 720],
+      "role": "lit",
+      "mask": {
+       "lit": true
+      }
+     }
+    ],
+    "note": "held to rule 4's midC 0.07 or below by B3 (folk are weathered)",
+    "lit": {
+     "L": [0.368, 0.4661, 0.7712],
+     "C": [0.0671, 0.0835, 0.0954],
+     "h": [277.3, -2.0, 2.1],
+     "mid": "#4e5588",
+     "n": 4000,
+     "roles": {"lit": "#4e5588"}
+    },
+    "albedo": {
+     "L": [0.3168, 0.4, 0.6526],
+     "C": [0.0922, 0.1059, 0.1169],
+     "h": [275.2, -1.3, 1.4],
+     "mid": "#4d5594",
+     "n": 4000,
+     "roles": {"lit": "#384080"},
+     "v": 2,
+     "method": "B3r3 (tools/look/joint.py): the board's day lit and shade samples over the game's own response, solved with the day fill (#7789ff at 0.1063) by least squares in Oklab at the play and close cameras",
+     "samples": ["day lit"],
+     "linear": [0.0738, 0.0916, 0.2945],
+     "fit_dE": 0.0022
+    }
+   },
+   "albedo_ctl": {
+    "target": 0.0,
+    "pull": 0.0,
+    "cap": 0.75,
+    "chroma": 1.0,
+    "from": "L1 W2 C6: the brief: the folk's white cloth capped at L 0.75"
+   }
+  }
+ },
+ "shaders": {
+  "res://shaders/kit.gdshader": "stone",
+  "res://shaders/kit.gdshader#OWN_FOLIAGE": "foliage",
+  "res://shaders/terrain.gdshader": "soil",
+  "res://shaders/arena_ground.gdshader": "soil",
+  "res://shaders/grass.gdshader": "grass",
+  "res://shaders/grass_own.gdshader": "grass",
+  "res://shaders/arena_grass.gdshader": "grass",
+  "res://shaders/arena_leaves.gdshader": "soil",
+  "res://shaders/scatter.gdshader": "soil",
+  "res://shaders/campfire_wood.gdshader": "bark",
+  "res://shaders/endgrain.gdshader": "plank",
+  "res://shaders/floor_cloth.gdshader": "cloth",
+  "res://shaders/props_runs.gdshader": "stone",
+  "res://shaders/person.gdshader": "folk_cloth",
+  "res://shaders/npc_dye.gdshader": "folk_cloth",
+  "res://shaders/vat.gdshaderinc": "crowd_fur",
+  "res://shaders/std_cel.gdshaderinc": "stone",
+  "res://shaders/heroine_skin.gdshader": "skin",
+  "res://shaders/heroine_paint.gdshaderinc": "skin",
+  "res://shaders/heroine_hair.gdshaderinc": "hair",
+  "res://shaders/heroine_outfit.gdshaderinc": "leather",
+  "res://shaders/heroine_eye.gdshader": "eye",
+  "res://shaders/heroine_teeth.gdshader": "eye",
+  "res://shaders/heroine_teeth_shell.gdshader": "eye",
+  "res://shaders/heroine_tongue.gdshader": "eye",
+  "res://shaders/heroine_cards.gdshader": "lash",
+  "res://shaders/heroine_cards_blend.gdshader": "lash",
+  "res://shaders/glowing.gdshader": "glass",
+  "res://shaders/crystal.gdshader": "glass",
+  "res://shaders/keeper_iron.gdshader": "iron",
+  "res://shaders/chakram.gdshader": "iron",
+  "res://shaders/far_castle.gdshader": "stone",
+  "res://shaders/warden_wet.gdshader": "folk_cloth",
+  "res://shaders/warden_face.gdshader": "folk_skin",
+  "res://shaders/sunder_steel.gdshader": "iron"
+ },
+ "assign": [
+  {
+   "shader": "crystal",
+   "material": "(?i)thorn",
+   "class": "bark"
+  },
+  {
+   "shader": "crystal",
+   "material": "(?i)stone",
+   "class": "rock"
+  },
+  {
+   "shader": "person|npc_dye",
+   "material": "(?i)skin|body|head|face|hand|arm|leg",
+   "class": "folk_skin"
+  },
+  {
+   "shader": "person|npc_dye",
+   "class": "folk_cloth"
+  },
+  {
+   "shader": "vat",
+   "class": "crowd_fur"
+  },
+  {
+   "material": "(?i)^Stone_Own",
+   "class": "rock"
+  },
+  {
+   "material": "(?i)^Wall_Own",
+   "class": "plaster"
+  },
+  {
+   "material": "(?i)^Roof_Own",
+   "class": "roof"
+  },
+  {
+   "material": "(?i)^Leaves_Own",
+   "class": "foliage"
+  },
+  {
+   "material": "(?i)glass|window|lantern|glow|ember|flame|candle",
+   "class": "glass"
+  },
+  {
+   "material": "(?i)gold|coin|gilt",
+   "class": "gold"
+  },
+  {
+   "material": "(?i)bronze|brass|copper",
+   "class": "bronze"
+  },
+  {
+   "material": "(?i)blade|sword|axe|steel|armou?r|helm|gauntlet|greave|mail|boss|weapon",
+   "class": "iron",
+   "what": "B3r3: gear iron (polished, MB2)"
+  },
+  {
+   "material": "(?i)wrought|iron|metal|chain|nail|hoop|rivet|hinge|anvil|bracket|fitting",
+   "class": "wrought",
+   "what": "B3r3: world iron (wrought, MB3: the barrel's hoops, fittings)"
+  },
+  {
+   "material": "(?i)leather|strap|belt|boot|saddle",
+   "class": "leather"
+  },
+  {
+   "material": "(?i)silk|satin",
+   "class": "satin"
+  },
+  {
+   "material": "(?i)cloth|fabric|canvas|rug|banner|curtain|sack|rope|wool|linen|tent|awning",
+   "class": "cloth"
+  },
+  {
+   "material": "(?i)roundtiles|roof|thatch|shingle",
+   "class": "roof"
+  },
+  {
+   "material": "(?i)plaster|daub|render",
+   "class": "plaster"
+  },
+  {
+   "material": "(?i)bark|trunk|stump|root",
+   "class": "bark"
+  },
+  {
+   "material": "(?i)leaf|leaves|needle|flower|petal|bush|fern|plant|clover|ivy|moss|vine",
+   "class": "foliage"
+  },
+  {
+   "material": "(?i)grass",
+   "class": "grass"
+  },
+  {
+   "material": "(?i)wood|plank|barrel|crate|beam|cart|stall|post|log|board|shield",
+   "class": "plank"
+  },
+  {
+   "material": "(?i)rock|boulder|cliff",
+   "class": "rock"
+  },
+  {
+   "material": "(?i)brick|stone|cobble|masonry|wall",
+   "class": "stone"
+  },
+  {
+   "material": "(?i)sett",
+   "class": "setts"
+  },
+  {
+   "material": "(?i)road|path",
+   "class": "road"
+  },
+  {
+   "material": "(?i)soil|dirt|earth|mud|ground",
+   "class": "soil"
+  },
+  {
+   "material": "(?i)water",
+   "class": "water"
+  },
+  {
+   "material": "(?i)skin|body|head|face",
+   "class": "folk_skin"
+  },
+  {
+   "material": "(?i)hair|fur",
+   "class": "crowd_fur"
+  },
+  {
+   "path": "(?i)/weapons/",
+   "class": "iron"
+  }
+ ],
+ "exclude": [
+  {
+   "what": "her materials, already on the model (B1b)",
+   "material": "^heroine_",
+   "shader": "heroine_"
+  },
+  {
+   "what": "unshaded (lights nothing)",
+   "rule": "shading_mode unshaded or render_mode unshaded"
+  },
+  {
+   "what": "FX: additive, subtractive, multiply or premultiplied blending, or billboards",
+   "rule": "blend_mode != mix or billboard_mode != disabled"
+  },
+  {
+   "what": "UI viewports (item models, portraits)",
+   "rule": "inside a SubViewport other than the root"
+  },
+  {
+   "what": "sky and fog",
+   "rule": "not a GeometryInstance3D material"
+  },
+  {
+   "what": "FX: the Flares' own shards and particles (rule 13: spells are their own family; by shader path, or by material name where the shader is an inline copy: FlareBits' mixed batch)",
+   "shader": "flare_",
+   "material": "^flare_"
+  },
+  {
+   "what": "water surfaces (the Hollow's slurry stream too: a transparent water surface, like the river and the ford)",
+   "shader": "water|river|ford|puddle|slurry_stream"
+  },
+  {
+   "what": "particles (FX)",
+   "rule": "GPUParticles3D / CPUParticles3D draw passes"
+  }
+ ],
+ "lights": {
+  "what": "B2r2: the boards' own light, divided out of paint.lit to give paint.albedo (tools/style/board_measure.py's docstring). Each LB panel's E is the mean linear color of its lit neutral references (gray setts, limewashed plaster), the lit side of each box (pixels at or over its median luminance), scaled to luminance 1: the light's color divided out, its strength left to the rig (B4). A board row with refs of its own takes the nearest panel by measurement (match); the others name theirs by the board's own label. First row that holds a box's center wins.",
+  "board": "LB",
+  "panels": {
+   "day": {
+    "refs": [
+     {
+      "box": [180, 805, 300, 845],
+      "what": "sunlit setts, foreground"
+     },
+     {
+      "box": [782, 545, 798, 560],
+      "what": "the right house's sunlit plaster"
+     }
+    ],
+    "E": [1.5605, 0.8902, 0.4371]
+   },
+   "dawn": {
+    "refs": [
+     {
+      "box": [1000, 335, 1100, 375],
+      "what": "sunlit setts, foreground"
+     },
+     {
+      "box": [1602, 65, 1618, 95],
+      "what": "the right house's sunlit plaster"
+     }
+    ],
+    "E": [2.2269, 0.7202, 0.1587]
+   },
+   "night": {
+    "refs": [
+     {
+      "box": [150, 322, 290, 352],
+      "what": "setts in the lantern's pool (the night's warm light)"
+     }
+    ],
+    "E": [1.9098, 0.7844, 0.4568]
+   },
+   "arena": {
+    "refs": [
+     {
+      "box": [1180, 770, 1300, 800],
+      "what": "the clearing's ground in the ember pool"
+     }
+    ],
+    "E": [2.4402, 0.6386, 0.3392]
+   },
+   "moon": {
+    "refs": [
+     {
+      "box": [180, 400, 300, 440],
+      "what": "the night panel's moonlit setts, out of the lantern's pool"
+     }
+    ],
+    "E": [0.6693, 0.9531, 2.4386]
+   }
+  },
+  "rows": [
+   {
+    "board": "MB1",
+    "y": [0, 2000],
+    "panel": "day",
+    "what": "her chips and day portrait (labelled 'Sunlight (warm, above-left)')"
+   },
+   {
+    "board": "MB2",
+    "x": [0, 230],
+    "y": [0, 2000],
+    "panel": "day",
+    "what": "her figure (sunlit like the day row)"
+   },
+   {
+    "board": "MB2",
+    "y": [0, 500],
+    "panel": "moon",
+    "what": "'NIGHT - MOONLIGHT + EMBER' (moonlight)"
+   },
+   {
+    "board": "MB2",
+    "y": [500, 2000],
+    "panel": "day",
+    "what": "'DAY - SUNLIGHT + VIOLET SHADE'"
+   },
+   {
+    "board": "MB3",
+    "y": [0, 445],
+    "panel": "day",
+    "what": "the sun row",
+    "refs": [
+     {
+      "box": [590, 240, 700, 380],
+      "what": "plaster"
+     },
+     {
+      "box": [120, 120, 360, 380],
+      "what": "setts"
+     }
+    ],
+    "match": {
+     "own_E": [1.7114, 0.8406, 0.4839],
+     "distance": {
+      "day": 0.149,
+      "dawn": 1.156
+     }
+    },
+    "candidates": ["day", "dawn"]
+   },
+   {
+    "board": "MB3",
+    "y": [445, 2000],
+    "panel": "night",
+    "what": "the moon row (its lantern glass, a light source, keeps albedo = lit)"
+   },
+   {
+    "board": "MB4",
+    "y": [0, 470],
+    "panel": "day",
+    "what": "'DAY'"
+   },
+   {
+    "board": "MB4",
+    "y": [470, 2000],
+    "panel": "moon",
+    "what": "'NIGHT' (moonlight)"
+   },
+   {
+    "board": "T09",
+    "y": [0, 2000],
+    "panel": "moon",
+    "what": "frame 09, the arena at night: the crowd's lit sides are the moon's (their lit color is moon-blue)"
+   },
+   {
+    "board": "T07",
+    "y": [0, 2000],
+    "panel": "day",
+    "what": "frame 07 (07_r5), the town by day: its shade color is the day rig's target (rule 1: its share of shade and its violet-blue shade, not its key), so only its shade boxes are read (B3r3's joint solve)"
+   }
+  ]
+ }
+}

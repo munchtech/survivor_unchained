@@ -6,6 +6,9 @@
 // leaves out (Campfire.CoalLayer), gets a warm wash from the fire over it.
 shader_type spatial;
 render_mode blend_mix, cull_back;
+// (the material library, godot/data/look/materials.json: this shader's default class; matte, rule 6: no highlight)
+#define CEL_SPEC vec4(9.0, 1.5, 0.0, 0.85)
+#include "res://shaders/cel.gdshaderinc"
 #include "res://shaders/world_clock.gdshaderinc"
 
 uniform sampler2D albedo_tex : source_color, filter_linear_mipmap_anisotropic, repeat_disable;
@@ -64,4 +67,6 @@ void fragment() {
 	float lit = clamp(dot(normalize(ln), to / d) * 0.75 + 0.25, 0.0, 1.0) / (1.0 + d * d * 6.0);
 	e += wash_k * heat * alb * vec3(1.0, 0.52, 0.22) * lit * (0.92 + 0.08 * shimmer);
 	EMISSION = e;
+	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug).
+	CEL_FRAGMENT;
 }

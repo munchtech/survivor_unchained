@@ -1,7 +1,7 @@
 """The twelve frames (H2, one look): the demo's whole look shot in one Godot batch, so every restyle
 round re-shoots the same frames with one command and is judged against the same twelve (plus her close-up).
 
-    python tools/style/frames.py shoot [--out DIR] [--only 04,09] [--extra "--grade-try vib=1.1"] [--scout] [--root WT]
+    python tools/style/frames.py shoot [--out DIR] [--only 04,09] [--extra "--grade-try vib=1.1"] [--scout] [--root WT] [--stale-ok]
     python tools/style/frames.py sheet DIR                 -> DIR/sheet.jpg from DIR/frames/*.png (+ _half.jpg copies)
     python tools/style/frames.py compare BEFORE AFTER OUT  -> OUT/NN_id_ab.jpg (before | after, 1:1 halves) + OUT/ab_sheet.jpg
 
@@ -31,28 +31,49 @@ ARENA = Q + ["--zone", "arena", "--offer", "0", "--tier", "1"]
 # The runs (several frames may share one). (H2 R4, 3 Nov: the arena minutes since H1's teeth, tier 1 ten minutes to its
 # boss (Content/Teeth, Pace 1): 09 at 8.5 +20 s (the pack streaming at her) and 12 at 6 +35 s
 # (a pack at her lower left), picked from a scout; the old 14 and 20 of thirty were past the boss; 10 keeps 29.9.)
+# (L1 Stage C wave 2, staging, 5 Nov: each moment picked from two scouts, look_l1\c\w2\stage\s1, s2, against its G1 target.
+# 03: C01 shot 12 at 0.5 of the shot (--stills 5, the 3rd), the grade come up and the bars still in, as 03's.
+# 04: on the road at (30,-2) by day (--spots, the play camera): the road and its ruts across, the verge, spruce at the
+#   top edge (the canopy was ~55% of the frame at --auto 50 s). 09 and 12: --auto stand (Autopilot: she plants and
+#   fights, never kites, dashes or Flares), 09 at minute 5 +6 s, 12 at minute 6 +4 s: the pack rings her in her
+#   own pool off the lamp, nothing over her (under --auto she kited, the pack streamed far off, a ring lay on her).
+# 10: --auto at 29.9 +6 s, the Pack-Mother to her right in her pool, the fold's kit boulders in shot (boards.json
+#   fold.rocks, FROM target 10).)
+# (L1 lead 11, R4 round 2) 09's pack: --horde groups and their --horde-arc wedges (DEG:WIDTH:DIST:SPREAD).
+SHAW_PACK = ("7:wolf,8:wolf,9:wolf", "150:50:7.7:2.8,150:54:10.5:3.5,150:56:14:4.5")
 # The runs (several frames may share one). "scout" replaces the run's frame options in --scout mode.
+SPOTS04 = "-110,10;-95,9;-80,7;-60,9;-45,13;-25,12;-10,10;8,4;30,-2;45,-5"
 RUNS = {
     "lk_title": dict(args=["--seconds", "6", "--count", "1"], fresh=True, timeout=300),
     "lk_sb00": dict(args=["--storybook", "sb00", "--sb-shots", "21.0", "--seconds", "300", "--until", "300"], timeout=400,
                     scout=["--storybook", "sb00", "--sb-shots", "8.0,21.0,30.0,42.0,51.0,64.0,76.0", "--seconds", "300", "--until", "300"]),
-    "lk_c01": dict(args=Q + ["--cine", "c01", "--until", "30"], timeout=400),
-    "lk_verge": dict(args=Q + ["--zone", "verge", "--time", "day", "--auto", "--seconds", "50", "--count", "1"], timeout=500,
-                     scout=Q + ["--zone", "verge", "--time", "day", "--auto", "--seconds", "20", "--every", "15", "--count", "4"]),
+    "lk_c01": dict(args=Q + ["--cine", "c01", "--until", "30", "--stills", "5"], timeout=400),
+    "lk_verge": dict(args=Q + ["--zone", "verge", "--time", "day", "--spots", "30,-2", "--spots-from", "2", "--seconds", "5", "--count", "1"], timeout=500,
+                     scout=Q + ["--zone", "verge", "--time", "day", "--spots", SPOTS04, "--spots-from", "2", "--spots-every", "5", "--seconds", "5", "--every", "5", "--count", "10"]),
     "lk_ford": dict(args=Q + ["--zone", "lowford", "--auto", "--pace", "--seconds", "100", "--every", "100", "--count", "2"], timeout=1500,
                     scout=Q + ["--zone", "lowford", "--auto", "--pace", "--seconds", "60", "--every", "20", "--count", "12"]),
     "lk_town": dict(args=Q + ["--zone", "waystation", "--time", "day", "--seconds", "18", "--count", "1"], timeout=400,
                     scout=Q + ["--zone", "waystation", "--time", "day", "--seconds", "6", "--every", "6", "--count", "3"]),
     "lk_lamps": dict(args=["--open", "lamps", "--seconds", "6", "--count", "1"], load_snap="fr3_loop:loop_back_1", timeout=400,
                      fallback=Q + ["--zone", "waystation", "--time", "day", "--open", "lamps", "--seconds", "6", "--count", "1"]),
-    "lk_shaw": dict(args=ARENA + ["--auto", "--minute", "8.5", "--seconds", "20", "--count", "1"], timeout=600,
-                    scout=ARENA + ["--auto", "--minute", "8.5", "--seconds", "20", "--every", "15", "--count", "4"]),
-    "lk_pack": dict(args=ARENA + ["--auto", "--minute", "29.9", "--seconds", "18", "--count", "1"], timeout=600,
-                    scout=ARENA + ["--auto", "--minute", "29.9", "--seconds", "12", "--every", "6", "--count", "5"]),
+    # (L1 lead 11, R4: 09 re-staged as T09's moment, the pack ARRIVING from the lower left with her in the clear and at full
+    # health: twelve wolves set in an arc 8-14 m out (world 140 deg +/-45: screen lower left), nothing else spawned, no banner,
+    # shot at 1.2 s (before the director's stand charge draws its lane at 1.5 s). Was: minute 5's own pack at 6 s, fifteen
+    # within 2 m in a closed ring on her, her life 0.67. --stage-log prints the pool's center, px/m and the foes' distances.)
+    # (Round 2: T09's pack is twenty-five streaming in, so twenty-four wolves in three ranks of one wedge to the lower left
+    # (world 150 deg, 50-56 deg wide, 8.3-18.5 m out: a loose column 2-13 m long at the picture, the nearest about 2 m, none
+    # on her). Two pictures, 1.2 s (the frame, lk_shaw_00) and 3.2 s (thrown away): a single picture's run quit at 1.2 s and
+    # hung there until demo_run's timeout; so does this one (the hang is at quit, after "ink: released", whatever the pictures), so its timeout is 180 s: the pictures are saved inside 70 s.)
+    "lk_shaw": dict(args=ARENA + ["--auto", "stand", "--minute", "5", "--horde", SHAW_PACK[0], "--horde-arc", SHAW_PACK[1], "--no-spawn", "--no-banners",
+                                  "--stage-log", "--seconds", "1.2", "--every", "2", "--count", "2"], timeout=180,
+                    scout=ARENA + ["--auto", "stand", "--minute", "5", "--horde", SHAW_PACK[0], "--horde-arc", SHAW_PACK[1], "--no-spawn", "--no-banners",
+                                   "--stage-log", "--seconds", "0.8", "--every", "0.2", "--count", "6"]),
+    "lk_pack": dict(args=ARENA + ["--auto", "--minute", "29.9", "--seconds", "6", "--count", "1"], timeout=600,
+                    scout=ARENA + ["--auto", "--minute", "29.9", "--seconds", "4", "--every", "2", "--count", "12"]),
     "lk_result": dict(args=ARENA + ["--open", "result", "--seconds", "7", "--count", "1"], timeout=400,
                       scout=ARENA + ["--open", "result", "--seconds", "3", "--every", "2", "--count", "3"]),
-    "lk_hud": dict(args=ARENA + ["--auto", "--minute", "6", "--seconds", "35", "--count", "1"], timeout=600,
-                   scout=ARENA + ["--auto", "--minute", "6", "--seconds", "25", "--every", "10", "--count", "3"]),
+    "lk_hud": dict(args=ARENA + ["--auto", "stand", "--minute", "6", "--seconds", "4", "--count", "1"], timeout=600,
+                   scout=ARENA + ["--auto", "stand", "--minute", "6", "--seconds", "2", "--every", "2", "--count", "6"]),
     "lk_close": dict(args=Q + ["--zone", "waystation", "--time", "day", "--close", "1", "--seconds", "8", "--count", "1"], timeout=400,
                      scout=Q + ["--zone", "waystation", "--time", "day", "--close", "1", "--seconds", "6", "--every", "3", "--count", "2"]),
 }
@@ -61,13 +82,13 @@ RUNS = {
 FRAMES = [
     ("01", "title", "lk_title", "lk_title.png"),
     ("02", "sb00", "lk_sb00", "sb_sb00_21.00.png"),
-    ("03", "c01", "lk_c01", "lk_c01_c01_s12_1.png"),
+    ("03", "c01", "lk_c01", "lk_c01_c01_s12_3.png"),
     ("04", "verge_day", "lk_verge", "lk_verge.png"),
     ("05", "ford_night", "lk_ford", "lk_ford_00.png"),
     ("06", "warden", "lk_ford", "lk_ford_01.png"),
     ("07", "town_day", "lk_town", "lk_town.png"),
     ("08", "lamps", "lk_lamps", "lk_lamps.png"),
-    ("09", "shaw_horde", "lk_shaw", "lk_shaw.png"),
+    ("09", "shaw_horde", "lk_shaw", "lk_shaw_00.png"),
     ("10", "pack_mother", "lk_pack", "lk_pack.png"),
     ("11", "result", "lk_result", "lk_result.png"),
     ("12", "hud", "lk_hud", "lk_hud.png"),
@@ -140,6 +161,8 @@ def shoot(args):
     only = opt(args, "--only", None)
     extra = opt(args, "--extra", "").split()
     scout = "--scout" in args
+    # --stale-ok: passed to demo_run's turn (an A/B in one tree that needs no newer art; say so on the sheet)
+    stale = ["--stale-ok"] if "--stale-ok" in args else []
     frames = [f for f in FRAMES if only is None or f[0] in only.split(",") or f[1] in only.split(",")]
     runs = sorted({f[2] for f in frames}, key=list(RUNS).index)
     batch = []
@@ -162,7 +185,7 @@ def shoot(args):
     json.dump(batch, open(bp, "w", encoding="utf-8"), indent=1)
     shots = os.path.join(root, "godot", ".shots")
     t0 = time.time() - 5
-    rc = subprocess.run([sys.executable, os.path.join(root, "tools", "experience", "demo_run.py"), bp, "--out", os.path.join(out, "run"), "--root", root]).returncode
+    rc = subprocess.run([sys.executable, os.path.join(root, "tools", "experience", "demo_run.py"), bp, "--out", os.path.join(out, "run"), "--root", root] + stale).returncode
     if rc != 0: print("demo_run failed", rc); sys.exit(rc)
     fresh = lambda f: os.path.exists(os.path.join(shots, f)) and os.path.getmtime(os.path.join(shots, f)) >= t0
     if scout:

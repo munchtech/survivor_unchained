@@ -2,6 +2,7 @@
 
     python tools/assets/env_rocks.py tex                               the stone sheet (painted, paint_tex 'rock')
     blender -b -P tools/assets/env_rocks.py -- mesh [--preset boulder]   the pieces (every preset if none named)
+                                                                         (L1 C3a: the plane rocks, below; --form sculpt E5's)
     then  Godot_console --headless --path godot --import               (frames.py does not reimport)
 
 Out: godot/art/world/flora/stone_albedo.png (RGBA: the painted stone, its alpha the moss's breakup) and
@@ -584,6 +585,300 @@ def cut(V, F, z):
     return V[used], remap[F]
 
 
+# ---------------------------------------------------------------- the plane rocks (L1 C3a: LOOK_BIBLE rules 9 and 10)
+# FROM (b) MB4's rock panel and targets 10 and 12's boulders: a few big rounded planes (a crown, two to four shoulders,
+# four to six sides), muted moon-blue grey, rims rounded so the band catches them, no small facets, chips or noise;
+# (a) the play camera (a plane must be 6+ px: no plane under about a sixth of the piece); (c) each preset's sizes,
+# heights, cuts, variants and LOD scheme are E5's (PRESETS above), so the zones' placements keep their sizes.
+# A piece is the smooth minimum (k m, its rounding) of its ellipsoid and its planes, each plane set in at fd of the
+# ellipsoid's support. Its uvs: one island per plane chart (the planes' normals, and fill directions where none is
+# within 50 degrees) and variant, each face projected onto its chart, all presets in one atlas (rock_atlas.png, the
+# painter's: tools/look/wild.py rocks). lod0 and lod1 are one mesh (it is already cheaper than E5's lod1); lod2 and the
+# shadow are decimated, their faces charted the same way.
+PLANES = {
+    # crown: (z of its normal low, high); sh: shoulders (count, normal z low, high); sides: (count, z low, high);
+    # fd: planes set in (share of the support, low, high); k: rounding (share of the smallest half size); tris: lod0, lod2
+    # (round 1 at k 0.1-0.2 and fd 0.74-0.9: the log-sum-exp of ten planes rounded a boulder into a smooth egg at play; now
+    # the planes cut deeper and meet in a bevel of a few cm, rule 10's "bigger bevels" the band can catch)
+    # crease (L1 W2 wild): a plane face's normal is this share its plane's, the rest its smooth normal (crease_normals)
+    # (L1 l9 kit, judge 1: 06's rocks read as faceted prisms; rule 9 "a few big rounded planes", MB4's rock and T10/T12's
+    # boulders: a domed crown, two or three broad shoulders, four sides, each plane shallower (fd up) and the bevels between
+    # them wide (k 0.05 -> 0.16 of the smallest half size: a rim of 15-25 cm the band rolls over, not a hard edge), the
+    # crease halved so a plane is a broad tilt of the shading, not a flat facet)
+    'boulder': dict(crown=(0.8, 0.92), sh=(3, 0.5, 0.7), sides=(4, 0.0, 0.2), fd=(0.8, 0.9), k=0.16, tris=(700, 180), crease=0.4),
+    'fieldrock': dict(crown=(0.8, 0.92), sh=(2, 0.45, 0.65), sides=(4, -0.05, 0.2), fd=(0.78, 0.9), k=0.14, tris=(600, 150), crease=0.4),
+    'cliff': dict(crown=(0.9, 0.99), sh=(4, 0.3, 0.55), sides=(6, -0.15, 0.15), fd=(0.66, 0.8), k=0.035, tris=(900, 250), crease=0.75),
+    'stepping': dict(crown=(0.93, 0.99), sh=(2, 0.6, 0.8), sides=(5, -0.25, 0.1), fd=(0.72, 0.85), k=0.05, tris=(300, 90), crease=0.75),
+    'pebbles': dict(crown=(0.9, 0.98), sh=(2, 0.45, 0.7), sides=(3, -0.1, 0.2), fd=(0.72, 0.86), k=0.08, tris=(240, 80)),
+}
+
+
+def plane_set(spec, rng):
+    """The planes' normals (z up): one crown, the shoulders and sides spread round the piece."""
+    N = []
+    a = rng.uniform(0, 2 * math.pi)
+    z = rng.uniform(*spec['crown']); N.append((math.cos(a) * math.sqrt(1 - z * z), math.sin(a) * math.sqrt(1 - z * z), z))
+    for cnt, lo, hi, off in ((spec['sh'][0], spec['sh'][1], spec['sh'][2], 0.3), (spec['sides'][0], spec['sides'][1], spec['sides'][2], 0.0)):
+        a0 = rng.uniform(0, 2 * math.pi)
+        for i in range(cnt):
+            a = a0 + (i + rng.uniform(-0.18, 0.18)) * 2 * math.pi / cnt
+            z = rng.uniform(lo, hi)
+            N.append((math.cos(a) * math.sqrt(1 - z * z), math.sin(a) * math.sqrt(1 - z * z), z))
+    return np.array(N)
+
+
+def sculpt_planes(ax, center, spec, rng, sub=5):
+    """One piece: (V, F, plane normals). The smooth minimum of the ellipsoid's radius and each plane's along each ray."""
+    D, F = icosphere(sub)
+    ax = np.asarray(ax, float)
+    Np = plane_set(spec, rng)
+    re = 1.0 / np.sqrt(((D / ax) ** 2).sum(1))
+    sup = np.sqrt(((Np * ax) ** 2).sum(1))
+    d = sup * rng.uniform(*spec['fd'], len(Np))
+    cosv = D @ Np.T
+    T = np.where(cosv > 1e-3, d[None, :] / np.maximum(cosv, 1e-3), 1e3)
+    R = np.concatenate([re[:, None], np.minimum(T, 1e3)], 1)
+    k = spec['k'] * ax.min()
+    r = softmin(R, k)
+    V = D * r[:, None] + np.asarray(center, float)
+    return V, F, Np, dict(center=np.asarray(center, float), ax=ax, Np=Np, d=d, k=k)
+
+
+def crease_weights(V, pl):
+    """(L1 W2 wild) Each point's share of the ellipsoid (column 0) and of each plane (1..), the softmin's own weights at its
+    rounding k: one-hot inside a plane, shared only across the bevel of a few cm between two."""
+    P = V - pl['center']
+    D = P / np.maximum(np.linalg.norm(P, axis=1, keepdims=True), 1e-9)
+    re = 1.0 / np.sqrt(((D / pl['ax']) ** 2).sum(1))
+    cosv = D @ pl['Np'].T
+    T = np.where(cosv > 1e-3, pl['d'][None, :] / np.maximum(cosv, 1e-3), 1e3)
+    R = np.concatenate([re[:, None], np.minimum(T, 1e3)], 1)
+    e = np.exp(-(R - R.min(1, keepdims=True)) / pl['k'])
+    return e / e.sum(1, keepdims=True)
+
+
+def crease_normals(V0, F0, Vd, Wd, Nd, kd, Np, idx, rnd):
+    """(L1 W2 wild: rule 9 "a few big rounded planes", the wave-1 judge "the planes don't step in the band") Per face corner
+    (len(F0) x 3 x 3): a face on a plane (its centre's plane share over a half, from the dense mesh's nearest point) takes
+    that plane's normal, rnd of its corners' smooth normals kept (rounded planes, never flat facets); a face on the
+    ellipsoid's round keeps the smooth normals. So two planes meet in a step the band can catch, not a smooth roll."""
+    cen = V0[F0].mean(1)
+    j = np.array([kd.find(c)[1] for c in cen])
+    W = Wd[j]
+    Nv = Nd[idx][F0]                                  # the corners' smooth normals
+    Nf = W[:, 1:] @ Np + W[:, :1] * Nd[j]
+    Nf /= np.maximum(np.linalg.norm(Nf, axis=1, keepdims=True), 1e-9)
+    on_plane = (W[:, 1:].max(1) > 0.5)[:, None, None]
+    Nc = np.where(on_plane, (1 - rnd) * Nf[:, None, :] + rnd * Nv, Nv)
+    return Nc / np.maximum(np.linalg.norm(Nc, axis=2, keepdims=True), 1e-9)
+
+
+def charts_for(Np):
+    """Chart directions: the planes' normals, then fill directions (the 14 of a cube's faces and corners, and straight
+    down) wherever none is within 50 degrees."""
+    C = [n / np.linalg.norm(n) for n in Np]
+    fill = [(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)] + [(x, y, z) for x in (-1, 1) for y in (-1, 1) for z in (-1, 1)]
+    for f in fill:
+        f = np.array(f, float); f /= np.linalg.norm(f)
+        if max(float(np.dot(f, c)) for c in C) < math.cos(math.radians(50)):
+            C.append(f)
+    return np.array(C)
+
+
+def chart_frame(c):
+    up = np.array([0.0, 0.0, 1.0]) if abs(c[2]) < 0.9 else np.array([1.0, 0.0, 0.0])
+    u = np.cross(up, c); u /= np.linalg.norm(u)
+    return u, np.cross(c, u)
+
+
+def face_charts(V, F, C):
+    fn = np.cross(V[F[:, 1]] - V[F[:, 0]], V[F[:, 2]] - V[F[:, 0]])
+    fn /= np.maximum(np.linalg.norm(fn, axis=1, keepdims=True), 1e-12)
+    return np.argmax(fn @ C.T, 1)
+
+
+def rock_atlas(pieces, A=2048, gap=8):
+    """pieces: [(key, V, F, C)] (lod0). Each (key, chart)'s projected box, shelf-packed at the largest density that fits.
+    Returns ({(key, chart): (u0, v0, scale, (pu0, pv0))}, px per metre)."""
+    boxes = []
+    for key, V, F, C in pieces:
+        fc = face_charts(V, F, C)
+        for ci in np.unique(fc):
+            u, v = chart_frame(C[ci])
+            P = V[np.unique(F[fc == ci])]
+            pu, pv = P @ u, P @ v
+            pad = 0.06 * max(np.ptp(pu), np.ptp(pv)) + 0.02
+            boxes.append(((key, int(ci)), pu.min() - pad, pv.min() - pad, np.ptp(pu) + 2 * pad, np.ptp(pv) + 2 * pad))
+
+    def pack(ppm):
+        order = sorted(boxes, key=lambda b: (-b[4], -b[3], str(b[0])))
+        x = y = gap; rowh = 0; out = {}
+        for key, pu0, pv0, w, h in order:
+            W, Hh = math.ceil(w * ppm), math.ceil(h * ppm)
+            if x + W > A - gap:
+                x, y, rowh = gap, y + rowh + gap, 0
+            if y + Hh > A - gap:
+                return None
+            out[key] = (x / A, y / A, ppm / A, (pu0, pv0))
+            x += W + gap; rowh = max(rowh, Hh)
+        return out
+    lo, hi = 5.0, 600.0
+    for _ in range(30):
+        mid = (lo + hi) / 2
+        if pack(mid):
+            lo = mid
+        else:
+            hi = mid
+    return pack(lo), lo
+
+
+def corner_uvs(V, F, C, key, atlas):
+    """Per face corner (len(F) x 3 x 2): each face's vertices projected onto its chart, placed in the chart's island
+    (a chart this LOD has but lod0 had not: its nearest chart that lod0 has)."""
+    fc = face_charts(V, F, C)
+    UV = np.zeros((len(F), 3, 2))
+    have = [ci for ci in range(len(C)) if (key, ci) in atlas]
+    for ci in np.unique(fc):
+        cj = ci if (key, int(ci)) in atlas else max(have, key=lambda h: float(np.dot(C[h], C[ci])))
+        u0, v0, s, (pu0, pv0) = atlas[(key, int(cj))]
+        u, v = chart_frame(C[cj])
+        P = V[F[fc == ci]]
+        UV[fc == ci, :, 0] = u0 + (P @ u - pu0) * s
+        UV[fc == ci, :, 1] = 1 - (v0 + (P @ v - pv0) * s)
+    return UV
+
+
+def pebble_stones(prm, rng):
+    """A pebble cluster's stones (ax, centre): E5's sizes and spacing (anchor, middling, small), each flat and sunk."""
+    sizes = [rng.uniform(0.08, 0.095) for _ in range(prm['n'][0])] + [rng.uniform(0.045, 0.055) for _ in range(prm['n'][1])] \
+        + [rng.uniform(0.022, 0.03) for _ in range(prm['n'][2])]
+    placed = []
+    for rad in sizes:
+        c = np.zeros(2)
+        if placed:
+            for _ in range(200):
+                q, qr = placed[rng.integers(len(placed))]
+                gap = rng.uniform(1.0, 2.0) * 2 * min(rad, qr)
+                a = rng.uniform(0, 2 * math.pi)
+                c = q + (rad + qr + gap) * np.array([math.cos(a), math.sin(a)])
+                if all(np.linalg.norm(c - p2) >= rad + r2 + 2 * min(rad, r2) - 1e-6 for p2, r2 in placed):
+                    break
+        placed.append((c, rad))
+    mid = np.mean([c for c, _ in placed], 0)
+    return [((rad, rad * rng.uniform(0.7, 0.9), rad * 0.45), (c[0] - mid[0], c[1] - mid[1], rad * 0.45 * 0.4)) for c, rad in placed]
+
+
+def mesh_planes(only=None):
+    """Every preset as plane rocks into flora/<preset>.gltf (lod0 = lod1, lod2, shadow), one material per preset
+    (Stone_Own<Preset>) on rock_atlas.png; the painter's sheet godot/art/world/painted/_src/rocks_sheet.glb (every
+    preset's every variant's lod0, side by side, material 'rock')."""
+    import bpy
+    ROOTP = os.path.join(ROOT, 'godot', 'art', 'world', 'painted', '_src')
+    os.makedirs(OUT, exist_ok=True); os.makedirs(ROOTP, exist_ok=True)
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    built = {}
+    for name, pre in PRESETS.items():
+        spec = PLANES[name]
+        vs = []
+        for vi, prm in enumerate(pre['variants']):
+            rng = np.random.default_rng(prm['seed'] + 7)
+            parts = pebble_stones(prm, rng) if name == 'pebbles' else [(prm['ax'], (0.0, 0.0, prm.get('cz', 0.6)))]
+            Vs, Fs, Cs, o, pls = [], [], [], 0, []
+            for ax, cen in parts:
+                V, F, Np, pl = sculpt_planes(ax, cen, spec, rng, sub=5 if name != 'pebbles' else 4)
+                if prm.get('cut') is not None:
+                    V, F = cut(V, F, prm['cut'])
+                Vs.append(V); Fs.append(F + o); Cs.append(Np); o += len(V); pls.append(pl)
+            V, F = np.concatenate(Vs), np.concatenate(Fs)
+            Np = np.concatenate(Cs)
+            # (the creases: one piece's planes; a pebble cluster's stones stay smooth, 2-9 cm, under rule 9's 3 cm read)
+            Wd = crease_weights(V, pls[0]) if len(pls) == 1 and spec.get('crease', 0) else None
+            col, N = bake(V, F)
+            from mathutils import kdtree
+            kd = kdtree.KDTree(len(V))
+            for i, q in enumerate(V):
+                kd.insert(q, i)
+            kd.balance()
+            per = spec['tris'][0] * len(parts) if name != 'pebbles' else spec['tris'][0]
+            L0 = decimate(V, F, per)
+            L2 = decimate(V, F, max(spec['tris'][1], 24 * len(parts)))
+            C = charts_for(Np)
+            vs.append(dict(dense=(V, F, col, N, kd), L=[L0, L0, L2, L2], C=C, W=Wd, Np=Np, rnd=spec.get('crease', 0)))
+            print(f'  {name} {vi}: planes {len(Np)}, charts {len(C)}, size {np.ptp(V, 0).round(2)}, lod0 {len(L0[1])} lod2 {len(L2[1])} tris')
+        built[name] = vs
+    atlas, ppm = rock_atlas([((nm, vi), d['L'][0][0], d['L'][0][1], d['C']) for nm, vs in built.items() for vi, d in enumerate(vs)])
+    print(f'rocks: atlas {ppm:.1f} px/m')
+
+    def obj(nm, parts, mats):
+        """parts: [(V, F, UV corners, N, colour)]: one object, corner uvs, the dense normals and colours."""
+        Vs, Fs, UVs, Ns, Cs, o = [], [], [], [], [], 0
+        for V, F, UV, N, col in parts:
+            Vs.append(V); Fs.append(F + o); UVs.append(UV); Ns.append(N); Cs.append(col); o += len(V)
+        V, F, UV, N, col = np.concatenate(Vs), np.concatenate(Fs), np.concatenate(UVs), np.concatenate(Ns), np.concatenate(Cs)
+        me = bpy.data.meshes.new(nm)
+        me.from_pydata(V.tolist(), [], F.tolist())
+        for p in me.polygons:
+            p.use_smooth = True
+        if N.ndim == 3:     # (per face corner: the creased planes)
+            me.normals_split_custom_set([tuple(n) for n in N.reshape(-1, 3)])
+        else:
+            me.normals_split_custom_set_from_vertices([tuple(n) for n in N])
+        ca = me.color_attributes.new('Col', 'FLOAT_COLOR', 'POINT')
+        ca.data.foreach_set('color', col.astype(np.float32).ravel())
+        me.color_attributes.active_color = ca
+        uvl = me.uv_layers.new(name='UVMap')
+        uvl.data.foreach_set('uv', UV.reshape(-1, 2).astype(np.float32).ravel())
+        for m in mats:
+            me.materials.append(m)
+        ob = bpy.data.objects.new(nm, me)
+        bpy.context.scene.collection.objects.link(ob)
+        return ob
+
+    def piece(nm, vi, d, li, off=None):
+        V0, F0 = d['L'][li]
+        Vd, Fd, col, N, kd = d['dense']
+        idx = np.array([kd.find(p)[1] for p in V0])
+        UV = corner_uvs(V0, F0, d['C'], (nm, vi), atlas)
+        C4 = np.concatenate([col[idx], np.full((len(V0), 1), (vi + 0.5) / 8)], 1)
+        Nout = N[idx][F0] if d['W'] is None else crease_normals(V0, F0, Vd, d['W'], N, kd, d['Np'], idx, 1 - d['rnd'])
+        return (V0 + (off if off is not None else 0), F0, UV, Nout, C4)
+
+    # the sheet: every piece's lod0 on a grid, 8 m apart (no piece's AO reaches another)
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    mr = bpy.data.materials.new('rock')
+    parts, k = [], 0
+    for nm, vs in built.items():
+        for vi, d in enumerate(vs):
+            parts.append(piece(nm, vi, d, 0, np.array([8.0 * (k % 6), 8.0 * (k // 6), 0.0]))); k += 1
+    obj('lod0', parts, [mr])
+    bpy.ops.export_scene.gltf(filepath=os.path.join(ROOTP, 'rocks_sheet.glb'), export_format='GLB', export_normals=True,
+                              export_tangents=False, export_materials='EXPORT', export_yup=True, export_apply=True,
+                              export_vertex_color='ACTIVE')
+    img_path = os.path.join(OUT, 'rock_atlas.png')
+    report = {}
+    for nm, vs in built.items():
+        if only and nm != only:
+            continue
+        bpy.ops.wm.read_factory_settings(use_empty=True)
+        mat = bpy.data.materials.new(f'Stone_Own{nm.capitalize()}'); mat.use_nodes = True
+        bsdf = mat.node_tree.nodes['Principled BSDF']
+        if os.path.exists(img_path):
+            ti = mat.node_tree.nodes.new('ShaderNodeTexImage'); ti.image = bpy.data.images.load(img_path)
+            mat.node_tree.links.new(ti.outputs['Color'], bsdf.inputs['Base Color'])
+        bsdf.inputs['Roughness'].default_value = 1.0
+        names = ['lod0', 'lod1', 'lod2'] + (['shadow'] if PRESETS[nm]['shadow'] else [])
+        tris = []
+        for li, on in enumerate(names):
+            obj(on, [piece(nm, vi, d, min(li, 3)) for vi, d in enumerate(vs)], [mat])
+            tris.append(sum(len(d['L'][min(li, 3)][1]) for d in vs) // len(vs))
+        bpy.ops.export_scene.gltf(filepath=os.path.join(OUT, f'{nm}.gltf'), export_format='GLTF_SEPARATE', export_texture_dir='',
+                                  export_normals=True, export_tangents=False, export_materials='EXPORT', export_image_format='AUTO',
+                                  export_keep_originals=True, export_yup=True, export_apply=True, export_vertex_color='ACTIVE')
+        report[nm] = dict(zip(names, tris))
+        print(f'{nm}.gltf tris per variant {report[nm]}')
+    print('REPORT', json.dumps(dict(rocks=report, ppm=round(ppm, 1))))
+
+
 def mesh(only=None):
     import bpy
     from mathutils import kdtree
@@ -665,10 +960,519 @@ def mesh(only=None):
     print('REPORT', json.dumps(report))
 
 
+# ---------------------------------------------------------------- the night kit's boulders (L1 l13 K2: docs/design/NIGHT_KIT.md)
+# FROM (a) the play camera (78 px per metre, 50 degrees above: a plane must be a tone the eye can count, so few and large);
+# (b) target 09's boulders: block-rounded, a pale flat top, dark planar sides, a hard step between; (c) K1's contract, "tones
+# step where normals step": every face is FLAT (its plane's normal on every corner, never the sculpt's), so the standing
+# material picks one tone a plane. A boulder is one to three convex blocks, each the cut of a few planes: a near-level top
+# (within 'ttilt' degrees of up), 'sides' planar sides leaning back 'lean' degrees, a shoulder bevel over each side (its
+# normal 48-60 degrees from up: the body tone between the top and a side) and a corner bevel between two sides ('corner' m
+# wide). The shoulder's size is solved so the tops cover 'top' of the footprint seen from above (the design's 35-45%).
+# Albedo: rock_dabs.png, a tiling sheet of flat low-contrast dabs (no cracks, no noise), each face projected onto it in its
+# own plane; drawn by OWN_ROCK's painted branch (kit.gdshader: the mesh normal as it is, no bump, no moss or lichen).
+# Vertex colour: r, g, b 0 (no baked wear: the planes carry the painting), a the variant, as every packed species.
+#     python tools/assets/env_rocks.py tex --kit night                        rock_dabs.png
+#     blender -b -P tools/assets/env_rocks.py -- mesh --preset boulder_s      (or boulder_m, boulder_l, round_s, round_m,
+#                                                                             round_l) -> <species>.gltf
+#     python tools/assets/env_rocks.py sheet --kit stone --out X.png          the kit's review sheet (the play camera's angle
+#                                                                             and size, three flat tones by normal) and its table
+# A species' name carries no underscore (FloraSpecies.ByMaterial cuts a material's name at one), so the design's preset
+# boulder_s is the species 'bouldersmall' (pieces boulder_s_a, boulder_s_b), boulder_m 'bouldermid', boulder_l 'boulderlarge'.
+# TWO FORMS on the same hulls (L1 l14 S2; lead 14 on the first sheet: the blocks read as crates with lids and cut gems,
+# vertical dark walls over half of each piece, where the target's boulders are rounded lumps wider than tall):
+#   facet  boulder_s/m/l: lower blocks (height about 0.45 of the width), sides leaning back 12-22 degrees and unequal,
+#          shoulders only on a run of neighbouring sides and never under 0.15 m wide (none on the small), no corner bevel on
+#          a block under 2 m; flat normals.
+#   round  round_s/m/l -> 'roundsmall', 'roundmid', 'roundlarge' (pieces round_s_a, ...): each block a low lump, a
+#          super-ellipse footprint with two broad lobes under a gently domed top (its profile's exponent solved for 'top'),
+#          the widest ring a little over the ground and a small tuck under it; SMOOTH normals taken from the surface itself,
+#          no noise, no feature under 0.15 m. The stepped material draws its tone boundaries as curves.
+DAB_TILE = 4.0      # metres the dab sheet covers
+# size: a block's x, y across and its height over the ground (m); off: its place (x, y); block: how square its outline
+# (2 an ellipse, 4 a block); sides; lean (degrees, low, high); ttilt (degrees); corner: the corner bevel's width (m, 0 none);
+# shoulders: how many neighbouring sides carry one (default half of them)
+HULLS = {
+    's': [
+        dict(seed=2101, blocks=[dict(size=(0.64, 0.50, 0.27), sides=5, lean=(12, 22), ttilt=(9, 15), block=2.6, corner=0.0, shoulders=0)]),
+        dict(seed=2113, blocks=[dict(size=(0.84, 0.62, 0.34), sides=5, lean=(12, 22), ttilt=(9, 15), block=2.8, corner=0.0, shoulders=0)]),
+    ],
+    'm': [
+        dict(seed=2201, blocks=[dict(size=(1.45, 1.15, 0.60), sides=5, lean=(12, 22), ttilt=(7, 13), block=2.8, corner=0.0)]),
+        dict(seed=2213, blocks=[dict(size=(1.55, 1.2, 0.64), sides=6, lean=(12, 22), ttilt=(7, 12), block=3.0, corner=0.0),
+                                dict(size=(0.72, 0.6, 0.32), off=(-0.62, -0.42), sides=5, lean=(12, 20), ttilt=(9, 15), block=2.6, corner=0.0, shoulders=0)]),
+        dict(seed=2227, blocks=[dict(size=(1.3, 1.1, 0.62), sides=5, lean=(12, 22), ttilt=(8, 13), block=2.8, corner=0.0),
+                                dict(size=(0.8, 0.7, 0.36), off=(0.55, -0.35), sides=5, lean=(12, 20), ttilt=(9, 15), block=2.6, corner=0.0, shoulders=0)]),
+    ],
+    'l': [
+        dict(seed=2301, blocks=[dict(size=(2.6, 2.0, 1.1), sides=6, lean=(12, 22), ttilt=(6, 11), block=3.0, corner=0.24),
+                                dict(size=(1.5, 1.2, 0.62), off=(1.15, -0.75), sides=5, lean=(12, 20), ttilt=(8, 13), block=2.8, corner=0.0)]),
+        dict(seed=2311, blocks=[dict(size=(3.0, 2.2, 1.15), sides=7, lean=(12, 22), ttilt=(5, 10), block=3.2, corner=0.26),
+                                dict(size=(1.2, 1.0, 0.5), off=(-1.2, -0.7), sides=5, lean=(12, 20), ttilt=(9, 14), block=2.6, corner=0.0)]),
+        dict(seed=2323, blocks=[dict(size=(2.3, 1.9, 1.15), sides=6, lean=(12, 22), ttilt=(6, 11), block=3.0, corner=0.24, seg=28, rings=7),
+                                dict(size=(1.7, 1.2, 0.75), off=(-0.85, 0.6), sides=5, lean=(12, 20), ttilt=(8, 13), block=2.8, corner=0.0),
+                                dict(size=(1.0, 0.9, 0.45), off=(0.9, 1.0), sides=5, lean=(12, 20), ttilt=(9, 14), block=2.6, corner=0.0, shoulders=0)]),
+    ],
+}
+_LONG = {'s': 'small', 'm': 'mid', 'l': 'large'}
+# (hz: the round form's height over the block's; a lump as low as the facet block read as a river pebble on the sheet)
+# (the small round stones stay low, 0.92: at 1.18 the one in her fire stood up as an egg in frame 09)
+NIGHT = {f'{pre}_{k}': dict(species=f'{pre}{_LONG[k]}', form=form, top=top, hz=hz * (0.78 if k == 's' and form == 'round' else 1.0), variants=HULLS[k])
+         for pre, form, top, hz in (('boulder', 'facet', 0.42, 1.0), ('round', 'round', 0.42, 1.18)) for k in 'sml'}
+COS30 = math.cos(math.radians(30))
+COS80 = math.cos(math.radians(80))
+
+
+def polytope(planes):
+    """planes [(n, d)], the solid n.x <= d: its faces [(plane index, polygon k x 3, counter-clockwise from outside)]."""
+    Nn = np.array([p[0] for p in planes], float); Dd = np.array([p[1] for p in planes], float)
+    m = len(planes)
+    I = np.array([(i, j, k) for i in range(m) for j in range(i + 1, m) for k in range(j + 1, m)])
+    A = Nn[I]
+    ok = np.abs(np.linalg.det(A)) > 1e-7
+    X = np.linalg.solve(A[ok], Dd[I[ok]][..., None])[..., 0]
+    X = X[(X @ Nn.T <= Dd[None] + 1e-6).all(1)]
+    faces = []
+    for i in range(m):
+        P = X[np.abs(X @ Nn[i] - Dd[i]) < 1e-6]
+        if len(P) < 3:
+            continue
+        P = P[np.unique(np.round(P, 4), axis=0, return_index=True)[1]]
+        if len(P) < 3:
+            continue
+        u, v = chart_frame(Nn[i])
+        c = P.mean(0)
+        faces.append((i, P[np.argsort(np.arctan2((P - c) @ v, (P - c) @ u))]))
+    return faces
+
+
+def night_block(bp, rng, sd, sink=0.12):
+    """One block's planes [(n, d, kind)]: top, sides, a shoulder over each side set sd m down it, corner bevels, the foot."""
+    ax, ay, h = bp['size'][0] / 2, bp['size'][1] / 2, bp['size'][2]
+    o = np.array(list(bp.get('off', (0.0, 0.0))) + [0.0])
+    n, p = bp['sides'], bp['block']
+    ta, tt = rng.uniform(0, 2 * math.pi), math.radians(rng.uniform(*bp['ttilt']))
+    nt = np.array([math.cos(ta) * math.sin(tt), math.sin(ta) * math.sin(tt), math.cos(tt)])
+    out = [(nt, nt[2] * h, 'top')]
+    a0, sides = rng.uniform(0, 2 * math.pi), []
+    sh0, shn = int(rng.integers(0, n)), bp.get('shoulders', n // 2)     # (the run of sides that carry a shoulder)
+    for i in range(n):
+        a = a0 + (i + rng.uniform(-0.32, 0.32)) * 2 * math.pi / n       # (unequal sides: an even ring reads as a cut gem)
+        r = (abs(math.cos(a) / ax) ** p + abs(math.sin(a) / ay) ** p) ** (-1 / p) * rng.uniform(0.84, 1.0)
+        l = math.radians(rng.uniform(*bp['lean']))
+        ns = np.array([math.cos(a) * math.cos(l), math.sin(a) * math.cos(l), math.sin(l)])
+        sides.append((ns, r * math.cos(l)))
+        out.append((ns, r * math.cos(l), 'side'))
+        # the shoulder: through the side's point 'drop' down from the top, its normal 44-58 degrees from up; only on the
+        # run of sides, and only when it is 0.18 m wide or more before the block is fitted to its size (0.15 after: under that it is a notch)
+        ph, drop = math.radians(rng.uniform(44, 58)), sd * rng.uniform(0.8, 1.2)
+        if (i - sh0) % n < shn and drop / math.sin(ph) >= 0.18:
+            zq = h - drop
+            q = np.array([math.cos(a), math.sin(a), 0.0]) * (r - zq * math.tan(l)) + np.array([0, 0, zq])
+            nsh = np.array([math.cos(a) * math.sin(ph), math.sin(a) * math.sin(ph), math.cos(ph)])
+            out.append((nsh, float(nsh @ q), 'shoulder'))
+    if bp['corner'] > 0:
+        for i in range(n):
+            (n1, d1), (n2, d2) = sides[i], sides[(i + 1) % n]
+            mm = n1 + n2; mm /= np.linalg.norm(mm)
+            beta = 0.5 * math.acos(float(np.clip(n1 @ n2, -1, 1)))
+            try:    # the corner's line at half height
+                cxy = np.linalg.solve(np.array([n1[:2], n2[:2]]), np.array([d1 - n1[2] * h / 2, d2 - n2[2] * h / 2]))
+            except np.linalg.LinAlgError:
+                continue
+            cpt = np.array([cxy[0], cxy[1], h / 2])
+            out.append((mm, float(mm @ cpt) - 0.5 * bp['corner'] * rng.uniform(0.8, 1.2) * math.tan(beta), 'bevel'))
+    out.append((np.array([0, 0, -1.0]), sink, 'foot'))
+    return [(nn, d + float(nn @ o), k) for nn, d, k in out]
+
+
+def night_piece(prm, top, name=''):
+    """One boulder: dict(name, V, F, N per face, K kinds per face, UV per corner). Flat: each face's corners are its own."""
+    def build(sd):
+        rng = np.random.default_rng(prm['seed'])
+        V, F, N, K, UV = [], [], [], [], []
+        for bp in prm['blocks']:
+            pl = night_block(bp, rng, sd * bp['size'][2])
+            faces = polytope([(nn, d) for nn, d, _ in pl])
+            allp = np.concatenate([P for _, P in faces])
+            lo_, hi_ = allp.min(0), allp.max(0)     # (the block keeps to its size: unequal leaning sides overran it)
+            sc = np.array([bp['size'][0] / (hi_[0] - lo_[0]), bp['size'][1] / (hi_[1] - lo_[1]), 1.0])
+            c0 = np.array([(lo_[0] + hi_[0]) / 2, (lo_[1] + hi_[1]) / 2, 0.0])
+            c1 = np.array(list(bp.get('off', (0.0, 0.0))) + [0.0])
+            for pi, P in faces:
+                nn, _, kind = pl[pi]
+                if kind == 'foot':
+                    continue
+                P = (P - c0) * sc + c1
+                nn = nn / sc; nn = nn / np.linalg.norm(nn)
+                u, v = chart_frame(nn)
+                uv0 = rng.uniform(0, 1, 2)
+                base = len(V)
+                V += list(P)
+                for j in range(1, len(P) - 1):
+                    F.append((base, base + j, base + j + 1)); N.append(nn); K.append(kind)
+                    UV.append([uv0 + np.array([P[t] @ u, P[t] @ v]) / DAB_TILE for t in (0, j, j + 1)])
+        return dict(name=name, V=np.array(V), F=np.array(F), N=np.array(N), K=K, UV=np.array(UV), fam='stone',
+                    CN=np.repeat(np.array(N)[:, None], 3, 1))
+    lo, hi = 0.04, 0.6      # (the shoulder's drop, a share of the block's height: more of it, less top)
+    for _ in range(12):
+        mid = (lo + hi) / 2
+        pc = build(mid)
+        if shares(pc)['top'] > top:
+            lo = mid
+        else:
+            hi = mid
+    pc['sd'] = round(mid, 3)
+    pc['lods'] = [pc, pc, pc]       # (a faceted boulder is under 150 triangles: one mesh at every distance)
+    return pc
+
+
+def round_block(bp, rng, e, seg, rings, sink=0.12):
+    """One block as a low lump: (V, F, VN, UV per vertex). A pole, 'rings' rings of 'seg': rings - 2 down the dome at equal
+    steps of arc to the widest ring (0.22 of the height over the ground), one on the ground under a small tuck, one 'sink'
+    under it. Then the lump is pressed against a few planes with a soft edge (a near-level top and two or three leaning
+    sides: the block's flats, each edge a round one), which is what makes it a boulder and not a river pebble. The normals
+    are the surface's own, read off the same surface built four times finer, so every lod shades alike."""
+    ax, ay, h = bp['size'][0] / 2, bp['size'][1] / 2, bp['size'][2]
+    o = np.array(list(bp.get('off', (0.0, 0.0))) + [0.0])
+    p = bp.get('round', 2.5)
+    lob = [(k, rng.uniform(0.07, 0.13) * (1.0 if k == 2 else 0.75), rng.uniform(0, 2 * math.pi)) for k in (2, 3)]
+    sa, sm = rng.uniform(0, 2 * math.pi), rng.uniform(0.25, 0.5)       # (the lump leans: m sideways per m of height)
+    shx, shy = sm * math.cos(sa), sm * math.sin(sa)
+    uv0 = rng.uniform(0, 1, 2)
+    fa0 = rng.uniform(0, 2 * math.pi)
+    # the flats: (bearing, the normal's rise over the level in degrees, how deep it presses as a share of the lump's reach)
+    flats = [(fa0 + (i + rng.uniform(-0.25, 0.25)) * 2 * math.pi / 3, rng.uniform(18, 48), rng.uniform(0.74, 0.88)) for i in range(3)]
+    flats.append((rng.uniform(0, 2 * math.pi), rng.uniform(76, 84), rng.uniform(0.86, 0.93)))      # (the top)
+    if (ax + ay) < 1.0:
+        flats = flats[1:]           # (a small stone: two sides and the top)
+    zc = 0.22 * h
+    k4 = 4
+    segd, nu = seg * k4, (rings - 2) * k4
+
+    def rad(th):
+        base = (np.abs(np.cos(th) / ax) ** p + np.abs(np.sin(th) / ay) ** p) ** (-1 / p)
+        return base * (1 + sum(a * np.cos(k * (th - t0)) for k, a, t0 in lob))
+    t = np.linspace(0, math.pi / 2, 400)
+    pr, pz = np.sin(t) ** (2 / e), zc + (h - zc) * np.cos(t) ** (2 / e)
+    s = np.concatenate([[0.0], np.cumsum(np.hypot(np.diff(pr) * (ax + ay) / 2, np.diff(pz)))])
+    sj = s[-1] * np.arange(1, nu + 1) / nu
+    rr, zz = np.interp(sj, s, pr), np.interp(sj, s, pz)
+    bz, br = 1.6 * zc, 0.5                      # (the tuck: an arc from the widest ring to the ground)
+    rg = 1 - br * (1 - math.cos(math.asin(zc / bz)))
+    rr, zz = np.concatenate([rr, [rg, rg]]), np.concatenate([zz, [0.0, -sink]])
+    nr = nu + 2
+    th = np.arange(segd) * 2 * math.pi / segd
+    R, c, sn = rad(th), np.cos(th), np.sin(th)
+    V = np.concatenate([np.array([[shx * h, shy * h, h]])] +
+                       [np.stack([R * rr[j] * c + shx * zz[j], R * rr[j] * sn + shy * zz[j], np.full(segd, zz[j])], 1) for j in range(nr)])
+    wsoft = max(0.05, 0.09 * (ax + ay) / 2)     # (the flats' edge: round, never a crease)
+    cz = np.array([0.0, 0.0, zc])
+    for az, rise, deep in flats:
+        nf = np.array([math.cos(az) * math.cos(math.radians(rise)), math.sin(az) * math.cos(math.radians(rise)), math.sin(math.radians(rise))])
+        tt = (V - cz) @ nf
+        d = deep * tt.max()
+        V = V + (-wsoft * np.logaddexp(0.0, (tt - d) / wsoft))[:, None] * nf
+    V[1 + (nr - 1) * segd:, :2] = V[1 + (nr - 2) * segd:1 + (nr - 1) * segd, :2]; V[1 + (nr - 1) * segd:, 2] = -sink
+    V[:, 2] *= h / V[:, 2].max()                # (the pressing lowered it: back to the block's height)
+    sx, sy = 2 * ax / np.ptp(V[:, 0]), 2 * ay / np.ptp(V[:, 1])        # (and to its size across)
+    V = V * [sx, sy, 1.0]
+    V[:, 0] -= (V[:, 0].max() + V[:, 0].min()) / 2; V[:, 1] -= (V[:, 1].max() + V[:, 1].min()) / 2
+
+    def faces(sg, n):
+        F = [(0, 1 + i, 1 + (i + 1) % sg) for i in range(sg)]
+        for j in range(n - 1):
+            a0, b0 = 1 + j * sg, 1 + (j + 1) * sg
+            for i in range(sg):
+                i1 = (i + 1) % sg
+                F += [(a0 + i, b0 + i, b0 + i1), (a0 + i, b0 + i1, a0 + i1)]
+        return np.array(F)
+    VNd = vertex_normals(V, faces(segd, nr))
+    # the lod's own vertices: every fourth of the fine surface (and its last two rings whole)
+    ringsel = [k4 * (j + 1) - 1 for j in range(rings - 2)] + [nr - 2, nr - 1]
+    idx = np.concatenate([[0]] + [1 + j * segd + np.arange(seg) * k4 for j in ringsel])
+    V, VN = V[idx], VNd[idx]
+    F = faces(seg, rings)
+    # the dabs: the dome laid flat about its pole (each vertex its meridian's arc from the pole, along its bearing)
+    m = np.zeros(len(V)); prev = np.repeat(V[:1], seg, 0); acc = np.zeros(seg)
+    for j in range(rings):
+        ring = V[1 + j * seg:1 + (j + 1) * seg]
+        acc = acc + np.linalg.norm(ring - prev, axis=1); m[1 + j * seg:1 + (j + 1) * seg] = acc; prev = ring
+    c, sn = c[::k4], sn[::k4]
+    ct, st = np.concatenate([[0.0], np.tile(c, rings)]), np.concatenate([[0.0], np.tile(sn, rings)])
+    UV = uv0 + np.stack([m * ct, m * st], 1) / DAB_TILE
+    return V + o, F, VN, UV
+
+
+def round_piece(prm, top, name='', hz=1.0):
+    """One rounded boulder: the same hull blocks as the facet form, each a lump; the dome's exponent (2 a half ellipse,
+    more a flatter top over steeper sides) solved so the tops cover 'top' of the footprint from above. lods: three."""
+    def build(e, lod=0):
+        rng = np.random.default_rng(prm['seed'] + 7)
+        V, F, CN, UV, o = [], [], [], [], 0
+        for bi, bp in enumerate(prm['blocks']):
+            bp = dict(bp, size=(bp['size'][0], bp['size'][1], bp['size'][2] * hz))
+            w = (bp['size'][0] + bp['size'][1]) / 2
+            seg = (bp.get('seg', 24 if w < 1.0 else 28 if w < 2.0 else 32) if bi == 0 else 20 if w >= 1.0 else 16)
+            rings = (bp.get('rings', 7 if w < 2.0 else 8) if bi == 0 else 5)
+            if lod:
+                seg, rings = (max(seg // 2, 10), max(rings - 2, 4)) if lod == 1 else (max(seg // 3, 8), 4)
+            v, f, vn, uv = round_block(bp, rng, e, seg, rings)
+            V.append(v); F.append(f + o); CN.append(vn[f]); UV.append(uv[f]); o += len(v)
+        CN = np.concatenate(CN)
+        N = CN.sum(1); N /= np.maximum(np.linalg.norm(N, axis=1, keepdims=True), 1e-12)
+        return dict(name=name, V=np.concatenate(V), F=np.concatenate(F), N=N, CN=CN, K=[], UV=np.concatenate(UV), fam='stone')
+    lo, hi = 2.0, 2.7        # (over 2.7 the lump is a drum: a flat lid over a wall; the share is then what it is)
+    for _ in range(10):
+        mid = (lo + hi) / 2
+        if shares(build(mid))['top'] < top:
+            lo = mid
+        else:
+            hi = mid
+    e = round(2.0 if shares(build(2.0))['top'] >= top else mid, 2)
+    pc = build(e)
+    pc['e'] = e
+    pc['lods'] = [pc, build(e, 1), build(e, 2)]
+    return pc
+
+
+def night_pieces(only=None):
+    """{preset: [piece]} (the pieces' names boulder_s_a, ..., round_s_a, ...)."""
+    return {nm: [round_piece(prm, pre['top'], f'{nm}_{"abcdefgh"[vi]}', pre['hz']) if pre['form'] == 'round' else
+                 night_piece(prm, pre['top'], f'{nm}_{"abcdefgh"[vi]}') for vi, prm in enumerate(pre['variants'])]
+            for nm, pre in NIGHT.items() if not only or nm == only}
+
+
+# ---- measuring and the review sheet (numpy; shared with env_trees.py's kit pieces)
+TOPDOWN = np.eye(3)
+_e = math.radians(50)
+PLAY = np.array([[1.0, 0, 0], [0, math.sin(_e), math.cos(_e)], [0, -math.cos(_e), math.sin(_e)]])   # (right, up, toward the eye)
+
+
+def raster(V, F, R, ppm, pad=2, bary=False):
+    """An orthographic z-buffer of the triangles seen with R's rows (right, up, toward the eye): (face ids, -1 empty; x0, y0 px)
+    and, with bary, each pixel's weights of its face's first two corners."""
+    P = V @ R.T
+    x, y, z = P[:, 0] * ppm, -P[:, 1] * ppm, P[:, 2]
+    x0, y0 = math.floor(x.min()) - pad, math.floor(y.min()) - pad
+    W, H = int(math.ceil(x.max()) - x0) + pad, int(math.ceil(y.max()) - y0) + pad
+    ids = -np.ones((H, W), np.int64); zb = np.full((H, W), -1e9)
+    B0, B1 = np.zeros((H, W)), np.zeros((H, W))
+    for fi, (a, b, c) in enumerate(F):
+        xs, ys = x[[a, b, c]] - x0, y[[a, b, c]] - y0
+        i0, i1 = max(int(xs.min()), 0), min(int(math.ceil(xs.max())) + 1, W)
+        j0, j1 = max(int(ys.min()), 0), min(int(math.ceil(ys.max())) + 1, H)
+        d = (ys[1] - ys[2]) * (xs[0] - xs[2]) + (xs[2] - xs[1]) * (ys[0] - ys[2])
+        if i1 <= i0 or j1 <= j0 or abs(d) < 1e-9:
+            continue
+        gx, gy = np.meshgrid(np.arange(i0, i1) + 0.5, np.arange(j0, j1) + 0.5)
+        w0 = ((ys[1] - ys[2]) * (gx - xs[2]) + (xs[2] - xs[1]) * (gy - ys[2])) / d
+        w1 = ((ys[2] - ys[0]) * (gx - xs[2]) + (xs[0] - xs[2]) * (gy - ys[2])) / d
+        w2 = 1 - w0 - w1
+        zz = w0 * z[a] + w1 * z[b] + w2 * z[c]
+        sub = zb[j0:j1, i0:i1]
+        m = (w0 >= 0) & (w1 >= 0) & (w2 >= 0) & (zz > sub)
+        sub[m] = zz[m]; ids[j0:j1, i0:i1][m] = fi
+        if bary:
+            B0[j0:j1, i0:i1][m] = w0[m]; B1[j0:j1, i0:i1][m] = w1[m]
+    return (ids, (x0, y0), (B0, B1)) if bary else (ids, (x0, y0))
+
+
+def groups(N):
+    """Each face's tone group by its baked normal: 0 top (within 30 degrees of up), 1 body, 2 inner or low (80 degrees or more)."""
+    return np.where(N[:, 2] >= COS30, 0, np.where(N[:, 2] > COS80, 1, 2))
+
+
+def shares(pc, ppm=60):
+    """From straight above: the footprint's area (m2), the share of it each group shows, and the share of its hull left open."""
+    ids, _ = raster(pc['V'], pc['F'], TOPDOWN, ppm)
+    cov = ids >= 0
+    g = groups(pc['N'])[ids[cov]]
+    ys, xs = np.nonzero(cov)
+    pts = sorted(set(zip(xs.tolist(), ys.tolist())))
+    def half(ps):
+        h = []
+        for q in ps:
+            while len(h) >= 2 and (h[-1][0] - h[-2][0]) * (q[1] - h[-2][1]) - (h[-1][1] - h[-2][1]) * (q[0] - h[-2][0]) <= 0:
+                h.pop()
+            h.append(q)
+        return h
+    hull = half(pts)[:-1] + half(pts[::-1])[:-1]
+    ha = 0.5 * abs(sum(hull[i][0] * hull[(i + 1) % len(hull)][1] - hull[(i + 1) % len(hull)][0] * hull[i][1] for i in range(len(hull))))
+    n = max(int(cov.sum()), 1)
+    return dict(area=round(n / ppm ** 2, 2), top=float((g == 0).mean()), body=float((g == 1).mean()), low=float((g == 2).mean()),
+                gaps=round(1 - n / max(ha, 1), 3))
+
+
+def oklch(L, C, h):
+    a, b = C * math.cos(math.radians(h)), C * math.sin(math.radians(h))
+    l, m, s = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3, (L - 0.1055613458 * a - 0.0638541728 * b) ** 3, (L - 0.0894841775 * a - 1.291485548 * b) ** 3
+    lin = np.array([4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+                    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s]).clip(0, 1)
+    return np.where(lin <= 0.0031308, 12.92 * lin, 1.055 * lin ** (1 / 2.4) - 0.055)
+
+
+# (the design's table, NIGHT_KIT.md K1: S1 side, S2 body, S3 top per family, as sRGB; the sheet's ground the moonlit S2)
+TONES = {'stone': [oklch(0.43, 0.12, 255), oklch(0.27, 0.085, 261), oklch(0.18, 0.05, 268)],
+         'leaf': [oklch(0.355, 0.075, 237), oklch(0.23, 0.063, 250), oklch(0.14, 0.035, 254)],
+         'bark': [oklch(0.28, 0.05, 268), oklch(0.20, 0.05, 272), oklch(0.15, 0.035, 262)]}
+GROUND = oklch(0.27, 0.073, 255)
+MOON = np.array([-0.55, 0.45, 0.70]) / np.linalg.norm([-0.55, 0.45, 0.70])     # (to the moon: up, from the left, behind)
+
+
+def sheet(rows, out, ppm=78.0, gap=0.5):
+    """The kit's review sheet: rows of pieces side by side from the play camera's angle (50 degrees above) at its size
+    (78 px per metre), flat-lit in three tones a family by each face's baked normal (a stand-in for K1's rule, not the
+    shader: top within 30 degrees of up or square to the moon; side facing away from it or low; body the rest)."""
+    from PIL import Image
+    tiles = []
+    for row in rows:
+        rt = []
+        for pc in row:
+            ids, _, (b0, b1) = raster(pc['V'], pc['F'], PLAY, ppm, bary=True)
+            cov = ids >= 0; f = ids[cov]
+            CN = pc['CN'] if pc.get('CN') is not None else np.repeat(pc['N'][:, None], 3, 1)
+            w0, w1 = b0[cov][:, None], b1[cov][:, None]
+            N = CN[f, 0] * w0 + CN[f, 1] * w1 + CN[f, 2] * (1 - w0 - w1)
+            N /= np.maximum(np.linalg.norm(N, axis=1, keepdims=True), 1e-12)
+            t = N @ MOON
+            tone = np.where((N[:, 2] >= COS30) | (t > 0.8), 0, np.where((t < 0.1) | (N[:, 2] <= COS80), 2, 1))
+            fam = pc.get('fams') if pc.get('fams') is not None else [pc['fam']] * len(pc['F'])
+            T = np.array([TONES[x] for x in fam])
+            img = np.tile(GROUND, (ids.shape[0], ids.shape[1], 1))
+            img[cov] = T[f, tone]
+            rt.append(img)
+        tiles.append(rt)
+    g = int(gap * ppm)
+    W = max(sum(t.shape[1] for t in rt) + g * (len(rt) + 1) for rt in tiles)
+    H = sum(max(t.shape[0] for t in rt) for rt in tiles) + g * (len(tiles) + 1)
+    can = np.tile(GROUND, (H, W, 1))
+    y = g
+    for rt in tiles:
+        hh = max(t.shape[0] for t in rt); x = g
+        for t in rt:
+            can[y + hh - t.shape[0]:y + hh, x:x + t.shape[1]] = t
+            x += t.shape[1] + g
+        y += hh + g
+    os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
+    Image.fromarray((can * 255 + 0.5).astype(np.uint8)).save(out)
+    print(out, f'{W}x{H}')
+
+
+def table(pc):
+    s = shares(pc)
+    V = pc['V']; above = V[V[:, 2] > -1e-6] if (V[:, 2] > 0).any() else V
+    kinds = pc.get('K')
+    line = f"{pc['name']}: {np.ptp(V[:, 0]):.2f} x {np.ptp(V[:, 1]):.2f} m, z {max(V[:, 2].min(), 0):.2f}-{V[:, 2].max():.2f} m, {len(pc['F'])} tris, " \
+           f"from above top {s['top']:.0%} body {s['body']:.0%} low {s['low']:.0%}, gaps {s['gaps']:.0%}"
+    if kinds:
+        ar = {}
+        for (a, b, c), k, n in zip(pc['F'], kinds, pc['N']):
+            if k == 'side':
+                key = tuple(np.round(n, 3)); ar[key] = ar.get(key, 0) + 0.5 * np.linalg.norm(np.cross(V[b] - V[a], V[c] - V[a]))
+        line += f", side planes {sum(1 for v in ar.values() if v > 0.15 * max(ar.values()))}, shoulder {pc.get('sd')} of the height"
+    if pc.get('e'):
+        line += f", dome exponent {pc['e']}, lods {' / '.join(str(len(q['F'])) for q in pc['lods'])} tris"
+    return line
+
+
+def dab_sheet(N, base, seed, tile=DAB_TILE, scales=(0.7, 0.25), step=0.05, warm=None, wrap=True):
+    """A flat painted field (N x N x 3, sRGB 0-1): 'base' with angular dabs at two sizes (m across), each one flat value
+    step up or down (and a breath of 'warm'); no noise, no gradient. Tiles when wrap."""
+    import cv2
+    rng = np.random.default_rng(seed)
+    img = np.tile(srgb(base), (N, N, 1)).astype(np.float32)
+    ppm = N / tile
+    for si, s in enumerate(scales):
+        for _ in range(int((0.9, 0.55)[min(si, 1)] * (tile / s) ** 2)):
+            c = rng.uniform(0, N, 2)
+            k = int(rng.integers(4, 7))
+            ang = np.sort(rng.uniform(0, 2 * math.pi, k))
+            rad = s * ppm * 0.5 * rng.uniform(0.7, 1.25, k)
+            poly = np.stack([c[0] + rad * np.cos(ang) * 1.3, c[1] + rad * np.sin(ang)], 1)
+            col = srgb(base) * (1 + step * rng.choice([-1.0, -0.5, 0.5, 1.0]))
+            if warm is not None and rng.random() < 0.3:
+                col = col * 0.9 + srgb(warm) * 0.1
+            for ox in ((-N, 0, N) if wrap else (0,)):
+                for oy in ((-N, 0, N) if wrap else (0,)):
+                    cv2.fillPoly(img, [np.round(poly + [ox, oy]).astype(np.int32)], [float(x) for x in col], cv2.LINE_AA)
+    return np.clip(img, 0, 1)
+
+
+def night_tex():
+    from PIL import Image
+    out = os.path.join(OUT, 'rock_dabs.png')
+    Image.fromarray((dab_sheet(1024, '#6c6f72', 71, warm='#8c7560') * 255 + 0.5).astype(np.uint8)).save(out)
+    print(out)
+
+
+def night_mesh(only=None):
+    """Each night preset's species file: lod0, lod1, lod2 and shadow (the facet form one mesh: a boulder is under 150
+    triangles; the round form three, the shadow its lod2), each corner the piece's own normal (a facet's plane or the
+    lump's surface), material Stone_Own<Species> on rock_dabs.png."""
+    import bpy
+    img_path = os.path.join(OUT, 'rock_dabs.png')
+    for nm, pcs in night_pieces(only).items():
+        sp = NIGHT[nm]['species']
+        bpy.ops.wm.read_factory_settings(use_empty=True)
+        mat = bpy.data.materials.new(f'Stone_Own{sp.capitalize()}'); mat.use_nodes = True
+        bsdf = mat.node_tree.nodes['Principled BSDF']
+        ti = mat.node_tree.nodes.new('ShaderNodeTexImage'); ti.image = bpy.data.images.load(img_path)
+        mat.node_tree.links.new(ti.outputs['Color'], bsdf.inputs['Base Color'])
+        bsdf.inputs['Roughness'].default_value = 1.0
+        for pc in pcs:
+            print('  ' + table(pc))
+        for on, li in (('lod0', 0), ('lod1', 1), ('lod2', 2), ('shadow', 2)):
+            V, F, Nv, UV, C, o = [], [], [], [], [], 0
+            for vi, pc0 in enumerate(pcs):
+                pc = pc0['lods'][li]
+                # (each corner its own vertex, so a corner's normal is exactly the piece's)
+                V.append(pc['V'][pc['F']].reshape(-1, 3)); Nv.append(pc['CN'].reshape(-1, 3)); UV.append(pc['UV'].reshape(-1, 2))
+                F.append(np.arange(len(pc['F']) * 3).reshape(-1, 3) + o); o += len(pc['F']) * 3
+                C.append(np.tile([0.0, 0.0, 0.0, (vi + 0.5) / 8], (len(pc['F']) * 3, 1)))
+            V, F, Nv, UV, C = np.concatenate(V), np.concatenate(F), np.concatenate(Nv), np.concatenate(UV), np.concatenate(C)
+            me = bpy.data.meshes.new(on)
+            me.from_pydata(V.tolist(), [], F.tolist())
+            me.normals_split_custom_set_from_vertices([tuple(n) for n in Nv])
+            ca = me.color_attributes.new('Col', 'FLOAT_COLOR', 'POINT')
+            ca.data.foreach_set('color', C.astype(np.float32).ravel())
+            me.color_attributes.active_color = ca
+            uvl = me.uv_layers.new(name='UVMap')
+            uvl.data.foreach_set('uv', np.stack([UV[:, 0], 1 - UV[:, 1]], 1).astype(np.float32).ravel())
+            me.materials.append(mat)
+            bpy.context.scene.collection.objects.link(bpy.data.objects.new(on, me))
+        bpy.ops.export_scene.gltf(filepath=os.path.join(OUT, f'{sp}.gltf'), export_format='GLTF_SEPARATE', export_texture_dir='',
+                                  export_normals=True, export_tangents=False, export_materials='EXPORT', export_image_format='AUTO',
+                                  export_keep_originals=True, export_yup=True, export_apply=True, export_vertex_color='ACTIVE')
+        print(f'{sp}.gltf: {len(pcs)} variants, lod0 {sum(len(q["F"]) for q in pcs)} tris')
+
+
+def kit_sheet(out, which='all'):
+    rows = []
+    if which in ('all', 'stone'):
+        allp = night_pieces()
+        rows += [[pc for nm, pcs in allp.items() if NIGHT[nm]['form'] == form for pc in pcs] for form in ('facet', 'round')]
+    if which != 'stone':
+        sys.path.insert(0, os.path.dirname(__file__))
+        import env_trees
+        rows += env_trees.kit_rows(which)
+    for row in rows:
+        for pc in row:
+            print(table(pc))
+    sheet(rows, out)
+
+
 if __name__ == '__main__':
     argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else sys.argv[1:]
-    if argv and argv[0] == 'tex':
+    if argv and argv[0] == 'tex' and arg('--kit', '') == 'night':
+        night_tex()
+    elif argv and argv[0] == 'sheet':
+        kit_sheet(arg('--out', os.path.join(ROOT, 'kit_sheet.png')), arg('--kit', 'all'))
+    elif argv and argv[0] == 'mesh' and arg('--preset', '') in NIGHT:
+        night_mesh(arg('--preset', None))
+    elif argv and argv[0] == 'tex':
         tex()
+    elif argv and argv[0] == 'mesh' and arg('--form', 'planes') == 'planes':
+        mesh_planes(arg('--preset', None))   # (L1 C3a; --form sculpt: E5's sculpted pieces on the triplanar sheet, kept to compare)
     elif argv and argv[0] == 'mesh':
         mesh(arg('--preset', None))
     else:

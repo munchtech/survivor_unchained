@@ -8,6 +8,24 @@
 // and heroine_hair_erase.gdshader drawn last over any of the blended ones, to
 // erase FSR 2's reactive mask under them (ERASE).
 
+// The cel model (cel.gdshaderinc; L1 B1b, from the bible v2 and the MB1/MB2 boards): ink 1 (her silhouette only), no
+// stepped rim (a card's normal is not a silhouette); its own light() below: the band on the wrapped n.l (the wrap kept:
+// the terminator wrap past n.l 0), its half-tone and the key's fill in shade taking the dye's own hue (shade_hue: the
+// shade side colored, never grey), and one hard highlight band per lock in place of the soft sheen (a narrow
+// smoothstep on the same Kajiya-Kay term, its shift and color kept; the secondary gone).
+#define CEL_INK 1
+// (the half-tone 0.12: rule 5, narrower than skin's 0.2; the library's hair, B2r2)
+#define CEL_BAND vec4(0.0, 0.06, 0.12, 0.06)
+#define CEL_MID vec4(0.72, 0.72, 0.72, 1.0)
+#define CEL_FORM 0.3
+#define CEL_NO_RIM
+#define CEL_OWN_LIGHT
+#define CEL_HERO   // (L1 l19 her2: the hero in her pool, one anchor tone on her shade side)
+#define CEL_HERO_REF colour   // (L1 l22 r1hair: the hair class's color and breakup are read against her dye, cel.gdshaderinc)
+#include "res://shaders/cel.gdshaderinc"
+uniform float shade_hue : hint_range(0.0, 1.0) = 0.6;   // (cel: how much the half-tone and fill take the dye's hue)
+uniform vec2 shine_band = vec2(0.42, 0.58);              // (cel: the highlight band's edges on the sheen term, 0..1)
+
 uniform sampler2D strands : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform vec3 colour : source_color = vec3(0.56, 0.17, 0.07);
 uniform float roots = 0.4;
@@ -94,8 +112,10 @@ uniform bool fibre_back = true;
 // combed, dark (under the hair), thinning out at her hairline (its vertex
 // alpha) to bare skin. A braid's strands are drawn so too.
 uniform bool cap = false;
-// A leather tie in her hair: dark, no strands.
+// A tie in her hair, no strands: GOLD (L1 lead 23 TUNE, the owner's close-up: a red braid with gold ties; was dark leather),
+// painted as metal: its glint (cel_hero_glint, class 3) and lifted to at least HAIR_TIE_L (Oklab L) on the hero paint.
 uniform bool tie = false;
+#define HAIR_TIE_L 0.72
 // Her hair's swing (src/Actors/HairSway.cs): how far a mass hung below her
 // head has been left behind, and where her head is (both in the mesh's own
 // space). Each point is moved by it the more the further it hangs below her
@@ -163,6 +183,53 @@ float hl_noise(vec3 p) {
 	f = f * f * (3.0 - 2.0 * f);
 	return mix(mix(mix(hl_hash(i), hl_hash(i + vec3(1, 0, 0)), f.x), mix(hl_hash(i + vec3(0, 1, 0)), hl_hash(i + vec3(1, 1, 0)), f.x), f.y),
 		mix(mix(hl_hash(i + vec3(0, 0, 1)), hl_hash(i + vec3(1, 0, 1)), f.x), mix(hl_hash(i + vec3(0, 1, 1)), hl_hash(i + vec3(1, 1, 1)), f.x), f.y), f.z);
+}
+
+// (L1 lead 23, LOCKS) THE LOCK-SCALE BREAKUP: at the play camera a strand texture blurs to one flat plateau (a cap, not
+// hair). Her hair is drawn as a few BIG LOCKS in her head's rest space (hl_at): the crown cut into cel_hero_locks.y locks
+// over a half turn about her head's front-back axis, each a rope with its OWN turn (its cylinder normal across its width
+// against her light, cel_hero.xy, 40 degrees up): under cel_hero_locks.z of the light it takes the shade-lock value
+// (x, an Oklab L factor), a dark gap line (w, L factor; 1 px at a lock's edge, and where the cards lie deep, COLOR.r; the
+// scalp cap under the cards is all gap), and one hard sheen band (cel_hero_locks2.x, L factor, its width y) where a lit
+// lock's normal meets the half-vector, each lock's band shifted by its number. VALUE ONLY: the emission is scaled by
+// the cube of the L factor (Oklab hue and C / L kept exactly; the sheen stops at the gamut's top). Whole at the play
+// camera, none in a close shot (c_near, as the class landing). hero_pool 72-77; zeros: as before.
+global uniform vec4 cel_hero_locks;
+global uniform vec2 cel_hero_locks2;
+vec3 hair_locks(vec3 e, vec3 p, float deep, bool scalp, vec3 pw, vec3 cam, mat3 to_world, float near) {
+	if (near <= 0.0) return e;
+	float y0 = 0.05;
+	vec3 q = p + vec3(0.0, y0, 0.0);
+	float a = atan(q.x, q.y) / 3.14159265 * max(cel_hero_locks.y, 1.0);   // (locks over a half turn)
+	float wob = 0.18 * sin(q.z * 23.0 + floor(a) * 1.7);                  // (a lock's edge not a ruled line)
+	a += wob;
+	float li = floor(a), u = a - li, h = hl_hash(vec3(li, 3.1, 7.7));
+	vec3 nr = normalize(q);
+	vec3 tl = normalize(cross(vec3(0.0, 0.0, 1.0), nr) + vec3(1e-5));
+	float th = (u - 0.5) * 2.4;                                          // (across the rope: its normal turns +-69 degrees)
+	vec3 nl = normalize(to_world * (nr * cos(th) - tl * sin(th)));
+	vec2 hx = cel_hero.xy / max(length(cel_hero.xy), 1e-4);
+	vec3 ld = normalize(vec3(hx.x, 0.84, hx.y));
+	float lit = dot(nl, ld) + (h - 0.5) * 0.5;                          // (each lock a little its own; TUNE l23: 0.3, neighbours read alike at 16 px)
+	float fw = max(fwidth(lit), 1e-4);
+	float f = mix(cel_hero_locks.x, 1.0, smoothstep(cel_hero_locks.z - 0.5 * fw, cel_hero_locks.z + 0.5 * fw, lit));
+	// (the gap: 1 px at a lock's edge, deep cards, the scalp)
+	float ue = min(u, 1.0 - u), uw = max(fwidth(a), 1e-4);
+	float gap = max(1.0 - smoothstep(0.5 * uw, 1.5 * uw, ue), smoothstep(0.84, 0.78, deep));   // (TUNE l23: 0.88-0.8, too much of the crown in gap)
+	if (scalp) gap = 1.0;
+	f *= mix(1.0, cel_hero_locks.w > 0.0 ? cel_hero_locks.w : 1.0, gap);
+	// (the sheen: a hard band on a lit lock where its normal meets the half-vector, shifted lock to lock)
+	if (cel_hero_locks2.x > 0.0) {
+		vec3 hv = normalize(ld + normalize(cam - pw));
+		float s = dot(normalize(to_world * nr), hv) + (h - 0.5) * 0.12;
+		float sw = max(fwidth(s), 1e-4), e0 = 1.0 - cel_hero_locks2.y;
+		float band = smoothstep(e0 - 0.5 * sw, e0 + 0.5 * sw, s) * smoothstep(cel_hero_locks.z - 0.5 * fw, cel_hero_locks.z + 0.5 * fw, lit - 0.1) * (1.0 - gap);
+		f *= mix(1.0, cel_hero_locks2.x, band);
+	}
+	f = mix(1.0, f, near);
+	vec3 o = e * (f * f * f);
+	float m = max(o.r, max(o.g, o.b));
+	return (f > 1.0 && m > 1.0) ? e * max(1.0, 1.0 / max(max(e.r, max(e.g, e.b)), 1e-4)) : o;
 }
 
 vec3 turned(vec4 q, vec3 v) {
@@ -271,7 +338,7 @@ void fragment() {
 	}
 	float cover = 1.0;
 	if (tie) {
-		ALBEDO = vec3(0.055, 0.035, 0.024);
+		ALBEDO = vec3(0.80, 0.52, 0.16);   // (linear gold; was leather 0.055, 0.035, 0.024)
 		fibre = 0.6;
 	} else if (cap) {
 		// (at her hairline, where its strands are seen, as bright as hair; dark under the cards)
@@ -306,7 +373,7 @@ void fragment() {
 	}
 	// (the ash on the lighter strands only: on the dark ones, deep in the hair and lit by the sky, it turned them
 	// blue-grey, 0.5% to 6.9% of her crown's pixels bluish: judge j1, face 34)
-	ALBEDO *= mix(vec3(1.0), ash_tone, ash_w * smoothstep(0.08, 0.35, dot(ALBEDO, vec3(0.2126, 0.7152, 0.0722)) / max(dye_lum, 0.001)));
+	ALBEDO *= mix(vec3(1.0), ash_tone, (tie ? 0.0 : ash_w) * smoothstep(0.08, 0.35, dot(ALBEDO, vec3(0.2126, 0.7152, 0.0722)) / max(dye_lum, 0.001)));
 #if defined(SOFT) || defined(OVER)
 	ALPHA = cover;
 #elif defined(BLEND)
@@ -347,6 +414,18 @@ void fragment() {
 	ROUGHNESS = 0.7;
 	SPECULAR = 0.15;
 	AO = mix(0.75, 1.0, depth);
+#ifndef ERASE
+	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug; none on the unshaded erase).
+	CEL_FRAGMENT;
+	CEL_HERO_FRAGMENT;
+	if (tie && cel_hero_abs() && cel_hero_id.a < 0.5) {
+		vec3 t_n = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);
+		float t_l = cel_hero_ok_l(EMISSION);
+		if (t_l > 0.0001 && t_l < HAIR_TIE_L) EMISSION *= pow(HAIR_TIE_L / t_l, 3.0);
+		EMISSION = cel_hero_glint(EMISSION, t_n, normalize((INV_VIEW_MATRIX * vec4(VIEW, 0.0)).xyz), 3, cel_hero_glint_lit(t_n));
+	}
+	if (cel_hero_abs() && cel_hero_id.a < 0.5 && cel_hero_locks.x > 0.0 && !tie) EMISSION = hair_locks(EMISSION, hl_at, depth, cap && COLOR.b < 0.5, (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz, CAMERA_POSITION_WORLD, mat3(MODEL_MATRIX) * head_turn, cel_hero_chroma.x > 0.0 ? cel_hero_near(-VERTEX.z, PROJECTION_MATRIX) : 1.0);
+#endif
 }
 
 float along_strand(vec3 t, vec3 h, float width) {
@@ -355,10 +434,27 @@ float along_strand(vec3 t, vec3 h, float width) {
 }
 
 void light() {
+	float cb_t = (dot(cel_nb(NORMAL), LIGHT) + wrap) / (1.0 + wrap);
+	vec3 cb_dbg = vec3(0.0);
+	if (cel_dbg_light(cel_nb(NORMAL), cb_t, ATTENUATION, LIGHT_IS_DIRECTIONAL, cb_dbg)) { SPECULAR_LIGHT += cb_dbg; } else {
 	vec3 lc = LIGHT_COLOR * ATTENUATION / PI;
 	float nl = dot(NORMAL, LIGHT);
-	DIFFUSE_LIGHT += lc * clamp((nl + wrap) / (1.0 + wrap), 0.0, 1.0);
-	DIFFUSE_LIGHT += lc * through * pow(clamp(dot(-LIGHT, VIEW), 0.0, 1.0), 3.0);
+	vec3 d_a = lc * clamp((nl + wrap) / (1.0 + wrap), 0.0, 1.0);
+	vec3 t_a = lc * through * pow(clamp(dot(-LIGHT, VIEW), 0.0, 1.0), 3.0);
+	float cb_sh = ATTENUATION;
+	if (cel_on > 0.0) {
+		// (cel: the band, its half-tone and the key's fill in the dye's hue, the hardened key shadow; the glow through
+		// her hair from behind kept, under that shadow)
+		cb_sh = cel_shadow(ATTENUATION, LIGHT_IS_DIRECTIONAL);
+		vec3 hue = mix(vec3(1.0), ALBEDO / max(max(ALBEDO.r, max(ALBEDO.g, ALBEDO.b)), 1e-3), shade_hue);
+		vec3 lb = LIGHT_COLOR * (cb_sh / PI);
+		vec3 d_b = lb * cel_level_mid(cb_t, vec4(cel_mid.rgb * hue, cel_mid.a)) + cel_fill_add(LIGHT_COLOR, cel_lit(cb_t) * cb_sh, LIGHT_IS_DIRECTIONAL) * hue;
+		vec3 t_b = lb * through * pow(clamp(dot(-LIGHT, VIEW), 0.0, 1.0), 3.0);
+		d_a = mix(d_a, d_b, cel_on);
+		t_a = mix(t_a, t_b, cel_on);
+	}
+	DIFFUSE_LIGHT += d_a;
+	DIFFUSE_LIGHT += t_a;
 	vec3 h = normalize(LIGHT + VIEW);
 	// (each strand's highlight a little up or down it from the next's: the
 	// highlight broken into strands, not one smooth band)
@@ -369,5 +465,17 @@ void light() {
 	float s2 = along_strand(normalize(strand + NORMAL * (shift2 + jitter)), h, shine2_width);
 	float seen = clamp(nl * 0.6 + 0.4, 0.0, 1.0);
 	vec3 lc1 = mix(lc, vec3(dot(lc, vec3(0.2126, 0.7152, 0.0722))), dark_neutral * dk);
-	SPECULAR_LIGHT += seen * fibre * fibre * (lc1 * shine_colour * mix(vec3(1.0), ALBEDO / max(max(ALBEDO.r, max(ALBEDO.g, ALBEDO.b)), 0.001), shine_tint * (1.0 - dk)) * shine * mix(1.0, dark_shine, dk) * s1 + lc * ALBEDO * mix(vec3(1.0, 0.55, 0.35), vec3(0.9, 0.95, 1.0), hl_ashen) * shine2 * s2 * (0.4 + 1.2 * sparkle));   // (r5: deep copper)
+	vec3 s1_col = shine_colour * mix(vec3(1.0), ALBEDO / max(max(ALBEDO.r, max(ALBEDO.g, ALBEDO.b)), 0.001), shine_tint * (1.0 - dk)) * shine * mix(1.0, dark_shine, dk);
+	vec3 s_a = seen * fibre * fibre * (lc1 * s1_col * s1 + lc * ALBEDO * mix(vec3(1.0, 0.55, 0.35), vec3(0.9, 0.95, 1.0), hl_ashen) * shine2 * s2 * (0.4 + 1.2 * sparkle));   // (r5: deep copper)
+	if (cel_on > 0.0) {
+		// (cel: one hard band per lock: the primary's term by the lock's shift alone (no strand-to-strand jitter, which
+		// broke it into grains), cut hard at shine_band, in its color, under the hardened key shadow)
+		float jl = (lock_n - 0.5) * 2.0 * lock_jitter + dk * (fract(lock_n * 7.31 + 0.21) - 0.5) * 2.0 * dark_card_jitter;
+		float b1 = smoothstep(shine_band.x, shine_band.y, along_strand(normalize(strand + NORMAL * (shift + jl)), h, shine_width * mix(1.0, dark_narrow, dk)));
+		vec3 lcb = mix(LIGHT_COLOR, vec3(dot(LIGHT_COLOR, vec3(0.2126, 0.7152, 0.0722))), dark_neutral * dk) * (cb_sh / PI);
+		s_a = mix(s_a, seen * fibre * fibre * lcb * s1_col * b1 * cel_lit(cb_t), cel_on);
+	}
+	SPECULAR_LIGHT += s_a;
+	}
+	CEL_HERO_LIGHT;
 }

@@ -8,6 +8,14 @@
 // reads as scratches.
 shader_type spatial;
 render_mode cull_disabled, diffuse_burley, world_vertex_coords;
+#define CEL_INK 2
+#define CEL_BAND vec4(0.0, 0.15, 0.2, 0.05)
+#define CEL_NO_RIM
+// (the material library, godot/data/look/materials.json: this shader's default class; matte, rule 6: no highlight)
+#define CEL_SPEC vec4(9.0, 1.5, 0.0, 0.85)
+// (L1 C1: the band sees none of the ground's normal map: the Stage B judge, ground and terrain cel_nmap 0, no orange peel)
+#define CEL_NMAP 0.0
+#include "res://shaders/cel.gdshaderinc"
 #include "res://shaders/world_clock.gdshaderinc"
 
 #include "res://shaders/flare_world.gdshaderinc"
@@ -83,14 +91,18 @@ void vertex() {
 	// a shade of its own (UV.x).
 	float live = smoothstep(0.55, 0.85, texture(noise_tex, wp * 0.021 + 5.3).g * 0.75 + h1 * 0.25) * green * 2.0;
 	v_dry = clamp(1.0 - live, 0.0, 1.0);
-	v_col = mix(green_col, body_col, v_dry) * (0.75 + 0.5 * UV.x) * (0.85 + 0.3 * h4);
+	// (L1 C1: a blade's and a tussock's own shade held inside rule 9's +-0.06 L: +-8% and +-6%, where +-25% and +-15%
+	// read as a scatter of light and dark scratches)
+	v_col = mix(green_col, body_col, v_dry) * (0.92 + 0.16 * UV.x) * (0.94 + 0.12 * h4);
 }
 
 void fragment() {
 	float t = clamp(v_t, 0.0, 1.0);
 	// Deep in the tussock it shades itself; its arched backs and tips take the light.
-	vec3 c = mix(root_col, v_col, smoothstep(0.0, 0.45, t));
-	c = mix(c, tip_col * (0.8 + 0.4 * v_col.r / max(body_col.r, 1e-3)), smoothstep(0.5, 1.0, t) * v_dry);
+	// (L1 C1, MB4 'grass as big flat clumps': three flat values up the blade, not a gradient: the cool underside at the
+	// root, the body, and the lit top; the steps a few centimetres soft, so they never alias.)
+	vec3 c = mix(root_col, v_col, smoothstep(0.26, 0.32, t));
+	c = mix(c, tip_col * (0.9 + 0.2 * v_col.r / max(body_col.r, 1e-3)), smoothstep(0.66, 0.72, t) * mix(0.55, 1.0, v_dry));
 	ALBEDO = c;
 	NORMAL = normalize((VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
 	ROUGHNESS = 0.8;
@@ -103,4 +115,6 @@ void fragment() {
 		flare_blade((INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz, t, fl_a, fl_r, fl_e);
 		ALBEDO = fl_a; ROUGHNESS = fl_r; EMISSION = fl_e;
 	}
+	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug).
+	CEL_FRAGMENT;
 }
