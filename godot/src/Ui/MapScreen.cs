@@ -749,11 +749,13 @@ public partial class MapScreen : Overlay
         var l = Style.Label(label, font, size, place ? new Color("#3a2414") : color, false, HorizontalAlignment.Center, false);
         l.AddThemeColorOverride("font_outline_color", new Color("#e4d6b6"));
         l.AddThemeConstantOverride("outline_size", 5);
-        float w = font.GetStringSize(label, HorizontalAlignment.Left, -1, size).X + 8;
-        l.Size = new Vector2(w, 22);
-        l.Position = new Vector2(-w / 2, place ? -11 : 12);
         node.AddChild(l);
         parent.AddChild(node);
+        // (M4 lead 14, r3e S1: the width the label really draws at, its theme's padding and outline included;
+        // the string alone was ~32 px short, so names grew to the right of their marks and their keep-clear rects fell short)
+        float w = Mathf.Max(font.GetStringSize(label, HorizontalAlignment.Left, -1, size).X + 8, l.GetMinimumSize().X);
+        l.Size = new Vector2(w, 22);
+        l.Position = new Vector2(-w / 2, place ? -11 : 12);
         names.Add((node, l, kind, w));
     }
 
