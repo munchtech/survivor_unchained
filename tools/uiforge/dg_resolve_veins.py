@@ -45,6 +45,12 @@ PARAMS = dict(
     clamp_lo=0.5, clamp_hi=0.85,
     clamp_wide=3.25,   # px (2x): in back_box the clamp acts only where a disc of this radius fits in the ridge (wider than 6.5)
     clamp_grow=4.5,    # px (2x): ... and this far round such a place (the clamp's own reach is 3.6)
+    # the lone ticks (lead 10 fix B): the dark hair between the front locks and back_box holds short ridges on no line
+    # (a 7 px stroke at frame (671, 947), a bright dash at (666, 990), flecks). Each lit as a lone tick. drop_lone() takes
+    # them out of R before the clamp; the long lines that cross the box are never touched (they are not short).
+    lone_box=(538, 20, 598, 312),  # px (2x) x0, y0, x1, y1: frame x 654-677, y 897-1005 at the HUD's 0.85; a vein must lie wholly inside
+    lone_max=27,       # px (2x): a vein shorter than this (10 px on screen) ...
+    lone_near=3.5,     # px (2x): ... with no longer vein within this (1.3 px on screen: nearer, it reads as that line's edge) is dropped
 )
 
 
@@ -167,6 +173,33 @@ def clamp_cover(R, P):
     return np.clip(1 - trim, 0, 1).astype(np.float32)
 
 
+def drop_lone(veins, P):
+    """R without its lone ticks (lead 10 fix B): a vein (R over clamp_lo, where the shader starts to light it,
+    8-connected) that lies wholly in lone_box, is shorter than lone_max (the longer side of its bounds) and has no
+    vein of lone_max or longer within lone_near. Its px and 2 px round them go to 0 (so cover, bright middle and
+    clamp are gone at every level); px of any other vein are left as they are."""
+    s8 = np.ones((3, 3), bool)
+    on = veins > P["clamp_lo"]
+    lab, n = ndimage.label(on, structure=s8)
+    objs = ndimage.find_objects(lab)
+    ln = np.array([max(s[0].stop - s[0].start, s[1].stop - s[1].start) for s in objs])
+    far = ndimage.distance_transform_edt(~np.isin(lab, np.nonzero(ln >= P["lone_max"])[0] + 1))
+    x0, y0, x1, y1 = P["lone_box"]
+    out = veins.copy()
+    for i, s in enumerate(objs, 1):
+        cy0, cy1, cx0, cx1 = s[0].start, s[0].stop, s[1].start, s[1].stop
+        if ln[i - 1] >= P["lone_max"] or cx0 < x0 or cx1 > x1 or cy0 < y0 or cy1 > y1:
+            continue
+        k = lab == i
+        gap = float(far[k].min())
+        if gap <= P["lone_near"]:
+            print(f"lone: kept x {cx0}-{cx1} y {cy0}-{cy1} (len {ln[i - 1]}, peak {veins[k].max():.2f}): a longer vein {gap:.1f} px away")
+            continue
+        out[ndimage.binary_dilation(k, structure=s8, iterations=2) & ~(on & ~k)] = 0
+        print(f"lone: DROPPED x {cx0}-{cx1} y {cy0}-{cy1} (len {ln[i - 1]}, peak {veins[k].max():.2f}, nearest longer vein {gap:.1f} px)")
+    return out
+
+
 def geodesic(mask, seed, flow=None, along=0.0):
     """Distance (px) inside mask from seed (y, x), 16-connected (no octagon facets); inf where unreachable. flow
     (vx, vy, coherence): a step along the strands costs up to `along` less, so the front runs up the locks."""
@@ -235,6 +268,8 @@ def main():
     body = ndimage.binary_dilation(on, iterations=6)
     hair *= body
     veins *= body
+    veins0 = veins                              # (the clamp of every other vein is read off R as it was, below)
+    veins = drop_lone(veins, P)                 # fix B: no lone tick between the front locks and back_box
     ys, xs = np.nonzero(on)
     top = ys.min()
     band = ys < top + 6
@@ -250,7 +285,10 @@ def main():
     gb = np.where(on, gb, gb[near[0], near[1]])
     g = np.clip(gb, 0, 1)
     # A: the clamp, from R as the shader reads it (8 bit)
-    core = clamp_cover(np.floor(np.clip(veins, 0, 1) * 255 + 0.5).astype(np.float32) / 255, P)
+    q8 = lambda v: np.floor(np.clip(v, 0, 1) * 255 + 0.5).astype(np.float32) / 255
+    core = clamp_cover(q8(veins0), P)
+    if (veins != veins0).any():   # fix B: only the dropped ticks' own px take the new clamp (a line beside one keeps its judged edge)
+        core = np.where(veins != veins0, clamp_cover(q8(veins), P), core)
     out = np.dstack([veins, g, hair, core])
     img = Image.fromarray((np.clip(out, 0, 1) * 255 + 0.5).astype(np.uint8), "RGBA")
     img.save(os.path.join(fc.OUT, "lamp_veins.png"))
@@ -266,7 +304,7 @@ def main():
     geo = json.load(open(gp))
     geo["resolve"] = {
         "tex": "lamp_veins.png", "crown": [round(crown[1] / 2, 2), round(crown[0] / 2, 2)],
-        "tip_cost": round(dmax / 2, 1), **{k: v for k, v in P.items() if k != "back_box" and not k.startswith(("join_", "clamp_"))},   # (the join's own: bake only)
+        "tip_cost": round(dmax / 2, 1), **{k: v for k, v in P.items() if k != "back_box" and not k.startswith(("join_", "clamp_", "lone_"))},   # (the join's own: bake only)
     }
     json.dump(geo, open(gp, "w"), indent=1)
     print(f"veins: {img.size[0]}x{img.size[1]} crown (1080 px in the quad) {geo['resolve']['crown']} tips at {dmax / 2:.0f} px")
