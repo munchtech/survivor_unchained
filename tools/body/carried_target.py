@@ -869,6 +869,9 @@ HER = {
     # `ratio` but those the published surface has over it too; Head-rigid points and the girdle regions as with it off
     "t23_poses": ["p4:idle_warden_town@126:r", "p4:idle_warden_town@122:l", "sword_heavy@10:l", "p4:shield_charge@0:r",
                   "p4:iron_vow@75:r", "axe_heavy@7:r", "Jog_Fwd@11:r"],
+    # T26: the relax rules' fold trigger (body_facts/notch.md 4): no region edge past rest by over `fold` on t26_poses;
+    # t26_quiet: poses with no seed, composed = trigger off bit for bit
+    "t26_poses": ["p4:heroic_leap@6:r", "p4:heroic_leap@9:r", "cast_bolt@3:r"], "t26_quiet": ["x:add0:l"],
     "t25_poses": ["Jog_Fwd@11:r", "Jog_Fwd@14:l"], "t25_ratio": 2.5, "t25_n": 8,   # T25: the gate's stretch opening
     "t21_poses": ["x:abd150:l", "p4:heroic_leap@9:r", "crossbow_shoot@10:r"],   # T21: the map through two paths
     "t19": {"poses": ["x:abd150:l", "x:abd170:l", "x:flex170:l"], "ref": "fold_probe/dump_t0.npz", "k": 3, "top": 12,
@@ -1144,7 +1147,7 @@ class Her:
         M, sig, u = relative_place(G @ ibm, Gr @ ibm, bd.J[rg.pts], bd.W[rg.pts], cfg["sig_lo"], cfg["sig_hi"])
         self._parts[name] = {"M": M, "cf": cf, "cr": cr, "Pg": Pg, "Va": Vr, "Va_own": Va,
                              "Gr": Gr, "sig": float(sig.min()), "guard": int((u < 1).sum()), "mem": mem, "map_w": mw, "map_N": mN}
-        if not getattr(self, "_folding", False) and any("fold" in r[3] for g in self.regions.values() for r in getattr(g, "relax", ())):
+        if getattr(self, "fold_on", True) and not getattr(self, "_folding", False) and any("fold" in r[3] for g in self.regions.values() for r in getattr(g, "relax", ())):
             self.folded(G)                                  # a relax rule with "fold": every region's carry first (Her.folded)
         return self._parts[name]
 
@@ -1297,6 +1300,15 @@ class Her:
             yield
         finally:
             self.map_on, self._pose = on, None
+
+    @contextlib.contextmanager
+    def fold_off(self):
+        """The relax rules without their fold trigger (Her.folded) inside the block; the parts' cache is cleared."""
+        on, self.fold_on, self._pose = getattr(self, "fold_on", True), False, None
+        try:
+            yield
+        finally:
+            self.fold_on, self._pose = on, None
 
     def relaxed(self, rg, G, cf, Vr):
         """The filled carry cf [region points, 3] with each gate stage's relax rule (config gate2 "relax"): on the plain
@@ -1796,7 +1808,8 @@ def cmd_test(h):
         G = z["G"][names.index(nm)]
         el = max(md.elevation(G, s) for s in sorted(md.grown))
         nrl, nk.relax = getattr(nk, "relax", None), []        # and the neck's relax rule (T23's) is off: stored before it
-        with h.map_off(), h.open_off(), h.fair_off():  # the stage alone (map: T20 / T21; stretch opening: T25; fair_a off)
+        with h.map_off(), h.open_off(), h.fair_off(), h.fold_off():  # the stage alone (map: T20 / T21; stretch opening: T25;
+                                                                    # fair_a off; the relax's fold trigger, notch.md 4: T26)
             d = float(np.abs(h.compose(G, pub(bd, G))[md.first[ids_c]][ia] - old["Xc"][io[nm]][ib]).max())
         nk.relax, h._pose = nrl, None
         line(f"T18 {nm}", d == 0.0, f"elevation {el:.1f} deg: composed target - stored ({cfg['t18_stored']}) max {d * 1000:.3g} mm on"
@@ -1903,12 +1916,13 @@ def cmd_test(h):
         for nm in cfg["t23_poses"]:
             G = z["G"][names.index(nm)]
             Vp = pub(bd, G)
-            X1 = h.compose(G, Vp)
-            nk.relax, h._pose = [], None
-            try:
-                X0 = h.compose(G, Vp)
-            finally:
-                nk.relax, h._pose = rl, None
+            with h.fold_off():                              # the ratio rule alone: the fold trigger is T26's
+                X1 = h.compose(G, Vp)
+                nk.relax, h._pose = [], None
+                try:
+                    X0 = h.compose(G, Vp)
+                finally:
+                    nk.relax, h._pose = rl, None
             def er(X):
                 return np.linalg.norm(X[nk.pts][e23[0]] - X[nk.pts][e23[1]], axis=1) / np.linalg.norm(bd.V0[nk.pts][e23[0]] - bd.V0[nk.pts][e23[1]], axis=1)
             t1, t0, pp = er(X1), er(X0), er(Vp)
@@ -1922,6 +1936,30 @@ def cmd_test(h):
                  f"neck set ({len(e23[0])} edges): over 2.5x with the published surface under it: {n1} (rule off {n0}); worst edge {t1.max():.2f}"
                  f" (off {t0.max():.2f}, published {pp.max():.2f}); Head-rigid points ({int(hd.sum())}) moved by the rule max {e_h!r} m,"
                  f" girdle regions outside the neck {e_g!r} m (limit exactly 0)")
+    # T26: the relax rules' fold trigger (Her.folded; body_facts/notch.md 4). On t26_poses, the composed surface has no
+    # region edge folded past its rest dihedral by over the rule's fold (each region's own triangles, the rows its rules
+    # open); on t26_quiet (no seed) the composed target is the one with the trigger off, bit for bit
+    if cfg.get("t26_poses") and any("fold" in r[3] for g in h.regions.values() for r in getattr(g, "relax", ())):
+        import fold_probe as fp
+        for nm in cfg["t26_poses"] + cfg["t26_quiet"]:
+            G = z["G"][names.index(nm)]
+            Vp = pub(bd, G)
+            X1 = h.compose(G, Vp)
+            if nm in cfg["t26_quiet"]:
+                with h.fold_off():
+                    X0 = h.compose(G, Vp)
+                line(f"T26 {nm}", np.array_equal(X1, X0), f"no seed: composed - trigger off max {float(np.abs(X1 - X0).max())!r} m (limit exactly 0)")
+                continue
+            worst = []
+            for rn in sorted(h.regions):
+                rg = h.regions[rn]
+                for lo, hi, opened, rule in getattr(rg, "relax", ()):
+                    if "fold" in rule and getattr(rg, "fold_tris", None) is not None:
+                        e, d = fp.dihedral(X1[rg.pts], rg.fold_tris)
+                        x = np.where(opened[e[:, 0]] | opened[e[:, 1]], np.abs(d) - np.abs(rg.fold_d0), -np.inf)
+                        worst.append((float(x.max()), int((x > rule["fold"]).sum()), rule["fold"], rn))
+            ok = all(n == 0 for _, n, _, _ in worst)
+            line(f"T26 {nm}", ok, "fold past rest: " + "; ".join(f"{rn} worst {x:.0f} deg, over {f:g}: {n}" for x, n, f, rn in worst))
     # T25: the first gate's stretch opening (support "open", Her.gate_open; body_facts/breast_gate.md). On t25_poses, both
     # sides, the composed target's worst edge on the gate's own rows is at most t25_ratio; on t25_n poses sampled where
     # the opening is at or under the elevation's share on both sides, the composed target is the one with it off, bit for bit
