@@ -382,9 +382,9 @@
   ]
  },
  "source": "src/heroic_leap.npz",
- "bvh": "heroic_leap__kk1s100r832_1.bvh",
- "sha1": "628c365e54c149db3105b11012cc37a6602d7405",
- "take_score": null,
+ "bvh": "heroic_leap__qr2s841_3.bvh",
+ "sha1": "ad285f1dab33cf16cfdb1a722afc358235db188b",
+ "take_score": 7.637,
  "gate": [
   "thigh_l_deg@0.2",
   "thigh_r_deg@apex",
