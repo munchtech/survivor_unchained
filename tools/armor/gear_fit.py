@@ -1347,8 +1347,61 @@ def write_unit(path, bd, ev, ref_glb):
     js["buffers"] = [{"byteLength": len(out.bin), "uri": binname}]
     with open(os.path.join(out_dir, binname), "wb") as f:
         f.write(bytes(out.bin))
+    stamp_build(js, bytes(out.bin))
     with open(path, "w") as f:
         json.dump(js, f, separators=(",", ":"))
+
+
+def stamp_build(js, bin_bytes):
+    """asset.extras.build = sha1 of the .bin, so the .gltf's bytes change whenever the .bin does (Godot keys its reimport on the .gltf)."""
+    js.setdefault("asset", {}).setdefault("extras", {})["build"] = hashlib.sha1(bin_bytes).hexdigest()
+    return js
+
+
+def import_stale(gltf_path, godot_dir):
+    """None when the imported scene is fresh, else (reason, scn_mtime or None, source_mtime): the game loads
+    godot/.godot/imported/<x>.scn named by the `path=` line of <x>.gltf.import."""
+    src = os.path.getmtime(gltf_path)
+    bp = gltf_path[:-5] + ".bin"
+    if os.path.exists(bp):
+        src = max(src, os.path.getmtime(bp))
+    ip = gltf_path + ".import"
+    if not os.path.exists(ip):
+        return "no .import file", None, src
+    scn = None
+    for line in open(ip, encoding="utf-8", errors="replace"):
+        if line.startswith("path="):
+            scn = line.split("=", 1)[1].strip().strip('"')
+            break
+    if not scn:
+        return "no path= line in .import", None, src
+    sp = os.path.join(godot_dir, scn[len("res://"):]) if scn.startswith("res://") else scn
+    if not os.path.exists(sp):
+        return f"imported scene missing ({scn})", None, src
+    t = os.path.getmtime(sp)
+    if t < src:
+        return "imported scene older than gltf/bin", t, src
+    return None
+
+
+def imports_cmd(folder):
+    name = os.path.basename(os.path.normpath(folder))
+    if name.startswith("_"):
+        print("trial folder, not imported")
+        return 0
+    godot_dir = os.path.join(REPO, "godot")
+    files = sorted(f for f in os.listdir(folder) if f.endswith(".gltf"))
+    fmt = lambda t: "none" if t is None else time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(t))
+    n = 0
+    for f in files:
+        r = import_stale(os.path.join(folder, f), godot_dir)
+        if r:
+            n += 1
+            print(f"STALE {f}: {r[0]} (scn {fmt(r[1])}, source {fmt(r[2])})")
+    print(f"gear imports: {n} of {len(files)} stale")
+    if n:
+        print('run inside a godot turn: "<Godot console exe>" --headless --path godot --import')
+    return 1 if n else 0
 
 
 def sparse_acc(out, d, eps=1e-7):
@@ -1766,8 +1819,12 @@ def main():
                        "folder's gear_index.json)")
         if name == "build":
             p.add_argument("--no-bind", action="store_true", help="skip the stale check and rebind")
+    im = sub.add_parser("imports")
+    im.add_argument("--gear", default=rel(os.path.join(OUT, os.path.basename(BIND_BODY))))
     a = ap.parse_args()
     only = [x for x in getattr(a, "only", "").split(",") if x]
+    if a.cmd == "imports":
+        sys.exit(imports_cmd(a.gear if os.path.isabs(a.gear) else os.path.join(REPO, a.gear)))
     if a.cmd == "bind":
         bind_units(only)
         return
@@ -1799,6 +1856,8 @@ def main():
         if a.json:
             print("gear_fit build: --json is check's; a build writes gear_index.json in its folder, nothing else")
         print(f"gear_fit build: {len(bindings(only))} units on {name} -> {rel(out_dir)} in {time.time() - t0:.1f} s")
+        if not os.path.basename(os.path.normpath(out_dir)).startswith("_"):
+            print("gear_fit: built files need a Godot reimport before any shot (python tools/armor/gear_fit.py imports checks)")
         return
     if a.field:
         res = check_field(body_dir, only, None if a.field == "all" else a.field.split(","), a.json or None)

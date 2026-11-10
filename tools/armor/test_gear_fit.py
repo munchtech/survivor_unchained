@@ -417,3 +417,37 @@ def test_rim_rides_its_plate(tmp_path, monkeypatch):
     class _Native:
         id, meta, z = "u", {"kind": "native", "row": {"slot": "pauldrons"}}, {}
     assert gf.rim_hosts(_Native, ms, X, comp, lead, T=T) == {}
+
+
+def test_import_stale_and_stamp(tmp_path):
+    import hashlib
+    import os
+    godot = tmp_path / "godot"
+    imp = godot / ".godot" / "imported"
+    imp.mkdir(parents=True)
+    folder = godot / "art" / "gear"
+    folder.mkdir(parents=True)
+
+    def piece(name, scn="ok", t_scn=2000, t_src=1000):
+        g = folder / f"{name}.gltf"
+        g.write_text("{}")
+        (folder / f"{name}.bin").write_bytes(b"x")
+        os.utime(g, (t_src, t_src))
+        os.utime(folder / f"{name}.bin", (t_src, t_src))
+        if scn == "noimport":
+            return g
+        s = imp / f"{name}.scn"
+        line = f'path="res://.godot/imported/{name}.scn"\n' if scn != "nopath" else "valid=true\n"
+        (folder / f"{name}.gltf.import").write_text("[remap]\n" + line)
+        if scn == "ok":
+            s.write_bytes(b"s")
+            os.utime(s, (t_scn, t_scn))
+        return g
+
+    assert gf.import_stale(str(piece("fresh")), str(godot)) is None
+    assert "older" in gf.import_stale(str(piece("old", t_scn=500)), str(godot))[0]
+    assert "no .import" in gf.import_stale(str(piece("noimp", scn="noimport")), str(godot))[0]
+    assert "no path=" in gf.import_stale(str(piece("nop", scn="nopath")), str(godot))[0]
+    assert "missing" in gf.import_stale(str(piece("noscn", scn="missing")), str(godot))[0]
+    js = gf.stamp_build({"asset": {"version": "2.0"}}, b"abc")
+    assert js["asset"]["extras"]["build"] == hashlib.sha1(b"abc").hexdigest()
