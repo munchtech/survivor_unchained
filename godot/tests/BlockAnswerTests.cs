@@ -136,7 +136,7 @@ public sealed class BlockAnswerTests
         var (pending, answer, after) = (r.Cuts[1], r.Cuts[2], r.Cuts[3]);
         // the pending cut landed at its own weight: the latch was not taken by its landing
         // (M3 MR 3 landed rule) the battle's first cut is whole (the bank starts full): Landed[0] is the written blow
-        // (22.81), so the pending held cut is it x its share (15.2067), not equal to it
+        // (18.25), so the pending held cut is it x its share (12.1667), not equal to it
         Assert.False(pending.Whole);
         Assert.Equal(r.Landed[0].Dmg * r.W.BlowWeight, r.Landed[1].Dmg, 6);
         // the answer: the next cut, from the pending cut's cancel beat, one whole blow

@@ -11,7 +11,7 @@
       "bossDamage": 1.8,
       "art": "slash_steel",
       "description": "Your blade swings on its own at whatever is nearest, cutting everything in a wide arc in front of you.",
-      "base": { "cooldown": 1.05, "damage": 22.81, "reach": 2.8, "arc": 2.3, "knockback": 0.9, "projectiles": 1 },
+      "base": { "cooldown": 1.05, "damage": 18.25, "reach": 2.8, "arc": 2.3, "knockback": 0.9, "projectiles": 1 },
       "evolutions": [
         {
           "id": "oathkeeper",
@@ -96,7 +96,7 @@
       "description": "Huge cuts while you hold. About every 6 seconds of cutting, a heavy one splits the ground in a line ahead of you.",
       "base": {
         "cooldown": 1.6,
-        "damage": 28,
+        "damage": 22.4,
         "reach": 3,
         "arc": 3.84,
         "knockback": 1.3,

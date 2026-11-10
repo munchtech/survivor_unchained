@@ -33,7 +33,7 @@ public sealed class WickCutTests
         var sum = WickBook.Sum(ch, "oathblade", false)!;
         // Level 1 lights one lead-in (+10%): the cut is the total x 0.70 / the 1.05 wait.
         Assert.Equal(sum.Total * 0.70 / 1.05, sum.Cut!.Value, 9);
-        Assert.Equal(16.7273, sum.Cut!.Value, 4);
+        Assert.Equal(13.3833, sum.Cut!.Value, 4); // (M3 bands round 8: grip damage x0.80)
         Assert.Equal(0.70, sum.Every!.Value, 9);
         Assert.Equal("wicks", sum.Parts[1].What);
         int rank = WickBook.RankIn(ch, "oathblade", false);
@@ -53,9 +53,9 @@ public sealed class WickCutTests
         {
             WickBook.Lights = WickBook.Mode.None;
             var (ch, _) = Hero("oathblade");
-            Assert.Equal(15.2067, WickBook.Sum(ch, "oathblade", false)!.Cut!.Value, 4);
+            Assert.Equal(12.1667, WickBook.Sum(ch, "oathblade", false)!.Cut!.Value, 4); // (M3 bands round 8: grip damage x0.80)
             var (c2, _) = Hero("sunder");
-            Assert.Equal(12.25, WickBook.Sum(c2, "sunder", false)!.Cut!.Value, 4);
+            Assert.Equal(9.8, WickBook.Sum(c2, "sunder", false)!.Cut!.Value, 4); // (M3 bands round 8: grip damage x0.80)
         }
         finally { WickBook.Lights = prev; }
     }
@@ -66,7 +66,7 @@ public sealed class WickCutTests
         if (!HasData) return;
         var (ch, _) = Hero("sunder");
         var sum = WickBook.Sum(ch, "sunder", false)!;
-        Assert.Equal(13.475, sum.Cut!.Value, 4);
+        Assert.Equal(10.78, sum.Cut!.Value, 4); // (M3 bands round 8: grip damage x0.80)
         Assert.Equal(0.70, sum.Every!.Value, 9);
     }
 
