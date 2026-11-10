@@ -37,7 +37,15 @@ from scipy.sparse.linalg import factorized
 
 HERE = Path(__file__).resolve().parent
 DEFAULT = {"fold_deg": 45.0, "beyond_deg": 20.0, "rings": 4, "soft": 2, "alpha": 0.1, "flip_passes": 4, "volume": True,
-           "iters": 0, "rot_smooth": 4, "rounds": 3, "grow": 2, "rot": "smooth", "rot_passes": 8, "alpha_core": 0.0, "weld": 1e-6, "wclamp": [0.02, 20.0]}
+           "iters": 0, "rot_smooth": 4, "rounds": 3, "grow": 2, "rot": "smooth", "rot_passes": 8, "alpha_core": 0.0, "weld": 1e-6, "wclamp": [0.02, 20.0],
+           # the crumple (attempt 4): close = the seeds take every bad element on the patch or its ring before a solve
+           # (to closure); edges "blend" = posed edges off the crumple, the rest edges turned (F, the filled gradients, with
+           # stretch) inside it; c_core / c_soft: the crumple = seeds + c_core rows, smoothstep to 0 over c_soft more;
+           # alpha_mid: the pull off the crumple (x median weight); rot "fill": the gradients harmonic-filled on the crumple
+           "close": False, "edges": "rest", "c_core": 1, "c_soft": 2, "alpha_mid": None, "stretch": True,
+           # dilate: a round's leftovers enter the seeds grown by `grow` rows (so a crumple the core keeps widens there);
+           # best: the round kept is the one with the fewest (flipped, beyond-rest folds) on the patch and its ring
+           "dilate": False, "best": False}
 
 
 def _unit(v):
@@ -195,41 +203,80 @@ class Fair:
         R0, S = prm["rings"] + self._extra, prm["soft"]
         t = np.clip((r - (R0 - S)) / max(S, 1), 0.0, 1.0) if S > 0 else np.zeros(len(p))
         al = (prm["alpha_core"] + (prm["alpha"] - prm["alpha_core"]) * t * t * (3 - 2 * t)) * np.median(wu)
+        c = self._crumple()                                     # [n] 1 on the crumple, 0 off it (edges "blend")
+        if prm["alpha_mid"] is not None:                        # off the crumple the patch is pulled to the posed points
+            al = np.maximum(al, (prm["alpha_mid"] * (1 - c[p]) + prm["alpha_core"] * c[p]) * np.median(wu))
         K = (Lpp + sp.diags(al)).tocsc()
         solve = factorized(K)
         cols = lambda Y: np.stack([solve(np.ascontiguousarray(Y[:, c])) for c in range(3)], 1)
         # the harmonic rotation field: the posed surface's own rotations on the held points, filled into the patch
         Rx = self.rotations(X)
+        if prm["rot"] == "fill":                                # the gradients: harmonic on the crumple, then smoothed
+            Fx = self._grad(X)
+            core = patch & (c >= 1.0)
+            if core.any():
+                Lu = (sp.diags(np.asarray(self.adj.sum(1)).ravel()) - self.adj).tocsr()
+                kc, nk = np.nonzero(core)[0], np.nonzero(~core)[0]
+                so = factorized(Lu[kc][:, kc].tocsc())
+                Fx[kc] = np.stack([so(np.ascontiguousarray(-(Lu[kc][:, nk] @ Fx[nk, j]))) for j in range(9)], 1)
+            for _ in range(int(prm["rot_passes"])):
+                Fn = self._avg @ Fx
+                Fx[p] = Fn[p]
+            R = Rx.copy()
+            R[p] = polar(Fx[p].reshape(-1, 3, 3))
+            Fe = Fx.reshape(-1, 3, 3) if prm["stretch"] else R
+            return self._finish(X, patch, p, Eu, wu, d0, Xb, al, cols, R, c, Fe)
         if prm["rot"] == "smooth":                              # the posed rotations smoothed in the patch (ring held)
             R = Rx.copy()
             R[p] = self.rotations(X, prm["rot_passes"], fixed=~patch)[p]
-            return self._finish(X, patch, p, Eu, wu, d0, Xb, al, cols, R)
+            return self._finish(X, patch, p, Eu, wu, d0, Xb, al, cols, R, c)
         Fh = Rx.reshape(-1, 9).copy()
         Lu = (sp.diags(np.asarray(self.adj.sum(1)).ravel()) - self.adj).tocsr()
         Fh[p] = np.stack([factorized(Lu[p][:, p].tocsc())(np.ascontiguousarray(-(Lu[p][:, hold] @ Fh[hold, c])))
                           for c in range(9)], 1)
         R = Rx.copy()
         R[p] = polar(Fh[p].reshape(-1, 3, 3))
-        return self._finish(X, patch, p, Eu, wu, d0, Xb, al, cols, R)
+        return self._finish(X, patch, p, Eu, wu, d0, Xb, al, cols, R, c)
 
-    def _finish(self, X, patch, p, Eu, wu, d0, Xb, al, cols, R):
+    def _grad(self, X):
+        """[n, 9] per welded vertex: the area-weighted triangle deformation gradients (rest -> X), not polarised."""
+        Ex, _ = frames(X, self.T)
+        return np.asarray(self._VT @ (Ex @ self._E0inv).reshape(-1, 9))
+
+    def _crumple(self):
+        """[n] the crumple's share: 1 within c_core rows of the seeds, a smoothstep to 0 over c_soft more (0 for "rest")."""
+        prm = self.prm
+        if prm["edges"] != "blend":
+            return np.zeros(self.n)
+        t = np.clip((self._dist - prm["c_core"]) / max(prm["c_soft"], 1e-9), 0.0, 1.0)
+        return 1.0 - t * t * (3 - 2 * t)
+
+    def _finish(self, X, patch, p, Eu, wu, d0, Xb, al, cols, R, c=None, Fe=None):
         prm, E = self.prm, self.E
+        blend = prm["edges"] == "blend"
+        ce = 0.5 * (c[Eu[:, 0]] + c[Eu[:, 1]])[:, None] if blend else None
+        Xd = X[Eu[:, 0]] - X[Eu[:, 1]]
+        va = self.varea[p] * (c[p] if blend else 1.0)            # blend: the volume is the crumple's
 
-        def poisson(R):
-            v = wu[:, None] * np.einsum("eij,ej->ei", 0.5 * (R[Eu[:, 0]] + R[Eu[:, 1]]), d0)
+        def poisson(R, Fe=None):
+            G = R if Fe is None else Fe
+            v = np.einsum("eij,ej->ei", 0.5 * (G[Eu[:, 0]] + G[Eu[:, 1]]), d0)
+            if blend:                                           # the posed edges off the crumple
+                v = ce * v + (1 - ce) * Xd
+            v = wu[:, None] * v
             Bv = np.zeros((self.n, 3))
             np.add.at(Bv, Eu[:, 0], v)
             np.add.at(Bv, Eu[:, 1], -v)
             Y = cols(Bv[p] - Xb + al[:, None] * X[p])
-            if prm["volume"]:                                   # the mean offset along the smooth normals held at 0
+            if prm["volume"] and va.sum() > 0:                  # the mean offset along the smooth normals held at 0
                 nrm = _unit(np.einsum("nij,nj->ni", R[p], self.n0[p]))
-                a = self.varea[p]
+                a = va
                 U = cols(a[:, None] * nrm)
                 q = (a * (U * nrm).sum(1)).sum()
                 Y = Y - (a * ((Y - X[p]) * nrm).sum(1)).sum() / q * U
             return Y
 
-        Y = poisson(R)
+        Y = poisson(R, Fe)
         info = {"iters": 0}
         if prm["iters"]:
             Z = X.copy()
@@ -263,6 +310,7 @@ class Fair:
         prm = self.prm
         X = V[self.first]
         eb, fl, d = self.bad(X)
+        ebA, flA = eb.copy(), fl.copy()                         # every bad element (the closure's, never limited)
         wh = None
         if where is not None:
             wh = np.zeros(self.n, bool)
@@ -273,8 +321,14 @@ class Fair:
         if not eb.any() and not fl.any():
             return V, info
         seed = self._seed_mask(eb, fl)
-        Xf, self._extra = X.copy(), 0
+        Xf, self._extra, keep = X.copy(), 0, None
         for rnd in range(int(prm["rounds"])):
+            for _ in range(32 if prm["close"] else 0):          # the closure: a bad element on the patch or its ring is a seed
+                near = rows_from(self.adj, seed) <= prm["rings"] + self._extra + 1
+                add = self._seed_mask(ebA & near[self.E[self.ie]].any(1), flA & near[self.T].any(1)) & ~seed
+                if not add.any():
+                    break
+                seed = seed | add
             self._dist = rows_from(self.adj, seed)
             patch = self._dist <= prm["rings"] + self._extra
             ring = self._dist == prm["rings"] + self._extra + 1
@@ -285,10 +339,21 @@ class Fair:
             eb2, fl2, _ = self.bad(Xf)
             near = patch | ring
             left = (eb2 & near[self.E[self.ie]].any(1)), (fl2 & near[self.T].any(1))
+            if prm["best"]:                                     # the round kept: the fewest flipped, then beyond-rest folds
+                sc = (int(left[1].sum()), int(left[0].sum()))
+                if keep is None or sc < keep[0]:
+                    keep = (sc, Xf, patch, dict(info))
             if not left[0].any() and not left[1].any():
                 break
-            seed = seed | self._seed_mask(*left)
+            add = self._seed_mask(*left)
+            if prm["dilate"]:
+                add = rows_from(self.adj, add) <= prm["grow"]
+            seed = seed | add
+            if prm["close"]:                                    # the closure re-reads the bad elements of the posed points
+                ebA, flA = ebA | eb2, flA | fl2
             self._extra += prm["grow"]
+        if keep is not None:
+            _, Xf, patch, info = keep
         self.patch = patch
         out = V.copy()
         raw = np.nonzero(patch[self.grp])[0]
