@@ -1361,6 +1361,7 @@ public partial class VatCrowd : MultiMeshInstance3D
         Multimesh.VisibleInstanceCount = shown = top;
         RenderingServer.MultimeshSetBuffer(blobs.Multimesh.GetRid(), new ReadOnlySpan<float>(blobBuf, 0, capacity * BlobStride));
         blobs.Multimesh.VisibleInstanceCount = top;
+        if (FireCast.Count) FireCast.Tally(blobBuf, top, BlobStride);
         blobs.Visible = Visible;
     }
 }

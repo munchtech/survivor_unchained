@@ -15,6 +15,42 @@ public static class FireCast
     /// <summary>A hand over the ground, as the crowd's blobs are.</summary>
     const float Lift = 0.06f;
 
+    /// <summary>(the frame's cost, on request) --cast-count: every two seconds, how many cast quads stand inside the
+    /// fire's reach (the others are drawn as nothing: the shader leaves their four corners on the feet).</summary>
+    public static readonly bool Count = SurvivorUnchained.Args.Has("cast-count");
+    static Vector3 foot;
+    static float reach;
+    static int crowd, crowdAll, crowdMeshes, frames;
+    static readonly System.Collections.Generic.List<Vector3> stands = new();
+
+    /// <summary>A crowd's blobs this frame (Vat.cs: transform 12, color 4; alpha how much it shows).</summary>
+    public static void Tally(float[] buf, int n, int stride)
+    {
+        if (n > 0) crowdMeshes++;
+        for (int i = 0; i < n; i++)
+        {
+            int q = i * stride;
+            if (buf[q + 15] <= 0) continue;
+            crowdAll++;
+            float dx = buf[q + 3] - foot.X, dz = buf[q + 11] - foot.Z;
+            if (dx * dx + dz * dz < reach * reach) crowd++;
+        }
+    }
+
+    /// <summary>Her place this frame; the count goes to the log every 120 frames.</summary>
+    public static void Report(Vector3 her)
+    {
+        if (++frames % 120 == 0)
+        {
+            int near = 0;
+            foreach (var s in stands) if (new Vector2(s.X - foot.X, s.Z - foot.Z).Length() < reach) near++;
+            GD.Print($"fire casts drawn: crowd {crowd} of {crowdAll} (in {crowdMeshes} MultiMeshes, the blobs' second pass), standing {near} of {stands.Count} (one MultiMesh), her 1 (one MultiMesh); reach {reach:0.0} m");
+        }
+        crowd = crowdAll = crowdMeshes = 0;
+        foot = her;
+        reach = RenderingServer.GlobalShaderParameterGet("cel_floor_band").AsVector4().X;
+    }
+
     /// <summary>A MultiMesh of n cast quads, none showing until Set.</summary>
     public static MultiMeshInstance3D Make(string name, int n)
     {
@@ -38,5 +74,6 @@ public static class FireCast
         var x = Vector3.Up.Cross(z);
         mm.SetInstanceTransform(i, new Transform3D(new Basis(x, Vector3.Up, z), feet + new Vector3(0, Lift, 0)));
         mm.SetInstanceColor(i, new Color(height, width, fixedLen, show));
+        if (Count && fixedLen <= 0) stands.Add(feet);
     }
 }
