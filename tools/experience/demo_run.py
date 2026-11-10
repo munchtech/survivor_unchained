@@ -34,6 +34,14 @@ USER = os.path.join(os.environ["APPDATA"], "Godot", "app_userdata", "Survivor Un
 runs = json.load(open(args[0], encoding="utf-8"))
 if len(args) > 1: runs = [r for r in runs if r["name"] in args[1].split(",")]
 
+def frame_sizes(sd, name):
+    try: return {f: os.path.getsize(os.path.join(sd, f)) for f in os.listdir(sd) if f.startswith(name)}
+    except OSError: return {}
+
+def quit_state(lines, prev, now):
+    """The work is done and Godot is quitting: the log has the quit line (ink: released, printed as the tree leaves; no per-run last-frame line exists) and the run's frames are on disk, nonzero and unchanged across two polls."""
+    return any(l.startswith("ink: released") for l in lines) and bool(now) and prev == now and all(v > 0 for v in now.values())
+
 def snap(dst):
     if os.path.isdir(USER):
         shutil.rmtree(dst, ignore_errors=True); shutil.copytree(USER, dst)
@@ -69,7 +77,7 @@ try:
         logp = os.path.join(LOGS, name + ".log")
         with open(logp, "w", encoding="utf-8", errors="replace") as lf:
             p = subprocess.Popen([GODOT, "--path", G, "--resolution", "1920x1080"] + list(r.get("godot", [])) + ["--", "--shot", name] + extra, stdout=lf, stderr=subprocess.STDOUT)
-            seen, deadline = 0, t0 + r.get("timeout", 600)
+            seen, deadline, qt, prevsz, qhang = 0, t0 + r.get("timeout", 600), None, {}, False
             while p.poll() is None:
                 time.sleep(2)
                 with open(logp, encoding="utf-8", errors="replace") as rf: lines = rf.read().splitlines()
@@ -77,6 +85,13 @@ try:
                     if ln.startswith("auto: saved "):
                         tag = ln.split()[2]; snap(os.path.join(OUT, f"snap_{name}_{tag}")); print(f"[{name}] step saved: {tag}", flush=True)
                 seen = len(lines)
+                sz = frame_sizes(os.path.join(G, ".shots"), name)
+                if qt is None and quit_state(lines, prevsz, sz): qt = time.time()
+                prevsz = sz
+                if qt is not None and time.time() > qt + 5:
+                    hp = hang_stacks.dump(p.pid, LOGS, name)
+                    subprocess.run(["taskkill", "/F", "/T", "/PID", str(p.pid)], capture_output=True); qhang = True
+                    print(f"{name} QUIT HANG (killed): {hp or 'no stacks'}", flush=True); break
                 if time.time() > deadline:
                     hp = hang_stacks.dump(p.pid, LOGS, name)
                     if hp: print(f"{name} HANG STACKS: {hp}", flush=True)
@@ -85,7 +100,7 @@ try:
         sd = os.path.join(G, ".shots")
         shots = [f for f in os.listdir(sd) if f.startswith(name)] if os.path.isdir(sd) else []
         log = open(logp, encoding="utf-8", errors="replace").read()
-        print(f"[{name}] {time.time()-t0:.0f} s, exit {p.returncode}, {len(shots)} frames, {log.count('Exception')} 'Exception' lines", flush=True)
+        print(f"[{name}] {time.time()-t0:.0f} s, exit {p.returncode}, {len(shots)} frames, {log.count('Exception')} 'Exception' lines{' quit-hang' if qhang else ''}", flush=True)
 finally:
     subprocess.run([sys.executable, TP, "give", "godot", TURN])
 print("DONE")

@@ -26,6 +26,7 @@ def dump(pid, out_dir, name):
         except Exception as e: tree = [(pid, f"? (tree failed: {e})")]
         out = [f"hang stacks {time.strftime('%Y-%m-%d %H:%M:%S')}  name {name}  root PID {pid}", "PID tree:"] + [f"  {k}  {n}" for k, n in tree]
         for k, n in reversed(tree):  # children first: the real Godot hosts .NET, the console wrapper may not
+            if n.lower().endswith("_console.exe"): out.append(f"PID {k} {n}: skipped (console wrapper, no .NET)"); continue
             out += ["", "=" * 70, f"PID {k} {n}: dotnet-stack report", "=" * 70]
             if time.time() - t0 > 90: out.append("(skipped: time bound)"); continue
             try:
