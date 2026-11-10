@@ -96,6 +96,8 @@ try:
                     hp = hang_stacks.dump(p.pid, LOGS, name)
                     if hp: print(f"{name} HANG STACKS: {hp}", flush=True)
                     subprocess.run(["taskkill", "/F", "/T", "/PID", str(p.pid)], capture_output=True); print(name, "TIMEOUT (stopped by its PID)"); break
+        # The game's own quit guard ends a hung quit before the 5 s kill above: count it, never read it as a clean run.
+        if any(l.startswith("quit guard: fired") for l in locals().get("lines", [])): print(f"{name} QUIT GUARD FIRED (a hang at quit, ended by the game's guard)", flush=True)
         if r.get("snap"): snap(os.path.join(OUT, "snap_" + name))
         sd = os.path.join(G, ".shots")
         shots = [f for f in os.listdir(sd) if f.startswith(name)] if os.path.isdir(sd) else []

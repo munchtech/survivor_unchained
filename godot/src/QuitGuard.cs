@@ -14,7 +14,7 @@ namespace SurvivorUnchained;
 public sealed class QuitGuard
 {
     /// <summary>The player's wait at a hung quit, from the tree's quit to the hard end.</summary>
-    public const int Ms = 3000;
+    public const int Ms = 2000;
     /// <summary>How long the fired line may take before the kill comes anyway.</summary>
     public const int SayMs = 500;
     public const string FiredLine = "quit guard: fired";

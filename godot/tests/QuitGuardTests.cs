@@ -45,6 +45,6 @@ public class QuitGuardTests
         Assert.True(QuitGuard.InTestHost);
         Assert.Null(QuitGuard.ArmForProcess(() => { }, 0, 1));
         Assert.Equal("quit guard: fired", QuitGuard.FiredLine);   // (tools/experience/demo_run.py and quit_starts.py count this line)
-        Assert.Equal(3000, QuitGuard.Ms);
+        Assert.Equal(2000, QuitGuard.Ms);
     }
 }
