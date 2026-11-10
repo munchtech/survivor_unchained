@@ -11,7 +11,7 @@ A piece dir (godot/art/gear/native/<id>/):
                  "parts": {part name: {"ride": {role: share}, "one_bone": bool} | {"bones": {bone: share}}
                            | {"with": part name}}   ("bones": the blend named bone by bone, "{s}" = the part's side:
                            an articulated lame rides exactly the bones its skin follows, e.g. thigh_twist_02_{s} 0.9
-                           + calf_share_{s} 0.1)
+                           + calf_share_{s} 0.1, and none of her corrective shapes: part_blends)
     <id>.glb     one node per part and material, at her_b's rest (glTF axes, metres, identity transforms), each a single
                  primitive whose material NAME is an entry of godot/art/people/outfit_materials.json. A part named
                  `*_rigid` never bends: it rides one blend of bones, its "ride" rule (roles as tools/armor/
@@ -402,7 +402,12 @@ def bind_native(u, bodies):
 
 
 def part_blends(bd, bodies, ev):
-    """Each rigid part's own ride rule (piece.json parts) in place of its slot's: its one blend of weights."""
+    """Each rigid part's own ride rule (piece.json parts) in place of its slot's: its one blend of weights. A part that
+    names its bones ("bones") rides that blend EXACTLY: it takes none of her corrective shapes. The build gives every
+    rigid component the mean of her shapes' deltas over its bound points; those answer her skin's own weights, and on
+    a blend named bone by bone they move the part off it (the cuisses' knee lame, thigh_twist_02 0.8 + calf_share 0.2,
+    went 13.8 mm into her knee and 10 mm round it at knee_flex135: her skin came through it in every run, and it
+    dipped into the lame above)."""
     g = gf()
     body, z = bodies["close"], bd.z
     lead = z["lead_close"]
@@ -427,6 +432,9 @@ def part_blends(bd, bodies, ev):
             ci = z[f"comp{m['i']}"]
             sel = ((ci >= 0) & (lead[np.maximum(ci, 0)] == p["comp"]))[e["inv"]]
             e["J"][sel], e["W"][sel] = j, w
+            if "bones" in p["rule"]:
+                for nm in e["shapes"]:
+                    e["shapes"][nm][sel] = 0.0
 
 
 def install(g):
