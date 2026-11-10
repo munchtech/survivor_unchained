@@ -29,14 +29,19 @@ public static class CanopyField
     const float Kv = 3f;         // past whole: cover per leaf length (steep, so a whole leaf stays its size; not a cliff, so its edge stays straight under the texture's filter)
     const float Kd = 0.25f;      // cover per meter of depth into the mass ...
     const float Dsat = 0.4f;     // ... to this depth; deeper, only the clumps' noise orders the leaves
-    const float Nz = 0.3f;       // the clumps: cover spread inside the mass (a slow noise, about 2 m: the opening over her fire takes its outline from it)
+    const float Nz = 0.4f;       // the clumps: cover spread inside the mass (a slow noise, about 2 m: the opening over her fire takes its outline from it)
     const float Ko = 0.25f;      // cover per meter out into a field (what closes as the cover rises past C0)
     const float BodyLag = 0.06f;  // the mass's own fill closes this much after the leaves over it
-    const float Pitch = 0.17f;   // a leaf every this far (m), jittered
-    const float GapMin = 0.06f, GapMax = 0.3f; // the shade band kept between two fields (m), by a slow noise
+    const float Pitch = 0.34f;   // a leaf every this far (m), jittered
+    const float GapMin = 0.05f, GapMax = 0.25f; // the shade band kept between two fields (m), by a slow noise
     const float Lean = 0.7f;     // the share of fields that lie along x (the rest any way)
-    const float Grow = 0.5f;     // a field never grows further than this past its ovals (m): where no field was thrown, the shade stays whole
-    const float Rho0 = 0.39f;    // the slow noise under this: no field (the few regions of whole shade)
+    const float Grow = 0.6f;     // a field never grows further than this past its ovals (m): where no field was thrown, the shade stays whole
+    const float Rho0 = 0.4f;     // the slow noise under this: no field (a BOUGH: a region of whole shade, 2-4 m, lying along x; the densest clump too, so it is what still stands in the opening over her fire)
+    const float RimLag = 0.4f, RimIn = 0.3f; // the mass's own fill closes this much later at its rim, falling to nothing this far in (m): the rim is whole leaves, their outlines
+    const float RimThin = 0.35f; // the share of leaves left out along the rim (each one left reads as a leaf, not a tooth of a saw)
+    const float Hang = 0.3f;     // the share of leaves just off the rim that stand whole (a leaf hanging out of the mass)
+    const float Join = 0.25f;    // the share of throws that grow onto an earlier field (fields joined in twos and threes)
+    const float Turn = 2.2f;     // a leaf turns this far in all (rad) off the way out of its clump
     const int Gn = 1024;         // the layout's grid over the tile
 
     struct Lobe { public float X, Y, Ca, Sa, Rx, Ry; }
@@ -50,23 +55,38 @@ public static class CanopyField
         var rnd = new Random(20261109 + run * 7919);
         float cell = tile / Gn;
         // --- the fields: ovals thrown apart, each with one or two leaning ovals grown into it; a field is its ovals' union ---
-        int ln1 = 5, ln2 = 8;
+        int ln1 = 7, ln2 = 11;
         float[] rho1 = Lattice(rnd, ln1), rho2 = Lattice(rnd, ln2);
+        // the slow noise, its cells twice as long (x) as deep: low = a bough, a region of whole shade no field is thrown in
+        float Slow(float x, float y) => 0.6f * Noise(rho1, ln1, x / tile, 2f * y / tile) + 0.4f * Noise(rho2, ln2, x / tile, 2f * y / tile);
         const int On = 256;
         var occ = new bool[On * On];
-        var lobes = new List<Lobe>(); var ids = new List<int>();
+        var lobes = new List<Lobe>(); var ids = new List<int>(); var mains = new List<int>(); var joined = new List<int>();
         int nfield = 0;
         for (int tr = 0; tr < 24000; tr++)
         {
             float x = (float)rnd.NextDouble() * tile, y = (float)rnd.NextDouble() * tile;
-            float len = fMin + (fMax - fMin) * (float)Math.Pow(rnd.NextDouble(), 1.3), wid = len * (0.5f + 0.24f * (float)rnd.NextDouble());
-            float ang = (float)((rnd.NextDouble() < Lean ? (rnd.NextDouble() - 0.5) * 1.5 : rnd.NextDouble() * Math.PI)), gap = 0.12f + 0.4f * (float)Math.Pow(rnd.NextDouble(), 1.5);
+            // (most fields short, a few three times as long; the larger a field, the more shade it keeps round it)
+            float len = fMin + (fMax - fMin) * (float)Math.Pow(rnd.NextDouble(), 2.2), wid = len * (0.5f + 0.24f * (float)rnd.NextDouble());
+            float ang = (float)((rnd.NextDouble() < Lean ? (rnd.NextDouble() - 0.5) * 1.5 : rnd.NextDouble() * Math.PI)), gap = 0.2f + 0.12f * len + 0.5f * (float)Math.Pow(rnd.NextDouble(), 1.5);
             double r1 = rnd.NextDouble(), r3 = rnd.NextDouble(), r4 = rnd.NextDouble(), r5 = rnd.NextDouble(), r6 = rnd.NextDouble(), r7 = rnd.NextDouble(), r8 = rnd.NextDouble(), r9 = rnd.NextDouble(), r10 = rnd.NextDouble(), r11 = rnd.NextDouble();
-            float rho = 0.6f * Noise(rho1, ln1, x / tile, y / tile) + 0.4f * Noise(rho2, ln2, x / tile, y / tile);
+            double rj = rnd.NextDouble(), rk = rnd.NextDouble(), rl = rnd.NextDouble();
+            int id = nfield;
+            bool join = rj < Join && mains.Count > 0;
+            if (join)
+            {
+                // grown onto an earlier field: off its end, a quarter into it, and one field with it (no band between them)
+                int pm = mains[(int)(rk * mains.Count * 0.9999)];
+                var pl = lobes[pm]; id = ids[pm];
+                if (joined[id] >= 2) continue;
+                float ja = MathF.Atan2(pl.Sa, pl.Ca) + ((float)rl - 0.5f) * 1.2f + ((tr & 1) == 0 ? 0 : MathF.PI), jd = 0.75f * (pl.Rx + len * 0.5f);
+                x = Mod(pl.X + MathF.Cos(ja) * jd, tile); y = Mod(pl.Y + MathF.Sin(ja) * jd, tile);
+            }
+            float rho = Slow(x, y);
             if (r1 > Smooth(Rho0, Rho0 + 0.08f, rho)) continue;
             var main = new Lobe { X = x, Y = y, Ca = MathF.Cos(ang), Sa = MathF.Sin(ang), Rx = len * 0.5f, Ry = wid * 0.5f };
-            if (Claimed(occ, On, tile, main, gap) > 0.02f) continue;
-            lobes.Add(main); ids.Add(nfield); Claim(occ, On, tile, main);
+            if (Claimed(occ, On, tile, main, join ? 0 : gap) > (join ? 0.45f : 0.02f)) continue;
+            lobes.Add(main); ids.Add(id); mains.Add(lobes.Count - 1); Claim(occ, On, tile, main);
             int more = 1 + (r3 < 0.55 ? 1 : 0);
             for (int k = 0; k < more; k++)
             {
@@ -74,9 +94,9 @@ public static class CanopyField
                 float t = (k == 0 ? 1 : -1) * (0.35f + 0.4f * (float)a) * main.Rx, s = ((float)b - 0.5f) * 0.9f * main.Ry;
                 float a2 = ang + ((float)c - 0.5f) * 1.5f;
                 var sub = new Lobe { X = x + main.Ca * t - main.Sa * s, Y = y + main.Sa * t + main.Ca * s, Ca = MathF.Cos(a2), Sa = MathF.Sin(a2), Rx = main.Rx * (0.45f + 0.25f * (float)d), Ry = main.Ry * (0.6f + 0.35f * (float)a) };
-                lobes.Add(sub); ids.Add(nfield); Claim(occ, On, tile, sub);
+                lobes.Add(sub); ids.Add(id); Claim(occ, On, tile, sub);
             }
-            nfield++;
+            if (join) joined[id]++; else { joined.Add(0); nfield++; }
         }
         log?.Invoke($"  {nfield} fields");
         // the distance (m, about) to the nearest field and to the nearest OTHER field: a field grows to the level the lit
@@ -111,9 +131,10 @@ public static class CanopyField
             {
                 float u = (i + 0.5f) / Gn, v = (j + 0.5f) / Gn;
                 int k = j * Gn + i;
-                ga[k] = -d1[k] + 0.25f * (Noise(la, na, u, v) + Noise(lb, nb, u, v) - 1f) + 0.12f * (Noise(lc, nc, u, v) + Noise(ld, nd, u, v) - 1f);
+                ga[k] = -d1[k] + 0.4f * (Noise(la, na, u, v) + Noise(lb, nb, u, v) - 1f) + 0.12f * (Noise(lc, nc, u, v) + Noise(ld, nd, u, v) - 1f);
                 gb[k] = 0.5f * (d2[k] - d1[k]) - 0.5f * (GapMin + (GapMax - GapMin) * Noise(lg, ng, u, v)) + 0.06f * (Noise(lc, nc, v, u) + Noise(ld, nd, v, u) - 1f);
-                clump[k] = 0.5f * (Noise(le, ne, u, v) + Noise(lf, nf, u, v));
+                // the clumps: a bough whole (the slow noise low), the rest by a small noise; what outlasts the opening over her fire is the boughs
+                clump[k] = 0.8f * (1f - Smooth(Rho0 - 0.03f, Rho0 + 0.15f, Slow(u * tile, v * tile))) + 0.1f * (Noise(le, ne, u, v) + Noise(lf, nf, u, v));
             }
         });
         // --- the leaves' own numbers, drawn once (the same leaves whatever the fields' level and the tile's resolution) ---
@@ -158,7 +179,7 @@ public static class CanopyField
             }
         Edt(inLit, n); Edt(inShade, n);
         // the cover the mass itself closes at (v): in the shade from C0 down with depth and the clumps, in a field from C0 + A up
-        var v = new float[Gn * Gn]; var sd = new float[Gn * Gn];
+        var v = new float[Gn * Gn]; var sd = new float[Gn * Gn]; var vb = new float[Gn * Gn];
         for (int j = 0; j < Gn; j++)
             for (int i = 0; i < Gn; i++)
             {
@@ -167,6 +188,7 @@ public static class CanopyField
                 bool litHere = inLit[k] == 0;
                 sd[j * Gn + i] = litHere ? dout - 0.5f * cell : -(din - 0.5f * cell);
                 v[j * Gn + i] = litHere ? MathF.Min(C0 + A + Ko * dout, 1f) : C0 - Kd * MathF.Min(din, Dsat) - Nz * clump[j * Gn + i];
+                vb[j * Gn + i] = v[j * Gn + i] + BodyLag + (litHere ? 0 : RimLag * MathF.Max(0, 1 - din / RimIn));
             }
         var px = new float[P * P];
         Array.Fill(px, 1f);
@@ -179,14 +201,16 @@ public static class CanopyField
                 float x = (ci + lr[o]) * pitch, y = (cj + lr[o + 1]) * pitch;
                 float gx = x / cell - 0.5f, gy = y / cell - 0.5f;
                 float d = Bil(sd, Gn, gx, gy);
-                if (d > 0.6f) continue;
+                if (d > 0.6f || (MathF.Abs(d) < RimIn && lr[o + 15] < RimThin)) continue;
                 int gi = Wrap((int)MathF.Floor(gx + 0.5f), Gn), gj = Wrap((int)MathF.Floor(gy + 0.5f), Gn);
                 float full = v[gj * Gn + gi] + (lr[o + 2] - 0.5f) * 0.02f;
                 // (a loose leaf now and then, lying whole just off the mass)
-                if (d > 0.12f && d < 0.55f && lr[o + 3] < 0.022f) full = C0 - 0.04f;
-                // its way: out of the mass (up the distance), turned as it likes
-                float ex = Bil(sd, Gn, gx + 3, gy) - Bil(sd, Gn, gx - 3, gy), ey = Bil(sd, Gn, gx, gy + 3) - Bil(sd, Gn, gx, gy - 3);
-                float way = (ex * ex + ey * ey > 1e-6f ? MathF.Atan2(ey, ex) : lr[o + 4] * MathF.Tau) + (lr[o + 4] - 0.5f) * 2.8f;
+                if (d > 0.25f && d < 0.55f && lr[o + 3] < 0.022f) full = C0 - 0.04f;
+                // (and leaves hanging out of the rim: whole, and gone with the rim they hang from)
+                if (d > 0 && d <= 0.25f && lr[o + 3] < Hang) full = C0 - 0.04f - Nz * clump[gj * Gn + gi];
+                // its way: out of its clump (up the cover: out of the mass at its rim, out of what still stands where the canopy opens), turned as it likes
+                float ex = Bil(v, Gn, gx + 3, gy) - Bil(v, Gn, gx - 3, gy), ey = Bil(v, Gn, gx, gy + 3) - Bil(v, Gn, gx, gy - 3);
+                float way = (ex * ex + ey * ey > 1e-8f ? MathF.Atan2(ey, ex) : lr[o + 4] * MathF.Tau) + (lr[o + 4] - 0.5f) * Turn;
                 float len = leafMin + (leafMax - leafMin) * MathF.Pow(lr[o + 5], 1.2f);
                 int points = lobesMin + (int)(lr[o + 6] * (lobesMax - lobesMin + 1) * 0.9999f);
                 // its points (kites from the stem's head): ca, sa, 1/length, 1/back, 1/half-width each
@@ -196,8 +220,8 @@ public static class CanopyField
                 for (int q = 0; q < nk; q++)
                 {
                     float a, l, back, hw;
-                    if (q == 0) { a = way; l = len; back = len * 0.28f; hw = len * (0.4f + 0.1f * lr[o + 7]); }
-                    else if (q <= 2) { a = way + (q == 1 ? 1 : -1) * (0.78f + 0.35f * lr[o + 7 + q]); l = len * (0.62f + 0.22f * lr[o + 9 + q]); back = len * 0.12f; hw = l * (0.4f + 0.1f * lr[o + 11 + q]); }
+                    if (q == 0) { a = way; l = len; back = len * 0.28f; hw = len * (0.5f + 0.1f * lr[o + 7]); }
+                    else if (q <= 2) { a = way + (q == 1 ? 1 : -1) * (0.78f + 0.35f * lr[o + 7 + q]); l = len * (0.62f + 0.22f * lr[o + 9 + q]); back = len * 0.12f; hw = l * (0.5f + 0.1f * lr[o + 11 + q]); }
                     else { a = way + (q == 3 ? 1 : -1) * (1.75f + 0.3f * lr[o + 10 + q]); l = len * (0.36f + 0.16f * lr[o + 8 + q]); back = len * 0.1f; hw = l * 0.45f; }
                     k[q * 5] = MathF.Cos(a); k[q * 5 + 1] = MathF.Sin(a); k[q * 5 + 2] = 1 / l; k[q * 5 + 3] = 1 / back; k[q * 5 + 4] = 1 / hw;
                     reach = MathF.Max(reach, l);
@@ -254,7 +278,7 @@ public static class CanopyField
         {
             for (int i = 0; i < P; i++)
             {
-                float b = Bil(v, Gn, (i + 0.5f) / m / cell - 0.5f, (j + 0.5f) / m / cell - 0.5f) + BodyLag;
+                float b = Bil(vb, Gn, (i + 0.5f) / m / cell - 0.5f, (j + 0.5f) / m / cell - 0.5f);
                 int idx = j * P + i;
                 if (b < px[idx]) { px[idx] = b; if (stemX != null) { stemX[idx] = 0; stemY![idx] = 0; } }
                 if (px[idx] < 0) px[idx] = 0;
@@ -267,6 +291,7 @@ public static class CanopyField
     }
 
     static int Wrap(int i, int n) => ((i % n) + n) % n;
+    static float Mod(float a, float n) => ((a % n) + n) % n;
     static float Smooth(float a, float b, float x) { float t = Math.Clamp((x - a) / (b - a), 0f, 1f); return t * t * (3 - 2 * t); }
     static float[] Lattice(Random r, int n) { var a = new float[n * n]; for (int i = 0; i < a.Length; i++) a[i] = (float)r.NextDouble(); return a; }
     // a wrapped value noise (u, v over the tile, 0..1)
