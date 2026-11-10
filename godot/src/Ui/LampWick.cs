@@ -414,7 +414,9 @@ public partial class LampWick : Control
         }
         if (LampAsk.Sum(ch, Skill, false) is { } sum)
         {
-            string line = $"{sum.Stat} {sum.Total:0} = " + string.Join(" · ", sum.Parts.Select(p => $"{p.What} {p.Value}"));
+            // (M3's card line, the owner's "Yes, ship it": a chained skill says what each cut deals and how often)
+            string line = $"{sum.Stat} {sum.Total:0} = " + string.Join(" · ", sum.Parts.Select(p => $"{p.What} {p.Value}"))
+                + (sum.Cut is { } cut ? $" · dealt as {cut:0} every {sum.Every:0.#} s" : "");
             LampInk.Text(ci, LampInk.F("alegreya-sans-500"), 14, Wide ? (X0 + X1) / 2 : X0 + 532, Y1 - (Wide ? 14 : 12), line, LampInk.Body with { A = 0.95f }, 0);
         }
     }
