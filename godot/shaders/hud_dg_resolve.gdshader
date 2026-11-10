@@ -1,9 +1,13 @@
 // M4 (docs/design/M4_HUD.md section 2): Resolve, heat rising through the Drowned Girl's hair. One quad over her figure
-// (LifeLamp's own transform), light drawn over the bronze: unshaded, stepped bands, a soft outer glow only.
+// (LifeLamp's own transform), light drawn over the bronze: unshaded.
 // veins (tools/uiforge/dg_resolve_veins.py, lamp_veins.png at the figure's 2x): R the hair's ridges (the veins), G the
-// gauge g (1 the crown, 0 the tips: a geodesic along the locks), B the soft hair mask. A vein with g <= level is lit:
-// mid gold; the last core_w of g under the front core white-gold; the tips edge amber. A faint warm underglow fills
-// the hair below the front. ResolveVeins.cs drives every motion through the uniforms below, set only on change.
+// gauge g (1 the crown, 0 the tips: a geodesic along the locks), B the soft hair mask. A vein with g <= level is lit,
+// and graded as heated metal is (M4 lead 8, the judge's "line art, not heat"): edge amber at the tips and the cold end,
+// mid gold up the fill, a paler hot gold in the last hot_w under the front, core white-gold only in the last core_w.
+// The bronze round a lit vein is warmed (rings of the lit veins, hotter by the front) and the hair under the front
+// takes an ember underglow. No vein is drawn wider than vein_px: a wide ridge keeps a bright middle and an ember edge.
+// An unlit ridge falls cold_k toward plain bronze, so 0 is cold metal. ResolveVeins.cs drives every motion through
+// the uniforms below, set only on change.
 shader_type canvas_item;
 render_mode blend_premul_alpha, unshaded;
 
@@ -21,7 +25,8 @@ uniform float level : hint_range(0.0, 1.0) = 0.0;   // the front (eased)
 uniform float alpha = 1.0;                          // 1, or the 0.6 hold when her figure fades (Behind)
 uniform float core_w = 0.06;                        // the core band's reach in g under the front
 uniform float tip_w = 0.14;                         // the tips' edge-amber band (g under this)
-uniform float under = 0.13;                         // the warm underglow's strength below the front
+uniform float under = 0.19;                         // the ember underglow's strength below the front
+uniform float hot_w = 0.16;                         // the hot gold's reach in g under the core band
 // a packet running up from the tips (Landed core, Taken edge, Blocked spark and smaller): its g, size, color
 uniform float pkt_g = -1.0;
 uniform float pkt_k = 0.0;
@@ -42,29 +47,63 @@ uniform float r_hi = 0.85;
 // the gauge as seen: the tips under g_floor sit behind the flask plate (and below the frame), so g is read from there,
 // and 25 / 60 / 100% light about that share of the veins she shows (measured at 1:1, M4 fix round)
 uniform float g_floor = 0.18;
-uniform float glow_k = 0.30;                        // the soft outer glow's strength (added, warm, hair-bound)
+uniform float glow_k = 1.0;                         // the warmed bronze round a lit vein (added, hair-bound)
+// a vein's greatest width in the texture's px (2.7 of them to a screen px at the HUD's 0.85: about 3 px)
+uniform float vein_px = 7.5;
+// an unlit ridge's fall toward plain bronze (the bronze between her ridges, measured at 1:1 by day)
+uniform float cold_k = 0.30;
+uniform vec4 c_bronze : source_color = vec4(0.215, 0.176, 0.133, 1.0);
 
 float vein_at(vec2 uv) { return smoothstep(r_lo, r_hi, texture(veins, uv).r); }
+float gauge(float G) { return clamp((G - g_floor) / (1.0 - g_floor), 0.0, 1.0); }
+// Spent's band at g (its flash)
+float spent_at(float g) { return spent_k * step(spent.x, g) * step(g, spent.y) * step(0.001, spent.y - spent.x); }
+// the heat a neighbor gives off: a lit vein there (or one in Spent's flash), hotter the nearer the front
+float heat_at(vec2 uv)
+{
+	vec3 t = texture(veins, uv).rgb;
+	float g = gauge(t.g);
+	float l = max(step(g, level) * step(0.001, level), spent_at(g));
+	return smoothstep(r_lo, r_hi, t.r) * smoothstep(0.15, 0.6, t.b) * l * mix(0.55, 1.5, smoothstep(0.45, 0.0, level - g));
+}
 
 void fragment()
 {
 	vec3 V = texture(veins, UV).rgb;
-	float s = smoothstep(r_lo, r_hi, V.r), g = clamp((V.g - g_floor) / (1.0 - g_floor), 0.0, 1.0), m = V.b;
+	float s0 = smoothstep(r_lo, r_hi, V.r), g = gauge(V.g), m = V.b;
 	vec2 tp = 1.0 / tex_px;
-	float lit = step(g, level) * step(0.001, level);
-	// the soft outer glow (the lit veins blurred: 8 taps at 3 and 6 tex px), and the hair mask grown 3 tex px: every
-	// added term lives in the hair (the glow a few px beyond it), never outside it (g is meaningless off the hair)
+	float on = step(0.001, level);
+	float lit = step(g, level) * on;
+	// the warmth round the lit veins (three rings: 4, 9 and 16 tex px, about 1.5, 3.3 and 6 px on screen), and the hair
+	// mask grown 4 tex px: every added term lives in the hair (a few px beyond it), never outside (g means nothing there)
 	float gl = 0.0, mg = m;
+	// the weight clamp: a vein px goes if, along some line, the vein's edge is within a of it and the vein runs on more
+	// than a + vein_px the other way (so it lies outside the middle vein_px of a wide ridge)
+	float trim = 0.0;
 	for (int i = 0; i < 8; i++) {
 		float an = float(i) * 0.785398;
 		vec2 o = vec2(cos(an), sin(an)) * tp;
-		gl += vein_at(UV + o * 3.0) + 0.6 * vein_at(UV + o * 6.0);
-		mg = max(mg, texture(veins, UV + o * 3.0).b);
+		vec2 o2 = vec2(cos(an + 0.392699), sin(an + 0.392699)) * tp;
+		gl += heat_at(UV + o * 4.0) + 0.7 * heat_at(UV + o2 * 9.0) + 0.45 * heat_at(UV + o * 16.0);
+		mg = max(mg, texture(veins, UV + o * 4.0).b);
+		if (s0 > 0.02) {
+			for (int k = 0; k < 3; k++) {
+				float a = k == 0 ? 1.0 : (k == 1 ? 2.2 : 3.6);
+				float far = a + vein_px;
+				trim = max(trim, (1.0 - vein_at(UV + o * a)) * vein_at(UV - o * far) * vein_at(UV - o * far * 0.5));
+			}
+		}
 	}
+	gl /= 17.2;
+	float s = s0 * (1.0 - trim);
 	float hair = smoothstep(0.15, 0.6, m);
 	float near = smoothstep(0.15, 0.6, mg);
-	// the bands, stepped: tips edge amber, the body mid gold, the last core_w under the front core white-gold
-	vec3 band = g < tip_w ? c_edge.rgb : c_mid.rgb;
+	// the grade along the fill: amber at the tips and the cold end, mid gold up the fill, hot gold under the front,
+	// core white-gold only in the last core_w
+	float df = level - g;
+	float amber = max(1.0 - smoothstep(0.25, 0.62, g / max(level, 0.001)), 1.0 - smoothstep(tip_w, tip_w + 0.10, g));
+	vec3 band = mix(c_mid.rgb, c_edge.rgb, amber);
+	band = mix(band, mix(c_mid.rgb, c_core.rgb, 0.45), smoothstep(core_w + hot_w, core_w, df));
 	float coreb = step(level - core_w - 0.02 * flare, g) * lit;
 	band = mix(band, c_core.rgb, coreb);
 	// Faded: cool toward edge, then bronze (dark: the light goes out)
@@ -78,7 +117,7 @@ void fragment()
 	// Full: the shimmer, a soft band running down the veins
 	float sh = shimmer_g < -0.5 ? 0.0 : exp(-pow((g - shimmer_g) / 0.05, 2.0)) * lit;
 	// Spent: the band just spent flashes core, then goes dark
-	float sp = spent_k * step(spent.x, g) * step(g, spent.y) * step(0.001, spent.y - spent.x);
+	float sp = spent_at(g);
 	vec3 col = band;
 	col = mix(col, c_core.rgb, 0.5 * flare * coreb);
 	col = mix(col, pkt_c.rgb, clamp(pk, 0.0, 1.0));
@@ -86,13 +125,20 @@ void fragment()
 	col = mix(col, c_core.rgb, sh * 0.7);
 	col = mix(col, c_core.rgb, sp);
 	// the vein covers the bronze by its strength: on screen a fully lit vein IS the band's color (no additive on top)
-	float va = s * hair * max(max(lit, sp), clamp(pk + em, 0.0, 1.0));
-	// added light, all hair-bound: the glow off the lit veins (between them, not on them), the underglow, the packet
-	gl = gl / 12.8 * max(lit, sp) * warm * (1.0 - s) * near;
-	// (feathered over the last 0.12 of g under the front: a warmth rising, never a cut-out fill)
-	float ug = under * hair * warm * step(0.001, level) * smoothstep(level, level - 0.12, g) * (0.6 + 0.4 * smoothstep(0.0, max(level, 0.01), g));
-	vec3 warmc = mix(c_edge.rgb, c_mid.rgb, 0.5);
-	vec3 addc = warmc * gl * glow_k + c_edge.rgb * ug + pkt_c.rgb * pk * 0.08 * hair + c_core.rgb * sp * 0.12 * gl;
+	float shown = max(max(lit, sp), clamp(pk + em, 0.0, 1.0));
+	float va = s * hair * shown;
+	// a wide ridge's edge outside the clamp: ember over the ridge's own highlight (a hot middle, a red edge)
+	vec3 ember = c_edge.rgb * vec3(1.0, 0.62, 0.6);
+	float ea = (s0 - s) * hair * lit * 0.55 * warm;
+	// an unlit ridge: its highlight falls toward plain bronze (cold metal above the front, and at 0)
+	float ca = s0 * hair * (1.0 - shown) * cold_k;
+	// added light, all hair-bound: the bronze warmed round the lit veins (not on them), the underglow (ember, piled
+	// under the front, feathered over the last 0.14 of g: a warmth rising, never a cut-out fill), the packet
+	float front = smoothstep(0.45, 0.0, df);
+	gl *= warm * (1.0 - s * shown) * near;
+	float ug = under * hair * warm * on * smoothstep(level, level - 0.14, g) * (0.5 + 0.6 * front);
+	vec3 addc = mix(ember, c_edge.rgb, clamp(gl * 2.0, 0.0, 1.0)) * gl * glow_k + ember * ug
+		+ pkt_c.rgb * pk * 0.08 * hair + c_core.rgb * sp * 0.12 * gl;
 	// Full: the four-point glint at the crown (small, 2-3 frames), and the warm rim on her hair's profile
 	vec2 px = UV * canvas;
 	vec2 d = abs(px - crown);
@@ -104,8 +150,9 @@ void fragment()
 			texture(cold, UV + vec2(-2.0, -2.0) * tp).a);
 		addc += c_edge.rgb * rim * 0.35 * clamp(a0 - an, 0.0, 1.0) * a0 * near;
 	}
-	// premultiplied: the veins cover the bronze (va); the glow, underglow, glint and rim add (alpha 0). Faded to
-	// bronze, the veins hold at 0.6 of their cover.
+	// premultiplied: the veins, the ember edges and the cold ridges cover the bronze; the warmth, underglow, glint and
+	// rim add (alpha 0). Faded to bronze, the veins hold at 0.6 of their cover.
 	float a = va * alpha * (warm + (1.0 - warm) * 0.6);
-	COLOR = vec4(col * a + addc * alpha, a);
+	float e = ea * alpha, c = ca * alpha;
+	COLOR = vec4(col * a + ember * e + c_bronze.rgb * c + addc * alpha, a + e + c);
 }
