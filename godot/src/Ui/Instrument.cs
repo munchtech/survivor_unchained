@@ -632,14 +632,14 @@ public partial class Socket : Control
             if (cooling && total >= 3.5 && waitSecs >= 1)
             {
                 int n = (int)Math.Ceiling(waitSecs);
-                DgMeters.Numeral(this, c, n.ToString(), 20, DgMeters.Gold, 4);
+                DgMeters.Numeral(this, c, DgMeters.Figures(n), 20, DgMeters.Gold, 4);
                 TraceWait(n);
             }
             else TraceWait(-1);
             // the rank (UI 23): a small dark chip at half past one over the bezel (DgPanel.Marks.Chip), gold-rimmed
             // when it can evolve or has. (M4 lead 4: only on a seat with no key cap, the Lamps' wide view and the arena:
             // in play the cap, the wait's seconds and a rank were three numerals a seat; the rank is read on the Lamps)
-            if (rank > 0 && !keyed) DgPanel.Marks.Chip(this, c + DgPanel.ChipOff, rank.ToString(), evolved || ripe);
+            if (rank > 0 && !keyed) DgPanel.Marks.Chip(this, c + DgPanel.ChipOff, DgMeters.Figures(rank), evolved || ripe);
         }
     }
 }

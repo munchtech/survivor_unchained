@@ -37,13 +37,15 @@ public static partial class DgMeters
     /// level rising, not a line drawn across.</summary>
     public static void Level(CanvasItem ci, Vector2 c, float r, float ready, Color tint)
     {
+        // (the points and colours are written into kept arrays of the draws' exact lengths: a waiting seat is redrawn at
+        // each change of its level, and each redraw made 41 points, a quad and its colours anew; Godot copies them at the call)
         ready = Math.Clamp(ready, 0, 1);
         float yCut = -r + 2 * r * (1 - ready);
         // the dark: from the top of the well down to the surface
         if (ready < 0.995f)
         {
-            const int n = 40;
-            var pts = new Vector2[n + 1];
+            const int n = LevelN;
+            var pts = levelPts;
             float a0 = Mathf.Asin(Mathf.Clamp(yCut / r, -1, 1));
             for (int k = 0; k <= n; k++)
             {
@@ -58,8 +60,8 @@ public static partial class DgMeters
         float depth = r - yCut;
         int rows = Math.Max(2, (int)Math.Ceiling(depth / 2));
         float HalfW(float y) => Mathf.Sqrt(Mathf.Max(0, r * r - y * y));
-        var quad = new Vector2[4];
-        var cols = new Color[4];
+        var quad = levelQuad;
+        var cols = levelCols;
         for (int i = 0; i < rows; i++)
         {
             float y0 = yCut + depth * i / rows, y1 = yCut + depth * (i + 1) / rows;
@@ -74,6 +76,14 @@ public static partial class DgMeters
             ci.DrawPolygon(quad, cols);
         }
     }
+
+    const int LevelN = 40;
+    static readonly Vector2[] levelPts = new Vector2[LevelN + 1], levelQuad = new Vector2[4];
+    static readonly Color[] levelCols = new Color[4];
+
+    static readonly string?[] figures = new string?[100];
+    /// <summary>A small whole number as text, kept (0 to 99: a wait's seconds, a rank; others are made each time).</summary>
+    public static string Figures(int n) => n is >= 0 and < 100 ? figures[n] ??= n.ToString() : n.ToString();
 
     /// <summary>A numeral cut in the bronze: gold, a dark carved outline and a soft drop, centred on at (its caps'
     /// middle).</summary>

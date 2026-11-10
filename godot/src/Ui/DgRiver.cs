@@ -26,12 +26,27 @@ public static class DgRiver
     static Vector2 V(Variant v) => v.AsGodotArray() is { Count: >= 2 } a ? new Vector2((float)a[0].AsDouble(), (float)a[1].AsDouble()) : Vector2.Zero;
 
     /// <summary>The i-th well's radius (the hole in its ring), from the geo.</summary>
-    public static float Hole(int i) => Geo.TryGetValue("seats", out var s) && s.AsGodotArray() is { } a && i >= 0 && i < a.Count
-        && a[i].AsGodotDictionary().TryGetValue("hole", out var h) ? (float)h.AsDouble() : 0;
+    public static float Hole(int i)
+    {
+        holes ??= Holes();
+        return i >= 0 && i < holes.Length ? holes[i] : 0;
+    }
+
+    // (read from the geo once: a seat asks at each redraw, and each asking made the geo's array and dictionary wrappers)
+    static float[]? holes;
+    static float[] Holes()
+    {
+        if (!Geo.TryGetValue("seats", out var s) || s.AsGodotArray() is not { } a) return System.Array.Empty<float>();
+        var o = new float[a.Count];
+        for (int i = 0; i < o.Length; i++) o[i] = a[i].AsGodotDictionary().TryGetValue("hole", out var h) ? (float)h.AsDouble() : 0;
+        return o;
+    }
 
     /// <summary>The ring (seat i) and its well.</summary>
     public static Texture2D? Ring(int i) => UiArt.Art($"{Dir}/ring_{i % 6}.png");
-    public static Texture2D? Well(int i) => UiArt.Art($"{Dir}/well_{i % 6}.png");
+    public static Texture2D? Well(int i) => i < 0 ? null : wells[i % 6] ??= UiArt.Art($"{Dir}/well_{i % 6}.png");
+    // (kept once found: the path was made again at each redraw of a seat)
+    static readonly Texture2D?[] wells = new Texture2D?[6];
 
     static readonly Texture2D?[] inner = new Texture2D?[6];
     /// <summary>UI 23: the ring cut to the well's radius r (DgPanel.WellR): its inner edge, the well's own rim shading,
