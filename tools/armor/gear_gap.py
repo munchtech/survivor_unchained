@@ -37,7 +37,7 @@ UP = 0.5           # her skin faces up: its normal's Y above this
 def bands_of(bd, ev, tier="close"):
     """(X, side, band) of the binding's rigid points on this body: side -1 / +1 by x, band 0 = topmost of its side."""
     ms = [m for m in bd.meta["meshes"] if m["tier"] == tier]
-    lead = bd.z[f"lead_{tier}"]
+    lead = ev[ms[0]["node"]].get("lead", bd.z[f"lead_{tier}"])    # (a rim is of its plate's band: gear_fit RIMS)
     comp = np.concatenate([ev[m["node"]]["comp"] for m in ms])
     X = np.vstack([ev[m["node"]]["Xu"] for m in ms])
     g = np.where(comp >= 0, lead[np.maximum(comp, 0)], -1)
