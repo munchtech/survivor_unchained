@@ -1,0 +1,111 @@
+carry: relative; 44 driven bones; regions:
+  girdle_l: bones clavicle_l upperarm_l lowerarm_l hand_l; reference {'clavicle_l': 'clavicle_l', 'upperarm_l': 'upperarm_l', 'lowerarm_l': 'lowerarm_l', 'hand_l': 'hand_l'}; anchors (source, reference) [('spine_05', 'spine_03')]; 5502 points, share 1 on 3072, carrier not ok 0; touches ['girdle_r', 'neck']
+  girdle_r: bones clavicle_r upperarm_r lowerarm_r hand_r; reference {'clavicle_r': 'clavicle_r', 'upperarm_r': 'upperarm_r', 'lowerarm_r': 'lowerarm_r', 'hand_r': 'hand_r'}; anchors (source, reference) [('spine_05', 'spine_03')]; 5502 points, share 1 on 3072, carrier not ok 0; touches ['girdle_l', 'neck']
+  neck: bones neck_01 neck_02 Head; reference {'neck_01': 'neck_02', 'Head': 'Head'}; anchors (source, reference) [('spine_05', 'spine_03'), ('Head', 'Head')]; 5542 points, share 1 on 3739, carrier not ok 0; touches ['girdle_l', 'girdle_r']
+pocket l: 11 bridge edges, 148 pocket points of 3764 (bridge_deg 60.0, rows 4, weight length)
+pocket r: 13 bridge edges, 148 pocket points of 3764 (bridge_deg 60.0, rows 4, weight length)
+reference bones posed (13): pelvis spine_01 spine_02 spine_03 neck_01 clavicle_l clavicle_r upperarm_l upperarm_r lowerarm_l lowerarm_r hand_l hand_r
+reference bones left at rest (87): root Head index_01_l index_02_l index_03_l index_04_leaf_l middle_01_l middle_02_l middle_03_l middle_04_leaf_l pinky_01_l pinky_02_l pinky_03_l pinky_04_leaf_l ring_01_l ring_02_l ring_03_l ring_04_leaf_l thumb_01_l thumb_02_l thumb_03_l thumb_04_leaf_l lowerarm_twist_01_l lowerarm_twist_02_l upperarm_twist_01_l lowerarm_share_l lowerarm_point_l upperarm_twist_02_l delt_l upperarm_twist_03_l upperarm_twist_04_l upperarm_share_l trap_l index_01_r index_02_r index_03_r index_04_leaf_r middle_01_r middle_02_r middle_03_r middle_04_leaf_r pinky_01_r pinky_02_r pinky_03_r pinky_04_leaf_r ring_01_r ring_02_r ring_03_r ring_04_leaf_r thumb_01_r thumb_02_r thumb_03_r thumb_04_leaf_r lowerarm_twist_01_r lowerarm_twist_02_r upperarm_twist_01_r lowerarm_share_r lowerarm_point_r upperarm_twist_02_r delt_r upperarm_twist_03_r upperarm_twist_04_r upperarm_share_r trap_r breast_l breast_r scap_l scap_r pec_l lat_l pec_r lat_r thigh_l calf_l foot_l ball_l ball_leaf_l calf_share_l thigh_r calf_r foot_r ball_r ball_leaf_r calf_share_r glute_l glute_r panel_front
+anchor: {'l': ('spine_03', 'spine_05'), 'r': ('spine_03', 'spine_05')} (reference, source)
+PASS T1 l: carry(rest) - P0 max 2.89e-15 m
+PASS T2 l: rigid motion of the rest: max 3.33e-15 m
+PASS T1 r: carry(rest) - P0 max 8.88e-16 m
+PASS T2 r: rigid motion of the rest: max 1.55e-15 m
+   transfer of the rest pose: reference vertices off its rest by 2.70e-05 m, globals by 3.91e-05
+PASS T3 l: X(rest) - md.V0 max 1.25e-08 m
+PASS T3 r: X(rest) - md.V0 max 4.41e-08 m
+PASS T4 l: ok False 0 of 3764; |d0| p50 0.20 p95 1.48 max 2.70 mm
+PASS T4 r: ok False 0 of 3764; |d0| p50 0.19 p95 1.32 max 2.80 mm
+     watch x:abd150:l with the armpit map: filled max 3.03, edge 0.15..3.30 (map off 2.99, 0.15..2.99; against B's old rest)
+PASS T5 x:abd150:l: edge max carried alone 11.70 -> filled 2.99; torn edges (over 3) 12, outside the pocket 0 | d_pub 10.3/30.8/46.2 border 0.5/33.3 mm  edge 0.15..2.99 (carried alone max 11.70, filled max 2.99)  pocket edge 0.43..2.69 off A 7.3/25.5 mm  vol 1.112  girth mid 1.096 ins 1.073
+     absolute | relative: d_bor_max 36.92 | 33.32  d_pub_p95 32.90 | 30.77  d_pub_max 46.22 | 46.22  edge_max 2.99 | 2.99  edge_car_max 2.99 | 2.99  pk_edge_max 2.69 | 2.69  pk_d_max 25.53 | 25.53  vol 1.12 | 1.11  girth_mid_deltoid 1.10 | 1.10  girth_insertion 1.07 | 1.07  sigma min 0.702 guarded 0 driver memory 0.0144
+     watch x:add0:l with the armpit map: filled max 1.29, edge 0.48..1.29 (map off 1.29, 0.48..1.29; against B's old rest)
+PASS T5 x:add0:l: edge max carried alone 1.38 -> filled 1.29; torn edges (over 3) 0, outside the pocket 0 | d_pub 1.6/6.2/8.1 border 0.1/7.9 mm  edge 0.48..1.29 (carried alone max 1.38, filled max 1.29)  pocket edge 0.47..1.14 off A 1.5/4.9 mm  vol 0.957  girth mid 0.992 ins 0.990
+     absolute | relative: d_bor_max 7.91 | 7.91  d_pub_p95 6.24 | 6.24  d_pub_max 8.06 | 8.06  edge_max 1.29 | 1.29  edge_car_max 1.29 | 1.29  pk_edge_max 1.14 | 1.14  pk_d_max 4.88 | 4.88  vol 0.96 | 0.96  girth_mid_deltoid 0.99 | 0.99  girth_insertion 0.99 | 0.99  sigma min 0.946 guarded 0 driver memory 0.0067
+     watch cast_bolt@0:l with the armpit map: filled max 2.38, edge 0.26..2.38 (map off 2.38, 0.26..2.38; against B's old rest)
+PASS T5 cast_bolt@0:l: edge max carried alone 2.38 -> filled 2.38; torn edges (over 3) 0, outside the pocket 0 | d_pub 16.7/50.2/69.8 border 0.3/55.2 mm  edge 0.26..2.38 (carried alone max 2.38, filled max 2.38)  pocket edge 0.70..1.48 off A 2.0/7.4 mm  vol 1.018  girth mid 0.952 ins 0.991
+     absolute | relative: d_bor_max 53.51 | 55.18  d_pub_p95 50.34 | 50.25  d_pub_max 69.81 | 69.80  edge_max 2.40 | 2.38  edge_car_max 2.40 | 2.38  pk_edge_max 1.48 | 1.48  pk_d_max 7.42 | 7.43  vol 1.01 | 1.02  girth_mid_deltoid 0.95 | 0.95  girth_insertion 0.99 | 0.99  sigma min 0.675 guarded 0 driver memory 0.0305
+     watch crossbow_shoot@0:r with the armpit map: filled max 2.54, edge 0.13..2.54 (map off 2.54, 0.12..2.54; against B's old rest)
+PASS T5 crossbow_shoot@0:r: edge max carried alone 4.40 -> filled 2.54; torn edges (over 3) 1, outside the pocket 0 | d_pub 3.8/19.7/42.8 border 1.6/28.9 mm  edge 0.12..2.54 (carried alone max 4.40, filled max 2.54)  pocket edge 0.42..1.84 off A 2.3/11.4 mm  vol 1.049  girth mid 1.013 ins 1.044
+     absolute | relative: d_bor_max 28.76 | 28.90  d_pub_p95 19.69 | 19.73  d_pub_max 42.83 | 42.77  edge_max 2.57 | 2.54  edge_car_max 2.57 | 2.54  pk_edge_max 2.22 | 1.84  pk_d_max 11.64 | 11.44  vol 1.03 | 1.05  girth_mid_deltoid 1.00 | 1.01  girth_insertion 1.04 | 1.04  sigma min 0.744 guarded 0 driver memory 0.0437
+PASS T6 l: pocket_rows 0 - the carry alone: max 0.00e+00 m; the fill moves 148 points (pocket 148)
+PASS T7 l: fill(rest) - rest max 2.89e-15 m; under a rigid motion 3.11e-15 m (11 bridge edges, 148 pocket points, 47 holding)
+PASS T6 r: pocket_rows 0 - the carry alone: max 0.00e+00 m; the fill moves 148 points (pocket 148)
+PASS T7 r: fill(rest) - rest max 8.88e-16 m; under a rigid motion 1.55e-15 m (13 bridge edges, 148 pocket points, 47 holding)
+FAIL T9 l: bones outside every region turned (spine_02 20 spine_03 25 spine_05 30 deg), every region's locals at rest: X - published max 29.1097 mm (absolute carry 69.2 mm; the region moves 237 mm; correctives the trunk drives there 0.000 mm)
+FAIL T9 r: bones outside every region turned (spine_02 20 spine_03 25 spine_05 30 deg), every region's locals at rest: X - published max 29.7547 mm (absolute carry 71.4 mm; the region moves 201 mm; correctives the trunk drives there 0.000 mm)
+PASS T10 x:abd150:l: whole-body rigid motion: max 1.78e-15 m; twice the same: True; correctives the other bones drive in the region 0.000 mm
+PASS T10 crossbow_shoot@0:r: whole-body rigid motion: max 2.44e-15 m; twice the same: True; correctives the other bones drive in the region 0.000 mm
+FAIL T11 x:abd150:l: no support region: every region - the stored target of before the border (target_a_regions.npz) max 1.25e-02 m (limit 1e-9); the girdles alone - the stored relative target (target_a_rel.npz) 2.53e-06 m (limit 1e-5), with the reference's 13 bones posed as that file was 0.00e+00 m (limit 1e-9)
+PASS T11 x:add0:l: no support region: every region - the stored target of before the border (target_a_regions.npz) max 0.00e+00 m (limit 1e-9); the girdles alone - the stored relative target (target_a_rel.npz) 6.68e-06 m (limit 1e-5), with the reference's 13 bones posed as that file was 0.00e+00 m (limit 1e-9)
+FAIL T11 cast_bolt@0:l: no support region: every region - the stored target of before the border (target_a_regions.npz) max 3.13e-02 m (limit 1e-9); the girdles alone - the stored relative target (target_a_rel.npz) 6.43e-06 m (limit 1e-5), with the reference's 13 bones posed as that file was 0.00e+00 m (limit 1e-9)
+FAIL T11 crossbow_shoot@0:r: no support region: every region - the stored target of before the border (target_a_regions.npz) max 1.33e-02 m (limit 1e-9); the girdles alone - the stored relative target (target_a_rel.npz) 4.62e-06 m (limit 1e-5), with the reference's 13 bones posed as that file was 0.00e+00 m (limit 1e-9)
+FAIL T11 p4:iron_vow@75:r: no support region: every region - the stored target of before the border (target_a_regions.npz) max 1.90e-02 m (limit 1e-9); the girdles alone - the stored relative target (target_a_rel.npz) 6.03e-06 m (limit 1e-5), with the reference's 13 bones posed as that file was 0.00e+00 m (limit 1e-9)
+FAIL T11 p4:idle_warden_town@122:l: no support region: every region - the stored target of before the border (target_a_regions.npz) max 4.97e-04 m (limit 1e-9); the girdles alone - the stored relative target (target_a_rel.npz) 6.55e-06 m (limit 1e-5), with the reference's 13 bones posed as that file was 0.00e+00 m (limit 1e-9)
+FAIL T11 Jog_Fwd@11:r: no support region: every region - the stored target of before the border (target_a_regions.npz) max 2.36e-02 m (limit 1e-9); the girdles alone - the stored relative target (target_a_rel.npz) 6.02e-06 m (limit 1e-5), with the reference's 13 bones posed as that file was 0.00e+00 m (limit 1e-9)
+PASS T12: neck alone (neck_01 30 neck_02 25 Head 20 deg): X - published max mm: outside the region 0.0000, head-rigid points (16574) 0.0000, outer row 0.0000 (limit 0.1); ramp rows off the core (what the share hides) 2.6 mm, interior moved 64.0 mm | worst edge in the region: target 2.23, published 11.39, A's own 2.23 (A registered at both anchors 2.32; limit A's own + 0.15); sigma min 0.954 guarded 0
+PASS T13 p4:iron_vow@75:r: regions listed backwards, the same bit for bit (whole body and the side): True; the side - the whole body on its points 4.4e-16 m; worst edge in the overlap rows (2260 points, both shares > 0) 2.10, girdle interior 1.96, neck interior 2.13 (limit the worse + 0.15)
+PASS T14 p4:iron_vow@75:r: trap line and throat pit (the side's 2575 points in the neck region): worst edge target 2.10 | published 11.68 | A's own there (absolute carry, alone) 1.63; the whole side: target 2.10, published 11.68
+PASS T13 p4:idle_warden_town@122:l: regions listed backwards, the same bit for bit (whole body and the side): True; the side - the whole body on its points 4.4e-16 m; worst edge in the overlap rows (2029 points, both shares > 0) 1.58, girdle interior 1.46, neck interior 1.70 (limit the worse + 0.15)
+PASS T14 p4:idle_warden_town@122:l: trap line and throat pit (the side's 2575 points in the neck region): worst edge target 1.58 | published 11.20 | A's own there (absolute carry, alone) 1.41; the whole side: target 1.56, published 11.20
+PASS T15 l: the region's outer row (288 of 5502 points): share max 0 shut and open; the region's own target - published there max 0.0e+00 m (limit 1e-9)
+PASS T15 r: the region's outer row (288 of 5502 points): share max 0 shut and open; the region's own target - published there max 0.0e+00 m (limit 1e-9)
+PASS T16 Jog_Fwd@11:r side r: arm elevation 43 deg (gate from 45; other 51): the side's gated part (586 points) off published by the regions under the gate max 0.0000 mm (limit 1); by the other regions in rows they own 21.1 mm
+PASS T16 Jog_Fwd@14:l side r: arm elevation 42 deg (gate from 45; other 54): the side's gated part (586 points) off published by the regions under the gate max 0.0000 mm (limit 1); by the other regions in rows they own 21.1 mm
+PASS T16 cast_bolt@0:l side r: arm elevation 40 deg (gate from 45; other 59): the side's gated part (586 points) off published by the regions under the gate max 0.0000 mm (limit 1); by the other regions in rows they own 0.0 mm
+PASS T16 p4:idle_warden_town@122:l side l: arm elevation 16 deg (gate from 45; other 64): the side's gated part (586 points) off published by the regions under the gate max 0.0017 mm (limit 1); by the other regions in rows they own 57.7 mm
+PASS T16 x:abd150:l side r: arm elevation 38 deg (gate from 45; other 150): the side's gated part (586 points) off published by the regions under the gate max 0.0000 mm (limit 1); by the other regions in rows they own 0.0 mm
+PASS T16 x:abd170:l side r: arm elevation 38 deg (gate from 45; other 170): the side's gated part (586 points) off published by the regions under the gate max 0.0000 mm (limit 1); by the other regions in rows they own 0.0 mm
+PASS T16 x:add0:l side l: arm elevation 0 deg (gate from 45; other 38): the side's gated part (586 points) off published by the regions under the gate max 0.0000 mm (limit 1); by the other regions in rows they own 0.0 mm
+PASS T16 x:add0:l side r: arm elevation 38 deg (gate from 45; other 0): the side's gated part (586 points) off published by the regions under the gate max 0.0000 mm (limit 1); by the other regions in rows they own 0.0 mm
+PASS T16 x:flex170:l side r: arm elevation 38 deg (gate from 45; other 170): the side's gated part (586 points) off published by the regions under the gate max 0.0000 mm (limit 1); by the other regions in rows they own 0.0 mm
+PASS T17 x:abd170:l: elevation 170 deg: ramp edges over 2.5x 0, not explained by the carried or the published surface's own stretch + 0.15: 0; worst ramp edge 2.04 (limit 0 over, 0 unexplained)
+PASS T17 x:abd150:l: elevation 150 deg: ramp edges over 2.5x 0, not explained by the carried or the published surface's own stretch + 0.15: 0; worst ramp edge 1.84 (limit 0 over, 0 unexplained)
+PASS T17 p4:iron_vow@72:l: elevation 109 deg: ramp edges over 2.5x 0, not explained by the carried or the published surface's own stretch + 0.15: 0; worst ramp edge 2.11 (limit 0 over, 0 unexplained)
+PASS T17 cast_bolt@0:l: elevation 59 deg: ramp edges over 2.5x 0, not explained by the carried or the published surface's own stretch + 0.15: 0; worst ramp edge 2.00 (limit 0 over, 0 unexplained)
+PASS T17 p4:heroic_leap@19:r: elevation 170 deg: ramp edges over 2.5x 0, not explained by the carried or the published surface's own stretch + 0.15: 0; worst ramp edge 2.40 (limit 1 over, 0 unexplained)
+     watch x:flex170:l: elevation 170 deg: ramp edges over 2.5x 0, not explained by the carried or the published surface's own stretch + 0.15: 0; worst ramp edge 1.84
+     watch Jog_Fwd@14:l: elevation 54 deg: ramp edges over 2.5x 10, not explained by the carried or the published surface's own stretch + 0.15: 0; worst ramp edge 6.13
+     watch Jog_Fwd@11:r: elevation 43 deg: ramp edges over 2.5x 16, not explained by the carried or the published surface's own stretch + 0.15: 6; worst ramp edge 3.64, worst unexplained 3.64
+     watch p4:idle_warden_town@122:l: elevation 16 deg: ramp edges over 2.5x 0, not explained by the carried or the published surface's own stretch + 0.15: 0; worst ramp edge 1.58
+     watch x:add0:l: elevation 0 deg: ramp edges over 2.5x 0, not explained by the carried or the published surface's own stretch + 0.15: 0; worst ramp edge 1.24
+PASS T18 x:add0:l: elevation 38.2 deg: composed target - stored (target_a_l18.npz) max 0 mm on 10139 shared points (limit exactly 0)
+PASS T18 cast_bolt@0:l: elevation 58.8 deg: composed target - stored (target_a_l18.npz) max 0 mm on 10139 shared points (limit exactly 0)
+PASS T18 cast_bolt@3:r: elevation 84.1 deg: composed target - stored (target_a_l18.npz) max 0 mm on 10139 shared points (limit exactly 0)
+PASS T18 crossbow_shoot@10:r: elevation 75.9 deg: composed target - stored (target_a_l18.npz) max 0 mm on 10139 shared points (limit exactly 0)
+PASS T18 x:abd90_int60:l: elevation 90.0 deg: composed target - stored (target_a_l18.npz) max 0 mm on 10139 shared points (limit exactly 0)
+PASS T18 Jog_Fwd@11:r: elevation 50.9 deg: composed target - stored (target_a_l18.npz) max 0 mm on 10139 shared points (limit exactly 0)
+PASS T19 x:abd150:l: fold (34 points): valley max 6.2 deg (A 5.8 + 1); depth mean -0.08 mm (A 0.02 +- 0.2)
+PASS T19 x:abd170:l: fold (31 points): valley max 5.1 deg (A 6.5 + 1); depth mean 0.03 mm (A 0.13 +- 0.2)
+PASS T19 x:flex170:l: fold (22 points): valley max 3.5 deg (A 3.2 + 1); depth mean -0.11 mm (A -0.01 +- 0.2)
+PASS T20: 25 of 141 poses have both arms at or under 45 deg; on 8 of them (sword_back@14:r, run_reaver@8:l, run_reaver@0:r, run_reaver@5:l, sword_heavy@0:r, idle_stalker_look@134:l, crossbow_shoot@14:r, x:add0_ext60:l) composed with the map - without max 0.0 m (limit exactly 0)
+FAIL T21 x:abd150:l: map w 1.000 (second path 1.000); band (174 vertices, moved up to 30.30 mm): composed - strip_rest's map placed max 0.00e+00 m, normals 0.00e+00 (limit 1e-6); outside the band - map off max 0.005641428765851941 m (limit exactly 0)
+FAIL T21 p4:heroic_leap@9:r: map w 1.000 (second path 1.000); band (348 vertices, moved up to 31.36 mm): composed - strip_rest's map placed max 0.00e+00 m, normals 0.00e+00 (limit 1e-6); outside the band - map off max 0.010720012694374503 m (limit exactly 0)
+FAIL T21 crossbow_shoot@10:r: map w 0.741 (second path 0.741); band (174 vertices, moved up to 14.46 mm): composed - strip_rest's map placed max 0.00e+00 m, normals 0.00e+00 (limit 1e-6); outside the band - map off max 0.0023675878782041526 m (limit exactly 0)
+PASS T22 x:abd120:l: (l) w 1.00: turned triangles 0 (limit 0); worst band edge 2.50 against A's own 2.37 (limit +0.15); A's own 2.37, fill 2.24
+PASS T22 x:abd150:l: (l) w 1.00: turned triangles 0 (limit 0); worst band edge 3.03 against A's own 2.93 (limit +0.15); A's own 2.93, fill 2.69
+PASS T22 x:abd170:l: (l) w 1.00: turned triangles 0 (limit 0); worst band edge 2.99 against A's own 2.87 (limit +0.15); A's own 2.87, fill 2.83
+PASS T22 x:flex170:l: (l) w 1.00: turned triangles 0 (limit 0); worst band edge 2.94 against A's own 2.89 (limit +0.15); A's own 2.89, fill 2.75
+FAIL T22 p4:iron_vow@72:l: (l) w 1.00: turned triangles 2 (limit 0); worst band edge 2.37 against A's own 1.83 (limit +0.15); A's own 1.83, fill 2.07
+FAIL T22 p4:heroic_leap@7:r: (r) w 1.00: turned triangles 2 (limit 0); worst band edge 2.96 against A's own 2.71 (limit +0.15); A's own 2.71, fill 2.24
+FAIL T22 p4:heroic_leap@9:r: (r) w 1.00: turned triangles 1 (limit 0); worst band edge 2.99 against A's own 2.44 (limit +0.15); A's own 2.44, fill 2.76
+PASS T22 p4:heroic_leap@19:r: (r) w 1.00: turned triangles 0 (limit 0); worst band edge 3.49 against A's own 4.36 (limit +0.15); A's own 4.36, fill 3.32
+PASS T22 p4:heroic_leap@20:r: (r) w 1.00: turned triangles 0 (limit 0); worst band edge 3.32 against A's own 4.13 (limit +0.15); A's own 4.13, fill 3.34
+PASS T22 crossbow_shoot@10:r: (r) w 0.74: turned triangles 0 (limit 0); worst band edge 1.87 against fill 1.73 (limit +0.15); A's own 1.50, fill 1.73
+PASS T22 cast_bolt@3:r: (r) w 0.47: turned triangles 0 (limit 0); worst band edge 1.85 against fill 1.73 (limit +0.15); A's own 1.67, fill 1.73
+PASS T22 axe_heavy@7:r: (r) w 0.47: turned triangles 0 (limit 0); worst band edge 2.08 against fill 2.15 (limit +0.15); A's own 1.76, fill 2.15
+PASS T22 p4:heroic_leap@5:r: (r) w 0.43: turned triangles 0 (limit 0); worst band edge 1.76 against fill 1.78 (limit +0.15); A's own 1.82, fill 1.78
+PASS T22 p4:idle_warden_town@126:r: (r) w 0.42: turned triangles 0 (limit 0); worst band edge 1.78 against fill 1.87 (limit +0.15); A's own 1.75, fill 1.87
+PASS T22 p4:heroic_leap@25:r: (r) w 0.27: turned triangles 0 (limit 0); worst band edge 1.74 against fill 1.76 (limit +0.15); A's own 1.84, fill 1.76
+PASS T23 p4:idle_warden_town@126:r: neck set (2723 edges): over 2.5x with the published surface under it: 0 (rule off 10); worst edge 2.01 (off 7.06, published 2.10); Head-rigid points (16574) moved by the rule max 0.0 m, girdle regions outside the neck 0.0 m (limit exactly 0)
+PASS T23 p4:idle_warden_town@122:l: neck set (2723 edges): over 2.5x with the published surface under it: 0 (rule off 8); worst edge 2.01 (off 6.75, published 2.02); Head-rigid points (16574) moved by the rule max 0.0 m, girdle regions outside the neck 0.0 m (limit exactly 0)
+PASS T23 sword_heavy@10:l: neck set (2723 edges): over 2.5x with the published surface under it: 0 (rule off 8); worst edge 2.04 (off 4.21, published 1.63); Head-rigid points (16574) moved by the rule max 0.0 m, girdle regions outside the neck 0.0 m (limit exactly 0)
+PASS T23 p4:shield_charge@0:r: neck set (2723 edges): over 2.5x with the published surface under it: 0 (rule off 9); worst edge 2.19 (off 4.26, published 1.63); Head-rigid points (16574) moved by the rule max 0.0 m, girdle regions outside the neck 0.0 m (limit exactly 0)
+PASS T23 p4:iron_vow@75:r: neck set (2723 edges): over 2.5x with the published surface under it: 0 (rule off 4); worst edge 2.13 (off 3.27, published 1.69); Head-rigid points (16574) moved by the rule max 0.0 m, girdle regions outside the neck 0.0 m (limit exactly 0)
+PASS T23 axe_heavy@7:r: neck set (2723 edges): over 2.5x with the published surface under it: 0 (rule off 11); worst edge 2.19 (off 3.75, published 1.71); Head-rigid points (16574) moved by the rule max 0.0 m, girdle regions outside the neck 0.0 m (limit exactly 0)
+PASS T23 Jog_Fwd@11:r: neck set (2723 edges): over 2.5x with the published surface under it: 0 (rule off 5); worst edge 2.34 (off 5.72, published 2.06); Head-rigid points (16574) moved by the rule max 0.0 m, girdle regions outside the neck 0.0 m (limit exactly 0)
+FAIL T26 p4:heroic_leap@6:r: fold past rest: girdle_l worst 26 deg, over 45: 0; girdle_r worst 17 deg, over 45: 0; neck worst 164 deg, over 45: 46
+FAIL T26 p4:heroic_leap@9:r: fold past rest: girdle_l worst 33 deg, over 45: 0; girdle_r worst 30 deg, over 45: 0; neck worst 160 deg, over 45: 48
+FAIL T26 cast_bolt@3:r: fold past rest: girdle_l worst 22 deg, over 45: 0; girdle_r worst 14 deg, over 45: 0; neck worst 159 deg, over 45: 42
+PASS T26 x:add0:l: no seed: composed - trigger off max 0.0 m (limit exactly 0)
+SOME FAILED

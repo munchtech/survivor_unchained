@@ -228,8 +228,7 @@ class Model:
         self.grown[side] = {new (point ids past the list), closed, opened ([list + new] shares, the gate shut / open),
         gate (lo, hi deg), stages [(lo, hi deg, share [list + new])]} is set by carried_target's support region: the
         share = (1 - g) closed + g opened, g by the arm's elevation (the breast part's upper and lateral rows open with
-        a high arm), or by grown["open"](G, side) where that is larger (the published stretch of the rows);
-        then each further gate stage in order, share = (1 - g_k) share + g_k its own, g_k by the elevation
+        a high arm); then each further gate stage in order, share = (1 - g_k) share + g_k its own, g_k by the elevation
         over the stage's own range (at or under its lo the share is the stages' before it, bit for bit).
         grown=False: the list's points only (len(S[side]["ids"])); True: the list, then the new points."""
         gr = getattr(self, "grown", {}).get(side)
@@ -239,8 +238,6 @@ class Model:
         el = self.elevation(G, side)
         g = np.clip((el - lo) / (hi - lo), 0.0, 1.0)
         g = g * g * (3 - 2 * g)
-        if gr.get("open") is not None:                              # a further opening measure (carried_target's support
-            g = max(g, gr["open"](G, side))                         #   "open"): where it is at or under g, bit for bit
         b = (1 - g) * gr["closed"] + g * gr["opened"]
         for lo, hi, share in gr.get("stages", ()):
             if el > lo:

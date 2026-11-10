@@ -172,7 +172,7 @@ class Pocket:
         e = np.asarray(edges, np.int64)
         touch = np.asarray(mask, bool)[e].any(1)
         self.edges = e[touch]                                # every edge with an end in the pocket
-        self.w, self.P0 = (np.ones(len(e)) if w is None else w)[touch], P0   # their weights; the rest (Pocket.fair)
+        self.w, self.P0 = (np.ones(len(e)) if w is None else w)[touch], P0   # their weights; the rest
 
     def smooth_rotations(self, R, passes):
         """The pocket points' rotations after `passes` Jacobi averaging passes (the others held), polar'd [len(p), 3, 3]."""
@@ -188,41 +188,6 @@ class Pocket:
         rhs = d - self._Lpb @ X[self.b]
         X[self.p] = np.stack([self._solve(np.ascontiguousarray(rhs[:, c])) for c in range(3)], 1)
         return X
-
-    def fair(self, X, R, alpha, iters=20, keep=None):
-        """(X, R): X [n, 3] with the pocket's points solved as rigid as possible (Sorkine and Alexa 2007) from the rest
-        shape, pulled toward X: argmin sum_ij w_ij |x_i - x_j - (R_i + R_j) / 2 (p_i - p_j)|^2 + sum alpha |x - X|^2
-        over the pocket's points, the others held. R [n, 3, 3] the rotations rest -> posed: the first guess, and the
-        held points' own; the pocket's are refitted to the result `iters` times. alpha (a scalar or [pocket]): the pull,
-        in the edge weights' units (about 1 an edge): the shape wider than about 1 / sqrt(alpha) edges stays, a crease
-        an edge or two wide goes. keep (a [pocket], nrm [pocket, 3]): the pocket's mean offset from X along nrm,
-        weighted by a, is held at 0 (the volume)."""
-        from scipy.sparse.linalg import factorized
-        X, R = np.array(X, float), np.array(R, float)
-        p, e, w = self.p, self.edges, self.w
-        al = np.broadcast_to(np.asarray(alpha, float), (len(p),))
-        solve = factorized((self._Lpp + sp.diags(al)).tocsc())
-        cols = lambda Y: np.stack([solve(np.ascontiguousarray(Y[:, c])) for c in range(3)], 1)
-        d0, C, Xb = self.P0[e[:, 0]] - self.P0[e[:, 1]], X[p].copy(), self._Lpb @ X[self.b]
-        if keep is not None:
-            a, nrm = keep
-            U = cols(a[:, None] * nrm)                       # the least-energy move that shifts the mean offset
-            q = (a * (U * nrm).sum(1)).sum()
-        for _ in range(int(iters)):
-            v = w[:, None] * np.einsum("eij,ej->ei", 0.5 * (R[e[:, 0]] + R[e[:, 1]]), d0)
-            Bv = np.zeros_like(X)
-            np.add.at(Bv, e[:, 0], v)
-            np.add.at(Bv, e[:, 1], -v)
-            Y = cols(Bv[p] - Xb + al[:, None] * C)
-            if keep is not None:
-                Y -= (a * ((Y - C) * nrm).sum(1)).sum() / q * U
-            X[p] = Y
-            S = np.zeros((len(X), 3, 3))
-            Sk = w[:, None, None] * (X[e[:, 0]] - X[e[:, 1]])[:, :, None] * d0[:, None, :]
-            np.add.at(S, e[:, 0], Sk)
-            np.add.at(S, e[:, 1], Sk)
-            R[p] = polar(S[p])
-        return X, R
 
 
 def _unit(v):
@@ -816,19 +781,13 @@ HER = {
                                              # `ratio` x rest are filled from their neighbours `rows` around, in step
                                              # with the stage (A's own crease on the breast's rows 4-7, chest_fold.md 6)
                                              "relax": {"ratio": 2.5, "rows": 2, "fold": 45.0, "fold_open": [30.0, 45.0]}},
-                                   # depinch (Her.depinched, Pocket.fair; body_facts/depinch.md): A's own skin crumples at
-                                   # the front armpit raised and the carry keeps it. NOT MET, so no key (inert): the
-                                   # facts give the swept rule {"deg", "fold_deg", "rows", "passes", "alpha", "iters"}
+                                   # depinch (Pocket.fair) removed 10 Nov by lead 22: superseded by fair_a at the source; facts body_facts/depinch.md
                                    "stiff": "upperarm_{s}", "rigid": 0.999, "gated_part": "breast", "cache": "support.npz",
                                    # map (Her.part; body_facts/strip_rest.md): the armpit band's lay (out/shoulder/`file`,
                                    # strip_rest.HerStrip) blended into the carried fill on the band's points by the arm's
                                    # elevation, smoothstep over `elev` deg (strip_rest.map_targets). No key: the fill alone
                                    "map": {"file": "strip_rest.npz", "elev": [45.0, 90.0]},
-                                   # open (Her.gate_open; body_facts/breast_gate.md): the first gate also opens by B's
-                                   # PUBLISHED stretch on its own rows, smoothstep over `stretch` (edge ratio), the share
-                                   # the larger of it and the elevation's. NOT MET, so no key (inert): Jog's torn edges sit
-                                   # on the ramp rows (opened share 0.02-0.26), so a full first gate leaves them published.
-                                   # The rule to try: {"stretch": [1.8, 2.5]}
+                                   # open (gate_open) removed 10 Nov by lead 22: Jog's tear is a clip fault (spine_04 35-51 deg), no gate can fix it; facts body_facts/breast_gate.md
                                    }},
         "neck": {"provider": "derived", "bones": ["neck_01", "neck_02", "Head"], "ref": {"neck_01": "neck_02", "Head": "Head"},
                  "root": "neck_01", "far": ["Head"], "rows": 4, "eps": 0.02, "rigid": 0.999,
@@ -872,7 +831,6 @@ HER = {
     # T26: the relax rules' fold trigger (body_facts/notch.md 4): no region edge past rest by over `fold` on t26_poses;
     # t26_quiet: poses with no seed, composed = trigger off bit for bit
     "t26_poses": ["p4:heroic_leap@6:r", "p4:heroic_leap@9:r", "cast_bolt@3:r"], "t26_quiet": ["x:add0:l"],
-    "t25_poses": ["Jog_Fwd@11:r", "Jog_Fwd@14:l"], "t25_ratio": 2.5, "t25_n": 8,   # T25: the gate's stretch opening
     "t21_poses": ["x:abd150:l", "p4:heroic_leap@9:r", "crossbow_shoot@10:r"],   # T21: the map through two paths
     "t19": {"poses": ["x:abd150:l", "x:abd170:l", "x:flex170:l"], "ref": "fold_probe/dump_t0.npz", "k": 3, "top": 12,
             "valley_deg": 1.0, "depth_mm": 0.2},
@@ -979,7 +937,6 @@ class Her:
         self.girth0 = {s: md.girth(md.S[s], md.V0) for s in sides}
         self.last = {}
         self._pose, self._parts = None, {}                  # the regions' parts of the last pose (part)
-        self.open_on, self._open = True, {}                 # the gate's stretch opening (support "open", gate_open)
         if verbose:
             print(f"carry: {cfg['carry']}; {len(self.driven)} driven bones; regions:")
             for n, r in self.regions.items():
@@ -1059,25 +1016,11 @@ class Her:
             plain = [Carrier(Ab.V0, Ab.T, bd.V0[F[x]], self.N0[F[x]], rad=cfg["rad"], k=cfg["k"], nw=cfg["nw"], pocket_rows=0) for x in news]
             rg.pts, rg.edges, rg.carrier, rg.nlist = F[allid], (A.row, A.col), Carriers([self.car[s], *plain]), len(md.S[s]["ids"])
             rg.share = lambda G, s=s: md.blend(G, s, grown=True)
-            if sup.get("open"):                             # the first gate also opens by the published stretch of its rows
-                gw = (md.grown[s]["closed"] <= 0) & (md.grown[s]["opened"] > 0)
-                ge = gw[A.row] & gw[A.col]
-                rg.open_edges = (F[allid][A.row[ge]], F[allid][A.col[ge]])
-                rg.open_stretch = tuple(sup["open"]["stretch"])
-                rg.open_L0 = np.linalg.norm(bd.V0[rg.open_edges[0]] - bd.V0[rg.open_edges[1]], axis=1)
-                md.grown[s]["open"] = lambda G, s=s: self.gate_open(G, s)
             rg.gated = gate[allid]
             rg.gate_own = F[own0 if s == s0 else md.tw[own0]]       # source vertices: what the side's gate rules (shut)
             rg.spread = spread_of(self.group, rg.pts)
             rg.relax = [(*g["deg"], (np.abs(SH[1 + k][o0] - SH[k][o0]) > 1e-12) & (np.arange(len(o0)) >= rg.nlist), g["relax"])
                         for k, g in enumerate(more) if g.get("relax")]      # (lo, hi, the plain rows the stage opens, rule)
-            if sup.get("depinch"):                          # (lo, hi, rule) and the region's own triangles (Her.depinched)
-                rg.depinch = (*sup["depinch"]["deg"], sup["depinch"])
-                loc = np.full(md.n, -1, np.int64)
-                loc[allid] = np.arange(len(allid))
-                Tl = loc[Tm]
-                rg.tris = Tl[(Tl >= 0).all(1)]
-            self.ext[s] = new
 
     def carrier(self, side, **over):
         """The side's Carrier from the config (`over` replaces Carrier arguments: the tests' variants)."""
@@ -1142,7 +1085,6 @@ class Her:
         cf = self.relaxed(rg, G, cf, Vr)
         Pg = self.rt.published(bd, Gr)[rg.pts]
         cf, mw, mN = self.mapped(rg, G, cf, Vr)
-        cf = self.depinched(rg, G, cf, Vr, mw)
         ibm = p.skel.ibm
         M, sig, u = relative_place(G @ ibm, Gr @ ibm, bd.J[rg.pts], bd.W[rg.pts], cfg["sig_lo"], cfg["sig_hi"])
         self._parts[name] = {"M": M, "cf": cf, "cr": cr, "Pg": Pg, "Va": Vr, "Va_own": Va,
@@ -1248,40 +1190,10 @@ class Her:
         cf[:nl] = Xm
         return cf, w, Nm
 
-    def gate_open(self, G, side):
-        """The first gate's stretch opening (config support "open": {"stretch": [lo, hi]}), [0, 1]: the smoothstep over
-        [lo, hi] of the largest edge ratio (posed / rest) of B's PUBLISHED surface of the whole pose G on the gate's own
-        rows (closed share 0, opened share > 0: the rows the gate alone puts on the target; their edges both ends in).
-        Model.blend takes the larger of it and the elevation's: where this is at or under that, the share is bit for bit.
-        Continuous in the pose (a max of continuous edge lengths), so a clip's frames never pop. 0 with open_on False."""
-        rg = self.regions[self.cfg["out_region"].replace("{s}", side)]
-        if not self.open_on or not hasattr(rg, "open_edges"):
-            return 0.0
-        key = (np.asarray(G, float).tobytes(), side)
-        if key not in self._open:
-            if len(self._open) > 64:
-                self._open.clear()
-            Vp = self.rt.published(self.bd, G)
-            a, b = rg.open_edges
-            r = float((np.linalg.norm(Vp[a] - Vp[b], axis=1) / rg.open_L0).max()) if len(a) else 0.0
-            lo, hi = rg.open_stretch
-            g = float(np.clip((r - lo) / (hi - lo), 0.0, 1.0))
-            self._open[key] = (g * g * (3 - 2 * g), r)
-        return self._open[key][0]
-
     def gate_shut(self, G, side):
-        """True while the side's first gate is shut: the arm under the gate's lo and the stretch opening 0."""
+        """True while the side's first gate is shut: the arm under the gate's lo."""
         gr = self.md.grown[side]
-        return self.md.elevation(G, side) < gr["gate"][0] and self.gate_open(G, side) <= 0.0
-
-    @contextlib.contextmanager
-    def open_off(self):
-        """The gate by the arm's elevation alone (no stretch opening) inside the block; the parts' cache is cleared."""
-        on, self.open_on, self._pose = self.open_on, False, None
-        try:
-            yield
-        finally:
-            self.open_on, self._pose = on, None
+        return self.md.elevation(G, side) < gr["gate"][0]
 
     @contextlib.contextmanager
     def fair_off(self):
@@ -1338,61 +1250,6 @@ class Her:
             X = Pocket(P0, E, m, self.cfg["pocket_weight"]).fill(cf, R, self.cfg["frame_passes"])
             cf = cf + w * (X - cf)
         return cf
-
-    def depinched(self, rg, G, cf, Vr, mw=0.0, info=None):
-        """The carried target cf [region points, 3] with A's skinning creases untangled (config support "depinch";
-        body_facts/depinch.md). A's own posed skin crumples where it collapses (the front armpit raised: 58-101 edges
-        over 45 deg under the patch, 0 at rest) and the carry keeps it (B's rest sits on A's within 3 mm). An edge of the
-        region's triangles folded either way (fold_probe.dihedral) over fold_deg and over B's rest fold there by
-        fold_deg, or a triangle turned against its rotation, seeds a pocket of the rows within `rows` edges, solved as
-        rigid as possible from B's rest shape and pulled toward cf by `alpha` (Pocket.fair; the carrier's rotations
-        smoothed the first guess, `iters` fits), its area-weighted mean normal offset from cf held at 0 (the volume).
-        `passes` rounds, each on the union of the pockets, its rows one wider. The armpit map's band (mw > 0) is held.
-        Blended by the smoothstep of the elevation over deg: at or under lo, or no seed, cf as it was, bit for bit."""
-        rule = getattr(rg, "depinch", None)
-        if not rule:
-            return cf
-        lo, hi, c = rule
-        w = 1.0
-        if rg.side:
-            el = self.md.elevation(G, rg.side)
-            if el <= lo:
-                return cf
-            w = np.clip((el - lo) / (hi - lo), 0.0, 1.0)
-            w = w * w * (3 - 2 * w)
-        import fold_probe as fp
-        P0, E, T = self.bd.V0[rg.pts], np.stack(rg.edges, 1), rg.tris
-        e0, d0 = fp.dihedral(P0, T)
-        n0 = fp.normals(P0, T)[1]
-        a0 = np.zeros(len(P0))
-        for j in range(3):
-            np.add.at(a0, T[:, j], np.linalg.norm(n0, axis=1) / 6.0)
-        n0 = _unit(n0)
-        R = np.concatenate([q.rotations(Vr) for q in getattr(rg.carrier, "parts", [rg.carrier])])
-        free = np.ones(len(P0), bool)
-        if mw > 0:                                          # the armpit map's band (Her.mapped) is the map's
-            free[np.asarray(self.map[rg.name].loc[rg.side], np.int64)] = False
-        X, m = cf, np.zeros(len(P0), bool)
-        for k in range(int(c["passes"])):
-            e, d = fp.dihedral(X, T)
-            turned = (_unit(fp.normals(X, T)[1]) * np.einsum("tij,tj->ti", polar(R[T].sum(1)), n0)).sum(1) < 0
-            hit = np.unique(np.r_[e[(np.abs(d) > c["fold_deg"]) & (np.abs(d) - np.abs(d0) > c["fold_deg"])].ravel(), T[turned].ravel()])
-            hit = hit[free[hit]]
-            if info is not None:
-                info.setdefault("rounds", []).append({"seeds": len(hit), "turned": int(turned.sum())})
-            if not len(hit):
-                break
-            m = (m | rows_around(len(P0), E, hit, c["rows"] + k)) & free
-            pk = Pocket(P0, E, m, self.cfg["pocket_weight"])
-            Rs = R.copy()
-            Rs[pk.p] = pk.smooth_rotations(R, self.cfg["frame_passes"])
-            nrm = _unit(np.einsum("nij,nj->ni", Rs[pk.p], self.N0[rg.pts][pk.p]))
-            X, R = pk.fair(cf, Rs, c["alpha"], c["iters"], keep=(a0[pk.p], nrm))
-            if info is not None:
-                info["rounds"][-1].update(pocket=int(m.sum()), offset_mm=float((a0[pk.p] * ((X - cf)[pk.p] * nrm).sum(1)).sum()
-                                                                          / a0[pk.p].sum() * 1000))
-                info["mask"] = m
-        return cf + w * (X - cf)
 
     def delta(self, G, name):
         """A region's relative delta on its points [points, 3], under its share: share M (c - published(part pose))."""
@@ -1808,7 +1665,7 @@ def cmd_test(h):
         G = z["G"][names.index(nm)]
         el = max(md.elevation(G, s) for s in sorted(md.grown))
         nrl, nk.relax = getattr(nk, "relax", None), []        # and the neck's relax rule (T23's) is off: stored before it
-        with h.map_off(), h.open_off(), h.fair_off(), h.fold_off():  # the stage alone (map: T20 / T21; stretch opening: T25;
+        with h.map_off(), h.fair_off(), h.fold_off():  # the stage alone (map: T20 / T21; 
                                                                     # fair_a off; the relax's fold trigger, notch.md 4: T26)
             d = float(np.abs(h.compose(G, pub(bd, G))[md.first[ids_c]][ia] - old["Xc"][io[nm]][ib]).max())
         nk.relax, h._pose = nrl, None
@@ -1960,36 +1817,6 @@ def cmd_test(h):
                         worst.append((float(x.max()), int((x > rule["fold"]).sum()), rule["fold"], rn))
             ok = all(n == 0 for _, n, _, _ in worst)
             line(f"T26 {nm}", ok, "fold past rest: " + "; ".join(f"{rn} worst {x:.0f} deg, over {f:g}: {n}" for x, n, f, rn in worst))
-    # T25: the first gate's stretch opening (support "open", Her.gate_open; body_facts/breast_gate.md). On t25_poses, both
-    # sides, the composed target's worst edge on the gate's own rows is at most t25_ratio; on t25_n poses sampled where
-    # the opening is at or under the elevation's share on both sides, the composed target is the one with it off, bit for bit
-    if any(hasattr(r, "open_edges") for r in h.regions.values()):
-        def gel(G, s_):
-            lo_, hi_ = md.grown[s_]["gate"]
-            q = float(np.clip((md.elevation(G, s_) - lo_) / (hi_ - lo_), 0.0, 1.0))
-            return q * q * (3 - 2 * q)
-        for nm in cfg["t25_poses"]:
-            G = z["G"][names.index(nm)]
-            C = h.compose(G, pub(bd, G))
-            for s_ in cfg["sides"]:
-                g = h.regions[cfg["out_region"].replace("{s}", s_)]
-                a_, b_ = g.open_edges
-                r_ = float((np.linalg.norm(C[a_] - C[b_], axis=1) / g.open_L0).max())
-                line(f"T25 {nm} side {s_}", r_ <= cfg["t25_ratio"], f"gate rows ({len(a_)} edges): composed worst {r_:.2f} (limit"
-                     f" {cfg['t25_ratio']:g}), published {h._open[(np.asarray(G, float).tobytes(), s_)][1]:.2f}; share elevation"
-                     f" {gel(G, s_):.3f}, stretch {h.gate_open(G, s_):.3f}")
-        same = [i for i in range(len(names)) if all(h.gate_open(z["G"][i], s_) <= gel(z["G"][i], s_) for s_ in cfg["sides"])]
-        pick = [same[k] for k in np.linspace(0, len(same) - 1, min(cfg["t25_n"], len(same))).astype(int)] if same else []
-        d25 = 0.0
-        for i in pick:
-            G = z["G"][i]
-            Vp = pub(bd, G)
-            X1 = h.compose(G, Vp)
-            with h.open_off():
-                X0 = h.compose(G, Vp)
-            d25 = max(d25, float(np.abs(X1 - X0).max()))
-        line("T25 same", len(pick) > 0 and d25 == 0.0, f"{len(same)} of {len(names)} poses where the opening does not raise the"
-             f" share; on {len(pick)} of them composed with it - without max {d25!r} m (limit exactly 0)")
     print("ALL PASS" if ok_all else "SOME FAILED")
     return ok_all
 
