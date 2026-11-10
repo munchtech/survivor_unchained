@@ -155,7 +155,8 @@ public sealed partial class Battle
         int every = Math.Max(1, (int)Math.Round(r!.Arg("every", HW.Every)));
         // (M3 MR 3) a chained cut is a share of a blow: the light cut's weight, as the Hand's count (Hands.HandBeginCast)
         // (M3 J12: a block's answer is a whole blow)
-        return Sim.Blows.Completes(w.RiteBlows, w.RitePart, every, w.WholeCast ? 1 : w.BlowWeight);
+        // (M3 MR 3 o2: a cut that started on a press asks at the light cut's rested weight, WeaponInst.CastAsk)
+        return Sim.Blows.Completes(w.RiteBlows, w.RitePart, every, w.CastAsk);
     }
 
     void RiteHeavyCount(WeaponInst w)

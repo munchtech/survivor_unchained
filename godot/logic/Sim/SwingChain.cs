@@ -51,6 +51,14 @@ public sealed class SwingChain
     /// <summary>(M3 J12) The cut is a block's answer: one whole written blow (its weight 1, its wait the blow's: PeriodScale is
     /// 1 / the cut's share), on the cut's own clip at the cut's rate.</summary>
     public bool Whole { get; internal set; }
+    /// <summary>(M3 MR 3 o2) The rest the cut carries, in written blows: the idle time between the instant the grip was
+    /// free to cut again (the cut before's PeriodEnd) and this cut's start, over the written wait. 0 for the held
+    /// chain's next cut on its beat (by definition, not by arithmetic) and for a cut with no idle behind it; 1 for the
+    /// grip's first cut of a battle. And the cut's weight, as its cast will weigh (Firing.CastOnce): its own share
+    /// (the cut's share of the written blow, times a heavy's longer period) plus the rest, at most one whole blow; a
+    /// block's answer 1.</summary>
+    public double Rest { get; internal set; }
+    public double Weight { get; internal set; }
     /// <summary>The cut's blow has landed; or it was dropped (a dash before its contact, a knockdown).</summary>
     public bool Landed { get; internal set; }
     public bool Dropped { get; internal set; }
@@ -94,9 +102,30 @@ public sealed partial class Battle
     /// never barred.</summary>
     internal bool CutBarred(WeaponInst w) => w.Chained && (Player.DashT > 0 || Player.Leap != null || Art.Rush != null);
 
+    /// <summary>(M3 MR 3 o2) The rest a chained skill's cut would carry if it started now, in written blows
+    /// (SwingChain.Rest; Sim.Blows.Rested adds it to the cut's share). A cut that starts on a PRESS carries the rest
+    /// its grip had: a chain's opening, a press again inside the grace, a hold let through after a dash barred it; any
+    /// cut but the live chain's next cut on its beat (the step its wait ran out on: DeferCut starts that one on the
+    /// instant, so it has no idle, and it keeps the cut's share to the bit). The idle time is counted from the instant
+    /// the grip was free to cut again (the last cut's PeriodEnd: a heavy's longer period, haste, momentum's shorter
+    /// wait and an answer's wait are all in it, so every cut pays forward for its own wait and no time is counted
+    /// twice) to now, over the WRITTEN wait at this step (the unchained record's: Firing.CooldownOf over the cut's
+    /// share; momentum's factor is not in it). The grip's first cut of a battle rests a whole blow, as an unchained
+    /// skill's first press fires at once. 0 for a skill whose BlowWeight is 1 (unchained, a chain with no period).</summary>
+    internal double RestOf(WeaponInst w)
+    {
+        double share = w.BlowWeight;
+        if (share == 1) return 0;
+        if (w.Chain is not { } c) return 1;
+        if (c.Live && c.ReadyStep == Time) return 0;
+        double idle = Time - c.PeriodEnd;
+        return idle > 0 ? idle / (Firing.CooldownOf(this, w) / share) : 0;
+    }
+
     /// <summary>A chained skill's press (Battle.DeferBlow): the next cut of its chain starts; its blow is queued for the
     /// cut's contact beat. False: no aim or not her own cast, and it lands now, as an unchained press does.</summary>
-    bool DeferCut(WeaponInst w, bool heavy, bool ownHeavy, double mul)
+    /// <param name="rest">(o2) The rest it carries (RestOf, read by DeferBlow before the heavy read-aheads).</param>
+    bool DeferCut(WeaponInst w, bool heavy, bool ownHeavy, double mul, double rest)
     {
         if (Refiring || FireFrom != null || CastAt == null || w.Press is not { } r) return false;
         if (w.Behavior is not (WeaponBehavior.Slash or WeaponBehavior.Crack)) return false;
@@ -132,6 +161,11 @@ public sealed partial class Battle
         // first clip from the side the unchained first blow did, and alternates from there
         c.Side = (clip != null ? HerEvents.Side(clip) : null) ?? ((cut & 1) == 0 ? -1 : 1);
         c.StartAt = start; c.Rate = rate; c.PeriodScale = wait; c.Whole = whole;
+        // (o2) The rest it carries and its weight (the cast reads them at the contact: Firing.LandBlow, CastOnce). Only
+        // the weight moves: the wait after it, its clip, rate and beats are the cut's as ever. An answer is one whole
+        // blow whatever it rested.
+        c.Rest = whole ? 0 : rest;
+        c.Weight = whole ? 1 : rest > 0 ? Sim.Blows.Rested(w.BlowWeight * scale, rest) : w.BlowWeight * scale;
         c.ContactAt = start + beats.Contact / rate; c.CancelAt = start + beats.Cancel / rate; c.PeriodEnd = start + cd * wait;
         c.Landed = c.Dropped = c.Told = false;
         c.Held = ChainHeld(w);

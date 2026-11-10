@@ -30,7 +30,8 @@ public sealed class GripMeter
     public int Opens, Drops;
     /// <summary>The weight of a grip's cut in hand: a share of the written blow (BlowWeight, times a heavy's longer period;
     /// a block's answer a whole 1), as Firing.CastWeighed gives its cast; 1 unchained.</summary>
-    public static double WeightOf(WeaponInst g) => g.Chained && g.Chain is { } c ? (c.Whole ? 1 : g.BlowWeight * c.PeriodScale) : 1;
+    /// (M3 MR 3 o2: a cut that started on a press carries the rest its grip had on top of its share: SwingChain.Weight.)
+    public static double WeightOf(WeaponInst g) => g.Chained && g.Chain is { } c ? (c.Whole ? 1 : c.Rest > 0 ? c.Weight : g.BlowWeight * c.PeriodScale) : 1;
     public double CutW, Bank;
     readonly Dictionary<string, double> dropAt = new();
     readonly List<WeaponInst> grips = new();

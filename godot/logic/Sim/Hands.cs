@@ -60,12 +60,14 @@ public sealed partial class Battle
         // (M3 MR 3) A chained cut is a share of a blow (Sim/Blows.cs); the LIGHT cut's weight on purpose, so the
         // read-ahead at the press (HandHeavyNext) and this one at the contact ask the same question.
         // (M3 J12: a block's answer is a whole blow at both, WeaponInst.NextW there and WholeCast here)
-        return Sim.Blows.Completes(w.HandBlows, w.HandPart, every, w.WholeCast ? 1 : w.BlowWeight);
+        // (M3 MR 3 o2: a cut that started on a press asks at the light cut's rested weight at both, WeaponInst.CastAsk)
+        return Sim.Blows.Completes(w.HandBlows, w.HandPart, every, w.CastAsk);
     }
 
     /// <summary>Whether its next firing will be the Hand's heavy (read ahead, nothing counted: Sim/Contact.cs picks the
     /// heavy clip by it; the rites' heavies are not read ahead).</summary>
-    internal bool HandHeavyNext(WeaponInst w) => WardenHand && Content.Hands.Heavies(w.Tags) && Sim.Blows.Completes(w.HandBlows, w.HandPart, Math.Max(1, HW.Every), w.NextW);
+    /// <param name="ask">The weight the question is asked at (Battle.DeferBlow: the next firing's light weight).</param>
+    internal bool HandHeavyNext(WeaponInst w, double ask) => WardenHand && Content.Hands.Heavies(w.Tags) && Sim.Blows.Completes(w.HandBlows, w.HandPart, Math.Max(1, HW.Every), ask);
 
     /// <summary>The firing done: a blow counted only if it fired.</summary>
     internal void HandEndCast(WeaponInst w, bool fired)

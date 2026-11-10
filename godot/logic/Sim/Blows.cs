@@ -25,6 +25,12 @@ public static class Blows
     public static void CountFirstWhole(ref int n, ref double part, double w) =>
         Count(ref n, ref part, n == 0 && part == 0 && w < 1 ? 1 : w);
 
+    /// <summary>(M3 MR 3 o2) A cut that starts on a press carries the rest its grip had: its own share (what it pays
+    /// forward: the time until the grip is free again, over the written wait) plus the idle time since the grip was
+    /// last free, in written blows. Never under its own share, never over one whole blow (an unchained wait runs down
+    /// to ready and no further).</summary>
+    public static double Rested(double own, double rest) => Math.Max(own, Math.Min(1, own + rest));
+
     /// <summary>A per-blow chance as a per-cut chance: the cuts of one blow's worth compound to c.</summary>
     public static double Chance(double c, double w) => w == 1 || c <= 0 || c >= 1 ? c : 1 - Math.Pow(1 - c, w);
 }

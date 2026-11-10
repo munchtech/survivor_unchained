@@ -103,6 +103,13 @@ public sealed class WeaponInst
     /// <summary>(M3 J12) The cast now landing is a block's answer, a whole blow (set round the cast by Firing.LandBlow from the
     /// chain cut's Whole): the heavy counts' questions inside the cast are asked at weight 1, as its press asked them.</summary>
     public bool WholeCast;
+    /// <summary>(M3 MR 3 o2) The rest the cast now landing carries, in written blows (set round the cast by Firing.LandBlow
+    /// from the chain cut's Rest; 0 outside a cast, on the held chain's beat, and for an answer): its weight is its share
+    /// plus this (Sim.Blows.Rested). And the weight the heavy counts' questions are asked at inside the cast: the LIGHT
+    /// cut's (a heavy's longer share never decides whether it is a heavy), rested as its press asked them
+    /// (Battle.DeferBlow); a block's answer 1.</summary>
+    public double CastRest;
+    public double CastAsk => WholeCast ? 1 : CastRest > 0 ? Blows.Rested(BlowWeight, CastRest) : BlowWeight;
     /// <summary>(M3 J12b) The written blow (BlowN) whose Linger ground is laid: under a chain one zone per written blow
     /// (Firing.LaysGround). Never written on a skill whose BlowWeight is 1.</summary>
     public int GroundKey = -1;
@@ -407,7 +414,10 @@ public static partial class Firing
         // (a chain with no period: every cut a whole blow, the heavy's too, as before)
         if (!(w.Chained && w.Press!.Chain!.Period is > 0)) scale = 1;
         // (M3 J12: a block's answer is one whole blow, exactly; its scale, 1 / BlowWeight, is the wait's and the stand clock's)
-        double cw = w.WholeCast ? 1 : w.BlowWeight * scale, cw0 = w.CutW;
+        // (M3 MR 3 o2: a cut that started on a press carries the rest its grip had on top of its share, at most a whole
+        // blow, WeaponInst.CastRest; the held chain's cut on its beat has none and weighs its share, as ever)
+        double own = w.BlowWeight * scale;
+        double cw = w.WholeCast ? 1 : w.CastRest > 0 ? Blows.Rested(own, w.CastRest) : own, cw0 = w.CutW;
         w.CutW = cw;
         try { return CastWeighed(b, w, cw, scale); }
         finally { w.CutW = cw0; }
@@ -422,7 +432,8 @@ public static partial class Firing
         // (the LIGHT cut's weight on purpose: the read-ahead at the press, Battle.DeferBlow, asks the same question; a
         // block's answer asks both at its whole blow's weight, WeaponInst.NextW at the press and WholeCast here)
         int own = HeavyEveryOf(b, w);
-        w.OwnHeavy = Blows.Completes(w.OwnBlows, w.OwnPart, own, w.WholeCast ? 1 : w.BlowWeight);
+        // (o2: a rested press asks both at the light cut's rested weight, Battle.DeferBlow there and CastAsk here)
+        w.OwnHeavy = Blows.Completes(w.OwnBlows, w.OwnPart, own, w.CastAsk);
         heavy |= w.OwnHeavy;
         var hb = b.HeavyBy;
         b.HeavyBy = heavy ? w : null;
@@ -1043,7 +1054,8 @@ public static partial class Firing
     {
         if (w.BlowWeight == 1 || b.Echoing) return true;
         if (w.GroundKey != w.BlowN) { w.GroundKey = w.BlowN; return true; }
-        if (!w.WholeCast) return false;
+        // (M3 MR 3 o2: so does a press rested to a whole blow, an opening after a full wait: it lays its own as the answer does)
+        if (w.CastAsk < 1 - Blows.Eps) return false;
         w.GroundKey = w.BlowN + 1;
         return true;
     }

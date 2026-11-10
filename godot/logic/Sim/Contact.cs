@@ -70,10 +70,14 @@ public sealed partial class Battle
         int own = Firing.HeavyEveryOf(this, w);
         // (Sim.Blows: inside Battle the bare name is its own list of enemy blows)
         // (M3 J12: a block's answer owed, the next firing is a whole blow: WeaponInst.NextW)
-        bool ownHeavy = Sim.Blows.Completes(w.OwnBlows, w.OwnPart, own, w.NextW);
-        bool heavy = ownHeavy || HandHeavyNext(w);
+        // (M3 MR 3 o2: a chained cut that starts on a press carries the rest its grip had, Battle.RestOf: the counts are
+        // asked at the LIGHT cut's rested weight, here and again at the contact, WeaponInst.CastAsk)
+        double rest = w.AnswerDue ? 0 : RestOf(w);
+        double ask = rest > 0 ? Sim.Blows.Rested(w.NextW, rest) : w.NextW;
+        bool ownHeavy = Sim.Blows.Completes(w.OwnBlows, w.OwnPart, own, ask);
+        bool heavy = ownHeavy || HandHeavyNext(w, ask);
         // (a chained record's cut: its own clock and clip beats, Sim/SwingChain.cs)
-        if (w.Chained) return DeferCut(w, heavy, ownHeavy, mul);
+        if (w.Chained) return DeferCut(w, heavy, ownHeavy, mul, rest);
         if (!ContactOf(w, heavy, out var clip, out var rate, out var delay)) return false;
         var aim = CastAt!.Value;
         var p = Player;
@@ -119,9 +123,12 @@ public static partial class Firing
         // (a chain's heavy cut is a longer share of the blow: its weight grows with its period)
         // (M3 J12: a block's answer is a whole blow: PeriodScale is 1 / BlowWeight, and the heavy counts ask at weight 1)
         bool fired;
+        // (M3 MR 3 o2: a cut that started on a press carries its rest: its weight is its share plus the rest, the heavy
+        // counts ask at the light cut's rested weight. Not through PeriodScale: that is the WAIT's factor.)
         w.WholeCast = c?.Whole ?? false;
+        w.CastRest = c?.Rest ?? 0;
         try { fired = CastOnce(b, w, c?.PeriodScale ?? 1); }
-        finally { w.WholeCast = false; }
+        finally { w.WholeCast = false; w.CastRest = 0; }
         w.ClipSide = 0;
         if (c != null) c.Landed = true;
         if (!fired) return;
