@@ -45,6 +45,9 @@ least GRID^2). OUT>2: area of samples ever past the outer face by more than 2 mm
 Where it shows ("views" per test, mm^2): close = through over 2 mm in the town / idle / look / talk clips, play = over
 6 mm in every other clip, "*_ex" without the known broken clips (VIEWS, CLOSE_WORDS, BROKEN). --out-mm D adds
 "outd_mm2": the 2 mm count again at depth D.
+What the eye gets ("frames" per test, "frame_mm2" per clip): the WORST SINGLE FRAME's through area deeper than each of
+FRAME_MM (the views above are unions over every frame of every clip, which no frame shows at once). --samples adds
+<out>/samples_<piece>.npz per skin test (each sample's rest position, area and deepest out per clip) for a breakdown.
 Writes <out>/gear_wear.json (everything) and <out>/gear_wear.md (worst 20 and per-test totals).
 """
 import json
@@ -84,6 +87,7 @@ SHOW_GRID, SHOW_RAY, SHOW_TILT, SHOW_MIN = 0.004, 0.08, 50.0, 0.05
 VIEWS = {"close": 2.0, "play": 6.0}
 CLOSE_WORDS = ("town", "idle", "look", "talk")
 BROKEN = ("Jog_Fwd",)
+FRAME_MM = (2.0, 3.0, 6.0)      # the depths the worst single frame's through area is counted at (frame_mm2, frames)
 
 
 # ------------------------------------------------------------------ helpers --
@@ -409,6 +413,23 @@ def view_sets(per_clip_out, n):
                 if clip_view(c) == v and not (ex and c in BROKEN):
                     mo = np.minimum(mo, o)
             out[v + ex] = np.nonzero(mo < -d / 1000.0)[0].tolist()
+    return out
+
+
+def frame_views(per_clip):
+    """{view key: {depth: {"mm2", "clip", "frame"}}} of one test: per view (and "<view>_ex"), the worst SINGLE FRAME's
+    through area at each of FRAME_MM over that view's clips. per_clip: the report's rows (frame_mm2, frame_at)."""
+    out = {}
+    for v in VIEWS:
+        for ex in ("", "_ex"):
+            best = {f"{d:g}": {"mm2": 0.0, "clip": "", "frame": -1} for d in FRAME_MM}
+            for c, row in per_clip.items():
+                if clip_view(c) != v or (ex and c in BROKEN) or "frame_mm2" not in row:
+                    continue
+                for k, a in row["frame_mm2"].items():
+                    if a > best[k]["mm2"]:
+                        best[k] = {"mm2": a, "clip": c, "frame": row["frame_at"][k]}
+            out[v + ex] = best
     return out
 
 
@@ -757,6 +778,11 @@ class Check:
         if go_[k] < pc["worst"]:
             pc["worst"], pc["frame"], pc["pt"] = float(go_[k]), f, k
         pc["worst_in"] = min(pc["worst_in"], float(gg.min()))
+        fr = pc.setdefault("fr", {d: [0.0, -1] for d in FRAME_MM})      # (the worst single frame: area past each depth)
+        for d in FRAME_MM:
+            a_ = float(x["area"][go_ < -d / 1000.0].sum())
+            if a_ > fr[d][0]:
+                fr[d] = [a_, f]
 
     # ---- every slot shows --
     def show(self, look):
@@ -823,8 +849,9 @@ class Check:
         return vis
 
     # ---- report --
-    def report(self, clips, region_of, out_mm=0.0):
-        """out_mm > 0 adds "outd_mm2" (per test and per clip): as out2 with that depth in place of 2 mm."""
+    def report(self, clips, region_of, out_mm=0.0, samples=False):
+        """out_mm > 0 adds "outd_mm2" (per test and per clip): as out2 with that depth in place of 2 mm. samples: each
+        skin test carries "_samples" (rest position mm, deepest out per clip mm; 999 = never measured)."""
         out, worst = [], []
         for x in self.tests:
             A, B = x["A"], x["B"]
@@ -857,13 +884,19 @@ class Check:
                 row = {"out2_n": int(o2.sum()), "out2_mm2": round(float(ar[o2].sum() * 1e6), 1),
                        "out_worst_mm": round(float(-pc["worst"] * 1000), 2) if np.isfinite(pc["worst"]) else None,
                        "in_worst_mm": round(float(-pc["worst_in"] * 1000), 2) if np.isfinite(pc["worst_in"]) else None,
-                       "frame": pc["frame"], "region": region_of(pt) if pt >= 0 else ""}
+                       "frame": pc["frame"], "region": region_of(pt) if pt >= 0 else "",
+                       "frame_mm2": {f"{d:g}": round(pc["fr"][d][0] * 1e6, 1) for d in FRAME_MM},
+                       "frame_at": {f"{d:g}": pc["fr"][d][1] for d in FRAME_MM}}
                 if out_mm > 0:
                     row["outd_mm2"] = round(float(ar[pc["out"] < -out_mm / 1000.0].sum() * 1e6), 1)
                 e["per_clip"][c] = row
+                if samples and A == "skin":
+                    sm = e.setdefault("_samples", {"pos": (self.sc.P0[x["pts"]] * 1000).round(2).tolist(), "clips": {}})
+                    sm["clips"][c] = np.where(np.isfinite(pc["out"]), pc["out"] * 1000, 999.0).round(2).tolist()
                 if row["out2_n"]:
                     worst.append({"clip": c, "test": f"{A} under {B}" if A != "skin" else f"skin under {B}",
                                   "kind": x["kind"], **{k: row[k] for k in ("out2_mm2", "out2_n", "out_worst_mm", "frame", "region")}})
+            e["frames"] = frame_views(e["per_clip"])
             out.append(e)
         out.sort(key=lambda e: (-e["out2_mm2"], -(e["out_worst_mm"] or -99)))
         worst.sort(key=lambda r: (-r["out2_mm2"], -(r["out_worst_mm"] or 0)))
@@ -941,6 +974,8 @@ def main(argv=None):
     ap.add_argument("--out", default=OUT)
     ap.add_argument("--out-mm", type=float, default=0.0, help="also count the through deeper than this many mm "
                     "(outd_mm2, per test and per clip); 0: only the 2 mm count and the views")
+    ap.add_argument("--samples", action="store_true", help="also write <out>/samples_<piece>.npz per skin test: pos "
+                    "(rest, mm), area (mm^2), clips, out (clip x sample: deepest out, mm; 999 = never measured)")
     ap.add_argument("--part", default="", help=argparse.SUPPRESS)
     a = ap.parse_args(argv)
     t_start = time.time()
@@ -965,7 +1000,7 @@ def main(argv=None):
     t_motion = ck.run(dump_sources(sc, clips, a.step))
     names = sc.poser.names
     dom = np.array([names[j] for j in sc.J[np.arange(len(sc.P0)), sc.W.argmax(1)]])
-    pairs, worst = ck.report([os.path.basename(c) for c in clips], lambda pt: region_name(dom[pt]), a.out_mm)
+    pairs, worst = ck.report([os.path.basename(c) for c in clips], lambda pt: region_name(dom[pt]), a.out_mm, a.samples)
     if a.part:
         json.dump({"pairs": pairs, "worst": worst}, open(a.part, "w"))
         return
@@ -1028,6 +1063,8 @@ def merge(parts):
                 b = by[k]
                 b["per_clip"].update(e["per_clip"])
                 b["_parts"].append(e)
+                if "_samples" in e:
+                    b["_samples"] = {"pos": e["_samples"]["pos"], "clips": {**b["_samples"]["clips"], **e["_samples"]["clips"]}}
                 for f in ("worst_in_mm", "out_worst_mm", "raw_out_worst_mm", "raw_out2_mm2"):
                     if e.get(f) is not None and (b.get(f) is None or e[f] > b[f]):
                         b[f] = e[f]
@@ -1044,6 +1081,7 @@ def merge(parts):
         if "_od" in ps[0]:
             b["outd_mm2"] = round(float(ar[sorted(set().union(*[e["_od"] for e in ps]))].sum()), 1)
         b["lost_share"] = round(float(np.mean([e["lost_share"] for e in ps])), 4)
+        b["frames"] = frame_views(b["per_clip"])
         out.append(b)
     out.sort(key=lambda e: (-e["out2_mm2"], -(e["out_worst_mm"] or -99)))
     return out
@@ -1052,6 +1090,11 @@ def merge(parts):
 def write(a, clips, pairs, worst, shows, ck, took, t_motion):
     os.makedirs(a.out, exist_ok=True)
     for e in pairs:
+        sm = e.pop("_samples", None)
+        if sm:
+            cs = sorted(sm["clips"])
+            np.savez_compressed(os.path.join(a.out, f"samples_{e['B']}.npz"), pos=np.array(sm["pos"]),
+                                area=np.array(e["_area"]), clips=np.array(cs), out=np.array([sm["clips"][c] for c in cs]))
         for k in ("_o2", "_i2", "_area", "_vw", "_od"):
             e.pop(k, None)
     slots_filled = set()
@@ -1095,6 +1138,15 @@ def write(a, clips, pairs, worst, shows, ck, took, t_motion):
     for e in sorted(pairs, key=lambda e: -(e["views"]["close"] + e["views"]["play"]))[:20]:
         if e["views"]["close"] + e["views"]["play"] > 0:
             L.append(f"| {e['A']} under {e['B']} | {e['views']['close']:.0f} | {e['views']['play']:.0f} | {e['views']['play_ex']:.0f} |")
+    L += ["", "## What one frame shows", "",
+          "The worst single frame's through area (mm^2) past each depth, its clip and frame: close views at "
+          f"{VIEWS['close']:g} mm, play (ex) at 3 and {VIEWS['play']:g} mm. One play pixel is 169 mm^2.", "",
+          "| test | close 2 mm | play 3 mm | play 6 mm |", "|---|---|---|---|"]
+    cell = lambda r: f"{r['mm2']:.0f} ({r['clip']} f{r['frame']})" if r["mm2"] > 0 else "0"
+    for e in sorted(pairs, key=lambda e: -e.get("frames", {}).get("play_ex", {}).get("6", {}).get("mm2", 0))[:20]:
+        fv = e.get("frames")
+        if fv and (fv["close_ex"]["2"]["mm2"] + fv["play_ex"]["3"]["mm2"]) > 0:
+            L.append(f"| {e['A']} under {e['B']} | {cell(fv['close_ex']['2'])} | {cell(fv['play_ex']['3'])} | {cell(fv['play_ex']['6'])} |")
     if shows:
         L += ["", "## Every slot shows (at rest)", ""]
         fails = [(s["name"], i, s["pieces"][i]) for s in shows for i in s["fails"]]

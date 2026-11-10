@@ -187,3 +187,24 @@ def test_views_where_it_shows():
              _vw=gw.view_sets({k: pc[k] for k in ("sword_fore", "Jog_Fwd")}, 4))
     m = gw.merge([{"pairs": [a]}, {"pairs": [b]}])[0]
     assert m["views"] == {"close": 1.0, "close_ex": 1.0, "play": 12.0, "play_ex": 4.0} and m["outd_mm2"] == 9.0
+
+
+def test_frame_views_worst_single_frame():
+    """frames: per view the worst single frame's area at each depth, with its clip; the broken clip left out of _ex;
+    the merge of two parts' clips gives the same answer as one run."""
+    row = lambda a2, a3, a6, f: {"frame_mm2": {"2": a2, "3": a3, "6": a6}, "frame_at": {"2": f, "3": f, "6": f}}
+    pc = {"idle_warden": row(40.0, 10.0, 0.0, 4), "run_warden_town": row(55.0, 0.0, 0.0, 8),
+          "sword_fore": row(300.0, 200.0, 90.0, 12), "Jog_Fwd": row(900.0, 800.0, 700.0, 2), "old_clip": {}}
+    fv = gw.frame_views(pc)
+    assert fv["close"]["2"] == {"mm2": 55.0, "clip": "run_warden_town", "frame": 8} and fv["close"]["6"]["mm2"] == 0.0
+    assert fv["play"]["6"] == {"mm2": 700.0, "clip": "Jog_Fwd", "frame": 2}
+    assert fv["play_ex"]["6"] == {"mm2": 90.0, "clip": "sword_fore", "frame": 12} and fv["play_ex"]["3"]["mm2"] == 200.0
+    base = {"A": "skin", "B": "p", "kind": "skin", "_area": [1.0], "_o2": [], "_i2": [], "lost_share": 0.0,
+            "out2_mm2": 0.0, "out_worst_mm": None}
+    a = dict(base, per_clip={k: pc[k] for k in ("idle_warden", "sword_fore")},
+             _samples={"pos": [[0, 0, 0]], "clips": {"idle_warden": [1.0], "sword_fore": [-7.0]}})
+    b = dict(base, per_clip={k: pc[k] for k in ("run_warden_town", "Jog_Fwd")},
+             _samples={"pos": [[0, 0, 0]], "clips": {"run_warden_town": [999.0], "Jog_Fwd": [-20.0]}})
+    m = gw.merge([{"pairs": [a]}, {"pairs": [b]}])[0]
+    assert m["frames"] == fv and sorted(m["_samples"]["clips"]) == ["Jog_Fwd", "idle_warden", "run_warden_town", "sword_fore"]
+
