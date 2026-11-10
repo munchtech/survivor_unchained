@@ -461,6 +461,14 @@ cel_hero_line={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+cel_hero_chroma={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+cel_hero_chroma_px={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 cel_give={
 "type": "vec4",
 "value": Vector4(0, 0, 0.25, 0.6)

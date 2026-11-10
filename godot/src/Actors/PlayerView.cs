@@ -1159,7 +1159,23 @@ public partial class PlayerView : Node3D
         }
         // (Every frame while on: her level of detail and her wear make meshes of their own on layer 2.)
         if (OwnLayer || ownShown) { Relayer(this, OwnLayer, person.Hair); ownShown = OwnLayer; }
-        Light.Position = new Vector3(Atmosphere.HeroFoot.X, EmberH, Atmosphere.HeroFoot.Y);   // (L1 lead 19, HER2) the rig's hero_pool: her fire's foot beside her; (0, 0.4) without the row
+        // (L1 lead 19, HER2) the rig's hero_pool: her fire's foot beside her; (0, 0.4) in her own frame without the row.
+        // (L1 lead 21, FOOT) With the row the foot is a point on the GROUND of the view: her ground position + (dx along
+        // screen-right, dz along screen-down), whatever her heading, clip or hold (it was local to her, so the pool, her cast and
+        // her shade side swung round her as she turned). The light node carries the point: cel_ember, her cast and the casts'
+        // report below read Light.GlobalPosition, and the hero's shade side is told the same direction (Atmosphere.HeroFootWorld).
+        if (Atmosphere.HeroFootRig)
+        {
+            var right = GetViewport()?.GetCamera3D() is { } vc ? vc.GlobalBasis.X : Vector3.Right;
+            right = new Vector3(right.X, 0, right.Z);
+            right = right.LengthSquared() > 1e-6f ? right.Normalized() : Vector3.Right;
+            var down = right.Cross(Vector3.Up);   // along the ground toward the camera = down the screen (+Z at yaw 0)
+            var foot = right * Atmosphere.HeroFoot.X + down * Atmosphere.HeroFoot.Y;
+            var own = GlobalBasis.Inverse() * foot;
+            Light.Position = new Vector3(own.X, EmberH, own.Z);
+            if (mine) Atmosphere.HeroFootWorld(new Vector2(foot.X, foot.Z));
+        }
+        else Light.Position = new Vector3(Atmosphere.HeroFoot.X, EmberH, Atmosphere.HeroFoot.Y);
         // Her lamp on the crowd by night, in its own paint (Atmosphere.CrowdFill, vat.gdshaderinc): from over her, with the pool's flicker.
         if (mine)
         {

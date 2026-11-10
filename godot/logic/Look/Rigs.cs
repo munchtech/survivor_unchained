@@ -232,6 +232,11 @@ public static class Rigs
         return b;
     }
 
+    /// <summary>(L1 lead 21, CHROMA) The hero chroma rule's six values of a hero_pool row (29-34: the chroma gain on the light,
+    /// on the shade step, the floor and the cap as Oklab C / L, the px per metre at 1080p under which the gain is whole and
+    /// over which it is none; cel.gdshaderinc cel_hero_gain). A row without them: six zeros, and the figure renders as before.</summary>
+    public static double[] HeroChroma(double[]? heroPool) => heroPool is { Length: >= 35 } ? heroPool[29..35] : new double[6];
+
     /// <summary>sRGB hex to linear rgb (the ink rig's and the tests' colors).</summary>
     public static (double R, double G, double B) Linear(string hex) => Atmospheres.Linear(hex);
 }

@@ -523,17 +523,49 @@ vec3 cel_hero_local(vec3 c_tone, vec3 c_alb) {
 	vec3 c_own = clamp(c_alb / c_v, 0.0, 1.0);
 	return c_tone * mix(vec3(1.0), c_own, cel_hero_own.x) * pow(c_v, cel_hero_own.y);
 }
-vec3 cel_hero_paint(vec3 c_wn, vec3 c_alb, float c_w) {
+// (L1 lead 21, CHROMA) THE HERO CHROMA RULE: at hero scale (30-40 px) each of her materials keeps ITS OWN hue and its
+// level and GAINS chroma, so each hue reads as a color and not as a grey of it. Worked in Oklab on the painted tone (the
+// row's level on the material's own color): L and the hue angle held, the saturation s = C / L (the same at every
+// level) scaled. cel_hero_chroma (values 29-32) = the gain on the light, the gain on the shade step, the FLOOR (a
+// material under it takes none, the whole gain from twice it: steel and near-greys never go neon), the CAP (the gain
+// never lifts a material past it; one already past it is left as it is). cel_hero_chroma_px (values 33-34) = the
+// figure's size on screen, in px per metre at 1080p, under which the gain is whole and over which it is none (a close
+// shot keeps her data colors). A row without them (all zero): no gain, the painted tone untouched.
+global uniform vec4 cel_hero_chroma;
+global uniform vec4 cel_hero_chroma_px;
+float cel_hero_near(float c_depth, mat4 c_proj) {
+	if (cel_hero_chroma.x <= 0.0) return 0.0;
+	float c_ppm = abs(c_proj[1][1]) * 540.0 / (c_proj[3][3] == 0.0 ? max(c_depth, 0.01) : 1.0);
+	return 1.0 - smoothstep(cel_hero_chroma_px.x, max(cel_hero_chroma_px.y, cel_hero_chroma_px.x + 0.001), c_ppm);
+}
+vec3 cel_hero_gain(vec3 c_rgb, float c_gain, float c_k) {
+	if (c_k <= 0.0 || c_gain <= 0.0 || c_gain == 1.0) return c_rgb;
+	vec3 c_in = max(c_rgb, vec3(0.0));
+	vec3 c_lms = pow(mat3(vec3(0.4122214708, 0.2119034982, 0.0883024619), vec3(0.5363325363, 0.6806995451, 0.2817188376), vec3(0.0514459929, 0.1073969566, 0.6299787005)) * c_in, vec3(1.0 / 3.0));
+	vec3 c_ok = mat3(vec3(0.2104542553, 1.9779984951, 0.0259040371), vec3(0.7936177850, -2.4285922050, 0.7827717662), vec3(-0.0040720468, 0.4505937099, -0.8086757660)) * c_lms;
+	float c_s = length(c_ok.yz) / max(c_ok.x, 0.0001);
+	float c_to = c_s * mix(1.0, c_gain, c_k * smoothstep(cel_hero_chroma.z, 2.0 * cel_hero_chroma.z, c_s));
+	if (c_gain > 1.0) c_to = min(c_to, max(c_s, cel_hero_chroma.w));
+	if (c_s < 0.0001 || c_to == c_s) return c_rgb;
+	c_ok.yz *= c_to / c_s;
+	vec3 c_l = mat3(vec3(1.0, 1.0, 1.0), vec3(0.3963377774, -0.1055613458, -0.0894841775), vec3(0.2158037573, -0.0638541728, -1.2914855480)) * c_ok;
+	vec3 c_out = mat3(vec3(4.0767416621, -1.2684380046, -0.0041960863), vec3(-3.3077115913, 2.6097574011, -0.7034186147), vec3(0.2309699292, -0.3413193965, 1.7076147010)) * (c_l * c_l * c_l);
+	// the gamut's edge: no channel under zero (the gain stops where the color is pure, at the same hue)
+	float c_lo = min(c_out.r, min(c_out.g, c_out.b));
+	if (c_lo < 0.0) { float c_was = min(c_in.r, min(c_in.g, c_in.b)); c_out = mix(c_in, c_out, clamp(c_was / max(c_was - c_lo, 0.000001), 0.0, 1.0)); }
+	return c_out;
+}
+vec3 cel_hero_paint(vec3 c_wn, vec3 c_alb, float c_w, float c_near) {
 	// (round 2) FORM FROM ABOVE: the side is read from the plane's LEAN alone (n.xz normalized, down to the least lean
 	// cel_hero_own.z, value 27), so at the play camera, where her planes point up, the side away from the foot still
 	// takes the mid and the anchor as one connected side.
 	float c_s = -dot(c_wn.xz, cel_hero.xy) / max(length(c_wn.xz), max(cel_hero_own.z, 0.001));
 	float c_mid = cel_hero_mid.rgb != vec3(0.0) ? smoothstep(cel_hero_mid.w - c_w, cel_hero_mid.w + c_w, c_s) : 0.0;
-	vec3 c_t = mix(cel_hero_local(cel_hero_lit.rgb, c_alb), cel_hero_local(cel_hero_mid.rgb, c_alb), c_mid);
+	vec3 c_t = mix(cel_hero_gain(cel_hero_local(cel_hero_lit.rgb, c_alb), cel_hero_chroma.x, c_near), cel_hero_gain(cel_hero_local(cel_hero_mid.rgb, c_alb), cel_hero_chroma.y, c_near), c_mid);
 	float c_dark = max(smoothstep(cel_hero.z - c_w, cel_hero.z + c_w, c_s), 1.0 - smoothstep(cel_hero_tone.w - c_w, cel_hero_tone.w + c_w, c_wn.y));
 	return mix(c_t, cel_hero_tone.rgb, c_dark);
 }
-#define CEL_HERO_FRAGMENT { if (cel_hero_on()) { vec3 c_hn = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz); if (cel_hero_abs()) { EMISSION = cel_hero_paint(c_hn, ALBEDO, 0.02); ALBEDO = vec3(0.0); METALLIC = 0.0; SPECULAR = 0.0; } else { float c_hm = cel_hero_mask(c_hn, 0.02); ALBEDO *= 1.0 - c_hm; EMISSION = mix(EMISSION, cel_hero_tone.rgb, c_hm); } } }
+#define CEL_HERO_FRAGMENT { if (cel_hero_on()) { vec3 c_hn = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz); if (cel_hero_abs()) { EMISSION = cel_hero_paint(c_hn, ALBEDO, 0.02, cel_hero_near(-VERTEX.z, PROJECTION_MATRIX)); ALBEDO = vec3(0.0); METALLIC = 0.0; SPECULAR = 0.0; } else { float c_hm = cel_hero_mask(c_hn, 0.02); ALBEDO *= 1.0 - c_hm; EMISSION = mix(EMISSION, cel_hero_tone.rgb, c_hm); } } }
 #define CEL_HERO_LIGHT { if (cel_hero_abs()) { DIFFUSE_LIGHT = vec3(0.0); SPECULAR_LIGHT = vec3(0.0); } else { SPECULAR_LIGHT *= 1.0 - cel_hero_mask(normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz), 0.02); } }
 #ifdef CEL_HERO_ARM
 // (L1 lead 19, HER3; lead 20, HER4) A HELD PIECE of the hero (her shield, her blade: CelLib.Hero binds her own copies of
@@ -548,7 +580,7 @@ vec3 cel_hero_paint(vec3 c_wn, vec3 c_alb, float c_w) {
 global uniform vec4 cel_hero_arm;
 bool cel_hero_arm_on() { return cel_hero_abs() && cel_hero_arm.rgb != vec3(0.0); }
 #define CEL_HERO_ARM_VERTEX { if (cel_hero_arm_on()) { float c_ad = -(MODELVIEW_MATRIX * vec4(VERTEX, 1.0)).z; VERTEX += NORMAL * (0.5 * cel_hero_lit.w * 2.0 * c_ad / (PROJECTION_MATRIX[1][1] * VIEWPORT_SIZE.y * length(MODEL_MATRIX[0].xyz))); } }
-#define CEL_HERO_ARM_FRAGMENT { if (cel_hero_arm_on()) { vec3 c_ap = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz - NODE_POSITION_WORLD; float c_am = smoothstep(cel_hero_arm.w - 0.01, cel_hero_arm.w + 0.01, -dot(c_ap.xz, cel_hero.xy)); vec3 c_aa = ALBEDO; EMISSION = mix(cel_hero_local(cel_hero_lit.rgb * (cel_hero_own.w > 0.0 ? cel_hero_own.w : 1.0), c_aa), cel_hero_local(cel_hero_arm.rgb, c_aa), c_am); ALBEDO = vec3(0.0); METALLIC = 0.0; SPECULAR = 0.0; AO = 0.0; } }
+#define CEL_HERO_ARM_FRAGMENT { if (cel_hero_arm_on()) { vec3 c_ap = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz - NODE_POSITION_WORLD; float c_am = smoothstep(cel_hero_arm.w - 0.01, cel_hero_arm.w + 0.01, -dot(c_ap.xz, cel_hero.xy)); vec3 c_aa = ALBEDO; float c_ak = cel_hero_near(-VERTEX.z, PROJECTION_MATRIX); EMISSION = mix(cel_hero_gain(cel_hero_local(cel_hero_lit.rgb * (cel_hero_own.w > 0.0 ? cel_hero_own.w : 1.0), c_aa), cel_hero_chroma.x, c_ak), cel_hero_gain(cel_hero_local(cel_hero_arm.rgb, c_aa), cel_hero_chroma.y, c_ak), c_am); ALBEDO = vec3(0.0); METALLIC = 0.0; SPECULAR = 0.0; AO = 0.0; } }
 #define CEL_HERO_ARM_LIGHT { if (cel_hero_arm_on()) { DIFFUSE_LIGHT = vec3(0.0); SPECULAR_LIGHT = vec3(0.0); } }
 #endif
 #endif
