@@ -358,7 +358,8 @@ def chain_order(pts, E, P):
 
 
 def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), walk=(0.82, 1.28), wall=50.0,
-         fold=(0.3, 0.15), margin=(0.05, 0.10), steps=8, passes=3, iters=1500, start=None, log=print):
+         fold=(0.3, 0.15), margin=(0.05, 0.10), steps=8, passes=3, iters=1500, start=None, ratchet=True, capm=0.10,
+         log=print):
     """The band's plane points for a CARRY MAP: where each band point rides on the reference, chosen so the band is
     sound IN THE POSES IT IS USED IN, not as a rest. The snapped points (the apex row) stay on the curve and slide
     along it; they are walked onto it from their feet in `steps`.
@@ -373,6 +374,9 @@ def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), w
     were divided by the rest triangle's area signed against the reference's normals at the rest feet: a rest triangle
     that bridges the fold faces against those, and the barrier then HELD its lay triangle inverted.)
     start [n, 2]: a lay's plane points to start from (no walk onto the line: the snapped points are already on it).
+    ratchet: a pose's hi never rises from one pass to the next (the reference's own worst is read under the lay's
+    edges, so it moves with the lay: without this the limit chases the lay). A design pose may carry a fifth entry,
+    True = judged against the fill: there hi is also at most the fill's worst + capm.
     hi = the reference's own worst stretch under the lay's edges in that pose (and the fill's worst where w < 1)
     + margin[0]; lo = the smaller of the reference's own and the fill's shortest - margin[1]: the map may open as far
     as the reference's skin does and no further. hi, lo and the triangles' facing are re-read each pass.
@@ -396,7 +400,7 @@ def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), w
     rot = lambda v: np.stack([-v[:, 1], v[:, 0]], 1)
     if start is not None:
         steps, u0 = 0, np.asarray(start, float).copy()
-    pr = cur.project(u0[si])
+    pr = cur.project(u0[si]) if start is None else u0[si]   # a stored row may have slid past the sampled curve's ends
     off0, x = u0[si] - pr, np.r_[u0[fi].ravel(), cur.param(pr)] * 1000
 
     def place(x, tau):
@@ -425,6 +429,7 @@ def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), w
         q[0] = plane_area(uu, tris) / a0                     # the rest: the plane decides
         return q, a, b, c
 
+    capped, hi_min = np.array([len(d) > 4 and bool(d[4]) for d in design], bool), None
     for step in range(steps + passes):
         tau = max(1 - (step + 1) / steps, 0.0) if steps else 0.0
         mm = 1 if step < steps else m                        # the walk onto the line: on the rest surface alone
@@ -444,6 +449,10 @@ def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), w
             own = ln[1:] / ln[:1]
             hi[1:, 0] = np.where(W[1:] >= 1, own.max(1), np.maximum(own.max(1), fillr[1:].max(1))) + margin[0]
             lo[1:, 0] = np.maximum(np.minimum(own.min(1), fillr[1:].min(1)) - margin[1], 0.1)
+            hi[1:, 0] = np.where(capped, np.minimum(hi[1:, 0], fillr[1:].max(1) + capm), hi[1:, 0])
+            if ratchet and hi_min is not None:
+                hi[1:, 0] = np.minimum(hi[1:, 0], hi_min)
+            hi_min = hi[1:, 0].copy()
 
         def f(x):
             uu = place(x, tau)
@@ -770,6 +779,7 @@ HER = {
     "keep": ("strip_rest_l18.npz", "strip_rest_l19_lay2.npz", "strip_rest_l19_lay3.npz"),   # build never writes these
     "lay2": {},                          # lay2's keywords (lim, wall, fold, margin, steps, passes, iters)
     "map_elev": (45.0, 90.0),            # target --map: the lay's share, smoothstep of the arm's elevation over these deg
+    "fill_bar": 90.05,                   # lay2: poses up to this elevation are judged against the fill (worst edge <= its + capm)
     "map_near": (45, 60, 67.5, 75, 90),  # ... also print the pose nearest each of these elevations
     "dirs": 2000,                        # outside directions of the visibility proof
     "game_up": 0.3,                      # "from the play camera's side": directions with an up part over this
@@ -798,10 +808,12 @@ class HerStrip:
         """lay2's poses for side s: every pose of poses.npz where the map has a share (elevation over map_elev[0])."""
         z, car, out = np.load(rt.OUT / "poses.npz"), self.h.car[s], []
         for k in np.nonzero(np.array([str(x) for x in z["side"]]) == s)[0]:
-            w = share(elevation(self, z["G"][k], s), *self.cfg["map_elev"])
+            el = elevation(self, z["G"][k], s)
+            w = share(el, *self.cfg["map_elev"])
             if w > 0:
                 Va, _ = self.h.pose_ref(z["G"][k])
-                out.append((Va, car.carry(Va), np.einsum("nij,nj->ni", car.rotations(Va), self.h.N0[self.pts[s]]), w))
+                out.append((Va, car.carry(Va), np.einsum("nij,nj->ni", car.rotations(Va), self.h.N0[self.pts[s]]), w,
+                            el <= self.cfg["fill_bar"]))
         return out
 
     def relay(self, s, rows, u=None, repair=False, start=None, snap=None):
