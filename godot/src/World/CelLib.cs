@@ -151,6 +151,7 @@ public static class CelLib
         }
         LineStep();
         HeroClassStep();
+        HeroNormals.Step();
         if (HeroId) HeroIdStep();
     }
 
@@ -281,6 +282,7 @@ public static class CelLib
         while (n != null && !n.IsInGroup(Brush.HerGroup)) { mirror |= n is global::SurvivorUnchained.View.Reflections; n = n.GetParent(); }
         if (n == null) return;
         if (!mirror && n is Node3D her && lineIds.Add(mi.GetInstanceId())) lined.Add((mi, her));
+        if (!mirror) HeroNormals.Visit(mi);   // (L1 lead 22, P1NORM: her smoothed shading normals, baked once a mesh)
         for (int s = 0; s < mi.Mesh.GetSurfaceCount() && s < mi.GetSurfaceOverrideMaterialCount(); s++)
         {
             var so = mi.GetSurfaceOverrideMaterial(s);

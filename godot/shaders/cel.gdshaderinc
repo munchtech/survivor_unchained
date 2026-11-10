@@ -671,6 +671,14 @@ vec3 cel_hero_paint(vec3 c_wn, vec3 c_alb, float c_w, float c_near, vec3 c_ref) 
 	float c_dark = max(smoothstep(cel_hero.z - c_w, cel_hero.z + c_w, c_s), 1.0 - smoothstep(cel_hero_tone.w - c_w, cel_hero_tone.w + c_w, c_wn.y));
 	return mix(c_t, cel_hero_tone.rgb, c_dark);
 }
+// (L1 lead 22, P1NORM) SMOOTH SHADING NORMALS: the steps turn her FORMS, not her mesh's bumps. HeroNormals.cs bakes, at
+// load, per mesh under her, a normal diffused over the welded surface (radius hero_pool 60, m) into CUSTOM0 as xyz in the
+// vertex's own frame (tangent, its square binormal, normal; w 1), so it is skinned with the frame. A shader writes
+// CEL_HERO_VERTEX last in vertex(): with the rule on, NORMAL becomes the smoothed normal mixed toward the true one, the
+// smoothed share cel_hero_sn.x (hero_pool 59; 0 = off) times the material's cel_hero_sn_k. A mesh without it: as before.
+global uniform vec4 cel_hero_sn;
+uniform float cel_hero_sn_k : hint_range(0.0, 1.0) = 1.0;
+#define CEL_HERO_VERTEX { float c_sk = cel_hero_sn.x * cel_hero_sn_k; if (c_sk > 0.0 && CUSTOM0.w > 0.5 && cel_hero_abs()) { vec3 c_t = TANGENT - NORMAL * dot(NORMAL, TANGENT); c_t = dot(c_t, c_t) > 1e-8 ? normalize(c_t) : normalize(cross(NORMAL, abs(NORMAL.y) < 0.99 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0))); vec3 c_sn = CUSTOM0.x * c_t + CUSTOM0.y * cross(NORMAL, c_t) + CUSTOM0.z * NORMAL; if (dot(c_sn, c_sn) > 1e-6) NORMAL = normalize(mix(NORMAL, normalize(c_sn), clamp(c_sk, 0.0, 1.0))); } }
 // (L1 lead 21, HERMASK) THE ID INSTRUMENT (dev; CelLib sets it only with SU_HERO_ID in the environment, else it is
 // zero and nothing changes): a material's own flat ID color in place of the painted tone, on exactly the fragments the
 // hero paint (and the held piece's) covers, so one frame shows which pixels of her the row paints, material by material.

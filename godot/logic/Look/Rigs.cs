@@ -254,6 +254,10 @@ public static class Rigs
     /// edge (0 = off), the share of it past the edge on the shade side (cel.gdshaderinc cel_hero_term_tone). A row without
     /// them: zeros, the figure renders as before.</summary>
     public static double[] HeroTerm(double[]? heroPool) => heroPool is { Length: >= 59 } ? heroPool[49..59] : new double[10];
+    /// <summary>(L1 lead 22, P1NORM) hero_pool values 59-60: the share of her SMOOTHED shading normal in the cel steps
+    /// (0 = off, 1 = the smoothed normal alone; CEL_HERO_VERTEX), the radius in metres it is diffused over at load
+    /// (HeroNormals). A row without them: zeros, the figure renders as before.</summary>
+    public static double[] HeroSmooth(double[]? heroPool) => heroPool is { Length: >= 61 } ? heroPool[59..61] : new double[2];
 
     /// <summary>(HERPAIR) A hero material's class from its shader's file and its outfit kind (heroine_outfit.gdshaderinc
     /// `kind`: 0 leather, 1 metal, 2 cloth, 3 gloss, 4 twill, 5 satin; -1 none): 0 hair, 1 skin, 2 outfit leather / cloth,

@@ -236,6 +236,7 @@ void vertex() {
 		vec3 cam = (inverse(MODEL_MATRIX) * vec4(CAMERA_POSITION_WORLD, 1.0)).xyz;
 		VERTEX += normalize(cam - VERTEX) * view_pull;
 	}
+	CEL_HERO_VERTEX;   // (L1 l22 p1norm: the smoothed shading normal)
 }
 
 // (a piece's baked number as the shader sees it: the vertex colour comes in as 8 bits, truncated, not rounded

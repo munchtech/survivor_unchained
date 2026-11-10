@@ -497,6 +497,10 @@ cel_hero_term={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+cel_hero_sn={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
 cel_give={
 "type": "vec4",
 "value": Vector4(0, 0, 0.25, 0.6)

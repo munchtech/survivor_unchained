@@ -632,6 +632,7 @@ void vertex() {
 		VERTEX -= NORMAL * tuck * (h > 0.973 ? 1.0 : h);
 	}
 	model_y = VERTEX.y;
+	CEL_HERO_VERTEX;   // (L1 l22 p1norm: her smoothed shading normal, last: the tuck above moves along her true normal)
 }
 
 // (her normal as Godot's normal map makes it, from a tangent-space xy at depth 1, in view space, octahedral)
