@@ -1563,7 +1563,10 @@ public partial class GameHud : CanvasLayer
             // (a channel running keeps its well lit)
             double ready = w.Channeling && !second ? 1 : b.WeaponReady(shown);
             s.Show(shown.Id, Glyphs.ForSkill(shown.Id, shown.Art), ItemViews.SchoolColors[shown.School], ready, w.Rank, Weapons.MaxRank, w.Evolution != null, CanEvolve(b, w), shown.Timer);
-            double cost = b.CostOf(shown);
+            // (M4 lead 14, r3c M3: a kindled key's riposte, flare or command spends nothing: no arc; its "now" heaves from
+            // half the cost: the floor)
+            bool now = w.KindledNow && w.KindleKey == KindlePress.Now;
+            double cost = w.KindledNow && !now ? 0 : b.CostOf(shown);
             int other = w.Slot2 < 0 ? -1 : KeyMap.SeatOf(second ? w.Slot : w.Slot2);
             // (side by side: not across the coin, which stands between seats 2 and 3)
             bool adjacent = other >= 0 && Math.Abs(other - k) == 1 && Math.Min(other, k) != 2;
@@ -1574,6 +1577,7 @@ public partial class GameHud : CanvasLayer
                 Held = second ? w.Held2 : w.Held,
                 // (M4 lead 13, r3b M1: one rule on the one Resolve the hair reads: SeatCost)
                 Cost = HudPin.CostSeat is { } pc && pc.Seat == k ? SeatCost.Shown(pc.Fraction) : SeatCost.Arc(resolve.Value, cost),
+                Floor = SeatCost.FloorShare(now),
                 Union = w.Slot2 >= 0,
                 ClaspLeft = adjacent && other == k - 1,
                 Rings = w.Slot2 >= 0 && !adjacent,

@@ -36,4 +36,28 @@ public class SeatCostTests
         Assert.True(SeatCost.WarmWell(held: true, shortOfCost: false));
         Assert.False(SeatCost.ShortLook(shortOfCost: false, numbered: false));
     }
+
+    /// <summary>M4 lead 14 (judge r3c M3): a kindled "now" seat is short iff Resolve under half its cost, lit iff at or
+    /// above half, and shows its arc (the strength) iff under the full cost; the tick sits at half. A plain spender's
+    /// floor is its cost and it has no tick.</summary>
+    [Theory]
+    [InlineData(20)]
+    [InlineData(40)]
+    public void A_kindled_now_key_is_short_below_half_its_cost_and_shows_strength_up_to_full(double cost)
+    {
+        float k = SeatCost.FloorShare(kindledNow: true), p = SeatCost.FloorShare(kindledNow: false);
+        Assert.Equal(0.5f, SeatCost.Tick(k));
+        Assert.Equal(-1f, SeatCost.Tick(p));
+        for (int i = 0; i <= 1000; i++)
+        {
+            double v = i * 0.1;
+            float arc = SeatCost.Arc(v, cost);
+            Assert.Equal(v < cost / 2, SeatCost.ShortOfFloor(v, cost, k));
+            Assert.Equal(v < cost / 2, SeatCost.ShortShown(arc, k));
+            Assert.Equal(v < cost, arc >= 0);
+            Assert.Equal(v < cost, SeatCost.ShortOfFloor(v, cost, p));
+            Assert.Equal(v < cost, SeatCost.ShortShown(arc, p));
+        }
+        Assert.False(SeatCost.ShortShown(-1, k));
+    }
 }

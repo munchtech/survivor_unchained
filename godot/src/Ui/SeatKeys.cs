@@ -29,6 +29,9 @@ public partial class Socket
         public bool Channeling;
         /// <summary>A spender short of Resolve: Value / cost (0..1); -1 not short.</summary>
         public float Cost;
+        /// <summary>M4 lead 14 (judge r3c M3): the press floor as a share of the cost (SeatCost.FloorShare: 0.5 a kindled
+        /// "now" key, 1 or 0 the full cost). Short of it: the short look; from it to the cost: lit, the arc as strength.</summary>
+        public float Floor;
         /// <summary>One of a union's two seats; the clasp drawn by this seat to its left neighbour; the linked rings
         /// (the two seats not side by side); the bond's "press now" on the second key.</summary>
         public bool Union, ClaspLeft, Rings, Bond;
@@ -70,7 +73,7 @@ public partial class Socket
         float cq = SeatCost.Shown(s.Cost);
         // (the cost met: the arc goes and the ready glow plays once)
         if (costShown >= 0 && cq < 0 && filled && !waiting) cue = 0;
-        if (cq != costShown || s.Kind != st.Kind || s.Union != st.Union || s.ClaspLeft != st.ClaspLeft || s.Rings != st.Rings || s.Held != st.Held) dirty = true;
+        if (cq != costShown || s.Kind != st.Kind || s.Union != st.Union || s.ClaspLeft != st.ClaspLeft || s.Rings != st.Rings || s.Held != st.Held || s.Floor != st.Floor) dirty = true;
         costShown = cq;
         st = s;
         st.Cost = cq;
@@ -93,8 +96,11 @@ public partial class Socket
         if (this.locked != locked) { this.locked = locked; dirty = true; }
     }
 
-    /// <summary>Short of its cost, the glyph cools as when waiting.</summary>
-    bool CostShort => keyed && filled && st.Cost >= 0;
+    /// <summary>Short of its press floor (a press does nothing), the glyph cools as when waiting.</summary>
+    bool CostShort => keyed && filled && SeatCost.ShortShown(st.Cost, st.Floor);
+
+    /// <summary>Under its full cost (the arc shows): short, or the fourth look (fires, not at full strength).</summary>
+    bool BelowCost => keyed && filled && st.Cost >= 0;
 
     /// <summary>The lantern catching, by the seconds since a kindled seat fired itself (M4 §1, lead 6: the flat mid-band
     /// disc lost the glyph). Light: how much of the flare shows (whole for FlareHold, then gone over FlareSettle);
@@ -232,7 +238,8 @@ public partial class Socket
         // the arc, so held is never quieter than invited)
         bool held = keyed && filled && st.Held;
         // (M4 lead 13, r3b M2: held while short, the ring says the key is down but the well stays the short one)
-        bool warm = SeatCost.WarmWell(held, CostShort);
+        // (M4 lead 14, r3c M3: and no warm well from the floor to the cost: it fires, but not at full)
+        bool warm = SeatCost.WarmWell(held, BelowCost);
         if (warm && press == null) press = Fx(SeatFx.Mode.Press);
         if (press != null && press.Visible != warm) press.Visible = warm;
         bool spin = keyed && filled && (st.Channeling || st.Held);
@@ -250,6 +257,10 @@ public partial class Socket
         if (heldRing != null)
         {
             if (heldRing.Visible != held) heldRing.Visible = held;
+            // (M4 lead 14, r3c S6: held under the cost, the ring stands 2 px out past an ink gap, with no sheen, so the
+            // arc and its head read apart from it)
+            bool wide = held && BelowCost;
+            if (heldRing.Wide != wide) { heldRing.Wide = wide; heldRing.QueueRedraw(); }
             if (held) heldRing.Rotation = (heldRing.Rotation + (float)(dt * 0.75 * Mathf.Tau)) % Mathf.Tau;
         }
         bool bd = keyed && filled && st.Bond;
@@ -294,6 +305,14 @@ public partial class Socket
             // (fix A, 12: near full it read as a selection ring: a dark tick at 12 o'clock breaks it where it starts,
             // and a bright bead rides its head)
             DrawLine(c + new Vector2(0, -(hr - 5.5f)), c + new Vector2(0, -(hr + 2f)), new Color(0.03f, 0.02f, 0.01f, 0.95f), 3);
+            // (M4 lead 14, r3c M3: a kindled "now" key's press floor, a 2 px ink tick across the groove; past it the key
+            // fires at the arc's strength)
+            if (SeatCost.Tick(st.Floor) is var tk and > 0)
+            {
+                float ta = -Mathf.Pi / 2 + Mathf.Tau * tk;
+                var td = new Vector2(Mathf.Cos(ta), Mathf.Sin(ta));
+                DrawLine(c + td * (hr - 4f), c + td * (hr + 1f), new Color(0.03f, 0.02f, 0.01f, 0.95f), 2);
+            }
             if (st.Cost > 0.005f)
             {
                 float ha = -Mathf.Pi / 2 + Mathf.Tau * st.Cost;
@@ -341,6 +360,8 @@ public partial class SeatFx : Control
 {
     public enum Mode { Lantern, Spinner, Bond, Flare, Ink, Press, Held }
     readonly Mode mode;
+    /// <summary>The held ring stood out past an ink gap, plain (held under the cost: judge r3c S6).</summary>
+    public bool Wide;
     readonly float hr;
     public float Hr => hr;
     /// <summary>Ink: the glyph's white shape and the px it is shown across (the seat's gold inlay's).</summary>
@@ -418,6 +439,12 @@ public partial class SeatFx : Control
                 // the key down: the well warm, the ring fully lit (added light)
                 DrawTextureRect(DgMeters.Disc, new Rect2(c - Vector2.One * (hr + 1f), Vector2.One * (hr + 1f) * 2), false, new Color(1f, 0.66f, 0.28f, 0.6f));
                 DrawArc(c, hr + 5f, 0, Mathf.Tau, 64, Style.EmberHi with { A = 0.3f }, 4, true);
+                break;
+            case Mode.Held when Wide:
+                // M4 lead 14 (r3c S6): held under the cost: a 2 px ink gap outside the arc's groove, then the plain gold
+                // ring 2 px further out (no tail, no bead: the arc's head is the one bright point)
+                DrawArc(c, hr + 2.25f, 0, Mathf.Tau, 64, new Color(0.03f, 0.02f, 0.01f, 0.9f), 2.5f, true);
+                DrawArc(c, hr + 4.5f, 0, Mathf.Tau, 64, HeldGold, 2.5f, true);
                 break;
             case Mode.Held:
                 // M4 lead 9 (fix A2): the held ring in NORMAL blend (added to the lit bronze it clipped to lemon): the bar's
