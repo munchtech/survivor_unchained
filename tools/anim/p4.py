@@ -994,6 +994,10 @@ def cmd_check(a):
                   f"end off idle max {so['end']:.1f} cm{' MISS' if so['end'] > 0.5 else ''}")
         for ln in statue_lines(R["statue"], R["loop"]):
             print(ln)
+        import p4_contact                      # (the blade's contact measure: contact on the crossing, the blend rule)
+        R["blade"] = p4_contact.of_built(sys.modules[__name__], R["clip"])
+        for ln in (p4_contact.lines(R["blade"]) if R["blade"] else []):
+            print(ln)
         for s, ws in R["floors"].items():
             for w in ws:
                 print(f"  planted {s} f{w['frames'][0]}-{w['frames'][1]}: ankle {w['ankle_cm']:+} cm, ball {w['ball_cm']:+} cm over rest, "
