@@ -7,7 +7,12 @@ using Xunit.Abstractions;
 namespace SurvivorUnchained.Tests;
 
 /// <summary>(L1 lead 23, NORM2) SmoothNormals: a noisy sphere and a noisy capsule smooth back to their analytic normals,
-/// opposite surfaces that touch never bleed, and a 60k-vertex mesh bakes fast.</summary>
+/// opposite surfaces that touch never bleed, and a 60k-vertex mesh bakes fast. (L1 lead 24) Not parallel with the suite:
+/// the bake runs on the thread pool, so its wall-clock bound only means something without the other tests on the cores.</summary>
+[CollectionDefinition("SmoothNormalsTiming", DisableParallelization = true)]
+public class SmoothNormalsTimingCollection { }
+
+[Collection("SmoothNormalsTiming")]
 public class SmoothNormalsTests
 {
     readonly ITestOutputHelper log;
