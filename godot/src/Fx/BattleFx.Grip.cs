@@ -290,7 +290,8 @@ public partial class BattleFx
         {
             tr.FlashOwed = true; tr.Struck = e.Struck; tr.Killed = e.Killed;
             tr.Body = V(e.HitX, Y(e.HitX, e.HitZ) + 1.0, e.HitZ);
-            Cam?.AddTrauma(oath ? 0.02f : 0.04f);
+            // (one number a cut, by raise-to: a swing of several arcs calls this once an arc and still shakes once)
+            HitShake(P7D[oath ? "hit_budget.grip_shake_oath" : "hit_budget.grip_shake", oath ? 0.02f : 0.06f], "grip");
         }
         float r = Mathf.Clamp(reach * 0.62f, 1.7f, 2.1f), mid = (float)e.Angle;
         double tx = e.X + Mathf.Cos(mid) * r * 0.9f, tz = e.Z + Mathf.Sin(mid) * r * 0.9f;
@@ -299,7 +300,7 @@ public partial class BattleFx
             // The heavy blade's grit where it passes nearest the ground (grip.contact.grit puffs: 0 now, by day they
             // read as dark blobs on the stroke).
             if ((int)P7D["grip.contact.grit"] is > 0 and var grit) Dust(tx, tz, grit, 1.6f * g);
-            Cam?.AddTrauma(0.02f);
+            HitShake(P7D["hit_budget.grip_shake_air", 0.02f], "grip");
             return;
         }
         // The Oathblade's own: its gold on the ground under the cut, the struck's streaks along its path (HitKit), and a

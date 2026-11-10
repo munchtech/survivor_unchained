@@ -387,6 +387,19 @@ public partial class BattleFx : Node3D
         }
     }
 
+    /// <summary>A hit's camera shake is a "raise to", never a sum (P7 lead 8, main's px targets, 10 Nov): the camera's trauma
+    /// goes UP TO <paramref name="to"/> (scaled by the player's shake setting exactly as AddTrauma scales), is never lowered
+    /// and never stacks above it. The shake is trauma SQUARED, so sums cannot serve both ends: a crit big enough to tick alone
+    /// made three crits in a crowd cut a 10 px shake. With this a cut is ONE number whatever the order of its calls: the
+    /// largest of its contact, its crit and its shared impact (fx_language.json p7 hit_budget). Through AddTrauma with the
+    /// difference, so --shake-say still prints each raise with its src and the caller's line.</summary>
+    void HitShake(float to, string src, [System.Runtime.CompilerServices.CallerFilePath] string file = "", [System.Runtime.CompilerServices.CallerLineNumber] int line = 0)
+    {
+        if (Cam is not { ShakeScale: > 0 } cam) return;
+        float add = to - cam.Trauma / cam.ShakeScale;
+        if (add > 0) cam.AddTrauma(add, src, file, line);
+    }
+
     public void Burst(Vector3 at, School school, int n, float speed, float up = 1.5f, float size = 0.09f, float life = 0.45f, float gravity = 6)
     {
         var pal = Palette.Of(school);
