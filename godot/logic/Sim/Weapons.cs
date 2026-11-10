@@ -54,6 +54,10 @@ public sealed class WeaponInst
     /// TRUE to the clip she plays, so a one-clip grip holds its side and a chain's clips each name theirs); 0: no clip names
     /// one (the arena, an echo), and the count alternates.</summary>
     public int ClipSide;
+    /// <summary>Its chain (Sim/SwingChain.cs): set once a chained record's first cut starts; null for every other skill.</summary>
+    public SwingChain? Chain;
+    /// <summary>Its swings are a chain: its record has a chain block and it runs in its pressed form (campaign).</summary>
+    public bool Chained => Press?.Chain != null && !KindledNow;
     /// <summary>A spin (Bladestorm): its ticks this storm, the Sunder lines it has thrown and holds pending (split by its
     /// break, else faded), and the time it may still be broken after the spin ended (-1: not).</summary>
     public int SpinTicks;
@@ -307,6 +311,7 @@ public static partial class Firing
         if (w.Behavior == WeaponBehavior.Reactive) return;
         // Oath and Bell: a stagger owed the bell a toll; it goes off now, its own timer untouched.
         if (w.Behavior == WeaponBehavior.Toll && b.BellOwed) b.TollOwed(w);
+        if (w.Chain != null) ChainReady(b, w, dt);
         w.Timer -= dt;
         if (w.BurstLeft > 0)
         {
@@ -908,7 +913,7 @@ public static partial class Firing
     static bool ConeHit(Battle b, WeaponInst w, double a, double arc, double reach, double dmg)
     {
         var p = At(b);
-        var cut = new Ev.Slash { X = p.X, Z = p.Z, Angle = a, Arc = arc, Reach = reach, School = w.School, Art = w.Art, Rank = w.Rank, Held = w.Hold, Side = w.NextSide() };
+        var cut = new Ev.Slash { X = p.X, Z = p.Z, Angle = a, Arc = arc, Reach = reach, School = w.School, Art = w.Art, Rank = w.Rank, Held = w.Hold, Side = w.NextSide(), Cut = w.Chain is { Live: true } ch ? ch.Cut : 0 };
         b.Events.Emit(cut);
         double nearest = double.MaxValue, inLine = double.MaxValue;
         double kb = w.Num(s => s.Knockback) ?? 0;

@@ -225,6 +225,8 @@ public sealed partial class Battle
         double plant = Math.Clamp(r.Plant ?? 0, 0, MaxPlant);
         if (plant > 0 && Firing.HeavyEveryOf(this, w) > 0 && !w.WasOwnHeavy) plant = 0;
         if (w.Cast == CastMode.Channel) t = plant = 0;
+        // (a chain's cut limits her no longer than its cancel beat: Sim/SwingChain.cs)
+        if (w.Chained && w.Chain is { Live: true } ch) { double lim = Math.Max(0, ch.CancelAt - Time); t = Math.Min(t, lim); plant = Math.Min(plant, lim); }
         if (t > 0) { p.CastWalk = p.CastT > 0 ? Math.Min(p.CastWalk, walk) : walk; p.CastT = Math.Max(p.CastT, t); }
         p.PlantT = Math.Max(p.PlantT, plant);
         var at = CastAt ?? (SkillAim is { } s ? (s.X, s.Z, null) : (p.X, p.Z, null));

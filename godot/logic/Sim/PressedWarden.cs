@@ -395,6 +395,7 @@ public static partial class Firing
     static void TickHalf(Battle b, WeaponInst w, double dt)
     {
         if (HalfOf(w) is not { } h) return;
+        if (h.Chain != null) ChainReady(b, h, dt);
         if (h.Timer > 0) h.Timer = Math.Max(0, h.Timer - dt);
         if (w.Held2 && h.Timer <= 0) SwingHalf(b, w);
     }

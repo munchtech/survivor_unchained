@@ -1,3 +1,41 @@
+# M3 bands: round 7 (10 Nov, leads 7-9): the clock counts from a foe awake; the idler measured on Resolve wasted, not speed; veteran III/IV at 16 seeds; the dev veteran is the harness's
+
+**What changed since round 6 (file, change, why). No tier row and no skill number was tuned.**
+- `godot/logic/Play/Zones/PackKit.cs` (17871c1e5, lead 7): the story stand clock counts from when a foe that may charge is awake. Standing on a pack's ground between its waves with nothing up (the kerchiefs' (44,-89), the wolves' ring hold (0.5,-99)), the next wave charged her on the tick it walked out: 45% of the stand charges read one by one were this. 48 seeds, Low Ford I/II: human and deft charges 367 -> 184 in 192 runs. Main's call: the clause stays.
+- `godot/logic/Play/DevVeteran.cs` + `--veteran L[:G]` (a9b9cb98a, lead 8): the game's dev veteran is dressed by the harness's own code (shared with `MapSim.Survivor`), so a shot veteran is the measured one. Before, `--xp 100000000` gave level 30 with 58 unspent points and no gear (life 444, damage x1.15) against the sim's `--level 30 ... g2` (life 860, damage x2.60); the bare build falls 32 of 32 in the sim too.
+
+**The idler's measure, re-pointed again under option A (main accepted, lead 8):** round 6's "kills a minute at most 0.90x the human's" was the old clock charging a stand between waves, not a press plan's worth. In the first hour she owns ONE spender and half the kit is kindled by the hands rule, so a player who presses nothing loses Resolve WASTED, not speed. The measure is now:
+- **Low Ford I/II:** the idler is never faster than the human (kills a minute at most 1.00x, time through at least 1.00x) AND her Resolve sits at max at least 20% of the fight where the human's is under 10%.
+- **Veteran III/IV (full kit):** time through at least 1.25x the human's.
+- The passive player stays the STANDER (falls 80%+). The idler's falls are not a band.
+
+**Low Ford, 48 seeds, tiers I / II** (`zone --zone lowford --bots standing,idler,human,deft --seeds 48 --tiers 1,2`, at 17871c1e5; raw `l71.out`):
+
+| bot | band | I | II |
+|---|---|---|---|
+| human, no fall | I 85+, II 78-85 | 91.7% | 85.4% (0.4 over the top, inside the noise of 48) |
+| deft, no fall | 95+ | 97.9% | 100% |
+| standing, falls | 80+ | 81.2% | 97.9% |
+| idler, kills a minute vs human | at most 1.00x | 0.96x | 0.98x |
+| idler, time through vs human | at least 1.00x | 1.03x | 1.06x |
+| idler, Resolve at max, share of the fight | at least 20% | 29.6% | 27.8% |
+| human, Resolve at max, share of the fight | under 10% | 4.3% | 3.7% |
+| Resolve spent a minute, idler / human | - | 208 / 323 | 245 / 353 |
+| idler, no fall (not a band) | - | 85.4% | 81.2% |
+
+**Veteran maps III / IV, warden L30 g2, rank 8 grants + Bladestorm, 16 seeds x people dead,pack = 32 runs a bot, one life a map** (raw `l8et16.out`, table by `l8tab.py`):
+
+| bot | measure | III | IV |
+|---|---|---|---|
+| human | cleared | 32/32 | 32/32 |
+| human | time through / the ruler | 11.3 min / 76 s | 11.9 min / 80 s |
+| deft | cleared | 32/32 | 31/32 |
+| idler | cleared | 22/32 | 15/32 |
+| idler | time through vs human (band at least 1.25x) | 15.6 min = 1.38x | 16.0 min = 1.34x |
+| standing | cleared | 0/32 | 0/32 |
+
+**Every band is met at these seeds.** What stays open, named and not player-facing (the test bot's walk; none gates MR 2): the pickup dither at the kerchiefs' camp (45..48, -84..-87); the n_cart corner pocket at (6.36, 61.78) by night; STUCK 5 of 384 at the day's exits (they read as no-fall in the Low Ford table); the 17-31 s patch-wander and `Pilot.Leaves` unproven; two standing waits with no foe (118-130 s, 192-216 s) unread; a veteran pickup dither at 70-81 s (seed 1235); out of a storm the union's Sunder press aims at her own spot (`PressPlan.cs`), same in sim and game, so changing it moves numbers (MR 3). Human II sits at the band's top edge (85.4 against 78-85): left alone until MR 3's chain moves the grip, which re-measures every row here.
+
 # M3 bands: round 6 (9 Nov late night, lead 6): the stand clock that knows a fighter's plant, the bands re-pointed (main's option A)
 
 The rule (lead 5, `world_tiers.json` `stand.standSwing` 2.4 on every tier): the story stand clock counts only feet still with no cut landing; each landed cut of her held swing holds it for its own wait, up to 2.4 s at one spot; a 0.6 m step gives the allowance back; a swing at the air earns nothing. Lead 6 fixed the feet under it (`Pilot.StepLead` 0.6: the plant ends with 0.6 s of the clock left, because Sunder's own heavy holds her feet 0.3 s; a plant's end is always a step; the step clears the clock's own spot, `Battle.StandSpot`). No tier row was tuned this round.
