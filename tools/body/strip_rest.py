@@ -40,6 +40,7 @@ from pathlib import Path
 
 import numpy as np
 import scipy.sparse as sp
+from scipy.optimize import minimize
 from scipy.sparse.csgraph import connected_components, dijkstra
 from scipy.sparse.linalg import splu, spsolve
 from scipy.spatial import cKDTree
@@ -111,7 +112,8 @@ class Unfold:
         self.inv[sel] = np.arange(len(sel))
         first = np.zeros(int(grp.max()) + 1, np.int64)
         first[grp[::-1]] = np.arange(len(grp))[::-1]
-        self.P = V0[first[used]]
+        self.vid = first[used]                               # the patch's points as reference vertices
+        self.P = V0[self.vid]
         Wn = sp.csr_matrix((np.repeat(area[sel], 3), (self.tri.ravel(), np.repeat(np.arange(len(sel)), 3))), (len(used), len(sel)))
         self.nv = ct._unit(Wn @ E[sel][:, :, 2])
         self.uv, self.flipped = lscm(self.P, self.tri)
@@ -121,11 +123,12 @@ class Unfold:
     def uv_of(self, face, bary):
         return np.einsum("nk,nkj->nj", bary, self.uv[self.tri[self.inv[face]]])
 
-    def lift(self, q, chunk=1500):
+    def locate(self, q, chunk=1500):
+        """(patch triangle, barycentrics, how far inside it) of plane points q."""
         a, b, c = (self.uv[self.tri[:, i]] for i in range(3))
         v0, v1 = b - a, c - a
         den = v0[:, 0] * v1[:, 1] - v0[:, 1] * v1[:, 0]
-        S, N, sc = [], [], []
+        T, Bt, sc = [], [], []
         for s in range(0, len(q), chunk):
             d = q[s:s + chunk, None, :] - a[None]
             l1 = (d[..., 0] * v1[:, 1] - d[..., 1] * v1[:, 0]) / den
@@ -134,16 +137,44 @@ class Unfold:
             score = np.where(den > 0, B.min(2), -np.inf)
             t = score.argmax(1)
             bt = np.clip(B[np.arange(len(t)), t], 0, 1)
-            bt /= bt.sum(1, keepdims=True)
-            S.append(np.einsum("nk,nkj->nj", bt, self.P[self.tri[t]]))
-            N.append(ct._unit(np.einsum("nk,nkj->nj", bt, self.nv[self.tri[t]])))
+            T.append(t)
+            Bt.append(bt / bt.sum(1, keepdims=True))
             sc.append(score.max(1))
-        return np.concatenate(S), np.concatenate(N), np.concatenate(sc)
+        return np.concatenate(T), np.concatenate(Bt), np.concatenate(sc)
 
-    def length(self, qa, qb, k=12):
+    def lift(self, q):
+        t, bt, sc = self.locate(q)
+        return np.einsum("nk,nkj->nj", bt, self.P[self.tri[t]]), ct._unit(np.einsum("nk,nkj->nj", bt, self.nv[self.tri[t]])), sc
+
+    def lift_jac(self, q):
+        """lift(q) with its derivatives: (S, N, dS / dq [n, 3, 2], dN / dq [n, 3, 2])."""
+        t, bt, _ = self.locate(q)
+        tr = self.tri[t]
+        col = lambda X: np.stack([X[tr[:, 1]] - X[tr[:, 0]], X[tr[:, 2]] - X[tr[:, 0]]], 2)
+        Mi = np.linalg.inv(col(self.uv))
+        nr = np.einsum("nk,nkj->nj", bt, self.nv[tr])
+        ln = np.linalg.norm(nr, axis=1)
+        N, dn = nr / ln[:, None], col(self.nv) @ Mi
+        dN = (dn - N[:, :, None] * np.einsum("nk,nkc->nc", N, dn)[:, None, :]) / ln[:, None, None]
+        return np.einsum("nk,nkj->nj", bt, self.P[tr]), N, col(self.P) @ Mi, dN
+
+    def length(self, qa, qb, k=12, V=None):
+        """The surface length of the straight plane segments qa -> qb; V: the reference's vertices in a pose (else rest)."""
         s = np.linspace(0, 1, k + 1)[None, :, None]
-        S = self.lift((qa[:, None] + (qb - qa)[:, None] * s).reshape(-1, 2))[0].reshape(len(qa), k + 1, 3)
+        t, bt, _ = self.locate((qa[:, None] + (qb - qa)[:, None] * s).reshape(-1, 2))
+        S = np.einsum("nk,nkj->nj", bt, (self.P if V is None else V[self.vid])[self.tri[t]]).reshape(len(qa), k + 1, 3)
         return np.linalg.norm(np.diff(S, axis=1), axis=2).sum(1)
+
+    def stretch(self, q, V):
+        """The principal stretches [n, 2] (small, large) of the patch triangle under each plane point q, rest -> V."""
+        tr = self.tri[self.locate(q)[0]]
+        out = np.zeros((len(q), 2))
+        for r, (A, B) in enumerate(zip(self.P[tr], V[self.vid][tr])):
+            x = ct._unit(A[1] - A[0])
+            y = ct._unit(np.cross(np.cross(A[1] - A[0], A[2] - A[0]), x))
+            R = np.stack([[(A[1] - A[0]) @ x, (A[2] - A[0]) @ x], [(A[1] - A[0]) @ y, (A[2] - A[0]) @ y]])
+            out[r] = np.linalg.svd(np.stack([B[1] - B[0], B[2] - B[0]], 1) @ np.linalg.inv(R), compute_uv=False)[::-1]
+        return out
 
     def apex(self, ua, ub, k=64):
         s = np.linspace(0, 1, k + 1)[None, :, None]
@@ -177,6 +208,15 @@ class Curve:
         sc = np.clip(s, self.s0, self.s1)
         return np.polyval(self.poly, sc) + np.polyval(np.polyder(self.poly), sc) * (s - sc)
 
+    def at(self, s):
+        return self.c + s[:, None] * self.ax[0] + self._d(s)[:, None] * self.ax[1]
+
+    def tangent(self, s):
+        return self.ax[0] + np.polyval(np.polyder(self.poly), np.clip(s, self.s0, self.s1))[:, None] * self.ax[1]
+
+    def param(self, q):
+        return (q - self.c) @ self.ax[0]
+
     def side(self, q):
         r = (q - self.c) @ self.ax.T
         return r[:, 1] - self._d(r[:, 0])
@@ -185,8 +225,80 @@ class Curve:
         return self.Q[self._tree.query(q)[1]]
 
 
+def tri_quality(P, t):
+    """4 sqrt(3) area / (the sum of the squared sides): 1 = equilateral, 0 = a sliver."""
+    a, b, c = P[t[:, 0]], P[t[:, 1]], P[t[:, 2]]
+    return 2 * np.sqrt(3) * np.linalg.norm(np.cross(b - a, c - a), axis=1) / ((b - a) ** 2 + (c - b) ** 2 + (a - c) ** 2).sum(1)
+
+
+def relax(unf, cur, u, h, P0, N0, band, snap, E, tris, lim=(0.82, 1.28), wall=50.0, fold=0.5, passes=2, iters=3000, off=0.0):
+    """The band's plane points u moved (the snapped ones ALONG the curve) until the mesh's edges, measured on the
+    surface (foot + height h), are as near their rest lengths as the fixed neighbours allow: the new plane points.
+
+    min  sum_edges l0 * phi(L / l0)  +  sum_triangles sqrt(area0) * wall * max(0, fold / q - 1)^2,  q = area / area0
+    phi(r) = (r - 1)^2 + wall * (max(0, r - lim[1])^2 + max(0, lim[0] - r)^2): every edge the same strain (springs of
+    one stiffness per length), a soft wall at the limits, and a BARRIER under `fold` of a triangle's rest area: it
+    grows without bound as the area closes, so from a start with no triangle turned over none ever turns over (two
+    points cannot pass each other). The plane only carries the unknowns: lengths and areas are the real ones, so the
+    unfolding's scale does not leak in.
+    off [snapped, 2]: the snapped points run along the curve shifted by these plane offsets (relay walks them to 0).
+    """
+    n, bi = len(P0), np.nonzero(band)[0]
+    fi, si = np.nonzero(band & ~snap)[0], np.nonzero(snap)[0]
+    pf, ps = np.searchsorted(bi, fi), np.searchsorted(bi, si)
+    i, j = E[:, 0], E[:, 1]
+    l0 = np.linalg.norm(P0[i] - P0[j], axis=1) * 1000
+    ta, tb_, tc = tris[:, 0], tris[:, 1], tris[:, 2]
+    x = np.r_[u[fi].ravel(), cur.param(u[si] - off)] * 1000
+
+    def place(x):
+        uu = u.copy()
+        uu[fi], uu[si] = x[:2 * len(fi)].reshape(-1, 2) / 1000, cur.at(x[2 * len(fi):] / 1000) + off
+        return uu
+
+    for _ in range(passes):
+        Nc = N0.copy()
+        Nc[bi] = unf.lift(place(x)[bi])[1]
+        nh = ct._unit(Nc[tris].sum(1))
+        a0 = 0.5 * (np.cross(P0[tb_] - P0[ta], P0[tc] - P0[ta]) * ct._unit(N0[tris].sum(1))).sum(1)
+        wt = wall * np.sqrt(np.abs(a0)) * 1000
+        Ps = P0.copy()
+        Ps[bi] = unf.lift(place(x)[bi])[0] + h[:, None] * Nc[bi]
+        # a triangle turned over at the start (the feet fold at a groove's mouth) gets a finite push until it is open
+        soft = 0.5 * (np.cross(Ps[tb_] - Ps[ta], Ps[tc] - Ps[ta]) * nh).sum(1) / a0 <= 0.05
+
+        def f(x):
+            uu = place(x)
+            S, N, dS, dN = unf.lift_jac(uu[bi])
+            P = P0.copy()
+            P[bi] = S + h[:, None] * N
+            d = P[i] - P[j]
+            L = np.linalg.norm(d, axis=1) * 1000
+            r = L / l0
+            over, under = np.maximum(r - lim[1], 0), np.maximum(lim[0] - r, 0)
+            e = (l0 * ((r - 1) ** 2 + wall * (over ** 2 + under ** 2))).sum()
+            co = (2 * (r - 1) + 2 * wall * (over - under))[:, None] * d * (1000 / np.maximum(L, 1e-9))[:, None]
+            gP = np.zeros((n, 3))
+            np.add.at(gP, i, co)
+            np.add.at(gP, j, -co)
+            a, b, c = P[ta], P[tb_], P[tc]
+            q = 0.5 * (np.cross(b - a, c - a) * nh).sum(1) / a0
+            qc = np.maximum(q, 1e-3)
+            pen = np.maximum(np.where(soft, fold - q, fold / qc - 1), 0)
+            e += (wt * pen ** 2).sum()
+            k = (wt * pen * np.where(soft, -1.0, -fold / qc ** 2 * (q > 1e-3)) / a0 / 1000)[:, None]
+            np.add.at(gP, ta, k * np.cross(nh, c - b))
+            np.add.at(gP, tb_, k * np.cross(nh, a - c))
+            np.add.at(gP, tc, k * np.cross(nh, b - a))
+            gu = np.einsum("nkc,nk->nc", dS + h[:, None, None] * dN, gP[bi])
+            return e, np.r_[gu[pf].ravel(), (gu[ps] * cur.tangent(x[2 * len(fi):] / 1000)).sum(1)]
+
+        x = minimize(f, x, jac=True, method="L-BFGS-B", options={"maxiter": iters, "maxfun": 2 * iters, "ftol": 1e-13, "gtol": 1e-7}).x
+    return place(x)
+
+
 def relay(P0, edges, tris, band, bridge, face, bary, ref_V0, ref_T, reach=0.03, kappa=1.2, deg=3, ext=0.01, part=0.9,
-          rounds=4, sweeps=40):
+          rounds=4, sweeps=40, lim=(0.82, 1.28), wall=50.0, fold=0.5):
     """The band's points re-laid on the reference's rest surface: {"P1": the new points [n, 3], ...stats}.
 
     P0 [n, 3], edges [m, 2], tris [f, 3]: the mesh's rest points and topology; band [n] bool: the points that may move;
@@ -249,6 +361,12 @@ def relay(P0, edges, tris, band, bridge, face, bary, ref_V0, ref_T, reach=0.03, 
             step, u[si] = np.abs(new - u[si]).max(), new
             if step < 1e-7:
                 break
+        if lim is not None:                                  # real lengths decide: from the feet (no triangle turned),
+            u = u0.copy()                                    # the apex row WALKED onto its line (a jump turns triangles)
+            off, tau, step = u0[si] - cur.project(u0[si]), 1.0, 0.25
+            while tau > 0:
+                tau = max(tau - step, 0.0)
+                u = relax(unf, cur, u, hb, P0, N0, band, snap, Eb, tb, lim, wall, fold, 1 if tau else 3, off=tau * off)
         S, N, score = unf.lift(u[bi])
         h = hb.copy()
         cut = np.zeros(len(bi), bool)
@@ -289,7 +407,9 @@ def relay(P0, edges, tris, band, bridge, face, bary, ref_V0, ref_T, reach=0.03, 
             "budget": np.array(bud), "move": np.linalg.norm(P1 - P0, axis=1)[bi], "len": l1 / l0, "k0": k0, "k1": k1,
             "flip": int((np.sign(ct.facing(tb, P1, Nf)) != np.sign(ct.facing(tb, P0, N0))).sum()), "h": h, "cut": int(cut.sum()),
             "score": float(score.min()), "depth": depth, "apex_res": cur.res, "lscm_flipped": unf.flipped,
-            "scale": np.percentile(unf.scale, [1, 50, 99]), "rounds": rnd + 1, "bridging": int(isb.sum())}
+            "scale": np.percentile(unf.scale, [1, 50, 99]), "rounds": rnd + 1, "bridging": int(isb.sum()), "unf": unf,
+            "isb": isb, "l0": l0, "cur": cur, "ring": np.nonzero(ring)[0],
+            "qual": (float(tri_quality(P0, tb).min()), float(tri_quality(P1, tb).min()))}
 
 
 def sphere_dirs(k):
