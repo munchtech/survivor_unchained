@@ -45,6 +45,11 @@ public sealed class ArmorPiece
     /// <summary>Its tuck of her skin, a path under its index's folder (null: it tucks nothing).</summary>
     [JsonPropertyName("tuck")] public string? Tuck { get; set; }
     [JsonPropertyName("tuck_count")] public int? TuckCount { get; set; }
+    /// <summary>Its tuck record's full scale, mm (gear_tuck.py: a row says it only when it is not 10, the shader's): a
+    /// point's depth is its mark times this (SkinTuck.Merge).</summary>
+    [JsonPropertyName("tuck_depth_mm")] public double TuckDepthMm { get; set; } = 10;
+    /// <summary>TuckDepthMm as the merge takes it (a row saying 0 or less: 10).</summary>
+    [JsonIgnore] public float TuckDepth => TuckDepthMm > 0 ? (float)TuckDepthMm : 10f;
     [JsonPropertyName("body_hash")] public string? BodyHash { get; set; }
     [JsonPropertyName("hold")] public ArmorHold? Hold { get; set; }
     /// <summary>A rigid piece (a plate style, or a free mesh made only of `_rigid` parts): the garment tuck never bends it

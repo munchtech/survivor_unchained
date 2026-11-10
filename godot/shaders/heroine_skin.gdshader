@@ -610,7 +610,9 @@ void vertex() {
 		int vid = VERTEX_ID + tuck_offset;
 		float h = texelFetch(tuck_map, ivec2(vid % tuck_map_width, vid / tuck_map_width), 0).r;
 		tuck_gone = step(0.995, h);
-		VERTEX -= NORMAL * tuck * (h > 0.973 ? 1.0 : h);
+		// (a mark over 1, SkinTuck.Merge: skin not drawn that a shallower piece hides in a deeper look, moved by its own
+		// depth, 2 - h of `tuck`; marks up to 1 read as before)
+		VERTEX -= NORMAL * tuck * (h > 0.973 ? min(1.0, 2.0 - h) : h);
 	}
 	model_y = VERTEX.y;
 }

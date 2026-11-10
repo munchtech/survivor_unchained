@@ -903,7 +903,8 @@ public static class HerWear
         var path = r.CoverPath;
         if (tucks.TryGetValue("foot:" + path, out var f)) return f;
         var d = new Dictionary<long, float>();
-        if (r.TuckPath is string tp) foreach (var (k, t) in Records(tp)) d[k] = t;
+        // (its tuck as 10 mm marks, SkinTuck.Foot: the lay amount follows the depth, not the row's scale)
+        if (r.TuckPath is string tp) foreach (var (k, t) in Records(tp)) d[k] = SkinTuck.Foot(t, r.TuckDepth);
         if (FileAccess.FileExists(path))
             foreach (var (k, t) in Records(path))
                 if (!d.TryGetValue(k, out var o) || t > o) d[k] = t;
@@ -1140,16 +1141,15 @@ public static class HerWear
     /// (and `under`: her points under garment-tucked pieces).</summary>
     static void TuckMap(People.Person p, List<ArmorPiece> rows, Dictionary<long, float>? under = null)
     {
-        var at = new Dictionary<long, float>();
+        // (in millimetres, SkinTuck: a row's record is marks of its own full scale (ArmorPiece.TuckDepth), the deepest at
+        // a point wins, and the look's deepest scale is the shader's `tuck`; `under` is 10 mm marks)
+        var worn = new List<(float DepthMm, IEnumerable<(long Key, float T)> Records)>();
         foreach (var r in rows)
-        {
-            if (r.TuckPath is not string tp) continue;
-            foreach (var (k, t) in Records(tp))
-                if (!at.TryGetValue(k, out var o) || t * TuckScale > o) at[k] = t * TuckScale;
-        }
-        if (under != null)
-            foreach (var (k, t) in under)
-                if (!at.TryGetValue(k, out var o) || t > o) at[k] = t;
+            if (r.TuckPath is string tp)
+                worn.Add((r.TuckDepth, Records(tp).Select(x => (x.Item1, x.Item2 * TuckScale))));
+        float lookMm = SkinTuck.LookMm(worn.Select(w => w.DepthMm), under != null);
+        if (under != null) worn.Add((SkinTuck.BaseMm, under.Select(kv => (kv.Key, kv.Value))));
+        var at = SkinTuck.Merge(worn, lookMm);
         var bodies = p.Skeleton.GetChildren().OfType<MeshInstance3D>().Where(People.TuckBody).ToList();
         var seen = new HashSet<long>();
         foreach (var mi in bodies)
@@ -1167,14 +1167,15 @@ public static class HerWear
             for (int s = 0; s < keys.Length && s < mi.GetSurfaceOverrideMaterialCount(); s++)
             {
                 if (mi.GetSurfaceOverrideMaterial(s) is not ShaderMaterial m || !People.IsSkin(m)) continue;
+                m.SetShaderParameter("tuck", SkinTuck.Uniform(lookMm));
                 var ks = keys[s];
                 var v = new float[ks.Length];
                 bool any = false;
                 for (int i = 0; i < ks.Length; i++)
                     if (at.TryGetValue(ks[i], out var t))
                     {
-                        // (as her vertex colours hold a channel's mark: eight bits)
-                        v[i] = MathF.Round(Math.Clamp(t, 0f, 1f) * 255f) / 255f;
+                        // (SkinTuck.Merge: a row's mark as her vertex colours hold a channel's, eight bits, then of the look's scale)
+                        v[i] = t;
                         any |= v[i] > 0;
                         seen.Add(ks[i]);
                     }
