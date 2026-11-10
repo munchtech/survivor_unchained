@@ -359,6 +359,39 @@ public partial class BattleFx : Node3D
         }
     }
 
+    // The spark budget (main, 9 Nov): ONE source that strikes many in a frame throws its hit burst (Impact, the bash, Burst)
+    // only on the few bodies nearest the middle of what it struck (the blade's reach, the blast's center); a crit always
+    // shows and takes a place first; the rest throw none. So a wide skill over a crowd is a few clean bursts, not 150 specks
+    // (a Sunder cut that struck 37 threw 4 sparks from each). The numbers, the gore and the Flare's own hits are not touched.
+    // A source = the hits of one art and school in one frame's events. fx_language.json p7 hit_budget.n.
+    readonly HashSet<Ev.Hit> sparkless = new();
+    readonly Dictionary<(string?, School), (double X, double Z, int N, int Crits)> sparkMid = new();
+    readonly List<(Ev.Hit H, double D)> sparkRank = new();
+    void HitSparkBudget(IReadOnlyList<CombatEvent> events)
+    {
+        sparkless.Clear();
+        sparkMid.Clear();
+        foreach (var ev in events)
+            if (ev is Ev.Hit { Dot: false, Blocked: false, ByFlare: false } h)
+            {
+                var k = (h.Art, h.School);
+                sparkMid.TryGetValue(k, out var m);
+                sparkMid[k] = (m.X + h.X, m.Z + h.Z, m.N + 1, m.Crits + (h.Crit ? 1 : 0));
+            }
+        int budget = (int)P7D["hit_budget.n", 4];
+        foreach (var (k, m) in sparkMid)
+        {
+            if (m.N <= budget) continue;
+            double cx = m.X / m.N, cz = m.Z / m.N;
+            sparkRank.Clear();
+            foreach (var ev in events)
+                if (ev is Ev.Hit { Dot: false, Blocked: false, ByFlare: false, Crit: false } h && h.Art == k.Item1 && h.School == k.Item2)
+                    sparkRank.Add((h, (h.X - cx) * (h.X - cx) + (h.Z - cz) * (h.Z - cz)));
+            sparkRank.Sort((p, q) => p.D.CompareTo(q.D));
+            for (int i = Math.Max(0, budget - m.Crits); i < sparkRank.Count; i++) sparkless.Add(sparkRank[i].H);
+        }
+    }
+
     public void Burst(Vector3 at, School school, int n, float speed, float up = 1.5f, float size = 0.09f, float life = 0.45f, float gravity = 6)
     {
         var pal = Palette.Of(school);
@@ -1222,6 +1255,7 @@ public partial class BattleFx : Node3D
         }
         WgLineSwings(events);
         P7Pre(events);
+        HitSparkBudget(events);
         foreach (var ev in events)
         {
             switch (ev)
@@ -1278,7 +1312,7 @@ public partial class BattleFx : Node3D
                         if (wgd > 0) { int tg = e.Target; double am = e.Amount, mh = e.MaxHp; bool cr = e.Crit; var wat = at; WgLater(wgd, () => { WgNumberLog(tg); Hits.Tally(tg, wat, am, mh, cr); }); }
                         else Hits.Tally(e.Target, at, e.Amount, e.MaxHp, e.Crit);
                     }
-                    if (Flare.HushesHitSparks) { }
+                    if (Flare.HushesHitSparks || sparkless.Contains(e)) { }
                     else if (e.Art != null) Impact(e, at);
                     else if (BashStruck(e, at)) { }
                     else Burst(at, e.School, e.Crit ? 10 : 4, e.Crit ? 5 : 3, size: e.Crit ? 0.12f : 0.08f);
