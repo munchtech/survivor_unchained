@@ -955,7 +955,7 @@ public partial class LampBoard : Control
                 ink.Glyphs.Add(new BoardInk.Mark(g, new Rect2(at - Vector2.One * gs / 2, Vector2.One * gs), col with { A = col.A * a }));
             }
             if (nd.Kind == "link" && state[i] == 0 && LampAsk.LinkPick(ch, nd.Id) is { } pick && Weapons.All.TryGetValue(pick, out var wd))
-                ink.Glyphs.Add(new BoardInk.Mark(wd.Art, new Rect2(at + new Vector2(R + 6, -9), new Vector2(18, 18)), LampInk.Gold with { A = a }));
+                ink.Glyphs.Add(new BoardInk.Mark(Glyphs.ForSkill(wd.Id, wd.Art), new Rect2(at + new Vector2(R + 6, -9), new Vector2(18, 18)), LampInk.Gold with { A = a }));
             if (d != null && nd.Kind is "notable" or "blue" or "entry" or "ultimate" && d.Name != "")
             {
                 var text = d.Name.ToUpperInvariant();
@@ -972,7 +972,7 @@ public partial class LampBoard : Control
     }
 
     static string? FeedGlyph(LampDef? d) =>
-        d is { Feeds.Length: > 0 } && Weapons.All.TryGetValue(d.Feeds[0], out var w) && w.Art != "" ? w.Art : null;
+        d is { Feeds.Length: > 0 } && Weapons.All.TryGetValue(d.Feeds[0], out var w) && w.Art != "" ? Glyphs.ForSkill(w.Id, w.Art) : null;
 
     /* ------------------------------------------------------------- the focus card -- */
 
@@ -995,20 +995,20 @@ public partial class LampBoard : Control
         var feeds = new List<(string, bool)>();
         var names = new List<string>();
         foreach (var f in d?.Feeds ?? [])
-            if (Weapons.All.TryGetValue(f, out var wd)) { feeds.Add((wd.Art, carried.Contains(f))); names.Add(wd.Name); }
+            if (Weapons.All.TryGetValue(f, out var wd)) { feeds.Add((Glyphs.ForSkill(f, wd.Art), carried.Contains(f))); names.Add(wd.Name); }
         string? feedsText = names.Count > 0 ? "Feeds " + string.Join(", ", names) : null;
         string stateLine;
         var stateC = LampInk.Gold;
         var prompts = new List<(string, string)>();
         int spare = LampBook.Spare(ch, w);
-        bool night = w?.Time == TimeOfDay.Night;
+        bool night = w?.Arena != null;   // read-only (the arena)
         if (state[i] == 0)
         {
             if (LampAsk.Sleeps(ch, nd.Id) is { } sl)
                 stateLine = $"Sleeps: carry {string.Join(" or ", sl.Skills.Select(s => Weapons.All.TryGetValue(s, out var x) ? x.Name : s))} to wake it";
             else if (Visit?.IsNew(nd.Id) == true) stateLine = "Lit this visit: can go out until you close";
             else if (AtPost && !night) stateLine = "Lit  ·  it can go out here";
-            else stateLine = "Lit  ·  lamps go out at a town’s lamp-post, by day";
+            else stateLine = "Lit  ·  lamps go out at a lamp-post";
             if (!night && (AtPost || Visit?.IsNew(nd.Id) == true) && LampBook.CanUnlight(ch, nd.Id) is LampNo.None or LampNo.Holds)
                 prompts.Add(pad ? ("X", "Hold: put out") : ("Right-click", "Hold: put out"));
         }
@@ -1031,7 +1031,7 @@ public partial class LampBoard : Control
         if (night || !Safe)
         {
             prompts.RemoveAll(p => p.Item2.StartsWith("Light"));
-            if (state[i] != 0) stateLine = night ? stateLine + "  ·  by night the board is read-only" : stateLine + "  ·  lamps are lit out of a fight";
+            if (state[i] != 0) stateLine = night ? stateLine + "  ·  in the arena the board is read-only" : stateLine + "  ·  lamps are lit out of a fight";
         }
         if (Said != null && i == focus) { stateLine = Said; stateC = LampInk.Gate; }
         string? fires = null;
@@ -1039,7 +1039,7 @@ public partial class LampBoard : Control
         {
             var pick = LampAsk.LinkPick(ch, nd.Id);
             string pn = pick != null && Weapons.All.TryGetValue(pick, out var pw) ? pw.Name : "Light my way’s pick";
-            fires = $"Fires: {pn} (change: {(pad ? "A" : "Click")})";
+            fires = night ? $"Fires: {pn}" : $"Fires: {pn} (change: {(pad ? "A" : "Click")})";   // (read-only: a click only denies)
         }
         // (a small lamp or an attribute has no name: the card's title row collapses, the place line leads)
         return new LampCardText(d != null ? d.Name : nd.Id, chip, chipC, place, d?.Text ?? "", feeds, feedsText,
@@ -1146,8 +1146,9 @@ public partial class LampBoard : Control
 
     /// <summary>The visit (the page keeps it while the screen is open: §9's session undo).</summary>
     public LampSession Visit = null!;
-    /// <summary>By night the board is read-only; in a fight nothing is lit; AtPost: by day at a town's lamp-post.</summary>
-    public bool Night, Safe = true, AtPost;
+    /// <summary>In the arena the board is read-only; in a fight nothing is lit; AtPost: not in the arena, where
+    /// layouts are open (LampBook.LayoutsOpen: in a town, or at a lit lamp-post she stands at out of a fight).</summary>
+    public bool ReadOnly, Safe = true, AtPost;
     /// <summary>The lamps lit changed (the header's count, the tabs after a switch).</summary>
     public event Action? LampsChanged;
     /// <summary>The last refusal's words (null: none).</summary>
@@ -1341,7 +1342,7 @@ public partial class LampBoard : Control
         if (why != null) GD.Print($"LAMPBOARD denied: {why}");
     }
 
-    string? Refusal() => Night ? "By night the board is read-only" : !Safe ? "Lamps are lit out of a fight" : Busy ? "" : null;
+    string? Refusal() => ReadOnly ? "In the arena the board is read-only" : !Safe ? "Lamps are lit out of a fight" : Busy ? "" : null;
 
     /// <summary>A or a click: light the focus; a far lamp, its whole path (as previewed) if the points allow.</summary>
     public bool LightFocus()
@@ -1378,14 +1379,14 @@ public partial class LampBoard : Control
     public void BeginOut(Func<bool> held)
     {
         if (focus < 0 || Busy) return;
-        var no = Visit.CanOut(M.Nodes[focus].Id, Night, AtPost, out var order);
+        var no = Visit.CanOut(M.Nodes[focus].Id, ReadOnly, AtPost, out var order);
         if (no != OutNo.None)
         {
             Deny(no switch
             {
-                OutNo.Night => "By night the board is read-only",
+                OutNo.Night => "In the arena the board is read-only",
                 OutNo.Free => "This lamp is hers for good",
-                OutNo.Place => "Lamps go out by day at a town’s lamp-post",
+                OutNo.Place => "Lamps go out at a lamp-post",
                 OutNo.Holds => AtPost ? "Others hang on it" : "Lamps lit after it hang on it: put those out first",
                 _ => null,
             });
@@ -1408,14 +1409,14 @@ public partial class LampBoard : Control
         Show(holdOrder.Select(x => (M.Index[x], false)), holdOrder.Count > 1 ? Math.Min(0.06, 0.3 / holdOrder.Count) : 0);
     }
 
-    /// <summary>1 2 3 or a coin: take up another layout (by day at a town's lamp-post). Out from the tips (0.25 s), in
+    /// <summary>1 2 3 or a coin: take up another layout (not in the arena, where LampBook.LayoutsOpen). Out from the tips (0.25 s), in
     /// from her hearth (0.45 s).</summary>
     public bool Switch(int index, string? zone)
     {
         if (index == LampBook.State(ch).Active || Busy) return false;
-        if (Night) { Deny("By night the board is read-only"); return false; }
+        if (ReadOnly) { Deny("In the arena the board is read-only"); return false; }
         var before = lit.ToList();
-        if (!LampBook.Switch(ch, index, w, zone)) { Deny("Layouts change by day at a town’s lamp-post"); return false; }
+        if (!LampBook.Switch(ch, index, w, zone)) { Deny("Layouts change at a lamp-post"); return false; }
         var after = LampBook.Now(ch).Lit.Where(M.Index.ContainsKey).Select(x => M.Index[x]).ToHashSet();
         var outs = before.Where(i => !after.Contains(i)).OrderByDescending(i => steps[i] == int.MaxValue ? 0 : steps[i]).ToList();
         var hs = M.Steps([Hearth]);

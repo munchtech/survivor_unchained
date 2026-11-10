@@ -7,7 +7,7 @@ using SurvivorUnchained.World;
 namespace SurvivorUnchained.Ui;
 
 /// <summary>A mark on the minimap: where, what kind, and its name.</summary>
-public readonly record struct MiniMark(double X, double Z, MarkKind Kind, string Label);
+public readonly record struct MiniMark(double X, double Z, MarkKind Kind, string Label, bool Active = false);
 
 /// <summary>
 /// The corner map (docs/UI_DESIGN.md, "Minimap"): the zone's own drawing
@@ -23,7 +23,7 @@ public partial class Minimap : Control
     /// <summary>The disc's size on screen, and how many metres it spans.</summary>
     public const float Diameter = 200, Span = 120;
     // (Names made once, not a new one every showing for the collector.)
-    static readonly StringName CentreName = "centre", DimName = "dim";
+    static readonly StringName CentreName = "centre";
     readonly ColorRect disc;
     readonly ShaderMaterial mat;
     readonly Control marks;
@@ -42,20 +42,16 @@ public partial class Minimap : Control
         AddChild(disc);
         marks = new Control { Size = new Vector2(Diameter, Diameter), MouseFilter = MouseFilterEnum.Ignore };
         AddChild(marks);
-        you = new Polygon2D
+        // Where she is: a bone-white arrow with an ink edge (M4 lead 9, fix C: it reads on the vellum and on the dark
+        // unexplored plate alike; the painted red minimap/you.png sank into both and is no longer shown).
+        var arrow = new[] { new Vector2(0, -10), new Vector2(7.5f, 8), new Vector2(0, 3.5f), new Vector2(-7.5f, 8) };
+        you = new Polygon2D { Polygon = arrow, Color = new Color("#efe6d2"), Position = new Vector2(Diameter / 2, Diameter / 2) };
+        you.AddChild(new Line2D
         {
-            Polygon = new[] { new Vector2(0, -9), new Vector2(7, 7), new Vector2(0, 3), new Vector2(-7, 7) },
-            Color = new Color("#b8321e"), Position = new Vector2(Diameter / 2, Diameter / 2),
-        };
+            Points = arrow, Closed = true, Width = 4.5f, DefaultColor = new Color("#241c12"), JointMode = Line2D.LineJointMode.Round,
+            ShowBehindParent = true, Antialiased = true,
+        });
         AddChild(you);
-        // A painted arrow (minimap/you.png, pointing up, 24 by 24 shown) in place of the drawn one.
-        if (UiArt.Art("minimap/you.png") is { } arrow)
-        {
-            you.Color = Colors.Transparent;
-            var a = new TextureRect { Texture = arrow, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, MouseFilter = MouseFilterEnum.Ignore, Size = arrow.GetSize() };
-            a.Position = -a.Size / 2;
-            you.AddChild(a);
-        }
         // The bezel: the cuffs' iron round the disc, the day's path riding over its top (Bezel).
         bezel = new Bezel(this);
         AddChild(bezel);
@@ -126,8 +122,8 @@ public partial class Minimap : Control
             }
             else
             {
-                DrawCircle(c + new Vector2(0, 4), r + Band + 3, new Color(0, 0, 0, 0.35f));
-                DrawCircle(c, r, new Color(0, 0, 0, 0));
+                // (M4 lead 11: a ring, from r+4 to r+Band+3 about a centre 4 px low, never over the lens)
+                DrawArc(c + new Vector2(0, 4), r + 4 + (Band - 1) / 2f, 0, Mathf.Tau, 96, new Color(0, 0, 0, 0.35f), Band - 1, true);
                 Cuff.Band(this, c, r, Band);
             }
             // North: a small ember notch on the iron's top.
@@ -181,6 +177,39 @@ public partial class Minimap : Control
         };
     }
 
+    static readonly Dictionary<string, ImageTexture> keeps = new();
+
+    /// <summary>The zone's road keep (S2), built once on the CPU from the drawing's pixels as the shader classifies them.</summary>
+    ImageTexture KeepFor(string id, Texture2D drawing)
+    {
+        if (keeps.TryGetValue(id, out var hit)) return hit;
+        var img = drawing.GetImage();
+        if (img.IsCompressed()) img.Decompress();
+        img.Convert(Image.Format.Rgba8);
+        int w = img.GetWidth(), h = img.GetHeight();
+        var data = img.GetData();
+        var road = new bool[w * h];
+        for (int j = 0; j < h; j++)
+            for (int i = 0; i < w; i++)
+            {
+                int o = (j * w + i) * 4;
+                float u = (i + 0.5f) / w - 0.5f, v = (j + 0.5f) / h - 0.5f;
+                float t = Math.Clamp((MathF.Sqrt(u * u + v * v) - 0.3f) / 0.42f, 0, 1);
+                float age = t * t * (3 - 2 * t) * 0.5f;
+                float r = Math.Clamp((data[o] / 255f - 0.275f * age) / (1 - age), 0, 1), g = Math.Clamp((data[o + 1] / 255f - 0.157f * age) / (1 - age), 0, 1);
+                float b = Math.Clamp((data[o + 2] / 255f - 0.055f * age) / (1 - age), 0, 1);
+                road[j * w + i] = (r - g) / Math.Max(r + g + b, 0.05f) > 0.0505f;
+            }
+        // minimap pixels per drawing pixel: Diameter px show Span metres, the drawing is extent metres across w px
+        float scale = Diameter / Span * extent / w;
+        var dropped = new List<int>();
+        var keep = RoadKeep.Build(road, w, h, scale, 16, 3, dropped);
+        GD.Print($"minimap: road keep for {id}: {dropped.Count} islands dropped (sizes px: {string.Join(", ", dropped)})");
+        var tex = ImageTexture.CreateFromImage(Image.CreateFromData(w, h, false, Image.Format.R8, keep));
+        keeps[id] = tex;
+        return tex;
+    }
+
     /// <summary>A new zone: its drawing and how wide it is.</summary>
     public void Zone(string id, Texture2D drawing, float ext)
     {
@@ -189,12 +218,14 @@ public partial class Minimap : Control
         extent = Math.Max(1, ext);
         seenNow = "";
         mat.SetShaderParameter("drawing", drawing);
+        mat.SetShaderParameter("road_keep", KeepFor(id, drawing));
         mat.SetShaderParameter("span", Span / extent);
         GD.Print($"minimap: zone {id} extent {extent:0} span {Span / extent:0.000}: the drawing's edge fades into the paper over 28 px (+-6 px wander), darkening over 70 px beyond");
     }
 
-    /// <summary>Where the survivor is and what is known, a few times a second.</summary>
-    public void Show(string seen, int n, IEnumerable<MiniMark> list, double px, double pz, double facing, bool night)
+    /// <summary>Where the survivor is and what is known, a few times a second. Nothing is built here once the marks'
+    /// icons exist (M4 lead 5: it built a list, a set and an enumerator each showing, about 370 B).</summary>
+    public void Show(string seen, int n, List<MiniMark> list, double px, double pz, double facing, bool night)
     {
         if (seen != seenNow)
         {
@@ -207,50 +238,70 @@ public partial class Minimap : Control
             else maskTex.Update(mask);
         }
         mat.SetShaderParameter(CentreName, new Vector2((float)(px / extent + 0.5), (float)(pz / extent + 0.5)));
-        mat.SetShaderParameter(DimName, night ? 0.62f : 0.95f);
+        // (night is not shown on the disc: the HUD does not darken at night, and the map is the same map; M4 lead 9, fix C)
         you.Rotation = (float)(Math.PI - facing);
         // The marks are kept and reused, not freed and built anew each time (MR4, the HUD's redraws were
         // 3.4 ms a frame): one pool per look (kind and size; the people's dots), shown in order, the rest hidden.
-        var used = new List<Control>();
+        var used = spareMarks;
+        used.Clear();
         pooledUsed.Clear();
         float r = Diameter / 2, scale = Diameter / Span;
-        foreach (var m in list)
-        {
-            var at = new Vector2((float)(m.X - px), (float)(m.Z - pz)) * scale;
-            bool guide = m.Kind is MarkKind.Quest or MarkKind.Turn or MarkKind.Exit or MarkKind.Goal;
-            bool off = at.Length() > r - 12;
-            if (off && !guide) continue;
-            // Off the disc, what is sought waits on the rim, pointing the way.
-            if (off) at = at.Normalized() * (r - 12);
-            // People are many in a town: a dot each; what is sought keeps its sign.
-            var key = m.Kind == MarkKind.Person ? (MarkKind.Person, 0) : (m.Kind, m.Kind == MarkKind.Goal ? (off ? 21 : 25) : off ? 15 : 18);
-            if (!pool.TryGetValue(key, out var spare)) pool[key] = spare = new List<Control>();
-            pooledUsed.TryGetValue(key, out int taken);
-            pooledUsed[key] = taken + 1;
-            Control icon;
-            if (taken < spare.Count) icon = spare[taken];
-            else
+        bool trace = Args.Has("map-trace");
+        System.Text.StringBuilder? tb = trace ? new System.Text.StringBuilder() : null;
+        // (objectives are added last, so they draw over the other pins)
+        for (int pass = 0; pass < 2; pass++)
+            for (int li = 0; li < list.Count; li++)
             {
-                icon = m.Kind == MarkKind.Person ? Dot(new Color("#3a2414")) : Mark(m.Kind, key.Item2);
-                spare.Add(icon);
-                marks.AddChild(icon);
+                var m = list[li];
+                bool objective = m.Kind == MarkKind.Quest || (m.Kind is MarkKind.Goal or MarkKind.Exit && m.Active);
+                if (objective != (pass == 1)) continue;
+                var at = new Vector2((float)(m.X - px), (float)(m.Z - pz)) * scale;
+                bool guide = m.Kind is MarkKind.Quest or MarkKind.Turn or MarkKind.Exit or MarkKind.Goal;
+                bool off = at.Length() > r - 12;
+                if (off && !guide) { tb?.Append($"{m.Kind} '{m.Label}' pin skipped; "); continue; }
+                // Off the disc, what is sought waits on the rim, pointing the way.
+                if (off) at = at.Normalized() * (r - 12);
+                tb?.Append($"{m.Kind} '{m.Label}' {(objective ? "objective" : "pin")} {(off ? "rim" : "on")}; ");
+                // People are many in a town: a dot each; what is sought keeps its sign.
+                var key = m.Kind == MarkKind.Person ? (MarkKind.Person, 0, false) : objective ? (m.Kind, 24, true) : (m.Kind, m.Kind == MarkKind.Goal ? (off ? 21 : 25) : 18, false);
+                if (!pool.TryGetValue(key, out var spare)) pool[key] = spare = new List<Control>();
+                pooledUsed.TryGetValue(key, out int taken);
+                pooledUsed[key] = taken + 1;
+                Control icon;
+                if (taken < spare.Count) icon = spare[taken];
+                else
+                {
+                    icon = m.Kind == MarkKind.Person ? Dot(new Color("#3a2414")) : objective ? new GoalDiamond() : m.Kind == MarkKind.Exit ? new ExitBead() : Mark(m.Kind, key.Item2);
+                    spare.Add(icon);
+                    marks.AddChild(icon);
+                }
+                // (set when they change: a mark that has not moved on the disc is left alone)
+                var pos = new Vector2(r, r) + at - icon.CustomMinimumSize / 2;
+                if (icon.Position != pos) icon.Position = pos;
+                var mod = off && !objective ? Colors.White with { A = 0.85f } : Colors.White;
+                if (icon.Modulate != mod) icon.Modulate = mod;
+                if (!icon.Visible) icon.Visible = true;
+                used.Add(icon);
             }
-            icon.Position = new Vector2(r, r) + at - icon.CustomMinimumSize / 2;
-            icon.Modulate = off ? Colors.White with { A = 0.85f } : Colors.White;
-            icon.Visible = true;
-            used.Add(icon);
+        if (tb != null)
+        {
+            var line = "minimap marks: " + tb;
+            if (line != lastTrace) { lastTrace = line; GD.Print(line); }
         }
         // Draw order is the list's, as when each was built in turn.
         for (int i = 0; i < used.Count; i++)
             if (marks.GetChild(i) != used[i]) marks.MoveChild(used[i], i);
-        var keep = new HashSet<Control>(used);
-        foreach (var c in shownMarks) if (!keep.Contains(c)) c.Visible = false;
+        // (what was shown and is not now; the two lists change places, neither is made anew)
+        for (int i = 0; i < shownMarks.Count; i++)
+            if (!used.Contains(shownMarks[i])) shownMarks[i].Visible = false;
+        spareMarks = shownMarks;
         shownMarks = used;
     }
 
-    readonly Dictionary<(MarkKind, int), List<Control>> pool = new();
-    readonly Dictionary<(MarkKind, int), int> pooledUsed = new();
-    List<Control> shownMarks = new();
+    string lastTrace = "";
+    readonly Dictionary<(MarkKind, int, bool), List<Control>> pool = new();
+    readonly Dictionary<(MarkKind, int, bool), int> pooledUsed = new();
+    List<Control> shownMarks = new(), spareMarks = new();
 
     /// <summary>A map mark's look: painted (icons/map/KIND.png) or its glyph in its ink.</summary>
     public static Control Mark(MarkKind kind, int size)
@@ -278,6 +329,54 @@ public partial class Minimap : Control
         return holder;
     }
 
+    /// <summary>The objective's pin: the tracker's diamond (GameHud StepMark), heavier: an open bone diamond on an ink edge, ink-dimmed centre.</summary>
+    /// <summary>M4 lead 13 (r3b S3): an exit that is not the objective, as a lesser pin that reads at 1:1: a bone bead with
+    /// an ink edge and one ink shape, an arch (a gate in a wall) in 2 px strokes, the diamond's hand. The painted exit.png
+    /// went to a grey-green blot at 14 px.</summary>
+    internal partial class ExitBead : Control
+    {
+        public ExitBead()
+        {
+            CustomMinimumSize = new Vector2(18, 18);
+            Size = new Vector2(18, 18);
+            MouseFilter = MouseFilterEnum.Ignore;
+        }
+
+        public override void _Draw()
+        {
+            var c = Size / 2;
+            var ink = new Color("#241c12");
+            DrawCircle(c, 8.6f, ink, true, -1, true);
+            DrawCircle(c, 7.4f, new Color("#e8dcc4"), true, -1, true);
+            // the arch: two posts and a round head, the way out
+            float w = 3.2f, top = -0.6f, foot = 4.6f;
+            DrawLine(c + new Vector2(-w, foot), c + new Vector2(-w, top), ink, 2.1f, true);
+            DrawLine(c + new Vector2(w, foot), c + new Vector2(w, top), ink, 2.1f, true);
+            DrawArc(c + new Vector2(0, top), w, Mathf.Pi, Mathf.Tau, 12, ink, 2.1f, true);
+            DrawLine(c + new Vector2(-w - 1.6f, foot), c + new Vector2(w + 1.6f, foot), ink, 1.6f, true);
+        }
+    }
+
+    internal partial class GoalDiamond : Control
+    {
+        public GoalDiamond()
+        {
+            CustomMinimumSize = new Vector2(24, 24);
+            Size = new Vector2(24, 24);
+            MouseFilter = MouseFilterEnum.Ignore;
+        }
+
+        public override void _Draw()
+        {
+            var c = Size / 2;
+            var d = new[] { c + new Vector2(0, -7), c + new Vector2(7, 0), c + new Vector2(0, 7), c + new Vector2(-7, 0) };
+            var closed = new[] { d[0], d[1], d[2], d[3], d[0] };
+            DrawColoredPolygon(d, new Color(0.03f, 0.02f, 0.01f, 0.55f));
+            DrawPolyline(closed, new Color("#241c12"), 5.5f, true);
+            DrawPolyline(closed, new Color("#e8dcc4"), 2.4f, true);
+        }
+    }
+
     static Control Dot(Color ink)
     {
         var p = new Panel { CustomMinimumSize = new Vector2(8, 8), Size = new Vector2(8, 8), MouseFilter = MouseFilterEnum.Ignore };
@@ -298,33 +397,83 @@ public partial class Minimap : Control
         shader_type canvas_item;
         uniform sampler2D drawing : filter_linear, repeat_disable;
         uniform sampler2D seen : filter_linear, repeat_disable;
+        uniform sampler2D road_keep : filter_linear, repeat_disable, hint_default_white;
         uniform vec2 centre = vec2(0.5);
         uniform float span = 0.2;
-        uniform float dim = 1.0;
+        float roadMask(vec2 uv) {
+            vec3 drawn = texture(drawing, uv).rgb;
+            float age = smoothstep(0.3, 0.72, length(uv - 0.5)) * 0.5;
+            drawn = clamp((drawn - vec3(0.275, 0.157, 0.055) * age) / (1.0 - age), 0.0, 1.0);
+            // (S2) road_keep: the road pixels that are road, not dirt-hued ground (a camp yard) under 16 px across (RoadKeep)
+            return smoothstep(0.047, 0.054, (drawn.r - drawn.g) / max(drawn.r + drawn.g + drawn.b, 0.05)) * texture(road_keep, uv).r;
+        }
+        // (M4 lead 12: the lattice hash is sin-free: fract(sin(dot)*43758) turns a 1-ulp difference between two evaluations of the
+        // same lattice point (fma or not, 0.001 at args of 14000) into a 0.1 to 0.25 jump, so the warp tore along lattice lines)
+        float hash2(vec2 p) {
+            vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+            p3 += dot(p3, p3.yzx + 33.33);
+            return fract((p3.x + p3.y) * p3.z);
+        }
+        float vnoise(vec2 p) {
+            vec2 i0 = floor(p), f0 = fract(p);
+            f0 = f0 * f0 * (3.0 - 2.0 * f0);
+            return mix(mix(hash2(i0), hash2(i0 + vec2(1.0, 0.0)), f0.x), mix(hash2(i0 + vec2(0.0, 1.0)), hash2(i0 + vec2(1.0, 1.0)), f0.x), f0.y);
+        }
         void fragment() {
             vec2 d = UV - 0.5;
             float r = length(d) * 2.0;
             vec2 uv = centre + d * span;
-            vec3 paper = vec3(0.85, 0.796, 0.66);
-            vec3 col = texture(drawing, uv).rgb;
-            float s = texture(seen, uv).r;
-            // Unwalked ground is blank parchment, as on the big map; beyond the zone's edge, darker.
-            col = mix(col, paper * 0.97, 1.0 - smoothstep(0.2, 0.7, s));
-            // Beyond the drawing's edge, darker paper; the edge itself never shows (UI 20: a dead-straight line where the
-            // drawing stopped): the drawing fades into the paper over ~28 screen px, the line wandering +-6 px along
-            // its length, then the paper darkens slowly away from it.
+            // (M4 lead 9, fix C) a map, not a dark lens. The plate and the unexplored ground stay the HUD's own dark
+            // (#1c1713 at 0.86); explored ground is worn vellum (120,105,80), flat as paper (the land's light and dark
+            // ride on it within +-8); what is drawn on it is ink at full contrast (36,28,18): the roads (the drawing's
+            // dirt, told by its hue once the sheet's aged edge is taken back out) and, as a wash, the water.
+            vec3 panel = vec3(0.110, 0.090, 0.075);
+            // (M4 lead 11: the bezel's fallback shadow was a filled disc over the lens, which dimmed it by about 0.64
+            // and was compensated here by K; the shadow is a ring now and K is gone: the colors are as meant)
+            // (the plate was seen through that veil: a2 = 1 - 0.65 * (1 - 0.86) = 0.909; panel2 = panel * 0.65 * 0.86 / a2 = panel * 0.615)
+            vec3 panel2 = panel * 0.615;
+            vec3 vellum = vec3(0.471, 0.412, 0.314);
+            vec3 ink = vec3(0.141, 0.110, 0.071);
+            vec3 roadFill = vec3(1.0, 0.906, 0.726) * 0.745;
+            vec3 roadEdge = vec3(36.0, 28.0, 18.0) / 255.0;
             float px = max(fwidth(uv.x), fwidth(uv.y));
+            vec3 drawn = texture(drawing, uv).rgb;
+            float age = smoothstep(0.3, 0.72, length(uv - 0.5)) * 0.5;
+            drawn = clamp((drawn - vec3(0.275, 0.157, 0.055) * age) / (1.0 - age), 0.0, 1.0);
+            float sum = max(drawn.r + drawn.g + drawn.b, 0.05);
+            // The road: its total width is the mask (the dirt hue) as before, its lower threshold raised so the
+            // drawing's fine contour lines no longer pass; the fill is the mask shrunk by 1 px, the ring left is the ink edge.
+            float road = roadMask(uv);
+            float core = min(min(roadMask(uv + vec2(px, 0.0)), roadMask(uv - vec2(px, 0.0))), min(roadMask(uv + vec2(0.0, px)), roadMask(uv - vec2(0.0, px))));
+            core = min(core, road);
+            float water = smoothstep(0.030, 0.070, (drawn.b - drawn.r) / sum);
+            float luma = dot(drawn, vec3(0.299, 0.587, 0.114));
+            vec3 seenCol = vellum + vec3(clamp((luma - 0.72) * 0.25, -0.03, 0.03));
+            seenCol = mix(seenCol, mix(vellum, ink, 0.55) + vec3(-0.02, 0.01, 0.03), water);
+            seenCol = mix(seenCol, roadEdge, road);
+            seenCol = mix(seenCol, roadFill, core);
+            // The fog's edge: the explored grid (cells of about 10 px here) is blurred over its neighbours, not drawn
+            // as cells, and crossed in 6 to 8 px: no stair steps.
+            vec2 cell = 1.0 / vec2(textureSize(seen, 0));
+            // (M4 lead 11: the lookup is warped in map-anchored pixels, so no straight side survives and the edge does not swim)
+            vec2 wq = uv / max(px, 1e-6);
+            vec2 wv = vec2(vnoise(wq / 26.0), vnoise(wq / 26.0 + vec2(17.3, 9.1))) - 0.5;
+            wv += 0.5 * (vec2(vnoise(wq / 11.0 + vec2(5.1, 2.7)), vnoise(wq / 11.0 + vec2(31.7, 13.9))) - 0.5);
+            vec2 fuv = uv + wv * 11.0 * px;
+            float s = 0.0;
+            for (int j = -1; j <= 1; j++)
+                for (int i = -1; i <= 1; i++)
+                    s += texture(seen, fuv + vec2(float(i), float(j)) * cell).r * (i == 0 ? 2.0 : 1.0) * (j == 0 ? 2.0 : 1.0);
+            float known = smoothstep(0.23, 0.77, s / 16.0);
+            // Beyond the drawing's edge the plate is the panel dark; the edge itself never shows (UI 20: a dead-straight
+            // line where the drawing stopped): the drawing fades into it over ~28 screen px, the line wandering +-6 px.
             float e = min(min(uv.x, uv.y), min(1.0 - uv.x, 1.0 - uv.y)) / max(px, 1e-6);
-            vec2 q = uv / max(px, 1e-6) / 40.0;
-            vec2 i0 = floor(q), f0 = fract(q);
-            f0 = f0 * f0 * (3.0 - 2.0 * f0);
-            float h00 = fract(sin(dot(i0, vec2(127.1, 311.7))) * 43758.5453), h10 = fract(sin(dot(i0 + vec2(1.0, 0.0), vec2(127.1, 311.7))) * 43758.5453);
-            float h01 = fract(sin(dot(i0 + vec2(0.0, 1.0), vec2(127.1, 311.7))) * 43758.5453), h11 = fract(sin(dot(i0 + vec2(1.0, 1.0), vec2(127.1, 311.7))) * 43758.5453);
-            e += (mix(mix(h00, h10, f0.x), mix(h01, h11, f0.x), f0.y) - 0.5) * 12.0;
-            vec3 beyond = mix(paper * 0.97, paper * 0.6, smoothstep(0.0, 70.0, -e));
-            col = mix(beyond, col, smoothstep(-4.0, 28.0, e));
-            col *= mix(1.0, 0.86, smoothstep(0.7, 1.0, r)) * dim;
-            COLOR = vec4(col, 1.0 - smoothstep(0.965, 1.0, r));
+            e += (vnoise(uv / max(px, 1e-6) / 40.0) - 0.5) * 12.0;
+            known *= smoothstep(-4.0, 28.0, e);
+            vec3 col = mix(panel2, seenCol, known);
+            col *= mix(1.0, 0.86, smoothstep(0.7, 1.0, r));
+            float ground = mix(0.909, 1.0, known);
+            COLOR = vec4(col, ground * (1.0 - smoothstep(0.965, 1.0, r)));
         }
         """;
 }

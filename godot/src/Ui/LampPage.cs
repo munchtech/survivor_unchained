@@ -55,16 +55,17 @@ public partial class LampPage : Control
         MouseFilter = MouseFilterEnum.Pass;
         CustomMinimumSize = new Vector2(0, Height);
         SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        bool night = w?.Time == TimeOfDay.Night;
+        bool night = w?.Time == TimeOfDay.Night;   // the look (the world's clock)
+        bool readOnly = w?.Arena != null;          // the board's rule: read-only in the arena only
         // C: the page's own backdrop under everything on it (no townsfolk through the board; her side untouched)
         if (!wide) AddChild(backdrop = new LampWindow(night));
         AddChild(Header = new LampHeader(ch, w, zone, wide));
         AddChild(Board = new LampBoard(ch, w) { Wide = wide });
         if (wide) Board.Fe = new Vector4(0, 40, 0, FieldBottom - 900);
         Board.Visit = visit ?? new LampSession(ch);
-        Board.Night = night;
+        Board.ReadOnly = readOnly;
         Board.Safe = safe;
-        Board.AtPost = !night && LampBook.LayoutsOpen(w, zone);
+        Board.AtPost = !readOnly && LampBook.LayoutsOpen(w, zone);
         AddChild(Wick = new LampWick(ch) { Visible = false, Safe = safe });
         AddChild(Tabs = new WickTabs(ch));
         if (wide) { Wick.SetWide(wickRect.Size); Tabs.SetSeats(seats ?? new()); }
@@ -74,8 +75,8 @@ public partial class LampPage : Control
         AddChild(prompts);
         Tabs.Clicked += OpenWick;
         Wick.Picked += sk => { Wick.Open(sk); SetPrompts(); };
-        // by night the board is read-only and the night's growth is the wicks: the page opens on the first one
-        openAtStart = night;
+        // in the arena the board is read-only and the growth is the wicks: the page opens on the first one
+        openAtStart = readOnly;
         layoutShown = LampBook.State(ch).Active;
         Board.LampsChanged += Changed;
         Header.Hovered += i => ShowCoinCard(i, false);
@@ -164,7 +165,7 @@ public partial class LampPage : Control
 
     /* ------------------------------------------------------------- the wick (§8, §16) -- */
 
-    /// <summary>The foot row (§16, the build lead's input of 2 November): by day the board's, with the wick open the
+    /// <summary>The foot row (§16, the build lead's input of 2 November): out of the arena the board's, with the wick open the
     /// wick's.</summary>
     Container Prompts()
     {
@@ -173,11 +174,7 @@ public partial class LampPage : Control
         {
             var v = new VBoxContainer { MouseFilter = MouseFilterEnum.Ignore, Alignment = BoxContainer.AlignmentMode.End };
             v.AddThemeConstantOverride("separation", 8);
-            var rows = wickOpen
-                ? pad ? new[] { new[] { ("A", "Plan") }, new[] { ("Y", "Light my way") }, new[] { ("B", "Back") } }
-                      : new[] { new[] { ("Click", "Plan") }, new[] { ("Space", "Light my way") }, new[] { ("Tab", "Back") } }
-                : pad ? new[] { new[] { ("LT", ""), ("RT", "Zoom"), ("D-pad", "Next lamp") }, new[] { ("L3", "Home"), ("R3", "The book") } }
-                      : new[] { new[] { ("Wheel", "Zoom") }, new[] { ("H", "Home"), ("Z", "The book") } };
+            var rows = LampPrompts.WideFootRows(pad, wickOpen, Board.ReadOnly, wickSafe);
             foreach (var r in rows)
             {
                 var h = LampInk.Row(r, pad, 15, 16);
@@ -191,15 +188,15 @@ public partial class LampPage : Control
             // §9: the pad's focus in the header (the lamp card hides): the focused item's prompts and the way back, so Y
             // never means both "Copy to III" and "Light my way"
             var hp = Header.Focused <= 2 ? CoinWords(Header.Focused, pad).Prompts
+                : Header.Focused == 3 && Board.ReadOnly ? []   // (read-only: Light my way only denies)
                 : [(pad ? "A" : "Enter", Header.Focused switch { 3 => "Light my way", 4 => "Find", _ => Wide ? "Close" : "Open wide" })];
             hp.Add(pad ? ("B", "Back") : ("Esc", "Back"));
             return LampInk.Row(hp, pad);
         }
-        return LampInk.Row(wickOpen
-            ? pad ? [("A", "Plan"), ("Y", "Light my way"), ("B", "Board")] : [("Click", "Plan"), ("Space", "Light my way"), ("Tab", "Board")]
-            : pad ? [("A", "Light"), ("Y", "Light my way"), ("L3", "Home"), ("R3", "Open wide")]
-                  : [("Click", "Light"), ("Space", "Light my way"), ("H", "Home"), ("F", "Find"), ("Z", "Open wide")], pad);
+        return LampInk.Row(LampPrompts.FootRow(pad, wickOpen, Board.ReadOnly, wickSafe), pad);
     }
+
+    bool wickSafe => Wick.Safe;
 
     void SetPrompts()
     {
@@ -259,10 +256,10 @@ public partial class LampPage : Control
         string road = Lamps.Roads.TryGetValue(l.Type, out var r) ? r.Name : "";
         string type = road.StartsWith("Road of the ") ? "The " + road[12..] : road == "" ? "Not yet walked" : road;
         string flare = Lamps.Flare(l.Flare)?.Name ?? "";
-        bool open = LampBook.LayoutsOpen(w, zone), pad = Play.Controls.Instance?.UsingPad == true, active = i == st.Active;
+        bool ro = w?.Arena != null, open = !ro && LampBook.LayoutsOpen(w, zone), pad = Play.Controls.Instance?.UsingPad == true, active = i == st.Active;
         // §9: the glyphs of all its carried skills (the active layout's are her seats now)
         var carried = (active ? SkillBook.Carried(ch).Select(c => c.Id) : l.Carried ?? new()).Where(Weapons.All.ContainsKey).Distinct().ToList();
-        var glyphs = carried.Select(s => (Weapons.All[s].Art, true)).ToList();
+        var glyphs = carried.Select(s => (Glyphs.ForSkill(s, Weapons.All[s].Art), true)).ToList();
         string? carries = null;
         if (carried.Count > 0)
         {
@@ -283,9 +280,9 @@ public partial class LampPage : Control
     (string State, List<(string, string)> Prompts) CoinWords(int i, bool pad)
     {
         var st = LampBook.State(ch);
-        bool open = LampBook.LayoutsOpen(w, zone), active = i == st.Active;
+        bool ro = w?.Arena != null, open = !ro && LampBook.LayoutsOpen(w, zone), active = i == st.Active;
         var others = Enumerable.Range(0, 3).Where(k => k != st.Active).ToArray();
-        string stateLine = active ? "The layout she walks" : open ? "Take it up: the whole build" : "Layouts change by day at a town’s lamp-post";
+        string stateLine = ro ? "In the arena the board is read-only" : active ? "The layout she walks" : open ? "Take it up: the whole build" : "Layouts change at a lamp-post";
         var pr = new List<(string, string)>();
         if (active && open)
         {
@@ -299,6 +296,7 @@ public partial class LampPage : Control
     void Pick(int i, bool right)
     {
         var st = LampBook.State(ch);
+        if (i <= 2 && w?.Arena != null) { Board.Deny("In the arena the board is read-only"); return; }
         if (i <= 2)
         {
             if (right) Copy(i);
@@ -316,8 +314,9 @@ public partial class LampPage : Control
 
     void Copy(int to)
     {
+        if (w?.Arena != null) { Board.Deny("In the arena the board is read-only"); return; }
         if (LampAsk.CopyLayout(ch, to, w, zone)) { Sound.Sfx.Pick(); GD.Print($"LAMPBOARD copy {LampBook.State(ch).Active + 1} to {to + 1}"); Header.Refresh(); }
-        else Board.Deny("Layouts change by day at a town’s lamp-post");
+        else Board.Deny("Layouts change at a lamp-post");
     }
 
     void OpenWideNow()
@@ -723,7 +722,7 @@ public partial class LampFind : Control
         HashSet<int> Where(Func<LampDef, LampBoardModel.Node, bool> f) =>
             m.Nodes.Where(nd => Lamps.Find(nd.Id) is { } d && f(d, nd)).Select(nd => nd.I).ToHashSet();
         var carried = SkillBook.Carried(ch).Select(c => c.Id).Where(Weapons.All.ContainsKey).ToList();
-        foreach (var s in carried) chips.Add((Weapons.All[s].Name, Weapons.All[s].Art, Where((d, _) => d.Feeds.Contains(s))));
+        foreach (var s in carried) chips.Add((Weapons.All[s].Name, Glyphs.ForSkill(s, Weapons.All[s].Art), Where((d, _) => d.Feeds.Contains(s))));
         foreach (var school in carried.Select(s => Weapons.All[s].School).Distinct())
             chips.Add((Style.Cap1(school.ToString()), null, Where((d, _) => d.Feeds.Any(f => Weapons.All.TryGetValue(f, out var wd) && wd.School == school))));
         chips.Add(("Blue lamps", null, Where((_, nd) => nd.Kind == "blue")));
@@ -916,8 +915,8 @@ public static class LampInk
 /// <summary>
 /// The header row (§4, §9, §12 C; skins/c.py header()): left, the three layout coins (32 px, I II III, the active one
 /// lit) and the layout's name (Alegreya 700 17, her type's: "The Sunderer"); center, "3 LAMPS TO LIGHT" (Cinzel 700 30
-/// and 600 16 letterspaced, warm gold), under it what was earned (Alegreya Sans 14, dim) and by day at a town's
-/// lamp-post the warm italic line (by night, the board is read-only); right, Light my way and Open wide with their caps.
+/// and 600 16 letterspaced, warm gold), under it what was earned (Alegreya Sans 14, dim) and at a town's
+/// lamp-post the warm italic line (in the arena, the board is read-only); right, Light my way and Open wide with their caps.
 /// </summary>
 public partial class LampHeader : Control
 {
@@ -942,8 +941,7 @@ public partial class LampHeader : Control
         bool pad = Play.Controls.Instance?.UsingPad == true;
         // (A: Light my way and Find; the way back to the book is in the lower right)
         // (A, §16: "Y Light my way · Find · B Close"; Close goes back to the book, as B does)
-        if (wide) keys = LampInk.Row(pad ? [("Y", "Light my way"), ("D-pad up", "Find"), ("B", "Close")] : [("Space", "Light my way"), ("F", "Find"), ("Esc", "Close")], pad, 16, 22);
-        else keys = LampInk.Row(pad ? [("Y", "Light my way"), ("D-pad up", "Find"), ("R3", "Open wide")] : [("Space", "Light my way"), ("F", "Find"), ("Z", "Open wide")], pad, 16, 22);
+        keys = LampInk.Row(LampPrompts.HeaderRow(pad, wide, w?.Arena != null), pad, 16, 22);
         AddChild(keys);
         Resized += Lay;
         Refresh();
@@ -967,8 +965,8 @@ public partial class LampHeader : Control
         if (atlas > 0) parts.Add($"{atlas} from the atlas");
         if (posts > 0) parts.Add($"{posts} from the lamp-posts");
         sub = $"{lit} lit  ·  {string.Join(", ", parts)}";
-        bool isNight = w?.Time == TimeOfDay.Night;
-        if (isNight) night = "By night the board is read-only";
+        bool inArena = w?.Arena != null;
+        if (inArena) night = "In the arena the board is read-only";
         else if (LampBook.LayoutsOpen(w, zone))
             post = $"At the {Style.Cap1(zone ?? "")}’s lamp-post: lamps go out free";
         else post = null;
@@ -1093,7 +1091,7 @@ public partial class WickTabs : Control
         foreach (var (id, _) in SkillBook.Carried(ch))
         {
             if (!Weapons.All.TryGetValue(id, out var wd) || i >= 6) continue;
-            seats.Add((id, wd.Art, ItemViews.SchoolColors[wd.School]));
+            seats.Add((id, Glyphs.ForSkill(id, wd.Art), ItemViews.SchoolColors[wd.School]));
             i++;
         }
         row.AddChild(scroll);
