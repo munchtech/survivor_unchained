@@ -126,5 +126,5 @@ RULE (CORRECTED): with the weights fixed, neck_01 may turn up to 40 deg on any a
 spine_05; the split is free, 20 / 30 / 50 recommended (it lowers iron_vow's trap 1.95 -> 1.48 and idle's 1.80 -> 1.23);
 "never against the head's end turn" is DROPPED as a deformation rule (the keyed counter-turns, 41 deg on idle_warden_town, pass
 at 1.80) and stays only a motion-taste call for A1. Nothing fails under the proxy. The rule holds only once the fit lands:
-it must hit section 6's targets at least as well as this proxy (re-measure the seven clips on the fit; trap is the zone to watch,
+it must hit the VERDICT 2 targets at least as well as this proxy (re-measure the seven clips on the fit; trap is the zone to watch,
 extension and twist the axes). Until then no split clears iron_vow and heroic_leap.

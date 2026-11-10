@@ -359,7 +359,7 @@ def chain_order(pts, E, P):
 
 def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), walk=(0.82, 1.28), wall=50.0,
          fold=(0.3, 0.15), margin=(0.05, 0.10), steps=8, passes=3, iters=1500, start=None, ratchet=True, capm=0.10,
-         log=print):
+         qmin=0.0, qwall=1.0, capwall=1.0, lo_own=0.0, lowall=1.0, hiwall=1.0, rest_wall=1.0, ring_lim=None, log=print):
     """The band's plane points for a CARRY MAP: where each band point rides on the reference, chosen so the band is
     sound IN THE POSES IT IS USED IN, not as a rest. The snapped points (the apex row) stay on the curve and slide
     along it; they are walked onto it from their feet in `steps`.
@@ -380,6 +380,15 @@ def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), w
     hi = the reference's own worst stretch under the lay's edges in that pose (and the fill's worst where w < 1)
     + margin[0]; lo = the smaller of the reference's own and the fill's shortest - margin[1]: the map may open as far
     as the reference's skin does and no further. hi, lo and the triangles' facing are re-read each pass.
+    Lay 5's rules (all off at their defaults): qmin, a floor on each lay triangle's quality AT REST (tri_quality of
+    the lifted points, not the plane: the unfold squeezes near the fold, plane 0.35 can be 0.17 lifted) over B's rest
+    quality (a sliver at rest has no stable facing in a pose: tri 290 r, 0.18 against B's 0.91, turned at leap@19),
+    weighted qwall x the triangle barrier's weight; capwall, the wall's factor over hi in the poses judged against the
+    fill (so the fill's worst + capm holds, not just pulls); lo_own, lo is at least this part of the reference's own
+    shortest (no edge collapses where A's skin does not), lowall the wall's factor under lo in the poses, hiwall over
+    hi in the other poses; rest_wall, the wall's factor on the rest edges (lim); ring_lim (lo, hi), the rest edge
+    ratio's limits on an edge to the fixed ring (its far end does not move with the map: edge 2455-2456 r, lay 1.86,
+    carried crossbow_shoot's worst).
     """
     n, bi, m = len(P0), np.nonzero(band)[0], 1 + len(design)
     fi, si = np.nonzero(band & ~snap)[0], np.nonzero(snap)[0]
@@ -398,6 +407,17 @@ def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), w
     a0 = 0.5 * np.linalg.norm(np.cross(P0[tris[:, 1]] - P0[tris[:, 0]], P0[tris[:, 2]] - P0[tris[:, 0]]), axis=1)
     wt = wall * np.sqrt(a0) * 1000
     rot = lambda v: np.stack([-v[:, 1], v[:, 0]], 1)
+    ring_e = ~(band[i] & band[j])
+    q0p = tri_quality(P0, tris)
+
+    def quality(X):                                          # tri_quality of 3D points [n, 3] and its gradient per corner
+        a, b, c = X[tris[:, 0]], X[tris[:, 1]], X[tris[:, 2]]
+        nr = np.cross(b - a, c - a)
+        A2 = np.maximum(np.linalg.norm(nr, axis=1), 1e-18)
+        nu, S2, K = nr / A2[:, None], ((b - a) ** 2 + (c - b) ** 2 + (a - c) ** 2).sum(1), 2 * np.sqrt(3)
+        g = [K * (np.cross(nu, w1) * S2[:, None] - A2[:, None] * 2 * w2) / S2[:, None] ** 2
+             for w1, w2 in ((c - b, 2 * a - b - c), (a - c, 2 * b - c - a), (b - a, 2 * c - a - b))]
+        return K * A2 / S2, g
     if start is not None:
         steps, u0 = 0, np.asarray(start, float).copy()
     pr = cur.project(u0[si]) if start is None else u0[si]   # a stored row may have slid past the sampled curve's ends
@@ -453,6 +473,13 @@ def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), w
             if ratchet and hi_min is not None:
                 hi[1:, 0] = np.minimum(hi[1:, 0], hi_min)
             hi_min = hi[1:, 0].copy()
+            if lo_own:
+                lo[1:, 0] = np.maximum(lo[1:, 0], lo_own * own.min(1))
+        hi, lo = np.broadcast_to(hi, (mm, ne)).copy(), np.broadcast_to(lo, (mm, ne)).copy()
+        if ring_lim is not None:
+            lo[0, ring_e], hi[0, ring_e] = np.maximum(lo[0, ring_e], ring_lim[0]), np.minimum(hi[0, ring_e], ring_lim[1])
+        wl = np.r_[rest_wall, np.where(capped, capwall, hiwall)[:mm - 1]][:, None] * wall
+        wu = np.r_[rest_wall, np.full(mm - 1, lowall)][:, None] * wall
 
         def f(x):
             uu = place(x, tau)
@@ -461,8 +488,14 @@ def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), w
             L = np.linalg.norm(d, axis=2) * 1000
             r = L / l0
             over, under = np.maximum(r - hi, 0), np.maximum(lo - r, 0)
-            e = (l0 * (kspr * (r - 1) ** 2 + wall * (over ** 2 + under ** 2))).sum()
-            gX = scat(De, (2 * kspr * (r - 1) + 2 * wall * (over - under))[..., None] * d * (1000 / np.maximum(L, 1e-9))[..., None])
+            e = (l0 * (kspr * (r - 1) ** 2 + wl * over ** 2 + wu * under ** 2)).sum()
+            gX = scat(De, (2 * kspr * (r - 1) + 2 * (wl * over - wu * under))[..., None] * d * (1000 / np.maximum(L, 1e-9))[..., None])
+            if qmin:                                         # the rest lay's slivers (row 0 = the rest surface)
+                qr, gq = quality(X[0])
+                pq = np.maximum(qmin - qr / q0p, 0)
+                e += (qwall * wt * pq ** 2).sum()
+                kq = (-2 * qwall * wt * pq / q0p / 1000)[:, None]
+                gX[0] += sum(Tc[c_].T @ (kq * gq[c_]) for c_ in range(3))
             q, a, b, c = areas(X, nh, uu)
             qc = np.maximum(q, 1e-3)
             pen = np.maximum(np.where(soft, fo - q, fo / qc - 1), 0)
@@ -1242,7 +1275,9 @@ def cmd_turned(hs, poses, top=4):
         ids = lambda v: "/".join(f"{int(x)}{tag[x]}" for x in v) + " (mesh " + "/".join(str(int(hs.pts[s][x])) for x in v) + ")"
         print(f"== {q} ({s}) w {wk:.2f}: turned map {int(tm.sum())}, at w = 1 {int(t1.sum())}, fill {int(tf.sum())}; map edge max {rm.max():.2f}, A's own max {own.max():.2f}"
               f" (limit {lim:.2f}), over the limit {int((rm > lim).sum())}; mean lay {lay.mean():.2f}, map {rm.mean():.2f}, A {own.mean():.2f};"
-              f" A'S OWN surface under the band's triangles: turned {int(oa.sum())} {np.nonzero(oa)[0].tolist()}, a corner facing off {int((oc <= 0).any(1).sum())}", flush=True)
+              f" A'S OWN surface under the band's triangles: turned {int(oa.sum())} {np.nonzero(oa)[0].tolist()}, a corner facing off {int((oc <= 0).any(1).sum())};"
+              f" fill max {rf.max():.2f}; SHORTEST map {rm.min():.2f} (edge {int(rm.argmin())} {ids(e[rm.argmin()])}: lay {lay[rm.argmin()]:.2f}, A's own along it {own[rm.argmin()]:.2f}, fill {rf[rm.argmin()]:.2f}), A's own {own.min():.2f} (map / A's {rm.min() / own.min():.2f}), fill {rf.min():.2f};"
+              f" lay rest edge {lay.min():.2f}..{lay.max():.2f}", flush=True)
         for t in np.nonzero(tm | t1)[0]:
             v = tb[t]
             ga, ga0 = (fa[v] * ng[t]).sum(1), (fa0[v] * nl[t]).sum(1)
