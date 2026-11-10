@@ -5,7 +5,11 @@
     python tools/body/region_shape.py silhouette --provider P [--poses a,b | --only ...] [--views front,back,side,top,game_front,game_back]
     python tools/body/region_shape.py sheets --provider P --poses a,b,c [--views front34,back34,top34,under] [--gate]
     python tools/body/region_shape.py edges --provider carried [--poses a,b] [--over 2.5]     (why edges stretch: cmd_edges,
-        classify_edges; the poses and sides of poses.npz, the target of target_a.npz; out edges_carried.json)
+        classify_edges; the poses and sides of poses.npz, the target of target_a.npz; out edges_carried.json, with --poses
+        edges_carried_dev.json; counts on the OLD set (both ends on the list) and the NEW edges (an end on a grown row),
+        classed by the share of the pose; "no crack": the list-to-grown edges' worst ratio, the outer row against published)
+    --target FILE (provider carried): the stored target read, default target_a.npz. Its grown rows (Xe, ext_<side>) are
+        written by surface("carried") after the list: sheets, silhouette, shift and strip_rest read them through it.
 
 Pose names: rest[:s] | x:<extreme>[:s] | <clip>@<frame>[:s] (p4:<clip>@f too); side l by default. Out: tools/body/out/shoulder.
 Providers (pose -> whole-body B vertices): pub = published B; target = region_target live (full_target), or target.npz +
@@ -126,7 +130,8 @@ class Ctx:
                 v = md.first[self.bands[b][s]]
                 nr = self.near[b, s] = Near(B.V0[v], N0[v], A)
                 self.sd0[b, s], self.q0[b, s] = nr.signed(B.V0[v], A.V0)
-        self._tz = self._cz = self._regtri = None
+        self._tz = self._cz = None
+        self._regtri, self._rows = {}, {}
         self._pub = (None, None)
 
     def _bands(self):
@@ -227,27 +232,57 @@ class Ctx:
             X = self._carried(pose, nr)
         else:
             raise KeyError(kind)
-        g = np.nonzero(sd["loc"][md.src] >= 0)[0]
-        g = g[sd["loc"][md.src[g]] < nr]
+        k = self.rows(s, kind)[md.src]          # every vertex of a region point takes the point's row of X
+        g = np.nonzero(k >= 0)[0]
         V = Vp.copy()
-        V[g] = X[sd["loc"][md.src[g]]]
+        V[g] = X[k[g]]
         return V
 
-    def _carried(self, pose, nr):
-        """The carried target of a pose from target_a.npz; no fallback."""
-        f = OUT / "target_a.npz"
+    def region(self, s, kind=None):
+        """md point ids of the side's region as the provider `kind` writes it: the list, then (carried) the rows the
+        stored target grew it by (its ext_<side>). One side is written a pose, so no point is written twice; a grown
+        row that is also a point of another side's region holds the COMPOSED value (carried_target.Her.target)."""
+        ids = self.md.S[s]["ids"]
+        return np.r_[ids, self._stored()[2].get(s, ids[:0])] if kind == "carried" else ids
+
+    def rows(self, s, kind=None):
+        """[md points] the row of the side's region (region) a point is, -1 outside."""
+        key = (s, kind == "carried")
+        if key not in self._rows:
+            ids = self.region(s, kind)
+            lut = np.full(self.md.n, -1, np.int64)
+            lut[ids] = np.arange(len(ids))
+            assert (lut >= 0).sum() == len(ids), "a region point is listed twice"
+            self._rows[key] = lut
+        return self._rows[key]
+
+    def _stored(self):
+        """(X, Xe, {side: md ids of Xe's rows}, {pose name: row}) of the stored carried target (CARRIED["file"]); a file
+        without grown rows (no Xe / ext_<side>) is a region that did not grow."""
+        f = OUT / CARRIED["file"]
         if self._cz is None:
             if not f.exists():
                 raise FileNotFoundError(f"provider carried: {f} does not exist")
             z = np.load(f)
-            self._cz = (z["X"], {str(n): i for i, n in enumerate(z["name"])})
-        X, ix = self._cz
+            ext = {k[4:]: z[k] for k in z.files if k.startswith("ext_")}
+            Xe = z["Xe"] if "Xe" in z.files else np.zeros((len(z["X"]), 0, 3))
+            self._cz = (z["X"], Xe, ext, {str(n): i for i, n in enumerate(z["name"])})
+            print(f"provider carried: {f.name}, {len(z['X'])} poses, {z['X'].shape[1]} list points + grown rows"
+                  f" { {k: len(v) for k, v in ext.items()} } a side", flush=True)
+        return self._cz
+
+    def _carried(self, pose, nr):
+        """The carried target of a pose from the stored file, on the side's region (the list, then the grown rows); no fallback."""
+        f = OUT / CARRIED["file"]
+        X, Xe, ext, ix = self._stored()
         nm = pose["name"] if pose["name"][-2:] in (":l", ":r") else pose["name"] + ":l"
         if nm not in ix:
             raise KeyError(f"provider carried: pose {nm!r} is not in {f.name} ({len(ix)} poses); there is no live fallback")
         if X.shape[1] != nr:
             raise ValueError(f"provider carried: {f.name} has {X.shape[1]} points a pose, the region has {nr}")
-        return X[ix[nm]]
+        if Xe.shape[1] != len(ext.get(pose["side"], ())):
+            raise ValueError(f"provider carried: {f.name} has {Xe.shape[1]} grown rows a pose, ext_{pose['side']} {len(ext.get(pose['side'], ()))}")
+        return np.concatenate([X[ix[nm]], Xe[ix[nm]]])
 
     # ------------------------------------------------- silhouette and sheets --
     def a_on_B(self, pose):
@@ -267,19 +302,19 @@ class Ctx:
         c = np.asarray(G[B.p.index[B.role(SIL["center"], s)]])[:3, 3]
         return chest_view(c, R, self.sg[s] * np.asarray(fr.lat), np.asarray(fr.up), np.asarray(fr.front), v, half, px)
 
-    def regtri(self, s):
-        """[B triangles] bool: touches the side's shoulder region."""
-        if self._regtri is None:
-            self._regtri = {}
-            for k in "lr":
-                loc = self.md.S[k]["loc"][self.md.src]
-                g = np.zeros(len(self.B.V0), bool)          # the full layer has points past the body's (md.src)
-                g[:len(loc)] = (loc >= 0) & (loc < len(self.md.S[k]["ids"]))
-                self._regtri[k] = g[self.B.T].any(1)
-        return self._regtri[s]
+    def regtri(self, s, kind=None):
+        """[B triangles] bool: touches the side's region as the provider `kind` writes it (region)."""
+        key = (s, kind == "carried")
+        if key not in self._regtri:
+            k = self.rows(s, kind)[self.md.src]
+            g = np.zeros(len(self.B.V0), bool)              # the full layer has points past the body's (md.src)
+            g[:len(k)] = k >= 0
+            self._regtri[key] = g[self.B.T].any(1)
+        return self._regtri[key]
 
-    def silhouette(self, kind, pose, views):
-        """{view: {"all": [p05, p50, p95, min, max] mm, "reg": the same on the region's outline or None, "n": pixels}}."""
+    def silhouette(self, kind, pose, views, reg_of=None):
+        """{view: {"all": [p05, p50, p95, min, max] mm, "reg": the same on the region's outline or None, "n": pixels}}.
+        reg_of: the provider whose region "reg" is read on (None: kind's; the rest row passes the command's)."""
         Va = self.a_on_B(pose)
         V, T = self.mesh(kind, pose, Va)
         sp, sa = ray.scene(V, T), ray.scene(Va, self.A.T)
@@ -291,7 +326,7 @@ class Ctx:
             ok = np.zeros(d.shape, bool)
             ok[k:-k, k:-k] = True
             ok &= np.isfinite(d)
-            reg = ok & self.regtri(pose["side"])[np.maximum(pid, 0)] if T is self.B.T else None
+            reg = ok & self.regtri(pose["side"], reg_of or kind)[np.maximum(pid, 0)] if T is self.B.T else None
             out[vn] = {"all": sil_stats(d[ok]), "reg": None if reg is None else sil_stats(d[reg]), "n": int(ok.sum())}
         return out
 
@@ -431,7 +466,7 @@ def cmd_silhouette(cx, a):
     for pose in cx.poses(names):
         s = pose["side"]
         if s not in rest:
-            rest[s] = cx.silhouette(rk, {"name": f"rest:{s}", "side": s, "G": cx.B.G0}, views)
+            rest[s] = cx.silhouette(rk, {"name": f"rest:{s}", "side": s, "G": cx.B.G0}, views, reg_of=kind)
         rows[pose["name"]] = r = cx.silhouette(kind, pose, views)
         if len(names) <= 40:
             for vn in views:
@@ -537,6 +572,7 @@ def cmd_pops(cx, a):
 
 
 # ---------------------------------------------------------------------- edges --
+CARRIED = {"file": "target_a.npz"}       # the stored carried target every reader takes (--target)
 EDGE_CLASSES = ["pocket", "published", "A's own", "border blend", "bridge", "carrier"]
 EDGE = {"tol": 0.15, "bridge": 2.0, "tiny": 0.25, "geo_rad": 0.15, "turns": ["spine_05", "neck_01", "neck_02", "head", "clavicle_{s}", "upperarm_{s}"]}
 
@@ -642,26 +678,35 @@ def edge_zones(h):
     bz = np.load(OUT / "bands.npz")
     for b in BANDS[::-1]:
         z[sd["loc"][bz[f"{b}_l"]]] = b
-    return z
+    ext = h.ext.get("l", ids[:0])            # the grown rows after the list: grown [across the midline] <part> top / front / back
+    N = h.N0[md.first[ext]]
+    fbt = np.where(N @ np.asarray(fr.up) > 0.6, "top", np.where(N @ np.asarray(fr.front) > 0, "front", "back"))
+    ze = [f"grown {'across ' if x < 0 else ''}{md.parts[p] if p >= 0 else 'none'} {f}" for x, p, f in zip(md.V0[ext] @ np.asarray(fr.lat), md.part[ext], fbt)]
+    return np.r_[z, np.array(ze, object)]
+
+
+def out_region(h, s):
+    return h.regions[h.cfg["out_region"].replace("{s}", s)]
 
 
 def edge_rows(h, pr, G, s, X=None):
     """One pose and side: {t, p, c, a: ratio per edge of the target (X, or the live blend), the published surface, the
     carried surface before the blend, A's own; dis: per point |carried - published| m; stale: max |X - live blend| m}."""
-    md = h.md
-    MC, _, VaM = h.carried(G, s)
-    Vp = h.rt.published(h.bd, G)[md.first[md.S[s]["ids"]]]
-    b = md.blend(G, s)[:, None]
+    rg = out_region(h, s)                # every region point: the list, then the grown rows
+    MC, _, VaM = h.carried(G, s, full=True)
+    Vp = h.rt.published(h.bd, G)[rg.pts]
+    sh = rg.share_at(G)                  # the share of this pose
+    b = sh[:, None]
     oth = h.last.get("others", 0.0)      # the deltas of the regions that touch this one (the neck): added whole
     live = b * MC + (1 - b) * Vp + oth
     X = live if X is None else X
     return {"t": pr.ratio(X), "p": pr.ratio(Vp), "c": pr.ratio(MC + oth), "a": pr.own(VaM), "dis": np.linalg.norm(MC - Vp, axis=1),
-            "stale": float(np.abs(X - live).max())}
+            "share": sh, "step": np.linalg.norm(X - Vp, axis=1), "stale": float(np.abs(X - live).max())}
 
 
 def edge_probe(h, s):
-    car = h.car[s]
-    return EdgeProbe(h.md.V0[h.md.S[s]["ids"]], *h.edges[s], car.tri, car.bary, h.Ab.V0)
+    rg, ids = out_region(h, s), h.md.S[s]["ids"]
+    return EdgeProbe(h.md.V0[np.r_[ids, h.ext.get(s, ids[:0])]], *rg.edges, rg.carrier.tri, rg.carrier.bary, h.Ab.V0)
 
 
 def cmd_edges(a):
@@ -674,19 +719,40 @@ def cmd_edges(a):
         raise SystemExit("edges: --provider carried only")
     h = ct.Her(verbose=False)
     md, bd, over = h.md, h.bd, a.over
-    z, tz = np.load(OUT / "poses.npz"), np.load(OUT / "target_a.npz")
+    z, tz = np.load(OUT / "poses.npz"), np.load(OUT / CARRIED["file"])
     names, tix = [str(x) for x in z["name"]], {str(n): i for i, n in enumerate(tz["name"])}
+    TX, TE = tz["X"], tz["Xe"] if "Xe" in tz.files else np.zeros((len(tz["X"]), 0, 3))
+    ids, nl, seam, outer = {}, {}, {}, {}
+    for s in h.cfg["sides"]:
+        nl[s] = len(md.S[s]["ids"])
+        ids[s] = np.r_[md.S[s]["ids"], h.ext.get(s, md.S[s]["ids"][:0])]
+        fe = tz[f"ext_{s}"] if f"ext_{s}" in tz.files else ids[s][:0]
+        if not np.array_equal(fe, ids[s][nl[s]:]):
+            raise SystemExit(f"edges: {CARRIED['file']} side {s} has {len(fe)} grown rows, not the live region's {len(ids[s]) - nl[s]}:"
+                             f" rerun carried_target.py target")
+        ei, ej = out_region(h, s).edges
+        seam[s] = (ei < nl[s]) != (ej < nl[s])              # the edges that join a list point to a grown row
+        o = np.ones(md.n)
+        o[ids[s]] = 0
+        outer[s] = np.asarray(md.adj[ids[s]] @ o).ravel() > 0   # the region's outer row: a neighbour outside the region
+    nold = sum(int(((out_region(h, s).edges[0] < nl[s]) & (out_region(h, s).edges[1] < nl[s])).sum()) for s in ids)
+    nnew = sum(len(seam[s]) for s in ids) - nold
     sel = [names.index(p) for p in a.poses.split(",")] if a.poses else list(range(len(names)))
     zone, beta = edge_zones(h), md.beta
     pr = {s: edge_probe(h, s) for s in "lr"}
-    acc = {s: {k: [] for k in ("t", "p", "c", "a", "dis", "name", "i")} for s in "lr"}
+    acc = {s: {k: [] for k in ("t", "p", "c", "a", "dis", "share", "name", "i")} for s in "lr"}
+    nocrack = {}
     stale = 0.0
     for i in sel:
         s = str(z["side"][i])
-        r = edge_rows(h, pr[s], z["G"][i], s, tz["X"][tix[names[i]]])
+        r = edge_rows(h, pr[s], z["G"][i], s, np.concatenate([TX[tix[names[i]]], TE[tix[names[i]]]]))
         stale = max(stale, r["stale"])
-        for k in ("t", "p", "c", "a", "dis"):
+        for k in ("t", "p", "c", "a", "dis", "share"):
             acc[s][k].append(r[k])
+        nocrack[names[i]] = [round(float(r["t"][seam[s]].max()), 3) if seam[s].any() else 1.0, float(r["step"][outer[s]].max() * 1000)]
+        if a.poses:
+            print(f"no crack {names[i]:28s} list-to-grown edges ({int(seam[s].sum())}) worst ratio {nocrack[names[i]][0]:.2f} | outer row"
+                  f" ({int(outer[s].sum())} points) off published max {nocrack[names[i]][1]:.2e} mm", flush=True)
         acc[s]["name"].append(names[i])
         acc[s]["i"].append(i)
     print(f"edges {a.provider}: {len(sel)} poses, over {over:g}; target_a.npz against the live blend: max {stale * 1000:.3f} mm"
@@ -696,29 +762,32 @@ def cmd_edges(a):
         if not acc[s]["t"]:
             continue
         R = {k: np.array(acc[s][k]) for k in ("t", "p", "c", "a", "dis")}
-        nm, p_, (ei, ej) = acc[s]["name"], pr[s], h.edges[s]
+        nm, p_, (ei, ej) = acc[s]["name"], pr[s], out_region(h, s).edges
+        new, sh = (ei >= nl[s]) | (ej >= nl[s]), np.array(acc[s]["share"])     # an end on a grown row; the share per pose
         w = R["t"].argmax(0)
         t, p, c, av = (R[k][w, np.arange(len(w))] for k in ("t", "p", "c", "a"))
-        inp = np.zeros(len(beta), bool)
+        bi, bj = sh[w, ei], sh[w, ej]                       # the ends' share at the edge's worst pose
+        key = np.r_[beta, np.full(len(ids[s]) - nl[s], -1.0)]   # the zone's end: as before on the list; the grown end of a new edge
+        inp = np.zeros(len(ids[s]), bool)
         if h.car[s].pocket is not None:
             inp[h.car[s].pocket.p] = True
         ov = np.nonzero(t > over)[0]
         geo = np.full(len(t), np.nan)
         geo[ov] = p_.along(h.Ab.T, ov)
-        bmin, bmax = np.minimum(beta[ei], beta[ej]), np.maximum(beta[ei], beta[ej])
+        bmin, bmax = np.minimum(bi, bj), np.maximum(bi, bj)
         bridge = geo > EDGE["bridge"] * np.maximum(p_.l0, p_.g0)
         lab = classify_edges(t, p, c, av, inp[ei] | inp[ej], bmin, bmax, bridge, over)
         note = carrier_note(t, p, c, av, bmin)
-        ez = zone[np.where(beta[ei] <= beta[ej], ei, ej)]
+        ez = zone[np.where(key[ei] <= key[ej], ei, ej)]
         dis = np.maximum(R["dis"][w, ei], R["dis"][w, ej])
         need = np.minimum(dis / np.maximum((over - np.maximum(c, p)) * p_.l0, 1e-9), 99.0)
-        mid = (md.V0[md.S[s]["ids"]][ei] + md.V0[md.S[s]["ids"]][ej]) * 500
+        mid = (md.V0[ids[s]][ei] + md.V0[ids[s]][ej]) * 500
         for e in ov:
             cl = EDGE_CLASSES[lab[e]]
-            rows.append({"side": s, "edge": [int(ei[e]), int(ej[e])], "zone": ez[e], "class": cl, "note": str(note[e]) if cl == "carrier" else "",
+            rows.append({"side": s, "edge": [int(ei[e]), int(ej[e])], "set": "new" if new[e] else "old", "zone": ez[e], "class": cl, "note": str(note[e]) if cl == "carrier" else "",
                          "pose": nm[w[e]], "t": round(float(t[e]), 3), "p": round(float(p[e]), 3), "c": round(float(c[e]), 3), "a": round(float(av[e]), 3),
                          "along_over_l0": round(float(geo[e] / p_.l0[e]), 2), "gap_over_l0": round(float(p_.g0[e] / p_.l0[e]), 2),
-                         "beta": [round(float(beta[ei[e]]), 2), round(float(beta[ej[e]]), 2)], "l0_mm": round(float(p_.l0[e] * 1000), 2),
+                         "beta": [round(float(bi[e]), 2), round(float(bj[e]), 2)], "l0_mm": round(float(p_.l0[e] * 1000), 2),
                          "dis_mm": round(float(dis[e] * 1000), 1), "rows_need": round(float(need[e]), 1), "poses_over": int((R["t"][:, e] > over).sum()),
                          "rest_mm": [round(float(x), 1) for x in mid[e]]})
             cells.setdefault((ez[e], cl), {"l": 0, "r": 0, "worst": 0.0, "pose": "", "poses": set(), "rest_mm": None, "dis": [], "need": [], "l0": [], "notes": {}})
@@ -762,11 +831,17 @@ def cmd_edges(a):
         worst[zn] = [{"ratio": round(r, 2), "pose": n, "edges_over": k, "turns_deg": turns(i)} for r, n, i, k in sorted(v, reverse=True)[:5]]
         for e in worst[zn]:
             print(f"  {zn:34s} {e['ratio']:5.2f} {e['pose']:27s} ({e['edges_over']:3d}) | " + " ".join(f"{k} {x:.0f}" for k, x in e["turns_deg"].items()))
-    tot = {c: sum(1 for r in rows if r["class"] == c) for c in EDGE_CLASSES}
+    tot, told, tnew = ({c: sum(1 for r in rows if r["class"] == c and r["set"] in k) for c in EDGE_CLASSES} for k in (("old", "new"), ("old",), ("new",)))
     print("classes:", tot, "of", len(rows), "edges over")
-    f = OUT / f"edges_{a.provider}.json"
+    print(f"  OLD set (both ends on the list, {nold} edges):", told, "of", sum(told.values()))
+    print(f"  NEW edges (an end on a grown row, {nnew} edges):", tnew, "of", sum(tnew.values()))
+    wk, ws = (max(nocrack, key=lambda n: nocrack[n][j]) for j in (0, 1))
+    print(f"no crack: list-to-grown edges worst {nocrack[wk][0]:.2f} ({wk}); outer row off published max {nocrack[ws][1]:.2e} mm"
+          f" ({ws}; over 0 = another region's delta on the outer row)")
+    f = OUT / (f"edges_{a.provider}_dev.json" if a.poses else f"edges_{a.provider}.json")     # a subset never over the full run's file
     f.write_text(json.dumps({"provider": a.provider, "over": over, "params": EDGE, "classes": EDGE_CLASSES, "poses": len(sel), "stale_mm": stale * 1000,
-                             "totals": tot, "table": table, "worst_poses": worst, "edges": rows}))
+                             "totals": tot, "totals_old": told, "totals_new": tnew, "edges_old": nold, "edges_new": nnew, "no_crack": nocrack,
+                             "target": CARRIED["file"], "table": table, "worst_poses": worst, "edges": rows}))
     print("wrote", f)
 
 
@@ -781,7 +856,9 @@ def main():
     ap.add_argument("--clips", default="run_warden,sword_heavy,p4:bladestorm_loop")
     ap.add_argument("--views", default="")
     ap.add_argument("--gate", action="store_true")
+    ap.add_argument("--target", default=CARRIED["file"], help="the stored carried target in out/shoulder (provider carried)")
     a = ap.parse_args()
+    CARRIED["file"] = a.target
     if a.cmd == "edges":
         return cmd_edges(a)
     {"shift": cmd_shift, "pops": cmd_pops, "silhouette": cmd_silhouette, "sheets": cmd_sheets}[a.cmd](Ctx(), a)
