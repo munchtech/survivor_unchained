@@ -1,14 +1,19 @@
 """region_target: stage T of the shoulder region rebuild: the pose set and the offline TARGET surface (WIP, lead 14).
 
-    python tools/body/region_target.py poses | target | gate [--base rule_main|rule|pub] [--only train,held,extreme]
+    python tools/body/region_target.py region | poses | target | gate [--base rule_main|rule|pub] [--only train,held,extreme]
 
 Out (git-ignored, tools/body/out/shoulder): poses.npz, region.npz, target.npz, gate.json, base_rule.npz (cache).
+  `region` writes region.npz alone and prints the region's size, its depth around each armpit apex and what bounds it.
 Region (topology points, left; the right is its twin by mirror_of, same order): core = left points of the neck, trunk,
   shoulder and arm parts whose girdle weight (clavicle, scap, upper arm chain, share, delt, trap, pec, lat; published or
   base) is over CORE_W 0.02 and whose station along the upper arm is under T_ARM 0.50 (arm ring 11: the ball's 0.12 m
   ends at 0.475); grown RING 3 + BLEND 4 rows into the rigid trunk and arm (never the breast part, the midline or the
-  head seam). depth = rows from outside; beta 0 on rows 1-3 (the fixed border ring = the published skinned surface),
-  smoothstep over rows 4-7, 1 inside. Target = beta X + (1 - beta) published.
+  head seam). The head seam is the mesh's OPEN BORDER (an edge of one quad). POLES true (the default) keeps the
+  poles (points of 3 or 5 quads) in the region like any other point; false is the old test "four quads at a point",
+  which caught the seam and also punched every pole out as a one-point hole with its own border rows: two 5-poles
+  sit 30 mm from the armpit apex, so the fixed border ran through the armpit. depth = rows from outside; beta 0 on
+  rows 1-3 (the fixed border ring = the published skinned surface), smoothstep over rows 4-7, 1 inside.
+  Target = beta X + (1 - beta) published.
 Method (own numpy; every number below is PARAMS):
   base   LBS of the rule weights with the A roles off (weights_topo.body on the build's weights body), the muscle
          helpers merged into their parents (MERGE: delt, trap, pec, lat, scap): the twist chain and the share stay
@@ -23,6 +28,9 @@ Method (own numpy; every number below is PARAMS):
          by a normal offset over the free points, then one more contact pass.
 Poses: descriptor (left; the right mirrored) = upper arm direction and twist in spine_05's frame, clavicle, spine_05
   in spine_04, neck_01; distance (deg) = sqrt(swing^2 + (.5 twist)^2 + clav^2 + (.5 spine)^2 + (.25 neck)^2).
+  A clip that keys no clavicle (unkeyed) is posed with the girdle LAW driving the clavicle (the rig without
+  "clavicle_by", as the extremes are), which is what the game shows at runtime; a clip that keys one stays as keyed.
+  poses.npz `law` marks the law-driven poses.
 """
 from __future__ import annotations
 
@@ -46,7 +54,11 @@ ROUND, OUT = HERE / "out/round_36", HERE / "out/shoulder"
 M4 = np.diag([-1.0, 1, 1, 1])
 PARAMS = {"base": "rule_main", "core_w": 0.02, "t_arm": 0.50, "ring": 3, "blend": 4, "dm_iters": 8, "lam": 0.5,
           "mu": -0.53, "gap": 0.001, "reach": 0.04, "cap": 0.012, "rest_sep": 0.012, "contact_iters": 8, "skirt": 3, "fall": 0.6,
-          "vol_dead": 0.025, "guard_arm": 0.0, "w_desc": [1, 0.5, 1, 0.5, 0.25], "n_train": 64, "n_held": 64}
+          "vol_dead": 0.025, "guard_arm": 0.0, "w_desc": [1, 0.5, 1, 0.5, 0.25], "n_train": 64, "n_held": 64,
+          "poles": True,                        # the region keeps poles; only the open border is the seam (see Region)
+          "apex": [0.154, 1.418, -0.03]}        # report only: her left armpit apex at rest, m (the right is its mirror)
+APEX_R = (0.03, 0.06)                           # the report's radii round the apex, m
+CLAVICLES = {"clavicle": ("clavicle_l", "clavicle_r")}      # her names of the bones the girdle law drives when unkeyed
 MERGE = {"delt_{s}": "upperarm_twist_01_{s}", "trap_{s}": "clavicle_{s}", "pec_{s}": "spine_05", "lat_{s}": "spine_04",
          "scap_{s}": "clavicle_{s}"}
 GIRDLE = ["clavicle", "scap", "upperarm", "upperarm_twist_01", "upperarm_twist_02", "upperarm_twist_03",
@@ -58,6 +70,23 @@ EXTREMES = {"abd120": (120, 0, 0), "abd150": (150, 0, 0), "abd170": (170, 0, 0),
 unit = lambda v: v / max(np.linalg.norm(v), 1e-12)
 unit_rows = lambda v: v / np.maximum(np.linalg.norm(v, axis=1, keepdims=True), 1e-15)
 s01 = lambda x: np.clip(x, 0, 1) ** 2 * (3 - 2 * np.clip(x, 0, 1))
+
+
+def rows(adj, seed):
+    """Rows (edge steps) from the seed points, [n]: 0 on the seed; a point no row reaches keeps n."""
+    d, cur, k = np.where(seed, 0, adj.shape[0]), seed.copy(), 0
+    while True:
+        k += 1
+        nb = (adj @ cur > 0) & ~cur
+        if not nb.any():
+            return d
+        d[nb], cur = k, cur | nb
+
+
+def unkeyed(d, bones):
+    """True when the clip d keys none of `bones`: a p4 clip by its rotation tracks, a library dump by its keyed list."""
+    keyed = d["rot"] if "bones" in d else d["keyed"]
+    return not any(b in keyed for b in bones)
 
 
 def rule_weights():
@@ -116,7 +145,8 @@ class Model:
         self.tw = tw = np.arange(n)
         r = np.nonzero(mo >= 0)[0]
         tw[r], tw[mo[r]] = mo[r], r
-        e = np.unique(np.sort(np.concatenate([Q[:, [0, 1]], Q[:, [1, 2]], Q[:, [2, 3]], Q[:, [3, 0]]]), 1), axis=0)
+        e, ec = np.unique(np.sort(np.concatenate([Q[:, [0, 1]], Q[:, [1, 2]], Q[:, [2, 3]], Q[:, [3, 0]]]), 1), axis=0,
+                          return_counts=True)
         self.adj = sp.coo_matrix((np.ones(2 * len(e)), (np.r_[e[:, 0], e[:, 1]], np.r_[e[:, 1], e[:, 0]])), (n, n)).tocsr()
         self.T = np.concatenate([Q[:, [0, 1, 2]], Q[:, [0, 2, 3]]])
         Wp = np.zeros((n, len(nm)))
@@ -138,19 +168,19 @@ class Model:
         t = (self.V0 - H) @ unit(E - H) / np.linalg.norm(E - H)
         gi = [self.I[f"{b}_l"] for b in GIRDLE]
         cnt = np.bincount(Q.ravel(), minlength=n)
-        ok = (side == 1) & np.isin(part, [parts.index(x) for x in ("neck", "trunk", "shoulder", "arm")]) & (cnt == 4)
+        seam = np.zeros(n, bool)
+        seam[e[ec == 1].ravel()] = True                             # the open border (the head seam)
+        own = np.isin(part, [parts.index(x) for x in ("neck", "trunk", "shoulder", "arm")])
+        ok = (side == 1) & own & (~seam if P["poles"] else cnt == 4)
         reg = ok & (np.maximum(Wp[:, gi].sum(1), Wb[:, gi].sum(1)) > P["core_w"]) & (t < P["t_arm"])
         for _ in range(P["ring"] + P["blend"]):
             reg = ok & (reg | (self.adj @ reg > 0))
-        depth, cur, d = np.zeros(n, int), ~reg, 0
-        while True:
-            d += 1
-            nb = (self.adj @ cur > 0) & reg & (depth == 0)
-            if not nb.any():
-                break
-            depth[nb], cur = d, cur | nb
         ids = np.nonzero(reg)[0]
-        self.depth = depth[ids]
+        self.depth = rows(self.adj, ~reg)[ids]
+        # what each outside point is (the report's "bounded by"): -1 inside the region
+        self.why_names = ["midline", "breast part", "other part", "open seam", "pole", "rigid trunk / arm"]
+        self.why = np.where(reg, -1, np.select([side != 1, part == parts.index("breast"), ~own, seam, ~ok], [0, 1, 2, 3, 4], 5))
+        self.part, self.parts = part, [str(x) for x in parts]
         self.beta = s01((self.depth - P["ring"]) / P["blend"])
         ai = [k for b in ("upperarm_l", "delt_l") for k in p.subtree(self.I[b])]
         arm_l = Wb[:, ai].sum(1) + 0.5 * Wb[:, self.I["upperarm_share_l"]]
@@ -373,23 +403,40 @@ def extreme_G(bd, name):
     D[:3, :3], D[:3, 3] = R, G[j][:3, 3] - R @ G[j][:3, 3]
     for c in p.subtree(j):
         G[c] = D @ G[c]
-    rig = {**bd.rig, "girdle": {k_: v for k_, v in bd.rig["girdle"].items() if k_ != "clavicle_by"}}
-    return bd.rd.drive(p, G, rig)[0], R
+    return bd.rd.drive(p, G, law_rig(bd))[0], R
 
 
 def clip_names():
     return sorted(q.stem for q in da.DUMP.glob("*.json")) + da.p4_clips()
 
 
+def law_rig(bd):
+    """The rig whose girdle law drives the clavicle too (bd.rig holds it still offline: "clavicle_by")."""
+    return {**bd.rig, "girdle": {k: v for k, v in bd.rig["girdle"].items() if k != "clavicle_by"}}
+
+
+def clav_deg(D):
+    """The clavicle's turn from rest in spine_05's frame, deg, of descriptor rows."""
+    return np.degrees(2 * np.arccos(np.clip(np.abs(D[:, 7]), 0, 1)))
+
+
 def cmd_poses(bd, md):
-    names, sides, Gs, D = [], [], [], []
+    names, sides, Gs, D, law = [], [], [], [], {}
+    rig = bd.rig
     for c in clip_names():
-        for f, _, G in bd.clip_frames(da.load_clip(c), 1):
-            for s in "lr":
-                names.append((c, f))
-                sides.append(s)
-                D.append(describe(md, G if s == "l" else md.mirror_G(G)))
-            Gs.append(G)
+        d = da.load_clip(c)
+        law[c] = unkeyed(d, CLAVICLES["clavicle"])
+        try:
+            if law[c]:
+                bd.rig = law_rig(bd)
+            for f, _, G in bd.clip_frames(d, 1):
+                for s in "lr":
+                    names.append((c, f))
+                    sides.append(s)
+                    D.append(describe(md, G if s == "l" else md.mirror_G(G)))
+                Gs.append(G)
+        finally:
+            bd.rig = rig
     D = np.array(D)
     nt, nh = md.P["n_train"], md.P["n_held"]
     pick = [int(np.argmin(desc_dist(D, describe(md, bd.p.rest)[None])[:, 0]))]
@@ -408,7 +455,16 @@ def cmd_poses(bd, md):
     worst = {c: round(float(cover[cl == c].max()), 1) for c in np.unique(cl)}
     OUT.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(OUT / "poses.npz", name=name, kind=kind, side=[x.split(":")[-1] for x in name], G=G,
-                        desc=np.r_[D[pick], Dx], bones=list(bd.p.names), cover_all=cover, clip_worst=json.dumps(worst))
+                        desc=np.r_[D[pick], Dx], bones=list(bd.p.names), cover_all=cover, clip_worst=json.dumps(worst),
+                        law=np.array([law[names[i][0]] for i in pick] + [True] * len(ex)))
+    print("clavicle unkeyed, posed by the girdle law:", [c for c in law if law[c]])
+    print("clavicle keyed, posed as keyed:", [c for c in law if not law[c]])
+    p4, pk = np.char.startswith(cl, "p4:"), np.array(pick)
+    q = lambda v: "p50/p95/max " + "/".join(f"{x:.1f}" for x in (np.median(v), np.percentile(v, 95), v.max())) if len(v) else "none"
+    for k, m in (("p4", p4), ("dump", ~p4)):
+        sel = pk[m[pk]]
+        print(f"clavicle turn deg from rest, {k}: picked poses ({len(sel)}, law-driven {sum(law[names[i][0]] for i in sel)}) "
+              f"{q(clav_deg(D[sel]))}; all candidates ({int(m.sum())}) {q(clav_deg(D[m]))}")
     print(f"poses: {len(D)} candidates (frames x sides), train {nt}, held {nh}, extremes {len(ex)}")
     print(f"coverage deg to nearest train: held p50/max {np.median(cover[pick[nt:]]):.1f}/{cover[pick[nt:]].max():.1f}; "
           f"all frames p50/p95/max {np.median(cover):.1f}/{np.percentile(cover, 95):.1f}/{cover.max():.1f}; "
@@ -442,12 +498,43 @@ def cmd_target(bd, md):
         infos.append(i)
     np.savez_compressed(OUT / "target.npz", X=np.array(X), name=z["name"], side=z["side"], kind=z["kind"],
                         info=json.dumps(infos), params=json.dumps(md.P))
-    np.savez_compressed(OUT / "region.npz", ids_l=md.S["l"]["ids"], ids_r=md.S["r"]["ids"], depth=md.depth, beta=md.beta,
-                        src=md.src, first=md.first)
+    save_region(md)
     for k in ("vol_dm", "vol", "girth_mid_deltoid", "girth_insertion", "contact"):
         v = np.array([i[k] for i in infos])
         print(f"{k}: min {v.min():.3f} median {np.median(v):.3f} max {v.max():.3f}")
     print("region points", len(md.S["l"]["ids"]), "pure (beta 1)", int((md.beta == 1).sum()), "ring", int((md.beta == 0).sum()))
+
+
+def save_region(md):
+    OUT.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(OUT / "region.npz", ids_l=md.S["l"]["ids"], ids_r=md.S["r"]["ids"], depth=md.depth, beta=md.beta,
+                        src=md.src, first=md.first, params=json.dumps(md.P))
+
+
+def cmd_region(bd, md):
+    """Write region.npz alone and say how deep the region holds each armpit apex and what bounds it there."""
+    save_region(md)
+    ids, pure = md.S["l"]["ids"], md.P["ring"] + md.P["blend"] + 1
+    print("region points a side", len(ids), "pure (beta 1)", int((md.beta == 1).sum()), "ring (beta 0)", int((md.beta == 0).sum()),
+          "(poles kept)" if md.P["poles"] else "(poles punched out)")
+    near = {k: rows(md.adj, md.why == i)[ids] for i, k in enumerate(md.why_names) if (md.why == i).any()}
+    for s, sx in (("l", 1), ("r", -1)):
+        d = np.linalg.norm(md.V0[md.S[s]["ids"]] - np.array(md.P["apex"]) * [sx, 1, 1], axis=1)
+        for r in APEX_R:
+            m = d < r
+            lo = m & (md.depth < pure)
+            by = {k: int((v[lo] == md.depth[lo]).sum()) for k, v in near.items() if (v[lo] == md.depth[lo]).any()}
+            print(f"apex {s} within {r * 1000:.0f} mm: {int(m.sum())} points, depth min / median / max {md.depth[m].min()} / "
+                  f"{np.median(md.depth[m]):.0f} / {md.depth[m].max()}; under row {pure}: {int(lo.sum())}" + (f", bounded by {by}" if by else ""))
+        i = int(np.argmin(d))
+        print(f"apex {s}: nearest point {int(md.S[s]['ids'][i])} at {d[i] * 1000:.1f} mm, depth {md.depth[i]}; rows from it to:",
+              {k: int(v[i]) for k, v in near.items()})
+    print("region points by part:", {md.parts[k]: int(c) for k, c in zip(*np.unique(md.part[ids], return_counts=True))})
+    inr = np.zeros(md.n, bool)
+    inr[ids] = True
+    out = np.nonzero((md.adj @ inr > 0) & ~inr)[0]
+    print("its outer neighbours:", {md.why_names[k]: int(c) for k, c in zip(*np.unique(md.why[out], return_counts=True))},
+          "| by part:", {md.parts[k]: int(c) for k, c in zip(*np.unique(md.part[out], return_counts=True))})
 
 
 GM = ["st99", "bad", "flip", "kink99", "ins_mm"]
@@ -521,7 +608,7 @@ def report(rows):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["poses", "target", "gate", "report"])
+    ap.add_argument("cmd", choices=["region", "poses", "target", "gate", "report"])
     ap.add_argument("--base", default=PARAMS["base"])
     ap.add_argument("--only", default="train,held,extreme")
     ap.add_argument("--set", default="{}", help="JSON overrides of PARAMS")
@@ -531,7 +618,7 @@ def main():
     bd = da.body("B")
     bd.set_layer("full")
     md = Model(bd.p, {"base": a.base, **json.loads(a.set)})
-    {"poses": cmd_poses, "target": cmd_target}.get(a.cmd, lambda b, m: cmd_gate(b, m, a.only.split(",")))(bd, md)
+    {"region": cmd_region, "poses": cmd_poses, "target": cmd_target}.get(a.cmd, lambda b, m: cmd_gate(b, m, a.only.split(",")))(bd, md)
 
 
 if __name__ == "__main__":
