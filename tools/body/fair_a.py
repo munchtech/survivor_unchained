@@ -59,8 +59,18 @@ DEFAULT = {"fold_deg": 45.0, "beyond_deg": 20.0, "rings": 4, "soft": 2, "alpha":
 # R_posed + turn R_rigid) (R_posed: the posed rotations after `passes` averaging passes): the rest curvature carried
 # rigidly by the bone; the posed points are only soft targets (pull `alpha` x median weight) and the cap's volume is held.
 # "bone" / "chain": the caller's (her_hook: the rigid bone and the chain whose skin share is w), unused here.
+# ceil (attempt 8; None = the flattening test above): fire instead where the surface P5 makes (the fair without the cap)
+# curves over the ceiling, H_P5 > ceil x max(H0, H_A) + add and H_P5 > h_min (H_A: the posed surface's own): P5 over-curving
+# a rim, the "lid" (flat/rim unused then). target "rest": the cap's edges are the rest edges turned as above; "posed": the
+# posed surface's own edges (its curvature kept, the cap pulled back from P5's rim).
 CAP = {"lo": 0.05, "hi": 0.95, "h_min": 8.0, "flat": 0.5, "rim": True, "rings": 2, "grow": 2, "soft": 3, "turn": 1.0,
-       "alpha": 0.05, "passes": 4, "bone": None, "chain": []}
+       "alpha": 0.05, "passes": 4, "bone": None, "chain": [], "ceil": None, "add": 0.0, "target": "rest",
+       "spare": False, "mode": "edges", "clip": 1.0, "reps": 1}
+# mode "lap" (attempt 8): no edge targets; after the fair without the cap (Vf), the cap (kc > 0) is re-solved by Laplacian
+# coordinates (Fair._cap_lap), `reps` times, pulled `alpha` to Vf, all else held. target "clip" there: Vf's own Laplacian
+# with its normal part cut by `clip` x (H - ceil x max(H0, H_A) - add)+, the curvature ceiling itself. Attempt 8: H falls
+# (iron_vow@72:l cap p50 27.5 -> 18-23 per m, A 14.2) with 0 flips, but the cap core's >45 edges rise (+1..+25) and
+# T22's band edge does not move (a stretch ratio along the armpit map band): NOT LIVE. fair_a.md attempt 8.   # spare: the crumple (from the non-cap seeds) keeps its own target
 
 
 def _unit(v):
@@ -184,7 +194,7 @@ class Fair:
             a, b = a + self.adj @ a, b + self.adj @ b
         return a / np.maximum(2.0 * b, 1e-30)
 
-    def cap_share(self, X, rigid, wh=None):
+    def cap_share(self, X, rigid, wh=None, Xf=None):
         """The cap rule (CAP): ([n] the cap share, 1 on the fired set grown `grow` rows, a smoothstep to 0 over `soft`; or
         None when nothing fires, [n] the fired set). rigid = (R, w) per raw vertex; wh [n] limits the band."""
         cp = self.prm["cap"]
@@ -195,7 +205,11 @@ class Fair:
         if getattr(self, "_h0", None) is None or self._h0[0] != cp["rings"]:
             self._h0 = (cp["rings"], self.curv(self.P0, cp["rings"]))
         h0, hx = self._h0[1], self.curv(X, cp["rings"])
-        fire = band & (h0 > cp["h_min"]) & ((hx < cp["flat"] * h0) | (bool(cp["rim"]) & (hx < -cp["h_min"])))
+        if cp["ceil"] is not None:                              # the ceiling: P5's surface Xf over-curving the posed one
+            hf = self.curv(Xf, cp["rings"])
+            fire = band & (hf > cp["h_min"]) & (hf > cp["ceil"] * np.maximum(h0, hx) + cp["add"])
+        else:
+            fire = band & (h0 > cp["h_min"]) & ((hx < cp["flat"] * h0) | (bool(cp["rim"]) & (hx < -cp["h_min"])))
         if not fire.any():
             return None, fire
         t = np.clip((rows_from(self.adj, fire) - cp["grow"]) / max(cp["soft"], 1e-9), 0.0, 1.0)
@@ -262,7 +276,7 @@ class Fair:
         if prm["alpha_mid"] is not None:                        # off the crumple the patch is pulled to the posed points
             al = np.maximum(al, (prm["alpha_mid"] * (1 - c[p]) + prm["alpha_core"] * c[p]) * np.median(wu))
         if self._cap is not None:                               # the cap: the posed points only soft targets
-            kc = self._cap[0][p]
+            kc = self._cap[0][p] * ((1 - c[p]) if prm["cap"]["spare"] else 1.0)
             al = (1 - kc) * al + kc * prm["cap"]["alpha"] * np.median(wu)
         K = (Lpp + sp.diags(al)).tocsc()
         solve = factorized(K)
@@ -308,7 +322,8 @@ class Fair:
         prm = self.prm
         if prm["edges"] != "blend":
             return np.zeros(self.n)
-        t = np.clip((self._dist - prm["c_core"]) / max(prm["c_soft"], 1e-9), 0.0, 1.0)
+        d = self._cdist if getattr(self, "_cdist", None) is not None else self._dist
+        t = np.clip((d - prm["c_core"]) / max(prm["c_soft"], 1e-9), 0.0, 1.0)
         return 1.0 - t * t * (3 - 2 * t)
 
     def _finish(self, X, patch, p, Eu, wu, d0, Xb, al, cols, R, c=None, Fe=None):
@@ -320,7 +335,9 @@ class Fair:
         if self._cap is not None:                               # the cap: the rest edges turned by the rigid-blend rotations
             kc, Rc = self._cap
             ke = 0.5 * (kc[Eu[:, 0]] + kc[Eu[:, 1]])[:, None]
-            vc = np.einsum("eij,ej->ei", 0.5 * (Rc[Eu[:, 0]] + Rc[Eu[:, 1]]), d0)
+            if prm["cap"]["spare"] and blend:
+                ke = ke * (1 - ce)
+            vc = Xd if prm["cap"]["target"] == "posed" else np.einsum("eij,ej->ei", 0.5 * (Rc[Eu[:, 0]] + Rc[Eu[:, 1]]), d0)
             va = np.maximum(va, self.varea[p] * kc[p])           # and its volume held
 
         def poisson(R, Fe=None):
@@ -392,14 +409,28 @@ class Fair:
         info = {"seed_edges": int(eb.sum()), "seed_flips": int(fl.sum()), "rounds": 0}
         if extra is not None:
             info["seed_extra"] = int(ex.sum())
-        self._cap = None
+        self._cap, self._cdist, capx = None, None, None
         if prm["cap"] is not None and rigid is not None:        # the cap rule: its share and the rigid-blend rotations
-            kc, fire = self.cap_share(X, rigid, wh)
+            Xf = None
+            if prm["cap"]["ceil"] is not None:                  # the ceiling reads the fair without the cap
+                self.prm = {**prm, "cap": None}
+                try:
+                    Vf, inf0 = self.fair(V, where, extra)
+                finally:
+                    self.prm = prm
+                Xf = Vf[self.first]
+            kc, fire = self.cap_share(X, rigid, wh, Xf)
             info["cap_fire"] = int(fire.sum())
+            if kc is None and Xf is not None:                   # nothing over the ceiling: the fair without the cap
+                return Vf, {**inf0, "cap_fire": 0}
+            if kc is not None and prm["cap"]["mode"] == "lap":  # the cap re-solved on P5's surface by Laplacian coordinates
+                return self._cap_lap(V, Vf, X, kc, {**inf0, "cap_fire": int(fire.sum())})
             if kc is not None:
                 cp = prm["cap"]
                 Rr = np.broadcast_to(np.asarray(rigid[0], float), (self.nraw, 3, 3))[self.first]
                 self._cap = (kc, polar((1 - cp["turn"]) * self.rotations(X, cp["passes"]) + cp["turn"] * Rr))
+                if cp["spare"]:                                 # the cap's own seeds are not crumple
+                    capx = (kc > 0) & ~(self._seed_mask(eb, fl) | ex)
                 ex = ex | (kc > 0)
         if not eb.any() and not fl.any() and not ex.any():
             return V, info
@@ -413,6 +444,8 @@ class Fair:
                     break
                 seed = seed | add
             self._dist = rows_from(self.adj, seed)
+            if capx is not None:
+                self._cdist = rows_from(self.adj, seed & ~capx)
             patch = self._dist <= prm["rings"] + self._extra
             ring = self._dist == prm["rings"] + self._extra + 1
             Y, inf = self._solve(X, patch, ring)
@@ -443,6 +476,52 @@ class Fair:
         raw = np.nonzero(patch[self.grp])[0]
         out[raw] = Xf[self.grp[raw]]
         info["raw"] = raw
+        return out, info
+
+    def _cap_lap(self, V, Vf, X, kc, info):
+        """The cap's "lap" mode: on the fair without the cap (Vf) the cap (kc > 0) is solved so its Laplacian coordinates
+        (cotangent L) are kc x the target's (target "rest": the rest ones turned by Vf's rotations after `passes`; "posed":
+        the posed surface's own) + (1 - kc) x Vf's, in least squares with a pull `alpha` x median(diag L^T L) to Vf; every
+        other point held. A biharmonic-like solve: the cap meets the held surface with its slope (no crisp rim)."""
+        cp = self.prm["cap"]
+        Xf = Vf[self.first]
+        if self._L is None:
+            self.curv(Xf, 0)
+        L = self._L
+        U = kc > 0
+        X5 = Xf
+        for _rep in range(int(cp["reps"])):
+            if cp["target"] == "posed":
+                dt = L @ X
+            elif cp["target"] == "clip":                            # a true ceiling: Vf's own, its normal part cut to the cap
+                T = self.T
+                fn = np.cross(Xf[T[:, 1]] - Xf[T[:, 0]], Xf[T[:, 2]] - Xf[T[:, 0]])
+                nv = _unit(self._inc @ fn)
+                b = self._inc @ (np.linalg.norm(fn, axis=1) / 6.0)
+                hf = self.curv(Xf, cp["rings"])
+                top = cp["ceil"] * np.maximum(self._h0[1], self.curv(X, cp["rings"])) + cp["add"]
+                dt = L @ Xf - (2.0 * b * np.maximum(hf - top, 0.0) * cp["clip"])[:, None] * nv
+            else:
+                R = self.rotations(Xf, cp["passes"])
+                dt = np.einsum("nij,nj->ni", R, L @ self.P0)
+            d = kc[:, None] * dt + (1 - kc[:, None]) * (L @ Xf)
+            rows = (np.asarray(abs(L)[:, U].sum(1)).ravel() > 0) | U
+            A = L[rows][:, U].tocsc()
+            b = d[rows] - L[rows][:, ~U] @ Xf[~U]
+            M = (A.T @ A).tocsc()
+            a = float(cp["alpha"]) * np.median(M.diagonal())
+            solve = factorized((M + a * sp.eye(M.shape[0])).tocsc())
+            rhs = A.T @ b + a * X5[U]
+            Y = Xf.copy()
+            Y[U] = np.stack([solve(np.ascontiguousarray(rhs[:, j])) for j in range(3)], 1)
+            Xf = Y
+        out = np.asarray(V, float).copy()
+        old = np.zeros(self.n, bool)
+        old[self.grp[np.asarray(info.get("raw", np.zeros(0, np.int64)), np.int64)]] = True
+        self.patch = getattr(self, "patch", old) | U | old
+        raw = np.nonzero(self.patch[self.grp])[0]
+        out[raw] = Y[self.grp[raw]]
+        info = {**info, "patch": int(self.patch.sum()), "raw": raw}
         return out, info
 
     def cached(self, V, where=None, folder=None, extra=None, rigid=None):
