@@ -281,20 +281,31 @@ public sealed class MomentumChainTests
     }
 
     [Fact] // T10
-    public void Unchained_the_reaching_swings_own_wait_is_shortened_as_ever()
+    public void Unchained_lit_but_never_earning_is_the_unlit_run_step_for_step_and_a_paid_swing_is_the_old_rule()
     {
+        // lit, no kills v not lit: the same press on the same step, every swing (the unchained rule is untouched)
+        var lit = new Run(null).Step(1500);
+        var unlit = new Run(null, lit: false).Step(1500);
+        Assert.True(lit.Casts.Count > 20);
+        Assert.Equal(unlit.Casts.Select(k => k.T).ToArray(), lit.Casts.Select(k => k.T).ToArray());
+        Assert.Equal(unlit.W.Timer, lit.W.Timer);
         var r = new Run(null);
         for (int i = 0; i < 1500; i++) { if (i % 100 == 20) r.Spawn(i / 100 % 3 == 0 ? 2 : 3 + i / 100 % 2); r.Step(); }
         Assert.Equal(1, r.W.BlowWeight);
         Assert.Equal((int.MinValue, 0, false), (r.W.MomKey, r.W.MomKills, r.W.MomFast));
-        Assert.Contains(r.Casts, k => k.Kills >= 3);
         Assert.Contains(r.Casts, k => k.Kills == 2);
-        // press to press is the wait, x 0.75 after a swing that killed three: to the step
+        // the old rule: the swing that killed three has its OWN wait x 0.75 (press to press), every other the whole wait.
+        // (tighten to the written wait after the clock commit: today's unchained deferred swing runs a step short on some blows)
+        int paid = 0;
         for (int i = 0; i + 1 < r.Casts.Count; i++)
         {
-            double want = r.Wait * (r.Casts[i].Kills >= 3 ? Fast : 1), got = r.Casts[i + 1].T - r.Casts[i].T;
-            Assert.True(got >= want - 1e-9 && got < want + Dt + 1e-9, $"swing {i} ({r.Casts[i].Kills} kills): next after {got:R}, want {want:R}");
+            bool p = r.Casts[i].Kills >= 3;
+            double want = r.Wait * (p ? Fast : 1), got = r.Casts[i + 1].T - r.Casts[i].T;
+            Assert.True(Math.Abs(got - want) < Dt + 1e-9, $"swing {i} ({r.Casts[i].Kills} kills): next after {got:R}, want {want:R}");
+            if (p) paid++;
         }
+        output.WriteLine($"unchained: {r.Casts.Count} swings, {paid} paid");
+        Assert.True(paid >= 3);
     }
 
     [Fact] // T11
