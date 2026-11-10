@@ -1187,6 +1187,8 @@ public static class HerWear
                 m.SetShaderParameter("tuck_map", ImageTexture.CreateFromImage(img));
                 m.SetShaderParameter("tuck_map_width", w);
                 m.SetShaderParameter("tuck_channel", -2);
+                // (--shot: what this body surface's shader got, read back from its material: the look's scale and the marks over 1, the deep look's not-drawn points)
+                if (Args.Has("shot")) GD.Print($"her tuck: {mi.Name}[{s}] tuck {m.GetShaderParameter("tuck").AsSingle() * 1000:0.###} mm (look {lookMm:0.###} mm; rows {string.Join(" ", rows.Where(r => r.TuckPath != null).Select(r => $"{r.Id}:{r.TuckDepth:0.#}"))}{(under != null ? " under:10" : "")}); marks {v.Count(x => x > 0)} of {ks.Length} points, {v.Count(x => x > 0.973f && x <= 1f)} full, {v.Count(x => x >= 0.995f)} not drawn, {v.Count(x => x > 1f)} over 1, max {v.Max():0.####}");
             }
         }
         int miss = at.Keys.Count(k => !seen.Contains(k));
