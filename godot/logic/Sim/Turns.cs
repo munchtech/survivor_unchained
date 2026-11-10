@@ -163,6 +163,15 @@ public sealed partial class Battle
     /// Turn while its own weapon still suits it (Turns.Works); the rest go dark.</summary>
     internal void CarryTurns(WeaponInst into, params WeaponInst?[] parts)
     {
+        // A two-key union whose second key swings its other part (a spin: Bladestorm), ARPG.md 3.3: each half keeps its
+        // own part's lamps and Turns: the first part's on the union (the spin), the second's on its half (Sunder's swing).
+        if (into.Behavior == WeaponBehavior.Spin && into.Slot2 >= 0 && parts.Length == 2)
+        {
+            if (Lit(parts[0]) is { Count: > 0 } la) into.Wick = Turns.Build(into, la, united: true);
+            if (Lit(parts[1]) is { Count: > 0 } lb && Firing.HalfOf(into) is { } half && half.Id == parts[1]!.Id)
+                half.Wick = Turns.Build(half, lb, parts[1]!.Wick!.Lit);
+            return;
+        }
         var carried = new List<(StrandDef, int)>();
         foreach (var p in parts)
         {
@@ -171,6 +180,14 @@ public sealed partial class Battle
                 if (Wicks.Lamp(p.Id, id) is { } l) carried.Add(l);
         }
         if (carried.Count > 0) into.Wick = Turns.Build(into, carried, united: true);
+    }
+
+    static List<(StrandDef, int)>? Lit(WeaponInst? p)
+    {
+        if (p?.Wick == null) return null;
+        var l = new List<(StrandDef, int)>();
+        foreach (var id in p.Wick.Lit) if (Wicks.Lamp(p.Id, id) is { } x) l.Add(x);
+        return l;
     }
 
     /// <summary>Where the skill now firing fires from, if not from her (an On-kill echo: the corpse). Read by the Fire*

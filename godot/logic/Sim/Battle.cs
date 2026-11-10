@@ -16,7 +16,9 @@ namespace SurvivorUnchained.Sim;
  * town the same Battle runs with combat off, so walking, colliding and the
  * camera are one system everywhere. */
 
-public sealed record AttackAnim(string Weapon, double Angle, double T, bool Heavy);
+/// <summary>Her swing for the view: the skill, its angle, when it started, heavy; and (a campaign blow that lands on its
+/// contact, Sim/Contact.cs) the clip she swings and its rate, which the view plays as given.</summary>
+public sealed record AttackAnim(string Weapon, double Angle, double T, bool Heavy, string? Clip = null, double Rate = 1);
 /// <summary>A leap through the air (the art's, a Vault's, or a leap skill's: Weapon set, it lands in a ring of Radius, heavy
 /// if its cast was).</summary>
 public sealed class Leap { public double T, Dur, X0, Z0, X1, Z1; public AbilityKind Kind = AbilityKind.Leap; public WeaponInst? Weapon; public double Radius; public bool Heavy; }
@@ -36,6 +38,9 @@ public sealed class PlayerState
     public bool PerfectThisDash;
     public double AbilityCd, AbilityActive;
     public bool Moving;
+    /// <summary>A campaign cast's pose (Battle.CastPose): her walk at CastWalk for CastT more seconds, and her feet held
+    /// PlantT more (a heavy commit, at most 0.3 s).</summary>
+    public double CastT, CastWalk = 1, PlantT;
     public double StillT, SlowT, SlowF = 1, BlockT, Shield, ShieldT, InvisibleT, SureCritT, BulwarkT, BulwarkSize = 1;
     /// <summary>Rooted (the kit's ring, Sim/Tells.cs): no walking while above 0; a dash is still hers, and ends it.</summary>
     public double RootT;
@@ -181,6 +186,9 @@ public sealed class BattleSetup
     public Dictionary<string, int>? ReflexRanks;
     public int Level = 1;
     public double FlareStart;
+    /// <summary>The campaign (ARPG.md 3.1): skills set off by their press records, the warden on Resolve. False (the
+    /// arena, the probes, tests' own fights): every skill as it always was.</summary>
+    public bool Campaign;
 }
 
 public enum OfferKind { Weapon, Rank, Boon, Evolve, Heal, Gold, Hone, Union }
@@ -224,6 +232,8 @@ public struct HitOpts
     public bool Dot;
     public int Depth;
     public double? BossDamage;
+    /// <summary>(M3 round 4) The most this blow takes, after every multiplier (null: no cap). The Flare's StoryBossCut.</summary>
+    public double? Cap;
     /// <summary>Damage from the survivor's summons.</summary>
     public bool Summon;
     /// <summary>Projectile direction, for frontal guards.</summary>
@@ -406,6 +416,7 @@ public sealed partial class Battle
         Collision = s.Collision;
         HeightAt = s.HeightAt;
         Combat = s.Combat;
+        Campaign = s.Campaign;
         Stats = s.Stats;
         SetArt(s.Ability, s.ArtRank, s.Facets);
         War = s.Hostility ?? DefaultWar;
@@ -458,8 +469,10 @@ public sealed partial class Battle
         if (Combat)
         {
             RunOnKills();
+            if (pendingBlows.Count > 0) LandBlows();
             foreach (var w in Weapons.ToArray()) Firing.Tick(this, w, dt);
             TickVow(dt);
+            Resolve.Tick(dt);
             TickAuras(dt);
             TickTriggers(dt);
             TickReflexes(dt);
@@ -503,6 +516,8 @@ public sealed partial class Battle
         p.BulwarkT = Math.Max(0, p.BulwarkT - dt);
         p.SlowT = Math.Max(0, p.SlowT - dt);
         if (p.SlowT <= 0) p.SlowF = 1;
+        if (p.CastT > 0 && (p.CastT -= dt) <= 0) { p.CastT = 0; p.CastWalk = 1; }
+        if (p.PlantT > 0) p.PlantT = Math.Max(0, p.PlantT - dt);
         if (p.RootT > 0) p.RootT = Math.Max(0, p.RootT - dt);
         if (p.ShieldT > 0) { p.ShieldT -= dt; if (p.ShieldT <= 0) p.Shield = 0; }
         p.UnstruckT += dt;
@@ -545,7 +560,7 @@ public sealed partial class Battle
             p.X = leap.X0 + (leap.X1 - leap.X0) * k;
             p.Z = leap.Z0 + (leap.Z1 - leap.Z0) * k;
             p.Iframes = Math.Max(p.Iframes, 0.05);
-            if (k >= 1) { p.Leap = null; LandLeap(leap); }
+            if (k >= 1 && !RuleLeapHangs(leap, dt)) { p.Leap = null; LandLeap(leap); }
             Collision.Resolve(ref p.X, ref p.Z, p.Radius, true, overGaps: true);
             return;
         }
@@ -572,7 +587,9 @@ public sealed partial class Battle
             return;
         }
 
-        double speed = st.Get(Stat.MoveSpeed) * p.SlowF * SpinPace();
+        double speed = st.Get(Stat.MoveSpeed) * p.SlowF * SpinPace() * RuleMoveMul();
+        // A campaign cast plays on her upper body: she walks at its pace (1 everywhere else).
+        if (p.CastT > 0) speed *= p.CastWalk;
         if (p.BulwarkT > 0 && !Has("marching_wall")) speed *= 0.45;
         double targetVX = mx * speed, targetVZ = mz * speed;
         double accel = 1 - Math.Exp(-dt * 14);
@@ -581,7 +598,7 @@ public sealed partial class Battle
         // Rooted (the kit's ring): her feet are held; only a dash frees them.
         if (p.RootT > 0) { p.Vx = p.Vz = 0; p.DriftX = p.DriftZ = 0; }
         // Iron Vow's plant: her walk is held (a drag still moves her).
-        if (VowPlanted) { p.Vx = p.Vz = 0; }
+        if (VowPlanted || p.PlantT > 0) { p.Vx = p.Vz = 0; }
         double wasX = p.X, wasZ = p.Z;
         // Dragged (the kit's pull): the drag moves her on top of her own walk, and is not her pace.
         bool drift = p.DriftX != 0 || p.DriftZ != 0;
@@ -836,6 +853,8 @@ public sealed partial class Battle
         // and swings that happen to reach a neutral pass it by. Picking a
         // fight is a choice, not a stray spark.
         if (e.Disposition == Disposition.Ally || (e.Disposition == Disposition.Neutral && !e.Provoked && !o.Provoke)) return 0;
+        FightAt = Time;
+        if (StruckBy != null && o.Weapon == StruckBy) Struck.Add(e.Id);
         if (Lamps.Board) BoardBeforeHit(e, school, tags, o);
         var st = Stats;
         double dmg = baseDamage * st.DamageMult(school, tags, e.Def.Family);
@@ -893,6 +912,7 @@ public sealed partial class Battle
         if (crit) dmg *= st.Get(Stat.CritDamage) * (e.Hp < e.MaxHp * 0.5 && Boons.TryGetValue("ferocity", out int tooth) ? 1 + 0.12 * tooth : 1);
         else if ((Rules.IronSkin > 0 || e.Def.IronSkin > 0) && e.Disposition == Disposition.Hostile) { dmg *= 1 - Math.Max(Rules.IronSkin, e.Def.IronSkin); blocked = true; }
         dmg = Math.Max(0.5, dmg);
+        if (o.Cap is { } cap) dmg = Math.Min(dmg, Math.Max(0.5, cap));
         LightningLeaps(e, baseDamage, school, tags, o);
 
         double before = e.Hp;
@@ -1028,6 +1048,7 @@ public sealed partial class Battle
 
     public void KillEnemy(Enemy e, bool byPlayer, WeaponInst? weapon, int depth = 0)
     {
+        RuleOnDeath(e);
         e.Hp = 0;
         e.State = EnemyState.Dying;
         e.StateT = 0;
@@ -1311,6 +1332,7 @@ public sealed partial class Battle
         if (!p.Alive || !Combat) return 0;
         amount *= FoeHitMul;
         stoneLull = 0;
+        FightAt = Time;
         if (p.Iframes > 0 || p.Leap != null)
         {
             if (telegraphed && p.DodgeWindow > 0 && !p.PerfectThisDash) PerfectDodge(from);
@@ -1324,6 +1346,9 @@ public sealed partial class Battle
             Fire(TriggerEvent.Dodge, new ProcCtx { X = p.X, Z = p.Z });
             return 0;
         }
+        // Rebuke's riposte (campaign): the blow is blocked and answered.
+        if (TryRiposte(amount, school, source, from)) return 0;
+        if (RuleShieldBlock(amount, school, source, from)) return 0;
         // Warding light.
         int blockRank = RoundInt(st.Get(Stat.Block));
         // blue.feral's price: she can't block.
@@ -1380,8 +1405,10 @@ public sealed partial class Battle
         if (Boons.TryGetValue("grounding", out int ground)) dmg *= ground >= 2 ? 0.67 : 0.8;
         dmg *= ReaverTakenMul(school) * ArcanistTakenMul();
         // Iron Vow: bracing, a share of the blow is kept and it lands at half.
-        dmg = VowTake(dmg);
-        return HurtPlayerRaw(FlareGuard(dmg), school, source, from);
+        dmg = VowTake(dmg, from);
+        double dealt = HurtPlayerRaw(FlareGuard(dmg), school, source, from);
+        Resolve.Taken(dealt);
+        return dealt;
     }
 
     double thornsAt = -9;
@@ -1576,7 +1603,7 @@ public sealed partial class Battle
         if (Lamps.Board && !silent && !dot) BoardOnHurt(dmg, hpBefore);
         if (!silent && !dot)
         {
-            FlareOnHurt(dmg, hpBefore, source);
+            FlareOnHurt(dmg, hpBefore, source, from);
             if (p.Hp > 0) ReflexOnBlow(dmg, from);
         }
         if (!silent)
@@ -1939,6 +1966,10 @@ public sealed partial class Battle
         public Action<Battle>? After;
         /// <summary>What it dealt her when it landed (after her armor; 0: missed, slipped, blocked), set before After runs.</summary>
         public double Dealt;
+        /// <summary>(M3) A boss script's own mark (the Ford-Warden's cleave and charge lane): its caster emits its telegraph
+        /// and its landing's burst, so Blow and UpdateBlows emit nothing for it; it is here so that every pair of hands that
+        /// reads marked blows (BossSense, the press plan's dash, the game's autopilot) reads it, and it deals its damage.</summary>
+        public bool OwnMark;
         public bool Hit(double x, double z, double r)
         {
             double dx = x - X, dz = z - Z, d = Math.Sqrt(dx * dx + dz * dz);
@@ -2009,7 +2040,7 @@ public sealed partial class Battle
         b.At = Time;
         blows.Add(b);
         b.MarkId = 900000 + blowIds++;
-        Events.Emit(new Ev.Telegraph
+        if (!b.OwnMark) Events.Emit(new Ev.Telegraph
         {
             Id = b.MarkId, Tell = b.Tell, Shape = b.Shape, Kind = b.Kind, X = b.X, Z = b.Z, X1 = b.X1, Z1 = b.Z1, Radius = b.Radius, Inner = b.Inner,
             Width = b.Width, Angle = b.Angle, Arc = b.Arc, Duration = b.Delay, Hostile = true, Boss = b.From?.Boss == true, Label = b.Label,
@@ -2033,7 +2064,7 @@ public sealed partial class Battle
             if (b.Damage > 0 || b.Slow > 0)
             {
                 double cx = b.Shape == TelegraphShape.Line ? (b.X + b.X1) / 2 : b.X, cz = b.Shape == TelegraphShape.Line ? (b.Z + b.Z1) / 2 : b.Z;
-                if (b.Kind == TelegraphKind.Blow) Events.Emit(new Ev.Explosion { X = cx, Z = cz, Radius = Math.Max(1.2, b.Shape == TelegraphShape.Line ? b.Width : b.Radius * 0.6), School = b.School, Power = 0.8 });
+                if (b.Kind == TelegraphKind.Blow && !b.OwnMark) Events.Emit(new Ev.Explosion { X = cx, Z = cz, Radius = Math.Max(1.2, b.Shape == TelegraphShape.Line ? b.Width : b.Radius * 0.6), School = b.School, Power = 0.8 });
                 if (p.Alive && b.Hit(p.X, p.Z, p.Radius))
                 {
                     blowLabel = b.Label;
@@ -2513,6 +2544,8 @@ public sealed partial class Battle
         var slots = FreeSlots(Content.Weapons.SlotCost(id));
         var w = new WeaponInst(id, rank, slots[0]);
         if (slots.Count > 1) w.Slot2 = slots[1];
+        // The campaign sets it off by its press record (ARPG.md 3.1); everywhere else as "cast" says.
+        if (Campaign) w.Press = w.Def.Press;
         if (SkillMods.TryGetValue(id, out var sm)) Marks.Fold(w.Mods, sm);
         Relight(w, false);
         Weapons.Add(w);

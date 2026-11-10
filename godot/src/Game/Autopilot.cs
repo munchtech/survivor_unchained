@@ -51,6 +51,18 @@ public sealed class Autopilot
 
     public Autopilot(Game game) { g = game; }
 
+    /// <summary>(M3) The one press plan (data/content/press_plan.json, Sim/PressPlan.cs) in a campaign fight: the grip held at
+    /// the nearest foe, spenders, waits and Leap pressed as the harness's human presses them (0.4 s late, a share missed);
+    /// `--auto deft` presses on the instant and misses nothing. Not under --auto idle/toward/across/away/talk. It runs each
+    /// sim step after the keys (WorldScene.Hands), through Battle.HoldSkill/PressSkill; the Dash and the Flare stay this
+    /// autopilot's own.</summary>
+    readonly PressHands planHands = Args.Get("auto") == "deft" ? PressHands.Deft(7) : PressHands.Human(7, 0.4);
+    void PlanStep(Battle b)
+    {
+        if (!b.Campaign || Idle || Toward || Away || Across || Talk || g.InTransit || g.InCinematic || !b.Player.Alive) return;
+        PressPlan.Run(b, planHands);
+    }
+
     readonly Picker picker = Picker.Make(Args.Get("draft") ?? "greedy");
     readonly SurvivorUnchained.Core.Rng rng = new(7);
 
@@ -137,6 +149,7 @@ public sealed class Autopilot
         var b = g.Battle;
         var z = g.Zone;
         if (z?.Id == "lowford") fromLowford = true;
+        if (g.Scene is { } sc && sc.Hands == null) sc.Hands = PlanStep;
         if (GoalsOn) Track(dt, b, z);
         if (b != null && z != null) Hooks(b, z);
         // (--auto toward: walking down the screen, toward the camera, her face

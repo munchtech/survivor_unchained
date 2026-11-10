@@ -3,7 +3,7 @@
 The ARPG design lead, 9 November 2026, from the owner's words of 8 November (`ARPG_DIRECTION.md`, `SIEGES.md`). **A proposal for the owner's pick: design only, no game code.** Where `ONE_BUILD.md`, `CLASS_IDENTITY_AND_TALENTS.md` and `STORY_NIGHTS_AND_TIME.md` describe the night as the game, this page wins; everything else in them stands and is reused by name below.
 
 ## PICKED (the owner, 9 November 2026): "defaults work", with one amendment on call 1
-**The hands rule.** The owner: "with casted abilities I worry that 6 is too many. maybe 2 pressed 3 not? (either auras or auto casts etc?)". So six slots stand, but the SHAPE of a build is two or three pressed skills and the rest kindled (auras, auto-casts, triggers): every calling's kit offers at least half its skills as kindled options, each calling's taught build in Act 1 has at most two pressed skills beside the held swing and the dash, and the slot UI shows which keys she actually presses. No hard cap on a veteran who wants six pressed. The Warden's taught build: the swing held (Resolve), Heroic Leap and Shield Charge pressed, Iron Vow kindled (braces itself when a brute winds up), Watch Bell and Dawnpulse kindled; Bladestorm takes Cleaver's and Sunder's keys when it comes.
+**The hands rule.** The owner: "with casted abilities I worry that 6 is too many. maybe 2 pressed 3 not? (either auras or auto casts etc?)". So six slots stand, but the SHAPE of a build is two or three pressed skills and the rest kindled (auras, auto-casts, triggers): every calling's kit offers at least half its skills as kindled options, each calling's taught build in Act 1 has at most two pressed skills beside the held swing and the dash, and the slot UI shows which keys she actually presses. No hard cap on a veteran who wants six pressed. The Warden's taught build (M3, 9 Nov; data in `godot/data/content/taught_builds.json`, read by the hands-rule test): the swing held (builds Resolve), Heroic Leap and Shield Charge pressed, Groundbreaker kindled as the spender (it heaves itself at the pack when Resolve is full; its key heaves now with what she has), Iron Vow kindled (braces itself when a brute winds up), Watch Bell kindled; Dawnpulse is offered later, not taught; Bladestorm takes Cleaver's and Sunder's keys when it comes.
 
 ## For the owner (one page)
 
@@ -240,7 +240,7 @@ Access follows CLASS_IDENTITY's circles; The Barrow Host (built) stays open to t
 | 1 | She wakes by the fire (night) | move | the stick / WASD |
 | 2 | A lone drowned one at the fire's edge | hit: hold to swing | LMB on the bar |
 | 3 | The ember it spills | the ember is the dead's light: it fills her bar and rises into a level | the ember bar |
-| 4 | Three on the road | a skill: Groundbreaker; Resolve pays for it | RMB and the Resolve bar |
+| 4 | Three on the road | a skill: Groundbreaker, kindled: her swings fill Resolve and it heaves itself at the pack when the bar is full; its key heaves now (M3, 9 Nov) | the Resolve bar, then Groundbreaker's key |
 | 5 | The first pack and its captain | a pack; the captain carries gear | the captain's lantern |
 | 5a | Her first level, on the road | a lamp: the level-up's flash offers *Third Blow* (every third swing lands heavy), lit where she stands with the wick point she has held since level 1 | Sunder's wick, before and after |
 | 6 | The captain's Rare | loot: the beam, the label; the filter hides the rest | the label, then the filter's key |
