@@ -1145,6 +1145,11 @@ def pose_check(shell_id, model, new_by_mesh, base_full):
         bones = [str(b) for b in z[f"{pn}__bones"]]
         mats = z[f"{pn}__mats"]
         bi = {b: i for i, b in enumerate(bones)}
+        miss = [j for j in model.joints if j not in bi]
+        if miss:
+            # (P2 l16: a followed shell carries her helper joints; a poses.npz from an older Blender build has none, so
+            # its matrices can't pose it: the P2 chain's gear_fit / gear_wear check the shipped piece instead)
+            return {"skipped": f"{os.path.relpath(f, ROOT)} lacks {len(miss)} of the shell's joints ({miss[0]}..): checked by the P2 chain (gear_wear)"}
         M = np.stack([mats[bi[j]] for j in model.joints])
         skin, skin_n = z[f"{pn}__skin"], z[f"{pn}__skin_n"]
         st = cKDTree(skin)
