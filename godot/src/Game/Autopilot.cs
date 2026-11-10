@@ -58,13 +58,14 @@ public sealed class Autopilot
 
     /// <summary>(M3) The one press plan (data/content/press_plan.json, Sim/PressPlan.cs) in a campaign fight: the grip held at
     /// the nearest foe, spenders, waits and Leap pressed as the harness's human presses them (0.4 s late, a share missed);
-    /// `--auto deft` presses on the instant and misses nothing. Not under --auto idle/toward/across/away/talk. It runs each
+    /// `--auto deft` presses on the instant and misses nothing. Not under --auto idle/toward/across/away/talk/stand
+    /// (stand: a Leap would take her off her mark, and frames 09 and 12 shoot from it). It runs each
     /// sim step after the keys (WorldScene.Hands), through Battle.HoldSkill/PressSkill; the Dash and the Flare stay this
     /// autopilot's own.</summary>
     readonly PressHands planHands = Args.Get("auto") == "deft" ? PressHands.Deft(7) : PressHands.Human(7, 0.4);
     void PlanStep(Battle b)
     {
-        if (!b.Campaign || Idle || Toward || Away || Across || Talk || g.InTransit || g.InCinematic || !b.Player.Alive) return;
+        if (!b.Campaign || Idle || Toward || Away || Across || Talk || Stand || g.InTransit || g.InCinematic || !b.Player.Alive) return;
         PressPlan.Run(b, planHands);
     }
 
