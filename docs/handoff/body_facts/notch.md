@@ -1,16 +1,13 @@
 # The lead's three marks on the carried column, located (lead 21's helper, 10 Nov; dev target target_a_dev.npz)
 
-Probes (CPU, read-only, nothing written to out/): `survivorsunchained_inputs/scratch_p1_notch/` probe.py (sharpest
-composed edges in a rest box, fair on / `fair_off` / `map_off` / published, region share + delta per end), neck.py,
-wjump.py. Live compose == dev Xc (0.0 mm). Rest frame: +z front, -x her right, y up (mm). md vertex ids below are for
-the lead's checks only; the cures are rules.
+Probes: `survivorsunchained_inputs/scratch_p1_notch/` (probe.py, neck.py, wjump.py; read-only). Live compose == dev Xc
+(0.0 mm). Rest mm: +z front, -x her right. Vertex ids (md) are for checks only; the cures are rules.
 
 ## (1) heroic_leap@6:r / @9:r, upper-chest notch: B's SOURCE WEIGHTS, checkerboard neck_01 / spine_04
-- Where: rest x -45..-69, y 1508-1531, z 43-75 (just under the right clavicle, sternum side of the breast top).
-  Edges e23033-23034, 23034-23075, 23074-23139, 23075-23140, 23204-23205, 23268-23269, 22913-22914.
+- Where: x -45..-69, y 1508-1531, z 43-75 (under the right clavicle). Edges 23033-23034, 23075-23140, 23204-23205 ...
 - Cause: neighbouring vertices alternate neck_01 0.82-0.95 (23034, 23075, 23140, 23204, 23205, 22914) and
   spine_04 0.76-0.82 + trap 0.1-0.18 (23033, 23074, 23139, 23268). 28 front edges per side with a neck-chain weight jump
-  > 0.5 (y 1510-1544; symmetric, so the left has it too). The neck region's delta alternates with it: 30-34 mm on the
+  > 0.5 (y 1510-1544; the left the same). The neck region's delta alternates with it: 30-34 mm on the
   neck_01 points, 1-3 mm on the spine_04 points (share 1.00, core, not stiff; neck relax on = off, cf = cr).
 - Numbers, box of 179 edges, max dihedral / edges over 45: @6 published 153/26, composed 136/22, girdles only 147/27;
   @9 published 148/5, composed 124/17, neck only 137/15 (the neck region adds 12 on @9); @12 pub 77/4 -> 35/0;
@@ -35,6 +32,6 @@ the lead's checks only; the cures are rules.
 
 ## (3) cast_bolt@3:r, ribcage below the armpit: B's own published fold, nothing carried there
 - Sharpest in x -210..-100, y 1230-1420: e24889-24890 -166, 24888-24975 157, 21680-24889 -151 at x -122..-126,
-  y 1325-1332, z 64-67, identical on published / composed / fair_off / map_off; girdle_r share 0.02-0.20, delta 0.0-0.3 mm.
-  Box over 45: composed 33, published 40. No share gradient or band border makes it.
+  y 1325-1332, z 64-67, same on published / composed / fair_off / map_off; girdle_r share 0.02-0.20, delta <= 0.3 mm
+  (box over 45: composed 33, published 40). No share gradient or band border makes it.
 - Cure: B's source skin (same weight-relax tool as (1)) or the girdle's ramp grown to cover it. Not checked: B weights there.
