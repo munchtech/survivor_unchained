@@ -120,7 +120,9 @@ public partial class BattleFx
     /// <summary>A ring (mode 16) running out to `r` in `run` s: its width share `w`, its along from `a0` (near) to `a1`
     /// (at the radius), its life from 0 to `l1`; gone the frame after it arrives.</summary>
     P7Shape P7Ring(Vector3 at, float r, float run, float w, float a0, float a1, float l1, float alpha) =>
-        P7Brushed(2 * w * r / P7Px(at), P7Quad(16, at, r, run + 1 / 60f, step: s =>
+        // (M4 lead 14, HUD judge r3c: on the top shader, over the ground and the firs alike; it was a flat plane at her foot
+        // height that a rise or a canopy cut into dashes)
+        P7Brushed(2 * w * r / P7Px(at), P7Quad(16, at, r, run + 1 / 60f, top: false, step: s =>
         {
             float t = Mathf.Clamp(s.Age / run, 0, 1), prog = 1 - (1 - t) * (1 - t);
             s.M.SetShaderParameter("p7_prog", prog);

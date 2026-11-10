@@ -88,9 +88,24 @@ vec4 p7_bring(vec2 p) {
 	float r = length(p), a = atan(p.y, p.x);
 	float front = p7_prog * (1.0 + 0.012 * (fx_noise(vec2(a * 4.0, p7_seed)) - 0.5));
 	float along = p7_lvl * (0.82 + 0.18 * fx_noise(vec2(a * 2.2, p7_seed + 3.0)));
-	vec4 o = p7_stroke((r - front) / max(p7_width, 1e-3), along, p7_fade);
-	o.a *= p7_alpha;
-	return o;
+	float x = (r - front) / max(p7_width, 1e-3);
+	vec4 o = p7_stroke(x, along, p7_fade);
+	// M4 lead 14 (HUD judge r3c, 21/22: "flat hard orange, dashed"): the stroke's outer lip feathered, and a soft wash
+	// falling off inward behind the front (the air the vow threw out), in the stroke's own heart colour at its life, so
+	// the ring reads as a front on the ground and not as a hard painted hoop. Drawn over the ground on the top shader
+	// (BattleFx.P7Ring): one occlusion rule, never cut into dashes by a rise or a fir.
+	// the band's real half-width in x (fx_stroke thins it toward the tail and with its stepped life)
+	float lf = floor(clamp(p7_fade, 0.0, 1.0) * 3.0 + 1e-4) / 3.0;
+	float we = max(mix(fx_stroke_shape.z, 1.0, pow(clamp(along, 0.0, 1.0), 0.7)) * (1.0 - 0.45 * lf), 0.05);
+	o.a *= (1.0 - smoothstep(0.15 * we, we, x)) * smoothstep(-we, -0.25 * we, x);
+	vec4 h = p7_stroke(0.0, along * 0.6, p7_fade);
+	float behind = max(front - r, 0.0) / max(front, 1e-3);
+	float wash = h.a * 0.42 * exp(-behind * 20.0) * smoothstep(0.1 * we, -0.5 * we, x) * (0.7 + 0.3 * fx_noise(vec2(a * 3.0, p7_seed + 7.0)));
+	// the front's lip runs hot (the core's pale gold), its body the mid, then the wash: a value ramp, never one flat band
+	o.rgb = mix(o.rgb, fx_core, 0.6 * smoothstep(-0.1 * we, 0.55 * we, x));
+	float al = max(o.a, wash);
+	vec3 rgb = mix(h.rgb, o.rgb, al > 1e-4 ? o.a / al : 1.0);
+	return vec4(rgb, al * p7_alpha);
 }
 
 // the star
