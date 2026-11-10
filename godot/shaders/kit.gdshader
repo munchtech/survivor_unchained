@@ -1293,15 +1293,11 @@ void fragment() {
 			float st_gv = 1.0 - 0.8 * clamp(3.0 * cel_lum(st_f) / max(cel_lum(cel_stand_tone(5).rgb), 1e-5), 0.0, 1.0);
 			EMISSION *= st_gv;
 			st_m *= st_gv;
-			// (L1 l25 WORLD) the fire's share in her light's shadow (cel_stt, cel.gdshaderinc), gone over the reach's last 15%
-			cel_stt = cel_pool_band.x > 0.0 ? CEL_STAND_THRU * (1.0 - smoothstep(0.85, 1.0, length(v_org - cel_ember.xz) / cel_pool_band.x)) : 0.0;
 			// (L1 l25 WORLD) --cel-dbg stand (cel_dbg -1, inert elsewhere: every other use reads > 0.5): the fire's factors
-			// unlit, r = the fire-facing step c_m1, g = the pool's level at the piece's foot over its heart's, b = that foot's
-			// distance from her light's foot / 4 m.
+			// unlit. (world_01 drew r = c_m1, g = the pool's level ratio, b = distance / 4 m: c_m1 = 1 everywhere.)
 			if (cel_dbg < -0.5) {
-				float pb_r = length(v_org - cel_ember.xz);
-				float pb_m1 = cel_stand_step(dot(wn, normalize(cel_ember.xyz - wp)), cel_stand_fire.x);
-				EMISSION = vec3(pb_m1, cel_lum(cel_pool_at(pb_r).rgb) / max(cel_lum(cel_pool_at(0.0).rgb), 1e-4), pb_r * 0.25);
+				// (l25 WORLD2: now r = st_gv only; g, b come from her light, cel_stand_light)
+				EMISSION = vec3(st_gv, 0.0, 0.0);
 				st_m = vec3(0.0); st_f = vec3(0.0);
 			}
 #else

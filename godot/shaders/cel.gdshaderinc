@@ -816,12 +816,11 @@ global uniform sampler2D cel_stand_pal : filter_nearest, repeat_disable;
 #endif
 varying vec3 cel_stm;   // (fragment to light: the moon's add here, top or rim over the base)
 varying vec3 cel_stf;   // (fragment to light: her fire's add here per unit of her light's energy over PI)
-// (L1 l25 WORLD) a leaf (CEL_STAND_FAM 1) in her light's SHADOW keeps cel_stt of her fire: probe world_01 read the fire-facing
-// step c_m1 = 1 on every frond of the pool fern and its pool level whole, yet the back fronds drew dark wine: the omni's shadow
-// (the front fronds' cast on the ones behind) cut the add whole while the moon's give-way (st_gv) had already dimmed the
-// base. Thin fronds pass firelight on; the share is CEL_STAND_THRU inside her pool's reach, none past it (the caller sets it).
-varying float cel_stt;
-#define CEL_STAND_THRU 0.7
+// (L1 l25 WORLD2) a leaf (CEL_STAND_FAM 1) keeps 1 - CEL_STAND_LEAF_CUT of her fire under the canopy's leaf shade
+// (cel_pool_shade.x cuts the ground's fire whole there: the dapple's hard edge inside her pool). Probe world2_01: the pool
+// fern's back fronds sat in that shade at frond height (cut 0.05, her light reaching, c_m1 = 1) while st_gv had already
+// given their moon tones 27% away: dark wine. Her fire is under the canopy; on a standing leaf the shade is a step, not a cut.
+#define CEL_STAND_LEAF_CUT 0.45
 bool cel_stand_on() { return cel_on > 0.0 && cel_stand.x != 0.0; }
 vec4 cel_stand_tone(int c_i) { return texelFetch(cel_stand_pal, ivec2(c_i, CEL_STAND_FAM), 0); }
 // A hard step of c_v at c_e, one pixel wide (fragment() only).
@@ -893,12 +892,16 @@ bool cel_stand_light(vec3 c_l, vec3 c_lc, float c_att, bool c_dir, mat4 c_iv, in
 	if (cel_pool.w <= 0.0 || cel_pool_band.x <= 0.0 || cel_ember.w <= 0.0) return false;
 	float c_m = max(c_lc.r, max(c_lc.g, max(c_lc.b, 1e-6)));
 	if (dot(abs(c_lc / c_m - cel_pool.rgb), vec3(1.0)) > 0.02) return false;
-#if CEL_STAND_FAM == 1
-	float c_sh = c_att > 0.0 ? 1.0 : cel_stt;
-#else
 	float c_sh = c_att > 0.0 ? 1.0 : 0.0;
+#if CEL_STAND_FAM == 1
+	float c_cut = 1.0 - cel_pool_shade.x * CEL_STAND_LEAF_CUT * (1.0 - c_leaf);
+	// (L1 l25 WORLD2) --cel-dbg stand, her light's side: g = the fire's whole cut here (shadow x the canopy-shade cut),
+	// b = her light reaches (ATTENUATION > 0); the fragment's r is the moon tones' give-way st_gv
+	if (cel_dbg < -0.5) { c_sl += vec3(0.0, c_sh * c_cut, c_sh); return true; }
+#else
+	float c_cut = 1.0 - cel_pool_shade.x * (1.0 - c_leaf);
 #endif
-	c_sl += cel_stf * (c_m / PI) * c_sh * (1.0 - cel_pool_shade.x * (1.0 - c_leaf));
+	c_sl += cel_stf * (c_m / PI) * c_sh * c_cut;
 	return true;
 }
 #endif
