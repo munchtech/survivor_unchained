@@ -78,9 +78,68 @@ def test_built_unit_carries_its_sources_vertex_data(pid):
             if not k.startswith(("COLOR_", "TEXCOORD_")):
                 continue
             assert k in ua, (pid, n["name"], k, stamp)
-            assert np.array_equal(gf.stored(u, ua[k]), gf.stored(s, sa[k])), (pid, n["name"], k)
+            got, src_v = gf.stored(u, ua[k]), gf.stored(s, sa[k])
+            if k == "TEXCOORD_1":
+                # (edge distance as stored; convexity in the shader's sense: a Blender source's is 1 - it, flipped)
+                pr = u.js["meshes"][n["mesh"]]["primitives"][0]
+                shape = gf.shape_convexity(u.accessor(ua["POSITION"]), u.accessor(ua["NORMAL"]), u.accessor(pr["indices"]))
+                assert np.array_equal(got[:, 0], src_v[:, 0]), (pid, n["name"], k)
+                assert np.allclose(got[:, 1], 1.0 - src_v[:, 1], atol=1e-6), (pid, n["name"], "convexity not flipped")
+                assert np.abs(got[:, 1] - shape).mean() < 0.15, (pid, n["name"], "convexity is not the shape's")
+            else:
+                assert np.array_equal(got, src_v), (pid, n["name"], k)
             seen += 1
         if "COLOR_0" in ua and n["name"].endswith(".steel"):
             sky = u.accessor(ua["COLOR_0"])[:, 0]
             assert sky.mean() > 0.2, (pid, n["name"], "sky seen fell to 0")   # (the fault: every value cast to 0)
     assert seen
+
+
+def _dome(n=24, r=0.08, seam=False):
+    """A sphere cap (a cup's dome), normals outward; seam: one meridian's points doubled, as a UV seam leaves them."""
+    th = np.linspace(0.05, 1.2, n)
+    ph = np.linspace(0, 2 * np.pi, n + 1 if seam else n, endpoint=seam)
+    TH, PH = np.meshgrid(th, ph, indexing="ij")
+    N = np.stack([np.sin(TH) * np.cos(PH), np.sin(TH) * np.sin(PH), np.cos(TH)], -1).reshape(-1, 3)
+    m = len(ph)
+    T = []
+    for i in range(n - 1):
+        for j in range(m - 1 if seam else m):
+            a, b, c, d = i * m + j, i * m + (j + 1) % m, (i + 1) * m + j, (i + 1) * m + (j + 1) % m
+            T += [[a, c, b], [b, c, d]]
+    return N * r, N, np.array(T)
+
+
+def test_shape_convexity_dome_and_hollow():
+    P, N, T = _dome()
+    inner = slice(24 * 3, 24 * 21)                              # (off the open rim and the pole ring)
+    out = gf.shape_convexity(P, N, T)[inner]
+    assert out.min() > 0.55                                     # (a dome seen from outside stands out: convex)
+    assert gf.shape_convexity(P, -N, T)[inner].max() < 0.45     # (its inner face: a hollow)
+    flat = np.c_[P[:, :2], np.zeros(len(P))]
+    assert np.abs(gf.shape_convexity(flat, np.tile([0, 0, 1.0], (len(P), 1)), T)[inner] - 0.5).max() < 0.02
+
+
+def test_a_uv_seam_is_no_edge():
+    P, N, T = _dome()
+    Ps, Ns, Ts = _dome(seam=True)
+    a = gf.shape_convexity(P, N, T).reshape(24, 24)
+    b = gf.shape_convexity(Ps, Ns, Ts).reshape(24, 25)
+    assert np.allclose(b[:, :24], a, atol=1e-9) and np.allclose(b[:, 24], a[:, 0], atol=1e-9)
+
+
+def test_carry_convexity_flips_a_blender_source_and_keeps_a_straight_one():
+    P, N, T = _dome()
+    shape = gf.shape_convexity(P, N, T)
+    edge = np.linspace(0, 0.05, len(P))
+    straight = np.c_[edge, shape].astype(np.float32)            # (a native's, adorn's: our own writers)
+    v, flipped, _, _ = gf.carry_convexity(straight, P, N, T)
+    assert not flipped and v is straight                        # (untouched: its unit is byte for byte as before)
+    blender = np.c_[edge, 1.0 - shape].astype(np.float32)       # (Blender's glTF export: V flipped on every UV layer)
+    v, flipped, keep, flip = gf.carry_convexity(blender, P, N, T)
+    assert flipped and flip < 0.01 < keep and v.dtype == np.float32
+    assert np.array_equal(v[:, 0], blender[:, 0]) and np.allclose(v[:, 1], shape, atol=1e-6)
+    again, flipped2, _, _ = gf.carry_convexity(v, P, N, T)      # (a carried value is not flipped back)
+    assert not flipped2 and again is v
+    flat = np.c_[edge, np.full(len(P), 0.5)].astype(np.float32)  # (no evidence either way: left alone)
+    assert gf.carry_convexity(flat, np.c_[P[:, :2], np.zeros(len(P))], np.tile([0, 0, 1.0], (len(P), 1)), T)[1] is False

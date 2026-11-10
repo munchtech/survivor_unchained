@@ -1322,6 +1322,50 @@ def stored(g, ai):
     return v
 
 
+def shape_convexity(P, N, T, ease=12):
+    """Each point's convexity as the outfit shader means it (0.5 flat, high where it stands out of its neighbours, low
+    in a crease), measured on the mesh as heroine_outfits.detail() does: its height over the mean of its neighbours
+    along its normal, per edge length, eased, tanh(4 c) / 2 + 0.5. Welded positions: a UV seam is no edge."""
+    from scipy import sparse
+    P, N, T = np.asarray(P, float), np.asarray(N, float), np.asarray(T, np.int64).reshape(-1, 3)
+    _, first, inv = np.unique(np.round(P / 1e-5).astype(np.int64), axis=0, return_index=True, return_inverse=True)
+    inv = inv.reshape(-1)
+    n = len(first)
+    V = P[first]
+    Nw = np.zeros((n, 3))
+    np.add.at(Nw, inv, N)
+    Nw /= np.maximum(np.linalg.norm(Nw, axis=1), 1e-9)[:, None]
+    t = inv[T]
+    e = np.vstack([t[:, [0, 1]], t[:, [1, 2]], t[:, [2, 0]]])
+    e = e[e[:, 0] != e[:, 1]]
+    A = sparse.coo_matrix((np.ones(len(e) * 2), (np.r_[e[:, 0], e[:, 1]], np.r_[e[:, 1], e[:, 0]])), shape=(n, n)).tocsr()
+    A.data[:] = 1.0
+    deg = np.maximum(np.asarray(A.sum(1)).ravel(), 1)
+    mn = lambda x: (A @ x) / (deg if x.ndim == 1 else deg[:, None])  # noqa: E731
+    el = np.sqrt(np.maximum(mn((V ** 2).sum(1)) - 2 * (mn(V) * V).sum(1) + (V ** 2).sum(1), 0.0)) + 1e-6
+    c = -((mn(V) - V) * Nw).sum(1) / el
+    for _ in range(ease):
+        c = 0.5 * c + 0.5 * mn(c)
+    return (np.tanh(c * 4) * 0.5 + 0.5)[inv]
+
+
+def carry_convexity(uv1, P, N, T):
+    """A source's TEXCOORD_1 (edge distance m, convexity) with its convexity in the shader's sense. Blender's glTF
+    export flips V on EVERY UV layer, so a Blender-built source stores 1 - convexity (a cup's dome read as a hollow:
+    grime, no wear); a mesh written by our own tools (a native, adorn's trims) stores it straight. Told apart by the
+    shape itself, no per-piece data: flipped when 1 - stored lies clearly nearer the mesh's measured convexity than
+    stored does (under half its mean error, and 0.05 nearer). Returns (uv1, flipped, error as stored, error flipped)."""
+    uv1 = np.asarray(uv1)
+    s = uv1[:, 1].astype(float)
+    g = shape_convexity(P, N, T)
+    keep, flip = float(np.abs(s - g).mean()), float(np.abs(1.0 - s - g).mean())
+    if not (flip < 0.5 * keep and keep - flip > 0.05):
+        return uv1, False, keep, flip
+    out = uv1.copy()
+    out[:, 1] = (1.0 - s).astype(uv1.dtype)
+    return out, True, keep, flip
+
+
 def write_unit(path, bd, ev, ref_glb):
     """<id>.gltf + .bin: B's joints and skin verbatim, A's nodes / meshes / materials with our geometry."""
     import glbwrite
@@ -1395,6 +1439,7 @@ def write_unit(path, bd, ev, ref_glb):
         am = ajs["meshes"][an["mesh"]]
         pr = am["primitives"][0]
         P = e["Xu"][e["inv"]]
+        idx = g.accessor(pr["indices"]).astype(np.uint32).reshape(-1)
         att = {}
         for k, ai in pr["attributes"].items():
             if k == "POSITION":
@@ -1405,11 +1450,16 @@ def write_unit(path, bd, ev, ref_glb):
                 continue
             else:
                 a = ajs["accessors"][ai]
-                att[k] = out.acc(stored(g, ai), a["type"], a["componentType"], 34962, normalized=a.get("normalized", False))
+                v = stored(g, ai)
+                if k == "TEXCOORD_1" and a["componentType"] == 5126 and not m["node"].endswith(".shadow"):
+                    # (the shader's convexity in the shader's sense, measured on the shape she wears)
+                    v, flipped, e_keep, e_flip = carry_convexity(v, P, e["N"], idx)
+                    if flipped:
+                        print(f"gear carry: {m['node']:44s} convexity was 1 - shape (error {e_keep:.3f} as stored, {e_flip:.3f} flipped): flipped")
+                att[k] = out.acc(v, a["type"], a["componentType"], 34962, normalized=a.get("normalized", False))
         for s in range(2):
             att[f"JOINTS_{s}"] = out.acc(e["J"][:, 4 * s:4 * s + 4], "VEC4", 5123, 34962)
             att[f"WEIGHTS_{s}"] = out.acc(e["W"][:, 4 * s:4 * s + 4], "VEC4", 5126, 34962)
-        idx = g.accessor(pr["indices"]).astype(np.uint32).reshape(-1)
         p = {"attributes": att, "indices": out.acc(idx, "SCALAR", 5125, 34963)}
         if "material" in pr:
             p["material"] = mat(pr["material"])
