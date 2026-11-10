@@ -47,7 +47,10 @@ public partial class GameHud : CanvasLayer
     bool shownEmber = true;
     /// <summary>Her irons along the foot.</summary>
     Instrument irons = null!;
-    float hpShown = 1, trailShown = 1, trailWait;
+    float hpShown = 1;
+    // The trails behind her life and a boss's bar: one rule, by time (BarTrail), run in _Process.
+    BarTrail lifeTrail, bossTrailAt;
+    float bossK = 1;
     // Names made once: a string given where a name is wanted is a new one each
     // call, and the HUD's twelve frames a second left them to the collector.
     internal static readonly StringName FontColor = "font_color", PanelName = "panel";
@@ -935,7 +938,8 @@ public partial class GameHud : CanvasLayer
         var life = irons.Life;
         if (HudPin.Life is float l)
         {
-            life.Level = life.Trail = hpShown = trailShown = l;
+            life.Level = life.Trail = hpShown = l;
+            lifeTrail.Snap(l);
             globeNum = double.NaN;
             life.Number = $"{Math.Ceiling(l * pinMax)}";
         }
@@ -1243,6 +1247,8 @@ public partial class GameHud : CanvasLayer
     public void Boss(BossBar? bar)
     {
         bar ??= DevSlots.ShieldBar;
+        // A bar that appears, or becomes another bar (the ring, then Old Blue), starts with no trail: nothing was lost on screen.
+        bool fresh = bar != null && (!bossBox.Visible || BossName != bar.Name);
         bossBox.Visible = bar != null;
         BossName = bar?.Name;
         if (bar == null) return;
@@ -1257,7 +1263,8 @@ public partial class GameHud : CanvasLayer
         bossFill.Size = new Vector2(w * k, 12);
         if (bossSheen.Visible != bar.Shielded) bossSheen.Visible = bar.Shielded;
         if (bossFill.Color != BossRed) bossFill.Color = BossRed;
-        bossTrail.Size = new Vector2(Math.Max(bossTrail.Size.X - 2, w * k), 12);
+        bossK = k;
+        if (fresh) { bossTrailAt.Snap(k); bossTrail.Size = new Vector2(w * k, 12); }
         // The phase marks, built when they change rather than every frame.
         string marks = bar.Phases == null ? "" : string.Join(",", bar.Phases);
         if (marks != bossMarks)
@@ -1849,8 +1856,9 @@ public partial class GameHud : CanvasLayer
         // The health under the survivor eases in and out with the night's fight.
         underAlpha = Mathf.MoveToward(underAlpha, underWanted ? 1 : 0, dt * 4);
         // The trail behind her life catches up after a moment.
-        if (trailShown > hpShown) { trailWait += dt; if (trailWait > 0.35f) trailShown = Mathf.MoveToward(trailShown, hpShown, dt * 1.6f); }
-        else { trailWait = 0; trailShown = hpShown; }
+        float trailShown = lifeTrail.Step(hpShown, dt);
+        // A boss's bar the same way: by time and here, so a bar fed once still settles (Boss() only says where the fill is).
+        if (bossBox.Visible) bossTrail.Size = new Vector2((BossW - 4) * bossTrailAt.Step(bossK, dt), 12);
         var life = irons.Life;
         life.Trail = trailShown;
         float now = Time.GetTicksMsec() / 1000f;
