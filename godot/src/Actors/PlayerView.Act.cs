@@ -41,7 +41,7 @@ public partial class PlayerView
     {
         actInit = true;
         actT0 = time - 0;   // (time has run this frame's dt already: the run's clock counts from here)
-        if (!own.Has(ActClip!)) { GD.PrintErr($"act: no clip '{ActClip}' in her library"); return; }
+        if (!HasHer(ActClip!)) { GD.PrintErr($"act: no clip '{ActClip}' in her library"); return; }
         var anim = person.Anim.GetAnimation(own.Prefix + ActClip);
         HerEvents.Beats? beats = null;
         var path = ProjectSettings.GlobalizePath("res://data/anim/her_events.json");
@@ -55,16 +55,120 @@ public partial class PlayerView
         if (beats == null) GD.Print($"act: {ActClip} has no beats in her_events.json");
     }
 
+    // ---- the blend's foot travel (cm, x and z, her node's frame and the world), per act pass ----
+    static readonly string[] MeasBones = { "ball_l", "ball_r", "foot_l", "foot_r", "pelvis" };
+    readonly int[] measIdx = new int[5];
+    readonly Vector3[] measNode = new Vector3[5], measWorld = new Vector3[5];     // this frame's reading
+    readonly Vector3[] measPrevNode = new Vector3[5], measPrevWorld = new Vector3[5];
+    readonly Vector3[] measStartNode = new Vector3[5], measStartWorld = new Vector3[5];
+    readonly float[] measPathNode = new float[5], measPathWorld = new float[5];
+    bool measInit, measOk;
+    int measStage;   // 0 idle, 1 blend-in window, 2 clip running, 3 blend-back window
+    double measT;    // the clock at the stage's start
+    double measEndAt;
+
+    static string Cm(float m) => (m * 100f).ToString("0.0", CultureInfo.InvariantCulture);
+    static string Xz(Vector3 v) => $"({Cm(v.X)}, {Cm(v.Z)})";
+
+    /// <summary>Reads the five points off the skeleton's current global poses. Called at the top of ActTick, so it sees the pose the
+    /// last tree.Advance left and the node transform ActApply left: one frame behind the pose this frame will show, consistently.</summary>
+    bool MeasRead()
+    {
+        if (!measInit)
+        {
+            measInit = true; measOk = true;
+            for (int i = 0; i < 5; i++)
+            {
+                measIdx[i] = person.Skeleton.FindBone(MeasBones[i]);
+                if (measIdx[i] < 0) { GD.PrintErr($"act: measure: no bone '{MeasBones[i]}' in her skeleton: foot travel not measured"); measOk = false; break; }
+            }
+        }
+        if (!measOk) return false;
+        var skel = person.Skeleton;
+        var inv = GlobalTransform.AffineInverse();
+        for (int i = 0; i < 5; i++)
+        {
+            var w = skel.GlobalTransform * skel.GetBoneGlobalPose(measIdx[i]).Origin;
+            measWorld[i] = w; measNode[i] = inv * w;
+        }
+        return true;
+    }
+
+    string MeasPoints(Vector3[] v) =>
+        $"ball_l {Xz(v[0])} ball_r {Xz(v[1])} foot_l {Xz(v[2])} foot_r {Xz(v[3])} pelvis {Xz(v[4])}";
+
+    string MeasPaths(float[] path, Vector3[] start, Vector3[] cur)
+    {
+        var sb = new System.Text.StringBuilder();
+        for (int i = 0; i < 5; i++)
+        {
+            float net = new Vector2(cur[i].X - start[i].X, cur[i].Z - start[i].Z).Length();
+            sb.Append($"{MeasBones[i]} path {Cm(path[i])} net {Cm(net)}").Append(i < 4 ? ", " : "");
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>Each frame while a pass is measured: add the horizontal moves, print the windows as they close.</summary>
+    void MeasStep()
+    {
+        if (measStage == 0 || !MeasRead()) return;
+        for (int i = 0; i < 5; i++)
+        {
+            if (measStage != 2)
+            {
+                measPathNode[i] += new Vector2(measNode[i].X - measPrevNode[i].X, measNode[i].Z - measPrevNode[i].Z).Length();
+                measPathWorld[i] += new Vector2(measWorld[i].X - measPrevWorld[i].X, measWorld[i].Z - measPrevWorld[i].Z).Length();
+            }
+            measPrevNode[i] = measNode[i]; measPrevWorld[i] = measWorld[i];
+        }
+        double c = actClock();
+        if (measStage == 1 && c >= measT + 0.25)
+        {
+            GD.Print($"act: {ActClip} blend-in 0.25 s: {MeasPaths(measPathNode, measStartNode, measNode)} [node frame]");
+            measStage = 2;
+        }
+        if (measStage == 2 && c >= measEndAt)
+        {
+            GD.Print($"act: {ActClip} end: {MeasPoints(measNode)} [node frame]");
+            for (int i = 0; i < 5; i++) { measStartNode[i] = measNode[i]; measStartWorld[i] = measWorld[i]; measPathNode[i] = measPathWorld[i] = 0; }
+            measStage = 3; measT = c;
+        }
+        else if (measStage == 3 && c >= measT + 0.60)
+        {
+            GD.Print($"act: {ActClip} blend-back 0.60 s: {MeasPaths(measPathWorld, measStartWorld, measWorld)} [world]");
+            GD.Print($"act: {ActClip} blend-back 0.60 s: {MeasPaths(measPathNode, measStartNode, measNode)} [node frame]");
+            GD.Print($"act: {ActClip} after: {MeasPoints(measNode)} [node frame]");
+            measStage = 0;
+        }
+    }
+
+    /// <summary>A pass is about to start: its last pose before the clip takes over.</summary>
+    void MeasStart(double startRun, double duration)
+    {
+        if (measStage == 3) GD.Print($"act: {ActClip} blend-back cut short by the next pass");
+        measStage = 0;
+        if (!MeasRead()) return;
+        GD.Print($"act: {ActClip} before: {MeasPoints(measNode)} [node frame]");
+        for (int i = 0; i < 5; i++)
+        {
+            measStartNode[i] = measPrevNode[i] = measNode[i]; measStartWorld[i] = measPrevWorld[i] = measWorld[i];
+            measPathNode[i] = measPathWorld[i] = 0;
+        }
+        measStage = 1; measT = actClock(); measEndAt = startRun + duration;
+    }
+
     /// <summary>Before the tree advances: start the clip at its time, then each frame set its place for the end of this frame.</summary>
     void ActTick(double dt)
     {
         if (!ActOn) return;
         if (!actInit) ActLoad();
         if (actPlan == null) return;
+        MeasStep();
         var s = actPlan.Sample(actClock());
         if (s.Pass < 0) return;
         if (s.Pass != actPass)
         {
+            MeasStart(actPlan.Start(s.Pass), actPlan.Duration);
             actPass = s.Pass; actEvent = 0; actPos = 0; actFading = false;
             if (!actShown) { actBase = Position; actBaseYaw = Rotation.Y; actShown = true; }
             if (!FullHer(ActClip!, 1, false)) { GD.PrintErr($"act: {ActClip} would not start"); actPlan = null; return; }

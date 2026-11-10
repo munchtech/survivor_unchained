@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # P4 clips packed for the game: godot/art/people/body_p1/p4/*.json (tools/anim/p4.py build) -> body_p1/p4_clips.res
-# (godot/tools_scenes/P4Pack.cs). Default = judged clips only (p4.py judged); --review = all, for shots (never commit its her_events.json). Takes and gives back the godot turn. Extra args pass to Godot.
+# (godot/tools_scenes/P4Pack.cs). Default = judged clips only (p4.py judged); --review = all, --review=a,b = only those named clips unjudged (the rest still need judged), for shots (never commit its her_events.json). Takes and gives back the godot turn. Extra args pass to Godot.
 set -u
 W="$(cd "$(dirname "$0")/../.." && pwd)"
 G="C:/Users/munch/Desktop/Godot_v4.5.1-stable_mono_win64/Godot_v4.5.1-stable_mono_win64_console.exe"

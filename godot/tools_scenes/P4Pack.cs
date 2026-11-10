@@ -37,12 +37,14 @@ public partial class P4Pack : Node
         // t^-1 q, and t (t^-1 q) = q: the clip plays exactly as built while the bridge clips need the base.
         var baseTurn = P1Body.BlendBase().ToDictionary(x => x.Bone, x => x.Turn);
         var outLib = new AnimationLibrary();
-        bool review = P4Gate.Review(OS.GetCmdlineUserArgs());
-        if (review)
+        var (review, reviewNames) = P4Gate.ReviewOf(OS.GetCmdlineUserArgs());
+        if (review || reviewNames.Count > 0)
         {
             outLib.SetMeta("review", true);
-            GD.Print("p4-pack: REVIEW PACK: unjudged clips included. For shots and judges in this worktree only; never commit or hand its her_events.json on");
+            GD.Print("p4-pack: REVIEW PACK: " + (review ? "unjudged clips included" : $"unjudged taken by name: {string.Join(", ", reviewNames.OrderBy(n => n))}") +
+                     ". For shots and judges in this worktree only; never commit or hand its her_events.json on");
         }
+        var builtNames = new HashSet<string>();
         int skipped = 0;
         var events = new Dictionary<string, HerEvents.Beats>();
         var files = DirAccess.GetFilesAt(dir).Where(f => f.EndsWith(".json")).OrderBy(f => f).ToArray();
@@ -51,7 +53,8 @@ public partial class P4Pack : Node
             using var d = JsonDocument.Parse(FileAccess.GetFileAsString(dir + file));
             var r = d.RootElement;
             string name = r.GetProperty("name").GetString()!;
-            if (!P4Gate.Takes(r, review))
+            builtNames.Add(name);
+            if (!P4Gate.Takes(r, name, review, reviewNames))
             {
                 skipped++;
                 GD.Print($"p4-pack: SKIPPED {name}: not judged (the bridge clip keeps playing; a review pack takes it: p4_pack.sh --review)");
@@ -95,6 +98,8 @@ public partial class P4Pack : Node
             GD.Print($"p4-pack: {name}: {frames} frames, {bones} bones ({based} under the blend base, pre-turned), {(loop ? "loop" : "once")}, {anim.Length:F3} s" +
                      (missing.Length > 0 ? $"; NOT KEYED under the blend base (they land on t): {string.Join(" ", missing)}" : ""));
         }
+        var unknown = reviewNames.Where(n => !builtNames.Contains(n)).OrderBy(n => n).ToArray();
+        if (unknown.Length > 0) GD.Print($"p4-pack: --review names with no built clip: {string.Join(", ", unknown)}");
         var err = ResourceSaver.Save(outLib, P1Body.Dir + "p4_clips.res", ResourceSaver.SaverFlags.Compress);
         GD.Print($"p4-pack: wrote p4_clips.res ({files.Length - skipped} packed, {skipped} skipped, track path {skelPath}): {err}");
         // The clips' beats as data (a clip's top-level "beats", clip seconds -> frames at 60 fps). The pack owns the

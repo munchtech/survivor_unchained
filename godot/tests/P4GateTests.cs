@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Text.Json;
 using SurvivorUnchained.Play;
 using Xunit;
@@ -25,6 +26,26 @@ public class P4GateTests
     {
         Assert.True(P4Gate.Takes(Of("{}"), true));
         Assert.True(P4Gate.Takes(Of("{\"judged\": {\"verdict\": \"FAIL\"}}"), true));
+    }
+
+    [Fact] public void NamedReviewTakesOnlyTheNamedUnjudged()
+    {
+        var names = new System.Collections.Generic.HashSet<string> { "a" };
+        Assert.True(P4Gate.Takes(Of("{}"), "a", false, names));
+        Assert.False(P4Gate.Takes(Of("{}"), "b", false, names));
+        Assert.True(P4Gate.Takes(Of("{\"judged\": {\"verdict\": \"PASS\", \"build\": \"abc\"}}"), "b", false, names));
+        Assert.True(P4Gate.Takes(Of("{}"), "b", true, new System.Collections.Generic.HashSet<string>()));
+    }
+
+    [Fact] public void ReviewOfReadsAllAndNames()
+    {
+        var (all, names) = P4Gate.ReviewOf(new[] { "--review" });
+        Assert.True(all); Assert.Empty(names);
+        (all, names) = P4Gate.ReviewOf(new[] { "x", "--review=a, b,,c" });
+        Assert.False(all); Assert.Equal(new[] { "a", "b", "c" }, names.OrderBy(n => n));
+        (all, names) = P4Gate.ReviewOf(new string[0]);
+        Assert.False(all); Assert.Empty(names);
+        Assert.False(P4Gate.Review(new[] { "--review=a" }));
     }
 
     [Fact] public void ReviewReadsTheArg()

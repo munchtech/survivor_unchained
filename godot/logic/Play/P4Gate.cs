@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 
@@ -21,6 +22,23 @@ public static class P4Gate
     /// <summary>A review pack takes every clip; the default takes judged ones.</summary>
     public static bool Takes(JsonElement clip, bool review) => review || Judged(clip);
 
-    /// <summary>True when the pack's user args hold --review.</summary>
+    /// <summary>A named review: all clips (bare --review), or only the named ones unjudged; the rest need the judged stamp.</summary>
+    public static bool Takes(JsonElement clip, string name, bool all, ISet<string> names) => all || names.Contains(name) || Judged(clip);
+
+    /// <summary>--review (all) or --review=a,b (names); neither gives (false, empty).</summary>
+    public static (bool All, HashSet<string> Names) ReviewOf(string[] args)
+    {
+        var names = new HashSet<string>();
+        bool all = false;
+        foreach (var a in args)
+        {
+            if (a == "--review") all = true;
+            else if (a.StartsWith("--review="))
+                foreach (var n in a.Substring(9).Split(',', System.StringSplitOptions.RemoveEmptyEntries | System.StringSplitOptions.TrimEntries)) names.Add(n);
+        }
+        return (all, names);
+    }
+
+    /// <summary>True when the pack's user args hold the bare --review.</summary>
     public static bool Review(string[] args) => args.Contains("--review");
 }

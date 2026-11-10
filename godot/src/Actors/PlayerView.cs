@@ -521,9 +521,12 @@ public partial class PlayerView : Node3D
 
     /// <summary>One of her own on the whole of her: soft ones (a fidget, a
     /// breath caught) give way the moment she moves.</summary>
+    /// <summary>Her clip by name: in her own library, or (--body p1) in the P1 library laid into the animation player.</summary>
+    bool HasHer(string clip) => own.Has(clip) || person.Anim.HasAnimation(own.Prefix + clip);
+
     bool FullHer(string clip, double speed, bool soft)
     {
-        if (!mine || !own.Has(clip)) return false;
+        if (!mine || !HasHer(clip)) return false;
         XfadeStop();
         fullClip = clip;
         fullStart = time; fullSpeed = (float)speed;
@@ -545,7 +548,7 @@ public partial class PlayerView : Node3D
     /// swing in one frame (the Long Cut's f0 pop). For the Flare's press; any other cut can use it.</summary>
     bool FullHerFrom(string clip, double speed, bool soft, double xfade)
     {
-        if (!mine || !own.Has(clip)) return false;
+        if (!mine || !HasHer(clip)) return false;
         bool live = (bool)tree.Get("parameters/fullShot/active");
         var oldAnim = full.Animation;
         double oldAt = (time - fullStart) * fullSpeed;
