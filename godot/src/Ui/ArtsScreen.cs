@@ -9,13 +9,13 @@ namespace SurvivorUnchained.Ui;
 /// <summary>
 /// The arts the survivor knows (Rpg/ArtBook.cs), on the day's book's panel at the right with her in
 /// the world beside it, as Self and the Pack are (approved: the book is one panel; no boxes). Its two
-/// pages turn under the book's tabs: the art in hand, and the skills by day.
+/// pages turn under the book's tabs: the art in hand, and the skills.
 ///
 /// The art in hand: the arts known in a row of marks, the rest of the calling's faint with how they
 /// are learned (Hades II's locked silhouettes); the art chosen, named large, its rank as a line of
 /// nodes (the road to mastery), its facets as ruled lines of type, each set, to choose, or waiting
 /// on a rank. An art is taken in hand, and a set facet changed, only where it is safe (out of a
-/// fight); a facet newly opened by rank can be chosen anywhere. Skills by day: what is learned and
+/// fight); a facet newly opened by rank can be chosen anywhere. Skills: what is learned and
 /// carried, each a line, and the one chosen read out beside the list.
 /// </summary>
 public partial class ArtsScreen : Overlay
@@ -42,7 +42,7 @@ public partial class ArtsScreen : Overlay
     public static bool BoardOn => SurvivorUnchained.Args.Has("board") || System.Environment.GetEnvironmentVariable("SU_BOARD") == "1";
     /// <summary>v2's Lamps are their own tab on the book's chain (LampsScreen); --board keeps the functional pages here.</summary>
     static int Pages => BoardOn ? 4 : 2;
-    static readonly string[] PageNames = ["The art in hand", "Skills by day", "Lamps", "Wicks"];
+    static readonly string[] PageNames = ["The art in hand", "Skills", "Lamps", "Wicks"];
 
     public ArtsScreen(Game g) : base(g) { }
 
@@ -419,7 +419,7 @@ public partial class ArtsScreen : Overlay
     static System.Func<string, string> PathName(string skill) => id =>
         Wicks.Lamp(skill, id) is { } ln ? (ln.N == Wicks.PerStrand ? $"{ln.Strand.TurnDef.Name} (Turn)" : $"{ln.Strand.TurnDef.Name} {Ranks[ln.N]}") : id;
 
-    /* ------------------------------------------------------ skills by day -- */
+    /* --------------------------------------------------------------- skills -- */
 
     static readonly string[] Ranks = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
     string? selSkill;
@@ -505,12 +505,12 @@ public partial class ArtsScreen : Overlay
         d.AddChild(Style.H(Style.Gap4, m, Style.V(2, Style.Label(w.Name.ToUpperInvariant(), Style.Display, 28, Kit.Ink),
             Style.Label($"{w.School.ToString().ToLowerInvariant()}  ·  {string.Join(", ", w.Tags.Select(t => t.ToString().ToLowerInvariant()))}", Style.UiBold, 14, col))));
         d.AddChild(Style.Label(w.Description, Style.Text, 17, Kit.Ink2, true));
-        // What her calling's Hand does to it, in her hands by day and by night (plain text; the look is the UI lead's).
+        // What her calling's Hand does to it, in her hands in every fight (plain text; the look is the UI lead's).
         if (Content.Hands.Line(ch.Archetype, w) is { } hand) d.AddChild(Style.Label(hand, Style.Text, 16, Kit.Ink2, true));
         string attr = SkillBook.Attribute(w.Id);
         d.AddChild(Style.Label($"It asks {SkillBook.Need} {attr} of whoever uses it. You have {SkillBook.Have(ch, attr)}.{(meets ? "" : " Until you measure up (points, a respec), it lies idle.")}",
             Style.UiBold, 15, meets ? Style.Good : Style.Bad, true));
-        d.AddChild(Style.Label($"By day it is rank {Ranks[SkillBook.Rank(ch)]}, and grows with you (every third level). In the night's arenas the ember starts from nothing, but what you carry by day is banked: it comes in at rank {Ranks[SkillBook.NightRank(ch)]}" +
+        d.AddChild(Style.Label($"It is rank {Ranks[SkillBook.Rank(ch)]}, and grows with you (every third level). In the arenas the ember starts from nothing, but what you carry is banked: it comes in at rank {Ranks[SkillBook.NightRank(ch)]}" +
             (ch.Level < 10 ? " (rank III from the tenth level)." : "."), Style.Ui, 14, Kit.Dim, true));
         if (!known)
             d.AddChild(Style.Label("You have seen it burn. Learn it from a tome (a story fight won, Vonnra's Curiosities), or your calling may teach it as you grow.", Style.TextItalic, 15, Kit.Dim, true));

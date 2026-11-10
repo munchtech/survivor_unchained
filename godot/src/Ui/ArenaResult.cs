@@ -86,7 +86,7 @@ public partial class ArenaResultScreen : TellingScreen
             found.AddThemeConstantOverride("h_separation", 32);
             found.AddThemeConstantOverride("v_separation", 8);
             foreach (var id in r.Discovered) found.AddChild(Skill(id, true));
-            Next(Style.V(8, Mid("DISCOVERED  ·  to be learned by day, from tomes and from your calling", Kit.HeadInk, 12, Style.UiHeavy), found), Sound.Sfx.Discovery, 0.45);
+            Next(Style.V(8, Mid("DISCOVERED  ·  to be learned from tomes and from your calling", Kit.HeadInk, 12, Style.UiHeavy), found), Sound.Sfx.Discovery, 0.45);
         }
         if (r.Taught is { } taught) Next(Mid($"Your calling taught you {Weapons.All[taught].Name}", Style.Good), Sound.Sfx.Discovery);
         if (r.LevelsGained > 0) Next(Mid($"Level {G.Journey.Ch.Level}" + (r.LevelsGained > 1 ? $": {r.LevelsGained} levels in one night" : ""), Style.Good, 20), () => Sound.Sfx.LevelUp(), 0.45);
@@ -100,7 +100,7 @@ public partial class ArenaResultScreen : TellingScreen
             {
                 var w = Weapons.All[id];
                 var word = Kit.Word(w.Name, () => { if (Arenas.Inscribe(G.Journey, r, id)) { told = true; Refresh(); } }, new Color("#d8c8f0"), 16);
-                word.TooltipText = $"{w.Description} By day it asks {SkillBook.Need} {SkillBook.Attribute(id)}.";
+                word.TooltipText = $"{w.Description} It asks {SkillBook.Need} {SkillBook.Attribute(id)} of whoever uses it.";
                 pick.AddChild(word);
             }
             Next(pick, () => Sound.Sfx.Loot(true), 0.45);
