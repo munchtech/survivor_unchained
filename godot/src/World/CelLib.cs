@@ -275,11 +275,16 @@ public static class CelLib
     static readonly List<(MeshInstance3D G, Node3D Her)> lined = new();
     static readonly HashSet<ulong> lineIds = new();
     static readonly Dictionary<ulong, bool> lineShader = new();
-    static ShaderMaterial? line, lineHair;
+    static ShaderMaterial? line;
+    // (lead 22, HAIRLINE) hair: a chain per OPAQUE surface (its first material -> our passes hung after its last pass), cut
+    // like that surface; never the overlay, which would also draw the blended cap and fine hairs' whole cards
+    static readonly Dictionary<Material, ShaderMaterial> lineCut = new();
+    const float LineHairCut = 0.3f;   // (the strands' cover from which the hull counts them: their blended fringe's reach)
+    static readonly HashSet<ulong> lineHairIds = new();
     static readonly Dictionary<Material, ShaderMaterial> lineOver = new();   // (another's overlay -> our passes with it after them)
     static bool lineWas;
 
-    static ShaderMaterial LineChain(bool hair)
+    static ShaderMaterial LineChain(bool hair, ShaderMaterial? cutBy = null)
     {
         var sh = GD.Load<Shader>("res://shaders/hero_line.gdshader");
         ShaderMaterial? first = null, last = null;
@@ -289,6 +294,7 @@ public static class CelLib
             var m = new ShaderMaterial { Shader = sh, ResourceName = LineName };
             m.SetShaderParameter("dir", new Vector2(Mathf.Cos(a), Mathf.Sin(a)));
             if (hair) m.SetShaderParameter("near_px", 250f);   // (hair cards: the hull is the card's quad, so no line in a close view)
+            if (cutBy != null) LineCutBy(m, cutBy);
             if (last == null) first = m; else last.NextPass = m;
             last = m;
         }
@@ -296,6 +302,65 @@ public static class CelLib
     }
 
     static bool IsLine(Material? m) => m is ShaderMaterial { ResourceName: LineName };
+
+    /// <summary>(lead 22) A hair surface the line goes round: a lit, depth-writing hair shader (the cards' core, the braid's
+    /// ropes, the tie), never the blended cap or fine hairs (depth_draw_never) nor the cap drawn as a core.</summary>
+    static bool HairOpaque(Material? m) => m is ShaderMaterial { Shader: { } sh } sm && sh.ResourcePath.Contains("heroine_hair")
+        && ShaderLines(sh) && !(sm.GetShaderParameter("cap").AsBool() && !sh.ResourcePath.Contains("rope_core"));
+
+    /// <summary>The pass's cut, as its hair surface cuts (heroine_hair.gdshaderinc's cover): 2 the braid's ropes, 0 the tie
+    /// (solid), else 1 a card at core_cut (a hashed one at half).</summary>
+    static void LineCutBy(ShaderMaterial pass, ShaderMaterial src)
+    {
+        var path = src.Shader.ResourcePath;
+        int mode = path.Contains("rope_core") ? 2 : src.GetShaderParameter("tie").AsBool() ? 0 : 1;
+        var cc = src.GetShaderParameter("core_cut");
+        float cut = path.Contains("_core") ? (cc.VariantType == Variant.Type.Nil ? 0.9f : cc.AsSingle()) : 0.5f;
+        // (hairline_01: cut at the core's own 0.9 the hull sat under the blended fringe the over/soft passes draw past the
+        // core, which washed the line to L 0.31-0.38 against the body's 0.19; cut at the fringe's visible reach instead)
+        cut = Mathf.Min(cut, LineHairCut);
+        // (no atlas, as on the tie: no cut; a null sampler set on a pass is "not a valid texture" at draw)
+        if (src.GetShaderParameter("strands").AsGodotObject() is Texture2D tex) pass.SetShaderParameter("cut_tex", tex); else mode = 0;
+        pass.SetShaderParameter("cut_mode", mode);
+        pass.SetShaderParameter("cut", cut);
+        pass.SetShaderParameter("cut_bias", src.GetShaderParameter("strand_bias").VariantType == Variant.Type.Nil ? 0f : src.GetShaderParameter("strand_bias").AsSingle());
+    }
+
+    static bool ShaderLines(Shader sh)
+    {
+        var id = sh.GetInstanceId();
+        if (!lineShader.TryGetValue(id, out var ok))
+        {
+            var code = sh.Code;
+            lineShader[id] = ok = Spatial.IsMatch(code) && !Unshaded.IsMatch(code) && !FxBlend.IsMatch(code) && !code.Contains("depth_draw_never");
+        }
+        return ok;
+    }
+
+    static Material? SurfaceMat(MeshInstance3D g, int s) => (s < g.GetSurfaceOverrideMaterialCount() ? g.GetSurfaceOverrideMaterial(s) : null) ?? g.Mesh.SurfaceGetMaterial(s);
+
+    /// <summary>(lead 22) Hangs (want) or takes off the line on each of a hair mesh's surfaces: our passes after the last of
+    /// an opaque surface's own; the soft ones never. Returns what it did per surface, for the print.</summary>
+    static string HairLine(MeshInstance3D g, bool want)
+    {
+        string said = "";
+        int n = g.Mesh?.GetSurfaceCount() ?? 0;
+        for (int s = 0; s < n; s++)
+        {
+            if (SurfaceMat(g, s) is not ShaderMaterial m) { said += $" s{s}:-"; continue; }
+            Material tail = m;
+            while (tail.NextPass != null && !IsLine(tail.NextPass)) tail = tail.NextPass;
+            bool has = IsLine(tail.NextPass), wants = want && HairOpaque(m);
+            if (wants && !has)
+            {
+                if (!lineCut.TryGetValue(m, out var chain)) lineCut[m] = chain = LineChain(true, m);
+                tail.NextPass = chain;
+            }
+            else if (!wants && has) tail.NextPass = null;
+            said += $" s{s}:{(wants ? "line" : "-")}";
+        }
+        return said;
+    }
 
     /// <summary>A mesh the line goes round: drawn (no shadow proxy), every surface a lit, solid material. Hair: its own chain.</summary>
     static bool LineFits(MeshInstance3D g, out bool hair)
@@ -307,21 +372,17 @@ public static class CelLib
         int n = g.Mesh.GetSurfaceCount();
         for (int s = 0; s < n; s++)
         {
-            var m = (s < g.GetSurfaceOverrideMaterialCount() ? g.GetSurfaceOverrideMaterial(s) : null) ?? g.Mesh.SurfaceGetMaterial(s);
+            var m = SurfaceMat(g, s);
+            // (lead 22) a hair surface: lined on its own if opaque (HairLine), the soft ones left out; the mesh still fits
+            if (m is ShaderMaterial { Shader: { } hs } && hs.ResourcePath.Contains("heroine_hair")) { hair = true; continue; }
             if (m is BaseMaterial3D b) { if (Why(b) is not null || b.Transparency == BaseMaterial3D.TransparencyEnum.Alpha) return false; }
             else if (m is ShaderMaterial { Shader: { } sh })
             {
-                var id = sh.GetInstanceId();
-                if (!lineShader.TryGetValue(id, out var ok))
-                {
-                    var code = sh.Code;
-                    lineShader[id] = ok = Spatial.IsMatch(code) && !Unshaded.IsMatch(code) && !FxBlend.IsMatch(code) && !code.Contains("depth_draw_never");
-                }
-                if (!ok) return false;
-                if (sh.ResourcePath.Contains("hair")) hair = true;
+                if (!ShaderLines(sh)) return false;
             }
             else return false;
         }
+        if (hair) { bool any = false; for (int s = 0; s < n && !any; s++) any = HairOpaque(SurfaceMat(g, s)); return any; }
         return n > 0;
     }
 
@@ -329,14 +390,14 @@ public static class CelLib
     /// state (its path, whether it is drawn, its shadow mode, layers, fade, skin, overlay passes, first surface's shader).</summary>
     static readonly bool LinePrint = !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("SU_HERO_LINE_PRINT"));
     static readonly Dictionary<ulong, string> lineSaid = new();
-    static void LineSay(MeshInstance3D g, bool want, bool hair, Material? ov)
+    static void LineSay(MeshInstance3D g, bool want, bool hair, Material? ov, string surfs = "")
     {
         var m = g.Mesh == null || g.Mesh.GetSurfaceCount() == 0 ? null : (g.GetSurfaceOverrideMaterialCount() > 0 ? g.GetSurfaceOverrideMaterial(0) : null) ?? g.Mesh.SurfaceGetMaterial(0);
         string sh = m switch { ShaderMaterial { Shader: { } x } => x.ResourcePath + " [" + (Regex.Match(x.Code, @"render_mode[^;]*").Value) + "]", BaseMaterial3D b => "std " + b.ResourceName + " transp " + b.Transparency, null => "none", _ => m.GetClass() };
         string passes = "";
         for (var p = ov; p != null; p = p.NextPass) passes += (p is ShaderMaterial { Shader: { } o } ? (IsLine(p) ? "line" : o.ResourcePath.GetFile()) : p.GetClass()) + ">";
         var cam = g.GetViewport()?.GetCamera3D();
-        string say = $"want {want} hair {hair} vis {g.Visible}/{g.IsVisibleInTree()} cast {g.CastShadow} layers {g.Layers} cam_mask {cam?.CullMask} fade {g.Transparency} skin {g.Skin != null} surfs {g.Mesh?.GetSurfaceCount()} overlay {passes} | {sh}";
+        string say = $"want {want} hair {hair} vis {g.Visible}/{g.IsVisibleInTree()} cast {g.CastShadow} layers {g.Layers} cam_mask {cam?.CullMask} fade {g.Transparency} skin {g.Skin != null} surfs {g.Mesh?.GetSurfaceCount()} overlay {passes}{(surfs.Length > 0 ? " hair_surfaces" + surfs : "")} | {sh}";
         var id = g.GetInstanceId();
         if (lineSaid.TryGetValue(id, out var was) && was == say) return;
         lineSaid[id] = say;
@@ -355,10 +416,14 @@ public static class CelLib
             if (!GodotObject.IsInstanceValid(g) || !GodotObject.IsInstanceValid(her)) { lined.RemoveAt(i); continue; }
             if (!g.IsInsideTree()) continue;
             at = her;
-            bool hair = false, want = on && LineFits(g, out hair);
+            bool hair = false, fits = on && LineFits(g, out hair);
+            // (lead 22) hair: per surface, never the overlay
+            bool want = fits && !hair;
+            string surfs = "";
+            if (fits && hair && lineHairIds.Add(g.GetInstanceId()) || lineHairIds.Contains(g.GetInstanceId())) surfs = HairLine(g, fits && hair);
             var ov = g.MaterialOverlay;
-            if (LinePrint) LineSay(g, want, hair, ov);
-            if (ov == null) { if (want) g.MaterialOverlay = hair ? lineHair ??= LineChain(true) : line ??= LineChain(false); }
+            if (LinePrint) LineSay(g, want || fits && hair, hair, ov, surfs);
+            if (ov == null) { if (want) g.MaterialOverlay = line ??= LineChain(false); }
             else if (IsLine(ov)) { if (!want) { Material? under = ov; while (IsLine(under)) under = under!.NextPass; g.MaterialOverlay = under; } }
             else if (want)
             {
@@ -378,7 +443,7 @@ public static class CelLib
         if (on && at != null && at.IsInsideTree())
         {
             float y = at.GlobalPosition.Y;
-            foreach (var first in lineOver.Values.Append(line).Append(lineHair))
+            foreach (var first in lineOver.Values.Append(line).Concat(lineCut.Values))
                 for (Material? p = first; IsLine(p); p = p!.NextPass) ((ShaderMaterial)p!).SetShaderParameter("floor_y", y);
         }
     }

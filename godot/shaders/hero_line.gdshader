@@ -16,6 +16,13 @@ uniform float floor_y = -1000.0;        // her foot's height: the hull never sin
 uniform float lift = 0.012;             // the hull's least height over that floor, m
 uniform float near_px = 0.0;            // (hair cards: the hull is the card's whole quad) px per metre from which the
                                         // line thins to nothing in a close view; 0: never
+// (L1 lead 22, HAIRLINE) Hair: CelLib hangs a chain on each OPAQUE hair surface (never the blended cap or fine hairs) with
+// that surface's own cut, so the hull is the strands as drawn, not the card's whole quad: 1 a card (heroine_hair.gdshaderinc,
+// not the cap: its atlas's alpha by its root's fade and the vertex alpha), 2 a braid's rope on the cap (vertex blue 0.5 up).
+uniform int cut_mode = 0;               // 0: no cut (a solid mesh)
+uniform sampler2D cut_tex : hint_default_white, filter_linear_mipmap, repeat_enable;   // the surface's strands atlas
+uniform float cut = 0.3;                // the cover the hull counts from (CelLib.LineHairCut: the fringe past the core)
+uniform float cut_bias = 0.0;           // its mip bias (strand_bias)
 
 void vertex() {
 	float px = cel_hero_line.w;
@@ -36,5 +43,16 @@ void vertex() {
 
 void fragment() {
 	if (IN_SHADOW_PASS) discard;
+	if (cut_mode > 0) {
+		vec4 t = texture(cut_tex, UV, cut_bias);
+		float cover;
+		if (cut_mode == 2) {
+			if (COLOR.b < 0.5) discard;
+			cover = max(COLOR.a * COLOR.a, t.a * smoothstep(0.0, 0.8, COLOR.a + (t.g - 0.5) * 0.35));
+		} else {
+			cover = t.a * smoothstep(0.0, 0.012, UV.y) * COLOR.a;
+		}
+		if (cover < cut) discard;
+	}
 	ALBEDO = cel_hero_line.rgb;
 }
