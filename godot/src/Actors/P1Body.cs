@@ -536,6 +536,7 @@ public partial class P1Laws : SkeletonModifier3D
             sk.SetBonePoseScale(j, sc);
         }
         lastG = G2; weights = w;
+        if (LawsDump != "" && Engine.GetProcessFrames() % (ulong)LawsEvery == 0) DumpLaws(G, G2, w);
         // held mounts laid in A's bone frame (Follow)
         for (int i = follow.Count - 1; i >= 0; i--)
         {
@@ -568,6 +569,27 @@ public partial class P1Laws : SkeletonModifier3D
         if (lod is { Visible: true } && playRig != null && !driveFailed)
             foreach (var kv in playRig.CorrectiveWeights(G2))
                 if (lod.FindBlendShapeByName(kv.Key) is int k and >= 0) lod.SetBlendShapeValue(k, (float)kv.Value);
+    }
+
+    // --p1-laws-dump FILE (checks only; tools/armor/engine_check.py): every --pose-probe-every'th frame (default 30) one JSON
+    // line: the laws' input (every bone's skeleton-space pose as the clip and the layers left it, helpers at rest local) and
+    // their output, 12 numbers a bone (three rows of four), and the corrective weights. The check runs rig_drive on the input
+    // and lays it on the output: P1Rig.cs and rig_drive.py out of step show as degrees.
+    static readonly string LawsDump = Args.Get("p1-laws-dump") ?? "";
+    static readonly int LawsEvery = System.Math.Max(1, (int)Args.Num("pose-probe-every", 30));
+    static bool lawsTruncated;
+
+    void DumpLaws(P1M4[] pre, P1M4[] post, Dictionary<string, double> w)
+    {
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        string M(P1M4[] g) => "[" + string.Join(",", g.Select(m => "[" + string.Join(",", Enumerable.Range(0, 12).Select(k => m.A[k].ToString("R", inv))) + "]")) + "]";
+        var sb = new System.Text.StringBuilder();
+        sb.Append("{\"frame\":").Append(Engine.GetProcessFrames()).Append(",\"names\":[").Append(string.Join(",", rig!.Names.Select(n => "\"" + n + "\"")));
+        sb.Append("],\"pre\":").Append(M(pre)).Append(",\"post\":").Append(M(post)).Append(",\"weights\":{");
+        sb.Append(string.Join(",", w.Select(kv => "\"" + kv.Key + "\":" + kv.Value.ToString("R", inv))));
+        sb.Append("}}" + (char)10);
+        if (!lawsTruncated) { lawsTruncated = true; System.IO.File.WriteAllText(LawsDump, ""); }
+        System.IO.File.AppendAllText(LawsDump, sb.ToString());
     }
 
     public override void _Process(double delta)
