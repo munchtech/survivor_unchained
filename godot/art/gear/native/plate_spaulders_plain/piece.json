@@ -35,7 +35,11 @@
     "clavicle_l": 0.0028,
     "scap_l": 0.0022
    },
-   "carry": "part"
+   "carry": "part",
+   "bend": {
+    "max": 1.0,
+    "smooth": 0.02
+   }
   },
   "lame1_l_rigid": {
    "bones": {
@@ -48,7 +52,11 @@
     "spine_04": 0.0028,
     "clavicle_l": 0.0027
    },
-   "carry": "part"
+   "carry": "part",
+   "bend": {
+    "max": 1.0,
+    "smooth": 0.02
+   }
   },
   "lame2_l_rigid": {
    "bones": {
@@ -61,7 +69,11 @@
     "delt_l": 0.0004,
     "spine_05": 0.0002
    },
-   "carry": "part"
+   "carry": "part",
+   "bend": {
+    "max": 1.0,
+    "smooth": 0.02
+   }
   },
   "lame3_l_rigid": {
    "bones": {
@@ -71,7 +83,11 @@
     "upperarm_twist_02_l": 0.025,
     "upperarm_share_l": 0.0003
    },
-   "carry": "part"
+   "carry": "part",
+   "bend": {
+    "max": 1.0,
+    "smooth": 0.02
+   }
   },
   "cop_r_rigid": {
    "bones": {
@@ -84,7 +100,11 @@
     "clavicle_r": 0.0028,
     "scap_r": 0.0023
    },
-   "carry": "part"
+   "carry": "part",
+   "bend": {
+    "max": 1.0,
+    "smooth": 0.02
+   }
   },
   "lame1_r_rigid": {
    "bones": {
@@ -97,7 +117,11 @@
     "clavicle_r": 0.0028,
     "spine_04": 0.0028
    },
-   "carry": "part"
+   "carry": "part",
+   "bend": {
+    "max": 1.0,
+    "smooth": 0.02
+   }
   },
   "lame2_r_rigid": {
    "bones": {
@@ -110,7 +134,11 @@
     "delt_r": 0.0004,
     "spine_05": 0.0002
    },
-   "carry": "part"
+   "carry": "part",
+   "bend": {
+    "max": 1.0,
+    "smooth": 0.02
+   }
   },
   "lame3_r_rigid": {
    "bones": {
@@ -120,7 +148,11 @@
     "upperarm_twist_02_r": 0.0257,
     "upperarm_share_r": 0.0002
    },
-   "carry": "part"
+   "carry": "part",
+   "bend": {
+    "max": 1.0,
+    "smooth": 0.02
+   }
   },
   "rim0_l_rigid": {
    "with": "cop_l_rigid"

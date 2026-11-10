@@ -225,3 +225,64 @@ def test_plain_natives_name_bare_steel_and_it_has_a_template():
     m = [m for m in js["materials"] if m["name"] == "plainsteel"]
     assert len(m) == 1 and "baseColorTexture" in m[0]["pbrMetallicRoughness"] and "normalTexture" in m[0], js["materials"]
     assert any("outfit_steel_diff" in im["uri"] for im in js["images"])
+
+
+def _bend_scene(frames=12, theta=0.5):
+    """A flat strip of her skin (z = 0, normal +z) on two bones: "a", and "b" taking over past x = 0.1 and folding up
+    toward the plate (about y at x = 0.1) over the frames; a plate 8 mm over it riding "a" rigidly."""
+    xs, ys = np.meshgrid(np.arange(0.0, 0.2001, 0.005), np.arange(-0.05, 0.0501, 0.005))
+    V = np.c_[xs.ravel(), ys.ravel(), np.zeros(xs.size)]
+    t = np.clip((V[:, 0] - 0.08) / 0.04, 0, 1)
+    wb = t * t * (3 - 2 * t)
+
+    class Body:
+        joint_names = ["a", "b"]
+        N = np.tile([0.0, 0.0, 1.0], (len(V), 1))
+        J = np.tile([0, 1], (len(V), 1))
+        W = np.c_[1 - wb, wb]
+    Body.V = V
+    S = np.tile(np.eye(4), (frames, 2, 1, 1))
+    for f, a in enumerate(np.linspace(0, theta, frames)):
+        c, s = np.cos(a), np.sin(a)
+        R = np.array([[c, 0, -s], [0, 1, 0], [s, 0, c]])
+        S[f, 1, :3, :3], S[f, 1, :3, 3] = R, np.array([0.1, 0, 0]) - R @ np.array([0.1, 0, 0])
+    px, py = np.meshgrid(np.arange(0.04, 0.1801, 0.005), np.arange(-0.03, 0.0301, 0.005))
+    X = np.c_[px.ravel(), py.ravel(), np.full(px.size, 0.008)]
+    t = np.clip((X[:, 0] - 0.08) / 0.04, 0, 1)
+    Ds = np.c_[1 - t * t * (3 - 2 * t), t * t * (3 - 2 * t)]
+    return Body, S, {"a": 0, "b": 1}, X, Ds
+
+
+def _bend_group(X, Ds, spec):
+    K, pairs = gn.bend_kernel(X, spec["smooth"])
+    B, Wr, Wt = gn.bend_blend(Ds, np.array([0]), np.array([1.0]), K)
+    return {"spec": {**gn.BEND, **spec}, "X": X, "K": K, "pairs": pairs, "B": B, "Wr": Wr, "Wt": Wt}
+
+
+def test_bend_clears_a_plate_over_a_folding_skin_with_a_smooth_field():
+    """A rigid plate goes through the folding skin (its rest pass is under 0); after the solve it stands at least its
+    clear height (2.4 mm, 0.3 mm of nearest-vertex slack) over every frame, the part that never folds stays rigid
+    (alpha 0), and the field is smooth: no two points 5 mm apart differ by more than 0.25 in alpha."""
+    from scipy.spatial import cKDTree
+    Body, S, index, X, Ds = _bend_scene()
+    gr = _bend_group(X, Ds, {"max": 1.0, "smooth": 0.02})
+    (a,), (st,) = gn.bend_solve(Body, [gr], S, index)
+    assert st["low_by_pass_mm"][0] < 0                    # the rigid plate is inside her
+    assert st["low"].min() >= 0.0024 - 0.0003, st["low_by_pass_mm"]
+    assert np.all(a[X[:, 0] < 0.05] == 0)                 # (far from the fold: rigid)
+    assert a.max() <= 1.0
+    pr = cKDTree(X).query_pairs(0.0051, output_type="ndarray")
+    assert np.abs(a[pr[:, 0]] - a[pr[:, 1]]).max() <= 0.25
+
+
+def test_bend_alpha_zero_is_the_ride_exactly():
+    """Over a skin that never moves no point asks to bend: alpha 0 everywhere, and the blend is the ride's on a fixed
+    bone set that starts with the ride's own bones."""
+    Body, S, index, X, Ds = _bend_scene()
+    gr = _bend_group(X, Ds, {"max": 1.0, "smooth": 0.02})
+    (a,), _ = gn.bend_solve(Body, [gr], np.tile(np.eye(4), (4, 2, 1, 1)), index)
+    assert np.all(a == 0)
+    assert list(gr["B"][:1]) == [0]
+    D = (1 - a)[:, None] * gr["Wr"] + a[:, None] * gr["Wt"]
+    np.testing.assert_array_equal(D, gr["Wr"])
+    np.testing.assert_array_equal(gr["Wr"][:, 0], 1.0)

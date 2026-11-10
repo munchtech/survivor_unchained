@@ -19,10 +19,12 @@ part]: how far a lame runs up past its band, UNDER the plate above it (never pas
 outer face of the part beneath (a number or one a part), "margin", "last_flare": the last lame's lower edge stands this
 far further off her, "rides": "mean" (each plate rides the area-weighted mean of her skin weights over its footprint,
 top 8: derived here from the body, so a changed body re-derives it; the footprint is her skin under its exposed band
-and "ride_reach", 6 mm, up past it) or [a part rule each], "carry": "part" | "none" (gear_native.part_blends)};
+and "ride_reach", 6 mm, up past it) or [a part rule each], "carry": "part" | "none" (gear_native.part_blends), "bend"
+{"max", "smooth", "clear", "clips"} (one for every lame, or a list, one per lame or null): the plate bends only as far
+as her moving skin needs, written into its part rule (gear_native.part_blends solves it at build time)};
 "cop" {"apex": how far its crown stands over its rim's surface, "rim": its rim's own extra stand-off, "shape" [a, b]:
 the dome's fullness along / round the arm (2 a parabola, more is fuller), "roll" its own rolled rim, "ridge" {"theta",
-"h", "w", "fade"}: a keel down its crown (Sheet), "ride_band" [s0, s1]: the band of her skin its ride reads (her skin
+"h", "w", "fade"}: a keel down its crown (Sheet), "bend": as the lames' (its own), "ride_band" [s0, s1]: the band of her skin its ride reads (her skin
 under its own outline when absent), "over" {"depth", "ease"}: the cop CROWNS her shoulder: e0 may lie up past the
 joint, over her acromion and outer trapezius, because the frame's centres are let down to stay `depth` under her
 skin's crest line there (ShoulderFrame; depth: her skin's own at lame 1's top when absent; read from her skin, so
@@ -751,6 +753,15 @@ def resolve(cfg):
     return cfg
 
 
+def part_bend(cfg, k):
+    """Sheet k's "bend" rule (gear_native.part_blends), or None: the cop's from cop.bend, lame k's from lames.bend (one
+    dict for every lame, or a list, one entry (dict or null) per lame)."""
+    b = (cfg.get("cop") or {}).get("bend") if k == 0 else (cfg.get("lames") or {}).get("bend")
+    if isinstance(b, list):
+        b = b[k - 1] if k - 1 < len(b) else None
+    return json.loads(json.dumps(b)) if b else None
+
+
 def spaulder(pid, cfg, out=None, ref=None, laws=None):
     cfg = resolve(cfg)
     ref = ref or nb.Ref.her()
@@ -769,6 +780,9 @@ def spaulder(pid, cfg, out=None, ref=None, laws=None):
             rule = {"bones": mean_ride(ref, L["foot"][k])} if given == "mean" else json.loads(json.dumps(given[k]))
             if "bones" in rule:
                 rule.setdefault("carry", lm.get("carry", "none"))
+                bend = part_bend(cfg, k)
+                if bend:
+                    rule.setdefault("bend", bend)
             rules[name] = rule
             tm = 0.5 * sum(L["theta"][k])
             c, nn = sh.at(np.array(0.5 * sum(L["spans"][k])), np.array(tm))

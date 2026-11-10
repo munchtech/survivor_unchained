@@ -12,7 +12,9 @@ A piece dir (godot/art/gear/native/<id>/):
                            | {"with": part name}}   ("bones": the blend named bone by bone, "{s}" = the part's side:
                            an articulated lame rides exactly the bones its skin follows, e.g. thigh_twist_02_{s} 0.9
                            + calf_share_{s} 0.1, and none of her corrective shapes: part_blends; with "carry": "part"
-                           it takes her arm_hang_* and elbow_* shapes as ONE rigid motion of the whole part)
+                           it takes her arm_hang_* and elbow_* shapes as ONE rigid motion of the whole part;
+                           "bend": {"max", "smooth", "clear", "clips"} on such a part: it bends only as far as her
+                           moving skin needs, part_blends' alpha solve)
     <id>.glb     one node per part and material, at her_b's rest (glTF axes, metres, identity transforms), each a single
                  primitive whose material NAME is an entry of godot/art/people/outfit_materials.json. A part named
                  `*_rigid` never bends: it rides one blend of bones, its "ride" rule (roles as tools/armor/
@@ -182,6 +184,124 @@ def bones_blend(names, D, bones):
 
 CARRY = ("none", "part")
 CARRY_SHAPES = ("arm_hang_", "elbow_")   # her corrective shapes a part with "carry": "part" follows
+BEND = {"max": 1.0, "smooth": 0.02, "clear": 0.0024, "clips": "all"}   # a "bend" rule's keys and defaults
+BEND_EPS = 1e-4         # (m) bending must raise a point this much over a frame before that frame asks it to bend
+BEND_REPORT = {}        # {unit id: {part: stats}}: the last build's solve, per bent part
+
+
+def bend_kernel(X, r):
+    """(K, pairs): the row-normalised biweight kernel of radius r over the points X (sparse [n, n], self weight 1) and
+    the point pairs within r (what the max filter reads)."""
+    import scipy.sparse as sp
+    from scipy.spatial import cKDTree
+    n = len(X)
+    pr = cKDTree(X).query_pairs(r, output_type="ndarray") if n > 1 else np.zeros((0, 2), int)
+    w = (1.0 - (np.linalg.norm(X[pr[:, 0]] - X[pr[:, 1]], axis=1) / r) ** 2) ** 2
+    K = sp.csr_matrix((np.r_[w, w, np.ones(n)], (np.r_[pr[:, 0], pr[:, 1], np.arange(n)], np.r_[pr[:, 1], pr[:, 0], np.arange(n)])), (n, n))
+    return sp.diags(1.0 / np.asarray(K.sum(1)).ravel()) @ K, pr
+
+
+def max_filter(x, pr):
+    m = x.copy()
+    np.maximum.at(m, pr[:, 0], x[pr[:, 1]])
+    np.maximum.at(m, pr[:, 1], x[pr[:, 0]])
+    return m
+
+
+def bend_blend(Ds, j, w, K):
+    """(B, Wr, Wt): a bent part's FIXED bone set (its ride's bones, then the others her smoothed skin weights K @ Ds lean
+    on most, to 8) and its two blends over it per point: the ride (rigid) and her smoothed skin projected on B. Any
+    alpha's blend (1-a) Wr + a Wt stays on B: no influence ever switches, and alpha 0 is the ride exactly."""
+    KD = np.asarray(K @ Ds)
+    ride = [int(b) for b, v in zip(j, w) if v > 0]
+    others = [int(b) for b in np.argsort(-KD.sum(0)) if int(b) not in ride and KD[:, b].sum() > 0][:max(0, 8 - len(ride))]
+    B = np.array(ride + others, int)
+    Wr = np.zeros((len(Ds), len(B)))
+    for b, v in zip(j, w):
+        if v > 0:
+            Wr[:, ride.index(int(b))] += v
+    Wr /= Wr.sum(1, keepdims=True)
+    Wt = KD[:, B]
+    s = Wt.sum(1, keepdims=True)
+    Wt = np.where(s > 1e-9, Wt / np.maximum(s, 1e-12), Wr)
+    return B, Wr, Wt
+
+
+def bend_heights(body, S, index, groups, alphas, chunk=96, reach=0.07):
+    """Per group (need [n], low [n]): over each group's clips' frames, the alpha each point needs to stand its clear
+    height over her moving skin (linear blend, no corrective shapes: native_travel.skin) and its lowest height at its
+    current alphas. LBS is linear in the weights, so a point's pose at alpha a is (1-a) P_ride + a P_skin exactly; a
+    point's need over a frame is a + (L - h_a) / (h_skin - h_ride) where it is under L and bending lifts it. L = the
+    rule's "clear", or the point's own height at rest when that is less (no point is asked to stand higher than it is
+    built)."""
+    import native_travel as nt
+    from scipy.spatial import cKDTree
+    Xall = np.vstack([gr["X"] for gr in groups])
+    vs = np.unique(np.concatenate(cKDTree(body.V).query_ball_point(Xall, reach)).astype(int))
+    tree0 = cKDTree(body.V[vs])
+    jm = np.array([index[n] for n in body.joint_names])
+    out = []
+    for gr in groups:
+        jn = tree0.query(gr["X"])[1]
+        h0 = ((gr["X"] - body.V[vs][jn]) * body.N[vs][jn]).sum(1)
+        out.append({"L": np.minimum(gr["spec"]["clear"], h0), "need": np.zeros(len(gr["X"])), "low": np.full(len(gr["X"]), np.inf)})
+    for c0 in range(0, len(S), chunk):
+        Sf = S[c0:c0 + chunk]
+        V, N = nt.skin(body, Sf, index, vs)
+        P = []
+        for gr, a in zip(groups, alphas):
+            Sb = Sf[:, jm[gr["B"]]]
+            pos = np.einsum("fkij,nj->fnki", Sb[:, :, :3, :3], gr["X"]) + Sb[:, None, :, :3, 3]
+            Pr, Pt = np.einsum("fnki,nk->fni", pos, gr["Wr"]), np.einsum("fnki,nk->fni", pos, gr["Wt"])
+            P.append((Pr, Pt, (1 - a)[None, :, None] * Pr + a[None, :, None] * Pt))
+        for fi in range(len(Sf)):
+            t = cKDTree(V[fi])
+            for gr, a, o, (Pr, Pt, Pa) in zip(groups, alphas, out, P):
+                if not gr["frames"][c0 + fi]:
+                    continue
+                h = []
+                for Q in (Pr[fi], Pt[fi], Pa[fi]):
+                    k = t.query(Q)[1]
+                    h.append(((Q - V[fi][k]) * N[fi][k]).sum(1))
+                hr, ht, ha = h
+                worse = ha < o["low"]
+                o.setdefault("at", np.zeros(len(ha), int))[worse] = c0 + fi
+                o["low"] = np.minimum(o["low"], ha)
+                o["short"] = np.maximum(o.get("short", 0.0), o["L"] - ha)
+                lift = ht - hr
+                ask = (ha < o["L"]) & (lift > BEND_EPS)
+                o["need"][ask] = np.maximum(o["need"][ask], a[ask] + (o["L"][ask] - ha[ask]) / lift[ask])
+    return out
+
+
+def bend_solve(body, groups, S=None, index=None, passes=3):
+    """The alpha field per group ([n] in [0, max]): a bent part's points move (1-a) with its ride and a with her
+    skin's own weights (smoothed), and a is only as large as her moving skin asks: alpha = K @ maxfilter(need) (>= the
+    need by construction, smooth at the kernel's radius); each pass re-measures the need at the new field and keeps
+    the larger (so alpha never drops and never creeps past the need's own reach). Returns (alphas, stats) where stats per group has the passes' lowest heights."""
+    if S is None:
+        import native_travel as nt
+        z = nt.frames()
+        S, index = z["S"], z["index"]
+        for gr in groups:
+            gr.setdefault("frames", nt.clip_frames(gr["spec"]["clips"]))
+    for gr in groups:
+        gr.setdefault("frames", np.ones(len(S), bool))
+    alphas = [np.zeros(len(gr["X"])) for gr in groups]
+    needs = [np.zeros(len(gr["X"])) for gr in groups]
+    lows = [[] for _ in groups]
+    for _ in range(passes):
+        res = bend_heights(body, S, index, groups, alphas)
+        for k, (gr, o) in enumerate(zip(groups, res)):
+            lows[k].append(float(o["low"].min()))
+            needs[k] = np.maximum(needs[k], o["need"])     # (the need is kept, never the smoothed field: no creep)
+            alphas[k] = np.clip(np.asarray(gr["K"] @ max_filter(needs[k], gr["pairs"])).ravel(), 0.0, gr["spec"]["max"])
+    res = bend_heights(body, S, index, groups, alphas)
+    for k, o in enumerate(res):
+        lows[k].append(float(o["low"].min()))
+    return alphas, [{"low_by_pass_mm": [round(v * 1000, 2) for v in lw], "low": res[k]["low"],
+                     "short": np.maximum(res[k].get("short", np.zeros(len(alphas[k]))), 0.0),
+                     "at": res[k].get("at", np.zeros(len(alphas[k]), int))} for k, lw in enumerate(lows)]
 
 
 def rigid_fit(X, Y):
@@ -253,6 +373,8 @@ def validate(d, rest_hash=None, head=None, mask=None, materials=None):
     for name, r in (piece.get("parts") or {}).items():
         if r.get("carry", "none") not in CARRY or ("carry" in r and "bones" not in r):
             why.append(f"part '{name}': \"carry\" is one of {', '.join(CARRY)}, on a part that names its \"bones\"")
+        if "bend" in r and ("bones" not in r or not isinstance(r["bend"], dict) or set(r["bend"]) - set(BEND)):
+            why.append(f"part '{name}': \"bend\" is {{{', '.join(BEND)}}}, on a part that names its \"bones\"")
     if any(p["T"] is None for p in parts):
         return why
     P = np.vstack([p["P"] for p in parts])
@@ -419,6 +541,8 @@ def part_blends(bd, bodies, ev):
     trs = np.concatenate([z[f"tri{m['i']}"] for m in ms]).astype(np.int64)
     ws = np.vstack([g.unq(z[f"bw{m['i']}"]) for m in ms])
     rr = g.rigid_roles()
+    off = np.cumsum([0] + [len(z[f"comp{m['i']}"]) for m in ms])
+    bent = []
     for p in bd.meta.get("parts", []):
         if not p["rule"] or not (comp == p["comp"]).any():
             continue
@@ -436,6 +560,8 @@ def part_blends(bd, bodies, ev):
         else:
             j, w = g.rigid_blend(body, trs[own], ws[own], "_", roles={"roles": rr.get("roles", {}), "anchors": rr.get("anchors", {}),
                                                                      "slots": {"_": p["rule"]}})
+        if "bones" in p["rule"] and p["rule"].get("bend"):
+            bent.append((p, j, w, fits))
         for m in ms:
             e = ev[m["node"]]
             ci = z[f"comp{m['i']}"]
@@ -450,6 +576,74 @@ def part_blends(bd, bodies, ev):
                         if nm not in e["shapes"]:
                             e["shapes"][nm] = np.zeros((len(sel), 3))
                         e["shapes"][nm][sel] = X @ R.T + t - X
+    if bent:
+        bend_parts(bd, body, ev, ms, comp, lead, trs, ws, off, bent)
+
+
+def bend_parts(bd, body, ev, ms, comp, lead, trs, ws, off, bent, S=None, index=None):
+    """The bent parts (a "bend" rule on a part that names its bones): each part group (the plate, its rims and rivets:
+    one alpha field) gets weights (1-a) ride + a (her smoothed skin weights on its fixed bones) and, for her
+    CARRY_SHAPES, (1-a) its rigid carry + a (her smoothed skin's own delta). Alpha 0 leaves the ride exactly. Nothing
+    is written per vertex but the weights and shapes the game already reads."""
+    g = gf()
+    t0 = time.time()
+    nj = len(body.joint_names)
+    Xall = np.vstack([ev[m["node"]]["Xu"] for m in ms])
+    groups = []
+    for p, j, w, fits in bent:
+        spec = {**BEND, **p["rule"]["bend"]}
+        gsel = np.flatnonzero((comp >= 0) & (lead[np.maximum(comp, 0)] == p["comp"]))
+        X = Xall[gsel]
+        K, pairs = bend_kernel(X, float(spec["smooth"]))
+        Ds = g.dense_weights(body, trs[gsel], ws[gsel], nj)
+        B, Wr, Wt = bend_blend(Ds, j, w, K)
+        groups.append({"part": p["part"], "spec": spec, "gsel": gsel, "X": X, "K": K, "pairs": pairs, "B": B, "Wr": Wr,
+                       "Wt": Wt, "j": j, "w": w, "fits": fits})
+    alphas, stats = bend_solve(body, groups, S, index)
+    rep = BEND_REPORT.setdefault(bd.meta.get("id", "?"), {})
+    for gr, a, st in zip(groups, alphas, stats):
+        au = np.zeros(len(Xall))
+        au[gr["gsel"]] = a
+        rows = np.full(len(Xall), -1)
+        rows[gr["gsel"]] = np.arange(len(gr["gsel"]))
+        Tg = body.T[trs[gr["gsel"]]]
+        for i, m in enumerate(ms):
+            e = ev[m["node"]]
+            r = rows[off[i]:off[i + 1]][e["inv"]]
+            sel = np.flatnonzero((r >= 0) & (au[off[i]:off[i + 1]][e["inv"]] > 0))
+            if not len(sel):
+                continue
+            rs, av = r[sel], a[r[sel]]
+            D = np.zeros((len(sel), nj))
+            D[:, gr["B"]] = (1 - av)[:, None] * gr["Wr"][rs] + av[:, None] * gr["Wt"][rs]
+            e["J"][sel], e["W"][sel] = g.top_k(D)
+            X = e["Xu"][e["inv"]][sel]
+            for nm, dP in body.shapes.items():
+                if not nm.startswith(CARRY_SHAPES):
+                    continue
+                sk = np.asarray(gr["K"] @ (ws[gr["gsel"]][:, :, None] * dP[Tg]).sum(1))[rs]
+                rig = X @ gr["fits"][nm][0].T + gr["fits"][nm][1] - X if nm in gr["fits"] else 0.0
+                d = (1 - av)[:, None] * rig + av[:, None] * sk
+                if nm not in e["shapes"]:
+                    if np.abs(d).max() <= 1e-5:
+                        continue
+                    e["shapes"][nm] = np.zeros((len(e["inv"]), 3))
+                e["shapes"][nm][sel] = d
+        rep[gr["part"]] = st = {"alpha_p50_p95_max": [round(float(v), 3) for v in (np.median(a), np.percentile(a, 95), a.max())],
+                                "bent_share": round(float((a > 1e-6).mean()), 3), "points": int(len(a)),
+                                "low_by_pass_mm": st["low_by_pass_mm"], "min_clear_mm": round(float(st["low"].min()) * 1000, 2),
+                                "short_max_mm": round(float(st["short"].max()) * 1000, 2), "bones": [body.joint_names[b] for b in gr["B"]]}
+        if S is None:       # (where it is lowest: the clips of the points more than 1 mm under their clear height)
+            import native_travel as nt
+            fz = nt.frames()
+            k = np.flatnonzero(stats[groups.index(gr)]["short"] > 0.001)
+            cl, cn = np.unique(fz["clip"][stats[groups.index(gr)]["at"][k]], return_counts=True)
+            st["short_clips"] = dict(sorted(zip(cl.tolist(), cn.tolist()), key=lambda t: -t[1])[:6])
+            print(f"    {gr['part']} short by clip: {st['short_clips']}; worst at {X[:0].shape and ''}"
+                  f"{fz['clip'][stats[groups.index(gr)]['at'][np.argmax(stats[groups.index(gr)]['short'])]]}")
+        print(f"  bend {bd.meta.get('id', '?')}/{gr['part']}: alpha p50/p95/max {st['alpha_p50_p95_max']}, bent {st['bent_share']:.1%}"
+              f" of {st['points']}, min clear {st['min_clear_mm']} mm (by pass {st['low_by_pass_mm']}), worst short {st['short_max_mm']} mm")
+    print(f"  bend solve {bd.meta.get('id', '?')}: {len(groups)} parts, {time.time() - t0:.1f} s")
 
 
 def install(g):

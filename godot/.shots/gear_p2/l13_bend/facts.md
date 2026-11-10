@@ -24,3 +24,14 @@ alpha = clip(K @ maxfilter_r(need), 0, max) (>= need by construction); 2-3 passe
 Weights: D = (1-a)Dr + aDt -> top_k; shapes (CARRY_SHAPES): (1-a)*rigid-fit delta + a*(K @ skin delta).
 Proof tool to write: per-vertex posing of a built part; flex = Kabsch residual per frame (idle / all); lap opening =
 (lower edge of plate k - top edge of plate k+1) . posed arm axis per theta bin.
+
+## Built (bend solve landed; see commit "spaulder: plates bend only as her skin needs")
+- Keys: cop.bend / lames.bend (dict or per-lame list) -> piece.json part rule "bend" (native_spaulder.part_bend);
+  gear_native BEND defaults {max 1, smooth 0.02, clear 0.0024, clips all}; validate refuses "bend" without "bones".
+- Solve: gear_native.bend_parts (from part_blends), bend_solve/bend_heights/bend_blend/bend_kernel; need kept across
+  passes (no creep), L = min(clear, rest height); report in BEND_REPORT + stdout. ~283 s per spaulder build (8 parts).
+- Result at max 1 / smooth 0.02: does NOT clear. Cops alpha 1 everywhere, still -12/-13 mm (left cast_bolt, right
+  crossbow_shoot); lames -7..-22 mm. Full skin weights do not clear: plain-LBS skin (no correctives) folds into the
+  plate in those clips. Bend alone is not the fix there; needs a lead decision (clips scope, stand-off, or correctives
+  in the measure).
+- test_reach_table::test_spaulder_row_is_lead_11s now fails (KeyError 'l'): reach_table drops bent plates (known, facts above).
