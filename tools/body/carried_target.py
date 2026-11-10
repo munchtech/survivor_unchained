@@ -826,13 +826,18 @@ HER = {
                 "crossbow_shoot@0:r", "crossbow_shoot@2:r", "cast_flick@8:r"],      # + lay 8's rows (lead 22)
     "t22_fill": ["crossbow_shoot@10:r", "cast_bolt@3:r", "axe_heavy@7:r", "p4:heroic_leap@5:r", "p4:idle_warden_town@126:r",
                  "p4:heroic_leap@25:r", "cast_bolt@6:l", "p4:heroic_leap@6:r", "p4:heroic_leap@0:l", "p4:heroic_leap@30:l"],
+    # Left pit rows where the map rides faired A at w = 1 and faired A's OWN surface is turned (a closed pit's tight crease):
+    # the bar there reads "no more turned than faired A's own": turned map <= A's own turned count and every turned map
+    # triangle among A's own turned ones (the band-edge part unchanged). Coordinator's ruling, inbox RULING P1 12:17, ASK 2.
+    "t22_own_turned": ["x:hadd40:l", "x:flex120:l", "p4:iron_vow@72:l"],
     "t22_tol": 0.15,
     # T23: the neck's relax rule (head-piece patches, body_facts/neck_edges.md): on these poses the neck set has no edge over
     # `ratio` but those the published surface has over it too; Head-rigid points and the girdle regions as with it off
     "t23_poses": ["p4:idle_warden_town@126:r", "p4:idle_warden_town@122:l", "sword_heavy@10:l", "p4:shield_charge@0:r",
                   "p4:iron_vow@75:r", "axe_heavy@7:r", "Jog_Fwd@11:r"],
     # T26: the relax rules' fold trigger (body_facts/notch.md 4): no region edge past rest by over `fold` on t26_poses;
-    # t26_quiet: poses with no seed, composed = trigger off bit for bit
+    # t26_quiet: poses with no seed, composed = trigger off bit for bit. The neck has no fold key now (its checkerboard was
+    # cured at the source, notch.md 5), so T26 reads the girdle trigger only.
     "t26_poses": ["p4:heroic_leap@6:r", "p4:heroic_leap@9:r", "cast_bolt@3:r"], "t26_quiet": ["x:add0:l"],
     "t21_poses": ["x:abd150:l", "p4:heroic_leap@9:r", "crossbow_shoot@10:r"],   # T21: the map through two paths
     "t19": {"poses": ["x:abd150:l", "x:abd170:l", "x:flex170:l"], "ref": "fold_probe/dump_t0.npz", "k": 3, "top": 12,
@@ -1754,15 +1759,18 @@ def cmd_test(h):
                 buf = io.StringIO()
                 with contextlib.redirect_stdout(buf):
                     h._sr.cmd_turned(hs22, [nm])
-                m = re.search(rf"== {re.escape(nm)} \((.)\) w ([\d.]+): turned map (\d+), .*? map edge max ([\d.]+), A's own max ([\d.]+)"
+                m = re.search(rf"== {re.escape(nm)} \((.)\) w ([\d.]+): turned map (\d+) \[([\d, ]*)\], .*? map edge max ([\d.]+), A's own max ([\d.]+)"
+                              r".*? A'S OWN surface under the band's triangles: turned (\d+) \[([\d, ]*)\]"
                               r".*? fill max ([\d.]+)", buf.getvalue())
                 if not m:
                     line(f"T22 {nm}", False, "cmd_turned's report not read: " + buf.getvalue()[:200])
                     continue
-                tm_, rm_, own_, fill_ = int(m.group(3)), float(m.group(4)), float(m.group(5)), float(m.group(6))
+                tm_, rm_, own_, fill_ = int(m.group(3)), float(m.group(5)), float(m.group(6)), float(m.group(9))
+                tids, oids = {int(x) for x in m.group(4).split(",") if x.strip()}, {int(x) for x in m.group(8).split(",") if x.strip()}
                 ref_ = own_ if key == "t22_own" else fill_
-                line(f"T22 {nm}", tm_ == 0 and rm_ <= ref_ + tol22,
-                     f"({m.group(1)}) w {m.group(2)}: turned triangles {tm_} (limit 0); worst band edge {rm_:.2f} against {lim_name} {ref_:.2f}"
+                ot = nm in cfg.get("t22_own_turned", ())
+                line(f"T22 {nm}", (tids <= oids and tm_ <= int(m.group(7)) if ot else tm_ == 0) and rm_ <= ref_ + tol22,
+                     f"({m.group(1)}) w {m.group(2)}: turned triangles {tm_} {sorted(tids)} (limit " + (f"A's own {m.group(7)} {sorted(oids)}" if ot else "0") + f"); worst band edge {rm_:.2f} against {lim_name} {ref_:.2f}"
                      f" (limit +{tol22:g}); A's own {own_:.2f}, fill {fill_:.2f}")
     # T23: the neck's relax rule (config neck "relax"): against the rule off, on the measured poses
     if getattr(nk, "relax", None):
@@ -1899,15 +1907,68 @@ def cmd_target(h, poses):
     print(f"wrote {out}  X {np.array(X).shape}  Xc {np.array(Xc).shape} (every region's points, composed) + {len(raw_c)} vertices outside the model (Xr)")
 
 
+def cmd_rebaseline(h):
+    """Rewrite the three frozen references T11 and T18 compare against (target_a_regions / target_a_rel / target_a_l18 .npz),
+    from exactly the paths those tests run, for every pose each file holds. Why: B's published skin weights changed at the
+    source (her_b chain_relax, lead 23, notch.md 5), so the stored bits of before no longer hold; the coordinator ruled the
+    baselines are reset in the same change. Keys, names, order and dtypes are kept; only X (T11) and Xc (T18) are replaced."""
+    bd, md, cfg = h.bd, h.md, h.cfg
+    z = np.load(h.OUT / "poses.npz")
+    names = [str(x) for x in z["name"]]
+    pub = h.rt.published
+    h0 = Her({**{k_: v_ for k_, v_ in cfg.items() if k_ != "fair_a"}, "regions": {k: {a_: b_ for a_, b_ in v.items() if a_ != "support"} for k, v in cfg["regions"].items()}}, verbose=False)
+    h0.fold_on = False
+    gird = [n for n, r in h0.regions.items() if r.side]
+
+    def save(fname, upd):
+        old = np.load(h.OUT / fname, allow_pickle=False)
+        d = {k: old[k] for k in old.files}
+        for k, v in upd.items():
+            assert d[k].shape == v.shape and d[k].dtype == v.dtype, (fname, k)
+            print(f"{fname} {k}: max move per pose (mm), worst {max(float(np.abs(v[i] - d[k][i]).max()) for i in range(len(v))) * 1000:.4g}")
+            for i, nm in enumerate(d["name"]):
+                print(f"   {fname} {nm}: {float(np.abs(v[i] - d[k][i]).max()) * 1000:.4g} mm")
+            d[k] = v
+        np.savez_compressed(h.OUT / fname, **d)
+
+    def tgt(nm, regs):
+        i = names.index(nm)
+        return h0.target(z["G"][i], str(z["side"][i]), regions=regs)[0]
+
+    old = np.load(h.OUT / cfg["t11_stored"]["regions"])
+    save(cfg["t11_stored"]["regions"], {"X": np.stack([tgt(str(n), None) for n in old["name"]]).astype(old["X"].dtype)})
+    old = np.load(h.OUT / cfg["t11_stored"]["girdles"])
+    for n in gird:
+        h0.regions[n].ref_map, h0.regions[n].order = cfg["bone_map"], h0.order
+    h0._pose = None
+    save(cfg["t11_stored"]["girdles"], {"X": np.stack([tgt(str(n), gird) for n in old["name"]]).astype(old["X"].dtype)})
+    old = np.load(h.OUT / cfg["t18_stored"])
+    raw = np.unique(np.concatenate([r.spread[0] for r in h.regions.values()]))
+    ids_c = np.unique(md.src[raw[raw < len(md.src)]])
+    print("T18 ids_c: current derivation equals the old file's:", bool(np.array_equal(ids_c, old["ids_c"])), len(ids_c), len(old["ids_c"]))
+    nk = next(r for r in h.regions.values() if not r.side)
+    Xc = []
+    for n in old["name"]:
+        G = z["G"][names.index(str(n))]
+        nrl, nk.relax = getattr(nk, "relax", None), []
+        with h.map_off(), h.fair_off(), h.fold_off():
+            Xc.append(h.compose(G, pub(bd, G))[md.first[old["ids_c"]]])
+        nk.relax, h._pose = nrl, None
+    save(cfg["t18_stored"], {"Xc": np.stack(Xc).astype(old["Xc"].dtype)})
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("cmd", choices=["test", "target"])
+    ap.add_argument("cmd", choices=["test", "target", "rebaseline"])
     ap.add_argument("--poses", default="", help="comma-separated pose names: a subset, written to the dev file")
     ap.add_argument("--carry", default=HER["carry"], choices=["relative", "absolute"], help="see the module docstring")
     a = ap.parse_args()
     h = Her({**HER, "carry": a.carry})
     if a.cmd == "test":
         sys.exit(0 if cmd_test(h) else 1)
+    if a.cmd == "rebaseline":
+        cmd_rebaseline(h)
+        return
     cmd_target(h, [p for p in a.poses.split(",") if p])
 
 

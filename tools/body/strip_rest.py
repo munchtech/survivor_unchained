@@ -1377,7 +1377,7 @@ def cmd_turned(hs, poses, top=4):
         oa, oc = ct.facing(tb, FA, NA) <= 0, corner_facing(FA, NA, tb)
         ids = lambda v: "/".join(f"{int(x)}{tag[x]}" for x in v) + " (mesh " + "/".join(str(int(hs.pts[s][x])) for x in v) + ")"
         fm, ff = fold_angles(tb, Xm, b), fold_angles(tb, Xf, b)
-        print(f"== {q} ({s}) w {wk:.2f}: turned map {int(tm.sum())}, at w = 1 {int(t1.sum())}, fill {int(tf.sum())}; map edge max {rm.max():.2f}, A's own max {own.max():.2f}"
+        print(f"== {q} ({s}) w {wk:.2f}: turned map {int(tm.sum())} {np.nonzero(tm)[0].tolist()}, at w = 1 {int(t1.sum())}, fill {int(tf.sum())}; map edge max {rm.max():.2f}, A's own max {own.max():.2f}"
               f" (limit {lim:.2f}), over the limit {int((rm > lim).sum())}; mean lay {lay.mean():.2f}, map {rm.mean():.2f}, A {own.mean():.2f};"
               f" A'S OWN surface under the band's triangles: turned {int(oa.sum())} {np.nonzero(oa)[0].tolist()}, a corner facing off {int((oc <= 0).any(1).sum())};"
               f" fill max {rf.max():.2f}; SHORTEST map {rm.min():.2f} (edge {int(rm.argmin())} {ids(e[rm.argmin()])}: lay {lay[rm.argmin()]:.2f}, A's own along it {own[rm.argmin()]:.2f}, fill {rf[rm.argmin()]:.2f}), A's own {own.min():.2f} (map / A's {rm.min() / own.min():.2f}), fill {rf.min():.2f};"
