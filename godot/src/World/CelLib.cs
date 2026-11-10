@@ -149,6 +149,7 @@ public static class CelLib
             var k = KeyOf(m);
             if (k != key) { live.RemoveAt(sweep); if (Why(m) is null) Bind(m, cls); }
         }
+        LineStep();
     }
 
     /// <summary>A mesh's materials as the renderer picks them: the override (over every surface) or each surface's
@@ -240,8 +241,10 @@ public static class CelLib
     {
         if (g is not MeshInstance3D mi || mi.Mesh == null) return;
         Node? n = g;
-        while (n != null && !n.IsInGroup(Brush.HerGroup)) n = n.GetParent();
+        bool mirror = false;   // (HER5: her reflection's copies are placed by their own vertex code: no line, as PlayerView.Gather leaves them out)
+        while (n != null && !n.IsInGroup(Brush.HerGroup)) { mirror |= n is global::SurvivorUnchained.View.Reflections; n = n.GetParent(); }
         if (n == null) return;
+        if (!mirror && n is Node3D her && lineIds.Add(mi.GetInstanceId())) lined.Add((mi, her));
         for (int s = 0; s < mi.Mesh.GetSurfaceCount() && s < mi.GetSurfaceOverrideMaterialCount(); s++)
         {
             var so = mi.GetSurfaceOverrideMaterial(s);
@@ -257,6 +260,96 @@ public static class CelLib
                 c.SetMeta(HeroMeta, true);
                 mi.SetSurfaceOverrideMaterial(s, c);
             }
+        }
+    }
+
+    /* ------------------------------------------------------------------ her line -- */
+
+    /// <summary>(L1 lead 20, HER5) The hero's LINE (hero_line.gdshader): every solid mesh under the player's view wears the
+    /// hull as its overlay while the rig's hero rule is on (Atmosphere.HeroLinePx), six passes, one per direction. Where
+    /// the overlay is another's (her x-ray, a wraith's walk: PlayerView's own materials) the hull is the last of its
+    /// passes. Off: taken away again, so a rig without the row draws nothing more than before.</summary>
+    const int LinePasses = 6;
+    const string LineName = "hero_line";
+    static readonly List<(MeshInstance3D G, Node3D Her)> lined = new();
+    static readonly HashSet<ulong> lineIds = new();
+    static readonly Dictionary<ulong, bool> lineShader = new();
+    static ShaderMaterial? line, lineHair;
+    static bool lineWas;
+
+    static ShaderMaterial LineChain(bool hair)
+    {
+        var sh = GD.Load<Shader>("res://shaders/hero_line.gdshader");
+        ShaderMaterial? first = null, last = null;
+        for (int i = 0; i < LinePasses; i++)
+        {
+            float a = Mathf.Tau * i / LinePasses;   // (from 0: her sides, the long edges of a standing figure, take the full width)
+            var m = new ShaderMaterial { Shader = sh, ResourceName = LineName };
+            m.SetShaderParameter("dir", new Vector2(Mathf.Cos(a), Mathf.Sin(a)));
+            if (hair) m.SetShaderParameter("near_px", 250f);   // (hair cards: the hull is the card's quad, so no line in a close view)
+            if (last == null) first = m; else last.NextPass = m;
+            last = m;
+        }
+        return first!;
+    }
+
+    static bool IsLine(Material? m) => m is ShaderMaterial { ResourceName: LineName };
+
+    /// <summary>A mesh the line goes round: drawn (no shadow proxy), every surface a lit, solid material. Hair: its own chain.</summary>
+    static bool LineFits(MeshInstance3D g, out bool hair)
+    {
+        hair = false;
+        if (g.Mesh == null || g.CastShadow == GeometryInstance3D.ShadowCastingSetting.ShadowsOnly || g.MaterialOverride != null) return false;
+        int n = g.Mesh.GetSurfaceCount();
+        for (int s = 0; s < n; s++)
+        {
+            var m = (s < g.GetSurfaceOverrideMaterialCount() ? g.GetSurfaceOverrideMaterial(s) : null) ?? g.Mesh.SurfaceGetMaterial(s);
+            if (m is BaseMaterial3D b) { if (Why(b) is not null || b.Transparency == BaseMaterial3D.TransparencyEnum.Alpha) return false; }
+            else if (m is ShaderMaterial { Shader: { } sh })
+            {
+                var id = sh.GetInstanceId();
+                if (!lineShader.TryGetValue(id, out var ok))
+                {
+                    var code = sh.Code;
+                    lineShader[id] = ok = Spatial.IsMatch(code) && !Unshaded.IsMatch(code) && !FxBlend.IsMatch(code) && !code.Contains("depth_draw_never");
+                }
+                if (!ok) return false;
+                if (sh.ResourcePath.Contains("hair")) hair = true;
+            }
+            else return false;
+        }
+        return n > 0;
+    }
+
+    static void LineStep()
+    {
+        bool on = Atmosphere.HeroLinePx > 0;
+        if (!on && !lineWas) return;
+        lineWas = on;
+        Node3D? at = null;
+        for (int i = lined.Count - 1; i >= 0; i--)
+        {
+            var (g, her) = lined[i];
+            if (!GodotObject.IsInstanceValid(g) || !GodotObject.IsInstanceValid(her)) { lined.RemoveAt(i); continue; }
+            if (!g.IsInsideTree()) continue;
+            at = her;
+            bool hair = false, want = on && LineFits(g, out hair);
+            var ov = g.MaterialOverlay;
+            if (ov == null) { if (want) g.MaterialOverlay = hair ? lineHair ??= LineChain(true) : line ??= LineChain(false); }
+            else if (IsLine(ov)) { if (!want) g.MaterialOverlay = null; }
+            else
+            {
+                Material last = ov;
+                while (last.NextPass != null && !IsLine(last.NextPass)) last = last.NextPass;
+                var then = want ? line ??= LineChain(false) : null;
+                if (last.NextPass != then) last.NextPass = then;
+            }
+        }
+        if (on && at != null && at.IsInsideTree())
+        {
+            float y = at.GlobalPosition.Y;
+            foreach (var first in new[] { line, lineHair })
+                for (Material? p = first; p != null; p = p.NextPass) ((ShaderMaterial)p).SetShaderParameter("floor_y", y);
         }
     }
 

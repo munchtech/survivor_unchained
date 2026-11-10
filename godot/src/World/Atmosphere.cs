@@ -640,6 +640,7 @@ public partial class Atmosphere : Node3D
         RenderingServer.GlobalShaderParameterSet("cel_hero", hp != null && toFoot != Vector2.Zero ? new Vector4(toFoot.X, toFoot.Y, (float)hp[6], 1) : Vector4.Zero);
         var anchor = hp != null ? new Color((float)hp[3] / 255f, (float)hp[4] / 255f, (float)hp[5] / 255f).SrgbToLinear() * (float)hp[2] : new Color(0, 0, 0);
         RenderingServer.GlobalShaderParameterSet("cel_hero_tone", new Vector4(anchor.R, anchor.G, anchor.B, hp != null ? (float)hp[7] : 0));
+        HeroLine(hp, toFoot != Vector2.Zero, anchor);   // (L1 lead 20, HER5) her line: values 8, 9
         // (L1 lead 19, HER3; CEL_HERO_ARM) her held pieces as bodies: row values 10-19 = the body's level, r, g, b, its side edge, the
         // warm light's level, r, g, b, the least screen width in px. A shorter row: both zero, her shield and blade as they were.
         var ha = hp is { Length: >= 20 } ? hp : null;
@@ -654,6 +655,15 @@ public partial class Atmosphere : Node3D
         var midTone = hm != null ? HeroTone(20) : new Color(0, 0, 0);
         RenderingServer.GlobalShaderParameterSet("cel_hero_mid", new Vector4(midTone.R, midTone.G, midTone.B, hm != null ? (float)hm[24] : 0));
         RenderingServer.GlobalShaderParameterSet("cel_hero_own", hm != null ? new Vector4((float)hm[25], (float)hm[26], hm.Length >= 29 ? (float)hm[27] : 0, hm.Length >= 29 ? (float)hm[28] : 0) : Vector4.Zero);   // (round 2: value 27 = the least lean the side test normalizes down to, 28 = a held piece's light as a share of hers)
+    }
+    /// <summary>(L1 lead 20, HER5) Her LINE (hero_line.gdshader; CelLib.LineStep hangs it on her meshes): the row's value 8 = its
+    /// width in px at 1080p, value 9 = its level against the anchor's tone. On as cel_hero is on; else 0 and nothing is drawn.</summary>
+    public static float HeroLinePx;
+    static void HeroLine(double[]? hp, bool on, Color anchor)
+    {
+        HeroLinePx = on && hp is { Length: >= 10 } ? (float)hp[8] : 0;
+        var t = HeroLinePx > 0 ? anchor * (float)hp![9] : new Color(0, 0, 0);
+        RenderingServer.GlobalShaderParameterSet("cel_hero_line", new Vector4(t.R, t.G, t.B, HeroLinePx));
     }
     /// <summary>(L1 lead 19, HER2) Where her pool light's foot sits, in metres from her (x, z): the rig's hero_pool, else (0, 0.4).</summary>
     public static Vector2 HeroFoot = new(0, 0.4f);
