@@ -247,6 +247,21 @@ def tri_quality(P, t):
     return 2 * np.sqrt(3) * np.linalg.norm(np.cross(b - a, c - a), axis=1) / ((b - a) ** 2 + (c - b) ** 2 + (a - c) ** 2).sum(1)
 
 
+def plane_area(u, tris):
+    """Per triangle [f]: its signed area in the unfold's plane. THE LAY'S ORIENTATION RULE: a lay triangle is right
+    when this is over 0, the sign the reference's own unfolded triangles have (lscm keeps their winding; Unfold.flipped
+    counts the exceptions, 0 on a sound patch), whatever the mesh's rest triangle did across the fold."""
+    d1, d2 = u[tris[:, 1]] - u[tris[:, 0]], u[tris[:, 2]] - u[tris[:, 0]]
+    return 0.5 * (d1[..., 0] * d2[..., 1] - d1[..., 1] * d2[..., 0])
+
+
+def corner_facing(X, N, tris):
+    """[f, 3]: each triangle's unit normal dotted with the unit normal N at each of its corners (the orientation rule
+    where no plane test is available: a triangle is right when it faces along the surface normal at EVERY corner)."""
+    nr = ct._unit(np.cross(X[tris[:, 1]] - X[tris[:, 0]], X[tris[:, 2]] - X[tris[:, 0]]))
+    return np.einsum("fj,fkj->fk", nr, ct._unit(N[tris]))
+
+
 def relax(unf, cur, u, h, P0, N0, band, snap, E, tris, lim=(0.82, 1.28), wall=50.0, fold=0.5, passes=2, iters=3000, off=0.0):
     """The band's plane points u moved (the snapped ones ALONG the curve) until the mesh's edges, measured on the
     surface (foot + height h), are as near their rest lengths as the fixed neighbours allow: the new plane points.
@@ -343,7 +358,7 @@ def chain_order(pts, E, P):
 
 
 def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), walk=(0.82, 1.28), wall=50.0,
-         fold=(0.3, 0.15), margin=(0.05, 0.10), steps=8, passes=3, iters=1500, log=print):
+         fold=(0.3, 0.15), margin=(0.05, 0.10), steps=8, passes=3, iters=1500, start=None, log=print):
     """The band's plane points for a CARRY MAP: where each band point rides on the reference, chosen so the band is
     sound IN THE POSES IT IS USED IN, not as a rest. The snapped points (the apex row) stay on the curve and slide
     along it; they are walked onto it from their feet in `steps`.
@@ -353,6 +368,11 @@ def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), w
     min  sum_edges l0 (r0 - 1)^2 + walls on r0 at lim                          (r0: edge / rest on the rest surface)
        + sum_poses sum_edges l0 wall (max(0, r - hi)^2 + max(0, lo - r)^2)     (r: the posed edge / the mesh's rest)
        + sum_surfaces sum_triangles the barrier of `relax` under fold x the rest area (rest fold[0], poses fold[1])
+    The triangles' orientation: at rest the signed area IN THE UNFOLD'S PLANE (plane_area: over 0 = the reference's own
+    sign), in a pose the area along the carried normals; both over the mesh's UNSIGNED rest area. (Until lay 4 both
+    were divided by the rest triangle's area signed against the reference's normals at the rest feet: a rest triangle
+    that bridges the fold faces against those, and the barrier then HELD its lay triangle inverted.)
+    start [n, 2]: a lay's plane points to start from (no walk onto the line: the snapped points are already on it).
     hi = the reference's own worst stretch under the lay's edges in that pose (and the fill's worst where w < 1)
     + margin[0]; lo = the smaller of the reference's own and the fill's shortest - margin[1]: the map may open as far
     as the reference's skin does and no further. hi, lo and the triangles' facing are re-read each pass.
@@ -371,8 +391,11 @@ def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), w
     NB = np.stack([N0] + [d[2] for d in design])
     De = sp.coo_matrix((np.r_[np.ones(ne), -np.ones(ne)], (np.r_[np.arange(ne), np.arange(ne)], np.r_[i, j])), (ne, n)).tocsr()
     Tc = [sp.coo_matrix((np.ones(nf), (np.arange(nf), tris[:, c])), (nf, n)).tocsr() for c in range(3)]
-    a0 = 0.5 * (np.cross(P0[tris[:, 1]] - P0[tris[:, 0]], P0[tris[:, 2]] - P0[tris[:, 0]]) * ct._unit(N0[tris].sum(1))).sum(1)
-    wt = wall * np.sqrt(np.abs(a0)) * 1000
+    a0 = 0.5 * np.linalg.norm(np.cross(P0[tris[:, 1]] - P0[tris[:, 0]], P0[tris[:, 2]] - P0[tris[:, 0]]), axis=1)
+    wt = wall * np.sqrt(a0) * 1000
+    rot = lambda v: np.stack([-v[:, 1], v[:, 0]], 1)
+    if start is not None:
+        steps, u0 = 0, np.asarray(start, float).copy()
     pr = cur.project(u0[si])
     off0, x = u0[si] - pr, np.r_[u0[fi].ravel(), cur.param(pr)] * 1000
 
@@ -396,12 +419,14 @@ def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), w
             J = col(A) + h[None, :, None, None] * (dn - N[..., None] * np.einsum("mnk,mnkc->mnc", N, dn)[:, :, None, :]) / ln[..., None]
         return X, N, J
 
-    def areas(X, nh):
+    def areas(X, nh, uu):
         a, b, c = (X[:, tris[:, k]] for k in range(3))
-        return 0.5 * (np.cross(b - a, c - a) * nh).sum(2) / a0, a, b, c
+        q = 0.5 * (np.cross(b - a, c - a) * nh).sum(2) / a0
+        q[0] = plane_area(uu, tris) / a0                     # the rest: the plane decides
+        return q, a, b, c
 
     for step in range(steps + passes):
-        tau = max(1 - (step + 1) / steps, 0.0)
+        tau = max(1 - (step + 1) / steps, 0.0) if steps else 0.0
         mm = 1 if step < steps else m                        # the walk onto the line: on the rest surface alone
         lm, Ws = (walk, W[:1]) if mm == 1 else (lim, W)
         fo = np.r_[0.5 if mm == 1 else fold[0], np.full(mm - 1, fold[1])][:, None]
@@ -412,7 +437,7 @@ def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), w
         NX = NB[:mm].copy()
         NX[:, bi] = ct._unit((1 - Ws)[:, None, None] * NX[:, bi] + Ws[:, None, None] * N)
         nh = ct._unit(NX[:, tris].sum(2))
-        soft = areas(X, nh)[0] <= 0.05
+        soft = areas(X, nh, uu)[0] <= 0.05
         hi, lo = np.full((mm, 1), lm[1]), np.full((mm, 1), lm[0])
         if mm > 1:
             ln = paths(unf, uu[i], uu[j], PS)
@@ -421,20 +446,24 @@ def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), w
             lo[1:, 0] = np.maximum(np.minimum(own.min(1), fillr[1:].min(1)) - margin[1], 0.1)
 
         def f(x):
-            X, _, J = points(place(x, tau), mm, True)
+            uu = place(x, tau)
+            X, _, J = points(uu, mm, True)
             d = X[:, i] - X[:, j]
             L = np.linalg.norm(d, axis=2) * 1000
             r = L / l0
             over, under = np.maximum(r - hi, 0), np.maximum(lo - r, 0)
             e = (l0 * (kspr * (r - 1) ** 2 + wall * (over ** 2 + under ** 2))).sum()
             gX = scat(De, (2 * kspr * (r - 1) + 2 * wall * (over - under))[..., None] * d * (1000 / np.maximum(L, 1e-9))[..., None])
-            q, a, b, c = areas(X, nh)
+            q, a, b, c = areas(X, nh, uu)
             qc = np.maximum(q, 1e-3)
             pen = np.maximum(np.where(soft, fo - q, fo / qc - 1), 0)
             e += (wt * pen ** 2).sum()
             k = (wt * pen * np.where(soft, -1.0, -fo / qc ** 2 * (q > 1e-3)) / a0 / 1000)[..., None]
+            kp, (ua, ub, uc) = k[0].copy(), (uu[tris[:, c_]] for c_ in range(3))
+            k[0] = 0.0
             gX += scat(Tc[0], k * np.cross(nh, c - b)) + scat(Tc[1], k * np.cross(nh, a - c)) + scat(Tc[2], k * np.cross(nh, b - a))
             gu = np.einsum("m,mnkc,mnk->nc", Ws, J, gX[:, bi])
+            gu += (Tc[0].T @ (kp * rot(uc - ub)) + Tc[1].T @ (kp * rot(ua - uc)) + Tc[2].T @ (kp * rot(ub - ua)))[bi]
             return e, np.r_[gu[pf].ravel(), (gu[ps] * cur.tangent(x[2 * len(fi):] / 1000)).sum(1)]
 
         res = minimize(f, x, jac=True, method="L-BFGS-B", options={"maxiter": iters, "maxfun": 2 * iters, "ftol": 1e-12, "gtol": 1e-7})
@@ -442,28 +471,31 @@ def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), w
         if log and (mm > 1 or tau == 0):
             Xn = points(place(x, tau), mm)[0]
             rr = np.linalg.norm(Xn[:, i] - Xn[:, j], axis=2) * 1000 / l0
-            log(f"   lay2 step {step} tau {tau:.2f}: e {res.fun:.1f}, {res.nit} its; turned at start (rest, poses) {int(soft[0].sum())}, {int(soft[1:].sum())};"
+            log(f"   lay2 step {step} tau {tau:.2f}: e {res.fun:.1f}, {res.nit} its; turned at start (rest: the plane, poses) {int(soft[0].sum())}, {int(soft[1:].sum())};"
                 f" rest edge {rr[0].min():.2f}..{rr[0].max():.2f}" + (f"; poses over hi {int((rr[1:] > hi[1:]).sum())} (worst by {(rr[1:] - hi[1:]).max():.2f}),"
                 f" under lo {int((rr[1:] < lo[1:]).sum())}; A's own worst over the poses {own.max():.2f}" if mm > 1 else ""), flush=True)
     return place(x, 0.0)
 
 
-def lay_faults(P0, P, N, E, tris, lim, qrel, amin):
-    """The faults of a lay P (points on the reference, N the reference's normals at their feet) against the mesh's rest
-    P0: per triangle the signed area against the feet's normals / the rest area (the mesh's winding faces along the
-    reference's normals) and tri_quality lay, rest; per edge lay / rest length. Faulty: a triangle with area under
-    amin (under 0: turned) or quality under qrel x its rest quality; an edge outside lim.
+def lay_faults(P0, P, u, E, tris, lim, qrel, amin):
+    """The faults of a lay P (points on the reference, u their plane points) against the mesh's rest P0: per triangle
+    the signed area IN THE UNFOLD'S PLANE (plane_area: over 0 = the reference's own sign) / the unsigned rest area, and
+    tri_quality lay, rest; per edge lay / rest length. Faulty: a triangle with area under amin (under 0: turned) or
+    quality under qrel x its rest quality; an edge outside lim (lim None: no edge is a fault).
     -> (area [f], quality [f], rest quality [f], ratio [e], faulty triangles [f] bool, faulty edges [e] bool)."""
     cr = lambda X: np.cross(X[tris[:, 1]] - X[tris[:, 0]], X[tris[:, 2]] - X[tris[:, 0]])
-    sa = (cr(P) * ct._unit(N[tris].sum(1))).sum(1) / np.linalg.norm(cr(P0), axis=1)
+    sa = 2 * plane_area(u, tris) / np.linalg.norm(cr(P0), axis=1)
     q, q0 = tri_quality(P, tris), tri_quality(P0, tris)
     r = np.linalg.norm(P[E[:, 0]] - P[E[:, 1]], axis=1) / np.linalg.norm(P0[E[:, 0]] - P0[E[:, 1]], axis=1)
-    return sa, q, q0, r, (sa < amin) | (q < qrel * q0), (r < lim[0]) | (r > lim[1])
+    return sa, q, q0, r, (sa < amin) | (q < qrel * q0), ((r < lim[0]) | (r > lim[1])) if lim else np.zeros(len(E), bool)
 
 
-def untangle(unf, u, h, P0, N0, band, hold, E, tris, lim=(0.6, 1.6), qrel=0.5, amin=0.25, grow=2, sweeps=30, dirs=16,
-             tol=1e-4, stop=1e-5):
+def untangle(unf, u, h, P0, N0, band, hold, E, tris, lim=None, qrel=0.0, amin=0.1, grow=1, polish=False, sweeps=30,
+             dirs=16, tol=1e-4, stop=1e-5):
     """A lay's faults repaired in place: (the plane points u with the faulty points re-placed, a report).
+    BY DEFAULT A SAFETY NET ON TURNED TRIANGLES ONLY (plane area under amin x rest; no quality floor, no edge limits,
+    polish False: a point stops as soon as its triangles are sound, its edges are not improved). A broad rest repair
+    (lim (0.6, 1.6), qrel 0.5, amin 0.25, grow 2, polish True = lay 3) judges the rest alone and broke the poses.
 
     u [n, 2]: the lay (plane points of the unfold `unf`); h [band points]: their heights; P0 [n, 3]: the mesh's rest;
     N0 [n, 3]: the reference's normals at the rest feet (used for the points outside the band, which stay at P0);
@@ -513,17 +545,20 @@ def untangle(unf, u, h, P0, N0, band, hold, E, tris, lim=(0.6, 1.6), qrel=0.5, a
             c = int(np.nonzero(tris[t] == p)[0][0])
             X[:, c], Nn[:, c] = C, Nq
             nr = np.cross(X[:, 1] - X[:, 0], X[:, 2] - X[:, 0])
-            sa = (nr * ct._unit(Nn.sum(1))).sum(1) / a0[t]
+            U = np.repeat(u[tris[t]][None], len(q), 0)
+            U[:, c] = q
+            sa = (U[:, 1, 0] - U[:, 0, 0]) * (U[:, 2, 1] - U[:, 0, 1]) - (U[:, 1, 1] - U[:, 0, 1]) * (U[:, 2, 0] - U[:, 0, 0])
+            sa = sa / a0[t]                                  # the plane rule (plane_area / the rest area)
             ql = 2 * np.sqrt(3) * np.linalg.norm(nr, axis=1) / ((X[:, 1] - X[:, 0]) ** 2 + (X[:, 2] - X[:, 1]) ** 2 + (X[:, 0] - X[:, 2]) ** 2).sum(1)
             short += np.maximum(amin - sa, 0) + np.maximum(qrel * q0[t] - ql, 0)
         return short, d, C, Nq
 
     better = lambda s, d, s0, d0: (s < s0 - tol) if s0 > 0 else (s <= 0) & (d < d0 - tol)
-    first = lay_faults(P0, P, N, E, tris, lim, qrel, amin)
+    first = lay_faults(P0, P, u, E, tris, lim, qrel, amin)
     free = np.zeros(n, bool)
     rounds = 0
     for g in range(grow + 1):
-        sa, q, _, r, ft, fe = lay_faults(P0, P, N, E, tris, lim, qrel, amin)
+        sa, q, _, r, ft, fe = lay_faults(P0, P, u, E, tris, lim, qrel, amin)
         if not (ft.any() or fe.any()):
             break
         seed = np.zeros(n, bool)
@@ -542,7 +577,7 @@ def untangle(unf, u, h, P0, N0, band, hold, E, tris, lim=(0.6, 1.6), qrel=0.5, a
                 ep = np.array(pe[p])
                 rad = 0.5 * np.linalg.norm(u[E[ep, 0]] - u[E[ep, 1]], axis=1).mean()
                 s0, d0, _, _ = (x[0] for x in score(p, u[p][None]))
-                while rad > stop:
+                while rad > stop and (polish or s0 > 0):
                     cand = u[p] + np.r_[rad * ring, 0.5 * rad * ring]
                     s, d, C, Nq = score(p, cand)
                     key = np.where(s > 0, 1e6 + s, d) if s0 <= 0 else s * 1e6 + d * (s <= 0)
@@ -554,14 +589,15 @@ def untangle(unf, u, h, P0, N0, band, hold, E, tris, lim=(0.6, 1.6), qrel=0.5, a
                         rad *= 0.5
             if moved < stop:
                 break
-    last = lay_faults(P0, P, N, E, tris, lim, qrel, amin)
+    last = lay_faults(P0, P, u, E, tris, lim, qrel, amin)
     mv = np.linalg.norm(P - Pin, axis=1)
     return u, {"moved": np.nonzero(mv > 1e-9)[0], "mm": mv[mv > 1e-9] * 1000, "free": np.nonzero(free)[0], "rounds": rounds,
                "before": first, "after": last, "lim": lim, "qrel": qrel, "amin": amin}
 
 
 def relay(P0, edges, tris, band, bridge, face, bary, ref_V0, ref_T, reach=0.03, kappa=1.2, deg=3, ext=0.01, part=0.9,
-          rounds=4, sweeps=40, lim=(0.82, 1.28), wall=50.0, fold=0.5, side=0, design=None, lay=None, u_given=None, repair=None):
+          rounds=4, sweeps=40, lim=(0.82, 1.28), wall=50.0, fold=0.5, side=0, design=None, lay=None, u_given=None, repair=None,
+          start=None, snap_given=None):
     """The band's points re-laid on the reference's rest surface: {"P1": the new points [n, 3], ...stats}.
 
     P0 [n, 3], edges [m, 2], tris [f, 3]: the mesh's rest points and topology; band [n] bool: the points that may move;
@@ -572,6 +608,8 @@ def relay(P0, edges, tris, band, bridge, face, bary, ref_V0, ref_T, reach=0.03, 
     design (+ lay: lay2's keywords): the lay is lay2's (a carry map, judged in the poses of `design`).
     u_given [n, 2]: a stored lay's plane points; nothing is solved, the result is rebuilt from them.
     repair: untangle's keywords ({} = its defaults); the lay (solved or given) is untangled, the snapped row held.
+    start [n, 2] (with design): lay2 starts from these plane points, one round, no walk. snap_given: the snapped row's
+    points as stored with a lay (u_given / start); without it the row is found again (the first round's only).
     """
     P0, E, tris = np.asarray(P0, float), np.asarray(edges, np.int64), np.asarray(tris, np.int64)
     V0, T = np.asarray(ref_V0, float), np.asarray(ref_T, np.int64)
@@ -608,11 +646,12 @@ def relay(P0, edges, tris, band, bridge, face, bary, ref_V0, ref_T, reach=0.03, 
     Wd = sp.diags(w)
     wsum = np.bincount(np.r_[i, j], np.r_[w, w], n)
     snap = np.zeros(n, bool)
-    snap[X] = True
+    snap[X if snap_given is None else np.asarray(snap_given, np.int64)] = True
+    one = u_given is not None or start is not None
     u, bi = u0.copy(), np.nonzero(band)[0]
     Db = D[:, bi]
     hb = splu((Db.T @ Wd @ Db).tocsc()).solve(Db.T @ (Wd @ -(D @ np.where(band, 0.0, h0))))
-    for rnd in range(1 if u_given is not None else rounds):
+    for rnd in range(1 if one else rounds):
         fi, si = np.nonzero(band & ~snap)[0], np.nonzero(snap)[0]
         Df = D[:, fi]
         K = splu((Df.T @ Wd @ Df).tocsc())
@@ -632,7 +671,7 @@ def relay(P0, edges, tris, band, bridge, face, bary, ref_V0, ref_T, reach=0.03, 
         if u_given is not None:
             u = np.asarray(u_given, float).copy()
         elif design is not None:
-            u = lay2(unf, cur, u0, hb, P0, N0, band, snap, Eb, tb, design, **(lay or {}))
+            u = lay2(unf, cur, u0, hb, P0, N0, band, snap, Eb, tb, design, **{**(lay or {}), "start": start})
         elif lim is not None:                                # real lengths decide: from the feet (no triangle turned),
             u = u0.copy()                                    # the apex row WALKED onto its line (a jump turns triangles)
             off, tau, step = u0[si] - cur.project(u0[si]), 1.0, 0.25
@@ -654,7 +693,7 @@ def relay(P0, edges, tris, band, bridge, face, bary, ref_V0, ref_T, reach=0.03, 
         s1 = cur.side(u)
         cross = (k1 > kappa) & (s1[i] * s1[j] < 0) & ~snap[i] & ~snap[j] & band[i] & band[j]
         add = np.unique(np.where(sx * s1[i[cross]] > 0, i[cross], j[cross]))
-        if not len(add) or rnd == rounds - 1 or u_given is not None:
+        if not len(add) or rnd == rounds - 1 or one:
             break
         snap[add] = True
     fix = None
@@ -672,9 +711,6 @@ def relay(P0, edges, tris, band, bridge, face, bary, ref_V0, ref_T, reach=0.03, 
         k1 = unf.length(u[i], u[j]) / np.maximum(np.linalg.norm(P1[i] - P1[j], axis=1), 1e-12)
     Nf = N0.copy()
     Nf[bi] = N
-    own = np.zeros((n, 3))                                   # the mesh's own rest normals: which way its triangles face
-    for c in range(3):
-        np.add.at(own, tris[:, c], np.cross(P0[tris[:, 1]] - P0[tris[:, 0]], P0[tris[:, 2]] - P0[tris[:, 0]]))
     # the skin budget across the fold: per bridge, the chain ring - bridge - ring along the mesh's edges
     side_e = sd0[i] * sd0[j] > 0
     G = sp.coo_matrix((l0[side_e], (i[side_e], j[side_e])), (n, n)).tocsr()
@@ -693,8 +729,9 @@ def relay(P0, edges, tris, band, bridge, face, bary, ref_V0, ref_T, reach=0.03, 
     l1 = np.linalg.norm(P1[i] - P1[j], axis=1)
     return {"P1": P1, "band": bi, "snap": np.nonzero(snap)[0], "u0": u0, "u": u, "edges": Eb, "tris": tb, "Nf": Nf,
             "budget": np.array(bud), "move": np.linalg.norm(P1 - P0, axis=1)[bi], "len": l1 / l0, "k0": k0, "k1": k1,
-            "flip": int((np.sign(ct.facing(tb, P1, Nf)) != np.sign(ct.facing(tb, P0, own))).sum()), "fix": fix, "N0": N0,
-            "flip_feet": int((np.sign(ct.facing(tb, P1, Nf)) != np.sign(ct.facing(tb, P0, N0))).sum()), "h": h, "cut": int(cut.sum()),
+            "flip": int((plane_area(u, tb) <= 0).sum()), "flip_corner": int((corner_facing(P1, Nf, tb) <= 0).any(1).sum()),
+            "flip_sum": int((ct.facing(tb, P1, Nf) <= 0).sum()), "flip_rest": int((plane_area(u0, tb) <= 0).sum()),
+            "fix": fix, "N0": N0, "h": h, "cut": int(cut.sum()),
             "score": float(score.min()), "depth": depth, "apex_res": cur.res, "lscm_flipped": unf.flipped,
             "scale": np.percentile(unf.scale, [1, 50, 99]), "rounds": rnd + 1, "bridging": int(isb.sum()), "unf": unf,
             "isb": isb, "l0": l0, "cur": cur, "ring": np.nonzero(ring)[0], "chains": chains, "cross": int(cross.sum()), "sx": sx,
@@ -729,7 +766,8 @@ HER = {
     "old_out": "strip_rest_l18.npz",     #    linear lay, kept in this file
     "side": {"l": -1, "r": 0},           # the apex row: 0 the nearer side's bridge ends, +1 / -1 that side of the line
                                          # (l: the nearer side, +, crushes on the line: rest edge 0.18; - walks on clean)
-    "untangle": {},                      # untangle's keywords (lim, qrel, amin, grow): the lay's own faults repaired
+    "untangle": {},                      # untangle's keywords: {} = a safety net on triangles turned in the plane only
+    "keep": ("strip_rest_l18.npz", "strip_rest_l19_lay2.npz", "strip_rest_l19_lay3.npz"),   # build never writes these
     "lay2": {},                          # lay2's keywords (lim, wall, fold, margin, steps, passes, iters)
     "map_elev": (45.0, 90.0),            # target --map: the lay's share, smoothstep of the arm's elevation over these deg
     "map_near": (45, 60, 67.5, 75, 90),  # ... also print the pose nearest each of these elevations
@@ -766,9 +804,9 @@ class HerStrip:
                 out.append((Va, car.carry(Va), np.einsum("nij,nj->ni", car.rotations(Va), self.h.N0[self.pts[s]]), w))
         return out
 
-    def relay(self, s, rows, u=None, repair=False):
-        """The lay of side s: built (cfg["lay"]: 2 = lay2 on the design poses, 1 = the old linear lay), or rebuilt from
-        stored plane points u."""
+    def relay(self, s, rows, u=None, repair=False, start=None, snap=None):
+        """The lay of side s: built (cfg["lay"]: 2 = lay2 on the design poses, 1 = the old linear lay; start: lay2
+        starts from these plane points), or rebuilt from stored plane points u. snap: the stored apex row."""
         car, n = self.h.car[s], len(self.pts[s])
         band = ct.rows_around(n, self.E[s], np.unique(car.bridge), rows) & (np.asarray(self.md.beta) >= 1)
         c = self.cfg
@@ -777,11 +815,13 @@ class HerStrip:
                      self.Ab.T, c["reach"], c["kappa"], c["deg"], c["ext"], c["part"], lim=c["lim"],
                      rounds=2 if new else 4, side=c["side"][s] if c["lay"] == 2 else 0,
                      design=self.design(s) if new else None, lay=c["lay2"], u_given=u,
-                     repair=c["untangle"] if c["lay"] == 2 and (new or repair) else None)
+                     repair=c["untangle"] if c["lay"] == 2 and (new or repair) else None,
+                     start=start if new else None, snap_given=snap if c["lay"] == 2 else None)
 
     def load(self):
         z = np.load(rt.OUT / self.cfg["out"])
         self.u = {s: z[f"u_{s}"] for s in "lr"} if "u_l" in z.files else None
+        self.snap = {s: z[f"snap_{s}"] for s in "lr"}
         self.loc = {s: z[f"loc_{s}"] for s in "lr"}
         self.P1 = {}
         for s in "lr":
@@ -822,9 +862,15 @@ def cmd_build(hs, rows):
     import ray
     import region_shape as rs
     md, bd, cfg, out, R = hs.md, hs.bd, hs.cfg, {}, {}
+    if cfg["out"] in cfg["keep"]:
+        raise SystemExit(f"{cfg['out']} is a kept lay: build writes --file another name")
     old = np.load(rt.OUT / cfg["out"]) if cfg.get("only") or cfg.get("repair") else None
+    st = np.load(rt.OUT / cfg["start"]) if cfg.get("start") else None
     for s in "lr":
-        r = R[s] = hs.relay(s, rows, old[f"u_{s}"] if old is not None and s not in cfg["only"] else None, bool(cfg.get("repair")))
+        kept = old is not None and s not in cfg["only"]
+        src = old if kept else st
+        r = R[s] = hs.relay(s, rows, old[f"u_{s}"] if kept else None, bool(cfg.get("repair")),
+                            st[f"u_{s}"] if st is not None and not kept else None, src[f"snap_{s}"] if src is not None else None)
         if r["fix"]:
             fx, e, tb, pid = r["fix"], r["edges"], r["tris"], hs.pts[s]
             ids = lambda v: "/".join(str(int(x)) for x in v) + " (mesh " + "/".join(str(int(pid[x])) for x in v) + ")"
@@ -857,7 +903,7 @@ def cmd_build(hs, rows):
               f" points off the patch {int(r['score'] < -1e-6)}; apex fit residual {r['apex_res'] * 1000:.2f} mm; groove depth under the bridges p50 / max {np.median(r['depth']) * 1000:.1f} / {r['depth'].max() * 1000:.1f} mm")
         print(f"   move mm p50 / p95 / max {pct(r['move'] * 1000)}; rest edge new / old {r['len'].min():.2f}..{r['len'].max():.2f} (p50 {np.median(r['len']):.2f});"
               f" path / chord max {r['k0'].max():.2f} -> {r['k1'].max():.2f} (over {cfg['kappa']}: {(r['k0'] > cfg['kappa']).sum()} -> {(r['k1'] > cfg['kappa']).sum()});"
-              f" rest triangles turned over {r['flip']} (against the sign of B's rest at A's foot normals, the old count: {r['flip_feet']}); heights mm p5 / p50 / p95 {pct(r['h'] * 1000, (5, 50, 95))}, cut {r['cut']}")
+              f" rest triangles turned, THE PLANE RULE {r['flip']} (B's rest feet by the same rule {r['flip_rest']}; a corner facing off A's normal {r['flip_corner']}, summed normals {r['flip_sum']}); heights mm p5 / p50 / p95 {pct(r['h'] * 1000, (5, 50, 95))}, cut {r['cut']}")
         print(f"   A's rest path / B's p50 / max {np.median(r['budget'][:, 0]):.2f} / {r['budget'][:, 0].max():.2f}  ->  A's / B' {np.median(r['budget'][:, 1]):.2f} / {r['budget'][:, 1].max():.2f}")
     np.savez_compressed(rt.OUT / cfg["out"], params=json.dumps({**{k: v for k, v in cfg.items()}, "rows": rows}), **out)
     print(f"wrote {rt.OUT / cfg['out']}")
@@ -984,7 +1030,7 @@ def cmd_map(hs, poses):
     for k in sel:
         s = sides[k]
         if s not in R:
-            r = hs.relay(s, cfg["rows"], hs.u[s] if hs.u else None)
+            r = hs.relay(s, cfg["rows"], hs.u[s] if hs.u else None, snap=hs.snap[s])
             i, j = r["edges"][:, 0], r["edges"][:, 1]
             R[s] = (r["unf"], r["u"][i], r["u"][j], r["unf"].length(r["u"][i], r["u"][j]), float(np.abs(r["P1"] - hs.P1[s]).max()))
         Va, Xf, Nf, Xm, Nm = targets(z["G"][k], s, w[k])
@@ -1136,13 +1182,21 @@ def cmd_turned(hs, poses, top=4):
         k = names.index(q)
         s, G = sides[k], z["G"][k]
         if s not in R:
-            r = hs.relay(s, cfg["rows"], hs.u[s] if hs.u else None)
+            r = hs.relay(s, cfg["rows"], hs.u[s] if hs.u else None, snap=hs.snap[s])
+            tr, pid = r["tris"], hs.pts[s]
+            pl, co = plane_area(r["u"], tr) <= 0, (corner_facing(r["P1"], r["Nf"], tr) <= 0).any(1)
+            sm = np.sign(ct.facing(tr, hs.P1[s], hs.N1[pid])) != np.sign(ct.facing(tr, bd.V0[pid], h.N0[pid]))
+            wh = lambda m: np.nonzero(m)[0].tolist()
+            print(f"== rest {s}: lay triangles turned, THE PLANE RULE {int(pl.sum())} {wh(pl)}; the map count's measure on the lay at rest (B' vertex normals)"
+                  f" {int(sm.sum())} {wh(sm)}: {'AGREE' if (pl == sm).all() else 'DIFFER'}; a corner facing off A's foot normal {int(co.sum())} {wh(co)};"
+                  f" B's rest feet by the plane rule {wh(plane_area(r['u0'], tr) <= 0)}; unfold flipped {r['lscm_flipped']}", flush=True)
             tag = np.full(len(hs.pts[s]), "o")
             tag[r["ring"]], tag[r["band"]] = "r", "."
             tag[np.unique(h.car[s].bridge)] = "b"
             tag[r["snap"]] = "A"
-            R[s] = r, tag, r["unf"].length(r["u"][r["edges"][:, 0]], r["u"][r["edges"][:, 1]])
-        r, tag, len0 = R[s]
+            act = np.unique(tr)
+            R[s] = r, tag, r["unf"].length(r["u"][r["edges"][:, 0]], r["u"][r["edges"][:, 1]]), (act,) + r["unf"].locate(r["u"][act])[:2]
+        r, tag, len0, (act, ta, bta) = R[s]
         e, P, N0, b, P1, c1 = r["edges"], bd.V0[hs.pts[s]], h.N0[hs.pts[s]], hs.loc[s], hs.P1[s], hs.car1[s]
         tb = hs.tris(s)
         tb = tb[np.isin(tb, b).any(1)]
@@ -1169,9 +1223,14 @@ def cmd_turned(hs, poses, top=4):
         area = lambda X, N: 0.5 * (un(tb, X) * ct._unit(N[tb].sum(1))).sum(1)
         ql, q0, q1 = area(P1, r["Nf"]) / area(P, N0), tri_quality(P, tb), tri_quality(P1, tb)
         lim = own.max() + 0.15
+        FA, NA, pa = np.zeros_like(P), np.zeros_like(P), r["unf"].tri[ta]   # A's OWN surface under the lay's triangles:
+        FA[act] = np.einsum("nk,nkj->nj", bta, Va[r["unf"].vid][pa])        # the feet on A (no height), A's normals there
+        NA[act] = ct._unit(np.einsum("nk,nkj->nj", bta, r["unf"].normals(Va)[pa]))
+        oa, oc = ct.facing(tb, FA, NA) <= 0, corner_facing(FA, NA, tb)
         ids = lambda v: "/".join(f"{int(x)}{tag[x]}" for x in v) + " (mesh " + "/".join(str(int(hs.pts[s][x])) for x in v) + ")"
         print(f"== {q} ({s}) w {wk:.2f}: turned map {int(tm.sum())}, at w = 1 {int(t1.sum())}, fill {int(tf.sum())}; map edge max {rm.max():.2f}, A's own max {own.max():.2f}"
-              f" (limit {lim:.2f}), over the limit {int((rm > lim).sum())}; mean lay {lay.mean():.2f}, map {rm.mean():.2f}, A {own.mean():.2f}", flush=True)
+              f" (limit {lim:.2f}), over the limit {int((rm > lim).sum())}; mean lay {lay.mean():.2f}, map {rm.mean():.2f}, A {own.mean():.2f};"
+              f" A'S OWN surface under the band's triangles: turned {int(oa.sum())} {np.nonzero(oa)[0].tolist()}, a corner facing off {int((oc <= 0).any(1).sum())}", flush=True)
         for t in np.nonzero(tm | t1)[0]:
             v = tb[t]
             ga, ga0 = (fa[v] * ng[t]).sum(1), (fa0[v] * nl[t]).sum(1)
@@ -1179,7 +1238,8 @@ def cmd_turned(hs, poses, top=4):
             print(f"   tri {t} {ids(v)}: turned map {bool(tm[t])}, w = 1 {bool(t1[t])}, fill {bool(tf[t])}; lay area / B's {ql[t]:+.2f}, quality B {q0[t]:.2f} lay {q1[t]:.2f};"
                   f" its normal . A's carrier normals: lay rest {ga0.round(2).tolist()}, pose {ga.round(2).tolist()} (w = 1 {(fa[v] * n1[t]).sum(1).round(2).tolist()});"
                   f" carriers' least mutual normal dot in the pose {ap:.2f} (rest {min(fa0[v[a]] @ fa0[v[c]] for a, c in ((0, 1), (1, 2), (2, 0))):.2f});"
-                  f" the mixed normals . its normal {(Nm[v] * ng[t]).sum(1).round(2).tolist()}")
+                  f" the mixed normals . its normal {(Nm[v] * ng[t]).sum(1).round(2).tolist()};"
+                  f" A's own under it: turned {bool(oa[t])}, corners {oc[t].round(2).tolist()}")
         bad = set(tb[tm | t1].ravel().tolist())
         for x in np.argsort(-rm)[:max(top, int((rm > lim).sum()))]:
             print(f"   edge {x} {ids(e[x])}: map {rm[x]:.2f} ({rm[x] - lim:+.2f} on the limit) = lay {lay[x]:.2f} x pose {rm[x] / lay[x]:.2f}; at w = 1 {r1[x]:.2f}; A's own along it {own[x]:.2f};"
@@ -1203,11 +1263,15 @@ def main():
     ap.add_argument("--repair", action="store_true", help="build: no solve; the npz's lay untangled (its faults repaired) and stored")
     ap.add_argument("--fix", default="", help="build: untangle keywords as JSON, e.g. {\"lim\": [0.6, 1.6]}")
     ap.add_argument("--set", default="", help="build: lay2 keywords as JSON, e.g. {\"iters\": 800}")
+    ap.add_argument("--file", default="", help="the lay's npz in out/shoulder (build writes it; target / turned / sheet read it); default strip_rest.npz")
+    ap.add_argument("--start", default="", help="build: a lay npz in out/shoulder; lay2 starts from its plane points and apex row (no walk)")
     a = ap.parse_args()
     HER["lim"] = (0.82, 1.28) if a.relax else None
     if a.lay == "l18":
         HER["lay"], HER["out"] = 1, HER["old_out"]
-    HER["only"], HER["repair"] = a.only, a.repair
+    HER["only"], HER["repair"], HER["start"] = a.only, a.repair, a.start
+    if a.file:
+        HER["out"] = a.file
     HER["untangle"] = {k: tuple(v) if isinstance(v, list) else v for k, v in json.loads(a.fix or "{}").items()}
     HER["side"].update({k: int(v) for k, v in (x.split("=") for x in a.side.split(",") if x)})
     HER["lay2"] = {**HER["lay2"], **{k: tuple(v) if isinstance(v, list) else v for k, v in json.loads(a.set or "{}").items()}}
