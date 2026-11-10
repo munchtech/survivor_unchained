@@ -1,5 +1,9 @@
 # The owner's notes waiting for the leads
 
+## 9 Nov (evening, coordinator #3): HER RUN READS RIGID (A1); L1 RETHINK; the owner's bar restated
+- **Locomotion (A1, open):** "I'm still worried about how rigid they are. running still looks slightly awkward - the arm always held 90 degrees instead of casually holding the sword outward downward etc". For: the run is the most-seen clip and the sword arm is locked at a right angle all cycle. Bar: effortlessly badass, a relaxed low carry, the arm alive through the stride. The design is A1's; "outward downward" is an example. Check walk/jog/idle carries for the same locked arm. Coordinator's call: locomotion is the first item after the MR of the four skill clips.
+- **L1 (taken):** shown the pairs sheet, the owner: "whatever you think is best! I want aaa quality. casually badass character with epic effects, a solid pipeline for armor creation and npc creation with marionette and a unique art style that were working on. whatever we need to get there". Coordinator's call: rethink = night lighting first as one system, cap ~0.6M (RESUME top).
+
 ## 9 Nov (afternoon): USAGE REVIEW, PICKED
 The owner: "were burning through usage, what can we do to preserve some without losing quality?" Coordinator's finding: ~15M in 12 h, mostly work built twice (skill views before clips, ~2M), a shader scrapped at round 3 (~0.6M), six leads' orientation and handoffs (~1M), re-merges against moving branches. PICKED: "all those changes are great please do them. for the leads - lets reduce it if things would be waiting long, but for things that are not a big pipeline like needing judges or anything they can go past the 4 anytime." Rules in `docs/handoff/lead_brief.md` "Usage rules": own look before every max judge; scrap at the first FAR; orientation cap 60k/80k; no visuals before their inputs; four live JUDGED leads, non-judged data/systems work past four anytime. Judges stay max on always-seen things; models unchanged.
 
