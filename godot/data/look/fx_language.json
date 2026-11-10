@@ -830,6 +830,60 @@
     ]
    }
   },
+  "grip": {
+   "what": "P7 lead 4, the held swing's arc, take 3 (src/Fx/BattleFx.Grip.cs, shaders/fx_grip_stroke.gdshader): the SAIL her blade leaves, the contact on the blade, the link between a chain's cuts. px at the play camera, m in the world, s of real time (the fight's through a hitstop). Colors stay the steel family's.",
+   "lead_frames": 2,
+   "slow": 4,
+   "tail_px": 2.5,
+   "point": 0.14,
+   "grain": [3, 0.45],
+   "waver": 0.07,
+   "glow": 0.28,
+   "along": [[0.12, 0.4], [0.3, 0.88]],
+   "retract": [[0.05, 0], [0.15, 1]],
+   "shed_at": [0.084, 0.117],
+   "sunder": {
+    "what": "head = the blade's lit share at the head, p = how fast the inner edge runs out to the tip's path, max_len = the longest drawn (m of the tip's path), across = the brush's knots [share of the width, the brush's across] x 2 for the whole stroke, then with the amber stepped out, then the gold (the brush's core ends at 0.24 x its heat, its mid at 0.66), flash = the contact's size",
+    "head": 1.0,
+    "p": 2.7,
+    "max_len": 2.7,
+    "across": [[0.64, 0.22, 0.82, 0.62], [0.8, 0.22, 0.97, 0.62], [0.95, 0.2, 0.99, 0.4]],
+    "width": [1, 0.8, 0.55],
+    "flash": 1.0
+   },
+   "oath": {
+    "head": 0.78,
+    "p": 3.0,
+    "max_len": 2.5,
+    "across": [[0.44, 0.22, 0.76, 0.62], [0.6, 0.22, 0.95, 0.62], [0.9, 0.2, 0.99, 0.4]],
+    "width": [1, 0.8, 0.55],
+    "flash": 0.8
+   },
+   "contact": {
+    "what": "the slit on the blade where its line crosses the struck body: looked for from the contact for wait_frames, then laid on the blade as it is; k_min = the nearest to the guard it sits; lift = toward the camera (m); larger for a kill or a crowd (3+ struck); tears = [fewest, most]",
+    "wait_frames": 3,
+    "k_min": 0.35,
+    "lift": 0.3,
+    "kill": 1.3,
+    "crowd": 1.12,
+    "tears": [3, 6]
+   },
+   "link": {
+    "what": "a chain: the next cut inside window s of the last contact, the grip still held. Opposite side and its start within max_gap m of the last cut's end: its tail is a thread from that end through a turn hook (hook m past the end, hook_w m wide when the two points meet) into its first fast sample. along = the brush's along on the thread.",
+    "window": 1.6,
+    "max_gap": 1.5,
+    "hook": 0.24,
+    "hook_w": 0.1,
+    "points": 18
+   },
+   "edge": {
+    "what": "the hot edge between a chain's cuts: a core line px wide on the real blade, a glint_px star at its tip, lifted lift m toward the camera; steps out gold then amber, out_frames each, when the chain breaks",
+    "px": 2.5,
+    "glint_px": [8, 3.5],
+    "lift": 0.08,
+    "out_frames": 2
+   }
+  },
   "dash": {
    "ribbon": {
     "head_px": 24,
