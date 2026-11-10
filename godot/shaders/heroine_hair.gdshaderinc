@@ -112,8 +112,10 @@ uniform bool fibre_back = true;
 // combed, dark (under the hair), thinning out at her hairline (its vertex
 // alpha) to bare skin. A braid's strands are drawn so too.
 uniform bool cap = false;
-// A leather tie in her hair: dark, no strands.
+// A tie in her hair, no strands: GOLD (L1 lead 23 TUNE, the owner's close-up: a red braid with gold ties; was dark leather),
+// painted as metal: its glint (cel_hero_glint, class 3) and lifted to at least HAIR_TIE_L (Oklab L) on the hero paint.
 uniform bool tie = false;
+#define HAIR_TIE_L 0.72
 // Her hair's swing (src/Actors/HairSway.cs): how far a mass hung below her
 // head has been left behind, and where her head is (both in the mesh's own
 // space). Each point is moved by it the more the further it hangs below her
@@ -208,12 +210,12 @@ vec3 hair_locks(vec3 e, vec3 p, float deep, bool scalp, vec3 pw, vec3 cam, mat3 
 	vec3 nl = normalize(to_world * (nr * cos(th) - tl * sin(th)));
 	vec2 hx = cel_hero.xy / max(length(cel_hero.xy), 1e-4);
 	vec3 ld = normalize(vec3(hx.x, 0.84, hx.y));
-	float lit = dot(nl, ld) + (h - 0.5) * 0.3;                          // (each lock a little its own)
+	float lit = dot(nl, ld) + (h - 0.5) * 0.5;                          // (each lock a little its own; TUNE l23: 0.3, neighbours read alike at 16 px)
 	float fw = max(fwidth(lit), 1e-4);
 	float f = mix(cel_hero_locks.x, 1.0, smoothstep(cel_hero_locks.z - 0.5 * fw, cel_hero_locks.z + 0.5 * fw, lit));
 	// (the gap: 1 px at a lock's edge, deep cards, the scalp)
 	float ue = min(u, 1.0 - u), uw = max(fwidth(a), 1e-4);
-	float gap = max(1.0 - smoothstep(0.5 * uw, 1.5 * uw, ue), smoothstep(0.88, 0.8, deep));
+	float gap = max(1.0 - smoothstep(0.5 * uw, 1.5 * uw, ue), smoothstep(0.84, 0.78, deep));   // (TUNE l23: 0.88-0.8, too much of the crown in gap)
 	if (scalp) gap = 1.0;
 	f *= mix(1.0, cel_hero_locks.w > 0.0 ? cel_hero_locks.w : 1.0, gap);
 	// (the sheen: a hard band on a lit lock where its normal meets the half-vector, shifted lock to lock)
@@ -336,7 +338,7 @@ void fragment() {
 	}
 	float cover = 1.0;
 	if (tie) {
-		ALBEDO = vec3(0.055, 0.035, 0.024);
+		ALBEDO = vec3(0.80, 0.52, 0.16);   // (linear gold; was leather 0.055, 0.035, 0.024)
 		fibre = 0.6;
 	} else if (cap) {
 		// (at her hairline, where its strands are seen, as bright as hair; dark under the cards)
@@ -371,7 +373,7 @@ void fragment() {
 	}
 	// (the ash on the lighter strands only: on the dark ones, deep in the hair and lit by the sky, it turned them
 	// blue-grey, 0.5% to 6.9% of her crown's pixels bluish: judge j1, face 34)
-	ALBEDO *= mix(vec3(1.0), ash_tone, ash_w * smoothstep(0.08, 0.35, dot(ALBEDO, vec3(0.2126, 0.7152, 0.0722)) / max(dye_lum, 0.001)));
+	ALBEDO *= mix(vec3(1.0), ash_tone, (tie ? 0.0 : ash_w) * smoothstep(0.08, 0.35, dot(ALBEDO, vec3(0.2126, 0.7152, 0.0722)) / max(dye_lum, 0.001)));
 #if defined(SOFT) || defined(OVER)
 	ALPHA = cover;
 #elif defined(BLEND)
@@ -416,6 +418,12 @@ void fragment() {
 	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug; none on the unshaded erase).
 	CEL_FRAGMENT;
 	CEL_HERO_FRAGMENT;
+	if (tie && cel_hero_abs() && cel_hero_id.a < 0.5) {
+		vec3 t_n = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);
+		float t_l = cel_hero_ok_l(EMISSION);
+		if (t_l > 0.0001 && t_l < HAIR_TIE_L) EMISSION *= pow(HAIR_TIE_L / t_l, 3.0);
+		EMISSION = cel_hero_glint(EMISSION, t_n, normalize((INV_VIEW_MATRIX * vec4(VIEW, 0.0)).xyz), 3, cel_hero_glint_lit(t_n));
+	}
 	if (cel_hero_abs() && cel_hero_id.a < 0.5 && cel_hero_locks.x > 0.0 && !tie) EMISSION = hair_locks(EMISSION, hl_at, depth, cap && COLOR.b < 0.5, (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz, CAMERA_POSITION_WORLD, mat3(MODEL_MATRIX) * head_turn, cel_hero_chroma.x > 0.0 ? cel_hero_near(-VERTEX.z, PROJECTION_MATRIX) : 1.0);
 #endif
 }

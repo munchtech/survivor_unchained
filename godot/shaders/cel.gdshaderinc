@@ -695,7 +695,11 @@ vec3 cel_hero_glint(vec3 c_t, vec3 c_wn, vec3 c_wv, int c_cls, float c_lit) {
 	float c_sf = max(c_g.y, c_fw);
 	float c_d = (1.0 - smoothstep(c_g.x - c_sf, c_g.x + c_sf, c_ang)) * c_lit;
 	float c_mx = max(c_t.r, max(c_t.g, c_t.b));
-	vec3 c_hot = mix(c_t / max(c_mx, 0.0001), vec3(1.0), c_cls == 3 ? 0.65 : 0.5) * max(c_g.z, 1.2 * c_mx);
+	// (TUNE l23: metal's hot glint mixes toward HER KEY's color, not white: a specular is the light's color, so cool
+	// gunmetal flashes warm under her lamp and gold flashes hotter; her key's hue, never a rig hue)
+	float c_km = max(cel_hero_lit.r, max(cel_hero_lit.g, cel_hero_lit.b));
+	vec3 c_key = c_cls == 3 && c_km > 0.0001 ? cel_hero_lit.rgb / c_km : vec3(1.0);
+	vec3 c_hot = mix(c_t / max(c_mx, 0.0001), c_key, c_cls == 3 ? 0.85 : 0.5) * max(c_g.z, 1.2 * c_mx);
 	vec3 c_o = c_t;
 	if (c_cls == 3 && c_g.w > 0.0) {
 		float c_b = smoothstep(c_g.x + c_sf, c_g.x + 2.0 * c_sf, c_ang) * (1.0 - smoothstep(2.4 * c_g.x, 2.4 * c_g.x + c_sf, c_ang));
