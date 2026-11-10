@@ -390,3 +390,51 @@ def test_no_hold_rows_are_posed_as_before():
     ck.add_skin(["ranger.belt"])
     assert ck.tests[0]["worn"] is None and not ck.rests
     assert gw.worn_top(scene()[0] if isinstance(scene(), tuple) else scene(), {"slot": "top", "hold": {"support": 1}}) is None
+
+
+def _pair_scene(top):
+    import os
+    import pytest
+    if not os.path.isfile(os.path.join(gw.GEAR, "gear_index.json")):
+        pytest.skip("no built gear folder")
+    ix, rows = gw.load_rows(gw.GEAR)
+    have = {r["id"] for r in rows}
+    ids = {top, "warden.greaves", "warden.boots"}
+    if not ids <= have:
+        pytest.skip("pieces not built")
+    body = os.path.join(gw.REPO, "godot", "art", "people", ix["body"])
+    sc = gw.build_scene(body, rows, ids)
+    order = __import__("json").load(open(os.path.join(gw.HERE, "slot_map.json"), encoding="utf-8"))["order"]
+    return sc, gw.Check(sc, rows, order)
+
+
+def test_pair_without_the_top_is_posed_on_the_looks_worn_frames():
+    """A look with a held top: a pair with no top in it takes the top's worn frames (the ones its skin test uses), and its
+    row says so; the same pair in a look with no held top is posed bare."""
+    sc, ck = _pair_scene("plate_top_plain")
+    wn = ck.worn_of("plate_top_plain")
+    assert wn is not None
+    look = ["plate_top_plain", "warden.greaves", "warden.boots"]
+    ck.add_pair("warden.greaves", "warden.boots", "control", look=look)
+    assert len(ck.tests) == 1 and ck.tests[0]["worn"] is wn
+    ck.tests.clear()
+    ck.add_skin(["plate_top_plain"])
+    skin_wn = ck.tests[0]["worn"]
+    src = gw.dump_sources(sc, gw.clip_files("Jog_Fwd"), 1000)[0][1]
+    _, Sa, _ = next(src(wn))
+    _, Sb, _ = next(src(skin_wn))
+    assert np.abs(Sa - Sb).max() < 1e-5            # (metres: 0.01 mm)
+    # (the row's "worn_rest": True is written from the test's "worn", as the skin row's)
+
+
+def test_pair_in_a_look_without_a_held_top_is_posed_as_before():
+    """No held top in the look (or no look given): the pair's worn is None and its frames are the bare ones, bit-equal."""
+    sc, ck = _pair_scene("plate_top_plain")
+    ck.add_pair("warden.greaves", "warden.boots", "control", look=["warden.greaves", "warden.boots"])
+    ck.add_pair("warden.greaves", "warden.boots", "control")
+    assert len(ck.tests) == 1 and ck.tests[0]["worn"] is None
+    assert ck.look_worn(["warden.greaves", "warden.boots"]) is None and ck.look_worn(None) is None
+    src = gw.dump_sources(sc, gw.clip_files("Jog_Fwd"), 1000)[0][1]
+    f0, S0, _ = next(src())
+    f1, S1, _ = next(src(ck.look_worn(None)))
+    assert f0 == f1 and np.array_equal(S0, S1)

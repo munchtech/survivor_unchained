@@ -17,9 +17,10 @@ piece, the rays' faces, the cover) on her body and the piece as the engine poses
 shapes, then the skin with the springs at their worn equilibrium: worn_rest.spring_rest), and every clip frame carries
 the springs' worn equilibrium IN THAT FRAME's pose (worn_rest.spring_rest with the frame's globals: the press along
 her chest's frame, the sag along the skeleton's down), for her and for every piece weighted to those bones. A pair
-test (control / mixed) takes the worn frames of the top AMONG THE PAIR (as it takes its support shapes); its rest
-footprint and the garment lay are still read at the bind (the engine lays on the mesh data), and "show" is at the bind.
-A pair with no top in it is posed bare, whatever top its set has. Areas are the bind's. Frames a caller hands to
+test (control / mixed) takes the worn frames of the held top of its LOOK (the top among the pair, else the top of the
+set the pair belongs to: she wears it the whole time; the support shapes stay the pair's own); the row says
+"worn_rest": True. Its rest footprint and the garment lay are still read at the bind (the engine lays on the mesh
+data), and "show" is at the bind. A look with no held top is posed bare, as before. Areas are the bind's. Frames a caller hands to
 Check.run itself (engine_check: the engine's own pose) are taken as they are.
 NOT driven: a live spring SWING (the springs sit at their equilibrium every frame: no velocity, no lag, no bounce, no
 limits or collision from P1Springs' step), the glute springs (no piece gives them support: they keep the dump's
@@ -850,7 +851,14 @@ class Check:
                 x["cover"][:x["nfp"]] = np.isfinite(dc)
             self._add(x)
 
-    def add_pair(self, a, b, kind, tuck_ok=True):
+    def look_worn(self, look):
+        """The WornTop of a look's top (the first top of the look's piece ids with a held worn_rest), or None."""
+        return next((w for w in (self.worn_of(i) for i in look or () if i in self.byid and self.byid[i]["slot"] == "top")
+                     if w is not None), None)
+
+    def add_pair(self, a, b, kind, tuck_ok=True, look=None):
+        """look: the piece ids of the look this pair belongs to (a set, or a set with one piece put on); its held top
+        sets the worn frames of a pair with no top in it (docstring AS WORN)."""
         ra, rb = self.byid[a], self.byid[b]
         if a not in self.pc or b not in self.pc:
             return
@@ -885,6 +893,8 @@ class Check:
         for A, B, fp, lay in found:
             sup = next((support_of(self.byid[x]) for x in (A, B) if self.byid[x]["slot"] == "top"), (0.0, 0.0, 0.0))
             wn = next((self.worn_of(x) for x in (A, B) if self.byid[x]["slot"] == "top"), None)
+            if wn is None and not any(self.byid[x]["slot"] == "top" for x in (A, B)):
+                wn = self.look_worn(look)       # (no top in the pair: she still wears the look's top)
             x = {"A": A, "B": B, "kind": kind, "fp": fp, "sup": sup, "worn": wn, "pts": self.pc[A]["samples"][fp["idx"]],
                  "dir": self.pc[A]["near"][fp["idx"]], "laid": None, "rigid_inner": bool(self.byid[A].get("rigid"))}
             if lay is not None:
@@ -1244,11 +1254,11 @@ def plan(ck, tests, only=None):
             ids = sel([i for i, r in byid.items() if r.get("outfit") == cal])
             for a in range(len(ids)):
                 for b in ids[a + 1:]:
-                    ck.add_pair(ids[a], b, "control", tuck_ok=False)
+                    ck.add_pair(ids[a], b, "control", tuck_ok=False, look=ids)
         ids = sel(ps["plate"])
         for a in range(len(ids)):
             for b in ids[a + 1:]:
-                ck.add_pair(ids[a], b, "control")
+                ck.add_pair(ids[a], b, "control", look=ps["plate"])
     if "mixed" in tests:
         names = [s for s in PROOF]
         for si in range(len(names)):
@@ -1256,7 +1266,7 @@ def plan(ck, tests, only=None):
                 for a in sel(ps[names[si]]):
                     for b in sel(ps[names[sj]]):
                         if a != b:
-                            ck.add_pair(a, b, "mixed")
+                            ck.add_pair(a, b, "mixed", look=list(look_of(ps[names[si]], b, byid)[0].values()))
     if "show" in tests:
         for s in PROOF:
             looks.append({"name": f"{s} set", "look": {byid[i]["slot"]: i for i in ps[s] if i in ck.pc}, "dropped": []})
