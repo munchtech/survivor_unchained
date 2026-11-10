@@ -337,7 +337,7 @@ void fragment() {
 
 	// (L1 lead 20, MASS) The floor's luminance here without its grain (materials, slow variation, value masses, moss; before
 	// the trodden, wet and burnt marks, which stay as drawn): what her fire lifts toward the floor's reference inside her pool
-	// (cel.gdshaderinc CEL_FLOOR_LUM, cel_floor_lift), so a dark patch rises as one mass and keeps its grain.
+	// (cel.gdshaderinc CEL_FLOOR_LUM, cel_floor_paint: both ways since MASS3), so a patch goes as one mass and keeps its grain.
 	float fl_lum = dot(albedo, vec3(0.2126, 0.7152, 0.0722)) / mix(clamp(fl_g, 0.5, 2.0), 1.0, mo);
 	// Trodden flat: darker, smoother.
 	float trod = s2.b * (0.8 + 0.4 * nF.r);

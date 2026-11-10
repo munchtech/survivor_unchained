@@ -628,7 +628,7 @@ public partial class Atmosphere : Node3D
         // (L1 lead 17, P) her fire on the floor as a turn of the floor's own tone (the rig's ember_floor; cel.gdshaderinc cel_floor_turn). Only with a ramp (what stands and the foes take it).
         var turn = ramp != null ? FloorTurn(p.EmberFloor) : null;
         RenderingServer.GlobalShaderParameterSet("cel_floor_band", turn is { } ft ? new Vector4(ft.Reach, ft.Lit.X, ft.Lit.Y, ft.Lit.Z) : Vector4.Zero);
-        RenderingServer.GlobalShaderParameterSet("cel_floor_unit", turn is { } ft1 ? new Vector4(ft1.Shade.X, ft1.Shade.Y, ft1.Shade.Z, p.EmberFloorLift is { Length: >= 1 } efl ? (float)efl[0] : 0) : Vector4.Zero);   // (lead 20, MASS: w the floor's reference albedo luminance, cel_floor_lift)
+        RenderingServer.GlobalShaderParameterSet("cel_floor_unit", turn is { } ft1 && p.EmberFloorLift is { Length: >= 1 } efl ? new Vector4(ft1.Paint.X, ft1.Paint.Y, ft1.Paint.Z, 1) * (float)efl[0] : Vector4.Zero);   // (lead 20, MASS, MASS3: the floor's reference paint inside her pool, rgb the table's floor color at the luminance w; cel_floor_paint)
         FireCast.Reach = turn?.Reach ?? 0;   // (L1 lead 19, SH2: a C# copy of the table's reach for --cast-count)
         if (turn is { } ft2) RenderingServer.GlobalShaderParameterSet("cel_floor_turn", ft2.Tex);
         // (L1 lead 19, HER2) the hero figure in her lit pool (the rig's hero_pool, Zone.HeroPool; cel.gdshaderinc CEL_HERO): the
@@ -665,8 +665,9 @@ public partial class Atmosphere : Node3D
     /// return. Tones run between stops in Oklab (so orange meets the floor's blue through red and violet, not through the
     /// pink of an RGB sum); the last stop is the floor's own tones (a turn of 1: nothing to meet, so no edge). Lit and Shade:
     /// her light's color x level that shows the floor's own lit tone and its shade's (she stands in for the moon where it
-    /// gives way). Null: no table (the key missing or short).</summary>
-    internal static (ImageTexture Tex, float Reach, Vector3 Lit, Vector3 Shade)? FloorTurn(double[]? ef)
+    /// gives way; under a leaf the sky stays whole and she adds nothing). Paint: the color of the floor the table was drawn for
+    /// (the unit, at luminance 1; x ember_floor_lift it is the paint the floor takes inside her pool). Null: no table.</summary>
+    internal static (ImageTexture Tex, float Reach, Vector3 Lit, Vector3 Paint)? FloorTurn(double[]? ef)
     {
         if (ef is not { Length: >= 25 } || (ef.Length - 9) % 8 != 0) return null;
         if (floorTurnOf != null && floorTurn != null && System.Linq.Enumerable.SequenceEqual(floorTurnOf, ef)) return floorTurn;
@@ -692,7 +693,7 @@ public partial class Atmosphere : Node3D
             Vector3 l = OkLin(tl[j].Lerp(tl[j + 1], t)) / linL, s = OkLin(ts[j].Lerp(ts[j + 1], t)) / linS;
             img.SetPixel(x, 0, new Color(l.X, l.Y, l.Z, a)); img.SetPixel(x, 1, new Color(s.X, s.Y, s.Z, a));
         }
-        floorTurn = (ImageTexture.CreateFromImage(img), reach, linL / unit, Vector3.Zero);   // (under a leaf the sky stays whole and she adds nothing: cel_floor_back)
+        floorTurn = (ImageTexture.CreateFromImage(img), reach, linL / unit, unit / Mathf.Max(unit.Dot(new Vector3(0.2126f, 0.7152f, 0.0722f)), 1e-4f));   // (Paint: the floor the table was drawn for, at luminance 1)
         return floorTurn;
     }
     static double[]? floorTurnOf;
