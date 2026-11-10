@@ -73,6 +73,7 @@
   },
   {
     "id": "plate_cuirass_plain",
+    "finish": {"steel": "plainsteel"},
     "outfit": null,
     "slot": "top",
     "layer": 1,
@@ -96,6 +97,7 @@
   },
   {
     "id": "plate_gstring_plain",
+    "finish": {"steel": "plainsteel"},
     "outfit": null,
     "slot": "bottom",
     "layer": 1,
@@ -116,6 +118,7 @@
   },
   {
     "id": "plate_pauldrons_plain",
+    "finish": {"steel": "plainsteel"},
     "outfit": null,
     "slot": "pauldrons",
     "layer": 3,
@@ -212,6 +215,7 @@
   },
   {
     "id": "plate_top_plain",
+    "finish": {"steel": "plainsteel"},
     "outfit": null,
     "slot": "top",
     "layer": 1,

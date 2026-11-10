@@ -329,39 +329,13 @@ def merge_parts(piece, parts):
 
 def write_src(path, piece, merged):
     """<id>.src.glb beside the binding: the merged meshes with the shared materials' own textures (uris from here)."""
-    mats, tail = {}, {"textures": [], "images": [], "samplers": [{"magFilter": 9729, "minFilter": 9987}]}
-    want = {m["material"] for m in merged}
     # (a key whose outfit_materials.json row names a "template" takes that key's glTF material and textures under its
     # own name: plainsteel is steel's scan, drawn bare by the game because it has no finish in metal_finishes.json.
-    # Without one a key no gear source carries came out as a bare white material.)
-    table = json.load(open(MATERIALS, encoding="utf-8"))
-    alias = {}
-    for k in want:
-        alias.setdefault(table.get(k, {}).get("template", k), []).append(k)
-    for f, js in material_templates():
-        for m0 in js.get("materials", []):
-            todo = [k for k in alias.get(m0.get("name"), ()) if k not in mats]
-            if not todo:
-                continue
-            m = dict(m0, name=todo[0])
-
-            def fix(o, f=f, js=js):
-                if isinstance(o, dict):
-                    o = {k: fix(v) for k, v in o.items()}
-                    if isinstance(o.get("index"), int):
-                        im = dict(js["images"][js["textures"][o["index"]]["source"]])
-                        im["uri"] = os.path.relpath(os.path.join(os.path.dirname(f), im["uri"]), os.path.dirname(path)).replace("\\", "/")
-                        tail["images"].append(im)
-                        tail["textures"].append({"sampler": 0, "source": len(tail["images"]) - 1})
-                        o["index"] = len(tail["textures"]) - 1
-                    return o
-                return [fix(v) for v in o] if isinstance(o, list) else o
-            for k in todo:   # (each key its own copy: the images are listed once a copy, by uri)
-                mats[k] = fix(json.loads(json.dumps(dict(m, name=k))))
-        if want <= set(mats):
-            break
-    if not tail["textures"]:
-        tail = None
+    # Without one a key no gear source carries came out as a bare white material. The rule is gear_finish's, shared
+    # with a record's "finish" in the fit build.)
+    import gear_finish
+    mats, tail = gear_finish.template_materials({m["material"] for m in merged}, os.path.dirname(path),
+                                                json.load(open(MATERIALS, encoding="utf-8")), material_templates())
     write_glb(path, merged, {"gear_native": {"piece": piece["id"]}}, mats, tail)
 
 

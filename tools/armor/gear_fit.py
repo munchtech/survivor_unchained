@@ -1402,6 +1402,9 @@ def write_unit(path, bd, ev, ref_glb):
     nodes += mesh_nodes
     roots = [j for j in range(nj) if not any(j in n.get("children", []) for n in nodes[:nj])]
     nodes.append({"name": "Armature", "children": list(range(base, base + len(mesh_nodes))) + roots})
+    # (the piece's finish is its record's: "finish" {source material name: outfit_materials.json key}, gear_finish.py)
+    import gear_finish
+    gear_finish.apply(bd, mats, texs, imgs, smps, meshes, out_dir)
     js = {"asset": {"generator": "Survivor Unchained tools/armor/gear_fit.py", "version": "2.0",
                     "extras": {"gear_fit": {"binding": f"godot/art/gear/bind/{bd.id}.npz", "a_source": bd.meta["src"]}}},
           "scene": 0, "scenes": [{"name": "Scene", "nodes": [len(nodes) - 1]}], "nodes": nodes, "meshes": meshes,
