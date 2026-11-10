@@ -352,7 +352,8 @@ class Sheet:
     theta t0 / t1 side: an edge hidden under another plate takes none); ridge {theta, h, w, fade}; lift {band, h}:
     its last `band` before the bottom edge stands `h` further out (room for the lame under it); lift_top {band, h,
     ease, theta [a, b]}: its first `band` after the TOP edge stands `h` further out, easing back over `ease` (a lame
-    that laps OVER the plate above it; theta: only from a on, in full from b); cap(s, th) -> the rho its outer face
+    that laps OVER the plate above it; theta: only from a on, in full from b; h a number, or h(s, theta): the room
+    the plate beneath needs where the lame slides along it); cap(s, th) -> the rho its outer face
     must stay under (the plate or the cop that covers it); lip: how far above the law - `clear` its inner lip ends
     (the edge wall runs down to the skin, so no void shows under an edge; under a lifted edge it is the steel's own
     thickness and its lip turns in over the plate beneath; an edge with no roll, hidden under another plate, has no
@@ -405,7 +406,7 @@ class Sheet:
             k = smooth(1 - (s - self.top(th) - lt["band"]) / lt.get("ease", lt["band"]))
             if lt.get("theta"):
                 k = k * smooth((th - lt["theta"][0]) / (lt["theta"][1] - lt["theta"][0]))
-            h = h + lt["h"] * k
+            h = h + (lt["h"](s, th) if callable(lt["h"]) else lt["h"]) * k
         if self.ridge:
             r = self.ridge
             x = np.radians(th - r["theta"]) * R / (r["w"] / 2)

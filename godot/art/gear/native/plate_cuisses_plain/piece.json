@@ -43,11 +43,6 @@
     "calf_share_{s}": 0.2
    }
   },
-  "hip_l_rigid": {
-   "bones": {
-    "thigh_share_{s}": 1
-   }
-  },
   "buckle_l_rigid": {
    "ride": {
     "spine": "mean",
@@ -56,9 +51,6 @@
   },
   "tabs_l_rigid": {
    "with": "plate_l_rigid"
-  },
-  "gtab_l_rigid": {
-   "with": "hip_l_rigid"
   },
   "rivets_l_rigid": {
    "with": "plate_l_rigid"
@@ -85,11 +77,6 @@
     "calf_share_{s}": 0.2
    }
   },
-  "hip_r_rigid": {
-   "bones": {
-    "thigh_share_{s}": 1
-   }
-  },
   "buckle_r_rigid": {
    "ride": {
     "spine": "mean",
@@ -98,9 +85,6 @@
   },
   "tabs_r_rigid": {
    "with": "plate_r_rigid"
-  },
-  "gtab_r_rigid": {
-   "with": "hip_r_rigid"
   },
   "rivets_r_rigid": {
    "with": "plate_r_rigid"

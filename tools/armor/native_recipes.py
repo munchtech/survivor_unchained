@@ -31,6 +31,17 @@ def climb(fr, ref, path, sheets, base=0.0004, slope=0.55, over=0.0014):
     return q, lift, on
 
 
+def lap_room(above, law, gap, slide, n=5):
+    """The lift h(s, theta) of a lame's lapping band over the sheet `above` it: `gap` clear of that sheet's outer face
+    wherever the lame may lie along it, from 2 mm up-limb of its rest to `slide` down-limb (a lame that takes a share
+    of the next bone slides toward the joint as it bends, onto a limb that widens there)."""
+    def h(s, th):
+        s, th = np.broadcast_arrays(np.asarray(s, float), np.asarray(th, float))
+        top = np.max([above.outer(np.minimum(s + d, above.bot(th)), th) for d in np.linspace(-0.002, slide, n)], axis=0)
+        return np.maximum(top + gap - law(s, th), 0.0)
+    return h
+
+
 def taper(th_a, th_b, s_b, over):
     """A side edge theta(s): th_a down to s_b - over, easing to th_b at s_b and below (a plate's side running into
     the lames under it)."""
@@ -42,8 +53,10 @@ def limb_plate(pid, cfg, out=None, ref=None):
     points); "bottom" {"rim_of", "nodes", "below"}: the piece ends `below` under another built piece's rim (the spec
     bottom); "spec_top" {"points"}: the top its length is counted from; "lames" {"count", "plate_share" (the plate's
     share of the spec length), "under" (the plate's hidden band under the first lame), "overlap", "theta", "taper"
-    (the plate's sides ease to the lames' over its lowest `taper`), "rides" [a part rule each], "gap", "ease", ..}:
-    lames from the plate down to the spec bottom, the lower over the upper; "hip_lames" [{"theta", "top" {"points"},
+    (the plate's sides ease to the lames' over its lowest `taper`), "rides" [a part rule each], "clear" / "gap" /
+    "slide" (a number, or one a lame: its clearance, the room between its lapping band and the sheet above, how far
+    it slides down that sheet in motion), "ease", "flare" {h, band} of the last one's end}: lames from the plate
+    down to the spec bottom, the lower over the upper; "hip_lames" [{"theta", "top" {"points"},
     "under", "ride", ..}]: lames above the plate, the plate's top band over them; straps as before."""
     ref = ref or nb.Ref.her()
     t0, t1 = cfg["theta"]
@@ -124,15 +137,16 @@ def limb_plate(pid, cfg, out=None, ref=None):
             cop, _ = nb.radial(Vg, Tc, fr, s, th, 0.3)
             return np.where(np.isfinite(cop), cop - lm.get("under_gap", 0.0008), np.inf)
 
-        above = (cfg["clear"], cfg["thick"])
+        per = lambda key, k, d=None: (lm[key][k] if isinstance(lm.get(key), list) else lm.get(key, d))  # noqa: E731
         for k in range(n_l):
             last = k == n_l - 1
             lap = lm["under"] if k == 0 else lm["overlap"]
-            sh = Sheet(fr, env.plus(lm["clear"]), lt0, lt1, line(k), end if last else (lambda th, k=k: line(k + 1)(th) + lm["overlap"]),
-                       lm["thick"], roll=roll, cap=cap if last else None, clear=lm["clear"], lip=lip, step=lm.get("step", step),
-                       step_s=lm.get("step_s"), flare={"h": lm["flare"], "band": 0.008} if last and lm.get("flare") else None,
-                       roll_on="tb01" if last else "t01",
-                       lift_top={"band": lap + 0.002, "ease": lm.get("ease", 0.012), "h": above[0] + above[1] - lm["clear"] + lm.get("gap", 0.0008)})
+            law_k = env.plus(per("clear", k))
+            sh = Sheet(fr, law_k, lt0, lt1, line(k), end if last else (lambda th, k=k: line(k + 1)(th) + lm["overlap"]),
+                       lm["thick"], roll=roll, cap=cap if last else None, clear=per("clear", k), lip=lip, step=lm.get("step", step),
+                       step_s=lm.get("step_s"), flare=lm.get("flare") if last else None, roll_on="tb01" if last else "t01",
+                       lift_top={"band": lap + 0.002, "ease": lm.get("ease", 0.012),
+                                 "h": lap_room(sheets[-1], law_k, per("gap", k, 0.0008), per("slide", k, 0.0))})
             p = sh.build(f"lame{k + 1}_{sd}_rigid", mats["plate"], ao=0.92)
             # its pivot rivets, on its lapping band at each side: part of the lame (they ride its blend)
             riv = []
@@ -146,7 +160,6 @@ def limb_plate(pid, cfg, out=None, ref=None):
             rules[p.name] = lm["rides"][k]
             sheets.append(sh)
             built.append(p)
-            above = (lm["clear"], lm["thick"])
         hip_sheets = []
         for j, ((f, g), h) in enumerate(zip(hip_lines, hips)):
             sh = Sheet(fr, env.plus(h.get("clear", cfg["clear"])), h["theta"][0], h["theta"][1], f, g, h["thick"], roll=roll,
