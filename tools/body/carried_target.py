@@ -815,7 +815,7 @@ HER = {
                                              # relax (Her.relaxed): on the rows this stage opens, carried edges over
                                              # `ratio` x rest are filled from their neighbours `rows` around, in step
                                              # with the stage (A's own crease on the breast's rows 4-7, chest_fold.md 6)
-                                             "relax": {"ratio": 2.5, "rows": 2}},
+                                             "relax": {"ratio": 2.5, "rows": 2, "fold": 45.0, "fold_open": [30.0, 45.0]}},
                                    # depinch (Her.depinched, Pocket.fair; body_facts/depinch.md): A's own skin crumples at
                                    # the front armpit raised and the carry keeps it. NOT MET, so no key (inert): the
                                    # facts give the swept rule {"deg", "fold_deg", "rows", "passes", "alpha", "iters"}
@@ -835,7 +835,7 @@ HER = {
                  # relax (Her.relaxed on a region with no side): no elevation, w = 1, every row open; A's own stretched
                  # reference on the head-piece patches (body_facts/neck_edges.md) is filled from its neighbours; 2.4 not 2.5: the placement
                  # adds up to 0.1 to a carried edge (iron_vow@75:r: carried 2.47, composed 2.51)
-                 "relax": {"ratio": 2.4, "rows": 2}},
+                 "relax": {"ratio": 2.4, "rows": 2, "fold": 45.0}},
     },
     # the bones the source's driver places (never read from a pose): her rig's helpers but the "unroll" kind, and the scapula
     "driven": [b + "_{s}" for b in (
@@ -1144,7 +1144,88 @@ class Her:
         M, sig, u = relative_place(G @ ibm, Gr @ ibm, bd.J[rg.pts], bd.W[rg.pts], cfg["sig_lo"], cfg["sig_hi"])
         self._parts[name] = {"M": M, "cf": cf, "cr": cr, "Pg": Pg, "Va": Vr, "Va_own": Va,
                              "Gr": Gr, "sig": float(sig.min()), "guard": int((u < 1).sum()), "mem": mem, "map_w": mw, "map_N": mN}
+        if not getattr(self, "_folding", False) and any("fold" in r[3] for g in self.regions.values() for r in getattr(g, "relax", ())):
+            self.folded(G)                                  # a relax rule with "fold": every region's carry first (Her.folded)
         return self._parts[name]
+
+    def folded(self, G):
+        """The relax rules' FOLD trigger (config "relax" {"fold": deg}; body_facts/notch.md 4), once a pose, after every
+        region's carry. B's published surface folds where its weights alternate between bone chains (the upper chest's
+        neck_01 / spine_04 checkerboard) and the relative placement M keeps that fold whatever A's carry is, so the
+        trigger reads the COMPOSED surface (published + every region's delta), not the carry. In the regions' name order
+        (each sees the ones before it fixed: overlapping regions never fix one fold twice), on the rows a rule opens,
+        an edge of the region's triangles folded past its rest dihedral by over `fold` deg seeds a pocket of the rows
+        within `rows` edges (the share > 0 points; the armpit map's band held), harmonically filled on the composed
+        surface (Pocket; the carrier's rotations placed by M) and blended in by the rule's own w (the stage's elevation
+        smoothstep; 1 on a region with no side). The fill goes back into the region's cf through its delta's placement,
+        so every consumer (delta, compose, target) sees it. No seed: every part as it was, bit for bit."""
+        import fold_probe as fp
+        bd, parts = self.bd, self._parts
+        self._folding = True
+        try:
+            for n in self.regions:
+                self.part(G, n)
+        finally:
+            self._folding = False
+        if parts.get("__fold__"):
+            return
+        parts["__fold__"] = True
+        Vp = self.rt.published(bd, G)
+        X = compose(Vp, {n: (*r.spread, self.delta(G, n)) for n, r in self.regions.items()})
+        for name in sorted(self.regions):
+            rg = self.regions[name]
+            rules = [r for r in getattr(rg, "relax", ()) if "fold" in r[3]]
+            if not rules:
+                continue
+            P = parts[name]
+            if getattr(rg, "fold_tris", None) is None:      # the region's own triangles (local ids; welds joined) and rest fold
+                lg = np.full(len(bd.V0), -1, np.int64)
+                lg[rg.spread[0]] = rg.spread[1]
+                Tl = lg[bd.T]
+                Tl = Tl[(Tl >= 0).all(1) & (Tl[:, 0] != Tl[:, 1]) & (Tl[:, 1] != Tl[:, 2]) & (Tl[:, 0] != Tl[:, 2])]
+                rg.fold_tris = Tl
+                rg.fold_e0, rg.fold_d0 = fp.dihedral(bd.V0[rg.pts], Tl)
+            P0, E, Tl = bd.V0[rg.pts], np.stack(rg.edges, 1), rg.fold_tris
+            sh = rg.share_at(G)
+            free = sh > 1e-3
+            if np.any(P.get("map_w", 0.0) > 0) and rg.name in getattr(self, "map", {}):
+                free[np.asarray(self.map[rg.name].loc[rg.side], np.int64)] = False
+            el = self.md.elevation(G, rg.side) if rg.side else 0.0
+            for lo, hi, opened, rule in rules:
+                op = rule.get("fold_open")                  # [a, b] deg: the stage also opens by the fold itself
+                w = 1.0
+                if rg.side:
+                    w = np.clip((el - lo) / (hi - lo), 0.0, 1.0)
+                    w = w * w * (3 - 2 * w)
+                    if w <= 0 and not op:
+                        continue
+                Y = X[rg.pts]
+                e, d = fp.dihedral(Y, Tl)
+                ex = np.where(opened[e[:, 0]] | opened[e[:, 1]], np.abs(d) - np.abs(rg.fold_d0), -np.inf)
+                hit = ex > (min(rule["fold"], op[0]) if op else rule["fold"])
+                if not hit.any():
+                    continue
+                m = rows_around(len(P0), E, np.unique(e[hit]), rule["rows"]) & opened & free
+                if not m.any():
+                    continue
+                if op:                                      # per point: the smoothstep over [a, b] of the worst seed's
+                    xv = np.full(len(P0), -np.inf)          # excess within `rows` edges, the larger of it and the
+                    np.maximum.at(xv, e[hit].ravel(), np.repeat(ex[hit], 2))   # elevation's w (seeds under `fold`
+                    for _ in range(int(rule["rows"])):      # get only the fold's own weight)
+                        xn = xv.copy()
+                        np.maximum.at(xn, E[:, 0], xv[E[:, 1]])
+                        np.maximum.at(xn, E[:, 1], xv[E[:, 0]])
+                        xv = xn
+                    o = np.clip((xv - op[0]) / (op[1] - op[0]), 0.0, 1.0)
+                    o = o * o * (3 - 2 * o)
+                    w = np.maximum(np.where(xv > rule["fold"], w, 0.0), o)[:, None]
+                R = np.concatenate([c.rotations(P["Va"]) for c in getattr(rg.carrier, "parts", [rg.carrier])])
+                R = np.einsum("nij,njk->nik", polar(P["M"]), R)
+                C = w * (Pocket(P0, E, m, self.cfg["pocket_weight"]).fill(Y, R, self.cfg["frame_passes"]) - Y)
+                C[~m] = 0.0
+                P["cf"] = P["cf"] + np.linalg.solve(P["M"], (C / np.maximum(sh, 1e-3)[:, None])[..., None])[..., 0] * m[:, None]
+                raw, loc = rg.spread
+                X[raw] += C[loc]
 
     def mapped(self, rg, G, cf, Vr):
         """(cf, w, N): the filled carry cf [region points, 3] with the armpit map (config support "map") on the band's
