@@ -33,3 +33,13 @@ Probes: `survivorsunchained_inputs/scratch_p1_notch/` (probe.py, neck.py, wjump.
   y 1325-1332, z 64-67, same on published / composed / fair_off / map_off; girdle_r share 0.02-0.20, delta <= 0.3 mm
   (box over 45: composed 33, published 40). No share gradient or band border makes it.
 - Cure: B's source skin (same weight-relax tool as (1)) or the girdle's ramp grown to cover it. Not checked: B weights there.
+
+## (4) Relax fold trigger (lead 22's solver, 10 Nov): (1) and (3) cleared; shift, breast top and suite NOT run (context cap)
+- Why not on cf: at leap@9 the neck's carry cf is smooth in box (1) (max 8 deg). The fold is B's published surface, and the placement M keeps it (M alternates spine_04 / spine_05 frames with the weights). So the trigger reads the COMPOSED surface.
+- `Her.folded` (once a pose, after every region's carry, regions in name order so overlapping regions never fix one fold twice): an edge of the region's triangles over its rest dihedral by more than `fold` deg, on the rows a rule opens, seeds a pocket `rows` wide (share > 0, the map band held). The pocket is filled on the composed surface (Pocket, rotations polar(M) R) and goes back into cf through M^-1 / share, so delta, compose and target all see it. Keywords: `relax.fold` 45 (neck ~l.838, girdle gate2 ~l.818). Absent = bit for bit.
+- (3): the seeds sit ON gate2's opened rows (0 rows away). The stage is shut by elevation (cast_bolt@3:r 65.8 deg, lo 90). Rule: `fold_open` [30, 45] on the girdle opens the stage by the fold itself, per point: the smoothstep of the worst seed excess within `rows`, max with the elevation's w. Continuous in the fold.
+- Box (1) R, max / over 45, off -> on: leap@5 123/11->20/0, @6 136/22->11/0, @7 134/24->15/0, @8 128/23->17/0, @9 124/17->16/0, @10 122/12->15/0, @11 109/8->24/0, @12 35/0 (no trigger). Pops: 2nd difference on the fixed points, on vs off: +0..+11 mm, at @9 +19 (45->64); the fix itself jumps 8-26 mm frame to frame.
+- Box (3) cast_bolt@2/3/4:r 166/22-23 -> 90/0 (90 = its rest crease). iron_vow@72:l boxL 106/9 -> 43/0.
+- Bit for bit only where nothing seeds: x:add0:l. All other dev poses seed somewhere: the fix is 5.7-17.4 mm, region-wide over-45 counts fall, except cast_bolt@0:l 335 -> 338.
+- Tests: T18 and T23 now run under `Her.fold_off()` (stored before it / the ratio rule alone). New T26: no region edge over fold on leap@6/@9:r and cast_bolt@3:r; x:add0:l bit for bit.
+- Left: (c) `region_shape.py shift --provider carried --target target_a_l22r.npz --poses <the 13>` (built, out/shoulder; without --poses it fails on sword_back@14:r); (d) scratch p5.py (axe/sword_heavy@9 from dumps, bd.clavicle = "law"); the suite.
