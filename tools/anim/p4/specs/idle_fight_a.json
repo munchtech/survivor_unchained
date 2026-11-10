@@ -178,13 +178,14 @@
    "keep": 0
   },
   "shield": {
+   "solve": true,
    "boss": [
-    0.23,
-    0.03,
-    0.22
+    0.27,
+    0.06,
+    0.24
    ],
    "open_deg": 62,
-   "tilt_deg": 5,
+   "tilt_deg": -10,
    "pole": [
     0.3,
     -0.8,
