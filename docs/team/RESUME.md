@@ -1,5 +1,17 @@
 # Where we are: read this after README.md, before your handoff
 
+## 10 November 2026 (night): coordinator #5 handoff. NEXT COORDINATOR (Opus high, normal rules): START HERE, then #4's block below, then #3's for the lanes
+
+**Reports:** every lead reports by ONE line in `survivorsunchained_inputs\scratch_coord5\inbox.md`; rule with `RULING <lane>: ...` lines there. Watch it with Monitor (`tail -n0 -F ... | grep -v ^RULING`, 30 min, re-arm). Lead ids: `scratch_coord5gents.txt` (unreachable from a new session; leads read the inbox for rulings). Nothing merged in #5's run.
+
+**Live leads (4 judged = the cap; L1 the one GPU-heavy):**
+- **L1 look-l1** (lead 22, line 1.4M, ~0.6M spent at 10:07): HER FAR at herpair_01 (`survivorsunchained_inputs\look_l1\c\l17\herpair_01\her_pair.jpg`; main agreed). RULED: rebuild R1 hair chroma (NO hue term), R2 hero interior ink, R3 three value steps; then hair line r2; FAR again = stop and bring the pair. Then wolves/foe_tones, F + floor, frame-cost, M4 rows (minimap ink; hold ring decal = its only BattleFx edits), MR. Open: a red segmented bar draws in the world at her feet in 09 (UI row if a HUD leak); four start-up "not a valid texture" errors from the hair line.
+- **P1 body-p1b** (lead 22, line 2.1M, ~1.49M spent before it): Gate T round 2: left map lay on faired A, fair_a cap ring, relax FOLD TRIGGER in the target (RULED; no source weight relax on B before Gate W: a plan to main if the trigger fails), stretch, rerun, look, one max judge, GATE T READY with A|B half sheets (the owner sees the bare shape).
+- **A1 motion-a1** (lead 16 from #4, line 1.6M): cuts A+B built clean, thumb fixed, release recover in, integration merged; A->B->A shoot, look, ONE max judge, MR. CLOSE = HANDOFF READY with the list (main spawns the fix lead). Queued row after its MR: an authored 09 pose for L1 (two-handed lunge, face to camera).
+- **P2 gear-p2** (lead 15, line 1.6M): gore bar + etched tier solver (piece_blender source blend for body 03e3bcb5, adorn JOINTS_1), reshoot without the spaulder (CUT, OPEN), look, judge only on a PASS bet, MR.
+
+**Queue:** P7 skills-p7 (merge integration first: it brings M4's ring commits; the HitShake "raise to" code exists ONLY on skills-p7, so the PlayerHit one-liner, now ~BattleFx.cs:1315 in integration, is a su-worker job in skills-p7 after that merge; L1's ring decal edits named in art_style.md), P3 (needs a game worktree; 6 on disk). Each starts when a judged slot frees (an MR or a closed lane). Machine 10 Nov 09:00: C: 135 GB free.
+
 ## 10 November 2026 (evening): coordinator #4 handoff. NEXT COORDINATOR (Opus high, normal rules): START HERE, then #3's block below for the lanes and rules
 
 **Restart (owner said "Yes, restart"):** the live leads P1 (body-p1b, line 1.75M), A1 (motion-a1, 1.4M) and P2 (gear-p2, 1.4M) keep running but now report by appending to `survivorsunchained_inputs\scratch_coord5\inbox.md` and their handoff tops. Watch it with Monitor, and answer as `RULING <lane>: ...` lines there. Queue to start (one judged slot free; 6 worktrees on disk): L1 (GPU), P7, P3.
