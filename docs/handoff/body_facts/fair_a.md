@@ -41,3 +41,21 @@ Probe: survivorsunchained_inputs/scratch_p1_fair_a4/pb.py (env FA = params, DIAG
 - (d) x:add0:l: fires (girdle_l 4 seed edges, patch 103, 1 round): target and composed move 0.63 mm max vs key off.
 - Tests: 79 PASS, 4 FAIL. T11 (h0 built without fair_a) and T18 (`fair_off`) now run rule-off as the frozen "of before" copies need; they failed on the rule alone (T18 add0 0.52 mm). T22 FAILS, limits unchanged: abd120:l 2.44 vs own 2.23, iron_vow@72:l 2.41 vs 1.85, leap@7:r turned 1 + 2.83 vs 2.65, leap@9:r turned 1 + 3.29 vs 2.88 (T22 was MET on lay 5 raw; the lay was built on raw A, A's own measure is now the faired one).
 - Next (the lead): the look; then either re-lay strip_rest on faired A (`build`, its design now reads faired A) or keep the map's measures on raw A.
+
+## Attempt 5 (numeric solver, 10 Nov): `shrink`, the cap ring on iron_vow@72:l; NOT LIVE (2 of 4 acceptance lines missed)
+- New keyword `shrink` (default None, P4 reproduces bit for bit: iron_vow 277->131, flip 1): with rot "fill", stretch false, edges "blend", the crumple's rest edges turned are scaled by `shrink`, so the core is solved in TENSION (a taut membrane on its ring does not buckle; full-length rest edges pushed into the compressed hollow fold).
+- P5 = P4 + {"rings": 4, "shrink": 0.5}. Probe pb.py, same columns as the job-1 table:
+| pose | patch | >45 (rest, cap) | flip | move p95/max | off smooth p95/max | met |
+|---|---|---|---|---|---|---|
+| abd120:l | 4342 | 387->44 (81, 89) | 45->0 | 7.6/15.0 | 2.2/5.1 (was 4.3) | yes, off worse |
+| abd150:l | 1373 | 84->41 (70, 77) | 15->0 | 4.9/13.0 | 1.7/3.6 | yes |
+| abd170:l | 1674 | 112->42 (73, 80) | 17->0 | 6.6/22.5 | 1.7/3.7 | yes |
+| flex170:l | 1582 | 93->42 (73, 80) | 16->0 | 6.2/21.1 | 1.7/3.7 | yes |
+| iron_vow@72:l | 2046 | 277->81 (76, 84) | 72->0 | 9.4/16.9 | 1.9/3.3 | yes (was NO) |
+| leap@6:r | 2427 | 254->89 (102, 112) | 41->0 | 5.7/15.4 | 1.3/5.2 | yes |
+| leap@9:r | 4011 | 324->47 (107, 118) | 31->0 | 10.4/26.8 | 2.7/7.3 | yes |
+| leap@12:r | 4040 | 333->47 (107, 118) | 53->0 | 9.4/25.2 | 2.5/7.4 (was 6.8) | yes, off worse |
+| leap@19:r | 2414 | 108->10 (12, 13) | 33->0 | 10.7/33.3 | 1.5/4.7 (was 3.3) | yes (was NO), off worse |
+- Notch (2) box on the composed B surface (notch probe, fair-on): P4 >45 51, >120 6 (max 177); P5 >45 42, >120 ONE (5889-8236 at 128; 5664-5665 119). Under it A's core keeps two folds (A 38088-1806 -85 -> -115 posed -> faired; A 40339-40368 9 -> 148): the filled rotation field jumps 50-122 deg across one edge there (the polar of a near-singular harmonic-filled gradient).
+- Lost (code removed): `grow` 2 / `rings` 4 alone (iron 117-121, B box >120 2-7); a measured per-vertex scale sqrt|det F| (~1, no help; note: `_grad` is area-weighted, unnormalised, so `stretch` true scaled edges by area: why it "flattened"); shrink 0.3/0.4/0.7 (flips or 97); flip barrier reweight x4/x10 (never kept); Jacobi passes on R after the polar (4-20: B box 124-131); rotation-vector fill about the ring mean (worse, iron 112); fold_deg 30-35, beyond 10, c_core 0/2, c_soft 1/3, soft 3, alpha_core 0, alpha_mid 0.1, rot_passes 30.
+- Left: (a) the B box line needs the core's rotation jump cured (a fill that stays off the singular set, e.g. a rotation fill with the jump edges' weight cut, or seeds there pulled to posed); (c) smooth-skin off max worse on abd120 / leap@12 / leap@19 (the patch grows with rings 4: try shrink per crumple share only, or rings 4 with alpha_mid 0.3).

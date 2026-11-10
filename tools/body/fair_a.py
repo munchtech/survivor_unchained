@@ -45,7 +45,11 @@ DEFAULT = {"fold_deg": 45.0, "beyond_deg": 20.0, "rings": 4, "soft": 2, "alpha":
            "close": False, "edges": "rest", "c_core": 1, "c_soft": 2, "alpha_mid": None, "stretch": True,
            # dilate: a round's leftovers enter the seeds grown by `grow` rows (so a crumple the core keeps widens there);
            # best: the round kept is the one with the fewest (flipped, beyond-rest folds) on the patch and its ring
-           "dilate": False, "best": False}
+           "dilate": False, "best": False,
+           # shrink (attempt 5): with rot "fill", stretch false and edges "blend", the crumple's rest edges turned are also
+           # scaled by `shrink` (< 1), so its Poisson solve is in TENSION: a membrane pulled taut between its ring does not
+           # buckle, where full-length rest edges pushed into the compressed hollow fold (the core's leftover >45s and flips)
+           "shrink": None}
 
 
 def _unit(v):
@@ -225,6 +229,8 @@ class Fair:
             R = Rx.copy()
             R[p] = polar(Fx[p].reshape(-1, 3, 3))
             Fe = Fx.reshape(-1, 3, 3) if prm["stretch"] else R
+            if prm["shrink"] is not None and not prm["stretch"]:  # the crumple's target edges shortened: solved in tension
+                Fe = R * float(prm["shrink"])
             return self._finish(X, patch, p, Eu, wu, d0, Xb, al, cols, R, c, Fe)
         if prm["rot"] == "smooth":                              # the posed rotations smoothed in the patch (ring held)
             R = Rx.copy()
@@ -335,6 +341,7 @@ class Fair:
             Y, inf = self._solve(X, patch, ring)
             Xf = X.copy()
             Xf[patch] = Y
+
             info.update(rounds=rnd + 1, patch=int(patch.sum()), arap_iters=inf["iters"])
             eb2, fl2, _ = self.bad(Xf)
             near = patch | ring
