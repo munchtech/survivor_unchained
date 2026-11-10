@@ -1,4 +1,4 @@
-﻿# Handoff: combat (skills' mechanics, enemies, encounters, bosses, balance, the maps, the story's nights)
+# Handoff: combat (skills' mechanics, enemies, encounters, bosses, balance, the maps, the story's nights)
 
 ## M3 combat systems, lead 8 (combat-m3, 10 Nov small hours): HANDOFF READY at ~190k. MR 2 still open; suite GREEN 1746/0/10 at c0e479eb0 (NOT rerun on 61ae9cdd9); the veteran clip's fault found and fixed; the swing's arc scrapped once and half rebuilt; no clip to the owner, no judge
 Brief: `tools/scratch/coordinator/briefs/M3_combat_lead1.md` + main's re-scope (9 Nov): the bot's walk does NOT gate MR 2; every trace, run and shoot goes to a runner or solver; MR 3 goes to a successor. Lead 8 worked that way (8 helpers, own context on decisions).
