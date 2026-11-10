@@ -64,7 +64,7 @@ public class FxP7Tests
         var p = Real();
         foreach (var k in new[] { "grip.lead_frames", "grip.slow", "grip.min_len", "grip.aspect", "grip.tail_px", "grip.point", "grip.glow", "grip.glow_end",
             "grip.lit", "grip.retract", "grip.shed_at", "grip.lane.jitter", "grip.lane.tail", "grip.lane.slant", "grip.lane.point", "grip.lane.gap", "grip.lane.shed",
-            "grip.contact.wait_frames", "grip.contact.k_min", "grip.contact.kill", "grip.contact.swell", "grip.contact.reach", "grip.contact.flood", "grip.contact.frames",
+            "grip.contact.wait_frames", "grip.contact.k_min", "grip.contact.kill", "grip.contact.swell", "grip.contact.reach", "grip.contact.reach_most", "grip.contact.white", "grip.contact.frames", "grip.kink", "grip.kink_run", "grip.min_seen", "grip.band.short", "grip.band.jag",
             "grip.contact.grit", "grip.short", "grip.lane.carry", "grip.shed_rim", "grip.shed_push", "grip.band.back", "grip.band.clumps", "grip.band.uneven", "grip.band.depth", "grip.band.ratio",
             "grip.contact.by_struck", "grip.band.round", "grip.shed_to", "grip.snap", "grip.face", "grip.link.on" })
             Assert.True(p.Has(k), "fx_language.json p7 lacks " + k);
@@ -142,9 +142,10 @@ public class FxP7Tests
             // a comma, not the whole blade's fin
             Assert.InRange(p[$"grip.{w}.head"], 0.3f, 0.75f);
             Assert.InRange(p[$"grip.{w}.taper"], 0.5f, 1f);
-            // (round 3) the contact is the stroke's own swell: a fifth to a half wider for one body, under twice as wide at the cap
+            // (round 3) the contact is the stroke's own swell: a fifth to a half wider for one body, two fifths wider to twice as wide at the cap
+            // (round 4: less than round 3's, whose inner side ran into the guard at the cap and read as a slab)
             Assert.InRange((sw[0] + sw[1]) * p[$"grip.{w}.flash"], 0.2f, 0.5f);
-            Assert.InRange((sw[0] + sw[1]) * by[1] * p[$"grip.{w}.flash"], 0.5f, 1f);
+            Assert.InRange((sw[0] + sw[1]) * by[1] * p[$"grip.{w}.flash"], 0.4f, 1f);
         }
         // no second object: the mark's keys are gone; the swell is mostly inward (the tip's path stays the clean edge), a
         // local bulge (under a metre and a half end to end, longer toward the tail), 2-3 frames, stepping down
@@ -154,7 +155,25 @@ public class FxP7Tests
         Assert.True(sw.Length == 2 && sw[0] > sw[1] && sw[1] > 0, "grip.contact.swell");
         Assert.True(reach.Length == 2 && reach[0] > 0 && reach[0] < reach[1] && reach[0] + reach[1] <= 1.5f, "grip.contact.reach");
         Assert.True(frames.Length is >= 2 and <= 3 && frames[0] == 1 && frames[^1] > 0 && frames[^1] < frames[0], "grip.contact.frames");
-        Assert.InRange(p["grip.contact.flood"], 0f, 1f);
+        // (round 4) the swell is the stroke pressed harder: the white runs on toward the gold's end, never the whole way and
+        // less along the inner edge (no flat flood); its reaches follow the stroke's length
+        Assert.False(p.Has("grip.contact.flood"), "grip.contact.flood: the flat flood is gone");
+        var white = p.All("grip.contact.white");
+        var most = p.All("grip.contact.reach_most");
+        Assert.True(white.Length == 3 && white[0] > 0 && white[1] > 0 && white[1] < 1 && white[2] > 0 && white[2] <= 1, "grip.contact.white");
+        Assert.True(most.Length == 2 && most[0] > 0 && most[0] < most[1] && most[0] + most[1] < 1, "grip.contact.reach_most");
+        // the inner side stays inside the guard at the largest bite
+        Assert.True(Math.Max(p["grip.sunder.head"], p["grip.oath.head"]) * (1 + sw[0] * by[1]) <= 0.98f, "grip.contact.swell: past the guard at the cap");
+        // (round 4) the ribbon never lies over itself: a rib ends short of its crossing, a kink is a hard pinch, the part
+        // before it runs out in a frame or two and always leaves a stroke; no chip before the stroke can be a comma
+        var kink = p.All("grip.kink");
+        var krun = p.All("grip.kink_run");
+        Assert.True(kink.Length == 3 && kink[0] > 0.5f && kink[0] <= 1 && kink[1] > 0 && kink[1] < 0.6f && kink[2] > p["grip.min_len"] && kink[2] >= p["grip.min_seen"], "grip.kink");
+        Assert.True(krun.Length is >= 1 and <= 2 && krun[0] > 0 && krun[^1] == 1, "grip.kink_run");
+        Assert.InRange(p["grip.min_seen"], 0.3f, 0.9f);
+        var bshort = p.All("grip.band.short");
+        var jag = p.All("grip.band.jag");
+        Assert.True(bshort.Length == 2 && bshort[0] < bshort[1] && jag.Length == 2 && jag[0] > 0 && jag[0] < 1 && jag[1] > 1, "grip.band.short / grip.band.jag");
         // sized by the bodies struck, capped at 8 to 16 of them; a kill is larger, never past the cap (GripContact clamps)
         Assert.True(by.Length == 2 && by[0] >= 8 && by[0] <= 16 && p["grip.contact.kill"] > 1 && p["grip.contact.kill"] <= by[1], "grip.contact.by_struck");
         // the Oathblade's is the thinner stroke
