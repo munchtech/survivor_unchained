@@ -123,25 +123,25 @@
  "fit": {
   "stance": {
    "shift_cm": -17,
-   "drop_cm": -2.15,
-   "roll_deg": -11,
+   "drop_cm": -2.75,
+   "roll_deg": -15,
    "yaw_deg": -16,
    "foot_l": [
-    -0.2085,
+    -0.2185,
     0,
-    0.27
+    0.25
    ],
    "foot_r": [
     0.1165,
     0,
-    -0.22
+    -0.18
    ],
    "turn_l": 8,
    "turn_r": -27
   },
   "lean": {
    "deg": -1.5,
-   "side_deg": 1.5
+   "side_deg": -2.5
   },
   "shoulders": {
    "level_cm": 2.2
@@ -210,11 +210,11 @@
   },
   "shield": {
    "boss": [
-    0.29,
-    0.005,
+    0.275,
+    0.02,
     0.03
    ],
-   "open_deg": 76,
+   "open_deg": 88,
    "tilt_deg": 0,
    "pole": [
     0.1,
