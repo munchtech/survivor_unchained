@@ -66,6 +66,7 @@ sys.path.insert(0, os.path.join(REPO, "tools", "anim"))
 from surfdist import Surface  # noqa: E402
 from skin import Gltf  # noqa: E402
 import gear_field  # noqa: E402
+import worn_rest  # noqa: E402
 
 PEOPLE = os.path.join(REPO, "godot", "art", "people")
 ARMOR = os.path.join(REPO, "godot", "art", "armor")
@@ -1046,9 +1047,13 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
             rims_tier[tier] = {int(a): v for a, v in rims.items()}
         # (the stand-off law, rigid_roles.json slots "standoff": each plate point's measured need, on every body)
         flo = standoff_floor(bd, ms, ev, lead=lead)
-        if (comp >= 0).any() and (bbody is not None or flo is not None):
+        # (the worn rest, rigid_roles.json slots "worn_rest": the body her support rests her in under this piece)
+        wr = worn_rest.worn(body, bd.meta["row"], rigid_roles()) if (comp >= 0).any() else None
+        if (comp >= 0).any() and (bbody is not None or flo is not None or wr is not None):
             Xa = np.vstack([ev[m["i"]]["Xbind"] for m in ms])
             Xn = np.vstack([ev[m["i"]]["X"] for m in ms])
+            if wr is not None:
+                Xn = wr.move(np.concatenate([ev[m["i"]]["tri"] for m in ms]), np.vstack([ev[m["i"]]["w"] for m in ms]), Xn)
             if bbody is None:
                 c0s = gear_field.signed_clear(body, Xa, k=16)[0]
             else:
@@ -1059,9 +1064,9 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                 own = comp == c
                 grp = (comp >= 0) & (lead[np.maximum(comp, 0)] == c)
                 fg = None if flo is None else flo[grp]
-                if bbody is None and (fg is None or not np.isfinite(fg).any()):
+                if bbody is None and wr is None and (fg is None or not np.isfinite(fg).any()):
                     continue
-                M, ca, cb, info = gear_field.rigid_fit_clear(body, Xa[own], Xn[own], Xa[grp], c0s[grp], fg)
+                M, ca, cb, info = gear_field.rigid_fit_clear(body if wr is None else wr.body, Xa[own], Xn[own], Xa[grp], c0s[grp], fg)
                 rots[int(c)] = (M, ca, cb)
                 fit["rigid"][f"{tier}/{int(c)}"] = info
         rots_tier[tier] = rots
@@ -1132,6 +1137,12 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                             shapes[nm][sel] = mean
                         elif np.abs(mean).max() > 1e-5:
                             shapes[nm] = np.where(sel[:, None], mean, (e["w"][:, :, None] * dP[Tv]).sum(1))
+                    if wr is not None and int(c) in rots and sel.any():
+                        # (stored so that the engine's own pose of the component, its blend and its mean shape
+                        # deltas, lands it on the worn fit)
+                        k0 = int(np.nonzero(sel)[0][0])
+                        sv = sel[inv]
+                        X[sel], N[sv] = wr.unpose(X[sel], N[sv], J[k0], W[k0], {nm: shapes[nm][k0] for nm in wr.weights if nm in shapes})
             out[m["node"]] = {"Xu": X, "inv": inv, "N": U(N), "J": J[inv], "W": W[inv],
                               "shapes": {k: v[inv] for k, v in shapes.items()}, "tier": tier, "comp": comp_i,
                               "Xbind": e["Xbind"], "h": z[f"off{i}"][:, 2], "lead": lead}
