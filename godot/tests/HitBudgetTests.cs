@@ -225,4 +225,19 @@ public class HitBudgetTests
         Assert.Equal(107, Choose(hits, n: 0).Hushed.Count);
         Assert.Equal(107, Choose(hits, n: -3).Hushed.Count);
     }
+
+    [Fact]
+    public void Shared_shake_is_nothing_for_none_linear_below_the_cap_capped_and_never_falls()
+    {
+        const float per = 0.0065f, cap = 0.65f;
+        Assert.Equal(0f, HitBudget.SharedShake(0, per, cap));
+        Assert.Equal(0f, HitBudget.SharedShake(-4, per, cap));
+        Assert.Equal(0f, HitBudget.SharedShake(50, 0, cap));
+        Assert.Equal(0f, HitBudget.SharedShake(50, per, 0));
+        for (int h = 1; h <= 99; h++) Assert.Equal(per * h, HitBudget.SharedShake(h, per, cap), 1e-6f);
+        Assert.Equal(cap, HitBudget.SharedShake(100, per, cap), 1e-6f);
+        foreach (int h in new[] { 101, 103, 105, 500, 100000 }) Assert.Equal(cap, HitBudget.SharedShake(h, per, cap));
+        float was = 0;
+        for (int h = 0; h <= 400; h++) { float now = HitBudget.SharedShake(h, per, cap); Assert.True(now >= was, $"fell at {h}"); Assert.InRange(now, 0, cap); was = now; }
+    }
 }

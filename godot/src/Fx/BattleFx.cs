@@ -377,11 +377,11 @@ public partial class BattleFx : Node3D
         Look.HitBudget.HeldContacts(events, sparkContact);
         Look.HitBudget.Choose(events, (int)P7D["hit_budget.n", 4], b.Player.X, b.Player.Z, sparkless, sparkTally, sparkContact);
         // The hushed hits land as ONE shared impact (main, 10 Nov: a cut through 37 bodies showing 4 bursts must still
-        // feel like 37; no specks come back): the camera's trauma grows with the hits the budget hushed, capped. (The
+        // feel like 37; no specks come back): the camera's trauma is RAISED TO a number that grows with the hits the budget hushed, capped (HitShake). (The
         // held cut's contact mark grows with the bodies struck the same way: BattleFx.Grip.cs GripContact.)
         foreach (var t in sparkTally)
         {
-            Cam?.AddTrauma(Math.Min(P7D["hit_budget.shake_cap", 0.1f], P7D["hit_budget.shake_per", 0.003f] * t.Hushed), "hushed");
+            HitShake(Look.HitBudget.SharedShake(t.Hushed, P7D["hit_budget.shake_per"], P7D["hit_budget.shake_cap"]), "hushed");
             if (HitBudgetSay)
                 GD.Print($"hit budget frame {Engine.GetFramesDrawn()} art {t.Art ?? "auto"} {t.School} struck {t.Struck} crits {t.Crits} crits shown {t.CritsShown} plain shown {t.PlainShown} hushed {t.Hushed}");
         }
@@ -1345,7 +1345,7 @@ public partial class BattleFx : Node3D
                         float near = dx * dx + dz * dz < 9 ? 0.6f : 1f;
                         if (!Books.Spawn("sparks", at, 0.7f * near, 0.3f, new Color(1f, 0.8f, 0.48f) * new Color(1, 1, 1, near), sizeEnd: 1.2f * near))
                             Sparks.Spawn(at, Vector3.Zero, 0.22f * near, 1.1f, Palette.Of(e.School).Core, sizeEnd: 0.25f, sprite: Sprites.Of("star"), spinV: 4);
-                        Cam?.AddTrauma(0.04f, "crit");
+                        HitShake(P7D["hit_budget.crit_shake"], "crit");
                     }
                     break;
                 }

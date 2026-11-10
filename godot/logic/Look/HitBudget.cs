@@ -87,4 +87,10 @@ public static class HitBudget
                 // b.Swing.ContactAt replaces Ev.Slash.HitX/HitZ when combat's MR 3 is merged
                 into.TryAdd((s.Art, s.School), (s.HitX, s.HitZ));
     }
+
+    /// <summary>The shared impact of a source's hushed hits, as the camera trauma it is raised to (BattleFx.HitShake):
+    /// nothing for none, <paramref name="per"/> a hushed hit, never above <paramref name="cap"/>. Never falls as the hits
+    /// grow (fx_language.json p7 hit_budget.shake_per, shake_cap).</summary>
+    public static float SharedShake(int hushed, float per, float cap) =>
+        hushed <= 0 || per <= 0 || cap <= 0 ? 0 : System.Math.Min(cap, per * hushed);
 }
