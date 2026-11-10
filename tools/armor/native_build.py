@@ -722,7 +722,8 @@ def main():
     a = ap.parse_args()
     cfg = json.load(open(os.path.join(NATIVE, a.id, "build.json"), encoding="utf-8"))
     import native_recipes
-    rep = native_recipes.RECIPES[cfg["recipe"]](a.id, cfg, out=a.out)
+    import native_spaulder
+    rep = {**native_recipes.RECIPES, **native_spaulder.RECIPES}[cfg["recipe"]](a.id, cfg, out=a.out)
     print(json.dumps(rep, indent=1))
 
 

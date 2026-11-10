@@ -11,7 +11,8 @@ A piece dir (godot/art/gear/native/<id>/):
                  "parts": {part name: {"ride": {role: share}, "one_bone": bool} | {"bones": {bone: share}}
                            | {"with": part name}}   ("bones": the blend named bone by bone, "{s}" = the part's side:
                            an articulated lame rides exactly the bones its skin follows, e.g. thigh_twist_02_{s} 0.9
-                           + calf_share_{s} 0.1, and none of her corrective shapes: part_blends)
+                           + calf_share_{s} 0.1, and none of her corrective shapes: part_blends; with "carry": "part"
+                           it takes her arm_hang_* and elbow_* shapes as ONE rigid motion of the whole part)
     <id>.glb     one node per part and material, at her_b's rest (glTF axes, metres, identity transforms), each a single
                  primitive whose material NAME is an entry of godot/art/people/outfit_materials.json. A part named
                  `*_rigid` never bends: it rides one blend of bones, its "ride" rule (roles as tools/armor/
@@ -179,6 +180,18 @@ def bones_blend(names, D, bones):
     return out / out.sum()
 
 
+CARRY = ("none", "part")
+CARRY_SHAPES = ("arm_hang_", "elbow_")   # her corrective shapes a part with "carry": "part" follows
+
+
+def rigid_fit(X, Y):
+    """The rigid motion (R, t) with X @ R.T + t ~ Y (least squares, no mirror)."""
+    cx, cy = X.mean(0), Y.mean(0)
+    u, _, vt = np.linalg.svd((X - cx).T @ (Y - cy))
+    R = vt.T @ np.diag([1.0, 1.0, np.sign(np.linalg.det(vt.T @ u.T))]) @ u.T
+    return R, cy - R @ cx
+
+
 def open_scalp(parts, head_P, head_N, mask):
     """How many of the scalp mask's head points no helm face covers (within SCALP_COVER_M, outward of the point)."""
     sys.path.insert(0, os.path.join(REPO, "tools", "body"))
@@ -237,6 +250,9 @@ def validate(d, rest_hash=None, head=None, mask=None, materials=None):
             why.append(f"part '{p['name']}' has no indices (export an indexed triangle list)")
         if p["name"].endswith("_rigid") and part_rule(piece, p["name"]) is None:
             why.append(f"rigid part '{p['name']}' has no role: piece.json parts needs its \"ride\" or the part it is fixed \"with\"")
+    for name, r in (piece.get("parts") or {}).items():
+        if r.get("carry", "none") not in CARRY or ("carry" in r and "bones" not in r):
+            why.append(f"part '{name}': \"carry\" is one of {', '.join(CARRY)}, on a part that names its \"bones\"")
     if any(p["T"] is None for p in parts):
         return why
     P = np.vstack([p["P"] for p in parts])
@@ -407,7 +423,10 @@ def part_blends(bd, bodies, ev):
     rigid component the mean of her shapes' deltas over its bound points; those answer her skin's own weights, and on
     a blend named bone by bone they move the part off it (the cuisses' knee lame, thigh_twist_02 0.8 + calf_share 0.2,
     went 13.8 mm into her knee and 10 mm round it at knee_flex135: her skin came through it in every run, and it
-    dipped into the lame above)."""
+    dipped into the lame above). "carry": "part" on such a part: it follows her CARRY_SHAPES after all, each as ONE
+    rigid motion (the rigid fit of her skin's delta over the part's footprint, the body points its own bound points
+    stand on), applied to every point that rides it, its rims and rivets too: a shoulder lame that carries none sees
+    her skin rise 16-24 mm under it in the attacks, and one whose trim carries its own mean leaves its plate."""
     g = gf()
     body, z = bodies["close"], bd.z
     lead = z["lead_close"]
@@ -424,6 +443,12 @@ def part_blends(bd, bodies, ev):
             names = body.joint_names
             jj, ww = g.top_k(bones_blend(names, g.dense_weights(body, trs[own], ws[own], len(names)).mean(0), p["rule"]["bones"])[None])
             j, w = jj[0], ww[0]
+            fits = {}
+            if p["rule"].get("carry") == "part":
+                vs = np.unique(body.T[trs[own]])
+                for nm, dP in body.shapes.items():
+                    if nm.startswith(CARRY_SHAPES) and np.abs(dP[vs]).max() > 1e-5:
+                        fits[nm] = rigid_fit(body.V[vs], body.V[vs] + dP[vs])
         else:
             j, w = g.rigid_blend(body, trs[own], ws[own], "_", roles={"roles": rr.get("roles", {}), "anchors": rr.get("anchors", {}),
                                                                      "slots": {"_": p["rule"]}})
@@ -435,6 +460,12 @@ def part_blends(bd, bodies, ev):
             if "bones" in p["rule"]:
                 for nm in e["shapes"]:
                     e["shapes"][nm][sel] = 0.0
+                if sel.any():
+                    X = e["Xu"][e["inv"]][sel] if fits else None
+                    for nm, (R, t) in fits.items():
+                        if nm not in e["shapes"]:
+                            e["shapes"][nm] = np.zeros((len(sel), 3))
+                        e["shapes"][nm][sel] = X @ R.T + t - X
 
 
 def install(g):
