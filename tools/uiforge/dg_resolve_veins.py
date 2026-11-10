@@ -31,6 +31,12 @@ PARAMS = dict(
     tip_pct=99.0,      # the geodesic distance at this percentile is g 0 (the farthest specks don't set the scale)
     along=0.55,        # a step along the strands costs this much less (the front runs up the locks, not as a cut)
     flow_sigma=6.0,    # px (2x): the strands' direction smoothed over this
+    # the back of her head (lead 9 fix D): the bronze there is dull, so a lock's ridge dips under the floor every few px
+    # and read as dashes. Inside back_box the ridges are joined along the strands before the gain, dilate and clamps.
+    back_box=(598, 60, 949, 345),  # px (2x) x0, y0, x1, y1: the hair behind the front locks, down to the bar
+    join_gap=12,       # px (2x): a ridge is carried this far along the strand from each end (a gap of twice this closes)
+    join_min=70,       # px (2x): a joined ridge shorter than this is speckle, not a lock: dropped
+    join_seen=0.35,    # a joined ridge must already be vein over this share of its length (no vein where no strand is)
 )
 
 
@@ -50,6 +56,78 @@ def strands(L, sigma):
     phi = 0.5 * np.arctan2(2 * j12, j11 - j22)          # across the strands
     coh = np.sqrt((j11 - j22) ** 2 + 4 * j12 ** 2) / np.maximum(j11 + j22, 1e-6)
     return -np.sin(phi), np.cos(phi), np.clip(coh, 0, 1)
+
+
+def thin(on):
+    """Zhang-Suen thinning: a 1 px centre line of a binary shape."""
+    a = np.pad(on.astype(np.uint8), 1)
+    while True:
+        gone = 0
+        for step in (0, 1):
+            n = [np.roll(a, sh, (0, 1)) for sh in ((1, 0), (1, -1), (0, -1), (-1, -1), (-1, 0), (-1, 1), (0, 1), (1, 1))]  # N NE E SE S SW W NW
+            b = sum(n)
+            t = sum((n[i] == 0) & (n[(i + 1) % 8] == 1) for i in range(8))
+            if step == 0:
+                c = (n[0] * n[2] * n[4] == 0) & (n[2] * n[4] * n[6] == 0)
+            else:
+                c = (n[0] * n[2] * n[6] == 0) & (n[0] * n[4] * n[6] == 0)
+            kill = (a == 1) & (b >= 2) & (b <= 6) & (t == 1) & c
+            kill[0], kill[-1], kill[:, 0], kill[:, -1] = False, False, False, False
+            gone += int(kill.sum())
+            a[kill] = 0
+        if not gone:
+            return a[1:-1, 1:-1].astype(bool)
+
+
+def join_ridges(ridge, flow, hair, P):
+    """The back of the head's ridges as whole lines (inside P["back_box"] only; the rest is returned as it came). The
+    crest lines (the ridge's maxima across the strand) are closed along the strands' direction over join_gap, thinned,
+    and the lines that are long and were mostly vein already are kept: where such a line's ridge is under the front
+    locks' own level it is lifted to it, at their width (both read off the hair outside the box). The rest in the box
+    (ticks on no line) is dropped."""
+    vx, vy, _ = flow
+    H, W = ridge.shape
+    yy, xx = np.mgrid[0:H, 0:W]
+
+    def at(a, dx, dy):
+        return a[np.clip(np.rint(yy + dy).astype(int), 0, H - 1), np.clip(np.rint(xx + dx).astype(int), 0, W - 1)]
+
+    x0, y0, x1, y1 = P["back_box"]
+    box = np.zeros((H, W), bool)
+    box[y0:y1, x0:x1] = True
+    rs = ndimage.gaussian_filter(ridge, 1.0)
+    crest = (rs >= at(rs, -vy, vx)) & (rs >= at(rs, vy, -vx)) & (ridge > 0) & (hair > 0.5)
+    C = ndimage.binary_dilation(crest, structure=np.ones((3, 3), bool))
+    D = C.copy()
+    for k in range(1, P["join_gap"] + 1):
+        D |= at(C, vx * k, vy * k) | at(C, -vx * k, -vy * k)
+    E = D.copy()
+    for k in range(1, P["join_gap"] + 1):
+        E &= at(D, vx * k, vy * k) & at(D, -vx * k, -vy * k)
+    sk = thin(E | C)
+    lab, n = ndimage.label(sk, structure=np.ones((3, 3)))
+    ids = np.arange(1, n + 1)
+    length = ndimage.sum(sk, lab, ids)
+    seen = ndimage.sum(sk & (ridge > 0), lab, ids) / np.maximum(length, 1)
+    inbox = ndimage.sum(sk & box, lab, ids) / np.maximum(length, 1)
+    good = (length >= P["join_min"]) & (seen >= P["join_seen"])
+    keep = np.isin(lab, ids[good])
+    # the front locks' own level and half width (the lines outside the box)
+    core = ridge * P["ridge_gain"] > 0.5
+    ref = keep & ~box & core
+    peak = float(np.median(ridge[ref]))
+    hw = float(np.median(ndimage.distance_transform_edt(core)[ref]))
+    lift = keep & box & (ridge < peak)
+    # (+0.23: with it the lifted core measures the front locks' width after the gain and the dilate, l9_measure.py)
+    prof = np.clip(hw + 0.23 - ndimage.distance_transform_edt(~lift), 0, 1) * peak
+    near = ndimage.distance_transform_edt(~keep) <= hw + 2
+    out = np.where(box, np.maximum(np.where(near, ridge, 0), prof), ridge)
+    kb = keep & box
+    print(f"join: back box {int((good & (inbox > 0.5)).sum())} lines kept (lengths {sorted(int(v) for v in length[good & (inbox > 0.5)])}), "
+          f"{int(((length >= 8) & ~good & (inbox > 0.5)).sum())} short ones dropped; front level {peak:.2f}, half width {hw:.2f} px")
+    print(f"join: cause: share of a kept line under the core level (R 0.5) before: back {(~core[kb]).mean() * 100:.0f}%, "
+          f"front {(~core[keep & ~box]).mean() * 100:.0f}%; median ridge on the line: back {np.median(ridge[kb]):.2f}, front {np.median(ridge[keep & ~box]):.2f}")
+    return out
 
 
 def geodesic(mask, seed, flow=None, along=0.0):
@@ -104,6 +182,8 @@ def main():
     k = 2 * info["s"]                          # 2x canvas px per source px
     _, ridge = fc.ridge_map(L, k)
     ridge = np.where(ridge > P["ridge_floor"], ridge, 0)
+    flow = strands(L, P["flow_sigma"])
+    ridge = join_ridges(ridge, flow, hair, P)   # fix D: the back's broken ridges joined, then the same gain, dilate and clamps
     veins = np.clip(ridge * P["ridge_gain"], 0, 1) * hair
     if P["dilate"]:
         veins = ndimage.grey_dilation(veins, size=(2 * P["dilate"] + 1,) * 2)
@@ -122,7 +202,7 @@ def main():
     top = ys.min()
     band = ys < top + 6
     crown = (int(round(ys[band].mean())) + 3, int(round(xs[band].mean())))
-    d = geodesic(on, crown, strands(L, P["flow_sigma"]), P["along"])
+    d = geodesic(on, crown, flow, P["along"])
     fin = np.isfinite(d)
     dmax = float(np.percentile(d[fin], P["tip_pct"]))
     g = np.where(fin, np.clip(1 - d / dmax, 0, 1), 0).astype(np.float32)
@@ -139,7 +219,7 @@ def main():
     geo = json.load(open(gp))
     geo["resolve"] = {
         "tex": "lamp_veins.png", "crown": [round(crown[1] / 2, 2), round(crown[0] / 2, 2)],
-        "tip_cost": round(dmax / 2, 1), **P,
+        "tip_cost": round(dmax / 2, 1), **{k: v for k, v in P.items() if k != "back_box" and not k.startswith("join_")},   # (the join's own: bake only)
     }
     json.dump(geo, open(gp, "w"), indent=1)
     print(f"veins: {img.size[0]}x{img.size[1]} crown (1080 px in the quad) {geo['resolve']['crown']} tips at {dmax / 2:.0f} px")
