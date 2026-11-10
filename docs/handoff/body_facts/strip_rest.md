@@ -291,3 +291,34 @@ Not done: `target --map` not rerun on the composite active file (its left rows a
 on the line's end (fixed before 4c; 4a / 4b began from that jolt); the right alone for tri 290 without the cost above;
 edge 2455-2456; lay 3's left as a second start; per-corner barrier in the poses; all 141 poses; a fresh build from B's
 feet under the new rule; the sheet; the map is not in `Her`.
+
+## Lay 5 (right): 10 Nov, lead 20's solver
+NOT MET, NOT PROMOTED: active `strip_rest.npz` stays lay 4. Best: `out/shoulder/strip_rest_l20_f.npz` (left = lay 4's,
+right re-solved from lay 4). 8 of 10 right poses at every check; fails crossbow edge and axe_heavy shortest.
+| pose (w) | turned | map / ref (A's own nine, fill rest) | excess | shortest map / A's own | rest r | bar |
+|---|---|---|---|---|---|---|
+| p4:heroic_leap@7:r | 0 | 2.65 / 2.58 | +0.07 | 0.29 / 0.31 (0.94) | 0.51..1.90 | met |
+| p4:heroic_leap@9:r | 0 | 3.02 / 3.40 | -0.38 | 0.23 / 0.27 (0.85) | | met |
+| p4:heroic_leap@19:r | 0 | 3.31 / 4.17 | -0.86 | 0.47 / 0.36 | | met (tri 290 cured) |
+| p4:heroic_leap@20:r | 0 | 3.21 / 3.94 | -0.73 | 0.42 / 0.36 | | met |
+| crossbow_shoot@10:r (0.74) | 0 | 1.96 / 1.73 | +0.23 | 0.38 / 0.37 | | FAIL edge (262, 2455-2456r, lay 1.82) |
+| cast_bolt@3:r (0.47) | 0 | 1.78 / 1.76 | +0.02 | 0.62 / 0.61 | | met |
+| axe_heavy@7:r (0.47) | 0 | 2.10 / 2.14 | -0.04 | 0.46 / 0.65 (0.71) | | FAIL short (edge 171 2325A-2385b, lay 0.51; lay 2 was 0.75 too) |
+| p4:heroic_leap@5:r (0.43) | 0 | 1.80 / 1.85 | -0.05 | 0.53 / 0.56 | | met |
+| p4:idle_warden_town@126:r (0.42) | 0 | 1.76 / 1.87 | -0.11 | 0.56 / 0.59 | | met |
+| p4:heroic_leap@25:r (0.27) | 0 | 1.90 / 1.98 | -0.08 | 0.48 / 0.46 | | met |
+Checks: 1 met (4 of 4); 2 not met (1.96 > 1.88); 3 met; 4 structural (w = 0 -> map = fill), `target --map` NOT rerun on `_f`;
+5 not met at axe_heavy only (0.71 < 0.8). Note A's own worst read under `_f`'s edges rose (leap@19 3.41 -> 4.17), so
+check 1's margin there is partly the reference moving with the lay. Variant `_b` hit crossbow 1.88 exactly (capwall 50,
+capm 0.10) but left tri 290 turned and leap@7 short 0.50: the lifted-quality floor and the crossbow cap pull apart.
+What changed (`strip_rest.py`, all off at defaults, old builds unchanged): lay2 keywords `qmin`/`qwall` (floor on each
+rest lay triangle's LIFTED quality over B's; the plane quality floor did not cure tri 290: plane 0.35 was 0.17 lifted),
+`capwall` / `hiwall` (wall factor over hi in fill-judged / other poses), `lo_own` / `lowall` (lo >= part of A's own
+shortest, its wall), `rest_wall`, `ring_lim` (rest ratio limits on edges to the fixed ring). `turned` prints fill max,
+the shortest map edge (id, lay, A's own, fill) and the lay's rest edge range.
+Commands: `cp strip_rest_l19_lay4.npz strip_rest_l20_f.npz` then `build --snap --only r --start strip_rest_l19_lay4.npz
+--file strip_rest_l20_f.npz --set '{"passes": 4, "wall": 150, "capm": 0.05, "qmin": 0.4, "qwall": 5, "capwall": 50,
+"hiwall": 10, "lo_own": 0.95, "lowall": 50, "rest_wall": 30, "lim": [0.55, 1.85], "fold": [0.3, 0.25]}'` (80 s);
+`turned --snap --file strip_rest_l20_f.npz --poses <the 10>`. Logs `out/shoulder/build_l20_*.log`, `turned_l20_*.log`.
+Next (built, NOT measured): `_g` (= f + lim [0.6, 1.85], ring_lim [0.6, 1.5]) and `_h` (lim [0.58, 1.85], ring_lim
+[0.55, 1.6], capwall 200) aim at the two fails (ring edge 262 down, edge 171 up); run `turned` on them first.
