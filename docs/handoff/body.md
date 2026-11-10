@@ -1,5 +1,39 @@
 # Handoff: her body (rig, mesh, weights)
 
+## SHOULDER REBUILD, LEAD 20 -> LEAD 21 (10 Nov, evening): Gate T round 1 JUDGED CLOSE (not sent to the owner). Armpit right AT THE BAR (lay 5), T17 green, map IN `Her`, neck + head stump FITTED (nothing published), A1's neck rule CONFIRMED and sent, P2's cap-top row sent; 83 tests PASS
+**Charter:** unchanged (lead 19's block below). Main's word, 10 Nov: the lane line was raised to 1.15M for Gate T only. The after-list (P3 bends spec first, then the her-config split, then deform_audit general) goes to a fresh P1 lead with its own line. Worktree `.claude\worktrees\body-p1b`, branch `body-p1b`. Start pack: `docs/handoff/body_facts/gate_t.md` (the table, the judge's verdict and the ranked fixes). Read it first.
+**Done by lead 20 (all committed and pushed):**
+1. ARMPIT RIGHT, lay 5 (cb34bb524, promoted 61244c52f). Active `out/shoulder/strip_rest.npz` = `strip_rest_l20_h.npz` (backup `survivorsunchained_inputs\body\p1b_l20_lays\`); left byte for byte with lay 4. All 15 named poses meet the bar (strip_rest.md "Lay 5 PROMOTED"). Off the named set, 5 poses with real share have turned triangles (gate_t.md).
+2. CHEST EDGES (e911cedb6). `gate2["relax"] = {ratio 2.5, rows 2}`: carried edges over the ratio on the stage's rows are filled from their neighbours (`Her.relaxed`). T17 is green with limits untouched; worst 3.63 -> 1.44-1.54. Fold at A's. T18 is bit for bit at <= 90, T19 is the fold limit (chest_fold.md section 6).
+3. MAP IN `Her` (ea9f55d16). Config `support["map"]`. T20: <= 45 deg = fill. T21: the same band through two paths. T5 runs map-off; T22 (1c23d317a) is the map's bar as a test on the 15 named poses.
+4. NECK RELAX (1c23d317a). The neck config has `relax` ratio 2.4 (`relaxed` works on a region with no side). The head-piece patches go 7.06 -> 2.01 and the neck set has 0 edges over 2.5x (T23). T18 runs with the neck rule off (its stored file predates the rule).
+5. NECK + HEAD STUMP FIT (043a6e4c0, `tools/body/neck_fit.py fit | check`, `neck_fit.md`). Per-vertex bounded LSQ + Laplacian over 141 poses, fitted to `compose(G, ["neck"])` (the full compose tore the border). Out: `out/neck_fit/fit.npz`, nothing published. The three conditions are met (face bit for bit, rest and order untouched, seam 0.0).
+6. A1 NECK RULE (689dfc5d4 on a stand-in; confirmed on the fit, neck_fit.md). neck_01 <= 40 deg on any axis, split 20 / 30 / 50, 0 frames over on the 7 p4 clips. Sent to main, who forwarded it to A1. It holds only once the fit ships (Gate W).
+7. P2 ROW (f941a453a, `ride_travel.py --ref first --patch cap_top`). The cap-top floor is 19-24 mm, against the 5 mm line. Sent; P2 has started on it.
+8. FULL RUN on the final state: `target_a.npz` (before it: `target_a_l19.npz`), edges, shift, silhouette, sheets, the 141-pose `turned` and the bends check, all `*_l20*` in `out/shoulder/`.
+**Gate T round 1 = judge CLOSE** (Item "Gate T shoulder target", round 1 of 3). Rows that are CLOSE:
+- Jog_Fwd: the published breast top, 7.7x. "Fix before the fit."
+- abd120: A's own front-armpit pinch, carried.
+- heroic_leap@9:r: an armpit sliver.
+- heroic_leap@19:r: streaks in the hollow.
+- iron_vow@72:l: A's crease on the cap, carried.
+**Next, in order (lead 21):**
+1. De-pinch A before carrying it, in the girdle carrier. This is a general rule in `carried_target.py`, on the model of gate2's `relax` but keeping the volume: the edge angle on A goes from 141 to at least 165 at abd120, and it also fixes iron_vow@72:l.
+2. Extend the armpit map. Re-lay for heroic_leap @6-@19 plus the 5 turned poses (add them to T22), with a minimum-width guard, and require turned 0 on every frame of the fit list (strip_rest.py `lay2` with the `turned` rule over all 141 poses).
+3. Breast-top gate on lift or on the published stretch (open past about 1.8x), so Jog's 40 deg clavicle opens it.
+4. Stretch: slide vertices along the surface so the carrier's 48 and the pocket's 130 fall under 2.5x beyond A's own.
+5. The cast_bolt@3:r tick.
+6. Rerun (step 8's commands), take your own look, then judge round 2 (max).
+7. `GATE T READY body-p1b@<sha>` to main with the two half sheets.
+Unchecked: the trap-band shift of 33-53 mm on big-neck poses (the same on lead 19's target; probably the band's anchor). `pops` does not run on the carried provider. `silhouette_pub.json` is empty, so there is no published baseline.
+**Commands** (lead 19's block, plus):
+- `python tools/body/neck_fit.py fit | check`
+- `python tools/body/ride_travel.py --ref first --patch cap_top --out ...`
+- `python tools/body/region_shape.py shift | silhouette --provider carried [--target X.npz]`
+- `python tools/body/check.py godot/art/people/heroine.glb --only bends --out DIR` (10 min)
+- `python tools/body/strip_rest.py turned --snap --poses <all 141>` (90 s)
+**Cost, lead 20:** 13 helper runs (120k solver at max-high, 93k, 85k, 42k, 52k, 109k, 64k, 80k, 115k, 45k, 32k, plus a 74k judge) = about 0.91M, plus about 0.15M of my own, about 1.06M total. $0 API, 0 Meshy. Two half-size sheets opened.
+
 ## SHOULDER REBUILD, LEAD 19 -> LEAD 20 (10 Nov, ~10:30): chest fold GONE at the source (second gate stage; my look: overhead chest reads like A) but two of A's own carried edges now show and T17 fails on abd150 / abd170; armpit lay 4: LEFT AT THE BAR, right one sliver + one border edge short; map NOT yet in `Her`; P2's spaulder row measured (the new shoulder does NOT bring it under 5 mm); head stump, neck rule, Jog fact, Gate T table NOT started; Gate T NOT sent; nothing fitted, nothing published
 **Charter, fixed things:** unchanged (lead 18's block below + main's word in lead 19's brief: the armpit MAP is the accepted method, carry map only, bar = turned 0 and worst edge <= A's own + 0.15 on the nine named poses, <= the fill's + 0.15 on the transition; the chest fold is a fault, fixed at the source; every clip-pose picture at Gate T is shot on 7bbcf445d or later; stump fit must not carry A on the two head-piece patches; Jog_Fwd@11:r goes to Gate T as a fact with the option; A1 neck rule confirmed or corrected with numbers; main's added row: P2 spaulder travel old vs new). Worktree `.claude\worktrees\body-p1b`, branch `body-p1b`. Facts: `docs/handoff/body_facts/chest_fold.md` (section 5 = gate2), `strip_rest.md` ("Lay 2" l.80, "located" l.137, "Lay 3", "Lay 4"), `ride_travel.md`, plus lead 18's.
 **Learned the hard way:** (1) a helper's base context is huge: without the line "DO NOT read docs/team/README.md, RESUME.md (431 KB), OWNER_NOTES.md, any handoff or status page: this brief is complete" one helper hit its stop line at 55k of work with NOTHING built; with it the next two finished (143k, 154k). Put it at the top of every helper prompt. (2) My own context reached 164k after four rounds of two helpers: keep prompts under ~600 words, ask for a final message under 150 words and read the facts file's table by line range. (3) A rest-only repair of the lay (lay 3) broke the poses: the lay is judged in the poses it is used in. (4) Sheets render on the CPU (`ray`): no turn needed; `edges` needs `--provider carried`.
