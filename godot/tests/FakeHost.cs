@@ -82,6 +82,9 @@ sealed class FakeHost : IZoneHost
         return true;
     }
     public bool CanCinematic(string id) => Plays?.Invoke(id) == true;
+    /// <summary>The storybooks asked for mid-zone (M6: sb_dawn); each goes straight on.</summary>
+    public readonly List<string> Stories = new();
+    public void Storybook(string id, Action then) { Stories.Add(id); then(); }
     /// <summary>The arrival's black has lifted (a test holds it to see what waits for it).</summary>
     public bool Arrived { get; set; } = true;
     public void SetDraftTip(string tip) => DraftTip = tip;

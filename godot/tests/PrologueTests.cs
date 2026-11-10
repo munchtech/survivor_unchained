@@ -220,9 +220,8 @@ public class PrologueTests
         Assert.False(s.Zone.Ember);
         Assert.False(s.B.EmberOn);
         Assert.Null(s.Host.DraftTip);
-        // (the Flare at half, as the night started it, for the Warden's lamps)
-        Assert.NotNull(s.B.Flare);
-        Assert.True(s.B.FlareMeter >= Battle.FlareFull / 2 - 1e-6);
+        // (M6: no Flare on the road; the ember lends it at C02's hand-back, PrologueFlareLentTests)
+        Assert.Null(s.B.Flare);
         Run(s, 4);
         double xp = s.J.Ch.Xp; int level = s.J.Ch.Level;
         foreach (var id in new[] { "n_lone", "n_three", "n_first" })

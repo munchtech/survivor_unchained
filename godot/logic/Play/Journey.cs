@@ -184,6 +184,9 @@ public sealed partial class Journey
             var wt = Content.WorldTiers.Get(Content.WorldTiers.Of(World));
             b.WorldHealth = wt.Health; b.WorldDamage = wt.Damage; b.KitDamageMul = wt.Kit; b.KitEveryMul = wt.KitEvery; b.StoryStand = wt.Stand;
         }
+        // (M6, TUTORIAL_COPY.md A12/A14) Taken at the Low Ford's dawn page, the Flare is not hers again until the
+        // Waystation's lamp lights it for good; arena runs keep theirs.
+        if (!arena && World.Fact(Zones.Prologue.FlareOutFact).Truthy && !World.Fact(Zones.Prologue.FlareLitFact).Truthy) { b.Flare = null; b.FlareMeter = 0; }
         b.EmberOn = combat && (arena || ember);
         EmberLit = b.EmberOn && !arena;
         b.Night = arena || ember || World.Time == TimeOfDay.Night;

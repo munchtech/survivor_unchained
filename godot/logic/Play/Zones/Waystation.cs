@@ -491,6 +491,21 @@ public sealed class Waystation : ZoneRuntime
     /// <summary>C04 B plays Rook with its own: ours steps out of the picture until it hands back.</summary>
     bool rookByCine;
 
+    /// <summary>(M6, TUTORIAL_COPY.md A14) How near the square's lamp she comes for it to light her Flare for good.</summary>
+    public const double FlareLampReach = 3;
+
+    /// <summary>A14: after C04 B (the day's clock started as it hands back), her first time within reach of the square's
+    /// lamp (waystation.square) gives back the Flare the dawn took (Prologue.FlareOutFact), for good. The lamp is a town
+    /// post, lit already: no new look.</summary>
+    void SquareLamp(double px, double pz)
+    {
+        if (B == null || !F(Prologue.FlareOutFact).Truthy || F(Prologue.FlareLitFact).Truthy || !F("clock.started").Truthy || rookByCine) return;
+        if (Content.LampPosts.Get("waystation.square") is not { } post || Dist(px, pz, post.X, post.Z) > FlareLampReach) return;
+        W.Facts[Prologue.FlareLitFact] = true;
+        B.Flare = Content.Lamps.Flare(Rpg.LampBook.Carried(G.Journey.Ch));
+        G.Announce(new Announcement("The Flare", $"Lit for good. {G.KeyLabel("flare")}", "boon", 4.5));
+    }
+
     public override void CineEvent(string name)
     {
         if (name == "rook_cine") rookByCine = true;
@@ -501,6 +516,7 @@ public sealed class Waystation : ZoneRuntime
         if (B == null) return;
         if (rookByCine && Actors.TryGetValue("rook", out var rook)) rook.Hidden = true;
         double px = B.Player.X, pz = B.Player.Z;
+        SquareLamp(px, pz);
         foreach (var a in Actors.Values) a.Update(dt, px, pz);
         foreach (var a in guards) a.Update(dt, px, pz);
         foreach (var a in keepers) { a.Hidden = Dark; a.Update(dt, px, pz); }

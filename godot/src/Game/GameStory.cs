@@ -168,6 +168,46 @@ public partial class Game
     }
 
     /// <summary>The bars a storybook left, for the cinematic starting now (null: none).</summary>
+    /// <summary>IZoneHost (M6): a storybook mid-zone (sb_dawn, the Low Ford's dawn page): the world held and faded under
+    /// it, the page over its own bars (fading in from black and out to it), then the world back and `then`. Where no
+    /// storybook can play (--nocine, a quick start without --cines, one already up, a cinematic, no such file) it goes on.</summary>
+    public void Storybook(string id, Action then)
+    {
+        if (scene == null || storybook != null || cine != null || Args.Has("nocine") || (quick && !Args.Has("cines")) || !StoryExists(id)) { then(); return; }
+        StoryFile f;
+        try { f = StoryFile.Load(id); }
+        catch (Exception e) { GD.PushWarning($"storybook: {id} not played ({e.Message})"); then(); return; }
+        if (!f.Live) { then(); return; }
+        scene.SimPaused = true;
+        scene.Hold = 1;
+        hud.HoldToasts = true;
+        hud.HoldTip = true;
+        hud.ClearBanner();
+        hud.Prompt(promptShown = null);
+        controls.ClearLatches();
+        hud.Fade(1, 0.6);
+        GD.Print($"storybook: {id} mid-zone at wall {Time.GetTicksMsec() / 1000.0:0.00}s");
+        Wait(0.6, () =>
+        {
+            storybook = new StoryPlayer(f, Host(), _ =>
+            {
+                storybook = null;
+                if (scene != null)
+                {
+                    scene.Hold = 0;
+                    if (screens.Current == null && cine == null && teacher?.Current is not { Kind: CalloutKind.Freeze }) scene.SimPaused = false;
+                }
+                hud.HoldToasts = false;
+                hud.HoldTip = false;
+                controls.ClearLatches();
+                then();
+                // (a cinematic `then` started takes the black as its own; else the world fades back in)
+                if (cine == null) hud.Fade(0, 0.8);
+            });
+            AddChild(storybook);
+        });
+    }
+
     CinemaBars? TakeStoryBars()
     {
         var b = storyBars;

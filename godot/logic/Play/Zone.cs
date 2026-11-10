@@ -177,6 +177,9 @@ public interface IZoneHost
     bool Cinematic(string id, Action? done = null, IReadOnlyDictionary<string, double[]>? marks = null) => false;
     /// <summary>Whether that cinematic would play here now (a zone waits for its moment only if so).</summary>
     bool CanCinematic(string id) => false;
+    /// <summary>(M6) A storybook (godot/data/storybook/ID.json) played mid-zone over the held world, `then` when it ends
+    /// or is skipped. A host that plays none (the tests, a quick start, --nocine) calls `then` at once.</summary>
+    void Storybook(string id, Action then) => then();
 }
 
 /// <summary>The zone's look, as a runtime reaches into it.</summary>
