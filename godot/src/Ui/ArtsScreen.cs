@@ -433,7 +433,7 @@ public partial class ArtsScreen : Overlay
         var list = Style.V(4);
         list.CustomMinimumSize = new Vector2(330, 0);
         list.AddChild(Kit.Head("Learned", $"carrying {SkillBook.Carried(ch).Count()} of {SkillBook.Slots(ch)}"));
-        if (ch.Skills.Count == 0) list.AddChild(Style.Label("None yet. What burns in the arenas can be learned by day.", Style.TextItalic, 15, Kit.Dim, true));
+        if (ch.Skills.Count == 0) list.AddChild(Style.Label("None yet. Your calling teaches the first as you grow.", Style.TextItalic, 15, Kit.Dim, true));
         foreach (var id in ch.Skills) list.AddChild(SkillEntry(ch, id, true));
         if (seen.Count > 0)
         {
@@ -456,10 +456,10 @@ public partial class ArtsScreen : Overlay
     static void HowSkillsCome(VBoxContainer d)
     {
         d.AddChild(Style.Label("HOW A SKILL COMES TO YOU", Style.Display, 24, Kit.Ink));
-        d.AddChild(Style.Label("The night's arenas burn with skills the ember lends you. By day you can keep them.", Style.Text, 17, Kit.Ink2, true));
+        d.AddChild(Style.Label("Your calling teaches you skills as you grow, and tomes teach the rest. What you put on a key is yours in every fight.", Style.Text, 17, Kit.Ink2, true));
         foreach (var (glyph, title, text) in new[]
         {
-            ("flame", "Seen", "An arena shows it to you: the ember offers it in a draft, and you use it."),
+            ("flame", "Seen", "An arena's ember may show you one you have not learned: use it there, and look for its tome."),
             ("book", "Learned", "A tome teaches it: a story fight won, Vonnra's Curiosities; your calling may teach one as you grow."),
             ("embers", "Carried", "Put it on a key and it is yours in every fight."),
         })
@@ -483,7 +483,7 @@ public partial class ArtsScreen : Overlay
         b.Pressed += () => { selSkill = id; Sound.Sfx.Click(); Refresh(); };
         Nav.Id(b, $"skill:{id}");
         var col = ItemViews.SchoolColors[w.School];
-        var r = Style.H(12, Glyphs.Icon(w.Art, 26, known ? col : col with { A = 0.45f }));
+        var r = Style.H(12, Glyphs.Icon(Glyphs.ForSkill(w.Id, w.Art), 26, known ? col : col with { A = 0.45f }));
         string attr = SkillBook.Attribute(id);
         var words = Style.V(0, Style.Label(w.Name + (carried ? (meets ? "  ·  carried" : "  ·  idle") : ""), Style.DisplayLight, 16, known ? (carried ? Kit.Ink : Kit.Ink2) : Kit.Dim),
             Style.Label($"asks {SkillBook.Need} {attr}  ·  you have {SkillBook.Have(ch, attr)}", Style.Ui, 13, meets ? Style.Good : Style.Bad));
@@ -500,7 +500,7 @@ public partial class ArtsScreen : Overlay
         d.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         bool known = SkillBook.Knows(ch, w.Id), carried = ch.Slotted.Contains(w.Id), meets = SkillBook.Meets(ch, w.Id);
         var col = ItemViews.SchoolColors[w.School];
-        var m = new Medallion(88, "", w.Art) { Ink = col, Ring = carried ? Style.Ember : Style.Gold, Lit = carried };
+        var m = new Medallion(88, "", Glyphs.ForSkill(w.Id, w.Art)) { Ink = col, Ring = carried ? Style.Ember : Style.Gold, Lit = carried };
         m.SizeFlagsVertical = SizeFlags.ShrinkBegin;
         d.AddChild(Style.H(Style.Gap4, m, Style.V(2, Style.Label(w.Name.ToUpperInvariant(), Style.Display, 28, Kit.Ink),
             Style.Label($"{w.School.ToString().ToLowerInvariant()}  ·  {string.Join(", ", w.Tags.Select(t => t.ToString().ToLowerInvariant()))}", Style.UiBold, 14, col))));
