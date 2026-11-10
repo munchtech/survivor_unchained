@@ -147,6 +147,16 @@ public sealed partial class Battle
     /// <summary>The last blow she gave or took (the battle's clock): Resolve fades only 3 s after it.</summary>
     internal double FightAt = double.NegativeInfinity;
 
+    /// <summary>(M3) Her held swing's landed cuts, as seconds (each cut that struck a foe adds its own wait): what the story's
+    /// stand clock reads to tell a fighter's plant from a stand (PackKit.Stand, Teeth.Director.StandSwing).</summary>
+    public double SwingLanded { get; internal set; }
+    /// <summary>(M3) How long the story's stand clock has counted her standing where she is (s; PackKit sets it each step;
+    /// 0 with no clock): what a hand that has learnt the clock plants under (Pilot's feet).</summary>
+    public double StoodFor { get; internal set; }
+    /// <summary>(M3) The spot the story's stand clock measures her from (she has moved once she is its `standMoved` off;
+    /// null with no clock running): what her feet's step must clear (Pilot's feet), not where the hands think she planted.</summary>
+    public (double X, double Z)? StandSpot { get; internal set; }
+
     /// <summary>A builder's swing now being counted, and what it has struck (Firing.CastOnce; HitEnemy adds).</summary>
     internal WeaponInst? StruckBy;
     internal readonly HashSet<int> Struck = new();
@@ -215,6 +225,8 @@ public sealed partial class Battle
         double plant = Math.Clamp(r.Plant ?? 0, 0, MaxPlant);
         if (plant > 0 && Firing.HeavyEveryOf(this, w) > 0 && !w.WasOwnHeavy) plant = 0;
         if (w.Cast == CastMode.Channel) t = plant = 0;
+        // (a chain's cut limits her no longer than its cancel beat: Sim/SwingChain.cs)
+        if (w.Chained && w.Chain is { Live: true } ch) { double lim = Math.Max(0, ch.CancelAt - Time); t = Math.Min(t, lim); plant = Math.Min(plant, lim); }
         if (t > 0) { p.CastWalk = p.CastT > 0 ? Math.Min(p.CastWalk, walk) : walk; p.CastT = Math.Max(p.CastT, t); }
         p.PlantT = Math.Max(p.PlantT, plant);
         var at = CastAt ?? (SkillAim is { } s ? (s.X, s.Z, null) : (p.X, p.Z, null));
