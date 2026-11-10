@@ -5,11 +5,20 @@ ring `k` rows away, along its normal: valley +), `rows_from`, `edge_ratio`. Surf
 
   python tools/body/fold_probe.py dump  POSES TAG      her: published / composed / A carried on every model point
                                                         -> out/shoulder/fold_probe/dump_TAG.npz (+ adj.npz), ~30 s
-  python tools/body/fold_probe.py measure TAG [--k 3] [--top 12] [--side l]
+                                                        --today: her config without its further gate stages (gate2 ...)
+  python tools/body/fold_probe.py measure TAG [--k 3] [--top 12] [--side l] [--ref TAG0]
+                                                        --ref: the fold set and "B" from dump TAG0 (today), TAG's composed as "new"
+  python tools/body/fold_probe.py sweep TAG0 [--rows 14,16,20,all] [--wall 12] [--smooth 0,60] [--ramp 1,0] [--deg 90,130]
+                                                        a further gate stage on a dump of today: the REAL share
+                                                        (carried_target.support_region), the surface recomposed
+  python tools/body/fold_probe.py same NEW.npz OLD.npz  two stored targets (carried_target target): max |new - old| on the
+                                                        composed points they share, per pose, by the arm's elevation
 Facts: docs/handoff/body_facts/chest_fold.md
 """
+import json
 import sys
 from pathlib import Path
+from types import SimpleNamespace as NS
 import numpy as np
 import scipy.sparse as sp
 
@@ -78,68 +87,169 @@ def edge_ratio(V, V0, E):
     return np.linalg.norm(V[E[:, 0]] - V[E[:, 1]], axis=1) / np.maximum(np.linalg.norm(V0[E[:, 0]] - V0[E[:, 1]], axis=1), 1e-12)
 
 
+def mesh_of(Z, adj, k):
+    """What every pose of a dump shares: triangles, rest, edges, the ring, the rest's depth and fold angles."""
+    T, V0 = Z["T"], Z["V0"]
+    R = ring(adj, k)
+    ee, a0 = dihedral(V0, T)
+    parts = [str(x) for x in Z["parts"]]
+    return NS(T=T, V0=V0, adj=adj, n=len(V0), R=R, E=np.stack(sp.triu(adj, 1).nonzero(), 1), d0=depth(V0, T, R), ee=ee, a0=a0,
+              parts=parts, part=Z["part"], br=Z["part"] == parts.index("breast"))
+
+
+def pose_ctx(Z, M, nm, s, top):
+    """One pose of a dump: the surfaces B (composed), A (carried at share 1), pub; the share; the side's own gated
+    part; the fold set `cl` (see the facts file) and its edges `m`."""
+    n = M.n
+    sd = s if nm[-2:] not in (":l", ":r") else nm[-1]
+    gl = f"girdle_{sd}"
+    rp, lst, dg, dw = Z[f"rp_{gl}"], Z[f"list_{sd}"], Z[f"dg_{sd}"], Z[f"dwall_open_{sd}"]
+    pub, comp = Z[f"{nm}|pub"], Z[f"{nm}|comp"]
+    Dw = np.where(Z[f"{nm}|wok"][:, None], Z[f"{nm}|Dw"], 0.0)
+    Dw[rp] = Z[f"{nm}|D|{gl}"]                      # A carried, share 1: the region's own carrier on its points
+    sh = np.zeros(n)
+    sh[rp] = Z[f"{nm}|share|{gl}"]
+    own = M.br & (dg <= Z[f"dg_{'r' if sd == 'l' else 'l'}"])
+    el = float(Z[f"{nm}|elev"]["lr".index(sd)])
+    S = {"B": comp, "A": pub + Dw, "pub": pub}
+    zone = (own | ((sh > 0) & (sh < 1))) & (rows_from(M.adj, own) <= 14) & (rows_from(M.adj, np.isin(np.arange(n), lst)) <= 14)
+    dd = {a: depth(V, M.T, M.R) - M.d0 for a, V in S.items()}
+    f = np.where(zone, dd["B"] - dd["A"], -1e9)
+    ids = np.argsort(-f)[:top]
+    cl = zone & (f > 0.5 * f[ids[0]]) & (rows_from(M.adj, np.isin(np.arange(n), ids[:1])) <= 12)
+    return NS(nm=nm, sd=sd, gl=gl, rp=rp, lst=lst, dg=dg, dw=dw, pub=pub, comp=comp, Dw=Dw, sh=sh, own=own, el=el, S=S, zone=zone,
+              dd=dd, ids=ids, cl=cl, m=cl[M.ee].all(1))
+
+
+def stats(M, c, V, ramp):
+    """(fold depth mean, max mm; valley angle over rest on the fold's edges mean, max deg; worst edge ratio on `ramp`)."""
+    d = depth(V, M.T, M.R) - M.d0
+    da_ = dihedral(V, M.T)[1] - M.a0
+    return (float(d[c.cl].mean()), float(d[c.cl].max()), float(da_[c.m].mean()) if c.m.any() else 0.0,
+            float(da_[c.m].max()) if c.m.any() else 0.0, float(edge_ratio(V, M.V0, M.E)[ramp].max()))
+
+
 def cmd_measure(argv):
     tag = argv[0]
     opt = dict(zip(argv[1::2], argv[2::2]))
     k, top, s = int(opt.get("--k", 3)), int(opt.get("--top", 12)), opt.get("--side", "l")
-    Z = np.load(OUTD / f"dump_{tag}.npz")
+    Zn = np.load(OUTD / f"dump_{tag}.npz")
+    Z = np.load(OUTD / f"dump_{opt['--ref']}.npz") if "--ref" in opt else Zn
     adj = sp.load_npz(OUTD / "adj.npz")
-    T, V0, part, parts = Z["T"], Z["V0"], Z["part"], [str(x) for x in Z["parts"]]
-    R, n = ring(adj, k), len(V0)
-    E = np.stack(sp.triu(adj, 1).nonzero(), 1)
-    br = part == parts.index("breast")
-    d0 = depth(V0, T, R)
-    for nm in [str(x) for x in Z["names"]]:
-        sd = s if nm[-2:] not in (":l", ":r") else nm[-1]
-        gl = f"girdle_{sd}"
-        rp, lst, dg, dw = Z[f"rp_{gl}"], Z[f"list_{sd}"], Z[f"dg_{sd}"], Z[f"dwall_open_{sd}"]
-        pub, comp = Z[f"{nm}|pub"], Z[f"{nm}|comp"]
-        Dw = np.where(Z[f"{nm}|wok"][:, None], Z[f"{nm}|Dw"], 0.0)
-        Dw[rp] = Z[f"{nm}|D|{gl}"]                      # A carried, share 1: the region's own carrier on its points
-        sh = np.zeros(n)
-        sh[rp] = Z[f"{nm}|share|{gl}"]
-        own = br & (dg <= Z[f"dg_{'r' if sd == 'l' else 'l'}"])
-        el = float(Z[f"{nm}|elev"]["lr".index(sd)])
-        S = {"B": comp, "A": pub + Dw, "pub": pub}
-        zone = (own | ((sh > 0) & (sh < 1))) & (rows_from(adj, own) <= 14) & (rows_from(adj, np.isin(np.arange(n), lst)) <= 14)
+    M = mesh_of(Z, adj, k)
+    T, V0, part, parts, n, E = M.T, M.V0, M.part, M.parts, M.n, M.E
+    for nm in [str(x) for x in Zn["names"]]:
+        if f"{nm}|comp" not in Z:
+            continue
+        c = pose_ctx(Z, M, nm, s, top)
+        sd, gl, rp, lst, dg, dw, pub, comp, Dw, sh, own, el, S, dd, ids, cl = (c.sd, c.gl, c.rp, c.lst, c.dg, c.dw, c.pub, c.comp, c.Dw,
+                                                                              c.sh, c.own, c.el, c.S, c.dd, c.ids, c.cl)
+        shn = sh
+        if Zn is not Z:                              # the build under test against today's dump
+            S["new"] = Zn[f"{nm}|comp"]
+            shn = np.zeros(n)
+            shn[Zn[f"rp_{gl}"]] = Zn[f"{nm}|share|{gl}"]
         # candidates: the wall standing back R rows (second gate stage), ramp W rows; (c) the ramp's share diffused
-        for lab, Rw, W in (("a:wall back 14", 14, 12), ("a:wall back 20", 20, 12), ("a:no wall", 10 ** 6, 12), ("b:ramp 20", 8, 20)):
+        for lab, Rw, W in (("a:wall back 14", 14, 12), ("a:wall back 20", 20, 12), ("a:no wall", 10 ** 6, 12), ("b:ramp 20", 8, 20)) if Zn is Z else ():
             w = s01(rows_from(adj, own & (dg >= Rw)) / W) if (own & (dg >= Rw)).any() else np.ones(n)
             w = np.where(own | (sh > 0), np.where(own, w, np.maximum(sh, np.minimum(w, np.where(sh > 0, 1, 0)) * (sh >= s01(dw / 12) - 1e-9) + sh * (sh < s01(dw / 12) - 1e-9))), 0.0)
             S[lab] = comp + (w - sh)[:, None] * Dw
-        w = sh.copy()
-        mv = own | ((sh > 0) & (sh < 1) & (dw <= 12))
-        P = sp.diags(1.0 / np.maximum(np.asarray(adj.sum(1)).ravel(), 1)) @ adj
-        for _ in range(60):
-            w = np.where(mv, P @ w, sh)
-        S["c:diffused"] = comp + (w - sh)[:, None] * Dw
-        dd = {a: depth(V, T, R) - d0 for a, V in S.items()}
-        f = np.where(zone, dd["B"] - dd["A"], -1e9)
-        ids = np.argsort(-f)[:top]
-        cl = zone & (f > 0.5 * f[ids[0]]) & (rows_from(adj, np.isin(np.arange(n), ids[:1])) <= 12)
+        if Zn is Z:
+            w = sh.copy()
+            mv = own | ((sh > 0) & (sh < 1) & (dw <= 12))
+            P = sp.diags(1.0 / np.maximum(np.asarray(adj.sum(1)).ravel(), 1)) @ adj
+            for _ in range(60):
+                w = np.where(mv, P @ w, sh)
+            S["c:diffused"] = comp + (w - sh)[:, None] * Dw
+        dd = {a: depth(V, T, M.R) - M.d0 for a, V in S.items()}
         print(f"\n== {nm} side {sd} elev {el:.0f}: fold = the points of the zone where B's depth over A's is at least half the worst, within 12 rows of it: {int(cl.sum())} points")
         print("  id      part      share rows:list wall | depth-rest mm (k=%d): B   A   pub | carry-pub mm: normal tangent" % k)
         Np = normals(pub, T)[0]
         for i in ids:
             dn = float(Dw[i] @ Np[i]) * 1000
             print(f"  {i:6d} {parts[part[i]]:9s} {sh[i]:5.2f} {dg[i]:4d} {dw[i]:4d} | {dd['B'][i]:6.2f} {dd['A'][i]:6.2f} {dd['pub'][i]:6.2f} | {dn:6.1f} {np.sqrt(max(Dw[i] @ Dw[i] * 1e6 - dn * dn, 0)):6.1f}")
-        ee, _ = dihedral(V0, T)
-        m = cl[ee].all(1)
-        a0 = dihedral(V0, T)[1]
-        ramp = ((sh[E] > 0) & (sh[E] < 1)).any(1) | own[E].any(1)
-        print("  surface          fold depth mean / max mm | valley angle over rest, fold edges mean / max deg | worst edge ratio on ramp + breast rows")
+        ee, a0 = M.ee, M.a0
+        ramp = ((sh[E] > 0) & (sh[E] < 1)).any(1) | own[E].any(1) | ((shn[E] > 0) & (shn[E] < 1)).any(1)
+        reg = (np.maximum(sh, shn)[E] > 0).any(1) | own[E].any(1)
+        print("  surface          fold depth mean / max mm | valley angle over rest, fold edges mean / max deg | worst edge ratio on ramp + breast rows | edges over 2.5x in the region + part")
         for a, V in S.items():
-            da_ = dihedral(V, T)[1] - a0
-            print(f"  {a:16s} {dd[a][cl].mean():6.2f} {dd[a][cl].max():6.2f} | {da_[m].mean() if m.any() else 0:6.1f} {da_[m].max() if m.any() else 0:6.1f} | {edge_ratio(V, V0, E)[ramp].max():5.2f}  moved off B max {np.linalg.norm(V - comp, axis=1).max() * 1000:5.1f} mm")
+            st = stats(M, c, V, ramp)
+            print(f"  {a:16s} {st[0]:6.2f} {st[1]:6.2f} | {st[2]:6.1f} {st[3]:6.1f} | {st[4]:5.2f} | {int((edge_ratio(V, V0, E)[reg] > 2.5).sum()):3d}  moved off B max {np.linalg.norm(V - comp, axis=1).max() * 1000:5.1f} mm")
         up = np.argmax(V0.max(0) - V0.min(0))
-        print("  A's lift over published on the own breast part, by rows from the list (mean mm along the long axis | |carry-pub| mean | share mean):")
-        print("   " + "  ".join(f"r{r}: {Dw[own & (dg == r)][:, up].mean() * 1000:.1f}|{np.linalg.norm(Dw[own & (dg == r)], axis=1).mean() * 1000:.1f}|{sh[own & (dg == r)].mean():.2f}" for r in (1, 2, 4, 6, 8, 10, 14, 20) if (own & (dg == r)).any()))
+        print("  A's lift over published on the own breast part, by rows from the list (mean mm along the long axis | |carry-pub| mean | share mean (new)):")
+        print("   " + "  ".join(f"r{r}: {Dw[own & (dg == r)][:, up].mean() * 1000:.1f}|{np.linalg.norm(Dw[own & (dg == r)], axis=1).mean() * 1000:.1f}|{sh[own & (dg == r)].mean():.2f} ({shn[own & (dg == r)].mean():.2f})" for r in (1, 2, 4, 6, 8, 10, 14, 20, 26) if (own & (dg == r)).any()))
         # the pinch: the sharpest valley edge of B inside the list, the same edge on A carried and published
         dB, dA, dP = (dihedral(S[a], T)[1] for a in ("B", "A", "pub"))
         inl = np.isin(ee, lst).all(1)
         j = np.argsort(-np.where(inl, dB, -1e9))[:3]
         print("  pinch (sharpest valley edges in the list): " + "; ".join(f"edge {tuple(ee[x])} share {sh[ee[x]].min():.2f} B {dB[x]:.0f} A {dA[x]:.0f} pub {dP[x]:.0f} rest {a0[x]:.0f} deg" for x in j))
         print(f"  list valley edges over 60 deg: B {int((dB[inl] > 60).sum())}, A {int((dA[inl] > 60).sum())}, pub {int((dP[inl] > 60).sum())}; over 90: B {int((dB[inl] > 90).sum())}, A {int((dA[inl] > 90).sum())}")
+
+
+def cmd_sweep(argv):
+    """A further gate stage tried on a dump of TODAY (dump ... --today): the stage's real share from
+    carried_target.support_region, blended by the pose's elevation as region_target.Model.blend does, the surface
+    recomposed as comp + (share - today's share) x the unshared delta (the dump's wide carrier off today's region)."""
+    sys.path.insert(0, str(HERE))
+    import carried_target as ct
+    tag = argv[0]
+    opt = dict(zip(argv[1::2], argv[2::2]))
+    k = int(opt.get("--k", 3))
+    Z = np.load(OUTD / f"dump_{tag}.npz")
+    adj = sp.load_npz(OUTD / "adj.npz")
+    M = mesh_of(Z, adj, k)
+    sup, s0, tw, n = json.loads(str(Z["sup"])), str(Z["s0"]), Z["tw"], M.n
+    core = np.isin(np.arange(n), Z[f"list_{s0}"])
+    own0 = M.br & (Z[f"dg_{s0}"] <= Z[f"dg_{'r' if s0 == 'l' else 'l'}"])
+    lo2, hi2 = (float(x) for x in opt.get("--deg", "90,130").split(","))
+    names = [str(x) for x in Z["names"]]
+    ctx = {nm: pose_ctx(Z, M, nm, "l", 12) for nm in names}
+    print("pose (elevation; fold points): depth mean / max mm, valley angle max deg, worst edge on ramp + part, edges over 2.5x in region + part")
+    for nm, c in ctx.items():
+        ramp = ((c.sh[M.E] > 0) & (c.sh[M.E] < 1)).any(1) | c.own[M.E].any(1)
+        reg = (c.sh[M.E] > 0).any(1) | c.own[M.E].any(1)
+        for a in ("B", "A"):
+            st = stats(M, c, c.S[a], ramp)
+            print(f"  {nm:24s} ({c.el:3.0f}; {int(c.cl.sum()):2d}) {a}: {st[0]:5.2f} / {st[1]:5.2f}, {st[3]:5.1f}, {st[4]:4.2f}, {int((edge_ratio(c.S[a], M.V0, M.E)[reg] > 2.5).sum())}")
+    print("\nrows wall smooth ramp | " + " | ".join(f"{nm} g2 {float(s01((c.el - lo2) / (hi2 - lo2))):.2f}" for nm, c in ctx.items()))
+    for N in opt.get("--rows", "14,16,20,all").split(","):
+        for W in opt.get("--wall", "12").split(","):
+            for K in opt.get("--smooth", "0,60").split(","):
+                for rmp in opt.get("--ramp", "1").split(","):
+                    st2 = {"rows": own0 if N == "all" else int(N), "wall_rows": int(W), "smooth": int(K), "ramp": rmp == "1"}
+                    ids, closed, shares, n1 = ct.support_region(adj, Z["sr_moved"], core, Z["sr_stiff"], M.br, sup["rows"], sup["ring"],
+                                                                sup["gate_rows"], sup["wall_rows"], [st2])
+                    A = np.zeros((3, n))
+                    A[:, ids] = closed, *shares
+                    cells = []
+                    for nm, c in ctx.items():
+                        C, O, S2 = A if c.sd == s0 else A[:, tw]
+                        g = float(s01((c.el - sup["gate_deg"][0]) / (sup["gate_deg"][1] - sup["gate_deg"][0])))
+                        b = (1 - g) * C + g * O
+                        err = float(np.abs(b - c.sh).max())                       # stage 1 = the dump's share
+                        g2 = float(s01((c.el - lo2) / (hi2 - lo2))) if c.el > lo2 else 0.0
+                        b = (1 - g2) * b + g2 * S2
+                        V = c.comp + (b - c.sh)[:, None] * c.Dw
+                        ramp = ((c.sh[M.E] > 0) & (c.sh[M.E] < 1)).any(1) | c.own[M.E].any(1) | ((b[M.E] > 0) & (b[M.E] < 1)).any(1)
+                        reg = (np.maximum(b, c.sh)[M.E] > 0).any(1) | c.own[M.E].any(1)
+                        st = stats(M, c, V, ramp)
+                        cells.append(f"{st[0]:5.2f}/{st[1]:5.2f} {st[3]:5.1f} {st[4]:4.2f} {int((edge_ratio(V, M.V0, M.E)[reg] > 2.5).sum()):2d}" + ("" if err < 1e-9 else f" !stage1 {err:.1e}"))
+                    print(f"{N:>4s} {W:>4s} {K:>6s} {rmp:>4s} | " + " | ".join(cells) + f" | +{len(ids) - n1} points", flush=True)
+
+
+def cmd_same(argv):
+    new, old = (np.load(a if Path(a).is_absolute() or Path(a).exists() else HERE / "out" / "shoulder" / a, allow_pickle=False) for a in argv[:2])
+    io = {str(x): i for i, x in enumerate(old["name"])}
+    common, ia, ib = np.intersect1d(new["ids_c"], old["ids_c"], return_indices=True)
+    info = json.loads(str(new["info"]))
+    print(f"composed points: new {len(new['ids_c'])}, old {len(old['ids_c'])}, shared {len(common)}")
+    for i, nm in enumerate(str(x) for x in new["name"]):
+        if nm not in io:
+            print(f"{nm:28s} not in the old file")
+            continue
+        d = np.abs(new["Xc"][i][ia] - old["Xc"][io[nm]][ib]).max(1)
+        dl = np.abs(new["X"][i] - old["X"][io[nm]]).max()
+        print(f"{nm:28s} elev {info[i]['elev']:6.1f}  max |new - old| {d.max() * 1000:.6g} mm (exactly 0: {bool(d.max() == 0)}), points moved {int((d > 0).sum())}; the list's X {dl * 1000:.6g} mm")
 
 
 def cmd_dump(argv):
@@ -149,9 +259,16 @@ def cmd_dump(argv):
     sys.path.insert(0, str(HERE))
     import carried_target as ct
     OUTD.mkdir(parents=True, exist_ok=True)
+    import copy
+    import re
     names = argv[0].split(",")
     t = time.time()
-    h = ct.Her(verbose=False)
+    hc = copy.deepcopy(ct.HER)
+    if "--today" in argv:                               # her config without its further gate stages
+        for rc in hc["regions"].values():
+            for kk in [x for x in rc.get("support", {}) if re.fullmatch(r"gate\d+", x)]:
+                del rc["support"][kk]
+    h = ct.Her(hc, verbose=False)
     md, bd, Ab, cfg = h.md, h.bd, h.Ab, h.cfg
     F = md.first
     print("her", round(time.time() - t, 1), "s; md.n", md.n, "V0", len(bd.V0), "src", len(md.src), flush=True)
@@ -173,6 +290,12 @@ def cmd_dump(argv):
     out["tw"] = md.tw
     sup = cfg["regions"]["girdle_{s}"]["support"]
     gate = md.part == md.parts.index(sup["gated_part"])
+    s0 = min(cfg["sides"])                              # support_region's inputs (Her.grow), for `sweep`
+    MP, MA = h.motion("girdle_{s}", sup)
+    j = bd.p.index[sup["stiff"].replace("{s}", s0)]
+    out["sr_moved"] = (MP > sup["eps_mm"]) | (MA > sup["eps_mm"])
+    out["sr_stiff"] = (bd.W[F] * np.isin(bd.J[F], sorted(set(bd.p.subtree(j)) | {j}))).sum(1) >= sup["rigid"]
+    out["s0"], out["sup"] = np.array(s0), np.array(json.dumps(sup))
     for s in "lr":
         core = np.zeros(md.n, bool)
         core[md.S[s]["ids"]] = True
@@ -221,4 +344,4 @@ def cmd_dump(argv):
 
 
 if __name__ == "__main__":
-    {"measure": cmd_measure}[sys.argv[1]](sys.argv[2:]) if sys.argv[1] != "dump" else cmd_dump(sys.argv[2:])
+    {"measure": cmd_measure, "dump": cmd_dump, "sweep": cmd_sweep, "same": cmd_same}[sys.argv[1]](sys.argv[2:])

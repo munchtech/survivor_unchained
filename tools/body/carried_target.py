@@ -46,6 +46,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import time
 from pathlib import Path
@@ -621,7 +622,7 @@ def derive_region(V0, T, J, W, bones, far=(), rows=4, eps=0.02, rigid=0.999):
     return {"pts": first[ids], "share": s01((d[ids] - 1) / rows), "edges": ed, "core": core[ids], "stiff": stiff[ids]}
 
 
-def support_region(adj, moved, core=None, stiff=None, gated=None, rows=4, ring=3, gate_rows=8, wall_rows=12):
+def support_region(adj, moved, core=None, stiff=None, gated=None, rows=4, ring=3, gate_rows=8, wall_rows=12, stages=()):
     """A region's points and border share from the bone set's MOTION SUPPORT: a true rigid border (any set, any poser).
 
     adj [n, n]: the points' edges. moved [n] bool: the points that the source's own surface OR the carried reference
@@ -631,11 +632,19 @@ def support_region(adj, moved, core=None, stiff=None, gated=None, rows=4, ring=3
     source's own surface on the outer row by construction and the ramp hides less than eps.
     stiff [n] bool: points rigid to a far bone set. Never the region's, nothing grows into them, and the share is 0
     within `ring` rows of them and rises over `rows` rows (an explicit list's own far border, kept as it is).
-    gated [n] bool: a part that moves but is the region's only while a gate is open (two shares come back, the pose
-    blends them). It is a WALL: share 0 on it, rising over `wall_rows` rows away from it (the ramp there hides real
-    disagreement, so it is wide). Closed, the whole part is the wall. Open, the wall stands back by `gate_rows` rows
-    from the core: those rows of the part are blend rows (the last one is the wall's first: share 0).
-    Returns (ids [m] the region's points, closed [m], opened [m]: the share with the gate shut and open).
+    gated [n] bool: a part that moves but is the region's only while a gate is open (one share per gate stage comes
+    back, the pose blends them in order). It is a WALL: share 0 on it, rising over `wall_rows` rows away from it (the
+    ramp there hides real disagreement, so it is wide). Closed, the whole part is the wall. Open (the first stage),
+    the wall stands back by `gate_rows` rows from the core: those rows of the part are blend rows (the last one is the
+    wall's first: share 0).
+    stages: FURTHER gate stages, in order, each {"rows": the rows the wall stands back from the core (or [n] bool: the
+    part's points that open, any shape), "wall_rows": the ramp's rows away from the wall, "smooth": passes, "ramp":
+    bool}. A further stage's share is a SMOOTH FIELD: the row ramp relaxed by `smooth` passes of neighbour averaging
+    on the part's open points (and, "ramp" true, on the wall ramp's rows outside the part), between the wall's 0 and
+    the points the wall does not reach, never over the region's own border ramp (a row ramp alone steps where the
+    rows of a mesh do). Without stages the result is the two shares of one gate, as before.
+    Returns (ids [m] the region's points: the first stage's region ascending, then the points further stages add,
+    ascending; closed [m]; [opened [m], one share [m] per further stage]; the count of the first stage's points).
     """
     n = len(moved)
     core, stiff, gated = (np.zeros(n, bool) if x is None else np.asarray(x, bool) for x in (core, stiff, gated))
@@ -644,11 +653,28 @@ def support_region(adj, moved, core=None, stiff=None, gated=None, rows=4, ring=3
     for _ in range(rows):
         reg |= adj @ reg > 0
     dg = rows_from(adj, core)
-    full = (reg & ~gated & ~stiff) | core | (gated & (dg <= gate_rows))
-    s = np.minimum(s01((rows_from(adj, ~full) - 1) / rows), s01((rows_from(adj, stiff) - ring) / rows))
+    base = (reg & ~gated & ~stiff) | core
+    full = base | (gated & (dg <= gate_rows))
+    ds = s01((rows_from(adj, stiff) - ring) / rows)
+    s = np.minimum(s01((rows_from(adj, ~full) - 1) / rows), ds)
     out = [np.where(full, np.minimum(s, s01(rows_from(adj, wall) / wall_rows)), 0.0) for wall in (gated, gated & (dg >= gate_rows))]
-    ids = np.nonzero(full)[0]
-    return ids, out[0][ids], out[1][ids]
+    every = full.copy()
+    for st in stages:
+        r = st["rows"]
+        opn, wall = (gated & (dg <= r), gated & (dg >= r)) if np.isscalar(r) else (gated & np.asarray(r, bool), gated & ~np.asarray(r, bool))
+        fk = base | opn
+        sk = np.minimum(s01((rows_from(adj, ~fk) - 1) / rows), ds)          # the region's own border ramp, this stage's region
+        dw = rows_from(adj, wall)
+        w0 = np.where(fk, np.minimum(sk, s01(dw / st["wall_rows"])), 0.0)   # the row ramp (the first stage's rule)
+        free = fk & ~wall & (gated | (bool(st.get("ramp", True)) & (dw <= st["wall_rows"])))
+        P = sp.diags(1.0 / np.maximum(np.asarray(adj.sum(1)).ravel(), 1)) @ adj
+        w = w0
+        for _ in range(int(st.get("smooth", 0))):
+            w = np.where(free, np.minimum(sk, P @ w), w0)
+        out.append(w)
+        every |= fk
+    ids = np.r_[np.nonzero(full)[0], np.nonzero(every & ~full)[0]]
+    return ids, out[0][ids], [x[ids] for x in out[1:]], int(full.sum())
 
 
 class Carriers:
@@ -744,7 +770,10 @@ HER = {
                        # the rigid border (support_region; body_facts/border.md): the motion support over the stored poses
                        # (eps_mm, cached), grown `rows`; stiff = rigid to this bone's subtree; gated = this part of the
                        # topology, opened by the arm's elevation over gate_deg (region_target.Model.blend)
+                       # gate2 (gate3 ...): a further gate stage, opened over its own `deg` on top of the stage before
+                       # (rows: an integer, or "all" = the part's whole side; body_facts/chest_fold.md section 5)
                        "support": {"eps_mm": 1.0, "rows": 4, "ring": 3, "gate_rows": 8, "wall_rows": 12, "gate_deg": [45.0, 75.0],
+                                   "gate2": {"deg": [90.0, 130.0], "rows": 16, "wall_rows": 12, "smooth": 60},
                                    "stiff": "upperarm_{s}", "rigid": 0.999, "gated_part": "breast", "cache": "support.npz"}},
         "neck": {"provider": "derived", "bones": ["neck_01", "neck_02", "Head"], "ref": {"neck_01": "neck_02", "Head": "Head"},
                  "root": "neck_01", "far": ["Head"], "rows": 4, "eps": 0.02, "rigid": 0.999},
@@ -898,26 +927,31 @@ class Her:
         core[md.S[s0]["ids"]] = True
         j = bd.p.index[sup["stiff"].replace("{s}", s0)]
         stiff = (bd.W[F] * np.isin(bd.J[F], sorted(set(bd.p.subtree(j)) | {j}))).sum(1) >= sup["rigid"]
-        ids, closed, opened = support_region(md.adj, (MP > sup["eps_mm"]) | (MA > sup["eps_mm"]), core, stiff,
-                                             md.part == md.parts.index(sup["gated_part"]), sup["rows"], sup["ring"],
-                                             sup["gate_rows"], sup["wall_rows"])
-        C, O = np.zeros(md.n), np.zeros(md.n)
-        C[ids], O[ids] = closed, opened
         gate = md.part == md.parts.index(sup["gated_part"])
         dg = rows_from(md.adj, core)
-        own0 = np.nonzero(gate & (dg <= dg[md.tw]))[0]       # the gated part on this side: nearer its list than the twin's
-        new0 = ids[~core[ids]]
-        o0 = np.r_[md.S[s0]["ids"], new0]
+        own = gate & (dg <= dg[md.tw])                       # the gated part on this side: nearer its list than the twin's
+        own0 = np.nonzero(own)[0]
+        more = [sup[k] for k in sorted((k for k in sup if re.fullmatch(r"gate\d+", k)), key=lambda k: int(k[4:]))]
+        ids, closed, shares, n1 = support_region(md.adj, (MP > sup["eps_mm"]) | (MA > sup["eps_mm"]), core, stiff, gate, sup["rows"],
+                                                 sup["ring"], sup["gate_rows"], sup["wall_rows"],
+                                                 [{**g, "rows": own if isinstance(g["rows"], str) else g["rows"]} for g in more])
+        C, SH = np.zeros(md.n), np.zeros((len(shares), md.n))
+        C[ids], SH[:, ids] = closed, shares
+        new0 = ids[:n1][~core[ids[:n1]]]                     # the first stage's rows, then the rows the further stages add
+        add0 = ids[n1:]                                      #   (their own carrier block: the first blocks stay as they were)
+        o0 = np.r_[md.S[s0]["ids"], new0, add0]
         md.grown = getattr(md, "grown", {})
         for s in cfg["sides"]:
             rg = self.regions[key.replace("{s}", s)]
-            new = new0 if s == s0 else md.tw[new0]
+            news = [x if s == s0 else md.tw[x] for x in (new0, add0) if len(x)]
+            new = np.concatenate(news) if news else new0
             allid = np.r_[md.S[s]["ids"], new]
             assert s == s0 or (md.tw[md.S[s0]["ids"]] == md.S[s]["ids"]).all(), "the sides' lists are not twins"
-            md.grown[s] = {"new": new, "closed": C[o0], "opened": O[o0], "gate": tuple(sup["gate_deg"])}
+            md.grown[s] = {"new": new, "closed": C[o0], "opened": SH[0][o0], "gate": tuple(sup["gate_deg"]),
+                           "stages": [(*g["deg"], SH[1 + k][o0]) for k, g in enumerate(more)]}
             A = sp.triu(md.adj[allid][:, allid], 1).tocoo()
-            plain = Carrier(Ab.V0, Ab.T, bd.V0[F[new]], self.N0[F[new]], rad=cfg["rad"], k=cfg["k"], nw=cfg["nw"], pocket_rows=0)
-            rg.pts, rg.edges, rg.carrier, rg.nlist = F[allid], (A.row, A.col), Carriers([self.car[s], plain]), len(md.S[s]["ids"])
+            plain = [Carrier(Ab.V0, Ab.T, bd.V0[F[x]], self.N0[F[x]], rad=cfg["rad"], k=cfg["k"], nw=cfg["nw"], pocket_rows=0) for x in news]
+            rg.pts, rg.edges, rg.carrier, rg.nlist = F[allid], (A.row, A.col), Carriers([self.car[s], *plain]), len(md.S[s]["ids"])
             rg.share = lambda G, s=s: md.blend(G, s, grown=True)
             rg.gated = gate[allid]
             rg.gate_own = F[own0 if s == s0 else md.tw[own0]]       # source vertices: what the side's gate rules (shut)

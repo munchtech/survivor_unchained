@@ -226,16 +226,24 @@ class Model:
     def blend(self, G, side, grown=False):
         """The share of the target against the published surface per region point for the pose G of `side`, [points].
         self.grown[side] = {new (point ids past the list), closed, opened ([list + new] shares, the gate shut / open),
-        gate (lo, hi deg)} is set by carried_target's support region: the share = (1 - g) closed + g opened, g by the
-        arm's elevation (the breast part's upper and lateral rows open with a high arm). grown=False: the list's
-        points only (len(S[side]["ids"])); True: the list, then the new points."""
+        gate (lo, hi deg), stages [(lo, hi deg, share [list + new])]} is set by carried_target's support region: the
+        share = (1 - g) closed + g opened, g by the arm's elevation (the breast part's upper and lateral rows open with
+        a high arm); then each further gate stage in order, share = (1 - g_k) share + g_k its own, g_k by the elevation
+        over the stage's own range (at or under its lo the share is the stages' before it, bit for bit).
+        grown=False: the list's points only (len(S[side]["ids"])); True: the list, then the new points."""
         gr = getattr(self, "grown", {}).get(side)
         if gr is None:                                              # no support region set: the list's rest-built beta
             return self.beta
         lo, hi = gr["gate"]
-        g = np.clip((self.elevation(G, side) - lo) / (hi - lo), 0.0, 1.0)
+        el = self.elevation(G, side)
+        g = np.clip((el - lo) / (hi - lo), 0.0, 1.0)
         g = g * g * (3 - 2 * g)
         b = (1 - g) * gr["closed"] + g * gr["opened"]
+        for lo, hi, share in gr.get("stages", ()):
+            if el > lo:
+                g = np.clip((el - lo) / (hi - lo), 0.0, 1.0)
+                g = g * g * (3 - 2 * g)
+                b = (1 - g) * b + g * share
         return b if grown else b[:len(self.S[side]["ids"])]
 
     def elevation(self, G, side):
