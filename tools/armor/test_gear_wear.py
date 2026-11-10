@@ -208,3 +208,110 @@ def test_frame_views_worst_single_frame():
     m = gw.merge([{"pairs": [a]}, {"pairs": [b]}])[0]
     assert m["frames"] == fv and sorted(m["_samples"]["clips"]) == ["Jog_Fwd", "idle_warden", "run_warden_town", "sword_fore"]
 
+
+
+# ---- the sweep's domain (P2 lead 7): cloth is read for the skin under it, a plate for every point near it ----
+def _press_scene(plate):
+    """Her torso (the two-bone cylinder), an arm (a tube on bone 2) and the piece: the skinned sleeve (the arm 2 cm thick,
+    44 mm beside it at rest), or a rigid plate (two open 5 mm grids 2 mm apart on bone 0, y 0.05..0.25, z -0.03..0.03,
+    facing +x; the arm 1 cm thick, 50 mm off its z border at rest, its near side 2 mm above the plate's plane)."""
+    Ps, Ts = tube(R)
+    Pa, Ta = tube(0.01 if plate else 0.02, n=24)
+    Pa += [0.068, 0, 0.09] if plate else [0.12, 0, 0]
+    if plate:
+        y, z = np.arange(0.05, 0.2501, 0.005), np.arange(-0.03, 0.0301, 0.005)
+        G = np.array([[0.0, a, b] for a in y for b in z])
+        nz = len(z)
+        Tg = np.array([t for i in range(len(y) - 1) for k in range(nz - 1) for p in [i * nz + k]
+                       for t in ([p, p + nz, p + 1], [p + 1, p + nz, p + nz + 1])])
+        Pp = np.vstack([G + [RI, 0, 0], G + [RO, 0, 0]])
+        Tp = np.vstack([Tg[:, ::-1], Tg + len(G)])
+    else:
+        Pi, Ti = tube(RI, inward=True)
+        Po, To = tube(RO)
+        Pp, Tp = np.vstack([Pi, Po]), np.vstack([Ti, To + len(Pi)])
+    P = np.vstack([Ps, Pa, Pp])
+    T = np.vstack([Ts, Ta + len(Ps), Tp + len(Ps) + len(Pa)])
+    ns = len(Ps) + len(Pa)
+    kind = np.r_[np.full(ns, "skin"), np.full(len(Pp), "piece")]
+    owner = np.r_[np.full(ns, ""), np.full(len(Pp), "piece")]
+    J, W = weights(P)
+    arm = np.arange(len(Ps), ns)
+    J[arm], W[arm] = 0, 0.0
+    J[arm, 0], W[arm, 0] = 2, 1.0
+    if plate:
+        J[ns:], W[ns:] = 0, 0.0
+        W[ns:, 0] = 1.0
+    sc = gw.Scene(P, T, kind, owner, J, W, {})
+    sc.keys = gw.keys_of(P[:ns])
+    rows = [{"id": "piece", "slot": "top", "layer": 1, "covers": ["top"], "source": "piece", "tuck_path": "", "cover_path": ""}]
+    ck = gw.Check(sc, rows, ["top"], grid=0.0025, confirm=True)
+    ck.add_skin(["piece"])
+    return sc, ck, arm
+
+
+def _press(ck, slide=False):
+    """The arm pressed 60 mm into the sleeve, or slid 90 mm over the plate from beside it: its far side stands 24 / 22 mm
+    in front of the piece's outer face, normals running with it."""
+    def frames():
+        S = np.stack([np.eye(4)] * 3)
+        S[2, 2 if slide else 0, 3] = -0.09 if slide else -0.06
+        yield 0, S, {}
+    ck.run([("press", frames)], log=lambda *_: None)
+    return ck.report(["press"], lambda pt: str(pt))[0][0]
+
+
+def test_bare_arm_beside_cloth_reads_zero():
+    sc, ck, arm = _press_scene(plate=False)
+    x = ck.tests[0]
+    assert x["swSkin"].all() and len(x["pts"]) > x["nfp"]         # cloth; the arm's points are in the sweep's set
+    assert not x["cover"][x["nfp"]:].any() and x["cover"][:x["nfp"]].all()
+    assert _press(ck)["out2_mm2"] == 0.0                          # an arm on the garment is not skin through it
+    sc, ck, arm = _press_scene(plate=False)
+    ck.tests[0]["cover"][:] = True                                # (the premise: read against cloth, the arm counts)
+    assert _press(ck)["out2_mm2"] > 100.0
+
+
+def test_skin_through_cloth_in_its_cover_counts():
+    sc, poke = scene()
+    rows = [{"id": "sleeve", "slot": "top", "layer": 1, "covers": ["top"], "source": "sleeve", "tuck_path": "", "cover_path": ""}]
+    ck = gw.Check(sc, rows, ["top"], grid=0.0025, confirm=True)
+    ck.add_skin(["sleeve"])
+    x = ck.tests[0]
+    row = int(np.nonzero(x["pts"] == poke)[0][0])
+    assert row < x["nfp"] and x["cover"][row] and x["swSkin"].all()
+    sw = ck._sweep(x, sc.P0[x["pts"]], ck.N0[x["pts"]], sc.P0, np.arange(len(sc.P0)))    # (the sweep alone, at rest)
+    assert abs(-sw[row] - (POKE_R - RO)) < 0.0005 and np.isfinite(sw).sum() == 1
+    ck.run([("bend", frames)], log=lambda *_: None)
+    e = ck.report(["bend"], lambda pt: str(pt))[0][0]
+    assert e["split"]["out2"]["under_mm2"] == e["out2_mm2"] > 0 and e["split"]["out2"]["beside_mm2"] == 0.0
+    assert e["per_clip"]["bend"]["under_mm2"] == e["per_clip"]["bend"]["out2_mm2"]
+
+
+def test_skin_over_a_rigid_plate_from_beside_counts():
+    sc, ck, arm = _press_scene(plate=True)
+    x = ck.tests[0]
+    assert not x["swSkin"].any() and x["swBE"].any()              # one bone blend: a plate; two open sheets
+    e = _press(ck, slide=True)
+    s = e["split"]["out2"]
+    assert s["beside_mm2"] > 100.0 and s["under_mm2"] == 0.0 and e["out2_mm2"] == s["beside_mm2"]
+    assert set(np.nonzero(x["min_out"] < -0.002)[0]) <= set(np.nonzero(np.isin(x["pts"], arm))[0])   # the arm's skin
+    fv = e["frames"]["play_ex"]["2"]
+    assert fv["beside_mm2"] == fv["mm2"] > 100.0 and fv["under_mm2"] == 0.0
+    m = gw.merge([{"pairs": [e]}, {"pairs": [dict(e, per_clip={})]}])[0]          # (the split survives the merge)
+    assert abs(m["split"]["out2"]["beside_mm2"] - s["beside_mm2"]) < 1.0 and m["split"]["out2"]["under_mm2"] == 0.0
+    assert m["frames"]["play_ex"]["2"] == fv
+
+
+def test_point_off_an_open_sheets_border_is_not_counted():
+    sc, ck, arm = _press_scene(plate=True)
+    x = ck.tests[0]
+    # 21 mm in front of the outer sheet: one point 12 mm off its z border, its normal tilted back over the sheet (the
+    # back cast lands on it), one over its middle
+    O = np.array([[0.0773, 0.15, 0.042], [0.0773, 0.15, 0.0]])
+    D = np.array([[0.866, 0.0, 0.5], [1.0, 0.0, 0.0]])
+    at = np.arange(len(sc.P0))
+    sw = ck._sweep(x, O, D, sc.P0, at)
+    assert not np.isfinite(sw[0]) and abs(-sw[1] - 0.0213) < 0.0005
+    x["swBE"][:], x["swBV"][:] = False, False                     # (the premise: without the border rule it counts)
+    assert np.isfinite(ck._sweep(x, O, D, sc.P0, at)[0])
