@@ -98,6 +98,10 @@ public static class ArenaPlaces
         (night, air) = mood switch
         {
             // Less moon, more dark: the light the survivor carries is most of what there is.
+            // (L1 lead 11, R2: under a cel night rig the levels are the rig's, absolute (rigs.json arena_night: key.intensity,
+            // hemi, env, exposure), so this cut of the moon, sky and exposure lights nothing there: it took the Deep Shaw's
+            // ground 0.05 L under every other place's. A mood keeps its air and cover (the mist here); the cut stays for
+            // --cel off, the night before the rigs. RigsTests.NoPlaceAndNoMoodScalesTheArenaNightsLevels holds it.)
             "moonless" => (night with { KeyIntensity = night.KeyIntensity * 0.55, HemiIntensity = night.HemiIntensity * 0.7, Exposure = night.Exposure * 0.94 },
                 air with { MistDensity = air.MistDensity * 1.4 }),
             // Mist lying thick in the low ground.

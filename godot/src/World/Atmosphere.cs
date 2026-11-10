@@ -222,6 +222,8 @@ public partial class Atmosphere : Node3D
 
     const float FogMatchDistance = 60;
     static readonly bool OldAir = SurvivorUnchained.Args.Has("air-old");
+    static readonly bool LightLog = SurvivorUnchained.Args.Has("light-log");
+    string lightLogged = "";
     // (Colours as sRGB hex, written with '_' for '#'; three numbers as r/g/b.)
     static readonly Dictionary<string, string>? Tune = SurvivorUnchained.Args.Get("air-tune") is string tu
         ? tu.Split(',').Select(kv => kv.Split('=')).ToDictionary(kv => kv[0], kv => kv[1].Replace('_', '#')) : null;
@@ -393,6 +395,17 @@ public partial class Atmosphere : Node3D
             if (a.Dapple > 0) Key.LightAngularDistance = 1.2f;
         }
         Env.TonemapExposure = (float)p.Exposure * ExposureScale * ViewExposure * FlareDip;
+        // (L1 lead 11, R2) --light-log: what the renderer got, one line each time it changes (a shoot's log shows the levels).
+        if (LightLog)
+        {
+            var ci = System.Globalization.CultureInfo.InvariantCulture;
+            string line = string.Create(ci, $"LIGHT rig={(p.Rig != "" ? p.Rig : "-")} cel={(CelRigs ? 1 : 0)} place={(airPlace != "" ? airPlace : "-")} mood={(airMood != "" ? airMood : "-")} "
+                + $"key={p.KeyColor} {p.KeyIntensity:0.###} (energy {Key.LightEnergy:0.###}) el={p.KeyElevation:0.#} az={p.KeyAzimuth:0.#} shadow={p.ShadowStrength:0.###} "
+                + $"fill={p.CelFillColor} {p.CelFill:0.####} hemi={p.HemiSky}/{p.HemiGround} {p.HemiIntensity:0.###} env={p.EnvIntensity:0.###} "
+                + $"exposure={p.Exposure:0.###} (tonemap {Env.TonemapExposure:0.###}) hardness={p.CelShadow:0.##} "
+                + $"dapple=cover {p.DappleCover:0.##} strength {p.DappleStrength:0.###} size {p.DappleSize:0.#} floor {p.DappleFloor:0.##}");
+            if (line != lightLogged) { lightLogged = line; GD.Print(line); }
+        }
         SurvivorUnchained.View.MistLayers.Tint(C(p.MistColor), (float)p.Mist, C(p.KeyColor).SrgbToLinear() * ((float)p.KeyIntensity / Mathf.Pi));
         EmberGain = (float)p.Ember;
         EmberColor = p.EmberColor != "" ? new Color(p.EmberColor) : null; EmberReach = (float)p.EmberReach;
@@ -656,11 +669,12 @@ public partial class Atmosphere : Node3D
     }
 
     SurvivorUnchained.Maps.ArenaAir? air;
+    string airPlace = "", airMood = "";
 
     /// <summary>A place's own air (an ember arena's), or none; applied with the next Set.</summary>
-    public void Air(SurvivorUnchained.Maps.ArenaAir? a)
+    public void Air(SurvivorUnchained.Maps.ArenaAir? a, string place = "", string mood = "")
     {
-        air = a;
+        air = a; airPlace = place; airMood = mood;
         Set(Current);
     }
 

@@ -41,8 +41,45 @@ public class RigsTests
         var place = Atmospheres.Night with { KeyAzimuth = 200, KeyIntensity = 4.7, Rig = "arena_night" };
         var lit = Rigs.Lit(place, s);
         Assert.Equal(200, lit.KeyAzimuth);
-        Assert.Equal(4.7 * (s["arena_night"]!.Key.Scale ?? 1), lit.KeyIntensity, 9);   // (S2b-N2: the place's own moon at the rig's level)
+        Assert.Equal(s["arena_night"]!.Key.Intensity!.Value * (s["arena_night"]!.Key.Scale ?? 1), lit.KeyIntensity, 9);   // (L1 lead 11, R2: the rig's level, absolute; the place's moon keeps its way)
         Assert.Equal(s["night_play"]!.Rim.Strength, lit.CelRim);
+    }
+
+    /// <summary>(L1 lead 11, R2) Levels are the rig's, absolute: under the arena's night rig no place and no mood scales the
+    /// moon's key, the sky's light, the environment's or the exposure (the 'moonless' mood cut the Deep Shaw's key x0.55 and
+    /// its sky x0.7); a place keeps its moon's way (azimuth, elevation) and a mood its air.</summary>
+    [Fact]
+    public void NoPlaceAndNoMoodScalesTheArenaNightsLevels()
+    {
+        var s = Real();
+        var rig = s["arena_night"]!;
+        Assert.NotNull(rig.Key.Intensity); Assert.NotNull(rig.Fill.Hemi); Assert.NotNull(rig.Fill.Env); Assert.NotNull(rig.Exposure);
+        Assert.Null(rig.Fill.SkyScale);   // (a level on the place's own sky light: retired)
+        Assert.Equal(1, rig.Key.Scale ?? 1);
+        var moods = SurvivorUnchained.Maps.ArenaPlaces.Moods.Select(m => m.Mood).Append("").Append("blight").Append("a mood not written yet").Distinct().ToList();
+        Assert.Contains("moonless", moods);
+        var ways = new System.Collections.Generic.HashSet<(double, double)>();
+        foreach (var people in new[] { "dead", "pack", "kerchiefs", "lamplings" })
+            foreach (var mood in moods)
+            {
+                var place = SurvivorUnchained.Maps.ArenaPlaces.For(new SurvivorUnchained.Maps.MapSpec { Arena = true, People = people, Mood = mood, Theme = mood == "blight" ? "blight" : "" });
+                Assert.Equal("arena_night", place.Night.Rig);
+                var lit = Rigs.Lit(place.Night, s);
+                Assert.Equal(rig.Key.Intensity!.Value, lit.KeyIntensity, 12);
+                Assert.Equal(rig.Fill.Hemi!.Value, lit.HemiIntensity, 12);
+                Assert.Equal(rig.Fill.Env!.Value, lit.EnvIntensity, 12);
+                Assert.Equal(rig.Exposure!.Value, lit.Exposure, 12);
+                Assert.Equal(rig.Key.Shadow!.Value, lit.ShadowStrength, 12);
+                Assert.Equal(rig.Key.Color, lit.KeyColor);
+                // the place keeps its moon's way
+                Assert.Equal(place.Night.KeyAzimuth, lit.KeyAzimuth); Assert.Equal(place.Night.KeyElevation, lit.KeyElevation);
+                ways.Add((lit.KeyAzimuth, lit.KeyElevation));
+            }
+        Assert.Equal(4, ways.Count);
+        // a mood keeps its air: the moonless night's mist is thicker than the still one's
+        var still = SurvivorUnchained.Maps.ArenaPlaces.For(new SurvivorUnchained.Maps.MapSpec { Arena = true, People = "pack", Mood = "still" });
+        var dark = SurvivorUnchained.Maps.ArenaPlaces.For(new SurvivorUnchained.Maps.MapSpec { Arena = true, People = "pack", Mood = "moonless" });
+        Assert.True(dark.Air.MistDensity > still.Air.MistDensity);
     }
 
     [Fact]

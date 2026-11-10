@@ -806,7 +806,7 @@ public partial class Game : Node, IZoneHost
         StopBlend();
         var time = zone.TimeOf(World);
         air.Set(zone.AtmosphereFor(time));
-        air.Air(scene!.Data.Place?.Air);
+        air.Air(scene!.Data.Place?.Air, scene!.Data.Place?.Id ?? "", scene!.Data.Place?.Mood ?? "");
         scene.View.SetNight(time == TimeOfDay.Night);
         scene.Fx.Flare.Night = time == TimeOfDay.Night;
         scene.View.SetDusk(time == TimeOfDay.Dusk);
