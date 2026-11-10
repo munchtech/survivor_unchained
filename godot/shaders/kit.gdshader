@@ -1233,14 +1233,25 @@ void fragment() {
 		if (stand) {
 			vec3 st_nv = normalize((VIEW_MATRIX * vec4(wn, 0.0)).xyz);
 #ifdef KIT_STAND_LEAF
-			// (a leaf has one baked normal, the same on both faces (v_wnrm is the vertex's, never flipped toward the viewer),
-			// so it gives no n.v silhouette: the rim is the tip band of a TOP leaf (COLOR.r >= 0.9, COLOR.g toward 1) whose
-			// normal leans to the moon's side of the screen; cel_stand_fire.z px wide by the tip coordinate's derivative)
-			vec3 st_kv = (VIEW_MATRIX * vec4(cel_key.xyz, 0.0)).xyz;
-			float st_tip = (1.0 - COLOR.g) / max(fwidth(COLOR.g), 1e-4);
-			float st_rim = step(0.9, COLOR.r) * (1.0 - smoothstep(cel_stand_fire.z - 0.5, cel_stand_fire.z + 0.5, st_tip))
-				* smoothstep(0.05, 0.25, dot(st_nv.xy, normalize(st_kv.xy + vec2(1e-5))));
+			// (L1 lead 16, S2) Two routes through the ONE leaf row. The MASS (COLOR.b > 0.5: the bush's lumpy body, smooth
+			// normals): stone's true moon-side edge, on front faces only (a back face has n.v 0, all edge). A RIM LEAF
+			// (COLOR.b < 0.5: one baked normal, the same on both faces, no n.v silhouette): the tip band of a TOP leaf
+			// (COLOR.r >= 0.9, COLOR.g toward 1) whose normal leans to the moon's side of the screen, 1.5 px at 0.6 (a full
+			// rim on every tip read as stars). Under her fire the leaf's moon tones give way by 0.8 x the fire's strength
+			// (the add over the mid tone, x 3), so the fire tones land olive ON the leaf, not on a blue body.
+			float st_rim;
+			if (COLOR.b > 0.5) {
+				st_rim = FRONT_FACING ? cel_stand_edge(st_nv, VIEW, VIEW_MATRIX) : 0.0;
+			} else {
+				vec3 st_kv = (VIEW_MATRIX * vec4(cel_key.xyz, 0.0)).xyz;
+				float st_tip = (1.0 - COLOR.g) / max(fwidth(COLOR.g), 1e-4);
+				st_rim = 0.6 * step(0.9, COLOR.r) * (1.0 - smoothstep(1.0, 2.0, st_tip))
+					* smoothstep(0.05, 0.25, dot(st_nv.xy, normalize(st_kv.xy + vec2(1e-5))));
+			}
 			EMISSION = cel_stand_base(wp, v_org, wn, v_foot, cel_lum(col), st_rim, st_m, st_f);
+			float st_gv = 1.0 - 0.8 * clamp(3.0 * cel_lum(st_f) / max(cel_lum(cel_stand_tone(5).rgb), 1e-5), 0.0, 1.0);
+			EMISSION *= st_gv;
+			st_m *= st_gv;
 #else
 			EMISSION = cel_stand_base(wp, v_org, wn, v_foot, cel_lum(col), cel_stand_edge(st_nv, VIEW, VIEW_MATRIX), st_m, st_f);
 #endif
