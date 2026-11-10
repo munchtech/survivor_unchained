@@ -849,6 +849,9 @@ public sealed partial class Battle
     /// <summary>(M3 MR 3) The weight of the hit whose statuses are being applied (a chained cut's share of its blow); 1 at
     /// every other moment.</summary>
     double statusW = 1;
+    /// <summary>(M3 MR 3) Inside ApplyStatus, past its roll: the share of a blow the status being applied stands for
+    /// (1 unchained; a chained cut's refreshed kinds build by it). For the hooks after the switch.</summary>
+    double statusBuild = 1;
 
     /// <summary>Everything the survivor's side does to a creature passes through here.</summary>
     public double HitEnemy(Enemy e, double baseDamage, School school, Tag[] tags, HitOpts o = default)
@@ -1028,10 +1031,12 @@ public sealed partial class Battle
         // (M3 MR 3) Sized on the blow (damage over time is kept by its worst rate and refreshed); statusW tells
         // ApplyStatus the hit was a cut of that weight.
         statusWeapon = o.Weapon;
+        // (saved and put back, not set to 1: a hit nested in a status's own procs must not unweight the rest of ours)
+        double wasW = statusW;
         statusW = cw;
         if (o.Status != null) ApplyStatus(e, o.Status, blowDmg, o.Depth, by);
         if (o.Weapon?.Wick is { Statuses.Count: > 0 } wst) WickStatuses(e, wst, blowDmg, o.Depth, by);
-        statusW = 1;
+        statusW = wasW;
         statusWeapon = null;
 
         int depth = o.Depth;
@@ -1190,7 +1195,23 @@ public sealed partial class Battle
     {
         if (!e.Alive || e.State == EnemyState.Dying) return;
         double chance = p.Chance * (1 + Stats.Get(Stat.StatusChance));
-        if (Rng.Next() >= chance) return;
+        // (M3 MR 3) riding a chained cut (statusW < 1) a status keeps its per-SECOND rates. Hard control is counted: its
+        // chance is the cut's share of the blow's (as many stuns a minute; what lands is whole). Every other kind is kept by
+        // refresh, so the cuts of one blow's worth compound to the blow's chance (a chance of 1 stays 1: it never gaps), and
+        // what a landed one BUILDS (stacks, chill) is the share of a blow it stands for, so the build per second holds.
+        bool hard = p.Kind is StatusKind.Stun or StatusKind.Fear or StatusKind.Charm;
+        double roll = statusW == 1 ? chance : hard ? chance * statusW : Sim.Blows.Chance(chance, statusW);
+        if (Rng.Next() >= roll) return;
+        double build = statusW == 1 || hard ? 1 : statusW * Math.Min(1, chance) / Math.Min(1, roll);
+        double wasBuild = statusBuild;
+        statusBuild = build;
+        try { ApplyRolled(e, p, hitDamage, depth, from, build); }
+        finally { statusBuild = wasBuild; }
+    }
+
+    /// <summary>ApplyStatus past its roll. build: the share of a blow this application stands for (1 unchained).</summary>
+    void ApplyRolled(Enemy e, StatusPayload p, double hitDamage, int depth, string? from, double build)
+    {
         var s = e.Status;
         double sd = Stats.Get(Stat.StatusDamage) * Stats.Get(Stat.StatusDamageOf(p.Kind));
         double dps = hitDamage * p.Power / Math.Max(0.5, p.Duration) * sd;
@@ -1205,7 +1226,9 @@ public sealed partial class Battle
             case StatusKind.Burn:
             {
                 var cur = s.Ensure(StatusKind.Burn, 0, 0, 0, 0.5);
-                cur.Stacks = Math.Min(5, cur.Stacks + 1);
+                // (a cut's is the share of a blow it stands for; the first on a foe free of it is a whole one. A slot
+                // out of time is taken away by TickStatus, so a made one reads stacks 0, time 0.)
+                cur.Stacks = Math.Min(5, cur.Stacks + (cur.Stacks <= 0 || cur.T <= 0 ? 1 : build));
                 if (dps >= cur.Power) cur.From = from;
                 cur.Power = Math.Max(cur.Power, dps);
                 cur.T = Math.Max(cur.T, dur);
@@ -1215,7 +1238,8 @@ public sealed partial class Battle
             {
                 var cur = s.Ensure(StatusKind.Bleed, 0, 1, 0, 0.5);
                 // A wound that deepens with each cut (A Thousand Cuts) rather than the worst kept.
-                if (p.Stack) cur.Stacks = Math.Min(5, cur.Stacks + (cur.T > 0 ? 1 : 0));
+                // (a fresh bleed is made at 1 stack, time 0; a cut deepens a live one by the share of a blow it stands for)
+                if (p.Stack) cur.Stacks = Math.Min(5, cur.Stacks + (cur.T > 0 ? build : 0));
                 if (dps >= cur.Power) cur.From = from;
                 cur.Power = Math.Max(cur.Power, dps);
                 cur.T = Math.Max(cur.T, dur);
@@ -1224,7 +1248,7 @@ public sealed partial class Battle
             case StatusKind.Poison:
             {
                 var cur = s.Ensure(StatusKind.Poison, 0, 0, 0, 0.5);
-                cur.Stacks = Math.Min(StalkerPoisonCap, cur.Stacks + 1);
+                cur.Stacks = Math.Min(StalkerPoisonCap, cur.Stacks + (cur.Stacks <= 0 || cur.T <= 0 ? 1 : build));
                 if (dps >= cur.Power) cur.From = from;
                 cur.Power = Math.Max(cur.Power, dps);
                 cur.T = Math.Max(cur.T, dur);
@@ -1235,10 +1259,12 @@ public sealed partial class Battle
                 // The frozen stay frozen only as long as the freeze: more cold does not lock them for good.
                 if (s.Has(StatusKind.Frozen)) break;
                 var cur = s.Ensure(StatusKind.Chill, 0, 0, 0, 0);
-                cur.Stacks += p.Power * (Boons.ContainsKey("deep_chill") ? 2 : 1) * Stats.Get(Stat.StatusPowerOf(StatusKind.Chill)) * ArcanistChillMul(e);
+                // (a cut's cold is the share of a blow it stands for; the first on a foe with none is a whole one)
+                double cold = cur.Stacks <= 0 ? 1 : build;
+                cur.Stacks += p.Power * (Boons.ContainsKey("deep_chill") ? 2 : 1) * Stats.Get(Stat.StatusPowerOf(StatusKind.Chill)) * ArcanistChillMul(e) * cold;
                 // blue.drowned_lung: frost skills freeze in half the time.
                 if (Lamps.Board && Lamp("blue.drowned_lung") && statusWeapon != null && (statusWeapon.Tags.Has(Tag.Frost) || statusWeapon.School == School.Frost))
-                    cur.Stacks += p.Power * (1 / Math.Max(0.1, Lamps.Full("blue.drowned_lung", "faster", 0.5)) - 1) * GiftSize * Stats.Get(Stat.StatusPowerOf(StatusKind.Chill)) * ArcanistChillMul(e);
+                    cur.Stacks += p.Power * (1 / Math.Max(0.1, Lamps.Full("blue.drowned_lung", "faster", 0.5)) - 1) * GiftSize * Stats.Get(Stat.StatusPowerOf(StatusKind.Chill)) * ArcanistChillMul(e) * cold;
                 cur.T = Math.Max(cur.T, dur);
                 if (cur.Stacks >= 5 && e.Boss) { cur.Stacks = 2; AddStagger(e, 0.12); }
                 if (cur.Stacks >= 5 && !e.Boss && e.ThawT <= 0)
@@ -1266,6 +1292,7 @@ public sealed partial class Battle
             case StatusKind.Fear:
             case StatusKind.Charm:
                 // A boss is not locked: what would lock it fills its stagger bar instead.
+                // (no cut weight on the stagger: the roll carried it, and weighting both would count it twice)
                 if (e.Boss) { AddStagger(e, p.Kind == StatusKind.Stun ? 0.06 + 0.12 * dur : 0.08); return; }
                 s[p.Kind] = new StatusSlot(Math.Max(s[p.Kind]?.T ?? 0, dur), 1, p.Power, 0);
                 break;
