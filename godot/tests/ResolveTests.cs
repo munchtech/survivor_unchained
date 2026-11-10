@@ -277,10 +277,11 @@ public sealed class ResolveTests
         Assert.Empty(Run(b, 3, () => Pin(b, es, at)).OfType<Ev.Slash>());
     }
 
-    /// <summary>The view mirrors a cut's arc from the sim's side, never a toggle of its own: -1, +1, -1 ... from the
-    /// weapon's count of cuts, the same on every run; and a cut that lands names the nearest body it struck.</summary>
+    /// <summary>The view mirrors a cut's arc from the sim's side, never a toggle of its own (Ev.Slash.Side). A blow that
+    /// lands on its clip's contact takes the CLIP's side: Sunder held as the grip plays sword_heavy, so every cut is
+    /// that clip's side, the same on every run; a cut that kills none says so, and names the in-line body it struck.</summary>
     [Fact]
-    public void A_held_cut_alternates_its_side_from_the_weapons_count()
+    public void A_held_cut_takes_its_clips_side()
     {
         List<Ev.Slash> Cuts()
         {
@@ -295,10 +296,76 @@ public sealed class ResolveTests
         }
         var a = Cuts();
         Assert.True(a.Count >= 3, $"{a.Count} cuts held");
-        for (int i = 0; i < a.Count; i++) Assert.Equal(i % 2 == 0 ? -1 : 1, a[i].Side);
+        Assert.Equal(-1, HerEvents.Side("sword_heavy"));
+        Assert.All(a, s => Assert.Equal(HerEvents.Side("sword_heavy"), s.Side));
         Assert.Equal(a.Select(s => s.Side), Cuts().Select(s => s.Side));
         Assert.All(a, s => Assert.True(s.Held));
-        Assert.Contains(a, s => s.Struck > 0 && Math.Abs(s.HitX - 2) < 0.5 && Math.Abs(s.HitZ) < 0.5);
+        Assert.All(a, s => Assert.Equal(0, s.Killed));
+        Assert.All(a, s => Assert.True(s.Struck > 0 && Math.Abs(s.HitX - 2) < 0.5 && Math.Abs(s.HitZ) < 0.5, $"struck {s.Struck} at {s.HitX:0.00},{s.HitZ:0.00}"));
+    }
+
+    /// <summary>WeaponInst.NextSide: a clip's side wins while it is set (the Oathblade's grip plays sword_back then
+    /// sword_fore: +1, -1, ...); with none (ClipSide 0) the cut alternates from the weapon's count, the first -1.</summary>
+    [Fact]
+    public void A_cut_with_no_clip_side_alternates_from_the_weapons_count_and_a_clips_side_wins()
+    {
+        var w = Warden(("sunder", 1)).Weapons.Single();
+        Assert.Equal((0, 0), (w.ClipSide, w.Cuts));
+        Assert.Equal(new[] { -1, 1, -1, 1 }, Enumerable.Range(0, 4).Select(_ => w.NextSide()));
+        foreach (var clip in new[] { "sword_back", "sword_fore", "sword_back" })
+        {
+            w.ClipSide = HerEvents.Side(clip)!.Value;
+            Assert.Equal(HerEvents.Side(clip), w.NextSide());
+        }
+        Assert.Equal(7, w.Cuts);
+        // The clip's side gone: back to the count (7 cuts made, so the eighth is +1, the ninth -1).
+        w.ClipSide = 0;
+        Assert.Equal(new[] { 1, -1 }, new[] { w.NextSide(), w.NextSide() });
+    }
+
+    /// <summary>The first cut of Sunder held at (2, 0) over these bodies (hp each; pinned every step).</summary>
+    static (Ev.Slash Cut, List<Enemy> Es) FirstCut(params (double X, double Z, double Hp)[] bodies)
+    {
+        var b = Warden(("sunder", 1));
+        var w = b.Weapons.Single();
+        var at = bodies.Select(o => (o.X, o.Z)).ToList();
+        var es = bodies.Select(o => { var e = Dummy(b, o.X, o.Z); e.Hp = e.MaxHp = o.Hp; return e; }).ToList();
+        b.HoldSkill(w.Slot, true, 2, 0);
+        var cuts = Run(b, 0.5, () => Pin(b, es, at)).OfType<Ev.Slash>().ToList();
+        return (Assert.Single(cuts), es);
+    }
+
+    /// <summary>Ev.Slash.Killed: how many of the struck the cut killed.</summary>
+    [Fact]
+    public void A_cut_reports_how_many_of_its_struck_it_killed()
+    {
+        // Two that die to it and one that does not, all on the cut's line.
+        var (cut, es) = FirstCut((2, 0, 1), (1.6, 0.2, 1), (2.2, -0.2, 1e7));
+        Assert.Equal(3, cut.Struck);
+        Assert.True(cut.Killed == 2, $"killed {cut.Killed} of {cut.Struck} struck; bodies (alive, state, hp): {string.Join(" ", es.Select(e => $"{e.Alive}/{e.State}/{e.Hp:0.#}"))}");
+        Assert.Equal(new[] { true, true, false }, es.Select(e => e.State == EnemyState.Dying));
+        // None dies: none killed.
+        var (dry, _) = FirstCut((2, 0, 1e7), (1.6, 0.2, 1e7));
+        Assert.Equal((2, 0), (dry.Struck, dry.Killed));
+    }
+
+    /// <summary>Ev.Slash.HitX/HitZ: the struck body nearest the cut's line, not the nearest to her; a body within
+    /// 0.7 m of her only when no other was struck.</summary>
+    [Fact]
+    public void A_cut_names_the_struck_body_nearest_its_line()
+    {
+        // One nearer her and off the line, one farther and on it: the one on the line.
+        var (cut, _) = FirstCut((1.0, 0.3, 1e7), (2, 0, 1e7));
+        Assert.Equal(2, cut.Struck);
+        Assert.Equal((2.0, 0.0), (cut.HitX, cut.HitZ));
+        // One against her (0.5 m, dead on the line) and one farther and a little off it: the farther one.
+        (cut, _) = FirstCut((0.5, 0, 1e7), (2, 0.3, 1e7));
+        Assert.Equal(2, cut.Struck);
+        Assert.Equal((2.0, 0.3), (cut.HitX, cut.HitZ));
+        // The one against her alone: it is the contact.
+        (cut, _) = FirstCut((0.5, 0, 1e7));
+        Assert.Equal(1, cut.Struck);
+        Assert.Equal((0.5, 0.0), (cut.HitX, cut.HitZ));
     }
 
     [Fact]
