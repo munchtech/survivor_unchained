@@ -474,6 +474,26 @@ vec3 cel_s3_add(vec3 c_l, vec3 c_lc, float c_t, float c_att, bool c_dir, vec3 c_
 }
 #endif
 
+#ifdef CEL_HERO
+// (L1 lead 19, HER2) THE HERO IN A POOL: a hero-scale figure standing in her own lit pool takes ONE dark warm anchor tone
+// on her shade side (the side away from the pool light's foot, and her under planes), a single hard step, so at 40 px
+// she is a light figure with one connected dark mass and the eye lands on her first. Rig-driven (rigs.json "hero_pool",
+// Atmosphere.SetCel): cel_hero = unit xz toward the light's foot, the side edge (in n.xz away from the foot), on;
+// cel_hero_tone = the anchor (linear rgb x level), the under edge (n.y under it). Off without the row or with her lamp
+// out (cel_ember.w 0). No varying (her skin is at Godot's 32): the mask is read from the normal in fragment() and light().
+// A shader defines CEL_HERO before the include, writes CEL_HERO_FRAGMENT after CEL_FRAGMENT and CEL_HERO_LIGHT last in light().
+global uniform vec4 cel_hero;
+global uniform vec4 cel_hero_tone;
+float cel_hero_mask(vec3 c_wn, float c_w) {
+	if (cel_hero.w < 0.5 || cel_ember.w <= 0.0) return 0.0;
+	float c_side = smoothstep(cel_hero.z - c_w, cel_hero.z + c_w, -dot(c_wn.xz, cel_hero.xy));
+	float c_under = 1.0 - smoothstep(cel_hero_tone.w - c_w, cel_hero_tone.w + c_w, c_wn.y);
+	return max(c_side, c_under);
+}
+#define CEL_HERO_FRAGMENT { float c_hm = cel_hero_mask(normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz), 0.02); ALBEDO *= 1.0 - c_hm; EMISSION = mix(EMISSION, cel_hero_tone.rgb, c_hm); }
+#define CEL_HERO_LIGHT { SPECULAR_LIGHT *= 1.0 - cel_hero_mask(normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz), 0.02); }
+#endif
+
 #ifdef CEL_STAND
 // (L1 lead 14, K1/S1; docs/design/NIGHT_KIT.md) THE STANDING BLOCK: what stands on the board painted in hard steps as the
 // rig's levels (rigs.json "stand"), never the albedo's luck. The BASE tones (contact at the foot, side away from the moon,

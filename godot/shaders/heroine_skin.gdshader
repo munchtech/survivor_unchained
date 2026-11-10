@@ -20,6 +20,7 @@ render_mode sss_mode_skin, cull_disabled;
 #define CEL_SPEC vec4(6.0, 1.0, 0.5, 0.85)   // (rule 6: 85% key color; the library's skin)
 #define CEL_NMAP 0.10
 #define CEL_OWN_LIGHT
+#define CEL_HERO   // (L1 l19 her2: the hero in her pool, one anchor tone on her shade side)
 #include "res://shaders/cel.gdshaderinc"
 // (the screen-space scatter's share under the cel model: its blur widened the hard terminator into a soft one)
 uniform float scatter_cel : hint_range(0.0, 1.0) = 0.25;
@@ -892,6 +893,7 @@ void fragment() {
 	if (dbg_gate > 18.5) { ALBEDO = vec3(0.0); SPECULAR = 0.0; BACKLIGHT = vec3(0.0); EMISSION = 0.25 * vec3(clamp((model_y - 1.4) / 0.4, 0.0, 1.0), fm.b, fk.b); }
 	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, her roughness before the ink tag, the tag, debug).
 	CEL_FRAGMENT;
+	CEL_HERO_FRAGMENT;
 }
 
 // Each lamp's light on her, as Godot's own (Burley's diffuse, GGX's sheen,
@@ -1065,4 +1067,5 @@ void light() {
 	// (cel: the stepped rim on the key's side)
 	if (cel_on > 0.0) SPECULAR_LIGHT += cel_on * mouth_lit * cel_rim_add(cb_n, VIEW, lc, cb_t, cb_sh, LIGHT_IS_DIRECTIONAL, ALBEDO * un);
 	}
+	CEL_HERO_LIGHT;
 }

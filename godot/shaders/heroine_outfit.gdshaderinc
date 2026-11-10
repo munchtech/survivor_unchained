@@ -20,6 +20,7 @@
 #define OUTFIT_BASE_LIGHT
 #define CEL_CLEARCOAT
 #endif
+#define CEL_HERO   // (L1 l19 her2: the hero in her pool, one anchor tone on her shade side)
 #include "res://shaders/cel.gdshaderinc"
 #define OUTFIT_HL_ROUGH 0.3
 
@@ -611,6 +612,7 @@ void fragment() {
 	if (test_flat) { ALBEDO = vec3(0.0); METALLIC = 0.0; ROUGHNESS = 1.0; SPECULAR = 0.0; RIM = 0.0; EMISSION = vec3(0.5); }
 	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, roughness before the tag, the tag, debug).
 	CEL_FRAGMENT;
+	CEL_HERO_FRAGMENT;
 }
 
 // The cel model's highlight by kind (see the header), as SPECULAR_LIGHT; lit_sh the lit band times the key's shadow.
@@ -711,6 +713,7 @@ void light() {
 	SPECULAR_LIGHT += s;
 	if (cel_on > 0.0) SPECULAR_LIGHT += cel_on * cel_rim_add(ob_n, VIEW, LIGHT_COLOR, ob_t, ob_sh, LIGHT_IS_DIRECTIONAL, ALBEDO);
 	}
+	CEL_HERO_LIGHT;
 }
 #endif
 
@@ -767,5 +770,6 @@ void light() {
 	SPECULAR_LIGHT += s;
 	if (cel_on > 0.0) SPECULAR_LIGHT += cel_on * cel_rim_add(ob_n, VIEW, LIGHT_COLOR, ob_t, ob_sh, LIGHT_IS_DIRECTIONAL, ALBEDO);
 	}
+	CEL_HERO_LIGHT;
 }
 #endif

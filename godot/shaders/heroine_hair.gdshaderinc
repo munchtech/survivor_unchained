@@ -20,6 +20,7 @@
 #define CEL_FORM 0.3
 #define CEL_NO_RIM
 #define CEL_OWN_LIGHT
+#define CEL_HERO   // (L1 l19 her2: the hero in her pool, one anchor tone on her shade side)
 #include "res://shaders/cel.gdshaderinc"
 uniform float shade_hue : hint_range(0.0, 1.0) = 0.6;   // (cel: how much the half-tone and fill take the dye's hue)
 uniform vec2 shine_band = vec2(0.42, 0.58);              // (cel: the highlight band's edges on the sheen term, 0..1)
@@ -366,6 +367,7 @@ void fragment() {
 #ifndef ERASE
 	// The cel model's end of fragment (cel.gdshaderinc: geometric normal, ink tag, debug; none on the unshaded erase).
 	CEL_FRAGMENT;
+	CEL_HERO_FRAGMENT;
 #endif
 }
 
@@ -418,4 +420,5 @@ void light() {
 	}
 	SPECULAR_LIGHT += s_a;
 	}
+	CEL_HERO_LIGHT;
 }
