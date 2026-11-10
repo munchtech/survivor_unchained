@@ -545,6 +545,71 @@ def clearance(G, P, held, target_mm=10.0, n=None, pts=800):
                 "under": FIT._ranges(v["under"])} for k, v in out.items()}
 
 
+GROUND_CM = 2.5          # a foot is on the floor where its ball AND its heel point are within this of their floor heights
+SKATE_CM = 1.0           # the fail line: a foot's grounded travel outside its planted windows, cm a clip (see skate())
+
+
+def _foot_pts(rig, G, P, s, tps=None, fps=30):
+    """One foot's ball and heel ground point (F,3) (a de-rotated spin's in the WORLD: the game's turn put back),
+    its sole's tilt from flat (deg) and its leg's reach (the hip-ankle distance over the leg's length)."""
+    from motion.footlock import heel_local
+    th, ca, fo, ba = (rig.index[f"{b}_{s}"] for b in ("thigh", "calf", "foot", "ball"))
+    ball, heel = P[:, ba].copy(), P[:, fo] + np.einsum("fij,j->fi", G[:, fo], heel_local(rig, fo))
+    if tps:
+        w = 2 * np.pi * tps * np.arange(len(P)) / fps
+        c, sn = np.cos(w), np.sin(w)
+        ball, heel = (np.stack([c * q[:, 0] + sn * q[:, 2], q[:, 1], -sn * q[:, 0] + c * q[:, 2]], 1) for q in (ball, heel))
+    tilt = np.degrees(np.arccos(np.clip((G[:, fo] @ rig.R0[fo].T)[:, 1, 1], -1, 1)))
+    reach = np.linalg.norm(P[:, fo] - P[:, th], axis=1) / (np.linalg.norm(P[:, ca] - P[:, th], axis=1) +
+                                                             np.linalg.norm(P[:, fo] - P[:, ca], axis=1))
+    return ball, heel, tilt, reach
+
+
+def skate(r, spec, G=None, P=None):
+    """Skating, per foot: its grounded travel OUTSIDE its planted windows, cm. On each frame step where the foot is on
+    the floor at both ends (ball and heel point within GROUND_CM of their floor heights: the ball's rest height, 0)
+    the smaller of the ball's and the heel point's horizontal step is summed (the belt out for a gait, in the world
+    for a de-rotated spin), so a pivot on the heel or the ball is free and a drag is counted. Over SKATE_CM is a MISS."""
+    G, P = (r.G, r.P) if G is None else (G, P)
+    rig, fps, n, m = r.rig, r.src.fps, len(P), r.m
+    tps = (spec.get("post", {}).get("action") or {}).get("derotate_tps")
+    out = {}
+    for si, s in enumerate("lr"):
+        ball, heel, _, _ = _foot_pts(rig, G, P, s, tps, fps)
+        hb = rig.head[rig.index[f"ball_{s}"]][1]
+        on = (np.abs(ball[:, 1] - hb) < GROUND_CM / 100) & (np.abs(heel[:, 1]) < GROUND_CM / 100)
+        pl = {(ws + k) % m for ws, ln, _ in r.wins[si] for k in range(ln)}
+        tot, worst, cnt = 0.0, (0.0, 0), 0
+        for f in range(m if r.clip["loop"] else n - 1):
+            g = (f + 1) % m if r.clip["loop"] else f + 1
+            if not (on[f] and on[g]) or (f in pl and g in pl):
+                continue
+            d = min(np.linalg.norm((q[g] - q[f] - r.belt / fps)[[0, 2]]) for q in (ball, heel)) * 100
+            tot, cnt = tot + d, cnt + 1
+            if d > worst[0]:
+                worst = (float(d), g)
+        out[s] = {"cm": round(tot, 2), "frames": cnt, "worst_cm": round(worst[0], 2), "at": worst[1]}
+    return out
+
+
+def floors(r, G=None, P=None):
+    """Each planted window's floor numbers: the ankle's and the ball's height over rest (cm, the largest either way),
+    the sole's tilt from flat (deg, max) and the leg's reach (max)."""
+    G, P = (r.G, r.P) if G is None else (G, P)
+    rig, out = r.rig, {}
+    for si, s in enumerate("lr"):
+        ball, _, tilt, reach = _foot_pts(rig, G, P, s)
+        fo, ba = rig.index[f"foot_{s}"], rig.index[f"ball_{s}"]
+        out[s] = []
+        for ws, ln, _ in r.wins[si]:
+            fr = [(ws + k) % r.m for k in range(ln)]
+            big = lambda v: round(float(v[np.argmax(np.abs(v))]) * 100, 2)  # noqa: E731
+            out[s].append({"frames": [int(fr[0]), int(fr[-1])], "ankle_cm": big(P[fr, fo, 1] - rig.head[fo][1]),
+                           "ball_cm": big(ball[fr, 1] - rig.head[ba][1]), "tilt_deg": round(float(tilt[fr].max()), 1),
+                           "reach": round(float(reach[fr].max()), 3)})
+    return out
+
+
 def m44(R, P):
     M = np.zeros(R.shape[:-2] + (4, 4))
     M[..., :3, :3], M[..., :3, 3], M[..., 3, 3] = R, P, 1
@@ -588,13 +653,21 @@ def cmd_check(a):
         rows.append({"clip": p.stem, "frames": n, "pops": len(sp), "clearance": cl, "worst_step": [round(worst[0], 2), worst[1], worst[2]],
                      "seam_deg": round(seam[0], 4) if c["loop"] else None, "feet": ft, "contact": ct,
                      "slide_mm": [round(x * 1000, 2) for x in sl], "fidelity": fid,
-                     "locked_frames": [sum(w[1] for w in ws) for ws in r.wins]})
+                     "locked_frames": [sum(w[1] for w in ws) for ws in r.wins],
+                     "skate": skate(r, sj, G, P), "skate_line_cm": SKATE_CM, "floors": floors(r, G, P)})
     for R in rows:
         f, b = R["feet"], R["contact"]
         print(f"\n{R['clip']}: {R['frames']} frames, pops {R['pops']} (worst step {R['worst_step'][0]} deg {R['worst_step'][1]} "
               f"@{R['worst_step'][2]}), seam {R['seam_deg']} deg")
         print(f"  feet: locked frames L {R['locked_frames'][0]} R {R['locked_frames'][1]}, planted slide (core) L {R['slide_mm'][0]} "
               f"R {R['slide_mm'][1]} mm; clipcheck drift SOMA/B mm L {f['l']['A']}/{f['l']['B']} R {f['r']['A']}/{f['r']['B']} (belt {f['belt_mps']} m/s)")
+        print("  skate (grounded travel outside the planted windows, cm; line %s): " % SKATE_CM + "  ".join(
+            f"{s.upper()} {v['cm']}{' MISS' if v['cm'] > SKATE_CM else ''} ({v['frames']} steps, worst {v['worst_cm']} @{v['at']})"
+            for s, v in R["skate"].items()))
+        for s, ws in R["floors"].items():
+            for w in ws:
+                print(f"  planted {s} f{w['frames'][0]}-{w['frames'][1]}: ankle {w['ankle_cm']:+} cm, ball {w['ball_cm']:+} cm over rest, "
+                      f"sole {w['tilt_deg']} deg from flat, reach {w['reach']}")
         print("  fidelity deg (mean / max, worst):  " + "  ".join(f"{g} {v['mean']}/{v['max']} {v['worst']}" for g, v in R["fidelity"].items()))
         for k, v in R["clearance"].items():
             print(f"  held {k}: closest gap {v['gap_mm']} mm, deepest in {v['in_mm']} mm (frames in: {v['inside'] or '-'}; "
