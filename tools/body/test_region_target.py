@@ -53,15 +53,21 @@ def test_rigid_turn(ctx):
     assert np.abs(X - (md.V0[md.S["l"]["ids"]] @ D[:3, :3].T + D[:3, 3])).max() < 1e-6
 
 
-def test_border_ring_and_determinism(ctx):
+def test_border_ring_is_published(ctx):
     bd, md = ctx
-    G = rt.extreme_G(bd, "abd90_int60")[0]
-    X, Vp = tgt(bd, md, G, "l")
     ring = md.beta == 0
     assert ring.sum() > 100 and md.depth[ring].max() >= 3
-    assert np.abs(X[ring] - Vp[md.S["l"]["ids"]][ring]).max() == 0
-    X2, _ = tgt(bd, md, G, "l")
-    assert hashlib.sha256(X.tobytes()).hexdigest() == hashlib.sha256(X2.tobytes()).hexdigest()
+    for k, s in (("abd90_int60", "l"), ("add0_ext60", "l"), ("flex150", "r")):
+        G = rt.extreme_G(bd, k)[0]
+        X, Vp = tgt(bd, md, G if s == "l" else md.mirror_G(G), s)
+        assert np.abs(X[ring] - Vp[md.S[s]["ids"]][ring]).max() == 0
+
+
+def test_deterministic(ctx):
+    bd, md = ctx
+    G = rt.extreme_G(bd, "add0_int60")[0]                           # arm on the torso: the contact pass runs
+    sha = [hashlib.sha256(tgt(bd, md, G, "l")[0].tobytes()).hexdigest() for _ in range(2)]
+    assert sha[0] == sha[1]
 
 
 def test_mirror_sides_agree(ctx):
