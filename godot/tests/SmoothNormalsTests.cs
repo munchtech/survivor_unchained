@@ -121,4 +121,67 @@ public class SmoothNormalsTests
         log.WriteLine($"60k verts ({P.Length / 3}): {ms:0} ms, median {d[d.Length / 2]:0.00} max {d[^1]:0.00} deg");
         Assert.True(ms < 250, $"{ms:0} ms");
     }
+
+    /// <summary>(NORM2B, offline, runs only with SU_SN_DUMP = a folder of HeroNormals' SU_HERO_SN_DUMP files) per dumped mesh:
+    /// its bbox, mean edge, connected surfaces, and the new bake and the old diffusion each against the raw normals and
+    /// each other; plus the mean angle between welded neighbours (how calm each field is).</summary>
+    [Fact]
+    public void DumpedMeshes()
+    {
+        var dir = Environment.GetEnvironmentVariable("SU_SN_DUMP");
+        if (string.IsNullOrEmpty(dir) || !System.IO.Directory.Exists(dir)) return;
+        bool old = Environment.GetEnvironmentVariable("SU_SN_OLD") == "1";
+        var files = System.IO.Directory.GetFiles(dir, "*.bin"); Array.Sort(files);
+        var lines = new string[files.Length];
+        System.Threading.Tasks.Parallel.For(0, files.Length, fi =>
+        {
+            var (P, N, T, _) = Load(files[fi]);
+            int n = P.Length / 3;
+            float[] lo = { 1e9f, 1e9f, 1e9f }, hi = { -1e9f, -1e9f, -1e9f };
+            for (int v = 0; v < n; v++) for (int c = 0; c < 3; c++) { lo[c] = MathF.Min(lo[c], P[3 * v + c]); hi[c] = MathF.Max(hi[c], P[3 * v + c]); }
+            double el = 0; for (int t = 0; t < T.Length; t += 3) el += Dist(P, T[t], T[t + 1]);
+            el /= Math.Max(1, T.Length / 3);
+            var raw = new float[n * 3]; for (int v = 0; v < n; v++) { float l = MathF.Sqrt(N[3 * v] * N[3 * v] + N[3 * v + 1] * N[3 * v + 1] + N[3 * v + 2] * N[3 * v + 2]) + 1e-12f; for (int c = 0; c < 3; c++) raw[3 * v + c] = N[3 * v + c] / l; }
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var nw = SmoothNormals.Smooth(P, N, T, 0.06f); double ms = sw.Elapsed.TotalMilliseconds;
+            var a = SmoothNormals.AnglesDeg(nw, raw);
+            string s = $"{System.IO.Path.GetFileNameWithoutExtension(files[fi]),-40} {n,7} v  bbox {hi[0] - lo[0]:0.000} {hi[1] - lo[1]:0.000} {hi[2] - lo[2]:0.000}  edge {el * 1000:0.0} mm  {ms,5:0} ms  new|raw {a[n / 2],5:0.0} p90 {a[(int)(n * 0.9)],5:0.0}  calm raw {Calm(raw, T),4:0.0} new {Calm(nw, T),4:0.0}";
+            if (old && n < 60000)
+            {
+                var od = SmoothNormals.Diffuse(P, N, T, 0.06f);
+                var b = SmoothNormals.AnglesDeg(od, raw); var c2 = SmoothNormals.AnglesDeg(od, nw);
+                s += $"  old|raw {b[n / 2],5:0.0} p90 {b[(int)(n * 0.9)],5:0.0}  old|new {c2[n / 2],5:0.0}  calm old {Calm(od, T),4:0.0}";
+            }
+            lines[fi] = s;
+        });
+        foreach (var l in lines) log.WriteLine(l);
+    }
+
+    static float Dist(float[] P, int a, int b) { float dx = P[3 * a] - P[3 * b], dy = P[3 * a + 1] - P[3 * b + 1], dz = P[3 * a + 2] - P[3 * b + 2]; return MathF.Sqrt(dx * dx + dy * dy + dz * dz); }
+
+    /// <summary>Mean angle (deg) between the two ends of every triangle edge.</summary>
+    static float Calm(float[] Nn, int[] T)
+    {
+        double s = 0; long k = 0;
+        for (int t = 0; t < T.Length; t += 3)
+            for (int e = 0; e < 3; e++)
+            {
+                int a = T[t + e], b = T[t + (e + 1) % 3];
+                float c = Nn[3 * a] * Nn[3 * b] + Nn[3 * a + 1] * Nn[3 * b + 1] + Nn[3 * a + 2] * Nn[3 * b + 2];
+                s += MathF.Acos(Math.Clamp(c, -1f, 1f)) * 57.29578f; k++;
+            }
+        return (float)(s / Math.Max(1, k));
+    }
+
+    /// <summary>A HeroNormals dump: nv, nt, surfaces, surface bases, pos, nrm, tri.</summary>
+    public static (float[] P, float[] N, int[] T, int[] Base) Load(string f)
+    {
+        using var br = new System.IO.BinaryReader(System.IO.File.OpenRead(f));
+        int nv = br.ReadInt32(), nt = br.ReadInt32(), ns = br.ReadInt32();
+        var bs = new int[ns]; for (int i = 0; i < ns; i++) bs[i] = br.ReadInt32();
+        var P = new float[nv * 3]; for (int i = 0; i < P.Length; i++) P[i] = br.ReadSingle();
+        var N = new float[nv * 3]; for (int i = 0; i < N.Length; i++) N[i] = br.ReadSingle();
+        var T = new int[nt]; for (int i = 0; i < nt; i++) T[i] = br.ReadInt32();
+        return (P, N, T, bs);
+    }
 }

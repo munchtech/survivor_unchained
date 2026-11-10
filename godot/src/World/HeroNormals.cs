@@ -21,7 +21,9 @@ public static class HeroNormals
 {
     public static float Radius;
     static readonly bool Check = OS.GetEnvironment("SU_HERO_SN_CHECK") == "1";   // (NORM2: log the new bake against lead 22's diffusion per mesh)
+    static readonly string Dump = OS.GetEnvironment("SU_HERO_SN_DUMP");   // (NORM2B: a folder: each mesh's welded input written once, with its bbox / edge / scale logged, for the offline compare)
     static readonly System.Collections.Concurrent.ConcurrentQueue<string> checks = new();
+    static int nDump; static double tFirst = -1, tLast; static double msStall; static readonly object tLock = new();
     static readonly Dictionary<ulong, ArrayMesh?> made = new();
     static readonly HashSet<ulong> outs = new();
     static readonly Dictionary<ulong, (ArrayMesh Src, Godot.Collections.Array[] Arr, Task<(float[][][]? Out, float Ms)> Job)> jobs = new();
@@ -63,7 +65,23 @@ public static class HeroNormals
         float r = Radius;
         if (!wall.IsRunning) wall.Start();
         if (mi.Name.ToString().StartsWith("her_merge")) nMerged++;
-        jobs[id] = (am, arr, Task.Run(() => { var sw = System.Diagnostics.Stopwatch.StartNew(); var o = Bake(P, N, T, I, r); return (o, (float)sw.Elapsed.TotalMilliseconds); }));
+        string? dumpTo = null;
+        if (!string.IsNullOrEmpty(Dump))
+        {
+            var mats = new List<string>();
+            for (int s = 0; s < n; s++) { var m = mi.GetActiveMaterial(s); mats.Add(m == null ? "-" : (m is ShaderMaterial sm2 && sm2.Shader != null ? sm2.Shader.ResourcePath.GetFile() : m.GetClass()) + ":" + m.ResourceName + ":" + am.SurfaceGetName(s)); }
+            var sc = mi.GlobalTransform.Basis.Scale;
+            dumpTo = System.IO.Path.Combine(Dump, $"m{nDump++:00}_{mi.Name}");
+            System.IO.Directory.CreateDirectory(Dump);
+            System.IO.File.WriteAllText(dumpTo + ".txt", $"{mi.Name} scale {sc.X:0.####},{sc.Y:0.####},{sc.Z:0.####}\n" + string.Join("\n", mats) + "\n");
+        }
+        jobs[id] = (am, arr, Task.Run(() =>
+        {
+            double t0 = wall.Elapsed.TotalMilliseconds;
+            var sw = System.Diagnostics.Stopwatch.StartNew(); var o = Bake(P, N, T, I, r, dumpTo); float ms = (float)sw.Elapsed.TotalMilliseconds;
+            lock (tLock) { if (tFirst < 0 || t0 < tFirst) tFirst = t0; tLast = Math.Max(tLast, wall.Elapsed.TotalMilliseconds); }
+            return (o, ms);
+        }));
         waiting.Add(mi);
     }
 
@@ -77,6 +95,7 @@ public static class HeroNormals
         }
         if (jobs.Count == 0) return;
         // (NORM2) every bake is done before the frame that shows her: the Gaussian bake takes tens of ms, so wait for it
+        var st = System.Diagnostics.Stopwatch.StartNew();
         var all = new List<Task>(); foreach (var j in jobs.Values) all.Add(j.Job);
         try { Task.WaitAll(all.ToArray()); } catch (AggregateException) { }
         int done = 0;
@@ -110,9 +129,10 @@ public static class HeroNormals
             }
             made[id] = copy;
         }
+        msStall += st.Elapsed.TotalMilliseconds;
         while (checks.TryDequeue(out var cl)) GD.Print(cl);
         if (done > 0)
-            GD.Print($"hero normals: {nBaked} meshes baked ({nMerged} of them her_merge), {nVerts} verts, {msBake:0} ms of bake on workers, {wall.Elapsed.TotalMilliseconds:0} ms wall; {nLeft} left as is, {jobs.Count} still baking, {early.Count} waiting for the radius; radius {Radius:0.###} m");
+            GD.Print($"hero normals: {nBaked} meshes baked ({nMerged} of them her_merge), {nVerts} verts, {msBake:0} ms of bake on workers, {tLast - tFirst:0} ms bake wall (first start to last end), {msStall:0} ms main-thread stall in Step, {wall.Elapsed.TotalMilliseconds:0} ms since the first visit; {nLeft} left as is, {jobs.Count} still baking, {early.Count} waiting for the radius; radius {Radius:0.###} m");
         for (int i = waiting.Count - 1; i >= 0; i--)
         {
             var mi = waiting[i];
@@ -122,7 +142,7 @@ public static class HeroNormals
     }
 
     /// <summary>The smoothed normal per vertex as CUSTOM0 (frame xyz, w 1), every surface; no Godot calls (a worker).</summary>
-    static float[][][]? Bake(Vector3[][] P, Vector3[][] N, float[]?[] T, int[][] I, float radius)
+    static float[][][]? Bake(Vector3[][] P, Vector3[][] N, float[]?[] T, int[][] I, float radius, string? dumpTo = null)
     {
         // (NORM2) the smoothed normal: SmoothNormals' Gaussian (sigma = the radius) over the mesh's surfaces as one
         int nv = 0; foreach (var ps in P) nv += ps.Length;
@@ -135,6 +155,17 @@ public static class HeroNormals
             foreach (int i in I[s]) ti.Add(baseOf[s] + i);
         }
         if (nv == 0) return null;
+        if (dumpTo != null)
+        {
+            using (var bw = new System.IO.BinaryWriter(System.IO.File.Create(dumpTo + ".bin")))
+            {
+                bw.Write(nv); bw.Write(ti.Count); bw.Write(P.Length);
+                foreach (var b in baseOf) bw.Write(b);
+                foreach (var f in fp) bw.Write(f);
+                foreach (var f in fn) bw.Write(f);
+                foreach (var i in ti) bw.Write(i);
+            }
+        }
         var sm = Check ? SurvivorUnchained.Look.SmoothNormals.Diffuse(fp, fn, ti.ToArray(), radius) : null;
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var fs = SurvivorUnchained.Look.SmoothNormals.Smooth(fp, fn, ti.ToArray(), radius);
