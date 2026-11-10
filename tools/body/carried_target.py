@@ -144,6 +144,7 @@ class Pocket:
         self.b = out[ring]                                   # the pocket's neighbours: they hold it
         self._Lpb = Lpb[:, ring].tocsr()
         Lpp = Lp[:, self.p].tocsc()
+        self._Lpp = Lpp.tocsr()
         nc, lab = connected_components(Lpp, directed=False)
         held = np.zeros(nc, bool)
         held[lab[np.diff(self._Lpb.indptr) > 0]] = True
@@ -169,6 +170,113 @@ class Pocket:
         rhs = d - self._Lpb @ X[self.b]
         X[self.p] = np.stack([self._solve(np.ascontiguousarray(rhs[:, c])) for c in range(3)], 1)
         return X
+
+
+def _unit(v):
+    return v / np.maximum(np.linalg.norm(v, axis=-1, keepdims=True), 1e-30)
+
+
+def facing(tris, X, N):
+    """Per triangle [f]: its normal dotted with the sum of N at its corners. The sign says which way it faces."""
+    n = np.cross(X[tris[:, 1]] - X[tris[:, 0]], X[tris[:, 2]] - X[tris[:, 0]])
+    return (n * N[tris].sum(1)).sum(1)
+
+
+class Band(Pocket):
+    """The pocket as a band that SLIDES ON THE REFERENCE'S POSED SURFACE (the hollow of an opened fold is the reference's).
+
+    A band point is a point of the reference's surface (a triangle and barycentrics, at rest its closest point) plus
+    its rest offset: x = S + R(S) (d0 + h (n0(S) - n0)), R(S) the reference's local rotation at S, n0(S) its smooth
+    REST normal there, h = d0 . n0 the point's height (the offset keeps its height over the surface wherever the point
+    goes; a point that has not moved is the plain carry). A pose moves S only. The points outside hold the band at
+    their carried positions, and the band's points move along the surface until the pull of their edges is in
+    balance in the tangent plane: T^t (R(S) c - L x) = 0 at every band point, L the pocket's Laplacian, T the tangent
+    plane of the reference's posed smooth normal at S, c = the tangent part of delta at rest. With "length" weights
+    the opening is shared at one RATIO per edge. At rest the balance holds as it is (T^t (c - delta) = 0): the rest is
+    a fixed point, the slide starts from it in every pose and vanishes as the fold closes.
+
+    Solved by Newton steps in the tangent planes (T^t Lpp T) s = T^t (R c - L x), each step cut to `cap` and landed on
+    the reference by the closest point over the triangles around the point's own triangle (two rings by shared
+    vertices, on the posed mesh): a walk on the mesh, never a projection through a fold onto its other wall.
+
+    V0, T: the reference's rest mesh. pt: its triangles the band may walk on (the patch), rim [len(pt)]: those on the
+    patch's edge. vg [nv]: each reference vertex's row in the vertex frames (Rv, nv of Carrier._vertex_frames).
+    face, bary, d0, n0 [n]: the points' correspondence and smooth rest normals. nv0: the rest vertex normals.
+    step: `cap` as a part of the patch's median edge; tol: converged when the largest step is under tol * cap.
+    """
+
+    def __init__(self, P0, edges, mask, weight, V0, T, pt, rim, vg, face, bary, d0, n0, nv0, step=0.5, tol=1e-3, iters=200):
+        super().__init__(P0, edges, mask, weight)
+        p, T = self.p, np.asarray(T, np.int64)
+        self.tv, self.rim = T[pt], np.asarray(rim, bool)
+        self.tg = vg[self.tv]
+        mp = len(pt)
+        I = sp.csr_matrix((np.ones(3 * mp), (np.repeat(np.arange(mp), 3), self.tg.ravel())), (mp, int(vg.max()) + 1))
+        R1 = (I @ I.T).tocsr()
+        R1.data[:] = 1.0
+        R2 = (R1 @ R1).tocsr()                               # triangles two rings apart by shared (welded) vertices
+        cnt = np.diff(R2.indptr)
+        self.ring = -np.ones((mp, int(cnt.max())), np.int64)
+        self.ring[np.repeat(np.arange(mp), cnt), np.arange(R2.nnz) - np.repeat(R2.indptr[:-1], cnt)] = R2.indices
+        inv = -np.ones(len(T), np.int64)
+        inv[pt] = np.arange(mp)
+        self.t0, self.b0 = inv[face[p]], bary[p]
+        if (self.t0 < 0).any():
+            raise ValueError("a band point's matched triangle is not in the patch")
+        self.d0, self.n0, self.nv0 = d0[p], n0[p], nv0
+        self.h = (self.d0 * self.n0).sum(1)
+        self.c = self.delta - (self.delta * self.n0).sum(1)[:, None] * self.n0
+        self.cap = step * float(np.median(np.linalg.norm(V0[self.tv] - V0[self.tv[:, [1, 2, 0]]], axis=2)))
+        self.tol, self.iters = tol * self.cap, int(iters)
+        C = self._Lpp.tocoo()
+        self._i, self._j, self._v = C.row, C.col, C.data
+        self._r = (2 * C.row[:, None] + np.array([0, 0, 1, 1])).ravel()
+        self._c = (2 * C.col[:, None] + np.array([0, 1, 0, 1])).ravel()
+
+    def _land(self, q, t, V):
+        """The points q [n, 3] back on the mesh: (triangle, barycentrics) of the closest point around triangles t."""
+        cand = self.ring[t]
+        n, k = cand.shape
+        tv = self.tv[np.maximum(cand, 0)].reshape(n * k, 3)
+        P = np.repeat(q, k, axis=0)
+        A, B, C = V[tv[:, 0]], V[tv[:, 1]], V[tv[:, 2]]
+        Q = closest_on_tris(P, A, B, C)
+        d = np.linalg.norm(P - Q, axis=1)
+        d = np.where(np.isfinite(d) & (cand.ravel() >= 0), d, np.inf).reshape(n, k)
+        j = np.arange(n) * k + d.argmin(1)
+        return cand.ravel()[j], _bary(Q[j], A[j], B[j], C[j])
+
+    def slide(self, ref_V, Rv, nv, X):
+        """(the band's points [len(p), 3], stats, the reference's posed normal at each) for the posed reference ref_V.
+
+        Rv, nv: the reference's vertex rotations and posed vertex normals (Carrier._vertex_frames); X [n, 3]: the
+        carried points (the holders are read from it). stats: iters (Newton steps taken), step (the last step's
+        largest move, m: under `tol` when converged), rim (points that ended on the patch's edge: the walk was cut).
+        """
+        from scipy.sparse.linalg import spsolve
+        V = np.asarray(ref_V, float)
+        t, be = self.t0.copy(), self.b0.copy()
+        n = len(t)
+        hold = self._Lpb @ X[self.b]
+        for it in range(self.iters + 1):
+            tv, tg = self.tv[t], self.tg[t]
+            S = np.einsum("nk,nkj->nj", be, V[tv])
+            R = polar(np.einsum("nk,nkij->nij", be, Rv[tg]))
+            ns = _unit(np.einsum("nk,nkj->nj", be, self.nv0[tg]))
+            x = S + np.einsum("nij,nj->ni", R, self.d0 + self.h[:, None] * (ns - self.n0))
+            nrm = _unit(np.einsum("nk,nkj->nj", be, nv[tg]))
+            a = V[tv[:, 1]] - V[tv[:, 0]]
+            e1 = _unit(a - (a * nrm).sum(1)[:, None] * nrm)
+            Tb = np.stack([e1, np.cross(nrm, e1)], 2)                                  # [n, 3, 2]
+            f = np.einsum("nij,nj->ni", R, self.c) - self._Lpp @ x - hold
+            g = np.einsum("nki,nk->ni", Tb, f)
+            blk = self._v[:, None, None] * np.einsum("eki,ekj->eij", Tb[self._i], Tb[self._j])
+            s = spsolve(sp.csc_matrix((blk.ravel(), (self._r, self._c)), (2 * n, 2 * n)), g.ravel()).reshape(n, 2)
+            smax = float(np.linalg.norm(s, axis=1).max())
+            if smax < self.tol or it == self.iters:
+                break
+            t, be = self._land(S + np.einsum("nki,ni->nk", Tb, s) * min(1.0, self.cap / smax), t, V)
+        return x, {"iters": it, "step": smax, "rim": int(self.rim[t].sum())}, np.einsum("nij,nj->ni", R, ns)
 
 
 def surface_distance(P, V, T, k=48):
@@ -202,15 +310,23 @@ class Carrier:
     THE POCKET RULE (needs `edges` [m, 2], the points' own edges in local indices). Where the points' mesh bridges a
     tight fold that the reference keeps as two walls, the two ends of one edge land on opposite walls, and a pose that
     opens the fold would put the whole opening on that edge. Those edges are found at rest (bridge_edges, `bridge_deg`),
-    the points within `pocket_rows` edges of a bridge end are the pocket (rows_around), and in every pose the pocket is
-    not carried but filled from its carried neighbours (Pocket.fill with `pocket_weight`, the carrier's rotations
-    smoothed across it by `frame_passes` averaging passes). pocket_rows = 0, or no edges, or no bridge: the plain
-    carry. Kept: `bridge` [nb, 2] the bridge edges, `pocket` (a Pocket, or None). The fill SPANS the opened fold: the
-    points' mesh has less surface there than the reference, so the pocket lies off the reference's hollow.
+    the points within `pocket_rows` edges of a bridge end are the pocket (rows_around; never a point of `hold` [n]
+    bool, e.g. a region's blended border), and in every pose the pocket is not carried alone but shares the opening
+    over its rows, held by its carried neighbours. pocket_rows = 0, or no edges, or no bridge: the plain carry.
+    Kept: `bridge` [nb, 2] the bridge edges, `pocket` (a Band or a Pocket, or None), `stats` of the last carry.
+      pocket_mode "slide": the pocket is a Band that slides on the reference's posed surface (Band; `band_step`,
+        `band_tol`, `band_iters`). The hollow is the reference's own; rows cost nothing in distance from it. `stats`:
+        iters, step, rim (Band.slide) and, with the points' triangles `tris` [f, 3], flip: the band triangles that
+        face the other way against the reference's normal than they do at rest.
+      pocket_mode "fill": the harmonic fill (Pocket.fill with the carrier's rotations smoothed across the pocket by
+        `frame_passes` passes). It SPANS the opened fold like a web: more rows, further off the reference's hollow.
     """
 
     def __init__(self, ref_V0, ref_T, P0, N0, rad=0.05, k=64, nw=0.0, weld=1e-6, edges=None, bridge_deg=60.0,
-                 pocket_rows=4, frame_passes=8, pocket_weight="length"):
+                 pocket_rows=4, frame_passes=8, pocket_weight="length", pocket_mode="fill", hold=None, tris=None,
+                 band_step=0.5, band_tol=1e-3, band_iters=200):
+        if pocket_mode not in ("slide", "fill"):
+            raise ValueError(f"pocket_mode {pocket_mode!r}: slide or fill")
         V0, T = np.asarray(ref_V0, float), np.asarray(ref_T, np.int64)
         P0, N0 = np.asarray(P0, float), np.asarray(N0, float)
         n = len(P0)
@@ -237,10 +353,30 @@ class Carrier:
         self.bary = _bary(closest_on_tris(P0, A, B, C), A, B, C)
         self.d0 = P0 - np.einsum("nk,nkj->nj", self.bary, V0[self.tri])
         self.rad, self.k, self.nw = rad, k, nw
-        # the frames: only the triangles around the vertices in use
+        # the pocket rule: the bridges and the pocket's points
+        self.nref = E0[self.face][:, :, 2]
+        self.bridge_deg, self.pocket_rows, self.frame_passes = bridge_deg, pocket_rows, frame_passes
+        self.bridge, self.pocket, self.stats = np.zeros((0, 2), np.int64), None, {}
+        mask = np.zeros(n, bool)
+        if edges is not None and len(edges):
+            edges = np.asarray(edges, np.int64)
+            self.bridge = edges[bridge_edges(self.nref, N0, edges, bridge_deg)]
+            if len(self.bridge) and pocket_rows > 0:
+                mask = rows_around(n, edges, np.unique(self.bridge), pocket_rows)
+                if hold is not None:
+                    mask &= ~np.asarray(hold, bool)
+        slide = bool(mask.any()) and pocket_mode == "slide"
         _, grp = np.unique(np.round(V0 / weld).astype(np.int64), axis=0, return_inverse=True)
         grp = np.asarray(grp).ravel()
-        used = np.unique(grp[self.tri])
+        used = grp[self.tri].ravel()
+        if slide:                        # the patch: the reference's triangles within the band's own width of its rest feet
+            e = edges[mask[edges].any(1)]
+            reach = pocket_rows * float(np.linalg.norm(P0[e[:, 0]] - P0[e[:, 1]], axis=1).mean())
+            near = cKDTree(P0[mask] - self.d0[mask]).query(V0)[0] <= reach
+            pt = np.nonzero(near[T].any(1) & (area > AREA_EPS))[0]
+            used = np.concatenate([used, grp[T[pt]].ravel()])
+        # the frames: only the triangles around the vertices in use
+        used = np.unique(used)
         loc = -np.ones(int(grp.max()) + 1, np.int64)
         loc[used] = np.arange(len(used))
         tg = loc[grp[T]]
@@ -251,33 +387,50 @@ class Carrier:
         m = rows >= 0
         self._W = sp.csr_matrix((w[m], (rows[m], cols[m])), (len(used), len(inc)))
         self._pg = loc[grp[self.tri]]
-        # the pocket rule
-        self.nref = E0[self.face][:, :, 2]
-        self.bridge_deg, self.pocket_rows, self.frame_passes = bridge_deg, pocket_rows, frame_passes
-        self.bridge, self.pocket = np.zeros((0, 2), np.int64), None
-        if edges is not None and len(edges):
-            edges = np.asarray(edges, np.int64)
-            self.bridge = edges[bridge_edges(self.nref, N0, edges, bridge_deg)]
-            if len(self.bridge) and pocket_rows > 0:
-                self.pocket = Pocket(P0, edges, rows_around(n, edges, np.unique(self.bridge), pocket_rows), pocket_weight)
+        nv0 = _unit(self._W @ E0[inc][:, :, 2])              # the reference's smooth rest normals, per vertex in use
+        self.n0 = _unit(np.einsum("nk,nkj->nj", self.bary, nv0[self._pg]))               # and at each point's rest foot
+        self._tris = self._face0 = None
+        if slide:
+            full = np.bincount(grp[T[live]].ravel(), minlength=len(loc))
+            mine = np.bincount(grp[T[pt]].ravel(), minlength=len(loc))
+            rim = (mine[grp[T[pt]]] < full[grp[T[pt]]]).any(1)
+            self.pocket = Band(P0, edges, mask, pocket_weight, V0, T, pt, rim, loc[grp], self.face, self.bary, self.d0,
+                               self.n0, nv0, band_step, band_tol, band_iters)
+            if tris is not None:         # the points' triangles that touch the band, and which way they face at rest
+                tris = np.asarray(tris, np.int64)
+                self._tris = tris[mask[tris].any(1)]
+                self._face0 = np.sign(facing(self._tris, P0, self.n0))
+        elif mask.any():
+            self.pocket = Pocket(P0, edges, mask, pocket_weight)
+
+    def _vertex_frames(self, ref_V):
+        """(Rv [vertices in use, 3, 3] the rotations rest -> posed, nv [vertices in use, 3] the posed smooth normals)."""
+        E, _ = _frames(np.asarray(ref_V, float), self._T)
+        Rt = polar(E @ self._E0inv)
+        return polar((self._W @ Rt.reshape(-1, 9)).reshape(-1, 3, 3)), _unit(self._W @ E[:, :, 2])
 
     def rotations(self, ref_V):
         """The reference's local surface rotation rest -> posed at each point [n, 3, 3]."""
-        E, _ = _frames(np.asarray(ref_V, float), self._T)
-        Rt = polar(E @ self._E0inv)
-        Rv = polar((self._W @ Rt.reshape(-1, 9)).reshape(-1, 3, 3))
-        return polar(np.einsum("nk,nkij->nij", self.bary, Rv[self._pg]))
+        return polar(np.einsum("nk,nkij->nij", self.bary, self._vertex_frames(ref_V)[0][self._pg]))
 
     def carry(self, ref_V, fill=True, both=False):
-        """The points on the reference's posed surface ref_V [nv, 3] -> [n, 3], the pocket filled.
+        """The points on the reference's posed surface ref_V [nv, 3] -> [n, 3], the pocket slid (or filled).
 
-        fill=False: the carry alone (every point on its own matched face). both=True: (filled, carried alone).
+        fill=False: the carry alone (every point on its own matched face). both=True: (with the pocket, carried alone).
         """
         ref_V = np.asarray(ref_V, float)
-        R = self.rotations(ref_V)
+        Rv, nv = self._vertex_frames(ref_V)
+        R = polar(np.einsum("nk,nkij->nij", self.bary, Rv[self._pg]))
         raw = np.einsum("nk,nkj->nj", self.bary, ref_V[self.tri]) + np.einsum("nij,nj->ni", R, self.d0)
-        X = raw
-        if (fill or both) and self.pocket is not None:
+        X, self.stats = raw, {}
+        if (fill or both) and isinstance(self.pocket, Band):
+            X = raw.copy()
+            X[self.pocket.p], self.stats, Np = self.pocket.slide(ref_V, Rv, nv, raw)
+            if self._tris is not None:
+                N = np.einsum("nij,nj->ni", R, self.n0)
+                N[self.pocket.p] = Np
+                self.stats["flip"] = int((np.sign(facing(self._tris, X, N)) != self._face0).sum())
+        elif (fill or both) and self.pocket is not None:
             X = self.pocket.fill(raw, R, self.frame_passes)
         if both:
             return X, raw
