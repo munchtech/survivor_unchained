@@ -10,7 +10,7 @@ namespace SurvivorUnchained.View;
 /// The engine's side of the engine-against-poser check (tools/armor/engine_check.py; --pose-probe-skin DIR with
 /// --pose-probe-full, checks only, nothing without the flag): once, at the first sampled frame from --pose-probe-skin-at
 /// (default 200), her drawn body (Heroine) and every drawn piece of B's built gear as the ENGINE holds them: each surface's
-/// vertices, normals, bone indices and weights (4 or 8 a vertex), indices, the blend-shape arrays of the shapes that are on
+/// vertices, normals, bone indices and weights (4 or 8 a vertex), indices, the blend-shape arrays (points and normals) of the shapes that are on
 /// (and the mesh's blend mode), the instance's shape values, its skin's binds (bone name, bind pose), and the body's tuck as
 /// its material got it (the `tuck` uniform, the tuck_map's values, its width and the instance's offset). DIR/meshes.json
 /// indexes one DIR/NAME.mesh.bin a mesh (float32 / int32, offsets and counts in the index). The check skins these with the
@@ -64,6 +64,15 @@ public static class P1MeshDump
                     {
                         if (Mathf.Abs(mi.GetBlendShapeValue(i)) < 1e-5f) continue;
                         sb.Append($"{(f2 ? "" : ",")}\"{am.GetBlendShapeName(i)}\":{Vec(bs[i][(int)Mesh.ArrayType.Vertex].AsVector3Array())}");
+                        f2 = false;
+                    }
+                    // (and the shapes' normals: the engine blends them into the normal her tuck runs along)
+                    sb.Append("},\"shape_normals\":{");
+                    f2 = true;
+                    for (int i = 0; i < nsh && i < bs.Count; i++)
+                    {
+                        if (Mathf.Abs(mi.GetBlendShapeValue(i)) < 1e-5f) continue;
+                        sb.Append($"{(f2 ? "" : ",")}\"{am.GetBlendShapeName(i)}\":{Vec(bs[i][(int)Mesh.ArrayType.Normal].AsVector3Array())}");
                         f2 = false;
                     }
                 }
