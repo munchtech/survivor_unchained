@@ -423,6 +423,33 @@ def _fold_helpers(dw, B, A):
     return dw
 
 
+def move_points(fld, Q):
+    """The rest move D the follow gives a point at Q (same correspondence as follow_file's first step: the closest
+    place on BASE's surface, D barycentric, faded by distance; no smoothing: a socket point has no welded surface)."""
+    Q = np.asarray(Q, float).reshape(-1, 3)
+    d, f, b, _, _, _ = fld.A.surface(Q)
+    Dq = (fld.D[fld.A.F[f]] * b[:, :, None]).sum(1)
+    return Dq * _ss((FAR - d) / (FAR - NEAR))[:, None]
+
+
+def follow_sockets(path, fld, dry=False):
+    """<id>.sockets.json: each socket's point moved by move_points (glTF space, metres). Returns the max move (mm), or
+    None when the file was followed onto this body already."""
+    s = json.load(open(path, encoding="utf-8"))
+    if s.get("followed_onto") == fld.bsha:
+        return None
+    ks = [k for k, v in s.get("sockets", {}).items() if "point" in v]
+    if not ks:
+        return 0.0
+    M = move_points(fld, [s["sockets"][k]["point"] for k in ks])
+    for k, m in zip(ks, M):
+        s["sockets"][k]["point"] = [round(float(x), 5) for x in np.asarray(s["sockets"][k]["point"]) + m]
+    s["followed_onto"] = fld.bsha
+    if not dry:
+        json.dump(s, open(path, "w", encoding="utf-8"), indent=1)
+    return float(np.linalg.norm(M, axis=1).max() * 1000)
+
+
 def follow_file(path, fld, kind, shapes, dry=False):
     A, B = fld.A, fld.B
     G = _Gl(path)
@@ -701,6 +728,11 @@ def main(argv):
         if r:
             _say("FOLLOW %-34s %7d pts: %6d within 10 mm of her, %6d moved (max %.2f mm, off its neighbours %.2f; %d over the re-meshed pit, %d of them set back out of her), %6d reweighted, %7d shape moves; %d points in rigid shells moved rigidly (bend taken out: max %.2f mm)"
                  % (os.path.basename(f), r["pts"], r["near"], r["moved"], r["max_mm"], r["spike_mm"], r["soft"], r["pit_out"], r["wpts"], r["shaped"], r["rigid"], r["bend_mm"]))
+    if "armor" in parts:
+        for sp in sorted(glob.glob(os.path.join(art, "armor", "*.sockets.json"))):
+            mm = follow_sockets(sp, fld, dry)
+            if mm is not None:
+                _say("FOLLOW %-34s sockets moved (max %.2f mm)" % (os.path.basename(sp), mm))
     # records
     subs = []
     if "outfits" in parts:

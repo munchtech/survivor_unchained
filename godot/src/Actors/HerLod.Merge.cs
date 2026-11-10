@@ -364,6 +364,8 @@ public partial class HerLod
         var mi = new MeshInstance3D { Name = name, Mesh = mesh, Skin = skin, Layers = 2, CastShadow = cast, Visible = false };
         skel.AddChild(mi);
         mi.Skeleton = "..";
+        // (B with its built gear: the merge of B's own pieces, P1Laws leaves it to this switch)
+        if (P1Body.IsB(skel) && SurvivorUnchained.Rpg.ArmorIndex.GearDir != null) mi.SetMeta(P1Body.GearMeta, true);
         return mi;
     }
 

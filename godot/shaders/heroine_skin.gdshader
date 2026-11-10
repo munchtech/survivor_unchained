@@ -377,6 +377,9 @@ uniform int tuck_channel = -1;
 uniform float tuck = 0.010;
 uniform sampler2D tuck_map : filter_nearest, repeat_disable;
 uniform int tuck_map_width = 1;
+// (B, --body p1: its play body wears its close body's material, and one tuck_map holds both bodies' values, the play
+// body's from this offset on, set on its instance by HerWear.TuckMap; 0 everywhere else)
+instance uniform int tuck_offset = 0;
 varying float tuck_gone;
 
 // The light through her (BACKLIGHT): how much, its colour, and how far it is kept to lamps behind her (it has no
@@ -627,9 +630,12 @@ void vertex() {
 		tuck_gone = step(0.995, h);
 		VERTEX -= NORMAL * tuck * (h > 0.973 ? 1.0 : h);
 	} else if (tuck_channel == -2) {
-		float h = texelFetch(tuck_map, ivec2(VERTEX_ID % tuck_map_width, VERTEX_ID / tuck_map_width), 0).r;
+		int vid = VERTEX_ID + tuck_offset;
+		float h = texelFetch(tuck_map, ivec2(vid % tuck_map_width, vid / tuck_map_width), 0).r;
 		tuck_gone = step(0.995, h);
-		VERTEX -= NORMAL * tuck * (h > 0.973 ? 1.0 : h);
+		// (a mark over 1, SkinTuck.Merge: skin not drawn that a shallower piece hides in a deeper look, moved by its own
+		// depth, 2 - h of `tuck`; marks up to 1 read as before)
+		VERTEX -= NORMAL * tuck * (h > 0.973 ? min(1.0, 2.0 - h) : h);
 	}
 	model_y = VERTEX.y;
 	CEL_HERO_VERTEX;   // (L1 l22 p1norm: her smoothed shading normal, last: the tuck above moves along her true normal)

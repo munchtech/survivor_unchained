@@ -96,6 +96,9 @@ def cast(O, D, V):
 def signed_gap(t, facing, reach):
     """Per ray: the gap out to B's inner face (negative: past it), the column used, and the gap out to B's outer face
     (negative: A out through B where it shows; inside B's shell it is hidden), nan if none within reach."""
+    # a forward inner-face hit past the reach: the point is inside B's shell (a boot's toe box), so the backward
+    # inner hit behind it is not "through"; it reads no gap
+    ahead = ((t >= reach) & (facing < 0)).any(1)
     t = np.where(np.abs(t) < reach, t, np.nan)
     n = len(t)
     rows = np.arange(n)
@@ -113,9 +116,9 @@ def signed_gap(t, facing, reach):
     g = np.full(n, np.nan)
     j = np.zeros(n, int)
     c1 = hf & (sf < 0)
-    c2 = ~c1 & hbi
+    c2 = ~c1 & hbi & ~ahead
     c3 = ~c1 & ~c2 & hf
-    c4 = ~c1 & ~c2 & ~c3 & hba
+    c4 = ~c1 & ~c2 & ~c3 & hba & ~ahead
     for c, gg, jj in ((c1, tf, jf), (c2, tbi, jbi), (c3, tf, jf), (c4, tba, jba)):
         g[c], j[c] = gg[c], jj[c]
     fx = np.where((t >= 0) & (facing > 0), t, np.inf).min(1)
