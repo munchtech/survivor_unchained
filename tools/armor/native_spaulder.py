@@ -19,10 +19,15 @@ top 8: derived here from the body, so a changed body re-derives it; the footprin
 and "ride_reach", 6 mm, up past it) or [a part rule each], "carry": "part" | "none" (gear_native.part_blends)};
 "cop" {"apex": how far its crown stands over its rim's surface, "rim": its rim's own extra stand-off, "shape" [a, b]:
 the dome's fullness along / round the arm (2 a parabola, more is fuller), "roll" its own rolled rim, "ridge" {"theta",
-"h", "w", "fade"}: a keel down its crown (Sheet), "ride_band" [s0, s1]: the band of her skin its ride reads (its whole
-footprint when absent)};
-"arming" {"clear", "thick", "roll", "past" [up, down, round (degrees)]: how far it shows beyond the plates' outline,
-"step"} (absent or null: no arming cap); "rivet" {"r", "h", "in"}: the articulation rivets, at the two ends of every
+"h", "w", "fade"}: a keel down its crown (Sheet), "ride_band" [s0, s1]: the band of her skin its ride reads (her skin
+under its own outline when absent), "over" {"depth", "ease"}: the cop CROWNS her shoulder: e0 may lie up past the
+joint, over her acromion and outer trapezius, because the frame's centres are let down to stay `depth` under her
+skin's crest line there (ShoulderFrame; depth: her skin's own at lame 1's top when absent; read from her skin, so
+another body re-derives it), "arch" {"span", "power"}: its upper edge is an arch (e0 at its middle, down to `span`
+above its lower edge at its two ends: a rounded outline, never a box)};
+"arming" {"clear", "thick", "roll", "past" [up, down, round (degrees)]: how far it shows beyond the plates' outline
+(the cop's arch, the cop's sides, then in to the lames' sides), "step"} (absent or null: no arming cap; its material
+must be a key some gear source carries painted, gear_native.material_templates: "darkleather"; a bare key is white); "rivet" {"r", "h", "in"}: the articulation rivets, at the two ends of every
 lap; "tip_flare" {"lames" [k ..], "from", "to", "rise"}: those parts' front tips stand `rise` further off her from
 theta `from` to `to` (her pec and front armpit skin ride over anything in front of 45); "mirror" (true): one shape for
 her two shoulders, on the law lying over both sides' skin; "materials" {"plate", "rim", "arming"}: the rolled rims are
