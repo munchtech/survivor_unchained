@@ -381,9 +381,9 @@ cel_oneshade={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
-cel_pool_brush={
+cel_pool_shade={
 "type": "vec4",
-"value": Vector4(0, 0, 0, 0.3)
+"value": Vector4(0, 0, 0, 0)
 }
 cel_canopy_r={
 "type": "vec4",

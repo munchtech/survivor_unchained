@@ -304,7 +304,7 @@ public static class Atmospheres
             EmberColor = a.EmberColor != "" && b.EmberColor != "" ? Mix(a.EmberColor, b.EmberColor, t) : t < 0.5 ? a.EmberColor : b.EmberColor, EmberReach = Lerp(a.EmberReach, b.EmberReach, t),
             EmberGive = a.EmberGive is { Length: 4 } ga && b.EmberGive is { Length: 4 } gb ? Lerp3x(ga, gb, t) : t < 0.5 ? a.EmberGive : b.EmberGive,
             FireGive = a.FireGive is { Length: 4 } fa && b.FireGive is { Length: 4 } fb ? Lerp3x(fa, fb, t) : t < 0.5 ? a.FireGive : b.FireGive,
-            EmberPool = t < 0.5 ? a.EmberPool : b.EmberPool, EmberBreak = t < 0.5 ? a.EmberBreak : b.EmberBreak, EmberBrush = t < 0.5 ? a.EmberBrush : b.EmberBrush, EmberEdge = t < 0.5 ? a.EmberEdge : b.EmberEdge,
+            EmberPool = t < 0.5 ? a.EmberPool : b.EmberPool, EmberSmooth = t < 0.5 ? a.EmberSmooth : b.EmberSmooth, EmberShade = t < 0.5 ? a.EmberShade : b.EmberShade, EmberEdge = t < 0.5 ? a.EmberEdge : b.EmberEdge,
             CrowdRim = Lerp(a.CrowdRim, b.CrowdRim, t), CrowdFill = Lerp(a.CrowdFill, b.CrowdFill, t), RiverLight = Lerp(a.RiverLight, b.RiverLight, t),
             RiverSky = Lerp(a.RiverSky, b.RiverSky, t), RiverBend = Lerp(a.RiverBend, b.RiverBend, t),
             RiverMoon = Lerp(a.RiverMoon, b.RiverMoon, t), GrassLampOchre = Lerp(a.GrassLampOchre, b.GrassLampOchre, t),

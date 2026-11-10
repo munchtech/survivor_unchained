@@ -336,10 +336,12 @@ public partial class Atmosphere : Node3D
                 // (S2b-N3: her pool, the moon's give, and the canopy's dapple, for a sweep in one build: pool=a/b/..., give=a/b/c/d)
                 EmberPool = V("pool", p.EmberPool ?? []) is { Length: > 0 } tp ? tp : p.EmberPool, EmberGive = V("give", p.EmberGive ?? []) is { Length: > 0 } tg ? tg : p.EmberGive,
                 FireGive = V("fgive", p.FireGive ?? []) is { Length: > 0 } tf ? tf : p.FireGive,   // (L1 lead 9, NIGHT2: fgive=key/sky/start/gone)
-                EmberEdge = H("edge", p.EmberEdge), EmberBreak = T("pbreak", p.EmberBreak), EmberBrush = V("pbrush", p.EmberBrush ?? []) is { Length: > 0 } tbr ? tbr : p.EmberBrush, DappleCover = T("dcover", p.DappleCover), DappleStrength = T("dstr", p.DappleStrength), DappleSize = T("dsize", p.DappleSize), DappleFloor = T("dfloor", p.DappleFloor),
+                EmberEdge = H("edge", p.EmberEdge), EmberSmooth = T("psmooth", p.EmberSmooth ? 1 : 0) > 0, EmberShade = V("pshade", p.EmberShade ?? []) is { Length: > 0 } tsh ? tsh : p.EmberShade,   // (L1 lead 12, R4 round 4: psmooth=1, pshade=cut/from/to/moon)
+                DappleCover = T("dcover", p.DappleCover), DappleStrength = T("dstr", p.DappleStrength), DappleSize = T("dsize", p.DappleSize), DappleFloor = T("dfloor", p.DappleFloor),
                 // (L1 lead 11: the dapple's edge (px) and the leaf cookie's shapes: dedge=2,dclusters=300,dleaf=1.2/3.5,dleaves=2/4)
                 DappleEdge = T("dedge", p.DappleEdge), DappleClusters = T("dclusters", p.DappleClusters),
                 DappleLeaf = V("dleaf", p.DappleLeaf ?? []) is { Length: 2 } tl ? tl : p.DappleLeaf, DappleLeaves = V("dleaves", p.DappleLeaves ?? []) is { Length: 2 } tv ? tv : p.DappleLeaves,
+                DappleMass = V("dmass", p.DappleMass ?? []) is { Length: 2 } tm ? tm : p.DappleMass,   // (L1 lead 12, F4: leaf masses, dmass=1.5/4)
                 Grade = p.Grade with
                 {
                     TintStrength = T("tint", p.Grade.TintStrength), Contrast = T("contrast", p.Grade.Contrast), Toe = T("toe", p.Grade.Toe),
@@ -520,10 +522,10 @@ public partial class Atmosphere : Node3D
         RenderingServer.GlobalShaderParameterSet("cel_key", new Vector4(keyToward.X, keyToward.Y, keyToward.Z, dap));
         RenderingServer.GlobalShaderParameterSet("cel_dapple", new Vector4((float)p.DappleCover, CanopyCookie.PlaneY + (float)p.DappleHeight, (float)(p.DappleSize > 0 ? p.DappleSize : CanopyCookie.Tile), (float)(CanopyCookie.Floored ? p.DappleFloor : 0)));
         // (L1 lead 11, R3) the key's shadow as a level (cel_oneshade.x: its opacity; 0: the old switch), the dapple's edge (px), and the cookie's shapes
-        RenderingServer.GlobalShaderParameterSet("cel_oneshade", new Vector4(CelRigs && cam == null && p.ShadowLevel ? (float)p.ShadowStrength : 0f, (float)p.DappleEdge, CelRigs && cam == null ? (float)p.EmberBreak : 0f, 0));   // (z, R4: her pool's end under a leaf; --air-tune pbreak)
-        // (L1 lead 11, R4 round 2) her pool painted: the dab field's push, where the break under a leaf starts and is full, the dab's width (--air-tune pbrush=a/b/c/d)
-        RenderingServer.GlobalShaderParameterSet("cel_pool_brush", CelRigs && cam == null && p.EmberBrush is [var ba, var bf, var bt, var bw] ? new Vector4((float)ba, (float)bf, (float)bt, (float)bw) : new Vector4(0, 0, 0, 0.3f));
-        if (CelRigs) CanopyCookie.Shape((int)p.DappleClusters, p.DappleLeaf, p.DappleLeaves);
+        RenderingServer.GlobalShaderParameterSet("cel_oneshade", new Vector4(CelRigs && cam == null && p.ShadowLevel ? (float)p.ShadowStrength : 0f, (float)p.DappleEdge, 0, 0));
+        // (L1 lead 12, R4 round 4) the canopy's leaf shade across her fire: the share of the fire a leaf's shade takes, the canopy's opening over her (m: none inside, whole from), the moon kept under a leaf (--air-tune pshade=a/b/c/d). Zero: the rig has not opted in.
+        RenderingServer.GlobalShaderParameterSet("cel_pool_shade", CelRigs && cam == null && p.EmberShade is [var sc, var sf, var st, var sm] ? new Vector4((float)sc, (float)sf, (float)st, (float)sm) : Vector4.Zero);
+        if (CelRigs) CanopyCookie.Shape((int)p.DappleClusters, p.DappleLeaf, p.DappleLeaves, p.DappleMass);
         static Vector3 Hue(Color c)
         {
             float l = Mathf.Max(c.R * 0.2126f + c.G * 0.7152f + c.B * 0.0722f, 1e-4f);
@@ -551,7 +553,7 @@ public partial class Atmosphere : Node3D
         // (L1 lead 9, B1) her pool as light, a ramp in metres from her light's foot (the rig's ember_pool; cel.gdshaderinc
         // cel_pool_paint, cel_pool_ramp): [the canopy's dapple kept at its edge and at its core, then stops of r (m), level (over her light's energy),
         // color (sRGB 0-255)], FROM targets 09 and 12. Not under a camera rig (the close view's own light).
-        var ramp = CelRigs && cam == null ? PoolRamp(p.EmberPool) : null;
+        var ramp = CelRigs && cam == null ? PoolRamp(p.EmberPool, p.EmberSmooth) : null;
         RenderingServer.GlobalShaderParameterSet("cel_pool_band", ramp is { } pr ? new Vector4(pr.Reach, pr.Core, (float)p.EmberPool![0], (float)p.EmberPool![1]) : Vector4.Zero);
         if (ramp is { } pr2) RenderingServer.GlobalShaderParameterSet("cel_pool_ramp", pr2.Tex);
     }
@@ -559,19 +561,22 @@ public partial class Atmosphere : Node3D
     /// <summary>(L1 lead 9, B1) Her pool's ramp from a rig's ember_pool ([dapple kept at the edge, at the core, (r m, level, R, G, B 0-255) x n], r rising,
     /// the last stop's level 0): 64 texels over 0..the last stop, rgb the level x the color (linear, largest channel 1), a the
     /// moon's give-way (the level over the core's). Levels and colors linear between stops (a cubic's overshoot would ring).
-    /// Null: no ramp (fewer than two stops).</summary>
-    internal static (ImageTexture Tex, float Reach, float Core)? PoolRamp(double[]? ep)
+    /// (L1 lead 12, R4 round 4) smooth (rigs.json "ember_smooth"): the levels on a monotone cubic through the stops (Fritsch and
+    /// Carlson: no overshoot, so no ring), flat at her feet and flat where it ends, so the field has no kink a stop could draw
+    /// as a contour and its tail meets nothing without an edge. Null: no ramp (fewer than two stops).</summary>
+    internal static (ImageTexture Tex, float Reach, float Core)? PoolRamp(double[]? ep, bool smooth = false)
     {
         if (ep is not { Length: >= 12 } || (ep.Length - 2) % 5 != 0) return null;
         // (the last one built, kept: the air's glide sets the cel globals every frame)
-        if (poolRampOf != null && poolRamp != null && System.Linq.Enumerable.SequenceEqual(poolRampOf, ep)) return poolRamp;
-        poolRampOf = (double[])ep.Clone();
-        poolRamp = BuildPoolRamp(ep);
+        if (poolRampOf != null && poolRamp != null && poolRampSmooth == smooth && System.Linq.Enumerable.SequenceEqual(poolRampOf, ep)) return poolRamp;
+        poolRampOf = (double[])ep.Clone(); poolRampSmooth = smooth;
+        poolRamp = BuildPoolRamp(ep, smooth);
         return poolRamp;
     }
     static double[]? poolRampOf;
+    static bool poolRampSmooth;
     static (ImageTexture Tex, float Reach, float Core)? poolRamp;
-    static (ImageTexture Tex, float Reach, float Core) BuildPoolRamp(double[] ep)
+    static (ImageTexture Tex, float Reach, float Core) BuildPoolRamp(double[] ep, bool smooth)
     {
         int n = (ep.Length - 2) / 5;
         var r = new float[n]; var lv = new float[n]; var c = new Color[n];
@@ -584,6 +589,17 @@ public partial class Atmosphere : Node3D
             c[i] = new Color(cl.R / mx, cl.G / mx, cl.B / mx);
         }
         float reach = Mathf.Max(r[n - 1], 0.1f), core = Mathf.Max(lv[0], 1e-3f);
+        // (smooth: each stop's slope, the harmonic mean of its two sides' (0 where they turn), 0 at both ends)
+        var sl = new float[n];
+        if (smooth)
+            for (int i = 1; i < n - 1; i++)
+            {
+                float h0 = Mathf.Max(r[i] - r[i - 1], 1e-4f), h1 = Mathf.Max(r[i + 1] - r[i], 1e-4f);
+                float d0 = (lv[i] - lv[i - 1]) / h0, d1 = (lv[i + 1] - lv[i]) / h1;
+                if (d0 * d1 <= 0) continue;
+                float w1 = 2 * h1 + h0, w2 = h1 + 2 * h0;
+                sl[i] = (w1 + w2) / (w1 / d0 + w2 / d1);
+            }
         const int W = 64;
         var img = Image.CreateEmpty(W, 1, false, Image.Format.Rgbaf);
         for (int x = 0; x < W; x++)
@@ -592,6 +608,11 @@ public partial class Atmosphere : Node3D
             int j = 0; while (j < n - 2 && d > r[j + 1]) j++;
             float t = Mathf.Clamp((d - r[j]) / Mathf.Max(r[j + 1] - r[j], 1e-4f), 0, 1);
             float l = Mathf.Lerp(lv[j], lv[j + 1], t);
+            if (smooth)
+            {
+                float hh = Mathf.Max(r[j + 1] - r[j], 1e-4f), t2 = t * t, t3 = t2 * t;
+                l = Mathf.Max((2 * t3 - 3 * t2 + 1) * lv[j] + (t3 - 2 * t2 + t) * hh * sl[j] + (-2 * t3 + 3 * t2) * lv[j + 1] + (t3 - t2) * hh * sl[j + 1], 0);
+            }
             var col = c[j].Lerp(c[j + 1], t);
             img.SetPixel(x, 0, new Color(col.R * l, col.G * l, col.B * l, Mathf.Clamp(l / core, 0, 1)));
         }

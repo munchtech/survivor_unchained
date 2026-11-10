@@ -28,17 +28,22 @@ public static class CanopyCookie
 
     // (L1 lead 11) The leaf shapes as knobs (rigs.json dapple "clusters", "leaf", "leaves"; --air-tune dclusters, dleaf, dleaves):
     // the defaults draw the tile as it was (the same random run).
-    static (int Clusters, float LenMin, float LenMax, int LeavesMin, int LeavesMax) shape = (420, 0.8f, 2.4f, 3, 5), built;
+    // (L1 lead 12, F4) Leaf MASSES (rigs.json dapple "mass" [narrowest, widest, m]; --air-tune dmass): a cluster is a lobed mass
+    // that wide (a middle lobe and "leaves" more round it, filled) with small pointed leaves ("leaf" long) all round its rim,
+    // tips out: shade reads as serrated masses of foliage, and no single leaf is big enough to read as a leaf on the ground
+    // (the fans' 0.8-2.4 m leaves did, and bit her pool in scoops). No mass: the fans, as they were.
+    static (int Clusters, float LenMin, float LenMax, int LeavesMin, int LeavesMax, float MassMin, float MassMax) shape = (420, 0.8f, 2.4f, 3, 5, 0f, 0f), built;
     /// <summary>The cookie's shapes (0 or null: the default); the tile is redrawn, and set again where it is in use, when they change.</summary>
-    public static void Shape(int clusters, double[]? leafLen, double[]? leaves)
+    public static void Shape(int clusters, double[]? leafLen, double[]? leaves, double[]? mass = null)
     {
         bool lenOk = leafLen is { Length: 2 } && leafLen[0] > 0 && leafLen[1] >= leafLen[0];
         bool numOk = leaves is { Length: 2 } && leaves[0] >= 1 && leaves[1] >= leaves[0];
         var s = (clusters > 0 ? Math.Min(clusters, 4000) : 420, lenOk ? (float)leafLen![0] : 0.8f, lenOk ? (float)Math.Min(leafLen![1], 12) : 2.4f,
-            numOk ? (int)leaves![0] : 3, numOk ? (int)Math.Min(leaves![1], 12) : 5);
+            numOk ? (int)leaves![0] : 3, numOk ? (int)Math.Min(leaves![1], 12) : 5,
+            mass is { Length: 2 } && mass[0] > 0 && mass[1] >= mass[0] ? (float)mass[0] : 0f, mass is { Length: 2 } && mass[0] > 0 && mass[1] >= mass[0] ? (float)Math.Min(mass[1], 12) : 0f);
         if (s == shape) return;
         shape = s;
-        GD.Print($"canopy cookie: {s.Item1} clusters, leaves {s.Item4}-{s.Item5} of {s.Item2:0.##}-{s.Item3:0.##} m");
+        GD.Print($"canopy cookie: {s.Item1} clusters, leaves {s.Item4}-{s.Item5} of {s.Item2:0.##}-{s.Item3:0.##} m" + (s.Item6 > 0 ? $", masses {s.Item6:0.##}-{s.Item7:0.##} m" : ""));
         if (leaf == null) return;
         RenderingServer.GlobalShaderParameterSet("cel_cookie", Leaf());
     }
@@ -52,7 +57,8 @@ public static class CanopyCookie
         var rnd = new Random(20261104);
         float m = TilePx / Tile;
         int clusters = shape.Clusters;
-        for (int c = 0; c < clusters; c++)
+        if (shape.MassMin > 0) Masses(px, rnd, m);
+        else for (int c = 0; c < clusters; c++)
         {
             byte rank = (byte)(4 + c * 247 / clusters);
             float cx = (float)rnd.NextDouble() * TilePx, cy = (float)rnd.NextDouble() * TilePx;
@@ -81,6 +87,72 @@ public static class CanopyCookie
         img.GenerateMipmaps();
         leaf = ImageTexture.CreateFromImage(img);
         return leaf;
+    }
+
+    // (L1 lead 12, F4) The tile as leaf masses: see shape.
+    static void Masses(byte[] px, Random rnd, float m)
+    {
+        int clusters = shape.Clusters;
+        for (int c = 0; c < clusters; c++)
+        {
+            byte rank = (byte)(4 + c * 247 / clusters);
+            float cx = (float)rnd.NextDouble() * TilePx, cy = (float)rnd.NextDouble() * TilePx;
+            float rad = (shape.MassMin + (float)rnd.NextDouble() * (shape.MassMax - shape.MassMin)) * 0.5f * m;
+            int lobes = 1 + shape.LeavesMin + rnd.Next(shape.LeavesMax - shape.LeavesMin + 1);
+            var lx = new float[lobes]; var ly = new float[lobes]; var lr = new float[lobes];
+            // (the middle lobe, the others round it and into it: one lump about 2 rad across, never a circle)
+            float turn = (float)(rnd.NextDouble() * Math.PI * 2);
+            for (int l = 0; l < lobes; l++)
+            {
+                float a = turn + (l - 1) * (float)(Math.PI * 2) / Math.Max(lobes - 1, 1) + ((float)rnd.NextDouble() - 0.5f) * 0.9f;
+                float d = l == 0 ? 0 : rad * (0.38f + 0.3f * (float)rnd.NextDouble());
+                lr[l] = rad * (l == 0 ? 0.5f + 0.1f * (float)rnd.NextDouble() : 0.26f + 0.26f * (float)rnd.NextDouble());
+                lx[l] = cx + MathF.Cos(a) * d; ly[l] = cy + MathF.Sin(a) * d;
+            }
+            for (int l = 0; l < lobes; l++)
+            {
+                int r = (int)lr[l] + 1; float r2 = lr[l] * lr[l];
+                for (int y = -r; y <= r; y++)
+                {
+                    int iy = ((int)(ly[l] + y) % TilePx + TilePx) % TilePx;
+                    int w = (int)MathF.Sqrt(MathF.Max(r2 - y * y, 0));
+                    for (int x = -w; x <= w; x++)
+                    {
+                        int i = iy * TilePx + (((int)(lx[l] + x) % TilePx + TilePx) % TilePx);
+                        if (rank < px[i]) px[i] = rank;
+                    }
+                }
+                // its rim's leaves, tips out (none where the rim runs inside another lobe)
+                float at = (float)(rnd.NextDouble() * Math.PI * 2), end = at + (float)(Math.PI * 2);
+                while (at < end)
+                {
+                    float len = (shape.LenMin + (float)rnd.NextDouble() * (shape.LenMax - shape.LenMin)) * m, wid = len * (0.5f + (float)rnd.NextDouble() * 0.2f);
+                    float step = wid * (0.7f + 0.5f * (float)rnd.NextDouble()) / MathF.Max(lr[l], 1f);
+                    float th = at + step * 0.5f; at += step;
+                    float a = th + ((float)rnd.NextDouble() - 0.5f) * 1.1f;
+                    float bx = lx[l] + MathF.Cos(th) * lr[l], by = ly[l] + MathF.Sin(th) * lr[l];
+                    bool inside = false;
+                    for (int k = 0; k < lobes && !inside; k++)
+                        if (k != l) { float ex = bx - lx[k], ey = by - ly[k], rk = MathF.Max(lr[k] - len * 0.3f, 0); inside = ex * ex + ey * ey < rk * rk; }
+                    if (inside) continue;
+                    float ca = MathF.Cos(a), sa = MathF.Sin(a);
+                    float ox = bx + ca * len * 0.12f, oy = by + sa * len * 0.12f;
+                    int lrad = (int)(len * 0.5f) + 2;
+                    for (int y = -lrad; y <= lrad; y++)
+                        for (int x = -lrad; x <= lrad; x++)
+                        {
+                            float u = (x * ca + y * sa) / (len * 0.5f), v = (-x * sa + y * ca) / (wid * 0.5f);
+                            if (MathF.Abs(u) > 1 || MathF.Abs(v) > 1 - u * u) continue;
+                            int i = (((int)(oy + y) % TilePx + TilePx) % TilePx) * TilePx + (((int)(ox + x) % TilePx + TilePx) % TilePx);
+                            if (rank < px[i]) px[i] = rank;
+                        }
+                }
+            }
+        }
+        // (for the log: what the masses ranked under half close of the tile, and all of them)
+        long shade = 0, half = 0;
+        foreach (byte b in px) { if (b < 255) shade++; if (b < 128) half++; }
+        GD.Print($"canopy cookie: masses close {100.0 * half / px.Length:0.0}% of the tile at cover 0.5, {100.0 * shade / px.Length:0.0}% at 1");
     }
 
     /// <summary>The canopy for a zone: its mask and the leaf tile into the globals (ZoneView, as the zone is built).</summary>

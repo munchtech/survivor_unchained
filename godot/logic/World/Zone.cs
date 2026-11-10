@@ -180,13 +180,15 @@ public sealed record AtmospherePreset(
     /// from 0.5 m through orange and dusk into the moon's ground by 3.25 m, no plateau, no ring. Null: her light as Godot
     /// falls it.</summary>
     public double[]? EmberPool { get; init; }
-    /// <summary>(L1 lead 11, R4; rigs.json "ember_break") Her pool's broken end: under a leaf of the canopy's dapple the ramp reaches
-    /// this share of its radius less far, so its end follows the leaf shapes (cel_oneshade.z). 0: a round end.</summary>
-    public double EmberBreak { get; init; }
-    /// <summary>(L1 lead 11, R4 round 2; rigs.json "ember_brush") Her pool painted: [how far (m) the ground's dab field pushes the
-    /// ramp's radius in or out, where the break under a leaf starts (m from her light's foot), where it is full (m), the dab's
-    /// width (m)] (cel_pool_brush). Null: a compass pool, the break everywhere.</summary>
-    public double[]? EmberBrush { get; init; }
+    /// <summary>(L1 lead 12, R4 round 4; rigs.json "ember_smooth") Her pool's ramp runs smooth through its stops (a monotone
+    /// cubic, flat at her feet and at its end; Atmosphere.PoolRamp) instead of straight between them: a field with no kink
+    /// and no edge. (Retired with it: lead 11's ember_break and ember_brush, a shaped end that drew a disc.)</summary>
+    public bool EmberSmooth { get; init; }
+    /// <summary>(L1 lead 12, R4 round 4; rigs.json "ember_shade") The canopy's leaf shade across her fire: [the share of her
+    /// fire a leaf's shade takes, the canopy's opening over her fire (m from her light's foot: no leaf shade inside this),
+    /// where the shade is whole (m), how much of the moon's give-way a leaf's shade undoes (1: the moon whole under a leaf)]
+    /// (cel_pool_shade). Null: her light uncut and the moon's shade as it was.</summary>
+    public double[]? EmberShade { get; init; }
     /// <summary>(L1 lead 8, S2b) The pool's outer step's color (sRGB hex). Retired by lead 9 (B1: the ramp's stops carry the colors); read, unused.</summary>
     public string EmberEdge { get; init; } = "";
     /// <summary>The moon's rim on the crowd in play, in shade as in its light (0: none, as the cinematics' presets have it).</summary>
@@ -249,6 +251,9 @@ public sealed record AtmospherePreset(
     public double DappleClusters { get; init; }
     public double[]? DappleLeaf { get; init; }
     public double[]? DappleLeaves { get; init; }
+    /// <summary>(L1 lead 12, F4) Leaf masses: each cluster a lobed mass this wide [narrowest, widest] m with small leaves round
+    /// its rim (DappleLeaf their length, DappleLeaves the lobes a mass). Null: the fans of big leaves. CanopyCookie.Shape.</summary>
+    public double[]? DappleMass { get; init; }
     public bool IsLit { get; init; }
     public AtmospherePreset? Source { get; init; }
     /// <summary>(L1 B4) A blend's light under cel: the blend of its two presets' rigs (Atmospheres.Blend sets it).</summary>
