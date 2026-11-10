@@ -35,6 +35,40 @@ render_mode diffuse_burley, specular_schlick_ggx;
 #endif
 #include "res://shaders/cel.gdshaderinc"
 #include "res://shaders/world_clock.gdshaderinc"
+#ifdef KIT_STAND_LEAF
+// (L1 lead 22, BUSH) The leaf MASS's tone is BAKED per cap in COLOR.r (env_trees.py BU_RING: 1 its middle, 0.86 a ring,
+// 0.6 its edge, the whole cap shifted by BU_JIT), not read from its normal: a cap is 20-30 px at the play camera and its
+// normal's rim band 2-3 px, so the normal drew two flat fields. The normal still says WHICH SIDE (toward her fire: the
+// fire's first band; else the moon's), the level says which tone there: fire top (>= 0.9, tone 6) / olive mid (>= 0.7,
+// tone 5) / dark edge (tone 5 x texel 7.w); moon top (>= 0.9 on key-lit faces off the side, tone 3) / body or side by the
+// normal (>= 0.7) / side (the edge). Foot band, rim line, the fire's give-way and the dabs as cel_stand_base.
+vec3 kit_leaf_base(vec3 c_wp, vec2 c_org, vec3 c_wn, float c_foot, float c_lum, float c_rim, float c_lv, out vec3 c_moon, out vec3 c_fire) {
+	vec4 c_x = cel_stand_tone(7);
+	float c_dab = c_x.y > 0.0 ? clamp(pow(max(c_lum, 1e-4) / max(c_x.x, 1e-4), c_x.y), 0.5, 1.5) : 1.0;
+	float c_d = dot(c_wn, normalize(mix(cel_key.xyz, vec3(0.0, 1.0, 0.0), cel_stand.z)));
+	float c_ft = 1.0 - cel_stand_step(c_foot, cel_stand.w);
+	float c_kl = cel_stand_step(dot(c_wn, cel_key.xyz), 0.2);
+	float c_hi = cel_stand_step(c_lv, 0.9), c_md = cel_stand_step(c_lv, 0.7);
+	float c_side = 1.0 - cel_stand_step(c_d, cel_stand.y);
+	vec3 c_base = mix(cel_stand_tone(1).rgb, mix(cel_stand_tone(2).rgb, cel_stand_tone(1).rgb, c_side), c_md);
+	c_base = mix(c_base, cel_stand_tone(0).rgb, c_ft);
+	float c_top = c_hi * c_kl * (1.0 - c_side) * (1.0 - c_ft);
+	vec3 c_lit = mix(c_base, cel_stand_tone(3).rgb, c_top);
+	c_lit = mix(c_lit, cel_stand_tone(4).rgb, c_rim * (1.0 - c_ft) * mix(c_top, c_kl, clamp(c_x.z, 0.0, 1.0)));
+	float c_g = 1.0;
+	c_fire = vec3(0.0);
+	if (cel_ember.w > 0.0 && cel_pool_band.x > 0.0) {
+		float c_fd = dot(c_wn, normalize(cel_ember.xyz - c_wp));
+		float c_m1 = cel_stand_step(c_fd, cel_stand_fire.x);
+		vec3 c_mid = cel_stand_tone(5).rgb;
+		vec3 c_t = mix(c_mid * c_x.w, mix(c_mid, cel_stand_tone(6).rgb, c_hi), c_md);
+		c_fire = c_t * (c_m1 * c_dab * cel_lum(cel_pool_at(length(c_org - cel_ember.xz)).rgb));
+		c_g = mix(1.0, cel_give_of(cel_back_at(vec3(c_org.x, c_wp.y, c_org.y), cel_dapple_at(c_wp)), cel_give.x), c_m1);
+	}
+	c_moon = max(c_lit - c_base, vec3(0.0)) * (c_g * c_dab);
+	return c_base * (c_g * c_dab);
+}
+#endif
 
 #include "res://shaders/flare_world.gdshaderinc"
 
@@ -1248,7 +1282,8 @@ void fragment() {
 				st_rim = 0.6 * step(0.9, COLOR.r) * (1.0 - smoothstep(1.0, 2.0, st_tip))
 					* smoothstep(0.05, 0.25, dot(st_nv.xy, normalize(st_kv.xy + vec2(1e-5))));
 			}
-			EMISSION = cel_stand_base(wp, v_org, wn, v_foot, cel_lum(col), st_rim, st_m, st_f);
+			if (COLOR.b > 0.5) EMISSION = kit_leaf_base(wp, v_org, wn, v_foot, cel_lum(col), st_rim, COLOR.r, st_m, st_f);
+			else EMISSION = cel_stand_base(wp, v_org, wn, v_foot, cel_lum(col), st_rim, st_m, st_f);
 			float st_gv = 1.0 - 0.8 * clamp(3.0 * cel_lum(st_f) / max(cel_lum(cel_stand_tone(5).rgb), 1e-5), 0.0, 1.0);
 			EMISSION *= st_gv;
 			st_m *= st_gv;

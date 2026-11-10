@@ -2009,7 +2009,7 @@ def mesh_alder_clusters():
 #              (the contact tone, never the ground, never ink).
 # No separate leaves on a clump (the outline is the caps' leaf tips). The tuft: 6 broad five-lobed leaves.
 # Vertex data (the standing leaf route's contract): COLOR.b 1 on caps and core, 0 on the tuft's leaves; COLOR.r 1 on a
-# cap's top, 0.45 on undersides and core, on a leaf 1.0 / 0.8 by its normal; COLOR.g 0 on the mass, stem 0 to tip 1 on
+# cap's top as its baked level ring (BU_RING, shifted per cap by BU_JIT; l22), 0.55 on undersides, 0.45 on the core, on a leaf 1.0 / 0.8 by its normal; COLOR.g 0 on the mass, stem 0 to tip 1 on
 # a leaf; COLOR.a the piece. UV: a cap samples ONE point of clump_dabs.png (caps differ a step in value).
 # Species `clump`, packed: clump_a, tuft_a, clump_b (the order is the piece id).
 #     python tools/assets/env_trees.py tex --species clump                       clump_dabs.png
@@ -2033,6 +2033,12 @@ BU_AXIS = 0.45        # a cap's normals: this share its axis, the rest its local
                       # cap's drooping rim in its top's tone; at 0.45 the rim turns away and takes the next tone down)
 BU_OFF = (-0.02, 0.05)         # a cap's middle off the mound along its normal (m)
 BU_CORE = 0.86        # the core's share of the guide domes
+# (L1 lead 22, BUSH) A cap's TONE is baked in COLOR.r, not read from its normal (a cap is 20-30 px at the play camera, a
+# rim band of its normal 2-3 px): rows (s, level) from its middle to its rim; the standing leaf route steps at 0.9 (top)
+# and 0.7 (mid), under 0.7 the dark edge. lod0: top 1.0 to s 0.36, olive to s 0.81, the edge beyond; lod1-2: one fan.
+BU_RING = {0: ((0.0, 1.0), (0.5, 0.86), (1.0, 0.6)), 1: ((0.0, 0.98), (1.0, 0.6)), 2: ((0.0, 0.98), (1.0, 0.6))}
+BU_UNDER = 0.55       # a cap's underside level (lod0): the dark edge
+BU_JIT = ((0.55, -0.04, 0.05), (0.27, 0.13, 0.15), (0.18, 0.25, 0.27))   # (share, shift lo, hi): lit, olive, dark caps
 BU_UV_CORE = (0.36, 0.50)
 CL_WIDE = 0.92        # a tuft blade's width over its length (x of CL_BLADE is in half-widths of 0.5: 0.98 x 0.92 = 0.9)
 CL_JIT = 8.0          # a tuft leaf's normal off its own (degrees, at most)
@@ -2091,6 +2097,7 @@ def bush_caps(prm):
             break
         mult += 0.03
     rng = np.random.default_rng(prm['seed'] + 2)
+    jr = np.random.default_rng(prm['seed'] + 5)      # (l22 BUSH) each cap's baked level shift, its own stream: BU_JIT
     caps = []
     for i, (p, n) in enumerate(pts):
         r = float(rng.uniform(*prm['cap'])) * BU_SIZES[i % 3]
@@ -2110,9 +2117,20 @@ def bush_caps(prm):
                 rim.append((acc + span * ph, BU_NOTCH + (lob[k] - BU_NOTCH) * math.sin(math.pi * ph) ** 0.55 if j else BU_NOTCH, 0.0, j > 0))
             acc += span
         caps.append(dict(c=p + n * rng.uniform(*BU_OFF), u=u, v=v, w=w, r=r, hc=BU_HC, hu=BU_HU, rim=rim,
-                         uv=(float(rng.uniform(0.04, 0.70)), float(rng.uniform(0.22, 0.96)))))
+                         uv=(float(rng.uniform(0.04, 0.70)), float(rng.uniform(0.22, 0.96))), j=bu_jit(jr)))
     _cl_cache[key] = caps
     return caps
+
+
+def bu_jit(jr):
+    """(l22 BUSH) A cap's level shift (BU_JIT): a lit cap (its top ring shown, its size varied), an olive cap (no top)
+    or a dark cap (mostly edge), so a lit side is never one field."""
+    u, acc = float(jr.uniform()), 0.0
+    for share, lo, hi in BU_JIT:
+        acc += share
+        if u < acc:
+            return float(jr.uniform(lo, hi))
+    return 0.0
 
 
 def _bu_stitch(b, ra, rb_, w, under):
@@ -2147,20 +2165,22 @@ def bush_cap(b, C, lod):
         return nn if np.dot(nn, C['w']) > 0 else -nn
     nu = -C['w'] - _CL_UP
     nu /= np.linalg.norm(nu)
-    for under, rings in ((False, (0.0, 1.0)), (True, (1.0, 0.0) if lod == 0 else ())):
+    lvl = dict(BU_RING[lod])
+    for under, rings in ((False, tuple(r for r, _ in BU_RING[lod])), (True, (1.0, 0.0) if lod == 0 else ())):
         rows = []
         for s in rings:
-            cnt = 1 if s == 0.0 else (n // CL_SUB if lod == 2 else n)
+            mid = 0.0 < s < 1.0                     # (the level ring: one point a lobe's crown, so a cap costs about 2 x its lobes)
+            cnt = 1 if s == 0.0 else (n // CL_SUB if lod == 2 or mid else n)
             row = []
             for i in range(cnt):
-                k = i * n / cnt + (1.5 if lod == 2 else 0.0)
+                k = i * n / cnt + (1.5 if lod == 2 or mid else 0.0)
                 row.append(len(b.v))
                 b.v.append(cluster_point(C, k, s, under)[0])
                 if under:
-                    b.n.append(nu); b.c.append((0.45, 0.0, 1.0))
+                    b.n.append(nu); b.c.append((BU_UNDER - C['j'], 0.0, 1.0))
                 else:
                     nn = BU_AXIS * C['w'] + (1 - BU_AXIS) * (C['w'] if s == 0.0 else own(k, s))
-                    b.n.append(nn / np.linalg.norm(nn)); b.c.append((1.0, 0.0, 1.0))
+                    b.n.append(nn / np.linalg.norm(nn)); b.c.append((lvl[s] - C['j'], 0.0, 1.0))
                 b.uv.append(C['uv'])
             rows.append(row)
         for ra, rb_ in zip(rows[:-1], rows[1:]):
