@@ -31,6 +31,14 @@ skin: a sheer stocking, belts, skirts, a collar) tucks nothing (a_hides). `contr
 
 The cover: tools/armor/cover.py's rule (cover_of: reach 45 mm, ramp 0, deep 25 mm; a row's cover_grow) on this body.
 
+AS WORN (tools/armor/worn_rest.py; rigid_roles.json slots.<slot>.worn_rest): a piece whose hold rests her body somewhere
+else than her bare bind (a push-up top: her support shapes and her springs' equilibrium) is on screen only on that
+body, and gear_fit stores its rigid parts so the engine's pose lands them there. For such a row everything here is
+measured where the piece really sits: her skin (each tier's) and the piece's stored points are posed as the engine
+poses them under the hold (worn_rest.state + pose: the shapes, then the skin), rays, gaps, footprint and her surface's
+lengths are taken there, and the records keep her BIND keys (the shader tucks along her posed normal). A row whose
+slot has no switch, or no hold, support or springs: the bind, as before, to the byte.
+
     python tools/armor/gear_tuck.py write --body godot/art/people/body_p1 [--only id,id]   (re-writes the records alone)
     python tools/armor/gear_tuck.py control [--only id,id]   native vs A's records carried onto the gate body (B)
 """
@@ -85,7 +93,8 @@ class Skin:
 
     def __init__(self, glb_path):
         from gl import Glb
-        m = Glb(glb_path).mesh("Heroine")
+        g = Glb(glb_path)
+        m = g.mesh("Heroine")
         self.P = m.P.astype(np.float64)
         self.T = m.T.astype(np.int64)
         N = m.N.astype(np.float64)
@@ -100,6 +109,42 @@ class Skin:
         self.a, self.b = np.r_[e[:, 0], e[:, 1]], np.r_[e[:, 1], e[:, 0]]
         self.l = np.linalg.norm(cg[self.a] - cg[self.b], axis=1)
         self.kd = cKDTree(self.P)
+        # (what posing her as worn needs: her skin's blend, her shapes, her stored normals, her joints' names)
+        self.glb, self.J, self.W, self.targets, self.N0 = glb_path, m.J, m.W, m.targets, N
+        self.names = [g.nodes[j].get("name") for j in g.js["skins"][m.skin]["joints"]] if m.skin is not None else None
+
+    def as_worn(self, st):
+        """This tier's skin AS WORN (st: worn_state's): the same vertices, triangles and welded graph; its points and
+        normals as the engine poses them under the piece's hold (the shapes' deltas, then the skin), its edges' lengths
+        and its tree there. Its bind points stay the records' keys (the caller keeps the bind Skin for them)."""
+        import worn_rest
+        S, weights, _ = st
+        N = self.N0.copy()
+        for k, w in weights.items():
+            if k in self.targets and "NORMAL" in self.targets[k]:
+                N += w * self.targets[k]["NORMAL"]
+        N /= np.maximum(np.linalg.norm(N, axis=1, keepdims=True), 1e-12)
+        w_ = object.__new__(Skin)
+        w_.__dict__.update(self.__dict__)
+        w_.P, w_.N = worn_rest.pose(S, weights, self.P, self.J, self.W,
+                                    {k: v["POSITION"] for k, v in self.targets.items()}, N=N)
+        cg = np.zeros((self.ng, 3))
+        cg[self.gid] = w_.P
+        w_.l = np.linalg.norm(cg[self.a] - cg[self.b], axis=1)
+        w_.kd = cKDTree(w_.P)
+        return w_
+
+
+def worn_state(sk, row):
+    """The worn rest of a tier's skin under the row's piece (worn_rest.state: the slot's switch, the row's hold, the
+    springs file, the body's support shapes): (S [B, 4, 4], {shape: weight}, the joints' names), or None (no switch,
+    hold, support or springs: the bind)."""
+    import gear_fit
+    import worn_rest
+    if sk is None or sk.J is None or sk.names is None:
+        return None
+    st = worn_rest.state(sk.glb, sk.names, sk.targets, row, gear_fit.rigid_roles())
+    return None if st is None else (st[0], st[1], sk.names)
 
 
 def tuck_bound(sk, t, hard=None, under=None, step=None, scale=1.0, slope=None, edge=0.0):
@@ -384,9 +429,22 @@ def read_records(path):
     return np.c_[rec["x"], rec["y"], rec["z"]].astype(np.int64), rec["t"].astype(np.float64)
 
 
-def piece_of(out_dir, row, flags=False):
+def _as_worn(g, m, st):
+    """A piece mesh's stored points in the worn rest (a joint the body lacks stays where it is)."""
+    import worn_rest
+    S, weights, names = st
+    at = {nm: k for k, nm in enumerate(names)}
+    pj = [g.nodes[j].get("name") for j in g.js["skins"][m.skin]["joints"]]
+    ix = np.array([at.get(nm, len(S)) for nm in pj])
+    return worn_rest.pose(np.concatenate([S, np.eye(4)[None]]), weights, m.P, ix[m.J], m.W,
+                          {k: v["POSITION"] for k, v in m.targets.items()})
+
+
+def piece_of(out_dir, row, flags=False, worn=None):
     """A built row's close-tier meshes on this body: points and triangles (its lod1 / shadow meshes left out); with
-    `flags`, also a rigid flag per triangle (gear_fit's rule: a rigid row's metal meshes)."""
+    `flags`, also a rigid flag per triangle (gear_fit's rule: a rigid row's metal meshes). `worn` (worn_state's): the
+    points AS WORN, each skinned mesh's stored points posed as the engine poses them under the hold (its own joints by
+    name, its own shape deltas, then the skin)."""
     from gl import Glb
     import gear_fit as gf
     g = Glb(os.path.join(out_dir, f"{row['id']}.gltf"))
@@ -396,7 +454,8 @@ def piece_of(out_dir, row, flags=False):
         m = g.mesh(name)
         if m is None:
             continue
-        Ps.append(m.P.astype(np.float64))
+        posed = worn is not None and m.J is not None and m.skin is not None
+        Ps.append(_as_worn(g, m, worn) if posed else m.P.astype(np.float64))
         Ts.append(m.T + n)
         Rs.append(np.full(len(m.T), gf.is_rigid_mesh(rigid_row, name)))
         n += len(m.P)
@@ -412,29 +471,45 @@ def write_all(out_dir, close_glb, play_glb, rows, say=print):
     t0 = time.time()
     close, play = Skin(close_glb), Skin(play_glb) if play_glb and os.path.exists(play_glb) else None
     hides = a_hides()
-    stats = {}
+    stats, worn = {}, {}
     for r in rows:
         if r.get("lod"):
             continue   # (a calling's play-tier unit: worn with its set, which tucks; its lod_shadow is no piece)
         PB, TB, RB = piece_of(out_dir, r, flags=True)
-        c = cover_of(close, PB, TB, r) if r["slot"] != "ink" else np.zeros(len(close.P))
+        # (AS WORN, the module doc: a switched row's skin and piece where its hold rests her; else the bind's own)
+        sc, sp, PBc, PBp = close, play, PB, PB
+        for tier, sk in (("close", close), ("play", play)):
+            st = worn_state(sk, r)
+            if st is None:
+                continue
+            key = (tier, r["slot"], json.dumps(r.get("hold"), sort_keys=True))
+            if key not in worn:
+                worn[key] = sk.as_worn(st)
+            Pw = piece_of(out_dir, r, worn=st)[0]
+            if tier == "close":
+                sc, PBc = worn[key], Pw
+            else:
+                sp, PBp = worn[key], Pw
+        as_worn = sc is not close
+        c = cover_of(sc, PBc, TB, r) if r["slot"] != "ink" else np.zeros(len(close.P))
         ng = 0
         if hides.get(r["id"], True):
-            tc, gz, rz = tuck_of(close, PB, TB, RB, r["slot"])
-            tp = tuck_of(play, PB, TB, RB, r["slot"])[0] if play is not None else np.zeros(0)
+            tc, gz, rz = tuck_of(sc, PBc, TB, RB, r["slot"])
+            tp = tuck_of(sp, PBp, TB, RB, r["slot"])[0] if play is not None else np.zeros(0)
             gc = np.zeros(len(close.P), bool)
             if r["slot"] in ENCLOSE_SLOTS:
-                box = ((close.P >= PB.min(0) - BOX) & (close.P <= PB.max(0) + BOX)).all(1)
-                gc |= gone_of(close, enclosed_of(close, PB, TB, box))
+                box = ((sc.P >= PBc.min(0) - BOX) & (sc.P <= PBc.max(0) + BOX)).all(1)
+                gc |= gone_of(sc, enclosed_of(sc, PBc, TB, box))
+            # (the hidden set is keyed on her bind points and names the piece by its stored points)
             hid = hidden_of(out_dir, r["id"], close, PB) if RB.any() else None
             if hid is not None:
-                gc |= gone_of(close, hid & under_rigid_of(close, PB, TB, RB), fill=False)
+                gc |= gone_of(sc, hid & under_rigid_of(sc, PBc, TB, RB), fill=False)
             if gc.any():
                 tc[gc] = GONE
                 ng = int(gc.sum())
                 if play is not None:
                     # (the play body's points take the close body's gone where they lie on it)
-                    dp, ip = close.kd.query(play.P)
+                    dp, ip = sc.kd.query(sp.P)
                     gp = gc[ip] & (dp < 0.004) & (tp > 0)
                     tp[gp] = GONE
         else:
@@ -453,10 +528,11 @@ def write_all(out_dir, close_glb, play_glb, rows, say=print):
         r["cover_count"] = nc
         st = {"tuck_close": int(len(np.unique(np.round(close.P[tc > 0] * 1e5), axis=0))), "tuck_all": nt, "cover": nc,
               "full": int((tc >= 0.98).sum()), "gone": int((tc >= 0.995).sum()), "grazed": gz, "raised": rz,
-              "max": float(tc.max()) if len(tc) else 0.0}
+              "max": float(tc.max()) if len(tc) else 0.0, "worn": as_worn}
         stats[r["id"]] = st
         say(f"gear tuck: {r['id']:22} tuck {nt:6d} records ({st['tuck_close']} close), max {st['max']:.2f}, "
-            f"{gz} grazing rays, {rz} raised (plate / through), {ng} gone (enclosed); cover {nc:6d}")
+            f"{gz} grazing rays, {rz} raised (plate / through), {ng} gone (enclosed); cover {nc:6d}"
+            + (" (as worn)" if as_worn else ""))
     say(f"gear tuck: {len(rows)} rows in {time.time() - t0:.1f} s")
     return stats
 

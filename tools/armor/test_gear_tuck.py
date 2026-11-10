@@ -170,3 +170,101 @@ def test_reach_follows_the_law(monkeypatch):
     assert gt.tuck_of(sk, PB, TB, R, "pauldrons")[0].max() == 0.0                 # (past REACH: today, nothing)
     _law(monkeypatch, {"tuck_full_mm": 16, "tuck_zero_mm": 22})
     assert gt.tuck_of(sk, PB, TB, R, "pauldrons")[0].max() >= 0.9
+
+
+# ---------------------------------------------------------------- as worn (a switched slot's row: gear_tuck AS WORN)
+
+BODY = os.path.join(gt.REPO, "godot", "art", "people", "body_p1")
+OUT = os.path.join(gt.REPO, "godot", "art", "gear", "out", "body_p1")
+TOP = {"slot": "top", "hold": {"amount": 0.55, "squash": 0}}       # a push-up top's row (support 1)
+
+
+@pytest.fixture(scope="module")
+def her():
+    path = os.path.join(BODY, "body.glb")
+    if not os.path.exists(path):
+        pytest.skip("no body_p1 here")
+    return gt.Skin(path)
+
+
+def test_worn_state_follows_the_switch_and_the_hold(her):
+    """The worn rest is the slot's switch and the row's hold (worn_rest.state): none without either; her worn skin is
+    the body gear_fit fits the plates to, on the same vertices and graph."""
+    import gear_fit as gf
+    import worn_rest
+    from scipy.spatial import cKDTree
+    st = gt.worn_state(her, TOP)
+    assert st is not None
+    assert gt.worn_state(her, {"slot": "top"}) is None                              # no hold
+    assert gt.worn_state(her, {"slot": "top", "hold": {"amount": 1}}) is None       # support 0
+    assert gt.worn_state(her, dict(TOP, slot="pauldrons")) is None                  # a slot not switched
+    w = her.as_worn(st)
+    assert w.T is her.T and w.gid is her.gid and w.a is her.a and len(w.P) == len(her.P)
+    d = np.linalg.norm(w.P - her.P, axis=1)
+    assert 0.012 < d.max() < 0.06                       # her breasts where the push-up rests them
+    assert d[her.P[:, 1] < 0.8].max() < 1e-6            # her legs where they were (float32 binds)
+    assert np.abs(np.linalg.norm(w.N, axis=1) - 1).max() < 1e-9
+    assert np.abs(w.l - her.l).max() > 1e-4             # her surface's lengths are the worn body's
+    body = gf.load_bodies(BODY)["close"]
+    wr = worn_rest.worn(body, TOP, gf.rigid_roles())
+    assert cKDTree(wr.body.V).query(w.P)[0].max() < 1e-5
+
+
+def test_worn_tuck_is_measured_where_the_piece_sits(her):
+    """A plate made 2 mm off one worn breast: on her worn skin all of it under the plate is tucked and nothing else;
+    measured on her bare bind (where the plate is not: the fault) the tuck is another one."""
+    w = her.as_worn(gt.worn_state(her, TOP))
+    moved = (np.linalg.norm(w.P - her.P, axis=1) > 0.012) & (her.P[:, 0] > 0.02)
+    f = moved[her.T].all(1)
+    used = np.unique(her.T[f])
+    assert len(used) > 300
+    loc = np.full(len(her.P), -1)
+    loc[used] = np.arange(len(used))
+    PB, TB = (w.P + w.N * 0.002)[used], loc[her.T[f]]
+    rigid = np.ones(len(TB), bool)
+    tw = gt.tuck_of(w, PB, TB, rigid, "top")[0]
+    tb = gt.tuck_of(her, PB, TB, rigid, "top")[0]
+    inner = used[np.isin(used, her.T[f]) & ~np.isin(used, her.T[~f & moved[her.T].any(1)])]   # (off the patch's rim)
+    assert (tw[inner] > 0).mean() > 0.95 and tw.max() > 0.5
+    far = w.kd.query(w.P[used])[0].max() + 0.012          # (the tuck's ramp ends at the footprint's border)
+    from scipy.spatial import cKDTree
+    assert (tw[cKDTree(w.P[used]).query(w.P)[0] > far] == 0).all()
+    assert (np.abs(tw - tb) > 0.2).sum() > 50
+
+
+def test_write_all_switched_row_as_worn_unswitched_to_the_byte(tmp_path, monkeypatch):
+    """write_all on a built top (switched slot, a hold) and a built piece of a slot without the switch: with the
+    switch the top's records are the worn body's; without it they are the bind's; the other row's are the same bytes
+    either way."""
+    import copy
+    import json
+    import shutil
+    import gear_fit as gf
+    ids = ("plate_top_plain", "plate_gstring_plain")
+    if not all(os.path.exists(os.path.join(OUT, f"{i}.gltf")) for i in ids):
+        pytest.skip("the pieces are not built here (godot/art/gear/out is not in git)")
+    rows = [r for r in json.load(open(os.path.join(OUT, "gear_index.json")))["rows"] if r["id"] in ids]
+    assert len(rows) == 2
+
+    def run(tag):
+        d = tmp_path / tag
+        d.mkdir()
+        for i in ids:
+            for ext in ("gltf", "bin"):
+                shutil.copy(os.path.join(OUT, f"{i}.{ext}"), d / f"{i}.{ext}")
+        st = gt.write_all(str(d), os.path.join(BODY, "body.glb"), os.path.join(BODY, "play.glb"), copy.deepcopy(rows),
+                          say=lambda s: None)
+        return st, {(k, i): (d / k / f"{i}.bin").read_bytes() for k in ("armor_tuck", "armor_cover") for i in ids}
+
+    st_on, on = run("on")
+    roles = copy.deepcopy(gf.rigid_roles())
+    del roles["slots"]["top"]["worn_rest"]
+    path = tmp_path / "roles.json"
+    path.write_text(json.dumps(roles), encoding="utf-8")
+    monkeypatch.setenv("GEAR_ROLES", str(path))
+    st_off, off = run("off")
+    assert st_on["plate_top_plain"]["worn"] and not st_off["plate_top_plain"]["worn"]
+    assert not st_on["plate_gstring_plain"]["worn"]
+    for k in ("armor_tuck", "armor_cover"):
+        assert on[(k, "plate_gstring_plain")] == off[(k, "plate_gstring_plain")]
+        assert on[(k, "plate_top_plain")] != off[(k, "plate_top_plain")]
