@@ -104,6 +104,54 @@ FRAME_MM = (2.0, 3.0, 6.0)      # the depths the worst single frame's through ar
 # over SWEEP_ALONG) and she stands squarely in front of it (cos over SWEEP_SQUARE, as confirm_gap), deeper than
 # SWEEP_MIN, with no face of the piece within SWEEP_COVER ahead on her normal.
 SWEEP_NEAR, SWEEP_REACH, SWEEP_K, SWEEP_ALONG, SWEEP_SQUARE, SWEEP_MIN, SWEEP_COVER = 0.10, 0.045, 32, 0.3, 0.8, 0.0005, 0.04
+# THE REST COVER (P2 lead 7): cloth (a SKINNED component of the piece: its vertices carry more than one bone blend) moves
+# with the skin it lies on, so skin it never covered at rest is beside it, not through it (a bare arm hanging against a
+# top's side read 7,000 mm^2). Her skin within COVER_REACH of the skinned faces by closest point FROM THE PIECE (not a ray
+# on her normal: the inner arm's does hit torso cloth), widened by COVER_MARGIN over her skin; points outside it are
+# never swept against skinned faces. A RIGID component (one bone blend: a plate) keeps the posed sweep for every point,
+# less a closest point on the piece's open border (SWEEP_BORDER): a point off a sheet's edge is beside it.
+COVER_REACH, COVER_MARGIN, SWEEP_BORDER = 0.060, 0.012, 0.0005
+
+
+def piece_topology(P, T, J, W):
+    """Per face of a piece (T [F, 3] rows into P, J, W; vertices welded by rest position, a glb splits them at seams):
+    skinned [F] (its connected component does not ride one bone blend), bedge [F, 3] (edge k -> k+1 has one face),
+    bvert [F, 3] (the corner lies on such an edge)."""
+    from scipy.sparse import coo_matrix
+    from scipy.sparse.csgraph import connected_components
+    v, inv = np.unique(T, return_inverse=True)
+    _, w = np.unique(np.round(P[v] / 1e-5).astype(np.int64), axis=0, return_inverse=True)
+    w = w.ravel()
+    Tw = w[inv.reshape(T.shape)]
+    n = int(w.max()) + 1
+    a, b = np.r_[Tw[:, 0], Tw[:, 1]], np.r_[Tw[:, 1], Tw[:, 2]]
+    nc, lab = connected_components(coo_matrix((np.ones(len(a)), (a, b)), shape=(n, n)), directed=False)
+    Jv, Wv = np.where(W[v] > 1e-6, J[v], -1), np.where(W[v] > 1e-6, W[v], 0.0)
+    o = np.argsort(Jv, axis=1, kind="stable")
+    Jv, Wv = np.take_along_axis(Jv, o, 1), np.take_along_axis(Wv, o, 1)
+    labv = lab[w]
+    first = np.zeros(nc, np.int64)
+    first[labv[::-1]] = np.arange(len(v))[::-1]
+    ref = first[labv]
+    diff = (Jv != Jv[ref]).any(1) | (np.abs(Wv - Wv[ref]) > 1e-6).any(1)
+    skinned = (np.bincount(labv, diff, minlength=nc) > 0)[lab[Tw[:, 0]]]
+    e = np.sort(np.stack([Tw, np.roll(Tw, -1, 1)], 2).reshape(-1, 2), 1)
+    _, ei, cnt = np.unique(e[:, 0] * n + e[:, 1], return_inverse=True, return_counts=True)
+    be = (cnt[ei.ravel()] == 1) & (e[:, 0] != e[:, 1])
+    bv = np.zeros(n, bool)
+    bv[e[be].ravel()] = True
+    return skinned, be.reshape(-1, 3), bv[Tw]
+
+
+def cover_samples(P, T):
+    """Rest points of the faces T: their vertices, centres, and a lattice no coarser than COVER_MARGIN on long faces."""
+    F = P[T]
+    S = [P[np.unique(T)], F.mean(1)]
+    n = np.minimum(np.ceil(np.linalg.norm(F - np.roll(F, -1, 1), axis=2).max(1) / COVER_MARGIN).astype(int), 8)
+    for k in np.unique(n[n > 1]):
+        b = np.array([[i, j, k - i - j] for i in range(k + 1) for j in range(k + 1 - i)], float) / k
+        S.append(np.einsum("sb,fbx->fsx", b, F[n == k]).reshape(-1, 3))
+    return np.concatenate(S)
 
 
 # ------------------------------------------------------------------ helpers --
@@ -700,6 +748,16 @@ class Check:
             x["dir"] = x["pts"]
             x["tuck"] = np.r_[x["tuck"], tsv[extra]]
             x["sweepT"] = self.pc[i]["T"]
+            # (the rest cover, COVER_*: closest point over ALL her skin, hidden skin too, so cloth over hidden skin does
+            # not reach for the drawn skin beside it)
+            x["swSkin"], x["swBE"], x["swBV"] = piece_topology(P0, x["sweepT"], sc.J, sc.W)
+            cov = np.zeros(len(sc.isk), bool)
+            if x["swSkin"].any():
+                dc, jc = cKDTree(P0[sc.isk]).query(cover_samples(P0, x["sweepT"][x["swSkin"]]), distance_upper_bound=COVER_REACH)
+                cov[jc[np.isfinite(dc)]] = True
+            cov[np.nonzero(~gone)[0][fp["idx"]]] = True
+            dc, _ = cKDTree(P0[sc.isk[cov]]).query(P0[x["pts"]], distance_upper_bound=COVER_MARGIN)
+            x["cover"] = np.isfinite(dc)
             self._add(x)
 
     def add_pair(self, a, b, kind, tuck_ok=True):
@@ -830,6 +888,19 @@ class Check:
         # (squarely in front of the face AND the face squarely behind her on her own normal: a flared lame beside her
         # arm looks her way from 3 cm off without being under her)
         cand = ok & (along > SWEEP_ALONG) & (side >= SWEEP_SQUARE * dist) & ((off * Dr[:, None]).sum(2) >= SWEEP_SQUARE * dist)
+        if "swSkin" in x:
+            sk = x["swSkin"][cs]
+            cand &= ~(sk & ~x["cover"][rows][:, None])          # (outside the rest cover: never against cloth)
+            r_, c_ = np.nonzero(cand & ~sk)                     # (a plate: not from a closest point on its open border)
+            if len(r_) and x["swBE"].any():
+                fc, q, tri = cs[r_, c_], Q[r_, c_], F[r_, c_]
+                on = np.zeros(len(r_), bool)
+                for e in range(3):
+                    a, ab = tri[:, e], tri[:, (e + 1) % 3] - tri[:, e]
+                    t = np.clip(((q - a) * ab).sum(1) / ((ab * ab).sum(1) + 1e-30), 0, 1)
+                    on |= x["swBE"][fc, e] & (np.linalg.norm(q - a - ab * t[:, None], axis=1) < SWEEP_BORDER)
+                    on |= x["swBV"][fc, e] & (np.linalg.norm(q - a, axis=1) < SWEEP_BORDER)
+                cand[r_[on], c_[on]] = False
         dd = np.where(cand, dist, np.inf)
         depth = dd.min(1)
         hit = np.nonzero(np.isfinite(depth) & (depth > SWEEP_MIN))[0]
