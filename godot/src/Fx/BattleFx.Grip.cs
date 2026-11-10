@@ -43,14 +43,30 @@ public partial class BattleFx
     /// of it), the power its inner edge runs out by, the longest drawn (m of the tip's path), the bands' ends across
     /// the width by step of leaving, how far back the core and the mid reach, the width by step of leaving, the
     /// contact's size.</summary>
-    readonly record struct GripLook(float Head, float P, float MaxLen, float[] Lanes, float Taper, float Flash);
+    /// <remarks>(take 6) Knots = the three bands' ends (core, mid, end) as one line each across the width: 4 knots of
+    /// [across, share of the length] per band (a shorter list's last knot repeated); Streaks = the tail's lanes,
+    /// [width share, share of the tail kept] each.</remarks>
+    readonly record struct GripLook(float Head, float P, float MaxLen, float[] Knots, float[] Streaks, float Taper, float Flash);
     static GripLook? gripSunder, gripOath;
 
     static GripLook GripLookOf(bool oath)
     {
         if ((oath ? gripOath : gripSunder) is { } l) return l;
         string k = oath ? "grip.oath." : "grip.sunder.";
-        var n = new GripLook(P7D[k + "head"], P7D[k + "p"], P7D[k + "max_len"], P7D.All(k + "lanes"), P7D[k + "taper"], P7D[k + "flash"]);
+        var knots = new float[24];
+        string[] bands = { "core", "mid", "end" };
+        for (int b = 0; b < 3; b++)
+        {
+            var src = P7D.All(k + bands[b]);
+            int last = Math.Max(0, src.Length / 2 - 1);
+            for (int j = 0; j < 4 && src.Length >= 2; j++)
+            {
+                int s = Math.Min(j, last) * 2;
+                knots[b * 8 + j * 2] = src[s];
+                knots[b * 8 + j * 2 + 1] = src[s + 1];
+            }
+        }
+        var n = new GripLook(P7D[k + "head"], P7D[k + "p"], P7D[k + "max_len"], knots, P7D.All(k + "streaks"), P7D[k + "taper"], P7D[k + "flash"]);
         if (oath) gripOath = n; else gripSunder = n;
         return n;
     }
@@ -388,14 +404,21 @@ public partial class BattleFx
         float tail = Mathf.Min(P7D["grip.tail_px"] * px / blade, head * 0.25f);
         // the lit blade: from the comma's head down toward the guard as the stroke grows
         float full = Mathf.Clamp((body - lit[1]) / Mathf.Max(lit[2] - lit[1], 1e-3f), 0, 1);
-        var lanes = new float[32];
-        Array.Copy(look.Lanes, lanes, Math.Min(32, look.Lanes.Length));
+        // (take 6) the bands: one ragged line each across the width; lanes only in the tail (its streaks)
+        var lanes = new float[16];
+        Array.Copy(look.Streaks, lanes, Math.Min(16, look.Streaks.Length));
+        m.SetShaderParameter("grip_knot", look.Knots);
         m.SetShaderParameter("grip_lanes", lanes);
-        m.SetShaderParameter("grip_lane_n", Math.Min(8, look.Lanes.Length / 4));
+        m.SetShaderParameter("grip_lane_n", Math.Min(8, look.Streaks.Length / 2));
         m.SetShaderParameter("grip_lane", new Vector4(jit[0], jit[1], look.Taper, look.P));
-        var tg = P7D.All("grip.lane.tongue");
-        m.SetShaderParameter("grip_tips", new Vector4(tg[0], fp[0], fp[1], tg[1]));
-        m.SetShaderParameter("grip_last", P7D["grip.lane.last"]);
+        var tl = P7D.All("grip.lane.tail");
+        m.SetShaderParameter("grip_tips", new Vector4(tl[0], fp[0], fp[1], P7D["grip.lane.slant"]));
+        m.SetShaderParameter("grip_tail", tl[1]);
+        var cl = P7D.All("grip.band.clumps");
+        var td = P7D.All("grip.band.depth");
+        var tc = P7D.All("grip.band.cut");
+        m.SetShaderParameter("grip_clump", new Vector4(cl[0], cl[1], P7D["grip.band.uneven"], P7D["grip.band.ratio"]));
+        m.SetShaderParameter("grip_tooth", new Vector4(td[0], td[1], tc[0], tc[1]));
         m.SetShaderParameter("grip_gap", new Vector4(gap[0], gap[1], gap[2], gap[3]));
         m.SetShaderParameter("grip_shed", new Vector4(age, shed[0], shed[1], P7D["grip.lane.shed"]));
         m.SetShaderParameter("grip_seed", seed);
@@ -470,7 +493,7 @@ public partial class BattleFx
             tr.Said++;
             var s1 = gripRing[^1]; var s0 = gripRing[^2];
             var d = s1.Tip - PlayerPos;
-            GD.Print($"grip frame {Engine.GetFramesDrawn()} age {age * 60:0.0}f cut {cut:0.00} samples {n - i0} fast {hi - i0} tip az {Mathf.RadToDeg(Mathf.Atan2(d.Z, d.X)):0} r {new Vector2(d.X, d.Z).Length():0.00} y {d.Y:0.00} speed {s1.Tip.DistanceTo(s0.Tip) / Math.Max(1e-4, s1.At - s0.At):0.0} m/s step {(s1.At - s0.At) * 1000:0.0} ms linked {tr.Linked}");
+            GD.Print($"grip frame {Engine.GetFramesDrawn()} age {age * 60:0.0}f cut {cut:0.00} samples {n - i0} fast {hi - i0} tip az {Mathf.RadToDeg(Mathf.Atan2(d.Z, d.X)):0} r {new Vector2(d.X, d.Z).Length():0.00} y {d.Y:0.00} speed {s1.Tip.DistanceTo(s0.Tip) / Math.Max(1e-4, s1.At - s0.At):0.0} m/s step {(s1.At - s0.At) * 1000:0.0} ms linked {tr.Linked} px/m {1 / P7Px(PlayerPos):0}");
         }
         gripPts.Clear(); gripCum.Clear();
         if (!any) { gripNode.Visible = false; return; }

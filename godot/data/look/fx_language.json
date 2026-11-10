@@ -835,7 +835,7 @@
    "n": 4
   },
   "grip": {
-   "what": "P7 lead 6, the held swing's arc, take 5 (src/Fx/BattleFx.Grip.cs, shaders/fx_grip_stroke.gdshader): the STROKE her blade leaves, laid by a brush of bristle clumps (LANES across its width), the contact on the blade, the link between a chain's cuts. px at the play camera, m in the world, s of real time. Colors stay the steel family's. lead_frames, slow, snap, min_len, aspect as before. face = [under this share of the blade's line showing across the path on screen the ribbon is turned wholly to the camera, above this it is the blade's own sweep] (0 at [1]: off). tail_px and point: only the link's thread now. lane.jitter = per stroke [a lane's width +- share of itself, a band's or finger's end +- share of the length]; lane.tongue = [a band's end in a lane is a slant toward the next lane's end, at most this long (m; lead 7: was a point per lane, which read as a saw), a skip's slant (m)]; lane.last = the white left alone (amber and gold shed) runs to its point over this share of its length (fingers, not a wedge); lane.point = a finger's last [m, at most this share of it] run to a point; lane.gap = [a lane's chance to skip, the skip's m least, most, where it starts as a share of the finger]; lane.shed = each lane drops its amber, then its gold, within this (s) of shed_at; glow = the glow's unit (m) past the tip's path, glow_end = [it dies over the tip lane's last m, its heat in the body]; lit = the lit blade [px thick, the stroke's length (m) at which it starts, at which it reaches the guard]; retract = the leaving's clock (gone at 1); shed_at = s after the contact [the amber out, the gold out].",
+   "what": "P7 lead 6, the held swing's arc, take 5 (src/Fx/BattleFx.Grip.cs, shaders/fx_grip_stroke.gdshader): the STROKE her blade leaves, laid by a brush of bristle clumps (LANES across its width), the contact on the blade, the link between a chain's cuts. px at the play camera, m in the world, s of real time. Colors stay the steel family's. lead_frames, slow, snap, min_len, aspect as before. face = [under this share of the blade's line showing across the path on screen the ribbon is turned wholly to the camera, above this it is the blade's own sweep] (0 at [1]: off). tail_px and point: only the link's thread now. lane.jitter = per stroke [a streak's width +- share of itself, its end +- share of the length]; TAKE 6: lanes are only the TAIL's (the bands: grip.band): lane.tail = [the streaks lie across this share of the width from the tip's path, the paint's last share of its length laid as streaks]; lane.slant = a skip's slant (m); lane.point = a streak's last [m, at most this share of the tail] run to a point along one side; lane.gap = [a streak's chance to skip, the skip's m least, most, where it starts at most (share of the streak)]; lane.shed = each clump drops its amber, then its gold, within this (s) of shed_at; glow = the glow's unit (m) past the tip's path, glow_end = [it dies over the tip lane's last m, its heat in the body]; lit = the lit blade [px thick, the stroke's length (m) at which it starts, at which it reaches the guard]; retract = the leaving's clock (gone at 1); shed_at = s after the contact [the amber out, the gold out].",
    "lead_frames": 2,
    "slow": 4,
    "snap": 90,
@@ -846,11 +846,19 @@
    "point": [0.3, 0.4],
    "lane": {
     "jitter": [0.12, 0.04],
-    "tongue": [0.3, 0.1],
-    "last": 1.0,
+    "tail": [0.5, 0.28],
+    "slant": 0.1,
     "point": [0.4, 0.5],
     "gap": [0.5, 0.14, 0.26, 0.62],
     "shed": 0.03
+   },
+   "band": {
+    "what": "(take 6, lead 7) the three colors are CONTINUOUS bands: each band's end is ONE line across the stroke's width (per weapon: core / mid / end = its knots [across: 0 the tip's path, 1 the inner edge; share of the length], straight between them, at most 4), jogged by the brush's clumps: clumps = [fewest, most] across the width per line, uneven = their widths' spread (0 even), depth = a tooth's depth along the stroke [m least, most], never more than ratio x its clump's width, cut = a tooth's side is a slant over [least, most] of the narrower clump. Leaving: the amber goes clump by clump from the tip's path in (within lane.shed of shed_at[0]), then the gold; the white comma is last.",
+    "clumps": [2, 3],
+    "uneven": 0.4,
+    "depth": [0.18, 0.3],
+    "ratio": 1.0,
+    "cut": [0.2, 0.6]
    },
    "glow": 0.28,
    "glow_end": [0.45, 0.92],
@@ -858,12 +866,15 @@
    "retract": [[0.05, 0], [0.15, 1]],
    "shed_at": [0.084, 0.117],
    "sunder": {
-    "what": "head = the stroke's width at the blade (a share of the blade, in from the tip's path); taper = its width at the tail as a share of the head's, p = the power it narrows by; max_len = the longest drawn (m); lanes = from the tip's path in, each [width (share of the stroke's), where its core ends, its mid ends, its finger ends (shares of the length; 0 = that band is not in this lane)]; flash = the contact's size",
+    "what": "head = the stroke's width at the blade (a share of the blade, in from the tip's path); taper = its width at the tail as a share of the head's, p = the power it narrows by; max_len = the longest drawn (m); core / mid / end = the white's, the gold's and the paint's own end as ONE line across the width (grip.band.what); streaks = the tail's 3-5 dry streaks from the tip's path in, each [width (share of the tail's across), the share of the tail it keeps (1 = to the paint's end)]; flash = the contact's size",
     "head": 0.75,
     "taper": 0.8,
     "p": 1.3,
     "max_len": 2.7,
-    "lanes": [[0.24, 0.56, 0.8, 1], [0.1, 0.5, 0.62, 0.78], [0.2, 0.22, 0.66, 0.94], [0.12, 0.18, 0.34, 0.56], [0.2, 0, 0.4, 0.72], [0.14, 0, 0, 0.42]],
+    "core": [[0, 0.62], [0.5, 0.5], [1, 0.26]],
+    "mid": [[0, 0.82], [0.5, 0.66], [1, 0.38]],
+    "end": [[0, 1], [0.5, 0.76], [1, 0.48]],
+    "streaks": [[0.3, 1], [0.14, 0.4], [0.32, 0.75], [0.24, 0.2]],
     "flash": 1.0
    },
    "oath": {
@@ -871,7 +882,10 @@
     "taper": 0.92,
     "p": 1.5,
     "max_len": 2.5,
-    "lanes": [[0.27, 0.48, 0.74, 1], [0.23, 0.3, 0.6, 0.8], [0.16, 0, 0.42, 0.9], [0.18, 0, 0, 0.58], [0.16, 0, 0, 0.42]],
+    "core": [[0, 0.5], [0.5, 0.4], [1, 0.22]],
+    "mid": [[0, 0.78], [0.5, 0.62], [1, 0.34]],
+    "end": [[0, 1], [0.5, 0.76], [1, 0.46]],
+    "streaks": [[0.36, 1], [0.2, 0.35], [0.44, 0.7]],
     "flash": 0.9
    },
    "contact": {

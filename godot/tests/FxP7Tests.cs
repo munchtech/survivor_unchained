@@ -54,16 +54,17 @@ public class FxP7Tests
         Assert.InRange(p["wave.open_deg"], 120, 300);
     }
 
-    /// <summary>(P7 lead 6, take 5) The held cut's stroke: a comma laid in lanes, three bands, steel first, fingers for a
-    /// tail; the contact one chisel of the stroke's own paint, smaller than the stroke's head, never a line or a crown.</summary>
+    /// <summary>(P7 lead 7, take 6) The held cut's stroke: a comma in three CONTINUOUS bands (each band's end one ragged
+    /// line across the width: 2-3 uneven teeth, none deeper than it is wide, never a needle per lane), steel first, 3-5
+    /// uneven dry streaks only in the tail; the contact one chisel of the stroke's own paint, smaller than the stroke's head, never a line or a crown.</summary>
     [Fact]
     public void TheHeldCutsStrokeIsACommaInThreeBands()
     {
         var p = Real();
         foreach (var k in new[] { "grip.lead_frames", "grip.slow", "grip.min_len", "grip.aspect", "grip.tail_px", "grip.point", "grip.glow", "grip.glow_end",
-            "grip.lit", "grip.retract", "grip.shed_at", "grip.lane.jitter", "grip.lane.tongue", "grip.lane.point", "grip.lane.gap", "grip.lane.shed",
+            "grip.lit", "grip.retract", "grip.shed_at", "grip.lane.jitter", "grip.lane.tail", "grip.lane.slant", "grip.lane.point", "grip.lane.gap", "grip.lane.shed",
             "grip.contact.wait_frames", "grip.contact.k_min", "grip.contact.lift", "grip.contact.kill", "grip.contact.crowd", "grip.contact.tears",
-            "grip.contact.grit", "grip.contact.kite", "grip.contact.full_frames", "grip.contact.steps", "grip.contact.shards", "grip.contact.fan", "grip.contact.fly", "grip.lane.last",
+            "grip.contact.grit", "grip.contact.kite", "grip.contact.full_frames", "grip.contact.steps", "grip.contact.shards", "grip.contact.fan", "grip.contact.fly", "grip.band.clumps", "grip.band.uneven", "grip.band.depth", "grip.band.ratio", "grip.band.cut",
             "grip.snap", "grip.face", "grip.link.on" })
             Assert.True(p.Has(k), "fx_language.json p7 lacks " + k);
         Assert.Equal(3, p.All("grip.lit").Length);
@@ -71,30 +72,56 @@ public class FxP7Tests
         Assert.Equal(4, p.All("grip.lane.gap").Length);
         float jit = p.All("grip.lane.jitter")[1];
         var kite = p.All("grip.contact.kite");
-        var gold = new System.Collections.Generic.Dictionary<string, float>();
+        // the bands' ends: 2-3 clumps across the width (never 5-6 even ones), uneven; a tooth deep enough to see at
+        // 1:1 (10 px or more at about 55 px a metre) and never deeper than its clump is wide; its side a slant
+        var clumps = p.All("grip.band.clumps");
+        var depth = p.All("grip.band.depth");
+        var side = p.All("grip.band.cut");
+        Assert.True(clumps.Length == 2 && clumps[0] >= 2 && clumps[1] <= 3 && clumps[0] <= clumps[1], "grip.band.clumps: 2 to 3");
+        Assert.InRange(p["grip.band.uneven"], 0.25f, 0.6f);
+        Assert.True(depth.Length == 2 && depth[0] >= 0.18f && depth[0] < depth[1] && depth[1] <= 0.4f, "grip.band.depth");
+        Assert.InRange(p["grip.band.ratio"], 0.5f, 1f);
+        Assert.True(side.Length == 2 && side[0] >= 0.1f && side[0] < side[1] && side[1] <= 0.8f, "grip.band.cut");
+        // the tail: streaks across the outer part of the width only, over the paint's last quarter or so
+        var tail = p.All("grip.lane.tail");
+        Assert.True(tail.Length == 2 && tail[0] >= 0.35f && tail[0] <= 0.6f && tail[1] >= 0.2f && tail[1] <= 0.35f, "grip.lane.tail");
+        Assert.InRange(p["grip.lane.slant"], 0.02f, 0.15f);
         foreach (var w in new[] { "sunder", "oath" })
         {
-            var l = p.All($"grip.{w}.lanes");
-            int n = l.Length / 4;
-            Assert.True(l.Length % 4 == 0 && n >= 5 && n <= 8, $"grip.{w}.lanes: 5 to 8 lanes of 4");
-            float sum = 0, core = 0, mid = 0, edge = 0, longest = 0, shortest = 1;
-            var mids = new System.Collections.Generic.HashSet<float>();
-            for (int i = 0; i < n; i++)
+            Assert.False(p.Has($"grip.{w}.lanes"), $"grip.{w}.lanes: the bands are not laid by lanes");
+            // each band's end is one line across the whole width, falling from the tip's path in (nested commas),
+            // the three in order with room for a tooth between them; steel first: the white is the longest band
+            var bands = new[] { p.All($"grip.{w}.core"), p.All($"grip.{w}.mid"), p.All($"grip.{w}.end") };
+            float tooth = depth[1] / p[$"grip.{w}.max_len"];
+            for (int b = 0; b < 3; b++)
             {
-                float lw = l[i * 4], c = l[i * 4 + 1], m = l[i * 4 + 2], e = l[i * 4 + 3];
-                Assert.True(lw >= 0.1f && 0 <= c && c <= m && m <= e && e <= 1 && (c == 0 || c < m) && (m == 0 || m < e), $"grip.{w}.lanes[{i}] out of order");
-                sum += lw;
-                if (c > 0) core += lw; else if (m > 0) mid += lw; else edge += lw;
-                if (m > 0) mids.Add(m);
-                longest = Math.Max(longest, e); shortest = Math.Min(shortest, e);
+                var k = bands[b];
+                int n = k.Length / 2;
+                Assert.True(k.Length % 2 == 0 && n >= 2 && n <= 4 && k[0] == 0 && k[^2] == 1, $"grip.{w} band {b}: 2 to 4 knots from 0 to 1 across");
+                for (int i = 1; i < n; i++)
+                    Assert.True(k[i * 2] > k[i * 2 - 2] && k[i * 2 + 1] < k[i * 2 - 1], $"grip.{w} band {b}: not one falling line");
+                // a line across, not along: the comma's slant, never a needle's (under 2 m of length per m of width; the paint's own end is the comma's hem)
+                if (b < 2) Assert.True((k[1] - k[^1]) * p[$"grip.{w}.max_len"] <= 2 * p[$"grip.{w}.head"] * 1.2f, $"grip.{w} band {b}: too long a slant");
+                if (b > 0)
+                    foreach (float at in new[] { 0f, 0.5f, 1f })
+                        Assert.True(At(k, at) - At(bands[b - 1], at) >= 0.5f * tooth, $"grip.{w} band {b}: no room under it at {at}");
+            }
+            Assert.True(bands[2][1] == 1 && bands[0][1] >= 0.45f && bands[0][^1] >= 0.15f, $"grip.{w}: the white is not the body");
+            Assert.True(bands[0][1] > bands[1][1] - bands[0][1] && bands[0][1] > 1 - bands[1][1], $"grip.{w}: the core is not the longest band");
+            // the tail: 3-5 streaks, uneven in width and in length; the outermost is the longest (the comma's point)
+            var st = p.All($"grip.{w}.streaks");
+            int sn = st.Length / 2;
+            Assert.True(st.Length % 2 == 0 && sn >= 3 && sn <= 5, $"grip.{w}.streaks: 3 to 5");
+            float sum = 0, wmin = 1, wmax = 0, kmin = 1;
+            for (int i = 0; i < sn; i++)
+            {
+                sum += st[i * 2]; wmin = Math.Min(wmin, st[i * 2]); wmax = Math.Max(wmax, st[i * 2]); kmin = Math.Min(kmin, st[i * 2 + 1]);
+                for (int o = 0; o < i; o++) Assert.True(Math.Abs(st[i * 2 + 1] - st[o * 2 + 1]) >= 0.15f, $"grip.{w}.streaks: two the same length");
             }
             Assert.InRange(sum, 0.98f, 1.02f);
-            // steel first: at the head the core is the widest band; the amber is a lane of its own (never a hairline)
-            Assert.True(core > mid && core > edge && edge >= 0.12f, $"grip.{w}: the core is not the widest band, or the amber is a hairline");
-            // each band's end is a staircase, the tail is fingers: the longest at least twice the shortest whatever the jitter
-            Assert.True(mids.Count >= 3, $"grip.{w}: the bands' ends are not steps");
-            Assert.True(longest - jit >= 2 * (shortest + jit), $"grip.{w}: the fingers are too even");
-            gold[w] = mid;
+            Assert.True(wmax >= 1.8f * wmin && st[1] == 1 && kmin + jit / tail[1] <= 0.5f, $"grip.{w}.streaks: too even");
+            // the hem meets the tail: at the streaks' inner side the paint's own end is about the tail's start
+            Assert.InRange(At(bands[2], tail[0]) - (1 - tail[1]), -0.02f, 0.08f);
             // a comma, not the whole blade's fin
             Assert.InRange(p[$"grip.{w}.head"], 0.3f, 0.75f);
             Assert.InRange(p[$"grip.{w}.taper"], 0.5f, 1f);
@@ -113,17 +140,20 @@ public class FxP7Tests
         Assert.InRange(kite[3], 0.2f, 0.5f);
         // no crown: at most two chips, on the travel, thrown on
         Assert.True(p.All("grip.contact.tears")[1] <= 2 && p["grip.contact.fan"] <= 12 && p["grip.contact.fly"] >= 2 && p["grip.contact.full_frames"] >= 3);
-        // a band's end: a long flat slant (two lane widths or more), the skip's a short one; the white leaves as fingers
-        var tg = p.All("grip.lane.tongue");
-        Assert.True(tg.Length == 2 && tg[0] >= 0.2f && tg[0] <= 0.45f && tg[1] <= 0.15f, "grip.lane.tongue");
-        Assert.InRange(p["grip.lane.last"], 0.6f, 1f);
-        // the Oathblade's is the thinner stroke, its gold about a sixth of its width
+        // the Oathblade's is the thinner stroke
         Assert.True(p["grip.oath.head"] < p["grip.sunder.head"]);
-        Assert.InRange(gold["oath"], 0.12f, 0.2f);
         // the link's thread: a brush tail, not a hairline; its point capped by a share of a short stroke
         Assert.InRange(p["grip.tail_px"], 2.5f, 6);
         Assert.InRange(p.All("grip.point")[1], 0.1f, 0.5f);
         // gone 0.15 s after the contact
         Assert.Equal(1.0, (double)p.Curve("grip.retract", 0.15f), 3);
+    }
+
+    /// <summary>A band's end at `a` across the width (knots [across, share of the length], straight between).</summary>
+    static float At(float[] k, float a)
+    {
+        for (int i = 2; i < k.Length; i += 2)
+            if (a <= k[i]) return k[i - 1] + (k[i + 1] - k[i - 1]) * (a - k[i - 2]) / (k[i] - k[i - 2]);
+        return k[^1];
     }
 }
