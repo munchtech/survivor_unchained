@@ -943,6 +943,85 @@ def mirror(W, topo, names):
     return W
 
 
+def _jumps(W, e, P, cols, thr):
+    """Edges e whose summed weight over `cols` steps by more than thr; (mask, summary)."""
+    s = W[:, cols].sum(1)
+    m = np.abs(s[e[:, 0]] - s[e[:, 1]]) > thr
+    M = 0.5 * (P[e[m, 0]] + P[e[m, 1]]) * 1e3
+    box = ({"x_mm": [round(float(M[:, 0].min())), round(float(M[:, 0].max()))],
+            "y_mm": [round(float(M[:, 1].min())), round(float(M[:, 1].max()))],
+            "z_mm": [round(float(M[:, 2].min())), round(float(M[:, 2].max()))]} if m.any() else {})
+    return m, {"edges": int(m.sum()), **box}
+
+
+def chain_relax(W, P, topo, sk, cfg, ring=None):
+    """A spec's "weights" "chain_relax" (P1 R1 lead 23): where one bone chain's summed weight (cfg "chains", lists of
+    bone names) steps by over cfg "jump" between neighbouring points, those points seed a region grown cfg "rows" rings
+    (quad edges); the WHOLE weight vector is Laplacian-smoothed over the region (a harmonic fill, edges weighted
+    1 / length^2, every point outside and the head's ring `ring` held fixed), weights under cfg "min_w" dropped, each row
+    renormalised to 1; mirrored (her left's taken) and written to the region's rows only, so every other point is bit
+    for bit (the caller caps as after the a_* rules). UV-split copies are our topology's points (build_topo splits after),
+    so they carry one weight row. Why (body_facts/notch.md 1): B's upper chest under each clavicle alternated neck chain
+    (neck_01 + neck_02 + Head) 0.82-0.95 against spine_04 0.76-0.82 point to point (28 front edges a side jumped > 0.5,
+    y 1510-1544 mm), so when the spine and neck turn (heroic_leap@6 / @9) neighbours went to different frames and the
+    skin notched there; no carried-target rule cures what the source skin folds. Also reports, per bone, edges whose
+    weight steps by over "jump" elsewhere (info "bone_jumps", before and after), so other zones are seen."""
+    names = sk["names"]
+    Q = topo["Q"]
+    n, nb = W.shape
+    P = np.asarray(P, float)
+    eq = np.unique(np.sort(np.concatenate([Q[:, [0, 1]], Q[:, [1, 2]], Q[:, [2, 3]], Q[:, [3, 0]]]), 1), axis=0)
+    ed = np.unique(np.sort(np.concatenate([eq, Q[:, [0, 2]], Q[:, [1, 3]]]), 1), axis=0)    # with the diagonals
+    thr = float(cfg.get("jump", 0.5))
+    rows = int(cfg.get("rows", 2))
+    held = np.zeros(n, bool)
+    if ring is not None:
+        held[np.asarray(ring)] = True
+    seed = np.zeros(n, bool)
+    info = {"chains": {}}
+    for ch in cfg["chains"]:
+        cols = [names.index(b) for b in ch]
+        m, s = _jumps(W, ed, P, cols, thr)
+        info["chains"]["+".join(ch)] = {"before": s, "before_over_0.3": int(_jumps(W, ed, P, cols, 0.3)[0].sum())}
+        seed[ed[m].ravel()] = True
+    A = sp.coo_matrix((np.ones(2 * len(eq)), (np.r_[eq[:, 0], eq[:, 1]], np.r_[eq[:, 1], eq[:, 0]])), shape=(n, n)).tocsr()
+    reg = seed.copy()
+    for _ in range(rows):
+        reg |= (A @ reg.astype(float)) > 0
+    mo = topo["mirror_of"]
+    r = np.where(mo >= 0)[0]
+    reg[mo[r]] |= reg[r]
+    reg[r] |= reg[mo[r]]
+    reg &= ~held
+    out = W.copy()
+    ids = np.where(reg)[0]
+    if len(ids):
+        w = 1.0 / np.maximum(((P[eq[:, 0]] - P[eq[:, 1]]) ** 2).sum(1), 1e-10)
+        K = sp.coo_matrix((np.r_[w, w], (np.r_[eq[:, 0], eq[:, 1]], np.r_[eq[:, 1], eq[:, 0]])), shape=(n, n)).tocsr()
+        L = (sp.diags(np.asarray(K.sum(1)).ravel()) - K).tocsr()
+        fix = np.where(~reg)[0]
+        from scipy.sparse.linalg import splu
+        lu = splu(L[ids][:, ids].tocsc())
+        X = lu.solve(np.ascontiguousarray(-(L[ids][:, fix] @ W[fix])))
+        X = np.where(X < float(cfg.get("min_w", 0.01)), 0.0, X)
+        X /= np.maximum(X.sum(1, keepdims=True), 1e-12)
+        out[ids] = X
+        out[ids] = mirror(out, topo, names)[ids]
+    for ch in cfg["chains"]:
+        cols = [names.index(b) for b in ch]
+        k = info["chains"]["+".join(ch)]
+        k["after"] = _jumps(out, ed, P, cols, thr)[1]
+        k["after_over_0.3"] = int(_jumps(out, ed, P, cols, 0.3)[0].sum())
+    bj = {}
+    for j, b in enumerate(names):
+        a0, a1 = _jumps(W, ed, P, [j], thr)[1], _jumps(out, ed, P, [j], thr)[1]
+        if a0["edges"] or a1["edges"]:
+            bj[b] = {"before": a0, "after": a1["edges"]}
+    info.update({"seed_points": int(seed.sum()), "region_points": int(len(ids)), "rows": rows, "jump": thr,
+                 "bone_jumps": bj})
+    return out, info
+
+
 def body(P, topo, sk, rules=None):
     c = Ctx(P, topo, sk)
     names, par = sk["names"], sk["parents"]

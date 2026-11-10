@@ -182,6 +182,7 @@
   }
  },
  "weights": {
+  "chain_relax": {"chains": [["neck_01", "neck_02", "Head"]], "jump": 0.5, "rows": 2, "min_w": 0.01, "why": "P1 R1 lead 23 (body_facts/notch.md 1, 5): B's upper chest under each clavicle alternated neck chain 0.82-0.95 against spine_04 0.76-0.82 point to point (28 front edges a side jumped > 0.5, y 1510-1544 mm): a notch when the spine and neck turn (heroic_leap@6/@9). Seeds: points of an edge (quad edges and diagonals) whose neck-chain weight steps > jump; rows rings grown; the whole weight vector harmonic-filled there (outside and the head ring held), < min_w dropped, renormalised, mirrored (weights_topo.chain_relax)."},
   "leg": {
    "ankle_m": [-0.08, 0.195],
    "ball_t": [0.23, 1.4]

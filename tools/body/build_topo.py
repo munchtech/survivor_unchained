@@ -665,6 +665,14 @@ def stage_weights(z, V, ring, hv, sk, A, baked, rep, rules=None):
             J, W = wt_.cap(D, wt_.RULES["cap"])
             D = np.zeros((len(V), nb))
             np.put_along_axis(D, J, W, 1)
+    if (rules or {}).get("chain_relax"):
+        # (P1 R1 lead 23: a bone chain's weight checkerboard relaxed at the source, weights_topo.chain_relax; after the
+        # a_* rules, before the head, so the head's ring copies take the body's ring as it ships)
+        import weights as wt_
+        D, info["chain_relax"] = wtp.chain_relax(D, V, z, sk, rules["chain_relax"], ring=ring)
+        J, W = wt_.cap(D, wt_.RULES["cap"])
+        D = np.zeros((len(V), nb))
+        np.put_along_axis(D, J, W, 1)
     # the head: welded points, the ring's from the body's ring, one to one
     head = A.mesh("HeroineHead")
     PH = baked["HeroineHead"]["P"]
