@@ -6,8 +6,12 @@ agrees with it (the source). Each source point remembers its closest point on th
 barycentrics) and its rest offset from that point. In a pose the point is that barycentric point on the reference's posed
 triangle, plus the offset turned by the reference's local surface rotation (smooth per-vertex frames, no faceting).
 
-    car = Carrier(ref_V0, ref_T, P0, N0)                 # once: the correspondence of points P0 (unit normals N0)
+    car = Carrier(ref_V0, ref_T, P0, N0, edges=E)        # once: the correspondence of points P0 (unit normals N0)
     X = car.carry(ref_V)                                 # per pose: the reference's posed vertices -> the points
+
+Where the points' mesh bridges a fold that the reference keeps as two walls, a carried edge would take the whole opening
+of the fold. With the points' edges E the carrier finds those bridges at rest, and fills a pocket of rows around them
+from its carried neighbours in every pose (the pocket rule, see Carrier).
 
 Posing the reference like the source, for a reference skeleton that is driven by world turns:
 
@@ -22,7 +26,8 @@ mesh). The bottom is HER CONFIG: her body B's shoulder region against her old bo
     python tools/body/carried_target.py target [--poses name,name]
 
 `target` with no --poses writes out/shoulder/target_a.npz (X [poses, region points, 3], name, side, kind, info, params:
-the layout of target.npz, same pose order); a subset writes target_a_dev.npz.
+the layout of target.npz, same pose order; plus pocket_l / pocket_r, the pocket's points, and bridge_l / bridge_r [nb, 2],
+the bridge edges, as local indices into each side's region points); a subset writes target_a_dev.npz.
 """
 from __future__ import annotations
 
@@ -71,23 +76,141 @@ def _bary(q, a, b, c):
     return B / B.sum(1, keepdims=True)
 
 
+def _angle(a, b):
+    """The angle in degrees between unit vectors, row by row."""
+    return np.degrees(np.arccos(np.clip((a * b).sum(1), -1.0, 1.0)))
+
+
+def bridge_edges(nref, N0, edges, bridge_deg=60.0):
+    """The mask [m] of the edges that bridge a fold of the reference. Found at rest only.
+
+    nref [n, 3]: the rest normal of each point's matched reference face; N0 [n, 3]: the points' own rest normals;
+    edges [m, 2]: the points' own edges. An edge is a bridge when its ends' reference normals disagree by more than
+    `bridge_deg` degrees beyond what the points' own normals do: the reference has two walls there and the points'
+    mesh crosses from one to the other on a single edge.
+    """
+    i, j = edges[:, 0], edges[:, 1]
+    return _angle(nref[i], nref[j]) - _angle(N0[i], N0[j]) > bridge_deg
+
+
+def _adjacency(n, edges, w=None):
+    """The symmetric adjacency [n, n] of the edges (weights w per edge, 1 if None; an edge listed twice counts once)."""
+    e = np.unique(np.sort(np.asarray(edges, np.int64), axis=1), axis=0, return_index=True)[1]
+    i, j = edges[e, 0], edges[e, 1]
+    A = sp.coo_matrix((np.ones(len(e)) if w is None else np.asarray(w, float)[e], (i, j)), (n, n))
+    return (A + A.T).tocsr()
+
+
+def rows_around(n, edges, seeds, rows):
+    """The mask [n] of the points within `rows` edges of a seed point (the seeds included), by BFS over the edges."""
+    A = _adjacency(n, edges)
+    m = np.zeros(n, bool)
+    m[np.asarray(seeds, np.int64)] = True
+    for _ in range(int(rows)):
+        m = m | ((A @ m.astype(float)) > 0)
+    return m
+
+
+class Pocket:
+    """A harmonic fill of a set of points from their neighbours, keeping the rest shape's differential coordinates.
+
+    P0 [n, 3] the rest points, edges [m, 2] their edges, mask [n] the pocket. L is the graph Laplacian over the edges
+    and delta = L P0. fill(X, R) leaves every point outside the pocket as it is and solves the pocket's points from
+    L_pp x_p = (R delta)_p - L_pb x_b: an opening between the pocket's two sides is shared by its rows instead of
+    taken by one edge. L_pp is factored once. weight "uniform": every edge weighs 1, each row takes the same LENGTH of
+    the opening (a short edge stretches by a larger ratio than a long one). weight "length": an edge weighs mean rest
+    length / its rest length (springs of one material), each row takes the same RATIO.
+    """
+
+    def __init__(self, P0, edges, mask, weight="length"):
+        from scipy.sparse.csgraph import connected_components
+        from scipy.sparse.linalg import factorized
+        P0 = np.asarray(P0, float)
+        n = len(P0)
+        w = None
+        if weight == "length":
+            l0 = np.maximum(np.linalg.norm(P0[edges[:, 0]] - P0[edges[:, 1]], axis=1), 1e-12)
+            w = l0.mean() / l0
+        elif weight != "uniform":
+            raise ValueError(f"weight {weight!r}: uniform or length")
+        A = _adjacency(n, edges, w)
+        deg = np.asarray(A.sum(1)).ravel()
+        L = (sp.diags(deg) - A).tocsr()
+        self.p = np.nonzero(mask)[0]
+        Lp = L[self.p]
+        out = np.nonzero(~np.asarray(mask, bool))[0]
+        Lpb = Lp[:, out].tocsc()
+        ring = np.nonzero(np.diff(Lpb.indptr) > 0)[0]
+        self.b = out[ring]                                   # the pocket's neighbours: they hold it
+        self._Lpb = Lpb[:, ring].tocsr()
+        Lpp = Lp[:, self.p].tocsc()
+        nc, lab = connected_components(Lpp, directed=False)
+        held = np.zeros(nc, bool)
+        held[lab[np.diff(self._Lpb.indptr) > 0]] = True
+        if not held.all():
+            raise ValueError("a pocket component has no neighbour outside the pocket: nothing holds it")
+        self._solve = factorized(Lpp)
+        self.delta = (L @ P0)[self.p]
+        self._avg = sp.diags(1.0 / deg[self.p]) @ A[self.p]  # a pocket point <- the mean of its neighbours
+        e = np.asarray(edges, np.int64)
+        self.edges = e[np.asarray(mask, bool)[e].any(1)]     # every edge with an end in the pocket
+
+    def smooth_rotations(self, R, passes):
+        """The pocket points' rotations after `passes` Jacobi averaging passes (the others held), polar'd [len(p), 3, 3]."""
+        F = np.asarray(R, float).reshape(len(R), 9).copy()
+        for _ in range(int(passes)):
+            F[self.p] = self._avg @ F
+        return polar(F[self.p].reshape(-1, 3, 3))
+
+    def fill(self, X, R=None, passes=8):
+        """X [n, 3] with the pocket's points filled. R [n, 3, 3]: the per-point rotations rest -> posed (None: identity)."""
+        X = np.array(X, float)
+        d = self.delta if R is None else np.einsum("nij,nj->ni", self.smooth_rotations(R, passes), self.delta)
+        rhs = d - self._Lpb @ X[self.b]
+        X[self.p] = np.stack([self._solve(np.ascontiguousarray(rhs[:, c])) for c in range(3)], 1)
+        return X
+
+
+def surface_distance(P, V, T, k=48):
+    """The distance [n] from points P to the mesh (V, T): the closest point over the k triangles nearest by centroid,
+    whatever their facing."""
+    V, T = np.asarray(V, float), np.asarray(T, np.int64)
+    kk = min(k, len(T))
+    _, cand = cKDTree(V[T].mean(1)).query(P, k=kk)
+    cand = cand.reshape(len(P), kk)
+    best = np.full(len(P), np.inf)
+    for j in range(kk):
+        tv = T[cand[:, j]]
+        d = np.linalg.norm(P - closest_on_tris(P, V[tv[:, 0]], V[tv[:, 1]], V[tv[:, 2]]), axis=1)
+        best = np.where(np.isfinite(d) & (d < best), d, best)
+    return best
+
+
 class Carrier:
     """The rest correspondence of points P0 [n, 3] (unit normals N0) to a reference mesh (ref_V0 [nv, 3], ref_T [m, 3]).
 
     Per point: among the k triangles nearest by centroid, those within `rad` whose rest face normal faces the same way
     as the point's normal (dot > 0) are candidates, and the one with the least `distance + nw * rad * (1 - dot)` wins.
-    nw = 0 (the default) is the plain closest point. KNOWN, OPEN: where the points' mesh bridges a tight fold that the
-    reference keeps as two walls (her armpit apex), neighbours land on opposite walls (rest normals opposed) and a pose
-    that opens the fold tears the edge; nw = 0.2 does not cure it, the rule needs the points' adjacency. Kept: `tri` [n, 3]
-    vertex ids, `bary` [n, 3], `d0` = P0 - closest point, `face` the triangle, `ok` (False where no candidate passed:
-    those take the closest of the k without the tests; count them with (~ok).sum()).
+    nw = 0 (the default) is the plain closest point. Kept: `tri` [n, 3] vertex ids, `bary` [n, 3], `d0` = P0 - closest
+    point, `face` the triangle, `nref` its rest normal, `ok` (False where no candidate passed: those take the closest
+    of the k without the tests; count them with (~ok).sum()).
 
     The local rotation is smooth: a vertex's rotation is the polar of the area-weighted sum of its triangles' rest ->
     posed rotations (vertices doubled along seams are welded by rest position, `weld` m), a point's is the polar of the
     barycentric sum of its three vertices' rotations.
+
+    THE POCKET RULE (needs `edges` [m, 2], the points' own edges in local indices). Where the points' mesh bridges a
+    tight fold that the reference keeps as two walls, the two ends of one edge land on opposite walls, and a pose that
+    opens the fold would put the whole opening on that edge. Those edges are found at rest (bridge_edges, `bridge_deg`),
+    the points within `pocket_rows` edges of a bridge end are the pocket (rows_around), and in every pose the pocket is
+    not carried but filled from its carried neighbours (Pocket.fill with `pocket_weight`, the carrier's rotations
+    smoothed across it by `frame_passes` averaging passes). pocket_rows = 0, or no edges, or no bridge: the plain
+    carry. Kept: `bridge` [nb, 2] the bridge edges, `pocket` (a Pocket, or None). The fill SPANS the opened fold: the
+    points' mesh has less surface there than the reference, so the pocket lies off the reference's hollow.
     """
 
-    def __init__(self, ref_V0, ref_T, P0, N0, rad=0.05, k=64, nw=0.0, weld=1e-6):
+    def __init__(self, ref_V0, ref_T, P0, N0, rad=0.05, k=64, nw=0.0, weld=1e-6, edges=None, bridge_deg=60.0,
+                 pocket_rows=4, frame_passes=8, pocket_weight="length"):
         V0, T = np.asarray(ref_V0, float), np.asarray(ref_T, np.int64)
         P0, N0 = np.asarray(P0, float), np.asarray(N0, float)
         n = len(P0)
@@ -128,6 +251,15 @@ class Carrier:
         m = rows >= 0
         self._W = sp.csr_matrix((w[m], (rows[m], cols[m])), (len(used), len(inc)))
         self._pg = loc[grp[self.tri]]
+        # the pocket rule
+        self.nref = E0[self.face][:, :, 2]
+        self.bridge_deg, self.pocket_rows, self.frame_passes = bridge_deg, pocket_rows, frame_passes
+        self.bridge, self.pocket = np.zeros((0, 2), np.int64), None
+        if edges is not None and len(edges):
+            edges = np.asarray(edges, np.int64)
+            self.bridge = edges[bridge_edges(self.nref, N0, edges, bridge_deg)]
+            if len(self.bridge) and pocket_rows > 0:
+                self.pocket = Pocket(P0, edges, rows_around(n, edges, np.unique(self.bridge), pocket_rows), pocket_weight)
 
     def rotations(self, ref_V):
         """The reference's local surface rotation rest -> posed at each point [n, 3, 3]."""
@@ -136,11 +268,20 @@ class Carrier:
         Rv = polar((self._W @ Rt.reshape(-1, 9)).reshape(-1, 3, 3))
         return polar(np.einsum("nk,nkij->nij", self.bary, Rv[self._pg]))
 
-    def carry(self, ref_V):
-        """The points on the reference's posed surface ref_V [nv, 3] -> [n, 3]."""
+    def carry(self, ref_V, fill=True, both=False):
+        """The points on the reference's posed surface ref_V [nv, 3] -> [n, 3], the pocket filled.
+
+        fill=False: the carry alone (every point on its own matched face). both=True: (filled, carried alone).
+        """
         ref_V = np.asarray(ref_V, float)
-        q = np.einsum("nk,nkj->nj", self.bary, ref_V[self.tri])
-        return q + np.einsum("nij,nj->ni", self.rotations(ref_V), self.d0)
+        R = self.rotations(ref_V)
+        raw = np.einsum("nk,nkj->nj", self.bary, ref_V[self.tri]) + np.einsum("nij,nj->ni", R, self.d0)
+        X = raw
+        if (fill or both) and self.pocket is not None:
+            X = self.pocket.fill(raw, R, self.frame_passes)
+        if both:
+            return X, raw
+        return X if fill else raw
 
 
 def world_turn(G, rest, j):
@@ -223,13 +364,19 @@ HER = {
     "anchor_child": "clavicle_{s}",      # the anchor = this bone's parent, on each skeleton
     "rad": 0.05,
     "k": 64,
-    "nw": 0.0,                           # the normal term: tried at 0.2, it does not cure the armpit-apex bridge (see T5)
+    "nw": 0.0,                           # the normal term: tried at 0.2, it does not cure the armpit-apex bridge
+    "bridge_deg": 60.0,                  # the pocket rule (Carrier): her armpit apex, where B bridges A's closed fold
+    "pocket_rows": 4,                    # dev scan, abd150 pocket edge max / off A max mm: rows 4 2.69 / 25.5, 6 2.57 / 32.5,
+    "frame_passes": 8,                   #   8 2.48 / 38.6 (more rows: a little less stretch, a web further off A's hollow)
+    "pocket_weight": "length",           # "uniform" gives each row the same length: short edges 3.66x at rows 4, 3.28x at 10
+    "torn": 3.0,                         # a carried-alone edge over this ratio must lie inside the pocket (T5)
     "out": "target_a.npz",
     "dev_out": "target_a_dev.npz",
     "d0_p95_stop_mm": 4.0,
     "dev_poses": ["x:abd150:l", "x:add0:l", "cast_bolt@0:l", "crossbow_shoot@0:r"],
 }
-INFO = ["d_pub_p50", "d_pub_p95", "d_pub_max", "edge_min", "edge_max", "edge_car_max", "vol", "girth_mid_deltoid", "girth_insertion"]
+INFO = ["d_pub_p50", "d_pub_p95", "d_pub_max", "edge_min", "edge_max", "edge_raw_max", "edge_car_max", "pk_edge_min", "pk_edge_max",
+        "pk_d_p50", "pk_d_max", "vol", "girth_mid_deltoid", "girth_insertion"]
 
 
 class Her:
@@ -248,30 +395,50 @@ class Her:
         self.ref_names = list(Ab.p.names)
         self.order, left = transfer_order(self.ref_names, Ab.p.parent, bd.p.index, cfg["bone_map"],
                                           only=set(cfg["pose_bones"]))
-        N0 = bd._normals(bd.V0)
+        self.N0 = bd._normals(bd.V0)
         self.car, self.anchor, self.edges = {}, {}, {}
         for s in "lr":
             ids = md.S[s]["ids"]
-            pts = md.first[ids]
-            self.car[s] = Carrier(Ab.V0, Ab.T, bd.V0[pts], N0[pts], cfg["rad"], cfg["k"], cfg["nw"])
+            A = sp.triu(md.adj[ids][:, ids], 1).tocoo()
+            self.edges[s] = (A.row, A.col)
+            self.car[s] = self.carrier(s)
             ch = cfg["anchor_child"].replace("{s}", s)
             ra, ja = Ab.p.parent[Ab.p.index[ch]], bd.p.parent[bd.p.index[ch]]
             rn, sn = self.ref_names[ra], bd.p.names[ja]
             assert cfg["bone_map"].get(rn, rn) == sn, f"anchor: reference {rn} does not map to source {sn}"
             self.anchor[s] = (ja, ra)
-            A = sp.triu(md.adj[ids][:, ids], 1).tocoo()
-            self.edges[s] = (A.row, A.col)
         self.girth0 = {s: md.girth(md.S[s], md.V0) for s in "lr"}
         if verbose:
+            for s in "lr":
+                c = self.car[s]
+                print(f"pocket {s}: {len(c.bridge)} bridge edges, {0 if c.pocket is None else len(c.pocket.p)} pocket points"
+                      f" of {len(md.S[s]['ids'])} (bridge_deg {cfg['bridge_deg']}, rows {cfg['pocket_rows']}, weight {cfg['pocket_weight']})")
             print(f"reference bones posed ({len(self.order)}): {' '.join(self.order)}")
             print(f"reference bones left at rest ({len(left)}): {' '.join(left)}")
             print("anchor:", {s: (self.ref_names[ra], bd.p.names[ja]) for s, (ja, ra) in self.anchor.items()},
                   "(reference, source)")
 
+    def carrier(self, side, **over):
+        """The side's Carrier from the config (`over` replaces Carrier arguments: the tests' variants)."""
+        cfg, md, bd = self.cfg, self.md, self.bd
+        pts = md.first[md.S[side]["ids"]]
+        kw = {"rad": cfg["rad"], "k": cfg["k"], "nw": cfg["nw"], "edges": np.stack(self.edges[side], 1),
+              "bridge_deg": cfg["bridge_deg"], "pocket_rows": cfg["pocket_rows"], "frame_passes": cfg["frame_passes"],
+              "pocket_weight": cfg["pocket_weight"], **over}
+        return Carrier(self.Ab.V0, self.Ab.T, bd.V0[pts], self.N0[pts], **kw)
+
     def pose_ref(self, G):
         bd, Ab = self.bd, self.Ab
         return Ab.pose_turns(transfer_turns(G, bd.p.rest, bd.p.index, Ab.p.index, Ab.p.parent,
                                             self.cfg["bone_map"], self.order))
+
+    def carried(self, G, side):
+        """(filled, carried alone, the reference's posed vertices), all on the source's skeleton, for one pose and side."""
+        Va, Ga = self.pose_ref(G)
+        ja, ra = self.anchor[side]
+        M = anchor_align(G[ja], self.bd.p.rest[ja], self.Ab.G0[ra], Ga[ra])
+        Xf, Xr = self.car[side].carry(Va, both=True)
+        return tuple(x @ M[:3, :3].T + M[:3, 3] for x in (Xf, Xr, Va))
 
     def target(self, G, side, Vp=None):
         """(X [region points, 3], info) for one pose of B's globals G and one side."""
@@ -281,26 +448,33 @@ class Her:
         pts = md.first[ids]
         if Vp is None:
             Vp = self.rt.published(bd, G)
-        Va, Ga = self.pose_ref(G)
-        ja, ra = self.anchor[side]
-        M = anchor_align(G[ja], bd.p.rest[ja], Ab.G0[ra], Ga[ra])
-        MC = self.car[side].carry(Va) @ M[:3, :3].T + M[:3, 3]
+        MC, MR, VaM = self.carried(G, side)                              # carried and filled, carried alone, A posed
         b = md.beta[:, None]
         X = b * MC + (1 - b) * Vp[pts]
         d = np.linalg.norm(MC - Vp[pts], axis=1)[md.beta == 1] * 1000
         emin, emax, _ = edge_ratio(X, md.V0[ids], *self.edges[side])
-        ecar = edge_ratio(MC, md.V0[ids], *self.edges[side])[1]         # the carried surface alone: a correspondence jump shows here
+        ecar = edge_ratio(MC, md.V0[ids], *self.edges[side])[1]         # before the border blend: what T5 judges
+        eraw = edge_ratio(MR, md.V0[ids], *self.edges[side])[1]         # the carry alone: the bridge shows here
+        pk = self.car[side].pocket
+        pinfo = {"pk_edge_min": 1.0, "pk_edge_max": 1.0, "pk_d_p50": 0.0, "pk_d_max": 0.0}
+        if pk is not None:
+            pmin, pmax, _ = edge_ratio(MC, md.V0[ids], pk.edges[:, 0], pk.edges[:, 1])
+            pd = surface_distance(MC[pk.p], VaM, Ab.T) * 1000           # what the fill loses: how far it spans off A's hollow
+            pinfo = {"pk_edge_min": pmin, "pk_edge_max": pmax, "pk_d_p50": float(np.percentile(pd, 50)), "pk_d_max": float(pd.max())}
         Y = Vp[md.first].copy()
         Y[ids] = X
         g = md.girth(sd, Y)
         info = {"d_pub_p50": float(np.percentile(d, 50)), "d_pub_p95": float(np.percentile(d, 95)), "d_pub_max": float(d.max()),
-                "edge_min": emin, "edge_max": emax, "edge_car_max": ecar, "vol": md.volume(sd, Y) / sd["vol0"],
+                "edge_min": emin, "edge_max": emax, "edge_raw_max": eraw, "edge_car_max": ecar, **pinfo,
+                "vol": md.volume(sd, Y) / sd["vol0"],
                 **{f"girth_{k}": float(g[k] / self.girth0[side][k]) for k in ("mid_deltoid", "insertion")}}
         return X, info
 
 
 def fmt(i):
-    return (f"d_pub {i['d_pub_p50']:.1f}/{i['d_pub_p95']:.1f}/{i['d_pub_max']:.1f} mm  edge {i['edge_min']:.2f}..{i['edge_max']:.2f} (carried alone max {i['edge_car_max']:.2f})"
+    return (f"d_pub {i['d_pub_p50']:.1f}/{i['d_pub_p95']:.1f}/{i['d_pub_max']:.1f} mm  edge {i['edge_min']:.2f}..{i['edge_max']:.2f}"
+            f" (carried alone max {i['edge_raw_max']:.2f}, filled max {i['edge_car_max']:.2f})"
+            f"  pocket edge {i['pk_edge_min']:.2f}..{i['pk_edge_max']:.2f} off A {i['pk_d_p50']:.1f}/{i['pk_d_max']:.1f} mm"
             f"  vol {i['vol']:.3f}  girth mid {i['girth_mid_deltoid']:.3f} ins {i['girth_insertion']:.3f}")
 
 
@@ -359,18 +533,50 @@ def cmd_test(h):
             continue
         i = names.index(nm)
         s = str(z["side"][i])
+        ids = md.S[s]["ids"]
+        car = h.car[s]
+        ei, ej = h.edges[s]
         X, info = h.target(z["G"][i], s)
-        line(f"T5 {nm}", info["edge_car_max"] < 3 and np.isfinite(X).all(), fmt(info))
-        if info["edge_car_max"] >= 3:
-            ids = md.S[s]["ids"]
-            ei, ej = h.edges[s]
-            r = edge_ratio(X, md.V0[ids], ei, ej)[2]
-            w = np.argsort(-r)[:4]
-            car = h.car[s]
-            for a, b_, rr in zip(ei[w], ej[w], r[w]):
-                print(f"     edge {a}-{b_} ratio {rr:.2f} faces {car.face[a]} {car.face[b_]} ok {car.ok[a]} {car.ok[b_]}"
-                      f" |d0| {np.linalg.norm(car.d0[a]) * 1000:.1f} {np.linalg.norm(car.d0[b_]) * 1000:.1f} mm"
+        MC, MR, _ = h.carried(z["G"][i], s)
+        inp = np.zeros(len(ids), bool)
+        if car.pocket is not None:
+            inp[car.pocket.p] = True
+        rr = edge_ratio(MR, md.V0[ids], ei, ej)[2]
+        torn = rr > cfg["torn"]
+        out = torn & ~(inp[ei] & inp[ej])                              # the rule must cover every torn edge, both ends
+        line(f"T5 {nm}", info["edge_car_max"] <= 3 and not out.any() and np.isfinite(X).all(),
+             f"edge max carried alone {info['edge_raw_max']:.2f} -> filled {info['edge_car_max']:.2f}; torn edges (over"
+             f" {cfg['torn']:g}) {int(torn.sum())}, outside the pocket {int(out.sum())} | {fmt(info)}")
+        for e in np.nonzero(out)[0][:8]:
+            a, b_ = ei[e], ej[e]
+            print(f"     OUTSIDE edge {a}-{b_} ratio {rr[e]:.2f} in pocket {inp[a]} {inp[b_]}"
+                  f" ref normals {_angle(car.nref[[a]], car.nref[[b_]])[0]:.0f} deg, own {_angle(h.N0[md.first[ids[[a]]]], h.N0[md.first[ids[[b_]]]])[0]:.0f} deg"
+                  f" beta {md.beta[a]:.2f} {md.beta[b_]:.2f}")
+        if info["edge_car_max"] > 3:
+            r = edge_ratio(MC, md.V0[ids], ei, ej)[2]
+            for e in np.argsort(-r)[:4]:
+                a, b_ = ei[e], ej[e]
+                print(f"     edge {a}-{b_} filled ratio {r[e]:.2f} (carried alone {rr[e]:.2f}) in pocket {inp[a]} {inp[b_]}"
                       f" beta {md.beta[a]:.2f} {md.beta[b_]:.2f}")
+    # T6: no pocket rows = the old carry. T7: the fill of the rest is the rest.
+    i = names.index(cfg["dev_poses"][0]) if cfg["dev_poses"][0] in names else 0
+    Va, _ = h.pose_ref(z["G"][i])
+    for s in "lr":
+        car, ids = h.car[s], md.S[s]["ids"]
+        P0 = bd.V0[md.first[ids]]
+        c0 = h.carrier(s, pocket_rows=0)
+        e = np.abs(c0.carry(Va) - car.carry(Va, fill=False)).max()
+        moved = np.abs(car.carry(Va) - car.carry(Va, fill=False)).max(1) > 0
+        npk = 0 if car.pocket is None else len(car.pocket.p)
+        line(f"T6 {s}", e == 0 and c0.pocket is None and int(moved.sum()) <= npk,
+             f"pocket_rows 0 - the carry alone: max {e:.2e} m; the fill moves {int(moved.sum())} points (pocket {npk})")
+        if car.pocket is None:
+            line(f"T7 {s}", True, "no pocket")
+            continue
+        e = np.abs(car.pocket.fill(P0) - P0).max()
+        e2 = np.abs(car.pocket.fill(P0 @ R.T + t, np.broadcast_to(R, (len(P0), 3, 3)), car.frame_passes) - (P0 @ R.T + t)).max()
+        line(f"T7 {s}", e < 1e-6 and e2 < 1e-6, f"fill(rest) - rest max {e:.2e} m; under a rigid motion {e2:.2e} m"
+             f" ({len(car.bridge)} bridge edges, {npk} pocket points, {len(car.pocket.b)} holding)")
     print("ALL PASS" if ok_all else "SOME FAILED")
     return ok_all
 
@@ -382,7 +588,7 @@ def table(names, kinds, infos):
         for key in INFO:
             v = np.array([r[key] for r in rows])
             print(f"  {key:18s} {v.min():8.3f} {np.median(v):8.3f} {v.max():8.3f}")
-    for key in ("edge_max", "d_pub_max"):
+    for key in ("edge_max", "edge_car_max", "pk_d_max", "d_pub_max"):
         w = np.argsort([-i[key] for i in infos])[:5]
         print(f"worst by {key}:")
         for i in w:
@@ -409,8 +615,13 @@ def cmd_target(h, poses):
     out = h.OUT / (cfg["dev_out"] if poses else cfg["out"])
     params = {**{k: v for k, v in cfg.items()}, "method": "carried_target", "posed": h.order,
               "not_ok": {s: int((~h.car[s].ok).sum()) for s in "lr"}}
+    pocket = {}
+    for s in "lr":                       # local indices into the side's region points (md.S[s]["ids"] order)
+        c = h.car[s]
+        pocket[f"pocket_{s}"] = np.zeros(0, np.int64) if c.pocket is None else c.pocket.p
+        pocket[f"bridge_{s}"] = c.bridge
     np.savez_compressed(out, X=np.array(X), name=z["name"][sel], side=z["side"][sel], kind=z["kind"][sel],
-                        info=json.dumps(infos), params=json.dumps(params))
+                        info=json.dumps(infos), params=json.dumps(params), **pocket)
     table([names[i] for i in sel], [str(z["kind"][i]) for i in sel], infos)
     print(f"wrote {out}  X {np.array(X).shape}")
 
