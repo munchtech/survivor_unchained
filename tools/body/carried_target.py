@@ -620,6 +620,36 @@ def derive_region(V0, T, J, W, bones, far=(), rows=4, eps=0.02, rigid=0.999):
     return {"pts": first[ids], "share": s01((d[ids] - 1) / rows), "edges": ed, "core": core[ids], "stiff": stiff[ids]}
 
 
+def support_region(adj, moved, core=None, stiff=None, gated=None, rows=4, ring=3, gate_rows=8, wall_rows=12):
+    """A region's points and border share from the bone set's MOTION SUPPORT: a true rigid border (any set, any poser).
+
+    adj [n, n]: the points' edges. moved [n] bool: the points that the source's own surface OR the carried reference
+    moves by more than a small eps under the set's part poses (measured: no weights, no names). core [n] bool: points
+    that are the region's whatever moved (an explicit list). The region = (moved | core) grown by `rows` rows, the
+    share 0 on the outer row and 1 from `rows` rows in: the ramp lies in rows that nothing moves, so the target is the
+    source's own surface on the outer row by construction and the ramp hides less than eps.
+    stiff [n] bool: points rigid to a far bone set. Never the region's, nothing grows into them, and the share is 0
+    within `ring` rows of them and rises over `rows` rows (an explicit list's own far border, kept as it is).
+    gated [n] bool: a part that moves but is the region's only while a gate is open (two shares come back, the pose
+    blends them). It is a WALL: share 0 on it, rising over `wall_rows` rows away from it (the ramp there hides real
+    disagreement, so it is wide). Closed, the whole part is the wall. Open, the wall stands back by `gate_rows` rows
+    from the core: those rows of the part are blend rows (the last one is the wall's first: share 0).
+    Returns (ids [m] the region's points, closed [m], opened [m]: the share with the gate shut and open).
+    """
+    n = len(moved)
+    core, stiff, gated = (np.zeros(n, bool) if x is None else np.asarray(x, bool) for x in (core, stiff, gated))
+    stiff = stiff & ~core                 # far-rigid points INSIDE the list are the list's own (her deltoid and upper arm)
+    reg = (moved | core) & ~gated & ~stiff
+    for _ in range(rows):
+        reg |= adj @ reg > 0
+    dg = rows_from(adj, core)
+    full = (reg & ~gated & ~stiff) | core | (gated & (dg <= gate_rows))
+    s = np.minimum(s01((rows_from(adj, ~full) - 1) / rows), s01((rows_from(adj, stiff) - ring) / rows))
+    out = [np.where(full, np.minimum(s, s01(rows_from(adj, wall) / wall_rows)), 0.0) for wall in (gated, gated & (dg >= gate_rows))]
+    ids = np.nonzero(full)[0]
+    return ids, out[0][ids], out[1][ids]
+
+
 def follow_field(pose, V0, pivot, bone, deg=0.5):
     """[nv] in 0..1: how much each vertex of a posed mesh follows a bone, MEASURED (no weights read: any poser).
 
