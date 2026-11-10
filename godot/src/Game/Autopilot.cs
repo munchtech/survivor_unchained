@@ -83,6 +83,7 @@ public sealed class Autopilot
     /// game's keys make). Else, in a campaign fight, the bare press plan, as before.</summary>
     void PlanStep(Battle b)
     {
+        if (clip && b.Campaign && !g.InTransit && !g.InCinematic) Her(b);
         if (!b.Campaign || Idle || Toward || Away || Across || Talk || g.InTransit || g.InCinematic || !b.Player.Alive) return;
         if (!clip) { RunHands(b); return; }
         // --clip: one line per press the plan makes (the shape of ScriptedPress's), a print only.
@@ -98,10 +99,43 @@ public sealed class Autopilot
             if (k != null) Godot.GD.Print(string.Format(System.Globalization.CultureInfo.InvariantCulture,
                 "skill press frame {0} slot {1} t {2:0.00} skill {3} kind {4} resolve {5:0.0}/{6:0}", Godot.Engine.GetFramesDrawn(), w.Slot + 1, g.Journey.Playtime, w.Id, k, resolve, b.Resolve.Max));
         }
+        // A union on the grip's key (Bladestorm on Sunder's): the plan holds that key as the grip out of a storm
+        // (PressHands.HalfGrip), printed as the grip's hold with the half's swings while it was held.
+        if (b.Weapons.Find(w => w.Slot2 >= 0 && w.Half != null) is { } un)
+        {
+            if (un.Half!.Timer > clipHalfTimer + 1e-9) clipHalfSwings++;
+            clipHalfTimer = un.Half.Timer;
+        }
+        if (planHands.HalfGrip != clipHalf)
+        {
+            int slot2 = b.Weapons.Find(w => w.Slot2 >= 0)?.Slot2 ?? -1;
+            if (clipHalf != null) Godot.GD.Print(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "skill press frame {0} slot {1} t {2:0.00} skill {3} kind hold-end resolve {4:0.0}/{5:0} swings {6}", Godot.Engine.GetFramesDrawn(), slot2 + 1, g.Journey.Playtime, clipHalf, resolve, b.Resolve.Max, clipHalfSwings));
+            if (planHands.HalfGrip != null) Godot.GD.Print(string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "skill press frame {0} slot {1} t {2:0.00} skill {3} kind hold-start resolve {4:0.0}/{5:0}", Godot.Engine.GetFramesDrawn(), slot2 + 1, g.Journey.Playtime, planHands.HalfGrip, resolve, b.Resolve.Max));
+            clipHalf = planHands.HalfGrip; clipHalfSwings = 0;
+        }
         // A dash the Pilot made (in its Act, or its deft Steer this frame): it did not go through Press(Act.Dash).
         if (piloted && b.Player.DashT > lastDashT + 1e-9) DashLine(b);
         lastDashT = b.Player.DashT;
         Trace(b);
+    }
+
+    string? clipHalf; int clipHalfSwings; double clipHalfTimer;
+    bool herSaid, fallSaid; double herHp = -1;
+
+    /// <summary>--clip: her build once (Play/DevVeteran.Line, the line the balance harness prints: the same line, the same
+    /// build), each blow that takes 3% of her life or more (how much, by whom, whether her feet were asked still), and her fall.</summary>
+    void Her(Battle b)
+    {
+        var p = b.Player;
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        if (!herSaid && b.Time >= 1) { herSaid = true; Godot.GD.Print(DevVeteran.Line(b, g.Journey)); }
+        if (herHp >= 0 && herHp - p.Hp >= 0.03 * b.MaxHp)
+            Godot.GD.Print(string.Format(inv, "her hit t {0:0.0} lost {1:0} ({2:0.00} of life) by {3} life {4:0.00} feet {5}", b.Time, herHp - p.Hp, (herHp - p.Hp) / b.MaxHp,
+                p.LastKiller?.Def.Id ?? "-", p.Hp / b.MaxHp, Math.Abs(Move.X) + Math.Abs(Move.Z) < 0.05 ? "still" : "moving"));
+        if (!p.Alive && !fallSaid) { fallSaid = true; Godot.GD.Print(string.Format(inv, "her fall t {0:0.0} to {1}", b.Time, p.FellTo ?? p.LastKiller?.Def.Id ?? "-")); }
+        herHp = p.Hp;
     }
 
     void RunHands(Battle b)

@@ -63,37 +63,18 @@ public static class MapSim
             Name = "Bot", Archetype = calling, Background = "hunter", Palette = a.Palettes[0].Id,
             WeaponItem = a.Weapons[0], Ability = a.Abilities[0],
         }, (uint)seed);
-        var ch = j.Ch;
-        while (ch.Level < level) Character.GainXp(ch, Character.XpForLevel(ch.Level) - ch.Xp + 1);
-        switch (calling) { case "arcanist": ch.Attributes.Wits += ch.Points; break; case "stalker": ch.Attributes.Finesse += ch.Points; break; default: ch.Attributes.Might += ch.Points; break; }
-        ch.Points = 0;
-        // (M3) A calling with a taught build carries it first (taught_builds.json, as a campaign survivor of that level does);
-        // the path's skills fill what slots are left.
-        TaughtBuilds.Grant(ch, ch.Level);
-        var path = Content.Paths.All.Where(p => p.Callings.Contains(calling)).OrderBy(p => p.Id).ToList();
-        var pick = path[seed % path.Count];
-        foreach (var id in pick.Weapons.Concat(path.SelectMany(p => p.Weapons)).Distinct())
-        {
-            if (ch.Slotted.Count >= SkillBook.Slots(ch)) break;
-            if (!Content.Weapons.All.ContainsKey(id) || !SkillBook.Meets(ch, id) || !SkillBook.Carries(ch, id) || ch.Skills.Contains(id)) continue;
-            ch.Skills.Add(id);
-            ch.Slotted.Add(id);
-        }
-        var rng = new Rng((uint)seed * 31 + 5);
-        (EquipSlot Slot, string Def)[] dress =
-        [
-            (EquipSlot.Head, rng.Chance(0.5) ? "iron_helm" : "leather_cap"), (EquipSlot.Body, rng.Chance(0.5) ? "chain_shirt" : "padded_jerkin"),
-            (EquipSlot.Cloak, "travelers_cloak"), (EquipSlot.Amulet, "bone_amulet"), (EquipSlot.Ring1, "silver_ring"), (EquipSlot.Ring2, "copper_ring"),
-        ];
-        foreach (var (slot, def) in dress)
-            ch.Equipment[slot] = Inventory.Make(ch, def, 1, gearRarity, (uint)rng.Int(1, 1 << 30));
+        // (M3) The dressing is Play/DevVeteran.cs's, shared with the game's --veteran: one build under the same arguments.
+        // MAP_BARE=1 (a measuring aid): the game's old `--xp` veteran instead, the level alone (points unspent, no gear,
+        // the journey's one draught), to show what a clip of it was measuring.
+        if (Bare) { var ch = j.Ch; while (ch.Level < level) Character.GainXp(ch, Character.XpForLevel(ch.Level) - ch.Xp + 1); }
+        else DevVeteran.Dress(j.Ch, level, gearRarity, seed);
         return j;
     }
 
     public static MapRunResult Play(MapRunSpec spec)
     {
         var j = Survivor(spec.Calling, spec.Level, spec.GearRarity, spec.Seed);
-        for (int i = 0; i < 4; i++) Inventory.AddToPack(j.Ch, Inventory.Make(j.Ch, "health_draught", 1));
+        if (!Bare) DevVeteran.Belt(j.Ch);
         var chart = new Chart { Tier = spec.Tier, People = spec.People, Seed = spec.Seed * 7919 + spec.Tier, Mods = spec.Mods.ToList(), Rarity = spec.Mods.Length == 0 ? 0 : spec.Mods.Length <= 2 ? 1 : 2, Name = "The Harness Map" };
         var map = MapGen.Generate(chart.Map);
         var host = new HeadlessHost(j, spec.Seed);
@@ -125,6 +106,8 @@ public static class MapSim
         // (M3) --grant / --grant-union / --dash-steps: the game's dev grants (Sim/DevGrants.cs), carried from the start. A grant
         // the keys cannot hold takes the last key that is not the grip's nor the union's part.
         if (Grant != null || GrantUnion != null) GiveGrants(b, spec);
+        // (her, one line, as the game's --auto --clip prints it: the same line, the same build)
+        if (System.Threading.Interlocked.Increment(ref herSaid) <= 2) Console.WriteLine($"{spec.Key}: {DevVeteran.Line(b, j)}");
         var r = new MapRunResult { Spec = spec, Packs = zone.PackCount, MaxHp = b.MaxHp, Build = string.Join(" ", b.Weapons.Select(w => $"{w.Id}{w.Rank}")) };
         var nav = new NavField(map, b, map.Boss.X, map.Boss.Z);
         double along = 0;
@@ -242,7 +225,8 @@ public static class MapSim
 
     /// <summary>(M3) --grant id[:rank],... / --grant-union id: what every map starts carrying (as ArenaSim's).</summary>
     public static string? Grant, GrantUnion;
-    static int grantSaid;
+    static int grantSaid, herSaid;
+    static readonly bool Bare = Environment.GetEnvironmentVariable("MAP_BARE") == "1";
 
     static void GiveGrants(Battle b, MapRunSpec spec)
     {

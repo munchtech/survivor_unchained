@@ -301,6 +301,8 @@ public partial class Game : Node, IZoneHost
         if (Args.Has("gold")) Journey.Ch.Gold = Args.Num("gold", 0);
         // --xp N: that much experience at once (pictures of the self with points to spend).
         if (Args.Has("xp")) Character.GainXp(Journey.Ch, Args.Num("xp", 0));
+        // --veteran L[:G]: the balance harness's survivor of level L in gear of rarity G (Play/DevVeteran.cs: its `--level L`, g2).
+        if (Args.Get("veteran") is string vet) GD.Print(DevVeteran.Apply(Journey.Ch, vet, (int)Args.Num("seed", 1)));
         // --relight id,id|all: those lamp-posts relit (Lamps v2 only; RelightPost does nothing on v1).
         if (Args.Get("relight") is string rl)
             foreach (var id in rl == "all" ? Content.Lamps.Posts.Select(p => p.Id).ToList() : rl.Split(',').ToList()) LampBook.RelightPost(World, id);
