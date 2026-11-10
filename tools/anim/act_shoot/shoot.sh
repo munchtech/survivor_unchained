@@ -8,7 +8,8 @@
 # play = the game's play camera, untouched. close = --close-hold Z --act-rigid (the view carried with her root, no lag);
 # Z is the game's closest zoom (0.45) where her whole figure stays in the frame, else the closest that holds her (Z table;
 # found with `CLOSE=<z> NOMOVIE=1 ACT_M=<scratch> shoot.sh <clip>_close` then `sheets.py --box <clip>`: 0 frames out).
-# Env: ACT_M (the output folder), NOMOVIE=1 (no frames written, logs only: zoom trials, measures), CLOSE=<z> (overrides Z).
+# Env: ACT_M (the output folder), NOMOVIE=1 (no frames written, logs only: zoom trials, measures), CLOSE=<z> (overrides Z),
+# FACING=<deg> (her heading, default 90 = +X, side on; 0 = +Z, toward the camera; 45 = three-quarter).
 M=${ACT_M:-/c/Users/munch/Desktop/survivorsunchained_inputs/motion_a1/stageB/actions}
 G=/c/Users/munch/Desktop/Godot_v4.5.1-stable_mono_win64/Godot_v4.5.1-stable_mono_win64_console.exe
 cd "$(dirname "$0")/../../../godot" || exit 1
@@ -38,7 +39,7 @@ for clip in "${!F[@]}"; do
     C=""; [[ $cam == close ]] && C="--close-hold ${CLOSE:-${Z[$clip]}} --act-rigid"
     d=$M/$clip/clips/$cam; mkdir -p $d $M/$clip/logs
     MOV="--write-movie $d/f.png"; if [[ $NOMOVIE == 1 ]]; then MOV=""; else rm -f $d/f*.png; fi
-    timeout 500 "$G" --path . --fixed-fps 30 --resolution 1920x1080 $MOV -- --shot a1_act_$k ${F[$clip]} --act $clip --facing 90 $C $B --seconds ${SEC[$clip]} > "$M/$clip/logs/$cam.log" 2>&1
+    timeout 500 "$G" --path . --fixed-fps 30 --resolution 1920x1080 $MOV -- --shot a1_act_$k ${F[$clip]} --act $clip --facing ${FACING:-90} $C $B --seconds ${SEC[$clip]} > "$M/$clip/logs/$cam.log" 2>&1
     echo "== $k exit $? frames $(ls $d | wc -l)"; grep "act:" "$M/$clip/logs/$cam.log" | grep -v "act: scr f="
   done
 done
