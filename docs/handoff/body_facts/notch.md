@@ -46,3 +46,30 @@ Probes: `survivorsunchained_inputs/scratch_p1_notch/` (probe.py, neck.py, wjump.
 - T26 neck (OPEN, real folds): the 42-48 edges are visible skin, not seams: no non-manifold edges, 3-6 rest slivers; the left/right deltoid top (upperarm_share 0.5-1), trap_r, and under the jaw (Head 0.5-0.7 / neck_02 / spine_04, y 1.59-1.61 m). Only 7-15 were over 45 with the trigger off: the fill itself makes the rest. They sit on compressed triangles (area < 0.5x rest on 21-40 of them; published has 41-67 region triangles under 0.2x). No harmonic variant clears them (rows 2-10, seed 15-45, rest delta x0-1, R none/smoothed, uniform weights, Taubin): best 15/27/19. Needs a compression-aware fill (bulge or tangential relaxation), not an edge-set rule.
 - Pops (leap@4..12:r, @8 and @13 not in the pose files): the fix's own 2nd difference max 16-23 mm (p95 5-9), the carry's (trigger off - published) 11-72 mm, published (rigid jump) 105-497. A smoothstep fold_open [30,45] on the neck is WORSE (fix d2 20-30 mm, neck over-45 54/92/47): not adopted.
 - (c) shift, 13 dev, target_a_l22r.npz rebuilt: worst in95 fold_front 7.7 (iron_vow@72:l) / deltoid 7.6 (leap@9:r) / breast 5.0 / trap 31.9, against 6.0 / 5.0 / 5.0 / 31.9. (d) p5 breast top: axe_heavy@9 l max dihedral 166 -> 176 composed (>2.5x 3 = 3); r 52 -> 47, >2.5x 4 -> 0; sword_heavy@9 l 168 -> 135, >2.5x 1 -> 0; r 47 = 47, >2.5x 4 -> 4 (max 6.24 -> 4.89).
+
+## (5) Source weight relax (lead 23's solver, 10 Nov): mark (1) cured at the source
+- Rule: `weights_topo.chain_relax` (build_topo stage_weights, after the a_* rules, before the head; both tiers). Spec
+  her_b "weights" "chain_relax" {"chains": [["neck_01","neck_02","Head"]], "jump": 0.5, "rows": 2, "min_w": 0.01}; absent =
+  bit for bit (round_37a without it: body.glb / play.glb POSITION, JOINTS, WEIGHTS = round_36's exactly). Seeds: points of
+  quad edges and diagonals whose chain sum steps > jump; grown `rows` rings; harmonic fill (1 / length^2) of the whole
+  weight row there, outside and the head ring held; < min_w dropped, renormalised, mirrored, capped (RULES cap 8).
+- Build round_37 (published, backup of round_36's glbs/json in inputs/body/p1b_l23_pub_before): close 133 seeds,
+  region 410 points (428 glb rows), chain edges > 0.5 159 -> 0, > 0.3 419 -> 52; play 123 / 323 pts, 151 -> 0, 281 -> 7.
+  Published probe (wjump): > 0.5 0 / 0 a side, > 0.3 18 / 18. Rows sum 1 (4.5e-8, float32); max influences 8 = 8 (changed
+  rows median 4 -> 5); ring_weight_step_max 1.1e-16 (as before); head and every other row unchanged; positions unchanged.
+- The neck region's `fold` trigger is OFF (carried_target HER, ratio 2.4 rows 2 kept); the girdle's stays.
+- Box (1) right / mirrored left, max dihedral / edges > 45 (published; composed), before trigger-off -> after:
+  @5 137/25; 123/11 -> 15/0; 11/0 | L 43/0; 25/0 -> 27/0; 12/0. @6 153/26; 136/22 -> 15/0; 17/0 | L 28/0 -> 13/0.
+  @7 167/18; 134/24 -> 15/0; 20/0 | L 37/0 -> 15/0. @8 177/10; 128/25 -> 13/0; 20/0 | L 98/8 -> 14/0.
+  @9 148/5; 124/17 -> 16/0; 16/0 | L 161/8; 118/12 -> 30/0; 13/0. @10 109/4; 122/12 -> 19/0; 14/0 | L 125/18 -> 16/0.
+  @11 87/4; 109/8 -> 19/0; 13/0 | L 136/25; 127/25 -> 29/0; 21/0. (The old trigger got 11-24/0 on the right only.)
+- Box (3) cast_bolt@2/3/4:r (x -210..-100, y 1230-1420, all z): unchanged, published 166/45, composed (girdle trigger)
+  93/14-16. No bone has a weight jump > 0.5 there: (3) is not a checkerboard; the skin's shape or the clip.
+- Neck region, T26's metric (fold_tris, opened rows, past rest > 45) heroic_leap@6 / @9 / cast_bolt@3: old body trigger
+  on 40 / 53 / 42, old trigger off 135 / 157 / 47, new (off) 79 / 91 / 47. What is left sits outside box (1): the deltoid
+  cap front x +-200-225 y 1450-1500 (mark 2's zone), the throat x 0+-50 y 1600-1625, the shoulder top x +-125 y 1525.
+- Other per-bone jumps > 0.5 (not relaxed; seen by the rule's report): pelvis / spine_01 across the lower back (230 /
+  135 edges, y 875-1137, z < -85), upperarm_share (92 a side) and trap (64) behind the shoulder, thigh / thigh_share
+  (28 / 13) at the back of the hip. Candidates for "chains" if they fold in game; not checked posed.
+- Also moved: publish copied round_37's passing bake (ao, curvature, thickness; the sidecar normal.png now equals the
+  glb's embedded one); the glbs' embedded images are unchanged. pieces.json gained "carried_by_ref" (code since round_36).
