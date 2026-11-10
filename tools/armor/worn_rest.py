@@ -10,6 +10,19 @@ The rule (rigid_roles.json slots.<slot>.worn_rest, a spring group; "worn_rest" n
 gear_fit eval_unit fits such a slot's rigid components to the worn body (its points, and the move of each bound point by
 its own skin blend), and stores them so the engine's own pose of them (their blend, their mean shape deltas) lands them
 there. No support, no springs row, or bones the body lacks: None (the build is what it was).
+
+THE JOINS (JOIN; all read off the authored mesh and the body, nothing per piece). The worn fit moves plates, so what
+was authored joined must stay joined:
+- weld: rigid components that touch (points within JOIN "weld_m") are one group (a cup, its rim, its rivets): one fit.
+  A group that holds a component big enough to lead (gear_fit SMALL_SHARE) is a PLATE; any other is a FITTING (a
+  buckle, a clasp, a strap's rivet).
+- a plate is fitted to her worn skin, the largest first; a plate within JOIN "link_m" of plates already fitted is a
+  bridge (a gore between two cups) and is fitted to THEIR moves instead (each of its points to the nearer plate's).
+- a fitting rides what it sits on: the plain mean of her skin's weights over its own footprint (no slot roles: a
+  buckle over the clavicle follows the clavicle as the strap under it does), placed by the join field below.
+- the join field: a bendy vertex (or a fitting's point) at a fitted plate takes that plate's move and its blend of
+  weights, fading to her skin's own over the plate's fade length (the mismatch at its seam over JOIN "strain", kept in
+  JOIN "fade_m"), so a strap's end stays on its cup at rest and in motion and the strap stretches no more than that.
 """
 import json
 import os
@@ -23,6 +36,7 @@ for d in ("body", "anim"):
     if os.path.join(REPO, "tools", d) not in sys.path:
         sys.path.insert(0, os.path.join(REPO, "tools", d))
 DOWN = np.array([0.0, -1.0, 0.0])
+JOIN = {"weld_m": 0.002, "weld_n": 3, "link_m": 0.010, "strain": 0.25, "fade_m": (0.03, 0.12), "host": 0.5}
 SHAPES = ("form_support_lift", "form_support_press", "form_support_fill")
 
 
@@ -129,6 +143,20 @@ class Worn:
             d += k * (w[:, :, None] * self.base.shapes[nm][Tv]).sum(1)
         return np.einsum("nij,nj->ni", M[:, :, :3], X + d) + M[:, :, 3]
 
+    def mats(self, tri, w):
+        """[n, 3, 4]: each bound point's own skin blend of the worn pose."""
+        return (w[:, :, None, None] * self.A[self.base.T[tri]]).sum(1)
+
+    def unpose_each(self, Y, J, W, deltas):
+        """Worn points Y as STORED under per-point blends (J, W [n, 8]) and shape deltas {shape: [n, 3]}; also each
+        point's inverse linear part [n, 3, 3] (its normal's way back)."""
+        M = np.einsum("nk,nkij->nij", np.asarray(W, np.float64), self.S[np.asarray(J, np.int64)][:, :, :3, :])
+        Li = np.linalg.inv(M[:, :, :3])
+        X0 = np.einsum("nij,nj->ni", Li, Y - M[:, :, 3])
+        for nm, d in deltas.items():
+            X0 = X0 - self.weights.get(nm, 0.0) * d
+        return X0, Li
+
     def unpose(self, X, N, J, W, deltas):
         """A rigid component's worn points X (normals N) as STORED: the engine poses them by the component's own blend
         (J, W [8]) and its mean shape deltas {shape: [3]}, and they land at X."""
@@ -140,17 +168,18 @@ class Worn:
         return X0, N @ Li.T
 
 
-def worn(body, row, roles):
-    """The Worn of `body` under the row's piece, or None (see the module doc). roles: rigid_roles.json."""
+def state(glb_path, joint_names, shape_names, row, roles):
+    """(S [B, 4, 4] the worn pose's skin matrices, {shape: weight}, the springs' offsets) of a body glb under the row's
+    piece, or None (see the module doc). roles: rigid_roles.json."""
     grp = (roles.get("slots", {}).get((row or {}).get("slot"), {}) or {}).get("worn_rest")
     cfg, sup = roles.get("worn_rest"), support_of(row)
-    if not grp or not cfg or sup is None or not getattr(body, "glb", None) or not (sup[0] or any(sup[1])):
+    if not grp or not cfg or sup is None or not glb_path or not (sup[0] or any(sup[1])):
         return None
     doc = json.load(open(os.path.join(REPO, cfg["file"]), encoding="utf-8"))["bodies"].get(cfg["body"])
     if doc is None:
         return None
     from gl import Glb
-    g = Glb(body.glb)
+    g = Glb(glb_path)
     joints = g.js["skins"][0]["joints"]
     at = {j: k for k, j in enumerate(joints)}
     parent = np.full(len(joints), -1)
@@ -158,10 +187,131 @@ def worn(body, row, roles):
         for c in g.js["nodes"][j].get("children", []):
             if c in at:
                 parent[at[c]] = at[j]
-    names = list(body.joint_names)
+    names = list(joint_names) if joint_names is not None else [g.nodes[j].get("name") for j in joints]
     if not any(r["bone"].replace("{s}", s) in names for r in doc["springs"] if r["group"] == grp for s in "lr"):
         return None
     ibm = np.asarray(g.skeleton(0).ibm, np.float64)
     G, eqs = spring_rest(names, parent, np.linalg.inv(ibm), sup[0], grp, doc)
-    weights = {nm: v for nm, v in zip(SHAPES, sup[1]) if v and nm in body.shapes}
-    return Worn(body, G @ ibm, weights, eqs)
+    weights = {nm: v for nm, v in zip(SHAPES, sup[1]) if v and nm in shape_names}
+    return G @ ibm, weights, eqs
+
+
+def worn(body, row, roles):
+    """The Worn of `body` under the row's piece, or None (see the module doc). roles: rigid_roles.json."""
+    st = state(getattr(body, "glb", None), body.joint_names, body.shapes, row, roles)
+    return None if st is None else Worn(body, *st)
+
+
+def pose(S, weights, P, J, W, targets, N=None):
+    """A glb mesh's own vertices in the worn pose (the engine's order: shapes, then the skin): points, and normals
+    when given. targets: {shape: [n, 3]}."""
+    J, W = np.asarray(J, np.int64), np.asarray(W, np.float64)
+    W = W / np.maximum(W.sum(1, keepdims=True), 1e-12)
+    M = np.einsum("nk,nkij->nij", W, S[J][:, :, :3, :])
+    V = np.asarray(P, np.float64).copy()
+    for nm, k in weights.items():
+        if nm in targets:
+            V += k * targets[nm]
+    Pw = np.einsum("nij,nj->ni", M[:, :, :3], V) + M[:, :, 3]
+    if N is None:
+        return Pw
+    Nw = np.einsum("nij,nj->ni", M[:, :, :3], N)
+    return Pw, Nw / np.maximum(np.linalg.norm(Nw, axis=1, keepdims=True), 1e-12)
+
+
+# ---------------------------------------------------------------- the joins
+
+def clusters(X, comp, lead0):
+    """Rigid components welded by touch (JOIN "weld_m", at least "weld_n" points of one within it of the other). X: the
+    tier's authored points, comp: each point's component (-1 bendy), lead0: the bind's leaders. Returns (lead: each
+    component's group, named by its largest member; plate: per component, its group holds a bind-time leader)."""
+    from scipy.spatial import cKDTree
+    nc = int(comp.max()) + 1
+    rg = comp >= 0
+    cr = comp[rg]
+    par = np.arange(nc)
+
+    def find(a):
+        while par[a] != a:
+            par[a] = par[par[a]]
+            a = par[a]
+        return a
+    pairs = cKDTree(X[rg]).query_pairs(JOIN["weld_m"], output_type="ndarray")
+    if len(pairs):
+        a, b = cr[pairs[:, 0]], cr[pairs[:, 1]]
+        m = a != b
+        # (a touch counts by the points of the lower-numbered side that are in it)
+        lo, hi = np.minimum(a[m], b[m]), np.maximum(a[m], b[m])
+        pt = np.where(a[m] < b[m], pairs[m][:, 0], pairs[m][:, 1])
+        key = np.unique(np.c_[lo, hi, pt], axis=0)
+        uq, cnt = np.unique(key[:, :2], axis=0, return_counts=True)
+        for (i, j), n in zip(uq, cnt):
+            if n >= JOIN["weld_n"]:
+                par[find(i)] = find(j)
+    root = np.array([find(c) for c in range(nc)])
+    size = np.bincount(cr, minlength=nc)
+    lead, plate = np.arange(nc), np.zeros(nc, bool)
+    big = np.asarray(lead0)[:nc] == np.arange(nc)
+    for r in np.unique(root):
+        mem = np.nonzero(root == r)[0]
+        lead[mem] = mem[np.argmax(size[mem])]
+        plate[mem] = big[mem].any()
+    return lead, plate
+
+
+def _smooth(x):
+    x = np.clip(x, 0.0, 1.0)
+    return x * x * (3 - 2 * x)
+
+
+class Joins:
+    """The plates fitted so far and the field they give what is joined to them. Xb, Yb: the tier's bendy points as
+    authored and as her skin alone carries them into the worn rest (a seam's mismatch is measured on them)."""
+
+    def __init__(self, Xb, Yb):
+        self.Xb, self.Yb, self.rows = Xb, Yb, {}
+
+    def add(self, c, Xg, M, ca, cb):
+        """A fitted plate: its group's authored points Xg and its move X -> (X - ca) M^T + cb."""
+        from scipy.spatial import cKDTree
+        tree = cKDTree(Xg)
+        lo, hi = JOIN["fade_m"]
+        fade, gap = lo, 0.0
+        if len(self.Xb):
+            d = tree.query(self.Xb)[0]
+            seam = d <= JOIN["weld_m"] if (d <= JOIN["weld_m"]).any() else d <= JOIN["link_m"]
+            if seam.any():
+                gap = float(np.linalg.norm((self.Xb[seam] - ca) @ M.T + cb - self.Yb[seam], axis=1).max())
+                fade = float(np.clip(1.5 * gap / JOIN["strain"], lo, hi))
+        self.rows[int(c)] = dict(tree=tree, M=M, ca=ca, cb=cb, fade=fade, gap=gap)
+
+    def bridge(self, X):
+        """Targets of a plate's points X from the fitted plates it is linked to (within JOIN "link_m"), each point by
+        the inverse square of its distance to them; None when it is linked to none."""
+        ds = {c: r["tree"].query(X)[0] for c, r in self.rows.items()}
+        ds = {c: d for c, d in ds.items() if d.min() <= JOIN["link_m"]}
+        if not ds:
+            return None
+        Y, wsum = np.zeros_like(X), np.zeros(len(X))
+        for c, d in ds.items():
+            r = self.rows[c]
+            w = 1.0 / (d * d + 1e-8)
+            Y += w[:, None] * ((X - r["ca"]) @ r["M"].T + r["cb"])
+            wsum += w
+        return Y / wsum[:, None]
+
+    def field(self, X, Ys):
+        """Points X (authored; Ys as her skin alone carries them) -> (their worn targets, each one's share of a plate's
+        move 0..1, the plate it is nearest by that share or -1)."""
+        Y, G, gs = np.zeros_like(X), np.zeros(len(X)), np.zeros(len(X))
+        near = np.full(len(X), -1)
+        for c, r in self.rows.items():
+            g = _smooth(1.0 - np.maximum(0.0, r["tree"].query(X)[0] - JOIN["weld_m"]) / r["fade"])
+            Y += g[:, None] * ((X - r["ca"]) @ r["M"].T + r["cb"])
+            gs += g
+            near = np.where(g > G, c, near)
+            G = np.maximum(G, g)
+        on = gs > 0
+        out = Ys.copy()
+        out[on] = (1 - G[on])[:, None] * Ys[on] + G[on][:, None] * Y[on] / gs[on][:, None]
+        return out, G, near

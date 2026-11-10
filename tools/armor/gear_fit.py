@@ -1049,6 +1049,7 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
         flo = standoff_floor(bd, ms, ev, lead=lead)
         # (the worn rest, rigid_roles.json slots "worn_rest": the body her support rests her in under this piece)
         wr = worn_rest.worn(body, bd.meta["row"], rigid_roles()) if (comp >= 0).any() else None
+        join = None
         if (comp >= 0).any() and (bbody is not None or flo is not None or wr is not None):
             Xa = np.vstack([ev[m["i"]]["Xbind"] for m in ms])
             Xn = np.vstack([ev[m["i"]]["X"] for m in ms])
@@ -1058,7 +1059,17 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                 c0s = gear_field.signed_clear(body, Xa, k=16)[0]
             else:
                 c0s = np.concatenate([ev[m["i"]]["c0"] for m in ms])
-            for c in np.unique(lead[comp[comp >= 0]]):
+            jl = wr is not None and bool((rigid_roles().get("slots", {}).get(bd.meta["row"].get("slot")) or {}).get("joins"))
+            order = list(np.unique(lead[comp[comp >= 0]]))
+            if jl:
+                # (the joins; a slot's switch "joins" in rigid_roles.json, worn_rest JOIN: welded groups; plates the largest first, a bridge to its plates; a
+                # fitting by the join field, riding the mean of its own footprint)
+                lead, plate = worn_rest.clusters(Xa, comp, lead)
+                cnt = np.bincount(lead[comp[comp >= 0]], minlength=len(lead))
+                order = sorted(np.unique(lead[comp[comp >= 0]]), key=lambda c: (not plate[c], -cnt[c]))
+                jn = worn_rest.Joins(Xa[comp < 0], Xn[comp < 0])
+                join = dict(jn=jn, mean=set(), Xa=Xa, Xn=Xn)
+            for c in order:
                 # made to measure: rotation + translation + a scale per own principal axis (never bends: one blend
                 # of weights), then the smallest translation that clears it (and stands off where she moves)
                 own = comp == c
@@ -1066,8 +1077,24 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                 fg = None if flo is None else flo[grp]
                 if bbody is None and wr is None and (fg is None or not np.isfinite(fg).any()):
                     continue
-                M, ca, cb, info = gear_field.rigid_fit_clear(body if wr is None else wr.body, Xa[own], Xn[own], Xa[grp], c0s[grp], fg)
+                Bt, Yb = Xn[own], None
+                if jl and not plate[c]:
+                    Y, G, near = jn.field(Xa[grp], Xn[grp])
+                    if G.mean() > worn_rest.JOIN["host"]:
+                        lead[lead == c] = np.bincount(near[near >= 0]).argmax()   # (at a plate: it is of that plate)
+                        continue
+                    rots[int(c)] = kabsch(Xa[grp], Y)
+                    join["mean"].add(int(c))
+                    fit["rigid"][f"{tier}/{int(c)}"] = {"fitting": True, "share": round(float(G.mean()), 3)}
+                    continue
+                if jl:
+                    Yb = jn.bridge(Xa[own])
+                    Bt = Bt if Yb is None else Yb
+                M, ca, cb, info = gear_field.rigid_fit_clear(body if wr is None else wr.body, Xa[own], Bt, Xa[grp], c0s[grp], fg)
                 rots[int(c)] = (M, ca, cb)
+                if jl:
+                    jn.add(int(c), Xa[grp], M, ca, cb)
+                    info.update(bridge=Yb is not None, fade_mm=round(jn.rows[int(c)]["fade"] * 1000, 1), seam_gap_mm=round(jn.rows[int(c)]["gap"] * 1000, 1))
                 fit["rigid"][f"{tier}/{int(c)}"] = info
         rots_tier[tier] = rots
         if bbody is not None:
@@ -1129,7 +1156,7 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                     # the leader's bound points over all meshes of the tier
                     trs = np.concatenate([ev[mm["i"]]["tri"] for mm in ms])[own_all]
                     ws = np.vstack([ev[mm["i"]]["w"] for mm in ms])[own_all]
-                    J[sel], W[sel] = rigid_blend(body, trs, ws, bd.meta["row"].get("slot"))
+                    J[sel], W[sel] = rigid_blend(body, trs, ws, None if join and int(c) in join["mean"] else bd.meta["row"].get("slot"))
                     Tvs = body.T[trs]
                     for nm, dP in body.shapes.items():
                         mean = (ws[:, :, None] * dP[Tvs]).sum(1).mean(0)
@@ -1143,6 +1170,35 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                         k0 = int(np.nonzero(sel)[0][0])
                         sv = sel[inv]
                         X[sel], N[sv] = wr.unpose(X[sel], N[sv], J[k0], W[k0], {nm: shapes[nm][k0] for nm in wr.weights if nm in shapes})
+            if join is not None and (comp_i < 0).any():
+                # (the join field, worn_rest JOIN: a bendy vertex at a fitted plate takes the plate's move and its
+                # blend of weights and shape deltas, fading to her skin's own; stored so the engine lands it there)
+                k0 = int(sum(len(ev[mm["i"]]["comp"]) for mm in ms[:ms.index(m)]))
+                Yt, Gj, near = join["jn"].field(join["Xa"][k0:k0 + len(comp_i)], join["Xn"][k0:k0 + len(comp_i)])
+                comp_all = np.concatenate([ev[mm["i"]]["comp"] for mm in ms])
+                trs_all = np.concatenate([ev[mm["i"]]["tri"] for mm in ms])
+                ws_all = np.vstack([ev[mm["i"]]["w"] for mm in ms])
+                for c in np.unique(near[(comp_i < 0) & (Gj > 1e-4)]):
+                    a = (comp_i < 0) & (Gj > 1e-4) & (near == c)
+                    oc, g = comp_all == c, Gj[a]
+                    Jc, Wc = rigid_blend(body, trs_all[oc], ws_all[oc], bd.meta["row"].get("slot"))
+                    D = np.zeros((int(a.sum()), len(body.joint_names)))
+                    np.add.at(D, (np.arange(len(D))[:, None], J[a].astype(np.int64)), W[a] * (1 - g)[:, None])
+                    for j_, w_ in zip(Jc, Wc):
+                        D[:, int(j_)] += g * float(w_)
+                    J[a], W[a] = top_k(D)
+                    Tvs = body.T[trs_all[oc]]
+                    for nm, dP in body.shapes.items():
+                        mean = (ws_all[oc][:, :, None] * dP[Tvs]).sum(1).mean(0)
+                        if nm not in shapes:
+                            if np.abs(mean).max() <= 1e-5:
+                                continue
+                            shapes[nm] = (e["w"][:, :, None] * dP[Tv]).sum(1)
+                        shapes[nm][a] = (1 - g)[:, None] * shapes[nm][a] + g[:, None] * mean
+                    Ms = wr.mats(e["tri"][a], e["w"][a])[:, :, :3]
+                    X[a], Li = wr.unpose_each(Yt[a], J[a], W[a], {nm: shapes[nm][a] for nm in wr.weights if nm in shapes})
+                    sv, ia = a[inv], np.cumsum(a) - 1
+                    N[sv] = np.einsum("nij,nj->ni", np.einsum("nij,njk->nik", Li, Ms)[ia[inv[sv]]], N[sv])
             out[m["node"]] = {"Xu": X, "inv": inv, "N": U(N), "J": J[inv], "W": W[inv],
                               "shapes": {k: v[inv] for k, v in shapes.items()}, "tier": tier, "comp": comp_i,
                               "Xbind": e["Xbind"], "h": z[f"off{i}"][:, 2], "lead": lead}

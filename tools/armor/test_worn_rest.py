@@ -80,3 +80,53 @@ def test_plate_top_cups_clear_her_worn_skin_at_rest(bodies):
         assert c.min() > -0.0005, f"{m['node']}: {(c < 0).sum()} rigid points under her worn skin, deepest {-c.min() * 1000:.1f} mm"
         seen += int(rg.sum())
     assert seen > 5000
+
+
+def _grid(x0, n=6, step=0.001):
+    g = np.arange(n) * step
+    return np.array([[x0 + a, b, 0.0] for a in g for b in g])
+
+
+def test_join_clusters_weld_by_touch():
+    """Components that touch are one group named by its largest member; a group with a bind-time leader is a plate,
+    a group without one is a fitting."""
+    import worn_rest as wr_
+    X = np.vstack([_grid(0.0, 8), _grid(0.0085, 3), _grid(0.05, 3)])      # plate 0, a rivet touching it, a buckle apart
+    comp = np.r_[np.zeros(64, int), np.ones(9, int), np.full(9, 2)]
+    lead, plate = wr_.clusters(X, comp, np.array([0, 0, 0]))
+    assert list(lead) == [0, 0, 2] and list(plate) == [True, True, False]
+
+
+def test_join_field_and_bridge():
+    """At a fitted plate a point takes the plate's move, far from it her skin's; a bridge between two plates takes
+    each one's move at its own end."""
+    import worn_rest as wr_
+    A, B = _grid(0.0), _grid(0.1)
+    jn = wr_.Joins(np.zeros((0, 3)), np.zeros((0, 3)))
+    I = np.eye(3)
+    jn.add(0, A, I, np.zeros(3), np.array([0.0, 0.02, 0.0]))            # plate 0 moves up 20 mm
+    jn.add(1, B, I, np.zeros(3), np.array([0.0, -0.01, 0.0]))           # plate 1 moves down 10 mm
+    P = np.array([[0.0, -0.001, 0.0], [0.05, 0.3, 0.0]])
+    Y, G, near = jn.field(P, P.copy())
+    assert G[0] == 1.0 and near[0] == 0 and abs(Y[0, 1] - (P[0, 1] + 0.02)) < 1e-9
+    assert G[1] == 0.0 and near[1] == -1 and np.allclose(Y[1], P[1])
+    mid = np.array([[0.007, 0.0, 0.0], [0.098, 0.0, 0.0]])
+    Yb = jn.bridge(mid)
+    assert Yb[0, 1] > 0.019 and Yb[1, 1] < -0.009
+    assert jn.bridge(np.array([[0.05, 0.3, 0.0]])) is None
+
+
+def test_unpose_each_lands():
+    """A point stored by unpose_each under a blend lands on its target when posed (the engine's order)."""
+    import worn_rest as wr_
+    rng = np.random.default_rng(0)
+    S = np.tile(np.eye(4), (3, 1, 1))
+    S[1, :3, 3] = [0.0, 0.02, 0.01]
+    w = wr_.Worn.__new__(wr_.Worn)
+    w.S, w.weights = S, {"s": 0.5}
+    Y = rng.normal(size=(5, 3))
+    J = np.tile(np.array([0, 1, 0, 0, 0, 0, 0, 0]), (5, 1))
+    Wt = np.tile(np.array([0.3, 0.7, 0, 0, 0, 0, 0, 0.0]), (5, 1))
+    d = rng.normal(size=(5, 3)) * 0.01
+    X0, _ = w.unpose_each(Y, J, Wt, {"s": d})
+    assert np.allclose(wr_.pose(S, {"s": 0.5}, X0, J, Wt, {"s": d}), Y, atol=1e-12)
