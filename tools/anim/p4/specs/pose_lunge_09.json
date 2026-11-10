@@ -1,0 +1,254 @@
+{
+ "kind": "idle",
+ "rules": "POSE09 (A1 lead 17, 10 Nov): the owner's shield-and-sword lunge (owner_ref_10nov, function not a literal copy; mirrored to her kit: sword right, shield left) as a held still for L1's 09 look shot. Feet very wide and flat, toes out, both knees deep, the pelvis low, the weight a little to the shield leg; trunk forward, chest and face to the play camera; shield out front-left at chest height, face out; sword low at the right hip trailing forward-right, level to slightly down. Ease, not strain",
+ "bands": {
+  "shoulder_lift_l_cm": [
+   -3,
+   0.5
+  ],
+  "shoulder_lift_r_cm": [
+   -3,
+   0.5
+  ],
+  "shoulder_level_cm": [
+   -1.5,
+   1.5
+  ],
+  "blade_below_deg": [
+   8,
+   25
+  ],
+  "blade_tip_cm": [
+   35,
+   65
+  ],
+  "shield_top_cm": [
+   125,
+   142
+  ]
+ },
+ "gen": {
+  "engine": "kimodo",
+  "seconds": 9.0,
+  "takes": 6,
+  "seeds": [
+   131,
+   132,
+   133
+  ],
+  "prompts": [
+   "A woman stands ready and relaxed, a shield held on her left forearm at chest height and a sword held low by her right hip, slowly shifting her weight from foot to foot",
+   "A warrior woman waits calmly in a ready stance, her left arm holding a shield in front of her chest and her right hand holding a sword low at her side, swaying gently as her weight shifts",
+   "A relaxed fighter stands with a shield raised on her left arm and a sword lowered in her right hand, breathing calmly and shifting her weight from leg to leg"
+  ],
+  "root2d": {
+   "kind": "sway",
+   "travel": 0.07,
+   "period": 3.5,
+   "ease": 1.2,
+   "overshoot": 0.01,
+   "start": 0.5,
+   "every": 1
+  },
+  "root2d_scales": [
+   0.8,
+   0.85,
+   0.9
+  ],
+  "keys": {
+   "src": {
+    "prompt": 2,
+    "scale": 0.75,
+    "pick": 4
+   },
+   "hands": {
+    "LeftHand": [
+     0.06,
+     0.26,
+     0.3
+    ],
+    "RightHand": [
+     -0.2,
+     -0.08,
+     0.12
+    ]
+   },
+   "prompts": [
+    2,
+    1
+   ],
+   "scales": [
+    0.78,
+    0.82,
+    0.86
+   ],
+   "start": 15,
+   "every": 30,
+   "aim": {
+    "LeftHand": [
+     -0.04,
+     0.007,
+     0.055
+    ],
+    "RightHand": [
+     -0.03,
+     -0.075,
+     0.02
+    ]
+   },
+   "tag": "a"
+  }
+ },
+ "post": {
+  "loop": true,
+  "inplace": true,
+  "cycle_s": [
+   6.9,
+   7.1
+  ],
+  "gait": false,
+  "crop": [
+   15,
+   260
+  ]
+ },
+ "notes": "A POSE on idle_warden's own Kimodo take (src/idle_warden.npz; gen/takes not re-run), built from idle_fight_a's layer set: the stand is all fit. Hold any frame (the take's quiet sway is the only motion). --facing 0 puts her chest and face to the play camera; the lunge reads toward her left (screen right).",
+ "source": "src/idle_warden.npz",
+ "bvh": "idle_warden__ka2s78_1.bvh",
+ "sha1": "dc730148d7306457be5b2ab3336cc6dd99d1b933",
+ "take_score": 3.424,
+ "fit": {
+  "stance": {
+   "shift_cm": 4,
+   "drop_cm": 23,
+   "roll_deg": -6,
+   "yaw_deg": -10,
+   "turn_l": 48,
+   "turn_r": -48,
+   "foot_l": [
+    0.08,
+    0,
+    0.15
+   ],
+   "foot_r": [
+    -0.07,
+    0,
+    -0.1
+   ]
+  },
+  "lean": {
+   "deg": 14,
+   "side_deg": 0
+  },
+  "shoulders": {
+   "level_cm": 0
+  },
+  "twist": {
+   "keys": [
+    [
+     0,
+     26
+    ],
+    [
+     7.5,
+     26
+    ]
+   ]
+  },
+  "limbs": {
+   "hand_r": {
+    "at": [
+     -0.3,
+     -0.04,
+     0.14
+    ],
+    "pole": [
+     -0.5,
+     0,
+     -0.85
+    ]
+   }
+  },
+  "blade": {
+   "dir": [
+    -0.75,
+    -0.32,
+    0.55
+   ],
+   "keep": 0
+  },
+  "shield": {
+   "solve": true,
+   "boss": [
+    0.38,
+    0.25,
+    0.28
+   ],
+   "open_deg": 62,
+   "tilt_deg": -10,
+   "pole": [
+    0.3,
+    -0.8,
+    -0.55
+   ],
+   "swivel": 60
+  },
+  "pop": {
+   "x": 4,
+   "span": 4,
+   "cap": {}
+  },
+  "wrist": {
+   "hand_r": {
+    "flex": 20,
+    "dev": 15,
+    "mode": "turn",
+    "swivel": 30
+   },
+   "hand_l": {
+    "flex": 25,
+    "dev": 15,
+    "mode": "hold",
+    "swivel": 0,
+    "twist": false
+   }
+  },
+  "clear": {
+   "target_mm": 12,
+   "passes": 6
+  },
+  "look": {
+   "yaw_deg": 15,
+   "pitch_deg": 4,
+   "split": [
+    20,
+    30,
+    50
+   ]
+  },
+  "hips": {
+   "keys": [
+    [
+     0,
+     [
+      0,
+      0,
+      0
+     ]
+    ],
+    [
+     7.5,
+     [
+      0,
+      0,
+      0
+     ]
+    ]
+   ]
+  }
+ },
+ "held": [
+  "sword",
+  "shield"
+ ]
+}
