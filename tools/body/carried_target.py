@@ -779,6 +779,15 @@ HER = {
                                              # `ratio` x rest are filled from their neighbours `rows` around, in step
                                              # with the stage (A's own crease on the breast's rows 4-7, chest_fold.md 6)
                                              "relax": {"ratio": 2.5, "rows": 2}},
+                                   # depinch (Her.depinched; body_facts/depinch.md; OFF: the key is "depinch_wip", the volume bar
+                                   # is not met, see the facts): A's skinning pinches carried on the
+                                   # filled carry. An edge whose valley fold is over `fold_deg` AND over B's own (published
+                                   # part pose) fold by `fold_deg` seeds a pocket of the rows within `rows` edges, filled
+                                   # from its neighbours (Pocket, A's rotations smoothed); the volume the fill takes is
+                                   # given back along the fill's normals as a smooth bump (zero at the pocket's border),
+                                   # so the pocket's area-weighted mean normal offset is A's. `passes` rounds; blended
+                                   # in by the smoothstep of the arm's elevation over `deg`: at or under lo, bit for bit
+                                   "depinch_wip": {"deg": [90.0, 105.0], "fold_deg": 20.0, "rows": 2, "passes": 3, "fill": "membrane", "volume": 0.0},
                                    "stiff": "upperarm_{s}", "rigid": 0.999, "gated_part": "breast", "cache": "support.npz",
                                    # map (Her.part; body_facts/strip_rest.md): the armpit band's lay (out/shoulder/`file`,
                                    # strip_rest.HerStrip) blended into the carried fill on the band's points by the arm's
@@ -973,6 +982,8 @@ class Her:
         j = bd.p.index[sup["stiff"].replace("{s}", s0)]
         stiff = (bd.W[F] * np.isin(bd.J[F], sorted(set(bd.p.subtree(j)) | {j}))).sum(1) >= sup["rigid"]
         gate = md.part == md.parts.index(sup["gated_part"])
+        Tm = md.src[bd.T[(bd.T < len(md.src)).all(1)]]   # the model's triangles (md ids; fold_probe.cmd_dump's)
+        Tm = Tm[(Tm >= 0).all(1) & (Tm[:, 0] != Tm[:, 1]) & (Tm[:, 1] != Tm[:, 2]) & (Tm[:, 0] != Tm[:, 2])]
         dg = rows_from(md.adj, core)
         own = gate & (dg <= dg[md.tw])                       # the gated part on this side: nearer its list than the twin's
         own0 = np.nonzero(own)[0]
@@ -1003,6 +1014,12 @@ class Her:
             rg.spread = spread_of(self.group, rg.pts)
             rg.relax = [(*g["deg"], (np.abs(SH[1 + k][o0] - SH[k][o0]) > 1e-12) & (np.arange(len(o0)) >= rg.nlist), g["relax"])
                         for k, g in enumerate(more) if g.get("relax")]      # (lo, hi, the plain rows the stage opens, rule)
+            if sup.get("depinch"):                          # (lo, hi, rule) and the region's own triangles (Her.depinched)
+                rg.depinch = (*sup["depinch"]["deg"], sup["depinch"])
+                loc = np.full(md.n, -1, np.int64)
+                loc[allid] = np.arange(len(allid))
+                Tl = loc[Tm]
+                rg.tris = Tl[(Tl >= 0).all(1)]
             self.ext[s] = new
 
     def carrier(self, side, **over):
@@ -1063,10 +1080,12 @@ class Her:
         Vr = register(Va, [anchor_align(Gr[ja], p.rest[ja], Ab.G0[ra], Ga[ra]) for ja, ra in rg.anchors], rg.field)
         cf, cr = rg.carrier.carry(Vr, both=True)
         cf = self.relaxed(rg, G, cf, Vr)
+        Pg = self.rt.published(bd, Gr)[rg.pts]
+        cf = self.depinched(rg, G, cf, Vr, Pg)
         cf, mw, mN = self.mapped(rg, G, cf, Vr)
         ibm = p.skel.ibm
         M, sig, u = relative_place(G @ ibm, Gr @ ibm, bd.J[rg.pts], bd.W[rg.pts], cfg["sig_lo"], cfg["sig_hi"])
-        self._parts[name] = {"M": M, "cf": cf, "cr": cr, "Pg": self.rt.published(bd, Gr)[rg.pts], "Va": Vr, "Va_own": Va,
+        self._parts[name] = {"M": M, "cf": cf, "cr": cr, "Pg": Pg, "Va": Vr, "Va_own": Va,
                              "Gr": Gr, "sig": float(sig.min()), "guard": int((u < 1).sum()), "mem": mem, "map_w": mw, "map_N": mN}
         return self._parts[name]
 
@@ -1125,6 +1144,67 @@ class Her:
             X = Pocket(P0, E, m, self.cfg["pocket_weight"]).fill(cf, R, self.cfg["frame_passes"])
             cf = cf + w * (X - cf)
         return cf
+
+    def depinched(self, rg, G, cf, Vr, Pg, info=None):
+        """The filled carry cf [region points, 3] with A's skinning pinches smoothed (config support "depinch"): the
+        edges of the region's triangles whose valley fold (fold_probe.dihedral, valley +) is over fold_deg and over B's
+        own fold on the published part pose Pg by fold_deg seed a pocket of the rows within `rows` edges, harmonically
+        filled from its neighbours (Pocket, A's rotations smoothed). The fill moves the surface off A's; that volume is
+        given back along the fill's normals as a bump b (L_pp b = 1: zero at the pocket's border, smooth), scaled so
+        the pocket's area-weighted mean normal offset from cf is 0. `passes` rounds (the next on the result). Blended in
+        by the smoothstep of the elevation over deg. At or under lo, or no edge seeds: cf as it was, bit for bit.
+        info (a dict): filled with the seeds, pocket size and the volume given back per round."""
+        rule = getattr(rg, "depinch", None)
+        if not rule:
+            return cf
+        lo, hi, c = rule
+        if rg.side:
+            el = self.md.elevation(G, rg.side)
+            if el <= lo:
+                return cf
+            w = np.clip((el - lo) / (hi - lo), 0.0, 1.0)
+            w = w * w * (3 - 2 * w)
+        else:
+            w = 1.0
+        import fold_probe as fp
+        P0, E, T, X = self.bd.V0[rg.pts], np.stack(rg.edges, 1), rg.tris, cf
+        ep, dp = fp.dihedral(P0 if c.get("ref", "rest") == "rest" else Pg, T)    # B's own fold: rest, or the part pose
+        R = np.concatenate([q.rotations(Vr) for q in getattr(rg.carrier, "parts", [rg.carrier])])
+        free = np.ones(len(P0), bool)                       # the armpit map's band (Her.mapped) is the map's: never touched
+        hs = self.map.get(rg.name) if self.map_on else None
+        if hs is not None and self._sr.share(self._sr.elevation(hs, G, rg.side), *hs.cfg["map_elev"]) > 0:
+            free[np.asarray(hs.loc[rg.side], np.int64)] = False
+        for k in range(int(c.get("passes", 1))):
+            e, d = fp.dihedral(X, T)
+            if c.get("both", False):                         # ridges too: a crumple folds both ways
+                hit = (np.abs(d) > c["fold_deg"]) & (np.abs(d) - np.abs(dp) > c["fold_deg"]) & free[e].all(1)
+            else:
+                hit = (d > c["fold_deg"]) & (d - np.maximum(dp, 0.0) > c["fold_deg"]) & free[e].all(1)
+            if info is not None:
+                info.setdefault("rounds", []).append({"seeds": int(hit.sum())})
+            if not hit.any():
+                break
+            m = rows_around(len(P0), E, np.unique(e[hit]), c["rows"]) & free
+            pk = Pocket(P0, E, m, self.cfg["pocket_weight"])
+            if c.get("fill", "frames") == "membrane":        # no shape kept: the least-area patch on the pocket's ring
+                pk.delta = np.zeros_like(pk.delta)
+                Y = pk.fill(X)
+            else:                                           # B's rest differentials turned by A's smoothed rotations
+                Y = pk.fill(X, R, self.cfg["frame_passes"])
+            N, fn = fp.normals(Y, T)
+            ar = np.zeros(len(P0))
+            for j in range(3):
+                np.add.at(ar, T[:, j], np.linalg.norm(fn, axis=1) / 6.0)
+            b = pk._solve(np.ones(len(pk.p)))
+            b = b / max(b.max(), 1e-30)
+            a, n = ar[pk.p], N[pk.p]
+            g = float((a * ((X[pk.p] - Y[pk.p]) * n).sum(1)).sum() / max((a * b).sum(), 1e-30)) * float(c.get("volume", 1.0))
+            Y[pk.p] += g * b[:, None] * n
+            if info is not None:
+                info["rounds"][-1].update(pocket=int(m.sum()), bump_mm=g * 1000)
+                info["mask"] = m | info.get("mask", False)
+            X = Y
+        return cf + w * (X - cf)
 
     def delta(self, G, name):
         """A region's relative delta on its points [points, 3], under its share: share M (c - published(part pose))."""
