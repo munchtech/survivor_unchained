@@ -1128,7 +1128,9 @@ def night_piece(prm, top, name=''):
 def round_block(bp, rng, e, seg, rings, sink=0.12):
     """One block as a low lump: (V, F, VN, UV per vertex). A pole, 'rings' rings of 'seg': rings - 2 down the dome at equal
     steps of arc to the widest ring (0.22 of the height over the ground), one on the ground under a small tuck, one 'sink'
-    under it. The normals are the surface's own (its two tangents crossed), not the mesh's, so every lod shades alike."""
+    under it. Then the lump is pressed against a few planes with a soft edge (a near-level top and two or three leaning
+    sides: the block's flats, each edge a round one), which is what makes it a boulder and not a river pebble. The normals
+    are the surface's own, read off the same surface built four times finer, so every lod shades alike."""
     ax, ay, h = bp['size'][0] / 2, bp['size'][1] / 2, bp['size'][2]
     o = np.array(list(bp.get('off', (0.0, 0.0))) + [0.0])
     p = bp.get('round', 2.5)
@@ -1136,7 +1138,15 @@ def round_block(bp, rng, e, seg, rings, sink=0.12):
     sa, sm = rng.uniform(0, 2 * math.pi), rng.uniform(0.25, 0.5)       # (the lump leans: m sideways per m of height)
     shx, shy = sm * math.cos(sa), sm * math.sin(sa)
     uv0 = rng.uniform(0, 1, 2)
+    fa0 = rng.uniform(0, 2 * math.pi)
+    # the flats: (bearing, the normal's rise over the level in degrees, how deep it presses as a share of the lump's reach)
+    flats = [(fa0 + (i + rng.uniform(-0.25, 0.25)) * 2 * math.pi / 3, rng.uniform(18, 48), rng.uniform(0.74, 0.88)) for i in range(3)]
+    flats.append((rng.uniform(0, 2 * math.pi), rng.uniform(76, 84), rng.uniform(0.86, 0.93)))      # (the top)
+    if (ax + ay) < 1.0:
+        flats = flats[1:]           # (a small stone: two sides and the top)
     zc = 0.22 * h
+    k4 = 4
+    segd, nu = seg * k4, (rings - 2) * k4
 
     def rad(th):
         base = (np.abs(np.cos(th) / ax) ** p + np.abs(np.sin(th) / ay) ** p) ** (-1 / p)
@@ -1144,44 +1154,52 @@ def round_block(bp, rng, e, seg, rings, sink=0.12):
     t = np.linspace(0, math.pi / 2, 400)
     pr, pz = np.sin(t) ** (2 / e), zc + (h - zc) * np.cos(t) ** (2 / e)
     s = np.concatenate([[0.0], np.cumsum(np.hypot(np.diff(pr) * (ax + ay) / 2, np.diff(pz)))])
-    nu = rings - 2
     sj = s[-1] * np.arange(1, nu + 1) / nu
     rr, zz = np.interp(sj, s, pr), np.interp(sj, s, pz)
-    dr, dz = np.interp(sj, s, np.gradient(pr, s)), np.interp(sj, s, np.gradient(pz, s))
     bz, br = 1.6 * zc, 0.5                      # (the tuck: an arc from the widest ring to the ground)
-    t1 = math.asin(zc / bz)
-    rg = 1 - br * (1 - math.cos(t1))
+    rg = 1 - br * (1 - math.cos(math.asin(zc / bz)))
     rr, zz = np.concatenate([rr, [rg, rg]]), np.concatenate([zz, [0.0, -sink]])
-    dr, dz = np.concatenate([dr, [-br * math.sin(t1), 0.0]]), np.concatenate([dz, [-bz * math.cos(t1), -1.0]])
-    th = np.arange(seg) * 2 * math.pi / seg
-    R = rad(th); dR = (rad(th + 1e-4) - rad(th - 1e-4)) / 2e-4
-    c, sn = np.cos(th), np.sin(th)
-    V = [np.array([[shx * h, shy * h, h]])]; VN = [np.array([[0.0, 0.0, 1.0]])]
-    for j in range(rings):
-        V.append(np.stack([R * rr[j] * c + shx * zz[j], R * rr[j] * sn + shy * zz[j], np.full(seg, zz[j])], 1))
-        dth = np.stack([dR * c - R * sn, dR * sn + R * c, np.zeros(seg)], 1)
-        ds = np.stack([R * dr[j] * c + shx * dz[j], R * dr[j] * sn + shy * dz[j], np.full(seg, dz[j])], 1)
-        VN.append(np.cross(ds, dth))
-    V, VN = np.concatenate(V), np.concatenate(VN)
-    sx, sy = 2 * ax / np.ptp(V[:, 0]), 2 * ay / np.ptp(V[:, 1])        # (the lobes and the lean keep to the block's size)
+    nr = nu + 2
+    th = np.arange(segd) * 2 * math.pi / segd
+    R, c, sn = rad(th), np.cos(th), np.sin(th)
+    V = np.concatenate([np.array([[shx * h, shy * h, h]])] +
+                       [np.stack([R * rr[j] * c + shx * zz[j], R * rr[j] * sn + shy * zz[j], np.full(segd, zz[j])], 1) for j in range(nr)])
+    wsoft = max(0.05, 0.09 * (ax + ay) / 2)     # (the flats' edge: round, never a crease)
+    cz = np.array([0.0, 0.0, zc])
+    for az, rise, deep in flats:
+        nf = np.array([math.cos(az) * math.cos(math.radians(rise)), math.sin(az) * math.cos(math.radians(rise)), math.sin(math.radians(rise))])
+        tt = (V - cz) @ nf
+        d = deep * tt.max()
+        V = V + (-wsoft * np.logaddexp(0.0, (tt - d) / wsoft))[:, None] * nf
+    V[1 + (nr - 1) * segd:, :2] = V[1 + (nr - 2) * segd:1 + (nr - 1) * segd, :2]; V[1 + (nr - 1) * segd:, 2] = -sink
+    V[:, 2] *= h / V[:, 2].max()                # (the pressing lowered it: back to the block's height)
+    sx, sy = 2 * ax / np.ptp(V[:, 0]), 2 * ay / np.ptp(V[:, 1])        # (and to its size across)
     V = V * [sx, sy, 1.0]
     V[:, 0] -= (V[:, 0].max() + V[:, 0].min()) / 2; V[:, 1] -= (V[:, 1].max() + V[:, 1].min()) / 2
-    VN = VN / [sx, sy, 1.0]
-    VN /= np.maximum(np.linalg.norm(VN, axis=1, keepdims=True), 1e-12)
-    F = [(0, 1 + i, 1 + (i + 1) % seg) for i in range(seg)]
-    for j in range(rings - 1):
-        a0, b0 = 1 + j * seg, 1 + (j + 1) * seg
-        for i in range(seg):
-            i1 = (i + 1) % seg
-            F += [(a0 + i, b0 + i, b0 + i1), (a0 + i, b0 + i1, a0 + i1)]
+
+    def faces(sg, n):
+        F = [(0, 1 + i, 1 + (i + 1) % sg) for i in range(sg)]
+        for j in range(n - 1):
+            a0, b0 = 1 + j * sg, 1 + (j + 1) * sg
+            for i in range(sg):
+                i1 = (i + 1) % sg
+                F += [(a0 + i, b0 + i, b0 + i1), (a0 + i, b0 + i1, a0 + i1)]
+        return np.array(F)
+    VNd = vertex_normals(V, faces(segd, nr))
+    # the lod's own vertices: every fourth of the fine surface (and its last two rings whole)
+    ringsel = [k4 * (j + 1) - 1 for j in range(rings - 2)] + [nr - 2, nr - 1]
+    idx = np.concatenate([[0]] + [1 + j * segd + np.arange(seg) * k4 for j in ringsel])
+    V, VN = V[idx], VNd[idx]
+    F = faces(seg, rings)
     # the dabs: the dome laid flat about its pole (each vertex its meridian's arc from the pole, along its bearing)
     m = np.zeros(len(V)); prev = np.repeat(V[:1], seg, 0); acc = np.zeros(seg)
     for j in range(rings):
         ring = V[1 + j * seg:1 + (j + 1) * seg]
         acc = acc + np.linalg.norm(ring - prev, axis=1); m[1 + j * seg:1 + (j + 1) * seg] = acc; prev = ring
+    c, sn = c[::k4], sn[::k4]
     ct, st = np.concatenate([[0.0], np.tile(c, rings)]), np.concatenate([[0.0], np.tile(sn, rings)])
     UV = uv0 + np.stack([m * ct, m * st], 1) / DAB_TILE
-    return V + o, np.array(F), VN, UV
+    return V + o, F, VN, UV
 
 
 def round_piece(prm, top, name='', hz=1.0):
