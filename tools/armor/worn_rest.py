@@ -15,7 +15,10 @@ THE JOINS (JOIN; all read off the authored mesh and the body, nothing per piece)
 was authored joined must stay joined:
 - weld: rigid components that touch (points within JOIN "weld_m") are one group (a cup, its rim, its rivets): one fit.
   A group that holds a component big enough to lead (gear_fit SMALL_SHARE) is a PLATE; any other is a FITTING (a
-  buckle, a clasp, a strap's rivet).
+  buckle, a clasp, a strap's rivet) UNLESS it links (within JOIN "link_m") to at least 2 distinct fitted plates: then
+  it is a BRIDGE whatever its size, tested before the fitting's host test (Joins.links). A gore bar between the cups
+  is small by nature (the plain top's 47 x 14 mm bar is 1.9 % of its steel, under SMALL_SHARE): by size alone it read
+  as a fitting, joined ONE cup's group and rode that cup. A rivet or buckle links one plate and stays a fitting.
 - a plate is fitted to her worn skin, the largest first; a plate within JOIN "link_m" of plates already fitted is a
   bridge (a gore between two cups) and is fitted to THEIR moves instead (each of its points to the nearer plate's).
   A bridge keeps its JOINTS on its plates (its points within "link_m" of them) and its span rests ON her worn skin
@@ -338,6 +341,16 @@ class Joins:
             Y += w[:, None] * ((X - r["ca"]) @ r["M"].T + r["cb"])
             wsum += w
         return Y / wsum[:, None]
+
+    def links(self, X, only=None):
+        """The fitted rows (plates) that points X link to: within JOIN "link_m" of any of them (`only`: the rows that
+        count, e.g. the plates, not bridges fitted before)."""
+        return sorted(c for c, r in self.rows.items() if (only is None or c in only)
+                      and r["tree"].query(X)[0].min() <= JOIN["link_m"])
+
+    def is_bridge(self, X, plates):
+        """A non-plate group (points X) is a bridge when it links to at least 2 distinct fitted plates (THE JOINS)."""
+        return len(self.links(X, only=set(int(p) for p in plates))) >= 2
 
     def reach(self, X, skip=None):
         """Each point's distance to the nearest fitted plate it is linked to (as bridge links them; `skip`: the row

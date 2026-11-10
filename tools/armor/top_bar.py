@@ -134,8 +134,9 @@ def kinds(m, sel):
         P = m["attrs"]["POSITION"][0][s]
         if np.linalg.norm(P.max(0) - P.min(0)) < 0.009:
             out[s] = "rivet"
-        elif "TEXCOORD_1" in m["attrs"] and np.all(m["attrs"]["TEXCOORD_1"][0][s, 0] >= 0.0499):
-            out[s] = "plate"
+        elif "TEXCOORD_1" in m["attrs"]:
+            # (per vertex: the bar is one manifold (faces welded into its roll), a plate point carries the 0.05 cap)
+            out[s] = np.where(m["attrs"]["TEXCOORD_1"][0][s, 0] >= 0.0499, "plate", "roll")
         else:
             out[s] = "roll"
     return out
@@ -221,13 +222,6 @@ class Bar:
         X, Y = self.outline(nr, nc)
         B, N = self.s.at(X.ravel(), Y.ravel())
         out = []
-        if faces:
-            Fp, Bp = B + N * thick, B
-            T = grid_tris(nr, nc)
-            P = np.vstack([Fp, Bp])
-            NN = np.vstack([N, -N])
-            TT = np.vstack([orient(Fp, T, N), orient(Bp, T, -N) + len(Fp)])
-            out.append(("plate", P, NN, TT, np.full(len(P), 0.05)))
         # (the cut's loop, its in-plane outward direction mitred at the corners)
         idx = np.arange(nr * nc).reshape(nr, nc)
         loop = np.r_[idx[0, :], idx[1:, -1], idx[-1, -2::-1], idx[-2:0:-1, 0]]
@@ -255,6 +249,29 @@ class Bar:
         T = np.vstack([np.c_[i, j, i + 1], np.c_[i + 1, j, j + 1]])
         edge = np.tile(np.abs(np.minimum(u, 0)), nl)
         out.append(("roll", P, NR, orient(P, T, NR), edge))
+        if faces:
+            # (one manifold: the back face's border IS the roll's last ring (u 0, v 0) and the front face's border IS
+            # its first ring (w - oh inside the cut, on the front face), the same points; the front face's inside by a
+            # Coons patch from that ring, laid back on the surface `thick` off it)
+            ring0 = P.reshape(nl, npf, 3)[:, 0, :]
+            G = np.zeros((nr * nc, 3))
+            G[loop] = ring0
+            G = G.reshape(nr, nc, 3)
+            s_ = np.linspace(0, 1, nc)[None, :, None]
+            t_ = np.linspace(0, 1, nr)[:, None, None]
+            Cn = ((1 - t_) * G[:1] + t_ * G[-1:] + (1 - s_) * G[:, :1] + s_ * G[:, -1:]
+                  - ((1 - s_) * (1 - t_) * G[0, 0] + s_ * (1 - t_) * G[0, -1] + (1 - s_) * t_ * G[-1, 0] + s_ * t_ * G[-1, -1]))
+            Bi, Ni = self.s.at(Cn[..., 0].ravel(), Cn[..., 1].ravel())
+            Fp = Bi + Ni * thick
+            Fp[loop] = ring0
+            Nf = Ni.copy()
+            Nf[loop] = N[loop]
+            Bp = B
+            T = grid_tris(nr, nc)
+            Pp = np.vstack([Fp, Bp])
+            NN = np.vstack([Nf, -N])
+            TT = np.vstack([orient(Fp, T, Nf), orient(Bp, T, -N) + len(Fp)])
+            out.insert(0, ("plate", Pp, NN, TT, np.full(len(Pp), 0.05)))
         if rivets:
             ym = 0.5 * (self.y0 + self.y1)
             xl, xr = self.ends(np.array([ym]))

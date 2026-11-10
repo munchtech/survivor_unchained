@@ -245,3 +245,20 @@ def test_join_fields_that_overlap_leave_a_seam_on_its_own_plate():
     Y, G, near = jn.field(strap, skin)
     assert near[0] == 0 and np.linalg.norm(Y[0] - (strap[0] + up)) < 1e-6
     assert np.abs(np.diff(Y - strap, axis=0)).max() < 0.002              # (and the blend between them has no jump)
+
+
+def test_two_plate_link_is_a_bridge_one_plate_a_fitting():
+    """THE JOINS: a small group linked to 2 fitted plates is a bridge whatever its size; linked to one, a fitting."""
+    jn = worn_rest.Joins(np.zeros((0, 3)), np.zeros((0, 3)))
+    g = np.stack(np.meshgrid(np.linspace(0, 0.05, 11), np.linspace(0, 0.05, 11), [0.0]), -1).reshape(-1, 3)
+    I = (np.eye(3), np.zeros(3), np.zeros(3))
+    jn.add(1, g - [0.08, 0, 0], *I)                    # (left plate: x -0.08..-0.03)
+    jn.add(2, g + [0.03, 0, 0], *I)                    # (right plate: x 0.03..0.08)
+    jn.add(3, g + [0.0, 0.2, 0], *I)                   # (a bridge fitted before: not a plate, never counted)
+    bar = np.c_[np.linspace(-0.025, 0.025, 11), np.full(11, 0.02), np.zeros(11)]   # (5 mm off both plates)
+    rivet = np.array([[-0.025, 0.01, 0.0], [-0.024, 0.01, 0.0], [-0.025, 0.011, 0.0]])
+    assert jn.links(bar, only={1, 2}) == [1, 2]
+    assert jn.is_bridge(bar, [1, 2])
+    assert not jn.is_bridge(rivet, [1, 2])
+    assert not jn.is_bridge(bar, [1])                  # (one plate only: a fitting)
+    assert not jn.is_bridge(bar[:1] - [0, 0, 0.05], [1, 2])   # (linked to none)

@@ -1080,7 +1080,9 @@ def eval_unit(bd, bodies, bind_bodies, stats=None):
                 if bbody is None and wr is None and (fg is None or not np.isfinite(fg).any()):
                     continue
                 Bt, Yb = Xn[own], None
-                if jl and not plate[c]:
+                # (a non-plate group linked to 2+ fitted plates is a bridge, whatever its size: worn_rest THE JOINS)
+                two = jl and not plate[c] and jn.is_bridge(Xa[grp], [k for k in jn.rows if plate[k]])
+                if jl and not plate[c] and not two:
                     Y, G, near = jn.field(Xa[grp], Xn[grp])
                     if G.mean() > worn_rest.JOIN["host"]:
                         lead[lead == c] = np.bincount(near[near >= 0]).argmax()   # (at a plate: it is of that plate)
