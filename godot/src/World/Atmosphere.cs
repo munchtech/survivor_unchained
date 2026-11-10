@@ -653,7 +653,7 @@ public partial class Atmosphere : Node3D
         var hm = ha is { Length: >= 27 } ? ha : null;
         var midTone = hm != null ? HeroTone(20) : new Color(0, 0, 0);
         RenderingServer.GlobalShaderParameterSet("cel_hero_mid", new Vector4(midTone.R, midTone.G, midTone.B, hm != null ? (float)hm[24] : 0));
-        RenderingServer.GlobalShaderParameterSet("cel_hero_own", hm != null ? new Vector4((float)hm[25], (float)hm[26], 0, 0) : Vector4.Zero);
+        RenderingServer.GlobalShaderParameterSet("cel_hero_own", hm != null ? new Vector4((float)hm[25], (float)hm[26], hm.Length >= 29 ? (float)hm[27] : 0, hm.Length >= 29 ? (float)hm[28] : 0) : Vector4.Zero);   // (round 2: value 27 = the least lean the side test normalizes down to, 28 = a held piece's light as a share of hers)
     }
     /// <summary>(L1 lead 19, HER2) Where her pool light's foot sits, in metres from her (x, z): the rig's hero_pool, else (0, 0.4).</summary>
     public static Vector2 HeroFoot = new(0, 0.4f);
