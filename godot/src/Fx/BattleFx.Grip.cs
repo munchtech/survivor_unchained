@@ -416,9 +416,9 @@ public partial class BattleFx
         m.SetShaderParameter("grip_tail", tl[1]);
         var cl = P7D.All("grip.band.clumps");
         var td = P7D.All("grip.band.depth");
-        var tc = P7D.All("grip.band.cut");
         m.SetShaderParameter("grip_clump", new Vector4(cl[0], cl[1], P7D["grip.band.uneven"], P7D["grip.band.ratio"]));
-        m.SetShaderParameter("grip_tooth", new Vector4(td[0], td[1], tc[0], tc[1]));
+        m.SetShaderParameter("grip_tooth", new Vector4(td[0], td[1], P7D["grip.band.round"], 0));
+        m.SetShaderParameter("grip_narrow", P7D["grip.shed_to"]);
         m.SetShaderParameter("grip_gap", new Vector4(gap[0], gap[1], gap[2], gap[3]));
         m.SetShaderParameter("grip_shed", new Vector4(age, shed[0], shed[1], P7D["grip.lane.shed"]));
         m.SetShaderParameter("grip_seed", seed);
@@ -677,9 +677,10 @@ public partial class BattleFx
         Vector2 d2 = new(tip.X - hilt.X, tip.Z - hilt.Z), bd = new(body.X - hilt.X, body.Z - hilt.Z);
         float kb = Mathf.Clamp(bd.Dot(d2) / Mathf.Max(1e-4f, d2.LengthSquared()), P7D["grip.contact.k_min"], 1f);
         var at = hilt + (tip - hilt) * kb;
-        float size = look.Flash * (tr.Killed > 0 ? P7D["grip.contact.kill"] : tr.Struck >= 3 ? P7D["grip.contact.crowd"] : 1f);
-        var tears = P7D.All("grip.contact.tears");
-        int sparks = (int)Math.Min(tears[1], tears[0] + tr.Struck / 2 + (tr.Killed > 0 ? 1 : 0));
+        // (take 6) ONE shared impact, sized by the bodies struck (a kill larger still), capped; no chips
+        var by = P7D.All("grip.contact.by_struck");
+        float size = look.Flash * Mathf.Min(by[1], Mathf.Lerp(1f, by[1], Mathf.Clamp((tr.Struck - 1) / Mathf.Max(by[0] - 1, 1f), 0f, 1f)) * (tr.Killed > 0 ? P7D["grip.contact.kill"] : 1f));
+        int sparks = 0;
         if (GripSay) GD.Print($"grip contact frame {Engine.GetFramesDrawn()} struck {tr.Struck} killed {tr.Killed} oath {tr.Oath} size {size:0.00} on blade {kb:0.00} crossed {(found ? 1 : 0)} waited {waited} at {at}");
         GripFlash(at, travel.Normalized(), hilt - tip, size, sparks, tr.Oath);
     }
@@ -709,23 +710,21 @@ public partial class BattleFx
         across -= along * across.Dot(along);
         if (across.LengthSquared() < 1e-4f) across = side.LengthSquared() > 1e-6f ? side : cam != null ? cam.GlobalBasis.Y : Vector3.Up;
         across = across.Normalized();
-        var half = new Vector2(1.5f, 0.5f) * size;
+        // (take 6) the mark's length = a share of the stroke's head (its width), by `size`; a blunt slab, not a line
+        var mk = P7D.All("grip.contact.mark");
+        float len = mk[0] * GripLookOf(oath).Head * blen * size, wid = mk[1] * len;
+        var half = new Vector2(0.5f * len + 0.6f * wid, 0.6f * wid + 0.03f);
         var m = new ShaderMaterial { Shader = GD.Load<Shader>(GripShader) };
         FxCel.Apply(m, School.Physical, FxAfter.On);
         m.SetShaderParameter("grip_mode", 1);
         m.SetShaderParameter("grip_size", half);
         m.SetShaderParameter("grip_px", P7Px(at));
         m.SetShaderParameter("grip_seed", R() * 97f);
-        m.SetShaderParameter("grip_sparks", (float)sparks);
         m.SetShaderParameter("grip_core", oath ? 0.6f : 1f);
-        var kite = P7D.All("grip.contact.kite");
-        var sh = P7D.All("grip.contact.shards");
         var st = P7D.All("grip.contact.steps");
         float whole = P7D["grip.contact.full_frames"];
-        m.SetShaderParameter("grip_kite", new Vector4(kite[0], kite[1], kite[2], kite[3]));
-        m.SetShaderParameter("grip_shards", new Vector4(sh[0], sh[1], sh[2], sh[3]));
-        m.SetShaderParameter("grip_steps", new Vector4(whole, st[0], st[1], P7D["grip.contact.fan"]));
-        m.SetShaderParameter("grip_fly", P7D["grip.contact.fly"]);
+        m.SetShaderParameter("grip_kite", new Vector4(len, wid, mk[2], mk[3]));
+        m.SetShaderParameter("grip_steps", new Vector4(whole, st[0], st[1], 0));
         p7Quad ??= new QuadMesh { Size = new Vector2(2, 2) };
         var q = new MeshInstance3D { Mesh = p7Quad, MaterialOverride = m, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
         AddChild(q);
