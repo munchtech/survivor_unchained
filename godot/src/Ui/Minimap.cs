@@ -177,6 +177,39 @@ public partial class Minimap : Control
         };
     }
 
+    static readonly Dictionary<string, ImageTexture> keeps = new();
+
+    /// <summary>The zone's road keep (S2), built once on the CPU from the drawing's pixels as the shader classifies them.</summary>
+    ImageTexture KeepFor(string id, Texture2D drawing)
+    {
+        if (keeps.TryGetValue(id, out var hit)) return hit;
+        var img = drawing.GetImage();
+        if (img.IsCompressed()) img.Decompress();
+        img.Convert(Image.Format.Rgba8);
+        int w = img.GetWidth(), h = img.GetHeight();
+        var data = img.GetData();
+        var road = new bool[w * h];
+        for (int j = 0; j < h; j++)
+            for (int i = 0; i < w; i++)
+            {
+                int o = (j * w + i) * 4;
+                float u = (i + 0.5f) / w - 0.5f, v = (j + 0.5f) / h - 0.5f;
+                float t = Math.Clamp((MathF.Sqrt(u * u + v * v) - 0.3f) / 0.42f, 0, 1);
+                float age = t * t * (3 - 2 * t) * 0.5f;
+                float r = Math.Clamp((data[o] / 255f - 0.275f * age) / (1 - age), 0, 1), g = Math.Clamp((data[o + 1] / 255f - 0.157f * age) / (1 - age), 0, 1);
+                float b = Math.Clamp((data[o + 2] / 255f - 0.055f * age) / (1 - age), 0, 1);
+                road[j * w + i] = (r - g) / Math.Max(r + g + b, 0.05f) > 0.0505f;
+            }
+        // minimap pixels per drawing pixel: Diameter px show Span metres, the drawing is extent metres across w px
+        float scale = Diameter / Span * extent / w;
+        var dropped = new List<int>();
+        var keep = RoadKeep.Build(road, w, h, scale, 16, 3, dropped);
+        GD.Print($"minimap: road keep for {id}: {dropped.Count} islands dropped (sizes px: {string.Join(", ", dropped)})");
+        var tex = ImageTexture.CreateFromImage(Image.CreateFromData(w, h, false, Image.Format.R8, keep));
+        keeps[id] = tex;
+        return tex;
+    }
+
     /// <summary>A new zone: its drawing and how wide it is.</summary>
     public void Zone(string id, Texture2D drawing, float ext)
     {
@@ -185,6 +218,7 @@ public partial class Minimap : Control
         extent = Math.Max(1, ext);
         seenNow = "";
         mat.SetShaderParameter("drawing", drawing);
+        mat.SetShaderParameter("road_keep", KeepFor(id, drawing));
         mat.SetShaderParameter("span", Span / extent);
         GD.Print($"minimap: zone {id} extent {extent:0} span {Span / extent:0.000}: the drawing's edge fades into the paper over 28 px (+-6 px wander), darkening over 70 px beyond");
     }
@@ -363,13 +397,15 @@ public partial class Minimap : Control
         shader_type canvas_item;
         uniform sampler2D drawing : filter_linear, repeat_disable;
         uniform sampler2D seen : filter_linear, repeat_disable;
+        uniform sampler2D road_keep : filter_linear, repeat_disable, hint_default_white;
         uniform vec2 centre = vec2(0.5);
         uniform float span = 0.2;
         float roadMask(vec2 uv) {
             vec3 drawn = texture(drawing, uv).rgb;
             float age = smoothstep(0.3, 0.72, length(uv - 0.5)) * 0.5;
             drawn = clamp((drawn - vec3(0.275, 0.157, 0.055) * age) / (1.0 - age), 0.0, 1.0);
-            return smoothstep(0.047, 0.054, (drawn.r - drawn.g) / max(drawn.r + drawn.g + drawn.b, 0.05));
+            // (S2) road_keep: the road pixels that are road, not dirt-hued ground (a camp yard) under 16 px across (RoadKeep)
+            return smoothstep(0.047, 0.054, (drawn.r - drawn.g) / max(drawn.r + drawn.g + drawn.b, 0.05)) * texture(road_keep, uv).r;
         }
         // (M4 lead 12: the lattice hash is sin-free: fract(sin(dot)*43758) turns a 1-ulp difference between two evaluations of the
         // same lattice point (fma or not, 0.001 at args of 14000) into a 0.1 to 0.25 jump, so the warp tore along lattice lines)
