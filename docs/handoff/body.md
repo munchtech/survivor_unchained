@@ -1,5 +1,13 @@
 # Handoff: her body (rig, mesh, weights)
 
+## SHOULDER REBUILD, LEAD 24 -> NEXT (10 Nov): the cap CEILING sweep FAILED; the cap rule is SCRAPPED (code inert, key absent). Gate T still CLOSE (19 of 20; iron_vow@72:l). Not sent to the owner. HER bit for bit lead 23's (P5 tag b5c042ac971ca915), t22_row_tol kept
+**Charter:** RULING P1 14:23 (inbox): one sweep solver (curvature ceiling on clavicle/upperarm_share/twist_01), rerun, sheets, re-judge on a bet; fail = scrap, HANDOFF READY, main decides KNOWN. Line 0.22M.
+**Done:** integration 6996b5857 merged (4197ca9c9, junction rule; 40 colliding untracked .uid moved to `survivorsunchained_inputs/scratch_p1_l24/merge_aside/`). Sweep solver (high/medium, 105k): `ceil`/`add` keys, Laplacian mode with clip, rest/posed targets, `spare`, `reps` (a3b6309c4, off by default); notes fair_a.md "Attempt 8" (2e73e28cb); probes `scratch_p1_l24/cap3.py`, `t22.py`, `accept.log`.
+**Result: NOT LIVE.** Best (C1: lap, clip, ceil 1.0, hi 0.8, alpha 0.03, grow 2, soft 4, reps 4) brings iron_vow@72:l cap H/H0 6.21 -> 5.04 (A 2.35) but over-45 85 -> 86, hadd40 flips 7 -> 8, abd150 fires (266 pts), abd120 +3. Every setting that lowers the curvature adds folds: a steady trade.
+**Findings (load-bearing):** (1) the over-curved points sit 0-4 rows from A's own fold seeds, i.e. INSIDE P5's crumple core where the taut core meets the held ring: the lid is the core's slope break, not a carried cap. (2) The T22 band edge (1.97 vs 1.96 needed, A 1.81) is a stretch ratio in strip_rest's armpit-map lay, unchanged by any cap setting: it is NOT tied to the cap mark; tol 0.17 stays until that lay is fixed. (3) iron_vow@70/73/74 are not in poses.npz (@71, @72 used); @72's 16.9 mm move max is P5's own.
+**Next (if main rules a fix, not KNOWN), a NEW method, not this one:** a biharmonic core solve in fair_a (the core meets its ring with a matching slope, so no rim), or `shrink` set per crumple share; one solver ~0.12M, then target rerun (247 s) + sheets of iron_vow@71/72:l and the cross-body rows + look + one max re-judge ~0.1M. The cap/ceil code is dead: remove it with that change.
+**Cost, lead 24:** solver 105k, me ~45k = ~0.15M of 0.22M. $0 API, 0 Meshy, no judge, no pictures. Suite not rerun (no live change; tag unchanged).
+
 ## SHOULDER REBUILD, LEAD 23 -> LEAD 24 (10 Nov): Gate T round 2 JUDGED CLOSE (19 of 20 rows PASS; iron_vow@72:l cap front). Fix round: cap rule in code, NOT LIVE. Not sent to the owner. Suite 94 PASS / 0 FAIL (one KNOWN row, t22_row_tol)
 **Charter:** RULING P1 12:17 (inbox): source weight relax, T11/T18 reset, neck trigger off, left-pit bar, full rerun, look, one max judge, GATE T READY. Lane ~2.55M; lead 23's share ~0.40M, spent ~0.39M by the verdict.
 **Done (body-p1b, pushed):**
