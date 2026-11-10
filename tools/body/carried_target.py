@@ -785,7 +785,11 @@ HER = {
                                    # elevation, smoothstep over `elev` deg (strip_rest.map_targets). No key: the fill alone
                                    "map": {"file": "strip_rest.npz", "elev": [45.0, 90.0]}}},
         "neck": {"provider": "derived", "bones": ["neck_01", "neck_02", "Head"], "ref": {"neck_01": "neck_02", "Head": "Head"},
-                 "root": "neck_01", "far": ["Head"], "rows": 4, "eps": 0.02, "rigid": 0.999},
+                 "root": "neck_01", "far": ["Head"], "rows": 4, "eps": 0.02, "rigid": 0.999,
+                 # relax (Her.relaxed on a region with no side): no elevation, w = 1, every row open; A's own stretched
+                 # reference on the head-piece patches (body_facts/neck_edges.md) is filled from its neighbours; 2.4 not 2.5: the placement
+                 # adds up to 0.1 to a carried edge (iron_vow@75:r: carried 2.47, composed 2.51)
+                 "relax": {"ratio": 2.4, "rows": 2}},
     },
     # the bones the source's driver places (never read from a pose): her rig's helpers but the "unroll" kind, and the scapula
     "driven": [b + "_{s}" for b in (
@@ -808,6 +812,17 @@ HER = {
     "t18_poses": ["x:add0:l", "cast_bolt@0:l", "cast_bolt@3:r", "crossbow_shoot@10:r", "x:abd90_int60:l", "Jog_Fwd@11:r"],
     "t18_stored": "target_a_l18.npz",
     "t20_n": 8,                          # T20: poses sampled with both arms under the armpit map's lo (support "map")
+    # T22: the armpit map's bar, strip_rest.cmd_turned's numbers: turned triangles 0 and the worst band edge at most A's own
+    # worst + 0.15 (the first list) or the fill's worst + 0.15 (the second: where A's own is the harder pose)
+    "t22_own": ["x:abd120:l", "x:abd150:l", "x:abd170:l", "x:flex170:l", "p4:iron_vow@72:l", "p4:heroic_leap@7:r",
+                "p4:heroic_leap@9:r", "p4:heroic_leap@19:r", "p4:heroic_leap@20:r"],
+    "t22_fill": ["crossbow_shoot@10:r", "cast_bolt@3:r", "axe_heavy@7:r", "p4:heroic_leap@5:r", "p4:idle_warden_town@126:r",
+                 "p4:heroic_leap@25:r"],
+    "t22_tol": 0.15,
+    # T23: the neck's relax rule (head-piece patches, body_facts/neck_edges.md): on these poses the neck set has no edge over
+    # `ratio` but those the published surface has over it too; Head-rigid points and the girdle regions as with it off
+    "t23_poses": ["p4:idle_warden_town@126:r", "p4:idle_warden_town@122:l", "sword_heavy@10:l", "p4:shield_charge@0:r",
+                  "p4:iron_vow@75:r", "axe_heavy@7:r", "Jog_Fwd@11:r"],
     "t21_poses": ["x:abd150:l", "p4:heroic_leap@9:r", "crossbow_shoot@10:r"],   # T21: the map through two paths
     "t19": {"poses": ["x:abd150:l", "x:abd170:l", "x:flex170:l"], "ref": "fold_probe/dump_t0.npz", "k": 3, "top": 12,
             "valley_deg": 1.0, "depth_mm": 0.2},
@@ -884,6 +899,8 @@ class Her:
                                       rc["rows"], rc["eps"], rc["rigid"])
                     rg.pts, rg.share, rg.edges, rg.core, rg.stiff = d["pts"], d["share"], (d["edges"][:, 0], d["edges"][:, 1]), d["core"], d["stiff"]
                     rg.carrier = Carrier(Ab.V0, Ab.T, bd.V0[rg.pts], self.N0[rg.pts], rad=cfg["rad"], k=cfg["k"], nw=cfg["nw"], pocket_rows=0)
+                    if rc.get("relax"):                     # a region with no side: always open (Her.relaxed, w = 1)
+                        rg.relax = [(0.0, 0.0, np.ones(len(rg.pts), bool), rc["relax"])]
                 rg.spread = spread_of(self.group, rg.pts)
                 self.regions[rg.name] = rg
         self.ext = {}
@@ -1089,12 +1106,16 @@ class Her:
         rules = getattr(rg, "relax", ())
         if not rules:
             return cf
-        el, P0, E = self.md.elevation(G, rg.side), self.bd.V0[rg.pts], np.stack(rg.edges, 1)
+        side = bool(rg.side)                                # no side (the neck): no elevation, w = 1
+        el, P0, E = self.md.elevation(G, rg.side) if side else 0.0, self.bd.V0[rg.pts], np.stack(rg.edges, 1)
         for lo, hi, opened, rule in rules:
-            if el <= lo:
-                continue
-            w = np.clip((el - lo) / (hi - lo), 0.0, 1.0)
-            w = w * w * (3 - 2 * w)
+            if side:
+                if el <= lo:
+                    continue
+                w = np.clip((el - lo) / (hi - lo), 0.0, 1.0)
+                w = w * w * (3 - 2 * w)
+            else:
+                w = 1.0
             r = np.linalg.norm(cf[E[:, 0]] - cf[E[:, 1]], axis=1) / np.linalg.norm(P0[E[:, 0]] - P0[E[:, 1]], axis=1)
             hit = (r > rule["ratio"]) & (opened[E[:, 0]] | opened[E[:, 1]])
             if not hit.any():
@@ -1518,8 +1539,10 @@ def cmd_test(h):
     for nm in cfg["t18_poses"]:
         G = z["G"][names.index(nm)]
         el = max(md.elevation(G, s) for s in sorted(md.grown))
+        nrl, nk.relax = getattr(nk, "relax", None), []        # and the neck's relax rule (T23's) is off: stored before it
         with h.map_off():                # the stage alone: the armpit map (45..90 deg) is T20 / T21's
             d = float(np.abs(h.compose(G, pub(bd, G))[md.first[ids_c]][ia] - old["Xc"][io[nm]][ib]).max())
+        nk.relax, h._pose = nrl, None
         line(f"T18 {nm}", d == 0.0, f"elevation {el:.1f} deg: composed target - stored ({cfg['t18_stored']}) max {d * 1000:.3g} mm on"
              f" {len(common)} shared points (limit exactly 0)")
     # T19: the fold at A's (fold_probe's measure on the reference dump's fold set)
@@ -1589,6 +1612,60 @@ def cmd_test(h):
                  f"map w {P1['map_w']:.3f} (second path {w2:.3f}); band ({int(band.sum())} vertices, moved up to {moved * 1000:.2f} mm):"
                  f" composed - strip_rest's map placed max {e_b:.2e} m, normals {e_n:.2e} (limit 1e-6); outside the band - map off"
                  f" max {e_o!r} m (limit exactly 0)")
+    # T22: the armpit map's bar as a test (strip_rest.cmd_turned's own numbers, read from its report; map on)
+    if h.map:
+        import io, re
+        hs22 = next(iter(h.map.values()))
+        tol22 = cfg["t22_tol"]
+        for key, lim_name in (("t22_own", "A's own"), ("t22_fill", "fill")):
+            for nm in cfg[key]:
+                buf = io.StringIO()
+                with contextlib.redirect_stdout(buf):
+                    h._sr.cmd_turned(hs22, [nm])
+                m = re.search(rf"== {re.escape(nm)} \((.)\) w ([\d.]+): turned map (\d+), .*? map edge max ([\d.]+), A's own max ([\d.]+)"
+                              r".*? fill max ([\d.]+)", buf.getvalue())
+                if not m:
+                    line(f"T22 {nm}", False, "cmd_turned's report not read: " + buf.getvalue()[:200])
+                    continue
+                tm_, rm_, own_, fill_ = int(m.group(3)), float(m.group(4)), float(m.group(5)), float(m.group(6))
+                ref_ = own_ if key == "t22_own" else fill_
+                line(f"T22 {nm}", tm_ == 0 and rm_ <= ref_ + tol22,
+                     f"({m.group(1)}) w {m.group(2)}: turned triangles {tm_} (limit 0); worst band edge {rm_:.2f} against {lim_name} {ref_:.2f}"
+                     f" (limit +{tol22:g}); A's own {own_:.2f}, fill {fill_:.2f}")
+    # T23: the neck's relax rule (config neck "relax"): against the rule off, on the measured poses
+    if getattr(nk, "relax", None):
+        c23 = nk.relax[0][3]
+        outg = np.unique(np.concatenate([h.group[h.regions[cfg["out_region"].replace("{s}", s_)].spread[0]] for s_ in cfg["sides"]]))
+        keep = ~np.isin(h.group[nk.pts], outg)
+        ek = keep[nk.edges[0]] & keep[nk.edges[1]]
+        e23 = (nk.edges[0][ek], nk.edges[1][ek])
+        rl = nk.relax
+        gpts = np.unique(np.concatenate([h.regions[cfg["out_region"].replace("{s}", s_)].spread[0] for s_ in cfg["sides"]]))
+        hd = (bd.W * (bd.J == p.index[cfg["regions"][nk.name]["far"][0]])).sum(1) >= 0.999
+        nkp = np.zeros(len(bd.V0), bool)
+        nkp[nk.spread[0]] = True
+        for nm in cfg["t23_poses"]:
+            G = z["G"][names.index(nm)]
+            Vp = pub(bd, G)
+            X1 = h.compose(G, Vp)
+            nk.relax, h._pose = [], None
+            try:
+                X0 = h.compose(G, Vp)
+            finally:
+                nk.relax, h._pose = rl, None
+            def er(X):
+                return np.linalg.norm(X[nk.pts][e23[0]] - X[nk.pts][e23[1]], axis=1) / np.linalg.norm(bd.V0[nk.pts][e23[0]] - bd.V0[nk.pts][e23[1]], axis=1)
+            t1, t0, pp = er(X1), er(X0), er(Vp)
+            lim = 2.5
+            n1, n0 = int(((t1 > lim) & (pp <= lim)).sum()), int(((t0 > lim) & (pp <= lim)).sum())
+            e_h = float(np.abs(X1[hd] - X0[hd]).max())
+            gi = np.zeros(len(bd.V0), bool)
+            gi[gpts] = True
+            e_g = float(np.abs(X1[gi & ~nkp] - X0[gi & ~nkp]).max())
+            line(f"T23 {nm}", n1 == 0 and e_h == 0.0 and e_g == 0.0,
+                 f"neck set ({len(e23[0])} edges): over 2.5x with the published surface under it: {n1} (rule off {n0}); worst edge {t1.max():.2f}"
+                 f" (off {t0.max():.2f}, published {pp.max():.2f}); Head-rigid points ({int(hd.sum())}) moved by the rule max {e_h!r} m,"
+                 f" girdle regions outside the neck {e_g!r} m (limit exactly 0)")
     print("ALL PASS" if ok_all else "SOME FAILED")
     return ok_all
 

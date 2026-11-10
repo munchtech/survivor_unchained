@@ -36,3 +36,19 @@ Columns: A's own = the reference as the carry reads it (A posed by the neck's pa
 - One line, no more: look at A's own skin and the far field of the Head anchor on these two patches before touching B's weights or the region's rows.
 
 **NOT done:** no fix; no picture; the patches' place on the head piece (outer skin or inner part) not checked; `carried_target.py test` not rerun (nothing it imports was touched); the `under` label and the unregistered column were added after the dev run and are in the full run.
+
+## Relaxed (lead 20's worker)
+
+`Her.relaxed` now also works on a region with no side (no elevation, w = 1, every row open); config neck `"relax": {"ratio": 2.4, "rows": 2}` (2.4, not 2.5: the placement adds up to 0.1 to a carried edge; iron_vow@75:r carried 2.47, composed 2.51). Without the key nothing changes. Test T23 (`carried_target.py test`; the neck set of 2723 edges with no end in a girdle region); T22 is the armpit map's bar (cmd_turned's numbers). T18 now runs with the neck rule off (its stored file predates it).
+
+| pose | worst edge before | worst after | edges over 2.5x before | after | published worst |
+|---|---|---|---|---|---|
+| p4:idle_warden_town@126:r | 7.06 | 2.01 | 10 | 0 | 2.10 |
+| p4:idle_warden_town@122:l | 6.75 | 2.01 | 8 | 0 | 2.02 |
+| sword_heavy@10:l | 4.21 | 2.04 | 8 | 0 | 1.63 |
+| p4:shield_charge@0:r | 4.26 | 2.19 | 9 | 0 | 1.63 |
+| p4:iron_vow@75:r | 3.27 | 2.13 | 4 | 0 | 1.69 |
+| axe_heavy@7:r | 3.75 | 2.19 | 11 | 0 | 1.71 |
+| Jog_Fwd@11:r | 5.72 | 2.34 | 5 | 0 | 2.06 |
+
+Head-rigid points (Head weight >= 0.999, 16574) and the girdle regions outside the neck: moved by the rule 0.0 m on all 7 poses. Full test: 83 PASS (61 + T22 x15 + T23 x7), ALL PASS.
