@@ -15,6 +15,8 @@
                                               (motion/measures.py), logged in specs/<clip>.takes.json; the best is imported
     python tools/anim/p4.py check [clips]     tools/body/clipcheck.py's measures on the built clips (pops, seam, feet,
                                               arm contact, hand gap) plus the core's fidelity and planted slide, a table
+                                              and the freeze: `statue: n frames (fa-fb)` (measures.statue; MISS over 2
+                                              on a one-shot) and `quiet: n%`; bands may use statue_frames, quiet_pct
 
 The rig is tools/body/rig/{b_skeleton,soma_to_b}.json (tools/body/rig_map.py).
 """
@@ -223,17 +225,39 @@ def measure(r, spec):
         m = measures.action(r.P, r.G, r.rig, fps, spec.get("bands", {}), r.clip.get("beats", {}),
                             extra=action_held(r, spec), head_top=head_top())
         m.update(steps(r))
+        m.update(statue_of(r.clip, r.G, r.P, r.rig))
         return m
     if spec.get("kind") == "gait":
         m = measures.gait(r.P, r.rig, fps, r.clip.get("speed_mps"), loop=r.clip["loop"])
         m.update(held(r, spec))
         m.update(steps(r))
+        m.update(statue_of(r.clip, r.G, r.P, r.rig))
         return m
     m = measures.idle(r.P, r.rig, fps, loop=r.clip["loop"])
     m.update(hand_targets(r, spec))
     m.update(held(r, spec))
     m.update(steps(r))
+    m.update(statue_of(r.clip, r.G, r.P, r.rig))
     return m
+
+
+STATUE_FRAMES = 2        # the fail line on a one-shot: more frames than this frozen outside its hold reads as a statue
+
+
+def statue_of(c, G, P, rig, at=False):
+    """A clip's freeze numbers for the bands (measures.statue): statue_frames (the longest run of frozen frames
+    outside beats.hold, and outside beats.loop on a one-shot) and quiet_pct (the share of steps outside the hold in
+    which no major joint turns 1 deg); at: with statue_at [first, last frame] (check's line)."""
+    m = measures.statue(P, G, rig, c["fps"], c.get("beats") or {}, c["loop"])
+    return m if at else {k: m[k] for k in ("statue_frames", "quiet_pct")}
+
+
+def statue_lines(m, loop):
+    """check's two lines: the run with MISS over STATUE_FRAMES on a one-shot (a whole-clip loop prints it unflagged)."""
+    a = m["statue_at"]
+    return [f"  statue: {m['statue_frames']} frames" + (f" (f{a[0]}-f{a[1]})" if a else "")
+            + (" MISS" if m["statue_frames"] > STATUE_FRAMES and not loop else ""),
+            f"  quiet: {m['quiet_pct']}%"]
 
 
 def held(r, spec):
@@ -732,7 +756,7 @@ def cmd_check(a):
                      "slide_mm": [round(x * 1000, 2) for x in sl], "fidelity": fid,
                      "locked_frames": [sum(w[1] for w in ws) for ws in r.wins],
                      "skate": skate(r, sj, G, P), "skate_line_cm": SKATE_CM, "floors": floors(r, G, P),
-                     "spot": spot_off(rig, G, P, sj)})
+                     "spot": spot_off(rig, G, P, sj), "statue": statue_of(c, G, P, rig, at=True), "loop": c["loop"]})
     for R in rows:
         f, b = R["feet"], R["contact"]
         print(f"\n{R['clip']}: {R['frames']} frames, pops {R['pops']} (worst step {R['worst_step'][0]} deg {R['worst_step'][1]} "
@@ -750,6 +774,8 @@ def cmd_check(a):
             so = R["spot"]
             print(f"  spot: start off idle L {so['start'][0]:.1f} R {so['start'][1]:.1f} pelvis {so['start'][2]:.1f} cm; "
                   f"end off idle max {so['end']:.1f} cm{' MISS' if so['end'] > 0.5 else ''}")
+        for ln in statue_lines(R["statue"], R["loop"]):
+            print(ln)
         for s, ws in R["floors"].items():
             for w in ws:
                 print(f"  planted {s} f{w['frames'][0]}-{w['frames'][1]}: ankle {w['ankle_cm']:+} cm, ball {w['ball_cm']:+} cm over rest, "
