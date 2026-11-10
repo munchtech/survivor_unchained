@@ -16,9 +16,20 @@ cloth (no row simulates).
 
 Measures (per clip and per test; B's close tier):
   skin    her skin under each piece, tucked by the piece's armor_tuck record as heroine_skin.gdshader draws it on B
-          (tuck_channel -2, a float tuck_map, so no 8-bit step: pushed in along her posed normal by 10 mm x the mark,
+          (tuck_channel -2, a float tuck_map, so no 8-bit step: pushed in by 10 mm x the mark (the row's tuck_depth_mm),
           all of it past 0.973; a point marked 0.995 and over not drawn), against the piece's posed faces: wearcheck's
           signed gap (to the piece's inner face; OUT: past its OUTER face, what shows).
+          The tuck runs along the normal the ENGINE has (the glb's stored normal, its shapes' normal deltas, skinned:
+          Scene.stored_normals), not the welded face normal the rays use: on the warden pauldron's tucked points the two
+          stand 19 deg apart at the median, 1.5 mm of tuck (10.6 mm at worst).
+          THE SWEEP (P2 lead 5, 9 Nov: the engine drew her shoulder through a pauldron this test called clean): the rays
+          above only follow her points that lie under the piece AT REST, and one whose ray loses the piece in a pose
+          (lost_share) counts as clean. A rigid plate riding one bone slides over skin that was never under it. So every
+          frame, every drawn skin point within SWEEP_NEAR of the piece at rest is also read against ALL the piece's posed
+          faces: it is OUT where it stands squarely in front of a face that looks the way her skin does and lies squarely
+          behind her on her own normal (an outer face under her: the first face her normal meets going back into her is
+          an outer one), by its distance to it, unless the piece has a face ahead of it on her normal (a lame over it
+          hides it). A point's out is the deeper of the two readings. engine_check.py holds this to the engine's frame.
   control the sets as worn: each calling's own pieces (same outfit: no garment tuck), and the plate proof set (pieces of
           different outfits: the garment tuck as the game lays it between them).
   mixed   every piece of one proof set (reaver revealing, ranger leather, the plate set) under / over every piece of
@@ -88,6 +99,11 @@ VIEWS = {"close": 2.0, "play": 6.0}
 CLOSE_WORDS = ("town", "idle", "look", "talk")
 BROKEN = ("Jog_Fwd",)
 FRAME_MM = (2.0, 3.0, 6.0)      # the depths the worst single frame's through area is counted at (frame_mm2, frames)
+# THE SWEEP (docstring "skin"): her drawn points within SWEEP_NEAR of the piece at rest; each frame those within
+# SWEEP_REACH of a face centre, against its SWEEP_K nearest faces: out where a face looks her way (n_face . her normal
+# over SWEEP_ALONG) and she stands squarely in front of it (cos over SWEEP_SQUARE, as confirm_gap), deeper than
+# SWEEP_MIN, with no face of the piece within SWEEP_COVER ahead on her normal.
+SWEEP_NEAR, SWEEP_REACH, SWEEP_K, SWEEP_ALONG, SWEEP_SQUARE, SWEEP_MIN, SWEEP_COVER = 0.10, 0.045, 32, 0.3, 0.8, 0.0005, 0.04
 
 
 # ------------------------------------------------------------------ helpers --
@@ -214,6 +230,8 @@ class Scene:
         self.W = np.asarray(W, np.float64)
         self.targets = targets            # {name: (idx [n], delta [n, 3])}
         self.keys = keys
+        self.NS = None                    # her stored rest normals [len(P0), 3] (the glb's; None: the welded ones serve)
+        self.ntargets = {}                # {name: (idx [n], normal delta [n, 3])}: the shapes' normal deltas
         self.tri_owner = self.owner[self.T[:, 0]]
         self.isk = np.nonzero(self.kind == "skin")[0]
         self.ish = np.nonzero(self.kind != "piece")[0]
@@ -222,12 +240,12 @@ class Scene:
         self.TS = loc[self.T[(self.kind[self.T] != "piece").all(1)]]
         self.normals_sh = Welded(self.P0[self.ish], self.TS)
 
-    def restrict(self, idx):
+    def restrict(self, idx, targets=None):
         """The blend shapes' deltas over the points idx (local rows): {name: (rows, delta)}."""
         at = np.full(len(self.P0), -1)
         at[idx] = np.arange(len(idx))
         sub = {}
-        for k, (ti, d) in self.targets.items():
+        for k, (ti, d) in (self.targets if targets is None else targets).items():
             a = at[ti]
             ok = a >= 0
             if ok.any():
@@ -257,6 +275,31 @@ class Scene:
 
     def pose(self, S, weights, idx):
         return self.lbs(S, self.rest(idx, weights), self.J[idx], self.W[idx])
+
+    def stored_normals(self, S, weights, idx, sub=None):
+        """Her normals at the points idx as the ENGINE has them (what heroine_skin.gdshader's tuck moves along): the
+        mesh's stored normal, the shapes' normal deltas added and normalised (Godot's blend), turned by the skin's
+        blend of the bones' matrices, normalised. Rows without a stored normal: 0. None: the scene carries none."""
+        if self.NS is None:
+            return None
+        N = self.NS[idx].copy()
+        if weights and self.ntargets:
+            sub = self.restrict(idx, self.ntargets) if sub is None else sub
+            for k, w in weights.items():
+                if w and k in sub:
+                    a, d = sub[k]
+                    N[a] += w * d
+        ln = np.linalg.norm(N, axis=1, keepdims=True)
+        N = np.where(ln > 1e-12, N / np.maximum(ln, 1e-12), 0.0)
+        J, W = self.J[idx], self.W[idx]
+        out = np.zeros_like(N)
+        for k in range(J.shape[1]):
+            w = W[:, k]
+            if not w.any():
+                continue
+            out += w[:, None] * np.einsum("nij,nj->ni", S[J[:, k], :3, :3], N)
+        ln = np.linalg.norm(out, axis=1, keepdims=True)
+        return np.where(ln > 1e-12, out / np.maximum(ln, 1e-12), 0.0)
 
 
 def load_rows(gear):
@@ -322,6 +365,28 @@ def build_scene(body_dir, rows, only=None):
     sc = Scene(np.concatenate(P), np.concatenate(T), np.concatenate(kind), np.concatenate(owner).astype(str),
                np.concatenate(J), np.concatenate(W), targets)
     sc.keys = keys_of(p.Pb[p.piece == "body"])      # (the tuck format's keys: B's close body's bind points)
+    # her stored normals and her shapes' normal deltas, in the poser's point order (the tuck's direction in the engine)
+    NS, ntg, b0 = np.zeros_like(sc.P0), {}, 0
+    for nm in [rig.get("body_mesh")] + list(rig.get("close_meshes", [])):
+        m = p.glb.mesh(nm) if nm else None
+        if m is None or m.J is None or getattr(m, "N", None) is None:
+            continue
+        if b0 + len(m.P) > len(p.Pb) or np.abs(m.P - p.Pb[b0:b0 + len(m.P)]).max() > 1e-6:
+            b0 = -1
+            break
+        NS[b0:b0 + len(m.P)] = m.N
+        for k, d in m.targets.items():
+            dn = np.asarray(d.get("NORMAL"), np.float64) if d.get("NORMAL") is not None else None
+            if dn is not None and dn.shape == m.P.shape:
+                nz = np.nonzero(np.abs(dn).sum(1) > 0)[0]
+                if len(nz):
+                    ntg.setdefault(k, []).append((nz + b0, dn[nz]))
+        b0 += len(m.P)
+    if b0 == len(p.Pb):
+        sc.NS = NS
+        sc.ntargets = {k: (np.concatenate([a for a, _ in v]), np.concatenate([b for _, b in v])) for k, v in ntg.items()}
+    else:
+        print("gear_wear: the body's stored normals are not in the poser's order: the tuck runs along welded normals")
     sc.ibm = ibm_body
     sc.poser, sc.rig = p, rig
     return sc
@@ -627,6 +692,14 @@ class Check:
                     g0, go0 = wc.confirm_gap(O0[rr0], F0[rr0], x["inner0"][rr0], x["thick"])
                     fp["gap"], fp["out"] = fp["gap"].copy(), fp["out"].copy()
                     fp["gap"][rr0], fp["out"][rr0] = g0, go0
+            # (the sweep: her drawn points near the piece at rest, beyond those under it; all of the piece's faces)
+            dn, _ = self.pc[i]["kdv"].query(O, distance_upper_bound=SWEEP_NEAR)
+            extra = np.setdiff1d(np.nonzero(np.isfinite(dn))[0], fp["idx"])
+            x["nfp"] = len(fp["idx"])
+            x["pts"] = np.r_[x["pts"], sv[extra]]
+            x["dir"] = x["pts"]
+            x["tuck"] = np.r_[x["tuck"], tsv[extra]]
+            x["sweepT"] = self.pc[i]["T"]
             self._add(x)
 
     def add_pair(self, a, b, kind, tuck_ok=True):
@@ -683,8 +756,8 @@ class Check:
         x["rest_out2"] = int((fp["out"] < -0.002).sum())
         x["rest_min_mm"] = float(fp["gap"].min() * 1000)
         x["per_clip"] = {}
-        x["min"] = np.full(len(fp["idx"]), np.inf)
-        x["min_out"] = np.full(len(fp["idx"]), np.inf)
+        x["min"] = np.full(len(x["pts"]), np.inf)
+        x["min_out"] = np.full(len(x["pts"]), np.inf)
         x["lost"] = x["seen"] = 0
         A = x["A"]
         x["area"] = self.VA[x["pts"]] if A == "skin" else np.maximum(self.VA[x["pts"]], self.grid ** 2)
@@ -698,13 +771,16 @@ class Check:
         groups = sorted({x["sup"] for x in self.tests})
         for sup in groups:
             group = [x for x in self.tests if x["sup"] == sup]
-            need = np.unique(np.concatenate([sc.ish] + [np.r_[x["pts"], x["hitv"].ravel(), x["candv"].ravel()] for x in group]))
+            need = np.unique(np.concatenate([sc.ish] + [np.r_[x["pts"], x["hitv"].ravel(), x["candv"].ravel()] for x in group]
+                                            + [x["sweepT"].ravel() for x in group if "sweepT" in x]))
             at = np.full(len(sc.P0), -1)
             at[need] = np.arange(len(need))
             sh_local = at[sc.ish]
             SvB = {B: np.unique(np.concatenate([x["Sv"] for x in group if x["B"] == B]), axis=0) for B in {x["B"] for x in group}}
             sub = sc.restrict(need)
             Jn, Wn = sc.J[need], sc.W[need]
+            skn = np.nonzero(sc.kind[need] == "skin")[0] if sc.NS is not None else None     # (her stored normals: the tuck's)
+            nsub = sc.restrict(need[skn], sc.ntargets) if skn is not None else None
             for x in group:     # (a laid test's points: their own shapes, then the lay)
                 if "dA" in x:
                     x["_sub"] = sc.restrict(x["pts"])
@@ -716,21 +792,78 @@ class Check:
                     Pp = sc.lbs(S, Pn, Jn, Wn)
                     Np = np.zeros_like(Pp)
                     Np[sh_local] = sc.normals_sh(Pp[sh_local])
+                    Ns = None
+                    if skn is not None:
+                        Ns = np.zeros_like(Pp)
+                        Ns[skn] = sc.stored_normals(S, w, need[skn], nsub)
                     kd_frame = {}
                     for x in group:
-                        self._measure(x, Pp, Np, at, S, w, SvB, kd_frame, cname, f)
+                        self._measure(x, Pp, Np, at, S, w, SvB, kd_frame, cname, f, Ns)
                 log(f"gear_wear: support {sup} {cname} ({time.time() - t0:.0f} s)")
         return time.time() - t0
 
-    def _measure(self, x, Pp, Np, at, S, w, SvB, kd_frame, cname, f):
+    def _sweep(self, x, O, D, Pp, at):
+        """THE SWEEP (docstring "skin"): per point of O (her tucked drawn points, D her normals) minus the depth it
+        stands out past the piece (inf: not out), read against all the piece's posed faces."""
+        V = Pp[at[x["sweepT"]]]
+        out = np.full(len(O), np.inf)
+        if not len(V) or not len(O):
+            return out
+        fn = np.cross(V[:, 1] - V[:, 0], V[:, 2] - V[:, 0])
+        fn /= np.linalg.norm(fn, axis=1, keepdims=True) + 1e-30
+        kd = cKDTree(V.mean(1))
+        k = min(SWEEP_K, len(V))
+        d, ci = kd.query(O, k=k, distance_upper_bound=SWEEP_REACH)
+        d, ci = d.reshape(len(O), -1), ci.reshape(len(O), -1)
+        rows = np.nonzero(np.isfinite(d[:, 0]))[0]
+        if not len(rows):
+            return out
+        ok = ci[rows] < len(V)
+        cs = np.where(ok, ci[rows], 0)
+        F = V[cs]
+        Or, Dr = O[rows], D[rows]
+        Q = wc.closest_on_tri(Or[:, None], F[:, :, 0], F[:, :, 1], F[:, :, 2])
+        off = Or[:, None] - Q
+        dist = np.linalg.norm(off, axis=2)
+        side = (off * fn[cs]).sum(2)
+        along = (fn[cs] * Dr[:, None]).sum(2)
+        # (squarely in front of the face AND the face squarely behind her on her own normal: a flared lame beside her
+        # arm looks her way from 3 cm off without being under her)
+        cand = ok & (along > SWEEP_ALONG) & (side >= SWEEP_SQUARE * dist) & ((off * Dr[:, None]).sum(2) >= SWEEP_SQUARE * dist)
+        dd = np.where(cand, dist, np.inf)
+        depth = dd.min(1)
+        hit = np.nonzero(np.isfinite(depth) & (depth > SWEEP_MIN))[0]
+        if len(hit):
+            # (a face of the piece ahead of her point on her normal hides it: the faces near four stations of the ray)
+            Oh, Dh = Or[hit] + Dr[hit] * 1e-5, Dr[hit]
+            cc = np.concatenate([kd.query(Oh + Dh * h, k=k)[1].reshape(len(hit), -1) for h in (0.004, 0.014, 0.024, 0.034)], 1)
+            t, _, _, _ = wc.cast(Oh, Dh, V[np.minimum(cc, len(V) - 1)])
+            ahead = ((t > 0) & (t < SWEEP_COVER)).any(1)
+            # (and the first face behind her point on her normal is an outer one: she is past the piece there, not beside
+            # its rim or between two lames; the faces near five stations of the ray back into her)
+            cb = np.concatenate([kd.query(Oh - Dh * h, k=k)[1].reshape(len(hit), -1) for h in (0.0, 0.01, 0.02, 0.03, 0.04)], 1)
+            t, fa, _, _ = wc.cast(Oh, -Dh, V[np.minimum(cb, len(V) - 1)])
+            tt = np.where(t > 0, t, np.inf)
+            jb = tt.argmin(1)
+            r = np.arange(len(hit))
+            under = np.isfinite(tt[r, jb]) & (tt[r, jb] < SWEEP_REACH) & (fa[r, jb] < 0)
+            hit = hit[~ahead & under]
+            out[rows[hit]] = -depth[hit]
+        return out
+
+    def _measure(self, x, Pp, Np, at, S, w, SvB, kd_frame, cname, f, Ns=None):
         sc = self.sc
         O = Pp[at[x["pts"]]]
         D = Np[at[x["dir"]]]
         if x["A"] == "skin":
-            O = O - D * x["tuck"][:, None] + D * 1e-5
+            # (the tuck along the engine's normal, Scene.stored_normals; the rays along her welded one, as before)
+            Dt = Ns[at[x["pts"]]] if Ns is not None else D
+            O = O - np.where((np.abs(Dt).sum(1) > 0)[:, None], Dt, D) * x["tuck"][:, None] + D * 1e-5
         elif "dA" in x:
             R = sc.rest(x["pts"], w, x["_sub"]) + x["dA"]
             O = sc.lbs(S, R, x["lJ"], x["lW"])
+        Oa, Da, nf = O, D, x.get("nfp", len(O))
+        O, D = O[:nf], D[:nf]
         H = Pp[at[x["hitv"]]]
         hp = (H * x["fp"]["bary"][:, :, None]).sum(1)
         fn = np.cross(H[:, 1] - H[:, 0], H[:, 2] - H[:, 0])
@@ -768,6 +901,11 @@ class Check:
             if len(rc):
                 g[rc], go[rc] = wc.confirm_gap(O[rc], Pp[at[x["candv"][rc]]], x["inner0"][rc], x["thick"])
         x["seen"] += len(g)
+        if "sweepT" in x:
+            sw = self._sweep(x, Oa, Da, Pp, at)
+            g = np.r_[g, np.full(len(Oa) - nf, np.nan)]
+            go = np.r_[go, np.full(len(Oa) - nf, np.nan)]
+            go = np.where(np.isfinite(sw), np.where(np.isfinite(go), np.minimum(go, sw), sw), go)
         gg = np.where(np.isfinite(g), g, np.inf)
         go_ = np.where(np.isfinite(go), go, np.inf)
         x["min"] = np.minimum(x["min"], gg)
@@ -860,7 +998,8 @@ class Check:
             fin = np.isfinite(m)
             e = {"A": A, "B": B, "kind": x["kind"],
                  "slots": f"{'skin' if A == 'skin' else self.byid[A]['slot']}->{self.byid[B]['slot']}",
-                 "support": list(x["sup"]), "footprint_mm2": round(float(ar.sum() * 1e6), 1),
+                 "support": list(x["sup"]), "footprint_mm2": round(float(ar[:x.get("nfp", len(ar))].sum() * 1e6), 1),
+                 "swept_mm2": round(float(ar.sum() * 1e6), 1) if "sweepT" in x else None,
                  "worst_in_mm": round(float(-m[fin].min() * 1000), 2) if fin.any() else None,
                  "out_worst_mm": round(float(-mo[np.isfinite(mo)].min() * 1000), 2) if np.isfinite(mo).any() else None,
                  "out2_n": int((mo < -0.002).sum()), "out2_mm2": round(float(ar[mo < -0.002].sum() * 1e6), 1),
@@ -872,7 +1011,7 @@ class Check:
                  "_area": (ar * 1e6).round(3).tolist()}
             if "raw_min_out" in x:
                 rm = x["raw_min_out"]
-                e["raw_out2_mm2"] = round(float(ar[rm < -0.002].sum() * 1e6), 1)
+                e["raw_out2_mm2"] = round(float(ar[:len(rm)][rm < -0.002].sum() * 1e6), 1)
                 e["raw_out_worst_mm"] = round(float(-rm[np.isfinite(rm)].min() * 1000), 2) if np.isfinite(rm).any() else None
             e["_vw"] = view_sets({c: pc["out"] for c, pc in x["per_clip"].items()}, len(mo))
             e["views"] = {k: round(float(ar[v].sum() * 1e6), 1) for k, v in e["_vw"].items()}
