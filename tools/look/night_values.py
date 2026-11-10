@@ -50,6 +50,8 @@ BANDS = {"s1_L": ("range", 0.03), "s1_C": ("range", 0.015), "s1_h": ("hue", 8), 
          "s3_L": ("range", 0.03), "s3_h": ("hue", 10), "s3_share": ("min", 0.5),
          "s4_share": ("min", 0.33), "s4_core_L": ("range", 0.03), "s4_core_h": ("hue", 8), "s4_mid_L": ("range", 0.03),
          "s4_mid_h": ("hue", 8), "s4_edge_L": ("range", 0.03), "s4_edge_h": ("hue", 10), "floor": ("range", 0.03)}
+# Bands set by hand over the targets' spread (lead 11, night 2A: the arena pool's warm share; T09 13.3%, T10 10.0%; was a 3.3% minimum).
+FIXED = {"arena_night": {"s4_share": [0.09, 0.17]}}
 # Lead 11's prose, to print beside what the targets say (the plan follows the targets).
 DESIGN = {"s1_L": 0.16, "s1_h": 260, "s2_L": 0.27, "s2_h": 255, "s3_L": 0.50, "s4_core_L": 0.67, "s4_core_h": 60,
           "s4_mid_L": 0.48, "s4_edge_L": 0.28, "floor": 0.10}
@@ -176,6 +178,7 @@ def cmd_plan(_):
         for k, (kind, wid) in BANDS.items():
             use = [(f, r[k]) for f, o, r in ms if not any(k.startswith(p) for p in o.get("skip", []))]
             bands[k] = band(kind, wid, [v for _, v in use])
+        bands.update(FIXED.get(rig, {}))
         for f, o, _ in ms:
             if o.get("skip"): left.append(f"{f} left out of {'/'.join(o['skip'])}*: {o['why']}")
         out["rigs"][rig] = {

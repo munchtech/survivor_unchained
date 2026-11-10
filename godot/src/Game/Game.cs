@@ -1581,6 +1581,31 @@ public partial class Game : Node, IZoneHost
             hud.Follow(camera.IsPositionBehind(at) ? null : camera.UnprojectPosition(at));
             Probe?.Frame(camera, at, dt);
             if (Args.Has("shot")) Shots.Her = camera.IsPositionBehind(at) ? null : camera.UnprojectPosition(at + Vector3.Up * 1.1f);
+            // (L1 lead 11, R4) --stage-log: on a picture's line, her pool's center on screen (her light's foot), the ground's scale
+            // there (px per metre across the screen, and down it over across), and the foes in frame by distance from her
+            // (how many within 2 m, 2-7 m, further; the nearest; their mean bearing on screen, 0 right, 90 down, with how one-sided 0..1).
+            if (Shots.StageLog && scene.Player is { } spv)
+            {
+                var lf = spv.Light.GlobalPosition; lf.Y = at.Y;
+                var c0 = camera.UnprojectPosition(lf);
+                var fw = -camera.GlobalTransform.Basis.Z; fw.Y = 0; fw = fw.Normalized();
+                float pxm = camera.UnprojectPosition(lf + camera.GlobalTransform.Basis.X).DistanceTo(c0);
+                float pym = (camera.UnprojectPosition(lf + fw * 0.5f).DistanceTo(c0) + camera.UnprojectPosition(lf - fw * 0.5f).DistanceTo(c0));
+                int n0 = 0, n1 = 0, n2 = 0; float near = 1e9f; var dir = Vector2.Zero; var vs = GetViewport().GetVisibleRect().Size;
+                foreach (var e in fb2.Enemies.Living())
+                {
+                    var ep = new Vector3((float)e.X, at.Y, (float)e.Z);
+                    if (camera.IsPositionBehind(ep)) continue;
+                    var sp2 = camera.UnprojectPosition(ep);
+                    if (sp2.X < 0 || sp2.Y < 0 || sp2.X > vs.X || sp2.Y > vs.Y) continue;
+                    float d = new Vector2(ep.X - at.X, ep.Z - at.Z).Length();
+                    if (d < 2) n0++; else if (d < 7) n1++; else n2++;
+                    near = Mathf.Min(near, d);
+                    if ((sp2 - c0).Length() > 1) dir += (sp2 - c0).Normalized();
+                }
+                int nf = n0 + n1 + n2;
+                Shots.Stage = $" pool {c0.X:0} {c0.Y:0} pxm {pxm:0.0} aspect {pym / Mathf.Max(pxm, 1e-3f):0.000} foes {nf} (<2m {n0}, 2-7m {n1}, >7m {n2}; nearest {(nf > 0 ? near : 0):0.0} m; bearing {Mathf.RadToDeg(dir.Angle()):0} one-sided {(nf > 0 ? dir.Length() / nf : 0):0.00})";
+            }
             if (Shots.On("h6")) H6Frame(fb2);
             // (the Drowned Girl's figure fades when she, an elite or a boss, or a marked attack is behind it: their
             // middles, 1 m up, on the ground she stands on; dg2, the judge: not for the crowd, or in a horde it is

@@ -39,7 +39,7 @@ public sealed record RigDapple(double? Cover = null, double? Strength = null, do
 public sealed record LightRig(string Id, string From, bool Camera, RigKey Key, RigFill Fill, RigRim Rim, double[]? Ink,
     double? Hardness, string? Grade, double? Exposure, double? Ember, RigDapple Dapple, double? Fires = null,
     double? EmberReach = null, string? EmberColor = null, double[]? Curve = null, double? WarmKeep = null, double[]? EmberGive = null, double? SceneColor = null, double? SceneMoon = null,
-    double[]? EmberPool = null, string? EmberEdge = null, double[]? FireGive = null, bool? ShadowLevel = null)
+    double[]? EmberPool = null, string? EmberEdge = null, double[]? FireGive = null, bool? ShadowLevel = null, double? EmberBreak = null)
 {
     /// <summary>(L1 lead 11, R3 one shade; rigs.json "shadow_level") The key's shadow is a level: a cast shadow keeps exactly
     /// 1 - key.shadow of the key, and the canopy's dapple is the same shade (its strength is key.shadow, whatever
@@ -129,7 +129,8 @@ public sealed class RigSet
             D(e, "fires", b?.Fires), D(e, "ember_reach", b?.EmberReach), S(e, "ember_color", b?.EmberColor),
             A(e, "grade_curve", b?.Curve), D(e, "warm_keep", b?.WarmKeep), A(e, "ember_give", b?.EmberGive), D(e, "scene_color", b?.SceneColor), D(e, "scene_moon", b?.SceneMoon),
             A(e, "ember_pool", b?.EmberPool), S(e, "ember_edge", b?.EmberEdge), A(e, "fire_give", b?.FireGive),
-            e.TryGetProperty("shadow_level", out var sl) ? sl.GetBoolean() : b?.ShadowLevel);
+            e.TryGetProperty("shadow_level", out var sl) ? sl.GetBoolean() : b?.ShadowLevel,
+            D(e, "ember_break", b?.EmberBreak));   // (L1 lead 11, R4: her pool's end under a leaf, a share of its radius)
     }
 }
 
@@ -159,7 +160,7 @@ public static class Rigs
             CelInk = r.Ink is { } ink ? ink : p.CelInk, CelShadow = r.Hardness ?? p.CelShadow,
             Grade = Graded(r.Grade is { } g ? Atmospheres.GradeNamed(g) ?? p.Grade : p.Grade, r),
             EmberGive = r.EmberGive ?? p.EmberGive, FireGive = r.FireGive ?? p.FireGive,
-            EmberPool = r.EmberPool ?? p.EmberPool, EmberEdge = r.EmberEdge ?? p.EmberEdge,
+            EmberPool = r.EmberPool ?? p.EmberPool, EmberEdge = r.EmberEdge ?? p.EmberEdge, EmberBreak = r.EmberBreak ?? p.EmberBreak,
             Exposure = r.Exposure ?? p.Exposure, Ember = r.Ember ?? p.Ember,
             EmberReach = r.EmberReach ?? p.EmberReach, EmberColor = r.EmberColor ?? p.EmberColor,
             DappleCover = r.Dapple.Cover ?? p.DappleCover, DappleStrength = r.OneShade ? k.Shadow ?? p.ShadowStrength : r.Dapple.Strength ?? p.DappleStrength,

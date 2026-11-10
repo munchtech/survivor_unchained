@@ -230,7 +230,10 @@ public partial class Shots : Node
 
     /// <summary>Where her chest is on the screen this frame (the game sets it while pictures are taken), for crops of her.</summary>
     public static Vector2? Her;
-    static string HerAt() => Her is { } h ? $" her {h.X:0} {h.Y:0}" : "";
+    static string HerAt() => (Her is { } h ? $" her {h.X:0} {h.Y:0}" : "") + (StageLog ? Stage : "");
+    /// <summary>(L1 lead 11, R4) --stage-log: her pool's center on screen, the ground's scale there and the foes in frame, on each picture's line (Game sets Stage).</summary>
+    public static readonly bool StageLog = Args.Has("stage-log");
+    public static string Stage = "";
 
     /// <summary>--dump-her PATH (dent d3, a developer's measure): her skin surfaces skinned on the CPU at the picture's
     /// frame (shipped weights and pose; blend shapes listed, not applied), per surface PATH_sK.bin: int nv, int ni, then per

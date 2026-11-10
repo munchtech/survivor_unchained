@@ -54,8 +54,14 @@ RUNS = {
                     scout=Q + ["--zone", "waystation", "--time", "day", "--seconds", "6", "--every", "6", "--count", "3"]),
     "lk_lamps": dict(args=["--open", "lamps", "--seconds", "6", "--count", "1"], load_snap="fr3_loop:loop_back_1", timeout=400,
                      fallback=Q + ["--zone", "waystation", "--time", "day", "--open", "lamps", "--seconds", "6", "--count", "1"]),
-    "lk_shaw": dict(args=ARENA + ["--auto", "stand", "--minute", "5", "--seconds", "6", "--count", "1"], timeout=600,
-                    scout=ARENA + ["--auto", "stand", "--minute", "5", "--seconds", "2", "--every", "2", "--count", "6"]),
+    # (L1 lead 11, R4: 09 re-staged as T09's moment, the pack ARRIVING from the lower left with her in the clear and at full
+    # health: twelve wolves set in an arc 8-14 m out (world 140 deg +/-45: screen lower left), nothing else spawned, no banner,
+    # shot at 1.2 s (before the director's stand charge draws its lane at 1.5 s). Was: minute 5's own pack at 6 s, fifteen
+    # within 2 m in a closed ring on her, her life 0.67. --stage-log prints the pool's center, px/m and the foes' distances.)
+    "lk_shaw": dict(args=ARENA + ["--auto", "stand", "--minute", "5", "--horde", "12:wolf", "--horde-arc", "140:90:8:6", "--no-spawn", "--no-banners",
+                                  "--stage-log", "--seconds", "1.2", "--count", "1"], timeout=600,
+                    scout=ARENA + ["--auto", "stand", "--minute", "5", "--horde", "12:wolf", "--horde-arc", "140:90:8:6", "--no-spawn", "--no-banners",
+                                   "--stage-log", "--seconds", "0.8", "--every", "0.2", "--count", "6"]),
     "lk_pack": dict(args=ARENA + ["--auto", "--minute", "29.9", "--seconds", "6", "--count", "1"], timeout=600,
                     scout=ARENA + ["--auto", "--minute", "29.9", "--seconds", "4", "--every", "2", "--count", "12"]),
     "lk_result": dict(args=ARENA + ["--open", "result", "--seconds", "7", "--count", "1"], timeout=400,

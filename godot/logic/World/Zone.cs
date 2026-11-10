@@ -180,6 +180,9 @@ public sealed record AtmospherePreset(
     /// from 0.5 m through orange and dusk into the moon's ground by 3.25 m, no plateau, no ring. Null: her light as Godot
     /// falls it.</summary>
     public double[]? EmberPool { get; init; }
+    /// <summary>(L1 lead 11, R4; rigs.json "ember_break") Her pool's broken end: under a leaf of the canopy's dapple the ramp reaches
+    /// this share of its radius less far, so its end follows the leaf shapes (cel_oneshade.z). 0: a round end.</summary>
+    public double EmberBreak { get; init; }
     /// <summary>(L1 lead 8, S2b) The pool's outer step's color (sRGB hex). Retired by lead 9 (B1: the ramp's stops carry the colors); read, unused.</summary>
     public string EmberEdge { get; init; } = "";
     /// <summary>The moon's rim on the crowd in play, in shade as in its light (0: none, as the cinematics' presets have it).</summary>

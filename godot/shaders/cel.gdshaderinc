@@ -422,20 +422,26 @@ void cel_pool_paint(inout vec3 c_lc, inout float c_att, vec3 c_lw) {
 		if (c_f > c_att) c_lo = c_u; else c_hi = c_u;
 	}
 	vec3 c_wp = cel_ember.xyz - normalize(c_lw) * (0.5 * (c_lo + c_hi) * c_r);
-	vec4 c_rp = cel_pool_at(length(c_wp.xz - cel_ember.xz));
+	// (L1 lead 11, R4: a broken end. Under a leaf (the key's dapple, packed in cel_gn: 1 - cel_key.w under a leaf, 1 open; only
+	// where fragment() packed it and the moon is back) the ramp is read further out, so her pool reaches cel_oneshade.z of its
+	// radius less far there: its end is scalloped by the leaf shapes, not a compass circle, and its heart is untouched.)
+	float c_leaf = 0.0;
+	if (cel_key.w > 0.0 && cel_gq() >= 1.0) {
+		float c_dr = clamp((length(cel_gn) - 1.01 - 2.0 * cel_gq()) / 0.98, 0.0, 1.0);
+		// (times the moon's share here: the leaf shapes come in with the moon, from nothing where it has given way)
+		c_leaf = (1.0 - clamp((c_dr - (1.0 - cel_key.w)) / cel_key.w, 0.0, 1.0)) * clamp(cel_gv(), 0.0, 1.0);
+	}
+	vec4 c_rp = cel_pool_at(length(c_wp.xz - cel_ember.xz) / max(1.0 - cel_oneshade.z * c_leaf, 0.2));
 	vec3 c_ramp = c_rp.rgb;
 #ifdef CEL_POOL_PLAIN
 	c_ramp /= max(cel_pool_band.y, 1e-3);
 #endif
 	c_lc = c_m * c_ramp;
 	c_att = 1.0;
-	// (the canopy's leaf shapes kept in her light: the key's dapple here, packed in cel_gn: 1 - cel_key.w under a leaf, 1
-	// open; only where fragment() packed it)
-	if (cel_pool_band.z > 0.0 && cel_key.w > 0.0 && cel_gq() >= 1.0) {
-		float c_dr = clamp((length(cel_gn) - 1.01 - 2.0 * cel_gq()) / 0.98, 0.0, 1.0);
-		float c_ds = clamp((c_dr - (1.0 - cel_key.w)) / cel_key.w, 0.0, 1.0);
-		c_att = mix(1.0 - mix(cel_pool_band.z, cel_pool_band.w, c_rp.a) * cel_key.w, 1.0, c_ds);
-	}
+	// (lead 9's under-leaf cut of her light, for a rig not yet rebuilt (night_play: ember_pool[0..1]). The rebuilt pool
+	// (arena_night, R4) has none (0, 0): the fire is not cut by the moon's leaves; the moon comes back under it (ember_give)
+	// and its two blues, leaf shade and all, show through the outer band.)
+	if (cel_pool_band.z > 0.0) c_att = 1.0 - mix(cel_pool_band.z, cel_pool_band.w, c_rp.a) * cel_key.w * c_leaf;
 }
 
 // The cel model for one light, t = the band's n.l (the caller may wrap it).
