@@ -229,6 +229,15 @@ class Ctx:
             i = self._ti.get(pose["name"] if pose["name"][-2:] in (":l", ":r") else pose["name"] + ":l")
             X = self._tz["X"][i] if i is not None and self._tz["X"].shape[1] == nr else md.target(G, Vp[md.first], s)
         elif kind == "carried":
+            cc = self._stored() and self._cc
+            if cc is not None:                  # the whole composed surface (every region's points): no side's outer row steps
+                i = self._crow(pose)
+                k = cc[0][md.src]
+                g = np.nonzero(k >= 0)[0]
+                V = Vp.copy()
+                V[g] = cc[1][i][k[g]]
+                V[cc[2]] = cc[3][i]             # the regions' vertices the model has no point for
+                return V
             X = self._carried(pose, nr)
         else:
             raise KeyError(kind)
@@ -267,22 +276,35 @@ class Ctx:
             ext = {k[4:]: z[k] for k in z.files if k.startswith("ext_")}
             Xe = z["Xe"] if "Xe" in z.files else np.zeros((len(z["X"]), 0, 3))
             self._cz = (z["X"], Xe, ext, {str(n): i for i, n in enumerate(z["name"])})
+            self._cc = None
+            if "Xc" in z.files:                 # (md point -> row of Xc, Xc): the composed surface on every region's points
+                lut = np.full(self.md.n, -1, np.int64)
+                lut[z["ids_c"]] = np.arange(len(z["ids_c"]))
+                self._cc = (lut, z["Xc"], z["raw_c"], z["Xr"])
+            print(f"provider carried: surface = " + (f"the WHOLE composed surface (Xc, {len(z['ids_c'])} points of every region + {len(z['raw_c'])} vertices outside the model)" if self._cc
+                  else "ONE side's region (X, Xe: the file has no Xc; another region's delta steps at its outer row)"), flush=True)
             print(f"provider carried: {f.name}, {len(z['X'])} poses, {z['X'].shape[1]} list points + grown rows"
                   f" { {k: len(v) for k, v in ext.items()} } a side", flush=True)
         return self._cz
+
+    def _crow(self, pose):
+        """The pose's row in the stored file; no fallback."""
+        f, ix = OUT / CARRIED["file"], self._stored()[3]
+        nm = pose["name"] if pose["name"][-2:] in (":l", ":r") else pose["name"] + ":l"
+        if nm not in ix:
+            raise KeyError(f"provider carried: pose {nm!r} is not in {f.name} ({len(ix)} poses); there is no live fallback")
+        return ix[nm]
 
     def _carried(self, pose, nr):
         """The carried target of a pose from the stored file, on the side's region (the list, then the grown rows); no fallback."""
         f = OUT / CARRIED["file"]
         X, Xe, ext, ix = self._stored()
-        nm = pose["name"] if pose["name"][-2:] in (":l", ":r") else pose["name"] + ":l"
-        if nm not in ix:
-            raise KeyError(f"provider carried: pose {nm!r} is not in {f.name} ({len(ix)} poses); there is no live fallback")
+        i = self._crow(pose)
         if X.shape[1] != nr:
             raise ValueError(f"provider carried: {f.name} has {X.shape[1]} points a pose, the region has {nr}")
         if Xe.shape[1] != len(ext.get(pose["side"], ())):
             raise ValueError(f"provider carried: {f.name} has {Xe.shape[1]} grown rows a pose, ext_{pose['side']} {len(ext.get(pose['side'], ()))}")
-        return np.concatenate([X[ix[nm]], Xe[ix[nm]]])
+        return np.concatenate([X[i], Xe[i]])
 
     # ------------------------------------------------- silhouette and sheets --
     def a_on_B(self, pose):

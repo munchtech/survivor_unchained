@@ -1413,13 +1413,22 @@ def cmd_target(h, poses):
         if miss:
             sys.exit(f"not in poses.npz: {miss}")
         sel = [names.index(p) for p in poses]
-    X, Xe, infos, shut, t0 = [], [], [], [], time.time()
+    X, Xe, Xc, Xr, infos, shut, t0 = [], [], [], [], [], [], time.time()
+    # the whole composed surface, on the union of every region's points: what a picture of a pose shows. ids_c: md ids
+    # (sorted); raw_c: the regions' source vertices the model has no point for (a derived region is built on the whole
+    # source mesh, the model on its body part), stored by vertex (Xr)
+    raw = np.unique(np.concatenate([r.spread[0] for r in h.regions.values()]))
+    ids_c, raw_c = np.unique(h.md.src[raw[raw < len(h.md.src)]]), raw[raw >= len(h.md.src)]
     lo = {s: g["gate"][0] for s, g in getattr(h.md, "grown", {}).items()}
     for i in sel:
         G, side = z["G"][i], str(z["side"][i])
-        x, info = h.target(G, side)
+        Vp = h.rt.published(h.bd, G)
+        x, info = h.target(G, side, Vp)
         X.append(x)
         Xe.append(h.last["Xe"])
+        C = h.compose(G, Vp)                                             # the parts are this pose's (Her.part): no second carry
+        Xc.append(C[h.md.first[ids_c]])
+        Xr.append(C[raw_c])
         for s in sorted(lo):                                             # a shut gate: the side's gated part is published
             el = info["elev"] if s == side else h.md.elevation(G, s)     #   (each side of the pose, whatever the other does)
             if el < lo[s]:
@@ -1447,10 +1456,10 @@ def cmd_target(h, poses):
     print(f"gate shut (a side's elevation under {min(lo.values(), default=0.0):g} deg): {len(shut)} (pose, side), gated part off published by the"
           f" regions under the gate max {w[0]:.3f} mm at {w[1]} (limit 1); {len(sel)} poses in {time.time() - t0:.0f} s"
           f" ({(time.time() - t0) / max(len(sel), 1):.2f} s a pose)")
-    np.savez_compressed(out, X=np.array(X), Xe=np.array(Xe), name=z["name"][sel], side=z["side"][sel], kind=z["kind"][sel],
+    np.savez_compressed(out, X=np.array(X), Xe=np.array(Xe), Xc=np.array(Xc), ids_c=ids_c, Xr=np.array(Xr), raw_c=raw_c, name=z["name"][sel], side=z["side"][sel], kind=z["kind"][sel],
                         info=json.dumps(infos), params=json.dumps(params), **pocket)
     table([names[i] for i in sel], [str(z["kind"][i]) for i in sel], infos)
-    print(f"wrote {out}  X {np.array(X).shape}")
+    print(f"wrote {out}  X {np.array(X).shape}  Xc {np.array(Xc).shape} (every region's points, composed) + {len(raw_c)} vertices outside the model (Xr)")
 
 
 def main():
