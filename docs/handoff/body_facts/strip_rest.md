@@ -54,18 +54,8 @@ So: A itself is at 3.2-4.3 there; the lay's short rest edges add 0.1-0.6 on 6 (l
 0.75..1.35 would bring the worst to about A's 3.5-3.7 (l) and 4.3 (r), not under the fill's 2.7-3.3.
 
 ## Fill | B' on the OLD lay (unchanged; 9 named poses; band edges against each one's own rest)
-| pose | fill edge, off A mm, turned | B' edge, off A mm, turned |
-|---|---|---|
-| x:abd120:l | 0.69..2.41, 9.3, 0 | 0.67..3.00, 1.4, 2 |
-| x:abd150:l | 0.43..2.69, 25.5, 0 | 0.55..3.80, 1.4, 1 |
-| x:abd170:l | 0.39..2.83, 31.2, 2 | 0.56..3.71, 1.4, 1 |
-| x:flex170:l | 0.25..2.75, 33.6, 3 | 0.58..3.73, 1.4, 1 |
-| p4:iron_vow@72:l | 0.22..2.33, 20.6, 12 | 0.19..2.26, 1.4, 3 |
-| p4:heroic_leap@7:r | 0.33..3.17, 16.9, 12 | 0.43..2.68, 1.3, 1 |
-| p4:heroic_leap@9:r | 0.27..3.60, 17.7, 21 | 0.39..3.26, 1.3, 4 |
-| p4:heroic_leap@19:r | 0.56..3.32, 33.5, 2 | 0.60..4.50, 1.3, 0 |
-| p4:heroic_leap@20:r | 0.51..3.33, 33.5, 12 | 0.57..4.41, 1.3, 0 |
-A's-own for the other 6 poses, and pass counts over all 9, are not computed (`cmd_target` does not print them).
+The 9-row table is in git (this file at 2a2572f14) and still holds: fill worst edge 2.33..3.60, off A 9-34 mm,
+turned 0-21; B' worst edge 2.26..4.50, off A 1.3-1.4 mm, turned 0-4. A's-own for the other 6 poses, and pass counts over all 9, are not computed (`cmd_target` does not print them).
 
 ## Is B' better than the fill on every count? NO
 B' wins off-A (33 mm -> 1.4 mm), turned triangles, and follows A (mean 1.44-1.49 against A's 1.43-1.47). It LOSES
