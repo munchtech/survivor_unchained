@@ -271,7 +271,9 @@ class Ctx:
             self._regtri = {}
             for k in "lr":
                 loc = self.md.S[k]["loc"][self.md.src]
-                self._regtri[k] = ((loc >= 0) & (loc < len(self.md.S[k]["ids"])))[self.B.T].any(1)
+                g = np.zeros(len(self.B.V0), bool)          # the full layer has points past the body's (md.src)
+                g[:len(loc)] = (loc >= 0) & (loc < len(self.md.S[k]["ids"]))
+                self._regtri[k] = g[self.B.T].any(1)
         return self._regtri[s]
 
     def silhouette(self, kind, pose, views):
@@ -374,7 +376,7 @@ def outline_signed(mp, ma):
 
 def sil_stats(x):
     """[p05, p50, p95, min, max] or None."""
-    return [round(float(v), 2) for v in (*np.percentile(x, [5, 50, 95]), x.min(), x.max())] if len(x) else None
+    return [round(float(v), 2) + 0.0 for v in (*np.percentile(x, [5, 50, 95]), x.min(), x.max())] if len(x) else None
 
 
 def clay_rgb(V, T, view):
