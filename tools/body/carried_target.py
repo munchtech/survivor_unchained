@@ -45,6 +45,7 @@ the bridge edges, as local indices into each side's region points); a subset wri
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import re
 import sys
@@ -778,7 +779,11 @@ HER = {
                                              # `ratio` x rest are filled from their neighbours `rows` around, in step
                                              # with the stage (A's own crease on the breast's rows 4-7, chest_fold.md 6)
                                              "relax": {"ratio": 2.5, "rows": 2}},
-                                   "stiff": "upperarm_{s}", "rigid": 0.999, "gated_part": "breast", "cache": "support.npz"}},
+                                   "stiff": "upperarm_{s}", "rigid": 0.999, "gated_part": "breast", "cache": "support.npz",
+                                   # map (Her.part; body_facts/strip_rest.md): the armpit band's lay (out/shoulder/`file`,
+                                   # strip_rest.HerStrip) blended into the carried fill on the band's points by the arm's
+                                   # elevation, smoothstep over `elev` deg (strip_rest.map_targets). No key: the fill alone
+                                   "map": {"file": "strip_rest.npz", "elev": [45.0, 90.0]}}},
         "neck": {"provider": "derived", "bones": ["neck_01", "neck_02", "Head"], "ref": {"neck_01": "neck_02", "Head": "Head"},
                  "root": "neck_01", "far": ["Head"], "rows": 4, "eps": 0.02, "rigid": 0.999},
     },
@@ -802,6 +807,8 @@ HER = {
     # depth mean within depth_mm of A's
     "t18_poses": ["x:add0:l", "cast_bolt@0:l", "cast_bolt@3:r", "crossbow_shoot@10:r", "x:abd90_int60:l", "Jog_Fwd@11:r"],
     "t18_stored": "target_a_l18.npz",
+    "t20_n": 8,                          # T20: poses sampled with both arms under the armpit map's lo (support "map")
+    "t21_poses": ["x:abd150:l", "p4:heroic_leap@9:r", "crossbow_shoot@10:r"],   # T21: the map through two paths
     "t19": {"poses": ["x:abd150:l", "x:abd170:l", "x:flex170:l"], "ref": "fold_probe/dump_t0.npz", "k": 3, "top": 12,
             "valley_deg": 1.0, "depth_mm": 0.2},
     "t16_poses": ["Jog_Fwd@11:r"],       # + every dev / T14 / T17 pose; each side under the gate
@@ -883,6 +890,15 @@ class Her:
         for key, rc in cfg["regions"].items():              # the explicit regions' rigid border, once every region stands
             if rc["provider"] == "explicit" and rc.get("support"):
                 self.grow(key, rc["support"])
+        self.map = {}                                       # region name -> its HerStrip (the lay loaded on this Her)
+        for key, rc in cfg["regions"].items():
+            mp = (rc.get("support") or {}).get("map") if rc["provider"] == "explicit" else None
+            if mp:
+                import strip_rest as sr
+                self._sr = sr
+                hs = sr.HerStrip({**sr.HER, "out": mp["file"], "map_elev": tuple(mp["elev"])}, h=self).load()
+                self.map.update({key.replace("{s}", s): hs for s in (sides if "{s}" in key else [""])})
+        self.map_on = bool(self.map)
         own ={n: set(r.spread[0].tolist()) for n, r in self.regions.items()}
         self.touch = {n: [m for m in self.regions if m != n and own[n] & own[m]] for n in self.regions}
         self.girth0 = {s: md.girth(md.S[s], md.V0) for s in sides}
@@ -1030,11 +1046,39 @@ class Her:
         Vr = register(Va, [anchor_align(Gr[ja], p.rest[ja], Ab.G0[ra], Ga[ra]) for ja, ra in rg.anchors], rg.field)
         cf, cr = rg.carrier.carry(Vr, both=True)
         cf = self.relaxed(rg, G, cf, Vr)
+        cf, mw, mN = self.mapped(rg, G, cf, Vr)
         ibm = p.skel.ibm
         M, sig, u = relative_place(G @ ibm, Gr @ ibm, bd.J[rg.pts], bd.W[rg.pts], cfg["sig_lo"], cfg["sig_hi"])
         self._parts[name] = {"M": M, "cf": cf, "cr": cr, "Pg": self.rt.published(bd, Gr)[rg.pts], "Va": Vr, "Va_own": Va,
-                             "Gr": Gr, "sig": float(sig.min()), "guard": int((u < 1).sum()), "mem": mem}
+                             "Gr": Gr, "sig": float(sig.min()), "guard": int((u < 1).sum()), "mem": mem, "map_w": mw, "map_N": mN}
         return self._parts[name]
+
+    def mapped(self, rg, G, cf, Vr):
+        """(cf, w, N): the filled carry cf [region points, 3] with the armpit map (config support "map") on the band's
+        points of the list: strip_rest.map_targets on the registered reference Vr, w = strip_rest.share of the arm's
+        elevation (strip_rest.elevation of the whole pose G). N: the list's blended normals in the reference's frame
+        (None when w is 0). w = 0, no map, or map_on False: cf as it was, bit for bit."""
+        hs = self.map.get(rg.name) if self.map_on else None
+        if hs is None:
+            return cf, 0.0, None
+        sr, s = self._sr, rg.side
+        w = sr.share(sr.elevation(hs, G, s), *hs.cfg["map_elev"])
+        if w <= 0:
+            return cf, 0.0, None
+        nl = getattr(rg, "nlist", len(rg.pts))
+        _, _, Xm, Nm = sr.map_targets(hs, Vr, s, w, Xf=cf[:nl])
+        cf = cf.copy()
+        cf[:nl] = Xm
+        return cf, w, Nm
+
+    @contextlib.contextmanager
+    def map_off(self):
+        """The fill alone (the composed target as without the map key) inside the block; the parts' cache is cleared."""
+        on, self.map_on, self._pose = self.map_on, False, None
+        try:
+            yield
+        finally:
+            self.map_on, self._pose = on, None
 
     def relaxed(self, rg, G, cf, Vr):
         """The filled carry cf [region points, 3] with each gate stage's relax rule (config gate2 "relax"): on the plain
@@ -1231,8 +1275,13 @@ def cmd_test(h):
         ids = md.S[s]["ids"]
         car = h.car[s]
         ei, ej = h.edges[s]
-        X, info = h.target(z["G"][i], s)
-        MC, MR, _ = h.carried(z["G"][i], s)
+        Xm_, im_ = h.target(z["G"][i], s)                              # T5 judges the pocket fill: the map off (T20 / T21's)
+        with h.map_off():
+            X, info = h.target(z["G"][i], s)
+            MC, MR, _ = h.carried(z["G"][i], s)
+        if h.map:
+            print(f"     watch {nm} with the armpit map: filled max {im_['edge_car_max']:.2f}, edge {im_['edge_min']:.2f}..{im_['edge_max']:.2f}"
+                  f" (map off {info['edge_car_max']:.2f}, {info['edge_min']:.2f}..{info['edge_max']:.2f}; against B's old rest)")
         inp = np.zeros(len(ids), bool)
         if car.pocket is not None:
             inp[car.pocket.p] = True
@@ -1469,7 +1518,8 @@ def cmd_test(h):
     for nm in cfg["t18_poses"]:
         G = z["G"][names.index(nm)]
         el = max(md.elevation(G, s) for s in sorted(md.grown))
-        d = float(np.abs(h.compose(G, pub(bd, G))[md.first[ids_c]][ia] - old["Xc"][io[nm]][ib]).max())
+        with h.map_off():                # the stage alone: the armpit map (45..90 deg) is T20 / T21's
+            d = float(np.abs(h.compose(G, pub(bd, G))[md.first[ids_c]][ia] - old["Xc"][io[nm]][ib]).max())
         line(f"T18 {nm}", d == 0.0, f"elevation {el:.1f} deg: composed target - stored ({cfg['t18_stored']}) max {d * 1000:.3g} mm on"
              f" {len(common)} shared points (limit exactly 0)")
     # T19: the fold at A's (fold_probe's measure on the reference dump's fold set)
@@ -1486,6 +1536,59 @@ def cmd_test(h):
         line(f"T19 {nm}", n_[3] <= a_[3] + c19["valley_deg"] and abs(n_[0] - a_[0]) <= c19["depth_mm"],
              f"fold ({int(c.cl.sum())} points): valley max {n_[3]:.1f} deg (A {a_[3]:.1f} + {c19['valley_deg']:g}); depth mean {n_[0]:.2f} mm"
              f" (A {a_[0]:.2f} +- {c19['depth_mm']:g})")
+    # T20 / T21: the armpit map (config support "map", Her.mapped). T20: with both arms at or under the map's lo, the
+    # composed target is the fill alone, bit for bit (sampled over poses.npz). T21: on cfg t21_poses the composed band
+    # is strip_rest's map (map_targets) through a second path (its own HerStrip and Her, the carry not handed over),
+    # placed as compose places it (within 1e-6 m, the normals too); every other vertex bit for bit against the map off
+    if h.map:
+        sr, hs = h._sr, next(iter(h.map.values()))
+        lo = hs.cfg["map_elev"][0]
+        ev = np.array([[sr.elevation(hs, z["G"][i], s_) for s_ in cfg["sides"]] for i in range(len(names))])
+        low = np.nonzero(ev.max(1) <= lo)[0]
+        pick = low[np.linspace(0, len(low) - 1, min(cfg["t20_n"], len(low))).astype(int)] if len(low) else low
+        d20 = 0.0
+        for i in pick:
+            G = z["G"][i]
+            Vp = pub(bd, G)
+            X1 = h.compose(G, Vp)
+            with h.map_off():
+                X0 = h.compose(G, Vp)
+            d20 = max(d20, float(np.abs(X1 - X0).max()))
+        line("T20", len(pick) > 0 and d20 == 0.0, f"{len(low)} of {len(names)} poses have both arms at or under {lo:g} deg; on {len(pick)}"
+             f" of them ({', '.join(names[i] for i in pick)}) composed with the map - without max {d20!r} m (limit exactly 0)")
+        hs2 = sr.HerStrip({**hs.cfg}).load()                 # the second path: strip_rest's own Her and lay
+        for nm in cfg["t21_poses"]:
+            i = names.index(nm)
+            G, s_ = z["G"][i], str(z["side"][i])
+            rn = cfg["out_region"].replace("{s}", s_)
+            rg = h.regions[rn]
+            Vp = pub(bd, G)
+            X1 = h.compose(G, Vp)
+            P1 = h.part(G, rn)
+            with h.map_off():
+                X0 = h.compose(G, Vp)
+                P0 = dict(h.part(G, rn))
+            w2 = sr.share(sr.elevation(hs2, G, s_), *hs2.cfg["map_elev"])
+            _, _, Xm, Nm = sr.map_targets(hs2, P0["Va"], s_, w2)
+            b2 = hs2.loc[s_]
+            cf = P0["cf"].copy()
+            cf[b2] = Xm[b2]
+            parts = {n: (*r.spread, h.delta(G, n) if n != rn else
+                         r.share_at(G)[:, None] * np.einsum("nij,nj->ni", P0["M"], cf - P0["Pg"])) for n, r in h.regions.items()}
+            Xe = compose(Vp, parts)
+            band = np.zeros(len(X1), bool)                   # every side's band the map moves in this pose (w > 0)
+            for n, hm in h.map.items():
+                if n == rn or h.part(G, n)["map_w"] > 0:
+                    raw, loc = h.regions[n].spread
+                    band[raw[np.isin(loc, hm.loc[h.regions[n].side])]] = True
+            e_b = float(np.abs(X1[band] - Xe[band]).max())
+            e_n = float(np.abs(P1["map_N"][hs.loc[s_]] - Nm[b2]).max()) if P1["map_N"] is not None else np.inf
+            e_o = float(np.abs(X1[~band] - X0[~band]).max())
+            moved = float(np.linalg.norm(X1[band] - X0[band], axis=1).max())
+            line(f"T21 {nm}", e_b <= 1e-6 and e_n <= 1e-6 and e_o == 0.0 and abs(P1["map_w"] - w2) <= 1e-12,
+                 f"map w {P1['map_w']:.3f} (second path {w2:.3f}); band ({int(band.sum())} vertices, moved up to {moved * 1000:.2f} mm):"
+                 f" composed - strip_rest's map placed max {e_b:.2e} m, normals {e_n:.2e} (limit 1e-6); outside the band - map off"
+                 f" max {e_o!r} m (limit exactly 0)")
     print("ALL PASS" if ok_all else "SOME FAILED")
     return ok_all
 

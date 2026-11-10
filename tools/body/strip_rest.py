@@ -827,8 +827,8 @@ HER = {
 
 
 class HerStrip:
-    def __init__(self, cfg=HER):
-        self.cfg, self.h = cfg, ct.Her(verbose=False)
+    def __init__(self, cfg=HER, h=None):
+        self.cfg, self.h = cfg, (ct.Her(verbose=False) if h is None else h)    # h: an existing Her (Her's own map loader)
         self.md, self.bd, self.Ab = self.h.md, self.h.bd, self.h.Ab
         self.pts = {s: self.md.first[self.md.S[s]["ids"]] for s in "lr"}
         self.E = {s: np.stack(self.h.edges[s], 1) for s in "lr"}
@@ -1033,6 +1033,20 @@ def elevation(hs, G, s):
     return float(np.degrees(np.arccos(np.clip(-(d @ np.asarray(bd.frame.up)) / np.linalg.norm(d), -1, 1))))
 
 
+def map_targets(hs, Va, s, wk, Xf=None):
+    """(Xf, Nf, Xm, Nm) [side s's list points, 3] on the posed reference Va: today's fill (Xf: given, or carried here)
+    and the map, the band's points (hs.loc[s]) blended by wk toward the re-laid band carried on Va, normals alike.
+    cmd_map's targets and Her (config support "map": the composed target) both run this."""
+    h, N0, b = hs.h, hs.h.N0[hs.pts[s]], hs.loc[s]
+    Xf = h.car[s].carry(Va) if Xf is None else Xf
+    Nf = np.einsum("nij,nj->ni", h.car[s].rotations(Va), N0)
+    Xb, Nb = hs.car1[s].carry(Va), np.einsum("nij,nj->ni", hs.car1[s].rotations(Va), hs.N1[hs.pts[s]])
+    Xm, Nm = Xf.copy(), Nf.copy()
+    Xm[b] = Xf[b] + wk * (Xb[b] - Xf[b])
+    Nm[b] = ct._unit(Nf[b] + wk * (Nb[b] - Nf[b]))
+    return Xf, Nf, Xm, Nm
+
+
 def cmd_map(hs, poses):
     """target --map: the lay as a CARRY MAP only. B's rest stays as it is; per pose the band's target is
     (1 - w) * today's fill + w * the re-laid band carried on A's posed surface, w = smoothstep of the arm's elevation
@@ -1055,13 +1069,7 @@ def cmd_map(hs, poses):
 
     def targets(G, s, wk):
         Va, _ = h.pose_ref(G)
-        N0, b = h.N0[hs.pts[s]], hs.loc[s]
-        Xf, Nf = h.car[s].carry(Va), np.einsum("nij,nj->ni", h.car[s].rotations(Va), N0)
-        Xb, Nb = hs.car1[s].carry(Va), np.einsum("nij,nj->ni", hs.car1[s].rotations(Va), hs.N1[hs.pts[s]])
-        Xm, Nm = Xf.copy(), Nf.copy()
-        Xm[b] = Xf[b] + wk * (Xb[b] - Xf[b])
-        Nm[b] = ct._unit(Nf[b] + wk * (Nb[b] - Nf[b]))
-        return Va, Xf, Nf, Xm, Nm
+        return (Va, *map_targets(hs, Va, s, wk))
 
     def stats(X, N, s, Va):
         P, N0, e = bd.V0[hs.pts[s]], h.N0[hs.pts[s]], E[s]
