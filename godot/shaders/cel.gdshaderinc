@@ -531,6 +531,9 @@ vec3 cel_hero_local(vec3 c_tone, vec3 c_alb) {
 // never lifts a material past it; one already past it is left as it is). cel_hero_chroma_px (values 33-34) = the
 // figure's size on screen, in px per metre at 1080p, under which the gain is whole and over which it is none (a close
 // shot keeps her data colors). A row without them (all zero): no gain, the painted tone untouched.
+// (round 2) THE COLOR'S LEVEL: a light tone cannot hold a color on the screen (her hair's lit tone clipped to the floor's
+// light orange, whatever the gain), so a colored material is painted no lighter than cel_hero_chroma_px.z (value 35,
+// Oklab L of the emission; 0 = off), at the same C / L, by the floor's own weight: skin and steel keep the full light.
 global uniform vec4 cel_hero_chroma;
 global uniform vec4 cel_hero_chroma_px;
 float cel_hero_near(float c_depth, mat4 c_proj) {
@@ -539,15 +542,20 @@ float cel_hero_near(float c_depth, mat4 c_proj) {
 	return 1.0 - smoothstep(cel_hero_chroma_px.x, max(cel_hero_chroma_px.y, cel_hero_chroma_px.x + 0.001), c_ppm);
 }
 vec3 cel_hero_gain(vec3 c_rgb, float c_gain, float c_k) {
-	if (c_k <= 0.0 || c_gain <= 0.0 || c_gain == 1.0) return c_rgb;
+	if (c_k <= 0.0 || c_gain <= 0.0) return c_rgb;
 	vec3 c_in = max(c_rgb, vec3(0.0));
 	vec3 c_lms = pow(mat3(vec3(0.4122214708, 0.2119034982, 0.0883024619), vec3(0.5363325363, 0.6806995451, 0.2817188376), vec3(0.0514459929, 0.1073969566, 0.6299787005)) * c_in, vec3(1.0 / 3.0));
 	vec3 c_ok = mat3(vec3(0.2104542553, 1.9779984951, 0.0259040371), vec3(0.7936177850, -2.4285922050, 0.7827717662), vec3(-0.0040720468, 0.4505937099, -0.8086757660)) * c_lms;
 	float c_s = length(c_ok.yz) / max(c_ok.x, 0.0001);
-	float c_to = c_s * mix(1.0, c_gain, c_k * smoothstep(cel_hero_chroma.z, 2.0 * cel_hero_chroma.z, c_s));
+	float c_cw = c_k * smoothstep(cel_hero_chroma.z, 2.0 * cel_hero_chroma.z, c_s);
+	float c_to = c_s * mix(1.0, c_gain, c_cw);
+	float c_lt = cel_hero_chroma_px.z > 0.0 ? mix(c_ok.x, min(c_ok.x, cel_hero_chroma_px.z), c_cw) : c_ok.x;
 	if (c_gain > 1.0) c_to = min(c_to, max(c_s, cel_hero_chroma.w));
-	if (c_s < 0.0001 || c_to == c_s) return c_rgb;
-	c_ok.yz *= c_to / c_s;
+	if (c_s < 0.0001 || (c_to == c_s && c_lt == c_ok.x)) return c_rgb;
+	float c_lf = c_lt / max(c_ok.x, 0.0001);
+	c_ok.yz *= (c_to / c_s) * c_lf;
+	c_ok.x = c_lt;
+	c_in *= c_lf * c_lf * c_lf;
 	vec3 c_l = mat3(vec3(1.0, 1.0, 1.0), vec3(0.3963377774, -0.1055613458, -0.0894841775), vec3(0.2158037573, -0.0638541728, -1.2914855480)) * c_ok;
 	vec3 c_out = mat3(vec3(4.0767416621, -1.2684380046, -0.0041960863), vec3(-3.3077115913, 2.6097574011, -0.7034186147), vec3(0.2309699292, -0.3413193965, 1.7076147010)) * (c_l * c_l * c_l);
 	// the gamut's edge: no channel under zero (the gain stops where the color is pure, at the same hue)

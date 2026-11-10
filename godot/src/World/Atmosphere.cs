@@ -658,7 +658,7 @@ public partial class Atmosphere : Node3D
         RenderingServer.GlobalShaderParameterSet("cel_hero_own", hm != null ? new Vector4((float)hm[25], (float)hm[26], hm.Length >= 29 ? (float)hm[27] : 0, hm.Length >= 29 ? (float)hm[28] : 0) : Vector4.Zero);   // (round 2: value 27 = the least lean the side test normalizes down to, 28 = a held piece's light as a share of hers)
         var hc = SurvivorUnchained.Look.Rigs.HeroChroma(hm);   // (L1 lead 21, CHROMA) values 29-34: the hero chroma rule (cel_hero_gain); zeros without them
         RenderingServer.GlobalShaderParameterSet("cel_hero_chroma", new Vector4((float)hc[0], (float)hc[1], (float)hc[2], (float)hc[3]));
-        RenderingServer.GlobalShaderParameterSet("cel_hero_chroma_px", new Vector4((float)hc[4], (float)hc[5], 0, 0));
+        RenderingServer.GlobalShaderParameterSet("cel_hero_chroma_px", new Vector4((float)hc[4], (float)hc[5], (float)hc[6], 0));
     }
     /// <summary>(L1 lead 20, HER5) Her LINE (hero_line.gdshader; CelLib.LineStep hangs it on her meshes): the row's value 8 = its
     /// width in px at 1080p, value 9 = its level against the anchor's tone. On as cel_hero is on; else 0 and nothing is drawn.</summary>
@@ -756,6 +756,18 @@ public partial class Atmosphere : Node3D
     static double[]? poolRampOf;
     static bool poolRampSmooth;
     static (ImageTexture Tex, float Reach, float Core)? poolRamp;
+
+    /// <summary>(L1 lead 21 QUIT) The static textures (the pool ramp, the floor's turn table, the stand palette, the grade
+    /// LUTs) let go at the quit, in QuitPath's last step before the tree quits: as statics they lived until the .NET
+    /// shutdown, after the tree. What still draws with one holds its own reference; a later ask builds it again.</summary>
+    internal static void ReleaseStatics()
+    {
+        var all = new List<Texture?> { poolRamp?.Tex, floorTurn?.Tex, standPal };
+        all.AddRange(luts.Values);
+        poolRamp = null; poolRampOf = null; floorTurn = null; floorTurnOf = null; standPal = null; luts.Clear();
+        foreach (var t in all)
+            if (t != null && IsInstanceValid(t)) t.Dispose();
+    }
     static (ImageTexture Tex, float Reach, float Core) BuildPoolRamp(double[] ep, bool smooth)
     {
         int n = (ep.Length - 2) / 5;
