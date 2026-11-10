@@ -63,7 +63,7 @@ public partial class DawnCardView : Control
         var goRow = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore, Alignment = BoxContainer.AlignmentMode.Center };
         goRow.AddThemeConstantOverride("separation", 9);
         goRow.AddChild(new GoChip { SizeFlagsVertical = SizeFlags.ShrinkCenter });
-        goRow.AddChild(Words(c.Go, Style.Text, 19, Ink, HorizontalAlignment.Center));   // (judge 1: the card's serif, 19 px, in the darker ink)
+        goRow.AddChild(Words("Go on", Style.Text, 19, Ink, HorizontalAlignment.Center));   // (judge 1: the card's serif, 19 px, in the darker ink)
         more = goRow;
         more.Modulate = Colors.Transparent;
         page.AddChild(more);
@@ -142,7 +142,7 @@ public partial class DawnCardView : Control
         var s = card.GetCombinedMinimumSize();
         card.Size = s;
         card.Position = new Vector2((1920 - s.X) / 2, (1080 - s.Y) / 2 + 10 * (1 - k));
-        // "Click to go on" comes up as the card begins to listen.
+        // "Go on" (chip and verb) comes up as the card begins to listen.
         more.Modulate = Colors.White with { A = (float)Math.Clamp((t - Deaf) / 0.3, 0, 1) };
     }
 
