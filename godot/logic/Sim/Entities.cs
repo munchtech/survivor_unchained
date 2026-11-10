@@ -206,6 +206,9 @@ public sealed class Enemy : Pooled
     public long HandStoneKey;
     /// <summary>Lamps v2 (Sim/BoardRules.cs): when blue.poachers_mercy last doubled its bleed.</summary>
     public double PoachedAt = double.NegativeInfinity;
+    /// <summary>How long that doubling shuts the next one out: 1 s, times the weight of the hit that doubled (a chained
+    /// cut's share of its blow: the gate runs at the cut's pace, as an icd a cut starts).</summary>
+    public double PoachedFor = 1;
     /// <summary>Quickened by its own kind's aura (pace and blows), and warded (less taken), for a while.</summary>
     public double HasteT, Haste = 1, WardT, Ward;
     /// <summary>The verbs' own clocks, what it is casting and where, the runs left in a

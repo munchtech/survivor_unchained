@@ -125,7 +125,7 @@ public sealed class TailWeightTests
     {
         // she strikes true half the time, so the count is worth reading; the rite's bleed is what the lamp doubles
         const double crit = 0.5;
-        const int seeds = 10;
+        const int seeds = 40;
         int Doubled(bool chained, int seed, out int cuts)
         {
             var r = new Rig("sunder", chained, seed, crit).Lit(BleedRite(), Rule("blue.poachers_mercy"));
@@ -135,19 +135,33 @@ public sealed class TailWeightTests
             cuts = r.Cuts;
             return n;
         }
-        int a = 0, c = 0, blows = 0, cuts = 0;
+        var a = new double[seeds];
+        var c = new double[seeds];
+        int blows = 0, cuts = 0;
         for (int s = 1; s <= seeds; s++)
         {
-            a += Doubled(false, s, out int nb); blows += nb;
-            c += Doubled(true, s, out int nc); cuts += nc;
+            a[s - 1] = Doubled(false, s, out int nb); blows += nb;
+            c[s - 1] = Doubled(true, s, out int nc); cuts += nc;
         }
-        // a count of rare-ish yes/no draws: its spread is no wider than a Poisson's
-        double se = Math.Sqrt(a + c), off = (c - a) / se;
-        output.WriteLine($"sunder poachers_mercy doublings over {seeds} x 63.9 s, true strikes at {crit}: chained {c} ({cuts} cuts), unchained {a} ({blows} blows), ratio {(double)c / a:0.000}, {off:+0.00;-0.00} SE");
-        Assert.True(a > 100);
-        // RED: measured chained 175 / unchained 219 = 0.799 (-2.22 SE at 10 seeds: inside 3 SE only for want of seeds).
-        // The thinning is right per cut; the lamp's once-a-second gate then eats the cut after each doubling (cuts are
-        // 0.70 s apart, blows 1.6 s: the gate never binds unchained). Not tuned here: the lead's call.
+        // the spread is measured, not assumed: each record's mean a seed with its standard error, and the standard
+        // error of the difference from the per-seed differences (seed s chained less seed s unchained)
+        static (double Mean, double Se) Of(double[] v)
+        {
+            double m = v.Average();
+            return (m, Math.Sqrt(v.Sum(x => (x - m) * (x - m)) / (v.Length - 1) / v.Length));
+        }
+        var (ma, sa) = Of(a);
+        var (mc, sc) = Of(c);
+        var (md, sd) = Of(c.Zip(a, (x, y) => x - y).ToArray());
+        double off = md / sd;
+        output.WriteLine($"sunder poachers_mercy doublings over {seeds} x 63.9 s, true strikes at {crit}: chained {c.Sum():0} ({cuts} cuts; a seed {mc:0.000}, se {sc:0.000}), "
+            + $"unchained {a.Sum():0} ({blows} blows; a seed {ma:0.000}, se {sa:0.000}), ratio {mc / ma:0.0000}, difference a seed {md:+0.000;-0.000} (se {sd:0.000}): {off:+0.00;-0.00} SE");
+        Assert.True(a.Sum() > 400);
+        // enough seeds that the line can see the old fault: three standard errors are under 15% of the blows' count
+        Assert.True(3 * sd <= 0.15 * ma, $"too few seeds: 3 SE {3 * sd:0.000} against a mean of {ma:0.000}");
+        // (before the gate took the weight: chained 175 / unchained 219 = 0.799 at 10 seeds. The thinning was right per
+        // cut, but the once-a-second gate ate the cut after each doubling: cuts are 0.70 s apart, blows 1.6 s. A cut's
+        // gate now runs 1 s x its weight, 0.4375 s, so it passes the next cut as 1 s passes the next blow.)
         Assert.InRange(off, -3, 3);
     }
 

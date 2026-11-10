@@ -298,10 +298,12 @@ public sealed partial class Battle
         }
         // blue.poachers_mercy: a blow that strikes true on a bleeding thing doubles its bleed (once a second a thing).
         // (M3 MR 3: a true strike is rolled a cut, so on a chain it doubles as a blow's share; no draw at weight 1.
-        // The draw comes last: a cut that could not double takes none.)
-        if (crit && bleed != null && bleed.T > 0 && l.Has("blue.poachers_mercy") && Time - e.PoachedAt >= 1 && (cw == 1 || Rng.Next() < cw))
+        // The draw comes last: a cut that could not double takes none. The gate a cut sets runs 1 s x its weight, as an
+        // icd a cut starts does (docs/balance/chain_weight.md): cuts 0.70 s apart pass it as blows 1.6 s apart pass 1 s.)
+        if (crit && bleed != null && bleed.T > 0 && l.Has("blue.poachers_mercy") && Time - e.PoachedAt >= e.PoachedFor && (cw == 1 || Rng.Next() < cw))
         {
             e.PoachedAt = Time;
+            e.PoachedFor = 1 * cw;
             bleed.Power *= 1 + (l.Full("blue.poachers_mercy", "mul", 2) - 1) * GiftSize;
         }
     }
