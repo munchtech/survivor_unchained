@@ -130,12 +130,13 @@ public static class WickBook
     public static string[] Lit(Battle b, string skill, int rank) =>
         b.WickPaths.TryGetValue(skill, out var p) ? p.Take(System.Math.Max(0, rank)).ToArray() : System.Array.Empty<string>();
 
-    /// <summary>A skill as a fight takes it up at a rank: its wick lit to the rank (Battle.Relight's rule, on Path's lamps).</summary>
-    public static WeaponInst Weapon(CharacterData ch, string skill, int rank)
+    /// <summary>A skill as a fight takes it up at a rank: its wick lit to the rank (Battle.Relight's rule, on Path's lamps;
+    /// by day on DayPath, so a skill holding points lights only its burning ones).</summary>
+    public static WeaponInst Weapon(CharacterData ch, string skill, int rank, bool night = false)
     {
         var w = new WeaponInst(skill, rank, 0);
         if (Lights == Mode.None || Wicks.Of(skill) == null) return w;
-        var path = Path(ch, skill);
+        var path = night ? Path(ch, skill) : DayPath(ch, skill);
         var ids = path.Take(System.Math.Min(rank, path.Length)).ToArray();
         w.Wick = Turns.Build(w, ids.Select(id => Wicks.Lamp(skill, id)).Where(l => l != null).Select(l => l!.Value), ids);
         return w;
@@ -146,7 +147,7 @@ public static class WickBook
     public static int RankIn(CharacterData ch, string skill, bool night)
     {
         foreach (var (id, rank) in Character.DaySkills(ch, gearOnly: true)) if (id == skill) return rank;
-        return night ? SkillBook.NightRank(ch) : SkillBook.Rank(ch);
+        return night ? SkillBook.NightRank(ch) : DayRank(ch, skill);
     }
 
     /// <summary>§14.8: the wick's whole sum for one skill's damage, the number its blows start from in the fight
@@ -157,7 +158,7 @@ public static class WickBook
     {
         if (!Weapons.All.TryGetValue(skill, out var def) || Wicks.Of(skill) == null || (def.Base.Damage ?? 0) <= 0) return null;
         int rank = RankIn(ch, skill, night);
-        var w = Weapon(ch, skill, rank);
+        var w = Weapon(ch, skill, rank, night);
         var inv = System.Globalization.CultureInfo.InvariantCulture;
         var parts = new List<(string What, string Value)> { ("base", def.Base.Damage!.Value.ToString("0.#", inv)) };
         double growth = 1 + def.Growth * (rank - 1);
@@ -178,7 +179,113 @@ public static class WickBook
         return view;
     }
 
-    /// <summary>Every wick's path for a fight (BattleSetup.Wicks), or null when the fights read none.</summary>
-    public static Dictionary<string, string[]>? Paths(CharacterData ch) =>
-        Lights == Mode.None ? null : Wicks.Skills.ToDictionary(id => id, id => Path(ch, id));
+    /// <summary>Every wick's path for a fight (BattleSetup.Wicks), or null when the fights read none. By day a skill
+    /// holding points gets only its burning lamps (DayPath: Battle.Relight lights min(rank, path), so exactly Burning);
+    /// a night (an arena, an ember's) takes the whole path, for the ember ranks it (held points are a day rule).</summary>
+    public static Dictionary<string, string[]>? Paths(CharacterData ch, bool night = false) =>
+        Lights == Mode.None ? null : Wicks.Skills.ToDictionary(id => id, id => night ? Path(ch, id) : DayPath(ch, id));
+
+    /* ------------------------------------------------ held points (M7a) --
+     * docs/design/ARPG.md 3.5: a skill's points come at SkillBook.PointsAt (one at the first level, then one every
+     * second level). A point earned while she carries the skill is HELD until she lights it (the level-up card's
+     * offer, Light my way, a lamp-post); with LampState.LightMyWay on nothing is held. Held 0 is today's rule exactly:
+     * every point burns, rank = SkillBook.Rank. Held > 0: the burning points are Rank - Held; the fight takes rank
+     * max(1, Burning) (rank 0 maps onto the weapon's rank 1, skill_lamps.json rules.rank.zero) and lights Burning lamps. */
+
+    static Dictionary<string, int> HeldMap(CharacterData ch) => LampBook.Now(ch).Held ??= new();
+
+    /// <summary>The points this skill holds unlit (0: every point burns).</summary>
+    public static int Held(CharacterData ch, string skill) =>
+        LampBook.Now(ch).Held is { } h && h.TryGetValue(skill, out var n) ? System.Math.Max(0, n) : 0;
+
+    /// <summary>The points that burn: SkillBook.Rank less the held ones (never below 0).</summary>
+    public static int Burning(CharacterData ch, string skill) => System.Math.Max(0, SkillBook.Rank(ch) - Held(ch, skill));
+
+    /// <summary>The rank a day fight takes the skill at: Rank when nothing is held, else max(1, Burning).</summary>
+    public static int DayRank(CharacterData ch, string skill) =>
+        Held(ch, skill) > 0 ? System.Math.Max(1, Burning(ch, skill)) : SkillBook.Rank(ch);
+
+    /// <summary>The lamps a day fight lights for the skill, in order: the first Burning of Path when it holds points,
+    /// else the whole Path (Relight takes the rank's share).</summary>
+    public static string[] DayPath(CharacterData ch, string skill)
+    {
+        var path = Path(ch, skill);
+        return Held(ch, skill) > 0 ? path.Take(Burning(ch, skill)).ToArray() : path;
+    }
+
+    /// <summary>The lamp the next held point would light (Path[Burning]), or null: nothing held, or the path ends.</summary>
+    public static string? NextLamp(CharacterData ch, string skill)
+    {
+        if (Held(ch, skill) <= 0) return null;
+        var path = Path(ch, skill);
+        int b = Burning(ch, skill);
+        return b < path.Length ? path[b] : null;
+    }
+
+    /// <summary>Light one held point: Held less one; the lamp now burning (NextLamp before the call), or null when nothing
+    /// is held. A point past the path's end still burns (its rank grows) and returns null.</summary>
+    public static string? Light(CharacterData ch, string skill)
+    {
+        if (Held(ch, skill) <= 0) return null;
+        var lamp = NextLamp(ch, skill);
+        var h = HeldMap(ch);
+        if (--h[skill] <= 0) h.Remove(skill);
+        return lamp;
+    }
+
+    /// <summary>Hold n more points on a skill with a wick (Wicks.Of(skill) != null); a skill with none ignores it.</summary>
+    public static void Hold(CharacterData ch, string skill, int n)
+    {
+        if (n <= 0 || Wicks.Of(skill) == null) return;
+        var h = HeldMap(ch);
+        h[skill] = h.GetValueOrDefault(skill) + n;
+    }
+
+    /// <summary>Light my way, by day: every held point burns (each skill's next lamps along its path).</summary>
+    public static void LightAll(CharacterData ch) => LampBook.Now(ch).Held?.Clear();
+
+    /// <summary>True when the points she earns wait for her to light them (LampState.LightMyWay off).</summary>
+    public static bool Holds(CharacterData ch) => !LampBook.State(ch).LightMyWay;
+
+    /// <summary>A level gained (from, to): each carried skill with a wick holds the points earned (PointsAt(to) -
+    /// PointsAt(from)) while she lights them herself. Character.GainXp calls it, the one place every level passes.</summary>
+    public static void Grew(CharacterData ch, int from, int to)
+    {
+        int n = SkillBook.PointsAt(to) - SkillBook.PointsAt(from);
+        if (n <= 0 || !Holds(ch)) return;
+        foreach (var (id, _) in SkillBook.Carried(ch).ToList()) Hold(ch, id, n);
+    }
+
+    /// <summary>A skill come into her hands (creation, the calling's teaching): it holds every point it has
+    /// (PointsAt(level)), its first point waiting for her too, while she lights them herself.</summary>
+    public static void Arrived(CharacterData ch, string skill)
+    {
+        if (!Holds(ch) || Wicks.Of(skill) == null) return;
+        HeldMap(ch)[skill] = SkillBook.Rank(ch);
+    }
+
+    /// <summary>The level-up card's before and after for lighting lampId (the skill's next held lamp, NextLamp): the
+    /// skill's blow (Sum's day Total: base, rank growth, lit lead-ins and Turns) at Burning lamps and rank max(1, Burning)
+    /// against Burning + 1, Measure "a blow", when they differ; else the lamp's own card numbers (skill_lamps.json
+    /// lamps[].card, Wicks.Card); else ("", 0, 0): nothing to show (the card leaves the line out).</summary>
+    public static (string Measure, double Before, double After) LampMeasure(CharacterData ch, string skill, string lampId)
+    {
+        int b = Burning(ch, skill);
+        if (Blow(ch, skill, b) is { } before && Blow(ch, skill, b + 1) is { } after && System.Math.Abs(after - before) > 1e-6)
+            return ("a blow", System.Math.Round(before, 1), System.Math.Round(after, 1));
+        if (Wicks.Card(lampId) is { } c) return (c.Measure, c.Before, c.After);
+        return ("", 0, 0);
+    }
+
+    /// <summary>The skill's blow by day with lit lamps of its path burning (rank max(1, lit), as DayRank maps it).</summary>
+    static double? Blow(CharacterData ch, string skill, int lit)
+    {
+        if (!Weapons.All.TryGetValue(skill, out var def) || Wicks.Of(skill) == null || (def.Base.Damage ?? 0) <= 0) return null;
+        var path = Path(ch, skill);
+        var ids = path.Take(System.Math.Clamp(lit, 0, path.Length)).ToArray();
+        var w = new WeaponInst(skill, System.Math.Clamp(lit, 1, Weapons.MaxRank), 0);
+        if (Lights != Mode.None)
+            w.Wick = Turns.Build(w, ids.Select(id => Wicks.Lamp(skill, id)).Where(l => l != null).Select(l => l!.Value), ids);
+        return w.Damage;
+    }
 }

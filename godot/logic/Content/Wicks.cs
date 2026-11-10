@@ -109,7 +109,35 @@ public static class Wicks
         return f;
     }
 
-    public static void Reload() => file = null;
+    public static void Reload() { file = null; cards = null; }
+
+    /// <summary>A lamp's numbers for the level-up card when lighting it leaves the skill's blow as it was (M7a): what
+    /// changes ("a heavy blow every"), before and after (swings). skill_lamps.json lamps[].card.</summary>
+    public sealed class LampCard
+    {
+        public string Measure = "";
+        public double Before, After;
+    }
+
+    sealed class LampRow
+    {
+        public string Id = "", Name = "";
+        public LampCard? Card;
+    }
+
+    sealed class LampsFile { public List<LampRow> Lamps = new(); }
+
+    static Dictionary<string, LampRow>? cards;
+    /// <summary>skill_lamps.json's lamps by full id ("sunder.stroke.1"): their names and card numbers. The rest of
+    /// that file the game does not read yet.</summary>
+    static Dictionary<string, LampRow> Rows => cards ??= Json.Parse<LampsFile>(Json.ReadContent("skill_lamps.json")).Lamps
+        .Where(r => r.Id != "").GroupBy(r => r.Id).ToDictionary(g => g.Key, g => g.First());
+
+    /// <summary>A lamp's card numbers (skill_lamps.json lamps[].card) by its full id ("sunder.stroke.1"), or null.</summary>
+    public static LampCard? Card(string lampId) => Rows.TryGetValue(lampId, out var r) ? r.Card : null;
+
+    /// <summary>A lamp's name (skill_lamps.json lamps[].name: "Third Blow") by its full id, or null.</summary>
+    public static string? Name(string lampId) => Rows.TryGetValue(lampId, out var r) && r.Name != "" ? r.Name : null;
 
     /// <summary>A measuring aid (the harness's --strands): this skill's strands for this run, its wick made if it has
     /// none yet (Light my way then follows the first).</summary>

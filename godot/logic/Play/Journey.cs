@@ -71,6 +71,10 @@ public sealed partial class Journey
     {
         var world = WorldState.Fresh(seed);
         var ch = Character.Create(c, world.Day, seed);
+        // (M7a) A new survivor's first run (the Ford) has no point lit: each carried wick skill holds its first
+        // (skill_lamps.json rules.points.lit; ARPG.md 5 row 5a: her first level's card offers it). Here, not in
+        // Character.Create: the creation screen's figures and bare test characters burn every point as before.
+        foreach (var (id, _) in SkillBook.Carried(ch).ToList()) WickBook.Arrived(ch, id);
         // Where you came from decides how the world first reads you.
         var bg = Callings.Background(c.Background);
         foreach (var (f, v) in bg.Standing) world.Factions[f] = new FactionState { Id = f, Standing = v, Strength = 50 };
@@ -171,7 +175,8 @@ public sealed partial class Journey
             ArtRank = kit.ArtRank, Facets = kit.Facets, DashSteps = kit.DashSteps,
             Lamps = kit.Lamps, ReflexRanks = kit.ReflexRanks, Level = Ch.Level,
             // Each skill's wick, as planned by day (Light my way where she planned none).
-            Wicks = combat ? WickBook.Paths(Ch) : null,
+            // (M7a) By day a skill holding points lights only its burning lamps; a night takes the whole path.
+            Wicks = combat ? WickBook.Paths(Ch, night: arena || ember) : null,
             // Story fights are short: the Flare starts at half (CLASSES.md §3.2). Nights and maps (arena runs) start at a fifth.
             FlareStart = combat && ember && !arena ? Battle.FlareFull / 2 : combat && arena ? Battle.FlareStartNight : 0,
             Hp = exp != null ? Math.Min(exp.Hp, kit.Stats.Get(Stat.MaxHealth)) : null,
@@ -301,17 +306,32 @@ public sealed partial class Journey
         var got = Content.TaughtBuilds.Grant(Ch, Ch.Level);
         foreach (var s in got)
         {
+            // (M7a) It comes in holding its points (its first waits for her too), while she lights them herself.
+            WickBook.Arrived(Ch, s.Skill);
+            if (b != null && WickBook.Paths(Ch) is { } paths && paths.TryGetValue(s.Skill, out var path)) b.WickPaths[s.Skill] = path;
             int slot = -1;
             if (b != null && b.Campaign && !b.Weapons.Exists(w => w.Id == s.Skill))
             {
                 if (!b.HasRoomFor(s.Skill) && Content.TaughtBuilds.Of(Ch.Archetype) is { } t
                     && b.Weapons.LastOrDefault(w => t.Slots.All(x => x.Skill != w.Id)) is { } spare)
                     b.RemoveWeapon(spare.Id);
-                if (b.AddWeapon(s.Skill, SkillBook.Rank(Ch)) is { } w) { b.SetForm(s.Skill, s.Cast); slot = w.Slot; }
+                if (b.AddWeapon(s.Skill, WickBook.DayRank(Ch, s.Skill)) is { } w) { b.SetForm(s.Skill, s.Cast); slot = w.Slot; }
             }
             b?.Events.Emit(new Ev.Taught { Skill = s.Skill, Cast = s.Cast, Slot = slot, Level = Ch.Level });
         }
         return got;
+    }
+
+    /// <summary>(M7a) Light one point a carried skill holds (the level-up card's offer; ARPG.md 3.5 "one press lights it"):
+    /// WickBook.Light, then the live weapon in the fight, if there is one, takes the skill's DayRank and its day path
+    /// (Battle.LightHeld: ranked by RankWeapon, relit, an Ev.Wick for the lamp). The lamp lit, or null when nothing was held.
+    /// Any time is allowed: the Battle has no "a foe is on her" test (the zone's Encounters.Fighting is the caller's).</summary>
+    public string? LightHeld(string skill, Battle? b)
+    {
+        if (WickBook.Held(Ch, skill) <= 0) return null;
+        var lamp = WickBook.Light(Ch, skill);
+        b?.LightHeld(skill, WickBook.DayRank(Ch, skill), WickBook.DayPath(Ch, skill));
+        return lamp;
     }
 
     /// <summary>(M4) What the calling last taught in a campaign fight, and at which level: the HUD's level card prints it.</summary>

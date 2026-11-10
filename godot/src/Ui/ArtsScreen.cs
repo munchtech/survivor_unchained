@@ -510,7 +510,7 @@ public partial class ArtsScreen : Overlay
         string attr = SkillBook.Attribute(w.Id);
         d.AddChild(Style.Label($"It asks {SkillBook.Need} {attr} of whoever uses it. You have {SkillBook.Have(ch, attr)}.{(meets ? "" : " Until you measure up (points, a respec), it lies idle.")}",
             Style.UiBold, 15, meets ? Style.Good : Style.Bad, true));
-        d.AddChild(Style.Label($"It is rank {Ranks[SkillBook.Rank(ch)]}, and grows with you (every third level). In the arenas the ember starts from nothing, but what you carry is banked: it comes in at rank {Ranks[SkillBook.NightRank(ch)]}" +
+        d.AddChild(Style.Label($"It is rank {Ranks[SkillBook.Rank(ch)]}, and grows with you (every second level). In the arenas the ember starts from nothing, but what you carry is banked: it comes in at rank {Ranks[SkillBook.NightRank(ch)]}" +
             (ch.Level < 10 ? " (rank III from the tenth level)." : "."), Style.Ui, 14, Kit.Dim, true));
         if (!known)
             d.AddChild(Style.Label("You have seen it burn. Learn it from a tome (a story fight won, Vonnra's Curiosities), or your calling may teach it as you grow.", Style.TextItalic, 15, Kit.Dim, true));

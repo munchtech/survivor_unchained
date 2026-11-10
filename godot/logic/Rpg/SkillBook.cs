@@ -69,8 +69,13 @@ public static class SkillBook
     public static int Slots(CharacterData ch) => SlotsAt(ch.Level);
     public static int SlotsAt(int level) => level >= 9 ? 6 : level >= 7 ? 5 : level >= 5 ? 4 : level >= 4 ? 3 : 2;
 
-    /// <summary>A learned skill's rank by day: it grows with the survivor.</summary>
-    public static int Rank(CharacterData ch) => Math.Min(Weapons.MaxRank, 1 + (ch.Level - 1) / 3);
+    /// <summary>A learned skill's points (its rank by day, held or burning) at a level: one at the first, then one every
+    /// second level, to MaxRank (8) at the fifteenth (docs/design/ARPG.md 3.5; skill_lamps.json rules.points).</summary>
+    public static int PointsAt(int level) => Math.Min(Weapons.MaxRank, 1 + (Math.Max(1, level) - 1) / 2);
+
+    /// <summary>A learned skill's points by day: it grows with the survivor. The rank a day fight takes is
+    /// WickBook.DayRank (the points she still holds unlit do not burn).</summary>
+    public static int Rank(CharacterData ch) => PointsAt(ch.Level);
 
     public static bool Slot(CharacterData ch, string id)
     {
@@ -83,9 +88,9 @@ public static class SkillBook
 
     /// <summary>What is carried by day and can be used: slotted, measured up to, the
     /// calling's to carry (one that is not lies idle, as one not measured up to
-    /// does: an old save keeps it, unused), within the slots.</summary>
+    /// does: an old save keeps it, unused), within the slots. Its rank is WickBook.DayRank (Rank when nothing is held).</summary>
     public static IEnumerable<(string Id, int Rank)> Carried(CharacterData ch) =>
-        ch.Slotted.Where(id => Weapons.All.ContainsKey(id) && Knows(ch, id) && Meets(ch, id) && Carries(ch, id)).Take(Slots(ch)).Select(id => (id, Rank(ch)));
+        ch.Slotted.Where(id => Weapons.All.ContainsKey(id) && Knows(ch, id) && Meets(ch, id) && Carries(ch, id)).Take(Slots(ch)).Select(id => (id, WickBook.DayRank(ch, id)));
 
     /// <summary>The skills attuned for the night: those carried by day (and
     /// measured up to). In an arena the ember offers them in its first drafts,

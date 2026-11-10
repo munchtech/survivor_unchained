@@ -686,7 +686,7 @@ public static class Character
     {
         if (ch.Level >= MaxLevel) { ch.Xp = 0; return 0; }
         ch.Xp += xp;
-        int gained = 0;
+        int gained = 0, from = ch.Level;
         while (ch.Level < MaxLevel && ch.Xp >= XpForLevel(ch.Level))
         {
             ch.Xp -= XpForLevel(ch.Level);
@@ -696,6 +696,8 @@ public static class Character
             gained++;
         }
         if (ch.Level >= MaxLevel) ch.Xp = 0;
+        // M7a: the points the levels earned wait on her carried skills until she lights them (WickBook.Grew).
+        if (gained > 0) WickBook.Grew(ch, from, ch.Level);
         return gained;
     }
 
