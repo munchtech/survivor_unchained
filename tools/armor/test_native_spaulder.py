@@ -382,6 +382,27 @@ class ShoulderTop(unittest.TestCase):
         s, tv, _ = L["fr"].cyl(ref.V[L["foot"][0]])
         self.assertTrue((s >= top(np.clip(tv, t0, t1)) - 1e-9).all())
 
+    def test_a_wing_rounds_the_cops_lower_corner_and_curls_in_over_the_lames_end(self):
+        cfg = json.loads(json.dumps(CFG))
+        cfg["theta"] = [15, 168]          # (front: 20 degrees past the lames' end, a wing; back: 3, none)
+        cfg["cop"] = dict(cfg["cop"], arch={"span": 0.03, "power": 2.2}, wing={"end": 0.008, "curl": 1.0})
+        ref = arms()
+        L = sp.layout(cfg, ref)["l"]
+        plain = sp.layout({**cfg, "cop": {k: v for k, v in cfg["cop"].items() if k != "wing"}}, ref)["l"]
+        cop, low, top, bot, pb = L["sheets"][0], L["sheets"][1], L["top"][0], L["bot"][0], plain["bot"][0]
+        lt0 = float(cfg["lames"]["theta"][0])
+        self.assertAlmostEqual(float(bot(15.0) - top(15.0)), 0.008, places=9)       # (its side edge is `end` long)
+        th = np.linspace(lt0, 168, 9)
+        self.assertLess(np.abs(bot(th) - pb(th)).max(), 1e-12)                       # (over the lames and at the back: as it was)
+        self.assertTrue((np.diff(bot(np.linspace(15, lt0, 9))) > 0).all())
+        tip = np.array(15.0)
+        s = np.array(float(bot(15.0)) - 0.001)                                       # (curled in: on its own surface at its tip)
+        self.assertLess(abs(float(cop.inner(s, tip) - cop.law(s, tip))), 1e-5)
+        sp_ = np.array(float(pb(15.0)) - 0.001)
+        self.assertGreater(float(plain["sheets"][0].inner(sp_, tip) - plain["sheets"][0].law(sp_, tip)), 0.002)
+        s1, e = np.array(float(bot(lt0)) - 0.004), np.array(lt0)                     # (at the lame's end it still stands on it)
+        self.assertGreaterEqual(float(cop.inner(s1, e) - low.outer(s1, e)), cfg["lames"]["gap"] - 1e-5)
+
     def test_the_arming_caps_material_has_a_painted_template(self):
         have = {m.get("name") for _, g in gn.material_templates() for m in g.get("materials", [])
                 if "baseColorTexture" in m.get("pbrMetallicRoughness", {})}

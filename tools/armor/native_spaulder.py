@@ -24,7 +24,11 @@ under its own outline when absent), "over" {"depth", "ease"}: the cop CROWNS her
 joint, over her acromion and outer trapezius, because the frame's centres are let down to stay `depth` under her
 skin's crest line there (ShoulderFrame; depth: her skin's own at lame 1's top when absent; read from her skin, so
 another body re-derives it), "arch" {"span", "power"}: its upper edge is an arch (e0 at its middle, down to `span`
-above its lower edge at its two ends: a rounded outline, never a box)};
+above its lower edge at its two ends: a rounded outline, never a box), "wing" {"end", "curl", "power", "min"}: where
+the cop's reach runs round past the lames' ends (by "min" degrees or more, 8) that end of it is a WING: its lower
+corner is rounded (its lower edge rises from the lames' end to leave its side edge `end` long), and it curls back in
+over the end of lame 1 (curl 1: down to its own surface at its tip, so no slot shows under it from the front; 0: it
+keeps the lame's room all the way)};
 "arming" {"clear", "thick", "roll", "past" [up, down, round (degrees)]: how far it shows beyond the plates' outline
 (the cop's arch, the cop's sides, then in to the lames' sides), "step"} (absent or null: no arming cap; its material
 must be a key some gear source carries painted, gear_native.material_templates: "darkleather"; a bare key is white); "rivet" {"r", "h", "in"}: the articulation rivets, at the two ends of every
@@ -189,12 +193,20 @@ class Lame(Sheet):
         return self
 
 
-def tilt(law, top, bot, low=None, zs=None, gap=0.003, flare=0.0):
+def tilt(law, top, bot, low=None, zs=None, gap=0.003, flare=0.0, curl=None):
     """A plate's rise over its law. Over the lame `low` it laps: from the line s = zs(theta) on (down to its bottom
     edge) it stands `gap` clear of that lame's outer face, a straight ramp from nothing at its own top edge down to
-    there (a shingle). The last lame (no `low`): its lower edge stands `flare` further off her."""
+    there (a shingle). The last lame (no `low`): its lower edge stands `flare` further off her. curl [(a, b, k) ..]:
+    from theta a (the lapped lame's end) on to b (its own) its room over that lame eases off by k (a wing)."""
+    def keep(th):
+        f = np.ones(np.shape(th))
+        for a, b, k in curl or ():
+            x = np.clip((np.asarray(th, float) - a) / (b - a), 0, 1)
+            f = f * (1 - k * x * x * (3 - 2 * x))
+        return f
+
     def room(s, th):
-        return np.maximum(low.outer(np.clip(s, low.top(th), low.bot(th)), th) + gap - law(s, th), 0.0)
+        return np.maximum(low.outer(np.clip(s, low.top(th), low.bot(th)), th) + gap - law(s, th), 0.0) * keep(th)
 
     def h(s, th):
         s, th = np.broadcast_arrays(np.asarray(s, float), np.asarray(th, float))
@@ -332,6 +344,19 @@ def layout(cfg, ref, step=None, step_s=None, roll=True, laws=None):
     bot = [lambda th, k=k: E[k + 1] + arcf(th) for k in range(n)]
     ar = cp.get("arch")
     s_end = float(min(bot[0](t0), bot[0](t1))) - (ar or {}).get("span", 0.03)
+    # the cop's wings: an end of it that reaches round past the lames' (lames' end, its own end), its corner rounded
+    wg = cp.get("wing") or {}
+    wings = [(tl, te) for tl, te in ((lt0, t0), (lt1, t1)) if wg and n > 1 and abs(te - tl) >= wg.get("min", 8.0)]
+    w_end, edge0 = wg.get("end", 0.008), bot[0]
+
+    def bot0(th):
+        th = np.asarray(th, float)
+        b = edge0(th)
+        for tl, te in wings:
+            b = b - max(float(edge0(te)) - s_end - w_end, 0.0) * np.clip((th - tl) / (te - tl), 0, 1) ** wg.get("power", 2.0)
+        return b
+    if wings:
+        bot[0] = bot0
 
     def top0(th):
         """The cop's upper edge: E[0], or with "arch" a rounded outline: E[0] at its middle, coming down to `span`
@@ -368,7 +393,8 @@ def layout(cfg, ref, step=None, step_s=None, roll=True, laws=None):
             zs = (lambda th, k=k: top[k + 1](th) - margin) if low is not None else None
             law = law_of(k)
             rise = tilt(law, top[k], bot[k], low, zs, per("gap", k + 1 if low is not None else k, 0.003),
-                        flare=lm.get("last_flare", 0.0))
+                        flare=lm.get("last_flare", 0.0),
+                        curl=[(tl, te, wg.get("curl", 1.0)) for tl, te in wings] if k == 0 else None)
             on = ("tb01" if k == 0 else "b01") if roll else ""
             sheets[k] = Lame(fr, law, reach[k][0], reach[k][1], top[k], bot[k], cp.get("thick", thick) if k == 0 else thick,
                              roll=crl if k == 0 else rl, ridge=cp.get("ridge") if k == 0 else None, roll_on=on, rise=rise,
@@ -386,8 +412,10 @@ def layout(cfg, ref, step=None, step_s=None, roll=True, laws=None):
             arl = tuple(am.get("roll", (0.004, 0.0008))) if roll else None
             sm = lambda x: np.clip(x, 0, 1) ** 2 * (3 - 2 * np.clip(x, 0, 1))  # noqa: E731
             w = lambda s: sm((np.asarray(s, float) - E[1]) / 0.012)  # noqa: E731  (0 beside the cop, 1 beside the lames)
-            arming = Sheet(fr, laws[sd]["arm_law"], lambda s: t0 - past[2] + (lt0 - t0) * w(s),
-                           lambda s: t1 + past[2] + (lt1 - t1) * w(s),
+            ww = lambda s: sm((np.asarray(s, float) - s_end - w_end) / max(E[1] - s_end - w_end, 1e-6))  # noqa: E731  (down a wing's corner)
+            w0, w1 = (ww if (lt0, t0) in wings else w), (ww if (lt1, t1) in wings else w)
+            arming = Sheet(fr, laws[sd]["arm_law"], lambda s: t0 - past[2] + (lt0 - t0) * w0(s),
+                           lambda s: t1 + past[2] + (lt1 - t1) * w1(s),
                            lambda th: np.min([top[0](np.clip(np.asarray(th, float) + d, t0, t1))
                                               for d in np.linspace(-past[2], past[2], 5)], axis=0) - past[0],
                            lambda th: E[-1] + past[1] + arcf(np.clip(th, lt0, lt1)), am.get("thick", 0.0012), roll=arl,
