@@ -732,7 +732,8 @@ public partial class Round : Control
 
 /// <summary>HUD v2: a key on a small stamped iron tag (16 tall; 24, 32, 40 or 52 wide) hung from a ring at
 /// 6 o'clock. The key in Alegreya Sans 800 caps 14 px, bone, a 1 px dark edge; SPACE tracked 60. On a pad
-/// the button sits in the same tag (Style.PadButton, scaled to fit). Redraws only when its key or button
+/// the button sits in the same tag (Style.PadButton, scaled to fit); a chip draws the button's name as a key's
+/// cap instead (DrawPadCap), so it reads at 1:1. Redraws only when its key or button
 /// changes (Refresh). hud/tag_W.png and hud/tag_ring.png (half size) when made, else a drawn plate.</summary>
 public partial class KeyTag : Control
 {
@@ -778,6 +779,7 @@ public partial class KeyTag : Control
     {
         float mid = cx - Position.X;
         if (padView != null) return new Rect2(padView.Position, padView.Size * padView.Scale);
+        if (Chip && padName != null) { float pw = PadCapW(); return new Rect2(Mathf.Round(mid - pw / 2), 0, pw, Instrument.TagH); }
         if (mouse >= 0) return new Rect2(Mathf.Round(mid - MouseW / 2), Mathf.Round(Instrument.TagH / 2 - MouseH / 2), MouseW, MouseH);
         float cw = Math.Max(18, ChipTextW(Shown) + 9);
         return new Rect2(Mathf.Round(mid - cw / 2), 0, cw, Instrument.TagH);
@@ -813,6 +815,7 @@ public partial class KeyTag : Control
     void Fit()
     {
         if (Chip) Size = new Vector2(Math.Max(Math.Max(52, w), Mathf.Ceil(Math.Max(18, ChipTextW(Shown) + 9)) + 4), Instrument.TagH);
+        if (Chip && padName != null) Size = new Vector2(Math.Max(52, Mathf.Ceil(PadCapW()) + 4), Instrument.TagH);
         Place(cx, cy);
         QueueRedraw();
     }
@@ -831,13 +834,18 @@ public partial class KeyTag : Control
         if (pad != null)
         {
             w = 32;
-            padView = Style.PadButton(pad);
-            AddChild(padView);
-            var ps = padView.GetCombinedMinimumSize();
-            float k = (Instrument.TagH - 3) / Math.Max(1, ps.Y);
-            padView.Size = ps;
-            padView.Scale = new Vector2(k, k);
-            padView.Position = new Vector2((Size.X - ps.X * k) / 2, (Instrument.TagH - ps.Y * k) / 2);
+            // (a chip draws its button itself, as a key's cap: DrawPadCap. The menu's button scaled down to the
+            // tag's height could not be read at 1:1)
+            if (!Chip)
+            {
+                padView = Style.PadButton(pad);
+                AddChild(padView);
+                var ps = padView.GetCombinedMinimumSize();
+                float k = (Instrument.TagH - 3) / Math.Max(1, ps.Y);
+                padView.Size = ps;
+                padView.Scale = new Vector2(k, k);
+                padView.Position = new Vector2((Size.X - ps.X * k) / 2, (Instrument.TagH - ps.Y * k) / 2);
+            }
         }
         else
         {
@@ -879,6 +887,81 @@ public partial class KeyTag : Control
         DrawLine(new Vector2(r.Position.X + 1, split), new Vector2(r.End.X - 1, split), rim, 1);
     }
 
+    /// <summary>A pad button's name as a cap's text ("LB", "RT", "A"; the sticks "LS" and "RS"); null for the D-pad,
+    /// which is drawn as a cross (DrawPadCap).</summary>
+    public static string? PadCapText(string name) => name.StartsWith("D-pad") ? null
+        : name == "Left stick" ? "LS" : name == "Right stick" ? "RS" : name.ToUpperInvariant();
+
+    /// <summary>The D-pad's cross on a cap: as tall as the key caps' letters (11 px on screen), whole px.</summary>
+    static float PadGlyph => Mathf.Round(HudBottom.Keep(11));
+
+    /// <summary>What a pad cap holds, its width: the button's text or the D-pad's cross, then "  READY" when lit (as
+    /// the key's chip has it).</summary>
+    float PadInnerW()
+    {
+        string? t = PadCapText(padName!);
+        string tail = lit ? "  READY" : "";
+        return t != null ? ChipTextW(t + tail) : PadGlyph + (tail != "" ? HudBottom.Keep(0.6f) + ChipTextW(tail) : 0);
+    }
+
+    float PadCapW() => Math.Max(18, PadInnerW() + 9);
+
+    /// <summary>M4 lead 6: on a pad the cap is a key's cap, not the menu's button scaled down: the same chip (16 tall,
+    /// radius 3, the bronze rim, the dark ground; the lit one amber), the button's name in the same Alegreya Sans 800
+    /// 16 tracked 0.6, bone. A face button keeps its colour as a tint of its letter, half way to bone (its letter
+    /// tells it; the colour only confirms). The D-pad is a cross at the letters' height, the arm meant bone, the
+    /// rest dim. A kindled seat dims it as it dims a key (the seat's Modulate).</summary>
+    void DrawPadCap()
+    {
+        var cf = Style.UiHeavy;
+        int cfs = HudBottom.KeepFont(16);
+        float trk = HudBottom.Keep(0.6f);
+        string? name = PadCapText(padName!);
+        float tw = PadInnerW();
+        float mid = cx - Position.X;
+        float cw = Math.Max(18, tw + 9), cx0 = Mathf.Round(mid - cw / 2);
+        var box = lit
+            ? new StyleBoxFlat { BgColor = new Color(70 / 255f, 34 / 255f, 8 / 255f, 245 / 255f), BorderColor = new Color(1f, 190 / 255f, 90 / 255f), AntiAliasing = true }
+            : new StyleBoxFlat { BgColor = new Color(22 / 255f, 18 / 255f, 14 / 255f, 238 / 255f), BorderColor = new Color(138 / 255f, 108 / 255f, 70 / 255f), AntiAliasing = true };
+        box.SetBorderWidthAll(1); box.SetCornerRadiusAll(3);
+        DrawStyleBox(box, new Rect2(cx0, 0, cw, Instrument.TagH));
+        float tx = mid - tw / 2;
+        float ty = Instrument.TagH / 2 + 0.5f + (cf.GetAscent(cfs) - cf.GetDescent(cfs)) / 2;
+        var ink = lit ? new Color(1f, 236 / 255f, 196 / 255f) : new Color(240 / 255f, 230 / 255f, 208 / 255f);
+        string label = lit ? "  READY" : "";
+        if (name != null)
+        {
+            var own = !lit && Style.PadFace(padName!) is { } face ? face.Lerp(ink, 0.5f) : ink;
+            foreach (char ch in name)
+            {
+                string s = ch.ToString();
+                DrawString(cf, new Vector2(tx, ty), s, HorizontalAlignment.Left, -1, cfs, own);
+                tx += cf.GetStringSize(s, HorizontalAlignment.Left, -1, cfs).X + trk;
+            }
+        }
+        else
+        {
+            // the cross: its foot on the letters' baseline, three arms' width to eleven
+            float g = PadGlyph, t = Math.Max(1, Mathf.Round(g * 3 / 11)), arm = (g - t) / 2;
+            float gx = Mathf.Round(tx), gy = Mathf.Round(ty - g);
+            string which = padName!.Length > 6 ? padName[6..] : "";
+            var dim = ink with { A = 0.42f };
+            Color Of(string a) => which == "" || which == a ? ink : dim;
+            DrawRect(new Rect2(gx + arm, gy + arm, t, t), which == "" ? ink : dim, true);
+            DrawRect(new Rect2(gx + arm, gy, t, arm), Of("up"), true);
+            DrawRect(new Rect2(gx + arm, gy + arm + t, t, arm), Of("down"), true);
+            DrawRect(new Rect2(gx, gy + arm, arm, t), Of("left"), true);
+            DrawRect(new Rect2(gx + arm + t, gy + arm, arm, t), Of("right"), true);
+            tx = gx + g + trk;
+        }
+        foreach (char ch in label)
+        {
+            string s = ch.ToString();
+            DrawString(cf, new Vector2(tx, ty), s, HorizontalAlignment.Left, -1, cfs, ink);
+            tx += cf.GetStringSize(s, HorizontalAlignment.Left, -1, cfs).X + trk;
+        }
+    }
+
     float TextWidth()
     {
         var f = Style.UiHeavy;
@@ -894,6 +977,7 @@ public partial class KeyTag : Control
             var bx = ChipBox();
             DrawRect(new Rect2(bx.Position.X - 1, bx.End.Y + 1, bx.Size.X + 2, 2), Style.Gold, true);
         }
+        if (Chip && padName != null) { DrawPadCap(); return; }
         if (Chip && mouse >= 0 && padName == null) { DrawMouse(); return; }
         if (Chip && padName == null && text != "")
         {
