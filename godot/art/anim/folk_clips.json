@@ -290,7 +290,7 @@
 		"speed": 0.0
 	},
 	"m_arms_crossed": {
-		"changes": "retargeted to her skeleton, feet locked, looped, in place",
+		"changes": "retargeted to her skeleton, feet locked, looped, in place; the neck and the Head carried as m_idle's in the mean (one constant turn each about its own ear-to-ear axis, tip back +1.8 and -32.0 degrees; the take's own bob kept)",
 		"layer": "full",
 		"length": 3.59999990463257,
 		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
@@ -589,14 +589,14 @@
 		"source": "keyed (tools/anim/crowd.py)"
 	},
 	"m_talk": {
-		"changes": "retargeted to her skeleton, feet locked, looped, in place",
+		"changes": "retargeted to her skeleton, feet locked, looped, in place; the chest carried as m_idle's in the mean (one constant turn shared by the three spine bones, each about its own left-right axis, tip back +15.8 degrees; the take's own sway kept); the neck and the Head carried as m_idle's in the mean (one constant turn each about its own ear-to-ear axis, tip back -2.7 and -31.2 degrees; the take's own bob kept)",
 		"layer": "full",
-		"length": 10.2666664123535,
-		"licence": "Mixamo (Adobe)",
+		"length": 3.59999990463257,
+		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
 		"loop": true,
 		"note": "townsfolk (men)",
-		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_talking.bvh",
-		"speed": 0.0000111572903396131
+		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: talk_man_2.bvh",
+		"speed": 0.0040299481281598
 	},
 	"m_wade_drag": {
 		"changes": "retargeted to her skeleton, feet locked, travel taken out, looped (seam spread)",

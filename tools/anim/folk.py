@@ -30,7 +30,7 @@ from build import GODOT  # noqa: E402
 from clips import folk_armed, rook, warden  # noqa: E402
 from clips.generated import make  # noqa: E402
 from keyed import Rig  # noqa: E402
-from retarget import carry_head  # noqa: E402
+from retarget import carry_chest, carry_head  # noqa: E402
 from rig import DATA, REPO, Skeleton, write_clip  # noqa: E402
 
 OUT = Path(__file__).resolve().parent / "out" / "folk"
@@ -53,8 +53,16 @@ FOLK = {
     # Standing: weight shifting from foot to foot.
     "idle": {"fm": ("mixamo", "folk_weight_shift_idle.bvh", STAND)},
     # Talking: hers with both hands, his the general conversation.
-    "talk": {"f": ("kimodo", "talk_0.bvh", STAND), "m": ("mixamo", "folk_talking.bvh", STAND)},
-    "arms_crossed": {"fm": ("kimodo", "arms_crossed_0.bvh", STAND)},
+    # His (animation A1, 10 Nov): Mixamo's conversation stooped at the dialogue camera (chest 9 degrees forward of his
+    # idle's, the head 14 off to one side, the hands low and wide: 0.77 m apart in the mean). Kimodo's talk_man_2 is the
+    # take of the three whose feet stay planted (2 mm) and whose hands stay nearest (0.59 m apart, in front of him); it
+    # stoops as well (chest -14), so chest="idle" straightens the back to his idle's in the mean
+    # (retarget.carry_chest) and head="idle" carries the neck and the Head as his idle does.
+    "talk": {"f": ("kimodo", "talk_0.bvh", STAND),
+             "m": ("kimodo", "talk_man_2.bvh", dict(loop=True, place="line", chest="idle", head="idle"))},
+    # His holds the Head 30 degrees back of his idle's (+22.6 against -7.2), as his walk did: head="idle".
+    "arms_crossed": {"f": ("kimodo", "arms_crossed_0.bvh", STAND),
+                     "m": ("kimodo", "arms_crossed_0.bvh", dict(loop=True, place="line", head="idle"))},
     "sit_chair": {"fm": ("mixamo", "folk_sitting_chair.bvh", LOOP)},
     "sit_floor": {"fm": ("mixamo", "folk_sitting_floor.bvh", LOOP)},
     # Gestures played once.
@@ -80,11 +88,23 @@ def build(want):
             opts = dict(opts)
             opts["warp_"] = opts.pop("warp", None)
             head = opts.pop("head", None)
+            chest = opts.pop("chest", None)
             t0 = time.time()
             clip = make(rig, f"{sex}_{name}", source, file, note=f"townsfolk ({'women' if sex == 'f' else 'men'})", **opts)
             if clip is None:
                 print(f"  {sex}_{name}: {file} not on this machine")
                 continue
+            if chest:
+                # The back carried as another of this body's clips carries it (the mean only: retarget.carry_chest);
+                # before the head, which rides it.
+                rs, rf, ro = next(r for k, r in FOLK[chest].items() if sex in k)
+                ref = make(rig, f"{sex}_{chest}", rs, rf, **ro)
+                if ref is None:
+                    raise SystemExit(f"{sex}_{name}: its chest is carried as {sex}_{chest}'s, and {rf} is not on this machine")
+                clip.rot, deg = carry_chest(sk, clip.rot, clip.pos, ref.rot, ref.pos)
+                clip.meta["changes"] += (f"; the chest carried as {sex}_{chest}'s in the mean (one constant turn shared by "
+                                         f"the three spine bones, each about its own left-right axis, tip back {deg:+.1f} "
+                                         f"degrees; the take's own sway kept)")
             if head:
                 # The head carried as another of this body's clips carries it (the mean only: retarget.carry_head).
                 rs, rf, ro = next(r for k, r in FOLK[head].items() if sex in k)

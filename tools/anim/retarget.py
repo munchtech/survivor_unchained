@@ -719,6 +719,45 @@ def carry_head(sk: Skeleton, local, pos, ref_local, ref_pos):
     return L, turned["neck_01"], turned["Head"]
 
 
+CHEST_SPINE = ("spine_01", "spine_02", "spine_03")
+
+
+def carry_chest(sk: Skeleton, local, pos, ref_local, ref_pos):
+    """A take's chest carried as a reference clip carries it, in the MEAN only: the back straightened (or bowed) by ONE
+    angle, the same at every frame, shared equally between the three spine bones, each turned about its own left-right
+    axis (the world's at rest) after its own motion, until the chest's (spine_03's) mean pitch equals the reference's.
+    The hips and the legs are not touched (planted feet stay planted); the arms, the neck and the head ride the chest,
+    so carry_head, where it is wanted too, comes AFTER this. The take's own sway, bows and turns stay as they were, and
+    a loop's seam is untouched. For a take that stoops on a body whose own stand is upright (the takes of a man talking
+    on the kit's man: the chest 9 to 19 degrees forward of his idle's).
+    Returns the new locals and the whole angle (degrees, + = tipped back)."""
+    target = float(np.mean(carriage(sk, ref_local, ref_pos)["spine_03"]))
+    rg = sk.rest_globals()[0][0]
+    bones = [sk.i(b) for b in CHEST_SPINE]
+    axes = []
+    for j in bones:
+        axis = qrot(qinv(rg[j]), [1.0, 0, 0])
+        axes.append(axis / np.linalg.norm(axis))
+
+    def at(deg):
+        # (+ about the left-right axis bows forward: the angle is given as the tip back, as carry_head's.)
+        half = math.radians(-deg / len(bones)) / 2
+        M = local.copy()
+        for j, axis in zip(bones, axes):
+            M[:, j] = qmul(local[:, j], np.array([*(axis * math.sin(half)), math.cos(half)]))
+        return M
+
+    lo, hi = -60.0, 60.0
+    for _ in range(40):
+        mid = (lo + hi) / 2
+        if float(np.mean(carriage(sk, at(mid), pos)["spine_03"])) < target:
+            lo = mid
+        else:
+            hi = mid
+    deg = (lo + hi) / 2
+    return at(deg), deg
+
+
 def spread_twist(sk: Skeleton, local, share=0.5):
     """A take's forearm roll moved half into the forearm. Performers' rigs
     put the roll of the forearm (the radius turning over the ulna) at the
