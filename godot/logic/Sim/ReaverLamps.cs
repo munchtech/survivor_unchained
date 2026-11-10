@@ -114,7 +114,9 @@ public sealed partial class Battle
         if (!Lamp("long_chain") || !w.Tags.Has(Tag.Melee) || !last.Alive || last.Boss || last.Def.Behavior == Behavior.Stationary) return;
         double dx = Player.X - last.X, dz = Player.Z - last.Z, d = Len(dx, dz);
         if (d < 1.5) return;
-        double k = 0.8 * Stats.Get(Stat.Knockback) * 7 / Math.Max(0.5, last.Mass) * (last.Elite ? 0.35 : 1);
+        // (M3 MR 3) a chained cut pulls its share of the blow's pull (w.CutW is live inside its cast, 1 otherwise), as
+        // the cut's own knockback is weighed in HitEnemy: the pull a second holds.
+        double k = 0.8 * w.CutW * Stats.Get(Stat.Knockback) * 7 / Math.Max(0.5, last.Mass) * (last.Elite ? 0.35 : 1);
         last.Kbx += dx / d * k;
         last.Kbz += dz / d * k;
     }
@@ -183,16 +185,18 @@ public sealed partial class Battle
     }
 
     /// <summary>What a blow dealt now brings: Frenzy, and the open vein.</summary>
-    void ReaverOnHit(Enemy e, HitOpts o)
+    /// <param name="weight">(M3 MR 3) The hit's weight: a chained cut's share of the written blow (1 otherwise), as the
+    /// reaver Hand's (HandReaverHit). A stack is a blow's: the cuts of one blow's worth add one between them.</param>
+    void ReaverOnHit(Enemy e, HitOpts o, double weight = 1)
     {
         if (o.Dot || o.Summon || Lamps.Rules.Count == 0) return;
         var l = Lamps;
         // butcher.red_hands: each hit gives a stack (design pick: at most ten stacks a second, so a crowd in one swing is one).
         if (l.Has("frenzy") && (o.Weapon != null || o.Projectile))
         {
-            if (Time >= frenzyGate) { frenzyGate = Time + 0.1; AddFrenzy(1); }
+            if (Time >= frenzyGate) { frenzyGate = Time + 0.1; AddFrenzy(weight); }
             // reaver.bridge.hook_and_hatchet: a blow on a Bound thing adds a stack more.
-            if (l.Has("hook_and_hatchet") && e.Status.Has(StatusKind.Bound)) AddFrenzy(1);
+            if (l.Has("hook_and_hatchet") && e.Status.Has(StatusKind.Bound)) AddFrenzy(weight);
         }
         // butcher.open_vein: a blow on a thing bleeding long enough bursts the bleed: what was left to bleed comes at once.
         if (l.Has("open_vein") && e.Alive && e.Status[StatusKind.Bleed] is { } bl && bl.Age >= l.Full("open_vein", "seconds", 3))

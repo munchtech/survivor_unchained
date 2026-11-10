@@ -1053,9 +1053,11 @@ public sealed partial class Battle
             if (crit) Fire(TriggerEvent.Crit, ctx);
         }
 
-        ReaverOnHit(e, o);
-        ArcanistOnHit(e, school, tags, o, dmg);
-        StalkerOnHit(e, o, dmg);
+        // (M3 MR 3 l1) the callings' hooks count a blow's worth, never cuts: Frenzy's stack is the cut's weight, and the
+        // statuses the arcanist's and the stalker's lamps lay ride the hit like its own (sized on the blow, weighed as
+        // the cut; at weight 1 blowDmg is dmg and statusW is what it was: the lines as they were)
+        ReaverOnHit(e, o, cw);
+        { double w1 = statusW; statusW = cw; ArcanistOnHit(e, school, tags, o, blowDmg); StalkerOnHit(e, o, blowDmg); statusW = w1; }
         if (heavy || HandKindNow() != 0) HandOnHit(e, o, heavy, cw);
         // (M3 MR 3) the board's and the Flare's statuses ride the hit like its own: sized on the blow, weighed as the cut
         // (at weight 1 blowDmg is dmg and statusW is what it was: the lines as they were)
