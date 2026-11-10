@@ -420,3 +420,24 @@ the leap's worst jump halved). The left breaks: faired A's left poses (abd / fle
 Next: lay the left alone with lay 6 `_a`'s recipe (judge, guard 0.8, guardwall 50, no boost) on faired A:
 `build --only l --start strip_rest_l21c.npz --file strip_rest_l21d.npz`; then (4) on the right's late frames
 (@14-@17: a FOLD cap or `fold` [0.3, 0.3]); the composite's left must also clear tri 107 / 291 at rest.
+
+## Lay 8 (lead 22): 10 Nov, lead 22's solver. RIGHT MET; LEFT NOT; NOT PROMOTED; active `strip_rest.npz` stays lay 5 (41be13363b7a)
+On P5 faired A, live (no `--snap`), all 141 poses (`turned --poses <141>`: no `--poses` reads only the named 9). Base `turned_l22_lay5fair_all.log`.
+Candidate `strip_rest_l22.npz` (sha1 3b91593196d7) = `_l22g`'s `*_l` + `_l22j`'s `*_r`; `turned_l22_all.log`. Builds 1-3 min each (cache warm).
+Left: `_l22a` (lay 6 `_a` recipe on `_h` keys) -> `_l22c` (+ hiwall 50) -> `_l22g` (start `_l22c`, + boost 2, extra 4). Right: `_l22b` (`_l21c`
+recipe, fold [0.3, 0.3]) -> `_l22j` (start `_l22b`, fold [0.3, 0.3], hiwall 30, lim [0.58, 1.5], boost 4, extra 8). Logs `build_l22*.log`, `turned_l22*_all.log`.
+| req | lay 5 on P5 | `_l22` |
+|---|---|---|
+| (1) turned, w >= 0.5 | leap@7:r 2, @9:r 1, cast_flick@8:r 1, hadd40:l 7, iron_vow@72:l 2 (total 70) | right 0; LEFT hadd40:l 1, flex120:l 1, iron_vow@72:l 1 (total 60) |
+| (1) w < 0.5 | = fill's own | all <= the fill's own |
+| (2) guard, least map / A's own, w > 0 | 0.66 warden_look@150:l | right 0.80 (axe_back@0, sword_heavy@3): met; left 0.50 warden_look@150:l (w 0.02), 0.74 cast_bolt@11:l (w 0.08) |
+| (3) T22, 22 rows | 9 fail | 21 met; iron_vow@72:l FAIL (turned 1, 1.97 / own 1.81, +0.16); leap@9:r +0.15 (at the bar), leap@7 -0.15, @19 -0.35, @20 -0.32, crossbow@0/@2 +0.06, cast_flick -0.05; abd120 +0.06, abd150 -0.04, abd170 +0.05, flex170 +0.15; fill rows -0.34..+0.08 |
+| (4) FOLD max leap@5/6/7/9/12/14/16/17/18/19/20:r | 122/166/166/151/76/47/62/54/72/85/70 | 126/157/130/92/87/40/60/49/81/70/77 |
+| (4) frame-to-frame jump | 75.2 | 47.8 |
+| (5) rest corner facing off A | l 0, r 0 | l 0, r 0 (tri 107 / 291 cleared) |
+Step 3 MET: leap@14/16/17 40/60/49 <= lay 5's 47/62/54 (fold [0.3, 0.3] did it; lim 1.5 fixed leap@9). @5 +4, @12 +11, @18 +9 over lay 5 (not asked).
+FINDING (left): the three turned triangles (hadd40 tri 258, flex120 287, iron_vow@72 109 / 76) sit where A'S OWN surface is turned in that pose
+(turned's "A'S OWN surface under the band" names the same ids; carriers' least mutual normal dot -0.8..-0.96): the map rides A at w = 1,
+so it inherits A's own fold there. lay2 sees them (END count 4 in 3 poses) but boost cannot clear them: boost 3 / extra 8 (`_l22h`) blew
+abd120-flex170 to +0.23..+0.42; guard 0.6 (`_l22l`) cured hadd40 but turned 3 rest corners. Next: cure at A (fair P5's left at
+hadd40 / flex120 / iron_vow@72, the triangles above), or let the bar read "<= A's own turned" at w = 1 as it reads "<= the fill's" at w < 0.5.
