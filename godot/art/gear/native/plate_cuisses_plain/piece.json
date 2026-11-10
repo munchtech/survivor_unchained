@@ -1,0 +1,73 @@
+{
+ "name": "Plain cuisses",
+ "slot": "legwear",
+ "style": "cuisses",
+ "tier": 1,
+ "covers": [
+  "legwear"
+ ],
+ "dye": [
+  "metal",
+  "leather"
+ ],
+ "id": "plate_cuisses_plain",
+ "native": {
+  "rest_body": "godot/art/people/body_p1",
+  "rest_hash": {
+   "close": "4ce415f2b53d8e2bce1dfce62f8922c78ea5a561",
+   "play": "92a3f86b67527c74bdfbb50bde63225589893746"
+  },
+  "builder": "tools/armor/native_build.py",
+  "recipe": "limb_plate"
+ },
+ "parts": {
+  "plate_l_rigid": {
+   "ride": {
+    "thigh": 1
+   }
+  },
+  "lame_l_rigid": {
+   "ride": {
+    "thigh": 0.75,
+    "calf": 0.25
+   },
+   "one_bone": true
+  },
+  "buckle_l_rigid": {
+   "ride": {
+    "spine": "mean",
+    "thigh": "mean"
+   }
+  },
+  "tabs_l_rigid": {
+   "with": "plate_l_rigid"
+  },
+  "rivets_l_rigid": {
+   "with": "plate_l_rigid"
+  },
+  "plate_r_rigid": {
+   "ride": {
+    "thigh": 1
+   }
+  },
+  "lame_r_rigid": {
+   "ride": {
+    "thigh": 0.75,
+    "calf": 0.25
+   },
+   "one_bone": true
+  },
+  "buckle_r_rigid": {
+   "ride": {
+    "spine": "mean",
+    "thigh": "mean"
+   }
+  },
+  "tabs_r_rigid": {
+   "with": "plate_r_rigid"
+  },
+  "rivets_r_rigid": {
+   "with": "plate_r_rigid"
+  }
+ }
+}
