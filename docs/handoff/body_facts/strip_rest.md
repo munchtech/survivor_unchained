@@ -331,3 +331,30 @@ Next (built, NOT measured): `_g` (= f + lim [0.6, 1.85], ring_lim [0.6, 1.5]) an
 
 ## Lay 5 PROMOTED (lead 20): `strip_rest_l20_h.npz` is the active `strip_rest.npz` (backup `survivorsunchained_inputs\body\p1b_l20_lays\`)
 Only the `*_r` keys differ from lay 4 (left byte for byte). Runner's `turned_l20_h.log` / `map_l20_h.log`: turned 0 on all ten right poses; the nine's right four map / A's own: leap@7 2.69 / 2.58 (+0.11), @9 3.07 / 3.40, @19 3.43 / 4.16, @20 3.33 / 3.93; crossbow_shoot@10:r 1.87 against fill 1.73 (+0.14, bar 1.88); cast_bolt@3 1.78 / fill 1.76, axe_heavy@7 2.08 / 2.14, leap@5 1.80 / 1.85, warden_town@126 1.76 / 1.87, leap@25 1.88 / 1.98; proof 49 poses <= 45 deg |map - fill| 0.0; rest feet facing off A 0. FACTS FOR GATE T: the absolute map worst on the right overhead rose against lay 4 (@19 3.26 -> 3.43, @20 3.16 -> 3.33; fill 3.32 / 3.33) while A's own under the lay's edges rose more (3.41 -> 4.16): the bar is met as written, but the reference moves with the lay. Shortest edge at axe_heavy@7 0.47 against A's own 0.64 (lay 2 0.75 of A's too). `carried_target.py test` ALL PASS with the map in Her on this lay.
+
+## Lay 6 (lead 21's solver): 10 Nov. NOT MET; partial candidate `strip_rest_l21.npz` (left of `_l21_a` + lay 5's right)
+Method change (`strip_rest.py`, all off at defaults, old builds unchanged):
+- lay2 `judge` (`--set '{"judge": true}'`, built by `HerStrip.judge`): the poses' barrier uses THE MAP COUNT'S OWN RULE
+  (cmd_turned / Her): normals = (1 - w) fill + w (B' rest vertex normals carried by the B' carrier), signed against B's
+  rest facing, re-read each pass (about 3 s a pass). Triangles the fill itself turns in a pose weigh w x; `turnwall`
+  multiplies the rest. `guard` / `guardwall`: minimum-width guard, no posed edge under guard x A's own shortest there.
+- `turned` prints `FOLD deg`: the dihedral across band edges in the pose (map max / p95, fill max / p95): the smoothness number.
+Runs (start lay 5 `_l20_h`, both sides, lay 5 `_h` settings + the new keys; logs `out/shoulder/build_l21_{a,b}.log`,
+`turned_l21_{a,b}_all.log`, baseline `turned_l21_lay5_all.log`, all 141 poses):
+- `_a`: judge, guard 0.8, guardwall 50. `_b`: + guardwall 500, turnwall 30 (worse: abd150 / abd170 / leap@7 +0.33; dropped).
+| check | lay 5 | `_a` |
+|---|---|---|
+| (1) turned, w > 0 poses over the fill's own | crossbow@0 / @2:r, cast_flick@8:r, cast_bolt@6:l 3, leap@6:r 3 | crossbow@0 cured; @2:r 1, cast_flick@8:r 1, cast_bolt@6:l 1, leap@6:r 2; NEW leap@9:r 1, x:hadd40:l 1 |
+| (1) fill-inherited (w <= 0.18, map = fill's count) | axe_back@0 / @1:r, warden_look@150:l, iron_vow@8:r, cast_bolt@11:l, reaver_look@27:l | the same: a carry map at w 0.02-0.18 cannot cure the fill; "turned 0 on EVERY pose" is not reachable as written |
+| (2) guard, least map / A's own shortest (w > 0) | 0.64 (crossbow@2:r) | 0.66 (warden_look@150:l); 0.8 asked, the soft wall does not hold it |
+| (3) T22 own + fill + the 5 + leap@0 / @30:l | leap@0 / @30:l fill +0.18 / +0.16 | left ALL met (leap@0 / @30:l +0.06); right leap@7 +0.20, cast_flick@8 +0.25 FAIL |
+| (4) FOLD max deg leap@5/6/7/9/12/14/16/17/18/19/20:r | 123/143/110/137/122/47/62/54/75/87/71 | 120/148/107/151/135/45/63/51/71/72/64 |
+| (5) rest corner facing off A | l 0, r 0 | l 0, r 2 |
+`strip_rest_l21.npz` = `_a`'s `*_l` + lay 5's `*_r` (byte for byte): left gains leap@0 / @30:l (fill +0.18 / +0.16 -> +0.06),
+cast_bolt@6:l 3 -> 1 turned, rest l facing off 0; right = lay 5. Proof (5) at <= 45 deg is structural (w = 0). `turned` /
+`target --map` NOT rerun on the composite (left rows are `_a`'s run). Sheet not made.
+WHY IT STALLS (the finding): the turned triangles left are not seen by lay2 even under the judge's normals. lay2 places a
+band point at foot(u) + h N on its own unfold triangle; the B' carrier (car1, what Her and cmd_turned use) re-picks A's
+closest triangle for that rest point, at the fold often the other wall. So positions differ, not only normals. Next: make
+lay2's posed points the carrier's (carry the rest lay point with car1's face / bary / d0, rebuilt each pass, held as a
+fixed linear map within a pass), or make car1 keep the lay's own foot face (the HerStrip carrier given face = the unfold's).

@@ -359,7 +359,8 @@ def chain_order(pts, E, P):
 
 def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), walk=(0.82, 1.28), wall=50.0,
          fold=(0.3, 0.15), margin=(0.05, 0.10), steps=8, passes=3, iters=1500, start=None, ratchet=True, capm=0.10,
-         qmin=0.0, qwall=1.0, capwall=1.0, lo_own=0.0, lowall=1.0, hiwall=1.0, rest_wall=1.0, ring_lim=None, log=print):
+         qmin=0.0, qwall=1.0, capwall=1.0, lo_own=0.0, lowall=1.0, hiwall=1.0, rest_wall=1.0, ring_lim=None, judge=None,
+         guard=0.0, guardwall=1.0, turnwall=1.0, log=print):
     """The band's plane points for a CARRY MAP: where each band point rides on the reference, chosen so the band is
     sound IN THE POSES IT IS USED IN, not as a rest. The snapped points (the apex row) stay on the curve and slide
     along it; they are walked onto it from their feet in `steps`.
@@ -389,6 +390,12 @@ def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), w
     hi in the other poses; rest_wall, the wall's factor on the rest edges (lim); ring_lim (lo, hi), the rest edge
     ratio's limits on an edge to the fixed ring (its far end does not move with the map: edge 2455-2456 r, lay 1.86,
     carried crossbow_shoot's worst).
+    Lay 6's rules (off at their defaults): judge, a callable (X the rest lay points [n, 3]) -> (Nb [poses, band, 3]
+    the lay's own rest vertex normals carried into each design pose, s0 [triangles] the facing sign of B's rest): when
+    given, the poses' barrier is THE MAP COUNT'S OWN RULE (cmd_turned, Her): the area along the mixed normals
+    (1 - w) fill + w Nb, signed against B's rest facing, re-read each pass; a triangle the fill itself turns in a pose
+    is held at w x its weight there (the map can only move w of it), every other one at turnwall x its weight. guard, the minimum-width guard: in every pose
+    no edge under guard x the reference's own shortest there, wall guardwall x wall (slivers).
     """
     n, bi, m = len(P0), np.nonzero(band)[0], 1 + len(design)
     fi, si = np.nonzero(band & ~snap)[0], np.nonzero(snap)[0]
@@ -445,11 +452,15 @@ def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), w
 
     def areas(X, nh, uu):
         a, b, c = (X[:, tris[:, k]] for k in range(3))
-        q = 0.5 * (np.cross(b - a, c - a) * nh).sum(2) / a0
+        q = 0.5 * (np.cross(b - a, c - a) * nh).sum(2) / a0 * sg[:len(X)]
         q[0] = plane_area(uu, tris) / a0                     # the rest: the plane decides
         return q, a, b, c
 
     capped, hi_min = np.array([len(d) > 4 and bool(d[4]) for d in design], bool), None
+    sg, wtm, glo = np.ones((m, nf)), np.broadcast_to(wt, (m, nf)).copy(), np.zeros((m, 1))
+    if judge is not None:                                    # the fill's own turned triangles per pose (fixed)
+        ft = np.stack([ct.facing(tris, d[1], d[2]) for d in design])
+        ft0 = None
     for step in range(steps + passes):
         tau = max(1 - (step + 1) / steps, 0.0) if steps else 0.0
         mm = 1 if step < steps else m                        # the walk onto the line: on the rest surface alone
@@ -461,6 +472,13 @@ def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), w
         X, N, _ = points(uu, mm)
         NX = NB[:mm].copy()
         NX[:, bi] = ct._unit((1 - Ws)[:, None, None] * NX[:, bi] + Ws[:, None, None] * N)
+        if judge is not None and mm > 1:                     # the map count's rule: B' normals carried, B's rest sign
+            Nj, s0 = judge(X[0])
+            NX[1:, bi] = ct._unit((1 - W[1:mm])[:, None, None] * NB[1:mm][:, bi] + W[1:mm][:, None, None] * Nj)
+            sg[1:] = s0[None]
+            if ft0 is None:
+                ft0 = np.sign(ft) != s0[None]
+                wtm[1:] = np.where(ft0, W[1:, None], turnwall) * wt[None]
         nh = ct._unit(NX[:, tris].sum(2))
         soft = areas(X, nh, uu)[0] <= 0.05
         hi, lo = np.full((mm, 1), lm[1]), np.full((mm, 1), lm[0])
@@ -475,6 +493,7 @@ def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), w
             hi_min = hi[1:, 0].copy()
             if lo_own:
                 lo[1:, 0] = np.maximum(lo[1:, 0], lo_own * own.min(1))
+            glo = np.r_[0.0, guard * own.min(1)][:, None]
         hi, lo = np.broadcast_to(hi, (mm, ne)).copy(), np.broadcast_to(lo, (mm, ne)).copy()
         if ring_lim is not None:
             lo[0, ring_e], hi[0, ring_e] = np.maximum(lo[0, ring_e], ring_lim[0]), np.minimum(hi[0, ring_e], ring_lim[1])
@@ -488,8 +507,9 @@ def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), w
             L = np.linalg.norm(d, axis=2) * 1000
             r = L / l0
             over, under = np.maximum(r - hi, 0), np.maximum(lo - r, 0)
-            e = (l0 * (kspr * (r - 1) ** 2 + wl * over ** 2 + wu * under ** 2)).sum()
-            gX = scat(De, (2 * kspr * (r - 1) + 2 * (wl * over - wu * under))[..., None] * d * (1000 / np.maximum(L, 1e-9))[..., None])
+            ug, wg = np.maximum(glo[:mm] - r, 0), guardwall * wall
+            e = (l0 * (kspr * (r - 1) ** 2 + wl * over ** 2 + wu * under ** 2 + wg * ug ** 2)).sum()
+            gX = scat(De, (2 * kspr * (r - 1) + 2 * (wl * over - wu * under - wg * ug))[..., None] * d * (1000 / np.maximum(L, 1e-9))[..., None])
             if qmin:                                         # the rest lay's slivers (row 0 = the rest surface)
                 qr, gq = quality(X[0])
                 pq = np.maximum(qmin - qr / q0p, 0)
@@ -499,8 +519,8 @@ def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), w
             q, a, b, c = areas(X, nh, uu)
             qc = np.maximum(q, 1e-3)
             pen = np.maximum(np.where(soft, fo - q, fo / qc - 1), 0)
-            e += (wt * pen ** 2).sum()
-            k = (wt * pen * np.where(soft, -1.0, -fo / qc ** 2 * (q > 1e-3)) / a0 / 1000)[..., None]
+            e += (wtm[:mm] * pen ** 2).sum()
+            k = (wtm[:mm] * pen * np.where(soft, -1.0, -fo / qc ** 2 * (q > 1e-3)) * sg[:mm] / a0 / 1000)[..., None]
             kp, (ua, ub, uc) = k[0].copy(), (uu[tris[:, c_]] for c_ in range(3))
             k[0] = 0.0
             gX += scat(Tc[0], k * np.cross(nh, c - b)) + scat(Tc[1], k * np.cross(nh, a - c)) + scat(Tc[2], k * np.cross(nh, b - a))
@@ -515,7 +535,8 @@ def lay2(unf, cur, u0, h, P0, N0, band, snap, E, tris, design, lim=(0.5, 2.0), w
             rr = np.linalg.norm(Xn[:, i] - Xn[:, j], axis=2) * 1000 / l0
             log(f"   lay2 step {step} tau {tau:.2f}: e {res.fun:.1f}, {res.nit} its; turned at start (rest: the plane, poses) {int(soft[0].sum())}, {int(soft[1:].sum())};"
                 f" rest edge {rr[0].min():.2f}..{rr[0].max():.2f}" + (f"; poses over hi {int((rr[1:] > hi[1:]).sum())} (worst by {(rr[1:] - hi[1:]).max():.2f}),"
-                f" under lo {int((rr[1:] < lo[1:]).sum())}; A's own worst over the poses {own.max():.2f}" if mm > 1 else ""), flush=True)
+                f" under lo {int((rr[1:] < lo[1:]).sum())}; A's own worst over the poses {own.max():.2f}; least map / A's own shortest"
+                f" {(rr[1:].min(1) / own.min(1)).min():.2f}" if mm > 1 else ""), flush=True)
     return place(x, 0.0)
 
 
@@ -856,12 +877,38 @@ class HerStrip:
         band = ct.rows_around(n, self.E[s], np.unique(car.bridge), rows) & (np.asarray(self.md.beta) >= 1)
         c = self.cfg
         new = c["lay"] == 2 and u is None
+        des, lay = self.design(s) if new else None, dict(c["lay2"])
+        if new and lay.get("judge"):
+            lay["judge"] = self.judge(s, band, des)
+        else:
+            lay.pop("judge", None)
         return relay(self.bd.V0[self.pts[s]], self.E[s], self.tris(s), band, car.bridge, car.face, car.bary, self.Ab.V0,
                      self.Ab.T, c["reach"], c["kappa"], c["deg"], c["ext"], c["part"], lim=c["lim"],
                      rounds=2 if new else 4, side=c["side"][s] if c["lay"] == 2 else 0,
-                     design=self.design(s) if new else None, lay=c["lay2"], u_given=u,
+                     design=des, lay=lay, u_given=u,
                      repair=c["untangle"] if c["lay"] == 2 and (new or repair) else None,
                      start=start if new else None, snap_given=snap if c["lay"] == 2 else None)
+
+    def judge(self, s, band, des):
+        """lay2's `judge` for side s (cfg lay2 "judge": true): the map count's own normals, as cmd_turned and Her read
+        them. Given the rest lay points X0 [n, 3]: B' = B with them put in, its vertex normals, its carrier (no pocket,
+        as load builds car1), and those normals carried into each design pose (band points); with B's rest facing sign
+        of the band's triangles."""
+        pid, bi = self.pts[s], np.nonzero(band)[0]
+        tr = self.tris(s)
+        tb = tr[band[tr].any(1)]
+        s0 = np.sign(ct.facing(tb, self.bd.V0[pid], self.h.N0[pid]))
+
+        def f(X0):
+            V1 = self.whole(self.bd.V0, {s: X0})
+            keep = self.bd.V0, self.h.N0
+            try:
+                self.bd.V0, self.h.N0 = V1, self.bd._normals(V1)
+                N1, car = self.h.N0[pid][bi], self.h.carrier(s, pocket_rows=0)
+            finally:
+                self.bd.V0, self.h.N0 = keep
+            return np.stack([np.einsum("nij,nj->ni", car.rotations(d[0])[bi], N1) for d in des]), s0
+        return f
 
     def load(self):
         z = np.load(rt.OUT / self.cfg["out"])
@@ -1222,6 +1269,21 @@ def cmd_sheet(hs, rows_arg="", out_name="armpit_map"):
     print(f"wrote {half}")
 
 
+def fold_angles(tb, X, band):
+    """The dihedral (deg, 0 = flat) across each edge shared by two triangles of tb that has an end on the band
+    (smoothness: the band's folds in a pose)."""
+    nt = ct._unit(np.cross(X[tb[:, 1]] - X[tb[:, 0]], X[tb[:, 2]] - X[tb[:, 0]]))
+    e = np.sort(np.concatenate([tb[:, [0, 1]], tb[:, [1, 2]], tb[:, [2, 0]]]), 1)
+    t = np.tile(np.arange(len(tb)), 3)
+    o = np.lexsort((e[:, 1], e[:, 0]))
+    e, t = e[o], t[o]
+    pair = np.nonzero((e[1:] == e[:-1]).all(1))[0]
+    bm = np.zeros(len(X), bool)
+    bm[band] = True
+    pair = pair[bm[e[pair]].any(1)]
+    return np.degrees(np.arccos(np.clip((nt[t[pair]] * nt[t[pair + 1]]).sum(1), -1, 1)))
+
+
 def cmd_turned(hs, poses, top=4):
     """turned: DIAGNOSTICS of the carry map (reads the stored lay, writes nothing). Per pose: the triangles cmd_map
     counts as turned and the band edges over A's own worst + 0.15, with ids (region-local / mesh vertex), place
@@ -1281,11 +1343,13 @@ def cmd_turned(hs, poses, top=4):
         NA[act] = ct._unit(np.einsum("nk,nkj->nj", bta, r["unf"].normals(Va)[pa]))
         oa, oc = ct.facing(tb, FA, NA) <= 0, corner_facing(FA, NA, tb)
         ids = lambda v: "/".join(f"{int(x)}{tag[x]}" for x in v) + " (mesh " + "/".join(str(int(hs.pts[s][x])) for x in v) + ")"
+        fm, ff = fold_angles(tb, Xm, b), fold_angles(tb, Xf, b)
         print(f"== {q} ({s}) w {wk:.2f}: turned map {int(tm.sum())}, at w = 1 {int(t1.sum())}, fill {int(tf.sum())}; map edge max {rm.max():.2f}, A's own max {own.max():.2f}"
               f" (limit {lim:.2f}), over the limit {int((rm > lim).sum())}; mean lay {lay.mean():.2f}, map {rm.mean():.2f}, A {own.mean():.2f};"
               f" A'S OWN surface under the band's triangles: turned {int(oa.sum())} {np.nonzero(oa)[0].tolist()}, a corner facing off {int((oc <= 0).any(1).sum())};"
               f" fill max {rf.max():.2f}; SHORTEST map {rm.min():.2f} (edge {int(rm.argmin())} {ids(e[rm.argmin()])}: lay {lay[rm.argmin()]:.2f}, A's own along it {own[rm.argmin()]:.2f}, fill {rf[rm.argmin()]:.2f}), A's own {own.min():.2f} (map / A's {rm.min() / own.min():.2f}), fill {rf.min():.2f};"
-              f" lay rest edge {lay.min():.2f}..{lay.max():.2f}", flush=True)
+              f" lay rest edge {lay.min():.2f}..{lay.max():.2f}; FOLD deg (band edges' dihedral) map max {fm.max():.1f} p95 {np.percentile(fm, 95):.1f},"
+              f" fill max {ff.max():.1f} p95 {np.percentile(ff, 95):.1f}", flush=True)
         for t in np.nonzero(tm | t1)[0]:
             v = tb[t]
             ga, ga0 = (fa[v] * ng[t]).sum(1), (fa0[v] * nl[t]).sum(1)
