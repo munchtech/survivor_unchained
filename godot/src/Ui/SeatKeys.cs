@@ -311,7 +311,9 @@ public partial class Socket
             {
                 float ta = -Mathf.Pi / 2 + Mathf.Tau * tk;
                 var td = new Vector2(Mathf.Cos(ta), Mathf.Sin(ta));
-                DrawLine(c + td * (hr - 4f), c + td * (hr + 1f), new Color(0.03f, 0.02f, 0.01f, 0.95f), 2);
+                // (r3d S2: ink on the arc, bone (the cap's, at 70%) on the empty groove, where ink was lost)
+                var tc = st.Cost >= tk ? new Color(0.03f, 0.02f, 0.01f, 0.95f) : (Color.Color8(226, 214, 186) * 0.7f) with { A = 0.95f };
+                DrawLine(c + td * (hr - 4f), c + td * (hr + 1f), tc, 2);
             }
             if (st.Cost > 0.005f)
             {

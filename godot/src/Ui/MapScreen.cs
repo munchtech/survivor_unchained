@@ -357,6 +357,7 @@ public partial class MapScreen : Overlay
     double t;
     float extent = 1;
     Vector2 youAt;
+    Polygon2D? you;   // her arrow: a mark the names keep clear of (r3d S3: "YOUR CAMP" was printed through it)
 
     // In the panel she stands in the world beside it, near enough that her face reads (as for the rest
     // of the book); opened wide, the view is the map's.
@@ -529,7 +530,7 @@ public partial class MapScreen : Overlay
         if (G.Battle is { } b)
         {
             youAt = Px(b.Player.X, b.Player.Z);
-            world.AddChild(new Polygon2D { Polygon = new[] { new Vector2(0, -11), new Vector2(8, 8), new Vector2(0, 4), new Vector2(-8, 8) }, Color = new Color("#b8321e"), Position = youAt, Rotation = (float)(Math.PI - b.Player.Facing) });
+            world.AddChild(you = new Polygon2D { Polygon = new[] { new Vector2(0, -11), new Vector2(8, 8), new Vector2(0, 4), new Vector2(-8, 8) }, Color = new Color("#b8321e"), Position = youAt, Rotation = (float)(Math.PI - b.Player.Facing) });
         }
         frame.GuiInput += e => Input(e, F);
         minZoom = Math.Min(viewSize.X, viewSize.Y) / F * 0.9f;
@@ -767,6 +768,7 @@ public partial class MapScreen : Overlay
         var taken = new List<Rect2>();
         foreach (var (node, _, kind, _) in names)
             if (kind != MarkKind.Place) taken.Add(new Rect2(node.GlobalPosition - new Vector2(11, 11), new Vector2(22, 22)));
+        if (you != null && IsInstanceValid(you)) { float h = 12 * you.GlobalScale.X; taken.Add(new Rect2(you.GlobalPosition - new Vector2(h, h), new Vector2(2 * h, 2 * h))); }
         static int Order(MarkKind k) => k == MarkKind.Place ? 0 : k is MarkKind.Quest or MarkKind.Exit or MarkKind.Goal ? 1 : k == MarkKind.Person ? 2 : 3;
         foreach (var (node, text, kind, w) in names.OrderBy(n => Order(n.Kind)))
         {
