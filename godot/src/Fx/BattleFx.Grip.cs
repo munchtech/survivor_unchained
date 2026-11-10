@@ -7,13 +7,16 @@ using SurvivorUnchained.Sim;
 namespace SurvivorUnchained.View;
 
 /// <summary>
-/// Her held grip's cut (P7 lead 4, take 3; the most-seen effect in the game): the SAIL HER BLADE LEAVES, built from the
-/// blade itself. Her held blade's hilt and tip are sampled in world space on every skeleton update (the frame's final
-/// pose, after the attachments: no frame of lag), and the trail is the blade's swept area over the cut's fast frames:
-/// at its head the whole blade is lit (the head IS her sword, so the trail is joined to her hand), then its inner edge
-/// runs out to the tip's path, so the head third is a sail and the rest a whip-thin tail drawn to a point. Painted by
-/// the house brush (fx_stroke_at, through shaders/fx_grip_stroke.gdshader): white-gold the widest band at every point,
-/// gold a rim on the trailing side, amber only in the last dry bristles. It shows two frames before the contact (the
+/// Her held grip's cut (P7 lead 5, take 4; the most-seen effect in the game): THE STROKE HER BLADE LEAVES, built from
+/// the blade itself. Her held blade's hilt and tip are sampled in world space on every skeleton update (the frame's
+/// final pose, after the attachments: no frame of lag), and the trail is painted on the blade's swept area over the
+/// cut's fast frames as ONE brushed sweep, a heavy-headed comma: its leading edge is the tip's path, clean and hard;
+/// its inner edge starts part way up the blade and runs out to the tip's path, down to a brush tail a few px wide
+/// drawn to a point; at its head the blade itself is lit white down to the guard (the head IS her sword, so the stroke
+/// is joined to her hand). Painted by the house brush (fx_stroke_at, through shaders/fx_grip_stroke.gdshader) in three
+/// nested commas: white-gold the widest and the shortest, gold inside it, amber the tail and the inner side's dry
+/// bristles, whose streaks run along the sweep. A short stroke (the frames before the contact, the last of its leaving)
+/// is the same comma small: a clean wedge on the blade, never a sliver. It shows two frames before the contact (the
 /// sim's AttackAnim and the clip's contact, data/anim/her_events.json), is whole on the contact, its head stays on the
 /// blade through the follow-through, and it leaves by running its tail up to the blade (the amber, then the gold
 /// stepping out: the white is last), gone 0.15 s after the contact at the cut's END. Through a hitstop the watch's
@@ -36,17 +39,18 @@ public partial class BattleFx
     /// <summary>The margin drawn past the tip (a share of the blade: the glow, the edge's antialiasing).</summary>
     const float GripOver = 0.12f;
 
-    /// <summary>The look by weapon (fx_language.json p7 grip.sunder / grip.oath): the blade's lit share at the head, the
-    /// power its inner edge runs out by, the longest drawn (m of the tip's path), the brush's across knots and the
-    /// width by step of leaving, the contact's size.</summary>
-    readonly record struct GripLook(float Head, float P, float MaxLen, float[] Across, float[] Width, float Flash);
+    /// <summary>The look by weapon (fx_language.json p7 grip.sunder / grip.oath): the comma's width at the blade (a share
+    /// of it), the power its inner edge runs out by, the longest drawn (m of the tip's path), the bands' ends across
+    /// the width by step of leaving, how far back the core and the mid reach, the width by step of leaving, the
+    /// contact's size.</summary>
+    readonly record struct GripLook(float Head, float P, float MaxLen, float[] Bands, float[] Reach, float[] Width, float Flash);
     static GripLook? gripSunder, gripOath;
 
     static GripLook GripLookOf(bool oath)
     {
         if ((oath ? gripOath : gripSunder) is { } l) return l;
         string k = oath ? "grip.oath." : "grip.sunder.";
-        var n = new GripLook(P7D[k + "head"], P7D[k + "p"], P7D[k + "max_len"], P7D.All(k + "across"), P7D.All(k + "width"), P7D[k + "flash"]);
+        var n = new GripLook(P7D[k + "head"], P7D[k + "p"], P7D[k + "max_len"], P7D.All(k + "bands"), P7D.All(k + "reach"), P7D.All(k + "width"), P7D[k + "flash"]);
         if (oath) gripOath = n; else gripSunder = n;
         return n;
     }
@@ -265,11 +269,11 @@ public partial class BattleFx
         if (gripNode != null && IsInstanceValid(gripNode)) return;
         (gripNode, gripMesh, gripMat) = GripNewNode("GripTrail", 0);
         (gripEdgeNode, gripEdgeMesh, gripEdgeMat) = GripNewNode("GripEdge", 2);
-        // the brush as the sail takes it: the across and the along are the stroke's own (the sail's shape is the
-        // shader's), the bristles laid by the shader in pixels and metres, the boundaries' waver small (the across's
-        // knots magnify it in the white)
+        // the brush as the stroke takes it: the across and the along are the stroke's own (the comma's shape is the
+        // shader's), the bristles laid by the shader in pixels and metres, the boundaries' waver small (the across
+        // magnifies it in the white)
         gripMat.SetShaderParameter("fx_stroke_shape", new Vector4(1f, 0.3f, 1f, 0f));
-        gripMat.SetShaderParameter("fx_bristle", new Vector4(24f, 12f, 0.55f, P7D["grip.waver"]));
+        gripMat.SetShaderParameter("fx_bristle", new Vector4(24f, 12f, P7D.All("grip.dry")[4], P7D["grip.waver"]));
         gripWarm = 3;
     }
 
@@ -326,19 +330,31 @@ public partial class BattleFx
         var m = gripMat!;
         float px = P7Px(her);
         step = Math.Clamp(step, 0, 2);
-        var ac = look.Across;
-        var al = P7D.All("grip.along");
+        blade = Mathf.Max(blade, 0.05f);
+        var bn = look.Bands;
+        var dry = P7D.All("grip.dry");
         var gr = P7D.All("grip.grain");
+        var lit = P7D.All("grip.lit");
+        var pt = P7D.All("grip.point");
+        // a short stroke is the comma small, a wedge: its head no wider than `aspect` of its own length (a link's
+        // thread aside), its tail's width under its head's
+        float body = Mathf.Max(total - thread, 0.01f);
+        float head = Mathf.Min(look.Head * look.Width[step], body * P7D["grip.aspect"] / blade);
+        float tail = Mathf.Min(P7D["grip.tail_px"] * px / blade, head * 0.5f);
+        // the lit blade: from the comma's head down toward the guard as the stroke grows, thinner as it leaves
+        float full = Mathf.Clamp((body - lit[1]) / Mathf.Max(lit[2] - lit[1], 1e-3f), 0, 1);
         m.SetShaderParameter("grip_total", total);
         m.SetShaderParameter("grip_thread", thread);
         m.SetShaderParameter("grip_u0", u0);
         m.SetShaderParameter("grip_blade", blade);
-        m.SetShaderParameter("grip_shape", new Vector3(P7D["grip.tail_px"] * px / Mathf.Max(blade, 0.05f), look.Head * look.Width[step], look.P));
-        m.SetShaderParameter("grip_across", new Vector4(ac[step * 4], ac[step * 4 + 1], ac[step * 4 + 2], ac[step * 4 + 3]));
-        m.SetShaderParameter("grip_along", new Vector4(al[0], al[1], al[2], al[3]));
+        m.SetShaderParameter("grip_shape", new Vector3(tail, head, look.P));
+        m.SetShaderParameter("grip_bands", new Vector3(bn[step * 3], bn[step * 3 + 1], bn[step * 3 + 2]));
+        m.SetShaderParameter("grip_reach", new Vector3(look.Reach[0], look.Reach[1], look.Reach[2]));
+        m.SetShaderParameter("grip_dry", new Vector3(Mathf.Min(dry[0], total * dry[1]), dry[2], dry[3]));
+        m.SetShaderParameter("grip_lit", new Vector2(lit[0] * px * look.Width[step], full));
         m.SetShaderParameter("grip_grain", new Vector2(gr[0], gr[1]));
         m.SetShaderParameter("grip_glow", P7D["grip.glow"]);
-        m.SetShaderParameter("grip_point", P7D["grip.point"]);
+        m.SetShaderParameter("grip_point", Mathf.Min(pt[0], total * pt[1]));
         m.SetShaderParameter("grip_px", px);
         gripNode!.CustomAabb = new Aabb(her - new Vector3(5, 3, 5), new Vector3(10, 7, 10));
     }
@@ -423,7 +439,7 @@ public partial class BattleFx
         float thread = gripCum[linkN];
         // the drawn length: capped, and run up toward the head as it leaves
         float len = Mathf.Min(cum, look.MaxLen) * (1 - cut), start = cum - len;
-        if (len < 0.05f) { gripNode.Visible = false; return; }
+        if (len < P7D["grip.min_len"]) { gripNode.Visible = false; return; }
         int s = 0;
         while (s < gripPts.Count - 2 && gripCum[s + 1] <= start) s++;
         gripMesh.ClearSurfaces();

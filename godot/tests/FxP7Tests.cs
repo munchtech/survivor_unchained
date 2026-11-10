@@ -53,4 +53,43 @@ public class FxP7Tests
         Assert.InRange(p.All("wave.dust_px")[0], 20, 40);
         Assert.InRange(p["wave.open_deg"], 120, 300);
     }
+
+    /// <summary>(P7 lead 5, take 4) The held cut's stroke: a comma in three nested bands, steel first, a brush tail.</summary>
+    [Fact]
+    public void TheHeldCutsStrokeIsACommaInThreeBands()
+    {
+        var p = Real();
+        foreach (var k in new[] { "grip.lead_frames", "grip.slow", "grip.min_len", "grip.aspect", "grip.tail_px", "grip.point", "grip.grain", "grip.waver", "grip.glow",
+            "grip.dry", "grip.lit", "grip.retract", "grip.shed_at", "grip.contact.wait_frames", "grip.contact.k_min", "grip.contact.lift", "grip.contact.kill",
+            "grip.contact.crowd", "grip.contact.tears" })
+            Assert.True(p.Has(k), "fx_language.json p7 lacks " + k);
+        Assert.Equal(5, p.All("grip.dry").Length);
+        Assert.Equal(3, p.All("grip.lit").Length);
+        Assert.Equal(2, p.All("grip.point").Length);
+        foreach (var w in new[] { "sunder", "oath" })
+        {
+            var b = p.All($"grip.{w}.bands");
+            var r = p.All($"grip.{w}.reach");
+            Assert.Equal(9, b.Length);
+            Assert.Equal(3, r.Length);
+            Assert.Equal(3, p.All($"grip.{w}.width").Length);
+            for (int s = 0; s < 3; s++)
+                Assert.True(0 < b[s * 3] && b[s * 3] < b[s * 3 + 1] && b[s * 3 + 1] < b[s * 3 + 2] && b[s * 3 + 2] < 1, $"grip.{w}.bands step {s} out of order");
+            // steel first: the core is the widest band at the head and the shortest along; the mid reaches on, the edge is the tail
+            Assert.True(b[0] > b[1] - b[0] && b[0] > 1 - b[1], $"grip.{w}: the core is not the widest band");
+            Assert.True(r[0] < r[1] && r[1] <= 1, $"grip.{w}.reach");
+            // a comma, not the whole blade's fin
+            Assert.InRange(p[$"grip.{w}.head"], 0.3f, 0.75f);
+        }
+        // the Oathblade's is the thinner stroke, its gold about a sixth of its width
+        Assert.True(p["grip.oath.head"] < p["grip.sunder.head"]);
+        var ob = p.All("grip.oath.bands");
+        Assert.InRange(ob[1] - ob[0], 0.12f, 0.2f);
+        // a brush tail, not a hairline; the dry tail and the point counted in metres, capped by a share of a short stroke
+        Assert.InRange(p["grip.tail_px"], 3, 6);
+        Assert.InRange(p.All("grip.dry")[1], 0.1f, 0.4f);
+        Assert.InRange(p.All("grip.point")[1], 0.1f, 0.5f);
+        // gone 0.15 s after the contact
+        Assert.Equal(1.0, (double)p.Curve("grip.retract", 0.15f), 3);
+    }
 }

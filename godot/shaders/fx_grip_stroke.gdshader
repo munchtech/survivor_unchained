@@ -1,17 +1,21 @@
-// Her held grip's cut (src/Fx/BattleFx.Grip.cs, take 3): the SAIL her blade leaves, the contact where it meets a body,
+// Her held grip's cut (src/Fx/BattleFx.Grip.cs, take 4): the STROKE her blade leaves, the contact where it meets a body,
 // and the hot edge her blade keeps between a chain's cuts. Steel family (fx_cel.gdshaderinc: fx_core white-gold, fx_mid
 // gold, fx_edge amber), drawn after the grade (FxCel.Apply): flat bands, hard steps, never added light.
-// Mode 0, the sail: a ribbon built each frame from the blade's own samples. UV.x = metres along the tip's path from the
+// Mode 0, the stroke: a ribbon built each frame from the blade's own samples. UV.x = metres along the tip's path from the
 // drawn tail (0) to the head (grip_total: the blade now); UV.y = 0 at the guard, 1 at the tip, and a margin past it.
-//   The outer edge is the tip's path, clean and hard, the house glow past it. The inner edge: at the head the blade's
-//   whole lit share (grip_shape.y), then out to the tip's path fast (power grip_shape.z), so the head third is a sail and
-//   the rest a whip-thin tail (grip_shape.x of the blade) drawn to a point; the first grip_thread metres are a link's
-//   thread (the tail's width throughout). The paint is the house brush, fx_stroke_at, given a ONE-SIDED across (0 the
-//   tip's path, 1 the inner edge) through the knots grip_across, so its core (white-gold) is the widest band, its mid
-//   (gold) a rim on the trailing side and its feathered edge (amber) the last dry bristles; its along through the knots
-//   grip_along (the tail's end dry, the rest hot). The bristles are laid in the path's own metres and the screen's
-//   pixels (grain_at), so they stay where they were painted as the trail grows and runs up.
-//   Leaving is the view's: the tail runs up to the blade (a shorter ribbon each frame) and the knots step the amber,
+//   ONE fast brushed sweep, a heavy-headed comma. Its outer (leading) edge is the tip's path, clean and hard, the house
+//   glow past it. Its inner edge starts part way up the blade (grip_shape.y of it) and runs out to the tip's path along
+//   the length (power grip_shape.z), down to a brush tail a few px wide (grip_shape.x) drawn to a point over its last
+//   grip_point metres; a link's thread (the first grip_thread metres) keeps the tail's width. At the head the blade
+//   itself is lit white from the comma down to the guard (grip_lit), so the stroke is joined to her hand.
+//   The paint is the house brush, fx_stroke_at, given a ONE-SIDED across (0 the tip's path, 1 the inner edge) so that
+//   its three bands are three NESTED commas: the core (white-gold) the widest at the head and the shortest (it closes
+//   to a point on the leading edge grip_reach.x of the way back), the mid (gold) inside it reaching grip_reach.y, the
+//   edge (amber) the rest: the tail. The amber's inner part is the brush run dry (from grip_bands.z of the width): its
+//   bristles are laid in the path's own metres and the screen's pixels (grain_at), streaks along the sweep that end
+//   where the comma narrows past them, and they stay where they were painted as the stroke grows and runs up. The
+//   tail's last grip_dry.x metres are dry across their whole width.
+//   Leaving is the view's: the tail runs up to the blade (a shorter comma each frame) and the bands step the amber,
 //   then the gold, out: the white is last.
 // Mode 1, the contact (a quad facing the camera, +x the blade's travel): a white cut-through with a gold rim, longer
 //   ahead of its kernel than behind, whole for two frames and thin for one (grip_thin = frames since the contact),
@@ -27,9 +31,11 @@ uniform float grip_total = 1.0;
 uniform float grip_thread = 0.0;  // the link's thread at the tail (m of grip_total)
 uniform float grip_u0 = 0.0;      // the path's metres at the drawn tail (the bristles' place)
 uniform float grip_blade = 1.0;   // the blade's length guard to tip (m)
-uniform vec3 grip_shape = vec3(0.03, 1.0, 2.7);          // the tail's width, the head's (shares of the blade), the power
-uniform vec4 grip_across = vec4(0.62, 0.22, 0.8, 0.62);  // across knots: (share of the width, the brush's across) x 2
-uniform vec4 grip_along = vec4(0.14, 0.4, 0.34, 0.86);   // along knots: (share of the length, the brush's along) x 2
+uniform vec3 grip_shape = vec3(0.03, 0.6, 1.5);     // the tail's width, the head's (shares of the blade), the power it runs out by
+uniform vec3 grip_bands = vec3(0.48, 0.68, 0.74);   // across (shares of the width in from the tip's path): the core's end, the mid's, where the amber runs dry
+uniform vec3 grip_reach = vec3(0.62, 0.9, 2.0);     // how far back from the head the core and the mid reach (shares of the length), the power they close by
+uniform vec3 grip_dry = vec3(0.4, 0.05, 0.92);      // the tail's dry metres, the brush's along at the tail's end, and in the body
+uniform vec2 grip_lit = vec2(0.04, 1.0);            // the lit blade at the head: its thickness (m), how far down the blade (0 none, 1 to the guard)
 uniform vec2 grip_grain = vec2(3.0, 0.45);               // a bristle (px across), a streak (m along)
 uniform float grip_glow = 0.28;   // the glow's unit (m): fx_glow's width and reach are shares of it
 uniform float grip_point = 0.12;  // the tail's last metres, drawn to a point
@@ -52,16 +58,34 @@ float grip_knots(float x, vec4 k) {
 
 vec4 grip_trail(vec2 uv) {
 	float u = uv.x;
-	float al0 = clamp(u / max(grip_total, 1e-3), 0.0, 1.0);
-	float als = clamp((u - grip_thread) / max(grip_total - grip_thread, 1e-3), 0.0, 1.0);
-	float share = grip_shape.x + (grip_shape.y - grip_shape.x) * pow(als, grip_shape.z);
+	float sb = grip_total - u;   // metres behind the blade (negative: past it)
+	// 0 at the head (the blade now), 1 at the stroke's tail (a link's thread runs on behind it at the tail's width)
+	float t = clamp(sb / max(grip_total - grip_thread, 1e-3), 0.0, 1.0);
+	// the comma: the blade's share painted in from the tip's path, drawn to a point at the tail's end
+	float share = grip_shape.x + (grip_shape.y - grip_shape.x) * pow(1.0 - t, grip_shape.z);
 	share *= sqrt(clamp(u / max(grip_point, 1e-3), 0.0, 1.0));
 	share = max(share, 1e-4);
 	float vm = 1.0 - uv.y;   // shares of the blade in from the tip's path (negative: past it)
 	float a = vm / share;    // 0 the tip's path, 1 the inner edge
-	float alb = grip_knots(al0, grip_along);
+	// the brush's along: hot through the body, dry over the tail's last metres
+	float alb = mix(grip_dry.y, grip_dry.z, smoothstep(0.0, 1.0, u / max(grip_dry.x, 1e-3)));
+	// the house brush's own numbers at this heat (fx_stroke_at: its core ends 0.24 x hot in from its centerline, its mid
+	// at 0.48..0.66, its feather starts at 1 - fx_stroke_shape.y): the across below lands the bands' ends on them
+	float hot = smoothstep(0.15, 1.0, alb);
+	float kc = 0.24 * hot, km = mix(0.48, 0.66, hot), kf = 1.0 - fx_stroke_shape.y;
+	// the bands, three nested commas: the core and the mid each close to a point on the leading edge
+	float ac = grip_bands.x * (1.0 - pow(clamp(t / max(grip_reach.x, 1e-3), 0.0, 1.0), grip_reach.z));
+	float am = max(grip_bands.y * (1.0 - pow(clamp(t / max(grip_reach.y, 1e-3), 0.0, 1.0), grip_reach.z)), ac);
+	float af = max(grip_bands.z, am);
+	float ax = clamp(a, 0.0, 1.0);
+	float d = ax < ac ? kc * ax / max(ac, 1e-4)
+		: ax < am ? kc + (km - kc) * (ax - ac) / max(am - ac, 1e-4)
+		: ax < af ? km + (kf - km) * (ax - am) / max(af - am, 1e-4)
+		: kf + (1.0 - kf) * (ax - af) / max(1.0 - af, 1e-4);
+	// (behind the core's point the leading edge is the mid's: the boundaries' waver must not fleck it white)
+	d = max(d, (kc + 1.3 * fx_bristle.w) * (1.0 - smoothstep(0.0, 0.06, ac)));
 	// past the inner edge: the brush's own glow, in the glow's metres
-	float d = grip_knots(clamp(a, 0.0, 1.0), grip_across) + max(a - 1.0, 0.0) * share * grip_blade / grip_glow;
+	d += max(a - 1.0, 0.0) * share * grip_blade / grip_glow;
 	vec2 at = vec2(vm * grip_blade / (grip_grain.x * grip_px), (u + grip_u0) / grip_grain.y);
 	vec4 s = fx_stroke_at(d, alb, 0.0, at - vec2(d * fx_bristle.x * 0.5, alb * fx_bristle.y));
 	// past the tip's path: the house glow off a clean edge
@@ -69,8 +93,13 @@ vec4 grip_trail(vec2 uv) {
 	g.a *= smoothstep(0.0, 0.25, alb);
 	vec4 c = mix(g, s, fx_hard(0.0, vm, 0.0));
 	// the head ends on the blade, the tail at its point
-	c.a *= grip_in(grip_total, u) * step(0.0, u);
-	return c;
+	c.a *= grip_in(0.0, -sb) * step(0.0, u);
+	// the lit blade: white on the blade's own line from the tip's path through the comma's head and on down toward the
+	// guard, drawn to a point there
+	float lit_end = grip_shape.y + (1.0 - grip_shape.y) * grip_lit.y;
+	float k = clamp((vm - grip_shape.y) / max(lit_end - grip_shape.y, 1e-4), 0.0, 1.0);
+	float lit = grip_in(0.5 * grip_lit.x * (1.0 - 0.8 * k), abs(sb)) * step(0.0, vm) * step(vm, lit_end) * step(1e-3, grip_lit.y);
+	return vec4(mix(c.rgb, fx_core, lit), max(c.a, lit));
 }
 
 float grip_tear(vec2 p, vec2 at, vec2 dir, float len, float asp) {
