@@ -1,6 +1,6 @@
 {
  "kind": "action",
- "rules": "R8.1-R8.4 anticipation, contact, hold, follow-through, recovery to the RELAXED fight-ready pose; s11 Warden: committed, rotation-driven, the shield first; R1.2 the weapon carries 2-3x the body's motion. The read: a coiled spring, a sword raised high in flight, the blade driven into the earth as she lands on one knee; then she rises as if it cost nothing.",
+ "rules": "Lead 10 re-take (retake_brief.md, heroic_leap): a bow drawn in the air and loosed into the ground. Rules A-H: a line per beat that changes (arch, then crunch), nothing still outside the 2-frame hold, overlap, twist, from idle back to idle.",
  "held": [
   "sword",
   "shield"
@@ -18,7 +18,8 @@
    0.7333,
    0.8
   ],
-  "cancel": 0.9667
+  "cancel": 0.9667,
+  "blend_in": 0.05
  },
  "gen": {
   "engine": "kimodo",
@@ -35,252 +36,157 @@
    "A woman makes a powerful leaping attack: she springs up high, lifting her sword overhead, then comes down kneeling on one knee and plunges the sword point first into the ground, then stands back up ready."
   ],
   "keys": {
-   "src": {
-    "prompt": 0,
-    "seed": 702,
-    "seconds": 2.6,
-    "takes": 4,
-    "pick": 1,
-    "keys": {
-     "poses": [
-      {
-       "src": {
-        "prompt": "A woman holding a sword in her right hand crouches low with her weight forward, drawing the sword back and up behind her shoulder, about to spring forward into a jump.",
-        "seed": 321,
-        "seconds": 2.0,
-        "takes": 6
-       },
-       "pick": 1,
-       "frame": 0,
-       "at": 0,
-       "xz": [
-        0,
-        0
-       ],
-       "yaw": 0
-      },
-      {
-       "src": {
-        "prompt": "A warrior woman bends her knees deeply and leans forward, gathering herself to leap, her sword arm drawn back and her left arm tucked to her chest.",
-        "seed": 322,
-        "seconds": 2.0,
-        "takes": 6
-       },
-       "pick": 5,
-       "frame": 53,
-       "at": 12,
-       "xz": [
-        0,
-        0.3
-       ],
-       "yaw": 0,
-       "arm": {
-        "RightHand": [
-         -0.3,
-         0.55,
-         -0.2
-        ]
-       }
-      },
-      {
-       "src": {
-        "prompt": 2,
-        "seed": 403,
-        "seconds": 2.6,
-        "takes": 4,
-        "keys": {
-         "poses": [
-          {
-           "src": {
-            "prompt": 2,
-            "seed": 213
-           },
-           "pick": 4,
-           "frame": 53,
-           "at": 23,
-           "xz": [
-            0,
-            1.0
-           ],
-           "yaw": 0,
-           "lift": 0
-          },
-          {
-           "src": {
-            "prompt": 2,
-            "seed": 213
-           },
-           "pick": 4,
-           "frame": 79,
-           "at": 33,
-           "xz": [
-            0,
-            2.2
-           ],
-           "yaw": 0,
-           "lift": 0
-          }
-         ]
-        }
-       },
-       "pick": 2,
-       "frame": 21,
-       "at": 22,
-       "xz": [
-        0,
-        1.1
-       ],
-       "yaw": 0
-      },
-      {
-       "src": {
-        "prompt": 2,
-        "seed": 403,
-        "seconds": 2.6,
-        "takes": 4,
-        "keys": {
-         "poses": [
-          {
-           "src": {
-            "prompt": 2,
-            "seed": 213
-           },
-           "pick": 4,
-           "frame": 53,
-           "at": 23,
-           "xz": [
-            0,
-            1.0
-           ],
-           "yaw": 0,
-           "lift": 0
-          },
-          {
-           "src": {
-            "prompt": 2,
-            "seed": 213
-           },
-           "pick": 4,
-           "frame": 79,
-           "at": 33,
-           "xz": [
-            0,
-            2.2
-           ],
-           "yaw": 0,
-           "lift": 0
-          }
-         ]
-        }
-       },
-       "pick": 2,
-       "frame": 37,
-       "at": 32,
-       "xz": [
-        0,
-        2.2
-       ],
-       "yaw": 0,
-       "arm": {
-        "RightHand": [
-         -0.08,
-         0.45,
-         0.22
-        ]
-       }
-      },
-      {
-       "src": {
-        "prompt": "A woman stands ready and relaxed, a shield held on her left forearm at chest height and a sword held low by her right hip, slowly shifting her weight from foot to foot",
-        "seed": 131,
-        "seconds": 2.0,
-        "takes": 2
-       },
-       "pick": 0,
-       "frame": 30,
-       "at": 52,
-       "xz": [
-        0,
-        2.3
-       ],
-       "yaw": 0
-      }
-     ]
+   "poses": [
+    {
+     "src": {
+      "prompt": "A woman stands ready and relaxed, a shield held on her left forearm at chest height and a sword held low by her right hip, slowly shifting her weight from foot to foot",
+      "seed": 131,
+      "seconds": 2.0,
+      "takes": 2
+     },
+     "pick": 0,
+     "frame": 30,
+     "at": 0,
+     "xz": [
+      0,
+      0
+     ],
+     "yaw": 0
+    },
+    {
+     "src": {
+      "prompt": "A warrior leaps high into the air with an axe raised behind her head in her right hand, body arched backward like a drawn bow, then snaps forward and chops the axe down into the ground landing on one knee.",
+      "seed": 902,
+      "seconds": 3.0,
+      "takes": 6
+     },
+     "pick": 5,
+     "frame": 18,
+     "at": 6,
+     "xz": [
+      0,
+      0.25
+     ],
+     "yaw": 0
+    },
+    {
+     "src": {
+      "prompt": "A woman crouches low and springs forward into a high leap, arching her back with her left knee driving up and her right leg trailing straight behind, her right arm cocked back behind her head, then tucks both knees up, crunches forward chopping her right arm down, and lands kneeling on her right knee.",
+      "seed": 900,
+      "seconds": 3.0,
+      "takes": 6
+     },
+     "pick": 4,
+     "frame": 33,
+     "at": 10,
+     "xz": [
+      0,
+      0.461
+     ],
+     "yaw": 0
+    },
+    {
+     "src": {
+      "prompt": "A woman crouches low and springs forward into a high leap, arching her back with her left knee driving up and her right leg trailing straight behind, her right arm cocked back behind her head, then tucks both knees up, crunches forward chopping her right arm down, and lands kneeling on her right knee.",
+      "seed": 900,
+      "seconds": 3.0,
+      "takes": 6
+     },
+     "pick": 4,
+     "frame": 35,
+     "at": 16,
+     "xz": [
+      0,
+      0.776
+     ],
+     "yaw": 0,
+     "lift": 0.22
+    },
+    {
+     "src": {
+      "prompt": 2,
+      "seed": 213
+     },
+     "pick": 4,
+     "frame": 54,
+     "at": 24,
+     "xz": [
+      0,
+      1.197
+     ],
+     "yaw": 0
+    },
+    {
+     "src": {
+      "prompt": 2,
+      "seed": 213
+     },
+     "pick": 4,
+     "frame": 59,
+     "at": 32,
+     "xz": [
+      0,
+      1.618
+     ],
+     "yaw": 0,
+     "lift": -0.07
+    },
+    {
+     "src": {
+      "prompt": 2,
+      "seed": 213
+     },
+     "pick": 4,
+     "frame": 71,
+     "at": 38,
+     "xz": [
+      0,
+      1.934
+     ],
+     "yaw": 0,
+     "lift": 0.31
+    },
+    {
+     "src": {
+      "prompt": 2,
+      "seed": 213
+     },
+     "pick": 4,
+     "frame": 79,
+     "at": 44,
+     "xz": [
+      0,
+      2.25
+     ],
+     "yaw": 0
+    },
+    {
+     "src": {
+      "prompt": "A woman stands ready and relaxed, a shield held on her left forearm at chest height and a sword held low by her right hip, slowly shifting her weight from foot to foot",
+      "seed": 131,
+      "seconds": 2.0,
+      "takes": 2
+     },
+     "pick": 0,
+     "frame": 45,
+     "at": 77,
+     "xz": [
+      0,
+      2.35
+     ],
+     "yaw": 0
     }
-   },
-   "targets": {
-    "RightHand": {
-     "12": [
-      -0.12,
-      1.12,
-      0.0
-     ],
-     "13": [
-      -0.12,
-      1.12,
-      0.0
-     ],
-     "14": [
-      -0.12,
-      1.12,
-      0.0
-     ],
-     "15": [
-      -0.12,
-      1.12,
-      0.0
-     ],
-     "16": [
-      -0.12,
-      1.12,
-      0.0
-     ],
-     "17": [
-      -0.12,
-      1.12,
-      0.0
-     ],
-     "18": [
-      -0.12,
-      1.12,
-      0.0
-     ],
-     "19": [
-      -0.12,
-      1.12,
-      0.0
-     ],
-     "20": [
-      -0.12,
-      1.12,
-      0.0
-     ],
-     "21": [
-      -0.12,
-      1.12,
-      0.0
-     ]
-    }
-   },
-   "fullbody": [
-    0,
-    11,
-    22,
-    33,
-    52
    ],
    "prompts": [
     0,
-    1,
     2
    ],
    "seeds": [
-    831,
-    832
+    841
    ],
    "seconds": 2.6,
    "takes": 4,
-   "tag": "k"
+   "tag": "r"
   }
  },
  "post": {
@@ -289,11 +195,14 @@
   "action": {
    "seconds": 1.3,
    "retime": {
-    "lead": 0.22,
-    "tail": 0.75,
+    "lead": 0.2,
+    "tail": 1.1,
     "hold_on": "land",
-    "land_on": "knee",
-    "takeoff_on": "coil"
+    "at": {
+     "takeoff": 6,
+     "apex": 24,
+     "land": 44
+    }
    },
    "travel": [
     "takeoff",
@@ -307,8 +216,8 @@
       "ball",
       {
        "foot": "flat",
-       "sink": true,
-       "ride": 3
+       "at": "first",
+       "sink": true
       }
      ],
      [
@@ -329,7 +238,9 @@
       "ball",
       {
        "foot": "flat",
-       "sink": true
+       "at": "first",
+       "sink": true,
+       "ride": 2
       }
      ],
      [
@@ -359,25 +270,57 @@
    }
   }
  },
- "notes": "A1 actions (solver A): the first P4 action. Generation free (no Root2D: the take's leap travels; post strips the horizontal travel between the takeoff and the landing, the pelvis height kept). Solver F6 (feet): the take's kneel hung over the floor (left ankle +10.7 / ball +14.0 cm, right ball +13.1 cm). Landing and hold: the LEFT (front) foot FLAT on the floor where it lands (planted \"flat\", at first: its sole was 18 deg off flat in the air, a front foot under a raised knee stands flat), the RIGHT (rear) foot ON ITS BALL, toes tucked (planted \"ball\", knee keep: its own 79 deg heel-up pose brought down by a turn about the hip-knee line, thigh and knee unmoved); ease 1, both touch down on the land frame. Recovery: the right foot STEPS from its pin to idle's spot (0.9-1.2 s, 60.6 cm, 8 cm lift, step \"pinned\") and holds idle's foot to the end (\"last\"); the left stays planted to 1.1333 then PIVOTS ON ITS HEEL onto idle's heading (24.5 deg, toes 3 cm up); the end anchored on the left heel from the landing (anchor_from 0.7333). Left as the take has them: the start windows (f0-3 stand 2-8 cm over the floor) and the push-off foot riding the travel strip (f4-6). Sword wrist deviation 58 deg at f6 left: fit.wrist dev 35 turn was tried and dropped (it raised f2-4 from 4-18 to 35 and moved the hand up to 34 cm in the recovery). Solver S2 (the spot): fit.end.spot over [0.2333, 0.7333]: the end stood 30.5 cm off idle_warden's place (anchored on the left heel where she landed); the residual (-30.4, +2.7 cm) is taken out IN THE AIR (f7-f22, smootherstep, the whole body by the root): the push-off stays where it was, the landing, kneel and recovery are only translated, the last frame is on the idle's spot (0.0 cm). The start windows ON THE FLOOR (planted flat with sink: both feet at ankle / ball +0.0 over rest f0-3; the left leg could not reach at f0, so the pelvis comes down 1.8 cm at f0 and 0.7 at f1 instead of the heel rising); the left (push-off) foot RIDES the travel strip f4-6 on the floor (ride 3: flat, its heading held, sliding back by the strip so it is still in the world) and leaves at f7; the right leaves at f4 as the take has it.",
+ "notes": "A1 actions (solver A): the first P4 action. Generation free (no Root2D: the take's leap travels; post strips the horizontal travel between the takeoff and the landing, the pelvis height kept). Solver F6 (feet): the take's kneel hung over the floor (left ankle +10.7 / ball +14.0 cm, right ball +13.1 cm). Landing and hold: the LEFT (front) foot FLAT on the floor where it lands (planted \"flat\", at first: its sole was 18 deg off flat in the air, a front foot under a raised knee stands flat), the RIGHT (rear) foot ON ITS BALL, toes tucked (planted \"ball\", knee keep: its own 79 deg heel-up pose brought down by a turn about the hip-knee line, thigh and knee unmoved); ease 1, both touch down on the land frame. Recovery: the right foot STEPS from its pin to idle's spot (0.9-1.2 s, 60.6 cm, 8 cm lift, step \"pinned\") and holds idle's foot to the end (\"last\"); the left stays planted to 1.1333 then PIVOTS ON ITS HEEL onto idle's heading (24.5 deg, toes 3 cm up); the end anchored on the left heel from the landing (anchor_from 0.7333). Left as the take has them: the start windows (f0-3 stand 2-8 cm over the floor) and the push-off foot riding the travel strip (f4-6). Sword wrist deviation 58 deg at f6 left: fit.wrist dev 35 turn was tried and dropped (it raised f2-4 from 4-18 to 35 and moved the hand up to 34 cm in the recovery). Solver S2 (the spot): fit.end.spot over [0.2333, 0.7333]: the end stood 30.5 cm off idle_warden's place (anchored on the left heel where she landed); the residual (-30.4, +2.7 cm) is taken out IN THE AIR (f7-f22, smootherstep, the whole body by the root): the push-off stays where it was, the landing, kneel and recovery are only translated, the last frame is on the idle's spot (0.0 cm). The start windows ON THE FLOOR (planted flat with sink: both feet at ankle / ball +0.0 over rest f0-3; the left leg could not reach at f0, so the pelvis comes down 1.8 cm at f0 and 0.7 at f1 instead of the heel rising); the left (push-off) foot RIDES the travel strip f4-6 on the floor (ride 3: flat, its heading held, sliding back by the strip so it is still in the world) and leaves at f7; the right leaves at f4 as the take has it. RE-TAKE R1 (lead 10): keyed beats at 2x the clip's time (source frame = 2 x clip frame to the landing): stand 0, coil 6 (a native crouch, left foot forward), rise 10 and 16 (a native stride leap's takeoff: the LEFT knee driving, the right leg trailing long), apex 24, drive 32, reach 38, kneel 44 (the old leap's own tuck, descent and kneel), stand 77; hips on a straight line in z between takeoff and landing and on a parabola in height (lift). Kimodo does not arch a jump back (30 native takes: chest never under -5 deg): the arch and the crunch are fit.lean keys (-30..-34 through the rise and apex, +14 at 0.6), the look fit.nod keys (bowed at the landing, lifting first at 0.9), the sword arm, blade and shield keyed from idle's own seat at frame 0 (fit.start bones all, the coil on idle's feet: planted at first).",
  "bands": {
   "pelvis_cm@takeoff": [
    -25,
    -15
+  ],
+  "lean_deg@0.2": [
+   -30,
+   -12
+  ],
+  "thigh_l_deg@0.2": [
+   60,
+   130
+  ],
+  "thigh_r_deg@0.2": [
+   -40,
+   15
+  ],
+  "elbow_r_deg@0.2667": [
+   70,
+   120
+  ],
+  "hand_r_behind_head_cm@0.2667..0.4:min": [
+   5,
+   45
+  ],
+  "hand_r_over_head_cm@0.3333": [
+   -25,
+   15
   ],
   "pelvis_cm@apex": [
    80,
    120
   ],
   "thigh_l_deg@apex": [
-   50,
+   60,
    130
   ],
   "thigh_r_deg@apex": [
-   50,
+   60,
    130
   ],
-  "blade_below_deg@0.5667..land:min": [
+  "lean_deg@0.6": [
+   30,
+   60
+  ],
+  "tip_peak_s@0": [
+   0.45,
+   0.7
+  ],
+  "blade_below_deg@0.6..land:min": [
    60,
    90
   ],
@@ -409,9 +352,21 @@
    15,
    25
   ],
+  "shield_under_shoulder_cm@land": [
+   0,
+   40
+  ],
   "head_down_deg@land": [
-   -10,
-   15
+   20,
+   60
+  ],
+  "head_down_deg@0.9333": [
+   -15,
+   10
+  ],
+  "pelvis_cm@0.9": [
+   -70,
+   -30
   ],
   "settle_pct@0.8..1.0:max": [
    10,
@@ -421,13 +376,9 @@
    0,
    10
   ],
-  "boss_sternum_cm@0.1..0.2:max": [
+  "statue_frames": [
    0,
-   32
-  ],
-  "hand_r_over_head_cm@0.2333..0.3667:min": [
-   20,
-   80
+   2
   ]
  },
  "source": "src/heroic_leap.npz",
@@ -435,19 +386,16 @@
  "sha1": "628c365e54c149db3105b11012cc37a6602d7405",
  "take_score": null,
  "gate": [
-  "pelvis_cm@takeoff",
-  "hand_r_over_head_cm@0.2333..0.3667:min",
-  "pelvis_cm@apex",
-  "thigh_l_deg@apex",
+  "thigh_l_deg@0.2",
   "thigh_r_deg@apex",
   "knee_low_cm@land"
  ],
  "fit": {
   "blade": {
    "dir": [
-    -0.2425,
-    -0.7071,
-    0.6646
+    -0.2665,
+    -0.6636,
+    0.699
    ],
    "keep": 0,
    "ease": "through",
@@ -455,50 +403,74 @@
     [
      0.0,
      [
-      -0.2425,
-      -0.7071,
-      0.6646
+      -0.2665,
+      -0.6636,
+      0.699
      ],
      "still"
     ],
     [
-     0.25,
+     0.1,
+     [
+      -0.25,
+      -0.35,
+      -0.9
+     ]
+    ],
+    [
+     0.2,
+     [
+      -0.2,
+      -0.1,
+      -1.0
+     ]
+    ],
+    [
+     0.3,
      [
       -0.1,
-      1.0,
-      0.1
+      -0.45,
+      -0.9
      ]
     ],
     [
-     0.33,
+     0.4,
      [
       -0.05,
-      0.9,
-      -0.4
+      -0.6,
+      -0.8
      ]
     ],
     [
-     0.42,
+     0.45,
      [
       0,
-      0.7,
-      0.7
+      0.3,
+      -0.95
      ]
     ],
     [
      0.5,
      [
       0,
-      0.0,
+      1.0,
+      0.1
+     ]
+    ],
+    [
+     0.55,
+     [
+      0,
+      0.3,
       1.0
      ]
     ],
     [
-     0.5667,
+     0.6,
      [
       0,
-      -0.87,
-      0.5
+      -0.75,
+      0.66
      ]
     ],
     [
@@ -520,20 +492,27 @@
      "still"
     ],
     [
-     1.15,
+     0.95,
      [
-      -0.2425,
-      -0.7071,
-      0.6646
-     ],
-     "still"
+      -0.1,
+      -0.9,
+      0.42
+     ]
+    ],
+    [
+     1.1,
+     [
+      -0.3,
+      -0.55,
+      0.78
+     ]
     ],
     [
      1.3,
      [
-      -0.2425,
-      -0.7071,
-      0.6646
+      -0.2665,
+      -0.6636,
+      0.699
      ]
     ]
    ],
@@ -554,88 +533,84 @@
     [
      0.0,
      [
-      0.18,
-      0.17,
-      0.15
+      0.313,
+      -0.306,
+      0.262
      ],
-     50,
-     -5
+     29.5,
+     -3.4
     ],
     [
-     0.1667,
+     0.1,
      [
-      0.18,
-      0.17,
-      0.15
+      0.2,
+      -0.1,
+      0.42
      ],
-     50,
-     -5,
-     "still"
+     10,
+     -5
     ],
     [
      0.2667,
      [
-      0.38,
-      0.08,
-      0.1
+      0.24,
+      -0.02,
+      0.42
      ],
-     85,
-     -5
+     15,
+     -10
     ],
     [
      0.4,
      [
-      0.53,
-      -0.12,
-      -0.1
+      0.26,
+      -0.05,
+      0.4
      ],
-     125,
-     -6,
-     "still"
+     20,
+     -8
     ],
     [
-     0.4333,
+     0.55,
      [
-      0.544,
-      -0.189,
-      -0.078
+      0.42,
+      -0.15,
+      0.22
      ],
-     121,
-     1,
-     "still"
-    ],
-    [
-     0.6333,
-     [
-      0.505,
-      -0.068,
-      0.098
-     ],
-     93,
-     -15,
-     "still"
+     60,
+     -5
     ],
     [
      0.7333,
      [
-      0.471,
-      0.003,
-      0.025
+      0.44,
+      -0.34,
+      0.06
      ],
-     100,
-     -24,
+     80,
+     -5,
+     "still"
+    ],
+    [
+     0.8,
+     [
+      0.44,
+      -0.34,
+      0.06
+     ],
+     80,
+     -5,
      "still"
     ],
     [
      1.0,
      [
-      0.503,
-      -0.126,
-      0.165
+      0.4,
+      -0.3,
+      0.2
      ],
-     89,
-     -11,
-     "still"
+     50,
+     -5
     ]
    ]
   },
@@ -645,50 +620,58 @@
      [
       0.0,
       [
-       -0.15,
-       0.13,
-       0.28
+       -0.267,
+       -0.098,
+       0.001
       ],
       "still"
      ],
      [
       0.1,
       [
-       -0.5,
-       0.36,
-       -0.12
+       -0.36,
+       -0.06,
+       -0.32
       ]
      ],
      [
-      0.23,
+      0.1667,
       [
-       -0.27,
-       0.95,
-       0.0
+       -0.45,
+       0.2,
+       -0.42
       ]
      ],
      [
-      0.37,
+      0.2667,
       [
-       -0.25,
-       0.95,
-       0.06
+       -0.32,
+       0.62,
+       -0.5
+      ]
+     ],
+     [
+      0.4,
+      [
+       -0.24,
+       0.7,
+       -0.52
       ]
      ],
      [
       0.5,
       [
-       -0.25,
-       0.75,
-       0.5
+       -0.22,
+       0.86,
+       -0.05
       ]
      ],
      [
       0.6,
       [
        -0.15,
-       0.6,
-       0.48
+       0.55,
+       0.5
       ]
      ],
      [
@@ -715,8 +698,7 @@
        -0.15,
        0.3,
        0.35
-      ],
-      "still"
+      ]
      ]
     ],
     "pole_keys": [
@@ -731,25 +713,25 @@
      [
       0.1,
       [
-       -0.5,
-       -0.2,
-       -0.85
+       -0.6,
+       0.1,
+       -0.8
       ]
      ],
      [
-      0.25,
+      0.2667,
       [
-       -0.5,
-       0,
-       -0.85
+       -0.8,
+       0.3,
+       -0.5
       ]
      ],
      [
       0.4,
       [
        -0.8,
-       0,
-       -0.4
+       0.4,
+       -0.3
       ]
      ],
      [
@@ -823,23 +805,47 @@
   "lean": {
    "keys": [
     [
-     0.55,
+     0.0,
      0,
      "still"
     ],
     [
+     0.1,
+     0
+    ],
+    [
+     0.2,
+     -30
+    ],
+    [
+     0.3,
+     -34
+    ],
+    [
+     0.4,
+     -32
+    ],
+    [
+     0.5,
+     0
+    ],
+    [
+     0.6,
+     14
+    ],
+    [
      0.7333,
-     -28,
+     10,
      "still"
     ],
     [
      0.8,
-     -28,
+     10,
      "still"
     ],
     [
      1.0,
-     -12
+     0
     ],
     [
      1.3,
@@ -851,6 +857,61 @@
   "pop": {
    "cap": {},
    "x": 3.6
+  },
+  "start": {
+   "clip": "idle_warden",
+   "frame": 0,
+   "over": [
+    0.0,
+    0.1
+   ],
+   "anchor": "heel_l",
+   "anchor_to": 0.1,
+   "bones": "all"
+  },
+  "nod": {
+   "keys": [
+    [
+     0.0,
+     0,
+     "still"
+    ],
+    [
+     0.2,
+     0
+    ],
+    [
+     0.4,
+     15
+    ],
+    [
+     0.6,
+     25
+    ],
+    [
+     0.7333,
+     35,
+     "still"
+    ],
+    [
+     0.8,
+     35,
+     "still"
+    ],
+    [
+     0.9,
+     -8
+    ],
+    [
+     1.05,
+     0
+    ],
+    [
+     1.3,
+     0,
+     "still"
+    ]
+   ]
   }
  }
 }
