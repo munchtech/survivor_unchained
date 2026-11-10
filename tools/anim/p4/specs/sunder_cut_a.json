@@ -1,0 +1,24 @@
+{
+  "kind": "action",
+  "rules": "Sunder cut A (A1 lead 14 design): one unhurried, heavy, accurate RISING FOREHAND from the stance's tail guard, hips first, nothing snatched; ends in the LEFT WIND that cut B starts from (no return to the stance). 0.70 s = 42 game frames; contact 14 f, cancel 22 f. Standing, both feet planted on the stance's spots.",
+  "held": ["sword", "shield"],
+  "beats": {"contact": [0.2333], "cancel": 0.3667, "blend_in": 0.05},
+  "post": {"loop": false, "inplace": true, "crop": [23, 44],
+           "action": {"seconds": 0.7, "stretch": true,
+                      "planted": {"foot_l": [["start", "end", "ball", "first"]], "foot_r": [["start", "end", "ball", "first"]]}}},
+  "notes": "WIP first pass (helper CUT-A1, 10 Nov). FULLY KEYED, no generated take: the base is 22 frames of idle_warden's take (the stance clip's own source), wholly replaced by fit.start {clip idle_fight_a, bones all, over past the clip's end}, so every frame stands on the stance BY NAME and the keyed layers below make the motion. KNOWN GAPS: (1) blade.keys cannot take null, so key 0 and blade.dir COPY the stance's blade direction (148 right / 40 below): must go when keyed_dirs takes a None; (2) no keyed pelvis yaw layer found: the pelvis stays on the stance's -30, the unwind is carried by twist (chest) only; (3) no fit.end, so no spot check.",
+  "source": "src/idle_warden.npz",
+  "fit": {
+    "start": {"clip": "idle_fight_a", "frame": 0, "over": [5.0, 6.0], "bones": "all"},
+    "hips": {"frame": "clip", "keys": [[0.0, null], [0.1, [0.0, -0.015, -0.02]], [0.2333, [0.02, 0.0, 0.1]], [0.3667, [0.03, 0.0, 0.13]], [0.7, [0.03, -0.01, 0.12]]]},
+    "lean": {"keys": [[0.0, 0.0], [0.2333, 4.0], [0.3667, 2.0], [0.7, 0.0]]},
+    "twist": {"keys": [[0.0, 0.0], [0.1, 4.0], [0.2333, 34.0], [0.3667, 46.0], [0.5, 36.0], [0.7, 32.0]]},
+    "limbs": {"hand_r": {"frame": "clip",
+                         "keys": [[0.0, null], [0.1, [-0.3, -0.05, -0.05]], [0.1667, [-0.33, 0.0, 0.24]], [0.2333, [-0.18, 0.08, 0.48]], [0.3, [0.05, 0.3, 0.46]], [0.3667, [0.2, 0.42, 0.34]], [0.5, [0.25, 0.43, 0.25]], [0.7, [0.24, 0.42, 0.22]]],
+                         "pole_keys": [[0.0, [-0.5, -0.4, -0.75]], [0.1667, [-0.7, -0.6, -0.2]], [0.2333, [-0.6, -0.7, 0.1]], [0.3667, [-0.4, -0.8, 0.3]], [0.7, [-0.2, -0.9, 0.3]]]}},
+    "blade": {"dir": [-0.41, -0.64, -0.65], "keep": 0, "frame": "clip", "twist_smooth": 3, "ease": "through", "roll": "straight",
+              "keys": [[0.0, [-0.41, -0.64, -0.65]], [0.1, [-0.6, -0.6, -0.5]], [0.1667, [-0.75, -0.35, 0.55]], [0.2333, [0.12, 0.05, 0.99]], [0.3, [0.45, 0.65, 0.6]], [0.3667, [0.6, 0.75, 0.1]], [0.5, [0.45, 0.75, -0.5]], [0.7, [0.4, 0.78, -0.48]]]},
+    "shield": {"solve": true, "branch": -1,
+               "keys": [[0.0, null], [0.1, null], [0.2333, [0.36, 0.08, 0.1], 80, 5], [0.3667, [0.38, 0.1, 0.05], 85, 5], [0.5333, [0.22, 0.06, 0.26], 55, 5], [0.7, [0.2, 0.06, 0.28], 52, 5]]}
+  }
+}
