@@ -47,16 +47,21 @@ public static class DevSlots
         return step;
     }
 
-    /// <summary>--level-card slot:SKILL:LEVEL | lamp:SKILL:LEVEL:BEFORE:AFTER | plain:LEVEL | skill:SKILL:LEVEL [@T] (pictures, M4 §4): that card
-    /// shown through GameHud.LevelCard once the campaign fight's clock passes T s (default 1.5).</summary>
-    static readonly (Ui.LevelCardSpec Spec, double At)? CardSpec = Args.Get("level-card") is { } lc ? Ui.LevelCards.Parse(lc) : null;
+    /// <summary>--level-card slot:SKILL:LEVEL | lamp:SKILL:LEVEL:BEFORE:AFTER | plain:LEVEL | skill:SKILL:LEVEL | skill:SKILL [@T] (pictures, M4 §4): that card
+    /// shown through GameHud.LevelCard once the campaign fight's clock passes T s (default 1.5). Two joined by '+'
+    /// ("slot:heroic_leap:9@1.5+skill:dawnpulse"): the second follows the first in the cards' queue, as a level whose
+    /// key card is followed by the calling's new skill ("A NEW SKILL", no level).</summary>
+    static readonly List<(Ui.LevelCardSpec Spec, double At)>? CardSpecs = Args.Get("level-card") is { } lc ? Ui.LevelCards.ParseAll(lc) : null;
     static Battle? cardFor;
+    static int cardNext;
 
-    /// <summary>The card due now (once a fight), or null.</summary>
+    /// <summary>The next card due now (each once a fight, one a call), or null.</summary>
     public static Ui.LevelCardSpec? LevelCardDue(Battle b)
     {
-        if (CardSpec is not { } c || ReferenceEquals(cardFor, b) || !b.Combat || b.Time < c.At) return null;
-        cardFor = b;
+        if (CardSpecs == null || !b.Combat) return null;
+        if (!ReferenceEquals(cardFor, b)) { cardFor = b; cardNext = 0; }
+        if (cardNext >= CardSpecs.Count || b.Time < CardSpecs[cardNext].At) return null;
+        var c = CardSpecs[cardNext++];
         GD.Print($"level-card: {Ui.LevelCards.Header(c.Spec)} staged at {b.Time:0.00}");
         return c.Spec;
     }

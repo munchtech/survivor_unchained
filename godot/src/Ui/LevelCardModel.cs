@@ -139,6 +139,25 @@ public static class LevelCards
         }
         return null;
     }
+
+    /// <summary>--level-card's whole argument: one spec, or two joined by '+' (a key card and the new skill's card that
+    /// follows it: "slot:heroic_leap:9@1.5+skill:dawnpulse"). A spec with no @T of its own comes at the time of the one
+    /// before it (the queue shows them one after the other). Null when any part does not parse.</summary>
+    public static List<(LevelCardSpec Spec, double At)>? ParseAll(string arg)
+    {
+        var all = new List<(LevelCardSpec Spec, double At)>();
+        foreach (var part in arg.Split('+'))
+        {
+            // (a part after the first may be skill:SKILL with no level: the card that follows its level's key card,
+            // "A NEW SKILL"; alone it stays refused, as a card with no level follows nothing)
+            var bits = part.Split('@')[0].Split(':');
+            bool follow = all.Count > 0 && bits.Length == 2 && bits[0].Trim() == "skill" && bits[1].Trim() != "";
+            if (Parse(follow ? part.Replace(bits[1], bits[1] + ":0") : part) is not { } one) return null;
+            if (all.Count > 0 && !part.Contains('@')) one.At = all[^1].At;
+            all.Add(one);
+        }
+        return all.Count > 0 ? all : null;
+    }
 }
 
 /// <summary>The cards' clock: one at a time in the order given; a card waits to begin while held (banners held, a screen
