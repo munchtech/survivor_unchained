@@ -1532,7 +1532,7 @@
    "plus": {
     "heroic_leap": 1
    },
-   "description": "+1 to Heroic Leap. Its landing rings a second time, in light. +12 armor, +30 maximum health.",
+   "description": "+1 to Heroic Leap. Its landing rings a second time, in light. +12 armor and more maximum health.",
    "mods": [
     {
      "stat": "armor",
