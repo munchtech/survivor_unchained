@@ -60,6 +60,10 @@ public partial class BattleFx
     Node3D? gripBlade;
     Skeleton3D? gripSkel;
     double gripClock, gripAnimT = -1, gripDue = -1, gripPressAt, gripTimeWas, gripRealWas, gripSeen, gripCt;
+    /// <summary>This frame's share inside gripClock, whether it is the frame's own yet (GripSettle), and the last
+    /// frame's hold.</summary>
+    double gripShare;
+    bool gripSettled = true, gripHeldWas;
     bool gripDueOath;
     int gripDueSide;
     ulong gripDrawn, gripEdgeDrawn;
@@ -135,9 +139,13 @@ public partial class BattleFx
     void GripWatch()
     {
         double real = GetProcessDeltaTime();
-        bool held = !Flare.Active && gripRealWas > 0 && time > gripTimeWas && time - gripTimeWas < gripRealWas * 0.09;
-        gripClock += held ? real * 0.08 : real;
-        gripTimeWas = time; gripRealWas = real;
+        // (the last frame's share, if nothing settled it: no cut, no sample)
+        GripSettle(true);
+        // Whether the fight is held on THIS frame is known only once the fight has moved (GripSettle): the last frame's
+        // hold stands in until then.
+        gripShare = gripHeldWas ? real * 0.08 : real;
+        gripClock += gripShare;
+        gripTimeWas = time; gripRealWas = real; gripSettled = false;
         var bl = Flare.Blade;
         bool has = bl != null && IsInstanceValid(bl) && bl.IsInsideTree();
         if (!has) { if (gripBlade != null || gripSkel != null) GripUnhook(); }
@@ -154,6 +162,20 @@ public partial class BattleFx
         if (gripChain != null && gripEdgeDrawn + 1 < f) GripEdgeDraw();
     }
 
+    /// <summary>The watch's clock made this frame's own, once the fight's clock has moved (`last`: at the next frame's
+    /// start, whatever it did): the frame counts 8% if the fight was held on it, else whole. (Lead 7: the hold was read
+    /// a frame late, off the frame before. A hitstop's first sample then had the pose at 8% over a whole frame of clock
+    /// and its first free sample a whole frame's travel over 8%: 12 times too slow, 12 times too fast, neither a cut
+    /// to GripCutting, so the stroke's run broke twice and the Oathblade's stroke was gone for the hold's frames.)</summary>
+    void GripSettle(bool last = false)
+    {
+        if (gripSettled || gripRealWas <= 0 || (!last && time <= gripTimeWas)) return;
+        bool held = !Flare.Active && time > gripTimeWas && time - gripTimeWas < gripRealWas * 0.09;
+        double share = held ? gripRealWas * 0.08 : gripRealWas;
+        gripClock += share - gripShare;
+        gripShare = share; gripHeldWas = held; gripSettled = true;
+    }
+
     /// <summary>The blade now, in world space: its guard end (a little up the blade) and its tip.</summary>
     (Vector3 Hilt, Vector3 Tip)? GripBladeNow()
     {
@@ -168,6 +190,7 @@ public partial class BattleFx
     void GripSample()
     {
         if (GripBladeNow() is not { } now) return;
+        GripSettle();
         if (gripRing.Count > 0 && gripRing[^1].At >= gripClock - 1e-6) gripRing[^1] = new GripAt(now.Hilt, now.Tip, gripClock);
         else gripRing.Add(new GripAt(now.Hilt, now.Tip, gripClock));
         if (gripRing.Count > 36) gripRing.RemoveRange(0, gripRing.Count - 36);
@@ -238,6 +261,7 @@ public partial class BattleFx
     void GripCut(Ev.Slash e, Vector3 at, float reach, float g, bool oath)
     {
         if (oath && AaFxOff) return;
+        GripSettle();
         if (gripLive is not { Contact: < 0 } tr) { tr = new GripTrail { Oath = oath, Tail = gripClock - 5 / 60.0 }; GripArm(tr); }
         tr.Oath = oath; tr.Contact = gripClock; tr.SimSide = e.Side;
         if (e.Struck > 0)
@@ -317,7 +341,7 @@ public partial class BattleFx
         GripSet(GripLookOf(false), 0.02f, 0, 0, 0.02f, 0, o);
         gripNode.Visible = true;
         GripEdgeQuads(o, o + new Vector3(0.02f, 0, 0), 0);
-        if (gripWarm == 2) GripFlash(o, Vector3.Right, 0.02f, 1, false);
+        if (gripWarm == 2) GripFlash(o, Vector3.Right, Vector3.Forward, 0.02f, 1, false);
     }
 
     /// <summary>The trail is over. One that ran its course after a cut leaves the chain its end: where the blade's tip is
@@ -369,7 +393,9 @@ public partial class BattleFx
         m.SetShaderParameter("grip_lanes", lanes);
         m.SetShaderParameter("grip_lane_n", Math.Min(8, look.Lanes.Length / 4));
         m.SetShaderParameter("grip_lane", new Vector4(jit[0], jit[1], look.Taper, look.P));
-        m.SetShaderParameter("grip_tips", new Vector4(P7D["grip.lane.tongue"], fp[0], fp[1], 0));
+        var tg = P7D.All("grip.lane.tongue");
+        m.SetShaderParameter("grip_tips", new Vector4(tg[0], fp[0], fp[1], tg[1]));
+        m.SetShaderParameter("grip_last", P7D["grip.lane.last"]);
         m.SetShaderParameter("grip_gap", new Vector4(gap[0], gap[1], gap[2], gap[3]));
         m.SetShaderParameter("grip_shed", new Vector4(age, shed[0], shed[1], P7D["grip.lane.shed"]));
         m.SetShaderParameter("grip_seed", seed);
@@ -444,7 +470,7 @@ public partial class BattleFx
             tr.Said++;
             var s1 = gripRing[^1]; var s0 = gripRing[^2];
             var d = s1.Tip - PlayerPos;
-            GD.Print($"grip frame {Engine.GetFramesDrawn()} age {age * 60:0.0}f cut {cut:0.00} samples {n - i0} fast {hi - i0} tip az {Mathf.RadToDeg(Mathf.Atan2(d.Z, d.X)):0} r {new Vector2(d.X, d.Z).Length():0.00} y {d.Y:0.00} speed {s1.Tip.DistanceTo(s0.Tip) / Math.Max(1e-4, s1.At - s0.At):0.0} m/s linked {tr.Linked}");
+            GD.Print($"grip frame {Engine.GetFramesDrawn()} age {age * 60:0.0}f cut {cut:0.00} samples {n - i0} fast {hi - i0} tip az {Mathf.RadToDeg(Mathf.Atan2(d.Z, d.X)):0} r {new Vector2(d.X, d.Z).Length():0.00} y {d.Y:0.00} speed {s1.Tip.DistanceTo(s0.Tip) / Math.Max(1e-4, s1.At - s0.At):0.0} m/s step {(s1.At - s0.At) * 1000:0.0} ms linked {tr.Linked}");
         }
         gripPts.Clear(); gripCum.Clear();
         if (!any) { gripNode.Visible = false; return; }
@@ -632,20 +658,34 @@ public partial class BattleFx
         var tears = P7D.All("grip.contact.tears");
         int sparks = (int)Math.Min(tears[1], tears[0] + tr.Struck / 2 + (tr.Killed > 0 ? 1 : 0));
         if (GripSay) GD.Print($"grip contact frame {Engine.GetFramesDrawn()} struck {tr.Struck} killed {tr.Killed} oath {tr.Oath} size {size:0.00} on blade {kb:0.00} crossed {(found ? 1 : 0)} waited {waited} at {at}");
-        GripFlash(at, travel.Normalized(), size, sparks, tr.Oath);
+        GripFlash(at, travel.Normalized(), hilt - tip, size, sparks, tr.Oath);
     }
 
     /// <summary>The contact's picture: a quad facing the camera, its long axis the blade's travel as the camera sees it,
     /// drawn in the trail's shader (its second mode): the cut-through and its kernel for three frames (two whole, one
     /// thin), the tears flying on for a few more.</summary>
-    void GripFlash(Vector3 at, Vector3 travel, float size, int sparks, bool oath)
+    void GripFlash(Vector3 at, Vector3 travel, Vector3 blade, float size, int sparks, bool oath)
     {
         var cam = GetViewport()?.GetCamera3D();
         var back = cam != null ? cam.GlobalBasis.Z.Normalized() : Vector3.Up;
-        var along = travel - back * travel.Dot(back);
-        if (along.LengthSquared() < 1e-4f) along = cam != null ? cam.GlobalBasis.X : Vector3.Right;
-        along = along.Normalized();
-        var across = back.Cross(along).Normalized();
+        // (lead 7) The mark lies IN the stroke, no longer on a quad facing the camera: its long axis the tip's travel at
+        // the crossing, its width the stroke's own across there (the blade's line, turned to the camera by grip.face
+        // exactly as GripDraw turns the ribbon: an edge-on cut's mark is no sliver either).
+        var along = travel.LengthSquared() > 1e-6f ? travel.Normalized() : cam != null ? cam.GlobalBasis.X : Vector3.Right;
+        var side = back.Cross(along);
+        float blen = Mathf.Max(blade.Length(), 1e-4f);
+        var across = blade / blen;
+        if (side.LengthSquared() > 1e-6f)
+        {
+            side = side.Normalized();
+            float shown = across.Dot(side);
+            float way = Mathf.Abs(shown) > 0.15f ? Mathf.Sign(shown) : side.Dot(PlayerPos + Vector3.Up * 1.1f - at) < 0 ? -1 : 1;
+            var face = P7D.All("grip.face");
+            if (face[1] > 0) across = across.Lerp(side * way, 1 - Mathf.SmoothStep(face[0], face[1], shown * way));
+        }
+        across -= along * across.Dot(along);
+        if (across.LengthSquared() < 1e-4f) across = side.LengthSquared() > 1e-6f ? side : cam != null ? cam.GlobalBasis.Y : Vector3.Up;
+        across = across.Normalized();
         var half = new Vector2(1.5f, 0.5f) * size;
         var m = new ShaderMaterial { Shader = GD.Load<Shader>(GripShader) };
         FxCel.Apply(m, School.Physical, FxAfter.On);
@@ -662,11 +702,12 @@ public partial class BattleFx
         m.SetShaderParameter("grip_kite", new Vector4(kite[0], kite[1], kite[2], kite[3]));
         m.SetShaderParameter("grip_shards", new Vector4(sh[0], sh[1], sh[2], sh[3]));
         m.SetShaderParameter("grip_steps", new Vector4(whole, st[0], st[1], P7D["grip.contact.fan"]));
+        m.SetShaderParameter("grip_fly", P7D["grip.contact.fly"]);
         p7Quad ??= new QuadMesh { Size = new Vector2(2, 2) };
         var q = new MeshInstance3D { Mesh = p7Quad, MaterialOverride = m, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
         AddChild(q);
         // (toward the camera: over the blade and the struck body, never inside them)
-        q.GlobalTransform = new Transform3D(new Godot.Basis(along * half.X, across * half.Y, back), at + back * P7D["grip.contact.lift"] * Mathf.Min(1f, size * 4));
+        q.GlobalTransform = new Transform3D(new Godot.Basis(along * half.X, across * half.Y, along.Cross(across)), at + back * P7D["grip.contact.lift"] * Mathf.Min(1f, size * 4));
         if (FxAfter.On) FxAfter.Adopt(q);
         var s = new P7Shape
         {

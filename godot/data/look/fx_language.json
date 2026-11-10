@@ -835,7 +835,7 @@
    "n": 4
   },
   "grip": {
-   "what": "P7 lead 6, the held swing's arc, take 5 (src/Fx/BattleFx.Grip.cs, shaders/fx_grip_stroke.gdshader): the STROKE her blade leaves, laid by a brush of bristle clumps (LANES across its width), the contact on the blade, the link between a chain's cuts. px at the play camera, m in the world, s of real time. Colors stay the steel family's. lead_frames, slow, snap, min_len, aspect as before. face = [under this share of the blade's line showing across the path on screen the ribbon is turned wholly to the camera, above this it is the blade's own sweep] (0 at [1]: off). tail_px and point: only the link's thread now. lane.jitter = per stroke [a lane's width +- share of itself, a band's or finger's end +- share of the length]; lane.tongue = a band's end in a lane is a point this long (m); lane.point = a finger's last [m, at most this share of it] run to a point; lane.gap = [a lane's chance to skip, the skip's m least, most, where it starts as a share of the finger]; lane.shed = each lane drops its amber, then its gold, within this (s) of shed_at; glow = the glow's unit (m) past the tip's path, glow_end = [it dies over the tip lane's last m, its heat in the body]; lit = the lit blade [px thick, the stroke's length (m) at which it starts, at which it reaches the guard]; retract = the leaving's clock (gone at 1); shed_at = s after the contact [the amber out, the gold out].",
+   "what": "P7 lead 6, the held swing's arc, take 5 (src/Fx/BattleFx.Grip.cs, shaders/fx_grip_stroke.gdshader): the STROKE her blade leaves, laid by a brush of bristle clumps (LANES across its width), the contact on the blade, the link between a chain's cuts. px at the play camera, m in the world, s of real time. Colors stay the steel family's. lead_frames, slow, snap, min_len, aspect as before. face = [under this share of the blade's line showing across the path on screen the ribbon is turned wholly to the camera, above this it is the blade's own sweep] (0 at [1]: off). tail_px and point: only the link's thread now. lane.jitter = per stroke [a lane's width +- share of itself, a band's or finger's end +- share of the length]; lane.tongue = [a band's end in a lane is a slant toward the next lane's end, at most this long (m; lead 7: was a point per lane, which read as a saw), a skip's slant (m)]; lane.last = the white left alone (amber and gold shed) runs to its point over this share of its length (fingers, not a wedge); lane.point = a finger's last [m, at most this share of it] run to a point; lane.gap = [a lane's chance to skip, the skip's m least, most, where it starts as a share of the finger]; lane.shed = each lane drops its amber, then its gold, within this (s) of shed_at; glow = the glow's unit (m) past the tip's path, glow_end = [it dies over the tip lane's last m, its heat in the body]; lit = the lit blade [px thick, the stroke's length (m) at which it starts, at which it reaches the guard]; retract = the leaving's clock (gone at 1); shed_at = s after the contact [the amber out, the gold out].",
    "lead_frames": 2,
    "slow": 4,
    "snap": 90,
@@ -846,7 +846,8 @@
    "point": [0.3, 0.4],
    "lane": {
     "jitter": [0.12, 0.04],
-    "tongue": 0.1,
+    "tongue": [0.3, 0.1],
+    "last": 1.0,
     "point": [0.4, 0.5],
     "gap": [0.5, 0.14, 0.26, 0.62],
     "shed": 0.03
@@ -862,7 +863,7 @@
     "taper": 0.8,
     "p": 1.3,
     "max_len": 2.7,
-    "lanes": [[0.2, 0.52, 0.78, 1], [0.13, 0.4, 0.66, 0.84], [0.18, 0.24, 0.56, 0.93], [0.14, 0.1, 0.4, 0.62], [0.2, 0, 0.22, 0.74], [0.15, 0, 0, 0.42]],
+    "lanes": [[0.24, 0.56, 0.8, 1], [0.1, 0.5, 0.62, 0.78], [0.2, 0.22, 0.66, 0.94], [0.12, 0.18, 0.34, 0.56], [0.2, 0, 0.4, 0.72], [0.14, 0, 0, 0.42]],
     "flash": 1.0
    },
    "oath": {
@@ -874,19 +875,20 @@
     "flash": 0.9
    },
    "contact": {
-    "what": "kite = the mark, one hard cream lozenge with a gold rim, its fat point ON the blade [m ahead along the travel, m behind, half-width, the rim px] at size 1; whole for full_frames, then two steps at steps' sizes, then gone; shards = up to tears[1] short fat barbs starting on the kite [length least, most, width at the fat end least, most (m)], fanned within fan degrees of the travel; grit = the heavy blade's dust puffs under the cut (0: none). The mark sits on the blade where its line crosses the struck body: looked for from the contact for wait_frames, then laid on the blade as it is; k_min = the nearest to the guard it sits; lift = toward the camera (m); larger for a kill or a crowd (3+ struck); tears = [fewest, most] barbs",
+    "what": "(lead 7) the mark = where the edge bit, in the stroke's own hand: it lies IN the stroke (along the tip's travel at the crossing, across as the stroke's ribbon is there), smaller than the stroke's head. kite = one gold chisel, its fat end ON the blade white [m ahead along the travel, m behind, half-width, the white's share of its length (the Oathblade's x0.6)] at size 1; whole for full_frames, then two steps at steps' sizes, then gone; shards = up to tears[1] short hard chips thrown on along the travel at fly m/s [length least, most, width at the fat end least, most (m)], leaning at most fan degrees off the travel; grit = the heavy blade's dust puffs under the cut (0: none). The mark sits on the blade where its line crosses the struck body: looked for from the contact for wait_frames, then laid on the blade as it is; k_min = the nearest to the guard it sits; lift = toward the camera (m); larger for a kill or a crowd (3+ struck); tears = [fewest, most] barbs",
     "grit": 0,
-    "kite": [0.8, 0.2, 0.1, 2],
+    "kite": [0.36, 0.1, 0.065, 0.4],
     "full_frames": 3,
     "steps": [0.7, 0.42],
-    "shards": [0.28, 0.4, 0.09, 0.11],
-    "fan": 25,
+    "shards": [0.1, 0.18, 0.04, 0.06],
+    "fan": 10,
+    "fly": 5,
     "wait_frames": 3,
     "k_min": 0.35,
     "lift": 0.3,
     "kill": 1.3,
     "crowd": 1.12,
-    "tears": [2, 3]
+    "tears": [1, 2]
    },
    "link": {
     "what": "on = 0: the thread and the hot edge are not drawn (the single cut is judged without them; the next solver rebuilds the turn). A chain: the next cut inside window s of the last contact, the grip still held. Opposite side and its start within max_gap m of the last cut's end: its tail is a thread from that end through a turn hook (hook m past the end, hook_w m wide when the two points meet) into its first fast sample. along = the brush's along on the thread.",

@@ -55,7 +55,7 @@ public class FxP7Tests
     }
 
     /// <summary>(P7 lead 6, take 5) The held cut's stroke: a comma laid in lanes, three bands, steel first, fingers for a
-    /// tail; the contact a chunky kite, never a line.</summary>
+    /// tail; the contact one chisel of the stroke's own paint, smaller than the stroke's head, never a line or a crown.</summary>
     [Fact]
     public void TheHeldCutsStrokeIsACommaInThreeBands()
     {
@@ -63,7 +63,7 @@ public class FxP7Tests
         foreach (var k in new[] { "grip.lead_frames", "grip.slow", "grip.min_len", "grip.aspect", "grip.tail_px", "grip.point", "grip.glow", "grip.glow_end",
             "grip.lit", "grip.retract", "grip.shed_at", "grip.lane.jitter", "grip.lane.tongue", "grip.lane.point", "grip.lane.gap", "grip.lane.shed",
             "grip.contact.wait_frames", "grip.contact.k_min", "grip.contact.lift", "grip.contact.kill", "grip.contact.crowd", "grip.contact.tears",
-            "grip.contact.grit", "grip.contact.kite", "grip.contact.full_frames", "grip.contact.steps", "grip.contact.shards", "grip.contact.fan",
+            "grip.contact.grit", "grip.contact.kite", "grip.contact.full_frames", "grip.contact.steps", "grip.contact.shards", "grip.contact.fan", "grip.contact.fly", "grip.lane.last",
             "grip.snap", "grip.face", "grip.link.on" })
             Assert.True(p.Has(k), "fx_language.json p7 lacks " + k);
         Assert.Equal(3, p.All("grip.lit").Length);
@@ -98,15 +98,25 @@ public class FxP7Tests
             // a comma, not the whole blade's fin
             Assert.InRange(p[$"grip.{w}.head"], 0.3f, 0.75f);
             Assert.InRange(p[$"grip.{w}.taper"], 0.5f, 1f);
-            // the contact: a chunky kite on the blade, 0.9 to 1.1 m long and 0.16 to 0.22 m wide on one body
+            // (lead 7) the contact: one chisel of paint on the blade, never a line (10 px wide or more on one body, 3 to
+            // 5 times as long) and, at its largest (a kill), shorter than the stroke's head is wide (a 1.2 m blade)
             float fl = p[$"grip.{w}.flash"];
-            Assert.InRange((kite[0] + kite[1]) * fl, 0.9f, 1.1f);
-            Assert.InRange(2 * kite[2] * fl, 0.16f, 0.22f);
+            float len = (kite[0] + kite[1]) * fl, wide = 2 * kite[2] * fl;
+            Assert.True(wide >= 0.115f && len >= 3 * wide && len <= 5 * wide, $"grip.{w}: the mark is a line or a blob");
+            Assert.True(len * p["grip.contact.kill"] < p[$"grip.{w}.head"] * 1.2f, $"grip.{w}: the mark outgrows the stroke's head");
+            // its chips: short and hard, each smaller than half the mark
             var sh = p.All("grip.contact.shards");
-            Assert.True(sh[0] * fl >= 0.25f && sh[1] * fl <= 0.4f && sh[2] * fl >= 0.075f, $"grip.{w}: the barbs are not short fat wedges");
+            Assert.True(sh[1] <= 0.5f * (kite[0] + kite[1]) && sh[0] >= 0.08f && sh[2] >= 0.035f && sh[3] <= kite[2] * 1.2f, $"grip.{w}: the chips are not short hard chips");
         }
-        Assert.True(kite[0] > 2 * kite[1], "the kite points along the travel");
-        Assert.True(p.All("grip.contact.tears")[1] <= 3 && p["grip.contact.fan"] <= 25 && p["grip.contact.full_frames"] >= 3);
+        Assert.True(kite[0] > 2 * kite[1], "the mark points along the travel");
+        // by night the mark is not the brightest thing: its white is under half of it
+        Assert.InRange(kite[3], 0.2f, 0.5f);
+        // no crown: at most two chips, on the travel, thrown on
+        Assert.True(p.All("grip.contact.tears")[1] <= 2 && p["grip.contact.fan"] <= 12 && p["grip.contact.fly"] >= 2 && p["grip.contact.full_frames"] >= 3);
+        // a band's end: a long flat slant (two lane widths or more), the skip's a short one; the white leaves as fingers
+        var tg = p.All("grip.lane.tongue");
+        Assert.True(tg.Length == 2 && tg[0] >= 0.2f && tg[0] <= 0.45f && tg[1] <= 0.15f, "grip.lane.tongue");
+        Assert.InRange(p["grip.lane.last"], 0.6f, 1f);
         // the Oathblade's is the thinner stroke, its gold about a sixth of its width
         Assert.True(p["grip.oath.head"] < p["grip.sunder.head"]);
         Assert.InRange(gold["oath"], 0.12f, 0.2f);
