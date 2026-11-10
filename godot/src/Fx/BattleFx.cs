@@ -359,51 +359,26 @@ public partial class BattleFx : Node3D
         }
     }
 
-    // The spark budget (main, 9 Nov): ONE source that strikes many in a frame throws its hit burst (Impact, the bash, Burst)
-    // only on the few bodies nearest the middle of what it struck (the blade's reach, the blast's center); a crit always
-    // shows and takes a place first; the rest throw none. So a wide skill over a crowd is a few clean bursts, not 150 specks
-    // (a Sunder cut that struck 37 threw 4 sparks from each). The numbers, the gore and the Flare's own hits are not touched.
+    // The spark budget (main's ruling, 10 Nov; the choice is logic/Look/HitBudget.cs, tests/HitBudgetTests.cs): ONE source
+    // that lands more than n hits in a frame shows only n of them. Crits take the places first, the ones nearest HER when
+    // there are more crits than places; plain hits fill what the crits leave, nearest the middle of what was struck (the
+    // blade's contact for the held cut, else the centroid). A hushed hit, plain or crit, throws no hit burst (Impact, the
+    // bash, Burst), no crit burst and no gore chips: one Sunder cut over a crowd was 107 hits, 25 of them crits, and the
+    // crits' bursts and the chips were the pepper. Its number still shows, a kill's gore is thrown whole, the Flare's own
+    // hits are not touched, and a source of n hits or fewer looks as it always did.
     // A source = the hits of one art and school in one frame's events. fx_language.json p7 hit_budget.n.
     static readonly bool HitBudgetSay = Args.Has("clip") || Args.Has("grip-say");
-    // (P7 lead 6, debug for one census shoot: --hit-dbg nogore = no gore chips off a hit; nocrit = crits rank inside the budget like any hit)
-    static readonly string HitDbg = Args.Get("hit-dbg") ?? "";
-    static readonly bool HitDbgNoGore = HitDbg.Contains("nogore"), HitDbgNoCrit = HitDbg.Contains("nocrit");
     readonly HashSet<Ev.Hit> sparkless = new();
-    readonly Dictionary<(string?, School), (double X, double Z, int N, int Crits)> sparkMid = new();
-    readonly List<(Ev.Hit H, double D)> sparkRank = new();
-    void HitSparkBudget(IReadOnlyList<CombatEvent> events)
+    readonly Dictionary<(string?, School), (double X, double Z)> sparkContact = new();
+    readonly List<Look.HitBudget.Tally> sparkTally = new();
+    void HitSparkBudget(IReadOnlyList<CombatEvent> events, Battle b)
     {
-        sparkless.Clear();
-        sparkMid.Clear();
-        foreach (var ev in events)
-            if (ev is Ev.Hit { Dot: false, Blocked: false, ByFlare: false } h)
-            {
-                var k = (h.Art, h.School);
-                sparkMid.TryGetValue(k, out var m);
-                sparkMid[k] = (m.X + h.X, m.Z + h.Z, m.N + 1, m.Crits + (h.Crit ? 1 : 0));
-            }
-        int budget = (int)P7D["hit_budget.n", 4];
-        foreach (var (k, m) in sparkMid)
-        {
-            if (m.N <= budget) continue;
-            double cx = m.X / m.N, cz = m.Z / m.N;
-            sparkRank.Clear();
-            if (HitDbgNoCrit)
-            {
-                foreach (var ev in events)
-                    if (ev is Ev.Hit { Dot: false, Blocked: false, ByFlare: false } hc && hc.Art == k.Item1 && hc.School == k.Item2)
-                        sparkRank.Add((hc, (hc.X - cx) * (hc.X - cx) + (hc.Z - cz) * (hc.Z - cz)));
-                sparkRank.Sort((p, q) => p.D.CompareTo(q.D));
-                for (int i = budget; i < sparkRank.Count; i++) sparkless.Add(sparkRank[i].H);
-                continue;
-            }
-            foreach (var ev in events)
-                if (ev is Ev.Hit { Dot: false, Blocked: false, ByFlare: false, Crit: false } h && h.Art == k.Item1 && h.School == k.Item2)
-                    sparkRank.Add((h, (h.X - cx) * (h.X - cx) + (h.Z - cz) * (h.Z - cz)));
-            sparkRank.Sort((p, q) => p.D.CompareTo(q.D));
-            for (int i = Math.Max(0, budget - m.Crits); i < sparkRank.Count; i++) sparkless.Add(sparkRank[i].H);
-            if (HitBudgetSay) GD.Print($"hit budget frame {Engine.GetFramesDrawn()} art {k.Item1 ?? "auto"} {k.Item2} struck {m.N} crits {m.Crits} plain shown {Math.Min(sparkRank.Count, Math.Max(0, budget - m.Crits))} hushed {Math.Max(0, sparkRank.Count - Math.Max(0, budget - m.Crits))}");
-        }
+        // (the held cut's sparks rank from where the blade met them: HeldContacts reads the frame's Ev.Slash.HitX/HitZ)
+        Look.HitBudget.HeldContacts(events, sparkContact);
+        Look.HitBudget.Choose(events, (int)P7D["hit_budget.n", 4], b.Player.X, b.Player.Z, sparkless, HitBudgetSay ? sparkTally : null, sparkContact);
+        if (HitBudgetSay)
+            foreach (var t in sparkTally)
+                GD.Print($"hit budget frame {Engine.GetFramesDrawn()} art {t.Art ?? "auto"} {t.School} struck {t.Struck} crits {t.Crits} crits shown {t.CritsShown} plain shown {t.PlainShown} hushed {t.Hushed}");
     }
 
     public void Burst(Vector3 at, School school, int n, float speed, float up = 1.5f, float size = 0.09f, float life = 0.45f, float gravity = 6)
@@ -1269,7 +1244,7 @@ public partial class BattleFx : Node3D
         }
         WgLineSwings(events);
         P7Pre(events);
-        HitSparkBudget(events);
+        HitSparkBudget(events, b);
         foreach (var ev in events)
         {
             switch (ev)
@@ -1326,13 +1301,16 @@ public partial class BattleFx : Node3D
                         if (wgd > 0) { int tg = e.Target; double am = e.Amount, mh = e.MaxHp; bool cr = e.Crit; var wat = at; WgLater(wgd, () => { WgNumberLog(tg); Hits.Tally(tg, wat, am, mh, cr); }); }
                         else Hits.Tally(e.Target, at, e.Amount, e.MaxHp, e.Crit);
                     }
-                    if (Flare.HushesHitSparks || sparkless.Contains(e)) { }
+                    // (the spark budget: a hushed hit, plain or crit, throws no hit burst, no gore chips and no crit burst.
+                    // Its number is tallied above, whatever the budget says.)
+                    bool hushed = sparkless.Contains(e);
+                    if (Flare.HushesHitSparks || hushed) { }
                     else if (e.Art != null) Impact(e, at);
                     else if (BashStruck(e, at)) { }
                     else Burst(at, e.School, e.Crit ? 10 : 4, e.Crit ? 5 : 3, size: e.Crit ? 0.12f : 0.08f);
                     // (her auto-attacks on the dry dead: no bone-chip snow, their chip puff carries it; VFX 10 r3)
                     // (P7 solver A: the leap's and the charge's hits throw lit dust, not a speck cloud that reads as pepper at night)
-                    if (!HitDbgNoGore && e.Family != null && !(!P7Off && e.Art is "shield_charge" or "shield_charge_slam" or "heroic_leap") && !(e.Family == Family.Undead && !e.Dot && (IsOath(e.Art) || IsDisc(e.Art) || e.Art == "watch_bell" || (e.Art == null && time == bashAt))))
+                    if (!hushed && e.Family != null && !(!P7Off && e.Art is "shield_charge" or "shield_charge_slam" or "heroic_leap") && !(e.Family == Family.Undead && !e.Dot && (IsOath(e.Art) || IsDisc(e.Art) || e.Art == "watch_bell" || (e.Art == null && time == bashAt))))
                     {
                         var away = new Vector3((float)e.Dx, 0, (float)e.Dz);
                         if (away.LengthSquared() < 0.01f) away = Vector3.Forward;
@@ -1340,7 +1318,7 @@ public partial class BattleFx : Node3D
                     }
                     // A critical's burst: warm gold under the tone curve's knee (white-hot, a crowd of
                     // crits bloomed white round her), three at most in a breath, and small at her elbow.
-                    if (e.Crit && !(HitDbgNoCrit && sparkless.Contains(e)) && (time - critBurstAt > 0.15 || critBursts < 3))
+                    if (e.Crit && !hushed && (time - critBurstAt > 0.15 || critBursts < 3))
                     {
                         if (time - critBurstAt > 0.15) { critBurstAt = time; critBursts = 0; }
                         critBursts++;
