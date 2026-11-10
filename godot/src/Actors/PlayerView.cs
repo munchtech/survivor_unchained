@@ -1156,7 +1156,7 @@ public partial class PlayerView : Node3D
         }
         // (Every frame while on: her level of detail and her wear make meshes of their own on layer 2.)
         if (OwnLayer || ownShown) { Relayer(this, OwnLayer, person.Hair); ownShown = OwnLayer; }
-        Light.Position = new Vector3(0, EmberH, 0.4f);
+        Light.Position = new Vector3(Atmosphere.HeroFoot.X, EmberH, Atmosphere.HeroFoot.Y);   // (L1 lead 19, HER2) the rig's hero_pool: her fire's foot beside her; (0, 0.4) without the row
         // Her lamp on the crowd by night, in its own paint (Atmosphere.CrowdFill, vat.gdshaderinc): from over her, with the pool's flicker.
         if (mine)
         {

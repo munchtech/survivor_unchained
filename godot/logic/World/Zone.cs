@@ -195,6 +195,13 @@ public sealed record AtmospherePreset(
     /// the leaf shade's tone) x n, r rising; the last stop is where the floor is its own again (its tones are not read)].
     /// Atmosphere.FloorTurn builds cel_floor_turn from it. Null: the floor takes ember_pool as before.</summary>
     public double[]? EmberFloor { get; init; }
+    /// <summary>(L1 lead 19, HER2; rigs.json "hero_pool") The hero figure in her lit pool, so a 40 px figure is the first thing
+    /// the eye lands on: [the pool light's foot dx, dz (m from her: the fire sits BESIDE her, so her shade side faces the
+    /// camera), the anchor's level and color (sRGB 0-255: the one dark warm tone her shade side takes), the side edge (the
+    /// anchor's hard step in n.xz away from the foot), the under edge (n.y under it is anchor), the hero ink's width (px)
+    /// and strength]. PlayerView places her light by it; Atmosphere sets cel_hero / cel_hero_tone (cel.gdshaderinc CEL_HERO).
+    /// Null: the light over her at (0, 0.4) and no anchor, as before.</summary>
+    public double[]? HeroPool { get; init; }
     /// <summary>(L1 lead 12, S3, rule R5; rigs.json "moon_top") The moon's top step on what stands: [level (scene light; the
     /// screen level is tuned at the frame), R, G, B (sRGB 0-255), the top band's edge in n.m, how far m leans up from the key
     /// (0 the key's way, 1 straight up), the rim's width (screen px), the key's share on a standing form's unlit side]

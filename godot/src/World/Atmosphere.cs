@@ -631,7 +631,18 @@ public partial class Atmosphere : Node3D
         RenderingServer.GlobalShaderParameterSet("cel_floor_unit", turn is { } ft1 ? new Vector4(ft1.Shade.X, ft1.Shade.Y, ft1.Shade.Z, 0) : Vector4.Zero);
         FireCast.Reach = turn?.Reach ?? 0;   // (L1 lead 19, SH2: a C# copy of the table's reach for --cast-count)
         if (turn is { } ft2) RenderingServer.GlobalShaderParameterSet("cel_floor_turn", ft2.Tex);
+        // (L1 lead 19, HER2) the hero figure in her lit pool (the rig's hero_pool, Zone.HeroPool; cel.gdshaderinc CEL_HERO): the
+        // pool light's foot beside her (PlayerView reads HeroFoot), and her shade side (away from the foot, and her under
+        // planes) in ONE dark warm anchor tone. Not under a camera rig; a rig without the row: the light at (0, 0.4), no anchor.
+        var hp = CelRigs && cam == null && p.HeroPool is { Length: >= 8 } hpr ? hpr : null;
+        HeroFoot = hp != null ? new Vector2((float)hp[0], (float)hp[1]) : new Vector2(0, 0.4f);
+        var toFoot = hp != null && HeroFoot.Length() > 0.05f ? HeroFoot.Normalized() : Vector2.Zero;
+        RenderingServer.GlobalShaderParameterSet("cel_hero", hp != null && toFoot != Vector2.Zero ? new Vector4(toFoot.X, toFoot.Y, (float)hp[6], 1) : Vector4.Zero);
+        var anchor = hp != null ? new Color((float)hp[3] / 255f, (float)hp[4] / 255f, (float)hp[5] / 255f).SrgbToLinear() * (float)hp[2] : new Color(0, 0, 0);
+        RenderingServer.GlobalShaderParameterSet("cel_hero_tone", new Vector4(anchor.R, anchor.G, anchor.B, hp != null ? (float)hp[7] : 0));
     }
+    /// <summary>(L1 lead 19, HER2) Where her pool light's foot sits, in metres from her (x, z): the rig's hero_pool, else (0, 0.4).</summary>
+    public static Vector2 HeroFoot = new(0, 0.4f);
 
     /// <summary>(L1 lead 17, P) The floor's tone table from a rig's ember_floor (Zone.EmberFloor: [the floor's lit tone, its
     /// shade's (Oklab L, C, hue), the floor under one unit of her light (linear rgb), (r m, the moon's return, the gap's tone,

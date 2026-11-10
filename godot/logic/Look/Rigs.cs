@@ -43,7 +43,8 @@ public sealed record LightRig(string Id, string From, bool Camera, RigKey Key, R
     double? EmberReach = null, string? EmberColor = null, double[]? Curve = null, double? WarmKeep = null, double[]? EmberGive = null, double? SceneColor = null, double? SceneMoon = null,
     double[]? EmberPool = null, string? EmberEdge = null, double[]? FireGive = null, bool? ShadowLevel = null, bool? EmberSmooth = null, double[]? EmberShade = null,
     double[]? MoonTop = null, double[]? FoeFire = null, double[]? FoeMoon = null,   // (L1 lead 12, S3: what stands in the night's light; rigs.json "moon_top", "foe_fire", "foe_moon")
-    double[]? Stand = null, double[]? EmberFloor = null)   // (L1 lead 17, P: rigs.json "ember_floor", the floor's tone table under her fire)
+    double[]? Stand = null, double[]? EmberFloor = null,   // (L1 lead 17, P: rigs.json "ember_floor", the floor's tone table under her fire)
+    double[]? HeroPool = null)   // (L1 lead 19, HER2: rigs.json "hero_pool", the hero figure in her lit pool; Zone.HeroPool)
 {
     /// <summary>(L1 lead 14, K1; docs/design/NIGHT_KIT.md; rigs.json "stand") The standing material's levels: what stands on
     /// the board (stone, leaf, bark) painted in hard steps as the rig's levels, not the albedo's luck. Four rows, flattened:
@@ -148,7 +149,7 @@ public sealed class RigSet
             A(e, "ember_pool", b?.EmberPool), S(e, "ember_edge", b?.EmberEdge), A(e, "fire_give", b?.FireGive),
             e.TryGetProperty("shadow_level", out var sl) ? sl.GetBoolean() : b?.ShadowLevel,
             e.TryGetProperty("ember_smooth", out var es) ? es.ValueKind == JsonValueKind.True : b?.EmberSmooth, A(e, "ember_shade", b?.EmberShade),
-            A(e, "moon_top", b?.MoonTop), A(e, "foe_fire", b?.FoeFire), A(e, "foe_moon", b?.FoeMoon), A(e, "stand", b?.Stand), A(e, "ember_floor", b?.EmberFloor));   // (L1 lead 12, R4 round 4: her fire a smooth field, the leaf shade across it)
+            A(e, "moon_top", b?.MoonTop), A(e, "foe_fire", b?.FoeFire), A(e, "foe_moon", b?.FoeMoon), A(e, "stand", b?.Stand), A(e, "ember_floor", b?.EmberFloor), A(e, "hero_pool", b?.HeroPool));   // (L1 lead 12, R4 round 4: her fire a smooth field, the leaf shade across it)
     }
 }
 
@@ -178,7 +179,7 @@ public static class Rigs
             CelInk = r.Ink is { } ink ? ink : p.CelInk, CelShadow = r.Hardness ?? p.CelShadow,
             Grade = Graded(r.Grade is { } g ? Atmospheres.GradeNamed(g) ?? p.Grade : p.Grade, r),
             EmberGive = r.EmberGive ?? p.EmberGive, FireGive = r.FireGive ?? p.FireGive,
-            EmberPool = r.EmberPool ?? p.EmberPool, EmberEdge = r.EmberEdge ?? p.EmberEdge, EmberSmooth = r.EmberSmooth ?? p.EmberSmooth, EmberShade = r.EmberShade ?? p.EmberShade, EmberFloor = r.EmberFloor ?? p.EmberFloor,
+            EmberPool = r.EmberPool ?? p.EmberPool, EmberEdge = r.EmberEdge ?? p.EmberEdge, EmberSmooth = r.EmberSmooth ?? p.EmberSmooth, EmberShade = r.EmberShade ?? p.EmberShade, EmberFloor = r.EmberFloor ?? p.EmberFloor, HeroPool = r.HeroPool ?? p.HeroPool,
             MoonTop = r.MoonTop ?? p.MoonTop, FoeFire = r.FoeFire ?? p.FoeFire, FoeMoon = r.FoeMoon ?? p.FoeMoon,
             Exposure = r.Exposure ?? p.Exposure, Ember = r.Ember ?? p.Ember,
             EmberReach = r.EmberReach ?? p.EmberReach, EmberColor = r.EmberColor ?? p.EmberColor,
