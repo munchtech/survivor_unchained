@@ -114,18 +114,21 @@ global uniform vec4 crowd_moon;
 // the body turns grey-violet (a breath of the fire on every face, CF_AMB; the top step's violet, CF_TOP_IN), the cyan rim
 // goes, and the faces turned to her (n toward her, leaned up by CF_UP, past crowd_fire.w) take ONE warm step: CF_WARM's
 // hue at a fixed tone (crowd_fire.x x crowd_fire.y: a cel tone, not the ramp's falloff, which left a foe
-// 3 m out a faint brown), with a thin gold edge (the pool's core hue at crowd_fire.x) on her-side silhouettes of faces
+// 3 m out a faint brown), with a thin gold edge (CF_GOLD at crowd_fire.x) on her-side silhouettes of faces
 // past crowd_fire.z. All steps are hard, their edges one screen derivative wide. S3 itself is off on a foe (vat_s3k 0).)
 #define CF_KNEE 0.135
 #define CF_REACH 0.04
 #define CF_UP 0.35
 #define CF_AMB 0.006
-#define CF_TOP 0.90
+#define CF_TOP 0.85
 #define CF_TOP_OUT vec3(0.0105, 0.0255, 0.073)
 #define CF_TOP_IN vec3(0.037, 0.0165, 0.038)
 #define CF_RIM vec3(0.075, 0.43, 0.64)
 // (the warm step's hue: target 09's L 0.49 h 32 at level 0.335; the ramp's own hue out there runs to magenta)
-#define CF_WARM vec3(1.0, 0.144, 0.08)
+#define CF_WARM vec3(1.0, 0.18, 0.065)
+// (the gold edge's hue, target 09's L 0.72 h 62; the cyan rim's width in screen pixels where S3's own edge is thinner)
+#define CF_GOLD vec3(1.0, 0.384, 0.083)
+#define CF_RIM_PX 2.0
 // (a silhouette edge c_px screen pixels wide from n.v and its screen derivative, on grazing faces only)
 float vat_edge_px(vec3 c_n, vec3 c_v, float c_px) {
 	float c_nv = clamp(dot(c_n, c_v), 0.0, 1.0);
@@ -484,8 +487,6 @@ void fragment() {
 			vec4 cf_rp = cel_pool_at(cw_h);
 			float cf_mx = max(cf_rp.r, max(cf_rp.g, cf_rp.b));
 			vec3 cf_hue = cf_rp.rgb / max(cf_mx, 1e-4);
-			vec4 cf_core = cel_pool_at(0.0);
-			vec3 cf_gold = cf_core.rgb / max(max(cf_core.r, max(cf_core.g, cf_core.b)), 1e-4);
 			float cf_g = clamp((cf_mx - CF_REACH) / (CF_KNEE - CF_REACH), 0.0, 1.0) * step(0.001, crowd_ember.w);
 			float cf_alive = clamp(dot(abs(COLOR.rgb), vec3(0.333)), 0.0, 1.0);
 			vec2 cf_to = crowd_ember.xz - cw_p.xz;
@@ -500,10 +501,11 @@ void fragment() {
 			float cf_tm = dot(cw_n, normalize(mix(cel_key.xyz, vec3(0.0, 1.0, 0.0), cel_s3_shape.y)));
 			float cf_tw = fwidth(cf_tm) * 0.75 + 0.01;
 			float cf_top = smoothstep(CF_TOP - cf_tw, CF_TOP + cf_tw, cf_tm) * (1.0 - cf_warm);
-			float cf_rim = cel_s3_edge(NORMAL, VIEW, VIEW_MATRIX) * (1.0 - cf_g) * (1.0 - busy);
+			float cf_ms = smoothstep(-0.1, 0.3, dot(NORMAL, normalize((VIEW_MATRIX * vec4(cel_key.xyz, 0.0)).xyz)));
+			float cf_rim = max(cel_s3_edge(NORMAL, VIEW, VIEW_MATRIX), vat_edge_px(NORMAL, VIEW, CF_RIM_PX) * cf_ms) * (1.0 - cf_g) * (1.0 - busy);
 			e += mix(mix(CF_TOP_OUT, CF_TOP_IN, cf_g) * cf_top, CF_RIM, cf_rim) * cf_alive;
 			e += cf_hue * (CF_AMB * cf_g * cf_alive);
-			e += mix(CF_WARM * (crowd_fire.y * cf_warm), cf_gold, cf_edge) * (crowd_ember.w * crowd_fire.x * cf_alive);
+			e += mix(CF_WARM * (crowd_fire.y * cf_warm), CF_GOLD, cf_edge) * (crowd_ember.w * crowd_fire.x * cf_alive);
 			e += c * (crowd_fill.rgb + crowd_top.rgb * cn_head) * (1.0 - cf_give);
 			cn_k = 1.0 - cf_give;
 			vat_s3k = 0.0;

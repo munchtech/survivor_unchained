@@ -259,7 +259,7 @@ public class RigsTests
         }
         var a = s["arena_night"]!;
         Assert.Equal(new[] { 0.32, 60, 175, 235, 0.84, 0.5, 1.5, 0.15 }, a.MoonTop);
-        Assert.Equal(new[] { 1.15, 0.35, 0.5, 0.12 }, a.FoeFire);
-        Assert.Equal(new[] { 0.24, 0.8, 0.016, 58, 48, 92, 0.02 }, a.FoeMoon);
+        Assert.Equal(new[] { 0.85, 0.41, 0.5, 0.4 }, a.FoeFire);
+        Assert.Equal(new[] { 0.028, 1.0, 0.016, 58, 48, 92, 0.02 }, a.FoeMoon);
     }
 }
