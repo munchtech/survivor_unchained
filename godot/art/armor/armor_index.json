@@ -73,9 +73,7 @@
   },
   {
     "id": "plate_cuirass_plain",
-    "finish": {
-      "steel": "plainsteel"
-    },
+    "finish": {"steel": "plainsteel"},
     "outfit": null,
     "slot": "top",
     "layer": 1,
@@ -99,9 +97,7 @@
   },
   {
     "id": "plate_gstring_plain",
-    "finish": {
-      "steel": "plainsteel"
-    },
+    "finish": {"steel": "plainsteel"},
     "outfit": null,
     "slot": "bottom",
     "layer": 1,
@@ -122,9 +118,7 @@
   },
   {
     "id": "plate_pauldrons_plain",
-    "finish": {
-      "steel": "plainsteel"
-    },
+    "finish": {"steel": "plainsteel"},
     "outfit": null,
     "slot": "pauldrons",
     "layer": 3,
@@ -184,7 +178,7 @@
       "plate_top_etched.top.steel"
     ],
     "tuck": "armor_tuck/plate_top_etched.bin",
-    "tuck_count": 1104,
+    "tuck_count": 910,
     "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
     "hold": {
       "amount": 0.55,
@@ -192,9 +186,7 @@
     },
     "file": "res://art/armor/plate_top_etched.gltf",
     "tier": 2,
-    "base": "plate_top_plain",
-    "body_glb": "66182af6",
-    "built_on": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
+    "base": "plate_top_plain"
   },
   {
     "id": "plate_top_gilded",
@@ -211,7 +203,7 @@
       "plate_top_gilded.top.steel"
     ],
     "tuck": "armor_tuck/plate_top_gilded.bin",
-    "tuck_count": 1104,
+    "tuck_count": 910,
     "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
     "hold": {
       "amount": 0.55,
@@ -219,12 +211,11 @@
     },
     "file": "res://art/armor/plate_top_gilded.gltf",
     "tier": 3,
-    "base": "plate_top_plain",
-    "body_glb": "66182af6",
-    "built_on": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
+    "base": "plate_top_plain"
   },
   {
     "id": "plate_top_plain",
+    "finish": {"steel": "plainsteel"},
     "outfit": null,
     "slot": "top",
     "layer": 1,
@@ -236,18 +227,13 @@
       "plate_top_plain.top.steel"
     ],
     "tuck": "armor_tuck/plate_top_plain.bin",
-    "tuck_count": 1104,
+    "tuck_count": 910,
     "body_hash": "03e3bcb5fd3f65db7ea788171acc391935aaa223",
     "hold": {
       "amount": 0.55,
       "squash": 0
     },
     "file": "res://art/armor/plate_top_plain.gltf",
-    "tier": 1,
-    "finish": {
-      "steel": "plainsteel"
-    },
-    "body_glb": "66182af6",
-    "built_on": "7de7f07bc8a913024e75eb00b692dc76e6e8f44b"
+    "tier": 1
   }
 ]
