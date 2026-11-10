@@ -41,6 +41,10 @@ least GRID^2). OUT>2: area of samples ever past the outer face by more than 2 mm
 
     python tools/armor/gear_wear.py [--gear godot/art/gear/out/body_p1] [--body <dir>] [--clips <dir> | a,b,.. | a.json,..]
         [--pieces a,b,..] [--tests skin,control,mixed,show] [--step 2] [--grid 2.5] [--jobs N] [--out <dir>]
+        [--out-mm <depth>]
+Where it shows ("views" per test, mm^2): close = through over 2 mm in the town / idle / look / talk clips, play = over
+6 mm in every other clip, "*_ex" without the known broken clips (VIEWS, CLOSE_WORDS, BROKEN). --out-mm D adds
+"outd_mm2": the 2 mm count again at depth D.
 Writes <out>/gear_wear.json (everything) and <out>/gear_wear.md (worst 20 and per-test totals).
 """
 import json
@@ -74,6 +78,12 @@ TUCK_DEPTH, T_FULL, T_GONE = 0.010, 0.973, 0.995           # heroine_skin.gdshad
 G_SPREAD = 0.020                                           # GarmentTuck.Spread
 REACH, REACH_POSED, K, K0, REFINE, DRIFT = wc.REACH, wc.REACH_POSED, wc.K, wc.K0, wc.REFINE, wc.DRIFT
 SHOW_GRID, SHOW_RAY, SHOW_TILT, SHOW_MIN = 0.004, 0.08, 50.0, 0.05
+# WHERE IT SHOWS: the depth (mm past the outer face) a through must reach to show under each camera. close: the town,
+# idle, look and talk clips (close cameras, about 1 mm a pixel); play: every other clip (the play camera, 13 mm a pixel
+# at 23 m). A clip's view is read from the words of its name (clip_view). BROKEN: clips known bad, left out of "*_ex".
+VIEWS = {"close": 2.0, "play": 6.0}
+CLOSE_WORDS = ("town", "idle", "look", "talk")
+BROKEN = ("Jog_Fwd",)
 
 
 # ------------------------------------------------------------------ helpers --
@@ -379,6 +389,27 @@ def mats(a):
     m[:, :3] = a
     m[:, 3, 3] = 1
     return m
+
+
+def clip_view(name):
+    """"close" or "play" (VIEWS) by the words of a clip's name: idle_stalker_town is close (idle, town), not by the
+    "talk" inside "stalker"."""
+    words = os.path.splitext(os.path.basename(name))[0].lower().replace("-", "_").split("_")
+    return "close" if any(w in CLOSE_WORDS for w in words) else "play"
+
+
+def view_sets(per_clip_out, n):
+    """{view key: sample indices} of one test: per view (VIEWS), the samples ever past the outer face by more than the
+    view's depth over that view's clips; "<view>_ex" leaves the BROKEN clips out. per_clip_out: {clip: min out (m)}."""
+    out = {}
+    for v, d in VIEWS.items():
+        for ex in ("", "_ex"):
+            mo = np.full(n, np.inf)
+            for c, o in per_clip_out.items():
+                if clip_view(c) == v and not (ex and c in BROKEN):
+                    mo = np.minimum(mo, o)
+            out[v + ex] = np.nonzero(mo < -d / 1000.0)[0].tolist()
+    return out
 
 
 def clip_files(spec):
@@ -792,7 +823,8 @@ class Check:
         return vis
 
     # ---- report --
-    def report(self, clips, region_of):
+    def report(self, clips, region_of, out_mm=0.0):
+        """out_mm > 0 adds "outd_mm2" (per test and per clip): as out2 with that depth in place of 2 mm."""
         out, worst = [], []
         for x in self.tests:
             A, B = x["A"], x["B"]
@@ -814,6 +846,11 @@ class Check:
                 rm = x["raw_min_out"]
                 e["raw_out2_mm2"] = round(float(ar[rm < -0.002].sum() * 1e6), 1)
                 e["raw_out_worst_mm"] = round(float(-rm[np.isfinite(rm)].min() * 1000), 2) if np.isfinite(rm).any() else None
+            e["_vw"] = view_sets({c: pc["out"] for c, pc in x["per_clip"].items()}, len(mo))
+            e["views"] = {k: round(float(ar[v].sum() * 1e6), 1) for k, v in e["_vw"].items()}
+            if out_mm > 0:
+                e["outd_mm"], e["_od"] = out_mm, np.nonzero(mo < -out_mm / 1000.0)[0].tolist()
+                e["outd_mm2"] = round(float(ar[e["_od"]].sum() * 1e6), 1)
             for c, pc in x["per_clip"].items():
                 o2 = pc["out"] < -0.002
                 pt = x["pts"][pc["pt"]] if pc["pt"] >= 0 else -1
@@ -821,6 +858,8 @@ class Check:
                        "out_worst_mm": round(float(-pc["worst"] * 1000), 2) if np.isfinite(pc["worst"]) else None,
                        "in_worst_mm": round(float(-pc["worst_in"] * 1000), 2) if np.isfinite(pc["worst_in"]) else None,
                        "frame": pc["frame"], "region": region_of(pt) if pt >= 0 else ""}
+                if out_mm > 0:
+                    row["outd_mm2"] = round(float(ar[pc["out"] < -out_mm / 1000.0].sum() * 1e6), 1)
                 e["per_clip"][c] = row
                 if row["out2_n"]:
                     worst.append({"clip": c, "test": f"{A} under {B}" if A != "skin" else f"skin under {B}",
@@ -900,6 +939,8 @@ def main(argv=None):
     ap.add_argument("--no-confirm", action="store_true", help="skin tests: the raw ray gap only (no nearest-face check)")
     ap.add_argument("--jobs", type=int, default=1, help="clips split over this many processes")
     ap.add_argument("--out", default=OUT)
+    ap.add_argument("--out-mm", type=float, default=0.0, help="also count the through deeper than this many mm "
+                    "(outd_mm2, per test and per clip); 0: only the 2 mm count and the views")
     ap.add_argument("--part", default="", help=argparse.SUPPRESS)
     a = ap.parse_args(argv)
     t_start = time.time()
@@ -924,7 +965,7 @@ def main(argv=None):
     t_motion = ck.run(dump_sources(sc, clips, a.step))
     names = sc.poser.names
     dom = np.array([names[j] for j in sc.J[np.arange(len(sc.P0)), sc.W.argmax(1)]])
-    pairs, worst = ck.report([os.path.basename(c) for c in clips], lambda pt: region_name(dom[pt]))
+    pairs, worst = ck.report([os.path.basename(c) for c in clips], lambda pt: region_name(dom[pt]), a.out_mm)
     if a.part:
         json.dump({"pairs": pairs, "worst": worst}, open(a.part, "w"))
         return
@@ -998,6 +1039,10 @@ def merge(parts):
         i2 = sorted(set().union(*[e["_i2"] for e in ps]))
         b["out2_n"], b["out2_mm2"] = len(o2), round(float(ar[o2].sum()), 1)
         b["in2_mm2"] = round(float(ar[i2].sum()), 1)
+        if "_vw" in ps[0]:
+            b["views"] = {k: round(float(ar[sorted(set().union(*[e["_vw"][k] for e in ps]))].sum()), 1) for k in ps[0]["_vw"]}
+        if "_od" in ps[0]:
+            b["outd_mm2"] = round(float(ar[sorted(set().union(*[e["_od"] for e in ps]))].sum()), 1)
         b["lost_share"] = round(float(np.mean([e["lost_share"] for e in ps])), 4)
         out.append(b)
     out.sort(key=lambda e: (-e["out2_mm2"], -(e["out_worst_mm"] or -99)))
@@ -1007,7 +1052,7 @@ def merge(parts):
 def write(a, clips, pairs, worst, shows, ck, took, t_motion):
     os.makedirs(a.out, exist_ok=True)
     for e in pairs:
-        for k in ("_o2", "_i2", "_area"):
+        for k in ("_o2", "_i2", "_area", "_vw", "_od"):
             e.pop(k, None)
     slots_filled = set()
     if ck is not None:
@@ -1016,7 +1061,10 @@ def write(a, clips, pairs, worst, shows, ck, took, t_motion):
             for i in ps[s]:
                 slots_filled.update(ck.byid[i]["covers"])
     empty = [s for s in VISUAL_SLOTS if s not in slots_filled] if ck is not None else None
+    cn = [os.path.splitext(os.path.basename(c))[0] for c in clips]
     meta = {"gear": os.path.relpath(a.gear, REPO), "clips": [os.path.basename(c) for c in clips], "step": a.step,
+            "views": {"depth_mm": VIEWS, "broken": [c for c in cn if c in BROKEN],
+                      **{v: [c for c in cn if clip_view(c) == v] for v in VIEWS}},
             "grid_mm": a.grid, "seconds": round(took), "motion_seconds": round(t_motion) if t_motion else None,
             "jobs": a.jobs, "tests": a.tests, "pieces": a.pieces or "all",
             "note": "out_*: past the piece's OUTER face (what shows); in_*: past its inner face. out2: samples ever "
@@ -1040,6 +1088,13 @@ def write(a, clips, pairs, worst, shows, ck, took, t_motion):
           "|---|---|---|---:|---:|---:|---|"]
     for w in worst[:20]:
         L.append(f"| {w['clip']} | {w['test']} | {w['kind']} | {w['out2_mm2']:.0f} | {w['out_worst_mm']} | {w['frame']} | {w['region']} |")
+    L += ["", "## Where it shows", "",
+          "close: through over " + f"{VIEWS['close']:g} mm in the town / idle / look / talk clips ({len(meta['views']['close'])}); "
+          f"play: over {VIEWS['play']:g} mm in the others ({len(meta['views']['play'])}); ex: without {', '.join(BROKEN)}. mm^2.", "",
+          "| test | close | play | play ex |", "|---|---:|---:|---:|"]
+    for e in sorted(pairs, key=lambda e: -(e["views"]["close"] + e["views"]["play"]))[:20]:
+        if e["views"]["close"] + e["views"]["play"] > 0:
+            L.append(f"| {e['A']} under {e['B']} | {e['views']['close']:.0f} | {e['views']['play']:.0f} | {e['views']['play_ex']:.0f} |")
     if shows:
         L += ["", "## Every slot shows (at rest)", ""]
         fails = [(s["name"], i, s["pieces"][i]) for s in shows for i in s["fails"]]

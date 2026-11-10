@@ -319,3 +319,42 @@ def test_standoff_floor_law(tmp_path):
         assert gt.rigid_tuck_law("top") == (gt.RIGID_FULL, gt.RIGID_ZERO, gt.STEP)
     finally:
         gf.rigid_roles = old
+
+
+def test_seat_cap_and_roles_override(tmp_path, monkeypatch):
+    """The law's "seat_cap_mm" caps the topmost plates of each side (the cop and what rides it) while the lames below
+    keep "cap_mm"; "cap_mm" 0 is no stand-off; GEAR_ROLES names the roles file every tool reads."""
+    import json as _json
+    # two sides, each a cop (two groups at one height: steel, a trim) over a lame; comps 0..5, each its own leader
+    def blk(x, y0, y1):
+        return np.array([[x, y0, 0.0], [x, y1, 0.0], [x + 0.01, 0.5 * (y0 + y1), 0.0]])
+    X = np.vstack([blk(0.20, 1.47, 1.53), blk(0.21, 1.48, 1.52), blk(0.23, 1.44, 1.48),
+                   blk(-0.20, 1.47, 1.53), blk(-0.21, 1.48, 1.52), blk(-0.23, 1.44, 1.48), [[0.0, 2.0, 0.0]]])
+    comp = np.r_[np.repeat(np.arange(6), 3), -1]
+    lead = np.arange(6)
+    top = gf.top_groups(X, comp, lead)
+    assert top.tolist() == [True] * 6 + [False] * 3 + [True] * 6 + [False] * 3 + [False]
+    roles = {"slots": {"pauldrons": {"standoff": {"cap_mm": 10, "seat_cap_mm": 3}}}}
+    rp = tmp_path / "roles.json"
+    rp.write_text(_json.dumps(roles))
+    monkeypatch.setenv("GEAR_ROLES", str(rp))
+    assert gf.roles_path() == str(rp) and gf.standoff_law("pauldrons")["seat_cap_mm"] == 3
+    import gear_tuck as gt
+    assert gt.rigid_tuck_law("pauldrons") == (gt.RIGID_FULL, gt.RIGID_ZERO, gt.STEP)
+
+    class _Bd:
+        id, meta, z = "u", {"row": {"slot": "pauldrons"}}, {"lead_close": lead}
+    fp = tmp_path / "u.json"
+    fp.write_text(_json.dumps({"targets": {"n0": [[0, 0.03], [1, 0.002], [6, 0.03], [7, 0.004]]}}))
+    ev = {0: {"X": X, "Xbind": X, "comp": comp}}
+    ms = [{"i": 0, "node": "n0", "tier": "close"}]
+    f = gf.standoff_floor(_Bd, ms, ev, path=str(fp))
+    assert abs(f[0] - 0.003) < 1e-9 and abs(f[1] - 0.002) < 1e-9      # the cop: held at the seat cap
+    assert abs(f[6] - 0.010) < 1e-9 and abs(f[7] - 0.004) < 1e-9      # the lame: the law's cap
+    rp2 = tmp_path / "roles0.json"
+    rp2.write_text(_json.dumps({"slots": {"pauldrons": {"standoff": {"cap_mm": 0, "tuck_step": 1.0}}}}))
+    monkeypatch.setenv("GEAR_ROLES", str(rp2))
+    assert gf.standoff_floor(_Bd, ms, ev, path=str(fp)) is None
+    assert gt.rigid_tuck_law("pauldrons")[2] == 1.0
+    monkeypatch.delenv("GEAR_ROLES")
+    assert gf.roles_path() == gf.ROLES_PATH

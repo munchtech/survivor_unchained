@@ -169,3 +169,21 @@ def test_full_cast_toe_box():
     D2 = np.array([[1.0, 0.0, 0.0]])
     g2, _, go2, _, _ = gw.full_cast(O2, D2, V, reach)
     assert go2[0] < 0 or g2[0] < 0
+
+
+def test_views_where_it_shows():
+    """A clip's view by the words of its name; a view counts its own clips at its own depth; merge unions the parts."""
+    assert gw.clip_view("idle_stalker") == "close" and gw.clip_view("run_stalker") == "play"   # not "talk" in stalker
+    assert gw.clip_view("run_warden_town.json") == "close" and gw.clip_view("Jog_Fwd") == "play"
+    assert gw.clip_view("sword_heavy") == "play" and gw.clip_view("talk_sella") == "close"
+    pc = {"idle_warden": np.array([-0.003, -0.001, 0.0, 0.0]), "sword_fore": np.array([-0.003, 0.0, -0.007, 0.0]),
+          "Jog_Fwd": np.array([0.0, 0.0, 0.0, -0.02])}
+    vs = gw.view_sets(pc, 4)
+    assert vs == {"close": [0], "close_ex": [0], "play": [2, 3], "play_ex": [2]}
+    base = {"A": "skin", "B": "p", "kind": "skin", "_area": [1.0, 2.0, 4.0, 8.0], "_o2": [], "_i2": [], "lost_share": 0.0,
+            "out2_mm2": 0.0, "out_worst_mm": None}
+    a = dict(base, per_clip={"idle_warden": {}}, _vw=gw.view_sets({"idle_warden": pc["idle_warden"]}, 4), _od=[0])
+    b = dict(base, per_clip={"sword_fore": {}, "Jog_Fwd": {}}, _od=[3],
+             _vw=gw.view_sets({k: pc[k] for k in ("sword_fore", "Jog_Fwd")}, 4))
+    m = gw.merge([{"pairs": [a]}, {"pairs": [b]}])[0]
+    assert m["views"] == {"close": 1.0, "close_ex": 1.0, "play": 12.0, "play_ex": 4.0} and m["outd_mm2"] == 9.0

@@ -311,9 +311,16 @@ ROLES_PATH = os.path.join(HERE, "rigid_roles.json")
 _ROLES = {}
 
 
+def roles_path():
+    """The roles file every tool reads: tools/armor/rigid_roles.json, or the file the GEAR_ROLES environment variable
+    names (a trial's laws, tried without editing the repo's file while other builds run; child processes inherit it)."""
+    return os.environ.get("GEAR_ROLES") or ROLES_PATH
+
+
 def rigid_roles(path=None):
-    """tools/armor/rigid_roles.json (cached): the bone roles and, per slot, the roles a rigid blend may ride."""
-    path = path or ROLES_PATH
+    """tools/armor/rigid_roles.json or GEAR_ROLES' file (roles_path; cached): the bone roles and, per slot, the roles a
+    rigid blend may ride."""
+    path = path or roles_path()
     if path not in _ROLES:
         _ROLES[path] = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else {"slots": {}}
     return _ROLES[path]
@@ -841,23 +848,58 @@ def standoff_law(slot, roles=None):
     return (rr.get("slots", {}).get(slot) or {}).get("standoff")
 
 
+def top_groups(X, comp, lead, side_m=0.02):
+    """Per point: True where its rigid group (a leader's components: a plate with its rivets and trims) is one of the
+    TOPMOST of its side (left, right, or the middle within side_m of x = 0): the group reaching highest (Y) and every
+    group whose mean height is at or above that group's lowest point (a cop's layers of steel, leather and gold are
+    separate groups at one height; the lames hang below it)."""
+    comp = np.asarray(comp)
+    g = np.where(comp >= 0, np.asarray(lead)[np.maximum(comp, 0)], -1)
+    ids = np.unique(g[g >= 0])
+    top = np.zeros(len(g), bool)
+    if not len(ids):
+        return top
+    mx = np.array([X[g == k, 0].mean() for k in ids])
+    side = np.where(np.abs(mx) < side_m, 0, np.sign(mx)).astype(int)
+    my = np.array([X[g == k, 1].mean() for k in ids])
+    for sd in np.unique(side):
+        of = np.nonzero(side == sd)[0]
+        hi = of[int(np.argmax([X[g == ids[k], 1].max() for k in of]))]
+        lo = X[g == ids[hi], 1].min()
+        for k in of:
+            if my[k] >= lo:
+                top[g == ids[k]] = True
+    return top
+
+
 def standoff_floor(bd, ms, ev, path=None):
     """The stand-off each rigid point of a tier must reach (m; NaN where none), or None: the slot's law
     (rigid_roles.json "standoff": "cap_mm") over the unit's measured targets (godot/art/gear/standoff/<id>.json, written
     by tools/armor/gear_standoff.py from her skin's excursion under the plate over the clips: per node, [unique vertex,
-    clearance m]). A measured need over the cap is held at the cap (a plate that stands further off floats)."""
+    clearance m]). A measured need over the cap is held at the cap (a plate that stands further off floats); "cap_mm" 0 is no
+    stand-off (the law's tuck keys alone). "seat_cap_mm" (optional) is the cap of the TOPMOST rigid plates of each side
+    (a pauldron's cop and what rides it: top_groups), so the cop stays seated on the shoulder top while the lames below
+    it may stand off to "cap_mm"."""
     law = standoff_law(bd.meta["row"].get("slot"))
     fp = path or os.path.join(STANDOFF, f"{bd.id}.json")
     if not law or not os.path.isfile(fp):
         return None
     tg = json.load(open(fp)).get("targets", {})
     cap = float(law.get("cap_mm", 20.0)) / 1000.0
+    if cap <= 0:
+        return None
+    caps = [np.full(len(ev[m["i"]]["X"]), cap) for m in ms]
+    if ms and law.get("seat_cap_mm") is not None:
+        comp = np.concatenate([ev[m["i"]]["comp"] for m in ms])
+        top = top_groups(np.vstack([ev[m["i"]]["Xbind"] for m in ms]), comp, bd.z[f"lead_{ms[0]['tier']}"])
+        seat = np.where(top, min(cap, float(law["seat_cap_mm"]) / 1000.0), cap)
+        caps = np.split(seat, np.cumsum([len(c) for c in caps])[:-1])
     out = []
     for m in ms:
         f = np.full(len(ev[m["i"]]["X"]), np.nan)
         for u, c in tg.get(m["node"], []):
             if 0 <= int(u) < len(f):
-                f[int(u)] = min(float(c), cap)
+                f[int(u)] = min(float(c), caps[len(out)][int(u)])
         f[ev[m["i"]]["comp"] < 0] = np.nan
         out.append(f)
     out = np.concatenate(out) if out else np.zeros(0)
@@ -1289,7 +1331,14 @@ def build(bodies, out_dir, only=None, bind_bodies=None, write=True):
         # (her skin's tuck and each piece's cover, native on this body: tools/armor/gear_tuck.py)
         import gear_tuck
         gear_tuck.write_all(out_dir, bodies["close"].glb, bodies["play"].glb, index)
-        with open(os.path.join(out_dir, "gear_index.json"), "w") as f:
+        ip = os.path.join(out_dir, "gear_index.json")
+        if only and os.path.exists(ip):
+            # (a build of some pieces keeps the folder's other rows as they stand, when they are this body's)
+            old = json.load(open(ip))
+            if old.get("body_hash") == bodies["close"].hash:
+                new = {r["id"]: r for r in index}
+                index = [new.pop(r["id"], r) for r in old.get("rows", [])] + list(new.values())
+        with open(ip, "w") as f:
             json.dump({"body": bodies["close"].name, "body_hash": bodies["close"].hash, "rows": index}, f, indent=1)
     return evs
 
@@ -1592,7 +1641,8 @@ def main():
         p.add_argument("--only", default="")
         p.add_argument("--synthetic", action="store_true")
         p.add_argument("--field", default="", help="check: the follow field's test bodies (all, or names: synthetic,weight+1,...)")
-        p.add_argument("--json", default="")
+        p.add_argument("--json", default="", help="check: the report's file (build writes none: its numbers are the "
+                       "folder's gear_index.json)")
         if name == "build":
             p.add_argument("--no-bind", action="store_true", help="skip the stale check and rebind")
     a = ap.parse_args()
@@ -1625,6 +1675,8 @@ def main():
         name = bodies["close"].name
         out_dir = a.out or os.path.join(OUT, name)
         build(bodies, out_dir, only)
+        if a.json:
+            print("gear_fit build: --json is check's; a build writes gear_index.json in its folder, nothing else")
         print(f"gear_fit build: {len(bindings(only))} units on {name} -> {rel(out_dir)} in {time.time() - t0:.1f} s")
         return
     if a.field:
