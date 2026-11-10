@@ -436,6 +436,8 @@ HER = {
     "part": 0.9,
     "lim": None,                         # None: the linear lay (the npz on disk). build --relax: (0.82, 1.28), real lengths
     "out": "strip_rest.npz",
+    "map_elev": (45.0, 90.0),            # target --map: the lay's share, smoothstep of the arm's elevation over these deg
+    "map_near": (45, 60, 67.5, 75, 90),  # ... also print the pose nearest each of these elevations
     "dirs": 2000,                        # outside directions of the visibility proof
     "game_up": 0.3,                      # "from the play camera's side": directions with an up part over this
     "outline": {"front34": (0.5, 0.2, 0.8), "back34": (0.5, 0.3, -0.8), "side": (1, 0, 0), "under": (0.6, -0.5, 0.6)},
@@ -591,6 +593,83 @@ def cmd_target(hs, poses):
         print(f"wrote {rt.OUT / 'strip_target.json'}")
 
 
+def elevation(hs, G, s):
+    """The arm's elevation from hanging down, deg: the upper arm's direction in the trunk's frame (the carry's anchor
+    joint) against the body's down."""
+    bd, ja = hs.bd, hs.h.anchor[s][0]
+    d = np.linalg.solve(G[ja][:3, :3] @ np.linalg.inv(bd.p.rest[ja][:3, :3]),
+                        G[bd.p.index[f"lowerarm_{s}"]][:3, 3] - G[bd.p.index[f"upperarm_{s}"]][:3, 3])
+    return float(np.degrees(np.arccos(np.clip(-(d @ np.asarray(bd.frame.up)) / np.linalg.norm(d), -1, 1))))
+
+
+def cmd_map(hs, poses):
+    """target --map: the lay as a CARRY MAP only. B's rest stays as it is; per pose the band's target is
+    (1 - w) * today's fill + w * the re-laid band carried on A's posed surface, w = smoothstep of the arm's elevation
+    over cfg["map_elev"]. Every ratio is against B's OLD rest."""
+    h, bd, cfg = hs.h, hs.bd, hs.cfg
+    z = np.load(rt.OUT / "poses.npz")
+    names, sides = [str(x) for x in z["name"]], [str(x) for x in z["side"]]
+    lo, hi = cfg["map_elev"]
+    weight = lambda e: (lambda t: t * t * (3 - 2 * t))(np.clip((e - lo) / (hi - lo), 0, 1))
+    el = np.array([elevation(hs, z["G"][k], sides[k]) for k in range(len(names))])
+    w = weight(el)
+    sel = [names.index(q) for q in poses]
+    if poses == cfg["named"]:
+        sel += [int(np.abs(el - e).argmin()) for e in cfg["map_near"]]
+        sel += sorted(np.nonzero((w > 0.2) & (w < 0.8))[0].tolist(), key=lambda k: abs(w[k] - 0.5))[:6]
+    sel = list(dict.fromkeys(sel))
+    E = {s: hs.E[s][np.isin(hs.E[s], hs.loc[s]).any(1)] for s in "lr"}
+    tb = {s: hs.tris(s)[np.isin(hs.tris(s), hs.loc[s]).any(1)] for s in "lr"}
+    R = {}
+
+    def targets(G, s, wk):
+        Va, _ = h.pose_ref(G)
+        N0, b = h.N0[hs.pts[s]], hs.loc[s]
+        Xf, Nf = h.car[s].carry(Va), np.einsum("nij,nj->ni", h.car[s].rotations(Va), N0)
+        Xb, Nb = hs.car1[s].carry(Va), np.einsum("nij,nj->ni", hs.car1[s].rotations(Va), hs.N1[hs.pts[s]])
+        Xm, Nm = Xf.copy(), Nf.copy()
+        Xm[b] = Xf[b] + wk * (Xb[b] - Xf[b])
+        Nm[b] = ct._unit(Nf[b] + wk * (Nb[b] - Nf[b]))
+        return Va, Xf, Nf, Xm, Nm
+
+    def stats(X, N, s, Va):
+        P, N0, e = bd.V0[hs.pts[s]], h.N0[hs.pts[s]], E[s]
+        r = np.linalg.norm(X[e[:, 0]] - X[e[:, 1]], axis=1) / np.linalg.norm(P[e[:, 0]] - P[e[:, 1]], axis=1)
+        flip = int((np.sign(ct.facing(tb[s], X, N)) != np.sign(ct.facing(tb[s], P, N0))).sum())
+        return [float(r.min()), float(r.max()), float(r.mean()), float(ct.surface_distance(X[hs.loc[s]], Va, hs.Ab.T).max() * 1000), flip]
+
+    fmt = lambda a: f"{a[0]:.2f}..{a[1]:.2f} {a[2]:.2f} {a[3]:5.1f} {a[4]:3d}"
+    print(f"{'pose':24s}  elev    w | fill: edge min..max mean, off A mm, turned | map: the same | A's own skin under the band edges: min..max mean")
+    rows = []
+    for k in sel:
+        s = sides[k]
+        if s not in R:
+            r = hs.relay(s, cfg["rows"])
+            i, j = r["edges"][:, 0], r["edges"][:, 1]
+            R[s] = (r["unf"], r["u"][i], r["u"][j], r["unf"].length(r["u"][i], r["u"][j]), float(np.abs(r["P1"] - hs.P1[s]).max()))
+        Va, Xf, Nf, Xm, Nm = targets(z["G"][k], s, w[k])
+        unf, ui, uj, len0, _ = R[s]
+        own = unf.length(ui, uj, 12, Va) / len0
+        f, m = stats(Xf, Nf, s, Va), stats(Xm, Nm, s, Va)
+        rows.append((w[k], f, m))
+        print(f"{names[k]:24s} {el[k]:5.1f} {w[k]:4.2f} | {fmt(f)} | {fmt(m)} | {own.min():.2f}..{own.max():.2f} {own.mean():.2f}")
+    mid = [(f, m) for wk, f, m in rows if 0.2 < wk < 0.8]
+    if mid:
+        print(f"transition (w 0.2..0.8, {len(mid)} poses): map edge min {min(m[0] for _, m in mid):.2f} (fill {min(f[0] for f, _ in mid):.2f}), max {max(m[1] for _, m in mid):.2f}"
+              f" (fill {max(f[1] for f, _ in mid):.2f}); turned most {max(m[4] for _, m in mid)} (fill {max(f[4] for f, _ in mid)}), poses where the map turns more than the fill {sum(m[4] > f[4] for f, m in mid)}")
+    low, d = np.nonzero(w == 0)[0], 0.0
+    for k in low:                                            # the proof: the general formula, no shortcut at w = 0
+        _, Xf, _, Xm, _ = targets(z["G"][k], sides[k], w[k])
+        d = max(d, float(np.abs(Xm - Xf).max()))
+    print(f"proof: {len(low)} of {len(names)} poses have elevation <= {lo:.0f} deg (w = 0); max |map - fill| over them {d!r} m")
+    for s in "lr":
+        er = elevation(hs, bd.p.rest, s)
+        _, Xf, _, Xm, _ = targets(bd.p.rest, s, weight(er))
+        print(f"proof: rest {s}: elevation {er:.1f} deg, w {weight(er)!r}, max |map - fill| {float(np.abs(Xm - Xf).max())!r} m, fill off B's rest max"
+              f" {np.abs(Xf - bd.V0[hs.pts[s]])[hs.loc[s]].max() * 1000:.2f} mm; relay vs the npz {R[s][4] * 1000 if s in R else float('nan'):.3f} mm")
+    print("elevation check (name says): " + ", ".join(f"{names[k]} {el[k]:.0f}" for k in range(len(names)) if names[k].startswith("x:")))
+
+
 def cmd_sheet(hs):
     import region_shape as rs
     h, md, bd, cfg = hs.h, hs.md, hs.bd, hs.cfg
@@ -631,6 +710,7 @@ def main():
     ap.add_argument("--snap", action="store_true", help="import carried_target from out/shoulder/snap (a frozen copy)")
     ap.add_argument("--rows", type=int, default=HER["rows"])
     ap.add_argument("--relax", action="store_true", help="build: relax the lay on real lengths (slow; the left fails, see strip_rest.md)")
+    ap.add_argument("--map", action="store_true", help="target: the lay as a carry map blended in by arm elevation, B's rest kept")
     ap.add_argument("--poses", default="", help="comma-separated pose names, or 'named' (the config's list); none: all of poses.npz")
     a = ap.parse_args()
     HER["lim"] = (0.82, 1.28) if a.relax else None
@@ -639,6 +719,8 @@ def main():
     if a.cmd == "build":
         return cmd_build(hs, a.rows)
     hs.load()
+    if a.cmd == "target" and a.map:
+        return cmd_map(hs, HER["named"] if a.poses in ("", "named") else [q for q in a.poses.split(",") if q])
     if a.cmd == "target":
         return cmd_target(hs, HER["named"] if a.poses == "named" else [p for p in a.poses.split(",") if p])
     cmd_sheet(hs)
