@@ -624,6 +624,52 @@ def cmd_build(a):
               f"windows L {len(r.wins[0])} R {len(r.wins[1])} -> {OUT.relative_to(REPO).as_posix()}/{p.stem}.json")
 
 
+POSE_OUT = REPO / "tools/anim/out/pose"      # git-ignored (/tools/anim/out/): nothing packs or judges it
+
+
+def cmd_pose(a):
+    """A spec built as a short STILL for a pose loop (seconds, not minutes): `--frames` source frames around `--at`
+    (default: the middle of post.crop), loop off, no cycle search, fit.clear dropped unless --clear (so body_field()
+    is not built for the fit). Writes tools/anim/out/pose/<clip>.json (never OUT), prints the build's measures and
+    fit notes, and draws the middle frame large in the game, front and side views (p4_strip) -> <clip>.jpg."""
+    import time
+    import types
+    t0 = time.time()
+    spec = json.loads((P4 / "specs" / f"{a.clip}.json").read_text())
+    po = spec.setdefault("post", {})
+    crop = po.get("crop") or [0, soma.load_npz(P4 / spec["source"]).frames - 1]
+    at = a.at if a.at is not None else (crop[0] + crop[1]) // 2
+    lo = max(0, at - a.frames // 2)
+    po.update({"crop": [lo, lo + a.frames - 1], "loop": False})
+    po.pop("cycle_s", None)
+    spec["loop"] = False
+    if not a.clear and spec.get("fit"):
+        spec["fit"].pop("clear", None)
+    r = run_post(P4 / spec["source"], spec, a.clip)
+    POSE_OUT.mkdir(parents=True, exist_ok=True)
+    out = POSE_OUT / f"{a.clip}.json"
+    MC.write(r.clip, out)
+    t1 = time.time()
+    m = measure(r, spec)
+    ok = measures.passes(m, spec.get("bands", {}))
+    print(f"pose {a.clip}: source frames {po['crop'][0]}-{po['crop'][1]} (still, loop off, clear {'ON' if a.clear else 'off'}), "
+          f"{r.clip['frames']} frames, build {t1 - t0:.1f} s")
+    print("  bands: " + ", ".join(f"{k} {m.get(k)}{'' if ok[k] else ' MISS'}" for k in spec.get("bands", {})))
+    print("  more: " + ", ".join(f"{k} {v}" for k, v in m.items() if k not in spec.get("bands", {})))
+    for L in r.fitlog or []:
+        print(f"  fit {L['layer']}: " + ", ".join(f"{k} {v}" for k, v in L.items() if k != "layer"))
+    for nt in r.prep.notes:
+        print(f"  note: {nt}")
+    import p4_strip
+    mid = r.clip["frames"] // 2
+    png = POSE_OUT / f"{a.clip}.png"
+    p4_strip.run(sys.modules[__name__], types.SimpleNamespace(
+        clip=str(out), every=1, frm=mid, to=mid, views="game,front,side", cols=12, tile=a.tile, spin=0.0, pitch=None,
+        out=str(png)))
+    png.unlink(missing_ok=True)              # (JPEG only)
+    print(f"pose {a.clip}: {time.time() - t0:.1f} s in all -> {png.with_suffix('.jpg')}")
+
+
 def clearance(G, P, held, target_mm=10.0, n=None, pts=800):
     """Each held piece against her skin (body_field: the winding number's sign) on every frame of a clip: the closest
     gap (mm, + outside), the deepest in (mm, 0 if never), the frames inside and the frames under target_mm."""
@@ -893,7 +939,15 @@ def main():
     st.add_argument("--spin", type=float, default=0.0, help="turns/s: yaw her about the node's vertical axis (to her left), as the game does a de-rotated loop")
     st.add_argument("--pitch", type=float, default=None, help="the game view's pitch, deg down (default: FollowCamera.cs Pitch)")
     st.add_argument("--out", default="")
+    ps = sub.add_parser("pose", help="a spec built as a short still (no loop search, no clear) + its measures and a large pose sheet: tools/anim/out/pose")
+    ps.add_argument("clip")
+    ps.add_argument("--at", type=int, default=None, help="the source frame to pose on (default: the middle of post.crop)")
+    ps.add_argument("--frames", type=int, default=10)
+    ps.add_argument("--clear", action="store_true", help="run fit.clear anyway (slow: her skin field)")
+    ps.add_argument("--tile", default="330x480")
     a = ap.parse_args()
+    if a.cmd == "pose":
+        return cmd_pose(a)
     if a.cmd == "strip":
         import p4_strip
         return p4_strip.run(sys.modules[__name__], a)
