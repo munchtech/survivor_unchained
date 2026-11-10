@@ -454,8 +454,9 @@ public partial class BattleFx
         m.SetShaderParameter("grip_bite", new Vector4(biteU, biteK, Mathf.Min(rc[0], seenLen * rm[0]), Mathf.Min(rc[1], seenLen * rm[1])));
         m.SetShaderParameter("grip_swell", new Vector4(sw[0], sw[1], wh[0], wh[1]));
         m.SetShaderParameter("grip_inner", wh[2]);
-        var bs = P7D.All("grip.band.short"); var jag = P7D.All("grip.band.jag");
-        m.SetShaderParameter("grip_step", Mathf.SmoothStep(bs[0], bs[1], seenLen));
+        // (a switch, not a blend: a clump's step at a fifth of its depth is a pixel stair)
+        var jag = P7D.All("grip.band.jag");
+        m.SetShaderParameter("grip_step", seenLen >= P7D["grip.band.short"] ? 1f : 0f);
         m.SetShaderParameter("grip_jag", new Vector2(jag[0], jag[1]));
         m.SetShaderParameter("grip_gap", new Vector4(gap[0], gap[1], gap[2], gap[3]));
         m.SetShaderParameter("grip_shed", new Vector4(age, shed[0], shed[1], P7D["grip.lane.shed"]));
@@ -503,8 +504,9 @@ public partial class BattleFx
     /// two cross, the one whose crossing lies farther along it ends there, x grip.kink[0]), so where the tip's path turns
     /// the stroke is held inside the turn and pinches at a sharp kink; it never lies over itself. Returns the path's
     /// metres at the last KINK (a rib held under grip.kink[1] of the stroke's own width there), -1 if none.</summary>
-    float GripLay(GripLook look, float start, float len, float body, float blade, Camera3D? faceCam, Vector3 faceBack, float[] face, float[] kk, out float seen, out float way, out float shown)
+    float GripLay(GripLook look, float start, float len, float body, float blade, Camera3D? faceCam, Vector3 faceBack, float[] face, float[] kk, out float seen, out float way, out float shown, out float after)
     {
+        after = 0;
         gripRibs.Clear();
         int s = 0;
         while (s < gripPts.Count - 2 && gripCum[s + 1] <= start) s++;
@@ -591,13 +593,17 @@ public partial class BattleFx
             }
         }
         float kink = -1;
+        int at = -1;
         for (int i = 0; i < n; i++)
         {
             if (gripRibC[i] == float.MaxValue) continue;
             var rb = gripRibs[i];
             gripRibs[i] = (rb.H, rb.T, rb.U, rb.Real, Mathf.Min(1f, gripRibC[i] * kk[0] / Mathf.Max(gripRibL[i], 1e-3f)));
-            if (gripRibC[i] < kk[1] * gripRibW[i]) kink = start + rb.U;
+            if (gripRibC[i] < kk[1] * gripRibW[i]) { kink = start + rb.U; at = i; }
         }
+        // the stroke AFTER the kink, as long as the camera sees it (m at her)
+        for (int i = Math.Max(at, 0); at >= 0 && i < n - 1; i++) after += gripRibP[i + 1].DistanceTo(gripRibP[i]);
+        after *= P7Px(PlayerPos);
         return kink;
     }
 
@@ -685,18 +691,19 @@ public partial class BattleFx
         var face = P7D.All("grip.face");
         // (round 4) laid, and if the tip's path kinks on screen laid again from nearer the kink: the part before it (swept
         // edge-on, turned to the camera: an L with the part after it) runs out toward the kink over grip.kink.run's drawn
-        // frames, never leaving less than grip.kink[2] m of stroke (it must not blink)
+        // frames, but only once the part AFTER the kink is grip.kink[2] m long on screen (a stroke of its own: it must not
+        // blink; until then the kink is only held inside its turn, a clean mitre)
         float bladeNow = last.Tip.DistanceTo(last.Hilt);
         var kk = P7D.All("grip.kink"); var krun = P7D.All("grip.kink_run");
         float seen = len, way = 0, shown = 0, kinkAt = -1;
         for (int pass = 0; pass < 2; pass++)
         {
-            float k = GripLay(look, start, len, Mathf.Max(len - Mathf.Max(0, thread - start), 0.01f), bladeNow, faceCam, faceBack, face, kk, out seen, out way, out shown);
+            float k = GripLay(look, start, len, Mathf.Max(len - Mathf.Max(0, thread - start), 0.01f), bladeNow, faceCam, faceBack, face, kk, out seen, out way, out shown, out float after);
             if (pass == 0) kinkAt = k;
-            if (pass == 1 || k < 0) break;
+            if (pass == 1 || k < 0 || after < kk[2]) break;
             if (tr.KinkFrame < 0) tr.KinkFrame = Engine.GetFramesDrawn();
             float run = krun[Math.Min(Engine.GetFramesDrawn() - tr.KinkFrame, krun.Length - 1)];
-            float to = Mathf.Min(Mathf.Lerp(start, k, run), cum - kk[2]);
+            float to = Mathf.Min(Mathf.Lerp(start, k, run), cum - 2 * P7D["grip.min_len"]);
             if (to <= start + 1e-3f) break;
             start = to; len = cum - start;
         }

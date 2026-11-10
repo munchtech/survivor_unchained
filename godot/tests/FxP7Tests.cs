@@ -171,9 +171,9 @@ public class FxP7Tests
         Assert.True(kink.Length == 3 && kink[0] > 0.5f && kink[0] <= 1 && kink[1] > 0 && kink[1] < 0.6f && kink[2] > p["grip.min_len"] && kink[2] >= p["grip.min_seen"], "grip.kink");
         Assert.True(krun.Length is >= 1 and <= 2 && krun[0] > 0 && krun[^1] == 1, "grip.kink_run");
         Assert.InRange(p["grip.min_seen"], 0.3f, 0.9f);
-        var bshort = p.All("grip.band.short");
         var jag = p.All("grip.band.jag");
-        Assert.True(bshort.Length == 2 && bshort[0] < bshort[1] && jag.Length == 2 && jag[0] > 0 && jag[0] < 1 && jag[1] > 1, "grip.band.short / grip.band.jag");
+        Assert.InRange(p["grip.band.short"], 1.2f, 2.4f);
+        Assert.True(jag.Length == 2 && jag[0] > 0 && jag[0] < 1 && jag[1] > 1, "grip.band.jag");
         // sized by the bodies struck, capped at 8 to 16 of them; a kill is larger, never past the cap (GripContact clamps)
         Assert.True(by.Length == 2 && by[0] >= 8 && by[0] <= 16 && p["grip.contact.kill"] > 1 && p["grip.contact.kill"] <= by[1], "grip.contact.by_struck");
         // the Oathblade's is the thinner stroke

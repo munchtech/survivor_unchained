@@ -852,9 +852,9 @@
    "snap": 90,
    "min_len": 0.2,
    "min_seen": 0.5,
-   "kink": [0.9, 0.35, 0.7],
-   "kink_run": [0.6, 1.0],
-   "kink_what": "(round 4, lead 8) THE RIBBON NEVER LIES OVER ITSELF ON SCREEN. kink = [the share of a rib kept up to where it would cross another on screen (the stroke is held inside the turn: it pinches at a sharp kink); a rib held under this share of the stroke's own width there is a KINK; the metres of stroke the run-out always leaves (never a blink)]. kink_run = how far the part BEFORE the last kink has run out toward it, by drawn frame since the path first kinked (the edge-on part sheds first: one stroke after the kink, not an L). min_seen = the stroke is not drawn until it is this long on screen (m at her): a chip at the tip reads as a glitch.",
+   "kink": [1.0, 0.35, 0.7],
+   "kink_run": [1.0],
+   "kink_what": "(round 4, lead 8) THE RIBBON NEVER LIES OVER ITSELF ON SCREEN. kink = [the share of a rib kept up to where it would cross another on screen (the stroke is held inside the turn: it pinches at a sharp kink); a rib held under this share of the stroke's own width there is a KINK; the metres SEEN the part after the kink must be before the part before it runs out (a stroke of its own, never a blink; until then the kink is a clean mitre)]. kink_run = how far the part BEFORE the last kink has run out toward it, by drawn frame since the path first kinked (the edge-on part sheds first: one stroke after the kink, not an L). min_seen = the stroke is not drawn until it is this long on screen (m at her): a chip at the tip reads as a glitch.",
    "aspect": 0.5,
    "face": [0.3, 0.62],
    "tail_px": 3,
@@ -866,7 +866,7 @@
     "point": [0.4, 0.5],
     "gap": [0.5, 0.14, 0.26, 0.62],
     "shed": 0.03,
-    "carry": [1.5, 2.2]
+    "carry": [1.9, 2.4]
    },
    "band": {
     "what": "(take 6, lead 7) the three colors are CONTINUOUS bands: each band's end is ONE line across the stroke's width (per weapon: core / mid / end = its knots [across: 0 the tip's path, 1 the inner edge; share of the length], straight between them, at most 4), laid by the brush's BLUNT clumps: clumps = [fewest, most] across the width per line, uneven = their widths' spread (0 even); each clump ends square at its own length, a step off its neighbour's of depth [m least, most] (10-20 px at 75 px a metre), never more than ratio x the narrower clump's width; the side between two clumps runs along the travel (never a slant: a row of V's is a zigzag), round = its corners' radius (m). Leaving (grip.shed_to): from lane.shed before shed_at[0] to lane.shed after shed_at[1] the whole stroke thins toward the tip's path to shed_to of its width, its bands with it (every shed frame a thinner copy of the whole one; never a white fan).",
@@ -876,9 +876,9 @@
     "ratio": 1.5,
     "round": 0.12,
     "back": 0.4,
-    "short": [1.0, 2.0],
+    "short": 2.0,
     "jag": [0.4, 1.9],
-    "round4": "short = a band end's clumps by the stroke's length SEEN (m): none under [0] (the band ends on its own slanted line: a short comma's soft end, never lumps), whole at [1]. jag = a step's depth is its line's own drop times between these (a hash each), and its cap is hashed INSIDE what the clump can carry: no two steps alike (the Oathblade's gold-to-amber end was stairs: one cap for every step)."
+    "round4": "short = a band end's clumps by the stroke's length SEEN (m): none under it (the band ends on its own slanted line: a short comma's soft end, never lumps), whole from it (a switch: a blended step is a pixel stair). jag = a step's depth is its line's own drop times between these (a hash each), and its cap is hashed INSIDE what the clump can carry: no two steps alike (the Oathblade's gold-to-amber end was stairs: one cap for every step)."
    },
    "glow": 0.28,
    "glow_end": [0.45, 0.92],
@@ -888,7 +888,7 @@
    "shed_to": 0.2,
    "shed_rim": [0.45, 0.35, 0.12, 0.3],
    "shed_push": [0.8, 0.5],
-   "short": [0.9, 1.9],
+   "short": [1.4, 2.6],
    "sunder": {
     "what": "head = the stroke's width at the blade (a share of the blade, in from the tip's path); taper = its width at the tail as a share of the head's, p = the power it narrows by; max_len = the longest drawn (m); core / mid / end = the white's, the gold's and the paint's own end as ONE line across the width (grip.band.what); streaks = the tail's 3-5 dry streaks from the tip's path in, each [width (share of the tail's across), the share of the tail it keeps (1 = to the paint's end)]; flash = the contact's size",
     "head": 0.75,
