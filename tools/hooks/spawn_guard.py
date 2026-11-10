@@ -106,6 +106,11 @@ def main():
     if not os.path.exists(path):
         return
     inp = d.get("tool_input") or {}
+    if os.path.exists(os.path.join(os.environ.get("TEMP", "."), "ctx_budget", f"{aid}.stop")):
+        # ctx_budget.py's safe stop: a helper past its context grace finishes its step and reports; it starts nothing.
+        deny("You are past your context grace (safe stop): no new spawns. Put what you would delegate in your "
+             "report and your lead will route it to a fresh helper.")
+        return
     if atype == "su-lead-max":
         if not brief_allows_spawning(path):
             deny("Judges and solvers don't spawn helpers. Put what you would delegate in your report "
