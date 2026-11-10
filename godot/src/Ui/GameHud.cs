@@ -766,12 +766,15 @@ public partial class GameHud : CanvasLayer
             art.Level = (float)per;
             // (the Drowned Girl: the coal's heat is the reading; no glyph, no percent)
             // (the dash form's state is the dash's own ring now, Round.Form: under the Flare's orb it taught the wrong key)
-            var line = new System.Text.StringBuilder();
+            // (a debug readout of the reflexes' cooldowns: dev only, --reflex-note; it showed "shield_bash N" in normal play.
+            // M4 lead 4: built only under the flag: the empty builder and the empty text were set every HUD frame)
             if (ReflexNote)
-            foreach (var r in b.Reflexes)
-                line.Append(line.Length > 0 ? " | " : "").Append($"{r.Def.Art} {(r.Cd > 0 ? Math.Ceiling(r.Cd).ToString() : "ready")}");
-            // (a debug readout of the reflexes' cooldowns: dev only, --reflex-note; it showed "shield_bash N" in normal play)
-            irons.ArtNote.Text = ReflexNote ? line.ToString() : "";
+            {
+                var line = new System.Text.StringBuilder();
+                foreach (var r in b.Reflexes)
+                    line.Append(line.Length > 0 ? " | " : "").Append($"{r.Def.Art} {(r.Cd > 0 ? Math.Ceiling(r.Cd).ToString() : "ready")}");
+                irons.ArtNote.Text = line.ToString();
+            }
         }
         else { art.Level = 0; irons.ArtWord.Text = ""; irons.ArtNote.Text = ""; }
 
@@ -782,7 +785,7 @@ public partial class GameHud : CanvasLayer
         {
             tallyTime.Visible = false;
             killsChip.Visible = false;
-            tallyGold.Text = $"{Math.Floor(gold + b.GoldGained - b.GoldBanked)}";
+            TallyGold(gold + b.GoldGained - b.GoldBanked);
             GroundLabels.Drawn.Clear();
             return;
         }
@@ -790,18 +793,36 @@ public partial class GameHud : CanvasLayer
         tallyTime.Visible = ember;
         killsChip.Visible = ember;
         // In an arena the clock counts down to what rules it; after, how long past the half hour.
+        // (M4 lead 4: the tally's words and the clock's colour are set when they change, not each frame: a clock's
+        // second, a kill, a coin)
         double shown = arenaLeft is double left && left > 0 ? left : arenaLeft is double past ? -past : b.Time;
         int m = (int)(shown / 60), s = (int)(shown % 60);
-        tallyTime.Text = arenaLeft is double l2 && l2 <= 0 ? $"+{m}:{s:00}" : $"{m}:{s:00}";
-        tallyTime.AddThemeColorOverride(FontColor, arenaLeft is double l3 && l3 > 0 && l3 < 60 ? Style.EmberHi : Hex("#efe3c8"));
+        bool plus = arenaLeft is double l2 && l2 <= 0;
+        int clock = (m * 60 + s) * 2 + (plus ? 1 : 0);
+        if (clock != tallyClock) { tallyClock = clock; tallyTime.Text = plus ? $"+{m}:{s:00}" : $"{m}:{s:00}"; }
+        int hot = arenaLeft is double l3 && l3 > 0 && l3 < 60 ? 1 : 0;
+        if (hot != tallyHot) { tallyHot = hot; tallyTime.AddThemeColorOverride(FontColor, hot == 1 ? Style.EmberHi : TallyBone); }
         // (H7 r2: a Flare's kills count as its band reaches each, not at the press: FlareFx.KillsHeld)
         int kills = Math.Max(0, b.KillCount - SurvivorUnchained.View.FlareFx.KillsHeld);
-        tallyKills.Text = kills.ToString();
+        if (kills != tallyKillsText) { tallyKillsText = kills; tallyKills.Text = kills.ToString(); }
         // The count pops when it climbs, at most ten times a second.
         if (kills > killsShown) lastKillMs = Time.GetTicksMsec();
         if (kills > killsShown && killPop <= 0.05) killPop = 0.15;
         killsShown = kills;
-        tallyGold.Text = $"{Math.Floor(gold + b.GoldGained - b.GoldBanked)}";
+        TallyGold(gold + b.GoldGained - b.GoldBanked);
+    }
+
+    static readonly Color TallyBone = Hex("#efe3c8");
+    /// <summary>What the tally last wrote: the clock (its seconds and sign), its colour (-1 not yet), the kills, the gold.</summary>
+    int tallyClock = int.MinValue, tallyHot = -1, tallyKillsText = -1;
+    double tallyGoldShown = double.NaN;
+
+    void TallyGold(double have)
+    {
+        double g = Math.Floor(have);
+        if (g == tallyGoldShown) return;
+        tallyGoldShown = g;
+        tallyGold.Text = $"{g}";
     }
     // The chips over the globe and in the boons' row, as last built. They were
     // all remade on every call (twelve a second); now only when which there are
