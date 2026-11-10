@@ -153,6 +153,9 @@ public sealed partial class Battle
     /// <summary>(M3) How long the story's stand clock has counted her standing where she is (s; PackKit sets it each step;
     /// 0 with no clock): what a hand that has learnt the clock plants under (Pilot's feet).</summary>
     public double StoodFor { get; internal set; }
+    /// <summary>(M3) The spot the story's stand clock measures her from (she has moved once she is its `standMoved` off;
+    /// null with no clock running): what her feet's step must clear (Pilot's feet), not where the hands think she planted.</summary>
+    public (double X, double Z)? StandSpot { get; internal set; }
 
     /// <summary>A builder's swing now being counted, and what it has struck (Firing.CastOnce; HitEnemy adds).</summary>
     internal WeaponInst? StruckBy;

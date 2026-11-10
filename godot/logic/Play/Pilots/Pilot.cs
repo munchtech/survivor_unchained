@@ -170,6 +170,10 @@ public static class Pilot
     public static double PlantShare = 0.65, PlantFor = 0.7, StepClear = 1.6, StepWide = 1.0, StepMax = 0.45;
     /// <summary>The longest plant under a clock that counts (StandSwing): a chain and a breath, whatever the count says.</summary>
     public static double PlantMost = 4;
+    /// <summary>Under a clock that counts, the plant ends with StepLead s of the clock left: her own heavy cut may hold her
+    /// feet 0.3 s (Battle.MaxPlant) as the step begins, and the step itself takes a quarter second from rest. (A share of
+    /// the clock, PlantShare, left 0.35 s: a heavy at the plant's end and the clock charged a fighter mid-step.)</summary>
+    public static double StepLead = 0.6;
     /// <summary>Under this share of her health a crush is run from (the arena's away-and-round), not stood in.</summary>
     public static double CrushRun = 0.5;
 
@@ -203,6 +207,7 @@ public static class Pilot
         public int Side = 1;
         public readonly FeetMeter M = new();
         double seen = -9, plantUntil, stepUntil, plantX, plantZ, stepWide, lastT = -1, lastA;
+        (double X, double Z)? spot;
         bool planted;
         Enemy? lastFoe;
 
@@ -213,15 +218,25 @@ public static class Pilot
             double now = b.Time;
             var p = b.Player;
             bool fresh = now - seen > 0.5;
-            // The step is over once it has carried her clear of where she stood; one that has not in StepMax s (walled,
+            // The step is over once it has carried her clear of where it began; one that has not in StepMax s (walled,
             // held by a heave, slowed) is tried to the other hand, never stood through: the clock would see the stand.
             bool clear = Math.Sqrt((p.X - plantX) * (p.X - plantX) + (p.Z - plantZ) * (p.Z - plantZ)) >= stepWide;
             var clock = b.StoryStand is { Stand: true } d ? d : null;
-            // (the clock that knows a fighter's plant, StandSwing: she plants while it has counted her standing under
-            // PlantShare of its StandFor, a chain's length while her cuts land, and at most PlantMost s)
+            // (the clock that knows a fighter's plant, StandSwing: she plants while it has counted her standing with
+            // more than StepLead s of its StandFor left, a chain's length while her cuts land, and at most PlantMost s)
             bool counted = clock is { StandSwing: > 0 };
-            if (counted && !fresh && planted && (b.StoodFor >= clock!.StandFor * PlantShare || now >= plantUntil))
-                { planted = false; plantUntil = now; stepUntil = now + StepMax; }
+            // (and under it the step must clear the clock's own spot, not only the hands': pushed about in a plant, a
+            // step back across where the clock last saw her move reached 0.96 m and was still a stand to it)
+            if (counted && spot is var (sx, sz)) clear &= Math.Sqrt((p.X - sx) * (p.X - sx) + (p.Z - sz) * (p.Z - sz)) >= clock!.StandMoved;
+            if (counted && !fresh && planted && (b.StoodFor >= clock!.StandFor - StepLead || now >= plantUntil))
+            {
+                // The plant's end is always a step, from where she is now (a mark dodged in a plant left her far from
+                // where it began: "clear" at once, and the next plant followed with no step, 4.45 s of hands at rest).
+                planted = false; plantUntil = now; stepUntil = now + StepMax;
+                plantX = p.X; plantZ = p.Z; spot = b.StandSpot; clear = false;
+            }
+            // (her own heavy cut holds her feet up to 0.3 s: that is not a wall, the step's time starts when they are free)
+            if (!planted && p.PlantT > 0) stepUntil = Math.Max(stepUntil, now + p.PlantT + StepMax);
             if (!fresh && !planted && now >= stepUntil && !clear) { Side = -Side; stepUntil = now + StepMax; }
             else if (fresh || !planted && now >= plantUntil && clear)
             {
@@ -229,7 +244,7 @@ public static class Pilot
                 plantUntil = now + (counted ? PlantMost : clock != null ? clock.StandFor * PlantShare : PlantFor);
                 stepUntil = plantUntil + StepMax;
                 stepWide = clock != null ? clock.StandMoved * StepClear : StepWide;
-                plantX = p.X; plantZ = p.Z;
+                plantX = p.X; plantZ = p.Z; spot = null;
                 planted = true;
                 M.Plants++;
             }

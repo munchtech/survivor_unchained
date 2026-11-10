@@ -69,6 +69,7 @@ public sealed class PackKit(Battle b)
         if ((trailT -= dt) <= 0) { trailT = 0.25; StandClock.Sample(herTrail, b.Time, p.X, p.Z, d.StandFor); }
         bool moved = stillAt < 0 || Math.Sqrt((p.X - stillX) * (p.X - stillX) + (p.Z - stillZ) * (p.Z - stillZ)) >= d.StandMoved;
         if (moved || p.RootT > 0) { stillX = p.X; stillZ = p.Z; stillAt = b.Time; }
+        b.StandSpot = (stillX, stillZ);
         // (M3) A fighter's plant is not a stand: a cut of her held swing that landed on a foe holds the clock for its own
         // length, up to StandSwing s at one spot (a step of StandMoved gives the allowance back; held where she is does
         // not). What the clock counts is the rest: her feet still and no cut landing.
