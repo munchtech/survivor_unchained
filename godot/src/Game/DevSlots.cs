@@ -47,7 +47,7 @@ public static class DevSlots
         return step;
     }
 
-    /// <summary>--level-card slot:SKILL:LEVEL | lamp:SKILL:LEVEL:BEFORE:AFTER | plain:LEVEL [@T] (pictures, M4 §4): that card
+    /// <summary>--level-card slot:SKILL:LEVEL | lamp:SKILL:LEVEL:BEFORE:AFTER | plain:LEVEL | skill:SKILL:LEVEL [@T] (pictures, M4 §4): that card
     /// shown through GameHud.LevelCard once the campaign fight's clock passes T s (default 1.5).</summary>
     static readonly (Ui.LevelCardSpec Spec, double At)? CardSpec = Args.Get("level-card") is { } lc ? Ui.LevelCards.Parse(lc) : null;
     static Battle? cardFor;
@@ -79,6 +79,7 @@ public static class DevSlots
 
     public static void Tick(Battle b)
     {
+        DevAim.Tick(b);
         if (ResolveAt.Length > 0 && b.Campaign && b.Combat)
         {
             if (!ReferenceEquals(resolveFor, b)) { resolveFor = b; resolveNext = 0; }
