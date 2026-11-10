@@ -1199,6 +1199,15 @@ class Her:
             self.open_on, self._pose = on, None
 
     @contextlib.contextmanager
+    def fair_off(self):
+        """A's posed skin as it was (no "fair_a" rule) inside the block; the parts' cache is cleared."""
+        on, self.fair_on, self._pose = getattr(self, "fair_on", True), False, None
+        try:
+            yield
+        finally:
+            self.fair_on, self._pose = on, None
+
+    @contextlib.contextmanager
     def map_off(self):
         """The fill alone (the composed target as without the map key) inside the block; the parts' cache is cleared."""
         on, self.map_on, self._pose = self.map_on, False, None
@@ -1554,7 +1563,7 @@ def cmd_test(h):
     # back 4e-5 off in the reference's globals); a region poses its own 4. Measured 2.5-6.7 um with the 4, 0 with the
     # 13 as that file was written: asserted on the same line.
     gird = [n for n, r in h.regions.items() if r.side]
-    h0 = Her({**cfg, "regions": {k: {a_: b_ for a_, b_ in v.items() if a_ != "support"} for k, v in cfg["regions"].items()}}, verbose=False)
+    h0 = Her({**{k_: v_ for k_, v_ in cfg.items() if k_ != "fair_a"}, "regions": {k: {a_: b_ for a_, b_ in v.items() if a_ != "support"} for k, v in cfg["regions"].items()}}, verbose=False)
     st = {k: np.load(h.OUT / f_) if (h.OUT / f_).exists() else None for k, f_ in cfg["t11_stored"].items()}
     tp = cfg["dev_poses"] + cfg["t14_poses"] + ["Jog_Fwd@11:r"]
 
@@ -1705,7 +1714,7 @@ def cmd_test(h):
         G = z["G"][names.index(nm)]
         el = max(md.elevation(G, s) for s in sorted(md.grown))
         nrl, nk.relax = getattr(nk, "relax", None), []        # and the neck's relax rule (T23's) is off: stored before it
-        with h.map_off(), h.open_off():  # the stage alone: the armpit map (45..90 deg) is T20 / T21's, the stretch opening T25's
+        with h.map_off(), h.open_off(), h.fair_off():  # the stage alone (map: T20 / T21; stretch opening: T25; fair_a off)
             d = float(np.abs(h.compose(G, pub(bd, G))[md.first[ids_c]][ia] - old["Xc"][io[nm]][ib]).max())
         nk.relax, h._pose = nrl, None
         line(f"T18 {nm}", d == 0.0, f"elevation {el:.1f} deg: composed target - stored ({cfg['t18_stored']}) max {d * 1000:.3g} mm on"
