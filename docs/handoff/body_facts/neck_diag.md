@@ -91,3 +91,40 @@ of 3.8 is a lower bound on what a full fit would gain, not a neck_01 limit. Noth
 3. Rule for A1: neck_01 at most 10 deg, never against the head's end turn (neck_01, neck_02 and Head each turn the way the head
    ends), split about 20 / 30 / 50. All seven p4 clips break the cap today (12.7-41.4 deg), worst idle_warden_town and iron_vow.
    Until the weights are fixed even 10 deg shows 3-4x at the trap ring, so the rule alone does not close it.
+
+## 7. The rule for A1 under fixed weights (lead 20's solver)
+Rebuilt the measure (section 4's as-built column reproduces to 0.01). Scripts + logs: `tools/body/out/neck20/` (proxy.py, run1/run2).
+PROXY (stands in for the fit): B's weights; every vertex with y > 1495 mm and |x| < 90 mm (above the ring, neck column) moves its
+spine_04 share to neck_01; then every weight column is neighbour-averaged n = 4 or 8 passes on the welded mesh over y 1400-1660,
+|x| < 120; what that pulls back onto spine_04 above the ring goes to spine_05. Result: spine_04 above the ring 0.000 (today 0.93);
+max d(w)/mm neck_01 0.024, neck_02 0.007, Head 0.025 (target < 0.03; today 0.190 / 0.034 / 0.044); worst F drop up an edge in
+|x| < 70 mm 0.12 / 0.11 (today 0.93; the 0.20 drops left are sideways, neck to back shoulder at x 70-105).
+neck_01 alone from rest, pit / trap / nape, proxy n=4 (n=8 within 0.1 lower) beside A's own (joint map):
+| deg | flex | extend | side | twist |
+|---|---|---|---|---|
+| 10 | 1.00/1.13/1.03 (A 1.02/1.04/1.07) | 1.04/1.31/1.05 (A 1.22/1.14/1.00) | 1.02/1.26/1.04 (A 1.05/1.05/1.04) | 1.03/1.32/1.05 (A 1.12/1.10/1.04) |
+| 20 | 1.01/1.27/1.07 | 1.08/1.64/1.09 | 1.04/1.54/1.07 | 1.05/1.64/1.09 |
+| 30 | 1.01/1.46/1.10 | 1.11/1.96/1.13 | 1.06/1.81/1.10 | 1.07/1.95/1.13 |
+| 40 | 1.01/1.66/1.13 | 1.14/2.27/1.17 | 1.08/2.08/1.13 | 1.08/2.25/1.17 |
+| 50 | 1.02/1.88/1.16 | 1.16/2.57/1.20 x | 1.10/2.34/1.16 | 1.10/2.53/1.21 x |
+| 60 | 1.03/2.09/1.19 | 1.18/2.85/1.23 x | 1.12/2.58/1.18 x | 1.10/2.80/1.24 x |
+Largest passing angle (bar max(2.5, A + 0.15), every zone), n=4 / n=8: flex >= 60 / >= 60, extend 40 / 50, side 50 / >= 60,
+twist 40 / 50. Trap is the only zone that binds. As built every axis fails by 5-10 deg (section 4).
+Seven p4 clips, every frame, worst pit / trap / nape; frames over the bar in brackets; neck_01 max turn vs spine_05 in deg:
+| clip (frames, head end max) | as keyed | thirds | 20/30/50 | 10/30/60 | as keyed, TODAY's weights |
+|---|---|---|---|---|---|
+| idle_warden_town (163, 29 deg) | n1 41: 1.53/1.80/1.24 (0) | 1.19/1.22/1.08 (0) | 1.24/1.23/1.08 (0) | 1.27/1.27/1.09 (0) | 8.46/15.98/6.31 (163) |
+| iron_vow (91, 51) | n1 28: 1.51/1.95/1.23 (0) | 1.42/1.55/1.17 (0) | 1.52/1.48/1.21 (0) | 1.58/1.57/1.24 (0) | 9.10/11.81/3.71 (90) |
+| bladestorm_loop (41, 42) | n1 24: 1.38/1.59/1.16 (0) | 1.24/1.45/1.23 (0) | 1.27/1.27/1.28 (0) | 1.30/1.29/1.32 (0) | 4.71/9.21/3.42 (40) |
+| heroic_leap (40, 53) | n1 21: 1.44/1.51/1.36 (0) | 1.28/1.44/1.25 (0) | 1.35/1.32/1.29 (0) | 1.44/1.41/1.33 (0) | 5.21/8.65/3.70 (39) |
+| shield_charge (25, 35) | n1 20: 1.26/1.46/1.29 (0) | 1.17/1.39/1.19 (0) | 1.19/1.26/1.23 (0) | 1.22/1.23/1.26 (0) | 4.94/8.70/3.51 (25) |
+| run_warden (22, 13) | n1 13: 1.12/1.33/1.10 (0) | 1.09/1.14/1.09 (0) | 1.10/1.09/1.11 (0) | 1.12/1.11/1.13 (0) | 3.39/5.17/2.17 (22) |
+| run_warden_town (22, 18) | n1 13: 1.11/1.35/1.06 (0) | 1.09/1.22/1.09 (0) | 1.10/1.13/1.11 (0) | 1.11/1.12/1.12 (0) | 2.83/4.74/2.23 (20) |
+Proxy n=4 shown; n=8 is 0.02-0.13 lower everywhere, also 0 frames over. Today's weights even at 20/30/50 still fail iron_vow
+f0, f71-77 (4.00 / 3.62 / 2.30), heroic_leap f8-15 (3.72 / 3.11), bladestorm 19 frames, shield_charge f17-19.
+RULE (CORRECTED): with the weights fixed, neck_01 may turn up to 40 deg on any axis (flexion is free to 60) measured against
+spine_05; the split is free, 20 / 30 / 50 recommended (it lowers iron_vow's trap 1.95 -> 1.48 and idle's 1.80 -> 1.23);
+"never against the head's end turn" is DROPPED as a deformation rule (the keyed counter-turns, 41 deg on idle_warden_town, pass
+at 1.80) and stays only a motion-taste call for A1. Nothing fails under the proxy. The rule holds only once the fit lands:
+it must hit section 6's targets at least as well as this proxy (re-measure the seven clips on the fit; trap is the zone to watch,
+extension and twist the axes). Until then no split clears iron_vow and heroic_leap.
