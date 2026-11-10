@@ -1,7 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using SurvivorUnchained.Arena;
+using SurvivorUnchained.Balance;
 using SurvivorUnchained.Content;
+using SurvivorUnchained.Maps;
+using SurvivorUnchained.Play;
+using SurvivorUnchained.Play.Bosses;
+using SurvivorUnchained.Play.Zones;
+using SurvivorUnchained.Rpg;
 using SurvivorUnchained.Sim;
 using Xunit;
 
@@ -201,5 +208,78 @@ public sealed class CutLeakTests
         Assert.True(chain.Cuts > plain.Cuts * 1.4, "the chain did not swing");
         Assert.True(a > 0, "no burn was laid");
         Assert.InRange(c / a, 0.97, 1.03);
+    }
+
+    // (e, l2) The Barrow Lord, down: a holy hit opens a 0.5 s window in which standing over him lays him down twice as
+    // fast. A cut opens its weight's share of it (Battle.HitW), so the window is open as much of a second under the
+    // chain. Before: a whole window per cut (the laying 1.16x on Oathblade's wait, 1.31x on Sunder's). The arena's
+    // script, held down by the test (its clocks put back each tick), struck holy at the blows' pace and at the cuts'.
+    [Theory]
+    [InlineData(1.05)]
+    [InlineData(1.6)]
+    public void The_barrow_lords_holy_window_is_open_as_much_of_a_second_under_a_chain(double wait)
+    {
+        (double Open, double Laid) Down(double every, double? w)
+        {
+            // BossTests.At30("dead")
+            var a = Callings.Archetype("warden");
+            var j = Journey.Begin(new CreationChoice { Name = "Bot", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0] }, 3);
+            var spec = new ArenaSpec { Id = "table:test", Name = "Test", Seed = 3, Tier = 1, People = "dead" };
+            Arenas.Begin(j.World, spec);
+            var map = MapGen.Generate(spec.Map);
+            var host = new HeadlessHost(j, 3);
+            var zone = new ArenaRun(host, map, spec);
+            var at = zone.ArrivalFrom(null);
+            var b = j.StartBattle(true, map.Meta.Collision(), map.Ground.HeightAt, at.X, at.Z, at.Facing, 3, arena: true);
+            b.Hooks = zone.Hooks;
+            host.Battle = b;
+            zone.Begin(b);
+            b.GreatOwed = 0;
+            b.Time = 30 * 60 - 0.05;
+            void Tick()
+            {
+                zone.Step(Dt); zone.Frame(Dt); b.Tick(Dt, 0, 0); b.Events.Drain(); host.Pass(Dt);
+                b.PendingLevels = 0; b.PendingBlessings.Clear(); b.GreatOwed = 0; b.Player.Hp = b.MaxHp;
+            }
+            for (int i = 0; i < 12; i++) Tick();
+            var boss = b.Enemies.Items.First(e => e.Alive && e.Boss);
+            var s = Assert.IsType<BarrowLord>(zone.BossScript);
+            bool IsDown() => boss.Alive && boss.TakenMul == 0 && s.Channel?.StartsWith("He will not lie down") == true;
+            // down to nothing, the survivor kept away from him
+            for (int i = 0; i < 200 * 60 && !IsDown(); i++)
+            {
+                Tick();
+                if (boss.Alive && boss.TakenMul > 0) b.HitEnemy(boss, boss.MaxHp * 0.05, School.Physical, [Tag.Physical], new HitOpts { NoCrit = true });
+                if (s.Channel != null) { b.Player.X = boss.X + 20; b.Player.Z = boss.Z; }
+            }
+            Assert.True(IsDown(), "he never went down");
+            var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+            var layT = typeof(BarrowLord).GetField("layT", flags)!; var layHeld = typeof(BarrowLord).GetField("layHeld", flags)!;
+            double open = 0, laid = 0, next = 0;
+            for (int i = 0; i < 3600; i++)
+            {
+                // held down: he neither rises nor is laid; what a tick adds to the laying is that tick's own
+                layT.SetValue(s, 0.0); layHeld.SetValue(s, 0.0);
+                b.Player.X = boss.X + 1; b.Player.Z = boss.Z;
+                if (i * Dt >= next - 1e-9) { next += every; b.HitEnemy(boss, 1, School.Holy, [Tag.Holy], new HitOpts { NoCrit = true, W = w }); }
+                Assert.Equal(1.0, b.HitW);
+                Tick();
+                Assert.True(IsDown(), $"he did not stay down (tick {i})");
+                double held = (double)layHeld.GetValue(s)!;
+                laid += held;
+                if (held > Dt * 1.5) open += Dt;
+            }
+            return (open, laid);
+        }
+        var plain = Down(wait, null);
+        var chain = Down(0.70, 0.70 / wait);
+        output.WriteLine($"holy window, blows every {wait} s against cuts every 0.70 s of weight {0.70 / wait:0.####}, 60 s down: open chained {chain.Open:0.###} s, unchained {plain.Open:0.###} s, ratio {chain.Open / plain.Open:0.0000}; "
+            + $"the laying it grants {chain.Laid:0.###} / {plain.Laid:0.###}, ratio {chain.Laid / plain.Laid:0.0000}");
+        Assert.True(plain.Open > 10, "the holy hits opened no window");
+        // the laying a second holds
+        Assert.InRange(chain.Laid / plain.Laid, 0.97, 1.03);
+        // and the window's open time (a window is open a whole number of ticks: up to one tick over per hit on both
+        // records, and the cuts are more hits)
+        Assert.InRange(chain.Open / plain.Open, 0.97, 1.03);
     }
 }

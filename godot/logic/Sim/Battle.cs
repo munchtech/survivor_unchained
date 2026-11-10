@@ -855,6 +855,10 @@ public sealed partial class Battle
     /// <summary>(M3 MR 3) The weight of the hit whose statuses are being applied (a chained cut's share of its blow); 1 at
     /// every other moment.</summary>
     double statusW = 1;
+    /// <summary>(M3 MR 3 l2) The weight of the hit a boss's script is being told of (Hooks.OnBossHit carries none): a
+    /// chained cut's share of its written blow, a crescent's stamped weight, 1 for everything else and outside the hook.
+    /// A script that counts hits or opens a window per hit reads it (the Barrow Lord's holy window).</summary>
+    public double HitW = 1;
     /// <summary>(M3 MR 3) Inside ApplyStatus, past its roll: the share of a blow the status being applied stands for
     /// (1 unchained; a chained cut's refreshed kinds build by it). For the hooks after the switch.</summary>
     double statusBuild = 1;
@@ -1064,7 +1068,8 @@ public sealed partial class Battle
         if (Lamps.Board) { double w1 = statusW; statusW = cw; BoardOnHit(e, school, tags, o, blowDmg, heavy, crit, cw); statusW = w1; }
         if (handTrue && crit) { HandTrues++; HandEv(HandKind.True, e.X, e.Z, e.Id); if (Lamps.Board) HandSecondWind(); }
         { double w1 = statusW; statusW = cw; FlareOnHit(e, o, blowDmg); statusW = w1; }
-        if (e.Boss) Hooks.OnBossHit?.Invoke(e, school, dmg);
+        // (saved and put back: a hit the script lands from inside its own hook must not unweight ours; 1 outside)
+        if (e.Boss) { double hw = HitW; HitW = cw; Hooks.OnBossHit?.Invoke(e, school, dmg); HitW = hw; }
         if (e.Hp <= 0 && e.Alive && e.State != EnemyState.Dying)
         {
             if (o.Weapon != null) OnKillHit(o.Weapon, e);
