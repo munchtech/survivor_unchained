@@ -176,6 +176,19 @@ global uniform sampler2D cel_pool_ramp : filter_linear, repeat_disable;
 // both; whole from z on), w how much of the moon's give-way a leaf's shade undoes (1: under a leaf the moon is whole, so the
 // shade in her pool is the night's one shade (R3) plus the fire's residue, never black, never orange).
 global uniform vec4 cel_pool_shade;
+// (L1 lead 17, P) Her fire on the FLOOR, rebuilt (three ramp rounds drew an orange disc and pink panes cut by navy leaves:
+// red light ADDED to a blue floor is pink, and a leaf that cuts it leaves the night's navy). On a floor (a shader that
+// says `#define CEL_FLOOR` before the include) under a rig with a tone table (rigs.json "ember_floor"; Atmosphere.FloorTurn)
+// the fire is a TURN OF THE FLOOR'S OWN TONE: cel_floor_turn row 0 rgb what the floor's lit tone is multiplied by at r
+// metres from her light's foot, row 1 the same for the tone under a leaf (so gap and shade take the turn each at its own
+// value: one family, a step apart), both 1 at the last stop (the floor's own, so there is no edge to meet); a the moon's
+// return there (0 at her feet: its key and sky give way). Where the moon is away her light stands in for it at the
+// floor's own two tones (cel_floor_band yzw: the light that shows the floor's lit tone, cel_floor_unit rgb: its shade's),
+// so the leaf shapes run on to her feet and the turn alone says what color the floor is. cel_floor_band x the table's
+// last stop (m; 0: no table, the floor takes the ramp above exactly as before). No tone lives here: the rig's table.
+global uniform vec4 cel_floor_band;
+global uniform vec4 cel_floor_unit;
+global uniform sampler2D cel_floor_turn : filter_linear, repeat_disable;
 // (L1 lead 12, S3: rule R5) What STANDS shows the moon's top step. One stepped term (on or off, a hard edge, no gradient)
 // that any standing shader takes by `#define CEL_S3` before the include: a TOP band on planes facing the moon (the key's
 // way leaned up by cel_s3_shape.y, so backs, shoulders, crown tops and rock tops take it; on from cel_s3_shape.x of that
@@ -304,6 +317,29 @@ float cel_back_at(vec3 c_wp, float c_dap) {
 #endif
 }
 float cel_give_of(float c_back, float c_k) { return 1.0 - c_k * cel_on * (1.0 - c_back); }
+// (L1 lead 17, P) The floor's tone table (cel_floor_turn above) at r metres, row 0.25 (lit) or 0.75 (under a leaf); and a
+// floor's fragment: the moon's return from the table (in place of cel_back_at), the turn handed back for its albedo.
+#ifdef CEL_FLOOR
+bool cel_floor_on() { return cel_on > 0.0 && cel_floor_band.x > 0.0 && cel_ember.w > 0.0 && cel_pool.w > 0.0; }
+vec4 cel_floor_at(float c_r, float c_row) {
+	return texture(cel_floor_turn, vec2((clamp(c_r / cel_floor_band.x, 0.0, 1.0) * 63.0 + 0.5) / 64.0, c_row));
+}
+float cel_floor_back(vec3 c_wp, float c_dap, inout vec3 c_turn) {
+	if (!cel_floor_on()) return cel_back_at(c_wp, c_dap);
+	float c_r = length(c_wp.xz - cel_ember.xz);
+	float c_leaf = cel_key.w > 0.0 ? clamp((1.0 - c_dap) / cel_key.w, 0.0, 1.0) : 0.0;
+	vec4 c_t = cel_floor_at(c_r, 0.25);
+	c_turn = mix(c_t.rgb, cel_floor_at(c_r, 0.75).rgb, c_leaf);
+	return c_t.a;
+}
+#define CEL_FRAG_TURN0 vec3 c_ft = vec3(1.0);
+#define CEL_FRAG_BACK(c_p, c_d) cel_floor_back(c_p, c_d, c_ft)
+#define CEL_FRAG_TURN1 ALBEDO *= c_ft
+#else
+#define CEL_FRAG_TURN0
+#define CEL_FRAG_BACK(c_p, c_d) cel_back_at(c_p, c_d)
+#define CEL_FRAG_TURN1
+#endif
 // (L1 lead 9, NIGHT2) The moon's share at a world point under the zone's fires and lamps (the least of the nearest three).
 float cel_fire_one(vec2 c_p, vec4 c_f, float c_k) {
 	if (c_f.w <= 0.0) return 1.0;
@@ -318,7 +354,7 @@ float cel_fires_at(vec3 c_wp, float c_k) {
 	return min(cel_fire_one(c_wp.xz, cel_fire0, c_k * cel_on), min(cel_fire_one(c_wp.xz, cel_fire1, c_k * cel_on), cel_fire_one(c_wp.xz, cel_fire2, c_k * cel_on)));
 #endif
 }
-#define CEL_FRAGMENT { vec3 c_fw = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz; float c_fd = cel_dapple_at(c_fw); float c_fb = cel_back_at(c_fw, c_fd); cel_gn = normalize(NORMAL) * (1.01 + 0.98 * c_fd + 2.0 * round(1000.0 * cel_give_of(c_fb, cel_give.x) * cel_fires_at(c_fw, cel_fire_give.x))); AO *= cel_give_of(c_fb, cel_give.y) * cel_fires_at(c_fw, cel_fire_give.y); } CEL_FRAG_ALB; CEL_FRAG_MAT; CEL_FRAG_S3; ROUGHNESS = cel_tag(ROUGHNESS, cel_ink); if (cel_dbg > 0.5) { EMISSION = cel_dbg > 2.5 ? vec3(CEL_SKIN_V) : cel_dbg > 1.5 ? cel_ink_rgb(cel_ink) : vec3(0.0); ALBEDO = vec3(0.0); SPECULAR = 0.0; METALLIC = 0.0; }
+#define CEL_FRAGMENT CEL_FRAG_TURN0 { vec3 c_fw = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz; float c_fd = cel_dapple_at(c_fw); float c_fb = CEL_FRAG_BACK(c_fw, c_fd); cel_gn = normalize(NORMAL) * (1.01 + 0.98 * c_fd + 2.0 * round(1000.0 * cel_give_of(c_fb, cel_give.x) * cel_fires_at(c_fw, cel_fire_give.x))); AO *= cel_give_of(c_fb, cel_give.y) * cel_fires_at(c_fw, cel_fire_give.y); } CEL_FRAG_ALB; CEL_FRAG_TURN1; CEL_FRAG_MAT; CEL_FRAG_S3; ROUGHNESS = cel_tag(ROUGHNESS, cel_ink); if (cel_dbg > 0.5) { EMISSION = cel_dbg > 2.5 ? vec3(CEL_SKIN_V) : cel_dbg > 1.5 ? cel_ink_rgb(cel_ink) : vec3(0.0); ALBEDO = vec3(0.0); SPECULAR = 0.0; METALLIC = 0.0; }
 
 float cel_lum(vec3 c_c) { return dot(c_c, vec3(0.2126, 0.7152, 0.0722)); }
 float cel_schlick(float c_u) { float c_m = 1.0 - c_u; float c_m2 = c_m * c_m; return c_m2 * c_m2 * c_m; }
@@ -615,6 +651,15 @@ void cel_pool_paint(inout vec3 c_lc, inout float c_att, vec3 c_lw) {
 		float c_dr = clamp((length(cel_gn) - 1.01 - 2.0 * cel_gq()) / 0.98, 0.0, 1.0);
 		c_leaf = 1.0 - clamp((c_dr - (1.0 - cel_key.w)) / cel_key.w, 0.0, 1.0);
 	}
+#ifdef CEL_FLOOR
+	// (L1 lead 17, P: on a floor with a tone table her light stands in for the moon where the moon is away, at the floor's
+	// own lit tone or its shade's by the leaf; the turn of that tone is the albedo's, cel_floor_back)
+	if (cel_floor_band.x > 0.0) {
+		c_lc = c_m * (1.0 - cel_floor_at(length(c_wp.xz - cel_ember.xz), 0.25).a) * mix(cel_floor_band.yzw, cel_floor_unit.rgb, c_leaf);
+		c_att = 1.0;
+		return;
+	}
+#endif
 	vec4 c_rp = cel_pool_at(length(c_wp.xz - cel_ember.xz));
 	vec3 c_ramp = c_rp.rgb;
 #ifdef CEL_POOL_PLAIN

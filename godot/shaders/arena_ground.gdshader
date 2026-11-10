@@ -17,6 +17,8 @@ render_mode diffuse_burley, specular_schlick_ggx;
 #define CEL_SPEC vec4(9.0, 1.5, 0.0, 0.85)
 // (L1 C1: the band sees none of the ground's normal map: the Stage B judge, ground and terrain cel_nmap 0, no orange peel)
 #define CEL_NMAP 0.0
+// (L1 lead 17, P: a floor: under her fire it takes the rig's tone table, cel.gdshaderinc cel_floor_turn)
+#define CEL_FLOOR
 #include "res://shaders/cel.gdshaderinc"
 #include "res://shaders/world_clock.gdshaderinc"
 

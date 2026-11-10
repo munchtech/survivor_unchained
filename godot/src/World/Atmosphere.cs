@@ -624,6 +624,60 @@ public partial class Atmosphere : Node3D
         var ramp = CelRigs && cam == null ? PoolRamp(p.EmberPool, p.EmberSmooth) : null;
         RenderingServer.GlobalShaderParameterSet("cel_pool_band", ramp is { } pr ? new Vector4(pr.Reach, pr.Core, (float)p.EmberPool![0], (float)p.EmberPool![1]) : Vector4.Zero);
         if (ramp is { } pr2) RenderingServer.GlobalShaderParameterSet("cel_pool_ramp", pr2.Tex);
+        // (L1 lead 17, P) her fire on the floor as a turn of the floor's own tone (the rig's ember_floor; cel.gdshaderinc cel_floor_turn). Only with a ramp (what stands and the foes take it).
+        var turn = ramp != null ? FloorTurn(p.EmberFloor) : null;
+        RenderingServer.GlobalShaderParameterSet("cel_floor_band", turn is { } ft ? new Vector4(ft.Reach, ft.Lit.X, ft.Lit.Y, ft.Lit.Z) : Vector4.Zero);
+        RenderingServer.GlobalShaderParameterSet("cel_floor_unit", turn is { } ft1 ? new Vector4(ft1.Shade.X, ft1.Shade.Y, ft1.Shade.Z, 0) : Vector4.Zero);
+        if (turn is { } ft2) RenderingServer.GlobalShaderParameterSet("cel_floor_turn", ft2.Tex);
+    }
+
+    /// <summary>(L1 lead 17, P) The floor's tone table from a rig's ember_floor (Zone.EmberFloor: [the floor's lit tone, its
+    /// shade's (Oklab L, C, hue), the floor under one unit of her light (linear rgb), (r m, the moon's return, the gap's tone,
+    /// the shade's tone) x n]): 64 x 2 texels over 0..the last stop; row 0 rgb the gap's tone over the floor's lit tone
+    /// (linear, per channel: what turns the one into the other), row 1 the shade's over the floor's shade, a the moon's
+    /// return. Tones run between stops in Oklab (so orange meets the floor's blue through red and violet, not through the
+    /// pink of an RGB sum); the last stop is the floor's own tones (a turn of 1: nothing to meet, so no edge). Lit and Shade:
+    /// her light's color x level that shows the floor's own lit tone and its shade's (she stands in for the moon where it
+    /// gives way). Null: no table (the key missing or short).</summary>
+    internal static (ImageTexture Tex, float Reach, Vector3 Lit, Vector3 Shade)? FloorTurn(double[]? ef)
+    {
+        if (ef is not { Length: >= 25 } || (ef.Length - 9) % 8 != 0) return null;
+        if (floorTurnOf != null && floorTurn != null && System.Linq.Enumerable.SequenceEqual(floorTurnOf, ef)) return floorTurn;
+        floorTurnOf = (double[])ef.Clone();
+        int n = (ef.Length - 9) / 8;
+        Vector3 refL = OkLab(ef[0], ef[1], ef[2]), refS = OkLab(ef[3], ef[4], ef[5]);
+        Vector3 linL = OkLin(refL), linS = OkLin(refS), unit = new((float)Math.Max(ef[6], 1e-4), (float)Math.Max(ef[7], 1e-4), (float)Math.Max(ef[8], 1e-4));
+        var r = new float[n]; var g = new float[n]; var tl = new Vector3[n]; var ts = new Vector3[n];
+        for (int i = 0; i < n; i++)
+        {
+            int k = 9 + i * 8; bool last = i == n - 1;
+            r[i] = (float)ef[k]; g[i] = last ? 1f : Mathf.Clamp((float)ef[k + 1], 0, 1);
+            tl[i] = last ? refL : OkLab(ef[k + 2], ef[k + 3], ef[k + 4]); ts[i] = last ? refS : OkLab(ef[k + 5], ef[k + 6], ef[k + 7]);
+        }
+        float reach = Mathf.Max(r[n - 1], 0.1f);
+        const int W = 64;
+        var img = Image.CreateEmpty(W, 2, false, Image.Format.Rgbaf);
+        for (int x = 0; x < W; x++)
+        {
+            float d = reach * x / (W - 1);
+            int j = 0; while (j < n - 2 && d > r[j + 1]) j++;
+            float t = Mathf.Clamp((d - r[j]) / Mathf.Max(r[j + 1] - r[j], 1e-4f), 0, 1), a = Mathf.Lerp(g[j], g[j + 1], t);
+            Vector3 l = OkLin(tl[j].Lerp(tl[j + 1], t)) / linL, s = OkLin(ts[j].Lerp(ts[j + 1], t)) / linS;
+            img.SetPixel(x, 0, new Color(l.X, l.Y, l.Z, a)); img.SetPixel(x, 1, new Color(s.X, s.Y, s.Z, a));
+        }
+        floorTurn = (ImageTexture.CreateFromImage(img), reach, linL / unit, linS / unit);
+        return floorTurn;
+    }
+    static double[]? floorTurnOf;
+    static (ImageTexture Tex, float Reach, Vector3 Lit, Vector3 Shade)? floorTurn;
+    /// <summary>Oklab (L, a, b) of a tone given as L, chroma, hue (degrees); and its linear sRGB (floored just above 0).</summary>
+    static Vector3 OkLab(double l, double c, double h) => new((float)l, (float)(c * Math.Cos(h * Math.PI / 180)), (float)(c * Math.Sin(h * Math.PI / 180)));
+    static Vector3 OkLin(Vector3 o)
+    {
+        float l = o.X + 0.3963377774f * o.Y + 0.2158037573f * o.Z, m = o.X - 0.1055613458f * o.Y - 0.0638541728f * o.Z, s = o.X - 0.0894841775f * o.Y - 1.2914855480f * o.Z;
+        l *= l * l; m *= m * m; s *= s * s;
+        return new Vector3(Mathf.Max(4.0767416621f * l - 3.3077115913f * m + 0.2309699292f * s, 1e-4f),
+            Mathf.Max(-1.2684380046f * l + 2.6097574011f * m - 0.3413193965f * s, 1e-4f), Mathf.Max(-0.0041960863f * l - 0.7034186147f * m + 1.7076147010f * s, 1e-4f));
     }
 
     /// <summary>(L1 lead 9, B1) Her pool's ramp from a rig's ember_pool ([dapple kept at the edge, at the core, (r m, level, R, G, B 0-255) x n], r rising,

@@ -189,6 +189,12 @@ public sealed record AtmospherePreset(
     /// where the shade is whole (m), how much of the moon's give-way a leaf's shade undoes (1: the moon whole under a leaf)]
     /// (cel_pool_shade). Null: her light uncut and the moon's shade as it was.</summary>
     public double[]? EmberShade { get; init; }
+    /// <summary>(L1 lead 17, P; rigs.json "ember_floor") Her fire on the floor as a table of TONES (Oklab L, C, hue in degrees,
+    /// as the frame shows them): [the floor's own lit tone and its shade's away from her fire (L, C, h x 2), what the floor
+    /// shows under one unit of her light (linear r, g, b), then stops of (r m, the moon's return 0..1, the lit gap's tone,
+    /// the leaf shade's tone) x n, r rising; the last stop is where the floor is its own again (its tones are not read)].
+    /// Atmosphere.FloorTurn builds cel_floor_turn from it. Null: the floor takes ember_pool as before.</summary>
+    public double[]? EmberFloor { get; init; }
     /// <summary>(L1 lead 12, S3, rule R5; rigs.json "moon_top") The moon's top step on what stands: [level (scene light; the
     /// screen level is tuned at the frame), R, G, B (sRGB 0-255), the top band's edge in n.m, how far m leans up from the key
     /// (0 the key's way, 1 straight up), the rim's width (screen px), the key's share on a standing form's unlit side]

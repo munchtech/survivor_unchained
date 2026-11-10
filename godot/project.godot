@@ -465,3 +465,15 @@ cel_pool_ramp={
 "type": "sampler2D",
 "value": "res://art/fx/flare/flare_noise.png"
 }
+cel_floor_band={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+cel_floor_unit={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+cel_floor_turn={
+"type": "sampler2D",
+"value": "res://art/fx/flare/flare_noise.png"
+}
