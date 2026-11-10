@@ -640,6 +640,13 @@ public partial class Atmosphere : Node3D
         RenderingServer.GlobalShaderParameterSet("cel_hero", hp != null && toFoot != Vector2.Zero ? new Vector4(toFoot.X, toFoot.Y, (float)hp[6], 1) : Vector4.Zero);
         var anchor = hp != null ? new Color((float)hp[3] / 255f, (float)hp[4] / 255f, (float)hp[5] / 255f).SrgbToLinear() * (float)hp[2] : new Color(0, 0, 0);
         RenderingServer.GlobalShaderParameterSet("cel_hero_tone", new Vector4(anchor.R, anchor.G, anchor.B, hp != null ? (float)hp[7] : 0));
+        // (L1 lead 19, HER3; CEL_HERO_ARM) her held pieces as bodies: row values 10-19 = the body's level, r, g, b, its side edge, the
+        // warm light's level, r, g, b, the least screen width in px. A shorter row: both zero, her shield and blade as they were.
+        var ha = hp is { Length: >= 20 } ? hp : null;
+        Color HeroTone(int i) => ha != null ? new Color((float)ha[i + 1] / 255f, (float)ha[i + 2] / 255f, (float)ha[i + 3] / 255f).SrgbToLinear() * (float)ha[i] : new Color(0, 0, 0);
+        Color armTone = HeroTone(10), litTone = HeroTone(15);
+        RenderingServer.GlobalShaderParameterSet("cel_hero_arm", new Vector4(armTone.R, armTone.G, armTone.B, ha != null ? (float)ha[14] : 0));
+        RenderingServer.GlobalShaderParameterSet("cel_hero_lit", new Vector4(litTone.R, litTone.G, litTone.B, ha != null ? (float)ha[19] : 0));
     }
     /// <summary>(L1 lead 19, HER2) Where her pool light's foot sits, in metres from her (x, z): the rig's hero_pool, else (0, 0.4).</summary>
     public static Vector2 HeroFoot = new(0, 0.4f);

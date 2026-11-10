@@ -233,7 +233,7 @@ public class RigsTests
         Assert.Equal(new[] { 1, 1.4, 5.0, 1 }, a.EmberShade);   // (L1 l16 d3) a leaf takes all of her fire (no pink leaf patches); the canopy opens 1.4-5.0 m, read at each leaf cluster's center (CanopyField)
         Assert.Equal(0, (a.EmberFloor!.Length - 9) % 8); Assert.Equal(1.0, a.EmberFloor[^7]);   // (L1 l17 p) her fire on the floor: 9 heads, stops of 8, the moon whole at the last
         // (L1 l19 her2) the hero in her pool: 10 values; the fire's foot BESIDE her and off her feet (at least 0.5 m away), the anchor dark and WARM (red over blue), never black
-        Assert.Equal(10, a.HeroPool!.Length); Assert.True(Math.Sqrt(a.HeroPool[0] * a.HeroPool[0] + a.HeroPool[1] * a.HeroPool[1]) >= 0.5);
+        Assert.Equal(20, a.HeroPool!.Length); Assert.True(a.HeroPool[10] > a.HeroPool[2] && a.HeroPool[15] > 4 * a.HeroPool[10] && a.HeroPool[11] > a.HeroPool[13] && a.HeroPool[16] > a.HeroPool[18] && a.HeroPool[19] >= 1);   /* (L1 l19 her3) her held pieces: a body one step over the anchor, one warm light well over it, a least width */ Assert.True(Math.Sqrt(a.HeroPool[0] * a.HeroPool[0] + a.HeroPool[1] * a.HeroPool[1]) >= 0.5);
         Assert.True(a.HeroPool[2] > 0 && a.HeroPool[3] > a.HeroPool[5] && a.HeroPool[5] > 0);
         Assert.Equal(new[] { 1, 0.9, 2.4, 5.4 }, a.EmberGive);   // (L1 l16 d3 round 2: the moon returns later under her fire, 2.4-5.4 m)
         // (L1 lead 14, D2; l15 d round 2) the canopy as a field: lit fields 1.4-4.2 m, run 0, lit share 0.5, at the field's own cover; no clusters

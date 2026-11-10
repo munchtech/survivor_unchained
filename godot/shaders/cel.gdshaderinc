@@ -492,6 +492,20 @@ float cel_hero_mask(vec3 c_wn, float c_w) {
 }
 #define CEL_HERO_FRAGMENT { float c_hm = cel_hero_mask(normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz), 0.02); ALBEDO *= 1.0 - c_hm; EMISSION = mix(EMISSION, cel_hero_tone.rgb, c_hm); }
 #define CEL_HERO_LIGHT { SPECULAR_LIGHT *= 1.0 - cel_hero_mask(normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz), 0.02); }
+#ifdef CEL_HERO_ARM
+// (L1 lead 19, HER3) A HELD PIECE of the hero (her shield, her blade: CelLib.Hero binds her own copies of their standard
+// materials with CEL_HERO + CEL_HERO_ARM) is a BODY: one dark warm tone one step over the anchor on every face but the
+// ones turned well toward the pool light's foot, which take the rig's one warm light (the shield's lit rim as one line,
+// the blade's one lit edge). No albedo, no lights: the two tones are absolute. Row values 10-19 (Atmosphere.SetCel):
+// cel_hero_arm = the body (linear rgb x level), the arm's side edge; cel_hero_lit = the warm light (linear rgb x level),
+// the least screen width in px (CEL_HERO_ARM_VERTEX pushes each vertex half of it along its normal).
+global uniform vec4 cel_hero_arm;
+global uniform vec4 cel_hero_lit;
+bool cel_hero_arm_on() { return cel_hero.w > 0.5 && cel_ember.w > 0.0 && cel_hero_arm.rgb != vec3(0.0); }
+#define CEL_HERO_ARM_VERTEX { if (cel_hero_arm_on()) { float c_ad = -(MODELVIEW_MATRIX * vec4(VERTEX, 1.0)).z; VERTEX += NORMAL * (0.5 * cel_hero_lit.w * 2.0 * c_ad / (PROJECTION_MATRIX[1][1] * VIEWPORT_SIZE.y * length(MODEL_MATRIX[0].xyz))); } }
+#define CEL_HERO_ARM_FRAGMENT { if (cel_hero_arm_on()) { vec3 c_an = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz); float c_am = smoothstep(cel_hero_arm.w - 0.02, cel_hero_arm.w + 0.02, -dot(c_an.xz, cel_hero.xy)); ALBEDO = vec3(0.0); METALLIC = 0.0; SPECULAR = 0.0; AO = 0.0; EMISSION = mix(cel_hero_lit.rgb, cel_hero_arm.rgb, c_am); } }
+#define CEL_HERO_ARM_LIGHT { if (cel_hero_arm_on()) { DIFFUSE_LIGHT = vec3(0.0); SPECULAR_LIGHT = vec3(0.0); } }
+#endif
 #endif
 
 #ifdef CEL_STAND
@@ -765,5 +779,8 @@ void light() {
 		DIFFUSE_LIGHT += mix(c_da, c_db, cel_on);
 		SPECULAR_LIGHT += mix(c_sa, c_sb, cel_on);
 	}
+#ifdef CEL_HERO_ARM
+	CEL_HERO_ARM_LIGHT;   // (L1 lead 19, HER3: the hero's held piece is its two absolute tones, no light on it)
+#endif
 }
 #endif

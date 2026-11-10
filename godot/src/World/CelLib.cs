@@ -119,6 +119,7 @@ public static class CelLib
             foreach (var g in q)
                 if (GodotObject.IsInstanceValid(g) && g.IsInsideTree() && g.GetViewport() == tree!.Root)
                 {
+                    Hero(g);
                     foreach (var (m, _) in Slots(g)) Visit(m, g);
                     var id = g.GetInstanceId();
                     if (tracked.Add(id)) young.Add((g, id, YoungFrames));
@@ -128,7 +129,7 @@ public static class CelLib
         {
             var (g, id, left) = young[i];
             if (!GodotObject.IsInstanceValid(g)) { young.RemoveAt(i); tracked.Remove(id); continue; }
-            if (g.IsInsideTree()) foreach (var (m, _) in Slots(g)) Visit(m, g);
+            if (g.IsInsideTree()) { Hero(g); foreach (var (m, _) in Slots(g)) Visit(m, g); }
             if (left > 1) young[i] = (g, id, left - 1);
             else { young.RemoveAt(i); watch.Add((g, id)); }
         }
@@ -137,7 +138,7 @@ public static class CelLib
             watchAt = (watchAt + 1) % watch.Count;
             var (g, id) = watch[watchAt];
             if (!GodotObject.IsInstanceValid(g)) { tracked.Remove(id); watch[watchAt] = watch[^1]; watch.RemoveAt(watch.Count - 1); continue; }
-            if (g.IsInsideTree() && g.IsVisibleInTree()) foreach (var (m, _) in Slots(g)) Visit(m, g);
+            if (g.IsInsideTree() && g.IsVisibleInTree()) { Hero(g); foreach (var (m, _) in Slots(g)) Visit(m, g); }
         }
         // (a converted material whose feature set changed since: the engine bound its own shader for the new set)
         for (int i = 0; i < 4 && live.Count > 0; i++)
@@ -145,7 +146,7 @@ public static class CelLib
             sweep = (sweep + 1) % live.Count;
             var (m, key, cls) = live[sweep];
             if (!GodotObject.IsInstanceValid(m)) { live.RemoveAt(sweep); continue; }
-            var k = StdCelCode.Key(m);
+            var k = KeyOf(m);
             if (k != key) { live.RemoveAt(sweep); if (Why(m) is null) Bind(m, cls); }
         }
     }
@@ -210,18 +211,53 @@ public static class CelLib
     /// <summary>Puts one standard material on the model in its class (the loader does it to every one it finds; the lookdev swatches call it).</summary>
     public static void Bind(BaseMaterial3D b, string cls)
     {
-        var key = StdCelCode.Key(b);
+        var key = KeyOf(b);
         if (!variants.TryGetValue(key, out var sh))
         {
+            bool hero = b.HasMeta(HeroMeta);
             var head = (b.RimEnabled ? "#define CEL_BUILTIN_RIM\n" : "") + (b.ClearcoatEnabled ? "#define CEL_CLEARCOAT\n" : "")
-                + "#include \"res://shaders/std_cel.gdshaderinc\"";
-            variants[key] = sh = new Shader { Code = StdCelCode.Generate(b, head, "\tCEL_FRAGMENT;") };
+                + (hero ? "#define CEL_HERO\n#define CEL_HERO_ARM\n" : "") + "#include \"res://shaders/std_cel.gdshaderinc\"";
+            var code = StdCelCode.Generate(b, head, hero ? "\tCEL_FRAGMENT;\n\tCEL_HERO_ARM_FRAGMENT;" : "\tCEL_FRAGMENT;");
+            if (hero) code = code.Replace("void vertex() {", "void vertex() {\n\tCEL_HERO_ARM_VERTEX;");
+            variants[key] = sh = new Shader { Code = code };
         }
         var rid = b.GetRid();
         RenderingServer.MaterialSetShader(rid, sh.GetRid());
         foreach (var (name, v) in Uniforms(Lib.Classes[cls])) RenderingServer.MaterialSetParam(rid, name, v);
         b.SetMeta(Meta, cls);
         live.Add((b, key, cls));
+    }
+
+    /// <summary>(L1 lead 19, HER3) A hero's held piece (cel.gdshaderinc CEL_HERO_ARM): its material's own variant.</summary>
+    const string HeroMeta = "cel_hero_arm";
+    static string KeyOf(BaseMaterial3D b) => StdCelCode.Key(b) + (b.HasMeta(HeroMeta) ? "|hero" : "");
+
+    /// <summary>(L1 lead 19, HER3) The standard materials of a mesh under the player's view (her shield, her blade) become
+    /// HER OWN copies, marked for the hero's variant: a body in her lit pool (the rig's hero_pool), as they were without
+    /// the row. A surface that has her own copy already (PlayerView.WeaponClose's) is marked; any other gets a copy as a
+    /// surface override. Other holders of the same weapon keep the shared material.</summary>
+    static void Hero(GeometryInstance3D g)
+    {
+        if (g is not MeshInstance3D mi || mi.Mesh == null) return;
+        Node? n = g;
+        while (n != null && !n.IsInGroup(Brush.HerGroup)) n = n.GetParent();
+        if (n == null) return;
+        for (int s = 0; s < mi.Mesh.GetSurfaceCount() && s < mi.GetSurfaceOverrideMaterialCount(); s++)
+        {
+            var so = mi.GetSurfaceOverrideMaterial(s);
+            if (so is BaseMaterial3D ob)
+            {
+                if (ob.HasMeta(HeroMeta)) continue;
+                ob.SetMeta(HeroMeta, true);
+                if (ob.HasMeta(Meta)) Bind(ob, (string)ob.GetMeta(Meta));   // (bound before she held it: bound again, the sweep drops the old entry)
+            }
+            else if (so == null && mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D b && Why(b) is null)
+            {
+                var c = (BaseMaterial3D)b.Duplicate();
+                c.SetMeta(HeroMeta, true);
+                mi.SetSurfaceOverrideMaterial(s, c);
+            }
+        }
     }
 
     /// <summary>How many standard materials are on the model, and the shader variants made for them.</summary>
