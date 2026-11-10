@@ -40,9 +40,14 @@ def track(log):
     out = []
     num = r"(-?[\d.]+)"
     pat = re.compile(rf"act: scr f=(\d+) t={num} pelvis={num},{num} head={num},{num} foot={num},{num} box={num},{num},{num},{num} ppm={num}")
-    for m in pat.finditer(log.read_text(errors="ignore")):
+    clip = re.compile(r" clip=(-?[\d.]+)")
+    for line in log.read_text(errors="ignore").splitlines():
+        m = pat.search(line)
+        if not m: continue
         g = [float(v) for v in m.groups()]
-        out.append(dict(f=int(g[0]), t=g[1], pelvis=(g[2], g[3]), head=(g[4], g[5]), foot=(g[6], g[7]), box=tuple(g[8:12]), ppm=g[12]))
+        c = clip.search(line)
+        out.append(dict(f=int(g[0]), t=g[1], pelvis=(g[2], g[3]), head=(g[4], g[5]), foot=(g[6], g[7]), box=tuple(g[8:12]), ppm=g[12],
+                        clip=float(c.group(1)) if c else None))
     return out
 
 
@@ -64,7 +69,13 @@ def picks(tr, t0, dur, ev, hold, first, every, hold_every):
         if i < nxt and i not in fire and i not in (i0, i1):
             continue
         nxt = i + step
-        lab = f"t={t:.2f} " + (f"end+{round((t - t0 - dur) * 60)}" if i > i1 else f"f{round((t - t0) * 60)}")
+        # f<n>: the frame (60 fps) of the clip the picture shows: its playhead (`clip=`, the pose drawn) inside the act; the
+        # run clock runs one 30 fps frame ahead of it (the one-shot starts a frame after its fire), so old logs without
+        # `clip=` are labelled by the run clock and marked `~` (a tile "~f56" shows the clip's f54).
+        c = tr[i]["clip"]
+        inside = t0 - e <= t <= t0 + dur + e
+        lab = f"t={t:.2f} " + (f"end+{round((t - t0 - dur) * 60)}" if i > i1 else f"f{round(c * 60)}" if c is not None and inside
+                               else f"~f{round((t - t0) * 60)}")
         if i == i0: lab += " START"
         if i == i1: lab += " END"
         if i in fire: lab += " " + fire[i].upper()
@@ -193,4 +204,5 @@ def main(a):
     old(a[0])
 
 
-main(sys.argv[1:])
+if __name__ == "__main__":
+    main(sys.argv[1:])

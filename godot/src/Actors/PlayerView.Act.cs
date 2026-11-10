@@ -195,8 +195,12 @@ public partial class PlayerView
         var lf = x * measPose[0]; var rf = x * measPose[1];
         var foot = Px(lf.Y <= rf.Y ? lf : rf);
         float ppm = (Px(pelvisW + cam.GlobalBasis.X) - pelvis).Length();
+        // clip= the act clip's own playhead in the pose shown (the tree's `full` node after this frame's Advance): the run clock
+        // runs ahead of it (the one-shot takes its fire on one advance and starts on the next), so the sheets label by this.
+        var cp = tree.Get("parameters/full/current_position");
+        var clipAt = cp.VariantType is Variant.Type.Float or Variant.Type.Int ? $" clip={((double)cp).ToString("0.000", CultureInfo.InvariantCulture)}" : "";
         GD.Print($"act: scr f={Engine.GetProcessFrames()} t={actClock().ToString("0.000", CultureInfo.InvariantCulture)} pelvis={P2(pelvis)} head={P2(head)} foot={P2(foot)} " +
-                 $"box={P2(lo)},{P2(hi)} ppm={F1(ppm)} by={string.Join(",", who)}{off}");
+                 $"box={P2(lo)},{P2(hi)} ppm={F1(ppm)} by={string.Join(",", who)}{off}{clipAt}");
     }
 
     /// <summary>The five points of the pose last shown (measPose), in her skeleton's frame (measNode) and in the world. Called at the
