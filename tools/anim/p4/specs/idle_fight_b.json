@@ -181,6 +181,7 @@
     ]
    ]
   },
+  "look": {"yaw_deg": 0},
   "limbs": {
    "hand_r": {
     "at": [
