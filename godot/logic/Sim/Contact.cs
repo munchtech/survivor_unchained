@@ -71,6 +71,7 @@ public sealed partial class Battle
         double a = dx * dx + dz * dz > 0.01 ? Math.Atan2(dz, dx) : Math.Atan2(Math.Cos(p.Facing), Math.Sin(p.Facing));
         w.WasOwnHeavy = ownHeavy;
         p.AttackAnim = new AttackAnim(w.Id, a, Time, heavy || w.Behavior == WeaponBehavior.Crack, clip, rate);
+        w.ClipSide = HerEvents.Side(clip) ?? 0;
         clipSwing++;
         // Ready again after its wait from the press (the contact's rules may shorten it: Firing.LandBlow).
         w.Timer = Firing.CooldownOf(this, w);
@@ -105,6 +106,7 @@ public static partial class Firing
     {
         int kills0 = w.Kills;
         bool fired = CastOnce(b, w);
+        w.ClipSide = 0;
         if (!fired) return;
         Rearm(b, w, true, kills0);
         w.Timer = Math.Max(0, w.Timer - since);

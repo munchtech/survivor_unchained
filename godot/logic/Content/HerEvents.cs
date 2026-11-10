@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using SurvivorUnchained.Core;
 
@@ -15,6 +16,10 @@ public static class HerEvents
         public int[]? Hold;
         public int? Cancel;
         public int[]? Loop;
+        /// <summary>Which way the blade crosses at the contact, as the sim's angles run (atan2(dz, dx)): -1 toward the
+        /// lesser angle, +1 toward the greater (Ev.Slash.Side). Measured from the clip in play (BattleFx.Grip's `grip cut`
+        /// line under --clip prints it); absent: the cut's side alternates from the weapon's count.</summary>
+        public int? Side;
     }
 
     public sealed class File
@@ -38,6 +43,9 @@ public static class HerEvents
 
     /// <summary>The clip's first contact frame as written (tests).</summary>
     public static int? ContactFrame(string clip) => F.Clips.TryGetValue(clip, out var c) && c.Contact is { Length: > 0 } k ? k[0] : null;
+
+    /// <summary>The clip's side (-1 or +1), or null when the file names none.</summary>
+    public static int? Side(string clip) => F.Clips.TryGetValue(clip, out var c) && c.Side is int s && s != 0 ? Math.Sign(s) : null;
 
     public static double Fps => F.Fps;
 

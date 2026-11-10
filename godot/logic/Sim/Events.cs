@@ -86,12 +86,16 @@ public static class Ev
     public sealed class Slash : CombatEvent
     {
         public double X, Z, Angle, Arc, Reach; public School School; public string? Art; public int Rank; /* the swing of a skill held as the grip (campaign) */ public bool Held;
-        /// <summary>Which way the blade crosses: -1 or +1, alternating from the weapon's own count of cuts (WeaponInst.Cuts; its
-        /// first is -1, the view's mirrored cut). The view mirrors its arc from this, never from a toggle of its own, so the
-        /// held chain's cut A and cut B can name their sides.</summary>
+        /// <summary>Which way the blade crosses, as the sim's angles run: -1 toward the lesser angle, +1 toward the greater. A blow
+        /// that lands on its clip's contact takes the CLIP's side (data/anim/her_events.json "side", WeaponInst.ClipSide), so it
+        /// is true to what she plays and a chain's cuts each name theirs; any other cut alternates from the weapon's own count
+        /// (WeaponInst.Cuts; its first is -1). The view's old crescents mirror from this; the grip's trail follows the blade.</summary>
         public int Side = -1;
-        /// <summary>How many it struck, and the nearest of them (for the view's contact flash); set as the cut lands.</summary>
+        /// <summary>How many it struck, and the one of them nearest the cut's line (a body within 0.7 m of her only when no
+        /// other was struck): where the view draws the contact; set as the cut lands.</summary>
         public int Struck; public double HitX, HitZ;
+        /// <summary>How many of the struck it killed (the view's contact is larger for a kill).</summary>
+        public int Killed;
     }
     public sealed class Muzzle : CombatEvent { public double X, Z, Angle; public School School; public string Weapon = ""; public string? Art; public int Rank; }
 

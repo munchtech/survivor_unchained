@@ -277,12 +277,12 @@ public partial class BattleFx
         // Which way the blade crosses is the sim's (Ev.Slash.Side, from the weapon's count of cuts), not a toggle here.
         mirror = e.Side < 0;
         // Held as her grip, the Oathblade's cut is the grip's stroke too (BattleFx.Grip.cs); pressed or kindled, its sweep.
-        if (IsOath(art)) { if (e.Held && GripStrokeOn) GripCut(e, at, facing, reach, g, true); else OathSweep(e, at, facing, reach, g); return; }
+        if (IsOath(art)) { if (e.Held && GripStrokeOn) GripCut(e, at, reach, g, true); else OathSweep(e, at, facing, reach, g); return; }
         // Sunder's heavy swing that splits the ground: the line is its blow (no crescent, sparks or chop crack over its base).
         if (art == "slash_heavy" && WgLineSwing(e)) return;
         // Her held grip (the generator) in steel, smaller than a spender's chop: half depth and echo, no crack scar or clods.
         bool grip = e.Held && art == "slash_heavy";
-        if (grip && GripStrokeOn) { GripCut(e, at, facing, reach, g, false); return; }
+        if (grip && GripStrokeOn) { GripCut(e, at, reach, g, false); return; }
         if (grip) { core = SteelWhite; glow = OathGold * 0.55f; hue = Hdr("#d8a24a", 0.95f); depth = 0.22f; }
         // The blade's path, cut fast: a hot edge at the reach and the smear of
         // its colour behind it (a painted fan read as a flat disc of beige, and
