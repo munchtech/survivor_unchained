@@ -78,3 +78,25 @@ Every other row (upperarm_share, delt, scap, sphere 0.5 and 0.75, PUB per clip, 
 - A smaller plate: the floor over a part of the box (the cap top alone, or the neck end alone) was not fitted separately; the zone rows are zones of the whole-box fit.
 - A on its own clip kinematics (`rt.a_frames`); only B's turns were used.
 - No picture, no render; numbers only.
+
+## Stance-referenced, cap top (lead 20's worker)
+
+New options of `tools/body/ride_travel.py`: `--ref rest|first` (first = each clip's first frame is the reference for every displacement and fit) and `--patch box|cap_top|neck_end` (floor fitted on that zone's points, travel reported on it). Floor = best rigid motion of the patch per frame; cells are travel p50 / p95 / max mm over all 91 frames (each point's largest). Runs: (a) `--ref first --patch cap_top` (cap_top 60-130 deg, s >= -45 mm), (b) `--ref first --patch box`. Outputs: `tools/body/out/ride_travel/first_cap_top.json`, `first_box.json`. The 5 mm line is met by none.
+
+Side l:
+
+| surface | (a) cap top, floor p50 / p95 / max | (a) worst | (b) box, floor p50 / p95 / max | (b) worst |
+|---|---|---|---|---|
+| OLD | 9.5 / 14.6 / 17.7 | daggers_heavy @ 9 | 11.9 / 25.2 / 31.2 | daggers_heavy @ 10 |
+| pub | 15.7 / 25.1 / 27.7 | daggers_heavy @ 12 | 18.9 / 29.3 / 40.9 | daggers_heavy @ 12 |
+| NEW | 11.8 / 21.0 / 23.5 | daggers_heavy @ 9 | 14.9 / 28.5 / 42.4 | daggers_heavy @ 12 |
+
+Side r:
+
+| surface | (a) cap top, floor p50 / p95 / max | (a) worst | (b) box, floor p50 / p95 / max | (b) worst |
+|---|---|---|---|---|
+| OLD | 13.6 / 20.8 / 23.4 | cast_flick @ 6 | 18.1 / 25.2 / 31.6 | cast_flick @ 6 |
+| pub | 16.8 / 29.6 / 31.6 | cast_flick @ 9 | 21.5 / 32.7 / 40.3 | cast_flick @ 6 |
+| NEW | 10.9 / 19.4 / 21.7 | daggers_heavy @ 9 | 15.4 / 25.8 / 37.1 | daggers_heavy @ 11 |
+
+Today's defaults reproduced: yes (rows and zones of a default run equal the previous table.json exactly).

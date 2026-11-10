@@ -338,6 +338,19 @@ def _bary(q, tri):
     return np.c_[1 - v - w, v, w]
 
 
+def rebase(tr, rows, first, mask):
+    """A Track of the frames `rows` measured from frame `first` (None: from rest) with the floor fitted on `mask` points."""
+    t = Track(tr.P0, tr.N0, tr.C0, tr.CN0, tr.area)
+    if first is not None:
+        t.P0, t.N0, t.C0, t.CN0 = tr.P[first], tr.N[first], tr.C[first], tr.CN[first]
+    t.P, t.N, t.C, t.CN = tr.P[rows], tr.N[rows], tr.C[rows], tr.CN[rows]
+    for r, m in tr.rides.items():
+        if r != "FLOOR fit":
+            t.rides[r] = m[rows] if first is None else m[rows] @ np.linalg.inv(m[first])
+    t.rides["FLOOR fit"] = np.array([rigid_fit(t.P0[mask], p[mask], t.area[mask]) for p in t.P])
+    return t
+
+
 def cell(st):
     return "       -                 " if st is None else f"{st['p50']:4.1f}/{st['p95']:4.1f}/{st['max']:4.1f} {st['sink']:4.1f} {st['sink_nn']:4.1f}"
 
@@ -347,6 +360,8 @@ def main():
     ap.add_argument("--surfaces", nargs="+", default=list(KINDS), choices=KINDS)
     ap.add_argument("--sides", nargs="+", default=list(HER["sides"]), choices=["l", "r"])
     ap.add_argument("--clips", nargs="+", default=list(HER["clips"]))
+    ap.add_argument("--ref", choices=["rest", "first"], default="rest", help="measure from rest, or from each clip's first frame")
+    ap.add_argument("--patch", choices=["box", "cap_top", "neck_end"], default="box", help="the zone the floor is fitted on and travel reported on")
     ap.add_argument("--out", default=str(HERE / "out" / "ride_travel" / "table.json"))
     a = ap.parse_args()
     cfg, kinds = HER, [k for k in KINDS if k in a.surfaces]
@@ -354,16 +369,29 @@ def main():
     seqs = [(c, [i for i, (cc, _) in enumerate(frames) if cc == c]) for c in a.clips]
     seqs.append(("ALL", list(range(len(frames)))))
     seqs += [(f"{c}@{f}", [frames.index((c, f))]) for c, f in cfg["singles"] if (c, f) in frames]
-    M = {key: {r: measure(tr, m) for r, m in tr.rides.items()} for key, tr in tracks.items()}
+    sel = {s: None for s in a.sides}
+    if a.patch != "box":
+        sel = {s: cfg["zones"][a.patch](pat[s]["s"], pat[s]["th"]) for s in a.sides}
+    if a.ref == "rest" and a.patch == "box":
+        M = {key: {r: measure(tr, m) for r, m in tr.rides.items()} for key, tr in tracks.items()}
+    else:
+        M = {}
+        for (k, s), tr in tracks.items():
+            mk = np.ones(len(tr.P0), bool) if sel[s] is None else sel[s]
+            parts = []
+            for c, rows in seqs[:len(a.clips)]:
+                bt = rebase(tr, rows, rows[0] if a.ref == "first" else None, mk)
+                parts.append({r: measure(bt, m) for r, m in bt.rides.items()})
+            M[k, s] = {r: tuple(np.concatenate([pt[r][i] for pt in parts]) for i in range(3)) for r in parts[0]}
     rides = list(dict.fromkeys(r for key in M for r in M[key] if r != "FLOOR fit")) + ["FLOOR fit"]
-    res = {"frames": len(frames), "limit_mm": cfg["limit_mm"], "rows": []}
+    res = {"ref": a.ref, "patch": a.patch, "frames": len(frames), "limit_mm": cfg["limit_mm"], "rows": []}
     print("\ncells: travel p50/p95/max  sink  sink_nn   (mm; per patch point the largest over the frames; sink + = plate into her)")
     for s in a.sides:
         for name, rows in seqs:
             print(f"\nside {s}  {name} ({len(rows)} frame{'s' * (len(rows) != 1)})")
             print(f"  {'ride':12s}" + "".join(f" | {HEAD[k]:25s}" for k in kinds))
             for r in rides:
-                st = {k: stats(M[k, s][r], rows) if r in M[k, s] else None for k in kinds}
+                st = {k: stats(M[k, s][r], rows, sel[s]) if r in M[k, s] else None for k in kinds}
                 print(f"  {r:12s}" + "".join(f" | {cell(st[k])}" for k in kinds))
                 for k in kinds:
                     if st[k]:
@@ -375,10 +403,10 @@ def main():
         zones = {z: fn(pat[s]["s"], pat[s]["th"]) for z, fn in cfg["zones"].items()}
         print(f"side {s}: zones " + ", ".join(f"{z} {int(m.sum())}" for z, m in zones.items()) + " points")
         for k in kinds:
-            single = {r: stats(M[k, s][r], allr) for r in M[k, s] if r != "FLOOR fit"}
+            single = {r: stats(M[k, s][r], allr, sel[s]) for r in M[k, s] if r != "FLOOR fit"}
             best = min(single, key=lambda r: single[r]["max"])
             for r in (best, "FLOOR fit"):
-                st = stats(M[k, s][r], allr)
+                st = stats(M[k, s][r], allr, sel[s])
                 zs = {z: stats(M[k, s][r], allr, m) for z, m in zones.items() if m.any()}
                 at = frames[st["at"]]
                 under = "UNDER" if st["max"] < cfg["limit_mm"] else "over"
