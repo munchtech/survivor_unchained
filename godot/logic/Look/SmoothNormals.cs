@@ -15,12 +15,14 @@ public static class SmoothNormals
     public static int BruteMax = 384;
 
     /// <summary>Per vertex (xyz each, the mesh's own vertices; tri = triangle list into them): the smoothed unit normal.</summary>
-    public static float[] Smooth(float[] pos, float[] nrm, int[] tri, float sigma)
+    public static float[] Smooth(float[] pos, float[] nrm, int[] tri, float sigma, double[]? ms = null)
     {
         int n = pos.Length / 3;
         var outv = new float[n * 3];
         if (n == 0) return outv;
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         var wid = Weld(pos, n, out int W);
+        if (ms != null) ms[0] = sw.Elapsed.TotalMilliseconds;
         var P = new float[W * 3]; var S = new float[W * 3];
         for (int v = 0; v < n; v++)
         {
@@ -53,21 +55,66 @@ public static class SmoothNormals
         for (int c = 0; c < count.Count; c++) start[c + 1] = start[c] + count[c];
         var members = new int[W]; var fill = (int[])start.Clone();
         for (int w = 0; w < W; w++) members[fill[compOf[w]]++] = w;
+        if (ms != null) ms[1] = sw.Elapsed.TotalMilliseconds;
+        // (BAKE, lead 24) a part smaller than half a sigma across (a stitch, a rivet: thread meshes are thousands of them)
+        // keeps its raw per-vertex normals: under one sigma its Gaussian is its own mean, and a tiny closed part's mean is
+        // ~0, so the normalized sum flipped corner to corner (calm 6 -> 70 deg on the thread meshes)
+        var tiny = new bool[count.Count];
         var R = new float[W * 3];
-        for (int c = 0; c < count.Count; c++)
+        int[] big = BigFirst(count);
+        System.Threading.Tasks.Parallel.For(0, big.Length, i =>
         {
+            int c = big[i];
             var seg = new ArraySegment<int>(members, start[c], count[c]);
+            if (Diagonal(seg, P) < TinyPart * sigma) { tiny[c] = true; return; }
             if (count[c] <= BruteMax) Brute(seg, P, S, Ar, sigma, R); else Grid(seg, P, S, Ar, sigma, R);
-        }
-        for (int v = 0; v < n; v++)
+        });
+        if (ms != null) ms[2] = sw.Elapsed.TotalMilliseconds;
+        System.Threading.Tasks.Parallel.For(0, (n + 4095) / 4096, chunk =>
+        {
+        for (int v = chunk * 4096, ve = Math.Min(n, v + 4096); v < ve; v++)
         {
             int w = wid[v];
+            if (tiny[compOf[w]])
+            {
+                float a = nrm[3 * v], b = nrm[3 * v + 1], d = nrm[3 * v + 2], q = a * a + b * b + d * d;
+                if (q > 1e-20f) { q = 1f / MathF.Sqrt(q); outv[3 * v] = a * q; outv[3 * v + 1] = b * q; outv[3 * v + 2] = d * q; continue; }
+            }
             float x = R[3 * w], y = R[3 * w + 1], z = R[3 * w + 2], l = x * x + y * y + z * z;
             if (l < 1e-20f) { x = S[3 * w]; y = S[3 * w + 1]; z = S[3 * w + 2]; l = x * x + y * y + z * z; }
             float k = l > 1e-20f ? 1f / MathF.Sqrt(l) : 0f;
             outv[3 * v] = x * k; outv[3 * v + 1] = y * k; outv[3 * v + 2] = z * k;
         }
+        });
+        if (ms != null) ms[3] = sw.Elapsed.TotalMilliseconds;
         return outv;
+    }
+
+    /// <summary>(BAKE) The skip rule: shader code (one file) that runs CEL_HERO_VERTEX as a statement, the one reader of
+    /// the bake (its #define alone does not count). HeroNormals follows the includes and bakes only such meshes.</summary>
+    public static bool RunsBake(string code) => !string.IsNullOrEmpty(code) && System.Text.RegularExpressions.Regex.IsMatch(code, @"^[ 	]*CEL_HERO_VERTEX\s*;", System.Text.RegularExpressions.RegexOptions.Multiline);
+
+    /// <summary>(BAKE) A connected part whose bbox diagonal is under this many sigma keeps its raw normals.</summary>
+    public const float TinyPart = 0.5f;
+
+    static float Diagonal(ArraySegment<int> m, float[] P)
+    {
+        float x0 = float.MaxValue, y0 = float.MaxValue, z0 = float.MaxValue, x1 = float.MinValue, y1 = float.MinValue, z1 = float.MinValue;
+        foreach (int a in m)
+        {
+            x0 = MathF.Min(x0, P[3 * a]); y0 = MathF.Min(y0, P[3 * a + 1]); z0 = MathF.Min(z0, P[3 * a + 2]);
+            x1 = MathF.Max(x1, P[3 * a]); y1 = MathF.Max(y1, P[3 * a + 1]); z1 = MathF.Max(z1, P[3 * a + 2]);
+        }
+        float dx = x1 - x0, dy = y1 - y0, dz = z1 - z0;
+        return MathF.Sqrt(dx * dx + dy * dy + dz * dz);
+    }
+
+    /// <summary>Component indices, the biggest first (so the long ones start first on the pool).</summary>
+    static int[] BigFirst(List<int> count)
+    {
+        var o = new int[count.Count]; for (int i = 0; i < o.Length; i++) o[i] = i;
+        Array.Sort(o, (a, b) => count[b].CompareTo(count[a]));
+        return o;
     }
 
     /// <summary>Welded id per vertex (positions at 0.1 mm), W the welded count.</summary>
@@ -159,10 +206,15 @@ public static class SmoothNormals
         Blur(g, tmp, nx, ny, nz, 0, tap, rr);
         Blur(tmp, g, nx, ny, nz, 1, tap, rr);
         Blur(g, tmp, nx, ny, nz, 2, tap, rr);
-        foreach (int a in m)
+        var arr = m.Array!; int off = m.Offset;
+        System.Threading.Tasks.Parallel.For(0, (m.Count + 2047) / 2048, chunk =>
         {
+        Span<float> lb = stackalloc float[4];
+        for (int ii = chunk * 2048, ie = Math.Min(m.Count, ii + 2048); ii < ie; ii++)
+        {
+            int a = arr[off + ii];
             float sx = S[3 * a], sy = S[3 * a + 1], sz = S[3 * a + 2];
-            Lobes(sx, sy, sz, lob);
+            Lobes(sx, sy, sz, lb);
             Cell(P, a, x0, y0, z0, h, nx, ny, nz, out int ix, out int iy, out int iz, out float fx, out float fy, out float fz);
             float rx = 0, ry = 0, rz = 0;
             for (int c = 0; c < 8; c++)
@@ -173,12 +225,13 @@ public static class SmoothNormals
                 long o = (((long)cz * ny + cy) * nx + cx) * C;
                 for (int k = 0; k < 4; k++)
                 {
-                    float q = lob[k] * wt;
+                    float q = lb[k] * wt;
                     rx += q * tmp[o + 3 * k]; ry += q * tmp[o + 3 * k + 1]; rz += q * tmp[o + 3 * k + 2];
                 }
             }
             R[3 * a] = rx; R[3 * a + 1] = ry; R[3 * a + 2] = rz;
         }
+        });
     }
 
     static void Lobes(float x, float y, float z, Span<float> l)
@@ -199,9 +252,10 @@ public static class SmoothNormals
         int len = axis == 0 ? nx : axis == 1 ? ny : nz;
         long st = axis == 0 ? 1 : axis == 1 ? nx : (long)nx * ny;
         int na = axis == 0 ? ny : nx, nb = axis == 2 ? ny : nz;
-        Span<float> acc = stackalloc float[C];
-        var line = new float[len * C];
-        for (int ib = 0; ib < nb; ib++)
+        // (BAKE) the lines are independent: spread over the pool, one line buffer per worker
+        System.Threading.Tasks.Parallel.For(0, nb, () => new float[len * C], (ib, _, line) =>
+        {
+            Span<float> acc = stackalloc float[C];
             for (int ia = 0; ia < na; ia++)
             {
                 long n0 = axis == 0 ? ((long)ib * ny + ia) * nx : axis == 1 ? (long)ib * nx * ny + ia : (long)ib * nx + ia;
@@ -225,6 +279,8 @@ public static class SmoothNormals
                     for (int c = 0; c < C; c++) dst[od + c] = acc[c];
                 }
             }
+            return line;
+        }, _ => { });
     }
 
     /// <summary>(Reference: lead 22's HeroNormals bake) welded normals diffused over the edge graph, self + neighbours,

@@ -53,6 +53,11 @@ public static class HeroNormals
             if (arr[s][(int)Mesh.ArrayType.Tangent].VariantType == Variant.Type.Nil && am.GetBlendShapeCount() > 0)
             { made[id] = null; nLeft++; GD.Print($"hero normals: {mi.Name} left as is (blend shapes without tangents on surface {s})"); return; }
         }
+        // (BAKE, lead 24) only a mesh whose shader reads the bake: FxAfter's depth-only twins, eyes, teeth, lashes skip
+        // (~950 ms of worker on norm2b_01); per instance, so a twin never blocks the source mesh's own bake
+        bool reads = false;
+        for (int s = 0; s < n && !reads; s++) reads = mi.GetActiveMaterial(s) is ShaderMaterial { Shader: { } sh2 } && ReadsBake(sh2);
+        if (!reads) return;
         var P = new Vector3[n][]; var N = new Vector3[n][]; var T = new float[]?[n]; var I = new int[n][];
         for (int s = 0; s < n; s++)
         {
@@ -83,6 +88,26 @@ public static class HeroNormals
             return (o, ms);
         }));
         waiting.Add(mi);
+    }
+
+    static readonly Dictionary<ulong, bool> readsBake = new();
+    static readonly System.Text.RegularExpressions.Regex Inc = new(@"#include\s+""([^""]+)""");
+
+    /// <summary>(BAKE) Does this shader (its includes followed) run CEL_HERO_VERTEX, the one reader of the bake's CUSTOM0?</summary>
+    public static bool ReadsBake(Shader sh)
+    {
+        ulong id = sh.GetInstanceId();
+        if (readsBake.TryGetValue(id, out bool r)) return r;
+        r = UsesIn(sh.Code, 0);
+        readsBake[id] = r; return r;
+    }
+    static bool UsesIn(string code, int depth)
+    {
+        if (string.IsNullOrEmpty(code) || depth > 8) return false;
+        if (SurvivorUnchained.Look.SmoothNormals.RunsBake(code)) return true;
+        foreach (System.Text.RegularExpressions.Match m in Inc.Matches(code))
+            if (ResourceLoader.Exists(m.Groups[1].Value) && GD.Load<ShaderInclude>(m.Groups[1].Value) is { } si && UsesIn(si.Code, depth + 1)) return true;
+        return false;
     }
 
     /// <summary>Each frame (CelLib): a finished bake becomes the copy, worn by every mesh that waited for it.</summary>

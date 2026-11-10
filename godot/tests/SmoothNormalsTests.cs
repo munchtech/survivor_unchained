@@ -122,6 +122,34 @@ public class SmoothNormalsTests
         Assert.True(ms < 250, $"{ms:0} ms");
     }
 
+    /// <summary>(BAKE pin) a part under TinyPart sigma across keeps its raw normals exactly (a stitch never flips);
+    /// a big part beside it is still smoothed; and the skip rule reads a CEL_HERO_VERTEX statement, never its define.</summary>
+    [Fact]
+    public void TinyPartsKeepRawNormalsAndTheSkipRuleReadsTheStatement()
+    {
+        var (P1, N1, _, T1) = Revolve(Sphere(0.008f, 6), 8, 0.6f, 7);          // a 1.6 cm closed bead (diagonal 2.8 cm): under 0.5 x 6 cm
+        var (P2, N2, A2, T2) = Revolve(Sphere(0.3f, 40), 48, 0.35f, 8, 1f);    // a big noisy sphere beside it
+        var P = new float[P1.Length + P2.Length]; P1.CopyTo(P, 0); P2.CopyTo(P, P1.Length);
+        var N = new float[N1.Length + N2.Length]; N1.CopyTo(N, 0); N2.CopyTo(N, N1.Length);
+        var T = new int[T1.Length + T2.Length]; T1.CopyTo(T, 0); for (int i = 0; i < T2.Length; i++) T[T1.Length + i] = T2[i] + P1.Length / 3;
+        var o = SmoothNormals.Smooth(P, N, T, 0.06f);
+        float worst = 0;
+        for (int v = 0; v < P1.Length / 3; v++)
+        {
+            float l = MathF.Sqrt(N1[3 * v] * N1[3 * v] + N1[3 * v + 1] * N1[3 * v + 1] + N1[3 * v + 2] * N1[3 * v + 2]);
+            float c = (o[3 * v] * N1[3 * v] + o[3 * v + 1] * N1[3 * v + 1] + o[3 * v + 2] * N1[3 * v + 2]) / l;
+            worst = MathF.Max(worst, MathF.Acos(Math.Clamp(c, -1f, 1f)) * 57.29578f);
+        }
+        var big = new float[P2.Length]; Array.Copy(o, P1.Length, big, 0, P2.Length);
+        var d = SmoothNormals.AnglesDeg(big, A2);
+        log.WriteLine($"tiny bead vs its raw normals: max {worst:0.000} deg; big sphere vs its true normal: median {d[d.Length / 2]:0.00} max {d[^1]:0.00} deg");
+        Assert.True(worst < 0.01f);
+        Assert.True(d[d.Length / 2] < 3f);   // (raw noise 0.35: still smoothed)
+        Assert.True(SmoothNormals.RunsBake("void vertex() {\n\tCEL_HERO_VERTEX;   // the smoothed normal\n}"));
+        Assert.False(SmoothNormals.RunsBake("#define CEL_HERO_VERTEX { NORMAL = NORMAL; }\nvoid vertex() { }"));
+        Assert.False(SmoothNormals.RunsBake("shader_type spatial; render_mode unshaded; void fragment() { ALBEDO = vec3(0.0); }"));
+    }
+
     /// <summary>(NORM2B, offline, runs only with SU_SN_DUMP = a folder of HeroNormals' SU_HERO_SN_DUMP files) per dumped mesh:
     /// its bbox, mean edge, connected surfaces, and the new bake and the old diffusion each against the raw normals and
     /// each other; plus the mean angle between welded neighbours (how calm each field is).</summary>
@@ -133,9 +161,28 @@ public class SmoothNormalsTests
         bool old = Environment.GetEnvironmentVariable("SU_SN_OLD") == "1";
         var files = System.IO.Directory.GetFiles(dir, "*.bin"); Array.Sort(files);
         var lines = new string[files.Length];
+        // (BAKE) the runtime's shape: every mesh but the depth-only twins (HeroNormals' skip rule) on its own task at once
+        var mesh = new (float[] P, float[] N, int[] T)[files.Length];
+        System.Threading.Tasks.Parallel.For(0, files.Length, fi => { var (P, N, T, _) = Load(files[fi]); mesh[fi] = (P, N, T); });
+        var ph = new double[files.Length][];
+        for (int rep = 0; rep < 3; rep++)
+        {
+            var sw0 = System.Diagnostics.Stopwatch.StartNew();
+            var jobs = new List<System.Threading.Tasks.Task>();
+            for (int fi = 0; fi < files.Length; fi++)
+            {
+                if (files[fi].Contains("FxAfterHole")) continue;
+                int k = fi; ph[k] = new double[4];
+                jobs.Add(System.Threading.Tasks.Task.Run(() => SmoothNormals.Smooth(mesh[k].P, mesh[k].N, mesh[k].T, 0.06f, ph[k])));
+            }
+            System.Threading.Tasks.Task.WaitAll(jobs.ToArray());
+            log.WriteLine($"bake wall, all meshes at once (rep {rep}): {sw0.Elapsed.TotalMilliseconds:0} ms");
+        }
+        for (int fi = 0; fi < files.Length; fi++)
+            if (ph[fi] != null && ph[fi][3] > 40) log.WriteLine($"  {System.IO.Path.GetFileName(files[fi])}: weld {ph[fi][0]:0} parts {ph[fi][1]:0} smooth {ph[fi][2]:0} out {ph[fi][3]:0} ms (cumulative)");
         System.Threading.Tasks.Parallel.For(0, files.Length, fi =>
         {
-            var (P, N, T, _) = Load(files[fi]);
+            var (P, N, T) = mesh[fi];
             int n = P.Length / 3;
             float[] lo = { 1e9f, 1e9f, 1e9f }, hi = { -1e9f, -1e9f, -1e9f };
             for (int v = 0; v < n; v++) for (int c = 0; c < 3; c++) { lo[c] = MathF.Min(lo[c], P[3 * v + c]); hi[c] = MathF.Max(hi[c], P[3 * v + c]); }
