@@ -1,6 +1,13 @@
 # Handoff: UI design lead
 
-## M4 UI lead 13 (ui-m4, 10 Nov): the r3b fix round is BUILT, committed and RESHOT; judge r3c, the merge, the FULL suite and the MR are what is left
+## M4 UI lead 13 (ui-m4, 10 Nov): HANDOFF READY. r3b fix round BUILT, RESHOT (CURRENT, seat table PASS 0); judge r3c ran: CLOSE (2 must, 2 should). A second round waits on main's go. NOT merged, FULL suite NOT run
+**Judge r3c verdict:** `scratch_ui_m4\judge_r3c_l13.md` (read it whole). Gone: M1, M2, S2, S3, S4. Ship as HUD frames: 01, 02, 07, 08, 10, 13, 15, 19. Open:
+- M3 (must): a kindled key fires from HALF its cost (`PressedSkills.cs:54` -> `Resolve.cs:255`), but the seat says short below FULL cost (`SeatKeys.cs:97`). That is 19_bc key 2 at 35/40, and 10/11/13/15/17. Fix: a press floor per key (half the cost if kindled), with `SeatCost.Short` against the floor; a 4th look from the floor up to the cost (lit glyph, no veil, the amber arc kept for strength, a 2 px ink tick at the floor, no warm well until full). Check first whether the HUD can read "kindled" without a new logic hunk; if it can't, ask main for the hunk.
+- M4 (must): sheet 23 opens on blank parchment; the first list row's focus glides the view to the goal (`MapScreen.cs:668`). Fix: open on a fit of her and the goal (80 px margin), or center on her with the goal pinned to the rim; draw the list-selection ring in ink or bone (its red, 168,50,30, reads as her arrow).
+- S5: 23_tr 486,251: the YOUR ROAD row wears the exit bead and the legend has no diamond. Fix: the row wears GoalDiamond, plus a "Your road" legend entry.
+- S6: 22_bc 350,507: the held ring (r 25-26.5) fuses with the short arc (r 22.5). Fix: while held and short, move the ring out 2 px with a 2 px ink gap and no sheen.
+- Nit: 02_tr 923,377: "Survive the night" wears the place diamond; a step with no place could have its own mark.
+- The world hold ring now fails 21/22 as frames by itself (L1 row below).
 **Start cold here; read this block only.** Worktree `.claude\worktrees\ui-m4` (branch ui-m4), scratch `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_ui_m4\`. Judge brief ready: `scratch_ui_m4\judge_r3c_brief.md` (spawn ONE su-lead-max, effort max, foreground, with that file's text as the prompt; the verdict goes to `judge_r3c_l13.md`).
 **Branch state:** commits `10751ce1c` (M1/M2, S3, S4, big map diamond), `36b9ab7a2` (S2 road keep, worker), `057a6d102` (Shots.cs `--open SCREEN@T`). The reshoot log is `scratch_ui_m4\l13_shoot2.out`: its last two lines must read `RESULT CURRENT at HEAD 057a6d102` and seat table `RESULT PASS 0` (`l13_seat_table.py`: 72 samples per seat on every `_bc` tile; the old tiles gave FAIL 6, matching r3b). This handoff commit is docs only, so the tiles stay current.
 **Done (r3b marks):**
