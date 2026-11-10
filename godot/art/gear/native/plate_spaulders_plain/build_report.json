@@ -4,990 +4,506 @@
   "l": {
    "law": {
     "no_hit": 0,
-    "eased_mm": 1.33,
+    "eased_mm": 4.14,
     "lift_mm": 0.0,
-    "sides_differ_mm": 1.15
+    "sides_differ_mm": 1.58
    },
    "cop_l_rigid": {
     "s_mm": [
-     -10.0,
-     10.0
+     -87.8,
+     36.0
     ],
-    "foot_points": 8,
+    "foot_points": 198,
     "ride": {
-     "upperarm_share_l": 0.9898,
-     "clavicle_l": 0.0064,
-     "scap_l": 0.0026,
-     "upperarm_twist_02_l": 0.0012
+     "upperarm_share_l": 0.5783,
+     "trap_l": 0.311,
+     "spine_04": 0.07,
+     "upperarm_twist_02_l": 0.0208,
+     "upperarm_twist_01_l": 0.0104,
+     "Head": 0.0044,
+     "clavicle_l": 0.0028,
+     "scap_l": 0.0022
     },
     "skin_under_mm": {
      "top": [
-      6.3,
-      16.3
+      3.8,
+      8.7
      ],
      "bottom": [
-      22.4,
-      26.9
+      9.1,
+      20.0
      ],
      "front": [
-      16.3,
-      24.6
+      8.7,
+      9.1
      ],
      "back": [
-      15.4,
-      22.8
+      8.6,
+      14.4
      ],
      "face": [
-      6.3,
-      26.9
+      3.8,
+      21.2
      ]
     },
-    "tris": 1072,
-    "rest_clear_mm_min": 5.82,
+    "tris": 2816,
+    "rest_clear_mm_min": 1.2,
     "inside": 0
    },
    "lame1_l_rigid": {
     "s_mm": [
-     -2.0,
-     30.0
+     14.0,
+     76.0
     ],
-    "foot_points": 15,
+    "foot_points": 98,
     "ride": {
-     "upperarm_share_l": 0.9267,
-     "upperarm_twist_02_l": 0.0724,
-     "clavicle_l": 0.0009
+     "upperarm_twist_02_l": 0.6993,
+     "upperarm_share_l": 0.2694,
+     "upperarm_twist_03_l": 0.0128,
+     "upperarm_twist_01_l": 0.006,
+     "trap_l": 0.0037,
+     "scap_l": 0.0032,
+     "spine_04": 0.0028,
+     "clavicle_l": 0.0027
     },
     "skin_under_mm": {
      "top": [
-      5.0,
-      5.6
+      7.3,
+      12.3
      ],
      "bottom": [
-      26.5,
-      32.4
+      14.8,
+      19.7
      ],
      "front": [
-      5.3,
-      32.4
+      12.3,
+      19.7
      ],
      "back": [
-      5.0,
-      28.9
+      7.6,
+      14.8
      ],
      "face": [
-      5.0,
-      32.4
+      7.3,
+      19.7
      ]
     },
-    "tris": 616,
-    "rest_clear_mm_min": 4.96,
+    "tris": 1088,
+    "rest_clear_mm_min": 7.54,
     "inside": 0
    },
    "lame2_l_rigid": {
     "s_mm": [
-     16.0,
-     40.0
+     62.0,
+     116.0
     ],
-    "foot_points": 5,
+    "foot_points": 113,
     "ride": {
-     "upperarm_share_l": 0.7583,
-     "upperarm_twist_02_l": 0.2296,
-     "trap_l": 0.0077,
-     "upperarm_twist_01_l": 0.0044
+     "upperarm_twist_02_l": 0.5098,
+     "upperarm_twist_03_l": 0.4789,
+     "upperarm_share_l": 0.0083,
+     "clavicle_l": 0.0012,
+     "scap_l": 0.0007,
+     "spine_04": 0.0005,
+     "delt_l": 0.0004,
+     "spine_05": 0.0002
     },
     "skin_under_mm": {
      "top": [
-      5.1,
-      6.2
+      7.6,
+      12.3
      ],
      "bottom": [
-      23.4,
-      27.6
+      13.3,
+      17.6
      ],
      "front": [
-      6.0,
-      23.5
+      12.3,
+      17.6
      ],
      "back": [
-      5.1,
-      23.4
+      7.6,
+      13.3
      ],
      "face": [
-      5.1,
-      27.6
+      7.6,
+      17.6
      ]
     },
-    "tris": 572,
-    "rest_clear_mm_min": 4.99,
+    "tris": 1098,
+    "rest_clear_mm_min": 7.5,
     "inside": 0
    },
    "lame3_l_rigid": {
     "s_mm": [
-     32.0,
-     49.8
+     102.0,
+     154.0
     ],
-    "foot_points": 7,
+    "foot_points": 146,
     "ride": {
-     "upperarm_twist_02_l": 0.4985,
-     "upperarm_share_l": 0.484,
-     "trap_l": 0.009,
-     "upperarm_twist_01_l": 0.0085
+     "upperarm_twist_03_l": 0.7969,
+     "upperarm_twist_04_l": 0.1336,
+     "delt_l": 0.0442,
+     "upperarm_twist_02_l": 0.025,
+     "upperarm_share_l": 0.0003
     },
     "skin_under_mm": {
      "top": [
-      5.3,
-      6.0
-     ],
-     "bottom": [
-      23.8,
-      26.1
-     ],
-     "front": [
-      5.3,
-      25.1
-     ],
-     "back": [
-      5.5,
-      23.8
-     ],
-     "face": [
-      5.3,
-      26.1
-     ]
-    },
-    "tris": 528,
-    "rest_clear_mm_min": 5.05,
-    "inside": 0
-   },
-   "lame4_l_rigid": {
-    "s_mm": [
-     41.8,
-     69.8
-    ],
-    "foot_points": 39,
-    "ride": {
-     "upperarm_twist_02_l": 0.8186,
-     "upperarm_share_l": 0.1632,
-     "scap_l": 0.0049,
-     "clavicle_l": 0.0035,
-     "upperarm_twist_01_l": 0.0033,
-     "neck_01": 0.0023,
-     "spine_04": 0.0021,
-     "trap_l": 0.0021
-    },
-    "skin_under_mm": {
-     "top": [
-      5.3,
-      7.1
-     ],
-     "bottom": [
-      22.0,
-      24.5
-     ],
-     "front": [
-      7.1,
-      24.5
-     ],
-     "back": [
-      5.3,
-      22.0
-     ],
-     "face": [
-      5.3,
-      24.5
-     ]
-    },
-    "tris": 668,
-    "rest_clear_mm_min": 5.23,
-    "inside": 0
-   },
-   "lame5_l_rigid": {
-    "s_mm": [
-     51.8,
-     89.8
-    ],
-    "foot_points": 54,
-    "ride": {
-     "upperarm_twist_02_l": 0.8115,
-     "upperarm_twist_03_l": 0.1433,
-     "upperarm_share_l": 0.0366,
-     "clavicle_l": 0.0031,
-     "scap_l": 0.0021,
-     "spine_04": 0.0021,
-     "spine_05": 0.0008,
-     "neck_01": 0.0005
-    },
-    "skin_under_mm": {
-     "top": [
-      5.2,
-      9.7
-     ],
-     "bottom": [
-      17.3,
-      21.0
-     ],
-     "front": [
-      9.7,
-      19.9
-     ],
-     "back": [
-      5.4,
-      17.3
-     ],
-     "face": [
-      5.2,
-      21.0
-     ]
-    },
-    "tris": 856,
-    "rest_clear_mm_min": 5.34,
-    "inside": 0
-   },
-   "lame6_l_rigid": {
-    "s_mm": [
-     77.8,
-     109.8
-    ],
-    "foot_points": 61,
-    "ride": {
-     "upperarm_twist_03_l": 0.5386,
-     "upperarm_twist_02_l": 0.4607,
-     "upperarm_share_l": 0.0005,
-     "scap_l": 0.0001,
-     "clavicle_l": 0.0001
-    },
-    "skin_under_mm": {
-     "top": [
-      5.2,
-      9.9
-     ],
-     "bottom": [
-      14.6,
-      16.1
-     ],
-     "front": [
-      9.9,
-      14.7
-     ],
-     "back": [
-      5.2,
-      14.6
-     ],
-     "face": [
-      5.2,
-      16.1
-     ]
-    },
-    "tris": 824,
-    "rest_clear_mm_min": 5.09,
-    "inside": 0
-   },
-   "lame7_l_rigid": {
-    "s_mm": [
-     104.8,
-     129.8
-    ],
-    "foot_points": 75,
-    "ride": {
-     "upperarm_twist_03_l": 0.8581,
-     "upperarm_twist_02_l": 0.0719,
-     "delt_l": 0.0644,
-     "upperarm_twist_04_l": 0.0052,
-     "upperarm_share_l": 0.0004
-    },
-    "skin_under_mm": {
-     "top": [
-      5.1,
-      5.5
-     ],
-     "bottom": [
-      12.2,
-      13.7
-     ],
-     "front": [
-      5.3,
+      7.7,
       12.2
      ],
-     "back": [
-      5.1,
-      12.5
-     ],
-     "face": [
-      5.1,
-      13.7
-     ]
-    },
-    "tris": 764,
-    "rest_clear_mm_min": 4.94,
-    "inside": 0
-   },
-   "lame8_l_rigid": {
-    "s_mm": [
-     121.8,
-     153.8
-    ],
-    "foot_points": 102,
-    "ride": {
-     "upperarm_twist_03_l": 0.755,
-     "upperarm_twist_04_l": 0.2025,
-     "delt_l": 0.0418,
-     "upperarm_twist_02_l": 0.0004,
-     "upperarm_share_l": 0.0002
-    },
-    "skin_under_mm": {
-     "top": [
-      5.1,
-      5.4
-     ],
      "bottom": [
-      8.9,
-      9.4
+      11.4,
+      15.9
      ],
      "front": [
-      5.2,
-      8.9
+      12.2,
+      15.9
      ],
      "back": [
-      5.3,
-      9.0
+      7.8,
+      11.4
      ],
      "face": [
-      5.1,
-      9.4
+      7.7,
+      15.9
      ]
     },
-    "tris": 744,
-    "rest_clear_mm_min": 5.11,
+    "tris": 956,
+    "rest_clear_mm_min": 7.45,
     "inside": 0
    },
    "arming_l_cap": {
-    "tris": 1308,
+    "tris": 1904,
     "skin_under_mm": {
      "top": [
-      1.5,
-      1.7
+      2.1,
+      2.8
      ],
      "bottom": [
-      1.6,
-      1.8
+      2.7,
+      3.0
      ],
      "front": [
-      1.5,
-      1.7
+      2.8,
+      3.0
      ],
      "back": [
-      1.6,
-      1.7
+      2.7,
+      2.8
      ],
      "face": [
-      1.5,
-      2.0
+      2.1,
+      3.1
      ]
     },
     "under_plates_mm": {
-     "cop_l_rigid": 4.01,
-     "lame1_l_rigid": 2.5,
-     "lame2_l_rigid": 2.66,
-     "lame3_l_rigid": 2.44,
-     "lame4_l_rigid": 2.49,
-     "lame5_l_rigid": 2.48,
-     "lame6_l_rigid": 1.89,
-     "lame7_l_rigid": 2.33,
-     "lame8_l_rigid": 2.25
+     "cop_l_rigid": 1.0,
+     "lame1_l_rigid": 4.04,
+     "lame2_l_rigid": 3.86,
+     "lame3_l_rigid": 3.71
     }
    }
   },
   "r": {
    "law": {
     "no_hit": 0,
-    "eased_mm": 1.33,
+    "eased_mm": 4.14,
     "lift_mm": 0.0,
-    "sides_differ_mm": 1.15
+    "sides_differ_mm": 1.58
    },
    "cop_r_rigid": {
     "s_mm": [
-     -10.0,
-     10.0
+     -87.8,
+     36.0
     ],
-    "foot_points": 8,
+    "foot_points": 195,
     "ride": {
-     "upperarm_share_r": 0.9896,
-     "clavicle_r": 0.0066,
-     "scap_r": 0.0027,
-     "upperarm_twist_02_r": 0.0012
+     "upperarm_share_r": 0.5837,
+     "trap_r": 0.3076,
+     "spine_04": 0.0681,
+     "upperarm_twist_02_r": 0.0213,
+     "upperarm_twist_01_r": 0.0103,
+     "Head": 0.0039,
+     "clavicle_r": 0.0028,
+     "scap_r": 0.0023
     },
     "skin_under_mm": {
      "top": [
-      6.7,
-      16.3
+      3.8,
+      9.0
      ],
      "bottom": [
-      22.5,
-      26.9
+      9.1,
+      19.9
      ],
      "front": [
-      16.3,
-      24.6
+      8.8,
+      9.1
      ],
      "back": [
-      16.3,
-      23.6
+      9.0,
+      14.4
      ],
      "face": [
-      6.7,
-      26.9
+      3.8,
+      21.2
      ]
     },
-    "tris": 1072,
-    "rest_clear_mm_min": 6.12,
+    "tris": 2816,
+    "rest_clear_mm_min": 1.22,
     "inside": 0
    },
    "lame1_r_rigid": {
     "s_mm": [
-     -2.0,
-     30.0
+     14.0,
+     76.0
     ],
-    "foot_points": 15,
+    "foot_points": 96,
     "ride": {
-     "upperarm_share_r": 0.9262,
-     "upperarm_twist_02_r": 0.0728,
-     "clavicle_r": 0.0009
+     "upperarm_twist_02_r": 0.703,
+     "upperarm_share_r": 0.2666,
+     "upperarm_twist_03_r": 0.0118,
+     "upperarm_twist_01_r": 0.006,
+     "trap_r": 0.0037,
+     "scap_r": 0.0033,
+     "clavicle_r": 0.0028,
+     "spine_04": 0.0028
     },
     "skin_under_mm": {
      "top": [
-      5.1,
-      6.0
+      7.5,
+      12.2
      ],
      "bottom": [
-      26.3,
-      32.2
+      14.8,
+      20.1
      ],
      "front": [
-      5.3,
-      32.2
+      12.2,
+      20.1
      ],
      "back": [
-      5.8,
-      28.8
+      7.6,
+      14.8
      ],
      "face": [
-      5.1,
-      32.2
+      7.5,
+      20.1
      ]
     },
-    "tris": 616,
-    "rest_clear_mm_min": 4.98,
+    "tris": 1088,
+    "rest_clear_mm_min": 7.59,
     "inside": 0
    },
    "lame2_r_rigid": {
     "s_mm": [
-     16.0,
-     40.0
+     62.0,
+     116.0
     ],
-    "foot_points": 5,
+    "foot_points": 110,
     "ride": {
-     "upperarm_share_r": 0.7588,
-     "upperarm_twist_02_r": 0.2292,
-     "trap_r": 0.0076,
-     "upperarm_twist_01_r": 0.0044
+     "upperarm_twist_02_r": 0.5164,
+     "upperarm_twist_03_r": 0.4721,
+     "upperarm_share_r": 0.0084,
+     "clavicle_r": 0.0013,
+     "scap_r": 0.0007,
+     "spine_04": 0.0005,
+     "delt_r": 0.0004,
+     "spine_05": 0.0002
     },
     "skin_under_mm": {
      "top": [
-      5.2,
-      5.9
+      7.8,
+      12.5
      ],
      "bottom": [
-      23.2,
-      27.5
+      13.4,
+      18.2
      ],
      "front": [
-      5.8,
-      23.6
+      12.5,
+      18.2
      ],
      "back": [
-      5.2,
-      23.2
+      7.8,
+      13.4
      ],
      "face": [
-      5.2,
-      27.5
+      7.8,
+      18.2
      ]
     },
-    "tris": 572,
-    "rest_clear_mm_min": 5.13,
+    "tris": 1098,
+    "rest_clear_mm_min": 7.71,
     "inside": 0
    },
    "lame3_r_rigid": {
     "s_mm": [
-     32.0,
-     49.8
+     102.0,
+     154.0
     ],
-    "foot_points": 7,
+    "foot_points": 135,
     "ride": {
-     "upperarm_twist_02_r": 0.5027,
-     "upperarm_share_r": 0.4801,
-     "trap_r": 0.0088,
-     "upperarm_twist_01_r": 0.0084
-    },
-    "skin_under_mm": {
-     "top": [
-      5.2,
-      5.7
-     ],
-     "bottom": [
-      23.9,
-      26.3
-     ],
-     "front": [
-      5.2,
-      25.5
-     ],
-     "back": [
-      5.3,
-      23.9
-     ],
-     "face": [
-      5.2,
-      26.3
-     ]
-    },
-    "tris": 528,
-    "rest_clear_mm_min": 4.92,
-    "inside": 0
-   },
-   "lame4_r_rigid": {
-    "s_mm": [
-     41.8,
-     69.8
-    ],
-    "foot_points": 40,
-    "ride": {
-     "upperarm_twist_02_r": 0.8126,
-     "upperarm_share_r": 0.1689,
-     "scap_r": 0.0051,
-     "clavicle_r": 0.0034,
-     "upperarm_twist_01_r": 0.0033,
-     "neck_01": 0.0024,
-     "trap_r": 0.0021,
-     "spine_04": 0.0021
-    },
-    "skin_under_mm": {
-     "top": [
-      5.3,
-      7.1
-     ],
-     "bottom": [
-      22.3,
-      24.8
-     ],
-     "front": [
-      7.1,
-      24.8
-     ],
-     "back": [
-      5.3,
-      22.3
-     ],
-     "face": [
-      5.3,
-      24.8
-     ]
-    },
-    "tris": 668,
-    "rest_clear_mm_min": 5.27,
-    "inside": 0
-   },
-   "lame5_r_rigid": {
-    "s_mm": [
-     51.8,
-     89.8
-    ],
-    "foot_points": 55,
-    "ride": {
-     "upperarm_twist_02_r": 0.8131,
-     "upperarm_twist_03_r": 0.1412,
-     "upperarm_share_r": 0.0369,
-     "clavicle_r": 0.0034,
-     "spine_04": 0.0021,
-     "scap_r": 0.0021,
-     "spine_05": 0.0008,
-     "neck_01": 0.0005
-    },
-    "skin_under_mm": {
-     "top": [
-      5.5,
-      9.9
-     ],
-     "bottom": [
-      17.4,
-      21.5
-     ],
-     "front": [
-      9.9,
-      20.4
-     ],
-     "back": [
-      5.6,
-      17.4
-     ],
-     "face": [
-      5.5,
-      21.5
-     ]
-    },
-    "tris": 856,
-    "rest_clear_mm_min": 5.55,
-    "inside": 0
-   },
-   "lame6_r_rigid": {
-    "s_mm": [
-     77.8,
-     109.8
-    ],
-    "foot_points": 61,
-    "ride": {
-     "upperarm_twist_03_r": 0.5246,
-     "upperarm_twist_02_r": 0.4747,
-     "upperarm_share_r": 0.0005,
-     "scap_r": 0.0001,
-     "clavicle_r": 0.0001
-    },
-    "skin_under_mm": {
-     "top": [
-      5.4,
-      10.3
-     ],
-     "bottom": [
-      14.7,
-      16.7
-     ],
-     "front": [
-      10.3,
-      15.3
-     ],
-     "back": [
-      5.4,
-      14.7
-     ],
-     "face": [
-      5.4,
-      16.7
-     ]
-    },
-    "tris": 824,
-    "rest_clear_mm_min": 5.26,
-    "inside": 0
-   },
-   "lame7_r_rigid": {
-    "s_mm": [
-     104.8,
-     129.8
-    ],
-    "foot_points": 73,
-    "ride": {
-     "upperarm_twist_03_r": 0.8544,
-     "upperarm_twist_02_r": 0.0761,
-     "delt_r": 0.0642,
-     "upperarm_twist_04_r": 0.005,
-     "upperarm_share_r": 0.0003
-    },
-    "skin_under_mm": {
-     "top": [
-      5.3,
-      6.1
-     ],
-     "bottom": [
-      12.7,
-      13.9
-     ],
-     "front": [
-      5.9,
-      12.9
-     ],
-     "back": [
-      5.3,
-      12.7
-     ],
-     "face": [
-      5.3,
-      13.9
-     ]
-    },
-    "tris": 764,
-    "rest_clear_mm_min": 5.07,
-    "inside": 0
-   },
-   "lame8_r_rigid": {
-    "s_mm": [
-     121.8,
-     153.8
-    ],
-    "foot_points": 93,
-    "ride": {
-     "upperarm_twist_03_r": 0.7573,
-     "upperarm_twist_04_r": 0.1973,
-     "delt_r": 0.0448,
-     "upperarm_twist_02_r": 0.0004,
+     "upperarm_twist_03_r": 0.7993,
+     "upperarm_twist_04_r": 0.1283,
+     "delt_r": 0.0465,
+     "upperarm_twist_02_r": 0.0257,
      "upperarm_share_r": 0.0002
     },
     "skin_under_mm": {
      "top": [
-      5.5,
-      6.1
+      7.9,
+      12.7
      ],
      "bottom": [
-      9.3,
-      10.3
+      11.8,
+      16.7
      ],
      "front": [
-      5.9,
-      9.7
+      12.7,
+      16.7
      ],
      "back": [
-      5.5,
-      9.3
+      7.9,
+      11.8
      ],
      "face": [
-      5.5,
-      10.3
+      7.9,
+      16.7
      ]
     },
-    "tris": 744,
-    "rest_clear_mm_min": 5.32,
+    "tris": 956,
+    "rest_clear_mm_min": 7.61,
     "inside": 0
    },
    "arming_r_cap": {
-    "tris": 1308,
+    "tris": 1904,
     "skin_under_mm": {
      "top": [
-      2.1,
-      3.6
+      2.4,
+      3.7
      ],
      "bottom": [
-      2.1,
-      2.9
+      3.1,
+      4.1
      ],
      "front": [
-      1.6,
-      2.6
+      2.8,
+      3.6
      ],
      "back": [
-      1.7,
-      2.5
+      2.7,
+      3.2
      ],
      "face": [
-      1.5,
-      3.6
+      2.4,
+      4.6
      ]
     },
     "under_plates_mm": {
-     "cop_r_rigid": 4.01,
-     "lame1_r_rigid": 2.5,
-     "lame2_r_rigid": 2.66,
-     "lame3_r_rigid": 2.44,
-     "lame4_r_rigid": 2.49,
-     "lame5_r_rigid": 2.48,
-     "lame6_r_rigid": 1.89,
-     "lame7_r_rigid": 2.33,
-     "lame8_r_rigid": 2.25
+     "cop_r_rigid": 1.0,
+     "lame1_r_rigid": 4.04,
+     "lame2_r_rigid": 3.86,
+     "lame3_r_rigid": 3.71
     }
    }
   }
  },
  "mirror_mm_max": 0.0,
  "dir": "godot/art/gear/native/plate_spaulders_plain",
- "tris": 15904,
+ "tris": 15724,
  "parts": {
   "cop_l_rigid": [
-   100,
-   148,
+   552,
+   998,
    "plainsteel"
   ],
   "rim0_l_rigid": [
-   512,
-   924,
+   1014,
+   1818,
    "plainsteel"
   ],
   "lame1_l_rigid": [
-   91,
-   139,
+   203,
+   339,
    "plainsteel"
   ],
   "rim1_l_rigid": [
-   273,
-   477,
+   426,
+   749,
    "plainsteel"
   ],
   "lame2_l_rigid": [
-   84,
-   127,
+   209,
+   349,
    "plainsteel"
   ],
   "rim2_l_rigid": [
-   255,
-   445,
+   426,
+   749,
    "plainsteel"
   ],
   "lame3_l_rigid": [
-   77,
-   115,
+   143,
+   239,
    "plainsteel"
   ],
   "rim3_l_rigid": [
-   237,
-   413,
-   "plainsteel"
-  ],
-  "lame4_l_rigid": [
-   104,
-   159,
-   "plainsteel"
-  ],
-  "rim4_l_rigid": [
-   291,
-   509,
-   "plainsteel"
-  ],
-  "lame5_l_rigid": [
-   147,
-   235,
-   "plainsteel"
-  ],
-  "rim5_l_rigid": [
-   354,
-   621,
-   "plainsteel"
-  ],
-  "lame6_l_rigid": [
-   139,
-   219,
-   "plainsteel"
-  ],
-  "rim6_l_rigid": [
-   345,
-   605,
-   "plainsteel"
-  ],
-  "lame7_l_rigid": [
-   124,
-   191,
-   "plainsteel"
-  ],
-  "rim7_l_rigid": [
-   327,
-   573,
-   "plainsteel"
-  ],
-  "lame8_l_rigid": [
-   89,
-   139,
-   "plainsteel"
-  ],
-  "rim8_l_rigid": [
-   345,
-   605,
+   408,
+   717,
    "plainsteel"
   ],
   "arming_l_cap": [
-   696,
-   1308,
+   1005,
+   1904,
    "darkleather"
   ],
   "cop_r_rigid": [
-   100,
-   148,
+   552,
+   998,
    "plainsteel"
   ],
   "rim0_r_rigid": [
-   512,
-   924,
+   1014,
+   1818,
    "plainsteel"
   ],
   "lame1_r_rigid": [
-   91,
-   139,
+   203,
+   339,
    "plainsteel"
   ],
   "rim1_r_rigid": [
-   273,
-   477,
+   426,
+   749,
    "plainsteel"
   ],
   "lame2_r_rigid": [
-   84,
-   127,
+   209,
+   349,
    "plainsteel"
   ],
   "rim2_r_rigid": [
-   255,
-   445,
+   426,
+   749,
    "plainsteel"
   ],
   "lame3_r_rigid": [
-   77,
-   115,
+   143,
+   239,
    "plainsteel"
   ],
   "rim3_r_rigid": [
-   237,
-   413,
-   "plainsteel"
-  ],
-  "lame4_r_rigid": [
-   104,
-   159,
-   "plainsteel"
-  ],
-  "rim4_r_rigid": [
-   291,
-   509,
-   "plainsteel"
-  ],
-  "lame5_r_rigid": [
-   147,
-   235,
-   "plainsteel"
-  ],
-  "rim5_r_rigid": [
-   354,
-   621,
-   "plainsteel"
-  ],
-  "lame6_r_rigid": [
-   139,
-   219,
-   "plainsteel"
-  ],
-  "rim6_r_rigid": [
-   345,
-   605,
-   "plainsteel"
-  ],
-  "lame7_r_rigid": [
-   124,
-   191,
-   "plainsteel"
-  ],
-  "rim7_r_rigid": [
-   327,
-   573,
-   "plainsteel"
-  ],
-  "lame8_r_rigid": [
-   89,
-   139,
-   "plainsteel"
-  ],
-  "rim8_r_rigid": [
-   345,
-   605,
+   408,
+   717,
    "plainsteel"
   ],
   "arming_r_cap": [
-   696,
-   1308,
+   1005,
+   1904,
    "darkleather"
   ]
  },
- "play_tris": 2744
+ "play_tris": 3696
 }
