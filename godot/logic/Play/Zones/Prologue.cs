@@ -204,8 +204,11 @@ public sealed partial class Prologue : ZoneRuntime
 
     /* ------------------------------------------------------------- helpers -- */
 
-    void Objective((string Text, bool Done, bool Optional)[] steps) =>
+    void Objective((string Text, bool Done, bool Optional)[] steps)
+    {
+        roadStep = false;
         G.SetObjectives([new Tracked("pro", "The Low Ford", TrackTone.Tutorial, steps.Select(s => new Step(s.Text, s.Optional, s.Done)).ToList())]);
+    }
 
     /// <summary>When a lamp last went out or was relit (H4 r2): the lamp tips wait 1.5 s after it.</summary>
     double lampEventAt = -99;
@@ -1973,7 +1976,7 @@ public sealed partial class Prologue : ZoneRuntime
             new(at("camp").X, at("camp").Z, "Your camp", MarkKind.Place), new(at("cart").X, at("cart").Z, "Broken cart", MarkKind.Place),
             new(at("post").X, at("post").Z, "Watch-post", MarkKind.Place), new(at("barrow").X, at("barrow").Z, "The Barrow", MarkKind.Place),
             new(at("ford").X, at("ford").Z, "The Low Ford", wardenGone ? MarkKind.Place : MarkKind.Danger),
-            new(at("gate").X, at("gate").Z + 4, "North, to the Waystation", MarkKind.Exit),
+            new(at("gate").X, at("gate").Z + 4, "North, to the Waystation", MarkKind.Exit, roadStep),
         ];
     }
 

@@ -1929,7 +1929,7 @@ public partial class Game : Node, IZoneHost
             marks.Clear();
             foreach (var m in zone.MapMarks())
                 if (m.Kind != MarkKind.Place && (m.Kind is MarkKind.Exit or MarkKind.Quest || SeenAt(seen, extent, m.X, m.Z)))
-                    marks.Add(new MiniMark(m.X, m.Z, m.Kind, m.Label));
+                    marks.Add(new MiniMark(m.X, m.Z, m.Kind, m.Label, m.Objective));
             marks.AddRange(GoalMiniMarks());
             if (corpse != null) marks.Add(new MiniMark(corpse.X, corpse.Z, MarkKind.Danger, "Your belongings"));
         }

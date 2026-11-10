@@ -219,7 +219,7 @@ public partial class Minimap : Control
             for (int li = 0; li < list.Count; li++)
             {
                 var m = list[li];
-                bool objective = m.Kind == MarkKind.Quest || (m.Kind == MarkKind.Goal && m.Active);
+                bool objective = m.Kind == MarkKind.Quest || (m.Kind is MarkKind.Goal or MarkKind.Exit && m.Active);
                 if (objective != (pass == 1)) continue;
                 var at = new Vector2((float)(m.X - px), (float)(m.Z - pz)) * scale;
                 bool guide = m.Kind is MarkKind.Quest or MarkKind.Turn or MarkKind.Exit or MarkKind.Goal;
