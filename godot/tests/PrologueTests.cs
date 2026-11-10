@@ -383,7 +383,9 @@ public class PrologueTests
             var s = Make();
             Assert.False(s.J.World.Fact(Prologue.WardenLegendaryFact).Truthy);
             var e = s.B.SpawnEnemy("wolf", s.B.Player.X + 3, s.B.Player.Z + 3, new Battle.SpawnOpts { Level = level })!;
-            s.Zone.WardenLegendary(e);
+            var named = s.Zone.WardenLegendary(e.Level, e.Def.Family, e.X, e.Z, false);
+            Assert.Equal("The Ford-Warden's Evening Chain", named);
+            Assert.Contains(Prologue.WardenGrant, s.J.World.Owned);
             Assert.True(s.J.World.Fact(Prologue.WardenLegendaryFact).Truthy);
             Assert.True(Legends(s) >= 1, $"no Legendary at level {level}");
             // (a second kill rolls the plain Boss source: the fact stays, the certainty is spent)

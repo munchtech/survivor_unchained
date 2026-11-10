@@ -1469,7 +1469,7 @@ public sealed partial class Prologue : ZoneRuntime
         bool first = !W.Fact(WardenLegendaryFact).Truthy;
         var loot = G.Journey.Drops(new DropCtx
         {
-            Source = DropSource.Boss, Level = level, People = Drops.PeopleOf(family), Floor = first ? (int)LootTier.Legendary : 0,
+            Source = DropSource.Boss, Level = level, People = Drops.PeopleOf(family), Floor = first ? (int)LootTier.Legendary : 0, Grant = first ? WardenGrant : null,
             Luck = B.Stats.Get(Stat.Luck), R = B.Rng.Next, Hush = hush,
         });
         if (first) W.Facts[WardenLegendaryFact] = true;
@@ -1524,6 +1524,8 @@ public sealed partial class Prologue : ZoneRuntime
     }
 
     public const string WardenLegendaryFact = "lowford.warden_legendary";
+    /// <summary>(M9) The designed Legendary his first kill leaves.</summary>
+    public const string WardenGrant = "fordwardens_evening_chain";
 
     bool victoryByCine;
 

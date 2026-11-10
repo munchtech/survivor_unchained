@@ -484,7 +484,7 @@ public class LootTests
             Assert.False(string.IsNullOrWhiteSpace(d.Lore), $"{d.Id} has no lore");
             Assert.False(Crafting.Workable(d), $"{d.Id} is somebody's work");
             if (d.Of != null) Assert.Equal(Items.Get(d.Of).Kind, d.Kind);
-            if (d.Id != "moonsilver_circlet") Assert.NotNull(d.DropsFrom);
+            if (d.Id is not ("moonsilver_circlet" or "fordwardens_evening_chain")) Assert.NotNull(d.DropsFrom);
             Assert.All(d.Homes ?? new(), h => Assert.Contains(h, new[] { "pack", "dead", "lamplings", "kerchiefs" }));
             // No item grants a rise from death (the owner's rule for story fights and maps).
             Assert.DoesNotContain("revive", d.Tags ?? new());

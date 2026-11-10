@@ -1522,6 +1522,52 @@
    "downside": "8% slower.",
    "lore": "Notched along the spine in tens, the way a man counts nights on a post nobody relieves. The Watch's book has him down as a deserter."
   },
+  "fordwardens_evening_chain": {
+   "id": "fordwardens_evening_chain",
+   "name": "The Ford-Warden's Evening Chain",
+   "kind": "amulet",
+   "rarity": 4,
+   "icon": "bone",
+   "value": 320,
+   "plus": {
+    "heroic_leap": 1
+   },
+   "description": "+1 to Heroic Leap. Its landing rings a second time, in light. +12 armor, +30 maximum health.",
+   "mods": [
+    {
+     "stat": "armor",
+     "kind": "flat",
+     "value": 12,
+     "source": "item"
+    },
+    {
+     "stat": "maxHealth",
+     "kind": "flat",
+     "value": 30,
+     "source": "item"
+    }
+   ],
+   "triggers": [
+    {
+     "on": "hit",
+     "icd": 1.5,
+     "when": {
+      "weapon": "heroic_leap"
+     },
+     "effects": [
+      {
+       "do": "nova",
+       "radius": 4.5,
+       "damage": 0.6,
+       "basis": "hit",
+       "school": "holy"
+      }
+     ],
+     "text": "Heroic Leap's landing rings again, in light"
+    }
+   ],
+   "lore": "The chain he wore the lamp on. He sang the evening call over it every dusk for a hundred years: Lamps are lit. Stay where they reach."
+  },
   "ditchwater": {
    "id": "ditchwater",
    "name": "Ditchwater",
