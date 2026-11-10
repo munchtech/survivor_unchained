@@ -378,7 +378,7 @@ def extreme_G(bd, name):
 
 
 def clip_names():
-    return sorted(q.stem for q in da.DUMP.glob("*.json")) + ["p4:" + q.stem for q in sorted(da.P4.glob("*.json"))]
+    return sorted(q.stem for q in da.DUMP.glob("*.json")) + da.p4_clips()
 
 
 def cmd_poses(bd, md):

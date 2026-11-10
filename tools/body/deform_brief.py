@@ -11,9 +11,9 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from deform_audit import CLIPMET, MET, OUT  # noqa: E402
+from deform_audit import CLIPMET, MET, OUT, drop_excluded  # noqa: E402
 
-A = json.loads(Path(sys.argv[1] if len(sys.argv) > 1 else OUT / "audit.json").read_text())
+A = drop_excluded(json.loads(Path(sys.argv[1] if len(sys.argv) > 1 else OUT / "audit.json").read_text()))
 C, R = A["clips"], A["rom"]
 ROWS = ["shoulder_{s}", "shoulder_{s}.deltoid", "shoulder_{s}.axilla", "clav_{s}", "elbow_{s}", "forearm_{s}", "wrist_{s}",
         "hip_{s}", "hip_{s}.front", "hip_{s}.glute", "hip_{s}.groin", "knee_{s}", "knee_{s}.front", "knee_{s}.back",

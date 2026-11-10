@@ -63,8 +63,21 @@ JOINTS = {"shoulder": ["shoulder_{s}", "shoulder_{s}.deltoid", "shoulder_{s}.axi
           "forearm": ["forearm_{s}"], "wrist": ["wrist_{s}"], "hip": ["hip_{s}", "hip_{s}.front", "hip_{s}.glute", "hip_{s}.groin"],
           "knee": ["knee_{s}", "knee_{s}.front", "knee_{s}.back"], "ankle": ["ankle_{s}"], "neck": ["neck"],
           "trunk": ["trunk", "trunk.waist", "trunk.core"]}
-P4_TWIN = {"walk": "Jog_Fwd", "run": "run_warden", "idle": "idle_warden_town", "p4_proof_walk": "Jog_Fwd",
-           "p4_proof_idle": "idle_warden_town"}
+P4_TWIN = {"walk": "Jog_Fwd", "run": "run_warden", "idle": "idle_warden_town"}
+EXCLUDE = {"p4_proof_walk", "p4_proof_idle"}    # stale pre-rebase retargets (A1 disowned them, 9 Nov): never measured
+
+
+def p4_clips():
+    """The p4 clip names ("p4:<stem>") that count: every json in P4 but the excluded ones."""
+    return ["p4:" + q.stem for q in sorted(P4.glob("*.json")) if q.stem not in EXCLUDE]
+
+
+def drop_excluded(A):
+    """An audit dict without the excluded clips' rows (in place; old audit.json files still hold them)."""
+    for col in A.get("clips", {}).values():
+        for k in [k for k in col if k.split(":")[-1] in EXCLUDE]:
+            del col[k]
+    return A
 CAM = {"shoulder": (0.5, 0.2, 0.8), "elbow": (0.6, 0.0, -0.8), "forearm": (0.7, 0, 0.7), "wrist": (0.7, 0, 0.7),
        "hip": (0.4, 0.0, 0.9), "knee": (0.9, 0.0, 0.4), "ankle": (0.9, 0.1, 0.4), "neck": (0.5, 0.1, 0.85), "trunk": (0.3, 0, 0.95)}
 DIRS = np.array([[0.5774, 0.5774, 0.5774], [-0.7071, 0.1, 0.7], [0.1, -0.9, -0.42]])
@@ -800,14 +813,14 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     only = a.only.split(",")
     jp = out / "audit.json"
-    A = json.loads(jp.read_text()) if jp.exists() else {"clips": {}, "rom": {}}
+    A = drop_excluded(json.loads(jp.read_text())) if jp.exists() else {"clips": {}, "rom": {}}
     from multiprocessing import Pool
     tasks = []
     names = a.clips.split(",") if a.clips else sorted(p.stem for p in DUMP.glob("*.json"))
     if "clips" in only:
         tasks += [(k, l, n, a.step) for n in names for k in BODIES for l in BODIES[k][3]]
     if "p4" in only and P4.exists():
-        tasks += [(k, l, "p4:" + p.stem, 1) for p in sorted(P4.glob("*.json")) for k in ("B", "Bplay") for l in BODIES[k][3]]
+        tasks += [(k, l, n, 1) for n in p4_clips() for k in ("B", "Bplay") for l in BODIES[k][3]]
     rt = [(k, l) for k in BODIES for l in BODIES[k][3]] if "rom" in only else []
     if tasks or rt:
         with Pool(a.procs) as pool:
