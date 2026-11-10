@@ -956,6 +956,18 @@ public partial class PlayerView : Node3D
             person.Anim.Seek(double.Parse(hold[1], System.Globalization.CultureInfo.InvariantCulture), true);
             person.Anim.Pause();
             foreach (var (bi, p0, r0) in legs) { sk.SetBonePosePosition(bi, p0); sk.SetBonePoseRotation(bi, r0); }
+            // (L1 lead 22, mirror) --hold-mirror: the held frame reflected across her own sagittal plane, left and right
+            // swapped (PoseMirror), and the held piece moved into the hand that grips after the mirror. View only.
+            if (HoldMirror)
+            {
+                if (mirror == null)
+                {
+                    mirror = new PoseMirror(sk);
+                    GD.Print($"hold-mirror: {mirror.Paired} paired bones of {sk.GetBoneCount()}, plane normal {mirror.Normal}");
+                }
+                mirror.Apply();
+                if (!mirror.Piece(P1Body.BoneName(sk, "hand_r"), P1Body.BoneName(sk, "hand_l")) && !mirrorSaid) { mirrorSaid = true; GD.Print("hold-mirror: no piece in her right hand to move"); }
+            }
             // Her head carried up as play carries it (HeadLevel) through a swing and her idles and runs; a
             // whole-body clip (a fall, a roll, a flourish) keeps its own head, as play leaves it.
             string hn = hold[0];
@@ -1527,6 +1539,10 @@ public partial class PlayerView : Node3D
     static readonly float EmberH = SurvivorUnchained.Args.Num("ember-h", 1.7f), EmberK = SurvivorUnchained.Args.Num("ember-k", 1f);
     static readonly string[]? Hold = SurvivorUnchained.Args.Get("hold")?.Split('@');
     static readonly bool HoldTurn = SurvivorUnchained.Args.Has("close-turn");
+    /// <summary>--hold-mirror with a hold (L1 lead 22, pictures only): the held frame mirrored left for right (PoseMirror).</summary>
+    static readonly bool HoldMirror = SurvivorUnchained.Args.Has("hold-mirror");
+    PoseMirror? mirror;
+    bool mirrorSaid;
     /// <summary>--facing DEG read for a held frame (the Hold branch): her heading in radians, null without the flag.</summary>
     static readonly float? HoldFacing = SurvivorUnchained.Args.Get("facing") is string hfa
         ? Mathf.DegToRad(float.Parse(hfa, System.Globalization.CultureInfo.InvariantCulture)) : null;
