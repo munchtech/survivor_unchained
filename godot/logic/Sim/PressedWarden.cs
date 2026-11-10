@@ -379,6 +379,8 @@ public static partial class Firing
     {
         if (w.DisabledT > 0 || InStorm(b, w) || HalfOf(w) is not { } h || h.Timer > 0 || b.BlowPending(h)) return false;
         if (b.FireFrom != null || b.Refiring) return false;
+        // (a chain's cut never starts mid-dash, in a leap or a rush: Sim/SwingChain.cs)
+        if (b.CutBarred(h)) return false;
         int kills0 = h.Kills;
         var aim0 = b.CastAt;
         b.CastAt = b.AimFor(h);

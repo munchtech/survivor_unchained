@@ -451,6 +451,8 @@ public static partial class Firing
     public static bool Press(Battle b, WeaponInst w)
     {
         if (!w.Pressed || w.DisabledT > 0 || w.Timer > 0 || w.Channeling || b.BlowPending(w)) return false;
+        // (a chain's cut never starts mid-dash, in a leap or a rush: Sim/SwingChain.cs)
+        if (b.CutBarred(w)) return false;
         // A spender (campaign, Resolve) fires only with its whole cost, and spends it on firing.
         double cost = b.CostOf(w);
         if (cost > 0 && b.Resolve.Value < cost) return false;

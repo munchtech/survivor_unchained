@@ -20,6 +20,8 @@ namespace SurvivorUnchained.Sim;
  *   - the aim, reach and targets are the contact blow's as before (Sim/Contact.cs): the aim fixed at the cut's start;
  *   - a dash that starts before the contact drops the blow (no damage, no Resolve, no Ev.Slash); the cut still counts
  *     and its period still runs from its start;
+ *   - no cut starts while she dashes, leaps or rushes (Battle.CutBarred). The key held through it, the chain stays live
+ *     and goes on with the next index when it ends: no reset, no Ev.SwingRelease;
  *   - letting go never stops a cut that has started. Ev.SwingRelease is told at the later of the release and the cut's
  *     cancel beat, unless the grip is held again by then (once a cut). From that instant the chain lives `grace` seconds
  *     more: held (or pressed) again inside it, the chain goes on; past it, the next cut is cut 0 on the first side;
@@ -82,6 +84,12 @@ public sealed partial class Battle
         foreach (var x in Weapons) if (ReferenceEquals(x.Half, w)) return x.Held2;
         return w.Held;
     }
+
+    /// <summary>(M3 MR 3 job A) A chained skill's cut never STARTS while she dashes, leaps or rushes (Firing.Press and
+    /// SwingHalf ask before anything is spent or posed). Its key may stay down through it: a held chain stays live
+    /// (StepChains), nothing is released and no grace runs, and the cut after it is the next index. An unchained skill is
+    /// never barred.</summary>
+    internal bool CutBarred(WeaponInst w) => w.Chained && (Player.DashT > 0 || Player.Leap != null || Art.Rush != null);
 
     /// <summary>A chained skill's press (Battle.DeferBlow): the next cut of its chain starts; its blow is queued for the
     /// cut's contact beat. False: no aim or not her own cast, and it lands now, as an unchained press does.</summary>
