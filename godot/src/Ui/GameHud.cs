@@ -1086,15 +1086,20 @@ public partial class GameHud : CanvasLayer
             var head = Style.H(6, ShadowedHeavy(Style.Label(t.Title, Style.Display, 18, t.Tone == TrackTone.Tutorial ? Style.Ink : Style.GoldHi)));
             head.Alignment = BoxContainer.AlignmentMode.End;
             objectives.AddChild(head);
+            // (fix B, mark 14: the active line is the first step neither done nor optional; the rest wait. Dimmed by color,
+            // never by alpha: waiting #cdc3af in the italic face, done #d0b47a, active Ink; all fully opaque)
+            var activeStep = t.Steps.FirstOrDefault(x => !x.Done && !x.Optional);
             foreach (var s in t.Steps)
             {
-                var col = s.Done ? Style.InkDim with { A = 0.6f } : s.Optional ? Style.InkDim : Style.Ink;
+                bool waiting = !s.Done && !ReferenceEquals(s, activeStep);
+                var col = s.Done ? new Color("#d0b47a") : waiting ? new Color("#cdc3af") : Style.Ink;
+                var stepFont = waiting ? Style.TextItalic : Style.Ui;
                 // The step's mark: the house's diamond, open while it waits and filled in gold once done; a
                 // small ring for what may be left (no checkbox: no box).
                 // (a goal's line wears its goal's colour on its mark, as its pin and arrow do, UI 31)
                 Color? goalInk = null;
                 if (!s.Done && s.Color is { } gc) try { goalInk = new Color(gc); } catch { }
-                var mark = new StepMark(s.Done, s.Optional, goalInk ?? col);
+                var mark = new StepMark(s.Done, s.Optional, goalInk ?? col, new Color("#d0b47a"));
                 HBoxContainer row;
                 // "Answer the night: hold [[answer]]": the key itself, as the device in hand shows it.
                 var key = System.Text.RegularExpressions.Regex.Match(s.Text, @"\[\[(\w+)\]\]");
@@ -1103,14 +1108,14 @@ public partial class GameHud : CanvasLayer
                 int bang = s.Text.IndexOf(" ! ", StringComparison.Ordinal);
                 if (bang > 0)
                 {
-                    var font = s.Optional ? Style.TextItalic : Style.Ui;
+                    var font = stepFont;
                     var worldMark = Rimmed(Style.Label("!", Style.Display, 20, new Color("#f3d9a0")));
                     row = Style.H(4, ShadowIf(s.Optional, Style.Label(s.Text[..bang], font, 16, col)), worldMark,
                         ShadowIf(s.Optional, Style.Label(s.Text[(bang + 3)..], font, 16, col)), mark);
                 }
                 else if (key.Success && Enum.TryParse<Act>(key.Groups[1].Value, true, out var act))
                 {
-                    var font = s.Optional ? Style.TextItalic : Style.Ui;
+                    var font = stepFont;
                     row = Style.H(5, ShadowIf(s.Optional, Style.Label(s.Text[..key.Index].TrimEnd(), font, 16, col)), Style.Prompt(act));
                     if (s.Text[(key.Index + key.Length)..].Trim() is { Length: > 0 } after) row.AddChild(ShadowIf(s.Optional, Style.Label(after, font, 16, col)));
                     row.AddChild(mark);
@@ -1118,7 +1123,7 @@ public partial class GameHud : CanvasLayer
                 else
                 {
                     // The objectives stand on the world like the tally: rimmed, so a dim italic line never ghosts over a tree.
-                    var l = ShadowIf(s.Optional, Style.Label(s.Text, s.Optional ? Style.TextItalic : Style.Ui, 16, col, true, HorizontalAlignment.Right));
+                    var l = ShadowIf(s.Optional, Style.Label(s.Text, stepFont, 16, col, true, HorizontalAlignment.Right));
                     l.CustomMinimumSize = new Vector2(370, 0);
                     row = Style.H(7, l, mark);
                 }
@@ -1567,7 +1572,8 @@ public partial class GameHud : CanvasLayer
                 Kind = w.KindledNow ? Socket.SeatKind.Kindled : !second && w.Cast == CastMode.Channel ? Socket.SeatKind.Channeled : Socket.SeatKind.Pressed,
                 Channeling = w.Channeling && !second,
                 Held = second ? w.Held2 : w.Held,
-                Cost = cost > 0 && resolve.Value < cost ? (float)(resolve.Value / cost) : -1,
+                Cost = HudPin.CostSeat is { } pc && pc.Seat == k ? pc.Fraction
+                    : cost > 0 && resolve.Value < cost ? (float)(resolve.Value / cost) : -1,
                 Union = w.Slot2 >= 0,
                 ClaspLeft = adjacent && other == k - 1,
                 Rings = w.Slot2 >= 0 && !adjacent,
@@ -1952,9 +1958,10 @@ public partial class StepMark : Control
     readonly bool done, optional;
     readonly Color ink;
 
-    public StepMark(bool done, bool optional, Color ink)
+    readonly Color doneInk;
+    public StepMark(bool done, bool optional, Color ink, Color doneInk)
     {
-        this.done = done; this.optional = optional; this.ink = ink;
+        this.done = done; this.optional = optional; this.ink = ink; this.doneInk = doneInk;
         CustomMinimumSize = new Vector2(12, 20);
         MouseFilter = MouseFilterEnum.Ignore;
     }
@@ -1964,7 +1971,7 @@ public partial class StepMark : Control
         var c = new Vector2(6, 10.5f);
         if (optional && !done)
         {
-            DrawArc(c, 3.6f, 0, Mathf.Tau, 20, new Color(0, 0, 0, 0.6f), 3, true);
+            DrawArc(c, 3.6f, 0, Mathf.Tau, 20, new Color(0.02f, 0.015f, 0.01f, 0.8f), 3, true);
             DrawArc(c, 3.6f, 0, Mathf.Tau, 20, ink, 1.3f, true);
             return;
         }
@@ -1973,11 +1980,11 @@ public partial class StepMark : Control
         {
             // A tick: a short stroke down, a long one up, ~10x8 px, gold, 2 px.
             Vector2 a = c + new Vector2(-5, 0.5f), b = c + new Vector2(-1.5f, 4), e = c + new Vector2(5, -4);
-            DrawLine(a, b, new Color(0, 0, 0, 0.6f), 4, true); DrawLine(b, e, new Color(0, 0, 0, 0.6f), 4, true);
-            DrawLine(a, b, Style.Gold, 2, true); DrawLine(b, e, Style.Gold, 2, true);
+            DrawLine(a, b, new Color(0.02f, 0.015f, 0.01f, 0.8f), 4, true); DrawLine(b, e, new Color(0.02f, 0.015f, 0.01f, 0.8f), 4, true);
+            DrawLine(a, b, doneInk, 2, true); DrawLine(b, e, doneInk, 2, true);
             return;
         }
-        DrawPolyline(d, new Color(0, 0, 0, 0.6f), 3, true);
+        DrawPolyline(d, new Color(0.02f, 0.015f, 0.01f, 0.8f), 3, true);
         DrawPolyline(d, ink, 1.3f, true);
     }
 }

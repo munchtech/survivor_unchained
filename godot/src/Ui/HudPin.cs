@@ -33,6 +33,8 @@ public static class HudPin
     /// frozen at that reason's most readable instant (ResolveMotion.Pin).</summary>
     public static float? Resolve;
     public static string? ResolveWhy;
+    /// <summary>cost=SEAT:F (SEAT 1-based, as the bar's labels): that campaign seat's cost arc drawn at F of the cost (HUD only).</summary>
+    public static (int Seat, float Fraction)? CostSeat;
     public static int? Level;
     public static int? Draught;
     public static bool? Behind, Day;
@@ -54,7 +56,7 @@ public static class HudPin
     public static void Use(int k)
     {
         Life = Shield = Ember = LockHeat = Art = Dash = null; Draught = null; Seats = null; Behind = null; Day = null;
-        Xp = XpTip = null; XpNum = null; Shine = null; Level = null; Status = null; Resolve = null; ResolveWhy = null;
+        Xp = XpTip = null; XpNum = null; Shine = null; Level = null; Status = null; Resolve = null; ResolveWhy = null; CostSeat = null;
         Parse(baseSpec);
         if (k >= 0 && k < Seq.Length) Parse(Seq[k]);
     }
@@ -87,6 +89,13 @@ public static class HudPin
                     var rp = kv[1].Split(':', 2);
                     Resolve = float.TryParse(rp[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var rv) ? Math.Clamp(rv, 0, 1) : 0;
                     ResolveWhy = rp.Length > 1 ? rp[1].Trim().ToLowerInvariant() : "";
+                    break;
+                case "cost":
+                    // cost=2:0.88 seat [2] (1-based, as the bar's labels) drawn as if she held 88% of its skill's cost
+                    var cp = kv[1].Split(':', 2);
+                    if (cp.Length == 2 && int.TryParse(cp[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var cs)
+                        && float.TryParse(cp[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var cf))
+                        CostSeat = (cs - 1, Math.Clamp(cf, 0, 1));
                     break;
                 case "seats": Seats = kv[1].Split(':', StringSplitOptions.TrimEntries); break;
             }
