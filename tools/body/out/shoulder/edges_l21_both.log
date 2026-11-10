@@ -1,0 +1,100 @@
+edges carried: 141 poses, over 2.5; target_a.npz against the live blend: max 0.000 mm | A rest edge p50 4.8 mm, B region edge p50 6.4 mm
+zone                               class         edges l/r   worst  pose                        poses  rest mm (x, y, z)     blend: dis mm p50/max, rows p50/max
+border rigid trunk / arm back      A's own          3 /  20   3.60  p4:heroic_leap@18:r           17   [-120.7, 1320.1, -31.8] 
+border rigid trunk / arm back      carrier         36 /   6   3.17  Jog_Fwd@11:r                   2   [124.0, 1336.3, -40.5] carry over A (offsets / frames): 42
+breast_edge                        A's own          0 /   1   2.60  p4:heroic_leap@21:r            2   [-143.0, 1431.3, 35.1] 
+breast_edge                        border blend     0 /   1   2.92  Jog_Fwd@11:r                   2   [-122.1, 1488.1, 60.4] 65.3/65.3, 15.9/15.9
+breast_edge                        carrier         10 /  15   3.60  Jog_Fwd@14:l                   2   [-147.0, 1456.0, 57.9] published-led blend row: 25
+deltoid_cap                        A's own         13 /  37   3.66  p4:heroic_leap@7:r            12   [-206.4, 1487.0, 14.7] 
+fold_back                          pocket           5 /  21   3.50  p4:heroic_leap@18:r           18   [-156.8, 1419.5, -40.9] 
+fold_back                          A's own          4 /  14   3.43  x:flex120:l                   42   [168.1, 1451.1, -81.5] 
+fold_front                         pocket          11 /  13   3.38  p4:heroic_leap@19:r           16   [-150.6, 1417.4, -19.8] 
+fold_front                         A's own          0 /   5   2.70  p4:heroic_leap@12:r            2   [-176.7, 1413.3, -0.6] 
+grown across trunk front           bridge           2 /   2   3.40  Jog_Fwd@11:r                   2   [1.2, 1373.5, 106.2]   
+grown across trunk front           carrier          1 /   1   3.36  Jog_Fwd@11:r                   2   [-2.1, 1321.4, 110.3]  carry over A (offsets / frames): 2
+grown breast back                  carrier          3 /   1   3.92  Jog_Fwd@14:l                   6   [126.9, 1332.5, 67.4]  carry over A (offsets / frames): 4
+grown breast front                 published        0 /  17   7.68  Jog_Fwd@11:r                  16   [-122.9, 1328.5, 65.7] 
+grown breast front                 carrier         11 /   0   7.91  Jog_Fwd@14:l                  29   [122.9, 1328.5, 65.7]  carry over A (offsets / frames): 4 published-led blend row: 7
+grown breast top                   published        0 /  18   2.74  Jog_Fwd@11:r                   2   [-71.3, 1486.4, 92.2]  
+grown trunk back                   carrier          4 /   0   2.65  Jog_Fwd@14:l                   2   [138.9, 1341.4, 67.2]  carry over A (offsets / frames): 4
+grown trunk front                  bridge           3 /   1   7.12  Jog_Fwd@11:r                  13   [-120.6, 1323.7, 67.0] 
+grown trunk front                  carrier          6 /  12   9.23  Jog_Fwd@11:r                  23   [-114.9, 1310.8, 72.7] carry over A (offsets / frames): 18
+inner back                         pocket          18 /  23   3.32  p4:heroic_leap@18:r           19   [-159.2, 1416.9, -32.0] 
+inner back                         A's own          4 /   5   2.88  p4:heroic_leap@19:r           17   [-124.4, 1358.4, -59.0] 
+inner back                         carrier         26 /   0   2.92  Jog_Fwd@11:r                   2   [124.4, 1345.3, -47.8] carry over A (offsets / frames): 26
+inner front                        pocket          23 /  17   3.58  p4:heroic_leap@18:r           17   [-159.7, 1414.7, -28.6] 
+inner front                        A's own          0 /   4   2.85  p4:heroic_leap@7:r            11   [-190.8, 1497.4, 20.8] 
+trap_line                          border blend     0 /   4   3.05  Jog_Fwd@11:r                   2   [-107.1, 1492.5, 67.9] 67.2/69.4, 17.7/27.2
+trap_line                          carrier          0 /   4   2.63  Jog_Fwd@11:r                   2   [-75.9, 1490.5, 86.9]  published-led blend row: 4
+the five worst poses per zone: ratio pose (edges over) | local turns from rest, deg
+  border rigid trunk / arm back       3.60 p4:heroic_leap@18:r         [girdle r own] (  4) | spine_05 3 neck_01 15 neck_02 8 clavicle_r 22 upperarm_r 126
+  border rigid trunk / arm back       3.58 p4:heroic_leap@19:r         [girdle r own] ( 20) | spine_05 3 neck_01 16 neck_02 9 clavicle_r 24 upperarm_r 144
+  border rigid trunk / arm back       3.58 p4:heroic_leap@19:l         [girdle r off] ( 20) | spine_05 3 neck_01 16 neck_02 9 clavicle_l 6 upperarm_l 48
+  border rigid trunk / arm back       3.54 p4:heroic_leap@14:r         [girdle r own] (  2) | spine_05 2 neck_01 17 neck_02 8 clavicle_r 18 upperarm_r 155
+  border rigid trunk / arm back       3.54 p4:heroic_leap@14:l         [girdle r off] (  2) | spine_05 2 neck_01 17 neck_02 8 clavicle_l 12 upperarm_l 75
+  breast_edge                         3.60 Jog_Fwd@14:l                [girdle r off] ( 16) | spine_05 0 neck_01 0 neck_02 38 clavicle_l 35 upperarm_l 56
+  breast_edge                         3.60 Jog_Fwd@11:r                [girdle r own] ( 16) | spine_05 0 neck_01 0 neck_02 41 clavicle_r 40 upperarm_r 36
+  breast_edge                         3.00 Jog_Fwd@11:r                [girdle l off] ( 10) | spine_05 0 neck_01 0 neck_02 41 clavicle_r 40 upperarm_r 36
+  breast_edge                         2.73 Jog_Fwd@14:l                [girdle l own] (  4) | spine_05 0 neck_01 0 neck_02 38 clavicle_l 35 upperarm_l 56
+  breast_edge                         2.60 p4:heroic_leap@21:r         [girdle r own] (  1) | spine_05 2 neck_01 10 neck_02 15 clavicle_r 22 upperarm_r 168
+  deltoid_cap                         3.66 p4:heroic_leap@7:r          [girdle r own] ( 31) | spine_05 7 neck_01 15 neck_02 4 clavicle_r 18 upperarm_r 150
+  deltoid_cap                         3.52 p4:heroic_leap@12:r         [girdle r own] ( 15) | spine_05 6 neck_01 15 neck_02 6 clavicle_r 20 upperarm_r 171
+  deltoid_cap                         3.47 p4:heroic_leap@9:r          [girdle r own] ( 18) | spine_05 7 neck_01 17 neck_02 1 clavicle_r 22 upperarm_r 180
+  deltoid_cap                         3.05 p4:heroic_leap@6:r          [girdle r own] ( 16) | spine_05 6 neck_01 11 neck_02 4 clavicle_r 14 upperarm_r 118
+  deltoid_cap                         2.81 p4:iron_vow@72:l            [girdle l own] ( 12) | spine_05 4 neck_01 24 neck_02 17 clavicle_l 10 upperarm_l 180
+  fold_back                           3.50 p4:heroic_leap@18:r         [girdle r own] ( 10) | spine_05 3 neck_01 15 neck_02 8 clavicle_r 22 upperarm_r 126
+  fold_back                           3.43 x:flex120:l                 [girdle l own] (  3) | spine_05 0 neck_01 0 neck_02 0 clavicle_l 11 upperarm_l 108
+  fold_back                           3.35 p4:heroic_leap@4:r          [girdle l off] (  3) | spine_05 2 neck_01 5 neck_02 5 clavicle_r 6 upperarm_r 67
+  fold_back                           3.34 p4:heroic_leap@5:r          [girdle l off] (  3) | spine_05 4 neck_01 7 neck_02 5 clavicle_r 12 upperarm_r 91
+  fold_back                           3.34 p4:heroic_leap@5:l          [girdle l own] (  3) | spine_05 4 neck_01 7 neck_02 5 clavicle_l 12 upperarm_l 115
+  fold_front                          3.38 p4:heroic_leap@19:r         [girdle r own] (  4) | spine_05 3 neck_01 16 neck_02 9 clavicle_r 24 upperarm_r 144
+  fold_front                          3.38 p4:heroic_leap@19:l         [girdle r off] (  4) | spine_05 3 neck_01 16 neck_02 9 clavicle_l 6 upperarm_l 48
+  fold_front                          3.35 p4:heroic_leap@18:r         [girdle r own] (  6) | spine_05 3 neck_01 15 neck_02 8 clavicle_r 22 upperarm_r 126
+  fold_front                          3.27 p4:heroic_leap@20:r         [girdle r own] (  7) | spine_05 2 neck_01 13 neck_02 11 clavicle_r 24 upperarm_r 155
+  fold_front                          2.99 x:abd150:l                  [girdle l own] (  8) | spine_05 0 neck_01 0 neck_02 0 clavicle_l 20 upperarm_l 100
+  grown across trunk front            3.40 Jog_Fwd@11:r                [girdle r own] (  3) | spine_05 0 neck_01 0 neck_02 41 clavicle_r 40 upperarm_r 36
+  grown across trunk front            3.40 Jog_Fwd@11:r                [girdle l off] (  3) | spine_05 0 neck_01 0 neck_02 41 clavicle_r 40 upperarm_r 36
+  grown across trunk front            3.29 Jog_Fwd@14:l                [girdle r off] (  3) | spine_05 0 neck_01 0 neck_02 38 clavicle_l 35 upperarm_l 56
+  grown across trunk front            3.29 Jog_Fwd@14:l                [girdle l own] (  3) | spine_05 0 neck_01 0 neck_02 38 clavicle_l 35 upperarm_l 56
+  grown breast back                   3.92 Jog_Fwd@14:l                [girdle l own] (  3) | spine_05 0 neck_01 0 neck_02 38 clavicle_l 35 upperarm_l 56
+  grown breast back                   3.80 Jog_Fwd@11:r                [girdle l off] (  3) | spine_05 0 neck_01 0 neck_02 41 clavicle_r 40 upperarm_r 36
+  grown breast back                   3.02 sword_heavy@10:l            [girdle r off] (  1) | spine_05 0 neck_01 0 neck_02 0 clavicle_l 7 upperarm_l 51
+  grown breast back                   2.95 Jog_Fwd@11:r                [girdle r own] (  1) | spine_05 0 neck_01 0 neck_02 41 clavicle_r 40 upperarm_r 36
+  grown breast back                   2.87 Jog_Fwd@14:l                [girdle r off] (  1) | spine_05 0 neck_01 0 neck_02 38 clavicle_l 35 upperarm_l 56
+  grown breast front                  7.91 Jog_Fwd@14:l                [girdle l own] (  8) | spine_05 0 neck_01 0 neck_02 38 clavicle_l 35 upperarm_l 56
+  grown breast front                  7.68 Jog_Fwd@11:r                [girdle r own] ( 17) | spine_05 0 neck_01 0 neck_02 41 clavicle_r 40 upperarm_r 36
+  grown breast front                  7.61 Jog_Fwd@14:l                [girdle r off] ( 17) | spine_05 0 neck_01 0 neck_02 38 clavicle_l 35 upperarm_l 56
+  grown breast front                  7.59 Jog_Fwd@11:r                [girdle l off] ( 11) | spine_05 0 neck_01 0 neck_02 41 clavicle_r 40 upperarm_r 36
+  grown breast front                  5.89 sword_heavy@10:l            [girdle r off] (  3) | spine_05 0 neck_01 0 neck_02 0 clavicle_l 7 upperarm_l 51
+  grown breast top                    2.74 Jog_Fwd@11:r                [girdle r own] ( 18) | spine_05 0 neck_01 0 neck_02 41 clavicle_r 40 upperarm_r 36
+  grown breast top                    2.74 Jog_Fwd@14:l                [girdle r off] ( 18) | spine_05 0 neck_01 0 neck_02 38 clavicle_l 35 upperarm_l 56
+  grown trunk back                    2.65 Jog_Fwd@14:l                [girdle l own] (  1) | spine_05 0 neck_01 0 neck_02 38 clavicle_l 35 upperarm_l 56
+  grown trunk back                    2.59 Jog_Fwd@11:r                [girdle l off] (  4) | spine_05 0 neck_01 0 neck_02 41 clavicle_r 40 upperarm_r 36
+  grown trunk front                   9.23 Jog_Fwd@11:r                [girdle r own] ( 13) | spine_05 0 neck_01 0 neck_02 41 clavicle_r 40 upperarm_r 36
+  grown trunk front                   9.07 Jog_Fwd@14:l                [girdle r off] ( 13) | spine_05 0 neck_01 0 neck_02 38 clavicle_l 35 upperarm_l 56
+  grown trunk front                   6.13 Jog_Fwd@14:l                [girdle l own] (  9) | spine_05 0 neck_01 0 neck_02 38 clavicle_l 35 upperarm_l 56
+  grown trunk front                   5.84 Jog_Fwd@11:r                [girdle l off] (  9) | spine_05 0 neck_01 0 neck_02 41 clavicle_r 40 upperarm_r 36
+  grown trunk front                   5.15 axe_heavy@7:r               [girdle l off] (  3) | spine_05 0 neck_01 0 neck_02 0 clavicle_r 14 upperarm_r 82
+  inner back                          3.32 p4:heroic_leap@18:r         [girdle r own] ( 19) | spine_05 3 neck_01 15 neck_02 8 clavicle_r 22 upperarm_r 126
+  inner back                          3.26 p4:heroic_leap@19:r         [girdle r own] ( 25) | spine_05 3 neck_01 16 neck_02 9 clavicle_r 24 upperarm_r 144
+  inner back                          3.26 p4:heroic_leap@19:l         [girdle r off] ( 25) | spine_05 3 neck_01 16 neck_02 9 clavicle_l 6 upperarm_l 48
+  inner back                          3.20 p4:heroic_leap@9:r          [girdle r own] ( 14) | spine_05 7 neck_01 17 neck_02 1 clavicle_r 22 upperarm_r 180
+  inner back                          3.12 p4:heroic_leap@12:r         [girdle r own] ( 13) | spine_05 6 neck_01 15 neck_02 6 clavicle_r 20 upperarm_r 171
+  inner front                         3.58 p4:heroic_leap@18:r         [girdle r own] ( 10) | spine_05 3 neck_01 15 neck_02 8 clavicle_r 22 upperarm_r 126
+  inner front                         3.37 p4:heroic_leap@19:r         [girdle r own] ( 12) | spine_05 3 neck_01 16 neck_02 9 clavicle_r 24 upperarm_r 144
+  inner front                         3.37 p4:heroic_leap@19:l         [girdle r off] ( 12) | spine_05 3 neck_01 16 neck_02 9 clavicle_l 6 upperarm_l 48
+  inner front                         3.28 p4:heroic_leap@20:r         [girdle r own] ( 14) | spine_05 2 neck_01 13 neck_02 11 clavicle_r 24 upperarm_r 155
+  inner front                         3.07 p4:heroic_leap@9:r          [girdle r own] ( 13) | spine_05 7 neck_01 17 neck_02 1 clavicle_r 22 upperarm_r 180
+  trap_line                           3.05 Jog_Fwd@11:r                [girdle r own] (  8) | spine_05 0 neck_01 0 neck_02 41 clavicle_r 40 upperarm_r 36
+  trap_line                           3.05 Jog_Fwd@14:l                [girdle r off] (  8) | spine_05 0 neck_01 0 neck_02 38 clavicle_l 35 upperarm_l 56
+classes, girdle l, both sides' poses: {'pocket': 57, 'published': 0, "A's own": 24, 'border blend': 0, 'bridge': 5, 'carrier': 97} of 183
+classes, girdle r, both sides' poses: {'pocket': 74, 'published': 35, "A's own": 86, 'border blend': 5, 'bridge': 3, 'carrier': 39} of 242
+classes, both sides' girdles, every pose: {'pocket': 131, 'published': 35, "A's own": 110, 'border blend': 5, 'bridge': 8, 'carrier': 136} of 425 edges over
+  own side only (round-1 basis): {'pocket': 130, 'published': 36, "A's own": 110, 'border blend': 5, 'bridge': 8, 'carrier': 80} of 369 | OLD: {'pocket': 130, 'published': 0, "A's own": 110, 'border blend': 5, 'bridge': 0, 'carrier': 48} of 293 | NEW: {'pocket': 0, 'published': 36, "A's own": 0, 'border blend': 0, 'bridge': 8, 'carrier': 32} of 76
+  OLD set (both ends on the list, 14766 edges): {'pocket': 131, 'published': 0, "A's own": 110, 'border blend': 5, 'bridge': 0, 'carrier': 97} of 343
+  NEW edges (an end on a grown row, 6834 edges): {'pocket': 0, 'published': 35, "A's own": 0, 'border blend': 0, 'bridge': 8, 'carrier': 39} of 82
+no crack: list-to-grown edges worst 2.48 (Jog_Fwd@14:l); outer row off published max 6.01e+01 mm (p4:idle_warden_town@126:r; over 0 = another region's delta on the outer row)
+  NECK set (both ends in the region neck, no end in an out region: 2723 edges, {'md-md': 118, 'md-raw': 46, 'raw-raw': 2559}; stored against live max 0.000 mm): {} of 0
+  neck: carrier without a candidate on the reference (A's own n/a) at 0 of 978 points; seam-touching edges over: 0; A's own only after the registration (unregistered A under 0.85 of it): 0; worst poses (target, edges over, published): p4:shield_charge@14:l 2.37 (0) pub 1.36; p4:iron_vow@5:r 2.37 (0) pub 1.91; idle_stalker_look@134:l 2.36 (0) pub 1.44; Jog_Fwd@11:r 2.34 (0) pub 2.06; p4:iron_vow@79:r 2.34 (0) pub 1.41
+  neck: the 15 worst | ratio  pub  A own (unregistered)  class | pose | y mm, side, rest (x, y, z) | share | end: [*open] piece, top weights
+wrote C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\body-p1b\tools\body\out\shoulder\edges_carried.json

@@ -878,7 +878,7 @@ def cmd_edges(a):
     sel = [names.index(p) for p in a.poses.split(",")] if a.poses else list(range(len(names)))
     zone, beta = edge_zones(h), md.beta
     pr = {s: edge_probe(h, s) for s in "lr"}
-    acc = {s: {k: [] for k in ("t", "p", "c", "a", "dis", "share", "name", "i")} for s in "lr"}
+    acc = {s: {k: [] for k in ("t", "p", "c", "a", "dis", "share", "name", "i", "own")} for s in "lr"}
     nocrack = {}
     stale = 0.0
     outs = {out_region(h, s).name for s in h.cfg["sides"]}     # the regions no side is written on: their own interior set
@@ -886,28 +886,34 @@ def cmd_edges(a):
     if not inner:
         print(f"edges: {CARRIED['file']} has no composed surface (Xc): the other regions' interior sets are not judged")
     for i in sel:
-        s = str(z["side"][i])
-        r = edge_rows(h, pr[s], z["G"][i], s, np.concatenate([TX[tix[names[i]]], TE[tix[names[i]]]]))
+        own = str(z["side"][i])
         for q in inner:
             q.add(names[i], z["G"][i], tix[names[i]])
-        stale = max(stale, r["stale"])
-        for k in ("t", "p", "c", "a", "dis", "share"):
-            acc[s][k].append(r[k])
-        nocrack[names[i]] = [round(float(r["t"][seam[s]].max()), 3) if seam[s].any() else 1.0, float(r["step"][outer[s]].max() * 1000)]
-        if a.poses:
-            print(f"no crack {names[i]:28s} list-to-grown edges ({int(seam[s].sum())}) worst ratio {nocrack[names[i]][0]:.2f} | outer row"
-                  f" ({int(outer[s].sum())} points) off published max {nocrack[names[i]][1]:.2e} mm", flush=True)
-        acc[s]["name"].append(names[i])
-        acc[s]["i"].append(i)
+        for s in (own, "r" if own == "l" else "l"):         # both sides' girdles for every pose: the off side on the live blend
+            r = edge_rows(h, pr[s], z["G"][i], s, np.concatenate([TX[tix[names[i]]], TE[tix[names[i]]]]) if s == own else None)
+            for k in ("t", "p", "c", "a", "dis", "share"):
+                acc[s][k].append(r[k])
+            acc[s]["name"].append(names[i])
+            acc[s]["i"].append(i)
+            acc[s]["own"].append(s == own)
+            if s != own:
+                continue
+            stale = max(stale, r["stale"])
+            nocrack[names[i]] = [round(float(r["t"][seam[s]].max()), 3) if seam[s].any() else 1.0, float(r["step"][outer[s]].max() * 1000)]
+            if a.poses:
+                print(f"no crack {names[i]:28s} list-to-grown edges ({int(seam[s].sum())}) worst ratio {nocrack[names[i]][0]:.2f} | outer row"
+                      f" ({int(outer[s].sum())} points) off published max {nocrack[names[i]][1]:.2e} mm", flush=True)
     print(f"edges {a.provider}: {len(sel)} poses, over {over:g}; target_a.npz against the live blend: max {stale * 1000:.3f} mm"
           f" | A rest edge p50 {np.median(edge_len(h.Ab.V0, h.Ab.T[:, 0], h.Ab.T[:, 1])) * 1000:.1f} mm, B region edge p50 {np.median(pr['l'].l0) * 1000:.1f} mm")
-    rows, cells, zworst = [], {}, {}
-    for s in "lr":
+    rows, rows_own, cells, zworst = [], [], {}, {}
+    for s, mode in [(s, m) for m in ("all", "own") for s in "lr"]:     # "all": every pose on both sides; "own": the round-1 basis (own side's poses only)
         if not acc[s]["t"]:
             continue
-        R = {k: np.array(acc[s][k]) for k in ("t", "p", "c", "a", "dis")}
-        nm, p_, (ei, ej) = acc[s]["name"], pr[s], out_region(h, s).edges
-        new, sh = (ei >= nl[s]) | (ej >= nl[s]), np.array(acc[s]["share"])     # an end on a grown row; the share per pose
+        km = np.array(acc[s]["own"]) | (mode == "all")
+        R = {k: np.array(acc[s][k])[km] for k in ("t", "p", "c", "a", "dis")}
+        nm, p_, (ei, ej) = [x for x, k in zip(acc[s]["name"], km) if k], pr[s], out_region(h, s).edges
+        ix = [x for x, k in zip(acc[s]["i"], km) if k]
+        new, sh = (ei >= nl[s]) | (ej >= nl[s]), np.array(acc[s]["share"])[km]     # an end on a grown row; the share per pose
         w = R["t"].argmax(0)
         t, p, c, av = (R[k][w, np.arange(len(w))] for k in ("t", "p", "c", "a"))
         bi, bj = sh[w, ei], sh[w, ej]                       # the ends' share at the edge's worst pose
@@ -928,6 +934,9 @@ def cmd_edges(a):
         mid = (md.V0[ids[s]][ei] + md.V0[ids[s]][ej]) * 500
         for e in ov:
             cl = EDGE_CLASSES[lab[e]]
+            if mode == "own":
+                rows_own.append({"side": s, "set": "new" if new[e] else "old", "class": cl})
+                continue
             rows.append({"side": s, "edge": [int(ei[e]), int(ej[e])], "set": "new" if new[e] else "old", "zone": ez[e], "class": cl, "note": str(note[e]) if cl == "carrier" else "",
                          "pose": nm[w[e]], "t": round(float(t[e]), 3), "p": round(float(p[e]), 3), "c": round(float(c[e]), 3), "a": round(float(av[e]), 3),
                          "along_over_l0": round(float(geo[e] / p_.l0[e]), 2), "gap_over_l0": round(float(p_.g0[e] / p_.l0[e]), 2),
@@ -943,12 +952,12 @@ def cmd_edges(a):
                 ce["notes"][str(note[e])] = ce["notes"].get(str(note[e]), 0) + 1
             if t[e] > ce["worst"]:
                 ce["worst"], ce["pose"], ce["rest_mm"] = float(t[e]), nm[w[e]], rows[-1]["rest_mm"]
-        for zn in set(ez[ov]):
+        for zn in set(ez[ov]) if mode == "all" else ():
             m = ov[ez[ov] == zn]
             for k in range(len(nm)):
                 v = float(R["t"][k, m].max())
                 if v > over:
-                    zworst.setdefault(zn, []).append((v, nm[k], acc[s]["i"][k], int((R["t"][k, m] > over).sum())))
+                    zworst.setdefault(zn, []).append((v, nm[k], ix[k], int((R["t"][k, m] > over).sum()), s))
     P, rest = bd.p, bd.p.rest
 
     def turns(i):
@@ -972,11 +981,15 @@ def cmd_edges(a):
     worst = {}
     print("the five worst poses per zone: ratio pose (edges over) | local turns from rest, deg")
     for zn, v in sorted(zworst.items()):
-        worst[zn] = [{"ratio": round(r, 2), "pose": n, "edges_over": k, "turns_deg": turns(i)} for r, n, i, k in sorted(v, reverse=True)[:5]]
+        worst[zn] = [{"ratio": round(r, 2), "pose": n, "side": sd + (" own" if n.endswith(":" + sd) else " off"), "edges_over": k, "turns_deg": turns(i)} for r, n, i, k, sd in sorted(v, reverse=True)[:5]]
         for e in worst[zn]:
-            print(f"  {zn:34s} {e['ratio']:5.2f} {e['pose']:27s} ({e['edges_over']:3d}) | " + " ".join(f"{k} {x:.0f}" for k, x in e["turns_deg"].items()))
+            print(f"  {zn:34s} {e['ratio']:5.2f} {e['pose']:27s} [girdle {e['side']}] ({e['edges_over']:3d}) | " + " ".join(f"{k} {x:.0f}" for k, x in e["turns_deg"].items()))
     tot, told, tnew = ({c: sum(1 for r in rows if r["class"] == c and r["set"] in k) for c in EDGE_CLASSES} for k in (("old", "new"), ("old",), ("new",)))
-    print("classes:", tot, "of", len(rows), "edges over")
+    ownt, ownold, ownnew = ({c: sum(1 for r in rows_own if r["class"] == c and r["set"] in k) for c in EDGE_CLASSES} for k in (("old", "new"), ("old",), ("new",)))
+    for s in "lr":
+        print(f"classes, girdle {s}, both sides' poses:", {c: sum(1 for r in rows if r["side"] == s and r["class"] == c) for c in EDGE_CLASSES}, "of", sum(1 for r in rows if r["side"] == s))
+    print("classes, both sides' girdles, every pose:", tot, "of", len(rows), "edges over")
+    print("  own side only (round-1 basis):", ownt, "of", len(rows_own), "| OLD:", ownold, "of", sum(ownold.values()), "| NEW:", ownnew, "of", sum(ownnew.values()))
     print(f"  OLD set (both ends on the list, {nold} edges):", told, "of", sum(told.values()))
     print(f"  NEW edges (an end on a grown row, {nnew} edges):", tnew, "of", sum(tnew.values()))
     wk, ws = (max(nocrack, key=lambda n: nocrack[n][j]) for j in (0, 1))
@@ -987,7 +1000,7 @@ def cmd_edges(a):
         extra.update(q.report(over))
     f = OUT / (f"edges_{a.provider}_dev.json" if a.poses else f"edges_{a.provider}.json")     # a subset never over the full run's file
     f.write_text(json.dumps({**extra, "provider": a.provider, "over": over, "params": EDGE, "classes": EDGE_CLASSES, "poses": len(sel), "stale_mm": stale * 1000,
-                             "totals": tot, "totals_old": told, "totals_new": tnew, "edges_old": nold, "edges_new": nnew, "no_crack": nocrack,
+                             "totals": tot, "totals_own_side": ownt, "totals_old_own_side": ownold, "totals_new_own_side": ownnew, "totals_old": told, "totals_new": tnew, "edges_old": nold, "edges_new": nnew, "no_crack": nocrack,
                              "target": CARRIED["file"], "table": table, "worst_poses": worst, "edges": rows}))
     print("wrote", f)
 
