@@ -208,7 +208,7 @@ public class RigsTests
             if (id == "arena_night") continue;
             Assert.True(r.EmberSmooth != true, id);
             Assert.True(r.EmberShade == null, id);
-            Assert.True(r.EmberFloor == null, id);   // (L1 l17 p) the floor's tone table is arena_night's alone
+            Assert.True(r.EmberFloor == null, id); Assert.True(r.EmberFloorLift == null, id);   // (L1 l17 p) the floor's tone table is arena_night's alone
             Assert.True(r.HeroPool == null, id);   // (L1 l19 her2) the hero-in-a-pool rule is arena_night's alone: every other rig renders as before
             Assert.True(r.Dapple.Mass == null && r.Dapple.Clusters == null && r.Dapple.Leaf == null && r.Dapple.Leaves == null, id);
         }
@@ -216,7 +216,7 @@ public class RigsTests
         {
             var lit = Rigs.Lit(place, s);
             Assert.False(lit.EmberSmooth);
-            Assert.Null(lit.EmberShade); Assert.Null(lit.EmberFloor); Assert.Null(lit.HeroPool);
+            Assert.Null(lit.EmberShade); Assert.Null(lit.EmberFloor); Assert.Null(lit.EmberFloorLift); Assert.Null(lit.HeroPool);
             Assert.Null(lit.DappleMass);
             Assert.Null(lit.DappleLeaf);
             Assert.Null(lit.DappleLeaves);
@@ -231,7 +231,7 @@ public class RigsTests
         var a = s["arena_night"]!;
         Assert.True(a.EmberSmooth);
         Assert.Equal(new[] { 1, 1.4, 5.0, 1 }, a.EmberShade);   // (L1 l16 d3) a leaf takes all of her fire (no pink leaf patches); the canopy opens 1.4-5.0 m, read at each leaf cluster's center (CanopyField)
-        Assert.Equal(0, (a.EmberFloor!.Length - 9) % 8); Assert.Equal(1.0, a.EmberFloor[^7]);   // (L1 l17 p) her fire on the floor: 9 heads, stops of 8, the moon whole at the last
+        Assert.Equal(0, (a.EmberFloor!.Length - 9) % 8); Assert.Equal(1.0, a.EmberFloor[^7]); Assert.InRange(a.EmberFloorLift![0], 0.01, 0.2);   // (L1 l17 p) her fire on the floor: 9 heads, stops of 8, the moon whole at the last
         // (L1 l19 her2) the hero in her pool: 10 values; the fire's foot BESIDE her and off her feet (at least 0.5 m away), the anchor dark and WARM (red over blue), never black
         var hp4 = a.HeroPool!; Assert.Equal(27, hp4.Length); Assert.True(hp4[6] >= 0.5 && hp4[24] < hp4[6] && hp4[20] > 2 * hp4[2] && hp4[15] > 2 * hp4[20] && hp4[21] > hp4[23] && hp4[14] > 0 && hp4[25] >= 0 && hp4[25] <= 0.6 && hp4[26] >= 0 && hp4[26] <= 0.4);   /* (L1 l20 her4) a LIGHT figure: the anchor a narrow accent (its side edge well past the mid's), a warm mid step between the anchor and the light, the held piece's away edge in m, a material's own hue and value as shares */ Assert.True(a.HeroPool[10] > a.HeroPool[2] && a.HeroPool[15] > 3 * a.HeroPool[10] && a.HeroPool[11] > a.HeroPool[13] && a.HeroPool[16] > a.HeroPool[18] && a.HeroPool[19] >= 1);   /* (L1 l19 her3) her held pieces: a body one step over the anchor, one warm light well over it, a least width */ Assert.True(Math.Sqrt(a.HeroPool[0] * a.HeroPool[0] + a.HeroPool[1] * a.HeroPool[1]) >= 0.5);
         Assert.True(a.HeroPool[2] > 0 && a.HeroPool[3] > a.HeroPool[5] && a.HeroPool[5] > 0);

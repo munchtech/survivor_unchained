@@ -195,6 +195,10 @@ public sealed record AtmospherePreset(
     /// the leaf shade's tone) x n, r rising; the last stop is where the floor is its own again (its tones are not read)].
     /// Atmosphere.FloorTurn builds cel_floor_turn from it. Null: the floor takes ember_pool as before.</summary>
     public double[]? EmberFloor { get; init; }
+    /// <summary>(L1 lead 20, MASS; rigs.json "ember_floor_lift") [the floor's reference albedo luminance]: inside her fire the
+    /// floor's own dark patches are lifted toward it before the tone table's turn (cel.gdshaderinc cel_floor_lift), so the
+    /// pool never cuts to black on a dark material. Null: no lift, the floor as before.</summary>
+    public double[]? EmberFloorLift { get; init; }
     /// <summary>(L1 lead 19, HER2; rigs.json "hero_pool") The hero figure in her lit pool, so a 40 px figure is the first thing
     /// the eye lands on: [the pool light's foot dx, dz (m from her: the fire sits BESIDE her, so her shade side faces the
     /// camera), the anchor's level and color (sRGB 0-255: the one dark warm tone her shade side takes), the side edge (the

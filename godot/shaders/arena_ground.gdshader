@@ -19,6 +19,7 @@ render_mode diffuse_burley, specular_schlick_ggx;
 #define CEL_NMAP 0.0
 // (L1 lead 17, P: a floor: under her fire it takes the rig's tone table, cel.gdshaderinc cel_floor_turn)
 #define CEL_FLOOR
+#define CEL_FLOOR_LUM fl_lum
 #include "res://shaders/cel.gdshaderinc"
 #include "res://shaders/world_clock.gdshaderinc"
 
@@ -262,7 +263,7 @@ void fragment() {
 	}
 	vec3 albedo = vec3(0.0);
 	vec3 n_w = vec3(0.0);
-	float rough = 0.0, ao = 0.0, hgt = 0.0, H = 0.0;
+	float rough = 0.0, ao = 0.0, hgt = 0.0, H = 0.0, fl_m = 0.0;
 	for (int k = 0; k < NL; k++) {
 		float wk = gw[k] / tot;
 		if (wk < 0.004) continue;
@@ -276,6 +277,7 @@ void fragment() {
 		a *= pow(max(la, 1e-4) / g_mean[k], g_con[k] - 1.0);
 		a = mix(vec3(dot(a, vec3(0.2126, 0.7152, 0.0722))), a, g_sat[k]);
 		albedo += a * g_tone[k] * wk;
+		fl_m += g_mean[k] * g_tone[k] * wk;
 		H += wk * (g_lift[k] + (arh.b - 0.5) * g_bump[k]);
 		n_w += tbn * nor2(uv, k, p) * wk;
 		rough += arh.g * wk;
@@ -283,6 +285,8 @@ void fragment() {
 		hgt += arh.b * wk;
 	}
 	vec3 n = normalize(n_w);
+	// (L1 lead 20, MASS) The grain here: this pixel's albedo over its materials' mean (g_mean x g_tone by their shares).
+	float fl_g = dot(albedo, vec3(0.2126, 0.7152, 0.0722)) / max(fl_m, 1e-4);
 
 	// Slow variation over tens of metres, so a field is never one colour.
 	albedo *= 0.78 + 0.3 * nL.r;
@@ -331,6 +335,10 @@ void fragment() {
 		n = normalize(mix(n, normalize(n_geo - vec3(ra.x + rb.x * 0.6, 0.0, ra.y + rb.y * 0.6) * 0.5), mo * 0.5));
 	}
 
+	// (L1 lead 20, MASS) The floor's luminance here without its grain (materials, slow variation, value masses, moss; before
+	// the trodden, wet and burnt marks, which stay as drawn): what her fire lifts toward the floor's reference inside her pool
+	// (cel.gdshaderinc CEL_FLOOR_LUM, cel_floor_lift), so a dark patch rises as one mass and keeps its grain.
+	float fl_lum = dot(albedo, vec3(0.2126, 0.7152, 0.0722)) / mix(clamp(fl_g, 0.5, 2.0), 1.0, mo);
 	// Trodden flat: darker, smoother.
 	float trod = s2.b * (0.8 + 0.4 * nF.r);
 	albedo *= 1.0 - 0.22 * trod;

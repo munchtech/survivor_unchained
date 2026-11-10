@@ -324,19 +324,33 @@ bool cel_floor_on() { return cel_on > 0.0 && cel_floor_band.x > 0.0 && cel_ember
 vec4 cel_floor_at(float c_r, float c_row) {
 	return texture(cel_floor_turn, vec2((clamp(c_r / cel_floor_band.x, 0.0, 1.0) * 63.0 + 0.5) / 64.0, c_row));
 }
-float cel_floor_back(vec3 c_wp, float c_dap, inout vec3 c_turn) {
+float cel_floor_back(vec3 c_wp, float c_dap, inout vec4 c_turn) {
 	if (!cel_floor_on()) return cel_back_at(c_wp, c_dap);
 	float c_r = length(c_wp.xz - cel_ember.xz);
 	float c_leaf = cel_key.w > 0.0 ? clamp((1.0 - c_dap) / cel_key.w, 0.0, 1.0) : 0.0;
 	vec4 c_t = cel_floor_at(c_r, 0.25);
-	c_turn = mix(c_t.rgb, cel_floor_at(c_r, 0.75).rgb, c_leaf);
+	// (lead 20, MASS: w the fire's share for cel_floor_lift, 1 - a^2 of the moon's return: whole at her feet, none where the moon is whole)
+	c_turn = vec4(mix(c_t.rgb, cel_floor_at(c_r, 0.75).rgb, c_leaf), 1.0 - c_t.a * c_t.a);
 	// (p_01: her stand-in under a leaf came out a third of the shade's tone, a near-black mass beside the orange. Under a
 	// leaf the sky stays whole instead, so the shade there is the floor's own shade times its turn: the table's tone exactly.)
 	return mix(c_t.a, 1.0, c_leaf);
 }
-#define CEL_FRAG_TURN0 vec3 c_ft = vec3(1.0);
+// (L1 lead 20, MASS) The turn is of the floor's REFERENCE tone. A floor's own dark patch (a painted material at a third of
+// the floor's mean albedo) took the turn and stayed near black beside the orange, with a hard edge. Inside her fire the
+// floor's value masses give way: the albedo is lifted (never lowered) toward the reference luminance (cel_floor_unit w;
+// rigs.json "ember_floor_lift"; 0: off, the floor as before) by the fire's share c_w (cel_floor_back). c_lum: the floor's
+// luminance here WITHOUT its grain (a floor shader names it before the include: #define CEL_FLOOR_LUM; else the albedo's
+// own, which flattens grain), so a patch is lifted as one mass and keeps its grain.
+#ifndef CEL_FLOOR_LUM
+#define CEL_FLOOR_LUM cel_lum(ALBEDO)
+#endif
+float cel_floor_lift(float c_lum, float c_w) {
+	if (cel_floor_unit.w <= 0.0 || c_w <= 0.0) return 1.0;
+	return mix(1.0, clamp(cel_floor_unit.w / max(c_lum, 1e-4), 1.0, 4.0), c_w);
+}
+#define CEL_FRAG_TURN0 vec4 c_ft = vec4(1.0, 1.0, 1.0, 0.0);
 #define CEL_FRAG_BACK(c_p, c_d) cel_floor_back(c_p, c_d, c_ft)
-#define CEL_FRAG_TURN1 ALBEDO *= c_ft
+#define CEL_FRAG_TURN1 ALBEDO *= cel_floor_lift(CEL_FLOOR_LUM, c_ft.w) * c_ft.rgb
 #else
 #define CEL_FRAG_TURN0
 #define CEL_FRAG_BACK(c_p, c_d) cel_back_at(c_p, c_d)

@@ -628,7 +628,7 @@ public partial class Atmosphere : Node3D
         // (L1 lead 17, P) her fire on the floor as a turn of the floor's own tone (the rig's ember_floor; cel.gdshaderinc cel_floor_turn). Only with a ramp (what stands and the foes take it).
         var turn = ramp != null ? FloorTurn(p.EmberFloor) : null;
         RenderingServer.GlobalShaderParameterSet("cel_floor_band", turn is { } ft ? new Vector4(ft.Reach, ft.Lit.X, ft.Lit.Y, ft.Lit.Z) : Vector4.Zero);
-        RenderingServer.GlobalShaderParameterSet("cel_floor_unit", turn is { } ft1 ? new Vector4(ft1.Shade.X, ft1.Shade.Y, ft1.Shade.Z, 0) : Vector4.Zero);
+        RenderingServer.GlobalShaderParameterSet("cel_floor_unit", turn is { } ft1 ? new Vector4(ft1.Shade.X, ft1.Shade.Y, ft1.Shade.Z, p.EmberFloorLift is { Length: >= 1 } efl ? (float)efl[0] : 0) : Vector4.Zero);   // (lead 20, MASS: w the floor's reference albedo luminance, cel_floor_lift)
         FireCast.Reach = turn?.Reach ?? 0;   // (L1 lead 19, SH2: a C# copy of the table's reach for --cast-count)
         if (turn is { } ft2) RenderingServer.GlobalShaderParameterSet("cel_floor_turn", ft2.Tex);
         // (L1 lead 19, HER2) the hero figure in her lit pool (the rig's hero_pool, Zone.HeroPool; cel.gdshaderinc CEL_HERO): the
