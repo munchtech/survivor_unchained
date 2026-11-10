@@ -2031,7 +2031,7 @@ CLUMP_CAPS = {   # (l16-l22: the cap mound, kept as data: an entry with 'domes' 
 # every frond real geometry (opaque, no alpha cut: no stipple or shimmer), drawn by kit.gdshader's leaf MASS route
 # (COLOR.b 1; COLOR.r the baked level: base < 0.7 body, mid ring 0.7-0.9, tip >= 0.9 top), the tones the rig's stand row.
 FERN_FORM = {
-    'fronds': (8, 6, 4),     # fronds a crown (times its share), lod 0/1/2
+    'fronds': (12, 8, 5),    # fronds a crown (times its share), lod 0/1/2
     'pairs': (7, 5, 4),      # pinna pairs a frond, lod 0/1/2 (lod2: one triangle a pinna)
     'segs': (14, 8, 5),      # rachis segments
     'L': (0.80, 1.05),       # frond length (m, times the crown's scale)
@@ -2040,15 +2040,15 @@ FERN_FORM = {
     'arch': (60, 95),        # ... turned down over its length (degrees): it arches over
     'bend': 16,              # ... and sideways (degrees, +-)
     'fan': 250,              # a crown's fronds spread over this (degrees; 360 reads as a rosette)
-    'width': 0.21,           # a pinna's length at the blade's widest (share of L)
+    'width': 0.32,           # a pinna's length at the blade's widest (share of L)
     'widest': 0.36,          # where the blade is widest (share of the blade, foot to tip)
     'fwd': 54,               # a pinna's angle forward off the rachis (degrees)
-    'base': 0.74,            # a pinna's foot along the rachis (share of its pair's spacing): the rest is gap
+    'base': 0.90,            # a pinna's foot along the rachis (share of its pair's spacing): the rest is gap
     'alt': 0.32,             # the right pinna this share of a spacing past the left (alternate, not a ladder)
     'shoulder': 0.42,        # a pinna's widest point (share of its length) and its half-width there (share of its foot)
     'droop': 0.22,           # a pinna's tip under its blade (share of its length)
     'rachis': 0.020,         # the rachis' half-width at its foot (m)
-    'up': 0.5,               # a normal: this share up, the rest its own face's
+    'up': 0.25,              # a normal: this share up, the rest its own face's
     'steps': (0.52, 0.80),   # along a frond, where the level reaches 0.7 (mid) and 0.9 (top: one step lighter at the tip)
     'jit': ((0.55, 0.0), (0.27, -0.13), (0.18, -0.30)),   # (share, level shift): lit fronds, no top, dark fronds
     'foot': 0.24,            # a frond's tip kept this high (m): under it the stand's foot band draws contact

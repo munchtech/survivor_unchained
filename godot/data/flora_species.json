@@ -79,7 +79,7 @@
              "size: its scale is its jitter (its scale over its kind's base scale) held to 'size' [lo, hi]. (L1 l24 BUSH) The bushes are FERN",
              "clumps (env_trees.py FERN: clump_b one crown ~1.5 m, clump_a two ~2.2 m: 1-1.5 of her heights; mostly clump_b and a narrow size so",
              "groups 1-1.5 m apart keep ground between them); the kit's ferns stay dropped (the bushes' copies carry the undergrowth)."],
-    "size": [0.8, 1.05],
+    "size": [0.9, 1.15],
     "own": {
       "Bush_Common": ["clump_b", "clump_b", "clump_a"],
       "Bush_Common_Flowers": ["clump_b", "clump_b"],
