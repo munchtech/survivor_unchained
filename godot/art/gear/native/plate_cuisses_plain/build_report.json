@@ -59,21 +59,21 @@
     "inside": 0
    },
    "lame1_l_rigid": {
-    "tris": 1302,
+    "tris": 1376,
     "grid": [
-     15,
+     16,
      32
     ],
-    "rest_clear_mm_min": 1.51,
+    "rest_clear_mm_min": 1.56,
     "inside": 0
    },
    "lame2_l_rigid": {
-    "tris": 1166,
+    "tris": 1232,
     "grid": [
-     15,
+     16,
      28
     ],
-    "rest_clear_mm_min": 1.72,
+    "rest_clear_mm_min": 1.79,
     "inside": 0
    },
    "lame3_l_rigid": {
@@ -146,21 +146,21 @@
     "inside": 0
    },
    "lame1_r_rigid": {
-    "tris": 1302,
+    "tris": 1376,
     "grid": [
-     15,
+     16,
      32
     ],
-    "rest_clear_mm_min": 1.48,
+    "rest_clear_mm_min": 1.54,
     "inside": 0
    },
    "lame2_r_rigid": {
-    "tris": 1166,
+    "tris": 1232,
     "grid": [
-     15,
+     16,
      28
     ],
-    "rest_clear_mm_min": 1.73,
+    "rest_clear_mm_min": 1.78,
     "inside": 0
    },
    "lame3_r_rigid": {
@@ -177,7 +177,7 @@
   }
  },
  "dir": "godot/art/gear/native/plate_cuisses_plain",
- "tris": 15492,
+ "tris": 15772,
  "parts": {
   "straps_l": [
    564,
@@ -200,13 +200,13 @@
    "steel"
   ],
   "lame1_l_rigid": [
-   710,
-   1302,
+   748,
+   1376,
    "steel"
   ],
   "lame2_l_rigid": [
-   638,
-   1166,
+   672,
+   1232,
    "steel"
   ],
   "lame3_l_rigid": [
@@ -240,13 +240,13 @@
    "steel"
   ],
   "lame1_r_rigid": [
-   710,
-   1302,
+   748,
+   1376,
    "steel"
   ],
   "lame2_r_rigid": [
-   638,
-   1166,
+   672,
+   1232,
    "steel"
   ],
   "lame3_r_rigid": [

@@ -128,6 +128,24 @@ class Lames(unittest.TestCase):
         self.assertLess(float(sh.edge_d(np.array([0.345]), np.array([-25.0]))[0]), 0)   # outside the tapered side
         self.assertGreater(float(sh.edge_d(np.array([0.302]), np.array([-25.0]))[0]), 0)
 
+    def test_bottom_dip(self):
+        # the cuisses' knee lame runs lower under the cop at the front only (build.json bottom "dip", limb_plate): in
+        # full across the front, eased to nothing before the outer side, never past its points, the edge smooth
+        import json
+        repo = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        cfg = json.load(open(os.path.join(repo, "godot", "art", "gear", "native", "plate_cuisses_plain", "build.json"), encoding="utf-8"))
+        pts = np.array(cfg["bottom"]["dip"]["points"], float)
+        f = nb.edge_points(pts[:, 0], pts[:, 1])
+        lt0, lt1 = cfg["lames"]["theta"]
+        self.assertLessEqual(pts[0, 0], lt0)
+        self.assertGreaterEqual(pts[-1, 0], lt1)
+        th = np.linspace(lt0, lt1, 600)
+        d = f(th)
+        np.testing.assert_allclose(d[th <= 45], 0.020, atol=1e-12)
+        np.testing.assert_allclose(d[th >= 72], 0.0, atol=1e-12)
+        self.assertTrue((np.diff(d) <= 1e-12).all())
+        self.assertLess(float(np.abs(np.diff(d)).max() / np.radians(th[1] - th[0]) / 0.06), 1.5)   # (slope of the edge on a 60 mm limb)
+
 
 if __name__ == "__main__":
     unittest.main()

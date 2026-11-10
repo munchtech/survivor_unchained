@@ -106,5 +106,86 @@ class Native(unittest.TestCase):
             self.assertEqual(gn.part_rule(piece, "rivets_rigid")["ride"], {"thigh": 1})
 
 
+class Legwear(unittest.TestCase):
+    """The legwear slot's law, and the cuisses' articulated parts as their piece.json names them."""
+    HERE = os.path.dirname(os.path.abspath(__file__))
+    REPO = os.path.dirname(os.path.dirname(HERE))
+
+    def test_legwear_slot(self):
+        self.assertIn("legwear", gn.SLOTS)
+        rr = json.load(open(os.path.join(self.HERE, "rigid_roles.json"), encoding="utf-8"))
+        law = rr["slots"]["legwear"]
+        self.assertEqual(law["ride"], {"thigh": 1})
+        self.assertTrue(law["one_bone"])
+        so = law["standoff"]
+        # (lapped lames stand 11-17 mm off her at rest: the tuck must still be full that far out, or her knee front
+        # goes untucked under the lapping bands; its depth as the cuisses were measured)
+        self.assertGreaterEqual(so["tuck_full_mm"], 18)
+        self.assertGreater(so["tuck_zero_mm"], so["tuck_full_mm"])
+        self.assertEqual(so["tuck_depth_mm"], 18)
+        g = gn.gf()
+        self.assertEqual(g.standoff_law("legwear", rr), so)
+        # a plate of the slot with no rule of its own: one thigh bone, the strongest in the mean, whatever else is in it
+
+        class Body:
+            joint_names = ["pelvis", "thigh_l", "thigh_twist_02_l", "calf_share_l"]
+            T = np.array([[0, 1, 2]])
+            J = np.tile(np.arange(4), (3, 1))
+            W = np.tile([0.1, 0.2, 0.5, 0.2], (3, 1))
+        j, w = g.rigid_blend(Body, np.array([0]), np.array([[0.2, 0.3, 0.5]]), "legwear", roles=rr)
+        self.assertEqual((int(j[0]), float(w[0])), (2, 1.0))
+
+    def test_articulated_parts(self):
+        # the cuisses' own piece.json: every rigid part resolves to a rule, the lames name their bones (shares sum to
+        # 1, a calf share only on the lames, growing toward the knee), fixings ride their plate
+        d = os.path.join(self.REPO, "godot", "art", "gear", "native", "plate_cuisses_plain")
+        piece = json.load(open(os.path.join(d, "piece.json"), encoding="utf-8"))
+        self.assertEqual(piece["slot"], "legwear")
+        parts = piece["parts"]
+        for sd in "lr":
+            calf = []
+            for nm in [f"plate_{sd}_rigid"] + sorted(k for k in parts if k.startswith("lame") and f"_{sd}_" in k):
+                bones = parts[nm]["bones"]
+                self.assertAlmostEqual(sum(bones.values()), 1.0)
+                self.assertTrue(all("{s}" in b for b in bones), nm)
+                calf.append(sum(v for b, v in bones.items() if b.startswith("calf")))
+                self.assertEqual(gn.lead_part(piece, nm), nm)
+            self.assertEqual(calf[0], 0)
+            self.assertEqual(calf, sorted(calf))
+            self.assertGreater(calf[-1], 0)
+            for nm in (f"rivets_{sd}_rigid", f"tabs_{sd}_rigid"):
+                self.assertEqual(gn.lead_part(piece, nm), f"plate_{sd}_rigid")
+            self.assertTrue(all(gn.part_rule(piece, k) for k in parts if k.endswith("_rigid")))
+
+    def test_named_bones_take_no_shapes(self):
+        # part_blends: a part that names its bones rides that blend exactly (its weights, and none of her corrective
+        # shapes: their mean over the knee lame's bound points moved it 13.8 mm into her knee at knee_flex135); a
+        # part with a role rule, and a bendy one, keep what the build gave them
+        g = gn.gf()
+
+        class Body:
+            joint_names = ["pelvis", "thigh_twist_02_l", "thigh_twist_02_r", "calf_share_l", "calf_share_r"]
+            T = np.array([[0, 1, 2]])
+            J = np.tile(np.arange(5), (3, 1))
+            W = np.tile([0.1, 0.5, 0.0, 0.4, 0.0], (3, 1))
+
+        class Bind:
+            z = {"lead_close": np.array([0, 1]), "comp0": np.array([0, 0, 1, -1]), "tri0": np.zeros(4, np.int64),
+                 "bw0": np.full((4, 2), 21845, np.uint16)}
+            meta = {"meshes": [{"tier": "close", "i": 0, "node": "n"}],
+                    "parts": [{"rule": {"bones": {"thigh_twist_02_{s}": 0.8, "calf_share_{s}": 0.2}}, "comp": 0},
+                              {"rule": {"ride": {"thigh": 1}, "one_bone": True}, "comp": 1}]}
+        d = np.tile([0.0, 0.0, -0.017], (4, 1))
+        ev = {"n": {"inv": np.arange(4), "J": np.zeros((4, 8), np.uint16), "W": np.zeros((4, 8), np.float32),
+                    "shapes": {"knee_flex135_l": d.copy()}}}
+        gn.part_blends(Bind, {"close": Body}, ev)
+        e = ev["n"]
+        for v in (0, 1):
+            got = {Body.joint_names[j]: round(float(w), 4) for j, w in zip(e["J"][v], e["W"][v]) if w > 0}
+            self.assertEqual(got, {"thigh_twist_02_l": 0.8, "calf_share_l": 0.2})
+        np.testing.assert_array_equal(e["shapes"]["knee_flex135_l"][:2], 0.0)
+        np.testing.assert_array_equal(e["shapes"]["knee_flex135_l"][2:], d[2:])
+
+
 if __name__ == "__main__":
     unittest.main()
