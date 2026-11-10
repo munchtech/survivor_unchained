@@ -257,7 +257,7 @@ public partial class ArtsScreen : Overlay
             {
                 bool done = false;
                 if (Safe) G.Gear((j, _) => done = LampBook.Switch(j.Ch, k, j.World, G.Zone?.Id));
-                status = done || k == st.Active ? "" : "Change layouts by day, in town.";
+                status = done || k == st.Active ? "" : "Change layouts at a lamp-post.";
                 Refresh();
             }, i == st.Active ? Style.EmberHi : Kit.Ink2));
         }

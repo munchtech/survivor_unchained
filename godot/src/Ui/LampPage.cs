@@ -285,7 +285,7 @@ public partial class LampPage : Control
         var st = LampBook.State(ch);
         bool open = LampBook.LayoutsOpen(w, zone), active = i == st.Active;
         var others = Enumerable.Range(0, 3).Where(k => k != st.Active).ToArray();
-        string stateLine = active ? "The layout she walks" : open ? "Take it up: the whole build" : "Layouts change by day at a town’s lamp-post";
+        string stateLine = active ? "The layout she walks" : open ? "Take it up: the whole build" : "Layouts change by day at a lamp-post";
         var pr = new List<(string, string)>();
         if (active && open)
         {
@@ -317,7 +317,7 @@ public partial class LampPage : Control
     void Copy(int to)
     {
         if (LampAsk.CopyLayout(ch, to, w, zone)) { Sound.Sfx.Pick(); GD.Print($"LAMPBOARD copy {LampBook.State(ch).Active + 1} to {to + 1}"); Header.Refresh(); }
-        else Board.Deny("Layouts change by day at a town’s lamp-post");
+        else Board.Deny("Layouts change by day at a lamp-post");
     }
 
     void OpenWideNow()
