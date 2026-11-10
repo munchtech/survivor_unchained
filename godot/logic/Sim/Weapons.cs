@@ -549,8 +549,10 @@ public static partial class Firing
         var (from, rf, ech, hb, mul) = (b.FireFrom, b.Refiring, b.Echoing, b.HeavyBy, w.FireMul);
         b.FireFrom = (x, z); b.Refiring = true; b.Echoing = true; b.HeavyBy = null;
         w.FireMul = w.Wick?.OnKillDamage ?? 1;
+        // (M3 MR 3) an echo is per KILL, so it is a whole blow even when the kill was a chained cut's (its cast still open)
+        double cw0 = w.CutW; w.CutW = 1;
         try { return Fire(b, w); }
-        finally { (b.FireFrom, b.Refiring, b.Echoing, b.HeavyBy, w.FireMul) = (from, rf, ech, hb, mul); }
+        finally { (b.FireFrom, b.Refiring, b.Echoing, b.HeavyBy, w.FireMul) = (from, rf, ech, hb, mul); w.CutW = cw0; }
     }
 
     /// <summary>moonweaver.the_echo: the spell fires again.</summary>
@@ -662,7 +664,7 @@ public static partial class Firing
             if (pr.GroundOnHit == null && w.Id == "cinderfall" && b.Marked(Marks.FallingStar, out double star))
                 pr.GroundOnHit = new GroundSpec(1.8, Marks.Lerp(2, 5, star), 0.25);
             pr.Rank = w.Rank;
-            pr.BossDamage = w.BossDamage;
+            pr.BossDamage = w.BossDamage; pr.W = w.CutW;
             pr.AimAlongVelocity();
             if (herd) pr.Rehit = 0.6;
         }

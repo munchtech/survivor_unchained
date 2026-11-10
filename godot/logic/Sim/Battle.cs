@@ -246,6 +246,9 @@ public struct HitOpts
     public string? Credit;
     /// <summary>A heavy blow's (the warden's Hand): set by a heavy projectile's hit.</summary>
     public bool Heavy;
+    /// <summary>(M3 MR 3) The weight of a hit that lands after its cast (a projectile's, stamped at the launch); null: the
+    /// weapon's live CutW.</summary>
+    public double? W;
 }
 
 /// <summary>What a trigger sees when it fires.</summary>
@@ -866,7 +869,7 @@ public sealed partial class Battle
         // (M3 MR 3) A chained cut is a share of the written blow (WeaponInst.CutW, set only inside its cast; a tick of
         // damage over time and everything unchained read 1). dmg arrives as the share already (WeaponInst.Damage): the
         // flat per-hit rows below take the weight; the per-blow events keep the blow.
-        double cw = o.Dot ? 1 : o.Weapon?.CutW ?? 1;
+        double cw = o.Dot ? 1 : o.W ?? o.Weapon?.CutW ?? 1;
         if (StruckBy != null && o.Weapon == StruckBy) Struck.Add(e.Id);
         if (Lamps.Board) BoardBeforeHit(e, school, tags, o);
         var st = Stats;
@@ -2339,7 +2342,7 @@ public sealed partial class Battle
         var weapon = WeaponById(pr.Weapon);
         HitEnemy(e, pr.Damage, pr.School, pr.Tags, new HitOpts
         {
-            Weapon = weapon, Knockback = pr.Knockback, DirX = pr.DirX, DirZ = pr.DirZ, Status = pr.Status, Depth = pr.Depth,
+            Weapon = weapon, W = pr.W, Knockback = pr.Knockback, DirX = pr.DirX, DirZ = pr.DirZ, Status = pr.Status, Depth = pr.Depth,
             BossDamage = pr.BossDamage, Projectile = pr.Tags.Has(Tag.Projectile), FromX = pr.DirX, FromZ = pr.DirZ,
             Summon = pr.Owner == Side.Ally, Credit = pr.Credit,
         });

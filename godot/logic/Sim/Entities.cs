@@ -256,6 +256,9 @@ public sealed class Projectile : Pooled
     /// <summary>The volley's rule is whole (the Crowded Sky looses its extra motes): it bars a second strike. Otherwise it only steers.</summary>
     public bool VolleyHard;
     public double BossDamage = 1;
+    /// <summary>(M3 MR 3) The share of a written blow each of its hits stands for (the cast's CutW at the launch: a
+    /// chained cut's projectile lands after its cast, when the weapon's live weight is 1 again); 1 for everything else.</summary>
+    public double W = 1;
     /// <summary>Which way it is going (frontal guards).</summary>
     public double DirX, DirZ = 1;
     /// <summary>What its damage is credited to when no weapon threw it (a blessing's missiles).</summary>
@@ -274,7 +277,7 @@ public sealed class Projectile : Pooled
         Homing = 0; Seek = null; Target = -2; Weapon = null; Art = "bolt"; Status = null; Splash = 0; SplitOnHit = 0;
         Heal = 0; Knockback = 0; Chakram = false; Returning = false; Lob = false; LandX = LandZ = 0; GroundOnHit = null;
         Hits.Clear(); HitTimes.Clear(); Rehit = 0; HitCount = 0; OrbitR = OrbitW = OrbitA = 0; SlotId = -1; Rank = 1;
-        Depth = 0; Volley = 0; VolleyHard = false; BossDamage = 1; DirX = 0; DirZ = 1; Credit = null; HeavyId = null; Echo = false;
+        Depth = 0; Volley = 0; VolleyHard = false; BossDamage = 1; W = 1; DirX = 0; DirZ = 1; Credit = null; HeavyId = null; Echo = false;
     }
 
     /// <summary>Point DirX, DirZ along its velocity.</summary>
