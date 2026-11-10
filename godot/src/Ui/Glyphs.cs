@@ -25,6 +25,9 @@ public static class Glyphs
     /// <summary>The glyph key a skill shows on a HUD seat and on the level card (GlyphPaths.ForSkill).</summary>
     public static string ForSkill(string id, string art) => GlyphPaths.ForSkill(id, art);
 
+    /// <summary>The glyph key an arena offer's card shows: a skill's by skill (GlyphPaths.ForOffer).</summary>
+    public static string ForOffer(Sim.Offer o) => GlyphPaths.ForOffer(o);
+
     /// <summary>A glyph as a texture, at a size in pixels. A painted icon
     /// (art/ui/icons/glyph/KEY.png, white on transparent) is tinted the same
     /// way and wins, so painted icons keep every state colour the glyphs had. A painting may be borrowed (IconKey);

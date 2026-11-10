@@ -91,4 +91,25 @@ public sealed class SeatGlyphTests
         // (a skill with no line of its own shows its art's)
         Assert.Equal("slash_quake", GlyphPaths.ForSkill("groundbreaker", "slash_quake"));
     }
+
+    [Fact]
+    public void An_arena_offers_card_shows_the_skills_own_glyph()
+    {
+        // (the draft's offers carry the skill's ART as their icon, Sim/LevelUp: Sunder's and the Cleaver's are the same)
+        string art = Weapons.All["sunder"].Art;
+        foreach (var kind in new[] { Sim.OfferKind.Weapon, Sim.OfferKind.Rank, Sim.OfferKind.Hone, Sim.OfferKind.Evolve })
+        {
+            Assert.Equal("sunder", GlyphPaths.ForOffer(new Sim.Offer { Kind = kind, Id = "sunder", Icon = art }));
+            Assert.Equal("butchers_cleaver", GlyphPaths.ForOffer(new Sim.Offer { Kind = kind, Id = "cleaver", Icon = art }));
+            // (a skill with no glyph of its own: the art it carries, an evolution's where it has one)
+            Assert.Equal("slash_quake", GlyphPaths.ForOffer(new Sim.Offer { Kind = kind, Id = "groundbreaker", Icon = "slash_quake" }));
+        }
+        // a union: the skill it becomes
+        var un = Unions.All[0];
+        Assert.Equal(GlyphPaths.ForSkill(un.Into, Weapons.All[un.Into].Art),
+            GlyphPaths.ForOffer(new Sim.Offer { Kind = Sim.OfferKind.Union, Id = un.Id, Icon = Weapons.All[un.Into].Art }));
+        // a passive, a blessing, a respite: the icon it carries, whatever its id
+        Assert.Equal("heart", GlyphPaths.ForOffer(new Sim.Offer { Kind = Sim.OfferKind.Heal, Id = "heal", Icon = "heart" }));
+        Assert.Equal("slash_heavy", GlyphPaths.ForOffer(new Sim.Offer { Kind = Sim.OfferKind.Boon, Id = "sunder", Icon = "slash_heavy" }));
+    }
 }

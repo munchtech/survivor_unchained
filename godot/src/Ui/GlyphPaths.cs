@@ -78,4 +78,15 @@ public static class GlyphPaths
     /// <summary>The glyph key a skill shows on a HUD seat and on the level card: its own line glyph where it has one
     /// (SkillLine), else its art's.</summary>
     public static string ForSkill(string id, string art) => SkillLine.TryGetValue(id, out var k) ? k : art;
+
+    /// <summary>The glyph key an arena offer's card shows. An offer about a combat skill (a new one, a rank, a honing, an
+    /// evolution: its Id is the skill's; a union: the skill it becomes) carries that skill's ART as its icon
+    /// (Sim/LevelUp): shown by skill, as on the seats, so Sunder's card is Sunder's and not the Cleaver's. Any other
+    /// offer (a passive, a blessing, a respite) shows the icon it carries.</summary>
+    public static string ForOffer(Sim.Offer o) => o.Kind switch
+    {
+        Sim.OfferKind.Weapon or Sim.OfferKind.Rank or Sim.OfferKind.Hone or Sim.OfferKind.Evolve => ForSkill(o.Id, o.Icon),
+        Sim.OfferKind.Union when Content.Unions.Find(o.Id) is { } u => ForSkill(u.Into, o.Icon),
+        _ => o.Icon,
+    };
 }
