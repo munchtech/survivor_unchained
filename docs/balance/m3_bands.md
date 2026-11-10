@@ -1,3 +1,38 @@
+# M3 bands: round 8 (10 Nov, M3 lead 16): the switch, the landed rule, the clock and the feet are in; a grip cut is sized x0.80
+
+**What changed since round 7 (file, change, why).**
+- The switch (MR 3): Oathblade and Sunder cut every 0.70 s as a chain; every per-second rate is held by the cut's weight (`chain_weight.md`).
+- The landed rule: a per-grip time bank. A cut weighs what the wait earned since the last cut that landed, capped at one blow, never under its share; a whiff spends and counts nothing; the first cut is whole.
+- The clock: every wait is exact to the instant, unchained and the bare countdown too (1.6 s was 97 steps).
+- The feet: under a chained grip the stand clock's step goes in a cut's dead part (`Pilot.StepsOnCuts`).
+- Grip damage x0.80: `godot/data/content/skills.json`, Oathblade 22.81 -> 18.25, Sunder 28 -> 22.4. Why: the real-path A/B showed the chained grip ahead of the stripped one (Low Ford II deft +20.6%, human +15.6%; veteran III deft +9.8%, human +2.3%) with no leak, from the old record's waste. Main ruled it a feel gain; the bands then sized it. Tried: x0.88, then x0.80 (shipped).
+
+**Commands.** Low Ford: `zone --zone lowford --bots standing,idler,human,deft --seeds 48 --tiers 1,2`. Veteran: `map --callings warden --level 30 --people dead,pack --grant groundbreaker:8,heroic_leap:8,shield_charge:8,iron_vow:8 --grant-union bladestorm --bots standing,idler,human,deft --seeds 16 --tiers 3,4`. Raw files in `scratch_combat_m3\lead16\`: `r8_*.out` (before the tune: shipped damage), `r8b_*` (x0.88), `r8c_*` (x0.80, the shipped tune).
+
+**Low Ford, 48 seeds, tiers I / II** (columns: shipped damage / x0.88 / x0.80):
+
+| bot | band | I | II |
+|---|---|---|---|
+| human, no fall | I 85+, II 78-85 | 95.8 / 93.8 / 87.5 | 100 / 93.8 / 85.4 |
+| deft, no fall | 95+ | 100 / 97.9 / 100 | 93.8 / 97.9 / 97.9 |
+| standing, falls | 80+ | 68.8 / 75.0 / 68.8 | 95.8 / 95.8 / 100 |
+| idler, kills a minute vs human | at most 1.00x | 0.93 / 0.90 / 0.99x | 0.99 / 0.96 / 0.93x |
+| idler, time through vs human | at least 1.00x | 1.04 / 1.06 / 1.06x | 1.06 / 1.07 / 1.10x |
+| idler, Resolve at max | at least 20% | 29.8 / 29.4 / 28.4% | 28.0 / 27.9 / 26.3% |
+| human, Resolve at max | under 10% | about 4% | about 4% |
+
+**Veteran maps III / IV at x0.80, 16 seeds x people dead,pack = 32 runs a bot:**
+
+| bot | measure | III | IV |
+|---|---|---|---|
+| human | cleared, time, lowest life | 32/32, 11.6 min, low 0.34 | 32/32, 11.8 min, low 0.27 |
+| deft | cleared, time, lowest life | 32/32, 10.6 min, low 0.68 | 32/32, 11.4 min, low 0.66 |
+| idler | cleared, time | 19/32, 15.9 min = 1.37x | 11/32, 15.6 min = 1.32x |
+
+The idler's band is at least 1.25x the human's time through: met on both.
+
+**Every band is met at x0.80 except standing on tier I, which falls 68.8% (band 80+).** That number is flat across all three grip trials (68.8 / 75.0 / 68.8), so it is not a grip-damage knob. Cause open; it is owner M3's next lead. Human on tier II is 85.4%, equal to round 7's value (0.4 over the top).
+
 # M3 bands: round 7 (10 Nov, leads 7-9): the clock counts from a foe awake; the idler measured on Resolve wasted, not speed; veteran III/IV at 16 seeds; the dev veteran is the harness's
 
 **What changed since round 6 (file, change, why). No tier row and no skill number was tuned.**

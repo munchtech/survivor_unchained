@@ -68,27 +68,50 @@ public sealed partial class Battle
         if (!Campaign) return false;
         // The blow it will be, read ahead of its cast (CastOnce decides it again on the contact, the same way).
         int own = Firing.HeavyEveryOf(this, w);
-        bool ownHeavy = own > 0 && (w.OwnBlows + 1) % own == 0;
-        bool heavy = ownHeavy || HandHeavyNext(w);
+        // (Sim.Blows: inside Battle the bare name is its own list of enemy blows)
+        // (M3 J12: a block's answer owed, the next firing is a whole blow: WeaponInst.NextW)
+        // (M3 MR 3 b1, the landed rule: a chained cut weighs what its grip's bank has earned since its last LANDED cut,
+        // Battle.BankOf: the counts are asked at the LIGHT cut's weight from it, here and again at the contact,
+        // WeaponInst.CastAsk)
+        bool banks = w.Chained && w.BlowWeight != 1;
+        var bank = banks ? BankOf(w, CutStartOf(w)) : (From: double.NaN, Earned: 0.0, W: 0.0);
+        double earned = w.AnswerDue ? 0 : bank.Earned;
+        double ask = earned > 0 ? Sim.Blows.Rested(w.NextW, earned) : w.NextW;
+        bool ownHeavy = Sim.Blows.Completes(w.OwnBlows, w.OwnPart, own, ask);
+        bool heavy = ownHeavy || HandHeavyNext(w, ask);
         // (a chained record's cut: its own clock and clip beats, Sim/SwingChain.cs)
-        if (w.Chained) return DeferCut(w, heavy, ownHeavy, mul);
+        if (w.Chained)
+        {
+            if (DeferCut(w, heavy, ownHeavy, mul, bank)) return true;
+            // (b1) it casts at once (no aim, a refire): the same bank, staged for that cast (Firing.CastOnce takes it on
+            // this step only; the light cut's weight, its wait the written one from now)
+            if (banks)
+            {
+                w.CastFrom = bank.From; w.CastRest = earned; w.CastStage = Time;
+                w.CastPayTo = Math.Min(bank.From + Sim.Blows.Rested(w.BlowWeight, earned) * bank.W, Time + Firing.CooldownOf(this, w));
+            }
+            return false;
+        }
         if (!ContactOf(w, heavy, out var clip, out var rate, out var delay)) return false;
         var aim = CastAt!.Value;
         var p = Player;
         double dx = aim.X - p.X, dz = aim.Z - p.Z;
         double a = dx * dx + dz * dz > 0.01 ? Math.Atan2(dz, dx) : Math.Atan2(Math.Cos(p.Facing), Math.Sin(p.Facing));
         w.WasOwnHeavy = ownHeavy;
-        p.AttackAnim = new AttackAnim(w.Id, a, Time, heavy || w.Behavior == WeaponBehavior.Crack, clip, rate);
+        double late = Firing.Late(this, w), at = Time - late;
+        p.AttackAnim = new AttackAnim(w.Id, a, at, heavy || w.Behavior == WeaponBehavior.Crack, clip, rate);
         w.ClipSide = HerEvents.Side(clip) ?? 0;
         clipSwing++;
         // Ready again after its wait from the press (the contact's rules may shorten it: Firing.LandBlow).
-        w.Timer = Firing.CooldownOf(this, w);
-        pendingBlows.Add(new PendingBlow { W = w, Due = Time + delay, At = Time, Mul = mul, Aim = aim });
+        // (M3 MR 3 clock) The press is backdated to the instant its wait ran out inside this step (Firing.Late), as a
+        // chained cut's start is (DeferCut): its contact, its clip and its next wait run from there.
+        w.Timer = Math.Max(0, Firing.CooldownOf(this, w) - late);
+        pendingBlows.Add(new PendingBlow { W = w, Due = at + delay, At = at, Mul = mul, Aim = aim });
         return true;
     }
 
     /// <summary>Each step (Tick, the fight's top): the blows whose contact has come land, at the aim fixed at their press.</summary>
-    void LandBlows()
+    void LandBlows(double dt)
     {
         if (!Player.Alive) { pendingBlows.Clear(); return; }
         for (int i = 0; i < pendingBlows.Count; i++)
@@ -100,7 +123,7 @@ public sealed partial class Battle
             CastAt = pb.Aim;
             pb.W.FireMul = fm * pb.Mul;
             Landing = true;
-            try { Firing.LandBlow(this, pb.W, Time - pb.At, pb.Cut); }
+            try { Firing.LandBlow(this, pb.W, Time - pb.At, pb.Cut, dt); }
             finally { CastAt = aim0; pb.W.FireMul = fm; Landing = false; }
         }
     }
@@ -110,19 +133,37 @@ public static partial class Firing
 {
     /// <summary>A pending blow's contact (Battle.LandBlows): the cast its press held back, then its wait's rules (momentum,
     /// the cleaver's next cut) as a press would have set them, less the time since the press.</summary>
-    internal static void LandBlow(Battle b, WeaponInst w, double since, bool cut = false)
+    /// <param name="dt">(M3 MR 3 clock) This step's length: an unchained blow's next wait is restated from its press's
+    /// instant at the step's start (its countdown for this step runs after, Firing.Tick), the chain's Sync way. 0: as before.</param>
+    internal static void LandBlow(Battle b, WeaponInst w, double since, bool cut = false, double dt = 0)
     {
-        int kills0 = w.Kills;
-        bool fired = CastOnce(b, w);
-        w.ClipSide = 0;
+        int kills0 = w.Kills, key0 = w.BlowN;
         var c = cut ? w.Chain : null;
+        // (a chain's heavy cut is a longer share of the blow: its weight grows with its period)
+        // (M3 J12: a block's answer is a whole blow: PeriodScale is 1 / BlowWeight, and the heavy counts ask at weight 1)
+        bool fired;
+        // (M3 MR 3 o2: a cut that started on a press carries its rest: its weight is its share plus the rest, the heavy
+        // counts ask at the light cut's rested weight. Not through PeriodScale: that is the WAIT's factor.)
+        w.WholeCast = c?.Whole ?? false;
+        w.CastRest = c?.Rest ?? 0;
+        // (M3 MR 3 b1: and its bank's stamp, paid at the cast only if the cut strikes a body: Firing.CastOnce)
+        if (c != null && w.BlowWeight != 1) (w.CastFrom, w.CastPayTo, w.CastStage) = (c.From, c.PayTo, b.Time);
+        try { fired = CastOnce(b, w, c?.PeriodScale ?? 1); }
+        finally { w.WholeCast = false; w.CastRest = 0; w.CastFrom = double.NaN; }
+        w.ClipSide = 0;
         if (c != null) c.Landed = true;
         if (!fired) return;
-        Rearm(b, w, true, kills0);
+        Rearm(b, w, true, kills0, key0);
         // (a chain's heavy cut waits its own longer period)
         if (c != null) w.Timer *= c.PeriodScale;
-        w.Timer = Math.Max(0, w.Timer - since);
+        // (M3 MR 3 clock) Unchained: `since` already holds this step, whose countdown has not run yet (LandBlows is before
+        // Firing.Tick), so the wait is restated from the press at the step's START, (At + wait) - (Time - dt), as
+        // SwingChain's ChainReady restates a cut's from PeriodEnd. A wait the contact's rules zeroed (the cleaver's next
+        // cut) stays 0, and a contact on its press's step (since 0) keeps the old form. The chained cut: as ever.
+        w.Timer = c == null && since > 0 && w.Timer > 0 ? Math.Max(0, w.Timer - since + dt) : Math.Max(0, w.Timer - since);
+        // (M3 J12: a block while this cut was pending: the answer is next, from this cut's cancel beat)
+        if (c != null && w.AnswerDue) w.Timer = 0;
         // (a chain's next cut never starts before this one's cancel beat, whatever shortened its wait)
-        if (c != null) { w.Timer = Math.Max(w.Timer, c.CancelAt - b.Time); c.PeriodEnd = b.Time + w.Timer; }
+        if (c != null) { w.Timer = Math.Max(w.Timer, c.CancelAt - b.Time); c.PeriodEnd = b.Time + w.Timer; c.Sync = true; }
     }
 }

@@ -160,10 +160,15 @@ public sealed class PressDef
 }
 
 /// <summary>A chain's own numbers (skills.json press "chain"): grace, the seconds the chain's index and side live after
-/// a release (0.40); recover, the release recover's length in frames at 60 fps (18), told on Ev.SwingRelease.</summary>
+/// a release (0.40); recover, the release recover's length in frames at 60 fps (18), told on Ev.SwingRelease; period,
+/// the cut's seconds (absent, the skill's own wait: each cut is a whole blow). With a period a cut is a SHARE of the
+/// written blow, period over the skill's wait (WeaponInst.BlowWeight): per second nothing changes.</summary>
 public sealed class ChainDef
 {
-    public double? Grace, Recover;
+    public double? Grace, Recover, Period;
+    /// <summary>(M3 J12) The wait after a block's answer, in seconds before the multipliers (json "answer"); null: the
+    /// written blow's wait (the answer is a whole blow for a whole wait). Only a chain with a period reads it.</summary>
+    public double? Answer;
 }
 
 /// <summary>A skill's kindled option (PressDef.Kindled): the condition (KindleDef's fields; none set, the skill's own

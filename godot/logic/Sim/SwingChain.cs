@@ -20,6 +20,8 @@ namespace SurvivorUnchained.Sim;
  *   - the aim, reach and targets are the contact blow's as before (Sim/Contact.cs): the aim fixed at the cut's start;
  *   - a dash that starts before the contact drops the blow (no damage, no Resolve, no Ev.Slash); the cut still counts
  *     and its period still runs from its start;
+ *   - no cut starts while she dashes, leaps or rushes (Battle.CutBarred). The key held through it, the chain stays live
+ *     and goes on with the next index when it ends: no reset, no Ev.SwingRelease;
  *   - letting go never stops a cut that has started. Ev.SwingRelease is told at the later of the release and the cut's
  *     cancel beat, unless the grip is held again by then (once a cut). From that instant the chain lives `grace` seconds
  *     more: held (or pressed) again inside it, the chain goes on; past it, the next cut is cut 0 on the first side;
@@ -32,7 +34,7 @@ public sealed class SwingChain
 {
     /// <summary>A chain is live: cuts were thrown and the grace after a release has not run out.</summary>
     public bool Live { get; internal set; }
-    /// <summary>The current (or last) cut: its 0-based index in the chain, its side (+1 on even cuts, -1 on odd, or the
+    /// <summary>The current (or last) cut: its 0-based index in the chain, its side (-1 on even cuts, +1 on odd, or the
     /// clip's written side), whether it is a heavy, and its clip (null: the record names none).</summary>
     public int Cut { get; internal set; }
     public int Side { get; internal set; }
@@ -46,6 +48,19 @@ public sealed class SwingChain
     /// <summary>The clip's rate (its length over the period), and the heavy's period over the cut's (1 for a cut).</summary>
     public double Rate { get; internal set; } = 1;
     public double PeriodScale { get; internal set; } = 1;
+    /// <summary>(M3 J12) The cut is a block's answer: one whole written blow (its weight 1, its wait the blow's: PeriodScale is
+    /// 1 / the cut's share), on the cut's own clip at the cut's rate.</summary>
+    public bool Whole { get; internal set; }
+    /// <summary>(M3 MR 3 b1, the landed rule) What the cut has earned, in written blows: the time since its grip's
+    /// landed weight last paid to (WeaponInst.PaidTo, at most one written blow back) over the written wait (Battle.BankOf);
+    /// its share exactly for the held chain's cut on its beat, 1 for the grip's first cut of a battle; 0 for an answer.
+    /// And the cut's weight, as its cast will weigh (Firing.CastOnce): what it earned, at most one whole blow, never
+    /// under its own share (the cut's share of the written blow, times a heavy's longer period); a block's answer 1.</summary>
+    public double Rest { get; internal set; }
+    public double Weight { get; internal set; }
+    /// <summary>(M3 MR 3 b1) Where the cut draws its weight from in its grip's bank (Battle.BankOf), and what
+    /// WeaponInst.PaidTo becomes if it strikes a body (from + weight x W, no further than its own period's end).</summary>
+    internal double From, PayTo;
     /// <summary>The cut's blow has landed; or it was dropped (a dash before its contact, a knockdown).</summary>
     public bool Landed { get; internal set; }
     public bool Dropped { get; internal set; }
@@ -60,12 +75,16 @@ public sealed class SwingChain
     internal double ReadyStep = double.NaN, Overshoot;
     /// <summary>Ev.SwingRelease was told for this cut (once a cut).</summary>
     internal bool Told;
+    /// <summary>Its blow landed this step: the wait is set from PeriodEnd before the step counts it down (the landing ran first).</summary>
+    internal bool Sync;
 }
 
 public sealed partial class Battle
 {
     /// <summary>The skills that have thrown a chain's cut (stepped each tick; empty when no carried record is chained).</summary>
     readonly List<WeaponInst> chains = new(2);
+    /// <summary>(M3 MR 3 b1) The banked chained cut whose cast is running (Firing.CastOnce): its projectiles carry it.</summary>
+    internal Firing.CutBill? Billing;
     SwingChain? swing;
 
     /// <summary>The chain of the grip in hand (the last chained skill to start a cut), while it is live; else null. Its
@@ -81,9 +100,36 @@ public sealed partial class Battle
         return w.Held;
     }
 
+    /// <summary>(M3 MR 3 job A) A chained skill's cut never STARTS while she dashes, leaps or rushes (Firing.Press and
+    /// SwingHalf ask before anything is spent or posed). Its key may stay down through it: a held chain stays live
+    /// (StepChains), nothing is released and no grace runs, and the cut after it is the next index. An unchained skill is
+    /// never barred.</summary>
+    internal bool CutBarred(WeaponInst w) => w.Chained && (Player.DashT > 0 || Player.Leap != null || Art.Rush != null);
+
+    /// <summary>(M3 MR 3 b1, the landed rule) The instant a chained skill's cut would start if it started now: the
+    /// live chain's next cut on the step its wait ran out on starts on the instant (DeferCut), any other now.</summary>
+    internal double CutStartOf(WeaponInst w) => w.Chain is { Live: true } c && c.ReadyStep == Time ? Time - c.Overshoot : Time;
+
+    /// <summary>(M3 MR 3 b1, the landed rule) A chained grip's time bank. WeaponInst.PaidTo is the time its LANDED
+    /// weight has paid up to (NaN: nothing landed yet this battle, read as start - W, so the first cut is whole as an
+    /// unchained skill's first press is). A cut starting at `start` draws from `from = max(PaidTo, start - W)` (at most
+    /// one written blow is ever banked) and has earned `(start - from) / W` written blows; Sim.Blows.Rested makes that
+    /// its weight (capped at 1, never under its own share). W is the WRITTEN wait at this step (Firing.CooldownOf over
+    /// the cut's share; momentum's factor is not in it). Only a cut that strikes a body pays: Firing.CastOnce moves
+    /// PaidTo to `from + weight * W` (no further than the cut's own period end), once a cut; a whiff, a dropped cut, a
+    /// cut with no body leave it. Held on target on its beat the cut starts where the last one paid to, so it has
+    /// earned its share exactly and weighs it to the bit. Time under DisabledT is rest like any other (capped at 1).</summary>
+    internal (double From, double Earned, double W) BankOf(WeaponInst w, double start)
+    {
+        double wt = Firing.CooldownOf(this, w) / w.BlowWeight;
+        double from = double.IsNaN(w.PaidTo) ? start - wt : Math.Max(w.PaidTo, start - wt);
+        return (from, (start - from) / wt, wt);
+    }
+
     /// <summary>A chained skill's press (Battle.DeferBlow): the next cut of its chain starts; its blow is queued for the
     /// cut's contact beat. False: no aim or not her own cast, and it lands now, as an unchained press does.</summary>
-    bool DeferCut(WeaponInst w, bool heavy, bool ownHeavy, double mul)
+    /// <param name="bank">(b1) The grip's bank at the cut's start (BankOf, read by DeferBlow before the heavy read-aheads).</param>
+    bool DeferCut(WeaponInst w, bool heavy, bool ownHeavy, double mul, (double From, double Earned, double W) bank)
     {
         if (Refiring || FireFrom != null || CastAt == null || w.Press is not { } r) return false;
         if (w.Behavior is not (WeaponBehavior.Slash or WeaponBehavior.Crack)) return false;
@@ -98,14 +144,35 @@ public sealed partial class Battle
         string? clip = heavyClip ? r.ClipHeavy : light;
         var beats = HerEvents.ChainBeats(clip, heavyClip || heavy && clip == null);
         double scale = heavy && (heavyClip && light != null || clip == null) ? beats.Len / HerEvents.ChainBeats(light, false).Len : 1;
-        double period = Firing.CooldownOf(this, w) * scale;
+        // (M3 J12c) sunderer.momentum: a cut of a written blow the blow before paid for takes (1 - sooner) on its period
+        // (BlowN at a cut's start is its blow), so its rate, its beats and its wait all follow; the same factor again at
+        // its contact (Firing.Rearm). 1 when not lit.
+        double cd = Firing.CooldownOf(this, w) * Firing.MomentumMul(this, w, w.BlowN);
+        double period = cd * scale;
+        // (M3 J12) A block's answer (WeaponInst.AnswerDue, taken here: after the returns above, so a press that lands at
+        // once does not eat it) is one whole blow: the wait after it is the blow's. Its clip keeps the cut's rate and
+        // beats (period and rate below are the cut's), so only the wait takes the factor.
+        bool whole = w.AnswerDue && w.BlowWeight != 1;
+        w.AnswerDue = false;
+        // (the chain's "answer", when written: that wait in place of the blow's, over the cut's period, so haste and the
+        // other multipliers apply to it as they do to the written wait)
+        double wait = !whole ? scale : r.Chain is { Answer: > 0 and var aw, Period: > 0 and var cp } ? aw / cp : 1 / w.BlowWeight;
         // Held on from the last cut, it starts on the instant the wait ran out (inside this step), not on the step.
         double start = go && c.ReadyStep == Time ? Time - c.Overshoot : Time;
         double rate = Math.Max(1e-3, beats.Len / period);
         c.Live = true; c.Cut = cut; c.Heavy = heavy; c.Clip = clip;
-        c.Side = (clip != null ? HerEvents.Side(clip) : null) ?? ((cut & 1) == 0 ? 1 : -1);
-        c.StartAt = start; c.Rate = rate; c.PeriodScale = scale;
-        c.ContactAt = start + beats.Contact / rate; c.CancelAt = start + beats.Cancel / rate; c.PeriodEnd = start + period;
+        // (sw2) the weapon's own count's rule (WeaponInst.NextSide: -1 first), so a hold's first cut swings the record's
+        // first clip from the side the unchained first blow did, and alternates from there
+        c.Side = (clip != null ? HerEvents.Side(clip) : null) ?? ((cut & 1) == 0 ? -1 : 1);
+        c.StartAt = start; c.Rate = rate; c.PeriodScale = wait; c.Whole = whole;
+        // (b1, the landed rule) What it has earned and its weight (the cast reads them at the contact: Firing.LandBlow,
+        // CastOnce, which pays the bank only if it strikes a body). Only the weight moves: the wait after it, its clip,
+        // rate and beats are the cut's as ever. An answer is one whole blow whatever the bank holds, and pays a whole W.
+        c.Rest = whole ? 0 : bank.Earned;
+        c.Weight = whole ? 1 : Sim.Blows.Rested(w.BlowWeight * scale, bank.Earned);
+        c.From = bank.From;
+        c.PayTo = Math.Min(bank.From + c.Weight * bank.W, start + cd * wait);
+        c.ContactAt = start + beats.Contact / rate; c.CancelAt = start + beats.Cancel / rate; c.PeriodEnd = start + cd * wait;
         c.Landed = c.Dropped = c.Told = false;
         c.Held = ChainHeld(w);
         c.Released = false; c.GraceUntil = double.NaN;
@@ -119,7 +186,7 @@ public sealed partial class Battle
         w.WasOwnHeavy = ownHeavy;
         p.AttackAnim = new AttackAnim(w.Id, a, start, heavy || w.Behavior == WeaponBehavior.Crack, clip, rate, cut);
         w.ClipSide = c.Side;
-        w.Timer = Math.Max(0, period - (Time - start));
+        w.Timer = Math.Max(0, cd * wait - (Time - start));
         pendingBlows.Add(new PendingBlow { W = w, Due = c.ContactAt, At = start, Mul = mul, Aim = aim, Cut = true });
         return true;
     }
@@ -169,6 +236,8 @@ public static partial class Firing
     /// <summary>Before a chained skill's wait counts down a step: the step it runs out on is noted, and how far into it.</summary>
     internal static void ChainReady(Battle b, WeaponInst w, double dt)
     {
-        if (w.Timer > 0 && w.Timer <= dt && w.Chain is { } c) { c.ReadyStep = b.Time; c.Overshoot = dt - w.Timer; }
+        if (w.Chain is not { } c) return;
+        if (c.Sync) { c.Sync = false; w.Timer = Math.Max(0, c.PeriodEnd - (b.Time - dt)); }
+        if (w.Timer > 0 && w.Timer <= dt) { c.ReadyStep = b.Time; c.Overshoot = dt - w.Timer; }
     }
 }

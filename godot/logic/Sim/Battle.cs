@@ -246,6 +246,9 @@ public struct HitOpts
     public string? Credit;
     /// <summary>A heavy blow's (the warden's Hand): set by a heavy projectile's hit.</summary>
     public bool Heavy;
+    /// <summary>(M3 MR 3) The weight of a hit that lands after its cast (a projectile's, stamped at the launch); null: the
+    /// weapon's live CutW.</summary>
+    public double? W;
 }
 
 /// <summary>What a trigger sees when it fires.</summary>
@@ -260,10 +263,15 @@ public struct ProcCtx
     public WeaponInst? Weapon;
     public StatusKind? Applied;
     public int? Depth;
+    /// <summary>(M3 MR 3) The share of a written blow the event stands for: a chained cut's weight, or what a status a
+    /// cut landed builds. Null (every other event) reads 1. Under 1, Damage is the share and Damage / W the blow.</summary>
+    public double? W;
 }
 
 public sealed partial class Battle
 {
+    /// <summary>(M3 lead 16 b6, harness-only) Firing.CastOnce's nesting: 1 for a skill's own cast, more for a cast inside it.</summary>
+    internal int CastDepth;
     /// <summary>Copies of a many-at-once kind vary their pace (EnemyDef.Spread) and weave (EnemyDef.Weave) here: set by a
     /// story zone that shows a pack close (the Low Ford, NPC 17). Off, every kind keeps the old +-8% and its straight
     /// line, so the arenas' seeded fights and their balance are as they were.</summary>
@@ -469,7 +477,7 @@ public sealed partial class Battle
         if (Combat)
         {
             RunOnKills();
-            if (pendingBlows.Count > 0) LandBlows();
+            if (pendingBlows.Count > 0) LandBlows(dt);
             if (chains.Count > 0) StepChains();
             foreach (var w in Weapons.ToArray()) Firing.Tick(this, w, dt);
             TickVow(dt);
@@ -846,6 +854,17 @@ public sealed partial class Battle
     /// was caught, and how much more it takes from what strikes an area.</summary>
     public const double BoundSlack = 0.8, BoundArea = 0.2;
 
+    /// <summary>(M3 MR 3) The weight of the hit whose statuses are being applied (a chained cut's share of its blow); 1 at
+    /// every other moment.</summary>
+    double statusW = 1;
+    /// <summary>(M3 MR 3 l2) The weight of the hit a boss's script is being told of (Hooks.OnBossHit carries none): a
+    /// chained cut's share of its written blow, a crescent's stamped weight, 1 for everything else and outside the hook.
+    /// A script that counts hits or opens a window per hit reads it (the Barrow Lord's holy window).</summary>
+    public double HitW = 1;
+    /// <summary>(M3 MR 3) Inside ApplyStatus, past its roll: the share of a blow the status being applied stands for
+    /// (1 unchained; a chained cut's refreshed kinds build by it). For the hooks after the switch.</summary>
+    double statusBuild = 1;
+
     /// <summary>Everything the survivor's side does to a creature passes through here.</summary>
     public double HitEnemy(Enemy e, double baseDamage, School school, Tag[] tags, HitOpts o = default)
     {
@@ -856,6 +875,10 @@ public sealed partial class Battle
         // fight is a choice, not a stray spark.
         if (e.Disposition == Disposition.Ally || (e.Disposition == Disposition.Neutral && !e.Provoked && !o.Provoke)) return 0;
         FightAt = Time;
+        // (M3 MR 3) A chained cut is a share of the written blow (WeaponInst.CutW, set only inside its cast; a tick of
+        // damage over time and everything unchained read 1). dmg arrives as the share already (WeaponInst.Damage): the
+        // flat per-hit rows below take the weight; the per-blow events keep the blow.
+        double cw = o.Dot ? 1 : o.W ?? o.Weapon?.CutW ?? 1;
         if (StruckBy != null && o.Weapon == StruckBy) Struck.Add(e.Id);
         if (Lamps.Board) BoardBeforeHit(e, school, tags, o);
         var st = Stats;
@@ -870,7 +893,20 @@ public sealed partial class Battle
         if (s.Has(StatusKind.Frozen)) dmg *= Boons.ContainsKey("deep_chill") ? 1.35 : 1.15;
         if (s.Has(StatusKind.Sear) && school == School.Holy) dmg *= 1.3;
         if (s.Has(StatusKind.Bound) && tags.Has(Tag.Area)) dmg *= 1 + BoundArea;
-        if (s.Has(StatusKind.Shock) && !o.Dot) { dmg *= 1.35 + st.Get(Stat.ShockBonus); if (!Boons.ContainsKey("static_charge")) s.Remove(StatusKind.Shock); }
+        if (s.Has(StatusKind.Shock) && !o.Dot)
+        {
+            if (cw == 1) { dmg *= 1.35 + st.Get(Stat.ShockBonus); if (!Boons.ContainsKey("static_charge")) { s.Remove(StatusKind.Shock); e.ShockEaten = 0; } }
+            else if (Boons.ContainsKey("static_charge")) dmg *= 1.35 + st.Get(Stat.ShockBonus);
+            else
+            {
+                // A Shock is eaten by one blow's worth of cuts: each takes the multiplier on the share of it still
+                // uneaten (the cut that finishes it only on what was left), so the cuts together give one blow's bonus.
+                double part = Math.Min(cw, Math.Max(0, 1 - e.ShockEaten)) / cw;
+                dmg *= 1 + (1.35 + st.Get(Stat.ShockBonus) - 1) * part;
+                e.ShockEaten += cw;
+                if (e.ShockEaten >= 1 - Sim.Blows.Eps) { s.Remove(StatusKind.Shock); e.ShockEaten = 0; }
+            }
+        }
         if (e.SunderUntil > Time) dmg *= 1 + e.Sunder;
         if (e.AirUntil > Time) dmg *= 1 + e.AirMore;
         dmg *= e.TakenMul;
@@ -899,21 +935,36 @@ public sealed partial class Battle
         bool crit = o.Crit && !noTrue;
         // The stalker's Hand: just after a dash, a blow on a champion strikes true.
         bool handTrue = !noTrue && StalkerHand && HandTrue(e, o);
+        // (M3 MR 3) The opener (the Hunters' Blind's share of the roll) is a moment: it lands whole on the cut that rolls it.
+        bool opener = false;
+        double blindAdd = 0;
         if (!crit && !o.NoCrit && !o.Dot)
         {
             double chance = st.Get(Stat.CritChance) + (!noTrue && Player.SureCritT > 0 ? 1 : 0) + (o.Weapon?.CritBonus ?? 0) + (noTrue ? 0 : StalkerCritAdd(e, tags, o)) + (handTrue ? 1 : 0);
             // The Hunters' Blind: the first blow on anything unhurt.
-            if (e.Hp >= e.MaxHp && Boons.TryGetValue("hunters_blind", out int blind)) chance += blind >= 2 ? 1 : 0.5;
+            if (e.Hp >= e.MaxHp && Boons.TryGetValue("hunters_blind", out int blind)) { blindAdd = blind >= 2 ? 1 : 0.5; chance += blindAdd; }
             // Night-Eyes: the far ones, in the dark, are seen best.
             if (Boons.TryGetValue("precision", out int eyes) && Dist(e.X, e.Z, Player.X, Player.Z) > 6) chance += 0.03 * eyes;
             if (Lamps.Board) chance += BoardCritAdd(e, o);
-            crit = Rng.Next() < chance;
+            double roll = Rng.Next();
+            crit = roll < chance;
+            // The build's own chance is the low part of the roll (a rolled crit: the cut's share, right in expectation);
+            // what the Blind added is the rest (the opener).
+            opener = crit && blindAdd > 0 && roll >= chance - blindAdd;
         }
         // blue.feral's price: she can't strike true.
         if (crit && Lamps.Board && BoardNoTrue) crit = false;
-        if (crit) dmg *= st.Get(Stat.CritDamage) * (e.Hp < e.MaxHp * 0.5 && Boons.TryGetValue("ferocity", out int tooth) ? 1 + 0.12 * tooth : 1);
+        // The opener's bonus is the whole blow's (the cut's damage plus the blow's crit bonus); 0 without one.
+        double bonus = 0;
+        if (crit && opener && cw != 1)
+        {
+            double critMul = st.Get(Stat.CritDamage) * (e.Hp < e.MaxHp * 0.5 && Boons.TryGetValue("ferocity", out int tooth1) ? 1 + 0.12 * tooth1 : 1);
+            bonus = dmg / cw * (critMul - 1);
+            dmg += bonus;
+        }
+        else if (crit) dmg *= st.Get(Stat.CritDamage) * (e.Hp < e.MaxHp * 0.5 && Boons.TryGetValue("ferocity", out int tooth) ? 1 + 0.12 * tooth : 1);
         else if ((Rules.IronSkin > 0 || e.Def.IronSkin > 0) && e.Disposition == Disposition.Hostile) { dmg *= 1 - Math.Max(Rules.IronSkin, e.Def.IronSkin); blocked = true; }
-        dmg = Math.Max(0.5, dmg);
+        dmg = Math.Max(0.5 * cw, dmg);
         if (o.Cap is { } cap) dmg = Math.Min(dmg, Math.Max(0.5, cap));
         LightningLeaps(e, baseDamage, school, tags, o);
 
@@ -931,7 +982,9 @@ public sealed partial class Battle
         if (dx == 0 && dz == 0) { dx = e.X - Player.X; dz = e.Z - Player.Z; }
         double dl = Len(dx, dz);
         if (dl == 0) dl = 1;
-        e.LastBlow = before > 0 ? dmg / Math.Max(1, before) : 0;
+        // A cut is judged as the blow it is a share of (the death burst reads LastBlow); statuses are sized on it too.
+        double blowDmg = cw == 1 ? dmg : (dmg - bonus) / cw + bonus;
+        e.LastBlow = before > 0 ? blowDmg / Math.Max(1, before) : 0;
         e.LastCrit = crit;
         e.LastDot = o.Dot;
         e.LastDx = dx / dl; e.LastDz = dz / dl;
@@ -969,6 +1022,7 @@ public sealed partial class Battle
             X = e.X, Z = e.Z, Amount = dmg, Crit = crit, School = school, Target = e.Id, Dot = o.Dot, Blocked = blocked,
             Family = e.Def.Family, Def = e.Def.Id, MaxHp = e.MaxHp, Dx = e.LastDx, Dz = e.LastDz,
             Art = o.Weapon?.Art, Rank = o.Weapon?.Rank ?? 0, ByFlare = o.Credit == "flare" || credit == "flare",
+            Weapon = o.Weapon?.Id,
         });
 
         // Lifesteal.
@@ -976,38 +1030,49 @@ public sealed partial class Battle
         if (ls > 0 && !o.Dot) HealPlayer(dmg * ls, "lifesteal", true);
 
         // Knockback: heavier things move less, bosses not at all.
-        if (o.Knockback != 0 && e.Boss) AddStagger(e, 0.004 * o.Knockback * st.Get(Stat.Knockback));
+        if (o.Knockback != 0 && e.Boss) AddStagger(e, 0.004 * o.Knockback * st.Get(Stat.Knockback) * cw);
         // The warden's Hand: a heavy blow (every few firings of a Melee or Thrown skill; all of its hits).
         bool heavy = !o.Dot && (o.Heavy || (HeavyBy != null && o.Weapon == HeavyBy));
         if (o.Knockback != 0 && !e.Boss && e.Def.Behavior != Behavior.Stationary)
         {
-            double k = o.Knockback * (heavy ? HW.Knockback : 1) * st.Get(Stat.Knockback) * 7 / Math.Max(0.5, e.Mass) * (e.Elite ? 0.35 : 1);
+            double k = o.Knockback * (heavy ? (cw == 1 ? HW.Knockback : cw + HW.Knockback - 1) : cw) * st.Get(Stat.Knockback) * 7 / Math.Max(0.5, e.Mass) * (e.Elite ? 0.35 : 1);
             e.Kbx += o.DirX * k;
             e.Kbz += o.DirZ * k;
         }
 
         // Status payloads ride the hit.
+        // (M3 MR 3) Sized on the blow (damage over time is kept by its worst rate and refreshed); statusW tells
+        // ApplyStatus the hit was a cut of that weight.
         statusWeapon = o.Weapon;
-        if (o.Status != null) ApplyStatus(e, o.Status, dmg, o.Depth, by);
-        if (o.Weapon?.Wick is { Statuses.Count: > 0 } wst) WickStatuses(e, wst, dmg, o.Depth, by);
+        // (saved and put back, not set to 1: a hit nested in a status's own procs must not unweight the rest of ours)
+        double wasW = statusW;
+        statusW = cw;
+        if (o.Status != null) ApplyStatus(e, o.Status, blowDmg, o.Depth, by);
+        if (o.Weapon?.Wick is { Statuses.Count: > 0 } wst) WickStatuses(e, wst, blowDmg, o.Depth, by);
+        statusW = wasW;
         statusWeapon = null;
 
         int depth = o.Depth;
         if (!o.NoProcs && depth < 3)
         {
-            var ctx = new ProcCtx { Target = e, X = e.X, Z = e.Z, Damage = dmg, School = school, Tags = tags, Crit = crit, Weapon = o.Weapon, Depth = depth + 1 };
+            var ctx = new ProcCtx { Target = e, X = e.X, Z = e.Z, Damage = dmg, School = school, Tags = tags, Crit = crit, Weapon = o.Weapon, Depth = depth + 1, W = cw };
             Fire(TriggerEvent.Hit, ctx);
             if (crit) Fire(TriggerEvent.Crit, ctx);
         }
 
-        ReaverOnHit(e, o);
-        ArcanistOnHit(e, school, tags, o, dmg);
-        StalkerOnHit(e, o, dmg);
-        if (heavy || HandKindNow() != 0) HandOnHit(e, o, heavy);
-        if (Lamps.Board) BoardOnHit(e, school, tags, o, dmg, heavy, crit);
+        // (M3 MR 3 l1) the callings' hooks count a blow's worth, never cuts: Frenzy's stack is the cut's weight, and the
+        // statuses the arcanist's and the stalker's lamps lay ride the hit like its own (sized on the blow, weighed as
+        // the cut; at weight 1 blowDmg is dmg and statusW is what it was: the lines as they were)
+        ReaverOnHit(e, o, cw);
+        { double w1 = statusW; statusW = cw; ArcanistOnHit(e, school, tags, o, blowDmg); StalkerOnHit(e, o, blowDmg); statusW = w1; }
+        if (heavy || HandKindNow() != 0) HandOnHit(e, o, heavy, cw);
+        // (M3 MR 3) the board's and the Flare's statuses ride the hit like its own: sized on the blow, weighed as the cut
+        // (at weight 1 blowDmg is dmg and statusW is what it was: the lines as they were)
+        if (Lamps.Board) { double w1 = statusW; statusW = cw; BoardOnHit(e, school, tags, o, blowDmg, heavy, crit, cw); statusW = w1; }
         if (handTrue && crit) { HandTrues++; HandEv(HandKind.True, e.X, e.Z, e.Id); if (Lamps.Board) HandSecondWind(); }
-        FlareOnHit(e, o, dmg);
-        if (e.Boss) Hooks.OnBossHit?.Invoke(e, school, dmg);
+        { double w1 = statusW; statusW = cw; FlareOnHit(e, o, blowDmg); statusW = w1; }
+        // (saved and put back: a hit the script lands from inside its own hook must not unweight ours; 1 outside)
+        if (e.Boss) { double hw = HitW; HitW = cw; Hooks.OnBossHit?.Invoke(e, school, dmg); HitW = hw; }
         if (e.Hp <= 0 && e.Alive && e.State != EnemyState.Dying)
         {
             if (o.Weapon != null) OnKillHit(o.Weapon, e);
@@ -1148,7 +1213,23 @@ public sealed partial class Battle
     {
         if (!e.Alive || e.State == EnemyState.Dying) return;
         double chance = p.Chance * (1 + Stats.Get(Stat.StatusChance));
-        if (Rng.Next() >= chance) return;
+        // (M3 MR 3) riding a chained cut (statusW < 1) a status keeps its per-SECOND rates. Hard control is counted: its
+        // chance is the cut's share of the blow's (as many stuns a minute; what lands is whole). Every other kind is kept by
+        // refresh, so the cuts of one blow's worth compound to the blow's chance (a chance of 1 stays 1: it never gaps), and
+        // what a landed one BUILDS (stacks, chill) is the share of a blow it stands for, so the build per second holds.
+        bool hard = p.Kind is StatusKind.Stun or StatusKind.Fear or StatusKind.Charm;
+        double roll = statusW == 1 ? chance : hard ? chance * statusW : Sim.Blows.Chance(chance, statusW);
+        if (Rng.Next() >= roll) return;
+        double build = statusW == 1 || hard ? 1 : statusW * Math.Min(1, chance) / Math.Min(1, roll);
+        double wasBuild = statusBuild;
+        statusBuild = build;
+        try { ApplyRolled(e, p, hitDamage, depth, from, build); }
+        finally { statusBuild = wasBuild; }
+    }
+
+    /// <summary>ApplyStatus past its roll. build: the share of a blow this application stands for (1 unchained).</summary>
+    void ApplyRolled(Enemy e, StatusPayload p, double hitDamage, int depth, string? from, double build)
+    {
         var s = e.Status;
         double sd = Stats.Get(Stat.StatusDamage) * Stats.Get(Stat.StatusDamageOf(p.Kind));
         double dps = hitDamage * p.Power / Math.Max(0.5, p.Duration) * sd;
@@ -1163,7 +1244,9 @@ public sealed partial class Battle
             case StatusKind.Burn:
             {
                 var cur = s.Ensure(StatusKind.Burn, 0, 0, 0, 0.5);
-                cur.Stacks = Math.Min(5, cur.Stacks + 1);
+                // (a cut's is the share of a blow it stands for; the first on a foe free of it is a whole one. A slot
+                // out of time is taken away by TickStatus, so a made one reads stacks 0, time 0.)
+                cur.Stacks = Math.Min(5, cur.Stacks + (cur.Stacks <= 0 || cur.T <= 0 ? 1 : build));
                 if (dps >= cur.Power) cur.From = from;
                 cur.Power = Math.Max(cur.Power, dps);
                 cur.T = Math.Max(cur.T, dur);
@@ -1173,7 +1256,8 @@ public sealed partial class Battle
             {
                 var cur = s.Ensure(StatusKind.Bleed, 0, 1, 0, 0.5);
                 // A wound that deepens with each cut (A Thousand Cuts) rather than the worst kept.
-                if (p.Stack) cur.Stacks = Math.Min(5, cur.Stacks + (cur.T > 0 ? 1 : 0));
+                // (a fresh bleed is made at 1 stack, time 0; a cut deepens a live one by the share of a blow it stands for)
+                if (p.Stack) cur.Stacks = Math.Min(5, cur.Stacks + (cur.T > 0 ? build : 0));
                 if (dps >= cur.Power) cur.From = from;
                 cur.Power = Math.Max(cur.Power, dps);
                 cur.T = Math.Max(cur.T, dur);
@@ -1182,7 +1266,7 @@ public sealed partial class Battle
             case StatusKind.Poison:
             {
                 var cur = s.Ensure(StatusKind.Poison, 0, 0, 0, 0.5);
-                cur.Stacks = Math.Min(StalkerPoisonCap, cur.Stacks + 1);
+                cur.Stacks = Math.Min(StalkerPoisonCap, cur.Stacks + (cur.Stacks <= 0 || cur.T <= 0 ? 1 : build));
                 if (dps >= cur.Power) cur.From = from;
                 cur.Power = Math.Max(cur.Power, dps);
                 cur.T = Math.Max(cur.T, dur);
@@ -1193,10 +1277,12 @@ public sealed partial class Battle
                 // The frozen stay frozen only as long as the freeze: more cold does not lock them for good.
                 if (s.Has(StatusKind.Frozen)) break;
                 var cur = s.Ensure(StatusKind.Chill, 0, 0, 0, 0);
-                cur.Stacks += p.Power * (Boons.ContainsKey("deep_chill") ? 2 : 1) * Stats.Get(Stat.StatusPowerOf(StatusKind.Chill)) * ArcanistChillMul(e);
+                // (a cut's cold is the share of a blow it stands for; the first on a foe with none is a whole one)
+                double cold = cur.Stacks <= 0 ? 1 : build;
+                cur.Stacks += p.Power * (Boons.ContainsKey("deep_chill") ? 2 : 1) * Stats.Get(Stat.StatusPowerOf(StatusKind.Chill)) * ArcanistChillMul(e) * cold;
                 // blue.drowned_lung: frost skills freeze in half the time.
                 if (Lamps.Board && Lamp("blue.drowned_lung") && statusWeapon != null && (statusWeapon.Tags.Has(Tag.Frost) || statusWeapon.School == School.Frost))
-                    cur.Stacks += p.Power * (1 / Math.Max(0.1, Lamps.Full("blue.drowned_lung", "faster", 0.5)) - 1) * GiftSize * Stats.Get(Stat.StatusPowerOf(StatusKind.Chill)) * ArcanistChillMul(e);
+                    cur.Stacks += p.Power * (1 / Math.Max(0.1, Lamps.Full("blue.drowned_lung", "faster", 0.5)) - 1) * GiftSize * Stats.Get(Stat.StatusPowerOf(StatusKind.Chill)) * ArcanistChillMul(e) * cold;
                 cur.T = Math.Max(cur.T, dur);
                 if (cur.Stacks >= 5 && e.Boss) { cur.Stacks = 2; AddStagger(e, 0.12); }
                 if (cur.Stacks >= 5 && !e.Boss && e.ThawT <= 0)
@@ -1224,6 +1310,7 @@ public sealed partial class Battle
             case StatusKind.Fear:
             case StatusKind.Charm:
                 // A boss is not locked: what would lock it fills its stagger bar instead.
+                // (no cut weight on the stagger: the roll carried it, and weighting both would count it twice)
                 if (e.Boss) { AddStagger(e, p.Kind == StatusKind.Stun ? 0.06 + 0.12 * dur : 0.08); return; }
                 s[p.Kind] = new StatusSlot(Math.Max(s[p.Kind]?.T ?? 0, dur), 1, p.Power, 0);
                 break;
@@ -1233,6 +1320,7 @@ public sealed partial class Battle
                 cur.From ??= from;
                 cur.T = Math.Max(cur.T, dur);
                 cur.Power = Math.Max(cur.Power, p.Power);
+                if (p.Kind == StatusKind.Shock) e.ShockEaten = 0;
                 if (p.Kind == StatusKind.Sear && e.Def.Family == Family.Undead) cur.Power = Math.Max(cur.Power, dps != 0 ? dps : 2);
                 break;
             }
@@ -1242,7 +1330,10 @@ public sealed partial class Battle
         ReaverAfterStatus(e, p, hitDamage, depth);
         StalkerAfterStatus(e, p, hitDamage, depth);
         Events.Emit(new Ev.Status { Target = e.Id, Kind = p.Kind, X = e.X, Z = e.Z });
-        if (depth < 3) Fire(TriggerEvent.Status, new ProcCtx { Target = e, X = e.X, Z = e.Z, Damage = hitDamage, School = School.Physical, Tags = Array.Empty<Tag>(), Applied = p.Kind, Depth = depth + 1 });
+        // (M3 MR 3) what a cut landed stands for a share of a blow (build): the rules it sets off weigh it as a cut's hit
+        // (build is 1 unchained and for hard control: the line as it was)
+        double sw = build > 0 && build < 1 ? build : 1;
+        if (depth < 3) Fire(TriggerEvent.Status, new ProcCtx { Target = e, X = e.X, Z = e.Z, Damage = hitDamage * sw, School = School.Physical, Tags = Array.Empty<Tag>(), Applied = p.Kind, Depth = depth + 1, W = sw });
     }
 
     static readonly Tag[] DotBurn = [Tag.Dot, Tag.Fire], DotBleed = [Tag.Dot, Tag.Physical], DotSear = [Tag.Dot, Tag.Holy], DotPoison = [Tag.Dot, Tag.Nature];
@@ -1743,7 +1834,7 @@ public sealed partial class Battle
             Collision.Resolve(ref nx, ref nz, e.Radius);
             e.X = nx; e.Z = nz;
         }
-        e.Burst = false; e.LastBlow = 0; e.LastCrit = false; e.LastDot = false;
+        e.Burst = false; e.LastBlow = 0; e.LastCrit = false; e.LastDot = false; e.ShockEaten = 0;
         e.Status.Clear();
         e.Flash = 0;
         e.Laid = false;
@@ -1937,9 +2028,19 @@ public sealed partial class Battle
     public void EnemyStrike(double x, double z, double r, double dmg, School school, double delay) =>
         strikes.Add(new StrikeSpec(x, z, r, dmg, school, BlastTag, delay, null, Side.Enemy, 0));
 
+    /// <summary>(M3 MR 3 b2) A strike made inside a banked chained cut's cast (Bonesplitter's, Sunder's, an Aftershock's
+    /// heave) is part of that cut: it carries the cut's bill like a crescent, so the cut has landed if its swing OR its
+    /// strike strikes a body; the cut reserves while it is marked and refunds if it goes off on nothing (UpdateStrikes).</summary>
+    internal StrikeSpec BillStrike(StrikeSpec s)
+    {
+        if (s.Owner == Side.Player && Billing is { } bl && ReferenceEquals(bl.W, s.Weapon)) { s.Bill = bl; bl.Live++; }
+        return s;
+    }
+
     public void ScheduleStrike(double x, double z, double r, double dmg, School school, Tag[] tags, double delay, WeaponInst? weapon, Side owner = Side.Player, int depth = 0)
     {
-        strikes.Add(new StrikeSpec(x, z, r, dmg, school, tags, delay, weapon, owner, depth) { Credit = credit, Echo = Echoing });
+        // (M3 MR 3) made inside a chained cut it lands after the cast, when CutW reads 1 again: it carries the cut's weight
+        strikes.Add(BillStrike(new StrikeSpec(x, z, r, dmg, school, tags, delay, weapon, owner, depth) { Credit = credit, Echo = Echoing, W = weapon?.CutW ?? 1 }));
         Events.Emit(new Ev.Strike { X = x, Z = z, Radius = r, School = school, Delay = delay, Art = weapon?.Art, Rank = weapon?.Rank ?? 0 });
         if (owner == Side.Enemy) Events.Emit(new Ev.Telegraph { Id = -1, Shape = TelegraphShape.Circle, X = x, Z = z, Radius = r, Duration = delay, Hostile = true, School = school == School.Physical ? null : school });
     }
@@ -2266,17 +2367,18 @@ public sealed partial class Battle
 
     void ProjectileStrikes(Projectile pr, Enemy e)
     {
+        if (pr.Bill is { } bl) bl.Hit = true;
         var weapon = WeaponById(pr.Weapon);
         HitEnemy(e, pr.Damage, pr.School, pr.Tags, new HitOpts
         {
-            Weapon = weapon, Knockback = pr.Knockback, DirX = pr.DirX, DirZ = pr.DirZ, Status = pr.Status, Depth = pr.Depth,
+            Weapon = weapon, W = pr.W, Knockback = pr.Knockback, DirX = pr.DirX, DirZ = pr.DirZ, Status = pr.Status, Depth = pr.Depth,
             BossDamage = pr.BossDamage, Projectile = pr.Tags.Has(Tag.Projectile), FromX = pr.DirX, FromZ = pr.DirZ,
             Summon = pr.Owner == Side.Ally, Credit = pr.Credit,
         });
         if (pr.Heal != 0) HealPlayer(pr.Heal, "weapon", true);
         pr.HitCount++;
         ArcanistOnProjectileHit(pr, e, weapon);
-        if (pr.Splash > 0) Explode(pr.X, pr.Z, pr.Splash, pr.Damage * 0.75, pr.School, pr.Tags, weapon, pr.Depth, e.Id);
+        if (pr.Splash > 0) Explode(pr.X, pr.Z, pr.Splash, pr.Damage * 0.75, pr.School, pr.Tags, weapon, pr.Depth, e.Id, pr.W);
         if (pr.GroundOnHit is { } g)
         {
             var zn = SpawnZone(Side.Player, pr.X, pr.Z, g.Radius * Stats.Get(Stat.Area), g.Duration, pr.Damage * g.DpsPct, pr.School);
@@ -2292,7 +2394,7 @@ public sealed partial class Battle
                 if (c == null) continue;
                 c.Y = pr.Y; c.Vx = Math.Cos(a) * sp; c.Vz = Math.Sin(a) * sp; c.Speed = sp; c.Tags = pr.Tags; c.Radius = pr.Radius * 0.7;
                 c.Pierce = 0; c.Life = 0.9; c.Homing = Math.Max(pr.Homing, 3); c.Weapon = pr.Weapon; c.Art = pr.Art; c.Status = pr.Status;
-                c.Depth = pr.Depth + 1; c.Rank = pr.Rank;
+                c.Depth = pr.Depth + 1; c.Rank = pr.Rank; c.W = pr.W;
                 c.AimAlongVelocity();
                 c.Hits.Add(e.Id); c.HitTimes.Add(Time);
             }
@@ -2342,12 +2444,15 @@ public sealed partial class Battle
             }
         }
         else if (pr.Splash > 0 && hitWall && pr.Owner == Side.Player)
-            Explode(pr.X, pr.Z, pr.Splash, pr.Damage * 0.75, pr.School, pr.Tags, null, pr.Depth, -1);
+            Explode(pr.X, pr.Z, pr.Splash, pr.Damage * 0.75, pr.School, pr.Tags, null, pr.Depth, -1, pr.W);
+        // (b1) a banked cut's projectile gone: the last of its cut's, with nothing struck, refunds the cut's weight
+        if (pr.Bill is { } bl) { pr.Bill = null; bl.Gone(); }
         Projectiles.Release(pr);
     }
 
-    /// <summary>An area blast from the survivor's side. Raises Explode for procs.</summary>
-    public void Explode(double x, double z, double r, double dmg, School school, Tag[] tags, WeaponInst? weapon, int depth = 0, int skip = -1)
+    /// <summary>An area blast from the survivor's side. Raises Explode for procs. w: the weight of a blast that goes
+    /// off after its cast (a projectile's splash carries its stamp, HitOpts.W); null: the weapon's live CutW.</summary>
+    public void Explode(double x, double z, double r, double dmg, School school, Tag[] tags, WeaponInst? weapon, int depth = 0, int skip = -1, double? w = null)
     {
         Events.Emit(new Ev.Explosion { X = x, Z = z, Radius = r, School = school, Power = Math.Min(2, dmg / 40), Art = weapon?.Art, Rank = weapon?.Rank ?? 0 });
         var t2 = tags.Has(Tag.Explosion) ? tags : [.. tags, Tag.Explosion];
@@ -2357,7 +2462,7 @@ public sealed partial class Battle
         {
             if (e.Id == skip) return;
             double dd = d == 0 ? 1 : d;
-            HitEnemy(e, dmg, school, t2, new HitOpts { Weapon = weapon, Knockback = 0.5, DirX = (e.X - x) / dd, DirZ = (e.Z - z) / dd, Depth = depth + 1, Status = status });
+            HitEnemy(e, dmg, school, t2, new HitOpts { Weapon = weapon, W = w, Knockback = 0.5, DirX = (e.X - x) / dd, DirZ = (e.Z - z) / dd, Depth = depth + 1, Status = status });
         });
         foreach (var c in Collision.Within(x, z, r)) if (c.Tag != null) Hooks.OnHitProp?.Invoke(c.Tag, c.Id, school, dmg, x, z);
         if (depth < 3) Fire(TriggerEvent.Explode, new ProcCtx { X = x, Z = z, Damage = dmg, School = school, Tags = t2, Depth = depth + 1 });
@@ -2445,9 +2550,23 @@ public sealed partial class Battle
             {
                 var (was, ech) = (credit, Echoing);
                 credit = s.Credit; Echoing = ech || s.Echo;
-                if (s.Heave && s.Weapon != null) { if (Weapons.Contains(s.Weapon)) Heave(s.Weapon, s.X, s.Z, s.R, s.Dmg); }
-                else Explode(s.X, s.Z, s.R, s.Dmg, s.School, s.Tags, s.Weapon, s.Depth);
-                (credit, Echoing) = (was, ech);
+                // (b2) a banked cut's strike learns whether it struck a body (HitEnemy fills Struck for StruckBy)
+                var bl = s.Bill; s.Bill = null;
+                var sb0 = StruckBy;
+                bool watch = bl != null && StruckBy == null;
+                if (watch) { StruckBy = s.Weapon; Struck.Clear(); }
+                try
+                {
+                    if (s.Heave && s.Weapon != null) { if (Weapons.Contains(s.Weapon)) Heave(s.Weapon, s.X, s.Z, s.R, s.Dmg); }
+                    else Explode(s.X, s.Z, s.R, s.Dmg, s.School, s.Tags, s.Weapon, s.Depth, -1, s.W);
+                }
+                finally
+                {
+                    if (watch) { if (Struck.Count > 0) bl!.Hit = true; StruckBy = sb0; Struck.Clear(); }
+                    (credit, Echoing) = (was, ech);
+                }
+                // (the last of its cut's projectiles and strikes gone, with nothing struck: the cut's weight refunds)
+                bl?.Gone();
             }
         }
     }
@@ -2856,6 +2975,9 @@ public sealed partial class Battle
 
     public void Fire(TriggerEvent on, ProcCtx ctx)
     {
+        // (M3 MR 3) the share of a written blow the event stands for: under 1 only for a chained cut's hit and for a
+        // status a cut landed. At 1 every line below is as it was.
+        double w = ctx.W is { } cw && cw > 0 && cw < 1 ? cw : 1;
         // By index: an effect may add a trigger (a summon's boon), never remove one.
         for (int i = 0; i < Triggers.Count; i++)
         {
@@ -2864,9 +2986,39 @@ public sealed partial class Battle
             if (t.Cd > 0) continue;
             if (t.Def.Chance is { } ch && Rng.Next() >= ch) continue;
             if (t.Def.When != null && !Matches(t.Def.When, ctx)) continue;
-            if (t.Def.Icd is { } icd && icd != 0) t.Cd = icd;
+            if (w == 1)
+            {
+                if (t.Def.Icd is { } icd && icd != 0) t.Cd = icd;
+                t.Begun = true;
+                t.Count++;
+                RunEffects(t, ctx);
+                continue;
+            }
+            // A cut. Cuts come 1 / w as often as the blows they are shares of, so the rule's own clock runs at their
+            // pace: the cuts under icd x w are the blows under icd, scaled in time.
+            if (t.Def.Icd is { } cd && cd != 0) t.Cd = cd * w;
+            var kind = t.Def.Weighs();
+            if (kind == ProcClass.Whole)
+            {
+                // Once per blow's worth of would-fires (counted, never rolled), and it sees the blow. The first is whole.
+                if (!t.Begun) t.Begun = true;
+                else
+                {
+                    t.Part += w;
+                    if (t.Part < 1 - Sim.Blows.Eps) continue;
+                    t.Part = Math.Max(0, t.Part - 1);
+                }
+                var blow = ctx;
+                blow.Damage = ctx.Damage / w;
+                blow.W = null;
+                t.Count++;
+                RunEffects(t, blow);
+                continue;
+            }
+            // Sized by the hit (the share is its size already; a status it applies is weighed by the status step), or an
+            // execute (a threshold, not a rate): on every cut.
             t.Count++;
-            RunEffects(t, ctx);
+            RunEffects(t, ctx, kind == ProcClass.Sized ? w : 1);
         }
     }
 
@@ -2887,23 +3039,31 @@ public sealed partial class Battle
         return true;
     }
 
-    void RunEffects(TriggerInstance t, ProcCtx ctx)
+    /// <param name="weight">(M3 MR 3) What a status the rule applies rides (statusW): a cut's weight for a rule sized by
+    /// the hit, 1 for everything else. Set for the rule's own effects only, so a cut's weight never leaks from the hit
+    /// that set a whole rule off.</param>
+    void RunEffects(TriggerInstance t, ProcCtx ctx, double weight = 1)
     {
         int depth = ctx.Depth ?? 1;
-        var (was, wasWeapon) = (credit, ctxWeapon);
+        var (was, wasWeapon, wasW) = (credit, ctxWeapon, statusW);
         credit = t.Credit ?? t.Source;
         ctxWeapon = t.Credit;
+        statusW = weight;
         foreach (var fx in t.Def.Effects) RunEffect(fx, ctx, depth);
-        (credit, ctxWeapon) = (was, wasWeapon);
+        (credit, ctxWeapon, statusW) = (was, wasWeapon, wasW);
     }
 
     double BaseOf(double damage, Basis basis, ProcCtx ctx) => basis switch
     {
         Basis.Hit => damage * (ctx.Damage ?? 0),
         Basis.MaxHp => damage * (ctx.Target?.MaxHp ?? 0),
-        Basis.Weapon => damage * (ctx.Weapon?.Damage ?? WeaponById(ctxWeapon)?.Damage ?? 0),
+        Basis.Weapon => damage * (Written(ctx.Weapon) ?? Written(WeaponById(ctxWeapon)) ?? 0),
         _ => damage * (1 + 0.08 * (EmberLevel - 1)),
     };
+
+    /// <summary>(M3 MR 3) The weapon's written damage: inside a chained cut's cast WeaponInst.Damage is the cut's share,
+    /// and a rule sized on the weapon is sized on the blow.</summary>
+    static double? Written(WeaponInst? w) => w == null ? null : w.CutW > 0 && w.CutW < 1 ? w.Damage / w.CutW : w.Damage;
 
     /// <summary>The weapon whose rule is running (an evolution's), for Basis.Weapon
     /// when the event that set it off carried none (a kill by a status).</summary>
@@ -2919,7 +3079,8 @@ public sealed partial class Battle
                 if (fx.Status != null) ForEachHostileInRadius(x, z, fx.Radius, (e, _) => ApplyStatus(e, fx.Status, BaseOf(fx.Damage, fx.Basis, ctx), depth));
                 break;
             case Effect.Apply fx:
-                if (fx.OnHit && ctx.Target != null) ApplyStatus(ctx.Target, fx.Payload, ctx.Damage ?? 10, depth);
+                // (M3 MR 3: a status is sized on the blow; on a cut the hit is its share, and statusW weighs what it builds)
+                if (fx.OnHit && ctx.Target != null) ApplyStatus(ctx.Target, fx.Payload, (ctx.W is { } aw && aw > 0 && aw < 1 ? ctx.Damage / aw : ctx.Damage) ?? 10, depth);
                 else if (!fx.OnHit)
                 {
                     var list = HostilesInRadius(x, z, fx.Radius);
@@ -3115,6 +3276,11 @@ sealed class StrikeSpec
     public School School;
     public Tag[] Tags;
     public WeaponInst? Weapon;
+    /// <summary>(M3 MR 3) The weight of the cut that made it (WeaponInst.CutW then); 1 for a whole blow or no weapon.</summary>
+    public double W = 1;
+    /// <summary>(M3 MR 3 b2) The banked chained cut it is part of (Battle.BillStrike): its hit pays the cut, the last
+    /// of the cut's strikes and projectiles gone with nothing struck refunds it.</summary>
+    internal Firing.CutBill? Bill;
     public Side Owner;
     public int Depth;
     public string? Credit;
