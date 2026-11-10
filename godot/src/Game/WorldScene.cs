@@ -321,6 +321,7 @@ public partial class WorldScene : Node3D, IZoneLook
                 foreach (var e in evs)
                 {
                     if (e is Ev.Muzzle shot) Player?.OnMuzzle(shot.Angle);
+                    else if (e is Ev.SwingRelease rel) Player?.OnSwingRelease(rel);
                     else if (e is Ev.Flare fl && fl.Phase == FlarePhase.Press) Player?.OnFlarePress(fl, b);
                     else if (e is Ev.Spin or Ev.Brace) Player?.OnP7(e);
                     else if (e is Ev.Knockdown kd) { Player?.OnKnockdown(kd.Seconds); SurvivorUnchained.Play.Story.CourtTrace.Say("knock"); }

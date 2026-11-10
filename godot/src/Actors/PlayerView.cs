@@ -34,7 +34,7 @@ public partial class PlayerView : Node3D
     readonly AnimationNodeAnimation upper, full;
     /// <summary>The whole-body clip she was in, held on at its place for a crossfade out of it (FullHerFrom).</summary>
     readonly AnimationNodeAnimation fullOld;
-    readonly AnimationNodeOneShot fullShotNode;
+    readonly AnimationNodeOneShot fullShotNode, upperShotNode;
     readonly AnimationNodeAnimation? idleNode, runNode;
     public readonly OmniLight3D Light;
     /// <summary>Her carried light on people (Rendering 2, judge r1 D1): <see cref="Light"/> lights the ground round her and
@@ -334,6 +334,7 @@ public partial class PlayerView : Node3D
         var upperShot = new AnimationNodeOneShot { FadeInTime = 0.05, FadeOutTime = 0.18, FilterEnabled = true };
         var fullShot = new AnimationNodeOneShot { FadeInTime = FullFadeIn, FadeOutTime = 0.2 };
         fullShotNode = fullShot;
+        upperShotNode = upperShot;
         fullOld = new AnimationNodeAnimation { Animation = full.Animation };
         var skel = person.Skeleton;
         for (int b = 0; b < skel.GetBoneCount(); b++)
@@ -492,6 +493,7 @@ public partial class PlayerView : Node3D
     {
         if (!mine || !own.Has(clip)) return false;
         upperClip = clip;
+        upperShotNode.FadeOutTime = 0.18; fullShotNode.FadeOutTime = 0.2;   // (a release's recover lengthens them: OnSwingRelease)
         // Standing, a stance swing takes her whole body (its own feet set and hips into the blow), soft:
         // it gives way to the run the moment she moves. Moving, it rides her upper body over the run.
         if (this.speed < 0.6f && own.Stance(clip)) return FullHer(clip, speed, true);
@@ -533,6 +535,7 @@ public partial class PlayerView : Node3D
     {
         if (!mine || !HasHer(clip)) return false;
         XfadeStop();
+        fullShotNode.FadeOutTime = 0.2; upperShotNode.FadeOutTime = 0.18;
         FullBlendIn(clip);
         fullClip = clip;
         fullStart = time; fullSpeed = (float)speed;
@@ -620,6 +623,20 @@ public partial class PlayerView : Node3D
     // (the blow she was in, held where it was at the press under the crossfade; NaN: none held)
     float upperHeld = float.NaN;
     string? flareClipName; double flareClipStart; bool flareClipSeen;
+
+    /// <summary>Ev.SwingRelease: a released cut that does not end on her stance (SwingRecover) fades from its live pose to the
+    /// armed idle over the sim's Recover, instead of running out and fading in 0.2 s. A press inside the grace fires the next
+    /// cut over that fade (its own blend_in reads from the pose then). Held, no release is told, so nothing here.</summary>
+    public void OnSwingRelease(Ev.SwingRelease e)
+    {
+        if (!mine || dead) return;
+        bool full = (bool)tree.Get("parameters/fullShot/active") && HasHer(fullClip);
+        bool up = (bool)tree.Get("parameters/upperShot/active");
+        if (SwingRecover.Fade(full ? fullClip : up ? upperClip : null, e.Recover) is not double fade) return;
+        var (node, path) = full ? (fullShotNode, "parameters/fullShot/request") : (upperShotNode, "parameters/upperShot/request");
+        node.FadeOutTime = fade;
+        tree.Set(path, (int)AnimationNodeOneShot.OneShotRequest.FadeOut);
+    }
 
     /// <summary>The Flare's press (Ev.Flare, Press): her own full-body clip if its data names one, facing the aim, with
     /// its grip formed in her hands for the clip's length. Without a Clip (or without that clip) nothing happens.</summary>
