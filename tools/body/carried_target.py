@@ -831,6 +831,12 @@ HER = {
     # triangle among A's own turned ones (the band-edge part unchanged). Coordinator's ruling, inbox RULING P1 12:17, ASK 2.
     "t22_own_turned": ["x:hadd40:l", "x:flex120:l", "p4:iron_vow@72:l"],
     "t22_tol": 0.15,
+    # Per-row band-edge limits, each with its reason (lead 23, main's ruling: a green suite with the reason stated).
+    # p4:iron_vow@72:l: the ruled left-pit spot (ASK 2). Its turned part passes (1 [109] = faired A's own) and its band edge
+    # 1.97 beats the fill's 2.07, but it sits 0.16 over A's own 1.81. That is the judge's one open CLOSE mark (round 2: the
+    # cap front reads as a lid), still open. The limit 1.98 holds today's value, so any regression fails. It goes back to
+    # 0.15 when the cap fix lands. body.md lead 23 block.
+    "t22_row_tol": {"p4:iron_vow@72:l": 0.17},
     # T23: the neck's relax rule (head-piece patches, body_facts/neck_edges.md): on these poses the neck set has no edge over
     # `ratio` but those the published surface has over it too; Head-rigid points and the girdle regions as with it off
     "t23_poses": ["p4:idle_warden_town@126:r", "p4:idle_warden_town@122:l", "sword_heavy@10:l", "p4:shield_charge@0:r",
@@ -1770,9 +1776,10 @@ def cmd_test(h):
                 tids, oids = {int(x) for x in m.group(4).split(",") if x.strip()}, {int(x) for x in m.group(8).split(",") if x.strip()}
                 ref_ = own_ if key == "t22_own" else fill_
                 ot = nm in cfg.get("t22_own_turned", ())
-                line(f"T22 {nm}", (tids <= oids and tm_ <= int(m.group(7)) if ot else tm_ == 0) and rm_ <= ref_ + tol22,
+                t_ = cfg.get("t22_row_tol", {}).get(nm, tol22)
+                line(f"T22 {nm}", (tids <= oids and tm_ <= int(m.group(7)) if ot else tm_ == 0) and rm_ <= ref_ + t_ + 1e-9,
                      f"({m.group(1)}) w {m.group(2)}: turned triangles {tm_} {sorted(tids)} (limit " + (f"A's own {m.group(7)} {sorted(oids)}" if ot else "0") + f"); worst band edge {rm_:.2f} against {lim_name} {ref_:.2f}"
-                     f" (limit +{tol22:g}); A's own {own_:.2f}, fill {fill_:.2f}")
+                     f" (limit +{t_:g}" + (", KNOWN: judge's open cap mark, see t22_row_tol" if t_ != tol22 else "") + f"); A's own {own_:.2f}, fill {fill_:.2f}")
     # T23: the neck's relax rule (config neck "relax"): against the rule off, on the measured poses
     if getattr(nk, "relax", None):
         c23 = nk.relax[0][3]
