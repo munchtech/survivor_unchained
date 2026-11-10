@@ -13,19 +13,25 @@ namespace SurvivorUnchained.View;
 /// for K = 2 (radius / mean edge)^2 passes (hero_pool value 60, m), stored in CUSTOM0 as xyz in the vertex's own
 /// frame (tangent made square to the normal, cross(normal, it), normal; w 1) so the skinning's frame carries it. The
 /// copy is the source's surfaces, blend shapes, materials and names plus CUSTOM0; no source data or texture changes.
-/// Hair (heroine_hair), meshes without tangents and meshes with a CUSTOM0 of their own are left as they are.
-/// Radius 0 (a row without value 60): nothing is baked.</summary>
+/// Hair (heroine_hair) and meshes with a CUSTOM0 of their own are left as they are; a mesh without tangents gets the
+/// frame's own fallback tangent (the one CEL_HERO_VERTEX builds) in its copy. A mesh visited before the rig set the radius
+/// waits and is baked as soon as it is set (Step), so the order of the rig and the hero's load never matters.
+/// Radius 0 (a row without value 60): nothing is baked. When the bakes drain the log says how many meshes, verts, ms.</summary>
 public static class HeroNormals
 {
     public static float Radius;
     static readonly Dictionary<ulong, ArrayMesh?> made = new();
     static readonly HashSet<ulong> outs = new();
-    static readonly Dictionary<ulong, (ArrayMesh Src, Godot.Collections.Array[] Arr, Task<float[][]?> Job)> jobs = new();
+    static readonly Dictionary<ulong, (ArrayMesh Src, Godot.Collections.Array[] Arr, Task<(float[][][]? Out, float Ms)> Job)> jobs = new();
     static readonly List<MeshInstance3D> waiting = new();
+    static readonly List<MeshInstance3D> early = new();   // visited before the radius was set: baked when it is (Step)
+    static readonly HashSet<ulong> earlyIds = new();
+    static int nBaked, nLeft, nVerts, nMerged; static float msBake; static readonly System.Diagnostics.Stopwatch wall = new();
 
     public static void Visit(MeshInstance3D mi)
     {
-        if (Radius <= 0f || mi.Mesh is not ArrayMesh am) return;
+        if (mi.Mesh is not ArrayMesh am) return;
+        if (Radius <= 0f) { if (earlyIds.Add(mi.GetInstanceId())) early.Add(mi); return; }
         ulong id = am.GetInstanceId();
         if (outs.Contains(id)) return;
         if (made.TryGetValue(id, out var copy)) { if (copy != null) mi.Mesh = copy; return; }
@@ -37,26 +43,35 @@ public static class HeroNormals
             if (mi.GetActiveMaterial(s) is ShaderMaterial { Shader: { } sh } && sh.ResourcePath.Contains("heroine_hair")) { made[id] = null; return; }
             if (am.SurfaceGetPrimitiveType(s) != Mesh.PrimitiveType.Triangles) { made[id] = null; return; }
             arr[s] = am.SurfaceGetArrays(s);
-            if (arr[s][(int)Mesh.ArrayType.Tangent].VariantType == Variant.Type.Nil || arr[s][(int)Mesh.ArrayType.Custom0].VariantType != Variant.Type.Nil)
-            { made[id] = null; GD.Print($"hero normals: {mi.Name} left as is (no tangents or a CUSTOM0 of its own)"); return; }
+            if (arr[s][(int)Mesh.ArrayType.Custom0].VariantType != Variant.Type.Nil)
+            { made[id] = null; nLeft++; GD.Print($"hero normals: {mi.Name} left as is (a CUSTOM0 of its own on surface {s})"); return; }
+            if (arr[s][(int)Mesh.ArrayType.Tangent].VariantType == Variant.Type.Nil && am.GetBlendShapeCount() > 0)
+            { made[id] = null; nLeft++; GD.Print($"hero normals: {mi.Name} left as is (blend shapes without tangents on surface {s})"); return; }
         }
-        var P = new Vector3[n][]; var N = new Vector3[n][]; var T = new float[n][]; var I = new int[n][];
+        var P = new Vector3[n][]; var N = new Vector3[n][]; var T = new float[]?[n]; var I = new int[n][];
         for (int s = 0; s < n; s++)
         {
             P[s] = arr[s][(int)Mesh.ArrayType.Vertex].AsVector3Array();
             N[s] = arr[s][(int)Mesh.ArrayType.Normal].AsVector3Array();
-            T[s] = arr[s][(int)Mesh.ArrayType.Tangent].AsFloat32Array();
+            T[s] = arr[s][(int)Mesh.ArrayType.Tangent].VariantType == Variant.Type.Nil ? null! : arr[s][(int)Mesh.ArrayType.Tangent].AsFloat32Array();
             var iv = arr[s][(int)Mesh.ArrayType.Index];
             I[s] = iv.VariantType == Variant.Type.Nil ? System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Range(0, P[s].Length)) : iv.AsInt32Array();
         }
         float r = Radius;
-        jobs[id] = (am, arr, Task.Run(() => Bake(P, N, T, I, r)));
+        if (!wall.IsRunning) wall.Start();
+        if (mi.Name.ToString().StartsWith("her_merge")) nMerged++;
+        jobs[id] = (am, arr, Task.Run(() => { var sw = System.Diagnostics.Stopwatch.StartNew(); var o = Bake(P, N, T, I, r); return (o, (float)sw.Elapsed.TotalMilliseconds); }));
         waiting.Add(mi);
     }
 
     /// <summary>Each frame (CelLib): a finished bake becomes the copy, worn by every mesh that waited for it.</summary>
     public static void Step()
     {
+        if (Radius > 0f && early.Count > 0)
+        {
+            var e = new List<MeshInstance3D>(early); early.Clear(); earlyIds.Clear();
+            foreach (var mi in e) if (GodotObject.IsInstanceValid(mi)) Visit(mi);
+        }
         if (jobs.Count == 0) return;
         foreach (var id in new List<ulong>(jobs.Keys))
         {
@@ -64,14 +79,18 @@ public static class HeroNormals
             if (!job.IsCompleted) continue;
             jobs.Remove(id);
             ArrayMesh? copy = null;
-            if (job.Status == TaskStatus.RanToCompletion && job.Result is { } cs && GodotObject.IsInstanceValid(src))
+            if (job.Status != TaskStatus.RanToCompletion) GD.PushError($"hero normals: {src.ResourceName} bake failed: {job.Exception?.GetBaseException().Message}");
+            if (job.Status == TaskStatus.RanToCompletion && job.Result.Out is { } cs && GodotObject.IsInstanceValid(src))
             {
+                msBake += job.Result.Ms;
                 copy = new ArrayMesh { BlendShapeMode = src.BlendShapeMode, CustomAabb = src.CustomAabb, ShadowMesh = src.ShadowMesh, ResourceName = src.ResourceName };
                 bool shapes = src.GetBlendShapeCount() > 0;
                 if (shapes) for (int k = 0; k < src.GetBlendShapeCount(); k++) copy.AddBlendShape(src.GetBlendShapeName(k));
                 for (int s = 0; s < arr.Length; s++)
                 {
-                    arr[s][(int)Mesh.ArrayType.Custom0] = cs[s];
+                    arr[s][(int)Mesh.ArrayType.Custom0] = cs[s][0];
+                    if (cs[s][1] is { } ft) arr[s][(int)Mesh.ArrayType.Tangent] = ft;   // (a mesh without tangents: the frame's own fallback)
+                    nVerts += cs[s][0].Length / 4;
                     long keep = (long)src.SurfaceGetFormat(s) & ((long)Mesh.ArrayFormat.FlagUse8BoneWeights | (0xFFFL << (int)Mesh.ArrayFormat.FormatCustom0Shift));
                     keep &= ~((long)Mesh.ArrayFormat.FormatCustomMask << (int)Mesh.ArrayFormat.FormatCustom0Shift);
                     keep |= (long)Mesh.ArrayCustomFormat.RgbaFloat << (int)Mesh.ArrayFormat.FormatCustom0Shift;
@@ -80,10 +99,12 @@ public static class HeroNormals
                     copy.SurfaceSetName(s, src.SurfaceGetName(s));
                 }
                 outs.Add(copy.GetInstanceId());
-                GD.Print($"hero normals: {src.ResourceName} baked ({arr.Length} surfaces, radius {Radius:0.###} m)");
+                nBaked++;
             }
             made[id] = copy;
         }
+        if (jobs.Count == 0)
+            GD.Print($"hero normals: {nBaked} meshes baked ({nMerged} of them her_merge), {nVerts} verts, {msBake:0} ms of bake on workers, {wall.Elapsed.TotalMilliseconds:0} ms wall; {nLeft} left as is; radius {Radius:0.###} m");
         for (int i = waiting.Count - 1; i >= 0; i--)
         {
             var mi = waiting[i];
@@ -93,7 +114,7 @@ public static class HeroNormals
     }
 
     /// <summary>The smoothed normal per vertex as CUSTOM0 (frame xyz, w 1), every surface; no Godot calls (a worker).</summary>
-    static float[][]? Bake(Vector3[][] P, Vector3[][] N, float[][] T, int[][] I, float radius)
+    static float[][][]? Bake(Vector3[][] P, Vector3[][] N, float[]?[] T, int[][] I, float radius)
     {
         var weld = new Dictionary<(long, long, long), int>();
         var wid = new int[P.Length][];
@@ -143,16 +164,20 @@ public static class HeroNormals
             }
             (n0, n1) = (n1, n0);
         }
-        var outv = new float[P.Length][];
+        var outv = new float[P.Length][][];
         for (int s = 0; s < P.Length; s++)
         {
-            var o = outv[s] = new float[P[s].Length * 4];
+            var o = new float[P[s].Length * 4];
+            var ts = T[s];
+            var ft = ts == null ? new float[P[s].Length * 4] : null;
+            outv[s] = new[] { o, ft! };
             for (int v = 0; v < P[s].Length; v++)
             {
                 var nn = N[s][v].Normalized();
-                var tt = new Vector3(T[s][4 * v], T[s][4 * v + 1], T[s][4 * v + 2]);
+                var tt = ts == null ? Vector3.Zero : new Vector3(ts[4 * v], ts[4 * v + 1], ts[4 * v + 2]);
                 tt -= nn * nn.Dot(tt);
                 tt = tt.LengthSquared() > 1e-8f ? tt.Normalized() : nn.Cross(MathF.Abs(nn.Y) < 0.99f ? Vector3.Up : Vector3.Right).Normalized();
+                if (ft != null) { ft[4 * v] = tt.X; ft[4 * v + 1] = tt.Y; ft[4 * v + 2] = tt.Z; ft[4 * v + 3] = 1f; }
                 var bb = nn.Cross(tt);
                 var sn = n0[wid[s][v]];
                 o[4 * v] = sn.Dot(tt); o[4 * v + 1] = sn.Dot(bb); o[4 * v + 2] = sn.Dot(nn); o[4 * v + 3] = 1f;
