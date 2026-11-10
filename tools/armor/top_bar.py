@@ -6,9 +6,11 @@ step: no rebuild, no follow, the cups never move").
 Loads the installed godot/art/armor/plate_top_plain.gltf (+ .bin, .sockets.json), takes the gore tongue (its plate,
 rolled edge and 3 rivets) out of top.steel, lod1.steel and shadow (found by welded component + the gore socket's one
 rigid weight row + nearness to the gore socket, never by index ranges), and builds the bar in its place from
-piece.json params.gore (the piece_blender gore_plate(bar=...) law, ported to numpy in the glTF frame, y up, +z front):
-rows of straight chords between her skin at the installed cups' innermost rims (+-x_in), bowed forward `camber`,
-never behind her skin, `lift` off it, `thick` thick, a rolled edge `roll` (width, height) over its cut, square ends
+piece.json params.gore (the glTF frame, y up, +z front): a bridge between the CUPS (never her skin): rows `top + drop`
+tall centred where the installed cups' inner rims stand closest (the cleavage's narrowest gap), each row a straight
+chord between the two cups' fronts at their inner rims (the rolled-edge crowns, a least-squares line in y per side so
+the plate is flat), set back `thick + roll height` (the bar's rolled edge crowns level with the cups', its face just
+behind them), bowed forward `camber`, never closer than `lift` to her skin, `thick` thick, a rolled edge `roll` (width, height) over its cut, square ends
 standing `clear` off the cups (the WHOLE bar, rolled edge included: past the join law's weld_m, so it links to both
 cups as a bridge), 2 end rivets at mid-height. Every bar point carries the tongue's one rigid row and one delta per
 morph target (the mean of the removed piece's position deltas, zero normal deltas: a rigid piece's normals do not
@@ -141,32 +143,34 @@ def kinds(m, sel):
 
 # ---------------------------------------------------------------- the bar
 class Surf:
-    """The bar's back surface z(x, y): straight chords between her skin at +-xa per row, bowed forward, never behind
-    her skin, `lift` off it (along its own normal)."""
+    """The bar's back surface z(x, y): per row a straight chord between the two cups' FRONT at their inner rims
+    (`rim(ys)` -> (x_left < 0, z_left, x_right > 0, z_right): the installed rim's x, the cup's front-most z there), set
+    back `back` (so the face sits level with / just behind the cups' fronts), bowed forward `camber` at the middle;
+    never closer than `lift` to her skin (in the valley it stands far off it)."""
 
-    def __init__(self, V, F, y0, y1, xa, hw, camber, lift):
+    def __init__(self, V, F, y0, y1, hw, rim, back, camber, lift):
         self.xs = np.arange(-hw - 0.008, hw + 0.008 + 1e-9, 0.0005)
         self.ys = np.arange(y0 - 0.006, y1 + 0.006 + 1e-9, 0.0005)
         X, Y = np.meshgrid(self.xs, self.ys)
         Zs = front_z(V, F, X.ravel(), Y.ravel()).reshape(X.shape)
         assert not np.isnan(Zs).any(), "her skin missed under the bar"
         self.skin = RegularGridInterpolator((self.ys, self.xs), Zs)
-        Z = Zs.copy()
-        for r in range(len(self.ys)):
-            zb = 0.5 * (np.interp(-xa, self.xs, Zs[r]) + np.interp(xa, self.xs, Zs[r]))
-            zb = zb + camber * np.clip(1 - (self.xs / xa) ** 2, 0, 1)
-            Z[r] = np.maximum(Zs[r], zb)
+        xl, zl, xr, zr = rim(self.ys)
+        t = np.clip((self.xs[None, :] - xl[:, None]) / (xr - xl)[:, None], 0, 1)
+        zb = zl[:, None] + (zr - zl)[:, None] * t - back
+        xm, ha = 0.5 * (xl + xr), 0.5 * (xr - xl)
+        zb = zb + camber * np.clip(1 - ((self.xs[None, :] - xm[:, None]) / ha[:, None]) ** 2, 0, 1)
+        Z = np.maximum(Zs + lift, zb)
         self.z = RegularGridInterpolator((self.ys, self.xs), Z)
         gy, gx = np.gradient(Z, self.ys, self.xs)
         self.gx = RegularGridInterpolator((self.ys, self.xs), gx)
         self.gy = RegularGridInterpolator((self.ys, self.xs), gy)
-        self.lift = lift
 
     def at(self, x, y):
         q = np.c_[y, x]
         N = np.c_[-self.gx(q), -self.gy(q), np.ones(len(q))]
         N /= np.linalg.norm(N, axis=1, keepdims=True)
-        return np.c_[x, y, self.z(q)] + N * self.lift, N
+        return np.c_[x, y, self.z(q)], N
 
     def skin_z(self, x, y):
         return self.skin(np.c_[y, x])
@@ -304,14 +308,6 @@ def run(src, dst=None, check=False):
     at = np.asarray(sock["sockets"]["gore"]["point"], float)
     V, F = skin()
 
-    # (the cups' innermost rims, from the installed rims: x_in and the inner corner's height)
-    R = np.vstack([np.asarray(r["points"], float) for k, r in sock["rims"].items() if k.startswith("cup_rim")])
-    x_in = np.abs(R[:, 0]).min()
-    y_corner = R[np.abs(R[:, 0]) < x_in + 0.012, 1].min()
-    y0, y1 = y_corner - gp["drop"], y_corner + gp["top"]
-    hw = x_in + 0.012
-    say(f"cups' inner rims x_in {x_in * 1000:.1f} mm, corner y {y_corner:.4f}; bar rows y {y0:.4f}..{y1:.4f}")
-
     old = {k: M.get(f"{PID}.{k}") for k in MESHES}
     sel = {k: find_gore(old[k], row, at) for k in MESHES}
     for k in MESHES:
@@ -322,7 +318,50 @@ def run(src, dst=None, check=False):
     cupV = steel["attrs"]["POSITION"][0].astype(np.float64)
     cupF = steel["tris"][keep_t]
 
-    surf = Surf(V, F, y0, y1, x_in, hw, bar_p["camber"], gp["lift"])
+    # (the cups' inner rims, from the installed rims (their inner branches, x(y) and z(y)); the bar's rows cover the
+    # band where they stand closest (the cleavage's narrowest gap), top + drop tall, centred there)
+    branch = {}
+    for k, r in sock["rims"].items():
+        if not k.startswith("cup_rim"):
+            continue
+        R = np.asarray(r["points"], float)
+        R = R[R[:, 2] > 0.1]
+        R = R[(np.abs(R[:, 0]) < 0.06) & (np.abs(R[:, 1] - R[np.argmin(np.abs(R[:, 0])), 1]) < 0.03)]
+        R = R[np.argsort(R[:, 1])]
+        assert len(R) > 6 and np.all(np.diff(R[:, 1]) > 0), f"{k}: no single inner branch"
+        branch[int(np.sign(np.median(R[:, 0])))] = R
+    assert set(branch) == {-1, 1}, "top_bar: need both cups' rims"
+    ylo = max(branch[-1][0, 1], branch[1][0, 1])
+    yhi = min(branch[-1][-1, 1], branch[1][-1, 1])
+    yy = np.arange(np.ceil(ylo / 0.0002), np.floor(yhi / 0.0002) + 1) * 0.0002
+    rim_x = lambda sx, ys: np.interp(ys, branch[sx][:, 1], branch[sx][:, 0])
+    gap = rim_x(1, yy) - rim_x(-1, yy)
+    yc = float(yy[np.argmin(gap)])
+    H = gp["top"] + gp["drop"]
+    y0, y1 = yc - H / 2, yc + H / 2
+    assert ylo < y0 - 0.006 and y1 + 0.006 < yhi, "top_bar: the rims do not span the bar's rows"
+    x_in = float(min(np.abs(rim_x(-1, yy[np.abs(yy - yc) <= H / 2])).min(), rim_x(1, yy[np.abs(yy - yc) <= H / 2]).min()))
+    hw = x_in + 0.012
+
+    def cup_front(sx, ys):
+        """The cup's front-most z at its rim's x (the rolled edge's crown), per row."""
+        z = front_z(cupV, cupF, rim_x(sx, ys), ys)
+        assert not np.isnan(z).any(), "the cup missed at its rim"
+        return z
+
+    # (the cups' fronts as the bar sees them: a straight line in y per side, least squares over the bar's rows +- 6 mm,
+    # so the plate is flat (the crowns' ray hits are faceted: a per-row chord would ripple the face))
+    yf = np.linspace(y0 - 0.006, y1 + 0.006, 29)
+    fit = {sx: np.polyfit(yf, cup_front(sx, yf), 1) for sx in (-1, 1)}
+
+    def rim(ys):
+        return rim_x(-1, ys), np.polyval(fit[-1], ys), rim_x(1, ys), np.polyval(fit[1], ys)
+    # (depth: the plate's face level with the cups' rolled-edge crowns minus the bar's own roll height, so the bar's
+    # rolled edge crowns level with the cups' and its face stands just behind them)
+    back = gp["thick"] + gp["roll"][1]
+    say(f"cups' inner rims: narrowest gap {gap.min() * 1000:.1f} mm at y {yc:.4f}, x_in {x_in * 1000:.1f} mm; bar rows"
+        f" y {y0:.4f}..{y1:.4f}; set back {back * 1000:.2f} mm from the cups' fronts")
+    surf = Surf(V, F, y0, y1, hw, rim, back, bar_p["camber"], gp["lift"])
     clear = bar_p["clear"]
 
     def env(x, y, sx):
@@ -513,7 +552,23 @@ def run(src, dst=None, check=False):
              "bar_to_cups_left_mm": round(float(dfull[bL].min()) * 1000, 2),
              "bar_to_cups_right_mm": round(float(dfull[~bL].min()) * 1000, 2),
              "skin_standoff_min_mm": round(float(st_z.min()) * 1000, 2), "skin_dist_min_mm": round(float(st_n.min()) * 1000, 2)}
+    # (the face: its normal's angle to +z (the front), and the ends' face depth against the cups' fronts at the rims)
+    X_, Y_ = bar.outline(11, 33)
+    _, Nf = surf.at(X_.ravel(), Y_.ravel())
+    ang = np.degrees(np.arccos(np.clip(Nf[:, 2], -1, 1)))
+    ye = np.linspace(y0, y1, 11)
+    xl_, xr_ = end_fn(ye)
+    dz = []
+    for sx, xe in ((-1, xl_), (1, xr_)):
+        fz = surf.z(np.c_[ye, xe]) + gp["thick"]
+        dz.append(cup_front(sx, ye) - fz)
+    dz = np.concatenate(dz)
+    gates.update({"face_normal_deg_mean": round(float(ang.mean()), 2), "face_normal_deg_max": round(float(ang.max()), 2),
+                  "end_face_behind_rim_front_mm_min": round(float(dz.min()) * 1000, 2),
+                  "end_face_behind_rim_front_mm_max": round(float(dz.max()) * 1000, 2)})
     say("GATES", json.dumps(gates))
+    assert gates["face_normal_deg_mean"] <= 25, "GATE: the bar's face does not face the front"
+    assert np.abs(dz).max() <= 0.005, "GATE: the bar's ends are not at the rims' depth"
     assert d.min() >= clear - TOL, f"GATE: bar {d.min() * 1000:.2f} mm off the cups (< {clear * 1000 - 0.2:.1f})"
     assert st_z.min() > 0, "GATE: bar behind her skin"
     assert dfull[bL].min() < 0.010 and dfull[~bL].min() < 0.010, "GATE: bar not within link_m of both cups"

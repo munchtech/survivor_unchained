@@ -27,6 +27,17 @@ def test_gates_hold(built):
     assert g["bar_to_cups_left_mm"] < 10 and g["bar_to_cups_right_mm"] < 10
 
 
+def test_bar_faces_front_at_rim_depth(built):
+    """A bridge between the cups: its face looks to the front (not down into the cleavage), its ends at the rims' depth."""
+    g = built[3]
+    assert g["face_normal_deg_mean"] <= 25 and g["face_normal_deg_max"] <= 30
+    assert -5 <= g["end_face_behind_rim_front_mm_min"] and g["end_face_behind_rim_front_mm_max"] <= 5
+    assert g["skin_standoff_min_mm"] > 1
+    M, sock = tb.load(built[1])
+    n = np.asarray(sock["sockets"]["gore"]["normal"])
+    assert np.degrees(np.arccos(n[2] / np.linalg.norm(n))) <= 25
+
+
 def test_other_meshes_identical(built):
     src, once = built[0], built[1]
     A, _ = tb.load(src)
