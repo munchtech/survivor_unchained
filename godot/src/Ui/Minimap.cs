@@ -23,7 +23,7 @@ public partial class Minimap : Control
     /// <summary>The disc's size on screen, and how many metres it spans.</summary>
     public const float Diameter = 200, Span = 120;
     // (Names made once, not a new one every showing for the collector.)
-    static readonly StringName CentreName = "centre", DimName = "dim";
+    static readonly StringName CentreName = "centre";
     readonly ColorRect disc;
     readonly ShaderMaterial mat;
     readonly Control marks;
@@ -42,20 +42,16 @@ public partial class Minimap : Control
         AddChild(disc);
         marks = new Control { Size = new Vector2(Diameter, Diameter), MouseFilter = MouseFilterEnum.Ignore };
         AddChild(marks);
-        you = new Polygon2D
+        // Where she is: a bone-white arrow with an ink edge (M4 lead 9, fix C: it reads on the vellum and on the dark
+        // unexplored plate alike; the painted red minimap/you.png sank into both and is no longer shown).
+        var arrow = new[] { new Vector2(0, -10), new Vector2(7.5f, 8), new Vector2(0, 3.5f), new Vector2(-7.5f, 8) };
+        you = new Polygon2D { Polygon = arrow, Color = new Color("#efe6d2"), Position = new Vector2(Diameter / 2, Diameter / 2) };
+        you.AddChild(new Line2D
         {
-            Polygon = new[] { new Vector2(0, -9), new Vector2(7, 7), new Vector2(0, 3), new Vector2(-7, 7) },
-            Color = new Color("#b8321e"), Position = new Vector2(Diameter / 2, Diameter / 2),
-        };
+            Points = arrow, Closed = true, Width = 4.5f, DefaultColor = new Color("#241c12"), JointMode = Line2D.LineJointMode.Round,
+            ShowBehindParent = true, Antialiased = true,
+        });
         AddChild(you);
-        // A painted arrow (minimap/you.png, pointing up, 24 by 24 shown) in place of the drawn one.
-        if (UiArt.Art("minimap/you.png") is { } arrow)
-        {
-            you.Color = Colors.Transparent;
-            var a = new TextureRect { Texture = arrow, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, MouseFilter = MouseFilterEnum.Ignore, Size = arrow.GetSize() };
-            a.Position = -a.Size / 2;
-            you.AddChild(a);
-        }
         // The bezel: the cuffs' iron round the disc, the day's path riding over its top (Bezel).
         bezel = new Bezel(this);
         AddChild(bezel);
@@ -208,7 +204,7 @@ public partial class Minimap : Control
             else maskTex.Update(mask);
         }
         mat.SetShaderParameter(CentreName, new Vector2((float)(px / extent + 0.5), (float)(pz / extent + 0.5)));
-        mat.SetShaderParameter(DimName, night ? 0.62f : 0.95f);
+        // (night is not shown on the disc: the HUD does not darken at night, and the map is the same map; M4 lead 9, fix C)
         you.Rotation = (float)(Math.PI - facing);
         // The marks are kept and reused, not freed and built anew each time (MR4, the HUD's redraws were
         // 3.4 ms a frame): one pool per look (kind and size; the people's dots), shown in order, the rest hidden.
@@ -308,24 +304,35 @@ public partial class Minimap : Control
         uniform sampler2D seen : filter_linear, repeat_disable;
         uniform vec2 centre = vec2(0.5);
         uniform float span = 0.2;
-        uniform float dim = 1.0;
         void fragment() {
             vec2 d = UV - 0.5;
             float r = length(d) * 2.0;
             vec2 uv = centre + d * span;
-            // (fix E, 4) the plate is the HUD's own dark, not khaki: unexplored ground the panel's ink-brown #1c1713 at 0.86,
-            // explored one step lighter, #3a3026; the drawing's dark ink (roads, outlines) turns bone at 0.6, its other
-            // colours ride on the explored ground
+            // (M4 lead 9, fix C) a map, not a dark lens. The plate and the unexplored ground stay the HUD's own dark
+            // (#1c1713 at 0.86); explored ground is worn vellum (120,105,80), flat as paper (the land's light and dark
+            // ride on it within +-8); what is drawn on it is ink at full contrast (36,28,18): the roads (the drawing's
+            // dirt, told by its hue once the sheet's aged edge is taken back out) and, as a wash, the water.
             vec3 panel = vec3(0.110, 0.090, 0.075);
-            vec3 lit = vec3(0.227, 0.188, 0.149);
-            vec3 bone = vec3(0.914, 0.875, 0.800);
+            vec3 vellum = vec3(0.471, 0.412, 0.314);
+            vec3 ink = vec3(0.141, 0.110, 0.071);
             vec3 drawn = texture(drawing, uv).rgb;
-            float s = texture(seen, uv).r;
-            float known = smoothstep(0.2, 0.7, s);
+            float age = smoothstep(0.3, 0.72, length(uv - 0.5)) * 0.5;
+            drawn = clamp((drawn - vec3(0.275, 0.157, 0.055) * age) / (1.0 - age), 0.0, 1.0);
+            float sum = max(drawn.r + drawn.g + drawn.b, 0.05);
+            float road = smoothstep(0.026, 0.048, (drawn.r - drawn.g) / sum);
+            float water = smoothstep(0.030, 0.070, (drawn.b - drawn.r) / sum);
             float luma = dot(drawn, vec3(0.299, 0.587, 0.114));
-            float inkness = clamp((0.62 - luma) / 0.42, 0.0, 1.0);
-            vec3 hue = (drawn - vec3(luma)) * 0.5;
-            vec3 seenCol = mix(lit + hue * 0.6, bone * 0.6 * dim, inkness);
+            vec3 seenCol = vellum + vec3(clamp((luma - 0.72) * 0.25, -0.03, 0.03));
+            seenCol = mix(seenCol, mix(vellum, ink, 0.55) + vec3(-0.02, 0.01, 0.03), water);
+            seenCol = mix(seenCol, ink, road);
+            // The fog's edge: the explored grid (cells of about 10 px here) is blurred over its neighbours, not drawn
+            // as cells, and crossed in 6 to 8 px: no stair steps.
+            vec2 cell = 1.0 / vec2(textureSize(seen, 0));
+            float s = 0.0;
+            for (int j = -1; j <= 1; j++)
+                for (int i = -1; i <= 1; i++)
+                    s += texture(seen, uv + vec2(float(i), float(j)) * cell).r * (i == 0 ? 2.0 : 1.0) * (j == 0 ? 2.0 : 1.0);
+            float known = smoothstep(0.23, 0.77, s / 16.0);
             // Beyond the drawing's edge the plate is the panel dark; the edge itself never shows (UI 20: a dead-straight
             // line where the drawing stopped): the drawing fades into it over ~28 screen px, the line wandering +-6 px.
             float px = max(fwidth(uv.x), fwidth(uv.y));
