@@ -454,8 +454,12 @@ public partial class GameHud : CanvasLayer
         if (!UiArt.Has("boss_groove"))
             foreach (float cx in new[] { -6f, w - 6 })
                 bossBox.AddChild(Clamp(new Vector2(cx, 34), new Vector2(12, 24)));
-        bossTitle = Style.Label("", Style.TextItalic, 16, Style.InkDim, false, HorizontalAlignment.Center);
-        bossTitle.Position = new Vector2(0, 64); bossTitle.Size = new Vector2(w, 20);
+        // (M4 lead 6: 16 px InkDim italic with a soft shadow was lost over lit grass at 1:1, "Old Blue is out of reach
+        // until it breaks" could not be read: the tracker's rule for words that stand on the world, bone ink, rimmed and
+        // shadowed, two sizes up)
+        bossTitle = Shadowed(Style.Label("", Style.TextItalic, 18, Style.Ink, false, HorizontalAlignment.Center));
+        bossTitle.AddThemeConstantOverride("outline_size", 4);
+        bossTitle.Position = new Vector2(0, 62); bossTitle.Size = new Vector2(w, 24);
         bossBox.AddChild(bossTitle);
         // A channel's bar: the boss bar's smaller sibling (UI 20; the judge: "a default progress bar under a dressed
         // boss bar"): the same forged groove and iron clamps, an ember fill deep at its start and hot at its leading

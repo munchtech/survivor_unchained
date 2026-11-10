@@ -89,8 +89,18 @@ public partial class DawnCardView : Control
         col.AddThemeConstantOverride("separation", 4);
         col.AddChild(Words(head.ToUpperInvariant(), Style.DisplayLight, Style.Small, Red, HorizontalAlignment.Center));
         col.AddChild(Gap(6));
-        // (one line: the column's items run together, wrapping inside the short column)
-        var line = Style.Label(string.Join(" · ", lines.Select(l => l.Replace(" ", "\u00A0"))), Style.Text, Style.Lead, Ink, true, HorizontalAlignment.Center, false);
+        // (the column's items run together with a dot between two on one line. M4 lead 6: the lines are packed here,
+        // not by the label's wrap, which left a dot hanging at a line's end: "Whirling Ember" and its dot alone)
+        var rows = new List<string>();
+        string row = "";
+        foreach (var l in lines)
+        {
+            string both = row.Length == 0 ? l : row + " · " + l;
+            if (row.Length > 0 && Style.Text.GetStringSize(both, HorizontalAlignment.Left, -1, Style.Lead).X > 250) { rows.Add(row); row = l; }
+            else row = both;
+        }
+        if (row.Length > 0) rows.Add(row);
+        var line = Style.Label(string.Join('\n', rows.Select(r => r.Replace(" ", "\u00A0"))), Style.Text, Style.Lead, Ink, true, HorizontalAlignment.Center, false);
         line.CustomMinimumSize = new Vector2(250, 0);
         col.AddChild(line);
         return col;
