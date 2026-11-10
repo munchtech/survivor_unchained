@@ -1,5 +1,18 @@
 # Handoff: her body (rig, mesh, weights)
 
+## SHOULDER REBUILD, LEAD 22 (10 Nov, running): Gate T round 2 NOT sent. BLOCKED on two asks to main (inbox 12:16). Suite 81 PASS / 6 FAIL before the lay 8 promotion (T22 3, T26 3)
+**Charter:** as lead 21's (below). Lane line 2.1M; lead 22 spent ~0.70M by 12:16 (over the ~0.61M left; told main with the rest's cost).
+**Done (body-p1b, pushed):**
+1. fair_a P5 LIVE (`38b8171cf`): P4 + rings 4, `shrink` 0.5 (new keyword, fair_a.md attempt 5). Girdle-posed nine: caps met, 0 flips (iron_vow@72:l 131 -> 81 / cap 84, leap@19 met). One cap-front edge at 128 deg left. On the WHOLE pose (pose_ref) P5 misses the cap on hadd40 (88 / 81, 6 flips) and iron_vow (252 / 229, 1 flip): fair_a.md attempt 6.
+2. Armpit map lay 8 PROMOTED (`fc79f57d3`): active `out/shoulder/strip_rest.npz` = `_l22` sha1 3b91593196d7 (lay 5 backed up, `survivorsunchained_inputsody\p1b_l22_lays\`). Right MET on P5 (0 turned, guard 0.80, FOLD jump 75 -> 48 deg, leap@14-17 under lay 5). Left: 1 turned triangle each on hadd40 / flex120 / iron_vow@72 = faired A's OWN tight crease (pit walls 1-4 mm apart); two solvers could not fair it (strip_rest.md Lay 8, Lay 9). T22 + 7 rows (22 rows): iron_vow@72:l the one expected fail.
+3. Relax FOLD trigger (`Her.folded`, `relax.fold` 45 on neck + girdle gate2, girdle `fold_open` [30, 45]; notch.md (4)): clears the chest notch box (leap@5-@11:r 109-136 -> 11-24 deg, 0 over 45) and the cast_bolt tick (166 -> 90 = rest). BUT the neck fill makes 30+ NEW folds (deltoid tops, trap_r, under jaw; T26 neck 42-48 over 45 vs 7-15 off). Shift worse: fold_front 7.7, deltoid 7.6 (were 6.0 / 5.0). Girdles clean.
+4. Inert code DECIDED: removed `Her.depinched` + `Pocket.fair`, `Her.gate_open` / `open_off` / T25 (`05675c18b`); kept lay2 `boost` / `extra` (lay 8 uses them), `judge` / `guard` / `turnwall`, new `fair_a` `extra` seeds (off).
+5. T9 / T11 / T21 re-specified under `fold_off` (isolation tests of other stages; `6c2807395`).
+6. Breast top at the worst legitimate spine turns (published -> composed): axe_heavy@9 l max dihedral 166 -> 176 (over 2.5x 3 -> 3), r 52 -> 47 (4 -> 0); sword_heavy@9 l 168 -> 135 (1 -> 0), r 47 -> 47 (4 -> 4, worst 6.24 -> 4.89).
+**ASKS to main (12:16):** (1) source weight relax on B's checkerboard neck_01 / spine_04 weights (the notch ships in game today), neck fold trigger off meanwhile; (2) left armpit bar at w = 1 reads "<= faired A's own turned", a look item for the judge.
+**Next:** per the rulings; then full rerun (lead 19 / 20 commands), own 1:1 look, one max judge, GATE T READY with the A|B half sheets.
+**Cost, lead 22:** helpers fair_a 109k, lay 8 109k, relax 121k, worker 57k, fair_a 6 104k, tests/neck 111k (~0.61M) + me ~0.1M. $0 API, 0 Meshy, no judge.
+
 ## SHOULDER REBUILD, LEAD 21 -> LEAD 22 (10-11 Nov): Gate T round 2 NOT sent. The FAIRED A is LIVE and cures A's own crumple at the source (my look: abd120-170, flex170, leap@12 / @19 clean). The map re-lay is right-side only. Three marks are located. Suite 79 PASS / 4 FAIL (T22, the map laid on raw A)
 **Charter:** Gate T round 2, a fix in the target only with no rest change, then GATE T READY with the A|B half sheets. The after-list is unchanged (P3 bends spec, her-config split, deform_audit general). Line: main raised it to 1.75M (1.0M, then 1.75M). Spent about 1.49M. Reports now go to `survivorsunchained_inputs\scratch_coord5\inbox.md` (one line, "<time> P1 <branch>@<sha>: <what>") and this block. Do not SendMessage main. Rulings come back in the same file: re-read it before each decision.
 **Done by lead 21 (all committed and pushed on body-p1b):**
