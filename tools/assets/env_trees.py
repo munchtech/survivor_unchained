@@ -2032,12 +2032,12 @@ CLUMP_CAPS = {   # (l16-l22: the cap mound, kept as data: an entry with 'domes' 
 # (COLOR.b 1; COLOR.r the baked level: base < 0.7 body, mid ring 0.7-0.9, tip >= 0.9 top), the tones the rig's stand row.
 FERN_FORM = {
     'fronds': (8, 6, 4),     # fronds a crown (times its share), lod 0/1/2
-    'pairs': (7, 5, 3),      # pinna pairs a frond, lod 0/1/2 (lod2: one triangle a pinna, no rachis)
+    'pairs': (7, 5, 4),      # pinna pairs a frond, lod 0/1/2 (lod2: one triangle a pinna)
     'segs': (14, 8, 5),      # rachis segments
     'L': (0.80, 1.05),       # frond length (m, times the crown's scale)
     'stipe': 0.16,           # the bare stem's share of a frond
-    'el': (24, 50),          # a frond's rise at its foot (degrees)
-    'arch': (50, 78),        # ... turned down over its length (degrees): it arches over
+    'el': (35, 62),          # a frond's rise at its foot (degrees)
+    'arch': (60, 95),        # ... turned down over its length (degrees): it arches over
     'bend': 16,              # ... and sideways (degrees, +-)
     'fan': 250,              # a crown's fronds spread over this (degrees; 360 reads as a rosette)
     'width': 0.21,           # a pinna's length at the blade's widest (share of L)
@@ -2055,8 +2055,8 @@ FERN_FORM = {
 }
 FERN = {
     # crowns: (x, y, scale, fan middle (degrees), frond share)
-    'clump_a': {'seed': 11, 'fern': {}, 'crowns': [(-0.15, 0.05, 1.0, 100, 1.0), (0.82, -0.30, 0.72, -20, 0.75)]},
-    'clump_b': {'seed': 37, 'fern': {}, 'crowns': [(0.0, 0.0, 0.88, 80, 1.0)]},
+    'clump_a': {'seed': 11, 'fern': {}, 'crowns': [(-0.12, 0.04, 0.88, 100, 1.0), (0.66, -0.26, 0.62, -20, 0.75)]},
+    'clump_b': {'seed': 37, 'fern': {}, 'crowns': [(0.0, 0.0, 0.80, 80, 1.0)]},
 }
 CLUMP = {'clump_a': FERN['clump_a'], 'tuft_a': CLUMP_CAPS['tuft_a'], 'clump_b': FERN['clump_b']}
 
@@ -2094,7 +2094,7 @@ def fern_frond(b, F, c0, az, L, el, arch, bend, shift, uv, lod, rng):
     def put(v, n, lv, s):
         b.v.append(v); b.n.append(n); b.uv.append(uv); b.c.append((lv, s, 1.0))
 
-    if lod < 2:      # the rachis
+    if True:         # the rachis (every LOD: the far fronds keep their stem)
         base = len(b.v)
         for k in range(K + 1):
             s = k / K

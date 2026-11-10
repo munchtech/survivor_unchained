@@ -76,12 +76,13 @@
   "own_stand": {
     "_doc": ["(L1 lead 17, M3; docs/design/NIGHT_KIT.md) An ARENA under a rig with 'stand' (ZoneData; never a zone, never --flora-kit): these",
              "kit pieces draw as the pieces of 'own' here instead of the game's 'own' above ([]: dropped). A copy drawn so keeps its piece's own",
-             "size: its scale is its jitter (its scale over its kind's base scale) held to 'size' [lo, hi]. The bushes are the leaf clump (the",
-             "target's bush, about 2.4 m across); the kit's ferns are dropped until a small plant of ours is good enough to multiply."],
-    "size": [0.85, 1.25],
+             "size: its scale is its jitter (its scale over its kind's base scale) held to 'size' [lo, hi]. (L1 l24 BUSH) The bushes are FERN",
+             "clumps (env_trees.py FERN: clump_b one crown ~1.5 m, clump_a two ~2.2 m: 1-1.5 of her heights; mostly clump_b and a narrow size so",
+             "groups 1-1.5 m apart keep ground between them); the kit's ferns stay dropped (the bushes' copies carry the undergrowth)."],
+    "size": [0.8, 1.05],
     "own": {
-      "Bush_Common": ["clump_a", "clump_a", "clump_b"],
-      "Bush_Common_Flowers": ["clump_b", "clump_a"],
+      "Bush_Common": ["clump_b", "clump_b", "clump_a"],
+      "Bush_Common_Flowers": ["clump_b", "clump_b"],
       "Fern_1": [], "Plant_1_Big": []
     }
   },
