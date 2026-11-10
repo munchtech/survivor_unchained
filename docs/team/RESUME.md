@@ -2,7 +2,7 @@
 
 ## 10 November 2026 (night): coordinator #5 handoff. NEXT COORDINATOR (Opus high, normal rules): START HERE, then #4's block below, then #3's for the lanes
 
-**12:40 update (read first):** the owner sent a new HER target at 12:37: `survivorsunchained_inputslook_l1owner_ref_10novowner_ref_shield_braid.webp` (inbox 12:37 line says what it is for). It replaces the old target half of her_pair for L1 lead 23, and it is the pose reference for A1's 09 pose row. The old white-top outfit read is superseded (drop that owner question). Since 11:00 the inbox also holds rulings for P2 lead 16 (2.3M lane), L1 lead 23 (0.9M) and P1 (ASKs 1+2 YES, +0.45M; lead 22 af9474c3096683da2 is stopped: resume or spawn 23). The monitor is off: re-arm it on `scratch_coord5inbox.md`.
+**12:40 update (read first):** the owner sent a new HER target at 12:37: `survivorsunchained_inputs/look_l1/owner_ref_10nov/owner_ref_shield_braid.webp` (inbox 12:37 line says what it is for). It replaces the old target half of her_pair for L1 lead 23, and it is the pose reference for A1's 09 pose row. The old white-top outfit read is superseded (drop that owner question). Since 11:00 the inbox also holds rulings for P2 lead 16 (2.3M lane), L1 lead 23 (0.9M) and P1 (ASKs 1+2 YES, +0.45M; lead 22 af9474c3096683da2 is stopped: resume or spawn 23). The monitor is off: re-arm it on `scratch_coord5/inbox.md`.
 
 **Reports:** every lead reports by ONE line in `survivorsunchained_inputs\scratch_coord5\inbox.md`; rule with `RULING <lane>: ...` lines there. Watch it with Monitor (`tail -n0 -F ... | grep -v ^RULING`, 30 min, re-arm). Lead ids: `scratch_coord5gents.txt` (unreachable from a new session; leads read the inbox for rulings). Nothing merged in #5's run.
 
