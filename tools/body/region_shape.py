@@ -652,9 +652,10 @@ def edge_rows(h, pr, G, s, X=None):
     MC, _, VaM = h.carried(G, s)
     Vp = h.rt.published(h.bd, G)[md.first[md.S[s]["ids"]]]
     b = md.blend(G, s)[:, None]
-    live = b * MC + (1 - b) * Vp
+    oth = h.last.get("others", 0.0)      # the deltas of the regions that touch this one (the neck): added whole
+    live = b * MC + (1 - b) * Vp + oth
     X = live if X is None else X
-    return {"t": pr.ratio(X), "p": pr.ratio(Vp), "c": pr.ratio(MC), "a": pr.own(VaM), "dis": np.linalg.norm(MC - Vp, axis=1),
+    return {"t": pr.ratio(X), "p": pr.ratio(Vp), "c": pr.ratio(MC + oth), "a": pr.own(VaM), "dis": np.linalg.norm(MC - Vp, axis=1),
             "stale": float(np.abs(X - live).max())}
 
 

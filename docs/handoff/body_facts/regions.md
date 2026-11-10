@@ -37,7 +37,19 @@ Read `relative_carry.md` first (the relative placement); this file is what was a
 ## Tests (`carried_target.py test`)
 T1-T7, T10 green, unchanged numbers. T9 (spine_02 20, spine_03 25, spine_05 30 only, all regions composed): X - published
 max 0.0000 mm l and r (limit 0.01 mm).
-T11-T14: NUMBERS_PENDING
+**NOT a pass: T11 and T14 (iron_vow) fail; stopped after one attempt, no second design.**
+- T11 FAIL: girdles only vs stored target_a.npz, 7 poses: max 2.5e-06 .. 6.7e-06 m (limit 1e-06). Likely cause, NOT verified: the
+  reference is now posed with the region's 4 bones only (before: 13, identity turns on spine and neck; A's poser is off its
+  rest by 2.7e-05 m under identity turns).
+- T12 PASS: outside the region, head-rigid (16574), outer row all 0.0000 mm; ramp rows hide 2.6 mm; worst edge target 2.32,
+  published 11.39, A's own 2.23 (A registered at both anchors 2.32); sigma min 0.954, guarded 0.
+- T13 PASS: listed backwards, bit-identical (whole body and side). Overlap rows worst 2.83 (iron_vow@75:r; girdle interior 2.02,
+  neck interior 3.27) and 1.66 (idle_warden_town@122:l; 1.47, 6.75). **The neck interior OUTSIDE the girdles reaches 6.75x in
+  idle_warden_town: not looked into (midline, breast part or head stump), and no file shows it.**
+- T14: iron_vow@75:r FAIL: target 2.83 | published 11.68 | A's own there (absolute carry) 1.63 (limit 2.5 or A + 0.15).
+  idle_warden_town@122:l PASS: 1.66 | 11.20 | 1.41.
+- Dev subset (target_a_dev.npz): edge max iron_vow 2.83, idle_warden 1.66, abd150 3.20, Jog_Fwd@11:r 5.28 (girdle's, as before).
+  Logs: out/shoulder/regions_test.log, regions_dev.log.
 
 ## Still her-only (carried_target.py)
 - `Her.carrier`, `Her.target` info (girth rings, volume, pocket) and the explicit provider read `region_target.Model`.

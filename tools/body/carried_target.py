@@ -710,6 +710,7 @@ HER = {
     # T9's pose: local turns in degrees about seeded random axes of bones outside EVERY region (all regions' locals at rest)
     "t9_turns": {"spine_02": 20, "spine_03": 25, "spine_05": 30},
     "t12_turns": {"neck_01": 30, "neck_02": 25, "Head": 20},             # T12: the neck alone
+    "t14_poses": ["p4:iron_vow@75:r", "p4:idle_warden_town@122:l"],      # T14: where B's neck skinning stretched 11.76x
     "rad": 0.05,
     "k": 64,
     "nw": 0.0,                           # the normal term: tried at 0.2, it does not cure the armpit-apex bridge
@@ -1071,8 +1072,8 @@ def cmd_test(h):
         e = np.abs(h.target(Gt, s, Vt)[0] - Vt[pts]).max()
         ea = np.abs(h.target(Gt, s, Vt, carry="absolute")[0] - Vt[pts]).max()
         moved = np.abs(Vt[pts] - md.V0[md.S[s]["ids"]]).max()
-        line(f"T9 {s}", e < 1e-4, f"trunk and neck turned ({' '.join(f'{k} {v}' for k, v in cfg['t9_turns'].items())} deg), girdle locals at"
-             f" rest: X - published max {e * 1000:.4f} mm (absolute carry {ea * 1000:.1f} mm; the region moves {moved * 1000:.0f} mm;"
+        line(f"T9 {s}", e < 1e-5, f"bones outside every region turned ({' '.join(f'{k} {v}' for k, v in cfg['t9_turns'].items())} deg), every region's"
+             f" locals at rest: X - published max {e * 1000:.4f} mm (absolute carry {ea * 1000:.1f} mm; the region moves {moved * 1000:.0f} mm;"
              f" correctives the trunk drives there {shapes(Gt, s) * 1000:.3f} mm)")
     # T10: a rigid motion of the whole body moves the target with it; the same pose twice is the same target
     Q = np.eye(4)
@@ -1084,6 +1085,83 @@ def cmd_test(h):
         e = np.abs(X3 - (X1 @ R.T + t)).max()
         line(f"T10 {nm}", e < 1e-6 and (X1 == X2).all(), f"whole-body rigid motion: max {e:.2e} m; twice the same: {bool((X1 == X2).all())};"
              f" correctives the other bones drive in the region {shapes(G, s) * 1000:.3f} mm")
+    # T11: the two girdles alone = the stored relative target (written before the regions)
+    gird = [n for n, r in h.regions.items() if r.side]
+    stored = np.load(h.OUT / cfg["out"])
+    sn = [str(x) for x in stored["name"]]
+    for nm in cfg["dev_poses"] + cfg["t14_poses"] + ["Jog_Fwd@11:r"]:
+        i = names.index(nm)
+        e = np.abs(h.target(z["G"][i], str(z["side"][i]), regions=gird)[0] - stored["X"][sn.index(nm)]).max()
+        line(f"T11 {nm}", e < 1e-6, f"girdles only - the stored target ({cfg['out']}): max {e:.2e} m")
+
+    def turned(turns):
+        G = p.rest.copy()
+        for k in bd.order:
+            L, pk = bd.rl[k].copy(), p.parent[k]
+            if p.names[k] in turns:
+                L[:3, :3] = L[:3, :3] @ Rotation.from_rotvec(_unit(rng.normal(size=3)) * np.radians(turns[p.names[k]])).as_matrix()
+            G[k] = G[pk] @ L if pk >= 0 else L
+        return h.drive(G)
+
+    def worst(X, X0, ed, mask=None):     # the worst edge ratio against rest (edges with both ends in the mask)
+        ei, ej = ed
+        if mask is not None:
+            keep = mask[ei] & mask[ej]
+            ei, ej = ei[keep], ej[keep]
+        return edge_ratio(X, X0, ei, ej)[1] if len(ei) else 1.0
+
+    # T12: the neck alone. Published outside the region, on head-rigid points and on the outer row; inside, A's edges.
+    nk = next(r for r in h.regions.values() if not r.side)
+    ta = Ab.T[(nk.field[:, 0] > 0.02)[Ab.T].all(1)]                     # A's own neck: its triangles that follow the chain
+    ae = (np.concatenate([ta[:, 0], ta[:, 1], ta[:, 2]]), np.concatenate([ta[:, 1], ta[:, 2], ta[:, 0]]))
+    nloc = -np.ones(len(bd.V0), np.int64)
+    nloc[nk.spread[0]] = nk.spread[1]
+    Gn = turned(cfg["t12_turns"])
+    Vn = pub(bd, Gn)
+    Xn = h.compose(Gn, Vn)
+    dn = np.linalg.norm(Xn - Vn, axis=1)
+    headr = (bd.W * (bd.J == p.index[cfg["regions"][nk.name]["far"][0]])).sum(1) >= 0.999
+    sh = nk.share
+    e_out, e_head, e_row = dn[nloc < 0].max(), dn[headr].max(), dn[nk.pts[sh == 0]].max()
+    P = h.part(Gn, nk.name)
+    Mh = anchor_align(P["Gr"][nk.anchors[1][0]], p.rest[nk.anchors[1][0]], Ab.G0[nk.anchors[1][1]], Ab.G0[nk.anchors[1][1]])
+    r_t, r_p = worst(Xn[nk.pts], bd.V0[nk.pts], nk.edges), worst(Vn[nk.pts], bd.V0[nk.pts], nk.edges)
+    r_a, r_r = worst(P["Va_own"], Ab.V0, ae), worst(P["Va"], Ab.V0, ae)
+    line("T12", max(e_out, e_head, e_row) < 1e-4 and r_t <= r_a + 0.15,
+         f"neck alone ({' '.join(f'{k} {v}' for k, v in cfg['t12_turns'].items())} deg): X - published max mm: outside the region"
+         f" {e_out * 1000:.4f}, head-rigid points ({int(headr.sum())}) {e_head * 1000:.4f}, outer row {e_row * 1000:.4f} (limit 0.1);"
+         f" ramp rows off the core (what the share hides) {dn[nk.pts[(sh > 0) & (sh < 1) & ~nk.core]].max() * 1000:.1f} mm,"
+         f" interior moved {dn[nk.pts[sh == 1]].max() * 1000:.1f} mm | worst edge in the region: target {r_t:.2f}, published {r_p:.2f},"
+         f" A's own {r_a:.2f} (A registered at both anchors {r_r:.2f}; limit A's own + 0.15); sigma min {P['sig']:.3f} guarded {P['guard']}")
+    # T13: the listing order never matters (bit for bit); no step where girdle and neck overlap
+    h2 = Her({**cfg, "sides": cfg["sides"][::-1], "regions": dict(reversed(list(cfg["regions"].items())))}, verbose=False)
+    ing = np.zeros(len(bd.V0), bool)
+    for n in gird:
+        ing[h.regions[n].spread[0]] = True
+    for nm in cfg["t14_poses"]:
+        i = names.index(nm)
+        G, s = z["G"][i], str(z["side"][i])
+        g = h.regions[cfg["out_region"].replace("{s}", s)]
+        Vp = pub(bd, G)
+        Xa = h.compose(G, Vp)
+        X, info = h.target(G, s, Vp)
+        same = bool((Xa == h2.compose(G, Vp)).all() and (X == h2.target(G, s, Vp)[0]).all())
+        e_w = np.abs(X - Xa[g.pts]).max()
+        gn, bsh, X0 = nloc[g.pts], g.share_at(G), bd.V0[g.pts]
+        ov = (gn >= 0) & (bsh > 0) & (nk.share[np.maximum(gn, 0)] > 0)
+        r_ov, r_g = worst(X, X0, g.edges, ov), worst(X, X0, g.edges, (bsh == 1) & (gn < 0))
+        r_n = worst(Xa[nk.pts], bd.V0[nk.pts], nk.edges, (nk.share == 1) & ~ing[nk.pts])
+        line(f"T13 {nm}", same and r_ov <= max(r_g, r_n) + 0.15,
+             f"regions listed backwards, the same bit for bit (whole body and the side): {same}; the side - the whole body on its points {e_w:.1e} m;"
+             f" worst edge in the overlap rows ({int(ov.sum())} points, both shares > 0) {r_ov:.2f}, girdle interior {r_g:.2f},"
+             f" neck interior {r_n:.2f} (limit the worse + 0.15)")
+        # T14: the measured poses, on the side's points inside the neck region (the trap line and the throat pit)
+        MA = h.carried(G, s, Vp, carry="absolute")[1]
+        r_t, r_p, r_a = (worst(x, X0, g.edges, gn >= 0) for x in (X, Vp[g.pts], MA))
+        line(f"T14 {nm}", r_t < 2.5 or r_t <= r_a + 0.15,
+             f"trap line and throat pit (the side's {int((gn >= 0).sum())} points in the neck region): worst edge target {r_t:.2f} |"
+             f" published {r_p:.2f} | A's own there (absolute carry, alone) {r_a:.2f}; the whole side: target {info['edge_max']:.2f},"
+             f" published {worst(Vp[g.pts], X0, g.edges):.2f}")
     print("ALL PASS" if ok_all else "SOME FAILED")
     return ok_all
 
