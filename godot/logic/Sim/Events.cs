@@ -115,6 +115,9 @@ public static class Ev
     /// <summary>Loot landed where the filter lets it be seen: Tier is Rpg.LootTier (its beam and its sound).</summary>
     public sealed class Drop : CombatEvent { public int Tier; public double X, Z; public bool Emphasised, Quiet; public PickupKind Kind; }
     public sealed class LevelUp : CombatEvent { public int Level; }
+    /// <summary>(M3) Her calling taught a slot of its build (taught_builds.json) at a level reached in the campaign: the
+    /// skill, the slot it went to (-1: carried by day but not in this fight), its cast form.</summary>
+    public sealed class Taught : CombatEvent { public string Skill = "", Cast = ""; public int Slot = -1, Level; }
     /// <summary>A weapon evolved; out of a chest, the chest's opening shows it, not this.</summary>
     public sealed class Evolve : CombatEvent { public string Weapon = "", Into = ""; public bool Chest; }
 
@@ -128,6 +131,13 @@ public static class Ev
     /// <summary>Hard Landing: a dash ended and shoved the lesser things round her aside.</summary>
     public sealed class HardLanding : CombatEvent { public double X, Z, Radius; }
     /// <summary>A channelled skill (CastMode.Channel) began (On) or ended, on its slot.</summary>
+    /// <summary>Resolve moved a whole point or more since the last told (Sim/Resolve.cs: M4's bar).</summary>
+    public sealed class Resolve : CombatEvent { public double Value, Max, Delta; public ResolveReason Reason; }
+    /// <summary>A campaign press went off (Battle.CastPose): her walk at Walk for Time seconds, her feet planted Plant
+    /// seconds first (a heavy commit), aimed at (X, Z); Heavy, its own heavy swing.</summary>
+    public sealed class Cast : CombatEvent { public string Weapon = ""; public int Slot; public double Walk, Time, Plant, X, Z; public bool Heavy; }
+    /// <summary>A kindled skill's key pressed (Battle.KindledPress): what it did (now, riposte, flare, command) and until when.</summary>
+    public sealed class KindlePress : CombatEvent { public string Weapon = ""; public int Slot; public Content.KindlePress Mode; public double Until; }
     public sealed class Channel : CombatEvent { public string Weapon = ""; public int Slot; public bool On; public double X, Z; }
     /// <summary>Heroic Leap (Sim/PressedWarden.cs). Takeoff: she leaves (X0, Z0) for (X1, Z1), Dur seconds in the air,
     /// and lands in a ring of Radius there (the view draws the ring at once: everything in it at landing is struck, and

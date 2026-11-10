@@ -60,6 +60,8 @@ public sealed partial class Prologue : ZoneRuntime
         public string Mode = "sleep";
         public double Hold, T, CleaveCd = 3, ChargeCd = 6, ChannelCd = 30, DirX, DirZ = 1, Travelled, ChannelHp, ChannelOver, RaiseT, ContactT, HitX, HitZ;
         public List<double> Thresholds = [0.7, 0.4];
+        /// <summary>(M3) The cleave's and the charge lane's marked blows (Battle.EnemyBlow, OwnMark): the hands read them.</summary>
+        public Battle.EnemyBlow? Cleave, Lane;
     }
 
     static readonly double[] Ward = [1, 0.7, 0.55, 0.4];
@@ -815,6 +817,11 @@ public sealed partial class Prologue : ZoneRuntime
     BossBar? bar;
     void Bar(BossBar? b) { bar = b; G.SetBoss(b); }
 
+    /// <summary>(M3) The cleave's damage on top of his own (teeth.json prologue.fordWarden.cleave).</summary>
+    static double CleaveMul => Teeth.Ford?.Cleave ?? 1;
+    /// <summary>(M3) The charge's lane called off: the run is over (or broke on a lamp or a rock).</summary>
+    void EndLane() { if (ai.Lane != null) { ai.Lane.T = 0; ai.Lane = null; } }
+
     bool WardenTick(Enemy e, double dt)
     {
         if (B == null) return true;
@@ -871,6 +878,9 @@ public sealed partial class Prologue : ZoneRuntime
                     ai.Mode = "windup"; ai.T = 0; ai.DirX = dx / dist; ai.DirZ = dz / dist;
                     ai.HitX = e.X + ai.DirX * 3; ai.HitZ = e.Z + ai.DirZ * 3;
                     B.Events.Emit(new Ev.Telegraph { Id = e.Id * 10 + 1, Shape = TelegraphShape.Circle, X = ai.HitX, Z = ai.HitZ, Radius = 3.4, Duration = 1.05, Hostile = true, Boss = true });
+                    // (M3: the cleave is a marked blow the hands read; it lands on its own clock, as his did, within 3.4 m + her girth)
+                    ai.Cleave = B.Blow(new Battle.EnemyBlow { OwnMark = true, Shape = TelegraphShape.Circle, X = ai.HitX, Z = ai.HitZ, Radius = 3.4 + p.Radius * 0.5,
+                        Delay = 1.05, Damage = e.Damage * 1.5 * CleaveMul, Source = "The Ford-Warden", From = e });
                     wardenView.SetPose("windup");
                     return true;
                 }
@@ -880,6 +890,10 @@ public sealed partial class Prologue : ZoneRuntime
                     double len = Math.Min(24, dist + 8);
                     B.Events.Emit(new Ev.Telegraph { Id = e.Id * 10 + 2, Shape = TelegraphShape.Line, X = e.X, Z = e.Z, X1 = e.X + ai.DirX * len, Z1 = e.Z + ai.DirZ * len, Radius = 0, Width = 3, Duration = 1.3, Hostile = true, Boss = true });
                     ai.Travelled = len;
+                    // (M3: the lane, a marked blow of no damage of its own held for the windup and the run, so the hands read it; the
+                    // run's touch still hurts)
+                    ai.Lane = B.Blow(new Battle.EnemyBlow { OwnMark = true, Shape = TelegraphShape.Line, X = e.X, Z = e.Z, X1 = e.X + ai.DirX * len, Z1 = e.Z + ai.DirZ * len,
+                        Width = 2 * (e.Radius + 0.3), Delay = 1.3 + len / 17, Source = "The Ford-Warden", From = e });
                     wardenView.SetPose("charge-windup");
                     B.Events.Emit(new Ev.Bark { X = e.X, Z = e.Z, Text = "It lowers its head...", Boss = true });
                     return true;
@@ -906,7 +920,7 @@ public sealed partial class Prologue : ZoneRuntime
                 {
                     ai.Mode = "cleave"; ai.T = 0;
                     wardenView.SetPose("cleave");
-                    if (Dist(p.X, p.Z, ai.HitX, ai.HitZ) < 3.4 + p.Radius) B.HurtPlayer(e.Damage * 1.5, School.Physical, "The Ford-Warden", e);
+                    // (its blow is ai.Cleave's: Battle.UpdateBlows lands it)
                     B.Events.Emit(new Ev.Explosion { X = ai.HitX, Z = ai.HitZ, Radius = 3.4, School = School.Physical, Power = 1.2 });
                     B.Events.Emit(new Ev.Shake { Amount = 0.55 });
                 }
@@ -933,7 +947,7 @@ public sealed partial class Prologue : ZoneRuntime
                     if (litPylons[i] && Dist(py.X, py.Z, e.X, e.Z) < e.Radius + 0.9)
                     {
                         Snuff(i, "charge");
-                        ai.Mode = "stun"; ai.T = -1.5;
+                        ai.Mode = "stun"; ai.T = -1.5; EndLane();
                         wardenView.SetPose("stunned");
                         return true;
                     }
@@ -943,13 +957,13 @@ public sealed partial class Prologue : ZoneRuntime
                 double moved = Dist(e.X, e.Z, x0, z0);
                 if (moved < step * 0.4)
                 {
-                    ai.Mode = "stun"; ai.T = 0.8;
+                    ai.Mode = "stun"; ai.T = 0.8; EndLane();
                     wardenView.SetPose("stunned");
                     B.Events.Emit(new Ev.Shake { Amount = 0.5 });
                 }
                 else if (Dist(p.X, p.Z, e.X, e.Z) < e.Radius + p.Radius + 0.3 && p.Iframes <= 0)
                     B.HurtPlayer(e.Damage * 1.4, School.Physical, "The Ford-Warden", e);
-                if (ai.Travelled <= 0.01 && ai.Mode == "charge") { ai.Mode = "walk"; ai.ChargeCd = 8 + B.Rng.Next() * 3; wardenView.Release(); }
+                if (ai.Travelled <= 0.01 && ai.Mode == "charge") { ai.Mode = "walk"; ai.ChargeCd = 8 + B.Rng.Next() * 3; wardenView.Release(); EndLane(); }
                 return true;
             }
             case "stun":
@@ -1356,6 +1370,8 @@ public sealed partial class Prologue : ZoneRuntime
         PaceNotes.Enqueue($"ford down t={B.Time:0.0} fought={stageT:0.0} hp={e.Hp:0}/{e.MaxHp:0} floor={e.HpFloor:0} taken={e.TakenMul:0.00} over={e.Overflow:0} school={e.LastSchool} weapon={e.LastWeapon ?? "-"} blow={e.LastBlow:0.00} lit={LitCount} broken={lampsBroken} state={e.State}");
         ai.Mode = "dead";
         wardenView.SetPose("dead");
+        if (ai.Cleave != null) { ai.Cleave.Damage = 0; ai.Cleave = null; }
+        EndLane();
         wardenPos = (e.X, e.Z, Math.PI / 2 - e.Facing);
         Bar(null);
         B.Events.Emit(new Ev.Shake { Amount = 0.9 });

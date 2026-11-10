@@ -1,5 +1,5 @@
 Spawning: allowed
-Context budget: 300k
+Context budget: 200k
 
 ## Your area: C2 one build, the night's cards are her talent tree (classes design lead 1)
 
@@ -11,6 +11,6 @@ Your brief is `docs/team/hook/C2_one_build.md`: read it IN FULL first; it holds 
 
 What binds: the decision is locked ("sounds good"); design inside it, never around it. No lamp is a bare percent. American spelling; names in the bible's voice; the 18+ tone. The dawn card's "The ember takes" wording is re-worded by the build lead when the rule lands: note it in the migration list, do not touch H8's card. The harness run (`danger.py` on the Pack's board, full build from minute 0, no quarter sizes) reports numbers only, no retune. Judges: paused on the API credits unless `Marionette/JUDGES_PAUSED` says `allow: judge` (check it); otherwise a `su-lead-max` subagent in the foreground, `Item: C2 design`, round cap 3.
 
-Done looks like: `docs/design/ONE_BUILD.md` one page the owner can read, the lamp JSON with the Warden's Wicks complete, the migration list, the harness note, suite green (`dotnet test` in `godot/tests`; last green 1565/0/10), integration merged in (the junction rule), pushed, `MR READY classes-c2@<sha>` in your handoff top and to main with the open questions (at most three, each with your pick) and your cost. Est ~0.5M. Hand off at ~300k with `HANDOFF READY classes-c2@<sha>`. Scratch: `scratchpad\classes_c2\` only; back it up to `survivorsunchained_inputs\scratch_classes_c2\` and clear only that subfolder at the end.
+Done looks like: `docs/design/ONE_BUILD.md` one page the owner can read, the lamp JSON with the Warden's Wicks complete, the migration list, the harness note, suite green (`dotnet test` in `godot/tests`; last green 1565/0/10), integration merged in (the junction rule), pushed, `MR READY classes-c2@<sha>` in your handoff top and to main with the open questions (at most three, each with your pick) and your cost. Est ~0.5M. hand off at ~200k with `HANDOFF READY classes-c2@<sha>`. Scratch: `scratchpad\classes_c2\` only; back it up to `survivorsunchained_inputs\scratch_classes_c2\` and clear only that subfolder at the end.
 
 Worktrees on disk: main + 6 (body-p1, look-l1, motion-a1, classes-c2, combat-p6, films-p9; cap 8): helpers work in YOUR worktree, never `isolation: "worktree"`. Four other leads share the machine: give any Godot or GPU turn back at once (`python tools/turn.py`).

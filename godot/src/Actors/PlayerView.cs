@@ -1080,8 +1080,9 @@ public partial class PlayerView : Node3D
         {
             lastAttack = a.T;
             var swings = mine ? HerClips.Swings(person.Kind) : System.Array.Empty<string>();
-            bool played = false;
-            if (swings.Length > 0)
+            // (campaign: the sim names the clip and its rate, from the press, so her contact and the hit meet: Sim/Contact.cs)
+            bool played = mine && a.Clip != null && UpperHer(a.Clip, a.Rate);
+            if (!played && swings.Length > 0)
                 played = a.Heavy ? UpperHer(HerClips.Heavy(person.Kind), 1.5) : UpperHer(swings[swing % swings.Length], 1.6);
             if (!played)
             {

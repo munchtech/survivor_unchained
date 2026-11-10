@@ -1,5 +1,5 @@
 Spawning: allowed
-Context budget: 300k
+Context budget: 200k
 
 ## Your area: C2 one build, THE BUILD (the Warden slice; classes build lead 1)
 
@@ -24,6 +24,6 @@ The job: ONE_BUILD §5, items 1-16, the Warden slice first (her 7 Wicks are comp
 - items 15-16 (docs marked superseded; Judgement -> Judgment in display names, ids stay).
 One max judge at the end (`Item: C2 build`, foreground `su-lead-max` unless `Marionette/JUDGES_PAUSED` says `allow: judge`): a newcomer's first night and a veteran's tier-4 night played through the harness and one clip each at 1:1, the whole-frame question first; round cap 3, then knowns.
 
-Done looks like: the Warden plays one build from minute 0 in town, maps and nights from `skill_lamps.json`; the offer, the dawn card and the Lamps screen built; `SkillBook`/`wicks.json`/§2.10 gone; the bands measured per tier and level band with the numbers in ONE_BUILD §6; the suite green (`dotnet test` in `godot/tests`; last green 1571/0/10 at 758fecd38); integration merged in (the junction rule), pushed, `MR READY classes-c2@<sha>` in your handoff top and to main with the numbers, the judge's two lines and your cost; PIPELINE row P7's capability line ("P7: the app can now X; this cost Y; the next calling's Wicks cost about Z"). Est ~1.5-2.5M (the migration touches SkillBook, LevelUp, Journey, WickBook, DawnCard, the Lamps screen, the harness). Hand off at ~300k with `HANDOFF READY classes-c2@<sha>`. Scratch: `scratchpad\classes_c2\` only; back it up to `survivorsunchained_inputs\scratch_classes_c2\` and clear only that subfolder at the end.
+Done looks like: the Warden plays one build from minute 0 in town, maps and nights from `skill_lamps.json`; the offer, the dawn card and the Lamps screen built; `SkillBook`/`wicks.json`/§2.10 gone; the bands measured per tier and level band with the numbers in ONE_BUILD §6; the suite green (`dotnet test` in `godot/tests`; last green 1571/0/10 at 758fecd38); integration merged in (the junction rule), pushed, `MR READY classes-c2@<sha>` in your handoff top and to main with the numbers, the judge's two lines and your cost; PIPELINE row P7's capability line ("P7: the app can now X; this cost Y; the next calling's Wicks cost about Z"). Est ~1.5-2.5M (the migration touches SkillBook, LevelUp, Journey, WickBook, DawnCard, the Lamps screen, the harness). hand off at ~200k with `HANDOFF READY classes-c2@<sha>`. Scratch: `scratchpad\classes_c2\` only; back it up to `survivorsunchained_inputs\scratch_classes_c2\` and clear only that subfolder at the end.
 
 Worktrees on disk: count `.claude/worktrees` (cap 8): helpers work in YOUR worktree, never `isolation: "worktree"`. Other leads share the machine: take and give Godot or GPU turns through `python tools/turn.py` (`take godot "C2: <job>" --wait 90`, give it back the moment the job ends).

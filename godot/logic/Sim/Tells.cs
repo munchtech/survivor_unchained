@@ -75,6 +75,10 @@ public sealed partial class Battle
     /// <summary>Every kit damage times this (H6: the night's tier, the waves' TierDamage; set by the zone with ClosingTeeth).
     /// 1: as it was.</summary>
     public double KitDamageMul = 1;
+    /// <summary>(M3) The kit's cadence in a story fight by world tier (Encounters: champions' affixes, packs' tells): waits x this.</summary>
+    public double KitEveryMul = 1;
+    /// <summary>(M3) The stand clock in a story fight by world tier (WorldTiers' `stand`, read by Encounters with Campaign on). Null: none.</summary>
+    public SurvivorUnchained.Content.Teeth.Director? StoryStand;
 
     /// <summary>The kit telegraphs alive now (their windups, a charger's run): the hands read a pull's reach here.</summary>
     public IReadOnlyList<TellOn> ActiveTells => tells;
@@ -406,6 +410,8 @@ public sealed partial class Battle
         var kd = new Ev.Knockdown { X = p.X, Z = p.Z, Seconds = s };
         if (by is { Shape: TelegraphShape.Line }) { kd.FromX = by.X; kd.FromZ = by.Z; kd.ToX = by.X1; kd.ToZ = by.Z1; kd.Width = by.Width; }
         Events.Emit(kd);
+        // (a blow she was swinging never lands: Sim/Contact.cs)
+        DropBlows();
     }
 
     /// <summary>A closing's crush (H6): from CrushAfter past its landing, for CrushFor, while its wall stands and she is
