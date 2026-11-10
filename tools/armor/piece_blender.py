@@ -25,7 +25,12 @@ SCRATCH = os.path.abspath(ARGS[1])
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 HO = os.path.join(ROOT, "tools", "assets", "heroine_outfits.py")
-ART = os.path.join(ROOT, "godot", "art", "armor")
+ART_SRC = os.path.join(ROOT, "godot", "art", "armor")
+# (ARMOR_STAGE=<dir> (tools/armor/piece_ship.py): the piece is written into <dir>/armor, never godot/art/armor, with the
+# body it was built on as <dir>/base.glb (the body at her tuck, the body export's own settings); the shipped-body gate
+# and the tuck's rekey are left to piece_ship, which follows the piece onto the shipped body and installs it)
+STAGE = os.environ.get("ARMOR_STAGE")
+ART = os.path.join(os.path.abspath(STAGE), "armor") if STAGE else ART_SRC
 os.makedirs(SCRATCH, exist_ok=True)
 SPEC_PIECE = json.load(open(PIECE_JSON, encoding="utf-8"))
 PID = SPEC_PIECE["id"]
@@ -2498,7 +2503,7 @@ run(src.index(M_LOOP) + len(M_LOOP), src.index(M_BODY), NS)
 stamp("cover regions and tuck rule ready")
 
 # --------------------------------------------- the trim strip's UVs (rims) --
-TRIM = json.load(open(os.path.join(ART, "trim_strip.json"), encoding="utf-8"))
+TRIM = json.load(open(os.path.join(ART_SRC, "trim_strip.json"), encoding="utf-8"))
 
 
 def trim_uv(obj, tb, band):
@@ -2924,6 +2929,16 @@ G["ARMOR_TUCK"].clear()
 G["ARMOR_TUCK"][(PID, SLOT)] = tuck
 G["armor_tuck_write"](body, TUCKDIR)
 BODY_HASH = G["ARMOR_BODY_HASH"]
+if STAGE:
+    os.makedirs(STAGE, exist_ok=True)
+    bpy.ops.object.select_all(action="DESELECT")
+    arm.select_set(True)
+    body.select_set(True)
+    bpy.context.view_layer.objects.active = arm
+    bpy.ops.export_scene.gltf(filepath=os.path.join(STAGE, "base.glb"), export_format="GLB", use_selection=True, export_skins=True,
+                              export_animations=False, export_yup=True, export_vertex_color="ACTIVE")
+    bpy.ops.object.select_all(action="DESELECT")
+    stamp("stage: the built-on body (%s) written as %s" % (BODY_HASH, os.path.join(STAGE, "base.glb")))
 TUCK_N = G["ARMOR_TUCK_N"][(PID, SLOT)]
 if keep is not None:
     me.vertices.foreach_set("co", keep[0])
@@ -3412,7 +3427,7 @@ if missing:
 # (the piece must sit on the body the game ships: her hash as art/people/armor_index.json has it, item 1)
 _pix = json.load(open(os.path.join(ROOT, "godot", "art", "people", "armor_index.json"), encoding="utf-8"))
 SHIPPED_HASH = {r.get("body_hash") for r in _pix} - {None}
-if SHIPPED_HASH != {BODY_HASH} and os.environ.get("ARMOR_ANY_BODY") != "1":
+if not STAGE and SHIPPED_HASH != {BODY_HASH} and os.environ.get("ARMOR_ANY_BODY") != "1":
     json.dump(NUM, open(os.path.join(SCRATCH, "numbers.json"), "w", encoding="utf-8"), indent=1)
     raise SystemExit("ARMOR REFUSED: built on body %s, the shipped body is %s (art/people/armor_index.json); nothing written"
                      % (BODY_HASH, sorted(SHIPPED_HASH)))
@@ -3474,7 +3489,8 @@ def tuck_rekey_shipped(fp):
     print("TUCK REKEY %s: %d records, %d off her shipped points moved to them, %d dropped, %d written" % (PID, n, moved, dropped, len(ks)))
 
 
-tuck_rekey_shipped(os.path.join(ART, "armor_tuck", f"{PID}.bin"))
+if not STAGE:
+    tuck_rekey_shipped(os.path.join(ART, "armor_tuck", f"{PID}.bin"))     # (staged: body_follow_post re-keys it)
 NUM["meshes"] = sorted(ranks)
 
 # sockets, rims, the UV surface

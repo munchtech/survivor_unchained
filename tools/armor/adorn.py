@@ -49,9 +49,12 @@ import heroine_lod as hl  # noqa: E402
 from carry_targets import closest  # noqa: E402
 import piece_lod as pl  # noqa: E402
 
-ART = os.path.join(ROOT, "godot", "art", "armor")
-LIB = os.path.join(ART, "lib")
-TEX = os.path.join(ART, "tex")
+ART_SRC = os.path.join(ROOT, "godot", "art", "armor")
+# (ARMOR_STAGE=<dir> (tools/armor/piece_ship.py): the pieces read and written in <dir>/armor, the specs, library and
+# textures still godot/art/armor's)
+ART = os.path.join(os.path.abspath(os.environ["ARMOR_STAGE"]), "armor") if os.environ.get("ARMOR_STAGE") else ART_SRC
+LIB = os.path.join(ART_SRC, "lib")
+TEX = os.path.join(ART_SRC, "tex")
 MATS = os.path.join(ROOT, "godot", "art", "people", "outfit_materials.json")
 NATIVE = lambda ad: ad["kind"] == "row" and ad.get("mesh", "rivet") == "rivet"   # (piece_blender.py builds these)
 GEMS = {"gem_garnet": ((70, 6, 16), (205, 32, 48)), "gem_amethyst": ((52, 14, 78), (160, 70, 205)),
@@ -84,6 +87,10 @@ class Model:
         for i, m in enumerate(self.js["meshes"]):
             if len(m["primitives"]) != 1:
                 raise SystemExit(f"ADORN: {m['name']} has {len(m['primitives'])} primitives (one each expected)")
+            if m["primitives"][0].get("targets"):
+                # (a followed piece's shoulder shapes: this writer keeps none, so adorn runs before the follow,
+                # tools/armor/piece_ship.py; never a silent drop)
+                raise SystemExit(f"ADORN: {m['name']} has morph targets (a followed piece): adorn it before the follow (piece_ship.py)")
             mat, attrs, tris = self.g.prims(i)[0]
             self.meshes.append({"name": m["name"], "mat": mat, "attrs": {k: [np.array(v[0]), v[1]] for k, v in attrs.items()},
                                 "tris": tris, "extras": copy.deepcopy(m.get("extras", {})), "node": None})
@@ -141,7 +148,7 @@ class Model:
             n.pop("mesh", None)
         for m in self.meshes:
             p = {"attributes": {}, "material": self.material(m["mat"])}
-            for key in ("POSITION", "NORMAL", "TEXCOORD_0", "TEXCOORD_1", "TEXCOORD_2", "COLOR_0", "JOINTS_0", "WEIGHTS_0"):
+            for key in ("POSITION", "NORMAL", "TEXCOORD_0", "TEXCOORD_1", "TEXCOORD_2", "COLOR_0") + weight_keys(m["attrs"]):
                 if key in m["attrs"]:
                     arr, norm = m["attrs"][key]
                     p["attributes"][key] = add(arr, norm, 34962, minmax=key == "POSITION")
@@ -236,20 +243,46 @@ def gem_textures():
 
 
 # ------------------------------------------------------------------------------------ weights, data --
+def weight_sets(attrs):
+    """How many JOINTS_n/WEIGHTS_n sets the attributes carry (a followed piece has eight weights a point: two)."""
+    n = 0
+    while f"JOINTS_{n}" in attrs and f"WEIGHTS_{n}" in attrs:
+        n += 1
+    return n
+
+
+def weight_keys(attrs):
+    return tuple(k for i in range(weight_sets(attrs)) for k in (f"JOINTS_{i}", f"WEIGHTS_{i}"))
+
+
+def joints_weights(attrs):
+    """All of a point's joints and weights, every set side by side: J (n, 4 x sets) int, W float."""
+    k = weight_sets(attrs)
+    J = np.concatenate([attrs[f"JOINTS_{i}"][0].astype(np.int64) for i in range(k)], 1)
+    W = np.concatenate([pl.floats(*attrs[f"WEIGHTS_{i}"]).astype(np.float64) for i in range(k)], 1)
+    return J, W
+
+
 def dense(m, nb):
-    j = m["attrs"]["JOINTS_0"][0].astype(np.int64)
-    w = pl.floats(*m["attrs"]["WEIGHTS_0"]).astype(np.float64)
+    j, w = joints_weights(m["attrs"])
     out = np.zeros((len(j), nb))
-    np.add.at(out, (np.arange(len(j))[:, None].repeat(4, 1), j), w)
+    np.add.at(out, (np.arange(len(j))[:, None].repeat(j.shape[1], 1), j), w)
     return out
 
 
-def top4(d):
-    k = np.argsort(-d, 1)[:, :4]
+def top4(d, sets=1):
+    """The largest 4 x sets weights a point, normalized, as `sets` (JOINTS, WEIGHTS) pairs (one by default)."""
+    n = 4 * sets
+    if d.shape[1] < n:
+        d = np.c_[d, np.zeros((len(d), n - d.shape[1]))]
+    k = np.argsort(-d, 1)[:, :n]
     w = np.take_along_axis(d, k, 1)
     w[w < 1e-4] = 0
     w /= np.maximum(w.sum(1, keepdims=True), 1e-12)
-    return k.astype(np.uint8), w.astype(np.float32)
+    jt = np.uint8 if d.shape[1] <= 256 else np.uint16
+    if sets == 1:
+        return k.astype(jt), w.astype(np.float32)
+    return [(k[:, 4 * i:4 * i + 4].astype(jt), w[:, 4 * i:4 * i + 4].astype(np.float32)) for i in range(sets)]
 
 
 def colour(m):
@@ -956,15 +989,22 @@ def append(m, parts, nb):
         T.append(np.asarray(p[6]) + off + n0)
         off += len(p[0])
     T = np.concatenate(T)
-    J, Wt = top4(W)
+    sets = max(weight_sets(have), 1)
     N = N / np.maximum(np.linalg.norm(N, axis=1, keepdims=True), 1e-12)
     new = {"POSITION": P.astype(np.float32), "NORMAL": N.astype(np.float32), "TEXCOORD_0": U0.astype(np.float32),
            "TEXCOORD_1": U1.astype(np.float32), "TEXCOORD_2": np.zeros((len(P), 2), np.float32),
-           "COLOR_0": np.round(np.clip(C, 0, 1) * 65535).astype(np.uint16), "JOINTS_0": J, "WEIGHTS_0": Wt}
+           "COLOR_0": np.round(np.clip(C, 0, 1) * 65535).astype(np.uint16)}
+    # (as many weight sets as the mesh has: a followed shell's eight weights a point are all kept, none dropped)
+    for i, (J, Wt) in enumerate(top4(W, sets) if sets > 1 else [top4(W)]):
+        new[f"JOINTS_{i}"], new[f"WEIGHTS_{i}"] = J, Wt
     for k, (arr, norm) in list(have.items()):
+        if k not in new:
+            raise SystemExit(f"ADORN: {m['name']} has {k}, which an adornment can't fill")
         v = new[k]
         if k == "COLOR_0" and arr.dtype != np.uint16:
             v = (np.clip(C, 0, 1) * {np.dtype(np.uint8): 255}.get(arr.dtype, 1)).astype(arr.dtype)
+        elif k.startswith("WEIGHTS_") and norm and arr.dtype.kind == "u":
+            v = np.round(v * np.iinfo(arr.dtype).max)
         have[k] = [np.concatenate([arr, v.astype(arr.dtype)]), norm]
     m["tris"] = np.concatenate([m["tris"], T])
     m["extras"].setdefault("adorn_tris", []).append([int(t0), int(len(T))])
@@ -973,7 +1013,7 @@ def append(m, parts, nb):
 
 def new_mesh(model, name, mat, like, extras):
     m = {"name": name, "mat": mat, "attrs": {}, "tris": np.zeros((0, 3), np.int64), "extras": extras, "node": None}
-    for k in ("POSITION", "NORMAL", "TEXCOORD_0", "TEXCOORD_1", "COLOR_0", "JOINTS_0", "WEIGHTS_0"):
+    for k in ("POSITION", "NORMAL", "TEXCOORD_0", "TEXCOORD_1", "COLOR_0") + weight_keys(like["attrs"]):
         arr, norm = like["attrs"][k]
         m["attrs"][k] = [np.zeros((0, arr.shape[1]), arr.dtype), norm]
     model.meshes.append(m)
@@ -1024,8 +1064,7 @@ def pose_check(shell_id, model, new_by_mesh, base_full):
 
         def pose(m, sel=None, P_=None):
             P = m["attrs"]["POSITION"][0].astype(np.float64)
-            J = m["attrs"]["JOINTS_0"][0].astype(np.int64)
-            W = pl.floats(*m["attrs"]["WEIGHTS_0"]).astype(np.float64)
+            J, W = joints_weights(m["attrs"])
             if sel is not None:
                 P, J, W = P[sel], J[sel], W[sel]
             if P_ is not None:
@@ -1139,7 +1178,7 @@ def sig(ad):
 
 
 def piece_json(pid):
-    return json.load(open(os.path.join(ART, "src", pid, "piece.json"), encoding="utf-8"))
+    return json.load(open(os.path.join(ART_SRC, "src", pid, "piece.json"), encoding="utf-8"))
 
 
 def build(pid, post=False):
@@ -1226,7 +1265,7 @@ def build(pid, post=False):
                     T = sub["tris"]
                     used, inv = np.unique(T.ravel(), return_inverse=True)
                     a = sub["attrs"]
-                    W = dense({"attrs": {"JOINTS_0": [a["JOINTS_0"][0][used]], "WEIGHTS_0": [a["WEIGHTS_0"][0][used], a["WEIGHTS_0"][1]]}}, nb)
+                    W = dense({"attrs": {k: [a[k][0][used], a[k][1]] for k in weight_keys(a)}}, nb)
                     full_new.setdefault(mat, []).append((a["POSITION"][0][used].astype(np.float64), a["NORMAL"][0][used].astype(np.float64),
                                                          a["TEXCOORD_0"][0][used], a["TEXCOORD_1"][0][used], colour({"attrs": {"COLOR_0": [a["COLOR_0"][0][used], a["COLOR_0"][1]]}}),
                                                          W, inv.reshape(-1, 3)))
