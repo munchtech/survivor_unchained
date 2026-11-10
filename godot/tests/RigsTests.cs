@@ -228,7 +228,7 @@ public class RigsTests
         // and the field itself, as written (round 5)
         var a = s["arena_night"]!;
         Assert.True(a.EmberSmooth);
-        Assert.Equal(new[] { 0.85, 1.2, 4.2, 1 }, a.EmberShade);   // (L1 l15 d) a leaf takes 0.85 of her fire; the canopy opens 1.2-4.2 m (the boughs stand from 1.2 m)
+        Assert.Equal(new[] { 1, 1.2, 5.0, 1 }, a.EmberShade);   // (L1 l16 d3) a leaf takes all of her fire (no pink leaf patches); the canopy opens 1.2-5.0 m, read at each leaf cluster's center (CanopyField)
         Assert.Equal(new[] { 1, 0.9, 1.8, 5.2 }, a.EmberGive);
         // (L1 lead 14, D2; l15 d round 2) the canopy as a field: lit fields 1.4-4.2 m, run 0, lit share 0.5, at the field's own cover; no clusters
         Assert.Equal(new[] { 1.4, 4.2, 0, 0.5 }, a.Dapple.Mass);

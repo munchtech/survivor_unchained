@@ -23,13 +23,22 @@ public static class CanopyField
 {
     /// <summary>The cover the tile is drawn for (rigs.json dapple "cover" at this: the layout as designed).</summary>
     public const float C0 = 0.5f;
-    /// <summary>The furthest a texel lies from its leaf's stem (m): the range the stems' offsets are stored over.</summary>
-    public const float Stem = 1f;
+    /// <summary>The furthest a texel lies from its ANCHOR (m): the range the offsets are stored over. (L1 lead 16, D3) The
+    /// anchor is the center of the leaf's CLUSTER, not its stem: the shade is laid out in clusters (a center every
+    /// <see cref="ClusterPitch"/>, the mass cut along the lines between them), a cluster's cover lowest at its heart and
+    /// rising to the lines, and the shader reads her fire's distance at the anchor. So over her fire a cluster is whole or
+    /// gone (never cut by an arc), stands small where the cover is low and grows leaf by leaf until it meets its neighbors:
+    /// between the unbroken core and the whole canopy the shade is leaf clusters with her fire between them, a bough too.</summary>
+    public const float Stem = 3f;
     const float A = 0.04f;       // a leaf's own span of cover, stem to whole (small: a leaf is whole or gone, so a mass that pulls back shows whole leaves at its edge and no fringe of half-grown ones)
     const float Kv = 3f;         // past whole: cover per leaf length (steep, so a whole leaf stays its size; not a cliff, so its edge stays straight under the texture's filter)
-    const float Kd = 0.25f;      // cover per meter of depth into the mass ...
-    const float Dsat = 0.4f;     // ... to this depth; deeper, only the clumps' noise orders the leaves
-    const float Nz = 0.4f;       // the clumps: cover spread inside the mass (a slow noise, about 2 m: the opening over her fire takes its outline from it)
+    const float Kd = 0.1f;       // cover per meter of depth into the mass ...
+    const float Dsat = 0.4f;     // ... to this depth (on the lines between clusters: the mass's rim closes last there)
+    const float ClusterPitch = 2.2f; // a leaf cluster's center every this far (m), jittered
+    const float ClusterJit = 0.7f;   // ... by this share of the pitch
+    const float Wg = 0.75f;      // a cluster's cover rises from its heart's to the top over this far in from the line between two clusters (m)
+    const float Vlo = 0.08f, Vhi = 0.3f; // a cluster's own cover at its heart (each its own: which stand nearest her fire)
+    const float Vtop = C0 - 0.08f;   // the cover on the line between two clusters (the mass is whole from here up)
     const float Ko = 0.25f;      // cover per meter out into a field (what closes as the cover rises past C0)
     const float BodyLag = 0.06f;  // the mass's own fill closes this much after the leaves over it
     const float Pitch = 0.34f;   // a leaf every this far (m), jittered
@@ -39,7 +48,7 @@ public static class CanopyField
     const float Rho0 = 0.4f;     // the slow noise under this: no field (a BOUGH: a region of whole shade, 2-4 m, lying along x; the densest clump too, so it is what still stands in the opening over her fire)
     const float RimLag = 0.4f, RimIn = 0.3f; // the mass's own fill closes this much later at its rim, falling to nothing this far in (m): the rim is whole leaves, their outlines
     const float RimThin = 0.35f; // the share of leaves left out along the rim (each one left reads as a leaf, not a tooth of a saw)
-    const float Hang = 0.3f;     // the share of leaves just off the rim that stand whole (a leaf hanging out of the mass)
+    const float Hang = 0.12f;    // the share of leaves just off the rim that stand whole (a leaf hanging out of the mass)
     const float Join = 0.25f;    // the share of throws that grow onto an earlier field (fields joined in twos and threes)
     const float Turn = 2.2f;     // a leaf turns this far in all (rad) off the way out of its clump
     const int Gn = 1024;         // the layout's grid over the tile
@@ -123,7 +132,21 @@ public static class CanopyField
         }
         int na = 19, nb = 23, nc = 43, nd = 47, ne = 13, nf = 17, ng = 11;
         float[] la = Lattice(rnd, na), lb = Lattice(rnd, nb), lc = Lattice(rnd, nc), ld = Lattice(rnd, nd), le = Lattice(rnd, ne), lf = Lattice(rnd, nf), lg = Lattice(rnd, ng);
-        var clump = new float[Gn * Gn];
+        // the clusters: centers on a jittered grid, each its own cover; a grid point belongs to the nearest (its place bent
+        // by a noise, so the lines between clusters are not straight)
+        int cn = Math.Max(3, (int)MathF.Round(tile / ClusterPitch));
+        float cp = tile / cn;
+        var ccx = new float[cn * cn]; var ccy = new float[cn * cn]; var ccv = new float[cn * cn];
+        for (int j = 0; j < cn; j++)
+            for (int i = 0; i < cn; i++)
+            {
+                ccx[j * cn + i] = (i + 0.5f + ((float)rnd.NextDouble() - 0.5f) * ClusterJit) * cp;
+                ccy[j * cn + i] = (j + 0.5f + ((float)rnd.NextDouble() - 0.5f) * ClusterJit) * cp;
+                ccv[j * cn + i] = Vlo + (Vhi - Vlo) * MathF.Pow((float)rnd.NextDouble(), 1.4f);
+            }
+        var cid = new int[Gn * Gn];       // the cluster a grid point belongs to
+        var vs = new float[Gn * Gn];      // the cover it closes at as shade, before the mass's rim (Draw)
+        var gl = new float[Gn * Gn];      // 1 on the line between two clusters, 0 at a cluster's heart
         var ga = new float[Gn * Gn]; var gb = new float[Gn * Gn];   // lit where ga > the level and gb > 0
         Parallel.For(0, Gn, j =>
         {
@@ -133,8 +156,22 @@ public static class CanopyField
                 int k = j * Gn + i;
                 ga[k] = -d1[k] + 0.4f * (Noise(la, na, u, v) + Noise(lb, nb, u, v) - 1f) + 0.12f * (Noise(lc, nc, u, v) + Noise(ld, nd, u, v) - 1f);
                 gb[k] = 0.5f * (d2[k] - d1[k]) - 0.5f * (GapMin + (GapMax - GapMin) * Noise(lg, ng, u, v)) + 0.06f * (Noise(lc, nc, v, u) + Noise(ld, nd, v, u) - 1f);
-                // the clumps: a bough whole (the slow noise low), the rest by a small noise; what outlasts the opening over her fire is the boughs
-                clump[k] = 0.8f * (1f - Smooth(Rho0 - 0.03f, Rho0 + 0.15f, Slow(u * tile, v * tile))) + 0.1f * (Noise(le, ne, u, v) + Noise(lf, nf, u, v));
+                float qx = u * tile + 0.5f * (Noise(le, ne, u, v) - 0.5f) + 0.2f * (Noise(lc, nc, u, v) - 0.5f), qy = v * tile + 0.5f * (Noise(lf, nf, u, v) - 0.5f) + 0.2f * (Noise(ld, nd, u, v) - 0.5f);
+                int ci0 = (int)MathF.Floor(qx / cp), cj0 = (int)MathF.Floor(qy / cp), best = 0;
+                float f1 = 1e9f, f2 = 1e9f, bx = 0, by = 0, sx2 = 0, sy2 = 0;
+                for (int cj = cj0 - 2; cj <= cj0 + 2; cj++)
+                    for (int ci = ci0 - 2; ci <= ci0 + 2; ci++)
+                    {
+                        int c = Wrap(cj, cn) * cn + Wrap(ci, cn);
+                        float ddx = Md(ccx[c] - qx, tile), ddy = Md(ccy[c] - qy, tile), dd = ddx * ddx + ddy * ddy;
+                        if (dd < f1) { f2 = f1; sx2 = bx; sy2 = by; f1 = dd; bx = ddx; by = ddy; best = c; }
+                        else if (dd < f2) { f2 = dd; sx2 = ddx; sy2 = ddy; }
+                    }
+                // (the distance to the line between the nearest two)
+                float edge = (f2 - f1) / (2f * MathF.Max(MathF.Sqrt((sx2 - bx) * (sx2 - bx) + (sy2 - by) * (sy2 - by)), 1e-3f));
+                cid[k] = best;
+                gl[k] = 1f - Smooth(0f, Wg, edge);
+                vs[k] = ccv[best] + (Vtop - ccv[best]) * gl[k];
             }
         });
         // --- the leaves' own numbers, drawn once (the same leaves whatever the fields' level and the tile's resolution) ---
@@ -152,17 +189,17 @@ public static class CanopyField
         shade = 0;
         for (int it = 0; it < 5; it++)
         {
-            var c = Draw(Pc, tile, ga, gb, sorted, nominal, clump, lr, ncell, pitch, leafMin, leafMax, lobesMin, lobesMax, out float sh, null, null);
+            var c = Draw(Pc, tile, ga, gb, sorted, nominal, vs, gl, cid, ccx, ccy, lr, ncell, pitch, leafMin, leafMax, lobesMin, lobesMax, out float sh, null, null);
             log?.Invoke($"  nominal lit {nominal:0.000} -> lit {1 - sh:0.000}");
             float err = lit - (1 - sh);
             if (MathF.Abs(err) < 0.004f) break;
             nominal = Math.Clamp(nominal + err, 0.02f, 0.98f);
         }
         stemX = new float[P * P]; stemY = new float[P * P];
-        return Draw(P, tile, ga, gb, sorted, nominal, clump, lr, ncell, pitch, leafMin, leafMax, lobesMin, lobesMax, out shade, stemX, stemY);
+        return Draw(P, tile, ga, gb, sorted, nominal, vs, gl, cid, ccx, ccy, lr, ncell, pitch, leafMin, leafMax, lobesMin, lobesMax, out shade, stemX, stemY);
     }
 
-    static float[] Draw(int P, float tile, float[] ga, float[] gb, float[] sorted, float nominal, float[] clump, float[] lr, int ncell, float pitch, float leafMin, float leafMax, int lobesMin, int lobesMax, out float shade, float[]? stemX, float[]? stemY)
+    static float[] Draw(int P, float tile, float[] ga, float[] gb, float[] sorted, float nominal, float[] vs, float[] gl, int[] cid, float[] ccx, float[] ccy, float[] lr, int ncell, float pitch, float leafMin, float leafMax, int lobesMin, int lobesMax, out float shade, float[]? stemX, float[]? stemY)
     {
         float cell = tile / Gn, m = P / tile;
         float thr = sorted[Math.Clamp(sorted.Length - (int)(nominal * Gn * Gn), 0, sorted.Length - 1)];
@@ -178,7 +215,8 @@ public static class CanopyField
                 inLit[j * n + i] = litHere ? 0 : 1e12f; inShade[j * n + i] = litHere ? 1e12f : 0;
             }
         Edt(inLit, n); Edt(inShade, n);
-        // the cover the mass itself closes at (v): in the shade from C0 down with depth and the clumps, in a field from C0 + A up
+        // the cover the mass itself closes at (v): in the shade its cluster's (low at the heart, the top on the lines between
+        // clusters, where the mass's rim closes last), in a field from C0 + A up
         var v = new float[Gn * Gn]; var sd = new float[Gn * Gn]; var vb = new float[Gn * Gn];
         for (int j = 0; j < Gn; j++)
             for (int i = 0; i < Gn; i++)
@@ -187,13 +225,13 @@ public static class CanopyField
                 float din = MathF.Sqrt(inLit[k]) * cell, dout = MathF.Sqrt(inShade[k]) * cell;
                 bool litHere = inLit[k] == 0;
                 sd[j * Gn + i] = litHere ? dout - 0.5f * cell : -(din - 0.5f * cell);
-                v[j * Gn + i] = litHere ? MathF.Min(C0 + A + Ko * dout, 1f) : C0 - Kd * MathF.Min(din, Dsat) - Nz * clump[j * Gn + i];
+                v[j * Gn + i] = litHere ? MathF.Min(C0 + A + Ko * dout, 1f) : vs[j * Gn + i] + gl[j * Gn + i] * Kd * (Dsat - MathF.Min(din, Dsat));
                 vb[j * Gn + i] = v[j * Gn + i] + BodyLag + (litHere ? 0 : RimLag * MathF.Max(0, 1 - din / RimIn));
             }
         var px = new float[P * P];
         Array.Fill(px, 1f);
         // the leaves
-        var leaves = new List<(float X, float Y, float Full, float Reach, float[] K)>();
+        var leaves = new List<(float X, float Y, float Full, float Reach, float[] K, float Cx, float Cy)>();
         for (int cj = 0; cj < ncell; cj++)
             for (int ci = 0; ci < ncell; ci++)
             {
@@ -207,7 +245,7 @@ public static class CanopyField
                 // (a loose leaf now and then, lying whole just off the mass)
                 if (d > 0.25f && d < 0.55f && lr[o + 3] < 0.022f) full = C0 - 0.04f;
                 // (and leaves hanging out of the rim: whole, and gone with the rim they hang from)
-                if (d > 0 && d <= 0.25f && lr[o + 3] < Hang) full = C0 - 0.04f - Nz * clump[gj * Gn + gi];
+                if (d > 0 && d <= 0.25f && lr[o + 3] < Hang) full = vs[gj * Gn + gi];
                 // its way: out of its clump (up the cover: out of the mass at its rim, out of what still stands where the canopy opens), turned as it likes
                 float ex = Bil(v, Gn, gx + 3, gy) - Bil(v, Gn, gx - 3, gy), ey = Bil(v, Gn, gx, gy + 3) - Bil(v, Gn, gx, gy - 3);
                 float way = (ex * ex + ey * ey > 1e-8f ? MathF.Atan2(ey, ex) : lr[o + 4] * MathF.Tau) + (lr[o + 4] - 0.5f) * Turn;
@@ -227,7 +265,7 @@ public static class CanopyField
                     reach = MathF.Max(reach, l);
                 }
                 float gmax = 1 + MathF.Max(1 - full, 0) / Kv;
-                leaves.Add((x, y, full, reach * gmax + 1.5f / m, k));
+                leaves.Add((x, y, full, reach * gmax + 1.5f / m, k, ccx[cid[gj * Gn + gi]], ccy[cid[gj * Gn + gi]]));
             }
         // stamped in strips (each strip writes its own rows only)
         const int Strips = 32;
@@ -246,7 +284,7 @@ public static class CanopyField
             int top = s * rows, bottom = s == Strips - 1 ? P : top + rows;
             foreach (int li in per[s])
             {
-                var (lx, ly, full, reach, k) = leaves[li];
+                var (lx, ly, full, reach, k, acx, acy) = leaves[li];
                 int x0 = (int)MathF.Floor((lx - reach) * m), x1 = (int)MathF.Ceiling((lx + reach) * m);
                 int y0 = (int)MathF.Floor((ly - reach) * m), y1 = (int)MathF.Ceiling((ly + reach) * m);
                 int nk = k.Length / 5;
@@ -266,7 +304,7 @@ public static class CanopyField
                         }
                         float val = gg <= 1 ? full - A * (1 - gg) : full + Kv * (gg - 1);
                         int idx = wy * P + Wrap(xx, P);
-                        if (val < px[idx]) { px[idx] = val; if (stemX != null) { stemX[idx] = -dx; stemY![idx] = -dy; } }
+                        if (val < px[idx]) { px[idx] = val; if (stemX != null) { stemX[idx] = Md(acx - (xx + 0.5f) / m, tile); stemY![idx] = Md(acy - (yy + 0.5f) / m, tile); } }
                     }
                 }
             }
@@ -280,7 +318,15 @@ public static class CanopyField
             {
                 float b = Bil(vb, Gn, (i + 0.5f) / m / cell - 0.5f, (j + 0.5f) / m / cell - 0.5f);
                 int idx = j * P + i;
-                if (b < px[idx]) { px[idx] = b; if (stemX != null) { stemX[idx] = 0; stemY![idx] = 0; } }
+                if (b < px[idx])
+                {
+                    px[idx] = b;
+                    if (stemX != null)
+                    {
+                        int c = cid[Math.Clamp((int)((j + 0.5f) / m / cell), 0, Gn - 1) * Gn + Math.Clamp((int)((i + 0.5f) / m / cell), 0, Gn - 1)];
+                        stemX[idx] = Md(ccx[c] - (i + 0.5f) / m, tile); stemY![idx] = Md(ccy[c] - (j + 0.5f) / m, tile);
+                    }
+                }
                 if (px[idx] < 0) px[idx] = 0;
                 if (px[idx] < C0) acc++;
             }
@@ -292,6 +338,7 @@ public static class CanopyField
 
     static int Wrap(int i, int n) => ((i % n) + n) % n;
     static float Mod(float a, float n) => ((a % n) + n) % n;
+    static float Md(float d, float n) => d - n * MathF.Round(d / n);   // the short way round the tile
     static float Smooth(float a, float b, float x) { float t = Math.Clamp((x - a) / (b - a), 0f, 1f); return t * t * (3 - 2 * t); }
     static float[] Lattice(Random r, int n) { var a = new float[n * n]; for (int i = 0; i < a.Length; i++) a[i] = (float)r.NextDouble(); return a; }
     // a wrapped value noise (u, v over the tile, 0..1)
