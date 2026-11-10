@@ -1088,7 +1088,7 @@ class Her:
         Va, Ga = Ab.pose_turns(transfer_turns(Gr, p.rest, p.index, Ab.p.index, Ab.p.parent, rg.ref_map, rg.order))
         if cfg.get("fair_a"):                               # A's own posed skin faired at the source (fair_a.py); absent: as it was
             import fair_a
-            Va = fair_a.her_hook(self, rg, Va)
+            Va = fair_a.her_hook(self, rg, Va, Ga)
         Vr = register(Va, [anchor_align(Gr[ja], p.rest[ja], Ab.G0[ra], Ga[ra]) for ja, ra in rg.anchors], rg.field)
         cf, cr = rg.carrier.carry(Vr, both=True)
         cf = self.relaxed(rg, G, cf, Vr)
