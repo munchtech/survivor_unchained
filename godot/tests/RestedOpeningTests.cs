@@ -7,10 +7,10 @@ using Xunit;
 
 namespace SurvivorUnchained.Tests;
 
-/// <summary>(M3 MR 3 o2) The rested opening (Battle.RestOf, Sim.Blows.Rested): a chained cut that starts on a press
-/// carries the rest its grip had. Every cut pays forward its own share (the time until the grip is free again, over
-/// the written wait); a press adds the idle time since the grip was last free; at most one whole blow. The held
-/// chain's cut on its beat keeps its share to the bit. The shipped records, as they ship.</summary>
+/// <summary>(M3 MR 3 b1/b2, the LANDED rule) A chained grip keeps a time bank (WeaponInst.PaidTo, Battle.BankOf): a
+/// cut weighs what the wait has earned since the grip's last cut that LANDED (struck a body), at most one written blow,
+/// never under its own share; only a cut that strikes a body pays, once however many bodies; a whiff spends and counts
+/// nothing. Held on target every cut weighs its share to the bit. The shipped records, as they ship.</summary>
 public sealed class RestedOpeningTests
 {
     readonly Xunit.Abstractions.ITestOutputHelper output;
@@ -18,7 +18,7 @@ public sealed class RestedOpeningTests
 
     const double Dt = 1 / 60.0;
 
-    sealed record Cut(int N, double Start, double End, double Rest, double Weight, double Scale, bool Heavy, bool Whole, double Wait);
+    sealed record Cut(int N, double Start, double End, double Earned, double Weight, double Scale, bool Heavy, bool Whole);
 
     sealed class Rig
     {
@@ -27,13 +27,16 @@ public sealed class RestedOpeningTests
         /// <summary>The weapon that swings (the union's half when one is granted).</summary>
         public WeaponInst G;
         public readonly Enemy E;
+        public readonly List<Enemy> More = new();
         public readonly List<Cut> Cuts = new();
-        /// <summary>The summed weight of the cuts started, and what the cap (one whole blow) cut off them.</summary>
-        public double Sum, CapLoss;
-        public int Drops;
-        double last = double.NaN, dropped = double.NaN;
+        /// <summary>What each cut landed (BlowN's growth while it was the chain's cut), by its index in Cuts.</summary>
+        public readonly List<double> Paid = new();
+        /// <summary>The body is away (40 m behind her) while she still aims where it stood: a gap, nothing in reach.</summary>
+        public bool Gap;
+        public int Drops, HeavyLanded;
+        double last = double.NaN, dropped = double.NaN, landed0;
 
-        public Rig(string id, bool chained = true, bool hand = true)
+        public Rig(string id, bool chained = true, bool hand = true, int bodies = 1)
         {
             B = new Battle(new BattleSetup
             {
@@ -46,28 +49,39 @@ public sealed class RestedOpeningTests
             B.Stats.Add(new StatMod(Stat.CritChance, ModKind.Flat, -B.Stats.Get(Stat.CritChance), "test"));
             G = W = B.Weapons[0];
             W.Timer = 0;
-            Assert.Same(W.Def.Press, W.Press);
             if (!chained) W.Press = W.Press!.WithChain(null);
             Assert.Equal(chained, W.Chained);
             E = B.SpawnEnemy("footpad", 2, 0)!;
             E.Hp = E.MaxHp = 1e9;
             E.AttackT = E.RangedT = 999;
+            for (int i = 1; i < bodies; i++)
+            {
+                var f = B.SpawnEnemy("footpad", 2, 0)!;
+                f.Hp = f.MaxHp = 1e9; f.AttackT = f.RangedT = 999;
+                More.Add(f);
+            }
         }
 
-        /// <summary>The written wait now: the unchained record's (the period over the cut's share).</summary>
+        /// <summary>The written wait now (the period over the cut's share): W of the bank.</summary>
         public double Written => Firing.CooldownOf(B, G) / G.BlowWeight;
-        /// <summary>The written blows landed (every cast's weight, counted).</summary>
+        /// <summary>The written blows LANDED (every landed cast's weight, counted; a whiff counts 0).</summary>
         public double Landed => G.BlowN + G.BlowPart;
-        public double Damage => 1e9 - E.Hp;
+        (double X, double Z) Aim => (B.Player.X + 2, B.Player.Z);
 
-        void Pin() { var p = B.Player; E.X = p.X + 2; E.Z = p.Z; E.Vx = E.Vz = 0; }
+        void Pin()
+        {
+            var p = B.Player;
+            (E.X, E.Z) = Gap ? (p.X - 40, p.Z) : (p.X + 2, p.Z);
+            E.Vx = E.Vz = 0;
+            for (int i = 0; i < More.Count; i++) { var f = More[i]; (f.X, f.Z) = Gap ? (p.X - 40, p.Z + 1 + i) : (p.X + 2, p.Z + (i + 1) * 0.3 * (i % 2 == 0 ? 1 : -1)); f.Vx = f.Vz = 0; }
+        }
 
         public void Step(bool held, int steps = 1)
         {
             for (int i = 0; i < steps; i++)
             {
                 Pin();
-                B.HoldSkill(W.Slot, held, E.X, E.Z);
+                B.HoldSkill(W.Slot, held, Aim.X, Aim.Z);
                 B.Tick(Dt, 0, 0);
                 Note();
             }
@@ -76,7 +90,7 @@ public sealed class RestedOpeningTests
         public bool Tap(int? slot = null)
         {
             Pin();
-            bool ok = B.PressSkill(slot ?? W.Slot, E.X, E.Z);
+            bool ok = B.PressSkill(slot ?? W.Slot, Aim.X, Aim.Z);
             Note();
             return ok;
         }
@@ -86,289 +100,271 @@ public sealed class RestedOpeningTests
         void Note()
         {
             B.Events.Drain();
+            double l = Landed;
+            if (l > landed0 + 1e-12)
+            {
+                if (Paid.Count > 0) Paid[^1] += l - landed0;
+                if (G.HeavyCast) HeavyLanded++;
+            }
+            landed0 = l;
             if (G.Chain is not { } c) return;
             if (c.Dropped && dropped != c.StartAt) { dropped = c.StartAt; Drops++; }
             if (!c.Live || c.StartAt == last) return;
             last = c.StartAt;
-            double own = G.BlowWeight * (c.Whole ? 1 : c.PeriodScale);
             Assert.Equal(GripMeter.WeightOf(G), c.Weight);
-            Cuts.Add(new Cut(c.Cut, c.StartAt, c.PeriodEnd, c.Rest, c.Weight, c.PeriodScale, c.Heavy, c.Whole, Written));
-            Sum += c.Weight;
-            if (!c.Whole && Cuts.Count > 1) CapLoss += own + c.Rest - c.Weight;
+            Cuts.Add(new Cut(c.Cut, c.StartAt, c.PeriodEnd, c.Rest, c.Weight, c.PeriodScale, c.Heavy, c.Whole));
+            Paid.Add(0);
         }
     }
 
-    /// <summary>(1) Held steady, both shipped records, a minute: the first cut of the battle is a whole blow; every cut
-    /// after it is the chain's next cut on its beat, carries no rest and weighs its own share TO THE BIT (the cut's
-    /// share times a heavy's longer period: the tip's weight), starting on the instant the cut before's period ended.
-    /// (SwingChainTests' held minute pins the beats, rates and sides, and stands untouched.)</summary>
-    [Theory]
-    [InlineData("sunder", true)]
-    [InlineData("sunder", false)]
-    [InlineData("oathblade", true)]
-    [InlineData("oathblade", false)]
-    public void Held_steady_every_cut_but_the_first_weighs_its_share_to_the_bit(string id, bool hand)
-    {
-        var r = new Rig(id, hand: hand);
-        r.Step(true, 3600);
-        Assert.True(r.Cuts.Count > 60, $"{r.Cuts.Count} cuts");
-        Assert.Equal((0, 1.0, 1.0), (r.Cuts[0].N, r.Cuts[0].Rest, r.Cuts[0].Weight));
-        double share = r.W.BlowWeight, sum = 1;
-        Assert.Equal(id == "sunder" ? 0.70 / 1.6 : 0.70 / 1.05, share);
-        for (int k = 1; k < r.Cuts.Count; k++)
-        {
-            var c = r.Cuts[k];
-            Assert.Equal(k, c.N);
-            Assert.Equal(0.0, c.Rest);
-            // (exact: the same product the tip's cast took)
-            Assert.Equal(share * c.Scale, c.Weight);
-            Assert.Equal(r.Cuts[k - 1].End, c.Start, 9);
-            if (k < r.Cuts.Count - 1) sum += c.Weight;
-        }
-        if (id == "sunder" || hand) Assert.Contains(r.Cuts, c => c.Heavy);
-        Assert.Equal(0.0, r.CapLoss);
-        // the counted blows are the cuts' weights: all but the last cut, whose blow may not have landed yet
-        Assert.InRange(r.Landed - sum, -1e-9, r.Cuts[^1].Weight + 1e-9);
-    }
-
-    /// <summary>(2) The opening after a rest: its weight is its share plus the idle time since the grip was free over the
-    /// written wait, at most 1; the battle's first cut is 1. Damage, Resolve, the written-blow count and the heavy's
-    /// count (Sunder's own, the Hand's for Oathblade) all move by that same weight, and the wait after it is the period.</summary>
-    [Theory]
-    [InlineData("sunder", 0.2)]
-    [InlineData("sunder", 0.9)]
-    [InlineData("sunder", 1.6)]
-    [InlineData("sunder", 5.0)]
-    [InlineData("oathblade", 0.2)]
-    [InlineData("oathblade", 0.9)]
-    [InlineData("oathblade", 1.05)]
-    [InlineData("oathblade", 5.0)]
-    public void An_opening_after_a_rest_weighs_its_share_plus_the_rest(string id, double rest)
-    {
-        var r = new Rig(id);
-        var w = r.W;
-        double share = w.BlowWeight, period = Firing.CooldownOf(r.B, w), written = r.Written;
-        Assert.Equal(0.70, period, 12);
-        double Count() => id == "sunder" ? w.OwnBlows + w.OwnPart : w.HandBlows + w.HandPart;
-        Assert.True(r.Tap());
-        var first = r.Cuts.Single();
-        Assert.Equal((0, 1.0), (first.N, first.Weight));
-        Assert.Equal(first.Start + period, first.End, 9);
-        r.Until(first.End - 0.1);
-        // the first blow landed whole: every count took 1
-        var (d1, f1) = (r.Damage, r.B.Resolve.LandedFill);
-        Assert.True(d1 > 0 && f1 > 0);
-        Assert.Equal((1.0, 1.0), (r.Landed, Count()));
-        r.Until(first.End + rest);
-        double idle = r.B.Time - w.Chain!.PeriodEnd, want = Math.Min(1, share + idle / written);
-        Assert.InRange(idle, rest - 1e-9, rest + Dt);
-        Assert.True(r.Tap());
-        var c = r.Cuts[1];
-        // (past the grace: a new chain's opening, cut 0)
-        Assert.Equal(0, c.N);
-        Assert.False(c.Heavy);
-        Assert.Equal(want, c.Weight, 12);
-        Assert.InRange(c.Weight, share, 1);
-        if (rest >= written) Assert.Equal(1.0, c.Weight);
-        // the wait after it is the cut's own period
-        Assert.Equal(c.Start + period, c.End, 9);
-        Assert.False(r.Tap());
-        r.Until(c.End - 0.1);
-        // (the foe's 1e9 life: a blow's damage is read off it to about 1e-7)
-        Assert.Equal(want, (r.Damage - d1) / d1, 6);
-        Assert.Equal(want, (r.B.Resolve.LandedFill - f1) / f1, 9);
-        Assert.Equal(1 + want, r.Landed, 9);
-        Assert.Equal(1 + want, Count(), 9);
-        Assert.Equal(c.End, w.Chain.PeriodEnd, 9);
-        // (ready on the step its period ends, or the one after: the step clock's residue)
-        r.Until(c.End);
-        if (!r.Tap()) { r.Step(false); Assert.True(r.Tap()); }
-        output.WriteLine($"{id}: rest {rest:F2} s (idle {idle:F4}) -> weight {c.Weight:F4} (share {share:F4}, written wait {written:F3})");
-    }
-
-    /// <summary>One seeded press pattern, 120 s: holds, taps at a rhythm (buffered or not), gaps inside and outside the
-    /// grace, flutters, and dashes (which drop a pending cut and bar the next). Checked at every step.</summary>
-    static Rig Pattern(string id, int seed, bool hand, double[] worst)
-    {
-        var r = new Rig(id, hand: hand);
-        var rng = new Random(seed);
-        double share = r.W.BlowWeight, written = r.Written, heavyMost = share * (54.0 / 42 - 1);
-        int steps = 7200, i = 0;
-        void Step(bool held)
-        {
-            r.Step(held); i++;
-            if (r.Cuts.Count == 0) return;
-            var (c0, cn) = (r.Cuts[0], r.Cuts[^1]);
-            // THE INVARIANT: the summed weight of the cuts started never exceeds elapsed / the written wait + 1 (the first
-            // cut's whole blow); a heavy in hand pays forward its longer period, its extra share and no more
-            double over = r.Sum - ((r.B.Time - c0.Start) / written + 1);
-            worst[0] = Math.Max(worst[0], over);
-            Assert.True(over <= (cn.Heavy ? heavyMost : 0) + 1e-6, $"{id} seed {seed} t {r.B.Time:F3}: sum {r.Sum:F4} over the bound by {over:F4}");
-            // the account, exact: one whole blow, then every second from the first cut's period end to the last one's,
-            // less only what the cap cut off (a grip left idle past a full written wait)
-            double id2 = r.Sum - (1 + (cn.End - c0.End) / written - r.CapLoss);
-            worst[1] = Math.Max(worst[1], Math.Abs(id2));
-            Assert.True(Math.Abs(id2) <= 1e-6, $"{id} seed {seed} t {r.B.Time:F3}: the account is off by {id2:E3}");
-            Assert.True(r.Landed <= r.Sum + 1e-9);
-        }
-        while (i < steps)
-        {
-            if (rng.NextDouble() < 0.2) r.B.Dash(rng.Next(2) == 0 ? 1 : -1, 0);
-            switch (rng.Next(4))
-            {
-                case 0:
-                {
-                    int n = 3 + (int)(rng.NextDouble() * 240), dashAt = rng.NextDouble() < 0.35 ? rng.Next(n) : -1;
-                    for (int k = 0; k < n && i < steps; k++) { if (k == dashAt) r.B.Dash(0, -1); Step(true); }
-                    break;
-                }
-                case 1:
-                {
-                    int every = (int)Math.Round((0.2 + rng.NextDouble() * 2.8) * 60), taps = 1 + rng.Next(6);
-                    bool buffered = rng.Next(2) == 0, want = false;
-                    for (int k = 0; k < taps * every && i < steps; k++)
-                    {
-                        if (k % every == 0) want = true;
-                        if (want && r.Tap() || !buffered) want = false;
-                        Step(false);
-                    }
-                    break;
-                }
-                case 2:
-                    for (int k = 0, n = 3 + (int)(rng.NextDouble() * 150); k < n && i < steps; k++) Step(false);
-                    break;
-                default:
-                    for (int f = 0, fs = 1 + rng.Next(5); f < fs; f++)
-                    {
-                        for (int k = 0, n = 6 + rng.Next(25); k < n && i < steps; k++) Step(true);
-                        for (int k = 0, n = 3 + rng.Next(28); k < n && i < steps; k++) Step(false);
-                    }
-                    break;
-            }
-        }
-        return r;
-    }
-
-    /// <summary>(3) THE INVARIANT, as a property: over 200 seeded press patterns a record (half with the Hand's heavy on),
-    /// at every step the summed weight is at most elapsed / the written wait + 1; it IS one whole blow plus the time from
-    /// the first cut's period end to the last one's over the written wait, less only the cap's loss (so a pattern that
-    /// never rests the grip past a full wait is within one cut's share of the bound); and no pattern beats holding by
-    /// more than one whole blow.</summary>
+    /// <summary>(1) THE INVARIANT, as a property: 400 seeded press patterns a record, 60 s each (holds, taps, rests,
+    /// flutters, each on target or in a GAP with no body in reach; dashes; the Hand on for half; answers off). At every
+    /// step the summed LANDED weight is at most (t + W) / W plus what the cut in hand has paid forward past now
+    /// (max(0, PaidTo - t) / W, never more than the time it occupies), and at every cut's period end the plain bound
+    /// (t + W) / W. The summed heavy COUNT never runs ahead of holding on target over the same time.</summary>
     [Theory]
     [InlineData("sunder")]
     [InlineData("oathblade")]
     public void No_press_pattern_beats_the_written_wait_or_the_hold(string id)
     {
-        var held = new double[2];
-        for (int h = 0; h < 2; h++) { var r = new Rig(id, hand: h == 1); r.Step(true, 7200); held[h] = r.Sum; }
-        double worstHold = double.NegativeInfinity, least = double.PositiveInfinity;
-        var worst = new[] { double.NegativeInfinity, 0.0 };
-        int cuts = 0, rested = 0, capped = 0, drops = 0, heavies = 0, tight = 0;
-        for (int seed = 1; seed <= 200; seed++)
+        const int steps = 3600, seeds = 400;
+        var heldL = new double[2][]; var heldH = new int[2][];
+        for (int h = 0; h < 2; h++)
+        {
+            var r = new Rig(id, hand: h == 1);
+            heldL[h] = new double[steps]; heldH[h] = new int[steps];
+            for (int i = 0; i < steps; i++) { r.Step(true); heldL[h][i] = r.Landed; heldH[h][i] = r.HeavyLanded; }
+        }
+        double worstStep = double.NegativeInfinity, worstEnd = double.NegativeInfinity, worstHold = double.NegativeInfinity;
+        int capped = 0, cappedCuts = 0, cuts = 0, whiffs = 0, drops = 0, heavies = 0, rested = 0, worstHeavy = int.MinValue;
+        for (int seed = 1; seed <= seeds; seed++)
         {
             bool hand = seed % 2 == 0;
-            var r = Pattern(id, seed, hand, worst);
-            worstHold = Math.Max(worstHold, r.Sum - held[hand ? 1 : 0]);
-            least = Math.Min(least, r.Sum);
-            Assert.True(r.Sum <= held[hand ? 1 : 0] + 1, $"{id} seed {seed}: {r.Sum:F3} beats the hold's {held[hand ? 1 : 0]:F3}");
-            cuts += r.Cuts.Count; drops += r.Drops; heavies += r.Cuts.Count(c => c.Heavy);
-            rested += r.Cuts.Count(c => c.Rest > 0); capped += r.Cuts.Skip(1).Count(c => c.Weight >= 1 - 1e-12 && !c.Whole);
-            Assert.All(r.Cuts, c => Assert.True(c.Rest > 0 || c.Weight == r.W.BlowWeight * c.Scale));
-            if (r.CapLoss == 0)
+            int hi = hand ? 1 : 0;
+            var r = new Rig(id, hand: hand);
+            var rng = new Random(seed);
+            int i = 0, ends = 0;
+            void Step(bool held)
             {
-                // no waste: at the last cut's start the sum is within that cut's share of the bound
-                tight++;
-                var (c0, cn) = (r.Cuts[0], r.Cuts[^1]);
-                Assert.InRange(r.Sum - ((cn.Start - c0.Start) / r.Written + 1), -1e-6 - r.W.BlowWeight * 54.0 / 42, r.W.BlowWeight * (54.0 / 42 - 1) + 1e-6);
+                r.Step(held);
+                double t = r.B.Time, wt = r.Written, l = r.Landed, paid = double.IsNaN(r.G.PaidTo) ? t : r.G.PaidTo;
+                double over = l - ((t + wt) / wt + Math.Max(0, paid - t) / wt);
+                worstStep = Math.Max(worstStep, over);
+                Assert.True(over <= 1e-9, $"{id} seed {seed} t {t:F3}: landed {l:F4} over the bound by {over:F4}");
+                // every cut's period end passed: the plain bound
+                while (ends < r.Cuts.Count && r.Cuts[ends].End <= t + 1e-9)
+                {
+                    double o2 = l - (t + wt) / wt;
+                    worstEnd = Math.Max(worstEnd, o2);
+                    Assert.True(o2 <= 1e-9, $"{id} seed {seed} t {t:F3}: landed {l:F4} over the plain bound at a period end by {o2:F4}");
+                    ends++;
+                }
+                int dh = r.HeavyLanded - heldH[hi][i];
+                worstHeavy = Math.Max(worstHeavy, dh);
+                // (at most one heavy of phase: a whole opening lands at once where the hold's cut is still before its
+                // contact; the count itself is bounded by the landed weight above)
+                Assert.True(dh <= 1, $"{id} seed {seed} t {t:F3}: {r.HeavyLanded} heavies landed, held on target {heldH[hi][i]}");
+                worstHold = Math.Max(worstHold, l - heldL[hi][i]);
+                i++;
             }
+            while (i < steps)
+            {
+                r.Gap = rng.NextDouble() < 0.35;
+                if (rng.NextDouble() < 0.2) r.B.Dash(rng.Next(2) == 0 ? 1 : -1, 0);
+                switch (rng.Next(4))
+                {
+                    case 0:
+                    {
+                        int n = 3 + (int)(rng.NextDouble() * 200), dashAt = rng.NextDouble() < 0.35 ? rng.Next(n) : -1;
+                        for (int k = 0; k < n && i < steps; k++) { if (k == dashAt) r.B.Dash(0, -1); Step(true); }
+                        break;
+                    }
+                    case 1:
+                    {
+                        int every = (int)Math.Round((0.2 + rng.NextDouble() * 2.8) * 60), taps = 1 + rng.Next(5);
+                        bool buffered = rng.Next(2) == 0, want = false;
+                        for (int k = 0; k < taps * every && i < steps; k++)
+                        {
+                            if (k % every == 0) want = true;
+                            if (want && r.Tap() || !buffered) want = false;
+                            Step(false);
+                        }
+                        break;
+                    }
+                    case 2:
+                        for (int k = 0, n = 3 + (int)(rng.NextDouble() * 150); k < n && i < steps; k++) Step(false);
+                        break;
+                    default:
+                        for (int f = 0, fs = 1 + rng.Next(5); f < fs; f++)
+                        {
+                            for (int k = 0, n = 6 + rng.Next(25); k < n && i < steps; k++) Step(true);
+                            for (int k = 0, n = 3 + rng.Next(28); k < n && i < steps; k++) Step(false);
+                        }
+                        break;
+                }
+            }
+            cuts += r.Cuts.Count; drops += r.Drops; heavies += r.HeavyLanded;
+            whiffs += r.Paid.Count(p => p == 0);
+            rested += r.Cuts.Skip(1).Count(c => !c.Whole && c.Weight > r.G.BlowWeight * c.Scale + 1e-12);
+            int cap = r.Cuts.Skip(1).Count(c => c.Weight >= 1 - 1e-12 && !c.Whole);
+            cappedCuts += cap; if (cap > 0) capped++;
+            // a cut that landed paid exactly its weight (once), a whiff nothing
+            for (int k = 0; k < r.Cuts.Count; k++) Assert.True(r.Paid[k] == 0 || Math.Abs(r.Paid[k] - r.Cuts[k].Weight) < 1e-9 || r.Cuts[k].Whole, $"{id} seed {seed} cut {k}: paid {r.Paid[k]:F4} of {r.Cuts[k].Weight:F4}");
         }
-        Assert.True(rested > 1000 && drops > 20 && heavies > 200 && capped > 100, $"rested {rested} drops {drops} heavies {heavies} capped {capped}");
-        output.WriteLine($"{id}: 200 patterns x 120 s, {cuts} cuts ({rested} rested, {capped} capped at a whole blow, {heavies} heavy, {drops} dropped by a dash), {tight} with no cap loss; "
-            + $"worst sum - (elapsed / wait + 1) = {worst[0]:+0.0000;-0.0000} (a heavy in hand may add {r0(id):F4}); the account's worst error {worst[1]:E2}; "
-            + $"held 120 s = {held[0]:F3} (no Hand) / {held[1]:F3} (Hand); best pattern - hold = {worstHold:+0.000;-0.000}; least pattern {least:F3}");
-        static double r0(string id) => (id == "sunder" ? 0.70 / 1.6 : 0.70 / 1.05) * (54.0 / 42 - 1);
+        Assert.True(whiffs > 500 && drops > 20 && heavies > 200 && rested > 500 && capped > 50, $"whiffs {whiffs} drops {drops} heavies {heavies} rested {rested} capped {capped}");
+        output.WriteLine($"{id}: {seeds} patterns x 60 s, {cuts} cuts ({whiffs} whiffed or dropped, {rested} rested, {cappedCuts} capped at a whole blow in {capped} patterns, {heavies} heavies landed, {drops} dropped by a dash)");
+        output.WriteLine($"{id}: worst landed - bound (with the cut in hand's paid-forward) {worstStep:+0.0000;-0.0000}; worst at a period end - (t + W) / W {worstEnd:+0.0000;-0.0000}; "
+            + $"worst heavies - held's {worstHeavy:+0;-0}; worst landed - held's (same step) {worstHold:+0.0000;-0.0000}; held 60 s = {heldL[0][^1]:F3} (no Hand) / {heldL[1][^1]:F3} (Hand)");
     }
 
-    /// <summary>Written blows landed in `secs` by a press plan: `press(step)` says tap (retried each step until it fires:
-    /// the buffer) or hold.</summary>
-    static double Landed(string id, bool chained, double secs, Func<int, (bool Held, bool Tap)> plan, bool hand = false)
-    {
-        var r = new Rig(id, chained, hand);
-        bool want = false;
-        for (int i = 0, n = (int)Math.Round(secs / Dt); i < n; i++)
-        {
-            var (held, tap) = plan(i);
-            want |= tap;
-            if (want && r.Tap()) want = false;
-            r.Step(held);
-        }
-        return r.Landed;
-    }
-
-    /// <summary>(4) Against the unchained record, the same hands: tapped once a written wait for a minute, the landed
-    /// weight is the unchained blows' within one; short holds (1.0 s on, 0.6 s off) land Sunder's within 3%. Oathblade's
-    /// unchained record wastes 0.55 s of each such cycle (ready at 1.05 s, its key up until 1.6 s) where the chain's
-    /// second cut uses it, so there the chain lands MORE (as it did before this rule), and never more than the wait
-    /// allows; its lifts short enough to waste nothing (0.9 s on, 0.15 s off) land the unchained record's within 3%.</summary>
-    [Fact]
-    public void The_same_presses_land_what_the_unchained_record_lands()
-    {
-        foreach (var (id, written) in new[] { ("sunder", 1.6), ("oathblade", 1.05) })
-        {
-            int every = (int)Math.Round(written / Dt);
-            double c = Landed(id, true, 60, i => (false, i % every == 0)), u = Landed(id, false, 60, i => (false, i % every == 0));
-            output.WriteLine($"{id} tapped once per {written} s for 60 s: chained {c:F3} | unchained {u:F3}");
-            Assert.InRange(c - u, -1, 1);
-            Assert.InRange(c, 60 / written - 1, 60 / written + 1);
-            // With the Hand's heavy on: a heavy cut pays forward its longer period (its share 54/42 of a cut's), and a
-            // rested heavy is still capped at one whole blow, so a hand that taps once a written wait loses the heavy's
-            // extra share each time one comes round (Oathblade: 0.19 of a blow every sixth blow). Never more.
-            double ch = Landed(id, true, 60, i => (false, i % every == 0), hand: true), uh = Landed(id, false, 60, i => (false, i % every == 0), hand: true);
-            output.WriteLine($"{id} tapped once per {written} s for 60 s, the Hand on: chained {ch:F3} | unchained {uh:F3}");
-            Assert.InRange(ch - uh, -(uh / 6 + 1) * (0.70 / written) * (54.0 / 42 - 1) - 1e-6, 1);
-            double hc = Landed(id, true, 60, i => (i % 96 < 60, false)), hu = Landed(id, false, 60, i => (i % 96 < 60, false));
-            output.WriteLine($"{id} held 1.0 s on, 0.6 s off for 60 s: chained {hc:F3} | unchained {hu:F3} | {(hc / hu - 1) * 100:+0.0;-0.0}% (the wait allows {60 / written + 1:F2})");
-            Assert.True(hc <= 60 / written + 1 + 1e-6);
-            if (id == "sunder") Assert.InRange(hc / hu, 0.97, 1.03);
-            else Assert.True(hc >= hu);
-            double sc = Landed(id, true, 60, i => (i % 63 < 54, false)), su = Landed(id, false, 60, i => (i % 63 < 54, false));
-            output.WriteLine($"{id} held 0.9 s on, 0.15 s off for 60 s: chained {sc:F3} | unchained {su:F3} | {(sc / su - 1) * 100:+0.0;-0.0}%");
-            Assert.InRange(sc / su, 0.97, 1.03);
-        }
-    }
-
-    /// <summary>(5) A press buffered through the cut starts the chain's next cut on its beat: no idle, the share to the
-    /// bit. A press again inside the grace, after the grip stood free a while, is the chain's next cut too (not an
-    /// opening) and carries that idle.</summary>
+    /// <summary>(2) One cut on three bodies: one weight, one commit (BlowN grows by the cut's weight, PaidTo by its weight
+    /// x W), and every body struck.</summary>
     [Theory]
     [InlineData("sunder")]
     [InlineData("oathblade")]
-    public void A_buffered_press_on_the_beat_carries_nothing_and_a_press_inside_the_grace_carries_its_idle(string id)
+    public void One_cut_on_several_bodies_is_one_weight_and_one_commit(string id)
     {
-        var r = new Rig(id);
-        double share = r.W.BlowWeight, written = r.Written;
-        r.Step(true, 30);
-        var c0 = r.Cuts.Single();
-        // let go at 0.5 s and press every step: the buffer
-        while (r.Cuts.Count < 2) { r.Tap(); r.Step(false); Assert.True(r.B.Time < c0.End + 0.1); }
-        var c1 = r.Cuts[1];
-        Assert.Equal((1, 0.0, share), (c1.N, c1.Rest, c1.Weight));
-        Assert.Equal(c0.End, c1.Start, 9);
-        // held through the second cut and let go just before its period ends: the grace runs from there
-        while (r.B.Time < c1.End - 0.1) r.Step(true);
-        r.Until(c1.End + 0.15);
-        Assert.True(r.W.Chain!.Live);
-        double idle = r.B.Time - r.W.Chain.PeriodEnd;
-        Assert.InRange(idle, 0.15 - 1e-9, 0.15 + Dt);
-        Assert.True(r.Tap());
-        var c2 = r.Cuts[2];
-        Assert.Equal(2, c2.N);
-        Assert.Equal(share + idle / written, c2.Weight, 12);
-        Assert.Equal(idle / written, c2.Rest, 12);
+        var r = new Rig(id, hand: false, bodies: 3);
+        while (r.Cuts.Count < 6) r.Step(true);
+        r.Until(r.Cuts[^1].Start - Dt);
+        for (int k = 0; k < r.Cuts.Count - 1; k++) Assert.Equal(r.Cuts[k].Weight, r.Paid[k], 9);
+        Assert.Equal(r.Cuts.Take(r.Cuts.Count - 1).Sum(c => c.Weight), r.Landed, 9);
+        // held on target: each landed cut paid its weight x W once, from where the one before paid to: the bank stands
+        // at the last landed cut's start (the first, whole, paid from start - W to its start)
+        Assert.Equal(r.Cuts[^2].Start, r.G.PaidTo, 9);
+        Assert.True(r.E.Hp < 1e9 && r.More.All(f => f.Hp < 1e9));
     }
 
-    /// <summary>(6) The union's half (Bladestorm's Sunder, on the union's second key) keeps its own rest: its first cut
-    /// is a whole blow, a press after a full written wait is whole again, and a shorter rest is its share plus the idle.</summary>
+    /// <summary>(3) Held on target, both records, Hand on and off, a minute: the first cut is a whole blow, every cut
+    /// after it weighs its share TO THE BIT (a heavy share x scale) and lands exactly that. (SwingChainTests' held minute
+    /// pins the beats, rates and sides, and runs in the same filter, unchanged.)</summary>
+    [Theory]
+    [InlineData("sunder", false)]
+    [InlineData("sunder", true)]
+    [InlineData("oathblade", false)]
+    [InlineData("oathblade", true)]
+    public void Held_on_target_every_cut_but_the_first_weighs_its_share_to_the_bit(string id, bool hand)
+    {
+        var r = new Rig(id, hand: hand);
+        r.Step(true, 3600);
+        Assert.True(r.Cuts.Count > 60);
+        Assert.Equal(1.0, r.Cuts[0].Weight);
+        foreach (var c in r.Cuts.Skip(1)) Assert.Equal(r.G.BlowWeight * c.Scale, c.Weight);
+        for (int k = 0; k < r.Cuts.Count - 1; k++) Assert.Equal(r.Cuts[k].Weight, r.Paid[k], 9);
+        Assert.True(hand || id == "oathblade" || r.Cuts.Any(c => c.Heavy));
+        output.WriteLine($"{id} hand {hand}: {r.Cuts.Count} cuts, {r.Cuts.Count(c => c.Heavy)} heavy, landed {r.Landed:F4}");
+    }
+
+    /// <summary>(4) A whiff then a landed cut: the landed one carries the whole rest earned since the last LANDED cut
+    /// (capped at 1). Flailing (holding in the gap), tapping in the gap and resting all open on the same weight.</summary>
+    [Theory]
+    [InlineData("sunder", 0.75)]
+    [InlineData("oathblade", 0.75)]
+    [InlineData("sunder", 1.3)]
+    [InlineData("oathblade", 2.0)]
+    public void A_whiff_spends_nothing_and_the_next_landed_cut_carries_the_rest(string id, double gap)
+    {
+        double? weight = null;
+        foreach (var mode in new[] { "flail", "tap", "rest" })
+        {
+            var r = new Rig(id, hand: false);
+            while (r.Cuts.Count < 5) r.Step(true);
+            double p = r.Cuts[^1].End, landedAt = 0;
+            // release so the 5th is the last cut held on target; it lands
+            r.Until(p);
+            // (held on target the bank stands at the last landed cut's start)
+            Assert.Equal(r.Cuts[^1].Start, r.G.PaidTo, 9);
+            double paid = r.G.PaidTo;
+            landedAt = r.Landed;
+            int n0 = r.Cuts.Count;
+            r.Gap = true;
+            if (mode == "flail") while (r.B.Time < p + Math.Min(gap, 0.7) - 0.1) r.Step(true);
+            if (mode == "tap") Assert.True(r.Tap());
+            r.Until(p + gap);
+            if (mode != "rest") { Assert.True(r.Cuts.Count > n0); Assert.Equal(landedAt, r.Landed, 12); }
+            r.Gap = false;
+            while (r.G.Timer > 0) r.Step(false);
+            double start = r.B.Time;
+            Assert.True(r.Tap());
+            var c = r.Cuts[^1];
+            double expect = Blows.Rested(r.G.BlowWeight * c.Scale, (c.Start - paid) / r.Written);
+            Assert.Equal(expect, c.Weight, 12);
+            Assert.Equal(Math.Min(1, (c.Start - paid) / r.Written), c.Earned, 12);
+            r.Until(c.End);
+            Assert.Equal(landedAt + c.Weight, r.Landed, 9);
+            output.WriteLine($"{id} gap {gap:F2} {mode}: opens at +{start - p:F3} s on weight {c.Weight:F4} (share {r.G.BlowWeight:F4})");
+            weight ??= c.Weight;
+            Assert.Equal(weight.Value, c.Weight, 12);
+        }
+    }
+
+    /// <summary>(5) The block's answer is one whole blow, against a full bank (after a rest) and an empty one (held on
+    /// target), at each block rate and answer wait of lead 14's table: printed, the written blows landed in each 0.85 s
+    /// span from an answer's start; asserted, the answer never pays more than one blow's weight in its own wait's span.</summary>
+    [Fact]
+    public void The_answer_pays_one_blow_in_its_wait_full_bank_or_empty()
+    {
+        double?[] answers = [null, 0.85, 0.78, 0.70];
+        double[] gaps = [3, 7, 10];
+        foreach (var answer in answers)
+        {
+            string line = $"answer wait {(answer is double a0 ? a0.ToString("F2") : "unset (1.05)")}:";
+            Rig Make()
+            {
+                var r = new Rig("oathblade", hand: false);
+                // (null: unset, the blow's own wait; the shipped record writes 0.85)
+                { var ch = r.W.Press!.Chain!; r.W.Press = r.W.Press.WithChain(new ChainDef { Grace = ch.Grace, Recover = ch.Recover, Period = ch.Period, Answer = answer }); }
+                return r;
+            }
+            double Span(Rig r, Cut c, double len, List<(double T, double L)> trace) =>
+                trace.Where(x => x.T >= c.Start - 1e-9 && x.T < c.Start + len - 1e-9).Sum(x => x.L);
+            foreach (double g in gaps)
+            {
+                // empty bank: held on target, a block about every g s when no cut is pending (the answer is the next cut)
+                var r = Make();
+                var trace = new List<(double T, double L)>();
+                var jit = new Random(100 + (int)g);
+                double next = g / 2, l0 = 0;
+                while (r.B.Time < 240)
+                {
+                    if (r.B.Time >= next && r.B.PendingBlows == 0 && !r.W.AnswerDue) { r.W.AnswerDue = true; next += g - 1 + 2 * jit.NextDouble(); }
+                    r.Step(true);
+                    trace.Add((r.B.Time, r.Landed - l0)); l0 = r.Landed;
+                }
+                var ans = r.Cuts.Where(c => c.Whole).ToList();
+                Assert.True(ans.Count > 15);
+                double wait = (answer ?? 1.05);
+                foreach (var c in ans)
+                {
+                    Assert.Equal(1.0, c.Weight);
+                    Assert.True(Span(r, c, wait, trace) <= 1 + 1e-9, $"answer at {c.Start:F3} pays {Span(r, c, wait, trace):F4} in its wait");
+                }
+                var spans = ans.Select(c => Span(r, c, 0.85, trace)).ToList();
+                line += $" | empty bank, block ~{g} s: {ans.Count} answers, blows per 0.85 s span mean {spans.Average():F4} max {spans.Max():F4}";
+            }
+            {
+                // full bank: rested 3 s, then the answer
+                var r = Make();
+                while (r.Cuts.Count < 3) r.Step(true);
+                r.Until(r.B.Time + 3);
+                var trace = new List<(double T, double L)>();
+                double l0 = r.Landed;
+                r.W.AnswerDue = true;
+                Assert.True(r.Tap());
+                trace.Add((r.B.Time, r.Landed - l0)); l0 = r.Landed;
+                var c = r.Cuts[^1];
+                Assert.True(c.Whole);
+                Assert.Equal(1.0, c.Weight);
+                while (r.B.Time < c.Start + 1.2) { r.Step(true); trace.Add((r.B.Time, r.Landed - l0)); l0 = r.Landed; }
+                Assert.True(Span(r, c, answer ?? 1.05, trace) <= 1 + 1e-9);
+                line += $" | full bank: {Span(r, c, 0.85, trace):F4} per 0.85 s span";
+            }
+            output.WriteLine(line);
+        }
+    }
+
+    /// <summary>(6) The union's half: its first cut is whole; after a rest it carries what it earned since its last
+    /// landed cut; after more than a written wait it opens whole again.</summary>
     [Fact]
     public void The_unions_half_opens_whole_after_a_rest()
     {
@@ -383,9 +379,9 @@ public sealed class RestedOpeningTests
         Assert.True(r.Tap(storm.Slot2));
         Assert.Equal((0, 1.0), (r.Cuts[0].N, r.Cuts[0].Weight));
         r.Until(r.Cuts[0].End + 0.3);
-        double idle = r.B.Time - half.Chain!.PeriodEnd;
+        double paid = half.PaidTo;
         Assert.True(r.Tap(storm.Slot2));
-        Assert.Equal(share + idle / written, r.Cuts[1].Weight, 12);
+        Assert.Equal(Blows.Rested(share * r.Cuts[1].Scale, (r.Cuts[1].Start - paid) / written), r.Cuts[1].Weight, 12);
         r.Until(r.Cuts[1].End + 3);
         double landed = r.Landed;
         Assert.Equal(1 + r.Cuts[1].Weight, landed, 9);
@@ -395,34 +391,35 @@ public sealed class RestedOpeningTests
         Assert.Equal(landed + 1, r.Landed, 9);
     }
 
-    /// <summary>(7) An answer mid-chain is still exactly one whole blow (no rest on it), and the cut after it follows the
-    /// record's "answer" wait and weighs its share.</summary>
+    /// <summary>(7) Momentum held (its faster cuts on fodder), then a long rest: the next opening is a whole blow (the
+    /// PayTo clamp at the period end keeps the fast cuts from running the bank into the future).</summary>
     [Theory]
     [InlineData("sunder")]
     [InlineData("oathblade")]
-    public void An_answer_mid_chain_is_one_whole_blow_and_the_next_cut_follows_its_wait(string id)
+    public void A_momentum_hold_then_a_long_rest_opens_whole(string id)
     {
         var r = new Rig(id, hand: false);
-        var ch = r.W.Press!.Chain!;
-        Assert.Equal((0.70, 0.85), (ch.Period, ch.Answer));
-        while (r.Cuts.Count < 3) r.Step(true);
-        r.W.AnswerDue = true;
-        while (r.Cuts.Count < 5) r.Step(true);
-        var (a, next) = (r.Cuts[3], r.Cuts[4]);
-        Assert.True(a.Whole);
-        Assert.Equal((0.0, 1.0), (a.Rest, a.Weight));
-        Assert.Equal(0.85 / 0.70, a.Scale, 12);
-        Assert.Equal(a.Start + 0.85, next.Start, 9);
-        Assert.False(next.Whole);
-        Assert.Equal((0.0, r.W.BlowWeight), (next.Rest, next.Weight));
-        // an answer owed at an opening after a rest: one whole blow, not more
-        r.Until(next.End + 2);
-        double landed = r.Landed;
-        r.W.AnswerDue = true;
+        r.B.Lamps = new LampLoadout();
+        r.B.Lamps.Add(new LampEffect { Do = LampDo.Rule, Rule = "momentum", Args = new Dictionary<string, double> { ["kills"] = 1, ["sooner"] = 0.3 } });
+        var fodder = new List<Enemy>();
+        for (int i = 0; i < 600; i++)
+        {
+            fodder.RemoveAll(f => !f.Alive);
+            while (fodder.Count < 3)
+            {
+                var f = r.B.SpawnEnemy("footpad", r.B.Player.X + 1.5, r.B.Player.Z)!;
+                f.Hp = f.MaxHp = 0.01; f.AttackT = f.RangedT = 999;
+                fodder.Add(f);
+            }
+            for (int k = 0; k < fodder.Count; k++) { var f = fodder[k]; f.X = r.B.Player.X + 1.5; f.Z = r.B.Player.Z + (k - 1) * 0.2; f.Vx = f.Vz = 0; }
+            r.Step(true);
+        }
+        Assert.True(r.G.Kills > 10, $"{r.G.Kills} kills");
+        double held = r.Landed, t1 = r.B.Time;
+        Assert.True(r.G.PaidTo <= r.Cuts[^1].End + 1e-9, $"PaidTo {r.G.PaidTo:F3} past the last period end {r.Cuts[^1].End:F3}");
+        r.Until(t1 + 5);
         Assert.True(r.Tap());
-        Assert.True(r.Cuts[5].Whole);
-        Assert.Equal(1.0, r.Cuts[5].Weight);
-        r.Until(r.Cuts[5].End - 0.05);
-        Assert.Equal(landed + 1, r.Landed, 9);
+        Assert.Equal(1.0, r.Cuts[^1].Weight);
+        output.WriteLine($"{id}: momentum held 10 s, {r.G.Kills} kills, landed {held:F3}; after 5 s the opening weighs {r.Cuts[^1].Weight:F4}");
     }
 }

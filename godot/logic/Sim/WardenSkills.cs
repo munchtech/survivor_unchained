@@ -338,7 +338,7 @@ public sealed partial class Battle
     /// <summary>A heave owed later at the same spot (Aftershock), shown as a strike marked on the ground.</summary>
     internal void ScheduleHeave(WeaponInst w, double x, double z, double r, double dmg, double delay)
     {
-        strikes.Add(new StrikeSpec(x, z, r, dmg, w.School, w.Tags, delay, w, Side.Player, 0) { Credit = credit, Echo = Echoing, Heave = true });
+        strikes.Add(BillStrike(new StrikeSpec(x, z, r, dmg, w.School, w.Tags, delay, w, Side.Player, 0) { Credit = credit, Echo = Echoing, Heave = true }));
         Events.Emit(new Ev.Strike { X = x, Z = z, Radius = r, School = w.School, Delay = delay, Art = w.Art, Rank = w.Rank });
     }
 }

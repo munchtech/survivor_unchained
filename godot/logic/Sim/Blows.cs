@@ -22,14 +22,18 @@ public static class Blows
     /// blows' (Sunder's every 4th: cut 8 at 4.9 s for the 4th blow at 4.8 s, not cut 10). The cycle after it is
     /// unchanged; at weight 1 it is Count. (Completes read ahead on a fresh count agrees for every >= 2: the opening
     /// firing completes nothing at either weight.)</summary>
-    public static void CountFirstWhole(ref int n, ref double part, double w) =>
+    /// (b2: a firing of weight 0, a chained cut that whiffed, counts nothing, the opening one too.)
+    public static void CountFirstWhole(ref int n, ref double part, double w)
+    {
+        if (w <= 0) return;
         Count(ref n, ref part, n == 0 && part == 0 && w < 1 ? 1 : w);
+    }
 
     /// <summary>(M3 MR 3 b1, the landed rule) A chained cut weighs what the wait has earned since its grip's last cut
     /// that LANDED (Battle.BankOf: `earned`, in written blows), at most one whole blow, never under its own share (the
     /// cut's share of the written blow, times a heavy's longer period). Earned within 1e-9 of the share (the held
-    /// chain on its beat) is the share to the bit.</summary>
-    public static double Rested(double own, double earned) => earned <= own + 1e-9 ? own : Math.Max(own, Math.Min(1, earned));
+    /// chain on its beat) is the share to the bit; within 1e-9 of a whole blow (a full bank) is 1 to the bit (b2).</summary>
+    public static double Rested(double own, double earned) => earned <= own + 1e-9 ? own : earned >= 1 - 1e-9 ? Math.Max(own, 1) : Math.Max(own, earned);
 
     /// <summary>A per-blow chance as a per-cut chance: the cuts of one blow's worth compound to c.</summary>
     public static double Chance(double c, double w) => w == 1 || c <= 0 || c >= 1 ? c : 1 - Math.Pow(1 - c, w);

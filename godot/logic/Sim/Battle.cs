@@ -2026,10 +2026,19 @@ public sealed partial class Battle
     public void EnemyStrike(double x, double z, double r, double dmg, School school, double delay) =>
         strikes.Add(new StrikeSpec(x, z, r, dmg, school, BlastTag, delay, null, Side.Enemy, 0));
 
+    /// <summary>(M3 MR 3 b2) A strike made inside a banked chained cut's cast (Bonesplitter's, Sunder's, an Aftershock's
+    /// heave) is part of that cut: it carries the cut's bill like a crescent, so the cut has landed if its swing OR its
+    /// strike strikes a body; the cut reserves while it is marked and refunds if it goes off on nothing (UpdateStrikes).</summary>
+    internal StrikeSpec BillStrike(StrikeSpec s)
+    {
+        if (s.Owner == Side.Player && Billing is { } bl && ReferenceEquals(bl.W, s.Weapon)) { s.Bill = bl; bl.Live++; }
+        return s;
+    }
+
     public void ScheduleStrike(double x, double z, double r, double dmg, School school, Tag[] tags, double delay, WeaponInst? weapon, Side owner = Side.Player, int depth = 0)
     {
         // (M3 MR 3) made inside a chained cut it lands after the cast, when CutW reads 1 again: it carries the cut's weight
-        strikes.Add(new StrikeSpec(x, z, r, dmg, school, tags, delay, weapon, owner, depth) { Credit = credit, Echo = Echoing, W = weapon?.CutW ?? 1 });
+        strikes.Add(BillStrike(new StrikeSpec(x, z, r, dmg, school, tags, delay, weapon, owner, depth) { Credit = credit, Echo = Echoing, W = weapon?.CutW ?? 1 }));
         Events.Emit(new Ev.Strike { X = x, Z = z, Radius = r, School = school, Delay = delay, Art = weapon?.Art, Rank = weapon?.Rank ?? 0 });
         if (owner == Side.Enemy) Events.Emit(new Ev.Telegraph { Id = -1, Shape = TelegraphShape.Circle, X = x, Z = z, Radius = r, Duration = delay, Hostile = true, School = school == School.Physical ? null : school });
     }
@@ -2539,9 +2548,23 @@ public sealed partial class Battle
             {
                 var (was, ech) = (credit, Echoing);
                 credit = s.Credit; Echoing = ech || s.Echo;
-                if (s.Heave && s.Weapon != null) { if (Weapons.Contains(s.Weapon)) Heave(s.Weapon, s.X, s.Z, s.R, s.Dmg); }
-                else Explode(s.X, s.Z, s.R, s.Dmg, s.School, s.Tags, s.Weapon, s.Depth, -1, s.W);
-                (credit, Echoing) = (was, ech);
+                // (b2) a banked cut's strike learns whether it struck a body (HitEnemy fills Struck for StruckBy)
+                var bl = s.Bill; s.Bill = null;
+                var sb0 = StruckBy;
+                bool watch = bl != null && StruckBy == null;
+                if (watch) { StruckBy = s.Weapon; Struck.Clear(); }
+                try
+                {
+                    if (s.Heave && s.Weapon != null) { if (Weapons.Contains(s.Weapon)) Heave(s.Weapon, s.X, s.Z, s.R, s.Dmg); }
+                    else Explode(s.X, s.Z, s.R, s.Dmg, s.School, s.Tags, s.Weapon, s.Depth, -1, s.W);
+                }
+                finally
+                {
+                    if (watch) { if (Struck.Count > 0) bl!.Hit = true; StruckBy = sb0; Struck.Clear(); }
+                    (credit, Echoing) = (was, ech);
+                }
+                // (the last of its cut's projectiles and strikes gone, with nothing struck: the cut's weight refunds)
+                bl?.Gone();
             }
         }
     }
@@ -3253,6 +3276,9 @@ sealed class StrikeSpec
     public WeaponInst? Weapon;
     /// <summary>(M3 MR 3) The weight of the cut that made it (WeaponInst.CutW then); 1 for a whole blow or no weapon.</summary>
     public double W = 1;
+    /// <summary>(M3 MR 3 b2) The banked chained cut it is part of (Battle.BillStrike): its hit pays the cut, the last
+    /// of the cut's strikes and projectiles gone with nothing struck refunds it.</summary>
+    internal Firing.CutBill? Bill;
     public Side Owner;
     public int Depth;
     public string? Credit;

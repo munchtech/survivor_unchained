@@ -494,9 +494,11 @@ public static partial class Firing
         if (builds || swing || bank) { b.StruckBy = w; b.Struck.Clear(); }
         bool fired = Fire(b, w);
         if (bank && fired && b.Struck.Count > 0) bill!.Hit = true;
-        // (b1) A banked cut that struck nothing (and has nothing in the air) spent nothing: its counts, its follow-ups and
-        // its after-casts take its own share, as the chain's cut always did; one that struck takes its weight.
-        if (bill != null && !bill.Hit && bill.Live == 0) { cw = w.BlowWeight * scale; w.CutW = cw; }
+        // (b2, a whiff counts nothing) A banked cut that struck nothing (and has nothing in the air or on the ground to
+        // come) spent nothing and counts nothing: weight 0 for its counts (its own, BlowN, the Hand's, a rite's), its
+        // follow-ups (no pulses) and its after-casts, so flailing in a gap never brings the next heavy sooner. The
+        // read-ahead asked at the bank's weight; the count stands, and the next landed cut is asked again.
+        if (bill != null && !bill.Hit && bill.Live == 0) { cw = 0; w.CutW = 0; }
         if (builds || swing || bank)
         {
             b.StruckBy = null;
@@ -513,7 +515,7 @@ public static partial class Firing
         if (fired) Blows.Count(ref w.BlowN, ref w.BlowPart, cw);
         b.HandEndCast(w, fired);
         if (fired) { w.HeavyCast = heavy; w.CastW = cw; }
-        if (fired && w.Wick is { Pulses: > 1 } pw) { w.PulseLeft = pw.Pulses - 1; w.PulseT = pw.PulseGap; }
+        if (fired && cw > 0 && w.Wick is { Pulses: > 1 } pw) { w.PulseLeft = pw.Pulses - 1; w.PulseT = pw.PulseGap; }
         b.ArcanistAfterCast(w, fired);
         if (b.Lamps.Board) b.BoardAfterFire(w, fired);
         return fired;
