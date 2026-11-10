@@ -1,15 +1,24 @@
 {
- "source": "tools/body/out/round_36",
+ "source": "tools/body/out/round_37",
  "files": {
-  "body.glb": "4ce415f2b53d8e2bce1dfce62f8922c78ea5a561",
-  "play.glb": "92a3f86b67527c74bdfbb50bde63225589893746",
+  "body.glb": "c7d0b2dfc81933145d256adf2817c6399c4c2c69",
+  "play.glb": "5ca776d0cd3d1e68223c6c2b713dcc1804ce0582",
   "rig.json": "b633dc797fd93c265cc423f0f0720c367e11c7bd",
   "play_rig.json": "b633dc797fd93c265cc423f0f0720c367e11c7bd",
   "pieces.glb": "30cb474d8369383948f2a9bb5166daa0966d28c9",
-  "pieces.json": "7959f1b92a0ae0b1d4cdda5d072ffcc71b07883a",
-  "cavity.png": "256290d36e42ac16a5fa36f99d9e917e82757c17"
+  "pieces.json": "9ba22b6aa3e522e2d7d30e073c6c93e0c3f3d4a4",
+  "albedo.png": "bf86cbe08cc3850ab94590d436262a3d7de72078",
+  "ao.png": "8032cdf213df391da7c394abe77dede8eda88740",
+  "bake.json": "23715e08301ede4e1b45f21f208f6dac55958ec0",
+  "cavity.png": "256290d36e42ac16a5fa36f99d9e917e82757c17",
+  "curvature.png": "c1648a143ba268518fd31f762dbe1cac2714b150",
+  "form_normal.png": "4e26f553578bd7bda6fad6fb40dd9e86fd0ccc03",
+  "freckles.png": "94321524c264122be224c6390b83146ec089027b",
+  "normal.png": "699fe972ecb82367089391c6d3c788331ff605dc",
+  "region_id.png": "e374f6e86782fe8b838dd6d2f39875c3ec6c503e",
+  "roughness.png": "2126885b688444dd9e17ef6ec721436eb300ac7f",
+  "thickness.png": "a0423ab01b5d0d580cfcc523c59c60569e72cb1a"
  },
- "maps": "not copied (no passing bake.json in the build)",
  "spec": "tools/body/specs/her_b.json",
  "skin": {
   "cavity_bounce": 0.0

@@ -794,7 +794,9 @@ HER = {
                  # relax (Her.relaxed on a region with no side): no elevation, w = 1, every row open; A's own stretched
                  # reference on the head-piece patches (body_facts/neck_edges.md) is filled from its neighbours; 2.4 not 2.5: the placement
                  # adds up to 0.1 to a carried edge (iron_vow@75:r: carried 2.47, composed 2.51)
-                 "relax": {"ratio": 2.4, "rows": 2, "fold": 45.0}},
+                 # fold trigger off 10 Nov (lead 23's solver): the upper-chest notch it stood in for is cured at the source
+                 # (her_b weights chain_relax, body_facts/notch.md 5)
+                 "relax": {"ratio": 2.4, "rows": 2}},
     },
     # the bones the source's driver places (never read from a pose): her rig's helpers but the "unroll" kind, and the scapula
     "driven": [b + "_{s}" for b in (

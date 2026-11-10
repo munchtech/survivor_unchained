@@ -8,9 +8,28 @@
   "dist_max_mm": 31.72,
   "closest_point_fallback": 21939
  },
+ "cavity": {
+  "line_m": [
+   [
+    0.177,
+    1.393,
+    -0.033
+   ],
+   [
+    0.159,
+    1.461,
+    0.039
+   ]
+  ],
+  "radius_mm": [
+   40.0,
+   80.0
+  ]
+ },
  "files": [
   "albedo.png",
   "ao.png",
+  "cavity.png",
   "curvature.png",
   "form_normal.png",
   "freckles.png",
@@ -46,6 +65,6 @@
   "pass": true,
   "from": "the source maps' own bake.json (the carry's gates)"
  },
- "sheet": "tools/body/out/round_29/uv_sheet.png",
- "s": 42.2
+ "sheet": "tools/body/out/round_37/uv_sheet.png",
+ "s": 45.9
 }
