@@ -44,6 +44,7 @@ uniform float grip_thin = 0.0;    // mode 1: frames since the contact; mode 2: 0
 uniform float grip_px = 0.012;    // a pixel here (m)
 uniform float grip_seed = 0.0;
 uniform vec2 grip_size = vec2(1.5, 0.5);
+uniform vec4 grip_slit = vec4(0.6, 0.35, 0.1, 0.12);   // mode 1: the cut-through's reach ahead and behind its kernel, its half-width, the kernel (m at size 1)
 uniform float grip_sparks = 4.0;
 uniform float grip_age = 0.0;
 
@@ -92,6 +93,13 @@ vec4 grip_trail(vec2 uv) {
 	d += max(a - 1.0, 0.0) * share * grip_blade / grip_glow;
 	vec2 at = vec2(vm * grip_blade / (grip_grain.x * grip_px), (u + grip_u0) / grip_grain.y);
 	vec4 s = fx_stroke_at(d, alb, 0.0, at - vec2(d * fx_bristle.x * 0.5, alb * fx_bristle.y));
+	// The dry brush's gaps are BARE here, and nothing glows past the inner edge: the brush lays its glow under the paint
+	// (in every gap, at the glow's whole strength), which filled the bristles' gaps into one smooth amber band. Its paint
+	// alone: where the coverage is above the glow's the coverage is the paint's own, so the paint's color is un-mixed
+	// from the glow's and the rest is cut. (The glow stays where the steel's belongs: past the leading edge.)
+	float g_in = mix(fx_glow.w, fx_glow.z, clamp(alb, 0.0, 1.0));
+	float bd = max(s.a, 1e-3);
+	s = vec4((s.rgb - fx_glow_color * (1.0 - bd)) / bd, clamp((s.a - g_in) / max(1.0 - g_in, 1e-3), 0.0, 1.0));
 	// past the tip's path: the house glow off a clean edge
 	vec4 g = fx_cel(fx_t.x - max(-vm, 0.0) * grip_blade / grip_glow - 1e-3, alb);
 	g.a *= smoothstep(0.0, 0.25, alb);
@@ -123,11 +131,11 @@ vec4 grip_contact(vec2 uv) {
 	float ahead = q.x - xk;
 	float sd = 1.0;
 	if (f < 2.5) {
-		float reach = (ahead > 0.0 ? 1.05 : 0.6) * s * (f < 0.5 ? 0.8 : 1.0);
+		float reach = (ahead > 0.0 ? grip_slit.x : grip_slit.y) * s * (f < 0.5 ? 0.8 : 1.0);
 		float k = clamp(abs(ahead) / reach, 0.0, 1.0);
-		float nw = 0.05 * s * pow(1.0 - k, 1.5) * (f < 1.5 ? 1.0 : 0.5);
+		float nw = grip_slit.z * s * pow(1.0 - k, 1.5) * (f < 1.5 ? 1.0 : 0.5);
 		sd = abs(q.y) - nw + step(1.0, k);
-		if (f < 1.5) sd = min(sd, (length(vec2(ahead / 1.9, q.y)) - 0.085 * s));
+		if (f < 1.5) sd = min(sd, (length(vec2(ahead / 1.9, q.y)) - grip_slit.w * s));
 	}
 	float rim = 1.6 * grip_px;
 	float aa = max(fwidth(sd), 1e-4);

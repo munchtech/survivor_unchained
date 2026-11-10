@@ -186,7 +186,7 @@ public partial class BattleFx
         double lead = P7D["grip.lead_frames"] / 60.0;
         if (gripDue >= 0 && time >= gripDue - lead - 0.004)
         {
-            if (time < gripDue + 0.05) GripArm(new GripTrail { Oath = gripDueOath, Side = gripDueSide, Tail = gripPressAt, Until = gripClock + lead + 2.5 / 60 });
+            if (time < gripDue + 0.05) GripArm(new GripTrail { Oath = gripDueOath, Side = gripDueSide, Tail = Math.Max(gripPressAt, gripClock), Until = gripClock + lead + 2.5 / 60 });
             gripDue = -1;
         }
         if (gripLive != null) GripDraw();
@@ -379,8 +379,12 @@ public partial class BattleFx
     }
 
     /// <summary>Whether the blade's tip was fast between sample `j - 1` and `j`.</summary>
-    bool GripFast(int j, float slow) =>
-        gripRing[j].Tip.DistanceTo(gripRing[j - 1].Tip) >= slow * Math.Max(1e-4, gripRing[j].At - gripRing[j - 1].At);
+    bool GripFast(int j, float slow)
+    {
+        // (above grip.snap m/s it is no cut: the blade's pose snapping from rest into the clip)
+        double d = gripRing[j].Tip.DistanceTo(gripRing[j - 1].Tip), dt = Math.Max(1e-4, gripRing[j].At - gripRing[j - 1].At);
+        return d >= slow * dt && d <= P7D["grip.snap"] * dt;
+    }
 
     /// <summary>Whether the blade was CUTTING between sample `j - 1` and `j`: its tip fast, and going round her the
     /// cut's own way (its clip's side; 0: either way). The wind-up's sweep back is fast too: it leaves no stroke.</summary>
@@ -607,6 +611,8 @@ public partial class BattleFx
         m.SetShaderParameter("grip_seed", R() * 97f);
         m.SetShaderParameter("grip_sparks", (float)sparks);
         m.SetShaderParameter("grip_core", oath ? 0.6f : 1f);
+        var sl = P7D.All("grip.contact.slit");
+        m.SetShaderParameter("grip_slit", new Vector4(sl[0], sl[1], sl[2], sl[3]));
         p7Quad ??= new QuadMesh { Size = new Vector2(2, 2) };
         var q = new MeshInstance3D { Mesh = p7Quad, MaterialOverride = m, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
         AddChild(q);
