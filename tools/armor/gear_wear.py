@@ -533,6 +533,15 @@ def view_sets(per_clip_out, n):
     return out
 
 
+def split_mm2(area, idx, nfp, scale=1.0):
+    """THROUGH or BESIDE: the area of the samples idx as {"under_mm2": those under the piece at rest (the first nfp
+    samples, its footprint: skin THROUGH the piece), "beside_mm2": the others (skin from beside it, over a plate)}."""
+    idx = np.asarray(idx, np.int64)
+    area = np.asarray(area, float)
+    return {"under_mm2": round(float(area[idx[idx < nfp]].sum() * scale), 1),
+            "beside_mm2": round(float(area[idx[idx >= nfp]].sum() * scale), 1)}
+
+
 def frame_views(per_clip):
     """{view key: {depth: {"mm2", "clip", "frame"}}} of one test: per view (and "<view>_ex"), the worst SINGLE FRAME's
     through area at each of FRAME_MM over that view's clips. per_clip: the report's rows (frame_mm2, frame_at)."""
@@ -546,6 +555,9 @@ def frame_views(per_clip):
                 for k, a in row["frame_mm2"].items():
                     if a > best[k]["mm2"]:
                         best[k] = {"mm2": a, "clip": c, "frame": row["frame_at"][k]}
+                        if "frame_under_mm2" in row:      # (that frame's area under the piece at rest, and beside it)
+                            u = row["frame_under_mm2"][k]
+                            best[k].update(under_mm2=u, beside_mm2=round(a - u, 1))
             out[v + ex] = best
     return out
 
@@ -992,11 +1004,13 @@ class Check:
         if go_[k] < pc["worst"]:
             pc["worst"], pc["frame"], pc["pt"] = float(go_[k]), f, k
         pc["worst_in"] = min(pc["worst_in"], float(gg.min()))
-        fr = pc.setdefault("fr", {d: [0.0, -1] for d in FRAME_MM})      # (the worst single frame: area past each depth)
+        fr = pc.setdefault("fr", {d: [0.0, -1, 0.0] for d in FRAME_MM})  # (the worst single frame: area past each depth,
+        nu = x.get("nfp", len(go_))                                       # its frame, the part under the piece at rest)
         for d in FRAME_MM:
-            a_ = float(x["area"][go_ < -d / 1000.0].sum())
+            th = go_ < -d / 1000.0
+            a_ = float(x["area"][th].sum())
             if a_ > fr[d][0]:
-                fr[d] = [a_, f]
+                fr[d] = [a_, f, float(x["area"][:nu][th[:nu]].sum())]
 
     # ---- every slot shows --
     def show(self, look):
@@ -1090,9 +1104,12 @@ class Check:
                 e["raw_out_worst_mm"] = round(float(-rm[np.isfinite(rm)].min() * 1000), 2) if np.isfinite(rm).any() else None
             e["_vw"] = view_sets({c: pc["out"] for c, pc in x["per_clip"].items()}, len(mo))
             e["views"] = {k: round(float(ar[v].sum() * 1e6), 1) for k, v in e["_vw"].items()}
+            nu = e["_nfp"] = x.get("nfp", len(ar))
+            e["split"] = {"out2": split_mm2(ar, e["_o2"], nu, 1e6), **{k: split_mm2(ar, v, nu, 1e6) for k, v in e["_vw"].items()}}
             if out_mm > 0:
                 e["outd_mm"], e["_od"] = out_mm, np.nonzero(mo < -out_mm / 1000.0)[0].tolist()
                 e["outd_mm2"] = round(float(ar[e["_od"]].sum() * 1e6), 1)
+                e["split"]["outd"] = split_mm2(ar, e["_od"], nu, 1e6)
             for c, pc in x["per_clip"].items():
                 o2 = pc["out"] < -0.002
                 pt = x["pts"][pc["pt"]] if pc["pt"] >= 0 else -1
@@ -1101,9 +1118,13 @@ class Check:
                        "in_worst_mm": round(float(-pc["worst_in"] * 1000), 2) if np.isfinite(pc["worst_in"]) else None,
                        "frame": pc["frame"], "region": region_of(pt) if pt >= 0 else "",
                        "frame_mm2": {f"{d:g}": round(pc["fr"][d][0] * 1e6, 1) for d in FRAME_MM},
-                       "frame_at": {f"{d:g}": pc["fr"][d][1] for d in FRAME_MM}}
+                       "frame_at": {f"{d:g}": pc["fr"][d][1] for d in FRAME_MM},
+                       "frame_under_mm2": {f"{d:g}": round(pc["fr"][d][2] * 1e6, 1) for d in FRAME_MM},
+                       **split_mm2(ar, np.nonzero(o2)[0], nu, 1e6)}
                 if out_mm > 0:
-                    row["outd_mm2"] = round(float(ar[pc["out"] < -out_mm / 1000.0].sum() * 1e6), 1)
+                    od = np.nonzero(pc["out"] < -out_mm / 1000.0)[0]
+                    row["outd_mm2"] = round(float(ar[od].sum() * 1e6), 1)
+                    row["outd_under_mm2"] = split_mm2(ar, od, nu, 1e6)["under_mm2"]
                 e["per_clip"][c] = row
                 if samples and A == "skin":
                     sm = e.setdefault("_samples", {"pos": (self.sc.P0[x["pts"]] * 1000).round(2).tolist(), "clips": {}})
@@ -1291,10 +1312,16 @@ def merge(parts):
         i2 = sorted(set().union(*[e["_i2"] for e in ps]))
         b["out2_n"], b["out2_mm2"] = len(o2), round(float(ar[o2].sum()), 1)
         b["in2_mm2"] = round(float(ar[i2].sum()), 1)
+        nu = ps[0].get("_nfp", len(ar))
+        b["split"] = {"out2": split_mm2(ar, o2, nu)}
         if "_vw" in ps[0]:
-            b["views"] = {k: round(float(ar[sorted(set().union(*[e["_vw"][k] for e in ps]))].sum()), 1) for k in ps[0]["_vw"]}
+            vw = {k: sorted(set().union(*[e["_vw"][k] for e in ps])) for k in ps[0]["_vw"]}
+            b["views"] = {k: round(float(ar[v].sum()), 1) for k, v in vw.items()}
+            b["split"].update({k: split_mm2(ar, v, nu) for k, v in vw.items()})
         if "_od" in ps[0]:
-            b["outd_mm2"] = round(float(ar[sorted(set().union(*[e["_od"] for e in ps]))].sum()), 1)
+            od = sorted(set().union(*[e["_od"] for e in ps]))
+            b["outd_mm2"] = round(float(ar[od].sum()), 1)
+            b["split"]["outd"] = split_mm2(ar, od, nu)
         b["lost_share"] = round(float(np.mean([e["lost_share"] for e in ps])), 4)
         b["frames"] = frame_views(b["per_clip"])
         out.append(b)
@@ -1310,7 +1337,7 @@ def write(a, clips, pairs, worst, shows, ck, took, t_motion):
             cs = sorted(sm["clips"])
             np.savez_compressed(os.path.join(a.out, f"samples_{e['B']}.npz"), pos=np.array(sm["pos"]),
                                 area=np.array(e["_area"]), clips=np.array(cs), out=np.array([sm["clips"][c] for c in cs]))
-        for k in ("_o2", "_i2", "_area", "_vw", "_od"):
+        for k in ("_o2", "_i2", "_area", "_vw", "_od", "_nfp"):
             e.pop(k, None)
     slots_filled = set()
     if ck is not None:
@@ -1362,6 +1389,21 @@ def write(a, clips, pairs, worst, shows, ck, took, t_motion):
         fv = e.get("frames")
         if fv and (fv["close_ex"]["2"]["mm2"] + fv["play_ex"]["3"]["mm2"]) > 0:
             L.append(f"| {e['A']} under {e['B']} | {cell(fv['close_ex']['2'])} | {cell(fv['play_ex']['3'])} | {cell(fv['play_ex']['6'])} |")
+    sp = [e for e in pairs if e.get("split") and e["split"]["out2"]["under_mm2"] + e["split"]["out2"]["beside_mm2"] > 0]
+    if sp:
+        L += ["", "## Through or beside", "",
+              "under: her skin UNDER the piece at rest (its footprint), through it; beside: skin from beside the piece "
+              "over it (rigid parts only). mm^2, under / beside. Frames: the worst single frame (close 2 mm, play ex 6 mm).", "",
+              "| test | close ex | play ex |" + (f" over {a.out_mm:g} mm |" if getattr(a, "out_mm", 0) else "") + " close frame | play frame |",
+              "|---|---|---|---|---|" + ("---|" if getattr(a, "out_mm", 0) else "")]
+        ub = lambda d: f"{d.get('under_mm2', 0):.0f} / {d.get('beside_mm2', 0):.0f}"
+        for e in sorted(sp, key=lambda e: -sum(e["split"]["out2"].values()))[:20]:
+            fv, s_ = e.get("frames", {}), e["split"]
+            row = f"| {e['A']} under {e['B']} | {ub(s_.get('close_ex', {}))} | {ub(s_.get('play_ex', {}))} |"
+            row += f" {ub(s_['outd'])} |" if "outd" in s_ else (" |" if getattr(a, "out_mm", 0) else "")
+            L.append(row + f" {ub(fv.get('close_ex', {}).get('2', {}))} | {ub(fv.get('play_ex', {}).get('6', {}))} |")
+        for ln in L[-len(sp[:20]) - 2:]:
+            print(ln)
     if shows:
         L += ["", "## Every slot shows (at rest)", ""]
         fails = [(s["name"], i, s["pieces"][i]) for s in shows for i in s["fails"]]
