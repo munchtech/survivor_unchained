@@ -37,7 +37,7 @@ public static class CanopyField
     const float ClusterPitch = 2.2f; // a leaf cluster's center every this far (m), jittered
     const float ClusterJit = 0.7f;   // ... by this share of the pitch
     const float Wg = 0.75f;      // a cluster's cover rises from its heart's to the top over this far in from the line between two clusters (m)
-    const float Vlo = 0.08f, Vhi = 0.3f; // a cluster's own cover at its heart (each its own: which stand nearest her fire)
+    const float Vlo = 0.12f, Vhi = 0.3f; // a cluster's own cover at its heart (each its own: which stand nearest her fire)
     const float Vtop = C0 - 0.08f;   // the cover on the line between two clusters (the mass is whole from here up)
     const float Ko = 0.25f;      // cover per meter out into a field (what closes as the cover rises past C0)
     const float BodyLag = 0.06f;  // the mass's own fill closes this much after the leaves over it
