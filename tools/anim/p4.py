@@ -319,6 +319,21 @@ def action_held(r, spec):
         out["tip_ahead_cm"] = 100 * np.einsum("fi,fi->f", tip - P[:, pv], hd)
         out["grip_cm"] = 100 * grip[:, 1]                                       # (the grip's height)
         out["grip_ahead_cm"] = 100 * np.einsum("fi,fi->f", grip - P[:, pv], hd)
+        # (solver R1, the leap's line: the tip's speed (m/s) and when it peaks (s, one number on every frame); the
+        # sword arm's elbow bend (deg, 0 = straight) and the hand behind the Head bone along her heading (cm): a cocked
+        # wind-up reads bent and behind, a raised flag straight and over)
+        v = np.linalg.norm(np.diff(tip, axis=0), axis=1) * r.src.fps
+        out["tip_mps"] = np.r_[v, v[-1:]]
+        out["tip_peak_s"] = np.full(len(tip), float(np.argmax(v)) / r.src.fps)
+        ua_, la_ = P[:, rig.index["upperarm_r"]] - P[:, rig.index["lowerarm_r"]], P[:, h] - P[:, rig.index["lowerarm_r"]]
+        cs = np.einsum("fi,fi->f", ua_, la_) / (np.linalg.norm(ua_, axis=1) * np.linalg.norm(la_, axis=1) + 1e-12)
+        out["elbow_r_deg"] = 180 - np.degrees(np.arccos(np.clip(cs, -1, 1)))
+        out["hand_r_behind_head_cm"] = -100 * np.einsum("fi,fi->f", P[:, h] - P[:, rig.index["Head"]], hd)
+    # (the shoulders turned against the hips about the vertical, deg, + = her left shoulder forward)
+    sl = P[:, rig.index["upperarm_l"]] - P[:, rig.index["upperarm_r"]]
+    hl = P[:, rig.index["thigh_l"]] - P[:, rig.index["thigh_r"]]
+    tw = np.degrees(np.arctan2(sl[:, 2], sl[:, 0]) - np.arctan2(hl[:, 2], hl[:, 0]))
+    out["twist_deg"] = -((tw + 180) % 360 - 180)
     # (her look: the face's forward (Head's rest +Z) below the horizontal, deg, + down)
     hz = np.einsum("fij,j->fi", G[:, rig.index["Head"]] @ rig.R0[rig.index["Head"]].T, [0, 0, 1.0])
     out["head_down_deg"] = np.degrees(np.arctan2(-hz[:, 1], np.hypot(hz[:, 0], hz[:, 2])))
@@ -349,6 +364,9 @@ def action_held(r, spec):
         out["shield_face_deg"] = np.degrees(np.arctan2(f[:, 0], f[:, 2]))
         out["boss_sternum_cm"] = 100 * np.linalg.norm(boss - P[:, rig.index["spine_05"]], axis=1)
         out["boss_cm"] = 100 * boss[:, 1]                                       # (the shield's centre height)
+        # (the shield's top edge under her left shoulder joint, cm, + = under: a shield carried low and out, not over her)
+        out["shield_under_shoulder_cm"] = 100 * P[:, rig.index["upperarm_l"], 1] - out["shield_top_cm"]
+        out["boss_left_cm"] = 100 * np.einsum("fi,fi->f", boss - P[:, pv], np.cross([0, 1.0, 0], hd))
         out["boss_ahead_cm"] = 100 * np.einsum("fi,fi->f", boss - P[:, pv], hd)  # (ahead of the pelvis, her heading)
         # (a block's cover: the shield's top edge over her eyes (EYE_BELOW_TOP under the head's top, along the Head's
         # up), and its face ahead of the head's top along her heading (+ = the head tucked behind it))
