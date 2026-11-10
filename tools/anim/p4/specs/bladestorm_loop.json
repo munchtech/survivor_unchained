@@ -271,7 +271,7 @@
    }
   }
  },
- "notes": "A1 actions (solver B): three turns to her left in 40 frames. Made at 1.0 turn/s (Kimodo holds about that; asked for 2.25 it turns at 1.4 at most and hovers) by a Root2D heading track with the root orbiting the planted left foot, the same stance pose keyed every half turn (the right foot steps around the pivot), then stretched x2.25 onto 1.3333 s and de-rotated at 2.25 turns/s about the pivot. Fit (solver F2): pivot on the left ball (derotate pivot LeftToeBase, planted ball; the core puts B's pivot on the turn axis), the pelvis 5 cm up (knees in band), lean 17 (lean_of) = 10.8 band, sword hand held in the turning frame [-0.66, 0.20, 0.10] by arm_solve (hinge rest), blade level 50 deg ahead of out in the clip frame (leading), shield on the chest frame at its left front (open 50) and cleared 11 mm; pops eased on the head, neck and the stepping ball. Solver F4: on her own axis: the axis layer moves her centre (pelvis 0.55 / Head 0.45) over the pivot ball (left) every frame and re-plants the stepping right foot world-still under the game's 2.25 turns/s (pelvis 6.6 cm and head 8.5 cm mean from the axis, were 33.0 / 23.1); lean 14, stance drop -7, ball_l eased past the pin (pop free); boss to spine_05 band 32.",
+ "notes": "A1 actions (solver B): three turns to her left in 40 frames. Made at 1.0 turn/s (Kimodo holds about that; asked for 2.25 it turns at 1.4 at most and hovers) by a Root2D heading track with the root orbiting the planted left foot, the same stance pose keyed every half turn (the right foot steps around the pivot), then stretched x2.25 onto 1.3333 s and de-rotated at 2.25 turns/s about the pivot. Fit (solver F2): pivot on the left ball (derotate pivot LeftToeBase, planted ball; the core puts B's pivot on the turn axis), the pelvis 5 cm up (knees in band), lean 17 (lean_of) = 10.8 band, sword hand held in the turning frame [-0.66, 0.20, 0.10] by arm_solve (hinge rest), blade level 50 deg ahead of out in the clip frame (leading), shield on the chest frame at its left front (open 50) and cleared 11 mm; pops eased on the head, neck and the stepping ball. Solver F4: on her own axis: the axis layer moves her centre (pelvis 0.55 / Head 0.45) over the pivot ball (left) every frame and re-plants the stepping right foot world-still under the game's 2.25 turns/s (pelvis 6.6 cm and head 8.5 cm mean from the axis, were 33.0 / 23.1); lean 14, stance drop -7, ball_l eased past the pin (pop free); boss to spine_05 band 32. Solver S1: HER FEET ON THE FLOOR (she floated: the take's pivot ball rode 2.7-14.0 cm over its rest height, the lock pinned it in x and z only, and the steps took the pivot's lowest height as the ground): fit.axis.floor puts the pivot on its ball at rest height on the axis every frame (toes flat, heel up 18 deg, rising to 40 before the pelvis sinks), each right-foot contact two whole frames at the ball's rest height, flat, world-still about the pivot under 2.25 turns/s, the swing lifted 3 cm clear (steps.lift_cm) and kept in reach, no sole point under the floor, the pelvis brought down where the stepping leg cannot reach (up to 6 cm: stance.drop_cm -7 is now a ceiling), one flipped knee frame (R f36) laid back; bob 7 (the pelvis's rise and fall 13.6 -> 8 cm: with a foot on the floor the full bob pumped the knee 20-58 deg and the heel 18-40 deg six times a loop); pop.free gone (the floor sets the toes).",
  "bands": {
   "yaw_resid_deg@loop": [
    0,
@@ -330,6 +330,9 @@
   "lean": {
    "deg": 14
   },
+  "bob": {
+   "pelvis_cm": 7
+  },
   "limbs": {
    "hand_r": {
     "at": [
@@ -386,16 +389,21 @@
     "ball_r": 10,
     "ball_l": 6
    },
-   "span": 4,
-   "free": [
-    "ball_l"
-   ]
+   "span": 4
   },
   "axis": {
    "pivot": "ball_l",
    "smooth": 2,
    "steps": {
-    "tps": 2.25
+    "tps": 2.25,
+    "lift_cm": 3
+   },
+   "floor": {
+    "heel_deg": [
+     18,
+     40
+    ],
+    "step_deg": 6
    },
    "center": {
     "pelvis": 0.55,

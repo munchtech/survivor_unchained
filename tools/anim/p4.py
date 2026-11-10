@@ -616,18 +616,32 @@ def skate(r, spec, G=None, P=None):
         ball, heel, _, _ = _foot_pts(rig, G, P, s, tps, fps)
         hb = rig.head[rig.index[f"ball_{s}"]][1]
         on = (np.abs(ball[:, 1] - hb) < GROUND_CM / 100) & (np.abs(heel[:, 1]) < GROUND_CM / 100)
-        pl = {(ws + k) % m for ws, ln, _ in r.wins[si] for k in range(ln)}
+        pl = {(ws + k) % m for ws, ln, _ in _contacts(r, si) for k in range(ln)}
         tot, worst, cnt = 0.0, (0.0, 0), 0
         for f in range(m if r.clip["loop"] else n - 1):
             g = (f + 1) % m if r.clip["loop"] else f + 1
-            if not (on[f] and on[g]) or (f in pl and g in pl):
+            inw = f in pl and g in pl
+            # (a de-rotated spin (solver S1): a window pinned in the clip is not still in the WORLD unless it is on the
+            # turn's axis or turned back, so its planted windows are counted too, by the ball's travel in the world)
+            if (inw and not tps) or not (inw or (on[f] and on[g])):
                 continue
-            d = min(np.linalg.norm((q[g] - q[f] - r.belt / fps)[[0, 2]]) for q in (ball, heel)) * 100
+            d = min(np.linalg.norm((q[g] - q[f] - r.belt / fps)[[0, 2]]) for q in ((ball,) if inw else (ball, heel))) * 100
             tot, cnt = tot + d, cnt + 1
             if d > worst[0]:
                 worst = (float(d), g)
         out[s] = {"cm": round(tot, 2), "frames": cnt, "worst_cm": round(worst[0], 2), "at": worst[1]}
+        if tps:                              # (a spin's floor: the ball over its rest height and the sole's lowest point)
+            ba = rig.index[f"ball_{s}"]
+            toe = P[:, ba] + np.einsum("fij,j->fi", G[:, ba], rig.R0[ba].T @ np.array([0.0, -hb, 0.11]))
+            low = np.minimum(np.minimum(heel[:m, 1], ball[:m, 1] - hb), toe[:m, 1])
+            out[s].update(ball_cm=[round(float(x) * 100, 2) for x in (ball[:m, 1].min() - hb, ball[:m, 1].max() - hb)],
+                          low_cm=round(float(low.min()) * 100, 2), low_at=int(np.argmin(low)))
     return out
+
+
+def _contacts(r, si):
+    """One foot's planted windows: the lock's, and a spin's world-still steps (fit.axis.steps)."""
+    return list(r.wins[si]) + list((getattr(r, "steps", None) or [[], []])[si])
 
 
 def floors(r, G=None, P=None):
@@ -639,7 +653,7 @@ def floors(r, G=None, P=None):
         ball, _, tilt, reach = _foot_pts(rig, G, P, s)
         fo, ba = rig.index[f"foot_{s}"], rig.index[f"ball_{s}"]
         out[s] = []
-        for ws, ln, _ in r.wins[si]:
+        for ws, ln, _ in _contacts(r, si):
             fr = [(ws + k) % r.m for k in range(ln)]
             big = lambda v: round(float(v[np.argmax(np.abs(v))]) * 100, 2)  # noqa: E731
             out[s].append({"frames": [int(fr[0]), int(fr[-1])], "ankle_cm": big(P[fr, fo, 1] - rig.head[fo][1]),
@@ -703,6 +717,10 @@ def cmd_check(a):
         print("  skate (grounded travel outside the planted windows, cm; line %s): " % SKATE_CM + "  ".join(
             f"{s.upper()} {v['cm']}{' MISS' if v['cm'] > SKATE_CM else ''} ({v['frames']} steps, worst {v['worst_cm']} @{v['at']})"
             for s, v in R["skate"].items()))
+        if any("low_cm" in v for v in R["skate"].values()):
+            print("  floor (a spin; skate counts its planted windows in the world): " + "  ".join(
+                f"{s.upper()} ball {v['ball_cm'][0]:+}..{v['ball_cm'][1]:+} cm over rest, lowest sole point {v['low_cm']:+} cm @{v['low_at']}"
+                for s, v in R["skate"].items()))
         for s, ws in R["floors"].items():
             for w in ws:
                 print(f"  planted {s} f{w['frames'][0]}-{w['frames'][1]}: ankle {w['ankle_cm']:+} cm, ball {w['ball_cm']:+} cm over rest, "
