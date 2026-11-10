@@ -1293,6 +1293,13 @@ void fragment() {
 			float st_gv = 1.0 - 0.8 * clamp(3.0 * cel_lum(st_f) / max(cel_lum(cel_stand_tone(5).rgb), 1e-5), 0.0, 1.0);
 			EMISSION *= st_gv;
 			st_m *= st_gv;
+			// (L1 l25 WORLD) --cel-dbg stand (cel_dbg -1, inert elsewhere: every other use reads > 0.5): the fire's factors
+			// unlit. (world_01 drew r = c_m1, g = the pool's level ratio, b = distance / 4 m: c_m1 = 1 everywhere.)
+			if (cel_dbg < -0.5) {
+				// (l25 WORLD2: now r = st_gv only; g, b come from her light, cel_stand_light)
+				EMISSION = vec3(st_gv, 0.0, 0.0);
+				st_m = vec3(0.0); st_f = vec3(0.0);
+			}
 #else
 			EMISSION = cel_stand_base(wp, v_org, wn, v_foot, cel_lum(col), cel_stand_edge(st_nv, VIEW, VIEW_MATRIX), st_m, st_f);
 #endif

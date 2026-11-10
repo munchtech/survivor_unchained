@@ -271,6 +271,10 @@ public static class Rigs
     /// a gold texel's L factor over the metal class's lit / shade L (0 = off), the gold share's start and full (the tone's Oklab
     /// (a, b) along h 60 over its L), its C / L factor (0 or 1 = its own). Value and chroma only. A row without them: zeros, as before.</summary>
     public static double[] HeroGold(double[]? heroPool) => heroPool is { Length: >= 82 } ? heroPool[78..82] : new double[4];
+    /// <summary>(L1 lead 25, PLATE) hero_pool values 82-83: her gunmetal plate WARM under her own fire (cel.gdshaderinc
+    /// cel_hero_land, metal class only, the non-gold share): the Oklab C / L its tone turns to in her anchor's hue on the lit pair,
+    /// on the shade pair (0 = that pair as before). Chroma only. A row without them: zeros, as before.</summary>
+    public static double[] HeroWarm(double[]? heroPool) => heroPool is { Length: >= 84 } ? heroPool[82..84] : new double[2];
 
     /// <summary>(HERPAIR) A hero material's class from its shader's file and its outfit kind (heroine_outfit.gdshaderinc
     /// `kind`: 0 leather, 1 metal, 2 cloth, 3 gloss, 4 twill, 5 satin; -1 none): 0 hair, 1 skin, 2 outfit leather / cloth,
