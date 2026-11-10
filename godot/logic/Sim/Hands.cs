@@ -59,12 +59,13 @@ public sealed partial class Battle
         // The count is of firings, not of attempts: an attempt with nothing in range is not a blow (HandEndCast).
         // (M3 MR 3) A chained cut is a share of a blow (Sim/Blows.cs); the LIGHT cut's weight on purpose, so the
         // read-ahead at the press (HandHeavyNext) and this one at the contact ask the same question.
-        return Sim.Blows.Completes(w.HandBlows, w.HandPart, every, w.BlowWeight);
+        // (M3 J12: a block's answer is a whole blow at both, WeaponInst.NextW there and WholeCast here)
+        return Sim.Blows.Completes(w.HandBlows, w.HandPart, every, w.WholeCast ? 1 : w.BlowWeight);
     }
 
     /// <summary>Whether its next firing will be the Hand's heavy (read ahead, nothing counted: Sim/Contact.cs picks the
     /// heavy clip by it; the rites' heavies are not read ahead).</summary>
-    internal bool HandHeavyNext(WeaponInst w) => WardenHand && Content.Hands.Heavies(w.Tags) && Sim.Blows.Completes(w.HandBlows, w.HandPart, Math.Max(1, HW.Every), w.BlowWeight);
+    internal bool HandHeavyNext(WeaponInst w) => WardenHand && Content.Hands.Heavies(w.Tags) && Sim.Blows.Completes(w.HandBlows, w.HandPart, Math.Max(1, HW.Every), w.NextW);
 
     /// <summary>The firing done: a blow counted only if it fired.</summary>
     internal void HandEndCast(WeaponInst w, bool fired)

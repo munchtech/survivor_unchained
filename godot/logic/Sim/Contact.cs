@@ -69,7 +69,8 @@ public sealed partial class Battle
         // The blow it will be, read ahead of its cast (CastOnce decides it again on the contact, the same way).
         int own = Firing.HeavyEveryOf(this, w);
         // (Sim.Blows: inside Battle the bare name is its own list of enemy blows)
-        bool ownHeavy = Sim.Blows.Completes(w.OwnBlows, w.OwnPart, own, w.BlowWeight);
+        // (M3 J12: a block's answer owed, the next firing is a whole blow: WeaponInst.NextW)
+        bool ownHeavy = Sim.Blows.Completes(w.OwnBlows, w.OwnPart, own, w.NextW);
         bool heavy = ownHeavy || HandHeavyNext(w);
         // (a chained record's cut: its own clock and clip beats, Sim/SwingChain.cs)
         if (w.Chained) return DeferCut(w, heavy, ownHeavy, mul);
@@ -116,7 +117,11 @@ public static partial class Firing
         int kills0 = w.Kills;
         var c = cut ? w.Chain : null;
         // (a chain's heavy cut is a longer share of the blow: its weight grows with its period)
-        bool fired = CastOnce(b, w, c?.PeriodScale ?? 1);
+        // (M3 J12: a block's answer is a whole blow: PeriodScale is 1 / BlowWeight, and the heavy counts ask at weight 1)
+        bool fired;
+        w.WholeCast = c?.Whole ?? false;
+        try { fired = CastOnce(b, w, c?.PeriodScale ?? 1); }
+        finally { w.WholeCast = false; }
         w.ClipSide = 0;
         if (c != null) c.Landed = true;
         if (!fired) return;
@@ -124,6 +129,8 @@ public static partial class Firing
         // (a chain's heavy cut waits its own longer period)
         if (c != null) w.Timer *= c.PeriodScale;
         w.Timer = Math.Max(0, w.Timer - since);
+        // (M3 J12: a block while this cut was pending: the answer is next, from this cut's cancel beat)
+        if (c != null && w.AnswerDue) w.Timer = 0;
         // (a chain's next cut never starts before this one's cancel beat, whatever shortened its wait)
         if (c != null) { w.Timer = Math.Max(w.Timer, c.CancelAt - b.Time); c.PeriodEnd = b.Time + w.Timer; c.Sync = true; }
     }

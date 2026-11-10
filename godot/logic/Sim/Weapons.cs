@@ -96,6 +96,16 @@ public sealed class WeaponInst
     public double BlowPart;
     public double CutW = 1;
     public double CastW = 1;
+    /// <summary>(M3 J12) A block owes this chained skill one whole blow (bulwark.oathblade.shield_and_edge): set at the block,
+    /// kept through a pending cut's landing, taken by the next cut to start (Battle.DeferCut). Never set on a skill whose
+    /// BlowWeight is 1 (unchained, or a chain with no period).</summary>
+    public bool AnswerDue;
+    /// <summary>(M3 J12) The cast now landing is a block's answer, a whole blow (set round the cast by Firing.LandBlow from the
+    /// chain cut's Whole): the heavy counts' questions inside the cast are asked at weight 1, as its press asked them.</summary>
+    public bool WholeCast;
+    /// <summary>(M3 J12) The weight of its NEXT firing, for the heavy read-aheads at a press (Battle.DeferBlow, HandHeavyNext):
+    /// a whole blow when a block's answer is owed, else the cut's share.</summary>
+    public double NextW => AnswerDue && BlowWeight != 1 ? 1 : BlowWeight;
     /// <summary>A chained cut's share of the written blow: the chain's period over the blow's wait (1 when not chained or no period).</summary>
     public double BlowWeight => Chained && Press!.Chain!.Period is > 0 and var p ? p / (Press.Wait ?? Def.Base.Cooldown ?? 1) : 1;
     /// <summary>What "once per firing" keys on (the Hand's stone, the bind rite): the firing; for a chain of weighed
@@ -387,7 +397,8 @@ public static partial class Firing
         // only inside this cast (WeaponInst.CutW, read by Damage), 1 again after it.
         // (a chain with no period: every cut a whole blow, the heavy's too, as before)
         if (!(w.Chained && w.Press!.Chain!.Period is > 0)) scale = 1;
-        double cw = w.BlowWeight * scale, cw0 = w.CutW;
+        // (M3 J12: a block's answer is one whole blow, exactly; its scale, 1 / BlowWeight, is the wait's and the stand clock's)
+        double cw = w.WholeCast ? 1 : w.BlowWeight * scale, cw0 = w.CutW;
         w.CutW = cw;
         try { return CastWeighed(b, w, cw, scale); }
         finally { w.CutW = cw0; }
@@ -399,9 +410,10 @@ public static partial class Firing
         // The warden's Hand: every few blows one is heavy, and every hit of it (HitEnemy reads HeavyBy).
         bool heavy = b.HandBeginCast(w);
         // Its own count (Sunder's): a firing heavy for either reason is just heavy; its own count also drives its line.
-        // (the LIGHT cut's weight on purpose: the read-ahead at the press, Battle.DeferBlow, asks the same question)
+        // (the LIGHT cut's weight on purpose: the read-ahead at the press, Battle.DeferBlow, asks the same question; a
+        // block's answer asks both at its whole blow's weight, WeaponInst.NextW at the press and WholeCast here)
         int own = HeavyEveryOf(b, w);
-        w.OwnHeavy = Blows.Completes(w.OwnBlows, w.OwnPart, own, w.BlowWeight);
+        w.OwnHeavy = Blows.Completes(w.OwnBlows, w.OwnPart, own, w.WholeCast ? 1 : w.BlowWeight);
         heavy |= w.OwnHeavy;
         var hb = b.HeavyBy;
         b.HeavyBy = heavy ? w : null;

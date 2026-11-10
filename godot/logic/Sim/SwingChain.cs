@@ -48,6 +48,9 @@ public sealed class SwingChain
     /// <summary>The clip's rate (its length over the period), and the heavy's period over the cut's (1 for a cut).</summary>
     public double Rate { get; internal set; } = 1;
     public double PeriodScale { get; internal set; } = 1;
+    /// <summary>(M3 J12) The cut is a block's answer: one whole written blow (its weight 1, its wait the blow's: PeriodScale is
+    /// 1 / the cut's share), on the cut's own clip at the cut's rate.</summary>
+    public bool Whole { get; internal set; }
     /// <summary>The cut's blow has landed; or it was dropped (a dash before its contact, a knockdown).</summary>
     public bool Landed { get; internal set; }
     public bool Dropped { get; internal set; }
@@ -109,13 +112,19 @@ public sealed partial class Battle
         var beats = HerEvents.ChainBeats(clip, heavyClip || heavy && clip == null);
         double scale = heavy && (heavyClip && light != null || clip == null) ? beats.Len / HerEvents.ChainBeats(light, false).Len : 1;
         double period = Firing.CooldownOf(this, w) * scale;
+        // (M3 J12) A block's answer (WeaponInst.AnswerDue, taken here: after the returns above, so a press that lands at
+        // once does not eat it) is one whole blow: the wait after it is the blow's. Its clip keeps the cut's rate and
+        // beats (period and rate below are the cut's), so only the wait takes the factor.
+        bool whole = w.AnswerDue && w.BlowWeight != 1;
+        w.AnswerDue = false;
+        double wait = whole ? 1 / w.BlowWeight : scale;
         // Held on from the last cut, it starts on the instant the wait ran out (inside this step), not on the step.
         double start = go && c.ReadyStep == Time ? Time - c.Overshoot : Time;
         double rate = Math.Max(1e-3, beats.Len / period);
         c.Live = true; c.Cut = cut; c.Heavy = heavy; c.Clip = clip;
         c.Side = (clip != null ? HerEvents.Side(clip) : null) ?? ((cut & 1) == 0 ? 1 : -1);
-        c.StartAt = start; c.Rate = rate; c.PeriodScale = scale;
-        c.ContactAt = start + beats.Contact / rate; c.CancelAt = start + beats.Cancel / rate; c.PeriodEnd = start + period;
+        c.StartAt = start; c.Rate = rate; c.PeriodScale = wait; c.Whole = whole;
+        c.ContactAt = start + beats.Contact / rate; c.CancelAt = start + beats.Cancel / rate; c.PeriodEnd = start + Firing.CooldownOf(this, w) * wait;
         c.Landed = c.Dropped = c.Told = false;
         c.Held = ChainHeld(w);
         c.Released = false; c.GraceUntil = double.NaN;
@@ -129,7 +138,7 @@ public sealed partial class Battle
         w.WasOwnHeavy = ownHeavy;
         p.AttackAnim = new AttackAnim(w.Id, a, start, heavy || w.Behavior == WeaponBehavior.Crack, clip, rate, cut);
         w.ClipSide = c.Side;
-        w.Timer = Math.Max(0, period - (Time - start));
+        w.Timer = Math.Max(0, Firing.CooldownOf(this, w) * wait - (Time - start));
         pendingBlows.Add(new PendingBlow { W = w, Due = c.ContactAt, At = start, Mul = mul, Aim = aim, Cut = true });
         return true;
     }
