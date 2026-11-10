@@ -878,9 +878,10 @@ HER = {
     "t11_stored": {"regions": "target_a_regions.npz", "girdles": "target_a_rel.npz"},
     # fair_a (Her.part + strip_rest.pose_a; body_facts/fair_a.md): A's own posed skin faired at the source before any carry
     # (seeds: folds over 45 deg and past rest + 20, flips; limited to the A vertices the girdle carriers read). LIVE (WIP,
-    # pending the lead's look): job 1 met on 7/9 poses (iron_vow@72:l, leap@19:r not). h.fair_on False = off
+    # pending the lead's look): P5 = P4 + rings 4, shrink 0.5 (lead 22): patch caps met and 0 flips on all 9 poses
+    # (body_facts/fair_a.md, attempt 5); one cap-front edge at 128 deg on iron_vow@72:l left. h.fair_on False = off
     "fair_a": {"regions": ["girdle_{s}"],
-               "params": {"rings": 3, "soft": 2, "alpha": 0.5, "alpha_core": 0.02, "rot_passes": 10, "grow": 1, "close": True,
+               "params": {"rings": 4, "shrink": 0.5, "soft": 2, "alpha": 0.5, "alpha_core": 0.02, "rot_passes": 10, "grow": 1, "close": True,
                           "rot": "fill", "edges": "blend", "c_core": 1, "c_soft": 2, "alpha_mid": 0.2, "stretch": False,
                           "dilate": True, "best": True, "rounds": 5, "iters": 4}},
     "rad": 0.05,
