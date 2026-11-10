@@ -73,19 +73,22 @@ public sealed class ResolveTests
         var at = new List<(double, double)> { (2, 0), (2.3, 0.8), (2.3, -0.8) };
         var es = at.Select(a => Dummy(b, a.Item1, a.Item2)).ToList();
         Pin(b, es, at);
-        // Held at the pack: one swing, three struck: 12 + 3 + 3.
+        // Held at the pack: one swing, three struck: 12 + 3 + 3 a written blow. (sw1) Sunder is chained: the swing is
+        // one cut of the blow, its share 0.70 / 1.6 = 0.4375 of that: 18 x 0.4375 = 7.875.
+        const double cut = 18 * (0.70 / 1.6);
+        Assert.Equal(0.70 / 1.6, w.BlowWeight, 12);
         b.HoldSkill(w.Slot, true, 2, 0);
         var evs = Run(b, Land, () => Pin(b, es, at));
-        Assert.Equal(18, b.Resolve.Value, 6);
+        Assert.Equal(cut, b.Resolve.Value, 6);
         Assert.Equal(ResolveReason.Landed, b.Resolve.LastReason);
-        Assert.Contains(evs.OfType<Ev.Resolve>(), e => e.Value == 18 && e.Reason == ResolveReason.Landed);
+        Assert.Contains(evs.OfType<Ev.Resolve>(), e => Math.Abs(e.Value - cut) < 1e-6 && e.Reason == ResolveReason.Landed);
         // Swung at the air behind her: nothing landed, nothing gained.
         b.HoldSkill(w.Slot, false);
         w.Timer = 0;
         b.HoldSkill(w.Slot, true, -2, 0);
         var air = Run(b, Land, () => Pin(b, es, at));
         Assert.Single(air.OfType<Ev.Slash>());
-        Assert.Equal(18, b.Resolve.Value, 6);
+        Assert.Equal(cut, b.Resolve.Value, 6);
     }
 
     [Fact]
@@ -234,7 +237,8 @@ public sealed class ResolveTests
         Assert.False(Firing.InStorm(b, w));
         Assert.True(b.PressSkill(w.Slot2, 2, 0));
         Run(b, Land, () => Pin(b, [e], at));
-        Assert.Equal(12, b.Resolve.Value, 6);
+        // (sw1) the half is Sunder's shipped record, chained: one cut builds its share of the blow's 12 (0.70 / 1.6)
+        Assert.Equal(12 * (0.70 / 1.6), b.Resolve.Value, 6);
         Assert.True(e.Hp < e.MaxHp);
     }
 
@@ -371,7 +375,10 @@ public sealed class ResolveTests
         var e = Dummy(b, 2, 0);
         var at = new List<(double, double)> { (2, 0) };
         var plants = new List<double>();
-        for (int i = 0; i < 4; i++)
+        // (sw1) Sunder is chained: each press is a cut of weight 0.70 / 1.6 = 0.4375 in the every-4th count, the opening
+        // one whole (Blows.CountFirstWhole): 1 + 6 x 0.4375 = 3.625 after seven, and the EIGHTH completes the fourth blow
+        // (it was the fourth press of four written blows).
+        for (int i = 0; i < 8; i++)
         {
             w.Timer = 0;
             Pin(b, [e], at);
@@ -379,7 +386,7 @@ public sealed class ResolveTests
             plants.Add(b.Events.Drain().OfType<Ev.Cast>().Single().Plant);
             Run(b, 0.4, () => Pin(b, [e], at));
         }
-        Assert.Equal([0, 0, 0, 0.3], plants);
+        Assert.Equal([0, 0, 0, 0, 0, 0, 0, 0.3], plants);
     }
 
     /* ------------------------------------------------------------ kindled -- */

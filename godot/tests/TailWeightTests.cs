@@ -41,8 +41,10 @@ public sealed class TailWeightTests
             if (chained)
             {
                 W.Press = W.Press!.WithChain(new ChainDef { Grace = 0.40, Recover = 18, Period = 0.70 });
-                Assert.Null(W.Def.Press!.Chain);
+                Assert.NotSame(W.Def.Press!.Chain, W.Press.Chain);
             }
+            // (the switch: the shipped record carries a chain; the unchained run takes it off its own copy)
+            else W.Press = W.Press?.WithChain(null);
             E = B.SpawnEnemy("footpad", 2, 0)!;
             E.Hp = E.MaxHp = 1e9;
             E.AttackT = E.RangedT = 999;

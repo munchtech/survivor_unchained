@@ -52,7 +52,8 @@ public sealed class MomentumChainTests
             W = B.Weapons[0];
             W.Timer = 0;
             Assert.True(W.Tags.Has(Tag.Melee));
-            if (period is double p) W.Press = W.Press!.WithChain(new ChainDef { Grace = 0.40, Recover = 18, Period = p });
+            // (the switch: the shipped record carries a chain; the unchained run takes it off its own copy)
+            W.Press = W.Press!.WithChain(period is double p ? new ChainDef { Grace = 0.40, Recover = 18, Period = p } : null);
             B.Lamps = new LampLoadout();
             if (lit) B.Lamps.Add(new LampEffect { Do = LampDo.Rule, Rule = "momentum", Args = new Dictionary<string, double> { ["kills"] = need, ["sooner"] = 1 - Fast } });
             if (answer) { B.Lamps.Add(new LampEffect { Do = LampDo.Rule, Rule = "oathblade.shield_and_edge", Args = new Dictionary<string, double>() }); B.AddBoon("warding"); }

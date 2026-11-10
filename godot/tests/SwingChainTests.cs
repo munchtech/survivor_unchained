@@ -7,9 +7,10 @@ using Xunit;
 
 namespace SurvivorUnchained.Tests;
 
-/// <summary>The held swing as a chain (M3 MR 3, Sim/SwingChain.cs): opt-in by a press record's "chain" block. No shipped
-/// record has one in this job, so every test here gives a carried skill a COPY of its record with a chain (never the
-/// shared data).</summary>
+/// <summary>The held swing as a chain (M3 MR 3, Sim/SwingChain.cs): opt-in by a press record's "chain" block. Since the
+/// switch (sw1) the two shipped held records carry one (Oathblade, Sunder: grace 0.40, recover 18, period 0.70, answer
+/// 0.85). Every test here still gives a carried skill a COPY of its record with the test's own chain (never the shared
+/// data); an unchained run takes the shipped chain OFF its copy; `shipped` runs the record as it ships.</summary>
 public sealed class SwingChainTests
 {
     readonly Xunit.Abstractions.ITestOutputHelper output;
@@ -36,7 +37,10 @@ public sealed class SwingChainTests
         public int Lines;
         double last = double.NaN, hp = 1e9;
 
-        public Run(string id, Func<PressDef, PressDef>? shape = null, bool chain = true)
+        /// <param name="chain">true: a copy with the test's chain (no period, unless `shape` writes one); false: a copy
+        /// with the shipped chain taken off (unchained).</param>
+        /// <param name="shipped">The record as it ships, untouched (`chain` and `shape` are not read).</param>
+        public Run(string id, Func<PressDef, PressDef>? shape = null, bool chain = true, bool shipped = false)
         {
             B = new Battle(new BattleSetup
             {
@@ -46,12 +50,15 @@ public sealed class SwingChainTests
             B.Calling = "warden";
             W = B.Weapons[0];
             W.Timer = 0;
-            if (chain)
+            if (shipped) Assert.Same(W.Def.Press, W.Press);
+            else if (chain)
             {
                 var r = W.Press!.WithChain(new ChainDef { Grace = 0.40, Recover = 18 });
                 W.Press = shape != null ? shape(r) : r;
-                Assert.Null(W.Def.Press!.Chain);
+                Assert.NotSame(W.Def.Press!.Chain, W.Press.Chain);
             }
+            // (the switch: the shipped record carries a chain; the unchained run takes it off its own copy)
+            else W.Press = W.Press!.WithChain(null);
             E = B.SpawnEnemy("footpad", 2, 0)!;
             E.Hp = E.MaxHp = 1e9;
             E.AttackT = E.RangedT = 999;
@@ -332,7 +339,37 @@ public sealed class SwingChainTests
         // (lead 8's sides, from the weapon's count: the first is -1)
         for (int k = 0; k < r.Slashes.Count; k++) Assert.Equal(k % 2 == 0 ? -1 : 1, r.Slashes[k].S.Side);
         Assert.Equal(0, r.B.Player.AttackAnim?.Cut ?? 0);
-        foreach (var d in SurvivorUnchained.Content.Weapons.All.Values) Assert.Null(d.Press?.Chain);
+        // (the run above took the chain off its own copy only: the shared record keeps it)
+        Assert.NotNull(r.W.Def.Press!.Chain);
+    }
+
+    /// <summary>The switch (sw1): exactly the two shipped held records carry a chain, with these four values, read from
+    /// the shipped skills.json through the game's own loader (Content.Weapons.All); no other record has one.</summary>
+    [Fact]
+    public void The_two_shipped_held_records_carry_the_chain_and_no_other_does()
+    {
+        var all = SurvivorUnchained.Content.Weapons.All;
+        var chained = all.Values.Where(d => d.Press?.Chain != null).Select(d => d.Id).OrderBy(x => x, StringComparer.Ordinal).ToList();
+        Assert.Equal(new[] { "oathblade", "sunder" }, chained);
+        foreach (var (id, wait) in new[] { ("oathblade", 1.05), ("sunder", 1.6) })
+        {
+            var d = all[id];
+            var c = d.Press!.Chain!;
+            Assert.Equal((0.40, 18.0, 0.70, 0.85), (c.Grace!.Value, c.Recover!.Value, c.Period!.Value, c.Answer!.Value));
+            // the written blow is as it was: the wait stays, the kind is a hold
+            Assert.Equal(wait, d.Base.Cooldown!.Value);
+            Assert.Equal(PressKind.Hold, d.Press.Kind);
+            // and a carried one is chained in a campaign fight, at the period over the written wait
+            var r = new Run(id, shipped: true);
+            Assert.True(r.W.Chained);
+            Assert.Equal(0.70 / wait, r.W.BlowWeight, 12);
+            Assert.Equal(0.85, r.W.Press!.Chain!.Answer);
+        }
+        // the same record in the arena's form has no press and never chains (Battle.AddWeapon: campaign only)
+        var arena = new Battle(new BattleSetup { Seed = 5, Collision = new CollisionWorld(120), Combat = true, Stats = BattleTests.BaseStats(), Weapons = [("sunder", 1)] });
+        Assert.Null(arena.Weapons[0].Press);
+        Assert.False(arena.Weapons[0].Chained);
+        Assert.Equal(1.0, arena.Weapons[0].BlowWeight);
     }
 
     // ---- the cut's weight (M3 MR 3): a chain with a period makes each cut a share of the written blow ----
@@ -366,10 +403,12 @@ public sealed class SwingChainTests
 
     /// <summary>Held for 63.9 s: whole written blows on both sides (the unchained Sunder's 41st lands at 64.0 s exactly).
     /// Lines: its own heavies; Hand: the Hand's count's heavies (every Hands.Warden.Every-th blow); Heavy: the heavy
-    /// blows fired for either reason (Battle.HandHeavies is per foe struck).</summary>
+    /// blows fired for either reason (Battle.HandHeavies is per foe struck). (sw1) The chained side is the record AS IT
+    /// SHIPS (its own chain block from skills.json); the unchained side is the same record with the chain taken off.</summary>
     static (double Dmg, double Fill, int Lines, int Hand, int Heavy, int Blows, double Whole) Hold(string id, bool chained, int pack)
     {
-        var r = new Run(id, chained ? P70 : null, chain: chained);
+        var r = chained ? new Run(id, shipped: true) : new Run(id, chain: false);
+        Assert.Equal(chained, r.W.Chained);
         // crit off: it holds in expectation (a cut rolls as a blow does) and is not what this measures
         r.B.Stats.Add(new StatMod(Stat.CritChance, ModKind.Flat, -r.B.Stats.Get(Stat.CritChance), "test"));
         if (pack > 1) { r.Add(2, 0.7); r.Add(2, -0.7); }
@@ -383,6 +422,7 @@ public sealed class SwingChainTests
     [InlineData("sunder", 1)]
     [InlineData("oathblade", 1)]
     [InlineData("sunder", 3)]
+    [InlineData("oathblade", 3)]
     public void Held_a_minute_the_chain_of_cuts_gives_what_the_written_blows_gave(string id, int pack)
     {
         var c = Hold(id, true, pack);

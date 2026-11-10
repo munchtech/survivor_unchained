@@ -46,8 +46,10 @@ public sealed class ProcWeightTests
             if (chained)
             {
                 W.Press = W.Press!.WithChain(new ChainDef { Grace = 0.40, Recover = 18, Period = 0.70 });
-                Assert.Null(W.Def.Press!.Chain);
+                Assert.NotSame(W.Def.Press!.Chain, W.Press.Chain);
             }
+            // (the switch: the shipped record carries a chain; the unchained run takes it off its own copy)
+            else W.Press = W.Press?.WithChain(null);
             if (ride != null)
             {
                 Assert.Null(W.StatusOf);

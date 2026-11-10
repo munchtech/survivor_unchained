@@ -54,8 +54,10 @@ public sealed class BlockAnswerTests
             if (period is double p)
             {
                 W.Press = W.Press!.WithChain(p > 0 ? new ChainDef { Grace = 0.40, Recover = 18, Period = p, Answer = answer } : new ChainDef { Grace = 0.40, Recover = 18 });
-                Assert.Null(W.Def.Press!.Chain);
+                Assert.NotSame(W.Def.Press!.Chain, W.Press.Chain);
             }
+            // (the switch: the shipped record carries a chain; the unchained run takes it off its own copy)
+            else W.Press = W.Press?.WithChain(null);
             if (lamp)
             {
                 B.Lamps = new LampLoadout();

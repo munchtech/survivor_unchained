@@ -38,7 +38,8 @@ public sealed class LateWeightTests
             W = B.Weapons[0];
             if (evolve) Assert.Equal("oathkeeper", W.Evolution?.Id);
             W.Timer = 0;
-            if (chain) W.Press = W.Press!.WithChain(new ChainDef { Grace = 0.40, Recover = 18, Period = 0.70 });
+            // (the switch: the shipped record carries a chain; the unchained run takes it off its own copy)
+            W.Press = W.Press!.WithChain(chain ? new ChainDef { Grace = 0.40, Recover = 18, Period = 0.70 } : null);
             E = B.SpawnEnemy("footpad", Far, 0)!;
             E.Hp = E.MaxHp = 1e9;
             E.AttackT = E.RangedT = 999;

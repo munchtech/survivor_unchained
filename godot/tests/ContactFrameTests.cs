@@ -92,7 +92,10 @@ public sealed class ContactFrameTests
         var w = b.Weapons.First(x => x.Id == "sunder");
         int every = Firing.HeavyEveryOf(b, w);
         Assert.True(every > 0);
-        w.OwnBlows = every - 1;   // the next is its own heavy
+        // the next is its own heavy. (sw1) Sunder is chained: a cut counts its share of a blow (0.70 / 1.6 = 0.4375), so
+        // the count stands one cut short of the every-th blow, not one blow short.
+        (w.OwnBlows, w.OwnPart) = (every - 1, 1 - w.BlowWeight);
+        Assert.Equal(0.70 / 1.6, w.BlowWeight, 12);
         var (clip, after) = PressAndLand(b, w, e);
         Assert.Equal(w.Def.Press!.ClipHeavy, clip);
         double d = HerEvents.ContactFrame(clip)!.Value / HerEvents.Fps / (w.Def.Press.ClipHeavyRate ?? 1.5);

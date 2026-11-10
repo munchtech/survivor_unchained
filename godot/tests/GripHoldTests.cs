@@ -91,13 +91,18 @@ public sealed class GripHoldTests
                 foreach (var ev in b.Events.Drain()) if (ev is Ev.Slash { Held: true, Struck: > 0 }) blows++;
             }
         }
-        Step(1.5, true);
+        // (sw1: 3 s, was 1.5 s. The half is chained now: each cut builds its share of the blow's Resolve (12 x 0.4375 =
+        // 5.25 a cut, where the first written blow gave 12 at once and the second, a heavy, 18 by 1.43 s), so at 1.5 s
+        // she holds 15.75 where she held 30, and the storm below (28 a second) ran dry at 0.58 s of its 0.6 s. The storm
+        // must end for no reason but the grip here: the longer hold pays for it.)
+        Step(3, true);
         Assert.True(blows > 0, "Sunder held on the union's second key never landed");
         // The storm, with Sunder's key still down from before it: no break.
         storm.Timer = 0;
         b.HoldSkill(storm.Slot, true);
         Assert.True(b.PressSkill(storm.Slot, foe.X, foe.Z), "the storm did not start");
         Step(0.6, true);
+        Assert.True(b.Resolve.Value > 0, "the storm ran out of Resolve: the test no longer measures the grip");
         Assert.True(storm.Channeling, "a grip held from before the storm broke it");
         Assert.False(b.PressSkill(storm.Slot2, p.X, p.Z));
         Assert.True(storm.Channeling);
@@ -153,7 +158,7 @@ public sealed class GripHoldTests
     // ---- (M3 MR 3 h1) The hands' gap rule (Sim/PressPlan.cs GripGaps): a chained grip's key stays down for up to the
     // chain's grace after the last step a foe stood in reach and a step. A model of the bot's hands: no rule of the game.
 
-    /// <summary>One Sunder (test-only chain at period 0.70, or the shipped unchained record), one foe that stays up and is
+    /// <summary>One Sunder (test-only chain at period 0.70, or the shipped record with its chain taken off), one foe that stays up and is
     /// put in reach or out of reach + pad each step, the plan's hands on the key.</summary>
     sealed class Rig
     {
@@ -181,8 +186,9 @@ public sealed class GripHoldTests
             B.Calling = "warden";
             W = B.Weapons[0];
             W.Timer = 0;
-            if (chained) W.Press = W.Press!.WithChain(new ChainDef { Grace = 0.40, Recover = 18, Period = 0.70 });
-            Assert.Null(W.Def.Press!.Chain);
+            // (the switch: the shipped record carries a chain; the unchained rig takes it off its own copy)
+            W.Press = W.Press!.WithChain(chained ? new ChainDef { Grace = 0.40, Recover = 18, Period = 0.70 } : null);
+            Assert.NotSame(W.Def.Press!.Chain, W.Press.Chain);
             Assert.True(W.Hold);
             Assert.Equal(chained, W.Chained);
             H = h;
@@ -322,8 +328,9 @@ public sealed class GripHoldTests
     }
 
     /// <summary>(4) The union's second key (Bladestorm's half on Sunder's key) follows the same rule. The half takes its
-    /// record from its def each step, so the test stands in for its chain through the hands' seam (GripGaps.GraceOf);
-    /// without it (the shipped, unchained half) the key comes up the step the foe leaves.</summary>
+    /// record from its def each step, so the test stands in for its chain through the hands' seam (GripGaps.GraceOf):
+    /// a grace of 0.40, or (sw1: the shipped half is chained now, and no copy stays on it) a grace of 0 standing in for
+    /// an unchained half, whose key comes up the step the foe leaves. The real path is the test after this one.</summary>
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -340,6 +347,7 @@ public sealed class GripHoldTests
         var h = PressHands.Grip(3);
         WeaponInst? asked = null;
         if (chained) h.Gaps.GraceOf = x => { asked = x; return 0.40; };
+        else h.Gaps.GraceOf = _ => 0;
         List<(double T, bool Held, string? Grip)> Run(bool near, double secs)
         {
             var steps = new List<(double, bool, string?)>();
@@ -367,6 +375,70 @@ public sealed class GripHoldTests
         gap = Run(false, 0.50);
         double lift = gap.First(s => !s.Held).T - seen;
         if (chained) Assert.InRange(lift, 0.40 - 1e-9, 0.40 + Dt + 1e-9); else Assert.InRange(lift, Dt - 1e-9, Dt + 1e-9);
+        Assert.All(gap, s => Assert.Equal(s.T - seen < lift - 1e-9, s.Held));
+        Assert.True(Run(true, 2 * Dt)[^1].Held);
+    }
+
+    /// <summary>(4, sw1) The same on the REAL path, no seam: with the shipped Sunder chained, the union's half (granted as
+    /// the harness's --grant-union bladestorm does) is chained by its own record, the hands read its grace from it, and
+    /// its key is held through a gap inside the grace and comes up at the grace in a longer one.</summary>
+    [Fact]
+    public void The_shipped_unions_half_is_chained_and_its_key_is_held_through_a_gap()
+    {
+        var j = MapSim.Survivor("warden", 30, 2, 5);
+        var b = Fight(j);
+        Assert.True(b.Campaign);
+        DevGrants.Apply(b, null, "bladestorm", null);
+        var union = Unions.Find("bladestorm")!;
+        var storm = b.Weapons.Single(x => x.Id == union.Into);
+        var half = Firing.HalfOf(storm)!;
+        Assert.Equal("sunder", half.Id);
+        Assert.Same(half.Def.Press, half.Press);
+        Assert.True(half.Chained, "the union's half is not chained by the shipped record");
+        Assert.Equal(0.70 / 1.6, half.BlowWeight, 12);
+        Assert.Equal(0.40, GripGaps.Grace(half));
+        // (the union's own record, the storm, has no chain: only its half's does)
+        Assert.False(storm.Chained);
+        var p = b.Player;
+        var foe = b.SpawnEnemy("footpad", p.X + 1.6, p.Z)!;
+        foe.Hp = foe.MaxHp = 1e9;
+        foe.AttackT = foe.RangedT = 999;
+        var h = PressHands.Grip(3);
+        Assert.Null(h.Gaps.GraceOf);
+        int releases = 0, cuts = 0;
+        double last = double.NaN;
+        List<(double T, bool Held, string? Grip)> Run(bool near, double secs)
+        {
+            var steps = new List<(double, bool, string?)>();
+            for (int i = 0, n = (int)Math.Round(secs / Dt); i < n; i++)
+            {
+                foe.X = p.X + (near ? 1.6 : 14); foe.Z = p.Z; foe.Vx = foe.Vz = 0;
+                double t = b.Time;
+                PressPlan.Run(b, h);
+                steps.Add((t, storm.Held2, h.HalfGrip));
+                b.Tick(Dt, 0, 0);
+                foreach (var ev in b.Events.Drain()) if (ev is Ev.SwingRelease) releases++;
+                if (half.Chain is { Live: true } c && c.StartAt != last) { last = c.StartAt; cuts++; }
+            }
+            return steps;
+        }
+        Assert.True(Run(true, 2)[^1].Held, "the union's grip was not held at a foe");
+        // (the half swings as a chain of cuts on the union's second key)
+        Assert.True(half.Chain is { Live: true }, "the held half runs no chain");
+        Assert.True(cuts >= 2, $"{cuts} cuts in 2 s");
+        // a gap of 0.30 s, inside the grace: the key never lifts, nothing is released
+        var gap = Run(false, 0.30);
+        Assert.All(gap, s => Assert.True(s.Held, $"the key lifted {s.T - gap[0].T:0.000} s into the gap"));
+        Assert.All(gap, s => Assert.Equal("sunder", s.Grip));
+        Assert.Equal(0, releases);
+        double seen = Run(true, 0.5)[^1].T;
+        Assert.True(storm.Held2);
+        Assert.Equal(0, releases);
+        Assert.True(half.Chain is { Live: true });
+        // a gap of 0.50 s: up at the grace after the last step a foe stood in reach, within a step
+        gap = Run(false, 0.50);
+        double lift = gap.First(s => !s.Held).T - seen;
+        Assert.InRange(lift, 0.40 - 1e-9, 0.40 + Dt + 1e-9);
         Assert.All(gap, s => Assert.Equal(s.T - seen < lift - 1e-9, s.Held));
         Assert.True(Run(true, 2 * Dt)[^1].Held);
     }

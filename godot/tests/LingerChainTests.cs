@@ -58,8 +58,10 @@ public sealed class LingerChainTests
             if (period is double p)
             {
                 W.Press = W.Press!.WithChain(p > 0 ? new ChainDef { Grace = 0.40, Recover = 18, Period = p } : new ChainDef { Grace = 0.40, Recover = 18 });
-                Assert.Null(W.Def.Press!.Chain);
+                Assert.NotSame(W.Def.Press!.Chain, W.Press.Chain);
             }
+            // (the switch: the shipped record carries a chain; the unchained run takes it off its own copy)
+            else W.Press = W.Press?.WithChain(null);
             // (the plain run of the shipped strand keeps the strand's other numbers: only its ground is taken off)
             if (shipped) { Assert.Equal(Spec, W.Wick!.Ground); if (!ground) W.Wick.Ground = null; }
             else if (ground || onKill) W.Wick = new WickFx { Ground = ground ? Spec : null, OnKill = onKill, OnKillGap = 0.5, OnKillDamage = 0.6 };
