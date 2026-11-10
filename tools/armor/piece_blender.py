@@ -25,7 +25,12 @@ SCRATCH = os.path.abspath(ARGS[1])
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 HO = os.path.join(ROOT, "tools", "assets", "heroine_outfits.py")
-ART = os.path.join(ROOT, "godot", "art", "armor")
+ART_SRC = os.path.join(ROOT, "godot", "art", "armor")
+# (ARMOR_STAGE=<dir> (tools/armor/piece_ship.py): the piece is written into <dir>/armor, never godot/art/armor, with the
+# body it was built on as <dir>/base.glb (the body at her tuck, the body export's own settings); the shipped-body gate
+# and the tuck's rekey are left to piece_ship, which follows the piece onto the shipped body and installs it)
+STAGE = os.environ.get("ARMOR_STAGE")
+ART = os.path.join(os.path.abspath(STAGE), "armor") if STAGE else ART_SRC
 os.makedirs(SCRATCH, exist_ok=True)
 SPEC_PIECE = json.load(open(PIECE_JSON, encoding="utf-8"))
 PID = SPEC_PIECE["id"]
@@ -499,7 +504,7 @@ def gore_row(z_top, z_tip):
     return row
 
 
-def gore_plate(name, cup_objs, z_top, z_tip, hw_top, hw_tip, lift, thick, roll, row=None):
+def gore_plate(name, cup_objs, z_top, z_tip, hw_top, hw_tip, lift, thick, roll, row=None, bar=None, x_in=None):
     """The gore: a small forged plate on her sternum between the cups, cut from her own skin (so it lies on her,
     `lift` off), its outline the cups' inner rims 1.5 mm clear above, tapering down to a rounded tip on her
     sternum. Its own rolled edge. Rigid (r2, F7): with `row`, the plate and its rolled edge all on that one blend (the
@@ -509,6 +514,17 @@ def gore_plate(name, cup_objs, z_top, z_tip, hw_top, hw_tip, lift, thick, roll, 
     zs = np.arange(z_tip - 0.006, z_top + 0.012 + 1e-9, 0.0025)
     nx, nz = len(xs), len(zs)
     pos = np.array([G["front_point"](x, z) for z in zs for x in xs])
+    if bar is not None:
+        # (P2 lead 14, `bar`: a straight bridge, not a tongue on her sternum (the tongue, hinged on the worn rest, read
+        # at 1:1 as a bent tin tab hanging low): each row a straight chord between her skin at the cups' innermost rim
+        # (x_in), bowed forward `camber` at its middle, never behind her skin (front is -y))
+        g3 = pos.reshape(nz, nx, 3)
+        xa = float(x_in if x_in is not None else hw_top)
+        for r_ in range(nz):
+            yb = 0.5 * (np.interp(-xa, xs, g3[r_, :, 1]) + np.interp(xa, xs, g3[r_, :, 1]))
+            yb = yb - bar.get("camber", 0.0015) * np.clip(1 - (xs / xa) ** 2, 0, 1)
+            g3[r_, :, 1] = np.minimum(g3[r_, :, 1], yb)
+        pos = g3.reshape(-1, 3)
     i = (np.arange(nz - 1)[:, None] * nx + np.arange(nx - 1)[None, :]).ravel()
     tris = np.vstack([np.c_[i, i + nx, i + 1], np.c_[i + 1, i + nx, i + nx + 1]])
     nor = G["vertex_normals"](pos, tris)
@@ -525,13 +541,17 @@ def gore_plate(name, cup_objs, z_top, z_tip, hw_top, hw_tip, lift, thick, roll, 
     under = np.array([ct.ray_cast(Vector(p), Vector(nn), 0.012)[0] is not None for p, nn in zip(pos, nor)])
     d_in = cKDTree(pos[under]).query(pos)[0] if under.any() else np.full(len(pos), 1.0)
     d_out = cKDTree(pos[~under]).query(pos)[0]
-    clear = np.where(under, -d_out, d_in) - 0.0015
+    # (a bar stands `clear` off the cups, past the join law's weld distance (worn_rest JOIN weld_m 2 mm) so it LINKS to them
+    # as a bridge and is not welded into one cup's group; the tongue kept 1.5 mm)
+    clear = np.where(under, -d_out, d_in) - (bar.get("clear", 0.0015) if bar is not None else 0.0015)
     x, z = pos[:, 0], pos[:, 2]
     t = np.clip((z - z_tip) / max(z_top - z_tip, 1e-6), 0, 1)
     hw = hw_tip + (hw_top - hw_tip) * np.sqrt(t)
     tipc = np.array([0.0, z_tip + hw_tip])
     f = np.minimum.reduce([clear, hw - np.abs(x), z_top - z,
                            np.where(z < tipc[1], hw_tip - np.hypot(x, z - tipc[1]), 1.0)])
+    if bar is not None:
+        f = np.minimum.reduce([clear, hw_top - np.abs(x), z_top - z, z - z_tip])   # (a bar: square ends on the cups)
     pos = pos + nor * lift
     _, j = cKDTree(P).query(pos)
     attr = np.hstack([nor, W[j].astype(float) if row is None else np.repeat(np.asarray(row, float)[None], len(pos), 0),
@@ -806,7 +826,8 @@ def build_plate_top():
     z_corner = near_in[:, 2].min()
     gz_top, gz_tip = z_corner + gp["top"], z_corner - gp["drop"]
     grow = gore_row(gz_top, gz_tip) if gp.get("rigid", True) else None
-    gore, gsheet = gore_plate(f"{PID}.gore", [cups[0]], gz_top, gz_tip, x_min + 0.012, gp["hw_tip"], gp["lift"], gp["thick"], gp["roll"], grow)
+    gore, gsheet = gore_plate(f"{PID}.gore", [cups[0]], gz_top, gz_tip, x_min + 0.012, gp["hw_tip"], gp["lift"], gp["thick"], gp["roll"], grow,
+                              gp.get("bar"), x_min)
     if grow is not None:
         for o_ in gore:
             set_one_blend(o_, top4(grow))
@@ -816,7 +837,16 @@ def build_plate_top():
     band_ = gs[np.abs(gs[:, 2] - zr) < 0.002]
     xr = (np.abs(band_[:, 0]).max() - 0.0055) if len(band_) else 0.008
     zt = gs[:, 2].min() + 0.0075
-    gpts_, gn_ = aim_hits(gore, [((0.0, -0.6, zt), (0.0, 0.0, zt))] + [((sg * xr, -0.6, zr), (sg * xr, 0.0, zr)) for sg in (1, -1)])
+    if gp.get("bar") is not None:
+        # (a bar: a rivet at each end, where it seats on the cups, at its middle height; its centre left for a tier's boss)
+        zr = 0.5 * (gs[:, 2].min() + gs[:, 2].max())
+        band_ = gs[np.abs(gs[:, 2] - zr) < 0.002]
+        xr = (np.abs(band_[:, 0]).max() - 0.0055) if len(band_) else 0.02
+        gpts_, gn_ = aim_hits(gore, [((sg * xr, -0.6, zr), (sg * xr, 0.0, zr)) for sg in (1, -1)])
+        gch_, gcn_ = aim_hits(gore, [((0.0, -0.6, zr), (0.0, 0.0, zr))])
+    else:
+        gpts_, gn_ = aim_hits(gore, [((0.0, -0.6, zt), (0.0, 0.0, zt))] + [((sg * xr, -0.6, zr), (sg * xr, 0.0, zr)) for sg in (1, -1)])
+        gch_ = None
     gwt_ = np.repeat(grow[None], len(gpts_), 0) if grow is not None else (G["soft_weights"](np.array(gpts_)) if gpts_ else None)
     gore_rivets = low_rivets(f"{PID}.gore_rivets", gpts_, gn_, gwt_, 0.0024, MKEY) if gpts_ else []
     FIT["gore"] = {"top_z": round(float(gz_top), 4), "tip_z": round(float(gz_tip), 4), "cups_apart_mm": round(float(2 * x_min * 1000), 1),
@@ -858,6 +888,10 @@ def build_plate_top():
         sh = np.asarray(strap_lines[sd][1])
         sock(f"shoulder_{sd}", sh, G["SKIN_BVH"].find_nearest(Vector(sh))[1][:], [0, 1.0, 0], G["soft_weights"](sh[None])[0])
     gn = np.array(G["SKIN_BVH"].find_nearest(Vector(gc))[1][:])
+    if gch_:
+        # (a bar floats off her sternum: its socket is on its own face)
+        gc, gn = np.asarray(gch_[0]), np.asarray(gcn_[0])
+        gp = dict(gp, lift=0.0, thick=0.0)
     sock("gore", gc + gn * (gp["lift"] + gp["thick"]), gn, [0, 0, 1.0], grow if grow is not None else G["soft_weights"](gc[None])[0])
     NUM_FIT.update(FIT.get("gore", {}))
     bs = bsock["back"]
@@ -2471,7 +2505,7 @@ run(src.index(M_LOOP) + len(M_LOOP), src.index(M_BODY), NS)
 stamp("cover regions and tuck rule ready")
 
 # --------------------------------------------- the trim strip's UVs (rims) --
-TRIM = json.load(open(os.path.join(ART, "trim_strip.json"), encoding="utf-8"))
+TRIM = json.load(open(os.path.join(ART_SRC, "trim_strip.json"), encoding="utf-8"))
 
 
 def trim_uv(obj, tb, band):
@@ -2897,6 +2931,16 @@ G["ARMOR_TUCK"].clear()
 G["ARMOR_TUCK"][(PID, SLOT)] = tuck
 G["armor_tuck_write"](body, TUCKDIR)
 BODY_HASH = G["ARMOR_BODY_HASH"]
+if STAGE:
+    os.makedirs(STAGE, exist_ok=True)
+    bpy.ops.object.select_all(action="DESELECT")
+    arm.select_set(True)
+    body.select_set(True)
+    bpy.context.view_layer.objects.active = arm
+    bpy.ops.export_scene.gltf(filepath=os.path.join(STAGE, "base.glb"), export_format="GLB", use_selection=True, export_skins=True,
+                              export_animations=False, export_yup=True, export_vertex_color="ACTIVE")
+    bpy.ops.object.select_all(action="DESELECT")
+    stamp("stage: the built-on body (%s) written as %s" % (BODY_HASH, os.path.join(STAGE, "base.glb")))
 TUCK_N = G["ARMOR_TUCK_N"][(PID, SLOT)]
 if keep is not None:
     me.vertices.foreach_set("co", keep[0])
@@ -3385,7 +3429,7 @@ if missing:
 # (the piece must sit on the body the game ships: her hash as art/people/armor_index.json has it, item 1)
 _pix = json.load(open(os.path.join(ROOT, "godot", "art", "people", "armor_index.json"), encoding="utf-8"))
 SHIPPED_HASH = {r.get("body_hash") for r in _pix} - {None}
-if SHIPPED_HASH != {BODY_HASH} and os.environ.get("ARMOR_ANY_BODY") != "1":
+if not STAGE and SHIPPED_HASH != {BODY_HASH} and os.environ.get("ARMOR_ANY_BODY") != "1":
     json.dump(NUM, open(os.path.join(SCRATCH, "numbers.json"), "w", encoding="utf-8"), indent=1)
     raise SystemExit("ARMOR REFUSED: built on body %s, the shipped body is %s (art/people/armor_index.json); nothing written"
                      % (BODY_HASH, sorted(SHIPPED_HASH)))
@@ -3447,7 +3491,8 @@ def tuck_rekey_shipped(fp):
     print("TUCK REKEY %s: %d records, %d off her shipped points moved to them, %d dropped, %d written" % (PID, n, moved, dropped, len(ks)))
 
 
-tuck_rekey_shipped(os.path.join(ART, "armor_tuck", f"{PID}.bin"))
+if not STAGE:
+    tuck_rekey_shipped(os.path.join(ART, "armor_tuck", f"{PID}.bin"))     # (staged: body_follow_post re-keys it)
 NUM["meshes"] = sorted(ranks)
 
 # sockets, rims, the UV surface
@@ -3473,6 +3518,8 @@ if SPEC_PIECE.get("hold"):
     row["hold"] = SPEC_PIECE["hold"]
 row["file"] = f"res://art/armor/{PID}.gltf"
 row["tier"] = SPEC_PIECE.get("tier")
+if SPEC_PIECE.get("finish"):
+    row["finish"] = SPEC_PIECE["finish"]            # (the record's finish key, gear_finish.py: data on the piece)
 # (armor 9, the rigid-piece rule: a rigid piece is never bent by the garment tuck (Rpg/GarmentTuck.cs Over, HerWear,
 # wearcheck --garment-tuck). A plate style is rigid; a free mesh is when every part of it is `_rigid`.)
 # (rigid only when the piece says so, piece.json "rigid": true (B's cuirass, cuisses), or a free mesh made only of

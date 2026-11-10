@@ -4,6 +4,16 @@
   "repeats": 2.5,
   "zone": "metal"
  },
+ "plainsteel": {
+  "kind": "metal",
+  "repeats": 2.5,
+  "zone": "metal",
+  "template": "steel",
+  "ground": 1.0,
+  "ground_edge": 0.6,
+  "ground_sat": 0.0,
+  "note": "provisional (P2 gear, 10 Nov; l14: its ground reflection grey and faded over 0.6 below the horizon, no tan band on the cups at 1:1, sun and shade: godot/.shots/gear_p2/l14_crops/steel_try2_1to1.png v4). L1 ROW: the real painted-cel finish replaces this stand-in (ground / ground_edge / ground_sat then go): bare steel so the plate set's form can be judged; L1 owns the final read. Steel's own textures (template: the glTF material of that key, gear_native.write_src); no finish in metal_finishes.json, so it draws bare (finish 0)."
+ },
  "darksteel": {
   "kind": "metal",
   "repeats": 2.5,

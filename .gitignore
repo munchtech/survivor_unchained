@@ -52,3 +52,9 @@ tools/body/forms/her_v1_target.npz
 
 # P1 R1 sliders: slider variants of B (publish_p1.py --dest), pictures only, never committed
 godot/art/people/body_p1_var/
+
+# tools/armor/gear_fit.py build output (per body; the bindings in godot/art/gear/bind are the source)
+/godot/art/gear/out/
+
+# tools/armor/gear_fit.py bind output: regenerable in ~3 min, a build output (the P2 lead 2, coordinator 9 Nov); `gear_fit.py stale` fails when they are stale
+/godot/art/gear/bind/
