@@ -1491,8 +1491,9 @@ def cmd_test(h):
 
     for s in "lr":
         pts = md.first[md.S[s]["ids"]]
-        e = np.abs(h.target(Gt, s, Vt)[0] - Vt[pts]).max()
-        ea = np.abs(h.target(Gt, s, Vt, carry="absolute")[0] - Vt[pts]).max()
+        with h.fold_off():                  # the carry alone: the fold trigger fixes B's own published folds (T26's)
+            e = np.abs(h.target(Gt, s, Vt)[0] - Vt[pts]).max()
+            ea = np.abs(h.target(Gt, s, Vt, carry="absolute")[0] - Vt[pts]).max()
         moved = np.abs(Vt[pts] - md.V0[md.S[s]["ids"]]).max()
         line(f"T9 {s}", e < 1e-5, f"bones outside every region turned ({' '.join(f'{k} {v}' for k, v in cfg['t9_turns'].items())} deg), every region's"
              f" locals at rest: X - published max {e * 1000:.4f} mm (absolute carry {ea * 1000:.1f} mm; the region moves {moved * 1000:.0f} mm;"
@@ -1517,6 +1518,7 @@ def cmd_test(h):
     h0 = Her({**{k_: v_ for k_, v_ in cfg.items() if k_ != "fair_a"}, "regions": {k: {a_: b_ for a_, b_ in v.items() if a_ != "support"} for k, v in cfg["regions"].items()}}, verbose=False)
     st = {k: np.load(h.OUT / f_) if (h.OUT / f_).exists() else None for k, f_ in cfg["t11_stored"].items()}
     tp = cfg["dev_poses"] + cfg["t14_poses"] + ["Jog_Fwd@11:r"]
+    h0.fold_on = False                  # the path of before the border: the stored targets predate the fold trigger (T26's)
 
     def off(k, nm, regs):
         i, sn = names.index(nm), [str(x) for x in st[k]["name"]]
@@ -1707,37 +1709,38 @@ def cmd_test(h):
              f" of them ({', '.join(names[i] for i in pick)}) composed with the map - without max {d20!r} m (limit exactly 0)")
         hs2 = sr.HerStrip({**hs.cfg}).load()                 # the second path: strip_rest's own Her and lay
         for nm in cfg["t21_poses"]:
-            i = names.index(nm)
-            G, s_ = z["G"][i], str(z["side"][i])
-            rn = cfg["out_region"].replace("{s}", s_)
-            rg = h.regions[rn]
-            Vp = pub(bd, G)
-            X1 = h.compose(G, Vp)
-            P1 = h.part(G, rn)
-            with h.map_off():
-                X0 = h.compose(G, Vp)
-                P0 = dict(h.part(G, rn))
-            w2 = sr.share(sr.elevation(hs2, G, s_), *hs2.cfg["map_elev"])
-            _, _, Xm, Nm = sr.map_targets(hs2, P0["Va"], s_, w2)
-            b2 = hs2.loc[s_]
-            cf = P0["cf"].copy()
-            cf[b2] = Xm[b2]
-            parts = {n: (*r.spread, h.delta(G, n) if n != rn else
-                         r.share_at(G)[:, None] * np.einsum("nij,nj->ni", P0["M"], cf - P0["Pg"])) for n, r in h.regions.items()}
-            Xe = compose(Vp, parts)
-            band = np.zeros(len(X1), bool)                   # every side's band the map moves in this pose (w > 0)
-            for n, hm in h.map.items():
-                if n == rn or h.part(G, n)["map_w"] > 0:
-                    raw, loc = h.regions[n].spread
-                    band[raw[np.isin(loc, hm.loc[h.regions[n].side])]] = True
-            e_b = float(np.abs(X1[band] - Xe[band]).max())
-            e_n = float(np.abs(P1["map_N"][hs.loc[s_]] - Nm[b2]).max()) if P1["map_N"] is not None else np.inf
-            e_o = float(np.abs(X1[~band] - X0[~band]).max())
-            moved = float(np.linalg.norm(X1[band] - X0[band], axis=1).max())
-            line(f"T21 {nm}", e_b <= 1e-6 and e_n <= 1e-6 and e_o == 0.0 and abs(P1["map_w"] - w2) <= 1e-12,
-                 f"map w {P1['map_w']:.3f} (second path {w2:.3f}); band ({int(band.sum())} vertices, moved up to {moved * 1000:.2f} mm):"
-                 f" composed - strip_rest's map placed max {e_b:.2e} m, normals {e_n:.2e} (limit 1e-6); outside the band - map off"
-                 f" max {e_o!r} m (limit exactly 0)")
+            with h.fold_off():                               # the map alone: the fold trigger acts after it (T26's)
+                i = names.index(nm)
+                G, s_ = z["G"][i], str(z["side"][i])
+                rn = cfg["out_region"].replace("{s}", s_)
+                rg = h.regions[rn]
+                Vp = pub(bd, G)
+                X1 = h.compose(G, Vp)
+                P1 = h.part(G, rn)
+                with h.map_off():
+                    X0 = h.compose(G, Vp)
+                    P0 = dict(h.part(G, rn))
+                w2 = sr.share(sr.elevation(hs2, G, s_), *hs2.cfg["map_elev"])
+                _, _, Xm, Nm = sr.map_targets(hs2, P0["Va"], s_, w2)
+                b2 = hs2.loc[s_]
+                cf = P0["cf"].copy()
+                cf[b2] = Xm[b2]
+                parts = {n: (*r.spread, h.delta(G, n) if n != rn else
+                             r.share_at(G)[:, None] * np.einsum("nij,nj->ni", P0["M"], cf - P0["Pg"])) for n, r in h.regions.items()}
+                Xe = compose(Vp, parts)
+                band = np.zeros(len(X1), bool)                   # every side's band the map moves in this pose (w > 0)
+                for n, hm in h.map.items():
+                    if n == rn or h.part(G, n)["map_w"] > 0:
+                        raw, loc = h.regions[n].spread
+                        band[raw[np.isin(loc, hm.loc[h.regions[n].side])]] = True
+                e_b = float(np.abs(X1[band] - Xe[band]).max())
+                e_n = float(np.abs(P1["map_N"][hs.loc[s_]] - Nm[b2]).max()) if P1["map_N"] is not None else np.inf
+                e_o = float(np.abs(X1[~band] - X0[~band]).max())
+                moved = float(np.linalg.norm(X1[band] - X0[band], axis=1).max())
+                line(f"T21 {nm}", e_b <= 1e-6 and e_n <= 1e-6 and e_o == 0.0 and abs(P1["map_w"] - w2) <= 1e-12,
+                     f"map w {P1['map_w']:.3f} (second path {w2:.3f}); band ({int(band.sum())} vertices, moved up to {moved * 1000:.2f} mm):"
+                     f" composed - strip_rest's map placed max {e_b:.2e} m, normals {e_n:.2e} (limit 1e-6); outside the band - map off"
+                     f" max {e_o!r} m (limit exactly 0)")
     # T22: the armpit map's bar as a test (strip_rest.cmd_turned's own numbers, read from its report; map on)
     if h.map:
         import io, re
