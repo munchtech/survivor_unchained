@@ -299,13 +299,13 @@ def compare(run, name, fr, sc, rows, order, strict=False, store=False, log=print
     return fails, num
 
 
-def shoot(run, names):
+def shoot(run, names, stale_ok=False):
     wt_godot = os.path.join(REPO, "godot")
     main = REPO.split(os.sep + ".claude" + os.sep)[0]
     turn = os.path.join(main if os.path.isfile(os.path.join(main, "tools", "turn.py")) else REPO, "tools", "turn.py")
     os.makedirs(run, exist_ok=True)
     job = "gear: engine check"
-    if subprocess.run([sys.executable, turn, "take", "godot", job, "--wait", "600"]).returncode != 0:
+    if subprocess.run([sys.executable, turn, "take", "godot", job, "--wait", "600"] + (["--stale-ok"] if stale_ok else [])).returncode != 0:
         raise SystemExit("engine_check: the godot turn is busy")
     try:
         for n in names:
@@ -329,11 +329,12 @@ def main(argv=None):
     ap.add_argument("--frames", default=",".join(FRAMES))
     ap.add_argument("--shoot", action="store_true", help="run the game for each frame first (takes and gives the godot turn)")
     ap.add_argument("--store", action="store_true", help="keep each frame's compact reference in tools/armor/engine_ref")
+    ap.add_argument("--stale-ok", action="store_true", help="shoot though the branch is behind integration (only when the missing commits carry no body or gear art)")
     ap.add_argument("--strict-pose", action="store_true", help="fail on bones the clip does not key standing off the dump")
     a = ap.parse_args(argv)
     names = [n for n in a.frames.split(",") if n]
     if a.shoot:
-        shoot(a.run, names)
+        shoot(a.run, names, a.stale_ok)
     ix, rows = gw.load_rows(gw.GEAR)
     body = os.path.join(REPO, "godot", "art", "people", ix["body"])
     order = json.load(open(os.path.join(HERE, "slot_map.json"), encoding="utf-8"))["order"]
