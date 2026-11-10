@@ -60,6 +60,11 @@ public static class CanopyField
     /// run: the random run; lit: the lit share of the tile at C0 (the fields are grown until it holds, or until they meet
     /// their bands); shade: what it came to; stemX, stemY: from each texel to its leaf's stem (m; 0 where the mass's own fill shows).</summary>
     public static float[] Build(int P, float tile, float fMin, float fMax, float leafMin, float leafMax, int lobesMin, int lobesMax, int run, float lit, out float shade, out float[] stemX, out float[] stemY, Action<string>? log = null)
+        => run >= MassesRun ? BuildMasses(P, tile, fMin, fMax, leafMin, leafMax, lobesMin, lobesMax, run - MassesRun, lit, out shade, out stemX, out stemY, log)
+            : BuildFields(P, tile, fMin, fMax, leafMin, leafMax, lobesMin, lobesMax, run, lit, out shade, out stemX, out stemY, log);
+
+    /// <summary>The layout of lead 14 to 16 (lit fields thrown into one shade, clusters): a run under <see cref="MassesRun"/>.</summary>
+    static float[] BuildFields(int P, float tile, float fMin, float fMax, float leafMin, float leafMax, int lobesMin, int lobesMax, int run, float lit, out float shade, out float[] stemX, out float[] stemY, Action<string>? log = null)
     {
         var rnd = new Random(20261109 + run * 7919);
         float cell = tile / Gn;
@@ -334,6 +339,230 @@ public static class CanopyField
         }, acc => { lock (gate) closed += acc; });
         shade = (float)closed / px.Length;
         return px;
+    }
+
+    // ---- (L1 lead 17, F) THE MASSES: a few broad calm masses of shade, the leaves only along their borders ----
+    /// <summary>A rig's dapple "mass" run from here up asks for the MASSES layout (run - MassesRun is its random run; "mass" min
+    /// and max are then a mass's size across, m): the shade is a slow field cut at one level (masses and lit fields of the
+    /// same order, both whole inside, longer along x than deep), no piece of either under <see cref="MSmall"/>; the leaf
+    /// drawing lives on the borders (leaves pointing out of the mass, stretches of them dense, stretches nearly plain, a
+    /// lone leaf now and then just off an edge). The mass itself is leaves too, each with the cover of its own depth into
+    /// the mass and anchored at itself, and what no leaf covers goes with the nearest leaf: so where the canopy opens over
+    /// her fire a mass pulls back to its core leaf by leaf and its edge there is a leafy border like any other.</summary>
+    public const int MassesRun = 100;
+    const float MAniso = 1.4f;    // a mass is this much longer along x than it is deep
+    const float MCell = 0.75f;    // the slow field's cell (m) per meter of the mean mass size
+    const float MOct = 0.35f;     // the weight of the second, finer field (the masses' lobes and necks)
+    const float MWarp = 1.3f;     // the slow field's ground is bent this far (m): no outline follows the lattice
+    const float MWob = 0.08f;     // the weight of the outline's own small wobble (what a plain stretch of border shows)
+    const float MSmall = 1.6f;    // a piece of shade or of light under this (m2) is given to the other phase
+    const float MKd = 0.2f;       // cover per meter of depth into a mass: over her fire a mass stands from its core out
+    const float MVlo = 0.1f, MVtop = C0 - 0.06f; // the cover deep in a mass and at its outline
+    const float MPitch = 0.3f;    // a leaf every this far (m), jittered
+    const float MOut = 0.45f;     // a border leaf's center lies at most this far outside the outline (a dense stretch)
+    const float MDense = 0.34f;   // the border noise under this: a plain stretch (few leaves, small, the outline itself shows)
+    const float MLone = 0.05f;    // the share of sites 0.4-0.9 m off a border that hold a lone leaf
+    const float MKr = 3f;         // the fill's cover per meter across the outline (its edge under the texture's filter)
+    const float MTurn = 3.0f;     // a leaf turns this far in all (rad) off the way out of its mass
+
+    static float[] BuildMasses(int P, float tile, float mMin, float mMax, float leafMin, float leafMax, int lobesMin, int lobesMax, int run, float lit, out float shade, out float[] stemX, out float[] stemY, Action<string>? log)
+    {
+        var rnd = new Random(20261110 + run * 7919);
+        float mean = 0.5f * (mMin + mMax);
+        int n1x = Math.Max(3, (int)MathF.Round(tile / (MCell * mean))), n1y = Math.Max(3, (int)MathF.Round(n1x * MAniso));
+        int n2x = Math.Max(5, (int)MathF.Round(tile / (MCell * mMin * 0.55f))), n2y = Math.Max(5, (int)MathF.Round(n2x * MAniso));
+        const int nw = 9, n3 = 40, nb = 13;
+        float[] l1 = Lattice2(rnd, n1x, n1y), l2 = Lattice2(rnd, n2x, n2y), wa = Lattice(rnd, nw), wb = Lattice(rnd, nw), l3 = Lattice(rnd, n3), lb = Lattice(rnd, nb);
+        var f = new float[Gn * Gn];
+        Parallel.For(0, Gn, j =>
+        {
+            for (int i = 0; i < Gn; i++)
+            {
+                float u = (i + 0.5f) / Gn, w = (j + 0.5f) / Gn;
+                float uw = u + MWarp / tile * (2 * Noise(wa, nw, u, w) - 1), ww = w + MWarp / tile / MAniso * (2 * Noise(wb, nw, u, w) - 1);
+                f[j * Gn + i] = Noise2(l1, n1x, n1y, uw, ww) + MOct * Noise2(l2, n2x, n2y, uw, ww) + MWob * Noise(l3, n3, u, w);
+            }
+        });
+        var sorted = (float[])f.Clone(); Array.Sort(sorted);
+        int ncell = (int)MathF.Round(tile / MPitch); float pitch = tile / ncell;
+        var lr = new float[ncell * ncell * 16];
+        for (int i = 0; i < lr.Length; i++) lr[i] = (float)rnd.NextDouble();
+        // the level: the lit share is counted on the drawn tile (the leaves hang over the outline), the level moved to it
+        float nominal = lit + 0.06f; float[]? px = null; shade = 0;
+        stemX = new float[P * P]; stemY = new float[P * P];
+        for (int pass = 0; pass < 3; pass++)
+        {
+            bool last = pass == 2;
+            int Pp = last ? P : Math.Min(P, 1024);
+            px = DrawMasses(Pp, tile, f, sorted[Math.Clamp((int)((1 - nominal) * Gn * Gn), 0, sorted.Length - 1)], lb, nb, lr, ncell, pitch, leafMin, leafMax, lobesMin, lobesMax, out shade, last ? stemX : null, last ? stemY : null, out int pieces, out int fields);
+            log?.Invoke($"  masses pass {pass}: level for lit {nominal:0.000}, drawn lit {1 - shade:0.000}, {pieces} masses, {fields} lit fields");
+            if (!last) nominal = Math.Clamp(nominal + (lit - (1 - shade)), 0.05f, 0.95f);
+        }
+        return px!;
+    }
+
+    static float[] DrawMasses(int P, float tile, float[] f, float thr, float[] lb, int nb, float[] lr, int ncell, float pitch, float leafMin, float leafMax, int lobesMin, int lobesMax, out float shade, float[]? stemX, float[]? stemY, out int pieces, out int fields)
+    {
+        float cell = tile / Gn, m = P / tile;
+        var sh = new bool[Gn * Gn];
+        for (int k = 0; k < sh.Length; k++) sh[k] = f[k] < thr;
+        int minCells = (int)(MSmall / (cell * cell));
+        pieces = DropSmall(sh, Gn, true, minCells); fields = DropSmall(sh, Gn, false, minCells);
+        // signed distance to the outline (m; under 0 in the shade), wrapped
+        const int pad = 112;
+        int n = Gn + 2 * pad;
+        var inLit = new float[n * n]; var inShade = new float[n * n];
+        for (int j = 0; j < n; j++)
+            for (int i = 0; i < n; i++)
+            {
+                bool s = sh[Wrap(j - pad, Gn) * Gn + Wrap(i - pad, Gn)];
+                inLit[j * n + i] = s ? 1e12f : 0; inShade[j * n + i] = s ? 0 : 1e12f;
+            }
+        Edt(inLit, n); Edt(inShade, n);
+        var sd = new float[Gn * Gn];
+        for (int j = 0; j < Gn; j++)
+            for (int i = 0; i < Gn; i++)
+            {
+                int k = (j + pad) * n + i + pad;
+                sd[j * Gn + i] = sh[j * Gn + i] ? -(MathF.Sqrt(inLit[k]) * cell - 0.5f * cell) : MathF.Sqrt(inShade[k]) * cell - 0.5f * cell;
+            }
+        var px = new float[P * P]; Array.Fill(px, 1f);
+        var gbest = new float[P * P]; Array.Fill(gbest, float.MaxValue);
+        var fbest = new float[P * P]; var bx = new float[P * P]; var by = new float[P * P];
+        var leaves = new List<(float X, float Y, float Full, float Reach, float[] K)>();
+        for (int cj = 0; cj < ncell; cj++)
+            for (int ci = 0; ci < ncell; ci++)
+            {
+                int o = (cj * ncell + ci) * 16;
+                float x = (ci + lr[o]) * pitch, y = (cj + lr[o + 1]) * pitch;
+                float gx = x / cell - 0.5f, gy = y / cell - 0.5f;
+                float d = Bil(sd, Gn, gx, gy);
+                if (d > 0.9f) continue;
+                bool dense = Noise(lb, nb, x / tile, y / tile) > MDense, lone = false;
+                if (d > (dense ? MOut : 0.02f)) { if (d > 0.4f && lr[o + 3] < MLone) lone = true; else continue; }
+                else if (d > -0.14f && lr[o + 15] < (dense ? (d > 0.2f ? 0.6f : d > 0.05f ? 0.3f : 0.1f) : 0.55f)) continue;
+                float full = (lone ? C0 - 0.04f : d > 0 ? MVtop + 0.03f * d / MOut : MathF.Max(MVlo, MVtop + MKd * d)) + (lr[o + 2] - 0.5f) * 0.02f;
+                // its way: out of its mass, turned as it likes
+                float ex = Bil(sd, Gn, gx + 3, gy) - Bil(sd, Gn, gx - 3, gy), ey = Bil(sd, Gn, gx, gy + 3) - Bil(sd, Gn, gx, gy - 3);
+                float way = (ex * ex + ey * ey > 1e-8f && !lone ? MathF.Atan2(ey, ex) : lr[o + 4] * MathF.Tau) + (lr[o + 4] - 0.5f) * MTurn;
+                float len = (leafMin + (leafMax - leafMin) * MathF.Pow(lr[o + 5], 1.2f)) * (dense || d < -0.14f ? 1f : 0.75f);
+                int points = lobesMin + (int)(lr[o + 6] * (lobesMax - lobesMin + 1) * 0.9999f);
+                int nk = Math.Clamp(points, 1, 5);
+                var k = new float[nk * 5];
+                float reach = 0;
+                for (int q = 0; q < nk; q++)
+                {
+                    float a, l, back, hw;
+                    if (q == 0) { a = way; l = len; back = len * 0.28f; hw = len * (0.5f + 0.1f * lr[o + 7]); }
+                    else if (q <= 2) { a = way + (q == 1 ? 1 : -1) * (0.78f + 0.35f * lr[o + 7 + q]); l = len * (0.62f + 0.22f * lr[o + 9 + q]); back = len * 0.12f; hw = l * (0.5f + 0.1f * lr[o + 11 + q]); }
+                    else { a = way + (q == 3 ? 1 : -1) * (1.75f + 0.3f * lr[o + 10 + q]); l = len * (0.36f + 0.16f * lr[o + 8 + q]); back = len * 0.1f; hw = l * 0.45f; }
+                    k[q * 5] = MathF.Cos(a); k[q * 5 + 1] = MathF.Sin(a); k[q * 5 + 2] = 1 / l; k[q * 5 + 3] = 1 / back; k[q * 5 + 4] = 1 / hw;
+                    reach = MathF.Max(reach, l);
+                }
+                leaves.Add((x, y, full, reach + 1.3f * pitch, k));
+            }
+        const int Strips = 32;
+        int rows = P / Strips;
+        var per = new List<int>[Strips];
+        for (int s = 0; s < Strips; s++) per[s] = new List<int>();
+        for (int li = 0; li < leaves.Count; li++)
+        {
+            var lf = leaves[li];
+            int y0 = (int)MathF.Floor((lf.Y - lf.Reach) * m), y1 = (int)MathF.Ceiling((lf.Y + lf.Reach) * m);
+            int s0 = (int)MathF.Floor((float)y0 / rows), s1 = (int)MathF.Floor((float)y1 / rows);
+            for (int s = s0; s <= s1 && s - s0 < Strips; s++) per[Wrap(s, Strips)].Add(li);
+        }
+        Parallel.For(0, Strips, s =>
+        {
+            int top = s * rows, bottom = s == Strips - 1 ? P : top + rows;
+            foreach (int li in per[s])
+            {
+                var (lx, ly, full, reach, k) = leaves[li];
+                int x0 = (int)MathF.Floor((lx - reach) * m), x1 = (int)MathF.Ceiling((lx + reach) * m);
+                int y0 = (int)MathF.Floor((ly - reach) * m), y1 = (int)MathF.Ceiling((ly + reach) * m);
+                int nk = k.Length / 5;
+                for (int yy = y0; yy <= y1; yy++)
+                {
+                    int wy = Wrap(yy, P);
+                    if (wy < top || wy >= bottom) continue;
+                    float dy = (yy + 0.5f) / m - ly;
+                    for (int xx = x0; xx <= x1; xx++)
+                    {
+                        float dx = (xx + 0.5f) / m - lx, gg = float.MaxValue;
+                        for (int q = 0; q < nk; q++)
+                        {
+                            float u = dx * k[q * 5] + dy * k[q * 5 + 1], w = MathF.Abs(-dx * k[q * 5 + 1] + dy * k[q * 5]);
+                            float gq = (u >= 0 ? u * k[q * 5 + 2] : -u * k[q * 5 + 3]) + w * k[q * 5 + 4];
+                            if (gq < gg) gg = gq;
+                        }
+                        float val = gg <= 1 ? full - A * (1 - gg) : full + Kv * (gg - 1);
+                        int idx = wy * P + Wrap(xx, P);
+                        if (val < px[idx]) { px[idx] = val; if (stemX != null) { stemX[idx] = -dx; stemY![idx] = -dy; } }
+                        // (the nearest leaf by its own shape: what no leaf covers goes with it)
+                        if (gg < gbest[idx]) { gbest[idx] = gg; fbest[idx] = full; bx[idx] = -dx; by[idx] = -dy; }
+                    }
+                }
+            }
+        });
+        // the mass's own fill: what no leaf covers stands and goes with its nearest leaf; the outline itself where no leaf hangs over it
+        long closed = 0;
+        object gate = new();
+        Parallel.For(0, P, () => 0L, (j, _, acc) =>
+        {
+            for (int i = 0; i < P; i++)
+            {
+                float sdp = Bil(sd, Gn, (i + 0.5f) / m / cell - 0.5f, (j + 0.5f) / m / cell - 0.5f);
+                int idx = j * P + i;
+                bool has = gbest[idx] < float.MaxValue;
+                float b = MathF.Max(has ? fbest[idx] : MathF.Max(MVlo, MVtop + MKd * MathF.Min(sdp, 0)), C0 + MKr * sdp);
+                if (b < px[idx])
+                {
+                    px[idx] = b;
+                    if (stemX != null) { stemX[idx] = has ? bx[idx] : 0; stemY![idx] = has ? by[idx] : 0; }
+                }
+                if (px[idx] < 0) px[idx] = 0;
+                if (px[idx] < C0) acc++;
+            }
+            return acc;
+        }, acc => { lock (gate) closed += acc; });
+        shade = (float)closed / px.Length;
+        return px;
+    }
+
+    // pieces of one phase (wrapped, 4 ways) under minCells go to the other phase; the count of those kept
+    static int DropSmall(bool[] sh, int n, bool phase, int minCells)
+    {
+        var seen = new bool[n * n]; var stack = new int[n * n]; var comp = new List<int>();
+        int kept = 0;
+        for (int s = 0; s < n * n; s++)
+        {
+            if (seen[s] || sh[s] != phase) continue;
+            int sp = 0; stack[sp++] = s; seen[s] = true; comp.Clear();
+            while (sp > 0)
+            {
+                int k = stack[--sp]; comp.Add(k);
+                int i = k % n, j = k / n;
+                for (int q = 0; q < 4; q++)
+                {
+                    int nk = Wrap(j + (q == 2 ? 1 : q == 3 ? -1 : 0), n) * n + Wrap(i + (q == 0 ? 1 : q == 1 ? -1 : 0), n);
+                    if (!seen[nk] && sh[nk] == phase) { seen[nk] = true; stack[sp++] = nk; }
+                }
+            }
+            if (comp.Count < minCells) { foreach (int k in comp) sh[k] = !phase; } else kept++;
+        }
+        return kept;
+    }
+    static float[] Lattice2(Random r, int nx, int ny) { var a = new float[nx * ny]; for (int i = 0; i < a.Length; i++) a[i] = (float)r.NextDouble(); return a; }
+    // a wrapped value noise on an nx by ny lattice (u, v over the tile, 0..1), quintic steps
+    static float Noise2(float[] lat, int nx, int ny, float u, float v)
+    {
+        float x = u * nx, y = v * ny;
+        int x0 = (int)MathF.Floor(x), y0 = (int)MathF.Floor(y);
+        float fx = x - x0, fy = y - y0;
+        fx = fx * fx * fx * (fx * (fx * 6 - 15) + 10); fy = fy * fy * fy * (fy * (fy * 6 - 15) + 10);
+        int xa = Wrap(x0, nx), xb = Wrap(x0 + 1, nx), ya = Wrap(y0, ny), yb = Wrap(y0 + 1, ny);
+        float a = lat[ya * nx + xa] + (lat[ya * nx + xb] - lat[ya * nx + xa]) * fx, b = lat[yb * nx + xa] + (lat[yb * nx + xb] - lat[yb * nx + xa]) * fx;
+        return a + (b - a) * fy;
     }
 
     static int Wrap(int i, int n) => ((i % n) + n) % n;

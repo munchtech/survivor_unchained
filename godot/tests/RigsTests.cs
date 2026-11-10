@@ -233,7 +233,7 @@ public class RigsTests
         Assert.Equal(0, (a.EmberFloor!.Length - 9) % 8); Assert.Equal(1.0, a.EmberFloor[^7]);   // (L1 l17 p) her fire on the floor: 9 heads, stops of 8, the moon whole at the last
         Assert.Equal(new[] { 1, 0.9, 2.4, 5.4 }, a.EmberGive);   // (L1 l16 d3 round 2: the moon returns later under her fire, 2.4-5.4 m)
         // (L1 lead 14, D2; l15 d round 2) the canopy as a field: lit fields 1.4-4.2 m, run 0, lit share 0.5, at the field's own cover; no clusters
-        Assert.Equal(new[] { 1.4, 4.2, 0, 0.5 }, a.Dapple.Mass);
+        Assert.Equal(new[] { 3, 5, 100, 0.48 }, a.Dapple.Mass);
         Assert.Null(a.Dapple.Clusters);
         Assert.Equal(0.5, (double)a.Dapple.Cover!, 6);
     }
