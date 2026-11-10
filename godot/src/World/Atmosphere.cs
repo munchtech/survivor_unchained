@@ -310,6 +310,8 @@ public partial class Atmosphere : Node3D
         if (CelRigs) { RigsLoad(); p = SurvivorUnchained.Look.Rigs.Lit(p); }
         // (L1 B4r3) the zones' fires and lamps at the rig's share (rigs.json "fires": by day a glow; ZoneView.FireShare)
         ZoneView.FireShare = CelRigs && orig.Rig != "" && SurvivorUnchained.Look.Rigs.Current[orig.Rig] is { } fr ? (float)fr.FireShare : 1f;
+        // (L1 lead 14, S1) the rig's standing levels (rigs.json "stand"; SetCel binds them: cel_stand, cel_stand_fire, cel_stand_pal)
+        standOf = CelRigs && orig.Rig != "" && SurvivorUnchained.Look.Rigs.Current[orig.Rig] is { Stands: true } sr ? sr.Stand : null;
         // --air-tune "fillc=#..,fill=..,hemi=..,env=..,exposure=..,key=..,elevation=..,azimuth=..,shadow=..,tint=..,toe=..,contrast=..,ember=..,mist=..,haze=..":
         // play's presets (E1) nudged, for a sweep of pictures in one build (under cel, the rig's light nudged).
         if (Tune != null && (ReferenceEquals(orig, Atmospheres.LowFordNight) || ReferenceEquals(orig, Atmospheres.LowFordDawn)
@@ -342,7 +344,7 @@ public partial class Atmosphere : Node3D
                 // (L1 lead 11: the dapple's edge (px) and the leaf cookie's shapes: dedge=2,dclusters=300,dleaf=1.2/3.5,dleaves=2/4)
                 DappleEdge = T("dedge", p.DappleEdge), DappleClusters = T("dclusters", p.DappleClusters),
                 DappleLeaf = V("dleaf", p.DappleLeaf ?? []) is { Length: 2 } tl ? tl : p.DappleLeaf, DappleLeaves = V("dleaves", p.DappleLeaves ?? []) is { Length: 2 } tv ? tv : p.DappleLeaves,
-                DappleMass = V("dmass", p.DappleMass ?? []) is { Length: 2 or 3 } tm ? tm : p.DappleMass,   // (L1 lead 12, F4: leaf masses, dmass=1.5/4, or dmass=2/4/3: the third their random run)
+                DappleMass = V("dmass", p.DappleMass ?? []) is { Length: >= 2 and <= 4 } tm ? tm : p.DappleMass,   // (L1 lead 14, D2: the canopy as a field, dmass=1.2/4, dmass=1.2/4/3 (the third the random run) or dmass=1.2/4/0/0.46 (the fourth the lit share))
                 Grade = p.Grade with
                 {
                     TintStrength = T("tint", p.Grade.TintStrength), Contrast = T("contrast", p.Grade.Contrast), Toe = T("toe", p.Grade.Toe),
@@ -493,6 +495,28 @@ public partial class Atmosphere : Node3D
         rigsLoaded = true;
         SurvivorUnchained.Look.Rigs.Current = SurvivorUnchained.Look.RigSet.Parse(Godot.FileAccess.GetFileAsString(SurvivorUnchained.Args.Get("rigs-file") ?? "res://data/look/rigs.json"));
     }
+    /// <summary>(L1 lead 14, S1) The standing material's tones as a texture, 8 x 3 (a family a row: stone, leaf, bark): texels
+    /// 0-6 the tone as scene light (contact, side, body, top, rim, fire mid, fire top: the sRGB color at its largest channel 1
+    /// x its level, a the level), texel 7 the family's four numbers as written (LightRig.Stand). Kept: SetCel runs every frame.</summary>
+    static ImageTexture StandPal(double[] st)
+    {
+        if (standPal != null && ReferenceEquals(standPalOf, st)) return standPal;
+        const int row = SurvivorUnchained.Look.LightRig.StandRow;
+        var img = Image.CreateEmpty(8, 3, false, Image.Format.Rgbaf);
+        for (int f = 0; f < 3; f++)
+            for (int i = 0; i < 8; i++)
+            {
+                int k = f * row + i * 4;
+                if (i == 7) { img.SetPixel(i, f, new Color((float)st[k], (float)st[k + 1], (float)st[k + 2], (float)st[k + 3])); continue; }
+                var c = new Color((float)st[k + 1] / 255f, (float)st[k + 2] / 255f, (float)st[k + 3] / 255f).SrgbToLinear();
+                float mx = Mathf.Max(c.R, Mathf.Max(c.G, Mathf.Max(c.B, 1e-4f))), lv = (float)st[k];
+                img.SetPixel(i, f, new Color(c.R / mx * lv, c.G / mx * lv, c.B / mx * lv, lv));
+            }
+        standPalOf = st;
+        return standPal = ImageTexture.CreateFromImage(img);
+    }
+    static double[]? standOf, standPalOf;
+    static ImageTexture? standPal;
     /// <summary>(L1 lead 14, K1; docs/design/NIGHT_KIT.md) True when this rig carries the standing material's levels
     /// (rigs.json "stand") under the cel rigs: an arena lit by it draws our own flora (ZoneData), not the kit's.</summary>
     public static bool StandRig(string rig)
@@ -531,7 +555,9 @@ public partial class Atmosphere : Node3D
         RenderingServer.GlobalShaderParameterSet("cel_key", new Vector4(keyToward.X, keyToward.Y, keyToward.Z, dap));
         RenderingServer.GlobalShaderParameterSet("cel_dapple", new Vector4((float)p.DappleCover, CanopyCookie.PlaneY + (float)p.DappleHeight, (float)(p.DappleSize > 0 ? p.DappleSize : CanopyCookie.Tile), (float)(CanopyCookie.Floored ? p.DappleFloor : 0)));
         // (L1 lead 11, R3) the key's shadow as a level (cel_oneshade.x: its opacity; 0: the old switch), the dapple's edge (px), and the cookie's shapes
-        RenderingServer.GlobalShaderParameterSet("cel_oneshade", new Vector4(CelRigs && cam == null && p.ShadowLevel ? (float)p.ShadowStrength : 0f, (float)p.DappleEdge, 0, 0));
+        RenderingServer.GlobalShaderParameterSet("cel_oneshade", new Vector4(CelRigs && cam == null && p.ShadowLevel ? (float)p.ShadowStrength : 0f, (float)p.DappleEdge,
+            // (L1 lead 14, D2) z: the cookie is the FIELD tile (covers and leaf stems, CanopyField); its stems' range in the tile's own meters
+            CanopyCookie.IsField(p.DappleMass) ? CanopyField.Stem * (float)((p.DappleSize > 0 ? p.DappleSize : CanopyCookie.Tile) / CanopyCookie.Tile) : 0f, 0));
         // (L1 lead 12, R4 round 4) the canopy's leaf shade across her fire: the share of the fire a leaf's shade takes, the canopy's opening over her (m: none inside, whole from), the moon kept under a leaf (--air-tune pshade=a/b/c/d). Zero: the rig has not opted in.
         RenderingServer.GlobalShaderParameterSet("cel_pool_shade", CelRigs && cam == null && p.EmberShade is [var sc, var sf, var st, var sm] ? new Vector4((float)sc, (float)sf, (float)st, (float)sm) : Vector4.Zero);
         // (L1 lead 12, S3, R5) the moon's top band and rim on what stands (cel_s3: the color x level, on; cel_s3_shape: top edge, up lean, rim px, the unlit side's share), and the foes on it
@@ -546,6 +572,17 @@ public partial class Atmosphere : Node3D
             RenderingServer.GlobalShaderParameterSet("cel_s3_shape", new Vector4((float)mt[4], (float)mt[5], (float)mt[6], (float)mt[7]));
         }
         else { RenderingServer.GlobalShaderParameterSet("cel_s3", Vector4.Zero); RenderingServer.GlobalShaderParameterSet("cel_s3_shape", Vector4.Zero); }
+        // (L1 lead 14, S1; docs/design/NIGHT_KIT.md K1) the standing material (cel.gdshaderinc's cel_stand_*): cel_stand = top edge,
+        // side edge, up lean, foot band m; cel_stand_fire = fire edge 1, fire edge 2, rim px, spare; cel_stand_pal = the tones,
+        // 8 x 3 (stone, leaf, bark). Zero: the rig has no "stand" (every rig but arena_night) or a camera rig is in force.
+        if (CelRigs && cam == null && standOf is { } so)
+        {
+            int sh = 3 * SurvivorUnchained.Look.LightRig.StandRow;
+            RenderingServer.GlobalShaderParameterSet("cel_stand_pal", StandPal(so));
+            RenderingServer.GlobalShaderParameterSet("cel_stand", new Vector4((float)so[sh], (float)so[sh + 1], (float)so[sh + 2], (float)so[sh + 3]));
+            RenderingServer.GlobalShaderParameterSet("cel_stand_fire", new Vector4((float)so[sh + 4], (float)so[sh + 5], (float)so[sh + 6], (float)so[sh + 7]));
+        }
+        else { RenderingServer.GlobalShaderParameterSet("cel_stand", Vector4.Zero); RenderingServer.GlobalShaderParameterSet("cel_stand_fire", Vector4.Zero); }
         bool foeOn = CelRigs && cam == null && R4 && CrowdFill > 0 && p.FoeFire is { Length: 4 } && p.FoeFire[0] > 0;
         RenderingServer.GlobalShaderParameterSet("crowd_fire", foeOn ? new Vector4((float)p.FoeFire![0], (float)p.FoeFire[1], (float)p.FoeFire[2], (float)p.FoeFire[3]) : Vector4.Zero);
         if (foeOn && p.FoeMoon is [var fl, var fp, var fsl, var fsr, var fsg, var fsb, var fres])

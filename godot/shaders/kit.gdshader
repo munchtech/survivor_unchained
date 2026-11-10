@@ -21,6 +21,12 @@ render_mode diffuse_burley, specular_schlick_ggx;
 #define CEL_NO_RIM
 #define CEL_OWN_LIGHT
 #endif
+// (L1 lead 14, K1; docs/design/NIGHT_KIT.md) KIT_STAND: the standing material (cel.gdshaderinc's standing block) on our own
+// stone under a rig with "stand" (KitLook's Look.Stand); the family row 0, stone.
+#ifdef KIT_STAND
+#define CEL_STAND
+#define CEL_STAND_FAM 0
+#endif
 #include "res://shaders/cel.gdshaderinc"
 #include "res://shaders/world_clock.gdshaderinc"
 
@@ -1192,7 +1198,14 @@ void fragment() {
 			float ab = smoothstep(wy - 0.02, wy - 0.005, wp.y) * (1.0 - smoothstep(wy + algae_w * (0.5 + 0.8 * st.a), wy + algae_w * (0.9 + 1.0 * st.a), wp.y));
 			col = mix(col, algae_color.rgb * (0.8 + 0.4 * st.a), algae * ab);
 		}
-		col *= mix(vec3(1.0), night_tint, flora_light.x);
+		// (L1 lead 14, K1) Under a rig with "stand" the old night terms (night_tint, night_fill, the ambient) are replaced by
+		// the standing material's tones, below; any other rig: as it was.
+#ifdef KIT_STAND
+		bool stand = cel_stand_on();
+#else
+		const bool stand = false;
+#endif
+		if (!stand) col *= mix(vec3(1.0), night_tint, flora_light.x);
 		ALBEDO = col;
 		ROUGHNESS = mix(mix(stone_rough, wet_rough, wet), wet_rough, damp_gloss * damp / max(top_damp, 1e-3));
 		SPECULAR = mix(0.35, 0.5, wet);
@@ -1200,7 +1213,21 @@ void fragment() {
 		AO_LIGHT_AFFECT = 0.0;
 		NORMAL = normalize((VIEW_MATRIX * vec4(bn, 0.0)).xyz);
 		// its shade keeps colour: a little of its own albedo given back, cool by day, more under the moon
-		EMISSION += col * shade * mix(shade_floor, night_fill, flora_light.x);
+		if (!stand) EMISSION += col * shade * mix(shade_floor, night_fill, flora_light.x);
+#ifdef KIT_STAND
+		// (the base tone as EMISSION by the smooth normal wn, never the bumped one; the ambient and the gloss off; the moon's
+		// and her fire's adds handed to light(); the albedo stays for any other light)
+		vec3 st_m = vec3(0.0), st_f = vec3(0.0);
+		if (stand) {
+			vec3 st_nv = normalize((VIEW_MATRIX * vec4(wn, 0.0)).xyz);
+			EMISSION = cel_stand_base(wp, wn, v_foot, cel_lum(col), cel_stand_edge(st_nv, VIEW, VIEW_MATRIX), st_m, st_f);
+			SPECULAR = 0.0;
+			AO = 0.0;
+			NORMAL = st_nv;
+		}
+		cel_stm = st_m;
+		cel_stf = st_f;
+#endif
 	}
 #endif
 

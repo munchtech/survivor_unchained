@@ -393,6 +393,18 @@ cel_s3_shape={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+cel_stand={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+cel_stand_fire={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+cel_stand_pal={
+"type": "sampler2D",
+"value": "res://art/fx/flare/flare_noise.png"
+}
 crowd_fire={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)

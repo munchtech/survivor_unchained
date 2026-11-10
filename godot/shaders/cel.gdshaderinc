@@ -133,7 +133,8 @@ global uniform vec4 cel_canopy_r;
 // exactly 1 - x of the key, and where the canopy's dapple falls too the darker one stands (min), never the product; the
 // dapple's strength is the same number (Rigs.Lit), so both land on one shade. 0: the rig has not opted in (the day rigs,
 // the other nights, a camera rig): the attenuation hardened after the opacity (a switch round 0.5), times the dapple, as
-// before. y: the dapple's edge width (screen pixels; under 1: one pixel, as before).
+// before. y: the dapple's edge width (screen pixels; under 1: one pixel, as before). z: over 0, cel_cookie is the FIELD tile
+// and this its stems' range in metres (see cel_dapple_at).
 global uniform vec4 cel_oneshade;
 global uniform sampler2D cel_cookie : filter_linear_mipmap, repeat_enable;
 global uniform sampler2D cel_canopy : filter_linear, repeat_disable;
@@ -258,6 +259,18 @@ float cel_dapple_at(vec3 c_wp) {
 	float c_cov = max(texture(cel_canopy, (c_p - cel_canopy_r.xy) * cel_canopy_r.zw).r, cel_dapple.w) * cel_dapple.x;
 	if (c_cov <= 0.004) return 1.0;
 	float c_e = max(cel_oneshade.y, 1.0);
+	// (L1 lead 14, D2) The FIELD tile (cel_oneshade.z > 0: CanopyField, rigs.json dapple "mass"): r the cover a texel closes at
+	// (shade where it is under the canopy's cover), g and b the way to its leaf's stem (128 + 127 per z metres). The canopy's
+	// opening over her fire (cel_pool_shade y to z) is the COVER falling toward her, read at the leaf's stem: a leaf is whole
+	// or gone, so the masses pull back leaf by leaf and the opening's edge is their own hard leaf outlines (lead 12's fade
+	// below drew a brown gradient where a mass met the fire). The edge's width is capped (the tile steps from leaf to leaf
+	// inside a mass: an uncapped fwidth drew those steps as faint lines).
+	if (cel_oneshade.z > 0.0) {
+		vec3 c_t = textureLod(cel_cookie, c_p / cel_dapple.z, 0.0).rgb;
+		if (cel_pool_shade.z > 0.0 && cel_ember.w > 0.0) c_cov *= smoothstep(cel_pool_shade.y, max(cel_pool_shade.z, cel_pool_shade.y + 1e-3), length(c_wp.xz + (c_t.gb * 255.0 - 128.0) * (cel_oneshade.z / 127.0) - cel_ember.xz));
+		float c_wf = min(fwidth(c_t.r) * 0.5, 0.02) * c_e + 0.0005;
+		return mix(1.0, smoothstep(c_cov - c_wf, c_cov + c_wf, c_t.r), cel_key.w);
+	}
 	float c_f = texture(cel_cookie, c_p / cel_dapple.z, log2(c_e)).r;
 	float c_w = fwidth(c_f) * 0.5 * c_e + 0.01;
 	float c_d = mix(1.0, smoothstep(c_cov - c_w, c_cov + c_w, c_f), cel_key.w);
@@ -423,6 +436,86 @@ vec3 cel_s3_add(vec3 c_l, vec3 c_lc, float c_t, float c_att, bool c_dir, vec3 c_
 }
 #endif
 
+#ifdef CEL_STAND
+// (L1 lead 14, K1/S1; docs/design/NIGHT_KIT.md) THE STANDING BLOCK: what stands on the board painted in hard steps as the
+// rig's levels (rigs.json "stand"), never the albedo's luck. The BASE tones (contact at the foot, side away from the moon,
+// body) are absolute scene light written in fragment() as EMISSION, with the ambient off (AO 0) and no diffuse from the key
+// or her light, so no piece can render black. The key's light() ADDS only the moon's share (the top tone on up-and-moonward
+// normals, the rim line on the moon-side silhouette) in open moonlight: under a cast shadow or a leaf's shade a piece shows
+// neither. Her light ADDS the fire as two hard bands on the faces toward it, at her ramp's level at the fragment's distance
+// on the ground, and the moon gives way on those faces only. Tones step on the SMOOTH geometric normal, one pixel wide.
+// #define CEL_STAND_FAM 0 stone (default), 1 leaf, 2 bark. Globals (Atmosphere.SetCel): cel_stand = top edge, side edge
+// (the normal's dot with the key leaned up), up lean, foot band m (x 0: the rig has not opted in); cel_stand_fire = fire
+// edge 1, fire edge 2 (the normal's dot toward her light), rim px, spare; cel_stand_pal 8 x 3: texels 0-6 contact, side,
+// body, top, rim, fire mid, fire top (rgb the tone, a its level), 7 = paint luminance, dab contrast, rim on any moon edge
+// (1) or on tops only (0), spare.
+global uniform vec4 cel_stand;
+global uniform vec4 cel_stand_fire;
+global uniform sampler2D cel_stand_pal : filter_nearest, repeat_disable;
+#ifndef CEL_STAND_FAM
+#define CEL_STAND_FAM 0
+#endif
+varying vec3 cel_stm;   // (fragment to light: the moon's add here, top or rim over the base)
+varying vec3 cel_stf;   // (fragment to light: her fire's add here per unit of her light's energy over PI)
+bool cel_stand_on() { return cel_on > 0.0 && cel_stand.x != 0.0; }
+vec4 cel_stand_tone(int c_i) { return texelFetch(cel_stand_pal, ivec2(c_i, CEL_STAND_FAM), 0); }
+// A hard step of c_v at c_e, one pixel wide (fragment() only).
+float cel_stand_step(float c_v, float c_e) { float c_w = 0.5 * fwidth(c_v) + 1e-5; return smoothstep(c_e - c_w, c_e + c_w, c_v); }
+// The moon-side silhouette line, cel_stand_fire.z pixels wide (fragment() only; c_nv the smooth normal in view space).
+float cel_stand_edge(vec3 c_nv, vec3 c_v, mat4 c_vm) {
+	if (cel_stand_fire.z <= 0.0) return 0.0;
+	float c_e = max(dot(c_nv, c_v), 0.0);
+	float c_px = c_e / max(fwidth(c_e), 1e-4);
+	vec3 c_kv = (c_vm * vec4(cel_key.xyz, 0.0)).xyz;
+	float c_side = smoothstep(0.05, 0.25, dot(c_nv.xy, normalize(c_kv.xy + vec2(1e-5))));
+	return (1.0 - smoothstep(cel_stand_fire.z - 0.5, cel_stand_fire.z + 0.5, c_px)) * (1.0 - smoothstep(0.55, 0.65, c_e)) * c_side;
+}
+// fragment(): the base tone at a world point (EMISSION), and the moon's and her fire's adds for light() (c_moon, c_fire:
+// the caller writes them to cel_stm, cel_stf; a varying is assigned in fragment() itself). c_wn the smooth world normal, c_foot the height over the piece's foot (m), c_lum the paint's luminance here
+// (the dabs: the tone x (lum / the family's paint luminance) ^ dab contrast), c_rim the silhouette line (cel_stand_edge).
+vec3 cel_stand_base(vec3 c_wp, vec3 c_wn, float c_foot, float c_lum, float c_rim, out vec3 c_moon, out vec3 c_fire) {
+	vec4 c_x = cel_stand_tone(7);
+	float c_dab = c_x.y > 0.0 ? clamp(pow(max(c_lum, 1e-4) / max(c_x.x, 1e-4), c_x.y), 0.5, 1.5) : 1.0;
+	float c_d = dot(c_wn, normalize(mix(cel_key.xyz, vec3(0.0, 1.0, 0.0), cel_stand.z)));
+	float c_ft = 1.0 - cel_stand_step(c_foot, cel_stand.w);
+	float c_top = cel_stand_step(c_d, cel_stand.x) * (1.0 - c_ft);
+	float c_side = 1.0 - cel_stand_step(c_d, cel_stand.y);
+	vec3 c_base = mix(mix(cel_stand_tone(2).rgb, cel_stand_tone(1).rgb, c_side), cel_stand_tone(0).rgb, c_ft);
+	vec3 c_lit = mix(c_base, cel_stand_tone(3).rgb, c_top);
+	c_lit = mix(c_lit, cel_stand_tone(4).rgb, c_rim * (1.0 - c_ft) * mix(c_top, 1.0, clamp(c_x.z, 0.0, 1.0)));
+	float c_g = 1.0;
+	c_fire = vec3(0.0);
+	if (cel_ember.w > 0.0 && cel_pool_band.x > 0.0) {
+		float c_fd = dot(c_wn, normalize(cel_ember.xyz - c_wp));
+		float c_m1 = cel_stand_step(c_fd, cel_stand_fire.x), c_m2 = cel_stand_step(c_fd, cel_stand_fire.y);
+		c_fire = mix(cel_stand_tone(5).rgb, cel_stand_tone(6).rgb, c_m2) * (c_m1 * c_dab * cel_lum(cel_pool_at(length(c_wp.xz - cel_ember.xz)).rgb));
+		c_g = mix(1.0, cel_give_of(cel_back_at(c_wp, cel_dapple_at(c_wp)), cel_give.x), c_m1);
+	}
+	c_moon = max(c_lit - c_base, vec3(0.0)) * (c_g * c_dab);
+	return c_base * (c_g * c_dab);
+}
+// light(): true when this light is the standing material's own (a directional: the key adds the moon's share in open
+// moonlight, another adds nothing; her light adds the fire, the leaf's shade cut as on the ground); false: the caller
+// lights it as any other (the albedo's response).
+bool cel_stand_light(vec3 c_l, vec3 c_lc, float c_att, bool c_dir, mat4 c_iv, inout vec3 c_sl) {
+	if (!cel_stand_on()) return false;
+	float c_q = cel_gq();
+	float c_leaf = 1.0;
+	if (cel_key.w > 0.0 && length(cel_gn) > 1.005) c_leaf = clamp((clamp((length(cel_gn) - 1.01 - 2.0 * c_q) / 0.98, 0.0, 1.0) - (1.0 - cel_key.w)) / cel_key.w, 0.0, 1.0);
+	if (c_dir) {
+		if (dot((c_iv * vec4(c_l, 0.0)).xyz, cel_key.xyz) < 0.98) return true;
+		float c_raw = cel_oneshade.x > 0.0 ? clamp(1.0 - (1.0 - c_att) / cel_oneshade.x, 0.0, 1.0) : c_att;
+		c_sl += cel_stm * (smoothstep(0.42, 0.58, c_raw) * smoothstep(0.4, 0.6, c_leaf));
+		return true;
+	}
+	if (cel_pool.w <= 0.0 || cel_pool_band.x <= 0.0 || cel_ember.w <= 0.0) return false;
+	float c_m = max(c_lc.r, max(c_lc.g, max(c_lc.b, 1e-6)));
+	if (dot(abs(c_lc / c_m - cel_pool.rgb), vec3(1.0)) > 0.02) return false;
+	if (c_att > 0.0) c_sl += cel_stf * (c_m / PI) * (1.0 - cel_pool_shade.x * (1.0 - c_leaf));
+	return true;
+}
+#endif
+
 // Godot 4.5.1's built-in light for one light (scene_forward_lights_inc.glsl light_compute, not LIGHT_CODE_USED):
 // Burley diffuse, Schlick-GGX specular, f0 = mix(0.16 specular^2, albedo, metallic), the BACKLIGHT transmission
 // and RIM. (Not reproduced: the directional light's angular size A (~0 here) and the specular's energy
@@ -565,6 +658,10 @@ void light() {
 	float c_t = dot(c_nb, LIGHT);
 	vec3 c_sl = vec3(0.0);
 	if (cel_dbg_light(c_nb, c_t, ATTENUATION, LIGHT_IS_DIRECTIONAL, c_sl)) { SPECULAR_LIGHT += c_sl; }
+#ifdef CEL_STAND
+	// (L1 lead 14, K1: the standing material's own lights, the key and her fire, as absolute adds; any other light below)
+	else if (cel_stand_light(LIGHT, LIGHT_COLOR, ATTENUATION, LIGHT_IS_DIRECTIONAL, INV_VIEW_MATRIX, c_sl)) { SPECULAR_LIGHT += c_sl; }
+#endif
 	else {
 		vec3 c_da = vec3(0.0), c_sa = vec3(0.0), c_db = vec3(0.0), c_sb = vec3(0.0);
 		if (cel_on < 1.0) {

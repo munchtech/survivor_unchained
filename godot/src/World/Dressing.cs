@@ -207,6 +207,8 @@ public static class Dressing
         var merged = new Dictionary<(string File, KitLook.Look Look), (FloraSpecies.Species Sp, List<Transform3D> At, List<int> Var)>();
         // (a zone's causeways, its flora_species.json: the kit's stones there dropped, ours laid in their place)
         var ways = FloraOwn ? FloraSpecies.CausewaysFor(z.Id) : [];
+        // (L1 lead 14, K1; docs/design/NIGHT_KIT.md) an arena under a rig with "stand": its stones take the standing material
+        bool stand = z.Place != null && Atmosphere.StandRig(z.Place.Night.Rig);
         bool Dropped(string kind, Vector3 o)
         {
             foreach (var w in ways)
@@ -251,7 +253,7 @@ public static class Dressing
                 var sp = FloraSpecies.Of(name);
                 var (file, v) = sp.FileOf(name);
                 // (our stones take no look: one material whatever the kind's moss and wind, so they merge across kinds)
-                var look = sp.Stone ? KitLook.Look.Plain : g.Look with { LeafA = null, LeafB = null, LeafAmount = 0, Wind = sp.Wind ?? g.Look.Wind };
+                var look = sp.Stone ? (stand ? StandStone : KitLook.Look.Plain) : g.Look with { LeafA = null, LeafB = null, LeafAmount = 0, Wind = sp.Wind ?? g.Look.Wind };
                 if (!merged.TryGetValue((file, look), out var mg)) merged[(file, look)] = mg = (sp, new(), new());
                 mg.At.Add(t); mg.Var.Add(v);
             }
@@ -460,6 +462,9 @@ public static class Dressing
             r++;
         }
     }
+
+    /// <summary>(L1 lead 14, K1) A stone under the standing material (KitLook's Look.Stand).</summary>
+    static readonly KitLook.Look StandStone = KitLook.Look.Plain with { Stand = true };
 
     /// <summary>Our own flora of one file and look: its copies in cells (the species' cell), each cell a MultiMesh
     /// per LOD shown by distance, and its shadow proxy (if it casts) in cells twice as wide. A packed file's copies

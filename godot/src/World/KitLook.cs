@@ -29,13 +29,15 @@ public static class KitLook
 
     /// <param name="Shade">How much light the leaves give back: under an ember
     /// arena's night they stand as dark crowns round the fight, not lit lawns.</param>
-    public sealed record Look(float Wind, Color? LeafA, Color? LeafB, float LeafAmount, float Moss, float Shade = 1)
+    /// <param name="Stand">(L1 lead 14, K1) Painted by the standing material (kit.gdshader's KIT_STAND, the rig's "stand"
+    /// levels): our own stone in an arena under such a rig (Dressing).</param>
+    public sealed record Look(float Wind, Color? LeafA, Color? LeafB, float LeafAmount, float Moss, float Shade = 1, bool Stand = false)
     {
         /// <summary>A piece as it comes: still, its own colours.</summary>
         public static readonly Look Plain = new(0, null, null, 0, 0);
     }
 
-    static Shader? solid, twoSided, solidRim, twoSidedRim, own, ownLeaf, ownRock, ownRockRim, ownWall, ownRoof;
+    static Shader? solid, twoSided, solidRim, twoSidedRim, own, ownLeaf, ownRock, ownRockRim, ownRockStand, ownRockStandRim, ownWall, ownRoof;
     static readonly Dictionary<string, ShaderMaterial> cache = new();
 
     /// <summary>--see-debug (a developer's switch): the kit's pieces tinted green where whole and
@@ -362,10 +364,16 @@ public static class KitLook
     {
         ownRock ??= new Shader { Code = solid!.Code.Replace("shader_type spatial;", "shader_type spatial;\n#define OWN_ROCK") };
         ownRockRim ??= Rim(ownRock);
+        // (L1 lead 14, K1: the standing material's variant, a shader of its own, so every other rig's stone is the old code)
+        if (look.Stand)
+        {
+            ownRockStand ??= new Shader { Code = ownRock.Code.Replace("#define OWN_ROCK", "#define OWN_ROCK\n#define KIT_STAND") };
+            ownRockStandRim ??= Rim(ownRockStand);
+        }
         var st = FloraSpecies.Stone;
         stoneTex ??= GD.Load<Texture2D>(st.GetProperty("albedo").GetString()!);
         stoneNor ??= GD.Load<Texture2D>(st.GetProperty("normal").GetString()!);
-        var m = new ShaderMaterial { Shader = ownRock };
+        var m = new ShaderMaterial { Shader = look.Stand ? ownRockStand : ownRock };
         m.SetShaderParameter("stone_tex", stoneTex);
         m.SetShaderParameter("stone_nor", stoneNor);
         // (L1 C3a: a piece with its own map, env_rocks.py's plane rocks on rock_atlas.png, B3's painter, is drawn from it, OWN_ROCK's painted)
@@ -393,7 +401,7 @@ public static class KitLook
             if (sp.Packed) m.SetShaderParameter("packed", true);
         }
         Rocks.Add(m);
-        var rim = new ShaderMaterial { Shader = ownRockRim };
+        var rim = new ShaderMaterial { Shader = look.Stand ? ownRockStandRim : ownRockRim };
         foreach (var u in m.Shader.GetShaderUniformList())
         {
             var name = (string)u.AsGodotDictionary()["name"];
