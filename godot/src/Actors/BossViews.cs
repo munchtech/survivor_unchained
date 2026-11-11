@@ -58,7 +58,7 @@ public partial class WardenView : Node3D, IBossView
             Dye = new Dye { Cloth = "#3a3e44" },
         };
         view = new PersonView(spec, new Held { Right = "watch_blade" }, 0.8 * Size)
-        { WalkClip = "Zombie_Walk_Fwd_Loop", RunClip = "Zombie_Walk_Fwd_Loop" };
+        { WalkClip = "Zombie_Walk_Fwd_Loop", RunClip = "Zombie_Walk_Fwd_Loop", WalkStride = 1.0f };
         AddChild(view);
         foreach (var mi in view.Person.Meshes)
             for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
@@ -148,12 +148,13 @@ public partial class WardenView : Node3D, IBossView
             case "sleep": v.Act("LayToIdle", 0.0001, true); break;
             case "wake": v.Loop("Sword_Idle", 0); v.Act("LayToIdle", 0.6, true); break;
             case "walk": case "idle": v.Loop("Sword_Idle", 0.2); break;
-            case "windup": v.Loop("Sword_Idle", 0.1, 0.5); break;
-            case "cleave": v.Act("Sword_Attack", 1.1); break;
+            // (windup and cleave are driven from his AnimT in Update: the strike's contact frame lands at the windup's end)
+            case "windup": case "cleave": break;
             case "charge-windup": v.Loop("Idle_Shield_Loop", 0.15); break;
-            case "charge": v.Loop("Jog_Fwd_Loop", 0.1, 1.6); break;
-            case "stunned": v.Act("Hit_Head", 0.7, true); break;
-            case "channel": v.Loop("Spell_Simple_Idle_Loop", 0.3); break;
+            // Sprint_Loop: ~7.5 m/s at scale 1, at the rate his feet keep the ground (17 / (7.5 * 2.08))
+            case "charge": v.Loop("Sprint_Loop", 0.1, 17 / (7.5 * 2.08)); break;
+            case "stunned": v.Loop("Zombie_Idle_Loop", 0.2, 0.7); v.Act("Idle_Shield_Break", 0.9); break;
+            case "channel": v.Loop("Spell_Simple_Idle_Loop", 0.3); v.Act("Spell_Simple_Enter", 0.8); break;
             case "dead": v.Act("Death01", 0.7, true); break;
         }
         if (Args.Has("pace")) GD.Print($"ford pose {p} clip={v.Person.Anim.CurrentAnimation} len={v.Person.Anim.CurrentAnimationLength:0.00} rate={v.Person.Anim.GetPlayingSpeed():0.00}");
@@ -199,7 +200,16 @@ public partial class WardenView : Node3D, IBossView
         flameHold = Math.Max(0, flameHold - dt);
         heading = Core.MathX.DampAngle(heading, facing, 14, dt);
         Rotation = new Vector3(0, (float)heading, 0);
-        if (e != null && pose is "walk" or "idle") view.Locomotion(Math.Sqrt(e.Vx * e.Vx + e.Vz * e.Vz) * 1.2);
+        if (e != null && pose is "walk" or "idle") view.Locomotion(Math.Sqrt(e.Vx * e.Vx + e.Vz * e.Vz));
+        else if (e != null && pose == "windup")
+        {
+            // AnimT 0..0.85 eases the raise (clip 0..0.33), 0.85..1.05 the strike to contact (0.33..0.45)
+            double t = e.AnimT;
+            double c = t < 0.85 ? 0.33 * Mathf.SmoothStep(0, 1, (float)(t / 0.85)) : 0.33 + 0.12 * Math.Min(1, (t - 0.85) / 0.2);
+            view.Drive("Sword_Attack", c, dt);
+        }
+        else if (e != null && pose == "cleave")
+            view.Drive("Sword_Attack", 0.45 + 1.08 * Math.Min(1, e.AnimT / 0.8), dt);
         flash = Math.Max(flash - dt * 6, e?.Flash ?? 0);
         foreach (var m in skin) m.Emission = new Color(1f, 0.8f, 0.6f) * (float)(flash * 0.25);
         double g = Glow * (pose == "sleep" ? 0.35 : 1) * (pose == "dead" ? 0 : 1);

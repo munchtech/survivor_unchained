@@ -525,6 +525,33 @@ public class PrologueTests
         Assert.Equal([0.7, 0.4], (System.Collections.Generic.List<double>)at.GetField("Thresholds")!.GetValue(ai)!);
     }
 
+    [Theory]
+    [InlineData(1.9, false)]
+    [InlineData(0.5, true)]
+    public void The_charge_hurts_only_inside_its_drawn_lane(double off, bool hurt)
+    {
+        var s = Make(draft: true);
+        var ford = s.Meta.Place("LOWFORD", "ford");
+        typeof(Prologue).GetMethod("Go", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.Invoke(s.Zone, [Prologue.Stage.ToFord]);
+        Stand(s, ford.X, ford.Z + 12);
+        Run(s, 7.1);
+        Assert.Equal(Prologue.Stage.Boss, s.Zone.Now);
+        var w = s.B.Enemies.Living().Single(e => e.Tag == "warden");
+        var ai = typeof(Prologue).GetField("ai", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(s.Zone)!;
+        var at = ai.GetType();
+        // He charges along +X from where he stands; she stands beside his line, level with him.
+        double x0 = w.X, z0 = w.Z;
+        var lane = s.B.Blow(new Battle.EnemyBlow { OwnMark = true, Shape = TelegraphShape.Line, X = x0, Z = z0, X1 = x0 + 20, Z1 = z0, Width = 2 * (w.Radius + 0.3), Delay = 5, Source = "The Ford-Warden", From = w });
+        at.GetField("Lane")!.SetValue(ai, lane);
+        at.GetField("Mode")!.SetValue(ai, "charge");
+        at.GetField("DirX")!.SetValue(ai, 1.0); at.GetField("DirZ")!.SetValue(ai, 0.0);
+        at.GetField("Travelled")!.SetValue(ai, 20.0);
+        s.B.Player.X = x0 + 0.8; s.B.Player.Z = z0 + off; s.B.Player.Iframes = 0;
+        double hp = s.B.Player.Hp;
+        Run(s, 0.01, safe: false);
+        Assert.Equal(hurt, s.B.Player.Hp < hp);
+    }
+
     [Fact]
     public void Falling_here_is_forgiven()
     {

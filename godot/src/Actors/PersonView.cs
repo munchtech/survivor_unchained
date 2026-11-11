@@ -402,6 +402,24 @@ public partial class PersonView : Node3D, INpcView
     }
     CineBreath? breath;
 
+    /// <summary>Natural ground speed (m/s at scale 1) of WalkClip; > 0 matches the stride to the body's size
+    /// (speed / (WalkStride * Root scale), clamped 0.5..1.8). 0 keeps the default.</summary>
+    public float WalkStride;
+
+    /// <summary>Plays clip at its time t (seconds into the clip), driven by speed so blends still work: the caller
+    /// passes the clip time it wants each frame and the frame's dt. Held until the next Loop/Act (Release).
+    /// A stalled t (a world freeze) freezes the clip; a gap over 0.2 s seeks outright.</summary>
+    public void Drive(string clip, double t, double dt)
+    {
+        var name = People.Clip(person, clip);
+        var a = person.Anim;
+        if (a.CurrentAnimation != name) { a.Play(name, 0.15, 1); Native(name); }
+        holding = true; actLeft = double.MaxValue; bent = false;
+        double pos = a.CurrentAnimationPosition;
+        if (Mathf.Abs(t - pos) > 0.2) { a.Seek(t, true); a.SpeedScale = 0; return; }
+        a.SpeedScale = dt > 0 ? (float)Mathf.Clamp((t - pos) / dt, 0, 4) : 0;
+    }
+
     public void Locomotion(double speed)
     {
         if (holding) return;
@@ -419,6 +437,7 @@ public partial class PersonView : Node3D, INpcView
             string walk = People.Clip(person, WalkClip);
             float stride = walk.StartsWith(FolkClips.Prefix) ? FolkClips.Speed(walk) * person.Root.Scale.X : 0;
             loopSpeed = natural > 0 ? Mathf.Clamp(speed / natural, 0.4, 1.6)
+                : want == WalkClip && WalkStride > 0 ? Mathf.Clamp(speed / (WalkStride * person.Root.Scale.X), 0.5, 1.8)
                 : want == WalkClip ? Mathf.Clamp(speed / (stride > 0 ? stride : 1.5), 0.6, 1.5) : Mathf.Clamp(speed / 3.6, 0.7, 1.5);
             if (want != loopClip || !was) { loopClip = want; if (actLeft <= 0) PlayLoop(0.25); }
             else if (actLeft <= 0) person.Anim.SpeedScale = (float)loopSpeed;
