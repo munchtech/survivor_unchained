@@ -83,7 +83,7 @@ public class SkillTests
         Assert.Contains(Weapons.All[taught!].Tags, Callings.Archetype("stalker").Favours.Contains);
         while (j.Ch.Level < 8) Character.GainXp(j.Ch, Character.XpForLevel(j.Ch.Level) - j.Ch.Xp + 1);
         Assert.Equal(5, SkillBook.Slots(j.Ch));
-        Assert.Equal(3, SkillBook.Rank(j.Ch));
+        Assert.Equal(4, SkillBook.Rank(j.Ch)); // M7a: one point every second level (1 + 7 / 2)
     }
 
     /// <summary>A stalker at the third level with skills of its kind seen: the calling teaches one when Grew is called.</summary>

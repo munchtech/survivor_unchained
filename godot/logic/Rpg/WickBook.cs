@@ -248,12 +248,16 @@ public static class WickBook
     public static bool Holds(CharacterData ch) => !LampBook.State(ch).LightMyWay;
 
     /// <summary>A level gained (from, to): each carried skill with a wick holds the points earned (PointsAt(to) -
-    /// PointsAt(from)) while she lights them herself. Character.GainXp calls it, the one place every level passes.</summary>
-    public static void Grew(CharacterData ch, int from, int to)
+    /// PointsAt(from)) while she lights them herself; one carried only from this level (its opening level reached:
+    /// not in had) comes in holding all its points, as a taught one does (Arrived). Character.GainXp calls it, the one
+    /// place every level passes.</summary>
+    public static void Grew(CharacterData ch, int from, int to, ISet<string>? had = null)
     {
+        if (!Holds(ch)) return;
         int n = SkillBook.PointsAt(to) - SkillBook.PointsAt(from);
-        if (n <= 0 || !Holds(ch)) return;
-        foreach (var (id, _) in SkillBook.Carried(ch).ToList()) Hold(ch, id, n);
+        foreach (var (id, _) in SkillBook.Carried(ch).ToList())
+            if (had != null && !had.Contains(id)) Arrived(ch, id);
+            else Hold(ch, id, n);
     }
 
     /// <summary>A skill come into her hands (creation, the calling's teaching): it holds every point it has
