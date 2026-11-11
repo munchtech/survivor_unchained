@@ -23,9 +23,39 @@ public partial class Game
     /// <summary>One standing in her place in the close view (the shot harness's --npc NAME:swap), framed as she is.</summary>
     internal SurvivorUnchained.View.PersonView? CloseStandIn;
 
+    readonly FrameGuard closeUpFrame = new();
+
+    void CloseUpFrame(double dt) => closeUpFrame.Run(this, dt,
+        static (g, step) => g.UpdateCloseUp(step),
+        static e => GD.PushError($"close-up disabled until the next zone: {e}"));
+
+    void CloseUpLeave()
+    {
+        // The scene owns these nodes; release the rig before its children are freed.
+        CelRigOff();
+        TownLampsDim(1);
+        LampDimDraw();
+        if (lampDimHooked) RenderingServer.FramePreDraw -= LampDimDraw;
+        lampDimHooked = false;
+        lampDim.Clear();
+        celKey = null;
+        closeKey = closeKeyGear = closeKeyHair = closeRim = closeRimGear = closeBodyRim = closeFill = closeFillFolk = null;
+        keyFolk = rimFolk = coolFolk = bodyRimFolk = groundKey = null;
+        fireFill = CloseKeySrcLamp = null;
+        keyLight = bodyKey = fillLight = edgeLight = rimLight = bounceLight = lookBodyRim = null;
+        herFire = fireSrc = null;
+        CloseStandIn = null;
+        closeDrives = false;
+        closeDrift = 0;
+        skyShown = 1;
+        eyesNight = 0;
+        roomTops.Clear();
+    }
+
     /// <summary>A new place: the close view back to play's distance at once (--close C: set, where it is safe).</summary>
     void CloseUpBegin(ZoneRuntime z)
     {
+        closeUpFrame.Reset();
         closeUp.Reset();
         if (!z.Combat && Args.Has("close")) closeUp.Wheel(Args.Num("close", 0) / CloseUp.Step, 0, new CloseUp.Situation(true, false, false, false));
         cam.Close = 0;
@@ -218,10 +248,16 @@ public partial class Game
             // CloseKeyHair of its light: at 3000K and twice the light (the exposure down) it lifted her copper toward strawberry blonde.)
             closeKey = new SpotLight3D { LightColor = new Color(1f, 0.95f, 0.88f), SpotAngle = 24, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2 | SurvivorUnchained.View.PlayerView.CastLayer | SurvivorUnchained.View.PlayerView.HerLayer, LightSpecular = 0.3f, LightEnergy = 0 };
             scene.AddChild(closeKey);
+        }
+        if (closeKeyGear == null || !IsInstanceValid(closeKeyGear) || closeKeyGear.GetParent() != scene)
+        {
             // (Rendering 2, judge j1 D3 "the sword tip blazes white, the brightest thing in the frame": its twin on her gear
             // (PlayerView.HerGearLayer) with CloseKeyGearSpec of the sheen: at 0.3 the key's highlight ran up the blade clipped.)
             closeKeyGear = new SpotLight3D { SpotAngle = 24, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = SurvivorUnchained.View.PlayerView.HerGearLayer, LightSpecular = CloseKeyGearSpec, LightEnergy = 0 };
             scene.AddChild(closeKeyGear);
+        }
+        if (closeKeyHair == null || !IsInstanceValid(closeKeyHair) || closeKeyHair.GetParent() != scene)
+        {
             closeKeyHair = new SpotLight3D { LightColor = CloseKeyHairColour, SpotAngle = 24, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = SurvivorUnchained.View.PlayerView.HerHairLayer, LightSpecular = 0.3f, LightEnergy = 0 };
             scene.AddChild(closeKeyHair);
         }
@@ -401,7 +437,7 @@ public partial class Game
             // (L1 B4, rule 3: under cel the close view is one key, one colored fill and one rim; the seven spots split by layer
             // (key, key gear, key hair, rim, rim gear, fill, body rim) are off, and her skin keeps the sky's whole share)
             foreach (var l in new Light3D?[] { closeKey, closeKeyGear, closeKeyHair, closeRim, closeRimGear, closeFill, closeBodyRim, keyFolk, rimFolk, coolFolk })
-                if (l != null) { l.LightEnergy = 0; l.Visible = false; }
+                if (IsInstanceValid(l)) { l!.LightEnergy = 0; l.Visible = false; }
             if (skyShown != 1) { skyShown = 1; SurvivorUnchained.View.People.HerSkyShare(pv.Person, 1); }
         }
     }
@@ -414,7 +450,7 @@ public partial class Game
     // --cel-rigs off: never (the spots as they were).
     DirectionalLight3D? celKey;
     uint celKeyMask, celWorldMask;
-    bool CelRigHeld => celKey != null && celKey.Visible;
+    bool CelRigHeld => GodotObject.IsInstanceValid(celKey) && celKey!.Visible;
     const uint CelHerMask = 2 | SurvivorUnchained.View.PlayerView.CastLayer | SurvivorUnchained.View.PlayerView.HerLayer
         | SurvivorUnchained.View.PlayerView.HerHairLayer | SurvivorUnchained.View.PlayerView.HerGearLayer;
 
@@ -445,8 +481,13 @@ public partial class Game
 
     void CelRigOff()
     {
-        if (celKey != null && IsInstanceValid(celKey)) celKey.Visible = false;
-        if (celKeyMask != 0) { air.Key.LightCullMask = celWorldMask; celKeyMask = 0; }
+        if (IsInstanceValid(celKey)) celKey!.Visible = false;
+        else celKey = null;
+        if (celKeyMask != 0)
+        {
+            if (IsInstanceValid(air.Key)) air.Key.LightCullMask = celWorldMask;
+            celKeyMask = celWorldMask = 0;
+        }
         if (air.CameraRig != null) air.HoldCameraRig(null);
     }
 
@@ -466,14 +507,14 @@ public partial class Game
     void FolkTwins(bool on, Vector3 head = default)
     {
         Twin(closeKey, ref keyFolk, "CloseKeyFolk", on, CloseFolkKey, null, CloseFolkKeySpec);
-        if (keyFolk != null && keyFolk.Visible)
+        if (IsInstanceValid(keyFolk) && keyFolk!.Visible)
         {
             keyFolk.LightColor = keyFolk.LightColor.Lerp(CloseKeyColourFolk, 0.5f);
             keyFolk.SpotAngle = CloseFolkFillCone; keyFolk.SpotAngleAttenuation = CloseFolkFillEdge;
             keyFolk.LookAt(head);
         }
         Twin(closeFill, ref closeFillFolk, "CloseFillFolk", on, 1f, CloseFillColourFolk, 0f);
-        if (closeFillFolk != null && closeFillFolk.Visible)
+        if (IsInstanceValid(closeFillFolk) && closeFillFolk!.Visible)
         {
             closeFillFolk.SpotAngle = CloseFolkFillCone; closeFillFolk.SpotAngleAttenuation = CloseFolkFillEdge;
             closeFillFolk.LookAt(head);
@@ -485,7 +526,12 @@ public partial class Game
     SpotLight3D? bodyRimFolk;
     void Twin(SpotLight3D? src, ref SpotLight3D? twin, string name, bool on, float gain, Color? colour, float spec)
     {
-        if (src == null || !IsInstanceValid(src) || scene == null) return;
+        if (src == null || !IsInstanceValid(src) || scene == null)
+        {
+            if (IsInstanceValid(twin)) twin!.Visible = false;
+            else twin = null;
+            return;
+        }
         uint mask = src.LightCullMask;
         uint want = on ? mask & ~2u : mask | 2u;
         if (mask != want) src.LightCullMask = want;
