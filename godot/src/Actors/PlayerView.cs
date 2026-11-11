@@ -955,7 +955,7 @@ public partial class PlayerView : Node3D
     float otWf = 1, otWr, otWb, otWl, otAng, otAim, otSimSp;
     // --ot-grace S: the switch holds S seconds past aimHold's end (the blow's 0.45 s lapses between swings at a ~0.7 s cadence:
     // with no grace the sweep switched 42 times, at 0.6 s 8). A1 L22: 0.6 s by default; --ot-grace 0 = the first design.
-    static readonly float OtGrace = (float)SurvivorUnchained.Args.Num("ot-grace", 0.6);
+    static readonly float OtGrace = (float)SurvivorUnchained.Args.Num("ot-grace", 0.6f);
     static readonly bool TurnL21 = SurvivorUnchained.Args.Has("turn-l21");
 
     /// <summary>The three off-travel clips of this run clip (run_warden_back/_right/_left), when her library has all three.</summary>
