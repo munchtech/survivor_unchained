@@ -1258,9 +1258,13 @@ public partial class BattleFx : Node3D
         // measure: her hit over the crowd with N dying, tools/audio/crowd_tape.py).
         if (KillTrace)
         {
-            int kills = 0, heavy = 0;
-            foreach (var ev in events) { if (ev is Ev.Kill) kills++; else if (ev is Ev.Hit hh && SurvivorUnchained.Sound.LeadRule.Heavy(hh)) heavy++; }
-            if (kills > 0 || heavy > 0) GD.Print($"[kill-trace] tape={SurvivorUnchained.Sound.Synth.Instance?.TapeSeconds ?? 0:F3} kills={kills} heavy={heavy} living={System.Linq.Enumerable.Count(b.Enemies.Living())}");
+            int kills = 0, heavy = 0, launch = 0, burst = 0, elite = 0;
+            foreach (var ev in events)
+            {
+                if (ev is Ev.Kill kk) { kills++; if (kk.Launch) launch++; if (kk.Burst) burst++; if (kk.Elite || kk.Boss) elite++; }
+                else if (ev is Ev.Hit hh && SurvivorUnchained.Sound.LeadRule.Heavy(hh)) heavy++;
+            }
+            if (kills > 0 || heavy > 0) GD.Print($"[kill-trace] tape={SurvivorUnchained.Sound.Synth.Instance?.TapeSeconds ?? 0:F3} kills={kills} heavy={heavy} living={System.Linq.Enumerable.Count(b.Enemies.Living())} launch={launch} burst={burst} elite={elite} frame={Engine.GetFramesDrawn()}");
         }
         if (FxLog)
         {
