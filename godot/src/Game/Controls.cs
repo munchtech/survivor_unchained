@@ -367,13 +367,10 @@ public partial class Controls : Node
         if (!FileAccess.FileExists(SaveFile)) return;
         try
         {
-            var saved = JsonSerializer.Deserialize<Dictionary<string, string[]>>(FileAccess.GetFileAsString(SaveFile));
+            var saved = JsonSerializer.Deserialize<Dictionary<string, string?[]?>>(FileAccess.GetFileAsString(SaveFile));
             if (saved == null) return;
-            foreach (var a in Rebindable)
-                if (saved.TryGetValue(Key(a), out var v) && v.Length > 0) Bindings[a] = v;
-                else if (a == Act.Flare && saved.TryGetValue("ability", out var oldArt) && oldArt.Length > 0) Bindings[a] = oldArt;
-                else if (a == Act.Draught && saved.TryGetValue("ultimate", out var old) && old.Length > 0) Bindings[a] = old;
-            if (saved.TryGetValue("preset", out var pr) && pr.Length > 0 && int.TryParse(pr[0], out var pi)) Preset = Math.Clamp(pi, 0, KeyMap.PresetNames.Length - 1);
+            // (every entry checked: a bad one keeps that action's default, never the rest's, SU-011)
+            if (KeyMap.LoadSaved(saved, Bindings) is int pi) Preset = Math.Clamp(pi, 0, KeyMap.PresetNames.Length - 1);
             // (an old save: the skills' keys are theirs; the Flare's old RMB goes)
             foreach (var line in KeyMap.Sanitize(Bindings)) GD.Print($"bindings: {line}");
             Version++;
@@ -385,8 +382,8 @@ public partial class Controls : Node
     {
         var o = Rebindable.ToDictionary(Key, a => Bindings[a]);
         o["preset"] = [Preset.ToString(System.Globalization.CultureInfo.InvariantCulture)];
-        using var f = FileAccess.Open(SaveFile, FileAccess.ModeFlags.Write);
-        f?.StoreString(JsonSerializer.Serialize(o));
+        // (written beside, then moved over: a failed write keeps the old bindings, SU-010)
+        if (!Core.AtomicFile.Write(ProjectSettings.GlobalizePath(SaveFile), JsonSerializer.Serialize(o))) GD.PushWarning("bindings: could not be saved");
     }
 
     /// <summary>The web game's name for an action ('flare', once 'ability'; LoadBindings reads the old keys).</summary>

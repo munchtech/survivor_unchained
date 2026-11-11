@@ -38,7 +38,16 @@ public sealed class SaveData
     public EmberCarry? Ember;
 }
 
-public sealed record SlotInfo(int Slot, string Name, int Level, string Archetype, int Day, string Zone, long SavedAt, bool Alive);
+/// <summary>A slot as the title lists it. Newer: written by a newer build of the game; this one
+/// cannot load it and never writes over it (it stays on disk as it is).</summary>
+public sealed record SlotInfo(int Slot, string Name, int Level, string Archetype, int Day, string Zone, long SavedAt, bool Alive, bool Newer = false);
+
+/// <summary>A save from a newer build: migrating it would stamp it with our version and drop
+/// what we don't know, so it is refused instead and the file left alone.</summary>
+public sealed class NewerSaveException(int version) : Exception($"save version {version} is newer than {Saves.Version}")
+{
+    public int SaveVersion { get; } = version;
+}
 
 /// <summary>The save slots, as files in a folder (the game's user folder).</summary>
 public sealed class Saves
@@ -59,6 +68,18 @@ public sealed class Saves
     public static SaveData Migrate(SaveData d)
     {
         // Version 1 is the first; later versions add steps here, oldest first.
+        // Valid JSON can still hold a null where a list belongs (a hand edit, a cut-off write):
+        // a missing collection reads as an empty one rather than throwing further down.
+        d.Location ??= new();
+        var c0 = d.Character;
+        c0.Attributes ??= new(); c0.Equipment ??= new(); c0.Traits ??= new(); c0.Knowledge ??= new();
+        c0.Pack ??= Inventory.NewPack();
+        c0.Discovered ??= new(); c0.Skills ??= new(); c0.Slotted ??= new(); c0.Known ??= new();
+        c0.Arts ??= new(); c0.DashSteps ??= new(); c0.Conditions ??= new(); c0.Mastery ??= new(); c0.Stats ??= new();
+        var w0 = d.World;
+        w0.Facts ??= new(); w0.Knowledge ??= new(); w0.Npcs ??= new(); w0.Factions ??= new(); w0.Quests ??= new();
+        w0.History ??= new(); w0.Scheduled ??= new(); w0.Zones ??= new(); w0.TimeIn ??= new(); w0.Codex ??= new();
+        w0.Bestiary ??= new(); w0.Rematches ??= new();
         d.World.Stash ??= new();
         // Whole shelves, at least the one that comes with the room (a save from before shelves had two).
         while (d.World.Stash.Count < WorldState.Shelf || d.World.Stash.Count % WorldState.Shelf != 0) d.World.Stash.Add(null);
@@ -126,36 +147,46 @@ public sealed class Saves
         data.Version = Version;
         if (data.Character?.Lamps != null) LampBook.Keep(data.Character);
         data.SavedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        try
-        {
-            // Written beside, then moved over: a crash mid-write never leaves half a save.
-            var tmp = PathOf(slot) + ".tmp";
-            File.WriteAllText(tmp, Json.Write(data));
-            File.Move(tmp, PathOf(slot), true);
-            File.WriteAllText(MetaPath, $"{{\"last\":{slot}}}");
-            return true;
-        }
-        catch (IOException) { return false; }
-        catch (UnauthorizedAccessException) { return false; }
+        // Written beside, then moved over: a crash mid-write never leaves half a save.
+        if (!AtomicFile.Write(PathOf(slot), Json.Write(data))) return false;
+        // (which slot was last is a convenience: the journey itself is safe even if this fails)
+        AtomicFile.Write(MetaPath, $"{{\"last\":{slot}}}");
+        return true;
     }
 
     public static SaveData? Parse(string raw)
     {
         var d = Json.Parse<SaveData>(raw);
         if (d.Character == null || d.World == null) throw new FormatException("incomplete save");
+        if (d.Version > Version) throw new NewerSaveException(d.Version);
         return Migrate(d);
     }
 
-    public SaveData? Read(int slot)
+    public SaveData? Read(int slot) => Load(slot, out _);
+
+    /// <summary>The slot's journey, or null: no file, unreadable (left alone, it may only be locked),
+    /// from a newer build (left alone; newer says so), or broken (set aside for a bug report).</summary>
+    SaveData? Load(int slot, out SaveData? newer)
     {
+        newer = null;
         var p = PathOf(slot);
         if (!File.Exists(p)) return null;
-        var raw = File.ReadAllText(p);
+        string raw;
+        try { raw = File.ReadAllText(p); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return null; }
         try { return Parse(raw); }
-        catch (Exception e) when (e is FormatException or System.Text.Json.JsonException)
+        catch (NewerSaveException)
         {
-            // Keep the broken record aside for a bug report; never overwrite it.
-            File.Move(p, $"{p}.broken.{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}", true);
+            // Read as it stands (no migration) only for its name on the list; never written back.
+            try { newer = Json.Parse<SaveData>(raw); } catch (Exception) { newer = new SaveData(); }
+            return null;
+        }
+        catch (Exception)
+        {
+            // Bad JSON, a missing part or a structure Migrate can't take: keep the broken record
+            // aside for a bug report; never overwrite it. One bad slot never breaks the list.
+            try { File.Move(p, $"{p}.broken.{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}", true); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
             return null;
         }
     }
@@ -164,8 +195,11 @@ public sealed class Saves
     {
         var o = new List<SlotInfo>();
         for (int i = 0; i < SlotCount; i++)
-            if (Read(i) is { } d)
+            if (Load(i, out var newer) is { } d)
                 o.Add(new SlotInfo(i, d.Character.Name, d.Character.Level, d.Character.Archetype, d.World.Day, d.Location.Zone, d.SavedAt, d.Character.Alive));
+            else if (newer != null)
+                o.Add(new SlotInfo(i, newer.Character?.Name ?? "Unknown", newer.Character?.Level ?? 0, newer.Character?.Archetype ?? "",
+                    newer.World?.Day ?? 0, newer.Location?.Zone ?? "", newer.SavedAt, newer.Character?.Alive ?? true, true));
         return o;
     }
 

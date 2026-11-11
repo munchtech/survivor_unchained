@@ -95,7 +95,7 @@ public static class Telegraphs
     }
 
     static File? file;
-    static File F => file ??= Json.Parse<File>((System.Environment.GetEnvironmentVariable("SU_TELLS") is { Length: > 0 } alt ? System.IO.File.ReadAllText(alt) : Json.ReadContent("telegraphs.json")));
+    static File F => file ??= Json.Parse<File>((DevOverrides.Env("SU_TELLS") is { } alt ? System.IO.File.ReadAllText(alt) : Json.ReadContent("telegraphs.json")));
 
     /// <summary>The named telegraph, or null for a name the kit does not have.</summary>
     public static Kind? Get(string kind) => F.Kinds.TryGetValue(kind, out var k) ? k : null;
