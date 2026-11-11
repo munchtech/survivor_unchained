@@ -1784,6 +1784,10 @@ public partial class BattleFx : Node3D
                 case Ev.Ability e:
                     Ability(e, b);
                     break;
+                case Ev.Floater e:
+                    // (B1) a word over him, warm gold, like PERFECT: the bark's caption sat at the screen's foot
+                    Hits.Text(V(e.X, Y(e.X, e.Z) + e.Up, e.Z), e.Text, new Color(2.0f, 1.55f, 0.55f), 56);
+                    break;
                 case Ev.Status e:
                     if (e.Kind == StatusKind.Frozen)
                         for (int i = 0; i < 8; i++) Sparks.Spawn(V(e.X, Y(e.X, e.Z) + 0.8, e.Z), new Vector3((R() - 0.5f) * 2, R() * 2, (R() - 0.5f) * 2), 0.5f, 0.25f, new Color(1.6f, 2.2f, 2.6f), drag: 3, sprite: Sprites.Of("star"), spinV: 2);

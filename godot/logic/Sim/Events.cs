@@ -236,6 +236,9 @@ public static class Ev
         /// <summary>A boss's signature line naming its own next mark (ArenaBoss.Signature): it keeps its slot over the speaker
         /// while that mark is live (not sent to the fight's band above the HUD), lifted a little clear of the mark's rim.</summary>
         public bool Signature; }
+    /// <summary>A word over something in the world, Up metres over the ground at X, Z (the Ford-Warden's "Dazed"): drawn
+    /// like a struck number, not a caption.</summary>
+    public sealed class Floater : CombatEvent { public double X, Z, Up; public string Text = ""; }
     public sealed class Announce : CombatEvent { public string Title = ""; public string? Subtitle, Kicker; public Tone? Tone; }
     public sealed class Shake : CombatEvent { public double Amount; }
     /// <summary>A story beat's cue for the set (the films lead's: "door_sigil" lights the door's sigil as Corvane's

@@ -63,7 +63,7 @@ public sealed partial class Prologue : ZoneRuntime
         /// <summary>(M3) The cleave's and the charge lane's marked blows (Battle.EnemyBlow, OwnMark): the hands read them.</summary>
         public Battle.EnemyBlow? Cleave, Lane;
         /// <summary>(B1) The windup's swing already shown to the eye; the mode last ticked, and the charge's tell standing.</summary>
-        public bool SlashShown, TellUp;
+        public bool TellUp;
         public string Last = "";
     }
 
@@ -1020,7 +1020,7 @@ public sealed partial class Prologue : ZoneRuntime
             if (ai.TellUp && ai.Mode is not ("chargeWind" or "charge")) { ai.TellUp = false; B.Events.Emit(new Ev.Hush { Speaker = "@said:" + ChargeTell }); }
             if (ai.Mode == "stun")
             {
-                B.Events.Emit(new Ev.Bark { X = e.X, Z = e.Z, Text = "Dazed" });
+                B.Events.Emit(new Ev.Floater { X = e.X, Z = e.Z, Up = 3.2, Text = "Dazed" });
                 if (ai.Last != "channel") B.Events.Emit(new Ev.Sound { Id = "ford.channel_broken", X = e.X, Z = e.Z });
             }
             ai.Last = ai.Mode;
@@ -1074,7 +1074,7 @@ public sealed partial class Prologue : ZoneRuntime
                 }
                 if (dist < 5.2 && ai.CleaveCd <= 0)
                 {
-                    ai.Mode = "windup"; ai.T = 0; e.AnimT = 0; ai.SlashShown = false; ai.DirX = dx / dist; ai.DirZ = dz / dist;
+                    ai.Mode = "windup"; ai.T = 0; e.AnimT = 0; ai.DirX = dx / dist; ai.DirZ = dz / dist;
                     ai.HitX = e.X + ai.DirX * 3; ai.HitZ = e.Z + ai.DirZ * 3;
                     B.Events.Emit(new Ev.Telegraph { Id = e.Id * 10 + 1, Shape = TelegraphShape.Cone, X = e.X, Z = e.Z, Radius = 6.4, Angle = Math.Atan2(ai.DirZ, ai.DirX), Arc = 120 * Math.PI / 180, Duration = 1.05, Hostile = true, Boss = true });
                     // (M3: the cleave is a marked blow the hands read; it lands on its own clock, as his did: a 120 degree frontal sweep, 6.4 m,
@@ -1116,13 +1116,10 @@ public sealed partial class Prologue : ZoneRuntime
                 return true;
             }
             case "windup":
-                // (B1 judge at 1:1: the swing drawn at the landing trailed the blade by 40-60 degrees and sat at the rim: it is
-                // shown 0.1 s ahead, one fan from his hands to the reach, crossed in 0.12 s as the blade comes down)
-                if (ai.T >= 0.95 && !ai.SlashShown)
-                {
-                    ai.SlashShown = true;
-                    B.Events.Emit(new Ev.Slash { X = e.X, Z = e.Z, Angle = Math.Atan2(ai.DirZ, ai.DirX), Arc = 120 * Math.PI / 180, Reach = 6.4, School = School.Physical, Side = -1, Inner = 1.0, Sweep = 0.12 });
-                }
+                // (B1 judge at 1:1: a swing drawn from the sim, at the landing or 0.1 s ahead, trailed the blade and sat at
+                // the rim as a crescent: the swing is his blade's own, swept by the view, WardenView's WardenSwing; the
+                // slash's whoosh stays, as the blade comes down)
+                if (ai.T >= 0.95 && ai.T - dt < 0.95) B.Events.Emit(new Ev.Sound { Id = "swing", X = e.X, Z = e.Z });
                 if (ai.T >= 1.05)
                 {
                     ai.Mode = "cleave"; ai.T = 0; e.AnimT = 0;

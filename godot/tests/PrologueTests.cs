@@ -676,28 +676,38 @@ public class PrologueTests
     }
 
     [Fact]
-    public void The_cleaves_swing_is_shown_a_tenth_early_as_one_fan_and_a_stun_says_dazed_once()
+    public void The_cleaves_swing_is_the_views_and_a_stun_says_dazed_once_over_him()
     {
         var (s, w, ai, at) = AtFord();
         at.GetField("CleaveCd")!.SetValue(ai, 0.0);
         at.GetField("Hold")!.SetValue(ai, 0.0);
         Stand(s, w.X + 4.5, w.Z);
-        double slashAt = -1; int slashes = 0;
-        for (int i = 0; i < 60 * 4 && slashes == 0; i++)
+        // the cleave's swing is drawn from his blade by the view (WardenSwing): the sim sends no slash of its own
+        int slashes = 0; bool cleaved = false;
+        for (int i = 0; i < 60 * 4 && !cleaved; i++)
         {
             Stand(s, w.X + 4.5, w.Z);
             s.Zone.Step(1 / 60.0); s.B.Tick(1 / 60.0, 0, 0);
-            foreach (var ev in s.B.Events.Drain()) if (ev is Ev.Slash { Inner: > 0 } sl) { slashes++; slashAt = (double)at.GetField("T")!.GetValue(ai)!; Assert.Equal(1.0, sl.Inner); Assert.Equal(0.12, sl.Sweep); Assert.Equal(-1, sl.Side); }
+            slashes += s.B.Events.Drain().Count(ev => ev is Ev.Slash);
             s.Zone.Frame(1 / 60.0);
+            cleaved = (string)at.GetField("Mode")!.GetValue(ai)! is "cleave";
         }
-        Assert.Equal(1, slashes);
-        Assert.InRange(slashAt, 0.94, 1.0);
-        Assert.Equal("windup", (string)at.GetField("Mode")!.GetValue(ai)!);
-        // a stun: "Dazed" once, however often he is staggered in it
+        Assert.True(cleaved);
+        Assert.Equal(0, slashes);
+        // a stun: "Dazed" once over him (a floater, not a caption), however often he is staggered in it
         s.B.Hooks.OnBossStagger!(w);
-        int dazed = 0;
-        for (int i = 0; i < 30; i++) { s.B.Hooks.OnBossStagger!(w); Stand(s, w.X + 4.5, w.Z); s.Zone.Step(1 / 60.0); s.B.Tick(1 / 60.0, 0, 0); dazed += s.B.Events.Drain().Count(ev => ev is Ev.Bark { Text: "Dazed" }); }
+        int dazed = 0, barks = 0;
+        for (int i = 0; i < 30; i++)
+        {
+            s.B.Hooks.OnBossStagger!(w); Stand(s, w.X + 4.5, w.Z); s.Zone.Step(1 / 60.0); s.B.Tick(1 / 60.0, 0, 0);
+            foreach (var ev in s.B.Events.Drain())
+            {
+                if (ev is Ev.Floater { Text: "Dazed" } fl) { dazed++; Assert.Equal(w.X, fl.X, 3); Assert.InRange(fl.Up, 3.0, 3.5); }
+                if (ev is Ev.Bark { Text: "Dazed" }) barks++;
+            }
+        }
         Assert.Equal(1, dazed);
+        Assert.Equal(0, barks);
     }
 
     [Fact]

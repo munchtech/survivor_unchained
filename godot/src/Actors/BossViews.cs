@@ -60,6 +60,9 @@ public partial class WardenView : Node3D, IBossView
         view = new PersonView(spec, new Held { Right = "watch_blade" }, 0.8 * Size)
         { WalkClip = "Zombie_Walk_Fwd_Loop", RunClip = "Zombie_Walk_Fwd_Loop", WalkStride = 1.0f };
         AddChild(view);
+        // (B1 judge r6) the cleave's swing is his blade's own: sampled on his skeleton's every pose
+        AddChild(swing);
+        view.Person.Skeleton.SkeletonUpdated += () => swing.Sample(view.HeldIn("handslot.r"), GlobalPosition);
         foreach (var mi in view.Person.Meshes)
             for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
                 if (mi.GetSurfaceOverrideMaterial(s) is StandardMaterial3D m)
@@ -246,6 +249,10 @@ public partial class WardenView : Node3D, IBossView
             if (want == 0 && lean < 1e-3) lean = 0;
             view.Rotation = new Vector3((float)lean, view.Rotation.Y, view.Rotation.Z);
         }
+        // The swing's sheet from the blade's fast frames (windup 0.80 s: the blade at its top, clip 0.33) through its
+        // follow-through to the ground (the cleave's first 0.12 s, clip ~0.64); the recovery's lift draws nothing.
+        swing.Live = e != null && (pose == "windup" && e.AnimT >= 0.80 || pose == "cleave" && e.AnimT <= 0.12);
+        swing.Step(dt);
         if (e != null && Args.Has("pace") && pose is "windup" or "cleave" or "charge-windup" or "charge" or "stunned") Trace(e, facing, dt);
         flash = Math.Max(flash - dt * 6, e?.Flash ?? 0);
         foreach (var m in skin) m.Emission = new Color(1f, 0.8f, 0.6f) * (float)(flash * 0.25);
@@ -258,6 +265,7 @@ public partial class WardenView : Node3D, IBossView
     }
 
     MeshInstance3D? bladeMesh;
+    readonly WardenSwing swing = new();
 
     /// <summary>--pace (B1): each frame of a strike or charge, the sim's clock against the clip's, the blade's world reach
     /// (lowest and highest point, farthest along his facing, metres from his feet) and where his body and face point
