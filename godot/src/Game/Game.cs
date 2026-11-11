@@ -713,9 +713,11 @@ public partial class Game : Node, IZoneHost
         scene.Held = a => heldOn == null && choiceUp == null && auto == null && !controls.Captured && controls.Held(a);
         scene.Pointer = PointerGround;
         // --press (ScriptedPress.cs): scripted skill/dash presses, held keys, aim and dash direction (pictures; under --auto idle).
-        if (Args.Get("press") is { Length: > 0 } pressSpec)
+        // (--aimsweep / --press8, A1 L22: TurnRun's own presses, on the fight's clock, as its stick is)
+        if ((SurvivorUnchained.Play.TurnRun.PressSpec() ?? Args.Get("press")) is { Length: > 0 } pressSpec)
         {
-            var sp = new ScriptedPress(pressSpec, () => Journey.Playtime, () => Battle is { } pb ? (pb.Player.X, pb.Player.Z) : null);
+            bool onFight = SurvivorUnchained.Play.TurnRun.PressSpec() != null;
+            var sp = new ScriptedPress(pressSpec, () => onFight ? Battle?.Time ?? 0 : Journey.Playtime,() => Battle is { } pb ? (pb.Player.X, pb.Player.Z) : null);
             var bMove = scene.Move; var bPressed = scene.Pressed; var bHeld = scene.Held; var bPointer = scene.Pointer;
             scene.Move = () => sp.Move() ?? bMove();
             scene.Pressed = x => sp.Take(x) || bPressed(x);

@@ -284,7 +284,17 @@ public partial class PlayerView : Node3D
             mv.AddNode("runSeek", new AnimationNodeTimeSeek(), new Vector2(400, 300));
             mv.AddNode("blendW", new AnimationNodeBlend2(), new Vector2(400, 0));
             mv.AddNode("blend", new AnimationNodeBlend2(), new Vector2(600, 100));
-            mv.ConnectNode("fast", 0, "run");
+            // (A1 L22) The off-travel clips (back, right, left on the run's cycle), blended in under the one stride seek: otSide = left|right,
+            // otMix = side|back, otRun = run|otMix. Weights 0 (and the clips the run itself) when her library lacks the three.
+            otL = new AnimationNodeAnimation { Animation = run }; otR = new AnimationNodeAnimation { Animation = run }; otB = new AnimationNodeAnimation { Animation = run };
+            mv.AddNode("otL", otL, new Vector2(0, 1000)); mv.AddNode("otR", otR, new Vector2(0, 1100)); mv.AddNode("otB", otB, new Vector2(0, 1200));
+            mv.AddNode("otSide", new AnimationNodeBlend2 { Sync = true }, new Vector2(200, 1050));
+            mv.AddNode("otMix", new AnimationNodeBlend2 { Sync = true }, new Vector2(400, 1100));
+            mv.AddNode("otRun", new AnimationNodeBlend2 { Sync = true }, new Vector2(600, 1000));
+            mv.ConnectNode("otSide", 0, "otL"); mv.ConnectNode("otSide", 1, "otR");
+            mv.ConnectNode("otMix", 0, "otSide"); mv.ConnectNode("otMix", 1, "otB");
+            mv.ConnectNode("otRun", 0, "run"); mv.ConnectNode("otRun", 1, "otMix");
+            mv.ConnectNode("fast", 0, "otRun");
             mv.ConnectNode("fast", 1, "sprint");
             mv.ConnectNode("walkSeek", 0, "walk");
             mv.ConnectNode("runSeek", 0, "fast");
@@ -314,7 +324,15 @@ public partial class PlayerView : Node3D
                 for (int b = 0; b < person.Skeleton.GetBoneCount(); b++)
                     if (ArmHold.IsArmBone(person.Skeleton.GetBoneName(b))) arms.SetFilterPath($"Armature/Skeleton3D:{person.Skeleton.GetBoneName(b)}", true);
                 mv.AddNode("arms", arms, new Vector2(800, 300));
-                mv.ConnectNode("aFast", 0, "aRun");
+                aOtL = new AnimationNodeAnimation { Animation = run }; aOtR = new AnimationNodeAnimation { Animation = run }; aOtB = new AnimationNodeAnimation { Animation = run };
+                mv.AddNode("aOtL", aOtL, new Vector2(0, 1300)); mv.AddNode("aOtR", aOtR, new Vector2(0, 1400)); mv.AddNode("aOtB", aOtB, new Vector2(0, 1500));
+                mv.AddNode("aOtSide", new AnimationNodeBlend2 { Sync = true }, new Vector2(200, 1350));
+                mv.AddNode("aOtMix", new AnimationNodeBlend2 { Sync = true }, new Vector2(400, 1400));
+                mv.AddNode("aOtRun", new AnimationNodeBlend2 { Sync = true }, new Vector2(600, 1300));
+                mv.ConnectNode("aOtSide", 0, "aOtL"); mv.ConnectNode("aOtSide", 1, "aOtR");
+                mv.ConnectNode("aOtMix", 0, "aOtSide"); mv.ConnectNode("aOtMix", 1, "aOtB");
+                mv.ConnectNode("aOtRun", 0, "aRun"); mv.ConnectNode("aOtRun", 1, "aOtMix");
+                mv.ConnectNode("aFast", 0, "aOtRun");
                 mv.ConnectNode("aFast", 1, "aSprint");
                 mv.ConnectNode("aWalkSeek", 0, "aWalk");
                 mv.ConnectNode("aRunSeek", 0, "aFast");
@@ -328,6 +346,7 @@ public partial class PlayerView : Node3D
             }
             else mv.ConnectNode("output", 0, "blend");
             moveNode = mv;
+            OtClips(run);
             // (A1 lead 19) The directional walks (walk_<calling>_back/_left/_right, her armed walk's own): one 2D node, her velocity in her
             // facing's frame on it. Any one missing: today's graph, unchanged. Points sit at the speeds the graph above plays by (Spd).
             var wn = own.Walk(person.Calling, person.Kind, false);
@@ -920,6 +939,7 @@ public partial class PlayerView : Node3D
         var run = People.Clip(person, "Jog_Fwd_Loop", sheathed);
         runNode.Animation = run;
         runSpeed = run.StartsWith(own.Prefix) ? Spd(run[own.Prefix.Length..]) * person.Root.Scale.X : 5.3f;
+        OtClips(run);
         GaitClips(run, sheathed);
         if (sprintNode == null) return;
         // The sprint follows: her town sprint if she has one, else the town run itself; the armed sprint on the draw.
@@ -927,6 +947,25 @@ public partial class PlayerView : Node3D
         if (own.Has(sprint)) { sprintNode.Animation = own.Prefix + sprint; sprintSpeed = Spd(sprint) * person.Root.Scale.X; }
         else { sprintNode.Animation = run; sprintSpeed = runSpeed; }
         ArmClips();
+    }
+
+    // (A1 L22) The off-travel view switch: nodes, state, eased weights (forward, right, back, left), her local travel angle.
+    AnimationNodeAnimation? otL, otR, otB, aOtL, aOtR, aOtB;
+    bool otAvail, otOn;
+    float otWf = 1, otWr, otWb, otWl, otAng, otAim, otSimSp;
+    // --ot-grace S: the switch holds S seconds past aimHold's end (the blow's 0.45 s lapses between swings); 0 = the brief's design.
+    static readonly float OtGrace = (float)SurvivorUnchained.Args.Num("ot-grace", 0);
+    static readonly bool TurnL21 = SurvivorUnchained.Args.Has("turn-l21");
+
+    /// <summary>The three off-travel clips of this run clip (run_warden_back/_right/_left), when her library has all three.</summary>
+    void OtClips(string run)
+    {
+        otAvail = !TurnL21 && run.StartsWith(own.Prefix) && HasHer(run[own.Prefix.Length..] + "_back") && HasHer(run[own.Prefix.Length..] + "_right") && HasHer(run[own.Prefix.Length..] + "_left");
+        string c(string s) => otAvail ? run + s : run;
+        if (otL == null || otR == null || otB == null) return;
+        otL.Animation = c("_left"); otR.Animation = c("_right"); otB.Animation = c("_back");
+        if (aOtL != null && aOtR != null && aOtB != null) { aOtL.Animation = otL.Animation; aOtR.Animation = otR.Animation; aOtB.Animation = otB.Animation; }
+        if (!otAvail) otOn = false;
     }
 
     /// <summary>The arms' copy of the move graph plays the same clips.</summary>
@@ -1038,8 +1077,14 @@ public partial class PlayerView : Node3D
             {
                 float travel = velX * velX + velZ * velZ > 0.16f ? Mathf.Atan2(velX, velZ) : Rotation.Y;
                 float dt2 = Mathf.RadToDeg(Mathf.Wrap(face - travel, -Mathf.Pi, Mathf.Pi));
-                if (Mathf.Abs(dt2) > 100) hipGoal = travel + Mathf.DegToRad(Mathf.Sign(dt2) * (Mathf.Abs(dt2) - 75));
-                aim = Mathf.Clamp(dt2, -75, 75);
+                // (A1 L22) Off travel (the view switch on, or this blow puts her past 60 deg): the legs play the off-travel clips under
+                // her whole body turned to the blow, no waist twist and no hipGoal (--turn-l21: lead 21's).
+                if (otAvail && (otOn || (Mathf.Abs(dt2) > 60 && speed > 2f))) aim = 0;
+                else
+                {
+                    if (Mathf.Abs(dt2) > 100) hipGoal = travel + Mathf.DegToRad(Mathf.Sign(dt2) * (Mathf.Abs(dt2) - 75));
+                    aim = Mathf.Clamp(dt2, -75, 75);
+                }
             }
         }
         else if (mine && !AimLegs && !TurnSnap)
@@ -1184,6 +1229,20 @@ public partial class PlayerView : Node3D
         // keeps her legs' line and turns her back to the blow instead).
         aimHold -= (float)dt;
         aimFacingNow = AimLegs && aimHold > 0 && p.Leap == null && p.DashT <= 0;
+        // (A1 L22) The off-travel switch: on past 60 deg between the blow's facing and her travel, off below 45, only held aim, running.
+        if (mine)
+        {
+            bool was = otOn;
+            if (otAvail && aimHold > -OtGrace && sp > (otOn ? 1.2f : 2f) && p.Leap == null && p.DashT <= 0)
+            {
+                float angOff = Mathf.RadToDeg(Mathf.Abs(Mathf.Wrap(aimFace - Mathf.Atan2((float)p.Vx, (float)p.Vz), -Mathf.Pi, Mathf.Pi)));
+                if (!otOn && angOff > 60) otOn = true; else if (otOn && angOff < 45) otOn = false;
+                otAim = angOff;
+            }
+            else otOn = false;
+            if (otOn != was) GD.Print(System.FormattableString.Invariant($"OFFTRAVEL frame {Engine.GetProcessFrames()} {(otOn ? "on" : "off")} ang {otAim:0.0}"));
+            otSimSp = sp;
+        }
         if (time < flareFaceUntil)
         {
             // (a Flare's clip holds her on its line until ClipFree; she turns onto it over the press's crossfade)
@@ -1197,6 +1256,7 @@ public partial class PlayerView : Node3D
         // turning": facing chased velocity, 217-267 ms to within 10 degrees and on a 180 she ran backwards for a
         // moment). Snapped as Hades and Diablo IV do: 67 ms to within 10 degrees on a 90, 100 ms on a 180.
         // --turn-old: the old chase (before/after pictures).
+        else if (otOn) TurnTo(aimFace, (float)dt, 1350);
         else if (AimLegs && aimHold > 0 && p.Leap == null && p.DashT <= 0) Rotation = new Vector3(0, aimFace, 0);
         // (A1 L20) A blow struck standing or slow: she turns whole to it on the eased turn and stays on it while it lasts,
         // unless she is off at a run (then the run's facing takes her back, as a blow struck running does not turn her whole).
@@ -1671,6 +1731,38 @@ public partial class PlayerView : Node3D
         // played at the rate the blend of their speeds asks.
         float fast = sprintSpeed > runSpeed ? Mathf.SmoothStep(runSpeed * 1.1f, sprintSpeed * 0.95f, spd) : 0;
         if (!move2D) tree.Set("parameters/move/fast/blend_amount", fast);
+        if (!move2D)
+        {
+            // (A1 L22) The legs' weights by her travel in her own frame (0 forward, 90 right, 180 back, 270 left, linear between
+            // neighbors), eased over ~3 frames; the forward run when the switch is off.
+            float tf = 1, tr = 0, tb = 0, tl = 0;
+            if (otOn)
+            {
+                var lv2 = SurvivorUnchained.Play.Move2D.Local(velX, velZ, Rotation.Y);
+                float a = Mathf.PosMod(Mathf.RadToDeg(Mathf.Atan2(lv2.X, lv2.Y)), 360f);
+                otAng = a;
+                if (a < 90) { tr = a / 90; tf = 1 - tr; }
+                else if (a < 180) { tb = (a - 90) / 90; tr = 1 - tb; tf = 0; }
+                else if (a < 270) { tl = (a - 180) / 90; tb = 1 - tl; tf = 0; }
+                else { tf = (a - 270) / 90; tl = 1 - tf; }
+            }
+            float ke = 1 - Mathf.Exp(-25 * dt);
+            otWf = Mathf.Lerp(otWf, tf, ke); otWr = Mathf.Lerp(otWr, tr, ke); otWb = Mathf.Lerp(otWb, tb, ke); otWl = Mathf.Lerp(otWl, tl, ke);
+            float sum = otWf + otWr + otWb + otWl;
+            otWf /= sum; otWr /= sum; otWb /= sum; otWl /= sum;
+            if (!otOn && otWf > 0.999f) { otWf = 1; otWr = otWb = otWl = 0; }
+            float side = otWr + otWl, off = 1 - otWf;
+            var tsp = "parameters/move/";
+            tree.Set(tsp + "otRun/blend_amount", off);
+            tree.Set(tsp + "otMix/blend_amount", off > 1e-4f ? otWb / off : 0f);
+            tree.Set(tsp + "otSide/blend_amount", side > 1e-4f ? otWr / side : 0f);
+            if (layered)
+            {
+                tree.Set(tsp + "aOtRun/blend_amount", off);
+                tree.Set(tsp + "aOtMix/blend_amount", off > 1e-4f ? otWb / off : 0f);
+                tree.Set(tsp + "aOtSide/blend_amount", side > 1e-4f ? otWr / side : 0f);
+            }
+        }
         float natural = Mathf.Lerp(runSpeed, sprintSpeed, fast);
         // One stride phase for both gaits; a walk starts on the left heel after she has stood a moment.
         standT = spd < 0.05f ? standT + dt : 0;
@@ -1679,7 +1771,7 @@ public partial class PlayerView : Node3D
         // (A1 L21) Frozen through the 180's pivot (the planted foot holds); with her hips turned onto a blow, at her travel's
         // part along her facing (backward past 90 deg off it: a backpedal), so the planted foot keeps its ground.
         float strideK = 1;
-        if (!TurnL20 && hipGoal != null && aimHold > 0 && velX * velX + velZ * velZ > 0.16f)
+        if (!TurnL20 && hipGoal != null && aimHold > 0 && !otOn && velX * velX + velZ * velZ > 0.16f)
             strideK = Mathf.Cos(Mathf.Wrap(Rotation.Y - Mathf.Atan2(velX, velZ), -Mathf.Pi, Mathf.Pi));
         // (the plant: eased to the planted foot's mid-stance in two frames, held there while she yaws, then on from it)
         if (!TurnL20 && !TurnNoPlant && plantStage == 2 && pivotN < 0) plantStage = 3;
@@ -1798,7 +1890,7 @@ public partial class PlayerView : Node3D
         accel = Mathf.Lerp(accel, acc, 1 - Mathf.Exp(-12 * dt));
         carriage.Tilt = Mathf.Lerp(carriage.Tilt, Mathf.Clamp(accel * 0.35f, -9, 7), 1 - Mathf.Exp(-10 * dt));
         // Her back to the blow while it lasts, then home.
-        float aimTo = aimHold > 0 ? aim : 0;
+        float aimTo = aimHold > 0 && !otOn ? aim : 0;
         if (TurnL20) carriage.Aim = Mathf.Lerp(carriage.Aim, aimTo, 1 - Mathf.Exp((aimHold > 0 ? -30 : -8) * dt));
         else
         {
@@ -2115,6 +2207,7 @@ public partial class PlayerView : Node3D
         if (cam != null && logPvSet) { st = cam.UnprojectPosition(logPv); sk = cam.UnprojectPosition(logPv2); }
         var dpv = Drawn("pelvis");
         logPv2 = logPv; logPv = dpv; logPvSet = true;
+        GD.Print(System.FormattableString.Invariant($"OT {t:0.0000} frame {Engine.GetProcessFrames()} on {(otOn ? 1 : 0)} wf {otWf:0.000} wr {otWr:0.000} wb {otWb:0.000} wl {otWl:0.000} ang {otAng:0.0} sim {otSimSp:0.00} fast {(float)tree.Get("parameters/move/fast/blend_amount"):0.000} hold {aimHold:0.00}"));
         GD.Print(System.FormattableString.Invariant($"CARRY {t:0.0000} fl {V(fl)} fr {V(fr)} hl {V(hl)} hr {V(hr)} pv {V(pv)} chest {Yaw("upperarm_l", "upperarm_r"):0.0} pelv {Yaw("thigh_l", "thigh_r"):0.0} face {Mathf.RadToDeg(Rotation.Y):0.0} scr {sc.X:0.0} {sc.Y:0.0} aimset {aim:0.0} aimc {carriage?.Aim ?? 0:0.0} hold {aimHold:0.00} stride {stride:0.000} up {(up ? upperClip : "-")} full {(fu ? fullClip : "-")} bank {carriage?.Bank ?? 0:0.0} tilt {carriage?.Tilt ?? 0:0.0} upos {(float)tree.Get("parameters/upper/current_position"):0.000} piv {pivotN} off {plantOff.Length():0.000} sim {V(Position - plantOff)} lfl {V(inv * fl)} lfr {V(inv * fr)} lpv {V(inv * pv)} dpv {V(dpv)} dfl {V(Drawn("foot_l"))} dfr {V(Drawn("foot_r"))} stage {plantStage} scrt {st.X:0.0} {st.Y:0.0} scrk {sk.X:0.0} {sk.Y:0.0}"));
     }
     Vector3 logPv, logPv2; bool logPvSet;

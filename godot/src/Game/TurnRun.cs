@@ -22,6 +22,10 @@ public static class TurnRun
             foreach (double h8 in new double[] { 0, 180, 45, 225, 90, 270, 135, 315 }) { r.Add((t8, h8)); r.Add((t8 + 1.6, double.NaN)); t8 += 2.2; }
             return r.ToArray();
         }
+        // --aimsweep T0 / --press8 T0 (A1 L22): she runs straight (+X, then -X back for the second side) with her aim held off her travel
+        // (the off-travel view switch): Press specs below (repeated slot-3 presses: only a blow sets aimHold, 0.45 s each).
+        if (Args.Has("aimsweep")) return new (double, double)[] { (0, 90), (15.5, double.NaN), (16.5, 270), (31.5, double.NaN) };
+        if (Args.Has("press8")) return new (double, double)[] { (0, 90), (5.5, double.NaN), (6.5, 270), (12, double.NaN) };
         var s = new System.Collections.Generic.List<(double, double)> { (0, 90) };
         double t = 1;
         for (int i = 1; i <= 8; i++) { s.Add((t, 90 + 45 * i)); t += 0.25; }
@@ -34,7 +38,46 @@ public static class TurnRun
     }
     /// <summary>Pictures at these script times: across the loops, the 180 and its settle.</summary>
     static readonly double[] Beats = { 1.25, 1.75, 2.25, 2.75, 3.25, 3.75, 4.25, 4.75, 5.9, 6.05, 6.12, 6.2, 6.3, 6.45, 6.7, 7.1 };
-    public static readonly double Start = Args.Has("fig8") ? Args.Num("fig8", 3) : Args.Has("run8") ? Args.Num("run8", 3) : -1;
+    public static readonly double Start = Args.Has("fig8") ? Args.Num("fig8", 3) : Args.Has("run8") ? Args.Num("run8", 3)
+        : Args.Has("aimsweep") ? Args.Num("aimsweep", 2) : Args.Has("press8") ? Args.Num("press8", 2) : -1;
+
+    /// <summary>The aim sweep's off-travel angle (deg) at sweep time u (0..13 s): 0 to 60 and 2 s held in the hysteresis band (60 +/- 12.5,
+    /// 39 deg/s at most), 60 to 180 and back to 60 (3 s each, 40 deg/s), the band again, then 60 to 0 (1.5 s).</summary>
+    public static double SweepAngle(double u)
+    {
+        if (u < 1.5) return 40 * u;
+        if (u < 3.5) return 60 + 12.5 * Math.Sin(Math.PI * (u - 1.5));
+        if (u < 6.5) return 60 + 40 * (u - 3.5);
+        if (u < 9.5) return 180 - 40 * (u - 6.5);
+        if (u < 11.5) return 60 + 12.5 * Math.Sin(Math.PI * (u - 9.5));
+        return Math.Max(0, 60 - 40 * (u - 11.5));
+    }
+
+    /// <summary>The scripted presses of --aimsweep / --press8 (a ScriptedPress spec on the fight's clock), or null.</summary>
+    public static string? PressSpec()
+    {
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        string Spec(int slot, double at, double travelHead, double off)
+        {
+            double h = (travelHead + off) * Math.PI / 180;
+            return string.Format(inv, "{0}:{1:0.000}:{2:0.000},{3:0.000}", slot, Start + at, 14 * Math.Sin(h), 14 * Math.Cos(h));
+        }
+        var l = new System.Collections.Generic.List<string>();
+        if (Args.Has("aimsweep"))
+        {
+            // side A: running +X (heading 90), the aim turned to +off; side B: running -X (270), the aim at -off (the mirror)
+            foreach (var (t0, head, sg) in new[] { (1.0, 90.0, 1.0), (17.0, 270.0, -1.0) })
+                for (double u = 0; u < 13; u += 0.35) l.Add(Spec(3, t0 + u, head, sg * SweepAngle(u)));
+        }
+        else if (Args.Has("press8"))
+        {
+            // 2 each at 180 (behind), 90 and 270 off travel, from slots 1 and 3, >= 1.2 s apart
+            double[] at = { 1.2, 2.4, 3.6, 4.8, 7.7, 8.9 }; double[] off = { 180, 180, 90, 90, 270, 270 };
+            for (int i = 0; i < 6; i++) l.Add(Spec(i % 2 == 0 ? 1 : 3, at[i], i < 4 ? 90 : 270, off[i]));
+        }
+        else return null;
+        return string.Join(';', l);
+    }
     static int beat;
     static double t0 = -1;
 
