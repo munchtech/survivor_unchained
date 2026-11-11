@@ -16,7 +16,7 @@ public partial class Blades : MultiMeshInstance3D
     struct Swing
     {
         public Transform3D At;
-        public float Span, Sweep, Drain, Age, Depth, Seed;
+        public float Span, Sweep, Drain, Age, Depth, Seed, CutTotal, CutLeft;
         public Color Hue;
     }
 
@@ -61,24 +61,48 @@ public partial class Blades : MultiMeshInstance3D
         // world's axes, so a mirrored swing was flipped across the world's X and drawn on the far side of
         // her from its hits whenever it faced along X (vfx9 aa: "a gold crescent 2 m to her left").
         var basis = new Basis(Vector3.Up, facing) * Basis.FromScale(new Vector3(mirror ? -reach : reach, reach, reach));
-        live.Add(new Swing
+        var sw = new Swing
         {
             At = new Transform3D(basis, centre), Span = span, Sweep = Mathf.Max(0.02f, sweep), Drain = Mathf.Max(0.02f, drain),
             Age = -delay, Depth = Mathf.Clamp(depth, 0.05f, 0.62f), Hue = hue, Seed = 1 + rng.Next(900),
-        });
+        };
+        if (cutWindow > 0) Fade(ref sw, cutWithin);
+        live.Add(sw);
     }
 
     /// <summary>Every swing in flight gone (the Long Cut's press: the Flare has the frame).</summary>
     public void Clear() => live.Clear();
 
+    float cutWindow, cutWithin;
+
+    /// <summary>Every live swing fades to nothing within `within` seconds from now (a mass kill: the nova must not
+    /// out-shout the bodies). Swings added in the next two frames fade the same way. Sweep and drain shapes are
+    /// untouched; only a fade multiplier on the colour and its life fade.</summary>
+    public int Cut(float within)
+    {
+        within = Mathf.Max(0.01f, within);
+        cutWindow = 2 / 60f; cutWithin = within;
+        for (int i = 0; i < live.Count; i++) { var s = live[i]; Fade(ref s, within); live[i] = s; }
+        return live.Count;
+    }
+
+    static void Fade(ref Swing s, float within)
+    {
+        if (s.CutTotal > 0 && s.CutLeft <= within) return;
+        s.CutTotal = within; s.CutLeft = within;
+    }
+
     public void Step(float dt)
     {
         int n = 0;
+        if (cutWindow > 0) cutWindow -= dt;
         for (int i = live.Count - 1; i >= 0; i--)
         {
             var s = live[i];
             s.Age += dt;
-            if (s.Age >= s.Sweep + s.Drain) { live.RemoveAt(i); continue; }
+            float fade = 1;
+            if (s.CutTotal > 0) { s.CutLeft -= dt; fade = Mathf.Max(0, s.CutLeft / s.CutTotal); }
+            if (s.Age >= s.Sweep + s.Drain || (s.CutTotal > 0 && s.CutLeft <= 0)) { live.RemoveAt(i); continue; }
             live[i] = s;
             if (s.Age < 0) continue;
             float k = Mathf.Min(1, s.Age / s.Sweep);
@@ -92,7 +116,7 @@ public partial class Blades : MultiMeshInstance3D
                 buffer[q] = ob.X.X; buffer[q + 1] = ob.Y.X; buffer[q + 2] = ob.Z.X; buffer[q + 3] = s.At.Origin.X;
                 buffer[q + 4] = ob.X.Y; buffer[q + 5] = ob.Y.Y; buffer[q + 6] = ob.Z.Y; buffer[q + 7] = s.At.Origin.Y;
                 buffer[q + 8] = ob.X.Z; buffer[q + 9] = ob.Y.Z; buffer[q + 10] = ob.Z.Z; buffer[q + 11] = s.At.Origin.Z;
-                buffer[q + 12] = s.Hue.R; buffer[q + 13] = s.Hue.G; buffer[q + 14] = s.Hue.B; buffer[q + 15] = s.Depth;
+                buffer[q + 12] = s.Hue.R * fade; buffer[q + 13] = s.Hue.G * fade; buffer[q + 14] = s.Hue.B * fade; buffer[q + 15] = s.Depth;
                 buffer[q + 16] = hd; buffer[q + 17] = er; buffer[q + 18] = s.Span; buffer[q + 19] = s.Seed;
                 continue;
             }
@@ -106,13 +130,13 @@ public partial class Blades : MultiMeshInstance3D
                 back = Mathf.Lerp(1 - Tail, 1, 1 - (1 - d) * (1 - d));
             }
             float life = s.Age / (s.Sweep + s.Drain);
-            float left = 1 - Mathf.SmoothStep(0.45f, 1, life);
+            float left = (1 - Mathf.SmoothStep(0.45f, 1, life)) * fade;
             int o = n++ * Stride;
             var b = s.At.Basis;
             buffer[o] = b.X.X; buffer[o + 1] = b.Y.X; buffer[o + 2] = b.Z.X; buffer[o + 3] = s.At.Origin.X;
             buffer[o + 4] = b.X.Y; buffer[o + 5] = b.Y.Y; buffer[o + 6] = b.Z.Y; buffer[o + 7] = s.At.Origin.Y;
             buffer[o + 8] = b.X.Z; buffer[o + 9] = b.Y.Z; buffer[o + 10] = b.Z.Z; buffer[o + 11] = s.At.Origin.Z;
-            buffer[o + 12] = s.Hue.R; buffer[o + 13] = s.Hue.G; buffer[o + 14] = s.Hue.B; buffer[o + 15] = s.Depth;
+            buffer[o + 12] = s.Hue.R * fade; buffer[o + 13] = s.Hue.G * fade; buffer[o + 14] = s.Hue.B * fade; buffer[o + 15] = s.Depth;
             buffer[o + 16] = head; buffer[o + 17] = back; buffer[o + 18] = s.Span; buffer[o + 19] = s.Seed + Mathf.Clamp(left, 0.001f, 0.999f);
         }
         if (n > 0) Multimesh.Buffer = buffer;

@@ -87,9 +87,12 @@ public sealed class Settings
 
     /// <summary>How much blood and how much of a body comes apart (1, 0.35, 0).</summary>
     public float GoreLevel => Gore switch { "reduced" => 0.35f, "off" => 0, _ => 1 };
-    /// <summary>How much the camera shakes (the heavy blow's pause goes with it when off).</summary>
+    /// <summary>How much the camera shakes (the menu's "Screen shake": shake, jolts, kicks, the Flare's push).</summary>
     public float ShakeLevel => Motion switch { "reduced" => 0.4f, "off" => 0, _ => 1 };
-    public bool Hitstop => Motion != "off";
+    /// <summary>The heavy blow's pause, the perfect dodge's slow and the Flare's held time stay at every setting (F1 lead 18,
+    /// 10 Nov: the owner's run at "off" had no pause at all and nothing felt satisfying; a stop is time, not camera motion,
+    /// and the menu's row says "Screen shake"). Off keeps the flash, the sound, the gore and the death show too.</summary>
+    public bool Hitstop => true;
     public float Volume => Sound switch { "quiet" => 0.4f, "off" => 0, _ => 1 };
 
     public static string Next(string now, params string[] among) => among[(Array.IndexOf(among, now) + 1) % among.Length];

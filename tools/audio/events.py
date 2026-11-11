@@ -14,8 +14,9 @@ def L(take, gain, pitch=None, **kw):
     d.update(kw)
     return d
 
-def E(*layers, bus="sfx", near=None, gate=None, synth=None, duck=None):
+def E(*layers, bus="sfx", near=None, gate=None, synth=None, duck=None, lead=False):
     d = {"bus": bus}
+    if lead: d["lead"] = True
     if near is not None: d["near"] = near
     if gate: d["gate"] = gate
     if synth: d["synth"] = synth
@@ -70,7 +71,7 @@ EV = {
     "flare.the_long_cut.inhale": E(L("flare_intake_warden", 1.6, stereo=True), bus="flare", near=1),
     "flare.the_long_cut.boom": E(L("flare_boom_the_long_cut", 1.7, stereo=True), bus="flare", near=1, duck={"sfx": 0.15, "seconds": 1.4}),
     "flare.bell_of_the_morning.inhale": E(L("flare_intake_warden", 1.6, stereo=True), bus="flare", near=1),
-    "flare.bell_of_the_morning.boom": E(L("flare_boom_bell_of_the_morning", 3.2, stereo=True), bus="flare", near=1, duck={"sfx": 0.15, "seconds": 1.4}),
+    "flare.bell_of_the_morning.boom": E(L("flare_boom_bell_of_the_morning", 3.9, stereo=True), bus="flare", near=1, duck={"sfx": 0.15, "seconds": 1.4}),
     "flare.burns_twice.inhale": E(L("flare_intake_arcanist", 1.10, stereo=True), bus="flare", near=1),
     "flare.burns_twice.boom": E(L("flare_boom_burns_twice", 1.23, stereo=True), bus="flare", near=1, duck={"sfx": 0.15, "seconds": 1.4}),
     "flare.the_roads_toll.inhale": E(L("flare_intake_stalker", 1.62, stereo=True), bus="flare", near=1),
@@ -119,6 +120,13 @@ EV = {
     "telegraph.charge.land.boss":   E(L("tg_charge_land", 0.65, [0.8, 0.85]), L("gore_thump", 0.4, [0.7, 0.8]), near=0.8),
     "telegraph.pull.windup.boss":   E(L("tg_pull_windup", 0.60, [0.8, 0.85]), near=0.8),
     "telegraph.pull.land.boss":     E(L("tg_pull_land", 0.65, [0.8, 0.85]), L("gore_thump", 0.4, [0.7, 0.8]), near=0.8),
+    # the drop ladder (Sfx.Drop / Sfx.Toll): tiers 2-4 one instrument each, the toll its own, the storied fire laid over it.
+    # Levels: rare about -20 LUFS in the hits' context (hits play near -25), epic/set about -18, the toll the loudest bar a boss's fall.
+    "drop.2":           E(L("drop_rare", 0.43, [0.98, 1.03]), gate=[1, 500]),
+    "drop.3":           E(L("drop_epic", 0.31, [0.98, 1.02], stereo=True), gate=[1, 500]),
+    "drop.4":           E(L("drop_set", 0.62, [0.98, 1.02], stereo=True), L("drop_set", 0.5, [1.49, 1.51], stereo=True, delay=0.16), gate=[1, 500]),  # the pair struck one after the other, up a fifth: its rhythm tells it from the rare's one chime
+    "toll":             E(L("drop_legendary", 0.90, stereo=True), bus="ui", near=1, lead=True),
+    "toll.storied":     E(L("drop_legendary", 0.90, stereo=True), L("drop_storied_fire", 0.50, stereo=True, delay=0.3), bus="ui", near=1, lead=True),
     # zone beds (Ambience.SetZone: bed.<zone>.<day|night>, then bed.<zone>; the first layer's take loops, at its gain)
     "bed.verge.day":       E(L("bed_verge_day", 0.45, stereo=True), bus="ambience"),
     "bed.lowford":         E(L("bed_lowford_night", 0.45, stereo=True), bus="ambience"),

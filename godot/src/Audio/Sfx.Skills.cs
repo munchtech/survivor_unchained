@@ -218,9 +218,10 @@ public static partial class Sfx
     }
 
     /// <summary>A little of the skill itself on a hit (Ev.Hit's art), over the school's.</summary>
-    public static void HitOf(string? art, Where w)
+    public static void HitOf(string? art, Where w, bool lead = false)
     {
         if (A is not { } a || art == null) return;
+        using var _lead = Synth.LeadFor(lead);
         if (Bank($"art.{art}.hit", w)) return;
         double p = w.Pan, g = 0.5 + 0.5 * w.Near;
         switch (art)

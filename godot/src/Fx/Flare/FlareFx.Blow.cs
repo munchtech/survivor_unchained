@@ -104,7 +104,7 @@ public partial class FlareFx
         // (r3, judge r2 fix 5: a band launched from a shock ring throws dust outward from it on the hitstop frame)
         var brr = Br;
         if (brr.Start > 0 && brr.RingPuffs > 0 && bandOn) DustRing(o, (float)brr.Start, brr.RingPuffs, (float)(brr.Reach * brr.Ease / Math.Max(brr.Time, 1e-3)) * 0.4f);
-        Cam?.JoltPx(axis, (float)FlareFamily.Beat.KickPx * (Motion >= 1 ? 1 : Motion > 0 ? 0.5f : 0));
+        Cam?.JoltPx(axis, (float)FlareFamily.Beat.KickPx * (Shake >= 1 ? 1 : Shake > 0 ? 0.5f : 0));
         ResolvePending();
         if (Perf.On) GD.Print($"flare perf blow t {Perf.Now:0.0000}");
         if (Args.Has("clip") || Args.Has("shot"))

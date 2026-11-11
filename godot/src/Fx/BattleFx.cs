@@ -325,7 +325,80 @@ public partial class BattleFx : Node3D
 
     /* --------------------------------------------------------- primitives -- */
 
-    public void Flash(Vector3 at, Color color, float peak, float life, float range = 9)
+    /// <summary>--light-trace (dev): one line per hit light lit (Flash, the sweep's pool), with its caller, place,
+    /// distance to her, peak and range and the drawn frame, to find what lit a frame in a clip.</summary>
+    static readonly bool LightTrace = Args.Has("light-trace");
+
+    /// <summary>F1 lead 27: the drawn frame of her last step that felled 4+ (Ev.Kill Mass); the kill window counts from it.</summary>
+    public static long MassKillFrame = -100000;
+    /// <summary>The dim on what is not the kill this frame (FeelRules.KillDim): 1 outside the kill window.</summary>
+    public static float KillDimNow => FeelRules.KillDim(Engine.GetFramesDrawn() - MassKillFrame);
+    /// <summary>A tell's fill and edge under the kill dim (FeelRules.TellFill/TellEdge, ruling 10:06): a lane never
+    /// dims, nor any tell in its last 0.3 s; a wall standing past its landing counts as far from landing.</summary>
+    static float TellSecsToLand(Mark m) => m.Held && m.T >= HeldAt ? float.MaxValue : (1 - m.T) * m.Life;
+    static bool TellLane(Mark m) => m.Shape == 0 || m.Length > 0;
+    static float TellFillNow(Mark m) => FeelRules.TellFill(KillDimNow, TellSecsToLand(m), TellLane(m));
+    static float TellEdgeNow(Mark m) => FeelRules.TellEdge(KillDimNow, TellSecsToLand(m), TellLane(m));
+
+    void TraceLight(string what, Vector3 at, float peak, float range, int line)
+    {
+        float near = new Vector2(at.X - PlayerPos.X, at.Z - PlayerPos.Z).Length();
+        GD.Print($"[light-trace] {what}:{line} at {at.X:F1},{at.Y:F1},{at.Z:F1} her {near:F2} m peak {peak:F2} range {range:F1} frame={Engine.GetFramesDrawn()}");
+    }
+
+    /* ------------------------------------------------------ hit lights -- */
+
+    /// <summary>What a hit light lights (F1 judge r1, "the hit flash whites her out at 409, 5215, 5542"): everything but
+    /// her (people's layer 2, where she fights, and her own close-view layers), so the struck crowd (CrowdLayer), the
+    /// bosses (CastLayer) and the ground take the blow's light and she keeps her own values over it.</summary>
+    public const uint HitLightMask = 0xFFFFFu & ~2u & ~PlayerView.HerLayers;
+    /// <summary>How far from her (flat, metres) a hit light's footprint must end: her body's reach on the ground (~0.35 m)
+    /// and the soft edge of an omni's falloff. A hit light never lights the ground under her figure.</summary>
+    public const float HerClear = 0.9f;
+    /// <summary>The ground her standing figure hides behind her at the play camera (metres, away from the lens): her
+    /// 1.7 m over the camera's ~64 degree look down. A hit light behind her keeps this much more clear, so the lit ground
+    /// never sits behind her head and shoulders on screen (judge r1: 5215, the bell's wolves up-screen of her).</summary>
+    public const float HerShadowOnScreen = 0.85f;
+    /// <summary>The least reach a hit light keeps (metres): smaller and the blow's light is a dot.</summary>
+    public const float HitMinRange = 0.8f;
+
+    /// <summary>The hit-light rule (HitLight, the sweep's pool, a champion's fall): its light at the struck body, its
+    /// footprint ending HerClear short of her. A body struck closer than HerClear + HitMinRange has its light slid out
+    /// along the blow (her to it) to that distance, so the light keeps HitMinRange of reach and the punch stays on the
+    /// victim. Returns the light's place and its range.
+    /// `back`: the flat way away from the camera (unit; zero for none): a light that way keeps HerShadowOnScreen more.</summary>
+    public static (Vector3 At, float Range) HitLightFit(Vector3 at, Vector3 her, float range, Vector2 back = default)
+    {
+        var flat = new Vector2(at.X - her.X, at.Z - her.Z);
+        float near = flat.Length();
+        var dir = near > 0.05f ? flat / near : new Vector2(1, 0);
+        float clear = HerClear + HerShadowOnScreen * Mathf.Max(0, dir.Dot(back)), least = clear + HitMinRange;
+        if (near < least)
+        {
+            at = new Vector3(her.X + dir.X * least, at.Y, her.Z + dir.Y * least);
+            near = least;
+        }
+        return (at, Mathf.Clamp(near - clear, HitMinRange, range));
+    }
+
+    /// <summary>The flat way away from the play camera (unit), for HitLightFit; zero without a camera.</summary>
+    Vector2 AwayFromLens()
+    {
+        if (GetViewport()?.GetCamera3D() is not { } cam) return Vector2.Zero;
+        var f = -cam.GlobalBasis.Z;
+        var v = new Vector2(f.X, f.Z);
+        return v.LengthSquared() > 1e-4f ? v.Normalized() : Vector2.Zero;
+    }
+
+    /// <summary>A blow's light at the struck body (the hit-light rule, HitLightFit and HitLightMask): no distance damp
+    /// near her (its footprint never reaches her, so its punch stays whole on the victim).</summary>
+    public void HitLight(Vector3 at, Color color, float peak, float life, float range = 9, [System.Runtime.CompilerServices.CallerLineNumber] int line = 0)
+    {
+        var (p, r) = HitLightFit(at, PlayerPos, range, AwayFromLens());
+        Flash(p, color, peak, life, r, line, "HitLight", hit: true);
+    }
+
+    public void Flash(Vector3 at, Color color, float peak, float life, float range = 9, [System.Runtime.CompilerServices.CallerLineNumber] int line = 0, [System.Runtime.CompilerServices.CallerFilePath] string file = "", bool hit = false)
     {
         // Lights share: each one already lit dims the next, so a crowd's worth of
         // blows lights the pale dead no brighter than a few (they washed to cream).
@@ -334,17 +407,20 @@ public partial class BattleFx : Node3D
         peak /= 1 + 0.6f * lit;
         // A light lit beside her lights her most of all: a champion falling at her elbow burned
         // her white through every effect's hero_clear. Her own moments (lit where she stands)
-        // keep their light; the rest fade out within four metres of her.
+        // keep their light; the rest fade out within four metres of her. (A hit light is kept off her
+        // by its mask and footprint instead: HitLight.)
         float near = new Vector2(at.X - PlayerPos.X, at.Z - PlayerPos.Z).Length();
-        if (near > 0.4f) peak *= Mathf.Lerp(0.15f, 1, Mathf.SmoothStep(1, 4, near));
+        if (!hit && near > 0.4f) peak *= Mathf.Lerp(0.15f, 1, Mathf.SmoothStep(1, 4, near));
         int best = 0;
         for (int i = 1; i < flashes.Count; i++) if (flashes[i].Light.LightEnergy < flashes[best].Light.LightEnergy) best = i;
         var l = flashes[best].Light;
         l.Position = at;
         l.LightColor = color;
         l.OmniRange = range;
+        l.LightCullMask = hit ? HitLightMask : 0xFFFFFFFFu;
         l.Visible = true;
         flashes[best] = (l, 0, life, peak);
+        if (LightTrace) TraceLight("Flash " + System.IO.Path.GetFileName(file), at, peak, range, line);
     }
 
     /// <summary>A chest bursting open (ChestCeremony): its light up out of it in a column, a
@@ -459,6 +535,8 @@ public partial class BattleFx : Node3D
             if (s >= 0) { slotUsed[s] = true; m.Slot = s; m.HeightsDue = true; if (tex == ringTex) m.Shape = 1; }
         }
         m.Amber = styleNext == 2;
+        // (a hostile telegraph draws over gore and her own ground: Fx/DecalLayer.cs)
+        d.SortingOffset = m.Styled ? DecalLayer.Telegraph : DecalLayer.HerGround;
         m.Raise = m.Amber && raisingNext;
         m.FillNow = null;
         if (m.OverFill != null) m.OverFill.Visible = false;
@@ -559,10 +637,11 @@ public partial class BattleFx : Node3D
     void FillStyle(Mark m, Color color, bool lane)
     {
         var f = m.Fill!;
+        f.SortingOffset = m.Styled ? DecalLayer.TelegraphFill : DecalLayer.HerGround + 0.01f;
         if (m.Styled)
         {
             f.TextureEmission = m.FillNow = FillTex(lane, FillStyleOf(m), 0.01f);
-            f.Modulate = (m.Danger ? Palette.TeleDanger : Palette.TeleAmber) with { A = 0.42f };
+            f.Modulate = (m.Danger ? Palette.TeleDanger : CrowdHue) with { A = 0.42f };
             f.EmissionEnergy = m.Danger ? DangerFill : m.Energy * AmberFillK;
         }
         else
@@ -1005,10 +1084,14 @@ public partial class BattleFx : Node3D
     /// <summary>A danger mark's light: its edge's energy, its flare as the blow lands (x; edge x flare stays near 1.3,
     /// past it AgX folds the scarlet to salmon), its running fill's, its copy over a roof or water (x the scarlet,
     /// unshaded) and that copy's bed. A crowd's amber at about 0.4 of the red's; the raising's ring a little more.</summary>
-    const float DangerEnergy = 0.45f, DangerFlare = 1.4f, DangerFill = 0.55f, DangerOver = 0.55f, DangerOverBed = 0.95f;
+    static readonly TeleRank.Row RankBoss = TeleRank.Current.Boss, RankCrowd = TeleRank.Current.Crowd;
+    static readonly float DangerEnergy = (float)RankBoss.Edge, DangerFlare = (float)RankBoss.Flare, DangerFill = (float)RankBoss.Fill;
+    const float DangerOver = 0.55f, DangerOverBed = 0.95f;
     const float SoftEnergy = 0.75f, SoftBed = 0.35f;
-    static readonly Color ClosingRed = new(0.5f, 0.05f, 0.04f);
-    const float AmberEnergy = 0.22f, AmberFlare = 1.3f, AmberFillK = 0.6f, RaiseEnergy = 0.5f;
+    /// <summary>The crowd's rank-2 hue (data/content/tele_rank.json) at the closing band's dim strength; the horde's band.</summary>
+    static readonly Color CrowdHue = new(RankCrowd.Color), CrowdBed = new(RankCrowd.Bed);
+    static readonly Color ClosingRed = new((float)(CrowdHue.R * RankCrowd.Closing), (float)(CrowdHue.G * RankCrowd.Closing), (float)(CrowdHue.B * RankCrowd.Closing));
+    static readonly float AmberEnergy = (float)RankCrowd.Edge, AmberFlare = (float)RankCrowd.Flare, AmberFillK = (float)RankCrowd.Fill, RaiseEnergy = (float)RankCrowd.Raise, ChargeEnergy = (float)RankCrowd.Charge;
     /// <summary>A styled bed's ambient occlusion (its share of the sky's light).</summary>
     const float BedAo = 0.15f;
     /// <summary>A styled ring's hot core, half its width in metres (a crisp line a few pixels wide at the play camera,
@@ -1037,8 +1120,8 @@ public partial class BattleFx : Node3D
         var em = Image.CreateEmpty(w, h, false, Image.Format.Rgba8);
         // (the textures are sRGB; the hue's sRGB, scaled in linear and stored back)
         // (the crowd and the raising share one amber, hue ~33 on screen: AgX and the dark bed pulled #ffa020 to a rust at 24; the raising's tail must not go under 28)
-        var hot = danger ? new Color("#ff0612") : new Color("#ffbc30");
-        var bed = danger ? Palette.TeleDangerGround : new Color("#2a1d08");
+        var hot = danger ? new Color(RankBoss.Color) : CrowdHue;
+        var bed = danger ? Palette.TeleDangerGround : CrowdBed;
         // (a red bed's own glow is a breath: at 0.25 through it, with the fill's even body over it, the bed lit 1.25-2.5x
         // brighter than the ground round it and a wide lane read as a red rug, not as light; round 3's judge)
         float inside = danger ? 0.97f : style == 3 ? 0.8f : 0.7f, glowIn = danger ? 0.06f : style == 3 ? 0.06f : 0.1f;
@@ -1196,10 +1279,30 @@ public partial class BattleFx : Node3D
         }
     }
 
+    static readonly bool KillTrace = Args.Has("kill-trace");
     static readonly bool FxLog = Args.Has("fx-log"); // dev only: one line per combat event
     double fxLogNext;
 
     /// <summary>A death's fx: its gore, its burst, its light (Handle's Ev.Kill).</summary>
+    /// <summary>F1 r6: a launched body's whole throw on the ground (m), as CrowdView.LaunchOf throws it (a mass kill's
+    /// out from her plus along the blow, at its longest; a lone launch along the blow, at the longest a blow throws):
+    /// its number keeps off the flight (Hits.Felled).</summary>
+    static Vector3 KillThrow(Ev.Kill e, Battle b, (double X, double Z) from)
+    {
+        double dx = e.Dx, dz = e.Dz, l = Math.Sqrt(dx * dx + dz * dz);
+        double ax = from.X - b.Player.X, az = from.Z - b.Player.Z, al = Math.Sqrt(ax * ax + az * az);
+        if (al > 1e-6) { ax /= al; az /= al; } else { ax = az = 0; }
+        if (e.Mass)
+        {
+            if (l > 1e-6) { dx /= l; dz /= l; } else { dx = dz = 0; }
+            dx += ax; dz += az; l = Math.Sqrt(dx * dx + dz * dz);
+        }
+        if (l < 1e-6) { dx = ax; dz = az; l = al > 1e-6 ? 1 : 0; }
+        if (l < 1e-6) { dx = 1; dz = 0; l = 1; }
+        double d = (e.Mass ? DeathShow.T.MassLaunchMax : DeathShow.T.LaunchMax) / Math.Sqrt(Math.Max(0.25, e.Scale));
+        return new Vector3((float)(dx / l * d), 0, (float)(dz / l * d));
+    }
+
     void KillFx(Ev.Kill e)
     {
         // A reflection breaking is glass, not a body (Ability: mirror_break).
@@ -1245,7 +1348,9 @@ public partial class BattleFx : Node3D
             // small (eight full blasts at once washed the whole crowd white).
             bool first = e.Boss || time - lastFall > 0.3;
             if (first) lastFall = time;
-            Flash(V(e.X, gy + 1.5, e.Z), pal.Light, e.Boss ? 16 : first ? 10 : 4, e.Boss ? 0.6f : 0.15f, e.Boss ? 12 : 8);
+            // (a champion's is a hit light: at its body, off her, its footprint short of her; a boss's is the fall's own)
+            if (e.Boss) Flash(V(e.X, gy + 1.5, e.Z), pal.Light, 16, 0.6f, 12);
+            else HitLight(V(e.X, gy + 1.5, e.Z), pal.Light, first ? 10 : 4, 0.15f, 8);
             if (e.Boss) Waves.Add(V(e.X, gy + 0.5, e.Z), 7, 0.5f, pal.Glow, 0.8f);
             // (A burst's reach is its radius, its picture 2.4 times that across: at 2 it was
             // nearly five metres of colour, the rule's three is 1.3.)
@@ -1260,6 +1365,18 @@ public partial class BattleFx : Node3D
         hitBudget = 28;
         killBudget = 6;
         rose = false;
+        // --kill-trace (dev, with --wav): a line a frame that kills or lands a heavy blow, placed on the tape (F1's tape
+        // measure: her hit over the crowd with N dying, tools/audio/crowd_tape.py).
+        if (KillTrace)
+        {
+            int kills = 0, heavy = 0, launch = 0, burst = 0, elite = 0, mass = 0;
+            foreach (var ev in events)
+            {
+                if (ev is Ev.Kill kk) { kills++; if (kk.Launch) launch++; if (kk.Burst) burst++; if (kk.Elite || kk.Boss) elite++; if (kk.Mass) mass++; }
+                else if (ev is Ev.Hit hh && SurvivorUnchained.Sound.LeadRule.Heavy(hh)) heavy++;
+            }
+            if (kills > 0 || heavy > 0) GD.Print($"[kill-trace] tape={SurvivorUnchained.Sound.Synth.Instance?.TapeSeconds ?? 0:F3} kills={kills} heavy={heavy} living={System.Linq.Enumerable.Count(b.Enemies.Living())} launch={launch} burst={burst} elite={elite} mass={mass} frame={Engine.GetFramesDrawn()}");
+        }
         if (FxLog)
         {
             if (b.Time >= fxLogNext)
@@ -1372,6 +1489,15 @@ public partial class BattleFx : Node3D
                 {
                     // (a body the Warden's line or heave kills falls, bursts and throws its gore as the view's blow lands)
                     float wkd = WgKillWait(e);
+                    // (F1 lead 29: a launch's flight starts where its body is drawn, as CrowdView.LaunchOf throws it from there,
+                    // not at the sim's point: the crowd's spread puts the drawn body up to a body's width off it)
+                    var kf = e.Launch && e.Enemy >= 0 && e.Enemy < b.Enemies.Capacity && b.Enemies.Items[e.Enemy] is { } ken && CrowdView.Placed is { } pl ? pl(ken) : (e.X, e.Z);
+                    Hits.Felled(e.Enemy, V(kf.X, Y(kf.X, kf.Z) + 1.0, kf.Z), e.Launch ? KillThrow(e, b, kf) : null, e.Launch ? (float)(e.Mass ? DeathShow.T.MassLaunchHop : 0.22) : 0);
+                    if (KillTrace && e.Launch) GD.Print($"[num-from] f={Engine.GetFramesDrawn()} target={e.Enemy} sim=({e.X:F2},{e.Z:F2}) drawn=({kf.X:F2},{kf.Z:F2})");
+                    // F1 lead 27: her step that fells 4+ opens the kill window (FeelRules.KillDim) and folds its numbers to
+                    // one. Her own blows only: the Warden's wave kills (crack-timed, judged right in round 4) stay as they are.
+                    if (e.Mass && wkd <= 0 && MassKillFrame != Engine.GetFramesDrawn()) { MassKillFrame = Engine.GetFramesDrawn(); Hits.MassStep = true; }
+                    if (KillTrace && e.Mass) GD.Print($"[mass-open] f={Engine.GetFramesDrawn()} wkd={wkd:F3} opened={(MassKillFrame == Engine.GetFramesDrawn() ? 1 : 0)}");
                     if (wkd > 0) WgLater(wkd, () => KillFx(e));
                     else KillFx(e);
                     break;
@@ -1570,17 +1696,21 @@ public partial class BattleFx : Node3D
                     // ground, in its textures. The crowd's blows stay amber and quiet (main's ruling, 27 October).
                     // (A champion's full ring is its raising of the dead (the Grave-Caller's "Rise...", 7 m), no blow:
                     // drawn as a ring that fills, in the crowd's amber. As a filled band it flooded the screen salmon.)
-                    Func<int, bool> champ = id => System.Linq.Enumerable.Any(b.Enemies.Living(), x => x.Id == id && (x.Elite || x.Boss));
+                    // (a kit blow's Id is its mark's, not its maker's: the maker is the foe standing at ByX/ByZ, so an elite's
+                    // charge lane is the red line it is meant to be and not the crowd's dim one)
+                    var laneMaker = MakerOf(e, b);
+                    Func<int, bool> champ = id => System.Linq.Enumerable.Any(b.Enemies.Living(), x => x.Id == id && (x.Elite || x.Boss)) || (laneMaker != null && (laneMaker.Elite || laneMaker.Boss));
                     var (look, raising) = TelegraphRead.Of(e, champ);
                     // A fodder charger's kit lane (a champion's or a boss's is red already): the same red line at a lower
                     // strength (round 1's judge: thin faint edges and a faint fill read as nothing).
+                    // (rank 2, the crowd's reserved crimson, dim: the bright scarlet means only an elite's or a boss's blow)
                     bool fodderCharge = e.Tell == "charge" && e.Hostile && e.Shape == TelegraphShape.Line && look != TelegraphRead.TeleLook.Danger;
-                    if (fodderCharge) look = TelegraphRead.TeleLook.Danger;
+                    if (fodderCharge) look = TelegraphRead.TeleLook.Amber;
                     // The kit's ring (a hostile circle): the full danger red, never the amber the lamp's hold ring was read as.
-                    if (e.Tell == "ring" && e.Hostile && e.Shape == TelegraphShape.Circle) look = TelegraphRead.TeleLook.Danger;
+                    if (e.Tell == "ring" && e.Hostile && e.Shape == TelegraphShape.Circle) look = TelegraphRead.Champion(e, champ) ? TelegraphRead.TeleLook.Danger : TelegraphRead.TeleLook.Amber;
                     // A pull's slam (H6: marked on its heart as the drag ends, landing 0.7 s later): a blow about to land, so the
                     // kit ring's red, not the pull's look it carries in the sim.
-                    if (PullSlam(e)) look = TelegraphRead.TeleLook.Danger;
+                    if (PullSlam(e)) look = TelegraphRead.Champion(e, champ) ? TelegraphRead.TeleLook.Danger : TelegraphRead.TeleLook.Amber;
                     bool danger = look == TelegraphRead.TeleLook.Danger;
                     // (the crowd's blows and the raising: dim amber over a faint bed, in their own textures; an added
                     // amber at x2.5 went salmon under AgX, and a crowd's lunge read as loose glowing rods)
@@ -1588,7 +1718,7 @@ public partial class BattleFx : Node3D
                     if (danger) col = Palette.TeleDanger;
                     // The closing's band is the horde's dim red (the pull's reach band keeps the violet).
                     if (e.Tell == "closing") col = ClosingRed;
-                    else if (amber) col = Palette.TeleAmber;
+                    else if (amber) col = CrowdHue;
                     styleNext = danger ? 1 : amber ? 2 : 0;
                     patternNext = SurvivorUnchained.View.MarkPass.PatternOf(e.Pattern, e.School?.ToString(), e.Shape switch { TelegraphShape.Line => "line", TelegraphShape.Cone => "cone", TelegraphShape.Ring => "ring", _ => "circle" });
                     raisingNext = raising;
@@ -1596,13 +1726,38 @@ public partial class BattleFx : Node3D
                     else if (e.Hostile && e.Faction is { } sf && e.Kind == TelegraphKind.Ground && e.Id == -1 && e.Shape == TelegraphShape.Circle) Summoning(e, People(sf));
                     else if (e.Shape == TelegraphShape.Line)
                     {
-                        var lm = Lane(e.X, e.Z, e.X1 ?? e.X, e.Z1 ?? e.Z, (float)(e.Width ?? 1), col, (float)e.Duration, e.Id, e.Hostile && e.Kind == TelegraphKind.Blow);
-                        if (e.Hostile && TelegraphRead.Champion(e, champ)) Over(lm, true);
+                        // F1 lead 26: a crowd charger's lane that runs under her stops 1.5 m short of her (nothing under 1 m is drawn),
+                        // so it doesn't swamp her at a dense crit. Elite and boss lanes are untouched.
+                        double lx1 = e.X1 ?? e.X, lz1 = e.Z1 ?? e.Z, herd = 0; bool laneCut = false, laneSkip = false;
                         if (fodderCharge)
                         {
-                            lm.Soft = true;
+                            double ldx = lx1 - e.X, ldz = lz1 - e.Z, ll = Math.Sqrt(ldx * ldx + ldz * ldz);
+                            if (ll > 1e-6)
+                            {
+                                double ux = ldx / ll, uz = ldz / ll, px0 = b.Player.X - e.X, pz0 = b.Player.Z - e.Z;
+                                double proj = px0 * ux + pz0 * uz;
+                                herd = Math.Abs(px0 * uz - pz0 * ux);
+                                if (proj >= 0 && proj <= ll && herd <= (e.Width ?? 1) / 2 + 1.5)
+                                {
+                                    laneCut = true;
+                                    double keep = proj - 1.5;
+                                    if (keep < 1.0) laneSkip = true;
+                                    else { lx1 = e.X + ux * keep; lz1 = e.Z + uz * keep; }
+                                }
+                            }
+                        }
+                        if (laneSkip) { if (LaneTrace) GD.Print($"[lane-trace] f={Engine.GetFramesDrawn()} tid={e.Id} fodderCharge=1 skipped cut=1 herd={herd:F1} grace={b.MassGraceLeft:F2}"); }
+                        else
+                        {
+                        var lm = Lane(e.X, e.Z, lx1, lz1, (float)(e.Width ?? 1), col, (float)e.Duration, e.Id, e.Hostile && e.Kind == TelegraphKind.Blow);
+                        if (e.Hostile && TelegraphRead.Champion(e, champ)) Over(lm, true);
+                        if (LaneTrace) LaneTraceStart(e, b, lm, look, fodderCharge, laneCut, herd);
+                        if (fodderCharge)
+                        {
+                            lm.Energy = ChargeEnergy; lm.Decal.EmissionEnergy = ChargeEnergy;
                             double hx0 = e.ByX ?? e.X, hz0 = e.ByZ ?? e.Z;
-                            Flash(V(hx0, Y(hx0, hz0) + 1.2, hz0), Palette.TeleDanger, 7, 0.45f, 6);
+                            Flash(V(hx0, Y(hx0, hz0) + 1.2, hz0), CrowdHue, 7, 0.45f, 6);
+                        }
                         }
                     }
                     else if (e.Shape == TelegraphShape.Cone) ConeMark(e.X, e.Z, (float)e.Radius, e.Angle ?? 0, e.Arc ?? Math.PI / 2, col, (float)e.Duration, e.Id, e.Hostile && e.Kind == TelegraphKind.Blow);
@@ -1988,6 +2143,7 @@ public partial class BattleFx : Node3D
             flashes[i] = (l, t, life, peak);
         }
         float mdt = SimHeld ? 0 : fdt;   // (the marks age on the sim's clock)
+        if (LaneTrace) LaneTraceTick();
         foreach (var m in marks)
         {
             if (!m.Active) continue;
@@ -2019,7 +2175,7 @@ public partial class BattleFx : Node3D
             {
                 // Telegraphs: steady, a quick flare at the end.
                 bool flare = m.T > 0.85f && !stand;
-                m.Decal.Modulate = m.Color with { A = fk * (flare ? 1 : 0.75f + 0.1f * Mathf.Sin((float)now * 12)) };
+                m.Decal.Modulate = m.Color with { A = fk * TellEdgeNow(m) * (flare ? 1 : 0.75f + 0.1f * Mathf.Sin((float)now * 12)) };
                 // (a danger mark's light breathes and flares as the blow lands: a decal's emission ignores its alpha)
                 // (the raising breathes slowly, +-15% at 0.5 Hz on the mark's own age; the rest keep the fast flicker)
                 if (m.Styled) m.Decal.EmissionEnergy = m.Energy * (flare ? (m.Danger ? DangerFlare : AmberFlare) : 0.88f + 0.12f * Mathf.Sin((float)now * 12)) * (m.Raise ? 1 + 0.15f * Mathf.Sin(Mathf.Tau * 0.5f * m.T * m.Life) : 1) * fk;
@@ -2028,7 +2184,7 @@ public partial class BattleFx : Node3D
                     om.SetShaderParameter("col", (m.Danger ? oc.LinearToSrgb() : new Color(Mathf.Min(1, oc.R), Mathf.Min(1, oc.G), Mathf.Min(1, oc.B))) with { A = 0.8f * m.Decal.Modulate.A });
                 // (the fill's copy at the fill's own light: a decal's emission is the texture x its modulate x its energy)
                 if (m.OverFill is { Visible: true } ovf0 && ovf0.MaterialOverride is ShaderMaterial fom)
-                    fom.SetShaderParameter("col", (Palette.TeleDanger * DangerFill).LinearToSrgb() with { A = 1 });
+                    fom.SetShaderParameter("col", (Palette.TeleDanger * DangerFill).LinearToSrgb() with { A = TellFillNow(m) });
                 if (m.Progress && m.Fill != null && m.Length > 0)
                 {
                     // A lane's fill runs out along it, its front reaching the end as the blow lands.
@@ -2128,7 +2284,7 @@ public partial class BattleFx : Node3D
             if (n >= SurvivorUnchained.View.MarkPass.MaxMarks) continue;
             buf ??= new float[SurvivorUnchained.View.MarkPass.MaxMarks * 16];
             float fill = !m.Progress ? -1 : m.Length > 0 ? m.Length * m.T : m.Radius * m.T;
-            SurvivorUnchained.View.MarkPass.Pack(buf, n++, d.Position, m.Shape, ax, az, hx, hz, d.EmissionEnergy * (m.Soft ? SoftEnergy : 1) * (m.Styled ? 1 : Fk(m)), (m.Soft ? SoftBed : 1) * Fk(m), fill, m.P1, m.Slot, m.Roof, m.Pattern);
+            SurvivorUnchained.View.MarkPass.Pack(buf, n++, d.Position, m.Shape, ax, az, hx, hz, d.EmissionEnergy * (m.Soft ? SoftEnergy : 1) * (m.Styled ? 1 : Fk(m)) * TellEdgeNow(m), (m.Soft ? SoftBed : 1) * Fk(m) * TellFillNow(m), fill, m.P1, m.Slot, m.Roof, m.Pattern);
         }
         if (hts) markPass.SetHeights((float[])markHeights.Clone());
         markPass.Set(buf ?? Array.Empty<float>(), n, SurvivorUnchained.View.Water.Level);
@@ -2363,7 +2519,7 @@ public partial class BattleFx : Node3D
         {
             var (kx, kz) = Drawn?.Of(p) ?? (p.X, p.Z);
             // A Flare's statue keeps its body's drop until it breaks.
-            if (p.Kind is PickupKind.Ember or PickupKind.Gold && !p.Pulled && Flare.HidesDrop(kx, kz)) continue;
+            if (p.Kind is PickupKind.Ember or PickupKind.Gold && !p.Pulled && (Flare.HidesDrop(kx, kz) || WgHidesDrop(p.X, p.Z))) continue;
             float gy = Y(kx, kz);
             // (After Burns Twice's BOOM a fresh drop settles in: scaled up and held dim until the Return ends.)
             var (freshS, freshL) = p.Kind is PickupKind.Ember or PickupKind.Gold && !p.Pulled ? Flare.DropFresh(kx, kz, b.Time - p.Age) : (1f, 1f);
