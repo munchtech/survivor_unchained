@@ -400,7 +400,7 @@ public partial class Game
     string? haloDiag, dimDiag;
 
     string? paceStage;
-    bool paceSprung;
+    bool paceSprung, paceInterrupted, paceWinding; int paceWindups;
     double paceHpT;
 
     /// <summary>--pace (the tutorial's pacing audit): each Prologue stage as it begins, and her health
@@ -437,7 +437,22 @@ public partial class Game
             GD.Print($"pace sprung t={b.Time:0.0} hp={b.Player.Hp:0}/{b.MaxHp:0}");
             if (Args.Has("shot")) { Shots.Want("ambush_sprung", 1.6); Shots.Want("ambush_volley", 2.3); }
         }
-        if (zone is Zones.Prologue pz) while (pz.PaceNotes.Count > 0) FordNote(pz.PaceNotes.Dequeue(), b);
+        if (zone is Zones.Prologue pz)
+            while (pz.PaceNotes.Count > 0)
+            {
+                var n = pz.PaceNotes.Dequeue();
+                if (n.StartsWith("ford mode ")) { paceWinding = n.Contains("->windup "); if (paceWinding) paceWindups++; }
+                FordNote(n, b);
+            }
+        // --b1interrupt (B1 harness): his second cleave windup is interrupted at 0.55 s, as a Flare or a perfect dodge would.
+        if (Args.Has("b1interrupt") && zone is Zones.Prologue { BossInFrame: { } bw } && !paceInterrupted
+            && paceWinding && paceWindups == 2 && bw.AnimT >= 0.55 && bw.AnimT < 0.9)
+        {
+            paceInterrupted = true;
+            GD.Print($"pace b1interrupt t={b.Time:0.00} at={bw.AnimT:0.00} state={bw.State}");
+            b.Interrupt(bw);
+            if (Args.Has("shot")) { Shots.Want("ford_int_0", 1 / 60.0); Shots.Want("ford_int_1", 0.15); Shots.Want("ford_int_2", 0.45); Shots.Want("ford_int_3", 0.9); }
+        }
         if (b.Time - paceHpT >= 5) { paceHpT = b.Time; GD.Print($"pace hp t={b.Time:0.0} hp={b.Player.Hp:0}/{b.MaxHp:0} stage={st} at=({b.Player.X:0},{b.Player.Z:0}) draughts={Journey?.Draughts}"); }
     }
 

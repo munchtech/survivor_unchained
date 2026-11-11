@@ -160,6 +160,7 @@ public sealed class BattleHooks
         OnHitProp = (tag, id, school, dmg, x, z) => zone.OnHitProp?.Invoke(tag, id, school, dmg, x, z),
         OnBossHit = (e, school, dmg) => zone.OnBossHit?.Invoke(e, school, dmg),
         OnBossStagger = e => zone.OnBossStagger?.Invoke(e),
+        OnBossInterrupt = e => zone.OnBossInterrupt?.Invoke(e),
         OnCalled = (e, by) => zone.OnCalled?.Invoke(e, by),
     };
 }
