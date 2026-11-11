@@ -1473,6 +1473,7 @@ public partial class BattleFx : Node3D
                     // F1 lead 27: her step that fells 4+ opens the kill window (FeelRules.KillDim) and folds its numbers to
                     // one. Her own blows only: the Warden's wave kills (crack-timed, judged right in round 4) stay as they are.
                     if (e.Mass && wkd <= 0 && MassKillFrame != Engine.GetFramesDrawn()) { MassKillFrame = Engine.GetFramesDrawn(); Hits.MassStep = true; }
+                    if (KillTrace && e.Mass) GD.Print($"[mass-open] f={Engine.GetFramesDrawn()} wkd={wkd:F3} opened={(MassKillFrame == Engine.GetFramesDrawn() ? 1 : 0)}");
                     if (wkd > 0) WgLater(wkd, () => KillFx(e));
                     else KillFx(e);
                     break;

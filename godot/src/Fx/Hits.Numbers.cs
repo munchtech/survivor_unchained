@@ -24,6 +24,8 @@ public partial class Hits
     /// <summary>F1 r5: the mass kill's one number and its drawn frame: the blows of the next FeelRules.MassTail frames
     /// (the rest of her step's kills, landing a frame or two late) are added into it, not shown as numbers of their own.</summary>
     int massLabel = -1;
+    static readonly bool NumTrace = Args.Has("kill-trace");
+    int ntCrowded, ntCapped;
     long massFrame = long.MinValue;
     /// <summary>The most numbers on screen at once (a big blow is told past it).</summary>
     const int LiveMost = 12;
@@ -184,10 +186,11 @@ public partial class Hits
             if (numbers[k].T < 0.6f) young.Add(numbers[k].Label.GlobalPosition);
         }
         int shown = 0;
+        ntCrowded = ntCapped = 0;
         foreach (var (w, extra) in work)
         {
             // No exceptions: in a crowd of the small dead nearly every blow takes a fifth of one.
-            if (shown >= NewPerFrame || live >= LiveMost) break;
+            if (shown >= NewPerFrame || live >= LiveMost) { ntCapped = work.Count - shown; break; }
             var at = w.At;
             if (her is { } h)
             {
@@ -202,7 +205,7 @@ public partial class Hits
             var t = new Tallied { Target = w.Target, Sum = w.Amount, Born = clock, Crit = w.Crit, Heavy = w.MaxHp > 0 && w.Amount > w.MaxHp * 0.2, Tint = w.Tint };
             bool blow = w.Tint == null;
             var spot = blow ? Spot(at, her, ((int)Math.Round(t.Sum)).ToString(), HitsPlace.NumberSize(t.Crit, t.Heavy)) : Beside(at);
-            if (Crowded(spot)) continue;
+            if (Crowded(spot)) { ntCrowded++; continue; }
             int i = Show(spot, "", Colors.White, 46, blow);
             tallies[i] = t;
             tallyOf[i] = w.Target;
@@ -220,6 +223,8 @@ public partial class Hits
             live++;
             young.Add(numbers[i].Label.GlobalPosition);
         }
+        if (NumTrace && (mass || blowAt.Count >= 3))
+            GD.Print($"[num-trace] f={now} mass={(mass ? 1 : 0)} blows={blowAt.Count} kept={keptBlows.Count} work={work.Count} shown={shown} crowded={ntCrowded} capped={ntCapped} live={live} massLabel={massLabel}");
         waiting.Clear();
     }
 
