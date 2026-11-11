@@ -24,6 +24,8 @@ public static class SkillTipModel
     public static string Damage(double v) => Math.Abs(v) >= 10 ? Math.Round(v).ToString("0", Inv) : Math.Round(v, 1).ToString("0.#", Inv);
     /// <summary>A plain number, up to two places, no trailing zeros.</summary>
     public static string Plain(double v) => Math.Round(v, 2).ToString("0.##", Inv);
+    /// <summary>Seconds: one place, no trailing zeros ("7.8", "0.5", "8").</summary>
+    public static string Seconds(double v) => Math.Round(v, 1).ToString("0.#", Inv);
     static string Percent(double v) => Math.Round(v * 100, 1).ToString("0.#", Inv) + "%";
 
     /// <summary>The card for a skill. With a battle: the fight's own weapon (so its numbers are the fight's); without, the
@@ -62,6 +64,10 @@ public static class SkillTipModel
         {
             string? s = Lookup(m.Groups[1].Value, w, dmg, cut, every, cooldown, resolve, drain);
             if (s == null) { unresolved.Add(m.Value); return "?"; }
+            // a value read as seconds (the hole followed by " s") prints 0.#
+            bool secs = string.CompareOrdinal(t, m.Index + m.Length, " s", 0, 2) == 0
+                && (m.Index + m.Length + 2 == t.Length || !char.IsLetter(t[m.Index + m.Length + 2]));
+            if (secs && double.TryParse(s, NumberStyles.Float, Inv, out double sv)) return Seconds(sv);
             return s;
         });
 
@@ -106,8 +112,8 @@ public static class SkillTipModel
         {
             case "damage": return Damage(dmg);
             case "cut": return Damage(cut ?? dmg);
-            case "every": return Plain(every ?? cooldown);
-            case "cooldown": return Plain(cooldown);
+            case "every": return Seconds(every ?? cooldown);
+            case "cooldown": return Seconds(cooldown);
             case "resolve": return Plain(resolve);
             case "drain": return drain > 0 ? Plain(drain) : null;
         }
