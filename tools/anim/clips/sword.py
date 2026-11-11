@@ -26,6 +26,7 @@ import numpy as np
 
 from gait import arc_of
 from keyed import STRIKE, build
+from clips.run import _swivel
 
 
 def _n(*v):
@@ -119,6 +120,55 @@ HEAVY_L = [
     (22, (0.02, -0.18, 0.37), (1.0, -0.5, -0.4), "auto"),
     (30, GUARD_L_AT, GUARD_L_POLE, "ease"),
 ]
+# A1 L23: the buckler stays at her SIDE through every blow (the run's own shield_guard spec: hand (0.14, -0.32, 0.26) from the
+# shoulder in the chest frame, swivel -90, no blade key), riding the cut a little (forward on the wind, back on the follow-
+# through); the last key is the run's exactly so the blend has no pop. (BACK_L/FORE_L/HEAVY_L/shield_l stay: arts.py uses them.)
+SIDE_AT = (0.14, -0.32, 0.26)
+SIDE_SWIVEL = -90
+
+
+def side_l(at):
+    """The run's side-shield spec with the hand at `at` (chest frame, from the shoulder)."""
+    return {"arc": arc_of(at), "pole": _swivel(at, SIDE_SWIVEL), "frame": "chest"}
+
+
+def _ride(dx, dz, y=0.0):
+    x, yy, z = SIDE_AT
+    return (x + dx, yy + y, z + dz)
+
+
+def with_side_shield(keys, track):
+    """with_shield's sibling: the buckler's own [(frame, hand, ease)] in the run's side format."""
+    keys = [(t, dict(p), e) for t, p, e in keys]
+    at_t = {t: k for k, (t, _, _) in enumerate(keys)}
+    for t, at, e in track:
+        if t in at_t:
+            keys[at_t[t]][1]["hand_l"] = side_l(at)
+        else:
+            keys.append((t, {"hand_l": side_l(at)}, e))
+    return sorted(keys, key=lambda k: k[0])
+
+
+RIDE_WIND = (-0.03, 0.03)    # (dx, dz): in and forward on the wind
+RIDE_FOLLOW = (0.0, -0.05, 0.0)   # (dx, dz, y): back on the follow-through
+SIDE_BACK_L = [(0, _ride(*RIDE_WIND), "fast"), (2.5, _ride(-0.015, 0.02), "linear"), (5, _ride(*RIDE_FOLLOW), "ease"),
+               (8, _ride(*RIDE_FOLLOW), "ease"), (15, _ride(0.0, -0.02), "auto"), (24, SIDE_AT, "ease")]
+# The left-going cuts (fore, heavy) sweep the blade across where the buckler rides: it draws back behind the blade.
+RIDE_DODGE = (0.0, -0.05, 0.0)   # (dx, dz, y) (tried z -0.10 clear of the sweep, and y -0.06: the disc rose over her head, or the arm straightened, and still met the blade)
+SIDE_FORE_L = [(0, _ride(*RIDE_WIND), "fast"), (2.5, _ride(-0.015, 0.02), "linear"), (5, _ride(0.0, -0.05), "ease"),
+               (8, _ride(*RIDE_DODGE), "ease"), (13, _ride(*RIDE_DODGE), "ease"), (19, _ride(0.0, -0.02), "auto"), (24, SIDE_AT, "ease")]
+SIDE_HEAVY_L = [(0, _ride(*RIDE_WIND), "fast"), (3, _ride(-0.015, 0.02), "linear"), (6, _ride(*RIDE_DODGE), "ease"),
+                (15, _ride(*RIDE_DODGE), "ease"), (22, _ride(0.0, -0.02), "auto"), (30, SIDE_AT, "ease")]
+
+# A1 L23: the sword's last key = the run's trailing carry (run_warden frame 0, the right fist from the right shoulder, the blade
+# line and the elbow's way, all in the chest frame; measured by L23/carry.py), the body as GUARD's.
+CARRY_AT = (-0.096, -0.452, 0.191)
+CARRY_BLADE = (-0.304, -0.868, -0.392)
+CARRY_POLE = (-0.579, 0.419, 0.7)
+CARRY = pose(0, 0, CARRY_AT, CARRY_BLADE, pole=CARRY_POLE, left=False, pitch=12)
+# The way home: the blade comes from forward to the carry (back and down) out by her RIGHT side, not down through her legs
+# (the plain blend swung it through her calves at 1-8 mm).
+CARRY_VIA = pose(0, 0, (-0.26, -0.38, 0.20), _n(-0.9, -0.35, 0.1), pole=CARRY_POLE, left=False)
 BACK_COCK = (0.30, 0.04, 0.17)   # the cocked fist off her chest (at (0.30, 0.02, 0.10) the hilt was 11 mm into it)
 
 
@@ -139,9 +189,10 @@ def sword_back(rig):
         (8, pose(-19, -38, (-0.38, -0.18, 0.24), _n(-0.99, 0.04, -0.05), pole=(-0.1, -1.0, 0.3), left=False, weight=-0.6), "ease"),
         # Recovering: the blade comes round and up into the guard.
         (15, pose(-6, -10, (-0.15, -0.26, 0.24), _n(-0.34, 0.51, 0.79), pole=(-0.6, -0.5, -0.4), left=False, weight=-0.2), "auto"),
-        (24, _body(GUARD), "ease"),
+        (20, CARRY_VIA, "ease"),
+        (24, CARRY, "ease"),
     ]
-    keys = with_shield(keys, BACK_L)
+    keys = with_side_shield(keys, SIDE_BACK_L)
     return build("sword_back", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "sword+shield"})
 
 
@@ -155,9 +206,10 @@ def sword_fore(rig):
         (8, pose(19, 36, (0.28, -0.27, 0.24), _n(0.86, -0.26, -0.17), pole=(-0.9, -0.1, 0.3), left=False, weight=0.7, pivot=0.7), "ease"),
         (15, pose(6, 10, (0.02, -0.28, 0.24), _n(0.2, 0.5, 0.8), pole=(-0.6, -0.5, -0.4), left=False, weight=0.2, pivot=0.2),
          "auto"),
-        (24, _body(GUARD), "ease"),
+        (20, CARRY_VIA, "ease"),
+        (24, CARRY, "ease"),
     ]
-    keys = with_shield(keys, FORE_L)
+    keys = with_side_shield(keys, SIDE_FORE_L)
     return build("sword_fore", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "sword+shield"})
 
 
@@ -170,9 +222,10 @@ def sword_heavy(rig):
         (6, pose(26, 44, (0.30, -0.16, 0.34), _n(0.95, 0.175, 0.075), pole=(-0.8, -0.6, 0.2), left=False, weight=0.8, pivot=1.0, pitch=10), "ease"),
         (10, pose(30, 50, (0.30, -0.22, 0.26), _n(0.8, -0.25, -0.3), pole=(-0.8, -0.4, 0.4), left=False, weight=0.9, pivot=1.0, pitch=10), "ease"),
         (19, pose(10, 14, (0.04, -0.28, 0.24), _n(0.2, 0.5, 0.8), pole=(-0.6, -0.5, -0.4), left=False, weight=0.3, pivot=0.3), "auto"),
-        (30, _body(GUARD), "ease"),
+        (26, CARRY_VIA, "ease"),
+        (30, CARRY, "ease"),
     ]
-    keys = with_shield(keys, HEAVY_L)
+    keys = with_side_shield(keys, SIDE_HEAVY_L)
     return build("sword_heavy", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 3 / 30, "weapon": "sword+shield"})
 
 
