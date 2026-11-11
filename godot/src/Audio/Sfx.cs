@@ -491,6 +491,7 @@ public static partial class Sfx
         // The hush is the music's and the world's, never the fight's (combat: a warning under a duck is
         // a blow unheard). On the interface's bus, so the toll carries over the horde.
         if (!faint) a.DuckBeds(0.35f, 1.2);
+        if (storied && !faint && Bank("toll.storied", null, g, gated: false)) return;
         if (Bank("toll", null, g, gated: false)) return;
         a.Play(new Tone { F = 55, A = 0.004, D = 0.6, G = 0.12 * g, Lp = 300, Bus = Bus.Ui });
         a.Play(new Fm { F = 98, Ratio = 2.76, Index = 3, A = 0.004, D = 6, G = 0.12 * g, Verb = 0.8, Bus = Bus.Ui });

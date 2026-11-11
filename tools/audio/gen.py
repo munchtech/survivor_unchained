@@ -338,6 +338,9 @@ def process_family(name, fam):
                 cur.append(t)
             groups.append(cur)
             ok = [t for g in groups for t in sorted(g, key=lambda t: rank[id(t)])]
+    if fam.get("pick"):  # a hand/measure-chosen set of cache indices (among those that pass), e.g. for distinct ladders
+        ok = [t for t in ok if t["i"] in fam["pick"]]
+        keep = len(ok)
     kept = ok[:keep]
     for t in ok[keep:]:
         t["drop"] = "not among the %d best-ranked takes" % keep

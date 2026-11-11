@@ -1151,7 +1151,12 @@
    "loop": false,
    "tail_db": -55,
    "note": "drop tier 2 (Rare): one bright small chime",
-   "max_rise_ms": 15
+   "max_rise_ms": 15,
+   "pick": [
+    0,
+    2,
+    4
+   ]
   },
   "drop_epic": {
    "prompt": "A deep resonant bronze singing bowl struck once, instant attack at full volume, then a warm ringing hum with an airy shimmer rising after it, no music, no voice",
@@ -1165,7 +1170,12 @@
    "loop": false,
    "tail_db": -55,
    "note": "drop tier 3 (Epic): bronze singing bowl",
-   "max_rise_ms": 15
+   "max_rise_ms": 15,
+   "pick": [
+    0,
+    1,
+    2
+   ]
   },
   "drop_set": {
    "prompt": "Two small bells struck together at the same instant a perfect fifth apart, a bright ringing pair, instant attack at full volume, clear metallic tone, no music, no voice",
@@ -1179,7 +1189,12 @@
    "loop": false,
    "tail_db": -55,
    "note": "drop tier 4 (Set): two small bells a fifth apart",
-   "max_rise_ms": 15
+   "max_rise_ms": 15,
+   "pick": [
+    2,
+    3,
+    4
+   ]
   },
   "drop_legendary": {
    "prompt": "One great deep cathedral bell tolled once, struck hard with instant attack at full volume, a low impact boom under the strike, a long resonant ring that slowly decays, cinematic, no music, no voice",
@@ -1193,7 +1208,12 @@
    "loop": false,
    "tail_db": -55,
    "note": "drop tier 5 (Legendary): the toll",
-   "max_rise_ms": 15
+   "max_rise_ms": 15,
+   "pick": [
+    0,
+    1,
+    2
+   ]
   },
   "drop_storied_fire": {
    "prompt": "A deep whoosh of fire catching, flames igniting with a rushing roar, then an ember roar rising and swelling, no music, no voice",
@@ -1207,7 +1227,11 @@
    "loop": false,
    "tail_db": -55,
    "note": "drop tier 6 (Storied): fire laid over the toll at 0.3 s",
-   "max_rise_ms": 60
+   "pick": [
+    0,
+    1,
+    2
+   ]
   }
  }
 }
