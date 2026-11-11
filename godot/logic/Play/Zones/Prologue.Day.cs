@@ -275,6 +275,13 @@ public sealed partial class Prologue
     {
         if (day == null || B == null) return;
         var p = B.Player;
+        // (dev, --on teach) the day's state every 2 s: why A13/A13b and the gate do or do not come (m6r3 stalled at Exit)
+        if (Trace != null && B.Time - dayTracedAt >= 2)
+        {
+            dayTracedAt = B.Time;
+            var dg = day.Goal(pb => !Lamps.V2 || LampBook.PostLit(W, pb.Post!), _ => box is { Alive: true } bx ? (bx.X, bx.Z) : null, L("gate").X);
+            Trace(FormattableString.Invariant($"daystate t={B.Time:0.0} stage={Now} p=({p.X:0.0},{p.Z:0.0}) lv={G.Journey.Ch.Level} goal=({dg.X:0.0},{dg.Z:0.0}):{dg.For?.Id ?? "-"} ring={day.RingAt:0.0} owed={day.RingOwed?.Id ?? "-"} gate={day.GateOpen} box={(box is { } bq ? $"{bq.X:0.0},{bq.Z:0.0}:{(bq.Alive ? "on" : "gone")}:{bq.Age:0.0}:{bq.Look}:{Dist(bq.X, bq.Z, p.X, p.Z):0.0}" : day.Done("strongbox") ? "done" : "-")} seats={string.Join("|", B.Weapons.Where(w => w.Slot >= 0).Select(w => $"{w.Slot}:{w.Id}"))} packs={string.Join("|", day.Packs.Keys.Where(k => !day.DownAt.ContainsKey(k)).Select(k => $"{k}:{(day.WokeAt.ContainsKey(k) ? "up" : "rest")}{day.Standing(k).Count}"))}"));
+        }
         // The charge: the first boar's lane on the ground, frozen a beat into its windup.
         if (chargeBlow != null && (chargeBlow.T <= 0.25 || chargeFrom is not { Alive: true } || G.Taught("day_charge"))) chargeBlow = null;
         if (chargeBlow is { } cb && cb.T < cb.Delay - 0.2)
@@ -309,6 +316,8 @@ public sealed partial class Prologue
                 new Aim { Hud = "seat:" + act, World = () => NextPack(B!.Player, ChargeNear).Select(e => Up(e.X, e.Z, 1.0)).ToList(), Each = true }, act.ToLowerInvariant(), urgent: true);
         }
     }
+
+    double dayTracedAt = -99;
 
     /// <summary>(A13, A13b) skills-p7's skills, by id.</summary>
     public const string LeapId = "heroic_leap", ChargeId = "shield_charge";
