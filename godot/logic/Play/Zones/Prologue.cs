@@ -931,6 +931,22 @@ public sealed partial class Prologue : ZoneRuntime
     }
 
     void EndLane() { if (ai.Lane != null) { ai.Lane.T = 0; ai.Lane = null; } }
+    /// <summary>Whether his charge's first 6 m are open ground: a lit lamp in the way counts as open (he goes through it,
+    /// Snuff); a wall, a broken post, a rock does not.</summary>
+    bool LaneClear(Enemy e, double dx, double dz)
+    {
+        if (B == null) return true;
+        for (double d = 1.5; d <= 6; d += 1.5)
+        {
+            double x = e.X + dx * d, z = e.Z + dz * d;
+            bool lamp = false;
+            for (int i = 0; i < pylons.Count; i++) if (litPylons[i] && Dist(pylons[i].X, pylons[i].Z, x, z) < e.Radius + 1.5) lamp = true;
+            if (lamp) return true;
+            if (B.Collision.Blocked(x, z, e.Radius * 0.7, false)) return false;
+        }
+        return true;
+    }
+
     /// <summary>(the trace) How far a point lies off the charge's drawn lane's middle line, metres (-1: no lane).</summary>
     double LaneOff(double x, double z)
     {
@@ -1014,6 +1030,9 @@ public sealed partial class Prologue : ZoneRuntime
                     wardenView.SetPose("windup");
                     return true;
                 }
+                // (a lane blocked at his feet is no charge: B1 run3's first wound up 1.3 s and stopped dead in 0.02 s, a stagger
+                // with nothing hit; he walks on and tries again shortly)
+                if (dist > 6.5 && ai.ChargeCd <= 0 && !LaneClear(e, dx / dist, dz / dist)) ai.ChargeCd = 1.5;
                 if (dist > 6.5 && ai.ChargeCd <= 0)
                 {
                     ai.Mode = "chargeWind"; ai.T = 0; e.AnimT = 0; ai.DirX = dx / dist; ai.DirZ = dz / dist;
