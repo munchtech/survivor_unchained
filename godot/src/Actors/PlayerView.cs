@@ -971,16 +971,6 @@ public partial class PlayerView : Node3D
     AnimationNodeAnimation? otL, otR, otB, aOtL, aOtR, aOtB;
     bool otAvail, otOn;
     float otWf = 1, otWr, otWb, otWl, otAng, otAim, otSimSp;
-    // (A1 L25 strafe3) The leg set behind 90: the backpedal past OtBackOn deg off forward, the side run again below OtBackOff
-    // (the band's middle, 100, is where the two sets' spine twists meet: the side clip's 69 plus its yaw past 90, the
-    // backpedal's 180 less her travel); otYaw = the lower turn that lays the set onto her travel, deg (LowerTurn's sign).
-    bool otBackSet;
-    float otYaw, otSwT;
-    static readonly float OtBackOn = (float)SurvivorUnchained.Args.Num("ot-back-on", 105f), OtBackOff = (float)SurvivorUnchained.Args.Num("ot-back-off", 95f);
-    /// <summary>Both feet off the ground in her run and her backpedal at this stride phase (gait.foot: the left plants at 0, the
-    /// right at 0.5; the run planted 0.33 of the cycle, the backpedal 0.20): the first part of each flight, so a set switched
-    /// here has crossed over (about 2 frames) before the next foot lands.</summary>
-    static bool OtFlight(float s) { s = Mathf.PosMod(s, 0.5f); return s > 0.335f && s < 0.44f; }
     // --ot-grace S: the switch holds S seconds past aimHold's end (the blow's 0.45 s lapses between swings at a ~0.7 s cadence:
     // with no grace the sweep switched 42 times, at 0.6 s 8). A1 L22: 0.6 s by default; --ot-grace 0 = the first design.
     static readonly float OtGrace = (float)SurvivorUnchained.Args.Num("ot-grace", 0.6f);
@@ -1801,42 +1791,16 @@ public partial class PlayerView : Node3D
                 var lv2 = SurvivorUnchained.Play.Move2D.Local(velX, velZ, Rotation.Y);
                 float a = Mathf.PosMod(Mathf.RadToDeg(Mathf.Atan2(lv2.X, lv2.Y)), 360f);
                 otAng = a;
-                // (A1 L25 strafe3) Behind 90 the legs are ONE set, never side and back weighted together (their feet move opposite
-                // ways: the planted foot slid 170-270 mm): the side run up to OtBackOn off forward, the backpedal past it (back to
-                // the side below OtBackOff), each yawed onto her travel by the lower turn (otYaw, below). The set changes only in a
-                // flight (both feet up, OtFlight), so no planted foot is ever handed between the two.
-                float off0 = a <= 180 ? a : 360 - a;
-                bool flight = OtFlight(stride);
-                if (!otBackSet && off0 > OtBackOn && flight) { otBackSet = true; otSwT = 0.1f; }
-                else if (otBackSet && off0 < OtBackOff && flight) { otBackSet = false; otSwT = 0.1f; }
                 if (a < 90) { tr = a / 90; tf = 1 - tr; }
-                else if (a < 270 && otBackSet) { tb = 1; tf = 0; }
-                else if (a < 180) { tr = 1; tf = 0; }
-                else if (a < 270) { tl = 1; tf = 0; }
+                else if (a < 180) { tb = (a - 90) / 90; tr = 1 - tb; tf = 0; }
+                else if (a < 270) { tl = (a - 180) / 90; tb = 1 - tl; tf = 0; }
                 else { tf = (a - 270) / 90; tl = 1 - tf; }
             }
-            else otBackSet = false;
-            // (a set switch crosses over at 50/s, 95% in 2 frames, inside the flight; the angle blends in front at 25/s as before)
-            otSwT -= dt;
-            float ke = 1 - Mathf.Exp(-(otSwT > 0 ? 50 : 25) * dt);
+            float ke = 1 - Mathf.Exp(-25 * dt);
             otWf = Mathf.Lerp(otWf, tf, ke); otWr = Mathf.Lerp(otWr, tr, ke); otWb = Mathf.Lerp(otWb, tb, ke); otWl = Mathf.Lerp(otWl, tl, ke);
             float sum = otWf + otWr + otWb + otWl;
             otWf /= sum; otWr /= sum; otWb /= sum; otWl /= sum;
             if (!otOn && otWf > 0.999f) { otWf = 1; otWr = otWb = otWl = 0; }
-            // (A1 L25 strafe3) Each leg set yawed onto her travel by the lower turn (LowerTurnModifier: the pelvis by the yaw, the
-            // spine takes it back out, the chest and arms stay where the clip has them): the side run by its travel past 90, the
-            // backpedal by its travel off 180 (at 135 its hips turn 45). Weighted as the clips are, so the yaw and the clips'
-            // pelvis cross over together at a switch. Behind 90 only; in front the run|side blend is the turn itself.
-            float otYawT = 0;
-            if (otOn && otAng > 90 && otAng < 270)
-            {
-                float yr = -Mathf.Clamp(Mathf.Wrap(otAng - 90, -180, 180), -90, 90), yb = -Mathf.Clamp(Mathf.Wrap(otAng - 180, -180, 180), -90, 90);
-                float yl = -Mathf.Clamp(Mathf.Wrap(otAng - 270, -180, 180), -90, 90);
-                otYawT = otWr * yr + otWb * yb + otWl * yl;
-            }
-            otYaw = Mathf.Lerp(otYaw, otYawT, ke);
-            if (Mathf.Abs(otYaw) < 0.01f && otYawT == 0) otYaw = 0;
-            if (person.Turn != null) person.Turn.Delta = lowerDelta + otYaw;
             float side = otWr + otWl, off = 1 - otWf;
             var tsp = "parameters/move/";
             tree.Set(tsp + "otRun/blend_amount", off);
@@ -2312,7 +2276,7 @@ public partial class PlayerView : Node3D
         if (cam != null && logPvSet) foreach (var q in logF) { var u = cam.UnprojectPosition(q); sf += System.FormattableString.Invariant($" {u.X:0.0} {u.Y:0.0}"); }
         logF = new[] { Drawn("foot_l"), Drawn("foot_r"), Drawn("ball_l"), Drawn("ball_r"), Drawn("Head") };
         logPv2 = logPv; logPv = dpv; logPvSet = true;
-        GD.Print(System.FormattableString.Invariant($"OT {t:0.0000} frame {Engine.GetProcessFrames()} on {(otOn ? 1 : 0)} wf {otWf:0.000} wr {otWr:0.000} wb {otWb:0.000} wl {otWl:0.000} ang {otAng:0.0} sim {otSimSp:0.00} fast {(float)tree.Get("parameters/move/fast/blend_amount"):0.000} hold {aimHold:0.00} bs {(otBackSet ? 1 : 0)} yaw {otYaw:0.0}"));
+        GD.Print(System.FormattableString.Invariant($"OT {t:0.0000} frame {Engine.GetProcessFrames()} on {(otOn ? 1 : 0)} wf {otWf:0.000} wr {otWr:0.000} wb {otWb:0.000} wl {otWl:0.000} ang {otAng:0.0} sim {otSimSp:0.00} fast {(float)tree.Get("parameters/move/fast/blend_amount"):0.000} hold {aimHold:0.00}"));
         GD.Print(System.FormattableString.Invariant($"CARRY {t:0.0000} pvw {pivotW:0.00} fl {V(fl)} fr {V(fr)} hl {V(hl)} hr {V(hr)} pv {V(pv)} chest {Yaw("upperarm_l", "upperarm_r"):0.0} pelv {Yaw("thigh_l", "thigh_r"):0.0} face {Mathf.RadToDeg(Rotation.Y):0.0} scr {sc.X:0.0} {sc.Y:0.0} aimset {aim:0.0} aimc {carriage?.Aim ?? 0:0.0} hold {aimHold:0.00} stride {stride:0.000} up {(up ? upperClip : "-")} full {(fu ? fullClip : "-")} bank {carriage?.Bank ?? 0:0.0} tilt {carriage?.Tilt ?? 0:0.0} upos {(float)tree.Get("parameters/upper/current_position"):0.000} piv {pivotN} off {plantOff.Length():0.000} sim {V(Position - plantOff)} lfl {V(inv * fl)} lfr {V(inv * fr)} lpv {V(inv * pv)} dpv {V(dpv)} dfl {V(Drawn("foot_l"))} dfr {V(Drawn("foot_r"))} stage {plantStage} scrt {st.X:0.0} {st.Y:0.0} scrk {sk.X:0.0} {sk.Y:0.0} scrf{sf}"));
     }
     Vector3 logPv, logPv2; bool logPvSet; Vector3[] logF = System.Array.Empty<Vector3>();
