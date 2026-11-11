@@ -109,10 +109,21 @@ public static class LevelCards
             {
                 Kind = LevelCardKind.LampLit, Offer = true, Level = level, Skill = id, Lamp = lamp,
                 Measure = measure, Before = before, After = after,
-                PromptKey = Act.Lamps, PromptText = "Light: " + Content.Wicks.Text(id, lamp),
+                PromptKey = Act.Lamps, PromptText = "Light it: " + Content.Wicks.Text(id, lamp),
             };
         }
         return null;
+    }
+
+    /// <summary>The dev offer card (--level-card offer:...) made as the real offer is: the skill's next lamp, its live text in the
+    /// prompt, and (when BEFORE/AFTER were left out) the blow's real before and after on this character.</summary>
+    public static void ResolveDevOffer(LevelCardSpec s, Rpg.CharacterData ch)
+    {
+        if (!s.Offer || s.Lamp != "" || Rpg.WickBook.NextLamp(ch, s.Skill) is not { } lamp) return;
+        var (measure, before, after) = Rpg.WickBook.LampMeasure(ch, s.Skill, lamp);
+        s.Lamp = lamp;
+        if (double.IsNaN(s.Before) || double.IsNaN(s.After)) { s.Measure = measure; s.Before = before; s.After = after; }
+        s.PromptText = "Light it: " + Content.Wicks.Text(s.Skill, lamp);
     }
 
     /// <summary>The offer taken: the card turns to the lit state (header "A LAMP LIT", no lighting prompt).</summary>
@@ -137,7 +148,7 @@ public static class LevelCards
         return null;
     }
 
-    /// <summary>--level-card's spec: slot:SKILL:LEVEL | lamp:SKILL:LEVEL:BEFORE:AFTER | offer:SKILL:LEVEL:BEFORE:AFTER | plain:LEVEL | skill:SKILL:LEVEL, each with an optional
+    /// <summary>--level-card's spec: slot:SKILL:LEVEL | lamp:SKILL:LEVEL:BEFORE:AFTER | offer:SKILL:LEVEL[:BEFORE:AFTER] | plain:LEVEL | skill:SKILL:LEVEL, each with an optional
     /// @T (seconds into the fight). Null when it does not parse.</summary>
     public static (LevelCardSpec Spec, double At)? Parse(string arg)
     {
@@ -158,6 +169,8 @@ public static class LevelCards
                 return (new LevelCardSpec { Kind = LevelCardKind.NewKey, Skill = p[1], Level = l }, at);
             case "lamp" when p.Length == 5 && I(p[2]) is { } l && D(p[3]) is { } b && D(p[4]) is { } f:
                 return (new LevelCardSpec { Kind = LevelCardKind.LampLit, Skill = p[1], Level = l, Before = b, After = f }, at);
+            case "offer" when p.Length == 3 && I(p[2]) is { } l:
+                return (new LevelCardSpec { Kind = LevelCardKind.LampLit, Offer = true, Skill = p[1], Level = l, Before = double.NaN, After = double.NaN, PromptKey = Act.Lamps, PromptText = "Light" }, at);
             case "offer" when p.Length == 5 && I(p[2]) is { } l && D(p[3]) is { } b && D(p[4]) is { } f:
                 return (new LevelCardSpec { Kind = LevelCardKind.LampLit, Offer = true, Skill = p[1], Level = l, Before = b, After = f, PromptKey = Act.Lamps, PromptText = "Light" }, at);
             case "plain" when p.Length == 2 && I(p[1]) is { } l:

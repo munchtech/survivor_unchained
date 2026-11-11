@@ -107,6 +107,110 @@ public class BattleTests
         Assert.Equal(dropped, stones.Sum(p => p.Value), 6);
     }
 
+    /// <summary>(Codex audit SU-014) A kill's ember is kept whole however big: six stones at most, the last
+    /// carrying the rest (a level-35 Pack-Mother is about 279; the night's split used to drop past 240).</summary>
+    [Theory]
+    [InlineData(39)]
+    [InlineData(240)]
+    [InlineData(279)]
+    [InlineData(1000)]
+    public void A_kills_ember_is_conserved_below_at_and_above_six_stones(double xp)
+    {
+        var b = Arena(1);
+        b.Player.Iframes = 1e9;
+        var e = b.SpawnEnemy("risen", 40, 40)!;
+        b.Rules.EmberGain = xp / (e.Def.Xp * Content.Enemies.ScaleFor(e.Level).Xp * b.Rules.KillEmber);
+        b.KillEnemy(e, true, null);
+        var stones = b.Pickups.Items.Where(p => p.Alive && p.Kind == PickupKind.Ember).ToList();
+        Assert.InRange(stones.Count, 1, Battle.StonesMost);
+        Assert.Equal(xp, stones.Sum(p => p.Value), 6);
+    }
+
+    /// <summary>A battle whose survivor stands at the origin, untouched by anything else ("block": a Warding light
+    /// rank; "dodge": the most dodge there is, three in four, on a seed whose first roll dodges).</summary>
+    static Battle StatusArena(string how = "none")
+    {
+        var st = BaseStats();
+        if (how is "block" or "dodge") st.SetBase(new Dictionary<string, double>
+        {
+            [Stat.MaxHealth] = 140, [Stat.Regen] = 0, [Stat.Armor] = 2, [Stat.MoveSpeed] = 5, [Stat.PickupRadius] = 2.4,
+            [Stat.CritChance] = 0.05, [Stat.CritDamage] = 1.5, [Stat.Luck] = 1, [how == "block" ? Stat.Block : Stat.Dodge] = 1,
+        });
+        return new Battle(new BattleSetup { Seed = 3, Collision = new CollisionWorld(120), Combat = true, Stats = st, Weapons = [("oathblade", 1)], Ability = AbilityKind.ShieldBash });
+    }
+
+    /// <summary>How she is spared, for the status tests: "none" lets the hit land.</summary>
+    static void Spare(Battle b, string how)
+    {
+        var p = b.Player;
+        switch (how)
+        {
+            case "iframes": p.Iframes = 5; break;   // (a dash's or a dodge-roll's)
+            case "leap": p.Leap = new Leap { Dur = 50, X0 = p.X, Z0 = p.Z, X1 = p.X, Z1 = p.Z }; break;
+        }
+    }
+
+    /// <summary>(Codex audit SU-012) A frost missile chills only when it lands: never through i-frames, a leap or a block.</summary>
+    [Theory]
+    [InlineData("none", true)]
+    [InlineData("iframes", false)]
+    [InlineData("leap", false)]
+    [InlineData("block", false)]
+    [InlineData("dodge", false)]
+    public void A_frost_missile_chills_only_a_landed_hit(string how, bool chilled)
+    {
+        var b = StatusArena(how);
+        b.Tick(1 / 60.0, 0, 0);
+        Spare(b, how);
+        var p = b.Player;
+        var pr = b.SpawnProjectile(Side.Enemy, p.X, p.Z, 5, School.Frost)!;
+        pr.Radius = 0.28; pr.Life = 5; pr.Status = new StatusPayload(StatusKind.Chill, 1, 1, 2);
+        b.Tick(1 / 60.0, 0, 0);
+        Assert.Equal(chilled, p.SlowT > 0);
+    }
+
+    /// <summary>(Codex audit SU-013) Burning and frozen ground set their burn and their cold only on a pulse that
+    /// reached her; the burn is mitigated as the ground is.</summary>
+    [Theory]
+    [InlineData("none", School.Fire, true)]
+    [InlineData("iframes", School.Fire, false)]
+    [InlineData("leap", School.Fire, false)]
+    [InlineData("none", School.Frost, true)]
+    [InlineData("iframes", School.Frost, false)]
+    [InlineData("leap", School.Frost, false)]
+    public void A_ground_pulse_sets_its_status_only_when_it_reaches_her(string how, School school, bool reached)
+    {
+        var b = StatusArena();
+        b.Tick(1 / 60.0, 0, 0);
+        Spare(b, how);
+        var p = b.Player;
+        var z = b.SpawnZone(Side.Enemy, p.X, p.Z, 2, 10, 40, school)!;
+        z.TickT = 0;
+        b.Tick(1 / 60.0, 0, 0);
+        if (school == School.Fire)
+        {
+            Assert.Equal(reached, p.BurnT > 0);
+            if (reached) Assert.True(p.BurnDps < 40 * 0.25, $"the burn is mitigated as the ground is ({p.BurnDps})");
+        }
+        else Assert.Equal(reached, p.SlowT > 0);
+    }
+
+    /// <summary>(Codex audit SU-016) A blast finds every body it overlaps, whichever grid cell the body's centre is
+    /// filed in: a small one just past a cell boundary, and a boss-sized one whose centre lies beyond the queried cells.</summary>
+    [Theory]
+    [InlineData(1.9, 1.0, 3.2, 0.45)]
+    [InlineData(0.1, 1.0, 4.0, 3.5)]
+    public void A_radius_hit_finds_bodies_across_cell_boundaries(double qx, double r, double ex, double radius)
+    {
+        var b = Arena(1);
+        b.Player.Iframes = 1e9;
+        var e = b.SpawnEnemy("risen", ex, 0.1)!;
+        e.Radius = radius;
+        b.Tick(1 / 60.0, 0, 0);
+        Assert.True(Math.Abs(e.X - qx) <= r + radius, "the body overlaps the blast");
+        Assert.Contains(e, b.HostilesInRadius(qx, 0.1, r));
+    }
+
     [Fact]
     public void A_minute_of_fighting_kills_levels_and_stays_finite()
     {
@@ -412,5 +516,22 @@ public class BattleBalanceTests(Xunit.Abstractions.ITestOutputHelper log)
         string line = $"Low Ford, human bot, tier I: no fall in {noFall} of 48 runs; mean kills {results.Average(r => r.Kills):0.0}, mean minutes {results.Average(r => r.PlaySeconds / 60):0.0}";
         log.WriteLine(line);
         Assert.True(noFall >= 41, line + " (need >= 85%)");
+    }
+}
+
+public class OwnMarkClockTests
+{
+    [Fact]
+    public void An_own_marked_blow_counts_down_on_the_world_clock_and_others_do_not()
+    {
+        var b = BattleTests.Arena();
+        b.WorldRate = 0.25; b.WorldRateT = 1000;
+        var own = b.Blow(new Battle.EnemyBlow { OwnMark = true, Delay = 1.0, Damage = 0, Shape = TelegraphShape.Circle, Radius = 1, X = 90, Z = 90 });
+        var plain = b.Blow(new Battle.EnemyBlow { Delay = 1.0, Damage = 0, Shape = TelegraphShape.Circle, Radius = 1, X = 90, Z = 90 });
+        for (int i = 0; i < 60; i++) b.Tick(1 / 60.0, 0, 0);
+        Assert.Contains(own, b.Blows);
+        Assert.DoesNotContain(plain, b.Blows);
+        for (int i = 0; i < 60 * 3 + 2; i++) b.Tick(1 / 60.0, 0, 0);
+        Assert.DoesNotContain(own, b.Blows);
     }
 }

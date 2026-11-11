@@ -369,6 +369,7 @@ public partial class Game
 
     sealed partial class Cine
     {
+        static readonly bool SkipAll = Args.Has("skip-cines");
         readonly Game g;
         readonly CineFile file;
         readonly Battle b;
@@ -815,7 +816,8 @@ public partial class Game
 
         void Skipping(double dt)
         {
-            bool held = g.controls.Held(Act.Interact) || g.controls.Held(Act.Pause);
+            // (--skip-cines: every film held to its skip as soon as it may be, the way the owner played demo-arpg1)
+            bool held = g.controls.Held(Act.Interact) || g.controls.Held(Act.Pause) || SkipAll;
             if (held && player.CanSkip(seen)) skipHeld += dt;
             else skipHeld = Math.Max(0, skipHeld - dt * 3);
             bars.Skip((float)(skipHeld / file.Skip.Hold));

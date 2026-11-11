@@ -401,7 +401,7 @@ public partial class WorldScene : Node3D, IZoneLook
     PlayerView? staffOf;
     Node3D? staff, blade;
     bool bladeSaid, staffSaid;
-    int staffLook;
+    int staffLook, bladeLook;
 
 
     void Draw(double dt, double fightDt)
@@ -440,12 +440,13 @@ public partial class WorldScene : Node3D, IZoneLook
             Fx.Her3D = Player;
             Fx.Drawn = Drawn;
             Perf.Begin(Perf.Part.Fx);
+            Fx.SimHeld = SimPaused;
             Fx.Update(b, FxStill ? 0 : fightDt, fightTime, FxStill ? 0 : dt);
             flare.Her = HerDrawn;
             // The staff in her hand (under a mount_, not one hung at her back); looked for again while there is none (the
             // arms are built after the person), at most every 30 frames. VFX 12: "arm:mage_staff" never matched (Godot's
             // node names turn ':' into '_'), so the staff light never rode the staff.
-            if (staffOf != Player) { staffOf = Player; staff = null; staffLook = 0; blade = null; }
+            if (staffOf != Player) { staffOf = Player; staff = null; staffLook = 0; blade = null; bladeLook = 0; }
             if ((staff == null || !IsInstanceValid(staff) || !staff.IsInsideTree()) && Player != null && staffLook-- <= 0)
             {
                 staff = null; staffLook = 30;
@@ -457,9 +458,12 @@ public partial class WorldScene : Node3D, IZoneLook
             }
             flare.Staff = staff;
             // The blade in her hand (not one hung at her back), for the Long Cut's steel.
-            if (blade == null || !IsInstanceValid(blade) || !blade.IsInsideTree())
+            // (looked for at most every 30 frames while there is none, as the staff is: a hero with no blade searched
+            // her whole tree every frame)
+            if (blade != null && (!IsInstanceValid(blade) || !blade.IsInsideTree())) { blade = null; bladeLook = 0; }
+            if (blade == null && bladeLook-- <= 0)
             {
-                blade = null;
+                bladeLook = 30;
                 if (Player != null)
                     foreach (var n in Player.FindChildren("arm?*", "", true, false))
                         // ("arm?*": Godot turns the ":" in "arm:id" into "_", so "arm:*" never matched and the steel had no light)

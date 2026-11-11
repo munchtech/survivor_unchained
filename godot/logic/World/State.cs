@@ -211,6 +211,10 @@ public sealed class WorldState
     /// (Crafting.ShelfPrice). A save from before shelves kept 48 places: two shelves.</summary>
     public const int Shelf = 24;
     public int Shelves => System.Math.Max(1, Stash.Count / Shelf);
+    /// <summary>What Rook holds by the door while her shelves are full: protected loot (Rare and up, a jackpot)
+    /// a fight's end or a zone left could not shelve. It goes onto the shelves as room is made (SU-019:
+    /// it used to stay on the ground and go with the zone).</summary>
+    public List<ItemInstance> Held = new();
     static List<ItemInstance?> NewStash() { var s = new List<ItemInstance?>(Shelf); for (int i = 0; i < Shelf; i++) s.Add(null); return s; }
 
     public static WorldState Fresh(uint seed) => new() { Seed = seed };

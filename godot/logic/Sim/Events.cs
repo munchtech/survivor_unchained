@@ -96,6 +96,9 @@ public static class Ev
         /// is true to what she plays and a chain's cuts each name theirs; any other cut alternates from the weapon's own count
         /// (WeaponInst.Cuts; its first is -1). The view's old crescents mirror from this; the grip's trail follows the blade.</summary>
         public int Side = -1;
+        /// <summary>(opt-in; 0 = the old crescent) A fan from this radius (metres, his hands) out to Reach, drawn as one sweep with no
+        /// rings and no rim mark, crossed in Sweep seconds (0 = 0.12): a boss's blow as the swing itself (BattleFx.Fan).</summary>
+        public double Inner, Sweep;
         /// <summary>How many it struck, and the one of them nearest the cut's line (a body within 0.7 m of her only when no
         /// other was struck): where the view draws the contact; set as the cut lands.</summary>
         public int Struck; public double HitX, HitZ;
@@ -235,6 +238,9 @@ public static class Ev
         /// <summary>A boss's signature line naming its own next mark (ArenaBoss.Signature): it keeps its slot over the speaker
         /// while that mark is live (not sent to the fight's band above the HUD), lifted a little clear of the mark's rim.</summary>
         public bool Signature; }
+    /// <summary>A word over something in the world, Up metres over the ground at X, Z (the Ford-Warden's "Dazed"): drawn
+    /// like a struck number, not a caption.</summary>
+    public sealed class Floater : CombatEvent { public double X, Z, Up; public string Text = ""; }
     public sealed class Announce : CombatEvent { public string Title = ""; public string? Subtitle, Kicker; public Tone? Tone; }
     public sealed class Shake : CombatEvent { public double Amount; }
     /// <summary>A story beat's cue for the set (the films lead's: "door_sigil" lights the door's sigil as Corvane's

@@ -113,7 +113,12 @@ public static class Vat
         var key = beast?.Key ?? spec.Key;
         if (cache.TryGetValue(key, out var shared)) { cache[spec.Key] = shared; return shared; }
         var kept = Load(key);
-        var asset = kept != null ? Build(kept) : beast != null ? BakeBeast(beast, host) : BakePerson(spec, host);
+        VatAsset? fromDisk = null;
+        if (kept != null)
+            // A cache that reads but won't build is thrown away and the kind baked fresh (SU-009).
+            try { fromDisk = Build(kept); }
+            catch (Exception e) { GD.PushWarning($"vat: cached {key} would not build ({e.Message}); baking it again"); DirAccess.RemoveAbsolute(CachePath(key)); kept = null; }
+        var asset = fromDisk ?? (beast != null ? BakeBeast(beast, host) : BakePerson(spec, host));
         if (beast == null) asset.Pace = Pace(spec);
         if (beast == null) asset.FallOff = Falls(spec, asset);
         if (Args.Has("crowd-census") && asset.FallOff != null)
@@ -1061,8 +1066,18 @@ public static class Vat
         if (DisplayServer.GetName() == "headless") return;
         DirAccess.MakeDirRecursiveAbsolute("user://vat");
         Sweep();
-        using var f = FileAccess.Open(CachePath(b.Key), FileAccess.ModeFlags.Write);
-        if (f == null) return;
+        // Written beside, then moved over (SU-009): a crash mid-write never leaves a short cache in place.
+        var tmp = CachePath(b.Key) + ".tmp";
+        if (Write(b, tmp))
+            try { System.IO.File.Move(ProjectSettings.GlobalizePath(tmp), ProjectSettings.GlobalizePath(CachePath(b.Key)), true); }
+            catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException) { DirAccess.RemoveAbsolute(tmp); }
+        else DirAccess.RemoveAbsolute(tmp);
+    }
+
+    static bool Write(Baked b, string path)
+    {
+        using var f = FileAccess.Open(path, FileAccess.ModeFlags.Write);
+        if (f == null) return false;
         void Blob(byte[] data) { f.Store32((uint)data.Length); f.StoreBuffer(data); }
         f.Store32(Version);
         f.Store32((uint)b.Width); f.Store32((uint)b.Rows); f.Store32((uint)b.FrameCount); f.StoreFloat(b.Height);
@@ -1086,7 +1101,7 @@ public static class Vat
             else
             {
                 var img = s.Tex.GetImage();
-                if (img == null || img.IsEmpty()) { f.Close(); DirAccess.RemoveAbsolute(CachePath(b.Key)); return; }
+                if (img == null || img.IsEmpty()) { f.Close(); return false; }
                 f.Store8(2);
                 f.Store32((uint)img.GetWidth()); f.Store32((uint)img.GetHeight()); f.Store32((uint)img.GetFormat()); f.Store8((byte)(img.HasMipmaps() ? 1 : 0));
                 Blob(img.GetData());
@@ -1098,6 +1113,9 @@ public static class Vat
             f.StoreFloat(s.DyeLum);
             f.StoreFloat(s.Cut);
         }
+        bool ok = f.GetError() == Error.Ok;
+        f.Close();
+        return ok;
     }
 
     static bool swept;
@@ -1166,8 +1184,24 @@ public static class Vat
             s.Cut = f.GetFloat();
             surfs.Add(s);
         }
-        if (f.GetError() != Error.Ok && f.GetError() != Error.FileEof) return null;
+        // A short or inconsistent cache (a cut-off write, a bad disk) is refused and the kind baked again (SU-009):
+        // reading past the end, frame data that doesn't fill its dimensions, a clip past the frames, no idle,
+        // or a surface whose arrays disagree.
+        if (f.GetError() != Error.Ok || f.GetPosition() != f.GetLength()) return Refused(key, "short");
+        long cells = (long)width * rows * frames;
+        if (width <= 0 || rows <= 0 || frames <= 0 || pos.LongLength != cells * 8 || nor.LongLength != cells * 4) return Refused(key, "dimensions");
+        if (!clips.ContainsKey("idle")) return Refused(key, "clips");
+        foreach (var c in clips.Values) if (c.Start < 0 || c.Frames <= 0 || c.Start + c.Frames > frames) return Refused(key, "clips");
+        foreach (var s in surfs)
+            if (s.N.Length != s.V.Length || s.Uv.Length != s.V.Length || s.Color != null && s.Color.Length != s.V.Length || Array.Exists(s.Index, i => (uint)i >= (uint)s.V.Length))
+                return Refused(key, "surface");
         return new Baked { Key = key, Width = width, Rows = rows, FrameCount = frames, Height = height, Clips = clips, Pos = pos, Nor = nor, Surfs = surfs };
+    }
+
+    static Baked? Refused(string key, string why)
+    {
+        GD.PushWarning($"vat: cached {key} refused ({why}); baking it again");
+        return null;
     }
 
     static void Half(byte[] b, int at, float v)

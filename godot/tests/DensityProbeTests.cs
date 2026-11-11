@@ -43,13 +43,32 @@ public class DensityProbeTests
     [Fact]
     public void Verge_walk_clears_the_field_and_returns_past_the_camp_wall()
     {
-        var r = VergeZoneSim.Play(new VergeZoneSpec(2));
-        Assert.True(r.Reached);
+        var r = VergeZoneSim.Play(new VergeZoneSpec(2), maxWallTime: TimeSpan.FromSeconds(20), maxSeconds: 300);
+        Assert.True(r.Reached, r.StopReason);
         Assert.Equal(0, r.Skipped);
         Assert.Equal(0, r.Falls);
         Assert.True(r.Density.Seconds < 300);
         Assert.All(r.Density.Packs.Where(p => p.Id.StartsWith("field:")), p => Assert.True(p.Cleared));
         Assert.Equal(r.Density.Kills, r.Density.Windows.Sum(w => w.Kills));
+    }
+
+    [Fact]
+    public void Walk_wall_budget_stops_even_before_the_simulation_clock_advances()
+    {
+        var r = VergeZoneSim.Play(new VergeZoneSpec(2), maxWallTime: TimeSpan.FromTicks(1), maxSeconds: 300);
+        Assert.False(r.Reached);
+        Assert.StartsWith("wall-time limit", r.StopReason);
+        Assert.Equal(0, r.Density.Seconds);
+        Assert.All(r.Density.Packs, p => Assert.Null(p.FirstHit));
+    }
+
+    [Fact]
+    public void Walk_simulation_budget_stops_without_waiting_for_the_wall_budget()
+    {
+        var r = VergeZoneSim.Play(new VergeZoneSpec(2), maxWallTime: TimeSpan.FromSeconds(20), maxSeconds: ArenaSim.Dt);
+        Assert.False(r.Reached);
+        Assert.StartsWith("simulation limit", r.StopReason);
+        Assert.Equal(ArenaSim.Dt, r.Density.Seconds);
     }
 
     [Fact]

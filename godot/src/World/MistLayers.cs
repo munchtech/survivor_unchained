@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 
 namespace SurvivorUnchained.View;
@@ -13,7 +14,8 @@ namespace SurvivorUnchained.View;
 /// </summary>
 public static class MistLayers
 {
-    static readonly List<ShaderMaterial> mats = new();
+    // (the sheets' materials are reached through their roots, freed with their zone: a list of its own held them, and
+    // every river zone's, for good: SU-023)
     static readonly List<Node3D> roots = new();
     static readonly float[] Rise = { 0.25f, 0.7f, 1.4f }, Share = { 1f, 0.7f, 0.45f }, Drift = { 0.02f, 0.03f, 0.014f }, BankDrift = { 0.22f, 0.3f, 0.4f };
     // Each sheet's most (the three stacked: 1 - 0.78 x 0.85 x 0.9, about 40% veiled at the thickest, so the bed shows through).
@@ -43,7 +45,6 @@ public static class MistLayers
             if (lo <= hi) course.Add(((float)x, (float)((lo + hi) / 2), (float)((hi - lo) / 2 + 5)));
         }
         if (course.Count < 2) return null;
-        mats.RemoveAll(mt => !GodotObject.IsInstanceValid(mt));
         var root = new Node3D { Name = "MistLayers" };
         for (int k = 0; k < Rise.Length; k++)
         {
@@ -80,7 +81,6 @@ public static class MistLayers
             mat.SetShaderParameter("layer", (float)k);
             mat.SetShaderParameter("cap", Cap[k]);
             mat.SetMeta("share", Share[k]);
-            mats.Add(mat);
             root.AddChild(new MeshInstance3D { Name = $"Mist{k}", Mesh = mesh, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
         }
         roots.Add(root);
@@ -98,10 +98,9 @@ public static class MistLayers
 
     static void Apply()
     {
-        mats.RemoveAll(mt => !GodotObject.IsInstanceValid(mt));
         roots.RemoveAll(r => !GodotObject.IsInstanceValid(r));
         foreach (var r in roots) r.Visible = shown && thick > 0.001f;
-        foreach (var mt in mats)
+        foreach (var mt in roots.SelectMany(r => r.GetChildren().OfType<MeshInstance3D>()).Select(mi => mi.MaterialOverride).OfType<ShaderMaterial>())
         {
             mt.SetShaderParameter("mist", tint);
             mt.SetShaderParameter("key_light", new Vector3(keyLight.R, keyLight.G, keyLight.B));

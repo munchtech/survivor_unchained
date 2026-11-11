@@ -147,6 +147,8 @@ public partial class Game
     public void CloseOverlay()
     {
         if (screens.Current is RestScreen { Reporting: true }) { FinishRest(); return; }
+        // (mid-sleep: the screen stays until the morning's report)
+        if (screens.Current is RestScreen { Resting: true }) return;
         screens.Close();
         // A shop, the pack or a rest may have changed what people's markers say.
         zone?.Touched();
@@ -188,14 +190,18 @@ public partial class Game
             });
             return;
         }
+        // One night per sleep: picks made during the fade are refused (RestScreen.Resting).
+        if (screens.Current is RestScreen { Resting: true }) return;
         var b = Battle;
         var lines = Journey.Sleep(b, Rng.NextDouble);
         if (lines == null) return;
         var screen = screens.Current as RestScreen;
+        if (screen != null) screen.Resting = true;
         hud.Fade(1, 0.9);
         Wait(0.95, () =>
         {
-            screen?.Report(lines);
+            // The morning always comes: the time, the save and the fade up, whatever became of the screen.
+            if (screen != null && IsInstanceValid(screen) && screens.Current == screen) screen.Report(lines);
             SetTimeOutright(TimeOfDay.Day);
             Save("rest");
             hud.Fade(0, 0.6);
