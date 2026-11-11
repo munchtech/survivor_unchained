@@ -1359,13 +1359,14 @@ public partial class GameHud : CanvasLayer
     /// <summary>Where a tip stands: in the upper third, centred, and always below a boss's bar.</summary>
     static float TipY => Math.Max(1080 * 0.17f, TopClear + 30);
 
-    public void Hint(Hint? h)
+    /// <param name="rebuild">Built again even when it is the tip on show (the device changed: its keys' icons, SU-018).</param>
+    public void Hint(Hint? h, bool rebuild = false)
     {
         // (--no-banners pictures nothing over the play: a tip such as THE MAP is a banner's kin, UI 31)
         if (Args.Has("clean") || Args.Has("no-banners")) h = null;
         if ((Time.GetTicksMsec() < tipHoldUntil || FlareAftermath(Time.GetTicksMsec())) && h != null && !(hintView != null && hintView.Id == h.Id)) { tipHeld = h; tipWaiting = true; return; }
         if (h == null) { tipHeld = null; tipWaiting = false; }
-        bool same = hintView != null && h != null && hintView.Id == h.Id;
+        bool same = !rebuild && hintView != null && h != null && hintView.Id == h.Id;
         hintView = h;
         hintBox.Visible = false;
         // The tip, centred in the upper third and set on the world itself (the owner: "a centered
@@ -1397,7 +1398,7 @@ public partial class GameHud : CanvasLayer
     {
         irons.Keys();
         Prompt(promptView);
-        Hint(hintView);
+        Hint(hintView, rebuild: true);
         draft?.Prompts();
         talk?.Prompts();
     }

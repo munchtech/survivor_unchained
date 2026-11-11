@@ -133,4 +133,23 @@ public class CheckpointTests
         StoryPlace.Open(c, place.Gates[0]);
         Assert.False(c.Blocked(0, 6, 0.5));
     }
+
+    /// <summary>(Codex audit SU-015) A companion the checkpoint's blessings call up again comes back at the
+    /// checkpoint's ember level, not the failed stage's.</summary>
+    [Fact]
+    public void A_companion_called_up_again_has_the_checkpoints_strength()
+    {
+        var b = BattleTests.Arena(4);
+        b.EmberLevel = 7;
+        b.AddBoon("spirit_companion");
+        var at = b.Snapshot();
+        var wolf = Assert.Single(b.Enemies.Living(), e => e.Def.Id == "spirit_wolf");
+        double damage = wolf.Damage, maxHp = wolf.MaxHp;
+        b.EmberLevel = 11;
+        b.Restore(at);
+        var back = Assert.Single(b.Enemies.Living(), e => e.Def.Id == "spirit_wolf");
+        Assert.Equal(7, b.EmberLevel);
+        Assert.Equal(damage, back.Damage, 6);
+        Assert.Equal(maxHp, back.MaxHp, 6);
+    }
 }

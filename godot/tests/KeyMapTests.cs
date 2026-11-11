@@ -118,4 +118,19 @@ public class KeyMapTests
         // seats 0-2 left of the coin hold 1, 2, 3 (Skill3-5); seat 3 right of it holds 4; then LMB and RMB
         Assert.Equal(new[] { "Digit1", "Digit2", "Digit3", "Digit4", "Mouse0", "Mouse2" }, KeyMap.SeatSlot.Select(s => KeyMap.Defaults[KeyMap.Skills[s]].Single()));
     }
+
+    [Fact]
+    public void A_null_entry_in_the_bindings_file_keeps_its_default_and_the_rest_still_load()
+    {
+        // (Codex audit SU-011: {"up":null} used to throw past every later entry)
+        var saved = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.Dictionary<string, string?[]?>>(
+            "{\"up\":null,\"left\":[null],\"down\":[],\"dash\":[\"KeyF\"],\"preset\":null}")!;
+        var keys = KeyMap.Fresh();
+        Assert.Null(KeyMap.LoadSaved(saved, keys));
+        Assert.Equal(KeyMap.Defaults[Act.Up], keys[Act.Up]);
+        Assert.Equal(KeyMap.Defaults[Act.Left], keys[Act.Left]);
+        Assert.Equal(KeyMap.Defaults[Act.Down], keys[Act.Down]);
+        Assert.Equal(new[] { "KeyF" }, keys[Act.Dash]);
+        Assert.Equal(1, KeyMap.LoadSaved(new() { ["preset"] = ["1"] }, keys));
+    }
 }

@@ -46,6 +46,9 @@ public static class Args
     public static float Num(string key, float fallback) =>
         float.TryParse(Get(key), NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : fallback;
     public static bool Has(string key) => All().ContainsKey(key);
+    /// <summary>A run given any switch at all (a harness, the autopilot, a shot, a clip, a measure): a tool's run, never
+    /// the owner's play, which passes none (B1, 10 Nov: tool runs kept the owner's profile, Settings.File).</summary>
+    public static bool Tool => All().Count > 0;
 }
 
 public partial class Shots : Node

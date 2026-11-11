@@ -82,6 +82,9 @@ public sealed partial class Battle
         // What the blessings called up comes again with them.
         foreach (var e in Enemies.Living().Where(e => e.Disposition == Disposition.Ally).ToList()) Enemies.Release(e);
         Built.Clear();
+        // The ember first: the replay's summons (spirit_companion, grave_call) are sized by the level
+        // she had at the checkpoint, not the failed stage's (SU-015). Set again after, as the snapshot holds it.
+        EmberLevel = s.EmberLevel; EmberXp = s.EmberXp; EmberNext = s.EmberNext;
         foreach (var st in s.Steps)
             switch (st.Op)
             {
