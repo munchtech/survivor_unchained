@@ -1610,6 +1610,9 @@ public partial class BattleFx : Node3D
                 case Ev.Muzzle e:
                     Release(e);
                     break;
+                case Ev.Slash e when e.Inner > 0:
+                    Fan(e);
+                    break;
                 case Ev.Slash e when e.Art != null:
                     Swing(e);
                     break;
@@ -1868,6 +1871,10 @@ public partial class BattleFx : Node3D
                 }
                 case Ev.Ability e:
                     Ability(e, b);
+                    break;
+                case Ev.Floater e:
+                    // (B1) a word over him, warm gold, like PERFECT: the bark's caption sat at the screen's foot
+                    Hits.Text(V(e.X, Y(e.X, e.Z) + e.Up, e.Z), e.Text, new Color(2.0f, 1.55f, 0.55f), 56);
                     break;
                 case Ev.Status e:
                     if (e.Kind == StatusKind.Frozen)
