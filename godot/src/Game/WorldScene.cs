@@ -382,6 +382,8 @@ public partial class WorldScene : Node3D, IZoneLook
         {
             // (a body the Warden's line or heave strikes holds when the view's blow lands on it, not while it stands)
             double late = a0.Body == SurvivorUnchained.Look.HitStops.Her ? 0 : Fx.WgLate(a0.Body);
+            // (a mass-kill body's freeze waits two frames past its view blow: it catches a pose already knocked, not the standing one)
+            if (a0.Body >= 0 && a0.Body < b.Enemies.Capacity && b.Enemies.Items[a0.Body].MassKill) late += SurvivorUnchained.Sim.DeathShow.T.MassStopLag;
             var ask = late > 0 ? a0 with { Delay = a0.Delay + late } : a0;
             if (ask.Delay > 0) stopLater.Add((ask.Delay, ask, onScreen));
             else GiveStop(ask, onScreen);
@@ -416,6 +418,7 @@ public partial class WorldScene : Node3D, IZoneLook
             var p = b.Player;
             // Where she is drawn: between the last two steps (Interp), as everything else is.
             var (hx, hz, leap) = Drawn.Her(b);
+            CrowdView.Project ??= v => cam.Camera.UnprojectPosition(v);
             float y = (float)HeightAt(hx, hz);
             HerDrawn = new Vector3((float)hx, y, (float)hz);
             // The living's own clock: the fight's, all but stopped while the world is held.

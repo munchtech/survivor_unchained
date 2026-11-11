@@ -19,7 +19,9 @@ public sealed class DeathShow
         /// <summary>A mass kill (massFrom or more kills in one step) may show up to massMaxPerWindow in its window.</summary>
         public int MassFrom = 4, MassMaxPerWindow = 8;
         /// <summary>A mass kill's body leaves its feet this fast once its hold ends (s; the view's topple, CrowdView).</summary>
-        public double MassTopple = 0.12;
+        public double MassTopple = 0.08;
+        /// <summary>A mass-kill body's hit-stop ask waits this long past its view blow (s), and its held body shakes MassShakeM metres.</summary>
+        public double MassStopLag = 0.033, MassShakeM = 0.09;
         public double LaunchBase = 0.9, LaunchPerBlow = 0.6, LaunchBlowCap = 2, LaunchMin = 0.9, LaunchMax = 2.1;
     }
 

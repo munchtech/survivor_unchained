@@ -86,6 +86,9 @@ public partial class CrowdView : Node3D
         public double LastX, LastZ;
         /// <summary>How fast it is drawn moving (m/s, eased over about 0.15 s: the interpolated place, every shove in it), and which way.</summary>
         public double DrawnSpeed, DVx, DVz;
+        /// <summary>A mass-kill body held for its blow keeps running: the drawn velocity carried (F1 lead 24 c).</summary>
+        public double CarryX, CarryZ;
+        public int BlowFrame = -1;
         /// <summary>Its death's twist under the blow: from the facing it had to the one its fall needs (NaN: none).</summary>
         public double FaceFrom, FaceTo = double.NaN;
         /// <summary>The turn every fall ends with (radians), and how long its first turn takes (s).</summary>
@@ -123,6 +126,15 @@ public partial class CrowdView : Node3D
         {
             g.Thrown = true; g.LaunchT = 0; g.ThrowY = 0; g.ThrowVx = g.ThrowVz = 0;
             double dx = e.LastDx, dz = e.LastDz, l = Math.Sqrt(dx * dx + dz * dz);
+            if (e.MassKill && battle != null)
+            {
+                // thrown outward from her: away from her plus along the blow (the heave sets LastDx/Dz away from its centre)
+                var (ox, oz) = Drawn?.Of(e) ?? (e.X, e.Z);
+                double ax = ox - battle.Player.X, az = oz - battle.Player.Z, al = Math.Sqrt(ax * ax + az * az);
+                if (al > 1e-6) { ax /= al; az /= al; } else { ax = az = 0; }
+                if (l > 1e-6) { dx /= l; dz /= l; } else { dx = dz = 0; }
+                dx += ax; dz += az; l = Math.Sqrt(dx * dx + dz * dz);
+            }
             if (l < 1e-6) { var (ax, az) = Drawn?.Of(e) ?? (e.X, e.Z); dx = ax - battle!.Player.X; dz = az - battle.Player.Z; l = Math.Sqrt(dx * dx + dz * dz); }
             if (l < 1e-6) { dx = 1; dz = 0; l = 1; }
             double d = SurvivorUnchained.Sim.DeathShow.LaunchDistance(e.LastBlow) / Math.Sqrt(Math.Max(0.25, e.Def.Scale ?? 1));
@@ -620,6 +632,9 @@ public partial class CrowdView : Node3D
     /// rim): seven at once round one Iron Palms, struck again each frame as they flew.</summary>
     const float FlashRimOnly = 0.12f;
 
+    static readonly bool MassTrace = SurvivorUnchained.Args.Has("mass-trace");
+    /// <summary>World to screen pixels (WorldScene sets it; for --mass-trace).</summary>
+    public static Func<Vector3, Vector2>? Project;
     static readonly bool WgBeatsLog = SurvivorUnchained.Args.Has("wg-beats");
     int wgFallLogged;
 
@@ -650,12 +665,16 @@ public partial class CrowdView : Node3D
         {
             bool planted = e.State == EnemyState.Active && e.Anim == EnemyAnim.Attack && e.AnimT < asset.Duration("attack") && Staged == null;
             if (planted || stopped) { g.OffX -= ex - g.SimX; g.OffZ -= ez - g.SimZ; }
-            else { double k = Math.Exp(-dt / (g.CatchT > 0 ? StopOf?.Table.CatchupS ?? 0.2 : 0.2)); g.OffX *= k; g.OffZ *= k; }
+            else if (!(dieHeld && e.MassKill)) { double k = Math.Exp(-dt / (g.CatchT > 0 ? StopOf?.Table.CatchupS ?? 0.2 : 0.2)); g.OffX *= k; g.OffZ *= k; }
             double od = Math.Sqrt(g.OffX * g.OffX + g.OffZ * g.OffZ);
             if (od > PlantMax) { g.OffX *= PlantMax / od; g.OffZ *= PlantMax / od; }
         }
         g.SimX = ex; g.SimZ = ez;
         ex += g.OffX; ez += g.OffZ;
+        // (a mass-kill body waiting for its blow keeps running into it, its drawn velocity carried)
+        if (e.State != EnemyState.Dying) g.CarryX = g.CarryZ = 0;
+        else if (dieHeld && e.MassKill && dt > 0) { g.CarryX += g.DVx * dt; g.CarryZ += g.DVz * dt; }
+        ex += g.CarryX; ez += g.CarryZ;
         if (e.State == EnemyState.Dying && !dieHeld) { var (tx, tz) = ThrowOf(e, g); ex += tx; ez += tz; }
         else g.Thrown = false;
         double t = e.AnimT, y = heightAt(ex, ez) + (e.State == EnemyState.Dying && e.Launch && g.Thrown ? g.ThrowY : 0);
@@ -887,6 +906,7 @@ public partial class CrowdView : Node3D
             if (!g.WasHeld) { g.HoldRole = role; g.HoldT = t; g.HoldF = f; }
             else { role = g.HoldRole ?? role; g.HoldT += dt * g.Rate; t = g.HoldT; f = g.HoldF; }
             (shx, shz) = StopOf!.Shake(e.Id);
+            if (e.MassKill && StopOf.Table.ShakeM > 1e-6) { double k = SurvivorUnchained.Sim.DeathShow.T.MassShakeM / StopOf.Table.ShakeM; shx *= k; shz *= k; }
         }
         else g.HoldLost = e.State == EnemyState.Dying ? g.HoldLost : 0;
         g.WasHeld = stopped;
@@ -920,6 +940,18 @@ public partial class CrowdView : Node3D
         tint = Charred(tint, chr);
         Audit(ex, ez, chr, frozen);
         if (e.State != EnemyState.Dying) { g.LastRole = role; g.LastT = t; }
+        if (MassTrace && e.MassKill && e.State == EnemyState.Dying)
+        {
+            if (!dieHeld && g.BlowFrame < 0) g.BlowFrame = (int)Engine.GetFramesDrawn();
+            int fr = (int)Engine.GetFramesDrawn();
+            if (g.BlowFrame >= 0 && fr - g.BlowFrame < 30)
+            {
+                double down = asset.Down.TryGetValue(role, out var dn) ? dn : asset.Duration(role) * 0.4;
+                bool up = t < down && !(e.Launch && g.Thrown);
+                var sp = Project?.Invoke(at) ?? new Vector2((float)ex, (float)ez);
+                GD.Print($"[mass-trace] f={fr} id={e.Id} blow={g.BlowFrame} held={(dieHeld ? 1 : 0)} dieT={dieT:F3} clipT={t:F3}/{down:F3} launch={(e.Launch ? 1 : 0)} up={(up ? 1 : 0)} sx={sp.X:F0} sy={sp.Y:F0}");
+            }
+        }
         if (CensusOn) CensusWalker(e, g, asset, role, t, ex, ez);
         g.LastState = e.State; g.LastX = ex; g.LastZ = ez; g.HasLast = true;
         if (fallBurn.W > 0 || fallBurn.Z > 0) { dissolve = Math.Max(dissolve, fallBurn.Z); burning = fallBurn.W; frozen = fallBurn.X; }
