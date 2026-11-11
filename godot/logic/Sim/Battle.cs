@@ -2634,8 +2634,14 @@ public sealed partial class Battle
             if (!k.Alive) continue;
             if (k.Kind == PickupKind.Ember && k.Tier != HoardTier) lying++;
             k.Age += dt;
-            // Scatter, then settle.
-            k.X += k.Vx * dt; k.Z += k.Vz * dt;
+            // Scatter, then settle. (M6) Never into a rock, prop or wall: a Pillager's cloth that slid into a cart's box lay
+            // out of her reach for good, and the bots circled it (Low Ford, plain s2). The scatter stops at the edge.
+            if (k.Vx != 0 || k.Vz != 0)
+            {
+                double nx = k.X + k.Vx * dt, nz = k.Z + k.Vz * dt;
+                if (Collision != null && Collision.Blocked(nx, nz, 0.05, false)) k.Vx = k.Vz = 0;
+                else { k.X = nx; k.Z = nz; }
+            }
             double drag = Math.Exp(-dt * 5);
             k.Vx *= drag; k.Vz *= drag;
             if (!p.Alive) continue;

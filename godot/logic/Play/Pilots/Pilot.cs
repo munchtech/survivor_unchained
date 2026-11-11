@@ -16,7 +16,7 @@ public static class Pilot
 {
     /// <summary>How far its weapons reach, the median of them: a build of blades
     /// and rings fights close, one of bolts and arrows from further off.</summary>
-    public static double Reach(Battle b)
+    public static double Reach(Battle b, bool shortest = false)
     {
         if (b.Weapons.Count == 0) return 10;
         var r = b.Weapons.Select(w => w.Behavior switch
@@ -27,7 +27,7 @@ public static class Pilot
             Content.WeaponBehavior.Zone when !w.Flag(s => s.AtTarget) => w.Num(s => s.Radius) ?? 3,
             _ => w.Num(s => s.Range) ?? 12,
         }).OrderBy(x => x).ToList();
-        return r[(r.Count - 1) / 2];
+        return shortest ? r[0] : r[(r.Count - 1) / 2];
     }
 
     /// <param name="onward">On a map: where the way goes on. Resting packs are left to rest, what
@@ -83,6 +83,12 @@ public static class Pilot
         // turn round the foe every four seconds and never a stand. The plant is kept under the story's stand clock.)
         var meter = b.Campaign ? State(b) : null;
         var feet = StepsAndStands ? meter : null;
+        // (M6) In the campaign a foe that keeps off (Ranged, Caster: it backs away inside 0.55 of its range and strafes
+        // inside 0.85) is not "in reach" at the median reach's engage: planted there, she and a lone kiter (the Low Ford's
+        // Howler, a Pillager) held each other off for good once the day had no Flare to end it. She runs it down to
+        // her shortest weapon's reach, as a player does: she is faster than its back-off.
+        if (b.Campaign && nearest != null && nearest.Def.Behavior is Content.Behavior.Ranged or Content.Behavior.Caster)
+            engage = Math.Min(engage, Math.Max(1.6, Reach(b, shortest: true) * 0.7));
         bool inReach = nearest != null && near - (b.Campaign ? nearest.Radius : 0) <= engage;
         bool plant = false;
         if (feet != null && !wall && (inReach || press.Count >= crowded)) plant = feet.Plant(b);
