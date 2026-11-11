@@ -150,16 +150,14 @@ public static class MapGen
 
         // ---------------------------------------------------------- layout --
         // A snake through a grid of cells: the way crosses the whole square
-        // and back, and back again, so the map is long for its size. An
-        // arena is one clearing, as wide as the square allows.
-        var order = spec.Arena ? new List<(int, int)>() : Snake(rng);
+        // and back, and back again, so the map is long for its size.
+        var order = Snake(rng);
         // A map's way is cut to its clearings (the experience lead's shape: 9-10 minutes at tiers 1-2,
         // 10-12 from 3, a pack every 13-15 s): 15 turns of the snake for three clearings, 14 for four
         // (they are bigger fights), all 16 for five. (12 turns for three measured 7 minutes.)
         if (spec.Clearings > 0) order = order.Take(Math.Min(order.Count, spec.Clearings switch { 3 => 15, 4 => 14, _ => 16 })).ToList();
         double cell = (Size - Margin * 2) / Grid;
         var areas = new List<Area>();
-        if (spec.Arena) areas.Add(new Area(0, AreaKind.Start, 0, 0, ArenaR));
         for (int k = 0; k < order.Count; k++)
         {
             var (ci, cj) = order[k];
@@ -171,11 +169,11 @@ public static class MapGen
         }
         // Three of the clearings between hold altars: early, midway, late.
         int na = areas.Count;
-        if (!spec.Arena && spec.Clearings == 0) foreach (int k in new[] { rng.Int((int)(na * 0.15), (int)(na * 0.25)), rng.Int((int)(na * 0.4), (int)(na * 0.5)), rng.Int((int)(na * 0.65), (int)(na * 0.75)) })
+        if (spec.Clearings == 0) foreach (int k in new[] { rng.Int((int)(na * 0.15), (int)(na * 0.25)), rng.Int((int)(na * 0.4), (int)(na * 0.5)), rng.Int((int)(na * 0.65), (int)(na * 0.75)) })
             areas[k] = areas[k] with { Kind = AreaKind.Altar, R = Math.Max(areas[k].R, 17) };
         // A Wayfinder's map: its clearings spread evenly along the way, the rest of the turns bends;
         // the altars among the clearings, never the first (the way is learned before its question).
-        if (!spec.Arena && spec.Clearings > 0)
+        if (spec.Clearings > 0)
         {
             int between = na - 2, n = Math.Min(spec.Clearings, between);
             var at = Enumerable.Range(0, n).Select(i => 1 + (int)Math.Round((i + 0.5) * between / n - 0.5)).ToList();
@@ -308,10 +306,7 @@ public static class MapGen
                     }
                 }
                 double wet = MathX.Smoothstep(0.55, 0.8, noise.Noise(x * 0.05 - 9, z * 0.05)) * MathX.Smoothstep(-1, 2, inn);
-                // An arena is seen from high up, where wet black mud reads as a hole
-                // in the ground: there the same patches are trodden earth.
-                if (spec.Arena) { dirt = Math.Max(dirt, wet * 0.75); mud = Math.Max(mud, wet * 0.15); }
-                else mud = Math.Max(mud, wet * 0.9);
+                mud = Math.Max(mud, wet * 0.9);
                 int o = (j * SplatRes + i) * 4;
                 splat[o] = B(dirt); splat[o + 1] = B(setts); splat[o + 2] = B(blight); splat[o + 3] = B(mud);
             }
@@ -346,34 +341,11 @@ public static class MapGen
                     if (rng.Chance(keep)) Put(rng.Pick(trees), x, z, 1 + Math.Min(0.4, d * 0.012));
                     if (d < 12 && rng.Chance(0.45)) Put(rng.Pick(new[] { "bush", "fern", "bramble", "fern" }), x + rng.Range(-1, 1), z + rng.Range(-1, 1));
                     if (d < 8 && rng.Chance(0.12)) Put(rng.Pick(new[] { "boulder", "rock", "cliff" }), x, z, 1, 0.3);
-                    // An arena's wall, seen from high up: roots, stumps and fallen
-                    // trunks between the trees, mossed rock, the floor of a wood.
-                    if (spec.Arena && d < 14)
-                    {
-                        if (rng.Chance(0.35)) Put(rng.Pick(new[] { "scan_fern", "scan_shrub", "scan_grass", "scan_bark" }), x + rng.Range(-1, 1), z + rng.Range(-1, 1), rng.Range(0.9, 1.3));
-                        if (rng.Chance(0.1)) Put(rng.Pick(new[] { "scan_root", "scan_stump", "scan_trunk", "scan_mossrock", "scan_branches" }), x, z, rng.Range(0.8, 1.2), 0.15);
-                    }
                 }
                 else if (inn < 2.2)
                 {
                     // The edge of the way: undergrowth and stones you brush past.
-                    if (spec.Arena)
-                    {
-                        if (rng.Chance(0.45)) Put(rng.Pick(new[] { "scan_fern", "scan_fern", "scan_shrub", "scan_grass" }), x, z, rng.Range(0.8, 1.2));
-                        if (rng.Chance(0.12)) Put(rng.Pick(new[] { "scan_root", "scan_stump", "scan_branches", "scan_rock" }), x, z, rng.Range(0.8, 1.2), 0.1);
-                    }
-                    else if (rng.Chance(0.4)) Put(rng.Pick(new[] { "fern", "bush", "rock", "plant", "mushroom" }), x, z);
-                }
-                else if (spec.Arena)
-                {
-                    // Out in the open, in patches as ground grows: thick where
-                    // the noise says, a little anywhere, never a lawn.
-                    double patch = noise.Noise(x * 0.07 + 31, z * 0.07 - 17), rough = noise.Noise(x * 0.19 - 5, z * 0.19 + 8);
-                    if (patch > 0.15 && rng.Chance(0.55)) Put("scan_grass", x, z, rng.Range(0.8, 1.3));
-                    else if (rng.Chance(0.09)) Put("scan_grass", x, z, rng.Range(0.7, 1.1));
-                    if (rough > 0.3 && rng.Chance(0.3)) Put("scan_stones", x + rng.Range(-1, 1), z + rng.Range(-1, 1), rng.Range(0.7, 1.3), 0.05);
-                    if (patch < -0.25 && rng.Chance(0.25)) Put(rng.Chance(0.6) ? "scan_bark" : "scan_moss", x, z, rng.Range(0.8, 1.2), 0.02);
-                    if (rng.Chance(0.025)) Put(rng.Pick(new[] { "flowers", "clover", "mushroom" }), x, z);
+                    if (rng.Chance(0.4)) Put(rng.Pick(new[] { "fern", "bush", "rock", "plant", "mushroom" }), x, z);
                 }
                 else
                 {
@@ -384,186 +356,6 @@ public static class MapGen
         // A few boulders to fight round in the bigger clearings (not the start).
         var colliders = new List<ColliderDef>();
         int cid = 1;
-        var pieces = new List<PropPlace>();
-        var glows = new List<(double X, double Z, string Color, double Intensity, bool Fire)>();
-        if (spec.Arena)
-        {
-            // Islands of cover across the arena, low enough to read from the
-            // arena's high camera and the people's own: places to be cornered
-            // by, and to lose a crowd round.
-            var islands = new List<(double X, double Z)>();
-            int crypts = 0;
-            void Piece(string id, double px, double pz, double rot, double scale = 1) => pieces.Add(new PropPlace(id, px, ground.HeightAt(px, pz), pz, rot, scale));
-            void Block(double bx, double bz, double r) => colliders.Add(new ColliderDef { Id = cid++, Kind = ColliderKind.Circle, X = bx, Z = bz, R = r, Hw = r, Hd = r });
-            void Slab(double bx, double bz, double hw, double hd, double rot) => colliders.Add(new ColliderDef { Id = cid++, Kind = ColliderKind.Box, X = bx, Z = bz, Hw = hw, Hd = hd, Rot = rot, R = Math.Sqrt(hw * hw + hd * hd) });
-            // A piece's own x axis, turned: where a row of them runs.
-            (double X, double Z) Along(double rot) => (Math.Cos(rot), -Math.Sin(rot));
-            double Square() => rng.Int(0, 3) * Math.PI / 2;
-            for (int t = 0; t < 400 && islands.Count < 18; t++)
-            {
-                double ang = rng.Range(0, Math.PI * 2), rr = rng.Range(16, ArenaR - 14);
-                double x = Math.Cos(ang) * rr, z = Math.Sin(ang) * rr;
-                if (islands.Any(o => MathX.Dist(o.X, o.Z, x, z) < 19)) continue;
-                islands.Add((x, z));
-                int kind = rng.Int(0, 2);
-                if (spec.People == "dead")
-                {
-                    // The barrow field: rows of graves, a crypt or two, pillars fallen among rubble.
-                    if (kind == 1 && crypts < 2)
-                    {
-                        crypts++;
-                        double rot = Square();
-                        Piece("halloween/crypt", x, z, rot, 0.8);
-                        Slab(x, z, 2.5, 3.3, rot);
-                        var (ux, uz) = Along(rot);
-                        // Its door faces the crypt's +z: a lantern either side of it.
-                        double fx = Math.Sin(rot), fz = Math.Cos(rot);
-                        foreach (int side in new[] { -1, 1 })
-                        {
-                            double lx = x + fx * 4.2 + ux * side * 1.8, lz = z + fz * 4.2 + uz * side * 1.8;
-                            Piece("halloween/lantern_standing", lx, lz, rot);
-                            glows.Add((lx, lz, "#ffc27a", 7, false));
-                        }
-                    }
-                    else if (kind == 2)
-                    {
-                        double rot = rng.Range(0, Math.PI * 2);
-                        var (ux, uz) = Along(rot);
-                        foreach (int side in new[] { -1, 1 })
-                        {
-                            Piece("halloween/pillar", x + ux * side * 2.4, z + uz * side * 2.4, rng.Range(0, Math.PI * 2), rng.Range(0.6, 0.9));
-                            Block(x + ux * side * 2.4, z + uz * side * 2.4, 0.55);
-                        }
-                        Piece("dungeon/rubble_half", x - 1.2, z, rot, 0.55);
-                        Block(x, z, 1.3);
-                        Piece("halloween/skull_candle", x + uz * 1.6, z - ux * 1.6, rng.Range(0, Math.PI * 2));
-                        glows.Add((x + uz * 1.6, z - ux * 1.6, "#9fe0c8", 5, false));
-                    }
-                    else
-                    {
-                        double rot = rng.Range(0, Math.PI * 2);
-                        var (ux, uz) = Along(rot);
-                        int n = rng.Int(3, 5);
-                        string[] graves = ["halloween/grave_A", "halloween/grave_B", "halloween/grave_A_destroyed", "halloween/gravestone"];
-                        for (int g = 0; g < n; g++)
-                        {
-                            double o = (g - (n - 1) / 2.0) * 2.5;
-                            double gx = x + ux * o, gz = z + uz * o;
-                            Piece(rng.Pick(graves), gx, gz, rot + rng.Range(-0.12, 0.12), rng.Range(0.8, 0.95));
-                            Block(gx, gz, 0.9);
-                        }
-                        Piece("halloween/bone_A", x + uz * 2, z - ux * 2, rng.Range(0, Math.PI * 2));
-                        Piece("halloween/ribcage", x - uz * 2.2, z + ux * 2.2, rng.Range(0, Math.PI * 2));
-                    }
-                    continue;
-                }
-                if (spec.People == "kerchiefs")
-                {
-                    // The raided camp: a broken wall's corner, its stores broken open, a fire still going.
-                    if (kind == 0)
-                    {
-                        double rot = Square();
-                        var (ux, uz) = Along(rot);
-                        Piece("dungeon/wall_broken", x, z, rot, 0.8);
-                        Slab(x, z, 1.6, 0.4, rot);
-                        double cx = x + ux * 1.6 + uz * 1.6, cz = z + uz * 1.6 - ux * 1.6;
-                        Piece("dungeon/wall_broken", cx, cz, rot + Math.PI / 2, 0.7);
-                        Slab(cx, cz, 1.4, 0.35, rot + Math.PI / 2);
-                        for (int n = 0; n < 3; n++)
-                        {
-                            double bx = x - uz * rng.Range(1.2, 2.2) + ux * rng.Range(-1.5, 1.5), bz = z + ux * rng.Range(1.2, 2.2) + uz * rng.Range(-1.5, 1.5);
-                            Piece(rng.Pick(new[] { "props/Barrel", "props/Crate_Wooden" }), bx, bz, rng.Range(0, Math.PI * 2), rng.Range(0.9, 1.2));
-                            Block(bx, bz, 0.55);
-                        }
-                    }
-                    else if (kind == 1)
-                    {
-                        foreach (var (id, dx, dz, r) in new[] { ("props/Crate_Wooden", -1.6, 0.0, 0.6), ("props/Crate_Wooden", -1.4, 1.1, 0.6), ("props/Barrel_Holder", 1.6, -0.6, 0.9), ("props/Chest_Wood", 0.2, 1.8, 0.6), ("props/Barrel", 1.3, 1.4, 0.55) })
-                        {
-                            Piece(id, x + dx, z + dz, rng.Range(0, Math.PI * 2));
-                            Block(x + dx, z + dz, r);
-                        }
-                        glows.Add((x + 0.2, z - 2.4, "#ff9a48", 11, true));
-                    }
-                    else
-                    {
-                        double rot = rng.Range(0, Math.PI * 2);
-                        var (ux, uz) = Along(rot);
-                        foreach (int side in new[] { -1, 1 })
-                        {
-                            Piece(side < 0 ? "halloween/fence_broken" : "halloween/fence", x + ux * side * 2, z + uz * side * 2, rot, 0.9);
-                            Slab(x + ux * side * 2, z + uz * side * 2, 1.8, 0.25, rot);
-                        }
-                        Put("boulder", x - uz * 2, z + ux * 2, 1.0, 0.2);
-                        Block(x - uz * 2, z + ux * 2, 1.1);
-                    }
-                    continue;
-                }
-                if (spec.People == "lamplings")
-                {
-                    // The dig: spoil heaps and broken stone, lamps on poles, the blasting ember kept in barrels.
-                    if (kind == 0)
-                    {
-                        double rot = Square();
-                        Piece("dungeon/rubble_large", x, z, rot, 0.7);
-                        Slab(x, z, 2.6, 1.0, rot);
-                    }
-                    else if (kind == 1)
-                    {
-                        Piece("dungeon/pillar", x, z, rng.Range(0, Math.PI * 2), 0.7);
-                        Block(x, z, 0.6);
-                        for (int n = 0; n < 2; n++)
-                        {
-                            double bx = x + rng.Range(-2.5, 2.5), bz = z + rng.Range(-2.5, 2.5);
-                            Put("boulder", bx, bz, rng.Range(0.8, 1.1), 0.2);
-                            Block(bx, bz, 1.0);
-                        }
-                    }
-                    else
-                    {
-                        for (int n = 0; n < 3; n++)
-                        {
-                            double bx = x + rng.Range(-1.8, 1.8), bz = z + rng.Range(-1.8, 1.8);
-                            Piece("props/Barrel", bx, bz, rng.Range(0, Math.PI * 2), 1.1);
-                            Block(bx, bz, 0.55);
-                        }
-                    }
-                    double lx = x + rng.Range(-3.5, 3.5), lz = z + rng.Range(3, 4);
-                    Piece("halloween/lantern_standing", lx, lz, rng.Range(0, Math.PI * 2), 1.2);
-                    glows.Add((lx, lz, "#ffcf7a", 8, false));
-                    continue;
-                }
-                // The Pack's wood: bare trees (they read from above; full crowns do not) and stone.
-                if (kind == 0)
-                {
-                    // A stand of trees, undergrowth between.
-                    for (int n = rng.Int(3, 5); n > 0; n--)
-                    {
-                        double tx = x + rng.Range(-3, 3), tz = z + rng.Range(-3, 3);
-                        Put("dead", tx, tz, 0.9);
-                        colliders.Add(new ColliderDef { Id = cid++, Kind = ColliderKind.Circle, X = tx, Z = tz, R = 0.7, Hw = 0.7, Hd = 0.7 });
-                    }
-                    for (int n = 0; n < 5; n++) Put(rng.Pick(new[] { "fern", "bush", "bramble" }), x + rng.Range(-4, 4), z + rng.Range(-4, 4));
-                }
-                else
-                {
-                    // An outcrop: a boulder or two and a tooth of rock.
-                    for (int n = rng.Int(1, 2); n > 0; n--)
-                    {
-                        double bx = x + rng.Range(-2, 2), bz = z + rng.Range(-2, 2), sc = rng.Range(1.0, 1.5);
-                        Put("boulder", bx, bz, sc, 0.2);
-                        colliders.Add(new ColliderDef { Id = cid++, Kind = ColliderKind.Circle, X = bx, Z = bz, R = 1.1 * sc, Hw = 1.1 * sc, Hd = 1.1 * sc });
-                    }
-                    if (kind == 2)
-                    {
-                        double cx = x + rng.Range(-2.5, 2.5), cz = z + rng.Range(-2.5, 2.5);
-                        Put("cliff", cx, cz, 0.4, 0.4);
-                        colliders.Add(new ColliderDef { Id = cid++, Kind = ColliderKind.Circle, X = cx, Z = cz, R = 1.0, Hw = 1.0, Hd = 1.0 });
-                    }
-                    for (int n = 0; n < 3; n++) Put(rng.Pick(new[] { "rock", "fern", "mushroom" }), x + rng.Range(-3.5, 3.5), z + rng.Range(-3.5, 3.5));
-                }
-            }
-        }
         foreach (var a in areas.Where(a => a.Kind is AreaKind.Clearing))
             for (int n = rng.Int(1, 3); n > 0; n--)
             {
@@ -583,15 +375,9 @@ public static class MapGen
             lights.Add(new LightDef { X = x, Y = y + 1.1, Z = z, Color = color, Intensity = intensity, Distance = intensity, Flicker = 0.28, On = true });
             fires.Add(new FireDef { X = x, Y = y + 0.1, Z = z, Size = size, Light = lights.Count - 1 });
         }
-        // An arena's lanterns and camp fires.
-        foreach (var (gx, gz, color, intensity, fire) in glows)
-        {
-            if (fire) { Fire(gx, gz, 0.7, intensity, color); continue; }
-            lights.Add(new LightDef { X = gx, Y = ground.HeightAt(gx, gz) + 1.1, Z = gz, Color = color, Intensity = intensity, Distance = intensity, Flicker = 0.14, On = true });
-        }
-        // Where you come in: a fire someone left (in an arena, the fires are round the edge).
+        // Where you come in: a fire someone left.
         var st = areas[0];
-        if (!spec.Arena) Fire(st.X + 2.5, st.Z + 1.5, 0.8, 12);
+        Fire(st.X + 2.5, st.Z + 1.5, 0.8, 12);
         foreach (var a in areas.Where(a => a.Kind == AreaKind.Altar))
         {
             // A ring of standing stones round a cold hearth (lit when the altar is woken).
@@ -606,8 +392,8 @@ public static class MapGen
             lights[^1].On = false;
         }
         var boss = areas[^1];
-        // Standing stones round the last clearing (an arena's edge), fires between.
-        int stones = spec.Arena ? 12 : 8;
+        // Standing stones round the last clearing, fires between.
+        int stones = 8;
         for (int n = 0; n < stones; n++)
         {
             double ang = n * Math.PI * 2 / stones;
@@ -661,10 +447,10 @@ public static class MapGen
         foreach (var a in areas) placesJson[$"area{a.Index}"] = new { x = a.X, z = a.Z };
         var meta = new ZoneMeta
         {
-            Id = spec.Arena ? "arena" : "map", Size = Size, Res = Res, SplatRes = SplatRes, Leaves = spec.Theme == "autumn" ? 0.5 : spec.Arena ? 0.22 : 0.42,
+            Id = "map", Size = Size, Res = Res, SplatRes = SplatRes, Leaves = spec.Theme == "autumn" ? 0.5 : 0.42,
             // A map is walked by day, where the night's bright veins read as neon over the whole of its
             // ruler's clearing: there they smoulder.
-            BlightGlow = spec.Arena || spec.Night ? "#9aff4a" : "#3d6420",
+            BlightGlow = spec.Night ? "#9aff4a" : "#3d6420",
             Bound = half - 4,
             Start = new Start { X = st.X, Z = st.Z, Facing = areas.Count > 1 ? Math.Atan2(areas[1].X - st.X, areas[1].Z - st.Z) : 0 },
             Atmosphere = spec.Night ? Atmospheres.Night : Atmospheres.Day,
@@ -680,7 +466,7 @@ public static class MapGen
         };
         return new MapBuild
         {
-            Spec = spec, Meta = meta, Ground = ground, SplatRes = SplatRes, Splat = splat, Flora = flora, Props = props, Pieces = pieces,
+            Spec = spec, Meta = meta, Ground = ground, SplatRes = SplatRes, Splat = splat, Flora = flora, Props = props,
             Kinds = kinds, Areas = areas, Packs = packs, Walkable = walk, Ways = ways,
         };
     }
