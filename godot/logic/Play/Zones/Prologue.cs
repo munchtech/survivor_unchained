@@ -845,7 +845,9 @@ public sealed partial class Prologue : ZoneRuntime
         // (by the lamps broken this fight, never taken back by a relight: H8's b_path had his channels relight them
         // six times over 338 s; the ward, what a blow does, stays by the lamps lit)
         double k = fw.Floors is { Length: 4 } fl ? fl[Math.Clamp(pylons.Count - lampsBroken - wardCracks, 0, 3)] : 0;
-        if (Now == Stage.Boss && stageT < fw.MinSeconds) k = Math.Max(k, fw.Backstop);
+        // (the backstop only while a lamp stands to be broken: B1's run had all three broken by 19 s, then "Warded" held
+        // him at 5% for 32 s with nothing left to do, under "The Warden is laid bare". Bare means bare.)
+        if (Now == Stage.Boss && stageT < fw.MinSeconds && pylons.Count - lampsBroken - wardCracks > 0) k = Math.Max(k, fw.Backstop);
         double floor = k * e.MaxHp;
         // (a floor of 0 is none; a floor over his life now is his life: a relight never heals him)
         e.HpFloor = floor <= 0 ? 0 : Math.Min(floor, Math.Max(e.Hp, 1));

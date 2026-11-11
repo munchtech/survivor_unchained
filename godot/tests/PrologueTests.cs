@@ -736,4 +736,24 @@ public class PrologueTests
         Assert.Equal($"skill{gb.Slot + 1}", c.Answer);
         Assert.True(c.Target.World!().Count >= 2);
     }
+    [Fact]
+    public void Laid_bare_no_backstop_holds_him()
+    {
+        // (B1: all three lamps broken by 19 s, the 60 s backstop then held him at 5% for 32 s under "laid bare")
+        var s = Make(draft: true);
+        var ford = s.Meta.Place("LOWFORD", "ford");
+        var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+        typeof(Prologue).GetMethod("Go", flags)!.Invoke(s.Zone, [Prologue.Stage.ToFord]);
+        Stand(s, ford.X, ford.Z + 12);
+        Run(s, 7.1);
+        Assert.Equal(Prologue.Stage.Boss, s.Zone.Now);
+        var w = s.B.Enemies.Living().Single(e => e.Tag == "warden");
+        var snuff = typeof(Prologue).GetMethod("Snuff", flags)!;
+        snuff.Invoke(s.Zone, [0, "test"]);
+        Run(s, 0.2);
+        Assert.True(w.HpFloor > 0);   // a lamp left: the floor (and the backstop) hold
+        snuff.Invoke(s.Zone, [1, "test"]); snuff.Invoke(s.Zone, [2, "test"]);
+        Run(s, 0.2);
+        Assert.Equal(0, w.HpFloor);   // bare: nothing holds him, early in the fight or not
+    }
 }
