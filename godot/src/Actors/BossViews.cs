@@ -156,7 +156,10 @@ public partial class WardenView : Node3D, IBossView
             case "charge-windup": v.Loop("Idle_Shield_Loop", 0.15); break;
             // Sprint_Loop: ~7.5 m/s at scale 1, at the rate his feet keep the ground (17 / (7.5 * 2.08))
             case "charge": v.Loop("Sprint_Loop", 0.1, 17 / (7.5 * 2.08)); break;
-            case "stunned": v.Loop("Zombie_Idle_Loop", 0.2, 0.7); v.Act("Idle_Shield_Break", 0.9); break;
+            // (B1 judge r2: Idle_Shield_Break is a guard-break recoil, chest pitched back ~20 deg and the sword arm up: at +0.4 s
+            // two of three stuns read upright and ready) driven in Update: a stagger (Jump_Land's buckle: knees give, pelvis
+            // down 0.93 -> 0.45, chest forward 30-45 deg) held low, then the dazed hunch (Zombie_Idle_Loop, slowed) to release
+            case "stunned": dazed = false; break;
             case "channel": v.Loop("Spell_Simple_Idle_Loop", 0.3); v.Act("Spell_Simple_Enter", 0.8); break;
             case "dead": v.Act("Death01", 0.7, true); break;
         }
@@ -199,6 +202,9 @@ public partial class WardenView : Node3D, IBossView
     /// <summary>The cleave's clip time at the blow's landing (Sword_Attack: the hand drops through 0.43..0.50, lowest at
     /// 0.50); the strike runs 0.33 to here over the windup's last 0.2 s.</summary>
     const double Contact = 0.48;
+    /// <summary>Seconds of a stun's stagger before the dazed hunch (StaggerFor), and whether the hunch has taken over.</summary>
+    const double StaggerFor = 0.9;
+    bool dazed;
     double lean;
 
     public void Update(Enemy? e, double x, double y, double z, double facing, double dt)
@@ -222,6 +228,13 @@ public partial class WardenView : Node3D, IBossView
         }
         else if (e != null && pose == "cleave")
             view.Drive("Sword_Attack", Contact + (1.533 - Contact) * Math.Min(1, e.AnimT / 0.8), dt);
+        else if (e != null && pose == "stunned" && !dazed)
+        {
+            // The buckle (clip 0..0.15 over the first 0.25 s), then held near its lowest (0.15..0.36) until the hunch takes it.
+            double t = e.AnimT;
+            if (t < StaggerFor) view.Drive("Jump_Land", t < 0.25 ? 0.15 * t / 0.25 : 0.15 + 0.21 * (t - 0.25) / (StaggerFor - 0.25), dt);
+            else { dazed = true; view.Person.Anim.SpeedScale = 1; view.Loop("Zombie_Idle_Loop", 0.5, 0.6); }
+        }
         // (B1 judge: "It lowers its head" stood upright) gathered low over the charge's windup, leaning into the run
         double want = pose == "charge-windup" ? 0.2 : pose == "charge" ? 0.15 : 0;
         if (want > 0 || lean > 0)
@@ -230,7 +243,7 @@ public partial class WardenView : Node3D, IBossView
             if (want == 0 && lean < 1e-3) lean = 0;
             view.Rotation = new Vector3((float)lean, view.Rotation.Y, view.Rotation.Z);
         }
-        if (e != null && Args.Has("pace") && pose is "windup" or "cleave" or "charge-windup" or "charge") Trace(e, facing, dt);
+        if (e != null && Args.Has("pace") && pose is "windup" or "cleave" or "charge-windup" or "charge" or "stunned" && (pose != "stunned" || e.AnimT < 1.2)) Trace(e, facing, dt);
         flash = Math.Max(flash - dt * 6, e?.Flash ?? 0);
         foreach (var m in skin) m.Emission = new Color(1f, 0.8f, 0.6f) * (float)(flash * 0.25);
         double g = Glow * (pose == "sleep" ? 0.35 : 1) * (pose == "dead" ? 0 : 1);
