@@ -44,8 +44,6 @@ public static class Ev
 
     public sealed class Hit : CombatEvent
     {
-        // Keep identity and time when a pooled slot is reused before the harness drains events.
-        public double TargetSeed, Time;
         public double X, Z, Amount; public bool Crit; public School School; public int Target;
         public bool Dot, Blocked; public Family? Family; public string? Def; public double MaxHp, Dx, Dz;
         public string? Art; public int Rank;

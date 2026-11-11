@@ -1050,7 +1050,7 @@ public sealed partial class Battle
 
         Events.Emit(new Ev.Hit
         {
-            X = e.X, Z = e.Z, Amount = dmg, Crit = crit, School = school, Target = e.Id, TargetSeed = e.Seed, Time = Time, Dot = o.Dot, Blocked = blocked,
+            X = e.X, Z = e.Z, Amount = dmg, Crit = crit, School = school, Target = e.Id, Dot = o.Dot, Blocked = blocked,
             Family = e.Def.Family, Def = e.Def.Id, MaxHp = e.MaxHp, Dx = e.LastDx, Dz = e.LastDz,
             Art = o.Weapon?.Art, Rank = o.Weapon?.Rank ?? 0, ByFlare = o.Credit == "flare" || credit == "flare",
             Weapon = o.Weapon?.Id,
