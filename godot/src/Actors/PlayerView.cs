@@ -424,11 +424,19 @@ public partial class PlayerView : Node3D
         bt.AddNode("full", full, new Vector2(400, 300));
         bt.AddNode("fullScale", fullScale, new Vector2(600, 300));
         bt.AddNode("fullShot", fullShot, new Vector2(800, 150));
-        bt.ConnectNode("upperScale", 0, "upper");
+        // (A1 L21) Hers: a seek between each shot's clip and its pace, so a swing held on its wind while she turns is let go
+        // at the place it would have reached (SwingHold); --turn-l20: none, as before.
+        if (mine && !TurnL20)
+        {
+            bt.AddNode("upperSeek", new AnimationNodeTimeSeek(), new Vector2(100, 200));
+            bt.ConnectNode("upperSeek", 0, "upper");
+            bt.ConnectNode("upperScale", 0, "upperSeek");
+        }
+        else bt.ConnectNode("upperScale", 0, "upper");
         bt.ConnectNode("upperShot", 0, "move");
         bt.ConnectNode("upperShot", 1, "upperScale");
         // (--act: a seek node between the clip and its pace, to jump a held loop back; nothing is added without it)
-        if (ActOn && mine)
+        if ((ActOn || !TurnL20) && mine)
         {
             bt.AddNode("fullSeek", new AnimationNodeTimeSeek(), new Vector2(500, 300));
             bt.ConnectNode("fullSeek", 0, "full");
@@ -1009,7 +1017,32 @@ public partial class PlayerView : Node3D
         // (A1 L20) Hers: standing or slow she turns whole to the blow on the eased turn (faceGoal, Update), not in one frame;
         // running, her waist takes it (up to 110 deg, a blow further round goes out at 110), never a whole-body flip that
         // the run's facing undid the next frame (the demo-arpg1 flicker). --turn-snap: as before.
-        if (mine && !AimLegs && !TurnSnap)
+        hipGoal = null;
+        aimRamp = 0;
+        if (mine && !AimLegs && !TurnSnap && !TurnL20)
+        {
+            // (A1 L21) Standing: whole body to the blow (faceGoal, the quick standing turn), a soft clip she was in (a stop)
+            // let go so the swing shows. Running: her waist takes up to 75 deg of the blow off her travel; past 100 her hips
+            // join (her body turned toward it by the rest, hipGoal), shoulders on the blow in ~3 frames (Carry's eased twist).
+            faceGoal = null;
+            if (speed < 1.5f)
+            {
+                faceGoal = face; aim = 0;
+                if (fullSoft && (bool)tree.Get("parameters/fullShot/active"))
+                {
+                    fullShotNode.FadeOutTime = 0.1;
+                    tree.Set("parameters/fullShot/request", (int)AnimationNodeOneShot.OneShotRequest.FadeOut);
+                }
+            }
+            else
+            {
+                float travel = velX * velX + velZ * velZ > 0.16f ? Mathf.Atan2(velX, velZ) : Rotation.Y;
+                float dt2 = Mathf.RadToDeg(Mathf.Wrap(face - travel, -Mathf.Pi, Mathf.Pi));
+                if (Mathf.Abs(dt2) > 100) hipGoal = travel + Mathf.DegToRad(Mathf.Sign(dt2) * (Mathf.Abs(dt2) - 75));
+                aim = Mathf.Clamp(dt2, -75, 75);
+            }
+        }
+        else if (mine && !AimLegs && !TurnSnap)
         {
             faceGoal = null;
             if (speed < 1.5f) { faceGoal = face; aim = 0; }
@@ -1167,15 +1200,27 @@ public partial class PlayerView : Node3D
         else if (AimLegs && aimHold > 0 && p.Leap == null && p.DashT <= 0) Rotation = new Vector3(0, aimFace, 0);
         // (A1 L20) A blow struck standing or slow: she turns whole to it on the eased turn and stays on it while it lasts,
         // unless she is off at a run (then the run's facing takes her back, as a blow struck running does not turn her whole).
-        else if (mine && faceGoal is float fg && aimHold > 0 && sp < 2f && p.Leap == null && p.DashT <= 0) TurnTo(fg, (float)dt, TurnMaxStanding);
+        else if (mine && faceGoal is float fg && aimHold > 0 && sp < 2f && p.Leap == null && p.DashT <= 0) TurnTo(fg, (float)dt, TurnL20 ? TurnMaxStanding : TurnMaxStanding21);
+        // (A1 L21) A blow behind her, running: her body turned toward it (hipGoal) while it lasts, at most 45 deg a frame.
+        else if (mine && hipGoal is float hg && aimHold > 0 && p.Leap == null && p.DashT <= 0) TurnTo(hg, (float)dt, 1350);
         else if (sp > 0.4f && p.Leap == null)
         {
             bool stick = !TurnOld && p.StickX * p.StickX + p.StickZ * p.StickZ > 0.01;
             float want = stick ? Mathf.Atan2((float)p.StickX, (float)p.StickZ) : Mathf.Atan2((float)p.Vx, (float)p.Vz);
-            if (mine && !TurnOld && !TurnSnap) TurnTo(want, (float)dt, TurnMax);
+            // (A1 L21) The 180 at a run: a plant and pivot (Pivot), facing on the new travel in 3 frames.
+            float off = Mathf.Abs(Mathf.Wrap(want - Rotation.Y, -Mathf.Pi, Mathf.Pi));
+            if (mine && !TurnL20 && !TurnOld && !TurnSnap && pivotN < 0 && speed > 2.5f && off > Mathf.DegToRad(120)) PivotStart(want);
+            if (pivotN >= 0)
+            {
+                TurnTo(want, (float)dt, 2200); pivotN++;
+                if (Mathf.Abs(Mathf.Wrap(want - Rotation.Y, -Mathf.Pi, Mathf.Pi)) < Mathf.DegToRad(10) || pivotN > 6) pivotN = -1;
+            }
+            else if (mine && !TurnOld && !TurnSnap) TurnTo(want, (float)dt, TurnMax);
             else Rotation = new Vector3(0, Mathf.LerpAngle(Rotation.Y, want, 1 - Mathf.Exp(-(TurnOld ? 14 : FaceRate) * (float)dt)), 0);
         }
-        if (aimHold <= 0) faceGoal = null;
+        else pivotN = -1;
+        if (aimHold <= 0) { faceGoal = null; hipGoal = null; }
+        if (mine && !TurnL20) PivotPlace((float)dt);
         turnedLast = turning; turning = false;
         // Turned to the view while a panel frames her (FollowCamera.ScreenFrame), standing.
         if (Turned is float tw && sp < 0.4f && p.AttackAnim == null && time >= flareFaceUntil)
@@ -1244,6 +1289,7 @@ public partial class PlayerView : Node3D
         if (p.AttackAnim is { } a && a.T != lastAttack && !KnockSkip(a.T))
         {
             lastAttack = a.T;
+            double fs0 = fullStart;
             var swings = mine ? HerClips.Swings(person.Kind) : System.Array.Empty<string>();
             // (campaign: the sim names the clip and its rate, from the press, so her contact and the hit meet: Sim/Contact.cs)
             bool played = mine && a.Clip != null && UpperHer(a.Clip, a.Rate);
@@ -1256,6 +1302,13 @@ public partial class PlayerView : Node3D
             }
             swing++;
             if (mine) Strike(a.Angle);
+            if (mine && played && !TurnL20 && !AimLegs && !TurnSnap)
+            {
+                bool wasFull = fullStart == time && fs0 != time;
+                SwingHold(wasFull, wasFull ? fullClip : upperClip, wasFull ? fullSpeed : (float)upperRate, speed >= 1.5f);
+            }
+            if (mine && SurvivorUnchained.Play.TurnRun.Start >= 0)
+                GD.Print(System.FormattableString.Invariant($"STRIKE t {b.Time - SurvivorUnchained.Play.TurnRun.Start:0.0000} aim {Mathf.RadToDeg(aimFace):0.0} sp {speed:0.00} clip {upperClip} rate {upperRate:0.00} full {fullStart == time}"));
         }
         // Casters raise a hand now and then as their spells go (hers move
         // with the spells themselves: OnMuzzle).
@@ -1284,6 +1337,7 @@ public partial class PlayerView : Node3D
         ActWalkVel(ref sp);
         if (mine && !ActLive && ActWalk == null) Rest(b, dt, sp);
         if (mine) Carry((float)dt, sp);
+        if (mine) { if (SurvivorUnchained.Play.TurnRun.Start >= 0) logT = b.Time - SurvivorUnchained.Play.TurnRun.Start; SwingRelease((float)dt); }
         if (mine) ActApply();
         if (mine) SurvivorUnchained.Play.TurnRun.Log(b.Time, p.StickX, p.StickZ, p.Vx, p.Vz, Rotation.Y, carriage?.Bank ?? 0, speed, p.X, p.Z);
         if (mine && SurvivorUnchained.Play.TurnRun.Start >= 0) CarryLog(b.Time - SurvivorUnchained.Play.TurnRun.Start);
@@ -1610,7 +1664,12 @@ public partial class PlayerView : Node3D
         standT = spd < 0.05f ? standT + dt : 0;
         if (standT > 0.4f) stride = 0;
         float period = Stride.Period(spd, walkLen, walkSpeed, runLen, Stride.RunScale(spd, natural), w, hasWalk);
-        stride = Stride.Advance(stride, dt, period);
+        // (A1 L21) Frozen through the 180's pivot (the planted foot holds); with her hips turned onto a blow, at her travel's
+        // part along her facing (backward past 90 deg off it: a backpedal), so the planted foot keeps its ground.
+        float strideK = 1;
+        if (!TurnL20 && hipGoal != null && aimHold > 0 && velX * velX + velZ * velZ > 0.16f)
+            strideK = Mathf.Cos(Mathf.Wrap(Rotation.Y - Mathf.Atan2(velX, velZ), -Mathf.Pi, Mathf.Pi));
+        if (TurnL20 || pivotN < 0) stride = Stride.Advance(stride, dt * strideK, period);
         if (!move2D)
         {
             tree.Set("parameters/move/walkSeek/seek_request", stride * walkLen);
@@ -1715,7 +1774,22 @@ public partial class PlayerView : Node3D
         carriage.Tilt = Mathf.Lerp(carriage.Tilt, Mathf.Clamp(accel * 0.35f, -9, 7), 1 - Mathf.Exp(-10 * dt));
         // Her back to the blow while it lasts, then home.
         float aimTo = aimHold > 0 ? aim : 0;
-        carriage.Aim = Mathf.Lerp(carriage.Aim, aimTo, 1 - Mathf.Exp((aimHold > 0 ? -30 : -8) * dt));
+        if (TurnL20) carriage.Aim = Mathf.Lerp(carriage.Aim, aimTo, 1 - Mathf.Exp((aimHold > 0 ? -30 : -8) * dt));
+        else
+        {
+            // (A1 L21) Eased in (18 deg the first frame), at most 30 a frame, eased out on the goal, never past it.
+            float rem = aimTo - carriage.Aim, f = dt * 30;
+            aimRamp = aimRamp <= 0 ? 18 : 30;
+            float k = aimHold > 0 ? 0.8f : 1 - Mathf.Exp(-8 * dt);
+            float stepA = Mathf.Min(aimRamp * f, Mathf.Abs(rem) * k);
+            carriage.Aim += Mathf.Sign(rem) * stepA;
+            // The 180's lean: toward the new travel and banked into the pivot, eased out after it.
+            if (pivotLean > 0.01f)
+            {
+                carriage.Bank = Mathf.Lerp(carriage.Bank, -pivotSign * 12, pivotLean);
+                carriage.Tilt = Mathf.Lerp(carriage.Tilt, 10, pivotLean);
+            }
+        }
         // Her head carried up, her eyes on the way ahead (HerCarriage.HeadLevel);
         // left to the clip through a whole-body one (a roll, a leap, a vault, a
         // rush, a get-up), whose tucked head lifted would look wrong, and back after.
@@ -1770,6 +1844,99 @@ public partial class PlayerView : Node3D
     bool turning, turnedLast;
     /// <summary>A blow's facing she turns her whole body to (standing or slow when it was struck), held while aimHold lasts.</summary>
     float? faceGoal;
+    /// <summary>(A1 L21) --turn-l20: lead 20's turning and presses (A/B); without it lead 21's: the eased waist (30 deg a
+    /// frame at most), hips joining a blow behind her, the swing held on its wind until her shoulders are on the blow,
+    /// the quick standing turn and the 180's plant and pivot.</summary>
+    static readonly bool TurnL20 = SurvivorUnchained.Args.Has("turn-l20"), TurnPlant = SurvivorUnchained.Args.Has("turn-plant");
+    /// <summary>Standing, lead 21: within 20 deg of a 180 in 3 frames, no frame over ~73 deg.</summary>
+    const float TurnMaxStanding21 = 2200f;
+    /// <summary>A running blow past 100 deg off her travel: the facing her body turns to while it lasts (radians).</summary>
+    float? hipGoal;
+    /// <summary>The waist's per-frame cap (deg) as it eases into a blow: 18 the first frame, 30 after.</summary>
+    float aimRamp;
+    // The 180's pivot: frames into it (-1 none), its turn's sign, the planted foot (her local, and its world point), the
+    // model's offset that keeps it there (eased back to 0 after), the lean's weight, last frame's sim place and drawn transform.
+    int pivotN = -1;
+    float pivotSign, pivotLean;
+    Vector3 plantLocal, plantW, plantOff, lastSimPos;
+    Transform3D lastXform = Transform3D.Identity;
+    bool lastXformSet;
+
+    void PivotStart(float want)
+    {
+        pivotN = 0;
+        pivotSign = Mathf.Sign(Mathf.Wrap(want - Rotation.Y, -Mathf.Pi, Mathf.Pi));
+        var skel = person.Skeleton;
+        Vector3 W(string n) { int i = skel.FindBone(n); return i < 0 ? Position : skel.GlobalTransform * skel.GetBoneGlobalPose(i).Origin; }
+        var fl = W("foot_l"); var fr = W("foot_r");
+        var foot = fl.Y < fr.Y ? fl : fr;
+        plantLocal = Transform.AffineInverse() * foot;
+        plantW = (lastXformSet ? lastXform : Transform) * plantLocal;
+    }
+
+    /// <summary>Her model placed this frame: on the sim's point, plus the pivot's offset (the planted foot held at its
+    /// world point while she yaws), let go after it at no more than a run frame's worth beside the sim's own step.</summary>
+    void PivotPlace(float dt)
+    {
+        var sim = Position;
+        if (pivotN >= 0) pivotLean = Mathf.Min(1, pivotLean + 0.5f);
+        // (--turn-plant: the planted foot held at its world point. OFF by default: in the run's both-feet-up frames at the
+        // stick's flip the lower foot is ~0.36 m ahead of her root and in the air, so holding it carried her 0.64 m in a frame,
+        // 38 px on screen (r1); the root (the sim) has already stopped. A plant needs the stride chosen for it: later work.)
+        if (pivotN >= 0 && TurnPlant)
+        {
+            var at = new Transform3D(new Godot.Basis(Vector3.Up, Rotation.Y), sim) * plantLocal;
+            plantOff = new Vector3(plantW.X - at.X, 0, plantW.Z - at.Z);
+        }
+        else
+        {
+            float len = plantOff.Length();
+            if (len > 1e-4f)
+            {
+                float simStep = new Vector2(sim.X - lastSimPos.X, sim.Z - lastSimPos.Z).Length();
+                float allowed = Mathf.Max(0.02f, 0.19f - simStep);
+                float step = Mathf.Min(Mathf.Min(len * 0.4f + 0.005f, allowed), len);
+                plantOff -= plantOff / len * step;
+            }
+            else plantOff = Vector3.Zero;
+            pivotLean *= Mathf.Exp(-dt / 0.1f);
+        }
+        lastSimPos = sim;
+        Position = sim + plantOff;
+        lastXform = Transform; lastXformSet = true;
+    }
+
+    // The swing held on its first frame (its wind) while she turns onto the blow: when (time; -1 none), its pace, the
+    // clip, whether it is the whole-body shot, and the frames it may wait.
+    double swingHoldAt = -1; float swingHoldRate; string swingHoldClip = ""; bool swingHoldFull; int swingHoldMax;
+    float aimFaceHold;
+
+    void SwingHold(bool full, string clip, float rate, bool running)
+    {
+        swingHoldAt = time; swingHoldFull = full; swingHoldClip = clip; swingHoldRate = rate; swingHoldMax = running ? 3 : 4;
+        aimFaceHold = aimFace;
+        tree.Set(full ? "parameters/fullScale/scale" : "parameters/upperScale/scale", 0f);
+    }
+
+    /// <summary>After Carry: let the held swing go once her shoulders (body yaw + the waist carried) are within 25 deg
+    /// of the blow, or at its frames' cap, seeked to where it would be (never past its contact), so view and hit meet.</summary>
+    void SwingRelease(float dt)
+    {
+        if (swingHoldAt < 0) return;
+        float sh = Rotation.Y + Mathf.DegToRad(carriage?.Aim ?? 0);
+        float err = Mathf.Abs(Mathf.Wrap(aimFaceHold - sh, -Mathf.Pi, Mathf.Pi));
+        double waited = time - swingHoldAt;
+        if (err > Mathf.DegToRad(25) && waited < (swingHoldMax - 0.5) * dt) return;
+        double seek = waited * swingHoldRate;
+        if (SurvivorUnchained.Content.HerEvents.Contact(swingHoldClip) is double ct) seek = System.Math.Min(seek, ct);
+        tree.Set(swingHoldFull ? "parameters/fullScale/scale" : "parameters/upperScale/scale", swingHoldRate);
+        if (seek > 0) tree.Set(swingHoldFull ? "parameters/fullSeek/seek_request" : "parameters/upperSeek/seek_request", seek);
+        if (swingHoldFull) fullStart = time - seek / System.Math.Max(fullSpeed, 1e-3);
+        if (SurvivorUnchained.Play.TurnRun.Start >= 0) GD.Print(System.FormattableString.Invariant($"RELEASE {logT:0.0000} waited {waited / dt:0.0} f seek {seek:0.000} err {Mathf.RadToDeg(err):0.0}"));
+        swingHoldAt = -1;
+    }
+    double logT;
+
     /// <summary>One frame of the eased turn toward `want` (radians), at most `max` deg/s.</summary>
     void TurnTo(float want, float dt, float max)
     {
@@ -1798,7 +1965,7 @@ public partial class PlayerView : Node3D
         var sc = cam != null ? cam.UnprojectPosition(pv) : Vector2.Zero;
         bool up = (bool)tree.Get("parameters/upperShot/active"), fu = (bool)tree.Get("parameters/fullShot/active");
         string V(Vector3 v) => System.FormattableString.Invariant($"{v.X:0.000} {v.Y:0.000} {v.Z:0.000}");
-        GD.Print(System.FormattableString.Invariant($"CARRY {t:0.0000} fl {V(fl)} fr {V(fr)} hl {V(hl)} hr {V(hr)} pv {V(pv)} chest {Yaw("upperarm_l", "upperarm_r"):0.0} pelv {Yaw("thigh_l", "thigh_r"):0.0} face {Mathf.RadToDeg(Rotation.Y):0.0} scr {sc.X:0.0} {sc.Y:0.0} aimset {aim:0.0} aimc {carriage?.Aim ?? 0:0.0} hold {aimHold:0.00} stride {stride:0.000} up {(up ? upperClip : "-")} full {(fu ? fullClip : "-")} bank {carriage?.Bank ?? 0:0.0} tilt {carriage?.Tilt ?? 0:0.0}"));
+        GD.Print(System.FormattableString.Invariant($"CARRY {t:0.0000} fl {V(fl)} fr {V(fr)} hl {V(hl)} hr {V(hr)} pv {V(pv)} chest {Yaw("upperarm_l", "upperarm_r"):0.0} pelv {Yaw("thigh_l", "thigh_r"):0.0} face {Mathf.RadToDeg(Rotation.Y):0.0} scr {sc.X:0.0} {sc.Y:0.0} aimset {aim:0.0} aimc {carriage?.Aim ?? 0:0.0} hold {aimHold:0.00} stride {stride:0.000} up {(up ? upperClip : "-")} full {(fu ? fullClip : "-")} bank {carriage?.Bank ?? 0:0.0} tilt {carriage?.Tilt ?? 0:0.0} upos {(float)tree.Get("parameters/upper/current_position"):0.000} piv {pivotN} off {plantOff.Length():0.000}"));
     }
     bool held;
     static readonly float HeadLevel = SurvivorUnchained.Args.Has("head-level") ? SurvivorUnchained.Args.Num("head-level", 0.8f) : 0.8f;
