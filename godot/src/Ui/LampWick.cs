@@ -418,13 +418,14 @@ public partial class LampWick : Control
             // (M3's card line, the owner's "Yes, ship it": a chained skill says what each cut deals and how often)
             string line = $"{sum.Stat} {sum.Total:0} = " + string.Join(" · ", sum.Parts.Select(p => $"{p.What} {p.Value}"))
                 + (sum.Cut is { } cut ? $" · dealt as {cut:0} every {sum.Every:0.#} s" : "");
-            float shift = Math.Clamp(lastRowBottom + 15 - (Y1 - (Wide ? 14 : 12)), 0, 6);
+            var fsum = LampInk.F("alegreya-sans-500");
+            float shift = Math.Clamp(lastRowBottom + 8 + fsum.GetAscent(14) - (Y1 - (Wide ? 14 : 12)), 0, 6);
             LampInk.Text(ci, LampInk.F("alegreya-sans-500"), 14, Wide ? (X0 + X1) / 2 : X0 + 532, Y1 - (Wide ? 14 : 12) + shift, line, LampInk.Body with { A = 0.95f }, 0);
         }
     }
 
     readonly HashSet<string> overflowSaid = new();
-    /// <summary>The lowest baseline the last row drew (the sum line keeps 15 px under it, moving down at most 6).</summary>
+    /// <summary>The lowest ink the last row drew (the sum line keeps 8 px under it, moving down at most 6).</summary>
     float lastRowBottom;
     void Overflow(int r, int c, string text)
     {
@@ -457,15 +458,39 @@ public partial class LampWick : Control
             if (slot != "" && stText == "") slotLines = new() { slot };
             else if (slot != "" && said == null && LampInk.W(fs, slot + " · " + stText, 13) <= w) slotLines = new() { slot + " · " + stText };
             else slotLines = stText == "" ? (slot == "" ? new() : new() { slot }) : LampInk.Wrap(stText, fs, 13, w);
-            float y0 = ry + 5, sy = y0 + Math.Max(0, lines.Count - 1) * 16 + 17;
-            // the room under: the sum line (last row) or the next row's name
-            float limit = last ? Y1 - (Wide ? 14 : 12) + 6 - 15 : ry + PitchY - (r + 1 == fr ? 12 : 2) - 16;
-            int allowed = Math.Max(1, (int)MathF.Floor((limit - sy) / 15f) + 1);
-            if (slotLines.Count > allowed) Overflow(r, fc, string.Join(" ", slotLines));
-            LampInk.Text(ci, fn, 18, TextX, ry - 12, NameOf(r, fc), LampInk.Ink);
+            // measured layout: the block sits at the unfocused anchor and only rises as far as the room under needs,
+            // never closer than 10 px (ink to ink) below the row above; 8 px of clear ground above what follows
+            static float Asc(Font f, int px) => f.GetAscent(px);
+            static float Desc(Font f, int px) => f.GetDescent(px);
+            int n = lines.Count;
+            float aboveBottom = float.NegativeInfinity;
+            if (r > 0)
+            {
+                var al = LampInk.Wrap(LineOf(r - 1, 3), fl, 14, w);
+                float ay = ry - PitchY;
+                aboveBottom = al.Count > 0 ? ay + 16 + (al.Count - 1) * 16 + Desc(fl, 14) : ay - 2 + Desc(fn, 18);
+            }
+            float nameTop = ry - 2 - Asc(fn, 18);
+            float maxRise = float.IsNegativeInfinity(aboveBottom) ? 16 : Math.Clamp(nameTop - (aboveBottom + 10), 0, 16);
+            float lowTop = last ? Y1 - (Wide ? 14 : 12) + 6 - Asc(LampInk.F("alegreya-sans-500"), 14) : ry + PitchY - 2 - Asc(fn, 18);
+            float limitBottom = lowTop - 8;
+            float lastLine = ry + 16 + Math.Max(0, n - 1) * 16;
+            float BottomInk(List<string> sl) => sl.Count > 0 ? lastLine + 17 + (sl.Count - 1) * 15 + Desc(fs, 13) : lastLine + Desc(fl, 14);
+            float rise = 0;
+            while (true)
+            {
+                float need = BottomInk(slotLines) - limitBottom;
+                if (need <= maxRise) { rise = Math.Max(0, need); break; }
+                if (slotLines.Count > 0 && said == null) { slotLines.RemoveAt(slotLines.Count - 1); continue; }
+                Overflow(r, fc, string.Join(" ", slotLines.Prepend(line)));
+                rise = maxRise;
+                break;
+            }
+            float y0 = ry + 16 - rise, sy = y0 + Math.Max(0, n - 1) * 16 + 17;
+            LampInk.Text(ci, fn, 18, TextX, ry - 2 - rise, NameOf(r, fc), LampInk.Ink);
             for (int j = 0; j < lines.Count; j++) LampInk.Text(ci, fl, 14, TextX, y0 + j * 16, lines[j], LampInk.Body with { A = 0.92f });
             for (int j = 0; j < slotLines.Count; j++) LampInk.Text(ci, fs, 13, TextX, sy + j * 15, slotLines[j], said != null ? LampInk.Red : LampInk.Focus);
-            bottom = slotLines.Count > 0 ? sy + (slotLines.Count - 1) * 15 : y0 + (lines.Count - 1) * 16;
+            bottom = BottomInk(slotLines) - rise;
         }
         else
         {
@@ -476,7 +501,7 @@ public partial class LampWick : Control
             if (ls.Count > 2) Overflow(r, 3, tl);
             for (int j = 0; j < ls.Count; j++)
                 LampInk.Text(ci, fl, 14, TextX, ry + 16 + j * 16, ls[j], (crossed ? LampInk.Dim : LampInk.Body) with { A = 0.9f });
-            bottom = ry + 16 + (Math.Max(1, ls.Count) - 1) * 16;
+            bottom = ry + 16 + (Math.Max(1, ls.Count) - 1) * 16 + fl.GetDescent(14);
         }
         if (last) lastRowBottom = bottom;
     }

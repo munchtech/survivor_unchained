@@ -179,6 +179,20 @@ public partial class SkillTip : Control
         return o;
     }
 
+    /// <summary>Wrap, then if the last line is a stub (under 45% of the width) re-wrap at the narrowest width (4 px steps, down to 60%) that keeps the same line count.</summary>
+    static List<string> WrapBalanced(Font f, string s, int size, float width)
+    {
+        var o = Wrap(f, s, size, width);
+        if (o.Count < 2 || TextW(f, o[^1], size) >= 0.45f * width) return o;
+        for (float w = width - 4; w >= 0.6f * width; w -= 4)
+        {
+            var t = Wrap(f, s, size, w);
+            if (t.Count != o.Count) break;
+            o = t;
+        }
+        return o;
+    }
+
     /// <summary>One label/value pair placed: its line, where the label starts, where the value ends (right-aligned).</summary>
     sealed record Cell(string Label, string Value, int Line, float LabelX, float ValueRight, bool Gold);
     sealed class Lay
@@ -212,7 +226,7 @@ public partial class SkillTip : Control
             if (compact && padX + nameW + 16 + howW <= right) { L.HowInline = true; L.HowX = right - howW; }
             else { L.HowBase = y + (compact ? 4 : 6) + L.HowSize; y = L.HowBase; }
         }
-        L.Lines = Wrap(Style.Ui, v.Line, L.LineSize, inner);
+        L.Lines = WrapBalanced(Style.Ui, v.Line, L.LineSize, inner);
         int maxLines = compact ? 2 : 3;
         if (L.Lines.Count > maxLines && said.Add(v.Skill + "|line")) GD.Print($"SKILLTIP OVERFLOW {v.Skill} line={L.Lines.Count}");
         if (L.Lines.Count > 0) { L.LineBase = y + 10 + L.LineSize; y = L.LineBase + (L.Lines.Count - 1) * L.LinePitch; }
