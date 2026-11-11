@@ -137,6 +137,9 @@ public class HitStopTests
         Assert.Single(far); Assert.Equal(7, far[0].Body);
         var near = c.Of(new CombatEvent[] { new Ev.Hit { Target = 7, Amount = 40, MaxHp = 100, Weapon = "oathblade", X = 1.5 } }, 100, 0, 0);
         Assert.Contains(near, x => x.Body == HitStops.Her);
+        // her own blade's swing past her_reach_m (gear grows its reach) is still her contact
+        var longSwing = c.Of(new CombatEvent[] { new Ev.Hit { Target = 7, Amount = 40, MaxHp = 100, Weapon = "oathblade", Art = "slash_steel", X = T.HerReachM + 1 } }, 100, 0, 0);
+        Assert.Contains(longSwing, x => x.Body == HitStops.Her);
         // an elite dying of a wound (no blow of hers on it this step): it holds, she never stops mid wind-up
         var wound = c.Of(new CombatEvent[] { new Ev.Kill { Enemy = 4, Elite = true, ByPlayer = true, X = 1 } }, 100, 0, 0);
         Assert.Single(wound); Assert.Equal(4, wound[0].Body);

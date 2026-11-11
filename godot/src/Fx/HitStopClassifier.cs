@@ -49,7 +49,8 @@ public sealed class HitStopClassifier
             {
                 case Ev.Hit h when Qualifies(h):
                     struck.Add(h);
-                    bool near = Near(h.X, h.Z);
+                    // Her own blade's swing is her contact at any reach her gear gives it; other weapons count only within her_reach_m.
+                    bool near = IsOath(h.Art) || Near(h.X, h.Z);
                     if (near) touched.Add(h.Target);
                     double ms = LeadRule.Heavy(h) ? (h.Crit ? t.CritMs : t.HeavyMs) : t.TrashMs;
                     if (ms > 0)
