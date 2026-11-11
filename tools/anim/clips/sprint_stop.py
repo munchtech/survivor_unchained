@@ -47,6 +47,8 @@ if REAVER_CARRY == "high":  # Animation 58: the back elbow 7 closer (at the defa
     SPRINT_SWING_RUN["run_reaver_axes"] = (5, -3, 1.25, -7, 6, 6)
 if WARDEN_CARRY == "high57":
     SPRINT_SWING_RUN["run_warden"] = (5, -3, 1.25, -3, 0, 3)
+if WARDEN_CARRY == "trail":  # A1 L22: the straight sword arm, the high57 values
+    SPRINT_SWING_RUN["run_warden"] = (5, -3, 1.25, -3, 0, 3)
 if WARDEN_CARRY == "high":  # Animation 58: 4 (at 3 its upper arm went 7 mm into her plate)
     SPRINT_SWING_RUN["run_warden"] = (5, -3, 1.25, -3, 0, 4)
 

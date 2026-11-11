@@ -511,7 +511,11 @@ LOW_ARM_R = ((12, 24, 118, -10), (-18, 22, 122, -15))
 # at 330 29 off vertical (cap 35); 41+ deg on screen at all eight views and 0/60/150/210, both pitches; the wrist easy
 # (flex 4-8 back, radial/ulnar -7..+5); pitch 65-70, its heading 40-83 (a steep line's heading swings with any roll).
 GRIP_TILT = 30.0
-WARDEN_CARRY = os.environ.get("WARDEN_CARRY", "high57")
+# A1 L22: the round-2 judge failed high57 (the blade vertical overhead at 225/270). A nearly straight arm (elbow open 151)
+# lets the wrist trail the blade 41-44 below level and 27-29 out: screen >= 31 deg at all 8 views, tip 0.26 m, legs 143 mm
+# (measured offline, shsw.py). Shield: hand 14 right, 36 down, 26 ahead of the shoulder, swivel -90 (vertical, top below the head).
+WARDEN_TRAIL_ARM = ((7.5, 12, 151, 0), (7.5, 12, 151, 0))
+WARDEN_CARRY = os.environ.get("WARDEN_CARRY", "trail")
 REAVER_CARRY = os.environ.get("REAVER_CARRY", "trail")  # high | trail | low (see RUNS)
 BELT_ARM = ((10, 20, 95, -6), (-6, 20, 98, -8))
 HIGH_ARM_57 = ((14, 29, 82, -20), (4, 29, 76, -22))
@@ -519,7 +523,8 @@ HIGH_ARM = ((8, 31, 100, -20), (-4, 31, 96, -22))
 WARDEN_CARRIES = {"low": (LOW_ARM, dict(out=(26, 24))),
                   "belt": (BELT_ARM, dict(pitch=(-45, -47), out=(2, 2))),
                   "high": (HIGH_ARM, dict(pitch=(76, 66), out=(35, 35), roll=10, sway=6, sway_lag=0.09, fa=(12, 28), lift=0.04)),
-                  "high57": (HIGH_ARM_57, dict(pitch=(80, 80), out=(30, 30)))}
+                  "high57": (HIGH_ARM_57, dict(pitch=(80, 80), out=(30, 30))),
+                  "trail": (WARDEN_TRAIL_ARM, dict(back=44, out=16, edge=0.0, swing=0.0, side="r", knuckles=False, out_swing=0.0))}
 # Animation 57 (max judge r1 on hold B: the axe head dragged at her feet, the far axe flat on screen from the side): her
 # fists 13 cm up the hafts (REAVER_GRIP, the idle's grip), each haft held steep (-60..-70 off level, eased only a little
 # with the swing) and turned out little, so it reads 35+ deg from the side from either side at both camera pitches; the
@@ -561,7 +566,8 @@ RUNS = {
     # (Animation 56: the low point; was the trailing carry, TRAIL_ARM and axe_hang(**TRAIL).)
     # (Animation 57: WARDEN_CARRY; "low" is Animation 56's LOW_ARM and low_point(out=(26, 24)).)
     "run_warden": (replace(WARDEN_RUN, swing_r=WARDEN_CARRIES[WARDEN_CARRY][0]),
-                   {"r": (haft_carry if WARDEN_CARRY == "high" else low_point)(**WARDEN_CARRIES[WARDEN_CARRY][1]), "l": shield_guard(lift=0.04, fwd=-0.005)}, "sword+shield"),
+                   {"r": (haft_carry if WARDEN_CARRY == "high" else axe_hang if WARDEN_CARRY == "trail" else low_point)(**WARDEN_CARRIES[WARDEN_CARRY][1]),
+                    "l": shield_guard(hand_at=(0.14, -0.36, 0.26), swivel=-90, lift=0.04, fwd=-0.005)}, "sword+shield"),
     # The free fist's forward end higher and out, by her hip (anim 41: it landed at her groin from the close-up).
     # Animation 57: REAVER_CARRY picks the reaver's armed runs, "trail" (the trailing carry, Animation 55's; the
     # default until Animation 58) or "low" (hold B: REAVER_ARMED, REAVER_ARM_R/L, low_point with the grip up the haft).
@@ -621,7 +627,7 @@ if WARDEN_CARRY == "high":
 # The sprint's own arms where they differ from the run's (sprint_stop applies these over RUNS).
 # The shield hand sits back toward her (run 2.5 cm, sprint 2 cm from the first pass) so the
 # elbow stays bent: at most 124 degrees in the run, 119 in the sprint (a judge's bar: 125/120).
-SPRINT_ARMS = {"run_warden": {"l": shield_guard(lift=0.08, fwd=0.0)}}
+SPRINT_ARMS = {"run_warden": {"l": shield_guard(hand_at=(0.14, -0.36, 0.26), swivel=-90, lift=0.08, fwd=0.0)}}
 
 
 def clips(rig, want):
