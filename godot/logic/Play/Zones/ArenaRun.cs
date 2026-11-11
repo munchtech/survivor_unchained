@@ -1291,6 +1291,8 @@ public sealed partial class ArenaRun : ZoneRuntime, IBossArena
         if (over || !bossUp) return;
         var b = boss;
         if (b != null) foreach (var l in OnLoot(b)) B!.Spill(l, x, z);
+        // (SU-030) Its script lets go of what it holds on this path too, as at the kill.
+        if (b != null) script?.Fell(b);
         if (won) Felled();
         else Victory(x, z);
     }

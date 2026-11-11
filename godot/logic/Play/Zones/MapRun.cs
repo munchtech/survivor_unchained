@@ -72,7 +72,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     ArenaBoss? script;
     Enemy? boss;
     double bossAt = -1;
-    bool bossUp, cleared, over, restlessDone, eventLit, firstClear;
+    bool bossUp, cleared, over, restlessDone, returning, eventLit, firstClear;
     int falls, kills;
     double? bossTtk;
     (double X, double Z)? way;
@@ -304,10 +304,10 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         // The ruler's sign at its clearing's edge, as the last stretch of way begins.
         var bc = map.Boss;
         if (!signed && Near(p, bc.X, bc.Z, bc.R + 34)) Sign(p);
-        if (eventAt >= 0) Event();
+        if (lit != null) Event();
         Press(dt);
         // The ruler, in its clearing.
-        if (!bossUp && !cleared && boss == null && Near(p, bc.X, bc.Z, bc.R + 2)) Ruler(false);
+        if (!bossUp && !cleared && !returning && boss == null && Near(p, bc.X, bc.Z, bc.R + 2)) Ruler(false);
     }
 
     /* ------------------------------------------- the packs' kit (M3 round 4) -- */
@@ -380,10 +380,15 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         if (eventLit && !(eventsLit < 2 && R() < Atlas.Rank(G.Journey.World, Atlas.TwiceLit) / 3.0)) return;
         eventLit = true;
         eventsLit++;
-        eventAt = Seconds;
-        eventWave = 0;
-        eventAltar = a.Area;
-        eventFoes.Clear();
+        // (SU-029) A second question waits its turn: it is asked once the first's strongbox is out.
+        if (lit != null) queued.Enqueue(a.Area);
+        else Ask(a.Area);
+    }
+
+    /// <summary>The people's question begins at its altar.</summary>
+    void Ask(Area altar)
+    {
+        lit = new Lighting { Altar = altar, At = Seconds };
         B!.Charges.Spikes = true;
         G.Announce(new Announcement(EventName, "Hold the altar", "danger", 3, people.Name));
     }
@@ -392,10 +397,17 @@ public sealed class MapRun : ZoneRuntime, IBossArena
      * over about fifty seconds at the lit altar, its tell first; then, its last asker down (or a
      * minute gone), a strongbox at the altar: three to five things at the map's level, and a chart
      * now and then. */
-    double eventAt = -1;
-    int eventWave, eventsLit;
-    Area? eventAltar;
-    readonly List<(Enemy E, double Seed)> eventFoes = new();
+    sealed class Lighting
+    {
+        public required Area Altar;
+        public double At;
+        public int Wave;
+        public readonly List<(Enemy E, double Seed)> Foes = new();
+    }
+    /// <summary>The question being asked, and any lit since that wait their turn (each its own altar).</summary>
+    Lighting? lit;
+    readonly Queue<Area> queued = new();
+    int eventsLit;
 
     string EventName => people.Id switch
     {
@@ -404,28 +416,30 @@ public sealed class MapRun : ZoneRuntime, IBossArena
 
     void Event()
     {
-        if (B == null || eventAltar == null) return;
-        double t = Seconds - eventAt;
-        if (eventWave < 3 && t >= eventWave * 17)
+        if (B == null || lit == null) return;
+        var ev = lit;
+        double t = Seconds - ev.At;
+        if (ev.Wave < 3 && t >= ev.Wave * 17)
         {
-            Wave(eventWave);
-            eventWave++;
+            Wave(ev, ev.Wave);
+            ev.Wave++;
         }
-        bool clear = eventFoes.All(f => !f.E.Alive || f.E.Seed != f.Seed || f.E.State == EnemyState.Dying);
-        if ((eventWave >= 3 && t >= 45 && clear) || t >= 60)
+        bool clear = ev.Foes.All(f => !f.E.Alive || f.E.Seed != f.Seed || f.E.State == EnemyState.Dying);
+        if ((ev.Wave >= 3 && t >= 45 && clear) || t >= 60)
         {
-            var at = eventAltar;
-            eventAt = -1;
+            var at = ev.Altar;
+            lit = null;
             B.Charges.Spikes = false;
             B.SpawnPickup(PickupKind.Chest, at.X, at.Z, 1, "strongbox");
             B.Events.Emit(new Ev.Shake { Amount = 0.3 });
             G.Announce(new Announcement("A strongbox", "The altar gives up what it kept", "reward", 2.6));
+            if (queued.Count > 0) Ask(queued.Dequeue());
         }
     }
 
     /// <summary>One asking of the people's question: a ring of them up round her, then a line from
     /// one side with a champion leading it, then the ring again with more.</summary>
-    void Wave(int k)
+    void Wave(Lighting ev, int k)
     {
         var p = B!.Player;
         string def = PickKind(people);
@@ -455,7 +469,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         {
             if (B == null || over) return;
             foreach (var (x, z) in at)
-                if (Put(def, x, z, (x, z)) is { } e) { B.Rouse(e); eventFoes.Add((e, e.Seed)); }
+                if (Put(def, x, z, (x, z)) is { } e) { B.Rouse(e); ev.Foes.Add((e, e.Seed)); }
             if (k != 1) return;
             if (Put(people.Champion, p.X + Math.Cos(a0) * 15, p.Z + Math.Sin(a0) * 15, (p.X, p.Z), elite: true, levelUp: 1) is { } c)
             {
@@ -463,7 +477,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
                 Sign(c, people, 1 + Chart.Tier / 6);
                 carriers[c.Id] = 2;
                 B.Rouse(c);
-                eventFoes.Add((c, c.Seed));
+                ev.Foes.Add((c, c.Seed));
             }
         });
     }
@@ -472,7 +486,8 @@ public sealed class MapRun : ZoneRuntime, IBossArena
 
     void Ruler(bool again)
     {
-        if (B == null) return;
+        // (SU-028) Never a second over a living one.
+        if (B == null || boss is { Alive: true } up && up.State != EnemyState.Dying) return;
         var bc = map.Boss;
         bossUp = true;
         bossAt = Seconds;
@@ -534,13 +549,17 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     {
         bossUp = false;
         bossTtk ??= Seconds - bossAt;
+        // (SU-030) Its script lets go of what it holds (Red Hand's cage, Snib's pits) on every path.
+        if (boss is { } fallen) script?.Fell(fallen);
         boss = null;
         B!.Charges.Cap = 2;
-        // Restless: it comes again once, at half its strength.
+        // Restless: it comes again once, at half its strength. (SU-028) The return is pending until
+        // its callback takes it, never read as "no ruler yet" by the clearing's own spawn.
         if (Chart.Has("restless") && !restlessDone)
         {
             restlessDone = true;
-            G.After(4, () => { if (!over) Ruler(true); });
+            returning = true;
+            G.After(4, () => { if (!returning) return; returning = false; if (!over) Ruler(true); });
             return;
         }
         cleared = true;
@@ -666,8 +685,12 @@ public sealed class MapRun : ZoneRuntime, IBossArena
             if (e.Disposition == Disposition.Hostile && e.State != EnemyState.Dying) B.KillEnemy(e, true, null);
         foreach (var a in altars) a.Lit = true;
         if (altars.FirstOrDefault() is { } first) { eventLit = true; Strongbox(first.Area.X, first.Area.Z, told: false); }
-        if (!bossUp) Ruler(false);
-        if (boss is { } b) B.KillEnemy(b, true, null);
+        // (A restless ruler is called and felled twice; its pending return is taken here, not in 4 s.)
+        for (int i = 0; i < 2 && !cleared && !over; i++)
+        {
+            if (!bossUp) { bool again = returning; returning = false; Ruler(again); }
+            if (boss is { } b) B.KillEnemy(b, true, null);
+        }
         foreach (var p in B.Pickups.Items) if (p.Alive && p.Kind == PickupKind.Gold) p.Pulled = true;
     }
 
