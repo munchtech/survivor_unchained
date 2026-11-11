@@ -655,10 +655,56 @@ def over_gait_of(spec, name):
     from motion.rig import Rig
     st, ga = MC.read(OUT / f"{spec['of']}.json"), MC.read(OUT / f"{spec['gait']}.json")
     sp = pieces()["shieldp"]["at"] if "shield" in spec.get("held", ["shield"]) else None
-    up, log = OG.over_gait(st, ga, Rig(RIG), keep={"l": sp} if sp is not None else None, name=name,
+    rig = Rig(RIG)
+    clear = None
+    if spec.get("clear"):
+        keyed = {b for b in st.get("bones", st["rot"]) if not OG.lower(b) and b in st["rot"]} | \
+            {n for n in rig.names if OG.lower(n)}
+        clear = dict(spec["clear"] if isinstance(spec["clear"], dict) else {}, probe=arm_probe(keyed))
+    up, log = OG.over_gait(st, ga, rig, keep={"l": sp} if sp is not None else None, name=name,
                            arms=spec.get("arms", "node"), anchor=spec.get("anchor", "pelvis"), soft=spec.get("soft"),
-                           targets=spec.get("targets", "world"))
+                           targets=spec.get("targets", "world"), clear=clear, spine=spec.get("spine"))
     return up, log, st, ga
+
+
+def arm_probe(keyed):
+    """over_gait's clear probe: probe(G, P) -> {"l"|"r": (sd (F,), point (F,3), normal (F,3))}, per frame the arm's skin
+    vertex (upper arm to fingers) deepest against her torso's skin, clipcheck.contact's reading exactly (B posed by
+    clipcheck's poser, the torso's signed distance along its vertex normal, the axilla fold and points over 3 cm from
+    the torso left out), and whether that point is the hand's; a frame with no arm point within 3 cm reads 1 m. World
+    (B's node frame), m."""
+    sys.path.insert(0, str(REPO / "tools/body"))
+    import clipcheck as CC
+    P1 = REPO / "godot/art/people/body_p1"
+    B = CC.Body(str(P1 / "body.glb"), json.loads((P1 / "rig.json").read_text()), MC_rig_names(), m44(*_rest()), True)
+    Xi = np.linalg.inv(B.X)
+    p = B.p
+
+    def probe(G, P):
+        Gb = m44(G, P)
+        n = len(Gb)
+        out = {s: (np.ones(n), np.zeros((n, 3)), np.zeros((n, 3)), np.zeros(n, bool)) for s in "lr"}
+        B.cache.clear()
+        for f in range(n):
+            V, Gp, N, tree = B.pose(Gb[f], keyed, f)
+            for s in "lr":
+                ai = np.nonzero(B.arm[s])[0]
+                u, lo = Gp[p.index[f"upperarm_{s}"]][:3, 3], Gp[p.index[f"lowerarm_{s}"]][:3, 3]
+                ax = (lo - u) / np.linalg.norm(lo - u)
+                ok = ((V[ai] - u) @ ax >= CC.AXILLA * np.linalg.norm(lo - u))
+                sd, dist, q = CC.signed(V, N, tree, B.tidx, V[ai])
+                ok &= dist < 0.03
+                if not ok.any():
+                    continue
+                k = int(np.argmin(np.where(ok, sd, 1.0)))
+                out[s][0][f] = sd[k]
+                out[s][1][f] = (Xi @ np.r_[V[ai[k]], 1.0])[:3]
+                nr = Xi[:3, :3] @ N[q[k]]
+                out[s][2][f] = nr / (np.linalg.norm(nr) + 1e-12)
+                out[s][3][f] = bool(B.hand[s][ai[k]])
+        B.cache.clear()
+        return out
+    return probe
 
 
 def over_gait_measure(up, st, ga, body=None, rig=None):

@@ -6,6 +6,9 @@
   "arms": "node",
   "anchor": "pelvis",
   "soft": 0.95,
-  "rules": "sunder_cut_b's upper body while she walks (the ARPG pivot: a press never roots her): Marionette's over_gait re-solves the cut over walk_warden's MEAN pelvis (spine_01..05 carry the cut's hip drive so the chest keeps its world turn; each arm's IK keeps the hand / shield boss on the cut's path, the hand its world turn), in the frame carried by the cut's pelvis travel over the ground (anchor pelvis). Upper tracks only; the cut's beats; meta layer upper.",
-  "notes": "WIP (OVERGAIT, A1 lead 19, 10 Nov): built from the BUILT sunder_cut_b and walk_warden (p4.py build runs over_gait specs after the rest). Not judged."
+  "targets": "chest",
+  "spine": ["spine_01", "spine_02", "spine_03"],
+  "clear": {"target_mm": 1.0},
+  "rules": "sunder_cut_b's upper body while she walks (the ARPG pivot: a press never roots her): Marionette's over_gait re-solves the cut over walk_warden's MEAN pelvis (spine_01..03 carry the cut's hip drive so the chest keeps its world turn and spine_04/05 keep the cut's own locals; targets chest: each arm's IK puts the hand / shield boss on the cut's path taken against its chest and carried by the re-solved chest, the hand its turn the same way, so the arms keep the cut's own pose and the swing rides 5-8 cm higher with her walking height; clear: the arms kept 1 mm out of her torso at the mean pelvis and the K 0.5 / K 1 laid poses, elbow swivel first, then a shoulder turn), in the frame carried by the cut's pelvis travel over the ground (anchor pelvis). Upper tracks only; the cut's beats; meta layer upper.",
+  "notes": "WIP (OVERGAIT, OVERGAIT3: targets chest + spine_01..03 + clear, A1 lead 19, 10 Nov): built from the BUILT sunder_cut_b and walk_warden (p4.py build runs over_gait specs after the rest). Not judged."
 }
