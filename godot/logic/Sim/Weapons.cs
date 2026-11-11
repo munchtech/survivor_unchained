@@ -303,11 +303,24 @@ public static partial class Firing
     /// <summary>Its cooldown before the multipliers: the campaign record's wait for a pressed skill (a spender's only
     /// while a resource pays for it), else its base cooldown. (M3) A kindled spender whose key heaves (Groundbreaker, the
     /// Disc) waits its record's wait too while Resolve pays: its cost is its gate, as the pressed form's is.</summary>
-    static double BaseCooldown(Battle b, WeaponInst w) =>
+    static double BaseCooldown(Battle b, WeaponInst w) => BaseCooldownFor(w, b.Resolve.On);
+
+    /// <summary>The wait the seat shows with no Battle (the skill tooltips, U1): CooldownOf's rule on the weapon's own
+    /// numbers: the base wait (BaseCooldownFor), the character's Cooldown stat (statMul), its Mods, Evolution and Wick cooldown. No stat, rule, board or Hand
+    /// multipliers: a fresh campaign fight has none (a test holds it equal to CooldownOf).</summary>
+    public static double CampaignCooldownOf(WeaponInst w, bool resolveOn, double statMul = 1)
+    {
+        double c = BaseCooldownFor(w, resolveOn) * statMul * w.Mods.Cooldown;
+        if (w.Evolution != null) c *= w.Evolution.Mods.Cooldown ?? 1;
+        if (w.Wick != null) c *= w.Wick.Cooldown;
+        return Math.Max(0.08, Math.Min(20, c));
+    }
+
+    internal static double BaseCooldownFor(WeaponInst w, bool resolveOn) =>
         // (M3 MR 3) a chained cut with a period waits its period: a share of the blow, as its weight is
         w.Chained && w.Press!.Chain!.Period is > 0 and var p ? p :
-        w.Press is { Wait: { } wait } r && (w.Pressed && (b.Resolve.On || (r.Resolve ?? 0) <= 0 && (r.Drain ?? 0) <= 0)
-            || w.KindledNow && w.KindleKey == KindlePress.Now && b.Resolve.On && (r.Resolve ?? 0) > 0) ? wait : w.Def.Base.Cooldown ?? 1;
+        w.Press is { Wait: { } wait } r && (w.Pressed && (resolveOn || (r.Resolve ?? 0) <= 0 && (r.Drain ?? 0) <= 0)
+            || w.KindledNow && w.KindleKey == KindlePress.Now && resolveOn && (r.Resolve ?? 0) > 0) ? wait : w.Def.Base.Cooldown ?? 1;
 
     public static double AreaOf(Battle b, WeaponInst w, double baseValue)
     {
