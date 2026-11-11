@@ -526,6 +526,31 @@ public class PrologueTests
     }
 
     [Theory]
+    [InlineData("channel")]
+    [InlineData("windup")]
+    public void A_boss_stagger_breaks_the_Wardens_channel_and_calls_off_his_cleave(string mode)
+    {
+        var s = Make(draft: true);
+        var ford = s.Meta.Place("LOWFORD", "ford");
+        typeof(Prologue).GetMethod("Go", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.Invoke(s.Zone, [Prologue.Stage.ToFord]);
+        Stand(s, ford.X, ford.Z + 12);
+        Run(s, 7.1);
+        Assert.Equal(Prologue.Stage.Boss, s.Zone.Now);
+        var w = s.B.Enemies.Living().Single(e => e.Tag == "warden");
+        var ai = typeof(Prologue).GetField("ai", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(s.Zone)!;
+        var at = ai.GetType();
+        var blow = s.B.Blow(new Battle.EnemyBlow { OwnMark = true, Delay = 1.0, Damage = 50, Shape = TelegraphShape.Circle, Radius = 3, X = s.B.Player.X, Z = s.B.Player.Z, From = w });
+        at.GetField("Cleave")!.SetValue(ai, blow);
+        at.GetField("Mode")!.SetValue(ai, mode);
+        s.B.Events.Drain();
+        s.B.Hooks.OnBossStagger!(w);
+        Assert.Equal("stun", (string)at.GetField("Mode")!.GetValue(ai)!);
+        Assert.DoesNotContain(s.B.Blows, b => b.OwnMark && b.Damage > 0);
+        var evs = s.B.Events.Drain();
+        Assert.Equal(mode == "channel", evs.Any(e => e is Ev.Announce { Title: "Channel broken" }));
+    }
+
+    [Theory]
     [InlineData(1.9, false)]
     [InlineData(0.5, true)]
     public void The_charge_hurts_only_inside_its_drawn_lane(double off, bool hurt)

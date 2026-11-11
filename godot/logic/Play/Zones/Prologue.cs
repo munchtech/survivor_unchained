@@ -146,6 +146,7 @@ public sealed partial class Prologue : ZoneRuntime
         {
             BossTick = (e, dt) => e.Tag == "warden" && WardenTick(e, dt),
             OnKill = OnKill,
+            OnBossStagger = e => { if (e.Tag == "warden") WardenStaggered(e); },
             // (M5-B, ARPG 7.1: a pack's captain is its carrier, a champion carries more; Encounters.Carried)
             OnLoot = e => [.. night?.Carried(e, G.Journey.Drops) ?? [], .. day?.Carried(e, G.Journey.Drops) ?? []],
             OnPickup = OnDayPickup,
@@ -928,6 +929,24 @@ public sealed partial class Prologue : ZoneRuntime
         ai.ChannelCd = 30; ai.CleaveCd = 3; ai.ChargeCd = 6; ai.T = 0; ai.Hold = WakeHold;
         floorHeldT = 0;
         wardenView.Release();
+    }
+
+    /// <summary>Battle staggered him (3 s): a channel breaks, a pending cleave and the lane are called off, he stands stunned.</summary>
+    void WardenStaggered(Enemy e)
+    {
+        if (B == null || Now != Stage.Boss || ai.Mode is "dead" or "sleep" or "wake") return;
+        if (PaceNotes.Count < 200) PaceNotes.Enqueue($"ford staggered t={B.Time:0.00} mode={ai.Mode}");
+        if (ai.Mode == "stun") { ai.T = Math.Min(ai.T, -0.5); return; }
+        if (ai.Mode == "channel")
+        {
+            if (bar != null) Bar(bar with { Channel = null });
+            B.Events.Emit(new Ev.Announce { Title = "Channel broken", Tone = Tone.Boon });
+            B.Events.Emit(new Ev.Sound { Id = "ford.channel_broken" });
+        }
+        if (ai.Cleave != null) { ai.Cleave.Damage = 0; ai.Cleave = null; }
+        EndLane();
+        ai.Mode = "stun"; ai.T = -0.5; e.AnimT = 0;
+        wardenView.SetPose("stunned");
     }
 
     void EndLane() { if (ai.Lane != null) { ai.Lane.T = 0; ai.Lane = null; } }
