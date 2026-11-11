@@ -917,11 +917,30 @@ public sealed partial class Prologue : ZoneRuntime
     static double CleaveMul => Teeth.Ford?.Cleave ?? 1;
     /// <summary>(M3) The charge's lane called off: the run is over (or broke on a lamp or a rock).</summary>
     void EndLane() { if (ai.Lane != null) { ai.Lane.T = 0; ai.Lane = null; } }
+    /// <summary>(the trace) How far a point lies off the charge's drawn lane's middle line, metres (-1: no lane).</summary>
+    double LaneOff(double x, double z)
+    {
+        if (ai.Lane is not { } l) return -1;
+        double lx = l.X1 - l.X, lz = l.Z1 - l.Z, len2 = lx * lx + lz * lz;
+        double t = len2 > 0 ? Math.Clamp(((x - l.X) * lx + (z - l.Z) * lz) / len2, 0, 1) : 0;
+        return Dist(l.X + lx * t, l.Z + lz * t, x, z);
+    }
+
+    /// <summary>The fight's trace (--pace): each change of his mode, said once with the clock, the gap to her and his life.</summary>
+    string traceMode = "";
+    void TraceMode(Enemy e)
+    {
+        if (ai.Mode == traceMode || B == null) return;
+        if (PaceNotes.Count < 200)
+            PaceNotes.Enqueue($"ford mode {traceMode}->{ai.Mode} t={B.Time:0.00} fought={stageT:0.0} dist={Dist(B.Player.X, B.Player.Z, e.X, e.Z):0.0} hp={e.Hp:0}/{e.MaxHp:0} lit={LitCount} state={e.State} her={B.Player.Hp:0}");
+        traceMode = ai.Mode;
+    }
 
     bool WardenTick(Enemy e, double dt)
     {
         if (B == null) return true;
         var p = B.Player;
+        TraceMode(e);
         ai.T += dt;
         e.Vx = e.Vz = 0;
         double dx = p.X - e.X, dz = p.Z - e.Z;
@@ -976,7 +995,8 @@ public sealed partial class Prologue : ZoneRuntime
                     B.Events.Emit(new Ev.Telegraph { Id = e.Id * 10 + 1, Shape = TelegraphShape.Circle, X = ai.HitX, Z = ai.HitZ, Radius = 3.4, Duration = 1.05, Hostile = true, Boss = true });
                     // (M3: the cleave is a marked blow the hands read; it lands on its own clock, as his did, within 3.4 m + her girth)
                     ai.Cleave = B.Blow(new Battle.EnemyBlow { OwnMark = true, Shape = TelegraphShape.Circle, X = ai.HitX, Z = ai.HitZ, Radius = 3.4 + p.Radius * 0.5,
-                        Delay = 1.05, Damage = e.Damage * 1.5 * CleaveMul, Source = "The Ford-Warden", From = e });
+                        Delay = 1.05, Damage = e.Damage * 1.5 * CleaveMul, Source = "The Ford-Warden", From = e,
+                        After = bt => { if (PaceNotes.Count < 200) PaceNotes.Enqueue($"ford cleave lands t={bt.Time:0.00} dealt={ai.Cleave?.Dealt ?? -1:0} mode={ai.Mode} herAt={Dist(bt.Player.X, bt.Player.Z, ai.HitX, ai.HitZ):0.0}"); } });
                     wardenView.SetPose("windup");
                     return true;
                 }
@@ -1007,7 +1027,8 @@ public sealed partial class Prologue : ZoneRuntime
                 if (dist < e.Radius + p.Radius + 0.4 && ai.ContactT <= 0)
                 {
                     ai.ContactT = 1.2;
-                    B.HurtPlayer(e.Damage * 0.6, School.Physical, "The Ford-Warden", e);
+                    double cd = B.HurtPlayer(e.Damage * 0.6, School.Physical, "The Ford-Warden", e);
+                    if (PaceNotes.Count < 200) PaceNotes.Enqueue($"ford touch contact t={B.Time:0.00} dealt={cd:0} dist={dist:0.0}");
                 }
                 return true;
             }
@@ -1058,7 +1079,10 @@ public sealed partial class Prologue : ZoneRuntime
                     B.Events.Emit(new Ev.Shake { Amount = 0.5 });
                 }
                 else if (Dist(p.X, p.Z, e.X, e.Z) < e.Radius + p.Radius + 0.3 && p.Iframes <= 0)
-                    B.HurtPlayer(e.Damage * 1.4, School.Physical, "The Ford-Warden", e);
+                {
+                    double rd = B.HurtPlayer(e.Damage * 1.4, School.Physical, "The Ford-Warden", e);
+                    if (PaceNotes.Count < 200) PaceNotes.Enqueue($"ford touch charge t={B.Time:0.00} dealt={rd:0} off={LaneOff(p.X, p.Z):0.00}");
+                }
                 if (ai.Travelled <= 0.01 && ai.Mode == "charge") { ai.Mode = "walk"; ai.ChargeCd = 8 + B.Rng.Next() * 3; wardenView.Release(); EndLane(); }
                 return true;
             }

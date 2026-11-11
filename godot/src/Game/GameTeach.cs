@@ -405,6 +405,25 @@ public partial class Game
 
     /// <summary>--pace (the tutorial's pacing audit): each Prologue stage as it begins, and her health
     /// every 5 s of play, with the game's clock.</summary>
+    /// <summary>A pace note said; the Ford-Warden's (B1, the boss's trace) also shot with --shot at each move's tell and
+    /// landing, and --until-ford quits 12 s after he falls (the run stops at the boss's death).</summary>
+    void FordNote(string note, Battle b)
+    {
+        GD.Print(note);
+        if (!note.StartsWith("ford ")) return;
+        if (note.StartsWith("ford down") && Args.Has("until-ford")) After(12, () => QuitPath.Request(GetTree(), 0, "until-ford"));
+        if (!Args.Has("shot")) return;
+        string t = $"{b.Time:000.0}";
+        if (note.StartsWith("ford mode") && note.IndexOf("->", StringComparison.Ordinal) is int ar and > 0)
+        {
+            string m = note[(ar + 2)..note.IndexOf(' ', ar)];
+            // (a tell half-way through, a blow as it lands, a stun and a channel a beat in)
+            double at = m switch { "windup" => 0.55, "cleave" => 0.12, "chargeWind" => 0.7, "charge" => 0.25, "stun" => 0.4, "channel" => 1.0, "dead" => 1.0, _ => -1 };
+            if (at >= 0) Shots.Want($"ford_{t}_{m}", at);
+        }
+        else if (note.StartsWith("ford touch") || note.StartsWith("ford cleave")) Shots.Want($"ford_{t}_{note.Split(' ')[1]}", 0.02);
+    }
+
     void PaceLog()
     {
         if (!Args.Has("pace") || Battle is not { } b) return;
@@ -416,7 +435,7 @@ public partial class Game
             GD.Print($"pace sprung t={b.Time:0.0} hp={b.Player.Hp:0}/{b.MaxHp:0}");
             if (Args.Has("shot")) { Shots.Want("ambush_sprung", 1.6); Shots.Want("ambush_volley", 2.3); }
         }
-        if (zone is Zones.Prologue pz) while (pz.PaceNotes.Count > 0) GD.Print(pz.PaceNotes.Dequeue());
+        if (zone is Zones.Prologue pz) while (pz.PaceNotes.Count > 0) FordNote(pz.PaceNotes.Dequeue(), b);
         if (b.Time - paceHpT >= 5) { paceHpT = b.Time; GD.Print($"pace hp t={b.Time:0.0} hp={b.Player.Hp:0}/{b.MaxHp:0} stage={st} at=({b.Player.X:0},{b.Player.Z:0}) draughts={Journey?.Draughts}"); }
     }
 

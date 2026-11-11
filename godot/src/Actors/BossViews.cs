@@ -156,6 +156,7 @@ public partial class WardenView : Node3D, IBossView
             case "channel": v.Loop("Spell_Simple_Idle_Loop", 0.3); break;
             case "dead": v.Act("Death01", 0.7, true); break;
         }
+        if (Args.Has("pace")) GD.Print($"ford pose {p} clip={v.Person.Anim.CurrentAnimation} len={v.Person.Anim.CurrentAnimationLength:0.00} rate={v.Person.Anim.GetPlayingSpeed():0.00}");
     }
 
     /// <summary>A cinematic's double hands this view his last frame (H4 r3: C02's Warden turned ~40 deg and raised his
