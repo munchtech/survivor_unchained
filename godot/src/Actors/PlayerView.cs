@@ -953,8 +953,9 @@ public partial class PlayerView : Node3D
     AnimationNodeAnimation? otL, otR, otB, aOtL, aOtR, aOtB;
     bool otAvail, otOn;
     float otWf = 1, otWr, otWb, otWl, otAng, otAim, otSimSp;
-    // --ot-grace S: the switch holds S seconds past aimHold's end (the blow's 0.45 s lapses between swings); 0 = the brief's design.
-    static readonly float OtGrace = (float)SurvivorUnchained.Args.Num("ot-grace", 0);
+    // --ot-grace S: the switch holds S seconds past aimHold's end (the blow's 0.45 s lapses between swings at a ~0.7 s cadence:
+    // with no grace the sweep switched 42 times, at 0.6 s 8). A1 L22: 0.6 s by default; --ot-grace 0 = the first design.
+    static readonly float OtGrace = (float)SurvivorUnchained.Args.Num("ot-grace", 0.6);
     static readonly bool TurnL21 = SurvivorUnchained.Args.Has("turn-l21");
 
     /// <summary>The three off-travel clips of this run clip (run_warden_back/_right/_left), when her library has all three.</summary>
@@ -1229,14 +1230,14 @@ public partial class PlayerView : Node3D
         // keeps her legs' line and turns her back to the blow instead).
         aimHold -= (float)dt;
         aimFacingNow = AimLegs && aimHold > 0 && p.Leap == null && p.DashT <= 0;
-        // (A1 L22) The off-travel switch: on past 60 deg between the blow's facing and her travel, off below 45, only held aim, running.
+        // (A1 L22) The off-travel switch: on past 60 deg between the blow's facing and her travel, off below 40 (the sim's travel wobbles ~3 deg in a swing), only held aim, running.
         if (mine)
         {
             bool was = otOn;
             if (otAvail && aimHold > -OtGrace && sp > (otOn ? 1.2f : 2f) && p.Leap == null && p.DashT <= 0)
             {
                 float angOff = Mathf.RadToDeg(Mathf.Abs(Mathf.Wrap(aimFace - Mathf.Atan2((float)p.Vx, (float)p.Vz), -Mathf.Pi, Mathf.Pi)));
-                if (!otOn && angOff > 60) otOn = true; else if (otOn && angOff < 45) otOn = false;
+                if (!otOn && angOff > 60) otOn = true; else if (otOn && angOff < 40) otOn = false;
                 otAim = angOff;
             }
             else otOn = false;
