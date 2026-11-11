@@ -58,6 +58,8 @@ public partial class Game
         if (!Args.Dev) return;
         string real = what is "queued" || (what == "dropped" && teacher?.Current != c) ? "-" : $"{(RealNow - (teacher?.ShownAt ?? RealNow)) * 1000:0}";
         if (what == "shown") real = "0";
+        // (M6 dev: --shot NAME --on teach: a frame of each callout once it is up, for the flow judge)
+        if (what == "shown" && Shots.On("teach")) Shots.Want("teach_" + c.Id, 0.6);
         var at = Primary(c);
         string waited = what is "queued" or "shown" or "dropped" ? $" waited={(teacher?.LogWaited is { Length: > 0 } w ? w : "-")}" : "";
         GD.Print($"teach {c.Id} {what} t={Battle?.Time ?? 0:0.0} real={real} kind={c.Kind.ToString().ToLowerInvariant()} target={(at is Vector2 v ? $"{v.X:0},{v.Y:0}" : "-")}{(how != "" ? " how=" + how : "")}{waited}{(Battle is { } hb ? $" hp={hb.Player.Hp:0}/{hb.MaxHp:0}" : "")}");
