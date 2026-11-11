@@ -165,6 +165,34 @@ public class RoostTests
         Assert.True(captain.TakenMul < 0.5, $"taken {captain.TakenMul}");
     }
 
+    /// <summary>SU-034: the levy's front, cover and way round come from the men still standing in it. Kill
+    /// an end man and she stands where he stood unshoved, the captain behind is open from that side (the
+    /// other side still covers him), and the way round goes past the surviving end.</summary>
+    [Fact]
+    public void A_dead_end_man_narrows_the_levy_on_his_side_only()
+    {
+        var n = Roost(unarmed: true);
+        foreach (var e in n.B.Enemies.Living().ToList()) n.B.Enemies.Release(e);
+        var (lx, lz) = RaidOnTheRoost.Ground["levy"];
+        // Facing -z, so across it is +x: nine men at lx-6 .. lx+6.
+        var levy = new Levy(n.Zone, lx, lz, lx, lz - 10, 9);
+        Assert.Equal(9, levy.Standing);
+        var end = levy.Men.OrderByDescending(e => e.X).First();
+        double ex = end.X, ez = end.Z;
+        n.B.KillEnemy(end, true, null);
+        var p = n.B.Player;
+        p.X = ex; p.Z = ez;
+        for (int i = 0; i < 6; i++) levy.Step(0.01);
+        Assert.True(Dist(p.X, p.Z, ex, ez) < 0.05, $"shoved from ({ex:0.00}, {ez:0.00}) to ({p.X:0.00}, {p.Z:0.00})");
+        var (cx, cz) = levy.Behind();
+        Assert.False(levy.Between(lx + 6.3, lz - 0.2, cx, cz), "the dead end's side still covers the captain");
+        Assert.True(levy.Between(lx - 6.3, lz - 0.2, cx, cz), "the standing end's side no longer covers him");
+        var (rx, _) = levy.Round(lx + 6.3, lz - 0.2);
+        Assert.InRange(rx - lx, 6.5, 7.5);
+        var (rx2, _) = levy.Round(lx - 6.3, lz - 0.2);
+        Assert.InRange(rx2 - lx, -9, -8);
+    }
+
     /// <summary>A fire build standing by the crates does not blow them; the prompt does, and then the line
     /// breaks and the crates are gone from the story (be.crates = burned).</summary>
     [Fact]
@@ -266,6 +294,33 @@ public class RoostTests
         Assert.True(post.Broken);
         Assert.Equal(9, n.B.Collision.ByTag("cage").Count);
         Step(n, 9, each: _ => n.B.CancelBlows());
+        Assert.Empty(n.B.Collision.ByTag("cage"));
+    }
+
+    /// <summary>SU-035: delayed boss work belongs to the attempt that asked for it. She falls and rises while
+    /// his cage is still a telegraph: the old script's cage never lands on the boss that rose in its place
+    /// (ten posts and two footpads owned by a script nobody steps).</summary>
+    [Fact]
+    public void Rising_during_a_pending_cage_cancels_the_old_cage()
+    {
+        var n = Roost(unarmed: true);
+        n.Zone.SkipTo(3);
+        Step(n, 0.2);
+        var boss = Boss(n);
+        var rc = (Redcowl)n.Zone.BossScript!;
+        Step(n, 200, each: _ =>
+        {
+            if (rc.PhaseIx == 0 && boss.TakenMul > 0) n.B.HitEnemy(boss, boss.MaxHp * 0.01, School.Physical, [Tag.Physical], new HitOpts { NoCrit = true });
+        }, until: () => n.B.Blows.Any(b => b.Label == "The cage"));
+        Assert.Contains(n.B.Blows, b => b.Label == "The cage");
+        Assert.Empty(n.B.Collision.ByTag("cage"));
+        var p = n.B.Player;
+        p.Iframes = 0;
+        n.B.HurtPlayer(n.B.MaxHp * 9, School.Physical, "test", null);
+        Step(n, 1.2, keep: false);
+        Assert.Equal(1, p.Rose);
+        Assert.NotSame(rc, n.Zone.BossScript);
+        Step(n, 1.5, each: _ => n.B.CancelBlows());
         Assert.Empty(n.B.Collision.ByTag("cage"));
     }
 

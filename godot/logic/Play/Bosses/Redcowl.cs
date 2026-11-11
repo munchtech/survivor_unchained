@@ -161,9 +161,12 @@ public sealed class Redcowl : StoryBoss
         door = (cx + Math.Cos(toHim) * 5, cz + Math.Sin(toHim) * 5);
         B.Blow(new Battle.EnemyBlow { Shape = TelegraphShape.Ring, Kind = TelegraphKind.Wall, X = cx, Z = cz, Inner = 4.4, Radius = 5.6, Delay = 1.5, From = E, Label = "The cage" });
         if (!caged) { caged = true; S.Say("They cage you", "Stand by a post to break it, or chance the door", "danger"); }
+        var him = E;
+        double seed = him.Seed;
         S.After(1.5, () =>
         {
-            if (Ending || E == null || !E.Alive) return;
+            // His, and still him: the pool may hand the same object back as the boss that rose in his place.
+            if (Ending || E != him || !him.Alive || him.Seed != seed) return;
             ClearPosts();
             for (int k = 0; k < 10; k++)
             {
