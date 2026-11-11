@@ -635,7 +635,9 @@ SPRINT_ARMS = {"run_warden": {"l": shield_guard(hand_at=(0.14, -0.36, 0.26), swi
 # Kept out of RUNS (sprint_stop makes a sprint of every run there); the arms are the run's, held in guard: the swing
 # at `arm_amp` of the run's, the shield raised `GUARD_LIFT` more.
 GUARD_LIFT = 0.06
-_OT_BACK = dict(travel=180.0, duty=0.20, reach=0.40, peel=0.0, kick=0.16, knee=0.12, drop=0.11, bob=0.04,
+# A1 L25 strafe3: the backpedal stands as tall as the run (drop 0.11 -> 0.08, bob 0.04 -> 0.05: pelvis 942..982 -> the run's
+# 967..1017 mm, stance knee never straighter than 41 -> ~30 deg, the run 24); it now plays alone behind 105 deg, yawed onto travel.
+_OT_BACK = dict(travel=180.0, duty=0.20, reach=0.40, peel=0.0, kick=0.16, knee=0.12, drop=0.08, bob=0.05,
                 reach_key=(0.83, 0.10, 0.10), hip_tilt=10.0, chest_lean=2.0, hip_yaw=4.0, chest_yaw=3.0,
                 hip_roll=3.0, back_toe=14.0, arm_amp=0.35, lift=(-1.0, 1.5))
 # A1 L23: crossover strafe, side_hips 75 side_chest 20 width 0.04, drop 0.08, toe_lead 1.2, toe_trail 1.05, chest_lean 4, side_lean 9.
