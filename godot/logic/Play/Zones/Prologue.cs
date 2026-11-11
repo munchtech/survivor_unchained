@@ -916,6 +916,18 @@ public sealed partial class Prologue : ZoneRuntime
     /// <summary>(M3) The cleave's damage on top of his own (teeth.json prologue.fordWarden.cleave).</summary>
     static double CleaveMul => Teeth.Ford?.Cleave ?? 1;
     /// <summary>(M3) The charge's lane called off: the run is over (or broke on a lamp or a rock).</summary>
+    /// <summary>Her rise mid-fight: his script starts over (pending blows called off, thresholds and cooldowns restored).</summary>
+    internal void WardenReset()
+    {
+        if (ai.Cleave != null) { ai.Cleave.Damage = 0; ai.Cleave = null; }
+        EndLane();
+        ai.Mode = "walk";
+        ai.Thresholds = [0.7, 0.4];
+        ai.ChannelCd = 30; ai.CleaveCd = 3; ai.ChargeCd = 6; ai.T = 0; ai.Hold = WakeHold;
+        floorHeldT = 0;
+        wardenView.Release();
+    }
+
     void EndLane() { if (ai.Lane != null) { ai.Lane.T = 0; ai.Lane = null; } }
     /// <summary>(the trace) How far a point lies off the charge's drawn lane's middle line, metres (-1: no lane).</summary>
     double LaneOff(double x, double z)
@@ -1022,14 +1034,8 @@ public sealed partial class Prologue : ZoneRuntime
                     B.Collision.Resolve(ref e.X, ref e.Z, e.Radius);
                 }
                 wardenView.SetPose("walk");
-                // Contact.
+                // No contact damage: his hurts are the telegraphed cleave and the charge.
                 ai.ContactT -= dt;
-                if (dist < e.Radius + p.Radius + 0.4 && ai.ContactT <= 0)
-                {
-                    ai.ContactT = 1.2;
-                    double cd = B.HurtPlayer(e.Damage * 0.6, School.Physical, "The Ford-Warden", e);
-                    if (PaceNotes.Count < 200) PaceNotes.Enqueue($"ford touch contact t={B.Time:0.00} dealt={cd:0} dist={dist:0.0}");
-                }
                 return true;
             }
             case "windup":
@@ -1113,7 +1119,6 @@ public sealed partial class Prologue : ZoneRuntime
                     wardenView.SetPose("stunned");
                     B.Events.Emit(new Ev.Announce { Title = "Channel broken", Tone = Tone.Boon });
                     B.Events.Emit(new Ev.Sound { Id = "ford.channel_broken" });
-            B.Events.Emit(new Ev.Sound { Id = "ford.channel_broken" });
                 }
                 else if (ai.T >= 6)
                 {
@@ -2123,7 +2128,7 @@ public sealed partial class Prologue : ZoneRuntime
             {
                 warden.Hp = warden.MaxHp;
                 warden.X = wardenHome.X; warden.Z = wardenHome.Z;
-                ai.Mode = "walk";
+                WardenReset();
                 if (bar != null) Bar(bar with { Channel = null });
             }
         });

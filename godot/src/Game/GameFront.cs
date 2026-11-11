@@ -555,6 +555,8 @@ public partial class Game
     public void NewJourney()
     {
         Mode = "create";
+        // A new journey teaches again (the owner's demo-arpg1 profile had the callouts marked seen by test runs).
+        Settings.Current.SeenTips.Clear(); Settings.Current.Save();
         // (the Look holds the grade's whole toe: her irises and dark hair keep their colour (Atmospheres.Front))
         air.Set(Atmospheres.Front);
         LookView(true);

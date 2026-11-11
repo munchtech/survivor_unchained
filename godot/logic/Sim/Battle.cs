@@ -2219,7 +2219,8 @@ public sealed partial class Battle
         for (int i = blows.Count - 1; i >= 0; i--)
         {
             var b = blows[i];
-            b.T -= dt;
+            // His own marked blows count on the world clock his script ticks on (a world slow stretches them too).
+            b.T -= b.OwnMark ? dt * WorldRate : dt;
             if (b.T > 0) continue;
             blows.RemoveAt(i);
             var p = Player;

@@ -498,6 +498,34 @@ public class PrologueTests
     }
 
     [Fact]
+    public void Her_rise_mid_fight_starts_the_Warden_script_over()
+    {
+        var s = Make(draft: true);
+        var ford = s.Meta.Place("LOWFORD", "ford");
+        typeof(Prologue).GetMethod("Go", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.Invoke(s.Zone, [Prologue.Stage.ToFord]);
+        Stand(s, ford.X, ford.Z + 12);
+        Run(s, 7.1);
+        Assert.Equal(Prologue.Stage.Boss, s.Zone.Now);
+        var w = s.B.Enemies.Living().Single(e => e.Tag == "warden");
+        var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+        var ai = typeof(Prologue).GetField("ai", flags)!.GetValue(s.Zone)!;
+        var at = ai.GetType();
+        // Mid-windup: a pending marked cleave, a threshold spent, his life lowered.
+        var blow = s.B.Blow(new Battle.EnemyBlow { OwnMark = true, Delay = 1.0, Damage = 50, Shape = TelegraphShape.Circle, Radius = 3, X = s.B.Player.X, Z = s.B.Player.Z, From = w });
+        at.GetField("Cleave")!.SetValue(ai, blow);
+        at.GetField("Mode")!.SetValue(ai, "windup");
+        ((System.Collections.Generic.List<double>)at.GetField("Thresholds")!.GetValue(ai)!).Clear();
+        w.Hp = w.MaxHp * 0.3;
+        Assert.True(s.Zone.OnDeath("the Ford-Warden"));
+        s.B.Player.Alive = false;
+        Run(s, 3.5, safe: false);
+        Assert.Equal(w.MaxHp, w.Hp);
+        Assert.Equal("walk", (string)at.GetField("Mode")!.GetValue(ai)!);
+        Assert.DoesNotContain(s.B.Blows, b => b.OwnMark && b.Damage > 0);
+        Assert.Equal([0.7, 0.4], (System.Collections.Generic.List<double>)at.GetField("Thresholds")!.GetValue(ai)!);
+    }
+
+    [Fact]
     public void Falling_here_is_forgiven()
     {
         var s = Make();
