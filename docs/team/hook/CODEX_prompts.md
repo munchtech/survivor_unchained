@@ -40,7 +40,7 @@ Pass: unit tests for the recorder's math on a scripted kill timeline; the sim ru
 
 ## Job 2: local capped hit-stop (job-name: hitstop)
 
-**TAKEN BACK 11 Nov 00:55 (coordinator #8): do NOT run this job in Codex.** (01:05: it WAS running in the owner's Codex app with nothing pushed; the owner is asked to stop it, and `codex/hitstop` is not merged if it lands.) The feel lane (F1 lead 19, `feel-f1`) was blocked on it, so F1 builds it to this spec.
+**TAKEN BACK 11 Nov 00:55 (coordinator #8): do NOT run this job in Codex.** (01:05: it WAS running in the owner's Codex app with nothing pushed; the owner stopped it ~01:10; `codex/hitstop` is not merged if it ever appears.) The feel lane (F1 lead 19, `feel-f1`) was blocked on it, so F1 builds it to this spec.
 
 ```text
 Goal: hit-stop that is local, scaled and capped, driven by data and off by default.
