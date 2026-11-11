@@ -194,6 +194,7 @@ public partial class Game
         {
             // (M6) The page plays over bars of its own, full and black, as SB00 does: the HUD's black (above every
             // page) goes the moment they are up. Left up, it hid the page, the film after and the whole day (run m6r1).
+            // The player is handed them (it opens their black over its page): its own bars under these hid it (m6r2).
             var bars = new CinemaBars();
             AddChild(bars);
             bars.Frame(1, 1);
@@ -212,7 +213,7 @@ public partial class Game
                 then();
                 // (a cinematic `then` started took the bars as its own; else they go and the world fades back in)
                 Unbar();
-            });
+            }, bars);
             AddChild(storybook);
             hud.Fade(0, 0);
         });

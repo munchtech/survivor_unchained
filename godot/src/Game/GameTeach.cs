@@ -32,6 +32,7 @@ public partial class Game
     {
         // --teach-reset: every callout unseen again (test runs may overwrite the owner's profile).
         if (Args.Has("teach-reset")) { Settings.Current.SeenTips.Clear(); Settings.Current.Save(); }
+        if (Shots.On("teach")) SurvivorUnchained.Play.Zones.Prologue.Trace = s => GD.Print(s);
         return new Teacher(new ProfileMemory()) { Log = TeachLog };
     }
 

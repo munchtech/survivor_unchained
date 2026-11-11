@@ -574,6 +574,9 @@ public sealed partial class Prologue : ZoneRuntime
     /// <summary>(A3) The longest the first stone is held when A3 is not up over it (seconds).</summary>
     public const double StoneHoldMax = 10;
     double landedAtThree = -1, resolveSeenAt = double.MaxValue;
+    /// <summary>(dev, --on teach) A line a second of the callouts' state through the night (Game sets it).</summary>
+    public static Action<string>? Trace;
+    double tracedAt = double.NegativeInfinity;
 
     /// <summary>The movement keys from her bindings, as one word ("WASD").</summary>
     string MoveKeys() => Key("up") + Key("left") + Key("down") + Key("right");
@@ -587,6 +590,11 @@ public sealed partial class Prologue : ZoneRuntime
         if (B == null) return;
         var ch = G.Journey.Ch;
         if (xpAtStart < 0) { xpAtStart = ch.Xp; levelAtStart = ch.Level; }
+        if (Trace != null && Now < Stage.Intro && B.Time - tracedAt >= 1)
+        {
+            tracedAt = B.Time;
+            Trace(FormattableString.Invariant($"teachstate t={B.Time:0.0} stage={Now} emberOn={B.EmberOn} xp={ch.Xp:0}/{xpAtStart:0} lv={ch.Level} emberXp={B.EmberXp:0} emberLv={B.EmberLevel} lying={B.EmbersLying} near={NearEmbers().Count} held={(B.HeldStone is { } hs ? $"{hs.X:0.0},{hs.Z:0.0}" : "-")} holdSet={stoneHoldSet} lone={string.Join("|", night?.WokeAt.ContainsKey("n_lone") == true ? AwakeOf("n_lone").Select(e => $"{Dist(e.X, e.Z, B.Player.X, B.Player.Z):0.0}") : ["asleep"])} three={AwakeOf("n_three").Count} resOn={B.Resolve.On} res={B.Resolve.Value:0} landed={B.Resolve.LandedFill:0.0}/{landedAtThree:0.0} due={resolveDue} gb={(B.Weapons.FirstOrDefault(w => w.Id == "groundbreaker") is { } g ? $"{g.Slot}:{B.CostOf(g):0}" : "-")} cart={(cartBlow is { } cb ? $"{cb.T:0.0}/{cb.Delay:0.0}:{FromLane(cb, B.Player.X, B.Player.Z):0.0}" : "-")} cap={(night?.Captain("n_first") is { } cp ? $"{cp.State}:{Dist(cp.X, cp.Z, B.Player.X, B.Player.Z):0.0}" : "-")}"));
+        }
         // A1: in the Wake, 1.2 s after C01 hands back, by the fire (asked on into the Rising until the lone one wakes, so a
         // long hand-back never lets it lapse). The keys are written from her bindings; no target (an arrow-only callout).
         if (Now == Stage.Wake && stageT > 1.2 || Now == Stage.Rising && night != null && !night.WokeAt.ContainsKey("n_lone"))
