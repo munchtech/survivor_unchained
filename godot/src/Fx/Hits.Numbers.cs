@@ -356,8 +356,16 @@ public partial class Hits
             var others = new List<FeelRules.Flight>();
             foreach (var (id, o) in launchNow)
                 if (id != target && FlightOf(cam, o) is { } of) others.Add(of);
-            float rise = cam.UnprojectPosition(ln.At).Y - cam.UnprojectPosition(ln.At + Vector3.Up * RiseByN12).Y;
-            var (lx, ly) = FeelRules.NumberSpotLaunched(me, others, herX, nb.Size.X, nb.Size.Y, k, Mathf.Max(0, rise));
+            // (F1 lead 29, m4b: and off her body and the strap, as BesideHer keeps it, so BesideHer has nothing left to
+            // move: its sideways nudge, blind to the flights, had put "432" back over a rising body; the rise kept is
+            // the larger of the number's N..N+12 and its first HitsPlace.Young seconds, BesideHer's)
+            float rise = Mathf.Max(cam.UnprojectPosition(ln.At).Y - cam.UnprojectPosition(ln.At + Vector3.Up * RiseByN12).Y,
+                cam.UnprojectPosition(ln.At).Y - cam.UnprojectPosition(ln.At + Vector3.Up * (float)HitsPlace.RiseIn(HitsPlace.Young)).Y);
+            var keep = new List<(float, float, float, float)>(2);
+            static void Keep(List<(float, float, float, float)> to, Rect2? r, float gap) { if (r is Rect2 q) to.Add((q.Position.X - gap, q.Position.Y - gap, q.End.X + gap, q.End.Y + gap)); }
+            Keep(keep, HerBox(cam), HitsPlace.BodyGap * k);
+            Keep(keep, SurvivorUnchained.Ui.HerLight.Live?.Under.OnScreen, HitsPlace.StrapGap * k);
+            var (lx, ly) = FeelRules.NumberSpotLaunched(me, others, herX, nb.Size.X, nb.Size.Y, k, Mathf.Max(0, rise), keep);
             depth = (ln.At - cam.GlobalPosition).Dot(-cam.GlobalBasis.Z);
             if (NumTrace) GD.Print($"[num-launch] f={Engine.GetFramesDrawn()} target={target} body=({me.X0:0},{me.Y0:0} {me.X1:0},{me.Y1:0}) throw=({me.Lx:0},{me.Ly:0}) others={others.Count} spot=({lx:0},{ly:0})");
             return cam.ProjectPosition(new Vector2(lx, ly), depth);

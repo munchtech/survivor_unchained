@@ -1287,10 +1287,10 @@ public partial class BattleFx : Node3D
     /// <summary>F1 r6: a launched body's whole throw on the ground (m), as CrowdView.LaunchOf throws it (a mass kill's
     /// out from her plus along the blow, at its longest; a lone launch along the blow, at the longest a blow throws):
     /// its number keeps off the flight (Hits.Felled).</summary>
-    static Vector3 KillThrow(Ev.Kill e, Battle b)
+    static Vector3 KillThrow(Ev.Kill e, Battle b, (double X, double Z) from)
     {
         double dx = e.Dx, dz = e.Dz, l = Math.Sqrt(dx * dx + dz * dz);
-        double ax = e.X - b.Player.X, az = e.Z - b.Player.Z, al = Math.Sqrt(ax * ax + az * az);
+        double ax = from.X - b.Player.X, az = from.Z - b.Player.Z, al = Math.Sqrt(ax * ax + az * az);
         if (al > 1e-6) { ax /= al; az /= al; } else { ax = az = 0; }
         if (e.Mass)
         {
@@ -1489,7 +1489,11 @@ public partial class BattleFx : Node3D
                 {
                     // (a body the Warden's line or heave kills falls, bursts and throws its gore as the view's blow lands)
                     float wkd = WgKillWait(e);
-                    Hits.Felled(e.Enemy, V(e.X, Y(e.X, e.Z) + 1.0, e.Z), e.Launch ? KillThrow(e, b) : null, e.Launch ? (float)(e.Mass ? DeathShow.T.MassLaunchHop : 0.22) : 0);
+                    // (F1 lead 29: a launch's flight starts where its body is drawn, as CrowdView.LaunchOf throws it from there,
+                    // not at the sim's point: the crowd's spread puts the drawn body up to a body's width off it)
+                    var kf = e.Launch && e.Enemy >= 0 && e.Enemy < b.Enemies.Capacity && b.Enemies.Items[e.Enemy] is { } ken && CrowdView.Placed is { } pl ? pl(ken) : (e.X, e.Z);
+                    Hits.Felled(e.Enemy, V(kf.X, Y(kf.X, kf.Z) + 1.0, kf.Z), e.Launch ? KillThrow(e, b, kf) : null, e.Launch ? (float)(e.Mass ? DeathShow.T.MassLaunchHop : 0.22) : 0);
+                    if (KillTrace && e.Launch) GD.Print($"[num-from] f={Engine.GetFramesDrawn()} target={e.Enemy} sim=({e.X:F2},{e.Z:F2}) drawn=({kf.X:F2},{kf.Z:F2})");
                     // F1 lead 27: her step that fells 4+ opens the kill window (FeelRules.KillDim) and folds its numbers to
                     // one. Her own blows only: the Warden's wave kills (crack-timed, judged right in round 4) stay as they are.
                     if (e.Mass && wkd <= 0 && MassKillFrame != Engine.GetFramesDrawn()) { MassKillFrame = Engine.GetFramesDrawn(); Hits.MassStep = true; }

@@ -166,29 +166,38 @@ public static class FeelRules
 
     /// <summary>A launched victim's number (judge r5: "432" lay across a body thrown in under it for 8 frames): NumberOver
     /// over its top and NumberAside across its throw (Across), then moved on across it, 10 px at a time, until its box,
-    /// lengthened upward by its own rise (`rise`, px), meets none of the flights (the victim's and the step's `others`);
-    /// where none is clear in 24 steps, the least crossed. `w`, `h`: the number's box size.</summary>
-    public static (float X, float Y) NumberSpotLaunched(Flight body, IReadOnlyList<Flight>? others, float herX, float w, float h, float scale = 1, float rise = 0)
+    /// lengthened upward by its own rise (`rise`, px), meets none of the flights (the victim's and the step's `others`)
+    /// and none of the `keep` rects (her body and the strap under her, each already grown by its gap: F1 lead 29, m4b:
+    /// the number placed clear of the flights was then nudged sideways off her, back over a rising body). Where that
+    /// side has nothing clear in 24 steps, the other side across the throw; where neither, the least crossed.
+    /// `w`, `h`: the number's box size.</summary>
+    public static (float X, float Y) NumberSpotLaunched(Flight body, IReadOnlyList<Flight>? others, float herX, float w, float h, float scale = 1, float rise = 0,
+        IReadOnlyList<(float X0, float Y0, float X1, float Y1)>? keep = null)
     {
         float cx = (body.X0 + body.X1) / 2;
         var (ax, ay) = Across(body.Lx, body.Ly, cx, herX);
-        float x = cx + ax * NumberAside * scale, y = body.Y0 - NumberOver * scale - h / 2 + ay * NumberAside * scale;
         float g = FlightGap * scale;
         int Crossed(float px, float py)
         {
             float x0 = px - w / 2 - g, x1 = px + w / 2 + g, y0 = py - h / 2 - rise - g, y1 = py + h / 2 + g;
             int n = CrossesFlight(x0, y0, x1, y1, body) ? 1 : 0;
             if (others != null) foreach (var o in others) if (CrossesFlight(x0, y0, x1, y1, o)) n++;
+            if (keep != null) foreach (var r in keep) if (x1 > r.X0 && x0 < r.X1 && y1 > r.Y0 && y0 < r.Y1) n++;
             return n;
         }
-        (float X, float Y) best = (x, y);
+        (float X, float Y) best = default;
         int least = int.MaxValue;
-        for (int step = 0; step <= 24; step++)
+        for (int side = 1; side >= -1; side -= 2)
         {
-            float px = x + ax * 10 * scale * step, py = y + ay * 10 * scale * step;
-            int n = Crossed(px, py);
-            if (n == 0) return (px, py);
-            if (n < least) { least = n; best = (px, py); }
+            float sx = ax * side, sy = ay * side;
+            float x = cx + sx * NumberAside * scale, y = body.Y0 - NumberOver * scale - h / 2 + sy * NumberAside * scale;
+            for (int step = 0; step <= 24; step++)
+            {
+                float px = x + sx * 10 * scale * step, py = y + sy * 10 * scale * step;
+                int n = Crossed(px, py);
+                if (n == 0) return (px, py);
+                if (n < least) { least = n; best = (px, py); }
+            }
         }
         return best;
     }

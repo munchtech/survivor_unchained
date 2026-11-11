@@ -189,6 +189,37 @@ public class FeelRulesTests
     }
 
     [Fact]
+    public void ALaunchedNumberIsPlacedOffHerSoBesideHerLeavesItOverNoFlight()
+    {
+        // F1 lead 29, m4b: the spot clear of the flights lay on her body; BesideHer then pushed "432" ~90 px sideways,
+        // blind to the flights, back over a rising body. Her rects go into the placement: BesideHer has nothing to move.
+        const float w = 120, h = 60, rise = 30;
+        var f = new FeelRules.Flight(900, 500, 960, 600, 260, -220);
+        var p0 = FeelRules.NumberSpotLaunched(f, null, 600, w, h, 1, rise);
+        var her = new HitsPlace.Box(p0.X - 70, p0.Y - 120, p0.X + 40, p0.Y + 260);
+        float herX = (her.X0 + her.X1) / 2;
+        Assert.NotEqual(0f, Nudge(p0, w, h, rise, herX, her));                 // lead 28's spot: on her, so nudged
+        var keep = new[] { (her.X0 - HitsPlace.BodyGap, her.Y0 - HitsPlace.BodyGap, her.X1 + HitsPlace.BodyGap, her.Y1 + HitsPlace.BodyGap) };
+        var p = FeelRules.NumberSpotLaunched(f, null, herX, w, h, 1, rise, keep);
+        Assert.True(Clear(p, w, h, f) && Clear((p.X, p.Y - rise), w, h, f));
+        Assert.Equal(0f, Nudge(p, w, h, rise, herX, her));                     // BesideHer leaves it where it is
+    }
+
+    [Fact]
+    public void ALaunchedNumberTakesTheOtherSideWhenHerSideIsAllHer()
+    {
+        const float w = 120, h = 60;
+        var f = new FeelRules.Flight(900, 500, 960, 600, 260, -220);          // the upper side is up and left
+        var wall = new[] { (0f, 0f, 935f, 2000f) };                            // her and the strap fill all of it
+        var p = FeelRules.NumberSpotLaunched(f, null, 600, w, h, 1, 0, wall);
+        Assert.True(p.X - w / 2 - FeelRules.FlightGap >= 935);
+        Assert.True(Clear(p, w, h, f));
+    }
+
+    static float Nudge((float X, float Y) p, float w, float h, float rise, float herX, HitsPlace.Box her) =>
+        HitsPlace.HerNudge(new HitsPlace.Box(p.X - w / 2, p.Y - h / 2, p.X + w / 2, p.Y + h / 2), rise, herX, her, null, out _);
+
+    [Fact]
     public void NumbersKeepOffTheHud()
     {
         const float w = 100, h = 60;
