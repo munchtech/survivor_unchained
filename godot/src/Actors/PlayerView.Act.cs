@@ -29,6 +29,8 @@ namespace SurvivorUnchained.View;
 /// the scr lines reads that upper one-shot's playhead (parameters/upper/current_position). The camera follows her root as it
 /// does for any act (WorldScene shifts it by ActAt); --act-travel, --act-hold and --act-spin do nothing with it.
 /// Without it nothing changes.
+/// --act-gait (A1 GAITS; with --act-walk): a pure gait look: the act's clip is NOT played (it only names the shot and times
+/// its run), so her whole body, arms too, stays on the move node's walk for the velocity.
 /// </summary>
 public partial class PlayerView
 {
@@ -40,6 +42,8 @@ public partial class PlayerView
     /// <summary>--pelvis-k K (with --act): the pelvis counter's swing share for a look (PelvisCounter.K); play keeps 0.5.</summary>
     static readonly bool ActPelvisK = ActClip != null && float.TryParse(Args.Get("pelvis-k"), System.Globalization.NumberStyles.Float,
         System.Globalization.CultureInfo.InvariantCulture, out var k) && (SurvivorUnchained.Play.PelvisCounter.K = k) >= 0;
+    /// <summary>--act-gait (with --act-walk): the act's clip is not played; she is all move node.</summary>
+    static readonly bool ActGait = ActWalk != null && Args.Has("act-gait");
     (float X, float Z) actWalkWorld;
     double actWalkLog;
     /// <summary>--act-rigid (with --act, shots only): the view carried rigidly with her root from the act's start.</summary>
@@ -332,7 +336,7 @@ public partial class PlayerView
             MeasStart(actPlan.Start(s.Pass), actPlan.Duration);
             actPass = s.Pass; actEvent = 0; actPos = 0; actFading = false;
             if (!actShown) { actBase = Position; actBaseYaw = Rotation.Y; actShown = true; }
-            if (!(ActWalk != null ? UpperHer(ActClip!, 1) : FullHer(ActClip!, 1, false))) { GD.PrintErr($"act: {ActClip} would not start"); actPlan = null; return; }
+            if (!(ActGait || (ActWalk != null ? UpperHer(ActClip!, 1) : FullHer(ActClip!, 1, false)))) { GD.PrintErr($"act: {ActClip} would not start"); actPlan = null; return; }
             actEvents = new List<(string, double)>(actPlan.EventsRun(actPass));
             GD.Print($"act: {ActClip} at t={actPlan.Start(actPass):0.00} travel {actPlan.Travel:0.##} m over [{actPlan.Window.A:0.000}, {actPlan.Window.B:0.000}] s, " +
                      $"hold {(actPlan.Loop is { } lp ? actPlan.Passes * (lp.B - lp.A) : 0):0.##} s, spin {actPlan.Spin:0.##} t/s (pass {actPass + 1}/{actPlan.Repeat}, {actPlan.Duration:0.00} s long)");
@@ -343,7 +347,7 @@ public partial class PlayerView
         if (ActWalk != null)
         {
             // (the upper one-shot plays at its own pace; a looping clip is let go over its last 0.2 s)
-            if (!actFading && actClock() >= actPlan.Start(actPass) + actPlan.Duration - 0.2 && upper.Animation != null
+            if (!ActGait && !actFading && actClock() >= actPlan.Start(actPass) + actPlan.Duration - 0.2 && upper.Animation != null
                 && person.Anim.GetAnimation(upper.Animation)?.LoopMode != Animation.LoopModeEnum.None)
             {
                 actFading = true;
