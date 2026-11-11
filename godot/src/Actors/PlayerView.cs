@@ -291,7 +291,10 @@ public partial class PlayerView : Node3D
             mv.AddNode("otSide", new AnimationNodeBlend2 { Sync = true }, new Vector2(200, 1050));
             mv.AddNode("otMix", new AnimationNodeBlend2 { Sync = true }, new Vector2(400, 1100));
             mv.AddNode("otRun", new AnimationNodeBlend2 { Sync = true }, new Vector2(600, 1000));
-            mv.ConnectNode("otSide", 0, "otL"); mv.ConnectNode("otSide", 1, "otR");
+            // (A1 L25) The side clips on their own cycle (14 frames, the run's 21): each seeked to the shared phase times its own length.
+            mv.AddNode("otLSeek", new AnimationNodeTimeSeek(), new Vector2(100, 1000)); mv.AddNode("otRSeek", new AnimationNodeTimeSeek(), new Vector2(100, 1100));
+            mv.ConnectNode("otLSeek", 0, "otL"); mv.ConnectNode("otRSeek", 0, "otR");
+            mv.ConnectNode("otSide", 0, "otLSeek"); mv.ConnectNode("otSide", 1, "otRSeek");
             mv.ConnectNode("otMix", 0, "otSide"); mv.ConnectNode("otMix", 1, "otB");
             mv.ConnectNode("otRun", 0, "run"); mv.ConnectNode("otRun", 1, "otMix");
             // (A1 L23) The 180's held plant: pivotSide = pivot_<calling>_l|_r, pivotMix = what feeds the run | pivotSide, weighted in PivotMix.
@@ -336,7 +339,9 @@ public partial class PlayerView : Node3D
                 mv.AddNode("aOtSide", new AnimationNodeBlend2 { Sync = true }, new Vector2(200, 1350));
                 mv.AddNode("aOtMix", new AnimationNodeBlend2 { Sync = true }, new Vector2(400, 1400));
                 mv.AddNode("aOtRun", new AnimationNodeBlend2 { Sync = true }, new Vector2(600, 1300));
-                mv.ConnectNode("aOtSide", 0, "aOtL"); mv.ConnectNode("aOtSide", 1, "aOtR");
+                mv.AddNode("aOtLSeek", new AnimationNodeTimeSeek(), new Vector2(100, 1300)); mv.AddNode("aOtRSeek", new AnimationNodeTimeSeek(), new Vector2(100, 1400));
+                mv.ConnectNode("aOtLSeek", 0, "aOtL"); mv.ConnectNode("aOtRSeek", 0, "aOtR");
+                mv.ConnectNode("aOtSide", 0, "aOtLSeek"); mv.ConnectNode("aOtSide", 1, "aOtRSeek");
                 mv.ConnectNode("aOtMix", 0, "aOtSide"); mv.ConnectNode("aOtMix", 1, "aOtB");
                 mv.ConnectNode("aOtRun", 0, "aRun"); mv.ConnectNode("aOtRun", 1, "aOtMix");
                 aPvL = new AnimationNodeAnimation { Animation = run }; aPvR = new AnimationNodeAnimation { Animation = run };
@@ -1814,6 +1819,11 @@ public partial class PlayerView : Node3D
         standT = spd < 0.05f ? standT + dt : 0;
         if (standT > 0.4f) stride = 0;
         float period = Stride.Period(spd, walkLen, walkSpeed, runLen, Stride.RunScale(spd, natural), w, hasWalk);
+        // (A1 L25) The side clips' own length; the phase runs at the blend of the lengths (the run's 21 frames, the sides' 14), so each
+        // clip's feet keep the sim's pace at its weight. Side weight 0: the run's period, unchanged.
+        float sideLen = otAvail && otR != null && person.Anim.HasAnimation(otR.Animation) ? (float)person.Anim.GetAnimation(otR.Animation).Length : runLen;
+        float otSideW = move2D ? 0 : otWr + otWl;
+        if (otSideW > 1e-4f && runLen > 1e-3f) period *= 1 + otSideW * (sideLen / runLen - 1);
         // (A1 L21) Frozen through the 180's pivot (the planted foot holds); with her hips turned onto a blow, at her travel's
         // part along her facing (backward past 90 deg off it: a backpedal), so the planted foot keeps its ground.
         float strideK = 1;
@@ -1837,6 +1847,8 @@ public partial class PlayerView : Node3D
             float back = !TurnL20 && !TurnNoPlant && plantStage is >= 1 and <= 3 ? dt : 0;
             tree.Set("parameters/move/walkSeek/seek_request", Mathf.PosMod(stride * walkLen - back, Mathf.Max(walkLen, 1e-3f)));
             tree.Set("parameters/move/runSeek/seek_request", Mathf.PosMod(stride * runLen - back, Mathf.Max(runLen, 1e-3f)));
+            float sk = Mathf.PosMod(stride * sideLen - back, Mathf.Max(sideLen, 1e-3f));
+            tree.Set("parameters/move/otLSeek/seek_request", sk); tree.Set("parameters/move/otRSeek/seek_request", sk);
         }
         // Her arms in one hold or the other (Play/ArmHold): only where the walk and the run carry a piece in hand
         // (her walk for this calling and kind, armed, not sheathed); elsewhere today's per-bone mix. --arm-blend off: the mix.
@@ -1866,6 +1878,7 @@ public partial class PlayerView : Node3D
             tree.Set("parameters/move/aBlend/blend_amount", armHold.Run ? 1f : 0f);
             tree.Set("parameters/move/aWalkSeek/seek_request", stride * walkLen);
             tree.Set("parameters/move/aRunSeek/seek_request", stride * runLen);
+            tree.Set("parameters/move/aOtLSeek/seek_request", stride * sideLen); tree.Set("parameters/move/aOtRSeek/seek_request", stride * sideLen);
         }
         // Her corrective layer stands down for whichever half plays hers.
         bool fullOn = (bool)tree.Get("parameters/fullShot/active"), upperOn = (bool)tree.Get("parameters/upperShot/active");
@@ -2258,11 +2271,15 @@ public partial class PlayerView : Node3D
         Vector2 st = Vector2.Zero, sk = Vector2.Zero;
         if (cam != null && logPvSet) { st = cam.UnprojectPosition(logPv); sk = cam.UnprojectPosition(logPv2); }
         var dpv = Drawn("pelvis");
+        // (A1 L25) scrf: last frame's drawn ankles (l, r), balls (l, r) and Head under the camera they were drawn with, px (as scrt)
+        string sf = "";
+        if (cam != null && logPvSet) foreach (var q in logF) { var u = cam.UnprojectPosition(q); sf += System.FormattableString.Invariant($" {u.X:0.0} {u.Y:0.0}"); }
+        logF = new[] { Drawn("foot_l"), Drawn("foot_r"), Drawn("ball_l"), Drawn("ball_r"), Drawn("Head") };
         logPv2 = logPv; logPv = dpv; logPvSet = true;
         GD.Print(System.FormattableString.Invariant($"OT {t:0.0000} frame {Engine.GetProcessFrames()} on {(otOn ? 1 : 0)} wf {otWf:0.000} wr {otWr:0.000} wb {otWb:0.000} wl {otWl:0.000} ang {otAng:0.0} sim {otSimSp:0.00} fast {(float)tree.Get("parameters/move/fast/blend_amount"):0.000} hold {aimHold:0.00}"));
-        GD.Print(System.FormattableString.Invariant($"CARRY {t:0.0000} pvw {pivotW:0.00} fl {V(fl)} fr {V(fr)} hl {V(hl)} hr {V(hr)} pv {V(pv)} chest {Yaw("upperarm_l", "upperarm_r"):0.0} pelv {Yaw("thigh_l", "thigh_r"):0.0} face {Mathf.RadToDeg(Rotation.Y):0.0} scr {sc.X:0.0} {sc.Y:0.0} aimset {aim:0.0} aimc {carriage?.Aim ?? 0:0.0} hold {aimHold:0.00} stride {stride:0.000} up {(up ? upperClip : "-")} full {(fu ? fullClip : "-")} bank {carriage?.Bank ?? 0:0.0} tilt {carriage?.Tilt ?? 0:0.0} upos {(float)tree.Get("parameters/upper/current_position"):0.000} piv {pivotN} off {plantOff.Length():0.000} sim {V(Position - plantOff)} lfl {V(inv * fl)} lfr {V(inv * fr)} lpv {V(inv * pv)} dpv {V(dpv)} dfl {V(Drawn("foot_l"))} dfr {V(Drawn("foot_r"))} stage {plantStage} scrt {st.X:0.0} {st.Y:0.0} scrk {sk.X:0.0} {sk.Y:0.0}"));
+        GD.Print(System.FormattableString.Invariant($"CARRY {t:0.0000} pvw {pivotW:0.00} fl {V(fl)} fr {V(fr)} hl {V(hl)} hr {V(hr)} pv {V(pv)} chest {Yaw("upperarm_l", "upperarm_r"):0.0} pelv {Yaw("thigh_l", "thigh_r"):0.0} face {Mathf.RadToDeg(Rotation.Y):0.0} scr {sc.X:0.0} {sc.Y:0.0} aimset {aim:0.0} aimc {carriage?.Aim ?? 0:0.0} hold {aimHold:0.00} stride {stride:0.000} up {(up ? upperClip : "-")} full {(fu ? fullClip : "-")} bank {carriage?.Bank ?? 0:0.0} tilt {carriage?.Tilt ?? 0:0.0} upos {(float)tree.Get("parameters/upper/current_position"):0.000} piv {pivotN} off {plantOff.Length():0.000} sim {V(Position - plantOff)} lfl {V(inv * fl)} lfr {V(inv * fr)} lpv {V(inv * pv)} dpv {V(dpv)} dfl {V(Drawn("foot_l"))} dfr {V(Drawn("foot_r"))} stage {plantStage} scrt {st.X:0.0} {st.Y:0.0} scrk {sk.X:0.0} {sk.Y:0.0} scrf{sf}"));
     }
-    Vector3 logPv, logPv2; bool logPvSet;
+    Vector3 logPv, logPv2; bool logPvSet; Vector3[] logF = System.Array.Empty<Vector3>();
     bool held;
     static readonly float HeadLevel = SurvivorUnchained.Args.Has("head-level") ? SurvivorUnchained.Args.Num("head-level", 0.8f) : 0.8f;
 }

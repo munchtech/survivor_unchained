@@ -639,8 +639,12 @@ _OT_BACK = dict(travel=180.0, duty=0.20, reach=0.40, peel=0.0, kick=0.16, knee=0
                 reach_key=(0.83, 0.10, 0.10), hip_tilt=10.0, chest_lean=2.0, hip_yaw=4.0, chest_yaw=3.0,
                 hip_roll=3.0, back_toe=14.0, arm_amp=0.35, lift=(-1.0, 1.5))
 # A1 L23: crossover strafe, side_hips 75 side_chest 20 width 0.04, drop 0.08, toe_lead 1.2, toe_trail 1.05, chest_lean 4, side_lean 9.
-_OT_SIDE = dict(width=0.04, drop=0.08, hip_tilt=8.0, chest_lean=4.0, side_lean=9.0, side_hips=75.0, side_chest=20.0, hip_yaw=4.0, chest_yaw=3.0,
-                arm_amp=0.45, toe_lead=1.2, toe_trail=1.05)
+# A1 L25: a shorter, quicker step on its own cycle (14 frames, not the run's 21; PlayerView seeks the side clips at their own
+# length on the shared phase, so 5.3 m/s still lands each foot on its spot): reach 0.30 -> 0.20, reach_key (0.83, 0.20, 0.16)
+# -> (0.83, 0.12, 0.12), kick 0.42 -> 0.32, knee 0.32 -> 0.26; pelvis 85 toward travel (chest keeps 30: spine twist 62 as
+# before), width 0.03, toes 1.05/1.0. Feet split along travel 1203 -> 771 mm, lat split 433 -> 267, slide 2.1/3.4 mm/f.
+_OT_SIDE = dict(width=0.03, drop=0.08, hip_tilt=8.0, chest_lean=4.0, side_lean=9.0, side_hips=85.0, side_chest=30.0, hip_yaw=4.0, chest_yaw=3.0,
+                arm_amp=0.45, toe_lead=1.05, toe_trail=1.0, frames=14, reach=0.20, reach_key=(0.83, 0.12, 0.12), kick=0.32, knee=0.26)
 OFF_TRAVEL = {"run_warden_back": _OT_BACK, "run_warden_right": dict(_OT_SIDE, travel=90.0),
               "run_warden_left": dict(_OT_SIDE, travel=270.0)}
 
