@@ -364,6 +364,47 @@ public partial class BattleFx : Node3D
         }
     }
 
+    // The spark budget (main's ruling, 10 Nov; the choice is logic/Look/HitBudget.cs, tests/HitBudgetTests.cs): ONE source
+    // that lands more than n hits in a frame shows only n of them. Crits take the places first, the ones nearest HER when
+    // there are more crits than places; plain hits fill what the crits leave, nearest the middle of what was struck (the
+    // blade's contact for the held cut, else the centroid). A hushed hit, plain or crit, throws no hit burst (Impact, the
+    // bash, Burst), no crit burst and no gore chips: one Sunder cut over a crowd was 107 hits, 25 of them crits, and the
+    // crits' bursts and the chips were the pepper. Its number still shows, a kill's gore is thrown whole, the Flare's own
+    // hits are not touched, and a source of n hits or fewer looks as it always did.
+    // A source = the hits of one art and school in one frame's events. fx_language.json p7 hit_budget.n.
+    static readonly bool HitBudgetSay = Args.Has("clip") || Args.Has("grip-say");
+    readonly HashSet<Ev.Hit> sparkless = new();
+    readonly Dictionary<(string?, School), (double X, double Z)> sparkContact = new();
+    readonly List<Look.HitBudget.Tally> sparkTally = new();
+    void HitSparkBudget(IReadOnlyList<CombatEvent> events, Battle b)
+    {
+        // (the held cut's sparks rank from where the blade met them: HeldContacts reads the frame's Ev.Slash.HitX/HitZ)
+        Look.HitBudget.HeldContacts(events, sparkContact);
+        Look.HitBudget.Choose(events, (int)P7D["hit_budget.n", 4], b.Player.X, b.Player.Z, sparkless, sparkTally, sparkContact);
+        // The hushed hits land as ONE shared impact (main, 10 Nov: a cut through 37 bodies showing 4 bursts must still
+        // feel like 37; no specks come back): the camera's trauma is RAISED TO a number that grows with the hits the budget hushed, capped (HitShake). (The
+        // held cut's contact mark grows with the bodies struck the same way: BattleFx.Grip.cs GripContact.)
+        foreach (var t in sparkTally)
+        {
+            HitShake(Look.HitBudget.SharedShake(t.Hushed, P7D["hit_budget.shake_per"], P7D["hit_budget.shake_cap"]), "hushed");
+            if (HitBudgetSay)
+                GD.Print($"hit budget frame {Engine.GetFramesDrawn()} art {t.Art ?? "auto"} {t.School} struck {t.Struck} crits {t.Crits} crits shown {t.CritsShown} plain shown {t.PlainShown} hushed {t.Hushed}");
+        }
+    }
+
+    /// <summary>A hit's camera shake is a "raise to", never a sum (P7 lead 8, main's px targets, 10 Nov): the camera's trauma
+    /// goes UP TO <paramref name="to"/> (scaled by the player's shake setting exactly as AddTrauma scales), is never lowered
+    /// and never stacks above it. The shake is trauma SQUARED, so sums cannot serve both ends: a crit big enough to tick alone
+    /// made three crits in a crowd cut a 10 px shake. With this a cut is ONE number whatever the order of its calls: the
+    /// largest of its contact, its crit and its shared impact (fx_language.json p7 hit_budget). Through AddTrauma with the
+    /// difference, so --shake-say still prints each raise with its src and the caller's line.</summary>
+    void HitShake(float to, string src, [System.Runtime.CompilerServices.CallerFilePath] string file = "", [System.Runtime.CompilerServices.CallerLineNumber] int line = 0)
+    {
+        if (Cam is not { ShakeScale: > 0 } cam) return;
+        float add = to - cam.Trauma / cam.ShakeScale;
+        if (add > 0) cam.AddTrauma(add, src, file, line);
+    }
+
     public void Burst(Vector3 at, School school, int n, float speed, float up = 1.5f, float size = 0.09f, float life = 0.45f, float gravity = 6)
     {
         var pal = Palette.Of(school);
@@ -1227,6 +1268,7 @@ public partial class BattleFx : Node3D
         }
         WgLineSwings(events);
         P7Pre(events);
+        HitSparkBudget(events, b);
         foreach (var ev in events)
         {
             switch (ev)
@@ -1283,13 +1325,16 @@ public partial class BattleFx : Node3D
                         if (wgd > 0) { int tg = e.Target; double am = e.Amount, mh = e.MaxHp; bool cr = e.Crit; var wat = at; WgLater(wgd, () => { WgNumberLog(tg); Hits.Tally(tg, wat, am, mh, cr); }); }
                         else Hits.Tally(e.Target, at, e.Amount, e.MaxHp, e.Crit);
                     }
-                    if (Flare.HushesHitSparks) { }
+                    // (the spark budget: a hushed hit, plain or crit, throws no hit burst, no gore chips and no crit burst.
+                    // Its number is tallied above, whatever the budget says.)
+                    bool hushed = sparkless.Contains(e);
+                    if (Flare.HushesHitSparks || hushed) { }
                     else if (e.Art != null) Impact(e, at);
                     else if (BashStruck(e, at)) { }
                     else Burst(at, e.School, e.Crit ? 10 : 4, e.Crit ? 5 : 3, size: e.Crit ? 0.12f : 0.08f);
                     // (her auto-attacks on the dry dead: no bone-chip snow, their chip puff carries it; VFX 10 r3)
                     // (P7 solver A: the leap's and the charge's hits throw lit dust, not a speck cloud that reads as pepper at night)
-                    if (e.Family != null && !(!P7Off && e.Art is "shield_charge" or "shield_charge_slam" or "heroic_leap") && !(e.Family == Family.Undead && !e.Dot && (IsOath(e.Art) || IsDisc(e.Art) || e.Art == "watch_bell" || (e.Art == null && time == bashAt))))
+                    if (!hushed && e.Family != null && !(!P7Off && e.Art is "shield_charge" or "shield_charge_slam" or "heroic_leap") && !(e.Family == Family.Undead && !e.Dot && (IsOath(e.Art) || IsDisc(e.Art) || e.Art == "watch_bell" || (e.Art == null && time == bashAt))))
                     {
                         var away = new Vector3((float)e.Dx, 0, (float)e.Dz);
                         if (away.LengthSquared() < 0.01f) away = Vector3.Forward;
@@ -1297,7 +1342,7 @@ public partial class BattleFx : Node3D
                     }
                     // A critical's burst: warm gold under the tone curve's knee (white-hot, a crowd of
                     // crits bloomed white round her), three at most in a breath, and small at her elbow.
-                    if (e.Crit && (time - critBurstAt > 0.15 || critBursts < 3))
+                    if (e.Crit && !hushed && (time - critBurstAt > 0.15 || critBursts < 3))
                     {
                         if (time - critBurstAt > 0.15) { critBurstAt = time; critBursts = 0; }
                         critBursts++;
@@ -1305,7 +1350,7 @@ public partial class BattleFx : Node3D
                         float near = dx * dx + dz * dz < 9 ? 0.6f : 1f;
                         if (!Books.Spawn("sparks", at, 0.7f * near, 0.3f, new Color(1f, 0.8f, 0.48f) * new Color(1, 1, 1, near), sizeEnd: 1.2f * near))
                             Sparks.Spawn(at, Vector3.Zero, 0.22f * near, 1.1f, Palette.Of(e.School).Core, sizeEnd: 0.25f, sprite: Sprites.Of("star"), spinV: 4);
-                        Cam?.AddTrauma(0.04f);
+                        HitShake(P7D["hit_budget.crit_shake"], "crit");
                     }
                     break;
                 }
@@ -1335,7 +1380,8 @@ public partial class BattleFx : Node3D
                     }
                     Hits.Text(at + Vector3.Up * 0.2f, ((int)Math.Round(e.Amount)).ToString(), new Color(2f, 0.35f, 0.3f), 58);
                     Spray(at, Vector3.Up, null, 0.4f);
-                    Cam?.AddTrauma((float)Math.Min(0.5, 0.12 + e.Amount / 60));
+                    // a hit on her raises the shake to its size, never sums (crowd hits and a crit's raise do not stack toward 1.0)
+                    HitShake((float)Math.Min(0.5, 0.12 + e.Amount / 60), "her");
                     OnDamageFlash((float)Math.Min(1, 0.35 + e.Amount / 40));
                     break;
                 }
