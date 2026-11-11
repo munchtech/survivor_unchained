@@ -1000,7 +1000,7 @@ public partial class PlayerView : Node3D
     {
         float target = 0;
         if (mine && pvAvail && !TurnL20 && !TurnNoPlant)
-            target = plantStage switch { 1 => 0.6f, 2 => 1f, 3 => Mathf.Clamp(1f - plantN / 3f, 0f, 1f), _ => 0f };
+            target = plantStage switch { 1 => 0.6f, 2 => 1f, 3 => 0f, _ => 0f };
         pivotW = Mathf.MoveToward(pivotW, target, 0.5f * Mathf.Min(dt * 30f, 2f));
         float side = plantFoot == "foot_l" ? 0f : 1f;
         var tsp = "parameters/move/";
@@ -1929,12 +1929,15 @@ public partial class PlayerView : Node3D
         lastVelX = velX; lastVelZ = velZ;
         turnRate = Mathf.Lerp(turnRate, rate, 1 - Mathf.Exp(-(TurnOld ? 10 : 16) * dt));
         float bank = Mathf.Clamp(-turnRate * speed * 1.6f, -14, 14);
-        carriage.Bank = Mathf.Lerp(carriage.Bank, bank, 1 - Mathf.Exp(-(TurnOld ? 8 : BankRate) * dt));
+        // (A1 L25) Coming out of the pivot's lean, the carriage's own return is 3x quicker (it was ~1.3 deg a frame).
+        if (pivotLean > 0.01f) pivotOutN = 10; else if (pivotOutN > 0) pivotOutN--;
+        float outK = pivotOutN > 0 && pivotLean < 1 ? 5f : 1f;
+        carriage.Bank = Mathf.Lerp(carriage.Bank, bank, 1 - Mathf.Exp(-(TurnOld ? 8 : BankRate) * outK * dt));
         // Into a start, back out of a stop.
         float acc = (sp - lastSpeed) / dt;
         lastSpeed = sp;
         accel = Mathf.Lerp(accel, acc, 1 - Mathf.Exp(-12 * dt));
-        carriage.Tilt = Mathf.Lerp(carriage.Tilt, Mathf.Clamp(accel * 0.35f, -9, 7), 1 - Mathf.Exp(-10 * dt));
+        carriage.Tilt = Mathf.Lerp(carriage.Tilt, Mathf.Clamp(accel * 0.35f, -9, 7), 1 - Mathf.Exp(-10 * outK * dt));
         // Her back to the blow while it lasts, then home.
         float aimTo = aimHold > 0 && !otOn ? aim : 0;
         if (TurnL20) carriage.Aim = Mathf.Lerp(carriage.Aim, aimTo, 1 - Mathf.Exp((aimHold > 0 ? -30 : -8) * dt));
@@ -1948,7 +1951,10 @@ public partial class PlayerView : Node3D
             carriage.Aim += Mathf.Sign(rem) * stepA;
             // The 180's lean: toward the new travel and banked into the pivot, eased out after it.
             // (r4: eased in from the pivot's first frame, a quarter a frame, not a frame late at a third)
-            if (!TurnNoPlant && (pivotN >= 0 || plantStage is 1 or 2 or 3)) pivotLean = Mathf.Min(1, pivotLean + 0.25f);
+            if (!TurnNoPlant && (pivotN >= 0 || plantStage is 1 or 2)) pivotLean = Mathf.Min(1, pivotLean + 0.25f);
+            else if (plantStage == 3) pivotLean *= Mathf.Exp(-dt / 0.05f);
+            // (A1 L25) the plant pose already pitches her hips forward: the lean's tilt is not stacked on it
+            float tiltK = 1 - 0.6f * pivotW;
             if (pivotLean > 0.01f && !TurnNoPlant)
             {
                 // (r3: the lean held in the world, toward the new travel and the turn's side, so her yaw does not swing it:
@@ -1957,12 +1963,12 @@ public partial class PlayerView : Node3D
                 var fw = new Vector2(Mathf.Sin(yy), Mathf.Cos(yy)); var lf = new Vector2(Mathf.Cos(yy), -Mathf.Sin(yy));
                 var lw = new Vector2(Mathf.Sin(pivotWant), Mathf.Cos(pivotWant)) * 10 + pivotSideW * 12;
                 carriage.Bank = Mathf.Lerp(carriage.Bank, -lw.Dot(lf), pivotLean);
-                carriage.Tilt = Mathf.Lerp(carriage.Tilt, lw.Dot(fw), pivotLean);
+                carriage.Tilt = Mathf.Lerp(carriage.Tilt, lw.Dot(fw) * tiltK, pivotLean);
             }
             else if (pivotLean > 0.01f)
             {
                 carriage.Bank = Mathf.Lerp(carriage.Bank, -pivotSign * 12, pivotLean);
-                carriage.Tilt = Mathf.Lerp(carriage.Tilt, 10, pivotLean);
+                carriage.Tilt = Mathf.Lerp(carriage.Tilt, 10 * tiltK, pivotLean);
             }
         }
         // Her head carried up, her eyes on the way ahead (HerCarriage.HeadLevel);
@@ -2032,7 +2038,7 @@ public partial class PlayerView : Node3D
     // The 180's pivot: frames into it (-1 none), its turn's sign, the planted foot (her local, and its world point), the
     // model's offset that keeps it there (eased back to 0 after), the lean's weight, last frame's sim place and drawn transform.
     int pivotN = -1;
-    float pivotSign, pivotLean;
+    float pivotSign, pivotLean; int pivotOutN;
     Vector3 plantLocal, plantW, plantOff, lastSimPos;
     Transform3D lastXform = Transform3D.Identity;
     bool lastXformSet;
@@ -2092,7 +2098,7 @@ public partial class PlayerView : Node3D
     void PlantPlace(float dt)
     {
         var sim = Position;   // (set from the sim this frame; the offset not yet added)
-        if (plantStage == 0 || plantStage == 4) pivotLean *= Mathf.Exp(-dt / 0.1f);
+        if (plantStage == 0 || plantStage == 4) pivotLean *= Mathf.Exp(-dt / (plantStage == 4 ? 0.05f : 0.1f));
         Vector3 model = sim + plantOff;
         if (plantStage is 1 or 2 && plantFirst || plantStage == 1)
         {

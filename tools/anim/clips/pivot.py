@@ -18,7 +18,7 @@ from rig import Clip
 
 PH = {"l": 0.145, "r": 0.645}
 # Values (A1 L23): hips drop and pitch, free foot out (past its line), back (behind the planted foot), up, yaw, heel up.
-HIPS_DROP, HIPS_PITCH = 0.075, 6.0
+HIPS_DROP, HIPS_PITCH = 0.045, 6.0
 FREE_OUT, FREE_BACK, FREE_UP, FREE_YAW, FREE_HEEL = 0.32, 0.22, 0.10, 30.0, 15.0
 
 
