@@ -1,5 +1,18 @@
 # Handoff: combat (skills' mechanics, enemies, encounters, bosses, balance, the maps, the story's nights)
 
+## Feel F1, lead 20 (feel-f1, 11 Nov): judge r1's five fixes BUILT, captured (hs7), suite GREEN; judge ROUND 2 running. Lane spend: ~1.08M before lead 20 + lead 20's ~0.4M; line 1.5M.
+
+- **Built (all on feel-f1, merged integration 613e3d8b2 at 6fd33cffd; full suite 2275/0/11, build 0 errors, `scratch_feel_f1/lead20/suite_1.log`):**
+  1. Mass-kill hold: `HitStopClassifier` holds every body felled by a step's blows when 8+ fall (`hit_stop.json` mass_kill_n); her only on her own contact. Test `MassKillHoldsEveryBodyItFelled`.
+  2. `hit_stop.json` heavy_ms 60, crit_ms 65 (a crit never shorter than a heavy), crowd_scale 1.0.
+  3. Flash: hit lights (BattleFx `HitLight*`, HitKit OathPool) sit on the struck body, skip her layers, stop 0.9 m short of her. Near-white share round her 17-20% -> 0-2%. `--light-trace` flag added.
+  4. Sound: `tools/audio/crack.py` cracks hit_hide_0/1/3 (2-5 kHz, limited). Tape p10 +5.9 dB (was -3.1). Raw takes in `tools/audio/raw_takes/`.
+  5. `tele_rank.json` crowd **charge** 0.3375 -> 0.22 (+ TeleRank.cs fallback). Only that key touched (B1 also edits this file).
+  Plus deaths as rewards: `DeathShow` massFrom 4 / massMaxPerWindow 8 (`death_show.json`), test `MassKillShowsMoreOfIt`.
+- **Evidence:** capture `combat_m3/f1_feel_hs7` (ON) vs `f1_feel_hs4off` (OFF reference); sheets and brief in `scratch_feel_f1/lead20/judge/` (`brief_r2.md`, `judge_pack.py` one dir up); charge frames `combat_m3/f1_charge_pair` (no frame with both lanes; m7 pair given to the judge).
+- **Next:** read `judge/verdict_r2.md` (API judge, log `judge/api_r2.log`). PASS: re-merge integration if it moved + full suite, push feel-f1, post `MR READY feel-f1@<sha>` (verdict path, suite, "touched tele_rank.json crowd charge key + TeleRank.cs fallback"). CLOSE: build its fixes, one recapture, round 3 is the LAST; if it fails, post what holds.
+- **Out of lane, for routing (told to the judge):** Deep Shaw boulder as a black dome, wolves as purple lumps, EMBER banner + Ironback warning line (UI), red ferns salmon + her wide ember pool (art), canopies as yellow shards.
+
 ## Feel F1, lead 19 (feel-f1, 11 Nov): HANDOFF READY at ~185k. Hit-stop BUILT, tuned and captured; the ONE judge, the full-suite rerun and the MR are NOT done. Lane spend: about 0.88M before lead 19 plus lead 19's ~0.2M; the line is 1.5M.
 
 **Start here.** Scratch is `survivorsunchained_inputs\scratch_feel_f1\lead19\`. Integration (`claude/vigilant-galileo-l6jqyx`) is merged in.
