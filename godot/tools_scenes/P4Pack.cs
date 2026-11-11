@@ -92,6 +92,19 @@ public partial class P4Pack : Node
             }
             // A gait's ground speed at 1.0x (its locked stance's, m/s of B's skeleton): the game plays it at this on B.
             if (r.TryGetProperty("speed_mps", out var sp) && sp.ValueKind == System.Text.Json.JsonValueKind.Number) anim.SetMeta("speed", sp.GetDouble());
+            // The json's top-level "meta" object, key by key onto the clip (stance, layer, pelvis_mean...): strings, bools,
+            // numbers and number arrays (OwnClips and PelvisCounter read them back).
+            if (r.TryGetProperty("meta", out var mt) && mt.ValueKind == System.Text.Json.JsonValueKind.Object)
+                foreach (var kv in mt.EnumerateObject())
+                    switch (kv.Value.ValueKind)
+                    {
+                        case System.Text.Json.JsonValueKind.String: anim.SetMeta(kv.Name, kv.Value.GetString()!); break;
+                        case System.Text.Json.JsonValueKind.True: anim.SetMeta(kv.Name, true); break;
+                        case System.Text.Json.JsonValueKind.False: anim.SetMeta(kv.Name, false); break;
+                        case System.Text.Json.JsonValueKind.Number: anim.SetMeta(kv.Name, kv.Value.GetDouble()); break;
+                        case System.Text.Json.JsonValueKind.Array when kv.Value.EnumerateArray().All(e => e.ValueKind == System.Text.Json.JsonValueKind.Number):
+                            anim.SetMeta(kv.Name, kv.Value.EnumerateArray().Select(e => e.GetDouble()).ToArray()); break;
+                    }
             outLib.AddAnimation(name, anim);
             if (HerEvents.FromClip(r) is { } beats) events[name] = beats;
             var missing = baseTurn.Keys.Where(k => !r.GetProperty("rot").TryGetProperty(k, out _)).ToArray();

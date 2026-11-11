@@ -217,6 +217,8 @@ public static class People
         public string Calling = "", Kind = "";
         /// <summary>Her corrective layer, told how much of what plays is her own.</summary>
         public HerPose? Pose;
+        /// <summary>Her pelvis counter (B only; PelvisCounterModifier): PlayerView feeds it the upper clip's mean and blend.</summary>
+        public PelvisCounterModifier? Counter;
         /// <summary>Her hair's meshes (one hairstyle), and its style.</summary>
         public readonly List<MeshInstance3D> Hair = new();
         public string HairStyle = "";
@@ -404,6 +406,10 @@ public static class People
             // B's blend base first of all (P1BlendBase: the mixer's blends from B's map of A's rest; P1Laws keeps it first)
             skel.AddChild(new P1BlendBase());
             skel.MoveChild(skel.GetChildren().OfType<P1BlendBase>().First(), 0);
+            // The pelvis counter right after it, before every modifier that reads her pose (PelvisCounterModifier: the order).
+            person.Counter = new PelvisCounterModifier { Frame = root };
+            skel.AddChild(person.Counter);
+            skel.MoveChild(person.Counter, 1);
             if (P1Body.RigOf(skel).ShrugDriven) skel.AddChild(new HerShrug());
             // B's laws after every pose-writing modifier (P1Laws keeps itself there as more are added), then B's springs (P1Jiggle:
             // data/body/springs.json; HerJiggle stays A's) and her face

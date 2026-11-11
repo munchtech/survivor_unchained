@@ -45,7 +45,7 @@ public sealed class OwnClips
         return lib;
     }
 
-    public bool Has(string clip) => Library()?.HasAnimation(clip) == true;
+    public bool Has(string clip) => Library()?.HasAnimation(clip) == true || (Library() != null && Name == "her" && P1Body.On && P1Body.HerClips()?.HasAnimation(clip) == true);
 
     /// <summary>One of these clips by the full name an animation player knows it by.</summary>
     public bool Owns(string name) => name.StartsWith(Prefix);
@@ -57,15 +57,40 @@ public sealed class OwnClips
     Variant Meta(string clip, string key)
     {
         Library();
-        if (meta == null) return default;
         if (metaRead.TryGetValue((clip, key), out var known)) return known;
         Variant v = default;
-        if (meta.ContainsKey(clip))
+        if (meta != null && meta.ContainsKey(clip))
         {
             var m = meta[clip].AsGodotDictionary();
             if (m.ContainsKey(key)) v = m[key];
         }
+        // No entry in the clips json: the packed Animation's own meta (P4Pack copies the built json's "meta": stance, layer,
+        // pelvis_mean), from her library or, on B, the baked one (P1Body.HerClips, where the P4 clips are laid over).
+        if (v.VariantType == Variant.Type.Nil)
+            foreach (var l in PackedLibs())
+                if (l.HasAnimation(clip) && l.GetAnimation(clip) is { } a && a.HasMeta(key)) { v = a.GetMeta(key); break; }
         return metaRead[(clip, key)] = v;
+    }
+
+    IEnumerable<AnimationLibrary> PackedLibs()
+    {
+        if (lib != null) yield return lib;
+        if (Name == "her" && P1Body.On && P1Body.HerClips() is { } baked) yield return baked;
+    }
+
+    /// <summary>The clip's mean pelvis [x, y, z, w] (meta "pelvis_mean", on a built `_run` clip), or null for none.</summary>
+    public System.Numerics.Quaternion? PelvisMean(string clip)
+    {
+        if (clip.StartsWith(Prefix)) clip = clip.Substring(Prefix.Length);
+        var v = Meta(clip, "pelvis_mean");
+        double[]? a = v.VariantType switch
+        {
+            Variant.Type.PackedFloat64Array => v.AsFloat64Array(),
+            Variant.Type.PackedFloat32Array => System.Array.ConvertAll(v.AsFloat32Array(), x => (double)x),
+            Variant.Type.Array => System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Select(v.AsGodotArray(), x => (double)x)),
+            _ => null,
+        };
+        return SurvivorUnchained.Play.PelvisCounter.Mean(a);
     }
 
     /// <summary>How fast a loop carries them, in metres a second of their own

@@ -514,6 +514,8 @@ public partial class PlayerView : Node3D
 
     // The clips in the one-shots, by the name the library knows, and the grip slide (metres) and tilt (degrees) now.
     string fullClip = "", upperClip = "";
+    // (the pelvis counter's inputs: the upper clip's pace, and when its fade out was asked for (-1 none); PelvisCounterModifier)
+    double upperRate = 1, upperRelease = -1;
     float slide, tilt, slideL, tiltL, pocketL;
 
     void Upper(string clip, double speed)
@@ -523,6 +525,8 @@ public partial class PlayerView : Node3D
         upperNative = upper.Animation.ToString().StartsWith(own.Prefix);
         upperHeld = float.NaN;
         tree.Set("parameters/upperScale/scale", speed);
+        upperRate = speed; upperRelease = -1;
+        if (person.Counter != null) person.Counter.Mean = null;
         tree.Set("parameters/upperShot/request", (int)AnimationNodeOneShot.OneShotRequest.Fire);
     }
 
@@ -539,6 +543,8 @@ public partial class PlayerView : Node3D
         upperNative = true;
         upperHeld = float.NaN;
         tree.Set("parameters/upperScale/scale", speed);
+        upperRate = speed; upperRelease = -1;
+        if (person.Counter != null) person.Counter.Mean = own.PelvisMean(RunVariant(clip));
         tree.Set("parameters/upperShot/request", (int)AnimationNodeOneShot.OneShotRequest.Fire);
         return true;
     }
@@ -673,6 +679,7 @@ public partial class PlayerView : Node3D
         if (SwingRecover.Fade(full ? fullClip : up ? upperClip : null, e.Recover) is not double fade) return;
         var (node, path) = full ? (fullShotNode, "parameters/fullShot/request") : (upperShotNode, "parameters/upperShot/request");
         node.FadeOutTime = fade;
+        if (!full) upperRelease = time;
         tree.Set(path, (int)AnimationNodeOneShot.OneShotRequest.FadeOut);
     }
 
@@ -1573,6 +1580,20 @@ public partial class PlayerView : Node3D
             tiltL = GripSlide.Ease(tiltL, toTL, dt);
             pocketL = GripSlide.Ease(pocketL, toPL, dt);
             view?.Slide("handslot.l", slideL, tiltL, pocketL);
+        }
+        // The pelvis counter's blend: the upper shot's own weight (fade in from its start, out to its end or from a release),
+        // reproduced from the clip's position (AnimationNodeOneShot gives no weight); none while the upper shot is off or
+        // a full-body clip has taken her over.
+        if (person.Counter is { } pc)
+        {
+            float cw = 0;
+            if (upperOn && !fullOn && pc.Mean != null && upper.Animation is { } ua && person.Anim.GetAnimation(ua) is { } uanim)
+            {
+                double pace = System.Math.Max(upperRate, 1e-3), pos = (float)tree.Get("parameters/upper/current_position");
+                cw = SurvivorUnchained.Play.PelvisCounter.Weight(pos / pace, (uanim.Length - pos) / pace, upperShotNode.FadeInTime, upperShotNode.FadeOutTime,
+                    upperRelease >= 0 ? time - upperRelease : -1, upperShotNode.FadeOutTime);
+            }
+            pc.Weight = cw;
         }
         float lowerT = fullOn ? (fullNative ? 1 : 0) : 1;
         float upperT = fullOn ? (fullNative ? 1 : 0) : upperOn ? (upperNative ? 1 : 0) : 1;
