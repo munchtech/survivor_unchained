@@ -109,7 +109,14 @@ public partial class CrowdView : Node3D
         public string? HoldRole;
         public double HoldT, HoldLost, CatchT;
         public float HoldF;
+        /// <summary>A struck living body's recoil (F1 lead 26): drawn offset (m), where it started, its aim, and its clock (-1: none).</summary>
+        public double RecX, RecZ, RecFromX, RecFromZ, RecToX, RecToZ, RecT = -1;
+        /// <summary>Warm-tint frames left, and the frame its hold began (struck-trace).</summary>
+        public int TintLeft, StruckFrame = -1;
     }
+
+    const double RecoilM = 0.5, RecoilOut = 0.10, RecoilHold = 0.05, RecoilBack = 0.35;
+    static readonly bool StruckTrace = SurvivorUnchained.Args.Has("struck-trace");
 
     /// <summary>A dying body's knockback (m/s) at or over this is carried by its fall (ThrowOf); under it, it falls in place.</summary>
     const double ThrowFrom = 6;
@@ -914,6 +921,33 @@ public partial class CrowdView : Node3D
             if (e.MassKill && StopOf.Table.ShakeM > 1e-6) { double k = SurvivorUnchained.Sim.DeathShow.T.MassShakeM / StopOf.Table.ShakeM; shx *= k; shz *= k; }
         }
         else g.HoldLost = e.State == EnemyState.Dying ? g.HoldLost : 0;
+        // Recoil (F1 lead 26): a alive0 body leaving a hold slides back from her, holds, and returns. Drawn on the body
+        // only, like the shake: never in OffX/OffZ, SimX or the walker census.
+        bool alive0 = e.State == EnemyState.Active && !e.Boss;
+        if (stopped && !g.WasHeld && alive0)
+        {
+            g.RecT = -1; g.TintLeft = 2; g.StruckFrame = (int)Engine.GetFramesDrawn();
+        }
+        if (!stopped && g.WasHeld && alive0)
+        {
+            double ax = ex - (battle?.Player.X ?? ex), az = ez - (battle?.Player.Z ?? ez), al = Math.Sqrt(ax * ax + az * az);
+            if (al < 1e-6) { ax = e.LastDx; az = e.LastDz; al = Math.Sqrt(ax * ax + az * az); }
+            if (al > 1e-6) { g.RecFromX = g.RecX; g.RecFromZ = g.RecZ; g.RecToX = ax / al * RecoilM; g.RecToZ = az / al * RecoilM; g.RecT = 0; }
+        }
+        if (!alive0) { g.RecT = -1; g.RecX = g.RecZ = 0; g.TintLeft = 0; }
+        else if (g.RecT >= 0 && !stopped)
+        {
+            g.RecT += dt;
+            double rt = g.RecT;
+            if (rt < RecoilOut) { double u = 1 - rt / RecoilOut, k = 1 - u * u * u; g.RecX = g.RecFromX + (g.RecToX - g.RecFromX) * k; g.RecZ = g.RecFromZ + (g.RecToZ - g.RecFromZ) * k; }
+            else if (rt < RecoilOut + RecoilHold) { g.RecX = g.RecToX; g.RecZ = g.RecToZ; }
+            else if (rt < RecoilOut + RecoilHold + RecoilBack)
+            {
+                double u = (rt - RecoilOut - RecoilHold) / RecoilBack, k = u * u * (3 - 2 * u);
+                g.RecX = g.RecToX * (1 - k); g.RecZ = g.RecToZ * (1 - k);
+            }
+            else { g.RecX = g.RecZ = 0; g.RecT = -1; }
+        }
         g.WasHeld = stopped;
         // The struck flare's instant of white across the whole body is for a few at once, and two
         // champions besides (any ruler always); the rest keep it at the rim. A blast that hits sixty
@@ -928,7 +962,7 @@ public partial class CrowdView : Node3D
             && (e.Elite ? ++eliteFlashes > EliteFlashes : ++whiteFlashes > WhiteFlashes)) flare = FlashRimOnly;
         // The flinch along the blow: big enough to read from thirty metres up, twice on a critical (S-17).
         float push = e.LastCrit ? 0.45f : 0.25f;
-        var at = new Vector3((float)(ex + shx + e.LastDx * f * push), (float)y, (float)(ez + shz + e.LastDz * f * push));
+        var at = new Vector3((float)(ex + shx + g.RecX + e.LastDx * f * push), (float)y, (float)(ez + shz + g.RecZ + e.LastDz * f * push));
         var basis = new Godot.Basis(Vector3.Up, (float)(Math.PI / 2 - g.Facing)) * Godot.Basis.FromScale(new Vector3(sc * (1 + f * 0.1f), sc * (1 - f * 0.1f), sc * (1 + f * 0.1f)));
         // (a falling body comes down onto the slope it will lie on: THE CORPSE REST RULE, eased in as it goes down)
         if (e.State == EnemyState.Dying && e.Disposition != Disposition.Ally)
@@ -965,6 +999,18 @@ public partial class CrowdView : Node3D
         if (hk.X < 0 && FlareBandRim?.Invoke(e.Id) is > 0 and var brm) hk = new Vector2(0, brm);
         if (hk.X < 0 && FlareMarkRim?.Invoke(e.Id) is > 0 and var mrk) hk = new Vector2(flare, mrk);
         if (hk.X >= 0) flare = hk.X;
+        bool tinted = g.TintLeft > 0 && alive0;
+        if (tinted) { hk = new Vector2(Math.Max(hk.X, 0.45f), Math.Max(hk.Y, 1f)); flare = hk.X; g.TintLeft--; }
+        if (StruckTrace && g.StruckFrame >= 0)
+        {
+            int fr = (int)Engine.GetFramesDrawn();
+            if (fr - g.StruckFrame < 30)
+            {
+                var sp = Project?.Invoke(at) ?? new Vector2((float)ex, (float)ez);
+                GD.Print($"[struck-trace] f={fr} id={e.Id} tint={(tinted ? 1 : 0)} recoil_m={Math.Sqrt(g.RecX * g.RecX + g.RecZ * g.RecZ):F2} sx={sp.X:F0} sy={sp.Y:F0}");
+            }
+            else g.StruckFrame = -1;
+        }
         var xf = new Transform3D(basis, at);
         crowd.Push(KeyOf(e), xf, role, t, flare, dissolve, frozen, burning, tint, glow, e.LastCrit && !e.LastDot && hk.X < 0, hk.X >= 0 ? Math.Max(hk.Y, 0.001f) : 0, -1,
             // (M5 r3) a champion's affix rim (Content/Champions.Look): its body reads at night and in shade
