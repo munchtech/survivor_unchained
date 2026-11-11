@@ -56,6 +56,15 @@ public class DeathShowTests
     }
 
     [Fact]
+    public void MassLaunchKeysLoad()
+    {
+        var t = DeathShow.T;
+        Assert.True(t.MassLaunchMin >= 3);
+        Assert.True(t.MassLaunchMax >= t.MassLaunchMin);
+        Assert.True(t.MassLaunchHop > 0.3 && t.MassLaunchTime > 0.2);
+    }
+
+    [Fact]
     public void BurstVersusLaunch()
     {
         int id = Enumerable.Range(0, 500).First(i => DeathShow.Draw(i, 1) < 0.33);

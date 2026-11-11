@@ -360,10 +360,20 @@ public partial class WorldScene : Node3D, IZoneLook
     /// <summary>The slow-motion beats (a perfect dodge, the victory fall), then local hit-stop: from this step's events
     /// the classifier names the bodies to hold (her and the struck: heavy and crit hits, her arts, an elite or boss
     /// kill, a hard hit on her) and HitStops keeps their clocks. View only: the fight never waits.</summary>
+    static readonly bool MassTraceArg = Args.Has("mass-trace");
+
     void Weigh(List<CombatEvent> evs, Battle b)
     {
+        bool cut = false;
         foreach (var e in evs)
         {
+            // a mass kill: the Reaving Arc's crescents fade out in 3 frames so the thrown bodies are the loudest thing
+            if (!cut && e is Ev.Kill mk && mk.Mass)
+            {
+                cut = true;
+                int n = Fx.Blades.Cut(3 / 60f);
+                if (MassTraceArg) GD.Print($"[blades-cut] f={Engine.GetFramesDrawn()} live={n}");
+            }
             if (e is Ev.PerfectDodge && Hitstop) slowmo = 0.38;
             if (e is Ev.Victory && Hitstop) fall = Fall;
         }

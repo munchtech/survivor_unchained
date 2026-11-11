@@ -137,14 +137,19 @@ public partial class CrowdView : Node3D
             }
             if (l < 1e-6) { var (ax, az) = Drawn?.Of(e) ?? (e.X, e.Z); dx = ax - battle!.Player.X; dz = az - battle.Player.Z; l = Math.Sqrt(dx * dx + dz * dz); }
             if (l < 1e-6) { dx = 1; dz = 0; l = 1; }
-            double d = SurvivorUnchained.Sim.DeathShow.LaunchDistance(e.LastBlow) / Math.Sqrt(Math.Max(0.25, e.Def.Scale ?? 1));
+            var dt0 = DeathShow.T;
+            double d0 = SurvivorUnchained.Sim.DeathShow.LaunchDistance(e.LastBlow);
+            if (e.MassKill) d0 = Math.Clamp(Math.Max(d0, dt0.MassLaunchMin), dt0.MassLaunchMin, dt0.MassLaunchMax);
+            double d = d0 / Math.Sqrt(Math.Max(0.25, e.Def.Scale ?? 1));
             g.ThrowVx = dx / l * d; g.ThrowVz = dz / l * d;   // (the whole throw, not a speed)
         }
-        g.LaunchT = Math.Min(LaunchTime, g.LaunchT + dt * g.Rate);
-        double u = 1 - g.LaunchT / LaunchTime, f = 1 - u * u * u;
+        double lt = e.MassKill ? DeathShow.T.MassLaunchTime : LaunchTime, hopH = e.MassKill ? DeathShow.T.MassLaunchHop : HopHeight;
+        double hopPk = e.MassKill ? lt * 0.35 : HopPeak, hopEnd = e.MassKill ? lt * 0.8 : HopEnd;
+        g.LaunchT = Math.Min(lt, g.LaunchT + dt * g.Rate);
+        double u = 1 - g.LaunchT / lt, f = 1 - u * u * u;
         g.ThrowX = g.ThrowVx * f; g.ThrowZ = g.ThrowVz * f;
-        double h = g.LaunchT < HopEnd ? (g.LaunchT <= HopPeak ? g.LaunchT / HopPeak : 1 - (g.LaunchT - HopPeak) / (HopEnd - HopPeak)) : 0;
-        g.ThrowY = h > 0 ? HopHeight * (1 - Math.Pow(1 - h, 2)) : 0;
+        double h = g.LaunchT < hopEnd ? (g.LaunchT <= hopPk ? g.LaunchT / hopPk : 1 - (g.LaunchT - hopPk) / (hopEnd - hopPk)) : 0;
+        g.ThrowY = h > 0 ? hopH * (1 - Math.Pow(1 - h, 2)) : 0;
         return (g.ThrowX, g.ThrowZ);
     }
 

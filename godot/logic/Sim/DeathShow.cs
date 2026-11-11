@@ -22,6 +22,8 @@ public sealed class DeathShow
         public double MassTopple = 0.08;
         /// <summary>A mass-kill body's hit-stop ask waits this long past its view blow (s), and its held body shakes MassShakeM metres.</summary>
         public double MassStopLag = 0.033, MassShakeM = 0.09;
+        /// <summary>A mass kill's launched bodies (view): thrown massLaunchMin..Max metres, hop massLaunchHop m, over massLaunchTime s.</summary>
+        public double MassLaunchMin = 3.2, MassLaunchMax = 4.0, MassLaunchHop = 0.7, MassLaunchTime = 0.36;
         public double LaunchBase = 0.9, LaunchPerBlow = 0.6, LaunchBlowCap = 2, LaunchMin = 0.9, LaunchMax = 2.1;
     }
 
