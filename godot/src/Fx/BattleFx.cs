@@ -1657,7 +1657,10 @@ public partial class BattleFx : Node3D
                     // ground, in its textures. The crowd's blows stay amber and quiet (main's ruling, 27 October).
                     // (A champion's full ring is its raising of the dead (the Grave-Caller's "Rise...", 7 m), no blow:
                     // drawn as a ring that fills, in the crowd's amber. As a filled band it flooded the screen salmon.)
-                    Func<int, bool> champ = id => System.Linq.Enumerable.Any(b.Enemies.Living(), x => x.Id == id && (x.Elite || x.Boss));
+                    // (a kit blow's Id is its mark's, not its maker's: the maker is the foe standing at ByX/ByZ, so an elite's
+                    // charge lane is the red line it is meant to be and not the crowd's dim one)
+                    var laneMaker = MakerOf(e, b);
+                    Func<int, bool> champ = id => System.Linq.Enumerable.Any(b.Enemies.Living(), x => x.Id == id && (x.Elite || x.Boss)) || (laneMaker != null && (laneMaker.Elite || laneMaker.Boss));
                     var (look, raising) = TelegraphRead.Of(e, champ);
                     // A fodder charger's kit lane (a champion's or a boss's is red already): the same red line at a lower
                     // strength (round 1's judge: thin faint edges and a faint fill read as nothing).
@@ -1686,6 +1689,7 @@ public partial class BattleFx : Node3D
                     {
                         var lm = Lane(e.X, e.Z, e.X1 ?? e.X, e.Z1 ?? e.Z, (float)(e.Width ?? 1), col, (float)e.Duration, e.Id, e.Hostile && e.Kind == TelegraphKind.Blow);
                         if (e.Hostile && TelegraphRead.Champion(e, champ)) Over(lm, true);
+                        if (LaneTrace) LaneTraceStart(e, b, lm, look, fodderCharge);
                         if (fodderCharge)
                         {
                             lm.Energy = ChargeEnergy; lm.Decal.EmissionEnergy = ChargeEnergy;
@@ -2076,6 +2080,7 @@ public partial class BattleFx : Node3D
             flashes[i] = (l, t, life, peak);
         }
         float mdt = SimHeld ? 0 : fdt;   // (the marks age on the sim's clock)
+        if (LaneTrace) LaneTraceTick();
         foreach (var m in marks)
         {
             if (!m.Active) continue;
