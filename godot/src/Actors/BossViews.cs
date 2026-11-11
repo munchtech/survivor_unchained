@@ -205,6 +205,8 @@ public partial class WardenView : Node3D, IBossView
     /// <summary>The cleave's clip time at the blow's landing (Sword_Attack: the hand drops through 0.43..0.50, lowest at
     /// 0.50); the strike runs 0.33 to here over the windup's last 0.2 s.</summary>
     const double Contact = 0.48;
+    /// <summary>The strike's hip twist in radians (negative turns him toward -X of his facing), set from --pace's tip bearing.</summary>
+    const double Twist = -0.5;
     /// <summary>Seconds of a stun's stagger before the dazed hunch (StaggerFor), and whether the hunch has taken over.</summary>
     const double StaggerFor = 0.9;
     bool dazed;
@@ -217,7 +219,12 @@ public partial class WardenView : Node3D, IBossView
         Position = new Vector3((float)x, (float)y, (float)z);
         flameHold = Math.Max(0, flameHold - dt);
         heading = Core.MathX.DampAngle(heading, facing, 14, dt);
-        Rotation = new Vector3(0, (float)heading, 0);
+        // (B1 r14 at 1:1: Sword_Attack is a diagonal cut whose low point lies off his facing, so the blade met the ground
+        // beside her as the blow landed.) Twisted at the hips by Twist through the strike, eased in over the raise and out
+        // over the recovery, so the cut comes down along the cone's axis on to her. The view only: the cone stays his facing.
+        double twist = e == null ? 0 : pose == "windup" ? Twist * Mathf.SmoothStep(0, 1, (float)((e.AnimT - 0.55) / 0.4))
+            : pose == "cleave" ? Twist * (1 - Mathf.SmoothStep(0, 1, (float)((e.AnimT - 0.12) / 0.5))) : 0;
+        Rotation = new Vector3(0, (float)(heading + twist), 0);
         if (e != null && pose is "walk" or "idle") view.Locomotion(Math.Sqrt(e.Vx * e.Vx + e.Vz * e.Vz));
         else if (e != null && pose == "windup")
         {
@@ -291,9 +298,16 @@ public partial class WardenView : Node3D, IBossView
         if (bladeMesh != null)
         {
             var bb = bladeMesh.GetAabb(); var xf = bladeMesh.GlobalTransform;
-            float lo = 1e9f, hi = -1e9f, far = -1e9f;
-            for (int i = 0; i < 8; i++) { var p = xf * bb.GetEndpoint(i); lo = Math.Min(lo, p.Y - at.Y); hi = Math.Max(hi, p.Y - at.Y); far = Math.Max(far, (p - at).Dot(f)); }
-            blade = $" blade lo={lo:0.00} hi={hi:0.00} far={far:0.00}";
+            float lo = 1e9f, hi = -1e9f, far = -1e9f, reach = -1; double tip = 0;
+            for (int i = 0; i < 8; i++)
+            {
+                var p = xf * bb.GetEndpoint(i); lo = Math.Min(lo, p.Y - at.Y); hi = Math.Max(hi, p.Y - at.Y); far = Math.Max(far, (p - at).Dot(f));
+                var d = p - at; d.Y = 0;
+                if (d.Length() > reach) { reach = d.Length(); tip = Math.Atan2(d.X, d.Z) - facing; }
+            }
+            tip = Math.IEEERemainder(tip, 2 * Math.PI) * 180 / Math.PI;
+            // tip: the bearing in degrees of the blade's farthest point from his facing (positive toward +X of it), reach its flat distance
+            blade = $" blade lo={lo:0.00} hi={hi:0.00} far={far:0.00} tip={tip:0} reach={reach:0.00}";
         }
         var sk = view.Person.Skeleton;
         var bz = sk.GlobalTransform.Basis.Z; bz.Y = 0;
