@@ -142,6 +142,9 @@ public partial class WardenView : Node3D, IBossView
         if (p == pose) return;
         pose = p;
         var v = view;
+        // (B1: a held or looped pose of his own, not the walk he came in on; and the clip's rate a driven strike left set)
+        if (p is not ("walk" or "idle")) v.Halt();
+        if (p is not ("windup" or "cleave")) v.Person.Anim.SpeedScale = 1;
         switch (p)
         {
             // Lying where he fell (the first frame of getting up), then up.
@@ -189,8 +192,14 @@ public partial class WardenView : Node3D, IBossView
     public void Release()
     {
         pose = "walk";
+        view.Person.Anim.SpeedScale = 1;
         view.Loop("Sword_Idle", 0.2);
     }
+
+    /// <summary>The cleave's clip time at the blow's landing (Sword_Attack: the hand drops through 0.43..0.50, lowest at
+    /// 0.50); the strike runs 0.33 to here over the windup's last 0.2 s.</summary>
+    const double Contact = 0.48;
+    double lean;
 
     public void Update(Enemy? e, double x, double y, double z, double facing, double dt)
     {
@@ -203,13 +212,25 @@ public partial class WardenView : Node3D, IBossView
         if (e != null && pose is "walk" or "idle") view.Locomotion(Math.Sqrt(e.Vx * e.Vx + e.Vz * e.Vz));
         else if (e != null && pose == "windup")
         {
-            // AnimT 0..0.85 eases the raise (clip 0..0.33), 0.85..1.05 the strike to contact (0.33..0.45)
+            // (B1 judge: at +0.55 s the old slow raise read as a reach) The blade up and back by 0.45 s (clip 0..0.30), held
+            // there creeping to the top (0.33) so the blow is plainly coming, then the strike (0.33..Contact) over the
+            // windup's last 0.2 s, down in the circle as the blow lands.
             double t = e.AnimT;
-            double c = t < 0.85 ? 0.33 * Mathf.SmoothStep(0, 1, (float)(t / 0.85)) : 0.33 + 0.12 * Math.Min(1, (t - 0.85) / 0.2);
+            double c = t < 0.45 ? 0.30 * Mathf.SmoothStep(0, 1, (float)(t / 0.45)) : t < 0.85 ? 0.30 + 0.03 * (t - 0.45) / 0.4
+                : 0.33 + (Contact - 0.33) * Math.Min(1, (t - 0.85) / 0.2);
             view.Drive("Sword_Attack", c, dt);
         }
         else if (e != null && pose == "cleave")
-            view.Drive("Sword_Attack", 0.45 + 1.08 * Math.Min(1, e.AnimT / 0.8), dt);
+            view.Drive("Sword_Attack", Contact + (1.533 - Contact) * Math.Min(1, e.AnimT / 0.8), dt);
+        // (B1 judge: "It lowers its head" stood upright) gathered low over the charge's windup, leaning into the run
+        double want = pose == "charge-windup" ? 0.2 : pose == "charge" ? 0.15 : 0;
+        if (want > 0 || lean > 0)
+        {
+            lean += (want - lean) * (1 - Math.Exp(-10 * dt));
+            if (want == 0 && lean < 1e-3) lean = 0;
+            view.Rotation = new Vector3((float)lean, view.Rotation.Y, view.Rotation.Z);
+        }
+        if (e != null && Args.Has("pace") && pose is "windup" or "cleave" or "charge-windup" or "charge") Trace(e, facing, dt);
         flash = Math.Max(flash - dt * 6, e?.Flash ?? 0);
         foreach (var m in skin) m.Emission = new Color(1f, 0.8f, 0.6f) * (float)(flash * 0.25);
         double g = Glow * (pose == "sleep" ? 0.35 : 1) * (pose == "dead" ? 0 : 1);
@@ -218,6 +239,39 @@ public partial class WardenView : Node3D, IBossView
         lamp.Visible = pose != "dead" || g > 0.01;
         fire!.Lit(LampLit && g > 0.01);
         FaceLamp(LampLit ? Math.Min(g, 1) : 0);
+    }
+
+    MeshInstance3D? bladeMesh;
+
+    /// <summary>--pace (B1): each frame of a strike or charge, the sim's clock against the clip's, the blade's world reach
+    /// (lowest and highest point, farthest along his facing, metres from his feet) and where his body and face point
+    /// against the way he faces (fwd, face: dot with the facing; lane: his travel).</summary>
+    void Trace(Enemy e, double facing, double dt)
+    {
+        var a = view.Person.Anim;
+        var f = new Vector3((float)Math.Sin(facing), 0, (float)Math.Cos(facing));
+        var at = GlobalPosition;
+        bladeMesh ??= view.HeldIn("handslot.r")?.FindChildren("*", "MeshInstance3D", true, false).OfType<MeshInstance3D>().FirstOrDefault();
+        string blade = "";
+        if (bladeMesh != null)
+        {
+            var bb = bladeMesh.GetAabb(); var xf = bladeMesh.GlobalTransform;
+            float lo = 1e9f, hi = -1e9f, far = -1e9f;
+            for (int i = 0; i < 8; i++) { var p = xf * bb.GetEndpoint(i); lo = Math.Min(lo, p.Y - at.Y); hi = Math.Max(hi, p.Y - at.Y); far = Math.Max(far, (p - at).Dot(f)); }
+            blade = $" blade lo={lo:0.00} hi={hi:0.00} far={far:0.00}";
+        }
+        var sk = view.Person.Skeleton;
+        var bz = sk.GlobalTransform.Basis.Z; bz.Y = 0;
+        int hb = sk.FindBone("head");
+        string face = "";
+        if (hb >= 0)
+        {
+            var hx = sk.GlobalTransform * sk.GetBoneGlobalPose(hb);
+            var d = hx * new Vector3(0, 0.083f, 0.158f) - hx.Origin; d.Y = 0;
+            face = $" face={d.Normalized().Dot(f):0.00}";
+        }
+        var lane = new Vector3((float)e.Vx, 0, (float)e.Vz);
+        GD.Print($"fordview {pose} f={Engine.GetFramesDrawn()} at={e.AnimT:0.000} clip={a.CurrentAnimation} pos={a.CurrentAnimationPosition:0.000} ss={a.SpeedScale:0.00} dt={dt:0.000} lean={lean:0.00} fwd={bz.Normalized().Dot(f):0.00}{face}{(lane.Length() > 0.1 ? $" lane={lane.Normalized().Dot(f):0.00}" : "")}{blade}");
     }
 
     /// <summary>A cinematic's frame: the eyes and the lamp at the glow it sets,

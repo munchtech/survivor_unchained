@@ -416,9 +416,19 @@ public partial class PersonView : Node3D, INpcView
         if (a.CurrentAnimation != name) { a.Play(name, 0.15, 1); Native(name); }
         holding = true; actLeft = double.MaxValue; bent = false;
         double pos = a.CurrentAnimationPosition;
-        if (Mathf.Abs(t - pos) > 0.2) { a.Seek(t, true); a.SpeedScale = 0; return; }
+        // (B1: off by more than a frame's worth and it is put where it should be, now; a 0.2 s slack let a fast strike's
+        // pose trail the sim by up to that)
+        if (Mathf.Abs(t - pos) > DriveSlack) { a.Seek(t, true); a.SpeedScale = 0; return; }
         a.SpeedScale = dt > 0 ? (float)Mathf.Clamp((t - pos) / dt, 0, 4) : 0;
     }
+    const double DriveSlack = 0.03;
+
+    /// <summary>Off its feet's loop: the next Loop plays its own clip, not the walk Locomotion last chose (B1: the
+    /// Ford-Warden's charge windup and charge played his zombie walk, the walk flag still up from walking in).</summary>
+    public void Halt() => walking = false;
+
+    /// <summary>What is held in a slot ("handslot.r"...), for measuring.</summary>
+    public Node3D? HeldIn(string slot) => held.TryGetValue(slot, out var n) ? n : null;
 
     public void Locomotion(double speed)
     {
