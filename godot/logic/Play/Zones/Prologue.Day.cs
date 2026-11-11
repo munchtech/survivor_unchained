@@ -362,12 +362,13 @@ public sealed partial class Prologue
         // shallow up and down. Her way out first, then turned 30 degrees at a time, the first within LeapUpDown of
         // her along the road and on open ground; none, her way out.)
         // (M6 l4: m6r6's first such point lay at the screen's right edge under the tracker: every such point is
-        // offered in that order and the Aim's Safe takes the first well on the screen.)
+        // beyond the wolves offered in that order (her reach cuts some short), and the Aim's Safe takes the first well on
+        // the screen.)
         var pts = new List<(double X, double Y, double Z)>();
         foreach (int k in new[] { 0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6 })
         {
             var (tx, tz) = At(a0 + k * Math.PI / 6);
-            if (Math.Abs(tz - p.Z) <= LeapUpDown && !B.Collision.Blocked(tx, tz, 0.6)) pts.Add(Up(tx, tz, 0.1));
+            if (Math.Abs(tz - p.Z) <= LeapUpDown && Dist(tx, tz, cx, cz) > r - RingClear && !B.Collision.Blocked(tx, tz, 0.6)) pts.Add(Up(tx, tz, 0.1));
         }
         if (pts.Count == 0) { var (bx, bz) = At(a0); pts.Add(Up(bx, bz, 0.1)); }
         return pts;

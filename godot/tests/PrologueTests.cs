@@ -641,6 +641,10 @@ public class PrologueTests
     {
         var s = Make();
         LandOnTheThree(s);
+        // (it waits on A2's Swing seen before the Watch-post: m6r6 showed Resolve 18 s before Swing)
+        Assert.DoesNotContain(s.Host.Asked, c => c.Id == "resolve");
+        s.Host.TaughtIds.Add("swing");
+        Run(s, 0.1);
         var c = Offered(s, "resolve");
         Assert.Equal(("Resolve", "Every blow that lands builds Resolve. Your skills burn it.", CalloutKind.Arrow), (c.Title, c.Line, c.Kind));
         Assert.Equal("resolve", c.Target.Hud);
