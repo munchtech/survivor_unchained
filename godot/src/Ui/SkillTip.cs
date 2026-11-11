@@ -213,18 +213,16 @@ public partial class SkillTip : Control
             var w1 = Wrap(f, se, size, width);
             if (w1.Count == 2)
             {
-                string? best = null; float bestD = float.MaxValue;
+                List<string>? best = null; float bestD = float.MaxValue;
                 for (int i = 0; i < se.Length - 1; i++)
                 {
                     if (se[i] != ',' || se[i + 1] != ' ') continue;
                     string a = se.Substring(0, i + 1), b = se.Substring(i + 2);
                     float wa = TextW(f, a, size), wb = TextW(f, b, size);
                     if (wa > width || wb > width) continue;
-                    if (Math.Abs(wa - wb) < bestD) { bestD = Math.Abs(wa - wb); best = a + "
-" + b; }
+                    if (Math.Abs(wa - wb) < bestD) { bestD = Math.Abs(wa - wb); best = new List<string> { a, b }; }
                 }
-                if (best != null) { groups.Add(best.Split('
-').ToList()); continue; }
+                if (best != null) { groups.Add(best); continue; }
             }
             groups.Add(w1.Count >= 2 ? WrapBalancedOld(f, se, size, width) : w1);
         }
@@ -276,8 +274,8 @@ public partial class SkillTip : Control
         L.Lines = WrapBalanced(Style.Ui, v.Line, L.LineSize, inner, maxLines);
         if (L.Lines.Count > maxLines && said.Add(v.Skill + "|line")) GD.Print($"SKILLTIP OVERFLOW {v.Skill} line={L.Lines.Count}");
         if (L.Lines.Count > 0) { L.LineBase = y + 10 + L.LineSize; y = L.LineBase + (L.Lines.Count - 1) * L.LinePitch; }
-        L.RuleY = y + (compact ? 11 : 11);
-        L.RowBase = L.RuleY + (compact ? 4 : 3) + L.RowSize;
+        L.RuleY = y + 12;
+        L.RowBase = L.RuleY + (compact ? 6 : 3) + L.RowSize;
         var items = v.Rows.Select(r => (r.Label, r.Value, Gold: false)).ToList();
         if (v.Cost is { } c) items.Add((c.Label, c.Value, true));
         if (!compact)
