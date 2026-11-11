@@ -109,6 +109,11 @@ public static class FeelRules
         return shown;
     }
 
+    /// <summary>A mass kill's step lands over a frame or two (her step's last kills come a frame late): the blows of this
+    /// many drawn frames after the mass step are added into its one total.</summary>
+    public const int MassTailFrames = 3;
+    public static bool MassTail(long since) => since > 0 && since <= MassTailFrames;
+
     /// <summary>A number's lift over its victim (px at 1080): its box's bottom this far over the body's top on screen.</summary>
     public const float NumberOver = 50;
     /// <summary>And this far to the side away from her (px at 1080; the side the victim is on of her; the right when

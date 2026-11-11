@@ -21,6 +21,10 @@ public partial class Hits
     /// <summary>F1 lead 27: this frame's events held her step that felled 4+ (BattleFx, Ev.Kill Mass): its numbers fold
     /// into one at Flush (FeelRules.Fold); cleared there.</summary>
     public bool MassStep;
+    /// <summary>F1 r5: the mass kill's one number and its drawn frame: the blows of the next FeelRules.MassTail frames
+    /// (the rest of her step's kills, landing a frame or two late) are added into it, not shown as numbers of their own.</summary>
+    int massLabel = -1;
+    long massFrame = long.MinValue;
     /// <summary>The most numbers on screen at once (a big blow is told past it).</summary>
     const int LiveMost = 12;
     /// <summary>The nearest a number is drawn to her, in metres over the ground.</summary>
@@ -118,6 +122,32 @@ public partial class Hits
         bool mass = MassStep;
         MassStep = false;
         if (waiting.Count == 0) return;
+        long now = Engine.GetFramesDrawn();
+        if (massLabel >= 0 && FeelRules.MassTail(now - massFrame) && numbers[massLabel].T < 1 && tallyOf[massLabel] != int.MinValue)
+        {
+            var mt = tallies[massLabel];
+            bool any = false;
+            for (int k = waiting.Count - 1; k >= 0; k--)
+            {
+                var w = waiting[k];
+                if (w.Tint != null) continue;
+                mt.Sum += w.Amount;
+                mt.Crit |= w.Crit;
+                (extraTargets[massLabel] ??= new List<int>()).Add(w.Target);
+                labelOfTarget[w.Target] = massLabel;
+                waiting.RemoveAt(k);
+                any = true;
+            }
+            if (any)
+            {
+                tallies[massLabel] = mt;
+                Restyle(massLabel, mt);
+                Reclear(massLabel);
+                numbers[massLabel] = (numbers[massLabel].Label, Mathf.Min(numbers[massLabel].T, 0.25f));
+                if (mass) massFrame = now;
+            }
+            if (waiting.Count == 0) return;
+        }
         // A blow that takes a fifth of what it struck is told first, then crits, then the biggest.
         waiting.Sort((a, b) => Heavy(a) != Heavy(b) ? (Heavy(a) ? -1 : 1) : a.Crit != b.Crit ? (a.Crit ? -1 : 1) : b.Amount.CompareTo(a.Amount));
         // F1 27: the blows fold to at most NumbersPerStep numbers (one on a mass kill); damage over time is left as it is.
@@ -185,6 +215,7 @@ public partial class Hits
             }
             Restyle(i, t);
             Reclear(i);
+            if (mass && blow && massFrame != now) { massLabel = i; massFrame = now; }
             shown++;
             live++;
             young.Add(numbers[i].Label.GlobalPosition);

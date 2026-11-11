@@ -113,4 +113,14 @@ public class FeelRulesTests
         Assert.Equal(1f, FeelRules.TellFill(dim, 2f, true));
         Assert.Equal(1f, FeelRules.TellEdge(dim, 2f, true));
     }
+
+    [Fact]
+    public void AMassKillsLateBlowsJoinItsTotalForThreeFramesOnly()
+    {
+        Assert.False(FeelRules.MassTail(0));   // the mass step itself folds by Fold
+        Assert.True(FeelRules.MassTail(1));
+        Assert.True(FeelRules.MassTail(3));
+        Assert.False(FeelRules.MassTail(4));
+        Assert.False(FeelRules.MassTail(-1));
+    }
 }

@@ -21,6 +21,7 @@ uniform int p7_mode = 0;
 uniform float p7_t = 0.0;      // seconds since it began
 uniform float p7_prog = 0.0;   // ring closure / shove reach 0..1
 uniform float p7_fade = 0.0;   // 0 whole .. 1 gone (stepped by the caller)
+uniform float p7_dim = 1.0;    // F1 r5: her dash ribbon and afterimages held down in a mass kill's window (1 = whole)
 uniform float p7_alpha = 1.0;  // the coverage cap (the ring's half opacity)
 uniform float p7_seed = 0.0;
 uniform float p7_bill = 0.0;   // 1: the quad faces the camera
@@ -179,6 +180,7 @@ void p7_frag(vec2 uv, vec3 n, vec3 v, out vec3 albedo, out float alpha) {
 	else if (p7_mode == 11) c = p7_pulse(n, v);
 	else if (p7_mode == 12) c = p7_crescent(p);
 	else c = p7_nick(p);
+	c.a *= p7_dim;
 	if (c.a < 0.004) discard;
 	albedo = fx_out(c.rgb, c.a);
 	alpha = c.a;
