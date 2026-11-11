@@ -643,8 +643,15 @@ _OT_BACK = dict(travel=180.0, duty=0.20, reach=0.40, peel=0.0, kick=0.16, knee=0
 # length on the shared phase, so 5.3 m/s still lands each foot on its spot): reach 0.30 -> 0.20, reach_key (0.83, 0.20, 0.16)
 # -> (0.83, 0.12, 0.12), kick 0.42 -> 0.32, knee 0.32 -> 0.26; pelvis 85 toward travel (chest keeps 30: spine twist 62 as
 # before), width 0.03, toes 1.05/1.0. Feet split along travel 1203 -> 771 mm, lat split 433 -> 267, slide 2.1/3.4 mm/f.
-_OT_SIDE = dict(width=0.03, drop=0.08, hip_tilt=8.0, chest_lean=4.0, side_lean=9.0, side_hips=85.0, side_chest=30.0, hip_yaw=4.0, chest_yaw=3.0,
-                arm_amp=0.45, toe_lead=1.05, toe_trail=1.0, frames=14, reach=0.20, reach_key=(0.83, 0.12, 0.12), kick=0.32, knee=0.26)
+# A1 L25 strafe2 (the lead's 1:1 look: a low crouch, knees bent and splayed; the short step at the run's pelvis height kept the
+# knees 35-88 deg through push-off and early swing where the run's are 24-29): the side legs ARE run_warden's legs, yawed fully
+# onto the travel (pelvis 90, the run's width 0.08, its 21-frame cycle, reach, kick, knee, pelvis tilt 6.65 = lean x 0.35, hip
+# yaw 6, its 0.04 pelvis offset and 4 deg toe-out), so pelvis height and knee bend match the run's at every phase and the
+# game's forward/side angle blend is a pure lower-body turn (same leg locals). The torso stays the strafe's: chest 30 toward
+# travel (spine twist 60), the head back on the aim, leaning 16 into travel (was 9: the run leans ~20 into its travel).
+_OT_SIDE = dict(width=0.08, hip_tilt=WARDEN.lean * 0.35, hip_yaw=WARDEN.hip_yaw, hip_roll=WARDEN.hip_roll, side_hips=90.0,
+                side_z=0.04, side_toe_out=4.0, toe_lead=1.0, toe_trail=1.0, chest_lean=4.0, side_lean=16.0, side_chest=30.0,
+                chest_yaw=3.0, arm_amp=0.45)
 OFF_TRAVEL = {"run_warden_back": _OT_BACK, "run_warden_right": dict(_OT_SIDE, travel=90.0),
               "run_warden_left": dict(_OT_SIDE, travel=270.0)}
 

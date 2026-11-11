@@ -92,6 +92,11 @@ class Gait:
     toe_trail: float = 0.8
     # A1 L23: the chest's own turn toward travel at a 90 travel, deg; the head turns back to the aim.
     side_chest: float = 0.0
+    # A1 L25 strafe2: the run's own pelvis offset ahead of the feet (pose_at's 0.04) and its toe-out (4 deg), turned onto the travel,
+    # so a side clip with side_hips 90 and the run's legs is run_warden's lower body yawed onto its travel (the game's angle blend
+    # of the two is then a lower-body turn: the same leg locals, the pelvis yaw blended, no slide part-way).
+    side_z: float = 0.0
+    side_toe_out: float = 0.0
     # The arms' swing about its middle (1 as keyed; less: the arms held in guard, riding the step).
     arm_amp: float = 1.0
 
@@ -300,7 +305,7 @@ def _off_travel(g: Gait, rig: Rig, ph, pose):
         ct = psi * g.side_chest / 90.0
         chest = qeuler(ct + g.chest_yaw * c, g.chest_lean, side * g.side_lean)
         pr = math.radians(psi)               # over the standing foot: across the travel, not across her
-        hp = (x * math.cos(pr), y, -x * math.sin(pr))
+        hp = (x * math.cos(pr) + g.side_z * math.sin(pr), y, -x * math.sin(pr) + g.side_z * math.cos(pr))
     sp = _q2e(qmul(qinv(pel), chest))
     pose["hips"] = {"pos": hp, "rot": _q2e(pel)}
     pose["spine"] = sp
@@ -343,7 +348,7 @@ def _off_travel(g: Gait, rig: Rig, ph, pose):
             fx = ox * math.cos(pr) + oz * math.sin(pr)
             fz = -ox * math.sin(pr) + oz * math.cos(pr)
             fy = a[1]
-            yaw_f = turn * (g.toe_lead if lead else g.toe_trail)
+            yaw_f = turn * (g.toe_lead if lead else g.toe_trail) + s * g.side_toe_out
             yr = math.radians(yaw_f)
             pole = (math.sin(yr) + s * 0.1 * math.cos(yr), 0, math.cos(yr) - s * 0.1 * math.sin(yr))
         pose[f"foot_{side}"] = {"pos": (fx, fy, fz), "rot": (yaw_f, -pitch, 0), "toe": toe, "pole": pole}
