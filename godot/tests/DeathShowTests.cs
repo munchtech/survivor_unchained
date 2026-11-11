@@ -41,6 +41,21 @@ public class DeathShowTests
     }
 
     [Fact]
+    public void MassKillShowsMoreOfIt()
+    {
+        var s = new DeathShow();
+        int shown = 0;
+        for (int i = 0; i < 25; i++) if (D(s, 9.0, i, i) != DeathKind.Fall) shown++;   // one blow fells 25
+        Assert.InRange(shown, DeathShow.T.MaxPerWindow + 1, DeathShow.T.MassMaxPerWindow);
+        // three kills in one step are no mass kill: the plain cap holds
+        var p = new DeathShow();
+        int few = 0;
+        for (int i = 0; i < 3; i++) if (D(p, 9.0, i, i) != DeathKind.Fall) few++;
+        for (int i = 3; i < 40; i++) if (D(p, 9.0 + i * 0.001, i, i) != DeathKind.Fall) few++;
+        Assert.True(few <= DeathShow.T.MaxPerWindow);
+    }
+
+    [Fact]
     public void BurstVersusLaunch()
     {
         int id = Enumerable.Range(0, 500).First(i => DeathShow.Draw(i, 1) < 0.33);
