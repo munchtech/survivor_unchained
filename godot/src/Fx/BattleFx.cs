@@ -343,32 +343,47 @@ public partial class BattleFx : Node3D
     public const uint HitLightMask = 0xFFFFFu & ~2u & ~PlayerView.HerLayers;
     /// <summary>How far from her (flat, metres) a hit light's footprint must end: her body's reach on the ground (~0.35 m)
     /// and the soft edge of an omni's falloff. A hit light never lights the ground under her figure.</summary>
-    public const float HerClear = 0.65f;
+    public const float HerClear = 0.9f;
+    /// <summary>The ground her standing figure hides behind her at the play camera (metres, away from the lens): her
+    /// 1.7 m over the camera's ~64 degree look down. A hit light behind her keeps this much more clear, so the lit ground
+    /// never sits behind her head and shoulders on screen (judge r1: 5215, the bell's wolves up-screen of her).</summary>
+    public const float HerShadowOnScreen = 0.85f;
     /// <summary>The least reach a hit light keeps (metres): smaller and the blow's light is a dot.</summary>
     public const float HitMinRange = 0.8f;
 
     /// <summary>The hit-light rule (HitLight, the sweep's pool, a champion's fall): its light at the struck body, its
     /// footprint ending HerClear short of her. A body struck closer than HerClear + HitMinRange has its light slid out
     /// along the blow (her to it) to that distance, so the light keeps HitMinRange of reach and the punch stays on the
-    /// victim. Returns the light's place and its range.</summary>
-    public static (Vector3 At, float Range) HitLightFit(Vector3 at, Vector3 her, float range)
+    /// victim. Returns the light's place and its range.
+    /// `back`: the flat way away from the camera (unit; zero for none): a light that way keeps HerShadowOnScreen more.</summary>
+    public static (Vector3 At, float Range) HitLightFit(Vector3 at, Vector3 her, float range, Vector2 back = default)
     {
         var flat = new Vector2(at.X - her.X, at.Z - her.Z);
-        float near = flat.Length(), least = HerClear + HitMinRange;
+        float near = flat.Length();
+        var dir = near > 0.05f ? flat / near : new Vector2(1, 0);
+        float clear = HerClear + HerShadowOnScreen * Mathf.Max(0, dir.Dot(back)), least = clear + HitMinRange;
         if (near < least)
         {
-            var dir = near > 0.05f ? flat / near : new Vector2(1, 0);
             at = new Vector3(her.X + dir.X * least, at.Y, her.Z + dir.Y * least);
             near = least;
         }
-        return (at, Mathf.Clamp(near - HerClear, HitMinRange, range));
+        return (at, Mathf.Clamp(near - clear, HitMinRange, range));
+    }
+
+    /// <summary>The flat way away from the play camera (unit), for HitLightFit; zero without a camera.</summary>
+    Vector2 AwayFromLens()
+    {
+        if (GetViewport()?.GetCamera3D() is not { } cam) return Vector2.Zero;
+        var f = -cam.GlobalBasis.Z;
+        var v = new Vector2(f.X, f.Z);
+        return v.LengthSquared() > 1e-4f ? v.Normalized() : Vector2.Zero;
     }
 
     /// <summary>A blow's light at the struck body (the hit-light rule, HitLightFit and HitLightMask): no distance damp
     /// near her (its footprint never reaches her, so its punch stays whole on the victim).</summary>
     public void HitLight(Vector3 at, Color color, float peak, float life, float range = 9, [System.Runtime.CompilerServices.CallerLineNumber] int line = 0)
     {
-        var (p, r) = HitLightFit(at, PlayerPos, range);
+        var (p, r) = HitLightFit(at, PlayerPos, range, AwayFromLens());
         Flash(p, color, peak, life, r, line, "HitLight", hit: true);
     }
 

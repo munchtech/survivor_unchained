@@ -128,7 +128,7 @@ public partial class BattleFx
     void PlaceOathPool(int i, Vector3 at)
     {
         var l = oathPools[i]!;
-        var (p, r) = HitLightFit(at, PlayerPos, PoolRange);
+        var (p, r) = HitLightFit(at, PlayerPos, PoolRange, AwayFromLens());
         l.Position = p;
         l.OmniRange = r;
         if (LightTrace) TraceLight("OathPool HitKit.cs", p, oathPoolEnergy[i], r, 90);
