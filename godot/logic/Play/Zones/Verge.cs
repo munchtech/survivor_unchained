@@ -61,6 +61,13 @@ public sealed class Verge : ZoneRuntime
     readonly double[] brambleHp;
     Enemy? greymuzzle, redcowl, snib, nemesis;
     readonly List<Enemy> roostCrew = new(), digCrew = new();
+    // Retain the spawner's groups for measurement; seeds protect pooled members.
+    public readonly Dictionary<string, List<(Enemy E, double Seed)>> Packs = new();
+    void RememberPack(string id, IEnumerable<Enemy> foes)
+    {
+        if (!Packs.TryGetValue(id, out var pack)) Packs[id] = pack = new();
+        pack.AddRange(foes.Select(e => (e, e.Seed)));
+    }
     bool hollowSpawned, roostSpawned, digSpawned, sinkSpawned, restUsed;
 
     XZ V(string place) => P("V", place);
@@ -138,6 +145,7 @@ public sealed class Verge : ZoneRuntime
                 if (e != null) { SetDisposition(e); out_.Add(e); }
                 break;
             }
+        if (tag != null) RememberPack(tag, out_);
         return out_;
     }
 
@@ -291,8 +299,9 @@ public sealed class Verge : ZoneRuntime
             if (W.Day >= 2 && e.Count > 0 && R() < 0.25)
             {
                 var lead = B!.SpawnEnemy(def, at.X, at.Z, new Battle.SpawnOpts { Level = Level() + 1, Elite = true, Style = style, Home = (at.X, at.Z, Leash), Wake = Wake });
-                if (lead != null) SetDisposition(lead);
+                if (lead != null) { SetDisposition(lead); e.Add(lead); }
             }
+            RememberPack($"field:{Packs.Count}", e);
         }
         bool night = W.Time == TimeOfDay.Night;
         deadUp |= night;

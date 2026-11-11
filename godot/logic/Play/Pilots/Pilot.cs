@@ -30,6 +30,16 @@ public static class Pilot
         return shortest ? r[0] : r[(r.Count - 1) / 2];
     }
 
+    /// <summary>The feet's existing engage distance, shared with the density probe.</summary>
+    public static double EngageRange(Battle b, Enemy e)
+    {
+        double reach = Reach(b);
+        double engage = Wall(b) ? 1.8 : reach < 4.5 ? Math.Max(1.6, reach * 0.7) : 6;
+        if (b.Campaign && e.Def.Behavior is Content.Behavior.Ranged or Content.Behavior.Caster)
+            engage = Math.Min(engage, Math.Max(1.6, Reach(b, shortest: true) * 0.7));
+        return engage;
+    }
+
     /// <param name="onward">On a map: where the way goes on. Resting packs are left to rest, what
     /// lies about is picked up, and with nothing roused near, the hands walk on.</param>
     /// <param name="goal">A story night's stage: where it wants her (a fire to light, a foe to find). With no
@@ -47,7 +57,6 @@ public static class Pilot
         bool close = wall || reach < 4.5;
         var press = b.HostilesInRadius(p.X, p.Z, close ? 2.0 : 3.4);
         int crowded = close ? 4 : 2;
-        double engage = wall ? 1.8 : close ? Math.Max(1.6, reach * 0.7) : 6;
         Enemy? nearest = null;
         double nd = double.MaxValue;
         foreach (var e in b.Enemies.Items)
@@ -87,8 +96,7 @@ public static class Pilot
         // inside 0.85) is not "in reach" at the median reach's engage: planted there, she and a lone kiter (the Low Ford's
         // Howler, a Pillager) held each other off for good once the day had no Flare to end it. She runs it down to
         // her shortest weapon's reach, as a player does: she is faster than its back-off.
-        if (b.Campaign && nearest != null && nearest.Def.Behavior is Content.Behavior.Ranged or Content.Behavior.Caster)
-            engage = Math.Min(engage, Math.Max(1.6, Reach(b, shortest: true) * 0.7));
+        double engage = nearest == null ? 0 : EngageRange(b, nearest);
         bool inReach = nearest != null && near - (b.Campaign ? nearest.Radius : 0) <= engage;
         bool plant = false;
         if (feet != null && !wall && (inReach || press.Count >= crowded)) plant = feet.Plant(b);

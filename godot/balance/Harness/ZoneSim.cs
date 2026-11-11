@@ -23,6 +23,7 @@ public sealed record ZoneRunSpec(int Seed, string Zone, string Bot, int Tier, st
 public sealed class ZoneRunResult
 {
     public ZoneRunSpec Spec = null!;
+    public DensityMeasures Density = null!;
     public bool Reached, BossReached, WardenDown, Stuck;
     public string? StuckAt;
     public double Seconds, FilmFallback, Meters, MetersNight, MetersDay, Fighting, Gold, GoldDropped;
@@ -95,12 +96,14 @@ public static class ZoneSim
         var at = zone.ArrivalFrom(null);
         var b = j.StartBattle(true, meta.Collision(), Heightfield.Load(meta).HeightAt, at.X, at.Z, at.Facing, (uint)spec.Seed, ember: zone.Ember);
         var r = new ZoneRunResult { Spec = spec };
+        var density = new DensityProbe(b, () => DensityProbe.LowFord(zone));
         double wardenDownAt = -1;
         // (as Game.HookBattle: the journey's kills and pickups, the zone's after; a fall the zone's hooks do not take goes to its OnDeath)
         var zh = zone.Hooks;
         var h = BattleHooks.Following(zh);
         h.OnKill = (e, by) =>
         {
+            density.Killed(e, by);
             j.Killed(e, by);
             zh.OnKill?.Invoke(e, by);
             if (!by) return;
@@ -123,6 +126,7 @@ public static class ZoneSim
         b.Hooks = h;
         host.Battle = b;
         zone.Begin(b);
+        density.Sample();
 
         var human = spec.Bot is "human" or "careless" or "idler" ? new Human(spec.Seed, spec.Bot == "careless") { Idle = spec.Bot == "idler" } : null;
         bool deft = spec.Bot == "deft", standing = spec.Bot == "standing";
@@ -299,7 +303,9 @@ public static class ZoneSim
             }
             zone.Step(dt);
             b.Tick(dt, mx, mz);
-            meter.Step(b, tt, dt, b.Events.Drain(), fight);
+            var events = b.Events.Drain();
+            density.Observe(events);
+            meter.Step(b, tt, dt, events, fight);
             zone.Frame(dt);
             host.Pass(dt);
             tt += dt;
@@ -413,6 +419,7 @@ public static class ZoneSim
         r.Stages[stage.ToString()] = r.Stages.GetValueOrDefault(stage.ToString()) + (tt - stageAt);
         if (!r.Reached && stage is Prologue.Stage.Intro or Prologue.Stage.Victory) r.FilmFallback += tt - stageAt;
         r.Seconds = tt;
+        r.Density = density.Finish(tt);
         foreach (var (k, v) in b.DamageBy) r.DamageBy[k] = v;
         r.FlareCasts = b.FlareCasts; if (b.FlareTimes.Count > 0) r.FlareFirst = b.FlareTimes[0];
         meter.Finish(b, tt, r.Measures, hands);
