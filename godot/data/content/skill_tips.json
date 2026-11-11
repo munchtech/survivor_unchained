@@ -1,0 +1,81 @@
+{
+  // The skill tooltips' words (U1, 10 Nov: the owner "had no idea what the skills did"). Classes own this wording;
+  // edit it here, never in code. Read by Content/SkillTips.cs; Ui/SkillTip.cs draws it (the seats, the level card,
+  // the Lamps board's tabs). Plain words first: the line says what it does; the name is flavor.
+  //
+  // Placeholders, filled from the live numbers when the card is built (SkillTipModel):
+  //   {damage}     one blow's damage at her rank, wicks and gear (WeaponInst.Damage, as WickBook.Sum's total)
+  //   {cut}        a chained skill's damage per cut, {every} the seconds between cuts (WickBook.Sum Cut/Every)
+  //   {cooldown}   the wait the seat shows (Firing.CooldownOf in a fight)
+  //   {resolve}    the Resolve a press costs; {drain} the Resolve a second a channel drains
+  //   {base.X}     skills.json base.X as written; {base.X:%} as a percent (0.15 -> 15%)
+  //   {kindle.X}   the kindle rule's X (count, radius), from press.kindled or the skill's "kindle"
+  // Numbers print without trailing zeros (1.5, 8, 0.6). A placeholder that resolves to nothing is a test failure.
+  //
+  // Per skill: "line" (one plain sentence or two, under ~130 characters), "numbers" (rows of [label, value], at
+  // most four), and "kindled" (the small line under the name when she carries it kindled). "how" overrides the
+  // small line for a cast form. A skill missing here falls back to its skills.json description's first sentence
+  // and its damage and cooldown rows (no skill is ever without a card), but every skill in the demo has its own.
+
+  "how": {
+    "hold": "Hold it down",
+    "press": "Press it",
+    "channel": "Hold it down to keep it going",
+    "kindle": "Lights up on its own"
+  },
+  // The cost row, by what pays for it. {cooldown} under 0.1 s is left out.
+  "cost": {
+    "resolve": [ "Cost", "{resolve} Resolve" ],
+    "drain": [ "Cost", "{drain} Resolve a second" ],
+    "cooldown": [ "Cooldown", "{cooldown} s" ]
+  },
+
+  "skills": {
+    "sunder": {
+      "line": "Cut everything in front of you while you hold. Every 6 s of cutting, a heavy swing splits the ground.",
+      "numbers": [ [ "Damage", "{cut} a cut, every {every} s" ], [ "Reach", "{base.reach} m" ], [ "Ground split", "{base.line} m ahead, {damage} damage" ] ],
+      "callings": { "sunder.stroke.4": { "line": "Cut everything in front of you while you hold. Every 2nd swing is heavy and splits the ground." } }
+    },
+    "cleaver": {
+      "line": "A heavy chop that sweeps the whole front of you and leaves the wounds open.",
+      "numbers": [ [ "Damage", "{damage}" ], [ "Reach", "{base.reach} m" ] ]
+    },
+    "groundbreaker": {
+      "line": "A crack runs from your blade to the nearest pack, and the ground heaves under it, stunning them all.",
+      "numbers": [ [ "Damage", "{damage}" ], [ "Reach", "up to {base.range} m" ], [ "Stun", "{base.stun} s within {base.radius} m" ] ],
+      "kindled": "Lights up with {kindle.count} or more enemies within {kindle.radius} m: press it"
+    },
+    "heroic_leap": {
+      "line": "Leap where you aim and land blade first, knocking down all around. Untouchable in the air.",
+      "numbers": [ [ "Damage", "{damage}" ], [ "Leap", "{base.minRange} to {base.range} m" ], [ "Knockdown", "{base.stun} s within {base.radius} m" ] ]
+    },
+    "shield_charge": {
+      "line": "Charge behind your shield, striking and throwing aside all in your way. A champion that stops you is stunned.",
+      "numbers": [ [ "Damage", "{damage}" ], [ "Charge", "{base.range} m" ], [ "Barrier", "{base.barrier:%} health, {base.duration} s" ] ]
+    },
+    "iron_vow": {
+      "line": "Plant your feet: for {base.brace} s, blows on you land at half and a fifth is stored, then it all bursts out in a ring.",
+      "numbers": [ [ "Damage", "{damage} + what you stored" ], [ "Ring", "{base.radius} m" ] ],
+      "kindled": "Lights up when a big blow winds up on you, or a crowd closes in: press it then"
+    },
+    "watch_bell": {
+      "line": "Toll the bell: all near are drawn in to face you, each one shielding you for {base.barrier:%} of your health.",
+      "numbers": [ [ "Damage", "{damage}" ], [ "Draws", "{base.drawMost} within {base.range} m" ], [ "Shield cap", "{base.barrierCap:%} of health" ] ],
+      "kindled": "Lights up with {kindle.count} or more enemies within {kindle.radius} m: press it"
+    },
+    "dawnpulse": {
+      "line": "A ring of light bursts out from you and throws back what it touches. The dead hate it.",
+      "numbers": [ [ "Damage", "{damage}" ], [ "Ring", "{base.radius} m" ] ],
+      "kindled": "Fires itself with {kindle.count} or more enemies within {kindle.radius} m"
+    },
+    "bladestorm": {
+      "line": "Hold to spin, cutting all around you. Press Sunder's key to end it in one great blow that grows as you spin.",
+      "numbers": [ [ "Damage", "{damage} a turn" ], [ "Around you", "{base.radius} m" ], [ "Great blow", "up to x{base.breakGrow}" ] ]
+    },
+    "rebuke": {
+      "line": "Your shield blocks more, and each blow that reaches you smites its source and the {base.others} nearest with holy light.",
+      "numbers": [ [ "Damage", "{damage}" ], [ "Reach", "{base.radius} m" ], [ "Block", "+{base.block:%}" ] ],
+      "kindled": "Fires itself when a blow reaches you, at most every {base.cooldown} s"
+    }
+  }
+}

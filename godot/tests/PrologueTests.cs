@@ -498,6 +498,275 @@ public class PrologueTests
     }
 
     [Fact]
+    public void Her_rise_mid_fight_starts_the_Warden_script_over()
+    {
+        var s = Make(draft: true);
+        var ford = s.Meta.Place("LOWFORD", "ford");
+        typeof(Prologue).GetMethod("Go", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.Invoke(s.Zone, [Prologue.Stage.ToFord]);
+        Stand(s, ford.X, ford.Z + 12);
+        Run(s, 7.1);
+        Assert.Equal(Prologue.Stage.Boss, s.Zone.Now);
+        var w = s.B.Enemies.Living().Single(e => e.Tag == "warden");
+        var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+        var ai = typeof(Prologue).GetField("ai", flags)!.GetValue(s.Zone)!;
+        var at = ai.GetType();
+        // Mid-windup: a pending marked cleave, a threshold spent, his life lowered.
+        var blow = s.B.Blow(new Battle.EnemyBlow { OwnMark = true, Delay = 1.0, Damage = 50, Shape = TelegraphShape.Circle, Radius = 3, X = s.B.Player.X, Z = s.B.Player.Z, From = w });
+        at.GetField("Cleave")!.SetValue(ai, blow);
+        at.GetField("Mode")!.SetValue(ai, "windup");
+        ((System.Collections.Generic.List<double>)at.GetField("Thresholds")!.GetValue(ai)!).Clear();
+        w.Hp = w.MaxHp * 0.3;
+        Assert.True(s.Zone.OnDeath("the Ford-Warden"));
+        s.B.Player.Alive = false;
+        Run(s, 3.5, safe: false);
+        Assert.Equal(w.MaxHp, w.Hp);
+        Assert.Equal("walk", (string)at.GetField("Mode")!.GetValue(ai)!);
+        Assert.DoesNotContain(s.B.Blows, b => b.OwnMark && b.Damage > 0);
+        Assert.Equal([0.7, 0.4], (System.Collections.Generic.List<double>)at.GetField("Thresholds")!.GetValue(ai)!);
+    }
+
+    [Fact]
+    public void The_Wardens_cleave_is_a_frontal_sweep_cone_not_a_ground_circle()
+    {
+        var s = Make(draft: true);
+        var ford = s.Meta.Place("LOWFORD", "ford");
+        typeof(Prologue).GetMethod("Go", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.Invoke(s.Zone, [Prologue.Stage.ToFord]);
+        Stand(s, ford.X, ford.Z + 12);
+        Run(s, 7.1);
+        Assert.Equal(Prologue.Stage.Boss, s.Zone.Now);
+        var w = s.B.Enemies.Living().Single(e => e.Tag == "warden");
+        var ai = typeof(Prologue).GetField("ai", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(s.Zone)!;
+        var at = ai.GetType();
+        at.GetField("CleaveCd")!.SetValue(ai, 0.0);
+        Stand(s, w.X + 4.5, w.Z);
+        for (int i = 0; i < 600 && (string)at.GetField("Mode")!.GetValue(ai)! != "windup"; i++) { Stand(s, w.X + 4.5, w.Z); Run(s, 1 / 60.0); }
+        Assert.Equal("windup", (string)at.GetField("Mode")!.GetValue(ai)!);
+        var blow = (Battle.EnemyBlow)at.GetField("Cleave")!.GetValue(ai)!;
+        Assert.Equal(TelegraphShape.Cone, blow.Shape);
+        Assert.Equal(6.4, blow.Radius);
+        double ax = (double)at.GetField("DirX")!.GetValue(ai)!, az = (double)at.GetField("DirZ")!.GetValue(ai)!;
+        Assert.True(blow.Hit(w.X + ax * 5, w.Z + az * 5, 0.5));
+        Assert.False(blow.Hit(w.X - ax * 3, w.Z - az * 3, 0.5));
+    }
+
+    [Theory]
+    [InlineData("channel")]
+    [InlineData("windup")]
+    public void A_boss_stagger_breaks_the_Wardens_channel_and_calls_off_his_cleave(string mode)
+    {
+        var s = Make(draft: true);
+        var ford = s.Meta.Place("LOWFORD", "ford");
+        typeof(Prologue).GetMethod("Go", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.Invoke(s.Zone, [Prologue.Stage.ToFord]);
+        Stand(s, ford.X, ford.Z + 12);
+        Run(s, 7.1);
+        Assert.Equal(Prologue.Stage.Boss, s.Zone.Now);
+        var w = s.B.Enemies.Living().Single(e => e.Tag == "warden");
+        var ai = typeof(Prologue).GetField("ai", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(s.Zone)!;
+        var at = ai.GetType();
+        var blow = s.B.Blow(new Battle.EnemyBlow { OwnMark = true, Delay = 1.0, Damage = 50, Shape = TelegraphShape.Circle, Radius = 3, X = s.B.Player.X, Z = s.B.Player.Z, From = w });
+        at.GetField("Cleave")!.SetValue(ai, blow);
+        at.GetField("Mode")!.SetValue(ai, mode);
+        s.B.Events.Drain();
+        s.B.Hooks.OnBossStagger!(w);
+        Assert.Equal("stun", (string)at.GetField("Mode")!.GetValue(ai)!);
+        Assert.DoesNotContain(s.B.Blows, b => b.OwnMark && b.Damage > 0);
+        var evs = s.B.Events.Drain();
+        Assert.Equal(mode == "channel", evs.Any(e => e is Ev.Announce { Title: "Channel broken" }));
+    }
+
+    [Theory]
+    [InlineData(1.9, false)]
+    [InlineData(0.5, true)]
+    public void The_charge_hurts_only_inside_its_drawn_lane(double off, bool hurt)
+    {
+        var s = Make(draft: true);
+        var ford = s.Meta.Place("LOWFORD", "ford");
+        typeof(Prologue).GetMethod("Go", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.Invoke(s.Zone, [Prologue.Stage.ToFord]);
+        Stand(s, ford.X, ford.Z + 12);
+        Run(s, 7.1);
+        Assert.Equal(Prologue.Stage.Boss, s.Zone.Now);
+        var w = s.B.Enemies.Living().Single(e => e.Tag == "warden");
+        var ai = typeof(Prologue).GetField("ai", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(s.Zone)!;
+        var at = ai.GetType();
+        // He charges along +X from where he stands; she stands beside his line, level with him.
+        double x0 = w.X, z0 = w.Z;
+        var lane = s.B.Blow(new Battle.EnemyBlow { OwnMark = true, Shape = TelegraphShape.Line, X = x0, Z = z0, X1 = x0 + 20, Z1 = z0, Width = 2 * (w.Radius + 0.3), Delay = 5, Source = "The Ford-Warden", From = w });
+        at.GetField("Lane")!.SetValue(ai, lane);
+        at.GetField("Mode")!.SetValue(ai, "charge");
+        at.GetField("DirX")!.SetValue(ai, 1.0); at.GetField("DirZ")!.SetValue(ai, 0.0);
+        at.GetField("Travelled")!.SetValue(ai, 20.0);
+        s.B.Player.X = x0 + 0.8; s.B.Player.Z = z0 + off; s.B.Player.Iframes = 0;
+        double hp = s.B.Player.Hp;
+        Run(s, 0.01, safe: false);
+        Assert.Equal(hurt, s.B.Player.Hp < hp);
+    }
+
+    /* B1 judge round: stagger in a stun, a lamp in the charge's lane, the cleave's swing shown early, the daze cue and the tell put away. */
+
+    (Setup s, Enemy w, object ai, System.Type at) AtFord()
+    {
+        var s = Make(draft: true);
+        var ford = s.Meta.Place("LOWFORD", "ford");
+        typeof(Prologue).GetMethod("Go", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.Invoke(s.Zone, [Prologue.Stage.ToFord]);
+        Stand(s, ford.X, ford.Z + 12);
+        Run(s, 7.1);
+        Assert.Equal(Prologue.Stage.Boss, s.Zone.Now);
+        var w = s.B.Enemies.Living().Single(e => e.Tag == "warden");
+        var ai = typeof(Prologue).GetField("ai", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(s.Zone)!;
+        return (s, w, ai, ai.GetType());
+    }
+
+    [Fact]
+    public void A_stagger_while_the_Warden_is_stunned_does_nothing()
+    {
+        var (s, w, ai, at) = AtFord();
+        at.GetField("Mode")!.SetValue(ai, "stun");
+        at.GetField("T")!.SetValue(ai, 1.2);
+        s.B.Hooks.OnBossStagger!(w);
+        Assert.Equal(1.2, (double)at.GetField("T")!.GetValue(ai)!);
+        Assert.Equal("stun", (string)at.GetField("Mode")!.GetValue(ai)!);
+    }
+
+    /// <summary>(B1 r6) Battle's own stagger hold froze his script, so a stagger mid-stun ran one to 7 s and a stagger from
+    /// a walk stood 3 s held plus his 3 s stun. Through the real stagger: mid-stun it ends on its own clock, from a walk
+    /// in his 3 s.</summary>
+    [Theory]
+    [InlineData("stun", 1.2, 1.3)]
+    [InlineData("walk", 0.0, 3.0)]
+    public void A_real_stagger_never_stretches_the_Wardens_stun(string mode, double t, double left)
+    {
+        var (s, w, ai, at) = AtFord();
+        at.GetField("Mode")!.SetValue(ai, mode);
+        at.GetField("T")!.SetValue(ai, t);
+        at.GetField("Hold")!.SetValue(ai, 0.0);
+        w.TakenMul = 1; w.StaggeredT = 0; w.StaggerResistT = 0;
+        s.B.AddStagger(w, 50);
+        Assert.Equal("stun", (string)at.GetField("Mode")!.GetValue(ai)!);
+        double held = 0;
+        while ((string)at.GetField("Mode")!.GetValue(ai)! == "stun" && held < 10) { Run(s, 1 / 60.0); held += 1 / 60.0; }
+        Assert.InRange(held, left - 0.1, left + 0.1);
+    }
+
+    [Theory]
+    [InlineData(2.5, false)]
+    [InlineData(8.0, true)]
+    public void A_charge_never_starts_into_a_lamp_within_4_m_but_a_far_lamp_is_a_lure(double ahead, bool breaks)
+    {
+        var (s, w, ai, at) = AtFord();
+        var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+        var pylons = (System.Collections.Generic.List<(double X, double Z, int Light, string Flame)>)typeof(Prologue).GetField("pylons", flags)!.GetValue(s.Zone)!;
+        var lit = (bool[])typeof(Prologue).GetField("litPylons", flags)!.GetValue(s.Zone)!;
+        for (int i = 0; i < pylons.Count; i++) pylons[i] = (w.X + 80 + i * 5, w.Z + 80, pylons[i].Light, pylons[i].Flame);
+        pylons[0] = (w.X + ahead, w.Z, pylons[0].Light, pylons[0].Flame);
+        at.GetField("Mode")!.SetValue(ai, "walk");
+        at.GetField("Hold")!.SetValue(ai, 0.0);
+        at.GetField("ChargeCd")!.SetValue(ai, 0.0);
+        at.GetField("CleaveCd")!.SetValue(ai, 99.0);
+        at.GetField("ChannelCd")!.SetValue(ai, 99.0);
+        bool charged = false; double x0 = w.X, z0 = w.Z;
+        for (int i = 0; i < 60 * 5; i++)
+        {
+            Stand(s, x0 + 14, z0); if (ahead < 4) { w.X = x0; w.Z = z0; }
+            Run(s, 1 / 60.0);
+            if ((string)at.GetField("Mode")!.GetValue(ai)! is "charge") charged = true;
+            Stand(s, x0 + 14, z0); if (ahead < 4) { w.X = x0; w.Z = z0; }
+        }
+        Assert.Equal(breaks, charged);
+        Assert.Equal(breaks, !lit[0]);
+    }
+
+    [Fact]
+    public void The_cleaves_swing_is_the_views_and_a_stun_says_dazed_once_over_him()
+    {
+        var (s, w, ai, at) = AtFord();
+        at.GetField("CleaveCd")!.SetValue(ai, 0.0);
+        at.GetField("Hold")!.SetValue(ai, 0.0);
+        Stand(s, w.X + 4.5, w.Z);
+        // the cleave's swing is his blade's own (the view): the sim sends no slash of its own
+        int slashes = 0; bool cleaved = false;
+        for (int i = 0; i < 60 * 4 && !cleaved; i++)
+        {
+            Stand(s, w.X + 4.5, w.Z);
+            s.Zone.Step(1 / 60.0); s.B.Tick(1 / 60.0, 0, 0);
+            slashes += s.B.Events.Drain().Count(ev => ev is Ev.Slash);
+            s.Zone.Frame(1 / 60.0);
+            cleaved = (string)at.GetField("Mode")!.GetValue(ai)! is "cleave";
+        }
+        Assert.True(cleaved);
+        Assert.Equal(0, slashes);
+        // a stun: "Dazed" once over him (a floater, not a caption), however often he is staggered in it
+        s.B.Hooks.OnBossStagger!(w);
+        int dazed = 0, barks = 0;
+        for (int i = 0; i < 30; i++)
+        {
+            s.B.Hooks.OnBossStagger!(w); Stand(s, w.X + 4.5, w.Z); s.Zone.Step(1 / 60.0); s.B.Tick(1 / 60.0, 0, 0);
+            foreach (var ev in s.B.Events.Drain())
+            {
+                if (ev is Ev.Floater { Text: "Dazed" } fl)
+                {
+                    // over him, set off from her side when she is near (judge r4: against her bar it read as hers)
+                    dazed++; Assert.InRange(fl.Up, 3.0, 3.5);
+                    double her = Math.Sqrt(Math.Pow(fl.X - s.B.Player.X, 2) + Math.Pow(fl.Z - s.B.Player.Z, 2));
+                    double him = Math.Sqrt(Math.Pow(fl.X - w.X, 2) + Math.Pow(fl.Z - w.Z, 2));
+                    Assert.True(him <= 1.61 && her >= 4.5 + 0.5, $"dazed {him:0.00} m off him, {her:0.00} m from her");
+                }
+                if (ev is Ev.Bark { Text: "Dazed" }) barks++;
+            }
+        }
+        Assert.Equal(1, dazed);
+        Assert.Equal(0, barks);
+    }
+
+    /// <summary>(B1 r11) A windup cut by a stagger calls its cleave off: its red cone fades with it (not left up over a stunned
+    /// Warden to run out its 1.05 s), and the blow lands on nothing.</summary>
+    [Fact]
+    public void A_staggered_windup_takes_its_cone_down_and_its_blow_with_it()
+    {
+        var (s, w, ai, at) = AtFord();
+        at.GetField("CleaveCd")!.SetValue(ai, 0.0);
+        at.GetField("Hold")!.SetValue(ai, 0.0);
+        bool coned = false;
+        for (int i = 0; i < 60 * 4 && !coned; i++)
+        {
+            Stand(s, w.X + 4.5, w.Z);
+            s.Zone.Step(1 / 60.0); s.B.Tick(1 / 60.0, 0, 0);
+            coned = s.B.Events.Drain().Any(ev => ev is Ev.Telegraph { Phase: TellPhase.Warn } t && t.Id == w.Id * 10 + 1);
+            s.Zone.Frame(1 / 60.0);
+        }
+        Assert.True(coned);
+        double hp = s.B.Player.Hp;
+        s.B.Hooks.OnBossStagger!(w);
+        Assert.Contains(s.B.Events.Drain(), ev => ev is Ev.Telegraph { Phase: TellPhase.Off } t && t.Id == w.Id * 10 + 1);
+        for (int i = 0; i < 90; i++) { Stand(s, w.X + 4.5, w.Z); s.Zone.Step(1 / 60.0); s.B.Tick(1 / 60.0, 0, 0); s.B.Events.Drain(); }
+        Assert.True(s.B.Player.Hp >= hp - 0.01, $"hp {hp} -> {s.B.Player.Hp}");
+    }
+
+    [Fact]
+    public void An_interrupted_windup_is_called_off_not_just_barked()
+    {
+        var (s, w, ai, at) = AtFord();
+        at.GetField("CleaveCd")!.SetValue(ai, 0.0);
+        at.GetField("Hold")!.SetValue(ai, 0.0);
+        bool coned = false;
+        for (int i = 0; i < 60 * 4 && !coned; i++)
+        {
+            Stand(s, w.X + 4.5, w.Z);
+            s.Zone.Step(1 / 60.0); s.B.Tick(1 / 60.0, 0, 0);
+            coned = s.B.Events.Drain().Any(ev => ev is Ev.Telegraph { Phase: TellPhase.Warn } t && t.Id == w.Id * 10 + 1);
+            s.Zone.Frame(1 / 60.0);
+        }
+        Assert.True(coned);
+        s.Zone.Step(1 / 60.0); s.B.Tick(1 / 60.0, 0, 0); s.B.Events.Drain();
+        Assert.Equal(EnemyState.Windup, w.State);
+        double hp = s.B.Player.Hp;
+        s.B.Interrupt(w);
+        var evs = new System.Collections.Generic.List<CombatEvent>();
+        for (int i = 0; i < 90; i++) { Stand(s, w.X + 4.5, w.Z); s.Zone.Step(1 / 60.0); s.B.Tick(1 / 60.0, 0, 0); evs.AddRange(s.B.Events.Drain()); }
+        Assert.Contains(evs, ev => ev is Ev.Telegraph { Phase: TellPhase.Off } t && t.Id == w.Id * 10 + 1);
+        Assert.True(s.B.Player.Hp >= hp - 0.01, $"hp {hp} -> {s.B.Player.Hp}");
+    }
+
+    [Fact]
     public void Falling_here_is_forgiven()
     {
         var s = Make();
@@ -680,5 +949,25 @@ public class PrologueTests
         Assert.Equal($"seat:Skill{gb.Slot + 1}", c.Target.Hud);
         Assert.Equal($"skill{gb.Slot + 1}", c.Answer);
         Assert.True(c.Target.World!().Count >= 2);
+    }
+    [Fact]
+    public void Laid_bare_no_backstop_holds_him()
+    {
+        // (B1: all three lamps broken by 19 s, the 60 s backstop then held him at 5% for 32 s under "laid bare")
+        var s = Make(draft: true);
+        var ford = s.Meta.Place("LOWFORD", "ford");
+        var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+        typeof(Prologue).GetMethod("Go", flags)!.Invoke(s.Zone, [Prologue.Stage.ToFord]);
+        Stand(s, ford.X, ford.Z + 12);
+        Run(s, 7.1);
+        Assert.Equal(Prologue.Stage.Boss, s.Zone.Now);
+        var w = s.B.Enemies.Living().Single(e => e.Tag == "warden");
+        var snuff = typeof(Prologue).GetMethod("Snuff", flags)!;
+        snuff.Invoke(s.Zone, [0, "test"]);
+        Run(s, 0.2);
+        Assert.True(w.HpFloor > 0);   // a lamp left: the floor (and the backstop) hold
+        snuff.Invoke(s.Zone, [1, "test"]); snuff.Invoke(s.Zone, [2, "test"]);
+        Run(s, 0.2);
+        Assert.Equal(0, w.HpFloor);   // bare: nothing holds him, early in the fight or not
     }
 }
