@@ -205,8 +205,8 @@ public class SkillTipTests(ITestOutputHelper output)
         var j = Warden();
         var st = WickBook.LampDelta(j.Ch, "sunder", "holy.2");
         Assert.NotNull(st);
-        Assert.Equal("Damage", st!.Value.What);
-        Assert.True(double.Parse(st.Value.After) > double.Parse(st.Value.Before));
+        Assert.Equal("Cut", st!.Value.What); // Sunder is chained: its conditional lamps speak in cuts too
+        Assert.True(double.Parse(st.Value.After, System.Globalization.CultureInfo.InvariantCulture) > double.Parse(st.Value.Before, System.Globalization.CultureInfo.InvariantCulture));
         Assert.Equal("on seared foes", st.Value.Cond);
         var ch = WickBook.LampDelta(j.Ch, "rebuke", "rebuke.morning.3");
         Assert.NotNull(ch);

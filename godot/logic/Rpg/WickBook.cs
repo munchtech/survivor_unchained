@@ -339,8 +339,11 @@ public static class WickBook
                 ? (status ? o.Strand.LeadIns[o.N - 1].VsStatus : o.Strand.LeadIns[o.N - 1].VsChampion) : 0;
             double lit = ids.Where(id => id != lampId).Sum(Bonus), add = Bonus(lampId);
             double b0 = now.Damage * (1 + lit), b1 = now.Damage * (1 + lit + add);
+            // (U1 r2: a chained skill speaks in cuts here too, as its unconditional lamps and the level card do)
+            bool chained = CutOf(def, 1) != null;
+            if (chained) { b0 = CutOf(def, b0)!.Value; b1 = CutOf(def, b1)!.Value; }
             string fmt = System.Math.Round(b0) != System.Math.Round(b1) ? "0" : "0.0";
-            return ("Damage", b0.ToString(fmt, inv), b1.ToString(fmt, inv), status ? "on " + cl.Strand.TurnDef.Statused + " foes" : "on champions");
+            return (chained ? "Cut" : "Damage", b0.ToString(fmt, inv), b1.ToString(fmt, inv), status ? "on " + cl.Strand.TurnDef.Statused + " foes" : "on champions");
         }
         double? size = def.Base.Reach ?? def.Base.Radius;
         double a0 = now.Wick?.Area ?? 1, a1 = more.Wick?.Area ?? 1;
