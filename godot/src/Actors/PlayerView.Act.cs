@@ -36,6 +36,10 @@ public partial class PlayerView
     static bool ActOn => ActClip != null;
     /// <summary>--act-walk DEG,SPEED, read with --act (Move2D.ParseActWalk); null without.</summary>
     static readonly (double Deg, double Speed)? ActWalk = ActClip != null ? SurvivorUnchained.Play.Move2D.ParseActWalk(Args.Get("act-walk")) : null;
+
+    /// <summary>--pelvis-k K (with --act): the pelvis counter's swing share for a look (PelvisCounter.K); play keeps 0.5.</summary>
+    static readonly bool ActPelvisK = ActClip != null && float.TryParse(Args.Get("pelvis-k"), System.Globalization.NumberStyles.Float,
+        System.Globalization.CultureInfo.InvariantCulture, out var k) && (SurvivorUnchained.Play.PelvisCounter.K = k) >= 0;
     (float X, float Z) actWalkWorld;
     double actWalkLog;
     /// <summary>--act-rigid (with --act, shots only): the view carried rigidly with her root from the act's start.</summary>

@@ -18,7 +18,8 @@ public static class PelvisCounter
     /// <summary>How much of the swing (the non-yaw part of the pelvis's turn from its mean) is countered. A full counter
     /// (1) holds her chest dead square to the mean and reads stiff over a walk that tips the hips; half keeps the gait's
     /// own roll and pitch visible while taking the blade's error out of both halves.</summary>
-    public const float K = 0.5f;
+    /// <remarks>The shoot harness may set it (--pelvis-k, A1 lead 19's K look); play keeps 0.5.</remarks>
+    public static float K = 0.5f;
 
     /// <summary>The correction E'' = slerp(I, twist * slerp(I, swing, k), w), in mesh space.</summary>
     public static Quaternion Correction(Quaternion mean, Quaternion pelvis, float k, float w)
