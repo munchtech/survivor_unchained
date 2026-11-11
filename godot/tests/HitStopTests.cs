@@ -128,6 +128,23 @@ public class HitStopTests
 
     // ---- classifier ----
 
+    [Fact]
+    public void SheHoldsOnlyForHerOwnContact()
+    {
+        var c = new HitStopClassifier(T);
+        // a heavy blow landing 10 m off (a wave, a thrown edge): the struck body holds, she does not
+        var far = c.Of(new CombatEvent[] { new Ev.Hit { Target = 7, Amount = 40, MaxHp = 100, Weapon = "groundbreaker", X = 10 } }, 100, 0, 0);
+        Assert.Single(far); Assert.Equal(7, far[0].Body);
+        var near = c.Of(new CombatEvent[] { new Ev.Hit { Target = 7, Amount = 40, MaxHp = 100, Weapon = "oathblade", X = 1.5 } }, 100, 0, 0);
+        Assert.Contains(near, x => x.Body == HitStops.Her);
+        // an elite dying of a wound (no blow of hers on it this step): it holds, she never stops mid wind-up
+        var wound = c.Of(new CombatEvent[] { new Ev.Kill { Enemy = 4, Elite = true, ByPlayer = true, X = 1 } }, 100, 0, 0);
+        Assert.Single(wound); Assert.Equal(4, wound[0].Body);
+        // her blow on it, near, kills it: both hold the elite kill's length
+        var blow = c.Of(new CombatEvent[] { new Ev.Hit { Target = 4, Amount = 5, MaxHp = 100, Weapon = "oathblade", X = 1 }, new Ev.Kill { Enemy = 4, Elite = true, ByPlayer = true } }, 100, 0, 0);
+        Assert.Equal(T.EliteKillMs / 1000, blow.Single(x => x.Body == HitStops.Her).Seconds, 6);
+    }
+
     static Ev.Hit H(int target, bool crit = false, double amount = 1, double max = 100, string? weapon = "oathblade", string? art = null, bool dot = false, bool flare = false)
         => new() { Target = target, Crit = crit, Amount = amount, MaxHp = max, Weapon = weapon, Art = art, Dot = dot, ByFlare = flare, Dx = 1 };
 
@@ -163,7 +180,7 @@ public class HitStopTests
     {
         var k = Of(new Ev.Kill { Enemy = 4, Elite = true, ByPlayer = true });
         Assert.Equal(0.09, k.Single(x => x.Body == 4).Seconds, 6);
-        var bk = Of(new Ev.Kill { Enemy = 4, Boss = true, Elite = true, ByPlayer = true });
+        var bk = Of(H(4), new Ev.Kill { Enemy = 4, Boss = true, Elite = true, ByPlayer = true });
         Assert.Equal(0.1, bk.Single(x => x.Body == HitStops.Her).Seconds, 6);
         Assert.Empty(Of(new Ev.Kill { Enemy = 4, Elite = true, ByPlayer = true, ByFlare = true }));
         Assert.Empty(Of(new Ev.Kill { Enemy = 4, Elite = false, ByPlayer = true }));

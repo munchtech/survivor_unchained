@@ -32,27 +32,35 @@ public sealed class HitStopClassifier
         best[body] = new StopAsk(body, ms / 1000, delay, dx, dz);
     }
 
-    /// <summary>The asks of one step. maxHp: hers (a hurt is over 12% of it).</summary>
-    public List<StopAsk> Of(IReadOnlyList<CombatEvent> evs, double maxHp)
+    readonly List<Ev.Kill> kills = new();
+    readonly HashSet<int> touched = new();
+
+    /// <summary>The asks of one step. maxHp: hers (a hurt is over 12% of it). herX, herZ: where she stands (NaN: unknown,
+    /// every blow counts as her contact): she holds only for a blow that lands within her_reach_m of her, so a wave or a
+    /// thrown edge landing late, or a wound's kill, holds the struck body alone and never stops her mid wind-up.</summary>
+    public List<StopAsk> Of(IReadOnlyList<CombatEvent> evs, double maxHp, double herX = double.NaN, double herZ = double.NaN)
     {
-        best.Clear(); struck.Clear();
+        best.Clear(); struck.Clear(); kills.Clear(); touched.Clear();
         double art = 0;
+        bool Near(double x, double z) => double.IsNaN(herX) || (x - herX) * (x - herX) + (z - herZ) * (z - herZ) <= t.HerReachM * t.HerReachM;
         foreach (var e in evs)
         {
             switch (e)
             {
                 case Ev.Hit h when Qualifies(h):
                     struck.Add(h);
+                    bool near = Near(h.X, h.Z);
+                    if (near) touched.Add(h.Target);
                     double ms = LeadRule.Heavy(h) ? (h.Crit ? t.CritMs : t.HeavyMs) : t.TrashMs;
                     if (ms > 0)
                     {
                         double d = IsOath(h.Art) ? t.FirstHitDelayMs / 1000 : 0;
-                        Put(h.Target, ms, d, h.Dx, h.Dz); Put(HitStops.Her, ms, d, 0, 0);
+                        Put(h.Target, ms, d, h.Dx, h.Dz);
+                        if (near) Put(HitStops.Her, ms, d, 0, 0);
                     }
                     break;
                 case Ev.Kill k when k.ByPlayer && !k.ByFlare && (k.Elite || k.Boss):
-                    double km = k.Boss ? t.BossKillMs : t.EliteKillMs;
-                    Put(k.Enemy, km, 0, k.Dx, k.Dz); Put(HitStops.Her, km, 0, 0, 0);
+                    kills.Add(k);
                     break;
                 case Ev.PlayerHit ph when !ph.Dodged && !ph.Blocked && !ph.Dot && maxHp > 0 && ph.Amount > maxHp * 0.12:
                     Put(HitStops.Her, t.HurtMs, 0, 0, 0);
@@ -71,6 +79,13 @@ public sealed class HitStopClassifier
                     chargeStopped = false;
                     break;
             }
+        }
+        // An elite or boss kill holds the body; it holds her too only when her own blow landed on it, near, this step.
+        foreach (var k in kills)
+        {
+            double km = k.Boss ? t.BossKillMs : t.EliteKillMs;
+            Put(k.Enemy, km, 0, k.Dx, k.Dz);
+            if (touched.Contains(k.Enemy)) Put(HitStops.Her, km, 0, 0, 0);
         }
         if (art > 0)
         {

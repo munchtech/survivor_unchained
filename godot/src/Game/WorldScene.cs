@@ -368,7 +368,7 @@ public partial class WorldScene : Node3D, IZoneLook
             if (e is Ev.Victory && Hitstop) fall = Fall;
         }
         if (!(Hitstop || AaBeats) || Fx.Flare.Active) return;
-        var asks = stopClass.Of(evs, b.MaxHp);
+        var asks = stopClass.Of(evs, b.MaxHp, b.Player.X, b.Player.Z);
         if (asks.Count == 0) return;
         // (the crowd rule counts once per step that asks: living enemies drawn inside the camera's frame)
         int onScreen = 0;

@@ -25,6 +25,7 @@ public sealed class HitStopTable
     [JsonPropertyName("shake_hz")] public double ShakeHz = 30;
     [JsonPropertyName("catchup_s")] public double CatchupS = 0.08;
     [JsonPropertyName("first_hit_delay_ms")] public double FirstHitDelayMs = 30;
+    [JsonPropertyName("her_reach_m")] public double HerReachM = 3;
 
     static HitStopTable? loaded;
     public static HitStopTable Load => loaded ??= Json.Parse<HitStopTable>(Json.ReadContent("hit_stop.json"));
