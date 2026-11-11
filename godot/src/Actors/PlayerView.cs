@@ -1918,7 +1918,7 @@ public partial class PlayerView : Node3D
         plantFoot = Mathf.Abs(Mathf.Wrap(sT - PlantMidL, -0.5f, 0.5f)) < 0.25f ? "foot_l" : "foot_r";
         plantS0 = stride;
         plantStage = Mathf.Abs(plantDs) < 0.03f ? 2 : 1;
-        plantFirst = true; plantN = 0;
+        plantFirst = true; plantN = 0; plantRetaken = false;
         plantSpd = Mathf.Max(speed, 2.5f);
         // (the turn's side in the world, her left or right as it starts: the lean's bank holds toward it)
         pivotSideW = pivotSign * new Vector2(Mathf.Cos(Rotation.Y), -Mathf.Sin(Rotation.Y));
@@ -1928,7 +1928,7 @@ public partial class PlayerView : Node3D
     // The plant: 0 none, 1 easing the stride to mid-stance, 2 pinned while she yaws, 3 pinned as she pushes off (the
     // stride on), 4 the offset let go. Its stride from and change, the foot, the run's blend speed held, the last
     // model place and step (her momentum), the pinned world point, frames in stage 3.
-    int plantStage, plantN; float plantS0, plantDs, plantSpd; string plantFoot = "foot_l"; bool plantFirst, pivotStepped;
+    int plantStage, plantN; float plantS0, plantDs, plantSpd; string plantFoot = "foot_l"; bool plantFirst, plantRetaken, pivotStepped;
     float pivotWant; Vector2 pivotSideW; Vector3 lastModel, lastStep; bool lastModelSet;
 
     /// <summary>Where a bone is drawn (world), HerCarriage's bank and tilt about the root bone included.</summary>
@@ -1986,7 +1986,17 @@ public partial class PlayerView : Node3D
             }
             // (never more than 0.21 m in a frame, nor 0.35 off the sim: let go there)
             var stp = new Vector3(model.X - lastModel.X, 0, model.Z - lastModel.Z);
-            if (lastModelSet && stp.Length() > 0.21f) { model = lastModel + stp.Normalized() * 0.21f; plantStage = 4; }
+            if (lastModelSet && stp.Length() > 0.21f && plantStage == 2 && !plantRetaken)
+            {
+                // (r4: the foot taken at the easing frame still far from under her: this frame on her momentum instead, the
+                // foot taken again here, as r3 did; the plant holds rather than let go)
+                plantRetaken = true;
+                model = lastModel + lastStep * 0.5f;
+                Position = new Vector3(model.X, sim.Y, model.Z);
+                var fw2 = Drawn(plantFoot);
+                plantW = new Vector3(fw2.X, 0, fw2.Z);
+            }
+            else if (lastModelSet && stp.Length() > 0.21f) { model = lastModel + stp.Normalized() * 0.21f; plantStage = 4; }
         }
         var off = new Vector3(model.X - sim.X, 0, model.Z - sim.Z);
         if (plantStage == 4 || plantStage == 0)
