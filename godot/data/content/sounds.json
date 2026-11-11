@@ -28,6 +28,9 @@
   "ducks": {
     "lead": {
       "sfx": 0.32,
+      "sfxDeep": 0.12,
+      "sfxVoicesLo": 4,
+      "sfxVoicesHi": 12,
       "seconds": 0.12
     },
     "talk": {

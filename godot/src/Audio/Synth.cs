@@ -304,7 +304,7 @@ public partial class Synth : Node
         if (cut) { cut = false; voices.Clear(); incoming.Clear(); }
         while (incoming.TryDequeue(out var nv)) voices.Add(nv);
         while (bedsIn.TryDequeue(out var nb)) beds.Add(nb);
-        if (!crowdRead) { crowdRead = true; CrowdDuck = SoundBank.Duck("lead", "sfx", 0.5f); LeadHold = SoundBank.Duck("lead", "seconds", 0.09f); }
+        if (!crowdRead) { crowdRead = true; CrowdDuck = SoundBank.Duck("lead", "sfx", 0.5f); CrowdDuckDeep = SoundBank.Duck("lead", "sfxDeep", CrowdDuck); CrowdVoicesLo = SoundBank.Duck("lead", "sfxVoicesLo", 4); CrowdVoicesHi = SoundBank.Duck("lead", "sfxVoicesHi", 12); LeadHold = SoundBank.Duck("lead", "seconds", 0.09f); }
         float dt = (float)(1 / Rate);
         for (int i = 0; i < n; i++)
         {
@@ -313,7 +313,11 @@ public partial class Synth : Node
             float sfxTo = t < sfxDuckUntil ? sfxDuck : 1;
             sfxDuckNow += (sfxTo - sfxDuckNow) * (sfxTo < sfxDuckNow ? 0.00022f : 0.00005f);
             masterNow += (Master - masterNow) * 0.0002f;
-            float crowdTo = t < leadUntil ? CrowdDuck : 1;
+            // (F1 lead 24: the duck deepens from CrowdDuck to CrowdDuckDeep as the live effects voices go from Lo to Hi, the count
+            // of the sample before: a mass kill's pile-up no longer buries her crack)
+            float crowdDepth = CrowdDuck + (CrowdDuckDeep - CrowdDuck) * Math.Clamp((sfxLive - CrowdVoicesLo) / Math.Max(1f, CrowdVoicesHi - CrowdVoicesLo), 0f, 1f);
+            sfxLive = 0;
+            float crowdTo = t < leadUntil ? crowdDepth : 1;
             crowdNow += (crowdTo - crowdNow) * (crowdTo < crowdNow ? crowdAtk : crowdRel);
             float bedTo = t < bedDuckUntil ? bedDuck : 1;
             bedDuckNow += (bedTo - bedDuckNow) * (bedTo < bedDuckNow ? 0.00022f : 0.00005f);
@@ -327,6 +331,7 @@ public partial class Synth : Node
                 if (t < voice.Start) continue;
                 if (t > voice.End) { voices.RemoveAt(v); continue; }
                 if (voice.Lead && !voice.Led) { voice.Led = true; leadUntil = Math.Max(leadUntil, voice.Start + LeadHold); }
+                if (voice.Bus == Bus.Sfx && !voice.Lead) sfxLive++;
                 float s = voice.Sample(t, dt);
                 float bus = Level[(int)voice.Bus] * (voice.Bus == Bus.Music ? duckNow * voiceMusicNow * bedDuckNow : voice.Bus == Bus.Amb ? voiceAmbNow * bedDuckNow : voice.Bus == Bus.Sfx ? sfxDuckNow * (voice.Lead ? 1 : crowdNow) : 1);
                 float l = s * voice.L * bus, r = (voice.Wide ? voice.Right : s) * voice.R * bus;
@@ -372,6 +377,9 @@ public partial class Synth : Node
     /// <summary>The crowd sidechain: while a lead voice sounds (and LeadHold after it starts), every non-lead effects voice is
     /// held to CrowdDuck (ducks.lead.sfx / .seconds in sounds.json); about 3 ms down, 150 ms back.</summary>
     public float CrowdDuck = 0.5f;
+    /// <summary>The duck's depth with CrowdVoicesHi or more non-lead effects voices live (ducks.lead.sfxDeep; Lo or fewer: CrowdDuck).</summary>
+    public float CrowdDuckDeep = 0.5f, CrowdVoicesLo = 4, CrowdVoicesHi = 12;
+    int sfxLive;
     public double LeadHold = 0.09;
     bool crowdRead;
     double leadUntil;
