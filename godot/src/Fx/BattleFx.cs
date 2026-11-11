@@ -325,7 +325,54 @@ public partial class BattleFx : Node3D
 
     /* --------------------------------------------------------- primitives -- */
 
-    public void Flash(Vector3 at, Color color, float peak, float life, float range = 9)
+    /// <summary>--light-trace (dev): one line per hit light lit (Flash, the sweep's pool), with its caller, place,
+    /// distance to her, peak and range and the drawn frame, to find what lit a frame in a clip.</summary>
+    static readonly bool LightTrace = Args.Has("light-trace");
+
+    void TraceLight(string what, Vector3 at, float peak, float range, int line)
+    {
+        float near = new Vector2(at.X - PlayerPos.X, at.Z - PlayerPos.Z).Length();
+        GD.Print($"[light-trace] {what}:{line} at {at.X:F1},{at.Y:F1},{at.Z:F1} her {near:F2} m peak {peak:F2} range {range:F1} frame={Engine.GetFramesDrawn()}");
+    }
+
+    /* ------------------------------------------------------ hit lights -- */
+
+    /// <summary>What a hit light lights (F1 judge r1, "the hit flash whites her out at 409, 5215, 5542"): everything but
+    /// her (people's layer 2, where she fights, and her own close-view layers), so the struck crowd (CrowdLayer), the
+    /// bosses (CastLayer) and the ground take the blow's light and she keeps her own values over it.</summary>
+    public const uint HitLightMask = 0xFFFFFu & ~2u & ~PlayerView.HerLayers;
+    /// <summary>How far from her (flat, metres) a hit light's footprint must end: her body's reach on the ground (~0.35 m)
+    /// and the soft edge of an omni's falloff. A hit light never lights the ground under her figure.</summary>
+    public const float HerClear = 0.65f;
+    /// <summary>The least reach a hit light keeps (metres): smaller and the blow's light is a dot.</summary>
+    public const float HitMinRange = 0.8f;
+
+    /// <summary>The hit-light rule (HitLight, the sweep's pool, a champion's fall): its light at the struck body, its
+    /// footprint ending HerClear short of her. A body struck closer than HerClear + HitMinRange has its light slid out
+    /// along the blow (her to it) to that distance, so the light keeps HitMinRange of reach and the punch stays on the
+    /// victim. Returns the light's place and its range.</summary>
+    public static (Vector3 At, float Range) HitLightFit(Vector3 at, Vector3 her, float range)
+    {
+        var flat = new Vector2(at.X - her.X, at.Z - her.Z);
+        float near = flat.Length(), least = HerClear + HitMinRange;
+        if (near < least)
+        {
+            var dir = near > 0.05f ? flat / near : new Vector2(1, 0);
+            at = new Vector3(her.X + dir.X * least, at.Y, her.Z + dir.Y * least);
+            near = least;
+        }
+        return (at, Mathf.Clamp(near - HerClear, HitMinRange, range));
+    }
+
+    /// <summary>A blow's light at the struck body (the hit-light rule, HitLightFit and HitLightMask): no distance damp
+    /// near her (its footprint never reaches her, so its punch stays whole on the victim).</summary>
+    public void HitLight(Vector3 at, Color color, float peak, float life, float range = 9, [System.Runtime.CompilerServices.CallerLineNumber] int line = 0)
+    {
+        var (p, r) = HitLightFit(at, PlayerPos, range);
+        Flash(p, color, peak, life, r, line, "HitLight", hit: true);
+    }
+
+    public void Flash(Vector3 at, Color color, float peak, float life, float range = 9, [System.Runtime.CompilerServices.CallerLineNumber] int line = 0, [System.Runtime.CompilerServices.CallerFilePath] string file = "", bool hit = false)
     {
         // Lights share: each one already lit dims the next, so a crowd's worth of
         // blows lights the pale dead no brighter than a few (they washed to cream).
@@ -334,17 +381,20 @@ public partial class BattleFx : Node3D
         peak /= 1 + 0.6f * lit;
         // A light lit beside her lights her most of all: a champion falling at her elbow burned
         // her white through every effect's hero_clear. Her own moments (lit where she stands)
-        // keep their light; the rest fade out within four metres of her.
+        // keep their light; the rest fade out within four metres of her. (A hit light is kept off her
+        // by its mask and footprint instead: HitLight.)
         float near = new Vector2(at.X - PlayerPos.X, at.Z - PlayerPos.Z).Length();
-        if (near > 0.4f) peak *= Mathf.Lerp(0.15f, 1, Mathf.SmoothStep(1, 4, near));
+        if (!hit && near > 0.4f) peak *= Mathf.Lerp(0.15f, 1, Mathf.SmoothStep(1, 4, near));
         int best = 0;
         for (int i = 1; i < flashes.Count; i++) if (flashes[i].Light.LightEnergy < flashes[best].Light.LightEnergy) best = i;
         var l = flashes[best].Light;
         l.Position = at;
         l.LightColor = color;
         l.OmniRange = range;
+        l.LightCullMask = hit ? HitLightMask : 0xFFFFFFFFu;
         l.Visible = true;
         flashes[best] = (l, 0, life, peak);
+        if (LightTrace) TraceLight("Flash " + System.IO.Path.GetFileName(file), at, peak, range, line);
     }
 
     /// <summary>A chest bursting open (ChestCeremony): its light up out of it in a column, a
@@ -1253,7 +1303,9 @@ public partial class BattleFx : Node3D
             // small (eight full blasts at once washed the whole crowd white).
             bool first = e.Boss || time - lastFall > 0.3;
             if (first) lastFall = time;
-            Flash(V(e.X, gy + 1.5, e.Z), pal.Light, e.Boss ? 16 : first ? 10 : 4, e.Boss ? 0.6f : 0.15f, e.Boss ? 12 : 8);
+            // (a champion's is a hit light: at its body, off her, its footprint short of her; a boss's is the fall's own)
+            if (e.Boss) Flash(V(e.X, gy + 1.5, e.Z), pal.Light, 16, 0.6f, 12);
+            else HitLight(V(e.X, gy + 1.5, e.Z), pal.Light, first ? 10 : 4, 0.15f, 8);
             if (e.Boss) Waves.Add(V(e.X, gy + 0.5, e.Z), 7, 0.5f, pal.Glow, 0.8f);
             // (A burst's reach is its radius, its picture 2.4 times that across: at 2 it was
             // nearly five metres of colour, the rule's three is 1.3.)

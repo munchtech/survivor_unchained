@@ -84,6 +84,8 @@ public partial class BattleFx
     int oathPoolNext;
     /// <summary>The pool's energy scale (dev: --aa-pool K; 0 for the before frames).</summary>
     static readonly float PoolScale = Args.Num("aa-pool", 1f);
+    /// <summary>The pool's widest reach (metres), when the body it lands on stands far enough from her (HitLightFit).</summary>
+    const float PoolRange = 2.5f;
 
     /// <summary>The sweep's light on the ground: an unshadowed omni 0.3 m up at the arc's middle, 2.5 m in range,
     /// about +50% on the ground under it at night, a warming of the grass by day.</summary>
@@ -92,15 +94,53 @@ public partial class BattleFx
         int i = oathPoolNext++ % OathPools;
         if (oathPools[i] == null)
         {
-            oathPools[i] = new OmniLight3D { OmniRange = 2.5f, OmniAttenuation = 1.2f, ShadowEnabled = false, LightSpecular = 0.2f, Visible = false };
+            oathPools[i] = new OmniLight3D { OmniRange = PoolRange, OmniAttenuation = 1.2f, ShadowEnabled = false, LightSpecular = 0.2f, Visible = false };
             AddChild(oathPools[i]);
         }
         var l = oathPools[i]!;
-        l.Position = at;
-        l.LightColor = hue;
+        // (F1 r1: a hit light, by the rule (HitLightFit, HitLightMask): 2.5 m round the arc's middle, 1.3 m out, it lit
+        // the ground white under her and her with it at every heavy's hold; now off her, its footprint short of her)
+        l.LightCullMask = HitLightMask;
         oathPoolEnergy[i] = (Flare.Night ? 4.6f : 7f) * PoolScale;
+        // (its blow's contact, when the hit came before the swing in the frame's events: onto that body at once)
+        bool struck = oathContactFrame == Engine.GetFramesDrawn();
+        PlaceOathPool(i, struck ? OnGround(oathContact) : at);
+        l.LightColor = hue;
         oathPoolAge[i] = 0;
+        oathPoolLast = struck ? -1 : i; oathPoolFrame = Engine.GetFramesDrawn();
         StepOathPool(i, 0);
+    }
+
+    int oathPoolLast = -1;
+    long oathPoolFrame = -9, oathContactFrame = -9;
+    Vector3 oathContact;
+
+    Vector3 OnGround(Vector3 body) => V(body.X, Y(body.X, body.Z) + 0.3, body.Z);
+
+    /// <summary>An Oathblade contact (HitKit): the swing's pool goes onto the first body it struck, whichever of the
+    /// swing and the hit the frame's events told first.</summary>
+    void OathContact(Vector3 body)
+    {
+        if (oathContactFrame != Engine.GetFramesDrawn()) { oathContactFrame = Engine.GetFramesDrawn(); oathContact = body; }
+        OathPoolOnto(body);
+    }
+
+    void PlaceOathPool(int i, Vector3 at)
+    {
+        var l = oathPools[i]!;
+        var (p, r) = HitLightFit(at, PlayerPos, PoolRange);
+        l.Position = p;
+        l.OmniRange = r;
+        if (LightTrace) TraceLight("OathPool HitKit.cs", p, oathPoolEnergy[i], r, 90);
+    }
+
+    /// <summary>The swing's pool moved onto the first body it struck, the frame it was lit (the blow's contact, on
+    /// the ground under it, 0.3 m up).</summary>
+    void OathPoolOnto(Vector3 body)
+    {
+        if (oathPoolLast < 0 || Engine.GetFramesDrawn() - oathPoolFrame > 1 || oathPools[oathPoolLast] == null) return;
+        PlaceOathPool(oathPoolLast, OnGround(body));
+        oathPoolLast = -1;
     }
 
     void StepOathPools(float dt) { for (int i = 0; i < OathPools; i++) StepOathPool(i, dt); }
@@ -160,6 +200,7 @@ public partial class BattleFx
         {
             // The Oathblade's: along the blade's path at this body (the swing's tangent there), so the streaks fly on with the cut.
             first = first || oathKits == 0;
+            OathContact(at);
             full = full && oathKits++ < OathKits;
             var rim = at - oathAt; rim.Y = 0;
             along = rim.LengthSquared() > 0.01f ? new Vector3(-rim.Z, 0, rim.X).Normalized() * (oathMirror ? -1 : 1) : Vector3.Zero;
