@@ -72,6 +72,15 @@
    "deg": 90,
    "face_deg": 0,
    "every": 1
+  },
+  "more": {
+   "prompts": [
+    0,
+    1,
+    2
+   ],
+   "takes": 10,
+   "seed_add": 100
   }
  },
  "post": {
@@ -159,5 +168,9 @@
  "held": [
   "sword",
   "shield"
- ]
+ ],
+ "source": "src/walk_warden_left.npz",
+ "bvh": "walk_warden_left__p0_0.bvh",
+ "sha1": "e6121ee66f764d0d8edb519bbd2f7b580102f2e6",
+ "take_score": 1.612
 }
