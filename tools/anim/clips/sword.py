@@ -188,8 +188,7 @@ def sword_back(rig):
         # Held, the blade carrying on a hair (the weight of it).
         (8, pose(-19, -38, (-0.38, -0.18, 0.24), _n(-0.99, 0.04, -0.05), pole=(-0.1, -1.0, 0.3), left=False, weight=-0.6), "ease"),
         # Recovering: the blade comes round and up into the guard.
-        (15, pose(-6, -10, (-0.15, -0.26, 0.24), _n(-0.34, 0.51, 0.79), pole=(-0.6, -0.5, -0.4), left=False, weight=-0.2), "auto"),
-        (20, CARRY_VIA, "ease"),
+        (13, CARRY_VIA, "ease"),
         (24, CARRY, "ease"),
     ]
     keys = with_side_shield(keys, SIDE_BACK_L)
@@ -204,9 +203,7 @@ def sword_fore(rig):
         # Out to her left, across her: the cut ends low.
         (5, pose(16, 30, (0.26, -0.22, 0.30), _n(0.9, 0.0175, 0.0), pole=(-0.9, -0.2, 0.2), left=False, weight=0.6, pivot=0.6), "ease"),
         (8, pose(19, 36, (0.28, -0.27, 0.24), _n(0.86, -0.26, -0.17), pole=(-0.9, -0.1, 0.3), left=False, weight=0.7, pivot=0.7), "ease"),
-        (15, pose(6, 10, (0.02, -0.28, 0.24), _n(0.2, 0.5, 0.8), pole=(-0.6, -0.5, -0.4), left=False, weight=0.2, pivot=0.2),
-         "auto"),
-        (20, CARRY_VIA, "ease"),
+        (17, CARRY_VIA, "ease"),
         (24, CARRY, "ease"),
     ]
     keys = with_side_shield(keys, SIDE_FORE_L)
@@ -221,8 +218,8 @@ def sword_heavy(rig):
         # All the way round to her left, the whole back behind it.
         (6, pose(26, 44, (0.30, -0.16, 0.34), _n(0.95, 0.175, 0.075), pole=(-0.8, -0.6, 0.2), left=False, weight=0.8, pivot=1.0, pitch=10), "ease"),
         (10, pose(30, 50, (0.30, -0.22, 0.26), _n(0.8, -0.25, -0.3), pole=(-0.8, -0.4, 0.4), left=False, weight=0.9, pivot=1.0, pitch=10), "ease"),
-        (19, pose(10, 14, (0.04, -0.28, 0.24), _n(0.2, 0.5, 0.8), pole=(-0.6, -0.5, -0.4), left=False, weight=0.3, pivot=0.3), "auto"),
-        (26, CARRY_VIA, "ease"),
+        (16, pose(10, 14, (0.0, -0.24, 0.36), _n(-0.6, -0.4, 0.7), pole=CARRY_POLE, left=False, weight=0.3, pivot=0.3), "ease"),
+        (24, CARRY_VIA, "ease"),
         (30, CARRY, "ease"),
     ]
     keys = with_side_shield(keys, SIDE_HEAVY_L)
