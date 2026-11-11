@@ -632,9 +632,82 @@ def cmd_takes(a):
             p.write_text(json.dumps(sp, indent=1) + "\n")
 
 
+OVER_GAIT_WINDOW = (0.1, 0.35)      # the cut's window the over-gait measure reads (s)
+OVER_GAIT_OFFSETS = (0.0, 0.25, 0.5, 0.75)
+
+
+def over_gait_of(spec, name):
+    """A {"kind": "over_gait", "of": <stance clip>, "gait": <gait clip>, "arms": "node", "anchor": "pelvis"} spec built
+    from the two BUILT clips (OUT): (the _run clip, its log, the stance clip, the gait clip). Marionette's over_gait."""
+    from motion import over_gait as OG
+    from motion.rig import Rig
+    st, ga = MC.read(OUT / f"{spec['of']}.json"), MC.read(OUT / f"{spec['gait']}.json")
+    sp = pieces()["shieldp"]["at"] if "shield" in spec.get("held", ["shield"]) else None
+    up, log = OG.over_gait(st, ga, Rig(RIG), keep={"l": sp} if sp is not None else None, name=name,
+                           arms=spec.get("arms", "node"), anchor=spec.get("anchor", "pelvis"))
+    return up, log, st, ga
+
+
+def over_gait_measure(up, st, ga, body=None, rig=None):
+    """The _run laid over the gait (at its mean pelvis, then at OVER_GAIT_OFFSETS of its cycle) against its stance clip
+    through OVER_GAIT_WINDOW, in the carried node frame: hand / blade tip / boss (cm), blade / chest (deg); pops
+    (clipcheck.pops) and arms inside her body (clipcheck.contact) on each laid pose. {row: {key: value}}."""
+    from motion import over_gait as OG
+    from motion.rig import Rig
+    sys.path.insert(0, str(REPO / "tools/body"))
+    import clipcheck as CC
+    rig = rig or Rig(RIG)
+    pc = pieces()
+    bl = (pc["blade"]["at"], pc["blade"]["dir"], pc["blade"]["tip"])
+    Gs, Ps = MC.globals_of(st, rig)
+    Ps = Ps + np.array(up["meta"]["anchor_m"])[:, None]
+    fr = [f for f in range(st["frames"]) if OVER_GAIT_WINDOW[0] - 1e-6 <= f / st["fps"] <= OVER_GAIT_WINDOW[1] + 1e-6]
+    rows = {}
+    for o in ("mean",) + OVER_GAIT_OFFSETS:
+        G, P = OG.lay(up, ga, rig, 0.0 if o == "mean" else o, pelvis_mean=o == "mean")
+        m = OG.paths(G, P, Gs, Ps, rig, fr, bl, pc["shieldp"]["at"])
+        Gb = m44(G, P)
+        m["pops"] = len(CC.pops(rig.names, list(rig.parent), Gb, list(up["bones"]), False)[0])
+        if body is not None:
+            body.cache.clear()
+            ct = CC.contact(body, Gb, list(range(len(Gb))), set(up["bones"]) | {n for n in rig.names if OG.lower(n)})
+            m["arm_in_l"], m["arm_in_r"] = ct["l"]["inside"], ct["r"]["inside"]
+        rows[str(o)] = m
+    return rows
+
+
+def build_over_gait(p, sp):
+    up, log, st, ga = over_gait_of(sp, p.stem)
+    up["source"] = {"kind": "over_gait", "of": sp["of"], "gait": sp["gait"], "of_sha1": clip_hash(st), "gait_sha1": clip_hash(ga)}
+    print(judged_note(p.stem, sp, up))
+    MC.write(up, OUT / f"{p.stem}.json")
+    print(f"  {p.stem} over {sp['gait']}: " + ", ".join(f"{k} {v}" for k, v in log.items()))
+    print(f"  {p.stem} beats: {json.dumps(up['beats'])}; meta {json.dumps({k: v for k, v in up['meta'].items() if k != 'anchor_m'})}")
+    print(f"{p.stem}: {up['frames']} frames, {len(up['rot'])} upper tracks (no root / pelvis / leg track) -> "
+          f"{OUT.relative_to(REPO).as_posix()}/{p.stem}.json")
+
+
+def check_over_gait(p, sp, body):
+    built = OUT / f"{p.stem}.json"
+    if not built.exists():
+        print(f"{p.stem}: not built"); return None
+    up = MC.read(built)
+    st, ga = MC.read(OUT / f"{sp['of']}.json"), MC.read(OUT / f"{sp['gait']}.json")
+    rows = over_gait_measure(up, st, ga, body)
+    print("\n" + f"{p.stem}: {judged_state(sp, up)} (pack gate); over {sp['gait']}, against {sp['of']} in "
+          f"{OVER_GAIT_WINDOW[0]}-{OVER_GAIT_WINDOW[1]} s (offset = share of the gait's cycle; mean = its mean pelvis)")
+    keys = ("tip_cm", "blade_deg", "hand_cm", "boss_cm", "chest_deg", "chest_cm", "head_deg", "pops", "arm_in_l", "arm_in_r")
+    print("  " + "offset".ljust(7) + "".join(k.rjust(11) for k in keys))
+    for o, m in rows.items():
+        print("  " + o.ljust(7) + "".join(str(m.get(k, "-")).rjust(11) for k in keys))
+    return {"clip": p.stem, "over_gait": rows}
+
+
 def cmd_build(a):
     OUT.mkdir(parents=True, exist_ok=True)
     for p in specs(a.clips):
+        if json.loads(p.read_text()).get("kind") == "over_gait":
+            continue
         r = build_one(p)
         sp = json.loads(p.read_text())
         line = judged_note(p.stem, sp, r.clip)
@@ -656,6 +729,10 @@ def cmd_build(a):
             print(f"  note: {nt}")
         print(f"{p.stem}: {r.clip['frames']} frames, source crop {r.prep.crop}, yaw {r.prep.yaw_deg:.1f} deg, "
               f"windows L {len(r.wins[0])} R {len(r.wins[1])} -> {OUT.relative_to(REPO).as_posix()}/{p.stem}.json")
+    for p in specs(a.clips):
+        sp = json.loads(p.read_text())
+        if sp.get("kind") == "over_gait":
+            build_over_gait(p, sp)
 
 
 POSE_OUT = REPO / "tools/anim/out/pose"      # git-ignored (/tools/anim/out/): nothing packs or judges it
@@ -970,14 +1047,33 @@ def m44(R, P):
     return M
 
 
+def _rest():
+    from motion.rig import Rig
+    rig = Rig(RIG)
+    return rig.R0, rig.head
+
+
+def MC_rig_names():
+    from motion.rig import Rig
+    return Rig(RIG).names
+
+
 def cmd_check(a):
     sys.path.insert(0, str(REPO / "tools/body"))
     import clipcheck as CC
     P1 = REPO / "godot/art/people/body_p1"
     rigj = json.loads((P1 / "rig.json").read_text())
     body = None
-    rows = []
+    rows, rows_og = [], []
     for p in specs(a.clips):
+        sj0 = json.loads(p.read_text())
+        if sj0.get("kind") == "over_gait":
+            if body is None:
+                body = CC.Body(str(P1 / "body.glb"), rigj, MC_rig_names(), m44(*_rest()), True)
+            ro = check_over_gait(p, sj0, body)
+            if ro:
+                rows_og.append(ro)
+            continue
         built = OUT / f"{p.stem}.json"
         if not built.exists():
             print(f"{p.stem}: not built"); continue
@@ -1053,7 +1149,7 @@ def cmd_check(a):
                   f"axilla {v['axilla']}/{v['axilla_mm']} mm; hand gap {v['hand_gap_mm']} mm")
     out = REPO / "tools/body/out"
     out.mkdir(parents=True, exist_ok=True)
-    (out / "p4check.json").write_text(json.dumps(rows, indent=1))
+    (out / "p4check.json").write_text(json.dumps(rows + rows_og, indent=1))
 
 
 def cmd_judged(a):
