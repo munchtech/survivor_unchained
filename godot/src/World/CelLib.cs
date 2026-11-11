@@ -89,7 +89,9 @@ public static class CelLib
     static readonly List<GeometryInstance3D> queue = new();
     static readonly HashSet<ulong> seen = new();
     static readonly Dictionary<string, Shader> variants = new();
-    static readonly List<(BaseMaterial3D M, string Key, string Cls)> live = new();
+    // (by instance id, not held: a material bound here is freed with its last user, a figure's own copy with the figure;
+    // held, none ever was, and the sweep kept every one: SU-023)
+    static readonly List<(ulong Id, string Key, string Cls)> live = new();
     static int sweep, watchAt;
     // (B2r2) The late-assigned: a mesh whose material (or mesh) is set after it entered the tree and was first visited.
     // Each visited mesh is looked at again every frame for its first YoungFrames frames (a spawn site's material set a
@@ -144,8 +146,8 @@ public static class CelLib
         for (int i = 0; i < 4 && live.Count > 0; i++)
         {
             sweep = (sweep + 1) % live.Count;
-            var (m, key, cls) = live[sweep];
-            if (!GodotObject.IsInstanceValid(m)) { live.RemoveAt(sweep); continue; }
+            var (mid, key, cls) = live[sweep];
+            if (GodotObject.InstanceFromId(mid) is not BaseMaterial3D m) { live.RemoveAt(sweep); continue; }
             var k = KeyOf(m);
             if (k != key) { live.RemoveAt(sweep); if (Why(m) is null) Bind(m, cls); }
         }
@@ -263,7 +265,7 @@ public static class CelLib
         RenderingServer.MaterialSetShader(rid, sh.GetRid());
         foreach (var (name, v) in Uniforms(Lib.Classes[cls])) RenderingServer.MaterialSetParam(rid, name, v);
         b.SetMeta(Meta, cls);
-        live.Add((b, key, cls));
+        live.Add((b.GetInstanceId(), key, cls));
     }
 
     /// <summary>(L1 lead 19, HER3) A hero's held piece (cel.gdshaderinc CEL_HERO_ARM): its material's own variant.</summary>
