@@ -66,6 +66,11 @@ class Gait:
     path: str = ""
     land: float = 0.65
     peel: float = 0.10
+    # v2's last reach key (s, metres past the landing spot, height) and the foot's fall at the plant (height per unit
+    # of the swing's s). The game samples the clip between its keys, so a foot that keeps moving over the ground in the
+    # frame before the plant reads as a skate there even if the keyed frames don't (A1 L21: see facts_run.md).
+    reach_key: tuple = (0.85, 0.12, 0.12)
+    fall: float = 0.9
 
 
 def _spline(points, s):
@@ -105,9 +110,10 @@ def foot(g: Gait, phase):
     s = (ph - g.duty) / (1 - g.duty)
     if g.path == "v2":
         V = g.speed * T * (1 - g.duty)  # the ground's travel under her over the swing (m per unit s)
+        rs, rz, ry = g.reach_key
         keys = [(0.0, z_off, g.peel), (0.28, z_off * 0.55, g.kick), (0.58, z_land * 0.55, g.knee + 0.05),
-                (0.85, z_land + 0.12, 0.12), (1.0, z_land, 0.0)]
-        d0, d1 = np.array([-0.35 * V, 0.6]), np.array([-g.land * V, -0.9])
+                (rs, z_land + rz, ry), (1.0, z_land, 0.0)]
+        d0, d1 = np.array([-0.35 * V, 0.6]), np.array([-g.land * V, -g.fall])
         i = max(k for k in range(len(keys) - 1) if keys[k][0] <= s) if s < 1.0 else len(keys) - 2
 
         def der(k):

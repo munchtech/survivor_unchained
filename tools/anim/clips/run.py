@@ -252,7 +252,12 @@ WARDEN = Gait(frames=21, speed=SPEED, duty=0.33, drop=0.09, bob=0.05, lean=19, s
 # and its sprint through sprint_stop) on its own Gait: a shorter contact (duty 0.27: 0.96 m of sweep, 0.30 ahead to
 # 0.66 behind), the pelvis lower (the planted knee bent), the heel peeling higher off the toe, and the "v2" swing.
 # run_warden_town and arts.CHARGE keep WARDEN.
-WARDEN_RUN = replace(WARDEN, duty=0.27, reach=0.30, drop=0.10, kick=0.42, knee=0.32, path="v2", land=0.65, peel=0.14)
+# Solver 3: the game plays the clip between its keys, so the foot in the frame before the plant (53 mm up, still
+# moving 81 mm over the ground; the right foot lands at half a frame, its key 28 mm up) read as a 11-36 mm landing
+# skate in game (sim over every phase: 53). Reached further (0.20 past the spot at 0.83), clawed back a little faster
+# than the ground (land 1.2) and dropped steeper (fall 1.7): that frame 81 mm up, 22 mm off its spot (sim max 9 mm).
+WARDEN_RUN = replace(WARDEN, duty=0.27, reach=0.30, drop=0.10, kick=0.42, knee=0.32, path="v2", land=1.2, peel=0.14,
+                     reach_key=(0.83, 0.20, 0.16), fall=1.7)
 ARCANIST = Gait(frames=20, speed=SPEED, duty=0.30, drop=0.05, bob=0.06, lean=13, spine_lean=2, hip_yaw=8, hip_roll=5.5,
                 hip_shift=0.03, chest_yaw=7, width=0.03, reach=0.34, kick=0.40, knee=0.30, head_up=4,
                 arm_fwd=(0.0, -0.20, 0.25), arm_back=(0.0, -0.32, -0.22), elbow_out=0.25, fingers="open",
