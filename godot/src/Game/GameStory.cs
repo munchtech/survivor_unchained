@@ -178,7 +178,7 @@ public partial class Game
         try { f = StoryFile.Load(id); }
         catch (Exception e) { GD.PushWarning($"storybook: {id} not played ({e.Message})"); then(); return; }
         if (!f.Live) { then(); return; }
-        if (Shots.On("teach")) { Shots.Want("story_" + id, 2.0); Shots.Want("story_" + id, 6.0); }
+        if (Shots.On("teach")) { Shots.Want("story_" + id + "_a", 2.0); Shots.Want("story_" + id + "_b", 6.0); }
         // (M6 A3) A storybook pays the experience stones still on their way to her.
         scene.Battle?.PayXpStones();
         scene.SimPaused = true;

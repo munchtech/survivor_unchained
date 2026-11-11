@@ -1005,7 +1005,7 @@ public partial class Game : Node, IZoneHost
     {
         if (Args.Has("no-banners")) return; // (dev: pictures of a skill without the level and zone cards over it)
         if (!a.Through && Now < bannerHold) { After(bannerHold - Now + 0.1, () => Announce(a)); return; }
-        if (Shots.On("teach")) { GD.Print($"banner {a.Title} t={Battle?.Time ?? 0:0.0}"); Shots.Want("banner", 1.0); }
+        if (Shots.On("teach")) { GD.Print($"banner {a.Title} t={Battle?.Time ?? 0:0.0}"); Shots.Want("banner_" + string.Concat(a.Title.Where(char.IsLetterOrDigit)), 1.0); }
         // (M5 r4: not over a screen: a level-up held for the Legendary's moment came up over its item card)
         if (!a.Through && Overlay != null) { After(0.5, () => Announce(a)); return; }
         // (M5 r4: a level's title is not on a champion's wake: from 2 s before it (ChampionGate) to 3 s after; LEVEL 5 came
