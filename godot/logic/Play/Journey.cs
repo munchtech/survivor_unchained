@@ -155,13 +155,14 @@ public sealed partial class Journey
     public Battle StartBattle(bool combat, CollisionWorld col, Func<double, double, double> heightAt, double x, double z, double facing, uint seed, bool arena = false, bool ember = false, bool? worldTier = null)
     {
         // The kit goes on with the place: the night's wherever the ember burns, where its coals work.
-        Kits.Wear(Ch, combat && (arena || ember) ? KitKind.Night : KitKind.Day);
+        FightNight = combat && (arena || ember);
+        Kits.Wear(Ch, FightNight ? KitKind.Night : KitKind.Day);
         // (M3) A campaign fight: her calling's taught build is what she carries (taught_builds.json), its levels granted.
         bool campaign = combat && !arena && !ember;
         if (campaign)
             // (M7a) A skill granted as the fight starts holds its points like one taught mid-fight.
             foreach (var s in Content.TaughtBuilds.Grant(Ch, Ch.Level)) WickBook.Arrived(Ch, s.Skill);
-        var kit = Character.Kit(Ch, combat && (arena || ember));
+        var kit = Character.Kit(Ch, FightNight);
         InArena = arena;
         var exp = combat && !arena ? Expedition : null;
         var b = new Battle(new BattleSetup
@@ -255,10 +256,16 @@ public sealed partial class Journey
     /// is banked for the dawn.</summary>
     public bool EmberLit { get; private set; }
 
+    /// <summary>The fight in play is read by the night's rules (StartBattle: an ember arena or night), until its
+    /// dawn (Douse): a gear change mid-fight is read in that context (RefreshKit, SU-039).</summary>
+    public bool FightNight { get; private set; }
+
     /// <summary>The dawn: the ember goes out, and what it built with it; what the night taught is
     /// paid. The levels it came to.</summary>
     public int Douse(Battle b)
     {
+        // (from the dawn on, the fight is read by day: a gear change after it too, RefreshKit)
+        FightNight = false;
         var kit = Character.Kit(Ch);
         b.Douse(kit.Weapons);
         GearWeapons = kit.Weapons.Select(w => w.Id).ToHashSet();
@@ -561,7 +568,7 @@ public sealed partial class Journey
     {
         if (Inventory.Find(Ch, uid) is not { Carried: true } loc) return;
         var def = Items.Get(loc.Item.Def);
-        if (def.Kind != ItemKind.Consumable || def.Consumable is not { } c) { if (loc.InPack) Equip(uid, null, b); return; }
+        if (def.Kind != ItemKind.Consumable || def.Consumable is not { } c) { if (loc.InPack) PutOn(uid, Kits.On(Ch), null, b); return; }
         if (c.Heal is double heal && b != null)
         {
             if (b.NoDraught) { Warn("You have no draught"); return; } // reaver.nothing_spared
@@ -610,18 +617,26 @@ public sealed partial class Journey
         OnTouch();
     }
 
-    /// <summary>Gear changed: fold it into the running fight at once.</summary>
+    /// <summary>The sources Character.Kit gives that follow what she wears: a piece's numbers and rules, a set's
+    /// bonuses, her traits, her attributes and her conditions. Its lamps' numbers (lamp:, lamps:, price:) stay as
+    /// lit, and the battle's own (weapon:, evo:, boon:, its own lamp: rules) are never touched (SU-038).</summary>
+    public static bool FromKit(string src) =>
+        src.StartsWith("item:") || src.StartsWith("set:") || src.StartsWith("trait:") || src == "attributes" || src.StartsWith("cond:");
+
+    /// <summary>Gear changed: fold it into the running fight at once, a fresh read of what she wears in the
+    /// fight's own context (by night, the night's lamp rules): the same mods and triggers after any number of
+    /// refreshes. The caged coals' draft gifts (rerolls, banishes, stands, roads, omens, start levels) stay as
+    /// the ember was lit (StartBattle), by the ruling in CODEX_audit.md installment 6.</summary>
     public void RefreshKit(Battle? b)
     {
         OnTouch();
         if (b == null) return;
-        var kit = Character.Kit(Ch);
-        static bool FromKit(string src) => src.StartsWith("item:") || src == "attributes" || src.StartsWith("trait:") || src.StartsWith("cond:");
+        var kit = Character.Kit(Ch, FightNight);
         b.Stats.RemoveWhere(FromKit);
         b.Stats.SetBase(kit.Stats.GetBase());
         b.Stats.AddAll(kit.Stats.List().Where(m => FromKit(m.Source)).ToList());
-        b.Triggers = b.Triggers.Where(t => !t.Source.StartsWith("item:") && !t.Source.StartsWith("trait:")).ToList();
-        foreach (var (def, src) in kit.Triggers) b.AddTrigger(def, src);
+        b.Triggers = b.Triggers.Where(t => !FromKit(t.Source)).ToList();
+        foreach (var (def, src) in kit.Triggers) if (FromKit(src)) b.AddTrigger(def, src);
         var kitIds = kit.Weapons.Select(w => w.Id).ToHashSet();
         foreach (var id in GearWeapons) if (!kitIds.Contains(id)) b.RemoveWeapon(id);
         foreach (var (id, rank) in kit.Weapons) if (!b.Weapons.Any(x => x.Id == id)) b.AddWeapon(id, rank);
@@ -633,6 +648,8 @@ public sealed partial class Journey
             foreach (var w in b.Weapons.ToList())
                 if (carried.TryGetValue(w.Id, out var r)) b.SetRank(w.Id, r);
         }
+        // In a map (and only there) its Marks and skill numbers are worn again: replaced, not merged (SU-041).
+        if (b.WearsMarks) b.Wear(kit.Marks, kit.SkillMods);
         b.GearIds.Clear(); b.GearIds.UnionWith(kit.GearIds);
         b.GearStatuses.Clear(); b.GearStatuses.UnionWith(kit.GearStatuses);
         b.Player.Hp = Math.Min(b.Player.Hp, b.MaxHp);

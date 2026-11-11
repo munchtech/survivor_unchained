@@ -62,7 +62,9 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     /// <summary>The place's spaces open now: where she, a leap and the crowd may be.</summary>
     readonly HashSet<string> open = new();
     readonly Dictionary<int, (double Seed, Func<Enemy, double, bool> Tick)> scripted = new();
-    readonly HashSet<int> smallChests = new(), chests = new();
+    /// <summary>The named foes carrying a small chest: pool id and generation (Seed), so the next creature handed
+    /// the slot carries nothing (SU-036).</summary>
+    readonly Dictionary<int, double> smallChests = new();
     readonly Dictionary<int, double> leaving = new();
     int chestsOpened;
     /// <summary>What is left of the stage's crowd, and when it next tops up.</summary>
@@ -557,6 +559,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         foreach (var pr in b.Projectiles.Living().ToList()) if (pr.Owner == Side.Enemy) b.Projectiles.Release(pr);
         b.CancelBlows();
         scripted.Clear();
+        smallChests.Clear();
         leaving.Clear();
         Interactables.RemoveAll(i => i.Id.StartsWith("story:"));
         Choice = null;
@@ -738,9 +741,9 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     IEnumerable<Loot> OnLoot(Enemy e)
     {
         var o = new List<Loot>();
-        bool small = smallChests.Remove(e.Id), carrier = chests.Remove(e.Id) || small;
-        if (carrier) o.Add(new Loot(PickupKind.Chest, small ? "small" : null, 1, true));
-        if (carrier) o.AddRange(Gear(e.Level, small ? DropSource.Miniboss : DropSource.Champion));
+        if (!smallChests.Remove(e.Id, out var seed) || seed != e.Seed) return o;
+        o.Add(new Loot(PickupKind.Chest, "small", 1, true));
+        o.AddRange(Gear(e.Level, DropSource.Miniboss));
         return o;
     }
 
@@ -858,7 +861,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         fists.AttackEvery = (fists.AttackEvery ?? 1.0) * NamedFists;
         e.Def = fists;
         if (quiet) return e;
-        smallChests.Add(e.Id);
+        smallChests[e.Id] = e.Seed;
         B!.Charges.Calm(B, 4);
         G.Announce(new Announcement(e.Def.Name, e.Def.Lesson, "danger", 3.2, kicker ?? (Fight.Kicker != "" ? Fight.Kicker : null)));
         return e;

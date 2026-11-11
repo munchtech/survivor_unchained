@@ -471,6 +471,45 @@ public class LootTests
         Assert.Contains("kerchief_colors", Inventory.WorldTags(red));
     }
 
+    /// <summary>SU-038: a gear change mid-fight is a fresh read of the kit: a set bonus reached mid-fight brings its numbers
+    /// and its rule, one lost takes them away, and any number of refreshes leaves the same mods and triggers (the Levy
+    /// Red's crit bleed once). Before: RefreshKit left set: numbers alone and added the set's rules again each time.</summary>
+    [Fact]
+    public void A_set_bonus_reached_and_lost_mid_fight_follows_and_refreshes_never_stack()
+    {
+        var j = Begin("stalker");
+        var ch = j.Ch;
+        Assert.True(Inventory.Equip(ch, Inventory.Make(ch, "roost_hood", level: 6), EquipSlot.Head));
+        Assert.True(Inventory.Equip(ch, Inventory.Make(ch, "kerchief_knives", level: 6), EquipSlot.Weapon));
+        var cloak = Inventory.Make(ch, "levy_colours", level: 6);
+        Assert.True(Inventory.AddToPack(ch, cloak));
+        var b = j.StartBattle(true, new CollisionWorld(80), (_, _) => 0, 0, 0, 0, 3);
+        int Bleeds() => b.Triggers.Count(t => t.Source.StartsWith("set:levy_red"));
+        string Mods() => string.Join(";", b.Stats.List().Select(m => $"{m.Source}|{m.Stat}|{m.Kind}|{m.Value:R}").OrderBy(x => x, StringComparer.Ordinal));
+        int Triggers() => b.Triggers.Count;
+        // Two pieces of the Levy Red worn as the fight begins: its first bonus, not its rule.
+        Assert.Equal(0, Bleeds());
+        Assert.Contains(b.Stats.List(), m => m.Source.StartsWith("set:levy_red:2"));
+        Assert.DoesNotContain(b.Stats.List(), m => m.Source.StartsWith("set:levy_red:3"));
+        double crit = b.Stats.Get(Stat.CritChance);
+        // The third piece, worn mid-fight: its bonus arrives, the crit bleed once.
+        j.PutOn(cloak.Uid, KitKind.Day, EquipSlot.Cloak, b);
+        Assert.Equal(1, Bleeds());
+        Assert.Contains(b.Stats.List(), m => m.Source.StartsWith("set:levy_red:2"));
+        Assert.Contains(b.Stats.List(), m => m.Source.StartsWith("set:levy_red:3"));
+        string mods = Mods();
+        int triggers = Triggers();
+        for (int i = 0; i < 4; i++) j.RefreshKit(b);
+        Assert.Equal(1, Bleeds());
+        Assert.Equal(triggers, Triggers());
+        Assert.Equal(mods, Mods());
+        // Taken off again: the third bonus's numbers and rule go with it.
+        j.TakeOff(cloak.Uid, b);
+        Assert.Equal(0, Bleeds());
+        Assert.DoesNotContain(b.Stats.List(), m => m.Source.StartsWith("set:levy_red:3"));
+        Assert.Equal(crit, b.Stats.Get(Stat.CritChance), 9);
+    }
+
     [Fact]
     public void Every_legendary_changes_how_you_play_has_a_home_and_a_line_and_is_never_worked()
     {

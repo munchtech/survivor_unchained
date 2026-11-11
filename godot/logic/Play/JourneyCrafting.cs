@@ -155,6 +155,18 @@ public sealed partial class Journey
         RefreshKit(b);
     }
 
+    /// <summary>The Pack's wear (a click, the primary act, a drop on the doll): a piece from the pack worn in the
+    /// kit looked at (Kits.Into), never the kit-free <see cref="Equip"/>, so a night wear in a slot the night
+    /// borrows from the day leaves the day's piece in the day kit (SU-037).</summary>
+    public void PutOn(string uid, KitKind looked, EquipSlot? slot, Battle? b) => EquipKit(uid, Kits.Into(Ch, looked), slot, b);
+
+    /// <summary>The Pack's take-off (from the doll, the primary act, a drag into the pack): a worn or set-aside
+    /// piece taken off the kit it belongs to (Kits.Of), whichever kit is on (SU-037).</summary>
+    public void TakeOff(string uid, Battle? b)
+    {
+        if (Kits.Of(Ch, uid) is { } k) UnequipKit(k.Kit, k.Slot, b);
+    }
+
     /// <summary>A kit's piece taken off into the pack; off the night kit, that slot wears the day's piece again.</summary>
     public void UnequipKit(KitKind kit, EquipSlot slot, Battle? b)
     {

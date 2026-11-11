@@ -421,4 +421,36 @@ public class StoryNightTests
         var table = new ArenaSpec { Id = "table:1", Minutes = 30, Tier = 1 };
         Assert.Equal(Arenas.XpFor(table, 12 * 60, false), Arenas.XpFor(spec, 12 * 60, false));
     }
+
+    /// <summary>SU-036: a carrier's chest belongs to the creature that carried it (pool slot and generation), never to its
+    /// pool slot: after a rise clears the field, a plain creature handed a named foe's slot drops no small chest and no
+    /// miniboss roll. Before: the named foe's id stayed registered through Clear and the next creature in it paid out.</summary>
+    [Fact]
+    public void A_named_foes_chest_does_not_pass_to_the_next_creature_in_its_slot()
+    {
+        var n = Hollow();
+        Step(n, 0.5);
+        var p = n.B.Player;
+        var named = n.Zone.Foe("mb_whitethroat", p.X + 6, p.Z)!;
+        Assert.NotNull(named);
+        int slot = named.Id;
+        // Its own death would pay (the registration is live).
+        Assert.Contains(n.Zone.Hooks.OnLoot!(named), l => l.Kind == PickupKind.Chest);
+        var again = n.Zone.Foe("mb_whitethroat", p.X + 6, p.Z)!;
+        slot = again.Id;
+        // She falls and rises: the field is cleared, the stage begun again.
+        Assert.True(n.Zone.Hooks.OnPlayerDeath!(null));
+        Step(n, 1.6);
+        // Whatever stands now goes, and plain creatures take the pool's places until one is handed the named foe's.
+        foreach (var e in n.B.Enemies.Living().ToList()) n.B.Enemies.Release(e);
+        Enemy? plain = null;
+        for (int i = 0; i < 400 && plain == null; i++)
+        {
+            var w = n.B.SpawnEnemy("risen_warrior", p.X + 8, p.Z + 8, new Battle.SpawnOpts { Level = 1 });
+            if (w?.Id == slot) plain = w;
+        }
+        Assert.NotNull(plain);
+        Assert.Null(plain!.Named);
+        Assert.Empty(n.Zone.Hooks.OnLoot!(plain));
+    }
 }
