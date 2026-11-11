@@ -26,14 +26,14 @@ public partial class BattleFx
     }
 
     /// <summary>Rank used: boss (the red line), crowd (the dim crimson), none (a plain wall or ground lane).</summary>
-    void LaneTraceStart(Ev.Telegraph e, Battle b, Mark lm, TelegraphRead.TeleLook look, bool fodderCharge)
+    void LaneTraceStart(Ev.Telegraph e, Battle b, Mark lm, TelegraphRead.TeleLook look, bool fodderCharge, bool cut = false, double herd = 0)
     {
         if (!LaneTrace) return;
         var mk = MakerOf(e, b);
         string rank = look == TelegraphRead.TeleLook.Danger ? "boss" : look == TelegraphRead.TeleLook.Amber ? "crowd" : "none";
         double dx = (e.X1 ?? e.X) - e.X, dz = (e.Z1 ?? e.Z) - e.Z;
         string head = $"tid={e.Id} maker={mk?.Def.Id ?? "?"} elite={(mk?.Elite == true ? 1 : 0)} boss={(e.Boss || mk?.Boss == true ? 1 : 0)} tell={e.Tell ?? "-"} shape={e.Shape} kind={e.Kind} look={look} fodderCharge={(fodderCharge ? 1 : 0)} rank={rank} " +
-            $"len={Math.Sqrt(dx * dx + dz * dz):F1} wid={e.Width ?? 1:F1}";
+            $"len={Math.Sqrt(dx * dx + dz * dz):F1} wid={e.Width ?? 1:F1} cut={(cut ? 1 : 0)} herd={herd:F1} grace={b.MassGraceLeft:F2}";
         long f = (long)Engine.GetFramesDrawn();
         laneTrace[e.Id] = (lm, head, f);
         LaneTraceLine(lm, head);

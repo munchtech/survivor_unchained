@@ -1687,14 +1687,38 @@ public partial class BattleFx : Node3D
                     else if (e.Hostile && e.Faction is { } sf && e.Kind == TelegraphKind.Ground && e.Id == -1 && e.Shape == TelegraphShape.Circle) Summoning(e, People(sf));
                     else if (e.Shape == TelegraphShape.Line)
                     {
-                        var lm = Lane(e.X, e.Z, e.X1 ?? e.X, e.Z1 ?? e.Z, (float)(e.Width ?? 1), col, (float)e.Duration, e.Id, e.Hostile && e.Kind == TelegraphKind.Blow);
+                        // F1 lead 26: a crowd charger's lane that runs under her stops 1.5 m short of her (nothing under 1 m is drawn),
+                        // so it doesn't swamp her at a dense crit. Elite and boss lanes are untouched.
+                        double lx1 = e.X1 ?? e.X, lz1 = e.Z1 ?? e.Z, herd = 0; bool laneCut = false, laneSkip = false;
+                        if (fodderCharge)
+                        {
+                            double ldx = lx1 - e.X, ldz = lz1 - e.Z, ll = Math.Sqrt(ldx * ldx + ldz * ldz);
+                            if (ll > 1e-6)
+                            {
+                                double ux = ldx / ll, uz = ldz / ll, px0 = b.Player.X - e.X, pz0 = b.Player.Z - e.Z;
+                                double proj = px0 * ux + pz0 * uz;
+                                herd = Math.Abs(px0 * uz - pz0 * ux);
+                                if (proj >= 0 && proj <= ll && herd <= (e.Width ?? 1) / 2 + 1.5)
+                                {
+                                    laneCut = true;
+                                    double keep = proj - 1.5;
+                                    if (keep < 1.0) laneSkip = true;
+                                    else { lx1 = e.X + ux * keep; lz1 = e.Z + uz * keep; }
+                                }
+                            }
+                        }
+                        if (laneSkip) { if (LaneTrace) GD.Print($"[lane-trace] f={Engine.GetFramesDrawn()} tid={e.Id} fodderCharge=1 skipped cut=1 herd={herd:F1} grace={b.MassGraceLeft:F2}"); }
+                        else
+                        {
+                        var lm = Lane(e.X, e.Z, lx1, lz1, (float)(e.Width ?? 1), col, (float)e.Duration, e.Id, e.Hostile && e.Kind == TelegraphKind.Blow);
                         if (e.Hostile && TelegraphRead.Champion(e, champ)) Over(lm, true);
-                        if (LaneTrace) LaneTraceStart(e, b, lm, look, fodderCharge);
+                        if (LaneTrace) LaneTraceStart(e, b, lm, look, fodderCharge, laneCut, herd);
                         if (fodderCharge)
                         {
                             lm.Energy = ChargeEnergy; lm.Decal.EmissionEnergy = ChargeEnergy;
                             double hx0 = e.ByX ?? e.X, hz0 = e.ByZ ?? e.Z;
                             Flash(V(hx0, Y(hx0, hz0) + 1.2, hz0), CrowdHue, 7, 0.45f, 6);
+                        }
                         }
                     }
                     else if (e.Shape == TelegraphShape.Cone) ConeMark(e.X, e.Z, (float)e.Radius, e.Angle ?? 0, e.Arc ?? Math.PI / 2, col, (float)e.Duration, e.Id, e.Hostile && e.Kind == TelegraphKind.Blow);
