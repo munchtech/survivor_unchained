@@ -5,6 +5,35 @@ For a fresh successor. Read these first:
 2. `docs/team/experience.md`: the one-page status, which holds what's done, the next steps in order, and the verdicts.
 3. `docs/design/STORY_NIGHTS_AND_TIME.md`: the owner's decisions are at its top.
 
+## M6 tutorial (tutorial-m6, lead 1, 10 Nov): HANDOFF READY at the commit carrying this block. Everything is BUILT and tested in the fake host. It has NOT run in Godot, been shot, looked at or judged. Integration is NOT merged and the full suite has NOT run.
+
+**Brief and ruling.** The spawn brief is section 5 of docs/design/ARPG.md: the callouts, the cuts, one dawn page, the lent Flare, and the night copy retired. RULING M6 (main, 16:00) accepted the list and an estimate of 0.9-1.1M inside the lane's 1.4M. Helpers stay under 150k each. The dawn page reuses sb00's art (no new art), and a VO row goes to main if needed. Report one line each in `survivorsunchained_inputs\scratch_coord5\inbox.md`.
+
+**The spec is `docs/story/TUTORIAL_COPY.md`** (rewritten): beats A1-A14 with words, moments and targets; the dawn page; and what was kept, reworded and retired.
+
+**The app can now:**
+- **A1-A4b:** move, swing, ember stone, the coin's ring, Resolve, then Groundbreaker. They live in `ArpgCallouts(p)` in Prologue.cs. Two new HUD aims: `seat:<Act>` (GameHud.SeatRect) and `resolve` (GameHud.FigureRect).
+- **A5-A10:** the captain's plate, the charger's lane with the dash (the Knight's red line is the fallback), the elite's plate, the lit post on the corner map (`map:X,Z` via Minimap.OnDisc), and the raiser.
+- **A13/A13b:** the Leap at the wolves' ring and Shield Charge at the next pack. Both follow their real seat, and both skills exist on this branch.
+- **Seams:** `logic/Play/TeachSeams.cs` hangs on the zone (`Prologue.Seams`). skills-p7 sets `LampOffered` for A5a. loot-m9 sets `RareOnGround`, `FilterKey`, `FilterChip` and `CommonsOnGround` for A6 and A6b. Until then these beats do nothing.
+- **The lent Flare:** she has none until C02. It is lent full at Stage.Boss (`LendFlare`), with A11b after A11. The dawn page takes it (`TakeFlare`, fact `flare.out`), then the banner "The Flare goes out / Lent for the night. It burns again at the Waystation's lamp." shows. The day runs without it. The square lamp lights it for good (`Waystation.SquareLamp`, `flare.lit`, banner "The Flare / Lit for good."). Saves past the prologue and arena runs are unchanged.
+- **The dawn page:** `data/storybook/sb_dawn.json` is sb00's first-light plate `ink_p3d`, 9 s, with the `.dawn` line. It plays after C03 and before C04 A through `IZoneHost.Storybook` / `Game.Storybook` (src/Game/GameStory.cs). The dawn card and the traits banner are retired from the draft-off path.
+- **Experience stones in story zones:** with the ember off, kills drop stones that rest 0.35 s, fly to her and pay XP as they land (Battle.DropXpStones/PayXp/PayXpStones). They pay the same XP as before, and whatever is left is paid at a zone end, a fall or a film. The journey's first stone is held for A3.
+- **Retired:** Move, form, level, By day, F6 volley, F7 red_line, Elites, F8 art, day_hover and day_flare.
+- **Reworded:** pack, Shieldmen, tally and Rested.
+
+**Numbers.** The filter suites were green at each step: 215/0/2 at c27ea6462, and Prologue|Journey|Art 198/0/0 at 1e245e31e. The Low Ford zone sim went from 53/56 (the doc) to 52/56 at 48cac8472. That commit also changed two things for the whole game: a scattering drop now stops at colliders, and the Pilot closes on a kiting foe in the campaign. Its suite run is NOT done. Levels are still 3 at the Warden and 5 at the gate. Four runs stick: two at the wolves' Howler at the south edge, one at the boars' wedge, and one undiagnosed (I deft s3). The standing bot falls 5 (worst 14) against 2 with the Flare kept: the day without the Flare is harder for a bot that stands still. That is a design consequence, not a bug, and not yet routed to main. The sim outputs and A/B are in `survivorsunchained_inputs\scratch_m6\`.
+
+**Next, in order:**
+1. Merge integration `origin/claude/vigilant-galileo-l6jqyx` (junction rule; the runner saw 20 unmerged commits on her art, and shots need them). Then run the FULL suite and fix anything 48cac8472 moved.
+2. A runner plays a real Godot run of the night with `--cines`. Log each callout's id, time and stage, check the order A1 to A11b, and check that sb_dawn plays between C03 and C04 A and the Flare banner follows. H3 gave the command: `--zone lowford --stage day --cines`, or a full start.
+3. Shoot one 1:1 play-camera frame per freeze, plus the dawn page. Do your own look at half size.
+4. One flow judge, xhigh: the whole-frame AAA question first, then "does each callout come at its moment, aimed at the right thing, in plain words". This judges the flow and words, not the look: any look mark goes to main as a UI row.
+5. Tell main in one line: the Howler at the wolves' end is a slow chase without the Flare (zones' call), and the standing bot falls more by day.
+6. MR.
+
+**Cost (lead 1):** the lead used about 0.19M. Helpers used about 0.75M: H1 0.12, W1 0.05, H2 0.13, H3 0.13, H4 0.07, H5 0.12, W2 0.07, R1 0.04, H6 0.10. API: $0. Estimate to MR: about 0.3-0.4M (the merge and suite, a runner, the frames, one xhigh judge, one fix round).
+
 ## M5 zones and encounters (zones-m5, lead 2, 9 Nov): MR READY zones-m5@e195b0a45 (this line's own commit follows)
 
 **State.** Every M5 item built (lead 1's block below: encounters as data, champions, lamp-posts, death, world tiers, resets, the zone sim). Lead 2 ran rounds 3 and 4 of `Item: M5 first 10 min` (cap raised to 4 by the coordinator). Integration merged at 81b34cd31 (and 7732f83c0 before) (junction rule each time). Suite 1650/0/10 (at ff9c4f616). Zone sim (`docs/balance/zone_lowford.md`): tier II human 8/8 through, 7.2 min play (8.4 with films), kills 176/5/4/1, 16 packs, falls 0 (worst 1), Legendary 8/8, level 3 at the Warden and 5 at the gate; 3/56 runs stuck in the day's Exit (careless/deft, lead 1's known ground wedge).
