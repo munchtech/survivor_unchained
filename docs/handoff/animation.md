@@ -4,6 +4,52 @@ For the next animation lead (`su-lead-high`). Read `docs/team/README.md` ("Worki
 
 **Standing bar (the owner, 26 Oct): "effortlessly badass".** Every judge brief on her motion (armed walks especially) asks it as the whole-frame question: does she move effortlessly badass, or stiff, careful or strained?
 
+## 0000000000000000000000000000000000000000000000000h. A1 lead 25 (11 Nov, ~10:40, HANDOFF READY, LANE ENDED): round 3 (the LAST, one fresh su-lead-max) judged FAIL on every item; no round 4 (RULING A1 09:26); no MR
+
+**Start here, cold.** Worktree `.claude/worktrees/move-a1`, branch move-a1, pushed at the sha in my HANDOFF READY line. Integration is NOT merged in (lead 23's 58b3bec7a; captures need `--stale-ok`, see `scratch_motion_a1\L25\cap25.sh`). The suite has not been re-run since lead 23 (2267/0/11 at 8065ceedf): before any MR, merge integration 3296bd188 or newer and run against 2273/0/11. The lane ended at this verdict on the coordinator's ruling. Reopening it is the owner's call.
+**Commits (lead 25):**
+- Sword recovers: 055155355 (CARRY_VIA), 7bc8e06b8 (FORE_VIA on fore/heavy), bac7eb606 (their pack: the state round 3 judged).
+- The 180: bba8ca187 (stage 3 releases the pose and lean; tilt x(1-0.6 pivotW); HIPS_DROP 0.045) and 9948a9e21 (catch-up clamp 0.16, retake 0.15, stage-4 decay x0.8, stage-4 cap 12 at 0.185).
+- Strafe:
+  - 8c2417010/a9e248fa3: attempt 1 (own seeks, 14-frame cycle).
+  - 4448862ca/937408b09: attempt 2 (run_warden's legs yawed onto travel, `side_z` 0.04, `side_toe_out` 4, lean 16). Attempt 2 replaced attempt 1.
+  - 738f45668/d80a70ac3: attempt 3, reverted by 34f2fa6c6/710dc0fb4.
+
+**My numbers (`scratch_motion_a1\L25\`):**
+- Blows: fore pitch -83 -> -44, monotone; heavy ends at -43; tip down on screen at every heading.
+- The 180: pelvis step 0.210 -> 0.175, screen jump 2.62 -> 1.73, settle 14 -> 5 frames.
+- Strafe planted drift (median/p90/max, mm): pure 10/13/14, front diagonal 6/13/16, back diagonal 169/240/267 (the stated open). The on-screen split is 69 px against the run's 87 px seen side-on.
+- Sheets: `s_*.jpg`. Captures: `L21\cap_*_l25f`.
+
+**Round 3 verdict (FAIL on every item). Frame = capture image = CARRY log frame + 60:**
+- **Run and sprint.** The straights are clean (no slides). Running toward the camera, the sword hangs vertical like a cane (run f122-126; sprint f118-126 and f146-150). On corners both feet slide 23-34 cm/frame (run f193-197 and f258-260; sprint f241-244 and f334). The shield is a flat disc at f128 and f261-263.
+- **Figure-8.** Slides at f106, f167 and f303 (12-20 cm). At f116 she is in a wide split with the sword at shoulder height and the shield like a tray. At f124-132 the blade points up past her head.
+- **The 180.** The yaw is fine (90/55/12/-32/-75/-90 over f241-245). But she pops upright with her feet together at f241-242, which reads as a spin. The pivot foot slides 12-18 cm/frame at f243-244, the hips drop only 4-5 cm, and the shield goes flat at f243-244.
+- **Pure strafe.** She holds a 1.17 m knees-bent split at f200-206. On the other side the shield sits as a disc at f664-666 and the sword stands straight up at f672-678.
+- **Front diagonal.** A sumo crouch at f340-346, with slides of 14-16 cm.
+- **Back diagonal.** The stated open, plus her arm locked level holding the sword at shoulder height (f234-240 and f716-724).
+- **Blows while moving.** A 2-frame swap from crouched to upright at f98-100. The blade ends tip-up above her head at f110, f144 and f303. A split at f144-146, and a slide at f214-217.
+- **Blow chain.** Slides of 41 and 25 cm at f289-290 (32 slide frames across the chain). The blade is above her shoulder at f292 and f322. From f352 to f388 she settles behind the shield disc, not into the carry.
+- The blade crossing the shield rim was not visible at 1:1.
+
+**The judge's fixes:**
+1. Keep the planted foot within 1 cm/frame in turns. Spread 90-135 degree corners over 3-5 frames at no more than 35 degrees per frame, pivoting on the standing foot with an 8-12 degree lean.
+2. In the carry, the blade sits 30-45 degrees below horizontal with the tip 40-60 cm off the ground. The shield face stays within 30 degrees of upright through every turn.
+3. The 180: no upright feet-together frame. Lock the pivot foot through f241-245, drop the hips 6-10 cm, and push off with a 10-15 degree lean by f246.
+4. Strafe: feet at most 0.8 m apart and hips no more than 4 cm below run height. Past about 100 degrees off the aim, a backpedal with steps of 0.6 m or less and a foot lock within 2 cm. The sword goes low at the hip.
+5. Blows: within 4-6 frames of the release the blade is at shoulder height or lower with the tip down. She settles into the carry over 6-8 frames. Lock the foot she plants on, and blend any silhouette change over at least 4 frames.
+
+**Caveats (my read, not checked):**
+- The judge's "slide" is a foot within 3 cm of the ground that still moves, read from CARRY log foot positions, not pixels. It may count toe-off and touch-down. Re-measure planted drift with `scr_split.py`/`L25s2\scr2.py` before building.
+- The judge's scripts are copied to `L25\judge3\` (`skate.py`, `parse.py`, `strip.py`).
+- The judge could not match the f236-240 tiles on s_180 (they look like a held split, but the log shows the legs moving). My look saw the same.
+
+**What is left:**
+- The corner foot-lock and the head-on carry hit the run repack that lead 22 closed on numbers. Corners, turns and blow recovers are lane-wide, not polish.
+- My recommendation if it reopens: one design pass on a turn-in-place/plant layer (a foot-locked corner) and the carry's screen angle per heading before any more clip tuning.
+
+**Spend:** ~0.90M against the owner's 0.85M. RULING 09:26 accepted ~0.87M for the judge only, and the judge ran 0.10M.
+
 ## 0000000000000000000000000000000000000000000000000g. A1 lead 23 (11 Nov, ~07:50, HANDOFF READY): option A BUILT and reshot, my 1:1 look SHORT on the strafe and the 180, so round 3 (the LAST) is still UNSPENT; waiting on a ruling (inbox 07:4x: options a/b/c, I recommend b)
 
 **Start here, cold.** Worktree `.claude/worktrees/move-a1`, branch move-a1, pushed at the sha in my HANDOFF READY line. Integration merge 58b3bec7a unchanged (integration has moved by docs only). Suite 2267/0/11 at 8065ceedf (the new tests are lead 22's); re-run on the final MR.
