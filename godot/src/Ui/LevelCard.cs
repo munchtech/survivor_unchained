@@ -150,10 +150,18 @@ public partial class LevelCard : Control
         QueueRedraw();
     }
 
+    /// <summary>U1 §5B: the card being read (the pointer on it, or the pad's LB held while it shows): its hold clock stops
+    /// (it does not fold while read) and resumes from where it was.</summary>
+    public bool Read;
+    /// <summary>The card a skill tip can be read from (a new key, a new skill or a lamp lit, risen or holding), or null.</summary>
+    public LevelCardSpec? Readable => Visible && Queue.Current is { Skill: not "" } c
+        && c.Kind is LevelCardKind.NewKey or LevelCardKind.NewSkill or LevelCardKind.LampLit
+        && Queue.Now is LevelCardQueue.Phase.In or LevelCardQueue.Phase.Hold ? c : null;
+
     public override void _Process(double delta)
     {
         bool held = Held();
-        Queue.Tick(delta, held);
+        Queue.Tick(Read && Queue.Now == LevelCardQueue.Phase.Hold ? 0 : delta, held);
         if (Queue.Began && Queue.Current != null) Begin(Queue.Current);
         if (Queue.Current == null) { if (Visible) Visible = false; return; }
         if (held) { if (Visible) Visible = false; return; }

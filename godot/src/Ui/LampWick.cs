@@ -179,6 +179,7 @@ public partial class LampWick : Control
 
     void Read()
     {
+        deltaOf.Clear();
         if (Skill == null) return;
         plan = WickBook.PlanOf(ch, Skill).ToList();
         path = WickBook.Path(ch, Skill);
@@ -429,7 +430,7 @@ public partial class LampWick : Control
         float w = TextR - TextX;
         if (r == fr)
         {
-            string line = LineOf(r, fc);
+            string line = fc < 3 ? WithDelta(LineOf(r, fc), Id(r, fc)) : LineOf(r, fc);
             var lines = LampInk.Wrap(line, fl, 14, w);
             if (lines.Count > 2) { lines = lines.Take(2).ToList(); lines[1] = Ellipsize(lines[1] + "…", fl, 14, w); }
             LampInk.Text(ci, fn, 18, TextX, ry - 16, NameOf(r, fc), LampInk.Ink);
@@ -455,6 +456,20 @@ public partial class LampWick : Control
 
     /// <summary>A lamp's line under its name: the Turn's own text (Wicks.Text prefixes the Turn's name, already drawn above it).</summary>
     string LineOf(int r, int c) => c == 3 ? strands[r].TurnDef.Text : Wicks.Text(Skill!, Id(r, c));
+
+    /// <summary>U1 §5C: the focused lamp's line with what it changes ("+10% damage · Damage 57 → 63", WickBook.LampDelta);
+    /// the line alone when nothing it names changes. Asked once a lamp until the board is read again.</summary>
+    readonly Dictionary<string, string> deltaOf = new();
+    string WithDelta(string line, string id)
+    {
+        if (Skill == null || id == "") return line;
+        if (!deltaOf.TryGetValue(id, out var d))
+        {
+            d = WickBook.LampDelta(ch, Skill, id) is { } x ? $"{x.What} {x.Before} → {x.After}" : "";
+            deltaOf[id] = d;
+        }
+        return d == "" ? line : line + " · " + d;
+    }
 
     static string Ellipsize(string s, Font f, int px, float maxw)
     {

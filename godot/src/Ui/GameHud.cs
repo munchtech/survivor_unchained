@@ -750,6 +750,7 @@ public partial class GameHud : CanvasLayer
         if (Controls.Instance is { } ctl) ctl.Fighting = b.Combat && p.Alive && b.NearestHostile(p.X, p.Z, FightNear) != null;
         // The six places. In the campaign (M4 §1) seat k shows slot KeyMap.SeatSlot[k] with its key; elsewhere (the
         // arena) what fires by itself, in the order it came, keyless; the rest quiet.
+        SkillTipTick(b, b.Campaign && !(lampsWide && lampsSeats != null));
         var socks = irons.Sockets;
         int i = 0;
         // (the Lamps' Open wide: the six seats are the wick tabs, her carried skills, in a fight or not)
@@ -933,7 +934,7 @@ public partial class GameHud : CanvasLayer
         bool captured = c == null || c.Captured || c.MenuMode;
         var mouse = irons.GetLocalMousePosition();
         bool hover = DgPanel.OnCoin(mouse) && GetViewport().GetVisibleRect().HasPoint(GetViewport().GetMousePosition());
-        bool held = c != null && c.Held(Act.Experience) || TeachCard;
+        bool held = c != null && c.Held(Act.Experience) && !cardRead || TeachCard;
         if (TeachCard) captured = false;
         float f = barWant;
         int lv = barLevel;
@@ -950,6 +951,103 @@ public partial class GameHud : CanvasLayer
         var anchor = held ? new Vector2(DgPanel.Coin.X, DgPanel.Coin.Y - DgPanel.ArchR) : mouse;
         // (its lines are written only while it shows: they were four strings a frame for a hidden card)
         river.Card.Set(show, anchor, show ? XpLight.Lines(!day, lv, have, need, xpLast && day) : default, f, day);
+    }
+
+    // ---- U1 §5: the skill tips (the seats, the level card), on the HUD's top: over the seats and the level card
+    SkillTip? skillTip;
+    int tipSeat = -1;
+    ulong tipSeatSince, tipTickMs;
+    string tipFor = "";
+    SurvivorUnchained.Rpg.SkillTipView? tipView;
+    Vector2 tipMouse = new(-1, -1);
+    int tipHit = -1;
+    /// <summary>The level card is being read (U1 §5B): the XpCard leaves the pad's LB to it.</summary>
+    bool cardRead;
+
+    SkillTip Tip()
+    {
+        if (skillTip == null) { skillTip = new SkillTip { Name = "SkillTip" }; play.AddChild(skillTip); }
+        else if (skillTip.GetIndex() != play.GetChildCount() - 1) play.MoveChild(skillTip, -1);
+        return skillTip;
+    }
+
+    /// <summary>The seat (0-5) whose ring holds p (global), or -1.</summary>
+    int SeatUnder(Vector2 p)
+    {
+        var socks = irons.Sockets;
+        for (int k = 0; k < socks.Length; k++)
+        {
+            var s = socks[k];
+            if (s == null || !s.IsVisibleInTree()) continue;
+            var xf = s.GetGlobalTransform();
+            if (p.DistanceTo(xf * (s.Size / 2)) <= DgPanel.SeatR * xf.Scale.X) return k;
+        }
+        return -1;
+    }
+
+    /// <summary>U1 §5A/B: the level card's skill while it is read (the pointer on it, the pad's LB held, or --hud-pin
+    /// tip=card), else the seat the pointer has rested on 0.15 s (--hud-pin tip=seat:K: seat K), else nothing.</summary>
+    void SkillTipTick(Battle b, bool seats)
+    {
+        tipTickMs = Time.GetTicksMsec();
+        var ch = (GetParent() as Game)?.Journey.Ch;
+        var c = Controls.Instance;
+        bool captured = c == null || c.Captured || c.MenuMode;
+        var mp = play.GetGlobalMousePosition();
+        bool inView = GetViewport().GetVisibleRect().HasPoint(GetViewport().GetMousePosition());
+        string? pin = HudPin.Tip;
+        // (B) the level card
+        var card = levelCard?.Readable;
+        bool read = false;
+        if (card != null && ch != null)
+        {
+            var r = levelCard!.GetGlobalRect();
+            read = pin == "card" || !HudPin.Active && (c != null && c.Held(Act.Experience) || !captured && inView && r.HasPoint(mp));
+            if (read)
+            {
+                string f = "card|" + card.Skill + "|" + card.Slot;
+                if (f != tipFor) { tipFor = f; tipView = SkillTip.For(ch, b, card.Skill, card.Kind == LevelCardKind.NewKey ? card.Slot : -1); }
+                Tip().Set(true, new Vector2(r.Position.X + r.Size.X / 2, r.Position.Y), tipView);
+            }
+        }
+        if (levelCard != null) levelCard.Read = read;
+        cardRead = read;
+        if (read) { tipSeat = -1; return; }
+        // (A) the seats
+        int seat = -1;
+        if (seats && pin is { } ps && ps.StartsWith("seat:") && int.TryParse(ps[5..], out var pk)) seat = pk;
+        else if (seats && !HudPin.Active && !captured && inView)
+        {
+            // (the ring test only when the pointer moved)
+            if (mp != tipMouse) { tipMouse = mp; tipHit = SeatUnder(mp); }
+            seat = tipHit;
+        }
+        WeaponInst? w = null, shown = null;
+        if (seat >= 0 && seat < irons.Sockets.Length && ch != null)
+        {
+            int slot = KeyMap.SeatSlot[seat];
+            w = b.OnSlot(slot);
+            if (w != null) shown = w.Slot2 == slot && w.Half != null ? w.Half : w;
+            if (shown != null)
+            {
+                string f = $"seat|{seat}|{shown.Id}|{SkillTip.CastOf(shown)}|{shown.Rank}";
+                if (f != tipFor)
+                {
+                    tipFor = f;
+                    tipView = SurvivorUnchained.Rpg.SkillTipModel.Build(ch, b, shown.Id, SkillTip.CastOf(shown), KeyMap.Skills[slot].ToString());
+                }
+            }
+        }
+        if (shown == null) { tipSeat = -1; skillTip?.Set(false, default, null); return; }
+        // (0.15 s on one seat; moving on to another while it shows switches at once)
+        bool up = skillTip is { Visible: true };
+        if (seat != tipSeat) { tipSeat = seat; tipSeatSince = Time.GetTicksMsec(); }
+        bool show = pin != null || up || Time.GetTicksMsec() - tipSeatSince >= 150;
+        var sk = irons.Sockets[seat];
+        var sx = sk.GetGlobalTransform();
+        var mid = sx * (sk.Size / 2);
+        if (show) Tip().Set(true, new Vector2(mid.X, mid.Y - DgPanel.SeatR * sx.Scale.Y), tipView);
+        else skillTip?.Set(false, default, null);
     }
 
     /// <summary>The level's name over the coin as last written, and what it was written for.</summary>
@@ -1917,6 +2015,8 @@ public partial class GameHud : CanvasLayer
         barShown = barShown > barWant + 0.5f ? Mathf.MoveToward(barShown, barWant, dt * 4) : barShown + (barWant - barShown) * (1 - Mathf.Exp(-18 * dt));
         irons.DayNight(barEmber);
         XpTick(irons.Panel, delta);
+        // (the tips are fed from Frame; a HUD not fed this frame hides its tip)
+        if (skillTip is { Visible: true } && Time.GetTicksMsec() - tipTickMs > 100) { skillTip.Set(false, default, null); if (levelCard != null) levelCard.Read = false; }
         killPop = Math.Max(0, killPop - delta);
         tallyWord.Scale = tallyWord.Scale.Lerp(Vector2.One, 1 - Mathf.Exp(-8 * dt));
         float kp = 1 + (float)(killPop / 0.15) * 0.15f;
