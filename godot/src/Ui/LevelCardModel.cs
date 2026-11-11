@@ -28,6 +28,10 @@ public sealed class LevelCardSpec
     /// <summary>The prompt row (optional): its key and words ("C", "A new trait can be chosen"); the card holds 3 s.</summary>
     public Act? PromptKey;
     public string? PromptText;
+    /// <summary>M7a: a lamp offer (a held point waits for her: Act.Lamps lights it); false once lit. Kind LampLit.</summary>
+    public bool Offer;
+    /// <summary>The lamp this card offers or lit (its full id, "sunder.stroke.1"), "" none.</summary>
+    public string Lamp = "";
 
     public bool HasPrompt => PromptKey != null && !string.IsNullOrEmpty(PromptText);
 }
@@ -41,7 +45,7 @@ public static class LevelCards
     public static string Header(LevelCardSpec s) => s.Kind switch
     {
         LevelCardKind.NewKey => $"LEVEL {s.Level} · A NEW KEY",
-        LevelCardKind.LampLit => $"LEVEL {s.Level} · A LAMP LIT",
+        LevelCardKind.LampLit => s.Offer ? $"LEVEL {s.Level} · A LAMP TO LIGHT" : $"LEVEL {s.Level} · A LAMP LIT",
         LevelCardKind.NewSkill => s.Level > 0 ? $"LEVEL {s.Level} · A NEW SKILL" : "A NEW SKILL",
         _ => $"LEVEL {s.Level}",
     };
@@ -77,11 +81,10 @@ public static class LevelCards
 
     /// <summary>The card a campaign level makes: a new key when the taught build teaches a skill at that level and the
     /// fight carries it on a slot (slotOf: its slot, -1 when not carried), else plain; with the trait/attribute prompt.</summary>
-    public static LevelCardSpec ForCampaignLevel(int level, Content.TaughtBuild? build, Func<string, int> slotOf, int traitPicks)
+    public static LevelCardSpec ForCampaignLevel(int level, Content.TaughtBuild? build, Func<string, int> slotOf, int traitPicks, Rpg.CharacterData? ch = null)
     {
         var spec = new LevelCardSpec { Level = level, PromptKey = Act.Character, PromptText = PromptFor(traitPicks) };
-        if (build == null) return spec;
-        foreach (var s in build.Slots)
+        foreach (var s in (IEnumerable<Content.TaughtSlot>?)build?.Slots ?? Array.Empty<Content.TaughtSlot>())
         {
             if (s.Level != level) continue;
             int slot = slotOf(s.Skill);
@@ -89,8 +92,31 @@ public static class LevelCards
             spec.Kind = LevelCardKind.NewKey; spec.Skill = s.Skill; spec.Slot = slot;
             break;
         }
+        if (spec.Kind == LevelCardKind.Plain && ch != null && LampOffer(ch, level) is { } offer) return offer;
         return spec;
     }
+
+    /// <summary>M7a: the lamp card for a level whose carried skill (first in slot order) holds a point: Kind LampLit, Offer,
+    /// the live lamp's own text ("Light: +10% damage", Wicks.Text: what the fight runs, not skill_lamps.json's name),
+    /// Act.Lamps to light it, the blow's (or the lamp's own) before and after. Null when no skill holds a point.</summary>
+    public static LevelCardSpec? LampOffer(Rpg.CharacterData ch, int level)
+    {
+        foreach (var (id, _) in Rpg.SkillBook.Carried(ch))
+        {
+            if (Rpg.WickBook.NextLamp(ch, id) is not { } lamp) continue;
+            var (measure, before, after) = Rpg.WickBook.LampMeasure(ch, id, lamp);
+            return new LevelCardSpec
+            {
+                Kind = LevelCardKind.LampLit, Offer = true, Level = level, Skill = id, Lamp = lamp,
+                Measure = measure, Before = before, After = after,
+                PromptKey = Act.Lamps, PromptText = "Light: " + Content.Wicks.Text(id, lamp),
+            };
+        }
+        return null;
+    }
+
+    /// <summary>The offer taken: the card turns to the lit state (header "A LAMP LIT", no lighting prompt).</summary>
+    public static void Lit(LevelCardSpec s) { s.Offer = false; s.PromptKey = null; s.PromptText = null; }
 
     /// <summary>A new skill's prompt row: the skills screen's key and these words (it is on no key yet).</summary>
     public const string SkillPrompt = "Put it on a key";
@@ -111,7 +137,7 @@ public static class LevelCards
         return null;
     }
 
-    /// <summary>--level-card's spec: slot:SKILL:LEVEL | lamp:SKILL:LEVEL:BEFORE:AFTER | plain:LEVEL | skill:SKILL:LEVEL, each with an optional
+    /// <summary>--level-card's spec: slot:SKILL:LEVEL | lamp:SKILL:LEVEL:BEFORE:AFTER | offer:SKILL:LEVEL:BEFORE:AFTER | plain:LEVEL | skill:SKILL:LEVEL, each with an optional
     /// @T (seconds into the fight). Null when it does not parse.</summary>
     public static (LevelCardSpec Spec, double At)? Parse(string arg)
     {
@@ -132,6 +158,8 @@ public static class LevelCards
                 return (new LevelCardSpec { Kind = LevelCardKind.NewKey, Skill = p[1], Level = l }, at);
             case "lamp" when p.Length == 5 && I(p[2]) is { } l && D(p[3]) is { } b && D(p[4]) is { } f:
                 return (new LevelCardSpec { Kind = LevelCardKind.LampLit, Skill = p[1], Level = l, Before = b, After = f }, at);
+            case "offer" when p.Length == 5 && I(p[2]) is { } l && D(p[3]) is { } b && D(p[4]) is { } f:
+                return (new LevelCardSpec { Kind = LevelCardKind.LampLit, Offer = true, Skill = p[1], Level = l, Before = b, After = f, PromptKey = Act.Lamps, PromptText = "Light" }, at);
             case "plain" when p.Length == 2 && I(p[1]) is { } l:
                 return (new LevelCardSpec { Kind = LevelCardKind.Plain, Level = l }, at);
             case "skill" when p.Length == 3 && I(p[2]) is { } l:

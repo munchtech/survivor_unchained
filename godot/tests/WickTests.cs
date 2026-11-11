@@ -157,6 +157,8 @@ public sealed class WickTests
         var a = Callings.Archetype("warden");
         var j = Journey.Begin(new CreationChoice { Name = "T", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0] }, 7);
         j.Ch.Level = 10;
+        SurvivorUnchained.Content.TaughtBuilds.Grant(j.Ch, 10); // lit after the grant, so nothing is held
+        WickBook.LightAll(j.Ch);
         var b = j.StartBattle(true, new CollisionWorld(80), (_, _) => 0, 0, 0, 0, 7);
         Assert.False(b.EmberOn);
         foreach (var w in b.Weapons.Where(w => Wicks.Of(w.Id) != null))

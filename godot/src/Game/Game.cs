@@ -807,6 +807,8 @@ public partial class Game : Node, IZoneHost
         else RemoveFigure();
         Perf.Lap("the rest of the stage (lights, fires)");
         zone = Make(id, scene!.Data.Meta);
+        // (M7a: A5a's seam: true exactly while a level card offers a lamp)
+        if (zone is SurvivorUnchained.Play.Zones.Prologue pz) pz.Seams.LampOffered = () => hud.LampOfferUp != null ? "lamp_offer" : null;
         StopBlend();
         var time = zone.TimeOf(World);
         air.Set(zone.AtmosphereFor(time));

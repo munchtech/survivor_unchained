@@ -241,7 +241,8 @@ public static class Inventory
             int n = Math.Min(3, it.Rarity);
             // A skill worn that the survivor's calling may not carry rolls something else.
             var pool = Items.Affixes.Where(a => a.Slots.Contains(def.Kind) && it.Rarity >= a.MinRarity && !a.Unique
-                && (a.Grants == null || ch == null || Content.Weapons.CanCarry(ch.Archetype, a.Grants))).ToList();
+                && (a.Grants == null || ch == null || Content.Weapons.CanCarry(ch.Archetype, a.Grants))
+                && (a.Plus == null || ch == null || Content.Weapons.CanCarry(ch.Archetype, a.Plus))).ToList();
             var picked = new HashSet<string>();
             bool hasPrefix = false, hasSuffix = false;
             // The passives the survivor's carried skills evolve with (the kindlings that would stand in for them).
@@ -255,7 +256,7 @@ public static class Inventory
                 if (cands.Count == 0) break;
                 // What answers the map comes four times as often; a skill worn is rare, and a kindling rarer,
                 // though one that stands in for what the survivor's carried skills evolve with comes twice as often.
-                double W(AffixDef x) => (lean?.Contains(x.Id) == true ? 4 : 1) * (x.Grants != null ? 0.35 : 1) *
+                double W(AffixDef x) => (lean?.Contains(x.Id) == true ? 4 : 1) * (x.Grants != null || x.Plus != null ? 0.35 : 1) *
                     (x.Kindled == null ? 1 : 0.3 * (wanted.Contains(x.Kindled) ? 2 : 1));
                 double total = cands.Sum(W), roll = rng.Next() * total;
                 var a = cands[^1];
@@ -602,6 +603,22 @@ public sealed class CombatKit
 
 public static class Character
 {
+    /// <summary>(M9, ARPG.md 9) The ranks her worn gear adds to one skill: +1 for each rolled "+1 to a skill" affix
+    /// (AffixDef.Plus) and a named piece's own (ItemDef.Plus). The one seam the ranks read (SkillBook.RankOf);
+    /// M7's points fold in here.</summary>
+    public static int SkillPlus(CharacterData ch, string skill)
+    {
+        int n = 0;
+        foreach (var s in Items.EquipSlots)
+        {
+            if (ch.Equipment[s] is not { } it) continue;
+            foreach (var a in it.Affixes)
+                if (Items.Affix(a.Id)?.Plus == skill) n++;
+            if (Items.Find(it.Def)?.Plus is { } own && own.TryGetValue(skill, out var k)) n += k;
+        }
+        return n;
+    }
+
     public static CharacterData Create(CreationChoice c, int day = 1, long? seed = null)
     {
         var a = Callings.Archetype(c.Archetype);
@@ -686,7 +703,8 @@ public static class Character
     {
         if (ch.Level >= MaxLevel) { ch.Xp = 0; return 0; }
         ch.Xp += xp;
-        int gained = 0;
+        int gained = 0, from = ch.Level;
+        var had = SkillBook.Carried(ch).Select(c => c.Id).ToHashSet();
         while (ch.Level < MaxLevel && ch.Xp >= XpForLevel(ch.Level))
         {
             ch.Xp -= XpForLevel(ch.Level);
@@ -696,6 +714,8 @@ public static class Character
             gained++;
         }
         if (ch.Level >= MaxLevel) ch.Xp = 0;
+        // M7a: the points the levels earned wait on her carried skills until she lights them (WickBook.Grew).
+        if (gained > 0) WickBook.Grew(ch, from, ch.Level, had);
         return gained;
     }
 

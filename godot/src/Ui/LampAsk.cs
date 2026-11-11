@@ -29,7 +29,7 @@ public static class LampAsk
         {
             Type = a.Type, Lit = a.Lit.ToList(), Flare = a.Flare,
             Wicks = a.Wicks.ToDictionary(kv => kv.Key, kv => kv.Value.ToList()),
-            Links = new Dictionary<string, string>(a.Links), Carried = a.Carried.ToList(),
+            Links = new Dictionary<string, string>(a.Links), Carried = a.Carried.ToList(), Held = new Dictionary<string, int>(a.Held),
         };
         return true;
     }

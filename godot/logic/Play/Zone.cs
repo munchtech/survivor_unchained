@@ -523,6 +523,11 @@ public abstract class ZoneRuntime
     public virtual Dictionary<string, object?> Debug() => new();
     public virtual void Dispose()
     {
+        // (M9) Leaving a fight's zone: Rare and better still lying goes to Rook's storeroom (ARPG 7.1).
+        if (Combat && B != null)
+        {
+            try { G.Journey?.Abandon(B); } catch (Exception) { /* a battle already torn down: nothing lying to keep */ }
+        }
         foreach (var a in Actors.Values) a.Dispose();
         Actors.Clear();
     }

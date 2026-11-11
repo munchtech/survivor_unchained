@@ -142,6 +142,26 @@ public sealed partial class Battle
         foreach (var w in Weapons) if (w.Id == skill) Relight(w, false);
     }
 
+    /// <summary>(M7a) A held point lit by day (Journey.LightHeld): the skill's path becomes its day path, the live weapon
+    /// ranks up to the rank by the ember's own way (RankWeapon, journalled, so a checkpoint replays it) and relights, and
+    /// each lamp newly lit is shown (Ev.Wick, by day too: the HUD and sound read it). The weapon, or null when not in hand.</summary>
+    public WeaponInst? LightHeld(string skill, int rank, string[] path)
+    {
+        WickPaths[skill] = path;
+        var w = Weapons.Find(x => x.Id == skill);
+        if (w == null) return null;
+        int had = w.Wick?.Lit.Length ?? 0;
+        bool ranked = false;
+        while (w.Rank < System.Math.Min(rank, Content.Weapons.MaxRank)) { RankWeapon(skill); ranked = true; }
+        Relight(w, false);
+        // RankWeapon shows the new lamps itself while the ember burns.
+        if (ranked && EmberOn) return w;
+        var lit = w.Wick?.Lit ?? System.Array.Empty<string>();
+        for (int i = had; i < lit.Length; i++)
+            Events.Emit(new Ev.Wick { Skill = skill, Lamp = lit[i], Turn = Wicks.IsTurn(skill, lit[i]) });
+        return w;
+    }
+
     /// <summary>Light a weapon's wick to its rank (as it comes in, ranks up or evolves). At night each new lamp is
     /// shown (Ev.Wick). A skill with no path keeps what it has (a union's carried Turns).</summary>
     internal void Relight(WeaponInst w, bool show)

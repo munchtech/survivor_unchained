@@ -18,6 +18,9 @@ public sealed class LampLayout
     /// <summary>Each skill's wick plan (Rpg/WickBook.cs): its lamp ids in the order they light. A layout holds
     /// its wicks, so swapping layouts swaps builds (docs/design/CLASS_IDENTITY_AND_TALENTS.md 3.5).</summary>
     public Dictionary<string, List<string>> Wicks = new();
+    /// <summary>M7a: each skill's points earned while she carried it and not yet lit (WickBook.Held / Light). Absent or 0:
+    /// every earned point burns (old saves, gear skills, a level set by hand). Per layout, so it saves with the wicks.</summary>
+    public Dictionary<string, int> Held = new();
     /// <summary>Lamps v2: each link's pick, its lamp id to the skill it fires (docs/design/LAMPS_V2_RULES.md "Links").
     /// No pick, or one not carried: Light my way's (Battle.LinkSkill).</summary>
     public Dictionary<string, string> Links = new();
@@ -475,6 +478,8 @@ public static class LampBook
     {
         int n = 0;
         while (Suggest(ch, w) is { } id && Light(ch, w, id)) n++;
+        // M7a: Light my way burns every skill's held points too (each lights its wick's next lamps along its path).
+        WickBook.LightAll(ch);
         return n;
     }
 
@@ -509,7 +514,7 @@ public static class LampBook
         {
             if (!Weapons.All.ContainsKey(skill) || !SkillBook.Carries(ch, skill)) return false;
             if (link) return true;
-            var w = WickBook.Weapon(ch, skill, SkillBook.Rank(ch));
+            var w = WickBook.Weapon(ch, skill, WickBook.DayRank(ch, skill));
             return scoped.Any(e => LampLoadout.Covers(e, w.Def.Id, w.Tags));
         }
         var names = scoped.Where(e => e.Skill != null).Select(e => e.Skill!).Concat(d.Feeds).Where(Wakes).Distinct().ToList();

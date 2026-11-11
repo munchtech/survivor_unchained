@@ -59,19 +59,25 @@ public partial class LevelCard : Control
         capHost.Scale = promptHost.Scale = new Vector2(CapK, CapK);
     }
 
+    /// <summary>The offer showing now (a lamp card not yet lit), else null.</summary>
+    public LevelCardSpec? OfferUp => Queue.Current is { Offer: true } c && Queue.Now is LevelCardQueue.Phase.In or LevelCardQueue.Phase.Hold && Visible ? c : null;
+
+    /// <summary>The showing card's spec changed (an offer lit): its words, chips and size again, no second stinger.</summary>
+    public void Refresh(LevelCardSpec s) { if (shown == s) Begin(s, true); }
+
     /// <summary>A card to show (in turn, after any showing).</summary>
     public void Add(LevelCardSpec s) => Queue.Add(s);
 
     static float TextW(Font f, string s, int size) => f.GetStringSize(s, HorizontalAlignment.Left, -1, size).X;
 
     /// <summary>A card begins: its words, glyph, chips and size, once.</summary>
-    void Begin(LevelCardSpec s)
+    void Begin(LevelCardSpec s, bool again = false)
     {
         shown = s;
         header = LevelCards.Header(s);
         // (the level's stinger, once the card shows: Journey's "Level N" banner, which carried it, is gone in the campaign;
         // a new skill's card that follows its level's key card is the same level-up: it does not ring twice)
-        if (s.Kind != LevelCardKind.NewSkill || s.Level > 0) SurvivorUnchained.Sound.Sfx.Stinger("triumph");
+        if (!again && (s.Kind != LevelCardKind.NewSkill || s.Level > 0)) SurvivorUnchained.Sound.Sfx.Stinger("triumph");
         bool body = s.Kind != LevelCardKind.Plain;
         name = line = before = after = measure = "";
         glyph = null;

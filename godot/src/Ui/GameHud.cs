@@ -1472,6 +1472,15 @@ public partial class GameHud : CanvasLayer
         LevelCard(cardDue);
     }
 
+    /// <summary>M7a: the lamp offer showing now (A5a's seam reads it), else null.</summary>
+    public LevelCardSpec? LampOfferUp => levelCard?.OfferUp;
+
+    /// <summary>The level card's box on the screen (A5a's aim), null when none shows.</summary>
+    public Rect2? LevelCardArea => levelCard is { Visible: true } c ? c.GetGlobalRect() : null;
+
+    /// <summary>The offered lamp taken: its card turns to the lit state at once.</summary>
+    public void LampOfferLit(LevelCardSpec s) { LevelCards.Lit(s); levelCard?.Refresh(s); }
+
     /// <summary>The level card is showing or waiting.</summary>
     public bool LevelCardUp => levelCard != null && levelCard.Queue.Count > 0;
 
@@ -1498,7 +1507,7 @@ public partial class GameHud : CanvasLayer
         var build = TaughtBuilds.Of(ch?.Archetype);
         for (int l = was + 1; l <= lv; l++)
         {
-            var card = LevelCards.ForCampaignLevel(l, build, id => b.Weapons.Find(w => w.Id == id) is { } w ? w.Slot : -1, ch?.TraitPicks ?? 0);
+            var card = LevelCards.ForCampaignLevel(l, build, id => b.Weapons.Find(w => w.Id == id) is { } w ? w.Slot : -1, ch?.TraitPicks ?? 0, ch);
             LevelCardSpec? second = null;
             if (journey?.CallingTaught is { } taught && taught.Level == l && callingCarded != taught)
             {

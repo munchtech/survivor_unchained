@@ -116,4 +116,27 @@ public sealed partial class Journey
         if (home + stored + broken > 0) OnTouch();
         return new Gathered(home, stored, broken, iron, shards, left);
     }
+
+    /// <summary>(M9, ARPG 7.1) A zone left: Rare and better still lying (and shown) goes to Rook's storeroom while it
+    /// has a free slot (no shelves are added); the rest is lost with the ground. Returns how many it kept.</summary>
+    public int Abandon(Battle b)
+    {
+        int kept = 0;
+        foreach (var p in b.Pickups.Items)
+        {
+            if (!p.Alive || p.Payload is not ItemInstance it || p.Look == Verdict.Hidden) continue;
+            if (it.Rarity < 2 && !Rpg.Drops.Jackpot(Rpg.Drops.TierOf(it))) continue;
+            int j = World.Stash.IndexOf(null);
+            if (j < 0) continue;
+            World.Stash[j] = it;
+            b.Pickups.Release(p);
+            kept++;
+        }
+        if (kept > 0)
+        {
+            OnToast(new Toast(ToastKind.Loot, $"Rook kept {kept} {(kept == 1 ? "thing" : "things")} you left"));
+            OnTouch();
+        }
+        return kept;
+    }
 }
