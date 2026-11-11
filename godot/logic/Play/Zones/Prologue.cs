@@ -601,9 +601,11 @@ public sealed partial class Prologue : ZoneRuntime
             Teach("move", CalloutKind.Arrow, "Move", $"{MoveKeys()}: walk. The road runs north, out of the firelight.", new Aim());
         // A2: the lone drowned one awake, within 7 m, and well on the screen (Aim.Safe: it waits for it); the Skill1 seat
         // bracketed and the drowned one ringed. Answered by Skill1.
-        if (Now is Stage.Wake or Stage.Rising && AwakeOf("n_lone").Any(e => Dist(e.X, e.Z, p.X, p.Z) <= 7))
+        // (M6 l3: any foe awake near her, the lone one or C01's risen: C01 hands her the risen at once, and in run m6r3
+        // she had fought them for 7 s before the lone one woke; A2 waited on it and was lost.)
+        if (Now is Stage.Wake or Stage.Rising && NearFoes(p, 7).Count > 0)
             Teach("swing", CalloutKind.Freeze, "Swing", $"Hold {Key("skill1")} to swing at what's under the cursor. You walk as you swing.",
-                new Aim { Hud = "seat:Skill1", World = () => AwakeOf("n_lone").Select(e => Up(e.X, e.Z, 1.0)).ToList(), Safe = true }, "skill1", urgent: true);
+                new Aim { Hud = "seat:Skill1", World = () => NearFoes(B!.Player, 7).Take(1).Select(e => Up(e.X, e.Z, 1.0)).ToList(), Safe = true }, "skill1", urgent: true);
         // A3: the first ember stone near her on the ground (the lone one's), well inside the screen. With the draft off the
         // dead still spill their light (Journey.Killed, Battle.DropXpStones): each stone rests, then flies to her and pays
         // her experience as it lands. The journey's first is held at rest until A3 closes (Battle.HoldNextStone); a hold
@@ -622,19 +624,20 @@ public sealed partial class Prologue : ZoneRuntime
         // A3b: the first ember landed (her first experience), 0.6 s after A3 closes (when A3 was asked); the coin's ring.
         if (Now < Stage.Intro && (ch.Xp > xpAtStart || ch.Level > levelAtStart || B.EmberXp > 0 || B.EmberLevel > 1))
             Teach("ember_ring", CalloutKind.Arrow, "Your level", "Ember fills this ring. When it's full, you rise a level.", Aim.At("chain_fill"),
-                after: emberGroundAsked ? "ember_ground" : null, gap: 0.6, overHint: true);
+                after: emberGroundAsked || B.HeldStone != null ? "ember_ground" : null, gap: 0.6, overHint: true);
         // A4: the three on the road, her first landed swing on them (Resolve's Landed fill grows once they are up); her hair.
-        if (B.Resolve.On && landedAtThree < 0 && AwakeOf("n_three").Count > 0) landedAtThree = B.Resolve.LandedFill;
-        if (landedAtThree >= 0 && B.Resolve.LandedFill > landedAtThree) resolveDue = true;
+        // (M6 l3: her first landed blows on anything, after the swing's lesson: the three's waited on them waking awake,
+        // and they fell before a frame of it, so A4 and A4b never came in run m6r3)
+        if (B.Resolve.On && B.Resolve.LandedFill > 0) resolveDue = true;
         if (resolveDue && Now < Stage.Intro)
-            Teach("resolve", CalloutKind.Arrow, "Resolve", "Every blow that lands builds Resolve. Your skills burn it.", Aim.At("resolve"));
+            Teach("resolve", CalloutKind.Arrow, "Resolve", "Every blow that lands builds Resolve. Your skills burn it.", Aim.At("resolve"), after: "swing");
         // A4b: 2 s after A4 was seen, Resolve at or past Groundbreaker's cost and two or more of the three within its reach;
         // its seat bracketed (by the slot it sits in) and the pack ringed. Answered by its key.
         if (G.Taught("resolve") && resolveSeenAt == double.MaxValue) resolveSeenAt = B.Time;
-        if (B.Time - resolveSeenAt >= 2 && B.Weapons.FirstOrDefault(w => w.Id == "groundbreaker") is { } gb && B.Resolve.Value >= B.CostOf(gb))
+        if (Now < Stage.Intro && B.Time - resolveSeenAt >= 2 && B.Weapons.FirstOrDefault(w => w.Id == "groundbreaker") is { } gb && B.Resolve.Value >= B.CostOf(gb))
         {
             double reach = gb.AimRange;
-            List<Enemy> InReach() => AwakeOf("n_three").Where(e => Dist(e.X, e.Z, p.X, p.Z) <= reach).ToList();
+            List<Enemy> InReach() => NearFoes(B!.Player, reach);
             if (InReach().Count >= 2)
             {
                 string act = $"Skill{gb.Slot + 1}";
@@ -644,6 +647,18 @@ public sealed partial class Prologue : ZoneRuntime
         }
         ArpgCallouts2(p);
     }
+
+    /// <summary>(A2, A4b) The hostile foes awake and up within r of her, nearest first.</summary>
+    List<Enemy> NearFoes(PlayerState p, double r) => B?.Enemies.Living()
+        .Where(e => e.Disposition == Disposition.Hostile && Awake(e) && Dist(e.X, e.Z, p.X, p.Z) <= r)
+        .OrderBy(e => Dist(e.X, e.Z, p.X, p.Z)).ToList() ?? [];
+
+    /// <summary>(A5) The nearest live captain of a woken pack within r of her, rising or up.</summary>
+    Enemy? NearCaptain(PlayerState p, double r) => night == null ? null : night.Captains.Keys
+        .Where(night.WokeAt.ContainsKey).Select(night.Captain)
+        .Where(c => c is { Alive: true, Roused: true } && c.State != EnemyState.Dying && Dist(c.X, c.Z, p.X, p.Z) <= r)
+        .OrderBy(c => Dist(c!.X, c.Z, p.X, p.Z)).FirstOrDefault();
+    Enemy? teachCap;
 
     /* M6's beats A5-A10: their state. */
     /// <summary>The other lanes' hooks for the seam beats (A5a, A6, A6b): set by skills-p7 and loot-m9.</summary>
@@ -672,13 +687,18 @@ public sealed partial class Prologue : ZoneRuntime
     {
         if (B == null) return;
         // A5: the first pack's captain awake, within 14 m and in the open; the arrow on his plate, his body ringed.
-        if (Now < Stage.Intro && night?.Captain("n_first") is { } cap && Awake(cap) && Dist(cap.X, cap.Z, p.X, p.Z) <= 14)
-            G.Teach(new Callout("captain", CalloutKind.Freeze, "Captain", "Packs travel with a captain. The captain carries the better gear.", new Aim
-            {
-                World = () => night?.Captain("n_first") is { Alive: true } c ? [Up(c.X, c.Z, PlateLift(c))] : [], Safe = true, Open = true,
-                Seen = () => night?.Captain("n_first") is { Alive: true } c ? [Up(c.X, c.Z, 1.2)] : [],
-                Ring = () => night?.Captain("n_first") is { Alive: true } c ? [Up(c.X, c.Z, 0.9)] : [], RingRadius = 0.9,
-            }) { Urgent = true });
+        // (M6 l3: any pack's captain, from his rise: the first pack's died in 1 s under the road's line in run m6r3)
+        if (Now < Stage.Intro && !G.Taught("captain"))
+        {
+            if (teachCap is not { Alive: true } || teachCap.State == EnemyState.Dying) teachCap = NearCaptain(p, 14);
+            if (teachCap != null)
+                G.Teach(new Callout("captain", CalloutKind.Freeze, "Captain", "Packs travel with a captain. The captain carries the better gear.", new Aim
+                {
+                    World = () => teachCap is { Alive: true } c ? [Up(c.X, c.Z, PlateLift(c))] : [], Safe = true, Open = true,
+                    Seen = () => teachCap is { Alive: true } c ? [Up(c.X, c.Z, 1.2)] : [],
+                    Ring = () => teachCap is { Alive: true } c ? [Up(c.X, c.Z, 0.9)] : [], RingRadius = 0.9,
+                }) { Urgent = true });
+        }
         // A5a (skills-p7's seam): the first level-up card offering a lamp, once the card is up; its wick on the card.
         if (Seams.LampOffered?.Invoke() is { } wick)
             G.Teach(new Callout("lamp", CalloutKind.Panel, "A lamp", "Each level lights a lamp on a skill. This one makes every third swing heavy.", Aim.At(wick)));
