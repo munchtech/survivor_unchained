@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://cmly1ji2e28di"
+path="res://.godot/imported/drop_epic_0.wav-89078b7fc64baa3603b6ef52e7470d58.sample"
 
 [deps]
 
 source_file="res://art/sound/drop_epic_0.wav"
+dest_files=["res://.godot/imported/drop_epic_0.wav-89078b7fc64baa3603b6ef52e7470d58.sample"]
 
 [params]
 

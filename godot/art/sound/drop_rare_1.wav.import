@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://cujp153b1hgsw"
+path="res://.godot/imported/drop_rare_1.wav-d9f8b3664f9d5ece7a4ae4cf2af96949.sample"
 
 [deps]
 
 source_file="res://art/sound/drop_rare_1.wav"
+dest_files=["res://.godot/imported/drop_rare_1.wav-d9f8b3664f9d5ece7a4ae4cf2af96949.sample"]
 
 [params]
 

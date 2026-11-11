@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://tib51vovf8n8"
+path="res://.godot/imported/drop_legendary_1.wav-c141c03e4981916b2419ac491fcf15d0.sample"
 
 [deps]
 
 source_file="res://art/sound/drop_legendary_1.wav"
+dest_files=["res://.godot/imported/drop_legendary_1.wav-c141c03e4981916b2419ac491fcf15d0.sample"]
 
 [params]
 

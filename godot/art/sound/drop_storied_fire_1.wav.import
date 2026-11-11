@@ -2,10 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
+uid="uid://c3bbohll5bnoi"
+path="res://.godot/imported/drop_storied_fire_1.wav-2b59c1569f45bb64d6c50f7582006413.sample"
 
 [deps]
 
 source_file="res://art/sound/drop_storied_fire_1.wav"
+dest_files=["res://.godot/imported/drop_storied_fire_1.wav-2b59c1569f45bb64d6c50f7582006413.sample"]
 
 [params]
 

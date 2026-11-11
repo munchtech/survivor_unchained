@@ -10,7 +10,7 @@
   "cap_ms": 150,
   "gap_ms": 90,
   "crowd_n": 30,
-  "crowd_scale": 0.5,
+  "crowd_scale": 0.8,
   "rate": 0.06,
   "shake_m": 0.03,
   "shake_hz": 30,
