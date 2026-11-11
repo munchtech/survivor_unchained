@@ -389,7 +389,11 @@ public partial class WorldScene : Node3D, IZoneLook
     {
         if (stops.Ask(a.Body, a.Seconds, onScreen, a.Dx, a.Dz) && a.Body == SurvivorUnchained.Look.HitStops.Her && AaBeats)
             GD.Print($"[aa-beats] local hitstop {a.Seconds:F3} s at frame {Engine.GetFramesDrawn()}");
+        else if (StopTrace && a.Body == SurvivorUnchained.Look.HitStops.Her && stops.Held(a.Body))
+            GD.Print($"[stop-trace] her {stops.Left(a.Body):F3} s (asked {a.Seconds:F3}) on screen {onScreen} frame={Engine.GetFramesDrawn()}");
     }
+    // (--kill-trace: her local stops are told too, with the frame, to find them in a clip)
+    static readonly bool StopTrace = Args.Has("kill-trace");
 
     // (A name made once, not a new one every frame for the collector.)
     static readonly StringName SurvivorParam = "survivor";
