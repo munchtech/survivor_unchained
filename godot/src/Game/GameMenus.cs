@@ -24,7 +24,8 @@ public partial class Game
     bool OnAction(Act a)
     {
         // A storybook hears only the held skip.
-        if (storybook != null || beginning) return true;
+        // (and one fading in: it owns the pause from the ask, SU-032)
+        if (InputOwner.MenusRefused(storybook != null, storyAsked != null, beginning)) return true;
         if (scene == null) return false;
         // A screen hears the keys first.
         if (screens.Current is Overlay o)
@@ -157,8 +158,9 @@ public partial class Game
         cam.ScreenFrame = null;
         if (scene?.Player is { } pv) { pv.Turned = null; pv.Watch = null; pv.LampScale = 1; }
         LookFor(null);
-        if (scene != null && hudMode == null) scene.SimPaused = false;
-        controls.Captured = false;
+        if (scene != null && InputOwner.RunsOnClose(hudMode, storybook != null, storyAsked != null)) scene.SimPaused = false;
+        // (a hand-back's ease still running holds it until it lands, and gives it to whoever owns input then: SU-033)
+        controls.Captured = InputOwner.CapturedOnMenuClose(seam != null);
         controls.ClearLatches();
     }
 
@@ -212,7 +214,7 @@ public partial class Game
     {
         screens.Close();
         if (scene != null) scene.SimPaused = false;
-        controls.Captured = false;
+        controls.Captured = InputOwner.CapturedOnMenuClose(seam != null);
         controls.ClearLatches();
         // A night at the inn wakes her in the town: the morning's scene, if the story set one.
         PlayScene(dusk: false, 1.2);
@@ -235,11 +237,11 @@ public partial class Game
             chestShown = null;
             shown.QueueFree();
             if (hudMode == "chest") hudMode = null;
-            if (scene != null && hudMode == null) scene.SimPaused = false;
+            if (scene != null && InputOwner.RunsOnClose(hudMode, storybook != null, storyAsked != null)) scene.SimPaused = false;
             controls.ClearLatches();
             return;
         }
-        if (chestsWaiting.Count == 0 || Overlay != null || inTransit || cine != null || scene == null || Battle is not { } b || Teaching is { Kind: CalloutKind.Freeze }) return;
+        if (chestsWaiting.Count == 0 || Overlay != null || inTransit || cine != null || StoryHolds || scene == null || Battle is not { } b || Teaching is { Kind: CalloutKind.Freeze }) return;
         hudMode = "chest";
         scene.SimPaused = true;
         chestShown = new ChestCeremony(chestsWaiting.Dequeue(), b, scene, cam, hud, Haptics);

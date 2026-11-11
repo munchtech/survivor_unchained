@@ -660,6 +660,8 @@ public partial class Game : Node, IZoneHost
         if (cine != null) { var c = cine; cine = null; c.Finish(); }
         // Nor a callout.
         TeachLeave();
+        // Nor a storybook still fading in (SU-032): its page and its `then` are dropped, its holds let go.
+        if (storyAsked != null) { storyAsked = null; hud.HoldToasts = false; hud.HoldTip = false; }
         ClearKept();
         zone?.Dispose();
         zone = null;
