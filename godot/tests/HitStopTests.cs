@@ -14,14 +14,16 @@ public class HitStopTests
     public void TableValuesAndBands()
     {
         Assert.Equal(0, T.TrashMs);
-        Assert.Equal(50, T.HeavyMs);
-        Assert.Equal(55, T.CritMs);
+        Assert.Equal(60, T.HeavyMs);
+        Assert.Equal(65, T.CritMs);
+        Assert.Equal(1.0, T.CrowdScale);
+        Assert.Equal(8, T.MassKillN);
         Assert.Equal(55, T.ArtMs);
         Assert.Equal(90, T.EliteKillMs);
         Assert.Equal(100, T.BossKillMs);
         Assert.Equal(150, T.CapMs);
-        Assert.InRange(T.HeavyMs, 40, 60);
-        Assert.InRange(T.CritMs, 40, 60);
+        Assert.InRange(T.HeavyMs, 40, 70);
+        Assert.InRange(T.CritMs, T.HeavyMs, 70);
         Assert.InRange(T.EliteKillMs, 80, 100);
         Assert.InRange(T.BossKillMs, 80, 100);
     }
@@ -164,10 +166,44 @@ public class HitStopTests
     {
         var a = Of(H(7, amount: 40), H(8));
         Assert.Equal(2, a.Count);
-        Assert.Equal(0.05, a.Single(x => x.Body == 7).Seconds, 6);
-        Assert.Equal(0.05, a.Single(x => x.Body == HitStops.Her).Seconds, 6);
+        Assert.Equal(T.HeavyMs / 1000, a.Single(x => x.Body == 7).Seconds, 6);
+        Assert.Equal(T.HeavyMs / 1000, a.Single(x => x.Body == HitStops.Her).Seconds, 6);
         var c = Of(H(7, crit: true));
-        Assert.Equal(0.055, c.Single(x => x.Body == 7).Seconds, 6);
+        Assert.Equal(T.CritMs / 1000, c.Single(x => x.Body == 7).Seconds, 6);
+    }
+
+    [Fact]
+    public void MassKillHoldsEveryBodyItFelled()
+    {
+        var c = new HitStopClassifier(T);
+        var evs = new List<CombatEvent>();
+        for (int i = 0; i < T.MassKillN; i++)
+        {
+            evs.Add(new Ev.Hit { Target = i, Amount = 5, MaxHp = 100, Weapon = "oathblade", Art = "slash_steel", X = 1 });
+            evs.Add(new Ev.Kill { Enemy = i, ByPlayer = true, X = 1 });
+        }
+        var a = c.Of(evs, 100, 0, 0);
+        for (int i = 0; i < T.MassKillN; i++) Assert.Equal(T.EliteKillMs / 1000, a.Single(x => x.Body == i).Seconds, 6);
+        Assert.Equal(T.EliteKillMs / 1000, a.Single(x => x.Body == HitStops.Her).Seconds, 6);
+        // a far wave's mass kill holds the felled bodies, not her
+        var far = new List<CombatEvent>();
+        for (int i = 0; i < T.MassKillN; i++)
+        {
+            far.Add(new Ev.Hit { Target = i, Amount = 5, MaxHp = 100, Weapon = "disc", X = T.HerReachM + 4 });
+            far.Add(new Ev.Kill { Enemy = i, ByPlayer = true, X = T.HerReachM + 4 });
+        }
+        var f = c.Of(far, 100, 0, 0);
+        Assert.DoesNotContain(f, x => x.Body == HitStops.Her);
+        Assert.Equal(T.EliteKillMs / 1000, f.Single(x => x.Body == 0).Seconds, 6);
+        // one short of the count is no mass kill; wound kills (no blow this step) never count; Flare kills never count
+        var few = new List<CombatEvent>(evs.Take(2 * (T.MassKillN - 1)));
+        Assert.DoesNotContain(c.Of(few, 100, 0, 0), x => x.Seconds >= T.EliteKillMs / 1000);
+        var wounds = new List<CombatEvent>();
+        for (int i = 0; i < T.MassKillN; i++) wounds.Add(new Ev.Kill { Enemy = i, ByPlayer = true, X = 1 });
+        Assert.Empty(c.Of(wounds, 100, 0, 0));
+        var flare = new List<CombatEvent>();
+        for (int i = 0; i < T.MassKillN; i++) { flare.Add(new Ev.Hit { Target = i, Amount = 5, MaxHp = 100, Weapon = "oathblade", ByFlare = true }); flare.Add(new Ev.Kill { Enemy = i, ByPlayer = true, ByFlare = true }); }
+        Assert.Empty(c.Of(flare, 100, 0, 0));
     }
 
     [Fact]

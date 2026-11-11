@@ -34,13 +34,15 @@ public sealed class HitStopClassifier
 
     readonly List<Ev.Kill> kills = new();
     readonly HashSet<int> touched = new();
+    readonly HashSet<int> hitIds = new();
 
     /// <summary>The asks of one step. maxHp: hers (a hurt is over 12% of it). herX, herZ: where she stands (NaN: unknown,
     /// every blow counts as her contact): she holds only for a blow that lands within her_reach_m of her, so a wave or a
     /// thrown edge landing late, or a wound's kill, holds the struck body alone and never stops her mid wind-up.</summary>
     public List<StopAsk> Of(IReadOnlyList<CombatEvent> evs, double maxHp, double herX = double.NaN, double herZ = double.NaN)
     {
-        best.Clear(); struck.Clear(); kills.Clear(); touched.Clear();
+        best.Clear(); struck.Clear(); kills.Clear(); touched.Clear(); hitIds.Clear();
+        int mass = 0;
         double art = 0;
         bool Near(double x, double z) => double.IsNaN(herX) || (x - herX) * (x - herX) + (z - herZ) * (z - herZ) <= t.HerReachM * t.HerReachM;
         foreach (var e in evs)
@@ -49,6 +51,7 @@ public sealed class HitStopClassifier
             {
                 case Ev.Hit h when Qualifies(h):
                     struck.Add(h);
+                    hitIds.Add(h.Target);
                     // Her own blade's swing is her contact at any reach her gear gives it; other weapons count only within her_reach_m.
                     bool near = IsOath(h.Art) || Near(h.X, h.Z);
                     if (near) touched.Add(h.Target);
@@ -60,7 +63,7 @@ public sealed class HitStopClassifier
                         if (near) Put(HitStops.Her, ms, d, 0, 0);
                     }
                     break;
-                case Ev.Kill k when k.ByPlayer && !k.ByFlare && (k.Elite || k.Boss):
+                case Ev.Kill k when k.ByPlayer && !k.ByFlare:
                     kills.Add(k);
                     break;
                 case Ev.PlayerHit ph when !ph.Dodged && !ph.Blocked && !ph.Dot && maxHp > 0 && ph.Amount > maxHp * 0.12:
@@ -81,9 +84,15 @@ public sealed class HitStopClassifier
                     break;
             }
         }
-        // An elite or boss kill holds the body; it holds her too only when her own blow landed on it, near, this step.
+        // A mass kill (one blow felling mass_kill_n or more: kills this step by a blow that landed this step) holds every
+        // body it felled like an elite kill. An elite or boss kill holds the body; either holds her too only when her
+        // own blow landed on it, near, this step.
+        foreach (var k in kills) if (hitIds.Contains(k.Enemy)) mass++;
+        bool massKill = t.MassKillN > 0 && mass >= t.MassKillN;
         foreach (var k in kills)
         {
+            bool big = k.Elite || k.Boss;
+            if (!big && !(massKill && hitIds.Contains(k.Enemy))) continue;
             double km = k.Boss ? t.BossKillMs : t.EliteKillMs;
             Put(k.Enemy, km, 0, k.Dx, k.Dz);
             if (touched.Contains(k.Enemy)) Put(HitStops.Her, km, 0, 0, 0);

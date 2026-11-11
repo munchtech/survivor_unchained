@@ -22,7 +22,7 @@ public sealed partial class TeleRank
  {"rank":0,"name":"safe","color":"#8ad0ff","bed":"#10202a","edge":2.2},
  {"rank":0,"name":"wall","color":"#c8c8d0","bed":"#18181a","edge":1.6},
  {"rank":1,"name":"boss","color":"#ff0612","bed":"#2c0604","edge":0.45,"fill":0.55,"flare":1.4},
- {"rank":2,"name":"crowd","color":"#ff1a4a","bed":"#2a0610","edge":0.22,"fill":0.6,"flare":1.3,"raise":0.5,"charge":0.3375,"closing":0.5},
+ {"rank":2,"name":"crowd","color":"#ff1a4a","bed":"#2a0610","edge":0.22,"fill":0.6,"flare":1.3,"raise":0.5,"charge":0.22,"closing":0.5},
  {"rank":3,"name":"ground","color":"#a050ff","bed":"#140a24","edge":2.2}]}
 """;
 

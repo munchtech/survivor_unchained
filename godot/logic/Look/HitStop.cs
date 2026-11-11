@@ -10,16 +10,17 @@ namespace SurvivorUnchained.Look;
 public sealed class HitStopTable
 {
     [JsonPropertyName("trash_ms")] public double TrashMs;
-    [JsonPropertyName("heavy_ms")] public double HeavyMs = 50;
-    [JsonPropertyName("crit_ms")] public double CritMs = 55;
+    [JsonPropertyName("heavy_ms")] public double HeavyMs = 60;
+    [JsonPropertyName("crit_ms")] public double CritMs = 65;
     [JsonPropertyName("art_ms")] public double ArtMs = 55;
     [JsonPropertyName("hurt_ms")] public double HurtMs = 60;
     [JsonPropertyName("elite_kill_ms")] public double EliteKillMs = 90;
     [JsonPropertyName("boss_kill_ms")] public double BossKillMs = 100;
+    [JsonPropertyName("mass_kill_n")] public int MassKillN = 8;
     [JsonPropertyName("cap_ms")] public double CapMs = 150;
     [JsonPropertyName("gap_ms")] public double GapMs = 90;
     [JsonPropertyName("crowd_n")] public int CrowdN = 30;
-    [JsonPropertyName("crowd_scale")] public double CrowdScale = 0.5;
+    [JsonPropertyName("crowd_scale")] public double CrowdScale = 1.0;
     [JsonPropertyName("rate")] public double Rate = 0.06;
     [JsonPropertyName("shake_m")] public double ShakeM = 0.03;
     [JsonPropertyName("shake_hz")] public double ShakeHz = 30;
