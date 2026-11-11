@@ -36,6 +36,9 @@ public partial class BattleFx
     static Texture2D?[]? wgAlb, wgNrm, wgEmi;
     /// <summary>The crack's centre across the strip (m) in 256 steps along its 24 m (crack.json centre_m).</summary>
     static float[]? wgOff;
+    /// <summary>Largest side of any ground slab, m (was 0.9-1.4 m long x 1.3 wide, up to ~2 m); and the floor of their albedo (linear).</summary>
+    const float WgSlabMax = 0.6f;
+    static readonly Color WgSlabLit = new Color(0.30f, 0.26f, 0.22f);
     static Mesh[]? wgChunks, wgSlabs;
     static float[]? wgChunkLen, wgSlabLen;
 
@@ -292,7 +295,9 @@ public partial class BattleFx
                 if (m.SurfaceGetMaterial(si) is BaseMaterial3D bm)
                 {
                     var t = (BaseMaterial3D)bm.Duplicate();
-                    t.AlbedoColor = bm.AlbedoColor * new Color(1.75f, 1.62f, 1.45f);
+                    var pale = bm.AlbedoColor * new Color(1.75f, 1.62f, 1.45f);
+                    // (F1 lead 24: the dark rock paint left them near black in the dim arena; lifted to a lit earth floor)
+                    t.AlbedoColor = new Color(Mathf.Max(pale.R, WgSlabLit.R), Mathf.Max(pale.G, WgSlabLit.G), Mathf.Max(pale.B, WgSlabLit.B), pale.A);
                     m.SurfaceSetMaterial(si, t);
                 }
             return m;
@@ -808,6 +813,8 @@ public partial class BattleFx
     {
         var rk = WgRockNext();
         if (rk == null || wgSlabs == null) return;
+        // (F1 lead 24: the largest side of a slab, widening included, never passes WgSlabMax, so they stay smaller than a wolf)
+        len = Mathf.Min(len, WgSlabMax / Mathf.Max(1f, wide));
         int m = (int)(R() * wgSlabs.Length * 0.999f);
         rk.N.Mesh = wgSlabs[m];
         var outw = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
