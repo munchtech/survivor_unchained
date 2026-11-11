@@ -469,10 +469,10 @@ public partial class OrbView : Node3D, IOrb
     {
         this.size = (float)size;
         var c = new Color(color);
-        if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--heart-old") >= 0 || !LoadHeart())
+        if (SurvivorUnchained.Args.Has("heart-old") || !LoadHeart())
         {
             // (--heart-old-k K: its size times K, as the before was drawn: c03's heart was 0.11 before E7c, 0.05 now: K 2.2)
-            if (Array.IndexOf(OS.GetCmdlineUserArgs(), "--heart-old") >= 0) size *= SurvivorUnchained.Args.Num("heart-old-k", 1);
+            if (SurvivorUnchained.Args.Has("heart-old")) size *= SurvivorUnchained.Args.Num("heart-old-k", 1);
             stone = new StandardMaterial3D
             {
                 AlbedoColor = c.Darkened(0.7f), Metallic = 0.35f, Roughness = 0.12f,
@@ -569,6 +569,7 @@ public partial class OrbView : Node3D, IOrb
 
     static IEnumerable<(string, float)> Tries()
     {
+        if (!SurvivorUnchained.Args.Dev) yield break;   // (a dev switch: never in a release build, SU-007)
         var a = OS.GetCmdlineUserArgs();
         int i = Array.IndexOf(a, "--heart-try");
         if (i < 0 || i + 1 >= a.Length) yield break;

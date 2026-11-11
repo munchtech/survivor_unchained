@@ -351,9 +351,11 @@ public partial class PauseScreen : Overlay
         col.AddChild(Kit.RuleH());
         menu.Items.Clear();
         menu.Add("Resume", G.CloseOverlay);
-        // Nothing is kept of an arena until it is over; once won, it can be left.
+        // Nothing is kept of an arena or a story's night until it is over; a won arena can be left.
         if (G.Zone is Play.Zones.ArenaRun ar) { if (ar.Won) menu.Add("Leave the arena", () => { G.CloseOverlay(); ar.Leave(); }); }
-        else menu.Add("Save", () => { G.Save("manual"); G.Toast(new Toast(ToastKind.World, "Journey saved")); });
+        else if (G.Zone is not Play.Zones.StoryNight)
+            // (a failed write toasts its own warning)
+            menu.Add("Save", () => { if (G.Save("manual") == Play.Game.SaveOutcome.Saved) G.Toast(new Toast(ToastKind.World, "Journey saved")); });
         menu.Add("Settings", () => { panel = panel == "settings" ? "" : "settings"; Refresh(); });
         menu.Add("Controls", () => { panel = panel == "controls" ? "" : "controls"; Refresh(); });
         menu.Add("Credits and licences", G.Credits);
@@ -427,8 +429,12 @@ public partial class RestScreen : Overlay
 
     public RestScreen(Game g) : base(g) { }
 
-    public void Report(List<string> lines) { report = lines; Refresh(); }
+    public void Report(List<string> lines) { report = lines; Resting = false; Refresh(); }
     public bool Reporting => report != null;
+    /// <summary>The night is being slept (the fade down to the morning's report): every pick and
+    /// Cancel is refused until the report shows, so a night is paid for and passed once.</summary>
+    public bool Resting;
+    public override bool Dismissable => !Resting;
 
     /// <summary>Where the words sit about her (she stands at the screen's middle): what is said
     /// ends above her head, the choices begin under her feet.</summary>
@@ -512,7 +518,7 @@ public partial class RestScreen : Overlay
     Control Choice(string title, string text, string? price, string? refused, Action go, bool primary, string id)
     {
         int n = picks.Count;
-        picks.Add(() => { if (refused == null) go(); else Sound.Sfx.Deny(); });
+        picks.Add(() => { if (Resting) return; if (refused == null) go(); else Sound.Sfx.Deny(); });
         bool pad = Controls.Instance.UsingPad;
         var ink = refused != null ? Quiet : primary ? Style.EmberHi : Ink;
         var b = new Button { FocusMode = FocusModeEnum.None, Flat = true, MouseDefaultCursorShape = refused != null ? CursorShape.Forbidden : CursorShape.PointingHand };
@@ -589,6 +595,7 @@ public partial class RestScreen : Overlay
 
     public override bool Key(Act a)
     {
+        if (Resting) return true;
         if (report != null)
         {
             if (a is Act.Confirm or Act.Cancel or Act.Pause) { G.FinishRest(); return true; }

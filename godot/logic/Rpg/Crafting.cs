@@ -225,7 +225,9 @@ public static partial class Crafting
     public static int Cap(ItemInstance it) => Math.Clamp(it.Rarity, 0, 3);
     /// <summary>The grade a worked-in affix enters at: the piece's own quality lifts it.</summary>
     public static int EntryGrade(ItemInstance it) => Math.Clamp(it.Rarity - 2, 0, 3);
-    public static string Grade(int tier) => tier switch { 0 => "I", 1 => "II", 2 => "III", 3 => "IV", _ => "V" };
+    /// <summary>A grade's numeral: I to V by the forge (V the bright), VI only a ruler's Mark (RulerMark: SU-026).</summary>
+    public static string Grade(int tier) => GradeNumerals[Math.Clamp(tier, 0, GradeNumerals.Length - 1)];
+    static readonly string[] GradeNumerals = ["I", "II", "III", "IV", "V", "VI"];
     /// <summary>The bright grade (V): past every forge, given only by the slurry (design 5.1, 9).</summary>
     public const int Bright = 4;
 

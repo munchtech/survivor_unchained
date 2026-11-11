@@ -81,8 +81,8 @@ public sealed class Settings
     {
         // (a picture of the notice never unsets the owner's own answer)
         if (Args.Has("adults") || Args.Has("clip")) return;
-        using var f = FileAccess.Open(File, FileAccess.ModeFlags.Write);
-        f?.StoreString(Core.Json.Write(this));
+        // (written beside, then moved over: a failed write keeps the old settings, SU-010)
+        if (!Core.AtomicFile.Write(ProjectSettings.GlobalizePath(File), Core.Json.Write(this))) GD.PushWarning("settings: could not be saved");
     }
 
     /// <summary>How much blood and how much of a body comes apart (1, 0.35, 0).</summary>
