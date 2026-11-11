@@ -303,6 +303,7 @@ public partial class Hits : Node3D
         numA[i] = color.A;
         numPunch[i] = 1;
         clearFrom[i] = NotClearing;
+        bornFrame[i] = Engine.GetFramesDrawn();
         l.Scale = 1;
         // (F1 27: a placed blow number is already over its victim, away from her: no jitter)
         at = ClearOfNames(placed ? at : at + new Vector3(rng.RandfRange(-0.3f, 0.3f), 0, 0), text, size);

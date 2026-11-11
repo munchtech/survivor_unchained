@@ -202,6 +202,77 @@ public static class FeelRules
         return best;
     }
 
+    /// <summary>F1 lead 30 (judge n, m5b/m4: the mass total "501" carried ~250 px up the frame by the launched search,
+    /// "1763" ~200 px below-left of its five felled over the living pack): the furthest a mass kill's total box stands
+    /// off the felled bodies' box (px at 1080, the gap between the boxes, at its birth).</summary>
+    public const float MassReach = 80;
+
+    /// <summary>The gap between two boxes (px; 0 where they meet).</summary>
+    public static float BoxGap(float ax0, float ay0, float ax1, float ay1, float bx0, float by0, float bx1, float by1)
+    {
+        float dx = Math.Max(0, Math.Max(bx0 - ax1, ax0 - bx1)), dy = Math.Max(0, Math.Max(by0 - ay1, ay0 - by1));
+        return MathF.Sqrt(dx * dx + dy * dy);
+    }
+
+    /// <summary>How many of `flights` a number's box at (px, py) meets, lengthened upward by its rise and grown by FlightGap
+    /// (a felled body that is not thrown is a Flight with no throw: its box).</summary>
+    public static int FlightsCrossed(float px, float py, float w, float h, IReadOnlyList<Flight>? flights, float scale = 1, float rise = 0)
+    {
+        if (flights == null) return 0;
+        float g = FlightGap * scale, x0 = px - w / 2 - g, x1 = px + w / 2 + g, y0 = py - h / 2 - rise - g, y1 = py + h / 2 + g;
+        int n = 0;
+        foreach (var f in flights) if (CrossesFlight(x0, y0, x1, y1, f)) n++;
+        return n;
+    }
+
+    /// <summary>F1 lead 30: where a mass kill's one total goes (its box centre, px, y down): it stays by its kill. Preferred
+    /// is NumberSpot over the felled bodies' box (`felled`: NumberOver over its top, NumberAside away from her); among the
+    /// spots on a 10 px grid whose box stays within MassReach of `felled`, the one meeting the fewest `flights` (every
+    /// launched body's whole flight and every felled body's box) takes it, nearest the preferred on a tie. Never on her: a
+    /// spot meeting a `keep` rect (her body, the strap, each grown by its gap) or past `bounds` (the screen's room for a
+    /// number: left, top, right, bottom) loses to any that does not. The across-the-throw search (NumberSpotLaunched) is a
+    /// single launched victim's: it carried a total up to 250 px off its kill.</summary>
+    public static (float X, float Y) MassTotalSpot((float X0, float Y0, float X1, float Y1) felled, IReadOnlyList<Flight>? flights,
+        float herX, float w, float h, float scale = 1, float rise = 0,
+        IReadOnlyList<(float X0, float Y0, float X1, float Y1)>? keep = null, (float X0, float Y0, float X1, float Y1)? bounds = null,
+        float reach = MassReach)
+    {
+        var (fx0, fy0, fx1, fy1) = felled;
+        var pref = NumberSpot(fx0, fy0, fx1, fy1, herX, w, h, scale);
+        float r = reach * scale, step = 10 * scale, g = FlightGap * scale;
+        int Cost(float px, float py)
+        {
+            int n = FlightsCrossed(px, py, w, h, flights, scale, rise);
+            float x0 = px - w / 2 - g, x1 = px + w / 2 + g, y0 = py - h / 2 - rise - g, y1 = py + h / 2 + g;
+            if (keep != null) foreach (var k in keep) if (x1 > k.X0 && x0 < k.X1 && y1 > k.Y0 && y0 < k.Y1) n += 1000;
+            if (bounds is { } b && (px - w / 2 < b.X0 || py - h / 2 - rise < b.Y0 || px + w / 2 > b.X1 || py + h / 2 > b.Y1)) n += 1000;
+            return n;
+        }
+        (float X, float Y) best = pref;
+        int least = BoxGap(pref.X - w / 2, pref.Y - h / 2, pref.X + w / 2, pref.Y + h / 2, fx0, fy0, fx1, fy1) <= r ? Cost(pref.X, pref.Y) : int.MaxValue;
+        float bestD = 0;
+        if (least == 0) return pref;
+        // (the grid is laid from the preferred spot, so the preferred spot itself is on it)
+        int nx0 = (int)MathF.Floor((fx0 - r - w / 2 - pref.X) / step), nx1 = (int)MathF.Ceiling((fx1 + r + w / 2 - pref.X) / step);
+        int ny0 = (int)MathF.Floor((fy0 - r - h / 2 - pref.Y) / step), ny1 = (int)MathF.Ceiling((fy1 + r + h / 2 - pref.Y) / step);
+        for (int iy = ny0; iy <= ny1; iy++)
+            for (int ix = nx0; ix <= nx1; ix++)
+            {
+                float px = pref.X + ix * step, py = pref.Y + iy * step;
+                if (BoxGap(px - w / 2, py - h / 2, px + w / 2, py + h / 2, fx0, fy0, fx1, fy1) > r) continue;
+                int n = Cost(px, py);
+                float d = (px - pref.X) * (px - pref.X) + (py - pref.Y) * (py - pref.Y);
+                if (n < least || (n == least && d < bestD)) { least = n; best = (px, py); bestD = d; }
+            }
+        return best;
+    }
+
+    /// <summary>F1 lead 30 (judge n fix 1): when her kill window opens at frame `open`, a number clears off the kill only if
+    /// it was born on an earlier frame (`born` &lt; `open`) and stands within KillClearReach: the total of the kill that
+    /// opens the window is never cleared by it.</summary>
+    public static bool ClearsAtOpen(long born, long open, float x, float y, float kx, float ky, float scale = 1) =>
+        born < open && KillClears(x, y, kx, ky, scale);
+
     /// <summary>The lowest a number's middle stands (px at 1080): the HUD's band starts under it (judge r5: "315" on the
     /// health orb), and the gap it keeps over a HUD part.</summary>
     public const float NumberFloor = 880, HudGap = 8;

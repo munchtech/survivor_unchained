@@ -252,4 +252,76 @@ public class FeelRulesTests
         Assert.Equal(0f, FeelRules.KillClear(3));
         Assert.Equal(0f, FeelRules.KillClear(9));
     }
+
+    [Fact]
+    public void AKillWindowNeverClearsTheTotalOfTheKillThatOpensIt()
+    {
+        // F1 lead 30 (judge n fix 1): only numbers of earlier frames clear; the new total is born on the opening frame
+        Assert.False(FeelRules.ClearsAtOpen(500, 500, 960, 500, 960, 540));     // the new total, right over the kill
+        Assert.True(FeelRules.ClearsAtOpen(499, 500, 960, 500, 960, 540));      // an earlier step's number there
+        Assert.False(FeelRules.ClearsAtOpen(499, 500, 1300, 300, 960, 540));    // an earlier one out of reach
+    }
+
+    static float GapToFelled((float X, float Y) p, float w, float h, (float X0, float Y0, float X1, float Y1) f) =>
+        FeelRules.BoxGap(p.X - w / 2, p.Y - h / 2, p.X + w / 2, p.Y + h / 2, f.X0, f.Y0, f.X1, f.Y1);
+
+    [Fact]
+    public void AMassTotalStandsOverItsFelledWhenNothingIsInTheWay()
+    {
+        const float w = 130, h = 60;
+        var felled = (530f, 160f, 830f, 400f);                                  // judge n m4: the five felled
+        var bodies = new[] { new FeelRules.Flight(530, 160, 640, 300, 0, 0), new FeelRules.Flight(700, 250, 830, 400, 0, 0) };
+        var p = FeelRules.MassTotalSpot(felled, bodies, 1100, w, h, 1, 30);
+        Assert.Equal(FeelRules.NumberSpot(530, 160, 830, 400, 1100, w, h), p);   // NumberOver over the box, away from her
+        Assert.Equal(FeelRules.NumberOver, GapToFelled(p, w, h, felled), 0.01f);
+        Assert.Equal(0, FeelRules.FlightsCrossed(p.X, p.Y, w, h, bodies, 1, 30));
+    }
+
+    [Fact]
+    public void AMassTotalIsNotCarriedOffItsKillByAFanOfThrows()
+    {
+        // judge n m5b: eight felled thrown up-left in a fan; the across-the-throw search took "501" ~250 px up the frame
+        const float w = 110, h = 50, rise = 30;
+        var felled = (600f, 380f, 900f, 580f);
+        var fan = new FeelRules.Flight[8];
+        for (int i = 0; i < 8; i++)
+        {
+            float x = 600 + i * 37, y = 380 + (i % 3) * 60;
+            fan[i] = new FeelRules.Flight(x, y, x + 60, y + 110, -140 - i * 15, -150 + i * 10);
+        }
+        var p = FeelRules.MassTotalSpot(felled, fan, 1200, w, h, 1, rise);
+        Assert.True(GapToFelled(p, w, h, felled) <= FeelRules.MassReach);
+        // the fewest crossed of every spot in reach on its 10 px grid (laid from the preferred spot)
+        var pref = FeelRules.NumberSpot(600, 380, 900, 580, 1200, w, h);
+        int got = FeelRules.FlightsCrossed(p.X, p.Y, w, h, fan, 1, rise);
+        for (int iy = -40; iy <= 40; iy++)
+            for (int ix = -40; ix <= 40; ix++)
+            {
+                float x = pref.X + ix * 10, y = pref.Y + iy * 10;
+                if (GapToFelled((x, y), w, h, felled) <= FeelRules.MassReach)
+                    Assert.True(got <= FeelRules.FlightsCrossed(x, y, w, h, fan, 1, rise));
+            }
+    }
+
+    [Fact]
+    public void AMassTotalKeepsOffHerAndInsideTheScreenStillByItsKill()
+    {
+        const float w = 120, h = 60;
+        var felled = (900f, 300f, 1100f, 450f);
+        var pref = FeelRules.NumberSpot(900, 300, 1100, 450, 700, w, h);
+        var her = new[] { (pref.X - 120, pref.Y - 80, pref.X + 80, 1000f) };    // her body over the preferred spot
+        var p = FeelRules.MassTotalSpot(felled, null, 700, w, h, 1, 20, her);
+        Assert.True(GapToFelled(p, w, h, felled) <= FeelRules.MassReach);
+        Assert.True(p.X - w / 2 - FeelRules.FlightGap >= her[0].Item3 || p.Y + h / 2 + FeelRules.FlightGap <= her[0].Item2
+            || p.X + w / 2 + FeelRules.FlightGap <= her[0].Item1);
+        // felled at the top of the screen: the total stays under the top band, beside its kill, not lifted off it
+        var high = (900f, 90f, 1100f, 250f);
+        var q = FeelRules.MassTotalSpot(high, null, 700, w, h, 1, 20, null, (0f, 118f, 1920f, 1000f));
+        Assert.True(q.Y - h / 2 - 20 >= 118);
+        Assert.True(GapToFelled(q, w, h, high) <= FeelRules.MassReach);
+        // at 4K the reach doubles with the px
+        var f4 = (1800f, 600f, 2200f, 900f);
+        var p4 = FeelRules.MassTotalSpot(f4, null, 1400, 2 * w, 2 * h, 2);
+        Assert.Equal(2 * FeelRules.NumberOver, GapToFelled(p4, 2 * w, 2 * h, f4), 0.01f);
+    }
 }

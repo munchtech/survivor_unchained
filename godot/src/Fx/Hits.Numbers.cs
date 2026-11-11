@@ -31,6 +31,10 @@ public partial class Hits
     const long NotClearing = long.MinValue;
     readonly long[] clearFrom = FillClear();
     static long[] FillClear() { var a = new long[48]; Array.Fill(a, NotClearing); return a; }
+    /// <summary>Per pool label: the drawn frame it was shown (F1 lead 30: a kill window clears only earlier frames' numbers).</summary>
+    readonly long[] bornFrame = new long[48];
+    /// <summary>This frame's felled, in felledAt's order.</summary>
+    readonly List<int> felledIds = new();
 
     /// <summary>A body felled this frame (Ev.Kill), at chest height; `throwBy`: a launch's whole throw on the ground
     /// (m), its hop `hop` (m); null when it is not thrown.</summary>
@@ -38,6 +42,7 @@ public partial class Hits
     {
         FelledNow.Add(enemy);
         felledAt.Add(at);
+        felledIds.Add(enemy);
         if (throwBy is { } t) launchNow[enemy] = (at, t, hop);
     }
     /// <summary>F1 r5: the mass kill's one number and its drawn frame: the blows of the next FeelRules.MassTail frames
@@ -136,6 +141,7 @@ public partial class Hits
             FelledNow.Clear();
             launchNow.Clear();
             felledAt.Clear();
+            felledIds.Clear();
         }
         if (waiting.Count == 0) { Out(0, -1, 0); return; }
         if (massLabel >= 0 && FeelRules.MassTail(now - massFrame) && numbers[massLabel].T < 1 && tallyOf[massLabel] != int.MinValue)
@@ -160,6 +166,7 @@ public partial class Hits
                 Reclear(massLabel);
                 numbers[massLabel] = (numbers[massLabel].Label, Mathf.Min(numbers[massLabel].T, 0.25f));
                 if (mass) massFrame = now;
+                if (NumTrace) GD.Print($"[mass-fold] f={now} label={massLabel} sum={(int)Math.Round(mt.Sum)} box={BoxText(massLabel)}");
             }
             if (waiting.Count == 0) { Out(0, massLabel, mt.Sum); return; }
         }
@@ -176,7 +183,8 @@ public partial class Hits
             t.Heavy |= w.MaxHp > 0 && t.Sum > w.MaxHp * 0.2;
             Restyle(li, t);
             // (F1 r6: its own target thrown now: the number moves off the flight, as a new one would be placed)
-            if (w.Tint == null && tallyOf[li] == w.Target && launchNow.ContainsKey(w.Target))
+            // (F1 lead 30: never a mass total: it stays by its kill)
+            if (w.Tint == null && li != massLabel && tallyOf[li] == w.Target && launchNow.ContainsKey(w.Target))
                 numbers[li].Label.GlobalPosition = Spot(w.At, her, numbers[li].Label.Text, numbers[li].Label.FontSize, w.Target);
             Reclear(li);
             numbers[li] = (numbers[li].Label, Mathf.Min(numbers[li].T, 0.25f));
@@ -224,27 +232,37 @@ public partial class Hits
         }
         // F1 r6 (judge r5 m5c: "3783" and "928" stood over a new kill): her kill window opens: the numbers of earlier
         // steps near the kill clear off it (gone by N + 3), and the total is placed as if they were gone.
+        // (F1 lead 30: and the felled bodies' box on screen, which the new total keeps by: FeelRules.MassTotalSpot)
+        (float X0, float Y0, float X1, float Y1)? felledBox = null;
         if (mass && felledAt.Count > 0 && GetViewport()?.GetCamera3D() is { } kcam)
         {
             float kk = GetViewport().GetVisibleRect().Size.Y / 1080f, kx = 0, ky = 0;
             int kn = 0;
             foreach (var p in felledAt)
-                if (!kcam.IsPositionBehind(p)) { var sp = kcam.UnprojectPosition(p); kx += sp.X; ky += sp.Y; kn++; }
+                if (!kcam.IsPositionBehind(p))
+                {
+                    var sp = kcam.UnprojectPosition(p); kx += sp.X; ky += sp.Y; kn++;
+                    var (bx0, by0, bx1, by1) = BodyBox(kcam, p);
+                    felledBox = felledBox is { } fb ? (Mathf.Min(fb.X0, bx0), Mathf.Min(fb.Y0, by0), Mathf.Max(fb.X1, bx1), Mathf.Max(fb.Y1, by1)) : (bx0, by0, bx1, by1);
+                }
             if (kn > 0)
             {
                 kx /= kn; ky /= kn;
                 int cleared = 0;
+                var which = new List<int>();
                 for (int k = 0; k < numbers.Count; k++)
                 {
                     var l = numbers[k].Label;
                     if (numbers[k].T >= 1 || !l.Visible || clearFrom[k] != NotClearing || kcam.IsPositionBehind(l.GlobalPosition)) continue;
                     var sp = kcam.UnprojectPosition(l.GlobalPosition);
-                    if (!SurvivorUnchained.View.FeelRules.KillClears(sp.X, sp.Y, kx, ky, kk)) continue;
+                    // (only numbers of earlier frames: the total of the kill opening the window is never among them)
+                    if (!SurvivorUnchained.View.FeelRules.ClearsAtOpen(bornFrame[k], now, sp.X, sp.Y, kx, ky, kk)) continue;
                     clearFrom[k] = now;
                     if (k == massLabel) massLabel = -1;
                     cleared++;
+                    which.Add(k);
                 }
-                if (NumTrace) GD.Print($"[num-clear] f={now} kill=({kx:0},{ky:0}) felled={kn} cleared={cleared}");
+                if (NumTrace) GD.Print($"[num-clear] f={now} kill=({kx:0},{ky:0}) felled={kn} cleared={cleared} labels={string.Join(",", which)}");
             }
         }
         int live = 0;
@@ -274,7 +292,14 @@ public partial class Hits
             }
             var t = new Tallied { Target = w.Target, Sum = w.Amount, Born = clock, Crit = w.Crit, Heavy = w.MaxHp > 0 && w.Amount > w.MaxHp * 0.2, Tint = w.Tint };
             bool blow = w.Tint == null;
-            var spot = blow ? Spot(at, her, ((int)Math.Round(t.Sum)).ToString(), HitsPlace.NumberSize(t.Crit, t.Heavy), w.Target) : Beside(at);
+            string text = ((int)Math.Round(t.Sum)).ToString();
+            int tsize = HitsPlace.NumberSize(t.Crit, t.Heavy);
+            // F1 lead 30 (judge n, m5b/m4): the step's one total stays by its kill: over the felled bodies' box, off every
+            // flight and her (MassSpot), not by the blow it folds into (m4: that blow could be on a living body)
+            bool total = mass && blow && massFrame != now && felledBox != null;
+            int crossed = 0;
+            var spot = total ? MassSpot(felledBox!.Value, w.At, her, text, tsize, out crossed)
+                : blow ? Spot(at, her, text, tsize, w.Target) : Beside(at);
             if (!(mass && blow) && Crowded(spot)) { ntCrowded++; continue; }
             int i = Show(spot, "", Colors.White, 46, blow);
             tallies[i] = t;
@@ -292,6 +317,12 @@ public partial class Hits
             {
                 massLabel = i; massFrame = now;
                 HideUnder(i);
+                if (NumTrace && GetViewport()?.GetCamera3D() is { } tc)
+                {
+                    string pick = tc.IsPositionBehind(w.At) ? "behind" : $"({tc.UnprojectPosition(w.At).X:0},{tc.UnprojectPosition(w.At).Y:0})";
+                    string fb = felledBox is { } q ? $"({q.X0:0},{q.Y0:0},{q.X1:0},{q.Y1:0})" : "none";
+                    GD.Print($"[mass-spot] f={now} label={i} text={text} pick={w.Target} felledPick={(FelledNow.Contains(w.Target) ? 1 : 0)} pickAt={pick} felled={fb} n={felledAt.Count} launched={launchNow.Count} total={(total ? 1 : 0)} crossed={crossed} box={BoxText(i)}");
+                }
             }
             shown++;
             live++;
@@ -373,6 +404,52 @@ public partial class Hits
         var (x0, y0, x1, y1) = BodyBox(cam, at);
         var (sx, sy) = FeelRules.NumberSpot(x0, y0, x1, y1, herX, nb.Size.X, nb.Size.Y, k);
         return cam.ProjectPosition(new Vector2(sx, sy), depth);
+    }
+
+    /// <summary>F1 lead 30: a mass kill's total placed by its kill (FeelRules.MassTotalSpot on the felled bodies' screen box
+    /// `felled`): off every flight of this frame's launched and every felled body, off her body and the strap, inside the
+    /// screen's room, at the felled bodies' mean depth. `crossed`: the flights and bodies its box still meets.</summary>
+    Vector3 MassSpot((float X0, float Y0, float X1, float Y1) felled, Vector3 at, Vector3? her, string text, int size, out int crossed)
+    {
+        crossed = 0;
+        var cam = GetViewport()?.GetCamera3D();
+        if (cam == null || cam.IsPositionBehind(at)) return Beside(at);
+        var vs = GetViewport().GetVisibleRect().Size;
+        float k = vs.Y / 1080f;
+        float herX = her is { } h && !cam.IsPositionBehind(h) ? cam.UnprojectPosition(h).X : float.MinValue;
+        var flights = new List<FeelRules.Flight>();
+        for (int j = 0; j < felledAt.Count; j++)
+        {
+            if (cam.IsPositionBehind(felledAt[j])) continue;
+            if (launchNow.TryGetValue(felledIds[j], out var ln)) { if (FlightOf(cam, ln) is { } f) flights.Add(f); }
+            else { var (x0, y0, x1, y1) = BodyBox(cam, felledAt[j]); flights.Add(new FeelRules.Flight(x0, y0, x1, y1, 0, 0)); }
+        }
+        float depth = 0;
+        int dn = 0;
+        foreach (var p in felledAt) if (!cam.IsPositionBehind(p)) { depth += (p - cam.GlobalPosition).Dot(-cam.GlobalBasis.Z); dn++; }
+        depth = dn > 0 ? depth / dn : (at - cam.GlobalPosition).Dot(-cam.GlobalBasis.Z);
+        var mid = cam.ProjectPosition(new Vector2((felled.X0 + felled.X1) / 2, felled.Y0), depth);
+        if (NumBox(cam, mid, text, size) is not Rect2 nb) return Beside(at);
+        float rise = Mathf.Max(cam.UnprojectPosition(mid).Y - cam.UnprojectPosition(mid + Vector3.Up * RiseByN12).Y,
+            cam.UnprojectPosition(mid).Y - cam.UnprojectPosition(mid + Vector3.Up * (float)HitsPlace.RiseIn(HitsPlace.Young)).Y);
+        var keep = new List<(float, float, float, float)>(2);
+        static void Keep(List<(float, float, float, float)> to, Rect2? r, float gap) { if (r is Rect2 q) to.Add((q.Position.X - gap, q.Position.Y - gap, q.End.X + gap, q.End.Y + gap)); }
+        Keep(keep, HerBox(cam), HitsPlace.BodyGap * k);
+        Keep(keep, SurvivorUnchained.Ui.HerLight.Live?.Under.OnScreen, HitsPlace.StrapGap * k);
+        float top = Mathf.Max(vs.Y * 0.05f, SurvivorUnchained.Ui.GameHud.TopClear + 34);
+        var bounds = (vs.X * 0.03f, top, vs.X * 0.97f, FeelRules.NumberFloor * k + nb.Size.Y / 2);
+        var (x, y) = FeelRules.MassTotalSpot(felled, flights, herX, nb.Size.X, nb.Size.Y, k, Mathf.Max(0, rise), keep, bounds);
+        crossed = FeelRules.FlightsCrossed(x, y, nb.Size.X, nb.Size.Y, flights, k, Mathf.Max(0, rise));
+        return cam.ProjectPosition(new Vector2(x, y), depth);
+    }
+
+    /// <summary>A pool label's box on screen as text "(x0,y0,x1,y1)" for the traces.</summary>
+    string BoxText(int i)
+    {
+        var cam = GetViewport()?.GetCamera3D();
+        var l = numbers[i].Label;
+        if (cam == null || NumBox(cam, l.GlobalPosition, l.Text, l.FontSize) is not Rect2 b) return "none";
+        return $"({b.Position.X:0},{b.Position.Y:0},{b.End.X:0},{b.End.Y:0})";
     }
 
     /// <summary>How far a number rises (m) over a kill's N..N+12 (Hits._Process: 1.4 m/s easing out over 0.75 s).</summary>
