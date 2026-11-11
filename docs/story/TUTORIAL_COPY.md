@@ -18,12 +18,12 @@ The copy and the moments for the first hour's teaching (`docs/design/ARPG.md` se
 | # | Id | Fires | Points at | Kind | Title | Line |
 |---|---|---|---|---|---|---|
 | A1 | `move` | `Wake`, 1.2 s after C01 hands back, she stands by the fire | the movement keys' chip; no world point | arrow | Move | `Key(move)`: walk. The road runs north, out of the firelight. |
-| A2 | `swing` | the lone drowned one (`n_lone`) awake, within 7 m and well on screen | the Skill1 seat, and the drowned one ringed | freeze, answer Skill1 | Swing | Hold `Key(Skill1)` to swing at what's under the cursor. You walk as you swing. |
+| A2 | `swing` | any foe awake within 7 m and well on screen, in the Wake or the Rising (the first of C01's risen; not only `n_lone`) | the Skill1 seat, and the drowned one ringed | freeze, answer Skill1 | Swing | Hold `Key(Skill1)` to swing at what's under the cursor. You walk as you swing. |
 | A3 | `ember_ground` | the lone one's ember, held at rest on the ground until A3 closes (every kill's ember rests 0.35 s, then flies to her and pays her experience as it lands) | the ember stone | freeze | Ember | The light the dead carry. It comes to you, and it makes you stronger. |
 | A3b | `ember_ring` | the first ember landed, 0.6 s after A3 closes | the coin's experience ring | arrow | Your level | Ember fills this ring. When it's full, you rise a level. |
-| A4 | `resolve` | the three on the road (`n_three`), her first landed swing on them | the Resolve hair (the Drowned Girl's figure) | arrow | Resolve | Every blow that lands builds Resolve. Your skills burn it. |
-| A4b | `groundbreaker` | Resolve at or past Groundbreaker's cost, two or more of the three within its reach, 2 s after A4 | the Skill2 seat, and the pack under the cursor ringed | freeze, answer Skill2 | Groundbreaker | When Resolve is full, it heaves itself at the pack. `Key(Skill2)`: heave now. |
-| A5 | `captain` | the first pack's captain (`n_first`) awake, in the open, within 14 m | the captain (its plate and its body) | freeze | Captain | Packs travel with a captain. The captain carries the better gear. |
+| A4 | `resolve` | her first landed blows, after A2 (on any foe) | the Resolve hair (the Drowned Girl's figure) | arrow | Resolve | Every blow that lands builds Resolve. Your skills burn it. |
+| A4b | `groundbreaker` | Resolve at or past Groundbreaker's cost, any two or more foes within its reach before the Intro, 2 s after A4 | the Skill2 seat, and the pack under the cursor ringed | freeze, answer Skill2 | Groundbreaker | When Resolve is full, it heaves itself at the pack. `Key(Skill2)`: heave now. |
+| A5 | `captain` | the nearest woken pack's live captain, in the open, within 14 m | the captain (its plate and its body) | freeze | Captain | Packs travel with a captain. The captain carries the better gear. |
 | A5a | `lamp` | **skills-p7's seam:** the first level-up card offering a lamp (Third Blow), once the card is up | Sunder's wick on the card, before and after | on the card | A lamp | Each level lights a lamp on a skill. This one makes every third swing heavy. |
 | A6 | `rare` | **loot-m9's seam:** the captain's first Rare on the ground with its beam, nothing hostile within 8 m | the Rare's label | arrow | A Rare | That beam is a Rare: rarer and better. Click its name to take it. |
 | A6b | `filter` | **loot-m9's seam:** 3 s after the Rare is taken, with three or more common drops on the ground | the filter key's chip, then the ground labels | arrow | The filter | `Key(filter)`: hide what you don't want. Rares and better always show. |
@@ -54,6 +54,6 @@ Then, as play resumes at dawn, the existing banner: **The Flare goes out** over 
 - *Your pack:* "What you find, you keep. Press `Key(inventory)` to open your *pack* and wear the jerkin." (the ember-won't-outlast-the-night clause goes)
 - *Shieldmen:* "Their *raised shields* stop your blows. Strike from the side, or up close."
 - *Rested* (the post's Rest): "{post}. Fall, and you rise here."
-- *The tally:* "The dead you've put down, and your gold." (if the HUD still shows the tally)
+- *The tally:* "The dead you've put down, and your gold." (OUT of the demo, 10 Nov: the ARPG HUD has no tally chip; back with that UI row, Prologue.TallyOn)
 
 **Retired (code removed or left inert behind the draft flag):** Move ("your weapon strikes on its own"), Rising (F2), A skill (F4), Your skill (F5), A great blessing (F3), The ember's count (L1), Red line (F7: A7 teaches the red ground once for every telegraph), Elites (A8 says it), Form (F6b: the art riding the dash), the art at the Grave-Caller (F8: A10 replaces it, and she has no Flare there), What the night taught you (F12), By day ("the ember sleeps"; the day is the same game), the dawn card and Douse's "The ember goes out" announcement (the page and the Flare banner replace them).

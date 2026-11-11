@@ -264,7 +264,10 @@ public sealed partial class Prologue : ZoneRuntime
     /// <summary>A lesson's distance from any other callout, line or tip (au1 item 14), both ways.</summary>
     const double LessonQuiet = 4;
     /// <summary>The lessons the road's words wait for while they wait their turn.</summary>
-    static readonly string[] Lessons = ["tally"];
+    static readonly string[] Lessons = TallyOn ? ["tally"] : [];
+    /// <summary>(M6 l4, main's ruling 10 Nov) The tally's lesson is out of the demo: the ARPG HUD has no kills-and-gold
+    /// chip (hud.TallyArea null) and no new HUD area comes now. Back on with that UI row (docs/handoff/experience.md).</summary>
+    public const bool TallyOn = false;
 
     /// <summary>Words for the road's line: said in their turn (dropped if `still` says their moment has gone).</summary>
     void Words(Action say, Func<bool>? still = null) => words.Enqueue((say, still));
@@ -506,7 +509,7 @@ public sealed partial class Prologue : ZoneRuntime
                 { Quiet = LessonQuiet, Mark = "level", Patience = 30, Still = () => Now is Stage.Rising or Stage.Road });
         // The tally (the slain and the gold): with the first gold in hand (the wagon's spilled coins), before
         // the ditch rises (the trap waits for it) or in a calm later, never in a fight. The road's words wait for it (PaceWords).
-        if (B.GoldGained > 0 && TallyCalm())
+        if (TallyOn && B.GoldGained > 0 && TallyCalm())
             G.Teach(new Callout("tally", CalloutKind.Arrow, "The tally", "The dead you've put down, and your gold.", Aim.At("tally"))
                 { Quiet = LessonQuiet, Mark = "gold", Patience = 30, Still = TallyCalm });
         // (F6 the volley's dash, F7 the red line and F8 the art at the Grave-Caller retired: A7, A8 and A10, ArpgCallouts)
