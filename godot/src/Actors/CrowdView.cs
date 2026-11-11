@@ -119,6 +119,9 @@ public partial class CrowdView : Node3D
 
     const double RecoilM = SurvivorUnchained.View.FeelRules.RecoilM, RecoilOut = 0.10, RecoilHold = 0.05, RecoilBack = 0.35;
     static readonly bool StruckTrace = SurvivorUnchained.Args.Has("struck-trace");
+    /// <summary>The flash slot of a body in the ember look (F1 r5): just over nothing, so the critical's bit is kept
+    /// (vat.gdshaderinc reads the hit kit's flag with it as the ember look and skips the flash's blend).</summary>
+    const float WarmFlash = 0.05f;
 
     /// <summary>A dying body's knockback (m/s) at or over this is carried by its fall (ThrowOf); under it, it falls in place.</summary>
     const double ThrowFrom = 6;
@@ -1022,12 +1025,16 @@ public partial class CrowdView : Node3D
         if (hk.X >= 0) flare = hk.X;
         long framesNow = (long)Engine.GetFramesDrawn();
         bool tinted = alive0 && g.StruckFrame >= 0 && SurvivorUnchained.View.FeelRules.Tinted(framesNow - g.StruckFrame);
-        if (tinted) { hk = new Vector2(Math.Max(hk.X, 0.45f), Math.Max(hk.Y, 1f)); flare = hk.X; }
+        // (F1 r5, own look: the struck tint and the launched glow are the shader's ember look (the hit kit's flag with a
+        // critical's: never both otherwise), light not paint: a pale blend over the paint read as an ice-blue ghost by night)
+        bool warm = false;
+        if (tinted) { hk = new Vector2(WarmFlash, Math.Max(hk.Y, SurvivorUnchained.View.FeelRules.TintWarm)); warm = true; }
         // The kill window (F1 round 5): a launched mass-kill body glows warm; every other rim is held down.
         if (e.State == EnemyState.Dying && g.KillFrame < 0) g.KillFrame = (int)framesNow;
         float lrim = e.State == EnemyState.Dying && e.Launch && e.MassKill ? SurvivorUnchained.View.FeelRules.LaunchRim(framesNow - g.KillFrame) : 0;
-        if (lrim > 0) { hk = new Vector2(Math.Max(hk.X, 0.18f * lrim), Math.Max(hk.Y, lrim)); flare = hk.X; }
+        if (lrim > 0) { hk = new Vector2(WarmFlash, Math.Max(warm ? 0 : hk.Y, lrim)); warm = true; }
         else if (hk.X >= 0) hk.Y *= SurvivorUnchained.View.BattleFx.KillDimNow;
+        if (hk.X >= 0) flare = hk.X;
         if (StruckTrace && g.StruckFrame >= 0)
         {
             int fr = (int)Engine.GetFramesDrawn();
@@ -1039,7 +1046,7 @@ public partial class CrowdView : Node3D
             else g.StruckFrame = -1;
         }
         var xf = new Transform3D(basis, at);
-        crowd.Push(KeyOf(e), xf, role, t, flare, dissolve, frozen, burning, tint, glow, e.LastCrit && !e.LastDot && hk.X < 0, hk.X >= 0 ? Math.Max(hk.Y, 0.001f) : 0, -1,
+        crowd.Push(KeyOf(e), xf, role, t, flare, dissolve, frozen, burning, tint, glow, warm || (e.LastCrit && !e.LastDot && hk.X < 0),hk.X >= 0 ? Math.Max(hk.Y, 0.001f) : 0, -1,
             // (M5 r3) a champion's affix rim (Content/Champions.Look): its body reads at night and in shade
             e.Rank >= 2 && e.RankRim >= 0 ? (float)e.RankRim : -1);
         // (a carried lamp's glass where this frame draws it: BattleFx.Auras sets his light and its glow on it)

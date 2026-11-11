@@ -82,6 +82,8 @@ public static class FeelRules
     /// <summary>The struck tint and a crit victim's warm rim wait for the victim flash (the pool: 3 frames held, 3 fading)
     /// to go: from TintFrom drawn frames after the strike, for TintFor frames.</summary>
     public const int TintFrom = 6, TintFor = 4;
+    /// <summary>The struck tint's strength in the ember look (a launched body's is 1), held down in the kill window.</summary>
+    public const float TintWarm = 0.45f;
     public static bool Tinted(long sinceStruck) => sinceStruck >= TintFrom && sinceStruck < TintFrom + TintFor;
 
     /* ----------------------------------------------------- the numbers -- */
