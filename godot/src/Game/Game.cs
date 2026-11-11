@@ -408,6 +408,11 @@ public partial class Game : Node, IZoneHost
         foreach (var hop in Args.Get("travel")?.Split(',') ?? [])
             if (hop.Split('@') is [var onTo, var after] && double.TryParse(after, System.Globalization.CultureInfo.InvariantCulture, out var secs))
                 Wait(secs, () => Travel(onTo));
+        // --enter ZONE@S: entered S seconds in as a loaded save is, not travelled to (SU-021's check: with
+        // --prepare ZONE@S' just before, the place is still being built ahead).
+        foreach (var hop in Args.Get("enter")?.Split(',') ?? [])
+            if (hop.Split('@') is [var onTo, var after] && double.TryParse(after, System.Globalization.CultureInfo.InvariantCulture, out var secs))
+                Wait(secs, () => { GD.Print($"enter {onTo} (built ahead: {aheadId == onTo})"); EnterWhenBuilt(onTo, null, null, () => GD.Print($"entered {onTo}")); });
         // --cine ID: that cinematic played here at once (pictures of it, its previs),
         // and on into the one it runs on into (its end.next), as the zone plays them.
         // --cine-at T: it begins T seconds in, from play (perf: a start's cost seen apart from the load's).
@@ -942,6 +947,18 @@ public partial class Game : Node, IZoneHost
         else Wait(0, () => WhenBuilt(id, fn));
     }
 
+    /// <summary>EnterZone from outside travel (a save loaded, a fall carried to the Waystation), then `then`. A place
+    /// still being built ahead (the Prologue asks for the Waystation) is finished first over the next frames behind
+    /// the black, as travel waits; never at once in Stage (SU-021: its workers' loads need the main thread's frames,
+    /// and Finish waited for them forever).</summary>
+    void EnterWhenBuilt(string id, string? from, Arrival? at, Action? then = null)
+    {
+        // (behind the black: PumpAhead's faster pace)
+        bool hold = !inTransit && ahead != null && aheadId == id && !ahead.Done;
+        if (hold) inTransit = true;
+        WhenBuilt(id, () => { if (hold) inTransit = false; EnterZone(id, from, at); then?.Invoke(); });
+    }
+
     /// <summary>Later, in real time (a fade, the fall).</summary>
     void Wait(double seconds, Action fn) => GetTree().CreateTimer(seconds, true, false, true).Timeout += fn;
 
@@ -958,13 +975,15 @@ public partial class Game : Node, IZoneHost
             hud.Fade(1, 1.8, "You fell", $"Taken by {killer}");
             Wait(2.4, () =>
             {
-                EnterZone("waystation", "death");
-                Save("death");
-                Wait(1.4, () =>
+                EnterWhenBuilt("waystation", "death", null, () =>
                 {
-                    hud.Fade(0, 2);
-                    inTransit = false;
-                    Wait(1.6, () => Talk("chid"));
+                    Save("death");
+                    Wait(1.4, () =>
+                    {
+                        hud.Fade(0, 2);
+                        inTransit = false;
+                        Wait(1.6, () => Talk("chid"));
+                    });
                 });
             });
         });
