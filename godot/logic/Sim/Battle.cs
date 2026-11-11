@@ -524,7 +524,7 @@ public sealed partial class Battle
     {
         Spatial.Clear();
         foreach (var e in Enemies.Items)
-            if (e.Alive && e.State != EnemyState.Dying && e.State != EnemyState.Burrowed) Spatial.Insert(e.Id, e.X, e.Z);
+            if (e.Alive && e.State != EnemyState.Dying && e.State != EnemyState.Burrowed) Spatial.Insert(e.Id, e.X, e.Z, e.Radius);
     }
 
     /* ============================================================ player == */
@@ -831,7 +831,8 @@ public sealed partial class Battle
     public List<Enemy> HostilesInRadius(double x, double z, double r)
     {
         var output = new List<Enemy>();
-        Spatial.Query(x, z, r, q);
+        // (widened by the largest body: the exact test below counts a body that overlaps the circle, SU-016)
+        Spatial.Query(x, z, r + Spatial.MaxRadius, q);
         foreach (var id in q)
         {
             var e = Enemies.Items[id];
@@ -1540,17 +1541,33 @@ public sealed partial class Battle
     /// blow; but it is not a blow. It is never dodged or blocked, sets off no thorns, and buys
     /// none of the moment of grace a blow buys (it did: standing in fire made the survivor
     /// untouchable by the crowd's teeth, half a second in every half second). Said once a second.</summary>
-    public void HurtByGround(double amount, School school, double dt, string? named = null)
+    /// <returns>Whether the ground reached her: the one check its statuses (the burn, the cold) ride too (SU-013).</returns>
+    public bool HurtByGround(double amount, School school, double dt, string? named = null)
     {
-        var p = Player;
-        if (!p.Alive || p.Iframes > 0 || p.Leap != null) return;
-        if (Lamps.Board && BoardGroundSpares(school)) return;
-        var st = Stats;
-        double dmg = amount * (1 - StatBlock.ArmorReduction(st.Get(Stat.Armor) * Rules.ArmourMul)) * (1 - Clamp(st.GetRaw(Stat.ResistOf(school)), -1, 0.8));
-        if (p.BulwarkT > 0) dmg *= p.BulwarkSize == 1 ? (Has("unmoving") ? 0.2 : 0.35) : 1 - (1 - (Has("unmoving") ? 0.2 : 0.35)) * p.BulwarkSize; // A lamp reflex is a rule; by night its numbers are sizes, a quarter (Classes 20)
-        if (Art.WraithT > 0) dmg *= 0.5;
+        if (!GroundReaches(school)) return false;
+        double dmg = amount * GroundMul(school);
         string source = named ?? school switch { School.Fire => "burning ground", School.Frost => "frozen ground", School.Nature => "foul ground", _ => "bad ground" };
         Dot(ref groundSum, dmg, school, source, dt);
+        return true;
+    }
+
+    /// <summary>Whether bad ground can touch her now: not through i-frames, a leap, or a lamp that spares it.</summary>
+    bool GroundReaches(School school)
+    {
+        var p = Player;
+        if (!p.Alive || p.Iframes > 0 || p.Leap != null) return false;
+        return !(Lamps.Board && BoardGroundSpares(school));
+    }
+
+    /// <summary>What of bad ground's damage reaches her: armour, resistance, the bulwark, half a ghost.</summary>
+    double GroundMul(School school)
+    {
+        var p = Player;
+        var st = Stats;
+        double k = (1 - StatBlock.ArmorReduction(st.Get(Stat.Armor) * Rules.ArmourMul)) * (1 - Clamp(st.GetRaw(Stat.ResistOf(school)), -1, 0.8));
+        if (p.BulwarkT > 0) k *= p.BulwarkSize == 1 ? (Has("unmoving") ? 0.2 : 0.35) : 1 - (1 - (Has("unmoving") ? 0.2 : 0.35)) * p.BulwarkSize; // A lamp reflex is a rule; by night its numbers are sizes, a quarter (Classes 20)
+        if (Art.WraithT > 0) k *= 0.5;
+        return k;
     }
 
     /// <summary>A blow slipped at the last moment: the dash comes back, the
@@ -2027,15 +2044,19 @@ public sealed partial class Battle
         if (EmbersLying >= EmberCap) { Hoard(x, z, xp); return; }
         // Many small stones for a big creature reads better than one.
         double left = xp;
-        int guard = 0;
-        while (left > 0 && guard++ < 6)
+        for (int i = 0; i < StonesMost && left > 0; i++)
         {
-            double v = left > 40 ? Math.Min(left, 40) : left;
+            double v = StoneWorth(i, left);
             if (SpawnPickup(PickupKind.Ember, x + (Rng.Next() - 0.5), z + (Rng.Next() - 0.5), v) == null) Hoard(x, z, v);
             else EmbersLying++;
             left -= v;
         }
     }
+
+    /// <summary>A kill's stones: at most six, 40 a stone, the last carrying the rest, so the stones are worth exactly
+    /// the kill (SU-014: the night's split dropped what was past 240). Shared by the night's and the campaign's drops.</summary>
+    public const int StonesMost = 6;
+    public static double StoneWorth(int i, double left) => i == StonesMost - 1 || left <= 40 ? left : 40;
 
     /// <summary>(M6 A3) A kill's experience as stones where it fell (40 a stone at most, six at most, the last carrying
     /// the rest, so the stones are worth exactly `xp`). Where none can be spawned it is paid at once.</summary>
@@ -2043,9 +2064,9 @@ public sealed partial class Battle
     {
         if (PayXp == null || xp <= 0) return;
         double left = xp;
-        for (int i = 0; i < 6 && left > 0; i++)
+        for (int i = 0; i < StonesMost && left > 0; i++)
         {
-            double v = i == 5 || left <= 40 ? left : 40;
+            double v = StoneWorth(i, left);
             var k = SpawnPickup(PickupKind.Ember, x + (Rng.Next() - 0.5), z + (Rng.Next() - 0.5), v, XpStoneRef);
             if (k == null) { PayXp(left); return; }
             if (HoldNextStone) { HoldNextStone = false; heldStone = k; }
@@ -2337,7 +2358,7 @@ public sealed partial class Battle
                         continue;
                     }
                     var src = pr.OwnerId >= 0 ? Enemies.Items[pr.OwnerId] : null;
-                    HurtPlayer(Lamps.Board ? pr.Damage * BoardMissileMul() : pr.Damage, pr.School, pr.Art, src is { Alive: true } ? src : null, true);
+                    double landed = HurtPlayer(Lamps.Board ? pr.Damage * BoardMissileMul() : pr.Damage, pr.School, pr.Art, src is { Alive: true } ? src : null, true);
                     // bulwark.turned_arrows: a blocked missile flies back at whoever loosed it.
                     if (lampBlocked && Lamp("turned_arrows") && src is { Alive: true })
                     {
@@ -2346,14 +2367,15 @@ public sealed partial class Battle
                         pr.Tags = Reflected;
                         continue;
                     }
-                    if (pr.Status?.Kind == StatusKind.Chill) SlowPlayer(0.6, pr.Status.Duration);
+                    // Statuses ride landed hits only: a dodge, i-frames, a leap or a block attach no chill (SU-012).
+                    if (landed > 0 && pr.Status?.Kind == StatusKind.Chill) SlowPlayer(0.6, pr.Status.Duration);
                     Projectiles.Release(pr);
                 }
                 continue;
             }
 
             // Player and ally projectiles against the horde.
-            Spatial.Query(pr.X, pr.Z, pr.Radius + 1.2, qProj);
+            Spatial.Query(pr.X, pr.Z, pr.Radius + Math.Max(1.2, Spatial.MaxRadius), qProj);
             foreach (var id in qProj)
             {
                 var e = Enemies.Items[id];
@@ -2564,10 +2586,13 @@ public sealed partial class Battle
         {
             if (Dist(p.X, p.Z, z.X, z.Z) < z.Radius + p.Radius * 0.5)
             {
-                HurtByGround(z.Dps * z.Tick, z.School, z.Tick);
-                if (z.School == School.Fire) { p.BurnT = 1.5; p.BurnDps = z.Dps * 0.25; }
-                // The drowned's wet ground is cold underfoot.
-                if (z.School == School.Frost) SlowPlayer(0.75, 0.6);
+                // The burn and the cold ride the pulse only when it reached her; the burn is mitigated as the ground is (SU-013).
+                if (HurtByGround(z.Dps * z.Tick, z.School, z.Tick))
+                {
+                    if (z.School == School.Fire) { p.BurnT = 1.5; p.BurnDps = z.Dps * 0.25 * GroundMul(School.Fire); }
+                    // The drowned's wet ground is cold underfoot.
+                    if (z.School == School.Frost) SlowPlayer(0.75, 0.6);
+                }
             }
             // World hazards hurt everything standing in them.
             if (z.Owner == Side.World)

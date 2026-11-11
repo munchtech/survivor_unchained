@@ -84,6 +84,9 @@ public partial class BattleFx : Node3D
     sealed class Mark
     {
         public required Decal Decal;
+        /// <summary>The warning's key it is bound to in `keyed` (null: none): unbound when it retires or is reused, so an
+        /// old key's next warning never switches off another owner's mark (SU-017).</summary>
+        public int? Key;
         public float T, Life, Radius;
         /// <summary>Called off (TellPhase.Off): seconds left of its fade out (0: not fading).</summary>
         public float FadeLeft;
@@ -428,6 +431,7 @@ public partial class BattleFx : Node3D
             AddChild(m.Decal);
             marks.Add(m);
         }
+        Unkey(m);
         m.Active = true;
         m.T = 0;
         m.Pattern = patternNext;
@@ -497,6 +501,16 @@ public partial class BattleFx : Node3D
         return m;
     }
 
+    /// <summary>A mark bound to a warning's key (the key's earlier mark, if any, keeps no claim on it).</summary>
+    void Bind(int key, Mark m) { Unkey(m); m.Key = key; keyed[key] = m; }
+
+    /// <summary>The mark's key let go, if the key still points at it.</summary>
+    void Unkey(Mark m)
+    {
+        if (m.Key is int k && keyed.TryGetValue(k, out var km) && km == m) keyed.Remove(k);
+        m.Key = null;
+    }
+
     void Ring(double x, double z, float radius, Color color, float life, bool progress = false, int? key = null)
     {
         if (key is int k && keyed.TryGetValue(k, out var old)) { old.Active = false; old.Decal.Visible = false; if (old.Fill != null) old.Fill.Visible = false; }
@@ -510,7 +524,7 @@ public partial class BattleFx : Node3D
             m.Fill.Size = new Vector3(0.01f, 4, 0.01f);
             m.Fill.Visible = m.Slot < 0;
         }
-        if (key is int k2) keyed[k2] = m;
+        if (key is int k2) Bind(k2, m);
     }
 
     /// <summary>A lane on the ground; a hostile one fills from where the blow comes to its end as it
@@ -538,7 +552,7 @@ public partial class BattleFx : Node3D
             m.Fill.Size = new Vector3(width * 0.94f, 4, 0.01f);
             m.Fill.Visible = m.Slot < 0;
         }
-        if (key is int k2) keyed[k2] = m;
+        if (key is int k2) Bind(k2, m);
         return m;
     }
 
@@ -1136,7 +1150,7 @@ public partial class BattleFx : Node3D
         int pct = (int)Math.Round(Math.Clamp(inner / Math.Max(0.01, outer), 0, 0.95) * 20) * 5;
         var m = Ground(x, z, outer, BandTexture(pct), color, life);
         if (m.Slot >= 0) { m.Shape = 3; m.P1 = (float)Math.Clamp(inner, 0, outer * 0.9); }
-        if (key is int k2) keyed[k2] = m;
+        if (key is int k2) Bind(k2, m);
     }
 
     /// <summary>A cone on the ground from (x, z), pointing at `angle` (radians, in the plane), `radius` long.</summary>
@@ -1148,7 +1162,7 @@ public partial class BattleFx : Node3D
         if (m.Slot >= 0) { m.Shape = 2; m.P1 = (float)(arc / 2); }
         // a hostile blow's cone fills from its point as the blow comes (as a circle from its heart: MarkPass)
         m.Progress = progress;
-        if (key is int k2) keyed[k2] = m;
+        if (key is int k2) Bind(k2, m);
     }
 
     /// <summary>A mark's colour lifted for its word: the ground's tint is dim by design, the word must read over a crowd.</summary>
@@ -1629,7 +1643,7 @@ public partial class BattleFx : Node3D
                     {
                         if (keyed.TryGetValue(e.Id, out var old)) { old.Active = false; old.Decal.Visible = false; if (old.Fill != null) old.Fill.Visible = false; }
                         var tex = e.Kind == TelegraphKind.Ground ? hatchTex! : e.Kind == TelegraphKind.Safe ? dashTex! : wallTex!;
-                        keyed[e.Id] = Ground(e.X, e.Z, (float)e.Radius, tex, col, (float)e.Duration);
+                        Bind(e.Id, Ground(e.X, e.Z, (float)e.Radius, tex, col, (float)e.Duration));
                     }
                     else Ring(e.X, e.Z, (float)e.Radius, col, (float)e.Duration, true, e.Id);
                     // (a red circle, cone or band over water: its copy on the surface; a lane's is made above)
@@ -1961,6 +1975,10 @@ public partial class BattleFx : Node3D
 
     /* -------------------------------------------------------------- frame -- */
 
+    /// <summary>The fight's sim is held (a pause, a dialogue, a draft): the warnings on the ground hold too, since
+    /// the blows they warn of are not counting down (SU-008: a pause past a warning's life let the blow land unwarned).</summary>
+    public bool SimHeld;
+
     public void Update(Battle b, double dt, double now, double realDt = 0)
     {
         time = now;
@@ -1983,21 +2001,22 @@ public partial class BattleFx : Node3D
             if (t >= 1) l.Visible = false;
             flashes[i] = (l, t, life, peak);
         }
+        float mdt = SimHeld ? 0 : fdt;   // (the marks age on the sim's clock)
         foreach (var m in marks)
         {
             if (!m.Active) continue;
-            m.T += fdt / Mathf.Max(0.05f, m.Life);
+            m.T += mdt / Mathf.Max(0.05f, m.Life);
             float fk = 1;
             if (m.FadeLeft > 0)
             {
-                m.FadeLeft -= fdt;
+                m.FadeLeft -= mdt;
                 fk = Mathf.Max(0, m.FadeLeft / m.FadeFor);
                 m.T = m.FadeLeft <= 0 ? 1 : m.Caught ? HeldAt : Mathf.Min(m.T, 0.84f);
             }
             // (a closing's wall standing: its band past the landing's flare, held at its windup look)
             bool stand = m.Held && m.FadeLeft <= 0 && m.T >= HeldAt;
             if (stand) m.T = HeldAt;
-            if (m.T >= 1) { m.FadeLeft = 0; m.Active = false; m.Decal.Visible = false; if (m.Fill != null) m.Fill.Visible = false; if (m.Over != null) m.Over.Visible = false; if (m.OverFill != null) m.OverFill.Visible = false; continue; }
+            if (m.T >= 1) { Unkey(m); m.FadeLeft = 0; m.Active = false; m.Decal.Visible = false; if (m.Fill != null) m.Fill.Visible = false; if (m.Over != null) m.Over.Visible = false; if (m.OverFill != null) m.OverFill.Visible = false; continue; }
             if (m.Sink)
             {
                 float r = m.Radius * (1 - 0.65f * m.T);

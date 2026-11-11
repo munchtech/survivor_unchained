@@ -347,7 +347,7 @@ public static class CelLib
         }
         return first!;
     }
-    static readonly bool InkOn = string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("SU_HERO_INK_OFF"));
+    static readonly bool InkOn = !SurvivorUnchained.Args.Dev || string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("SU_HERO_INK_OFF"));
 
     static bool IsLine(Material? m) => m is ShaderMaterial { ResourceName: LineName };
 
@@ -436,7 +436,7 @@ public static class CelLib
 
     /// <summary>(lead 21) A dev print, off unless the environment has SU_HERO_LINE_PRINT: each lined mesh once per change of
     /// state (its path, whether it is drawn, its shadow mode, layers, fade, skin, overlay passes, first surface's shader).</summary>
-    static readonly bool LinePrint = !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("SU_HERO_LINE_PRINT"));
+    static readonly bool LinePrint = SurvivorUnchained.Args.Dev && !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("SU_HERO_LINE_PRINT"));
     static readonly Dictionary<ulong, string> lineSaid = new();
     static void LineSay(MeshInstance3D g, bool want, bool hair, Material? ov, string surfs = "")
     {
@@ -502,7 +502,7 @@ public static class CelLib
     /// under the player's view that goes through the hero paint (the uniform cel_hero_id of cel.gdshaderinc's CEL_HERO
     /// block) is drawn as ONE flat color, its ID; whatever of her does not go through it stays as rendered. The table goes
     /// to the log (lines HERO_ID: mesh, slot, pass, material, shader, the mesh's state), once and again on a change.</summary>
-    static readonly bool HeroId = !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("SU_HERO_ID"));
+    static readonly bool HeroId = SurvivorUnchained.Args.Dev && !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("SU_HERO_ID"));
     static readonly Dictionary<ulong, int> heroIds = new();   // (material -> its ID; -1: a shader with no hero paint)
     static readonly Dictionary<string, string> heroIdSaid = new();
     static int heroIdNext;

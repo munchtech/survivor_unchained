@@ -233,7 +233,7 @@ public static class Lamps
      * (lamps.json) stays reachable for one release: the env SU_LAMPS_V2=0, the harness's or the game's --lampsv1
      * (UseV2(false)), or a test. With v1 on nothing reads a v2 rule, and the sim is v1's to the byte. */
     static bool? v2;
-    public static bool V2 => v2 ??= Environment.GetEnvironmentVariable("SU_LAMPS_V2") != "0";
+    public static bool V2 => v2 ??= DevOverrides.Env("SU_LAMPS_V2") != "0";
 
     /// <summary>Switch the board (v2 on or off) and read it again.</summary>
     public static void UseV2(bool on)

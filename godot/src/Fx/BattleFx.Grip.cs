@@ -142,6 +142,9 @@ public partial class BattleFx
 
     public override void _ExitTree()
     {
+        // The red marks' pass slots are shared by every battle (static): this one's are freed as it goes, or 32
+        // battles left with marks up would leave none and every mark fall back to a decal (SU-020).
+        foreach (var m in marks) if (m.Slot >= 0) { slotUsed[m.Slot] = false; m.Slot = -1; }
         if (!GripStrokeOn) return;
         GetTree().ProcessFrame -= GripWatch;
         GripUnhook();

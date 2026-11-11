@@ -19,7 +19,7 @@ namespace SurvivorUnchained;
 public partial class QuitPath : Node
 {
     static QuitPath? node;
-    static bool requested, sent;
+    static bool requested, sent, closeAsked;
     static int code;
     static ulong atProcess;
     static int atDrawn;
@@ -56,7 +56,16 @@ public partial class QuitPath : Node
 
     public override void _Notification(int what)
     {
-        if (what == NotificationWMCloseRequest) Request(GetTree(), 0, "window close");
+        // The window's first close saves as the menu's quit does (Game.QuitGame saves, then asks for the quit;
+        // a failed save says so and stays). A second close always goes: nothing can hold the window open.
+        if (what != NotificationWMCloseRequest) return;
+        if (!requested && !closeAsked && game != null && IsInstanceValid(game))
+        {
+            closeAsked = true;
+            try { game.QuitGame(); return; }
+            catch (Exception e) { GD.PushError($"quit: the save before the close failed ({e.Message})"); }
+        }
+        Request(GetTree(), 0, "window close");
     }
 
     public override void _Process(double delta)
