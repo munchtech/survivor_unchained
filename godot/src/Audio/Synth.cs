@@ -83,9 +83,10 @@ public partial class Synth : Node
     readonly List<Bed> beds = new();
     AudioStreamGeneratorPlayback? dry, wet;
     public readonly float[] Level = { 0.85f, 0.8f, 0.9f, 0.7f, 0.85f };
-    /// <summary>--wav PATH --stems: each bus's dry contribution (after its level and the ducks, no room), in Bus order.</summary>
+    /// <summary>--wav PATH --stems: each bus's dry contribution (after its level and the ducks, no room), in Bus order, then
+    /// a sixth: the lead voices alone (LeadRule; part of the sfx stem too), so a tape measures her hit over the crowd.</summary>
     List<Vector2>[]? stems;
-    readonly float[] stemAcc = new float[10];
+    readonly float[] stemAcc = new float[12];
     /// <summary>Each bus's send to the room; like Level, in Bus order, and set from data/content/sounds.json (SoundBank).</summary>
     public static readonly float[] Send = { 0.2f, 0.55f, 0.3f, 0.08f, 0.22f };
     public float Master = 0.85f;
@@ -108,6 +109,8 @@ public partial class Synth : Node
     /// <summary>Seconds of work spent mixing, and of sound mixed (for the log).</summary>
     public double MixCost, Mixed;
 
+    /// <summary>Seconds on the tape so far (--wav; 0 without one): a trace line's place on it.</summary>
+    public double TapeSeconds => tape == null ? 0 : tape.Count / (double)Rate;
     public Synth() { Instance = this; Name = "Synth"; }
 
     static float[] NoiseBuffer(bool brown)
@@ -130,7 +133,7 @@ public partial class Synth : Node
             tapePath = path;
             tape = new List<Vector2>();
             Dynamics();
-            if (Args.Has("stems")) { stems = new List<Vector2>[5]; for (int i = 0; i < 5; i++) stems[i] = new List<Vector2>(); }
+            if (Args.Has("stems")) { stems = new List<Vector2>[6]; for (int i = 0; i < 6; i++) stems[i] = new List<Vector2>(); }
             SoundBank.Load(this);
             SoundHooks.Cue = id => Sfx.Cue(id);
             return;
@@ -328,7 +331,7 @@ public partial class Synth : Node
                 float bus = Level[(int)voice.Bus] * (voice.Bus == Bus.Music ? duckNow * voiceMusicNow * bedDuckNow : voice.Bus == Bus.Amb ? voiceAmbNow * bedDuckNow : voice.Bus == Bus.Sfx ? sfxDuckNow * (voice.Lead ? 1 : crowdNow) : 1);
                 float l = s * voice.L * bus, r = (voice.Wide ? voice.Right : s) * voice.R * bus;
                 dl += l; dr += r;
-                if (stems != null) { stemAcc[(int)voice.Bus * 2] += l; stemAcc[(int)voice.Bus * 2 + 1] += r; }
+                if (stems != null) { stemAcc[(int)voice.Bus * 2] += l; stemAcc[(int)voice.Bus * 2 + 1] += r; if (voice.Lead) { stemAcc[10] += l; stemAcc[11] += r; } }
                 float send = Send[(int)voice.Bus] + voice.Verb;
                 wl += l * send; wr += r * send;
             }
@@ -357,7 +360,7 @@ public partial class Synth : Node
             outDry[i] = new Vector2(dl, dr) * dyn;
             outWet[i] = new Vector2(wl, wr) * dyn;
             if (stems != null)
-                for (int k = 0; k < 5; k++) { stems[k].Add(new Vector2(stemAcc[k * 2], stemAcc[k * 2 + 1]) * masterNow); stemAcc[k * 2] = stemAcc[k * 2 + 1] = 0; }
+                for (int k = 0; k < 6; k++) { stems[k].Add(new Vector2(stemAcc[k * 2], stemAcc[k * 2 + 1]) * masterNow); stemAcc[k * 2] = stemAcc[k * 2 + 1] = 0; }
         }
         Interlocked.Add(ref clock, n);
         MixCost += (Time.GetTicksUsec() - t0) / 1e6;
@@ -387,8 +390,8 @@ public partial class Synth : Node
         if (stems != null)
         {
             string stem = tapePath.EndsWith(".wav", StringComparison.OrdinalIgnoreCase) ? tapePath[..^4] : tapePath;
-            string[] names = ["sfx", "music", "ambience", "ui", "flare"];
-            for (int i = 0; i < 5; i++) WriteWav($"{stem}_{names[i]}.wav", stems[i]);
+            string[] names = ["sfx", "music", "ambience", "ui", "flare", "lead"];
+            for (int i = 0; i < 6; i++) WriteWav($"{stem}_{names[i]}.wav", stems[i]);
         }
         GD.Print($"wrote {tapePath}: {tape.Count / Rate:0.0}s of sound, mixed at {MixCost / Math.Max(1e-9, Mixed) * 100:0.0}% of real time");
     }

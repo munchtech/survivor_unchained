@@ -1189,6 +1189,7 @@ public partial class BattleFx : Node3D
         }
     }
 
+    static readonly bool KillTrace = Args.Has("kill-trace");
     static readonly bool FxLog = Args.Has("fx-log"); // dev only: one line per combat event
     double fxLogNext;
 
@@ -1253,6 +1254,14 @@ public partial class BattleFx : Node3D
         hitBudget = 28;
         killBudget = 6;
         rose = false;
+        // --kill-trace (dev, with --wav): a line a frame that kills or lands a heavy blow, placed on the tape (F1's tape
+        // measure: her hit over the crowd with N dying, tools/audio/crowd_tape.py).
+        if (KillTrace)
+        {
+            int kills = 0, heavy = 0;
+            foreach (var ev in events) { if (ev is Ev.Kill) kills++; else if (ev is Ev.Hit hh && SurvivorUnchained.Sound.LeadRule.Heavy(hh)) heavy++; }
+            if (kills > 0 || heavy > 0) GD.Print($"[kill-trace] tape={SurvivorUnchained.Sound.Synth.Instance?.TapeSeconds ?? 0:F3} kills={kills} heavy={heavy} living={System.Linq.Enumerable.Count(b.Enemies.Living())}");
+        }
         if (FxLog)
         {
             if (b.Time >= fxLogNext)
