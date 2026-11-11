@@ -636,9 +636,10 @@ public sealed partial class Prologue : ZoneRuntime
         // (M6 l3: her first landed blows on anything, after the swing's lesson: the three's waited on them waking awake,
         // and they fell before a frame of it, so A4 and A4b never came in run m6r3)
         if (B.Resolve.On && B.Resolve.LandedFill > 0) resolveDue = true;
-        // (M6 l4: and after the swing's lesson was seen, or from the Watch-post on: in m6r6 the swing's foes fell twice
-        // before it showed, its moment lapsed, and Resolve came 18 s before Swing)
-        if (resolveDue && Now < Stage.Intro && (G.Taught("swing") || Now >= Stage.Post))
+        // (M6 l4: and after the swing's lesson was seen, or from the Barrow on: in m6r6 the swing's foes fell twice
+        // before it showed, its moment lapsed, and Resolve came 18 s before Swing; in m6r8 the Watch-post came at 69.8,
+        // before Swing at 74.7)
+        if (resolveDue && Now < Stage.Intro && (G.Taught("swing") || Now >= Stage.Barrow))
             Teach("resolve", CalloutKind.Arrow, "Resolve", "Every blow that lands builds Resolve. Your skills burn it.", Aim.At("resolve"), after: "swing");
         // A4b: 2 s after A4 was seen, Resolve at or past Groundbreaker's cost and two or more of the three within its reach;
         // its seat bracketed (by the slot it sits in) and the pack ringed. Answered by its key.
