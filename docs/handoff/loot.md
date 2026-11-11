@@ -46,7 +46,7 @@ attempt's runner produced nothing; the 2-seed human run takes seconds, so rerun 
 
 Watch-outs: a Boss roll can still drop a second random Legendary on its later rolls. Known test flakes
 (pass alone): `WearTests` migration race, `DraftCardFitTests.Every_draft_card_fits_its_card`,
-`ContentTests.Every_item_has_an_icon_a_value_and_words` once. `LootTests.Every_legendary_changes_how_you_play`
+(the ContentTests description failure was the Plus test's own band, fixed.) `LootTests.Every_legendary_changes_how_you_play`
 exempts the Evening Chain (it demands `DropsFrom`).
 
 Cost: helpers about 215k subagent tokens plus orchestration, well inside the 0.6M line.
