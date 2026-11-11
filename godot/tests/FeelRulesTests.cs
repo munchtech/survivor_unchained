@@ -260,6 +260,26 @@ public class FeelRulesTests
         Assert.False(FeelRules.ClearsAtOpen(500, 500, 960, 500, 960, 540));     // the new total, right over the kill
         Assert.True(FeelRules.ClearsAtOpen(499, 500, 960, 500, 960, 540));      // an earlier step's number there
         Assert.False(FeelRules.ClearsAtOpen(499, 500, 1300, 300, 960, 540));    // an earlier one out of reach
+        // m4 752: a spread kill; the older "654" over its felled box, ~460 px from the kill's middle, clears too
+        var spread = (584f, 201f, 1097f, 776f);
+        Assert.True(FeelRules.ClearsAtOpen(752, 753, 610, 140, 840, 600, 1, spread));
+        Assert.False(FeelRules.ClearsAtOpen(753, 753, 610, 140, 840, 600, 1, spread));   // never its own total
+        Assert.False(FeelRules.ClearsAtOpen(752, 753, 300, 60, 840, 600, 1, spread));    // off the box and the reach
+    }
+
+    [Fact]
+    public void AMassTotalsKillIsTheLargestGroupOfFelledLyingTogether()
+    {
+        // hs32 5874: four felled across 950 px; the total had gone over the empty middle
+        var boxes = new[] { (340f, 450f, 450f, 560f), (470f, 470f, 580f, 580f), (520f, 560f, 630f, 670f), (1180f, 1280f, 1287f, 1389f) };
+        Assert.Equal(new[] { 0, 1, 2 }, FeelRules.KillCluster(boxes, 3, FeelRules.KillLink));
+        // a tie goes to the weightiest blow's group
+        var two = new[] { (100f, 100f, 200f, 200f), (900f, 100f, 1000f, 200f) };
+        Assert.Equal(new[] { 1 }, FeelRules.KillCluster(two, 1, FeelRules.KillLink));
+        Assert.Equal(new[] { 0 }, FeelRules.KillCluster(two, 0, FeelRules.KillLink));
+        // a chained crowd is one kill
+        var chain = new[] { (0f, 0f, 100f, 100f), (150f, 0f, 250f, 100f), (300f, 0f, 400f, 100f) };
+        Assert.Equal(new[] { 0, 1, 2 }, FeelRules.KillCluster(chain, 0, FeelRules.KillLink));
     }
 
     static float GapToFelled((float X, float Y) p, float w, float h, (float X0, float Y0, float X1, float Y1) f) =>

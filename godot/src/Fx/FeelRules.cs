@@ -267,11 +267,44 @@ public static class FeelRules
         return best;
     }
 
+    /// <summary>F1 lead 30: two felled bodies' boxes this close (px at 1080) lie in one group of the kill.</summary>
+    public const float KillLink = 60;
+
+    /// <summary>The felled bodies of a kill (indices into `boxes`, their screen boxes): the largest group of boxes chained
+    /// within `link` of each other; on a tie, the group holding `prefer` (the weightiest blow's body), else the first.</summary>
+    public static List<int> KillCluster(IReadOnlyList<(float X0, float Y0, float X1, float Y1)> boxes, int prefer, float link)
+    {
+        int n = boxes.Count;
+        var root = new int[n];
+        for (int i = 0; i < n; i++) root[i] = i;
+        int Find(int i) { while (root[i] != i) i = root[i] = root[root[i]]; return i; }
+        for (int i = 0; i < n; i++)
+            for (int j = i + 1; j < n; j++)
+            {
+                var a = boxes[i]; var b = boxes[j];
+                if (BoxGap(a.X0, a.Y0, a.X1, a.Y1, b.X0, b.Y0, b.X1, b.Y1) <= link) root[Find(i)] = Find(j);
+            }
+        var size = new int[n];
+        for (int i = 0; i < n; i++) size[Find(i)]++;
+        int best = -1;
+        for (int i = 0; i < n; i++)
+        {
+            int r = Find(i);
+            if (best < 0 || size[r] > size[best] || size[r] == size[best] && prefer >= 0 && prefer < n && r == Find(prefer) && best != r) best = r;
+        }
+        var got = new List<int>();
+        for (int i = 0; i < n; i++) if (Find(i) == best) got.Add(i);
+        return got;
+    }
+
     /// <summary>F1 lead 30 (judge n fix 1): when her kill window opens at frame `open`, a number clears off the kill only if
     /// it was born on an earlier frame (`born` &lt; `open`) and stands within KillClearReach: the total of the kill that
-    /// opens the window is never cleared by it.</summary>
-    public static bool ClearsAtOpen(long born, long open, float x, float y, float kx, float ky, float scale = 1) =>
-        born < open && KillClears(x, y, kx, ky, scale);
+    /// opens the window is never cleared by it. Over a spread kill (m4 752: 18 felled across 500 px, the older "654" over
+    /// them ~460 px from their middle) a number standing within MassReach of the felled bodies' box (`felled`) clears too.</summary>
+    public static bool ClearsAtOpen(long born, long open, float x, float y, float kx, float ky, float scale = 1,
+        (float X0, float Y0, float X1, float Y1)? felled = null) =>
+        born < open && (KillClears(x, y, kx, ky, scale)
+            || felled is { } f && BoxGap(x, y, x, y, f.X0, f.Y0, f.X1, f.Y1) <= MassReach * scale);
 
     /// <summary>The lowest a number's middle stands (px at 1080): the HUD's band starts under it (judge r5: "315" on the
     /// health orb), and the gap it keeps over a HUD part.</summary>

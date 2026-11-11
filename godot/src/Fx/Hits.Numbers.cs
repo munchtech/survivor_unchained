@@ -237,14 +237,22 @@ public partial class Hits
         if (mass && felledAt.Count > 0 && GetViewport()?.GetCamera3D() is { } kcam)
         {
             float kk = GetViewport().GetVisibleRect().Size.Y / 1080f, kx = 0, ky = 0;
-            int kn = 0;
-            foreach (var p in felledAt)
-                if (!kcam.IsPositionBehind(p))
+            int kn = 0, prefer = 0;
+            var boxes = new List<(float X0, float Y0, float X1, float Y1)>();
+            for (int j = 0; j < felledAt.Count; j++)
+                if (!kcam.IsPositionBehind(felledAt[j]))
                 {
-                    var sp = kcam.UnprojectPosition(p); kx += sp.X; ky += sp.Y; kn++;
-                    var (bx0, by0, bx1, by1) = BodyBox(kcam, p);
-                    felledBox = felledBox is { } fb ? (Mathf.Min(fb.X0, bx0), Mathf.Min(fb.Y0, by0), Mathf.Max(fb.X1, bx1), Mathf.Max(fb.Y1, by1)) : (bx0, by0, bx1, by1);
+                    var sp = kcam.UnprojectPosition(felledAt[j]); kx += sp.X; ky += sp.Y; kn++;
+                    if (waiting.Count > 0 && felledIds[j] == waiting[0].Target) prefer = boxes.Count;
+                    boxes.Add(BodyBox(kcam, felledAt[j]));
                 }
+            // (the kill is the largest group of felled lying together: a body felled far off in the same frame, 5874 in
+            // hs32: four felled across 950 px, does not drag the total out over nothing)
+            foreach (int j in FeelRules.KillCluster(boxes, prefer, FeelRules.KillLink * kk))
+            {
+                var b = boxes[j];
+                felledBox = felledBox is { } fb ? (Mathf.Min(fb.X0, b.X0), Mathf.Min(fb.Y0, b.Y0), Mathf.Max(fb.X1, b.X1), Mathf.Max(fb.Y1, b.Y1)) : b;
+            }
             if (kn > 0)
             {
                 kx /= kn; ky /= kn;
@@ -256,7 +264,7 @@ public partial class Hits
                     if (numbers[k].T >= 1 || !l.Visible || clearFrom[k] != NotClearing || kcam.IsPositionBehind(l.GlobalPosition)) continue;
                     var sp = kcam.UnprojectPosition(l.GlobalPosition);
                     // (only numbers of earlier frames: the total of the kill opening the window is never among them)
-                    if (!SurvivorUnchained.View.FeelRules.ClearsAtOpen(bornFrame[k], now, sp.X, sp.Y, kx, ky, kk)) continue;
+                    if (!SurvivorUnchained.View.FeelRules.ClearsAtOpen(bornFrame[k], now, sp.X, sp.Y, kx, ky, kk, felledBox)) continue;
                     clearFrom[k] = now;
                     if (k == massLabel) massLabel = -1;
                     cleared++;
