@@ -606,7 +606,9 @@ public sealed partial class Prologue : ZoneRuntime
         // bracketed and the drowned one ringed. Answered by Skill1.
         // (M6 l3: any foe awake near her, the lone one or C01's risen: C01 hands her the risen at once, and in run m6r3
         // she had fought them for 7 s before the lone one woke; A2 waited on it and was lost.)
-        if (Now is Stage.Wake or Stage.Rising && NearFoes(p, 7).Count > 0)
+        // (M6 l4: on to the Intro, the next near foe: m6r4 lost it "gone" at 36.5 as the risen it ringed fell under the
+        // move arrow and the Rising closed; the Ambush's foes teach it then, before A4's Resolve, which waits on it)
+        if (Now < Stage.Intro && NearFoes(p, 7).Count > 0)
             Teach("swing", CalloutKind.Freeze, "Swing", $"Hold {Key("skill1")} to swing at what's under the cursor. You walk as you swing.",
                 new Aim { Hud = "seat:Skill1", World = () => NearFoes(B!.Player, 7).Take(1).Select(e => Up(e.X, e.Z, 1.0)).ToList(), Safe = true }, "skill1", urgent: true);
         // A3: the first ember stone near her on the ground (the lone one's), well inside the screen. With the draft off the

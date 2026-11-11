@@ -349,6 +349,9 @@ public sealed class Autopilot
     double draftFor;
     static readonly double DraftHold = Args.Num("draft-hold", 0);
     static readonly bool DayRush = Args.Has("day-rush");
+    (double X, double Z) dayAnchor;
+    double dayStillT;
+    bool dayStuck;
 
     public void Drive(double dt)
     {
@@ -611,7 +614,11 @@ public sealed class Autopilot
                 tx = dg.X; tz = dg.Z;
                 dayFight = pd.DayFighting; dayRoad = true;
                 // (--day-rush: straight up the road to the gate, past every fight: the owner's run on demo-rc2, N22)
-                if (DayRush) { tx = 0.3; tz = -110; dayFight = false; asGoal = true; }
+                // (M6 l4: stuck, no 4 m of ground in 25 s, on the way to a beat (m6r3/m6r4 wobbled at the strongbox for
+                // 1000 s, routing to the road ambush round the nook's trees; a player walks out): the gate's road from there)
+                if (Math.Sqrt((p.X - dayAnchor.X) * (p.X - dayAnchor.X) + (p.Z - dayAnchor.Z) * (p.Z - dayAnchor.Z)) > 4) { dayAnchor = (p.X, p.Z); dayStillT = 0; }
+                else if (!dayFight && (dayStillT += dt) > 25 && !dayStuck) { dayStuck = true; Godot.GD.Print($"autopilot: day stuck at ({p.X:0.0},{p.Z:0.0}) t={b.Time:0.0}: up the road to the gate"); }
+                if (DayRush || dayStuck) { tx = 0.3; tz = -110; dayFight = DayRush ? false : dayFight; asGoal = true; }
                 interactT -= dt;
                 if (dg.Press != null && g.Prompted == dg.Press && interactT <= 0) { interactT = 1.5; Controls.Instance.Press(Act.Interact); }
                 break;

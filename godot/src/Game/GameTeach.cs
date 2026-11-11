@@ -43,7 +43,10 @@ public partial class Game
     /// run's Begin saw last run's "art" and let the Flare's great blessings through, round 2 judge.)
     public bool Taught(string id) { _ = Teacher; return Settings.Current.SeenTips.Contains(id); }
     /// <summary>(the autopilot) It keeps the Flare in the Barrow until F8 has asked for it.</summary>
-    public bool HoldFlare => !Taught("art") && zone is Zones.Prologue { Now: Zones.Prologue.Stage.Barrow };
+    /// (M6 l4: and the lent Flare at the Warden until A11b is seen: m6r4's autopilot spent it on C02's hand-back, the meter
+    /// empty before A11b's moment)
+    public bool HoldFlare => zone is Zones.Prologue { Now: Zones.Prologue.Stage.Barrow } && !Taught("art")
+        || zone is Zones.Prologue { Now: Zones.Prologue.Stage.Boss } && !Taught("flare") && Settings.Current.Tips;
 
     /// <summary>The callout on the screen now (the autopilot answers a freeze).</summary>
     public Callout? Teaching => teacher?.Current;
