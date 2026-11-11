@@ -1,5 +1,9 @@
 # The owner's notes waiting for the leads
 
+## 10 November 2026, ~23:50: THE KIT SHEET IS PICKED ("Yes, build it")
+
+The owner picked the Sol concept sheets of her full gunmetal-and-gold kit for P2 to build from: `survivorsunchained_inputs\gpt_sol\kit\01_turnaround.png`, `02_pieces.png` (helm, pauldrons, bodice, vambraces, belt and hip plates, boots), `03_tiers.png` (three tiers by adornment on one silhouette). Built from the owner's own `owner_ref_shield_braid`. Today's plate cups stay as the lower tier; the strap fix is still owed. The pick is the design, not a frozen look: P2 owns fit and tiers.
+
 ## 10 November 2026, night: the owner played demo-arpg1 ("wasn't great")
 
 The owner: "had no idea what the skills did, they don't have tooltips on hover. movement looked weird especially turning, nothing really felt satisfying. the boss was buggy and when I got to the waystation it just stayed at a black screen until I force closed". What each note is for, by lane:
