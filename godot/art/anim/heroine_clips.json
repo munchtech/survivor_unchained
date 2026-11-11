@@ -511,6 +511,28 @@
 		"note": "the head down 8 degrees, held 0.4 s",
 		"source": "keyed (tools/anim)"
 	},
+	"pivot_warden_l": {
+		"cycle": 0.0333333333333333,
+		"layer": "full",
+		"length": 0.0333333350718021,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/clips/pivot.py)",
+		"speed": 0.0,
+		"steps": 0.0,
+		"weapon": "sword+shield"
+	},
+	"pivot_warden_r": {
+		"cycle": 0.0333333333333333,
+		"layer": "full",
+		"length": 0.0333333350718021,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/clips/pivot.py)",
+		"speed": 0.0,
+		"steps": 0.0,
+		"weapon": "sword+shield"
+	},
 	"reach_coals": {
 		"hold": true,
 		"layer": "full",

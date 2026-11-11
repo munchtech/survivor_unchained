@@ -294,7 +294,14 @@ public partial class PlayerView : Node3D
             mv.ConnectNode("otSide", 0, "otL"); mv.ConnectNode("otSide", 1, "otR");
             mv.ConnectNode("otMix", 0, "otSide"); mv.ConnectNode("otMix", 1, "otB");
             mv.ConnectNode("otRun", 0, "run"); mv.ConnectNode("otRun", 1, "otMix");
-            mv.ConnectNode("fast", 0, "otRun");
+            // (A1 L23) The 180's held plant: pivotSide = pivot_<calling>_l|_r, pivotMix = what feeds the run | pivotSide, weighted in PivotMix.
+            pvL = new AnimationNodeAnimation { Animation = run }; pvR = new AnimationNodeAnimation { Animation = run };
+            mv.AddNode("pvL", pvL, new Vector2(0, 1600)); mv.AddNode("pvR", pvR, new Vector2(0, 1700));
+            mv.AddNode("pivotSide", new AnimationNodeBlend2 { Sync = true }, new Vector2(200, 1650));
+            mv.AddNode("pivotMix", new AnimationNodeBlend2 { Sync = true }, new Vector2(800, 1000));
+            mv.ConnectNode("pivotSide", 0, "pvL"); mv.ConnectNode("pivotSide", 1, "pvR");
+            mv.ConnectNode("pivotMix", 0, "otRun"); mv.ConnectNode("pivotMix", 1, "pivotSide");
+            mv.ConnectNode("fast", 0, "pivotMix");
             mv.ConnectNode("fast", 1, "sprint");
             mv.ConnectNode("walkSeek", 0, "walk");
             mv.ConnectNode("runSeek", 0, "fast");
@@ -332,7 +339,13 @@ public partial class PlayerView : Node3D
                 mv.ConnectNode("aOtSide", 0, "aOtL"); mv.ConnectNode("aOtSide", 1, "aOtR");
                 mv.ConnectNode("aOtMix", 0, "aOtSide"); mv.ConnectNode("aOtMix", 1, "aOtB");
                 mv.ConnectNode("aOtRun", 0, "aRun"); mv.ConnectNode("aOtRun", 1, "aOtMix");
-                mv.ConnectNode("aFast", 0, "aOtRun");
+                aPvL = new AnimationNodeAnimation { Animation = run }; aPvR = new AnimationNodeAnimation { Animation = run };
+                mv.AddNode("aPvL", aPvL, new Vector2(0, 1800)); mv.AddNode("aPvR", aPvR, new Vector2(0, 1900));
+                mv.AddNode("aPivotSide", new AnimationNodeBlend2 { Sync = true }, new Vector2(200, 1850));
+                mv.AddNode("aPivotMix", new AnimationNodeBlend2 { Sync = true }, new Vector2(800, 1300));
+                mv.ConnectNode("aPivotSide", 0, "aPvL"); mv.ConnectNode("aPivotSide", 1, "aPvR");
+                mv.ConnectNode("aPivotMix", 0, "aOtRun"); mv.ConnectNode("aPivotMix", 1, "aPivotSide");
+                mv.ConnectNode("aFast", 0, "aPivotMix");
                 mv.ConnectNode("aFast", 1, "aSprint");
                 mv.ConnectNode("aWalkSeek", 0, "aWalk");
                 mv.ConnectNode("aRunSeek", 0, "aFast");
@@ -967,6 +980,37 @@ public partial class PlayerView : Node3D
         otL.Animation = c("_left"); otR.Animation = c("_right"); otB.Animation = c("_back");
         if (aOtL != null && aOtR != null && aOtB != null) { aOtL.Animation = otL.Animation; aOtR.Animation = otR.Animation; aOtB.Animation = otB.Animation; }
         if (!otAvail) otOn = false;
+        // (A1 L23) pivot_<calling>_l/_r on the same run: only her own model, only with both clips (and not --turn-r4).
+        string sfx = run.StartsWith(own.Prefix) ? run[own.Prefix.Length..] : "";
+        string pv = sfx.StartsWith("run_") ? own.Prefix + "pivot_" + sfx[4..] : "";
+        pvAvail = !TurnR4 && !TurnL21 && pv != "" && HasHer(pv[own.Prefix.Length..] + "_l") && HasHer(pv[own.Prefix.Length..] + "_r");
+        if (pvL == null || pvR == null) return;
+        pvL.Animation = pvAvail ? pv + "_l" : run; pvR.Animation = pvAvail ? pv + "_r" : run;
+        if (aPvL != null && aPvR != null) { aPvL.Animation = pvL.Animation; aPvR.Animation = pvR.Animation; }
+    }
+
+    // (A1 L23) The 180's held plant under the pin. pivotW eases (at most 0.5 a frame) to 0.6 as the stride goes to mid-stance, 1 while she yaws,
+    // then 1 - plantN/3 as she pushes off; 0 otherwise. --turn-r4: held 0 (and the pivot's yaw rate 2200 deg/s, PivotRate).
+    float pivotW;
+    bool pvAvail;
+    AnimationNodeAnimation? pvL, pvR, aPvL, aPvR;
+    static readonly bool TurnR4 = SurvivorUnchained.Args.Has("turn-r4");
+    float PivotRate => TurnR4 ? 2200f : 1350f;
+    void PivotMix(float dt)
+    {
+        float target = 0;
+        if (mine && pvAvail && !TurnL20 && !TurnNoPlant)
+            target = plantStage switch { 1 => 0.6f, 2 => 1f, 3 => Mathf.Clamp(1f - plantN / 3f, 0f, 1f), _ => 0f };
+        pivotW = Mathf.MoveToward(pivotW, target, 0.5f * Mathf.Min(dt * 30f, 2f));
+        float side = plantFoot == "foot_l" ? 0f : 1f;
+        var tsp = "parameters/move/";
+        tree.Set(tsp + "pivotMix/blend_amount", pivotW);
+        if (plantStage is >= 1 and <= 3) tree.Set(tsp + "pivotSide/blend_amount", side);
+        if (layered)
+        {
+            tree.Set(tsp + "aPivotMix/blend_amount", pivotW);
+            if (plantStage is >= 1 and <= 3) tree.Set(tsp + "aPivotSide/blend_amount", side);
+        }
     }
 
     /// <summary>The arms' copy of the move graph plays the same clips.</summary>
@@ -1273,7 +1317,7 @@ public partial class PlayerView : Node3D
             if (mine && !TurnL20 && !TurnOld && !TurnSnap && pivotN < 0 && speed > 2.5f && off > Mathf.DegToRad(120)) PivotStart(want);
             if (pivotN >= 0)
             {
-                TurnTo(want, (float)dt, 2200); pivotN++; pivotStepped = true; pivotWant = want;
+                TurnTo(want, (float)dt, PivotRate); pivotN++; pivotStepped = true; pivotWant = want;
                 if (Mathf.Abs(Mathf.Wrap(want - Rotation.Y, -Mathf.Pi, Mathf.Pi)) < Mathf.DegToRad(10) || pivotN > 6) pivotN = -1;
             }
             else if (mine && !TurnOld && !TurnSnap) TurnTo(want, (float)dt, TurnMax);
@@ -1764,6 +1808,7 @@ public partial class PlayerView : Node3D
                 tree.Set(tsp + "aOtSide/blend_amount", side > 1e-4f ? otWr / side : 0f);
             }
         }
+        if (!move2D) PivotMix((float)dt);
         float natural = Mathf.Lerp(runSpeed, sprintSpeed, fast);
         // One stride phase for both gaits; a walk starts on the left heel after she has stood a moment.
         standT = spd < 0.05f ? standT + dt : 0;
@@ -2209,7 +2254,7 @@ public partial class PlayerView : Node3D
         var dpv = Drawn("pelvis");
         logPv2 = logPv; logPv = dpv; logPvSet = true;
         GD.Print(System.FormattableString.Invariant($"OT {t:0.0000} frame {Engine.GetProcessFrames()} on {(otOn ? 1 : 0)} wf {otWf:0.000} wr {otWr:0.000} wb {otWb:0.000} wl {otWl:0.000} ang {otAng:0.0} sim {otSimSp:0.00} fast {(float)tree.Get("parameters/move/fast/blend_amount"):0.000} hold {aimHold:0.00}"));
-        GD.Print(System.FormattableString.Invariant($"CARRY {t:0.0000} fl {V(fl)} fr {V(fr)} hl {V(hl)} hr {V(hr)} pv {V(pv)} chest {Yaw("upperarm_l", "upperarm_r"):0.0} pelv {Yaw("thigh_l", "thigh_r"):0.0} face {Mathf.RadToDeg(Rotation.Y):0.0} scr {sc.X:0.0} {sc.Y:0.0} aimset {aim:0.0} aimc {carriage?.Aim ?? 0:0.0} hold {aimHold:0.00} stride {stride:0.000} up {(up ? upperClip : "-")} full {(fu ? fullClip : "-")} bank {carriage?.Bank ?? 0:0.0} tilt {carriage?.Tilt ?? 0:0.0} upos {(float)tree.Get("parameters/upper/current_position"):0.000} piv {pivotN} off {plantOff.Length():0.000} sim {V(Position - plantOff)} lfl {V(inv * fl)} lfr {V(inv * fr)} lpv {V(inv * pv)} dpv {V(dpv)} dfl {V(Drawn("foot_l"))} dfr {V(Drawn("foot_r"))} stage {plantStage} scrt {st.X:0.0} {st.Y:0.0} scrk {sk.X:0.0} {sk.Y:0.0}"));
+        GD.Print(System.FormattableString.Invariant($"CARRY {t:0.0000} pvw {pivotW:0.00} fl {V(fl)} fr {V(fr)} hl {V(hl)} hr {V(hr)} pv {V(pv)} chest {Yaw("upperarm_l", "upperarm_r"):0.0} pelv {Yaw("thigh_l", "thigh_r"):0.0} face {Mathf.RadToDeg(Rotation.Y):0.0} scr {sc.X:0.0} {sc.Y:0.0} aimset {aim:0.0} aimc {carriage?.Aim ?? 0:0.0} hold {aimHold:0.00} stride {stride:0.000} up {(up ? upperClip : "-")} full {(fu ? fullClip : "-")} bank {carriage?.Bank ?? 0:0.0} tilt {carriage?.Tilt ?? 0:0.0} upos {(float)tree.Get("parameters/upper/current_position"):0.000} piv {pivotN} off {plantOff.Length():0.000} sim {V(Position - plantOff)} lfl {V(inv * fl)} lfr {V(inv * fr)} lpv {V(inv * pv)} dpv {V(dpv)} dfl {V(Drawn("foot_l"))} dfr {V(Drawn("foot_r"))} stage {plantStage} scrt {st.X:0.0} {st.Y:0.0} scrk {sk.X:0.0} {sk.Y:0.0}"));
     }
     Vector3 logPv, logPv2; bool logPvSet;
     bool held;
