@@ -1006,7 +1006,16 @@ public partial class PlayerView : Node3D
         float d = Mathf.Wrap(face - Rotation.Y, -Mathf.Pi, Mathf.Pi);
         // (the 2D node: she faces the aim at any speed, her legs walking by the node; aimHold keeps it, Update)
         aimFace = face;
-        if (!mine || AimLegs || speed < 1.5f || Mathf.Abs(d) > Mathf.DegToRad(110))
+        // (A1 L20) Hers: standing or slow she turns whole to the blow on the eased turn (faceGoal, Update), not in one frame;
+        // running, her waist takes it (up to 110 deg, a blow further round goes out at 110), never a whole-body flip that
+        // the run's facing undid the next frame (the demo-arpg1 flicker). --turn-snap: as before.
+        if (mine && !AimLegs && !TurnSnap)
+        {
+            faceGoal = null;
+            if (speed < 1.5f) { faceGoal = face; aim = 0; }
+            else aim = Mathf.Clamp(Mathf.RadToDeg(d), -110, 110);
+        }
+        else if (!mine || AimLegs || speed < 1.5f || Mathf.Abs(d) > Mathf.DegToRad(110))
         {
             Rotation = new Vector3(0, face, 0);
             aim = 0;
@@ -1156,12 +1165,18 @@ public partial class PlayerView : Node3D
         // moment). Snapped as Hades and Diablo IV do: 67 ms to within 10 degrees on a 90, 100 ms on a 180.
         // --turn-old: the old chase (before/after pictures).
         else if (AimLegs && aimHold > 0 && p.Leap == null && p.DashT <= 0) Rotation = new Vector3(0, aimFace, 0);
+        // (A1 L20) A blow struck standing or slow: she turns whole to it on the eased turn and stays on it while it lasts,
+        // unless she is off at a run (then the run's facing takes her back, as a blow struck running does not turn her whole).
+        else if (mine && faceGoal is float fg && aimHold > 0 && sp < 2f && p.Leap == null && p.DashT <= 0) TurnTo(fg, (float)dt, TurnMaxStanding);
         else if (sp > 0.4f && p.Leap == null)
         {
             bool stick = !TurnOld && p.StickX * p.StickX + p.StickZ * p.StickZ > 0.01;
             float want = stick ? Mathf.Atan2((float)p.StickX, (float)p.StickZ) : Mathf.Atan2((float)p.Vx, (float)p.Vz);
-            Rotation = new Vector3(0, Mathf.LerpAngle(Rotation.Y, want, 1 - Mathf.Exp(-(TurnOld ? 14 : FaceRate) * (float)dt)), 0);
+            if (mine && !TurnOld && !TurnSnap) TurnTo(want, (float)dt, TurnMax);
+            else Rotation = new Vector3(0, Mathf.LerpAngle(Rotation.Y, want, 1 - Mathf.Exp(-(TurnOld ? 14 : FaceRate) * (float)dt)), 0);
         }
+        if (aimHold <= 0) faceGoal = null;
+        turnedLast = turning; turning = false;
         // Turned to the view while a panel frames her (FollowCamera.ScreenFrame), standing.
         if (Turned is float tw && sp < 0.4f && p.AttackAnim == null && time >= flareFaceUntil)
             Rotation = new Vector3(0, Mathf.LerpAngle(Rotation.Y, tw, 1 - Mathf.Exp(-4 * (float)dt)), 0);
@@ -1741,6 +1756,32 @@ public partial class PlayerView : Node3D
     static readonly bool TurnOld = SurvivorUnchained.Args.Has("turn-old");
     static readonly float FaceRate = SurvivorUnchained.Args.Num("face-rate", 36f), BlendRate = SurvivorUnchained.Args.Num("blend-rate", 40f),
         BankRate = SurvivorUnchained.Args.Num("bank-rate", 14f);
+    /// <summary>(A1 lead 20, the owner's demo-arpg1 note "movement looked weird especially turning") Her turn, eased and
+    /// rate-limited: the old chase (FaceRate 36/s) put 126 deg of a 180 into ONE frame at 30 fps, a flip. Now her yaw speed
+    /// eases up to TurnMax deg/s and settles on the goal at TurnK/s: a 180 in ~170 ms, a 90 in ~100 ms, every frame a step of
+    /// the turn. --turn-snap: the old chase (before/after pictures); --turn-max, --turn-k, --turn-ease for looks.</summary>
+    static readonly bool TurnSnap = SurvivorUnchained.Args.Has("turn-snap");
+    static readonly float TurnMax = SurvivorUnchained.Args.Num("turn-max", 1080f), TurnK = SurvivorUnchained.Args.Num("turn-k", 22f),
+        TurnEase = SurvivorUnchained.Args.Num("turn-ease", 45f);
+    /// <summary>Standing, she turns to a blow faster (no legs to carry round).</summary>
+    const float TurnMaxStanding = 1800f;
+    float yawVel;
+    bool turning, turnedLast;
+    /// <summary>A blow's facing she turns her whole body to (standing or slow when it was struck), held while aimHold lasts.</summary>
+    float? faceGoal;
+    /// <summary>One frame of the eased turn toward `want` (radians), at most `max` deg/s.</summary>
+    void TurnTo(float want, float dt, float max)
+    {
+        if (!turnedLast) yawVel = 0;
+        turning = true;
+        float err = Mathf.RadToDeg(Mathf.Wrap(want - Rotation.Y, -Mathf.Pi, Mathf.Pi));
+        float goal = Mathf.Clamp(err * TurnK, -max, max);
+        yawVel = Mathf.Lerp(yawVel, goal, 1 - Mathf.Exp(-TurnEase * dt));
+        float step = yawVel * dt;
+        // (never past the goal)
+        if (Mathf.Abs(step) > Mathf.Abs(err)) step = err;
+        Rotation = new Vector3(0, Rotation.Y + Mathf.DegToRad(step), 0);
+    }
     bool held;
     static readonly float HeadLevel = SurvivorUnchained.Args.Has("head-level") ? SurvivorUnchained.Args.Num("head-level", 0.8f) : 0.8f;
 }
