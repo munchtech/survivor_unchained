@@ -32,6 +32,5 @@ public class CastMoveTests
     }
     [Fact] public void StandingOrNoAimIsForward() { Assert.Equal(3.5, CastMove.Speed(0, 0, 0, 1, 5, 0.7, B), 6); Assert.Equal(3.5, CastMove.Speed(1, 0, 0, 0, 5, 0.7, B), 6); }
     [Fact] public void FwdOverridesWalk() => Assert.Equal(5.0, CastMove.Speed(0, 1, 0, 1, 5, 0.7, new CastMoveDef { Fwd = 1 }), 6);
-    // (A1 lead 20, 10 Nov) the shipped cap is OFF until a body that walks the cast's directions ships (cast_move.json castMoveOff)
-    [Fact] public void ShippedDefaultIsOff() => Assert.Null(CastMove.Default);
+    [Fact] public void ShippedDefaultExists() { Assert.NotNull(CastMove.Default); Assert.Equal(0.95, CastMove.Default!.Side); }
 }
