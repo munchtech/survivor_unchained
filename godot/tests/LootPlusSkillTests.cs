@@ -113,7 +113,7 @@ public class LootPlusSkillTests
         // TEST-ONLY def (the Legendary that carries one is another step's).
         Items.Register(new ItemDef
         {
-            Id = "test_plus_band", Name = "Test Band", Kind = ItemKind.Ring, Rarity = 4, Icon = "ring",
+            Id = "test_plus_band", Name = "Test Band", Kind = ItemKind.Ring, Rarity = 3, Icon = "ring", Description = "A test-only band that adds two ranks.",
             Plus = new Dictionary<string, int> { ["heroic_leap"] = 2 },
         });
         var ch = Warden(10).Ch;
