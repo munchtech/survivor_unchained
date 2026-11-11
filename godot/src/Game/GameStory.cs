@@ -14,6 +14,11 @@ namespace SurvivorUnchained.Play;
 public partial class Game
 {
     StoryPlayer? storybook;
+    /// <summary>The zone (or scene) a storybook was asked in, while it fades in (SU-032): it owns the pause from
+    /// the ask, not from when its player exists. Null: none pending.</summary>
+    object? storyAsked;
+    /// <summary>A storybook up or fading in holds the world's pause (InputOwner).</summary>
+    bool StoryHolds => storybook != null || storyAsked != null;
     /// <summary>The bars a storybook ended under, full and black, for the cinematic
     /// that follows it on the cut (C01) to take over, so nothing moves at the seam.</summary>
     CinemaBars? storyBars;
@@ -173,7 +178,7 @@ public partial class Game
     /// storybook can play (--nocine, a quick start without --cines, one already up, a cinematic, no such file) it goes on.</summary>
     public void Storybook(string id, Action then)
     {
-        if (scene == null || storybook != null || cine != null || Args.Has("nocine") || (quick && !Args.Has("cines")) || !StoryExists(id)) { then(); return; }
+        if (scene == null || StoryHolds || cine != null || Args.Has("nocine") || (quick && !Args.Has("cines")) || !StoryExists(id)) { then(); return; }
         StoryFile f;
         try { f = StoryFile.Load(id); }
         catch (Exception e) { GD.PushWarning($"storybook: {id} not played ({e.Message})"); then(); return; }
@@ -190,8 +195,18 @@ public partial class Game
         controls.ClearLatches();
         hud.Fade(1, 0.6);
         GD.Print($"storybook: {id} mid-zone at wall {Time.GetTicksMsec() / 1000.0:0.00}s");
+        object askedIn = (object?)zone ?? scene;
+        storyAsked = askedIn;
         Wait(0.6, () =>
         {
+            // (SU-032) The zone left during the fade (LeaveZone let the ask go): no page, and no `then`, which drives
+            // that zone (the Prologue's dawn: the Flare taken, the lamp given, the dawn and C04 A on a place gone).
+            if (!ReferenceEquals(storyAsked, askedIn) || !InputOwner.PageStillWanted(askedIn, (object?)zone ?? scene))
+            {
+                GD.Print($"storybook: {id} dropped, its zone left during the fade");
+                return;
+            }
+            storyAsked = null;
             // (M6) The page plays over bars of its own, full and black, as SB00 does: the HUD's black (above every
             // page) goes the moment they are up. Left up, it hid the page, the film after and the whole day (run m6r1).
             // The player is handed them (it opens their black over its page): its own bars under these hid it (m6r2).

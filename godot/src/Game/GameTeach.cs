@@ -544,7 +544,7 @@ public partial class Game
         {
             teachFroze = false;
             if (scene != null) { scene.Hold = 0; scene.FxStill = false; scene.Fx.Frozen = false; }
-            if (scene != null && hudMode == null && screens.Current == null && cine == null) scene.SimPaused = false;
+            if (scene != null && screens.Current == null && cine == null && InputOwner.RunsOnClose(hudMode, storybook != null, storyAsked != null)) scene.SimPaused = false;
         }
     }
 

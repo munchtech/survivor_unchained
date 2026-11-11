@@ -544,6 +544,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     void Clear(bool all)
     {
         var b = B!;
+        attempt++;
         if (all || atBoss)
         {
             script?.Clear();
@@ -695,6 +696,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
         Now = Stage.Won;
         StageEnded("boss");
         if (boss != null) foreach (var l in Hoard()) B.Spill(l, x, z);
+        attempt++;
         script?.Clear();
         boss = null;
         // The outcome told first: the end's cinematic reads it (redcowl = spared picks its words).
@@ -715,6 +717,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     {
         if (B == null || over) return;
         over = true;
+        attempt++;
         Now = Stage.Over;
         G.SetBoss(null);
         var result = Arenas.Finish(G.Journey, B, Spec, won, killer);
@@ -874,7 +877,17 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     public double HeightAt(double x, double z) => G.Look.HeightAt(x, z);
     public bool Test(Cond cond) => Rules.Test(cond, C);
     bool IStoryArena.Knows(string key) => Knows(key);
-    public void After(double seconds, Action act) => G.After(seconds, act);
+    /// <summary>Delayed work belongs to the attempt that asked for it: a rise, a clear and the night's end move
+    /// the attempt on, and work an older attempt asked for is dropped (a cage asked for before a rise never
+    /// lands on the boss that rose in its place).</summary>
+    public void After(double seconds, Action act)
+    {
+        int asked = attempt;
+        G.After(seconds, () => { if (asked == attempt) act(); });
+    }
+
+    /// <summary>The attempt delayed work belongs to (see After).</summary>
+    int attempt;
 
     public List<Enemy> Group(string def, int n, double x, double z, double spread, SpawnStyle? style = null)
     {

@@ -89,6 +89,18 @@ public sealed class Levy
         return (X + Sx * off, Z + Sz * off);
     }
 
+    /// <summary>The span its standing men hold, as offsets across it from its middle (its lowest and
+    /// highest standing slots): an end that falls narrows that side only, so the span may be lopsided.</summary>
+    (double Lo, double Hi) Span()
+    {
+        int lo = int.MaxValue, hi = int.MinValue;
+        foreach (var m in men)
+            if (Here(m)) { lo = Math.Min(lo, m.Slot); hi = Math.Max(hi, m.Slot); }
+        if (lo > hi) return (0, 0);
+        double mid = (slots - 1) / 2.0;
+        return ((lo - mid) * Spacing, (hi - mid) * Spacing);
+    }
+
     static bool Here(Man m) => m.E.Alive && m.E.Seed == m.Seed && m.E.State != EnemyState.Dying;
 
     /// <summary>The men at its two ends are targets; the rest are locked.</summary>
@@ -145,10 +157,11 @@ public sealed class Levy
         }
         // The front: pikes levelled. Walked into, it shoves her back, and bites now and then.
         double rx = p.X - X, rz = p.Z - Z, along = rx * Fx + rz * Fz, across = rx * Sx + rz * Sz;
-        double half = (slots - 1) / 2.0 * Spacing + 0.6;
+        var (lo, hi) = Span();
+        lo -= 0.6; hi += 0.6;
         shoveT -= dt;
         biteGrace -= dt;
-        if (Math.Abs(across) <= half && along > -0.6 && along < Front && shoveT <= 0)
+        if (across >= lo && across <= hi && along > -0.6 && along < Front && shoveT <= 0)
         {
             shoveT = 0.5;
             var pike = men[0].E;
@@ -160,7 +173,7 @@ public sealed class Levy
             drawT = 0.5;
             double ex = X + Fx * Front * 0.6, ez = Z + Fz * Front * 0.6;
             B.Events.Emit(new Ev.Telegraph { Id = mark, Shape = TelegraphShape.Line, Kind = TelegraphKind.Wall,
-                X = ex - Sx * half, Z = ez - Sz * half, X1 = ex + Sx * half, Z1 = ez + Sz * half, Width = Front, Duration = 0.6, Hostile = true });
+                X = ex + Sx * lo, Z = ez + Sz * lo, X1 = ex + Sx * hi, Z1 = ez + Sz * hi, Width = Front, Duration = 0.6, Hostile = true });
         }
     }
 
@@ -189,21 +202,23 @@ public sealed class Levy
     /// <summary>Does the way from one point to another cross the line (its men's span)?</summary>
     public bool Between(double ax, double az, double bx, double bz)
     {
-        if (Broken || men.Count == 0) return false;
-        double half = (slots - 1) / 2.0 * Spacing + 0.6;
+        if (Broken || !men.Any(Here)) return false;
+        var (lo, hi) = Span();
         double a = (ax - X) * Fx + (az - Z) * Fz, b = (bx - X) * Fx + (bz - Z) * Fz;
         if (Math.Sign(a) == Math.Sign(b)) return false;
         double t = a / (a - b);
         double cx = ax + (bx - ax) * t, cz = az + (bz - az) * t;
-        return Math.Abs((cx - X) * Sx + (cz - Z) * Sz) <= half;
+        double across = (cx - X) * Sx + (cz - Z) * Sz;
+        return across >= lo - 0.6 && across <= hi + 0.6;
     }
 
-    /// <summary>The way round it: past its nearer end, a little behind it.</summary>
+    /// <summary>The way round it: past its nearer standing end, a little behind it.</summary>
     public (double X, double Z) Round(double px, double pz)
     {
-        double half = (slots - 1) / 2.0 * Spacing + 2.5;
-        double side = (px - X) * Sx + (pz - Z) * Sz >= 0 ? 1 : -1;
-        return (X + Sx * half * side - Fx * 1.5, Z + Sz * half * side - Fz * 1.5);
+        var (lo, hi) = Span();
+        double across = (px - X) * Sx + (pz - Z) * Sz;
+        double off = across >= (lo + hi) / 2 ? hi + 2.5 : lo - 2.5;
+        return (X + Sx * off - Fx * 1.5, Z + Sz * off - Fz * 1.5);
     }
 
     /// <summary>Where a man behind it stands (its captain): the middle, a few paces back.</summary>
