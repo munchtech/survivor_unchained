@@ -222,6 +222,17 @@ public static class WickBook
         return b < path.Length ? path[b] : null;
     }
 
+    /// <summary>A lamp is offered: a skill holds a point and NextLamp names the lamp it would light (ch, skill, lampId). The M6 tutorial (TeachSeams.LampOffered) listens.</summary>
+    public static event System.Action<CharacterData, string, string>? LampOffered;
+
+    /// <summary>A held point was lit and a lamp now burns (ch, skill, lampId). The M6 tutorial (TeachSeams.LampOffered) listens.</summary>
+    public static event System.Action<CharacterData, string, string>? LampLit;
+
+    static void Offer(CharacterData ch, string skill)
+    {
+        if (NextLamp(ch, skill) is { } lamp) LampOffered?.Invoke(ch, skill, lamp);
+    }
+
     /// <summary>Light one held point: Held less one; the lamp now burning (NextLamp before the call), or null when nothing
     /// is held. A point past the path's end still burns (its rank grows) and returns null.</summary>
     public static string? Light(CharacterData ch, string skill)
@@ -230,6 +241,7 @@ public static class WickBook
         var lamp = NextLamp(ch, skill);
         var h = HeldMap(ch);
         if (--h[skill] <= 0) h.Remove(skill);
+        if (lamp != null) LampLit?.Invoke(ch, skill, lamp);
         return lamp;
     }
 
@@ -239,6 +251,7 @@ public static class WickBook
         if (n <= 0 || Wicks.Of(skill) == null) return;
         var h = HeldMap(ch);
         h[skill] = h.GetValueOrDefault(skill) + n;
+        Offer(ch, skill);
     }
 
     /// <summary>Light my way, by day: every held point burns (each skill's next lamps along its path).</summary>
@@ -266,6 +279,7 @@ public static class WickBook
     {
         if (!Holds(ch) || Wicks.Of(skill) == null) return;
         HeldMap(ch)[skill] = SkillBook.Rank(ch);
+        Offer(ch, skill);
     }
 
     /// <summary>The level-up card's before and after for lighting lampId (the skill's next held lamp, NextLamp): the

@@ -154,6 +154,38 @@ public class HeldPointTests
     }
 
     [Fact]
+    public void A_point_earned_offers_its_lamp_and_a_level_without_one_does_not()
+    {
+        var j = Warden();
+        LevelTo(j, 2);
+        var offered = new System.Collections.Generic.List<(string Skill, string Lamp)>();
+        void On(CharacterData c, string s, string l) { if (c == j.Ch) offered.Add((s, l)); }
+        WickBook.LampOffered += On;
+        try
+        {
+            LevelTo(j, 3);
+            Assert.Contains(offered, o => o.Skill == "sunder" && o.Lamp == WickBook.NextLamp(j.Ch, "sunder"));
+            offered.Clear();
+            LevelTo(j, 4);
+            Assert.Empty(offered);
+        }
+        finally { WickBook.LampOffered -= On; }
+    }
+
+    [Fact]
+    public void Lighting_a_point_raises_LampLit_with_the_lamp()
+    {
+        var j = Warden();
+        var lit = new System.Collections.Generic.List<(string Skill, string Lamp)>();
+        void On(CharacterData c, string s, string l) { if (c == j.Ch) lit.Add((s, l)); }
+        var next = WickBook.NextLamp(j.Ch, "sunder");
+        WickBook.LampLit += On;
+        try { Assert.Equal(next, WickBook.Light(j.Ch, "sunder")); }
+        finally { WickBook.LampLit -= On; }
+        Assert.Equal([("sunder", next!)], lit);
+    }
+
+    [Fact]
     public void Level_nine_all_lit_has_Sunders_Turn()
     {
         var j = Warden();
