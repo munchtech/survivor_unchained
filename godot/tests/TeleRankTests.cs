@@ -39,7 +39,7 @@ public class TeleRankTests
         Assert.Equal(d.Rows, f.Rows);
     }
 
-    [Fact(Skip = "FAILS on purpose-data: Fire glow/light (hue 21-22) is 3.5-5 deg from the crowd orange #ff7a14 (hue 26); Physical glow/light 10 deg. Her school hues are another lead's; remove Skip when resolved.")]
+    [Fact]
     public void HerSchoolHuesStayClearOfTheReservedRanks()
     {
         // Copied from godot/src/Fx/Palette.cs lines 27 (Physical), 28 (Fire), 34 (Holy): core, glow, light.

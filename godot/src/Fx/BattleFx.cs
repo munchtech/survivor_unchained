@@ -1564,7 +1564,7 @@ public partial class BattleFx : Node3D
                     var (look, raising) = TelegraphRead.Of(e, champ);
                     // A fodder charger's kit lane (a champion's or a boss's is red already): the same red line at a lower
                     // strength (round 1's judge: thin faint edges and a faint fill read as nothing).
-                    // (rank 2, the crowd's reserved orange: red means only an elite's or a boss's blow)
+                    // (rank 2, the crowd's reserved crimson, dim: the bright scarlet means only an elite's or a boss's blow)
                     bool fodderCharge = e.Tell == "charge" && e.Hostile && e.Shape == TelegraphShape.Line && look != TelegraphRead.TeleLook.Danger;
                     if (fodderCharge) look = TelegraphRead.TeleLook.Amber;
                     // The kit's ring (a hostile circle): the full danger red, never the amber the lamp's hold ring was read as.
