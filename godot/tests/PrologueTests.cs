@@ -525,6 +525,30 @@ public class PrologueTests
         Assert.Equal([0.7, 0.4], (System.Collections.Generic.List<double>)at.GetField("Thresholds")!.GetValue(ai)!);
     }
 
+    [Fact]
+    public void The_Wardens_cleave_is_a_frontal_sweep_cone_not_a_ground_circle()
+    {
+        var s = Make(draft: true);
+        var ford = s.Meta.Place("LOWFORD", "ford");
+        typeof(Prologue).GetMethod("Go", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.Invoke(s.Zone, [Prologue.Stage.ToFord]);
+        Stand(s, ford.X, ford.Z + 12);
+        Run(s, 7.1);
+        Assert.Equal(Prologue.Stage.Boss, s.Zone.Now);
+        var w = s.B.Enemies.Living().Single(e => e.Tag == "warden");
+        var ai = typeof(Prologue).GetField("ai", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(s.Zone)!;
+        var at = ai.GetType();
+        at.GetField("CleaveCd")!.SetValue(ai, 0.0);
+        Stand(s, w.X + 4.5, w.Z);
+        for (int i = 0; i < 600 && (string)at.GetField("Mode")!.GetValue(ai)! != "windup"; i++) { Stand(s, w.X + 4.5, w.Z); Run(s, 1 / 60.0); }
+        Assert.Equal("windup", (string)at.GetField("Mode")!.GetValue(ai)!);
+        var blow = (Battle.EnemyBlow)at.GetField("Cleave")!.GetValue(ai)!;
+        Assert.Equal(TelegraphShape.Cone, blow.Shape);
+        Assert.Equal(6.4, blow.Radius);
+        double ax = (double)at.GetField("DirX")!.GetValue(ai)!, az = (double)at.GetField("DirZ")!.GetValue(ai)!;
+        Assert.True(blow.Hit(w.X + ax * 5, w.Z + az * 5, 0.5));
+        Assert.False(blow.Hit(w.X - ax * 3, w.Z - az * 3, 0.5));
+    }
+
     [Theory]
     [InlineData("channel")]
     [InlineData("windup")]

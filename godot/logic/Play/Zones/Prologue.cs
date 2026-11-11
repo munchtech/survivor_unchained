@@ -1041,9 +1041,10 @@ public sealed partial class Prologue : ZoneRuntime
                 {
                     ai.Mode = "windup"; ai.T = 0; e.AnimT = 0; ai.DirX = dx / dist; ai.DirZ = dz / dist;
                     ai.HitX = e.X + ai.DirX * 3; ai.HitZ = e.Z + ai.DirZ * 3;
-                    B.Events.Emit(new Ev.Telegraph { Id = e.Id * 10 + 1, Shape = TelegraphShape.Circle, X = ai.HitX, Z = ai.HitZ, Radius = 3.4, Duration = 1.05, Hostile = true, Boss = true });
-                    // (M3: the cleave is a marked blow the hands read; it lands on its own clock, as his did, within 3.4 m + her girth)
-                    ai.Cleave = B.Blow(new Battle.EnemyBlow { OwnMark = true, Shape = TelegraphShape.Circle, X = ai.HitX, Z = ai.HitZ, Radius = 3.4 + p.Radius * 0.5,
+                    B.Events.Emit(new Ev.Telegraph { Id = e.Id * 10 + 1, Shape = TelegraphShape.Cone, X = e.X, Z = e.Z, Radius = 6.4, Angle = Math.Atan2(ai.DirZ, ai.DirX), Arc = 120 * Math.PI / 180, Duration = 1.05, Hostile = true, Boss = true });
+                    // (M3: the cleave is a marked blow the hands read; it lands on its own clock, as his did: a 120 degree frontal sweep, 6.4 m,
+                    // true to his level Sword_Attack)
+                    ai.Cleave = B.Blow(new Battle.EnemyBlow { OwnMark = true, Shape = TelegraphShape.Cone, X = e.X, Z = e.Z, Radius = 6.4, Angle = Math.Atan2(ai.DirZ, ai.DirX), Arc = 120 * Math.PI / 180,
                         Delay = 1.05, Damage = e.Damage * 1.5 * CleaveMul, Source = "The Ford-Warden", From = e,
                         After = bt => { if (PaceNotes.Count < 200) PaceNotes.Enqueue($"ford cleave lands t={bt.Time:0.00} dealt={ai.Cleave?.Dealt ?? -1:0} mode={ai.Mode} herAt={Dist(bt.Player.X, bt.Player.Z, ai.HitX, ai.HitZ):0.0}"); } });
                     wardenView.SetPose("windup");
@@ -1084,7 +1085,8 @@ public sealed partial class Prologue : ZoneRuntime
                     ai.Mode = "cleave"; ai.T = 0; e.AnimT = 0;
                     wardenView.SetPose("cleave");
                     // (its blow is ai.Cleave's: Battle.UpdateBlows lands it)
-                    B.Events.Emit(new Ev.Explosion { X = ai.HitX, Z = ai.HitZ, Radius = 3.4, School = School.Physical, Power = 1.2 });
+                    // (a level sweep right to left across his front, no ground slam: Side -1 runs toward the lesser angle, his left)
+                    B.Events.Emit(new Ev.Slash { X = e.X, Z = e.Z, Angle = Math.Atan2(ai.DirZ, ai.DirX), Arc = 120 * Math.PI / 180, Reach = 6.4, School = School.Physical, Side = -1 });
                     B.Events.Emit(new Ev.Shake { Amount = 0.55 });
                 }
                 return true;
