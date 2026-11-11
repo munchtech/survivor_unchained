@@ -2143,7 +2143,7 @@ public partial class PlayerView : Node3D
             }
             // (never more than 0.21 m in a frame, nor 0.35 off the sim: let go there)
             var stp = new Vector3(model.X - lastModel.X, 0, model.Z - lastModel.Z);
-            if (lastModelSet && stp.Length() > 0.21f && plantStage == 2 && !plantRetaken)
+            if (lastModelSet && stp.Length() > 0.15f && plantStage == 2 && !plantRetaken)
             {
                 // (r4: the foot taken at the easing frame still far from under her: this frame on her momentum instead, the
                 // foot taken again here, as r3 did; the plant holds rather than let go)
@@ -2153,7 +2153,7 @@ public partial class PlayerView : Node3D
                 var fw2 = Drawn(plantFoot);
                 plantW = new Vector3(fw2.X, 0, fw2.Z);
             }
-            else if (lastModelSet && stp.Length() > 0.21f) { model = lastModel + stp.Normalized() * 0.21f; plantStage = 4; }
+            else if (lastModelSet && stp.Length() > 0.16f) { model = lastModel + stp.Normalized() * 0.16f; plantStage = 4; }
         }
         var off = new Vector3(model.X - sim.X, 0, model.Z - sim.Z);
         if (plantStage == 4 || plantStage == 0)
@@ -2162,10 +2162,10 @@ public partial class PlayerView : Node3D
             float len = off.Length();
             if (len > 0.005f)
             {
-                var want = off * 0.65f;
+                var want = off * 0.8f;
                 var simStep = lastModelSet ? new Vector3(sim.X - (lastModel.X - plantOff.X), 0, sim.Z - (lastModel.Z - plantOff.Z)) : Vector3.Zero;
                 // (the model's step = the sim's + the offset's change: at most 0.19 m)
-                for (int k = 0; k < 6 && (simStep + want - off).Length() > 0.19f; k++) want = want.Lerp(off, 0.35f);
+                for (int k = 0; k < 12 && (simStep + want - off).Length() > 0.185f; k++) want = want.Lerp(off, 0.35f);
                 off = want;
             }
             else { off = Vector3.Zero; if (plantStage == 4) plantStage = 0; }
