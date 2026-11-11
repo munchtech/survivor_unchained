@@ -131,6 +131,8 @@ public partial class Game
                     else areas.Add(mm);
                 }
                 break;
+            // (M7a A5a: the level card offering a lamp)
+            case "lamp_offer": if (hud.LevelCardArea is Rect2 la) areas.Add(la); break;
             case "tally": if (hud.TallyArea is Rect2 ta) areas.Add(ta); break;
             // (the numbers card: held up by UpdateTeach while this callout is the one showing; no area on the first frame)
             case "card": hud.TeachCard = true; if (hud.XpCardArea is Rect2 xa) areas.Add(xa); break;
@@ -353,6 +355,7 @@ public partial class Game
         if (t.Hud is string s && s.StartsWith("socket:") && hud.SocketOf(s[7..]) == null) return Presence.NotYet;
         if (t.Hud is string st && st.StartsWith("seat:") && (SeatSlot(st) is not int sl || hud.SeatRect(sl) == null)) return Presence.NotYet;
         // (a HUD part that comes and goes: here while it shows)
+        if (t.Hud == "lamp_offer" && hud.LevelCardArea == null) return Presence.NotYet;
         if (t.Hud == "prompt" && hud.PromptArea == null || t.Hud == "minimap" && hud.MinimapArea == null
             || t.Hud == "tally" && hud.TallyArea == null) return Presence.NotYet;
         // (a freeze on her own state: never the moment a roof hides her)

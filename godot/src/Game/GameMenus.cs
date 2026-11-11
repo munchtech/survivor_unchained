@@ -52,6 +52,8 @@ public partial class Game
             case Act.Inventory: Open("inventory"); return true;
             case Act.Character: Open("character"); return true;
             case Act.Arts: Open("arts"); return true;
+            // (M7a: while a lamp offer's card is up, the key lights its lamp; the lamps board is for when none is)
+            case Act.Lamps when hud.LampOfferUp is { } offer && Journey.LightHeld(offer.Skill, Battle) != null: hud.LampOfferLit(offer); return true;
             case Act.Lamps when LampsScreen.On: Open("lamps"); return true;
             case Act.Journal: Open("journal"); return true;
             case Act.Map: Open("map"); return true;
