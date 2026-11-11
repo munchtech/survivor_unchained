@@ -984,7 +984,9 @@ public sealed partial class Prologue : ZoneRuntime
             if (!litPylons[i]) continue;
             double px = pylons[i].X - e.X, pz = pylons[i].Z - e.Z;
             double along = px * dx + pz * dz, off = Math.Abs(px * dz - pz * dx);
-            if (along > -0.5 && along <= 4 && off < e.Radius + 0.9) return true;
+            // (r7: 4 m to the pylon's middle still bumped one 0.12 s in: he meets it Radius + 0.9 short of it, so the 4 m are
+            // of his own run)
+            if (along > -0.5 && along <= 4 + e.Radius + 0.9 && off < e.Radius + 0.9) return true;
         }
         return false;
     }

@@ -21,8 +21,10 @@ public partial class WardenSwing : MeshInstance3D
     At? last;
     /// <summary>Whether the strike is live (new samples are taken), set by the view each frame.</summary>
     public bool Live;
-    /// <summary>The cleave's reach from his centre (Prologue's cone, 6.4 m).</summary>
-    public float Reach = 6.4f;
+    /// <summary>The cleave's reach from his centre (Prologue's cone, 6.4 m) the sheet runs on to past the tip; 0: the
+    /// blade's own trail only. (r7, the lead's look: run on to the reach it laid a 6.4 m sheet behind him on the raise and
+    /// washed half the frame at the landing; the telegraph's cone already shows the reach, so the trail is the steel's.)</summary>
+    public float Reach = 0f;
     /// <summary>Seconds a sample lives behind the blade, and the steps each frame is rounded into.</summary>
     const double Life = 0.22;
     const int Sub = 5;
@@ -99,8 +101,8 @@ void fragment() {
     {
         var dir = tip - hilt; var flat = new Vector3(tip.X - centre.X, 0, tip.Z - centre.Z);
         float r = flat.Length(), lie = dir.Length() > 1e-3f ? 1 - Mathf.Abs(dir.Normalized().Y) : 0;
-        float w = Mathf.SmoothStep(0.35f, 0.8f, lie) * Mathf.Clamp((Reach - r) / Reach * 3, 0, 1);
-        var outer = r > 0.2f ? tip + flat / r * (Reach - r) * w : tip;
+        float w = Reach > 0 ? Mathf.SmoothStep(0.35f, 0.8f, lie) * Mathf.Clamp((Reach - r) / Reach * 3, 0, 1) : 0;
+        var outer = Reach > r && r > 0.2f ? tip + flat / r * (Reach - r) * w : tip;
         outer.Y = Mathf.Lerp(tip.Y, centre.Y + 0.3f, 0.6f * w);
         return new At { Hilt = hilt, Tip = tip, Out = outer, Born = born };
     }
