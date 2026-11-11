@@ -88,7 +88,9 @@ public partial class LevelCard : Control
             if (s.Kind != LevelCardKind.LampLit) line = s.Line ?? LevelCards.Line(wd.Description);
         }
         else if (body) name = s.Skill;
-        if (s.Kind == LevelCardKind.LampLit) { measure = s.Measure + " "; before = LevelCards.Num(s.Before); after = LevelCards.Num(s.After); }
+        if (s.Kind == LevelCardKind.LampLit) { measure = s.Measure + " "; before = LevelCards.Num(s.Before); after = LevelCards.Num(s.After);
+            // (U1: a blow reads in whole numbers, as the wick's sum line and the skill tips print it)
+            if (s.Measure == "a blow") { before = Math.Round(s.Before).ToString(System.Globalization.CultureInfo.InvariantCulture); after = Math.Round(s.After).ToString(System.Globalization.CultureInfo.InvariantCulture); } }
         prompt = s.HasPrompt ? s.PromptText! : "";
 
         // the skill's key chip (a new key only), after its name

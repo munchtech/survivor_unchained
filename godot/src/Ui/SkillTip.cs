@@ -68,7 +68,8 @@ public partial class SkillTip : Control
         if (!show) return;
         string k = KeyOf(v!);
         if (k != key) { key = k; Build(v!); }
-        if (!float.IsNaN(leftOf) && !float.IsNaN(bottomAt) && leftOf - Out - Size.X >= 8)
+        float px = GetParent() is Control pci ? pci.GetGlobalPosition().X : 0;
+        if (!float.IsNaN(leftOf) && !float.IsNaN(bottomAt) && leftOf - Out - Size.X + px >= 8)
         {
             // (beside a panel: its outer right edge at leftOf, its outer bottom edge at bottomAt)
             var side = new Vector2(Mathf.Round(leftOf - Out - Size.X), Mathf.Clamp(Mathf.Round(bottomAt - Out - Size.Y), 8, 1080 - 8 - Size.Y));

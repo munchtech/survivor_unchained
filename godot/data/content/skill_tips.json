@@ -28,13 +28,13 @@
     "resolve": [ "Cost", "{resolve} Resolve" ],
     "drain": [ "Cost", "{drain} Resolve a second" ],
     "cooldown": [ "Cooldown", "{cooldown} s" ],
-    "chain": [ "Pace", "a cut every {every} s" ]
+    "chain": [ "Dealt as", "{cut} every {every} s" ]
   },
 
   "skills": {
     "sunder": {
       "line": "Huge cuts at everything in front of you, for as long as you hold. About every 6 s of cutting, a heavy swing splits the ground ahead.",
-      "numbers": [ [ "Damage", "{cut} a cut" ], [ "Reach", "{base.reach} m" ], [ "Ground split", "{base.line} m ahead" ] ]
+      "numbers": [ [ "Damage", "{damage} a blow" ], [ "Reach", "{base.reach} m" ], [ "Ground split", "{base.line} m ahead" ] ]
     },
     "cleaver": {
       "line": "A heavy chop that sweeps the whole front of you and leaves the wounds open.",

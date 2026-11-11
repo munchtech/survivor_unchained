@@ -98,6 +98,8 @@ public partial class LampPage : Control
     const float Wider = 6;
 
     LampWindow? backdrop;
+    /// <summary>The book frame's drawn left edge lies this far left of the content rect (1030): measured in the 1080 shot, the frame at x 1005.</summary>
+    const float BookEdge = 25;
 
     void Lay()
     {
@@ -560,7 +562,7 @@ public partial class LampPage : Control
         var tx = Tabs.GetGlobalTransform();
         var top = GetGlobalTransform().AffineInverse() * (tx * (Tabs.Centers[tab] - new Vector2(0, WickTabs.D / 2)));
         var inv = GetGlobalTransform().AffineInverse();
-        float panelLeft = Wide ? WickRect.Position.X : (backdrop != null ? (inv * backdrop.GetGlobalPosition()).X : 1030);
+        float panelLeft = Wide ? WickRect.Position.X : (backdrop != null ? (inv * (backdrop.GetGlobalPosition() - new Vector2(BookEdge, 0))).X : 1030 - BookEdge);
         float rowBottom = (inv * (tx * (Tabs.Centers[tab] + new Vector2(0, WickTabs.D / 2)))).Y;
         tabTip.Set(true, top, tabView, -1, panelLeft - 16, rowBottom);
     }
