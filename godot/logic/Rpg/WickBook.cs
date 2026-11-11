@@ -302,7 +302,7 @@ public static class WickBook
     /// differs, in order: damage ("Damage", whole numbers), reach or size ("Reach" for a skill with a reach, else "Size": the
     /// base number times the wick's Area, in m), cooldown ("Cooldown", s). Null when none does (a Turn's own text says it).
     /// The character is not touched.</summary>
-    public static (string What, string Before, string After)? LampDelta(CharacterData ch, string skill, string lampId)
+    public static (string What, string Before, string After, string Cond)? LampDelta(CharacterData ch, string skill, string lampId)
     {
         if (!Weapons.All.TryGetValue(skill, out var def) || Wicks.Of(skill) == null || Wicks.Lamp(skill, lampId) == null) return null;
         var inv = System.Globalization.CultureInfo.InvariantCulture;
@@ -320,13 +320,25 @@ public static class WickBook
         var more = new WeaponInst(skill, rank, 0);
         more.Wick = Turns.Build(more, ids.Select(id => Wicks.Lamp(skill, id)).Where(l => l != null).Select(l => l!.Value), ids);
         if (System.Math.Round(more.Damage) != System.Math.Round(now.Damage))
-            return ("Damage", System.Math.Round(now.Damage).ToString("0", inv), System.Math.Round(more.Damage).ToString("0", inv));
+            return ("Damage", System.Math.Round(now.Damage).ToString("0", inv), System.Math.Round(more.Damage).ToString("0", inv), "");
+        // A conditional damage lamp (more to what is statused, to champions): the blow against that, with every lit lamp of
+        // the same condition (same strand for a status) added to this one's.
+        if (Wicks.Lamp(skill, lampId) is { N: < Wicks.PerStrand } cl && cl.Strand.LeadIns[cl.N - 1] is { } li && (li.VsStatus != 0 || li.VsChampion != 0))
+        {
+            bool status = li.VsStatus != 0;
+            double Bonus(string id) => Wicks.Lamp(skill, id) is { N: < Wicks.PerStrand } o && (!status || o.Strand == cl.Strand)
+                ? (status ? o.Strand.LeadIns[o.N - 1].VsStatus : o.Strand.LeadIns[o.N - 1].VsChampion) : 0;
+            double lit = ids.Where(id => id != lampId).Sum(Bonus), add = Bonus(lampId);
+            double b0 = now.Damage * (1 + lit), b1 = now.Damage * (1 + lit + add);
+            string fmt = System.Math.Round(b0) != System.Math.Round(b1) ? "0" : "0.0";
+            return ("Damage", b0.ToString(fmt, inv), b1.ToString(fmt, inv), status ? "on " + cl.Strand.TurnDef.Statused + " foes" : "on champions");
+        }
         double? size = def.Base.Reach ?? def.Base.Radius;
         double a0 = now.Wick?.Area ?? 1, a1 = more.Wick?.Area ?? 1;
         if (size is { } sz && System.Math.Abs(a1 - a0) > 1e-9)
-            return (def.Base.Reach != null ? "Reach" : "Size", (sz * a0).ToString("0.##", inv) + " m", (sz * a1).ToString("0.##", inv) + " m");
+            return (def.Base.Reach != null ? "Reach" : "Size", (sz * a0).ToString("0.##", inv) + " m", (sz * a1).ToString("0.##", inv) + " m", "");
         double c0 = Firing.CampaignCooldownOf(now, true), c1 = Firing.CampaignCooldownOf(more, true);
-        if (System.Math.Round(c1, 1) != System.Math.Round(c0, 1)) return ("Cooldown", System.Math.Round(c0, 1).ToString("0.#", inv) + " s", System.Math.Round(c1, 1).ToString("0.#", inv) + " s");
+        if (System.Math.Round(c1, 1) != System.Math.Round(c0, 1)) return ("Cooldown", System.Math.Round(c0, 1).ToString("0.#", inv) + " s", System.Math.Round(c1, 1).ToString("0.#", inv) + " s", "");
         return null;
     }
 

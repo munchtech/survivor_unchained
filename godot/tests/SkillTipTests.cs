@@ -162,6 +162,24 @@ public class SkillTipTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_conditional_damage_lamp_reports_the_blow_against_its_condition()
+    {
+        var j = Warden();
+        var st = WickBook.LampDelta(j.Ch, "sunder", "holy.2");
+        Assert.NotNull(st);
+        Assert.Equal("Damage", st!.Value.What);
+        Assert.True(double.Parse(st.Value.After) > double.Parse(st.Value.Before));
+        Assert.Equal("on seared foes", st.Value.Cond);
+        var ch = WickBook.LampDelta(j.Ch, "rebuke", "rebuke.morning.3");
+        Assert.NotNull(ch);
+        Assert.True(double.Parse(ch!.Value.After) > double.Parse(ch.Value.Before));
+        Assert.Equal("on champions", ch.Value.Cond);
+        // the statuses' chance and duration lamps stay without a delta
+        Assert.Null(WickBook.LampDelta(j.Ch, "sunder", "holy.1"));
+        Assert.Null(WickBook.LampDelta(j.Ch, "sunder", "holy.3"));
+    }
+
+    [Fact]
     public void The_level_9_cards_table()
     {
         var j = Warden();

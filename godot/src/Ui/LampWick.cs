@@ -465,7 +465,7 @@ public partial class LampWick : Control
         if (Skill == null || id == "") return line;
         if (!deltaOf.TryGetValue(id, out var d))
         {
-            d = WickBook.LampDelta(ch, Skill, id) is { } x ? $"{x.What} {x.Before} → {x.After}" : "";
+            d = WickBook.LampDelta(ch, Skill, id) is { } x ? $"{x.What} {x.Before} → {x.After}" + (x.Cond == "" ? "" : " " + x.Cond) : "";
             deltaOf[id] = d;
         }
         return d == "" ? line : line + " · " + d;
