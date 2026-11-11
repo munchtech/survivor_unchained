@@ -1,0 +1,10 @@
+{
+  "_note": "What is on screen is ranked (docs/design/ARPG_FUN.md P0 item 4). Rank 1 and 2 hues are RESERVED: her own effects never use them (tests/TeleRankTests.cs checks her school hues stay clear). color = the edge's hue; bed = the dark ground under it; edge = emission energy of the edge; fill = fill energy (rank 1) or its share of the edge (rank 2); flare = the edge's lift as the blow lands; raise = the raising's ring edge; charge = a fodder charge lane's edge (the old lowered red, 0.45 x 0.75).",
+  "ranks": [
+    { "rank": 0, "name": "safe",   "color": "#8ad0ff", "bed": "#10202a", "edge": 2.2 },
+    { "rank": 0, "name": "wall",   "color": "#c8c8d0", "bed": "#18181a", "edge": 1.6 },
+    { "rank": 1, "name": "boss",   "color": "#ff0612", "bed": "#2c0604", "edge": 0.45, "fill": 0.55, "flare": 1.4 },
+    { "rank": 2, "name": "crowd",  "color": "#ff7a14", "bed": "#2a1408", "edge": 0.22, "fill": 0.6, "flare": 1.3, "raise": 0.5, "charge": 0.3375, "closing": 0.5 },
+    { "rank": 3, "name": "ground", "color": "#a050ff", "bed": "#140a24", "edge": 2.2 }
+  ]
+}

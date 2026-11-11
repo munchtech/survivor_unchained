@@ -374,7 +374,7 @@ public partial class BattleFx
         {
             if (discGlowN == discGlows.Count)
             {
-                var d = new Decal { UpperFade = 0.3f, LowerFade = 0.3f, CullMask = 1, TextureEmission = glowTex, AlbedoMix = 0, NormalFade = MarkNormalFade, EmissionEnergy = 1f };
+                var d = new Decal { UpperFade = 0.3f, LowerFade = 0.3f, CullMask = 1, TextureEmission = glowTex, AlbedoMix = 0, NormalFade = MarkNormalFade, EmissionEnergy = 1f, SortingOffset = DecalLayer.HerGround };
                 AddChild(d);
                 discGlows.Add(d);
             }

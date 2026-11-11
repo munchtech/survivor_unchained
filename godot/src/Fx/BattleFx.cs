@@ -455,6 +455,8 @@ public partial class BattleFx : Node3D
             if (s >= 0) { slotUsed[s] = true; m.Slot = s; m.HeightsDue = true; if (tex == ringTex) m.Shape = 1; }
         }
         m.Amber = styleNext == 2;
+        // (a hostile telegraph draws over gore and her own ground: Fx/DecalLayer.cs)
+        d.SortingOffset = m.Styled ? DecalLayer.Telegraph : DecalLayer.HerGround;
         m.Raise = m.Amber && raisingNext;
         m.FillNow = null;
         if (m.OverFill != null) m.OverFill.Visible = false;
@@ -545,10 +547,11 @@ public partial class BattleFx : Node3D
     void FillStyle(Mark m, Color color, bool lane)
     {
         var f = m.Fill!;
+        f.SortingOffset = m.Styled ? DecalLayer.TelegraphFill : DecalLayer.HerGround + 0.01f;
         if (m.Styled)
         {
             f.TextureEmission = m.FillNow = FillTex(lane, FillStyleOf(m), 0.01f);
-            f.Modulate = (m.Danger ? Palette.TeleDanger : Palette.TeleAmber) with { A = 0.42f };
+            f.Modulate = (m.Danger ? Palette.TeleDanger : CrowdHue) with { A = 0.42f };
             f.EmissionEnergy = m.Danger ? DangerFill : m.Energy * AmberFillK;
         }
         else
@@ -991,10 +994,14 @@ public partial class BattleFx : Node3D
     /// <summary>A danger mark's light: its edge's energy, its flare as the blow lands (x; edge x flare stays near 1.3,
     /// past it AgX folds the scarlet to salmon), its running fill's, its copy over a roof or water (x the scarlet,
     /// unshaded) and that copy's bed. A crowd's amber at about 0.4 of the red's; the raising's ring a little more.</summary>
-    const float DangerEnergy = 0.45f, DangerFlare = 1.4f, DangerFill = 0.55f, DangerOver = 0.55f, DangerOverBed = 0.95f;
+    static readonly TeleRank.Row RankBoss = TeleRank.Current.Boss, RankCrowd = TeleRank.Current.Crowd;
+    static readonly float DangerEnergy = (float)RankBoss.Edge, DangerFlare = (float)RankBoss.Flare, DangerFill = (float)RankBoss.Fill;
+    const float DangerOver = 0.55f, DangerOverBed = 0.95f;
     const float SoftEnergy = 0.75f, SoftBed = 0.35f;
-    static readonly Color ClosingRed = new(0.5f, 0.05f, 0.04f);
-    const float AmberEnergy = 0.22f, AmberFlare = 1.3f, AmberFillK = 0.6f, RaiseEnergy = 0.5f;
+    /// <summary>The crowd's rank-2 hue (data/content/tele_rank.json) at the closing band's dim strength; the horde's band.</summary>
+    static readonly Color CrowdHue = new(RankCrowd.Color), CrowdBed = new(RankCrowd.Bed);
+    static readonly Color ClosingRed = new((float)(CrowdHue.R * RankCrowd.Closing), (float)(CrowdHue.G * RankCrowd.Closing), (float)(CrowdHue.B * RankCrowd.Closing));
+    static readonly float AmberEnergy = (float)RankCrowd.Edge, AmberFlare = (float)RankCrowd.Flare, AmberFillK = (float)RankCrowd.Fill, RaiseEnergy = (float)RankCrowd.Raise, ChargeEnergy = (float)RankCrowd.Charge;
     /// <summary>A styled bed's ambient occlusion (its share of the sky's light).</summary>
     const float BedAo = 0.15f;
     /// <summary>A styled ring's hot core, half its width in metres (a crisp line a few pixels wide at the play camera,
@@ -1023,8 +1030,8 @@ public partial class BattleFx : Node3D
         var em = Image.CreateEmpty(w, h, false, Image.Format.Rgba8);
         // (the textures are sRGB; the hue's sRGB, scaled in linear and stored back)
         // (the crowd and the raising share one amber, hue ~33 on screen: AgX and the dark bed pulled #ffa020 to a rust at 24; the raising's tail must not go under 28)
-        var hot = danger ? new Color("#ff0612") : new Color("#ffbc30");
-        var bed = danger ? Palette.TeleDangerGround : new Color("#2a1d08");
+        var hot = danger ? new Color(RankBoss.Color) : CrowdHue;
+        var bed = danger ? Palette.TeleDangerGround : CrowdBed;
         // (a red bed's own glow is a breath: at 0.25 through it, with the fill's even body over it, the bed lit 1.25-2.5x
         // brighter than the ground round it and a wide lane read as a red rug, not as light; round 3's judge)
         float inside = danger ? 0.97f : style == 3 ? 0.8f : 0.7f, glowIn = danger ? 0.06f : style == 3 ? 0.06f : 0.1f;
@@ -1557,13 +1564,14 @@ public partial class BattleFx : Node3D
                     var (look, raising) = TelegraphRead.Of(e, champ);
                     // A fodder charger's kit lane (a champion's or a boss's is red already): the same red line at a lower
                     // strength (round 1's judge: thin faint edges and a faint fill read as nothing).
+                    // (rank 2, the crowd's reserved orange: red means only an elite's or a boss's blow)
                     bool fodderCharge = e.Tell == "charge" && e.Hostile && e.Shape == TelegraphShape.Line && look != TelegraphRead.TeleLook.Danger;
-                    if (fodderCharge) look = TelegraphRead.TeleLook.Danger;
+                    if (fodderCharge) look = TelegraphRead.TeleLook.Amber;
                     // The kit's ring (a hostile circle): the full danger red, never the amber the lamp's hold ring was read as.
-                    if (e.Tell == "ring" && e.Hostile && e.Shape == TelegraphShape.Circle) look = TelegraphRead.TeleLook.Danger;
+                    if (e.Tell == "ring" && e.Hostile && e.Shape == TelegraphShape.Circle) look = TelegraphRead.Champion(e, champ) ? TelegraphRead.TeleLook.Danger : TelegraphRead.TeleLook.Amber;
                     // A pull's slam (H6: marked on its heart as the drag ends, landing 0.7 s later): a blow about to land, so the
                     // kit ring's red, not the pull's look it carries in the sim.
-                    if (PullSlam(e)) look = TelegraphRead.TeleLook.Danger;
+                    if (PullSlam(e)) look = TelegraphRead.Champion(e, champ) ? TelegraphRead.TeleLook.Danger : TelegraphRead.TeleLook.Amber;
                     bool danger = look == TelegraphRead.TeleLook.Danger;
                     // (the crowd's blows and the raising: dim amber over a faint bed, in their own textures; an added
                     // amber at x2.5 went salmon under AgX, and a crowd's lunge read as loose glowing rods)
@@ -1571,7 +1579,7 @@ public partial class BattleFx : Node3D
                     if (danger) col = Palette.TeleDanger;
                     // The closing's band is the horde's dim red (the pull's reach band keeps the violet).
                     if (e.Tell == "closing") col = ClosingRed;
-                    else if (amber) col = Palette.TeleAmber;
+                    else if (amber) col = CrowdHue;
                     styleNext = danger ? 1 : amber ? 2 : 0;
                     patternNext = SurvivorUnchained.View.MarkPass.PatternOf(e.Pattern, e.School?.ToString(), e.Shape switch { TelegraphShape.Line => "line", TelegraphShape.Cone => "cone", TelegraphShape.Ring => "ring", _ => "circle" });
                     raisingNext = raising;
@@ -1583,9 +1591,9 @@ public partial class BattleFx : Node3D
                         if (e.Hostile && TelegraphRead.Champion(e, champ)) Over(lm, true);
                         if (fodderCharge)
                         {
-                            lm.Soft = true;
+                            lm.Energy = ChargeEnergy; lm.Decal.EmissionEnergy = ChargeEnergy;
                             double hx0 = e.ByX ?? e.X, hz0 = e.ByZ ?? e.Z;
-                            Flash(V(hx0, Y(hx0, hz0) + 1.2, hz0), Palette.TeleDanger, 7, 0.45f, 6);
+                            Flash(V(hx0, Y(hx0, hz0) + 1.2, hz0), CrowdHue, 7, 0.45f, 6);
                         }
                     }
                     else if (e.Shape == TelegraphShape.Cone) ConeMark(e.X, e.Z, (float)e.Radius, e.Angle ?? 0, e.Arc ?? Math.PI / 2, col, (float)e.Duration, e.Id, e.Hostile && e.Kind == TelegraphKind.Blow);

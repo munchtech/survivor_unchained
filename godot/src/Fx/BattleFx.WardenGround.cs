@@ -156,7 +156,7 @@ public partial class BattleFx
         }
         for (int i = 0; i < WgDecalPool; i++)
         {
-            var d = new Decal { UpperFade = 0.3f, LowerFade = 0.3f, CullMask = 1, NormalFade = 0.3f, Visible = false };
+            var d = new Decal { UpperFade = 0.3f, LowerFade = 0.3f, CullMask = 1, NormalFade = 0.3f, Visible = false, SortingOffset = DecalLayer.HerGround };
             AddChild(d);
             wgDecals.Add(new WgDecal { D = d });
         }
