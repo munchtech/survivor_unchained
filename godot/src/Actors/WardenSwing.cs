@@ -75,12 +75,17 @@ void fragment() {
 
     /// <summary>His skeleton has the frame's pose: the blade (its holder: grip at the origin, +Y to the tip, meta "tip")
     /// sampled if the strike is live, the frame rounded in from the last sample, and the sheet drawn again.</summary>
-    public void Sample(Node3D? holder, Vector3 centre)
+    public void Sample(Node3D? holder, MeshInstance3D? blade, Vector3 centre)
     {
-        if (!Live || holder == null || !IsInstanceValid(holder) || !holder.IsInsideTree()) return;
-        float tip = holder.HasMeta("tip") ? (float)holder.GetMeta("tip") : 1.4f;
-        var xf = holder.GlobalTransform;
-        Vector3 h1 = xf * new Vector3(0, tip * 0.12f, 0), t1 = xf * new Vector3(0, tip, 0);
+        if (!Live || holder == null || blade == null || !IsInstanceValid(holder) || !IsInstanceValid(blade) || !blade.IsInsideTree()) return;
+        // (r8, the lead's look: the holder's "tip" meta under his scale drew a sheet twice the blade.) The steel itself:
+        // its mesh's long axis in the world, the end nearer the grip the hilt (the trace's blade lo/hi/far are of it).
+        var bb = blade.GetAabb(); var bx = blade.GlobalTransform;
+        int ax = bb.Size.X >= bb.Size.Y && bb.Size.X >= bb.Size.Z ? 0 : bb.Size.Y >= bb.Size.Z ? 1 : 2;
+        var mid = bb.GetCenter(); var half = Vector3.Zero; half[ax] = bb.Size[ax] / 2;
+        Vector3 e0 = bx * (mid - half), e1 = bx * (mid + half), grip = holder.GlobalPosition;
+        if (e0.DistanceSquaredTo(grip) > e1.DistanceSquaredTo(grip)) (e0, e1) = (e1, e0);
+        Vector3 h1 = e0.Lerp(e1, 0.12f), t1 = e1;
         if (last is { } p && clock - p.Born > 1e-4)
             for (int k = 1; k <= Sub; k++)
             {

@@ -62,7 +62,13 @@ public partial class WardenView : Node3D, IBossView
         AddChild(view);
         // (B1 judge r6) the cleave's swing is his blade's own: sampled on his skeleton's every pose
         AddChild(swing);
-        view.Person.Skeleton.SkeletonUpdated += () => swing.Sample(view.HeldIn("handslot.r"), GlobalPosition);
+        view.Person.Skeleton.SkeletonUpdated += () =>
+        {
+            if (!swing.Live) return;
+            var holder = view.HeldIn("handslot.r");
+            bladeMesh ??= holder?.FindChildren("*", "MeshInstance3D", true, false).OfType<MeshInstance3D>().FirstOrDefault();
+            swing.Sample(holder, bladeMesh, GlobalPosition);
+        };
         foreach (var mi in view.Person.Meshes)
             for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
                 if (mi.GetSurfaceOverrideMaterial(s) is StandardMaterial3D m)
