@@ -1284,6 +1284,25 @@ public partial class BattleFx : Node3D
     double fxLogNext;
 
     /// <summary>A death's fx: its gore, its burst, its light (Handle's Ev.Kill).</summary>
+    /// <summary>F1 r6: a launched body's whole throw on the ground (m), as CrowdView.LaunchOf throws it (a mass kill's
+    /// out from her plus along the blow, at its longest; a lone launch along the blow, at the longest a blow throws):
+    /// its number keeps off the flight (Hits.Felled).</summary>
+    static Vector3 KillThrow(Ev.Kill e, Battle b)
+    {
+        double dx = e.Dx, dz = e.Dz, l = Math.Sqrt(dx * dx + dz * dz);
+        double ax = e.X - b.Player.X, az = e.Z - b.Player.Z, al = Math.Sqrt(ax * ax + az * az);
+        if (al > 1e-6) { ax /= al; az /= al; } else { ax = az = 0; }
+        if (e.Mass)
+        {
+            if (l > 1e-6) { dx /= l; dz /= l; } else { dx = dz = 0; }
+            dx += ax; dz += az; l = Math.Sqrt(dx * dx + dz * dz);
+        }
+        if (l < 1e-6) { dx = ax; dz = az; l = al > 1e-6 ? 1 : 0; }
+        if (l < 1e-6) { dx = 1; dz = 0; l = 1; }
+        double d = (e.Mass ? DeathShow.T.MassLaunchMax : DeathShow.T.LaunchMax) / Math.Sqrt(Math.Max(0.25, e.Scale));
+        return new Vector3((float)(dx / l * d), 0, (float)(dz / l * d));
+    }
+
     void KillFx(Ev.Kill e)
     {
         // A reflection breaking is glass, not a body (Ability: mirror_break).
@@ -1470,7 +1489,7 @@ public partial class BattleFx : Node3D
                 {
                     // (a body the Warden's line or heave kills falls, bursts and throws its gore as the view's blow lands)
                     float wkd = WgKillWait(e);
-                    Hits.FelledNow.Add(e.Enemy);
+                    Hits.Felled(e.Enemy, V(e.X, Y(e.X, e.Z) + 1.0, e.Z), e.Launch ? KillThrow(e, b) : null, e.Launch ? (float)(e.Mass ? DeathShow.T.MassLaunchHop : 0.22) : 0);
                     // F1 lead 27: her step that fells 4+ opens the kill window (FeelRules.KillDim) and folds its numbers to
                     // one. Her own blows only: the Warden's wave kills (crack-timed, judged right in round 4) stay as they are.
                     if (e.Mass && wkd <= 0 && MassKillFrame != Engine.GetFramesDrawn()) { MassKillFrame = Engine.GetFramesDrawn(); Hits.MassStep = true; }

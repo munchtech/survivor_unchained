@@ -256,7 +256,7 @@ public partial class Hits : Node3D
             for (int j = 0; j < numbers.Count; j++)
             {
                 var (o, t) = numbers[j];
-                if (j == i || t >= 1 || !o.Visible) continue;
+                if (j == i || t >= 1 || !o.Visible || clearFrom[j] != NotClearing) continue;
                 if (NumBox(cam, o.GlobalPosition, o.Text, o.FontSize) is Rect2 b && me.Intersects(b))
                     lift = Mathf.Max(lift, me.End.Y - b.Position.Y + 4);
             }
@@ -280,10 +280,13 @@ public partial class Hits : Node3D
         float h = em * 0.8f;
         // (the box's width is its text's: checked across all of it)
         float w = Mathf.Max(em * 0.8f, text.Length * em * 0.6f);
-        float top = HudTopOver((p.X - w / 2) / k, (p.X + w / 2) / k) is float ht ? ht * k : float.MaxValue;
-        if (top == float.MaxValue || p.Y + h / 2 <= top - 8) return at;
-        float to = top - 8 - h / 2;
-        if (hudShots++ < 12) GD.Print($"hits: number '{text}' size {size} ({h:0} px tall) at y {p.Y:0} (bottom {p.Y + h / 2:0}) lifted to {to:0}, HUD top {top:0}");
+        float? top = HudTopOver((p.X - w / 2) / k, (p.X + w / 2) / k) is float ht ? ht * k : null;
+        // (F1 r6, judge r5 "315" on the orb: the orb stands left of her figure's rect, which HudTop does not cover;
+        // and nothing's middle under NumberFloor, the HUD's band: FeelRules.HudSafeY)
+        var o = SurvivorUnchained.Ui.LifeLamp.Live!.OrbOnScreen;
+        float to = SurvivorUnchained.View.FeelRules.HudSafeY(p.X, p.Y, w, h, k, top, (o.Position.X, o.Position.Y, o.End.X));
+        if (to >= p.Y - 0.5f) return at;
+        if (hudShots++ < 12) GD.Print($"hits: number '{text}' size {size} ({h:0} px tall) at y {p.Y:0} (bottom {p.Y + h / 2:0}) lifted to {to:0}, HUD top {(top is float tt ? tt.ToString("0") : "none")}, orb top {o.Position.Y:0}");
         float depth = (at - cam.GlobalPosition).Dot(-cam.GlobalBasis.Z);
         return cam.ProjectPosition(new Vector2(p.X, to), depth);
     }
@@ -299,6 +302,7 @@ public partial class Hits : Node3D
         l.Modulate = color;
         numA[i] = color.A;
         numPunch[i] = 1;
+        clearFrom[i] = NotClearing;
         l.Scale = 1;
         // (F1 27: a placed blow number is already over its victim, away from her: no jitter)
         at = ClearOfNames(placed ? at : at + new Vector3(rng.RandfRange(-0.3f, 0.3f), 0, 0), text, size);
@@ -356,9 +360,14 @@ public partial class Hits : Node3D
                 float k = Mathf.Clamp(numPunch[i] / 0.08f, 0, 1), e = 1 - (1 - k) * (1 - k);
                 l.Scale = Mathf.Lerp(1.35f, 1f, e);
             }
-            var c = l.Modulate; c.A = (t < 0.7f ? 1 : 1 - (t - 0.7f) / 0.3f) * Hush * numA[i]; l.Modulate = c;
+            // (F1 r6: a number cleared off a new kill fades out by its window's N + 3, then is free)
+            float clear = clearFrom[i] == NotClearing ? 1 : SurvivorUnchained.View.FeelRules.KillClear(Engine.GetFramesDrawn() - clearFrom[i]);
+            if (clear <= 0) { t = 1; clearFrom[i] = NotClearing; }
+            var c = l.Modulate; c.A = (t < 0.7f ? 1 : 1 - (t - 0.7f) / 0.3f) * Hush * numA[i] * clear; l.Modulate = c;
             l.OutlineModulate = new Color(l.OutlineModulate, c.A);
             if (t >= 1) l.Visible = false;
+            // (F1 r6: and none drifts onto the HUD as the camera follows her: kept off it every frame)
+            else l.GlobalPosition = AboveHud(l.GlobalPosition, l.Text, l.FontSize);
             numbers[i] = (l, t);
         }
         SheetFrame(live);

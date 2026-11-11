@@ -130,4 +130,100 @@ public static class FeelRules
         float y = by0 - NumberOver * scale - h / 2;
         return (x, y);
     }
+
+    /// <summary>F1 r6 (judge r5 fix 1): a launched body on screen: its box at the blow (px, y down; its hop already
+    /// added on top) and where the launch takes it (Lx, Ly: the whole throw on screen, px).</summary>
+    public readonly record struct Flight(float X0, float Y0, float X1, float Y1, float Lx, float Ly);
+
+    /// <summary>The clear gap kept between a number and a launched body's path (px at 1080).</summary>
+    public const float FlightGap = 8;
+
+    /// <summary>Whether a number's box (nx0..nx1, ny0..ny1) meets the body's whole flight: the convex hull of its box at
+    /// the blow and at the end of the throw (separating axes: the screen's two and the one across the throw).</summary>
+    public static bool CrossesFlight(float nx0, float ny0, float nx1, float ny1, Flight f)
+    {
+        if (nx1 <= Math.Min(f.X0, f.X0 + f.Lx) || nx0 >= Math.Max(f.X1, f.X1 + f.Lx)) return false;
+        if (ny1 <= Math.Min(f.Y0, f.Y0 + f.Ly) || ny0 >= Math.Max(f.Y1, f.Y1 + f.Ly)) return false;
+        float len = MathF.Sqrt(f.Lx * f.Lx + f.Ly * f.Ly);
+        if (len < 1e-3f) return true;
+        float ax = -f.Ly / len, ay = f.Lx / len;
+        float bc = ax * (f.X0 + f.X1) / 2 + ay * (f.Y0 + f.Y1) / 2, br = MathF.Abs(ax) * (f.X1 - f.X0) / 2 + MathF.Abs(ay) * (f.Y1 - f.Y0) / 2;
+        float nc = ax * (nx0 + nx1) / 2 + ay * (ny0 + ny1) / 2, nr = MathF.Abs(ax) * (nx1 - nx0) / 2 + MathF.Abs(ay) * (ny1 - ny0) / 2;
+        return MathF.Abs(nc - bc) < br + nr;
+    }
+
+    /// <summary>The side a launched victim's number takes: across its throw on screen (never along it), the upper of the
+    /// two; when the throw is near up or down the screen, the side away from her (herX; the right when level with her).</summary>
+    public static (float X, float Y) Across(float lx, float ly, float cx, float herX)
+    {
+        float len = MathF.Sqrt(lx * lx + ly * ly);
+        if (len < 1e-3f) return (cx < herX - 1 ? -1 : 1, 0);
+        float ax = -ly / len, ay = lx / len;
+        if (MathF.Abs(ay) < 0.3f) { float side = cx < herX - 1 ? -1 : 1; if (ax * side < 0) { ax = -ax; ay = -ay; } }
+        else if (ay > 0) { ax = -ax; ay = -ay; }
+        return (ax, ay);
+    }
+
+    /// <summary>A launched victim's number (judge r5: "432" lay across a body thrown in under it for 8 frames): NumberOver
+    /// over its top and NumberAside across its throw (Across), then moved on across it, 10 px at a time, until its box,
+    /// lengthened upward by its own rise (`rise`, px), meets none of the flights (the victim's and the step's `others`);
+    /// where none is clear in 24 steps, the least crossed. `w`, `h`: the number's box size.</summary>
+    public static (float X, float Y) NumberSpotLaunched(Flight body, IReadOnlyList<Flight>? others, float herX, float w, float h, float scale = 1, float rise = 0)
+    {
+        float cx = (body.X0 + body.X1) / 2;
+        var (ax, ay) = Across(body.Lx, body.Ly, cx, herX);
+        float x = cx + ax * NumberAside * scale, y = body.Y0 - NumberOver * scale - h / 2 + ay * NumberAside * scale;
+        float g = FlightGap * scale;
+        int Crossed(float px, float py)
+        {
+            float x0 = px - w / 2 - g, x1 = px + w / 2 + g, y0 = py - h / 2 - rise - g, y1 = py + h / 2 + g;
+            int n = CrossesFlight(x0, y0, x1, y1, body) ? 1 : 0;
+            if (others != null) foreach (var o in others) if (CrossesFlight(x0, y0, x1, y1, o)) n++;
+            return n;
+        }
+        (float X, float Y) best = (x, y);
+        int least = int.MaxValue;
+        for (int step = 0; step <= 24; step++)
+        {
+            float px = x + ax * 10 * scale * step, py = y + ay * 10 * scale * step;
+            int n = Crossed(px, py);
+            if (n == 0) return (px, py);
+            if (n < least) { least = n; best = (px, py); }
+        }
+        return best;
+    }
+
+    /// <summary>The lowest a number's middle stands (px at 1080): the HUD's band starts under it (judge r5: "315" on the
+    /// health orb), and the gap it keeps over a HUD part.</summary>
+    public const float NumberFloor = 880, HudGap = 8;
+
+    /// <summary>A number's middle y kept off the HUD (only ever lifted): its middle at or over NumberFloor, its box's bottom
+    /// HudGap over the HUD's top under it (`hudTop`, null where none stands), and over the orb's top where its box spans
+    /// the orb's x (`orb`: its left, top and right; px on screen). `k`: the screen's height over 1080.</summary>
+    public static float HudSafeY(float cx, float cy, float w, float h, float k, float? hudTop = null, (float X0, float Y0, float X1)? orb = null)
+    {
+        float y = Math.Min(cy, NumberFloor * k);
+        if (hudTop is float t) y = Math.Min(y, t - HudGap * k - h / 2);
+        if (orb is { } o && cx + w / 2 > o.X0 - HudGap * k && cx - w / 2 < o.X1 + HudGap * k) y = Math.Min(y, o.Y0 - HudGap * k - h / 2);
+        return y;
+    }
+
+    /// <summary>When her kill window opens (frame N), numbers of earlier steps within KillClearReach of the kill's middle
+    /// (px at 1080) clear off it (judge r5: "3783" and "928" stood over a new kill): gone by N + KillClearFrames.</summary>
+    public const float KillClearReach = 300;
+    public const int KillClearFrames = 3;
+    public static bool KillClears(float x, float y, float kx, float ky, float scale = 1)
+    {
+        float dx = x - kx, dy = y - ky, r = KillClearReach * scale;
+        return dx * dx + dy * dy <= r * r;
+    }
+
+    /// <summary>A clearing number's alpha `since` frames after the window opened: front-loaded, 0 by KillClearFrames.</summary>
+    public static float KillClear(long since)
+    {
+        if (since < 0) return 1;
+        if (since >= KillClearFrames) return 0;
+        float u = 1 - (since + 1f) / (KillClearFrames + 1);
+        return u * u;
+    }
 }

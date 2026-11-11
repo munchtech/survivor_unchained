@@ -234,6 +234,18 @@ public partial class LifeLamp : Control
 
     /// <summary>The orb's copy of the screen: the glass and 16 px round it (the refraction's reach), where the orb
     /// stands now.</summary>
+    /// <summary>F1 r6: the orb's glass with its cap, on screen (the viewport's px, as the play camera unprojects):
+    /// damage numbers keep off it (judge r5: "315" on the orb).</summary>
+    public Rect2 OrbOnScreen
+    {
+        get
+        {
+            var xf = GetGlobalTransformWithCanvas();
+            float m = OrbR + 8;
+            return new Rect2(xf * (OrbC - new Vector2(m, m)), xf.BasisXform(new Vector2(2 * m, 2 * m)).Abs());
+        }
+    }
+
     void OrbCopy()
     {
         var xf = GetGlobalTransformWithCanvas();

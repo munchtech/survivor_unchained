@@ -123,4 +123,102 @@ public class FeelRulesTests
         Assert.False(FeelRules.MassTail(4));
         Assert.False(FeelRules.MassTail(-1));
     }
+
+    // F1 r6 (judge r5 fixes 1-3): the number path.
+
+    static bool Clear((float X, float Y) p, float w, float h, FeelRules.Flight f) =>
+        !FeelRules.CrossesFlight(p.X - w / 2, p.Y - h / 2, p.X + w / 2, p.Y + h / 2, f);
+
+    [Fact]
+    public void CrossesFlightSeesTheWholeThrowNotJustTheStart()
+    {
+        // a body at x 900..960, thrown 200 px right
+        var f = new FeelRules.Flight(900, 500, 960, 600, 200, 0);
+        Assert.True(FeelRules.CrossesFlight(1080, 540, 1120, 560, f));    // where it lands
+        Assert.True(FeelRules.CrossesFlight(1000, 540, 1040, 560, f));    // on the way
+        Assert.False(FeelRules.CrossesFlight(1000, 440, 1040, 490, f));   // over the path
+        Assert.False(FeelRules.CrossesFlight(800, 540, 880, 560, f));     // behind it
+        // diagonal: a box beside the hull's slanted edge but inside its bounding box is clear
+        var d = new FeelRules.Flight(0, 0, 50, 50, 300, -300);
+        Assert.False(FeelRules.CrossesFlight(0, -300, 40, -260, d));
+        Assert.True(FeelRules.CrossesFlight(150, -150, 190, -110, d));
+    }
+
+    [Fact]
+    public void ALaunchedNumberGoesAcrossTheThrowNeverAlongIt()
+    {
+        const float w = 120, h = 60;
+        // judge r5 m4b: her at x 600, the body thrown away from her, up and right on screen
+        var f = new FeelRules.Flight(900, 500, 960, 600, 260, -220);
+        var old = FeelRules.NumberSpot(f.X0, f.Y0, f.X1, f.Y1, 600, w, h);
+        Assert.False(Clear(old, w, h, f));   // the round 5 spot: the body flies in under it
+        var p = FeelRules.NumberSpotLaunched(f, null, 600, w, h);
+        Assert.True(Clear(p, w, h, f));
+        Assert.True(p.X < 930);              // on the side it does not fly to
+        Assert.True(p.Y + h / 2 <= f.Y0);    // still over its top
+    }
+
+    [Fact]
+    public void AThrowUpTheScreenPutsTheNumberBesideItAwayFromHer()
+    {
+        const float w = 120, h = 60;
+        var f = new FeelRules.Flight(900, 500, 960, 600, 0, -300);
+        var right = FeelRules.NumberSpotLaunched(f, null, 600, w, h);
+        Assert.True(Clear(right, w, h, f));
+        Assert.True(right.X - w / 2 >= f.X1);
+        var left = FeelRules.NumberSpotLaunched(f, null, 1400, w, h);
+        Assert.True(Clear(left, w, h, f));
+        Assert.True(left.X + w / 2 <= f.X0);
+    }
+
+    [Fact]
+    public void ALaunchedNumberKeepsOffTheStepsOtherThrowsAndItsOwnRise()
+    {
+        const float w = 120, h = 60;
+        var f = new FeelRules.Flight(900, 500, 960, 600, 300, 0);       // thrown right: the number goes over
+        var p0 = FeelRules.NumberSpotLaunched(f, null, 600, w, h);
+        var other = new FeelRules.Flight(p0.X - 30, p0.Y + 40, p0.X + 30, p0.Y + 140, 0, -120);   // flies up into that spot
+        var p = FeelRules.NumberSpotLaunched(f, new[] { other }, 600, w, h, 1, 30);
+        Assert.True(FeelRules.CrossesFlight(p0.X - w / 2, p0.Y - h / 2, p0.X + w / 2, p0.Y + h / 2, other));
+        Assert.True(Clear(p, w, h, f) && Clear(p, w, h, other));
+        Assert.True(Clear((p.X, p.Y - 30), w, h, f));                   // risen 30 px, still clear
+        // the same at 4K: twice the px
+        var f4 = new FeelRules.Flight(1800, 1000, 1920, 1200, 520, -440);
+        var p4 = FeelRules.NumberSpotLaunched(f4, null, 1200, 2 * w, 2 * h, 2);
+        Assert.True(Clear(p4, 2 * w, 2 * h, f4));
+    }
+
+    [Fact]
+    public void NumbersKeepOffTheHud()
+    {
+        const float w = 100, h = 60;
+        // judge r5 m2b: "315" at (450, 935), its right end over the orb (left 470, top 945)
+        var orb = (470f, 945f, 590f);
+        float y = FeelRules.HudSafeY(437, 935, w, h, 1, null, orb);
+        Assert.True(y + h / 2 <= 945 - FeelRules.HudGap);
+        Assert.True(y <= FeelRules.NumberFloor);
+        // no HUD part under it: only the floor
+        Assert.Equal(FeelRules.NumberFloor, FeelRules.HudSafeY(200, 1000, w, h, 1));
+        // over the hair's river (880): its box's bottom 8 over it
+        Assert.Equal(880 - 8 - h / 2, FeelRules.HudSafeY(700, 870, w, h, 1, 880));
+        // clear of it all: unchanged; scaled with the screen (1440: k 4/3)
+        Assert.Equal(500f, FeelRules.HudSafeY(437, 500, w, h, 1, 880, orb));
+        Assert.Equal(880 * 4f / 3, FeelRules.HudSafeY(200, 1400, w, h, 4f / 3), 0.01f);
+        // beside the orb (past its gap): the orb does not lift it
+        Assert.Equal(FeelRules.NumberFloor, FeelRules.HudSafeY(300, 900, w, h, 1, null, orb));
+    }
+
+    [Fact]
+    public void AKillWindowClearsTheOlderNumbersNearItByNPlusThree()
+    {
+        Assert.True(FeelRules.KillClears(1100, 400, 960, 540));            // 198 px off
+        Assert.False(FeelRules.KillClears(1300, 300, 960, 540));           // 416 px off
+        Assert.True(FeelRules.KillClears(1300, 300, 960, 540, 2));         // the same at 4K is in reach
+        Assert.Equal(1f, FeelRules.KillClear(-1));
+        Assert.True(FeelRules.KillClear(0) < 0.6f);
+        Assert.True(FeelRules.KillClear(1) < FeelRules.KillClear(0));
+        Assert.True(FeelRules.KillClear(2) < FeelRules.KillClear(1));
+        Assert.Equal(0f, FeelRules.KillClear(3));
+        Assert.Equal(0f, FeelRules.KillClear(9));
+    }
 }
