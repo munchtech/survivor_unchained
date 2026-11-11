@@ -436,6 +436,9 @@ public class CraftersTests
         Assert.InRange(low.Count, 160, 240);
         Assert.All(low, g => Assert.InRange(g, 0, 1));
         Assert.All(high, g => Assert.Equal(5, g));
+        // Every grade has its own numeral; a tier-16 ruler's Mark reads VI, not V (SU-026).
+        Assert.Equal(new[] { "I", "II", "III", "IV", "V", "VI" }, Enumerable.Range(0, 6).Select(Crafting.Grade));
+        Assert.Equal("VI", Crafting.Grade(high[0]));
         // Fallen at grade III, the thing carries its Mark at III.
         var p = Table();
         var thing = RulerThing(p, "lamplings", 2);
