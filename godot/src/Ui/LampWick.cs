@@ -78,9 +78,11 @@ public partial class LampWick : Control
     string? said;
     List<StrandDef> strands = new();
     List<string> learned = new();
-    IReadOnlyList<string> plan = Array.Empty<string>();
-    string[] path = [], litIds = [];
-    int rank;
+    WickBoardModel model = WickBoardModel.Empty;
+    IReadOnlyList<string> plan => model.Plan;
+    string[] path => model.Path;
+    string[] litIds => model.Lit;
+    int rank => model.Rank;
     /// <summary>A skill was picked from All learned (its wick opens).</summary>
     public event Action<string>? Picked;
     /// <summary>The plan changed.</summary>
@@ -181,17 +183,14 @@ public partial class LampWick : Control
     {
         deltaOf.Clear();
         if (Skill == null) return;
-        plan = WickBook.PlanOf(ch, Skill).ToList();
-        path = WickBook.Path(ch, Skill);
-        rank = SkillBook.Rank(ch);
-        litIds = path.Take(Math.Max(0, rank)).ToArray();
+        model = WickBoardModel.Read(ch, Skill);
     }
 
     string Id(int r, int c) => r < strands.Count ? strands[r].LampId(c + 1) : "";
-    bool Lit(int r, int c) => litIds.Contains(Id(r, c));
-    bool Planned(int r, int c) => plan.Contains(Id(r, c));
-    bool TurnTaken => Skill != null && (plan.Any(id => Wicks.IsTurn(Skill, id)) || litIds.Any(id => Wicks.IsTurn(Skill, id)));
-    bool Crossed(int r) => TurnTaken && !Planned(r, 3) && !Lit(r, 3);
+    bool Lit(int r, int c) => model.IsLit(Id(r, c));
+    bool Planned(int r, int c) => model.IsPlanned(Id(r, c));
+    bool TurnTaken => model.TurnTaken;
+    bool Crossed(int r) => model.Crossed(Id(r, 3));
     Vector2 At(int r, int c) => new(c < 3 ? Lx0 + c * PitchX : Tx, Row0 + r * PitchY);
 
     void Write()
@@ -203,10 +202,10 @@ public partial class LampWick : Control
             for (int r = 0; r < strands.Count; r++)
                 for (int c = 0; c < 4; c++)
                 {
-                    bool turn = c == 3, lit = Lit(r, c), planned = Planned(r, c), crossed = turn && Crossed(r);
+                    bool turn = c == 3, lit = Lit(r, c), crossed = turn && Crossed(r);
                     float R = turn ? Rt : Rw, Hh = R + 14;
                     var p = At(r, c);
-                    int st = lit ? 0 : planned ? 1 : 2;
+                    int st = (int)model.StateOf(Id(r, c));
                     int flags = (crossed ? 1 : 0) | (r == fr && c == fc ? 2 : 0) | 8;
                     mm.SetInstanceTransform2D(k, new Transform2D(0, new Vector2(2 * Hh, 2 * Hh), 0, p));
                     mm.SetInstanceColor(k, new Color(turn ? 17 : 16, st, LampMotion.None, flags + 0.999f));
