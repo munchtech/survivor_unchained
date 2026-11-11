@@ -1,17 +1,18 @@
 {
  "families": {
   "hit_flesh": {
-   "prompt": "A single sword blade hit cutting into a human body through a leather jerkin: a sharp wet meaty chop with a short cloth tear, punchy and heavy, close-miked, dry, no reverb, no music, no voice",
+   "prompt": "Instant sharp attack, the strike begins at full volume with no fade-in or swell: a single sword blade hit cutting into a human body through a leather jerkin: a sharp wet meaty chop with a short cloth tear, punchy and heavy, close-miked, dry, no reverb, no music, no voice",
    "seconds": 0.5,
    "influence": 0.55,
-   "n": 8,
+   "n": 12,
    "keep": 5,
    "kind": "oneshot",
    "stereo": false,
    "peak_db": -1.0,
    "loop": false,
    "tail_db": -55,
-   "note": "her blade into a bandit (hit.flesh)"
+   "note": "her blade into a bandit (hit.flesh)",
+   "max_rise_ms": 12
   },
   "dash": {
    "prompt": "A single quick dash: a fast whoosh of a cloak and leather armor, a light boot skid on dirt, close-miked, dry, no reverb, no music, no voice",
@@ -27,56 +28,60 @@
    "note": "her dash (dash)"
   },
   "hit_flesh_crit": {
-   "prompt": "A single brutal critical sword strike into a body: a deep heavy meaty crunch with a bone snap and a wet splatter, very punchy, close-miked, dry, no reverb, no music, no voice",
+   "prompt": "Instant sharp attack, the strike begins at full volume with no fade-in or swell: a single brutal critical sword strike into a body: a deep heavy meaty crunch with a bone snap and a wet splatter, very punchy, close-miked, dry, no reverb, no music, no voice",
    "seconds": 0.7,
    "influence": 0.55,
-   "n": 6,
+   "n": 12,
    "keep": 4,
    "kind": "oneshot",
    "stereo": false,
    "peak_db": -1.0,
    "loop": false,
    "tail_db": -55,
-   "note": "a crit into flesh (hit.flesh.crit)"
+   "note": "a crit into flesh (hit.flesh.crit)",
+   "max_rise_ms": 12
   },
   "hit_bone": {
-   "prompt": "A single sword blade striking a walking skeleton: a dry brittle bone crack with a hollow knock and a few rattling bones, punchy, close-miked, dry, no reverb, no music, no voice",
+   "prompt": "Instant sharp attack, the strike begins at full volume with no fade-in or swell: a single sword blade striking a walking skeleton: a dry brittle bone crack with a hollow knock and a few rattling bones, punchy, close-miked, dry, no reverb, no music, no voice",
    "seconds": 0.5,
    "influence": 0.55,
-   "n": 8,
+   "n": 12,
    "keep": 5,
    "kind": "oneshot",
    "stereo": false,
    "peak_db": -1.0,
    "loop": false,
    "tail_db": -55,
-   "note": "her blade into the risen (hit.bone)"
+   "note": "her blade into the risen (hit.bone)",
+   "max_rise_ms": 12
   },
   "hit_bone_crit": {
-   "prompt": "A single heavy sword smash splitting a skeleton: a loud dry bone crunch and splinter with bones rattling, very punchy, close-miked, dry, no reverb, no music, no voice",
+   "prompt": "Instant sharp attack, the strike begins at full volume with no fade-in or swell: a single heavy sword smash splitting a skeleton: a loud dry bone crunch and splinter with bones rattling, very punchy, close-miked, dry, no reverb, no music, no voice",
    "seconds": 0.7,
    "influence": 0.55,
-   "n": 6,
+   "n": 12,
    "keep": 4,
    "kind": "oneshot",
    "stereo": false,
    "peak_db": -1.0,
    "loop": false,
    "tail_db": -55,
-   "note": "a crit into bone (hit.bone.crit)"
+   "note": "a crit into bone (hit.bone.crit)",
+   "max_rise_ms": 12
   },
   "hit_hide": {
-   "prompt": "A single sword blade chopping into a large wolf: a dull heavy meaty thud through thick fur, punchy, close-miked, dry, no reverb, no music, no voice",
+   "prompt": "Instant sharp attack, the strike begins at full volume with no fade-in or swell: a single sword blade chopping into a large wolf: a dull heavy meaty thud through thick fur, punchy, close-miked, dry, no reverb, no music, no voice",
    "seconds": 0.5,
    "influence": 0.55,
-   "n": 6,
+   "n": 12,
    "keep": 4,
    "kind": "oneshot",
    "stereo": false,
    "peak_db": -1.0,
    "loop": false,
    "tail_db": -55,
-   "note": "her blade into wolves and boars (hit.hide)"
+   "note": "her blade into wolves and boars (hit.hide)",
+   "max_rise_ms": 12
   },
   "swing_blade": {
    "prompt": "A single fast sword swing: a sharp steel longsword whooshing through the air, a clean swish, no impact, close-miked, dry, no reverb, no music, no voice",
@@ -105,10 +110,10 @@
    "note": "Sunder's swing (art.slash_heavy.swing)"
   },
   "kill_flesh": {
-   "prompt": "A body falling dead on dirt after a killing blow: a heavy limp thud with leather gear and cloth, close-miked, dry, no reverb, no music, no voice",
+   "prompt": "Instant sharp attack, the strike begins at full volume with no fade-in or swell: a body falling dead on dirt after a killing blow: a heavy limp thud with leather gear and cloth, close-miked, dry, no reverb, no music, no voice",
    "seconds": 0.8,
    "influence": 0.55,
-   "n": 6,
+   "n": 12,
    "keep": 4,
    "kind": "oneshot",
    "stereo": false,
@@ -116,13 +121,14 @@
    "loop": false,
    "tail_db": -55,
    "note": "a bandit falls (kill.flesh)",
-   "max_onsets": 3
+   "max_onsets": 3,
+   "max_rise_ms": 25
   },
   "kill_bone": {
-   "prompt": "A walking skeleton collapsing: dry bones clattering and scattering onto stony ground, close-miked, dry, no reverb, no music, no voice",
+   "prompt": "Instant sharp attack, the strike begins at full volume with no fade-in or swell: a walking skeleton collapsing: dry bones clattering and scattering onto stony ground, close-miked, dry, no reverb, no music, no voice",
    "seconds": 0.8,
    "influence": 0.55,
-   "n": 8,
+   "n": 12,
    "keep": 5,
    "kind": "oneshot",
    "stereo": false,
@@ -130,13 +136,14 @@
    "loop": false,
    "tail_db": -55,
    "note": "a risen falls (kill.bone)",
-   "max_onsets": 4
+   "max_onsets": 4,
+   "max_rise_ms": 25
   },
   "kill_hide": {
-   "prompt": "A large wolf killed: a heavy body thud on earth and a short whimper cut off, close-miked, dry, no reverb, no music, no voice",
+   "prompt": "Instant sharp attack, the strike begins at full volume with no fade-in or swell: a large wolf killed: a heavy body thud on earth and a short whimper cut off, close-miked, dry, no reverb, no music, no voice",
    "seconds": 0.9,
    "influence": 0.55,
-   "n": 6,
+   "n": 12,
    "keep": 4,
    "kind": "oneshot",
    "stereo": false,
@@ -144,13 +151,14 @@
    "loop": false,
    "tail_db": -55,
    "note": "a wolf falls (kill.hide)",
-   "max_onsets": 3
+   "max_onsets": 3,
+   "max_rise_ms": 25
   },
   "gore_burst": {
-   "prompt": "A body exploding into gore: a wet heavy splattering burst, flesh chunks slapping on the ground, juicy and satisfying, punchy, close-miked, dry, no reverb, no music, no voice",
+   "prompt": "Instant sharp attack, the strike begins at full volume with no fade-in or swell: a body exploding into gore: a wet heavy splattering burst, flesh chunks slapping on the ground, juicy and satisfying, punchy, close-miked, dry, no reverb, no music, no voice",
    "seconds": 0.9,
    "influence": 0.55,
-   "n": 8,
+   "n": 12,
    "keep": 5,
    "kind": "oneshot",
    "stereo": false,
@@ -158,13 +166,14 @@
    "loop": false,
    "tail_db": -55,
    "note": "the corpse pop, flesh (kill.flesh.burst): the owner liked it, give it weight",
-   "max_onsets": 4
+   "max_onsets": 4,
+   "max_rise_ms": 25
   },
   "bone_burst": {
-   "prompt": "A skeleton blown apart: an explosive crack of bones bursting and flying, then rattling down on stones, punchy, satisfying, close-miked, dry, no reverb, no music, no voice",
+   "prompt": "Instant sharp attack, the strike begins at full volume with no fade-in or swell: a skeleton blown apart: an explosive crack of bones bursting and flying, then rattling down on stones, punchy, satisfying, close-miked, dry, no reverb, no music, no voice",
    "seconds": 0.9,
    "influence": 0.55,
-   "n": 8,
+   "n": 12,
    "keep": 5,
    "kind": "oneshot",
    "stereo": false,
@@ -172,7 +181,8 @@
    "loop": false,
    "tail_db": -55,
    "note": "the corpse pop, bone (kill.bone.burst)",
-   "max_onsets": 5
+   "max_onsets": 5,
+   "max_rise_ms": 25
   },
   "gore_thump": {
    "prompt": "A single deep low body-blow thump, a short heavy sub-bass punch, close-miked, dry, no reverb, no music, no voice",
@@ -188,10 +198,10 @@
    "note": "the weight under every corpse pop"
   },
   "kill_elite": {
-   "prompt": "A huge armored brute falling dead: a deep ground-shaking body slam with heavy metal armor clanking, close-miked, dry, no reverb, no music, no voice",
+   "prompt": "Instant sharp attack, the strike begins at full volume with no fade-in or swell: a huge armored brute falling dead: a deep ground-shaking body slam with heavy metal armor clanking, close-miked, dry, no reverb, no music, no voice",
    "seconds": 1.2,
    "influence": 0.55,
-   "n": 4,
+   "n": 12,
    "keep": 3,
    "kind": "oneshot",
    "stereo": false,
@@ -199,7 +209,8 @@
    "loop": false,
    "tail_db": -55,
    "note": "an elite falls (kill.elite)",
-   "max_onsets": 4
+   "max_onsets": 4,
+   "max_rise_ms": 25
   },
   "hurt_her": {
    "prompt": "A single blunt blow landing on a woman in leather and chainmail armor: a dull thud with a mail jingle, close-miked, dry, no reverb, no music, no voice",
@@ -1127,6 +1138,76 @@
    "loop": false,
    "tail_db": -55,
    "note": "Iron Vow stored blow (art.iron_vow.store)"
+  },
+  "drop_rare": {
+   "prompt": "A single small bright brass chime struck once with a tiny metallic sparkle, clean and crisp, instant attack at full volume, dry, close-miked, no reverb, no music, no voice",
+   "seconds": 1.0,
+   "influence": 0.6,
+   "n": 6,
+   "keep": 3,
+   "kind": "long",
+   "stereo": false,
+   "peak_db": -1.0,
+   "loop": false,
+   "tail_db": -55,
+   "note": "drop tier 2 (Rare): one bright small chime",
+   "max_rise_ms": 15
+  },
+  "drop_epic": {
+   "prompt": "A deep resonant bronze singing bowl struck once, instant attack at full volume, then a warm ringing hum with an airy shimmer rising after it, no music, no voice",
+   "seconds": 1.8,
+   "influence": 0.6,
+   "n": 6,
+   "keep": 3,
+   "kind": "long",
+   "stereo": true,
+   "peak_db": -1.0,
+   "loop": false,
+   "tail_db": -55,
+   "note": "drop tier 3 (Epic): bronze singing bowl",
+   "max_rise_ms": 15
+  },
+  "drop_set": {
+   "prompt": "Two small bells struck together at the same instant a perfect fifth apart, a bright ringing pair, instant attack at full volume, clear metallic tone, no music, no voice",
+   "seconds": 1.6,
+   "influence": 0.6,
+   "n": 6,
+   "keep": 3,
+   "kind": "long",
+   "stereo": true,
+   "peak_db": -1.0,
+   "loop": false,
+   "tail_db": -55,
+   "note": "drop tier 4 (Set): two small bells a fifth apart",
+   "max_rise_ms": 15
+  },
+  "drop_legendary": {
+   "prompt": "One great deep cathedral bell tolled once, struck hard with instant attack at full volume, a low impact boom under the strike, a long resonant ring that slowly decays, cinematic, no music, no voice",
+   "seconds": 4.0,
+   "influence": 0.6,
+   "n": 6,
+   "keep": 3,
+   "kind": "long",
+   "stereo": true,
+   "peak_db": -1.0,
+   "loop": false,
+   "tail_db": -55,
+   "note": "drop tier 5 (Legendary): the toll",
+   "max_rise_ms": 15
+  },
+  "drop_storied_fire": {
+   "prompt": "A deep whoosh of fire catching, flames igniting with a rushing roar, then an ember roar rising and swelling, no music, no voice",
+   "seconds": 2.5,
+   "influence": 0.6,
+   "n": 6,
+   "keep": 3,
+   "kind": "long",
+   "stereo": true,
+   "peak_db": -1.0,
+   "loop": false,
+   "tail_db": -55,
+   "note": "drop tier 6 (Storied): fire laid over the toll at 0.3 s",
+   "max_rise_ms": 60
   }
  }
 }
