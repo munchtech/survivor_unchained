@@ -925,13 +925,22 @@ public sealed partial class Prologue : ZoneRuntime
     /// <summary>Her rise mid-fight: his script starts over (pending blows called off, thresholds and cooldowns restored).</summary>
     internal void WardenReset()
     {
-        if (ai.Cleave != null) { ai.Cleave.Damage = 0; ai.Cleave = null; }
+        CallOffCleave();
         EndLane();
         ai.Mode = "walk";
         ai.Thresholds = [0.7, 0.4];
         ai.ChannelCd = 30; ai.CleaveCd = 3; ai.ChargeCd = 6; ai.T = 0; ai.Hold = WakeHold;
         floorHeldT = 0;
         wardenView.Release();
+    }
+
+    /// <summary>A pending cleave called off (a stagger, his death, her rise): it deals nothing, and its cone fades out with it
+    /// (B1 r11: a windup cut by his death or a stagger left the red cone up over him until its 1.05 s ran out).</summary>
+    void CallOffCleave()
+    {
+        if (ai.Cleave == null) return;
+        ai.Cleave.Damage = 0; ai.Cleave.After = null; ai.Cleave = null;
+        if (B != null && warden?.Id is int wid) B.Events.Emit(new Ev.Telegraph { Id = wid * 10 + 1, Phase = TellPhase.Off, Shape = TelegraphShape.Cone, Hostile = true, Boss = true });
     }
 
     /// <summary>Battle staggered him (3 s): a channel breaks, a pending cleave and the lane are called off, he stands stunned.</summary>
@@ -951,7 +960,7 @@ public sealed partial class Prologue : ZoneRuntime
             B.Events.Emit(new Ev.Announce { Title = "Channel broken", Tone = Tone.Boon });
             B.Events.Emit(new Ev.Sound { Id = "ford.channel_broken" });
         }
-        if (ai.Cleave != null) { ai.Cleave.Damage = 0; ai.Cleave = null; }
+        CallOffCleave();
         EndLane();
         ai.Mode = "stun"; ai.T = -0.5; e.AnimT = 0;
         wardenView.SetPose("stunned");
@@ -1586,7 +1595,7 @@ public sealed partial class Prologue : ZoneRuntime
         PaceNotes.Enqueue($"ford down t={B.Time:0.0} fought={stageT:0.0} hp={e.Hp:0}/{e.MaxHp:0} floor={e.HpFloor:0} taken={e.TakenMul:0.00} over={e.Overflow:0} school={e.LastSchool} weapon={e.LastWeapon ?? "-"} blow={e.LastBlow:0.00} lit={LitCount} broken={lampsBroken} state={e.State}");
         ai.Mode = "dead";
         wardenView.SetPose("dead");
-        if (ai.Cleave != null) { ai.Cleave.Damage = 0; ai.Cleave = null; }
+        CallOffCleave();
         EndLane();
         wardenPos = (e.X, e.Z, Math.PI / 2 - e.Facing);
         Bar(null);

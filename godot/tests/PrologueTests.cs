@@ -710,6 +710,30 @@ public class PrologueTests
         Assert.Equal(0, barks);
     }
 
+    /// <summary>(B1 r11) A windup cut by a stagger calls its cleave off: its red cone fades with it (not left up over a stunned
+    /// Warden to run out its 1.05 s), and the blow lands on nothing.</summary>
+    [Fact]
+    public void A_staggered_windup_takes_its_cone_down_and_its_blow_with_it()
+    {
+        var (s, w, ai, at) = AtFord();
+        at.GetField("CleaveCd")!.SetValue(ai, 0.0);
+        at.GetField("Hold")!.SetValue(ai, 0.0);
+        bool coned = false;
+        for (int i = 0; i < 60 * 4 && !coned; i++)
+        {
+            Stand(s, w.X + 4.5, w.Z);
+            s.Zone.Step(1 / 60.0); s.B.Tick(1 / 60.0, 0, 0);
+            coned = s.B.Events.Drain().Any(ev => ev is Ev.Telegraph { Phase: TellPhase.Warn } t && t.Id == w.Id * 10 + 1);
+            s.Zone.Frame(1 / 60.0);
+        }
+        Assert.True(coned);
+        double hp = s.B.Player.Hp;
+        s.B.Hooks.OnBossStagger!(w);
+        Assert.Contains(s.B.Events.Drain(), ev => ev is Ev.Telegraph { Phase: TellPhase.Off } t && t.Id == w.Id * 10 + 1);
+        for (int i = 0; i < 90; i++) { Stand(s, w.X + 4.5, w.Z); s.Zone.Step(1 / 60.0); s.B.Tick(1 / 60.0, 0, 0); s.B.Events.Drain(); }
+        Assert.True(s.B.Player.Hp >= hp - 0.01, $"hp {hp} -> {s.B.Player.Hp}");
+    }
+
     [Fact]
     public void Falling_here_is_forgiven()
     {

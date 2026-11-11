@@ -48,7 +48,10 @@ void fragment() {
     float air = v <= tipv ? 1.0 : pow(1.0 - (v - tipv) / (1.0 - tipv), 1.8) * (0.25 + 0.3 * lead);
     float rim = exp(-pow((v - tipv) / mix(0.035, 0.08, age), 2.0));
     float streak = 0.62 + 0.38 * n1(v * 34.0 + age * 2.0);
-    float a = (steel * air * lead * streak * 0.12 + rim * (0.45 + 1.1 * lead)) * fade;
+    // (r10: the body even across read as a flat pane; r11 at x0.12 it was gone, and the rim alone, a few cm wide, drew nothing
+    // at 1:1.) A comet: the steel's sheet strong at the tip and nothing toward the guard, hottest at the blade and cooling back.
+    float comet = pow(clamp(v / tipv, 0.0, 1.0), 2.5);
+    float a = (comet * air * streak * (0.15 + 0.85 * lead) * 0.85 + rim * (0.45 + 1.1 * lead)) * fade;
     ALBEDO = mix(cold, core, clamp(lead * 0.7 + rim * 0.6, 0.0, 1.0)) * energy;
     ALPHA = clamp(a, 0.0, 1.0);
 }
