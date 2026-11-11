@@ -62,7 +62,7 @@ public static class Ev
     public sealed class Kill : CombatEvent
     {
         public double X, Z; public int Enemy; public string Def = ""; public Family Family; public School School;
-        public bool Elite, Boss, ByPlayer, Burst, Launch, ByFlare; public double Dx, Dz, Scale = 1;
+        public bool Elite, Boss, ByPlayer, Burst, Launch, ByFlare, Mass; public double Dx, Dz, Scale = 1;
     }
 
     public sealed class PlayerHit : CombatEvent

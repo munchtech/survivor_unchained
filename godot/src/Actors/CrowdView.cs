@@ -136,6 +136,18 @@ public partial class CrowdView : Node3D
         return (g.ThrowX, g.ThrowZ);
     }
 
+    /// <summary>A mass kill's death clip time: once its hold ends it leaves its feet fast, its clip run to half way down
+    /// (Vat.Down) over DeathShow's massTopple, eased out (knocked off its feet, not slumping), then on at its usual rate.
+    /// F1 judge r2: the felled of a mass kill stood upright in a line ~13 frames after the blow.</summary>
+    static double Topple(VatAsset asset, string role, double dieT)
+    {
+        double rate = Math.Max(1, asset.Duration(role) / (Ai.DieTime * 0.62)), plain = Math.Max(0, dieT) * rate;
+        double tt = DeathShow.T.MassTopple, down = asset.Down.TryGetValue(role, out var d) ? d : asset.Duration(role) * 0.4;
+        if (dieT <= 0) return 0;
+        double u = Math.Min(1, dieT / tt), warped = down * (1 - (1 - u) * (1 - u)) + Math.Max(0, dieT - tt) * rate;
+        return Math.Min(Math.Max(plain, warped), asset.Duration(role) * 0.999);
+    }
+
     /// <summary>A dying body's thrown offset this frame: Ai's knockback slide (v * e^-9t, about v/9 metres) run in the
     /// view from its first dying frame, capped at ThrowMax. The sim is untouched.</summary>
     (double X, double Z) ThrowOf(Enemy e, Gait g)
@@ -716,12 +728,13 @@ public partial class CrowdView : Node3D
                     if (g.LastState == EnemyState.Lunging) cnLungeDie++;
                     if (asset.FallOff != null) g.Death = DeathToward(asset, e, g, kb >= ThrowFrom);
                     else Twist(e, g, Hash01(e.Seed, 5.3) < CrumpleShare);
+                    if (e.MassKill) g.TurnTime = Math.Min(g.TurnTime, DeathShow.T.MassTopple);
                 }
                 role = g.Death ??= DeathOf(asset, e);
                 // The twist under the blow: eased over the fall's first 0.2 s (a crumple's 0.5 s), then the end twist eased in
                 // over its last part, from half its time to the moment it is laid out (never a one-frame snap).
                 if (!double.IsNaN(g.FaceTo))
-                    g.Facing = g.FaceFrom + Wrap(g.FaceTo - g.FaceFrom) * Smooth(e.DieT, 0, g.TurnTime)
+                    g.Facing = g.FaceFrom + Wrap(g.FaceTo - g.FaceFrom) * Smooth(e.MassKill ? dieT : e.DieT, 0, g.TurnTime)
                         + g.EndTwist * Smooth(e.DieT, Ai.DieTime * 0.5, Ai.DieTime - 0.12);
                 if (FlareChar != null) g.Char = Math.Max(g.Char, FlareChar(ex, ez, false));
                 // The Long Cut burns her own kills still falling in its reach on the struck's clock (the fuse plus 0.05 s a
@@ -734,7 +747,7 @@ public partial class CrowdView : Node3D
                     fallBurn = SurvivorUnchained.View.FlareFx.BurnLook((float)fk, fa);
                 }
                 censusFall++; censusFallD += Math.Sqrt((ex - b0X) * (ex - b0X) + (ez - b0Z) * (ez - b0Z));
-                t = dieT * Math.Max(1, asset.Duration(role) / (Ai.DieTime * 0.62));
+                t = e.MassKill ? Topple(asset, role, dieT) : dieT * Math.Max(1, asset.Duration(role) / (Ai.DieTime * 0.62));
                 // Summons fade; the rest fall and stay.
                 if (e.Disposition == Disposition.Ally) dissolve = Smooth(e.DieT, Ai.DieTime * 0.55, Ai.DieTime);
                 else if (e.DieT >= Ai.DieTime - 0.12) {

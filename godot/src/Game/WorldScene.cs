@@ -378,8 +378,11 @@ public partial class WorldScene : Node3D, IZoneLook
             var (ex, ez) = Drawn.Of(en);
             if (cam.Camera.IsPositionInFrustum(new Vector3((float)ex, (float)HeightAt(ex, ez), (float)ez))) onScreen++;
         }
-        foreach (var ask in asks)
+        foreach (var a0 in asks)
         {
+            // (a body the Warden's line or heave strikes holds when the view's blow lands on it, not while it stands)
+            double late = a0.Body == SurvivorUnchained.Look.HitStops.Her ? 0 : Fx.WgLate(a0.Body);
+            var ask = late > 0 ? a0 with { Delay = a0.Delay + late } : a0;
             if (ask.Delay > 0) stopLater.Add((ask.Delay, ask, onScreen));
             else GiveStop(ask, onScreen);
         }

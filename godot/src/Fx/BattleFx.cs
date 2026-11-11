@@ -1339,13 +1339,13 @@ public partial class BattleFx : Node3D
         // measure: her hit over the crowd with N dying, tools/audio/crowd_tape.py).
         if (KillTrace)
         {
-            int kills = 0, heavy = 0, launch = 0, burst = 0, elite = 0;
+            int kills = 0, heavy = 0, launch = 0, burst = 0, elite = 0, mass = 0;
             foreach (var ev in events)
             {
-                if (ev is Ev.Kill kk) { kills++; if (kk.Launch) launch++; if (kk.Burst) burst++; if (kk.Elite || kk.Boss) elite++; }
+                if (ev is Ev.Kill kk) { kills++; if (kk.Launch) launch++; if (kk.Burst) burst++; if (kk.Elite || kk.Boss) elite++; if (kk.Mass) mass++; }
                 else if (ev is Ev.Hit hh && SurvivorUnchained.Sound.LeadRule.Heavy(hh)) heavy++;
             }
-            if (kills > 0 || heavy > 0) GD.Print($"[kill-trace] tape={SurvivorUnchained.Sound.Synth.Instance?.TapeSeconds ?? 0:F3} kills={kills} heavy={heavy} living={System.Linq.Enumerable.Count(b.Enemies.Living())} launch={launch} burst={burst} elite={elite} frame={Engine.GetFramesDrawn()}");
+            if (kills > 0 || heavy > 0) GD.Print($"[kill-trace] tape={SurvivorUnchained.Sound.Synth.Instance?.TapeSeconds ?? 0:F3} kills={kills} heavy={heavy} living={System.Linq.Enumerable.Count(b.Enemies.Living())} launch={launch} burst={burst} elite={elite} mass={mass} frame={Engine.GetFramesDrawn()}");
         }
         if (FxLog)
         {
@@ -2451,7 +2451,7 @@ public partial class BattleFx : Node3D
         {
             var (kx, kz) = Drawn?.Of(p) ?? (p.X, p.Z);
             // A Flare's statue keeps its body's drop until it breaks.
-            if (p.Kind is PickupKind.Ember or PickupKind.Gold && !p.Pulled && Flare.HidesDrop(kx, kz)) continue;
+            if (p.Kind is PickupKind.Ember or PickupKind.Gold && !p.Pulled && (Flare.HidesDrop(kx, kz) || WgHidesDrop(p.X, p.Z))) continue;
             float gy = Y(kx, kz);
             // (After Burns Twice's BOOM a fresh drop settles in: scaled up and held dim until the Return ends.)
             var (freshS, freshL) = p.Kind is PickupKind.Ember or PickupKind.Gold && !p.Pulled ? Flare.DropFresh(kx, kz, b.Time - p.Age) : (1f, 1f);

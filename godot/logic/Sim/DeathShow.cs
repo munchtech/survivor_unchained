@@ -18,6 +18,8 @@ public sealed class DeathShow
         public int MaxPerWindow = 3;
         /// <summary>A mass kill (massFrom or more kills in one step) may show up to massMaxPerWindow in its window.</summary>
         public int MassFrom = 4, MassMaxPerWindow = 8;
+        /// <summary>A mass kill's body leaves its feet this fast once its hold ends (s; the view's topple, CrowdView).</summary>
+        public double MassTopple = 0.12;
         public double LaunchBase = 0.9, LaunchPerBlow = 0.6, LaunchBlowCap = 2, LaunchMin = 0.9, LaunchMax = 2.1;
     }
 
@@ -57,6 +59,14 @@ public sealed class DeathShow
         shown.Enqueue(time);
         return !fire && (blow >= t.BurstBlow || (crit && blow >= t.BurstCritBlow)) ? DeathKind.Burst : DeathKind.Launch;
     }
+
+    /// <summary>This step has felled massFrom or more: a mass kill.</summary>
+    public bool Mass => stepKills >= t.MassFrom;
+
+    /// <summary>How the nth (from 0) shown body of a mass kill dies: the first massMaxPerWindow are thrown out from her,
+    /// the rest topple fast (F1 judge r2: a mass step's bursts read as dark specks and its felled stood upright in a
+    /// line; one kill moment, then every body off its feet).</summary>
+    public DeathKind MassKind(int nth) => nth < t.MassMaxPerWindow ? DeathKind.Launch : DeathKind.Fall;
 
     /// <summary>Launch distance in metres for a blow, before the body's size.</summary>
     public static double LaunchDistance(double blow)

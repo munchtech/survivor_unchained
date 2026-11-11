@@ -499,6 +499,34 @@ public partial class BattleFx
     double WgDeathLag(int id, double seed) =>
         wgDieHold.Count > 0 && wgDieHold.TryGetValue(id, out var h) && h.Seed == seed ? h.Lag : 0;
 
+    /// <summary>How long until the view's line or heave lands on this body (s; 0: it has, or none): its local hit-stop
+    /// waits for it (WorldScene), so a delayed kill holds when it is struck, not while it still stands (F1 judge r2: at
+    /// 9026 the 25 felled held 90 ms standing, invisible, and fell 233 ms later).</summary>
+    public double WgLate(int id)
+    {
+        double late = 0;
+        if (wgDieHold.Count > 0 && b0 != null && id >= 0 && id < b0.Enemies.Capacity && wgDieHold.TryGetValue(id, out var h)
+            && h.Seed == b0.Enemies.Items[id].Seed) late = h.Until - time;
+        if (wgHitAt.Count > 0 && wgHitAt.TryGetValue(id, out var at)) late = Math.Max(late, at - time);
+        return Math.Max(0, late);
+    }
+
+    /// <summary>A drop lying at a body whose death still waits for the view's blow is not drawn until the blow lands:
+    /// the glow, the number and the fall start together (F1 judge r2: the 25 stood 233 ms with their embers lit).</summary>
+    bool WgHidesDrop(double x, double z)
+    {
+        if (wgDieHold.Count == 0 || b0 == null) return false;
+        foreach (var (id, h) in wgDieHold)
+        {
+            if (h.Until <= time + 0.001 || id < 0 || id >= b0.Enemies.Capacity) continue;
+            var en = b0.Enemies.Items[id];
+            if (en.Seed != h.Seed) continue;
+            double dx = en.X - x, dz = en.Z - z;
+            if (dx * dx + dz * dz < 1.0) return true;
+        }
+        return false;
+    }
+
     /// <summary>How long this kill's fx wait for the view's blow (0: now).</summary>
     float WgKillWait(Ev.Kill e) =>
         wgDieHold.Count > 0 && b0 != null && e.Enemy >= 0 && e.Enemy < b0.Enemies.Capacity && wgDieHold.TryGetValue(e.Enemy, out var h)

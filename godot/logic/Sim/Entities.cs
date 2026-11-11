@@ -114,6 +114,8 @@ public sealed class Enemy : Pooled
     public double HeldUntil;
     /// <summary>Its death is a Launch: thrown along the last blow (view only; DeathShow).</summary>
     public bool Launch;
+    /// <summary>It fell in a mass kill (DeathShow.Mass): the view topples it fast once its hold ends (view only).</summary>
+    public bool MassKill;
     public double LastDx, LastDz;
     /// <summary>Its death burst it apart: nothing left to lie there.</summary>
     public bool Burst;

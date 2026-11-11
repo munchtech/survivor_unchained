@@ -1,9 +1,10 @@
 {
-  "about": "Spectacular deaths are rewards (docs/design/ARPG_FUN.md P1 item 5), read by logic/Sim/DeathShow.cs. An eligible kill (a crit, a blow of minBlow times what it had left, or an elite; never a boss) is shown at most share of the time, at most maxPerWindow shows each window seconds; once a single step has felled massFrom or more (a mass kill), that window may show up to massMaxPerWindow (F1 judge r1: 25 wolves felled at once fell plainly but for 3). A shown kill is a Burst (blow of burstBlow or a crit of burstCritBlow, not fire) or else a Launch (thrown along the blow; launchBase + launchPerBlow * min(blow, launchBlowCap) metres, clamped to launchMin..launchMax).",
+  "about": "Spectacular deaths are rewards (docs/design/ARPG_FUN.md P1 item 5), read by logic/Sim/DeathShow.cs. An eligible kill (a crit, a blow of minBlow times what it had left, or an elite; never a boss) is shown at most share of the time, at most maxPerWindow shows each window seconds; once a single step has felled massFrom or more (a mass kill), that window may show up to massMaxPerWindow (F1 judge r1: 25 wolves felled at once fell plainly but for 3). A mass kill is one moment (F1 judge r2): every body it felled is re-shown, the first massMaxPerWindow thrown out from her (Launch, never a Burst) and the rest toppled, each leaving its feet within massTopple seconds of its hold ending (CrowdView). A shown kill is a Burst (blow of burstBlow or a crit of burstCritBlow, not fire) or else a Launch (thrown along the blow; launchBase + launchPerBlow * min(blow, launchBlowCap) metres, clamped to launchMin..launchMax).",
   "share": 0.33,
   "maxPerWindow": 3,
   "massFrom": 4,
   "massMaxPerWindow": 8,
+  "massTopple": 0.12,
   "window": 0.5,
   "minBlow": 2,
   "burstBlow": 3,
