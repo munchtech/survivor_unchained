@@ -15,6 +15,15 @@ namespace SurvivorUnchained.Ui;
 /// </summary>
 public partial class OrnateBox : StyleBox
 {
+    static readonly Script typeScript;
+
+    static OrnateBox()
+    {
+        // Godot 4.5 can retire an unowned type's script while another frame is being constructed.
+        using var frame = new OrnateBox();
+        typeScript = frame.GetScript().As<Script>();
+    }
+
     public enum Kind { Plate, Well, Card, Paper, Banner, Slab }
 
     public Kind Look = Kind.Plate;

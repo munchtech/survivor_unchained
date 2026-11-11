@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Godot;
 using SurvivorUnchained.Content;
@@ -74,8 +75,27 @@ public partial class CardFit : Node
         AddChild(new Controls());
         vp = new SubViewport { Size = new Vector2I(1920, 1080), RenderTargetUpdateMode = SubViewport.UpdateMode.Disabled, TransparentBg = false, GuiDisableInput = true };
         AddChild(vp);
+        CheckFrameScriptLifetime();
         foreach (var c in callings) Gather(c);
         GD.Print($"card_fit: {jobs.Count} rows of up to three ({jobs.Sum(j => j.Offers.Count)} cards) over {string.Join(", ", callings)}");
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static WeakReference<Script> ReleasedFrameScript()
+    {
+        using var frame = OrnateBox.Make(OrnateBox.Kind.Card);
+        return new WeakReference<Script>(frame.GetScript().As<Script>());
+    }
+
+    void CheckFrameScriptLifetime()
+    {
+        var script = ReleasedFrameScript();
+        // Finalizers must not retire the type between disposable frame instances.
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+        if (!script.TryGetTarget(out var kept) || !IsInstanceValid(kept))
+            fails.Add("OrnateBox's C# script was collected between frame instances");
     }
 
     public override void _Process(double delta)
