@@ -137,7 +137,16 @@ public sealed class FollowCamera
     /// <summary>Where the camera is looking (for shadows, grass and sound).</summary>
     public Vector3 Focus => look;
 
-    public void AddTrauma(float v) => Trauma = Mathf.Clamp(Trauma + v * ShakeScale, 0, 1);
+    /// <summary>--shake-say (P7 debug): every AddTrauma and, while trauma is above 0, each frame's shake of the image at her in
+    /// screen pixels. Prints only: nothing changes with the switch off.</summary>
+    static readonly bool ShakeSay = Args.Has("shake-say");
+
+    public void AddTrauma(float v, string? src = null, [System.Runtime.CompilerServices.CallerFilePath] string file = "", [System.Runtime.CompilerServices.CallerLineNumber] int line = 0)
+    {
+        Trauma = Mathf.Clamp(Trauma + v * ShakeScale, 0, 1);
+        if (ShakeSay && v > 0)
+            GD.Print($"shake add frame {Engine.GetFramesDrawn()} v {v:0.####} src {src ?? (file.EndsWith("BattleFx.Grip.cs") ? "grip" : "other")} at {System.IO.Path.GetFileName(file)}:{line} trauma {Trauma:0.####}");
+    }
 
     /// <summary>The Flare's envelope (Fx/Flare/FlareFx.cs, FLARE_LOOK §1.4): the push in (a share of the distance; below
     /// 0 pulls out) and the pitch (radians added; below 0 lifts the view toward the sky).</summary>
@@ -320,5 +329,15 @@ public sealed class FollowCamera
         if (CamLog) GD.Print($"CAMLOG t={shakeT:F3} close={closeNow:F3} room={room:F3} free={logFree:F3} hit={RoomHit ?? "-"} fov={Camera.Fov:F2} d={d:F3} pos={at.X:F2},{at.Y:F2},{at.Z:F2} aim={aim.X:F2},{aim.Y:F2},{aim.Z:F2}");
         var basis = Basis.LookingAt(target - at, Vector3.Up);
         Camera.GlobalTransform = new Transform3D(basis.Rotated(basis.Z, N(6) * s * 0.025f), at);
+        if (ShakeSay && Trauma > 0)
+        {
+            // Where the point it aims at (her) falls on screen through this frame's shaken view, less where it falls through
+            // the same view without the trauma terms (eye, look point, roll): pixels of the viewport, x right, y down.
+            float half = (Camera.IsInsideTree() ? Camera.GetViewport().GetVisibleRect().Size.Y : 1080) / 2 / Mathf.Tan(Mathf.DegToRad(Camera.Fov) / 2);
+            Vector2 Px(Basis bs, Vector3 eye) { var v = bs.Inverse() * (aim - eye); return new Vector2(v.X, -v.Y) * (half / -v.Z); }
+            var eye0 = pos + lean + jolt + frameJolt;
+            var off = Px(Camera.GlobalBasis, at) - Px(Basis.LookingAt(aim + lean * 1.3f + frameJolt - eye0, Vector3.Up), eye0);
+            GD.Print($"shake frame {Engine.GetFramesDrawn()} trauma {Trauma:0.####} off_px {off.X:0.###} {off.Y:0.###} rot_deg {Mathf.RadToDeg(N(6) * s * 0.025f):0.####} px_per_m {half / (aim - eye0).Length():0.#}");
+        }
     }
 }
