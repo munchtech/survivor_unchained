@@ -59,6 +59,13 @@ class Gait:
     head_up: float = 0.0         # chin raised (+) beyond level
     shoulders: tuple = (0, 0)    # clavicles (raise, forward)
     arms: dict = field(default_factory=dict)  # per side overrides: {"r": callable(phase, pose)->hand spec}
+    # The foot's swing path: "" the spline (every run before A1 L21); "v2" (A1 L21, the armed warden run): the heel
+    # folded up fast off the toe, the foot under the driving knee, then reached and clawed back so it comes down
+    # steeply with `land` of the ground's speed already under it (no skate on the ground before the plant), the
+    # heel peeling `peel` m up at toe-off.
+    path: str = ""
+    land: float = 0.65
+    peel: float = 0.10
 
 
 def _spline(points, s):
@@ -93,9 +100,31 @@ def foot(g: Gait, phase):
         pitch = 6 * (1 - u) ** 3 - g.toe_off * max(0.0, (u - 0.55) / 0.45) ** 2
         y = 0.0
         # On the toe at the end: the ankle rises as the heel peels.
-        y += 0.10 * max(0.0, (u - 0.6) / 0.4) ** 2
+        y += g.peel * max(0.0, (u - 0.6) / 0.4) ** 2
         return np.array([0.0, y, z]), pitch, 0.0
     s = (ph - g.duty) / (1 - g.duty)
+    if g.path == "v2":
+        V = g.speed * T * (1 - g.duty)  # the ground's travel under her over the swing (m per unit s)
+        keys = [(0.0, z_off, g.peel), (0.28, z_off * 0.55, g.kick), (0.58, z_land * 0.55, g.knee + 0.05),
+                (0.85, z_land + 0.12, 0.12), (1.0, z_land, 0.0)]
+        d0, d1 = np.array([-0.35 * V, 0.6]), np.array([-g.land * V, -0.9])
+        i = max(k for k in range(len(keys) - 1) if keys[k][0] <= s) if s < 1.0 else len(keys) - 2
+
+        def der(k):
+            if k == 0:
+                return d0
+            if k == len(keys) - 1:
+                return d1
+            return (np.array(keys[k + 1][1:]) - np.array(keys[k - 1][1:])) / (keys[k + 1][0] - keys[k - 1][0])
+        s0, s1 = keys[i][0], keys[i + 1][0]
+        h = s1 - s0
+        t = (s - s0) / h
+        p0, p1 = np.array(keys[i][1:]), np.array(keys[i + 1][1:])
+        p = ((2 * t ** 3 - 3 * t ** 2 + 1) * p0 + (t ** 3 - 2 * t ** 2 + t) * h * der(i)
+             + (-2 * t ** 3 + 3 * t ** 2) * p1 + (t ** 3 - t ** 2) * h * der(i + 1))
+        pitch = float(_spline([(0.0, -g.toe_off), (0.25, -g.toe_off * 1.2), (0.55, -15), (0.8, 8), (1.0, 6)], s)[0])
+        toe = float(_spline([(0.0, 30), (0.2, 10), (0.4, 0), (1.0, 0)], s)[0])
+        return np.array([0.0, max(0.0, p[1]), p[0]]), pitch, toe
     # Off the toe, the heel kicked up, the knee driven through, the reach.
     p = _spline([
         (0.0, z_off, 0.10),

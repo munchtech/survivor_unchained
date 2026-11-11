@@ -245,6 +245,14 @@ WAND_L = ((10, 18, 85, -17), (-48, 8, 112, -23))
 WARDEN = Gait(frames=21, speed=SPEED, duty=0.33, drop=0.09, bob=0.05, lean=19, spine_lean=4, hip_yaw=6, hip_roll=3,
               hip_shift=0.02, chest_yaw=6, width=0.08, reach=0.38, kick=0.36, knee=0.28, shoulders=(4, 4),
               fingers="fist", swing=((6, 14, 85, 20), (-32, 15, 75, -25)))
+# A1 L21 (max judge on demo-arpg1's run: a wide split held 5-8 frames in flight with both feet sliding, a straight
+# "pogo" stance leg, the landing foot skating 110-130 mm/frame): WARDEN's stance swept 0.38 ahead to 0.80 behind the
+# pelvis (1.18 m), past her leg's reach, so the IK lifted and dragged the planted foot (baseline: both feet up 26-29 of
+# 33 frames at 0/180); and its swing spline met the ground at 1.2 of the ground's 5.1 m/s. Her armed run (run_warden,
+# and its sprint through sprint_stop) on its own Gait: a shorter contact (duty 0.27: 0.96 m of sweep, 0.30 ahead to
+# 0.66 behind), the pelvis lower (the planted knee bent), the heel peeling higher off the toe, and the "v2" swing.
+# run_warden_town and arts.CHARGE keep WARDEN.
+WARDEN_RUN = replace(WARDEN, duty=0.27, reach=0.30, drop=0.10, kick=0.42, knee=0.32, path="v2", land=0.65, peel=0.14)
 ARCANIST = Gait(frames=20, speed=SPEED, duty=0.30, drop=0.05, bob=0.06, lean=13, spine_lean=2, hip_yaw=8, hip_roll=5.5,
                 hip_shift=0.03, chest_yaw=7, width=0.03, reach=0.34, kick=0.40, knee=0.30, head_up=4,
                 arm_fwd=(0.0, -0.20, 0.25), arm_back=(0.0, -0.32, -0.22), elbow_out=0.25, fingers="open",
@@ -543,7 +551,7 @@ WAND_ARM = ((0, 15, 120, 0), (-30, 14, 120, -20))
 RUNS = {
     # (Animation 56: the low point; was the trailing carry, TRAIL_ARM and axe_hang(**TRAIL).)
     # (Animation 57: WARDEN_CARRY; "low" is Animation 56's LOW_ARM and low_point(out=(26, 24)).)
-    "run_warden": (replace(WARDEN, swing_r=WARDEN_CARRIES[WARDEN_CARRY][0]),
+    "run_warden": (replace(WARDEN_RUN, swing_r=WARDEN_CARRIES[WARDEN_CARRY][0]),
                    {"r": (haft_carry if WARDEN_CARRY == "high" else low_point)(**WARDEN_CARRIES[WARDEN_CARRY][1]), "l": shield_guard(lift=0.04, fwd=-0.005)}, "sword+shield"),
     # The free fist's forward end higher and out, by her hip (anim 41: it landed at her groin from the close-up).
     # Animation 57: REAVER_CARRY picks the reaver's armed runs, "trail" (the trailing carry, Animation 55's; the
