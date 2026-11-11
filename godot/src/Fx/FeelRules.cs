@@ -331,12 +331,35 @@ public static class FeelRules
         return dx * dx + dy * dy <= r * r;
     }
 
-    /// <summary>A clearing number's alpha `since` frames after the window opened: front-loaded, 0 by KillClearFrames.</summary>
-    public static float KillClear(long since)
+    /// <summary>A clearing number's alpha `since` frames after the window opened: front-loaded, 0 by KillClearFrames
+    /// (or by `frames`, OnHerClearFrames for a number she moved onto).</summary>
+    public static float KillClear(long since, int frames = KillClearFrames)
     {
         if (since < 0) return 1;
-        if (since >= KillClearFrames) return 0;
-        float u = 1 - (since + 1f) / (KillClearFrames + 1);
+        if (since >= frames) return 0;
+        float u = 1 - (since + 1f) / (frames + 1);
         return u * u;
+    }
+
+    /// <summary>F1 lead 31 (lead 30's m5b tail, hs34 6168: she dashed into the standing total "1026" and its "26" lay over
+    /// her health strap ~10 frames): a number of her blows that her body's rect or the strap's under her comes to overlap
+    /// starts clearing and is gone in OnHerClearFrames; it never comes back and is never moved. Real contact only (the
+    /// boxes share at least OnHerDepth px each way, px at 1080, no margin): birth keeps every number HitsPlace.BodyGap /
+    /// StrapGap (4 / 6 px) clear of both, so a step that does not reach a fresh number by her never clears it. Her own
+    /// readouts (heal, damage taken, callouts) are not passed to it.</summary>
+    public const float OnHerDepth = 1;
+    public const int OnHerClearFrames = 5;
+
+    /// <summary>How deep two boxes overlap: the lesser of their common part's width and height (px; 0 where they do not).</summary>
+    public static float Overlap(float ax0, float ay0, float ax1, float ay1, float bx0, float by0, float bx1, float by1) =>
+        Math.Max(0, Math.Min(Math.Min(ax1, bx1) - Math.Max(ax0, bx0), Math.Min(ay1, by1) - Math.Max(ay0, by0)));
+
+    /// <summary>Whether a number's box (`num`) is on her body's rect or the strap's (either null where not on screen).</summary>
+    public static bool OnHer((float X0, float Y0, float X1, float Y1) num, (float X0, float Y0, float X1, float Y1)? body,
+        (float X0, float Y0, float X1, float Y1)? strap, float scale = 1)
+    {
+        static float O((float X0, float Y0, float X1, float Y1) a, (float X0, float Y0, float X1, float Y1) b) =>
+            Overlap(a.X0, a.Y0, a.X1, a.Y1, b.X0, b.Y0, b.X1, b.Y1);
+        return body is { } b && O(num, b) >= OnHerDepth * scale || strap is { } s && O(num, s) >= OnHerDepth * scale;
     }
 }

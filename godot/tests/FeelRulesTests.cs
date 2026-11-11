@@ -254,6 +254,30 @@ public class FeelRulesTests
     }
 
     [Fact]
+    public void NumberSheMovesOntoClears()
+    {
+        var body = (900f, 400f, 1000f, 700f);        // her body's rect
+        var strap = (880f, 710f, 1020f, 722f);       // the strap under her
+        // born beside her at the birth gap (4 px off her body, 6 off the strap): untouched
+        Assert.False(FeelRules.OnHer((1004f, 500f, 1084f, 540f), body, strap));
+        Assert.False(FeelRules.OnHer((800f, 690f, 874f, 704f), body, strap));
+        // one step that does not reach it: still untouched; touching an edge is not contact
+        Assert.False(FeelRules.OnHer((1000f, 500f, 1080f, 540f), body, strap));
+        // she has moved onto it: the body, or the strap's left end (m5b's "1026", ~35x10 px)
+        Assert.True(FeelRules.OnHer((990f, 500f, 1070f, 540f), body, strap));
+        Assert.True(FeelRules.OnHer((830f, 705f, 915f, 745f), body, strap));
+        Assert.True(FeelRules.OnHer((830f, 705f, 915f, 745f), null, strap));
+        Assert.False(FeelRules.OnHer((830f, 705f, 915f, 745f), null, null));
+        // at 4K the depth scales: a 1.5 px brush is not contact there
+        Assert.False(FeelRules.OnHer((998.5f, 500f, 1080f, 540f), body, null, 2));
+        // its clearing: front-loaded, under half by its second frame, gone by OnHerClearFrames
+        Assert.True(FeelRules.KillClear(1, FeelRules.OnHerClearFrames) < 0.5f);
+        Assert.True(FeelRules.KillClear(3, FeelRules.OnHerClearFrames) < 0.15f);
+        Assert.Equal(0f, FeelRules.KillClear(FeelRules.OnHerClearFrames, FeelRules.OnHerClearFrames));
+        Assert.Equal(0f, FeelRules.KillClear(3));                                  // a kill's clearing is unchanged
+    }
+
+    [Fact]
     public void AKillWindowNeverClearsTheTotalOfTheKillThatOpensIt()
     {
         // F1 lead 30 (judge n fix 1): only numbers of earlier frames clear; the new total is born on the opening frame

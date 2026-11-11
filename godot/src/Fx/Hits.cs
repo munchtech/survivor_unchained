@@ -304,6 +304,8 @@ public partial class Hits : Node3D
         numPunch[i] = 1;
         clearFrom[i] = NotClearing;
         bornFrame[i] = Engine.GetFramesDrawn();
+        blowNum[i] = false;
+        clearFor[i] = SurvivorUnchained.View.FeelRules.KillClearFrames;
         l.Scale = 1;
         // (F1 27: a placed blow number is already over its victim, away from her: no jitter)
         at = ClearOfNames(placed ? at : at + new Vector3(rng.RandfRange(-0.3f, 0.3f), 0, 0), text, size);
@@ -348,6 +350,7 @@ public partial class Hits : Node3D
         StepTally(delta);
         float dt = (float)delta;
         bool live = false;
+        var onHer = HerRects();
         for (int i = 0; i < numbers.Count; i++)
         {
             var (l, t) = numbers[i];
@@ -361,14 +364,17 @@ public partial class Hits : Node3D
                 float k = Mathf.Clamp(numPunch[i] / 0.08f, 0, 1), e = 1 - (1 - k) * (1 - k);
                 l.Scale = Mathf.Lerp(1.35f, 1f, e);
             }
+            // (F1 r6: and none drifts onto the HUD as the camera follows her: kept off it every frame)
+            if (t < 1) l.GlobalPosition = AboveHud(l.GlobalPosition, l.Text, l.FontSize);
+            // (F1 lead 31: a number of her blows she moves onto starts clearing: FeelRules.OnHer)
+            if (t < 1 && blowNum[i] && onHer.Cam != null) OnHerNow(i, onHer);
             // (F1 r6: a number cleared off a new kill fades out by its window's N + 3, then is free)
-            float clear = clearFrom[i] == NotClearing ? 1 : SurvivorUnchained.View.FeelRules.KillClear(Engine.GetFramesDrawn() - clearFrom[i]);
+            float clear = clearFrom[i] == NotClearing ? 1 : SurvivorUnchained.View.FeelRules.KillClear(Engine.GetFramesDrawn() - clearFrom[i], clearFor[i]);
             if (clear <= 0) { t = 1; clearFrom[i] = NotClearing; }
             var c = l.Modulate; c.A = (t < 0.7f ? 1 : 1 - (t - 0.7f) / 0.3f) * Hush * numA[i] * clear; l.Modulate = c;
             l.OutlineModulate = new Color(l.OutlineModulate, c.A);
             if (t >= 1) l.Visible = false;
-            // (F1 r6: and none drifts onto the HUD as the camera follows her: kept off it every frame)
-            else l.GlobalPosition = AboveHud(l.GlobalPosition, l.Text, l.FontSize);
+            if (NumTrace && onHer.Cam != null && blowNum[i]) OnHerTrace(i, onHer, c.A);
             numbers[i] = (l, t);
         }
         SheetFrame(live);

@@ -33,6 +33,10 @@ public partial class Hits
     static long[] FillClear() { var a = new long[48]; Array.Fill(a, NotClearing); return a; }
     /// <summary>Per pool label: the drawn frame it was shown (F1 lead 30: a kill window clears only earlier frames' numbers).</summary>
     readonly long[] bornFrame = new long[48];
+    /// <summary>Per pool label: a number of her blows (the tally's, a Flare's total), the only ones FeelRules.OnHer clears;
+    /// and its clearing's length in frames (KillClearFrames off a kill, OnHerClearFrames off her).</summary>
+    readonly bool[] blowNum = new bool[48];
+    readonly int[] clearFor = new int[48];
     /// <summary>This frame's felled, in felledAt's order.</summary>
     readonly List<int> felledIds = new();
 
@@ -266,6 +270,7 @@ public partial class Hits
                     // (only numbers of earlier frames: the total of the kill opening the window is never among them)
                     if (!SurvivorUnchained.View.FeelRules.ClearsAtOpen(bornFrame[k], now, sp.X, sp.Y, kx, ky, kk, felledBox)) continue;
                     clearFrom[k] = now;
+                    clearFor[k] = SurvivorUnchained.View.FeelRules.KillClearFrames;
                     if (k == massLabel) massLabel = -1;
                     cleared++;
                     which.Add(k);
@@ -310,6 +315,7 @@ public partial class Hits
                 : blow ? Spot(at, her, text, tsize, w.Target) : Beside(at);
             if (!(mass && blow) && Crowded(spot)) { ntCrowded++; continue; }
             int i = Show(spot, "", Colors.White, 46, blow);
+            blowNum[i] = true;
             tallies[i] = t;
             tallyOf[i] = w.Target;
             labelOfTarget[w.Target] = i;
@@ -349,6 +355,7 @@ public partial class Hits
     public void Total(Vector3 at, double amount, float safe = 0.05f)
     {
         int i = Show(at, "", Colors.White, 60);
+        blowNum[i] = true;
         var t = new Tallied { Target = int.MinValue + 1, Sum = amount, Born = clock, Heavy = true };
         tallies[i] = t;
         tallyOf[i] = int.MinValue + 1;
@@ -449,6 +456,51 @@ public partial class Hits
         var (x, y) = FeelRules.MassTotalSpot(felled, flights, herX, nb.Size.X, nb.Size.Y, k, Mathf.Max(0, rise), keep, bounds);
         crossed = FeelRules.FlightsCrossed(x, y, nb.Size.X, nb.Size.Y, flights, k, Mathf.Max(0, rise));
         return cam.ProjectPosition(new Vector2(x, y), depth);
+    }
+
+    /// <summary>This frame's camera, her body's rect and the strap's under her on screen (FeelRules boxes), and the
+    /// screen's height over 1080; Cam null without a camera.</summary>
+    readonly record struct HerNow(Camera3D? Cam, (float X0, float Y0, float X1, float Y1)? Body, (float X0, float Y0, float X1, float Y1)? Strap, float K);
+
+    HerNow HerRects()
+    {
+        var cam = GetViewport()?.GetCamera3D();
+        if (cam == null) return default;
+        static (float, float, float, float)? B(Rect2? r) => r is Rect2 q ? (q.Position.X, q.Position.Y, q.End.X, q.End.Y) : null;
+        return new HerNow(cam, B(HerBox(cam)), B(SurvivorUnchained.Ui.HerLight.Live?.Under.OnScreen), GetViewport().GetVisibleRect().Size.Y / 1080f);
+    }
+
+    (float X0, float Y0, float X1, float Y1)? DrawnBox(int i, Camera3D cam)
+    {
+        var l = numbers[i].Label;
+        if (!l.Visible || cam.IsPositionBehind(l.GlobalPosition) || NumBox(cam, l.GlobalPosition, l.Text, l.FontSize) is not Rect2 b) return null;
+        return (b.Position.X, b.Position.Y, b.End.X, b.End.Y);
+    }
+
+    /// <summary>F1 lead 31: a number of her blows that she has moved onto (FeelRules.OnHer) starts clearing now, gone in
+    /// OnHerClearFrames; one already clearing keeps its own clearing.</summary>
+    void OnHerNow(int i, in HerNow her)
+    {
+        if (clearFrom[i] != NotClearing || DrawnBox(i, her.Cam!) is not { } nb) return;
+        if (!FeelRules.OnHer(nb, her.Body, her.Strap, her.K)) return;
+        long now = Engine.GetFramesDrawn();
+        clearFrom[i] = now;
+        clearFor[i] = FeelRules.OnHerClearFrames;
+        if (NumTrace) GD.Print($"[num-onher-clear] f={now} label={i} text={numbers[i].Label.Text} age={now - bornFrame[i]} box=({nb.X0:0},{nb.Y0:0},{nb.X1:0},{nb.Y1:0})");
+    }
+
+    /// <summary>--kill-trace: each frame a number of her blows still shown overlaps her body's rect or the strap's: its
+    /// alpha, age, the overlap's width x height with each, and frames since its clearing began (-1: not clearing).</summary>
+    void OnHerTrace(int i, in HerNow her, float alpha)
+    {
+        if (alpha <= 0.01f || DrawnBox(i, her.Cam!) is not { } nb) return;
+        static string O((float X0, float Y0, float X1, float Y1) a, (float X0, float Y0, float X1, float Y1)? r) =>
+            r is { } b ? $"{Math.Max(0, Math.Min(a.X1, b.X1) - Math.Max(a.X0, b.X0)):0}x{Math.Max(0, Math.Min(a.Y1, b.Y1) - Math.Max(a.Y0, b.Y0)):0}" : "none";
+        string ob = O(nb, her.Body), os = O(nb, her.Strap);
+        bool on = (ob != "none" && !ob.StartsWith("0x") && !ob.EndsWith("x0")) || (os != "none" && !os.StartsWith("0x") && !os.EndsWith("x0"));
+        if (!on) return;
+        long now = Engine.GetFramesDrawn();
+        GD.Print($"[num-onher] f={now} label={i} text={numbers[i].Label.Text} age={now - bornFrame[i]} a={alpha:0.00} body={ob} strap={os} since={(clearFrom[i] == NotClearing ? -1 : now - clearFrom[i])} box=({nb.X0:0},{nb.Y0:0},{nb.X1:0},{nb.Y1:0})");
     }
 
     /// <summary>A pool label's box on screen as text "(x0,y0,x1,y1)" for the traces.</summary>
