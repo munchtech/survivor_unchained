@@ -743,7 +743,7 @@ public partial class GameHud : CanvasLayer
         // M4 §4: the level card (a campaign level-up the HUD sees itself; --level-card's staged one)
         campaignNow = b.Campaign;
         LevelWatch(b, level.Level, ember);
-        if (DevSlots.LevelCardDue(b) is { } cardDue) StagedCard(b, cardDue);
+        if (DevSlots.LevelCardDue(b) is { } cardDue) { if ((GetParent() as Game)?.Journey.Ch is { } dch) LevelCards.ResolveDevOffer(cardDue, dch); StagedCard(b, cardDue); }
         if (DevSlots.DawnDue(b) && GetParent() is Game dg)
             dg.DawnCard(Play.DawnCard.Build(["Whirling Ember", "Cinder Ward"], 4), () => { });
         // (M4: the pad's A is Interact only out of a fight)
@@ -966,9 +966,17 @@ public partial class GameHud : CanvasLayer
 
     SkillTip Tip()
     {
-        if (skillTip == null) { skillTip = new SkillTip { Name = "SkillTip" }; play.AddChild(skillTip); }
+        if (skillTip == null) { skillTip = new SkillTip { Name = "SkillTip", ZIndex = 100 }; play.AddChild(skillTip); }
         else if (skillTip.GetIndex() != play.GetChildCount() - 1) play.MoveChild(skillTip, -1);
         return skillTip;
+    }
+
+    /// <summary>How far the seat's key cap (the seat row's highest point) rises above the seat's middle, in screen px.</summary>
+    float SeatTop(Control sk, Transform2D sx)
+    {
+        var seat = DgPanel.Seat(((Socket)sk).Index);
+        float capTop = (DgPanel.TopY + seat.Y - DgPanel.SeatR) / 2 - Instrument.TagH / 2;
+        return (seat.Y - capTop) * sx.Scale.Y;
     }
 
     /// <summary>The seat (0-5) whose ring holds p (global), or -1.</summary>
@@ -1006,8 +1014,8 @@ public partial class GameHud : CanvasLayer
             if (read)
             {
                 string f = "card|" + card.Skill + "|" + card.Slot;
-                if (f != tipFor) { tipFor = f; tipView = SkillTip.For(ch, b, card.Skill, card.Kind == LevelCardKind.NewKey ? card.Slot : -1); }
-                Tip().Set(true, new Vector2(r.Position.X + r.Size.X / 2, r.Position.Y), tipView);
+                if (f != tipFor) { tipFor = f; tipView = SkillTip.For(ch, b, card.Skill, card.Kind == LevelCardKind.NewKey ? card.Slot : b.Weapons.Find(x => x.Id == card.Skill)?.Slot ?? ch.Slotted.IndexOf(card.Skill)); }
+                Tip().Set(true, new Vector2(r.Position.X + r.Size.X / 2, r.Position.Y), tipView, 10);
             }
         }
         if (levelCard != null) levelCard.Read = read;
@@ -1046,7 +1054,7 @@ public partial class GameHud : CanvasLayer
         var sk = irons.Sockets[seat];
         var sx = sk.GetGlobalTransform();
         var mid = sx * (sk.Size / 2);
-        if (show) Tip().Set(true, new Vector2(mid.X, mid.Y - DgPanel.SeatR * sx.Scale.Y), tipView);
+        if (show) Tip().Set(true, new Vector2(mid.X, mid.Y - SeatTop(sk, sx)), tipView, 14);
         else skillTip?.Set(false, default, null);
     }
 

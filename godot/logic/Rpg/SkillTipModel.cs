@@ -20,8 +20,8 @@ public static class SkillTipModel
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
     static readonly Regex Hole = new(@"\{([^{}]*)\}", RegexOptions.Compiled);
 
-    /// <summary>A damage: whole at 10 or more, else one place (no trailing zeros).</summary>
-    public static string Damage(double v) => Math.Abs(v) >= 10 ? Math.Round(v).ToString("0", Inv) : Math.Round(v, 1).ToString("0.#", Inv);
+    /// <summary>A damage: always whole.</summary>
+    public static string Damage(double v) => Math.Round(v).ToString("0", Inv);
     /// <summary>A plain number, up to two places, no trailing zeros.</summary>
     public static string Plain(double v) => Math.Round(v, 2).ToString("0.##", Inv);
     /// <summary>Seconds: one place, no trailing zeros ("7.8", "0.5", "8").</summary>

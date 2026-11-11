@@ -53,20 +53,30 @@ public partial class SkillTip : Control
         return SkillTipModel.Build(ch, null, id, cast, fallbackSlot >= 0 && fallbackSlot < KeyMap.Skills.Length ? KeyMap.Skills[fallbackSlot].ToString() : null);
     }
 
+    /// <summary>How far UiArt's tooltip frame draws past the rect.</summary>
+    public const float Out = 6;
+
     /// <summary>The view now shown (null when hidden).</summary>
     public SkillTipView? View => Visible ? view : null;
 
     /// <summary>Show it with its foot's middle at foot (a 12 px gap above it; below foot when it would leave the top),
     /// clamped 8 px inside 1920x1080; or hide it.</summary>
-    public void Set(bool show, Vector2 foot, SkillTipView? v)
+    public void Set(bool show, Vector2 foot, SkillTipView? v, float outerGap = -1, float leftOf = float.NaN, float bottomAt = float.NaN)
     {
         show = show && v != null && v.Name != "";
         if (Visible != show) Visible = show;
         if (!show) return;
         string k = KeyOf(v!);
         if (k != key) { key = k; Build(v!); }
-        float y = foot.Y - Size.Y - 12;
-        if (y < 8) y = foot.Y + 12;
+        if (!float.IsNaN(leftOf) && !float.IsNaN(bottomAt) && leftOf - Out - Size.X >= 8)
+        {
+            // (beside a panel: its outer right edge at leftOf, its outer bottom edge at bottomAt)
+            var side = new Vector2(Mathf.Round(leftOf - Out - Size.X), Mathf.Clamp(Mathf.Round(bottomAt - Out - Size.Y), 8, 1080 - 8 - Size.Y));
+            if (Position != side) Position = side;
+            return;
+        }
+        float y = foot.Y - Size.Y - (outerGap >= 0 ? outerGap + Out : 12);
+        if (y < 8) y = foot.Y + (outerGap >= 0 ? outerGap + Out : 12);
         var at = new Vector2(Mathf.Clamp(Mathf.Round(foot.X - Size.X / 2), 8, 1920 - 8 - Size.X), Mathf.Clamp(Mathf.Round(y), 8, 1080 - 8 - Size.Y));
         if (Position != at) Position = at;
     }

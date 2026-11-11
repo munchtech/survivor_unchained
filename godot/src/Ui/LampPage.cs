@@ -559,7 +559,10 @@ public partial class LampPage : Control
         // its foot at the tab's top centre (SkillTip hangs it below the tab when it would leave the top)
         var tx = Tabs.GetGlobalTransform();
         var top = GetGlobalTransform().AffineInverse() * (tx * (Tabs.Centers[tab] - new Vector2(0, WickTabs.D / 2)));
-        tabTip.Set(true, top, tabView);
+        var inv = GetGlobalTransform().AffineInverse();
+        float panelLeft = Wide ? WickRect.Position.X : (backdrop != null ? (inv * backdrop.GetGlobalPosition()).X : 1030);
+        float rowBottom = (inv * (tx * (Tabs.Centers[tab] + new Vector2(0, WickTabs.D / 2)))).Y;
+        tabTip.Set(true, top, tabView, -1, panelLeft - 16, rowBottom);
     }
 
     /// <summary>The left stick's step: on the board §10's, in the wick its rows and pitch (the nearest of four ways).</summary>
