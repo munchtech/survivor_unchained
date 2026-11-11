@@ -1,3 +1,23 @@
+# M7a classes lead 1 (10 Nov): MR READY skills-p7@d951d773c (integration 0297fa6ab merged in; suite 2174/0/11); wound down on the owner's word
+
+- **What landed:**
+  - Wicks light by level at the new rate, `SkillBook.PointsAt(L) = min(8, 1 + (L-1)/2)` (8 at L15).
+  - A point earned while she carries a skill is HELD (`LampLayout.Held`, `WickBook.Grew` from `Character.GainXp`; `Arrived` for a skill that is taught, created, or granted at a fight's start).
+  - The day rank is `WickBook.DayRank`, with Burning points plus M9's gear `SkillPlus`, to MaxRank. Merge choice: `SkillBook.RankOf` stays M9's, ignoring the held points. Callers that fight use DayRank.
+  - The level-up card (M4's, no new look) offers the lamp: `LevelCards.LampOffer`, header "A LAMP TO LIGHT", `PromptText` "Light: <live wicks.json text>", and the blow's before/after (`WickBook.LampMeasure`). Act.Lamps lights it while the offer is up (`GameMenus.cs`, ahead of the lamps board), via `Journey.LightHeld`; the card then shows lit.
+  - Dev parse: `--level-card offer:SKILL:LEVEL:BEFORE:AFTER`.
+  - Events: `WickBook.LampOffered(ch, skill, lampId)` / `LampLit(ch, skill, lampId)`. M6's A5a seam is set in `Game.cs` (`Seams.LampOffered` gives "lamp_offer" while the card is up; a GameTeach target brackets the card).
+  - Tests: `HeldPointTests`, `LampOfferCardTests`, and the existing `PrologueArpgTeachTests.A5a_*`.
+- **Decision for main (reversible):** the card names the lamp by what the fight does (Sunder's first live lamp "+10% damage"), not skill_lamps.json's "Third Blow". The game does not read skill_lamps.json yet, and Third Blow is not a live wick lamp. To match ARPG.md 5a, make Third Blow Sunder's first live wicks.json lamp (rule `sunder.third_blow`), or wire skill_lamps.json (ONE_BUILD 5).
+- **Owed:**
+  1. The picture round: the offer card at the 1:1 play camera, through a fresh su-lead-max judge, skipped at wind-down.
+  2. The HUD-loudness check on p7_wave at P7's next skill view.
+  3. The Low Ford curve: an M3 re-measure after the demo (the faster rate changes it), not classes' job.
+  4. The LightMyWay-on card ("A LAMP LIT", with no offer) is not built; it shows M4's plain card. Nothing sets `LampState.LightMyWay` yet.
+  5. `--level-card offer:` is a staged picture: pressing L there opens the board, because nothing is held.
+- **Spec and scratch:** `survivorsunchained_inputs/scratch_m7a/spec_m7a.md`; the suite output is `suite_m7a_final.out` (one red, `LootPlusSkillTests`, fixed after in d951d773c by a setup LightAll).
+- **Cost:** about 0.12M for JOB 1, about 0.4M for M7a, with helpers at 122k + 28k + 80k.
+
 # The ARPG design lead 1 (8-9 Nov): `docs/design/ARPG.md` on design-arpg; three judge rounds, the last FAIL close with its five fixes applied; a confirm judge is needed before the owner sees it
 
 Brief: `tools/scratch/coordinator/briefs/ARPG_design_lead1.md`. Owner's words: `docs/design/ARPG_DIRECTION.md`, `SIEGES.md`, and on the dash: "its decent fundamentally - its improvements behind the scenes are awkward - just pushing the button leveling it up is weird". Report to main. Docs only, no game code. The worktree is a junction worktree (`godot\assets` links to its own `public\assets`): never merge, reset or checkout without the junction rule in `lead_brief.md`.
