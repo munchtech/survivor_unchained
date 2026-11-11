@@ -1343,7 +1343,7 @@ public partial class PlayerView : Node3D
         // (A1 L21) The 180's plant: its eased stride shown on this frame (not the next), then her model placed on it.
         if (mine && !TurnL20 && !TurnNoPlant)
         {
-            if (plantStage is 1 or 2) tree.Advance(0);
+            if (plantStage is 1 or 2 or 3) tree.Advance(0);
             PlantPlace((float)dt);
         }
         if (mine) { if (SurvivorUnchained.Play.TurnRun.Start >= 0) logT = b.Time - SurvivorUnchained.Play.TurnRun.Start; SwingRelease((float)dt); }
@@ -1693,8 +1693,12 @@ public partial class PlayerView : Node3D
         }
         if (!move2D)
         {
-            tree.Set("parameters/move/walkSeek/seek_request", stride * walkLen);
-            tree.Set("parameters/move/runSeek/seek_request", stride * runLen);
+            // (the plant's stages shown this frame by tree.Advance(0) after Carry, then played on dt by the tree's own pass:
+            // seeked dt back, so the pose shown is the stride set, as on a run frame: r3's plant stood a frame's play ahead,
+            // her foot 0.18 m behind her pelvis instead of under it)
+            float back = !TurnL20 && !TurnNoPlant && plantStage is >= 1 and <= 3 ? dt : 0;
+            tree.Set("parameters/move/walkSeek/seek_request", Mathf.PosMod(stride * walkLen - back, Mathf.Max(walkLen, 1e-3f)));
+            tree.Set("parameters/move/runSeek/seek_request", Mathf.PosMod(stride * runLen - back, Mathf.Max(runLen, 1e-3f)));
         }
         // Her arms in one hold or the other (Play/ArmHold): only where the walk and the run carry a piece in hand
         // (her walk for this calling and kind, armed, not sheathed); elsewhere today's per-bone mix. --arm-blend off: the mix.
@@ -1805,6 +1809,8 @@ public partial class PlayerView : Node3D
             float stepA = Mathf.Min(aimRamp * f, Mathf.Abs(rem) * k);
             carriage.Aim += Mathf.Sign(rem) * stepA;
             // The 180's lean: toward the new travel and banked into the pivot, eased out after it.
+            // (r4: eased in from the pivot's first frame, a quarter a frame, not a frame late at a third)
+            if (!TurnNoPlant && (pivotN >= 0 || plantStage is 1 or 2 or 3)) pivotLean = Mathf.Min(1, pivotLean + 0.25f);
             if (pivotLean > 0.01f && !TurnNoPlant)
             {
                 // (r3: the lean held in the world, toward the new travel and the turn's side, so her yaw does not swing it:
@@ -1878,7 +1884,7 @@ public partial class PlayerView : Node3D
     /// <summary>(A1 L21) --turn-l20: lead 20's turning and presses (A/B); without it lead 21's: the eased waist (30 deg a
     /// frame at most), hips joining a blow behind her, the swing held on its wind until her shoulders are on the blow,
     /// the quick standing turn and the 180's plant and pivot.</summary>
-    static readonly bool TurnL20 = SurvivorUnchained.Args.Has("turn-l20"), TurnNoPlant = SurvivorUnchained.Args.Has("turn-noplant");
+    static readonly bool TurnL20 = SurvivorUnchained.Args.Has("turn-l20"), TurnNoPlant = SurvivorUnchained.Args.Has("turn-noplant"), TurnPin3 = SurvivorUnchained.Args.Has("turn-pin3");
     /// <summary>Standing, lead 21: within 20 deg of a 180 in 3 frames, no frame over ~73 deg.</summary>
     const float TurnMaxStanding21 = 2200f;
     /// <summary>A running blow past 100 deg off her travel: the facing her body turns to while it lasts (radians).</summary>
@@ -1948,14 +1954,15 @@ public partial class PlayerView : Node3D
     void PlantPlace(float dt)
     {
         var sim = Position;   // (set from the sim this frame; the offset not yet added)
-        if (pivotN >= 0) pivotLean = Mathf.Min(1, pivotLean + 0.34f);
-        else if (plantStage == 0 || plantStage == 4) pivotLean *= Mathf.Exp(-dt / 0.1f);
+        if (plantStage == 0 || plantStage == 4) pivotLean *= Mathf.Exp(-dt / 0.1f);
         Vector3 model = sim + plantOff;
         if (plantStage is 1 or 2 && plantFirst || plantStage == 1)
         {
             // momentum: the last step, braked
             model = lastModelSet ? lastModel + lastStep * (plantStage == 1 ? 0.6f : 0.5f) : sim;
-            if (plantStage == 2)
+            // (r4: the foot taken at the easing frame, pinned from the next: r3 let it slide 0.12 m a frame longer, on
+            // the frame she yaws most; --turn-pin3 = r3)
+            if (plantStage == 2 || !TurnPin3)
             {
                 plantFirst = false;
                 Position = new Vector3(model.X, sim.Y, model.Z);
