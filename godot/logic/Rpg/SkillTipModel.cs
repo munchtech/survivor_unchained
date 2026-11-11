@@ -13,7 +13,7 @@ namespace SurvivorUnchained.Rpg;
 /// Own: the skill has its own record in skill_tips.json (else the description fallback). Unresolved lists any
 /// placeholder the numbers could not fill (shown as "?"; tests demand none).</summary>
 public sealed record SkillTipView(string Name, string How, string Line, IReadOnlyList<(string Label, string Value)> Rows,
-    (string Label, string Value)? Cost, string? Key, bool Own, IReadOnlyList<string> Unresolved);
+    (string Label, string Value)? Cost, string? Key, bool Own, IReadOnlyList<string> Unresolved, string Skill = "");
 
 public static class SkillTipModel
 {
@@ -87,12 +87,11 @@ public static class SkillTipModel
         }
 
         (string, string)? cost = null;
-        string? ck = resolveOn && (def.Press?.Resolve ?? 0) > 0 ? "resolve"
+        string? ck = every != null ? null : resolveOn && (def.Press?.Resolve ?? 0) > 0 ? "resolve"
             : resolveOn && drain > 0 ? "drain"
-            : every != null ? "chain"
             : cooldown >= 0.1 ? "cooldown" : null;
         if (ck != null && SkillTips.CostTemplate(ck) is { } ct) cost = (ct.Label, Fill(ct.Value));
-        return new SkillTipView(def.Name, how, line, rows, cost, key, rec != null, unresolved);
+        return new SkillTipView(def.Name, how, line, rows, cost, key, rec != null, unresolved, skill);
     }
 
     /// <summary>Her Cooldown stat as a fight starts with it (kit stats: calling, gear, lamps).</summary>

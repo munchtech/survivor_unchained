@@ -109,7 +109,7 @@ public static class LevelCards
             {
                 Kind = LevelCardKind.LampLit, Offer = true, Level = level, Skill = id, Lamp = lamp,
                 Measure = measure, Before = before, After = after,
-                PromptKey = Act.Lamps, PromptText = "Light: " + Content.Wicks.Text(id, lamp),
+                PromptKey = Act.Lamps, PromptText = "Light it: " + Content.Wicks.Text(id, lamp),
             };
         }
         return null;
@@ -123,7 +123,7 @@ public static class LevelCards
         var (measure, before, after) = Rpg.WickBook.LampMeasure(ch, s.Skill, lamp);
         s.Lamp = lamp;
         if (double.IsNaN(s.Before) || double.IsNaN(s.After)) { s.Measure = measure; s.Before = before; s.After = after; }
-        s.PromptText = "Light: " + Content.Wicks.Text(s.Skill, lamp);
+        s.PromptText = "Light it: " + Content.Wicks.Text(s.Skill, lamp);
     }
 
     /// <summary>The offer taken: the card turns to the lit state (header "A LAMP LIT", no lighting prompt).</summary>

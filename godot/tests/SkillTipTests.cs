@@ -91,8 +91,15 @@ public class SkillTipTests(ITestOutputHelper output)
                 Assert.InRange(v.Rows.Count, 2, 4);
                 Assert.All(v.Rows, r => Assert.False(string.IsNullOrWhiteSpace(r.Value), at));
                 Assert.Empty(v.Unresolved);
-                Assert.NotNull(v.Cost);
+                if (SkillTipModel.Build(j.Ch, null, skill, cast) is var vc && WickBook.Sum(j.Ch, skill, false)?.Cut is { } cut)
+                {
+                    // a chained skill: the cut is what lands (a normal Damage row, no cost row)
+                    Assert.Null(v.Cost);
+                    Assert.Equal($"{SkillTipModel.Damage(cut)} a cut, every {SkillTipModel.Seconds(WickBook.Sum(j.Ch, skill, false)!.Every!.Value)} s", v.Rows.First(r => r.Label == "Damage").Value);
+                }
+                else Assert.NotNull(v.Cost);
                 NoBraces(v);
+                Assert.True(v.Line.Length <= 112, $"{at} line is {v.Line.Length} chars: {v.Line}");
 
                 // the numbers are the fight's
                 var live = SkillTipModel.Build(j.Ch, b, skill, cast);
@@ -146,7 +153,7 @@ public class SkillTipTests(ITestOutputHelper output)
             {
                 string id = s.LampId(n);
                 var d = WickBook.LampDelta(j.Ch, "sunder", id);
-                if (d is { What: "Damage" } && dmg == null) dmg = id;
+                if (d is { What: "Cut" } && dmg == null) dmg = id;
                 if (d is { What: "Reach" or "Size" } && reach == null) reach = id;
                 if (n == Wicks.PerStrand && turn == null) turn = id;
                 output.WriteLine($"{id}: {d?.What} {d?.Before} -> {d?.After}");
@@ -172,13 +179,24 @@ public class SkillTipTests(ITestOutputHelper output)
             string? dmg = null;
             foreach (var s in Wicks.StrandsOf("sunder"))
                 for (int n = 1; n < Wicks.PerStrand && dmg == null; n++)
-                    if (WickBook.LampDelta(j.Ch, "sunder", s.LampId(n)) is { What: "Damage", Cond: "" }) dmg = s.LampId(n);
+                    if (WickBook.LampDelta(j.Ch, "sunder", s.LampId(n)) is { What: "Cut", Cond: "" }) dmg = s.LampId(n);
             Assert.NotNull(dmg);
             var d = WickBook.LampDelta(j.Ch, "sunder", dmg!)!.Value;
             output.WriteLine($"level {lv}: {d.Before} -> {d.After}, sum {sum.Total}");
-            Assert.Equal(System.Math.Round(sum.Total).ToString("0"), d.Before);
+            Assert.Equal(System.Math.Round(sum.Cut!.Value).ToString("0"), d.Before);
             Assert.True(double.Parse(d.After) > double.Parse(d.Before));
         }
+    }
+
+    [Fact]
+    public void A_chained_skills_lamp_and_level_card_speak_in_cuts()
+    {
+        var j = Warden();
+        var m = WickBook.LampMeasure(j.Ch, "sunder", WickBook.NextLamp(j.Ch, "sunder") ?? Wicks.StrandsOf("sunder").First().LampId(1));
+        output.WriteLine($"{m}");
+        if (m.Measure == "a cut") Assert.True(m.After > m.Before);
+        var wide = WickBook.LampDelta(j.Ch, "sunder", Wicks.StrandsOf("sunder").SelectMany(s => Enumerable.Range(1, Wicks.PerStrand - 1).Select(s.LampId)).First(id => WickBook.LampDelta(j.Ch, "sunder", id) is { What: "Cut" }));
+        Assert.True(double.Parse(wide!.Value.After) > double.Parse(wide.Value.Before));
     }
 
     [Fact]

@@ -968,6 +968,34 @@ public partial class GameHud : CanvasLayer
     const int TipLayer = 29;
     CanvasLayer? tipLayer;
 
+    bool tipAudit = Args.Has("tip-audit");
+
+    /// <summary>--tip-audit: the compact card of every demo skill (the warden's taught build: grip, slots, later, the union and its
+    /// parts, rebuke), each in its taught cast, one TIPAUDIT line apiece.</summary>
+    void TipAudit(SurvivorUnchained.Rpg.CharacterData ch)
+    {
+        var ids = new List<string>();
+        if (SurvivorUnchained.Content.TaughtBuilds.Of("warden") is { } tb)
+        {
+            ids.Add(tb.Grip);
+            ids.AddRange(tb.Slots.Select(s => s.Skill));
+            ids.AddRange(tb.Later);
+            if (tb.Union != null)
+            {
+                ids.Add(tb.Union.Id);
+                var un = SurvivorUnchained.Content.Unions.All.FirstOrDefault(u => u.Id == tb.Union.Id || u.Into == tb.Union.Id);
+                if (un != null) { ids.Add(un.Into); ids.Add(un.A); ids.Add(un.B); }
+            }
+        }
+        ids.Add("rebuke");
+        float top = DgPanel.TopY;
+        var (capL, capR) = CapSpan.Of(top - 14 - 164, top - 14);
+        float w = Mathf.Min(480, capR - capL - 24 - 12);
+        GD.Print($"TIPAUDIT capsSpan {capL:0} {capR:0} width {w:0}");
+        foreach (var id in ids.Distinct())
+            if (SurvivorUnchained.Content.Weapons.All.ContainsKey(id)) Tip().Audit(SkillTip.For(ch, null, id, Math.Max(0, (SurvivorUnchained.Content.TaughtBuilds.Of("warden")?.Slots.FindIndex(s => s.Skill == id)) ?? 0)), w);
+    }
+
     SkillTip Tip()
     {
         if (skillTip == null)
@@ -1008,6 +1036,7 @@ public partial class GameHud : CanvasLayer
     {
         tipTickMs = Time.GetTicksMsec();
         var ch = (GetParent() as Game)?.Journey.Ch;
+        if (tipAudit && ch != null) { tipAudit = false; TipAudit(ch); }
         var c = Controls.Instance;
         bool captured = c == null || c.Captured || c.MenuMode;
         var mp = play.GetGlobalMousePosition();
@@ -1024,7 +1053,7 @@ public partial class GameHud : CanvasLayer
             {
                 string f = "card|" + card.Skill + "|" + card.Slot;
                 if (f != tipFor) { tipFor = f; tipView = SkillTip.For(ch, b, card.Skill, card.Kind == LevelCardKind.NewKey ? card.Slot : b.Weapons.Find(x => x.Id == card.Skill)?.Slot ?? ch.Slotted.IndexOf(card.Skill)); }
-                Tip().Set(true, new Vector2(r.Position.X + r.Size.X / 2, r.Position.Y), tipView, 10);
+                Tip().SetBeside(true, HudBottom.GlobalRect(levelCard), tipView);
             }
         }
         if (levelCard != null) levelCard.Read = read;
@@ -1063,7 +1092,12 @@ public partial class GameHud : CanvasLayer
         var sk = irons.Sockets[seat];
         var sx = sk.GetGlobalTransform();
         var mid = sx * (sk.Size / 2);
-        if (show) Tip().Set(true, new Vector2(mid.X, mid.Y - SeatTop(sk, sx)), tipView, 14);
+        if (show)
+        {
+            float top = mid.Y - SeatTop(sk, sx);
+            var (capL, capR) = CapSpan.Of(top - 14 - 164, top - 14);
+            Tip().SetSeat(true, mid.X, top, tipView, capL, capR);
+        }
         else skillTip?.Set(false, default, null);
     }
 

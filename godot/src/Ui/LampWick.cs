@@ -359,11 +359,11 @@ public partial class LampWick : Control
         var id = Id(r, c);
         int pi = plan.ToList().IndexOf(id), at = Array.IndexOf(path, id);
         bool pad = Play.Controls.Instance?.UsingPad == true;
-        if (Lit(r, c)) return pi >= 0 ? $"Lit · {Ord(pi + 1)} in the plan · the ember lit it at day rank {Roman(at + 1)}" : $"Lit · Light my way chose it · day rank {Roman(at + 1)}";
-        if (pi >= 0) return at >= 0 ? $"Planned · {Ord(pi + 1)} · the ember lights it at day rank {Roman(at + 1)}" : $"Planned · {Ord(pi + 1)} in the plan";
+        if (Lit(r, c)) return pi >= 0 ? $"Lit · {Ord(pi + 1)} in the plan · day rank {Roman(at + 1)}" : $"Lit · day rank {Roman(at + 1)}";
+        if (pi >= 0) return at >= 0 ? $"Planned · {Ord(pi + 1)} · lights at day rank {Roman(at + 1)}" : $"Planned · {Ord(pi + 1)} in the plan";
         if (c == 3 && Crossed(r)) return "One Turn a skill";
         var no = WickBook.CanPlan(ch, Skill!, id);
-        if (no == WickNo.None) return pad ? "A: plan it next" : "Click: plan it next";
+        if (no == WickNo.None) return "";
         return no == WickNo.Turn ? "One Turn a skill" : BoardWords.Why(no).TrimEnd('.');
     }
 
@@ -418,8 +418,17 @@ public partial class LampWick : Control
             // (M3's card line, the owner's "Yes, ship it": a chained skill says what each cut deals and how often)
             string line = $"{sum.Stat} {sum.Total:0} = " + string.Join(" · ", sum.Parts.Select(p => $"{p.What} {p.Value}"))
                 + (sum.Cut is { } cut ? $" · dealt as {cut:0} every {sum.Every:0.#} s" : "");
-            LampInk.Text(ci, LampInk.F("alegreya-sans-500"), 14, Wide ? (X0 + X1) / 2 : X0 + 532, Y1 - (Wide ? 14 : 12), line, LampInk.Body with { A = 0.95f }, 0);
+            float shift = Math.Clamp(lastRowBottom + 15 - (Y1 - (Wide ? 14 : 12)), 0, 6);
+            LampInk.Text(ci, LampInk.F("alegreya-sans-500"), 14, Wide ? (X0 + X1) / 2 : X0 + 532, Y1 - (Wide ? 14 : 12) + shift, line, LampInk.Body with { A = 0.95f }, 0);
         }
+    }
+
+    readonly HashSet<string> overflowSaid = new();
+    /// <summary>The lowest baseline the last row drew (the sum line keeps 15 px under it, moving down at most 6).</summary>
+    float lastRowBottom;
+    void Overflow(int r, int c, string text)
+    {
+        if (overflowSaid.Add($"{r}/{c}/{text}")) GD.Print($"WICKROW OVERFLOW r={r} c={c} {text}");
     }
 
     void DrawRowText(Control ci, int r, float ry)
@@ -428,45 +437,48 @@ public partial class LampWick : Control
         var fl = LampInk.F("alegreya-400");
         var fs = LampInk.F("alegreya-sans-400");
         float w = TextR - TextX;
+        bool last = r == strands.Count - 1;
+        float bottom;
         if (r == fr)
         {
             string line = LineOf(r, fc), delta = fc < 3 ? DeltaOf(Id(r, fc)) : "";
-            var st = LampInk.Wrap(StateOf(r, fc), fs, 13, w);
-            // the last row sits over the sum line: the lamp line and its hint keep clear of it (hint baseline above Y1 - 28)
-            int fmost = 2, stMax = 2;
-            if (r == strands.Count - 1)
-            {
-                stMax = 1;
-                fmost = Math.Clamp((int)MathF.Floor((Y1 - 28 - (ry + 1 + 17)) / 16f) + 1, 1, 2);
-            }
+            string stText = StateOf(r, fc);
             var lines = LampInk.Wrap(line, fl, 14, w);
-            string tail = delta == "" ? "" : " · " + delta;
-            float tw = tail == "" ? 0 : LampInk.W(fl, tail, 14);
-            if (lines.Count > fmost) { lines = lines.Take(fmost).ToList(); lines[fmost - 1] = Ellipsize(lines[fmost - 1] + "…", fl, 14, w - tw); lines[fmost - 1] += tail; }
-            else if (tail != "")
+            if (lines.Count > 2) Overflow(r, fc, line);
+            // the delta rides the last text line when it fits; else it takes the status slot (one line)
+            string slot = "";
+            if (delta != "")
             {
-                if (LampInk.W(fl, lines[^1] + tail, 14) <= w) lines[^1] += tail;
-                else if (lines.Count < fmost) lines.Add(delta);
-                else lines[^1] = Ellipsize(lines[^1] + "…", fl, 14, w - tw) + tail;
+                if (lines.Count > 0 && LampInk.W(fl, lines[^1] + " · " + delta, 14) <= w) lines[^1] += " · " + delta;
+                else slot = delta;
             }
-            LampInk.Text(ci, fn, 18, TextX, ry - 16, NameOf(r, fc), LampInk.Ink);
-            for (int j = 0; j < lines.Count; j++) LampInk.Text(ci, fl, 14, TextX, ry + 1 + j * 16, lines[j], LampInk.Body with { A = 0.92f });
-            float sy = ry + 1 + (lines.Count - 1) * 16 + 17;
-            for (int j = 0; j < Math.Min(stMax, st.Count); j++) LampInk.Text(ci, fs, 13, TextX, sy + j * 15, j == stMax - 1 && st.Count > stMax ? Ellipsize(st[j] + "…", fs, 13, w) : st[j], said != null ? LampInk.Red : LampInk.Focus);
-            return;
+            // the slot: the delta then the status when both fit one line; a refusal (said) or the status alone otherwise
+            List<string> slotLines;
+            if (slot != "" && stText == "") slotLines = new() { slot };
+            else if (slot != "" && said == null && LampInk.W(fs, slot + " · " + stText, 13) <= w) slotLines = new() { slot + " · " + stText };
+            else slotLines = stText == "" ? (slot == "" ? new() : new() { slot }) : LampInk.Wrap(stText, fs, 13, w);
+            float y0 = ry + 5, sy = y0 + Math.Max(0, lines.Count - 1) * 16 + 17;
+            // the room under: the sum line (last row) or the next row's name
+            float limit = last ? Y1 - (Wide ? 14 : 12) + 6 - 15 : ry + PitchY - (r + 1 == fr ? 12 : 2) - 16;
+            int allowed = Math.Max(1, (int)MathF.Floor((limit - sy) / 15f) + 1);
+            if (slotLines.Count > allowed) Overflow(r, fc, string.Join(" ", slotLines));
+            LampInk.Text(ci, fn, 18, TextX, ry - 12, NameOf(r, fc), LampInk.Ink);
+            for (int j = 0; j < lines.Count; j++) LampInk.Text(ci, fl, 14, TextX, y0 + j * 16, lines[j], LampInk.Body with { A = 0.92f });
+            for (int j = 0; j < slotLines.Count; j++) LampInk.Text(ci, fs, 13, TextX, sy + j * 15, slotLines[j], said != null ? LampInk.Red : LampInk.Focus);
+            bottom = slotLines.Count > 0 ? sy + (slotLines.Count - 1) * 15 : y0 + (lines.Count - 1) * 16;
         }
-        bool crossed = Crossed(r);
-        string tl = crossed ? "One Turn a skill" : LineOf(r, 3);
-        LampInk.Text(ci, fn, 18, TextX, ry - 2, strands[r].TurnDef.Name, crossed ? LampInk.Dim : LampInk.Ink);
-        var ls = LampInk.Wrap(tl, fl, 14, w);
-        // the Turn's whole line (two lines where the next row leaves room: the last row keeps one, the sum line below it)
-        // (in C's 64 px pitch a focus row below draws its name 16 px higher: one line then)
-        int most = r < strands.Count - 1 && (Wide || fr != r + 1) ? 2 : 1;
-        for (int j = 0; j < Math.Min(most, ls.Count); j++)
+        else
         {
-            string t = j == most - 1 && ls.Count > most ? Ellipsize(ls[j] + "…", fl, 14, w) : ls[j];
-            LampInk.Text(ci, fl, 14, TextX, ry + 16 + j * 16, t, (crossed ? LampInk.Dim : LampInk.Body) with { A = 0.9f });
+            bool crossed = Crossed(r);
+            string tl = crossed ? "One Turn a skill" : LineOf(r, 3);
+            LampInk.Text(ci, fn, 18, TextX, ry - 2, strands[r].TurnDef.Name, crossed ? LampInk.Dim : LampInk.Ink);
+            var ls = LampInk.Wrap(tl, fl, 14, w);
+            if (ls.Count > 2) Overflow(r, 3, tl);
+            for (int j = 0; j < ls.Count; j++)
+                LampInk.Text(ci, fl, 14, TextX, ry + 16 + j * 16, ls[j], (crossed ? LampInk.Dim : LampInk.Body) with { A = 0.9f });
+            bottom = ry + 16 + (Math.Max(1, ls.Count) - 1) * 16;
         }
+        if (last) lastRowBottom = bottom;
     }
 
     /// <summary>A lamp's line under its name: the Turn's own text (Wicks.Text prefixes the Turn's name, already drawn above it).</summary>
@@ -478,20 +490,13 @@ public partial class LampWick : Control
     string DeltaOf(string id)
     {
         if (Skill == null || id == "") return "";
+        if (litIds.Contains(id)) return "";
         if (!deltaOf.TryGetValue(id, out var d))
         {
-            d = WickBook.LampDelta(ch, Skill, id) is { } x ? $"{x.Before} → {x.After}" : "";
+            d = WickBook.LampDelta(ch, Skill, id) is { } x ? $"{x.Before} → {x.After}" + (x.What == "Cut" ? " a cut" : "") : "";
             deltaOf[id] = d;
         }
         return d;
-    }
-
-    static string Ellipsize(string s, Font f, int px, float maxw)
-    {
-        if (LampInk.W(f, s, px) <= maxw) return s;
-        s = s.TrimEnd('…');
-        while (s.Length > 1 && LampInk.W(f, s + "…", px) > maxw) s = s[..^1];
-        return s.TrimEnd(' ', ',', ';', '·') + "…";
     }
 
     void DrawList(Control ci)

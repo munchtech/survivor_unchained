@@ -18,23 +18,22 @@
   // and its damage and cooldown rows (no skill is ever without a card), but every skill in the demo has its own.
 
   "how": {
-    "hold": "Hold the key",
-    "press": "Press the key",
-    "channel": "Hold the key to keep it going",
+    "hold": "Hold it down",
+    "press": "Press it",
+    "channel": "Hold it down to keep it going",
     "kindle": "Lights up on its own"
   },
   // The cost row, by what pays for it. {cooldown} under 0.1 s is left out.
   "cost": {
     "resolve": [ "Cost", "{resolve} Resolve" ],
     "drain": [ "Cost", "{drain} Resolve a second" ],
-    "cooldown": [ "Cooldown", "{cooldown} s" ],
-    "chain": [ "Dealt as", "{cut} every {every} s" ]
+    "cooldown": [ "Cooldown", "{cooldown} s" ]
   },
 
   "skills": {
     "sunder": {
-      "line": "Huge cuts at everything in front of you, for as long as you hold. About every 6 s of cutting, a heavy swing splits the ground ahead.",
-      "numbers": [ [ "Damage", "{damage} a blow" ], [ "Reach", "{base.reach} m" ], [ "Ground split", "{base.line} m ahead" ] ]
+      "line": "Cut everything in front of you while you hold. Every 6 s of cutting, a heavy swing splits the ground ahead.",
+      "numbers": [ [ "Damage", "{cut} a cut, every {every} s" ], [ "Reach", "{base.reach} m" ], [ "Ground split", "{base.line} m ahead" ] ]
     },
     "cleaver": {
       "line": "A heavy chop that sweeps the whole front of you and leaves the wounds open.",
@@ -42,38 +41,38 @@
     },
     "groundbreaker": {
       "line": "A crack runs from your blade to the nearest pack, and the ground heaves under it, stunning them all.",
-      "numbers": [ [ "Damage", "{damage}" ], [ "Reach", "up to {base.range} m" ], [ "Heave", "{base.radius} m, stuns {base.stun} s" ] ],
-      "kindled": "Lights up when {kindle.count} or more are within {kindle.radius} m: press it then"
+      "numbers": [ [ "Damage", "{damage}" ], [ "Reach", "up to {base.range} m" ], [ "Stun", "{base.stun} s within {base.radius} m" ] ],
+      "kindled": "Lights up with {kindle.count} or more enemies within {kindle.radius} m: press it"
     },
     "heroic_leap": {
-      "line": "Leap where you aim and land blade first: everything in the ring is struck and knocked down. Nothing can touch you in the air.",
-      "numbers": [ [ "Damage", "{damage}" ], [ "Leap", "{base.minRange} to {base.range} m" ], [ "Landing", "{base.radius} m, knocked down {base.stun} s" ] ]
+      "line": "Leap where you aim and land blade first, striking and knocking down everything there. Untouchable in the air.",
+      "numbers": [ [ "Damage", "{damage}" ], [ "Leap", "{base.minRange} to {base.range} m" ], [ "Knockdown", "{base.stun} s within {base.radius} m" ] ]
     },
     "shield_charge": {
-      "line": "Charge shield first behind a barrier: what stands in the way is struck and thrown aside, and a champion that stops you is stunned.",
-      "numbers": [ [ "Damage", "{damage}" ], [ "Charge", "{base.range} m" ], [ "Barrier", "{base.barrier:%} of your health for {base.duration} s" ] ]
+      "line": "Charge behind your shield, striking and throwing aside all in your way. A champion that stops you is stunned.",
+      "numbers": [ [ "Damage", "{damage}" ], [ "Charge", "{base.range} m" ], [ "Barrier", "{base.barrier:%} health, {base.duration} s" ] ]
     },
     "iron_vow": {
-      "line": "Plant your feet: for {base.brace} s every blow on you lands at half and a fifth of it is stored. Then it all bursts out of you in a ring.",
-      "numbers": [ [ "Damage", "{damage}, more for what you stored" ], [ "Ring", "{base.radius} m" ], [ "Braced", "{base.brace} s, blows at {base.halve:%}" ] ],
+      "line": "Plant your feet: for {base.brace} s blows on you land at half and a fifth is stored, then it all bursts out in a ring.",
+      "numbers": [ [ "Damage", "{damage} + what you stored" ], [ "Ring", "{base.radius} m" ] ],
       "kindled": "Lights up when a big blow winds up on you, or a crowd closes in: press it then"
     },
     "watch_bell": {
-      "line": "Toll the bell: everything near is drawn in to face you, and each one it draws shields you.",
-      "numbers": [ [ "Damage", "{damage}" ], [ "Draws", "up to {base.drawMost} within {base.range} m" ], [ "Barrier", "{base.barrier:%} of your health each, {base.barrierCap:%} at most" ] ],
-      "kindled": "Lights up when {kindle.count} or more are within {kindle.radius} m: press it then"
+      "line": "Toll the bell: all near are drawn in to face you, each one shielding you for {base.barrier:%} of your health.",
+      "numbers": [ [ "Damage", "{damage}" ], [ "Draws", "{base.drawMost} within {base.range} m" ], [ "Shield cap", "{base.barrierCap:%} of health" ] ],
+      "kindled": "Lights up with {kindle.count} or more enemies within {kindle.radius} m: press it"
     },
     "dawnpulse": {
       "line": "A ring of light bursts out from you and throws back what it touches. The dead hate it.",
       "numbers": [ [ "Damage", "{damage}" ], [ "Ring", "{base.radius} m" ] ],
-      "kindled": "Fires itself when {kindle.count} or more are within {kindle.radius} m"
+      "kindled": "Fires itself with {kindle.count} or more enemies within {kindle.radius} m"
     },
     "bladestorm": {
-      "line": "Hold to spin, blade out, cutting everything around you. Press Sunder's key to end it with one great blow: the longer the spin, the harder.",
+      "line": "Hold to spin, cutting all around you. Press Sunder's key to end it in one great blow that grows as you spin.",
       "numbers": [ [ "Damage", "{damage} a turn" ], [ "Around you", "{base.radius} m" ], [ "Great blow", "up to x{base.breakGrow}" ] ]
     },
     "rebuke": {
-      "line": "Your shield turns more blows, and every blow that reaches you smites its source and the {base.others} nearest in holy light.",
+      "line": "Your shield blocks more, and each blow that reaches you smites its source and the {base.others} nearest with holy light.",
       "numbers": [ [ "Damage", "{damage}" ], [ "Reach", "{base.radius} m" ], [ "Block", "+{base.block:%}" ] ],
       "kindled": "Fires itself when a blow reaches you, at most every {base.cooldown} s"
     }

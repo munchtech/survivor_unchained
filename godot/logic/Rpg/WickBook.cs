@@ -175,10 +175,14 @@ public static class WickBook
             foreach (var t in fx.Dark.Select(Wicks.Turn)) parts.Add(("Turn (dark):", t.Name));
         }
         var view = new WickSumView("Damage", w.Damage, parts);
-        if (!night && def.Press?.Chain?.Period is > 0 and var period)
-            view = view with { Cut = w.Damage * period / (def.Press.Wait ?? def.Base.Cooldown ?? 1), Every = period };
+        if (!night && CutOf(def, w.Damage) is { } cut)
+            view = view with { Cut = cut, Every = def.Press!.Chain!.Period };
         return view;
     }
+
+    /// <summary>A chained skill's damage per cut (its blow's damage over its period and its wait), or null for any other skill.</summary>
+    public static double? CutOf(WeaponDef def, double blow) =>
+        def.Press?.Chain?.Period is > 0 and var period ? blow * period / (def.Press.Wait ?? def.Base.Cooldown ?? 1) : null;
 
     /// <summary>Every wick's path for a fight (BattleSetup.Wicks), or null when the fights read none. By day a skill
     /// holding points gets only its burning lamps (DayPath: Battle.Relight lights min(rank, path), so exactly Burning);
@@ -291,6 +295,11 @@ public static class WickBook
     public static (string Measure, double Before, double After) LampMeasure(CharacterData ch, string skill, string lampId)
     {
         int b = Burning(ch, skill);
+        if (Weapons.All.TryGetValue(skill, out var cd) && CutOf(cd, 1) != null && Blow(ch, skill, b) is { } c0 && Blow(ch, skill, b + 1) is { } c1)
+        {
+            double k0 = CutOf(cd, c0)!.Value, k1 = CutOf(cd, c1)!.Value;
+            if (System.Math.Round(k1) != System.Math.Round(k0)) return ("a cut", System.Math.Round(k0), System.Math.Round(k1));
+        }
         if (Blow(ch, skill, b) is { } before && Blow(ch, skill, b + 1) is { } after && System.Math.Abs(after - before) > 1e-6)
             return ("a blow", System.Math.Round(before, 1), System.Math.Round(after, 1));
         if (Wicks.Card(lampId) is { } c) return (c.Measure, c.Before, c.After);
@@ -313,6 +322,12 @@ public static class WickBook
         if (!ids.Contains(lampId)) ids.Add(lampId);
         var more = new WeaponInst(skill, rank, 0);
         more.Wick = Turns.Build(more, ids.Select(id => Wicks.Lamp(skill, id)).Where(l => l != null).Select(l => l!.Value), ids);
+        if (CutOf(def, 1) != null)
+        {
+            double k0 = CutOf(def, now.Damage)!.Value, k1 = CutOf(def, more.Damage)!.Value;
+            if (System.Math.Round(k0) != System.Math.Round(k1))
+                return ("Cut", System.Math.Round(k0).ToString("0", inv), System.Math.Round(k1).ToString("0", inv), "");
+        }
         if (System.Math.Round(more.Damage) != System.Math.Round(now.Damage))
             return ("Damage", System.Math.Round(now.Damage).ToString("0", inv), System.Math.Round(more.Damage).ToString("0", inv), "");
         // A conditional damage lamp (more to what is statused, to champions): the blow against that, with every lit lamp of
