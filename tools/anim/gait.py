@@ -90,6 +90,8 @@ class Gait:
     side_lean: float = 6.0
     toe_lead: float = 1.35
     toe_trail: float = 0.8
+    # A1 L23: the chest's own turn toward travel at a 90 travel, deg; the head turns back to the aim.
+    side_chest: float = 0.0
     # The arms' swing about its middle (1 as keyed; less: the arms held in guard, riding the step).
     arm_amp: float = 1.0
 
@@ -282,6 +284,7 @@ def _off_travel(g: Gait, rig: Rig, ph, pose):
     x = g.hip_shift * math.cos(2 * math.pi * (ph - d2))
     roll_sw = g.hip_roll * math.cos(2 * math.pi * (ph - d2))
     I = rig.I
+    ct = 0.0
     if back:
         # The pelvis turns with the swinging leg, which now swings back: the other way round.
         p_yaw = g.hip_yaw * c
@@ -294,14 +297,15 @@ def _off_travel(g: Gait, rig: Rig, ph, pose):
         p_yaw = turn - g.hip_yaw * c
         pel = qeuler(p_yaw, g.hip_tilt * math.cos(rel), -g.hip_tilt * math.sin(rel) + roll_sw)
         side = -math.copysign(1.0, psi)      # + travelling to her right (roll + tips her right)
-        chest = qeuler(g.chest_yaw * c, g.chest_lean, side * g.side_lean)
+        ct = psi * g.side_chest / 90.0
+        chest = qeuler(ct + g.chest_yaw * c, g.chest_lean, side * g.side_lean)
         pr = math.radians(psi)               # over the standing foot: across the travel, not across her
         hp = (x * math.cos(pr), y, -x * math.sin(pr))
     sp = _q2e(qmul(qinv(pel), chest))
     pose["hips"] = {"pos": hp, "rot": _q2e(pel)}
     pose["spine"] = sp
     cy, cp, cr = _q2e(chest)
-    pose["neck"] = (0, -cp * 0.4, -cr * 0.4)
+    pose["neck"] = (-ct * 0.3, -cp * 0.4, -cr * 0.4)
     pose["head"] = (-cy * 0.8, -cp * 0.5 - g.head_up, -cr * 0.5)
     rest = {s: rig.prest[I[f"foot_{s}"]] for s in "lr"}
     ball = {s: rig.prest[I[f"ball_{s}"]] - rig.prest[I[f"foot_{s}"]] for s in "lr"}
