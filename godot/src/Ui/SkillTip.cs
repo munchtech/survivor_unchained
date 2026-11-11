@@ -242,7 +242,7 @@ public partial class SkillTip : Control
         }
         if (compact && L.RowLines > 2 && said.Add(v.Skill + "|rows")) GD.Print($"SKILLTIP OVERFLOW {v.Skill} rows={L.RowLines}");
         float bottom = L.RowLines > 0 ? L.RowBase + (L.RowLines - 1) * L.RowPitch : L.RuleY;
-        L.H = Mathf.Ceil(bottom + 4 + padY);
+        L.H = Mathf.Ceil(bottom + (compact ? 3 : 4) + padY);
         return L;
     }
 
