@@ -682,7 +682,7 @@ public class PrologueTests
         at.GetField("CleaveCd")!.SetValue(ai, 0.0);
         at.GetField("Hold")!.SetValue(ai, 0.0);
         Stand(s, w.X + 4.5, w.Z);
-        // the cleave's swing is drawn from his blade by the view (WardenSwing): the sim sends no slash of its own
+        // the cleave's swing is his blade's own (the view): the sim sends no slash of its own
         int slashes = 0; bool cleaved = false;
         for (int i = 0; i < 60 * 4 && !cleaved; i++)
         {

@@ -1128,7 +1128,7 @@ public sealed partial class Prologue : ZoneRuntime
             }
             case "windup":
                 // (B1 judge at 1:1: a swing drawn from the sim, at the landing or 0.1 s ahead, trailed the blade and sat at
-                // the rim as a crescent: the swing is his blade's own, swept by the view, WardenView's WardenSwing; the
+                // the rim as a crescent: the sim draws no swing, his blade's own chop is the picture (WardenView); the
                 // slash's whoosh stays, as the blade comes down)
                 if (ai.T >= 0.95 && ai.T - dt < 0.95) B.Events.Emit(new Ev.Sound { Id = "swing", X = e.X, Z = e.Z });
                 if (ai.T >= 1.05)
