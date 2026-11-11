@@ -158,7 +158,9 @@ public sealed partial class Journey
         Kits.Wear(Ch, combat && (arena || ember) ? KitKind.Night : KitKind.Day);
         // (M3) A campaign fight: her calling's taught build is what she carries (taught_builds.json), its levels granted.
         bool campaign = combat && !arena && !ember;
-        if (campaign) Content.TaughtBuilds.Grant(Ch, Ch.Level);
+        if (campaign)
+            // (M7a) A skill granted as the fight starts holds its points like one taught mid-fight.
+            foreach (var s in Content.TaughtBuilds.Grant(Ch, Ch.Level)) WickBook.Arrived(Ch, s.Skill);
         var kit = Character.Kit(Ch, combat && (arena || ember));
         InArena = arena;
         var exp = combat && !arena ? Expedition : null;

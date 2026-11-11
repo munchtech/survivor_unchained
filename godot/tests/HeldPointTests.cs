@@ -87,17 +87,6 @@ public class HeldPointTests
     }
 
     [Fact]
-    public void Dbg()
-    {
-        var j = Warden();
-        string S() => $"L{j.Ch.Level} gb {WickBook.Held(j.Ch, "groundbreaker")} su {WickBook.Held(j.Ch, "sunder")} carried {string.Join(",", SkillBook.Carried(j.Ch).Select(c => c.Id))}; ";
-        var log = S();
-        LevelTo(j, 2); log += S();
-        LevelTo(j, 3); log += S();
-        Assert.Fail(log);
-    }
-
-    [Fact]
     public void Card_numbers_for_lamps_whose_blow_stays()
     {
         var c = Wicks.Card("sunder.stroke.1")!;
@@ -137,8 +126,9 @@ public class HeldPointTests
     public void Nothing_held_fights_as_before()
     {
         var j = Warden();
-        WickBook.LightAll(j.Ch);
         j.Ch.Level = 8;
+        TaughtBuilds.Grant(j.Ch, 8); // lit after the grant, so nothing is held
+        WickBook.LightAll(j.Ch);
         Assert.Equal(4, SkillBook.Rank(j.Ch));
         var b = Day(j);
         foreach (var (id, rank) in SkillBook.Carried(j.Ch))
@@ -147,6 +137,19 @@ public class HeldPointTests
             if (Wicks.Of(id) == null || Live(b, id) is not { } w) continue;
             Assert.Equal(SkillBook.Rank(j.Ch), w.Rank);
             Assert.Equal(WickBook.Path(j.Ch, id).Take(SkillBook.Rank(j.Ch)), WickBook.Lit(b, id));
+        }
+    }
+
+    [Fact]
+    public void A_skill_with_every_point_held_fights_at_rank_one_with_no_lamps_lit()
+    {
+        var j = Warden();
+        var b = Day(j);
+        foreach (var (id, _) in SkillBook.Carried(j.Ch).Where(c => Wicks.Of(c.Id) != null))
+        {
+            Assert.True(WickBook.Held(j.Ch, id) > 0);
+            Assert.True(WickBook.DayRank(j.Ch, id) >= 1);
+            if (Live(b, id) is { } w) { Assert.True(w.Rank >= 1); Assert.Empty(w.Wick!.Lit); }
         }
     }
 
