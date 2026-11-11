@@ -16,7 +16,8 @@ public class LootPlusSkillTests
     static ItemInstance Ring(string skill, uint seed = 3) =>
         Inventory.Make(null, "copper_ring", rarity: 2, seed: seed, affixes: new List<AffixRoll> { new() { Id = Items.PlusId(skill), Tier = 0 } });
 
-    static Journey Warden(int level = 10) => MapSim.Survivor("warden", level, 1, 5);
+    // (M7a) every held point lit: these tests measure gear's +skill on the level's rank, not the lamps she has yet to light
+    static Journey Warden(int level = 10) { var j = MapSim.Survivor("warden", level, 1, 5); WickBook.LightAll(j.Ch); return j; }
 
     [Fact]
     public void A_plus_suffix_is_made_for_each_listed_skill_and_only_those()
