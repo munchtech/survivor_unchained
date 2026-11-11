@@ -1212,15 +1212,18 @@ public partial class PlayerView : Node3D
             if (mine && !TurnL20 && !TurnOld && !TurnSnap && pivotN < 0 && speed > 2.5f && off > Mathf.DegToRad(120)) PivotStart(want);
             if (pivotN >= 0)
             {
-                TurnTo(want, (float)dt, 2200); pivotN++;
+                TurnTo(want, (float)dt, 2200); pivotN++; pivotStepped = true; pivotWant = want;
                 if (Mathf.Abs(Mathf.Wrap(want - Rotation.Y, -Mathf.Pi, Mathf.Pi)) < Mathf.DegToRad(10) || pivotN > 6) pivotN = -1;
             }
             else if (mine && !TurnOld && !TurnSnap) TurnTo(want, (float)dt, TurnMax);
             else Rotation = new Vector3(0, Mathf.LerpAngle(Rotation.Y, want, 1 - Mathf.Exp(-(TurnOld ? 14 : FaceRate) * (float)dt)), 0);
         }
         else pivotN = -1;
+        // (a pivot another branch took over from (a blow, a leap) ends there: the stride never stays frozen)
+        if (!pivotStepped) pivotN = -1;
+        pivotStepped = false;
         if (aimHold <= 0) { faceGoal = null; hipGoal = null; }
-        if (mine && !TurnL20) PivotPlace((float)dt);
+        if (mine && !TurnL20 && TurnNoPlant) PivotPlace((float)dt);
         turnedLast = turning; turning = false;
         // Turned to the view while a panel frames her (FollowCamera.ScreenFrame), standing.
         if (Turned is float tw && sp < 0.4f && p.AttackAnim == null && time >= flareFaceUntil)
@@ -1337,11 +1340,18 @@ public partial class PlayerView : Node3D
         ActWalkVel(ref sp);
         if (mine && !ActLive && ActWalk == null) Rest(b, dt, sp);
         if (mine) Carry((float)dt, sp);
+        // (A1 L21) The 180's plant: its eased stride shown on this frame (not the next), then her model placed on it.
+        if (mine && !TurnL20 && !TurnNoPlant)
+        {
+            if (plantStage is 1 or 2) tree.Advance(0);
+            PlantPlace((float)dt);
+        }
         if (mine) { if (SurvivorUnchained.Play.TurnRun.Start >= 0) logT = b.Time - SurvivorUnchained.Play.TurnRun.Start; SwingRelease((float)dt); }
         if (mine) ActApply();
         if (mine) SurvivorUnchained.Play.TurnRun.Log(b.Time, p.StickX, p.StickZ, p.Vx, p.Vz, Rotation.Y, carriage?.Bank ?? 0, speed, p.X, p.Z);
         if (mine && SurvivorUnchained.Play.TurnRun.Start >= 0) CarryLog(b.Time - SurvivorUnchained.Play.TurnRun.Start);
-        else tree.Set(BlendPosition, speed);
+        // (the else belongs to the others, as before 2b944a520 put the log between: hers is set in Carry)
+        if (!mine) tree.Set(BlendPosition, speed);
         carriedLight:
         // The carried light: steadier at full health, guttering when hurt.
         double hp = p.Hp / b.MaxHp;
@@ -1648,6 +1658,8 @@ public partial class PlayerView : Node3D
                 move2dPos = new Vector2(backBlendNow, backFy);
             }
         }
+        // (the 180's plant keeps the run's blend: the walk's pose at her sim's one-frame stop drew her pelvis 0.25 m back)
+        if (!TurnL20 && !TurnNoPlant && plantSpd > 0) spd = Mathf.Max(spd, plantSpd);
         float natural0 = Mathf.Lerp(runSpeed, sprintSpeed, sprintSpeed > runSpeed ? Mathf.SmoothStep(runSpeed * 1.1f, sprintSpeed * 0.95f, spd) : 0);
         var (wWalk, w) = Stride.Weights(spd, walkSpeed, natural0, hasWalk);
         if (!move2D)
@@ -1669,7 +1681,16 @@ public partial class PlayerView : Node3D
         float strideK = 1;
         if (!TurnL20 && hipGoal != null && aimHold > 0 && velX * velX + velZ * velZ > 0.16f)
             strideK = Mathf.Cos(Mathf.Wrap(Rotation.Y - Mathf.Atan2(velX, velZ), -Mathf.Pi, Mathf.Pi));
-        if (TurnL20 || pivotN < 0) stride = Stride.Advance(stride, dt * strideK, period);
+        // (the plant: eased to the planted foot's mid-stance in two frames, held there while she yaws, then on from it)
+        if (!TurnL20 && !TurnNoPlant && plantStage == 2 && pivotN < 0) plantStage = 3;
+        if (!TurnL20 && !TurnNoPlant && plantStage == 1) stride = Mathf.PosMod(plantS0 + plantDs * 0.5f, 1);
+        else if (!TurnL20 && !TurnNoPlant && plantStage == 2) stride = Mathf.PosMod(plantS0 + plantDs, 1);
+        else if (TurnL20 || !TurnNoPlant || pivotN < 0)
+        {
+            // (pushing off the plant: the stride at her sim's pace, not the held run blend's)
+            if (!TurnL20 && !TurnNoPlant && plantStage >= 3 && plantSpd > 0) strideK *= Mathf.Clamp(sp / Mathf.Max(spd, 0.1f), 0.5f, 1f);
+            stride = Stride.Advance(stride, dt * strideK, period);
+        }
         if (!move2D)
         {
             tree.Set("parameters/move/walkSeek/seek_request", stride * walkLen);
@@ -1784,7 +1805,17 @@ public partial class PlayerView : Node3D
             float stepA = Mathf.Min(aimRamp * f, Mathf.Abs(rem) * k);
             carriage.Aim += Mathf.Sign(rem) * stepA;
             // The 180's lean: toward the new travel and banked into the pivot, eased out after it.
-            if (pivotLean > 0.01f)
+            if (pivotLean > 0.01f && !TurnNoPlant)
+            {
+                // (r3: the lean held in the world, toward the new travel and the turn's side, so her yaw does not swing it:
+                // a lean fixed in her frame swung her pelvis ~0.27 m about her root as she turned 173 deg in 3 frames)
+                float yy = Rotation.Y;
+                var fw = new Vector2(Mathf.Sin(yy), Mathf.Cos(yy)); var lf = new Vector2(Mathf.Cos(yy), -Mathf.Sin(yy));
+                var lw = new Vector2(Mathf.Sin(pivotWant), Mathf.Cos(pivotWant)) * 10 + pivotSideW * 12;
+                carriage.Bank = Mathf.Lerp(carriage.Bank, -lw.Dot(lf), pivotLean);
+                carriage.Tilt = Mathf.Lerp(carriage.Tilt, lw.Dot(fw), pivotLean);
+            }
+            else if (pivotLean > 0.01f)
             {
                 carriage.Bank = Mathf.Lerp(carriage.Bank, -pivotSign * 12, pivotLean);
                 carriage.Tilt = Mathf.Lerp(carriage.Tilt, 10, pivotLean);
@@ -1847,7 +1878,7 @@ public partial class PlayerView : Node3D
     /// <summary>(A1 L21) --turn-l20: lead 20's turning and presses (A/B); without it lead 21's: the eased waist (30 deg a
     /// frame at most), hips joining a blow behind her, the swing held on its wind until her shoulders are on the blow,
     /// the quick standing turn and the 180's plant and pivot.</summary>
-    static readonly bool TurnL20 = SurvivorUnchained.Args.Has("turn-l20"), TurnPlant = SurvivorUnchained.Args.Has("turn-plant");
+    static readonly bool TurnL20 = SurvivorUnchained.Args.Has("turn-l20"), TurnNoPlant = SurvivorUnchained.Args.Has("turn-noplant");
     /// <summary>Standing, lead 21: within 20 deg of a 180 in 3 frames, no frame over ~73 deg.</summary>
     const float TurnMaxStanding21 = 2200f;
     /// <summary>A running blow past 100 deg off her travel: the facing her body turns to while it lasts (radians).</summary>
@@ -1872,6 +1903,107 @@ public partial class PlayerView : Node3D
         var foot = fl.Y < fr.Y ? fl : fr;
         plantLocal = Transform.AffineInverse() * foot;
         plantW = (lastXformSet ? lastXform : Transform) * plantLocal;
+        if (TurnL20 || TurnNoPlant) return;
+        // The plant (lead 21 r3): the next mid-stance ahead (left 0.145, right 0.645 of her run's stride: the foot under
+        // her pelvis, flat), or the last one behind if that is nearer than 0.2; eased there in two frames.
+        float ahead = Mathf.PosMod(PlantMidL - stride, 0.5f);
+        plantDs = ahead <= 0.3f ? ahead : ahead - 0.5f;
+        float sT = Mathf.PosMod(stride + plantDs, 1);
+        plantFoot = Mathf.Abs(Mathf.Wrap(sT - PlantMidL, -0.5f, 0.5f)) < 0.25f ? "foot_l" : "foot_r";
+        plantS0 = stride;
+        plantStage = Mathf.Abs(plantDs) < 0.03f ? 2 : 1;
+        plantFirst = true; plantN = 0;
+        plantSpd = Mathf.Max(speed, 2.5f);
+        // (the turn's side in the world, her left or right as it starts: the lean's bank holds toward it)
+        pivotSideW = pivotSign * new Vector2(Mathf.Cos(Rotation.Y), -Mathf.Sin(Rotation.Y));
+    }
+
+    const float PlantMidL = 0.145f;
+    // The plant: 0 none, 1 easing the stride to mid-stance, 2 pinned while she yaws, 3 pinned as she pushes off (the
+    // stride on), 4 the offset let go. Its stride from and change, the foot, the run's blend speed held, the last
+    // model place and step (her momentum), the pinned world point, frames in stage 3.
+    int plantStage, plantN; float plantS0, plantDs, plantSpd; string plantFoot = "foot_l"; bool plantFirst, pivotStepped;
+    float pivotWant; Vector2 pivotSideW; Vector3 lastModel, lastStep; bool lastModelSet;
+
+    /// <summary>Where a bone is drawn (world), HerCarriage's bank and tilt about the root bone included.</summary>
+    Vector3 Drawn(string n)
+    {
+        var skel = person.Skeleton;
+        int i = skel.FindBone(n), r = skel.FindBone("root");
+        if (i < 0) return Position;
+        var g = skel.GetBoneGlobalPose(i).Origin;
+        if (r >= 0 && carriage != null && (Mathf.Abs(carriage.Bank) > 0.01f || Mathf.Abs(carriage.Tilt) > 0.01f))
+        {
+            var ro = skel.GetBoneGlobalPose(r).Origin;
+            var turn = new Godot.Basis(new Vector3(0, 0, 1), Mathf.DegToRad(carriage.Bank)) * new Godot.Basis(new Vector3(1, 0, 0), Mathf.DegToRad(carriage.Tilt));
+            g = ro + turn * (g - ro);
+        }
+        return skel.GlobalTransform * g;
+    }
+
+    /// <summary>(A1 L21 r3) After Carry: her model = the sim's point + one offset. Easing (1) and the first pinned frame,
+    /// her momentum carries her (the last step x0.6, then x0.5: braking through the sim's one-frame stop); pinned (2, 3),
+    /// the planted foot stays at its world point while she yaws and pushes off; then (4) the offset goes, her pelvis never
+    /// stepping more than 0.19 m in a frame. Offset never over 0.35 m.</summary>
+    void PlantPlace(float dt)
+    {
+        var sim = Position;   // (set from the sim this frame; the offset not yet added)
+        if (pivotN >= 0) pivotLean = Mathf.Min(1, pivotLean + 0.34f);
+        else if (plantStage == 0 || plantStage == 4) pivotLean *= Mathf.Exp(-dt / 0.1f);
+        Vector3 model = sim + plantOff;
+        if (plantStage is 1 or 2 && plantFirst || plantStage == 1)
+        {
+            // momentum: the last step, braked
+            model = lastModelSet ? lastModel + lastStep * (plantStage == 1 ? 0.6f : 0.5f) : sim;
+            if (plantStage == 2)
+            {
+                plantFirst = false;
+                Position = new Vector3(model.X, sim.Y, model.Z);
+                var fw = Drawn(plantFoot);
+                plantW = new Vector3(fw.X, 0, fw.Z);
+            }
+            else plantFirst = true;
+        }
+        else if (plantStage is 2 or 3)
+        {
+            Position = sim;
+            var fw = Drawn(plantFoot);
+            model = sim + new Vector3(plantW.X - fw.X, 0, plantW.Z - fw.Z);
+            if (plantStage == 3)
+            {
+                plantN++;
+                // pushed off: the foot's stance over (stride past mid-stance + 0.13), caught up with the sim along her travel, or 5 frames
+                var tr = new Vector3(Mathf.Sin(pivotWant), 0, Mathf.Cos(pivotWant));
+                float past = Mathf.PosMod(stride - (plantFoot == "foot_l" ? PlantMidL : PlantMidL + 0.5f), 1);
+                if ((past > 0.13f && past < 0.5f) || plantN > 5) plantStage = 4;
+            }
+            // (never more than 0.21 m in a frame, nor 0.35 off the sim: let go there)
+            var stp = new Vector3(model.X - lastModel.X, 0, model.Z - lastModel.Z);
+            if (lastModelSet && stp.Length() > 0.21f) { model = lastModel + stp.Normalized() * 0.21f; plantStage = 4; }
+        }
+        var off = new Vector3(model.X - sim.X, 0, model.Z - sim.Z);
+        if (plantStage == 4 || plantStage == 0)
+        {
+            off = plantOff;
+            float len = off.Length();
+            if (len > 0.005f)
+            {
+                var want = off * 0.65f;
+                var simStep = lastModelSet ? new Vector3(sim.X - (lastModel.X - plantOff.X), 0, sim.Z - (lastModel.Z - plantOff.Z)) : Vector3.Zero;
+                // (the model's step = the sim's + the offset's change: at most 0.19 m)
+                for (int k = 0; k < 6 && (simStep + want - off).Length() > 0.19f; k++) want = want.Lerp(off, 0.35f);
+                off = want;
+            }
+            else { off = Vector3.Zero; if (plantStage == 4) plantStage = 0; }
+            if (plantStage == 0) plantSpd = 0;
+        }
+        if (off.Length() > 0.35f) { off = off.Normalized() * 0.35f; if (plantStage is 2 or 3) plantStage = 4; }
+        plantOff = off;
+        if (plantStage >= 3) plantSpd = Mathf.Max(0, plantSpd - 0.3f);
+        if (plantStage == 1) plantStage = 2;
+        Position = new Vector3(sim.X + plantOff.X, sim.Y, sim.Z + plantOff.Z);
+        if (lastModelSet) lastStep = new Vector3(Position.X - lastModel.X, 0, Position.Z - lastModel.Z);
+        lastModel = Position; lastModelSet = true;
     }
 
     /// <summary>Her model placed this frame: on the sim's point, plus the pivot's offset (the planted foot held at its
@@ -1880,15 +2012,7 @@ public partial class PlayerView : Node3D
     {
         var sim = Position;
         if (pivotN >= 0) pivotLean = Mathf.Min(1, pivotLean + 0.5f);
-        // (--turn-plant: the planted foot held at its world point. OFF by default: in the run's both-feet-up frames at the
-        // stick's flip the lower foot is ~0.36 m ahead of her root and in the air, so holding it carried her 0.64 m in a frame,
-        // 38 px on screen (r1); the root (the sim) has already stopped. A plant needs the stride chosen for it: later work.)
-        if (pivotN >= 0 && TurnPlant)
-        {
-            var at = new Transform3D(new Godot.Basis(Vector3.Up, Rotation.Y), sim) * plantLocal;
-            plantOff = new Vector3(plantW.X - at.X, 0, plantW.Z - at.Z);
-        }
-        else
+        // (--turn-noplant: lead 21 r2, no plant: the offset only eased out)
         {
             float len = plantOff.Length();
             if (len > 1e-4f)
@@ -1965,8 +2089,18 @@ public partial class PlayerView : Node3D
         var sc = cam != null ? cam.UnprojectPosition(pv) : Vector2.Zero;
         bool up = (bool)tree.Get("parameters/upperShot/active"), fu = (bool)tree.Get("parameters/fullShot/active");
         string V(Vector3 v) => System.FormattableString.Invariant($"{v.X:0.000} {v.Y:0.000} {v.Z:0.000}");
-        GD.Print(System.FormattableString.Invariant($"CARRY {t:0.0000} fl {V(fl)} fr {V(fr)} hl {V(hl)} hr {V(hr)} pv {V(pv)} chest {Yaw("upperarm_l", "upperarm_r"):0.0} pelv {Yaw("thigh_l", "thigh_r"):0.0} face {Mathf.RadToDeg(Rotation.Y):0.0} scr {sc.X:0.0} {sc.Y:0.0} aimset {aim:0.0} aimc {carriage?.Aim ?? 0:0.0} hold {aimHold:0.00} stride {stride:0.000} up {(up ? upperClip : "-")} full {(fu ? fullClip : "-")} bank {carriage?.Bank ?? 0:0.0} tilt {carriage?.Tilt ?? 0:0.0} upos {(float)tree.Get("parameters/upper/current_position"):0.000} piv {pivotN} off {plantOff.Length():0.000}"));
+        // (the pose in her own frame, the transform it is drawn under: lfl/lfr/lpv; the drawn root before the pivot's
+        // offset: sim; scrt = LAST frame's pelvis on screen under the camera it was drawn with (the camera moves after
+        // her in WorldScene.Draw, so scr pairs this pelvis with last frame's camera); scrk = last frame's pelvis under
+        // the camera before it (scrt - scrk: the camera's share of the step))
+        var inv = Transform.AffineInverse();
+        Vector2 st = Vector2.Zero, sk = Vector2.Zero;
+        if (cam != null && logPvSet) { st = cam.UnprojectPosition(logPv); sk = cam.UnprojectPosition(logPv2); }
+        var dpv = Drawn("pelvis");
+        logPv2 = logPv; logPv = dpv; logPvSet = true;
+        GD.Print(System.FormattableString.Invariant($"CARRY {t:0.0000} fl {V(fl)} fr {V(fr)} hl {V(hl)} hr {V(hr)} pv {V(pv)} chest {Yaw("upperarm_l", "upperarm_r"):0.0} pelv {Yaw("thigh_l", "thigh_r"):0.0} face {Mathf.RadToDeg(Rotation.Y):0.0} scr {sc.X:0.0} {sc.Y:0.0} aimset {aim:0.0} aimc {carriage?.Aim ?? 0:0.0} hold {aimHold:0.00} stride {stride:0.000} up {(up ? upperClip : "-")} full {(fu ? fullClip : "-")} bank {carriage?.Bank ?? 0:0.0} tilt {carriage?.Tilt ?? 0:0.0} upos {(float)tree.Get("parameters/upper/current_position"):0.000} piv {pivotN} off {plantOff.Length():0.000} sim {V(Position - plantOff)} lfl {V(inv * fl)} lfr {V(inv * fr)} lpv {V(inv * pv)} dpv {V(dpv)} dfl {V(Drawn("foot_l"))} dfr {V(Drawn("foot_r"))} stage {plantStage} scrt {st.X:0.0} {st.Y:0.0} scrk {sk.X:0.0} {sk.Y:0.0}"));
     }
+    Vector3 logPv, logPv2; bool logPvSet;
     bool held;
     static readonly float HeadLevel = SurvivorUnchained.Args.Has("head-level") ? SurvivorUnchained.Args.Num("head-level", 0.8f) : 0.8f;
 }
