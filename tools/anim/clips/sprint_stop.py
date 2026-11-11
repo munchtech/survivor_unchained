@@ -51,6 +51,14 @@ if WARDEN_CARRY == "high":  # Animation 58: 4 (at 3 its upper arm went 7 mm into
     SPRINT_SWING_RUN["run_warden"] = (5, -3, 1.25, -3, 0, 4)
 
 
+# A1 L21: a sprint's own Gait values, set after the deltas in sprint() (per run; the others keep the deltas).
+# run_warden (solver 4): at the deltas (duty 0.22, reach 0.38) the stance swept 1.14 m (0.38..-0.76) at 1.45x speed, past
+# her reach: the trailing leg locked straight 3-4 frames a step, the reaching one 1-2, and the landing slid 27 mm/frame
+# (landsim). A shorter contact (0.19: 0.98 m, 0.33..-0.65), the run's peel and pelvis, and its own landing (the foot
+# clawed back at 1.45 of the ground's speed and dropping steeply: at 7.4 m/s the ground moves 25 cm a frame): no locked
+# knee (trailing min 29 deg, reaching 38), landing slide 8 mm. Same 21 frames, left plant at phase 0: in step with the run.
+SPRINT_GAIT = {"run_warden": dict(duty=0.19, reach=0.33, peel=0.26, drop=0.08, land=1.45, reach_key=(0.83, 0.18, 0.22), fall=4.0)}
+
 # The Stalker's left elbow in the stops (chest frame; the idle's is (0, -0.5, -1)).
 STALKER_STOP_POLE_L = (0.6, -0.5, -0.8)
 
@@ -73,6 +81,7 @@ def sprint(rig, run):
     s = replace(g, arms=arms, speed=g.speed * 1.45, duty=g.duty - 0.05, lean=g.lean + 8, kick=g.kick + 0.06,
                 knee=g.knee + 0.06, reach=g.reach + 0.08, bob=g.bob + 0.01,
                 arm_fwd=held(np.array(g.arm_fwd) * [1, 0.8, 1.2]), arm_back=held(np.array(g.arm_back) * [1, 1.1, 1.25]))
+    s = replace(s, **SPRINT_GAIT.get(run, {}))
     if g.swing is not None:
         # The sprint's arms by their joints: the upper arm further forward and back, the elbow a little closer.
         k = SPRINT_SWING_RUN.get(run, SPRINT_SWING)

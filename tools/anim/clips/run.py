@@ -256,7 +256,11 @@ WARDEN = Gait(frames=21, speed=SPEED, duty=0.33, drop=0.09, bob=0.05, lean=19, s
 # moving 81 mm over the ground; the right foot lands at half a frame, its key 28 mm up) read as a 11-36 mm landing
 # skate in game (sim over every phase: 53). Reached further (0.20 past the spot at 0.83), clawed back a little faster
 # than the ground (land 1.2) and dropped steeper (fall 1.7): that frame 81 mm up, 22 mm off its spot (sim max 9 mm).
-WARDEN_RUN = replace(WARDEN, duty=0.27, reach=0.30, drop=0.10, kick=0.42, knee=0.32, path="v2", land=1.2, peel=0.14,
+# Solver 4 (the pogo: the trailing leg locked straight, 3.6 deg, 2 frames per step at push-off; knee.py / kneesim.py):
+# the heel peels higher off the toe (0.14 -> 0.26: the ankle rises as she pushes, so the leg leaves the ground bent,
+# 21 deg; the toe stays down through the stance) and the pelvis rides 2 cm higher (drop 0.10 -> 0.08: landing knee
+# 37 -> 29, mid-stance 57 -> 52, the judge's 25-35 at the plant). Landing slide unchanged (landsim 9 mm).
+WARDEN_RUN = replace(WARDEN, duty=0.27, reach=0.30, drop=0.08, kick=0.42, knee=0.32, path="v2", land=1.2, peel=0.26,
                      reach_key=(0.83, 0.20, 0.16), fall=1.7)
 ARCANIST = Gait(frames=20, speed=SPEED, duty=0.30, drop=0.05, bob=0.06, lean=13, spine_lean=2, hip_yaw=8, hip_roll=5.5,
                 hip_shift=0.03, chest_yaw=7, width=0.03, reach=0.34, kick=0.40, knee=0.30, head_up=4,
