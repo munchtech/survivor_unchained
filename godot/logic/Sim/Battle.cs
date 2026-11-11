@@ -139,6 +139,9 @@ public sealed class BattleHooks
     public Action<Enemy, School, double>? OnBossHit;
     /// <summary>A boss's stagger bar filled.</summary>
     public Action<Enemy>? OnBossStagger;
+    /// <summary>A boss or scripted foe was interrupted mid-cast or mid-windup (Battle.Interrupt, after its 0.8 s hold is
+    /// set), for a script that owns its moves: Battle's hold freezes the script's clock but not its marked blows.</summary>
+    public Action<Enemy>? OnBossInterrupt;
     /// <summary>A creature called up by one of its own (a summon), and who called it: the
     /// zone softens or hardens it as it does the rest of its horde.</summary>
     public Action<Enemy, Enemy>? OnCalled;
@@ -743,6 +746,7 @@ public sealed partial class Battle
             e.StateT = 0.8;
             e.RaiseT = Math.Max(e.RaiseT, 3);
             Events.Emit(new Ev.Bark { X = e.X, Z = e.Z, Text = "Interrupted!" });
+            if (e.Boss || e.Scripted) Hooks.OnBossInterrupt?.Invoke(e);
         }
     }
 

@@ -742,6 +742,31 @@ public class PrologueTests
     }
 
     [Fact]
+    public void An_interrupted_windup_is_called_off_not_just_barked()
+    {
+        var (s, w, ai, at) = AtFord();
+        at.GetField("CleaveCd")!.SetValue(ai, 0.0);
+        at.GetField("Hold")!.SetValue(ai, 0.0);
+        bool coned = false;
+        for (int i = 0; i < 60 * 4 && !coned; i++)
+        {
+            Stand(s, w.X + 4.5, w.Z);
+            s.Zone.Step(1 / 60.0); s.B.Tick(1 / 60.0, 0, 0);
+            coned = s.B.Events.Drain().Any(ev => ev is Ev.Telegraph { Phase: TellPhase.Warn } t && t.Id == w.Id * 10 + 1);
+            s.Zone.Frame(1 / 60.0);
+        }
+        Assert.True(coned);
+        s.Zone.Step(1 / 60.0); s.B.Tick(1 / 60.0, 0, 0); s.B.Events.Drain();
+        Assert.Equal(EnemyState.Windup, w.State);
+        double hp = s.B.Player.Hp;
+        s.B.Interrupt(w);
+        var evs = new System.Collections.Generic.List<CombatEvent>();
+        for (int i = 0; i < 90; i++) { Stand(s, w.X + 4.5, w.Z); s.Zone.Step(1 / 60.0); s.B.Tick(1 / 60.0, 0, 0); evs.AddRange(s.B.Events.Drain()); }
+        Assert.Contains(evs, ev => ev is Ev.Telegraph { Phase: TellPhase.Off } t && t.Id == w.Id * 10 + 1);
+        Assert.True(s.B.Player.Hp >= hp - 0.01, $"hp {hp} -> {s.B.Player.Hp}");
+    }
+
+    [Fact]
     public void Falling_here_is_forgiven()
     {
         var s = Make();

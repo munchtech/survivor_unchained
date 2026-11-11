@@ -150,6 +150,7 @@ public sealed partial class Prologue : ZoneRuntime
             BossTick = (e, dt) => e.Tag == "warden" && WardenTick(e, dt),
             OnKill = OnKill,
             OnBossStagger = e => { if (e.Tag == "warden") WardenStaggered(e); },
+            OnBossInterrupt = e => { if (e.Tag == "warden") WardenInterrupted(e); },
             // (M5-B, ARPG 7.1: a pack's captain is its carrier, a champion carries more; Encounters.Carried)
             OnLoot = e => [.. night?.Carried(e, G.Journey.Drops) ?? [], .. day?.Carried(e, G.Journey.Drops) ?? []],
             OnPickup = OnDayPickup,
@@ -966,6 +967,29 @@ public sealed partial class Prologue : ZoneRuntime
         wardenView.SetPose("stunned");
     }
 
+    /// <summary>Battle interrupted him (a Flare, a perfect dodge, a freeze) mid-wind or mid-channel.</summary>
+    void WardenInterrupted(Enemy e)
+    {
+        // (B1 judge r5: "Interrupted!" barked over his cleave and the move went on.) Battle's 0.8 s hold froze his script's
+        // clock, not his marked blow, so the cleave landed anyway and the windup resumed; the old check for a broken channel
+        // in WardenTick never saw the hold. His script takes the interrupt itself: a channel breaks (its 2.5 s stun), a
+        // cleave or a charge wind is called off, cone and lane down, and he reels for Battle's 0.8 s.
+        if (B == null || Now != Stage.Boss || ai.Mode is not ("windup" or "chargeWind" or "channel")) return;
+        if (PaceNotes.Count < 200) PaceNotes.Enqueue($"ford interrupted t={B.Time:0.00} mode={ai.Mode}");
+        e.State = EnemyState.Active; e.StateT = 0;
+        if (ai.Mode == "channel")
+        {
+            if (bar != null) Bar(bar with { Channel = null });
+            B.Events.Emit(new Ev.Announce { Title = "Channel broken", Tone = Tone.Boon });
+            B.Events.Emit(new Ev.Sound { Id = "ford.channel_broken" });
+            ai.T = 0;
+        }
+        else ai.T = 2.5 - 0.8;
+        CallOffCleave(); EndLane();
+        ai.Mode = "stun"; e.AnimT = 0;
+        wardenView.SetPose("stunned");
+    }
+
     const string ChargeTell = "It lowers its head...";
     void EndLane() { if (ai.Lane != null) { ai.Lane.T = 0; ai.Lane = null; } }
     /// <summary>Whether his charge's first 6 m are open ground: a lit lamp in the way counts as open (he goes through it,
@@ -1054,14 +1078,6 @@ public sealed partial class Prologue : ZoneRuntime
         if (ai.Mode == "stun") mul *= 1.5;
         e.TakenMul = mul;
         ai.CleaveCd -= dt; ai.ChargeCd -= dt; ai.ChannelCd -= dt;
-        // Interrupted mid-channel (Battle.Interrupt sets this).
-        if (ai.Mode == "channel" && e.State == EnemyState.Stunned)
-        {
-            ai.Mode = "stun"; ai.T = 0; e.StateT = 0; e.AnimT = 0;
-            wardenView.SetPose("stunned");
-            B.Events.Emit(new Ev.Announce { Title = "Channel broken", Tone = Tone.Boon });
-            B.Events.Emit(new Ev.Sound { Id = "ford.channel_broken" });
-        }
         e.State = ai.Mode == "channel" ? EnemyState.Casting : ai.Mode is "windup" or "chargeWind" ? EnemyState.Windup : EnemyState.Active;
 
         switch (ai.Mode)
