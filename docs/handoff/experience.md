@@ -5,6 +5,39 @@ For a fresh successor. Read these first:
 2. `docs/team/experience.md`: the one-page status, which holds what's done, the next steps in order, and the verdicts.
 3. `docs/design/STORY_NIGHTS_AND_TIME.md`: the owner's decisions are at its top.
 
+## M6 tutorial (tutorial-m6, lead 3, 10 Nov): HANDOFF READY at the commit carrying this block. Not MR READY: the callout fixes need run 4, then the frames, the judge and the MR.
+
+**State.** Branch tutorial-m6 at 695ea5965 plus this block. Built; the Teach|Prologue tests pass 73/0. The full suite has NOT run. Integration is NOT merged since lead 2. Nothing is judged.
+
+**Done (lead 3).**
+- Run m6r3 (after 3cbf175c3): the HUD is lit after the dawn page. C04a measures 74/55, the day 40-67.
+- The dawn page was black (m6r2: `story_sb_dawn_a/b` all zeros). GameStory.Storybook now hands its bars to StoryPlayer. In m6r3 the page measures 53.8 and 55.4 (6af0bff73).
+- Teach.cs: an urgent freeze that is due takes the screen from an arrow already read (2.5 s). The test is `AnUrgentFreezeTakesTheScreenFromAReadArrow`.
+- Dev aids: `--on teach` prints a once-a-second `teachstate` line before Intro (Prologue.Trace, wired in GameTeach). `--quit-trace` prints the quit's stack.
+- Callout triggers fixed to follow the real fight (695ea5965, not yet run). m6r3 showed C01 hands her 4 risen, and the first kill lands at about 25 s, before n_lone wakes.
+  - A2 swing: any hostile awake within 7 m in the Wake or Rising, not only n_lone. It had dropped "gone" at 36.5.
+  - A3b ember_ring: waits on A3 while a stone is held. It had shown before A3.
+  - A4 resolve: her first landed blows, after swing. It had never fired, because n_three died unseen.
+  - A4b groundbreaker: any 2 or more in reach before Intro.
+  - A5 captain: the nearest woken pack's live captain within 14 m, kept in `teachCap`. It had been lost under the road's line.
+- In m6r3 these showed: A3 at 28.6, A7 dash at 113.9, elite, post, raiser, lamps, and day_charge (the boars) at 319.4.
+
+**Next, in order.**
+1. **The day (unsolved).** A13 leap, its fallback day_gap, and A13b charge never queued. From about t=330 to 1382, the autopilot circled at Stage.Exit around (48,-85) at wp=9 until `--until` quit. There were no gate-shut PaceNotes and no watch barks in run3/run.log.
+   - Check whether the wolves' ring ever closed (`day.RingAt`).
+   - Check whether leap and charge are seated. She was level 3 at the Warden; leap needs level 4 and charge level 5. If they can't be seated, A13/A13b can't fire in the demo's prologue: log them as later-zone beats.
+   - Decide whether the stall is autopilot-only (the zone sim's bots pass 55/56) and log it. Extend the `teachstate` trace into Dawn and Exit (ring, gate, level, the seated skills, the next pack) to answer all of this.
+2. **Run 4.** Use `C:/Users/munch/Desktop/survivorsunchained_inputs/scratch_m6/run3/run.sh` with `--shot m6r4`. Keep `--teach-reset`. Check that A2, A3b, A4, A4b and A5 show, and their order.
+   - With `--fixed-fps 30`, arrow timings are real seconds, so game time runs about 2x faster in a run. Drops caused only by that are an autopilot artifact; log them, don't fix them.
+   - Check A11b and flare (m6r3's summary had no flare line).
+3. **Tally** is queued and dropped all run ("passed"/"notyet"), because `hud.TallyArea` is null: the new HUD shows no kills chip. Either it's a UI row for main, or the callout retires. Tell main.
+4. Contact sheets via `tools/half.py`, then my own look. One xhigh su-lead-max flow judge, only on a PASS bet. The brief opens "would this frame ship in a AAA game as it stands, watched at 1:1?".
+5. Merge integration (junction rule), run the full suite, push, put MR READY here, and tell main and the inbox.
+   - A5a stays a stub unless main says skills-p7's M7a is merged. Lead 2's plan for wiring it is below.
+   - Update `docs/story/TUTORIAL_COPY.md`'s triggers for A2/A4/A4b/A5 to match.
+
+**Cost.** Lead 3 used about 0.2M. The lane is about 1.34M of 1.4M: tell main before going further.
+
 ## M6 tutorial (tutorial-m6, lead 2, 10 Nov): HANDOFF READY at the commit carrying this block. Not MR READY: one fix needs a rerun, then the frames, the judge and the MR.
 
 **Done (commits b8717560a..3cbf175c3):**
