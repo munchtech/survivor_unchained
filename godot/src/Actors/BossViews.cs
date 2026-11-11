@@ -257,7 +257,7 @@ public partial class WardenView : Node3D, IBossView
         }
         // The swing's sheet from the blade's fast frames (windup 0.80 s: the blade at its top, clip 0.33) through its
         // follow-through to the ground (the cleave's first 0.12 s, clip ~0.64); the recovery's lift draws nothing.
-        swing.Live = e != null && (pose == "windup" && e.AnimT >= 0.80 || pose == "cleave" && e.AnimT <= 0.12);
+        swing.Live = e != null && (pose == "windup" && e.AnimT >= 0.90 || pose == "cleave" && e.AnimT <= 0.10);
         swing.Step(dt);
         if (e != null && Args.Has("pace") && pose is "windup" or "cleave" or "charge-windup" or "charge" or "stunned") Trace(e, facing, dt);
         flash = Math.Max(flash - dt * 6, e?.Flash ?? 0);

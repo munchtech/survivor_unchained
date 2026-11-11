@@ -26,7 +26,7 @@ public partial class WardenSwing : MeshInstance3D
     /// washed half the frame at the landing; the telegraph's cone already shows the reach, so the trail is the steel's.)</summary>
     public float Reach = 0f;
     /// <summary>Seconds a sample lives behind the blade, and the steps each frame is rounded into.</summary>
-    const double Life = 0.22;
+    const double Life = 0.14;
     const int Sub = 5;
     /// <summary>The steel's share of the sheet's width (guard 0, tip TipV, reach 1).</summary>
     const float TipV = 0.62f;
@@ -48,7 +48,7 @@ void fragment() {
     float air = v <= tipv ? 1.0 : pow(1.0 - (v - tipv) / (1.0 - tipv), 1.8) * (0.25 + 0.3 * lead);
     float rim = exp(-pow((v - tipv) / mix(0.035, 0.08, age), 2.0));
     float streak = 0.62 + 0.38 * n1(v * 34.0 + age * 2.0);
-    float a = (steel * air * (0.22 + 0.78 * lead) * streak * 0.8 + rim * (0.35 + 0.9 * lead)) * fade;
+    float a = (steel * air * (0.15 + 0.6 * lead) * streak * 0.55 + rim * (0.35 + 0.9 * lead)) * fade;
     ALBEDO = mix(cold, core, clamp(lead * 0.7 + rim * 0.6, 0.0, 1.0)) * energy;
     ALPHA = clamp(a, 0.0, 1.0);
 }
@@ -85,7 +85,7 @@ void fragment() {
         var mid = bb.GetCenter(); var half = Vector3.Zero; half[ax] = bb.Size[ax] / 2;
         Vector3 e0 = bx * (mid - half), e1 = bx * (mid + half), grip = holder.GlobalPosition;
         if (e0.DistanceSquaredTo(grip) > e1.DistanceSquaredTo(grip)) (e0, e1) = (e1, e0);
-        Vector3 h1 = e0.Lerp(e1, 0.12f), t1 = e1;
+        Vector3 h1 = e0.Lerp(e1, 0.55f), t1 = e1; // (r9: his chop is overhead; swept from the guard it laid a half-disc toward the camera: the outer steel only)
         if (last is { } p && clock - p.Born > 1e-4)
             for (int k = 1; k <= Sub; k++)
             {
