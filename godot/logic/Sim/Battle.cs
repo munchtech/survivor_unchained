@@ -41,6 +41,9 @@ public sealed class PlayerState
     /// <summary>A campaign cast's pose (Battle.CastPose): her walk at CastWalk for CastT more seconds, and her feet held
     /// PlantT more (a heavy commit, at most 0.3 s).</summary>
     public double CastT, CastWalk = 1, PlantT;
+    /// <summary>The cast's aim direction (x, z; 0,0 = none) and its cast-move block (Sim/CastMove.cs), set by the press.</summary>
+    public double CastAimX, CastAimZ;
+    public CastMoveDef? CastMoveB;
     public double StillT, SlowT, SlowF = 1, BlockT, Shield, ShieldT, InvisibleT, SureCritT, BulwarkT, BulwarkSize = 1;
     /// <summary>Rooted (the kit's ring, Sim/Tells.cs): no walking while above 0; a dash is still hers, and ends it.</summary>
     public double RootT;
@@ -539,7 +542,7 @@ public sealed partial class Battle
         p.BulwarkT = Math.Max(0, p.BulwarkT - dt);
         p.SlowT = Math.Max(0, p.SlowT - dt);
         if (p.SlowT <= 0) p.SlowF = 1;
-        if (p.CastT > 0 && (p.CastT -= dt) <= 0) { p.CastT = 0; p.CastWalk = 1; }
+        if (p.CastT > 0 && (p.CastT -= dt) <= 0) { p.CastT = 0; p.CastWalk = 1; p.CastAimX = p.CastAimZ = 0; p.CastMoveB = null; }
         if (p.PlantT > 0) p.PlantT = Math.Max(0, p.PlantT - dt);
         if (p.RootT > 0) p.RootT = Math.Max(0, p.RootT - dt);
         if (p.ShieldT > 0) { p.ShieldT -= dt; if (p.ShieldT <= 0) p.Shield = 0; }
@@ -612,7 +615,15 @@ public sealed partial class Battle
 
         double speed = st.Get(Stat.MoveSpeed) * p.SlowF * SpinPace() * RuleMoveMul();
         // A campaign cast plays on her upper body: she walks at its pace (1 everywhere else).
-        if (p.CastT > 0) speed *= p.CastWalk;
+        if (p.CastT > 0)
+        {
+            if (p.CastMoveB == null) speed *= p.CastWalk;
+            else
+            {
+                // by the angle of her travel to the press's aim (Sim/CastMove.cs); iron_march's RuleMoveMul divides the share out as before, the angle caps still bind
+                speed = CastMove.Speed(mx, mz, p.CastAimX, p.CastAimZ, speed, p.CastWalk, p.CastMoveB);
+            }
+        }
         if (p.BulwarkT > 0 && !Has("marching_wall")) speed *= 0.45;
         double targetVX = mx * speed, targetVZ = mz * speed;
         double accel = 1 - Math.Exp(-dt * 14);

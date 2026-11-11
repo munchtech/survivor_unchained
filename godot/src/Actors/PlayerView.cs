@@ -328,13 +328,18 @@ public partial class PlayerView : Node3D
             if (wb != null && HasHer(wb + "_back") && HasHer(wb + "_left") && HasHer(wb + "_right") && walkNodeSpeed(wb) > 0.05f)
             {
                 float vw = walkNodeSpeed(wb);
+                // Each directional point sits at its own clip's ground speed (the back ~1.3 m/s, the sides ~0.95), as the cast-move caps walk her (Sim/CastMove.cs).
+                float vb = walkNodeSpeed(wb + "_back"), vl = walkNodeSpeed(wb + "_left"), vr = walkNodeSpeed(wb + "_right");
+                if (vb < 0.05f) vb = vw;
+                if (vl < 0.05f) vl = vw;
+                if (vr < 0.05f) vr = vw;
                 var two = new AnimationNodeBlendSpace2D { MinSpace = new Vector2(-Mathf.Max(runSpeed, sprintSpeed), -Mathf.Max(runSpeed, sprintSpeed)), MaxSpace = new Vector2(Mathf.Max(runSpeed, sprintSpeed), Mathf.Max(runSpeed, sprintSpeed)), Sync = true };
                 walkNode = new AnimationNodeAnimation { Animation = own.Prefix + wb };
                 two.AddBlendPoint(idleNode, new Vector2(0, 0));
                 two.AddBlendPoint(walkNode, new Vector2(0, vw));
-                two.AddBlendPoint(new AnimationNodeAnimation { Animation = own.Prefix + wb + "_back" }, new Vector2(0, -vw));
-                two.AddBlendPoint(new AnimationNodeAnimation { Animation = own.Prefix + wb + "_left" }, new Vector2(-vw, 0));
-                two.AddBlendPoint(new AnimationNodeAnimation { Animation = own.Prefix + wb + "_right" }, new Vector2(vw, 0));
+                two.AddBlendPoint(new AnimationNodeAnimation { Animation = own.Prefix + wb + "_back" }, new Vector2(0, -vb));
+                two.AddBlendPoint(new AnimationNodeAnimation { Animation = own.Prefix + wb + "_left" }, new Vector2(-vl, 0));
+                two.AddBlendPoint(new AnimationNodeAnimation { Animation = own.Prefix + wb + "_right" }, new Vector2(vr, 0));
                 two.AddBlendPoint(runNode, new Vector2(0, runSpeed));
                 if (sprintSpeed > runSpeed * 1.05f && sprintNode.Animation != runNode.Animation) two.AddBlendPoint(sprintNode, new Vector2(0, sprintSpeed));
                 moveNode = two;

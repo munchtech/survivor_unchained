@@ -232,6 +232,13 @@ public sealed partial class Battle
         if (t > 0) { p.CastWalk = p.CastT > 0 ? Math.Min(p.CastWalk, walk) : walk; p.CastT = Math.Max(p.CastT, t); }
         p.PlantT = Math.Max(p.PlantT, plant);
         var at = CastAt ?? (SkillAim is { } s ? (s.X, s.Z, null) : (p.X, p.Z, null));
+        if (t > 0)
+        {
+            // the aim direction and the cast-move block (the latest press's), read by UpdatePlayer while CastT runs
+            p.CastMoveB = r.CastMove ?? CastMove.Default;
+            double adx = at.X - p.X, adz = at.Z - p.Z, al = Math.Sqrt(adx * adx + adz * adz);
+            if (al > 1e-6) { p.CastAimX = adx / al; p.CastAimZ = adz / al; }
+        }
         Events.Emit(new Ev.Cast { Weapon = w.Id, Slot = w.Slot, Walk = walk, Time = t, Plant = plant, Heavy = w.WasOwnHeavy, X = at.X, Z = at.Z });
     }
 

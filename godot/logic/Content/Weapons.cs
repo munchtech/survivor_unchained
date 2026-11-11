@@ -142,6 +142,8 @@ public sealed class PressDef
     public PressAim? Aim;
     public double? Reach;
     public PadAim? Pad;
+    /// <summary>Her pace by travel-versus-aim angle while the cast plays (Sim/CastMove.cs); absent: the global block.</summary>
+    public SurvivorUnchained.Sim.CastMoveDef? CastMove;
     public double? Walk, CastTime, Plant, Wait, Resolve, Drain, Builds, BuildsEach, BuildsMost, HeavyMul;
     /// <summary>Her clips for a press of it (M3, campaign): `clip` alternated swing to swing, `clipHeavy` for a heavy blow,
     /// each played at its rate (clipRate, clipHeavyRate; absent: 1.6 and 1.5, the view's old pace). The blow's hits land on
