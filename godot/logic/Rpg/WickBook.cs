@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using SurvivorUnchained.Content;
@@ -147,7 +148,7 @@ public static class WickBook
     public static int RankIn(CharacterData ch, string skill, bool night)
     {
         foreach (var (id, rank) in Character.DaySkills(ch, gearOnly: true)) if (id == skill) return rank;
-        return night ? SkillBook.NightRank(ch) : DayRank(ch, skill);
+        return night ? System.Math.Min(Weapons.MaxRank, SkillBook.NightRank(ch) + Character.SkillPlus(ch, skill)) : DayRank(ch, skill);
     }
 
     /// <summary>§14.8: the wick's whole sum for one skill's damage, the number its blows start from in the fight
@@ -202,8 +203,9 @@ public static class WickBook
     public static int Burning(CharacterData ch, string skill) => System.Math.Max(0, SkillBook.Rank(ch) - Held(ch, skill));
 
     /// <summary>The rank a day fight takes the skill at: Rank when nothing is held, else max(1, Burning).</summary>
+    // (merge with M9) her gear's +skill (Character.SkillPlus) rides on top of the burning points, to MaxRank, as RankOf does
     public static int DayRank(CharacterData ch, string skill) =>
-        Held(ch, skill) > 0 ? System.Math.Max(1, Burning(ch, skill)) : SkillBook.Rank(ch);
+        System.Math.Min(Weapons.MaxRank, (Held(ch, skill) > 0 ? System.Math.Max(1, Burning(ch, skill)) : SkillBook.Rank(ch)) + Character.SkillPlus(ch, skill));
 
     /// <summary>The lamps a day fight lights for the skill, in order: the first Burning of Path when it holds points,
     /// else the whole Path (Relight takes the rank's share).</summary>

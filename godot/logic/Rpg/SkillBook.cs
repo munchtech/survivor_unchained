@@ -77,6 +77,10 @@ public static class SkillBook
     /// WickBook.DayRank (the points she still holds unlit do not burn).</summary>
     public static int Rank(CharacterData ch) => PointsAt(ch.Level);
 
+    /// <summary>(M9) A carried skill's rank by day with what her gear adds (Character.SkillPlus), to MaxRank:
+    /// rank is lit lamps on its wick, so a "+1" lights one more.</summary>
+    public static int RankOf(CharacterData ch, string skill) => Math.Min(Weapons.MaxRank, Rank(ch) + Character.SkillPlus(ch, skill));
+
     public static bool Slot(CharacterData ch, string id)
     {
         if (!Knows(ch, id) || !Carries(ch, id) || ch.Slotted.Contains(id) || ch.Slotted.Count >= Slots(ch)) return false;

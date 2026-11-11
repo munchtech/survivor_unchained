@@ -86,7 +86,9 @@ public class ChampionsTests
         var tolly = lf.Champions["kerchiefs"].E;
         Assert.Same(tolly, lf.Captain("kerchiefs"));
         Assert.Equal("kerchief_captain", tolly.Def.Id);
-        Assert.Equal(["Grasping"], tolly.Named!.Affixes);
+        // (M6: Ironhide, not Grasping: with the day's Flare gone his pull and its follow, 0.8 of her life from full, looped a
+        // stander through ten rises at the camp)
+        Assert.Equal(["Ironhide"], tolly.Named!.Affixes);
         Assert.Equal(["Charging"], lf.Champions["wallow"].E.Named!.Affixes);
         Assert.Equal(lf.S.Get("kerchiefs")!.Foes.Sum(f => f.N) + 1, lf.Packs["kerchiefs"].Count);
         // A zone's own (the Barrow Knight): crowned by its key, its one affix the armor it stands in.

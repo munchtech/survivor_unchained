@@ -47,6 +47,7 @@ public partial class QuitPath : Node
         requested = true; code = exitCode;
         atProcess = Engine.GetProcessFrames(); atDrawn = Engine.GetFramesDrawn();
         GD.Print($"quit: requested ({why})");
+        if (Args.Has("quit-trace")) GD.Print("quit: asked from " + System.Environment.StackTrace);
         if (node == null || !IsInstanceValid(node)) { node = Make(); tree.Root.CallDeferred(Node.MethodName.AddChild, node); }
         try { ReleaseEarly(tree); } catch (Exception e) { GD.PushError($"quit: early release failed ({e.Message})"); }
         // (should the node never tick: a tree mid-change)

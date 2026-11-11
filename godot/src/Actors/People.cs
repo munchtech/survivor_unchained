@@ -399,8 +399,8 @@ public static class People
         if (Args.Has("pose-probe")) root.AddChild(new P1PoseProbe(skel, root));   // (the pose ruler: nothing without the flag)
         if (p1)
         {
-            // A's clavicle lift where A runs it (P1 R1 arm chain: B's clips are A's before the shrug, mapped; B's girdle law
-            // leaves the clavicle to it, rig.json girdle "clavicle_by": "shrug"), so blends and layers lift B as A
+            // (A's HerShrug only on a rig whose girdle leaves the clavicle to it, "clavicle_by": "shrug"; the published B's
+            // own girdle law lifts its clavicle, "law", A1 rebase on B: no A runtime layer on B)
             // B's blend base first of all (P1BlendBase: the mixer's blends from B's map of A's rest; P1Laws keeps it first)
             skel.AddChild(new P1BlendBase());
             skel.MoveChild(skel.GetChildren().OfType<P1BlendBase>().First(), 0);

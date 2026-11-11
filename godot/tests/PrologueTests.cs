@@ -220,9 +220,8 @@ public class PrologueTests
         Assert.False(s.Zone.Ember);
         Assert.False(s.B.EmberOn);
         Assert.Null(s.Host.DraftTip);
-        // (the Flare at half, as the night started it, for the Warden's lamps)
-        Assert.NotNull(s.B.Flare);
-        Assert.True(s.B.FlareMeter >= Battle.FlareFull / 2 - 1e-6);
+        // (M6: no Flare on the road; the ember lends it at C02's hand-back, PrologueFlareLentTests)
+        Assert.Null(s.B.Flare);
         Run(s, 4);
         double xp = s.J.Ch.Xp; int level = s.J.Ch.Level;
         foreach (var id in new[] { "n_lone", "n_three", "n_first" })
@@ -281,11 +280,8 @@ public class PrologueTests
         Run(s, 6);
         Assert.True(s.Zone.Sprung);
         Assert.True(s.B.Enemies.Living().Count(e => e.Def.Id == "risen_archer") >= 3);
-        // Their first volley in the air at her asks for the dash, briefly (never late, after it lands).
+        // (the volley no longer asks for the dash: A7 is the charger's lane, PrologueArpgTeachTests)
         Run(s, 4);
-        var dash = s.Host.Asked.FirstOrDefault(c => c.Id == "dash");
-        Assert.NotNull(dash);
-        Assert.True(dash!.Patience < 1);
     }
 
     [Fact]
@@ -383,7 +379,9 @@ public class PrologueTests
             var s = Make();
             Assert.False(s.J.World.Fact(Prologue.WardenLegendaryFact).Truthy);
             var e = s.B.SpawnEnemy("wolf", s.B.Player.X + 3, s.B.Player.Z + 3, new Battle.SpawnOpts { Level = level })!;
-            s.Zone.WardenLegendary(e);
+            var named = s.Zone.WardenLegendary(e.Level, e.Def.Family, e.X, e.Z, false);
+            Assert.Equal("The Ford-Warden's Evening Chain", named);
+            Assert.Contains(Prologue.WardenGrant, s.J.World.Owned);
             Assert.True(s.J.World.Fact(Prologue.WardenLegendaryFact).Truthy);
             Assert.True(Legends(s) >= 1, $"no Legendary at level {level}");
             // (a second kill rolls the plain Boss source: the fact stays, the certainty is spent)
@@ -535,5 +533,152 @@ public class PrologueTests
         Assert.Contains("lore.warden", s.J.Ch.Knowledge);
         Assert.Equal(QuestStatus.Active, s.J.World.Quests["lamps"].Status);
         Assert.Contains("book", s.J.World.Quests["lamps"].Entries);
+    }
+
+    /* M6, docs/story/TUTORIAL_COPY.md A1-A4b: each beat asked at its moment, with the spec's title and line (the fake
+     * host's keys are each action's first letter). */
+
+    static Callout Offered(Setup s, string id)
+    {
+        var asked = s.Host.Asked.Where(c => c.Id == id).ToList();
+        Assert.NotEmpty(asked);
+        // (asked every frame its moment holds, always the same callout)
+        Assert.Single(asked.Select(c => (c.Title, c.Line, c.Kind)).Distinct());
+        return asked[0];
+    }
+
+    /// <summary>Hold her away from a beat for a while (her own skills fire on their own, and would kill what the test waits on).</summary>
+    static void Away(Setup s, string beat, double back, double seconds)
+    {
+        for (double t = 0; t < seconds; t += 0.1) { Near(s, beat, back); Run(s, 0.1); }
+    }
+
+    static void Near(Setup s, string beat, double back)
+    {
+        var bt = Play.Zones.Encounters.For("lowford")!.Get(beat)!;
+        s.B.Player.X = bt.X; s.B.Player.Z = bt.Z + back;
+    }
+
+    [Fact]
+    public void A1_move_comes_by_the_fire_with_her_movement_keys()
+    {
+        var s = Make();
+        Run(s, 1.0);
+        Assert.DoesNotContain(s.Host.Asked, c => c.Id == "move");
+        Run(s, 0.5);
+        var c = Offered(s, "move");
+        Assert.Equal(("Move", "ULDR: walk. The road runs north, out of the firelight.", CalloutKind.Arrow), (c.Title, c.Line, c.Kind));
+        Assert.Null(c.Target.Hud);
+        Assert.Null(c.Target.World);
+        Assert.DoesNotContain(s.Host.Asked, c => c.Id is "form" or "level" or "ember_bar");
+    }
+
+    [Fact]
+    public void A2_swing_waits_for_the_lone_one_awake_and_close()
+    {
+        var s = Make();
+        Away(s, "n_lone", 30, 1.0);
+        Assert.DoesNotContain(s.Host.Asked, c => c.Id == "swing");   // (she is far from the lone one)
+        Near(s, "n_lone", 3);
+        for (int i = 0; i < 100 && !s.Host.Asked.Any(c => c.Id == "swing"); i++) { Near(s, "n_lone", 3); Run(s, 0.1); }
+        var c = Offered(s, "swing");
+        Assert.Equal(("Swing", "Hold S to swing at what's under the cursor. You walk as you swing.", CalloutKind.Freeze), (c.Title, c.Line, c.Kind));
+        Assert.Equal("seat:Skill1", c.Target.Hud);
+        Assert.Equal("skill1", c.Answer);
+        Assert.True(c.Target.Safe);
+        Assert.NotEmpty(c.Target.World!());
+    }
+
+    [Fact]
+    public void A3_ember_ground_points_at_the_lone_ones_stone()
+    {
+        // (stones lie only while the ember burns, Battle.EmberOn: the draft's night here)
+        var s = Make(draft: true);
+        Away(s, "n_lone", 30, 4);   // (the Rising, the lone one still standing)
+        Near(s, "n_lone", 9);
+        Run(s, 0.05);
+        foreach (var e in s.Zone.Night!.Standing("n_lone")) { s.B.Player.X = e.X; s.B.Player.Z = e.Z + 9; s.B.KillEnemy(e, true, null); s.J.Killed(e, true); }
+        Run(s, 0.2);
+        var c = Offered(s, "ember_ground");
+        Assert.Equal(("Ember", "The light the dead carry. It comes to you, and it makes you stronger.", CalloutKind.Freeze), (c.Title, c.Line, c.Kind));
+        Assert.NotEmpty(c.Target.World!());
+    }
+
+    [Fact]
+    public void A3b_ember_ring_comes_with_her_first_experience()
+    {
+        var s = Make();
+        Away(s, "n_lone", 30, 4);
+        Assert.DoesNotContain(s.Host.Asked, c => c.Id == "ember_ring");
+        Near(s, "n_lone", 3);
+        Run(s, 0.05);
+        foreach (var e in s.Zone.Night!.Standing("n_lone")) { s.B.KillEnemy(e, true, null); s.J.Killed(e, true); }
+        Run(s, 0.2);
+        // (the lone one's stone is held at rest until A3 closes; A3b comes on the first stone landed)
+        Assert.DoesNotContain(s.Host.Asked, c => c.Id == "ember_ring");
+        s.Host.TaughtIds.Add("ember_ground");
+        Run(s, 1.5);
+        var c = Offered(s, "ember_ring");
+        Assert.Equal(("Your level", "Ember fills this ring. When it's full, you rise a level.", CalloutKind.Arrow), (c.Title, c.Line, c.Kind));
+        Assert.Equal("chain_fill", c.Target.Hud);
+    }
+
+    /// <summary>The three on the road up round her, and her first blow on them landed (Resolve's Landed fill).</summary>
+    static void LandOnTheThree(Setup s)
+    {
+        Run(s, 4);
+        foreach (var e in s.Zone.Night!.Standing("n_lone").ToList()) { s.B.KillEnemy(e, true, null); s.J.Killed(e, true); }
+        s.B.PayXpStones();   // (M6 A3: the lone one's stone landed, as if A3 had closed)
+        for (int i = 0; i < 200 && s.Zone.Night!.Standing("n_three").Count(e => e.State != EnemyState.Rising) < 3; i++) { Near(s, "n_three", 2); Run(s, 0.1); }
+        Run(s, 0.1);
+        Assert.DoesNotContain(s.Host.Asked, c => c.Id == "resolve");
+        Assert.True(s.B.Resolve.On);
+        var landed = typeof(ResolveMeter).GetProperty("LandedFill")!;
+        landed.SetValue(s.B.Resolve, (double)landed.GetValue(s.B.Resolve)! + 6);
+        Run(s, 0.1);
+    }
+
+    [Fact]
+    public void A4_resolve_comes_with_her_first_landed_blow_on_the_three()
+    {
+        var s = Make();
+        LandOnTheThree(s);
+        // (it waits on A2's Swing seen before the Watch-post: m6r6 showed Resolve 18 s before Swing)
+        Assert.DoesNotContain(s.Host.Asked, c => c.Id == "resolve");
+        s.Host.TaughtIds.Add("swing");
+        Run(s, 0.1);
+        var c = Offered(s, "resolve");
+        Assert.Equal(("Resolve", "Every blow that lands builds Resolve. Your skills burn it.", CalloutKind.Arrow), (c.Title, c.Line, c.Kind));
+        Assert.Equal("resolve", c.Target.Hud);
+    }
+
+    [Fact]
+    public void A4b_groundbreaker_waits_for_its_cost_two_in_reach_and_2_s_after_A4()
+    {
+        var s = Make();
+        var gb = s.B.Weapons.FirstOrDefault(w => w.Id == "groundbreaker") ?? s.B.AddWeapon("groundbreaker")!;
+        LandOnTheThree(s);
+        s.Host.TaughtIds.Add("resolve");
+        // (Resolve held at its cost, under ResolveMeter.SelfAt of the cap: at full, Groundbreaker heaves itself at the pack
+        // she stands on (Weapons selfHeave) and the three are down before the 2 s pass; the callout is for the window
+        // between its cost and full, when her key can heave it)
+        double cost = s.B.CostOf(gb);
+        Assert.True(cost < ResolveMeter.SelfAt * s.B.Resolve.Max);
+        s.B.Resolve.Set(cost);
+        Away(s, "n_three", 25, 1.0);   // (A4 seen under 2 s ago, and she is out of reach)
+        Assert.DoesNotContain(s.Host.Asked, c => c.Id == "groundbreaker");
+        for (int i = 0; i < 30 && !s.Host.Asked.Any(c => c.Id == "groundbreaker"); i++)
+        {
+            var three = s.Zone.Night!.Standing("n_three");
+            s.B.Player.X = three.Average(e => e.X); s.B.Player.Z = three.Average(e => e.Z) + 1;
+            s.B.Resolve.Set(cost);
+            Run(s, 0.1, safe: true);
+        }
+        var c = Offered(s, "groundbreaker");
+        string key = "S";
+        Assert.Equal(("Groundbreaker", $"When Resolve is full, it heaves itself at the pack. {key}: heave now.", CalloutKind.Freeze), (c.Title, c.Line, c.Kind));
+        Assert.Equal($"seat:Skill{gb.Slot + 1}", c.Target.Hud);
+        Assert.Equal($"skill{gb.Slot + 1}", c.Answer);
+        Assert.True(c.Target.World!().Count >= 2);
     }
 }

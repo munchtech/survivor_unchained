@@ -317,6 +317,20 @@ public sealed partial class Battle
     /// dead leave its stones and it rises, card by card. By day, in the story,
     /// it does not; the survivor grows instead.</summary>
     public bool EmberOn = true;
+    /// <summary>(M6, TUTORIAL_COPY.md A3) Her experience in stones: with the ember off in a story fight, the dead she
+    /// kills still spill their light, worth what they teach her (Journey.Killed). Each rests XpStoneRest, then flies to
+    /// her and pays PayXp as it lands. Null: kills pay straight (arena runs, tests without a journey).</summary>
+    public Action<double>? PayXp;
+    /// <summary>An experience stone's Ref (an ember-kind pickup that pays PayXp, never the ember).</summary>
+    public const string XpStoneRef = "xp";
+    /// <summary>How long an experience stone lies before it flies to her (seconds).</summary>
+    public const double XpStoneRest = 0.35;
+    /// <summary>The next experience stone dropped is held at rest (HeldStone) until ReleaseStone: the tutorial's first
+    /// (A3 points at it lying).</summary>
+    public bool HoldNextStone;
+    /// <summary>The experience stone held at rest, if any.</summary>
+    public Pickup? HeldStone => heldStone is { Alive: true, Ref: XpStoneRef } h ? h : null;
+    Pickup? heldStone;
     public int PendingLevels;
     /// <summary>A measuring aid (the harness's Hand pair): chests open empty, the build coming only as its twin's came.</summary>
     public bool ChestsInert;
@@ -1718,6 +1732,8 @@ public sealed partial class Battle
         }
         if (p.Hp <= 0)
         {
+            // (M6 A3) Her fall pays the experience still on its way to her.
+            PayXpStones();
             if (p.Revives > 0 || p.Ashes > 0)
             {
                 // The ember's rising first: the kit's keeps for a night without it.
@@ -2005,6 +2021,41 @@ public sealed partial class Battle
             else EmbersLying++;
             left -= v;
         }
+    }
+
+    /// <summary>(M6 A3) A kill's experience as stones where it fell (40 a stone at most, six at most, the last carrying
+    /// the rest, so the stones are worth exactly `xp`). Where none can be spawned it is paid at once.</summary>
+    public void DropXpStones(double x, double z, double xp)
+    {
+        if (PayXp == null || xp <= 0) return;
+        double left = xp;
+        for (int i = 0; i < 6 && left > 0; i++)
+        {
+            double v = i == 5 || left <= 40 ? left : 40;
+            var k = SpawnPickup(PickupKind.Ember, x + (Rng.Next() - 0.5), z + (Rng.Next() - 0.5), v, XpStoneRef);
+            if (k == null) { PayXp(left); return; }
+            if (HoldNextStone) { HoldNextStone = false; heldStone = k; }
+            left -= v;
+        }
+    }
+
+    /// <summary>The held stone let go: it flies to her as the rest do.</summary>
+    public void ReleaseStone() => heldStone = null;
+
+    /// <summary>(M6 A3) Every experience stone still lying or in flight paid now, the held one too (a zone's end, her
+    /// fall, a film): nothing she earned is lost. The total paid.</summary>
+    public double PayXpStones()
+    {
+        double paid = 0;
+        foreach (var k in Pickups.Items)
+        {
+            if (!k.Alive || k.Kind != PickupKind.Ember || k.Ref != XpStoneRef) continue;
+            paid += k.Value;
+            Pickups.Release(k);
+        }
+        heldStone = null;
+        if (paid > 0) PayXp?.Invoke(paid);
+        return paid;
     }
 
     /// <summary>Ember past the cap goes into the hoard stone, which lies where the overflow began
@@ -2583,11 +2634,21 @@ public sealed partial class Battle
             if (!k.Alive) continue;
             if (k.Kind == PickupKind.Ember && k.Tier != HoardTier) lying++;
             k.Age += dt;
-            // Scatter, then settle.
-            k.X += k.Vx * dt; k.Z += k.Vz * dt;
+            // Scatter, then settle. (M6) Never into a rock, prop or wall: a Pillager's cloth that slid into a cart's box lay
+            // out of her reach for good, and the bots circled it (Low Ford, plain s2). The scatter stops at the edge.
+            if (k.Vx != 0 || k.Vz != 0)
+            {
+                double nx = k.X + k.Vx * dt, nz = k.Z + k.Vz * dt;
+                if (Collision != null && Collision.Blocked(nx, nz, 0.05, false)) k.Vx = k.Vz = 0;
+                else { k.X = nx; k.Z = nz; }
+            }
             double drag = Math.Exp(-dt * 5);
             k.Vx *= drag; k.Vz *= drag;
             if (!p.Alive) continue;
+            // (M6 A3) An experience stone rests, then comes to her wherever she is; the held one stays where it fell.
+            bool xpStone = k.Kind == PickupKind.Ember && k.Ref == XpStoneRef;
+            if (xpStone && k == heldStone) { k.Pulled = false; continue; }
+            if (xpStone && k.Age >= XpStoneRest) k.Pulled = true;
             double dx = p.X - k.X, dz = p.Z - k.Z;
             double d = Len(dx, dz);
             bool autoPull = k.Kind is PickupKind.Ember or PickupKind.Gold or PickupKind.Heal or PickupKind.Magnet;
@@ -2609,7 +2670,7 @@ public sealed partial class Battle
             }
             if (d < p.Radius + 0.35 && (autoPull || k.Age > 0.4) && (k.Look != Verdict.Hidden || TakeHidden)) Collect(k);
             // Ember on the ground cools after a long while; gear does not.
-            if (k.Alive && !k.Persistent && k.Kind == PickupKind.Ember && k.Age > 90) Pickups.Release(k);
+            if (k.Alive && !k.Persistent && k.Kind == PickupKind.Ember && !xpStone && k.Age > 90) Pickups.Release(k);
         }
         EmbersLying = lying;
     }
@@ -2618,6 +2679,7 @@ public sealed partial class Battle
     {
         switch (k.Kind)
         {
+            case PickupKind.Ember when k.Ref == XpStoneRef: PayXp?.Invoke(k.Value); break;
             case PickupKind.Ember: GainEmber(k.Value); Fire(TriggerEvent.Ember, new ProcCtx { X = k.X, Z = k.Z }); break;
             case PickupKind.Gold: GoldGained += RoundInt(k.Value * Stats.Get(Stat.GoldGain)); break;
             case PickupKind.Heal: HealPlayer(k.Value * (MaxHp / 100), "potion"); break;
@@ -2720,6 +2782,18 @@ public sealed partial class Battle
         w.Rank++;
         // The wick lights along the day's plan as the ember ranks it.
         Relight(w, true);
+    }
+
+    /// <summary>(M9) A weapon set to a rank (1 to MaxRank) and its wick relit to it, quietly: gear's "+1 to a skill"
+    /// put on or taken off in a fight (Journey.RefreshKit). Not a build step (never journaled): the kit sets it again.</summary>
+    public void SetRank(string id, int rank)
+    {
+        var w = Weapons.Find(x => x.Id == id);
+        if (w == null) return;
+        rank = Math.Clamp(rank, 1, Content.Weapons.MaxRank);
+        if (w.Rank == rank) return;
+        w.Rank = rank;
+        Relight(w, false);
     }
 
     /// <summary>A finished weapon honed (the endless dark's draft): a little more damage each time.</summary>

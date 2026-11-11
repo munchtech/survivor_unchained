@@ -724,11 +724,12 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     /* --------------------------------------------------------------- spoils -- */
 
     /// <summary>What a carrier leaves (docs/design/LOOT_DESIGN.md §5), rolled whole at its level; the
-    /// story's boss pays the survivor's first Legendary for certain.</summary>
+    /// story's boss pays the survivor's first Legendary for certain. (M9) No tally: a story night is a zone now, its
+    /// materials fall on the ground in gear's place (ARPG 7.1); only the arena's night keeps the end tally.</summary>
     List<Loot> Gear(int level, DropSource source) => G.Journey.Drops(new DropCtx
     {
         Source = source, Level = level, People = Spec.People, Lean = lean, Luck = B!.Stats.Get(Stat.Luck), Tier = Spec.Tier,
-        Tally = true, StoryBoss = source == DropSource.Boss, R = R,
+        StoryBoss = source == DropSource.Boss, R = R,
     });
 
     IEnumerable<Loot> OnLoot(Enemy e)

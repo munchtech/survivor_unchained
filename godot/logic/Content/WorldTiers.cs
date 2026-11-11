@@ -19,15 +19,36 @@ public static class WorldTiers
         /// <summary>(M3) The stand clock in story fights (H6's rule, Teeth.Director's stand fields; Encounters through
         /// StandClock): a woken pack's foe charges her when she has not moved StandMoved in StandFor s. Null: none.</summary>
         public Teeth.Director? Stand;
+        /// <summary>(10 Nov) The tier's `stand` row as written, kept when the clock is retired (`standOn` false: Stand
+        /// is null): what the clock's own tests, and a return of it, read.</summary>
+        public Teeth.Director? StandRow { get; private set; }
+        internal void Retire(bool on) { StandRow = Stand; if (!on) Stand = null; }
         public int ItemLevels;
         /// <summary>The world fact that opens this tier (null: always open).</summary>
         public string? Opens;
     }
 
-    sealed class File { public int Default = 2; public Dictionary<string, Tier> Tiers = new(); }
+    sealed class File
+    {
+        public int Default = 2;
+        /// <summary>(10 Nov, the owner) The story and map stand clock is retired: "some builds like archers very much
+        /// move into an area and then stand still while they shoot. so that rule isn't really a thing anymore." Off, every
+        /// tier's `stand` row is kept as data and read as none (null). The arena's own director keeps its stand.</summary>
+        public bool StandOn = true;
+        public Dictionary<string, Tier> Tiers = new();
+    }
 
     static File? file;
-    static File F => file ??= Json.Parse<File>(Json.ReadContent("world_tiers.json"));
+    static File F => file ??= Retire(Json.Parse<File>(Json.ReadContent("world_tiers.json")));
+
+    static File Retire(File f)
+    {
+        foreach (var t in f.Tiers.Values) t.Retire(f.StandOn);
+        return f;
+    }
+
+    /// <summary>(10 Nov) Whether the story and map stand clock is on (world_tiers.json `standOn`).</summary>
+    public static bool StandOn => F.StandOn;
 
     public const string Key = "world.tier";
 

@@ -1791,6 +1791,15 @@ public partial class GameHud : CanvasLayer
         return null;
     }
 
+    /// <summary>The bar's seat a skill key shows on (M4 §1, KeyMap.SeatSlot: Skill1 the LMB seat), as a square, if it is on
+    /// the instrument now (a callout's "seat:Skill1"; empty or full, the seat is the key's place).</summary>
+    public Rect2? SeatRect(int slot)
+    {
+        int k = KeyMap.SeatOf(slot);
+        if (k < 0 || k >= irons.Sockets.Length || !irons.Sockets[k].IsVisibleInTree()) return null;
+        return HudBottom.GlobalRect(irons.Sockets[k]);
+    }
+
     string? spotKeep;
     AbilityKind? formGlyphOf;
     /// <summary>Whether the dash's form is lit (its flames and badge showing).</summary>

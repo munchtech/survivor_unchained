@@ -168,6 +168,57 @@ public partial class Game
     }
 
     /// <summary>The bars a storybook left, for the cinematic starting now (null: none).</summary>
+    /// <summary>IZoneHost (M6): a storybook mid-zone (sb_dawn, the Low Ford's dawn page): the world held and faded under
+    /// it, the page over its own bars (fading in from black and out to it), then the world back and `then`. Where no
+    /// storybook can play (--nocine, a quick start without --cines, one already up, a cinematic, no such file) it goes on.</summary>
+    public void Storybook(string id, Action then)
+    {
+        if (scene == null || storybook != null || cine != null || Args.Has("nocine") || (quick && !Args.Has("cines")) || !StoryExists(id)) { then(); return; }
+        StoryFile f;
+        try { f = StoryFile.Load(id); }
+        catch (Exception e) { GD.PushWarning($"storybook: {id} not played ({e.Message})"); then(); return; }
+        if (!f.Live) { then(); return; }
+        if (Shots.On("teach")) { Shots.Want("story_" + id + "_a", 2.0); Shots.Want("story_" + id + "_b", 6.0); }
+        // (M6 A3) A storybook pays the experience stones still on their way to her.
+        scene.Battle?.PayXpStones();
+        scene.SimPaused = true;
+        scene.Hold = 1;
+        hud.HoldToasts = true;
+        hud.HoldTip = true;
+        hud.ClearBanner();
+        hud.Prompt(promptShown = null);
+        controls.ClearLatches();
+        hud.Fade(1, 0.6);
+        GD.Print($"storybook: {id} mid-zone at wall {Time.GetTicksMsec() / 1000.0:0.00}s");
+        Wait(0.6, () =>
+        {
+            // (M6) The page plays over bars of its own, full and black, as SB00 does: the HUD's black (above every
+            // page) goes the moment they are up. Left up, it hid the page, the film after and the whole day (run m6r1).
+            // The player is handed them (it opens their black over its page): its own bars under these hid it (m6r2).
+            var bars = new CinemaBars();
+            AddChild(bars);
+            bars.Frame(1, 1);
+            storybook = new StoryPlayer(f, Host(), _ =>
+            {
+                storybook = null;
+                if (scene != null)
+                {
+                    scene.Hold = 0;
+                    if (screens.Current == null && cine == null && teacher?.Current is not { Kind: CalloutKind.Freeze }) scene.SimPaused = false;
+                }
+                hud.HoldToasts = false;
+                hud.HoldTip = false;
+                controls.ClearLatches();
+                storyBars = bars;
+                then();
+                // (a cinematic `then` started took the bars as its own; else they go and the world fades back in)
+                Unbar();
+            }, bars);
+            AddChild(storybook);
+            hud.Fade(0, 0);
+        });
+    }
+
     CinemaBars? TakeStoryBars()
     {
         var b = storyBars;

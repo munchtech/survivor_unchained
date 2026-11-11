@@ -1,0 +1,219 @@
+{
+ "kind": "gait",
+ "rules": "R7.2 armed: the shield low in front, the sword trailing; weapon-side swing damped 50-70%",
+ "bands": {
+  "steps_min": [
+   160,
+   176
+  ],
+  "yaw_pm_deg": [
+   8,
+   12
+  ],
+  "thorax_counter_pm_deg": [
+   10,
+   14
+  ],
+  "lean_deg": [
+   6,
+   8
+  ],
+  "pelvis_vertical_cm": [
+   5,
+   6
+  ],
+  "head_bob_cm": [
+   0,
+   5
+  ],
+  "speed_mps": [
+   4.55,
+   5.55
+  ],
+  "arm_swing_r_pm_deg": [
+   10,
+   25
+  ],
+  "elbow_r_deg": [
+   30,
+   100
+  ],
+  "slide_mm": [
+   0,
+   5
+  ],
+  "knee_swing_l_deg": [
+   90,
+   110
+  ],
+  "knee_swing_r_deg": [
+   90,
+   110
+  ],
+  "thigh_trail_l_deg": [
+   0,
+   20
+  ],
+  "thigh_trail_r_deg": [
+   0,
+   20
+  ],
+  "blade_below_deg": [
+   30,
+   45
+  ],
+  "blade_swing_deg": [
+   10,
+   25
+  ],
+  "boss_up_cm": [
+   7,
+   16
+  ],
+  "boss_fwd_cm": [
+   25,
+   40
+  ]
+ },
+ "gen": {
+  "engine": "kimodo",
+  "seconds": 6.0,
+  "takes": 6,
+  "seeds": [
+   171,
+   172,
+   173,
+   181,
+   182
+  ],
+  "prompts": [
+   "A warrior woman runs forward smoothly holding a shield low in front of her on her left arm and a sword trailing low behind her in her right hand",
+   "A woman runs forward at a steady pace with a shield held low on her left forearm and a sword carried low and back in her right hand, her head level",
+   "A fighter runs forward with a shield in front of her and a sword held low in her right hand, her right arm swinging",
+   "A warrior woman runs forward with long, easy, bounding strides, a shield held low in front on her left arm and a sword trailing low in her right hand",
+   "A woman runs forward with long relaxed strides at a slow stride rate, a shield held low on her left arm and a sword low behind her in her right hand"
+  ],
+  "root2d": {
+   "kind": "straight",
+   "speed": 5.0,
+   "ramp": 1.0,
+   "every": 1
+  },
+  "more": {
+   "prompts": [
+    3,
+    4
+   ],
+   "takes": 12,
+   "seed_add": 50
+  }
+ },
+ "post": {
+  "loop": true,
+  "inplace": true,
+  "cycle_s": [
+   0.6,
+   1.6
+  ],
+  "gait": true,
+  "duty": 0.27,
+  "game_speed": 5.0,
+  "crop": [
+   36,
+   140
+  ]
+ },
+ "notes": "Cadence gated (gate: steps_min, 160-176): Kimodo's prompted runs mostly step 180-200/min at 5 m/s; the 'long strides' prompts reach 164-172 but bounce more (pelvis vertical 8-11 cm). duty 0.27 (a 5 m/s run's ~0.2 s contact over a 0.73 s stride): the stance lock at 0.35 pinned the foot past the leg's reach (5-7 mm slide); at 0.27 slide 0. Pops (foot_r ~28 deg/frame) are the source's toe-off. Round 4 finish: ONE shield carry for the armed walk and run (the blend keeps it): at her left side, the face out to her left, the top edge 5 deg out, the boss 34 cm left / 6 up / 8 forward of the pelvis head, placed whole by fit.shield solve (elbow ~70, upper arm 22-31 off vertical, the wrist straight). The bible's low-in-front carry (boss at the navel 15-25 cm ahead) cannot clear her with this mount on B's 23 cm upper arm: every bent-arm solution cuts 58-80 mm into her (round 4 search); the straight arm reached it only with the shield in her.",
+ "source": "src/run_warden.npz",
+ "bvh": "run_warden__p4_4.bvh",
+ "sha1": "99b4bbf8d837c07dcc3b446a54738000e5571961",
+ "take_score": 11.682,
+ "gate": [
+  "steps_min"
+ ],
+ "fit": {
+  "pelvis": {
+   "yaw_pm": 10
+  },
+  "thorax": {
+   "counter_pm": 12
+  },
+  "lean": {
+   "deg": 7
+  },
+  "bob": {
+   "pelvis_cm": 5.5,
+   "head_cm": 4.6,
+   "pelvis_min_cm": 5.0
+  },
+  "knee": {
+   "swing_deg": 100
+  },
+  "pop": {
+   "x": 4,
+   "span": 4,
+   "cap": {
+    "foot_l": 10,
+    "foot_r": 10,
+    "ball_l": 10,
+    "ball_r": 10
+   }
+  },
+  "arms": {
+   "r": 0.6
+  },
+  "blade": {
+   "dir": [
+    -0.0995,
+    -0.8617,
+    -0.4975
+   ],
+   "fist": [
+    0.0,
+    -0.3,
+    1.0
+   ],
+   "keep": 0.5
+  },
+  "shield": {
+   "solve": true,
+   "boss": [
+    0.34,
+    0.06,
+    0.08
+   ],
+   "open_deg": 90,
+   "tilt_deg": 5,
+   "branch": -1
+  },
+  "roll": {
+   "heel": 0.7,
+   "toe": 0.7,
+   "ease": 7,
+   "reach": 0.92
+  },
+  "wrist": {
+   "hand_r": {
+    "flex": 25,
+    "dev": 15,
+    "mode": "turn",
+    "swivel": 0
+   },
+   "hand_l": {
+    "flex": 25,
+    "dev": 15,
+    "mode": "hold",
+    "swivel": 0,
+    "twist": false
+   }
+  },
+  "clear": {
+   "target_mm": 12,
+   "passes": 6
+  }
+ },
+ "held": [
+  "sword",
+  "shield"
+ ]
+}

@@ -104,6 +104,10 @@ public sealed class LootRules
     /// <summary>Each source's terms, by its key ("champion", "mapRuler").</summary>
     public Dictionary<string, SourceRule> Sources = new();
     public Dictionary<string, SetDef> Sets = new();
+    /// <summary>(M9) The skills a "+1 to a skill" suffix is made for (Items.Affixes), and the short name
+    /// it goes by in the affix's name ("of the Leap"); without one, the skill's own name.</summary>
+    public List<string> PlusSkills = new();
+    public Dictionary<string, string> PlusNames = new();
 }
 
 /// <summary>Everything a drop roll needs to know about where it falls.</summary>
@@ -135,6 +139,8 @@ public sealed class DropCtx
     public int Floor;
     /// <summary>A story fight's boss: the first one a survivor beats pays a Legendary for certain.</summary>
     public bool StoryBoss;
+    /// <summary>(M9) A designed Legendary's id: the first roll is that piece (once; owned, it falls through).</summary>
+    public string? Grant;
     /// <summary>Whether a story condition holds (a piece's DropsWhen).</summary>
     public Func<World.Cond?, bool>? Allows;
     public Func<double> R = () => Random.Shared.NextDouble();
@@ -285,7 +291,7 @@ public static class Drops
             s += Weight(m) * m.Value * (m.When != null ? 0.5 : 1);
         s += (def.Triggers?.Count ?? 0) * 5;
         foreach (var a in it.Affixes)
-            if (Items.Affix(a.Id) is { } ad) s += ad.Kindled != null ? 4 : ad.Grants != null ? 6 : 0;
+            if (Items.Affix(a.Id) is { } ad) s += ad.Kindled != null ? 4 : ad.Grants != null ? 6 : ad.Plus != null ? 5 : 0;
         if (def.Weapon != null) s += 8 * Inventory.WeaponRank(it);
         return s;
     }
@@ -445,14 +451,15 @@ public static class Drops
         rolls += (int)extra + (R() < extra % 1 ? 1 : 0);
         bool hoard = x.Source is DropSource.Boss or DropSource.MapRuler;
         bool owed = hoard && w != null && w.LootDebt >= Rules.Debt;
-        bool first = x.StoryBoss && w != null && !w.FirstLegendary && EarlyLegendaries().Any(d => Wieldable(d, x.Ch));
+        bool grant = x.Grant != null && w != null && Items.Find(x.Grant) != null && !Owned(x.Ch, w, x.Grant);
+        bool first = !grant && x.StoryBoss && w != null && !w.FirstLegendary && EarlyLegendaries().Any(d => Wieldable(d, x.Ch));
         string? material = x.People != null ? PeopleMaterial(x.People) : null;
         // Fire is the scars', iron the atlas's (crafting design 20.1): in a map the lamplings leave iron.
         if (material == "ember_shard" && x.Source is DropSource.MapPack or DropSource.MapPackFine or DropSource.MapKeeper or DropSource.MapRuler or DropSource.Strongbox)
             material = Iron;
         for (int k = 0; k < rolls; k++)
         {
-            bool gear = (k == 0 && x.Floor > 0) || R() < Math.Min(1, src.Chance * x.Gear);
+            bool gear = (k == 0 && (x.Floor > 0 || grant)) || R() < Math.Min(1, src.Chance * x.Gear);
             if (!gear)
             {
                 if (material != null && R() < Rules.Material) o.Add(new Dropped(null, material, 1, LootTier.Material));
@@ -461,7 +468,13 @@ public static class Drops
             }
             LootTier tier;
             ItemInstance it;
-            if (k == 0 && first)
+            if (k == 0 && grant)
+            {
+                it = Inventory.Make(x.Ch, x.Grant!, seed: (uint)(R() * int.MaxValue), dropped: true, level: Math.Clamp(x.Level, 1, Rules.MaxLevel));
+                tier = LootTier.Legendary;
+                w!.FirstLegendary = true;
+            }
+            else if (k == 0 && first)
             {
                 // The first story boss beaten: a Legendary from the early pool, the calling's own likelier.
                 var pool = EarlyLegendaries().Where(d => Wieldable(d, x.Ch)).ToList();

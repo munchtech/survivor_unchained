@@ -75,6 +75,8 @@ public sealed class ItemDef
     public List<string>? Homes;
     /// <summary>It falls only while this holds (the Pelt of the Pack after the Pack is slaughtered).</summary>
     public World.Cond? DropsWhen;
+    /// <summary>(M9) A named piece's own ranks to skills while worn (items.json "plus": { "heroic_leap": 1 }).</summary>
+    public Dictionary<string, int>? Plus;
 }
 
 public sealed class AffixDef
@@ -86,6 +88,9 @@ public sealed class AffixDef
     public Func<int, string> Text = _ => "";
     /// <summary>A skill (weapon) the gear grants while worn.</summary>
     public string? Grants;
+    /// <summary>(M9) A skill she carries that the piece raises one rank while worn ("+1 to Heroic Leap"):
+    /// one more lamp lit on its wick (Character.SkillPlus, SkillBook.RankOf).</summary>
+    public string? Plus;
     /// <summary>The least rarity it rolls on (skills come only on fine gear).</summary>
     public int MinRarity;
     /// <summary>Given, never rolled: a trophy's power set into a piece (Greymuzzle's fang), or what the
@@ -164,7 +169,37 @@ public static class Items
     /// <summary>A Mark's strength from its grade: 0 at grade I, 1 at grade VI (combat lerps across it).</summary>
     public static double MarkStrength(int tier) => Math.Clamp(tier / 5.0, 0, 1);
 
-    public static readonly AffixDef[] Affixes =
+    /// <summary>Every affix: the written ones and one "+1 to a skill" suffix for each skill in loot.json's
+    /// plusSkills. Built on first read, as it reads the weapons and the loot rules (static-init order).</summary>
+    public static AffixDef[] Affixes
+    {
+        get
+        {
+            if (affixes != null) return affixes;
+            var list = new List<AffixDef>(BaseAffixes);
+            var rules = Drops.Rules;
+            foreach (var id in rules.PlusSkills)
+            {
+                if (!Content.Weapons.All.TryGetValue(id, out var w)) continue;
+                string skill = w.Name;
+                string shortName = rules.PlusNames.TryGetValue(id, out var sn) ? sn : skill;
+                list.Add(new AffixDef
+                {
+                    Id = PlusId(id), Name = $"of the {shortName}", Prefix = false, Plus = id, MinRarity = 2,
+                    Slots = [ItemKind.Ring, ItemKind.Amulet, ItemKind.Head, ItemKind.Relic],
+                    Text = _ => $"+1 to {skill}",
+                });
+            }
+            // Published only when whole (the tests read it from several threads).
+            return affixes = list.ToArray();
+        }
+    }
+    static AffixDef[]? affixes;
+
+    /// <summary>The "+1 to a skill" affix's id for a skill.</summary>
+    public static string PlusId(string skill) => $"plus_{skill}";
+
+    public static readonly AffixDef[] BaseAffixes =
     [
         new() { Id = "sturdy", Name = "Sturdy", Prefix = true, Slots = [ItemKind.Head, ItemKind.Body, ItemKind.Cloak, ItemKind.Offhand],
             Mods = t => [M(Stat.Armor, ModKind.Flat, 1 + t)], Text = t => $"+{1 + t} armor" },

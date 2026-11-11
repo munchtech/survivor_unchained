@@ -39,6 +39,36 @@ ARM = ("upperarm", "lowerarm", "hand", "thumb", "index", "middle", "ring", "pink
 TORSO = ("pelvis", "spine", "thigh", "glute", "breast", "pec", "lat", "belly", "butt")
 GIRDLE = ("clavicle", "scap", "trap", "delt", "upperarm")
 SPIKE_X, SPIKE_DEG = 4.0, 3.0
+MOVING_DEG = 0.5   # a step under this (15 deg/s at 30 fps) is held, a breath at most: left out of the spike rule's median
+
+
+def spike_median(st):
+    """The spike rule's median: over the MOVING steps only (> MOVING_DEG), the two largest left out (a one-frame
+    spike is two steps: out and back). A frozen hold's ~0 steps no longer pull the median to 0 (every fast beat after
+    a hold was flagged), and a lone spike after a hold cannot set its own bar (its two steps alone: median 0, so it
+    is flagged). fit.pop mirrors it."""
+    mv = np.sort(st[st > MOVING_DEG])
+    return float(np.median(mv[:-2])) if len(mv) > 2 else 0.0
+
+
+LONE_X, BACK = 2.5, 0.5
+
+
+def out_of_line(R, st, k, loop):
+    """A pop is a step out of line with its neighbours: a lone jump (over LONE_X times the larger neighbour step) or
+    an out-and-back (two steps whose net turn is under BACK of their sum). A burst that builds and settles over a few
+    frames (a shove off a frozen hold: 8, 14.5, 4 deg) is neither, however fast. fit.pop mirrors it."""
+    n = len(st)
+    nb = lambda i: st[i % n] if loop or 0 <= i < n else 0.0  # noqa: E731
+    if st[k] > LONE_X * max(nb(k - 1), nb(k + 1)):
+        return True
+    for a in (k - 1, k):
+        if loop or (a >= 0 and a + 1 < n):
+            if ang(R[a % n], R[(a + 2) % n] if loop else R[a + 2]) < BACK * (nb(a) + nb(a + 1)):
+                return True
+    return False
+
+
 AXILLA = 0.4   # the upper arm's first 40% along its axis: the armpit fold (skin/weights, not the clip), reported apart
 
 
@@ -151,10 +181,13 @@ def pops(names, parent, Gs, keyed, loop):
         pj = parent[j]
         R = Gs[:, j, :3, :3] if pj < 0 else np.linalg.inv(Gs[:, pj, :3, :3]) @ Gs[:, j, :3, :3]
         st = ang(R[:-1], R[1:])
-        med = float(np.median(st))
+        med = spike_median(st)
         k = int(np.argmax(st))
-        if st[k] > SPIKE_DEG and st[k] > SPIKE_X * max(med, 1e-6):
-            out[n] = {"frame": k + 1, "step": round(float(st[k]), 2), "median": round(med, 3)}
+        # (the largest step over 3 deg and SPIKE_X times the moving median that is also out of line with its neighbours)
+        bad = [i for i in np.argsort(-st) if st[i] > SPIKE_DEG and st[i] > SPIKE_X * max(med, 1e-6)]
+        bad = next((i for i in bad if out_of_line(R, st, int(i), loop)), None)
+        if bad is not None:
+            out[n] = {"frame": int(bad) + 1, "step": round(float(st[bad]), 2), "median": round(med, 3)}
         if st[k] > worst[0]:
             worst = (float(st[k]), n, k + 1)
         if loop:

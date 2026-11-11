@@ -1,0 +1,3188 @@
+[
+ {
+  "clip": "idle_warden",
+  "family": "idle",
+  "plays_for": "idle, warden",
+  "layer": "full",
+  "length": 5.033,
+  "loop": true,
+  "weapon": "sword+shield",
+  "licence": "CC BY 4.0",
+  "made_by": "100STYLE Heavyset_ID, arms keyed",
+  "source": "100STYLE Heavyset_ID frames 1107-1409 (60 fps)",
+  "module": [
+   "flare_long_cut.py",
+   "idle.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "Sheath.Names(idle) via OwnClips.For: idle_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 0.0
+ },
+ {
+  "clip": "idle_arcanist",
+  "family": "idle",
+  "plays_for": "idle, arcanist",
+  "layer": "full",
+  "length": 5.0,
+  "loop": true,
+  "weapon": "staff",
+  "licence": "CC BY 4.0",
+  "made_by": "100STYLE Strutting_ID, arms keyed",
+  "source": "100STYLE HandsInPockets_ID frames 1297-1597 (60 fps)",
+  "module": [
+   "idle.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "Sheath.Names(idle) via OwnClips.For: idle_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 0.0
+ },
+ {
+  "clip": "idle_reaver",
+  "family": "idle",
+  "plays_for": "idle, reaver",
+  "layer": "full",
+  "length": 5.0,
+  "loop": true,
+  "weapon": "axe",
+  "licence": "CC BY 4.0",
+  "made_by": "100STYLE Angry_ID, arms keyed",
+  "source": "100STYLE Angry_ID frames 1055-1355 (60 fps)",
+  "module": [
+   "idle.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "Sheath.Names(idle) via OwnClips.For: idle_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 0.0
+ },
+ {
+  "clip": "idle_reaver_axes",
+  "family": "idle",
+  "plays_for": "idle, reaver with two axes",
+  "layer": "full",
+  "length": 5.0,
+  "loop": true,
+  "weapon": "axes",
+  "licence": "CC BY 4.0",
+  "made_by": "100STYLE Angry_ID (idle_reaver's base), arms keyed",
+  "source": "100STYLE Angry_ID frames 1055-1355 (60 fps)",
+  "module": [
+   "idle.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "Sheath.Names(idle) via OwnClips.For: idle_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 0.0
+ },
+ {
+  "clip": "idle_stalker",
+  "family": "idle",
+  "plays_for": "idle, stalker",
+  "layer": "full",
+  "length": 5.1,
+  "loop": true,
+  "weapon": "crossbow",
+  "licence": "CC BY 4.0",
+  "made_by": "100STYLE Crouched_ID, arms keyed",
+  "source": "100STYLE Crouched_ID frames 730-1036 (60 fps)",
+  "module": [
+   "idle.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "Sheath.Names(idle) via OwnClips.For: idle_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 0.0
+ },
+ {
+  "clip": "idle_stalker_daggers",
+  "family": "idle",
+  "plays_for": "idle, stalker with daggers",
+  "layer": "full",
+  "length": 5.1,
+  "loop": true,
+  "weapon": "daggers",
+  "licence": "CC BY 4.0",
+  "made_by": "100STYLE Crouched_ID (idle_stalker's base), arms keyed",
+  "source": "100STYLE Crouched_ID frames 730-1036 (60 fps)",
+  "module": [
+   "idle.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "Sheath.Names(idle) via OwnClips.For: idle_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 0.0
+ },
+ {
+  "clip": "idle_arcanist_wand",
+  "family": "idle",
+  "plays_for": "idle, arcanist with a wand",
+  "layer": "full",
+  "length": 5.0,
+  "loop": true,
+  "weapon": "wand",
+  "licence": "CC BY 4.0",
+  "made_by": "100STYLE HandsInPockets_ID (idle_arcanist's base), arms keye",
+  "source": "100STYLE HandsInPockets_ID frames 1297-1597 (60 fps)",
+  "module": [
+   "idle.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "Sheath.Names(idle) via OwnClips.For: idle_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 0.0
+ },
+ {
+  "clip": "idle_warden_break",
+  "family": "idle break",
+  "plays_for": "idle break, warden",
+  "layer": "full",
+  "length": 3.333,
+  "loop": false,
+  "weapon": "sword+shield",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "soul.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PlayerView:1318 Sheath.Pick(idle_{calling}, _break)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "idle_arcanist_break",
+  "family": "idle break",
+  "plays_for": "idle break, arcanist",
+  "layer": "full",
+  "length": 3.333,
+  "loop": false,
+  "weapon": "staff",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "soul.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PlayerView:1318 Sheath.Pick(idle_{calling}, _break)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "idle_reaver_break",
+  "family": "idle break",
+  "plays_for": "idle break, reaver",
+  "layer": "full",
+  "length": 3.333,
+  "loop": false,
+  "weapon": "axe",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "soul.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PlayerView:1318 Sheath.Pick(idle_{calling}, _break)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "idle_stalker_break",
+  "family": "idle break",
+  "plays_for": "idle break, stalker",
+  "layer": "full",
+  "length": 4.0,
+  "loop": false,
+  "weapon": "crossbow",
+  "licence": "own work",
+  "made_by": "keyed (100STYLE Followed for the glance)",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "soul.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PlayerView:1318 Sheath.Pick(idle_{calling}, _break)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "catch_breath",
+  "family": "idle",
+  "plays_for": "standing after a hard run",
+  "layer": "full",
+  "length": 4.133,
+  "loop": false,
+  "weapon": null,
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "soul.py"
+  ],
+  "game_refs": {
+   "src/Actors/PlayerView.cs": 1
+  },
+  "game_ref_patterns": [],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "run_warden",
+  "family": "run",
+  "plays_for": "run, sword and buckler",
+  "layer": "full",
+  "length": 0.7,
+  "loop": true,
+  "weapon": "sword+shield",
+  "licence": "own work",
+  "made_by": "keyed by stride",
+  "source": "keyed (tools/anim/gait.py)",
+  "module": [
+   "run.py",
+   "sprint_stop.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "Sheath.Names(run) via OwnClips.For (Jog_Fwd_Loop): run_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 5.1
+ },
+ {
+  "clip": "run_reaver",
+  "family": "run",
+  "plays_for": "run, axe",
+  "layer": "full",
+  "length": 0.633,
+  "loop": true,
+  "weapon": "axe",
+  "licence": "own work",
+  "made_by": "keyed by stride",
+  "source": "keyed (tools/anim/gait.py)",
+  "module": [
+   "run.py",
+   "sprint_stop.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "Sheath.Names(run) via OwnClips.For (Jog_Fwd_Loop): run_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 5.1
+ },
+ {
+  "clip": "run_reaver_axes",
+  "family": "run",
+  "plays_for": "run, two axes",
+  "layer": "full",
+  "length": 0.633,
+  "loop": true,
+  "weapon": "axes",
+  "licence": "own work",
+  "made_by": "keyed by stride",
+  "source": "keyed (tools/anim/gait.py)",
+  "module": [
+   "run.py",
+   "sprint_stop.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "Sheath.Names(run) via OwnClips.For (Jog_Fwd_Loop): run_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 5.1
+ },
+ {
+  "clip": "run_arcanist",
+  "family": "run",
+  "plays_for": "run, staff",
+  "layer": "full",
+  "length": 0.667,
+  "loop": true,
+  "weapon": "staff",
+  "licence": "own work",
+  "made_by": "keyed by stride",
+  "source": "keyed (tools/anim/gait.py)",
+  "module": [
+   "run.py",
+   "sprint_stop.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "Sheath.Names(run) via OwnClips.For (Jog_Fwd_Loop): run_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 5.1
+ },
+ {
+  "clip": "run_arcanist_wand",
+  "family": "run",
+  "plays_for": "run, wand",
+  "layer": "full",
+  "length": 0.667,
+  "loop": true,
+  "weapon": "wand",
+  "licence": "own work",
+  "made_by": "keyed by stride",
+  "source": "keyed (tools/anim/gait.py)",
+  "module": [
+   "run.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "Sheath.Names(run) via OwnClips.For (Jog_Fwd_Loop): run_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 5.1
+ },
+ {
+  "clip": "run_stalker",
+  "family": "run",
+  "plays_for": "run, crossbow",
+  "layer": "full",
+  "length": 0.667,
+  "loop": true,
+  "weapon": "crossbow",
+  "licence": "own work",
+  "made_by": "keyed by stride",
+  "source": "keyed (tools/anim/gait.py)",
+  "module": [
+   "run.py",
+   "sprint_stop.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "Sheath.Names(run) via OwnClips.For (Jog_Fwd_Loop): run_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 5.1
+ },
+ {
+  "clip": "run_stalker_daggers",
+  "family": "run",
+  "plays_for": "run, daggers",
+  "layer": "full",
+  "length": 0.667,
+  "loop": true,
+  "weapon": "daggers",
+  "licence": "own work",
+  "made_by": "keyed by stride",
+  "source": "keyed (tools/anim/gait.py)",
+  "module": [
+   "run.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "Sheath.Names(run) via OwnClips.For (Jog_Fwd_Loop): run_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 5.1
+ },
+ {
+  "clip": "sprint_warden",
+  "family": "sprint",
+  "plays_for": "sprint art, momentum: warden",
+  "layer": "full",
+  "length": 0.7,
+  "loop": true,
+  "weapon": "sword+shield",
+  "licence": "own work",
+  "made_by": "keyed by stride, in step with the run",
+  "source": "keyed (tools/anim/gait.py)",
+  "module": [
+   "sprint_stop.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PlayerView:228/775 \"sprint\"+run[3:]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 7.395
+ },
+ {
+  "clip": "stop_warden_l",
+  "family": "stop",
+  "plays_for": "stopping, left foot down: warden",
+  "layer": "full",
+  "length": 0.8,
+  "loop": false,
+  "weapon": "sword+shield",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "sprint_stop.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PlayerView:1297 Sheath.Pick(stop_{calling}, _l/_r)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "stop_warden_r",
+  "family": "stop",
+  "plays_for": "stopping, right foot down: warden",
+  "layer": "full",
+  "length": 0.8,
+  "loop": false,
+  "weapon": "sword+shield",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "sprint_stop.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PlayerView:1297 Sheath.Pick(stop_{calling}, _l/_r)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "sprint_arcanist",
+  "family": "sprint",
+  "plays_for": "sprint art, momentum: arcanist",
+  "layer": "full",
+  "length": 0.667,
+  "loop": true,
+  "weapon": "staff",
+  "licence": "own work",
+  "made_by": "keyed by stride, in step with the run",
+  "source": "keyed (tools/anim/gait.py)",
+  "module": [
+   "sprint_stop.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PlayerView:228/775 \"sprint\"+run[3:]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 7.395
+ },
+ {
+  "clip": "sprint_arcanist_wand",
+  "family": "sprint",
+  "plays_for": "sprint art, momentum: arcanist with wand",
+  "layer": "full",
+  "length": 0.667,
+  "loop": true,
+  "weapon": "wand",
+  "licence": "own work",
+  "made_by": "keyed by stride, in step with the run",
+  "source": "keyed (tools/anim/gait.py)",
+  "module": [
+   "sprint_stop.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PlayerView:228/775 \"sprint\"+run[3:]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 7.395
+ },
+ {
+  "clip": "stop_arcanist_l",
+  "family": "stop",
+  "plays_for": "stopping, left foot down: arcanist",
+  "layer": "full",
+  "length": 0.8,
+  "loop": false,
+  "weapon": "staff",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "sprint_stop.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PlayerView:1297 Sheath.Pick(stop_{calling}, _l/_r)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "stop_arcanist_r",
+  "family": "stop",
+  "plays_for": "stopping, right foot down: arcanist",
+  "layer": "full",
+  "length": 0.8,
+  "loop": false,
+  "weapon": "staff",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "sprint_stop.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PlayerView:1297 Sheath.Pick(stop_{calling}, _l/_r)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "sprint_reaver",
+  "family": "sprint",
+  "plays_for": "sprint art, momentum: reaver",
+  "layer": "full",
+  "length": 0.633,
+  "loop": true,
+  "weapon": "axe",
+  "licence": "own work",
+  "made_by": "keyed by stride, in step with the run",
+  "source": "keyed (tools/anim/gait.py)",
+  "module": [
+   "sprint_stop.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PlayerView:228/775 \"sprint\"+run[3:]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 7.395
+ },
+ {
+  "clip": "sprint_reaver_axes",
+  "family": "sprint",
+  "plays_for": "sprint art, momentum: reaver with axes",
+  "layer": "full",
+  "length": 0.633,
+  "loop": true,
+  "weapon": "axes",
+  "licence": "own work",
+  "made_by": "keyed by stride, in step with the run",
+  "source": "keyed (tools/anim/gait.py)",
+  "module": [
+   "sprint_stop.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PlayerView:228/775 \"sprint\"+run[3:]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 7.395
+ },
+ {
+  "clip": "stop_reaver_l",
+  "family": "stop",
+  "plays_for": "stopping, left foot down: reaver",
+  "layer": "full",
+  "length": 0.8,
+  "loop": false,
+  "weapon": "axe",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "sprint_stop.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PlayerView:1297 Sheath.Pick(stop_{calling}, _l/_r)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "stop_reaver_r",
+  "family": "stop",
+  "plays_for": "stopping, right foot down: reaver",
+  "layer": "full",
+  "length": 0.8,
+  "loop": false,
+  "weapon": "axe",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "sprint_stop.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PlayerView:1297 Sheath.Pick(stop_{calling}, _l/_r)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "sprint_stalker",
+  "family": "sprint",
+  "plays_for": "sprint art, momentum: stalker",
+  "layer": "full",
+  "length": 0.667,
+  "loop": true,
+  "weapon": "crossbow",
+  "licence": "own work",
+  "made_by": "keyed by stride, in step with the run",
+  "source": "keyed (tools/anim/gait.py)",
+  "module": [
+   "sprint_stop.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PlayerView:228/775 \"sprint\"+run[3:]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 7.395
+ },
+ {
+  "clip": "sprint_stalker_daggers",
+  "family": "sprint",
+  "plays_for": "sprint art, momentum: stalker with daggers",
+  "layer": "full",
+  "length": 0.667,
+  "loop": true,
+  "weapon": "daggers",
+  "licence": "own work",
+  "made_by": "keyed by stride, in step with the run",
+  "source": "keyed (tools/anim/gait.py)",
+  "module": [
+   "sprint_stop.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PlayerView:228/775 \"sprint\"+run[3:]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 7.395
+ },
+ {
+  "clip": "stop_stalker_l",
+  "family": "stop",
+  "plays_for": "stopping, left foot down: stalker",
+  "layer": "full",
+  "length": 0.8,
+  "loop": false,
+  "weapon": "crossbow",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "sprint_stop.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PlayerView:1297 Sheath.Pick(stop_{calling}, _l/_r)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "stop_stalker_r",
+  "family": "stop",
+  "plays_for": "stopping, right foot down: stalker",
+  "layer": "full",
+  "length": 0.8,
+  "loop": false,
+  "weapon": "crossbow",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "sprint_stop.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PlayerView:1297 Sheath.Pick(stop_{calling}, _l/_r)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "dash",
+  "family": "art",
+  "plays_for": "the dash",
+  "layer": "full",
+  "length": 0.467,
+  "loop": false,
+  "weapon": null,
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "actions.py"
+  ],
+  "game_refs": {
+   "data/content/glyphs.json": 1,
+   "data/content/items.json": 1,
+   "data/content/lamps.json": 2,
+   "data/content/lamps_v2.json": 4,
+   "data/content/sounds.json": 2,
+   "logic/Play/Teach.cs": 2,
+   "logic/Play/Zones/Prologue.Day.cs": 5,
+   "logic/Play/Zones/Prologue.cs": 13,
+   "logic/Sim/Battle.cs": 2,
+   "logic/Sim/BoardRules.cs": 1,
+   "logic/Sim/StalkerLamps.cs": 1,
+   "src/Actors/OwnClips.cs": 1,
+   "src/Actors/PlayerView.cs": 1,
+   "src/Audio/Sfx.cs": 1,
+   "src/Game/Game.cs": 3,
+   "src/Game/GameTeach.cs": 3,
+   "src/Ui/DgPanel.cs": 2,
+   "src/Ui/DgSmall.cs": 1,
+   "src/Ui/HudPin.cs": 1,
+   "src/Ui/Instrument.cs": 2
+  },
+  "game_ref_patterns": [
+   "OwnClips.For: Roll/Dodge_Forward (PlayerView full node)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "leap",
+  "family": "art",
+  "plays_for": "the Crashing Leap art",
+  "layer": "full",
+  "length": 1.1,
+  "loop": false,
+  "weapon": null,
+  "licence": "Mixamo (Adobe)",
+  "made_by": "Mixamo 'Standing Melee Run Jump Attack', retimed to the art'",
+  "source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistribut",
+  "module": [
+   "generated.py"
+  ],
+  "game_refs": {
+   "data/content/archetypes.json": 1,
+   "data/content/glyphs.json": 1,
+   "data/content/items.json": 1,
+   "data/content/lamps.json": 1,
+   "data/content/lamps_v2.json": 1,
+   "logic/Content/Abilities.cs": 2,
+   "logic/Sim/FlareReaver.cs": 5,
+   "logic/Sim/FlareStaged.cs": 2,
+   "src/Actors/OwnClips.cs": 1,
+   "src/Fx/BattleFx.cs": 1,
+   "src/Game/Game.cs": 1,
+   "src/Game/WorldScene.cs": 1
+  },
+  "game_ref_patterns": [
+   "OwnClips.For: Jump_Full_Short (PlayerView:1024)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 0.0
+ },
+ {
+  "clip": "vault",
+  "family": "art",
+  "plays_for": "the vault art moving (0.32 s)",
+  "layer": "full",
+  "length": 0.533,
+  "loop": false,
+  "weapon": null,
+  "licence": "own work",
+  "made_by": "keyed: a split leap (Mixamo's 'Jumping Over Into Combat' rej",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "arts.py"
+  ],
+  "game_refs": {
+   "balance/Program.cs": 3,
+   "data/content/concerns.json": 1,
+   "data/content/dialogue.json": 37,
+   "data/content/items.json": 1,
+   "data/content/lamps.json": 6,
+   "data/content/lamps_v2.json": 6,
+   "data/content/quests.json": 2,
+   "data/content/rules.json": 1,
+   "data/zones/verge/zone.json": 1,
+   "logic/Content/Abilities.cs": 2,
+   "logic/Play/Journey.Day.cs": 1,
+   "logic/Play/StoryFights.cs": 7,
+   "logic/Play/Zones/Verge.cs": 16,
+   "logic/Sim/FlareReaver.cs": 4,
+   "logic/World/Chapter.cs": 1,
+   "src/Actors/OwnClips.cs": 1,
+   "src/Audio/Sfx.cs": 1,
+   "src/Fx/BattleFx.cs": 1
+  },
+  "game_ref_patterns": [
+   "OwnClips.For: Jump_Start (PlayerView:1024)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "vault_back",
+  "family": "art",
+  "plays_for": "the vault art standing, a spring back (0.32 s)",
+  "layer": "full",
+  "length": 1.267,
+  "loop": false,
+  "weapon": null,
+  "licence": "own work",
+  "made_by": "keyed: a tucked back spring into a three-point landing",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "arts.py"
+  ],
+  "game_refs": {
+   "src/Actors/PlayerView.cs": 1
+  },
+  "game_ref_patterns": [],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "bull_rush",
+  "family": "art",
+  "plays_for": "the bull rush art (0.4 s)",
+  "layer": "full",
+  "length": 1.0,
+  "loop": false,
+  "weapon": "sword+shield",
+  "licence": "own work",
+  "made_by": "keyed: one charging stride cycle (the gait solver) into a pl",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "arts.py"
+  ],
+  "game_refs": {
+   "data/content/items.json": 1,
+   "data/content/lamps.json": 5,
+   "data/content/lamps_v2.json": 5,
+   "logic/Content/Abilities.cs": 2,
+   "src/Actors/OwnClips.cs": 1,
+   "src/Audio/Sfx.cs": 1,
+   "src/Fx/BattleFx.cs": 1,
+   "src/Game/Game.cs": 1,
+   "src/Game/WorldScene.cs": 1
+  },
+  "game_ref_patterns": [
+   "OwnClips.For: Shield_Dash"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "chain_haul",
+  "family": "art",
+  "plays_for": "hauled in on the chain, held until she arrives",
+  "layer": "full",
+  "length": 0.8,
+  "loop": false,
+  "weapon": "axe",
+  "licence": "own work",
+  "made_by": "keyed: yanked off her feet and flown in, axe cocked",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "arts.py"
+  ],
+  "game_refs": {
+   "src/Actors/OwnClips.cs": 1
+  },
+  "game_ref_patterns": [
+   "OwnClips.For: Sword_Dash"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "chain_strike",
+  "family": "art",
+  "plays_for": "the blow she lands with off the chain",
+  "layer": "full",
+  "length": 0.9,
+  "loop": false,
+  "weapon": "axe",
+  "licence": "own work",
+  "made_by": "keyed: feet down, axe over and down two-handed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "arts.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [],
+  "cine_refs": {},
+  "dead": true,
+  "contact_s": 0.1,
+  "speed": null
+ },
+ {
+  "clip": "sword_back",
+  "family": "attack",
+  "plays_for": "sword swing, first (left to right)",
+  "layer": "upper",
+  "length": 0.8,
+  "loop": false,
+  "weapon": "sword+shield",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "sword.py"
+  ],
+  "game_refs": {
+   "src/Actors/HerClips.cs": 1
+  },
+  "game_ref_patterns": [
+   "HerClips.Swings(kind) -> UpperHer (PlayerView:1060)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": 0.0833333333333333,
+  "speed": null
+ },
+ {
+  "clip": "sword_fore",
+  "family": "attack",
+  "plays_for": "sword swing, second (right to left)",
+  "layer": "upper",
+  "length": 0.8,
+  "loop": false,
+  "weapon": "sword+shield",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "sword.py"
+  ],
+  "game_refs": {
+   "src/Actors/HerClips.cs": 1
+  },
+  "game_ref_patterns": [
+   "HerClips.Swings(kind) -> UpperHer (PlayerView:1060)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": 0.0833333333333333,
+  "speed": null
+ },
+ {
+  "clip": "sword_heavy",
+  "family": "attack",
+  "plays_for": "sword, wide arc",
+  "layer": "upper",
+  "length": 1.0,
+  "loop": false,
+  "weapon": "sword+shield",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "sword.py"
+  ],
+  "game_refs": {
+   "src/Actors/HerClips.cs": 1
+  },
+  "game_ref_patterns": [
+   "HerClips.Heavy(kind) -> UpperHer (PlayerView:1052,1063)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": 0.1,
+  "speed": null
+ },
+ {
+  "clip": "axe_back",
+  "family": "attack",
+  "plays_for": "axe swing, first",
+  "layer": "upper",
+  "length": 0.867,
+  "loop": false,
+  "weapon": "axe",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "axe.py"
+  ],
+  "game_refs": {
+   "src/Actors/HerClips.cs": 1
+  },
+  "game_ref_patterns": [
+   "HerClips.Swings(kind) -> UpperHer (PlayerView:1060)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": 0.0833333333333333,
+  "speed": null
+ },
+ {
+  "clip": "axe_fore",
+  "family": "attack",
+  "plays_for": "axe swing, second",
+  "layer": "upper",
+  "length": 0.867,
+  "loop": false,
+  "weapon": "axe",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "axe.py"
+  ],
+  "game_refs": {
+   "src/Actors/HerClips.cs": 1
+  },
+  "game_ref_patterns": [
+   "HerClips.Swings(kind) -> UpperHer (PlayerView:1060)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": 0.0833333333333333,
+  "speed": null
+ },
+ {
+  "clip": "axe_heavy",
+  "family": "attack",
+  "plays_for": "axe, wide arc",
+  "layer": "upper",
+  "length": 1.067,
+  "loop": false,
+  "weapon": "axe",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "axe.py"
+  ],
+  "game_refs": {
+   "src/Actors/HerClips.cs": 1
+  },
+  "game_ref_patterns": [
+   "HerClips.Heavy(kind) -> UpperHer (PlayerView:1052,1063)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": 0.1,
+  "speed": null
+ },
+ {
+  "clip": "axes_left",
+  "family": "attack",
+  "plays_for": "two axes, left hand (left to right)",
+  "layer": "upper",
+  "length": 0.8,
+  "loop": false,
+  "weapon": "axes",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "axe.py"
+  ],
+  "game_refs": {
+   "src/Actors/HerClips.cs": 1
+  },
+  "game_ref_patterns": [
+   "HerClips.Swings(kind) -> UpperHer (PlayerView:1060)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": 0.0833333333333333,
+  "speed": null
+ },
+ {
+  "clip": "axes_right",
+  "family": "attack",
+  "plays_for": "two axes, right hand (right to left)",
+  "layer": "upper",
+  "length": 0.8,
+  "loop": false,
+  "weapon": "axes",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "axe.py"
+  ],
+  "game_refs": {
+   "src/Actors/HerClips.cs": 1
+  },
+  "game_ref_patterns": [
+   "HerClips.Swings(kind) -> UpperHer (PlayerView:1060)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": 0.0833333333333333,
+  "speed": null
+ },
+ {
+  "clip": "axes_heavy",
+  "family": "attack",
+  "plays_for": "two axes, wide arc",
+  "layer": "upper",
+  "length": 1.0,
+  "loop": false,
+  "weapon": "axes",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "axe.py"
+  ],
+  "game_refs": {
+   "src/Actors/HerClips.cs": 1
+  },
+  "game_ref_patterns": [
+   "HerClips.Heavy(kind) -> UpperHer (PlayerView:1052,1063)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": 0.1,
+  "speed": null
+ },
+ {
+  "clip": "daggers_back",
+  "family": "attack",
+  "plays_for": "daggers, first",
+  "layer": "upper",
+  "length": 0.533,
+  "loop": false,
+  "weapon": "daggers",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "actions.py"
+  ],
+  "game_refs": {
+   "src/Actors/HerClips.cs": 1
+  },
+  "game_ref_patterns": [
+   "HerClips.Swings(kind) -> UpperHer (PlayerView:1060)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": 0.0666666666666667,
+  "speed": null
+ },
+ {
+  "clip": "daggers_fore",
+  "family": "attack",
+  "plays_for": "daggers, second",
+  "layer": "upper",
+  "length": 0.533,
+  "loop": false,
+  "weapon": "daggers",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "actions.py"
+  ],
+  "game_refs": {
+   "src/Actors/HerClips.cs": 1
+  },
+  "game_ref_patterns": [
+   "HerClips.Swings(kind) -> UpperHer (PlayerView:1060)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": 0.0666666666666667,
+  "speed": null
+ },
+ {
+  "clip": "daggers_heavy",
+  "family": "attack",
+  "plays_for": "daggers, wide arc",
+  "layer": "upper",
+  "length": 0.667,
+  "loop": false,
+  "weapon": "daggers",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "actions.py"
+  ],
+  "game_refs": {
+   "src/Actors/HerClips.cs": 1
+  },
+  "game_ref_patterns": [
+   "HerClips.Heavy(kind) -> UpperHer (PlayerView:1052,1063)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": 0.1,
+  "speed": null
+ },
+ {
+  "clip": "throw",
+  "family": "attack",
+  "plays_for": "a knife or the disc thrown, the chain cast",
+  "layer": "upper",
+  "length": 0.7,
+  "loop": false,
+  "weapon": "daggers",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "actions.py"
+  ],
+  "game_refs": {
+   "src/Actors/OwnClips.cs": 1,
+   "src/Actors/PlayerView.cs": 2
+  },
+  "game_ref_patterns": [
+   "OwnClips.For: OverhandThrow; PlayerView:817 UpperHer(throw)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": 0.116666666666667,
+  "speed": null
+ },
+ {
+  "clip": "cast_bolt",
+  "family": "cast",
+  "plays_for": "the staff's spell loosed",
+  "layer": "upper",
+  "length": 0.667,
+  "loop": false,
+  "weapon": "staff",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "actions.py"
+  ],
+  "game_refs": {
+   "src/Actors/OwnClips.cs": 1,
+   "src/Actors/PlayerView.cs": 2
+  },
+  "game_ref_patterns": [
+   "OwnClips.For: Spell_Simple_Shoot; PlayerView:831 staff"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": 0.0,
+  "speed": null
+ },
+ {
+  "clip": "cast_flick",
+  "family": "cast",
+  "plays_for": "the wand's spell loosed",
+  "layer": "upper",
+  "length": 0.6,
+  "loop": false,
+  "weapon": "wand",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "actions.py"
+  ],
+  "game_refs": {
+   "src/Actors/PlayerView.cs": 1
+  },
+  "game_ref_patterns": [],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": 0.0,
+  "speed": null
+ },
+ {
+  "clip": "cast_raise",
+  "family": "cast",
+  "plays_for": "the arcanist's heavy, creation",
+  "layer": "upper",
+  "length": 0.933,
+  "loop": false,
+  "weapon": "staff",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "actions.py"
+  ],
+  "game_refs": {
+   "src/Actors/OwnClips.cs": 1
+  },
+  "game_ref_patterns": [
+   "OwnClips.For: Spell_Simple_Enter/Spellcast_*; cine c01"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": 0.333333333333333,
+  "speed": null
+ },
+ {
+  "clip": "crossbow_shoot",
+  "family": "attack",
+  "plays_for": "a bolt loosed",
+  "layer": "upper",
+  "length": 0.6,
+  "loop": false,
+  "weapon": "crossbow",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "actions.py"
+  ],
+  "game_refs": {
+   "src/Actors/OwnClips.cs": 1,
+   "src/Actors/PlayerView.cs": 1
+  },
+  "game_ref_patterns": [
+   "OwnClips.For: Pistol_Shoot; PlayerView:831"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": 0.0,
+  "speed": null
+ },
+ {
+  "clip": "warcry",
+  "family": "art",
+  "plays_for": "warcry, sprint, cinder trail, wraith walk",
+  "layer": "upper",
+  "length": 0.8,
+  "loop": false,
+  "weapon": null,
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "actions.py"
+  ],
+  "game_refs": {
+   "data/content/archetypes.json": 1,
+   "data/content/lamps.json": 3,
+   "data/content/lamps_v2.json": 3,
+   "logic/Content/Abilities.cs": 1,
+   "logic/Sim/Arts.cs": 1,
+   "src/Actors/OwnClips.cs": 1,
+   "src/Actors/PlayerView.cs": 1,
+   "src/Fx/BattleFx.cs": 1,
+   "src/Ui/GameHud.cs": 1
+  },
+  "game_ref_patterns": [
+   "OwnClips.For: Punch_Cross/Taunt; PlayerView:820"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "hit",
+  "family": "reaction",
+  "plays_for": "struck",
+  "layer": "upper",
+  "length": 0.6,
+  "loop": false,
+  "weapon": null,
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "actions.py"
+  ],
+  "game_refs": {
+   "data/cinematics/c01.json": 1,
+   "data/cinematics/c02w.json": 1,
+   "data/cinematics/c03.json": 1,
+   "data/cinematics/c03w.json": 1,
+   "data/content/items.json": 10,
+   "data/content/loot.json": 1,
+   "data/content/skills.json": 16,
+   "data/content/telegraphs.json": 1,
+   "data/storybook/sb00.json": 1,
+   "logic/Sim/ProcsJson.cs": 4,
+   "src/Actors/Beasts.cs": 3,
+   "src/Actors/CrowdView.cs": 6,
+   "src/Actors/OwnClips.cs": 1,
+   "src/Actors/PlayerView.cs": 1,
+   "src/Actors/Vat.cs": 1,
+   "src/Actors/Visuals.cs": 1,
+   "src/Audio/Sfx.cs": 2
+  },
+  "game_ref_patterns": [
+   "OwnClips.For: Hit_A/B/Chest/Head (PlayerView Upper Hit_A)"
+  ],
+  "cine_refs": {
+   "cinematics\\c01": 1,
+   "cinematics\\c02w": 1,
+   "cinematics\\c03": 1,
+   "cinematics\\c03w": 1
+  },
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "death",
+  "family": "death",
+  "plays_for": "falls (struck from behind, or by poison or fire)",
+  "layer": "full",
+  "length": 1.5,
+  "loop": false,
+  "weapon": null,
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "actions.py"
+  ],
+  "game_refs": {
+   "logic/Play/Journey.cs": 1,
+   "logic/Play/Zones/Waystation.cs": 1,
+   "src/Actors/OwnClips.cs": 1,
+   "src/Audio/Sfx.cs": 1,
+   "src/Game/Game.cs": 3
+  },
+  "game_ref_patterns": [
+   "OwnClips.For: Death_A/B/Death01 (Arms.Die)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "death_back",
+  "family": "death",
+  "plays_for": "falls (struck from in front): onto her back",
+  "layer": "full",
+  "length": 1.333,
+  "loop": false,
+  "weapon": null,
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "actions.py"
+  ],
+  "game_refs": {
+   "src/Actors/PlayerView.Knock.cs": 2,
+   "src/Actors/PlayerView.cs": 3
+  },
+  "game_ref_patterns": [],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "death_back_coals",
+  "family": "cinematic",
+  "plays_for": "C01's lying still: death_back's end, the left cheek down, face to the coals",
+  "layer": "full",
+  "length": 0.2,
+  "loop": false,
+  "weapon": null,
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "actions.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [],
+  "cine_refs": {},
+  "dead": true,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "lie_side_wake",
+  "family": "cinematic",
+  "plays_for": "C01: on her side, up onto the elbow",
+  "layer": "full",
+  "length": 7.0,
+  "loop": false,
+  "weapon": null,
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim/clips/story.py)",
+  "module": [
+   "story.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [],
+  "cine_refs": {},
+  "dead": true,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "sit_back_heels",
+  "family": "cinematic",
+  "plays_for": "C01: from the elbow to kneeling on her heels",
+  "layer": "full",
+  "length": 6.367,
+  "loop": false,
+  "weapon": null,
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim/clips/story.py)",
+  "module": [
+   "story.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [],
+  "cine_refs": {},
+  "dead": true,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "reach_coals",
+  "family": "cinematic",
+  "plays_for": "C01: kneeling, a hand held out over the fire",
+  "layer": "full",
+  "length": 4.2,
+  "loop": false,
+  "weapon": null,
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "story.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [],
+  "cine_refs": {},
+  "dead": true,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "nod",
+  "family": "gesture",
+  "plays_for": "cinematics: a nod, laid over any pose (Gestures)",
+  "layer": "gesture",
+  "length": 1.033,
+  "loop": false,
+  "weapon": null,
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "story.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [],
+  "cine_refs": {},
+  "dead": true,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "exhale",
+  "family": "gesture",
+  "plays_for": "cinematics: the long breath out, held, laid over any pose",
+  "layer": "gesture",
+  "length": 1.5,
+  "loop": false,
+  "weapon": null,
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "story.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [],
+  "cine_refs": {},
+  "dead": true,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "shiver",
+  "family": "gesture",
+  "plays_for": "cinematics: a shiver, laid over any pose",
+  "layer": "gesture",
+  "length": 1.067,
+  "loop": false,
+  "weapon": null,
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "story.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [],
+  "cine_refs": {},
+  "dead": true,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "get_up",
+  "family": "get-up",
+  "plays_for": "up again",
+  "layer": "full",
+  "length": 2.033,
+  "loop": false,
+  "weapon": null,
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "actions.py"
+  ],
+  "game_refs": {
+   "src/Actors/OwnClips.cs": 1
+  },
+  "game_ref_patterns": [
+   "OwnClips.For: Lie_StandUp/LayToIdle (PlayerView:852)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "sit_log",
+  "family": "cinematic",
+  "plays_for": "the title: by the fire",
+  "layer": "full",
+  "length": 8.0,
+  "loop": true,
+  "weapon": null,
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "soul.py"
+  ],
+  "game_refs": {
+   "src/Actors/OwnClips.cs": 1
+  },
+  "game_ref_patterns": [
+   "OwnClips.For: Sit_Chair_Idle/Sitting_Idle_Loop (title scene GameFront:67)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "warden_show",
+  "family": "show",
+  "plays_for": "creation flourish",
+  "layer": "full",
+  "length": 2.333,
+  "loop": false,
+  "weapon": "sword+shield",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "soul.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PersonView:298 {calling}_show; OwnClips.For Sword_Block"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "arcanist_show",
+  "family": "show",
+  "plays_for": "creation flourish",
+  "layer": "full",
+  "length": 2.6,
+  "loop": false,
+  "weapon": "staff",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "soul.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PersonView:298 {calling}_show; OwnClips.For Sword_Block"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "reaver_show",
+  "family": "show",
+  "plays_for": "creation flourish",
+  "layer": "full",
+  "length": 2.4,
+  "loop": false,
+  "weapon": "axe",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "soul.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PersonView:298 {calling}_show; OwnClips.For Sword_Block"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "stalker_show",
+  "family": "show",
+  "plays_for": "creation flourish",
+  "layer": "full",
+  "length": 3.0,
+  "loop": false,
+  "weapon": "crossbow",
+  "licence": "own work",
+  "made_by": "keyed",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "soul.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PersonView:298 {calling}_show; OwnClips.For Sword_Block"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "axe_fore_run",
+  "family": "attack",
+  "plays_for": "(not in the plan)",
+  "layer": "upper",
+  "length": 0.867,
+  "loop": false,
+  "weapon": "axe",
+  "licence": "own work",
+  "made_by": "",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "axe.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PlayerView RunVariant: stance clip + _run while moving"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": 0.0833333333333333,
+  "speed": null
+ },
+ {
+  "clip": "axe_heavy_run",
+  "family": "attack",
+  "plays_for": "(not in the plan)",
+  "layer": "upper",
+  "length": 1.067,
+  "loop": false,
+  "weapon": "axe",
+  "licence": "own work",
+  "made_by": "",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "axe.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PlayerView RunVariant: stance clip + _run while moving"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": 0.1,
+  "speed": null
+ },
+ {
+  "clip": "cup_hands",
+  "family": "cinematic",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 3.5,
+  "loop": false,
+  "weapon": null,
+  "licence": "own work",
+  "made_by": "",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "story.py"
+  ],
+  "game_refs": {
+   "data/cinematics/c03.json": 1,
+   "data/cinematics/c03w.json": 1
+  },
+  "game_ref_patterns": [],
+  "cine_refs": {
+   "cinematics\\c03": 1,
+   "cinematics\\c03w": 1
+  },
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "flare_burns_twice",
+  "family": "flare",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 2.0,
+  "loop": false,
+  "weapon": "staff",
+  "licence": "own work",
+  "made_by": "",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "flare.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [],
+  "cine_refs": {},
+  "dead": true,
+  "contact_s": 0.666666666666667,
+  "speed": null
+ },
+ {
+  "clip": "flare_long_cut",
+  "family": "flare",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 2.667,
+  "loop": false,
+  "weapon": "sunder",
+  "licence": "own work",
+  "made_by": "",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "flare_long_cut.py"
+  ],
+  "game_refs": {
+   "data/content/lamps.json": 1,
+   "data/content/lamps_v2.json": 1
+  },
+  "game_ref_patterns": [],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": 0.545,
+  "speed": null
+ },
+ {
+  "clip": "flask_drink",
+  "family": "cinematic",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 11.633,
+  "loop": false,
+  "weapon": null,
+  "licence": "CC BY 4.0",
+  "made_by": "",
+  "source": "keyed over 100STYLE Neutral_ID frames 655-1368 (60 fps)",
+  "module": [
+   "story_c04.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [],
+  "cine_refs": {},
+  "dead": true,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "flinch",
+  "family": "reaction",
+  "plays_for": "(not in the plan)",
+  "layer": "gesture",
+  "length": 0.467,
+  "loop": false,
+  "weapon": null,
+  "licence": "own work",
+  "made_by": "",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "story.py"
+  ],
+  "game_refs": {
+   "src/Actors/PlayerView.cs": 2
+  },
+  "game_ref_patterns": [],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "get_up_back",
+  "family": "get-up",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 1.667,
+  "loop": false,
+  "weapon": null,
+  "licence": "own work",
+  "made_by": "",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "actions.py"
+  ],
+  "game_refs": {
+   "src/Actors/PlayerView.Knock.cs": 2,
+   "src/Actors/PlayerView.cs": 2
+  },
+  "game_ref_patterns": [],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "idle_arcanist_staff_town",
+  "family": "town idle",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 5.0,
+  "loop": true,
+  "weapon": "staff",
+  "licence": "CC BY 4.0",
+  "made_by": "",
+  "source": "100STYLE GracefulArms_ID frames 935-1235 (60 fps)",
+  "module": [
+   "idle.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "Sheath.Names(idle) via OwnClips.For: idle_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 0.0
+ },
+ {
+  "clip": "idle_arcanist_town",
+  "family": "town idle",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 5.0,
+  "loop": true,
+  "weapon": "",
+  "licence": "CC BY 4.0",
+  "made_by": "",
+  "source": "100STYLE GracefulArms_ID frames 935-1235 (60 fps)",
+  "module": [
+   "idle.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "Sheath.Names(idle) via OwnClips.For: idle_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 0.0
+ },
+ {
+  "clip": "idle_reaver_town",
+  "family": "town idle",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 5.0,
+  "loop": true,
+  "weapon": "",
+  "licence": "CC BY 4.0",
+  "made_by": "",
+  "source": "100STYLE Proud_ID frames 843-1143 (60 fps)",
+  "module": [
+   "idle.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "Sheath.Names(idle) via OwnClips.For: idle_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 0.0
+ },
+ {
+  "clip": "idle_stalker_town",
+  "family": "town idle",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 5.2,
+  "loop": true,
+  "weapon": "",
+  "licence": "CC BY 4.0",
+  "made_by": "",
+  "source": "100STYLE HandsInPockets_ID frames 611-923 (60 fps)",
+  "module": [
+   "idle.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "Sheath.Names(idle) via OwnClips.For: idle_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 0.0
+ },
+ {
+  "clip": "idle_warden_town",
+  "family": "town idle",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 5.333,
+  "loop": true,
+  "weapon": "",
+  "licence": "CC BY 4.0",
+  "made_by": "",
+  "source": "100STYLE WiggleHips_ID frames 1458-1778 (60 fps)",
+  "module": [
+   "idle.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "Sheath.Names(idle) via OwnClips.For: idle_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 0.0
+ },
+ {
+  "clip": "kneel_to_stand_snap",
+  "family": "cinematic",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 3.3,
+  "loop": false,
+  "weapon": null,
+  "licence": "own work",
+  "made_by": "",
+  "source": "keyed (tools/anim/clips/story.py)",
+  "module": [
+   "story.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [],
+  "cine_refs": {},
+  "dead": true,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "letter",
+  "family": "cinematic",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 7.667,
+  "loop": false,
+  "weapon": null,
+  "licence": "own work",
+  "made_by": "",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "story.py"
+  ],
+  "game_refs": {
+   "data/content/dialogue.json": 5,
+   "data/content/quests.json": 1
+  },
+  "game_ref_patterns": [],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "run_arcanist_town",
+  "family": "run",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 0.667,
+  "loop": true,
+  "weapon": "",
+  "licence": "own work",
+  "made_by": "",
+  "source": "keyed (tools/anim/gait.py)",
+  "module": [
+   "run.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "Sheath.Names(run) via OwnClips.For (Jog_Fwd_Loop): run_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 5.1
+ },
+ {
+  "clip": "run_reaver_town",
+  "family": "run",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 0.633,
+  "loop": true,
+  "weapon": "",
+  "licence": "own work",
+  "made_by": "",
+  "source": "keyed (tools/anim/gait.py)",
+  "module": [
+   "run.py",
+   "sprint_stop.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "Sheath.Names(run) via OwnClips.For (Jog_Fwd_Loop): run_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 5.1
+ },
+ {
+  "clip": "run_stalker_town",
+  "family": "run",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 0.667,
+  "loop": true,
+  "weapon": "",
+  "licence": "own work",
+  "made_by": "",
+  "source": "keyed (tools/anim/gait.py)",
+  "module": [
+   "run.py",
+   "sprint_stop.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "Sheath.Names(run) via OwnClips.For (Jog_Fwd_Loop): run_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 5.1
+ },
+ {
+  "clip": "run_warden_town",
+  "family": "run",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 0.7,
+  "loop": true,
+  "weapon": "",
+  "licence": "own work",
+  "made_by": "",
+  "source": "keyed (tools/anim/gait.py)",
+  "module": [
+   "run.py",
+   "sprint_stop.py"
+  ],
+  "game_refs": {
+   "logic/Play/SheathHang.cs": 1
+  },
+  "game_ref_patterns": [
+   "Sheath.Names(run) via OwnClips.For (Jog_Fwd_Loop): run_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 5.1
+ },
+ {
+  "clip": "sprint_arcanist_town",
+  "family": "sprint",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 0.667,
+  "loop": true,
+  "weapon": "",
+  "licence": "own work",
+  "made_by": "",
+  "source": "keyed (tools/anim/gait.py)",
+  "module": [
+   "sprint_stop.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PlayerView:228/775 \"sprint\"+run[3:]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 7.395
+ },
+ {
+  "clip": "sprint_reaver_town",
+  "family": "sprint",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 0.633,
+  "loop": true,
+  "weapon": "",
+  "licence": "own work",
+  "made_by": "",
+  "source": "keyed (tools/anim/gait.py)",
+  "module": [
+   "sprint_stop.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PlayerView:228/775 \"sprint\"+run[3:]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 7.395
+ },
+ {
+  "clip": "sprint_stalker_town",
+  "family": "sprint",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 0.667,
+  "loop": true,
+  "weapon": "",
+  "licence": "own work",
+  "made_by": "",
+  "source": "keyed (tools/anim/gait.py)",
+  "module": [
+   "sprint_stop.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PlayerView:228/775 \"sprint\"+run[3:]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 7.395
+ },
+ {
+  "clip": "sprint_warden_town",
+  "family": "sprint",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 0.7,
+  "loop": true,
+  "weapon": "",
+  "licence": "own work",
+  "made_by": "",
+  "source": "keyed (tools/anim/gait.py)",
+  "module": [
+   "sprint_stop.py"
+  ],
+  "game_refs": {
+   "logic/Play/SheathHang.cs": 1
+  },
+  "game_ref_patterns": [
+   "PlayerView:228/775 \"sprint\"+run[3:]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 7.395
+ },
+ {
+  "clip": "stop_warden_town_l",
+  "family": "stop",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 0.8,
+  "loop": false,
+  "weapon": "",
+  "licence": "own work",
+  "made_by": "",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "sprint_stop.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PlayerView:1297 Sheath.Pick(stop_{calling}, _l/_r)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "stop_warden_town_r",
+  "family": "stop",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 0.8,
+  "loop": false,
+  "weapon": "",
+  "licence": "own work",
+  "made_by": "",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "sprint_stop.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "PlayerView:1297 Sheath.Pick(stop_{calling}, _l/_r)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "take_from_log",
+  "family": "cinematic",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 2.0,
+  "loop": false,
+  "weapon": null,
+  "licence": "own work",
+  "made_by": "",
+  "source": "keyed (tools/anim)",
+  "module": [
+   "story.py"
+  ],
+  "game_refs": {
+   "src/Actors/OwnClips.cs": 1
+  },
+  "game_ref_patterns": [
+   "OwnClips.For: PickUp_Table (C01 s11)"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": null
+ },
+ {
+  "clip": "wade",
+  "family": "cinematic",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 1.4,
+  "loop": true,
+  "weapon": null,
+  "licence": "CC BY 4.0",
+  "made_by": "",
+  "source": "100STYLE Neutral_FW frames 799-883 (60 fps)",
+  "module": [
+   "walks.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [],
+  "cine_refs": {},
+  "dead": true,
+  "contact_s": null,
+  "speed": 0.922163217461154
+ },
+ {
+  "clip": "walk_arcanist",
+  "family": "walk",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 1.333,
+  "loop": true,
+  "weapon": "staff",
+  "licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+  "made_by": "",
+  "source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: her_walk_2.bvh",
+  "module": [
+   "walk_armed.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "OwnClips.Walk / Sheath.WalkNames: walk_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 1.22951135170734
+ },
+ {
+  "clip": "walk_arcanist_town",
+  "family": "walk",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 1.333,
+  "loop": true,
+  "weapon": null,
+  "licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+  "made_by": "",
+  "source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: her_walk_2.bvh",
+  "module": [
+   "walk_town.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "OwnClips.Walk / Sheath.WalkNames: walk_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 1.22951135170734
+ },
+ {
+  "clip": "walk_arcanist_wand",
+  "family": "walk",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 1.333,
+  "loop": true,
+  "weapon": "wand",
+  "licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+  "made_by": "",
+  "source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: her_walk_2.bvh",
+  "module": [
+   "walk_armed.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "OwnClips.Walk / Sheath.WalkNames: walk_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 1.22951135170734
+ },
+ {
+  "clip": "walk_reaver",
+  "family": "walk",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 1.433,
+  "loop": true,
+  "weapon": "axe",
+  "licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+  "made_by": "",
+  "source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: her_walk_2.bvh",
+  "module": [
+   "walk_armed.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "OwnClips.Walk / Sheath.WalkNames: walk_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 1.14373148996032
+ },
+ {
+  "clip": "walk_reaver_axes",
+  "family": "walk",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 1.433,
+  "loop": true,
+  "weapon": "axes",
+  "licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+  "made_by": "",
+  "source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: her_walk_2.bvh",
+  "module": [
+   "walk_armed.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "OwnClips.Walk / Sheath.WalkNames: walk_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 1.14373148996032
+ },
+ {
+  "clip": "walk_reaver_town",
+  "family": "walk",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 1.433,
+  "loop": true,
+  "weapon": null,
+  "licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+  "made_by": "",
+  "source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: her_walk_2.bvh",
+  "module": [
+   "walk_town.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "OwnClips.Walk / Sheath.WalkNames: walk_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 1.14373148996032
+ },
+ {
+  "clip": "walk_stalker",
+  "family": "walk",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 1.467,
+  "loop": true,
+  "weapon": "crossbow",
+  "licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+  "made_by": "",
+  "source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: her_walk_2.bvh",
+  "module": [
+   "walk_armed.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "OwnClips.Walk / Sheath.WalkNames: walk_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 1.11773759246122
+ },
+ {
+  "clip": "walk_stalker_daggers",
+  "family": "walk",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 1.467,
+  "loop": true,
+  "weapon": "daggers",
+  "licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+  "made_by": "",
+  "source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: her_walk_2.bvh",
+  "module": [
+   "walk_armed.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "OwnClips.Walk / Sheath.WalkNames: walk_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 1.11773759246122
+ },
+ {
+  "clip": "walk_stalker_town",
+  "family": "walk",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 1.467,
+  "loop": true,
+  "weapon": null,
+  "licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+  "made_by": "",
+  "source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: her_walk_2.bvh",
+  "module": [
+   "walk_town.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "OwnClips.Walk / Sheath.WalkNames: walk_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 1.11773759246122
+ },
+ {
+  "clip": "walk_tired",
+  "family": "walk",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 1.4,
+  "loop": true,
+  "weapon": null,
+  "licence": "CC BY 4.0",
+  "made_by": "",
+  "source": "100STYLE Neutral_FW frames 799-883 (60 fps)",
+  "module": [
+   "walks.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [],
+  "cine_refs": {},
+  "dead": true,
+  "contact_s": null,
+  "speed": 0.922163217461154
+ },
+ {
+  "clip": "walk_uphill",
+  "family": "walk",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 1.4,
+  "loop": true,
+  "weapon": null,
+  "licence": "CC BY 4.0",
+  "made_by": "",
+  "source": "100STYLE Neutral_FW frames 799-883 (60 fps)",
+  "module": [
+   "walks.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [],
+  "cine_refs": {},
+  "dead": true,
+  "contact_s": null,
+  "speed": 0.922163217461154
+ },
+ {
+  "clip": "walk_warden",
+  "family": "walk",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 1.333,
+  "loop": true,
+  "weapon": "sword+shield",
+  "licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+  "made_by": "",
+  "source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: her_walk_2.bvh",
+  "module": [
+   "walk_armed.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "OwnClips.Walk / Sheath.WalkNames: walk_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 1.22951135170734
+ },
+ {
+  "clip": "walk_warden_town",
+  "family": "walk",
+  "plays_for": "(not in the plan)",
+  "layer": "full",
+  "length": 1.333,
+  "loop": true,
+  "weapon": null,
+  "licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+  "made_by": "",
+  "source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: her_walk_2.bvh",
+  "module": [
+   "walk_town.py"
+  ],
+  "game_refs": {},
+  "game_ref_patterns": [
+   "OwnClips.Walk / Sheath.WalkNames: walk_{calling}[_{kind}][_town]"
+  ],
+  "cine_refs": {},
+  "dead": false,
+  "contact_s": null,
+  "speed": 1.22951135170734
+ },
+ {
+  "clip": "Idle_Loop",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "idle",
+  "own_clip_it_maps_to": "idle_{calling}[_kind][_town]",
+  "plays_on_her_via": [
+   "Arms.Idle of apprentice_wand (Loadout.cs:31)",
+   "Portrait.cs:65",
+   "GameCinema.cs:509 (npc cue; her only via @idle)",
+   "People.Clip fallback Resolve(\"Idle\") when own.Owns(name) but clip missing (People.cs:259)",
+   "Visuals.Clips Rise default"
+  ],
+  "raw_only_when": "own clip missing for her (calling,kind), or heroine.res not built",
+  "dead": false
+ },
+ {
+  "clip": "Sword_Idle",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "idle",
+  "own_clip_it_maps_to": "idle_{calling}[_kind][_town]",
+  "plays_on_her_via": [
+   "Arms.Idle of oathblade, cleaver, gyre_axes, knife_belt (Loadout.cs:27-36)",
+   "cine @idle token (GameCinema.cs:1070)",
+   "c02 / c02w cue clip Sword_Idle (actor warden, not her)"
+  ],
+  "raw_only_when": "own clip missing for her (calling,kind), or heroine.res not built",
+  "dead": false
+ },
+ {
+  "clip": "Pistol_Idle_Loop",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "idle",
+  "own_clip_it_maps_to": "idle_{calling}[_kind][_town]",
+  "plays_on_her_via": [
+   "Arms.Idle of ember_staff, rime_rod, hunting_bow (Loadout.cs:33-35)"
+  ],
+  "raw_only_when": "own clip missing for her (calling,kind), or heroine.res not built",
+  "dead": false
+ },
+ {
+  "clip": "Idle_Shield_Loop",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "idle",
+  "own_clip_it_maps_to": "idle_warden",
+  "plays_on_her_via": [
+   "c03.json / c03w.json cue actor her, when calling warden",
+   "c02w (actor warden)"
+  ],
+  "raw_only_when": "own clip missing for her (calling,kind), or heroine.res not built",
+  "dead": false
+ },
+ {
+  "clip": "Jog_Fwd_Loop",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "run",
+  "own_clip_it_maps_to": "run_{calling}[_kind][_town]",
+  "plays_on_her_via": [
+   "PlayerView.cs:223,285,769 People.Clip(\"Jog_Fwd_Loop\")"
+  ],
+  "raw_only_when": "own clip missing for her (calling,kind), or heroine.res not built",
+  "dead": false
+ },
+ {
+  "clip": "Sprint_Loop",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "sprint",
+  "own_clip_it_maps_to": "sprint_{calling} (derived from run name)",
+  "plays_on_her_via": [
+   "OwnClips.Moving set; PlayerView:302 non-own branch only"
+  ],
+  "raw_only_when": "non-own body, or run clip not own",
+  "dead": false
+ },
+ {
+  "clip": "Walk_Loop",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "walk",
+  "own_clip_it_maps_to": "walk_{calling}[_kind][_town]",
+  "plays_on_her_via": [
+   "PlayerView:300 (non-own branch); OwnClips.Walks set"
+  ],
+  "raw_only_when": "non-own body, or no own walk for calling/kind",
+  "dead": false
+ },
+ {
+  "clip": "Walk_Formal_Loop",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "walk",
+  "own_clip_it_maps_to": "walk_{calling} (OwnClips.Walk) else null->raw",
+  "plays_on_her_via": [
+   "cinematic move cues for her: c02, c02w, c04a, c04b (x3)"
+  ],
+  "raw_only_when": "she has no own walk for calling/kind/sheathed state (explicit null in OwnClips.For:158)",
+  "dead": false
+ },
+ {
+  "clip": "Sword_Regular_A",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "attack",
+  "own_clip_it_maps_to": "sword_back/axe_back/axes_left/daggers_back (HerClips.Swings[0])",
+  "plays_on_her_via": [
+   "Arms.Attack of oathblade, gyre_axes (Loadout.cs)",
+   "GameFront.cs:100 creation flourish (reaver)"
+  ],
+  "raw_only_when": "held kind has no swing table (staff, wand, crossbow, unarmed)",
+  "dead": false
+ },
+ {
+  "clip": "Sword_Regular_B",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "attack",
+  "own_clip_it_maps_to": "Swings(kind)[0]",
+  "plays_on_her_via": [
+   "Arms.Attack of cleaver (Loadout.cs:29)"
+  ],
+  "raw_only_when": "same",
+  "dead": false
+ },
+ {
+  "clip": "Sword_Regular_C",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "attack",
+  "own_clip_it_maps_to": "Swings(kind)[0]",
+  "plays_on_her_via": [
+   "Arms.Attack of oathblade, gyre_axes"
+  ],
+  "raw_only_when": "same",
+  "dead": false
+ },
+ {
+  "clip": "Sword_Attack",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "attack",
+  "own_clip_it_maps_to": "Swings(kind)[0]",
+  "plays_on_her_via": [
+   "Arms.Attack of cleaver; Arms.Heavy of oathblade, judgement_disc (Loadout.cs)"
+  ],
+  "raw_only_when": "same",
+  "dead": false
+ },
+ {
+  "clip": "Sword_Heavy_Combo",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "attack",
+  "own_clip_it_maps_to": "Swings(kind)[0] (NOT Heavy(kind): For maps it to the first back swing)",
+  "plays_on_her_via": [
+   "Arms.Heavy of cleaver, gyre_axes (Loadout.cs:29-30)"
+  ],
+  "raw_only_when": "same",
+  "dead": false
+ },
+ {
+  "clip": "Sword_Regular_Combo",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "attack",
+  "own_clip_it_maps_to": "Swings(kind)[0]",
+  "plays_on_her_via": [
+   "Arms.Heavy of knife_belt"
+  ],
+  "raw_only_when": "same",
+  "dead": false
+ },
+ {
+  "clip": "OverhandThrow",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "attack",
+  "own_clip_it_maps_to": "throw",
+  "plays_on_her_via": [
+   "Arms.Attack of knife_belt, judgement_disc",
+   "PlayerView:817 fallback Upper(OverhandThrow) when UpperHer(throw) fails"
+  ],
+  "raw_only_when": "own clip missing for her (calling,kind), or heroine.res not built",
+  "dead": false
+ },
+ {
+  "clip": "Pistol_Shoot",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "attack",
+  "own_clip_it_maps_to": "crossbow_shoot",
+  "plays_on_her_via": [
+   "Arms.Attack/Heavy of hunting_bow",
+   "GameFront.cs:100 flourish (stalker)"
+  ],
+  "raw_only_when": "own clip missing for her (calling,kind), or heroine.res not built",
+  "dead": false
+ },
+ {
+  "clip": "Spell_Simple_Shoot",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "cast",
+  "own_clip_it_maps_to": "cast_bolt",
+  "plays_on_her_via": [
+   "Arms.Attack of wand, staff, rime_rod",
+   "Arms.Cast (castT) PlayerView:1075 skipped when own cast_bolt exists"
+  ],
+  "raw_only_when": "own clip missing for her (calling,kind), or heroine.res not built",
+  "dead": false
+ },
+ {
+  "clip": "Spell_Simple_Enter",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "cast",
+  "own_clip_it_maps_to": "cast_raise",
+  "plays_on_her_via": [
+   "Arms.Heavy of wand, staff",
+   "c01.json t1.35 when calling arcanist",
+   "GameFront.cs:100 flourish (arcanist)"
+  ],
+  "raw_only_when": "own clip missing for her (calling,kind), or heroine.res not built",
+  "dead": false
+ },
+ {
+  "clip": "Hit_Chest",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "reaction",
+  "own_clip_it_maps_to": "hit",
+  "plays_on_her_via": [
+   "PlayerView:1088 Upper(\"Hit_A\") -> alias Hit_Chest"
+  ],
+  "raw_only_when": "own clip missing for her (calling,kind), or heroine.res not built",
+  "dead": false
+ },
+ {
+  "clip": "Death01",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "death",
+  "own_clip_it_maps_to": "death / death_back",
+  "plays_on_her_via": [
+   "Arms.Die default (Visuals.cs:20)"
+  ],
+  "raw_only_when": "own clip missing for her (calling,kind), or heroine.res not built",
+  "dead": false
+ },
+ {
+  "clip": "Lie_StandUp",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "get-up",
+  "own_clip_it_maps_to": "get_up / get_up_back",
+  "plays_on_her_via": [
+   "PlayerView:852 Full(...); alias LayToIdle in People.Aliases"
+  ],
+  "raw_only_when": "fb; note Lie_StandUp is not a UAL name, People.Resolve aliases it to LayToIdle",
+  "dead": false
+ },
+ {
+  "clip": "Roll",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "art",
+  "own_clip_it_maps_to": "dash",
+  "plays_on_her_via": [
+   "PlayerView:306 full node, Dodge_Forward alias"
+  ],
+  "raw_only_when": "own clip missing for her (calling,kind), or heroine.res not built",
+  "dead": false
+ },
+ {
+  "clip": "Jump_Full_Short",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "art",
+  "own_clip_it_maps_to": "leap",
+  "plays_on_her_via": [
+   "PlayerView:1024 (alias NinjaJump_Start)"
+  ],
+  "raw_only_when": "own clip missing for her (calling,kind), or heroine.res not built",
+  "dead": false
+ },
+ {
+  "clip": "Jump_Start",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "art",
+  "own_clip_it_maps_to": "vault",
+  "plays_on_her_via": [
+   "PlayerView:1024"
+  ],
+  "raw_only_when": "own clip missing for her (calling,kind), or heroine.res not built",
+  "dead": false
+ },
+ {
+  "clip": "Shield_Dash",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "art",
+  "own_clip_it_maps_to": "bull_rush",
+  "plays_on_her_via": [
+   "PlayerView:1041 BullRush"
+  ],
+  "raw_only_when": "own clip missing for her (calling,kind), or heroine.res not built",
+  "dead": false
+ },
+ {
+  "clip": "Sword_Dash",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "art",
+  "own_clip_it_maps_to": "chain_haul",
+  "plays_on_her_via": [
+   "PlayerView:1041 Grapple"
+  ],
+  "raw_only_when": "own clip missing for her (calling,kind), or heroine.res not built",
+  "dead": false
+ },
+ {
+  "clip": "Punch_Cross",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "art",
+  "own_clip_it_maps_to": "warcry",
+  "plays_on_her_via": [
+   "PlayerView:820 warcry/sprint/cinder_trail/wraith_walk"
+  ],
+  "raw_only_when": "own clip missing for her (calling,kind), or heroine.res not built",
+  "dead": false
+ },
+ {
+  "clip": "Sword_Block",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "show",
+  "own_clip_it_maps_to": "{calling}_show",
+  "plays_on_her_via": [
+   "GameFront.cs:100 creation flourish (warden); People alias Block"
+  ],
+  "raw_only_when": "own clip missing for her (calling,kind), or heroine.res not built",
+  "dead": false
+ },
+ {
+  "clip": "Sitting_Idle_Loop",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "cinematic",
+  "own_clip_it_maps_to": "sit_log",
+  "plays_on_her_via": [
+   "title scene: GameFront.cs:67 Loop(Sit_Chair_Idle) -> alias"
+  ],
+  "raw_only_when": "own clip missing for her (calling,kind), or heroine.res not built",
+  "dead": false
+ },
+ {
+  "clip": "PickUp_Table",
+  "source": "UAL raw",
+  "licence": "CC0",
+  "library": "public/assets/people/UAL1.glb + UAL2.glb (People.Clips())",
+  "family": "cinematic",
+  "own_clip_it_maps_to": "take_from_log",
+  "plays_on_her_via": [
+   "C01 s11 (OwnClips.For:168)"
+  ],
+  "raw_only_when": "own clip missing for her (calling,kind), or heroine.res not built",
+  "dead": false
+ }
+]
