@@ -21,6 +21,8 @@ public partial class Hits
     /// <summary>F1 lead 27: this frame's events held her step that felled 4+ (BattleFx, Ev.Kill Mass): its numbers fold
     /// into one at Flush (FeelRules.Fold); cleared there.</summary>
     public bool MassStep;
+    /// <summary>Bodies felled this frame (set at Ev.Kill, cleared at Flush): a mass total sits over one.</summary>
+    public readonly HashSet<int> FelledNow = new();
     /// <summary>F1 r5: the mass kill's one number and its drawn frame: the blows of the next FeelRules.MassTail frames
     /// (the rest of her step's kills, landing a frame or two late) are added into it, not shown as numbers of their own.</summary>
     int massLabel = -1;
@@ -88,20 +90,6 @@ public partial class Hits
     public void Tally(int target, Vector3 at, double amount, double maxHp, bool crit, Color? dot = null)
     {
         if (dot != null) { target = ~target; crit = false; }
-        // Still counting for this target: it sums, at once and whatever the budget.
-        if (labelOfTarget.TryGetValue(target, out int i) && numbers[i].T < 1 && clock - tallies[i].Born < Beat)
-        {
-            ref var t = ref tallies[i];
-            t.Sum += amount;
-            t.Crit |= crit;
-            t.Heavy |= maxHp > 0 && t.Sum > maxHp * 0.2;
-            Restyle(i, t);
-            Reclear(i);
-            // Kept up while it grows, and nudged so the eye sees it climb.
-            var (l, _) = numbers[i];
-            numbers[i] = (l, Mathf.Min(numbers[i].T, 0.25f));
-            return;
-        }
         // A second hit the same frame before it was shown sums with the first.
         for (int k = 0; k < waiting.Count; k++)
             if (waiting[k].Target == target)
@@ -123,8 +111,14 @@ public partial class Hits
     {
         bool mass = MassStep;
         MassStep = false;
-        if (waiting.Count == 0) return;
         long now = Engine.GetFramesDrawn();
+        int waited = waiting.Count;
+        void Out(int shownN, int label, double sum)
+        {
+            if (NumTrace && mass) GD.Print($"[mass-num] f={now} waiting={waited} shown={shownN} label={label} sum={(int)Math.Round(sum)}");
+            FelledNow.Clear();
+        }
+        if (waiting.Count == 0) { Out(0, -1, 0); return; }
         if (massLabel >= 0 && FeelRules.MassTail(now - massFrame) && numbers[massLabel].T < 1 && tallyOf[massLabel] != int.MinValue)
         {
             var mt = tallies[massLabel];
@@ -148,11 +142,40 @@ public partial class Hits
                 numbers[massLabel] = (numbers[massLabel].Label, Mathf.Min(numbers[massLabel].T, 0.25f));
                 if (mass) massFrame = now;
             }
-            if (waiting.Count == 0) return;
+            if (waiting.Count == 0) { Out(0, massLabel, mt.Sum); return; }
         }
+        // Still counting for a target: its blows sum into its label, at once and whatever the budget (a mass step's blows
+        // are left out: they fold into the one total below).
+        for (int k = waiting.Count - 1; k >= 0; k--)
+        {
+            var w = waiting[k];
+            if (mass && w.Tint == null) continue;
+            if (!(labelOfTarget.TryGetValue(w.Target, out int li) && numbers[li].T < 1 && clock - tallies[li].Born < Beat)) continue;
+            ref var t = ref tallies[li];
+            t.Sum += w.Amount;
+            t.Crit |= w.Crit;
+            t.Heavy |= w.MaxHp > 0 && t.Sum > w.MaxHp * 0.2;
+            Restyle(li, t);
+            Reclear(li);
+            numbers[li] = (numbers[li].Label, Mathf.Min(numbers[li].T, 0.25f));
+            waiting.RemoveAt(k);
+        }
+        if (waiting.Count == 0) { Out(0, -1, 0); return; }
         // A blow that takes a fifth of what it struck is told first, then crits, then the biggest.
         waiting.Sort((a, b) => Heavy(a) != Heavy(b) ? (Heavy(a) ? -1 : 1) : a.Crit != b.Crit ? (a.Crit ? -1 : 1) : b.Amount.CompareTo(a.Amount));
         // F1 27: the blows fold to at most NumbersPerStep numbers (one on a mass kill); damage over time is left as it is.
+        if (mass)
+        {
+            // The total sits over a felled body: the weightiest blow on one goes first.
+            for (int k = 0; k < waiting.Count; k++)
+                if (waiting[k].Tint == null && FelledNow.Contains(waiting[k].Target))
+                {
+                    var pick = waiting[k];
+                    waiting.RemoveAt(k);
+                    waiting.Insert(0, pick);
+                    break;
+                }
+        }
         var blowAt = new List<int>();
         var amounts = new List<double>();
         for (int k = 0; k < waiting.Count; k++)
@@ -190,7 +213,7 @@ public partial class Hits
         foreach (var (w, extra) in work)
         {
             // No exceptions: in a crowd of the small dead nearly every blow takes a fifth of one.
-            if (shown >= NewPerFrame || live >= LiveMost) { ntCapped = work.Count - shown; break; }
+            if (!(mass && w.Tint == null) && (shown >= NewPerFrame || live >= LiveMost)) { ntCapped = work.Count - shown; break; }
             var at = w.At;
             if (her is { } h)
             {
@@ -205,7 +228,7 @@ public partial class Hits
             var t = new Tallied { Target = w.Target, Sum = w.Amount, Born = clock, Crit = w.Crit, Heavy = w.MaxHp > 0 && w.Amount > w.MaxHp * 0.2, Tint = w.Tint };
             bool blow = w.Tint == null;
             var spot = blow ? Spot(at, her, ((int)Math.Round(t.Sum)).ToString(), HitsPlace.NumberSize(t.Crit, t.Heavy)) : Beside(at);
-            if (Crowded(spot)) { ntCrowded++; continue; }
+            if (!(mass && blow) && Crowded(spot)) { ntCrowded++; continue; }
             int i = Show(spot, "", Colors.White, 46, blow);
             tallies[i] = t;
             tallyOf[i] = w.Target;
@@ -225,7 +248,9 @@ public partial class Hits
         }
         if (NumTrace && (mass || blowAt.Count >= 3))
             GD.Print($"[num-trace] f={now} mass={(mass ? 1 : 0)} blows={blowAt.Count} kept={keptBlows.Count} work={work.Count} shown={shown} crowded={ntCrowded} capped={ntCapped} live={live} massLabel={massLabel}");
+        double lastSum = massLabel >= 0 && mass ? tallies[massLabel].Sum : 0;
         waiting.Clear();
+        Out(shown, mass ? massLabel : -1, lastSum);
     }
 
     /// <summary>One big number past the caps (H7 r3: the Long Cut's line, told as one total at its far end once the band

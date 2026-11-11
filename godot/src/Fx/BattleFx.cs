@@ -1470,6 +1470,7 @@ public partial class BattleFx : Node3D
                 {
                     // (a body the Warden's line or heave kills falls, bursts and throws its gore as the view's blow lands)
                     float wkd = WgKillWait(e);
+                    Hits.FelledNow.Add(e.Enemy);
                     // F1 lead 27: her step that fells 4+ opens the kill window (FeelRules.KillDim) and folds its numbers to
                     // one. Her own blows only: the Warden's wave kills (crack-timed, judged right in round 4) stay as they are.
                     if (e.Mass && wkd <= 0 && MassKillFrame != Engine.GetFramesDrawn()) { MassKillFrame = Engine.GetFramesDrawn(); Hits.MassStep = true; }
