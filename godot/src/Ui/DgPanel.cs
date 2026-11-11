@@ -383,6 +383,7 @@ public partial class DgPanel : Control
         {
             box ??= UiArt.Frame("tooltip", new StyleBoxFlat { BgColor = new Color(0.08f, 0.06f, 0.05f, 0.95f) });
             box.Draw(GetCanvasItem(), new Rect2(Vector2.Zero, Size));
+            SkillTip.DrawEdge(this, Size);
             void Text(Font f, int size, Vector2 p, string s, Color c, bool right = false)
             {
                 if (s == "") return;

@@ -28,10 +28,10 @@ public class LampOfferCardTests
         Assert.Equal("sunder", card.Skill);
         Assert.Equal("LEVEL 2 · A LAMP TO LIGHT", LevelCards.Header(card));
         Assert.Equal(Act.Lamps, card.PromptKey);
-        Assert.Equal("Light: " + Wicks.Text("sunder", "sunder.stroke.1"), card.PromptText);
+        Assert.Equal("Light it: " + Wicks.Text("sunder", "sunder.stroke.1"), card.PromptText);
         Assert.DoesNotContain("Third Blow", card.PromptText);
         Assert.Equal((m.Measure, m.Before, m.After), (card.Measure, card.Before, card.After));
-        Assert.Equal("a blow", card.Measure);
+        Assert.Equal("a cut", card.Measure);   // (Sunder is chained: the cut is what lands)
     }
 
     [Fact]
