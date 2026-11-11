@@ -3,8 +3,8 @@
  "rules": "R7.1 armed, walk_warden's carry (one carry for the 2D node's blends): her facing held toward the aim, the root to her left; side steps, no leg crossing, hips square to the aim",
  "bands": {
   "speed_mps": [
-   1.26,
-   1.39
+   0.9,
+   1.0
   ],
   "steps_min": [
    103,
@@ -54,34 +54,31 @@
  "gen": {
   "engine": "kimodo",
   "seconds": 7.0,
-  "takes": 10,
+  "takes": 8,
   "seeds": [
-   171,
-   172,
-   173
+   191,
+   192,
+   193,
+   194
   ],
   "prompts": [
-   "A confident woman side-steps to her left without crossing her feet, still facing forward, a sword held low in her right hand and a shield on her left arm",
-   "A warrior woman sidesteps to the left calmly, hips square to the front, a sword down by her right side and a shield on her left forearm",
-   "A relaxed woman steps sideways to her left, facing ahead, holding a sword in her right hand and a shield on her left arm"
+   "A woman fighter side-steps to her left at a walking pace: she steps out with her left foot, then the other foot follows and closes without crossing, facing forward the whole time",
+   "A warrior woman moves sideways to the left with deliberate step-together steps, never crossing her legs, hips square to the front, a sword low in her right hand and a shield on her left arm",
+   "A calm, confident woman shuffles sideways to her left with slow wide steps, the leading foot reaching out and the trailing foot following, still facing ahead",
+   "A person steps sideways to the left slowly, one step and then the feet come together, repeated, keeping the body facing forward"
   ],
   "root2d": {
    "kind": "straight",
-   "speed": 1.3,
+   "speed": 0.95,
    "ramp": 0.8,
    "deg": 90,
    "face_deg": 0,
    "every": 1
   },
-  "more": {
-   "prompts": [
-    0,
-    1,
-    2
-   ],
-   "takes": 10,
-   "seed_add": 100
-  }
+  "root2d_scales": [
+   1.0,
+   1.15
+  ]
  },
  "post": {
   "loop": true,
@@ -92,7 +89,7 @@
   ],
   "gait": true,
   "duty": 0.45,
-  "game_speed": 1.3244,
+  "game_speed": 0.95,
   "crop": [
    30,
    180
@@ -170,7 +167,7 @@
   "shield"
  ],
  "source": "src/walk_warden_left.npz",
- "bvh": "walk_warden_left__p0_0.bvh",
- "sha1": "e6121ee66f764d0d8edb519bbd2f7b580102f2e6",
- "take_score": 1.612
+ "bvh": "walk_warden_left__p0s100_0.bvh",
+ "sha1": "8b03a1befdf129162b6c64182a2859ab92861891",
+ "take_score": 17.449
 }
