@@ -30,6 +30,20 @@ public static class FeelRules
         return KillDimTo + (1 - KillDimTo) * u;
     }
 
+    /// <summary>An enemy tell is a warning first (ruling 10:06): in the kill window only its fill dims; its edge (the
+    /// rims' light) keeps TellEdgeFloor or more; in its last TellLandGuard seconds before it lands, and for any lane
+    /// (an elite's lane ranks the danger: item 5), nothing dims.</summary>
+    public const float TellEdgeFloor = 0.6f, TellLandGuard = 0.3f;
+
+    /// <summary>A tell's fill strength under the kill dim `killDim`, `secsToLand` before its blow lands (a wall already
+    /// standing: float.MaxValue).</summary>
+    public static float TellFill(float killDim, float secsToLand, bool lane) =>
+        lane || secsToLand <= TellLandGuard ? 1 : killDim;
+
+    /// <summary>A tell's edge (rim light) strength under the kill dim, as TellFill.</summary>
+    public static float TellEdge(float killDim, float secsToLand, bool lane) =>
+        lane || secsToLand <= TellLandGuard ? 1 : Math.Max(killDim, TellEdgeFloor);
+
     /// <summary>A launched body's warm rim (#ff9a40 kind, the body's own material): whole from its kill frame to
     /// N+LaunchRimHold (the stop and the first frames of its flight), faded to nothing by N+LaunchRimGone.</summary>
     public const int LaunchRimHold = 12, LaunchRimGone = 18;

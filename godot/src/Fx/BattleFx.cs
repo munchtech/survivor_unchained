@@ -333,6 +333,12 @@ public partial class BattleFx : Node3D
     public static long MassKillFrame = -100000;
     /// <summary>The dim on what is not the kill this frame (FeelRules.KillDim): 1 outside the kill window.</summary>
     public static float KillDimNow => FeelRules.KillDim(Engine.GetFramesDrawn() - MassKillFrame);
+    /// <summary>A tell's fill and edge under the kill dim (FeelRules.TellFill/TellEdge, ruling 10:06): a lane never
+    /// dims, nor any tell in its last 0.3 s; a wall standing past its landing counts as far from landing.</summary>
+    static float TellSecsToLand(Mark m) => m.Held && m.T >= HeldAt ? float.MaxValue : (1 - m.T) * m.Life;
+    static bool TellLane(Mark m) => m.Shape == 0 || m.Length > 0;
+    static float TellFillNow(Mark m) => FeelRules.TellFill(KillDimNow, TellSecsToLand(m), TellLane(m));
+    static float TellEdgeNow(Mark m) => FeelRules.TellEdge(KillDimNow, TellSecsToLand(m), TellLane(m));
 
     void TraceLight(string what, Vector3 at, float peak, float range, int line)
     {
@@ -2144,7 +2150,7 @@ public partial class BattleFx : Node3D
             {
                 // Telegraphs: steady, a quick flare at the end.
                 bool flare = m.T > 0.85f && !stand;
-                m.Decal.Modulate = m.Color with { A = fk * KillDimNow * (flare ? 1 : 0.75f + 0.1f * Mathf.Sin((float)now * 12)) };
+                m.Decal.Modulate = m.Color with { A = fk * TellEdgeNow(m) * (flare ? 1 : 0.75f + 0.1f * Mathf.Sin((float)now * 12)) };
                 // (a danger mark's light breathes and flares as the blow lands: a decal's emission ignores its alpha)
                 // (the raising breathes slowly, +-15% at 0.5 Hz on the mark's own age; the rest keep the fast flicker)
                 if (m.Styled) m.Decal.EmissionEnergy = m.Energy * (flare ? (m.Danger ? DangerFlare : AmberFlare) : 0.88f + 0.12f * Mathf.Sin((float)now * 12)) * (m.Raise ? 1 + 0.15f * Mathf.Sin(Mathf.Tau * 0.5f * m.T * m.Life) : 1) * fk;
@@ -2153,7 +2159,7 @@ public partial class BattleFx : Node3D
                     om.SetShaderParameter("col", (m.Danger ? oc.LinearToSrgb() : new Color(Mathf.Min(1, oc.R), Mathf.Min(1, oc.G), Mathf.Min(1, oc.B))) with { A = 0.8f * m.Decal.Modulate.A });
                 // (the fill's copy at the fill's own light: a decal's emission is the texture x its modulate x its energy)
                 if (m.OverFill is { Visible: true } ovf0 && ovf0.MaterialOverride is ShaderMaterial fom)
-                    fom.SetShaderParameter("col", (Palette.TeleDanger * DangerFill).LinearToSrgb() with { A = KillDimNow });
+                    fom.SetShaderParameter("col", (Palette.TeleDanger * DangerFill).LinearToSrgb() with { A = TellFillNow(m) });
                 if (m.Progress && m.Fill != null && m.Length > 0)
                 {
                     // A lane's fill runs out along it, its front reaching the end as the blow lands.
@@ -2253,7 +2259,7 @@ public partial class BattleFx : Node3D
             if (n >= SurvivorUnchained.View.MarkPass.MaxMarks) continue;
             buf ??= new float[SurvivorUnchained.View.MarkPass.MaxMarks * 16];
             float fill = !m.Progress ? -1 : m.Length > 0 ? m.Length * m.T : m.Radius * m.T;
-            SurvivorUnchained.View.MarkPass.Pack(buf, n++, d.Position, m.Shape, ax, az, hx, hz, d.EmissionEnergy * (m.Soft ? SoftEnergy : 1) * (m.Styled ? 1 : Fk(m)) * KillDimNow, (m.Soft ? SoftBed : 1) * Fk(m) * KillDimNow, fill, m.P1, m.Slot, m.Roof, m.Pattern);
+            SurvivorUnchained.View.MarkPass.Pack(buf, n++, d.Position, m.Shape, ax, az, hx, hz, d.EmissionEnergy * (m.Soft ? SoftEnergy : 1) * (m.Styled ? 1 : Fk(m)) * TellEdgeNow(m), (m.Soft ? SoftBed : 1) * Fk(m) * TellFillNow(m), fill, m.P1, m.Slot, m.Roof, m.Pattern);
         }
         if (hts) markPass.SetHeights((float[])markHeights.Clone());
         markPass.Set(buf ?? Array.Empty<float>(), n, SurvivorUnchained.View.Water.Level);

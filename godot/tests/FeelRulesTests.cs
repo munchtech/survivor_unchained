@@ -90,4 +90,27 @@ public class FeelRulesTests
         for (int n = 6; n <= 9; n++) Assert.True(FeelRules.Tinted(n));
         Assert.False(FeelRules.Tinted(10));
     }
+
+    [Fact]
+    public void TellDimsItsFillOnlyAndKeepsItsEdge()
+    {
+        float dim = FeelRules.KillDim(5);
+        Assert.Equal(0.3f, FeelRules.TellFill(dim, 1.0f, false));
+        Assert.True(FeelRules.TellEdge(dim, 1.0f, false) >= 0.6f);
+        // outside the window nothing changes
+        Assert.Equal(1f, FeelRules.TellFill(FeelRules.KillDim(40), 1.0f, false));
+        Assert.Equal(1f, FeelRules.TellEdge(FeelRules.KillDim(40), 1.0f, false));
+        // a standing wall (far from landing) dims as any tell
+        Assert.Equal(0.3f, FeelRules.TellFill(dim, float.MaxValue, false));
+    }
+
+    [Fact]
+    public void TellNeverDimsInItsLastThirdOfASecondNorAnyLane()
+    {
+        float dim = FeelRules.KillDim(5);
+        Assert.Equal(1f, FeelRules.TellFill(dim, 0.3f, false));
+        Assert.Equal(1f, FeelRules.TellEdge(dim, 0.1f, false));
+        Assert.Equal(1f, FeelRules.TellFill(dim, 2f, true));
+        Assert.Equal(1f, FeelRules.TellEdge(dim, 2f, true));
+    }
 }
