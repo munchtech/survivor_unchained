@@ -1,5 +1,73 @@
 # Handoff: combat (skills' mechanics, enemies, encounters, bosses, balance, the maps, the story's nights)
 
+## Feel F1, lead 18 (feel-f1, 11 Nov): HANDOFF READY at ~170k. Captured, looked at, heard and measured at fresh-profile defaults; the mix fixed and the motion-"off" ruling built; the ONE judge, hit-stop and the MR are NOT done. Lane spend: about 0.48M before lead 18, plus lead 18's ~0.4M; the lane's line is 1.2M in all.
+
+**Branch:** feel-f1 @ the commit that adds this block (pushed). Integration is NOT merged in yet. Profile: md5 545be3545b291268afef5193275e8410, backup `scratch_feel_f1\settings_backup.json`. Integration's c8e5f7a46 says B1's settings isolation is merged, so after you merge, `user://settings_runs.json` protects the owner's profile. Check the md5 once anyway.
+
+**Built (commits e53dde5e1, 45f3794f1, 317e61db3, b67532d0c):**
+- **Synth.cs:** `--stems` writes a 6th stem, `_lead.wav` (the lead voices only). Stems are written lead and sfx first, buffered, so the quit guard can't cut them. `TapeSeconds` added.
+- **BattleFx.cs:** `--kill-trace` prints, per frame: tape time, kills, heavy, living, launch, burst, elite and the frame drawn.
+- **`tools/audio/crowd_tape.py TAPE.wav LOG.txt`:** measures her heavy hit (aligned on the lead's onset, 60 ms) over the rest of the effects, with the dying count.
+- **The mix:**
+  - sounds.json `ducks.lead` is now sfx 0.32 for 0.12 s (was 0.5 for 0.09 s). SoundBankTests are updated.
+  - Sfx.cs: the crowd's kill sounds are gated at 3 per 90 ms (elites on their own gate, bosses never gated). Plain hits are gated at 5 per 70 ms (was 7).
+- **Motion "off" ruling:** Settings.Hitstop is always true. Game.cs sets `Flare.Shake` (off 0, reduced 0.5) instead of Flare.Motion.
+  - "Off" drops only camera shake, push and kicks.
+  - The heavy hit's pause, the dodge's slow, the Flare's held time, flash, sound, gore and the death show stay at every setting.
+
+**Numbers:**
+- **Densest real play:** 32 dying per second, 56 living (arena b3). 50+ dying per second was never reached; autopilot play rarely has the Flare charged.
+- **Her heavy hit over the rest, 1-6 kHz, densest moments:**
+
+  | Capture | Median | Worst |
+  |---|---|---|
+  | Before the mix fix | +0.4 dB | -5.5 dB |
+  | After, b2 | +10.0 dB | -4.9 dB |
+  | After, b3 | +9.3 dB | -5.8 dB |
+  | After, map a2 | +7.7 dB | -2.3 dB |
+
+- **Top drops over the densest crowd (in-band, 0-300 ms), ducked:**
+
+  | Drop | Margin | Worst |
+  |---|---|---|
+  | Rare | +26 dB | |
+  | Epic | +13 dB | +10.8 dB |
+  | Set | +26 dB | |
+  | Legendary and storied | +19 dB | |
+
+  The ladder's distinctness is in `scratch_feel_f1\drop_ladder.txt` (lead 17's MFCC table, plus centroid, length and rhythm per family). No human has heard the regenerated takes.
+- **"Quiet"** is master bus 0 gain applied after the Synth's compressor and limiter (Game.cs ~483), so every ratio holds exactly.
+
+**Guards:**
+- (a) Holds: no fx dimming is built (lead 17 chose draw order), so the Flare and heavy landings are untouched.
+- (b) Holds by code read, not yet watched in-engine: a capped kill still gets its sound and flash. The crit flash is ranked first in HitBudget (crit bursts, 3 per 0.15 s), and its lead sound has its own gate (hit.lead, 3 per 60 ms); neither is under DeathShow's cap.
+- (c) Holds: attack-first hits cut through at "quiet" (see "Quiet" above).
+- Motion "off": built, per the ruling above.
+
+**My own 1:1 look** (arena b and b2 frames, `scratch_feel_f1\look\`):
+- Busy.
+- Damage numbers are big.
+- Her figure is hard to pick out inside the pack.
+- The red crowd ring reads.
+
+Without hit-stop I would NOT yet bet PASS on full feel.
+
+**Clips** (in `survivorsunchained_inputs\combat_m3\`): `f1_feel_a2\` (map) and `f1_feel_b3\` (arena). Each holds `clip.mp4`, `log.txt` with `[kill-trace]` lines (frame= finds the launch, burst and elite moments), and a tape with stems. Tape t equals clip time.
+
+**Next, in order:**
+1. **Hit-stop:** there is no codex/hitstop on origin as of 11 Nov 00:10. When it lands: merge it, tune it (trash 0, heavy/crit 40-60 ms, elite kill or finisher 80-100 ms, cap 150), turn it on. Do not build a second mechanism; the global one in WorldScene.Weigh exists today.
+2. **Own look on her readability in the pack.** Damage-number size and her silhouette are not my lane's to restyle: route them to U1/L1 in one inbox line if they stay a problem. Then run ONE `su-lead-max` judge (effort max, foreground, `Item: combat feel`):
+   - It opens with "would this ship in a AAA game as it stands, watched and heard at 1:1?".
+   - It covers ARPG_FUN's four checks (line 124) and the owner's words.
+   - Inputs: the a2 and b3 clips and logs, the numbers above, and `drop_ladder.txt`.
+   - Lead 17's watch items go with it: crimson under AgX may read pink; the crowd charge's energy is 0.3375 against the boss's 0.45, only 1.33x.
+   - Close is not a pass.
+3. **MR:**
+   - Junction rule first.
+   - Merge `origin/claude/vigilant-galileo-l6jqyx`.
+   - Full `dotnet test` in godot/tests via an su-runner.
+   - Push, then `MR READY feel-f1@<sha>` in `scratch_coord5\inbox.md`.
+
 ## Feel F1, lead 17 (feel-f1, 10 Nov): HANDOFF READY. Items 2-5 built and unit-green; the game builds (0 errors); NOT yet captured, looked at, heard or judged; item 1 (hit-stop) waits for codex/hitstop in integration
 **Start cold here.** Worktree `.claude/worktrees/feel-f1`, branch feel-f1 (pushed). Brief = coordinator #8's F1 spawn (ARPG_FUN P0 1, 2, 4, P1 5, item 15; the owner: "nothing really felt satisfying"). Scratch: `C:\Users\munch\Desktop\survivorsunchained_inputs\scratch_feel_f1\` (`drop_ladder.txt` = loudness and distinctness table; `attack.py` = onset shape, run with plain `python`). Inbox rulings: "RULING F1" lines in `scratch_coord5\inbox.md` (list approved; guards (a) and (b) below; every capture and the judge at FRESH-PROFILE DEFAULTS: Motion "full", Sound "on" (1.0), VoiceVolume 1; `--clip` forces these).
 **Built (commits on feel-f1):**
