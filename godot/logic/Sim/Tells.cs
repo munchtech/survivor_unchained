@@ -260,6 +260,7 @@ public sealed partial class Battle
         double now = Time, land = now + (Telegraphs.Get(kind)?.Windup ?? 0), wait = 0;
         // (H6 r1 fix 4: nothing new is cast on her while she is down or in her get-up grace; marks already running run on)
         if (now < knockGraceUntil) wait = knockGraceUntil - now;
+        if (now < massGraceUntil) wait = Math.Max(wait, massGraceUntil - now);
         landings.RemoveAll(l => l.At < now - w.Spacing);
         foreach (var (at, bl) in landings)
             if (Near(bl, p.X, p.Z) <= w.SpacingNear && Math.Abs(land + wait - at) < w.Spacing) wait = Math.Max(wait, at + w.Spacing - land);
@@ -392,6 +393,11 @@ public sealed partial class Battle
     double knockGraceUntil = -1;
     /// <summary>Seconds left of her knockdown and its get-up grace (0: none): no new kit mark is cast on her in it (KitWait).</summary>
     public double KnockGraceLeft => Math.Max(0, knockGraceUntil - Time);
+    /// <summary>F1 lead 26: after a step in which her blows felled a mass (DeathShows.Mass), no new kit mark is cast on her for this long.</summary>
+    public const double MassKillGrace = 0.25;
+    double massGraceUntil = -1;
+    /// <summary>Seconds left of the mass-kill grace (0: none); the view's --lane-trace prints it.</summary>
+    public double MassGraceLeft => Math.Max(0, massGraceUntil - Time);
 
     /// <summary>The app can now knock her down (the kit's charge, H6): held where she lies for a while (less for the
     /// tenacious; a dash ends it, as a root does), with Ev.Knockdown for the view.</summary>

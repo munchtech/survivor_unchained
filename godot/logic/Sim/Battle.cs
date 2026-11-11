@@ -1194,12 +1194,16 @@ public sealed partial class Battle
         if (Time != massStepT) { massStepT = Time; massStep.Clear(); }
         if (credited && credit != "flare" && !e.Boss && e.Disposition != Disposition.Ally) massStep.Add((e, kill));
         if (DeathShows.Mass)
+        {
             for (int i = 0; i < massStep.Count; i++)
             {
                 var (me, mk) = massStep[i];
                 bool launch = DeathShows.MassKind(i) == DeathKind.Launch;
                 me.Burst = mk.Burst = false; me.Launch = mk.Launch = launch; me.MassKill = mk.Mass = true;
             }
+            // F1 lead 26: her mass kill is the moment: no new kit mark (lane or ring) is cast on her for MassKillGrace (KitWait).
+            if (massStep.Count > 0) massGraceUntil = Math.Max(massGraceUntil, Time + MassKillGrace);
+        }
         Events.Emit(kill);
         Graves.Add((e.X, e.Z, e.Def.Id, Time));
 
