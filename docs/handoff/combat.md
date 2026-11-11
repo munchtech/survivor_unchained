@@ -26,9 +26,26 @@
 
 **Routed, not mine:** the Deep Shaw boulder draws as a black dome over a third of the frame, and the wolves read as purple lumps (inbox 03:03).
 
+**hs6 at 5c853ec21:**
+- She holds 51 times: 37 at 0.050, 11 at 0.055, 2 at 0.060, and 1 elite kill at 0.090 (frame 5542, her blow).
+- The kill-trace is identical to hs4off. 0 InkSnap errors.
+- Dense 1-6 kHz median +8.4 dB, worst +2.2 dB.
+- Full suite at 3ff4b2be9: **2262 / 0 / 11** (`lead19/suite_2.log`). Pushed.
+
+**JUDGE ROUND 1: CLOSE** (`lead19\judge\verdict_r1.md`, agent adb3e73de6d097db1; send round 2 to it, or to a fresh judge with that file).
+- Rulings: (1) felt CLOSE, (2) readable CLOSE, (3) guard (b) PASS, (4) picked out CLOSE. Crimson holds (not pink). The crowd charge at 1.33x the boss is FAR as a ranking.
+- Its fixes, ranked:
+  1. When one blow kills 8 or more, hold the struck bodies for elite_kill_ms. Her rule stays: she holds only on her own contact.
+  2. In `hit_stop.json`, crowd_scale 0.8 to 1.0 and heavy_ms 50 to 60.
+  3. Center the heavy, crit and elite hit flash on the struck body, not on her, and draw her above it. The white disc about 300 px wide hides her at frames 409, 5215 and 5542. Find it in `HitKit` / `BattleFx`.
+  4. Some hit takes (`hit_flesh`, `hit_hide`, `hit_bone`) are 17-21 dB dull in 1-6 kHz (worst 10% at -4.2 dB). Add a 2-5 kHz crack to any take whose first 60 ms is more than 6 dB under the set's median. Target: worst 10% at +3 dB or better.
+  5. In `tele_rank.json`, the crowd's charge 0.3375 to 0.22 (the boss one stop brighter). Verify with the Pack-Mother and a charge lane in one frame.
+- To route: the mid-screen EMBER banner and the Ironback warning line over the fight (UI lead), and red ferns going salmon under her glow (art lead).
+- Round 2 must also look at deaths as rewards: at 9026-9030 the 25 dying wolves stand in formation and nothing launches yet.
+
 **Left, in order:**
-1. ONE `su-lead-max` judge with `Item: combat feel` on the prompt's first line. Give it the hs6 and hs4off clips, the sheets, the tape numbers, `scratch_feel_f1\drop_ladder.txt`, lead 17's watch items (crimson may read pink under AgX; the crowd charge is only 1.33x the boss's) and the owner's words "nothing really felt satisfying". At most 3 rounds.
-2. The FULL `dotnet test` in godot/tests. The last green is 2261/0/11 at 8af3a5228.
+1. Build fixes 1-5 (1 and 2 are data and one classifier rule; 3-5 are one su-worker each, then check them). Recapture as hs7 with the same args and rebuild the sheets with `python judge_pack.py f1_feel_hs7`. Re-pick the moments from the stop-trace and kill-trace frames. Judge round 2 (at most 3 in all).
+2. Rerun the FULL `dotnet test` after the fixes.
 3. Push feel-f1.
 4. Post `MR READY feel-f1@<sha>` in the inbox. Motion "off" ("Screen shake") removes only the camera shake, push and kicks; the hit-stop, dodge slow, the Flare's held time, flash, sound, gore and the death show stay.
 
