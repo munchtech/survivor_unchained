@@ -5,9 +5,9 @@ For a fresh successor. Read these first:
 2. `docs/team/experience.md`: the one-page status, which holds what's done, the next steps in order, and the verdicts.
 3. `docs/design/STORY_NIGHTS_AND_TIME.md`: the owner's decisions are at its top.
 
-## M6 tutorial (tutorial-m6, lead 4, 10 Nov): STATUS_LINE
+## M6 tutorial (tutorial-m6, lead 4, 10 Nov): MR READY (the lane wound down on the owner's word)
 
-**State.** Branch tutorial-m6. Integration (origin/claude/vigilant-galileo-l6jqyx f2c5ac2f8) is in; nothing newer to merge as of this block. Full suite at 23a306734: 2138/0/11. Teach|Prologue tests pass 73/0 at the head. Runs: `survivorsunchained_inputs/scratch_m6/run4..run8/` (run.sh, run.log); shots `godot/.shots/m6r4_*` to `m6r8_*`.
+**State.** Branch tutorial-m6. Integration (claude/vigilant-galileo-l6jqyx adb6132ba) is merged in. skills-p7 is not in it, so A5a waits for main's word. The full suite passes 2138/0/11 with the stand clock off (a313aca86; the merge after it brought one doc). Teach|Prologue tests pass 73/0 at the head. Runs: `survivorsunchained_inputs/scratch_m6/run4..run8/` (run.sh, run.log); shots `godot/.shots/m6r4_*` to `m6r8_*`.
 
 **Done (lead 4).**
 - **The day stall (m6r3, m6r4) was autopilot-only.** A dev `daystate` trace (every 2 s in Dawn/Exit under `--on teach`) showed she took the strongbox and then wobbled for 1000 s in the nook at (46-49,-84..-87). GroundPath routing to `road_ambush` at (22,-86.5) never got her out. The wolves' ring was never reached, so neither A13 nor day_gap could queue. A player walks out of there, and the ambush isn't needed for the gate. Fix: Autopilot logs `autopilot: day stuck` after 25 s without 4 m of ground and takes the gate road. In m6r5 the ring sprang at 384 and A13 Leap showed (she was level 4, the Leap on seat 4), then the Waystation.
