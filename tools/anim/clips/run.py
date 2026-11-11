@@ -630,9 +630,29 @@ if WARDEN_CARRY == "high":
 SPRINT_ARMS = {"run_warden": {"l": shield_guard(hand_at=(0.14, -0.36, 0.26), swivel=-90, lift=0.08, fwd=0.0)}}
 
 
+# A1 L22: her off-travel runs (gait.Gait.travel), on run_warden's cycle (its frames, phase and cadence: the game plays
+# them on the run's stride and blends them with it by the angle between her facing and her travel, PlayerView).
+# Kept out of RUNS (sprint_stop makes a sprint of every run there); the arms are the run's, held in guard: the swing
+# at `arm_amp` of the run's, the shield raised `GUARD_LIFT` more.
+GUARD_LIFT = 0.06
+_OT_BACK = dict(travel=180.0, duty=0.20, reach=0.40, peel=0.0, kick=0.16, knee=0.12, drop=0.11, bob=0.04,
+                reach_key=(0.83, 0.10, 0.10), hip_tilt=10.0, chest_lean=2.0, hip_yaw=4.0, chest_yaw=3.0,
+                hip_roll=3.0, back_toe=14.0, arm_amp=0.35, lift=(-1.0, 1.5))
+_OT_SIDE = dict(width=0.12, drop=0.10, hip_tilt=8.0, chest_lean=8.0, side_lean=5.0, side_hips=50.0, hip_yaw=4.0, chest_yaw=3.0,
+                arm_amp=0.45)
+OFF_TRAVEL = {"run_warden_back": _OT_BACK, "run_warden_right": dict(_OT_SIDE, travel=90.0),
+              "run_warden_left": dict(_OT_SIDE, travel=270.0)}
+
+
+def _off_runs():
+    g, arms, weapon = RUNS["run_warden"]
+    guard = shield_guard(hand_at=(0.14, -0.36, 0.26), swivel=-90, lift=0.04 + GUARD_LIFT, fwd=-0.005)
+    return {n: (replace(g, **o), {**arms, "l": guard}, weapon) for n, o in OFF_TRAVEL.items()}
+
+
 def clips(rig, want):
     out = []
-    for name, (g, arms, weapon) in RUNS.items():
+    for name, (g, arms, weapon) in {**RUNS, **_off_runs()}.items():
         if want and not any(w in name for w in want):
             continue
         clip = run_cycle(name, rig, replace(g, arms=arms), {"weapon": weapon, **RUN_GRIPS.get(name, {})})

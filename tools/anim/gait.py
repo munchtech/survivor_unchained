@@ -71,6 +71,27 @@ class Gait:
     # frame before the plant reads as a skate there even if the keyed frames don't (A1 L21: see facts_run.md).
     reach_key: tuple = (0.85, 0.12, 0.12)
     fall: float = 0.9
+    # A1 L22, the off-travel runs: her body (chest, head, arms) faces the aim while the legs run `travel` degrees off it
+    # in her local frame (Move2D.Local's way round: 0 forward, 90 to her right, 180 back, 270 to her left), at `speed`
+    # along that travel and on the same phase (the left foot plants at 0). 0 leaves every run as it was, byte for byte.
+    # 180, the backpedal: the feet path mirrored (landing behind her hips, pushed off ahead of them), on the forefoot
+    # (`back_toe` degrees heel-up at the landing, the ball held on the ground through the stance), the trunk `lean`
+    # (pelvis `hip_tilt`), the arms' swing turned over (each arm goes with the opposite leg). 90/270, the strafes: the
+    # pelvis turned `side_hips` toward travel, the chest counter-turned to the aim, the feet on lines `width` either
+    # side of travel (the trail foot's line ahead of the lead's: neither crosses the other's), the lead foot toed out
+    # `toe_lead` of the pelvis's turn and the trail `toe_trail`, the body tipped `side_lean` toward travel.
+    travel: float = 0.0
+    # v2's foot leaving the ground: its speed along the ground (of the ground's: -1 holds it on its spot) and its rise.
+    lift: tuple = (-0.35, 0.6)
+    back_toe: float = 14.0
+    hip_tilt: float = 0.0
+    chest_lean: float = 0.0
+    side_hips: float = 45.0
+    side_lean: float = 6.0
+    toe_lead: float = 1.35
+    toe_trail: float = 0.8
+    # The arms' swing about its middle (1 as keyed; less: the arms held in guard, riding the step).
+    arm_amp: float = 1.0
 
 
 def _spline(points, s):
@@ -113,7 +134,7 @@ def foot(g: Gait, phase):
         rs, rz, ry = g.reach_key
         keys = [(0.0, z_off, g.peel), (0.28, z_off * 0.55, g.kick), (0.58, z_land * 0.55, g.knee + 0.05),
                 (rs, z_land + rz, ry), (1.0, z_land, 0.0)]
-        d0, d1 = np.array([-0.35 * V, 0.6]), np.array([-g.land * V, -g.fall])
+        d0, d1 = np.array([g.lift[0] * V, g.lift[1]]), np.array([-g.land * V, -g.fall])
         i = max(k for k in range(len(keys) - 1) if keys[k][0] <= s) if s < 1.0 else len(keys) - 2
 
         def der(k):
@@ -198,6 +219,11 @@ def pose_at(g: Gait, rig: Rig, ph):
                                 "pole": (s * 0.1, 0, 1)}
         # Arms against the legs: the left fist forward as the right foot lands.
         k = 0.5 - 0.5 * math.cos(2 * math.pi * (ph - off - 0.5))  # 1: this arm fully forward
+        if g.travel or g.arm_amp != 1.0:
+            # Off travel: backpedalling, the right foot lands behind her, so the left fist goes back with it.
+            if abs(((g.travel + 180) % 360) - 180) > 135:
+                k = 1.0 - k
+            k = 0.5 + (k - 0.5) * g.arm_amp
         fwd = np.array(g.arm_fwd) * [s * -1, 1, 1]
         back = np.array(g.arm_back) * [s * 1, 1, 1]
         # The fist swings on an arc about the shoulder, the arm's reach
@@ -228,6 +254,95 @@ def pose_at(g: Gait, rig: Rig, ph):
         # The shoulder goes with its arm: forward as the arm drives through,
         # drawn back and a touch higher behind.
         pose[f"clav_{side}"] = (g.shoulders[0] + 2.5 * (1 - k), g.shoulders[1] + 9 * (k - 0.5))
+    if g.travel:
+        _off_travel(g, rig, ph, pose)
+    return pose
+
+
+def _q2e(q):
+    """rig.qeuler's (yaw, pitch, roll) of a quaternion (R = yaw . pitch . roll)."""
+    from rig import qmatrix
+    R = np.asarray(qmatrix(q), float)[:3, :3]
+    pitch = math.degrees(math.asin(max(-1.0, min(1.0, -R[1, 2]))))
+    yaw = math.degrees(math.atan2(R[0, 2], R[2, 2]))
+    roll = math.degrees(math.atan2(R[1, 0], R[1, 1]))
+    return yaw, pitch, roll
+
+
+def _off_travel(g: Gait, rig: Rig, ph, pose):
+    """pose_at's legs, pelvis, spine and head for a run `g.travel` off her facing (the arms are pose_at's, in the
+    chest's frame): the feet and pelvis on the travel, the chest and head turned back to the aim (see Gait.travel)."""
+    from rig import qeuler, qinv, qmul
+    tr = g.travel % 360
+    back = abs(tr - 180) < 45
+    psi = -((tr + 180) % 360 - 180)          # the travel's yaw in her frame (+ to her left)
+    c = math.cos(2 * math.pi * ph)
+    d2 = g.duty / 2
+    y = -g.drop - g.bob / 2 * math.cos(4 * math.pi * (ph - d2))
+    x = g.hip_shift * math.cos(2 * math.pi * (ph - d2))
+    roll_sw = g.hip_roll * math.cos(2 * math.pi * (ph - d2))
+    I = rig.I
+    if back:
+        # The pelvis turns with the swinging leg, which now swings back: the other way round.
+        p_yaw = g.hip_yaw * c
+        pel = qeuler(p_yaw, g.hip_tilt, roll_sw)
+        chest = qeuler(-g.chest_yaw * c, g.chest_lean, 0.0)
+        hp = (x, y, 0.0)
+    else:
+        turn = psi * g.side_hips / 90.0
+        rel = math.radians(psi - turn)       # travel's yaw from the pelvis's forward
+        p_yaw = turn - g.hip_yaw * c
+        pel = qeuler(p_yaw, g.hip_tilt * math.cos(rel), -g.hip_tilt * math.sin(rel) + roll_sw)
+        side = -math.copysign(1.0, psi)      # + travelling to her right (roll + tips her right)
+        chest = qeuler(g.chest_yaw * c, g.chest_lean, side * g.side_lean)
+        pr = math.radians(psi)               # over the standing foot: across the travel, not across her
+        hp = (x * math.cos(pr), y, -x * math.sin(pr))
+    sp = _q2e(qmul(qinv(pel), chest))
+    pose["hips"] = {"pos": hp, "rot": _q2e(pel)}
+    pose["spine"] = sp
+    cy, cp, cr = _q2e(chest)
+    pose["neck"] = (0, -cp * 0.4, -cr * 0.4)
+    pose["head"] = (-cy * 0.8, -cp * 0.5 - g.head_up, -cr * 0.5)
+    rest = {s: rig.prest[I[f"foot_{s}"]] for s in "lr"}
+    ball = {s: rig.prest[I[f"ball_{s}"]] - rig.prest[I[f"foot_{s}"]] for s in "lr"}
+    for side, off in (("l", 0.0), ("r", 0.5)):
+        s = 1 if side == "l" else -1
+        a, pitch, toe = foot(g, ph - off)
+        if back:
+            u = (ph - off) % 1.0
+            if u < g.duty:
+                v = u / g.duty
+                pitch = -g.back_toe * (1 - v) ** 2 - 4 * math.sin(math.pi * v) - (g.back_toe + 4) * max(0.0, (v - 0.5) / 0.5) ** 2
+                pitch = min(pitch, -2.0)
+                toe = -pitch
+            else:
+                v = (u - g.duty) / (1 - g.duty)
+                pitch = float(_spline([(0.0, -g.back_toe - 4), (0.3, -g.back_toe - 14), (0.7, -g.back_toe - 6),
+                                       (1.0, -g.back_toe)], v)[0])
+                toe = float(_spline([(0.0, g.back_toe + 4), (0.35, 0.0), (0.75, 0.0), (1.0, g.back_toe)], v)[0])
+            # Heel up on the forefoot: the ankle raised and moved so the ball holds its place (its rest offset turned).
+            b = math.radians(-pitch)
+            bl = ball[side]
+            dy = bl[1] * (1 - math.cos(b)) + bl[2] * math.sin(b)
+            dz = bl[2] * (1 - math.cos(b)) - bl[1] * math.sin(b)
+            fx, fy, fz = s * g.width + a[0], a[1] + max(0.0, dy), -a[2] + dz
+            yaw_f = s * 4
+            pole = (s * 0.1, 0, 1)
+        else:
+            lead = (s < 0) == (psi < 0)      # the foot on the side she travels toward
+            # The travel frame's (out, forward) turned to her frame by psi (+ yaw: forward toward her left).
+            # Each foot's path follows its own hip socket along the travel (the turned pelvis puts the trail hip
+            # behind: on the run's shared spot its leg reached across her, landing locked straight).
+            sx = float(rig.prest[I[f"thigh_{side}"]][0])
+            ox, oz = s * g.width + a[0], a[2] + sx * math.sin(math.radians(psi - turn))
+            pr = math.radians(psi)
+            fx = ox * math.cos(pr) + oz * math.sin(pr)
+            fz = -ox * math.sin(pr) + oz * math.cos(pr)
+            fy = a[1]
+            yaw_f = turn * (g.toe_lead if lead else g.toe_trail)
+            yr = math.radians(yaw_f)
+            pole = (math.sin(yr) + s * 0.1 * math.cos(yr), 0, math.cos(yr) - s * 0.1 * math.sin(yr))
+        pose[f"foot_{side}"] = {"pos": (fx, fy, fz), "rot": (yaw_f, -pitch, 0), "toe": toe, "pole": pole}
     return pose
 
 

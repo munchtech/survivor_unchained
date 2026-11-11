@@ -56,6 +56,10 @@ func _init():
 	var all = {}
 	for n in old.get_animation_list():
 		all[String(n)] = true
+	var added = []
+	for n in fresh:
+		if not all.has(String(n)):
+			added.append(String(n))
 	for n in fresh:
 		all[String(n)] = true
 	var keys = all.keys()
@@ -67,5 +71,5 @@ func _init():
 	var fm = FileAccess.open(meta_out, FileAccess.WRITE)
 	fm.store_string(JSON.stringify(metas, "\t", true))
 	fm.close()
-	print("PACKED %d clips into %s (%s), replaced: %s" % [lib.get_animation_list().size(), out, error_string(err), ", ".join(fresh.keys())])
+	print("PACKED %d clips into %s (%s), replaced: %s; added (new to the library): %s" % [lib.get_animation_list().size(), out, error_string(err), ", ".join(fresh.keys()), ", ".join(added) if added else "none"])
 	quit()
