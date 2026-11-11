@@ -351,6 +351,8 @@ public partial class PlayerView : Node3D
                     mv.AddNode("backBlend", new AnimationNodeBlend2(), new Vector2(1400, 300));
                     mv.ConnectNode("backScale", 0, "backClip");
                     string last = layered ? "arms" : "blend";
+                    // (a node's output feeds one input only: free "last" from the output first, or the connect fails and the tree goes to rest)
+                    mv.DisconnectNode("output", 0);
                     mv.ConnectNode("backBlend", 0, last);
                     mv.ConnectNode("backBlend", 1, "backScale");
                     mv.ConnectNode("output", 0, "backBlend");
