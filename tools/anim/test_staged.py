@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import staged  # noqa: E402
@@ -27,7 +28,10 @@ def _hand_basis(d, f=0):
 
 
 def test_staged_differs_and_matches_pack():
-    raw = json.loads((HERE / "out" / "clips" / "run_reaver.json").read_text())
+    src = HERE / "out" / "clips" / "run_reaver.json"
+    if not src.exists():
+        pytest.skip("tools/anim/out/clips/run_reaver.json is build output (git-ignored): run `python tools/anim/build.py` first")
+    raw = json.loads(src.read_text())
     st = staged.staged_json(json.loads(json.dumps(raw)))
     ang = np.degrees(2 * np.arccos(min(1.0, abs(float(np.dot(_hand_basis(raw), _hand_basis(st)))))))
     assert ang > 5, f"staging should turn the wrist (got {ang:.1f} deg)"

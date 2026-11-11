@@ -20,6 +20,10 @@
 - **M4 UI:** damage numbers outshine the impacts and sit on top of them.
 - **A1 Stage B (after P1's pick):** FIRST in its order the four skill clips P7 needs: the Heroic Leap (crouch, overhead launch, tuck, point-down drive, knee landing), a spin loop (Bladestorm), a brace (Iron Vow), a shield-first charge. P7's views are judged with today's stand-in clips as a known until then.
 
+## From A1 Stage B lead 4 (9 Nov; the coordinator approved the shape): her clips' beats as data, the one record M3 reads
+- **M3 combat systems (item 14, contact frames as data):** `godot/data/anim/her_events.json` = `{"fps": 60, "clips": {<clip>: {"contact": [f, ...], "hold": [a, b], "cancel": f, "loop": [a, b], "events": {"takeoff": f, "apex": f, "land": f, "plant": f, "burst": f, "impact": f}}}}`. Frames count from the clip's start at 60 fps; every key is optional per clip. `contact` = the frame(s) a blow lands (damage there, not at the press); `hold` = the stillness window after a blow (bible R8.2); `cancel` = the earliest frame another action may cut in; `loop` = the range a held state repeats (Bladestorm's spin, Iron Vow's brace, the charge's run); `events` = named beats the views and the sim time to (the leap's takeoff/apex/land, the vow's plant/burst, the charge's impact). A1's P4 pack writes it; nothing else does.
+- **P7 skills:** the four clips are `heroic_leap`, `bladestorm_loop` (the TURN stays in the view: it yaws her root at 2.25 turns a second as today; the clip is her body de-rotated at that rate, so her pivot foot stands still in the world), `iron_vow`, `shield_charge`, on B (`--body p1`) until P2's refit makes B the default; their beats are in the file above.
+
 ## From the P7 skills judge, round 2 (9 Nov, relayed by coordinator ad002ada)
 
 Verdict verbatim: `survivorsunchained_inputs/skills_p7/judge_r2/verdict.md`. All five moves FAIL (leap and dash "medium", charge, Bladestorm, Iron Vow "far"); the long tapered strokes read, every ring/cross/crescent/disc is still a sticker. P7's round 3 rebuilds the rings on one travelling-wavefront primitive. Routes for other areas:

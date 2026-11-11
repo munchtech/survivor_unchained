@@ -236,22 +236,13 @@ public static class Arms
         person.Skeleton.AddChild(att);
         var mount = new Node3D { Name = GripSlide.MountPrefix + bone };
         att.AddChild(mount);
-        mount.Transform = InAFrame(person.Skeleton, bone) * MountTransform(id, bone, person.Own != null);
-        if (P1Body.IsB(person.Skeleton)) P1Laws.Follow(person.Skeleton, mount, bone, MountTransform(id, bone, person.Own != null));
+        // (on P1's B too: B's own bone frame, the plain attachment; B's pockets in Seat. A1 rebase on B: no A frame, no
+        // follow of A's hinge rule; B's holds are clip data)
+        mount.Transform = MountTransform(id, bone, person.Own != null);
         var w = Make(id);
-        w.Transform = Seat(w, id, bone, person.Own != null);
+        w.Transform = Seat(w, id, bone, person.Own != null, P1Body.IsB(person.Skeleton));
         mount.AddChild(w);
         return mount;
-    }
-
-    /// <summary>A held mount's frame: on A (and anyone but P1's B) the bone's own; on B the A bone's frame in the B bone's space
-    /// (P1Retarget.AFrame, a turn about the joint; B's hand and forearm joints ride A's path), so the mount, keyed in A's hand
-    /// and forearm frames, rides as on A. In B's own frame (its hands 6.7 degrees about their x off A's, the forearms 1-4
-    /// about their length) the sword's tip sat 113 mm and the shield's rim 30 mm off A's (P1 R1 round 31, gate judge 2's fault 2).</summary>
-    public static Transform3D InAFrame(Skeleton3D sk, string bone)
-    {
-        if (!P1Body.IsB(sk) || P1Body.RoleMap(sk).AFrame(P1Body.Bone(sk, bone)) is not { } r) return Transform3D.Identity;
-        return P1Body.T(P1M4.From(r, new P1V(0, 0, 0)));
     }
 
     /// <summary>A held piece's place inside its mount (Hold's and ArmsDump's): PieceTransform, and in her right hand, for a
@@ -267,12 +258,13 @@ public static class Arms
     /// dagger's so far), the mount itself unmirrored (the seat lays the grip point and the shaft's line, so only the
     /// piece's roll about its shaft is the plain mount's: a flat hilt's faces toward the palm and the back either way).
     /// Every other kind in the left hand keeps the plain mount.</summary>
-    public static Transform3D Seat(Node3D piece, string id, string bone, bool own = true)
+    public static Transform3D Seat(Node3D piece, string id, string bone, bool own = true, bool isB = false)
     {
         var t = PieceTransform(id);
         var spec = All[id];
         var kind = piece.HasMeta("kind") ? (WeaponKind)(int)piece.GetMeta("kind") : spec.Kind;
-        if (WeaponSockets.Pocket(kind, bone) is not { } pocket) return t;
+        // (B's own fist where it is measured: WeaponSockets.Pocket isB)
+        if (WeaponSockets.Pocket(kind, bone, isB) is not { } pocket) return t;
         static System.Numerics.Vector3 N(Vector3 v) => new(v.X, v.Y, v.Z);
         if (spec.Pistol)
         {
@@ -336,6 +328,8 @@ public static class Arms
     /// space at rest, mirrored as At is) as a hung weight (View/SheathSway, Play/SheathHang) instead of riding the bone
     /// rigidly; null: it rides rigidly (strapped across her back, tucked in the belt).
     /// Frog (Body 17): a hafted piece hangs in a leather frog (Made.Frog, MakeSheathed).
+    static Vector3 G(System.Numerics.Vector3 v) => new(v.X, v.Y, v.Z);
+
     sealed record Socket(string Bone, Vector3 At, Vector3 Shaft, Vector3 Thick, Vector3 Normal, bool Mirrors = false, bool MirrorEdge = false, Vector3? Hang = null, bool Frog = false);
 
     static readonly Dictionary<string, Socket> Sockets = new()
@@ -349,8 +343,8 @@ public static class Arms
         // Hung from its sheath point (Body 16) in walk and idle; RIGID, riding the pelvis, in the clips where her hand
         // holds the hilt (Body 17, 27 Oct: run_warden_town and sprint_warden_town, SheathHang.HiltHeld), where hung
         // it swung into that hand (10.0 / 11.6 mm; tools/scratch/body16/hang.py), eased over 0.2 s at the cuts.
-        [WeaponSockets.HipBlade] = new("pelvis", new(0.21f, 1.20f, 0.10f), new(0.08f, -0.87f, -0.50f), new(1, 0, 0), new(1, 0, 0), Mirrors: true,
-            Hang: new(0.21f, 1.20f, 0.10f)),
+        [WeaponSockets.HipBlade] = new("pelvis", G(WeaponSockets.HipBladeAtA), G(WeaponSockets.HipBladeShaft), new(1, 0, 0), new(1, 0, 0), Mirrors: true,
+            Hang: G(WeaponSockets.HipBladeAtA)),
         // Blunt and axe: the hip loop behind her right hip (left hand: mirrored, MirrorEdge, so gyre's two ride as mirror
         // images), at about 5 o'clock (12 her front): the head on the belt (the haft's top 1.06 m up, 22 cm out from her
         // axis), the haft down along the back of her thigh, its foot leaning 20 deg out and 10 deg to her side so the thigh
@@ -494,6 +488,22 @@ public static class Arms
             var toB = skeleton.GetBoneGlobalRest(bb).AffineInverse() * restA;
             at = toB * at;
             if (pivotAt is { } pv) pivotAt = toB * pv;
+            if (WeaponSockets.SocketOf(KindOf(id)) == WeaponSockets.HipBlade)
+            {
+                // (B's own sheath point, WeaponSockets.HipBladeAtB: the hilt 15 cm lower on B's hip; the hang point moves with it)
+                var d = G(WeaponSockets.HipBladeAtB - WeaponSockets.HipBladeAtA);
+                var shift = skeleton.GetBoneGlobalRest(bb).Basis.Inverse() * new Vector3(left ? -d.X : d.X, d.Y, d.Z);
+                at.Origin += shift;
+                if (pivotAt is { } pv2) pivotAt = pv2 + shift;
+                // (and B's own scabbard tilt, WeaponSockets.HipBladeShaftB: turned about the sheath point in skeleton space)
+                Vector3 sa = G(WeaponSockets.HipBladeShaft).Normalized(), sb = G(WeaponSockets.HipBladeShaftB).Normalized();
+                if (left) { sa.X = -sa.X; sb.X = -sb.X; }
+                var rest = skeleton.GetBoneGlobalRest(bb);
+                var ts = rest * at;
+                var turn = new Basis(new Quaternion(sa, sb));
+                ts.Basis = turn * ts.Basis;
+                at = rest.AffineInverse() * ts;
+            }
             bone = skeleton.GetBoneName(bb);
         }
         var att = new BoneAttachment3D { BoneName = bone };

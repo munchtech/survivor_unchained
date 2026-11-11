@@ -2,6 +2,28 @@
   "_doc": "side (M3 item 9): which way the blade crosses at the contact, -1 toward the lesser sim angle, +1 toward the greater, read in play from BattleFx.Grip's `grip cut` line (--clip); a clip with none alternates from the weapon's count. M3 interim: measured from today's clips by tools/anim/contact_measure.py (the blade tip's sweep crossing her facing, else its speed peak; frames from the clip's start at 60 fps, in clip time); A1's P4 pack replaces it. len (M3 MR 3): the clip's whole length in frames at fps (contact_measure.py prints `of N frames`: len = N - 1), and cancel (the frame a chain's cut stops limiting her): read only by a chained press record (skills.json press `chain`, Sim/SwingChain.cs); a beat not written falls back to the timing contract (cut 42 f, contact 14, cancel 22; heavy 54, 20, 30).",
   "fps": 60,
   "clips": {
+    "bladestorm_loop": {
+      "loop": [0, 80]
+    },
+    "heroic_leap": {
+      "contact": [44],
+      "hold": [44, 48],
+      "cancel": 58,
+      "events": {"takeoff": 6, "apex": 24, "land": 44}
+    },
+    "iron_vow": {
+      "contact": [144],
+      "hold": [144, 148],
+      "cancel": 148,
+      "loop": [18, 138],
+      "events": {"plant": 18, "burst": 144}
+    },
+    "shield_charge": {
+      "contact": [22],
+      "hold": [22, 26],
+      "cancel": 26,
+      "events": {"launch": 4, "impact": 22}
+    },
     "sword_back": {
       "contact": [
         4

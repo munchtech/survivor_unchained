@@ -228,6 +228,7 @@ public partial class Minimap : Control
         seenNow = "";
         mat.SetShaderParameter("drawing", drawing);
         mat.SetShaderParameter("road_keep", KeepFor(id, drawing));
+        mat.SetShaderParameter("zone_ink", MapScreen.InkSheetFor(id));
         mat.SetShaderParameter("span", Span / extent);
         GD.Print($"minimap: zone {id} extent {extent:0} span {Span / extent:0.000}: the drawing's edge fades into the paper over 28 px (+-6 px wander), darkening over 70 px beyond");
     }
@@ -407,14 +408,19 @@ public partial class Minimap : Control
         uniform sampler2D drawing : filter_linear, repeat_disable;
         uniform sampler2D seen : filter_linear, repeat_disable;
         uniform sampler2D road_keep : filter_linear, repeat_disable, hint_default_white;
+        // (L1 l26 mini) the zone's own ink (ZoneInk via MapScreen.InkSheetFor): R hard props, G soft, B buildings, A yards
+        uniform sampler2D zone_ink : filter_linear, repeat_disable, hint_default_transparent;
         uniform vec2 centre = vec2(0.5);
         uniform float span = 0.2;
-        float roadMask(vec2 uv) {
+        // x: the road; y: dirt-hued ground the road keep dropped (a camp yard: L1 l26 mini, inked as a yard, not left blank)
+        vec2 roadMask(vec2 uv) {
             vec3 drawn = texture(drawing, uv).rgb;
             float age = smoothstep(0.3, 0.72, length(uv - 0.5)) * 0.5;
             drawn = clamp((drawn - vec3(0.275, 0.157, 0.055) * age) / (1.0 - age), 0.0, 1.0);
             // (S2) road_keep: the road pixels that are road, not dirt-hued ground (a camp yard) under 16 px across (RoadKeep)
-            return smoothstep(0.047, 0.054, (drawn.r - drawn.g) / max(drawn.r + drawn.g + drawn.b, 0.05)) * texture(road_keep, uv).r;
+            float dirt = smoothstep(0.047, 0.054, (drawn.r - drawn.g) / max(drawn.r + drawn.g + drawn.b, 0.05));
+            float keep = texture(road_keep, uv).r;
+            return vec2(dirt * keep, dirt * (1.0 - keep));
         }
         // (M4 lead 12: the lattice hash is sin-free: fract(sin(dot)*43758) turns a 1-ulp difference between two evaluations of the
         // same lattice point (fma or not, 0.001 at args of 14000) into a 0.1 to 0.25 jump, so the warp tore along lattice lines)
@@ -452,15 +458,30 @@ public partial class Minimap : Control
             float sum = max(drawn.r + drawn.g + drawn.b, 0.05);
             // The road: its total width is the mask (the dirt hue) as before, its lower threshold raised so the
             // drawing's fine contour lines no longer pass; the fill is the mask shrunk by 1 px, the ring left is the ink edge.
-            float road = roadMask(uv);
-            float core = min(min(roadMask(uv + vec2(px, 0.0)), roadMask(uv - vec2(px, 0.0))), min(roadMask(uv + vec2(0.0, px)), roadMask(uv - vec2(0.0, px))));
-            core = min(core, road);
+            vec2 rm = roadMask(uv);
+            vec2 rc = min(min(roadMask(uv + vec2(px, 0.0)), roadMask(uv - vec2(px, 0.0))), min(roadMask(uv + vec2(0.0, px)), roadMask(uv - vec2(0.0, px))));
+            float road = rm.x;
+            float core = min(rc.x, road);
+            // (L1 l26 mini) the zone's own ink, each shape a fill and a 1 px ink edge (the fill shrunk by a pixel, as the road's)
+            vec4 zi = texture(zone_ink, uv);
+            vec4 zc = min(min(min(texture(zone_ink, uv + vec2(px, 0.0)), texture(zone_ink, uv - vec2(px, 0.0))), min(texture(zone_ink, uv + vec2(0.0, px)), texture(zone_ink, uv - vec2(0.0, px)))), zi);
+            float yard = max(zi.a, rm.y), yardCore = max(zc.a, min(rc.y, rm.y));
             float water = smoothstep(0.030, 0.070, (drawn.b - drawn.r) / sum);
             float luma = dot(drawn, vec3(0.299, 0.587, 0.114));
             vec3 seenCol = vellum + vec3(clamp((luma - 0.72) * 0.25, -0.03, 0.03));
             seenCol = mix(seenCol, mix(vellum, ink, 0.55) + vec3(-0.02, 0.01, 0.03), water);
+            // yards: the road's fill at half on the vellum, a half-strength ink edge (worked ground, not a road)
+            seenCol = mix(seenCol, mix(vellum, roadEdge, 0.45), yard);
+            seenCol = mix(seenCol, mix(vellum, roadFill, 0.5), yardCore);
             seenCol = mix(seenCol, roadEdge, road);
             seenCol = mix(seenCol, roadFill, core);
+            // the full map's hand (MapScreen.Ink): soft props a 0.35 wash (110,86,58); props (84,60,40) at 0.8 in (48,32,20);
+            // buildings (128,74,52) in (46,28,16)
+            seenCol = mix(seenCol, vec3(110.0, 86.0, 58.0) / 255.0, 0.35 * zi.g);
+            seenCol = mix(seenCol, vec3(48.0, 32.0, 20.0) / 255.0, 0.9 * zi.r);
+            seenCol = mix(seenCol, vec3(84.0, 60.0, 40.0) / 255.0, 0.8 * zc.r);
+            seenCol = mix(seenCol, vec3(46.0, 28.0, 16.0) / 255.0, 0.95 * zi.b);
+            seenCol = mix(seenCol, vec3(128.0, 74.0, 52.0) / 255.0, 0.95 * zc.b);
             // The fog's edge: the explored grid (cells of about 10 px here) is blurred over its neighbours, not drawn
             // as cells, and crossed in 6 to 8 px: no stair steps.
             vec2 cell = 1.0 / vec2(textureSize(seen, 0));

@@ -165,6 +165,10 @@ def main(argv):
     if "--dry" in argv:
         return
     OUT.parent.mkdir(parents=True, exist_ok=True)
+    if OUT.exists():
+        # (the P4 pack shares the file: every clip not measured here keeps its entry, e.g. A1's four action clips)
+        was = json.loads(OUT.read_text(encoding="utf-8")).get("clips", {})
+        out["clips"] = dict(sorted({**was, **out["clips"]}.items()))
     OUT.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
     print(f"written {OUT.relative_to(REPO)}")
 

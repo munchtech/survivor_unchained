@@ -1,0 +1,951 @@
+{
+ "kind": "action",
+ "rules": "R8.1-R8.4 anticipation, contact, hold, follow-through, recovery to the RELAXED fight-ready pose; s11 Warden: committed, rotation-driven, the shield first; R1.2 the weapon carries 2-3x the body's motion. The read: she plants and becomes a wall; then it all comes back out of her.",
+ "held": [
+  "sword",
+  "shield"
+ ],
+ "beats": {
+  "events": {
+   "plant": 0.3,
+   "burst": 2.4
+  },
+  "loop": [
+   0.3,
+   2.3
+  ],
+  "contact": [
+   2.4
+  ],
+  "hold": [
+   2.4,
+   2.4667
+  ],
+  "cancel": 2.4667,
+  "blend_in": 0.1
+ },
+ "gen": {
+  "engine": "kimodo",
+  "seconds": 2.8,
+  "takes": 6,
+  "seeds": [
+   811
+  ],
+  "prompts": [
+   "A woman plants her feet and raises her shield, braces behind it breathing heavily, then shoves the shield forward hard and returns to a ready stance."
+  ],
+  "keys": {
+   "poses": [
+    {
+     "src": {
+      "prompt": "A woman stands ready and relaxed, a shield held on her left forearm at chest height and a sword held low by her right hip, breathing calmly.",
+      "seed": 531,
+      "seconds": 2.0,
+      "takes": 6
+     },
+     "pick": 0,
+     "frame": 30,
+     "at": 0,
+     "xz": [
+      0,
+      0
+     ],
+     "yaw": 0,
+     "arm": {
+      "LeftHand": [
+       0.056,
+       0.243,
+       0.28
+      ],
+      "RightHand": [
+       -0.187,
+       -0.075,
+       0.112
+      ]
+     }
+    },
+    {
+     "src": {
+      "prompt": "A woman stands tall in a fighting stance with her left foot forward and her knees slightly bent, holding a shield up in front of her chest with her left arm, her right hand raised beside her right cheek holding a sword pointed straight forward over the top of the shield, and holds still.",
+      "seed": 541,
+      "seconds": 2.0,
+      "takes": 6
+     },
+     "pick": 3,
+     "frame": 45,
+     "at": 15,
+     "xz": [
+      0.081,
+      -0.014
+     ],
+     "yaw": 0.0,
+     "arm": {
+      "RightHand": [
+       -0.22,
+       0.46,
+       0.06
+      ],
+      "LeftHand": [
+       0.1,
+       0.22,
+       0.34
+      ]
+     }
+    },
+    {
+     "src": {
+      "prompt": "A woman stands tall in a fighting stance with her left foot forward and her knees slightly bent, holding a shield up in front of her chest with her left arm, her right hand raised beside her right cheek holding a sword pointed straight forward over the top of the shield, and holds still.",
+      "seed": 541,
+      "seconds": 2.0,
+      "takes": 6
+     },
+     "pick": 3,
+     "frame": 45,
+     "at": 45,
+     "xz": [
+      0.081,
+      -0.014
+     ],
+     "yaw": 0.0,
+     "arm": {
+      "RightHand": [
+       -0.22,
+       0.46,
+       0.06
+      ],
+      "LeftHand": [
+       0.1,
+       0.22,
+       0.34
+      ]
+     }
+    },
+    {
+     "src": {
+      "prompt": "A woman braced behind a shield explodes forward, driving her hips and shoving the shield hard forward with her left arm, then steps back into a ready stance.",
+      "seed": 512,
+      "seconds": 2.5,
+      "takes": 6
+     },
+     "pick": 4,
+     "frame": 32,
+     "at": 48,
+     "xz": [
+      0.262,
+      0.12
+     ],
+     "yaw": -25.0,
+     "arm": {
+      "RightHand": [
+       -0.5,
+       0.33,
+       -0.22
+      ],
+      "LeftHand": [
+       0.08,
+       0.3,
+       0.5
+      ]
+     }
+    },
+    {
+     "src": {
+      "prompt": "A woman braced behind a shield explodes forward, driving her hips and shoving the shield hard forward with her left arm, then steps back into a ready stance.",
+      "seed": 512,
+      "seconds": 2.5,
+      "takes": 6
+     },
+     "pick": 4,
+     "frame": 32,
+     "at": 50,
+     "xz": [
+      0.262,
+      0.12
+     ],
+     "yaw": -25.0,
+     "arm": {
+      "RightHand": [
+       -0.5,
+       0.33,
+       -0.22
+      ],
+      "LeftHand": [
+       0.08,
+       0.3,
+       0.5
+      ]
+     }
+    },
+    {
+     "src": {
+      "prompt": "A woman stands ready and relaxed, a shield held on her left forearm at chest height and a sword held low by her right hip, breathing calmly.",
+      "seed": 531,
+      "seconds": 2.0,
+      "takes": 6
+     },
+     "pick": 0,
+     "frame": 30,
+     "at": 66,
+     "xz": [
+      0,
+      0
+     ],
+     "yaw": 0,
+     "arm": {
+      "LeftHand": [
+       0.056,
+       0.243,
+       0.28
+      ],
+      "RightHand": [
+       -0.187,
+       -0.075,
+       0.112
+      ]
+     }
+    },
+    {
+     "src": {
+      "prompt": "A woman stands ready and relaxed, a shield held on her left forearm at chest height and a sword held low by her right hip, breathing calmly.",
+      "seed": 531,
+      "seconds": 2.0,
+      "takes": 6
+     },
+     "pick": 0,
+     "frame": 30,
+     "at": 78,
+     "xz": [
+      0,
+      0
+     ],
+     "yaw": 0,
+     "arm": {
+      "LeftHand": [
+       0.056,
+       0.243,
+       0.28
+      ],
+      "RightHand": [
+       -0.187,
+       -0.075,
+       0.112
+      ]
+     }
+    }
+   ],
+   "prompts": [
+    0
+   ],
+   "seeds": [
+    821
+   ],
+   "seconds": 2.8,
+   "takes": 6,
+   "tag": "w"
+  }
+ },
+ "post": {
+  "loop": false,
+  "inplace": false,
+  "crop": [
+   6,
+   66
+  ],
+  "action": {
+   "seconds": 3.0,
+   "planted": {
+    "foot_l": [
+     [
+      "plant",
+      2.7667,
+      "ball",
+      "flat"
+     ]
+    ],
+    "foot_r": [
+     [
+      "plant",
+      2.4667,
+      "ball",
+      "flat"
+     ],
+     [
+      2.8333,
+      3.0,
+      "ball",
+      "last"
+     ]
+    ]
+   },
+   "retime": {
+    "lead": 0.3,
+    "tail": 0.6,
+    "at": {
+     "plant": 9,
+     "burst": 42
+    },
+    "hold_on": "burst",
+    "pairs": [
+     [
+      2.3,
+      39
+     ]
+    ]
+   }
+  }
+ },
+ "notes": "A1 actions (solver B): keyed beats from native takes: the fight-ready start (rdpose, hands on idle_warden's), the brace (vwpose_brace pick 1 f37, the sword hand drawn back by IK) keyed through the loop, the shove (vwpose_shove pick 4 f32, feet on the brace's) at the burst and the hold, fight-ready at 2.0 s. Job frames = clip frames + 6 (crop). Fit (solver F2): loop 2.0 s by retime (pairs: the loop's end on the take's last brace key f39), the brace frozen with one breath (brace layer: the trunk 1.2 cm up on the legs, 2 deg extension), the sword drawn back low point forward (blade keys, heading frame), the sword hand held back at the hip through the burst (limbs keys), the end onto idle_warden anchored on the left foot, both pieces cleared 11 mm. Solver F4: the shield seated by keys through the brace (carried low at the start, boss [0.22, 0.20, 0.36], raised to [0.16, 0.30, 0.36] pelvis frame, 15 deg open, 5 tilt; shoved to [0.08, 0.30, 0.44] at the burst and held into the end blend), the shield hand on idle's hand (hand: end); the sword hand out at [-0.28, 0.08, 0.15] and the blade aimed outward ([-0.25, -0.2, 0.95] braced, [-0.7, -0.5, 0.5] low): both pieces 17+ mm clear through the brace before the clear layer, which then only works the start (f0-6) and the recovery (f80-86). pelvis_cm@3.0 retired for end_deg. Solver F5 (feet): both feet ON THE FLOOR through the brace (planted windows \"flat\": rest foot under the window's heading, ball pinned x, y, z; the back heel rises 15 deg about the ball through the burst so the leg stays at reach 0.985 and the pin holds); the right foot STEPS from its pinned spot to idle's (2.4667-2.8333 s, 36.5 cm, 6 cm lift, step \"pinned\") and is held on idle's foot pose to 3.0 (\"last\"); the left foot stays planted to 2.7667 then PIVOTS ON ITS HEEL onto idle's heading (31 deg, toes 3 cm up, step \"heel\"); the end's anchor is the left HEEL, held on its brace spot (anchor_from 2.3: the take's left foot shuffled 6 cm through the recovery and carried the hips with it). No pop clamp needed (0 pops without it). Solver S2 (the spot): the clip STARTS AND ENDS ON idle_warden's spot. fit.start (the mirror of end): f0 is idle_warden's legs and pelvis (turn, height), blended into the take over 0-0.3 s, anchored on the left heel at its brace spot; the RIGHT foot STEPS BACK into the brace (0-0.3 s, 36.4 cm, 5 cm lift, step \"pinned\", landing on the plant event f9 and pinned from there: its planted window now starts at plant), the left turns on its HEEL from idle's heading to the brace's (31 deg, toes 3 cm up), the pelvis travels 13 cm back and 17 cm down over the same frames. fit.end.spot true: the whole clip shifted (-22.6, -12.1 cm) so the end is on the idle's place (0.0 cm); the left heel stays within 0.8 cm of idle's left-heel spot from f0 to the end. BAND pelvis_cm@plant moved from [-15, -8] to [-22.5, -15.5]: it measures the drop from frame 0, and frame 0 is now idle's height (106.0 cm, was the take's 98.5); the brace itself is where it was (pelvis 88.9 cm). RE-TAKE R3 (lead 10): the brace is now a legionary's GUARD (ivpose_g0 pick 3 f45: tall, seat under her, both heels down), keyed at the loop's two ends only (job 15, 45); the burst stays vwpose_shove pick 4 f32 re-set on the guard's feet. Fit: hips (2 cm down, 4 cm onto the front foot through the guard; a 3 cm recoil after the hold), lean (the chest back 7 deg after the hold: the rebound), nod (chin up: -8 in the guard, -12 at the burst), twist (the shield shoulder driven in 22 deg at the burst), the sword laid OVER the shield's top edge (hand_r by the right shoulder, blade [0.17, -0.04, 0.98] heading frame), at the burst thrown back and out wide (the cross), then swung down through into the low carry with an overshoot (blade ease through); the shield locked at boss [0.07, 0.13, 0.40], punched to [0.05, 0.22, 0.55] with the top edge leading (open -20, tilt 22); brace ALIVE (breath 1.7 cm, press 2 cm along the stance, the shield riding 0.6 of the rise, the tip's 3 cm circle). Bands rewritten to the design (still_deg@hold kept for the 2-frame contact hold only: the loop is not in `hold`).",
+ "bands": {
+  "pelvis_cm@plant": [
+   -12,
+   -8
+  ],
+  "lean_deg@plant": [
+   8,
+   12
+  ],
+  "heel_l_cm@plant": [
+   -0.5,
+   1.0
+  ],
+  "heel_r_cm@plant": [
+   -0.5,
+   1.0
+  ],
+  "stance_fb_cm@plant": [
+   30,
+   60
+  ],
+  "knee_l_deg@plant": [
+   20,
+   60
+  ],
+  "head_down_deg@plant": [
+   -8,
+   5
+  ],
+  "shield_top_cm@plant": [
+   140,
+   155
+  ],
+  "shield_face_deg@plant": [
+   -20,
+   20
+  ],
+  "shield_over_eyes_cm@plant": [
+   -15,
+   -2
+  ],
+  "blade_rim_cm@loop:min": [
+   3,
+   10
+  ],
+  "blade_below_deg@plant": [
+   -20,
+   20
+  ],
+  "blade_yaw_deg@plant": [
+   -20,
+   20
+  ],
+  "chest_cm@loop:ptp": [
+   1.5,
+   2.0
+  ],
+  "boss_cm@loop:ptp": [
+   0.6,
+   1.4
+  ],
+  "pelvis_z_cm@loop:ptp": [
+   1.5,
+   2.5
+  ],
+  "blade_below_deg@loop:ptp": [
+   1.0,
+   3.5
+  ],
+  "loop_seam_deg": [
+   0,
+   1
+  ],
+  "boss_z_cm@2.3..contact:ptp": [
+   25,
+   50
+  ],
+  "twist_deg@contact": [
+   -50,
+   -15
+  ],
+  "hand_r_ahead_cm@2.4667": [
+   -70,
+   -5
+  ],
+  "still_deg@hold:max": [
+   0,
+   1
+  ],
+  "end_deg@3.0": [
+   0,
+   10
+  ]
+ },
+ "gate": [
+  "pelvis_cm@plant",
+  "end_deg@3.0"
+ ],
+ "source": "src/iron_vow.npz",
+ "bvh": "iron_vow__qw0s821_0.bvh",
+ "sha1": "5ccde4bdb8e8d8cf20ac181522f54a4504efe8da",
+ "take_score": 1.132,
+ "fit": {
+  "blade": {
+   "dir": [
+    -0.7,
+    -0.5,
+    0.5
+   ],
+   "keep": 0,
+   "frame": "heading",
+   "twist_smooth": 3,
+   "ease": "through",
+   "keys": [
+    [
+     0.0,
+     [
+      -0.7,
+      -0.5,
+      0.5
+     ]
+    ],
+    [
+     0.12,
+     [
+      -0.5,
+      0.3,
+      0.8
+     ]
+    ],
+    [
+     0.3,
+     [
+      0.17,
+      -0.04,
+      0.98
+     ]
+    ],
+    [
+     2.3,
+     [
+      0.17,
+      -0.04,
+      0.98
+     ]
+    ],
+    [
+     2.4,
+     [
+      -0.85,
+      0.2,
+      -0.5
+     ],
+     "still"
+    ],
+    [
+     2.4667,
+     [
+      -0.85,
+      0.2,
+      -0.5
+     ],
+     "still"
+    ],
+    [
+     2.6,
+     [
+      -0.7,
+      -0.7,
+      -0.1
+     ]
+    ],
+    [
+     2.78,
+     [
+      -0.45,
+      -0.45,
+      0.78
+     ]
+    ],
+    [
+     2.95,
+     [
+      -0.7,
+      -0.5,
+      0.5
+     ]
+    ],
+    [
+     3.0,
+     [
+      -0.7,
+      -0.5,
+      0.5
+     ]
+    ]
+   ]
+  },
+  "brace": {
+   "over": [
+    0.3,
+    2.3
+   ],
+   "chest_cm": 1.7,
+   "extend_deg": 2.5,
+   "press_cm": 2.0,
+   "press_phase": 0.3,
+   "shield_ride": 0.6,
+   "tip_cm": 3.0,
+   "out_s": 0.1
+  },
+  "end": {
+   "clip": "idle_warden",
+   "frame": 0,
+   "over": [
+    2.6,
+    3.0
+   ],
+   "anchor": "heel_l",
+   "anchor_from": 2.3,
+   "spot": true
+  },
+  "limbs": {
+   "hand_r": {
+    "keys": [
+     [
+      0.0,
+      null
+     ],
+     [
+      0.1,
+      [
+       -0.27,
+       0.12,
+       0.14
+      ]
+     ],
+     [
+      0.2,
+      [
+       -0.27,
+       0.34,
+       0.1
+      ]
+     ],
+     [
+      0.3,
+      [
+       -0.24,
+       0.42,
+       0.06
+      ]
+     ],
+     [
+      2.3,
+      [
+       -0.24,
+       0.42,
+       0.06
+      ]
+     ],
+     [
+      2.4,
+      [
+       -0.52,
+       0.33,
+       -0.24
+      ],
+      "still"
+     ],
+     [
+      2.4667,
+      [
+       -0.52,
+       0.33,
+       -0.24
+      ],
+      "still"
+     ],
+     [
+      2.6,
+      [
+       -0.42,
+       -0.02,
+       -0.1
+      ]
+     ],
+     [
+      2.78,
+      [
+       -0.2,
+       -0.1,
+       0.2
+      ]
+     ],
+     [
+      3.0,
+      null
+     ]
+    ],
+    "pole_keys": [
+     [
+      0.0,
+      [
+       -0.5,
+       -0.6,
+       -0.6
+      ]
+     ],
+     [
+      0.3,
+      [
+       -0.8,
+       -0.3,
+       -0.5
+      ]
+     ],
+     [
+      2.3,
+      [
+       -0.8,
+       -0.3,
+       -0.5
+      ]
+     ],
+     [
+      2.4,
+      [
+       -0.6,
+       -0.2,
+       -0.8
+      ]
+     ],
+     [
+      2.6,
+      [
+       -0.6,
+       -0.5,
+       -0.6
+      ]
+     ],
+     [
+      3.0,
+      [
+       -0.5,
+       -0.6,
+       -0.6
+      ]
+     ]
+    ]
+   }
+  },
+  "shield": {
+   "solve": true,
+   "branch": -1,
+   "hand": "end",
+   "keys": [
+    [
+     0.0,
+     [
+      0.22,
+      0.2,
+      0.36
+     ],
+     15,
+     5
+    ],
+    [
+     0.1,
+     [
+      0.14,
+      0.17,
+      0.4
+     ],
+     12,
+     5
+    ],
+    [
+     0.2333,
+     [
+      0.06,
+      0.135,
+      0.42
+     ],
+     9,
+     6
+    ],
+    [
+     0.3,
+     [
+      0.07,
+      0.13,
+      0.4
+     ],
+     10,
+     5
+    ],
+    [
+     2.3,
+     [
+      0.07,
+      0.13,
+      0.4
+     ],
+     10,
+     5
+    ],
+    [
+     2.4,
+     [
+      0.05,
+      0.22,
+      0.55
+     ],
+     -20,
+     22,
+     "still"
+    ],
+    [
+     2.4667,
+     [
+      0.05,
+      0.22,
+      0.55
+     ],
+     -20,
+     22,
+     "still"
+    ],
+    [
+     2.6,
+     [
+      0.12,
+      0.17,
+      0.36
+     ],
+     8,
+     0
+    ],
+    [
+     2.8,
+     [
+      0.21,
+      0.2,
+      0.35
+     ],
+     15,
+     5
+    ],
+    [
+     3.0,
+     [
+      0.22,
+      0.2,
+      0.36
+     ],
+     15,
+     5
+    ]
+   ]
+  },
+  "clear": {
+   "target_mm": 11,
+   "passes": 10
+  },
+  "step": {
+   "foot_r": [
+    [
+     0.0,
+     0.3,
+     5,
+     "pinned"
+    ],
+    [
+     2.4667,
+     2.8333,
+     6,
+     "pinned"
+    ]
+   ],
+   "foot_l": [
+    [
+     0.0,
+     0.3,
+     3,
+     "heel"
+    ],
+    [
+     2.7667,
+     3.0,
+     3,
+     "heel"
+    ]
+   ]
+  },
+  "start": {
+   "clip": "idle_warden",
+   "frame": 0,
+   "over": [
+    0.0,
+    0.3
+   ],
+   "anchor": "heel_l",
+   "anchor_to": 0.3
+  },
+  "hips": {
+   "keys": [
+    [
+     0.0,
+     null
+    ],
+    [
+     0.3,
+     [
+      0.0,
+      -0.02,
+      0.04
+     ]
+    ],
+    [
+     2.3,
+     [
+      0.0,
+      -0.02,
+      0.04
+     ]
+    ],
+    [
+     2.4,
+     null,
+     "still"
+    ],
+    [
+     2.4667,
+     null,
+     "still"
+    ],
+    [
+     2.5667,
+     [
+      0.0,
+      -0.01,
+      -0.03
+     ]
+    ],
+    [
+     2.8,
+     null
+    ],
+    [
+     3.0,
+     null
+    ]
+   ]
+  },
+  "lean": {
+   "keys": [
+    [
+     0.0,
+     0.0
+    ],
+    [
+     2.4667,
+     0.0,
+     "still"
+    ],
+    [
+     2.5667,
+     -7.0
+    ],
+    [
+     2.8,
+     0.0
+    ],
+    [
+     3.0,
+     0.0
+    ]
+   ]
+  },
+  "nod": {
+   "keys": [
+    [
+     0.0,
+     0.0
+    ],
+    [
+     0.3,
+     -8.0
+    ],
+    [
+     2.3,
+     -8.0
+    ],
+    [
+     2.4,
+     -12.0,
+     "still"
+    ],
+    [
+     2.4667,
+     -12.0,
+     "still"
+    ],
+    [
+     2.8,
+     0.0
+    ],
+    [
+     3.0,
+     0.0
+    ]
+   ]
+  },
+  "twist": {
+   "keys": [
+    [
+     0.0,
+     0.0
+    ],
+    [
+     0.3,
+     -6.0
+    ],
+    [
+     2.3,
+     -6.0
+    ],
+    [
+     2.4,
+     -22.0,
+     "still"
+    ],
+    [
+     2.4667,
+     -22.0,
+     "still"
+    ],
+    [
+     2.6,
+     6.0
+    ],
+    [
+     2.85,
+     0.0
+    ],
+    [
+     3.0,
+     0.0
+    ]
+   ]
+  }
+ }
+}

@@ -1,0 +1,571 @@
+{
+ "kind": "action",
+ "rules": "R8.1-R8.4 anticipation, contact, hold, follow-through, recovery to the RELAXED fight-ready pose; s11 Warden: committed, rotation-driven, the shield first; R1.2 the weapon carries 2-3x the body's motion. The read: a blink-fast lunge, the shield first: drop and lean in, one long bounding stride, the shield slams, the knees absorb.",
+ "held": [
+  "sword",
+  "shield"
+ ],
+ "beats": {
+  "events": {
+   "launch": 0.0667,
+   "impact": 0.3667
+  },
+  "contact": [
+   0.3667
+  ],
+  "hold": [
+   0.3667,
+   0.4333
+  ],
+  "cancel": 0.4333
+ },
+ "gen": {
+  "engine": "kimodo",
+  "seconds": 2.0,
+  "takes": 6,
+  "seeds": [
+   821
+  ],
+  "prompts": [
+   "A woman charges straight forward in a low shield rush: she drops, leans her torso far forward and drives off her back foot into one long bounding stride with her left foot leading, her shield held in front of her chest with her left shoulder behind it and her head tucked down behind its rim, her sword trailing low behind her right hip, then slams into an enemy shield first, sinking into her knees to absorb the impact."
+  ],
+  "keys": {
+   "poses": [
+    {
+     "src": {
+      "prompt": "A woman charges straight forward in a low shield rush: she drops, leans her torso far forward and drives off her back foot into one long bounding stride with her left foot leading, her shield held in front of her chest with her left shoulder behind it and her head tucked down behind its rim, her sword trailing low behind her right hip, then slams into an enemy shield first, sinking into her knees to absorb the impact.",
+      "seed": 621,
+      "seconds": 2.5,
+      "takes": 6
+     },
+     "pick": 4,
+     "frame": 16,
+     "at": 0,
+     "xz": [
+      0.065,
+      0.044
+     ],
+     "yaw": -2.7,
+     "arm": {
+      "LeftHand": [
+       0.056,
+       0.243,
+       0.28
+      ],
+      "RightHand": [
+       -0.187,
+       -0.075,
+       0.112
+      ]
+     }
+    },
+    {
+     "src": {
+      "prompt": "A woman charges straight forward in a low shield rush: she drops, leans her torso far forward and drives off her back foot into one long bounding stride with her left foot leading, her shield held in front of her chest with her left shoulder behind it and her head tucked down behind its rim, her sword trailing low behind her right hip, then slams into an enemy shield first, sinking into her knees to absorb the impact.",
+      "seed": 621,
+      "seconds": 2.5,
+      "takes": 6
+     },
+     "pick": 4,
+     "frame": 31,
+     "at": 10,
+     "xz": [
+      0.067,
+      0.368
+     ],
+     "yaw": 14.9,
+     "arm": {
+      "RightHand": [
+       -0.22,
+       -0.05,
+       -0.25
+      ]
+     }
+    },
+    {
+     "src": {
+      "prompt": "A woman charges straight forward in a low shield rush: she drops, leans her torso far forward and drives off her back foot into one long bounding stride with her left foot leading, her shield held in front of her chest with her left shoulder behind it and her head tucked down behind its rim, her sword trailing low behind her right hip, then slams into an enemy shield first, sinking into her knees to absorb the impact.",
+      "seed": 621,
+      "seconds": 2.5,
+      "takes": 6
+     },
+     "pick": 4,
+     "frame": 35,
+     "at": 15,
+     "xz": [
+      0.014,
+      0.54
+     ],
+     "yaw": 4.4,
+     "arm": {
+      "RightHand": [
+       -0.22,
+       -0.05,
+       -0.25
+      ]
+     }
+    },
+    {
+     "src": {
+      "prompt": "A woman charges straight forward in a low shield rush: she drops, leans her torso far forward and drives off her back foot into one long bounding stride with her left foot leading, her shield held in front of her chest with her left shoulder behind it and her head tucked down behind its rim, her sword trailing low behind her right hip, then slams into an enemy shield first, sinking into her knees to absorb the impact.",
+      "seed": 621,
+      "seconds": 2.5,
+      "takes": 6
+     },
+     "pick": 4,
+     "frame": 38,
+     "at": 19,
+     "xz": [
+      -0.02,
+      0.676
+     ],
+     "yaw": -4.7,
+     "arm": {
+      "RightHand": [
+       -0.22,
+       -0.05,
+       -0.25
+      ]
+     }
+    },
+    {
+     "src": {
+      "prompt": "A woman charges straight forward in a low shield rush: she drops, leans her torso far forward and drives off her back foot into one long bounding stride with her left foot leading, her shield held in front of her chest with her left shoulder behind it and her head tucked down behind its rim, her sword trailing low behind her right hip, then slams into an enemy shield first, sinking into her knees to absorb the impact.",
+      "seed": 621,
+      "seconds": 2.5,
+      "takes": 6
+     },
+     "pick": 4,
+     "frame": 38,
+     "at": 21,
+     "xz": [
+      -0.02,
+      0.676
+     ],
+     "yaw": -4.7,
+     "arm": {
+      "RightHand": [
+       -0.22,
+       -0.05,
+       -0.25
+      ]
+     }
+    },
+    {
+     "src": {
+      "prompt": "A woman charges straight forward in a low shield rush: she drops, leans her torso far forward and drives off her back foot into one long bounding stride with her left foot leading, her shield held in front of her chest with her left shoulder behind it and her head tucked down behind its rim, her sword trailing low behind her right hip, then slams into an enemy shield first, sinking into her knees to absorb the impact.",
+      "seed": 621,
+      "seconds": 2.5,
+      "takes": 6
+     },
+     "pick": 4,
+     "frame": 48,
+     "at": 23,
+     "xz": [
+      -0.068,
+      0.881
+     ],
+     "yaw": -16.2,
+     "arm": {
+      "RightHand": [
+       -0.22,
+       -0.05,
+       -0.25
+      ]
+     }
+    },
+    {
+     "src": {
+      "prompt": "A woman stands ready and relaxed, a shield held on her left forearm at chest height and a sword held low by her right hip, breathing calmly.",
+      "seed": 531,
+      "seconds": 2.0,
+      "takes": 6
+     },
+     "pick": 0,
+     "frame": 30,
+     "arm": {
+      "LeftHand": [
+       0.056,
+       0.243,
+       0.28
+      ],
+      "RightHand": [
+       -0.187,
+       -0.075,
+       0.112
+      ]
+     },
+     "at": 32,
+     "xz": [
+      -0.05,
+      0.85
+     ],
+     "yaw": 0
+    },
+    {
+     "src": {
+      "prompt": "A woman stands ready and relaxed, a shield held on her left forearm at chest height and a sword held low by her right hip, breathing calmly.",
+      "seed": 531,
+      "seconds": 2.0,
+      "takes": 6
+     },
+     "pick": 0,
+     "frame": 30,
+     "arm": {
+      "LeftHand": [
+       0.056,
+       0.243,
+       0.28
+      ],
+      "RightHand": [
+       -0.187,
+       -0.075,
+       0.112
+      ]
+     },
+     "at": 42,
+     "xz": [
+      -0.05,
+      0.85
+     ],
+     "yaw": 0
+    }
+   ],
+   "prompts": [
+    0
+   ],
+   "seeds": [
+    821,
+    822
+   ],
+   "seconds": 2.0,
+   "takes": 6,
+   "tag": "c"
+  }
+ },
+ "post": {
+  "loop": false,
+  "inplace": false,
+  "crop": [
+   8,
+   32
+  ],
+  "action": {
+   "seconds": 0.8,
+   "travel": [
+    "launch",
+    "impact"
+   ],
+   "planted": {
+    "foot_l": [
+     [
+      "start",
+      0.0333
+     ],
+     [
+      0.7667,
+      0.8
+     ]
+    ],
+    "foot_r": [
+     [
+      0.2333,
+      0.5333
+     ],
+     [
+      0.7667,
+      0.8
+     ]
+    ]
+   },
+   "ground": [
+    "impact",
+    "end"
+   ]
+  }
+ },
+ "notes": "A1 actions (solver B): keyed beats from one native rush (chnat2 pick 4, its own placement kept: launch f31, mid-stride f35, impact f38, absorbed f48; the sword hand trailing low by IK), the start its f16 with idle_warden's hands, fight-ready (rdpose) at 0.8 s. Job frames = clip frames + 8 (crop). The travel launch->impact is stripped (the game moves her). Solver F6: blade.roll straight (roll_smooth 1): the sword hand turned about the blade's own line toward the straightest wrist through the run: wrist flex 47.6 -> 12.6 deg, deviation 68.6 -> 55.5 (every frame lower), twist 38 -> 51; the clear layer at 12 mm keeps the sword 14.0 mm and the shield 11.9 mm clear. Solver S2 (the spot): fit.end.spot true: the whole clip moved on the ground (a constant shift, -25.4, -29.6 cm) so the last frame stands on idle_warden's place (end off idle 39.0 -> 0.2 cm). The offset was the source frame's origin, not the travel strip: her pelvis was on one spot at f0, the impact and the end, and now that spot is the idle's pelvis (f0 pelvis off idle 0.0); the start's lunge stance stands 69 / 34 cm off the idle's feet (not changed).",
+ "bands": {
+  "lean_deg@0.2": [
+   15,
+   35
+  ],
+  "stance_fb_cm@0.2": [
+   90,
+   170
+  ],
+  "pelvis_cm@impact": [
+   -30,
+   0
+  ],
+  "pelvis_cm@0.5": [
+   -40,
+   -8
+  ],
+  "boss_cm@0.2": [
+   105,
+   130
+  ],
+  "shield_face_deg@0.2": [
+   -15,
+   15
+  ],
+  "tip_ahead_cm@0.2": [
+   -200,
+   -10
+  ],
+  "still_deg@hold:max": [
+   0,
+   1
+  ],
+  "end_deg@0.8": [
+   0,
+   10
+  ],
+  "shield_over_eyes_cm@impact": [
+   0,
+   30
+  ],
+  "head_behind_cm@impact": [
+   5,
+   60
+  ],
+  "shield_face_deg@0.1..impact:min": [
+   -15,
+   15
+  ],
+  "shield_face_deg@0.1..impact:max": [
+   -15,
+   15
+  ],
+  "boss_cm@0.1..impact:min": [
+   105,
+   130
+  ],
+  "boss_cm@0.1..impact:max": [
+   105,
+   130
+  ]
+ },
+ "gate": [
+  "stance_fb_cm@0.2",
+  "tip_ahead_cm@0.2",
+  "pelvis_cm@0.5"
+ ],
+ "source": "src/shield_charge.npz",
+ "bvh": "shield_charge__qc0s822_0.bvh",
+ "sha1": "61d449b20d4864ab9a7c831c374b25dd0e6bda3f",
+ "take_score": 4.981,
+ "fit": {
+  "lean": {
+   "keys": [
+    [
+     0.0,
+     0,
+     "still"
+    ],
+    [
+     0.0667,
+     5
+    ],
+    [
+     0.2,
+     14
+    ],
+    [
+     0.3667,
+     16,
+     "still"
+    ],
+    [
+     0.4333,
+     16,
+     "still"
+    ],
+    [
+     0.65,
+     0,
+     "still"
+    ]
+   ]
+  },
+  "shield": {
+   "solve": true,
+   "branch": -1,
+   "hand": "end",
+   "keys": [
+    [
+     0.0,
+     [
+      0.31,
+      0.33,
+      0.26
+     ],
+     53,
+     -40
+    ],
+    [
+     0.1,
+     [
+      0.1,
+      0.42,
+      0.4
+     ],
+     0,
+     0
+    ],
+    [
+     0.2,
+     [
+      0.06,
+      0.44,
+      0.44
+     ],
+     0,
+     4
+    ],
+    [
+     0.3667,
+     [
+      0.04,
+      0.5,
+      0.46
+     ],
+     0,
+     15,
+     "still"
+    ],
+    [
+     0.4333,
+     [
+      0.04,
+      0.5,
+      0.46
+     ],
+     0,
+     15,
+     "still"
+    ],
+    [
+     0.8,
+     [
+      0.14,
+      0.37,
+      0.28
+     ],
+     34,
+     -46,
+     "still"
+    ]
+   ]
+  },
+  "blade": {
+   "dir": [
+    -0.2,
+    -0.45,
+    -0.87
+   ],
+   "keep": 0,
+   "ease": "through",
+   "frame": "heading",
+   "twist_smooth": 3,
+   "roll": "straight",
+   "roll_smooth": 1,
+   "keys": [
+    [
+     0.0,
+     [
+      -0.2425,
+      -0.7071,
+      0.6646
+     ],
+     "still"
+    ],
+    [
+     0.0667,
+     [
+      -0.65,
+      -0.65,
+      0.1
+     ]
+    ],
+    [
+     0.1667,
+     [
+      -0.2,
+      -0.45,
+      -0.87
+     ]
+    ],
+    [
+     0.3667,
+     [
+      -0.2,
+      -0.45,
+      -0.87
+     ],
+     "still"
+    ],
+    [
+     0.4333,
+     [
+      -0.2,
+      -0.45,
+      -0.87
+     ],
+     "still"
+    ],
+    [
+     0.65,
+     [
+      -0.85,
+      -0.45,
+      0.0
+     ]
+    ],
+    [
+     0.8,
+     [
+      -0.2425,
+      -0.7071,
+      0.6646
+     ],
+     "still"
+    ]
+   ]
+  },
+  "end": {
+   "clip": "idle_warden",
+   "frame": 0,
+   "over": [
+    0.45,
+    0.8
+   ],
+   "spot": true
+  },
+  "pop": {
+   "cap": {},
+   "x": 3.6
+  },
+  "step": {
+   "foot_l": [
+    [
+     0.4333,
+     0.7667,
+     8
+    ]
+   ],
+   "foot_r": [
+    [
+     0.5333,
+     0.7667,
+     5
+    ]
+   ]
+  },
+  "clear": {
+   "target_mm": 12,
+   "passes": 8
+  }
+ }
+}

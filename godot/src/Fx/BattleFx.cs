@@ -2048,6 +2048,7 @@ public partial class BattleFx : Node3D
         StepTellStreaks(b, fdt);
         Projectiles(b, fdt, now);
         Pickups(b, now);
+        LampPool(b, fdt);
         if (levelHeld > 0 && !Flare.HoldsFrame) { levelHeld = 0; LevelLight(); }
         StepFronts(fdt);
         StepWardenHoly(fdt);
