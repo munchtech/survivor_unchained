@@ -66,7 +66,7 @@ public partial class Game
     {
         if (!PostMenu.Rest(World, Battle, at)) { Toast(new Toast(ToastKind.Warning, "Not with them on you")); return; }
         CloseOverlay();
-        Toast(new Toast(ToastKind.World, "Rested", $"{at.Name}. If you fall, you will rise here.", Life: 4)); // (PLACEHOLDER copy: M6)
+        Toast(new Toast(ToastKind.World, "Rested", $"{at.Name}. Fall, and you rise here.", Life: 4)); // (M6, TUTORIAL_COPY.md)
         Save("post");
     }
 

@@ -184,6 +184,9 @@ public sealed partial class Journey
             var wt = Content.WorldTiers.Get(Content.WorldTiers.Of(World));
             b.WorldHealth = wt.Health; b.WorldDamage = wt.Damage; b.KitDamageMul = wt.Kit; b.KitEveryMul = wt.KitEvery; b.StoryStand = wt.Stand;
         }
+        // (M6, TUTORIAL_COPY.md A12/A14) Taken at the Low Ford's dawn page, the Flare is not hers again until the
+        // Waystation's lamp lights it for good; arena runs keep theirs.
+        if (!arena && World.Fact(Zones.Prologue.FlareOutFact).Truthy && !World.Fact(Zones.Prologue.FlareLitFact).Truthy) { b.Flare = null; b.FlareMeter = 0; }
         b.EmberOn = combat && (arena || ember);
         EmberLit = b.EmberOn && !arena;
         b.Night = arena || ember || World.Time == TimeOfDay.Night;
@@ -214,6 +217,10 @@ public sealed partial class Journey
         else if (combat && !campaign)
             foreach (var (id, rank) in kit.Learned) b.AddWeapon(id, rank);
         campaignFight = campaign ? b : null;
+        // (M6, TUTORIAL_COPY.md A3) A story fight with the ember out: the dead still spill their light, and it pays her
+        // experience as it reaches her (Battle.DropXpStones). Arena runs pay at their end, as before.
+        stoneFight = combat && !arena && !b.EmberOn ? b : null;
+        if (stoneFight != null) b.PayXp = Learn;
         return b;
     }
 
@@ -249,6 +256,7 @@ public sealed partial class Journey
         b.Douse(kit.Weapons);
         GearWeapons = kit.Weapons.Select(w => w.Id).ToHashSet();
         EmberLit = false;
+        if (!InArena && b.Combat) { stoneFight = b; b.PayXp = Learn; }
         if (World.NightLessons <= 0) return 0;
         int levels = Character.GainXp(Ch, World.NightLessons);
         World.NightLessons = 0;
@@ -258,6 +266,8 @@ public sealed partial class Journey
     /// <summary>Leaving a zone: the wounds come along (an arena's are left in it).</summary>
     public void Capture(Battle? b)
     {
+        // (M6 A3) Leaving: the experience stones still lying or on their way are hers now.
+        b?.PayXpStones();
         BankArt(b);
         BankGold(b);
         if (b == null || !b.Combat || InArena) return;
@@ -281,6 +291,17 @@ public sealed partial class Journey
         // a character level popping up while the ember levelled taught two systems at once in the
         // first minute (docs/EXPERIENCE_AUDIT.md, finding 4).
         if (EmberLit) { World.NightLessons += xp; return; }
+        // (M6 A3) With the ember out in a story fight, it comes to her as stones and is paid as each lands.
+        if (stoneFight is { PayXp: not null, EmberOn: false } sf) { sf.DropXpStones(e.X, e.Z, xp); return; }
+        Learn(xp);
+    }
+
+    /// <summary>The fight whose kills spill experience stones (a story fight with the ember out), else null.</summary>
+    Battle? stoneFight;
+
+    /// <summary>Experience reaching her (a kill's, or its stone's as it lands): a level teaches and is named.</summary>
+    void Learn(double xp)
+    {
         int levels = Character.GainXp(Ch, xp);
         if (levels > 0)
         {

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Godot;
+using SurvivorUnchained.Look;
 using SurvivorUnchained.Sim;
 
 namespace SurvivorUnchained.View;
@@ -54,7 +55,7 @@ public partial class BattleFx
     sealed class P7Light
     {
         public required OmniLight3D L;
-        public float Age = 9, Peak;
+        public float Age = 9, Peak, Hold = 1 / 12f, Down = 2 / 12f;
     }
 
     sealed class P7LeapRun
@@ -115,6 +116,12 @@ public partial class BattleFx
     float p7GhostNext = -1, p7PlowNext = -1;
     bool p7HushShake, p7Warm;
     static PlaneMesh? p7Plane;
+    static FxP7? p7d;
+    /// <summary>The judge's numbers (data/look/fx_language.json "p7", logic/Look/FxP7.cs): px at the play camera, counts, timings.</summary>
+    static FxP7 P7D => p7d ??= FxP7.Parse(Godot.FileAccess.GetFileAsString("res://data/look/fx_language.json"));
+    // chunks painted earth-brown for their flight (P7Throw), let go when they land
+    static StandardMaterial3D? p7Earth;
+    readonly List<WgRock> p7Thrown = new();
     static QuadMesh? p7Quad;
 
     static void P7Ev(string name)
@@ -153,7 +160,7 @@ public partial class BattleFx
     /// <summary>A quad mode's main stroke half-width as a share of the quad's half-size (0: the caller sizes it). The
     /// star's spikes are 0.1 and its streaks 0.02 in one material: brushed for 0.045 between them (spikes ~5 px a
     /// bristle, streaks ~1).</summary>
-    static float P7ModeHw(int mode) => mode switch { 1 => 0.045f, 4 => 0.07f, 9 => 1f, 12 => 0.2f, 17 => 0.075f, _ => 0f };
+    static float P7ModeHw(int mode) => mode switch { 9 => 1f, 12 => 0.2f, _ => 0f };
 
     /// <summary>A quad shape: flat on the ground (half-size `half`, at `at`) or facing the camera (`bill`).</summary>
     P7Shape P7Quad(int mode, Vector3 at, float half, float life, bool bill = false, bool top = false, Action<P7Shape>? step = null)
@@ -167,7 +174,12 @@ public partial class BattleFx
         n.Scale = Vector3.One * half;
         AddChild(n);
         n.GlobalPosition = at;
-        if (Args.Has("clip") && bill && (GetViewport()?.GetCamera3D() is { } c3) && c3.GlobalPosition.DistanceTo(at) < 8) GD.Print($"p7 near-camera shape mode {mode} at {at} frame {Engine.GetFramesDrawn()}");
+        if (Args.Has("clip") && (GetViewport()?.GetCamera3D() is { } c3) && !c3.IsPositionBehind(at))
+        {
+            // (for the px self-check: where it lands on screen and its half-size in px at the play camera)
+            var sp = c3.UnprojectPosition(at) * (1080f / Math.Max(1f, GetViewport().GetVisibleRect().Size.Y));
+            GD.Print($"p7px mode {mode} screen {sp.X:F0},{sp.Y:F0} half {half / P7Px(at):F1}px frame {Engine.GetFramesDrawn()}");
+        }
         if (FxAfter.On) FxAfter.Adopt(n);
         var s = new P7Shape { N = n, M = m, Life = life, Step = step };
         p7Shapes.Add(s);
@@ -178,9 +190,9 @@ public partial class BattleFx
     {
         var mesh = new ImmediateMesh();
         var m = P7Mat(2);
-        // a ribbon tapers harder than the default stroke: a wedge (fx_stroke's tail width 0.12 -> 0.05 of the head's); a
+        // a ribbon tapers to a point (fx_stroke's tail width 0.12 -> 0, round 3: no square tail); a
         // body's ribbon is 2 x `width` across, a blade's sweep about 0.4 m (0.6..0.98 of the blade)
-        P7Brush(m, (width > 0 ? 2 * width : 0.4f) / P7Px(src()), 0.05f);
+        P7Brush(m, (width > 0 ? 2 * width : 0.4f) / P7Px(src()), 0.001f);
         var n = new MeshInstance3D { Mesh = mesh, MaterialOverride = m, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
         AddChild(n);
         n.GlobalTransform = Transform3D.Identity;
@@ -198,7 +210,7 @@ public partial class BattleFx
         return t;
     }
 
-    void P7LightOn(Vector3 at, float range, float peak)
+    void P7LightOn(Vector3 at, float range, float peak, float hold = P7Sample, float down = 2 * P7Sample)
     {
         P7Light? l = null;
         foreach (var x in p7Lights) if (x.Age > 0.4f) { l = x; break; }
@@ -218,7 +230,7 @@ public partial class BattleFx
         l.L.LightColor = P7Band(1);
         l.L.OmniRange = range;
         l.L.GlobalPosition = at;
-        l.Age = 0; l.Peak = peak;
+        l.Age = 0; l.Peak = peak; l.Hold = hold; l.Down = down;
         l.L.Visible = true;
     }
 
@@ -255,98 +267,131 @@ public partial class BattleFx
             var from = V(e.X0, Y(e.X0, e.Z0), e.Z0);
             var dir = new Vector3((float)(e.X1 - e.X0), 0, (float)(e.Z1 - e.Z0));
             dir = dir.LengthSquared() > 1e-4f ? dir.Normalized() : Vector3.Forward;
-            P7Glint(P7BladeAt(1), 0.55f);
-            // the crouch's kick: dust thrown back and out from her feet, two values, low
-            for (int i = 0; i < 9; i++)
-            {
-                float a = R() * Mathf.Tau;
-                var o = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
-                var v = (o * 1.6f - dir * 1.4f) * (0.8f + R() * 0.6f) + Vector3.Up * (0.3f + R() * 0.5f);
-                WgPuff(from + o * 0.25f + Vector3.Up * 0.18f, v, 0.26f + R() * 0.1f, 1.5f, 0.55f + R() * 0.25f, WgDust(i % 3 == 0 ? 0.74f : 1.04f), 0.74f, 3.5f);
-            }
-            // the mark: where she lands, exactly the ring she strikes
+            // the press: one glint on the blade's tip and a kick of dust from her heels
+            P7Press(P7BladeAt(1), from, dir);
             double r = e.Radius, x1 = e.X1, z1 = e.Z1;
             var run = new P7LeapRun { X0 = e.X0, Z0 = e.Z0, X1 = x1, Z1 = z1, Dur = e.Dur, R = r };
-            // the ring: light on the ground, ~8 px wide at the play camera, its outer edge the hit radius (marked = hit). Its
-            // gaps close in three steps over the air time (coverage 0.6 -> 1.0); shut, it flashes a sample (a wide core),
-            // then it is gone in two steps after the landing.
-            run.Ring = P7Quad(0, V(x1, Y(x1, z1) + 0.04, z1), (float)r, (float)e.Dur + 3 * P7Sample, step: s =>
+            // the target: a wavefront standing at the hit radius (marked = hit), its arcs growing to the data's coverage
+            // curve with their opacity; shut, one flash at 1.5x its width (the core hot); gone in two steps at the landing
+            var c = V(x1, Y(x1, z1) + 0.04, z1);
+            float rpx = (float)r / P7Px(c);
+            float lead = P7D["leap.ring.lead_px"] / rpx, trail = P7D["leap.ring.trail_px"] / rpx;
+            int flashN = (int)P7D["leap.ring.flash_frames"];
+            float flashK = P7D["leap.ring.flash_k"];
+            float shutAt = -1;
+            run.Ring = P7Quad(0, c, (float)r, (float)e.Dur + 3 * P7Sample, step: s =>
             {
-                float dur = (float)run.Dur;
-                int st = Mathf.Clamp((int)(s.Age / (dur / 3f)), 0, 3);
-                s.M.SetShaderParameter("p7_prog", st >= 3 ? 1f : st / 3f);
-                s.M.SetShaderParameter("p7_alpha", st >= 3 ? 1f : 0.6f + 0.4f * st / 3f);
-                s.M.SetShaderParameter("p7_width", Mathf.Clamp(4f * P7Px(s.N.GlobalPosition) / (float)run.R, 0.004f, 0.2f));
-                float after = s.Age - dur;
+                float cover = P7D.Curve("leap.ring.cover", s.Age);
+                if (cover >= 0.999f && shutAt < 0) shutAt = s.Age;
+                bool flash = shutAt >= 0 && s.Age - shutAt < flashN / 60f - 1e-4f;
+                s.M.SetShaderParameter("p7_shrink", cover);
+                s.M.SetShaderParameter("p7_alpha", P7D.Range("leap.ring.alpha", cover));
+                s.M.SetShaderParameter("p7_lead", lead * (flash ? flashK : 1));
+                s.M.SetShaderParameter("p7_trw", trail);
+                float after = s.Age - (float)run.Dur;
                 int k = after < 0 ? -1 : (int)(after / P7Sample);
-                s.M.SetShaderParameter("p7_fade", k <= 0 ? 0f : k == 1 ? 0.4f : 0.8f);
+                s.M.SetShaderParameter("p7_fade", k < 0 ? 0f : k == 0 ? 0.34f : 0.67f);
             });
-            P7Brush(run.Ring.M, 8);
-            // the ribbon: the blade's upper half swept through the air, smoothed, tapering from the blade to nothing
-            run.Ribbon = P7NewTrail(() => (P7BladeAt(0.6f), P7BladeAt(0.98f)), (float)e.Dur, 2.5f * P7Sample);
+            run.Ring.M.SetShaderParameter("p7_shrink", 0f);
+            P7Arcs(run.Ring.M, R() * Mathf.Tau, Mathf.Tau, (int)P7D["leap.ring.arcs"], 1, 1.08f, 1.12f, 0.15f);
+            P7BrushWave(run.Ring.M, rpx, P7D["leap.ring.lead_px"]);
+            // the ribbon: her blade's way through the air (her chest plus the data's share of the blade's own swing: the
+            // stand-in's blade loops), splined, its head the data's px tapering to a point
+            float hw = 0.5f * P7D["leap.ribbon.head_px"] * P7Px(from);
+            run.Ribbon = P7NewTrail(() => (PlayerPos + Vector3.Up * 1.1f).Lerp(P7BladeAt(0.92f), P7D["leap.ribbon.blade"]), hw, (float)e.Dur, P7D["leap.ribbon.life"]);
             p7Leap = run;
             return;
         }
         // Land
         P7Ev("leap_land");
         if (p7Leap?.Ribbon is { } rb) rb.Until = 0;
+        if (p7Leap?.Ring is { } rg) rg.Life = Math.Min(rg.Life, rg.Age + 1 / 60f);
         p7Leap = null;
         if (p7Shadow != null) p7Shadow.Visible = false;
         P7Slam(e.X1, e.Z1, (float)e.Radius, 1f);
         Cam?.JoltPx(Vector3.Up, 10f);
     }
 
-    /// <summary>The landing (and, smaller, Pile Driver's slam): ONE bold star flat on the ground under her feet (6-8
-    /// tapered spikes of varied length round a solid white-gold heart, ~12 streaks running out; drawn on the ground, so
-    /// her depth twin hides it where she stands over it), a sample at its peak then stepping down; 3-4 tapering, forking
-    /// cracks (matter, their hearts cooling in steps); a clustered two-value dust ring out to the hit radius; chunks;
-    /// the gold pool.</summary>
+    /// <summary>A star's life by frames: full for `hold` frames, then the core, the gold and the amber step out every `step`.</summary>
+    static float P7StarLife(float age, int hold, int step)
+    {
+        int f = (int)(age * 60 + 1e-3f);
+        return f < hold ? 0f : f < hold + step ? 0.34f : f < hold + 2 * step ? 0.67f : 1f;
+    }
+
+    /// <summary>A star (modes 1 and 17 are one shape): `spikes` tapered spikes `px` across at the play camera, their roots
+    /// `rootPx` wide; `streaks` thin streaks running out; full `hold` frames, then a band off every `step` frames.</summary>
+    P7Shape P7StarPx(Vector3 at, float px, int spikes, float rootPx, int streaks, int hold, int step, bool bill, float tail = 0.12f)
+    {
+        float half = 0.5f * px * P7Px(at);
+        var s = P7Quad(1, at, half, (hold + 3 * step) / 60f, bill: bill, top: bill, step: q =>
+        {
+            q.M.SetShaderParameter("p7_t", q.Age);
+            q.M.SetShaderParameter("p7_fade", P7StarLife(q.Age, hold, step));
+        });
+        s.M.SetShaderParameter("p7_count", (float)spikes);
+        s.M.SetShaderParameter("p7_streaks", (float)streaks);
+        s.M.SetShaderParameter("p7_root", 0.5f * rootPx / (0.5f * px));
+        s.M.SetShaderParameter("p7_heart", 0.5f * rootPx / (0.5f * px) * 0.8f);
+        P7Brush(s.M, rootPx, tail);
+        return s;
+    }
+
+    /// <summary>The landing (and, smaller, Pile Driver's slam): ONE star flat on the ground under her feet (the data's
+    /// spikes, roots and streaks, full two frames then stepping out), tapering cracks with a dark gap and a lit lip
+    /// cooling gold, amber, off over 0.6 s; two-value dust out to the hit radius in 0.4 s; earth-brown chunks; the pool.</summary>
     void P7Slam(double x, double z, float r, float k)
     {
         var c = V(x, Y(x, z), z);
-        var star = P7Quad(1, c + Vector3.Up * 0.05f, r * 1.2f * k, 4 * P7Sample, step: s => s.M.SetShaderParameter("p7_t", s.Age));
-        star.M.SetShaderParameter("p7_spikes", (float)(6 + (int)(R() * 2.99f)));
+        float pxm = P7Px(c);
+        P7StarPx(c + Vector3.Up * 0.05f, 2 * r * P7D["leap.star.reach"] * k / pxm, P7D.Count("leap.star.spikes", R()), P7D["leap.star.root_px"] * (0.8f + 0.2f * k),
+            P7D.Count("leap.star.streaks", R()), (int)P7D["leap.star.hold_frames"], (int)P7D["leap.star.step_frames"], false);
         P7LightOn(c + Vector3.Up * (1.2f + 0.3f * r), r * 1.7f, (Flare.Night ? 4.2f : 6f) * k);
         float a0 = R() * Mathf.Tau;
         int cracks = k >= 1 ? 3 + (int)(R() * 1.99f) : 3;
         Color[] steps = [P7Band(2).SrgbToLinear(), P7Band(1).SrgbToLinear(), P7Band(0).SrgbToLinear()];
         float day = Flare.Night ? 1f : 1.7f;
+        float w0 = P7D["leap.crack.root_px"], w1 = P7D["leap.crack.tip_px"];
         for (int i = 0; i < cracks && wgAlb != null; i++)
         {
             float a = a0 + (i + (R() - 0.5f) * 0.6f) / cracks * Mathf.Tau;
             float len = r * (0.5f + R() * 0.55f) * k;
             int t0 = 8 + (int)(R() * 1.99f);
             var from = new Vector2((float)x, (float)z) + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * 0.1f;
-            // the main split: three segments narrowing to its tip, bending a little at each joint
-            var end1 = P7CrackRun(from, a, len, 3, [1f, 0.68f, 0.4f], t0, k, steps, day, out float aEnd, out var mid);
+            // the main split: three segments narrowing root -> tip, bending a little at each joint
+            var end1 = P7CrackRun(from, a, len, 3, [w0, Mathf.Lerp(w0, w1, 0.5f), w1 * 1.2f], t0, pxm, steps, day, out float aEnd, out var mid);
             // a fork off its middle on most of them, narrower and shorter, angled away
             if (R() < 0.8f)
             {
                 float side = R() < 0.5f ? -1 : 1;
-                P7CrackRun(mid, aEnd + side * (0.45f + R() * 0.35f), len * (0.3f + R() * 0.2f), 2, [0.48f, 0.28f], t0 + 1, k, steps, day, out _, out _);
+                P7CrackRun(mid, aEnd + side * (0.45f + R() * 0.35f), len * (0.3f + R() * 0.2f), 2, [Mathf.Lerp(w0, w1, 0.55f), w1], t0 + 1, pxm, steps, day, out _, out _);
             }
         }
-        P7DustRing(c, r * k, k >= 1 ? 6 + (int)(R() * 2.99f) : 5, 0.85f + 0.15f * k);
-        // chunks: faceted rock (the strip's stones), up and back on gravity
-        int chunks = k >= 1 ? 12 + (int)(R() * 4.99f) : 6 + (int)(R() * 2.99f);
+        var dpx = P7D.All("leap.dust.px");
+        P7Dust(c, r * k, (int)(P7D.Count("leap.dust.puffs", R()) * (k >= 1 ? 1 : 0.6f)), dpx[0], dpx[1], P7D["leap.dust.run"], 0.3f);
+        int chunks = (int)(P7D.Count("leap.chunks", R()) * (k >= 1 ? 1 : 0.55f));
         for (int i = 0; i < chunks; i++)
         {
             float a = R() * Mathf.Tau, d = r * 0.45f * Mathf.Sqrt(R());
             var o = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
             double px = x + o.X * d, pz = z + o.Z * d;
-            var v = o * (1.2f + R() * 2.2f) + Vector3.Up * (3.2f + R() * 3.0f) * (0.75f + 0.25f * k);
-            WgThrow(V(px, Y(px, pz) + 0.2, pz), v, (0.8f + R() * 0.35f) * (0.8f + 0.2f * k), 1.8f + R() * 0.5f, 5);
+            var v = o * (1.2f + R() * 2.2f) + Vector3.Up * (2.6f + R() * 2.4f) * (0.75f + 0.25f * k);
+            P7Throw(V(px, Y(px, pz) + 0.2, pz), v, (0.6f + R() * 0.35f) * (0.8f + 0.2f * k), 1.6f + R() * 0.5f);
         }
     }
 
-    /// <summary>One crack run: `n` decal segments from `from` heading `a` (radians on the ground), `len` long, each
-    /// `widths[j]` of the strip's width (tapering), its heart glowing core -> mid -> edge as it cools. Returns its end;
-    /// `aEnd` its last heading, `mid` its first joint (where a fork may leave).</summary>
-    Vector2 P7CrackRun(Vector2 from, float a, float len, int n, float[] widths, int tex, float k, Color[] steps, float day, out float aEnd, out Vector2 mid)
+    /// <summary>One crack run: `n` decal segments of the Warden's crack strip from `from` heading `a` (radians on the
+    /// ground), `len` long, each `px[j]` px wide at its dark gap (the strip's gap is the data's share of its band), its
+    /// projector 0.5 m deep (never up into foliage); its light a seam strip down the gap's own centre (P7Seam). Returns its
+    /// end; `aEnd` its last heading, `mid` its first joint (where a fork may leave).</summary>
+    Vector2 P7CrackRun(Vector2 from, float a, float len, int n, float[] px, int tex, float pxm, Color[] steps, float day, out float aEnd, out Vector2 mid)
     {
-        float seg = len / n;
+        float seg = len / n, gap = P7D["leap.crack.gap"];
         var p = from;
         mid = from;
+        var seam = new List<Vector3>();
+        var seamW = new List<float>();
+        var sp = P7D.All("leap.crack.seam_px");
         for (int j = 0; j < n; j++)
         {
             var dir = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
@@ -354,16 +399,45 @@ public partial class BattleFx
             var pos = V(cc.X, Y(cc.X, cc.Y), cc.Y);
             float theta = Mathf.Atan2(-dir.Y, dir.X);
             int t = Math.Min(11, tex + j);
-            var size = new Vector3(seg * 1.06f, 1.6f, WgBand * 0.9f * k * widths[j]);
-            WgDecalOn(pos, theta, size, wgAlb![t], wgNrm![t], null, 3.2f, 1f, 0, 0);
-            var hd = WgDecalOn(pos, theta, size, null, null, wgEmi![t], 1.5f, 1f, 1.6f * day * (0.6f + 0.4f * widths[j]), 0, 0, steps[0]);
-            if (hd != null) { hd.Steps = steps; hd.StepAt = [0.12f, 0.5f, 1.0f]; hd.StepE = [1.0f, 0.85f, 0.7f]; }
+            float w = px[j] * pxm / gap;
+            WgDecalOn(pos, theta, new Vector3(seg * 1.06f, 0.5f, w), wgAlb![t], wgNrm![t], null, 3.2f, 1f, 0, 0);
+            var side = new Vector2(-dir.Y, dir.X);
+            for (int q = 0; q < 6; q++)
+            {
+                if (j > 0 && q == 0) continue;
+                float u = q / 5f;
+                seam.Add(P7CrackAt(p, dir, side, seg * u, seg, t, 1, w / WgBand) + Vector3.Up * 0.03f);
+                seamW.Add(Mathf.Lerp(sp[0], sp[1], (j + u) / n) * pxm * 0.5f);
+            }
             p += dir * seg;
             if (j == 0) mid = p;
             a += (R() - 0.5f) * 0.5f;
         }
+        P7Seam(seam, seamW, P7D["leap.crack.cool"]);
         aEnd = a;
         return p;
+    }
+
+    /// <summary>A crack's light: a seam strip (mode 7) down `pts` (half-widths `hw`), hot at its root, cooling core, gold,
+    /// amber, off over `cool` s.</summary>
+    void P7Seam(List<Vector3> pts, List<float> hw, float cool)
+    {
+        if (pts.Count < 2) return;
+        var mesh = new ImmediateMesh();
+        mesh.SurfaceBegin(Mesh.PrimitiveType.TriangleStrip);
+        for (int i = 0; i < pts.Count; i++)
+        {
+            var d = i < pts.Count - 1 ? pts[i + 1] - pts[i] : pts[i] - pts[i - 1];
+            var sd = new Vector3(-d.Z, 0, d.X).Normalized() * hw[i];
+            float u = i / (float)(pts.Count - 1);
+            mesh.SurfaceSetUV(new Vector2(u, 0)); mesh.SurfaceAddVertex(pts[i] - sd);
+            mesh.SurfaceSetUV(new Vector2(u, 1)); mesh.SurfaceAddVertex(pts[i] + sd);
+        }
+        mesh.SurfaceEnd();
+        var s = P7OnMesh(7, mesh, Vector3.Zero, Vector3.One, cool, q =>
+            q.M.SetShaderParameter("p7_fade", q.Age < cool / 6 ? 0f : q.Age < cool / 2 ? 0.34f : 0.67f));
+        s.N.GlobalTransform = Transform3D.Identity;
+        P7Brush(s.M, 2 * hw[0] / P7Px(pts[0]));
     }
 
     void P7Charge(Ev.Charge e, Battle b)
@@ -378,41 +452,29 @@ public partial class BattleFx
             {
                 P7Ev("charge_start");
                 var feet = V(e.X, Y(e.X, e.Z), e.Z);
-                // the press: a glint off the shield and a real kick of dust back from her heels and out to the sides
-                P7Glint(P7ShieldAt(), 0.8f);
-                var sideAx = new Vector3(dir.Z, 0, -dir.X);
-                for (int q = 0; q < 4; q++)
+                // the press: the crescent flash on the shield (3 frames), its middle toward where she drives, and the kick
+                var sh0 = P7ShieldAt();
+                float cpx = P7D["charge.crescent.px"];
+                int cfr = (int)P7D["charge.crescent.frames"];
+                var cr = P7Quad(12, sh0, 0.5f * cpx * P7Px(sh0), cfr / 60f, bill: true, top: true, step: s =>
                 {
-                    var lean = (-dir * 1.0f + sideAx * ((q % 2 == 0 ? 1 : -1) * (0.5f + R() * 0.8f))).Normalized();
-                    int n = 3 + (int)(R() * 2.99f);
-                    for (int i = 0; i < n; i++)
-                    {
-                        float sz = 0.18f + R() * R() * 0.32f;
-                        var v = lean * (2.0f + R() * 2.2f) + Vector3.Up * (0.35f + R() * 0.6f);
-                        WgPuff(feet - dir * 0.2f + Vector3.Up * 0.2f, v, sz, 1.6f, 0.5f + R() * 0.3f, WgDust(1.06f + R() * 0.1f), 0.8f, 3.8f);
-                        WgPuff(feet - dir * 0.15f + Vector3.Up * 0.08f, v * 0.8f - Vector3.Up * 0.2f, sz * 1.25f, 1.5f, 0.6f + R() * 0.3f, WgDust(0.68f), 0.76f, 4f);
-                    }
+                    s.N.GlobalPosition = P7ShieldAt();
+                    int f = (int)(s.Age * 60 + 1e-3f);
+                    s.M.SetShaderParameter("p7_fade", f <= 0 ? 0f : f == 1 ? 0.34f : 0.67f);
+                });
+                P7Brush(cr.M, 0.2f * cpx);
+                if (GetViewport()?.GetCamera3D() is { } cam && !cam.IsPositionBehind(sh0))
+                {
+                    var d2 = cam.UnprojectPosition(sh0 + dir) - cam.UnprojectPosition(sh0);
+                    if (d2.LengthSquared() > 1e-4f) cr.M.SetShaderParameter("p7_dir2", d2.Normalized());
                 }
+                P7Kick(feet, dir, P7D.Count("kick.puffs", R()), P7D["kick.life"]);
                 p7ChargeT = 0; p7ChargeDur = (float)e.Dur; p7ChargeDir = dir; p7ChargeHit = false;
                 p7GhostDue.Clear();
                 p7GhostNext = 0.03f; p7PlowNext = 0.04f;
                 if (p7ChargeTrail != null) p7ChargeTrail.Until = 0;
-                p7ChargeTrail = P7NewTrail(() => PlayerPos + Vector3.Up * 0.95f - p7ChargeDir * 0.25f, 0.2f, p7ChargeDur + 0.05f, 2.5f * P7Sample);
-                // the crescent of light on the shield's face, its middle toward where she drives
-                if (p7Crescent != null && IsInstanceValid(p7Crescent.N)) p7Crescent.Age = p7Crescent.Life;
-                float dur = p7ChargeDur;
-                p7Crescent = P7Quad(12, P7ShieldAt(), 0.62f, dur + 3 * P7Sample, bill: true, top: true, step: s =>
-                {
-                    var sh = P7ShieldAt();
-                    s.N.GlobalPosition = sh;
-                    if (GetViewport()?.GetCamera3D() is { } cam && !cam.IsPositionBehind(sh))
-                    {
-                        var d2 = cam.UnprojectPosition(sh + p7ChargeDir) - cam.UnprojectPosition(sh);
-                        if (d2.LengthSquared() > 1e-4f) s.M.SetShaderParameter("p7_dir2", d2.Normalized());
-                    }
-                    float after = s.Age - dur;
-                    s.M.SetShaderParameter("p7_fade", after <= 0 ? 0f : Mathf.Min(0.9f, Mathf.Floor(after / P7Sample + 1) * 0.34f));
-                });
+                // the ribbon off her hips: the data's px at its head tapering to a point, its coverage 1 -> 0 to the tail
+                p7ChargeTrail = P7NewTrail(() => PlayerPos + Vector3.Up * 0.95f - p7ChargeDir * 0.25f, 0.5f * P7D["charge.ribbon.head_px"] * P7Px(feet), p7ChargeDur + 0.05f, P7D["charge.ribbon.life"]);
                 break;
             }
             case ChargePhase.Impact:
@@ -421,35 +483,32 @@ public partial class BattleFx
                 var at = P7Body(e.Target, e.X, e.Z, b);
                 bool first = !p7ChargeHit;
                 p7ChargeHit = true;
-                // a hit (§4): one bold 4-6 spike star at the contact; the first gets the pool and the hitstop
-                var st = P7Quad(1, at - dir * 0.15f, first ? 1.15f : 0.9f, 4 * P7Sample, bill: true, top: true, step: s => s.M.SetShaderParameter("p7_t", s.Age));
-                st.M.SetShaderParameter("p7_spikes", (float)(4 + (int)(R() * 2.99f)));
+                // a hit (§4): one 4-6 spike star at the contact, its roots 3x its tips, 3 frames, nothing else of light
+                int fr = (int)P7D["charge.star.frames"];
+                P7StarPx(at - dir * 0.15f, P7D["charge.star.px"] * (first ? 1f : 0.8f), P7D.Count("charge.star.spikes", R()), P7D["charge.star.root_px"], 0, 1, Math.Max(1, (fr - 1) / 2), true, 1f / P7D["charge.star.root_tip"]);
                 if (first) P7LightOn(at + Vector3.Up * 0.4f, 3.2f, Flare.Night ? 2.2f : 3f);
-                // the foe's feet throw a little lit dust aside
                 var ff = new Vector3(at.X, Y(at.X, at.Z), at.Z);
-                P7DustRing(ff, 0.9f, 2, 0.7f, 0.2f);
+                P7Dust(ff, 0.9f, 4, 18, 30, 0.3f, 0.2f);
                 break;
             }
             case ChargePhase.Stop:
             {
                 P7Ev("charge_stop");
                 var at = P7Body(e.Target, e.X, e.Z, b);
-                // the champion stops her: the big star, a pool, a punch of the view along the line (out 90 ms, back), a
-                // ring of light off the shield thinning to nothing, dust at their feet
-                var st = P7Quad(1, at - dir * 0.3f, 1.6f, 4 * P7Sample, bill: true, top: true, step: s => s.M.SetShaderParameter("p7_t", s.Age));
-                st.M.SetShaderParameter("p7_spikes", 6f);
+                // the champion stops her: one star and one wavefront off the shield (at most two light shapes), a pool, a
+                // punch of the view along the line, dust at their feet; the ribbon steps out
+                P7StarPx(at - dir * 0.3f, P7D["charge.stop.px"], (int)P7D["charge.stop.spikes"], P7D["charge.stop.root_px"], 0, 2, 2, true, 1f / P7D["charge.star.root_tip"]);
                 P7LightOn(at + Vector3.Up * 0.5f, 4.5f, Flare.Night ? 3.4f : 4.5f);
                 Cam?.Kick(dir, 0.22f);
-                var sh = P7ShieldAt();
-                var ring = P7Quad(5, sh, 1.5f, 0.2f + P7Sample, bill: true, top: true, step: s =>
-                {
-                    s.M.SetShaderParameter("p7_prog", Mathf.Clamp(s.Age / 0.2f, 0, 1));
-                    s.M.SetShaderParameter("p7_width", 0.09f);
-                    s.M.SetShaderParameter("p7_alpha", 1f - Mathf.Floor(s.Age / 0.05f) * 0.22f);
-                });
-                P7Brush(ring.M, 2 * 0.09f * 1.5f / P7Px(sh));
+                // the wave off the shield: on the ground at the contact ahead of her, an open arc facing the drive (r3 fix 2:
+                // the camera-facing ring round the shield read as a reticle on her)
                 var feet = V(e.X, Y(e.X, e.Z), e.Z);
-                P7DustRing(feet + dir * 0.4f, 1.6f, 4, 0.9f, 0.25f);
+                var hit = feet + dir * 0.6f;
+                float open = Mathf.DegToRad(P7D["wave.open_deg"]);
+                P7Wave(new Vector3(hit.X, Y(hit.X, hit.Z) + 0.06f, hit.Z), P7D["charge.stop.reach"], P7D["charge.stop.run"], P7D["charge.stop.lead_px"], P7D["charge.stop.trail_px"],
+                    span0: Mathf.Atan2(dir.Z, dir.X) - open / 2, span: open);
+                P7Dust(feet + dir * 0.4f, 1.6f, 10, 22, 40, 0.35f, 0.25f);
+                if (p7ChargeTrail != null) p7ChargeTrail.Until = 0;
                 p7GhostDue.Clear();
                 p7GhostNext = -1;
                 break;
@@ -470,9 +529,9 @@ public partial class BattleFx
         }
     }
 
-    /// <summary>The Warden's dash (FX_LANGUAGE §4, a body moving): an edge-band ribbon off her hips that tapers to nothing
-    /// in 2.5 samples, two mid-band afterimages stepping out, dust at her heels. Her figure runs the blink over ~0.2 s, so
-    /// the ribbon follows the figure, never drawn ahead of it. False: not hers (another calling's dash keeps its look).</summary>
+    /// <summary>The Warden's dash (FX_LANGUAGE §4, a body moving): the press (glint and kick), a ribbon off her hips
+    /// tapering to a point from its first frame, three amber rim afterimages 0.04 s apart. Her figure runs the blink over
+    /// ~0.2 s, so the ribbon follows the figure, never drawn ahead of it. False: not hers (another calling's dash keeps its look).</summary>
     bool P7Dash(Ev.Dash e, Battle b)
     {
         if (P7Off || !string.Equals(b.Calling, "warden", StringComparison.OrdinalIgnoreCase) || p7ChargeT >= 0) return false;
@@ -480,33 +539,18 @@ public partial class BattleFx
         var dir = new Vector3((float)(e.X1 - e.X0), 0, (float)(e.Z1 - e.Z0));
         dir = dir.LengthSquared() > 1e-4f ? dir.Normalized() : Vector3.Forward;
         var feet = V(e.X0, Y(e.X0, e.Z0), e.Z0);
-        // the press: a glint on her blade and a kick of dust back from her heels (two values, in knots)
-        P7Glint(P7BladeAt(1), 0.6f);
-        var sideAx = new Vector3(dir.Z, 0, -dir.X);
-        for (int q = 0; q < 3; q++)
-        {
-            var lean = (-dir + sideAx * ((R() - 0.5f) * 1.6f)).Normalized();
-            int n = 2 + (int)(R() * 2.99f);
-            for (int i = 0; i < n; i++)
-            {
-                float sz = 0.16f + R() * R() * 0.26f;
-                var v = lean * (1.6f + R() * 1.8f) + Vector3.Up * (0.25f + R() * 0.45f);
-                WgPuff(feet + Vector3.Up * 0.18f, v, sz, 1.5f, 0.45f + R() * 0.25f, WgDust(1.06f + R() * 0.1f), 0.8f, 3.8f);
-                WgPuff(feet + Vector3.Up * 0.07f, v * 0.8f, sz * 1.25f, 1.4f, 0.55f + R() * 0.25f, WgDust(0.68f), 0.76f, 4f);
-            }
-        }
-        // the wedge: a ribbon off her hips (three bands, tapering to nothing, gone in 2.5 samples)
-        P7NewTrail(() => PlayerPos + Vector3.Up * 0.95f, 0.24f, 0.24f, 2.5f * P7Sample);
+        P7Press(P7BladeAt(1), feet, dir);
+        P7NewTrail(() => PlayerPos + Vector3.Up * 0.95f, 0.5f * P7D["dash.ribbon.head_px"] * P7Px(feet), 0.24f, P7D["dash.ribbon.life"]);
         p7ChargeT = 0; p7ChargeDur = 0.0f; p7ChargeDir = dir;
         p7GhostDue.Clear();
         p7GhostNext = -1;
-        // three rim-only afterimages, 0.04 s apart
-        p7GhostDue.AddRange([0.03f, 0.07f, 0.11f]);
+        float g = P7D["charge.ghost.gap"];
+        p7GhostDue.AddRange([0.03f, 0.03f + g, 0.03f + 2 * g]);
         return true;
     }
 
-    /// <summary>Hard Landing: a ring of light running out at her feet to the shove's radius (bold and hot at first,
-    /// thinning to nothing as it reaches it, its coverage 1 -> 0 over 0.2 s) and the dust it pushes outward.</summary>
+    /// <summary>Hard Landing: a wavefront running out at her feet to the shove's radius (its hot edge and feathered
+    /// trailing band, width and coverage to nothing at the radius) and the dust it pushes outward.</summary>
     void P7Shove(Ev.HardLanding e)
     {
         if (P7Off) return;
@@ -514,25 +558,174 @@ public partial class BattleFx
         P7Ev("hard_landing");
         float r = (float)e.Radius;
         var c = V(e.X, Y(e.X, e.Z), e.Z);
-        var shove = P7Quad(5, c + Vector3.Up * 0.06f, r, 0.2f, step: s =>
-        {
-            s.M.SetShaderParameter("p7_prog", Mathf.Clamp(s.Age / 0.2f, 0, 1));
-            s.M.SetShaderParameter("p7_width", Mathf.Clamp(7f * P7Px(s.N.GlobalPosition) / r, 0.01f, 0.25f));
-            s.M.SetShaderParameter("p7_alpha", 1f - Mathf.Floor(s.Age / 0.05f) * 0.25f);
-        });
-        P7Brush(shove.M, 14);
-        P7DustRing(c, r, 6, 0.85f, 0.3f);
+        P7Wave(c + Vector3.Up * 0.06f, r, P7D["dash.shove.run"], P7D["dash.shove.lead_px"], P7D["dash.shove.trail_px"]);
+        var px = P7D.All("dash.shove.px");
+        P7Dust(c, r, P7D.Count("dash.shove.puffs", R()), px[0], px[1], P7D["dash.shove.run"] * 1.6f, 0.3f);
     }
 
     /* ----------------------------------------------------------- pieces -- */
 
-    /// <summary>The press: a four-point glint in the core color for three frames (§4).</summary>
-    void P7Glint(Vector3 at, float size) =>
-        P7Quad(4, at, size, 3 / 60f, bill: true, top: true, step: s =>
+    /// <summary>A wavefront (p7_wave) running out from `at` to `reach` m in `run` s (fast first), its edge and trailing
+    /// band the given px at the play camera, width and coverage to nothing as it arrives; flat on the ground or facing the
+    /// camera (`bill`, over everything).</summary>
+    P7Shape P7Wave(Vector3 at, float reach, float run, float leadPx, float trailPx, bool bill = false, float span0 = 0, float span = Mathf.Tau)
+    {
+        float rpx = reach / P7Px(at);
+        int n = Math.Clamp((int)MathF.Round(span * rpx / P7D["wave.arc_px"]), 3, 9);
+        Vector4[]? arcs = null;
+        var shed = P7D.All("wave.shed");
+        var dpx = P7D.All("wave.dust_px");
+        int next = 0;
+        var s = P7Quad(5, at, reach, run + 1 / 60f, bill: bill, top: bill, step: q =>
         {
-            int f = (int)(s.Age * 60);
-            s.M.SetShaderParameter("p7_fade", f <= 0 ? 0f : f == 1 ? 0.2f : 0.4f);
+            float t = Mathf.Clamp(q.Age / run, 0, 1), prog = 1 - (1 - t) * (1 - t);
+            q.M.SetShaderParameter("p7_prog", prog);
+            q.M.SetShaderParameter("p7_fall", prog);
+            // the front sheds dust as it passes (clusters off the arcs, riding out behind it); the last at the reach
+            while (arcs != null && next < shed.Length && prog >= shed[next])
+            {
+                float k = shed[next++];
+                P7Shed(new Vector3(at.X, at.Y - 0.06f, at.Z), reach * k, arcs, 2 * (1 - t) * reach / run, dpx[0], dpx[1]);
+            }
         });
+        s.M.SetShaderParameter("p7_lead", leadPx / rpx);
+        s.M.SetShaderParameter("p7_trw", trailPx / rpx);
+        s.M.SetShaderParameter("p7_prog", 0.02f);
+        arcs = P7Arcs(s.M, span0 + (span >= Mathf.Tau - 1e-3f ? R() * Mathf.Tau : 0), span, n, 0, 0.85f, 1.25f, 0.35f);
+        P7BrushWave(s.M, rpx, leadPx);
+        return s;
+    }
+
+    /// <summary>(r3 fix 2) A wavefront's painted arcs (p7_wave): `n` brush swipes evenly over `span` from `span0` (radians,
+    /// atan2(z, x) round the quad), each centred in its sector give or take 15%, its half-length `lo`-`hi` of half its sector
+    /// (some overlap, some gaps), its front `zk` leads in or out, its head on a side (`swirl` +1/-1 all one way, 0 each its
+    /// own). Returns them (x centre, y half-length, z offset, w side) for the dust.</summary>
+    Vector4[] P7Arcs(ShaderMaterial m, float span0, float span, int n, int swirl, float lo, float hi, float zk)
+    {
+        n = Math.Clamp(n, 1, 12);
+        var a = new Vector4[12];
+        float sec = span / n;
+        for (int i = 0; i < n; i++)
+            a[i] = new Vector4(span0 + (i + 0.5f + (R() - 0.5f) * 0.3f) * sec, 0.5f * sec * Mathf.Lerp(lo, hi, R()), (R() - 0.5f) * 2 * zk,
+                swirl != 0 ? swirl : (R() < 0.5f ? 1 : -1));
+        m.SetShaderParameter("p7_arc", a);
+        m.SetShaderParameter("p7_narc", n);
+        m.SetShaderParameter("p7_span", new Vector2(span0, span));
+        return a[..n];
+    }
+
+    /// <summary>(r3 fix 2) Dust shed by a wavefront's arcs at `radius` m from `c` (the ground): on most arcs a cluster of
+    /// two or three two-value puffs (`px0`-`px1` at the play camera; a lit top over a darker, wider skirt) toward the arc's
+    /// head, thrown on outward at a share of the front's `speed` (m/s) so the front leaves them behind.</summary>
+    void P7Shed(Vector3 c, float radius, Vector4[] arcs, float speed, float px0, float px1)
+    {
+        float m = P7Px(c);
+        foreach (var a in arcs)
+        {
+            if (R() > 0.7f) continue;
+            int k = 2 + (int)(R() * 1.99f);
+            for (int i = 0; i < k; i++)
+            {
+                float ang = a.X + a.W * a.Y * (0.1f + 0.7f * R());
+                var o = new Vector3(Mathf.Cos(ang), 0, Mathf.Sin(ang));
+                var p = c + o * (radius * (0.97f + R() * 0.06f));
+                p.Y = Y(p.X, p.Z);
+                float sz = Mathf.Lerp(px0, px1, R() * R()) * m;
+                var v = o * speed * (0.3f + 0.25f * R()) + Vector3.Up * (0.4f + R() * 0.5f);
+                WgPuff(p + Vector3.Up * (0.18f + R() * 0.08f), v, sz, 1.6f, 0.4f + R() * 0.25f, P7Lit(1.2f + R() * 0.1f), 0.92f, 5f);
+                WgPuff(p + Vector3.Up * 0.07f, v * 0.8f, sz * 1.3f, 1.45f, 0.48f + R() * 0.25f, WgDust(0.58f), 0.88f, 5.5f);
+            }
+        }
+    }
+
+    /// <summary>(r3 fix 2) A wavefront's brush (p7_wave): its own bristles, about one per 3 px across the lead's swell
+    /// (the shape lays their run along each arc and the trail's drag), drier tails (0.75) and a 0.28 waver so the band
+    /// edges read as a brush's at 1:1. `rpx`: the reach in px at the play camera.</summary>
+    void P7BrushWave(ShaderMaterial m, float rpx, float leadPx)
+    {
+        m.SetShaderParameter("fx_stroke_seed", R() * 97f);
+        m.SetShaderParameter("fx_bristle", new Vector4(Mathf.Clamp(0.66f * 1.3f * leadPx, 3f, 14f), 2f, 0.75f, 0.28f));
+        m.SetShaderParameter("p7_rpx", rpx);
+    }
+
+    /// <summary>The press (every move): one three-band glint at `at` (the blade's tip or the shield) and a dust kick at
+    /// her feet thrown back from `dir`.</summary>
+    void P7Press(Vector3 at, Vector3 feet, Vector3 dir)
+    {
+        P7Glint(at, P7D["glint.px"]);
+        P7Kick(feet, dir, P7D.Count("kick.puffs", R()), P7D["kick.life"]);
+    }
+
+    /// <summary>One three-band glint `px` long at the play camera (a hot heart and a lens streak), the data's frames.</summary>
+    void P7Glint(Vector3 at, float px)
+    {
+        int fr = (int)P7D["glint.frames"];
+        var g = P7Quad(4, at, 0.5f * px * P7Px(at), fr / 60f, bill: true, top: true, step: s =>
+        {
+            int f = (int)(s.Age * 60 + 1e-3f);
+            s.M.SetShaderParameter("p7_fade", f <= 0 ? 0f : f == 1 ? 0.34f : 0.67f);
+        });
+        P7Brush(g.M, 0.2f * px);
+    }
+
+    /// <summary>A kick of dust: `n` two-value puffs (a lit top over a darker skirt) of the data's px, thrown back from
+    /// `dir` and out to the sides (all round when `dir` is zero), low and quick.</summary>
+    void P7Kick(Vector3 feet, Vector3 dir, int n, float life)
+    {
+        float m = P7Px(feet);
+        var px = P7D.All("kick.px");
+        var side = new Vector3(dir.Z, 0, -dir.X);
+        for (int i = 0; i < n; i++)
+        {
+            Vector3 lean;
+            if (dir.LengthSquared() < 1e-4f) { float a = (i + R() * 0.6f) / n * Mathf.Tau; lean = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)); }
+            else lean = (-dir * (0.5f + R() * 0.7f) + side * ((R() - 0.5f) * 2.4f)).Normalized();
+            float sz = Mathf.Lerp(px[0], px[1], R() * R()) * m;
+            var v = lean * (1.8f + R() * 1.6f) + Vector3.Up * (0.3f + R() * 0.45f);
+            WgPuff(feet + lean * 0.18f + Vector3.Up * 0.16f, v, sz, 1.45f, life * (0.85f + R() * 0.3f), P7Lit(1.1f + R() * 0.12f), 0.85f, 4f);
+            WgPuff(feet + lean * 0.14f + Vector3.Up * 0.07f, v * 0.8f, sz * 1.2f, 1.35f, life * (0.95f + R() * 0.3f), WgDust(0.62f), 0.8f, 4.4f);
+        }
+    }
+
+    /// <summary>Dust out to `reach` in `run` s: `puffs` two-value puffs (`px0`-`px1` at the play camera) in knots at
+    /// uneven angles, never an even dotted circle.</summary>
+    void P7Dust(Vector3 c, float reach, int puffs, float px0, float px1, float run, float d0)
+    {
+        float m = P7Px(c), a0 = R() * Mathf.Tau;
+        const float drag = 4.5f;
+        int clusters = Math.Max(3, puffs / 4);
+        int left = puffs;
+        for (int q = 0; q < clusters && left > 0; q++)
+        {
+            float ac = a0 + (q + (R() - 0.5f) * 0.7f) / clusters * Mathf.Tau;
+            int n = q == clusters - 1 ? left : Math.Min(left, Math.Max(1, puffs / clusters + (int)((R() - 0.5f) * 3)));
+            left -= n;
+            for (int i = 0; i < n; i++)
+            {
+                float a = ac + (R() - 0.5f) * 0.45f;
+                var o = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
+                float far = Mathf.Max(0.2f, reach * (0.72f + R() * 0.34f) - d0);
+                float v0 = far * drag / (1 - Mathf.Exp(-drag * run));
+                var at = c + o * d0;
+                float sz = Mathf.Lerp(px0, px1, R() * R()) * m;
+                WgPuff(at + Vector3.Up * (0.2f + R() * 0.1f), o * v0 + Vector3.Up * (0.15f + R() * 0.25f), sz, 1.4f, run * 1.6f + R() * 0.3f, P7Lit(1.08f + R() * 0.12f), 0.82f, drag);
+                WgPuff(at + Vector3.Up * 0.09f, o * v0 * (0.8f + R() * 0.15f), sz * 1.2f, 1.35f, run * 1.8f + R() * 0.3f, WgDust(0.64f + R() * 0.06f), 0.78f, drag);
+            }
+        }
+    }
+
+    /// <summary>A chunk of earth: the Warden ground's faceted stone, painted the ground's own brown for its flight (the
+    /// r2 judge read the stones as red cubes in her pool), its paint let go when it lands back in the pool.</summary>
+    void P7Throw(Vector3 p, Vector3 v, float scale, float life)
+    {
+        WgThrow(p, v, scale, life, 5);
+        WgRock? rk = null;
+        foreach (var c in wgRocks) if (c.On && c.Age == 0 && c.P == p) { rk = c; break; }
+        if (rk == null) return;
+        p7Earth ??= new StandardMaterial3D { AlbedoColor = WgDustDay * 0.85f, Roughness = 0.95f };
+        rk.N.MaterialOverride = p7Earth;
+        p7Thrown.Add(rk);
+    }
 
     Vector3 P7BladeAt(float k)
     {
@@ -597,7 +790,7 @@ public partial class BattleFx
         var m = P7Mat(mode, ghost: true);
         // the afterimage's rim is ~2.6 px across (one bristle); the vow's pulse band a fifth of her height (~30 px)
         P7Brush(m, mode == 11 ? 30 : 3);
-        m.SetShaderParameter("p7_alpha", 0.9f);
+        m.SetShaderParameter("p7_alpha", 1f);
         m.SetShaderParameter("p7_life", life);
         var root = new Node3D { Name = "P7Ghost" };
         AddChild(root);
@@ -668,6 +861,8 @@ public partial class BattleFx
             if (s.Age >= s.Life || !IsInstanceValid(s.N)) { if (IsInstanceValid(s.N)) s.N.QueueFree(); p7Shapes.RemoveAt(i); continue; }
             s.Step?.Invoke(s);
         }
+        for (int i = p7Thrown.Count - 1; i >= 0; i--)
+            if (!p7Thrown[i].On) { p7Thrown[i].N.MaterialOverride = null; p7Thrown.RemoveAt(i); }
         for (int i = p7Ghosts.Count - 1; i >= 0; i--)
         {
             var g = p7Ghosts[i];
@@ -680,7 +875,7 @@ public partial class BattleFx
             if (l.Age > 0.4f) continue;
             l.Age += dt;
             // up on the hit's frame, held a sample, down over two (2-3 samples at a hit, §1)
-            float k = l.Age < P7Sample ? 1 : Mathf.Max(0, 1 - (l.Age - P7Sample) / (2 * P7Sample));
+            float k = l.Age < l.Hold ? 1 : Mathf.Max(0, 1 - (l.Age - l.Hold) / Mathf.Max(1e-3f, l.Down));
             l.L.LightEnergy = l.Peak * k * k;
             if (k <= 0) { l.L.Visible = false; l.Age = 9; }
         }
@@ -704,18 +899,19 @@ public partial class BattleFx
             // the charge: a rim ghost every 0.04 s (three alive at once), dust plowed to both sides of her path
             if (p7ChargeDur > 0 && p7ChargeT <= p7ChargeDur)
             {
-                if (p7GhostNext >= 0 && p7ChargeT >= p7GhostNext) { p7GhostNext += 0.04f; P7Snap(); }
+                if (p7GhostNext >= 0 && p7ChargeT >= p7GhostNext) { p7GhostNext += P7D["charge.ghost.gap"]; if (p7Ghosts.Count < 3) P7Snap(3, P7D["charge.ghost.life"]); }
                 if (p7PlowNext >= 0 && p7ChargeT >= p7PlowNext)
                 {
-                    p7PlowNext += 0.05f;
+                    p7PlowNext += P7D["charge.plow.gap"];
+                    var ppx = P7D.All("charge.plow.px");
                     var feet = new Vector3(PlayerPos.X, Y(PlayerPos.X, PlayerPos.Z), PlayerPos.Z);
                     var side = new Vector3(p7ChargeDir.Z, 0, -p7ChargeDir.X);
                     for (int sgn = -1; sgn <= 1; sgn += 2)
                     {
-                        float sz = 0.16f + R() * R() * 0.28f;
+                        float sz = Mathf.Lerp(ppx[0], ppx[1], R()) * P7Px(feet);
                         var v = side * sgn * (1.8f + R() * 1.4f) - p7ChargeDir * (0.3f + R() * 0.5f) + Vector3.Up * (0.3f + R() * 0.45f);
                         var at = feet + side * sgn * 0.3f + p7ChargeDir * 0.2f;
-                        WgPuff(at + Vector3.Up * 0.2f, v, sz, 1.6f, 0.45f + R() * 0.25f, WgDust(1.06f + R() * 0.1f), 0.8f, 4f);
+                        WgPuff(at + Vector3.Up * 0.2f, v, sz, 1.6f, 0.45f + R() * 0.25f, P7Lit(1.1f + R() * 0.1f), 0.82f, 4f);
                         WgPuff(at + Vector3.Up * 0.08f, v * 0.75f, sz * 1.3f, 1.4f, 0.55f + R() * 0.25f, WgDust(0.68f), 0.76f, 4.4f);
                     }
                 }
@@ -750,10 +946,11 @@ public partial class BattleFx
     static Vector3 P7Cr(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float u) =>
         0.5f * (2 * p1 + (p2 - p0) * u + (2 * p0 - 5 * p1 + 4 * p2 - p3) * u * u + (3 * p1 - p0 - 3 * p2 + p3) * u * u * u);
 
-    /// <summary>The ribbon mesh: the sampled path smoothed (Catmull-Rom, 4 steps a span: no kinks), a strip whose UV.x is
-    /// its age along it (1 the head, now; 0 the tail, Life old) and UV.y 0..1 across; the stroke tapers it to nothing at
-    /// the tail and gives it its bands. A body's ribbon faces the camera (`Width` its half-width); a blade's sweep spans
-    /// the blade. After `Until` its life steps it out (p7_fade).</summary>
+    /// <summary>The ribbon mesh: the sampled path splined (Catmull-Rom, 4 steps a span), then eased until no joint turns
+    /// more than the data's degrees on screen (leap.ribbon.turn_deg: no kink, no fishhook); a strip whose UV.x is its
+    /// along: the smaller of its age (1 the head, now; 0 the tail, Life old) and its length from the head (so it tapers
+    /// to a point from its first frame, never a rod with a blunt tail); UV.y 0..1 across. A body's ribbon faces the camera
+    /// (`Width` its half-width at the head); a blade's sweep spans the blade. After `Until` its life steps it out.</summary>
     void P7BuildTrail(P7Trail t, Camera3D? cam)
     {
         t.Mesh.ClearSurfaces();
@@ -776,10 +973,15 @@ public partial class BattleFx
             }
         pa.Add(t.Pts[n - 1].P); if (sweep) pb.Add(t.Pts2[n - 1]); ag.Add(t.Pts[n - 1].Age);
         int m = pa.Count;
+        if (!sweep) P7Ease(pa, cam, Mathf.DegToRad(P7D["leap.ribbon.turn_deg"]));
+        // its length from the head (the last point)
+        var sl = new float[m];
+        for (int i = m - 2; i >= 0; i--) sl[i] = sl[i + 1] + pa[i].DistanceTo(pa[i + 1]);
+        float total = Mathf.Max(1e-4f, sl[0]);
         t.Mesh.SurfaceBegin(Mesh.PrimitiveType.TriangleStrip);
         for (int i = 0; i < m; i++)
         {
-            float along = Mathf.Clamp(1 - ag[i] / t.Life, 0, 1);
+            float along = Mathf.Clamp(Mathf.Min(1 - ag[i] / t.Life, 1 - sl[i] / total), 0, 1);
             Vector3 a, b;
             if (sweep) { a = pa[i]; b = pb[i]; }
             else
@@ -797,5 +999,28 @@ public partial class BattleFx
         }
         t.Mesh.SurfaceEnd();
         t.N.MaterialOverride = t.M;
+    }
+
+    /// <summary>Eases a polyline until no joint turns more than `max` radians as the camera sees it (each offending
+    /// point pulled toward its neighbours' middle; the ends stay), at most 12 passes.</summary>
+    static void P7Ease(List<Vector3> p, Camera3D cam, float max)
+    {
+        int m = p.Count;
+        if (m < 3) return;
+        var q = new Vector2[m];
+        for (int pass = 0; pass < 12; pass++)
+        {
+            for (int i = 0; i < m; i++) q[i] = cam.IsPositionBehind(p[i]) ? Vector2.Zero : cam.UnprojectPosition(p[i]);
+            bool ok = true;
+            for (int i = 1; i < m - 1; i++)
+            {
+                var d0 = q[i] - q[i - 1]; var d1 = q[i + 1] - q[i];
+                if (d0.LengthSquared() < 0.25f || d1.LengthSquared() < 0.25f) continue;
+                if (Mathf.Abs(d0.AngleTo(d1)) <= max) continue;
+                ok = false;
+                p[i] = p[i] * 0.4f + (p[i - 1] + p[i + 1]) * 0.3f;
+            }
+            if (ok) break;
+        }
     }
 }

@@ -55,10 +55,35 @@ public partial class MapScreen : Overlay
     public static ImageTexture Drawing(ZoneData z)
     {
         if (drawings.TryGetValue(z.Id, out var hit)) return hit;
+        InkSheet(z);
         // (drawn on a worker since the place was staged: waited for, the rest of it only)
         var img = drawn.TryRemove(z.Id, out var ahead) ? ahead : soon.TryRemove(z.Id, out var task) ? task.Result : Draw(z);
         var tex = ImageTexture.CreateFromImage(img);
         drawings[z.Id] = tex;
+        return tex;
+    }
+
+    static readonly Dictionary<string, ImageTexture> inkSheets = new();
+    /// <summary>(L1 l26 mini) The zone's own ink (ZoneInk: props, buildings, yards) as a sheet over the drawing, made with it.</summary>
+    public static ImageTexture? InkSheetFor(string id) => inkSheets.TryGetValue(id, out var t) ? t : null;
+
+    /// <summary>The sheet's pixels across (about 0.3 m each on the Waystation's 120 m: half a minimap pixel).</summary>
+    public const int InkN = 400;
+
+    static ImageTexture InkSheet(ZoneData z)
+    {
+        if (inkSheets.TryGetValue(z.Id, out var hit)) return hit;
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        float extent = Extent(z.Meta);
+        int sr = z.Splat.GetWidth();
+        Color At(double x, double zz) => z.Splat.GetPixel(Math.Clamp((int)((x / z.Size + 0.5) * sr), 0, sr - 1), Math.Clamp((int)((zz / z.Size + 0.5) * sr), 0, sr - 1));
+        // as the drawing mixes it: the dirt (R, x1.2) under the stone (G) and the leaf litter (A, x0.8)
+        static float Dirt(Color p) => Math.Min(1, p.R * 1.2f) * (1 - p.G) * (1 - p.A * 0.8f);
+        var shapes = ZoneInk.From(z.Meta);
+        var px = ZoneInk.Build(shapes, InkN, extent, (x, zz) => Dirt(At(x, zz)) > 0.5f, (x, zz) => { var p = At(x, zz); return p.G > 0.5f || Dirt(p) > 0.5f; });
+        var tex = ImageTexture.CreateFromImage(Image.CreateFromData(InkN, InkN, false, Image.Format.Rgba8, px));
+        inkSheets[z.Id] = tex;
+        GD.Print($"map: zone ink for {z.Id}: {shapes.Count} shapes, {InkN} px over {extent:0} m, {sw.Elapsed.TotalMilliseconds:F1} ms");
         return tex;
     }
 

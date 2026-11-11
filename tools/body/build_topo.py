@@ -2,6 +2,8 @@
 """P1 B2a: the base build on OUR topology, both tiers, no Blender, no MakeHuman at build time. docs/team/body.md P1.
 
     python tools/body/build_topo.py tools/body/specs/base_woman.json <out_dir> [--tiers close,play] [--no-correctives]
+    python tools/body/build_topo.py <spec> <built or published dir> --rig-only    (the rig step alone: the spec's
+                                              rig_girdle into rig.json/play_rig.json, no glb republished)
 
 Writes <out>/body.glb + <out>/rig.json (close), <out>/play.glb + <out>/play_rig.json (play), <out>/build.json (counts,
 timings, checks) and <out>/stage/<tier>.npz (each stage's arrays). Check it:
@@ -750,12 +752,7 @@ def stage_export(spec, tier, z, V, ring, hv, sk, wts, A, baked, out, rep, uv=Non
     tmp = os.path.join(out, "stage", tier)
     os.makedirs(tmp, exist_ok=True)
     st.write_rig(sk, tmp)
-    if spec.get("rig_girdle"):          # (a spec's own girdle fields over base_drive.json's: P1 R1 arm chain "clavicle_by")
-        with open(os.path.join(tmp, "rig.json")) as f:
-            rj = json.load(f)
-        rj["girdle"].update({k: v for k, v in spec["rig_girdle"].items() if k != "why"})
-        with open(os.path.join(tmp, "rig.json"), "w") as f:
-            json.dump(rj, f, indent=1)
+    rig_girdle(spec, os.path.join(tmp, "rig.json"))
     os.replace(os.path.join(tmp, "rig.json"), os.path.join(out, rig))
     ht = int(sum(len(A.mesh(h).T) for h in HEADS))
     rep["export"] = {"file": glb, "body_vertices": int(len(V)), "tris_body": int(len(T)), "head_tris": ht,
@@ -763,6 +760,47 @@ def stage_export(spec, tier, z, V, ring, hv, sk, wts, A, baked, out, rep, uv=Non
                      "flipped_edges": twice}
     np.savez(os.path.join(out, "stage", f"{tier}.npz"), V=V, J=wts["J"], W=wts["W"], worlds=sk["worlds"],
              **({"src": uv["src"], "T": uv["T"]} if uv is not None else {}))
+
+
+def rig_girdle(spec, path):
+    """The rig step's spec part: the spec's own girdle fields over base_drive.json's (rig_girdle: P1 R1 arm chain
+    "clavicle_by"; the A1 rebase on B: B's own girdle law drives the clavicle) written into the rig file at `path`.
+    Returns the fields it set (none: no rig_girdle)."""
+    g = {k: v for k, v in (spec.get("rig_girdle") or {}).items() if k != "why"}
+    if not g:
+        return {}
+    with open(path) as f:
+        rj = json.load(f)
+    rj["girdle"].update(g)
+    with open(path, "w") as f:
+        json.dump(rj, f, indent=1)
+    return g
+
+
+def rig_only(spec, out, tiers):
+    """--rig-only: the rig step alone on a built or published body (its rig.json / play_rig.json; no mesh, no glb
+    written): the spec's rig_girdle laid into each tier's rig file, and a published dir's publish.json file hashes
+    kept true. A law change reaches the game without a republish of the glbs."""
+    import hashlib
+    done = {}
+    for tier in tiers:
+        p = os.path.join(out, GLB[tier][1])
+        if not os.path.exists(p):
+            print("RIG-ONLY", tier, "no", p)
+            continue
+        g = rig_girdle(spec, p)
+        done[GLB[tier][1]] = hashlib.sha1(open(p, "rb").read()).hexdigest()
+        print("RIG-ONLY", tier, p, "girdle", g)
+    pj = os.path.join(out, "publish.json")
+    if os.path.exists(pj) and done:
+        with open(pj) as f:
+            pub = json.load(f)
+        pub.setdefault("files", {}).update(done)
+        pub["rig_only"] = {"spec": os.path.relpath(spec["_path"], REPO).replace("\\", "/") if spec.get("_path") else None,
+                           "files": sorted(done)}
+        with open(pj, "w") as f:
+            json.dump(pub, f, indent=1)
+        print("RIG-ONLY publish.json", done)
 
 
 def stage_shapes(spec, tier, z, V, A, baked, out, rep):
@@ -1022,8 +1060,15 @@ def main():
     ap.add_argument("out")
     ap.add_argument("--tiers", default="close,play")
     ap.add_argument("--no-correctives", action="store_true", help="skip stage 6 (the export without shapes)")
+    ap.add_argument("--rig-only", action="store_true", help="the rig step alone on <out>'s rig.json/play_rig.json (a built or "
+                    "published body): the spec's rig_girdle; no mesh or glb written")
     a = ap.parse_args()
     out = os.path.abspath(a.out)
+    if a.rig_only:
+        spec = load_spec(a.spec)
+        spec["_path"] = os.path.abspath(a.spec)
+        rig_only(spec, out, a.tiers.split(","))
+        return
     os.makedirs(os.path.join(out, "stage"), exist_ok=True)
     spec = load_spec(a.spec)
     spec = with_defaults(spec)

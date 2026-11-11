@@ -122,6 +122,29 @@ public class TeachTests
     }
 
     [Fact]
+    public void AnUrgentFreezeTakesTheScreenFromAReadArrow()
+    {
+        var mem = new TeachMemory();
+        var t = new Teacher(mem);
+        t.Offer(Arrow("move"), 0);
+        Assert.Equal("move", t.Update(0, 0, Busy.None, Here)?.Id);
+        t.Offer(Freeze("swing") with { Urgent = true }, 1);
+        // Not read yet: the arrow stays and the freeze waits.
+        Assert.Null(t.Update(1, 1, Busy.None, Here));
+        Assert.Equal("move", t.Current?.Id);
+        // Read: the urgent freeze comes up at once, and the arrow counts as seen.
+        Assert.Equal("swing", t.Update(2.6, 2.6, Busy.None, Here)?.Id);
+        Assert.True(mem.Seen("move"));
+        // A plain freeze waits the arrow out.
+        var t2 = new Teacher(new TeachMemory());
+        t2.Offer(Arrow("move"), 0);
+        t2.Update(0, 0, Busy.None, Here);
+        t2.Offer(Freeze("plain"), 1);
+        Assert.Null(t2.Update(2.6, 2.6, Busy.None, Here));
+        Assert.Equal("move", t2.Current?.Id);
+    }
+
+    [Fact]
     public void FreezeHoldsBeforeItCanBeGoneOn()
     {
         var t = new Teacher(new TeachMemory());

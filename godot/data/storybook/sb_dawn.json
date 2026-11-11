@@ -1,0 +1,77 @@
+{
+  "id": "sb_dawn",
+  "title": "First Light",
+  "script": "docs/story/storybook/sb00_stay_where_they_reach.md",
+  "conversation": "sb_stay_where_they_reach",
+  "live": true,
+  "canvas": [
+    3200,
+    1800
+  ],
+  "grain": 0.05,
+  "vignette": 0.3,
+  "skip": {
+    "from": 1.5,
+    "hold": 0.8
+  },
+  "plates": [
+    {
+      "id": "dawn_p5",
+      "at": 0,
+      "until": 9.0,
+      "in": {
+        "kind": "fade",
+        "dur": 1.0,
+        "color": "#000000"
+      },
+      "camera": [
+        {
+          "t": 0,
+          "x": 1600,
+          "y": 849,
+          "zoom": 0.97
+        },
+        {
+          "t": 1.0,
+          "x": 1600,
+          "y": 844,
+          "zoom": 0.97
+        },
+        {
+          "t": 7.5,
+          "x": 1600,
+          "y": 754,
+          "zoom": 1.05,
+          "ease": "inout"
+        }
+      ],
+      "note": "SB00's P5 'First light' (ink_p3d, sb_wire_ink.py's plate), copied for the Low Ford's dawn (TUTORIAL_COPY.md A12); its camera as SB00's, times from 0.",
+      "layers": [
+        {
+          "id": "dawn",
+          "image": "res://art/storybook/sb00/p3d/dawn.png",
+          "pos": [
+            -560,
+            104
+          ],
+          "scale": 0.8,
+          "z": 1.0
+        }
+      ],
+      "out": {
+        "kind": "fade",
+        "dur": 1.2,
+        "color": "#000000"
+      },
+      "cues": [
+        {
+          "at": 0.8,
+          "do": "line",
+          "id": "dawn"
+        }
+      ]
+    }
+  ],
+  "cues": [],
+  "end": 9.0
+}

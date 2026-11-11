@@ -246,6 +246,10 @@ public sealed class Teacher
                 case CalloutKind.Arrow:
                     // (a draft owed waits for an arrow that is up: Game.UpdateDraft)
                     if (real - ShownAt >= ArrowLife) Close("time", real);
+                    // (M6) An urgent freeze whose moment is here takes the screen from an arrow already read: the
+                    // swing (A2) waited out the move arrow while the drowned one closed and fell (run m6r1, 31.7-36.9 s).
+                    else if (real - ShownAt >= ArrowRead && queue.Any(e => e.C.Urgent && e.C.Kind == CalloutKind.Freeze && !memory.Seen(e.C.Id) && where(e.C) == Presence.Here))
+                        Close("urgent", real);
                     else if (Blocked(cur, busy & ~Busy.Owed) || where(cur) == Presence.Gone)
                     {
                         if (real - ShownAt >= ArrowRead) Close("cut", real);

@@ -79,6 +79,10 @@ public class JourneyTests
         // Kills teach the survivor instead.
         double xp = j.Ch.Xp;
         j.Killed(wolf, true);
+        // (M6 A3: as the ember stones the dead spill, paid as they land; a zone's end pays any still on the way)
+        Assert.Equal(xp, j.Ch.Xp);
+        Assert.Contains(b.Pickups.Living(), k => k.Ref == Battle.XpStoneRef);
+        b.PayXpStones();
         Assert.True(j.Ch.Xp > xp);
         // The wounds are carried to the next place (not into town, where they are tended).
         b.Player.Hp = 40;

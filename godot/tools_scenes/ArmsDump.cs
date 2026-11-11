@@ -106,6 +106,29 @@ public partial class ArmsDump : Node
         sb.Append("\n}\n}\n");
         File.WriteAllText(Path.Combine(dir, "arms_local.json"), sb.ToString());
 
+        // The same held pairs seated as the game seats them on B (Arms.Seat isB: B's own fist), no sheathed block:
+        // tools/anim/data/arms_local_b.json, which tools/anim/p4.py pieces() reads for the sword and the shield.
+        var sbB = new StringBuilder("{\n");
+        bool firstB = true;
+        foreach (var (id, bone) in held)
+        {
+            var piece = Arms.Make(id);
+            piece.Transform = Arms.Seat(piece, id, bone, true, isB: true);
+            var v = new List<Vector3>();
+            var t = new List<int[]>();
+            Collect(piece, piece.Transform, Arms.MountTransform(id, bone, true), v, t);
+            if (!firstB) sbB.Append(",\n");
+            firstB = false;
+            sbB.Append($"\"{id}@{bone}\": {{\"v\": [");
+            sbB.Append(string.Join(",", v.ConvertAll(p => $"[{F(p.X)},{F(p.Y)},{F(p.Z)}]")));
+            sbB.Append("], \"t\": [");
+            sbB.Append(string.Join(",", t.ConvertAll(a => $"[{a[0]},{a[1]},{a[2]}]")));
+            sbB.Append("]}");
+            piece.QueueFree();
+        }
+        sbB.Append("\n}\n");
+        File.WriteAllText(Path.Combine(dir, "arms_local_b.json"), sbB.ToString());
+
         // Her skeleton, as the game loads her (art/people/heroine.glb).
         var her = GD.Load<PackedScene>("res://art/people/heroine.glb").Instantiate<Node3D>();
         var skel = (Skeleton3D)her.FindChildren("*", "Skeleton3D", true, false)[0];

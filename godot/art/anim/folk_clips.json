@@ -290,7 +290,7 @@
 		"speed": 0.0
 	},
 	"m_arms_crossed": {
-		"changes": "retargeted to her skeleton, feet locked, looped, in place",
+		"changes": "retargeted to her skeleton, feet locked, looped, in place; the neck and the Head carried as m_idle's in the mean (one constant turn each about its own ear-to-ear axis, tip back +1.8 and -32.0 degrees; the take's own bob kept)",
 		"layer": "full",
 		"length": 3.59999990463257,
 		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
@@ -589,14 +589,14 @@
 		"source": "keyed (tools/anim/crowd.py)"
 	},
 	"m_talk": {
-		"changes": "retargeted to her skeleton, feet locked, looped, in place",
+		"changes": "retargeted to her skeleton, feet locked, looped, in place; a keyed talk laid over it (tools/anim/data/folk_talk.json: the right hand raised to 12 cm above its hang, the left hand raised to 12 cm above its hang, the head nodding to 5 degrees; the upper arms' lines, the trunk and the legs as the clip has them)",
 		"layer": "full",
-		"length": 10.2666664123535,
+		"length": 10.8666667938232,
 		"licence": "Mixamo (Adobe)",
 		"loop": true,
 		"note": "townsfolk (men)",
-		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_talking.bvh",
-		"speed": 0.0000111572903396131
+		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_weight_shift_idle.bvh",
+		"speed": 0.000000085943207402705
 	},
 	"m_wade_drag": {
 		"changes": "retargeted to her skeleton, feet locked, travel taken out, looped (seam spread)",
@@ -609,7 +609,7 @@
 		"speed": 0.968388726222036
 	},
 	"m_walk": {
-		"changes": "retargeted to her skeleton, feet locked, looped, in place",
+		"changes": "retargeted to her skeleton, feet locked, looped, in place; the neck and the Head carried as m_idle's in the mean (one constant turn each about its own ear-to-ear axis, tip back -4.0 and -25.2 degrees; the take's own bob kept)",
 		"layer": "full",
 		"length": 3.59999990463257,
 		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",

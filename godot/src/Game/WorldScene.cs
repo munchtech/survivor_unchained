@@ -321,6 +321,7 @@ public partial class WorldScene : Node3D, IZoneLook
                 foreach (var e in evs)
                 {
                     if (e is Ev.Muzzle shot) Player?.OnMuzzle(shot.Angle);
+                    else if (e is Ev.SwingRelease rel) Player?.OnSwingRelease(rel);
                     else if (e is Ev.Flare fl && fl.Phase == FlarePhase.Press) Player?.OnFlarePress(fl, b);
                     else if (e is Ev.Spin or Ev.Brace) Player?.OnP7(e);
                     else if (e is Ev.Knockdown kd) { Player?.OnKnockdown(kd.Seconds); SurvivorUnchained.Play.Story.CourtTrace.Say("knock"); }
@@ -422,8 +423,13 @@ public partial class WorldScene : Node3D, IZoneLook
             Perf.Begin(Perf.Part.Player);
             Player?.Update(b, hx, hz, leap, herDt, viewTime, HeightAt);
             Perf.End(Perf.Part.Player);
+            // (--act: the shot harness moves her root off the fight's spot; the camera and the lights follow her)
+            if (Player?.ActAt is Vector3 shifted) { HerDrawn = shifted; hx = shifted.X; hz = shifted.Z; y = shifted.Y; }
             // (a teaching freeze holds the camera too: the words were placed for this picture)
             if (Showcase == null && !CameraHeld && !FxStill) cam.Update((float)dt, (float)hx, y, (float)hz, (float)p.Vx, (float)p.Vz);
+            // (--act-rigid, shots only: the view carried with her root, as it stands over her at rest: no follow lag on a travelling act)
+            if (SurvivorUnchained.View.PlayerView.ActRigid && Player?.ActAt is Vector3 carried)
+                cam.Camera.GlobalPosition += carried + new Vector3(0, 0.8f, 0) - cam.LookAt;
             Perf.Begin(Perf.Part.Crowd);
             Crowd.Still = Hold;
             Crowd.Drawn = Drawn;
