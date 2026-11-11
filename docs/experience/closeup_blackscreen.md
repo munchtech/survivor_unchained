@@ -13,7 +13,8 @@ close-up exception, reports it once, and retries in the next zone.
 
 ## Checks
 
-- `dotnet test` in `godot/tests`: 2,213 passed, 0 failed, 11 skipped.
+- `dotnet test` in `godot/tests`, with integration `f7c7ff458` merged: 2,265 passed,
+  0 failed, 11 skipped (the pre-merge fix also passed 2,213/0/11).
 - `FrameGuardTests`: the frame continues after a disposed-object failure, the
   error is reported once, and a new zone can resume the subsystem.
 - `CloseUpLifetime`: build a cel key in the Low Ford, enter the Waystation, wait
@@ -28,6 +29,9 @@ rendered run logged zero C# exceptions. Headless mode also reports dummy-rendere
 blend-shape and 3D color-table errors; the rendered run avoids those, but reports
 shader-cache write errors. Logs stay in the worktree as `closeup-harness-final.log`,
 `closeup-rendered.log`, and `closeup-rendered-stderr.log` (ignored).
+The final rendered recheck after the integration merge also passed all three
+checks with zero C# exceptions; its logs are `closeup-integrated-rendered.log`
+and `closeup-integrated-rendered-stderr.log`.
 
 The engine harness uses its own `Survivor Unchained Codex closeup-blackscreen`
 user directory and checks that isolation before creating the game. Run from the

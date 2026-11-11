@@ -552,9 +552,17 @@ public partial class Game
         Pose(new Vector3(Fire.X + 1.05f, y + 1.75f, Fire.Y + 7.0f), new Vector3(Fire.X + 0.95f, y + 1.0f, Fire.Y + 0.9f));
     }
 
-    public void NewJourney()
+    /// <summary>The slot the player chose to replace (all three in use: the title asks which, SU-001).</summary>
+    int? replaceSlot;
+
+    public void NewJourney() => NewJourney(null);
+
+    public void NewJourney(int? replace)
     {
+        replaceSlot = replace;
         Mode = "create";
+        // A new journey teaches again (the owner's demo-arpg1 profile had the callouts marked seen by test runs).
+        Settings.Current.SeenTips.Clear(); Settings.Current.Save();
         // (the Look holds the grade's whole toe: her irises and dark hair keep their colour (Atmospheres.Front))
         air.Set(Atmospheres.Front);
         LookView(true);
@@ -614,6 +622,7 @@ public partial class Game
 
     public void CancelCreation()
     {
+        replaceSlot = null;
         Mode = "title";
         draft = null;
         air.Set(Atmospheres.Title);
@@ -648,9 +657,9 @@ public partial class Game
             Journey = Journey.From(d, slot);
             Hook();
             // A journey kept on one of the old map runs comes back to the Wayfinder's table.
-            if (d.Location.Zone == "map") EnterZone("waystation", null, Play.Zones.Waystation.AtTable);
-            else EnterZone(d.Location.Zone, null, new Arrival(d.Location.X, d.Location.Z, d.Location.Facing));
-            hud.Fade(0, 1.2);
+            // (a place still being built ahead is finished behind the black first: SU-021)
+            if (d.Location.Zone == "map") EnterWhenBuilt("waystation", null, Play.Zones.Waystation.AtTable, () => hud.Fade(0, 1.2));
+            else EnterWhenBuilt(d.Location.Zone, null, new Arrival(d.Location.X, d.Location.Z, d.Location.Facing), () => hud.Fade(0, 1.2));
         });
     }
 
@@ -662,13 +671,25 @@ public partial class Game
         if (d == null) return;
         Journey = Journey.From(d, 0);
         Hook();
-        EnterZone(d.Location.Zone == "map" ? "waystation" : d.Location.Zone, null, new Arrival(d.Location.X, d.Location.Z, d.Location.Facing));
-        hud.Fade(0, 0.5);
+        EnterWhenBuilt(d.Location.Zone == "map" ? "waystation" : d.Location.Zone, null, new Arrival(d.Location.X, d.Location.Z, d.Location.Facing), () => hud.Fade(0, 0.5));
+    }
+
+    /// <summary>A leave whose save failed is refused once, with the reason; asked again, it goes
+    /// (the player chose to lose what wasn't written).</summary>
+    bool leaveUnsaved;
+
+    bool SavedForLeaving()
+    {
+        if (Save("quit") != SaveOutcome.Failed || leaveUnsaved) return true;
+        leaveUnsaved = true;
+        Toast(new Toast(ToastKind.Warning, "Leave again to go without saving."));
+        return false;
     }
 
     public void QuitToTitle()
     {
-        Save("quit");
+        if (!SavedForLeaving()) return;
+        leaveUnsaved = false;
         screens.Close();
         hudMode = null;
         // (notices held over a fall or a chest are not carried into the next journey)
@@ -679,7 +700,7 @@ public partial class Game
 
     public void QuitGame()
     {
-        if (Mode == "play") Save("quit");
+        if (Mode == "play" && !SavedForLeaving()) return;
         hud.Fade(1, 0.4);
         Wait(0.45, () => QuitPath.Request(GetTree()));
     }

@@ -154,7 +154,7 @@ public static class Teeth
     }
 
     static File? file;
-    static File F => file ??= Json.Parse<File>((System.Environment.GetEnvironmentVariable("SU_TEETH") is { Length: > 0 } alt ? System.IO.File.ReadAllText(alt) : Json.ReadContent("teeth.json")));
+    static File F => file ??= Json.Parse<File>((DevOverrides.Env("SU_TEETH") is { } alt ? System.IO.File.ReadAllText(alt) : Json.ReadContent("teeth.json")));
 
     /// <summary>A tier's teeth, or null (as it was).</summary>
     public static Tier? For(int tier) => F.Tiers.TryGetValue(tier.ToString(), out var t) ? t : null;

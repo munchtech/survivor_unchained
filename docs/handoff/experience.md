@@ -5,6 +5,21 @@ For a fresh successor. Read these first:
 2. `docs/team/experience.md`: the one-page status, which holds what's done, the next steps in order, and the verdicts.
 3. `docs/design/STORY_NIGHTS_AND_TIME.md`: the owner's decisions are at its top.
 
+## B1 Ford-Warden boss bugs (boss-b1, lead 1, 11 Nov): MR READY
+
+**State.** Branch boss-b1, integration 084c918c9 merged in. Judge round 5 PASS (all four checks, no musts): `survivorsunchained_inputs/scratch_boss_b1/r15/judge/verdict_r5.md` (round 4 CLOSE: `r13/judge/verdict_r4.md`). Harness `scratch_boss_b1/run.sh <name> [--b1interrupt]` (slice start through the kill, `--pace` trace, strike shots); r15-r18 run 0 exceptions, Victory, legendary on the ground and its card. Profile reset done at the MR (backup in scratch_boss_b1).
+
+**Fixed.** A cone left up after a stagger or his death, and its blow landing anyway (CallOffCleave). Stun lengths (lamp 4.0 s, stagger 3.0 s, channel break 2.5 s; a stagger in a stun no longer stretches it). Nothing lands after death. The drawn swing trail dropped (r4 ruling). The cleave's contact pose at windup 1.03 s, one frame ahead of the blow and its number; a view-only hip twist (WardenView.Twist, -0.5 rad) so the diagonal Sword_Attack comes down on the cone's axis (trace `tip=` bearing). "Dazed" pushed off her side of him. An interrupt (Flare, perfect dodge, freeze) now really interrupts him: BattleHooks.OnBossInterrupt (forwarded by Following) -> WardenInterrupted: cleave/charge wind called off with cone and lane, 0.8 s reel; a channel breaks (2.5 s). Before, "Interrupted!" barked while the move went on. Strike shots key off drawn frames (WardenView.StrikeShots), not the wall clock that runs through teach freezes.
+
+**Follow-ups (not done, not musts).**
+- A drawn weapon trail for his cut (dropped after r7-r12 failed as a pane or invisible); wants an authored ribbon or VFX lead.
+- The cone's reach (6.4 m) is longer than the blade's (about 5 m): a hit at the cone's edge lands with no steel near her. Shrink the cone to about 5.2 m or lengthen the cut.
+- The first lamp break showed no burst in r13 (the second did); confirm the burst fires on every break.
+- Text stacks at a lamp break (bottom line, log, Dazed, pip, banner) and at an interrupt ("Dazed" over "Interrupted!").
+- The charge lane vanishes while he runs in from off screen; keep it up, fading, to the run's end.
+- "blocked" over him on the frame she takes 70 can read as her block: a ward glyph or tint.
+- Lesson: after adding a BattleHooks field, run BossTests (Every_hook_the_game_wraps_asks_the_zone_when_called fails when Following lacks it); PrologueTests alone share the zone's hooks and miss it.
+
 ## M6 tutorial (tutorial-m6, lead 4, 10 Nov): MR READY (the lane wound down on the owner's word)
 
 **State.** Branch tutorial-m6. Integration (claude/vigilant-galileo-l6jqyx adb6132ba) is merged in. skills-p7 is not in it, so A5a waits for main's word. The full suite passes 2138/0/11 with the stand clock off (a313aca86; the merge after it brought one doc). Teach|Prologue tests pass 73/0 at the head. Runs: `survivorsunchained_inputs/scratch_m6/run4..run8/` (run.sh, run.log); shots `godot/.shots/m6r4_*` to `m6r8_*`.

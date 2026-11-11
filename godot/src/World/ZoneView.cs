@@ -58,7 +58,8 @@ public partial class ZoneView : Node3D
     }
 
     bool later;
-    public override void _EnterTree() { if (later) WaterLevel(); }
+    public override void _EnterTree() { if (later) WaterLevel(); if (canopy != null) CanopyCookie.Publish(canopy); }
+    CanopyCookie.Canopy? canopy;
 
     /// <summary>(the water's height for our own stones' wet band, kit.gdshader's OWN_ROCK; none: far under everything)</summary>
     void WaterLevel()
@@ -118,8 +119,10 @@ public partial class ZoneView : Node3D
         int rocks = BattleFx.TagRocks(this);
         if (Shots.On("h6")) GD.Print($"h6 rocks tagged {rocks}");
         yield return "own props";
-        // (L1 B4) The canopy's mask for the moon's dapple under cel (CanopyCookie; cel.gdshaderinc).
-        CanopyCookie.For(z);
+        // (L1 B4) The canopy's mask for the moon's dapple under cel (CanopyCookie; cel.gdshaderinc), published as this
+        // view is the one shown (a place built ahead is off the tree till then: SU-022).
+        canopy = CanopyCookie.Make(z);
+        if (!ahead) CanopyCookie.Publish(canopy);
         // An ember arena's ring, its mist and its streams.
         if (z.Place != null)
         {

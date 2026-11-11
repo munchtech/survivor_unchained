@@ -27,7 +27,7 @@ public sealed class BuildSnapshot
 {
     public List<BuildStep> Steps = new();
     public int EmberLevel, PendingLevels, GreatOwed, GreatExtra, Rerolls, Banishes, Ashes, Revives, DashCharges;
-    public double EmberXp, EmberNext, Hp, Shield;
+    public double EmberXp, EmberNext, Hp, Shield, ShieldT;
     public List<int> PendingBlessings = new();
     public List<string> Banned = new();
     public int DraftCards, RarePity, Skipped, Greats, SkillDrafts;
@@ -58,7 +58,7 @@ public sealed partial class Battle
             EmberLevel = EmberLevel, EmberXp = EmberXp, EmberNext = EmberNext,
             PendingLevels = PendingLevels, PendingBlessings = PendingBlessings.ToList(), GreatOwed = GreatOwed, GreatExtra = GreatExtra,
             Rerolls = Rerolls, Banishes = Banishes, Banned = BannedCards.ToList(),
-            Hp = p.Hp, Shield = p.Shield, Ashes = p.Ashes, Revives = p.Revives, DashCharges = p.DashCharges,
+            Hp = p.Hp, Shield = p.Shield, ShieldT = p.ShieldT, Ashes = p.Ashes, Revives = p.Revives, DashCharges = p.DashCharges,
             DraftCards = d.Cards, RarePity = d.RarePity, Skipped = d.Skipped, Greats = d.Greats, SkillDrafts = d.SkillDrafts, OwnShown = d.OwnShown,
             CatalystWait = new Dictionary<string, int>(d.CatalystWait),
         };
@@ -79,9 +79,18 @@ public sealed partial class Battle
         Boons.Clear();
         foreach (var id in Discoveries) RemoveTriggers($"disc:{id}");
         Discoveries.Clear();
-        // What the blessings called up comes again with them.
-        foreach (var e in Enemies.Living().Where(e => e.Disposition == Disposition.Ally).ToList()) Enemies.Release(e);
+        // What the blessings called up comes again with them. Reflections and echoes go with every
+        // registry that points at them: their pooled slots are reused for the horde (SU-024).
+        var gone = Enemies.Living().Where(e => e.Disposition == Disposition.Ally).ToList();
+        Decoys.Clear();
+        Art.Echo = null; Art.EchoT = 0;
+        foreach (var e in gone) Enemies.Release(e);
+        foreach (var h in Enemies.Living())
+            if (h.Target >= 0 && !Enemies.Items[h.Target].Alive) { h.Target = -2; h.RetargetT = 0; }
         Built.Clear();
+        // The ember first: the replay's summons (spirit_companion, grave_call) are sized by the level
+        // she had at the checkpoint, not the failed stage's (SU-015). Set again after, as the snapshot holds it.
+        EmberLevel = s.EmberLevel; EmberXp = s.EmberXp; EmberNext = s.EmberNext;
         foreach (var st in s.Steps)
             switch (st.Op)
             {
@@ -108,7 +117,9 @@ public sealed partial class Battle
         p.Alive = true;
         Over = null;
         p.Hp = Math.Min(s.Hp, MaxHp);
+        // A barrier comes back with the time it had left (SU-025): it expires only while that runs.
         p.Shield = s.Shield;
+        p.ShieldT = s.ShieldT;
         p.Ashes = s.Ashes;
         p.Revives = s.Revives;
         // A rise spent is spent: going back to a checkpoint does not give it back.

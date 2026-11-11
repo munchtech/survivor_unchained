@@ -95,7 +95,7 @@ public partial class Game
 
     /// <summary>Where a callout points now: its points and areas on the HUD's canvas (none: not there).</summary>
     /// <summary>--no-open (a dev flag for pictures): a lesson that waits for the open (the red line) may show under a canopy.</summary>
-    static readonly bool noOpen = OS.GetCmdlineUserArgs().Contains("--no-open");
+    static readonly bool noOpen = Args.Has("no-open");   // (Args: read in dev builds only, SU-007)
 
     (List<Vector2> Points, List<Rect2> Areas, bool Gone, int WorldOn) Resolve(Callout c)
     {
@@ -400,11 +400,32 @@ public partial class Game
     string? haloDiag, dimDiag;
 
     string? paceStage;
-    bool paceSprung;
+    bool paceSprung, paceInterrupted, paceWinding; int paceWindups;
     double paceHpT;
 
     /// <summary>--pace (the tutorial's pacing audit): each Prologue stage as it begins, and her health
     /// every 5 s of play, with the game's clock.</summary>
+    /// <summary>A pace note said; the Ford-Warden's (B1, the boss's trace) also shot with --shot at each move's tell and
+    /// landing, and --until-ford quits 12 s after he falls (the run stops at the boss's death).</summary>
+    void FordNote(string note, Battle b)
+    {
+        GD.Print(note);
+        if (!note.StartsWith("ford ")) return;
+        if (note.StartsWith("ford down") && Args.Has("until-ford")) After(12, () => QuitPath.Request(GetTree(), 0, "until-ford"));
+        if (!Args.Has("shot")) return;
+        string t = $"{b.Time:000.0}";
+        if (note.StartsWith("ford mode") && note.IndexOf("->", StringComparison.Ordinal) is int ar and > 0)
+        {
+            string m = note[(ar + 2)..note.IndexOf(' ', ar)];
+            // (a tell half-way through, a blow as it lands, a stun and a channel a beat in)
+            double at = m switch { "windup" => 0.55, "cleave" => 0.12, "chargeWind" => 0.7, "charge" => 0.25, "stun" => 0.4, "channel" => 1.0, "dead" => 1.0, _ => -1 };
+            if (at >= 0) Shots.Want($"ford_{t}_{m}", at);
+            if (m == "stun") Shots.Want($"ford_{t}_stun2", 2.0);
+            // (the strike's own frames, sw and cl, are the view's, on his clock: WardenView.StrikeShots)
+        }
+        else if (note.StartsWith("ford touch") || note.StartsWith("ford cleave")) Shots.Want($"ford_{t}_{note.Split(' ')[1]}", 0.02);
+    }
+
     void PaceLog()
     {
         if (!Args.Has("pace") || Battle is not { } b) return;
@@ -416,7 +437,22 @@ public partial class Game
             GD.Print($"pace sprung t={b.Time:0.0} hp={b.Player.Hp:0}/{b.MaxHp:0}");
             if (Args.Has("shot")) { Shots.Want("ambush_sprung", 1.6); Shots.Want("ambush_volley", 2.3); }
         }
-        if (zone is Zones.Prologue pz) while (pz.PaceNotes.Count > 0) GD.Print(pz.PaceNotes.Dequeue());
+        if (zone is Zones.Prologue pz)
+            while (pz.PaceNotes.Count > 0)
+            {
+                var n = pz.PaceNotes.Dequeue();
+                if (n.StartsWith("ford mode ")) { paceWinding = n.Contains("->windup "); if (paceWinding) paceWindups++; }
+                FordNote(n, b);
+            }
+        // --b1interrupt (B1 harness): his second cleave windup is interrupted at 0.55 s, as a Flare or a perfect dodge would.
+        if (Args.Has("b1interrupt") && zone is Zones.Prologue { BossInFrame: { } bw } && !paceInterrupted
+            && paceWinding && paceWindups == 2 && bw.AnimT >= 0.55 && bw.AnimT < 0.9)
+        {
+            paceInterrupted = true;
+            GD.Print($"pace b1interrupt t={b.Time:0.00} at={bw.AnimT:0.00} state={bw.State}");
+            b.Interrupt(bw);
+            if (Args.Has("shot")) { Shots.Want("ford_int_0", 1 / 60.0); Shots.Want("ford_int_1", 0.15); Shots.Want("ford_int_2", 0.45); Shots.Want("ford_int_3", 0.9); }
+        }
         if (b.Time - paceHpT >= 5) { paceHpT = b.Time; GD.Print($"pace hp t={b.Time:0.0} hp={b.Player.Hp:0}/{b.MaxHp:0} stage={st} at=({b.Player.X:0},{b.Player.Z:0}) draughts={Journey?.Draughts}"); }
     }
 

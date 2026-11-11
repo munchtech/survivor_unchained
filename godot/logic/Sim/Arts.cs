@@ -750,7 +750,7 @@ public sealed partial class Battle
                 double power = ArtPower;
                 foreach (var d in Decoys.ToArray())
                 {
-                    if (!d.Alive || d.State == EnemyState.Dying) continue;
+                    if (!d.Alive || !d.Decoy || d.State == EnemyState.Dying) continue;
                     var t = NearestHostile(d.X, d.Z, 2);
                     if (t == null) continue;
                     d.Facing = Math.Atan2(t.Z - d.Z, t.X - d.X);

@@ -28,10 +28,15 @@ public sealed class SpatialHash
 
     double Half => Size / 2;
 
-    public void Clear() => Array.Fill(heads, -1);
+    /// <summary>The largest body filed since the last Clear: each is filed by its centre only, so a query that
+    /// must find every body overlapping a circle widens by this (SU-016: a big body's centre past the queried cells).</summary>
+    public double MaxRadius { get; private set; }
 
-    public void Insert(int id, double x, double z)
+    public void Clear() { Array.Fill(heads, -1); MaxRadius = 0; }
+
+    public void Insert(int id, double x, double z, double radius = 0)
     {
+        if (radius > MaxRadius) MaxRadius = radius;
         int cx = (int)Math.Floor((x + Half) / Cell), cz = (int)Math.Floor((z + Half) / Cell);
         if (cx < 0 || cz < 0 || cx >= cols || cz >= rows) return;
         int c = cz * cols + cx;

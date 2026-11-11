@@ -204,4 +204,20 @@ public static class KeyMap
 
     /// <summary>The seat a slot shows on (SeatSlot's inverse).</summary>
     public static int SeatOf(int slot) => Array.IndexOf(SeatSlot, slot);
+
+    /// <summary>The bindings file's name for an action ('flare', once 'ability').</summary>
+    public static string SaveKey(Act a) => char.ToLowerInvariant(a.ToString()[0]) + a.ToString()[1..];
+
+    /// <summary>The saved bindings put on keys, every entry checked (a hand edit can hold a null or an
+    /// empty list): a bad entry keeps that action's default and never stops the rest (SU-011). The old
+    /// names ('ability', 'ultimate') still read. Returns the saved layout's number, if it has a usable one.</summary>
+    public static int? LoadSaved(Dictionary<string, string?[]?> saved, Dictionary<Act, string[]> keys)
+    {
+        static bool Ok(string?[]? v) => v is { Length: > 0 } && Array.TrueForAll(v, k => !string.IsNullOrEmpty(k));
+        foreach (var a in Rebindable)
+            if (saved.TryGetValue(SaveKey(a), out var v) && Ok(v)) keys[a] = v!.ToArray()!;
+            else if (a == Act.Flare && saved.TryGetValue("ability", out var oldArt) && Ok(oldArt)) keys[a] = oldArt!.ToArray()!;
+            else if (a == Act.Draught && saved.TryGetValue("ultimate", out var old) && Ok(old)) keys[a] = old!.ToArray()!;
+        return saved.TryGetValue("preset", out var pr) && Ok(pr) && int.TryParse(pr![0], out var pi) ? pi : null;
+    }
 }
