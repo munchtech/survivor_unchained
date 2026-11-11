@@ -67,7 +67,7 @@
   ],
   "root2d": {
    "kind": "straight",
-   "speed": 1.3,
+   "speed": 1.2,
    "ramp": 0.8,
    "deg": 180,
    "face_deg": 0,
@@ -91,7 +91,7 @@
   "travel_deg": 180,
   "cycle_frames": 34
  },
- "notes": "walk_warden_back (A1 lead 19 GAITS): pairs with walk_warden in PlayerView's BlendSpace2D at (Vw along 180 deg), Sync on, 1.0x: so its speed is walk_warden's (built 1.3244) and its loop the same 34 frames (cycle_frames resamples the picked cycle; frame 0 = the left foot's stance start, as the forward walk's). Unbuilt: gen -> takes -> build -> check -> look.",
+ "notes": "walk_warden_back (A1 lead 19 GAITS): pairs with walk_warden in PlayerView's BlendSpace2D at (Vw along 180 deg), Sync on, 1.0x: so its speed is walk_warden's (built 1.3244) and its loop the same 34 frames (cycle_frames resamples the picked cycle; frame 0 = the left foot's stance start, as the forward walk's). GAITS2: root2d speed 1.3 -> 1.2 (at 1.3 the best take's natural cycle was 31 frames, x0.912 resampled); these takes in C:/Users/munch/Tools/mocap/kimodo_p4_s120 (P4_TAKES), the 1.3 batch's log in survivorsunchained_inputs/scratch_motion_a1/L19/gaits/back_s130/. Pick p0_1: natural 33 -> 34 (x0.971).",
  "gate": [
   "speed_mps",
   "feet_gap_min_cm"
@@ -159,5 +159,9 @@
  "held": [
   "sword",
   "shield"
- ]
+ ],
+ "source": "src/walk_warden_back.npz",
+ "bvh": "walk_warden_back__p0_1.bvh",
+ "sha1": "5225be259083f32bd44d87fa68d4aad56186c641",
+ "take_score": 0.352
 }

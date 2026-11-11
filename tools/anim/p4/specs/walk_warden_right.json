@@ -159,5 +159,9 @@
  "held": [
   "sword",
   "shield"
- ]
+ ],
+ "source": "src/walk_warden_right.npz",
+ "bvh": "walk_warden_right__p1_1.bvh",
+ "sha1": "e87065682fe9396d7acccdee766c5fca07997531",
+ "take_score": 17.133
 }
