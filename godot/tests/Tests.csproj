@@ -18,6 +18,7 @@
     <Compile Include="../src/Ui/LampBoardModel.cs" LinkBase="src" />
     <Compile Include="../src/Ui/LampNav.cs" LinkBase="src" />
     <Compile Include="../src/Ui/LampAsk.cs" LinkBase="src" />
+    <Compile Include="../src/Actors/SwingRecover.cs" LinkBase="src" />
     <Compile Include="../src/QuitGuard.cs" LinkBase="src" />
     <Compile Include="../src/Ui/LampPrompts.cs" LinkBase="src" />
     <Compile Include="../src/Game/KeyMap.cs" LinkBase="src" />

@@ -1,0 +1,226 @@
+{
+ "kind": "idle",
+ "rules": "R2.1 contrapposto at the sway ends, R3.1 ease, R4.2/R4.3 the owner's sway (15.8 cm, 2.67 s, 7 deg roll, 12 deg yaw) rebuilt from the numbers, R5.2 whole cycles; s11 Warden: hand on the hip, the other on the pommel, sheathed",
+ "bands": {
+  "pelvis_travel_cm": [
+   12,
+   16
+  ],
+  "cycle_s": [
+   2.5,
+   2.85
+  ],
+  "roll_deg": [
+   5,
+   7.5
+  ],
+  "yaw_deg": [
+   8,
+   12
+  ],
+  "head_over_pelvis": [
+   0,
+   0.5
+  ],
+  "weight_share": [
+   0.75,
+   1.2
+  ],
+  "hip_out_cm": [
+   4,
+   7
+  ],
+  "pelvis_tilt_deg": [
+   5,
+   9
+  ],
+  "shoulder_lift_l_cm": [
+   -1,
+   0
+  ],
+  "shoulder_lift_r_cm": [
+   -2,
+   0.5
+  ],
+  "upperarm_vert_l_deg": [
+   0,
+   20
+  ],
+  "elbow_l_deg": [
+   80,
+   110
+  ],
+  "elbow_back_r_deg": [
+   30,
+   45
+  ],
+  "shoulder_counter_deg": [
+   2,
+   5
+  ]
+ },
+ "gen": {
+  "engine": "kimodo",
+  "seconds": 8.5,
+  "takes": 6,
+  "seeds": [
+   121,
+   122,
+   123
+  ],
+  "prompts": [
+   "A confident woman stands relaxed with her weight on one hip, her right hand resting on her right hip and her left hand resting on a sword hilt at her left hip, slowly shifting her weight from leg to leg",
+   "A woman stands at ease with her right hand on her hip and her left hand on the hilt of the sword at her left side, her hips swaying slowly from side to side as she shifts her weight between her feet",
+   "A relaxed woman stands with one hand on her hip and the other hand resting on a sword hilt at her side, lazily rocking her weight from one leg to the other"
+  ],
+  "root2d": {
+   "kind": "sway",
+   "travel": 0.12,
+   "period": 2.67,
+   "ease": 0.95,
+   "overshoot": 0.015,
+   "start": 0.5,
+   "every": 1
+  },
+  "root2d_scales": [
+   0.45,
+   0.5,
+   0.52
+  ],
+  "keys": {
+   "src": {
+    "prompt": 0,
+    "scale": 0.55,
+    "pick": 3
+   },
+   "hands": {
+    "LeftHand": [
+     0.2,
+     0.31,
+     0.15
+    ],
+    "RightHand": [
+     -0.19,
+     0.09,
+     -0.05
+    ]
+   },
+   "prompts": [
+    0
+   ],
+   "scales": [
+    0.5,
+    0.52,
+    0.54
+   ],
+   "start": 15,
+   "every": 30,
+   "aim": {
+    "LeftHand": [
+     0.032,
+     0.05,
+     0.06
+    ],
+    "RightHand": [
+     -0.02,
+     0.035,
+     0.02
+    ]
+   },
+   "tag": "a"
+  }
+ },
+ "post": {
+  "loop": true,
+  "inplace": true,
+  "cycle_s": [
+   5.27,
+   5.4
+  ],
+  "gait": false,
+  "crop": [
+   15,
+   245
+  ]
+ },
+ "notes": "Prompted (GPU-encoded) + hand keys: the left wrist over the sheathed sword's pommel (the game's HipBlade socket on B's pelvis), the right on the iliac crest; keys from our own take p0 s55 #3 at 1 s steps, aimed past the measured retarget miss (keys.aim). Path scale searched: the hips jump from ~1 cm to ~17 cm between path scale 0.45 and 0.55 (bimodal); 0.54 lands 13-15.5 cm. Loop: 2 whole cycles. Breath is Kimodo's own (not built). Round 4 (the lead's ruling): the pommel arm's upper arm hangs (<= 20 deg off vertical), the forearm forward and down to the pommel (elbow 80-110) on B's tilted sheath (WeaponSockets.HipBladeShaftB, 38.6 deg off vertical, pommel at the hip bone 1.20 m, 10.5 cm forward of the sheath point).",
+ "source": "src/idle_warden_town.npz",
+ "bvh": "idle_warden_town__ka0s54_2.bvh",
+ "sha1": "6287a4d3da208e7971ddb1559e7a548505072293",
+ "take_score": 1.248,
+ "fit": {
+  "shoulders": {
+   "level_cm": -0.6,
+   "counter_deg": 3.5
+  },
+  "head": {
+   "ratio": 0.45,
+   "bones": "neck"
+  },
+  "limbs": {
+   "hand_l": {
+    "at": [
+     0.21,
+     0.19,
+     0.21
+    ],
+    "pole": [
+     0.0,
+     -1,
+     -0.15
+    ],
+    "fingers": [
+     0,
+     -0.5,
+     0.85
+    ],
+    "palm": [
+     0,
+     -0.85,
+     -0.5
+    ]
+   },
+   "hand_r": {
+    "at": [
+     -0.165,
+     0.17,
+     -0.07
+    ],
+    "pole": [
+     -0.8,
+     0,
+     -0.6
+    ],
+    "fingers": [
+     -0.15,
+     -0.45,
+     0.88
+    ],
+    "palm": [
+     1,
+     0,
+     0
+    ]
+   }
+  },
+  "pop": {
+   "x": 4,
+   "span": 4,
+   "cap": {}
+  },
+  "wrist": {
+   "hand_l": {
+    "flex": 25,
+    "dev": 15,
+    "mode": "hold",
+    "swivel": 0
+   },
+   "hand_r": {
+    "flex": 25,
+    "dev": 15,
+    "mode": "hold",
+    "swivel": 0
+   }
+  }
+ }
+}

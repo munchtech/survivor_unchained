@@ -583,7 +583,7 @@
    ]
   ],
   "glide_m": 0.015,
-  "clavicle_by": "shrug",
+  "clavicle_by": "law",
   "clavicle_roll": "neutral",
   "clavicle_roll_keep": [
    "trap_{s}"

@@ -1,0 +1,158 @@
+{
+ "kind": "gait",
+ "rules": "R7.1 armed: sword in the right hand, shield on the left forearm, carried relaxed, the weapon side's swing damped",
+ "bands": {
+  "steps_min": [
+   104,
+   110
+  ],
+  "list_pm_deg": [
+   5,
+   7
+  ],
+  "yaw_pm_deg": [
+   6,
+   8
+  ],
+  "thorax_counter_pm_deg": [
+   4,
+   6
+  ],
+  "sway_pm_cm": [
+   3.5,
+   5
+  ],
+  "feet_off_line_cm": [
+   0,
+   4
+  ],
+  "head_bob_cm": [
+   0,
+   2.5
+  ],
+  "speed_mps": [
+   1.09,
+   1.33
+  ],
+  "arm_swing_r_pm_deg": [
+   6,
+   14
+  ],
+  "elbow_r_deg": [
+   15,
+   40
+  ],
+  "blade_below_deg": [
+   72,
+   82
+  ]
+ },
+ "gen": {
+  "engine": "kimodo",
+  "seconds": 7.0,
+  "takes": 10,
+  "seeds": [
+   151,
+   152,
+   153
+  ],
+  "prompts": [
+   "A confident woman walks forward at an unhurried pace carrying a sword in her right hand and a shield on her left arm, her hips swaying",
+   "A warrior woman walks forward calmly, a sword held low in her right hand and a shield on her left forearm, her left arm still and her right arm swinging a little",
+   "A relaxed woman strolls forward holding a sword down by her right side and a shield on her left arm"
+  ],
+  "root2d": {
+   "kind": "straight",
+   "speed": 1.2,
+   "ramp": 0.8,
+   "every": 1
+  }
+ },
+ "post": {
+  "loop": true,
+  "inplace": true,
+  "cycle_s": [
+   1.0,
+   2.4
+  ],
+  "gait": true,
+  "duty": 0.45,
+  "game_speed": 1.2,
+  "crop": [
+   30,
+   180
+  ]
+ },
+ "notes": " Round 4 finish: ONE shield carry for the armed walk and run (the blend keeps it): at her left side, the face out to her left, the top edge 5 deg out, the boss 34 cm left / 6 up / 8 forward of the pelvis head, placed whole by fit.shield solve (elbow ~70, upper arm 22-31 off vertical, the wrist straight). The bible's low-in-front carry (boss at the navel 15-25 cm ahead) cannot clear her with this mount on B's 23 cm upper arm: every bent-arm solution cuts 58-80 mm into her (round 4 search); the straight arm reached it only with the shield in her.",
+ "source": "src/walk_warden.npz",
+ "bvh": "walk_warden__p0_9.bvh",
+ "sha1": "a3ca932b4826a588801f5ece83291cf2170207ca",
+ "take_score": 3.974,
+ "gate": [
+  "steps_min"
+ ],
+ "fit": {
+  "pelvis": {
+   "yaw_pm": 7,
+   "list_pm": 6
+  },
+  "thorax": {
+   "counter_pm": 5
+  },
+  "bob": {
+   "head_cm": 2.2
+  },
+  "blade": {
+   "dir": [
+    -0.0995,
+    -0.9611,
+    -0.2575
+   ],
+   "fist": [
+    0.0,
+    -0.3,
+    1.0
+   ],
+   "keep": 0.5
+  },
+  "pop": {
+   "x": 4,
+   "span": 4,
+   "cap": {}
+  },
+  "shield": {
+   "solve": true,
+   "boss": [
+    0.34,
+    0.06,
+    0.08
+   ],
+   "open_deg": 90,
+   "tilt_deg": 5,
+   "branch": -1
+  },
+  "wrist": {
+   "hand_r": {
+    "flex": 25,
+    "dev": 15,
+    "mode": "turn",
+    "swivel": 0
+   },
+   "hand_l": {
+    "flex": 25,
+    "dev": 15,
+    "mode": "hold",
+    "swivel": 0,
+    "twist": false
+   }
+  },
+  "clear": {
+   "target_mm": 12,
+   "passes": 6
+  }
+ },
+ "held": [
+  "sword",
+  "shield"
+ ]
+}

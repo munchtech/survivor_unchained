@@ -93,7 +93,6 @@ public static class P1Body
         return clips;
     }
 
-    /// <summary>Her own clips baked onto B (OwnClips.Her's names; its meta stays heroine_clips.json).</summary>
     static (string Bone, Quaternion Turn)[]? blendBase;
     /// <summary>B's blend base (blend_base.json, the clip bridge's; P1BlendBase lays it): per bone some clip keys, the turn
     /// from B's mixer's base to B's map of A's rest (none without the file: a bake from before it).</summary>
@@ -110,7 +109,35 @@ public static class P1Body
         return blendBase = list.ToArray();
     }
 
-    public static AnimationLibrary? HerClips() => herClips ??= ResourceLoader.Exists(Dir + "her_clips.res") ? GD.Load<AnimationLibrary>(Dir + "her_clips.res") : null;
+    /// <summary>Her own clips baked onto B (OwnClips.Her's names; its meta stays heroine_clips.json).</summary>
+    public static AnimationLibrary? HerClips()
+    {
+        if (herClips != null) return herClips;
+        herClips = ResourceLoader.Exists(Dir + "her_clips.res") ? GD.Load<AnimationLibrary>(Dir + "her_clips.res") : null;
+        if (herClips != null && ResourceLoader.Exists(Dir + "p4_clips.res")) OverlayP4(herClips, GD.Load<AnimationLibrary>(Dir + "p4_clips.res"));
+        return herClips;
+    }
+
+    /// <summary>The P4 gaits' own ground speeds (m/s at 1.0x) by the name the game asks for (P4Overlay.Speed).</summary>
+    public static readonly Dictionary<string, float> P4Speeds = new();
+
+    /// <summary>P4 clips (SOMA motion retargeted onto B, tools/anim/p4.py + p4_pack.sh) over the bridge clips by
+    /// P4Overlay's rules, and --p4-as target=p4clip[,...] (dev) applied here at load so the animation tree is untouched.</summary>
+    static void OverlayP4(AnimationLibrary lib, AnimationLibrary p4)
+    {
+        var bad = new List<string>();
+        var plan = P4Overlay.Plan(lib.GetAnimationList().Select(n => (string)n), p4.GetAnimationList().Select(n => (string)n), Args.Get("p4-as"), bad);
+        foreach (var (target, clip) in plan)
+        {
+            if (lib.HasAnimation(target)) lib.RemoveAnimation(target);
+            var a = p4.GetAnimation(clip);
+            lib.AddAnimation(target, a);
+            if (a.HasMeta("speed")) P4Speeds[target] = (float)a.GetMeta("speed");
+        }
+        if (Args.Has("p1-probe") || bad.Count > 0)
+            GD.Print($"p4: {plan.Count} clips over her bridge clips ({string.Join(", ", plan.Select(kv => kv.Key == kv.Value ? kv.Key : $"{kv.Key}<-{kv.Value}"))})" +
+                     (bad.Count > 0 ? $"; --p4-as ignored (no such P4 clip): {string.Join(", ", bad)}" : ""));
+    }
 
     // ------------------------------------------------------------------ A's skeleton and the role map --
     /// <summary>A's skeleton as a_skeleton.json has it (the clip bridge writes it from heroine.glb).</summary>
@@ -429,32 +456,6 @@ public partial class P1Laws : SkeletonModifier3D
 
     public P1Laws() { Name = "P1Laws"; }
 
-    sealed record Held(Skeleton3D Sk, Node3D Mount, int Bone, Quaternion AFrame, Transform3D At, int Upper, Quaternion UpperAFrame, Quaternion ARestLocal);
-    static readonly List<Held> follow = new();
-
-    /// <summary>A held piece's mount on B (Arms.Hold; `at` its transform in A's bone frame), laid each frame where A's bone
-    /// frame is: B's bone as the clip and the layers left it (before the laws), times its A frame (P1Retarget.AFrame). On a
-    /// forearm A's own hinge rule then (HerJoints: the swing from A's rest local kept, its twist about y on the hand), which
-    /// differs from B's law (the roll about the bone's posed line relative to its parent's turn): B's shield, on B's unrolled
-    /// forearm, sat 3 deg off A's in the guard and 16-20 deg off through fight_close's blow (358-366).</summary>
-    public static void Follow(Skeleton3D sk, Node3D mount, string aBone, Transform3D at)
-    {
-        int j = P1Body.Bone(sk, aBone);
-        var map = P1Body.RoleMap(sk);
-        if (j < 0 || map.AFrame(j) is not { } af) return;
-        static Quaternion Q(P1M3 r) => P1Body.T(P1M4.From(r, new P1V(0, 0, 0))).Basis.GetRotationQuaternion();
-        int u = -1; var uf = Quaternion.Identity; var rl = Quaternion.Identity;
-        if (aBone.StartsWith("lowerarm_") && P1Body.A.Index.TryGetValue(aBone, out int a) && P1Body.A.Parent[a] is int ap and >= 0
-            && P1Body.Bone(sk, P1Body.A.Names[ap]) is int bu and >= 0 && map.AFrame(bu) is { } ufm)
-        {
-            u = bu; uf = Q(ufm);
-            rl = Q(P1Retarget.Rot(P1Body.A.Rest[ap]).T() * P1Retarget.Rot(P1Body.A.Rest[a]));
-        }
-        follow.Add(new Held(sk, mount, j, Q(af), at, u, uf, rl));
-    }
-
-    static Quaternion Q4(P1M4 m) => P1Body.T(P1M4.From(P1Retarget.Rot(m), new P1V(0, 0, 0))).Basis.GetRotationQuaternion();
-
     public override void _Ready()
     {
         sk = GetSkeleton() ?? GetParent() as Skeleton3D;
@@ -537,25 +538,6 @@ public partial class P1Laws : SkeletonModifier3D
         }
         lastG = G2; weights = w;
         if (LawsDump != "" && Engine.GetProcessFrames() % (ulong)LawsEvery == 0) DumpLaws(G, G2, w);
-        // held mounts laid in A's bone frame (Follow)
-        for (int i = follow.Count - 1; i >= 0; i--)
-        {
-            var h = follow[i];
-            if (!GodotObject.IsInstanceValid(h.Mount) || !GodotObject.IsInstanceValid(h.Sk)) { follow.RemoveAt(i); continue; }
-            if (h.Sk != sk) continue;
-            var a = (Q4(G[h.Bone]) * h.AFrame).Normalized();
-            if (h.Upper >= 0)
-            {
-                // A's forearm on its hinge (HerJoints.TwistY): local = rest local * swing * twist, the twist about y dropped
-                var au = (Q4(G[h.Upper]) * h.UpperAFrame).Normalized();
-                var d = (h.ARestLocal.Inverse() * au.Inverse() * a).Normalized();
-                var t = new Quaternion(0, d.Y, 0, d.W);
-                t = t.Length() > 1e-9f ? t.Normalized() : Quaternion.Identity;
-                a = (au * h.ARestLocal * d * t.Inverse()).Normalized();
-            }
-            var local = (Q4(G2[h.Bone]).Inverse() * a).Normalized();
-            h.Mount.Transform = new Transform3D(new Basis(local), Vector3.Zero) * h.At;
-        }
         for (int i = worn.Count - 1; i >= 0; i--)
         {
             var p = worn[i];

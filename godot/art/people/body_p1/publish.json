@@ -3,8 +3,8 @@
  "files": {
   "body.glb": "4ce415f2b53d8e2bce1dfce62f8922c78ea5a561",
   "play.glb": "92a3f86b67527c74bdfbb50bde63225589893746",
-  "rig.json": "b633dc797fd93c265cc423f0f0720c367e11c7bd",
-  "play_rig.json": "b633dc797fd93c265cc423f0f0720c367e11c7bd",
+  "rig.json": "250e38fcd00f07fcee184d40e97bc9dcd3fe248c",
+  "play_rig.json": "250e38fcd00f07fcee184d40e97bc9dcd3fe248c",
   "pieces.glb": "30cb474d8369383948f2a9bb5166daa0966d28c9",
   "pieces.json": "7959f1b92a0ae0b1d4cdda5d072ffcc71b07883a",
   "cavity.png": "256290d36e42ac16a5fa36f99d9e917e82757c17"
@@ -25,5 +25,12 @@
    "gltf/embedded_image_handling": "3"
   },
   "changed": {}
+ },
+ "rig_only": {
+  "spec": "tools/body/specs/her_b.json",
+  "files": [
+   "play_rig.json",
+   "rig.json"
+  ]
  }
 }

@@ -1,0 +1,175 @@
+{
+ "kind": "gait",
+ "rules": "R7.2 the Warden's run, sheathed: 5.0 m/s, 168 steps/min",
+ "bands": {
+  "steps_min": [
+   160,
+   176
+  ],
+  "yaw_pm_deg": [
+   8,
+   12
+  ],
+  "thorax_counter_pm_deg": [
+   10,
+   14
+  ],
+  "lean_deg": [
+   6,
+   8
+  ],
+  "pelvis_vertical_cm": [
+   5,
+   6
+  ],
+  "head_bob_cm": [
+   0,
+   5
+  ],
+  "speed_mps": [
+   4.55,
+   5.55
+  ],
+  "elbow_l_deg": [
+   80,
+   100
+  ],
+  "elbow_r_deg": [
+   80,
+   100
+  ],
+  "arm_swing_l_pm_deg": [
+   35,
+   50
+  ],
+  "arm_swing_r_pm_deg": [
+   35,
+   50
+  ],
+  "slide_mm": [
+   0,
+   5
+  ],
+  "knee_swing_l_deg": [
+   90,
+   110
+  ],
+  "knee_swing_r_deg": [
+   90,
+   110
+  ],
+  "thigh_trail_l_deg": [
+   0,
+   20
+  ],
+  "thigh_trail_r_deg": [
+   0,
+   20
+  ]
+ },
+ "gen": {
+  "engine": "kimodo",
+  "seconds": 6.0,
+  "takes": 6,
+  "seeds": [
+   161,
+   162,
+   163,
+   171,
+   172
+  ],
+  "prompts": [
+   "A woman runs forward smoothly and steadily, her elbows bent at right angles and her arms swinging forward and back",
+   "A confident woman jogs forward at a quick, even pace with her arms bent and swinging, her head level",
+   "A woman runs forward at a steady pace, her left hand resting on a sword hilt at her left hip and her right arm bent and swinging",
+   "A woman runs forward with long, easy, bounding strides, her elbows bent at right angles and her arms swinging forward and back",
+   "A woman runs forward with long relaxed strides, a slow and smooth stride rate, her bent arms pumping"
+  ],
+  "root2d": {
+   "kind": "straight",
+   "speed": 5.0,
+   "ramp": 1.0,
+   "every": 1
+  },
+  "more": {
+   "prompts": [
+    3,
+    4
+   ],
+   "takes": 12,
+   "seed_add": 50
+  }
+ },
+ "post": {
+  "loop": true,
+  "inplace": true,
+  "cycle_s": [
+   0.6,
+   1.6
+  ],
+  "gait": true,
+  "duty": 0.27,
+  "game_speed": 5.0,
+  "crop": [
+   36,
+   140
+  ]
+ },
+ "notes": "Cadence gated (gate: steps_min, 160-176): Kimodo's prompted runs mostly step 180-200/min at 5 m/s; the 'long strides' prompts reach 164-172 but bounce more (pelvis vertical 8-11 cm). duty 0.27 (a 5 m/s run's ~0.2 s contact over a 0.73 s stride): the stance lock at 0.35 pinned the foot past the leg's reach (5-7 mm slide); at 0.27 slide 0. Pops (foot_r ~28 deg/frame) are the source's toe-off.",
+ "source": "src/run_warden_town.npz",
+ "bvh": "run_warden_town__p3_0.bvh",
+ "sha1": "832be36ae3c2ead2e5e761d50c40d392fcef7a09",
+ "take_score": 5.98,
+ "gate": [
+  "steps_min"
+ ],
+ "fit": {
+  "pelvis": {
+   "yaw_pm": 10
+  },
+  "thorax": {
+   "counter_pm": 12
+  },
+  "lean": {
+   "deg": 7
+  },
+  "bob": {
+   "pelvis_cm": 5.5,
+   "head_cm": 4.8,
+   "pelvis_min_cm": 5.0
+  },
+  "knee": {
+   "swing_deg": 100
+  },
+  "pop": {
+   "x": 4,
+   "span": 4,
+   "cap": {
+    "foot_l": 10,
+    "foot_r": 10,
+    "ball_l": 10,
+    "ball_r": 10
+   }
+  },
+  "roll": {
+   "heel": 0.7,
+   "toe": 0.7,
+   "ease": 7,
+   "reach": 0.92
+  },
+  "wrist": {
+   "hand_l": {
+    "flex": 25,
+    "dev": 15,
+    "mode": "hold",
+    "swivel": 0
+   },
+   "hand_r": {
+    "flex": 25,
+    "dev": 15,
+    "mode": "hold",
+    "swivel": 0
+   }
+  }
+ }
+}

@@ -1,0 +1,549 @@
+{
+ "note": "Measured from the packed godot/art/anim/heroine.res (what the game plays: after clavhold and armroll), sampled at the clip fps via godot/tools_scenes dumper; forward kinematics with tools/anim/rig.py Skeleton.fk on tools/anim/data/heroine_skeleton.json. tools/anim/out/clips is not built in this worktree (full build slow: python tools/anim/build.py --no-pack idle catch_breath, minutes of mocap retarget; gitignored). Ranges are max-min over one loop. Frame: Y up, +Z forward, +X her left. Pelvis rot relative to rest pose in skeleton frame, YXZ euler (yaw about Y, pitch about X, roll about Z). Shoulder line = upperarm_l minus upperarm_r, roll = its tilt in the X-Y plane. Lateral period = FFT peak of pelvis X over 8 tiled loops.",
+ "clips": {
+  "catch_breath": {
+   "loop_s": 4.133,
+   "fps": 29.9999984353782,
+   "pelvis_cm": {
+    "X_range": 0.0,
+    "Y_range": 9.0,
+    "Z_range": 8.0,
+    "mean_xyz": [
+     0.0,
+     97.3,
+     -4.7
+    ]
+   },
+   "pelvis_rot_deg": {
+    "roll_range": 0.0,
+    "yaw_range": 0.0,
+    "pitch_range": 18.0
+   },
+   "head_cm": {
+    "X_range": 0.27,
+    "Y_range": 18.75,
+    "Z_range": 30.18,
+    "mean_xyz": [
+     0.0,
+     149.9,
+     12.5
+    ]
+   },
+   "pelvis_lateral_period_s": null,
+   "pelvis_lateral_amp_cm": 0.0,
+   "shoulder_line_roll_range_deg": 0.0
+  },
+  "idle_arcanist": {
+   "loop_s": 5.0,
+   "fps": 29.9999984353782,
+   "pelvis_cm": {
+    "X_range": 0.45,
+    "Y_range": 0.04,
+    "Z_range": 1.06,
+    "mean_xyz": [
+     -0.0,
+     106.7,
+     -0.0
+    ]
+   },
+   "pelvis_rot_deg": {
+    "roll_range": 0.35,
+    "yaw_range": 0.72,
+    "pitch_range": 0.49
+   },
+   "head_cm": {
+    "X_range": 0.79,
+    "Y_range": 0.36,
+    "Z_range": 2.59,
+    "mean_xyz": [
+     1.1,
+     164.1,
+     -2.5
+    ]
+   },
+   "pelvis_lateral_period_s": 5.0,
+   "pelvis_lateral_amp_cm": 0.45,
+   "shoulder_line_roll_range_deg": 0.46
+  },
+  "idle_arcanist_break": {
+   "loop_s": 3.333,
+   "fps": 29.9999984353782,
+   "pelvis_cm": {
+    "X_range": 0.29,
+    "Y_range": 0.04,
+    "Z_range": 0.88,
+    "mean_xyz": [
+     0.1,
+     106.7,
+     -0.1
+    ]
+   },
+   "pelvis_rot_deg": {
+    "roll_range": 0.34,
+    "yaw_range": 0.59,
+    "pitch_range": 0.49
+   },
+   "head_cm": {
+    "X_range": 0.55,
+    "Y_range": 0.28,
+    "Z_range": 1.93,
+    "mean_xyz": [
+     1.2,
+     164.1,
+     -2.5
+    ]
+   },
+   "pelvis_lateral_period_s": 3.33,
+   "pelvis_lateral_amp_cm": 0.29,
+   "shoulder_line_roll_range_deg": 0.41
+  },
+  "idle_arcanist_staff_town": {
+   "loop_s": 5.0,
+   "fps": 29.9999984353782,
+   "pelvis_cm": {
+    "X_range": 0.59,
+    "Y_range": 0.08,
+    "Z_range": 1.09,
+    "mean_xyz": [
+     -5.0,
+     105.2,
+     -0.7
+    ]
+   },
+   "pelvis_rot_deg": {
+    "roll_range": 2.65,
+    "yaw_range": 2.12,
+    "pitch_range": 0.75
+   },
+   "head_cm": {
+    "X_range": 1.0,
+    "Y_range": 0.25,
+    "Z_range": 1.74,
+    "mean_xyz": [
+     -3.5,
+     161.8,
+     1.8
+    ]
+   },
+   "pelvis_lateral_period_s": 5.0,
+   "pelvis_lateral_amp_cm": 0.59,
+   "shoulder_line_roll_range_deg": 0.9
+  },
+  "idle_arcanist_town": {
+   "loop_s": 5.0,
+   "fps": 29.9999984353782,
+   "pelvis_cm": {
+    "X_range": 0.59,
+    "Y_range": 0.08,
+    "Z_range": 1.09,
+    "mean_xyz": [
+     -5.0,
+     105.2,
+     -0.7
+    ]
+   },
+   "pelvis_rot_deg": {
+    "roll_range": 2.65,
+    "yaw_range": 2.12,
+    "pitch_range": 0.75
+   },
+   "head_cm": {
+    "X_range": 1.0,
+    "Y_range": 0.25,
+    "Z_range": 1.74,
+    "mean_xyz": [
+     -3.5,
+     161.8,
+     1.8
+    ]
+   },
+   "pelvis_lateral_period_s": 5.0,
+   "pelvis_lateral_amp_cm": 0.59,
+   "shoulder_line_roll_range_deg": 0.9
+  },
+  "idle_arcanist_wand": {
+   "loop_s": 5.0,
+   "fps": 29.9999984353782,
+   "pelvis_cm": {
+    "X_range": 0.45,
+    "Y_range": 0.04,
+    "Z_range": 1.06,
+    "mean_xyz": [
+     -0.0,
+     106.7,
+     -0.0
+    ]
+   },
+   "pelvis_rot_deg": {
+    "roll_range": 0.35,
+    "yaw_range": 0.72,
+    "pitch_range": 0.49
+   },
+   "head_cm": {
+    "X_range": 0.79,
+    "Y_range": 0.36,
+    "Z_range": 2.59,
+    "mean_xyz": [
+     1.1,
+     164.1,
+     -2.5
+    ]
+   },
+   "pelvis_lateral_period_s": 5.0,
+   "pelvis_lateral_amp_cm": 0.45,
+   "shoulder_line_roll_range_deg": 0.46
+  },
+  "idle_reaver": {
+   "loop_s": 5.0,
+   "fps": 29.9999984353782,
+   "pelvis_cm": {
+    "X_range": 0.66,
+    "Y_range": 0.06,
+    "Z_range": 1.21,
+    "mean_xyz": [
+     -0.0,
+     106.8,
+     -0.0
+    ]
+   },
+   "pelvis_rot_deg": {
+    "roll_range": 0.58,
+    "yaw_range": 0.7,
+    "pitch_range": 0.83
+   },
+   "head_cm": {
+    "X_range": 0.8,
+    "Y_range": 0.29,
+    "Z_range": 1.8,
+    "mean_xyz": [
+     0.5,
+     163.6,
+     0.5
+    ]
+   },
+   "pelvis_lateral_period_s": 5.0,
+   "pelvis_lateral_amp_cm": 0.66,
+   "shoulder_line_roll_range_deg": 1.21
+  },
+  "idle_reaver_axes": {
+   "loop_s": 5.0,
+   "fps": 29.9999984353782,
+   "pelvis_cm": {
+    "X_range": 0.66,
+    "Y_range": 0.06,
+    "Z_range": 1.21,
+    "mean_xyz": [
+     -0.0,
+     106.8,
+     -0.0
+    ]
+   },
+   "pelvis_rot_deg": {
+    "roll_range": 0.58,
+    "yaw_range": 0.7,
+    "pitch_range": 0.83
+   },
+   "head_cm": {
+    "X_range": 0.8,
+    "Y_range": 0.29,
+    "Z_range": 1.8,
+    "mean_xyz": [
+     0.5,
+     163.6,
+     0.5
+    ]
+   },
+   "pelvis_lateral_period_s": 5.0,
+   "pelvis_lateral_amp_cm": 0.66,
+   "shoulder_line_roll_range_deg": 1.21
+  },
+  "idle_reaver_break": {
+   "loop_s": 3.333,
+   "fps": 29.9999984353782,
+   "pelvis_cm": {
+    "X_range": 0.61,
+    "Y_range": 0.05,
+    "Z_range": 0.73,
+    "mean_xyz": [
+     0.1,
+     106.8,
+     0.2
+    ]
+   },
+   "pelvis_rot_deg": {
+    "roll_range": 3.44,
+    "yaw_range": 6.17,
+    "pitch_range": 0.82
+   },
+   "head_cm": {
+    "X_range": 3.3,
+    "Y_range": 0.22,
+    "Z_range": 1.63,
+    "mean_xyz": [
+     0.4,
+     163.6,
+     0.1
+    ]
+   },
+   "pelvis_lateral_period_s": 3.33,
+   "pelvis_lateral_amp_cm": 0.61,
+   "shoulder_line_roll_range_deg": 4.03
+  },
+  "idle_reaver_town": {
+   "loop_s": 5.0,
+   "fps": 29.9999984353782,
+   "pelvis_cm": {
+    "X_range": 4.26,
+    "Y_range": 0.07,
+    "Z_range": 1.15,
+    "mean_xyz": [
+     7.0,
+     106.6,
+     0.6
+    ]
+   },
+   "pelvis_rot_deg": {
+    "roll_range": 4.37,
+    "yaw_range": 2.98,
+    "pitch_range": 0.83
+   },
+   "head_cm": {
+    "X_range": 4.09,
+    "Y_range": 0.59,
+    "Z_range": 2.36,
+    "mean_xyz": [
+     9.0,
+     161.5,
+     -8.1
+    ]
+   },
+   "pelvis_lateral_period_s": 5.0,
+   "pelvis_lateral_amp_cm": 4.26,
+   "shoulder_line_roll_range_deg": 2.26
+  },
+  "idle_stalker": {
+   "loop_s": 5.1,
+   "fps": 29.9999984353782,
+   "pelvis_cm": {
+    "X_range": 1.49,
+    "Y_range": 0.93,
+    "Z_range": 2.05,
+    "mean_xyz": [
+     -0.0,
+     105.8,
+     0.0
+    ]
+   },
+   "pelvis_rot_deg": {
+    "roll_range": 0.65,
+    "yaw_range": 2.89,
+    "pitch_range": 0.97
+   },
+   "head_cm": {
+    "X_range": 1.74,
+    "Y_range": 0.99,
+    "Z_range": 3.6,
+    "mean_xyz": [
+     1.0,
+     162.2,
+     9.8
+    ]
+   },
+   "pelvis_lateral_period_s": 5.1,
+   "pelvis_lateral_amp_cm": 1.49,
+   "shoulder_line_roll_range_deg": 1.54
+  },
+  "idle_stalker_break": {
+   "loop_s": 4.0,
+   "fps": 29.9999984353782,
+   "pelvis_cm": {
+    "X_range": 3.78,
+    "Y_range": 51.86,
+    "Z_range": 38.96,
+    "mean_xyz": [
+     0.9,
+     90.9,
+     -10.4
+    ]
+   },
+   "pelvis_rot_deg": {
+    "roll_range": 0.61,
+    "yaw_range": 2.89,
+    "pitch_range": 12.39
+   },
+   "head_cm": {
+    "X_range": 7.34,
+    "Y_range": 53.83,
+    "Z_range": 34.04,
+    "mean_xyz": [
+     1.7,
+     145.7,
+     5.0
+    ]
+   },
+   "pelvis_lateral_period_s": 4.0,
+   "pelvis_lateral_amp_cm": 3.78,
+   "shoulder_line_roll_range_deg": 12.43
+  },
+  "idle_stalker_daggers": {
+   "loop_s": 5.1,
+   "fps": 29.9999984353782,
+   "pelvis_cm": {
+    "X_range": 1.49,
+    "Y_range": 0.93,
+    "Z_range": 2.05,
+    "mean_xyz": [
+     -0.0,
+     105.8,
+     0.0
+    ]
+   },
+   "pelvis_rot_deg": {
+    "roll_range": 0.65,
+    "yaw_range": 2.89,
+    "pitch_range": 0.97
+   },
+   "head_cm": {
+    "X_range": 1.74,
+    "Y_range": 0.99,
+    "Z_range": 3.6,
+    "mean_xyz": [
+     1.0,
+     162.2,
+     9.8
+    ]
+   },
+   "pelvis_lateral_period_s": 5.1,
+   "pelvis_lateral_amp_cm": 1.49,
+   "shoulder_line_roll_range_deg": 1.54
+  },
+  "idle_stalker_town": {
+   "loop_s": 5.2,
+   "fps": 29.9999984353782,
+   "pelvis_cm": {
+    "X_range": 1.27,
+    "Y_range": 0.15,
+    "Z_range": 1.13,
+    "mean_xyz": [
+     5.0,
+     105.9,
+     0.2
+    ]
+   },
+   "pelvis_rot_deg": {
+    "roll_range": 2.35,
+    "yaw_range": 1.67,
+    "pitch_range": 1.7
+   },
+   "head_cm": {
+    "X_range": 1.28,
+    "Y_range": 0.34,
+    "Z_range": 4.95,
+    "mean_xyz": [
+     4.0,
+     163.3,
+     1.5
+    ]
+   },
+   "pelvis_lateral_period_s": 5.2,
+   "pelvis_lateral_amp_cm": 1.27,
+   "shoulder_line_roll_range_deg": 1.48
+  },
+  "idle_warden": {
+   "loop_s": 5.033,
+   "fps": 29.9999984353782,
+   "pelvis_cm": {
+    "X_range": 0.31,
+    "Y_range": 0.05,
+    "Z_range": 0.7,
+    "mean_xyz": [
+     0.0,
+     106.8,
+     -0.0
+    ]
+   },
+   "pelvis_rot_deg": {
+    "roll_range": 0.16,
+    "yaw_range": 0.44,
+    "pitch_range": 0.52
+   },
+   "head_cm": {
+    "X_range": 0.65,
+    "Y_range": 0.16,
+    "Z_range": 1.44,
+    "mean_xyz": [
+     -0.2,
+     163.9,
+     -0.3
+    ]
+   },
+   "pelvis_lateral_period_s": 5.03,
+   "pelvis_lateral_amp_cm": 0.31,
+   "shoulder_line_roll_range_deg": 0.57
+  },
+  "idle_warden_break": {
+   "loop_s": 3.333,
+   "fps": 29.9999984353782,
+   "pelvis_cm": {
+    "X_range": 0.22,
+    "Y_range": 0.03,
+    "Z_range": 0.59,
+    "mean_xyz": [
+     -0.0,
+     106.7,
+     0.1
+    ]
+   },
+   "pelvis_rot_deg": {
+    "roll_range": 0.16,
+    "yaw_range": 0.32,
+    "pitch_range": 0.47
+   },
+   "head_cm": {
+    "X_range": 0.56,
+    "Y_range": 0.29,
+    "Z_range": 2.1,
+    "mean_xyz": [
+     -0.3,
+     163.9,
+     -0.2
+    ]
+   },
+   "pelvis_lateral_period_s": 3.33,
+   "pelvis_lateral_amp_cm": 0.22,
+   "shoulder_line_roll_range_deg": 6.19
+  },
+  "idle_warden_town": {
+   "loop_s": 5.333,
+   "fps": 29.9999984353782,
+   "pelvis_cm": {
+    "X_range": 15.76,
+    "Y_range": 0.91,
+    "Z_range": 1.14,
+    "mean_xyz": [
+     -0.0,
+     105.8,
+     0.0
+    ]
+   },
+   "pelvis_rot_deg": {
+    "roll_range": 6.95,
+    "yaw_range": 12.02,
+    "pitch_range": 1.97
+   },
+   "head_cm": {
+    "X_range": 6.68,
+    "Y_range": 1.66,
+    "Z_range": 2.23,
+    "mean_xyz": [
+     1.1,
+     162.3,
+     -3.6
+    ]
+   },
+   "pelvis_lateral_period_s": 2.67,
+   "pelvis_lateral_amp_cm": 15.76,
+   "shoulder_line_roll_range_deg": 25.65
+  }
+ }
+}

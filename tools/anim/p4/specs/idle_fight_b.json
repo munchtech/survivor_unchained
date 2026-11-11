@@ -1,0 +1,255 @@
+{
+ "kind": "idle",
+ "rules": "ST-B stance candidate B 'Dare': the left foot leads a short open stagger, she sits into the back (right) hip, the shield low and open at her left side, the sword arm long, the blade hanging forward, out and down",
+ "bands": {
+  "shoulder_lift_l_cm": [
+   -3,
+   0.5
+  ],
+  "shoulder_lift_r_cm": [
+   -3,
+   0.5
+  ],
+  "blade_below_deg": [
+   50,
+   60
+  ],
+  "blade_tip_cm": [
+   8,
+   15
+  ],
+  "shield_top_cm": [
+   90,
+   115
+  ],
+  "foot_l_fwd_cm": [
+   30,
+   42
+  ],
+  "head_over_pelvis": [
+   0,
+   0.6
+  ]
+ },
+ "gen": {
+  "engine": "kimodo",
+  "seconds": 9.0,
+  "takes": 6,
+  "seeds": [
+   131,
+   132,
+   133
+  ],
+  "prompts": [
+   "A woman stands ready and relaxed, a shield held on her left forearm at chest height and a sword held low by her right hip, slowly shifting her weight from foot to foot",
+   "A warrior woman waits calmly in a ready stance, her left arm holding a shield in front of her chest and her right hand holding a sword low at her side, swaying gently as her weight shifts",
+   "A relaxed fighter stands with a shield raised on her left arm and a sword lowered in her right hand, breathing calmly and shifting her weight from leg to leg"
+  ],
+  "root2d": {
+   "kind": "sway",
+   "travel": 0.07,
+   "period": 3.5,
+   "ease": 1.2,
+   "overshoot": 0.01,
+   "start": 0.5,
+   "every": 1
+  },
+  "root2d_scales": [
+   0.8,
+   0.85,
+   0.9
+  ],
+  "keys": {
+   "src": {
+    "prompt": 2,
+    "scale": 0.75,
+    "pick": 4
+   },
+   "hands": {
+    "LeftHand": [
+     0.06,
+     0.26,
+     0.3
+    ],
+    "RightHand": [
+     -0.2,
+     -0.08,
+     0.12
+    ]
+   },
+   "prompts": [
+    2,
+    1
+   ],
+   "scales": [
+    0.78,
+    0.82,
+    0.86
+   ],
+   "start": 15,
+   "every": 30,
+   "aim": {
+    "LeftHand": [
+     -0.04,
+     0.007,
+     0.055
+    ],
+    "RightHand": [
+     -0.03,
+     -0.075,
+     0.02
+    ]
+   },
+   "tag": "a"
+  }
+ },
+ "post": {
+  "loop": true,
+  "inplace": true,
+  "cycle_s": [
+   6.9,
+   7.1
+  ],
+  "gait": false,
+  "crop": [
+   15,
+   260
+  ]
+ },
+ "notes": "ST-B (A1, 9 Nov): the fighting stance candidate B built as a pose on idle_warden's take (src/idle_warden.npz, the quiet sway); gen not run for this clip.",
+ "source": "src/idle_warden.npz",
+ "bvh": "idle_warden__ka2s78_1.bvh",
+ "sha1": "dc730148d7306457be5b2ab3336cc6dd99d1b933",
+ "fit": {
+  "stance": {
+   "shift_cm": -17,
+   "drop_cm": -2.75,
+   "roll_deg": -15,
+   "yaw_deg": -16,
+   "foot_l": [
+    -0.2185,
+    0,
+    0.25
+   ],
+   "foot_r": [
+    0.1165,
+    0,
+    -0.18
+   ],
+   "turn_l": 8,
+   "turn_r": -27
+  },
+  "lean": {
+   "deg": -1.5,
+   "side_deg": -4.0
+  },
+  "shoulders": {
+   "level_cm": 2.2
+  },
+  "head": {
+   "ratio": 0.45,
+   "bones": "neck"
+  },
+  "hips": {
+   "keys": [
+    [
+     0,
+     [
+      0,
+      0,
+      0.042
+     ]
+    ],
+    [
+     7.0,
+     [
+      0,
+      0,
+      0.042
+     ]
+    ]
+   ]
+  },
+  "twist": {
+   "keys": [
+    [
+     0,
+     19.5
+    ],
+    [
+     7.0,
+     19.5
+    ]
+   ]
+  },
+  "look": {
+   "yaw_deg": 0,
+   "roll_deg": 2.5
+  },
+  "limbs": {
+   "hand_r": {
+    "at": [
+     -0.31,
+     -0.16,
+     0.13
+    ],
+    "pole": [
+     1.5,
+     0,
+     -1
+    ]
+   }
+  },
+  "blade": {
+   "dir": [
+    -0.21,
+    -0.83,
+    0.52
+   ],
+   "keep": 0
+  },
+  "shield": {
+   "boss": [
+    0.345,
+    0.075,
+    0.09
+   ],
+   "open_deg": 72,
+   "tilt_deg": -15,
+   "pole": [
+    0.1,
+    -0.2,
+    -1.0
+   ],
+   "swivel": 60.0
+  },
+  "pop": {
+   "x": 4,
+   "span": 4,
+   "cap": {}
+  },
+  "wrist": {
+   "hand_r": {
+    "flex": 28,
+    "dev": 28,
+    "mode": "turn",
+    "swivel": 30
+   },
+   "hand_l": {
+    "flex": 25,
+    "dev": 15,
+    "mode": "hold",
+    "swivel": 0,
+    "twist": false
+   }
+  },
+  "clear": {
+   "target_mm": 12,
+   "passes": 6
+  }
+ },
+ "held": [
+  "sword",
+  "shield"
+ ]
+}

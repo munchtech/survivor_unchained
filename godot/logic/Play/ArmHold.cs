@@ -14,6 +14,11 @@ public sealed class ArmHold
 {
     public const float Up = 0.6f, Down = 0.4f, Fade = 0.2f;
 
+    /// <summary>Whether a body gets the arm-hold layer at all (the filtered arms copy of the move graph, HerArmHold, the
+    /// per-clip grip ease). B: never. Its walk and run carry compatible holds as clip data (P4), so the move graph
+    /// blends them as authored; A keeps the layer until A leaves the game.</summary>
+    public static bool Layered(bool isB) => !isB;
+
     /// <summary>True: the run's hold (her run or sprint); false: the walk's (or idle's).</summary>
     public bool Run { get; private set; }
     /// <summary>Time since the last switch over Fade, 0..1 (1: settled).</summary>
