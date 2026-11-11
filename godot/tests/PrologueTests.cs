@@ -702,7 +702,14 @@ public class PrologueTests
             s.B.Hooks.OnBossStagger!(w); Stand(s, w.X + 4.5, w.Z); s.Zone.Step(1 / 60.0); s.B.Tick(1 / 60.0, 0, 0);
             foreach (var ev in s.B.Events.Drain())
             {
-                if (ev is Ev.Floater { Text: "Dazed" } fl) { dazed++; Assert.Equal(w.X, fl.X, 3); Assert.InRange(fl.Up, 3.0, 3.5); }
+                if (ev is Ev.Floater { Text: "Dazed" } fl)
+                {
+                    // over him, set off from her side when she is near (judge r4: against her bar it read as hers)
+                    dazed++; Assert.InRange(fl.Up, 3.0, 3.5);
+                    double her = Math.Sqrt(Math.Pow(fl.X - s.B.Player.X, 2) + Math.Pow(fl.Z - s.B.Player.Z, 2));
+                    double him = Math.Sqrt(Math.Pow(fl.X - w.X, 2) + Math.Pow(fl.Z - w.Z, 2));
+                    Assert.True(him <= 1.61 && her >= 4.5 + 0.5, $"dazed {him:0.00} m off him, {her:0.00} m from her");
+                }
                 if (ev is Ev.Bark { Text: "Dazed" }) barks++;
             }
         }

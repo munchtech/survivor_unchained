@@ -1031,7 +1031,11 @@ public sealed partial class Prologue : ZoneRuntime
             if (ai.TellUp && ai.Mode is not ("chargeWind" or "charge")) { ai.TellUp = false; B.Events.Emit(new Ev.Hush { Speaker = "@said:" + ChargeTell }); }
             if (ai.Mode == "stun")
             {
-                B.Events.Emit(new Ev.Floater { X = e.X, Z = e.Z, Up = 3.2, Text = "Dazed" });
+                // (B1 judge r4: with her 3.4 m off it sat against her health bar and read as hers) set off from her side of
+                // him when she is near, so it reads as his
+                double fx = e.X - B.Player.X, fz = e.Z - B.Player.Z, fd = Math.Sqrt(fx * fx + fz * fz);
+                double off = fd < 6 ? Math.Min(1.6, (6 - fd) * 0.5) : 0, ux = fd > 0.01 ? fx / fd : 0, uz = fd > 0.01 ? fz / fd : 1;
+                B.Events.Emit(new Ev.Floater { X = e.X + ux * off, Z = e.Z + uz * off, Up = 3.2, Text = "Dazed" });
                 if (ai.Last != "channel") B.Events.Emit(new Ev.Sound { Id = "ford.channel_broken", X = e.X, Z = e.Z });
             }
             ai.Last = ai.Mode;

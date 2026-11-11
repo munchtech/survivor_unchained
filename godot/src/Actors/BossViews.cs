@@ -225,15 +225,19 @@ public partial class WardenView : Node3D, IBossView
             // there creeping to the top (0.33) so the blow is plainly coming, then the strike (0.33..Contact) over the
             // windup's last 0.2 s, down in the circle as the blow lands.
             double t = e.AnimT;
-            // (B1 judge at 1:1: the blade was still high on the landing frame and reached her height ~0.07 s later, so the
-            // schedule runs 0.09 s early, proportionately: contact at 0.96 s of the windup's 1.05, down through her height
-            // by the sim's landing)
-            double c = t < 0.42 ? 0.30 * Mathf.SmoothStep(0, 1, (float)(t / 0.42)) : t < 0.77 ? 0.30 + 0.03 * (t - 0.42) / 0.35
-                : 0.33 + (Contact - 0.33) * Math.Min(1, (t - 0.77) / 0.19);
+            // (B1 judge r3 at 1:1: the blade still high on the landing frame; contact moved to 0.96 s. Judge r4: then the
+            // blade had passed her 0.09 s before the hit and its number. Contact at 1.03 s, one frame ahead of the sim's
+            // landing at 1.05: the blade meets her as the blow and its number land.)
+            double c = t < 0.42 ? 0.30 * Mathf.SmoothStep(0, 1, (float)(t / 0.42)) : t < 0.83 ? 0.30 + 0.03 * (t - 0.42) / 0.41
+                : 0.33 + (Contact - 0.33) * Math.Min(1, (t - 0.83) / 0.20);
             view.Drive("Sword_Attack", c, dt);
+            StrikeShots(e, [0.85, 0.95, 1.00, 1.03], "sw");
         }
         else if (e != null && pose == "cleave")
+        {
             view.Drive("Sword_Attack", Contact + (1.533 - Contact) * Math.Min(1, e.AnimT / 0.8), dt);
+            StrikeShots(e, [0.0, 0.034, 0.067, 0.12], "cl");
+        }
         else if (e != null && pose == "stunned" && !dazed)
         {
             // The buckle (clip 0..0.15 over the first 0.25 s), then held near its lowest (0.15..0.36) until the hunch takes it.
@@ -261,6 +265,18 @@ public partial class WardenView : Node3D, IBossView
     }
 
     MeshInstance3D? bladeMesh;
+    double shotT = -1; string shotPose = ""; int strikes;
+
+    /// <summary>--shot (B1): frames of the strike at his own clock's marks (windup or cleave seconds), so a game paused
+    /// over his windup (the tutorial's card) still yields the chop: Shots' clock runs on through a pause.</summary>
+    void StrikeShots(Enemy e, double[] marks, string tag)
+    {
+        if (!Args.Has("shot")) return;
+        if (shotPose != pose) { shotPose = pose; shotT = -1; if (pose == "windup") strikes++; }
+        foreach (var m in marks)
+            if (shotT < m && e.AnimT >= m) Shots.WantFrames($"ford_k{strikes}_{tag}{m * 1000:0000}", 0);
+        shotT = e.AnimT;
+    }
 
     /// <summary>--pace (B1): each frame of a strike or charge, the sim's clock against the clip's, the blade's world reach
     /// (lowest and highest point, farthest along his facing, metres from his feet) and where his body and face point

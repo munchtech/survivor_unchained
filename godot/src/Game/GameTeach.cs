@@ -421,9 +421,7 @@ public partial class Game
             double at = m switch { "windup" => 0.55, "cleave" => 0.12, "chargeWind" => 0.7, "charge" => 0.25, "stun" => 0.4, "channel" => 1.0, "dead" => 1.0, _ => -1 };
             if (at >= 0) Shots.Want($"ford_{t}_{m}", at);
             if (m == "stun") Shots.Want($"ford_{t}_stun2", 2.0);
-            // (B1 r7: the swing's sheet frame by frame, its blade's fast frames and its follow-through)
-            if (m == "windup") foreach (var s in (double[])[0.88, 0.92, 0.95, 0.99]) Shots.Want($"ford_{t}_sw{s * 100:000}", s);
-            if (m == "cleave") foreach (var s in (double[])[0.05, 0.09, 0.17, 0.25]) Shots.Want($"ford_{t}_cl{s * 100:000}", s);
+            // (the strike's own frames, sw and cl, are the view's, on his clock: WardenView.StrikeShots)
         }
         else if (note.StartsWith("ford touch") || note.StartsWith("ford cleave")) Shots.Want($"ford_{t}_{note.Split(' ')[1]}", 0.02);
     }
