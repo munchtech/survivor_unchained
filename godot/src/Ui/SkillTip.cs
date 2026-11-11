@@ -191,18 +191,26 @@ public partial class SkillTip : Control
         return o;
     }
 
-    /// <summary>Wrap, then if the last line is a stub (under 45% of the width) re-wrap at the narrowest width (4 px steps, down to 60%) that keeps the same line count.</summary>
+    static readonly HashSet<string> Weak = new(StringComparer.OrdinalIgnoreCase)
+        { "a", "an", "the", "of", "to", "in", "on", "at", "for", "with", "from", "by", "and", "or", "that", "its", "your", "as", "into", "than" };
+
+    /// <summary>Wrap at the widths from full down to 60% (4 px steps) that keep the plain wrap's line count, and take the best:
+    /// no line ending on a weak word ("a", "of", "the"...), no stub last line (under 45% of the width), then the most even lines.</summary>
     static List<string> WrapBalancedOld(Font f, string s, int size, float width)
     {
         var o = Wrap(f, s, size, width);
-        if (o.Count < 2 || TextW(f, o[^1], size) >= 0.45f * width) return o;
-        for (float w = width - 4; w >= 0.6f * width; w -= 4)
+        if (o.Count < 2) return o;
+        List<string> best = o; float bestScore = float.MaxValue;
+        for (float w = width; w >= 0.6f * width; w -= 4)
         {
             var t = Wrap(f, s, size, w);
             if (t.Count != o.Count) break;
-            o = t;
+            var ws = t.Select(l => TextW(f, l, size)).ToList();
+            int weak = t.Take(t.Count - 1).Count(l => Weak.Contains(l[(l.LastIndexOf(' ') + 1)..]));
+            float score = 100 * weak + (ws[^1] < 0.45f * width ? 50 : 0) + 10 * (ws.Max() - ws.Min()) / width;
+            if (score < bestScore) { bestScore = score; best = t; }
         }
-        return o;
+        return best;
     }
 
     /// <summary>Sentence-first wrap: each sentence on its own line(s), a two-line sentence broken at the comma that evens its halves, then whole one-line sentences joined while they fit. Falls back to the balanced wrap when it would overflow the card.</summary>

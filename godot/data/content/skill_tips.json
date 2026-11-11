@@ -54,7 +54,7 @@
       "numbers": [ [ "Damage", "{damage}" ], [ "Charge", "{base.range} m" ], [ "Barrier", "{base.barrier:%} health, {base.duration} s" ] ]
     },
     "iron_vow": {
-      "line": "Plant your feet: for {base.brace} s blows on you land at half and a fifth is stored, then it all bursts out in a ring.",
+      "line": "Plant your feet: for {base.brace} s, blows on you land at half and a fifth is stored, then it all bursts out in a ring.",
       "numbers": [ [ "Damage", "{damage} + what you stored" ], [ "Ring", "{base.radius} m" ] ],
       "kindled": "Lights up when a big blow winds up on you, or a crowd closes in: press it then"
     },
