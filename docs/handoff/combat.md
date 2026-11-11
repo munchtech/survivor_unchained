@@ -1,5 +1,37 @@
 # Handoff: combat (skills' mechanics, enemies, encounters, bosses, balance, the maps, the story's nights)
 
+## Feel F1, lead 19 (feel-f1, 11 Nov): HANDOFF READY at ~185k. Hit-stop BUILT, tuned and captured; the ONE judge, the full-suite rerun and the MR are NOT done. Lane spend: about 0.88M before lead 19 plus lead 19's ~0.2M; the line is 1.5M.
+
+**Start here.** Scratch is `survivorsunchained_inputs\scratch_feel_f1\lead19\`. Integration (`claude/vigilant-galileo-l6jqyx`) is merged in.
+
+**The mechanism that ships: the local, view-side stop only.** The old global WorldScene hold (`fightDt*0.08`) and `HitKit.FirstHitStop` are DELETED. Kept untouched: the dodge slowmo, the Victory fall, the Flare's own stops. `--no-hitstop` turns it off.
+- The pieces: `godot/data/content/hit_stop.json` (numbers plus an "about" for each key), `godot/logic/Look/HitStop.cs` (`HitStops` slots per body, pure), `godot/src/Fx/HitStopClassifier.cs` (events to asks) and `godot/tests/HitStopTests.cs` (16 green).
+- How it works: only she and the struck bodies freeze (clock rate 0.06). The sim, camera, UI, audio and FX run on. `CrowdView` holds the pose, t and flash, then walks the plant offset out over catchup_s.
+- The tuned values: heavy 50 ms, crit 55, art 55, hurt 60, elite kill 90, boss kill 100, cap 150. Crowd rule: over 30 on screen, scale 0.8; it was 0.5, which gave 25 ms, under two frames. A hit on a frozen body extends to the longer hold and never sums.
+- When she holds:
+  - her own Oathblade swing, at any reach (5c853ec21);
+  - any other weapon only within her_reach_m 3;
+  - an elite or boss kill only if her own near blow landed on it that step (98616e38d). Before that she froze 90 ms at the top of a new wind-up when a far wave killed an elite.
+- The sim is unchanged, so ON and OFF clips are a frame-exact A/B:
+  - zone sim lowford before and after are identical (`zone_before.md`, `zone_after.md`): human 2/2, 5.7 min, 148/5/5/1, 0 falls; deft 2/2, 5.2 min, 143/5/5/1, 0 falls;
+  - the hs5 and hs4off in-engine kill-traces are identical (115 lines).
+- `--kill-trace` now also prints `[stop-trace] her ... frame=N`.
+
+**Captures** (arena, `--quick --zone arena --veteran 30:2 --stems --kill-trace --wav`, at defaults via `--clip`):
+- `combat_m3\f1_feel_hs4off` (`--no-hitstop`) is the OFF reference. Keep it.
+- `f1_feel_hs5` is ON before the Oathblade reach rule: 29 her stops, up to 58 living, dense 1-6 kHz median +8.5 dB, worst +2.7 dB (`crowd_tape_hs5.txt`).
+- `f1_feel_hs6` is ON at the tip, captured last. Its tape is `f1_tape_hs6*.wav` and its numbers are `crowd_tape_hs6.txt`.
+- hs3 and hs4 are superseded: send them to the Recycle Bin.
+- `judge_pack.py` builds the ON/OFF sheets into `judge/`. Point ON at the newest capture and re-pick the moments from the kill-trace frames.
+
+**Routed, not mine:** the Deep Shaw boulder draws as a black dome over a third of the frame, and the wolves read as purple lumps (inbox 03:03).
+
+**Left, in order:**
+1. ONE `su-lead-max` judge with `Item: combat feel` on the prompt's first line. Give it the hs6 and hs4off clips, the sheets, the tape numbers, `scratch_feel_f1\drop_ladder.txt`, lead 17's watch items (crimson may read pink under AgX; the crowd charge is only 1.33x the boss's) and the owner's words "nothing really felt satisfying". At most 3 rounds.
+2. The FULL `dotnet test` in godot/tests. The last green is 2261/0/11 at 8af3a5228.
+3. Push feel-f1.
+4. Post `MR READY feel-f1@<sha>` in the inbox. Motion "off" ("Screen shake") removes only the camera shake, push and kicks; the hit-stop, dodge slow, the Flare's held time, flash, sound, gore and the death show stay.
+
 ## Feel F1, lead 18 (feel-f1, 11 Nov): HANDOFF READY at ~170k. Captured, looked at, heard and measured at fresh-profile defaults; the mix fixed and the motion-"off" ruling built; the ONE judge, hit-stop and the MR are NOT done. Lane spend: about 0.48M before lead 18, plus lead 18's ~0.4M; the lane's line is 1.2M in all.
 
 **Branch:** feel-f1 @ the commit that adds this block (pushed). Integration is NOT merged in yet. Profile: md5 545be3545b291268afef5193275e8410, backup `scratch_feel_f1\settings_backup.json`. Integration's c8e5f7a46 says B1's settings isolation is merged, so after you merge, `user://settings_runs.json` protects the owner's profile. Check the md5 once anyway.
