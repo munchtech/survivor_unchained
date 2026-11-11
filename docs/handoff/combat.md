@@ -1,6 +1,6 @@
 # Handoff: combat (skills' mechanics, enemies, encounters, bosses, balance, the maps, the story's nights)
 
-## Feel F1, lead 20 (feel-f1, 11 Nov): judge r1's five fixes BUILT, captured (hs7), suite GREEN; judge ROUND 2 running. Lane spend: ~1.08M before lead 20 + lead 20's ~0.4M; line 1.5M.
+## Feel F1, lead 20 (feel-f1, 11 Nov): HANDOFF READY at ~185k. Judge r1's five fixes BUILT, captured (hs7), suite GREEN; judge ROUND 2 = CLOSE (check 4 FAIL). Round 3 is the LAST. Lane spend: ~1.08M before lead 20 + lead 20's ~0.4M; line 1.5M.
 
 - **Built (all on feel-f1, merged integration 613e3d8b2 at 6fd33cffd; full suite 2275/0/11, build 0 errors, `scratch_feel_f1/lead20/suite_1.log`):**
   1. Mass-kill hold: `HitStopClassifier` holds every body felled by a step's blows when 8+ fall (`hit_stop.json` mass_kill_n); her only on her own contact. Test `MassKillHoldsEveryBodyItFelled`.
@@ -10,8 +10,16 @@
   5. `tele_rank.json` crowd **charge** 0.3375 -> 0.22 (+ TeleRank.cs fallback). Only that key touched (B1 also edits this file).
   Plus deaths as rewards: `DeathShow` massFrom 4 / massMaxPerWindow 8 (`death_show.json`), test `MassKillShowsMoreOfIt`.
 - **Evidence:** capture `combat_m3/f1_feel_hs7` (ON) vs `f1_feel_hs4off` (OFF reference); sheets and brief in `scratch_feel_f1/lead20/judge/` (`brief_r2.md`, `judge_pack.py` one dir up); charge frames `combat_m3/f1_charge_pair` (no frame with both lanes; m7 pair given to the judge).
-- **Next:** read `judge/verdict_r2.md` (API judge, log `judge/api_r2.log`). PASS: re-merge integration if it moved + full suite, push feel-f1, post `MR READY feel-f1@<sha>` (verdict path, suite, "touched tele_rank.json crowd charge key + TeleRank.cs fallback"). CLOSE: build its fixes, one recapture, round 3 is the LAST; if it fails, post what holds.
-- **Out of lane, for routing (told to the judge):** Deep Shaw boulder as a black dome, wolves as purple lumps, EMBER banner + Ironback warning line (UI), red ferns salmon + her wide ember pool (art), canopies as yellow shards.
+- **Round 2 verdict:** `scratch_feel_f1/lead20/judge/verdict_r2.md` (API judge, $1.88). PASS: flash on her (3). CLOSE: heavy hit felt (1), dense read (2), charge rank (5, not verified). FAIL: mass kills (4): at 6833 the 8 felled stand upright in a line with kill glows until 6846; at 9026 the 25 stand until 9040 (+233 ms, the Warden ground wave's WgDeathLag) and ON = OFF pack motion through 9039, so the 90 ms hold is invisible; the 8 "bursts" read as dark speck clusters; launch=0 at 6833/6848/9026 (68% of mass-kill bodies get no show).
+- **Round 3 (the LAST), build in this order, one recapture (hs8, same args as hs7, `judge_pack.py` with ON=hs8):**
+  1. Mass kill: every felled body of a 4+ step leaves its feet when its hold ends (N+6), none upright at N+12; glow, numbers and the show start together (for a delayed wave kill, hold the glow to the landing frame too, so nothing stands glowing). The up-to-8 shows become LAUNCHES outward from her along the swing; the rest a fast topple (<=150 ms). Look in `logic/Sim/DeathShow.cs` (why launch=0 on mass steps) and CrowdView's death start (why bodies stay upright ~13 frames). A solver (su-lead-max) with this brief if one attempt fails.
+  2. Lane rank by id: log each lane's source id, rank and energy when drawn (`BattleFx.cs` ~1660-1690, `fodderCharge`); find a verified rank-2 crowd charge lane (sources: `encounters.json` tell "charge" packs, `telegraphs.json` kit) beside the Pack-Mother's; name the 1823 lane (likely the Pack-Mother herself) and the 6834 maroon rectangle. If the crowd lane still reads as loud at 1:1, lower its chevron contrast, not only energy. Only the crowd "charge" key in tele_rank.json may change.
+  3. Victim flash at a lone heavy (409-412): cap the OathPool light on the struck body so its core never clips white and its footprint is ~one wolf (~80 px).
+  4. Dense crack floor: all ten densest steps >= +6 dB in 1-6 kHz (now +1.6 at t=114.47, +3.2 at t=129.70); duck the rest on dense steps (crowd_tape.py measures).
+  5. Show the struck hold on an ON/OFF diff after fix 1.
+  Then the judge's round 3 (brief_r2.md updated, verdict_r2.md attached). If round 3 fails: stop, post what holds.
+- **Then (PASS):** re-merge integration (it moved: B1 merged at 084c918c9) + full suite, push feel-f1, post `MR READY feel-f1@<sha>` (verdict path, suite, "touched tele_rank.json crowd charge key + TeleRank.cs fallback").
+- **Out of lane, for routing (told to the judge):** NEW from r2: the EMBER 10 "ember rises" pillar + her pool white her out at 8877-8884 (L1/VFX); Longcut chunk slabs (`chunks.glb`) draw as flat black slabs bigger than a wolf at 6846-6875 and 9040-9110 (rendering). Known: Deep Shaw boulder as a black dome, wolves as purple lumps, EMBER banner + Ironback warning line (UI), red ferns salmon + her wide ember pool (art), canopies as yellow shards.
 
 ## Feel F1, lead 19 (feel-f1, 11 Nov): HANDOFF READY at ~185k. Hit-stop BUILT, tuned and captured; the ONE judge, the full-suite rerun and the MR are NOT done. Lane spend: about 0.88M before lead 19 plus lead 19's ~0.2M; the line is 1.5M.
 
