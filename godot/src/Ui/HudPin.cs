@@ -40,6 +40,8 @@ public static class HudPin
     public static bool? Behind, Day;
     public static string[]? Seats;
     public static string? Xp, XpTip;
+    /// <summary>U1: the skill tip pinned on: "seat:K" (seat K, whatever the pointer) or "card" (the level card's skill).</summary>
+    public static string? Tip;
     public static int[]? XpNum;
     /// <summary>UI 28 (status=b:aegis:6:8+d:flame:3:5:4+...): the statuses shown instead of the live ones, each
     /// "b|d:glyph:left:max[:stacks]" ('+' between, so run.sh's ',' and ';' pass it whole).</summary>
@@ -56,7 +58,7 @@ public static class HudPin
     public static void Use(int k)
     {
         Life = Shield = Ember = LockHeat = Art = Dash = null; Draught = null; Seats = null; Behind = null; Day = null;
-        Xp = XpTip = null; XpNum = null; Shine = null; Level = null; Status = null; Resolve = null; ResolveWhy = null; CostSeat = null;
+        Xp = XpTip = Tip = null; XpNum = null; Shine = null; Level = null; Status = null; Resolve = null; ResolveWhy = null; CostSeat = null;
         Parse(baseSpec);
         if (k >= 0 && k < Seq.Length) Parse(Seq[k]);
     }
@@ -83,6 +85,7 @@ public static class HudPin
                 case "shine": Shine = float.TryParse(kv[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var sh) ? sh : null; break;
                 case "level": Level = int.TryParse(kv[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var lv) ? lv : null; break;
                 case "xptip": XpTip = kv[1]; break;
+                case "tip": Tip = kv[1]; break;
                 case "xpnum": XpNum = Array.ConvertAll(kv[1].Split(':'), v => int.TryParse(v, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) ? n : 0); break;
                 case "status": Status = SurvivorUnchained.Play.StatusShelf.Parse(kv[1]); break;
                 case "resolve":

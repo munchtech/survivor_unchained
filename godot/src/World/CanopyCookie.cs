@@ -114,12 +114,29 @@ public static class CanopyCookie
         return leaf;
     }
 
-    /// <summary>The canopy for a zone: its mask and the leaf tile into the globals (ZoneView, as the zone is built).</summary>
-    public static void For(ZoneData z)
+    /// <summary>A zone's canopy, made as the zone is built (on a worker, for a place built ahead) and published as its
+    /// view enters the tree: the mask (null: none stands), its rect, the ground's height under it, the floor's rule.</summary>
+    public sealed record Canopy(ImageTexture? Mask, Vector4 Rect, float PlaneY, bool Floored);
+
+    /// <summary>A canopy into the globals and the statics the air reads (ZoneView, as the zone becomes the one shown;
+    /// SU-022: made and published at once, a place built ahead put its canopy over the one still shown).</summary>
+    public static void Publish(Canopy c)
     {
         Shown = false;
-        Floored = z.Place is not { } pl0 || pl0.Air.Dapple > 0;
-        if (!Atmosphere.CelRigs) return;
+        Floored = c.Floored;
+        if (c.Mask == null) return;
+        RenderingServer.GlobalShaderParameterSet("cel_canopy", c.Mask);
+        RenderingServer.GlobalShaderParameterSet("cel_cookie", Leaf());
+        RenderingServer.GlobalShaderParameterSet("cel_canopy_r", c.Rect);
+        PlaneY = c.PlaneY;
+        Shown = !Args.Has("cel-dapple-off");
+    }
+
+    /// <summary>The canopy for a zone: its mask from its trees and the place's cover. Touches no global (Publish does).</summary>
+    public static Canopy Make(ZoneData z)
+    {
+        bool floored = z.Place is not { } pl0 || pl0.Air.Dapple > 0;
+        if (!Atmosphere.CelRigs) return new Canopy(null, default, 0, floored);
         Atmosphere.RigsLoad();
         var set = Rigs.Current;
         var trees = new List<(double X, double Z, string Kind, double Scale)>();
@@ -149,12 +166,8 @@ public static class CanopyCookie
         }
         long sum = 0; foreach (var b in mask) sum += b;
         GD.Print($"canopy: {trees.Count} trees, mask {res}px over {size:0} m, cover mean {sum / (255.0 * mask.Length):0.000}");
-        if (sum == 0) return;
+        if (sum == 0) return new Canopy(null, default, 0, floored);
         var img = Image.CreateFromData(res, res, false, Image.Format.R8, mask);
-        RenderingServer.GlobalShaderParameterSet("cel_canopy", ImageTexture.CreateFromImage(img));
-        RenderingServer.GlobalShaderParameterSet("cel_cookie", Leaf());
-        RenderingServer.GlobalShaderParameterSet("cel_canopy_r", new Vector4(-size / 2, -size / 2, 1 / size, 1 / size));
-        PlaneY = z.HeightAt(0, 0);
-        Shown = !Args.Has("cel-dapple-off");
+        return new Canopy(ImageTexture.CreateFromImage(img), new Vector4(-size / 2, -size / 2, 1 / size, 1 / size), z.HeightAt(0, 0), floored);
     }
 }

@@ -655,9 +655,9 @@ public partial class Game
             Journey = Journey.From(d, slot);
             Hook();
             // A journey kept on one of the old map runs comes back to the Wayfinder's table.
-            if (d.Location.Zone == "map") EnterZone("waystation", null, Play.Zones.Waystation.AtTable);
-            else EnterZone(d.Location.Zone, null, new Arrival(d.Location.X, d.Location.Z, d.Location.Facing));
-            hud.Fade(0, 1.2);
+            // (a place still being built ahead is finished behind the black first: SU-021)
+            if (d.Location.Zone == "map") EnterWhenBuilt("waystation", null, Play.Zones.Waystation.AtTable, () => hud.Fade(0, 1.2));
+            else EnterWhenBuilt(d.Location.Zone, null, new Arrival(d.Location.X, d.Location.Z, d.Location.Facing), () => hud.Fade(0, 1.2));
         });
     }
 
@@ -669,8 +669,7 @@ public partial class Game
         if (d == null) return;
         Journey = Journey.From(d, 0);
         Hook();
-        EnterZone(d.Location.Zone == "map" ? "waystation" : d.Location.Zone, null, new Arrival(d.Location.X, d.Location.Z, d.Location.Facing));
-        hud.Fade(0, 0.5);
+        EnterWhenBuilt(d.Location.Zone == "map" ? "waystation" : d.Location.Zone, null, new Arrival(d.Location.X, d.Location.Z, d.Location.Facing), () => hud.Fade(0, 0.5));
     }
 
     /// <summary>A leave whose save failed is refused once, with the reason; asked again, it goes

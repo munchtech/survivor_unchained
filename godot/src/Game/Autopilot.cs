@@ -1019,7 +1019,9 @@ public sealed class Autopilot
         double dx = post.X - p.X, dz = post.Z - p.Z, d = Math.Sqrt(dx * dx + dz * dz);
         if (d < 1.8)
         {
-            if (!townStood) { townStood = true; Godot.GD.Print($"auto: town stop at the square's lamp t={t:0.0} prologue.done={g.Journey.World.Fact("prologue.done").Truthy}"); Frame("town_stop", 1.5); }
+            if (!townStood) { townStood = true; Godot.GD.Print($"auto: town stop at the square's lamp t={t:0.0} prologue.done={g.Journey.World.Fact("prologue.done").Truthy}"); Frame("town_stop", 1.5);
+                // (--until-town: the run ends 6 s after she stands in the Waystation, the c04b -> town proof of the black screen fix)
+                if (Args.Has("until-town")) g.GetTree().CreateTimer(6).Timeout += () => QuitPath.Request(g.GetTree(), 0, "until-town"); }
             return;
         }
         routeT -= dt;

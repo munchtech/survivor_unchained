@@ -671,7 +671,8 @@ public static class Ai
             double dd = 14;
             foreach (var d in b.Decoys)
             {
-                if (!d.Alive || d.State == EnemyState.Dying) continue;
+                // (a pooled slot reused for the horde is no reflection: SU-024)
+                if (!d.Alive || !d.Decoy || d.State == EnemyState.Dying) continue;
                 double dist = Dist(d.X, d.Z, e.X, e.Z);
                 if (dist < dd) { dd = dist; decoy = d; }
             }
