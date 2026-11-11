@@ -420,6 +420,7 @@ public partial class Game
             // (a tell half-way through, a blow as it lands, a stun and a channel a beat in)
             double at = m switch { "windup" => 0.55, "cleave" => 0.12, "chargeWind" => 0.7, "charge" => 0.25, "stun" => 0.4, "channel" => 1.0, "dead" => 1.0, _ => -1 };
             if (at >= 0) Shots.Want($"ford_{t}_{m}", at);
+            if (m == "stun") Shots.Want($"ford_{t}_stun2", 2.0);
         }
         else if (note.StartsWith("ford touch") || note.StartsWith("ford cleave")) Shots.Want($"ford_{t}_{note.Split(' ')[1]}", 0.02);
     }

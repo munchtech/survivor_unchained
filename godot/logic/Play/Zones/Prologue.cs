@@ -62,6 +62,9 @@ public sealed partial class Prologue : ZoneRuntime
         public List<double> Thresholds = [0.7, 0.4];
         /// <summary>(M3) The cleave's and the charge lane's marked blows (Battle.EnemyBlow, OwnMark): the hands read them.</summary>
         public Battle.EnemyBlow? Cleave, Lane;
+        /// <summary>(B1) The windup's swing already shown to the eye; the mode last ticked, and the charge's tell standing.</summary>
+        public bool SlashShown, TellUp;
+        public string Last = "";
     }
 
     static readonly double[] Ward = [1, 0.7, 0.55, 0.4];
@@ -936,7 +939,9 @@ public sealed partial class Prologue : ZoneRuntime
     {
         if (B == null || Now != Stage.Boss || ai.Mode is "dead" or "sleep" or "wake") return;
         if (PaceNotes.Count < 200) PaceNotes.Enqueue($"ford staggered t={B.Time:0.00} mode={ai.Mode}");
-        if (ai.Mode == "stun") { ai.T = Math.Min(ai.T, -0.5); return; }
+        // (B1 judge: a stagger in a stun stretched one to 7.3 s against 4.0: while he reels a stagger does nothing, no
+        // longer time and no second buckle)
+        if (ai.Mode == "stun") return;
         if (ai.Mode == "channel")
         {
             if (bar != null) Bar(bar with { Channel = null });
@@ -949,6 +954,7 @@ public sealed partial class Prologue : ZoneRuntime
         wardenView.SetPose("stunned");
     }
 
+    const string ChargeTell = "It lowers its head...";
     void EndLane() { if (ai.Lane != null) { ai.Lane.T = 0; ai.Lane = null; } }
     /// <summary>Whether his charge's first 6 m are open ground: a lit lamp in the way counts as open (he goes through it,
     /// Snuff); a wall, a broken post, a rock does not.</summary>
@@ -964,6 +970,20 @@ public sealed partial class Prologue : ZoneRuntime
             if (B.Collision.Blocked(x, z, e.Radius * 0.7, false)) return false;
         }
         return true;
+    }
+
+    /// <summary>Whether a lit lamp-pylon stands in the charge's first 4 m along the lane from where he is (B1 judge: a charge
+    /// bumped a lamp 4 frames in and stunned him): no run starts into one. A lamp further out is a lure that still works.</summary>
+    bool LampInLane(Enemy e, double dx, double dz)
+    {
+        for (int i = 0; i < pylons.Count; i++)
+        {
+            if (!litPylons[i]) continue;
+            double px = pylons[i].X - e.X, pz = pylons[i].Z - e.Z;
+            double along = px * dx + pz * dz, off = Math.Abs(px * dz - pz * dx);
+            if (along > -0.5 && along <= 4 && off < e.Radius + 0.9) return true;
+        }
+        return false;
     }
 
     /// <summary>(the trace) How far a point lies off the charge's drawn lane's middle line, metres (-1: no lane).</summary>
@@ -990,6 +1010,18 @@ public sealed partial class Prologue : ZoneRuntime
         if (B == null) return true;
         var p = B.Player;
         TraceMode(e);
+        // (B1 judge) Cues on a mode's change, once: the charge's tell put away when the charge is over (it stood 0.4 s into the
+        // stun after it), and a reeling "Dazed" with the break's sound on entering a stun (the channel's own break says its own).
+        if (ai.Mode != ai.Last)
+        {
+            if (ai.TellUp && ai.Mode is not ("chargeWind" or "charge")) { ai.TellUp = false; B.Events.Emit(new Ev.Hush { Speaker = "@said:" + ChargeTell }); }
+            if (ai.Mode == "stun")
+            {
+                B.Events.Emit(new Ev.Bark { X = e.X, Z = e.Z, Text = "Dazed" });
+                if (ai.Last != "channel") B.Events.Emit(new Ev.Sound { Id = "ford.channel_broken", X = e.X, Z = e.Z });
+            }
+            ai.Last = ai.Mode;
+        }
         ai.T += dt;
         e.Vx = e.Vz = 0;
         double dx = p.X - e.X, dz = p.Z - e.Z;
@@ -1039,7 +1071,7 @@ public sealed partial class Prologue : ZoneRuntime
                 }
                 if (dist < 5.2 && ai.CleaveCd <= 0)
                 {
-                    ai.Mode = "windup"; ai.T = 0; e.AnimT = 0; ai.DirX = dx / dist; ai.DirZ = dz / dist;
+                    ai.Mode = "windup"; ai.T = 0; e.AnimT = 0; ai.SlashShown = false; ai.DirX = dx / dist; ai.DirZ = dz / dist;
                     ai.HitX = e.X + ai.DirX * 3; ai.HitZ = e.Z + ai.DirZ * 3;
                     B.Events.Emit(new Ev.Telegraph { Id = e.Id * 10 + 1, Shape = TelegraphShape.Cone, X = e.X, Z = e.Z, Radius = 6.4, Angle = Math.Atan2(ai.DirZ, ai.DirX), Arc = 120 * Math.PI / 180, Duration = 1.05, Hostile = true, Boss = true });
                     // (M3: the cleave is a marked blow the hands read; it lands on its own clock, as his did: a 120 degree frontal sweep, 6.4 m,
@@ -1052,7 +1084,7 @@ public sealed partial class Prologue : ZoneRuntime
                 }
                 // (a lane blocked at his feet is no charge: B1 run3's first wound up 1.3 s and stopped dead in 0.02 s, a stagger
                 // with nothing hit; he walks on and tries again shortly)
-                if (dist > 6.5 && ai.ChargeCd <= 0 && !LaneClear(e, dx / dist, dz / dist)) ai.ChargeCd = 1.5;
+                if (dist > 6.5 && ai.ChargeCd <= 0 && (!LaneClear(e, dx / dist, dz / dist) || LampInLane(e, dx / dist, dz / dist))) ai.ChargeCd = 1.5;
                 if (dist > 6.5 && ai.ChargeCd <= 0)
                 {
                     ai.Mode = "chargeWind"; ai.T = 0; e.AnimT = 0; ai.DirX = dx / dist; ai.DirZ = dz / dist;
@@ -1064,7 +1096,8 @@ public sealed partial class Prologue : ZoneRuntime
                     ai.Lane = B.Blow(new Battle.EnemyBlow { OwnMark = true, Shape = TelegraphShape.Line, X = e.X, Z = e.Z, X1 = e.X + ai.DirX * len, Z1 = e.Z + ai.DirZ * len,
                         Width = 2 * laneHalf, Delay = 1.3 + len / 17, Source = "The Ford-Warden", From = e });
                     wardenView.SetPose("charge-windup");
-                    B.Events.Emit(new Ev.Bark { X = e.X, Z = e.Z, Text = "It lowers its head...", Boss = true });
+                    B.Events.Emit(new Ev.Bark { X = e.X, Z = e.Z, Text = ChargeTell, Boss = true });
+                    ai.TellUp = true;
                     return true;
                 }
                 if (dist > e.Radius + 1.2)
@@ -1080,13 +1113,18 @@ public sealed partial class Prologue : ZoneRuntime
                 return true;
             }
             case "windup":
+                // (B1 judge at 1:1: the swing drawn at the landing trailed the blade by 40-60 degrees and sat at the rim: it is
+                // shown 0.1 s ahead, one fan from his hands to the reach, crossed in 0.12 s as the blade comes down)
+                if (ai.T >= 0.95 && !ai.SlashShown)
+                {
+                    ai.SlashShown = true;
+                    B.Events.Emit(new Ev.Slash { X = e.X, Z = e.Z, Angle = Math.Atan2(ai.DirZ, ai.DirX), Arc = 120 * Math.PI / 180, Reach = 6.4, School = School.Physical, Side = -1, Inner = 1.0, Sweep = 0.12 });
+                }
                 if (ai.T >= 1.05)
                 {
                     ai.Mode = "cleave"; ai.T = 0; e.AnimT = 0;
                     wardenView.SetPose("cleave");
-                    // (its blow is ai.Cleave's: Battle.UpdateBlows lands it)
-                    // (a level sweep right to left across his front, no ground slam: Side -1 runs toward the lesser angle, his left)
-                    B.Events.Emit(new Ev.Slash { X = e.X, Z = e.Z, Angle = Math.Atan2(ai.DirZ, ai.DirX), Arc = 120 * Math.PI / 180, Reach = 6.4, School = School.Physical, Side = -1 });
+                    // (its blow is ai.Cleave's: Battle.UpdateBlows lands it; the swing's picture went up at 0.95 s, above)
                     B.Events.Emit(new Ev.Shake { Amount = 0.55 });
                 }
                 return true;
@@ -1095,7 +1133,17 @@ public sealed partial class Prologue : ZoneRuntime
                 return true;
             case "chargeWind":
                 e.Facing = Math.Atan2(ai.DirZ, ai.DirX);
-                if (ai.T >= 1.3) { ai.Mode = "charge"; ai.T = 0; e.AnimT = 0; wardenView.SetPose("charge"); }
+                if (ai.T >= 1.3)
+                {
+                    // (B1 judge: a charge bumped a lamp 4 frames in: the run's last look, on the final aim; a lamp in the way
+                    // fizzles it like a blocked lane, no stun)
+                    if (LampInLane(e, ai.DirX, ai.DirZ))
+                    {
+                        ai.Mode = "walk"; ai.ChargeCd = 1.5; EndLane(); wardenView.Release();
+                        return true;
+                    }
+                    ai.Mode = "charge"; ai.T = 0; e.AnimT = 0; wardenView.SetPose("charge");
+                }
                 return true;
             case "charge":
             {

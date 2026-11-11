@@ -94,6 +94,9 @@ public static class Ev
         /// is true to what she plays and a chain's cuts each name theirs; any other cut alternates from the weapon's own count
         /// (WeaponInst.Cuts; its first is -1). The view's old crescents mirror from this; the grip's trail follows the blade.</summary>
         public int Side = -1;
+        /// <summary>(opt-in; 0 = the old crescent) A fan from this radius (metres, his hands) out to Reach, drawn as one sweep with no
+        /// rings and no rim mark, crossed in Sweep seconds (0 = 0.12): a boss's blow as the swing itself (BattleFx.Fan).</summary>
+        public double Inner, Sweep;
         /// <summary>How many it struck, and the one of them nearest the cut's line (a body within 0.7 m of her only when no
         /// other was struck): where the view draws the contact; set as the cut lands.</summary>
         public int Struck; public double HitX, HitZ;

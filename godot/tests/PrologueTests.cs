@@ -601,6 +601,85 @@ public class PrologueTests
         Assert.Equal(hurt, s.B.Player.Hp < hp);
     }
 
+    /* B1 judge round: stagger in a stun, a lamp in the charge's lane, the cleave's swing shown early, the daze cue and the tell put away. */
+
+    (Setup s, Enemy w, object ai, System.Type at) AtFord()
+    {
+        var s = Make(draft: true);
+        var ford = s.Meta.Place("LOWFORD", "ford");
+        typeof(Prologue).GetMethod("Go", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.Invoke(s.Zone, [Prologue.Stage.ToFord]);
+        Stand(s, ford.X, ford.Z + 12);
+        Run(s, 7.1);
+        Assert.Equal(Prologue.Stage.Boss, s.Zone.Now);
+        var w = s.B.Enemies.Living().Single(e => e.Tag == "warden");
+        var ai = typeof(Prologue).GetField("ai", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.GetValue(s.Zone)!;
+        return (s, w, ai, ai.GetType());
+    }
+
+    [Fact]
+    public void A_stagger_while_the_Warden_is_stunned_does_nothing()
+    {
+        var (s, w, ai, at) = AtFord();
+        at.GetField("Mode")!.SetValue(ai, "stun");
+        at.GetField("T")!.SetValue(ai, 1.2);
+        s.B.Hooks.OnBossStagger!(w);
+        Assert.Equal(1.2, (double)at.GetField("T")!.GetValue(ai)!);
+        Assert.Equal("stun", (string)at.GetField("Mode")!.GetValue(ai)!);
+    }
+
+    [Theory]
+    [InlineData(2.5, false)]
+    [InlineData(8.0, true)]
+    public void A_charge_never_starts_into_a_lamp_within_4_m_but_a_far_lamp_is_a_lure(double ahead, bool breaks)
+    {
+        var (s, w, ai, at) = AtFord();
+        var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+        var pylons = (System.Collections.Generic.List<(double X, double Z, int Light, string Flame)>)typeof(Prologue).GetField("pylons", flags)!.GetValue(s.Zone)!;
+        var lit = (bool[])typeof(Prologue).GetField("litPylons", flags)!.GetValue(s.Zone)!;
+        for (int i = 0; i < pylons.Count; i++) pylons[i] = (w.X + 80 + i * 5, w.Z + 80, pylons[i].Light, pylons[i].Flame);
+        pylons[0] = (w.X + ahead, w.Z, pylons[0].Light, pylons[0].Flame);
+        at.GetField("Mode")!.SetValue(ai, "walk");
+        at.GetField("Hold")!.SetValue(ai, 0.0);
+        at.GetField("ChargeCd")!.SetValue(ai, 0.0);
+        at.GetField("CleaveCd")!.SetValue(ai, 99.0);
+        at.GetField("ChannelCd")!.SetValue(ai, 99.0);
+        bool charged = false; double x0 = w.X, z0 = w.Z;
+        for (int i = 0; i < 60 * 5; i++)
+        {
+            Stand(s, x0 + 14, z0); if (ahead < 4) { w.X = x0; w.Z = z0; }
+            Run(s, 1 / 60.0);
+            if ((string)at.GetField("Mode")!.GetValue(ai)! is "charge") charged = true;
+            Stand(s, x0 + 14, z0); if (ahead < 4) { w.X = x0; w.Z = z0; }
+        }
+        Assert.Equal(breaks, charged);
+        Assert.Equal(breaks, !lit[0]);
+    }
+
+    [Fact]
+    public void The_cleaves_swing_is_shown_a_tenth_early_as_one_fan_and_a_stun_says_dazed_once()
+    {
+        var (s, w, ai, at) = AtFord();
+        at.GetField("CleaveCd")!.SetValue(ai, 0.0);
+        at.GetField("Hold")!.SetValue(ai, 0.0);
+        Stand(s, w.X + 4.5, w.Z);
+        double slashAt = -1; int slashes = 0;
+        for (int i = 0; i < 60 * 4 && slashes == 0; i++)
+        {
+            Stand(s, w.X + 4.5, w.Z);
+            s.Zone.Step(1 / 60.0); s.B.Tick(1 / 60.0, 0, 0);
+            foreach (var ev in s.B.Events.Drain()) if (ev is Ev.Slash { Inner: > 0 } sl) { slashes++; slashAt = (double)at.GetField("T")!.GetValue(ai)!; Assert.Equal(1.0, sl.Inner); Assert.Equal(0.12, sl.Sweep); Assert.Equal(-1, sl.Side); }
+            s.Zone.Frame(1 / 60.0);
+        }
+        Assert.Equal(1, slashes);
+        Assert.InRange(slashAt, 0.94, 1.0);
+        Assert.Equal("windup", (string)at.GetField("Mode")!.GetValue(ai)!);
+        // a stun: "Dazed" once, however often he is staggered in it
+        s.B.Hooks.OnBossStagger!(w);
+        int dazed = 0;
+        for (int i = 0; i < 30; i++) { s.B.Hooks.OnBossStagger!(w); Stand(s, w.X + 4.5, w.Z); s.Zone.Step(1 / 60.0); s.B.Tick(1 / 60.0, 0, 0); dazed += s.B.Events.Drain().Count(ev => ev is Ev.Bark { Text: "Dazed" }); }
+        Assert.Equal(1, dazed);
+    }
+
     [Fact]
     public void Falling_here_is_forgiven()
     {

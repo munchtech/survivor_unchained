@@ -222,8 +222,11 @@ public partial class WardenView : Node3D, IBossView
             // there creeping to the top (0.33) so the blow is plainly coming, then the strike (0.33..Contact) over the
             // windup's last 0.2 s, down in the circle as the blow lands.
             double t = e.AnimT;
-            double c = t < 0.45 ? 0.30 * Mathf.SmoothStep(0, 1, (float)(t / 0.45)) : t < 0.85 ? 0.30 + 0.03 * (t - 0.45) / 0.4
-                : 0.33 + (Contact - 0.33) * Math.Min(1, (t - 0.85) / 0.2);
+            // (B1 judge at 1:1: the blade was still high on the landing frame and reached her height ~0.07 s later, so the
+            // schedule runs 0.09 s early, proportionately: contact at 0.96 s of the windup's 1.05, down through her height
+            // by the sim's landing)
+            double c = t < 0.42 ? 0.30 * Mathf.SmoothStep(0, 1, (float)(t / 0.42)) : t < 0.77 ? 0.30 + 0.03 * (t - 0.42) / 0.35
+                : 0.33 + (Contact - 0.33) * Math.Min(1, (t - 0.77) / 0.19);
             view.Drive("Sword_Attack", c, dt);
         }
         else if (e != null && pose == "cleave")
@@ -243,7 +246,7 @@ public partial class WardenView : Node3D, IBossView
             if (want == 0 && lean < 1e-3) lean = 0;
             view.Rotation = new Vector3((float)lean, view.Rotation.Y, view.Rotation.Z);
         }
-        if (e != null && Args.Has("pace") && pose is "windup" or "cleave" or "charge-windup" or "charge" or "stunned" && (pose != "stunned" || e.AnimT < 1.2)) Trace(e, facing, dt);
+        if (e != null && Args.Has("pace") && pose is "windup" or "cleave" or "charge-windup" or "charge" or "stunned") Trace(e, facing, dt);
         flash = Math.Max(flash - dt * 6, e?.Flash ?? 0);
         foreach (var m in skin) m.Emission = new Color(1f, 0.8f, 0.6f) * (float)(flash * 0.25);
         double g = Glow * (pose == "sleep" ? 0.35 : 1) * (pose == "dead" ? 0 : 1);
@@ -284,7 +287,7 @@ public partial class WardenView : Node3D, IBossView
             face = $" face={d.Normalized().Dot(f):0.00}";
         }
         var lane = new Vector3((float)e.Vx, 0, (float)e.Vz);
-        GD.Print($"fordview {pose} f={Engine.GetFramesDrawn()} at={e.AnimT:0.000} clip={a.CurrentAnimation} pos={a.CurrentAnimationPosition:0.000} ss={a.SpeedScale:0.00} dt={dt:0.000} lean={lean:0.00} fwd={bz.Normalized().Dot(f):0.00}{face}{(lane.Length() > 0.1 ? $" lane={lane.Normalized().Dot(f):0.00}" : "")}{blade}");
+        GD.Print($"fordview {pose} f={Engine.GetFramesDrawn()} at={e.AnimT:0.000} clip={a.CurrentAnimation} pos={a.CurrentAnimationPosition:0.000} ss={a.SpeedScale:0.00} dt={dt:0.000} x={e.X:0.00} z={e.Z:0.00} ang={facing:0.00} lean={lean:0.00} fwd={bz.Normalized().Dot(f):0.00}{face}{(lane.Length() > 0.1 ? $" lane={lane.Normalized().Dot(f):0.00}" : "")}{blade}");
     }
 
     /// <summary>A cinematic's frame: the eyes and the lamp at the glow it sets,

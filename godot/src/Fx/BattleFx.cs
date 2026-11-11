@@ -1509,6 +1509,9 @@ public partial class BattleFx : Node3D
                 case Ev.Muzzle e:
                     Release(e);
                     break;
+                case Ev.Slash e when e.Inner > 0:
+                    Fan(e);
+                    break;
                 case Ev.Slash e when e.Art != null:
                     Swing(e);
                     break;
