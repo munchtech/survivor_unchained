@@ -219,6 +219,8 @@ public static class People
         public HerPose? Pose;
         /// <summary>Her pelvis counter (B only; PelvisCounterModifier): PlayerView feeds it the upper clip's mean and blend.</summary>
         public PelvisCounterModifier? Counter;
+        /// <summary>Her lower-body turn (B only; LowerTurnModifier): PlayerView feeds it the eased turn.</summary>
+        public LowerTurnModifier? Turn;
         /// <summary>Her hair's meshes (one hairstyle), and its style.</summary>
         public readonly List<MeshInstance3D> Hair = new();
         public string HairStyle = "";
@@ -410,6 +412,10 @@ public static class People
             person.Counter = new PelvisCounterModifier { Frame = root };
             skel.AddChild(person.Counter);
             skel.MoveChild(person.Counter, 1);
+            // The lower-body turn right after the counter, so the counter still reads the gait's own pelvis (LowerTurnModifier: the order).
+            person.Turn = new LowerTurnModifier { Frame = root };
+            skel.AddChild(person.Turn);
+            skel.MoveChild(person.Turn, 2);
             if (P1Body.RigOf(skel).ShrugDriven) skel.AddChild(new HerShrug());
             // B's laws after every pose-writing modifier (P1Laws keeps itself there as more are added), then B's springs (P1Jiggle:
             // data/body/springs.json; HerJiggle stays A's) and her face

@@ -222,6 +222,9 @@ public partial class PlayerView : Node3D
     bool move2D;
     float aimFace;
     Vector2 move2dPos;
+    // The lower-body turn (LowerTurn): the eased yaw her pelvis takes (deg), and the mode it is in; the side clips, when her library has them.
+    float lowerDelta;
+    bool lowerBack, move2DSides, aimFacingNow;
     // Her velocity this frame and last (the lean reads her travel's curve, not her facing's turn).
     float velX, velZ, lastVelX, lastVelZ;
     // Standing and running, for her breaks and her breath.
@@ -325,8 +328,9 @@ public partial class PlayerView : Node3D
             // facing's frame on it. Any one missing: today's graph, unchanged. Points sit at the speeds the graph above plays by (Spd).
             var wn = own.Walk(person.Calling, person.Kind, false);
             var wb = wn?[own.Prefix.Length..];
-            if (wb != null && HasHer(wb + "_back") && HasHer(wb + "_left") && HasHer(wb + "_right") && walkNodeSpeed(wb) > 0.05f)
+            if (wb != null && HasHer(wb + "_back") && walkNodeSpeed(wb) > 0.05f)
             {
+                move2DSides = HasHer(wb + "_left") && HasHer(wb + "_right");
                 float vw = walkNodeSpeed(wb);
                 // Each directional point sits at its own clip's ground speed (the back ~1.3 m/s, the sides ~0.95), as the cast-move caps walk her (Sim/CastMove.cs).
                 float vb = walkNodeSpeed(wb + "_back"), vl = walkNodeSpeed(wb + "_left"), vr = walkNodeSpeed(wb + "_right");
@@ -338,8 +342,11 @@ public partial class PlayerView : Node3D
                 two.AddBlendPoint(idleNode, new Vector2(0, 0));
                 two.AddBlendPoint(walkNode, new Vector2(0, vw));
                 two.AddBlendPoint(new AnimationNodeAnimation { Animation = own.Prefix + wb + "_back" }, new Vector2(0, -vb));
-                two.AddBlendPoint(new AnimationNodeAnimation { Animation = own.Prefix + wb + "_left" }, new Vector2(-vl, 0));
-                two.AddBlendPoint(new AnimationNodeAnimation { Animation = own.Prefix + wb + "_right" }, new Vector2(vr, 0));
+                if (move2DSides)
+                {
+                    two.AddBlendPoint(new AnimationNodeAnimation { Animation = own.Prefix + wb + "_left" }, new Vector2(-vl, 0));
+                    two.AddBlendPoint(new AnimationNodeAnimation { Animation = own.Prefix + wb + "_right" }, new Vector2(vr, 0));
+                }
                 two.AddBlendPoint(runNode, new Vector2(0, runSpeed));
                 if (sprintSpeed > runSpeed * 1.05f && sprintNode.Animation != runNode.Animation) two.AddBlendPoint(sprintNode, new Vector2(0, sprintSpeed));
                 moveNode = two;
@@ -1110,6 +1117,7 @@ public partial class PlayerView : Node3D
         // Face where you are going, or where you just struck (she, moving,
         // keeps her legs' line and turns her back to the blow instead).
         aimHold -= (float)dt;
+        aimFacingNow = move2D && aimHold > 0 && p.Leap == null && p.DashT <= 0;
         if (time < flareFaceUntil)
         {
             // (a Flare's clip holds her on its line until ClipFree; she turns onto it over the press's crossfade)
@@ -1507,7 +1515,22 @@ public partial class PlayerView : Node3D
         {
             // Her velocity in her facing's frame (Move2D.Local: x right, y forward), eased as the ground speed is.
             var lv = SurvivorUnchained.Play.Move2D.Local(velX, velZ, Rotation.Y);
-            move2dPos = move2dPos.Lerp(new Vector2(lv.X, lv.Y), 1 - Mathf.Exp(-(TurnOld ? 10 : BlendRate) * dt));
+            var feed = new Vector2(lv.X, lv.Y);
+            // The lower-body turn (no side clips): aim-facing, the legs walk toward her travel (the pelvis yawed by lowerDelta), the node
+            // fed the forward or back walk at the speed along the turned legs' line. Otherwise delta eases out.
+            float dTarget = 0;
+            bool aimFacing = move2D && !move2DSides && (ActWalk != null || aimFacingNow);
+            float vs = feed.Length();
+            if (aimFacing && vs > SurvivorUnchained.Play.LowerTurn.IdleSpeed)
+            {
+                double th = Mathf.RadToDeg(Mathf.Atan2(-feed.X, feed.Y));
+                var lt = SurvivorUnchained.Play.LowerTurn.Solve(th, vs, lowerBack);
+                lowerBack = lt.Back; dTarget = (float)lt.Delta; feed = new Vector2(0, (float)lt.FeedY);
+            }
+            else if (move2D && !move2DSides && aimHold > 0) feed.X = 0;
+            lowerDelta = (float)SurvivorUnchained.Play.LowerTurn.Ease(lowerDelta, dTarget, dt);
+            if (person.Turn != null) person.Turn.Delta = lowerDelta;
+            move2dPos = move2dPos.Lerp(feed, 1 - Mathf.Exp(-(TurnOld ? 10 : BlendRate) * dt));
             tree.Set(BlendPosition, move2dPos);
         }
         float natural0 = Mathf.Lerp(runSpeed, sprintSpeed, sprintSpeed > runSpeed ? Mathf.SmoothStep(runSpeed * 1.1f, sprintSpeed * 0.95f, speed) : 0);

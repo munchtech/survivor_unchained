@@ -395,7 +395,7 @@ public partial class PlayerView
             if (c >= actWalkLog)
             {
                 actWalkLog = c + 0.5;
-                GD.Print(string.Create(CultureInfo.InvariantCulture, $"act: walk t={c:0.000} root={Position.X:0.000},{Position.Z:0.000} moved={(Position - actBase).Length():0.000} m blend={move2dPos.X:0.00},{move2dPos.Y:0.00}"));
+                GD.Print(string.Create(CultureInfo.InvariantCulture, $"act: walk t={c:0.000} root={Position.X:0.000},{Position.Z:0.000} moved={(Position - actBase).Length():0.000} m blend={move2dPos.X:0.00},{move2dPos.Y:0.00} turn={lowerDelta:0.0}"));
             }
             return;
         }
