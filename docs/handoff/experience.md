@@ -5,6 +5,39 @@ For a fresh successor. Read these first:
 2. `docs/team/experience.md`: the one-page status, which holds what's done, the next steps in order, and the verdicts.
 3. `docs/design/STORY_NIGHTS_AND_TIME.md`: the owner's decisions are at its top.
 
+## M6 tutorial (tutorial-m6, lead 4, 10 Nov): STATUS_LINE
+
+**State.** Branch tutorial-m6. Integration (origin/claude/vigilant-galileo-l6jqyx f2c5ac2f8) is in; nothing newer to merge as of this block. Full suite at 23a306734: 2138/0/11. Teach|Prologue tests pass 73/0 at the head. Runs: `survivorsunchained_inputs/scratch_m6/run4..run8/` (run.sh, run.log); shots `godot/.shots/m6r4_*` to `m6r8_*`.
+
+**Done (lead 4).**
+- **The day stall (m6r3, m6r4) was autopilot-only.** A dev `daystate` trace (every 2 s in Dawn/Exit under `--on teach`) showed she took the strongbox and then wobbled for 1000 s in the nook at (46-49,-84..-87). GroundPath routing to `road_ambush` at (22,-86.5) never got her out. The wolves' ring was never reached, so neither A13 nor day_gap could queue. A player walks out of there, and the ambush isn't needed for the gate. Fix: Autopilot logs `autopilot: day stuck` after 25 s without 4 m of ground and takes the gate road. In m6r5 the ring sprang at 384 and A13 Leap showed (she was level 4, the Leap on seat 4), then the Waystation.
+- **A13b (Shield Charge) does not come in the prologue.** The charge seats at level 5 (taught_builds.json). The autopilot leaves the Low Ford at level 4, and the zone sim's bots reach 5 at the gate off the wolves, which is the last beat, so no pack is left. It already gates on the seat and the next pack within 10 m, so it fires at the first pack after that level-up, in the zones after. Logged as a later-zone beat; no change.
+- **A2 swing** was lost "gone" twice: under the move arrow as the Rising closed (m6r4), and at the screen's foot (m6r5). It is now asked until the Intro and tries the four nearest foes. **A4 Resolve now waits on it being seen** (else from the Barrow on). Its `after:` lapsed when the swing's foes fell, so in m6r6 Resolve came 18 s before Swing. m6r7: Swing 65.6, Resolve 67.2, Groundbreaker 78.0. (m6r8 reached the Watch-post at 69.8, before Swing at 74.7, so the fallback moved from the Post to the Barrow; tested, not rerun.)
+- **A11b flare** never queued in m6r4: the autopilot spent the lent Flare on C02's hand-back. `GameTeach.HoldFlare` now also holds it at the Warden until A11b is seen (autopilot only). It showed in m6r5 at 181.8. A11b's aim is now every lit lamp, nearest first, with Safe. In m6r5 the nearest lamp was off the top of the screen and the ring sat on the Warden's bar.
+- **A13's Leap point** lay 9 m north, at the screen's top edge under the watch's bark (m6r5), then under the tracker at the right edge (m6r6). `OutOfRing` now offers every point that is beyond the wolves, within 5.5 m of her up or down the screen, and on open ground, turned 30 degrees at a time. The Aim's Safe takes the first one well on screen.
+- **A Safe target's ring clears the HUD** (`GameTeach.RingFloor` 870 px), both for the things it rings and for a point ringed alone. m6r4's A5 captain ring sat on the Drowned Girl, and m6r7's Leap ring sat on the right-hand figure.
+- **The stand clock is retired (the owner, 10 Nov).** `world_tiers.json` `standOn: false`, read by `WorldTiers` (`Tier.Stand` is null, and the rows are kept as `Tier.StandRow`). Story fights (Journey, PostMenu) and maps (MapRun) read none. The arena's director keeps its own stand: it is a different switch, untouched. FighterFeetTests now reads `StandRow`, since the mechanism is kept. In the zone sim, II standing went from 3 falls (worst 8; Post 5, Exit 19, Boss 2) to 3 (worst 4; Exit 18, Boss 2). The clock's falls were the Watch-post ones. The rest is the day's rings, a get-out beat. Noted in `docs/balance/zone_lowford.md`, which the sim regenerated.
+- **Tally: out of the demo** (main's ruling: no new HUD area). `Prologue.TallyOn = false`; TUTORIAL_COPY says so. **UI row for later:** a kills-and-gold tally chip on the ARPG HUD (`hud.TallyArea`), then `TallyOn = true`.
+- **A5a stays a stub.** skills-p7 (f317a2f37, WickBook.LampOffered/LampLit) is not in integration. Wiring it is lead 2's plan below: TeachSeams.LampOffered set from WickBook.LampOffered.
+- TUTORIAL_COPY's A2/A4/A4b/A5 trigger cells now match the build.
+- Run 4 order (night): A3 28.6, A1 move 30.1, A4 44.6, A3b 57.9, A4b 83.0, elite, dash, draught, A5 138.7, post, raiser, lamps 209.9; day_charge 335.7.
+
+**Runs m6r6 to m6r8 (the head less the Barrow fallback): the whole prologue lands.** In every one the autopilot finished the Low Ford, ringed the wolves (leap 392-424), reached the town (`prologue.done=True`), and C03 ran. I looked at the 1:1 frames myself:
+- Swing rings a near foe.
+- Captain and Raiser are ringed on screen, clear of the HUD.
+- The Flare rings a lit lamp and the art.
+- The Leap point lies beyond the wolves, on screen and clear of the HUD. The red arcs in that frame are the Flare's boom, which the autopilot spends as the ring springs.
+- The autopilot still loses some "gone" freezes (Swing, Dash, Captain) because her foes fall before the freeze's gap or a bark ends. Every one came back later. Elite, Dash and Draught all showed in m6r6 and m6r7.
+
+**No flow judge (my call, per the brief: only on a bet on PASS).** Under "would this frame ship in a AAA game as it stands, watched at 1:1", the frames fail on things outside this lane: the night's darkness (look-l1) and the leap's dark gatehouse. Every callout is placed and timed right, but I would not bet on a whole-frame PASS. The flow wants the owner's own play of demo-arpg1.
+
+**Known, not fixed.**
+- With `--fixed-fps 30` the game runs about 2x real time, so read-arrow timings (2.5 s real) hold freezes about twice as long in game seconds. A2's late show is partly that.
+- Freezes answered by a key repeat the key in the hint ("LMB to swing" under "Hold LMB to swing"). This is the Teach system's overHint pattern, kept.
+- The scene's darkness belongs to the look lane, not this one.
+
+**Cost.** Lead 4 used about 0.24M. The lane is about 1.58M.
+
 ## M6 tutorial (tutorial-m6, lead 3, 10 Nov): HANDOFF READY at the commit carrying this block. Not MR READY: the callout fixes need run 4, then the frames, the judge and the MR.
 
 **State.** Branch tutorial-m6 at 695ea5965 plus this block. Built; the Teach|Prologue tests pass 73/0. The full suite has NOT run. Integration is NOT merged since lead 2. Nothing is judged.
