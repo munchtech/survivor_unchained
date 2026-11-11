@@ -27,8 +27,8 @@
   },
   "ducks": {
     "lead": {
-      "sfx": 0.5,
-      "seconds": 0.09
+      "sfx": 0.32,
+      "seconds": 0.12
     },
     "talk": {
       "music": 0.6,

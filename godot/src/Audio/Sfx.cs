@@ -30,7 +30,7 @@ public static partial class Sfx
     public static void Hit(School school, bool crit, Where w = default, Family? family = null, bool lead = false)
     {
         // (A lead hit has its own gate, so the crowd's hits can never take its slot.)
-        if (A is not { } a || !(lead ? a.Gate("hit.lead", 3, 60) : a.Gate("hit", 7, 70))) return;
+        if (A is not { } a || !(lead ? a.Gate("hit.lead", 3, 60) : a.Gate("hit", 5, 70))) return;
         using var _lead = Synth.LeadFor(lead);
         double pan = w.Pan, g = 0.5 + 0.5 * w.Near;
         // Recorded blows first: a physical blow by what it struck (hit.bone.crit, hit.bone, hit.flesh), the rest by school.
@@ -113,7 +113,9 @@ public static partial class Sfx
     {
         using var _lead = Synth.LeadFor(elite || boss);
         // (A boss's fall is never lost to the crowd's gate: it falls with its escort, often in the same blow.)
-        if (A is not { } a || !boss && !a.Gate("kill", 5, 90)) return;
+        // (F1 lead 18: a crowd going down is told by its first three a breath, as its light is (BattleFx killBudget); at five a
+        // breath the crowd's falls sat level with her heavy blow in the hit band, 32 dying a second, f1_feel_b)
+        if (A is not { } a || !boss && !(elite ? a.Gate("kill.elite", 3, 90) : a.Gate("kill", 3, 90))) return;
         double pan = w.Pan, g = 0.5 + 0.5 * w.Near;
         // Recorded: what fell by its material (a burst, if it was one), and on top of it, never in its place, the elite's or the boss's.
         string m = SoundBank.MaterialOf(family);

@@ -4,7 +4,7 @@
 
 The run: the game with `--wav TAPE.wav --stems --kill-trace` (Synth.cs writes TAPE_sfx.wav ... and TAPE_lead.wav, the lead
 voices alone; BattleFx prints `[kill-trace] tape=S kills=K heavy=H living=N` a frame that kills or lands a heavy blow).
-For each heavy-blow frame: the lead stem against the rest of the effects (sfx minus lead) in the 0-80 ms after it, broadband
+For each heavy-blow frame: the lead stem against the rest of the effects (sfx minus lead) in the 0-60 ms from its onset after it, broadband
 and in the 1-6 kHz band the ear finds a hit in; "dying" = kills within 0.5 s either side. Prints the spread, the dense
 moments' numbers (dying >= --dense, else the ten densest) and the most living at once.
 """
@@ -50,11 +50,17 @@ out = []
 for t, k, h, liv in rows:
     if h == 0:
         continue
-    i0, i1 = int(t * rate), int((t + 0.08) * rate)
-    if i1 > n or i1 - i0 < 10:
+    # (aligned on the lead voice's own onset: the first sample within 0.1 s of the trace at a tenth of that span's peak)
+    j0, j1 = int(max(0, t - 0.01) * rate), int((t + 0.1) * rate)
+    if j1 > n:
         continue
-    if np.max(np.abs(lead[i0:i1])) < 1e-4:
-        continue  # (no lead voice sounded: a gate took it; counted below)
+    seg = np.abs(lead[j0:j1])
+    if seg.max() < 1e-4:
+        continue  # (no lead voice sounded: a gate took it)
+    i0 = j0 + int(np.argmax(seg > 0.1 * seg.max()))
+    i1 = i0 + int(0.06 * rate)
+    if i1 > n:
+        continue
     dying = int(ks[(ts >= t - 0.5) & (ts <= t + 0.5)].sum())
     out.append(dict(t=t, dying=dying, living=liv, snr=db(lead[i0:i1]) - db(rest[i0:i1]), snr_b=db(lead_b[i0:i1]) - db(rest_b[i0:i1]),
                     master=db(master[i0:i1])))
@@ -64,7 +70,7 @@ print(f"frames traced {len(rows)}, heavy-blow frames {heavy_frames}, with a lead
 if not out:
     sys.exit(0)
 s = np.array([o["snr"] for o in out]); sb = np.array([o["snr_b"] for o in out])
-print(f"her heavy hit over the rest of the effects, 0-80 ms: broadband median {np.median(s):+.1f} dB (p10 {np.percentile(s, 10):+.1f}), "
+print(f"her heavy hit over the rest of the effects, 0-60 ms from its onset: broadband median {np.median(s):+.1f} dB (p10 {np.percentile(s, 10):+.1f}), "
       f"1-6 kHz median {np.median(sb):+.1f} dB (p10 {np.percentile(sb, 10):+.1f})")
 dense = [o for o in out if o["dying"] >= a.dense] or sorted(out, key=lambda o: -o["dying"])[:10]
 label = f"dying >= {a.dense}" if any(o["dying"] >= a.dense for o in out) else "the ten densest (none reached --dense)"

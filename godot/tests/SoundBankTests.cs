@@ -102,8 +102,8 @@ public class SoundBankTests
         Assert.False(d.Events["b"].Lead);
         Assert.Equal(0.4, d.Duck("lead", "sfx", 0.5));
         Assert.Equal(0.09, SoundBankData.Parse("{}").Duck("lead", "seconds", 0.09));
-        Assert.Equal(0.5, Real().Duck("lead", "sfx", 1));
-        Assert.Equal(0.09, Real().Duck("lead", "seconds", 1));
+        Assert.Equal(0.32, Real().Duck("lead", "sfx", 1));
+        Assert.Equal(0.12, Real().Duck("lead", "seconds", 1));
     }
 
     [Fact]
