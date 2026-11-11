@@ -289,7 +289,7 @@ public partial class Hits : Node3D
     }
 
     /// <summary>As Text, saying which of the pool's labels it took.</summary>
-    int Show(Vector3 at, string text, Color color, int size)
+    int Show(Vector3 at, string text, Color color, int size, bool placed = false)
     {
         int i = nextNumber++ % numbers.Count;
         Untally(i);
@@ -300,7 +300,8 @@ public partial class Hits : Node3D
         numA[i] = color.A;
         numPunch[i] = 1;
         l.Scale = 1;
-        at = ClearOfNames(at + new Vector3(rng.RandfRange(-0.3f, 0.3f), 0, 0), text, size);
+        // (F1 27: a placed blow number is already over its victim, away from her: no jitter)
+        at = ClearOfNames(placed ? at : at + new Vector3(rng.RandfRange(-0.3f, 0.3f), 0, 0), text, size);
         at = AboveHud(at, text, size);
         at = BesideHer(at, text, size);
         l.GlobalPosition = at;

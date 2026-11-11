@@ -111,11 +111,13 @@ public partial class CrowdView : Node3D
         public float HoldF;
         /// <summary>A struck living body's recoil (F1 lead 26): drawn offset (m), where it started, its aim, and its clock (-1: none).</summary>
         public double RecX, RecZ, RecFromX, RecFromZ, RecToX, RecToZ, RecT = -1;
-        /// <summary>Warm-tint frames left, and the frame its hold began (struck-trace).</summary>
-        public int TintLeft, StruckFrame = -1;
+        /// <summary>The frame its hold began (the tint's clock; struck-trace), and the frame it was first seen dying (the launched rim).</summary>
+        public int StruckFrame = -1, KillFrame = -1;
+        /// <summary>The hit-react's clock (s, -1: none) and its flat unit aim away from her (F1 round 5).</summary>
+        public double ReactT = -1, ReactAX, ReactAZ;
     }
 
-    const double RecoilM = 0.5, RecoilOut = 0.10, RecoilHold = 0.05, RecoilBack = 0.35;
+    const double RecoilM = SurvivorUnchained.View.FeelRules.RecoilM, RecoilOut = 0.10, RecoilHold = 0.05, RecoilBack = 0.35;
     static readonly bool StruckTrace = SurvivorUnchained.Args.Has("struck-trace");
 
     /// <summary>A dying body's knockback (m/s) at or over this is carried by its fall (ThrowOf); under it, it falls in place.</summary>
@@ -203,6 +205,7 @@ public partial class CrowdView : Node3D
         if (gaits.TryGetValue(e.Id, out var g) && g.Seed == e.Seed)
         {
             x += g.OffX; z += g.OffZ;
+            if (e.State == EnemyState.Active) { x += g.RecX; z += g.RecZ; }
             if (e.State == EnemyState.Dying && g.Thrown) { x += g.ThrowX; z += g.ThrowZ; }
         }
         return (x, z);
@@ -926,15 +929,16 @@ public partial class CrowdView : Node3D
         bool alive0 = e.State == EnemyState.Active && !e.Boss;
         if (stopped && !g.WasHeld && alive0)
         {
-            g.RecT = -1; g.TintLeft = 2; g.StruckFrame = (int)Engine.GetFramesDrawn();
+            g.RecT = -1; g.ReactT = -1; g.StruckFrame = (int)Engine.GetFramesDrawn();
         }
         if (!stopped && g.WasHeld && alive0)
         {
             double ax = ex - (battle?.Player.X ?? ex), az = ez - (battle?.Player.Z ?? ez), al = Math.Sqrt(ax * ax + az * az);
             if (al < 1e-6) { ax = e.LastDx; az = e.LastDz; al = Math.Sqrt(ax * ax + az * az); }
-            if (al > 1e-6) { g.RecFromX = g.RecX; g.RecFromZ = g.RecZ; g.RecToX = ax / al * RecoilM; g.RecToZ = az / al * RecoilM; g.RecT = 0; }
+            if (al > 1e-6) { g.RecFromX = g.RecX; g.RecFromZ = g.RecZ; g.RecToX = ax / al * RecoilM; g.RecToZ = az / al * RecoilM; g.RecT = 0; g.ReactT = 0; g.ReactAX = ax / al; g.ReactAZ = az / al; }
         }
-        if (!alive0) { g.RecT = -1; g.RecX = g.RecZ = 0; g.TintLeft = 0; }
+        if (!alive0) { g.RecT = -1; g.RecX = g.RecZ = 0; g.ReactT = -1; }
+        if (alive0 && g.ReactT >= 0 && !stopped) { g.ReactT += dt; if (g.ReactT >= SurvivorUnchained.View.FeelRules.ReactEnd) g.ReactT = -1; }
         else if (g.RecT >= 0 && !stopped)
         {
             g.RecT += dt;
@@ -964,6 +968,23 @@ public partial class CrowdView : Node3D
         float push = e.LastCrit ? 0.45f : 0.25f;
         var at = new Vector3((float)(ex + shx + g.RecX + e.LastDx * f * push), (float)y, (float)(ez + shz + g.RecZ + e.LastDz * f * push));
         var basis = new Godot.Basis(Vector3.Up, (float)(Math.PI / 2 - g.Facing)) * Godot.Basis.FromScale(new Vector3(sc * (1 + f * 0.1f), sc * (1 - f * 0.1f), sc * (1 + f * 0.1f)));
+        // Hit-react (F1 round 5): lean the top away from her about the feet, and swing the head away. The body's forward is
+        // local +Z = world (cos F, 0, sin F) (Basis(Up, PI/2 - F) takes +Z to (cos F, 0, sin F)); a yaw phi moves it by
+        // phi * (fz, 0, -fx), so the side that swings it toward a is sign(fz*ax - fx*az). A lean psi about Up x a = (az, 0, -ax)
+        // takes Up to Up*cos + a*sin, so psi > 0 tips the top away.
+        if (alive0 && g.ReactT >= 0)
+        {
+            float rk = SurvivorUnchained.View.FeelRules.React(g.ReactT);
+            if (rk > 0)
+            {
+                float fx = (float)Math.Cos(g.Facing), fz = (float)Math.Sin(g.Facing), ax = (float)g.ReactAX, az = (float)g.ReactAZ;
+                float cr = fz * ax - fx * az;
+                float side = Math.Abs(cr) < 0.2f ? ((((long)(Math.Abs(e.Seed) * 1000)) & 1) == 0 ? 1f : -1f) : Math.Sign(cr);
+                var yaw = new Godot.Basis(Vector3.Up, side * rk * Mathf.DegToRad(SurvivorUnchained.View.FeelRules.ReactTurnDeg));
+                var lean = new Godot.Basis(new Vector3(az, 0, -ax), rk * Mathf.DegToRad(SurvivorUnchained.View.FeelRules.ReactLeanDeg));
+                basis = lean * yaw * basis;
+            }
+        }
         // (a falling body comes down onto the slope it will lie on: THE CORPSE REST RULE, eased in as it goes down)
         if (e.State == EnemyState.Dying && e.Disposition != Disposition.Ally)
         {
@@ -999,8 +1020,14 @@ public partial class CrowdView : Node3D
         if (hk.X < 0 && FlareBandRim?.Invoke(e.Id) is > 0 and var brm) hk = new Vector2(0, brm);
         if (hk.X < 0 && FlareMarkRim?.Invoke(e.Id) is > 0 and var mrk) hk = new Vector2(flare, mrk);
         if (hk.X >= 0) flare = hk.X;
-        bool tinted = g.TintLeft > 0 && alive0;
-        if (tinted) { hk = new Vector2(Math.Max(hk.X, 0.45f), Math.Max(hk.Y, 1f)); flare = hk.X; g.TintLeft--; }
+        long framesNow = (long)Engine.GetFramesDrawn();
+        bool tinted = alive0 && g.StruckFrame >= 0 && SurvivorUnchained.View.FeelRules.Tinted(framesNow - g.StruckFrame);
+        if (tinted) { hk = new Vector2(Math.Max(hk.X, 0.45f), Math.Max(hk.Y, 1f)); flare = hk.X; }
+        // The kill window (F1 round 5): a launched mass-kill body glows warm; every other rim is held down.
+        if (e.State == EnemyState.Dying && g.KillFrame < 0) g.KillFrame = (int)framesNow;
+        float lrim = e.State == EnemyState.Dying && e.Launch && e.MassKill ? SurvivorUnchained.View.FeelRules.LaunchRim(framesNow - g.KillFrame) : 0;
+        if (lrim > 0) { hk = new Vector2(Math.Max(hk.X, 0.18f * lrim), Math.Max(hk.Y, lrim)); flare = hk.X; }
+        else if (hk.X >= 0) hk.Y *= SurvivorUnchained.View.BattleFx.KillDimNow;
         if (StruckTrace && g.StruckFrame >= 0)
         {
             int fr = (int)Engine.GetFramesDrawn();

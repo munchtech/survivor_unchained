@@ -136,6 +136,10 @@ public partial class BattleFx
         var (p, r) = HitLightFit(at, PlayerPos, struck ? PoolStruckRange : PoolRange, AwayFromLens());
         l.Position = p;
         l.OmniRange = r;
+        // F1 lead 27 (r4 judge, m4b 358-359): the swing's pool fitted short of her (0.8 m) at its full 4.6 was a white-hot
+        // core ~70 px across between her and the victims, the loudest thing on screen. A pool that small is held to the
+        // victim flash's cap, so no pool's core clips white.
+        if (r <= PoolStruckRange + 1e-3f) oathPoolEnergy[i] = Mathf.Min(oathPoolEnergy[i], (Flare.Night ? PoolStruckNight : PoolStruckDay) * PoolScale);
         if (LightTrace) TraceLight("OathPool HitKit.cs", p, oathPoolEnergy[i], r, 90);
     }
 
@@ -169,6 +173,8 @@ public partial class BattleFx
     const int RimFlash = 2, RimFrames = 8;
     /// <summary>Struck bodies whose look has the rim only (the Shield Bash's).</summary>
     readonly System.Collections.Generic.HashSet<int> rimNoFlash = new();
+    /// <summary>Bodies struck by a crit: their warm rim comes back for FeelRules.TintFor frames once the pool fades (round 5).</summary>
+    readonly System.Collections.Generic.HashSet<int> rimCrit = new();
     /// <summary>(dev: --aa-norim, the beats without the rim, for an A/B)</summary>
     static readonly bool NoRim = Args.Has("aa-norim");
     /// <summary>A struck body's (flash blend, rim strength) this frame; (-1, 0) when it has none. By night the rim is
@@ -180,11 +186,16 @@ public partial class BattleFx
     {
         if (!struckRims.TryGetValue(id, out var at)) return new Vector2(-1, 0);
         long age = Engine.GetFramesDrawn() - at;
-        if (age < 0 || age >= RimFrames) { if (age >= RimFrames) { struckRims.Remove(id); rimNoFlash.Remove(id); } return new Vector2(-1, 0); }
+        bool crit = rimCrit.Contains(id);
+        long end = crit ? FeelRules.TintFrom + FeelRules.TintFor : RimFrames;
+        if (age < 0 || age >= end) { if (age >= end) { struckRims.Remove(id); rimNoFlash.Remove(id); rimCrit.Remove(id); } return new Vector2(-1, 0); }
+        if (crit && age >= RimFrames) return FeelRules.Tinted(age) ? new Vector2(0.12f, 0.6f) : new Vector2(-1, 0);
         // (r3 judge cuts: halved, 0.15 then 0.06; none on the Bash's stunned, whose wave, glints and throw carry the hit)
         float flash = age < RimFlash && !rimNoFlash.Contains(id) ? (age == 0 ? 0.15f : 0.06f) : 0;
         float k = 1 - age / (float)RimFrames;
-        return new Vector2(flash, k * k * (Flare.Night ? 0.55f : 1f));
+        var rimv = new Vector2(flash, k * k * (Flare.Night ? 0.55f : 1f));
+        if (crit && FeelRules.Tinted(age)) rimv = new Vector2(Math.Max(rimv.X, 0.12f), Math.Max(rimv.Y, 0.6f));
+        return rimv;
     }
 
     /// <summary>The shared hit kit at a struck body (`at`, chest height; `away` the blow's way, flat):
@@ -212,7 +223,7 @@ public partial class BattleFx
             along = rim.LengthSquared() > 0.01f ? new Vector3(-rim.Z, 0, rim.X).Normalized() * (oathMirror ? -1 : 1) : Vector3.Zero;
         }
         // (every struck body: a tight gold rim fading over 8 frames, not the old cream ghost; the frame it was first struck)
-        if (target >= 0 && !NoRim && !(struckRims.TryGetValue(target, out var was) && Engine.GetFramesDrawn() - was < RimFrames)) { struckRims[target] = Engine.GetFramesDrawn(); rimNoFlash.Remove(target); }
+        if (target >= 0 && !NoRim && !(struckRims.TryGetValue(target, out var was) && Engine.GetFramesDrawn() - was < RimFrames)) { struckRims[target] = Engine.GetFramesDrawn(); rimNoFlash.Remove(target); if (crit) rimCrit.Add(target); else rimCrit.Remove(target); }
         // The sparks (r3): on the full kits only (at most six bodies a swing; the rest of a crowd get the rim), 3-5 each:
         // 12-20 px x 2-3 px at the play camera, white-yellow head to an orange tail, flung on along the blow at 10-15 m/s
         // with drag, 4-6 frames. (They run through the hitstop on the FX's own clock: BattleFx.Update.)

@@ -329,6 +329,11 @@ public partial class BattleFx : Node3D
     /// distance to her, peak and range and the drawn frame, to find what lit a frame in a clip.</summary>
     static readonly bool LightTrace = Args.Has("light-trace");
 
+    /// <summary>F1 lead 27: the drawn frame of her last step that felled 4+ (Ev.Kill Mass); the kill window counts from it.</summary>
+    public static long MassKillFrame = -100000;
+    /// <summary>The dim on what is not the kill this frame (FeelRules.KillDim): 1 outside the kill window.</summary>
+    public static float KillDimNow => FeelRules.KillDim(Engine.GetFramesDrawn() - MassKillFrame);
+
     void TraceLight(string what, Vector3 at, float peak, float range, int line)
     {
         float near = new Vector2(at.X - PlayerPos.X, at.Z - PlayerPos.Z).Length();
@@ -1459,6 +1464,9 @@ public partial class BattleFx : Node3D
                 {
                     // (a body the Warden's line or heave kills falls, bursts and throws its gore as the view's blow lands)
                     float wkd = WgKillWait(e);
+                    // F1 lead 27: her step that fells 4+ opens the kill window (FeelRules.KillDim) and folds its numbers to
+                    // one. Her own blows only: the Warden's wave kills (crack-timed, judged right in round 4) stay as they are.
+                    if (e.Mass && wkd <= 0 && MassKillFrame != Engine.GetFramesDrawn()) { MassKillFrame = Engine.GetFramesDrawn(); Hits.MassStep = true; }
                     if (wkd > 0) WgLater(wkd, () => KillFx(e));
                     else KillFx(e);
                     break;
@@ -2136,7 +2144,7 @@ public partial class BattleFx : Node3D
             {
                 // Telegraphs: steady, a quick flare at the end.
                 bool flare = m.T > 0.85f && !stand;
-                m.Decal.Modulate = m.Color with { A = fk * (flare ? 1 : 0.75f + 0.1f * Mathf.Sin((float)now * 12)) };
+                m.Decal.Modulate = m.Color with { A = fk * KillDimNow * (flare ? 1 : 0.75f + 0.1f * Mathf.Sin((float)now * 12)) };
                 // (a danger mark's light breathes and flares as the blow lands: a decal's emission ignores its alpha)
                 // (the raising breathes slowly, +-15% at 0.5 Hz on the mark's own age; the rest keep the fast flicker)
                 if (m.Styled) m.Decal.EmissionEnergy = m.Energy * (flare ? (m.Danger ? DangerFlare : AmberFlare) : 0.88f + 0.12f * Mathf.Sin((float)now * 12)) * (m.Raise ? 1 + 0.15f * Mathf.Sin(Mathf.Tau * 0.5f * m.T * m.Life) : 1) * fk;
@@ -2145,7 +2153,7 @@ public partial class BattleFx : Node3D
                     om.SetShaderParameter("col", (m.Danger ? oc.LinearToSrgb() : new Color(Mathf.Min(1, oc.R), Mathf.Min(1, oc.G), Mathf.Min(1, oc.B))) with { A = 0.8f * m.Decal.Modulate.A });
                 // (the fill's copy at the fill's own light: a decal's emission is the texture x its modulate x its energy)
                 if (m.OverFill is { Visible: true } ovf0 && ovf0.MaterialOverride is ShaderMaterial fom)
-                    fom.SetShaderParameter("col", (Palette.TeleDanger * DangerFill).LinearToSrgb() with { A = 1 });
+                    fom.SetShaderParameter("col", (Palette.TeleDanger * DangerFill).LinearToSrgb() with { A = KillDimNow });
                 if (m.Progress && m.Fill != null && m.Length > 0)
                 {
                     // A lane's fill runs out along it, its front reaching the end as the blow lands.
@@ -2245,7 +2253,7 @@ public partial class BattleFx : Node3D
             if (n >= SurvivorUnchained.View.MarkPass.MaxMarks) continue;
             buf ??= new float[SurvivorUnchained.View.MarkPass.MaxMarks * 16];
             float fill = !m.Progress ? -1 : m.Length > 0 ? m.Length * m.T : m.Radius * m.T;
-            SurvivorUnchained.View.MarkPass.Pack(buf, n++, d.Position, m.Shape, ax, az, hx, hz, d.EmissionEnergy * (m.Soft ? SoftEnergy : 1) * (m.Styled ? 1 : Fk(m)), (m.Soft ? SoftBed : 1) * Fk(m), fill, m.P1, m.Slot, m.Roof, m.Pattern);
+            SurvivorUnchained.View.MarkPass.Pack(buf, n++, d.Position, m.Shape, ax, az, hx, hz, d.EmissionEnergy * (m.Soft ? SoftEnergy : 1) * (m.Styled ? 1 : Fk(m)) * KillDimNow, (m.Soft ? SoftBed : 1) * Fk(m) * KillDimNow, fill, m.P1, m.Slot, m.Roof, m.Pattern);
         }
         if (hts) markPass.SetHeights((float[])markHeights.Clone());
         markPass.Set(buf ?? Array.Empty<float>(), n, SurvivorUnchained.View.Water.Level);

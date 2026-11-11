@@ -18,6 +18,9 @@ public partial class Hits
     /// <summary>How long a target's hits keep summing into one number.</summary>
     const double Beat = 0.25;
     const int NewPerFrame = 4;
+    /// <summary>F1 lead 27: this frame's events held her step that felled 4+ (BattleFx, Ev.Kill Mass): its numbers fold
+    /// into one at Flush (FeelRules.Fold); cleared there.</summary>
+    public bool MassStep;
     /// <summary>The most numbers on screen at once (a big blow is told past it).</summary>
     const int LiveMost = 12;
     /// <summary>The nearest a number is drawn to her, in metres over the ground.</summary>
@@ -62,7 +65,17 @@ public partial class Hits
             if (labelOfTarget.TryGetValue(tallyOf[i], out int j) && j == i) labelOfTarget.Remove(tallyOf[i]);
             tallyOf[i] = int.MinValue;
         }
+        // (F1 27: the targets folded into this label let go with it, so none points at a label reused for another)
+        if (i < extraTargets.Length && extraTargets[i] is { } extra)
+        {
+            foreach (int x in extra)
+                if (labelOfTarget.TryGetValue(x, out int j) && j == i) labelOfTarget.Remove(x);
+            extra.Clear();
+        }
     }
+
+    /// <summary>Per label: the targets whose blows were folded into it (FeelRules.Fold), still summing into it.</summary>
+    readonly List<int>?[] extraTargets = new List<int>?[64];
 
     /// <summary>A hit on `target` for this frame's numbers (shown at Flush). Damage over
     /// time passes its school's colour as `dot`, and sums into a number of its own.</summary>
@@ -102,9 +115,36 @@ public partial class Hits
     /// number on every body, overlapping into a carpet).</summary>
     public void Flush(Vector3? her)
     {
+        bool mass = MassStep;
+        MassStep = false;
         if (waiting.Count == 0) return;
         // A blow that takes a fifth of what it struck is told first, then crits, then the biggest.
         waiting.Sort((a, b) => Heavy(a) != Heavy(b) ? (Heavy(a) ? -1 : 1) : a.Crit != b.Crit ? (a.Crit ? -1 : 1) : b.Amount.CompareTo(a.Amount));
+        // F1 27: the blows fold to at most NumbersPerStep numbers (one on a mass kill); damage over time is left as it is.
+        var blowAt = new List<int>();
+        var amounts = new List<double>();
+        for (int k = 0; k < waiting.Count; k++)
+            if (waiting[k].Tint == null) { blowAt.Add(k); amounts.Add(waiting[k].Amount); }
+        var keptBlows = FeelRules.Fold(amounts, mass, out int[] foldedInto);
+        var work = new List<(Waiting W, List<int>? Extra)>();
+        for (int k = 0; k < waiting.Count; k++)
+        {
+            var w = waiting[k];
+            if (w.Tint != null) { work.Add((w, null)); continue; }
+            int bi = blowAt.IndexOf(k);
+            if (foldedInto[bi] != bi) continue;
+            // (shown: carries the sum, the crit and the targets of all that folded into it)
+            List<int>? extra = null;
+            for (int m = 0; m < foldedInto.Length; m++)
+            {
+                if (m == bi || foldedInto[m] != bi) continue;
+                var f = waiting[blowAt[m]];
+                w.Crit |= f.Crit;
+                (extra ??= new List<int>()).Add(f.Target);
+            }
+            foreach (var (idx, sum) in keptBlows) if (idx == bi) w.Amount = sum;
+            work.Add((w, extra));
+        }
         int live = 0;
         young.Clear();
         for (int k = 0; k < numbers.Count; k++)
@@ -114,7 +154,7 @@ public partial class Hits
             if (numbers[k].T < 0.6f) young.Add(numbers[k].Label.GlobalPosition);
         }
         int shown = 0;
-        foreach (var w in waiting)
+        foreach (var (w, extra) in work)
         {
             // No exceptions: in a crowd of the small dead nearly every blow takes a fifth of one.
             if (shown >= NewPerFrame || live >= LiveMost) break;
@@ -129,12 +169,20 @@ public partial class Hits
                     at = new Vector3(h.X + off.X * ClearOfHer, at.Y, h.Z + off.Z * ClearOfHer);
                 }
             }
-            if (Crowded(at)) continue;
             var t = new Tallied { Target = w.Target, Sum = w.Amount, Born = clock, Crit = w.Crit, Heavy = w.MaxHp > 0 && w.Amount > w.MaxHp * 0.2, Tint = w.Tint };
-            int i = Show(Beside(at), "", Colors.White, 46);
+            bool blow = w.Tint == null;
+            var spot = blow ? Spot(at, her, ((int)Math.Round(t.Sum)).ToString(), HitsPlace.NumberSize(t.Crit, t.Heavy)) : Beside(at);
+            if (Crowded(spot)) continue;
+            int i = Show(spot, "", Colors.White, 46, blow);
             tallies[i] = t;
             tallyOf[i] = w.Target;
             labelOfTarget[w.Target] = i;
+            if (extra != null)
+            {
+                // (Show's Untally cleared the label's old extras: these are this number's own)
+                extraTargets[i] = extra;
+                foreach (int x in extra) labelOfTarget[x] = i;
+            }
             Restyle(i, t);
             Reclear(i);
             shown++;
@@ -179,6 +227,25 @@ public partial class Hits
     }
 
     readonly List<Vector3> young = new();
+
+    /// <summary>F1 27: where a blow number is born: over the victim's body, away from her, never across it
+    /// (FeelRules.NumberSpot on the body's screen box, at the victim's depth). `at` is about chest height.</summary>
+    Vector3 Spot(Vector3 at, Vector3? her, string text, int size)
+    {
+        var cam = GetViewport()?.GetCamera3D();
+        if (cam == null || cam.IsPositionBehind(at) || NumBox(cam, at, text, size) is not Rect2 nb) return Beside(at);
+        float k = GetViewport().GetVisibleRect().Size.Y / 1080f;
+        var side = cam.GlobalBasis.X * 0.55f;
+        var feet = at - Vector3.Up * 0.6f;
+        var top = at + Vector3.Up * 0.5f;
+        var ps = new[] { cam.UnprojectPosition(feet - side), cam.UnprojectPosition(feet + side), cam.UnprojectPosition(top - side), cam.UnprojectPosition(top + side) };
+        float x0 = ps[0].X, x1 = x0, y0 = ps[0].Y, y1 = y0;
+        foreach (var p in ps) { x0 = Mathf.Min(x0, p.X); x1 = Mathf.Max(x1, p.X); y0 = Mathf.Min(y0, p.Y); y1 = Mathf.Max(y1, p.Y); }
+        float herX = her is { } h && !cam.IsPositionBehind(h) ? cam.UnprojectPosition(h).X : float.MinValue;
+        var (sx, sy) = FeelRules.NumberSpot(x0, y0, x1, y1, herX, nb.Size.X, nb.Size.Y, k);
+        float depth = (at - cam.GlobalPosition).Dot(-cam.GlobalBasis.Z);
+        return cam.ProjectPosition(new Vector2(sx, sy), depth);
+    }
 
     static bool Heavy(in Waiting w) => w.MaxHp > 0 && w.Amount > w.MaxHp * 0.2 && w.Tint == null;
 
