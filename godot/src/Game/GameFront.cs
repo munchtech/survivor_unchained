@@ -552,8 +552,14 @@ public partial class Game
         Pose(new Vector3(Fire.X + 1.05f, y + 1.75f, Fire.Y + 7.0f), new Vector3(Fire.X + 0.95f, y + 1.0f, Fire.Y + 0.9f));
     }
 
-    public void NewJourney()
+    /// <summary>The slot the player chose to replace (all three in use: the title asks which, SU-001).</summary>
+    int? replaceSlot;
+
+    public void NewJourney() => NewJourney(null);
+
+    public void NewJourney(int? replace)
     {
+        replaceSlot = replace;
         Mode = "create";
         // (the Look holds the grade's whole toe: her irises and dark hair keep their colour (Atmospheres.Front))
         air.Set(Atmospheres.Front);
@@ -614,6 +620,7 @@ public partial class Game
 
     public void CancelCreation()
     {
+        replaceSlot = null;
         Mode = "title";
         draft = null;
         air.Set(Atmospheres.Title);
@@ -666,9 +673,22 @@ public partial class Game
         hud.Fade(0, 0.5);
     }
 
+    /// <summary>A leave whose save failed is refused once, with the reason; asked again, it goes
+    /// (the player chose to lose what wasn't written).</summary>
+    bool leaveUnsaved;
+
+    bool SavedForLeaving()
+    {
+        if (Save("quit") != SaveOutcome.Failed || leaveUnsaved) return true;
+        leaveUnsaved = true;
+        Toast(new Toast(ToastKind.Warning, "Leave again to go without saving."));
+        return false;
+    }
+
     public void QuitToTitle()
     {
-        Save("quit");
+        if (!SavedForLeaving()) return;
+        leaveUnsaved = false;
         screens.Close();
         hudMode = null;
         // (notices held over a fall or a chest are not carried into the next journey)
@@ -679,7 +699,7 @@ public partial class Game
 
     public void QuitGame()
     {
-        if (Mode == "play") Save("quit");
+        if (Mode == "play" && !SavedForLeaving()) return;
         hud.Fade(1, 0.4);
         Wait(0.45, () => QuitPath.Request(GetTree()));
     }

@@ -95,7 +95,7 @@ public partial class Game
 
     /// <summary>Where a callout points now: its points and areas on the HUD's canvas (none: not there).</summary>
     /// <summary>--no-open (a dev flag for pictures): a lesson that waits for the open (the red line) may show under a canopy.</summary>
-    static readonly bool noOpen = OS.GetCmdlineUserArgs().Contains("--no-open");
+    static readonly bool noOpen = Args.Has("no-open");   // (Args: read in dev builds only, SU-007)
 
     (List<Vector2> Points, List<Rect2> Areas, bool Gone, int WorldOn) Resolve(Callout c)
     {

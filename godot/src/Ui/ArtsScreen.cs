@@ -39,7 +39,7 @@ public partial class ArtsScreen : Overlay
     bool skills => page == 1;
 
     /// <summary>The functional Lamps board and Wick screen: launch with --board, or set SU_BOARD=1.</summary>
-    public static bool BoardOn => SurvivorUnchained.Args.Has("board") || System.Environment.GetEnvironmentVariable("SU_BOARD") == "1";
+    public static bool BoardOn => SurvivorUnchained.Args.Has("board") || SurvivorUnchained.Args.Dev && System.Environment.GetEnvironmentVariable("SU_BOARD") == "1";
     /// <summary>v2's Lamps are their own tab on the book's chain (LampsScreen); --board keeps the functional pages here.</summary>
     static int Pages => BoardOn ? 4 : 2;
     static readonly string[] PageNames = ["The art in hand", "Skills", "Lamps", "Wicks"];

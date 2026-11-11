@@ -72,11 +72,13 @@ public partial class TitleScreen : Overlay
         if (panel == "") AddChild(brand);
 
         var slots = G.Saves.Slots();
-        var latest = slots.OrderByDescending(s => s.SavedAt).FirstOrDefault();
+        // A journey from a newer build is listed but can't be continued here.
+        var latest = slots.Where(s => !s.Newer).OrderByDescending(s => s.SavedAt).FirstOrDefault();
         menu.Items.Clear();
         if (latest != null)
             menu.Add("Continue", () => G.Continue(latest.Slot), $"{latest.Name} · {Callings.Archetypes.GetValueOrDefault(latest.Archetype)?.Name} {latest.Level} · Day {latest.Day}", true);
-        menu.Add("New Journey", G.NewJourney, null, latest == null);
+        // All three slots in use: New Journey first asks which journey it replaces (cancelling keeps them all).
+        menu.Add("New Journey", () => { if (slots.Count >= Saves.SlotCount) { replacing = null; Panel("replace"); } else G.NewJourney(); }, null, latest == null);
         if (slots.Count > 0) menu.Add("Journeys", () => Panel("load"));
         menu.Add("Settings", () => Panel("settings"));
         menu.Add("Controls", () => Panel("controls"));
@@ -92,25 +94,44 @@ public partial class TitleScreen : Overlay
         {
             // A fitted panel over the fire's picture, as the pause opens its own: its name, its rows as
             // type, back with its key at its foot.
-            var v = Fitted(new Vector2(540, 16), panel == "load" ? 640 : 600);
+            var v = Fitted(new Vector2(540, 16), panel is "load" or "replace" ? 640 : 600);
             Nav.Scope = v;
-            v.AddChild(new Title(panel switch { "load" => "Journeys", "settings" => "Settings", _ => "Controls" }, 30, false));
+            v.AddChild(new Title(panel switch { "load" => "Journeys", "replace" => "Replace a journey", "settings" => "Settings", _ => "Controls" }, 30, false));
             switch (panel)
             {
+                case "replace":
+                    // Every slot is in use: which journey the new one takes the place of, then a confirm.
+                    // Nothing is removed here; the old journey is written over when the new one is first saved.
+                    if (replacing is int r && slots.FirstOrDefault(x => x.Slot == r) is { } old)
+                    {
+                        var (om, ow) = SlotRow(old);
+                        v.AddChild(Style.H(Style.Gap4, om, ow));
+                        v.AddChild(Style.Label($"Begin a new journey in its place? {old.Name}'s journey will be gone for good.", Style.TextItalic, 17, Kit.Ink2, true));
+                        var yes = Kit.Word("Replace", () => G.NewJourney(r), Style.EmberHi, 17);
+                        var no = Kit.Word("Keep it", () => { replacing = null; Refresh(); }, Kit.Dim, 15);
+                        v.AddChild(Style.H(Style.Gap4, yes, no));
+                        break;
+                    }
+                    v.AddChild(Style.Label("All three journeys are in use. Choose the one the new journey replaces.", Style.TextItalic, 17, Kit.Ink2, true));
+                    foreach (var s in slots)
+                    {
+                        var (pm, pw) = SlotRow(s);
+                        int ps = s.Slot;
+                        var pick = Kit.Word("Replace", () => { replacing = ps; Refresh(); }, Style.EmberHi, 17);
+                        pick.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+                        v.AddChild(Style.H(Style.Gap4, pm, pw, pick));
+                    }
+                    break;
                 case "load":
                     foreach (var s in slots)
                     {
-                        var arch = Callings.Archetypes.GetValueOrDefault(s.Archetype);
-                        var mark = Glyphs.Icon(s.Archetype switch { "warden" => "shield", "reaver" => "axe", "arcanist" => "staff", _ => "bow" }, 30, s.Alive ? Kit.Ink2 : Kit.Faint, true);
-                        mark.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-                        var words = Style.V(0, Style.Label(s.Name.ToUpperInvariant(), Style.Display, 20, s.Alive ? Kit.Ink : Kit.Dim, false, HorizontalAlignment.Left, false),
-                            Style.Label($"{arch?.Name} {s.Level}  ·  Day {s.Day}  ·  {ZoneNames.GetValueOrDefault(s.Zone, s.Zone)}", Style.TextItalic, 16, Kit.HeadInk, false, HorizontalAlignment.Left, false),
-                            Style.Label(s.Alive ? $"Saved {Ago(s.SavedAt)}" : "Fallen", Style.Ui, 14, Kit.Dim, false, HorizontalAlignment.Left, false));
-                        words.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+                        var (mark, words) = SlotRow(s);
                         int slot = s.Slot;
-                        var resume = Kit.Word("Resume", () => G.Continue(slot), Style.EmberHi, 17);
                         var forget = Kit.Word("Forget", () => { G.Saves.Remove(slot); Refresh(); }, Kit.Dim, 15);
-                        foreach (var c in new Control[] { resume, forget }) c.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+                        forget.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+                        if (s.Newer) { v.AddChild(Style.H(Style.Gap4, mark, words, forget)); continue; }
+                        var resume = Kit.Word("Resume", () => G.Continue(slot), Style.EmberHi, 17);
+                        resume.SizeFlagsVertical = SizeFlags.ShrinkCenter;
                         v.AddChild(Style.H(Style.Gap4, mark, words, resume, forget));
                     }
                     break;
@@ -162,6 +183,23 @@ public partial class TitleScreen : Overlay
     }
 
     void Panel(string p) { panel = panel == p ? "" : p; Refresh(); }
+
+    /// <summary>The slot replace's pick waiting for its confirm (null: still choosing).</summary>
+    int? replacing;
+
+    /// <summary>A journey's mark and words, as the Journeys panel lists it: name, calling and level,
+    /// day and place, when it was last played.</summary>
+    (Control Mark, Control Words) SlotRow(SlotInfo s)
+    {
+        var arch = Callings.Archetypes.GetValueOrDefault(s.Archetype);
+        var mark = Glyphs.Icon(s.Archetype switch { "warden" => "shield", "reaver" => "axe", "arcanist" => "staff", _ => "bow" }, 30, s.Alive ? Kit.Ink2 : Kit.Faint, true);
+        mark.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        var words = Style.V(0, Style.Label(s.Name.ToUpperInvariant(), Style.Display, 20, s.Alive ? Kit.Ink : Kit.Dim, false, HorizontalAlignment.Left, false),
+            Style.Label($"{arch?.Name} {s.Level}  ·  Day {s.Day}  ·  {ZoneNames.GetValueOrDefault(s.Zone, s.Zone)}", Style.TextItalic, 16, Kit.HeadInk, false, HorizontalAlignment.Left, false),
+            Style.Label(s.Newer ? "Made by a newer version of the game" : s.Alive ? $"Saved {Ago(s.SavedAt)}" : "Fallen", Style.Ui, 14, Kit.Dim, false, HorizontalAlignment.Left, false));
+        words.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        return (mark, words);
+    }
 
     void Mature()
     {

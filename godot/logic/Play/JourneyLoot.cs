@@ -73,8 +73,41 @@ public sealed partial class Journey
         return true;
     }
 
-    /// <summary>What a fight's end did with what was still lying.</summary>
-    public sealed record Gathered(int Home, int Stored, int Broken, int Iron, int Shards, int Left);
+    /// <summary>What a fight's end did with what was still lying. Held: protected pieces Rook keeps by the door
+    /// (her shelves full), shelved as room is made.</summary>
+    public sealed record Gathered(int Home, int Stored, int Broken, int Iron, int Shards, int Left, int Held = 0);
+
+    /// <summary>Loot never lost at a fight's end: Rare and up, or a jackpot tier.</summary>
+    static bool Protected(ItemInstance it) => it.Rarity >= 2 || Rpg.Drops.Jackpot(Rpg.Drops.TierOf(it));
+
+    /// <summary>A protected piece to Rook: a free place on her shelves, else held by the door. True: shelved.</summary>
+    bool Keep(ItemInstance it)
+    {
+        int j = World.Stash.IndexOf(null);
+        if (j >= 0) { World.Stash[j] = it; return true; }
+        World.Held.Add(it);
+        return false;
+    }
+
+    /// <summary>What Rook was holding put on the shelves' free places, oldest first (the storeroom opened,
+    /// a place freed, a shelf bought). How many went up.</summary>
+    public int ShelveHeld()
+    {
+        int n = 0;
+        while (World.Held.Count > 0 && World.Stash.IndexOf(null) is var j and >= 0)
+        {
+            World.Stash[j] = World.Held[0];
+            World.Held.RemoveAt(0);
+            n++;
+        }
+        if (n > 0) OnTouch();
+        return n;
+    }
+
+    void SayHeld(int held)
+    {
+        if (held > 0) OnToast(new Toast(ToastKind.Loot, $"Rook is holding {held} {(held == 1 ? "thing" : "things")} for you", "Her shelves are full. Make room in the storeroom."));
+    }
 
     /// <summary>A fight's end (docs/design/LOOT_DESIGN.md §6.2): what the filter shows and is still
     /// lying comes home, into the pack while there is room, Rare and up beyond it to Rook's storeroom;
@@ -82,7 +115,7 @@ public sealed partial class Journey
     /// Nothing shown is lost to the fight.</summary>
     public Gathered Gather(Battle b)
     {
-        int home = 0, stored = 0, broken = 0, iron = 0, shards = 0, left = 0;
+        int home = 0, stored = 0, broken = 0, iron = 0, shards = 0, left = 0, held = 0;
         foreach (var p in b.Pickups.Items)
         {
             if (!p.Alive) continue;
@@ -97,8 +130,8 @@ public sealed partial class Journey
             }
             bool shown = p.Look != Verdict.Hidden;
             if (shown && Inventory.Free(Ch) > 0 && Inventory.AddToPack(Ch, it)) home++;
-            else if (shown && it.Rarity >= 2 && World.Stash.IndexOf(null) is var j and >= 0) { World.Stash[j] = it; stored++; }
-            else if (shown && Rpg.Drops.Jackpot(Rpg.Drops.TierOf(it))) { left++; continue; }
+            // Protected and shown: to Rook, never broken or left with the zone (SU-019).
+            else if (shown && Protected(it)) { if (Keep(it)) stored++; else held++; }
             else if (shown || Ch.Filter.BreakHidden)
             {
                 // (crafting's yield, the same as at the bench)
@@ -113,25 +146,26 @@ public sealed partial class Journey
             else { left++; continue; }
             b.Pickups.Release(p);
         }
-        if (home + stored + broken > 0) OnTouch();
-        return new Gathered(home, stored, broken, iron, shards, left);
+        if (home + stored + broken + held > 0) OnTouch();
+        SayHeld(held);
+        return new Gathered(home, stored, broken, iron, shards, left, held);
     }
 
-    /// <summary>(M9, ARPG 7.1) A zone left: Rare and better still lying (and shown) goes to Rook's storeroom while it
-    /// has a free slot (no shelves are added); the rest is lost with the ground. Returns how many it kept.</summary>
+    /// <summary>(M9, ARPG 7.1) A zone left: Rare and better still lying (and shown) goes to Rook's storeroom, held by
+    /// the door while her shelves are full (no shelves are added; SU-019); the rest is lost with the ground. Returns
+    /// how many went onto the shelves.</summary>
     public int Abandon(Battle b)
     {
-        int kept = 0;
+        int kept = 0, held = 0;
         foreach (var p in b.Pickups.Items)
         {
             if (!p.Alive || p.Payload is not ItemInstance it || p.Look == Verdict.Hidden) continue;
-            if (it.Rarity < 2 && !Rpg.Drops.Jackpot(Rpg.Drops.TierOf(it))) continue;
-            int j = World.Stash.IndexOf(null);
-            if (j < 0) continue;
-            World.Stash[j] = it;
+            if (!Protected(it)) continue;
+            // (her shelves full: held by the door, not lost with the ground, SU-019)
+            if (Keep(it)) kept++; else held++;
             b.Pickups.Release(p);
-            kept++;
         }
+        SayHeld(held);
         if (kept > 0)
         {
             OnToast(new Toast(ToastKind.Loot, $"Rook kept {kept} {(kept == 1 ? "thing" : "things")} you left"));

@@ -79,6 +79,8 @@ public partial class Game : Node, IZoneHost
         // Data through Godot's file access from the first frame: skills.json and items.json are read
         // on first use, which can come before any zone loads, and only res:// reads inside an export.
         ZoneData.UseGodotFiles();
+        // A release build takes no tuning file from the environment (SU-007): only dev and perf builds do.
+        Core.DevOverrides.On = Args.Dev;
         // --folk-kit: the town and Low Ford's people from the kit, not the Marionette packages (A/B).
         Lore.KitFolk = Args.Has("folk-kit");
         // The Lamps v2 board is the default; --lampsv1 (or SU_LAMPS_V2=0) plays v1's for one release (LAMPS_V2_RULES.md "The flag").
@@ -447,9 +449,16 @@ public partial class Game : Node, IZoneHost
 
     int FreeSlot()
     {
-        var used = saves.Slots().Select(s => s.Slot).ToHashSet();
+        // The one the player chose to replace; else the first free one. The title never begins a fourth
+        // journey without asking which to replace; only the dev paths (--new, the autopilot) fall back
+        // to the oldest.
+        if (replaceSlot is int chosen) { replaceSlot = null; return chosen; }
+        var slots = saves.Slots();
+        var used = slots.Select(s => s.Slot).ToHashSet();
         for (int i = 0; i < Saves.SlotCount; i++) if (!used.Contains(i)) return i;
-        return saves.Slots().OrderBy(s => s.SavedAt).First().Slot;
+        var oldest = slots.Where(s => !s.Newer).OrderBy(s => s.SavedAt).FirstOrDefault() ?? slots.OrderBy(s => s.SavedAt).First();
+        GD.Print($"save: every slot in use, slot {oldest.Slot} replaced (a dev path)");
+        return oldest.Slot;
     }
 
     void Hook()
@@ -1112,16 +1121,26 @@ public partial class Game : Node, IZoneHost
         if (scene != null) scene.Showcase = showNow;
     }
 
-    public void Save(string reason)
+    public enum SaveOutcome { Skipped, Saved, Failed }
+
+    void IZoneHost.Save(string reason) => Save(reason);
+
+    /// <summary>The journey written to its slot. Skipped: nothing is kept here (an arena, a story's night,
+    /// a --load picture). A failed write always says so: no save is lost without the player knowing.</summary>
+    public SaveOutcome Save(string reason)
     {
         // Nothing is kept of an arena until it is over (the save made on the way in stands).
-        if (zone == null || Mode != "play" || zone is ArenaRun or StoryNight) return;
+        if (zone == null || Mode != "play" || zone is ArenaRun or StoryNight) return SaveOutcome.Skipped;
         // (a journey read with --load is a picture's, never written back)
-        if (Args.Has("load")) return;
+        if (Args.Has("load")) return SaveOutcome.Skipped;
         var b = Battle;
         if (b != null) Journey.Capture(b);
         var p = b?.Player;
-        saves.Write(Journey.Slot, Journey.ToSave(new SaveLocation { Zone = zone.Id, X = p?.X ?? 0, Z = p?.Z ?? 0, Facing = p?.Facing ?? 0 }));
+        if (saves.Write(Journey.Slot, Journey.ToSave(new SaveLocation { Zone = zone.Id, X = p?.X ?? 0, Z = p?.Z ?? 0, Facing = p?.Facing ?? 0 })))
+            return SaveOutcome.Saved;
+        GD.PushError($"save: slot {Journey.Slot} could not be written ({reason})");
+        Toast(new Toast(ToastKind.Warning, "The journey could not be saved."));
+        return SaveOutcome.Failed;
     }
 
     /* ------------------------------------------------------ interaction -- */
