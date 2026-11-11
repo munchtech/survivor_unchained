@@ -453,17 +453,18 @@ public partial class Game
     /// <summary>The place is being let go (LeaveZone, before its scene is freed): the close view's lights live in that scene and go
     /// with it, so they are given back here and every hold on them dropped. Held past it, the next place read a freed light every
     /// frame: the cel key (CelRigHeld) threw in _Process from the Waystation's c04b on, the frame never finished and the screen stayed
-    /// black (demo-arpg1). The world key's mask and the camera rig are restored first (CelRigOff), the town's lamps given back.</summary>
+    /// black (demo-arpg1). What outlives the place is given back (the world key's mask, the camera rig); nothing in the dying scene
+    /// is touched (it goes whole).</summary>
     void CloseUpLeave()
     {
-        CelRigOff();
+        if (celKeyMask != 0) { air.Key.LightCullMask = celWorldMask; celKeyMask = 0; }
+        if (air.CameraRig != null) air.HoldCameraRig(null);
         bool held = celKey != null;
         celKey = null;
         closeKey = closeKeyGear = closeKeyHair = closeRim = closeRimGear = closeBodyRim = closeFill = closeFillFolk = null;
         keyFolk = rimFolk = coolFolk = bodyRimFolk = groundKey = null;
         fireFill = null;
         CloseKeySrcLamp = null;
-        foreach (var (l, d) in lampDim) if (IsInstanceValid(l)) l.LightEnergy = d.Base;
         lampDim.Clear();
         lampDimK = 1;
         if (held && Args.Tool) GD.Print("closeup: leave drops the cel key and the close lights with the place");
