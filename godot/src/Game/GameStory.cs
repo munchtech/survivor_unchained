@@ -192,6 +192,11 @@ public partial class Game
         GD.Print($"storybook: {id} mid-zone at wall {Time.GetTicksMsec() / 1000.0:0.00}s");
         Wait(0.6, () =>
         {
+            // (M6) The page plays over bars of its own, full and black, as SB00 does: the HUD's black (above every
+            // page) goes the moment they are up. Left up, it hid the page, the film after and the whole day (run m6r1).
+            var bars = new CinemaBars();
+            AddChild(bars);
+            bars.Frame(1, 1);
             storybook = new StoryPlayer(f, Host(), _ =>
             {
                 storybook = null;
@@ -203,11 +208,13 @@ public partial class Game
                 hud.HoldToasts = false;
                 hud.HoldTip = false;
                 controls.ClearLatches();
+                storyBars = bars;
                 then();
-                // (a cinematic `then` started takes the black as its own; else the world fades back in)
-                if (cine == null) hud.Fade(0, 0.8);
+                // (a cinematic `then` started took the bars as its own; else they go and the world fades back in)
+                Unbar();
             });
             AddChild(storybook);
+            hud.Fade(0, 0);
         });
     }
 
