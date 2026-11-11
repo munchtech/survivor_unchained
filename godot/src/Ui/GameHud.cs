@@ -964,10 +964,19 @@ public partial class GameHud : CanvasLayer
     /// <summary>The level card is being read (U1 §5B): the XpCard leaves the pad's LB to it.</summary>
     bool cardRead;
 
+    /// <summary>The tips' own layer: above the HUD (10), the callouts and screens (20), under only the fades (30).</summary>
+    const int TipLayer = 29;
+    CanvasLayer? tipLayer;
+
     SkillTip Tip()
     {
-        if (skillTip == null) { skillTip = new SkillTip { Name = "SkillTip", ZIndex = 100 }; play.AddChild(skillTip); }
-        else if (skillTip.GetIndex() != play.GetChildCount() - 1) play.MoveChild(skillTip, -1);
+        if (skillTip == null)
+        {
+            tipLayer = new CanvasLayer { Layer = TipLayer, Name = "SkillTipLayer" };
+            AddChild(tipLayer);
+            skillTip = new SkillTip { Name = "SkillTip" };
+            tipLayer.AddChild(skillTip);
+        }
         return skillTip;
     }
 
