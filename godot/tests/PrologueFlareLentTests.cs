@@ -99,7 +99,9 @@ public class PrologueFlareLentTests
         Assert.Equal("lamps", a.After);
         Assert.Equal(3, a.Gap);
         Assert.Equal("art", a.Target.Hud);
-        Assert.Single(a.Target.World!());
+        // (M6 l4) every lit lamp, nearest first; the first well inside the screen is the one (Safe)
+        Assert.True(a.Target.Safe);
+        Assert.NotEmpty(a.Target.World!());
     }
 
     [Fact]

@@ -351,11 +351,27 @@ public sealed partial class Prologue
         double r = ring.Max(e => Dist(e.X, e.Z, cx, cz)) + RingClear;
         double dx = p.X - cx, dz = p.Z - cz, n = Math.Sqrt(dx * dx + dz * dz);
         if (n < 0.5) { dx = Math.Sin(p.Facing); dz = Math.Cos(p.Facing); n = 1; }
-        double tx = cx + dx / n * r, tz = cz + dz / n * r;
-        double reach = leap.AimRange, td = Dist(tx, tz, p.X, p.Z);
-        if (td > reach) { tx = p.X + (tx - p.X) / td * reach; tz = p.Z + (tz - p.Z) / td * reach; }
-        return [Up(tx, tz, 0.1)];
+        double a0 = Math.Atan2(dz / n, dx / n), reach = leap.AimRange;
+        (double X, double Z) At(double a)
+        {
+            double tx = cx + Math.Cos(a) * r, tz = cz + Math.Sin(a) * r, td = Dist(tx, tz, p.X, p.Z);
+            if (td > reach) { tx = p.X + (tx - p.X) / td * reach; tz = p.Z + (tz - p.Z) / td * reach; }
+            return (tx, tz);
+        }
+        // (M6 l4: m6r5's point lay 9 m north of her, at the screen's top edge under the watch's bark: the screen is
+        // shallow up and down. Her way out first, then turned 30 degrees at a time, the first within LeapUpDown of
+        // her along the road and on open ground; none, her way out.)
+        foreach (int k in new[] { 0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6 })
+        {
+            var (tx, tz) = At(a0 + k * Math.PI / 6);
+            if (Math.Abs(tz - p.Z) <= LeapUpDown && !B.Collision.Blocked(tx, tz, 0.6)) return [Up(tx, tz, 0.1)];
+        }
+        var (bx, bz) = At(a0);
+        return [Up(bx, bz, 0.1)];
     }
+
+    /// <summary>(A13) How far up or down the screen (north or south of her, m) the Leap's point may lie.</summary>
+    public const double LeapUpDown = 5.5;
 
     /// <summary>(A13) How far past the ring's band the Leap's point lies (m).</summary>
     public const double RingClear = 2.5;

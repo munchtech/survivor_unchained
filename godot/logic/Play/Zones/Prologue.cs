@@ -521,7 +521,9 @@ public sealed partial class Prologue : ZoneRuntime
         // A11b: 3 s after A11 closes, the Flare lent at C02's hand-back and its meter full: its key and the nearest lit lamp.
         if (Now == Stage.Boss && B.FlareReady && warden is { Alive: true } && LitCount > 0 && G.Taught("lamps"))
             Teach("flare", CalloutKind.Freeze, "The Flare", $"The ember lends you its fire for this fight.{NL}{Key("flare")}: break a lamp.",
-                new Aim { Hud = "art", World = NearestLitLamp }, "flare", after: "lamps", gap: 3);
+                // (M6 l4: the lit lamps nearest first, the first well inside the screen: m6r5's nearest was off the top,
+                // its ring drawn on the Warden's bar)
+                new Aim { Hud = "art", World = NearestLitLamp, Safe = true }, "flare", after: "lamps", gap: 3);
         // F10: her health under 70% for the first time (MR5: it was half), with a draught to drink (au i15: under 40% a real
         // run never came, 42% at the lowest; the ambush's volley and the Knight bring it down before the ford).
         // (MR5 item 11: it never waits to see her clear of roofs and canopies. Its target is the HUD's draught slot and
@@ -610,7 +612,7 @@ public sealed partial class Prologue : ZoneRuntime
         // move arrow and the Rising closed; the Ambush's foes teach it then, before A4's Resolve, which waits on it)
         if (Now < Stage.Intro && NearFoes(p, 7).Count > 0)
             Teach("swing", CalloutKind.Freeze, "Swing", $"Hold {Key("skill1")} to swing at what's under the cursor. You walk as you swing.",
-                new Aim { Hud = "seat:Skill1", World = () => NearFoes(B!.Player, 7).Take(1).Select(e => Up(e.X, e.Z, 1.0)).ToList(), Safe = true }, "skill1", urgent: true);
+                new Aim { Hud = "seat:Skill1", World = () => NearFoes(B!.Player, 7).Take(4).Select(e => Up(e.X, e.Z, 1.0)).ToList(), Safe = true }, "skill1", urgent: true);
         // A3: the first ember stone near her on the ground (the lone one's), well inside the screen. With the draft off the
         // dead still spill their light (Journey.Killed, Battle.DropXpStones): each stone rests, then flies to her and pays
         // her experience as it lands. The journey's first is held at rest until A3 closes (Battle.HoldNextStone); a hold
@@ -1921,7 +1923,7 @@ public sealed partial class Prologue : ZoneRuntime
         if (B == null) return [];
         var p = B.Player;
         return pylons.Select((l, i) => (l, i)).Where(q => litPylons[q.i]).OrderBy(q => Dist(q.l.X, q.l.Z, p.X, p.Z))
-            .Take(1).Select(q => (q.l.X, lampY[q.i], q.l.Z)).ToList();
+            .Select(q => (q.l.X, lampY[q.i], q.l.Z)).ToList();
     }
 
     void Finish()

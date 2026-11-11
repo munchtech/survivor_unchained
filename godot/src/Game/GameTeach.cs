@@ -172,6 +172,10 @@ public partial class Game
                         GD.Print($"teachdiag {c.Id} t={diagAt:0.0} v={v.X:0},{v.Y:0} safe={InSafe(v)} block={diagBlock}");
                     }
                     if (!InSafe(v)) continue;
+                    // (M6 l4: and its ring whole above the HUD: m6r4's captain stood at the safe area's foot, its ring
+                    // drawn over the Drowned Girl)
+                    if (t.Ring?.Invoke() is { Count: > 0 } rs && rs.Any(q => OnScreen(q) is not Vector2 rv || !InSafe(rv)
+                        || rv.Y + Math.Clamp(PxPerMetre(q) * (float)t.RingRadius, 28, 110) > RingFloor)) continue;
                     if (t.Open && !noOpen && !InOpen(w)) continue;
                     // (and what must be read with it: on the screen and in the open, or it waits)
                     if (t.Open && !noOpen && t.Seen?.Invoke() is { } seen && seen.Any(q => OnScreen(q) is not Vector2 sv || !Canvas.HasPoint(sv) || !InOpen(q, true)))
@@ -284,6 +288,8 @@ public partial class Game
 
     /// <summary>Where a thing pointed at stands well inside the screen: clear of its edges, the map and the HUD.</summary>
     static readonly Rect2 SafeArea = new(300, 150, 1320, 700);
+    /// <summary>(M6 l4) A ring's lowest pixel: above the HUD's figures and seats (the Drowned Girl's head at about 890).</summary>
+    const float RingFloor = 870;
     /// <summary>The minimap and the zone's header and objectives under it (top right): a ring there sat
     /// against the words (au1 item 9, the lamps).</summary>
     static readonly Rect2 HudCorner = new(1460, 0, 460, 450);
