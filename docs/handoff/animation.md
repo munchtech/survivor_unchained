@@ -4,6 +4,50 @@ For the next animation lead (`su-lead-high`). Read `docs/team/README.md` ("Worki
 
 **Standing bar (the owner, 26 Oct): "effortlessly badass".** Every judge brief on her motion (armed walks especially) asks it as the whole-frame question: does she move effortlessly badass, or stiff, careful or strained?
 
+## 0000000000000000000000000000000000000000000000000f. A1 lead 22 (11 Nov, ~05:45, HANDOFF READY at context): run and sprint repack DONE (my numbers met, no judge spent on it); off-travel clips and view switch BUILT but short of my look; the owner PICKED A ("Spend for strafes too", RULING A1 05:24); lead 23 builds A. Round 3 (the LAST) is still unspent
+
+**Start here, cold.** Worktree `.claude/worktrees/move-a1`, branch move-a1, pushed at the sha in my HANDOFF READY inbox line. Integration 278714912 is merged at 58b3bec7a (junction rule done; godot/assets is the worktree's own public/assets, assume-unchanged). Next: 2bbffe9be scoped the branch to the run only; 6c9eadc97 reverts it, so PlayerView.cs is byte-equal to 7e879714c again (turning r4 + off-travel live). Suite on the scoped merge: 2263/0/11 (integration baseline). Re-run it on the final MR. **Fallback MR if round 3 fails** = the run repack only: re-apply 2bbffe9be (`git revert 6c9eadc97`). That leaves only the inert TurnRun.cs/Game.cs drivers plus the clip files against integration. Rulings: `grep '^RULING A1' scratch_coord5/inbox.md` (05:24 is in force; line 1.15M, lane 2.15M).
+
+**Read first:**
+- `survivorsunchained_inputs\scratch_motion_a1\L22\facts_s5.md`: Parts 5-7, the run, shield and sword numbers.
+- `L22\facts_ot.md`: off-travel.
+- `L21\facts_run.md`: the run guards.
+- Tools in `L22`:
+  - `shsw.py` measures shield and sword per frame.
+  - `ot\ot_meas.py` gives off-travel speed and clip mix per row.
+  - `tight.py` re-tiles a sheet keeping tile centres.
+- Capture and pack: `L21\cap.sh`. Cases are run8, fig8, cast, cast2, sweep (`--aimsweep`) and press8 (`--press8`). Flags are RUN, TAG, BUILD, NOMOVIE and PACK. PACK only through its pack_merge path, never build.py's own pack. `cm.py` reads the CARRY log rows, which exist only with the L22 PlayerView.
+- The integration run baseline is `L21\cap_run8_base`.
+
+**Built and kept:**
+- **Run and sprint (commits f825f8b80, 2cf222c04):**
+  - The sword is a trailing carry, `axe_hang(back=44, out=16)`, with arm (7.5, 12, 151, 0).
+  - The shield is at her side, `shield_guard(hand_at=(0.14,-0.36,0.26), swivel=-90)`, lift 0.04, with sprint lift 0.08.
+  - Measured:
+    - planted slide 1-4 mm/frame across 8 headings;
+    - 164 steps/min;
+    - sword pitch -41..-44, at least 31 deg on screen at all 8 views, tip 0.26 m, 143 mm clear of her legs;
+    - shield tilt 16-22, top under her head at all 8 headings, cover at 315 is 37% (was 80%), pauldron 8 mm (sprint 18);
+    - sim speed unchanged.
+  - **Known miss:** the sprint sword reads 27-31 deg at 45, 270 and 315 (sprint tip 0.30 m, legs 166 mm).
+  - **A|B sheets** (scoped branch, integration view): `L22\mr_ab_1.jpg`, `mr_ab_2.jpg`, `mr_full_{0,90,225}.png`. They use a fixed crop, so A at 45 and 225 is off-centre. The smaller, lower shield in B is the repack's intent (cover 80% -> 37%), not a fault. There is no sprint driver, so there is no sprint sheet: add a `--sprint8` buff to TurnRun.cs.
+- **Off-travel (50284a6df, 605731b45, 9b20bcab2, 7e879714c):**
+  - Clips: run_warden_back, run_warden_right and run_warden_left (`OFF_TRAVEL` in clips/run.py, with `Gait.travel` / `_off_travel()` in gait.py).
+  - The switch is in PlayerView: otOn enters at 60 deg and leaves below 40, with `--ot-grace` 0.6 s past the blow's aim. The sweep's flicker went from 42 to 8. `--turn-l21` restores L21.
+  - Sim speed is unchanged, and sprint never runs while the switch is on.
+
+**A, in order, with costs (lead 23):**
+1. **Strafe as a crossover run** (~0.1M). At full run speed today's side clips are a wide, low split. Rebuild as pelvis ~70 deg toward travel with the chest counter-twisted to aim: feet cross, no split. Back: check the same at full speed.
+2. **Turn-and-cut beat** (~0.15-0.2M):
+   - The heavy's shield arm goes over her head on presses; it must stay at her side.
+   - The legs under presses: the round-2 judge's numbers are in block 0e.
+   - The chain's ready pose holds the sword overhead after sword_back. It must meet the trailing carry.
+3. **180 plant** (~0.08M): still a fast spin. Block 0e has the judge's frames.
+4. **One reshoot of all of it**, then your own 1:1 look. If your look is short, say so to the coordinator before any judge.
+5. **Round 3, the LAST:** one max judge on the whole set (run, sprint, off-travel, turn-and-cut, 180), A|B against integration, whole frame while she moves. Use `Item:` lines. Solvers get the scripts and numbers above; they never measure from scratch. My solvers s5 and s6 each spent ~125k measuring without building, so make the decision and give a worker exact values.
+
+**Cost (lead 22):** about 0.82M of the lane's 1.15M line (helpers ~0.64M, me ~0.18M). That leaves ~0.33M for A plus lead 23's orientation, which is tight for items 1-5, so cut 3 before 5.
+
 ## 0000000000000000000000000000000000000000000000000e. A1 lead 21 (11 Nov, ~02:50, HANDOFF READY at context): turning r4 built (view only, numbers met) but the round-2 max judge FAILED every item, because I ran it before the approved run repack (my order miss: round 2 is spent). Run repack half done (legs, skate, sprint). ONE judge round left (round 3, the last; if it fails: no round 4, report what holds on its own)
 
 **Start here, cold.** Worktree `.claude/worktrees/move-a1`, branch move-a1 (pushed at handoff). Integration merged at 48364a844 (junction rule; suite 2240/0/11) but integration has since moved (6a2454569+): merge it again before the MR. Scratch `survivorsunchained_inputs\scratch_motion_a1\L21\`: `cap.sh` (`RUN="fig8 cast run8" TAG= [BUILD=1] [NOMOVIE=1] [PACK="run_warden sprint_warden"] [TMO=900]`: takes the godot turn, copies/restores the shared settings.json, PACK merges ONLY the named clips into heroine.res via `pack_merge.py` + `godot/tools_scenes/anim_pack_merge.gd`; NEVER build.py's own pack here, it would ship a 4-clip library from the git-ignored out dir), `cm.py` (CARRY per frame: feet/hands/pelvis, slide, screen), `slide8.py`, `landsim.py`, `knee.py`, `kneesim.py`, `sgrid.py`, `t3.py`/`dec.py` (the 180), `ac.py` (presses), facts `facts_turn.md` + `facts_run.md` (Part 4 on top = the run's next steps), briefs `brief_turn.md`, `brief_run.md`. Judge round 2: `judge_r2\` (brief + sheets; `run8_straight.jpg` tracked the campfire, use `run8_fixed.png`). Track crops with `..\L20\track.py`, sheets with `..\L20\sheet.py --track`. Never commit `godot/data/anim/her_events.json`.
