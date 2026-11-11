@@ -86,6 +86,10 @@ public partial class BattleFx
     static readonly float PoolScale = Args.Num("aa-pool", 1f);
     /// <summary>The pool's widest reach (metres), when the body it lands on stands far enough from her (HitLightFit).</summary>
     const float PoolRange = 2.5f;
+    /// <summary>F1 lead 24 (victim flash): on a struck body the pool made a clipped-white disc about 150 px across round a lone
+    /// heavy's victim at night. Capped there: reach 1.3 m (one wolf length at the game camera), energy 2.0 at night (was 4.6;
+    /// by day the same ratio, 3.04, was 7). Color and timing as before.</summary>
+    const float PoolStruckRange = 1.3f, PoolStruckNight = 2.0f, PoolStruckDay = 2.0f * 7f / 4.6f;
 
     /// <summary>The sweep's light on the ground: an unshadowed omni 0.3 m up at the arc's middle, 2.5 m in range,
     /// about +50% on the ground under it at night, a warming of the grass by day.</summary>
@@ -104,7 +108,8 @@ public partial class BattleFx
         oathPoolEnergy[i] = (Flare.Night ? 4.6f : 7f) * PoolScale;
         // (its blow's contact, when the hit came before the swing in the frame's events: onto that body at once)
         bool struck = oathContactFrame == Engine.GetFramesDrawn();
-        PlaceOathPool(i, struck ? OnGround(oathContact) : at);
+        if (struck) oathPoolEnergy[i] = (Flare.Night ? PoolStruckNight : PoolStruckDay) * PoolScale;
+        PlaceOathPool(i, struck ? OnGround(oathContact) : at, struck);
         l.LightColor = hue;
         oathPoolAge[i] = 0;
         oathPoolLast = struck ? -1 : i; oathPoolFrame = Engine.GetFramesDrawn();
@@ -125,10 +130,10 @@ public partial class BattleFx
         OathPoolOnto(body);
     }
 
-    void PlaceOathPool(int i, Vector3 at)
+    void PlaceOathPool(int i, Vector3 at, bool struck = false)
     {
         var l = oathPools[i]!;
-        var (p, r) = HitLightFit(at, PlayerPos, PoolRange, AwayFromLens());
+        var (p, r) = HitLightFit(at, PlayerPos, struck ? PoolStruckRange : PoolRange, AwayFromLens());
         l.Position = p;
         l.OmniRange = r;
         if (LightTrace) TraceLight("OathPool HitKit.cs", p, oathPoolEnergy[i], r, 90);
@@ -139,7 +144,8 @@ public partial class BattleFx
     void OathPoolOnto(Vector3 body)
     {
         if (oathPoolLast < 0 || Engine.GetFramesDrawn() - oathPoolFrame > 1 || oathPools[oathPoolLast] == null) return;
-        PlaceOathPool(oathPoolLast, OnGround(body));
+        oathPoolEnergy[oathPoolLast] = (Flare.Night ? PoolStruckNight : PoolStruckDay) * PoolScale;
+        PlaceOathPool(oathPoolLast, OnGround(body), true);
         oathPoolLast = -1;
     }
 
