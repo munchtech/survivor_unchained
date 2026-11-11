@@ -15,11 +15,14 @@ public static class TurnRun
     {
         // --run8 T0 (A1 lead 21): straight runs in all 8 directions, opposite pairs in turn so she stays near the start
         // (0, 180, 45, 225, 90, 270, 135, 315 deg: 0 = +Z, toward the play camera at its yaw 0), each 1.6 s from a 0.6 s stand.
-        if (Args.Has("run8"))
+        // --sprint8 T0 (A1 L23): the same 8 legs with her sprint on (GameCinema.PlayMove adds the sprint buff while she is moving):
+        // each leg 2.2 s from a 0.8 s stand, so the sprint is up ~0.4 s in and runs 3+ full 0.7 s cycles before the stop.
+        if (Args.Has("run8") || Args.Has("sprint8"))
         {
+            double leg = Args.Has("sprint8") ? 2.2 : 1.6, gap = Args.Has("sprint8") ? 3.0 : 2.2;
             var r = new System.Collections.Generic.List<(double, double)>();
             double t8 = 0;
-            foreach (double h8 in new double[] { 0, 180, 45, 225, 90, 270, 135, 315 }) { r.Add((t8, h8)); r.Add((t8 + 1.6, double.NaN)); t8 += 2.2; }
+            foreach (double h8 in new double[] { 0, 180, 45, 225, 90, 270, 135, 315 }) { r.Add((t8, h8)); r.Add((t8 + leg, double.NaN)); t8 += gap; }
             return r.ToArray();
         }
         // --aimsweep T0 / --press8 T0 (A1 L22): she runs straight (+X, then -X back for the second side) with her aim held off her travel
@@ -38,7 +41,7 @@ public static class TurnRun
     }
     /// <summary>Pictures at these script times: across the loops, the 180 and its settle.</summary>
     static readonly double[] Beats = { 1.25, 1.75, 2.25, 2.75, 3.25, 3.75, 4.25, 4.75, 5.9, 6.05, 6.12, 6.2, 6.3, 6.45, 6.7, 7.1 };
-    public static readonly double Start = Args.Has("fig8") ? Args.Num("fig8", 3) : Args.Has("run8") ? Args.Num("run8", 3)
+    public static readonly double Start = Args.Has("fig8") ? Args.Num("fig8", 3) : Args.Has("run8") ? Args.Num("run8", 3) : Args.Has("sprint8") ? Args.Num("sprint8", 3)
         : Args.Has("aimsweep") ? Args.Num("aimsweep", 2) : Args.Has("press8") ? Args.Num("press8", 2) : -1;
 
     /// <summary>The aim sweep's off-travel angle (deg) at sweep time u (0..13 s): 0 to 60 and 2 s held in the hysteresis band (60 +/- 12.5,
@@ -88,7 +91,7 @@ public static class TurnRun
         double t = time - Start;
         double h = double.NaN;
         foreach (var (at, head) in Steps) if (t >= at) h = head;
-        while (!Args.Has("run8") && beat < Beats.Length && t >= Beats[beat]) { Shots.WantFrames($"s{beat:00}", 1); beat++; }
+        while (!Args.Has("run8") && !Args.Has("sprint8") && beat < Beats.Length && t >= Beats[beat]) { Shots.WantFrames($"s{beat:00}", 1); beat++; }
         if (double.IsNaN(h)) return (0, 0);
         double r = h * Math.PI / 180;
         return (Math.Sin(r), Math.Cos(r));

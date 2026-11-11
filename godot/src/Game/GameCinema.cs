@@ -306,7 +306,12 @@ public partial class Game
     (double X, double Z) PlayMove()
     {
         if (cineWalk is { } w) return w;
-        if (Battle is { } fb8 && TurnRun.Stick(fb8.Time) is { } f8) return f8;
+        if (Battle is { } fb8 && TurnRun.Stick(fb8.Time) is { } f8)
+        {
+            // --sprint8 (A1 L23): the sprint art's own buff (Arts.Sprint: +70% move speed), held while the script moves her
+            if (Args.Has("sprint8") && f8 != (0, 0)) fb8.AddBuff("sprint", Stat.MoveSpeed, 0.7, ModKind.Inc, 0.4, 1);
+            return f8;
+        }
         // --stroll M: a constant move at M m/s of ground speed along the --facing heading (0 = +Z; the move is (sin, cos) of it), for gait shots.
         if (Args.Has("stroll") && Battle is { } sb)
         {
