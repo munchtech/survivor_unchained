@@ -23,6 +23,14 @@ public class LowerTurnTests
         Assert.Equal(back, r.Back);
     }
 
+    [Theory]
+    [InlineData(-1.3, 1.3, 1.0)]
+    [InlineData(-2.6, 1.3, 2.0)]
+    [InlineData(-5, 1.3, 2.0)]
+    [InlineData(-0.1, 1.3, 0.3)]
+    [InlineData(-1, 0, 1.0)]
+    public void BackScale(double fy, double vb, double want) => Assert.Equal(want, LowerTurn.BackScale(fy, vb), 6);
+
     [Fact]
     public void Feeds()
     {

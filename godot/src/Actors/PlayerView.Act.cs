@@ -76,7 +76,7 @@ public partial class PlayerView
             actBase = Position; actBaseYaw = Rotation.Y; actShown = true;
             actWalkWorld = SurvivorUnchained.Play.Move2D.ActWalkWorld(aw0, actBaseYaw);
             speed = (float)aw0.Speed;
-            GD.Print($"act: walk {aw0.Deg:0.##} deg at {aw0.Speed:0.###} m/s, facing {Mathf.RadToDeg(actBaseYaw):0.#} deg, the {(move2D ? "2D" : "1D")} move node");
+            GD.Print($"act: walk {aw0.Deg:0.##} deg at {aw0.Speed:0.###} m/s, facing {Mathf.RadToDeg(actBaseYaw):0.#} deg, the {(move2D ? "2D" : moveBack ? "1D+back" : "1D")} move node");
         }
         MeasInit();
         if (!HasHer(ActClip!)) { GD.PrintErr($"act: no clip '{ActClip}' in her library"); return; }

@@ -46,6 +46,9 @@ public static class LowerTurn
         return (dd, -speed * Math.Abs(Math.Cos((phi - dd) * Math.PI / 180)), true);
     }
 
+    /// <summary>The back walk's play rate (moveBack mode): her backward ground speed over the clip's own, within [0.3, 2].</summary>
+    public static double BackScale(double feedY, double clipSpeed) => clipSpeed < 0.05 ? 1 : Math.Clamp(Math.Abs(feedY) / clipSpeed, 0.3, 2);
+
     /// <summary>delta eased toward its target over dt seconds (time constant 0.12 s).</summary>
     public static double Ease(double delta, double target, double dt) => delta + (target - delta) * (1 - Math.Exp(-dt / TimeConstant));
 

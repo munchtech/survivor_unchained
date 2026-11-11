@@ -220,6 +220,10 @@ public partial class PlayerView : Node3D
     // A1 lead 19: her 2D move node (BlendSpace2D) when her library has the directional walks, and, with it, the facing that
     // holds her aim (aimFace) while aimHold runs, the legs walking her velocity in her facing's frame (move2dPos: x right, y forward).
     bool move2D;
+    // Without the side clips: the forward graph plus a back walk blended over it (backBlend, backScale); the legs still turn by LowerTurn.
+    bool moveBack;
+    float backBlendNow, backFy, backVb = 1;
+    bool AimLegs => move2D || moveBack;
     float aimFace;
     Vector2 move2dPos;
     // The lower-body turn (LowerTurn): the eased yaw her pelvis takes (deg), and the mode it is in; the side clips, when her library has them.
@@ -337,6 +341,23 @@ public partial class PlayerView : Node3D
                 if (vb < 0.05f) vb = vw;
                 if (vl < 0.05f) vl = vw;
                 if (vr < 0.05f) vr = vw;
+                if (!move2DSides)
+                {
+                    // No side clips: the points would all lie on x = 0 (no triangles, frozen legs). Keep the forward graph (its seeks and
+                    // stride) and lay the back walk over it: backBlend (input 1 = backScale, a TimeScale on the back clip) before the output.
+                    var wbk = new AnimationNodeAnimation { Animation = own.Prefix + wb + "_back" };
+                    mv.AddNode("backClip", wbk, new Vector2(1000, 500));
+                    mv.AddNode("backScale", new AnimationNodeTimeScale(), new Vector2(1200, 500));
+                    mv.AddNode("backBlend", new AnimationNodeBlend2(), new Vector2(1400, 300));
+                    mv.ConnectNode("backScale", 0, "backClip");
+                    string last = layered ? "arms" : "blend";
+                    mv.ConnectNode("backBlend", 0, last);
+                    mv.ConnectNode("backBlend", 1, "backScale");
+                    mv.ConnectNode("output", 0, "backBlend");
+                    backVb = vb;
+                    moveBack = true;
+                    goto skip2D;
+                }
                 var two = new AnimationNodeBlendSpace2D { MinSpace = new Vector2(-Mathf.Max(runSpeed, sprintSpeed), -Mathf.Max(runSpeed, sprintSpeed)), MaxSpace = new Vector2(Mathf.Max(runSpeed, sprintSpeed), Mathf.Max(runSpeed, sprintSpeed)), Sync = true };
                 walkNode = new AnimationNodeAnimation { Animation = own.Prefix + wb };
                 two.AddBlendPoint(idleNode, new Vector2(0, 0));
@@ -352,6 +373,7 @@ public partial class PlayerView : Node3D
                 moveNode = two;
                 move2D = true;
             }
+            skip2D:
             GaitClips(People.Clip(person, "Jog_Fwd_Loop"));
             carriage = new HerCarriage();
             person.Skeleton.AddChild(carriage);
@@ -982,7 +1004,7 @@ public partial class PlayerView : Node3D
         float d = Mathf.Wrap(face - Rotation.Y, -Mathf.Pi, Mathf.Pi);
         // (the 2D node: she faces the aim at any speed, her legs walking by the node; aimHold keeps it, Update)
         aimFace = face;
-        if (!mine || move2D || speed < 1.5f || Mathf.Abs(d) > Mathf.DegToRad(110))
+        if (!mine || AimLegs || speed < 1.5f || Mathf.Abs(d) > Mathf.DegToRad(110))
         {
             Rotation = new Vector3(0, face, 0);
             aim = 0;
@@ -1117,7 +1139,7 @@ public partial class PlayerView : Node3D
         // Face where you are going, or where you just struck (she, moving,
         // keeps her legs' line and turns her back to the blow instead).
         aimHold -= (float)dt;
-        aimFacingNow = move2D && aimHold > 0 && p.Leap == null && p.DashT <= 0;
+        aimFacingNow = AimLegs && aimHold > 0 && p.Leap == null && p.DashT <= 0;
         if (time < flareFaceUntil)
         {
             // (a Flare's clip holds her on its line until ClipFree; she turns onto it over the press's crossfade)
@@ -1131,7 +1153,7 @@ public partial class PlayerView : Node3D
         // turning": facing chased velocity, 217-267 ms to within 10 degrees and on a 180 she ran backwards for a
         // moment). Snapped as Hades and Diablo IV do: 67 ms to within 10 degrees on a 90, 100 ms on a 180.
         // --turn-old: the old chase (before/after pictures).
-        else if (move2D && aimHold > 0 && p.Leap == null && p.DashT <= 0) Rotation = new Vector3(0, aimFace, 0);
+        else if (AimLegs && aimHold > 0 && p.Leap == null && p.DashT <= 0) Rotation = new Vector3(0, aimFace, 0);
         else if (sp > 0.4f && p.Leap == null)
         {
             bool stick = !TurnOld && p.StickX * p.StickX + p.StickZ * p.StickZ > 0.01;
@@ -1511,7 +1533,8 @@ public partial class PlayerView : Node3D
     {
         // Standing to running over the first two metres a second; the run
         // at the rate her ground speed asks.
-        if (move2D)
+        float spd = speed;
+        if (AimLegs)
         {
             // Her velocity in her facing's frame (Move2D.Local: x right, y forward), eased as the ground speed is.
             var lv = SurvivorUnchained.Play.Move2D.Local(velX, velZ, Rotation.Y);
@@ -1519,22 +1542,42 @@ public partial class PlayerView : Node3D
             // The lower-body turn (no side clips): aim-facing, the legs walk toward her travel (the pelvis yawed by lowerDelta), the node
             // fed the forward or back walk at the speed along the turned legs' line. Otherwise delta eases out.
             float dTarget = 0;
-            bool aimFacing = move2D && !move2DSides && (ActWalk != null || aimFacingNow);
+            bool aimFacing = !move2DSides && (ActWalk != null || aimFacingNow);
             float vs = feed.Length();
-            if (aimFacing && vs > SurvivorUnchained.Play.LowerTurn.IdleSpeed)
+            float fyT = speed;
+            if (aimFacing)
             {
-                double th = Mathf.RadToDeg(Mathf.Atan2(-feed.X, feed.Y));
-                var lt = SurvivorUnchained.Play.LowerTurn.Solve(th, vs, lowerBack);
-                lowerBack = lt.Back; dTarget = (float)lt.Delta; feed = new Vector2(0, (float)lt.FeedY);
+                fyT = 0;
+                if (vs > SurvivorUnchained.Play.LowerTurn.IdleSpeed)
+                {
+                    double th = Mathf.RadToDeg(Mathf.Atan2(-feed.X, feed.Y));
+                    var lt = SurvivorUnchained.Play.LowerTurn.Solve(th, vs, lowerBack);
+                    lowerBack = lt.Back; dTarget = (float)lt.Delta; feed = new Vector2(0, (float)lt.FeedY);
+                    fyT = feed.Y;
+                }
             }
-            else if (move2D && !move2DSides && aimHold > 0) feed.X = 0;
+            else if (!move2DSides && aimHold > 0) feed.X = 0;
             lowerDelta = (float)SurvivorUnchained.Play.LowerTurn.Ease(lowerDelta, dTarget, dt);
             if (person.Turn != null) person.Turn.Delta = lowerDelta;
-            move2dPos = move2dPos.Lerp(feed, 1 - Mathf.Exp(-(TurnOld ? 10 : BlendRate) * dt));
-            tree.Set(BlendPosition, move2dPos);
+            float k = 1 - Mathf.Exp(-(TurnOld ? 10 : BlendRate) * dt);
+            if (move2D)
+            {
+                move2dPos = move2dPos.Lerp(feed, k);
+                tree.Set(BlendPosition, move2dPos);
+            }
+            else
+            {
+                // The forward graph walks the forward part of her line; the back walk comes in over it as she backpedals.
+                backFy = aimFacing ? Mathf.Lerp(backFy, fyT, k) : fyT;
+                spd = Mathf.Max(backFy, 0);
+                backBlendNow = Mathf.Lerp(backBlendNow, backFy < -0.05f ? 1f : 0f, 1 - Mathf.Exp(-dt / 0.15f));
+                tree.Set("parameters/move/backBlend/blend_amount", backBlendNow);
+                tree.Set("parameters/move/backScale/scale", SurvivorUnchained.Play.LowerTurn.BackScale(backFy, backVb));
+                move2dPos = new Vector2(backBlendNow, backFy);
+            }
         }
-        float natural0 = Mathf.Lerp(runSpeed, sprintSpeed, sprintSpeed > runSpeed ? Mathf.SmoothStep(runSpeed * 1.1f, sprintSpeed * 0.95f, speed) : 0);
-        var (wWalk, w) = Stride.Weights(speed, walkSpeed, natural0, hasWalk);
+        float natural0 = Mathf.Lerp(runSpeed, sprintSpeed, sprintSpeed > runSpeed ? Mathf.SmoothStep(runSpeed * 1.1f, sprintSpeed * 0.95f, spd) : 0);
+        var (wWalk, w) = Stride.Weights(spd, walkSpeed, natural0, hasWalk);
         if (!move2D)
         {
         tree.Set("parameters/move/blendW/blend_amount", wWalk);
@@ -1542,13 +1585,13 @@ public partial class PlayerView : Node3D
         }
         // Into the sprint as she goes past her run's own speed; the pair
         // played at the rate the blend of their speeds asks.
-        float fast = sprintSpeed > runSpeed ? Mathf.SmoothStep(runSpeed * 1.1f, sprintSpeed * 0.95f, speed) : 0;
+        float fast = sprintSpeed > runSpeed ? Mathf.SmoothStep(runSpeed * 1.1f, sprintSpeed * 0.95f, spd) : 0;
         if (!move2D) tree.Set("parameters/move/fast/blend_amount", fast);
         float natural = Mathf.Lerp(runSpeed, sprintSpeed, fast);
         // One stride phase for both gaits; a walk starts on the left heel after she has stood a moment.
-        standT = speed < 0.05f ? standT + dt : 0;
+        standT = spd < 0.05f ? standT + dt : 0;
         if (standT > 0.4f) stride = 0;
-        float period = Stride.Period(speed, walkLen, walkSpeed, runLen, Stride.RunScale(speed, natural), w, hasWalk);
+        float period = Stride.Period(spd, walkLen, walkSpeed, runLen, Stride.RunScale(spd, natural), w, hasWalk);
         stride = Stride.Advance(stride, dt, period);
         if (!move2D)
         {
