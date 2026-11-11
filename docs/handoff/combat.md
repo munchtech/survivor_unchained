@@ -1,5 +1,21 @@
 # Handoff: combat (skills' mechanics, enemies, encounters, bosses, balance, the maps, the story's nights)
 
+## Feel F1, lead 27 (feel-f1, 11 Nov): HANDOFF READY. Round 5 (the LAST, owner's "Fifth round") = CLOSE, one cheap number fix from PASS: PASS 1 (heavy felt), 3 (she reads, held), 4 (mass kills land as a beat; was CLOSE), 5 (lane rank, held); CLOSE 2 (dense crit: three number placements). None FAIL. Verdict `survivorsunchained_inputs/scratch_feel_f1/lead27/judge/verdict_r5.md`; brief `brief_r5.md` beside it; sheets `lead27/judge_r5/`.
+
+- **Built (all on feel-f1, unmerged; integration 3296bd188 merged in at 9578f45bc):**
+  1. `FeelRules.cs` (pure, `tests/FeelRulesTests.cs` 11 tests): the kill window (KillDim 0.3 N..N+16, back by N+22), LaunchRim, recoil 0.8 m, React (7 frames), Tinted (frames 6-9), Fold (2 per step, 1 on a mass step), MassTail (the next 3 frames add into the total), NumberSpot (50 px over, 40 px aside), TellFill/TellEdge (ruling 10:06: fill dims, edge >= 60%, never in the last 0.3 s, never a lane).
+  2. Kill window dims (window only): Watch Bell, Rebuke lash/flash, other bodies' rims (`CrowdView.cs`), tells by TellFill/TellEdge (`BattleFx.cs` RedMarks/decals), her dash ribbon and afterimages (`p7_dim`, `fx_p7.gdshaderinc`, `BattleFx.P7.cs`). The Warden line's crack is the kill and is not dimmed.
+  3. Ember look (`vat.gdshaderinc`: fx_aa*fx_crit, edge-led orange light) on launched bodies N..N+12 and the struck tint (45%); victim flash light capped 2.0 at night.
+  4. Numbers (`Hits.Numbers.cs`, 35e293441): every blow goes through `waiting`; a mass step shows one total over a felled body, outside the caps; trace `[mass-num]`/`[mass-open]` under `--kill-trace` (23/23 windows show a total in hs25).
+- **Captures:** `combat_m3/f1_feel_hs25` (a, 2.6 min), `f1_feel_hs22` (b, elite lane 3667-3967), `f1_feel_hs26` (c, dense). Runs are not frame-identical across builds; moments re-picked by the same rules.
+- **Ranked fixes (the judge's, all in the number code; re-check m4b 23-35, m5c 6880-6886, m2b 6584 only):**
+  1. The crit number's 40 px side offset goes perpendicular to the launch direction, not away from her (m4b 25-32: "432" lies across a launched victim). Done when no number overlaps a launched body N..N+12.
+  2. When a kill window opens at N, fade older numbers within ~300 px of the kill to 0 by N+3, or add them into the total (m5c 6880-6884: "3783" and "928" over the new kill).
+  3. Clamp numbers above y ~880 at 1080 and off the orb and statue (m2b: "315" on the health orb).
+  4. Optional: the 0.8 m push shows little at m1 (the wolf behind blocks it); let it ignore wolf spacing or push the one behind.
+- **Out of lane, spoiling judged frames:** EMBER 2 banner over m2; EMBER 7 banner, the pillar's blue circle and bodies falling onto the HUD at m2b; the boulder over her at m5 from 6297; launched bodies fly stiff in their running pose (a limp tumble later).
+- **Suite:** not run this round (no PASS). FeelRules and Hits tests pass (38/38 on 35e293441).
+
 ## Feel F1, lead 26 (feel-f1, 11 Nov): HANDOFF READY. Round 4 (the LAST, owner's "Fourth round") = CLOSE, same as round 3: PASS 3 (she reads) and 5 (lane rank); CLOSE 1 (heavy felt), 2 (dense crit), 4 (mass kills near her); none FAIL. Verdict `C:/Users/munch/Desktop/survivorsunchained_inputs/scratch_feel_f1/lead26/verdict_r4.md` (su-lead-max judge: the API route died on "Credit balance is too low" before ruling, $1.01, logged in the inbox). Integration 34586016e merged in (9be1a262d). Full suite NOT run (only on PASS).
 
 - **Built (kept, all measured in hs9):**
