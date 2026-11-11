@@ -253,7 +253,7 @@ public partial class Callout : Control, ICalloutView
     static List<string> KeyWords()
     {
         var all = new HashSet<string>();
-        foreach (var a in new[] { Act.Dash, Act.Flare, Act.Draught, Act.Interact, Act.Inventory, Act.Character, Act.Journal, Act.Map })
+        foreach (var a in new[] { Act.Dash, Act.Flare, Act.Draught, Act.Interact, Act.Inventory, Act.Character, Act.Journal, Act.Map, Act.Skill1, Act.Skill2, Act.Skill3, Act.Skill4, Act.Skill5, Act.Skill6 })
             foreach (var l in Labels(a))
                 if (l is not ("A" or "I") && (l.Length > 1 || char.IsUpper(l[0]))) all.Add(l);
         return all.OrderByDescending(l => l.Length).ToList();

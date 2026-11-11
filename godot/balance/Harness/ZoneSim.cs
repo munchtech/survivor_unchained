@@ -348,7 +348,7 @@ public static class ZoneSim
                 r.Stages[stage.ToString()] = r.Stages.GetValueOrDefault(stage.ToString()) + (tt - stageAt);
                 if (stage is Prologue.Stage.Intro or Prologue.Stage.Victory) r.FilmFallback += tt - stageAt;
                 stage = zone.Now; stageAt = tt;
-                if (stage == Prologue.Stage.Boss) { r.BossReached = true; r.LevelAtWarden = j.Ch.Level; }
+                if (stage == Prologue.Stage.Boss) { b.PayXpStones(); r.BossReached = true; r.LevelAtWarden = j.Ch.Level; }
             }
             foreach (var enc in new[] { night, zone.Day })
                 if (enc != null)
@@ -423,6 +423,7 @@ public static class ZoneSim
                     foreach (var (id, _) in enc.Packs)
                         if (enc.S.Get(id)?.Needs != null) { if (enc.DownAt.ContainsKey(id) || enc.Done(id)) r.PocketDown++; else r.PocketLeft++; }
         r.Gold = j.Ch.Gold - gold0;
+        b.PayXpStones();
         r.LevelAtGate = j.Ch.Level;
         r.Champions = r.Champion;
         if (!quiet && !r.Reached) Console.Error.WriteLine($"{spec.Key}: not through at {tt:0}s: {(r.Stuck ? "stuck " + r.StuckAt : "capped")} {zone.Now}");

@@ -82,6 +82,8 @@ public class VergeTests
         // Putting them down teaches the survivor.
         double xp = s.J.Ch.Xp;
         s.J.Killed(one, true);
+        // (M6: by day a kill drops experience stones that rest, fly to her and pay as they land: Battle.DropXpStones)
+        Run(s, 2);
         Assert.True(s.J.Ch.Xp > xp);
     }
 

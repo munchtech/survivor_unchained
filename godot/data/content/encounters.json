@@ -68,7 +68,7 @@
             }
           ],
           "captain": "kerchief_captain",
-          "levelUp": 1,
+          "levelUp": 0,
           "waves": [
             {
               "foes": [
@@ -108,7 +108,7 @@
           "champion": {
             "name": "Red Tolly the Collector",
             "affixes": [
-              "grasping"
+              "ironhide"
             ]
           }
         },
@@ -407,6 +407,7 @@
           ],
           "followElite": "wolf_howler",
           "followAfter": 2.0,
+          "followLeash": 8,
           "champion": {
             "name": "Ashjaw, the Hunt's Voice",
             "affixes": []

@@ -72,6 +72,9 @@ public sealed class Encounters
         /// <summary>A ring's second wave: the rest of the pack, out of the trees toward the gate, FollowAfter s on.</summary>
         public List<Foe> Follow = new();
         public double FollowAfter = 3;
+        /// <summary>(M6) A ring's follow on a leash round the ring's ground (0: none, they hunt her anywhere). The lone Howler
+        /// kited her to the wall once the day lost the Flare (it hangs back and gives tongue): leashed, it stays where she fights.</summary>
+        public double FollowLeash;
         /// <summary>An ambush's foes come out of the trees this far round her (and never within 5 m).</summary>
         public double Out = 8;
         /// <summary>A pack's waves after the first (the camp's sleepers out of the tents, the wallow's from the reeds).</summary>
@@ -550,7 +553,8 @@ public sealed class Encounters
                 if (front) { a = -Math.PI / 2 + (t % 2 == 1 ? 1 : -1) * ((t + 1) / 2) * 0.2; d = FrontD; }
                 double x = p.X + Math.Cos(a) * d, z = p.Z + Math.Sin(a) * d;
                 if (b.Collision.Blocked(x, z, 0.6) || z < S.GateZ - 6) continue;
-                var e = b.SpawnEnemy(def, x, z, new Battle.SpawnOpts { Level = elite ? lv + 1 : lv, Elite = elite, Style = SpawnStyle.Walk, Tag = Phase + ":" + bt.Id });
+                var e = b.SpawnEnemy(def, x, z, new Battle.SpawnOpts { Level = elite ? lv + 1 : lv, Elite = elite, Style = SpawnStyle.Walk, Tag = Phase + ":" + bt.Id,
+                    Home = bt.FollowLeash > 0 ? (bt.X, bt.Z, bt.FollowLeash) : null });
                 if (e != null) { e.Roused = true; list.Add((e, e.Seed)); }
                 return e;
             }

@@ -32,6 +32,7 @@ public partial class Game
     {
         // --teach-reset: every callout unseen again (test runs may overwrite the owner's profile).
         if (Args.Has("teach-reset")) { Settings.Current.SeenTips.Clear(); Settings.Current.Save(); }
+        if (Shots.On("teach")) SurvivorUnchained.Play.Zones.Prologue.Trace = s => GD.Print(s);
         return new Teacher(new ProfileMemory()) { Log = TeachLog };
     }
 
@@ -42,7 +43,10 @@ public partial class Game
     /// run's Begin saw last run's "art" and let the Flare's great blessings through, round 2 judge.)
     public bool Taught(string id) { _ = Teacher; return Settings.Current.SeenTips.Contains(id); }
     /// <summary>(the autopilot) It keeps the Flare in the Barrow until F8 has asked for it.</summary>
-    public bool HoldFlare => !Taught("art") && zone is Zones.Prologue { Now: Zones.Prologue.Stage.Barrow };
+    /// (M6 l4: and the lent Flare at the Warden until A11b is seen: m6r4's autopilot spent it on C02's hand-back, the meter
+    /// empty before A11b's moment)
+    public bool HoldFlare => zone is Zones.Prologue { Now: Zones.Prologue.Stage.Barrow } && !Taught("art")
+        || zone is Zones.Prologue { Now: Zones.Prologue.Stage.Boss } && !Taught("flare") && Settings.Current.Tips;
 
     /// <summary>The callout on the screen now (the autopilot answers a freeze).</summary>
     public Callout? Teaching => teacher?.Current;
@@ -117,6 +121,16 @@ public partial class Game
             // (au1 item 14: the parts never taught, each by the HUD's own accessor, bracketed)
             case "prompt": if (hud.PromptArea is Rect2 pa) areas.Add(pa); break;
             case "minimap": if (hud.MinimapArea is Rect2 ma) areas.Add(ma); break;
+            // (M6 A9: a place's mark on the corner map, "map:X,Z", by the disc's own transform; off the disc, the whole map)
+            case var s when s.StartsWith("map:"):
+                if (hud.MinimapArea is Rect2 mm && Battle?.Player is { } mp && s[4..].Split(',') is [var sx, var sz]
+                    && double.TryParse(sx, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var wx)
+                    && double.TryParse(sz, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var wz))
+                {
+                    if (Minimap.OnDisc(wx - mp.X, wz - mp.Z) is Vector2 md) pts.Add(mm.Position + md);
+                    else areas.Add(mm);
+                }
+                break;
             case "tally": if (hud.TallyArea is Rect2 ta) areas.Add(ta); break;
             // (the numbers card: held up by UpdateTeach while this callout is the one showing; no area on the first frame)
             case "card": hud.TeachCard = true; if (hud.XpCardArea is Rect2 xa) areas.Add(xa); break;
@@ -132,6 +146,12 @@ public partial class Game
                 // (a slot is square: bracketed, not ringed)
                 if (hud.SocketRect(s[7..]) is Rect2 sr) areas.Add(sr);
                 break;
+            // (M6: a skill key's seat on the bar, "seat:Skill1", by M4's seats: bracketed as a socket is)
+            case var s when s.StartsWith("seat:"):
+                if (SeatSlot(s) is int sl && hud.SeatRect(sl) is Rect2 st) areas.Add(st);
+                break;
+            // (M6: Resolve, the hair of the Drowned Girl: her figure above the bar line, where the veins run)
+            case "resolve": if (hud.FigureRect is Rect2 fr) areas.Add(HudBottom.Map(fr)); break;
         }
         if (t.World != null)
         {
@@ -152,6 +172,13 @@ public partial class Game
                         GD.Print($"teachdiag {c.Id} t={diagAt:0.0} v={v.X:0},{v.Y:0} safe={InSafe(v)} block={diagBlock}");
                     }
                     if (!InSafe(v)) continue;
+                    // (M6 l4: and its ring whole above the HUD: m6r4's captain stood at the safe area's foot, its ring
+                    // drawn over the Drowned Girl)
+                    if (t.Ring?.Invoke() is { Count: > 0 } rs && rs.Any(q => OnScreen(q) is not Vector2 rv || !InSafe(rv)
+                        || rv.Y + Math.Clamp(PxPerMetre(q) * (float)t.RingRadius, 28, 110) > RingFloor)) continue;
+                    // (the point itself ringed when nothing else is: its ring above the HUD too; m6r7's Leap point
+                    // sat at the safe area's foot, its ring on the right-hand figure)
+                    if (t.Ring == null && v.Y + Math.Clamp(PxPerMetre(w) * (float)t.Radius, 20, 56) > RingFloor) continue;
                     if (t.Open && !noOpen && !InOpen(w)) continue;
                     // (and what must be read with it: on the screen and in the open, or it waits)
                     if (t.Open && !noOpen && t.Seen?.Invoke() is { } seen && seen.Any(q => OnScreen(q) is not Vector2 sv || !Canvas.HasPoint(sv) || !InOpen(q, true)))
@@ -264,6 +291,8 @@ public partial class Game
 
     /// <summary>Where a thing pointed at stands well inside the screen: clear of its edges, the map and the HUD.</summary>
     static readonly Rect2 SafeArea = new(300, 150, 1320, 700);
+    /// <summary>(M6 l4) A ring's lowest pixel: above the HUD's figures and seats (the Drowned Girl's head at about 890).</summary>
+    const float RingFloor = 870;
     /// <summary>The minimap and the zone's header and objectives under it (top right): a ring there sat
     /// against the words (au1 item 9, the lamps).</summary>
     static readonly Rect2 HudCorner = new(1460, 0, 460, 450);
@@ -313,12 +342,16 @@ public partial class Game
         return pts.Count > 0 ? pts[0] : areas.Count > 0 ? areas[0].GetCenter() : null;
     }
 
+    /// <summary>A "seat:Skill2" aim's slot (Skill1 is slot 0), if it names a skill key.</summary>
+    static int? SeatSlot(string hud) => Enum.TryParse<Act>(hud[5..], true, out var a) && a is >= Act.Skill1 and <= Act.Skill6 ? a - Act.Skill1 : null;
+
     Presence Where(Callout c)
     {
         var t = c.Target;
         if (t.Hud == "card:weapon") return teachOffers?.Any(o => o.Kind == OfferKind.Weapon) == true ? Presence.Here : Presence.NotYet;
         if (t.Hud == "cards") return teachOffers is { Count: > 0 } ? Presence.Here : Presence.NotYet;
         if (t.Hud is string s && s.StartsWith("socket:") && hud.SocketOf(s[7..]) == null) return Presence.NotYet;
+        if (t.Hud is string st && st.StartsWith("seat:") && (SeatSlot(st) is not int sl || hud.SeatRect(sl) == null)) return Presence.NotYet;
         // (a HUD part that comes and goes: here while it shows)
         if (t.Hud == "prompt" && hud.PromptArea == null || t.Hud == "minimap" && hud.MinimapArea == null
             || t.Hud == "tally" && hud.TallyArea == null) return Presence.NotYet;
@@ -435,7 +468,7 @@ public partial class Game
         var view = new Ui.Callout { Night = scene?.View.Night == true || !Ui.Cuff.Day };
         hud.Callout(view);
         view.Show(new CalloutLook(c.Title, c.Line, c.Kind, answer, c.Kind == CalloutKind.Freeze ? answer ?? Act.Interact : null,
-            answer != null ? c.Title.ToLowerInvariant() switch { "dash" => "to dash", "draught" => "to drink", _ => "to use it" } : "to go on")
+            answer != null ? c.Title.ToLowerInvariant() switch { "dash" => "to dash", "draught" => "to drink", "swing" => "to swing", "groundbreaker" => "to heave", _ => "to use it" } : "to go on")
         { Headed = c.Kind == CalloutKind.Panel || c.Target.Banner != null, Mark = c.Mark, MarkInk = c.MarkInk });
         calloutShown = view;
         AimCallout();

@@ -1015,6 +1015,8 @@ public partial class Game : Node, IZoneHost
         if (scene?.Fx.Flare.HoldsFrame == true) { After(0.25, () => Announce(a)); return; }
         // (a zone's banner asked for during a film waits for play: "The ember goes out" under C04a's bars; a film's own titles go straight to the HUD)
         if (InCinematic) { After(0.3, () => Announce(a)); return; }
+        // (M6 dev: --on teach logs and shoots each banner as it goes up, after every hold above)
+        if (Shots.On("teach")) { GD.Print($"banner {a.Title} t={Battle?.Time ?? 0:0.0}"); Shots.Want("banner_" + string.Concat(a.Title.Where(char.IsLetterOrDigit)), 1.0); }
         hud.Announce(a);
         sound.Announce(a, bossUp);
         if (Args.Has("pace")) GD.Print($"pace announce t={Battle?.Time ?? 0:0.0} title={a.Title} line={a.Sub}");

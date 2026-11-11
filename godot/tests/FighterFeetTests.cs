@@ -99,7 +99,7 @@ public sealed class FighterFeetTests
             B = j.StartBattle(true, new CollisionWorld(80), (_, _) => 0, 0, 0, 0, 7, worldTier: false);
             Assert.True(B.Campaign);
             // The world tier's stand row, as the story fights carry it (Journey.StartBattle with the tier on).
-            Clock = WorldTiers.Get(WorldTiers.Default).Stand!;
+            Clock = WorldTiers.Get(WorldTiers.Default).StandRow!;
             Assert.True(Clock is { Stand: true, StandSwing: > 0 }, "the default tier's stand row has no standSwing");
             B.StoryStand = Clock;
             Kit = new PackKit(B);
@@ -231,7 +231,7 @@ public sealed class FeetOnCutsTests
     {
         var j = MapSim.Survivor("warden", 30, 2, 5);
         var b = j.StartBattle(true, new CollisionWorld(80), (_, _) => 0, 0, 0, 0, 7, worldTier: false);
-        b.StoryStand = WorldTiers.Get(WorldTiers.Default).Stand!;
+        b.StoryStand = WorldTiers.Get(WorldTiers.Default).StandRow!;
         var foe = b.SpawnEnemy("footpad", 1.8, 0)!;
         foe.Hp = foe.MaxHp = 1e7;
         foe.AttackT = foe.RangedT = 999;
