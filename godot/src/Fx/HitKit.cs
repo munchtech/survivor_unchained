@@ -10,7 +10,7 @@ namespace SurvivorUnchained.View;
 /// along the blow (one pooled spark batch, never a node per hit; capped per swing);
 /// the struck rim is the crowd's own (CrowdView: Battle sets the body's Flash, the
 /// VAT shader lights its rim and decays it in a few frames); and a 2 to 3 frame
-/// hitstop on the first hit of a swing only (WorldScene asks FirstHitStop).
+/// hitstop on the first hit of a swing only (local hit-stop: Look/HitStop, classes in HitStopClassifier).
 ///
 /// The Oathblade's sweep beats (dev only, --aa-beats): on her 3rd, 5th and 7th
 /// swing a frame at +1 and +3 drawn frames and one as the first hit's hitstop
@@ -19,14 +19,7 @@ namespace SurvivorUnchained.View;
 public partial class BattleFx
 {
     /// <summary>The Oathblade and its evolutions (skills.json oathblade: slash_steel, slash_holy, slash_blood).</summary>
-    public static bool IsOath(string? art) => art is "slash_steel" or "slash_holy" or "slash_blood";
-
-    /// <summary>The hitstop a blow asks for as the first hit of its swing (seconds; 0 none) and how long after
-    /// the blow it lands: the sweep is revealed over its first 2 frames (OathReveal), so 0.03 s on, the blade
-    /// has passed every body it struck and their flash, streaks, glint and rim are up when the frame holds.
-    /// Her auto-attacks' arts only: the Disc and Shield Bash add theirs here.</summary>
-    public static (double Len, double Delay) FirstHitStop(Ev.Hit h) =>
-        h.Dot || h.ByFlare || h.Blocked ? (0, 0) : IsOath(h.Art) ? (0.042, 0.03) : (0, 0);
+    public static bool IsOath(string? art) => SurvivorUnchained.Look.HitStopClassifier.IsOath(art);
 
     /* ------------------------------------------------------- the sweep -- */
 

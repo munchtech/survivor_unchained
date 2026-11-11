@@ -1,0 +1,82 @@
+using System;
+using System.Collections.Generic;
+using SurvivorUnchained.Sim;
+using SurvivorUnchained.Sound;
+
+namespace SurvivorUnchained.Look;
+
+/// <summary>One hold asked of one body: seconds, how long after the blow it lands (her Oathblade's hits wait for
+/// their sweep), and the blow's direction (the victim's shake).</summary>
+public readonly record struct StopAsk(int Body, double Seconds, double Delay, double Dx, double Dz);
+
+/// <summary>Local hit-stop's classes: from one sim step's events, which bodies hold and for how long. Her heavy hit is
+/// LeadRule.Heavy, the one definition the sound's lead uses. Plain C#; the one piece of state is the charge's "first
+/// impact only". Each body gets the longest class that applies to it this step.</summary>
+public sealed class HitStopClassifier
+{
+    readonly HitStopTable t;
+    bool chargeStopped;
+    readonly Dictionary<int, StopAsk> best = new();
+    readonly List<Ev.Hit> struck = new();
+    public HitStopClassifier(HitStopTable? table = null) { t = table ?? HitStopTable.Load; }
+
+    /// <summary>The Oathblade and its evolutions (skills.json oathblade: slash_steel, slash_holy, slash_blood).</summary>
+    public static bool IsOath(string? art) => art is "slash_steel" or "slash_holy" or "slash_blood";
+
+    static bool Qualifies(Ev.Hit h) => h.Weapon != null && !h.ByFlare && !h.Dot && !h.Blocked;
+
+    void Put(int body, double ms, double delay, double dx, double dz)
+    {
+        if (ms <= 0) return;
+        if (best.TryGetValue(body, out var o) && o.Seconds >= ms / 1000) return;
+        best[body] = new StopAsk(body, ms / 1000, delay, dx, dz);
+    }
+
+    /// <summary>The asks of one step. maxHp: hers (a hurt is over 12% of it).</summary>
+    public List<StopAsk> Of(IReadOnlyList<CombatEvent> evs, double maxHp)
+    {
+        best.Clear(); struck.Clear();
+        double art = 0;
+        foreach (var e in evs)
+        {
+            switch (e)
+            {
+                case Ev.Hit h when Qualifies(h):
+                    struck.Add(h);
+                    double ms = LeadRule.Heavy(h) ? (h.Crit ? t.CritMs : t.HeavyMs) : t.TrashMs;
+                    if (ms > 0)
+                    {
+                        double d = IsOath(h.Art) ? t.FirstHitDelayMs / 1000 : 0;
+                        Put(h.Target, ms, d, h.Dx, h.Dz); Put(HitStops.Her, ms, d, 0, 0);
+                    }
+                    break;
+                case Ev.Kill k when k.ByPlayer && !k.ByFlare && (k.Elite || k.Boss):
+                    double km = k.Boss ? t.BossKillMs : t.EliteKillMs;
+                    Put(k.Enemy, km, 0, k.Dx, k.Dz); Put(HitStops.Her, km, 0, 0, 0);
+                    break;
+                case Ev.PlayerHit ph when !ph.Dodged && !ph.Blocked && !ph.Dot && maxHp > 0 && ph.Amount > maxHp * 0.12:
+                    Put(HitStops.Her, t.HurtMs, 0, 0, 0);
+                    break;
+                case Ev.Ability { Id: "shield_bash" or "bull_rush" or "leap" }:
+                case Ev.Leap { Phase: LeapPhase.Land }:
+                case Ev.Charge { Phase: ChargePhase.Stop or ChargePhase.Slam }:
+                case Ev.Spin { Phase: SpinPhase.Break }:
+                case Ev.Brace { Phase: BracePhase.Burst }:
+                    art = t.ArtMs;
+                    break;
+                case Ev.Charge { Phase: ChargePhase.Impact } when !chargeStopped:
+                    chargeStopped = true; art = t.ArtMs;
+                    break;
+                case Ev.Charge { Phase: ChargePhase.Start }:
+                    chargeStopped = false;
+                    break;
+            }
+        }
+        if (art > 0)
+        {
+            Put(HitStops.Her, art, 0, 0, 0);
+            foreach (var h in struck) Put(h.Target, art, 0, h.Dx, h.Dz);
+        }
+        return new List<StopAsk>(best.Values);
+    }
+}
