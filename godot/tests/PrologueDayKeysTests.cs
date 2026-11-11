@@ -194,9 +194,11 @@ public class PrologueDayKeysTests
             Assert.DoesNotContain(s.Host.Asked, x => x.Id == "day_gap");
             // The point lies outside the ring the wolves stand on.
             var ring = s.Zone.Day!.Standing("wolves");
-            var pt = Assert.Single(c.Target.World!());
+            Assert.True(c.Target.Safe);
+            var pts = c.Target.World!();
+            Assert.NotEmpty(pts);
             double cx = ring.Average(e => e.X), cz = ring.Average(e => e.Z), r = ring.Max(e => System.Math.Sqrt((e.X - cx) * (e.X - cx) + (e.Z - cz) * (e.Z - cz)));
-            Assert.True(System.Math.Sqrt((pt.X - cx) * (pt.X - cx) + (pt.Z - cz) * (pt.Z - cz)) > r);
+            foreach (var pt in pts) Assert.True(System.Math.Sqrt((pt.X - cx) * (pt.X - cx) + (pt.Z - cz) * (pt.Z - cz)) > r);
         }
     }
 

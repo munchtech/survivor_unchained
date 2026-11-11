@@ -302,7 +302,7 @@ public sealed partial class Prologue
             {
                 string act = $"Skill{leap.Slot + 1}";
                 Teach("leap", CalloutKind.Freeze, leap.Def.Name, $"{Key(act.ToLowerInvariant())}: leap where you aim. Over them and out of the ring.",
-                    new Aim { Hud = "seat:" + act, World = () => OutOfRing(day?.Standing(wb.Id) ?? [], leap) }, act.ToLowerInvariant(), overHint: true, patience: 1.2, urgent: true);
+                    new Aim { Hud = "seat:" + act, World = () => OutOfRing(day?.Standing(wb.Id) ?? [], leap), Safe = true }, act.ToLowerInvariant(), overHint: true, patience: 1.2, urgent: true);
             }
             else
                 Teach("day_gap", CalloutKind.Freeze, "The ring", $"{Key("dash")}: out through the gap before they close.", Aim.At("dash"), "dash", overHint: true, patience: 1.2, urgent: true);
@@ -361,13 +361,16 @@ public sealed partial class Prologue
         // (M6 l4: m6r5's point lay 9 m north of her, at the screen's top edge under the watch's bark: the screen is
         // shallow up and down. Her way out first, then turned 30 degrees at a time, the first within LeapUpDown of
         // her along the road and on open ground; none, her way out.)
+        // (M6 l4: m6r6's first such point lay at the screen's right edge under the tracker: every such point is
+        // offered in that order and the Aim's Safe takes the first well on the screen.)
+        var pts = new List<(double X, double Y, double Z)>();
         foreach (int k in new[] { 0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6 })
         {
             var (tx, tz) = At(a0 + k * Math.PI / 6);
-            if (Math.Abs(tz - p.Z) <= LeapUpDown && !B.Collision.Blocked(tx, tz, 0.6)) return [Up(tx, tz, 0.1)];
+            if (Math.Abs(tz - p.Z) <= LeapUpDown && !B.Collision.Blocked(tx, tz, 0.6)) pts.Add(Up(tx, tz, 0.1));
         }
-        var (bx, bz) = At(a0);
-        return [Up(bx, bz, 0.1)];
+        if (pts.Count == 0) { var (bx, bz) = At(a0); pts.Add(Up(bx, bz, 0.1)); }
+        return pts;
     }
 
     /// <summary>(A13) How far up or down the screen (north or south of her, m) the Leap's point may lie.</summary>
