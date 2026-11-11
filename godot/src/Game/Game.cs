@@ -663,6 +663,8 @@ public partial class Game : Node, IZoneHost
         ClearKept();
         zone?.Dispose();
         zone = null;
+        // (the close view's lights live in the scene: given back and let go with it, GameCloseUp.CloseUpLeave)
+        CloseUpLeave();
         if (scene != null) { scene.QueueFree(); RemoveChild(scene); }
         scene = null;
         figure = null;
