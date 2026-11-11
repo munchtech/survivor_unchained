@@ -1,5 +1,20 @@
 # Where we are: read this after README.md, before your handoff
 
+## 10 November 2026 (night, ~23:00): coordinator #7 (Fable orchestrating; subagents on the normal Opus rules). demo-arpg1 PLAYED. NEXT COORDINATOR (#8): START HERE, then #6's block below
+
+**The owner played demo-arpg1: "wasn't great".** Notes by lane in `OWNER_NOTES.md` top block. The run's log (70 MB) is saved at `survivorsunchained_inputs\demo_arpg1_logs`.
+
+**THE WAVE BELOW IS PROPOSED, NOT APPROVED. Spawn nothing from it until the owner says go.** Goal: demo-arpg2, the same slice, finishable and satisfying. Each lead sizes its line in its first inbox report.
+1. **B1 blockers (first; gates the cut).** (a) The waystation black screen, cause known: `Game.CelRigHeld` (`godot/src/Game/GameCloseUp.cs:417`) reads a disposed `DirectionalLight3D` after c04b and throws every frame in `Game._Process` (Game.cs:1535). A su-worker job: a validity guard, re-take the rig's light on a zone change, a test, and one subsystem's exception must not stop the frame. (b) "The boss was buggy": no detail from the owner yet; the experience lead reproduces from the log and the harness.
+2. **U1 skill tooltips (UI lead, judged).** Hover tooltips on the skill bar, the level-up card and the lamp picks: name, one plain line, numbers, cooldown, key. Classes own the wording (this also settles "+10% damage" against "Third Blow" and takes the owed M7a picture round).
+3. **F1 feel (combat lead, judged; sound at the visual bar).** ARPG_FUN P0 items 1, 2 and 4, P1 item 5 and item 15: tune the hit-stop, hit sounds attack-first, the drop sound ladder (beams exist), deaths as rewards, a telegraph color family. Pass = ARPG_FUN's four checks from a capture with 30+ enemies.
+4. **A1 lead 20 movement (judged at max: always seen).** Capture her turning and moving at the play camera first. Suspect: the cast-move cap is live while the upper/lower split is dormant, so she slides through swings. Either the split and cut B reach PASS, or the cap goes off until they do.
+- **Systems alongside (no judged slot):** the owner may run Codex jobs from `docs/team/hook/CODEX_prompts.md` (density instrument, hit-stop mechanism behind an OFF flag for F1 to tune, the DraftCardFit flake, a wick audit for classes). Each posts `CODEX <job> ... MR READY` to the coord5 inbox on a `codex/<job>` branch; merge as any lead's.
+
+**Sol images (ChatGPT, the owner's go at ~22:30):** a Sonnet `claude` helper is driving six prompts from `docs/team/hook/GPT_sol_concepts.md` in the owner's Chrome (her full gunmetal-and-gold kit: turnaround, pieces, three tiers; the Ford-Warden: turnaround, close-up, props). Outputs: `survivorsunchained_inputs\gpt_sol\kit|warden`, provenance beside them. It reports to #7's session only; if #7 is gone, check the folder and that `chatgpt.lock` is removed. The owner picks the kit sheet; a judge passes the Warden sheet before P3 spends a Meshy credit.
+
+**Unchanged from #6's block:** integration is pushed (docs only since the tag), worktrees main / body-p1b / films-p9, the paused lanes, the inbox Monitor (re-arm every 30 min).
+
 ## 10 November 2026 (evening, 19:20; updated 21:25, demo-arpg1 CUT): coordinator #6 hands off. NEXT COORDINATOR (#7, Opus high, normal rules): START HERE
 
 **The owner's standing orders (10 Nov):**

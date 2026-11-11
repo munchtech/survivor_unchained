@@ -1,5 +1,13 @@
 # The owner's notes waiting for the leads
 
+## 10 November 2026, night: the owner played demo-arpg1 ("wasn't great")
+
+The owner: "had no idea what the skills did, they don't have tooltips on hover. movement looked weird especially turning, nothing really felt satisfying. the boss was buggy and when I got to the waystation it just stayed at a black screen until I force closed". What each note is for, by lane:
+- **Experience (blocker):** the demo must be finishable. The waystation black screen is found: `Game.CelRigHeld` (`godot/src/Game/GameCloseUp.cs:417`) reads a disposed `DirectionalLight3D` after c04b, and throws every frame in `_Process` (10,287 times in the run's log, saved at `survivorsunchained_inputs\demo_arpg1_logs`). "The boss was buggy": no detail yet; ask the owner or reproduce from that log.
+- **UI + classes:** the player must know what a skill does before pressing it: hover tooltips on the skill bar, the level-up card and the lamp picks (UI owns the look, classes the wording).
+- **Animation:** her movement must look right at the play camera, turning first. Suspect: the cast-move cap is live while the upper/lower split is dormant, so she slides through swings; diagnose from a capture before fixing.
+- **Combat + sound:** "nothing really felt satisfying" is ARPG_FUN's P0 list: hit-stop on her heavy hits, hit and drop sounds that cut through, density as a rhythm, ranked threats; plus deaths as rewards (P1 item 5).
+
 ## 10 November 2026, ~05:40 PST: the stance pick
 
 - **Her fighting stance: "Prowl".** Picked from A Prowl | B Dare (`survivorsunchained_inputs\scratch_motion_a1\L14\gate2_half.jpg`). Prowl as shown is her one drawn idle; every cut and skill starts and ends on it. Dare is dropped. Goes to A1 (cuts, carries), P7 (job 2), M3.
