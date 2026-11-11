@@ -114,17 +114,21 @@ float fx_hard(float edge, float x, float soft) {
 	return smoothstep(edge - aa, edge + aa, x);
 }
 
-vec4 fx_stroke(float across, float along, float life) {
+// (P7 round 3 fix) fx_stroke_at: the same stroke with its bristle field moved by the caller's `grain_at` (bristle-space
+// units), for a stroke whose `along` is its heat rather than its length (a ring's wavefront: its along is constant round it,
+// so its own bristles would run as even circles): the caller passes a seamless brush position (e.g. a point on a circle
+// that grows round the ring) and keeps fx_bristle.xy small. fx_stroke is this at grain_at 0, unchanged.
+vec4 fx_stroke_at(float across, float along, float life, vec2 grain_at) {
 	// (clamped into locals: Godot 4.5 resolves an assigned argument to a same-named uniform of the including shader)
 	float al = clamp(along, 0.0, 1.0);
 	float lf = clamp(life, 0.0, 1.0);
-	vec2 sp = vec2(across * fx_bristle.x * 0.5, al * fx_bristle.y);
+	vec2 sp = vec2(across * fx_bristle.x * 0.5, al * fx_bristle.y) + grain_at;
 	// the bristle field: gradient noise stretched along the stroke (each bristle a streak, its dry end a curved tip,
 	// not value noise's lattice square), two octaves, about 0..1
 	float b = clamp(0.5 + 0.42 * (fx_gnoise(sp + vec2(fx_stroke_seed * 17.3, fx_stroke_seed * 5.1)) * 0.65
 		+ fx_gnoise(sp * vec2(2.3, 1.7) + vec2(3.7, fx_stroke_seed * 9.3)) * 0.35), 0.0, 1.0);
 	// the brush's slow wander: the whole stroke's boundaries swell and pinch along its length
-	float wander = fx_gnoise(vec2(al * 4.0 + fx_stroke_seed * 3.1, 0.5 + fx_stroke_seed));
+	float wander = fx_gnoise(vec2(al * 4.0 + fx_stroke_seed * 3.1, 0.5 + fx_stroke_seed) + grain_at * 0.2);
 
 	// the width: thins toward the tail and with life; a round cap at the head
 	float w = fx_stroke_shape.x * mix(fx_stroke_shape.z, 1.0, pow(al, 0.7)) * (1.0 - 0.45 * lf);
@@ -163,3 +167,5 @@ vec4 fx_stroke(float across, float along, float life) {
 		* (1.0 - smoothstep(fx_glow.y * 0.6, fx_glow.y, out_d));
 	return vec4(mix(fx_glow_color, c, body), max(body, g * (1.0 - body)));
 }
+
+vec4 fx_stroke(float across, float along, float life) { return fx_stroke_at(across, along, life, vec2(0.0)); }

@@ -97,6 +97,10 @@ public static class Ev
         /// <summary>How many it struck, and the one of them nearest the cut's line (a body within 0.7 m of her only when no
         /// other was struck): where the view draws the contact; set as the cut lands.</summary>
         public int Struck; public double HitX, HitZ;
+        /// <summary>How many of Struck were not already struck by an earlier arc of the same swing (the first arc's Fresh == its
+        /// Struck; a single-arc cut's Fresh == Struck), so the sum of Fresh over a swing's arcs is the number of distinct bodies
+        /// the swing struck.</summary>
+        public int Fresh;
         /// <summary>How many of the struck it killed (the view's contact is larger for a kill).</summary>
         public int Killed;
         /// <summary>A chain's cut (Sim/SwingChain.cs): its 0-based index in the live chain; 0 for every other cut.</summary>
