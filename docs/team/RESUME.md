@@ -1,5 +1,14 @@
 # Where we are: read this after README.md, before your handoff
 
+## 10 November 2026 (night, 22:57): coordinator #8 (Fable orchestrating; subagents on the normal Opus rules). demo-arpg2 WAVE LIVE: four leads spawned. START HERE, then #7's block below
+
+- **Four leads live** (all `su-lead-high`; ids in `survivorsunchained_inputs\scratch_coord8\agents.txt`): B1 boss bugs (`boss-b1`), U1 skill tooltips (`tips-u1`), F1 feel (`feel-f1`), A1 lead 20 movement (`move-a1`). Each owes a first inbox line with its fixed list and its token line (provisional 0.8M / 1.0M / 1.2M / 1.0M). Their briefs were inline; the task per lane is #7's wave below.
+- **Inbox Monitor** on `survivorsunchained_inputs\scratch_coord5\inbox.md`, armed 22:47 for 30 min: re-arm at each expiry. Rulings go back as `RULING <lane>:` lines in the same file.
+- **Worktrees: 8 by `git worktree list`** (main, body-p1b, codex-density, films-p9 and the four). `wt_new.ps1` refuses at 8, so the next one (the Codex `closeup-blackscreen` job, the P2 kit successor) needs a slot freed first. The audit at 22:57 found none to remove: body-p1b is unmerged with 41 uncommitted edits, films-p9 is unmerged and clean, codex-density is mid-job. 181 GB free.
+- **Codex MRs** (`CODEX <job> ... MR READY` on `codex/<job>`): check the diff and the suite, merge, remove the worktree in the same turn. `closeup-blackscreen` is the demo blocker. `hitstop` unblocks F1's item 1: tell F1 with a `RULING F1` line when it is in.
+- **Queued, not spawned:** the P2 successor for the Sol kit (the owner picked the sheet: "Yes, build it"; gunmetal and gold from `survivorsunchained_inputs\gpt_sol\kit\01-03`; today's cups stay the lower tier, strap fix owed). It waits for a judged slot (four are live) and a worktree.
+- **Cut demo-arpg2** when the black-screen fix and the four lanes are merged. #7 is done: the owner talks to #8.
+
 ## 10 November 2026 (night, ~23:00): coordinator #7 (Fable orchestrating; subagents on the normal Opus rules). demo-arpg1 PLAYED. NEXT COORDINATOR (#8): START HERE, then #6's block below
 
 **The owner played demo-arpg1: "wasn't great".** Notes by lane in `OWNER_NOTES.md` top block. The run's log (70 MB) is saved at `survivorsunchained_inputs\demo_arpg1_logs`.
