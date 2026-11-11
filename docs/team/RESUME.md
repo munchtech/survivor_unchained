@@ -13,8 +13,7 @@
 - #6's lead ids are in `scratch_coord6\agents.txt`, and only #6's session can reach them. Anything they leave unfinished, you spawn a successor for from its handoff top block.
 
 **Integration `claude/vigilant-galileo-l6jqyx`:**
-- At 19:20 it holds the tutorial (27872d131, pushed) and loot (f40007767), merged locally, with the suite running before the push. If `git log origin/claude/vigilant-galileo-l6jqyx -1` is not f40007767 or later, run `dotnet test` in godot/tests (1 known flake: DraftCardFitTests, which passes alone), then push.
-- Then remove the loot-m9 worktree: `wt_remove.ps1 .claude\worktrees\loot-m9 -Force`. The only uncommitted edits there are .import/.uid churn, checked.
+- At 20:41 it holds the tutorial, loot and M7a (54c5a141a), all pushed, suite 2174/0/11 (1 known flake: DraftCardFitTests, which passes alone). loot-m9 and skills-p7 worktrees are removed.
 
 **Merged in #6's run:**
 - skills-p7 466cc36f4
@@ -24,11 +23,7 @@
 - loot-m9 f40007767 (M9 done: +1-to-skill affixes via SkillBook.RankOf, the Ford-Warden Legendary "Evening Chain" whose copy is a PLACEHOLDER for the story lead, zone-leave storeroom, tier tests; cadence 0.63 shown gear per pack against a 0.625 target)
 - R1 research: `docs/design/ARPG_FUN.md` (adb6132ba): what makes ARPGs fun, the owner's five guesses judged, 15 prioritized recs. Use it to plan the post-demo work. P0 is local capped hitstop, a drop sound and beam ladder, density measured as rhythm, and threats ranked on screen.
 
-**demo-arpg1: 2 of 4 in.** Tutorial and loot are merged. Two are left, both finishing under #6's wind-down order:
-- **M7a level-up lamps, skills-p7** (lead a49643e9c92ed816a, @f317a2f37+). It adds the `WickBook.LampOffered`/`LampLit` events, the level-up wick card and flash, and is now told to wire M6's A5a stub to LampOffered itself, with a test, inside its MR.
-  - Reversible decision: the card shows the honest wicks.json "+10% damage", not the "Third Blow" name.
-  - The picture round is skipped and owed.
-  - Wait for `MR READY skills-p7@<sha>`, then merge, suite, push, and remove the worktree.
+**demo-arpg1: 3 of 4 in.** Tutorial, loot and M7a level-up lamps are merged. M7a (skills-p7 54c5a141a): `WickBook.LampOffered`/`LampLit`, held-point wicks at 1+(L-1)/2, the level-up card offers the lamp, A5a wired via `Seams.LampOffered` in Game.cs. Reversible decision: the card shows the honest wicks.json "+10% damage", not the "Third Blow" name (options in docs/handoff/classes.md). The picture round is owed. One piece is left:
 - **A1 walk-while-swinging, motion-a1 Phase 1** (lead 19 a29d36ab18187eb37, @1c9fb44cc+). It covers the over_gait tool, the Sunder A/B `_run` clips, the built backpedal, the side-steps, and the **cast-move cap (ruled 18:45 by main, data in `data/content/cast_move.json`)**: during a press, forward stays at 70% of move speed, back drops to 1.3 m/s, sides to ~0.95 m/s.
   - The side-steps get one generation round. If they still cross or shuffle, the sides use a chest clamp.
   - The skills.json Sunder flip goes in only after the max judge, which runs only on a PASS bet.
@@ -43,10 +38,10 @@
 - **P9 films-p9 @5d24d74b5:** parked. C15 PASS WITH KNOWN; C13 is WIP.
 - **Queue after the demo:** ARPG_FUN P0 items (hit-shake scope and tuning, drop ladder via sound, density instrumentation), the M4 UI tally row, the M7a picture round, the Evening Chain copy (story), then skills/NPC leads as judged slots free.
 
-**Worktrees on disk:** main, body-p1b, films-p9, loot-m9 (remove at push), motion-a1, skills-p7. Rule: remove each in the same turn as its merge. The end-of-day sweep is `python tools/scratch/coordinator/wt_audit.py`.
+**Worktrees on disk:** main, body-p1b, films-p9, motion-a1. Rule: remove each in the same turn as its merge. The end-of-day sweep is `python tools/scratch/coordinator/wt_audit.py`.
 
 **Restart prompt for the owner (paste into a fresh session in survivorsunchained):**
-> You are Survivor Unchained coordinator #7 (Opus high, normal rules). Read CLAUDE.md, docs/team/README.md, then docs/team/RESUME.md's top block (10 Nov 19:20) only. Re-arm the coord5 inbox Monitor. Push integration if the loot merge isn't on origin yet, and remove loot-m9. Merge M7a (skills-p7) and A1 Phase 1 (motion-a1) when their MR READY lines land, or spawn one successor each from their handoff top blocks if they stopped without one. Then cut demo-arpg1 and tell me. No new lines beyond that until I say go.
+> You are Survivor Unchained coordinator #7 (Opus high, normal rules). Read CLAUDE.md, docs/team/README.md, then docs/team/RESUME.md's top block (10 Nov 19:20) only. Re-arm the coord5 inbox Monitor. Merge A1 Phase 1 (motion-a1) when its MR READY line lands, or spawn one successor from its handoff top block (docs/handoff/animation.md in motion-a1) if it stopped without one. Then cut demo-arpg1 and tell me. No new lines beyond that until I say go.
 
 ## 10 November 2026 (afternoon, updated 14:30): coordinator #6 handoff. NEXT COORDINATOR (Opus high, normal rules): START HERE, then #5's block below
 
