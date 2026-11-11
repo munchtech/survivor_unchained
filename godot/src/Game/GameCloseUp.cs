@@ -23,9 +23,16 @@ public partial class Game
     /// <summary>One standing in her place in the close view (the shot harness's --npc NAME:swap), framed as she is.</summary>
     internal SurvivorUnchained.View.PersonView? CloseStandIn;
 
+    readonly FrameGuard closeUpFrame = new();
+
+    void CloseUpFrame(double dt) => closeUpFrame.Run(this, dt,
+        static (g, step) => g.UpdateCloseUp(step),
+        static e => GD.PushError($"close-up disabled until the next zone: {e}"));
+
     /// <summary>A new place: the close view back to play's distance at once (--close C: set, where it is safe).</summary>
     void CloseUpBegin(ZoneRuntime z)
     {
+        closeUpFrame.Reset();
         closeUp.Reset();
         if (!z.Combat && Args.Has("close")) closeUp.Wheel(Args.Num("close", 0) / CloseUp.Step, 0, new CloseUp.Situation(true, false, false, false));
         cam.Close = 0;
@@ -218,10 +225,16 @@ public partial class Game
             // CloseKeyHair of its light: at 3000K and twice the light (the exposure down) it lifted her copper toward strawberry blonde.)
             closeKey = new SpotLight3D { LightColor = new Color(1f, 0.95f, 0.88f), SpotAngle = 24, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = 2 | SurvivorUnchained.View.PlayerView.CastLayer | SurvivorUnchained.View.PlayerView.HerLayer, LightSpecular = 0.3f, LightEnergy = 0 };
             scene.AddChild(closeKey);
+        }
+        if (closeKeyGear == null || !IsInstanceValid(closeKeyGear) || closeKeyGear.GetParent() != scene)
+        {
             // (Rendering 2, judge j1 D3 "the sword tip blazes white, the brightest thing in the frame": its twin on her gear
             // (PlayerView.HerGearLayer) with CloseKeyGearSpec of the sheen: at 0.3 the key's highlight ran up the blade clipped.)
             closeKeyGear = new SpotLight3D { SpotAngle = 24, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = SurvivorUnchained.View.PlayerView.HerGearLayer, LightSpecular = CloseKeyGearSpec, LightEnergy = 0 };
             scene.AddChild(closeKeyGear);
+        }
+        if (closeKeyHair == null || !IsInstanceValid(closeKeyHair) || closeKeyHair.GetParent() != scene)
+        {
             closeKeyHair = new SpotLight3D { LightColor = CloseKeyHairColour, SpotAngle = 24, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = false, LightCullMask = SurvivorUnchained.View.PlayerView.HerHairLayer, LightSpecular = 0.3f, LightEnergy = 0 };
             scene.AddChild(closeKeyHair);
         }
@@ -414,7 +427,7 @@ public partial class Game
     // --cel-rigs off: never (the spots as they were).
     DirectionalLight3D? celKey;
     uint celKeyMask, celWorldMask;
-    bool CelRigHeld => celKey != null && IsInstanceValid(celKey) && celKey.Visible;
+    bool CelRigHeld => celKey != null && GodotObject.IsInstanceValid(celKey) && celKey.Visible;
     const uint CelHerMask = 2 | SurvivorUnchained.View.PlayerView.CastLayer | SurvivorUnchained.View.PlayerView.HerLayer
         | SurvivorUnchained.View.PlayerView.HerHairLayer | SurvivorUnchained.View.PlayerView.HerGearLayer;
 
@@ -445,8 +458,13 @@ public partial class Game
 
     void CelRigOff()
     {
-        if (celKey != null && IsInstanceValid(celKey)) celKey.Visible = false;
-        if (celKeyMask != 0) { air.Key.LightCullMask = celWorldMask; celKeyMask = 0; }
+        if (IsInstanceValid(celKey)) celKey!.Visible = false;
+        else celKey = null;
+        if (celKeyMask != 0)
+        {
+            if (IsInstanceValid(air.Key)) air.Key.LightCullMask = celWorldMask;
+            celKeyMask = celWorldMask = 0;
+        }
         if (air.CameraRig != null) air.HoldCameraRig(null);
     }
 
@@ -457,7 +475,8 @@ public partial class Game
     /// is touched (it goes whole).</summary>
     void CloseUpLeave()
     {
-        if (celKeyMask != 0) { air.Key.LightCullMask = celWorldMask; celKeyMask = 0; }
+        if (celKeyMask != 0 && IsInstanceValid(air.Key)) air.Key.LightCullMask = celWorldMask;
+        celKeyMask = celWorldMask = 0;
         if (air.CameraRig != null) air.HoldCameraRig(null);
         bool held = celKey != null;
         celKey = null;
@@ -465,8 +484,18 @@ public partial class Game
         keyFolk = rimFolk = coolFolk = bodyRimFolk = groundKey = null;
         fireFill = null;
         CloseKeySrcLamp = null;
+        keyLight = bodyKey = fillLight = edgeLight = rimLight = bounceLight = lookBodyRim = null;
+        herFire = fireSrc = null;
+        CloseStandIn = null;
+        if (lampDimHooked) RenderingServer.FramePreDraw -= LampDimDraw;
+        lampDimHooked = false;
         lampDim.Clear();
         lampDimK = 1;
+        closeDrives = false;
+        closeDrift = 0;
+        skyShown = 1;
+        eyesNight = 0;
+        roomTops.Clear();
         if (held && Args.Tool) GD.Print("closeup: leave drops the cel key and the close lights with the place");
     }
 
@@ -505,7 +534,12 @@ public partial class Game
     SpotLight3D? bodyRimFolk;
     void Twin(SpotLight3D? src, ref SpotLight3D? twin, string name, bool on, float gain, Color? colour, float spec)
     {
-        if (src == null || !IsInstanceValid(src) || scene == null) return;
+        if (src == null || !IsInstanceValid(src) || scene == null)
+        {
+            if (IsInstanceValid(twin)) twin!.Visible = false;
+            else twin = null;
+            return;
+        }
         uint mask = src.LightCullMask;
         uint want = on ? mask & ~2u : mask | 2u;
         if (mask != want) src.LightCullMask = want;

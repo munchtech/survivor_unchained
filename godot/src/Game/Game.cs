@@ -1572,7 +1572,7 @@ public partial class Game : Node, IZoneHost
             // The close view of her: the wheel in town, and the idle view anywhere quiet (GameCloseUp).
             Spots(dt);
             Lookdev(dt); LookSwatches(); LookFx(dt);   // (L1 B2: --lookdev-swatches; B6: --lookdev-fx)
-            UpdateCloseUp(dt);
+            CloseUpFrame(dt);
             Perf.Begin(Perf.Part.Later);
             RunLater(dt);
             Perf.End(Perf.Part.Later);
