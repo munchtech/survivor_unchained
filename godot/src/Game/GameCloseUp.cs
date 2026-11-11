@@ -401,7 +401,7 @@ public partial class Game
             // (L1 B4, rule 3: under cel the close view is one key, one colored fill and one rim; the seven spots split by layer
             // (key, key gear, key hair, rim, rim gear, fill, body rim) are off, and her skin keeps the sky's whole share)
             foreach (var l in new Light3D?[] { closeKey, closeKeyGear, closeKeyHair, closeRim, closeRimGear, closeFill, closeBodyRim, keyFolk, rimFolk, coolFolk })
-                if (l != null) { l.LightEnergy = 0; l.Visible = false; }
+                if (l != null && IsInstanceValid(l)) { l.LightEnergy = 0; l.Visible = false; }
             if (skyShown != 1) { skyShown = 1; SurvivorUnchained.View.People.HerSkyShare(pv.Person, 1); }
         }
     }
@@ -414,7 +414,7 @@ public partial class Game
     // --cel-rigs off: never (the spots as they were).
     DirectionalLight3D? celKey;
     uint celKeyMask, celWorldMask;
-    bool CelRigHeld => celKey != null && celKey.Visible;
+    bool CelRigHeld => celKey != null && IsInstanceValid(celKey) && celKey.Visible;
     const uint CelHerMask = 2 | SurvivorUnchained.View.PlayerView.CastLayer | SurvivorUnchained.View.PlayerView.HerLayer
         | SurvivorUnchained.View.PlayerView.HerHairLayer | SurvivorUnchained.View.PlayerView.HerGearLayer;
 
@@ -450,6 +450,26 @@ public partial class Game
         if (air.CameraRig != null) air.HoldCameraRig(null);
     }
 
+    /// <summary>The place is being let go (LeaveZone, before its scene is freed): the close view's lights live in that scene and go
+    /// with it, so they are given back here and every hold on them dropped. Held past it, the next place read a freed light every
+    /// frame: the cel key (CelRigHeld) threw in _Process from the Waystation's c04b on, the frame never finished and the screen stayed
+    /// black (demo-arpg1). What outlives the place is given back (the world key's mask, the camera rig); nothing in the dying scene
+    /// is touched (it goes whole).</summary>
+    void CloseUpLeave()
+    {
+        if (celKeyMask != 0) { air.Key.LightCullMask = celWorldMask; celKeyMask = 0; }
+        if (air.CameraRig != null) air.HoldCameraRig(null);
+        bool held = celKey != null;
+        celKey = null;
+        closeKey = closeKeyGear = closeKeyHair = closeRim = closeRimGear = closeBodyRim = closeFill = closeFillFolk = null;
+        keyFolk = rimFolk = coolFolk = bodyRimFolk = groundKey = null;
+        fireFill = null;
+        CloseKeySrcLamp = null;
+        lampDim.Clear();
+        lampDimK = 1;
+        if (held && Args.Tool) GD.Print("closeup: leave drops the cel key and the close lights with the place");
+    }
+
     // Rendering 2: the people beside her, and an NPC the close view frames (CloseStandIn), take the rig's lights through twins of
     // their own on people's layer (2), while she is off it (OwnLayer); her own layers keep the rig as it was. Her rig's cool fill
     // and moon rim on a package NPC's red-rich paint read lavender, then rose-magenta on the far cheek and nose (NPC 20's judges;
@@ -466,14 +486,14 @@ public partial class Game
     void FolkTwins(bool on, Vector3 head = default)
     {
         Twin(closeKey, ref keyFolk, "CloseKeyFolk", on, CloseFolkKey, null, CloseFolkKeySpec);
-        if (keyFolk != null && keyFolk.Visible)
+        if (keyFolk != null && IsInstanceValid(keyFolk) && keyFolk.Visible)
         {
             keyFolk.LightColor = keyFolk.LightColor.Lerp(CloseKeyColourFolk, 0.5f);
             keyFolk.SpotAngle = CloseFolkFillCone; keyFolk.SpotAngleAttenuation = CloseFolkFillEdge;
             keyFolk.LookAt(head);
         }
         Twin(closeFill, ref closeFillFolk, "CloseFillFolk", on, 1f, CloseFillColourFolk, 0f);
-        if (closeFillFolk != null && closeFillFolk.Visible)
+        if (closeFillFolk != null && IsInstanceValid(closeFillFolk) && closeFillFolk.Visible)
         {
             closeFillFolk.SpotAngle = CloseFolkFillCone; closeFillFolk.SpotAngleAttenuation = CloseFolkFillEdge;
             closeFillFolk.LookAt(head);
