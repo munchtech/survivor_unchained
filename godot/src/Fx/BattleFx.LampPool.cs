@@ -47,7 +47,7 @@ public partial class BattleFx
     void LampPoolBuild(Battle b, LampMark l)
     {
         lampPoolX = l.X; lampPoolZ = l.Z; lampPoolR = l.Pool;
-        float half = 0.13f;
+        float half = 0.22f;   // (round 2) the ink bed and the hand's wobble need the room: lamp_pool.gdshader lp_half
         lampPoolMat!.SetShaderParameter("lp_half", half);
         lampPoolMat.SetShaderParameter("lp_circ", (float)(Math.Tau * l.Pool));
         var st = new SurfaceTool();
