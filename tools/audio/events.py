@@ -124,7 +124,7 @@ EV = {
     # Levels: rare about -20 LUFS in the hits' context (hits play near -25), epic/set about -18, the toll the loudest bar a boss's fall.
     "drop.2":           E(L("drop_rare", 0.43, [0.98, 1.03]), gate=[1, 500]),
     "drop.3":           E(L("drop_epic", 0.31, [0.98, 1.02], stereo=True), gate=[1, 500]),
-    "drop.4":           E(L("drop_set", 0.69, [0.98, 1.02], stereo=True), gate=[1, 500]),
+    "drop.4":           E(L("drop_set", 0.62, [0.98, 1.02], stereo=True), L("drop_set", 0.5, [1.49, 1.51], stereo=True, delay=0.16), gate=[1, 500]),  # the pair struck one after the other, up a fifth: its rhythm tells it from the rare's one chime
     "toll":             E(L("drop_legendary", 0.90, stereo=True), bus="ui", near=1, lead=True),
     "toll.storied":     E(L("drop_legendary", 0.90, stereo=True), L("drop_storied_fire", 0.50, stereo=True, delay=0.3), bus="ui", near=1, lead=True),
     # zone beds (Ambience.SetZone: bed.<zone>.<day|night>, then bed.<zone>; the first layer's take loops, at its gain)

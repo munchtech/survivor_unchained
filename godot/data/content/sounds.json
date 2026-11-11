@@ -93,7 +93,7 @@
     "dash.hard_landing": {"bus": "sfx", "near": 1, "layers": [{"take": "hard_landing", "gain": 0.25, "pitch": [0.95, 1.05]}]},
     "drop.2": {"bus": "sfx", "gate": [1, 500], "layers": [{"take": "drop_rare", "gain": 0.43, "pitch": [0.98, 1.03]}]},
     "drop.3": {"bus": "sfx", "gate": [1, 500], "layers": [{"take": "drop_epic", "gain": 0.31, "pitch": [0.98, 1.02], "stereo": true}]},
-    "drop.4": {"bus": "sfx", "gate": [1, 500], "layers": [{"take": "drop_set", "gain": 0.69, "pitch": [0.98, 1.02], "stereo": true}]},
+    "drop.4": {"bus": "sfx", "gate": [1, 500], "layers": [{"take": "drop_set", "gain": 0.62, "pitch": [0.98, 1.02], "stereo": true}, {"take": "drop_set", "gain": 0.5, "pitch": [1.49, 1.51], "stereo": true, "delay": 0.16}]},
     "explosion": {"bus": "sfx", "layers": [{"take": "explosion_small", "gain": 0.4, "pitch": [0.9, 1.05]}]},
     "flare.bell_of_the_morning.boom": {"bus": "flare", "near": 1, "duck": {"sfx": 0.15, "seconds": 1.4}, "layers": [{"take": "flare_boom_bell_of_the_morning", "gain": 3.9, "stereo": true}]},
     "flare.bell_of_the_morning.inhale": {"bus": "flare", "near": 1, "layers": [{"take": "flare_intake_warden", "gain": 1.6, "stereo": true}]},
