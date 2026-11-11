@@ -1,0 +1,163 @@
+{
+ "kind": "gait",
+ "rules": "R7.1 armed, walk_warden's carry (one carry for the 2D node's blends): her facing held toward the aim, the root to her right; side steps, no leg crossing, hips square to the aim",
+ "bands": {
+  "speed_mps": [
+   1.26,
+   1.39
+  ],
+  "steps_min": [
+   103,
+   109
+  ],
+  "list_pm_deg": [
+   2,
+   6
+  ],
+  "yaw_pm_deg": [
+   2,
+   7
+  ],
+  "yaw_mean_deg": [
+   -5,
+   5
+  ],
+  "thorax_counter_pm_deg": [
+   1,
+   5
+  ],
+  "sway_pm_cm": [
+   2,
+   4.5
+  ],
+  "feet_gap_min_cm": [
+   4,
+   40
+  ],
+  "head_bob_cm": [
+   0,
+   2.5
+  ],
+  "arm_swing_r_pm_deg": [
+   2,
+   10
+  ],
+  "elbow_r_deg": [
+   15,
+   40
+  ],
+  "blade_below_deg": [
+   72,
+   82
+  ]
+ },
+ "gen": {
+  "engine": "kimodo",
+  "seconds": 7.0,
+  "takes": 10,
+  "seeds": [
+   181,
+   182,
+   183
+  ],
+  "prompts": [
+   "A confident woman side-steps to her right without crossing her feet, still facing forward, a sword held low in her right hand and a shield on her left arm",
+   "A warrior woman sidesteps to the right calmly, hips square to the front, a sword down by her right side and a shield on her left forearm",
+   "A relaxed woman steps sideways to her right, facing ahead, holding a sword in her right hand and a shield on her left arm"
+  ],
+  "root2d": {
+   "kind": "straight",
+   "speed": 1.3,
+   "ramp": 0.8,
+   "deg": -90,
+   "face_deg": 0,
+   "every": 1
+  }
+ },
+ "post": {
+  "loop": true,
+  "inplace": true,
+  "cycle_s": [
+   0.9,
+   1.6
+  ],
+  "gait": true,
+  "duty": 0.45,
+  "game_speed": 1.3244,
+  "crop": [
+   30,
+   180
+  ],
+  "travel_deg": -90,
+  "cycle_frames": 34
+ },
+ "notes": "walk_warden_right (A1 lead 19 GAITS): pairs with walk_warden in PlayerView's BlendSpace2D at (Vw along -90 deg), Sync on, 1.0x: so its speed is walk_warden's (built 1.3244) and its loop the same 34 frames (cycle_frames resamples the picked cycle; frame 0 = the left foot's stance start, as the forward walk's). Unbuilt: gen -> takes -> build -> check -> look.",
+ "gate": [
+  "speed_mps",
+  "feet_gap_min_cm"
+ ],
+ "fit": {
+  "pelvis": {
+   "yaw_pm": 7,
+   "list_pm": 6
+  },
+  "thorax": {
+   "counter_pm": 5
+  },
+  "bob": {
+   "head_cm": 2.2
+  },
+  "blade": {
+   "dir": [
+    -0.0995,
+    -0.9611,
+    -0.2575
+   ],
+   "fist": [
+    0.0,
+    -0.3,
+    1.0
+   ],
+   "keep": 0.5
+  },
+  "pop": {
+   "x": 4,
+   "span": 4,
+   "cap": {}
+  },
+  "shield": {
+   "solve": true,
+   "boss": [
+    0.34,
+    0.06,
+    0.08
+   ],
+   "open_deg": 90,
+   "tilt_deg": 5,
+   "branch": -1
+  },
+  "wrist": {
+   "hand_r": {
+    "flex": 25,
+    "dev": 15,
+    "mode": "turn",
+    "swivel": 0
+   },
+   "hand_l": {
+    "flex": 25,
+    "dev": 15,
+    "mode": "hold",
+    "swivel": 0,
+    "twist": false
+   }
+  },
+  "clear": {
+   "target_mm": 12,
+   "passes": 6
+  }
+ },
+ "held": [
+  "sword",
+  "shield"
+ ]
+}

@@ -54,9 +54,12 @@ CACHE = Path(os.environ.get("KIMODO_CACHE", "C:/Users/munch/Tools/mocap/kimodo_c
 KFPS = 30
 
 
-def specs(names):
+def specs(names, ungenerated=False):
+    """The specs named (all without names). A gen-only spec with no source yet (its takes not imported: a new
+    directional walk) is left out of the build-side commands unless named, and always kept for gen and takes."""
     allp = sorted(p for p in (P4 / "specs").glob("*.json") if not p.stem.endswith(".takes"))
-    return [p for p in allp if not names or p.stem in names]
+    return [p for p in allp if (not names or p.stem in names)
+            and (ungenerated or names or "source" in json.loads(p.read_text()))]
 
 
 PLAYS = ("name", "fps", "frames", "loop", "rot", "pos", "beats", "speed_mps")   # what P4Pack reads: all that plays
@@ -240,7 +243,9 @@ def run_post(src, spec, name):
                name=name, gait=po.get("gait", False), duty=po.get("duty"),
                cycle=(int(round(cyc[0] * KFPS)), int(round(cyc[1] * KFPS))) if cyc else None,
                crop=tuple(po["crop"]) if po.get("crop") else None, fit=fit_of(spec),
-               body=body_field() if "clear" in spec.get("fit", {}) else None, action=act, beats=beats)
+               body=body_field() if "clear" in spec.get("fit", {}) else None, action=act, beats=beats,
+               # (a directional gait: its travel's heading in her frame, its cycle resampled to the paired walk's frames)
+               travel_deg=po.get("travel_deg", 0.0), frames=po.get("cycle_frames"))
     r.law = MC.drop_rest(r.clip, r.rig, LAW_BONES, LAW_TOL_DEG)
     if spec.get("meta"):     # (the spec's meta carried onto the clip as data: P4Pack sets each key on the Animation;
         r.clip["meta"] = {**r.clip.get("meta", {}), **spec["meta"]}   # e.g. {"stance": true}: a cut with a _run)
@@ -470,7 +475,7 @@ def hand_targets(r, spec):
 
 
 def gen_specs(names):
-    return [(p, json.loads(p.read_text())) for p in specs(names) if json.loads(p.read_text()).get("gen")]
+    return [(p, json.loads(p.read_text())) for p in specs(names, True) if json.loads(p.read_text()).get("gen")]
 
 
 def soma_k(spec):
@@ -487,7 +492,11 @@ def path_of(g, sc):
     # (orbit [x, z]: the root circles a pivot at the origin, at that offset when the heading is 0 and turning with it:
     # a spin over a planted foot)
     tps, h0, orb = r.pop("heading_tps", None), r.pop("heading_deg0", 0.0), r.pop("orbit", None)
+    # (face_deg: a constant heading track, her facing held while the path goes any way: a back or side walk's)
+    face = r.pop("face_deg", None)
     out = {"xz": paths.make(r, g["seconds"], KFPS).round(5).tolist(), "every": r.get("every", 1)}
+    if face is not None and not tps:
+        out["heading"] = [round(float(np.radians(face)), 6)] * len(out["xz"])
     if tps:
         h = np.radians(h0) + 2 * np.pi * tps * np.arange(len(out["xz"])) / KFPS
         out["heading"] = h.round(6).tolist()
@@ -647,7 +656,8 @@ def over_gait_of(spec, name):
     st, ga = MC.read(OUT / f"{spec['of']}.json"), MC.read(OUT / f"{spec['gait']}.json")
     sp = pieces()["shieldp"]["at"] if "shield" in spec.get("held", ["shield"]) else None
     up, log = OG.over_gait(st, ga, Rig(RIG), keep={"l": sp} if sp is not None else None, name=name,
-                           arms=spec.get("arms", "node"), anchor=spec.get("anchor", "pelvis"), soft=spec.get("soft"))
+                           arms=spec.get("arms", "node"), anchor=spec.get("anchor", "pelvis"), soft=spec.get("soft"),
+                           targets=spec.get("targets", "world"))
     return up, log, st, ga
 
 
@@ -664,6 +674,11 @@ def over_gait_measure(up, st, ga, body=None, rig=None):
     bl = (pc["blade"]["at"], pc["blade"]["dir"], pc["blade"]["tip"])
     Gs, Ps = MC.globals_of(st, rig)
     Ps = Ps + np.array(up["meta"]["anchor_m"])[:, None]
+    Gw, Pw = Gs, Ps                     # (the world path: the stance's in the carried node frame)
+    if up["meta"].get("targets", "world") == "chest":    # the path the solve aimed at: carried by the re-solved chest
+        Gm, Pm = OG.lay(up, ga, rig, 0.0, pelvis_mean=True)
+        ch = rig.index["spine_05"]
+        Gs, Ps = OG.carry(Gs, Ps, Gm[:, ch], Pm[:, ch], ch)
     fr = [f for f in range(st["frames"]) if OVER_GAIT_WINDOW[0] - 1e-6 <= f / st["fps"] <= OVER_GAIT_WINDOW[1] + 1e-6]
     rows = {}
     runs = [("mean", 0.0, None)] + [(str(o), o, None) for o in OVER_GAIT_OFFSETS]
@@ -671,6 +686,9 @@ def over_gait_measure(up, st, ga, body=None, rig=None):
     for o, at, k in runs:      # (k: the engine's pelvis counter, PelvisCounter's math, at that share of the swing)
         G, P = OG.lay(up, ga, rig, at, pelvis_mean=o == "mean", k=k)
         m = OG.paths(G, P, Gs, Ps, rig, fr, bl, pc["shieldp"]["at"])
+        if Gw is not Gs:
+            w = OG.paths(G, P, Gw, Pw, rig, fr, bl, pc["shieldp"]["at"])
+            m.update({f"w_{k}": w[k] for k in ("tip_cm", "blade_deg", "hand_cm", "boss_cm")})
         Gb = m44(G, P)
         m["pops"] = len(CC.pops(rig.names, list(rig.parent), Gb, list(up["bones"]), False)[0])
         if body is not None:
@@ -702,6 +720,8 @@ def check_over_gait(p, sp, body):
     print("\n" + f"{p.stem}: {judged_state(sp, up)} (pack gate); over {sp['gait']}, against {sp['of']} in "
           f"{OVER_GAIT_WINDOW[0]}-{OVER_GAIT_WINDOW[1]} s (offset = share of the gait's cycle; mean = its mean pelvis)")
     keys = ("tip_cm", "blade_deg", "hand_cm", "boss_cm", "chest_deg", "chest_cm", "head_deg", "pops", "arm_in_l", "arm_in_r")
+    if any("w_tip_cm" in m for m in rows.values()):     # (targets chest: the columns above against the chest-carried path)
+        keys += ("w_tip_cm", "w_blade_deg", "w_hand_cm", "w_boss_cm")
     print("  " + "offset".ljust(9) + "".join(k.rjust(11) for k in keys))
     for o, m in rows.items():
         print("  " + o.ljust(9) + "".join(str(m.get(k, "-")).rjust(11) for k in keys))
