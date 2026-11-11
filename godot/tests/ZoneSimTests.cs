@@ -14,5 +14,9 @@ public class ZoneSimTests
         Assert.True(r.BossReached, r.StuckAt ?? "capped");
         Assert.True(r.Seconds < ZoneSim.Cap);
         Assert.True(r.Packs > 0 && r.Kills > 0);
+        Assert.Equal(r.Kills, r.Density.Kills);
+        Assert.Equal(r.Seconds, r.Density.Seconds);
+        Assert.NotEmpty(r.Density.Gaps);
+        Assert.Equal(r.Density.Kills, System.Linq.Enumerable.Sum(r.Density.Windows, w => w.Kills));
     }
 }

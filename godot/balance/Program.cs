@@ -17,6 +17,8 @@ using SurvivorUnchained.Rpg;
 
 /* The balance harness's command line.
  *
+ *   density Low Ford and Verge rhythm; --zones lowford,verge --bots human --seeds 1 --tier 2
+ *           --level 5 --day 1 --date YYYY-MM-DD --out docs/team/density.md --out-dir DIR
  *   arena   whole arenas, played by the Pilot, drafted by a policy
  *   probe   builds drafted to an ember level and put through the standard test
  *   report  a summary of runs saved before (arena's .jsonl)
@@ -145,12 +147,13 @@ switch (cmd)
     case "verge-day": VergeDay(); break;
     case "lowford-day": LowfordDay(); break;
     case "zone": ZoneRuns(); break;
+    case "density": Density(); break;
     case "place": Place(); break;
     case "landmarks": Landmarks(); break;
     case "board": BoardPlan.Run(opt.Get("people", "pack"), opt.Int("tier", 1), opt.Get("seed", "311").Split(',').Select(int.Parse).ToArray(), opt.Get("out", ""), double.Parse(opt.Get("ppm", "4"), System.Globalization.CultureInfo.InvariantCulture)); break;
     case "suggest": SuggestPath(); break;
     default:
-        Console.WriteLine("dotnet run -c Release --project godot/balance -- arena|probe|report [options]  (see Program.cs)");
+        Console.WriteLine("dotnet run -c Release --project godot/balance -- arena|probe|report|zone|density [options]  (see Program.cs)");
         break;
 }
 
@@ -226,7 +229,7 @@ void HandPairs(List<RunSpec> specs, string outPath)
             if (board)
             {
                 // --offwicks 1: the off run keeps Light my way's wicks too, so the pair reads the board alone (the wicks light by the
-                // ember's ranks at night on an empty board as on a full one: CLASS_IDENTITY_AND_TALENTS.md §3.3).
+                // ember's ranks at night on an empty board as on a full one: CLASS_IDENTITY_AND_TALENTS.md Â§3.3).
                 var boff = new ArenaSim.Fixed { NoFall = noFall, Span = span, NoWicks = opt.Get("offwicks", "0") != "1" };
                 var b0 = ArenaSim.Play(spec with { Lamps = "empty" }, boff);
                 // --boardwicks 0: the on run's lamps without its wicks (which half of the board's P is the wicks').
@@ -427,6 +430,54 @@ void Place()
  * with what she has learned by then (--learned 0,2,4 a stage), in three setups: old (1/2/3 slots, Hands off), new
  * (2/3/4, Hands on), nohand (new slots, Hands off). --stages 1:1:0,4:2:2,8:4:4 (level:day:learned)
  * --packs wolves,boars,footpads,lamplings,elitewolves --setups old,new,nohand --seeds N --waves N (packs a fight) --bot plain|deft --out PATH */
+// Density keeps one JSON per walk and regenerates the baseline table.
+void Density()
+{
+    string root = Directory.GetParent(Directory.GetParent(DataFiles.Dir)!.FullName)!.FullName;
+    string outDir = Path.GetFullPath(opt.Get("out-dir", Path.Combine(root, "godot", "balance", "out", "density")));
+    string reportPath = Path.GetFullPath(opt.Get("out", Path.Combine(root, "docs", "team", "density.md")));
+    string date = DateOnly.Parse(opt.Get("date", DateTime.Today.ToString("yyyy-MM-dd"))).ToString("yyyy-MM-dd");
+    string revision = opt.Get("revision", "working tree");
+    int tier = opt.Int("tier", 2), seed0 = opt.Int("seed0", 1), seeds = opt.Int("seeds", 1);
+    if (seeds < 1) throw new ArgumentException("--seeds must be positive");
+    var zones = opt.List("zones", "lowford,verge");
+    var bots = opt.List("bots", "human");
+    var calling = opt.Get("calling", "warden");
+    if (zones.Length == 0 || zones.Any(z => z is not ("lowford" or "verge"))) throw new ArgumentException("--zones lowford,verge");
+    if (bots.Length == 0 || bots.Any(b => b is not ("human" or "careless" or "deft" or "plain"))) throw new ArgumentException("--bots human,careless,deft,plain");
+    Directory.CreateDirectory(outDir);
+    var runs = new List<DensityRun>();
+    var files = new List<string>();
+    var json = new JsonSerializerOptions { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    string batch = DateTime.UtcNow.ToString("yyyyMMddTHHmmssfffffff");
+    foreach (var zone in zones)
+        foreach (var bot in bots)
+            for (int seed = seed0; seed < seed0 + seeds; seed++)
+            {
+                DensityRun run;
+                if (zone == "lowford")
+                {
+                    var r = ZoneSim.Play(new ZoneRunSpec(seed, zone, bot, tier, calling));
+                    run = new(zone, seed, calling, bot, tier, 1, 1, r.Reached, r.Falls, 0, r.PlaySeconds, r.Density);
+                }
+                else
+                {
+                    var r = VergeZoneSim.Play(new VergeZoneSpec(seed, calling, bot, tier, opt.Int("level", 5), opt.Int("day", 1)));
+                    run = new(zone, seed, calling, bot, tier, r.Spec.Level, r.Spec.Day, r.Reached, r.Falls, r.Skipped, r.Density.Seconds, r.Density);
+                }
+                runs.Add(run);
+                string path = Path.Combine(outDir, $"{batch}_{zone}_{calling}_{bot}_t{tier}_s{seed}.json");
+                File.WriteAllText(path, JsonSerializer.Serialize(new DensityRunFile(1, date, revision, run), json));
+                files.Add(Path.GetRelativePath(root, path).Replace('\\', '/'));
+                Console.WriteLine($"{run.Key}: {(run.Reached ? "through" : "INCOMPLETE")} {run.Density.Seconds / 60:0.0} min, {run.Falls} falls, {run.Density.KillsPerMinute:0.00} kills/min -> {path}");
+            }
+    Directory.CreateDirectory(Path.GetDirectoryName(reportPath)!);
+    File.WriteAllText(reportPath, DensityReport.Markdown(runs, date, revision,
+        "dotnet run -c Release --project godot/balance -- " + string.Join(" ", args), files));
+    Console.WriteLine($"{runs.Count(r => r.Reached)}/{runs.Count} through; table: {reportPath}");
+    if (runs.Any(r => !r.Reached)) Environment.ExitCode = 1;
+}
+
 // zone: a real zone played from its start (M5-F, ARPG 7.1): the Low Ford from the Wake to the gate, through HeadlessHost:
 // --zone lowford --bots human,careless,deft,plain,standing --seeds 8 --tier 2 (or --tiers 1,2) --also 1:human+deft --out PATH.md
 void ZoneRuns()
@@ -718,7 +769,7 @@ void WeaponsAll()
     });
     var sb = new StringBuilder();
     sb.AppendLine("## Every combat skill alone\n");
-    sb.AppendLine("Index: 0.6 × crowd damage + 0.4 × champion damage, each against the median of all skills at that stage (1.00 is the median). In brackets: crowd / champion damage a second, and the damage the survivor took a second (the price of the range it fights at).\n");
+    sb.AppendLine("Index: 0.6 Ã— crowd damage + 0.4 Ã— champion damage, each against the median of all skills at that stage (1.00 is the median). In brackets: crowd / champion damage a second, and the damage the survivor took a second (the price of the range it fights at).\n");
     sb.AppendLine("| skill | r1 | r4 | r8 | evolutions |");
     sb.AppendLine("|---|---|---|---|---|");
     var per = results.GroupBy(r => (r.Weapon, r.Evo, r.Stage)).ToDictionary(g => g.Key, g => (Crowd: Report.Median(g.Select(x => x.R.CrowdDps)), Boss: Report.Median(g.Select(x => x.R.BossDps)), Hurt: Report.Median(g.Select(x => x.R.Intake))));
@@ -726,7 +777,7 @@ void WeaponsAll()
     var medB = per.GroupBy(x => x.Key.Stage).ToDictionary(g => g.Key, g => Report.Median(g.Select(x => x.Value.Boss)));
     string Cell(string w, string? evo, string stage)
     {
-        if (!per.TryGetValue((w, evo, stage), out var v)) return "–";
+        if (!per.TryGetValue((w, evo, stage), out var v)) return "â€“";
         double idx = 0.6 * v.Crowd / medC[stage] + 0.4 * v.Boss / Math.Max(1, medB[stage]);
         return $"{idx:0.00} ({v.Crowd:0}/{v.Boss:0}, {v.Hurt:0})";
     }
