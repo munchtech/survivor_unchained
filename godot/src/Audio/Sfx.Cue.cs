@@ -21,6 +21,7 @@ public static partial class Sfx
     /// recorded only, no synth fallback. The Pack's howl, the dead's horn and the rest still go through Tell.</summary>
     public static void Telegraph(string tell, bool land, bool boss, Where w = default, double? windup = null)
     {
+        using var _lead = Synth.LeadFor(true);
         string phase = land ? "land" : "windup";
         double? len = land ? null : windup; // the windup ends as the blow lands, whatever the take's length or pitch
         if (boss) SoundBank.PlayFirstFor(len, w, $"telegraph.{tell}.{phase}.boss", $"telegraph.{tell}.{phase}");

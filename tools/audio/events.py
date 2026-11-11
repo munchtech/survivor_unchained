@@ -14,8 +14,9 @@ def L(take, gain, pitch=None, **kw):
     d.update(kw)
     return d
 
-def E(*layers, bus="sfx", near=None, gate=None, synth=None, duck=None):
+def E(*layers, bus="sfx", near=None, gate=None, synth=None, duck=None, lead=False):
     d = {"bus": bus}
+    if lead: d["lead"] = True
     if near is not None: d["near"] = near
     if gate: d["gate"] = gate
     if synth: d["synth"] = synth

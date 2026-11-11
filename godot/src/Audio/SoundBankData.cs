@@ -40,6 +40,8 @@ public sealed class SoundBankData
         public double Near { get; set; } = 0.5;
         public string Synth { get; set; } = "replace";
         public DuckDef? Duck { get; set; }
+        /// <summary>A lead sound cuts through the crowd (Synth's crowd sidechain); default false.</summary>
+        public bool Lead { get; set; }
         public List<LayerDef> Layers { get; set; } = new();
     }
 

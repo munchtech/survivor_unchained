@@ -26,6 +26,10 @@
     }
   },
   "ducks": {
+    "lead": {
+      "sfx": 0.5,
+      "seconds": 0.09
+    },
     "talk": {
       "music": 0.6,
       "ambience": 0.72

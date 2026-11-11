@@ -18,6 +18,7 @@ public struct Tone
     public Wave Type;
     public double? T, A, Hold, F2, Glide, Lp, Lp2, Q, Hp, Detune, Verb;
     public Bus Bus;
+    public bool Lead;
     public double Pan;
 }
 
@@ -28,6 +29,7 @@ public struct Hiss
     public double? T, A, Bp, Bp2, Q, Lp, Lp2, Hp, Verb;
     public bool Brown;
     public Bus Bus;
+    public bool Lead;
     public double Pan;
 }
 
@@ -37,6 +39,7 @@ public struct Fm
     public double F, Ratio, Index, D, G;
     public double? T, A, F2, Verb;
     public Bus Bus;
+    public bool Lead;
     public double Pan;
 }
 
@@ -47,6 +50,7 @@ public struct Clip
     public double G;
     public double? T, Pitch, Lp, Verb;
     public Bus Bus;
+    public bool Lead;
     public double Pan;
     /// <summary>Play the take's two channels as recorded (when it has them), ignoring Pan.</summary>
     public bool Stereo;
@@ -242,10 +246,20 @@ public partial class Synth : Node
 
     public static double R(double a, double b) => a + rng.NextDouble() * (b - a);
 
-    public void Play(Tone o) { if (Live) incoming.Enqueue(new ToneVoice(this, o)); }
-    public void Play(Hiss o) { if (Live) incoming.Enqueue(new NoiseVoice(this, o)); }
-    public void Play(Fm o) { if (Live) incoming.Enqueue(new FmVoice(this, o)); }
-    public void Play(Clip o) { if (Live && Recordings.Pick(o.Of) is { } take) incoming.Enqueue(new ClipVoice(this, o, take)); }
+    /// <summary>While a LeadFor scope is open (the main thread, one recipe), every voice asked for is a lead voice.</summary>
+    static bool leadScope;
+    public readonly struct LeadScope : IDisposable
+    {
+        readonly bool was;
+        public LeadScope(bool on) { was = leadScope; leadScope = was || on; }
+        public void Dispose() => leadScope = was;
+    }
+    public static LeadScope LeadFor(bool on) => new(on);
+
+    public void Play(Tone o) { if (Live) { o.Lead |= leadScope; incoming.Enqueue(new ToneVoice(this, o)); } }
+    public void Play(Hiss o) { if (Live) { o.Lead |= leadScope; incoming.Enqueue(new NoiseVoice(this, o)); } }
+    public void Play(Fm o) { if (Live) { o.Lead |= leadScope; incoming.Enqueue(new FmVoice(this, o)); } }
+    public void Play(Clip o) { if (Live && Recordings.Pick(o.Of) is { } take) { o.Lead |= leadScope; incoming.Enqueue(new ClipVoice(this, o, take)); } }
     public void Add(Bed b) => bedsIn.Enqueue(b);
     /// <summary>Every one-shot sound playing or asked for is dropped at the mixer's next
     /// chunk (a skipped storybook's tails must not ring on into what follows). Beds stay.</summary>
@@ -287,6 +301,7 @@ public partial class Synth : Node
         if (cut) { cut = false; voices.Clear(); incoming.Clear(); }
         while (incoming.TryDequeue(out var nv)) voices.Add(nv);
         while (bedsIn.TryDequeue(out var nb)) beds.Add(nb);
+        if (!crowdRead) { crowdRead = true; CrowdDuck = SoundBank.Duck("lead", "sfx", 0.5f); LeadHold = SoundBank.Duck("lead", "seconds", 0.09f); }
         float dt = (float)(1 / Rate);
         for (int i = 0; i < n; i++)
         {
@@ -295,6 +310,8 @@ public partial class Synth : Node
             float sfxTo = t < sfxDuckUntil ? sfxDuck : 1;
             sfxDuckNow += (sfxTo - sfxDuckNow) * (sfxTo < sfxDuckNow ? 0.00022f : 0.00005f);
             masterNow += (Master - masterNow) * 0.0002f;
+            float crowdTo = t < leadUntil ? CrowdDuck : 1;
+            crowdNow += (crowdTo - crowdNow) * (crowdTo < crowdNow ? crowdAtk : crowdRel);
             float bedTo = t < bedDuckUntil ? bedDuck : 1;
             bedDuckNow += (bedTo - bedDuckNow) * (bedTo < bedDuckNow ? 0.00022f : 0.00005f);
             // About 0.12 s down, 0.6 s back up.
@@ -306,8 +323,9 @@ public partial class Synth : Node
                 var voice = voices[v];
                 if (t < voice.Start) continue;
                 if (t > voice.End) { voices.RemoveAt(v); continue; }
+                if (voice.Lead && !voice.Led) { voice.Led = true; leadUntil = Math.Max(leadUntil, voice.Start + LeadHold); }
                 float s = voice.Sample(t, dt);
-                float bus = Level[(int)voice.Bus] * (voice.Bus == Bus.Music ? duckNow * voiceMusicNow * bedDuckNow : voice.Bus == Bus.Amb ? voiceAmbNow * bedDuckNow : voice.Bus == Bus.Sfx ? sfxDuckNow : 1);
+                float bus = Level[(int)voice.Bus] * (voice.Bus == Bus.Music ? duckNow * voiceMusicNow * bedDuckNow : voice.Bus == Bus.Amb ? voiceAmbNow * bedDuckNow : voice.Bus == Bus.Sfx ? sfxDuckNow * (voice.Lead ? 1 : crowdNow) : 1);
                 float l = s * voice.L * bus, r = (voice.Wide ? voice.Right : s) * voice.R * bus;
                 dl += l; dr += r;
                 if (stems != null) { stemAcc[(int)voice.Bus * 2] += l; stemAcc[(int)voice.Bus * 2 + 1] += r; }
@@ -348,9 +366,16 @@ public partial class Synth : Node
 
     public int Voices => voices.Count;
 
+    /// <summary>The crowd sidechain: while a lead voice sounds (and LeadHold after it starts), every non-lead effects voice is
+    /// held to CrowdDuck (ducks.lead.sfx / .seconds in sounds.json); about 3 ms down, 150 ms back.</summary>
+    public float CrowdDuck = 0.5f;
+    public double LeadHold = 0.09;
+    bool crowdRead;
+    double leadUntil;
+    float crowdNow = 1, crowdAtk, crowdRel;
     const float CompThreshold = -16, CompRatio = 4, Ceiling = 0.891f;
     float compEnv, limG = 1, compAtk, compRel, limRel;
-    void Dynamics() { compAtk = (float)(1 - Math.Exp(-1 / (0.004 * Rate))); compRel = (float)(1 - Math.Exp(-1 / (0.25 * Rate))); limRel = (float)(1 - Math.Exp(-1 / (0.08 * Rate))); }
+    void Dynamics() { crowdAtk = (float)(1 - Math.Exp(-1 / (0.003 * Rate))); crowdRel = (float)(1 - Math.Exp(-1 / (0.15 * Rate))); compAtk = (float)(1 - Math.Exp(-1 / (0.004 * Rate))); compRel = (float)(1 - Math.Exp(-1 / (0.25 * Rate))); limRel = (float)(1 - Math.Exp(-1 / (0.08 * Rate))); }
 
     public override void _ExitTree()
     {
@@ -390,6 +415,9 @@ public partial class Synth : Node
     {
         public double Start, End;
         public Bus Bus;
+        /// <summary>A lead voice (her heavy hit, a rare drop, a telegraph) is never ducked by the crowd and holds the crowd down while it sounds.</summary>
+        public bool Lead;
+        public bool Led;
         public float L, R, Verb;
         /// <summary>A wide voice's right side, set by each Sample (which gives its left); only read when Wide.</summary>
         public float Right;
@@ -534,7 +562,7 @@ public partial class Synth : Node
             if (o.Lp != null) lp = new Biquad(Biquad.Kind.Low, QOf(o.Q), s.Rate);
             if (o.Hp is double h) { hp = new Biquad(Biquad.Kind.High, 0.707, s.Rate); hpf = h; }
             detune = Math.Pow(2, (o.Detune ?? 0) / 1200);
-            Place(o.Bus, o.Pan, o.Verb);
+            Place(o.Bus, o.Pan, o.Verb); Lead = o.Lead;
         }
 
         public override float Sample(double t, float dt)
@@ -570,7 +598,7 @@ public partial class Synth : Node
             if (o.Bp != null) bp = new Biquad(Biquad.Kind.Band, o.Q ?? 1, s.Rate);
             if (o.Lp != null) lp = new Biquad(Biquad.Kind.Low, 0.707, s.Rate);
             if (o.Hp is double h) { hp = new Biquad(Biquad.Kind.High, 0.707, s.Rate); hpf = h; }
-            Place(o.Bus, o.Pan, o.Verb);
+            Place(o.Bus, o.Pan, o.Verb); Lead = o.Lead;
         }
 
         public override float Sample(double t, float dt)
@@ -637,7 +665,7 @@ public partial class Synth : Node
             }
             gain = (float)o.G;
             if (o.Lp is double f) { lp = new Biquad(Biquad.Kind.Low, 0.707, s.Rate); lpR = right != null ? new Biquad(Biquad.Kind.Low, 0.707, s.Rate) : null; lpf = f; }
-            Place(o.Bus, o.Pan, o.Verb);
+            Place(o.Bus, o.Pan, o.Verb); Lead = o.Lead;
         }
 
         public override float Sample(double t, float dt)
@@ -673,7 +701,7 @@ public partial class Synth : Node
             f = new Glide(o.F, o.F2, End - Start, s.Rate);
             depth = new Glide(o.F * o.Index, Math.Max(1, o.F * o.Index * 0.05), End - Start, s.Rate);
             modF = o.F * o.Ratio;
-            Place(o.Bus, o.Pan, o.Verb);
+            Place(o.Bus, o.Pan, o.Verb); Lead = o.Lead;
         }
 
         public override float Sample(double t, float dt)
