@@ -76,7 +76,7 @@ public static class ZoneSim
 
     static double Dist(double ax, double az, double bx, double bz) => Math.Sqrt((ax - bx) * (ax - bx) + (az - bz) * (az - bz));
 
-    public static ZoneRunResult Play(ZoneRunSpec spec, bool quiet = false)
+    public static ZoneRunResult Play(ZoneRunSpec spec, bool quiet = false, HitStopDef? hitStop = null)
     {
         var dbg = new HashSet<string>();
         RunMeter? meterRef = null;
@@ -95,6 +95,7 @@ public static class ZoneSim
         var at = zone.ArrivalFrom(null);
         var b = j.StartBattle(true, meta.Collision(), Heightfield.Load(meta).HeightAt, at.X, at.Z, at.Facing, (uint)spec.Seed, ember: zone.Ember);
         var r = new ZoneRunResult { Spec = spec };
+        if (hitStop != null) b.LocalHitStop = hitStop;
         double wardenDownAt = -1;
         // (as Game.HookBattle: the journey's kills and pickups, the zone's after; a fall the zone's hooks do not take goes to its OnDeath)
         var zh = zone.Hooks;

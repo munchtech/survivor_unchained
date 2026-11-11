@@ -1,0 +1,13 @@
+{
+  "enabled": false,
+  "capMs": 150,
+  "durationMs": {
+    "trash": 0,
+    "heavy": 50,
+    "critical": 50,
+    "eliteKill": 90,
+    "finisher": 90
+  },
+  "crowd": { "above": 30, "scale": 0.5 },
+  "headlessScreen": { "halfWidth": 18, "halfDepth": 14 }
+}

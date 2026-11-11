@@ -222,6 +222,7 @@ public sealed partial class Battle
     /// <summary>Q / right-click: the Flare, when the meter is full.</summary>
     public bool UseFlare(double dirX, double dirZ)
     {
+        if (LocalHitStopOn && Player.HitStop.Held) return false;
         var p = Player;
         if (!Combat || !p.Alive || Flare is not { } f || FlareMeter < FlareFull || FlareT > 0) return false;
         bool fromFullBank = FlareCharges > 1 && FlareMeter >= FlareFull * FlareCharges;

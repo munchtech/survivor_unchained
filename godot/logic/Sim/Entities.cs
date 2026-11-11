@@ -71,6 +71,7 @@ public sealed class Named
 
 public sealed class Enemy : Pooled
 {
+    public readonly HitStopClock HitStop = new();
     public EnemyDef Def = null!;
     public int Level = 1;
     public double X, Z, Vx, Vz, Kbx, Kbz, Facing;
@@ -224,6 +225,7 @@ public sealed class Projectile : Pooled
 {
     public Side Owner;
     public int OwnerId = -1;
+    public double HitStopOwnerSeed = double.NaN;
     public double X, Z, Y = 1, Vx, Vz, Vy, Speed, Damage;
     public School School;
     public Tag[] Tags = Array.Empty<Tag>();
@@ -278,7 +280,7 @@ public sealed class Projectile : Pooled
 
     public void Reset()
     {
-        Owner = Side.Player; OwnerId = -1; X = Z = 0; Y = 1; Vx = Vz = Vy = 0; Speed = 0; Damage = 0;
+        Owner = Side.Player; OwnerId = -1; HitStopOwnerSeed = double.NaN; X = Z = 0; Y = 1; Vx = Vz = Vy = 0; Speed = 0; Damage = 0;
         School = School.Physical; Tags = Array.Empty<Tag>(); Radius = 0.2; Pierce = 0; Bounces = 0; Life = 1; Age = 0;
         Homing = 0; Seek = null; Target = -2; Weapon = null; Art = "bolt"; Status = null; Splash = 0; SplitOnHit = 0;
         Heal = 0; Knockback = 0; Chakram = false; Returning = false; Lob = false; LandX = LandZ = 0; GroundOnHit = null;

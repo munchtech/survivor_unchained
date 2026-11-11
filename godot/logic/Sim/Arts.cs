@@ -149,6 +149,7 @@ public sealed partial class Battle
     /// <summary>Q: the art in hand.</summary>
     public bool UseAbility(double dirX, double dirZ)
     {
+        if (LocalHitStopOn && Player.HitStop.Held) return false;
         var p = Player;
         if (!Combat || !p.Alive || Ability is not { } kind || p.Leap != null || Art.Rush != null) return false;
         // The second press of an echo steps back into it.

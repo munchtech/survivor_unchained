@@ -52,6 +52,7 @@ public sealed partial class Battle
     /// channel starts. An auto skill ignores it. True when something went off.</summary>
     public bool PressSkill(int slot, double aimX, double aimZ)
     {
+        if (LocalHitStopOn && Player.HitStop.Held) return false;
         if (!Combat || !Player.Alive || FlareHold > 0) return false;
         if (OnSlot(slot) is not { } w) return false;
         // A kindled skill's key (campaign): its live press (now, riposte, flare, command).

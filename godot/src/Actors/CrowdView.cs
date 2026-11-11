@@ -93,6 +93,9 @@ public partial class CrowdView : Node3D
         /// <summary>Shoved back against its facing: its steps run backward.</summary>
         public bool Back;
         public bool HasLast;
+        public Transform3D StopTransform;
+        public string? StopRole;
+        public double StopT;
         /// <summary>Where the sim had it last frame, and how far the view holds it off that (a strike's planted feet).</summary>
         public double SimX, SimZ, OffX, OffZ;
         public string? SlideRole;
@@ -577,6 +580,8 @@ public partial class CrowdView : Node3D
 
     void Draw(Enemy e, Func<double, double, double> heightAt)
     {
+        bool stopped = battle?.LocalHitStopOn == true && e.HitStop.Held;
+        double dt = stopped ? 0 : this.dt;
         // Its body already lies where it fell: the fight lets it go shortly.
         if (laidOut.Contains((e.Id, e.Seed))) return;
         // (its body: the kind's, or its second body for a share of copies: Vary.Body)
@@ -795,7 +800,7 @@ public partial class CrowdView : Node3D
                         : Math.Clamp(moving / Math.Max(0.5, e.Def.Speed), 0.6, 1.6));
                     t = g.Phase;
                 }
-                else { role = "idle"; t = time + e.Seed * 9; }
+                else { role = "idle"; t = time - (battle?.LocalHitStopOn == true ? e.HitStop.Total : 0) + e.Seed * 9; }
                 break;
         }
         // Turned toward where it is going when it walks, toward what it wants
@@ -864,6 +869,8 @@ public partial class CrowdView : Node3D
         if (hk.X < 0 && FlareMarkRim?.Invoke(e.Id) is > 0 and var mrk) hk = new Vector2(flare, mrk);
         if (hk.X >= 0) flare = hk.X;
         var xf = new Transform3D(basis, at);
+        if (stopped && g.StopRole != null) { xf = g.StopTransform; role = g.StopRole; t = g.StopT; }
+        else { g.StopTransform = xf; g.StopRole = role; g.StopT = t; }
         crowd.Push(KeyOf(e), xf, role, t, flare, dissolve, frozen, burning, tint, glow, e.LastCrit && !e.LastDot && hk.X < 0, hk.X >= 0 ? Math.Max(hk.Y, 0.001f) : 0, -1,
             // (M5 r3) a champion's affix rim (Content/Champions.Look): its body reads at night and in shade
             e.Rank >= 2 && e.RankRim >= 0 ? (float)e.RankRim : -1);

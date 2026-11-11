@@ -18,13 +18,14 @@ namespace SurvivorUnchained.Sim;
 
 /// <summary>Her swing for the view: the skill, its angle, when it started, heavy; and (a campaign blow that lands on its
 /// contact, Sim/Contact.cs) the clip she swings and its rate, which the view plays as given.</summary>
-public sealed record AttackAnim(string Weapon, double Angle, double T, bool Heavy, string? Clip = null, double Rate = 1, int Cut = 0);
+public sealed record AttackAnim(string Weapon, double Angle, double T, bool Heavy, string? Clip = null, double Rate = 1, int Cut = 0, double Held = 0);
 /// <summary>A leap through the air (the art's, a Vault's, or a leap skill's: Weapon set, it lands in a ring of Radius, heavy
 /// if its cast was).</summary>
 public sealed class Leap { public double T, Dur, X0, Z0, X1, Z1; public AbilityKind Kind = AbilityKind.Leap; public WeaponInst? Weapon; public double Radius; public bool Heavy; }
 
 public sealed class PlayerState
 {
+    public readonly HitStopClock HitStop = new();
     public double X, Z, Vx, Vz, Facing, Radius = 0.42, Hp;
     /// <summary>The move asked this tick (the stick or the keys, before her pace and her easing): her view faces it, not her lagging velocity.</summary>
     public double StickX, StickZ;
@@ -239,6 +240,7 @@ public struct HitOpts
     public double? Cap;
     /// <summary>Damage from the survivor's summons.</summary>
     public bool Summon;
+    public Enemy? Attacker;
     /// <summary>Projectile direction, for frontal guards.</summary>
     public double FromX, FromZ;
     public bool Projectile;
@@ -488,24 +490,35 @@ public sealed partial class Battle
         Charges.Tick(this, wdt);
         if (tells.Count > 0) UpdateTells(dt);
         double footX = Player.X, footZ = Player.Z;
-        UpdatePlayer(dt, moveX, moveZ);
+        double playerDt = LocalHitStopOn ? Player.HitStop.Step(dt) : dt;
+        if (playerDt < dt) HoldPlayerDeadlines(dt - playerDt);
+        if (playerDt > 0) UpdatePlayer(playerDt, moveX, moveZ);
         if (tells.Count > 0) Walls(footX, footZ);
         Flow.Update(Player.X, Player.Z);
         if (Combat)
         {
             RunOnKills();
-            if (pendingBlows.Count > 0) LandBlows(dt);
-            if (chains.Count > 0) StepChains();
-            foreach (var w in Weapons.ToArray()) Firing.Tick(this, w, dt);
-            TickVow(dt);
-            Resolve.Tick(dt);
-            TickAuras(dt);
-            TickTriggers(dt);
-            TickReflexes(dt);
-            if (Lamps.Board) BoardTick(dt);
-            TickFlare(dt);
+            if (playerDt > 0)
+            {
+                if (pendingBlows.Count > 0) LandBlows(playerDt);
+                if (chains.Count > 0) StepChains();
+                foreach (var w in Weapons.ToArray()) Firing.Tick(this, w, playerDt);
+                TickVow(playerDt);
+                Resolve.Tick(playerDt);
+                TickAuras(playerDt);
+                TickTriggers(playerDt);
+                TickReflexes(playerDt);
+                if (Lamps.Board) BoardTick(playerDt);
+                TickFlare(playerDt);
+            }
         }
-        foreach (var e in Enemies.Items) if (e.Alive) Ai.Update(this, e, wdt);
+        foreach (var e in Enemies.Items)
+            if (e.Alive)
+            {
+                double actorDt = LocalHitStopOn ? e.HitStop.Step(dt) * WorldRate : wdt;
+                if (LocalHitStopOn && e.HoldUntil > Time - dt) e.HoldUntil += e.HitStop.LastHeld;
+                if (actorDt > 0) Ai.Update(this, e, actorDt);
+            }
         UpdateProjectiles(dt, wdt);
         UpdateZones(dt);
         UpdateStrikes(dt);
@@ -548,7 +561,7 @@ public sealed partial class Battle
         if (p.ShieldT > 0) { p.ShieldT -= dt; if (p.ShieldT <= 0) p.Shield = 0; }
         p.UnstruckT += dt;
         if (Boons.TryGetValue("boon_iron_vow", out int vow)) Vow(vow);
-        if (p.AttackAnim != null && Time - p.AttackAnim.T > 0.6 && !CutHolds(p.AttackAnim)) p.AttackAnim = null;
+        if (p.AttackAnim != null && Time - p.AttackAnim.T - p.AttackAnim.Held > 0.6 && !CutHolds(p.AttackAnim)) p.AttackAnim = null;
 
         // Dash charges come back one at a time.
         int maxCharges = MaxDashCharges;
@@ -699,6 +712,7 @@ public sealed partial class Battle
     /// <summary>Space: a short, invulnerable burst of movement.</summary>
     public bool Dash(double dirX, double dirZ)
     {
+        if (LocalHitStopOn && Player.HitStop.Held) return false;
         var p = Player;
         if (!p.Alive || p.DashCharges <= 0 || p.DashT > 0 || p.Leap != null || Art.Rush != null || FlareHold > 0) return false;
         double dx = dirX, dz = dirZ;
@@ -794,6 +808,7 @@ public sealed partial class Battle
     /// <summary>"Executed" over a kill: only for a champion, a boss or the priority target, and at most one in 0.5 s (six at once was spam).</summary>
     public void ExecutedBark(Enemy e)
     {
+        StopHit(e, HitClass.Finisher);
         bool pri = Priority >= 0 && Priority < Enemies.Items.Length && ReferenceEquals(Enemies.Items[Priority], e);
         if (!(e.Elite || e.Boss || pri) || (executedBarkAt >= 0 && Time - executedBarkAt < 0.5)) return;
         executedBarkAt = Time;
@@ -1058,6 +1073,10 @@ public sealed partial class Battle
         if (o.Knockback != 0 && e.Boss) AddStagger(e, 0.004 * o.Knockback * st.Get(Stat.Knockback) * cw);
         // The warden's Hand: a heavy blow (every few firings of a Melee or Thrown skill; all of its hits).
         bool heavy = !o.Dot && (o.Heavy || (HeavyBy != null && o.Weapon == HeavyBy));
+        bool eliteKill = e.Hp <= 0 && (e.Elite || e.Boss);
+        if ((!o.Dot || eliteKill) && !blocked && dmg > 0)
+            StopHit(e, eliteKill ? HitClass.EliteKill :
+                crit ? HitClass.Critical : heavy ? HitClass.Heavy : HitClass.Trash, o.Attacker, !(o.Summon || tags.Has(Tag.Summon)));
         if (o.Knockback != 0 && !e.Boss && e.Def.Behavior != Behavior.Stationary)
         {
             double k = o.Knockback * (heavy ? (cw == 1 ? HW.Knockback : cw + HW.Knockback - 1) : cw) * st.Get(Stat.Knockback) * 7 / Math.Max(0.5, e.Mass) * (e.Elite ? 0.35 : 1);
@@ -1732,6 +1751,7 @@ public sealed partial class Battle
             p.HurtT = 0.3;
             p.Iframes = Math.Max(p.Iframes, 0.45);
             Events.Emit(new Ev.PlayerHit { X = p.X, Z = p.Z, Amount = dmg, School = school, Source = source, Label = blowLabel });
+            if (!dot && dmg > 0 && from != null) StopPlayerHit(from);
             Fire(TriggerEvent.Hurt, new ProcCtx { X = p.X, Z = p.Z, Damage = dmg });
         }
         if (from != null)
@@ -1829,6 +1849,7 @@ public sealed partial class Battle
         int lvl = o.Level;
         var sc = Content.Enemies.ScaleFor(lvl);
         e.Def = def;
+        e.HitStop.Clear();
         e.Level = lvl;
         e.X = x; e.Z = z; e.Vx = e.Vz = e.Kbx = e.Kbz = 0;
         e.Facing = Math.Atan2(Player.Z - z, Player.X - x);
@@ -2118,6 +2139,7 @@ public sealed partial class Battle
         public School School = School.Physical;
         public string Source = "";
         public Enemy? From;
+        internal double HitStopFromSeed = double.NaN;
         /// <summary>Slowed by it (a fraction of pace, for a time).</summary>
         public double Slow, SlowFor;
         public string? Label;
@@ -2203,6 +2225,7 @@ public sealed partial class Battle
     {
         b.T = b.Delay;
         b.At = Time;
+        b.HitStopFromSeed = b.From?.Seed ?? double.NaN;
         blows.Add(b);
         b.MarkId = 900000 + blowIds++;
         if (!b.OwnMark) Events.Emit(new Ev.Telegraph
@@ -2219,7 +2242,9 @@ public sealed partial class Battle
         for (int i = blows.Count - 1; i >= 0; i--)
         {
             var b = blows[i];
-            b.T -= dt;
+            double held = LocalHitStopOn && b.From is { Alive: true } caster && caster.Seed == b.HitStopFromSeed ? caster.HitStop.LastHeld : 0;
+            b.At += held;
+            b.T -= dt - held;
             if (b.T > 0) continue;
             blows.RemoveAt(i);
             var p = Player;
@@ -2333,7 +2358,7 @@ public sealed partial class Battle
                         pr.Tags = Reflected;
                         continue;
                     }
-                    var src = pr.OwnerId >= 0 ? Enemies.Items[pr.OwnerId] : null;
+                    var src = LocalHitStopOn ? HitStopSource(pr) : pr.OwnerId >= 0 ? Enemies.Items[pr.OwnerId] : null;
                     HurtPlayer(Lamps.Board ? pr.Damage * BoardMissileMul() : pr.Damage, pr.School, pr.Art, src is { Alive: true } ? src : null, true);
                     // bulwark.turned_arrows: a blocked missile flies back at whoever loosed it.
                     if (lampBlocked && Lamp("turned_arrows") && src is { Alive: true })
@@ -2436,6 +2461,7 @@ public sealed partial class Battle
             Weapon = weapon, W = pr.W, Knockback = pr.Knockback, DirX = pr.DirX, DirZ = pr.DirZ, Status = pr.Status, Depth = pr.Depth,
             BossDamage = pr.BossDamage, Projectile = pr.Tags.Has(Tag.Projectile), FromX = pr.DirX, FromZ = pr.DirZ,
             Summon = pr.Owner == Side.Ally, Credit = pr.Credit,
+            Attacker = pr.Owner == Side.Ally ? HitStopSource(pr) : null,
         });
         if (pr.Heal != 0) HealPlayer(pr.Heal, "weapon", true);
         pr.HitCount++;
@@ -2492,7 +2518,7 @@ public sealed partial class Battle
                 Events.Emit(new Ev.Explosion { X = pr.X, Z = pr.Z, Radius = r, School = pr.School, Power = 0.6 });
                 if (Dist(p.X, p.Z, pr.X, pr.Z) < r + p.Radius)
                 {
-                    var src = pr.OwnerId >= 0 ? Enemies.Items[pr.OwnerId] : null;
+                    var src = LocalHitStopOn ? HitStopSource(pr) : pr.OwnerId >= 0 ? Enemies.Items[pr.OwnerId] : null;
                     HurtPlayer(Lamps.Board ? pr.Damage * BoardMissileMul() : pr.Damage, pr.School, pr.Art, src is { Alive: true } ? src : null, true);
                 }
                 if (pr.GroundOnHit is { } g)

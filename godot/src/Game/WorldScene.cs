@@ -180,6 +180,7 @@ public partial class WorldScene : Node3D, IZoneLook
     public Battle StartBattle(Battle b, Loadout lo)
     {
         Battle = b;
+        b.HitStopOnScreen = e => cam.Camera.IsPositionInFrustum(new Vector3((float)e.X, (float)HeightAt(e.X, e.Z), (float)e.Z));
         Player?.QueueFree();
         Player = new PlayerView(lo);
         look = Loadouts.Look(lo);
@@ -368,7 +369,7 @@ public partial class WorldScene : Node3D, IZoneLook
             if (e is Ev.PerfectDodge && Hitstop) slowmo = 0.38;
             if (e is Ev.Victory && Hitstop) fall = Fall;
         }
-        if (hitstopCd > 0 || !(Hitstop || AaBeats)) return;
+        if (b.LocalHitStopOn || hitstopCd > 0 || !(Hitstop || AaBeats)) return;
         double s = 0;
         foreach (var e in evs)
         {

@@ -839,7 +839,7 @@ public static class Ai
     {
         if (e.Disposition == Disposition.Ally)
         {
-            b.HitEnemy(o, e.Damage * mult, School.Physical, AllyStrike, new HitOpts { Summon = true, Knockback = 0.3, DirX = Math.Cos(e.Facing), DirZ = Math.Sin(e.Facing), Credit = e.SummonedBy ?? e.Def.Id,
+            b.HitEnemy(o, e.Damage * mult, School.Physical, AllyStrike, new HitOpts { Summon = true, Attacker = e, Knockback = 0.3, DirX = Math.Cos(e.Facing), DirZ = Math.Sin(e.Facing), Credit = e.SummonedBy ?? e.Def.Id,
                 BossDamage = e.SummonedBy != null && Content.Weapons.All.TryGetValue(e.SummonedBy, out var by) ? by.BossDamage : null });
             return;
         }
@@ -878,7 +878,7 @@ public static class Ai
                 double life = Math.Max(0.5, d / r.Speed);
                 var pr = b.SpawnProjectile(Side.Enemy, e.X, e.Z, e.Damage * (r.DamagePct ?? 1), r.School);
                 if (pr == null) continue;
-                pr.OwnerId = e.Id; pr.Y = 1; pr.Vx = (lx - e.X) / life; pr.Vz = (lz - e.Z) / life; pr.Speed = r.Speed;
+                pr.OwnerId = e.Id; pr.HitStopOwnerSeed = e.Seed; pr.Y = 1; pr.Vx = (lx - e.X) / life; pr.Vz = (lz - e.Z) / life; pr.Speed = r.Speed;
                 pr.Radius = 0.3; pr.Life = life; pr.Lob = true; pr.Art = r.Art ?? "firepot"; pr.GroundOnHit = r.Zone;
                 pr.AimAlongVelocity();
                 pr.LandX = lx; pr.LandZ = lz;
@@ -889,7 +889,7 @@ public static class Ai
                 double a = Math.Atan2(tz - e.Z, tx - e.X) + (i - (n - 1) / 2.0) * (r.Spread ?? 0.15);
                 var pr = b.SpawnProjectile(Side.Enemy, e.X + Math.Cos(a) * 0.5, e.Z + Math.Sin(a) * 0.5, e.Damage * (r.DamagePct ?? 1), r.School);
                 if (pr == null) continue;
-                pr.OwnerId = e.Id; pr.Y = 1.1; pr.Vx = Math.Cos(a) * r.Speed; pr.Vz = Math.Sin(a) * r.Speed; pr.Speed = r.Speed;
+                pr.OwnerId = e.Id; pr.HitStopOwnerSeed = e.Seed; pr.Y = 1.1; pr.Vx = Math.Cos(a) * r.Speed; pr.Vz = Math.Sin(a) * r.Speed; pr.Speed = r.Speed;
                 pr.Radius = 0.28; pr.Life = r.Range * 1.3 / r.Speed; pr.Art = r.Art ?? "bolt_enemy";
                 pr.Status = r.Slow is { } slow ? new StatusPayload(StatusKind.Chill, 1, 1, slow.Duration) : null;
                 pr.AimAlongVelocity();

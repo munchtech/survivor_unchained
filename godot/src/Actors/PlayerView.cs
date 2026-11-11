@@ -1018,6 +1018,7 @@ public partial class PlayerView : Node3D
     /// <summary>A frame of her: drawn at x, z (between the fight's steps: Interp), `leap` through a leap (-1: none).</summary>
     public void Update(Battle b, double x, double z, double leap, double dt, double fightTime, System.Func<double, double, double> heightAt)
     {
+        if (b.LocalHitStopOn && b.Player.HitStop.Held) return;
         time += dt;
         probeDt = dt; probeFight = fightTime;
         if (GripProbe && mine) Probe();
@@ -1149,7 +1150,7 @@ public partial class PlayerView : Node3D
             if (k >= 1) flareYawAt = -1;
             Rotation = new Vector3(0, Mathf.LerpAngle(flareYawFrom, flareFaceY, k * k * (3 - 2 * k)), 0);
         }
-        else if (p.AttackAnim is { } aa && fightTime - aa.T < 0.35 && !mine) Rotation = new Vector3(0, (float)(Mathf.Pi / 2 - aa.Angle), 0);
+        else if (p.AttackAnim is { } aa && fightTime - aa.T - aa.Held < 0.35 && !mine) Rotation = new Vector3(0, (float)(Mathf.Pi / 2 - aa.Angle), 0);
         // (In the air she keeps the facing she sprang with: her velocity is stale there.)
         // Running, she faces where the stick asks, not where her eased velocity has got to (owner N27, "off when
         // turning": facing chased velocity, 217-267 ms to within 10 degrees and on a 180 she ran backwards for a
