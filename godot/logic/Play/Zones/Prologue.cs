@@ -939,8 +939,11 @@ public sealed partial class Prologue : ZoneRuntime
     {
         if (B == null || Now != Stage.Boss || ai.Mode is "dead" or "sleep" or "wake") return;
         if (PaceNotes.Count < 200) PaceNotes.Enqueue($"ford staggered t={B.Time:0.00} mode={ai.Mode}");
-        // (B1 judge: a stagger in a stun stretched one to 7.3 s against 4.0: while he reels a stagger does nothing, no
-        // longer time and no second buckle)
+        // (B1 judge: a stagger in a stun stretched one to 7.3 s against 4.0.) Battle's stagger holds a foe Stunned for 3 s,
+        // and a held foe's script does not tick (Ai), so his own stun clock stood still through it. His script runs his
+        // stun itself: Battle's hold is let go here (the stagger's extra damage, StaggeredT, stays). While he already
+        // reels a stagger does nothing more: no longer time and no second buckle.
+        e.State = EnemyState.Active; e.StateT = 0;
         if (ai.Mode == "stun") return;
         if (ai.Mode == "channel")
         {

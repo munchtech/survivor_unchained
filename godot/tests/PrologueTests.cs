@@ -627,6 +627,26 @@ public class PrologueTests
         Assert.Equal("stun", (string)at.GetField("Mode")!.GetValue(ai)!);
     }
 
+    /// <summary>(B1 r6) Battle's own stagger hold froze his script, so a stagger mid-stun ran one to 7 s and a stagger from
+    /// a walk stood 3 s held plus his 3 s stun. Through the real stagger: mid-stun it ends on its own clock, from a walk
+    /// in his 3 s.</summary>
+    [Theory]
+    [InlineData("stun", 1.2, 1.3)]
+    [InlineData("walk", 0.0, 3.0)]
+    public void A_real_stagger_never_stretches_the_Wardens_stun(string mode, double t, double left)
+    {
+        var (s, w, ai, at) = AtFord();
+        at.GetField("Mode")!.SetValue(ai, mode);
+        at.GetField("T")!.SetValue(ai, t);
+        at.GetField("Hold")!.SetValue(ai, 0.0);
+        w.TakenMul = 1; w.StaggeredT = 0; w.StaggerResistT = 0;
+        s.B.AddStagger(w, 50);
+        Assert.Equal("stun", (string)at.GetField("Mode")!.GetValue(ai)!);
+        double held = 0;
+        while ((string)at.GetField("Mode")!.GetValue(ai)! == "stun" && held < 10) { Run(s, 1 / 60.0); held += 1 / 60.0; }
+        Assert.InRange(held, left - 0.1, left + 0.1);
+    }
+
     [Theory]
     [InlineData(2.5, false)]
     [InlineData(8.0, true)]
