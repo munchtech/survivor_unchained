@@ -176,6 +176,9 @@ public partial class Game
                     // drawn over the Drowned Girl)
                     if (t.Ring?.Invoke() is { Count: > 0 } rs && rs.Any(q => OnScreen(q) is not Vector2 rv || !InSafe(rv)
                         || rv.Y + Math.Clamp(PxPerMetre(q) * (float)t.RingRadius, 28, 110) > RingFloor)) continue;
+                    // (the point itself ringed when nothing else is: its ring above the HUD too; m6r7's Leap point
+                    // sat at the safe area's foot, its ring on the right-hand figure)
+                    if (t.Ring == null && v.Y + Math.Clamp(PxPerMetre(w) * (float)t.Radius, 20, 56) > RingFloor) continue;
                     if (t.Open && !noOpen && !InOpen(w)) continue;
                     // (and what must be read with it: on the screen and in the open, or it waits)
                     if (t.Open && !noOpen && t.Seen?.Invoke() is { } seen && seen.Any(q => OnScreen(q) is not Vector2 sv || !Canvas.HasPoint(sv) || !InOpen(q, true)))
