@@ -169,6 +169,9 @@ CARRY = pose(0, 0, CARRY_AT, CARRY_BLADE, pole=CARRY_POLE, left=False, pitch=12)
 # The way home: the blade comes from forward to the carry (back and down) out by her RIGHT side, not down through her legs
 # (the plain blend swung it through her calves at 1-8 mm).
 CARRY_VIA = pose(0, 0, (-0.26, -0.38, 0.20), _n(-0.9, -0.35, 0.1), pole=CARRY_POLE, left=False)
+# A1 L25: the fore/heavy way home (their cut ends on her left): the blade already low, it stays down and out by her right
+# side into the carry (CARRY_VIA's near-level blade lifted it from -75 to -15 deg pitch on the way).
+FORE_VIA = pose(0, 0, (-0.28, -0.36, 0.24), _n(-0.6, -0.75, 0.25), pole=CARRY_POLE, left=False)
 BACK_COCK = (0.30, 0.04, 0.17)   # the cocked fist off her chest (at (0.30, 0.02, 0.10) the hilt was 11 mm into it)
 
 
@@ -203,7 +206,7 @@ def sword_fore(rig):
         # Out to her left, across her: the cut ends low.
         (5, pose(16, 30, (0.26, -0.22, 0.30), _n(0.9, 0.0175, 0.0), pole=(-0.9, -0.2, 0.2), left=False, weight=0.6, pivot=0.6), "ease"),
         (8, pose(19, 36, (0.28, -0.27, 0.24), _n(0.86, -0.26, -0.17), pole=(-0.9, -0.1, 0.3), left=False, weight=0.7, pivot=0.7), "ease"),
-        (17, CARRY_VIA, "ease"),
+        (17, FORE_VIA, "ease"),
         (24, CARRY, "ease"),
     ]
     keys = with_side_shield(keys, SIDE_FORE_L)
@@ -219,7 +222,7 @@ def sword_heavy(rig):
         (6, pose(26, 44, (0.30, -0.16, 0.34), _n(0.95, 0.175, 0.075), pole=(-0.8, -0.6, 0.2), left=False, weight=0.8, pivot=1.0, pitch=10), "ease"),
         (10, pose(30, 50, (0.30, -0.22, 0.26), _n(0.8, -0.25, -0.3), pole=(-0.8, -0.4, 0.4), left=False, weight=0.9, pivot=1.0, pitch=10), "ease"),
         (16, pose(10, 14, (0.0, -0.24, 0.36), _n(-0.6, -0.4, 0.7), pole=CARRY_POLE, left=False, weight=0.3, pivot=0.3), "ease"),
-        (24, CARRY_VIA, "ease"),
+        (24, FORE_VIA, "ease"),
         (30, CARRY, "ease"),
     ]
     keys = with_side_shield(keys, SIDE_HEAVY_L)
