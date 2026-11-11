@@ -18,6 +18,8 @@ namespace SurvivorUnchained.Ui;
 public partial class SkillTip : Control
 {
     public const float W = 380, PadX = 16, PadY = 14;
+    /// <summary>The compact card's gap between its two row columns (a hairline at its middle).</summary>
+    const float Gutter = 32;
     static readonly Color Gold = new("#f3d9a0"), Dim = new("#a89c88"), Parch = new("#e8dcc4"), Bone = new("#f6efe0"),
         RuleBronze = new Color("#8a6a3a") with { A = 0.55f }, RuleGold = new Color("#c9a35a") with { A = 0.8f };
     
@@ -243,7 +245,7 @@ public partial class SkillTip : Control
         {
             // two columns: a row that fits half the inner width (less a 24 px gutter) is a cell; cells pair in order, a lone
             // cell taking the next cell even past a full-width row
-            float half = (inner - 24) / 2, xr = padX + half + 24;
+            float half = (inner - Gutter) / 2, xr = padX + half + Gutter;
             int line = 0, open = -1;
             foreach (var it in items)
             {
@@ -325,6 +327,8 @@ public partial class SkillTip : Control
             float y = L.RowBase + c.Line * L.RowPitch;
             Text(Style.Ui, L.RowSize, new Vector2(c.LabelX, y), c.Label, Dim);
             Text(Style.UiBold, L.RowSize, new Vector2(c.ValueRight, y), c.Value, c.Gold ? Gold : Bone, true);
+            // (lead 16) a right-hand cell: a bronze hairline in the gutter, so "every 0.7 s" and "Reach" never read as one run
+            if (c.LabelX > x0 + 1) DrawRect(new Rect2(Mathf.Round(c.LabelX - Gutter / 2), y - L.RowSize + 2, 1, L.RowSize + 2), RuleBronze);
         }
     }
 }

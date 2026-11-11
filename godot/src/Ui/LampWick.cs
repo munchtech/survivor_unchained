@@ -447,10 +447,12 @@ public partial class LampWick : Control
             var lines = LampInk.Wrap(line, fl, 14, w);
             if (lines.Count > 2) Overflow(r, fc, line);
             // the delta rides the last text line when it fits; else it takes the status slot (one line)
-            string slot = "";
+            string slot = "", nameTail = "";
             if (delta != "")
             {
                 if (lines.Count > 0 && LampInk.W(fl, lines[^1] + " · " + delta, 14) <= w) lines[^1] += " · " + delta;
+                // (lead 16) else beside the name (always room there, and nothing below moves): "Holy II · 10 → 11 a cut"
+                else if (LampInk.W(fn, NameOf(r, fc), 18) + LampInk.W(fl, " · " + delta, 14) <= w) nameTail = " · " + delta;
                 else slot = delta;
             }
             // the slot: the delta then the status when both fit one line; a refusal (said) or the status alone otherwise
@@ -488,6 +490,7 @@ public partial class LampWick : Control
             }
             float y0 = ry + 16 - rise, sy = y0 + Math.Max(0, n - 1) * 16 + 17;
             LampInk.Text(ci, fn, 18, TextX, ry - 2 - rise, NameOf(r, fc), LampInk.Ink);
+            if (nameTail != "") LampInk.Text(ci, fl, 14, TextX + LampInk.W(fn, NameOf(r, fc), 18), ry - 2 - rise, nameTail, LampInk.Body with { A = 0.92f });
             for (int j = 0; j < lines.Count; j++) LampInk.Text(ci, fl, 14, TextX, y0 + j * 16, lines[j], LampInk.Body with { A = 0.92f });
             for (int j = 0; j < slotLines.Count; j++) LampInk.Text(ci, fs, 13, TextX, sy + j * 15, slotLines[j], said != null ? LampInk.Red : LampInk.Focus);
             bottom = BottomInk(slotLines) - rise;
