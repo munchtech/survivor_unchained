@@ -361,4 +361,51 @@ public class MapTests
         r.B.HealPlayer(100, "draught");
         Assert.Equal(before + 50 * r.B.Stats.Get(Stat.Healing), p.Hp, 1);
     }
+
+    /// <summary>SU-041: in a map, a gear change wears the Marks again, replaced and not merged: one taken off stops (the
+    /// Open Gate's holy fire on the dash), one put on starts, a regrade takes its new strength; skill numbers are never
+    /// folded twice. Outside the maps nothing is marked. Before: the map wore its Marks once, at Begin.</summary>
+    [Fact]
+    public void A_gear_change_in_a_map_replaces_the_marks_worn()
+    {
+        var r = Open(Chart());
+        var j = r.J;
+        int Holy() => r.B.Zones.Living().Count(z => z.School == School.Holy && z.Owner == Side.Player);
+        Assert.False(r.B.Marked(Marks.OpenGate, out _));
+        var ring = Inventory.Make(j.Ch, "silver_ring", rarity: 2, affixes: new() { new AffixRoll { Id = Marks.OpenGate, Tier = 5 } });
+        Assert.True(Inventory.AddToPack(j.Ch, ring));
+        // Put on: the gate opens on the next dash.
+        j.PutOn(ring.Uid, KitKind.Day, EquipSlot.Ring1, r.B);
+        Assert.True(r.B.Marked(Marks.OpenGate, out double t) && t == 1);
+        Assert.True(r.B.Dash(1, 0));
+        Assert.Equal(1, Holy());
+        // Regraded (the forge's work on the worn piece): its strength follows.
+        ring.Affixes[0] = new AffixRoll { Id = Marks.OpenGate, Tier = 0 };
+        j.RefreshKit(r.B);
+        Assert.True(r.B.Marked(Marks.OpenGate, out t) && t == 0);
+        // Taken off: it stops.
+        j.TakeOff(ring.Uid, r.B);
+        Assert.False(r.B.Marked(Marks.OpenGate, out _));
+        Step(r, 4);
+        Assert.Equal(0, Holy());
+        Assert.True(r.B.Dash(1, 0));
+        Assert.Equal(0, Holy());
+        // Skill numbers re-worn are replaced, never folded twice.
+        var w = r.B.Weapons[0];
+        double dmg = w.Mods.Damage;
+        int proj = w.Mods.Projectiles;
+        r.B.Wear(new Dictionary<string, double>(), new Dictionary<string, WeaponMods> { [w.Id] = new() { Damage = 1.5, Projectiles = 1 } });
+        r.B.Wear(new Dictionary<string, double>(), new Dictionary<string, WeaponMods> { [w.Id] = new() { Damage = 1.5, Projectiles = 1 } });
+        Assert.Equal(dmg * 1.5, w.Mods.Damage, 9);
+        r.B.Wear(new Dictionary<string, double>(), new Dictionary<string, WeaponMods>());
+        Assert.Equal(dmg, w.Mods.Damage, 9);
+        Assert.Equal(proj, w.Mods.Projectiles);
+        // Outside the maps a Marked piece marks nothing.
+        var day = Route.New();
+        var ring2 = Inventory.Make(day.J.Ch, "silver_ring", rarity: 2, affixes: new() { new AffixRoll { Id = Marks.OpenGate, Tier = 5 } });
+        Assert.True(Inventory.AddToPack(day.J.Ch, ring2));
+        var b = day.J.StartBattle(true, new CollisionWorld(80), (_, _) => 0, 0, 0, 0, 3);
+        day.J.PutOn(ring2.Uid, KitKind.Day, EquipSlot.Ring1, b);
+        Assert.Empty(b.MarksWorn);
+    }
 }

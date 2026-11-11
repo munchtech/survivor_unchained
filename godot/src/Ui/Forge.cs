@@ -267,8 +267,8 @@ public partial class ForgeScreen : Overlay
             ? Kit.Tabs(new[] { "By day", "By night" }, (int)shown, k => { kitShown = (KitKind)k; Refresh(); }, 15, 16)
             : null;
         v.AddChild(Kit.Head("Worn", switcher == null ? "choose a piece" : null, switcher != null ? new[] { switcher } : Array.Empty<Control>()));
-        // One line of nine (three tiles under six read as a broken grid).
-        var worn = new GridContainer { Columns = 9, MouseFilter = MouseFilterEnum.Ignore };
+        // Every slot (Items.Places, 15): two even lines of eight and seven. (Layout functional; the look is the UI lead's.)
+        var worn = new GridContainer { Columns = 8, MouseFilter = MouseFilterEnum.Ignore };
         worn.AddThemeConstantOverride("h_separation", 5);
         worn.AddThemeConstantOverride("v_separation", 5);
         int i = 0;
@@ -279,7 +279,7 @@ public partial class ForgeScreen : Overlay
             // By night, a slot with nothing of its own wears the day's piece: shown faint, "as by day".
             bool asDay = shown == KitKind.Night && it != null && !Kits.HasOwn(Ch, KitKind.Night, s);
             fallback |= asDay;
-            var (name, glyph) = InventoryScreen.Slots[s];
+            var (name, glyph) = Items.Places[s];
             var view = ItemViews.Slot(it, 50, it != null && it.Uid == sel && !making, null, false, it != null ? () => Choose(it.Uid) : null, null,
                 over => Hover(it, over), glyph, name, $"worn:{i++}", engraved: true);
             if (it != null && (!Takes(it) || asDay)) view.Modulate = new Color(1, 1, 1, asDay ? 0.4f : 0.35f);

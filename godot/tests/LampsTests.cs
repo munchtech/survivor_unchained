@@ -290,4 +290,28 @@ public class LampsTests : IDisposable
         var dark = mods.Where(r => !code.Contains($"\"{r}\"")).OrderBy(r => r).ToList();
         Assert.True(dark.Count == 0, "unread flare mods: " + string.Join(", ", dark));
     }
+
+    /// <summary>SU-039: a gear change in an ember night is read by the night's rules, as the fight began: an attribute
+    /// lamp (butcher.s3, +2 Might) gives its points by day only, so a mid-fight refresh leaves Might's numbers as they
+    /// were. Before: RefreshKit read the day's rules and the +2 Might arrived. After the dawn (Douse) the fight is
+    /// read by day.</summary>
+    [Fact]
+    public void A_gear_change_in_an_ember_night_keeps_the_nights_lamp_rules()
+    {
+        var a = Callings.Archetype("reaver");
+        var j = SurvivorUnchained.Play.Journey.Begin(new CreationChoice
+        {
+            Name = "Ashe", Archetype = "reaver", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0],
+        }, 42);
+        j.Ch.Level = 30;
+        foreach (var id in new[] { "butcher.red_hands", "butcher.s1", "butcher.s2", "butcher.s3" })
+            Assert.True(LampBook.Light(j.Ch, null, id) || LampBook.IsLit(j.Ch, id), id);
+        Assert.Equal(2, LampBook.Loadout(j.Ch, night: false).Attributes.GetValueOrDefault("might"));
+        var b = j.StartBattle(true, new CollisionWorld(80), (_, _) => 0, 0, 0, 0, 3, ember: true);
+        Assert.True(j.FightNight);
+        double hp = b.Stats.Get(Stat.MaxHealth), dmg = b.Stats.Get(Stat.Damage);
+        j.RefreshKit(b);
+        Assert.Equal(hp, b.Stats.Get(Stat.MaxHealth), 9);
+        Assert.Equal(dmg, b.Stats.Get(Stat.Damage), 9);
+    }
 }
