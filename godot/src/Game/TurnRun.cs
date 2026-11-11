@@ -13,6 +13,15 @@ public static class TurnRun
     static readonly (double At, double Head)[] Steps = Build();
     static (double, double)[] Build()
     {
+        // --run8 T0 (A1 lead 21): straight runs in all 8 directions, opposite pairs in turn so she stays near the start
+        // (0, 180, 45, 225, 90, 270, 135, 315 deg: 0 = +Z, toward the play camera at its yaw 0), each 1.6 s from a 0.6 s stand.
+        if (Args.Has("run8"))
+        {
+            var r = new System.Collections.Generic.List<(double, double)>();
+            double t8 = 0;
+            foreach (double h8 in new double[] { 0, 180, 45, 225, 90, 270, 135, 315 }) { r.Add((t8, h8)); r.Add((t8 + 1.6, double.NaN)); t8 += 2.2; }
+            return r.ToArray();
+        }
         var s = new System.Collections.Generic.List<(double, double)> { (0, 90) };
         double t = 1;
         for (int i = 1; i <= 8; i++) { s.Add((t, 90 + 45 * i)); t += 0.25; }
@@ -25,7 +34,7 @@ public static class TurnRun
     }
     /// <summary>Pictures at these script times: across the loops, the 180 and its settle.</summary>
     static readonly double[] Beats = { 1.25, 1.75, 2.25, 2.75, 3.25, 3.75, 4.25, 4.75, 5.9, 6.05, 6.12, 6.2, 6.3, 6.45, 6.7, 7.1 };
-    public static readonly double Start = Args.Has("fig8") ? Args.Num("fig8", 3) : -1;
+    public static readonly double Start = Args.Has("fig8") ? Args.Num("fig8", 3) : Args.Has("run8") ? Args.Num("run8", 3) : -1;
     static int beat;
     static double t0 = -1;
 
@@ -36,7 +45,7 @@ public static class TurnRun
         double t = time - Start;
         double h = double.NaN;
         foreach (var (at, head) in Steps) if (t >= at) h = head;
-        while (beat < Beats.Length && t >= Beats[beat]) { Shots.WantFrames($"s{beat:00}", 1); beat++; }
+        while (!Args.Has("run8") && beat < Beats.Length && t >= Beats[beat]) { Shots.WantFrames($"s{beat:00}", 1); beat++; }
         if (double.IsNaN(h)) return (0, 0);
         double r = h * Math.PI / 180;
         return (Math.Sin(r), Math.Cos(r));

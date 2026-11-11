@@ -1286,6 +1286,7 @@ public partial class PlayerView : Node3D
         if (mine) Carry((float)dt, sp);
         if (mine) ActApply();
         if (mine) SurvivorUnchained.Play.TurnRun.Log(b.Time, p.StickX, p.StickZ, p.Vx, p.Vz, Rotation.Y, carriage?.Bank ?? 0, speed, p.X, p.Z);
+        if (mine && SurvivorUnchained.Play.TurnRun.Start >= 0) CarryLog(b.Time - SurvivorUnchained.Play.TurnRun.Start);
         else tree.Set(BlendPosition, speed);
         carriedLight:
         // The carried light: steadier at full health, guttering when hurt.
@@ -1781,6 +1782,23 @@ public partial class PlayerView : Node3D
         // (never past the goal)
         if (Mathf.Abs(step) > Mathf.Abs(err)) step = err;
         Rotation = new Vector3(0, Rotation.Y + Mathf.DegToRad(step), 0);
+    }
+    /// <summary>(A1 lead 21) A --fig8/--run8 frame's carriage, for measuring turns and the run without pictures ("CARRY" lines,
+    /// last frame's final pose: one frame behind TURN): world feet, hands and pelvis (m), chest (shoulder line) and pelvis (hip line) yaw (deg), her
+    /// screen position (px), the one-shots and clips, the waist aim (set and carried) and the stride phase.</summary>
+    void CarryLog(double t)
+    {
+        if (t < 0) return;
+        var skel = person.Skeleton;
+        Vector3 W(string n) { int i = skel.FindBone(n); return i < 0 ? Vector3.Zero : skel.GlobalTransform * skel.GetBoneGlobalPose(i).Origin; }
+        // (a line's yaw: forward = up x (right - left), her facing's convention: atan2(x, z))
+        float Yaw(string l, string r) { var rv = W(r) - W(l); return Mathf.RadToDeg(Mathf.Atan2(rv.Z, -rv.X)); }
+        var fl = W("foot_l"); var fr = W("foot_r"); var hl = W("hand_l"); var hr = W("hand_r"); var pv = W("pelvis");
+        var cam = GetViewport()?.GetCamera3D();
+        var sc = cam != null ? cam.UnprojectPosition(pv) : Vector2.Zero;
+        bool up = (bool)tree.Get("parameters/upperShot/active"), fu = (bool)tree.Get("parameters/fullShot/active");
+        string V(Vector3 v) => System.FormattableString.Invariant($"{v.X:0.000} {v.Y:0.000} {v.Z:0.000}");
+        GD.Print(System.FormattableString.Invariant($"CARRY {t:0.0000} fl {V(fl)} fr {V(fr)} hl {V(hl)} hr {V(hr)} pv {V(pv)} chest {Yaw("upperarm_l", "upperarm_r"):0.0} pelv {Yaw("thigh_l", "thigh_r"):0.0} face {Mathf.RadToDeg(Rotation.Y):0.0} scr {sc.X:0.0} {sc.Y:0.0} aimset {aim:0.0} aimc {carriage?.Aim ?? 0:0.0} hold {aimHold:0.00} stride {stride:0.000} up {(up ? upperClip : "-")} full {(fu ? fullClip : "-")} bank {carriage?.Bank ?? 0:0.0} tilt {carriage?.Tilt ?? 0:0.0}"));
     }
     bool held;
     static readonly float HeadLevel = SurvivorUnchained.Args.Has("head-level") ? SurvivorUnchained.Args.Num("head-level", 0.8f) : 0.8f;
