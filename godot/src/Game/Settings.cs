@@ -37,7 +37,10 @@ public sealed class Settings
     public bool Tips = true;
     public List<string> SeenTips = new();
 
-    const string File = "user://settings.json";
+    /// <summary>The owner's profile; a tool's run (any switch, Args.Tool) keeps its own beside it and never reads or
+    /// writes his (B1, 10 Nov: his demo-arpg1 played with motion off, sound quiet and the lessons all seen, left in his
+    /// settings by our runs).</summary>
+    static string File => Args.Tool ? "user://settings_runs.json" : "user://settings.json";
     public static Settings Current { get; private set; } = Load();
 
     static Settings Load()
