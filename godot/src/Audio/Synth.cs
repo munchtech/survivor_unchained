@@ -391,7 +391,8 @@ public partial class Synth : Node
         {
             string stem = tapePath.EndsWith(".wav", StringComparison.OrdinalIgnoreCase) ? tapePath[..^4] : tapePath;
             string[] names = ["sfx", "music", "ambience", "ui", "flare", "lead"];
-            for (int i = 0; i < 6; i++) WriteWav($"{stem}_{names[i]}.wav", stems[i]);
+            // (the lead and the effects first: the quit guard may cut the last ones short, 11 Nov a run lost the lead stem's end)
+            foreach (int i in (int[])[5, 0, 1, 2, 3, 4]) WriteWav($"{stem}_{names[i]}.wav", stems[i]);
         }
         GD.Print($"wrote {tapePath}: {tape.Count / Rate:0.0}s of sound, mixed at {MixCost / Math.Max(1e-9, Mixed) * 100:0.0}% of real time");
     }
@@ -399,7 +400,7 @@ public partial class Synth : Node
     /// <summary>16-bit stereo PCM.</summary>
     void WriteWav(string path, List<Vector2> samples)
     {
-        using var f = new System.IO.BinaryWriter(System.IO.File.Create(path));
+        using var f = new System.IO.BinaryWriter(new System.IO.BufferedStream(System.IO.File.Create(path), 1 << 20));
         int bytes = samples.Count * 4;
         f.Write("RIFF"u8); f.Write(36 + bytes); f.Write("WAVE"u8);
         f.Write("fmt "u8); f.Write(16); f.Write((short)1); f.Write((short)2); f.Write((int)Rate); f.Write((int)Rate * 4); f.Write((short)4); f.Write((short)16);
