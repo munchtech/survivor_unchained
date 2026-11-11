@@ -32,8 +32,8 @@
 
   "skills": {
     "sunder": {
-      "line": "Cut everything in front of you while you hold. Every 6 s of cutting, a heavy swing splits the ground ahead.",
-      "numbers": [ [ "Damage", "{cut} a cut, every {every} s" ], [ "Reach", "{base.reach} m" ], [ "Ground split", "{base.line} m ahead" ] ]
+      "line": "Cut everything in front of you while you hold. Every 6 s of cutting, a heavy swing splits the ground.",
+      "numbers": [ [ "Damage", "{cut} a cut, every {every} s" ], [ "Reach", "{base.reach} m" ], [ "Ground split", "{base.line} m ahead, {damage} damage" ] ]
     },
     "cleaver": {
       "line": "A heavy chop that sweeps the whole front of you and leaves the wounds open.",

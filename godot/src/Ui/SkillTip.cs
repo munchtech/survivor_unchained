@@ -139,6 +139,12 @@ public partial class SkillTip : Control
         Build(v, w);
         key = "";
         GD.Print($"TIPAUDIT {v.Skill} h={Size.Y + 2 * Out:0} w={Size.X + 2 * Out:0} how={(lay.HowInline ? "inline" : "own")} lines={lay.Lines.Count} rows={lay.RowLines}");
+        GD.Print($"TIPWRAP {v.Skill} compact | " + string.Join(" | ", lay.Lines));
+        compact = false;
+        Build(v, W);
+        key = "";
+        GD.Print($"TIPWRAP {v.Skill} full | " + string.Join(" | ", lay.Lines));
+        compact = true;
     }
 
     static string KeyOf(SkillTipView v)
@@ -182,7 +188,7 @@ public partial class SkillTip : Control
     }
 
     /// <summary>Wrap, then if the last line is a stub (under 45% of the width) re-wrap at the narrowest width (4 px steps, down to 60%) that keeps the same line count.</summary>
-    static List<string> WrapBalanced(Font f, string s, int size, float width)
+    static List<string> WrapBalancedOld(Font f, string s, int size, float width)
     {
         var o = Wrap(f, s, size, width);
         if (o.Count < 2 || TextW(f, o[^1], size) >= 0.45f * width) return o;
@@ -192,6 +198,44 @@ public partial class SkillTip : Control
             if (t.Count != o.Count) break;
             o = t;
         }
+        return o;
+    }
+
+    /// <summary>Sentence-first wrap: each sentence on its own line(s), a two-line sentence broken at the comma that evens its halves, then whole one-line sentences joined while they fit. Falls back to the balanced wrap when it would overflow the card.</summary>
+    static List<string> WrapBalanced(Font f, string s, int size, float width, int maxLines)
+    {
+        var plain = Wrap(f, s, size, width);
+        if (plain.Count < 2) return plain;
+        var sents = System.Text.RegularExpressions.Regex.Split(s.Trim(), @"(?<=[.;!?]) +").Where(x => x != "").ToList();
+        var groups = new List<List<string>>();
+        foreach (var se in sents)
+        {
+            var w1 = Wrap(f, se, size, width);
+            if (w1.Count == 2)
+            {
+                string? best = null; float bestD = float.MaxValue;
+                for (int i = 0; i < se.Length - 1; i++)
+                {
+                    if (se[i] != ',' || se[i + 1] != ' ') continue;
+                    string a = se.Substring(0, i + 1), b = se.Substring(i + 2);
+                    float wa = TextW(f, a, size), wb = TextW(f, b, size);
+                    if (wa > width || wb > width) continue;
+                    if (Math.Abs(wa - wb) < bestD) { bestD = Math.Abs(wa - wb); best = a + "
+" + b; }
+                }
+                if (best != null) { groups.Add(best.Split('
+').ToList()); continue; }
+            }
+            groups.Add(w1.Count >= 2 ? WrapBalancedOld(f, se, size, width) : w1);
+        }
+        for (int i = 0; i + 1 < groups.Count;)
+        {
+            if (groups[i].Count == 1 && groups[i + 1].Count == 1 && TextW(f, groups[i][0] + " " + groups[i + 1][0], size) <= width)
+            { groups[i][0] += " " + groups[i + 1][0]; groups.RemoveAt(i + 1); }
+            else i++;
+        }
+        var o = groups.SelectMany(g => g).ToList();
+        if (o.Count > plain.Count && o.Count > maxLines) return WrapBalancedOld(f, s, size, width);
         return o;
     }
 
@@ -228,12 +272,12 @@ public partial class SkillTip : Control
             if (compact && padX + nameW + 16 + howW <= right) { L.HowInline = true; L.HowX = right - howW; }
             else { L.HowBase = y + (compact ? 4 : 6) + L.HowSize; y = L.HowBase; }
         }
-        L.Lines = WrapBalanced(Style.Ui, v.Line, L.LineSize, inner);
         int maxLines = compact ? 2 : 3;
+        L.Lines = WrapBalanced(Style.Ui, v.Line, L.LineSize, inner, maxLines);
         if (L.Lines.Count > maxLines && said.Add(v.Skill + "|line")) GD.Print($"SKILLTIP OVERFLOW {v.Skill} line={L.Lines.Count}");
         if (L.Lines.Count > 0) { L.LineBase = y + 10 + L.LineSize; y = L.LineBase + (L.Lines.Count - 1) * L.LinePitch; }
-        L.RuleY = y + (compact ? 8 : 10);
-        L.RowBase = L.RuleY + (compact ? 8 : 10) + L.RowSize;
+        L.RuleY = y + (compact ? 11 : 11);
+        L.RowBase = L.RuleY + (compact ? 4 : 3) + L.RowSize;
         var items = v.Rows.Select(r => (r.Label, r.Value, Gold: false)).ToList();
         if (v.Cost is { } c) items.Add((c.Label, c.Value, true));
         if (!compact)

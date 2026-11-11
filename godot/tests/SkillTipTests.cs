@@ -218,6 +218,24 @@ public class SkillTipTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_lit_damage_lamp_reaches_the_seat_tips_cut()
+    {
+        var j = Warden();
+        string wide = Wicks.StrandsOf("sunder").SelectMany(st => Enumerable.Range(1, Wicks.PerStrand - 1).Select(st.LampId)).First(id => WickBook.LampDelta(j.Ch, "sunder", id) is { What: "Cut", Cond: "" });
+        string CutRow() { var v = SkillTipModel.Build(j.Ch, null, "sunder", "hold"); return v.Rows.First(r => r.Label == "Damage").Value; }
+        string unlit = CutRow();
+        Assert.Equal(WickNo.None, WickBook.Plan(j.Ch, "sunder", wide));
+        WickBook.LightAll(j.Ch); // her held point burns: the planned lamp is lit
+        {
+            string lit = CutRow();
+            output.WriteLine($"{wide}: unlit '{unlit}' lit '{lit}'");
+            Assert.NotEqual(unlit, lit);
+            int Num(string x) => int.Parse(new string(x.TakeWhile(char.IsDigit).ToArray()));
+            Assert.True(Num(lit) > Num(unlit));
+        }
+    }
+
+    [Fact]
     public void The_level_9_cards_table()
     {
         var j = Warden();
