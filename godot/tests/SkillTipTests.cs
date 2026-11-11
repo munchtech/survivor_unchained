@@ -95,7 +95,7 @@ public class SkillTipTests(ITestOutputHelper output)
                 {
                     // a chained skill: the cut is what lands (a normal Damage row, no cost row)
                     Assert.Null(v.Cost);
-                    Assert.Equal($"{SkillTipModel.Damage(cut)} a cut, every {SkillTipModel.Seconds(WickBook.Sum(j.Ch, skill, false)!.Every!.Value)} s", v.Rows.First(r => r.Label == "Damage").Value);
+                    Assert.Equal($"{SkillTipModel.Damage(cut)} a cut, every {System.Math.Round(WickBook.Sum(j.Ch, skill, false)!.Every!.Value, 2).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)} s", v.Rows.First(r => r.Label == "Damage").Value);
                 }
                 else Assert.NotNull(v.Cost);
                 NoBraces(v);
@@ -233,6 +233,25 @@ public class SkillTipTests(ITestOutputHelper output)
             int Num(string x) => int.Parse(new string(x.TakeWhile(char.IsDigit).ToArray()));
             Assert.True(Num(lit) > Num(unlit));
         }
+    }
+
+    [Fact]
+    public void A_lit_splitting_stroke_speaks_in_its_own_words_and_slows_the_swing()
+    {
+        var j = Warden();
+        LevelTo(j, 15);
+        string Line(out string every) { var v = SkillTipModel.Build(j.Ch, null, "sunder", "hold"); every = v.Rows.First(r => r.Label == "Damage").Value; return v.Line; }
+        string unlit = Line(out var e0);
+        WickBook.LightAll(j.Ch);
+        string lit = Line(out var e1);
+        output.WriteLine($"{unlit} | {e0} // {lit} | {e1}");
+        Assert.Contains("Every 6 s", unlit);
+        Assert.Equal("Cut everything in front of you while you hold. Every 2nd swing is heavy and splits the ground.", lit);
+        double Ev(string r) => double.Parse(r.Split("every ")[1].Replace(" s", ""), System.Globalization.CultureInfo.InvariantCulture);
+        // the period reads the lit wick's own cooldown (Splitting Stroke's 15% slower less the lamps' quickening): the Lamps sum line's
+        Assert.NotEqual(Ev(e0), Ev(e1));
+        Assert.Equal(System.Math.Round(WickBook.Sum(j.Ch, "sunder", false)!.Every!.Value, 2), Ev(e1));
+        Assert.True(Wicks.Turn("sunder.stroke").Cooldown > 1);
     }
 
     [Fact]

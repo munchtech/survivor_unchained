@@ -176,7 +176,7 @@ public static class WickBook
         }
         var view = new WickSumView("Damage", w.Damage, parts);
         if (!night && CutOf(def, w.Damage) is { } cut)
-            view = view with { Cut = cut, Every = def.Press!.Chain!.Period };
+            view = view with { Cut = cut, Every = def.Press!.Chain!.Period * (w.Wick?.Cooldown ?? 1) };
         return view;
     }
 

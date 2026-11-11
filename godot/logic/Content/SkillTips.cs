@@ -14,6 +14,9 @@ public sealed class SkillTipRec
     public string? Kindled;
     /// <summary>Overrides of the shared "how" by cast form.</summary>
     public Dictionary<string, string>? How;
+    /// <summary>By lit calling lamp id: its own words, replacing this record's line (and rows, when it has any) while that calling is lit,
+    /// for a calling that replaces what the plain line describes (Sunder's Splitting Stroke: its own heavy count).</summary>
+    public Dictionary<string, SkillTipRec>? Callings;
 }
 
 public static class SkillTips

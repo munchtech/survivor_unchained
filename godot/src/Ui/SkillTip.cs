@@ -136,13 +136,17 @@ public partial class SkillTip : Control
     public void Audit(SkillTipView v, float w)
     {
         compact = true;
+        int fb = WrapFallbacks;
         Build(v, w);
         key = "";
+        if (WrapFallbacks != fb) GD.Print($"TIPWRAP FALLBACK {v.Skill} compact");
         GD.Print($"TIPAUDIT {v.Skill} h={Size.Y + 2 * Out:0} w={Size.X + 2 * Out:0} how={(lay.HowInline ? "inline" : "own")} lines={lay.Lines.Count} rows={lay.RowLines}");
         GD.Print($"TIPWRAP {v.Skill} compact | " + string.Join(" | ", lay.Lines));
         compact = false;
+        fb = WrapFallbacks;
         Build(v, W);
         key = "";
+        if (WrapFallbacks != fb) GD.Print($"TIPWRAP FALLBACK {v.Skill} full");
         GD.Print($"TIPWRAP {v.Skill} full | " + string.Join(" | ", lay.Lines));
         compact = true;
     }
@@ -202,6 +206,7 @@ public partial class SkillTip : Control
     }
 
     /// <summary>Sentence-first wrap: each sentence on its own line(s), a two-line sentence broken at the comma that evens its halves, then whole one-line sentences joined while they fit. Falls back to the balanced wrap when it would overflow the card.</summary>
+    static int WrapFallbacks;
     static List<string> WrapBalanced(Font f, string s, int size, float width, int maxLines)
     {
         var plain = Wrap(f, s, size, width);
@@ -233,7 +238,7 @@ public partial class SkillTip : Control
             else i++;
         }
         var o = groups.SelectMany(g => g).ToList();
-        if (o.Count > plain.Count && o.Count > maxLines) return WrapBalancedOld(f, s, size, width);
+        if (o.Count > plain.Count && o.Count > maxLines) { WrapFallbacks++; return WrapBalancedOld(f, s, size, width); }
         return o;
     }
 

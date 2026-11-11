@@ -33,7 +33,8 @@
   "skills": {
     "sunder": {
       "line": "Cut everything in front of you while you hold. Every 6 s of cutting, a heavy swing splits the ground.",
-      "numbers": [ [ "Damage", "{cut} a cut, every {every} s" ], [ "Reach", "{base.reach} m" ], [ "Ground split", "{base.line} m ahead, {damage} damage" ] ]
+      "numbers": [ [ "Damage", "{cut} a cut, every {every} s" ], [ "Reach", "{base.reach} m" ], [ "Ground split", "{base.line} m ahead, {damage} damage" ] ],
+      "callings": { "sunder.stroke.4": { "line": "Cut everything in front of you while you hold. Every 2nd swing is heavy and splits the ground." } }
     },
     "cleaver": {
       "line": "A heavy chop that sweeps the whole front of you and leaves the wounds open.",
@@ -45,7 +46,7 @@
       "kindled": "Lights up with {kindle.count} or more enemies within {kindle.radius} m: press it"
     },
     "heroic_leap": {
-      "line": "Leap where you aim and land blade first, striking and knocking down everything there. Untouchable in the air.",
+      "line": "Leap where you aim and land blade first, knocking all there down. Untouchable in the air.",
       "numbers": [ [ "Damage", "{damage}" ], [ "Leap", "{base.minRange} to {base.range} m" ], [ "Knockdown", "{base.stun} s within {base.radius} m" ] ]
     },
     "shield_charge": {

@@ -58,6 +58,8 @@ public static class SkillTipModel
         {
             every = period;
             cut = dmg * period / (w.Press.Wait ?? def.Base.Cooldown ?? 1);
+            // a lit wick that slows or quickens the swing (Splitting Stroke's 15% slower, a lamp's 8% less) stretches the period (as the Lamps sum line reads it)
+            every = period * (w.Wick?.Cooldown ?? 1);
         }
 
         string Fill(string t) => Hole.Replace(t, m =>
@@ -67,7 +69,7 @@ public static class SkillTipModel
             // a value read as seconds (the hole followed by " s") prints 0.#
             bool secs = string.CompareOrdinal(t, m.Index + m.Length, " s", 0, 2) == 0
                 && (m.Index + m.Length + 2 == t.Length || !char.IsLetter(t[m.Index + m.Length + 2]));
-            if (secs && double.TryParse(s, NumberStyles.Float, Inv, out double sv)) return Seconds(sv);
+            if (secs && m.Groups[1].Value != "every" && double.TryParse(s, NumberStyles.Float, Inv, out double sv)) return Seconds(sv);
             return s;
         });
 
@@ -77,8 +79,12 @@ public static class SkillTipModel
         var rows = new List<(string, string)>();
         if (rec != null)
         {
-            line = Fill(rec.Line);
-            foreach (var r in rec.Numbers) if (r.Length >= 2) rows.Add((r[0], Fill(r[1])));
+            // a lit calling that replaces what the plain line says speaks in its own words (callings, by lamp id)
+            SkillTipRec? over = null;
+            if (rec.Callings != null && w.Wick?.Lit is { } lit)
+                foreach (var l in lit) if (rec.Callings.TryGetValue(l, out var o)) over = o;
+            line = Fill(over is { Line.Length: > 0 } ? over.Line : rec.Line);
+            foreach (var r in over is { Numbers.Length: > 0 } ? over.Numbers : rec.Numbers) if (r.Length >= 2) rows.Add((r[0], Fill(r[1])));
         }
         else
         {
@@ -111,7 +117,7 @@ public static class SkillTipModel
         {
             case "damage": return Damage(dmg);
             case "cut": return Damage(cut ?? dmg);
-            case "every": return Seconds(every ?? cooldown);
+            case "every": return Math.Round(every ?? cooldown, 2).ToString("0.##", Inv); // two places: a lit slower swing shows (0.7 -> 0.74)
             case "cooldown": return Seconds(cooldown);
             case "resolve": return Plain(resolve);
             case "drain": return drain > 0 ? Plain(drain) : null;
