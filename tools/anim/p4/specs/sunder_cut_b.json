@@ -2,6 +2,7 @@
   "kind": "action",
   "rules": "Sunder cut B (A1 lead 16 design): the one-hand heavy DOWNWARD cut out of cut A's left wind, high-left to low-right through the front at contact, the hips unwinding past centre to the stance's own blade and the weight coming back onto the back leg; the follow-through carries the blade low and behind into the stance's tail guard and ends ON the stance (idle_fight_a). 0.70 s = 42 game frames; contact 14 f, cancel 22 f. Standing, both feet planted on the stance's spots.",
   "held": ["sword", "shield"],
+  "meta": {"stance": true},
   "beats": {"contact": [0.2333], "cancel": 0.3667, "blend_in": 0.05, "target": {"height_cm": 60, "bearing_deg": -30, "dist_cm": 85}},
   "post": {"loop": false, "inplace": true, "crop": [23, 44], "action": {"seconds": 0.7, "stretch": true, "planted": {"foot_l": [["start", "end", "ball", "first"]], "foot_r": [["start", "end", "ball", "last"]]}}},
   "notes": "WIP (spec builder CUT-B1, 10 Nov). FULLY KEYED like cut A: the base is 22 frames of idle_warden's take, wholly replaced by fit.start {clip sunder_cut_a, frame 21 (its last), bones all, over past the end, place}: frame 0 IS cut A's end. Blade and hand keyed on every clip frame from one path (waypoints), re-timed so the blade's angular step rises to contact and falls every frame after. fit.end {idle_fight_a} over the last frames lands every local on the stance; hips keys bring the pelvis back to the stance's place. Back foot planted 'last' (the stance's flat foot), the heel layer lays cut A's end lift on it at frame 0 and lowers it to flat.",

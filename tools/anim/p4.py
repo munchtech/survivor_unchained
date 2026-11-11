@@ -242,6 +242,8 @@ def run_post(src, spec, name):
                crop=tuple(po["crop"]) if po.get("crop") else None, fit=fit_of(spec),
                body=body_field() if "clear" in spec.get("fit", {}) else None, action=act, beats=beats)
     r.law = MC.drop_rest(r.clip, r.rig, LAW_BONES, LAW_TOL_DEG)
+    if spec.get("meta"):     # (the spec's meta carried onto the clip as data: P4Pack sets each key on the Animation;
+        r.clip["meta"] = {**r.clip.get("meta", {}), **spec["meta"]}   # e.g. {"stance": true}: a cut with a _run)
     return r
 
 
@@ -634,6 +636,7 @@ def cmd_takes(a):
 
 OVER_GAIT_WINDOW = (0.1, 0.35)      # the cut's window the over-gait measure reads (s)
 OVER_GAIT_OFFSETS = (0.0, 0.25, 0.5, 0.75)
+OVER_GAIT_K = (0.5, 1.0)          # the counter's shares measured (the game runs PelvisCounter.K = 0.5)
 
 
 def over_gait_of(spec, name):
@@ -644,7 +647,7 @@ def over_gait_of(spec, name):
     st, ga = MC.read(OUT / f"{spec['of']}.json"), MC.read(OUT / f"{spec['gait']}.json")
     sp = pieces()["shieldp"]["at"] if "shield" in spec.get("held", ["shield"]) else None
     up, log = OG.over_gait(st, ga, Rig(RIG), keep={"l": sp} if sp is not None else None, name=name,
-                           arms=spec.get("arms", "node"), anchor=spec.get("anchor", "pelvis"))
+                           arms=spec.get("arms", "node"), anchor=spec.get("anchor", "pelvis"), soft=spec.get("soft"))
     return up, log, st, ga
 
 
@@ -663,8 +666,10 @@ def over_gait_measure(up, st, ga, body=None, rig=None):
     Ps = Ps + np.array(up["meta"]["anchor_m"])[:, None]
     fr = [f for f in range(st["frames"]) if OVER_GAIT_WINDOW[0] - 1e-6 <= f / st["fps"] <= OVER_GAIT_WINDOW[1] + 1e-6]
     rows = {}
-    for o in ("mean",) + OVER_GAIT_OFFSETS:
-        G, P = OG.lay(up, ga, rig, 0.0 if o == "mean" else o, pelvis_mean=o == "mean")
+    runs = [("mean", 0.0, None)] + [(str(o), o, None) for o in OVER_GAIT_OFFSETS]
+    runs += [(f"k{k:g}@{o}", o, k) for k in OVER_GAIT_K for o in OVER_GAIT_OFFSETS]
+    for o, at, k in runs:      # (k: the engine's pelvis counter, PelvisCounter's math, at that share of the swing)
+        G, P = OG.lay(up, ga, rig, at, pelvis_mean=o == "mean", k=k)
         m = OG.paths(G, P, Gs, Ps, rig, fr, bl, pc["shieldp"]["at"])
         Gb = m44(G, P)
         m["pops"] = len(CC.pops(rig.names, list(rig.parent), Gb, list(up["bones"]), False)[0])
@@ -672,7 +677,7 @@ def over_gait_measure(up, st, ga, body=None, rig=None):
             body.cache.clear()
             ct = CC.contact(body, Gb, list(range(len(Gb))), set(up["bones"]) | {n for n in rig.names if OG.lower(n)})
             m["arm_in_l"], m["arm_in_r"] = ct["l"]["inside"], ct["r"]["inside"]
-        rows[str(o)] = m
+        rows[o] = m
     return rows
 
 
@@ -697,9 +702,9 @@ def check_over_gait(p, sp, body):
     print("\n" + f"{p.stem}: {judged_state(sp, up)} (pack gate); over {sp['gait']}, against {sp['of']} in "
           f"{OVER_GAIT_WINDOW[0]}-{OVER_GAIT_WINDOW[1]} s (offset = share of the gait's cycle; mean = its mean pelvis)")
     keys = ("tip_cm", "blade_deg", "hand_cm", "boss_cm", "chest_deg", "chest_cm", "head_deg", "pops", "arm_in_l", "arm_in_r")
-    print("  " + "offset".ljust(7) + "".join(k.rjust(11) for k in keys))
+    print("  " + "offset".ljust(9) + "".join(k.rjust(11) for k in keys))
     for o, m in rows.items():
-        print("  " + o.ljust(7) + "".join(str(m.get(k, "-")).rjust(11) for k in keys))
+        print("  " + o.ljust(9) + "".join(str(m.get(k, "-")).rjust(11) for k in keys))
     return {"clip": p.stem, "over_gait": rows}
 
 

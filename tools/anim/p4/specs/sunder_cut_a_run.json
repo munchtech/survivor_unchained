@@ -5,6 +5,7 @@
   "held": ["sword", "shield"],
   "arms": "node",
   "anchor": "pelvis",
+  "soft": 0.95,
   "rules": "sunder_cut_a's upper body while she walks (the ARPG pivot: a press never roots her): Marionette's over_gait re-solves the cut over walk_warden's MEAN pelvis (spine_01..05 carry the cut's hip drive so the chest keeps its world turn; each arm's IK keeps the hand / shield boss on the cut's path, the hand its world turn), in the frame carried by the cut's pelvis travel over the ground (anchor pelvis). Upper tracks only; the cut's beats; meta layer upper.",
   "notes": "WIP (OVERGAIT, A1 lead 19, 10 Nov): built from the BUILT sunder_cut_a and walk_warden (p4.py build runs over_gait specs after the rest). Not judged."
 }
