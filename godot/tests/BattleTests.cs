@@ -518,3 +518,20 @@ public class BattleBalanceTests(Xunit.Abstractions.ITestOutputHelper log)
         Assert.True(noFall >= 41, line + " (need >= 85%)");
     }
 }
+
+public class OwnMarkClockTests
+{
+    [Fact]
+    public void An_own_marked_blow_counts_down_on_the_world_clock_and_others_do_not()
+    {
+        var b = BattleTests.Arena();
+        b.WorldRate = 0.25; b.WorldRateT = 1000;
+        var own = b.Blow(new Battle.EnemyBlow { OwnMark = true, Delay = 1.0, Damage = 0, Shape = TelegraphShape.Circle, Radius = 1, X = 90, Z = 90 });
+        var plain = b.Blow(new Battle.EnemyBlow { Delay = 1.0, Damage = 0, Shape = TelegraphShape.Circle, Radius = 1, X = 90, Z = 90 });
+        for (int i = 0; i < 60; i++) b.Tick(1 / 60.0, 0, 0);
+        Assert.Contains(own, b.Blows);
+        Assert.DoesNotContain(plain, b.Blows);
+        for (int i = 0; i < 60 * 3 + 2; i++) b.Tick(1 / 60.0, 0, 0);
+        Assert.DoesNotContain(own, b.Blows);
+    }
+}

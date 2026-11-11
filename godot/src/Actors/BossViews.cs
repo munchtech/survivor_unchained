@@ -58,8 +58,11 @@ public partial class WardenView : Node3D, IBossView
             Dye = new Dye { Cloth = "#3a3e44" },
         };
         view = new PersonView(spec, new Held { Right = "watch_blade" }, 0.8 * Size)
-        { WalkClip = "Zombie_Walk_Fwd_Loop", RunClip = "Zombie_Walk_Fwd_Loop" };
+        { WalkClip = "Zombie_Walk_Fwd_Loop", RunClip = "Zombie_Walk_Fwd_Loop", WalkStride = 1.0f };
         AddChild(view);
+        // (B1, r7-r12) No drawn swing over his cleave: a sheet swept from his blade, tuned over five runs, read at the game
+        // camera as a flat pane left where the blade had been, or as nothing; his chop reads by the blade, the cone and the
+        // swing's sound. A weapon trail is a follow-up for its own pass (the experience handoff).
         foreach (var mi in view.Person.Meshes)
             for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
                 if (mi.GetSurfaceOverrideMaterial(s) is StandardMaterial3D m)
@@ -142,20 +145,28 @@ public partial class WardenView : Node3D, IBossView
         if (p == pose) return;
         pose = p;
         var v = view;
+        // (B1: a held or looped pose of his own, not the walk he came in on; and the clip's rate a driven strike left set)
+        if (p is not ("walk" or "idle")) v.Halt();
+        if (p is not ("windup" or "cleave")) v.Person.Anim.SpeedScale = 1;
         switch (p)
         {
             // Lying where he fell (the first frame of getting up), then up.
             case "sleep": v.Act("LayToIdle", 0.0001, true); break;
             case "wake": v.Loop("Sword_Idle", 0); v.Act("LayToIdle", 0.6, true); break;
             case "walk": case "idle": v.Loop("Sword_Idle", 0.2); break;
-            case "windup": v.Loop("Sword_Idle", 0.1, 0.5); break;
-            case "cleave": v.Act("Sword_Attack", 1.1); break;
+            // (windup and cleave are driven from his AnimT in Update: the strike's contact frame lands at the windup's end)
+            case "windup": case "cleave": break;
             case "charge-windup": v.Loop("Idle_Shield_Loop", 0.15); break;
-            case "charge": v.Loop("Jog_Fwd_Loop", 0.1, 1.6); break;
-            case "stunned": v.Act("Hit_Head", 0.7, true); break;
-            case "channel": v.Loop("Spell_Simple_Idle_Loop", 0.3); break;
+            // Sprint_Loop: ~7.5 m/s at scale 1, at the rate his feet keep the ground (17 / (7.5 * 2.08))
+            case "charge": v.Loop("Sprint_Loop", 0.1, 17 / (7.5 * 2.08)); break;
+            // (B1 judge r2: Idle_Shield_Break is a guard-break recoil, chest pitched back ~20 deg and the sword arm up: at +0.4 s
+            // two of three stuns read upright and ready) driven in Update: a stagger (Jump_Land's buckle: knees give, pelvis
+            // down 0.93 -> 0.45, chest forward 30-45 deg) held low, then the dazed hunch (Zombie_Idle_Loop, slowed) to release
+            case "stunned": dazed = false; break;
+            case "channel": v.Loop("Spell_Simple_Idle_Loop", 0.3); v.Act("Spell_Simple_Enter", 0.8); break;
             case "dead": v.Act("Death01", 0.7, true); break;
         }
+        if (Args.Has("pace")) GD.Print($"ford pose {p} clip={v.Person.Anim.CurrentAnimation} len={v.Person.Anim.CurrentAnimationLength:0.00} rate={v.Person.Anim.GetPlayingSpeed():0.00}");
     }
 
     /// <summary>A cinematic's double hands this view his last frame (H4 r3: C02's Warden turned ~40 deg and raised his
@@ -187,8 +198,19 @@ public partial class WardenView : Node3D, IBossView
     public void Release()
     {
         pose = "walk";
+        view.Person.Anim.SpeedScale = 1;
         view.Loop("Sword_Idle", 0.2);
     }
+
+    /// <summary>The cleave's clip time at the blow's landing (Sword_Attack: the hand drops through 0.43..0.50, lowest at
+    /// 0.50); the strike runs 0.33 to here over the windup's last 0.2 s.</summary>
+    const double Contact = 0.48;
+    /// <summary>The strike's hip twist in radians (negative turns him toward -X of his facing), set from --pace's tip bearing.</summary>
+    const double Twist = -0.5;
+    /// <summary>Seconds of a stun's stagger before the dazed hunch (StaggerFor), and whether the hunch has taken over.</summary>
+    const double StaggerFor = 0.9;
+    bool dazed;
+    double lean;
 
     public void Update(Enemy? e, double x, double y, double z, double facing, double dt)
     {
@@ -197,8 +219,48 @@ public partial class WardenView : Node3D, IBossView
         Position = new Vector3((float)x, (float)y, (float)z);
         flameHold = Math.Max(0, flameHold - dt);
         heading = Core.MathX.DampAngle(heading, facing, 14, dt);
-        Rotation = new Vector3(0, (float)heading, 0);
-        if (e != null && pose is "walk" or "idle") view.Locomotion(Math.Sqrt(e.Vx * e.Vx + e.Vz * e.Vz) * 1.2);
+        // (B1 r14 at 1:1: Sword_Attack is a diagonal cut whose low point lies off his facing, so the blade met the ground
+        // beside her as the blow landed.) Twisted at the hips by Twist through the strike, eased in over the raise and out
+        // over the recovery, so the cut comes down along the cone's axis on to her. The view only: the cone stays his facing.
+        double twist = e == null ? 0 : pose == "windup" ? Twist * Mathf.SmoothStep(0, 1, (float)((e.AnimT - 0.55) / 0.4))
+            : pose == "cleave" ? Twist * (1 - Mathf.SmoothStep(0, 1, (float)((e.AnimT - 0.12) / 0.5))) : 0;
+        Rotation = new Vector3(0, (float)(heading + twist), 0);
+        if (e != null && pose is "walk" or "idle") view.Locomotion(Math.Sqrt(e.Vx * e.Vx + e.Vz * e.Vz));
+        else if (e != null && pose == "windup")
+        {
+            // (B1 judge: at +0.55 s the old slow raise read as a reach) The blade up and back by 0.45 s (clip 0..0.30), held
+            // there creeping to the top (0.33) so the blow is plainly coming, then the strike (0.33..Contact) over the
+            // windup's last 0.2 s, down in the circle as the blow lands.
+            double t = e.AnimT;
+            // (B1 judge r3 at 1:1: the blade still high on the landing frame; contact moved to 0.96 s. Judge r4: then the
+            // blade had passed her 0.09 s before the hit and its number. Contact at 1.03 s, one frame ahead of the sim's
+            // landing at 1.05: the blade meets her as the blow and its number land.)
+            double c = t < 0.42 ? 0.30 * Mathf.SmoothStep(0, 1, (float)(t / 0.42)) : t < 0.83 ? 0.30 + 0.03 * (t - 0.42) / 0.41
+                : 0.33 + (Contact - 0.33) * Math.Min(1, (t - 0.83) / 0.20);
+            view.Drive("Sword_Attack", c, dt);
+            StrikeShots(e, [0.85, 0.95, 1.00, 1.03], "sw");
+        }
+        else if (e != null && pose == "cleave")
+        {
+            view.Drive("Sword_Attack", Contact + (1.533 - Contact) * Math.Min(1, e.AnimT / 0.8), dt);
+            StrikeShots(e, [0.0, 0.034, 0.067, 0.12], "cl");
+        }
+        else if (e != null && pose == "stunned" && !dazed)
+        {
+            // The buckle (clip 0..0.15 over the first 0.25 s), then held near its lowest (0.15..0.36) until the hunch takes it.
+            double t = e.AnimT;
+            if (t < StaggerFor) view.Drive("Jump_Land", t < 0.25 ? 0.15 * t / 0.25 : 0.15 + 0.21 * (t - 0.25) / (StaggerFor - 0.25), dt);
+            else { dazed = true; view.Person.Anim.SpeedScale = 1; view.Loop("Zombie_Idle_Loop", 0.5, 0.6); }
+        }
+        // (B1 judge: "It lowers its head" stood upright) gathered low over the charge's windup, leaning into the run
+        double want = pose == "charge-windup" ? 0.2 : pose == "charge" ? 0.15 : 0;
+        if (want > 0 || lean > 0)
+        {
+            lean += (want - lean) * (1 - Math.Exp(-10 * dt));
+            if (want == 0 && lean < 1e-3) lean = 0;
+            view.Rotation = new Vector3((float)lean, view.Rotation.Y, view.Rotation.Z);
+        }
+        if (e != null && Args.Has("pace") && pose is "windup" or "cleave" or "charge-windup" or "charge" or "stunned") Trace(e, facing, dt);
         flash = Math.Max(flash - dt * 6, e?.Flash ?? 0);
         foreach (var m in skin) m.Emission = new Color(1f, 0.8f, 0.6f) * (float)(flash * 0.25);
         double g = Glow * (pose == "sleep" ? 0.35 : 1) * (pose == "dead" ? 0 : 1);
@@ -207,6 +269,58 @@ public partial class WardenView : Node3D, IBossView
         lamp.Visible = pose != "dead" || g > 0.01;
         fire!.Lit(LampLit && g > 0.01);
         FaceLamp(LampLit ? Math.Min(g, 1) : 0);
+    }
+
+    MeshInstance3D? bladeMesh;
+    double shotT = -1; string shotPose = ""; int strikes;
+
+    /// <summary>--shot (B1): frames of the strike at his own clock's marks (windup or cleave seconds), so a game paused
+    /// over his windup (the tutorial's card) still yields the chop: Shots' clock runs on through a pause.</summary>
+    void StrikeShots(Enemy e, double[] marks, string tag)
+    {
+        if (!Args.Has("shot")) return;
+        if (shotPose != pose) { shotPose = pose; shotT = -1; if (pose == "windup") strikes++; }
+        foreach (var m in marks)
+            if (shotT < m && e.AnimT >= m) Shots.WantFrames($"ford_k{strikes}_{tag}{m * 1000:0000}", 0);
+        shotT = e.AnimT;
+    }
+
+    /// <summary>--pace (B1): each frame of a strike or charge, the sim's clock against the clip's, the blade's world reach
+    /// (lowest and highest point, farthest along his facing, metres from his feet) and where his body and face point
+    /// against the way he faces (fwd, face: dot with the facing; lane: his travel).</summary>
+    void Trace(Enemy e, double facing, double dt)
+    {
+        var a = view.Person.Anim;
+        var f = new Vector3((float)Math.Sin(facing), 0, (float)Math.Cos(facing));
+        var at = GlobalPosition;
+        bladeMesh ??= view.HeldIn("handslot.r")?.FindChildren("*", "MeshInstance3D", true, false).OfType<MeshInstance3D>().FirstOrDefault();
+        string blade = "";
+        if (bladeMesh != null)
+        {
+            var bb = bladeMesh.GetAabb(); var xf = bladeMesh.GlobalTransform;
+            float lo = 1e9f, hi = -1e9f, far = -1e9f, reach = -1; double tip = 0;
+            for (int i = 0; i < 8; i++)
+            {
+                var p = xf * bb.GetEndpoint(i); lo = Math.Min(lo, p.Y - at.Y); hi = Math.Max(hi, p.Y - at.Y); far = Math.Max(far, (p - at).Dot(f));
+                var d = p - at; d.Y = 0;
+                if (d.Length() > reach) { reach = d.Length(); tip = Math.Atan2(d.X, d.Z) - facing; }
+            }
+            tip = Math.IEEERemainder(tip, 2 * Math.PI) * 180 / Math.PI;
+            // tip: the bearing in degrees of the blade's farthest point from his facing (positive toward +X of it), reach its flat distance
+            blade = $" blade lo={lo:0.00} hi={hi:0.00} far={far:0.00} tip={tip:0} reach={reach:0.00}";
+        }
+        var sk = view.Person.Skeleton;
+        var bz = sk.GlobalTransform.Basis.Z; bz.Y = 0;
+        int hb = sk.FindBone("head");
+        string face = "";
+        if (hb >= 0)
+        {
+            var hx = sk.GlobalTransform * sk.GetBoneGlobalPose(hb);
+            var d = hx * new Vector3(0, 0.083f, 0.158f) - hx.Origin; d.Y = 0;
+            face = $" face={d.Normalized().Dot(f):0.00}";
+        }
+        var lane = new Vector3((float)e.Vx, 0, (float)e.Vz);
+        GD.Print($"fordview {pose} f={Engine.GetFramesDrawn()} at={e.AnimT:0.000} clip={a.CurrentAnimation} pos={a.CurrentAnimationPosition:0.000} ss={a.SpeedScale:0.00} dt={dt:0.000} x={e.X:0.00} z={e.Z:0.00} ang={facing:0.00} lean={lean:0.00} fwd={bz.Normalized().Dot(f):0.00}{face}{(lane.Length() > 0.1 ? $" lane={lane.Normalized().Dot(f):0.00}" : "")}{blade}");
     }
 
     /// <summary>A cinematic's frame: the eyes and the lamp at the glow it sets,
