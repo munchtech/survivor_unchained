@@ -81,6 +81,7 @@ public sealed class Saves
         w0.History ??= new(); w0.Scheduled ??= new(); w0.Zones ??= new(); w0.TimeIn ??= new(); w0.Codex ??= new();
         w0.Bestiary ??= new(); w0.Rematches ??= new();
         d.World.Stash ??= new();
+        d.World.Held ??= new();
         // Whole shelves, at least the one that comes with the room (a save from before shelves had two).
         while (d.World.Stash.Count < WorldState.Shelf || d.World.Stash.Count % WorldState.Shelf != 0) d.World.Stash.Add(null);
         d.World.Legacy ??= new();
