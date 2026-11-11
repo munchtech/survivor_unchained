@@ -46,7 +46,7 @@
       "kindled": "Lights up with {kindle.count} or more enemies within {kindle.radius} m: press it"
     },
     "heroic_leap": {
-      "line": "Leap where you aim and land blade first, knocking all there down. Untouchable in the air.",
+      "line": "Leap where you aim and land blade first, knocking down all around. Untouchable in the air.",
       "numbers": [ [ "Damage", "{damage}" ], [ "Leap", "{base.minRange} to {base.range} m" ], [ "Knockdown", "{base.stun} s within {base.radius} m" ] ]
     },
     "shield_charge": {
