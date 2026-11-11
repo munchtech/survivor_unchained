@@ -430,14 +430,29 @@ public partial class LampWick : Control
         float w = TextR - TextX;
         if (r == fr)
         {
-            string line = fc < 3 ? WithDelta(LineOf(r, fc), Id(r, fc)) : LineOf(r, fc);
+            string line = LineOf(r, fc), delta = fc < 3 ? DeltaOf(Id(r, fc)) : "";
+            var st = LampInk.Wrap(StateOf(r, fc), fs, 13, w);
+            // the last row sits over the sum line: the lamp line and its hint keep clear of it (hint baseline above Y1 - 28)
+            int fmost = 2, stMax = 2;
+            if (r == strands.Count - 1)
+            {
+                stMax = 1;
+                fmost = Math.Clamp((int)MathF.Floor((Y1 - 28 - (ry + 1 + 17)) / 16f) + 1, 1, 2);
+            }
             var lines = LampInk.Wrap(line, fl, 14, w);
-            if (lines.Count > 2) { lines = lines.Take(2).ToList(); lines[1] = Ellipsize(lines[1] + "…", fl, 14, w); }
+            string tail = delta == "" ? "" : " · " + delta;
+            float tw = tail == "" ? 0 : LampInk.W(fl, tail, 14);
+            if (lines.Count > fmost) { lines = lines.Take(fmost).ToList(); lines[fmost - 1] = Ellipsize(lines[fmost - 1] + "…", fl, 14, w - tw); lines[fmost - 1] += tail; }
+            else if (tail != "")
+            {
+                if (LampInk.W(fl, lines[^1] + tail, 14) <= w) lines[^1] += tail;
+                else if (lines.Count < fmost) lines.Add(delta);
+                else lines[^1] = Ellipsize(lines[^1] + "…", fl, 14, w - tw) + tail;
+            }
             LampInk.Text(ci, fn, 18, TextX, ry - 16, NameOf(r, fc), LampInk.Ink);
             for (int j = 0; j < lines.Count; j++) LampInk.Text(ci, fl, 14, TextX, ry + 1 + j * 16, lines[j], LampInk.Body with { A = 0.92f });
             float sy = ry + 1 + (lines.Count - 1) * 16 + 17;
-            var st = LampInk.Wrap(StateOf(r, fc), fs, 13, w);
-            for (int j = 0; j < Math.Min(2, st.Count); j++) LampInk.Text(ci, fs, 13, TextX, sy + j * 15, st[j], said != null ? LampInk.Red : LampInk.Focus);
+            for (int j = 0; j < Math.Min(stMax, st.Count); j++) LampInk.Text(ci, fs, 13, TextX, sy + j * 15, j == stMax - 1 && st.Count > stMax ? Ellipsize(st[j] + "…", fs, 13, w) : st[j], said != null ? LampInk.Red : LampInk.Focus);
             return;
         }
         bool crossed = Crossed(r);
@@ -457,18 +472,18 @@ public partial class LampWick : Control
     /// <summary>A lamp's line under its name: the Turn's own text (Wicks.Text prefixes the Turn's name, already drawn above it).</summary>
     string LineOf(int r, int c) => c == 3 ? strands[r].TurnDef.Text : Wicks.Text(Skill!, Id(r, c));
 
-    /// <summary>U1 §5C: the focused lamp's line with what it changes ("+10% damage · Damage 57 → 63", WickBook.LampDelta);
+    /// <summary>U1 §5C: the focused lamp's line with what it changes ("+10% damage · 57 → 63", WickBook.LampDelta);
     /// the line alone when nothing it names changes. Asked once a lamp until the board is read again.</summary>
     readonly Dictionary<string, string> deltaOf = new();
-    string WithDelta(string line, string id)
+    string DeltaOf(string id)
     {
-        if (Skill == null || id == "") return line;
+        if (Skill == null || id == "") return "";
         if (!deltaOf.TryGetValue(id, out var d))
         {
-            d = WickBook.LampDelta(ch, Skill, id) is { } x ? $"{x.What} {x.Before} → {x.After}" + (x.Cond == "" ? "" : " " + x.Cond) : "";
+            d = WickBook.LampDelta(ch, Skill, id) is { } x ? $"{x.Before} → {x.After}" : "";
             deltaOf[id] = d;
         }
-        return d == "" ? line : line + " · " + d;
+        return d;
     }
 
     static string Ellipsize(string s, Font f, int px, float maxw)

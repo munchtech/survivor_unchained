@@ -298,7 +298,7 @@ public static class WickBook
     }
 
     /// <summary>(U1) What lighting a lamp changes in the skill, out of a fight: the weapon as it burns now against the same
-    /// weapon with the lamp lit as well (the lamps before it on her path lit in both), at the same rank. The first stat that
+    /// weapon with the lamp lit as well (her lit lamps now, as the sum line reads them), at the same rank. The first stat that
     /// differs, in order: damage ("Damage", whole numbers), reach or size ("Reach" for a skill with a reach, else "Size": the
     /// base number times the wick's Area, in m), cooldown ("Cooldown", s). Null when none does (a Turn's own text says it).
     /// The character is not touched.</summary>
@@ -307,15 +307,9 @@ public static class WickBook
         if (!Weapons.All.TryGetValue(skill, out var def) || Wicks.Of(skill) == null || Wicks.Lamp(skill, lampId) == null) return null;
         var inv = System.Globalization.CultureInfo.InvariantCulture;
         int rank = RankIn(ch, skill, false);
+        // Before is what she has now (the same weapon Sum reads); After adds this one lamp only.
         var now = Weapon(ch, skill, rank, false);
-        // What it adds itself: the lamps before it on her path are lit in both, so a lamp is not credited with them.
         var ids = (now.Wick?.Lit ?? System.Array.Empty<string>()).ToList();
-        var path = Path(ch, skill);
-        int at = System.Array.IndexOf(path, lampId);
-        if (at >= 0) foreach (var id in path.Take(at)) if (!ids.Contains(id)) ids.Add(id);
-        var then = new WeaponInst(skill, rank, 0);
-        then.Wick = Turns.Build(then, ids.Select(id => Wicks.Lamp(skill, id)).Where(l => l != null).Select(l => l!.Value), ids);
-        now = then;
         if (!ids.Contains(lampId)) ids.Add(lampId);
         var more = new WeaponInst(skill, rank, 0);
         more.Wick = Turns.Build(more, ids.Select(id => Wicks.Lamp(skill, id)).Where(l => l != null).Select(l => l!.Value), ids);

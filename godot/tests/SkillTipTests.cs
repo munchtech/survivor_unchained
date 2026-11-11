@@ -162,6 +162,26 @@ public class SkillTipTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_damage_lamps_before_is_the_sum_lines_total_at_each_rank()
+    {
+        foreach (int lv in new[] { 3, 9 })
+        {
+            var j = Warden();
+            LevelTo(j, lv);
+            var sum = WickBook.Sum(j.Ch, "sunder", false)!;
+            string? dmg = null;
+            foreach (var s in Wicks.StrandsOf("sunder"))
+                for (int n = 1; n < Wicks.PerStrand && dmg == null; n++)
+                    if (WickBook.LampDelta(j.Ch, "sunder", s.LampId(n)) is { What: "Damage", Cond: "" }) dmg = s.LampId(n);
+            Assert.NotNull(dmg);
+            var d = WickBook.LampDelta(j.Ch, "sunder", dmg!)!.Value;
+            output.WriteLine($"level {lv}: {d.Before} -> {d.After}, sum {sum.Total}");
+            Assert.Equal(System.Math.Round(sum.Total).ToString("0"), d.Before);
+            Assert.True(double.Parse(d.After) > double.Parse(d.Before));
+        }
+    }
+
+    [Fact]
     public void A_conditional_damage_lamp_reports_the_blow_against_its_condition()
     {
         var j = Warden();
