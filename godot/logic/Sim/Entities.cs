@@ -112,6 +112,8 @@ public sealed class Enemy : Pooled
     /// <summary>Until when (Battle.Time) a ground that is not the cold holds it slowed: its chill is
     /// drawn as no frost (a thicket's hold read as rime).</summary>
     public double HeldUntil;
+    /// <summary>Its death is a Launch: thrown along the last blow (view only; DeathShow).</summary>
+    public bool Launch;
     public double LastDx, LastDz;
     /// <summary>Its death burst it apart: nothing left to lie there.</summary>
     public bool Burst;

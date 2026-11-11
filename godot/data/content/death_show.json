@@ -1,0 +1,14 @@
+{
+  "about": "Spectacular deaths are rewards (docs/design/ARPG_FUN.md P1 item 5), read by logic/Sim/DeathShow.cs. An eligible kill (a crit, a blow of minBlow times what it had left, or an elite; never a boss) is shown at most share of the time, at most maxPerWindow shows each window seconds. A shown kill is a Burst (blow of burstBlow or a crit of burstCritBlow, not fire) or else a Launch (thrown along the blow; launchBase + launchPerBlow * min(blow, launchBlowCap) metres, clamped to launchMin..launchMax).",
+  "share": 0.33,
+  "maxPerWindow": 3,
+  "window": 0.5,
+  "minBlow": 2,
+  "burstBlow": 3,
+  "burstCritBlow": 2,
+  "launchBase": 0.9,
+  "launchPerBlow": 0.6,
+  "launchBlowCap": 2,
+  "launchMin": 0.9,
+  "launchMax": 2.1
+}

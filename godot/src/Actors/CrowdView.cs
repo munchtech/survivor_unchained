@@ -74,6 +74,8 @@ public partial class CrowdView : Node3D
         /// slide the sim gave it instead: offset (X, Z) and speed (Vx, Vz, decaying as Ai's slide does).</summary>
         public double ThrowX, ThrowZ, ThrowVx, ThrowVz;
         public bool Thrown;
+        /// <summary>A Launch's clock (s) and its hop height (m) (DeathShow).</summary>
+        public double LaunchT, ThrowY;
         /// <summary>Away from the blow at its first dying frame (world heading, radians; NaN: not yet).</summary>
         public double Away = double.NaN;
         // (the census's: a 0.5 s window of where it was drawn and what it played, and how long its pose has held)
@@ -104,10 +106,34 @@ public partial class CrowdView : Node3D
     /// <summary>The farthest a fall carries a body (metres): the view has no walls to stop it.</summary>
     const double ThrowMax = 2.5;
 
+    const double LaunchTime = 0.32, HopHeight = 0.22, HopPeak = 0.1, HopEnd = 0.24;
+
+    /// <summary>A launched body (DeathShow): thrown along the blow, hard ease-out over LaunchTime, a small hop, and it
+    /// lies where it lands. Heavy, not floaty: the fall clip runs from the first frame.</summary>
+    (double X, double Z) LaunchOf(Enemy e, Gait g)
+    {
+        if (!g.Thrown)
+        {
+            g.Thrown = true; g.LaunchT = 0; g.ThrowY = 0; g.ThrowVx = g.ThrowVz = 0;
+            double dx = e.LastDx, dz = e.LastDz, l = Math.Sqrt(dx * dx + dz * dz);
+            if (l < 1e-6) { var (ax, az) = Drawn?.Of(e) ?? (e.X, e.Z); dx = ax - battle!.Player.X; dz = az - battle.Player.Z; l = Math.Sqrt(dx * dx + dz * dz); }
+            if (l < 1e-6) { dx = 1; dz = 0; l = 1; }
+            double d = SurvivorUnchained.Sim.DeathShow.LaunchDistance(e.LastBlow) / Math.Sqrt(Math.Max(0.25, e.Def.Scale ?? 1));
+            g.ThrowVx = dx / l * d; g.ThrowVz = dz / l * d;   // (the whole throw, not a speed)
+        }
+        g.LaunchT = Math.Min(LaunchTime, g.LaunchT + dt);
+        double u = 1 - g.LaunchT / LaunchTime, f = 1 - u * u * u;
+        g.ThrowX = g.ThrowVx * f; g.ThrowZ = g.ThrowVz * f;
+        double h = g.LaunchT < HopEnd ? (g.LaunchT <= HopPeak ? g.LaunchT / HopPeak : 1 - (g.LaunchT - HopPeak) / (HopEnd - HopPeak)) : 0;
+        g.ThrowY = h > 0 ? HopHeight * (1 - Math.Pow(1 - h, 2)) : 0;
+        return (g.ThrowX, g.ThrowZ);
+    }
+
     /// <summary>A dying body's thrown offset this frame: Ai's knockback slide (v * e^-9t, about v/9 metres) run in the
     /// view from its first dying frame, capped at ThrowMax. The sim is untouched.</summary>
     (double X, double Z) ThrowOf(Enemy e, Gait g)
     {
+        if (e.Launch) return LaunchOf(e, g);
         if (!g.Thrown)
         {
             g.Thrown = true;
@@ -604,7 +630,7 @@ public partial class CrowdView : Node3D
         ex += g.OffX; ez += g.OffZ;
         if (e.State == EnemyState.Dying && !dieHeld) { var (tx, tz) = ThrowOf(e, g); ex += tx; ez += tz; }
         else g.Thrown = false;
-        double t = e.AnimT, y = heightAt(ex, ez);
+        double t = e.AnimT, y = heightAt(ex, ez) + (e.State == EnemyState.Dying && e.Launch && g.Thrown ? g.ThrowY : 0);
         float dissolve = 0;
         Godot.Vector4 fallBurn = default;
         double speed = Math.Sqrt(e.Vx * e.Vx + e.Vz * e.Vz);
