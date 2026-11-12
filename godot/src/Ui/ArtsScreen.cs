@@ -175,10 +175,8 @@ public partial class ArtsScreen : Overlay
         v.AddChild(head);
         if (known)
         {
-            double xp = ch.Arts.TryGetValue(a.Id, out var st) ? st.Xp : 0;
-            string next = rank < Abilities.MaxRank ? $"{xp:0} of {Abilities.RankXp[rank]:0} to rank {Numerals[rank]}" : "mastered";
-            v.AddChild(Kit.Head("The road to mastery", $"+{(Abilities.RankPower(rank) - 1) * 100:0}% strength, {(1 - Abilities.RankHaste(rank)) * 100:0}% shorter wait  ·  {next}"));
-            v.AddChild(new RoadTrack(rank, rank < Abilities.MaxRank ? (float)ArtBook.Progress(ch, a.Id) : 1));
+            v.AddChild(Kit.Head("Its rank", $"+{(Abilities.RankPower(rank) - 1) * 100:0}% strength, {(1 - Abilities.RankHaste(rank)) * 100:0}% shorter wait"));
+            v.AddChild(new RoadTrack(rank, 0));
         }
         Facets(v, ch, a, known);
     }

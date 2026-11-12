@@ -7,32 +7,32 @@ namespace SurvivorUnchained.Rpg;
 
 public enum WickLampState { Lit = 0, Planned = 1, Unlit = 2 }
 
-/// <summary>The wick panel's existing lamp states, read from the same day weapon as its stats and tooltip.</summary>
+/// <summary>The wick panel's existing lamp states, read from the same weapon as its stats and tooltip.</summary>
 public sealed class WickBoardModel
 {
-    public static readonly WickBoardModel Empty = new("", 0, [], [], []);
+    public static readonly WickBoardModel Empty = new("", 0, [], [], [], []);
 
     readonly string skill;
     public int Rank { get; }
     public IReadOnlyList<string> Plan { get; }
     public string[] Path { get; }
     public string[] Lit { get; }
+    public string[] Held { get; }
 
-    WickBoardModel(string skill, int rank, IReadOnlyList<string> plan, string[] path, string[] lit)
+    WickBoardModel(string skill, int rank, IReadOnlyList<string> plan, string[] path, string[] lit, string[] held)
     {
         this.skill = skill;
         Rank = rank;
         Plan = plan;
         Path = path;
         Lit = lit;
+        Held = held;
     }
 
-    public static WickBoardModel Read(CharacterData ch, string skill)
+    public static WickBoardModel Read(CharacterData ch, string skill, bool night = false)
     {
-        var path = WickBook.Path(ch, skill);
-        int rank = SkillBook.Rank(ch);
-        var weapon = WickBook.Weapon(ch, skill, WickBook.RankIn(ch, skill, false));
-        return new(skill, rank, WickBook.PlanOf(ch, skill).ToArray(), path, weapon.Wick?.Lit ?? Array.Empty<string>());
+        var panel = WickBook.Panel(ch, skill, night);
+        return new(skill, panel.Rank, WickBook.PlanOf(ch, skill).ToArray(), panel.Path, panel.Lit, panel.Held);
     }
 
     public bool IsLit(string id) => Lit.Contains(id);

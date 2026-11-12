@@ -428,6 +428,12 @@ public static class LampBook
         return learned.Contains(l.Flare) ? l.Flare : learned.FirstOrDefault() ?? "";
     }
 
+    /// <summary>SU-049: the Flare a lit Flare lamp of her calling teaches (Learned's rule, one lamp), or null. The board
+    /// carries it on activation (Carry), and the fight takes it up by the reconcile (Journey.RefreshKit).</summary>
+    public static string? FlareOf(CharacterData ch, string lamp) =>
+        Now(ch).Lit.Contains(lamp) && Lamps.Find(lamp) is { Kind: LampKind.Ultimate } d && d.Calling == ch.Archetype
+            ? d.Effects.FirstOrDefault(e => e.Do == LampDo.Flare)?.Flare : null;
+
     public static bool Carry(CharacterData ch, string flare)
     {
         if (!Learned(ch).Contains(flare)) return false;
@@ -474,14 +480,23 @@ public static class LampBook
     }
 
     /// <summary>Light my way: the suggested lamps, while there are lamps to light.</summary>
-    public static int LightSuggested(CharacterData ch, WorldState? w)
+    public static int LightSuggested(CharacterData ch, WorldState? w) => LightMyWay(ch, w).Lit.Count;
+
+    /// <summary>Light my way, the one command (the board's button and LightSuggested, SU-047): the suggested lamps lit in
+    /// order, then every skill's held wick points burned (M7a: each lights its wick's next lamps along its path). Returns
+    /// the lamps lit, in order (the board plays them in), and the held points burned.</summary>
+    public static (List<string> Lit, int Burned) LightMyWay(CharacterData ch, WorldState? w)
     {
-        int n = 0;
-        while (Suggest(ch, w) is { } id && Light(ch, w, id)) n++;
-        // M7a: Light my way burns every skill's held points too (each lights its wick's next lamps along its path).
+        var lit = new List<string>();
+        while (Suggest(ch, w) is { } id && Light(ch, w, id)) lit.Add(id);
+        int burned = Now(ch).Held?.Values.Sum(v => Math.Max(0, v)) ?? 0;
         WickBook.LightAll(ch);
-        return n;
+        return (lit, burned);
     }
+
+    /// <summary>Light my way has something to do: a lamp to light, or a held wick point to burn.</summary>
+    public static bool LightMyWayWaits(CharacterData ch, WorldState? w) =>
+        Suggest(ch, w) != null || Now(ch).Held?.Values.Any(v => v > 0) == true;
 
     /// <summary>§14.6: the next n lamps Light my way would light, in order, lighting none (it walks a copy of the lit list).</summary>
     public static IReadOnlyList<string> Suggested(CharacterData ch, WorldState? w, int n)
@@ -549,6 +564,17 @@ public static class LampBook
         if (!LinkChoices(ch, link).Contains(skill)) return false;
         Now(ch).Links[link] = skill;
         return true;
+    }
+
+    /// <summary>SU-048: the link chooser's step: bind the link to the choice after the one it fires now (LinkPick), round
+    /// LinkChoices; the skill bound, or null when there is nothing to choose.</summary>
+    public static string? NextLinkPick(CharacterData ch, string link)
+    {
+        var c = LinkChoices(ch, link);
+        if (c.Count == 0) return null;
+        int i = LinkPick(ch, link) is { } p ? c.ToList().IndexOf(p) : -1;
+        var next = c[(i + 1) % c.Count];
+        return SetLinkPick(ch, link, next) ? next : null;
     }
 
     /* ------------------------------------------------ into the fight -- */

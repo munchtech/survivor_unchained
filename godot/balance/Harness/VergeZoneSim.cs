@@ -120,7 +120,6 @@ public static class VergeZoneSim
             probe.Observe(b.Events.Drain());
             zone.Frame(ArenaSim.Dt);
             host.Pass(ArenaSim.Dt);
-            j.BankArt(b);
         }
         if (!b.Player.Alive) stopReason = "fell";
         string diagnostic = $"{stopReason}; sim {b.Time:0.00}s, wall {clock.Elapsed.TotalSeconds:0.00}s, at ({b.Player.X:0.00},{b.Player.Z:0.00}), route {k}/{route.Count}, skipped {skipped}, alive {b.Player.Alive}";

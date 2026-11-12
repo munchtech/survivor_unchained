@@ -90,7 +90,7 @@ public sealed class LampSession
 {
     readonly CharacterData ch;
     public readonly int Layout;
-    public readonly string Flare;
+    public string Flare { get; private set; }
     readonly List<string> litHere = new();
     public IReadOnlyList<string> LitHere => litHere;
 
@@ -109,6 +109,23 @@ public sealed class LampSession
         if (!LampBook.Light(ch, w, id)) return false;
         litHere.Add(id);
         KeepFlare();
+        return true;
+    }
+
+    /// <summary>Light my way (LampBook.LightMyWay, SU-047): the lamps lit, in order, kept in the visit; and the held points burned.</summary>
+    public (List<string> Lit, int Burned) LightMyWay(WorldState? w)
+    {
+        var got = LampBook.LightMyWay(ch, w);
+        litHere.AddRange(got.Lit);
+        KeepFlare();
+        return got;
+    }
+
+    /// <summary>Carry a learned Flare (LampBook.Carry, SU-049); the visit keeps it from now on.</summary>
+    public bool Carry(string flare)
+    {
+        if (!LampBook.Carry(ch, flare)) return false;
+        Flare = flare;
         return true;
     }
 

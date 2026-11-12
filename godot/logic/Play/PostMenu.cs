@@ -110,6 +110,19 @@ public static class PostMenu
     public static bool LampsOpen(WorldState w, Battle? b, LampPosts.Post at) =>
         LampBook.LayoutsOpen(w, at.Zone, LampBook.PostLit(w, at.Id) && Calm(b, at) ? at.Id : null);
 
+    /// <summary>She stands at the post's bench now: the Lamps open there (LampsOpen: a lit post, calm), alive, and in its
+    /// reach. LampBook.Bench reads it while the bench is open (GamePostMenu.PostLamps).</summary>
+    public static bool AtBench(WorldState w, Battle? b, LampPosts.Post at) =>
+        LampsOpen(w, b, at) && (b == null || b.Player.Alive
+            && Math.Pow(b.Player.X - at.X, 2) + Math.Pow(b.Player.Z - at.Z, 2) <= Math.Pow(Zones.LampRise.Reach + 1, 2));
+
+    /// <summary>(SU-043) The Lamps' edits (a lamp lit or put out, a wick planned, a layout taken up) may run now: out of a
+    /// fight, or in one at the bench the post menu opened (AtBench, its post in this zone). The screen asks again as each
+    /// act runs, so walking off or a foe coming closes it.</summary>
+    public static bool EditsOpen(WorldState? w, string? zone, Battle? b) =>
+        b is not { Combat: true }
+        || w != null && LampBook.Bench?.Invoke(w) is { } id && LampPosts.Get(id) is { } at && at.Zone == zone && AtBench(w, b, at);
+
     public enum Option { Rest, Travel, Tier, Lamps, Leave }
 
     /// <summary>(M5 r3) The post's full menu (travel, the world tier, the Lamps bench) opens once the Low Ford is done

@@ -146,4 +146,29 @@ public sealed class WickBoardTests
             Assert.Equal(board.Lit, battle.Weapons.Single(w => w.Id == "sunder").Wick!.Lit);
         }
     }
+
+    [Theory]
+    [MemberData(nameof(Skills))]
+    public void Arena_board_ignores_held_points_like_its_stats_and_tooltip(string skill, bool plus)
+    {
+        var ch = Warden(2 * Weapons.MaxRank - 1);
+        if (plus)
+            ch.Equipment.Ring1 = Inventory.Make(null, "copper_ring", rarity: 2, seed: 3,
+                affixes: new List<AffixRoll> { new() { Id = Items.PlusId(skill), Tier = 0 } });
+        int rank = WickBook.RankIn(ch, skill, true);
+        for (int held = 0; held <= SkillBook.Rank(ch) + 1; held++)
+        {
+            LampBook.Now(ch).Held[skill] = held;
+            var board = WickBoardModel.Read(ch, skill, night: true);
+            var stats = WickBook.Weapon(ch, skill, rank, night: true);
+            var battle = BattleTests.Arena(7, (skill, rank));
+            battle.SetWickPath(skill, WickBook.Path(ch, skill));
+            var tip = SkillTipModel.Build(ch, battle, skill, "press");
+            Assert.Equal(WickBook.Path(ch, skill).Take(rank), board.Lit);
+            Assert.Equal(stats.Wick!.Lit, board.Lit);
+            Assert.Equal(tip.LitLamps, board.Lit);
+            Assert.Empty(board.Held);
+            Assert.Equal(rank, board.Rank);
+        }
+    }
 }
