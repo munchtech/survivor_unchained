@@ -89,6 +89,8 @@ public static class LampRise
         var p = b.Player;
         p.Alive = true;
         p.Hp = b.MaxHp;
+        // (SU-059) a clean start: a leap, dash or cast she fell in ends, her poison, burning, slows and roots clear
+        b.CleanStart();
         p.Iframes = 3;
         p.X = x; p.Z = z;
         // (M5 r3: no post prompt over her as she gets up)

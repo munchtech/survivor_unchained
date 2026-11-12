@@ -160,6 +160,33 @@ public class LampPostsTests
         Assert.Contains(Journey.DayLines.RiseAgain, host.Said);
     }
 
+    /// <summary>(Codex audit SU-059) A post rise is a clean start: felled mid-leap with poison, slowed and rooted, she
+    /// stands at the post with none of it, her 3 s grace kept, and the next tick leaves her there.</summary>
+    [Fact]
+    public void She_rises_at_a_post_with_a_clean_start()
+    {
+        var (_, host, zone, b) = MakeVerge();
+        var p = b.Player;
+        p.Leap = new Leap { T = 0.1, Dur = 0.42, X0 = p.X, Z0 = p.Z, X1 = p.X + 6, Z1 = p.Z + 6 };
+        p.PoisonT = 8; p.PoisonDps = 50; p.BurnT = 4; p.BurnDps = 20;
+        p.SlowT = 3; p.SlowF = 0.5; p.RootT = 2; p.DriftX = 1;
+        p.DashT = 0.2; p.CastT = 0.5; p.PlantT = 0.3;
+        p.Hp = 0; p.Alive = false;
+        Assert.True(zone.OnDeath("poison"));
+        host.Pass(3);
+        var (x, z) = host.Revival!.Value;
+        Assert.True(p.Alive);
+        Assert.Null(p.Leap);
+        Assert.Equal(0, p.PoisonT); Assert.Equal(0, p.BurnT);
+        Assert.Equal(0, p.SlowT); Assert.Equal(1, p.SlowF); Assert.Equal(0, p.RootT); Assert.Equal(0, p.DriftX);
+        Assert.Equal(0, p.DashT); Assert.Equal(0, p.CastT); Assert.Equal(0, p.PlantT);
+        Assert.Equal(3, p.Iframes, 6);
+        double hp = p.Hp;
+        b.Tick(1 / 60.0, 0, 0);
+        Assert.InRange(System.Math.Sqrt((p.X - x) * (p.X - x) + (p.Z - z) * (p.Z - z)), 0, 0.2);
+        Assert.True(p.Hp >= hp);
+    }
+
     static Prologue Day(Journey j, string? from)
     {
         j.World.Facts["prologue.done"] = true;
