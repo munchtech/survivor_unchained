@@ -78,7 +78,7 @@ public sealed partial class Battle
         if (dt > 0) markDt = dt;
         if (!markCast) return;
         bool branding = Flare is { Id: "the_branding", Staged: true };
-        if (Flare == null || (branding ? flareBlow >= flareAt.Length && brands.Count == 0 && secondBrandAt <= 0 : FlareT <= 0))
+        if (Flare == null || (branding ? flareBlow >= flareAt.Length && brands.Count == 0 && !SecondBrandOwed : FlareT <= 0))
         {
             FlareMarksEnd();
             return;
@@ -188,7 +188,7 @@ public sealed partial class Battle
     {
         double soon = 2 * markDt + 1e-9, elapsed = flareLen - FlareT;
         if (flareBlow < flareAt.Length && flareAt[flareBlow] - elapsed <= soon) return true;
-        if (secondBrandAt > 0 && secondBrandAt - Time <= soon) return true;
+        foreach (var sb in secondBrands) if (sb.At - Time <= soon) return true;
         foreach (var br in brands) if (!br.Done && br.At - Time <= soon) return true;
         return false;
     }
@@ -406,7 +406,7 @@ public sealed partial class Battle
             // The last word: the wave's Last brand (the boss's, or the farthest), else the latest still to burst.
             if (host != null && (lastWord == null || br.Last || (!lastWord.Last && br.At > lastWord.At))) lastWord = br;
         }
-        if (secondBrandAt > 0) BrandWave();
+        if (SecondBrandOwed) BrandWave();
         if (Live(eyeOn) is { } eyeNow && Time <= eyeUntil && Standing(eyeNow) && eyeBursts < (int)f.Arg("eyeMax", 10)) Mark(eyeNow);
         if (flareBlow >= flareAt.Length) markMain = lastWord == null ? null : Live(lastWord.On);
     }

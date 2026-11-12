@@ -33,15 +33,18 @@ public sealed partial class Battle
     Lifetime eyeOn = Lifetime.None;
     int eyeBursts;
     double eyeUntil;
-    /// <summary>Second Brand: when the brand comes again (the sim's clock; 0 none), and its strength.</summary>
-    double secondBrandAt;
+    /// <summary>(SU-054) Second Brand, owed per cast: when each cast's brand comes again (the sim's clock) and that cast's
+    /// strength (its power, reach and clutch), so a press banked before it lands neither cancels it nor lends it its own.</summary>
+    sealed record SecondBrand(double At, double Power, double Reach, bool Clutch);
+    readonly List<SecondBrand> secondBrands = new();
+    bool SecondBrandOwed => secondBrands.Count > 0;
 
     /// <summary>The brand (its one blow, at "first"): everything in reach is marked and its burst is set by its distance
     /// from her, the boss's last; with nothing near, the crescents print on the ground in rings and burst there.</summary>
     void BrandingBlow(FlareDef f, bool last)
     {
         BrandAll(f, 1, true);
-        if (FlareMod("branding.second")) secondBrandAt = Time + f.BeatAt("second", 1.0);
+        if (FlareMod("branding.second")) secondBrands.Add(new SecondBrand(Time + f.BeatAt("second", 1.0), flarePower, flareReach, flareClutch));
     }
 
     void BrandAll(FlareDef f, double strength, bool first)
@@ -94,14 +97,17 @@ public sealed partial class Battle
     /// <summary>The brands burst on their times, passed marks land, Second Brand comes again; runs after the Strike ends.</summary>
     void TickBrands()
     {
-        if (secondBrandAt > 0 && Time >= secondBrandAt && Flare is { Id: "the_branding" } sf)
+        if (Flare is not { Id: "the_branding" }) secondBrands.Clear();
+        foreach (var sb in secondBrands.Where(x => Time >= x.At).ToList())
         {
-            secondBrandAt = 0;
-            // The echo: brands again where she stands now, its bursts quieter.
+            secondBrands.Remove(sb);
+            var sf = Flare!;
+            // The echo: brands again where she stands now, its bursts quieter, at its own cast's strength.
             var was0 = credit;
-            credit = "flare";
+            var (pw, rc, cl) = (flarePower, flareReach, flareClutch);
+            (credit, flarePower, flareReach, flareClutch) = ("flare", sb.Power, sb.Reach, sb.Clutch);
             BrandAll(sf, sf.Arg("secondShare", 0.6), false);
-            credit = was0;
+            (credit, flarePower, flareReach, flareClutch) = (was0, pw, rc, cl);
         }
         if (brands.Count == 0) return;
         var f = Flare;
@@ -188,6 +194,5 @@ public sealed partial class Battle
     {
         brandPassedTo.Clear();
         brandPasses = 0;
-        secondBrandAt = 0;
     }
 }
