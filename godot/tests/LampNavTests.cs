@@ -16,14 +16,11 @@ namespace SurvivorUnchained.Tests;
 /// lamp reached by the stick alone, the visit's undo, a far lamp's path all or nothing, a branch out from its tips, and
 /// labels clear at every zoom between the stops. Runs alone (it switches the board to v2).</summary>
 [Collection("Balance")]
-public sealed class LampNavTests
+public sealed class LampNavTests(ITestOutputHelper log, TestContent content) : IClassFixture<TestContent>
 {
-    readonly ITestOutputHelper log;
-    public LampNavTests(ITestOutputHelper log) => this.log = log;
-
     static readonly string File_ = Path.Combine(DataFiles.Dir, "content", "lamps_v2.json");
     static bool HasData => File.Exists(File_);
-    static LampBoardModel M => LampBoardModel.FromJson(File.ReadAllText(File_));
+    LampBoardModel M => content.LampBoard;
     static readonly Box Window = new(0, 0, 846, 642);
 
     static CharacterData Make(string calling)

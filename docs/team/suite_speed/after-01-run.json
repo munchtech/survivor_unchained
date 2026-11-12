@@ -1,0 +1,20 @@
+{
+  "exitCode": 0,
+  "wallSeconds": 773.4764236,
+  "finishedUtc": "2026-11-12T12:28:06.4592192Z",
+  "otherTestHostsAtStart": [
+    {
+      "ProcessId": 22148,
+      "CreationDate": "2026-11-12T04:12:43.457957-08:00",
+      "ExecutablePath": "C:\\Users\\munch\\Desktop\\su_audit_copy\\.claude\\worktrees\\codex-lamp-lit-state\\godot\\tests\\bin\\Debug\\net8.0\\testhost.exe"
+    }
+  ],
+  "source": "94efc00bd plus suite speed cuts",
+  "passed": 2358,
+  "failed": 0,
+  "skipped": 11,
+  "cards": 1914,
+  "stationaryOutputsMatched": 35,
+  "configuration": "Debug",
+  "optimize": true
+}

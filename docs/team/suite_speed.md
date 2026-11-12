@@ -29,8 +29,8 @@ per-case baseline is in [before.csv](suite_speed/before.csv).
 | Rank | Test (under `SurvivorUnchained.Tests`) | Seconds | Work |
 | --- | --- | ---: | --- |
 | 1 | `BlockAnswerTests.Measured_held_ten_minutes_with_blocks_the_chain_against_the_written_blows` | 244.639 | 122 ten-minute held combat simulations: eight seeds, three block gaps, and four answer waits. |
-| 2 | `RestedOpeningTests.No_press_pattern_beats_the_written_wait_or_the_hold(id: "oathblade")` | 203.290 | 400 seeded 60-second Sunder patterns, plus held references; every-step invariant checks. |
-| 3 | `RestedOpeningTests.No_press_pattern_beats_the_written_wait_or_the_hold(id: "sunder")` | 142.470 | 400 seeded 60-second Sunder patterns, plus held references; every-step invariant checks. |
+| 2 | `RestedOpeningTests.No_press_pattern_beats_the_written_wait_or_the_hold(id: "oathblade")` | 203.290 | 400 seeded 60-second patterns for the named weapon, plus held references; every-step invariant checks. |
+| 3 | `RestedOpeningTests.No_press_pattern_beats_the_written_wait_or_the_hold(id: "sunder")` | 142.470 | 400 seeded 60-second patterns for the named weapon, plus held references; every-step invariant checks. |
 | 4 | `StoryExplorerTests.A_quick_play_of_the_story_finds_nothing_new` | 124.269 | Two roots, up to 150 story states, dialogue/zone traversal, save serialization, and finding checks. |
 | 5 | `BalanceTests.Every_path_reaches_its_power` | 116.203 | Initializes the shared path probe batch: every path at 48 seeds, crowd and champion measurements. |
 | 6 | `ProcWeightTests.A_status_from_a_proc_builds_at_the_blows_rate` | 106.413 | On-hit/status trigger simulations, including 700-seed bleed sweeps and 3,834 ticks per run. |
@@ -54,6 +54,58 @@ per-case baseline is in [before.csv](suite_speed/before.csv).
 | 24 | `ArenaPlaceTests.The_story_s_rules_hold_in_every_place(seed: 1)` | 27.236 | Generates three complete arenas (dead, Pack, Kerchiefs) and checks all placed pieces. |
 | 25 | `ArenaTests.The_horde_thickens_with_the_minutes` | 26.927 | Builds an arena and runs 45 seconds of combat across early and ten-minute horde states. |
 
-## Next measurement
+## Cuts
 
-Speed cuts and three consecutive full validation runs are pending.
+- `Tests.csproj` sets `Optimize=true`. The configuration stays Debug, with
+  portable symbols and the same `TRACE;DEBUG;NET;NET8_0;NETCOREAPP` constants.
+  The game project excludes `tests/**` and is unchanged. For unoptimized
+  debugging, use `dotnet test -p:Optimize=false`.
+- `TestContent` is one reusable xUnit class fixture for `LampBoardTests`,
+  `LampNavTests`, and `LampCardDemoTests`. The same 574-node content model is
+  built three times instead of 22. Each class owns its model: `Hit` has a mutable
+  scratch list, so a global model would introduce shared state. Lazy loading
+  preserves the existing missing-content guards.
+- The stationary melee dummies in `BlockAnswerTests`, `ClockTests`,
+  `StatusWeightTests`, `ProcWeightTests`, and `TailWeightTests` use a 16 m arena
+  instead of 120 m, from `tests/fixtures/suite_speed.json`. Her origin and the
+  dummies at x=2 fit inside its playable bounds; pathing far away is irrelevant
+  to their timing, status, and proc assertions. The collision grid drops from
+  14,400 to 256 cells. Every simulated tick, seed, and stochastic sample stays.
+
+No assertion text, test attribute, skip, simulation duration, or sample count
+was changed. No `Thread.Sleep` or `Task.Delay` exists in the test sources.
+The engine test still waits for its real child process to finish.
+
+## Parallelism
+
+No test-class parallelism setting or collection membership changed. Classes
+already run concurrently by default. Extra parallelism is unsafe to assume:
+the Balance collection changes `Lamps.UseV2`, development overrides and save
+settings; PilotFeet changes `Pilot.StepsAndStands`; smooth-normal timing has its
+own isolated collection. Those boundaries remain. The new class fixture does
+not share mutable board state between classes; its only static spec value is
+an immutable, lazily loaded number.
+
+## Validation
+
+The first optimized run on `94efc00bd` passed 2,358/0/11 in 773.476 s
+(12m 53s), with all 35 stationary outputs identical and all 1,914 cards checked.
+That is 17.6% below the 939.234 s baseline, despite another test host at its
+start. The wrapper was interrupted before its second run executed tests; this
+is one completed validation run, not three. Integration subsequently advanced
+to `8d30ec648`; three fresh full runs are required after merging it.
+`94efc00bd` itself adds only audit documentation over the measured `c29abb87a` code.
+The comparison tool requires identical test names and outcomes, the same real
+card-fit count, and identical diagnostic output from all 35 cases in the five
+stationary harnesses. A source comparison also checks every `Assert.` line.
+
+Raw TRX files, console logs, wall times, and comparison logs are retained under
+`godot/tests/results/suite-speed/` (ignored). Committed CSV files preserve every
+case's timing and outcome. `tools/suite_speed.py` exports them and verifies the
+comparison:
+
+```powershell
+# From godot/tests; include build/restore in the wall timer.
+dotnet test --logger "trx;LogFileName=run.trx" --results-directory results/suite-speed
+python ../../tools/suite_speed.py results/suite-speed/run.trx --out results/suite-speed/run.csv --compare results/suite-speed/before-isolated.trx
+```
