@@ -1,7 +1,7 @@
 # DraftCardFitTests: native script lifetime
 
 Branch: `codex/draft-card-fit`, based on integration `ede4bf910`.
-Status: fix built; focused regression and first full suite green; ten-run validation in progress.
+Status: ready; deterministic regression and ten consecutive full suites passed.
 
 ## Cause and fix
 
@@ -29,18 +29,23 @@ contains the two `FlareStagedTests` for Butcher's Hour and Banked Flame, then
 `gravecall` / `bone_knights` / `vitality`. The saved TRX and order report retain
 the full trace; start estimates use completion timestamps minus test durations.
 
-Evidence in this worktree: `godot/.shots/draft-card-fit/`, especially
+Evidence is preserved in
+`C:/Users/munch/Desktop/survivorsunchained_inputs/scratch_codex_draft_card_fit/`, especially
 `baseline-13.log`, `baseline-13.trx`, `baseline-13-order.json`,
-`lifetime-red.log`, and `lifetime-green.log`.
+`lifetime-red.log`, `lifetime-green.log`, and `validation.json`.
+The ten fixed runs' logs, TRX results, card reports, and order reports are there too.
 
 ## Validation and existing findings
 
 - Focused regression: red before the fix, green after it; 1,914 cards, zero fit failures.
-- First full suite after the fix: 2,211 passed, 0 failed, 11 skipped.
-  Ten consecutive green runs are still in progress.
+- Ten consecutive full suites (`fixed-01` through `fixed-10`) passed on the
+  code in `531307d9b`, November 11, 2026, 11:27-13:13 Pacific. Every run had
+  2,211 passed, 0 failed, 11 skipped. Each TRX contains real harness output:
+  1,914 cards, zero fit failures; the engine's skip guard was not taken.
 - Before the fix, full run 2 independently failed `SmoothNormalsTests.SixtyThousandVertsBakeFast`
   at 382 ms. That test and its bound were not changed.
 - Existing harness limitation: `Gather` indexes an absent union ingredient evolution,
   logs an exception, and checks only the Warden cards gathered before it. This separate
   coverage defect remains open; the script-lifetime regression still runs and fails
-  the process when its check fails.
+  the process when its check fails. The same gather exception occurs in green baseline
+  runs; the reproduced crash additionally aborts while binding `OrnateBox`.
