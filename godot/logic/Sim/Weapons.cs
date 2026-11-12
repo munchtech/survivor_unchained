@@ -830,7 +830,7 @@ public static partial class Firing
             pr.Homing = (w.Num(s => s.Homing) ?? 0) + w.Mods.Homing;
             pr.Seek = b.StalkerSeek(w, b.ArcanistSeek(w, SeekOf(w)));
             // A hunter of the strongest or the marked picks its own prey in flight.
-            pr.Target = pr.Seek is Seek.Strongest or Seek.Elite or Seek.Marked ? -2 : target ?? -2;
+            pr.Home(pr.Seek is Seek.Strongest or Seek.Elite or Seek.Marked || target is not >= 0 ? null : b.Enemies.Items[target.Value]);
             pr.Weapon = w.Id;
             b.ArcanistLaunched(pr, w);
             b.StalkerLaunched(pr, w);

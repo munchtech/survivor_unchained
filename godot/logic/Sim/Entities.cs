@@ -37,6 +37,9 @@ public sealed class StatusSlot
     public double Age;
     /// <summary>Whose it is (Battle.DamageBy's key): what its damage is credited to.</summary>
     public string? From;
+    /// <summary>(L1) Her side of its ticks, taken when it was laid (Battle.HerTick): a tick deals Power x Her and applies
+    /// only the target's state. Power stays at the base (what the bursts that read it build their blows on).</summary>
+    public double Her = 1;
     public StatusSlot(double t, double stacks, double power, double tick) { T = t; Stacks = stacks; Power = power; Tick = tick; }
 }
 
@@ -262,8 +265,10 @@ public sealed class Projectile : Pooled
     public double Life = 1, Age, Homing;
     public Seek? Seek;
     public int Target = -2;
-    /// <summary>(SU-056) The homing target's lifetime where it was kept by one (checked only while it names Target's slot).</summary>
+    /// <summary>(SU-056, L3) The homing target's lifetime: a slot reused in flight is not the target (set with Home).</summary>
     public Lifetime TargetLife = Lifetime.None;
+    /// <summary>(L3) Homes on t, by lifetime (null: none yet, picks its own).</summary>
+    public void Home(Pooled? t) { Target = t?.Id ?? -2; TargetLife = Lifetime.Of(t); }
     public string? Weapon;
     public string Art = "bolt";
     public StatusPayload? Status;

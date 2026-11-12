@@ -375,22 +375,23 @@ public sealed partial class Battle
     void MarkBranding(FlareDef f)
     {
         var p = Player;
-        double r = f.Arg("burstRadius", 2) * (FlareMod("branding.deep") ? f.Arg("deep", 1.5) : 1) * FlareGrow(f);
         Brand? lastWord = null;
-        void BrandWave()
+        // (L2) a wave is previewed at its own cast's reach (the press now, or the cast a Second Brand is owed to)
+        void BrandWave(double reach)
         {
+            double r = f.Arg("burstRadius", 2) * (FlareMod("branding.deep") ? f.Arg("deep", 1.5) : 1) * (f.Radius > 0 ? reach / f.Radius : 1);
             // What BrandAll will mark (a boss it can't hurt passed over), and the lesser things its bursts splash.
-            foreach (var e in HostilesInRadius(p.X, p.Z, flareReach + 2))
+            foreach (var e in HostilesInRadius(p.X, p.Z, reach + 2))
             {
-                if (!Standing(e) || (e.Boss && !FlareCanHurt(e)) || Dist(e.X, e.Z, p.X, p.Z) > flareReach + e.Radius + MarkSlack(e)) continue;
+                if (!Standing(e) || (e.Boss && !FlareCanHurt(e)) || Dist(e.X, e.Z, p.X, p.Z) > reach + e.Radius + MarkSlack(e)) continue;
                 Mark(e);
                 if (!e.Boss) MarkCircle(e.X, e.Z, r, o => !o.Boss);
             }
-            Shape(p.X, p.Z, flareReach);
+            Shape(p.X, p.Z, reach);
         }
         if (flareBlow < flareAt.Length)
         {
-            BrandWave();
+            BrandWave(flareReach);
             var near = HostilesInRadius(p.X, p.Z, flareReach).Where(e => Standing(e) && (!e.Boss || FlareCanHurt(e))).ToList();
             markMain = near.FirstOrDefault(e => e.Boss) ?? near.OrderByDescending(e => Dist(e.X, e.Z, p.X, p.Z)).FirstOrDefault();
         }
@@ -406,7 +407,7 @@ public sealed partial class Battle
             // The last word: the wave's Last brand (the boss's, or the farthest), else the latest still to burst.
             if (host != null && (lastWord == null || br.Last || (!lastWord.Last && br.At > lastWord.At))) lastWord = br;
         }
-        if (SecondBrandOwed) BrandWave();
+        foreach (var sb in secondBrands) BrandWave(sb.Reach);
         if (Live(eyeOn) is { } eyeNow && Time <= eyeUntil && Standing(eyeNow) && eyeBursts < (int)f.Arg("eyeMax", 10)) Mark(eyeNow);
         if (flareBlow >= flareAt.Length) markMain = lastWord == null ? null : Live(lastWord.On);
     }

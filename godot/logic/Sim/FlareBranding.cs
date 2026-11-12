@@ -23,6 +23,9 @@ public sealed partial class Battle
         public double X, Z, At, Share, Radius;
         public bool Boss, Last, Dead, Pass, Done;
         public double FromX, FromZ;
+        /// <summary>(L2) Its own cast's strength (power, reach, clutch): it bursts with them, whatever was pressed since.</summary>
+        public double Power, Reach;
+        public bool Clutch;
     }
 
     readonly List<Brand> brands = new();
@@ -64,6 +67,7 @@ public sealed partial class Battle
             ApplyStatus(e, new StatusPayload(StatusKind.Mark, 1, 1, f.Arg("markSeconds", 4)), 0);
             set.Add(new Brand
             {
+                Power = flarePower, Reach = flareReach, Clutch = flareClutch,
                 On = Lifetime.Of(e), X = e.X, Z = e.Z, Boss = boss, Radius = boss ? 0 : r,
                 At = t0 + (boss ? bossAt : a + (b - a) * Math.Clamp(d / Math.Max(1, reach), 0, 1)),
                 Share = strength * (boss ? f.Arg("bossBurst", 1.5) : f.Arg("burst", 1.5)),
@@ -83,7 +87,7 @@ public sealed partial class Battle
                 {
                     double ang = flareAngle + Math.PI * 2 * k / n + ring * 0.4;
                     double x = p.X + Math.Cos(ang) * rr, z = p.Z + Math.Sin(ang) * rr;
-                    set.Add(new Brand { X = x, Z = z, Radius = r, At = t0 + a + (b - a) * rr / Math.Max(1, reach), Share = 0 });
+                    set.Add(new Brand { Power = flarePower, Reach = flareReach, Clutch = flareClutch, X = x, Z = z, Radius = r, At = t0 + a + (b - a) * rr / Math.Max(1, reach), Share = 0 });
                     FlareBlowEvent(f, "brand", false, x, z, null, 0, hitstop: hitstop);
                     hitstop = 0;
                 }
@@ -115,7 +119,14 @@ public sealed partial class Battle
         var was = credit;
         credit = "flare";
         // In time order: a burst may kill, and a kill passes a mark that lands a hop later.
-        foreach (var br in brands.Where(x => !x.Done && Time >= x.At - 1e-9).OrderBy(x => x.At).ToList()) Burst(f, br);
+        foreach (var br in brands.Where(x => !x.Done && Time >= x.At - 1e-9).OrderBy(x => x.At).ToList())
+        {
+            // (L2) a brand bursts with its own cast's strength, not the press that came since
+            var (pw, rc, cl) = (flarePower, flareReach, flareClutch);
+            (flarePower, flareReach, flareClutch) = (br.Power, br.Reach, br.Clutch);
+            try { Burst(f, br); }
+            finally { (flarePower, flareReach, flareClutch) = (pw, rc, cl); }
+        }
         brands.RemoveAll(x => x.Done);
         credit = was;
     }
@@ -157,9 +168,10 @@ public sealed partial class Battle
         if (eyeE != null && (Time > eyeUntil || eyeE.State == EnemyState.Dying)) eyeE = null;
         if (eyeE == null) eyeOn = Lifetime.None;
         bool branded = false;
+        Brand? source = null;
         foreach (var br in brands)
             // (a brand stays in the list until the tick it burst in ends: a death by its own burst still passes)
-            if (br.On == Lifetime.Of(e)) { br.Dead = true; br.X = e.X; br.Z = e.Z; branded = true; }
+            if (br.On == Lifetime.Of(e)) { br.Dead = true; br.X = e.X; br.Z = e.Z; branded = true; source = br; }
         bool inWave = branded || brandPassedTo.Contains(Lifetime.Of(e));
         if (eyeE != null && e != eyeE && e.Status.Has(StatusKind.Mark) && eyeBursts < (int)f.Arg("eyeMax", 10)
             && Dist(e.X, e.Z, eyeE.X, eyeE.Z) <= f.Arg("eyeRange", 8) * FlareGrow(f))
@@ -184,6 +196,8 @@ public sealed partial class Battle
         ApplyStatus(next, new StatusPayload(StatusKind.Mark, 1, 1, f.Arg("markSeconds", 4)), 0);
         brands.Add(new Brand
         {
+            // (L2) a passed mark is its brand's: that cast's strength (inside a burst flarePower is that brand's already)
+            Power = source?.Power ?? flarePower, Reach = source?.Reach ?? flareReach, Clutch = source?.Clutch ?? flareClutch,
             On = Lifetime.Of(next), X = next.X, Z = next.Z, Pass = true, FromX = e.X, FromZ = e.Z,
             At = Time + f.BeatAt("hop", 0.1), Share = f.Arg("pass", 0.75), Radius = f.Arg("burstRadius", 2) * (FlareMod("branding.deep") ? f.Arg("deep", 1.5) : 1) * FlareGrow(f),
         });

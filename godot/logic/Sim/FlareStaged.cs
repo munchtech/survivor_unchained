@@ -127,9 +127,9 @@ public sealed partial class Battle
         double stun = f.Arg("stun", 1), sear = f.Arg("sear", 2), stagger = f.Arg("stagger", 0.15);
         ForEachHostileInRadius(p.X, p.Z, flareReach, (e, d) =>
         {
-            double dealt = FlareHit(e, f.Arg("toll", 0.45), f.School, 0, p.X, p.Z);
+            double dealt = FlareHit(e, f.Arg("toll", 0.45), f.School, 0, p.X, p.Z), taken = LastTaken;
             if (!e.Alive || e.State == EnemyState.Dying) return;
-            ApplyStatus(e, new StatusPayload(StatusKind.Sear, 1, 0.2, sear), dealt);
+            ApplyStatus(e, new StatusPayload(StatusKind.Sear, 1, 0.2, sear), dealt, taken: taken);
             if (e.Boss || e.Elite) { Interrupt(e); AddStagger(e, e.Boss ? stagger : 2 * stagger); }
             else ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, stun), 0);
         });
@@ -385,7 +385,7 @@ public sealed partial class Battle
             double dealt = FlareHit(e, share, f.School, 0, p.X, p.Z);
             if (e.Alive && e.State != EnemyState.Dying)
             {
-                TollVenom(e, dealt, f);
+                TollVenom(e, dealt, LastTaken, f);
                 double below = last && FlareMod("toll.last_cut") ? f.Arg("lastCut", 0.4) : f.Arg("execute", 0.25);
                 if (!e.Boss && e.Alive && e.State != EnemyState.Dying && e.Hp < e.MaxHp * below) KillEnemy(e, true, null);
             }
@@ -404,13 +404,14 @@ public sealed partial class Battle
     /// <summary>The cut's poison: half its damage again over 4 s, the Flare's own. It marks the thing poisoned (a stack at
     /// the poison it already carries) but never lifts her poison's strength: a stack of hers ticks at its strongest
     /// poison's rate, so a cut's rate on it made her whole stack the Flare's (70% of a boss at T4, 12 October).</summary>
-    void TollVenom(Enemy e, double dealt, FlareDef f)
+    void TollVenom(Enemy e, double dealt, double taken, FlareDef f)
     {
         ApplyStatus(e, new StatusPayload(StatusKind.Poison, 1, 0, f.Arg("poisonSeconds", 4)), 0, from: "flare");
         double sd = Stats.Get(Stat.StatusDamage) * Stats.Get(Stat.StatusDamageOf(StatusKind.Poison));
         double ticks = Math.Max(1, Math.Round(f.Arg("poisonSeconds", 4) / 0.5));
-        // (SU-057) dealt is resolved: kept at the multipliers' base, so the ticks apply them once
-        if (dealt > 0) venom.Add(new TollPoison(Lifetime.Of(e), dealt * f.Arg("poison", 0.5) * sd / ticks / Resolved(e, StatusKind.Poison), (int)ticks, Time + 0.5));
+        // (SU-057, L1) dealt is resolved: her side counts once, from it (damage over time's own added); the target's share
+        // of it (taken) is out, since each tick applies the target's state as it then is
+        if (dealt > 0) venom.Add(new TollPoison(Lifetime.Of(e), dealt * f.Arg("poison", 0.5) * sd / ticks * DotOwn() / Math.Max(1e-9, taken), (int)ticks, Time + 0.5));
     }
 
     sealed class TollPoison(Lifetime target, double tick, int left, double next)
@@ -437,7 +438,7 @@ public sealed partial class Battle
             if (Time < v.Next) continue;
             v.Next += 0.5;
             v.Left--;
-            HitEnemy(e, v.Tick, School.Nature, DotPoison, new HitOpts { Dot = true, NoCrit = true, NoProcs = true, Depth = 2, Credit = "flare" });
+            HitEnemy(e, v.Tick, School.Nature, DotPoison, new HitOpts { Dot = true, Resolved = true, NoCrit = true, NoProcs = true, Depth = 2, Credit = "flare" });
             if (v.Left <= 0) venom.RemoveAt(i);
         }
         credit = was;

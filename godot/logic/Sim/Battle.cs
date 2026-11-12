@@ -260,6 +260,9 @@ public struct HitOpts
     public string? Credit;
     /// <summary>A heavy blow's (the warden's Hand): set by a heavy projectile's hit.</summary>
     public bool Heavy;
+    /// <summary>(L1) A tick of a status sized on her side already (StatusSlot.Her, TollVenom): only the target's state
+    /// (mark, frozen, resists, ward and the like) applies, never her multipliers again.</summary>
+    public bool Resolved;
     /// <summary>(M3 MR 3) The weight of a hit that lands after its cast (a projectile's, stamped at the launch); null: the
     /// weapon's live CutW.</summary>
     public double? W;
@@ -903,6 +906,11 @@ public sealed partial class Battle
     /// <summary>(M3 MR 3) The weight of the hit whose statuses are being applied (a chained cut's share of its blow); 1 at
     /// every other moment.</summary>
     double statusW = 1;
+    /// <summary>(L1) The target's share (its state: mark, frozen, resists...) of the blow being dealt, while its statuses
+    /// are laid: a resolved status is sized without it, since each tick applies the target's state as it then is.</summary>
+    double blowTaken = 1;
+    /// <summary>(L1) blowTaken of the last HitEnemy to return: a caller sizing a status on a blow it dealt passes it.</summary>
+    internal double LastTaken = 1;
     /// <summary>(M3 MR 3 l2) The weight of the hit a boss's script is being told of (Hooks.OnBossHit carries none): a
     /// chained cut's share of its written blow, a crescent's stamped weight, 1 for everything else and outside the hook.
     /// A script that counts hits or opens a window per hit reads it (the Barrow Lord's holy window).</summary>
@@ -943,17 +951,21 @@ public sealed partial class Battle
         if (StruckBy != null && o.Weapon == StruckBy) Struck.Add(e.Id);
         if (Lamps.Board) BoardBeforeHit(e, school, tags, o);
         var st = Stats;
-        double dmg = baseDamage * st.DamageMult(school, tags, e.Def.Family);
+        // (L1) a resolved tick (o.Resolved) carries her side already, taken once at the blow: only the target's state
+        // applies here. `taken` is the target's share of this blow (ApplyRolled sizes a resolved status without it).
+        double dmg = baseDamage * (o.Resolved ? 1 : st.DamageMult(school, tags, e.Def.Family));
+        double taken = 1;
         // Allies go for the throat: champions and worse take more from them.
-        if (o.Summon) dmg *= st.Get(Stat.SummonDamage) * (e.Boss || e.Elite ? (Boons.ContainsKey("go_for_the_throat") ? 2.8 : 2.0) : 1);
-        if (e.Boss || e.Elite) dmg *= o.BossDamage ?? o.Weapon?.Def.BossDamage ?? 1;
-        if (e.StaggeredT > 0) dmg *= 1.25;
+        if (o.Summon && !o.Resolved) dmg *= st.Get(Stat.SummonDamage) * (e.Boss || e.Elite ? (Boons.ContainsKey("go_for_the_throat") ? 2.8 : 2.0) : 1);
+        if ((e.Boss || e.Elite) && !o.Resolved) dmg *= o.BossDamage ?? o.Weapon?.Def.BossDamage ?? 1;
+        if (e.StaggeredT > 0) { dmg *= 1.25; taken *= 1.25; }
         // Vulnerabilities.
         var s = e.Status;
-        if (s[StatusKind.Mark] is { } mark) dmg *= 1 + 0.3 * (mark.Power != 0 ? mark.Power : 1);
-        if (s.Has(StatusKind.Frozen)) dmg *= Boons.ContainsKey("deep_chill") ? 1.35 : 1.15;
-        if (s.Has(StatusKind.Sear) && school == School.Holy) dmg *= 1.3;
-        if (s.Has(StatusKind.Bound) && tags.Has(Tag.Area)) dmg *= 1 + BoundArea;
+        if (s[StatusKind.Mark] is { } mark) { double f = 1 + 0.3 * (mark.Power != 0 ? mark.Power : 1); dmg *= f; taken *= f; }
+        if (s.Has(StatusKind.Frozen)) { double f = Boons.ContainsKey("deep_chill") ? 1.35 : 1.15; dmg *= f; taken *= f; }
+        if (s.Has(StatusKind.Sear) && school == School.Holy) { dmg *= 1.3; taken *= 1.3; }
+        if (s.Has(StatusKind.Bound) && tags.Has(Tag.Area)) { dmg *= 1 + BoundArea; taken *= 1 + BoundArea; }
+        double preShock = dmg;
         if (s.Has(StatusKind.Shock) && !o.Dot)
         {
             if (cw == 1) { dmg *= 1.35 + st.Get(Stat.ShockBonus); if (!Boons.ContainsKey("static_charge")) { s.Remove(StatusKind.Shock); e.ShockEaten = 0; } }
@@ -968,26 +980,31 @@ public sealed partial class Battle
                 if (e.ShockEaten >= 1 - Sim.Blows.Eps) { s.Remove(StatusKind.Shock); e.ShockEaten = 0; }
             }
         }
-        if (e.SunderUntil > Time) dmg *= 1 + e.Sunder;
-        if (e.AirUntil > Time) dmg *= 1 + e.AirMore;
+        if (preShock > 0) taken *= dmg / preShock;
+        if (e.SunderUntil > Time) { dmg *= 1 + e.Sunder; taken *= 1 + e.Sunder; }
+        if (e.AirUntil > Time) { dmg *= 1 + e.AirMore; taken *= 1 + e.AirMore; }
         dmg *= e.TakenMul;
-        dmg *= LampDamageMul(e, school, tags, o);
-        if (Lamps.Board) dmg *= BoardDamageMul(e, school, tags, o);
-        if (o.Weapon?.Wick is { } wfx) dmg *= WickDamageMul(e, wfx);
-        dmg *= ReaverDamageMul(e, school, tags, o);
-        dmg *= ArcanistDamageMul(e, school, tags, o);
-        dmg *= StalkerDamageMul(e, school, tags, o);
+        taken *= e.TakenMul;
+        if (!o.Resolved)
+        {
+            dmg *= LampDamageMul(e, school, tags, o);
+            if (Lamps.Board) dmg *= BoardDamageMul(e, school, tags, o);
+            if (o.Weapon?.Wick is { } wfx) dmg *= WickDamageMul(e, wfx);
+            dmg *= ReaverDamageMul(e, school, tags, o);
+            dmg *= ArcanistDamageMul(e, school, tags, o);
+            dmg *= StalkerDamageMul(e, school, tags, o);
+        }
         // Warded by its own kind's lamp or drum.
-        if (e.WardT > 0) dmg *= 1 - e.Ward;
+        if (e.WardT > 0) { dmg *= 1 - e.Ward; taken *= 1 - e.Ward; }
         // Resistances.
-        dmg *= 1 - (e.Def.Resists?.Of(school) ?? 0);
+        { double f = 1 - (e.Def.Resists?.Of(school) ?? 0); dmg *= f; taken *= f; }
         // Frontal guard: projectiles into a raised shield mostly glance off.
         bool blocked = false;
         if (o.Projectile && e.Def.Guard is { } guard && e.State != EnemyState.Stunned && !s.Has(StatusKind.Frozen) && !s.Has(StatusKind.Stun))
         {
             double fx = Math.Cos(e.Facing), fz = Math.Sin(e.Facing);
             double ix = -o.FromX, iz = -o.FromZ;
-            if (fx * ix + fz * iz > Math.Cos(guard.Arc / 2)) { dmg *= 1 - (e.Elite && !e.Def.Elite ? Math.Min(guard.Reduction, 0.6) : guard.Reduction); blocked = true; }
+            if (fx * ix + fz * iz > Math.Cos(guard.Arc / 2)) { double f = 1 - (e.Elite && !e.Def.Elite ? Math.Min(guard.Reduction, 0.6) : guard.Reduction); dmg *= f; taken *= f; blocked = true; }
         }
         if (e.TakenMul < 0.7) blocked = true;
         // Criticals.
@@ -1024,7 +1041,7 @@ public sealed partial class Battle
             dmg += bonus;
         }
         else if (crit) dmg *= st.Get(Stat.CritDamage) * (e.Hp < e.MaxHp * 0.5 && Boons.TryGetValue("ferocity", out int tooth) ? 1 + 0.12 * tooth : 1);
-        else if ((Rules.IronSkin > 0 || e.Def.IronSkin > 0) && e.Disposition == Disposition.Hostile) { dmg *= 1 - Math.Max(Rules.IronSkin, e.Def.IronSkin); blocked = true; }
+        else if ((Rules.IronSkin > 0 || e.Def.IronSkin > 0) && e.Disposition == Disposition.Hostile) { double f = 1 - Math.Max(Rules.IronSkin, e.Def.IronSkin); dmg *= f; taken *= f; blocked = true; }
         dmg = Math.Max(0.5 * cw, dmg);
         if (o.Cap is { } cap) dmg = Math.Min(dmg, Math.Max(0.5, cap));
         LightningLeaps(e, baseDamage, school, tags, o);
@@ -1105,6 +1122,9 @@ public sealed partial class Battle
         // (M3 MR 3) Sized on the blow (damage over time is kept by its worst rate and refreshed); statusW tells
         // ApplyStatus the hit was a cut of that weight.
         statusWeapon = o.Weapon;
+        // (L1) the statuses this blow lays are sized without the target's share of it (saved and put back like statusW)
+        double wasTaken = blowTaken;
+        blowTaken = taken;
         // (saved and put back, not set to 1: a hit nested in a status's own procs must not unweight the rest of ours)
         double wasW = statusW;
         statusW = cw;
@@ -1140,6 +1160,8 @@ public sealed partial class Battle
             KillEnemy(e, true, o.Weapon, depth);
         }
         else ArtOnHit(e);
+        blowTaken = wasTaken;
+        LastTaken = taken;
         return dmg;
     }
 
@@ -1291,7 +1313,8 @@ public sealed partial class Battle
     /// <param name="resolved">hitDamage is a resolved blow (it already carries the global multipliers, HitEnemy): a damage
     /// over time sized on it is kept at the multipliers' base, so its ticks apply them once, not twice (SU-057). False
     /// for a written number (a proc's flat base, an art's power).</param>
-    public void ApplyStatus(Enemy e, StatusPayload p, double hitDamage, int depth = 0, string? from = null, bool resolved = true)
+    /// <param name="taken">(L1) the target's share of the resolved blow, if it is not the blow being dealt (LastTaken).</param>
+    public void ApplyStatus(Enemy e, StatusPayload p, double hitDamage, int depth = 0, string? from = null, bool resolved = true, double? taken = null)
     {
         if (!e.Alive || e.State == EnemyState.Dying || e.TakenMul <= 0) return;
         double chance = p.Chance * (1 + Stats.Get(Stat.StatusChance));
@@ -1305,17 +1328,20 @@ public sealed partial class Battle
         double build = statusW == 1 || hard ? 1 : statusW * Math.Min(1, chance) / Math.Min(1, roll);
         double wasBuild = statusBuild;
         statusBuild = build;
-        try { ApplyRolled(e, p, hitDamage, depth, from, build, resolved); }
+        try { ApplyRolled(e, p, hitDamage, depth, from, build, resolved, taken ?? blowTaken); }
         finally { statusBuild = wasBuild; }
     }
 
     /// <summary>ApplyStatus past its roll. build: the share of a blow this application stands for (1 unchained).</summary>
-    void ApplyRolled(Enemy e, StatusPayload p, double hitDamage, int depth, string? from, double build, bool resolved)
+    void ApplyRolled(Enemy e, StatusPayload p, double hitDamage, int depth, string? from, double build, bool resolved, double taken)
     {
         var s = e.Status;
         double sd = Stats.Get(Stat.StatusDamage) * Stats.Get(Stat.StatusDamageOf(p.Kind));
         double dps = hitDamage * p.Power / Math.Max(0.5, p.Duration) * sd;
-        if (resolved && Ticks(p.Kind)) dps /= Resolved(e, p.Kind);
+        // (L1) her side of a tick is taken now and kept on the slot (Her); a resolved blow already carries hers, so its
+        // share is kept at the base (her side and the target's share of the blow out, the tick's own damage over time in)
+        double her = Ticks(p.Kind) ? HerTick(e, p.Kind) : 1;
+        if (resolved && Ticks(p.Kind)) dps *= DotOwn() / her / Math.Max(1e-9, taken);
         // Longer burning is more burning: the rate holds, the time stretches.
         double dur = ArcanistStatusDuration(p.Kind, StalkerStatusDuration(e, p.Kind, ReaverStatusDuration(e, p.Kind, p.Duration * Stats.Get(Stat.StatusDurationOf(p.Kind)))));
         if (statusWeapon?.Wick != null) dur *= WickDuration(p.Kind);
@@ -1330,8 +1356,7 @@ public sealed partial class Battle
                 // (a cut's is the share of a blow it stands for; the first on a foe free of it is a whole one. A slot
                 // out of time is taken away by TickStatus, so a made one reads stacks 0, time 0.)
                 cur.Stacks = Math.Min(5, cur.Stacks + (cur.Stacks <= 0 || cur.T <= 0 ? 1 : build));
-                if (dps >= cur.Power) cur.From = from;
-                cur.Power = Math.Max(cur.Power, dps);
+                if (dps * her >= cur.Power * cur.Her) { cur.From = from; cur.Power = dps; cur.Her = her; }
                 cur.T = Math.Max(cur.T, dur);
                 break;
             }
@@ -1341,8 +1366,7 @@ public sealed partial class Battle
                 // A wound that deepens with each cut (A Thousand Cuts) rather than the worst kept.
                 // (a fresh bleed is made at 1 stack, time 0; a cut deepens a live one by the share of a blow it stands for)
                 if (p.Stack) cur.Stacks = Math.Min(5, cur.Stacks + (cur.T > 0 ? build : 0));
-                if (dps >= cur.Power) cur.From = from;
-                cur.Power = Math.Max(cur.Power, dps);
+                if (dps * her >= cur.Power * cur.Her) { cur.From = from; cur.Power = dps; cur.Her = her; }
                 cur.T = Math.Max(cur.T, dur);
                 break;
             }
@@ -1350,8 +1374,7 @@ public sealed partial class Battle
             {
                 var cur = s.Ensure(StatusKind.Poison, 0, 0, 0, 0.5);
                 cur.Stacks = Math.Min(StalkerPoisonCap, cur.Stacks + (cur.Stacks <= 0 || cur.T <= 0 ? 1 : build));
-                if (dps >= cur.Power) cur.From = from;
-                cur.Power = Math.Max(cur.Power, dps);
+                if (dps * her >= cur.Power * cur.Her) { cur.From = from; cur.Power = dps; cur.Her = her; }
                 cur.T = Math.Max(cur.T, dur);
                 break;
             }
@@ -1404,7 +1427,11 @@ public sealed partial class Battle
                 cur.T = Math.Max(cur.T, dur);
                 cur.Power = Math.Max(cur.Power, p.Power);
                 if (p.Kind == StatusKind.Shock) e.ShockEaten = 0;
-                if (p.Kind == StatusKind.Sear && e.Def.Family == Family.Undead) cur.Power = Math.Max(cur.Power, dps != 0 ? dps : 2);
+                if (p.Kind == StatusKind.Sear && e.Def.Family == Family.Undead)
+                {
+                    double v = dps != 0 ? dps : 2;
+                    if (v * her >= cur.Power * cur.Her) { cur.Power = v; cur.Her = her; }
+                }
                 break;
             }
         }
@@ -1435,13 +1462,21 @@ public sealed partial class Battle
         _ => (School.Nature, DotPoison),
     };
 
-    /// <summary>(SU-057) The global multipliers a tick of `k` on `e` applies again (HitEnemy's DamageMult) bar the tick's
-    /// own (damage over time's): a share of a resolved blow is divided by it, so the blow's multipliers count once.</summary>
-    double Resolved(Enemy e, StatusKind k)
+    /// <summary>(SU-057, L1) Her side of a tick of `k` on `e`: the global multipliers (damage over time's own among them),
+    /// the lamps, the board and the callings, as HitEnemy would take them. Taken once, when the status is laid
+    /// (StatusSlot.Her); the tick applies only the target's state (HitOpts.Resolved).</summary>
+    double HerTick(Enemy e, StatusKind k)
     {
         var (school, tags) = DotOf(k);
-        return Math.Max(1e-9, Stats.DamageMult(school, tags, e.Def.Family) / Math.Max(1e-9, Stats.Get(Stat.DamageOf(Tag.Dot))));
+        var o = new HitOpts { Dot = true, NoCrit = true, Depth = 2 };
+        double m = Stats.DamageMult(school, tags, e.Def.Family) * LampDamageMul(e, school, tags, o);
+        if (Lamps.Board) m *= BoardDamageMul(e, school, tags, o);
+        m *= ReaverDamageMul(e, school, tags, o) * ArcanistDamageMul(e, school, tags, o) * StalkerDamageMul(e, school, tags, o);
+        return Math.Max(1e-9, m);
     }
+
+    /// <summary>Damage over time's own multiplier (what a resolved blow's share adds; the blow did not carry it).</summary>
+    double DotOwn() => Stats.Get(Stat.DamageOf(Tag.Dot));
 
     public void TickStatus(Enemy e, double dt)
     {
@@ -1464,7 +1499,7 @@ public sealed partial class Battle
                     if (k == StatusKind.Bleed) d *= Math.Max(1, slot.Stacks) * (s.Has(StatusKind.Frozen) && Boons.ContainsKey("frostbite") ? 3 : 1);
                     if (k == StatusKind.Bleed && Len(e.Vx, e.Vz) > 0.5) d *= 1.6;
                     var (school, tags) = DotOf(k);
-                    if (d > 0) HitEnemy(e, d, school, tags, new HitOpts { Dot = true, NoCrit = true, NoProcs = k != StatusKind.Burn, Depth = 2, Credit = slot.From ?? DotCredit[(int)k] });
+                    if (d > 0) HitEnemy(e, d * slot.Her, school, tags, new HitOpts { Dot = true, Resolved = true, NoCrit = true, NoProcs = k != StatusKind.Burn, Depth = 2, Credit = slot.From ?? DotCredit[(int)k] });
                     if (!e.Alive || e.State == EnemyState.Dying) return;
                 }
             }
@@ -2410,13 +2445,12 @@ public sealed partial class Battle
                 if (pr.Homing > 0 && pr.Owner != Side.Enemy)
                 {
                     Enemy? t = pr.Target >= 0 ? Enemies.Items[pr.Target] : null;
-                    // (SU-056: a target kept by lifetime, a reflection's thrower, is not whatever took its slot)
-                    if (t != null && pr.TargetLife.Id == pr.Target && !pr.TargetLife.Is(t)) t = null;
+                    // (SU-056, L3: the target is kept by lifetime, never whatever took its slot)
+                    if (t != null && !pr.TargetLife.Is(t)) t = null;
                     if (t == null || !Targetable(t) || pr.Hits.Contains(t.Id) || VolleyTaken(pr, t.Id))
                     {
                         t = PickSeekTarget(pr);
-                        pr.Target = t?.Id ?? -2;
-                        pr.TargetLife = Lifetime.Of(t);
+                        pr.Home(t);
                     }
                     if (t != null)
                     {
@@ -2464,7 +2498,7 @@ public sealed partial class Battle
                     if (p.BulwarkT > 0)
                     {
                         // Turned back on whoever loosed it.
-                        pr.Owner = Side.Player; pr.Vx *= -1; pr.Vz *= -1; pr.Homing = 6; pr.Target = Live(pr.OwnerLife)?.Id ?? -1; pr.TargetLife = pr.OwnerLife; pr.Age = 0;
+                        pr.Owner = Side.Player; pr.Vx *= -1; pr.Vz *= -1; pr.Homing = 6; pr.Home(Live(pr.OwnerLife)); pr.Age = 0;
                         pr.Tags = Reflected;
                         continue;
                     }
@@ -2474,7 +2508,7 @@ public sealed partial class Battle
                     if (lampBlocked && Lamp("turned_arrows") && src is { Alive: true })
                     {
                         lampBlocked = false;
-                        pr.Owner = Side.Player; pr.Vx *= -1; pr.Vz *= -1; pr.Homing = 6; pr.Target = Live(pr.OwnerLife)?.Id ?? -1; pr.TargetLife = pr.OwnerLife; pr.Age = 0;
+                        pr.Owner = Side.Player; pr.Vx *= -1; pr.Vz *= -1; pr.Homing = 6; pr.Home(Live(pr.OwnerLife)); pr.Age = 0;
                         pr.Tags = Reflected;
                         continue;
                     }
@@ -2603,7 +2637,7 @@ public sealed partial class Battle
             if (next != null)
             {
                 pr.Bounces--;
-                pr.Target = next.Id;
+                pr.Home(next);
                 double a = Math.Atan2(next.Z - pr.Z, next.X - pr.X);
                 pr.Vx = Math.Cos(a) * pr.Speed; pr.Vz = Math.Sin(a) * pr.Speed;
                 pr.Age = Math.Min(pr.Age, pr.Life * 0.5);
@@ -3176,7 +3210,7 @@ public sealed partial class Battle
             if (to == null) continue;
             var s = to.Status.Ensure(StatusKind.Poison, 0, 0, 0, 0.5);
             s.Stacks = Math.Min(10, s.Stacks + 1);
-            if (src.Power >= s.Power) { s.Power = src.Power; s.From = src.From; }
+            if (src.Power * src.Her >= s.Power * s.Her) { s.Power = src.Power; s.Her = src.Her; s.From = src.From; }
             s.T = Math.Max(s.T, 3);
             Events.Emit(new Ev.Chain { Points = [e.X, e.Z, to.X, to.Z], School = School.Nature });
         }
@@ -3322,8 +3356,7 @@ public sealed partial class Battle
                 {
                     var s = e.Status.Ensure(fx.Kind, 0, 0, 0, 0.5);
                     s.Stacks = Math.Min(fx.Kind == StatusKind.Poison ? 10 : 5, s.Stacks + fx.Stacks);
-                    if (src.Power >= s.Power) s.From = src.From;
-                    s.Power = Math.Max(s.Power, src.Power);
+                    if (src.Power * src.Her >= s.Power * s.Her) { s.From = src.From; s.Power = src.Power; s.Her = src.Her; }
                     s.T = Math.Max(s.T, 3);
                     Events.Emit(new Ev.Chain { Points = [x, z, e.X, e.Z], School = fx.Kind switch
                     {
@@ -3341,7 +3374,7 @@ public sealed partial class Battle
                     if (pr == null) continue;
                     pr.Y = 1.2; pr.Vx = Math.Cos(a) * fx.Speed; pr.Vz = Math.Sin(a) * fx.Speed; pr.Speed = fx.Speed;
                     pr.Tags = [Tag.Projectile, fx.School.AsTag()]; pr.Radius = 0.2; pr.Pierce = 0; pr.Life = 2.5; pr.Homing = 6;
-                    pr.Seek = fx.Seek; pr.Target = -2; pr.Art = fx.Art; pr.Status = fx.Status; pr.Depth = depth;
+                    pr.Seek = fx.Seek; pr.Home(null); pr.Art = fx.Art; pr.Status = fx.Status; pr.Depth = depth;
                     pr.AimAlongVelocity();
                 }
                 break;

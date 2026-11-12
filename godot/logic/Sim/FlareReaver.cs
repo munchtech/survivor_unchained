@@ -187,7 +187,7 @@ public sealed partial class Battle
         double cx = on?.X ?? p.X + Math.Cos(flareAngle) * 0.9, cz = on?.Z ?? p.Z + Math.Sin(flareAngle) * 0.9;
         if (on != null)
         {
-            double dealt = FlareHit(on, f.Arg("chop", 1.5) * (last ? f.Arg("lastChop", 1.5) : 1), f.School, last ? 1.5 : 0, p.X, p.Z);
+            double dealt = FlareHit(on, f.Arg("chop", 1.5) * (last ? f.Arg("lastChop", 1.5) : 1), f.School, last ? 1.5 : 0, p.X, p.Z), taken = LastTaken;
             HealPlayer(MaxHp * f.Arg("mend", 0.02), "flare", true);
             // The splash: what stands 2 m round bleeds (Wide Chops: struck too).
             double r = f.Arg("splash", 2) * FlareGrow(f);
@@ -195,7 +195,7 @@ public sealed partial class Battle
             {
                 if (e != on && FlareMod("bill.wide_chops") && !e.Boss) FlareHit(e, f.Arg("chop", 1.5) * f.Arg("wide", 0.6), f.School, 0.6, cx, cz);
                 if (e.Alive && e.State != EnemyState.Dying && dealt > 0)
-                    ApplyStatus(e, new StatusPayload(StatusKind.Bleed, 1, f.Arg("bleed", 0.4), f.Arg("bleedSeconds", 3)), dealt);
+                    ApplyStatus(e, new StatusPayload(StatusKind.Bleed, 1, f.Arg("bleed", 0.4), f.Arg("bleedSeconds", 3)), dealt, taken: taken);
             });
         }
         FlareBlowEvent(f, "chop", last, cx, cz, on, on != null ? f.Arg("splash", 2) * FlareGrow(f) : 0);
