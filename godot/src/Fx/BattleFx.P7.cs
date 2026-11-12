@@ -869,6 +869,7 @@ public partial class BattleFx
             g.Age += dt;
             if (g.Age >= g.Life) { g.Root.QueueFree(); p7Ghosts.RemoveAt(i); continue; }
             g.M.SetShaderParameter("p7_t", g.Age);
+            g.M.SetShaderParameter("p7_dim", KillDimNow);
         }
         foreach (var l in p7Lights)
         {
@@ -960,6 +961,7 @@ public partial class BattleFx
         var eye = cam.GlobalPosition;
         float after = t.Age - t.Until;
         t.M.SetShaderParameter("p7_fade", after <= 0 ? 0f : Mathf.Min(0.95f, Mathf.Floor(after / P7Sample + 1) * 0.34f));
+        t.M.SetShaderParameter("p7_dim", KillDimNow); // F1 r5: not the kill: held down in a mass kill's window
         const int Sub = 4;
         var pa = new List<Vector3>(); var pb = new List<Vector3>(); var ag = new List<float>();
         for (int i = 0; i < n - 1; i++)

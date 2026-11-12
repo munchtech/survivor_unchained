@@ -41,6 +41,9 @@ public sealed class VatAsset
     /// <summary>How far each death's body moves on the ground from its first frame to its last (model space, metres):
     /// a body that lies along a line shows its fall by it (Vat.Laid).</summary>
     public Dictionary<string, Vector2> Laid = new();
+    /// <summary>When each death's body is half way down (s into the clip): its vertices' mean height has fallen half way
+    /// from its first frame to its lowest (Vat.Downs). A mass kill's topple runs its clip to here fast (CrowdView).</summary>
+    public Dictionary<string, double> Down = new();
     /// <summary>Where its glowing glass is (a carried lamp's: Corvane's), model space, at each frame row; null: it has none
     /// (Vat.Glass). The view sets a carried light and its glow on it, in every pose (P6 judge r2 fix 2).</summary>
     public Vector3[]? Glass;
@@ -868,7 +871,7 @@ public static class Vat
         }
         // The posed bodies reach beyond the rest pose (a lunge, a fall): a generous box.
         mesh.CustomAabb = new Aabb(new Vector3(-2.5f, -1.5f, -2.5f), new Vector3(5, Math.Max(3, b.Height + 2), 5));
-        return new VatAsset { Key = b.Key, Mesh = mesh, Width = b.Width, Rows = b.Rows, Clips = b.Clips, Height = b.Height, Laid = Laid(b), Glass = Glass(b) };
+        return new VatAsset { Key = b.Key, Mesh = mesh, Width = b.Width, Rows = b.Rows, Clips = b.Clips, Height = b.Height, Laid = Laid(b), Down = Downs(b), Glass = Glass(b) };
     }
 
     /// <summary>Each death's lying body against its first frame: the move of the body's middle (all its vertices' mean,
@@ -925,6 +928,33 @@ public static class Vat
             if (role.StartsWith("die", StringComparison.Ordinal) && c.Frames > 1 && (c.Start + c.Frames) * b.Rows * b.Width * 8 <= b.Pos.Length)
                 laid[role] = Mid(c.Start + c.Frames - 1) - Mid(c.Start);
         return laid;
+    }
+
+    static Dictionary<string, double> Downs(Baked b)
+    {
+        int total = 0;
+        foreach (var sf in b.Surfs) total = Math.Max(total, sf.Offset + sf.Count);
+        var down = new Dictionary<string, double>();
+        if (total == 0) return down;
+        double Y(int frame)
+        {
+            double y = 0;
+            int at = frame * b.Rows * b.Width;
+            for (int i = 0; i < total; i++) y += (float)BitConverter.UInt16BitsToHalf(BitConverter.ToUInt16(b.Pos, (at + i) * 8 + 2));
+            return y / total;
+        }
+        foreach (var (role, c) in b.Clips)
+        {
+            if (!role.StartsWith("die", StringComparison.Ordinal) || c.Frames < 2 || (c.Start + c.Frames) * b.Rows * b.Width * 8 > b.Pos.Length) continue;
+            var ys = new double[c.Frames];
+            for (int f = 0; f < c.Frames; f++) ys[f] = Y(c.Start + f);
+            double low = ys[0];
+            foreach (var y in ys) low = Math.Min(low, y);
+            double half = ys[0] - (ys[0] - low) * 0.5;
+            int k = Array.FindIndex(ys, y => y <= half);
+            down[role] = (k < 0 ? c.Frames - 1 : k) / (double)(c.Frames - 1) * c.Duration;
+        }
+        return down;
     }
 
     /// <summary>

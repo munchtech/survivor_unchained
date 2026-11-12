@@ -18,6 +18,7 @@ public struct Tone
     public Wave Type;
     public double? T, A, Hold, F2, Glide, Lp, Lp2, Q, Hp, Detune, Verb;
     public Bus Bus;
+    public bool Lead;
     public double Pan;
 }
 
@@ -28,6 +29,7 @@ public struct Hiss
     public double? T, A, Bp, Bp2, Q, Lp, Lp2, Hp, Verb;
     public bool Brown;
     public Bus Bus;
+    public bool Lead;
     public double Pan;
 }
 
@@ -37,6 +39,7 @@ public struct Fm
     public double F, Ratio, Index, D, G;
     public double? T, A, F2, Verb;
     public Bus Bus;
+    public bool Lead;
     public double Pan;
 }
 
@@ -47,6 +50,7 @@ public struct Clip
     public double G;
     public double? T, Pitch, Lp, Verb;
     public Bus Bus;
+    public bool Lead;
     public double Pan;
     /// <summary>Play the take's two channels as recorded (when it has them), ignoring Pan.</summary>
     public bool Stereo;
@@ -79,9 +83,10 @@ public partial class Synth : Node
     readonly List<Bed> beds = new();
     AudioStreamGeneratorPlayback? dry, wet;
     public readonly float[] Level = { 0.85f, 0.8f, 0.9f, 0.7f, 0.85f };
-    /// <summary>--wav PATH --stems: each bus's dry contribution (after its level and the ducks, no room), in Bus order.</summary>
+    /// <summary>--wav PATH --stems: each bus's dry contribution (after its level and the ducks, no room), in Bus order, then
+    /// a sixth: the lead voices alone (LeadRule; part of the sfx stem too), so a tape measures her hit over the crowd.</summary>
     List<Vector2>[]? stems;
-    readonly float[] stemAcc = new float[10];
+    readonly float[] stemAcc = new float[12];
     /// <summary>Each bus's send to the room; like Level, in Bus order, and set from data/content/sounds.json (SoundBank).</summary>
     public static readonly float[] Send = { 0.2f, 0.55f, 0.3f, 0.08f, 0.22f };
     public float Master = 0.85f;
@@ -104,6 +109,8 @@ public partial class Synth : Node
     /// <summary>Seconds of work spent mixing, and of sound mixed (for the log).</summary>
     public double MixCost, Mixed;
 
+    /// <summary>Seconds on the tape so far (--wav; 0 without one): a trace line's place on it.</summary>
+    public double TapeSeconds => tape == null ? 0 : tape.Count / (double)Rate;
     public Synth() { Instance = this; Name = "Synth"; }
 
     static float[] NoiseBuffer(bool brown)
@@ -126,7 +133,7 @@ public partial class Synth : Node
             tapePath = path;
             tape = new List<Vector2>();
             Dynamics();
-            if (Args.Has("stems")) { stems = new List<Vector2>[5]; for (int i = 0; i < 5; i++) stems[i] = new List<Vector2>(); }
+            if (Args.Has("stems")) { stems = new List<Vector2>[6]; for (int i = 0; i < 6; i++) stems[i] = new List<Vector2>(); }
             SoundBank.Load(this);
             SoundHooks.Cue = id => Sfx.Cue(id);
             return;
@@ -242,10 +249,20 @@ public partial class Synth : Node
 
     public static double R(double a, double b) => a + rng.NextDouble() * (b - a);
 
-    public void Play(Tone o) { if (Live) incoming.Enqueue(new ToneVoice(this, o)); }
-    public void Play(Hiss o) { if (Live) incoming.Enqueue(new NoiseVoice(this, o)); }
-    public void Play(Fm o) { if (Live) incoming.Enqueue(new FmVoice(this, o)); }
-    public void Play(Clip o) { if (Live && Recordings.Pick(o.Of) is { } take) incoming.Enqueue(new ClipVoice(this, o, take)); }
+    /// <summary>While a LeadFor scope is open (the main thread, one recipe), every voice asked for is a lead voice.</summary>
+    static bool leadScope;
+    public readonly struct LeadScope : IDisposable
+    {
+        readonly bool was;
+        public LeadScope(bool on) { was = leadScope; leadScope = was || on; }
+        public void Dispose() => leadScope = was;
+    }
+    public static LeadScope LeadFor(bool on) => new(on);
+
+    public void Play(Tone o) { if (Live) { o.Lead |= leadScope; incoming.Enqueue(new ToneVoice(this, o)); } }
+    public void Play(Hiss o) { if (Live) { o.Lead |= leadScope; incoming.Enqueue(new NoiseVoice(this, o)); } }
+    public void Play(Fm o) { if (Live) { o.Lead |= leadScope; incoming.Enqueue(new FmVoice(this, o)); } }
+    public void Play(Clip o) { if (Live && Recordings.Pick(o.Of) is { } take) { o.Lead |= leadScope; incoming.Enqueue(new ClipVoice(this, o, take)); } }
     public void Add(Bed b) => bedsIn.Enqueue(b);
     /// <summary>Every one-shot sound playing or asked for is dropped at the mixer's next
     /// chunk (a skipped storybook's tails must not ring on into what follows). Beds stay.</summary>
@@ -287,6 +304,7 @@ public partial class Synth : Node
         if (cut) { cut = false; voices.Clear(); incoming.Clear(); }
         while (incoming.TryDequeue(out var nv)) voices.Add(nv);
         while (bedsIn.TryDequeue(out var nb)) beds.Add(nb);
+        if (!crowdRead) { crowdRead = true; CrowdDuck = SoundBank.Duck("lead", "sfx", 0.5f); CrowdDuckDeep = SoundBank.Duck("lead", "sfxDeep", CrowdDuck); CrowdVoicesLo = SoundBank.Duck("lead", "sfxVoicesLo", 4); CrowdVoicesHi = SoundBank.Duck("lead", "sfxVoicesHi", 12); LeadHold = SoundBank.Duck("lead", "seconds", 0.09f); }
         float dt = (float)(1 / Rate);
         for (int i = 0; i < n; i++)
         {
@@ -295,6 +313,12 @@ public partial class Synth : Node
             float sfxTo = t < sfxDuckUntil ? sfxDuck : 1;
             sfxDuckNow += (sfxTo - sfxDuckNow) * (sfxTo < sfxDuckNow ? 0.00022f : 0.00005f);
             masterNow += (Master - masterNow) * 0.0002f;
+            // (F1 lead 24: the duck deepens from CrowdDuck to CrowdDuckDeep as the live effects voices go from Lo to Hi, the count
+            // of the sample before: a mass kill's pile-up no longer buries her crack)
+            float crowdDepth = CrowdDuck + (CrowdDuckDeep - CrowdDuck) * Math.Clamp((sfxLive - CrowdVoicesLo) / Math.Max(1f, CrowdVoicesHi - CrowdVoicesLo), 0f, 1f);
+            sfxLive = 0;
+            float crowdTo = t < leadUntil ? crowdDepth : 1;
+            crowdNow += (crowdTo - crowdNow) * (crowdTo < crowdNow ? crowdAtk : crowdRel);
             float bedTo = t < bedDuckUntil ? bedDuck : 1;
             bedDuckNow += (bedTo - bedDuckNow) * (bedTo < bedDuckNow ? 0.00022f : 0.00005f);
             // About 0.12 s down, 0.6 s back up.
@@ -306,11 +330,13 @@ public partial class Synth : Node
                 var voice = voices[v];
                 if (t < voice.Start) continue;
                 if (t > voice.End) { voices.RemoveAt(v); continue; }
+                if (voice.Lead && !voice.Led) { voice.Led = true; leadUntil = Math.Max(leadUntil, voice.Start + LeadHold); }
+                if (voice.Bus == Bus.Sfx && !voice.Lead) sfxLive++;
                 float s = voice.Sample(t, dt);
-                float bus = Level[(int)voice.Bus] * (voice.Bus == Bus.Music ? duckNow * voiceMusicNow * bedDuckNow : voice.Bus == Bus.Amb ? voiceAmbNow * bedDuckNow : voice.Bus == Bus.Sfx ? sfxDuckNow : 1);
+                float bus = Level[(int)voice.Bus] * (voice.Bus == Bus.Music ? duckNow * voiceMusicNow * bedDuckNow : voice.Bus == Bus.Amb ? voiceAmbNow * bedDuckNow : voice.Bus == Bus.Sfx ? sfxDuckNow * (voice.Lead ? 1 : crowdNow) : 1);
                 float l = s * voice.L * bus, r = (voice.Wide ? voice.Right : s) * voice.R * bus;
                 dl += l; dr += r;
-                if (stems != null) { stemAcc[(int)voice.Bus * 2] += l; stemAcc[(int)voice.Bus * 2 + 1] += r; }
+                if (stems != null) { stemAcc[(int)voice.Bus * 2] += l; stemAcc[(int)voice.Bus * 2 + 1] += r; if (voice.Lead) { stemAcc[10] += l; stemAcc[11] += r; } }
                 float send = Send[(int)voice.Bus] + voice.Verb;
                 wl += l * send; wr += r * send;
             }
@@ -339,7 +365,7 @@ public partial class Synth : Node
             outDry[i] = new Vector2(dl, dr) * dyn;
             outWet[i] = new Vector2(wl, wr) * dyn;
             if (stems != null)
-                for (int k = 0; k < 5; k++) { stems[k].Add(new Vector2(stemAcc[k * 2], stemAcc[k * 2 + 1]) * masterNow); stemAcc[k * 2] = stemAcc[k * 2 + 1] = 0; }
+                for (int k = 0; k < 6; k++) { stems[k].Add(new Vector2(stemAcc[k * 2], stemAcc[k * 2 + 1]) * masterNow); stemAcc[k * 2] = stemAcc[k * 2 + 1] = 0; }
         }
         Interlocked.Add(ref clock, n);
         MixCost += (Time.GetTicksUsec() - t0) / 1e6;
@@ -348,9 +374,19 @@ public partial class Synth : Node
 
     public int Voices => voices.Count;
 
+    /// <summary>The crowd sidechain: while a lead voice sounds (and LeadHold after it starts), every non-lead effects voice is
+    /// held to CrowdDuck (ducks.lead.sfx / .seconds in sounds.json); about 3 ms down, 150 ms back.</summary>
+    public float CrowdDuck = 0.5f;
+    /// <summary>The duck's depth with CrowdVoicesHi or more non-lead effects voices live (ducks.lead.sfxDeep; Lo or fewer: CrowdDuck).</summary>
+    public float CrowdDuckDeep = 0.5f, CrowdVoicesLo = 4, CrowdVoicesHi = 12;
+    int sfxLive;
+    public double LeadHold = 0.09;
+    bool crowdRead;
+    double leadUntil;
+    float crowdNow = 1, crowdAtk, crowdRel;
     const float CompThreshold = -16, CompRatio = 4, Ceiling = 0.891f;
     float compEnv, limG = 1, compAtk, compRel, limRel;
-    void Dynamics() { compAtk = (float)(1 - Math.Exp(-1 / (0.004 * Rate))); compRel = (float)(1 - Math.Exp(-1 / (0.25 * Rate))); limRel = (float)(1 - Math.Exp(-1 / (0.08 * Rate))); }
+    void Dynamics() { crowdAtk = (float)(1 - Math.Exp(-1 / (0.003 * Rate))); crowdRel = (float)(1 - Math.Exp(-1 / (0.15 * Rate))); compAtk = (float)(1 - Math.Exp(-1 / (0.004 * Rate))); compRel = (float)(1 - Math.Exp(-1 / (0.25 * Rate))); limRel = (float)(1 - Math.Exp(-1 / (0.08 * Rate))); }
 
     public override void _ExitTree()
     {
@@ -362,8 +398,9 @@ public partial class Synth : Node
         if (stems != null)
         {
             string stem = tapePath.EndsWith(".wav", StringComparison.OrdinalIgnoreCase) ? tapePath[..^4] : tapePath;
-            string[] names = ["sfx", "music", "ambience", "ui", "flare"];
-            for (int i = 0; i < 5; i++) WriteWav($"{stem}_{names[i]}.wav", stems[i]);
+            string[] names = ["sfx", "music", "ambience", "ui", "flare", "lead"];
+            // (the lead and the effects first: the quit guard may cut the last ones short, 11 Nov a run lost the lead stem's end)
+            foreach (int i in (int[])[5, 0, 1, 2, 3, 4]) WriteWav($"{stem}_{names[i]}.wav", stems[i]);
         }
         GD.Print($"wrote {tapePath}: {tape.Count / Rate:0.0}s of sound, mixed at {MixCost / Math.Max(1e-9, Mixed) * 100:0.0}% of real time");
     }
@@ -371,7 +408,7 @@ public partial class Synth : Node
     /// <summary>16-bit stereo PCM.</summary>
     void WriteWav(string path, List<Vector2> samples)
     {
-        using var f = new System.IO.BinaryWriter(System.IO.File.Create(path));
+        using var f = new System.IO.BinaryWriter(new System.IO.BufferedStream(System.IO.File.Create(path), 1 << 20));
         int bytes = samples.Count * 4;
         f.Write("RIFF"u8); f.Write(36 + bytes); f.Write("WAVE"u8);
         f.Write("fmt "u8); f.Write(16); f.Write((short)1); f.Write((short)2); f.Write((int)Rate); f.Write((int)Rate * 4); f.Write((short)4); f.Write((short)16);
@@ -390,6 +427,9 @@ public partial class Synth : Node
     {
         public double Start, End;
         public Bus Bus;
+        /// <summary>A lead voice (her heavy hit, a rare drop, a telegraph) is never ducked by the crowd and holds the crowd down while it sounds.</summary>
+        public bool Lead;
+        public bool Led;
         public float L, R, Verb;
         /// <summary>A wide voice's right side, set by each Sample (which gives its left); only read when Wide.</summary>
         public float Right;
@@ -534,7 +574,7 @@ public partial class Synth : Node
             if (o.Lp != null) lp = new Biquad(Biquad.Kind.Low, QOf(o.Q), s.Rate);
             if (o.Hp is double h) { hp = new Biquad(Biquad.Kind.High, 0.707, s.Rate); hpf = h; }
             detune = Math.Pow(2, (o.Detune ?? 0) / 1200);
-            Place(o.Bus, o.Pan, o.Verb);
+            Place(o.Bus, o.Pan, o.Verb); Lead = o.Lead;
         }
 
         public override float Sample(double t, float dt)
@@ -570,7 +610,7 @@ public partial class Synth : Node
             if (o.Bp != null) bp = new Biquad(Biquad.Kind.Band, o.Q ?? 1, s.Rate);
             if (o.Lp != null) lp = new Biquad(Biquad.Kind.Low, 0.707, s.Rate);
             if (o.Hp is double h) { hp = new Biquad(Biquad.Kind.High, 0.707, s.Rate); hpf = h; }
-            Place(o.Bus, o.Pan, o.Verb);
+            Place(o.Bus, o.Pan, o.Verb); Lead = o.Lead;
         }
 
         public override float Sample(double t, float dt)
@@ -637,7 +677,7 @@ public partial class Synth : Node
             }
             gain = (float)o.G;
             if (o.Lp is double f) { lp = new Biquad(Biquad.Kind.Low, 0.707, s.Rate); lpR = right != null ? new Biquad(Biquad.Kind.Low, 0.707, s.Rate) : null; lpf = f; }
-            Place(o.Bus, o.Pan, o.Verb);
+            Place(o.Bus, o.Pan, o.Verb); Lead = o.Lead;
         }
 
         public override float Sample(double t, float dt)
@@ -673,7 +713,7 @@ public partial class Synth : Node
             f = new Glide(o.F, o.F2, End - Start, s.Rate);
             depth = new Glide(o.F * o.Index, Math.Max(1, o.F * o.Index * 0.05), End - Start, s.Rate);
             modF = o.F * o.Ratio;
-            Place(o.Bus, o.Pan, o.Verb);
+            Place(o.Bus, o.Pan, o.Verb); Lead = o.Lead;
         }
 
         public override float Sample(double t, float dt)

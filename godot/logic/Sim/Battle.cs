@@ -377,6 +377,11 @@ public sealed partial class Battle
     /// <summary>Who is dealing damage while no weapon is: the rule firing, the art.</summary>
     string? credit;
     public int KillCount;
+    /// <summary>Which deaths are shown as a burst or a launch (the rate cap lives here).</summary>
+    public readonly DeathShow DeathShows = new();
+    // (this step's felled, for a mass kill's one moment: DeathShow.Mass)
+    readonly List<(Enemy E, Ev.Kill K)> massStep = new();
+    double massStepT = double.NaN;
     public readonly Dictionary<Family, int> KillsByFamily = new();
     /// <summary>Champions slain, by family: what a night's people yield to crafting (docs/CRAFTING_DESIGN.md 6.1).</summary>
     public readonly Dictionary<Family, int> ChampionsByFamily = new();
@@ -1173,15 +1178,33 @@ public sealed partial class Battle
             if (e.Elite && !e.Boss) ChampionsByFamily[e.Def.Family] = ChampionsByFamily.GetValueOrDefault(e.Def.Family) + 1;
             if (e.Def.Miniboss && !e.Boss) MinibossesByFamily[e.Def.Family] = MinibossesByFamily.GetValueOrDefault(e.Def.Family) + 1;
         }
-        // A body comes apart under a blow of three times what it had left, or
-        // twice on a critical; fire does it its own way (no burst).
-        bool burst = !e.Boss && e.LastSchool != School.Fire && (e.LastBlow >= 3 || (e.LastCrit && e.LastBlow >= 2));
-        e.Burst = burst;
-        Events.Emit(new Ev.Kill
+        // A spectacular death is a reward (DeathShow): a crit, an overkill or an elite, a share of them, at a capped rate.
+        // A Burst comes apart (fire does it its own way); a Launch is thrown along the blow; the rest fall.
+        var show = DeathShows.Decide(Time, e.Id, KillCount, e.Boss, credited, e.LastCrit, e.LastBlow, e.Elite, e.LastSchool == School.Fire);
+        bool burst = show == DeathKind.Burst;
+        e.Burst = burst; e.Launch = show == DeathKind.Launch;
+        var kill = new Ev.Kill
         {
             X = e.X, Z = e.Z, Enemy = e.Id, Def = e.Def.Id, Family = e.Def.Family, School = e.LastSchool, Elite = e.Elite, Boss = e.Boss,
-            ByPlayer = credited, Burst = burst, ByFlare = credit == "flare", Dx = e.LastDx, Dz = e.LastDz, Scale = e.Def.Scale ?? 1,
-        });
+            ByPlayer = credited, Burst = burst, Launch = e.Launch, ByFlare = credit == "flare", Dx = e.LastDx, Dz = e.LastDz, Scale = e.Def.Scale ?? 1,
+        };
+        // A mass kill is one moment: once the step has felled massFrom, every body it felled (hers, not the Flare's, which
+        // shows its own) is re-shown, the first few thrown out from her and the rest toppled (its earlier kills' events are
+        // still this step's, unread, so they are rewritten with it).
+        if (Time != massStepT) { massStepT = Time; massStep.Clear(); }
+        if (credited && credit != "flare" && !e.Boss && e.Disposition != Disposition.Ally) massStep.Add((e, kill));
+        if (DeathShows.Mass)
+        {
+            for (int i = 0; i < massStep.Count; i++)
+            {
+                var (me, mk) = massStep[i];
+                bool launch = DeathShows.MassKind(i) == DeathKind.Launch;
+                me.Burst = mk.Burst = false; me.Launch = mk.Launch = launch; me.MassKill = mk.Mass = true;
+            }
+            // F1 lead 26: her mass kill is the moment: no new kit mark (lane or ring) is cast on her for MassKillGrace (KitWait).
+            if (massStep.Count > 0) massGraceUntil = Math.Max(massGraceUntil, Time + MassKillGrace);
+        }
+        Events.Emit(kill);
         Graves.Add((e.X, e.Z, e.Def.Id, Time));
 
         if (e.Disposition != Disposition.Ally)
@@ -1883,7 +1906,7 @@ public sealed partial class Battle
             Collision.Resolve(ref nx, ref nz, e.Radius);
             e.X = nx; e.Z = nz;
         }
-        e.Burst = false; e.LastBlow = 0; e.LastCrit = false; e.LastDot = false; e.ShockEaten = 0;
+        e.Burst = false; e.Launch = false; e.MassKill = false; e.LastBlow = 0; e.LastCrit = false; e.LastDot = false; e.ShockEaten = 0;
         e.Status.Clear();
         e.Flash = 0;
         e.Laid = false;

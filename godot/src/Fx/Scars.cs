@@ -59,7 +59,7 @@ public partial class Scars : Node3D
         Scar s;
         if (pool.Count < Max)
         {
-            s = new Scar { Decal = new Decal { UpperFade = 0.25f, LowerFade = 0.4f, CullMask = 1, NormalFade = 0.3f } };
+            s = new Scar { Decal = new Decal { UpperFade = 0.25f, LowerFade = 0.4f, CullMask = 1, NormalFade = 0.3f, SortingOffset = DecalLayer.Scar } };
             AddChild(s.Decal);
             pool.Add(s);
         }

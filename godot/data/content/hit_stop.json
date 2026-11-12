@@ -1,0 +1,21 @@
+{
+  "about": "Local hit-stop (view only; the sim never waits): the attacker and the struck bodies hold, everything else keeps moving. Read by logic/Look/HitStop.cs; classes picked by src/Fx/HitStopClassifier.cs. Milliseconds. A hold never exceeds cap_ms from its start, asking while held extends to the longer remaining (never the sum), and a body cannot be held again for gap_ms after a hold. More than crowd_n living enemies on screen scales every duration by crowd_scale. rate: how fast a held body's clocks run. shake_m/shake_hz: a held enemy's drawn position jitters along the blow, fading to 0 over its hold. catchup_s: the sim motion a held body missed is walked out over this time constant. first_hit_delay_ms: a stop asked by her Oathblade swing lands this long after the blow, so the sweep is up when the frame holds. mass_kill_n: a blow that kills this many or more in one step holds every body it felled for elite_kill_ms (and her, on her own contact). her_reach_m: she holds only for a blow that lands within this of her (her own contact); a far or late blow (a wave, a thrown edge, a kill by a wound) holds the struck body alone, so she never stops mid wind-up.",
+  "trash_ms": 0,
+  "heavy_ms": 60,
+  "crit_ms": 65,
+  "art_ms": 55,
+  "hurt_ms": 60,
+  "elite_kill_ms": 90,
+  "boss_kill_ms": 100,
+  "mass_kill_n": 8,
+  "cap_ms": 150,
+  "gap_ms": 90,
+  "crowd_n": 30,
+  "crowd_scale": 1.0,
+  "rate": 0.06,
+  "shake_m": 0.03,
+  "shake_hz": 30,
+  "catchup_s": 0.08,
+  "first_hit_delay_ms": 30,
+  "her_reach_m": 3
+}

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using SurvivorUnchained.Sim;
 using SurvivorUnchained.Sound;
 using Xunit;
 
@@ -91,5 +92,31 @@ public class SoundBankTests
         Assert.Contains(p, s => s.Contains("gain 5"));
         Assert.Contains(p, s => s.Contains("pitch"));
         Assert.Contains(p, s => s.StartsWith("b: no layers"));
+    }
+
+    [Fact]
+    public void LeadFieldParsesAndDefaultsFalse()
+    {
+        var d = SoundBankData.Parse("""{"ducks":{"lead":{"sfx":0.4,"seconds":0.1}},"events":{"a":{"lead":true,"layers":[{"take":"x"}]},"b":{"layers":[{"take":"x"}]}}}""");
+        Assert.True(d.Events["a"].Lead);
+        Assert.False(d.Events["b"].Lead);
+        Assert.Equal(0.4, d.Duck("lead", "sfx", 0.5));
+        Assert.Equal(0.09, SoundBankData.Parse("{}").Duck("lead", "seconds", 0.09));
+        Assert.Equal(0.32, Real().Duck("lead", "sfx", 1));
+        Assert.Equal(0.12, Real().Duck("lead", "seconds", 1));
+    }
+
+    [Fact]
+    public void LeadRuleHeavyHitsOnly()
+    {
+        Ev.Hit H(bool crit = false, double amt = 1, bool dot = false, bool flare = false, string? weapon = "cleave") =>
+            new() { Crit = crit, Amount = amt, MaxHp = 100, Dot = dot, ByFlare = flare, Weapon = weapon };
+        Assert.False(LeadRule.Heavy(H()));
+        Assert.True(LeadRule.Heavy(H(crit: true)));
+        Assert.True(LeadRule.Heavy(H(amt: 35)));
+        Assert.False(LeadRule.Heavy(H(amt: 34.9)));
+        Assert.False(LeadRule.Heavy(H(crit: true, weapon: null)));
+        Assert.False(LeadRule.Heavy(H(crit: true, dot: true)));
+        Assert.False(LeadRule.Heavy(H(crit: true, flare: true)));
     }
 }

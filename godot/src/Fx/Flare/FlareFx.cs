@@ -22,8 +22,11 @@ public partial class FlareFx : Node3D
     /// <summary>Where she is drawn.</summary>
     public Vector3 Her;
     public bool Night = true;
-    /// <summary>The Motion setting: 1 full, 0.5 reduced, 0 off (no slowed time, no hitstop, no shake).</summary>
+    /// <summary>The Flare's time (slowed world, hitstops): 1 always from the game since F1 lead 18 (10 Nov: the screen-shake
+    /// setting moves the camera only; a stop is not camera motion); 0 still means none (tools, A/B).</summary>
     public float Motion = 1;
+    /// <summary>The screen-shake setting on the Flare's camera (push, pitch, kicks): 1 full, 0.5 reduced, 0 off.</summary>
+    public float Shake = 1;
     /// <summary>The Flashing setting halves the Spend's peak.</summary>
     public bool LessFlash;
     /// <summary>A sound cue (Audio/Sfx.Flare.cs), where, and how strong.</summary>
@@ -358,7 +361,7 @@ public partial class FlareFx : Node3D
     void Envelope()
     {
         if (Cam == null) return;
-        float k = Motion >= 1 ? 1 : Motion > 0 ? 0.5f : 0;
+        float k = Shake >= 1 ? 1 : Shake > 0 ? 0.5f : 0;
         double sinceSpend = spendAt < 0 ? -1 : t - spendAt;
         // (H7 r2: a Flare with a peak holds its push through the stop and lets go on the main blow, over the data's release)
         bool peaked = HasPeak;

@@ -413,7 +413,9 @@ void fragment() {
 	c = min(c * (1.0 + 1.6 * crit_k * struck * (1.0 - lc_k) * vec3(1.0, 0.85, 0.7)) + vec3(0.16, 0.08, 0.04) * fx_crit * struck * (1.0 - lc_k), vec3(0.85 + 0.05 * fx_crit));
 	// The hit kit's flash: a warm white over the body's paint at up to half, lit by the scene (so no glowing cut-out
 	// by night), for its first 2 frames only.
-	c = mix(c, vec3(1.0, 0.86, 0.62), fx.x * fx_aa);
+	// (F1 r5: the hit kit's flag with a critical's (never both otherwise) is the ember look, CrowdView: no blend there)
+	float fx_ember = fx_aa * fx_crit;
+	c = mix(c, vec3(1.0, 0.86, 0.62), fx.x * fx_aa * (1.0 - fx_ember));
 	ALBEDO = c;
 	vec3 dnx = dFdx(NORMAL), dny = dFdy(NORMAL);
 	float busy = shine_aa * smoothstep(0.02, 0.3, 0.5 * (dot(dnx, dnx) + dot(dny, dny)));
@@ -451,6 +453,11 @@ void fragment() {
 	// (r3: gold #FFB84A, fresnel power 3 cut to its outermost edge (from up here most of a body is "rim"; at 0.55 it washed them) so it is ~2-3 px on a 70 px body; strength 1 to 0 over
 	// 8 frames, held to ~0.55 by night (BattleFx.StruckRimOn); never the cream ghost)
 	e += mix(vec3(1.0, 0.479, 0.069), flare_mark_rim.rgb, flare_mark_rim.a) * fx_rim * pow(rim, 3.0) * smoothstep(0.8, 0.97, rim) * 1.8;
+	// (F1 r5) The ember look: a launched mass-kill body (strength 1, its flight's first frames) and a struck survivor
+	// after the pool (0.45): ember light through the whole body and a hot band at its edge, in light, not paint (a pale
+	// blend over a blue wolf by night read as an ice ghost), so the kill out-shouts the frame and keeps its shape.
+	// (own look: 0.22 through the body went a peach-cream ghost under bloom: the body stays dark, the edge carries it)
+	e += vec3(1.0, 0.38, 0.06) * fx_ember * fx_rim * (0.07 * fx_rim + 1.6 * smoothstep(0.4, 0.9, rim));
 	// (H7 r2, judge r1 fix 5: the foe stands in its mark's pool, so the pool lights it from below: its lower body and the
 	// faces turned from the sky, in the school's light, x its own paint (light, not paint: a dark body stays dark))
 	e += flare_mark_rim.rgb * flare_mark_rim.a * flare_mark_lift * fx_rim * c * exp(-max(vat_local.y, 0.0) / 0.8) * (0.35 + 0.65 * (1.0 - up));
