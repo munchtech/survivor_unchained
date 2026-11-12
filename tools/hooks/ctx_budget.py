@@ -23,7 +23,7 @@ import re
 import sys
 
 DEFAULTS = {  # README "Working lean"
-    None: 180_000,              # the main session (coordinator); 9 Nov: under the 200k long-context premium
+    None: 200_000,              # the main session (coordinator); owner 12 Nov: safe stop nearing 200k, 250k max (autoCompactWindow 250000)
     "su-lead-high": 200_000,    # 9 Nov: leads hand off at 200k (premium above it); briefs may still say 300k until rewritten
     "su-lead-sonnet": 200_000,
     "su-lead-max": 180_000,     # judges and solvers (150k to 180k, 12 October); story leads set their own in the brief
