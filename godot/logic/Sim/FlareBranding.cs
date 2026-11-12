@@ -18,8 +18,8 @@ public sealed partial class Battle
     /// <summary>A brand waiting to burst: on whom (or a ground point), when (seconds of the sim's clock), how hard.</summary>
     sealed class Brand
     {
-        public Enemy? On;
-        public int Id = -1;
+        /// <summary>(SU-053) Whom it is on, by lifetime (a reused slot is not them); None for a ground point.</summary>
+        public Lifetime On = Lifetime.None;
         public double X, Z, At, Share, Radius;
         public bool Boss, Last, Dead, Pass, Done;
         public double FromX, FromZ;
@@ -27,11 +27,11 @@ public sealed partial class Battle
 
     readonly List<Brand> brands = new();
     /// <summary>Things a mark has passed to this press (each takes one), and how many have passed.</summary>
-    readonly HashSet<int> brandPassedTo = new();
+    readonly HashSet<Lifetime> brandPassedTo = new();
     int brandPasses;
     /// <summary>The Eye: the boss whose brand stays open, until when, and how many times it has burst again.</summary>
-    Enemy? eyeOn;
-    int eyeId = -1, eyeBursts;
+    Lifetime eyeOn = Lifetime.None;
+    int eyeBursts;
     double eyeUntil;
     /// <summary>Second Brand: when the brand comes again (the sim's clock; 0 none), and its strength.</summary>
     double secondBrandAt;
@@ -61,7 +61,7 @@ public sealed partial class Battle
             ApplyStatus(e, new StatusPayload(StatusKind.Mark, 1, 1, f.Arg("markSeconds", 4)), 0);
             set.Add(new Brand
             {
-                On = e, Id = e.Id, X = e.X, Z = e.Z, Boss = boss, Radius = boss ? 0 : r,
+                On = Lifetime.Of(e), X = e.X, Z = e.Z, Boss = boss, Radius = boss ? 0 : r,
                 At = t0 + (boss ? bossAt : a + (b - a) * Math.Clamp(d / Math.Max(1, reach), 0, 1)),
                 Share = strength * (boss ? f.Arg("bossBurst", 1.5) : f.Arg("burst", 1.5)),
             });
@@ -117,7 +117,8 @@ public sealed partial class Battle
     void Burst(FlareDef f, Brand br)
     {
         br.Done = true;
-        var host = br.On != null && !br.Dead && br.On.Id == br.Id && br.On.Alive && br.On.State != EnemyState.Dying ? br.On : null;
+        var host = br.Dead ? null : Live(br.On);
+        if (host is { State: EnemyState.Dying }) host = null;
         double x = host?.X ?? br.X, z = host?.Z ?? br.Z;
         if (br.Pass)
             // The mark arcs from the fallen to the next (the view's thin silver arc), and bursts as it lands.
@@ -132,8 +133,7 @@ public sealed partial class Battle
             });
         if (br.Boss && host != null && FlareMod("branding.eye"))
         {
-            eyeOn = host;
-            eyeId = host.Id;
+            eyeOn = Lifetime.Of(host);
             eyeBursts = 0;
             eyeUntil = Time + f.Arg("eyeSeconds", 6);
         }
@@ -147,17 +147,19 @@ public sealed partial class Battle
     void BrandOnKilled(Enemy e)
     {
         if (Flare is not { Id: "the_branding", Staged: true } f) return;
-        if (eyeOn != null && (Time > eyeUntil || eyeOn.Id != eyeId || !eyeOn.Alive || eyeOn.State == EnemyState.Dying)) eyeOn = null;
+        var eyeE = Live(eyeOn);
+        if (eyeE != null && (Time > eyeUntil || eyeE.State == EnemyState.Dying)) eyeE = null;
+        if (eyeE == null) eyeOn = Lifetime.None;
         bool branded = false;
         foreach (var br in brands)
             // (a brand stays in the list until the tick it burst in ends: a death by its own burst still passes)
-            if (br.On == e && br.Id == e.Id) { br.Dead = true; br.X = e.X; br.Z = e.Z; branded = true; }
-        bool inWave = branded || brandPassedTo.Contains(e.Id);
-        if (eyeOn != null && e != eyeOn && e.Status.Has(StatusKind.Mark) && eyeBursts < (int)f.Arg("eyeMax", 10)
-            && Dist(e.X, e.Z, eyeOn.X, eyeOn.Z) <= f.Arg("eyeRange", 8) * FlareGrow(f))
+            if (br.On == Lifetime.Of(e)) { br.Dead = true; br.X = e.X; br.Z = e.Z; branded = true; }
+        bool inWave = branded || brandPassedTo.Contains(Lifetime.Of(e));
+        if (eyeE != null && e != eyeE && e.Status.Has(StatusKind.Mark) && eyeBursts < (int)f.Arg("eyeMax", 10)
+            && Dist(e.X, e.Z, eyeE.X, eyeE.Z) <= f.Arg("eyeRange", 8) * FlareGrow(f))
         {
             eyeBursts++;
-            var eye = eyeOn;
+            var eye = eyeE;
             Events.Emit(new Ev.Flare { Phase = FlarePhase.Blow, Id = f.Id, X = e.X, Z = e.Z, TX = eye.X, TZ = eye.Z, Target = eye.Id, Part = "pass", Clutch = flareClutch });
             var was = credit;
             credit = "flare";
@@ -168,15 +170,15 @@ public sealed partial class Battle
         }
         if (!inWave || e.Boss || brandPasses >= (int)f.Arg("passMax", 24)) return;
         var next = HostilesInRadius(e.X, e.Z, f.Arg("passRange", 6) * FlareGrow(f))
-            .Where(o => o != e && !o.Boss && o.Alive && o.State != EnemyState.Dying && !brandPassedTo.Contains(o.Id) && !brands.Any(b => !b.Done && b.On == o && b.Id == o.Id))
+            .Where(o => o != e && !o.Boss && o.Alive && o.State != EnemyState.Dying && !brandPassedTo.Contains(Lifetime.Of(o)) && !brands.Any(b => !b.Done && b.On == Lifetime.Of(o)))
             .OrderBy(o => Dist(o.X, o.Z, e.X, e.Z)).FirstOrDefault();
         if (next == null) return;
         brandPasses++;
-        brandPassedTo.Add(next.Id);
+        brandPassedTo.Add(Lifetime.Of(next));
         ApplyStatus(next, new StatusPayload(StatusKind.Mark, 1, 1, f.Arg("markSeconds", 4)), 0);
         brands.Add(new Brand
         {
-            On = next, Id = next.Id, X = next.X, Z = next.Z, Pass = true, FromX = e.X, FromZ = e.Z,
+            On = Lifetime.Of(next), X = next.X, Z = next.Z, Pass = true, FromX = e.X, FromZ = e.Z,
             At = Time + f.BeatAt("hop", 0.1), Share = f.Arg("pass", 0.75), Radius = f.Arg("burstRadius", 2) * (FlareMod("branding.deep") ? f.Arg("deep", 1.5) : 1) * FlareGrow(f),
         });
     }

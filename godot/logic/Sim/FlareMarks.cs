@@ -46,16 +46,16 @@ public sealed partial class Battle
     /// <summary>The last cast's foes ever marked, and of them never hit by it (set when the cast ends; reset at each press).</summary>
     public int FlareMarkedCount, FlareMarkedUnhit;
     /// <summary>Whether the cast (the last one, once it ends) has hit this foe slot (the view's marks pop on a hit, fade if never).</summary>
-    public bool FlareWasHit(int id) => id >= 0 && id < Enemies.Items.Length && Enemies.Items[id] is { } e && markHit.Contains(e);
+    public bool FlareWasHit(int id) => id >= 0 && id < Enemies.Items.Length && Enemies.Items[id] is { } e && markHit.Contains(Lifetime.Of(e));
 
     bool markCast;
     double markDt = 1 / 30.0;
     Enemy? markMain;
     readonly List<Enemy> markWork = new();
-    readonly HashSet<Enemy> markWorkSet = new(), markShown = new(), markEver = new(), markHit = new();
-    readonly List<int> markPlan = new(), markPlan2 = new();
+    readonly HashSet<Lifetime> markWorkSet = new(), markShown = new(), markEver = new(), markHit = new();
+    readonly List<Lifetime> markPlan = new(), markPlan2 = new();
     readonly List<(double X, double Z)> markFell = new();
-    readonly List<(double X, double Z, int Target)> markAims = new();
+    readonly List<(double X, double Z, Lifetime Target)> markAims = new();
 
     /* ------------------------------------------------------------------- the cast -- */
 
@@ -92,7 +92,7 @@ public sealed partial class Battle
         if (!markCast) return;
         markCast = false;
         FlareMarkedCount = markEver.Count;
-        FlareMarkedUnhit = markEver.Count(e => !markHit.Contains(e));
+        FlareMarkedUnhit = markEver.Count(h => !markHit.Contains(h));
         flareMarks.Clear();
         flareMarkShapes.Clear();
         markShown.Clear();
@@ -103,8 +103,8 @@ public sealed partial class Battle
     void FlareMarkHit(Enemy e)
     {
         if (!markCast) return;
-        markHit.Add(e);
-        if (markShown.Contains(e)) return;
+        markHit.Add(Lifetime.Of(e));
+        if (markShown.Contains(Lifetime.Of(e))) return;
         FlareLateMarks++;
         MarkAt(e);
     }
@@ -112,7 +112,7 @@ public sealed partial class Battle
     /// <summary>A target the sim re-picks at the blow itself: marked at the decision (before its hit) when no earlier tick did.</summary>
     void FlareDecide(Enemy? e)
     {
-        if (!markCast || e == null || markShown.Contains(e)) return;
+        if (!markCast || e == null || markShown.Contains(Lifetime.Of(e))) return;
         FlareDecisionMarks++;
         MarkAt(e);
     }
@@ -127,8 +127,8 @@ public sealed partial class Battle
 
     void MarkAt(Enemy e)
     {
-        markShown.Add(e);
-        markEver.Add(e);
+        markShown.Add(Lifetime.Of(e));
+        markEver.Add(Lifetime.Of(e));
         flareMarks.Add(new FlareMark(e.Id, e.X, e.Z, e.Radius, false));
         FlareMarksVersion++;
     }
@@ -159,7 +159,7 @@ public sealed partial class Battle
                 break;
         }
         var pri = Priority >= 0 && Priority < Enemies.Items.Length ? Enemies.Items[Priority] : null;
-        var main = pri != null && markWorkSet.Contains(pri) ? pri : markMain != null && markWorkSet.Contains(markMain) ? markMain : null;
+        var main = pri != null && markWorkSet.Contains(Lifetime.Of(pri)) ? pri : markMain != null && markWorkSet.Contains(Lifetime.Of(markMain)) ? markMain : null;
         bool same = flareMarks.Count == markWork.Count;
         for (int i = 0; same && i < markWork.Count; i++)
             same = flareMarks[i].Id == markWork[i].Id && flareMarks[i].Main == (markWork[i] == main);
@@ -168,7 +168,7 @@ public sealed partial class Battle
         if (!same) FlareMarksVersion++;
         if (!publish) return;
         markShown.Clear();
-        foreach (var e in markWork) { markShown.Add(e); markEver.Add(e); }
+        foreach (var e in markWork) { markShown.Add(Lifetime.Of(e)); markEver.Add(Lifetime.Of(e)); }
     }
 
     /* ------------------------------------------------------------------ the pieces -- */
@@ -216,7 +216,7 @@ public sealed partial class Battle
 
     void Mark(Enemy? e)
     {
-        if (e != null && Standing(e) && markWorkSet.Add(e)) markWork.Add(e);
+        if (e != null && Standing(e) && markWorkSet.Add(Lifetime.Of(e))) markWork.Add(e);
     }
 
     void Shape(double x, double z, double r) => flareMarkShapes.Add(new FlareMarkShape(FlareMarkShapeKind.Circle, x, z, r));
@@ -229,13 +229,13 @@ public sealed partial class Battle
     }
 
     /// <summary>What LineHostiles finds (less one: a split passes the thing it leaves), and what may step into it.</summary>
-    void MarkLine(double ox, double oz, double ang, double len, double half, int skip = -1)
+    void MarkLine(double ox, double oz, double ang, double len, double half, Lifetime skip = default)
     {
         flareMarkShapes.Add(new FlareMarkShape(FlareMarkShapeKind.Line, ox, oz, half, ang, len));
         double dx = Math.Cos(ang), dz = Math.Sin(ang);
         foreach (var e in HostilesInRadius(ox + dx * len / 2, oz + dz * len / 2, len / 2 + half + 4))
         {
-            if (!Standing(e) || e.Id == skip) continue;
+            if (!Standing(e) || Lifetime.Of(e) == skip) continue;
             double s = MarkSlack(e), rx = e.X - ox, rz = e.Z - oz, along = rx * dx + rz * dz, perp = Math.Abs(-rx * dz + rz * dx);
             if (along >= -e.Radius - s && along <= len + e.Radius + s && perp <= half + e.Radius + s) Mark(e);
         }
@@ -286,21 +286,21 @@ public sealed partial class Battle
             last = target;
         }
         // Aimed and falling: where BurnsTwiceBlow will land each (on its target where it stands, bent off a fallen one).
-        var aims = before ? new List<(double X, double Z, int Target)>() : emberAims;
+        var aims = before ? new List<(double X, double Z, Lifetime Target)>() : emberAims;
         for (int j = landed; j < aims.Count && j < embers; j++)
         {
             var (ax, az, id) = aims[j];
-            var held = id >= 0 && id < Enemies.Items.Length ? Enemies.Items[id] : null;
+            var held = Live(id);
             var target = held != null && Standing(held) && FlareCanHurt(held) && Dist(held.X, held.Z, ax, az) < r + 2 ? held : null;
-            if (target == null && id >= 0) target = EmberBend(f, ax, az, r);
+            if (target == null && id.Id >= 0) target = EmberBend(f, ax, az, r);
             Ember(target?.X ?? ax, target?.Z ?? az, target);
         }
         // Not yet aimed: EmberPick run ahead on copies (before the frost, what is in reach counts as the ice it will be).
         markFell.Clear();
         markAims.Clear();
         if (!before) { markFell.AddRange(emberFell); markAims.AddRange(emberAims); }
-        int called = before
-            ? FlareMod("burns.called_down") ? CalledDownPick(HostilesInRadius(p.X, p.Z, flareReach).Where(Standing).ToList())?.Id ?? -1 : -1
+        Lifetime called = before
+            ? FlareMod("burns.called_down") ? Lifetime.Of(CalledDownPick(HostilesInRadius(p.X, p.Z, flareReach).Where(Standing).ToList())) : Lifetime.None
             : calledDown;
         Func<Enemy, bool>? ice = before ? e => !e.Boss && Dist(e.X, e.Z, p.X, p.Z) <= flareReach + e.Radius : null;
         bool aimed = flareAimAt.Length > 0;
@@ -311,7 +311,7 @@ public sealed partial class Battle
             else done = off + k;
             var (tx, tz, target) = EmberPickFrom(f, k + 1, embers, r, markFell, markAims, done, ref called, ice);
             markFell.Add((tx, tz));
-            markAims.Add((tx, tz, target?.Id ?? -1));
+            markAims.Add((tx, tz, Lifetime.Of(target)));
             Ember(tx, tz, target);
         }
         if (FlareMod("burns.black_ice"))
@@ -338,16 +338,16 @@ public sealed partial class Battle
             foreach (double r in new[] { flareReach + s, Math.Max(0, flareReach - s) })
             {
                 PlanTollInto(f, n, r, markPlan2, NextTickHostiles);
-                foreach (var id in markPlan2) if (id >= 0 && id < Enemies.Items.Length) Mark(Enemies.Items[id]);
+                foreach (var h in markPlan2) Mark(Live(h));
             }
         // Before the first cut, the plan as PlanToll would make it now; after it, her plan.
-        List<int> plan = tollPlan;
+        List<Lifetime> plan = tollPlan;
         if (flareBlow == 0) { PlanTollInto(f, n, flareReach, markPlan, NextTickHostiles); plan = markPlan; }
         bool fell = false;
         for (int i = flareBlow; i < n; i++)
         {
-            int slot = i < plan.Count ? plan[i] : -1;
-            var e = slot >= 0 && slot < Enemies.Items.Length ? Enemies.Items[slot] : null;
+            var slot = i < plan.Count ? plan[i] : Lifetime.None;
+            var e = Live(slot);
             if (e == null || !Standing(e) || !Targetable(e) || !FlareCanHurt(e))
             {
                 // TollCut's re-pick: the strongest still standing (with a cut near, in the reach it may find then).
@@ -397,7 +397,8 @@ public sealed partial class Battle
         foreach (var br in brands)
         {
             if (br.Done) continue;
-            var host = br.On != null && !br.Dead && br.On.Id == br.Id && Standing(br.On) ? br.On : null;
+            var host = br.Dead ? null : Live(br.On);
+            if (host != null && !Standing(host)) host = null;
             double x = host?.X ?? br.X, z = host?.Z ?? br.Z;
             if (br.Share <= 0) continue;
             Mark(host);
@@ -406,8 +407,8 @@ public sealed partial class Battle
             if (host != null && (lastWord == null || br.Last || (!lastWord.Last && br.At > lastWord.At))) lastWord = br;
         }
         if (secondBrandAt > 0) BrandWave();
-        if (eyeOn != null && Time <= eyeUntil && eyeOn.Id == eyeId && Standing(eyeOn) && eyeBursts < (int)f.Arg("eyeMax", 10)) Mark(eyeOn);
-        if (flareBlow >= flareAt.Length) markMain = lastWord?.On;
+        if (Live(eyeOn) is { } eyeNow && Time <= eyeUntil && Standing(eyeNow) && eyeBursts < (int)f.Arg("eyeMax", 10)) Mark(eyeNow);
+        if (flareBlow >= flareAt.Length) markMain = lastWord == null ? null : Live(lastWord.On);
     }
 
     void MarkArrow(FlareDef f)
@@ -437,9 +438,9 @@ public sealed partial class Battle
         }
         for (int k = flareBlow - 1; k < splits && k < arrowSplits.Count; k++)
         {
-            if (arrowHeart != null)
+            if (arrowHeart.Id >= 0)
             {
-                var heartOn = arrowHeart.Id == arrowHeartId && Standing(arrowHeart) ? arrowHeart : null;
+                var heartOn = Live(arrowHeart) is { } hl && Standing(hl) ? hl : null;
                 Mark(heartOn);
                 markMain = heartOn;
                 continue;
@@ -469,8 +470,8 @@ public sealed partial class Battle
         }
         else
         {
-            foreach (var (e, id) in dragHooked) if (e.Id == id) Mark(e);
-            markMain = dragHooked.Where(h => h.E.Id == h.Id && Standing(h.E)).Select(h => h.E).OrderByDescending(e => e.Boss).ThenByDescending(e => e.Elite).FirstOrDefault();
+            foreach (var h in dragHooked) Mark(Live(h));
+            markMain = dragHooked.Select(h => Live(h)).Where(e => e != null && Standing(e)).Select(e => e!).OrderByDescending(e => e.Boss).ThenByDescending(e => e.Elite).FirstOrDefault();
         }
         // Grinder's shreds take all in the knot; the slam what it can hurt.
         bool grinds = n > 3 && flareBlow < n - 1;
@@ -483,7 +484,7 @@ public sealed partial class Battle
         var p = Player;
         if (flareBlow >= flareAt.Length) return;
         double vault = f.Arg("vault", 6) * FlareGrow(f);
-        Enemy? Held() => billOn != null && billOn.Id == billOnId && Standing(billOn) ? billOn : null;
+        Enemy? Held() => Live(billOn) is { } hb && Standing(hb) ? hb : null;
         Enemy? on;
         if (flareAim == 0)
         {
@@ -491,7 +492,7 @@ public sealed partial class Battle
             on = BillPick(p.X, p.Z, flareReach);
         }
         else if (flareBlow == 0) on = Held() ?? BillPick(billX, billZ, vault);
-        else on = Held() ?? (billOn != null && billVaults < (FlareMod("bill.running_tab") ? 2 : 1) ? BillPick(p.X, p.Z, vault) : null);
+        else on = Held() ?? (billOn.Id >= 0 && billVaults < (FlareMod("bill.running_tab") ? 2 : 1) ? BillPick(p.X, p.Z, vault) : null);
         if (on == null) return;
         Mark(on);
         markMain = on;

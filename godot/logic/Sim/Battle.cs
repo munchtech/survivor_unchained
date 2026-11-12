@@ -65,7 +65,14 @@ public sealed class PlayerState
     public int Ashes;
     /// <summary>Blows that have reached the survivor since Watch Mail last turned one.</summary>
     public int MailCount;
-    public Enemy? LastKiller;
+    Enemy? lastKiller;
+    Lifetime lastKillerLife = Lifetime.None;
+    /// <summary>The last creature that hurt her, while that very one lives (SU-053: by lifetime, never a reused slot).</summary>
+    public Enemy? LastKiller
+    {
+        get => lastKillerLife.Is(lastKiller) ? lastKiller : null;
+        set { lastKiller = value; lastKillerLife = Lifetime.Of(value); }
+    }
     /// <summary>Since a blow last reached the survivor; where a burning dash last left fire.</summary>
     public double UnstruckT, WakeX, WakeZ;
     public bool VowUp;
@@ -904,6 +911,10 @@ public sealed partial class Battle
     /// (1 unchained; a chained cut's refreshed kinds build by it). For the hooks after the switch.</summary>
     double statusBuild = 1;
 
+    /// <summary>(SU-053) The creature a Lifetime names, if that very one is still alive (its slot not reused), else null.</summary>
+    public Enemy? Live(Lifetime h) =>
+        h.Id >= 0 && h.Id < Enemies.Items.Length && Enemies.Items[h.Id] is { } e && h.Is(e) ? e : null;
+
     /// <summary>Everything the survivor's side does to a creature passes through here.</summary>
     public double HitEnemy(Enemy e, double baseDamage, School school, Tag[] tags, HitOpts o = default)
     {
@@ -1494,6 +1505,19 @@ public sealed partial class Battle
     /// armour. A telegraphed blow (a lunge after its wind-up, a missile, a
     /// blast that marked its ground) slipped in the first moments of a dash
     /// is a perfect dodge.</summary>
+    /// <summary>(SU-056) A thrower gone (dead, or its slot reused in flight) lends its missile only what was copied when
+    /// it was fired (Projectile.OwnerShot): its kind and its bite, never the slot's new occupant.</summary>
+    Shot? shotFrom;
+
+    /// <summary>(SU-056) An enemy missile or lob landing on her: from its thrower while that very one lives, else from
+    /// the snapshot it was fired with.</summary>
+    double ShotHurt(Projectile pr, Enemy? src)
+    {
+        shotFrom = src == null ? pr.OwnerShot : null;
+        try { return HurtPlayer(Lamps.Board ? pr.Damage * BoardMissileMul() : pr.Damage, pr.School, pr.Art, src, true); }
+        finally { shotFrom = null; }
+    }
+
     public double HurtPlayer(double amount, School school, string source, Enemy? from, bool telegraphed = false)
     {
         var p = Player;
@@ -1563,7 +1587,7 @@ public sealed partial class Battle
         foreach (var z in Zones.Items) if (z.Alive && z.Armor > 0 && Dist(z.X, z.Z, p.X, p.Z) < z.Radius) armor += z.Armor;
         dmg *= 1 - StatBlock.ArmorReduction(armor);
         dmg *= 1 - Clamp(st.GetRaw(Stat.ResistOf(school)), -1, 0.8);
-        if (from != null) dmg *= 1 - Clamp(st.GetRaw(Stat.FromOf(from.Def.Family)), -1, 0.8);
+        if ((from?.Def ?? shotFrom?.Def) is { } fromDef) dmg *= 1 - Clamp(st.GetRaw(Stat.FromOf(fromDef.Family)), -1, 0.8);
         // Emberblood: what burns is busy burning (the Pyre's ward, as chill is the Winter's).
         if (from != null && from.Status.Has(StatusKind.Burn) && Boons.TryGetValue("emberblood", out int eb)) dmg *= 1 - 0.06 * eb;
         if (p.BulwarkT > 0) dmg *= p.BulwarkSize == 1 ? (Has("unmoving") ? 0.2 : 0.35) : 1 - (1 - (Has("unmoving") ? 0.2 : 0.35)) * p.BulwarkSize; // A lamp reflex is a rule; by night its numbers are sizes, a quarter (Classes 20)
@@ -1800,12 +1824,13 @@ public sealed partial class Battle
             Events.Emit(new Ev.PlayerHit { X = p.X, Z = p.Z, Amount = dmg, School = school, Source = source, Label = blowLabel });
             Fire(TriggerEvent.Hurt, new ProcCtx { X = p.X, Z = p.Z, Damage = dmg });
         }
-        if (from != null)
+        if ((from != null ? new Shot(from.Def, from.Damage) : shotFrom) is { } by)
         {
+            // (SU-056: a gone thrower's missile credits nobody living)
             p.LastKiller = from;
             // The map's oath rides their blows.
-            if (!silent && (Rules.HitChill || from.Def.Bite == StatusKind.Chill)) SlowPlayer(0.65, 1.4);
-            if (!silent && (Rules.HitPoison || from.Def.Bite == StatusKind.Poison)) { p.PoisonT = Math.Max(p.PoisonT, 3); p.PoisonDps = Math.Max(p.PoisonDps, from.Damage * 0.12); }
+            if (!silent && (Rules.HitChill || by.Def.Bite == StatusKind.Chill)) SlowPlayer(0.65, 1.4);
+            if (!silent && (Rules.HitPoison || by.Def.Bite == StatusKind.Poison)) { p.PoisonT = Math.Max(p.PoisonT, 3); p.PoisonDps = Math.Max(p.PoisonDps, by.Damage * 0.12); }
         }
         if (p.Hp <= 0)
         {
@@ -1839,7 +1864,7 @@ public sealed partial class Battle
                 Over = BattleOver.Death;
                 // Felled by what was in them (poison, burning), it is named so; the creature that put it there keeps the credit.
                 p.FellTo = dot ? source : null;
-                Events.Emit(new Ev.PlayerDeath { X = p.X, Z = p.Z, Killer = dot ? source : p.LastKiller?.Def.Name ?? source, KillerId = p.LastKiller?.Id ?? -1 });
+                Events.Emit(new Ev.PlayerDeath { X = p.X, Z = p.Z, Killer = dot ? source : p.LastKiller?.Def.Name ?? shotFrom?.Def.Name ?? source, KillerId = p.LastKiller?.Id ?? -1 });
             }
         }
         return dmg;
@@ -2373,10 +2398,13 @@ public sealed partial class Battle
                 if (pr.Homing > 0 && pr.Owner != Side.Enemy)
                 {
                     Enemy? t = pr.Target >= 0 ? Enemies.Items[pr.Target] : null;
+                    // (SU-056: a target kept by lifetime, a reflection's thrower, is not whatever took its slot)
+                    if (t != null && pr.TargetLife.Id == pr.Target && !pr.TargetLife.Is(t)) t = null;
                     if (t == null || !Targetable(t) || pr.Hits.Contains(t.Id) || VolleyTaken(pr, t.Id))
                     {
                         t = PickSeekTarget(pr);
                         pr.Target = t?.Id ?? -2;
+                        pr.TargetLife = Lifetime.Of(t);
                     }
                     if (t != null)
                     {
@@ -2424,17 +2452,17 @@ public sealed partial class Battle
                     if (p.BulwarkT > 0)
                     {
                         // Turned back on whoever loosed it.
-                        pr.Owner = Side.Player; pr.Vx *= -1; pr.Vz *= -1; pr.Homing = 6; pr.Target = pr.OwnerId; pr.Age = 0;
+                        pr.Owner = Side.Player; pr.Vx *= -1; pr.Vz *= -1; pr.Homing = 6; pr.Target = Live(pr.OwnerLife)?.Id ?? -1; pr.TargetLife = pr.OwnerLife; pr.Age = 0;
                         pr.Tags = Reflected;
                         continue;
                     }
-                    var src = pr.OwnerId >= 0 ? Enemies.Items[pr.OwnerId] : null;
-                    double landed = HurtPlayer(Lamps.Board ? pr.Damage * BoardMissileMul() : pr.Damage, pr.School, pr.Art, src is { Alive: true } ? src : null, true);
+                    var src = Live(pr.OwnerLife);
+                    double landed = ShotHurt(pr, src);
                     // bulwark.turned_arrows: a blocked missile flies back at whoever loosed it.
                     if (lampBlocked && Lamp("turned_arrows") && src is { Alive: true })
                     {
                         lampBlocked = false;
-                        pr.Owner = Side.Player; pr.Vx *= -1; pr.Vz *= -1; pr.Homing = 6; pr.Target = pr.OwnerId; pr.Age = 0;
+                        pr.Owner = Side.Player; pr.Vx *= -1; pr.Vz *= -1; pr.Homing = 6; pr.Target = Live(pr.OwnerLife)?.Id ?? -1; pr.TargetLife = pr.OwnerLife; pr.Age = 0;
                         pr.Tags = Reflected;
                         continue;
                     }
@@ -2588,8 +2616,7 @@ public sealed partial class Battle
                 Events.Emit(new Ev.Explosion { X = pr.X, Z = pr.Z, Radius = r, School = pr.School, Power = 0.6 });
                 if (Dist(p.X, p.Z, pr.X, pr.Z) < r + p.Radius)
                 {
-                    var src = pr.OwnerId >= 0 ? Enemies.Items[pr.OwnerId] : null;
-                    HurtPlayer(Lamps.Board ? pr.Damage * BoardMissileMul() : pr.Damage, pr.School, pr.Art, src is { Alive: true } ? src : null, true);
+                    ShotHurt(pr, Live(pr.OwnerLife));
                 }
                 if (pr.GroundOnHit is { } g)
                 {
