@@ -71,10 +71,18 @@ public sealed class StrandDef
     public WickLeadIn[]? Lamps;
     public WickSuit[]? Suits;
 
+    /// <summary>A rule strand (a P7 tree read from skill_lamps.json, every lamp engine "rule" or "built"): each place's
+    /// effects (1-4 at [0]-[3]): rules the fight reads by id (Sim/WardenWicks.cs), an evolve the weapon becomes. Its
+    /// lead-ins carry no numbers; null on wicks.json's strands.</summary>
+    public WickRule[][]? Rules;
+
     public WickLeadIn[] LeadIns => Lamps is { Length: 3 } l ? l : Wicks.LeadInsOf(Kind);
     public TurnDef TurnDef => Wicks.Turn(Turn);
     public string LampId(int n) => $"{Id}.{n}";
 }
+
+/// <summary>A rule strand lamp's effect: a rule lit in the fight (its LampEffect), or the evolution it becomes.</summary>
+public sealed record WickRule(LampEffect? Rule, string? Evolve);
 
 public sealed class SkillWick
 {
@@ -106,10 +114,66 @@ public static class Wicks
         foreach (var (id, s) in f.Strands) s.Id = id;
         foreach (var w in f.Skills.Values)
             if (w.Own != null) foreach (var (id, s) in w.Own) s.Id = id;
+        RuleTrees(f, LampsData);
         return f;
     }
 
-    public static void Reload() { file = null; cards = null; }
+    /// <summary>The skills a rule tree, not wicks.json, gives a wick: in skill_lamps.json, absent from wicks.json, every
+    /// lamp engine "rule" or "built" (tools/classes/skill_lamps_check.py names them). Today Heroic Leap, Shield Charge,
+    /// Iron Vow and the Cleaver (SU-051).</summary>
+    public static bool IsRuleTree(string skill) => Of(skill)?.Own?.Values.Any(s => s.Rules != null) == true;
+
+    /// <summary>(SU-051) Each eligible skill's three strands as its own ("heroic_leap.quake"), its lamps' ids skill_lamps.json's
+    /// ("heroic_leap.quake.1"): lead-ins whose text is the lamp's name and sentence, a Turn named for the fourth lamp, and
+    /// each place's effects, which Turns.Build gathers and the fight lights as rules (Battle.SyncWickRules).</summary>
+    static void RuleTrees(File f, LampsFile data)
+    {
+        var bySkill = data.Lamps.Where(l => l.Skill != "").GroupBy(l => l.Skill).ToDictionary(g => g.Key, g => g.ToList());
+        foreach (var sk in data.Skills)
+        {
+            if (f.Skills.ContainsKey(sk.Id) || !bySkill.TryGetValue(sk.Id, out var lamps) || sk.Strands.Count != 3) continue;
+            if (lamps.Any(l => l.Engine is not ("rule" or "built"))) continue;
+            var own = new Dictionary<string, StrandDef>();
+            foreach (var st in sk.Strands)
+            {
+                var row = Enumerable.Range(1, PerStrand).Select(n => lamps.FirstOrDefault(l => l.Strand == st.Id && l.N == n)).ToArray();
+                if (row.Any(r => r == null)) { own.Clear(); break; }
+                string sid = $"{sk.Id}.{st.Id}";
+                var turn = row[PerStrand - 1]!;
+                f.Turns[sid] = new TurnDef { Id = sid, Name = turn.Name, Text = turn.Rule };
+                own[sid] = new StrandDef
+                {
+                    Id = sid, Turn = sid,
+                    Kind = st.Kind switch { "calling" => StrandKind.Calling, "shape" => StrandKind.Shape, "element" => StrandKind.School, _ => StrandKind.Bind },
+                    Lamps = row.Take(PerStrand - 1).Select(r => new WickLeadIn { Text = $"{r!.Name}: {r.Rule}" }).ToArray(),
+                    Rules = row.Select(r => r!.Effects.Select(e => RuleOf(r.Id, e)).Where(x => x != null).Select(x => x!).ToArray()).ToArray(),
+                };
+            }
+            if (own.Count != 3) continue;
+            f.Skills[sk.Id] = new SkillWick { Strands = own.Keys.ToArray(), Suggested = $"{sk.Id}.{sk.Suggested}", Own = own };
+        }
+    }
+
+    /// <summary>A lamp effect as the fight takes it: a rule with its numeric args (a "skill" word names its skill; a
+    /// "skill.status" rule's status kind), or an evolve's evolution.</summary>
+    static WickRule? RuleOf(string lamp, System.Text.Json.JsonElement e)
+    {
+        string d = e.TryGetProperty("do", out var dv) ? dv.GetString() ?? "" : "";
+        if (d == "evolve") return e.TryGetProperty("evolution", out var ev) ? new WickRule(null, ev.GetString()) : null;
+        if (d != "rule" || !e.TryGetProperty("rule", out var rv)) return null;
+        var fx = new LampEffect { Do = LampDo.Rule, Rule = rv.GetString(), Args = new Dictionary<string, double>(), Lamp = lamp };
+        if (e.TryGetProperty("args", out var args))
+            foreach (var a in args.EnumerateObject())
+            {
+                if (a.Value.ValueKind == System.Text.Json.JsonValueKind.Number) fx.Args[a.Name] = a.Value.GetDouble();
+                else if (a.Name == "skill") fx.Skill = a.Value.GetString();
+                else if (a.Name == "status" && fx.Rule == "skill.status" && a.Value.TryGetProperty("kind", out var k)
+                    && Enum.TryParse<StatusKind>(k.GetString(), true, out var kind)) fx.Status = kind;
+            }
+        return new WickRule(fx, null);
+    }
+
+    public static void Reload() { file = null; cards = null; lampsData = null; }
 
     /// <summary>A lamp's numbers for the level-up card when lighting it leaves the skill's blow as it was (M7a): what
     /// changes ("a heavy blow every"), before and after (swings). skill_lamps.json lamps[].card.</summary>
@@ -121,16 +185,25 @@ public static class Wicks
 
     sealed class LampRow
     {
-        public string Id = "", Name = "";
+        public string Id = "", Name = "", Skill = "", Strand = "", Engine = "";
+        /// <summary>The lamp's sentence (its spec).</summary>
+        public string Rule = "";
+        public int N;
         public LampCard? Card;
+        public List<System.Text.Json.JsonElement> Effects = new();
     }
 
-    sealed class LampsFile { public List<LampRow> Lamps = new(); }
+    sealed class StrandRow { public string Id = "", Name = "", Kind = ""; }
+    sealed class SkillRow { public string Id = "", Suggested = ""; public List<StrandRow> Strands = new(); }
+    sealed class LampsFile { public List<LampRow> Lamps = new(); public List<SkillRow> Skills = new(); }
+
+    static LampsFile? lampsData;
+    static LampsFile LampsData => lampsData ??= Json.Parse<LampsFile>(Json.ReadContent("skill_lamps.json"));
 
     static Dictionary<string, LampRow>? cards;
-    /// <summary>skill_lamps.json's lamps by full id ("sunder.stroke.1"): their names and card numbers. The rest of
-    /// that file the game does not read yet.</summary>
-    static Dictionary<string, LampRow> Rows => cards ??= Json.Parse<LampsFile>(Json.ReadContent("skill_lamps.json")).Lamps
+    /// <summary>skill_lamps.json's lamps by full id ("sunder.stroke.1"): their names and card numbers (and, for the rule
+    /// trees, their effects: RuleTrees).</summary>
+    static Dictionary<string, LampRow> Rows => cards ??= LampsData.Lamps
         .Where(r => r.Id != "").GroupBy(r => r.Id).ToDictionary(g => g.Key, g => g.First());
 
     /// <summary>A lamp's card numbers (skill_lamps.json lamps[].card) by its full id ("sunder.stroke.1"), or null.</summary>

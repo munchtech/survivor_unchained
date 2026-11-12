@@ -192,7 +192,11 @@ public partial class LampWick : Control
         rank = v.Rank;
         litIds = v.Lit;
         heldIds = v.Held;
+        noWick = v.NoWick;
     }
+
+    /// <summary>(SU-051) The skill has no strands: the panel says so (WickBook.NoWickText). Plain; its look is the UI lead's.</summary>
+    bool noWick;
 
     string Held => !Night && Skill != null && WickBook.Held(ch, Skill) is > 0 and var h ? $" · {h} held" : "";
     string Id(int r, int c) => r < strands.Count ? strands[r].LampId(c + 1) : "";
@@ -399,6 +403,7 @@ public partial class LampWick : Control
             LampInk.Text(ci, fs, 14, X0 + Pad, Y0 + 177, $"{plan.Count} planned" + Held, LampInk.Dim);
         }
         else LampInk.Text(ci, fs, 14, X0 + Pad, Y0 + 160, $"{litIds.Length} of {Wicks.LampCount} lit · {plan.Count} planned" + Held, LampInk.Dim);
+        if (noWick) { LampInk.Text(ci, fs, 16, Lx0, Row0, WickBook.NoWickText, LampInk.Dim); return; }
         // the stem: up from the chosen tab, a 20 px bend, into the braid's knot
         var knot = new Vector2(Kx, Row0 + PitchY);
         DrawStem(ci, knot);

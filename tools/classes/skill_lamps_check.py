@@ -112,6 +112,18 @@ def main():
             probs.append(f"{uid}: engine '{u.get('engine')}'")
         check_text(uid, u["name"], u["rule"], banned, seen_names, probs)
 
+    # (SU-051) A skill wicks.json leaves out gets its wick from this file (Content/Wicks.cs RuleTrees): every lamp there
+    # must be engine "rule" or "built" and do a rule or an evolve, or the game would carry it with no wick.
+    wicks_txt = (CONTENT / "wicks.json").read_text(encoding="utf-8")
+    in_wicks = set(re.findall(r'^\s*"(\w+)"\s*:\s*\{\s*"strands"', wicks_txt, re.M))
+    rule_trees = []
+    for sid in heads:
+        if sid in in_wicks:
+            continue
+        rule_trees.append(sid)
+        for l in (l for l in d["lamps"] if l.get("skill") == sid):
+            if l.get("engine") not in ("rule", "built") or any(e.get("do") not in ("rule", "evolve") for e in l.get("effects", [])):
+                probs.append(f"{l['id']}: not in wicks.json, so its tree is wired from here: needs engine rule/built and rule/evolve effects")
     kw = d.get("keywords", {})
     if not kw or not all(isinstance(v, str) and v and "\n" not in v for v in kw.values()):
         probs.append("keywords: needs one line for each keyword")
@@ -121,7 +133,7 @@ def main():
         for p in probs:
             print("  " + p)
         return 1
-    print(f"skill_lamps_check: OK: {len(heads)} skills ({sum(1 for h in heads.values() if h.get('partial'))} partial), {nl} lamps, {len(d['unions'])} unions; parents, Turns, costs, kinds, unique ids and names, no bare-percent line, no barrier or mend too small to feel, blow-fed barriers bounded, Stones reachable, keywords")
+    print(f"skill_lamps_check: OK: {len(heads)} skills ({sum(1 for h in heads.values() if h.get('partial'))} partial), {nl} lamps, {len(d['unions'])} unions; parents, Turns, costs, kinds, unique ids and names, no bare-percent line, no barrier or mend too small to feel, blow-fed barriers bounded, Stones reachable, keywords; wired from here: {', '.join(sorted(rule_trees))}")
     return 0
 
 
