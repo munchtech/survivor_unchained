@@ -23,9 +23,15 @@ public static partial class Sfx
 
     /* ------------------------------------------------------------ combat -- */
 
-    public static void Hit(School school, bool crit, Where w = default, Family? family = null)
+    /// <summary>Her heavy blow: a crit, or a hit of at least a third of the target's life, with her weapon, not a status tick or a Flare.
+    /// The one place the rule lives (ARPG_FUN 15): these cut through the crowd (Synth's crowd sidechain).</summary>
+    public static bool LeadHit(Ev.Hit h) => LeadRule.Heavy(h);
+
+    public static void Hit(School school, bool crit, Where w = default, Family? family = null, bool lead = false)
     {
-        if (A is not { } a || !a.Gate("hit", 7, 70)) return;
+        // (A lead hit has its own gate, so the crowd's hits can never take its slot.)
+        if (A is not { } a || !(lead ? a.Gate("hit.lead", 3, 60) : a.Gate("hit", 5, 70))) return;
+        using var _lead = Synth.LeadFor(lead);
         double pan = w.Pan, g = 0.5 + 0.5 * w.Near;
         // Recorded blows first: a physical blow by what it struck (hit.bone.crit, hit.bone, hit.flesh), the rest by school.
         // The crit's ring stays unless hit.crit is banked.
@@ -105,8 +111,11 @@ public static partial class Sfx
 
     public static void Kill(Family family, bool elite, bool boss, Where w = default, bool burst = false)
     {
+        using var _lead = Synth.LeadFor(elite || boss);
         // (A boss's fall is never lost to the crowd's gate: it falls with its escort, often in the same blow.)
-        if (A is not { } a || !boss && !a.Gate("kill", 5, 90)) return;
+        // (F1 lead 18: a crowd going down is told by its first three a breath, as its light is (BattleFx killBudget); at five a
+        // breath the crowd's falls sat level with her heavy blow in the hit band, 32 dying a second, f1_feel_b)
+        if (A is not { } a || !boss && !(elite ? a.Gate("kill.elite", 3, 90) : a.Gate("kill", 3, 90))) return;
         double pan = w.Pan, g = 0.5 + 0.5 * w.Near;
         // Recorded: what fell by its material (a burst, if it was one), and on top of it, never in its place, the elite's or the boss's.
         string m = SoundBank.MaterialOf(family);
@@ -148,6 +157,7 @@ public static partial class Sfx
 
     public static void Hurt(double amount)
     {
+        using var _lead = Synth.LeadFor(true);
         if (A is not { } a || !a.Gate("hurt", 2, 160)) return;
         if (Bank("hurt", null, gated: false)) return;
         double k = Math.Min(1, amount / 30);
@@ -422,6 +432,7 @@ public static partial class Sfx
     /// a sound lead: each tier its own, the rarer the longer it rings, and none heard twice a second.</summary>
     public static void Drop(int tier, Where w = default)
     {
+        using var _lead = Synth.LeadFor(tier >= 2);
         if (A is not { } a || !a.Gate($"drop{tier}", 1, 500)) return;
         if (Bank($"drop.{tier}", w, gated: false)) return;
         double pan = w.Pan, g = 0.6 + 0.4 * w.Near;
@@ -476,11 +487,13 @@ public static partial class Sfx
     /// rising shimmer after. Faint: the reminder while it lies untaken.</summary>
     public static void Toll(bool storied = false, bool faint = false)
     {
+        using var _lead = Synth.LeadFor(true);
         if (A is not { } a || !a.Gate("toll", 1, faint ? 4000 : 900)) return;
         double g = faint ? 0.35 : 1;
         // The hush is the music's and the world's, never the fight's (combat: a warning under a duck is
         // a blow unheard). On the interface's bus, so the toll carries over the horde.
         if (!faint) a.DuckBeds(0.35f, 1.2);
+        if (storied && !faint && Bank("toll.storied", null, g, gated: false)) return;
         if (Bank("toll", null, g, gated: false)) return;
         a.Play(new Tone { F = 55, A = 0.004, D = 0.6, G = 0.12 * g, Lp = 300, Bus = Bus.Ui });
         a.Play(new Fm { F = 98, Ratio = 2.76, Index = 3, A = 0.004, D = 6, G = 0.12 * g, Verb = 0.8, Bus = Bus.Ui });

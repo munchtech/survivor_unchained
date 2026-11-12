@@ -36,6 +36,9 @@ public partial class BattleFx
     static Texture2D?[]? wgAlb, wgNrm, wgEmi;
     /// <summary>The crack's centre across the strip (m) in 256 steps along its 24 m (crack.json centre_m).</summary>
     static float[]? wgOff;
+    /// <summary>Largest side of any ground slab, m (was 0.9-1.4 m long x 1.3 wide, up to ~2 m); and the floor of their albedo (linear).</summary>
+    const float WgSlabMax = 0.6f;
+    static readonly Color WgSlabLit = new Color(0.30f, 0.26f, 0.22f);
     static Mesh[]? wgChunks, wgSlabs;
     static float[]? wgChunkLen, wgSlabLen;
 
@@ -156,7 +159,7 @@ public partial class BattleFx
         }
         for (int i = 0; i < WgDecalPool; i++)
         {
-            var d = new Decal { UpperFade = 0.3f, LowerFade = 0.3f, CullMask = 1, NormalFade = 0.3f, Visible = false };
+            var d = new Decal { UpperFade = 0.3f, LowerFade = 0.3f, CullMask = 1, NormalFade = 0.3f, Visible = false, SortingOffset = DecalLayer.HerGround };
             AddChild(d);
             wgDecals.Add(new WgDecal { D = d });
         }
@@ -292,7 +295,9 @@ public partial class BattleFx
                 if (m.SurfaceGetMaterial(si) is BaseMaterial3D bm)
                 {
                     var t = (BaseMaterial3D)bm.Duplicate();
-                    t.AlbedoColor = bm.AlbedoColor * new Color(1.75f, 1.62f, 1.45f);
+                    var pale = bm.AlbedoColor * new Color(1.75f, 1.62f, 1.45f);
+                    // (F1 lead 24: the dark rock paint left them near black in the dim arena; lifted to a lit earth floor)
+                    t.AlbedoColor = new Color(Mathf.Max(pale.R, WgSlabLit.R), Mathf.Max(pale.G, WgSlabLit.G), Mathf.Max(pale.B, WgSlabLit.B), pale.A);
                     m.SurfaceSetMaterial(si, t);
                 }
             return m;
@@ -335,8 +340,9 @@ public partial class BattleFx
             // (twin: the second of a pair takes a different run of the strip)
             int t0 = wgEnds.Count(x => x.At == time) > 1 ? 1 : 0;
             int n = Math.Clamp((int)Mathf.Round(len / 1.7f), 2, 6);
-            WgCrack(from, dir, len, t0, n, 1.05f, travel, 2.6f, night, true);
-            wgTips.Add(new WgTip { From = from, Dir = dir, Side = new Vector2(-dir.Y, dir.X), Len = len, Across = 1.05f, Travel = travel, T0 = t0, N = n });
+            float hAcross = WgHeavyAcross(from, dir, len, t0, n, 1.05f, out wgLastGapPx);
+            WgCrack(from, dir, len, t0, n, hAcross, travel, 2.6f, night, true);
+            wgTips.Add(new WgTip { From = from, Dir = dir, Side = new Vector2(-dir.Y, dir.X), Len = len, Across = hAcross, Travel = travel, T0 = t0, N = n });
             Cam?.AddTrauma(0.05f);
         }
         else
@@ -344,6 +350,7 @@ public partial class BattleFx
             wgLines++;
             if (WgBeats && !wgSlShot && time > WgSlAfter) { wgSlShot = true; foreach (var f in new[] { 3, 5, 10, 30 }) Shots.WantFrames($"sl_f{f}", f); GD.Print($"[wg-beats] line {wgLines} len {len:F1} from {from.X:F2},{from.Y:F2} dir {dir.X:F2},{dir.Y:F2} scr {WgScr(from.X, from.Y)} -> {WgScr(to.X, to.Y)} her {b0?.Player.X:F2},{b0?.Player.Z:F2} t={time:F2}"); }
             bool sear = b0?.Lamps is { } lp && lp.Has("sunder.burning_edge");
+            WgHeavyAcross(from, dir, len, 4, 6, (float)Args.Num("wg-line-across", 1.6f), out wgLastGapPx); // (the trace's gap only)
             // Tiles 4-9 (1.6x across: its dark gap 25-32 px at her end, ~10 px at the tip) over the line.
             WgCrack(from, dir, len, 4, 6, (float)Args.Num("wg-line-across", 1.6f), travel, 1.8f, night, false, sear);
             Cam?.AddTrauma(0.125f); // (shake goes as trauma squared: ~40% of Groundbreaker's ~0.2)
@@ -354,6 +361,7 @@ public partial class BattleFx
             float half = (float)e.Width * 0.5f;
             var items = b0.Enemies.Items;
             int kits = 0;
+            var land = new WgLanding { GapPx = wgLastGapPx };
             for (int i = 0; i < items.Length; i++)
             {
                 var en = items[i];
@@ -369,7 +377,8 @@ public partial class BattleFx
                 float kd = Mathf.Clamp(along / len, 0, 1) * travel;
                 wgHitAt[id] = time + kd;
                 WgHoldDeath(en, time + kd);
-                WgLater(kd, () => WgKit(id, awayDir, full));
+                land.Left++;
+                WgLater(kd, () => WgKit(id, awayDir, full, land));
             }
         }
         return true;
@@ -415,14 +424,16 @@ public partial class BattleFx
             WgHeaveNow(x, z, r, after);
             var c = new Vector2((float)x, (float)z);
             int kits = 0;
+            var land = new WgLanding { Left = ids.Count, GapPx = wgLastGapPx };
             foreach (var id in ids)
             {
                 var en = b0?.Enemies.Items[id];
                 var p = en != null ? new Vector2((float)en.X, (float)en.Z) : c;
                 var away = p - c;
                 away = away.LengthSquared() > 0.01f ? away.Normalized() : Vector2.Right;
-                WgKit(id, new Vector3(away.X, 0, away.Y), kits++ < (after ? 3 : 6));
+                WgKit(id, new Vector3(away.X, 0, away.Y), kits++ < (after ? 3 : 6), land);
             }
+            if (ids.Count == 0 && !after) WgLandTrace(land);
         });
     }
 
@@ -499,6 +510,34 @@ public partial class BattleFx
     double WgDeathLag(int id, double seed) =>
         wgDieHold.Count > 0 && wgDieHold.TryGetValue(id, out var h) && h.Seed == seed ? h.Lag : 0;
 
+    /// <summary>How long until the view's line or heave lands on this body (s; 0: it has, or none): its local hit-stop
+    /// waits for it (WorldScene), so a delayed kill holds when it is struck, not while it still stands (F1 judge r2: at
+    /// 9026 the 25 felled held 90 ms standing, invisible, and fell 233 ms later).</summary>
+    public double WgLate(int id)
+    {
+        double late = 0;
+        if (wgDieHold.Count > 0 && b0 != null && id >= 0 && id < b0.Enemies.Capacity && wgDieHold.TryGetValue(id, out var h)
+            && h.Seed == b0.Enemies.Items[id].Seed) late = h.Until - time;
+        if (wgHitAt.Count > 0 && wgHitAt.TryGetValue(id, out var at)) late = Math.Max(late, at - time);
+        return Math.Max(0, late);
+    }
+
+    /// <summary>A drop lying at a body whose death still waits for the view's blow is not drawn until the blow lands:
+    /// the glow, the number and the fall start together (F1 judge r2: the 25 stood 233 ms with their embers lit).</summary>
+    bool WgHidesDrop(double x, double z)
+    {
+        if (wgDieHold.Count == 0 || b0 == null) return false;
+        foreach (var (id, h) in wgDieHold)
+        {
+            if (h.Until <= time + 0.001 || id < 0 || id >= b0.Enemies.Capacity) continue;
+            var en = b0.Enemies.Items[id];
+            if (en.Seed != h.Seed) continue;
+            double dx = en.X - x, dz = en.Z - z;
+            if (dx * dx + dz * dz < 1.0) return true;
+        }
+        return false;
+    }
+
     /// <summary>How long this kill's fx wait for the view's blow (0: now).</summary>
     float WgKillWait(Ev.Kill e) =>
         wgDieHold.Count > 0 && b0 != null && e.Enemy >= 0 && e.Enemy < b0.Enemies.Capacity && wgDieHold.TryGetValue(e.Enemy, out var h)
@@ -552,7 +591,8 @@ public partial class BattleFx
                 WgDecalOn(pos, theta, new Vector3(w, 1.6f, b), wgAlb![tile], wgNrm![tile], null, life, 1f, 0, 0, 0, heavy ? null : WgLineTint);
                 // The hot edge: this tile's first 4 frames, dull orange; by night held low (never clipping).
                 // Sunder's: a #FF8A3A core held 10 frames, then cooling over 12 (burning_edge: over 1.2 s).
-                if (heavy) WgDecalOn(pos, theta, new Vector3(w, 1.6f, b), null, null, wgEmi![tile], 4 / 60f, 1f, night ? 0.7f : 1.3f, 0);
+                // F1 lead 26: Groundbreaker's edge too, held 10 frames then cooling over 12 (it read a dark 2 px line).
+                if (heavy) WgDecalOn(pos, theta, new Vector3(w, 1.6f, b), null, null, wgEmi![tile], 10 / 60f + 12 / 60f, 1f, night ? 1.1f : 2.2f, 0, 10 / 60f, WgCore);
                 else WgDecalOn(pos, theta, new Vector3(w, 1.6f, b), null, null, wgEmi![tile], 10 / 60f + (sear ? 1.2f : 12 / 60f), 1f, night ? 1.1f : 2.2f, 0, 10 / 60f, WgCore);
             });
         }
@@ -598,6 +638,63 @@ public partial class BattleFx
                 WgThrow(p + Vector3.Up * 0.05f, v, (heavy ? 0.75f : 0.6f) + R() * 0.45f, 1.5f + R() * 0.5f);
             });
         }
+    }
+
+    /// <summary>F1 lead 26: the `across` for Groundbreaker's crack so its dark gap (crack.json's gap width at the tile, times
+    /// `across`) draws at least `WgMinGapPx` px at the play camera on every tile; never narrower than `across` itself,
+    /// never wider than 3x. `gapPx` is the narrowest tile's gap at the returned width.</summary>
+    float WgHeavyAcross(Vector2 from, Vector2 dir, float len, int t0, int n, float across, out float gapPx)
+    {
+        float seg = len / n, need = across;
+        var px = new float[n]; var gap = new float[n];
+        for (int i = 0; i < n; i++)
+        {
+            var c = from + dir * (seg * (i + 0.5f));
+            px[i] = P7Px(V(c.X, Y(c.X, c.Y), c.Y));
+            gap[i] = Mathf.Max(0.02f, WgGap((Mathf.Clamp(t0 + i, 0, 11) + 0.5f) / 12f));
+            need = Mathf.Max(need, WgMinGapPx * px[i] / gap[i]);
+        }
+        need = Mathf.Min(need, 3f);
+        gapPx = float.MaxValue;
+        for (int i = 0; i < n; i++) gapPx = Mathf.Min(gapPx, gap[i] * need / px[i]);
+        return need;
+    }
+
+    const float WgMinGapPx = 7f; // (6 wanted; 1 px for the texture's soft edge)
+    const int WgKickCap = 16;
+    float wgLastGapPx;
+
+    /// <summary>One crack's landing on the felled: kicks so far, the narrowest kick (px), whether its flash is lit.</summary>
+    sealed class WgLanding { public int Kicks, Left; public float MinPx = float.MaxValue; public bool Flashed; public float Flash; public float GapPx; }
+
+    /// <summary>F1 lead 26: a chip and dust kick under a felled body, at least 40 px across at the play camera.</summary>
+    void WgFelledKick(Vector3 g, Vector3 away, WgLanding land)
+    {
+        float spread = 40f * P7Px(g) * 1.2f;
+        float a0 = R() * Mathf.Tau;
+        for (int i = 0; i < 4; i++)
+        {
+            float a = a0 + i * Mathf.Tau / 4 + (R() - 0.5f) * 0.5f;
+            var o = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
+            WgPuff(g + o * spread * 0.3f + Vector3.Up * 0.08f, o * 0.8f + Vector3.Up * 0.5f, spread * 0.45f, 1.5f, 0.32f, WgDust(0.9f + R() * 0.15f), 0.6f, 2.6f);
+        }
+        ChipPuff(g + Vector3.Up * 0.35f, away, 2);
+        for (int i = 0; i < 3; i++)
+            WgThrow(g + Vector3.Up * 0.05f, new Vector3(R() - 0.5f, 0, R() - 0.5f) * 2.2f + away * 0.6f + Vector3.Up * (2.2f + R() * 1.2f), 0.4f + R() * 0.25f, 1.1f + R() * 0.4f);
+        land.Kicks++;
+        land.MinPx = Mathf.Min(land.MinPx, (0.6f * spread + spread * 0.45f) / P7Px(g));
+        if (!land.Flashed)
+        {
+            land.Flashed = true;
+            land.Flash = Flare.Night ? 2.0f : 3.0f;
+            Flash(g + Vector3.Up * 0.3f, new Color("#ff9a40"), land.Flash, 0.2f, 1.3f);
+        }
+    }
+
+    void WgLandTrace(WgLanding land)
+    {
+        if (!WgBeats && !Args.Has("mass-trace")) return;
+        GD.Print($"[crack-trace] f={Engine.GetFramesDrawn()} gap_px={land.GapPx:F1} edge_frames={22} kicks={land.Kicks} kick_px={(land.Kicks > 0 ? land.MinPx : 0):F0} flash_e={land.Flash:F2}");
     }
 
     /// <summary>The crack's own centre at `along` (m) on a crack laid from tiles t0..t0+n-1.</summary>
@@ -780,6 +877,8 @@ public partial class BattleFx
     {
         var rk = WgRockNext();
         if (rk == null || wgSlabs == null) return;
+        // (F1 lead 24: the largest side of a slab, widening included, never passes WgSlabMax, so they stay smaller than a wolf)
+        len = Mathf.Min(len, WgSlabMax / Mathf.Max(1f, wide));
         int m = (int)(R() * wgSlabs.Length * 0.999f);
         rk.N.Mesh = wgSlabs[m];
         var outw = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
@@ -1020,15 +1119,19 @@ public partial class BattleFx
 
     /* ------------------------------------------------------------ bodies -- */
 
-    void WgKit(int id, Vector3 away, bool full)
+    void WgKit(int id, Vector3 away, bool full, WgLanding? land = null)
     {
-        if (b0 == null || id < 0 || id >= b0.Enemies.Capacity) return;
+        if (land != null) land.Left--;
+        if (b0 == null || id < 0 || id >= b0.Enemies.Capacity) { if (land is { Left: <= 0 }) WgLandTrace(land); return; }
         var en = b0.Enemies.Items[id];
-        if (en == null) return;
+        if (en == null) { if (land is { Left: <= 0 }) WgLandTrace(land); return; }
         var (gx, gz) = CrowdView.Placed?.Invoke(en) ?? (en.X, en.Z);
         var at = V(gx, Y(gx, gz) + 1.0, gz);
         HitKit(at, away, BashSpark, 1f, false, full, away + Vector3.Up * 0.3f, id);
         if (full) ChipPuff(at + Vector3.Down * 0.6f, away, 1);
+        // F1 lead 26: EVERY felled body gets its kick on its landing frame (16 a crack), not just the first 6.
+        if (land != null && en.State == EnemyState.Dying && land.Kicks < WgKickCap) WgFelledKick(V(gx, Y(gx, gz) + 0.05, gz), away, land);
+        if (land is { Left: <= 0 }) WgLandTrace(land);
     }
 
     /* ------------------------------------------------------------- step -- */

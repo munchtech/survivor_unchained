@@ -61,7 +61,7 @@ public sealed class SoundBridge
             switch (e)
             {
                 case Ev.Hit h when !h.Dot:
-                    if (h.Blocked) Sfx.Blocked(At(h.X, h.Z)); else { Sfx.Hit(h.School, h.Crit, At(h.X, h.Z), h.Family); Sfx.HitOf(h.Art, At(h.X, h.Z)); }
+                    if (h.Blocked) Sfx.Blocked(At(h.X, h.Z)); else { bool lead = Sfx.LeadHit(h); Sfx.Hit(h.School, h.Crit, At(h.X, h.Z), h.Family, lead); Sfx.HitOf(h.Art, At(h.X, h.Z), lead); }
                     break;
                 case Ev.Kill k when k.Def != "mirror":
                     Sfx.Kill(k.Family, k.Elite, k.Boss, At(k.X, k.Z), k.Burst);

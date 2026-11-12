@@ -104,17 +104,15 @@ public partial class InventoryScreen : Overlay
     string? sel;
     bool filterOpen;
 
-    /// <summary>Where each thing is worn on the doll: the left column, then the right, staggered.</summary>
+    /// <summary>Where each thing is worn on the doll: the body's pieces down the left, head to feet; the jewels,
+    /// the hands and what is held down the right, staggered. Every EquipSlot has a place (EquipPlacesTests);
+    /// the names and glyphs are Items.Places. (Layout functional, 15 places since SU-040; the look is the UI lead's.)</summary>
     static readonly (EquipSlot Slot, bool Right, float Y)[] Doll =
     {
-        // (the first places sit level with the carried grid's first row, so the two halves share a line)
-        (EquipSlot.Head, false, 36), (EquipSlot.Cloak, false, 122), (EquipSlot.Body, false, 208), (EquipSlot.Relic, false, 294),
-        (EquipSlot.Amulet, true, 58), (EquipSlot.Weapon, true, 144), (EquipSlot.Offhand, true, 230), (EquipSlot.Ring1, true, 316), (EquipSlot.Ring2, true, 402),
-    };
-    public static readonly Dictionary<EquipSlot, (string Name, string Glyph)> Slots = new()
-    {
-        [EquipSlot.Weapon] = ("Weapon", "sword"), [EquipSlot.Offhand] = ("Off-hand", "shield"), [EquipSlot.Head] = ("Head", "helm"), [EquipSlot.Body] = ("Body", "armor"),
-        [EquipSlot.Cloak] = ("Cloak", "cloak"), [EquipSlot.Amulet] = ("Amulet", "amulet"), [EquipSlot.Ring1] = ("Ring", "ring"), [EquipSlot.Ring2] = ("Ring", "ring"), [EquipSlot.Relic] = ("Relic", "relic"),
+        (EquipSlot.Head, false, 8), (EquipSlot.Shoulders, false, 63), (EquipSlot.Cloak, false, 118), (EquipSlot.Body, false, 173),
+        (EquipSlot.Bracers, false, 228), (EquipSlot.Belt, false, 283), (EquipSlot.Legs, false, 338), (EquipSlot.Feet, false, 393),
+        (EquipSlot.Amulet, true, 35), (EquipSlot.Weapon, true, 90), (EquipSlot.Offhand, true, 145), (EquipSlot.Hands, true, 200),
+        (EquipSlot.Ring1, true, 255), (EquipSlot.Ring2, true, 310), (EquipSlot.Relic, true, 365),
     };
 
     // What has been looked at this session: anything else carried is marked new.
@@ -162,13 +160,11 @@ public partial class InventoryScreen : Overlay
     /* --------------------------------------------------------- the doll -- */
 
     // (as tall as the column of what she carries beside it, so neither leaves an empty strip above the prompts)
-    const int DollW = 352, DollH = 468, SlotS = 64;
+    const int DollW = 352, DollH = 468, SlotS = 52;
 
     /// <summary>The kit looked at (by day or by night, crafting's design 20.2); null: the one worn now.</summary>
     static KitKind? kitShown;
     KitKind KitLooked => kitShown ?? Kits.On(Ch);
-    /// <summary>Looking at the kit not worn now: what is put on or taken off goes into that one.</summary>
-    bool OtherKit => Kits.Shown(Ch) && KitLooked != Kits.On(Ch);
 
     Control DollView(CharacterData ch)
     {
@@ -207,9 +203,10 @@ public partial class InventoryScreen : Overlay
         {
             var it = two ? Kits.Piece(ch, kit, s) : ch.Equipment[s];
             bool asDay = two && kit == KitKind.Night && it != null && !Kits.HasOwn(ch, KitKind.Night, s);
-            var (name, glyph) = Slots[s];
+            var (name, glyph) = Items.Places[s];
             var slot = s;
-            Action? off = it != null && slot != EquipSlot.Weapon && !asDay ? () => TakeOff(slot) : null;
+            var piece = it;
+            Action? off = piece != null && slot != EquipSlot.Weapon && !asDay ? () => TakeOff(piece.Uid) : null;
             var view = ItemViews.Slot(it, SlotS, it != null && it.Uid == sel, null, false, it != null ? () => Select(it.Uid) : null, off,
                 over => Hover(it, over), glyph, name, $"eq:{slot}", null, false, false, false, ch, engraved: true);
             view.Position = new Vector2(right ? DollW - SlotS - 6 : 6, y);
@@ -223,18 +220,15 @@ public partial class InventoryScreen : Overlay
         return holder;
     }
 
-    /// <summary>Worn in the kit looked at (the one on now, or the other).</summary>
+    /// <summary>Worn in the kit looked at (the one on now, or the other): Journey.PutOn decides the kit (SU-037).</summary>
     void PutOn(string uid, EquipSlot? slot)
     {
-        if (OtherKit) { var k = KitLooked; G.Gear((j, b) => j.EquipKit(uid, k, slot, b)); }
-        else G.Gear((j, b) => j.Equip(uid, slot, b));
+        var k = KitLooked;
+        G.Gear((j, b) => j.PutOn(uid, k, slot, b));
     }
 
-    void TakeOff(EquipSlot slot)
-    {
-        if (OtherKit) { var k = KitLooked; G.Gear((j, b) => j.UnequipKit(k, slot, b)); }
-        else G.Gear((j, b) => j.Unequip(slot, b));
-    }
+    /// <summary>Taken off the kit the piece belongs to (Kits.Of, in Journey.TakeOff), whichever kit is on.</summary>
+    void TakeOff(string uid) => G.Gear((j, b) => j.TakeOff(uid, b));
 
     /// <summary>The survivor drawn live, on a pool of ember light.</summary>
     public static Control Figure(CharacterData ch, int w = 420, int h = 620)
@@ -361,8 +355,9 @@ public partial class InventoryScreen : Overlay
             else if (d.StartsWith("eq:"))
             {
                 var parts = d.Split(':');
-                if (!Enum.TryParse<EquipSlot>(parts[1], out var slot)) return;
-                G.Gear((j, b) => j.Unequip(slot, b));
+                if (parts.Length < 3) return;
+                // (off the kit it was dragged from: the uid names it, whichever kit is on)
+                TakeOff(parts[2]);
                 // Into the place it was dropped on, if that is free.
                 if (ch.Pack[i] == null && Inventory.Find(ch, parts[2]) is { InPack: true } at && at.Index != i)
                 {
@@ -501,7 +496,7 @@ public partial class InventoryScreen : Overlay
         var loc = Inventory.Find(Ch, it.Uid);
         if (loc == null) return;
         var def = Items.Get(it.Def);
-        if (loc.Worn) { if (loc.Slot != EquipSlot.Weapon) G.Gear((j, b) => j.Unequip(loc.Slot, b)); else Sound.Sfx.Deny(); return; }
+        if (Kits.Of(Ch, it.Uid) is { } k) { if (k is not (KitKind.Day, EquipSlot.Weapon)) TakeOff(it.Uid); else Sound.Sfx.Deny(); return; }
         if (def.Kind == ItemKind.Consumable) G.Gear((j, b) => j.Use(it.Uid, b));
         else if (Items.SlotFor(def) != null) { Sound.Sfx.Equip(); PutOn(it.Uid, null); }
         else Sound.Sfx.Deny();

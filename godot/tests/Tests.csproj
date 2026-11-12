@@ -15,6 +15,8 @@
     <Compile Include="../balance/Harness/**/*.cs" LinkBase="balance" />
     <!-- The Lamps board's geometry (plain C#; src/Ui/LampBoard.cs draws it). -->
     <Compile Include="../src/Audio/SoundBankData.cs" LinkBase="src" />
+    <Compile Include="../src/Audio/LeadRule.cs" LinkBase="src" />
+    <Compile Include="../src/Fx/HitStopClassifier.cs" LinkBase="src" />
     <Compile Include="../src/Ui/LampBoardModel.cs" LinkBase="src" />
     <Compile Include="../src/Ui/LampNav.cs" LinkBase="src" />
     <Compile Include="../src/Ui/LampAsk.cs" LinkBase="src" />
@@ -26,6 +28,8 @@
     <Compile Include="../src/Ui/LevelCardModel.cs" LinkBase="src" />
     <Compile Include="../src/Ui/GlyphPaths.cs" LinkBase="src" />
     <Compile Include="../src/Fx/HitsPlace.cs" LinkBase="src" />
+    <Compile Include="../src/Fx/FeelRules.cs" LinkBase="src" />
+    <Compile Include="../src/Fx/TeleRank.cs" LinkBase="src" />
     <Compile Include="../src/Ui/SeatCostModel.cs" LinkBase="src" />
     <Compile Include="../src/Ui/RoadKeep.cs" LinkBase="src" />
   </ItemGroup>

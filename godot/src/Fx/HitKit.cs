@@ -10,7 +10,7 @@ namespace SurvivorUnchained.View;
 /// along the blow (one pooled spark batch, never a node per hit; capped per swing);
 /// the struck rim is the crowd's own (CrowdView: Battle sets the body's Flash, the
 /// VAT shader lights its rim and decays it in a few frames); and a 2 to 3 frame
-/// hitstop on the first hit of a swing only (WorldScene asks FirstHitStop).
+/// hitstop on the first hit of a swing only (local hit-stop: Look/HitStop, classes in HitStopClassifier).
 ///
 /// The Oathblade's sweep beats (dev only, --aa-beats): on her 3rd, 5th and 7th
 /// swing a frame at +1 and +3 drawn frames and one as the first hit's hitstop
@@ -19,14 +19,7 @@ namespace SurvivorUnchained.View;
 public partial class BattleFx
 {
     /// <summary>The Oathblade and its evolutions (skills.json oathblade: slash_steel, slash_holy, slash_blood).</summary>
-    public static bool IsOath(string? art) => art is "slash_steel" or "slash_holy" or "slash_blood";
-
-    /// <summary>The hitstop a blow asks for as the first hit of its swing (seconds; 0 none) and how long after
-    /// the blow it lands: the sweep is revealed over its first 2 frames (OathReveal), so 0.03 s on, the blade
-    /// has passed every body it struck and their flash, streaks, glint and rim are up when the frame holds.
-    /// Her auto-attacks' arts only: the Disc and Shield Bash add theirs here.</summary>
-    public static (double Len, double Delay) FirstHitStop(Ev.Hit h) =>
-        h.Dot || h.ByFlare || h.Blocked ? (0, 0) : IsOath(h.Art) ? (0.042, 0.03) : (0, 0);
+    public static bool IsOath(string? art) => SurvivorUnchained.Look.HitStopClassifier.IsOath(art);
 
     /* ------------------------------------------------------- the sweep -- */
 
@@ -91,6 +84,12 @@ public partial class BattleFx
     int oathPoolNext;
     /// <summary>The pool's energy scale (dev: --aa-pool K; 0 for the before frames).</summary>
     static readonly float PoolScale = Args.Num("aa-pool", 1f);
+    /// <summary>The pool's widest reach (metres), when the body it lands on stands far enough from her (HitLightFit).</summary>
+    const float PoolRange = 2.5f;
+    /// <summary>F1 lead 24 (victim flash): on a struck body the pool made a clipped-white disc about 150 px across round a lone
+    /// heavy's victim at night. Capped there: reach 1.3 m (one wolf length at the game camera), energy 2.0 at night (was 4.6;
+    /// by day the same ratio, 3.04, was 7). Color and timing as before.</summary>
+    const float PoolStruckRange = 1.3f, PoolStruckNight = 2.0f, PoolStruckDay = 2.0f * 7f / 4.6f;
 
     /// <summary>The sweep's light on the ground: an unshadowed omni 0.3 m up at the arc's middle, 2.5 m in range,
     /// about +50% on the ground under it at night, a warming of the grass by day.</summary>
@@ -99,15 +98,59 @@ public partial class BattleFx
         int i = oathPoolNext++ % OathPools;
         if (oathPools[i] == null)
         {
-            oathPools[i] = new OmniLight3D { OmniRange = 2.5f, OmniAttenuation = 1.2f, ShadowEnabled = false, LightSpecular = 0.2f, Visible = false };
+            oathPools[i] = new OmniLight3D { OmniRange = PoolRange, OmniAttenuation = 1.2f, ShadowEnabled = false, LightSpecular = 0.2f, Visible = false };
             AddChild(oathPools[i]);
         }
         var l = oathPools[i]!;
-        l.Position = at;
-        l.LightColor = hue;
+        // (F1 r1: a hit light, by the rule (HitLightFit, HitLightMask): 2.5 m round the arc's middle, 1.3 m out, it lit
+        // the ground white under her and her with it at every heavy's hold; now off her, its footprint short of her)
+        l.LightCullMask = HitLightMask;
         oathPoolEnergy[i] = (Flare.Night ? 4.6f : 7f) * PoolScale;
+        // (its blow's contact, when the hit came before the swing in the frame's events: onto that body at once)
+        bool struck = oathContactFrame == Engine.GetFramesDrawn();
+        if (struck) oathPoolEnergy[i] = (Flare.Night ? PoolStruckNight : PoolStruckDay) * PoolScale;
+        PlaceOathPool(i, struck ? OnGround(oathContact) : at, struck);
+        l.LightColor = hue;
         oathPoolAge[i] = 0;
+        oathPoolLast = struck ? -1 : i; oathPoolFrame = Engine.GetFramesDrawn();
         StepOathPool(i, 0);
+    }
+
+    int oathPoolLast = -1;
+    long oathPoolFrame = -9, oathContactFrame = -9;
+    Vector3 oathContact;
+
+    Vector3 OnGround(Vector3 body) => V(body.X, Y(body.X, body.Z) + 0.3, body.Z);
+
+    /// <summary>An Oathblade contact (HitKit): the swing's pool goes onto the first body it struck, whichever of the
+    /// swing and the hit the frame's events told first.</summary>
+    void OathContact(Vector3 body)
+    {
+        if (oathContactFrame != Engine.GetFramesDrawn()) { oathContactFrame = Engine.GetFramesDrawn(); oathContact = body; }
+        OathPoolOnto(body);
+    }
+
+    void PlaceOathPool(int i, Vector3 at, bool struck = false)
+    {
+        var l = oathPools[i]!;
+        var (p, r) = HitLightFit(at, PlayerPos, struck ? PoolStruckRange : PoolRange, AwayFromLens());
+        l.Position = p;
+        l.OmniRange = r;
+        // F1 lead 27 (r4 judge, m4b 358-359): the swing's pool fitted short of her (0.8 m) at its full 4.6 was a white-hot
+        // core ~70 px across between her and the victims, the loudest thing on screen. A pool that small is held to the
+        // victim flash's cap, so no pool's core clips white.
+        if (r <= PoolStruckRange + 1e-3f) oathPoolEnergy[i] = Mathf.Min(oathPoolEnergy[i], (Flare.Night ? PoolStruckNight : PoolStruckDay) * PoolScale);
+        if (LightTrace) TraceLight("OathPool HitKit.cs", p, oathPoolEnergy[i], r, 90);
+    }
+
+    /// <summary>The swing's pool moved onto the first body it struck, the frame it was lit (the blow's contact, on
+    /// the ground under it, 0.3 m up).</summary>
+    void OathPoolOnto(Vector3 body)
+    {
+        if (oathPoolLast < 0 || Engine.GetFramesDrawn() - oathPoolFrame > 1 || oathPools[oathPoolLast] == null) return;
+        oathPoolEnergy[oathPoolLast] = (Flare.Night ? PoolStruckNight : PoolStruckDay) * PoolScale;
+        PlaceOathPool(oathPoolLast, OnGround(body), true);
+        oathPoolLast = -1;
     }
 
     void StepOathPools(float dt) { for (int i = 0; i < OathPools; i++) StepOathPool(i, dt); }
@@ -130,6 +173,8 @@ public partial class BattleFx
     const int RimFlash = 2, RimFrames = 8;
     /// <summary>Struck bodies whose look has the rim only (the Shield Bash's).</summary>
     readonly System.Collections.Generic.HashSet<int> rimNoFlash = new();
+    /// <summary>Bodies struck by a crit: their warm rim comes back for FeelRules.TintFor frames once the pool fades (round 5).</summary>
+    readonly System.Collections.Generic.HashSet<int> rimCrit = new();
     /// <summary>(dev: --aa-norim, the beats without the rim, for an A/B)</summary>
     static readonly bool NoRim = Args.Has("aa-norim");
     /// <summary>A struck body's (flash blend, rim strength) this frame; (-1, 0) when it has none. By night the rim is
@@ -141,11 +186,16 @@ public partial class BattleFx
     {
         if (!struckRims.TryGetValue(id, out var at)) return new Vector2(-1, 0);
         long age = Engine.GetFramesDrawn() - at;
-        if (age < 0 || age >= RimFrames) { if (age >= RimFrames) { struckRims.Remove(id); rimNoFlash.Remove(id); } return new Vector2(-1, 0); }
+        bool crit = rimCrit.Contains(id);
+        long end = crit ? FeelRules.TintFrom + FeelRules.TintFor : RimFrames;
+        if (age < 0 || age >= end) { if (age >= end) { struckRims.Remove(id); rimNoFlash.Remove(id); rimCrit.Remove(id); } return new Vector2(-1, 0); }
+        if (crit && age >= RimFrames) return FeelRules.Tinted(age) ? new Vector2(0.12f, 0.6f) : new Vector2(-1, 0);
         // (r3 judge cuts: halved, 0.15 then 0.06; none on the Bash's stunned, whose wave, glints and throw carry the hit)
         float flash = age < RimFlash && !rimNoFlash.Contains(id) ? (age == 0 ? 0.15f : 0.06f) : 0;
         float k = 1 - age / (float)RimFrames;
-        return new Vector2(flash, k * k * (Flare.Night ? 0.55f : 1f));
+        var rimv = new Vector2(flash, k * k * (Flare.Night ? 0.55f : 1f));
+        if (crit && FeelRules.Tinted(age)) rimv = new Vector2(Math.Max(rimv.X, 0.12f), Math.Max(rimv.Y, 0.6f));
+        return rimv;
     }
 
     /// <summary>The shared hit kit at a struck body (`at`, chest height; `away` the blow's way, flat):
@@ -167,12 +217,13 @@ public partial class BattleFx
         {
             // The Oathblade's: along the blade's path at this body (the swing's tangent there), so the streaks fly on with the cut.
             first = first || oathKits == 0;
+            OathContact(at);
             full = full && oathKits++ < OathKits;
             var rim = at - oathAt; rim.Y = 0;
             along = rim.LengthSquared() > 0.01f ? new Vector3(-rim.Z, 0, rim.X).Normalized() * (oathMirror ? -1 : 1) : Vector3.Zero;
         }
         // (every struck body: a tight gold rim fading over 8 frames, not the old cream ghost; the frame it was first struck)
-        if (target >= 0 && !NoRim && !(struckRims.TryGetValue(target, out var was) && Engine.GetFramesDrawn() - was < RimFrames)) { struckRims[target] = Engine.GetFramesDrawn(); rimNoFlash.Remove(target); }
+        if (target >= 0 && !NoRim && !(struckRims.TryGetValue(target, out var was) && Engine.GetFramesDrawn() - was < RimFrames)) { struckRims[target] = Engine.GetFramesDrawn(); rimNoFlash.Remove(target); if (crit) rimCrit.Add(target); else rimCrit.Remove(target); }
         // The sparks (r3): on the full kits only (at most six bodies a swing; the rest of a crowd get the rim), 3-5 each:
         // 12-20 px x 2-3 px at the play camera, white-yellow head to an orange tail, flung on along the blow at 10-15 m/s
         // with drag, 4-6 frames. (They run through the hitstop on the FX's own clock: BattleFx.Update.)
@@ -374,7 +425,7 @@ public partial class BattleFx
         {
             if (discGlowN == discGlows.Count)
             {
-                var d = new Decal { UpperFade = 0.3f, LowerFade = 0.3f, CullMask = 1, TextureEmission = glowTex, AlbedoMix = 0, NormalFade = MarkNormalFade, EmissionEnergy = 1f };
+                var d = new Decal { UpperFade = 0.3f, LowerFade = 0.3f, CullMask = 1, TextureEmission = glowTex, AlbedoMix = 0, NormalFade = MarkNormalFade, EmissionEnergy = 1f, SortingOffset = DecalLayer.HerGround };
                 AddChild(d);
                 discGlows.Add(d);
             }
