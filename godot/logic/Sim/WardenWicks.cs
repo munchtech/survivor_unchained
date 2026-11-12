@@ -74,6 +74,17 @@ public sealed partial class Battle
     bool PaysResolve(WeaponInst w) => Resolve.On && (w.Press?.Resolve is > 0 || w.Press?.Drain is > 0);
 
     /// <summary>The Cleaver's pace lamps: big_game (15% slower), light_grip (25% faster).</summary>
+    /// <summary>(SU-063) The same pace with no fight, from the weapon's own lit wick (the skill card's twin).</summary>
+    internal static double CleaverPaceOf(WeaponInst w)
+    {
+        if (!Cleaves(w) || w.Wick?.Rules is not { Count: > 0 } rules) return 1;
+        double m = 1;
+        foreach (var r in rules)
+            if (r.Rule == "cleaver.big_game") m *= r.Arg("cooldown", 1.15);
+            else if (r.Rule == "cleaver.light_grip") m *= r.Arg("cooldown", 0.8);
+        return m;
+    }
+
     double CleaverPace(WeaponInst w) =>
         (Wk(w, "cleaver.big_game") ? Wn("cleaver.big_game", "cooldown", 1.15) : 1) * (Wk(w, "cleaver.light_grip") ? Wn("cleaver.light_grip", "cooldown", 0.8) : 1);
 
