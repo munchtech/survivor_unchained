@@ -59,7 +59,7 @@ public sealed class Verge : ZoneRuntime
     double dispT, chargeT = -1, trackT;
     readonly HashSet<string> seen = new();
     readonly double[] brambleHp;
-    Enemy? greymuzzle, redcowl, snib, nemesis;
+    Enemy? greymuzzle, redcowl, snib;
     readonly List<Enemy> roostCrew = new(), digCrew = new();
     // Retain the spawner's groups for measurement; seeds protect pooled members.
     public readonly Dictionary<string, List<(Enemy E, double Seed)>> Packs = new();
@@ -876,15 +876,6 @@ public sealed class Verge : ZoneRuntime
         if (e.Tag == "dig:snib") { snib = null; W.Facts["snib.dead"] = true; TurnHostile("dig.hostile"); }
         if (e.Tag?.StartsWith("dig") == true) TurnHostile("dig.hostile");
         if (e.Tag == "roost" && e.Disposition != Disposition.Hostile) TurnHostile("roost.hostile");
-        if (e == nemesis && W.Nemesis is { } n)
-        {
-            n.Killed = true;
-            foreach (var it in n.Carries) G.ReturnItem(it);
-            G.Apply($"[{Hist("nemesis_slain", $"put down {n.Title}, and took back what it took", ["revenge"], 2, """{ "respect": 10 }""")}]");
-            nemesis = null;
-            G.SetBoss(null);
-            G.Announce(new Announcement("Taken back", n.Title, "boon", 3.5));
-        }
     }
 
     IEnumerable<Loot> OnLoot(Enemy e)
@@ -950,35 +941,6 @@ public sealed class Verge : ZoneRuntime
                 if (e != null) e.Named = new Named { Title = "Of the Pack" };
             }
             G.Say("Four gray shapes fall in beside you at the edge of the wood.", null, 4);
-        }
-        // What you left behind, and what took it.
-        var c = wd.Corpse;
-        if (c != null && c.Zone == "verge")
-        {
-            G.Look.AddProp("halloween/gravemarker_B", c.X, c.Z, 0.3, 0.7);
-            int light = G.Look.AddLight(c.X, G.Look.HeightAt(c.X, c.Z) + 1.4, c.Z, "#ffc070", 6, 9, 0.1, 0.08, "#ffd890");
-            Interactables.Add(new()
-            {
-                Id = "corpse", X = c.X, Z = c.Z, R = 2.6, Verb = "Recover", Name = $"{c.HeroName}'s belongings",
-                When = () => W.Corpse != null,
-                Act = () =>
-                {
-                    var cc = W.Corpse!;
-                    G.Apply($$"""[{ "gold": {{cc.Gold}} }]""");
-                    foreach (var it in cc.Items) G.GiveItem(it.Def, it.Qty);
-                    W.Corpse = null;
-                    G.Look.SetLit(light, false);
-                    G.Say("Where you fell. The ground has kept your things for you, most of them.", null, 4);
-                },
-            });
-        }
-        var n = wd.Nemesis;
-        if (n != null && n.Zone == "verge" && !n.Killed)
-        {
-            var post = V("post");
-            var (ax, az) = c != null && c.Zone == "verge" ? (c.X, c.Z) : (post.X + 20, post.Z - 20);
-            nemesis = battle.SpawnEnemy(n.Def, ax + 6, az + 6, new Battle.SpawnOpts { Level = n.Level, Elite = true, Tag = "nemesis", Home = (ax, az, 30) });
-            if (nemesis != null) nemesis.Named = new Named { Title = n.Title, Carries = n.Carries.Select(i => i.Def).ToList(), SourceHero = n.HeroName };
         }
         PlacePacks();
         OpenScars();
@@ -1057,7 +1019,7 @@ public sealed class Verge : ZoneRuntime
                 e.Disposition == Disposition.Ally ? "Friend" : e.Disposition == Disposition.Neutral ? null : "Hostile"));
             if (e.Elite && e.Disposition == Disposition.Hostile && Dist(e.X, e.Z, p.X, p.Z) < 22) fight = e;
         }
-        if (fight != null) G.SetBoss(new BossBar(fight.Named!.Title, fight == nemesis ? $"Who took {W.Nemesis?.HeroName}'s light" : fight.Def.Name, fight.Hp, fight.MaxHp));
+        if (fight != null) G.SetBoss(new BossBar(fight.Named!.Title, fight.Def.Name, fight.Hp, fight.MaxHp));
         else G.SetBoss(null);
         G.Look.Plates(plates);
         trackT -= dt;

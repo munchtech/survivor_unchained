@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using SurvivorUnchained.Content;
+using SurvivorUnchained.Core;
 using SurvivorUnchained.Play;
 using SurvivorUnchained.Play.Zones;
 using SurvivorUnchained.Rpg;
@@ -117,9 +118,10 @@ public class LampPostsTests
         Assert.Contains(Journey.DayLines.RiseAgain, host.Said);
     }
 
-    static (Journey J, FakeHost Host, Verge Zone, Battle B) MakeVerge()
+    static (Journey J, FakeHost Host, Verge Zone, Battle B) MakeVerge(Action<Journey>? before = null)
     {
         var j = New();
+        before?.Invoke(j);
         j.World.Time = TimeOfDay.Dawn;
         j.World.Clock = 0;
         j.Apply("""[{ "quest": { "id": "beasts", "status": "active" } }]""");
@@ -132,6 +134,30 @@ public class LampPostsTests
         host.Battle = b;
         zone.Begin(b);
         return (j, host, zone, b);
+    }
+
+    /// <summary>(Codex audit SU-058) The corpse-and-nemesis death is retired: an old save's Corpse and Nemesis load and are
+    /// ignored (no belongings to recover, no nemesis waiting), and a death in the Verge is the zone's (a post rise).</summary>
+    [Fact]
+    public void An_old_saves_corpse_and_nemesis_load_and_are_ignored()
+    {
+        var old = new SaveData
+        {
+            Character = New().Ch,
+            World = new WorldState
+            {
+                Day = 3,
+                Corpse = new CorpseState { Zone = "verge", X = 4, Z = 4, Gold = 25, HeroName = "Ashe" },
+                Nemesis = new NemesisState { Zone = "verge", Def = "wolf", Title = "Ash-Fang, Who Took Your Light", Level = 5, HeroName = "Ashe" },
+            },
+            Location = new SaveLocation { Zone = "verge" },
+        };
+        var loaded = Saves.Parse(Json.Write(old))!;
+        Assert.NotNull(loaded.World.Corpse);
+        var (_, host, zone, b) = MakeVerge(j => { j.World.Corpse = loaded.World.Corpse; j.World.Nemesis = loaded.World.Nemesis; });
+        Assert.DoesNotContain(zone.Interactables, i => i.Id == "corpse");
+        Assert.DoesNotContain(b.Enemies.Living(), e => e.Tag == "nemesis");
+        Assert.True(zone.OnDeath("a wolf"));
     }
 
     [Fact]

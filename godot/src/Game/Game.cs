@@ -970,27 +970,9 @@ public partial class Game : Node, IZoneHost
     {
         LastFall = (killer, Battle?.Time ?? 0);
         Journey.Ch.Stats.Deaths++;
-        if (zone!.OnDeath(killer)) return;
-        var b = Battle;
-        Journey.Fell(zone.Id, zone.Name, killer, b?.Player, Rng);
-        inTransit = true;
-        Wait(1.5, () =>
-        {
-            hud.Fade(1, 1.8, "You fell", $"Taken by {killer}");
-            Wait(2.4, () =>
-            {
-                EnterWhenBuilt("waystation", "death", null, () =>
-                {
-                    Save("death");
-                    Wait(1.4, () =>
-                    {
-                        hud.Fade(0, 2);
-                        inTransit = false;
-                        Wait(1.6, () => Talk("chid"));
-                    });
-                });
-            });
-        });
+        // (SU-058) A death is its zone's: every fighting zone answers it (a post rise, or the run ends). The old
+        // corpse-and-nemesis fall (Journey.Fell, back to the Waystation) is retired.
+        if (!zone!.OnDeath(killer)) GD.PushError($"OnDeath: {zone.Id} did not answer a death");
     }
 
     /* --------------------------------------------------- what zones ask -- */
@@ -1974,7 +1956,6 @@ public partial class Game : Node, IZoneHost
     ZoneRuntime? miniZone;
     WorldScene? miniScene;
     string? miniSeen, miniGoals;
-    CorpseState? miniCorpse;
     int miniAsked;
     const int MiniMarksEvery = 6;
     static readonly string MiniUnseen = new('0', Journey.FogN * Journey.FogN);
@@ -1997,18 +1978,16 @@ public partial class Game : Node, IZoneHost
         var v = miniView;
         float extent = MapScreen.Extent(scene.Data.Meta);
         var seen = World.Zone(zone.Id).TryGetValue("seen", out var f) && f.Str is { Length: Journey.FogN * Journey.FogN } s ? s : MiniUnseen;
-        var corpse = World.Corpse is { } fallen && fallen.Zone == zone.Id ? fallen : null;
         if (++miniAsked >= MiniMarksEvery || !ReferenceEquals(zone, miniZone) || !ReferenceEquals(scene, miniScene) || !ReferenceEquals(seen, miniSeen)
-            || !ReferenceEquals(goalSet, miniGoals) || !ReferenceEquals(corpse, miniCorpse))
+            || !ReferenceEquals(goalSet, miniGoals))
         {
-            miniAsked = 0; miniZone = zone; miniScene = scene; miniSeen = seen; miniGoals = goalSet; miniCorpse = corpse;
+            miniAsked = 0; miniZone = zone; miniScene = scene; miniSeen = seen; miniGoals = goalSet;
             var marks = v.Marks;
             marks.Clear();
             foreach (var m in zone.MapMarks())
                 if (m.Kind != MarkKind.Place && (m.Kind is MarkKind.Exit or MarkKind.Quest || SeenAt(seen, extent, m.X, m.Z)))
                     marks.Add(new MiniMark(m.X, m.Z, m.Kind, m.Label, m.Objective));
             marks.AddRange(GoalMiniMarks());
-            if (corpse != null) marks.Add(new MiniMark(corpse.X, corpse.Z, MarkKind.Danger, "Your belongings"));
         }
         v.Zone = zone.Id; v.Drawing = MapScreen.Drawing(scene.Data); v.Extent = extent; v.Seen = seen; v.N = Journey.FogN;
         v.X = b.Player.X; v.Z = b.Player.Z; v.Facing = b.Player.Facing; v.Night = zone.TimeOf(World) == TimeOfDay.Night;

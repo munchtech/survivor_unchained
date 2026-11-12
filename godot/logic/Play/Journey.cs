@@ -450,49 +450,8 @@ public sealed partial class Journey
         OnTouch();
     }
 
-    /// <summary>The survivor fell in a zone: their gold stays where they fell;
-    /// one thing they carried goes with whatever killed them, and it is not the
-    /// same creature any more. The world remembers.</summary>
-    public void Fell(string zoneId, string zoneName, string killer, PlayerState? p, Random rng)
-    {
-        var w = World;
-        var k = p?.LastKiller;
-        double gold = Math.Floor(Ch.Gold / 2);
-        Ch.Gold -= gold;
-        w.Corpse = new CorpseState { Zone = zoneId, X = p?.X ?? 0, Z = p?.Z ?? 0, Gold = gold, Day = w.Day, Killer = killer, HeroName = Ch.Name };
-        if (k != null && !k.Boss && k.Def.Id != "grimtunnel")
-        {
-            // Only something that will carry it away takes a thing from you.
-            var pool = Ch.Pack.Select((it, i) => (it, i)).Where(x => x.it != null && Items.Get(x.it.Def).Kind is not (ItemKind.Quest or ItemKind.Consumable)).ToList();
-            ItemInstance? took = null;
-            if (pool.Count > 0)
-            {
-                var pick = pool[rng.Next(pool.Count)];
-                took = pick.it;
-                Ch.Pack[pick.i] = null;
-            }
-            // A nemesis still out there is not forgotten: the new one has what it had, too.
-            var before = w.Nemesis is { Killed: false } n ? n.Carries : new List<ItemInstance>();
-            w.Nemesis = new NemesisState
-            {
-                Zone = zoneId, Def = k.Def.Id, Title = $"{NemesisName(k.Def.Family, rng)}, Who Took Your Light", Level = k.Level + 2,
-                Carries = [.. before, .. took != null ? [took] : Array.Empty<ItemInstance>()], HeroName = Ch.Name,
-            };
-        }
-        Ch.Conditions.RemoveAll(c => c.Id == ConditionId.Rested);
-        int deaths = Ch.Stats.Deaths;
-        Apply($$"""
-            [
-              { "condition": { "id": "wounded", "days": 2, "note": "You fell in {{zoneName}}" } },
-              { "if": { "not": { "trait": "risen_once" } }, "then": [{ "trait": "risen_once" }] },
-              { "history": { "id": "fell_{{w.Day}}_{{deaths}}", "text": "fell in {{zoneName}} to {{Esc(killer)}}", "tags": ["death"], "spread": 2,
-                "sentiment": { "respect": -3 }, "reactions": { "chid": { "affection": 10 } } } },
-              { "set": { "player.just_died": true } },
-              { "add": { "player.deaths": 1 } }
-            ]
-            """);
-        Expedition = null;
-    }
+    // (SU-058) The corpse-and-nemesis death (Fell) is retired: a fight's death is its zone's (Zone.OnDeath: she rises at
+    // a post, or the run ends). An old save's Corpse and Nemesis still load (WorldState) and are ignored.
 
     static string Esc(string s) => s.Replace("\\", "\\\\").Replace("\"", "\\\"");
 
@@ -503,23 +462,6 @@ public sealed partial class Journey
     public void CarriedHome(SurvivorUnchained.Arena.ArenaSpec spec) => Apply($$"""
         [{ "set": { "player.just_died": true, "player.carried_home": "{{Esc(spec.Id)}}" } }, { "add": { "player.deaths": 1 } }]
         """);
-
-    /// <summary>What the thing that killed you is called now.</summary>
-    static string NemesisName(Family family, Random rng)
-    {
-        string[] list = family switch
-        {
-            Family.Wolf => ["Ash-Fang", "Hollow-Eye", "Old Greyback", "Split-Ear"],
-            Family.Boar => ["Old Tusk", "the Hedge-Breaker"],
-            // Never a name the story has spent: Wat is the drowned carter, and the
-            // dead watchman at the ford is Corran.
-            Family.Kerchief => ["Red Hob", "Knuckles Marro", "Sly Dell"],
-            Family.Lampling => ["Stub", "Soot-Tooth"],
-            Family.Undead => ["the Unburied", "the Ditch-Walker"],
-            _ => ["the Thing in the Wood"],
-        };
-        return list[rng.Next(list.Length)];
-    }
 
     /* -------------------------------------------------------------- gear -- */
 

@@ -170,7 +170,9 @@ public sealed class WorldState
     public List<ScheduledChange> Scheduled = new();
     /// <summary>Zone-persistent objects: opened chests, burned walls, picked herbs.</summary>
     public Dictionary<string, Dictionary<string, Fact>> Zones = new();
+    /// <summary>(SU-058) Retired with the corpse-and-nemesis death: an old save's are read and ignored.</summary>
     public CorpseState? Corpse;
+    /// <summary>(SU-058) Retired, as Corpse.</summary>
     public NemesisState? Nemesis;
     /// <summary>What a night with the ember lit outside an arena (the prologue's) has taught,
     /// banked until its dawn (Journey.Douse).</summary>
