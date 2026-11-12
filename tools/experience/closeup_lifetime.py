@@ -26,6 +26,12 @@ def main():
         parser.error("Set GODOT_CONSOLE or pass --godot with the Godot 4.5.1 Mono executable")
     if args.timeout <= 0:
         parser.error("--timeout must be positive")
+    engine = Path(args.godot)
+    if os.name == "nt" and engine.name.lower().endswith("_console.exe"):
+        # The console wrapper spawns a child; timeouts must stop the actual engine PID.
+        engine = engine.with_name(engine.name[:-len("_console.exe")] + ".exe")
+        if not engine.is_file():
+            parser.error("The console wrapper's sibling Godot executable was not found")
 
     project = ROOT / "godot"
     override = project / "override.cfg"
@@ -57,7 +63,7 @@ def main():
         installed = True
         log = args.log.resolve()
         log.parent.mkdir(parents=True, exist_ok=True)
-        command = [args.godot, "--path", str(project), "--fixed-fps", "60",
+        command = [str(engine), "--path", str(project), "--fixed-fps", "60",
                    "--resolution", "1920x1080", "--windowed", "--audio-driver", "Dummy",
                    "-s", "res://tools_scenes/closeup_lifetime.gd",
                    "--", "--quick", "warden", "--zone", "waystation"]
