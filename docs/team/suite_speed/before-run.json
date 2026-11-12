@@ -1,0 +1,13 @@
+{
+  "exitCode": 0,
+  "wallSeconds": 939.2336431,
+  "finishedUtc": "2026-11-12T12:11:16.7595780Z",
+  "source": "c29abb87a",
+  "passed": 2358,
+  "failed": 0,
+  "skipped": 11,
+  "cards": 1914,
+  "configuration": "Debug",
+  "optimize": false,
+  "otherTestHostsAtStart": 0
+}
