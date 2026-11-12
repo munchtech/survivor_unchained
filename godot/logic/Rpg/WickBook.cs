@@ -224,12 +224,18 @@ public static class WickBook
     /// rank = RankIn. By night (an arena): the night build, read-only.</summary>
     public static WickPanel Panel(CharacterData ch, string skill, bool night)
     {
+        if (NoWickYet(skill)) return new WickPanel([], [], [], RankIn(ch, skill, night), true, true);
         var path = Path(ch, skill);
         int rank = RankIn(ch, skill, night);
         var lit = Weapon(ch, skill, rank, night).Wick?.Lit ?? System.Array.Empty<string>();
         var held = night ? System.Array.Empty<string>() : path.Skip(lit.Length).Take(Held(ch, skill)).ToArray();
         return new WickPanel(path, lit, held, rank, night);
     }
+
+    /// <summary>(SU-051) A skill with no strands to light (no wick in the data yet): the wick tabs and panel show
+    /// NoWickText for it, never an empty tree.</summary>
+    public static bool NoWickYet(string skill) => !Wicks.StrandsOf(skill).Any();
+    public const string NoWickText = "No wick yet: this skill has no lamps to light.";
 
     /// <summary>The lamp the next held point would light (Path[Burning]), or null: nothing held, or the path ends.</summary>
     public static string? NextLamp(CharacterData ch, string skill)
@@ -381,4 +387,6 @@ public static class WickBook
 
 /// <summary>The wick panel's reading of one skill (WickBook.Panel): its path, the lamps lit, the lamps held points would
 /// light (apart from the lit), the rank shown, and whether it is read-only (the arena's night build).</summary>
-public sealed record WickPanel(string[] Path, string[] Lit, string[] Held, int Rank, bool ReadOnly);
+/// <summary>NoWick: the skill has no strands (no wick yet, WickBook.NoWickYet): the panel says so (WickBook.NoWickText)
+/// instead of an empty braid.</summary>
+public sealed record WickPanel(string[] Path, string[] Lit, string[] Held, int Rank, bool ReadOnly, bool NoWick = false);

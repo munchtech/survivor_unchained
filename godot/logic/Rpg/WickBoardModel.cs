@@ -18,8 +18,9 @@ public sealed class WickBoardModel
     public string[] Path { get; }
     public string[] Lit { get; }
     public string[] Held { get; }
+    public bool NoWick { get; }
 
-    WickBoardModel(string skill, int rank, IReadOnlyList<string> plan, string[] path, string[] lit, string[] held)
+    WickBoardModel(string skill, int rank, IReadOnlyList<string> plan, string[] path, string[] lit, string[] held, bool noWick = false)
     {
         this.skill = skill;
         Rank = rank;
@@ -27,12 +28,13 @@ public sealed class WickBoardModel
         Path = path;
         Lit = lit;
         Held = held;
+        NoWick = noWick;
     }
 
     public static WickBoardModel Read(CharacterData ch, string skill, bool night = false)
     {
         var panel = WickBook.Panel(ch, skill, night);
-        return new(skill, panel.Rank, WickBook.PlanOf(ch, skill).ToArray(), panel.Path, panel.Lit, panel.Held);
+        return new(skill, panel.Rank, WickBook.PlanOf(ch, skill).ToArray(), panel.Path, panel.Lit, panel.Held, panel.NoWick);
     }
 
     public bool IsLit(string id) => Lit.Contains(id);
