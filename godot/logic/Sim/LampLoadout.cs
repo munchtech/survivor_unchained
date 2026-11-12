@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using SurvivorUnchained.Content;
 
 namespace SurvivorUnchained.Sim;
@@ -68,6 +69,27 @@ public sealed class LampLoadout
         Rules.TryAdd(e.Rule, e);
         if (!Each.TryGetValue(e.Rule, out var l)) Each[e.Rule] = l = new();
         l.Add(e);
+    }
+
+    readonly List<LampEffect> wick = new();
+    /// <summary>(SU-051) How many rule-tree lamp effects the fight has lit here (Battle.SyncWickRules).</summary>
+    public int WickCount => wick.Count;
+
+    /// <summary>(SU-051) The rule trees' lit effects: the last set taken out (each rule falls back to the lamps still
+    /// lighting it), these added. The same set again changes nothing.</summary>
+    public void SetWick(IReadOnlyList<LampEffect> fx)
+    {
+        if (fx.Count == wick.Count && fx.SequenceEqual(wick)) return;
+        foreach (var e in wick)
+        {
+            if (e.Rule == null || !Each.TryGetValue(e.Rule, out var l)) continue;
+            l.Remove(e);
+            if (l.Count == 0) { Each.Remove(e.Rule); Rules.Remove(e.Rule); }
+            else if (Rules.TryGetValue(e.Rule, out var r) && ReferenceEquals(r, e)) Rules[e.Rule] = l[0];
+        }
+        wick.Clear();
+        Version++;
+        foreach (var e in fx) { if (e.Rule == null || Off.Contains(e.Rule)) continue; Add(e); wick.Add(e); }
     }
 
     /// <summary>A rule's size, at a quarter by night: summed over every lamp lighting it.</summary>

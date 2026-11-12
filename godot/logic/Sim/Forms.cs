@@ -46,6 +46,8 @@ public sealed partial class Battle
         foreach (var r in l.Reflexes)
             if (Abilities.Find(r.Art) is { } def)
                 Reflexes.Add(new ReflexRun { Def = r, Kind = def.Kind, Rank = Math.Clamp(ranks?.GetValueOrDefault(r.Art) ?? 1, 1, Abilities.MaxRank) });
+        // The rule trees' lit lamps (lit as the weapons came in) join the new loadout (SU-051).
+        SyncWickRules();
     }
 
     /// <summary>A build committed mid-fight (Journey.RefreshKit: a layout switched, a lamp lit or put out): the lamps
@@ -76,6 +78,7 @@ public sealed partial class Battle
         if (flare?.Id != Flare?.Id) Flare = flare;
         FlareMeter = Flare != null ? Math.Clamp(FlareMeter, 0, FlareFull * FlareCharges) : 0;
         Player.DashCharges = Math.Min(Player.DashCharges, MaxDashCharges);
+        SyncWickRules();
     }
 
     /// <summary>The learned day skills the kit put in this fight (Journey.StartBattle, RefreshKit): one no longer carried
