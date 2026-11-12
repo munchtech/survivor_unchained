@@ -6,7 +6,7 @@ using SurvivorUnchained.View;
 
 namespace SurvivorUnchained.Tools;
 
-/// <summary>Run headless with -s res://tools_scenes/closeup_lifetime.gd -- --quick warden --zone waystation.</summary>
+/// <summary>Run through tools/experience/closeup_lifetime.py so user storage is isolated before renderer startup.</summary>
 public partial class CloseUpLifetime : Node
 {
     const BindingFlags Private = BindingFlags.Instance | BindingFlags.NonPublic;
@@ -27,10 +27,8 @@ public partial class CloseUpLifetime : Node
     {
         try
         {
-            // A harness must never write the owner's saves or cinematic settings.
+            // Moving user:// after renderer startup strands its shader-cache directories.
             const string userDir = "Survivor Unchained Codex closeup-blackscreen";
-            ProjectSettings.SetSetting("application/config/use_custom_user_dir", true);
-            ProjectSettings.SetSetting("application/config/custom_user_dir_name", userDir);
             Require(OS.GetUserDataDir().Contains(userDir), "Harness user directory was not isolated");
             GD.Print($"closeup lifetime: user directory {OS.GetUserDataDir()}");
             Settings.Current.Mature = true;
