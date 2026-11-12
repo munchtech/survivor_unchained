@@ -382,6 +382,19 @@ public sealed class Pool<T> where T : Pooled
         return it;
     }
 
+    /// <summary>(SU-061) A thing made outside the pool taken into a free slot as it is (its id becomes the slot's),
+    /// so whoever holds it keeps a live reference. False: no slot free.</summary>
+    public bool Adopt(T it)
+    {
+        if (free.Count == 0) return false;
+        int i = free.Pop();
+        it.Id = i;
+        it.Alive = true;
+        Items[i] = it;
+        Count++;
+        return true;
+    }
+
     public void Release(T it)
     {
         if (!it.Alive) return;

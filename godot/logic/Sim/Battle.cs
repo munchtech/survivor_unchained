@@ -1225,9 +1225,9 @@ public sealed partial class Battle
                     foreach (var d in Hooks.OnLoot(e))
                     {
                         var pk = SpawnPickup(d.Kind, e.X, e.Z, d.Value, d.Ref);
-                        if (pk != null && d.Persistent) pk.Persistent = true;
-                        if (pk != null && d.Rarity is { } r) pk.Tier = r;
-                        if (pk != null) Dress(pk, d);
+                        if (d.Persistent) pk.Persistent = true;
+                        if (d.Rarity is { } r) pk.Tier = r;
+                        Dress(pk, d);
                     }
             }
         }
@@ -1266,7 +1266,10 @@ public sealed partial class Battle
     /* =========================================================== status == */
 
     /// <param name="from">What it is credited to (Battle.DamageBy), if not the rule firing now.</param>
-    public void ApplyStatus(Enemy e, StatusPayload p, double hitDamage, int depth = 0, string? from = null)
+    /// <param name="resolved">hitDamage is a resolved blow (it already carries the global multipliers, HitEnemy): a damage
+    /// over time sized on it is kept at the multipliers' base, so its ticks apply them once, not twice (SU-057). False
+    /// for a written number (a proc's flat base, an art's power).</param>
+    public void ApplyStatus(Enemy e, StatusPayload p, double hitDamage, int depth = 0, string? from = null, bool resolved = true)
     {
         if (!e.Alive || e.State == EnemyState.Dying) return;
         double chance = p.Chance * (1 + Stats.Get(Stat.StatusChance));
@@ -1280,16 +1283,17 @@ public sealed partial class Battle
         double build = statusW == 1 || hard ? 1 : statusW * Math.Min(1, chance) / Math.Min(1, roll);
         double wasBuild = statusBuild;
         statusBuild = build;
-        try { ApplyRolled(e, p, hitDamage, depth, from, build); }
+        try { ApplyRolled(e, p, hitDamage, depth, from, build, resolved); }
         finally { statusBuild = wasBuild; }
     }
 
     /// <summary>ApplyStatus past its roll. build: the share of a blow this application stands for (1 unchained).</summary>
-    void ApplyRolled(Enemy e, StatusPayload p, double hitDamage, int depth, string? from, double build)
+    void ApplyRolled(Enemy e, StatusPayload p, double hitDamage, int depth, string? from, double build, bool resolved)
     {
         var s = e.Status;
         double sd = Stats.Get(Stat.StatusDamage) * Stats.Get(Stat.StatusDamageOf(p.Kind));
         double dps = hitDamage * p.Power / Math.Max(0.5, p.Duration) * sd;
+        if (resolved && Ticks(p.Kind)) dps /= Resolved(e, p.Kind);
         // Longer burning is more burning: the rate holds, the time stretches.
         double dur = ArcanistStatusDuration(p.Kind, StalkerStatusDuration(e, p.Kind, ReaverStatusDuration(e, p.Kind, p.Duration * Stats.Get(Stat.StatusDurationOf(p.Kind)))));
         if (statusWeapon?.Wick != null) dur *= WickDuration(p.Kind);
@@ -1397,6 +1401,26 @@ public sealed partial class Battle
     static readonly string[] DotCredit = EnumKey<StatusKind>.All.Select(k => EnumKey<StatusKind>.Of(k)).ToArray();
 
     /// <summary>Called by the AI each tick: status timers and damage over time.</summary>
+    /// <summary>The kinds whose ticks are blows (HitEnemy, TickStatus).</summary>
+    static bool Ticks(StatusKind k) => k is StatusKind.Burn or StatusKind.Bleed or StatusKind.Poison or StatusKind.Sear;
+
+    /// <summary>A tick's school and tags.</summary>
+    static (School School, Tag[] Tags) DotOf(StatusKind k) => k switch
+    {
+        StatusKind.Burn => (School.Fire, DotBurn),
+        StatusKind.Bleed => (School.Physical, DotBleed),
+        StatusKind.Sear => (School.Holy, DotSear),
+        _ => (School.Nature, DotPoison),
+    };
+
+    /// <summary>(SU-057) The global multipliers a tick of `k` on `e` applies again (HitEnemy's DamageMult) bar the tick's
+    /// own (damage over time's): a share of a resolved blow is divided by it, so the blow's multipliers count once.</summary>
+    double Resolved(Enemy e, StatusKind k)
+    {
+        var (school, tags) = DotOf(k);
+        return Math.Max(1e-9, Stats.DamageMult(school, tags, e.Def.Family) / Math.Max(1e-9, Stats.Get(Stat.DamageOf(Tag.Dot))));
+    }
+
     public void TickStatus(Enemy e, double dt)
     {
         var s = e.Status;
@@ -1417,13 +1441,7 @@ public sealed partial class Battle
                     if (k == StatusKind.Poison) d *= slot.Stacks;
                     if (k == StatusKind.Bleed) d *= Math.Max(1, slot.Stacks) * (s.Has(StatusKind.Frozen) && Boons.ContainsKey("frostbite") ? 3 : 1);
                     if (k == StatusKind.Bleed && Len(e.Vx, e.Vz) > 0.5) d *= 1.6;
-                    var (school, tags) = k switch
-                    {
-                        StatusKind.Burn => (School.Fire, DotBurn),
-                        StatusKind.Bleed => (School.Physical, DotBleed),
-                        StatusKind.Sear => (School.Holy, DotSear),
-                        _ => (School.Nature, DotPoison),
-                    };
+                    var (school, tags) = DotOf(k);
                     if (d > 0) HitEnemy(e, d, school, tags, new HitOpts { Dot = true, NoCrit = true, NoProcs = k != StatusKind.Burn, Depth = 2, Credit = slot.From ?? DotCredit[(int)k] });
                     if (!e.Alive || e.State == EnemyState.Dying) return;
                 }
@@ -1670,7 +1688,7 @@ public sealed partial class Battle
             if (!f.Caught.Add(e.Id)) return;
             double dd = d == 0 ? 1 : d;
             HitEnemy(e, f.Dmg, School.Fire, tags, new HitOpts { Knockback = 0.5, DirX = (e.X - f.X) / dd, DirZ = (e.Z - f.Z) / dd, Depth = 1 });
-            if (e.Alive) ApplyStatus(e, burn, f.Dmg);
+            if (e.Alive) ApplyStatus(e, burn, f.Dmg, resolved: false);
         });
         foreach (var c in Collision.Within(f.X, f.Z, front))
             if (c.Tag != null && f.Props.Add(c.Id)) Hooks.OnHitProp?.Invoke(c.Tag, c.Id, School.Fire, f.Dmg, f.X, f.Z);
@@ -1989,15 +2007,42 @@ public sealed partial class Battle
         return zn;
     }
 
-    public Pickup? SpawnPickup(PickupKind kind, double x, double z, double value, string? reference = null)
+    /// <summary>A drop on the ground. Never null: with the pool full (Pickups' capacity) it is made outside it and kept
+    /// in Held, exactly as rolled, and laid down as a slot frees (DeliverHeld); capacity never loses value (SU-061).</summary>
+    public Pickup SpawnPickup(PickupKind kind, double x, double z, double value, string? reference = null)
     {
         var p = Pickups.Spawn();
-        if (p == null) return null;
+        if (p == null) { p = new Pickup(-1); held.Add(p); }
         double a = Rng.Next() * Tau, v = 1.5 + Rng.Next() * 2;
         p.Kind = kind; p.X = x; p.Z = z; p.Vx = Math.Cos(a) * v; p.Vz = Math.Sin(a) * v; p.Value = value; p.Ref = reference;
         p.Age = 0; p.Pulled = false; p.PullT = 0; p.Persistent = false; p.Tier = 0; p.Lean = null; p.Payload = null; p.Loot = -1; p.Look = Verdict.Shown;
         if (kind == PickupKind.Ember) p.Tier = value >= 40 ? 3 : value >= 12 ? 2 : value >= 4 ? 1 : 0;
         return p;
+    }
+
+    readonly List<Pickup> held = new();
+    /// <summary>(SU-061) Drops made while the pickup pool was full, oldest first, waiting for a free slot.</summary>
+    public IReadOnlyList<Pickup> Held => held;
+
+    /// <summary>(SU-061) Held drops laid down into free slots, oldest first, the same objects (references stay good).</summary>
+    public void DeliverHeld()
+    {
+        int n = 0;
+        while (n < held.Count && Pickups.Adopt(held[n])) n++;
+        if (n > 0) held.RemoveRange(0, n);
+    }
+
+    /// <summary>(SU-061) Every drop of the fight: those lying, then those held for a slot. Safe to Remove while walking.</summary>
+    public IEnumerable<Pickup> Lying()
+    {
+        foreach (var k in Pickups.Items) if (k.Alive) yield return k;
+        foreach (var k in held.ToArray()) yield return k;
+    }
+
+    /// <summary>(SU-061) A drop taken away, lying or held.</summary>
+    public void Remove(Pickup k)
+    {
+        if (!held.Remove(k)) Pickups.Release(k);
     }
 
     /// <summary>Everything lying on the ground brought to her feet, settled, so it is taken
@@ -2017,7 +2062,6 @@ public sealed partial class Battle
     public Pickup? Spill(Loot d, double x, double z)
     {
         var pk = SpawnPickup(d.Kind, x, z, d.Value, d.Ref);
-        if (pk == null) return null;
         if (d.Persistent) pk.Persistent = true;
         if (d.Rarity is { } r) pk.Tier = r;
         Dress(pk, d);
@@ -2065,7 +2109,7 @@ public sealed partial class Battle
     Pickup? hoardStone;
 
     /// <summary>The hoard stone lying, if there is one.</summary>
-    public Pickup? HoardStone => hoardStone is { Alive: true, Kind: PickupKind.Ember, Tier: HoardTier } h ? h : null;
+    public Pickup? HoardStone => hoardStone is { Kind: PickupKind.Ember, Tier: HoardTier } h && (h.Alive || held.Contains(h)) ? h : null;
 
     void DropEmber(double x, double z, double xp)
     {
@@ -2075,8 +2119,8 @@ public sealed partial class Battle
         for (int i = 0; i < StonesMost && left > 0; i++)
         {
             double v = StoneWorth(i, left);
-            if (SpawnPickup(PickupKind.Ember, x + (Rng.Next() - 0.5), z + (Rng.Next() - 0.5), v) == null) Hoard(x, z, v);
-            else EmbersLying++;
+            SpawnPickup(PickupKind.Ember, x + (Rng.Next() - 0.5), z + (Rng.Next() - 0.5), v);
+            EmbersLying++;
             left -= v;
         }
     }
@@ -2096,7 +2140,6 @@ public sealed partial class Battle
         {
             double v = StoneWorth(i, left);
             var k = SpawnPickup(PickupKind.Ember, x + (Rng.Next() - 0.5), z + (Rng.Next() - 0.5), v, XpStoneRef);
-            if (k == null) { PayXp(left); return; }
             if (HoldNextStone) { HoldNextStone = false; heldStone = k; }
             left -= v;
         }
@@ -2110,11 +2153,11 @@ public sealed partial class Battle
     public double PayXpStones()
     {
         double paid = 0;
-        foreach (var k in Pickups.Items)
+        foreach (var k in Lying())
         {
-            if (!k.Alive || k.Kind != PickupKind.Ember || k.Ref != XpStoneRef) continue;
+            if (k.Kind != PickupKind.Ember || k.Ref != XpStoneRef) continue;
             paid += k.Value;
-            Pickups.Release(k);
+            Remove(k);
         }
         heldStone = null;
         if (paid > 0) PayXp?.Invoke(paid);
@@ -2127,8 +2170,7 @@ public sealed partial class Battle
     {
         if (HoardStone is not { } h)
         {
-            h = SpawnPickup(PickupKind.Ember, x, z, 0)!;
-            if (h == null) return;
+            h = SpawnPickup(PickupKind.Ember, x, z, 0);
             h.Tier = HoardTier;
             h.Persistent = true;
             h.Vx = h.Vz = 0;
@@ -2697,6 +2739,7 @@ public sealed partial class Battle
         var p = Player;
         double reach = Stats.Get(Stat.PickupRadius);
         int lying = 0;
+        DeliverHeld();
         foreach (var k in Pickups.Items)
         {
             if (!k.Alive) continue;
@@ -3218,7 +3261,7 @@ public sealed partial class Battle
         {
             case Effect.Explode fx:
                 Explode(x, z, fx.Radius * Stats.Get(Stat.Area), BaseOf(fx.Damage, fx.Basis, ctx), fx.School, [Tag.Explosion, fx.School.AsTag()], null, depth, -1);
-                if (fx.Status != null) ForEachHostileInRadius(x, z, fx.Radius, (e, _) => ApplyStatus(e, fx.Status, BaseOf(fx.Damage, fx.Basis, ctx), depth));
+                if (fx.Status != null) ForEachHostileInRadius(x, z, fx.Radius, (e, _) => ApplyStatus(e, fx.Status, BaseOf(fx.Damage, fx.Basis, ctx), depth, resolved: fx.Basis == Basis.Hit));
                 break;
             case Effect.Apply fx:
                 // (M3 MR 3: a status is sized on the blow; on a cut the hit is its share, and statusW weighs what it builds)
@@ -3227,7 +3270,7 @@ public sealed partial class Battle
                 {
                     var list = HostilesInRadius(x, z, fx.Radius);
                     list.Sort((a, b) => b.MaxHp.CompareTo(a.MaxHp));
-                    foreach (var e in list.Take(fx.Count)) ApplyStatus(e, fx.Payload, 20, depth);
+                    foreach (var e in list.Take(fx.Count)) ApplyStatus(e, fx.Payload, 20, depth, resolved: false);
                 }
                 break;
             case Effect.Spread fx:

@@ -408,7 +408,8 @@ public sealed partial class Battle
         ApplyStatus(e, new StatusPayload(StatusKind.Poison, 1, 0, f.Arg("poisonSeconds", 4)), 0, from: "flare");
         double sd = Stats.Get(Stat.StatusDamage) * Stats.Get(Stat.StatusDamageOf(StatusKind.Poison));
         double ticks = Math.Max(1, Math.Round(f.Arg("poisonSeconds", 4) / 0.5));
-        if (dealt > 0) venom.Add(new TollPoison(e.Id, dealt * f.Arg("poison", 0.5) * sd / ticks, (int)ticks, Time + 0.5));
+        // (SU-057) dealt is resolved: kept at the multipliers' base, so the ticks apply them once
+        if (dealt > 0) venom.Add(new TollPoison(e.Id, dealt * f.Arg("poison", 0.5) * sd / ticks / Resolved(e, StatusKind.Poison), (int)ticks, Time + 0.5));
     }
 
     sealed class TollPoison(int target, double tick, int left, double next)
