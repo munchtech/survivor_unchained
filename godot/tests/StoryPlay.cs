@@ -107,7 +107,6 @@ public class StoryPlay(ITestOutputHelper log)
             double ml = Math.Sqrt(mx * mx + mz * mz);
             if (ml > 1e-6) { mx /= ml; mz /= ml; }
             if (b.HostilesInRadius(p.X, p.Z, 2.2).Count >= 3 && p.DashCharges > 0) b.Dash(mx, mz);
-            if (b.HostilesInRadius(p.X, p.Z, 6).Count >= 3) b.UseAbility(mx, mz);
             if (p.Hp < b.MaxHp * 0.35) { double before = p.Hp; j.Quaff(b); if (p.Hp > before) quaffs++; }
             zone.Step(dt);
             zone.Frame(dt);
@@ -115,7 +114,6 @@ public class StoryPlay(ITestOutputHelper log)
             foreach (var ev in b.Events.Drain())
                 if (ev is Ev.PlayerHit ph && ph.Amount > 0) hurt[ph.Source] = hurt.GetValueOrDefault(ph.Source) + ph.Amount;
             host.Pass(dt);
-            j.BankArt(b);
             low = Math.Min(low, p.Hp / b.MaxHp);
             t += dt;
             if (trace != null && (int)(t / 20) != (int)((t - dt) / 20))

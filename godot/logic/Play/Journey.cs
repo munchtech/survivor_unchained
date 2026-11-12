@@ -194,7 +194,7 @@ public sealed partial class Journey
         }
         // (M6, TUTORIAL_COPY.md A12/A14) Taken at the Low Ford's dawn page, the Flare is not hers again until the
         // Waystation's lamp lights it for good; arena runs keep theirs.
-        if (!arena && World.Fact(Zones.Prologue.FlareOutFact).Truthy && !World.Fact(Zones.Prologue.FlareLitFact).Truthy) { b.Flare = null; b.FlareMeter = 0; }
+        if (!arena && FlareOut) { b.Flare = null; b.FlareMeter = 0; }
         b.EmberOn = combat && (arena || ember);
         EmberLit = b.EmberOn && !arena;
         b.Night = arena || ember || World.Time == TimeOfDay.Night;
@@ -224,6 +224,7 @@ public sealed partial class Journey
         // By day, the skills learned for it.
         else if (combat && !campaign)
             foreach (var (id, rank) in kit.Learned) b.AddWeapon(id, rank);
+        b.KitLearned = combat && campaign && !b.EmberOn ? kit.Learned.Select(w => w.Id).Where(id => b.Weapons.Any(x => x.Id == id)).ToHashSet() : null;
         campaignFight = campaign ? b : null;
         // (M6, TUTORIAL_COPY.md A3) A story fight with the ember out: the dead still spill their light, and it pays her
         // experience as it reaches her (Battle.DropXpStones). Arena runs pay at their end, as before.
@@ -282,7 +283,6 @@ public sealed partial class Journey
     {
         // (M6 A3) Leaving: the experience stones still lying or on their way are hers now.
         b?.PayXpStones();
-        BankArt(b);
         BankGold(b);
         if (b == null || !b.Combat || InArena) return;
         Expedition = new Expedition { Hp = b.Player.Hp };
@@ -594,6 +594,8 @@ public sealed partial class Journey
             if (!SkillBook.Carries(Ch, skill)) { Warn($"{wd.Name} is not a {Callings.Archetype(Ch.Archetype).Name}'s to carry"); return; }
             if (!SkillBook.Learn(Ch, skill)) { Warn($"The words mean nothing yet: {wd.Name} has to be seen burning in an arena first"); return; }
             OnAnnounce(new Announcement(wd.Name, SkillBook.Meets(Ch, skill) ? "Learned for the day. Carry it from your skills (K)" : $"Learned, but it asks {SkillBook.Need} {SkillBook.Attribute(skill)} of you", "boon", 3.6, "A new skill"));
+            // (SU-045) carried now, it goes into the fight running at once
+            RefreshKit(b);
         }
         foreach (var cure in c.Cure ?? new())
         {
@@ -623,10 +625,14 @@ public sealed partial class Journey
     public static bool FromKit(string src) =>
         src.StartsWith("item:") || src.StartsWith("set:") || src.StartsWith("trait:") || src == "attributes" || src.StartsWith("cond:");
 
-    /// <summary>Gear changed: fold it into the running fight at once, a fresh read of what she wears in the
-    /// fight's own context (by night, the night's lamp rules): the same mods and triggers after any number of
-    /// refreshes. The caged coals' draft gifts (rerolls, banishes, stands, roads, omens, start levels) stay as
-    /// the ember was lit (StartBattle), by the ruling in CODEX_audit.md installment 6.</summary>
+    /// <summary>The build changed (gear put on or off, a layout switched, a lamp lit or put out, a wick planned, a skill
+    /// learned from a tome, an attribute point spent): the ONE live-build reconcile (CODEX_audit.md installments 6 and 7).
+    /// A fresh read of the kit in the fight's own context (by night, the night's lamp rules) goes into the running fight
+    /// at once: the gear's numbers and rules, the lamps' (replaced, not merged: Battle.ReplaceLamps; their reflexes, the
+    /// Flare), the art in hand, the wicks, and the skills she fights with (the gear's; by day the learned ones she now
+    /// carries, at their rank and in the campaign in their taught form; one no longer carried goes). The same build
+    /// after any number of refreshes, and the rest of the fight left alone. The caged coals' draft gifts (rerolls,
+    /// banishes, stands, roads, omens, start levels) stay as the ember was lit (StartBattle), by installment 6's ruling.</summary>
     public void RefreshKit(Battle? b)
     {
         OnTouch();
@@ -637,10 +643,51 @@ public sealed partial class Journey
         b.Stats.AddAll(kit.Stats.List().Where(m => FromKit(m.Source)).ToList());
         b.Triggers = b.Triggers.Where(t => !FromKit(t.Source)).ToList();
         foreach (var (def, src) in kit.Triggers) if (FromKit(src)) b.AddTrigger(def, src);
+        // The lamps (SU-042): their numbers, facets, reflexes and Flare, replaced; the art in hand as the kit reads it.
+        b.SetArt(kit.Ability, kit.ArtRank, kit.Facets);
+        b.ReplaceLamps(kit.Lamps, kit.ReflexRanks);
+        // (M6, A12/A14) the Flare taken at the Low Ford's dawn stays out until the Waystation lights it
+        if (!InArena && FlareOut) { b.Flare = null; b.FlareMeter = 0; }
+        // The wicks as planned now (a plan changed, a layout switched): a skill whose path changed relights to it.
+        if (b.Combat && WickBook.Paths(Ch, night: FightNight) is { } paths)
+            foreach (var (id, path) in paths)
+                if (!b.WickPaths.TryGetValue(id, out var was) || !was.SequenceEqual(path))
+                {
+                    b.WickPaths[id] = path;
+                    foreach (var w in b.Weapons.Where(x => x.Id == id).ToList()) b.Relight(w, false);
+                }
         var kitIds = kit.Weapons.Select(w => w.Id).ToHashSet();
-        foreach (var id in GearWeapons) if (!kitIds.Contains(id)) b.RemoveWeapon(id);
-        foreach (var (id, rank) in kit.Weapons) if (!b.Weapons.Any(x => x.Id == id)) b.AddWeapon(id, rank);
+        // By day, the learned skills she carries now (SU-045: a tome read, a point crossing a need, a layout's skills).
+        bool learns = b.KitLearned != null;
+        var learned = learns ? kit.Learned : new List<(string Id, int Rank)>();
+        var learnedIds = learned.Select(w => w.Id).ToHashSet();
+        var ours = GearWeapons.Concat(b.KitLearned ?? []).ToHashSet();
+        // What a fresh battle keys (StartBattle): the taught order over worn and learned, while the keys have room (the
+        // keys a skill the kit did not give holds stay its).
+        var want = new List<(string Id, int Rank)>();
+        if (learns)
+        {
+            int room = Content.Weapons.MaxWeapons - b.Weapons.Where(w => !ours.Contains(w.Id)).Sum(w => Content.Weapons.SlotCost(w.Id));
+            foreach (var s in Content.TaughtBuilds.KeyOrder(Ch.Archetype, kit.Weapons.Concat(learned)))
+            {
+                if (!Content.Weapons.All.ContainsKey(s.Id) || want.Any(x => x.Id == s.Id)) continue;
+                int cost = Content.Weapons.SlotCost(s.Id);
+                if (cost > room) continue;
+                room -= cost; want.Add(s);
+            }
+        }
+        else want.AddRange(kit.Weapons);
+        var wantIds = want.Select(s => s.Id).ToHashSet();
+        foreach (var id in ours) if (!wantIds.Contains(id)) b.RemoveWeapon(id);
         GearWeapons = kitIds;
+        var taught = Content.TaughtBuilds.Of(Ch.Archetype);
+        foreach (var (id, rank) in want)
+        {
+            if (b.Weapons.Any(x => x.Id == id)) { if (learnedIds.Contains(id)) b.SetRank(id, rank); continue; }
+            if (b.AddWeapon(id, rank) is null) continue;
+            if (b.Campaign && taught?.Slots.FirstOrDefault(x => x.Skill == id) is { } slot) b.SetForm(id, slot.Cast);
+        }
+        if (learns) b.KitLearned = learnedIds.Where(id => b.Weapons.Any(x => x.Id == id)).ToHashSet();
         // (M9) A campaign fight's carried skills at their rank with the gear worn now ("+1 to a skill" on or off).
         if (b.Campaign)
         {
@@ -655,6 +702,9 @@ public sealed partial class Journey
         b.Player.Hp = Math.Min(b.Player.Hp, b.MaxHp);
     }
 
+    /// <summary>The Flare is out for the story (taken at the Low Ford's dawn, not yet lit at the Waystation).</summary>
+    bool FlareOut => World.Fact(Zones.Prologue.FlareOutFact).Truthy && !World.Fact(Zones.Prologue.FlareLitFact).Truthy;
+
     /* -------------------------------------------------------------- arts -- */
 
     /// <summary>Gold picked up in the fight, into the purse as it comes.</summary>
@@ -666,24 +716,6 @@ public sealed partial class Journey
         b.GoldBanked = b.GoldGained;
         Ch.Gold += d;
         Ch.Stats.GoldEarned += d;
-    }
-
-    /// <summary>What the art in hand grew by in the fight, written to the
-    /// survivor; a new rank strengthens it at once and may open a facet.</summary>
-    public void BankArt(Battle? b)
-    {
-        if (b == null || b.ArtXp <= 0 || Ch.Ability == "") return;
-        // A way of moving grows by the dash's steps, never by use: nothing to bank, nothing said.
-        if (ArtBook.Movement(Ch.Ability)) { b.ArtXp = 0; return; }
-        double xp = b.ArtXp;
-        b.ArtXp = 0;
-        int rank = ArtBook.Grow(Ch, Ch.Ability, xp);
-        if (rank == 0) return;
-        b.ArtRank = rank;
-        var def = Abilities.ById(Ch.Ability);
-        bool open = ArtBook.OpenSlots(Ch, Ch.Ability) > 0;
-        OnAnnounce(new Announcement($"{def.Name}, rank {rank}", open ? "A facet can be chosen (K)" : "Stronger, and sooner ready", "boon", 3.2, "Your art grows"));
-        OnTouch();
     }
 
     /// <summary>A step of the dash's growth (Content/DashSteps.cs) taken: kept on her, and into the fight now if
@@ -700,7 +732,6 @@ public sealed partial class Journey
     /// <summary>Carry another known art (somewhere safe).</summary>
     public void HoldArt(string id, Battle? b)
     {
-        BankArt(b);
         if (!ArtBook.Hold(Ch, id)) return;
         var def = Abilities.ById(id);
         b?.SetArt(def.Kind, ArtBook.Rank(Ch, id), ArtBook.Facets(Ch, id));

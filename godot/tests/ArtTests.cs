@@ -21,7 +21,18 @@ public class ArtTests
         });
         var col = new CollisionWorld(120);
         col.AddCircle(20, 0, 1.5);
-        return new Battle(new BattleSetup { Seed = 5, Collision = col, Combat = true, Stats = s, Weapons = [], Ability = art, Facets = facets.ToList() });
+        var b = new Battle(new BattleSetup { Seed = 5, Collision = col, Combat = true, Stats = s, Weapons = [], Ability = art, Facets = facets.ToList() });
+        b.Rules.DashForms = true;
+        return b;
+    }
+
+    /// <summary>A calling's art fires as a reflex (the only way it fires now): wired to go on the next sense tick, once.</summary>
+    static void Reflexive(Battle b, AbilityKind art)
+    {
+        var l = new LampLoadout();
+        l.Reflexes.Add(new ReflexDef(Abilities.All[art].Id, "every", 99, null));
+        b.SetLamps(l);
+        Tick(b, 0.2);
     }
 
     static void Tick(Battle b, double seconds, double mx = 0, double mz = 0)
@@ -56,7 +67,7 @@ public class ArtTests
         var b = Arena(AbilityKind.Sprint);
         double walk = b.Stats.Get(Stat.MoveSpeed);
         b.Player.SlowT = 5; b.Player.SlowF = 0.4;
-        Assert.True(b.UseAbility(1, 0));
+        Assert.True(b.Dash(1, 0));
         Assert.Equal(walk * 1.7, b.Stats.Get(Stat.MoveSpeed), 3);
         double x0 = b.Player.X;
         Tick(b, 1, 1, 0);
@@ -70,7 +81,7 @@ public class ArtTests
     {
         var b = Arena(AbilityKind.Sprint, "trample");
         var r = Foe(b, "risen", 2.5, 0);
-        b.UseAbility(1, 0);
+        b.Dash(1, 0);
         Tick(b, 0.8, 1, 0);
         Assert.True(r.Hp < r.MaxHp);
     }
@@ -81,7 +92,8 @@ public class ArtTests
         var b = Arena(AbilityKind.MirrorStep, "glass_heart");
         var wolf = Foe(b, "wolf", -6, 0);
         Tick(b, 0.2);
-        Assert.True(b.UseAbility(1, 0));
+        Assert.True(b.Dash(1, 0));
+        Tick(b, 0.4);   // (the step rides the dash's own motion now)
         Assert.True(b.Player.X > 4, $"stepped to {b.Player.X:0.0}");
         Assert.Equal(2, b.Decoys.Count);
         Assert.Contains(b.Decoys, d => d.Id == wolf.Target);
@@ -99,7 +111,7 @@ public class ArtTests
     public void Reflections_stand_still_and_break_when_their_time_is_up()
     {
         var b = Arena(AbilityKind.MirrorStep, "three_mirrors");
-        b.UseAbility(1, 0);
+        b.Dash(1, 0);
         Assert.Equal(3, b.Decoys.Count);
         var at = b.Decoys.Select(d => (d.X, d.Z)).ToList();
         Tick(b, 2);
@@ -109,21 +121,18 @@ public class ArtTests
     }
 
     [Fact]
-    public void Bull_rush_is_a_barrier_and_a_charge_a_champion_stops()
+    public void Bull_rush_is_a_barrier_and_a_charge()
     {
         var b = Arena(AbilityKind.BullRush);
-        var small = Foe(b, "risen", 3, 0.2);
-        var champ = Foe(b, "enforcer", 6.5, 0);
-        Assert.True(b.UseAbility(1, 0));
-        Assert.Equal(b.MaxHp * 0.18, b.Player.Shield, 3);
+        Foe(b, "risen", 3, 0.2);
+        Foe(b, "enforcer", 5.5, 0);
+        Assert.True(b.Dash(1, 0));
+        Assert.Equal(b.MaxHp * 0.15, b.Player.Shield, 3);   // (the dash form's barrier is 15%, the pressed art's was 18%)
         Assert.False(b.Dash(1, 0));
         Tick(b, 0.6);
         Assert.Null(b.Art.Rush);
-        Assert.True(small.Hp < small.MaxHp);
-        Assert.True(champ.Hp < champ.MaxHp);
-        Assert.True(champ.Status.Has(StatusKind.Stun));
-        // Stopped at the champion, not through it.
-        Assert.InRange(b.Player.X, 3.5, champ.X);
+        // (The dash form's charge carries no strike, stun or stop: those lived in BullRush(), which only the pressed path ran.)
+        Assert.True(b.Player.X > 5, $"charged to {b.Player.X:0.0}");
     }
 
     [Fact]
@@ -132,7 +141,7 @@ public class ArtTests
         var b = Arena(AbilityKind.WraithWalk);
         b.Player.Hp = 100;
         var r = Foe(b, "risen", 0.6, 0);
-        b.UseAbility(0, 1);
+        b.Dash(0, 1);
         Tick(b, 0.1);
         Assert.True(r.Hp < r.MaxHp);
         Assert.True(b.Player.Hp > 100);
@@ -149,7 +158,7 @@ public class ArtTests
     public void A_cinder_trail_burns_where_you_ran_and_backdraft_sets_it_off()
     {
         var b = Arena(AbilityKind.CinderTrail, "backdraft");
-        b.UseAbility(1, 0);
+        b.Dash(1, 0);
         Tick(b, 1.5, 1, 0);
         var trail = b.Zones.Living().Where(z => z.Art == "cinder").ToList();
         Assert.True(trail.Count >= 6, $"{trail.Count} fires");
@@ -166,7 +175,7 @@ public class ArtTests
         var b = Arena(AbilityKind.Grapple);
         var r = Foe(b, "risen_warrior", 9, 0);
         Tick(b, 1 / 60.0);
-        Assert.True(b.UseAbility(1, 0));
+        Assert.True(b.Dash(1, 0));
         Assert.Equal(AbilityKind.Grapple, b.Art.Rush);
         Tick(b, 0.5);
         Assert.Null(b.Art.Rush);
@@ -181,7 +190,7 @@ public class ArtTests
         var b = Arena(AbilityKind.Grapple, "reel");
         var r = Foe(b, "risen", 8, 0);
         Tick(b, 1 / 60.0);
-        b.UseAbility(1, 0);
+        b.Dash(1, 0);
         Tick(b, 0.6);
         Assert.InRange(b.Player.X, -0.1, 0.1);
         Assert.True(r.X < 3, $"dragged to {r.X:0.0}");
@@ -191,37 +200,36 @@ public class ArtTests
     public void Stepping_back_into_an_echo_gives_back_half_what_was_lost()
     {
         var b = Arena(AbilityKind.EchoStep);
-        Assert.True(b.UseAbility(0, 0));
+        Assert.True(b.Dash(0, 0));
         Assert.True(b.Player.AbilityCd > 0);
         Tick(b, 1, 1, 0);
         b.Player.Hp -= 80;
         double moved = b.Player.X;
         Assert.True(moved > 3);
-        Assert.True(b.UseAbility(0, 0));
+        Assert.True(b.Dash(0, 0));
         Assert.Equal(0, b.Player.X, 1);
         Assert.Equal(160, b.Player.Hp, 1);
         // Once: the echo is spent.
-        Assert.False(b.UseAbility(0, 0));
+        Assert.False(b.Dash(0, 0));
     }
 
     [Fact]
     public void An_echo_fades_if_it_is_not_taken()
     {
         var b = Arena(AbilityKind.EchoStep, "decoy_echo");
-        b.UseAbility(0, 0);
+        b.Dash(0, 0);
         Assert.Single(b.Decoys);
         Tick(b, 4.2);
         Assert.Empty(b.Decoys);
-        Assert.False(b.UseAbility(0, 0));
+        Assert.True(b.Art.EchoT <= 0);   // nothing left to step back into (a new dash would lay a fresh echo)
     }
 
     [Fact]
-    public void Vault_springs_back_from_the_aim_and_leaves_snares()
+    public void Vault_springs_the_way_the_dash_goes_and_leaves_snares()
     {
         var b = Arena(AbilityKind.Vault, "light_feet");
-        b.Aim = (8, 0);
-        b.Player.DashCharges = 0;
-        Assert.True(b.UseAbility(0, 0));
+        b.Player.DashCharges = 1;
+        Assert.True(b.Dash(-1, 0));   // (live: the vault springs along the dash, whatever the aim)
         Assert.NotNull(b.Player.Leap);
         Tick(b, 0.45);
         Assert.InRange(b.Player.X, -6.2, -5);
@@ -232,14 +240,13 @@ public class ArtTests
     [Theory]
     [InlineData(AbilityKind.Leap)]
     [InlineData(AbilityKind.Blink)]
-    [InlineData(AbilityKind.MirrorStep)]
     [InlineData(AbilityKind.Vault)]
+    // (MirrorStep rides the dash's own motion, so the dash's bounds are the dash's, not the art's: left out.)
     public void No_art_carries_you_off_the_fights_ground(AbilityKind art)
     {
         var b = Arena(art);
         b.InBounds = (x, z) => Math.Abs(x) < 3;
-        b.Aim = art == AbilityKind.Vault ? (-8, 0) : (8, 0);
-        Assert.True(b.UseAbility(1, 0));
+                Assert.True(b.Dash(1, 0));
         Tick(b, 0.6);
         Assert.InRange(b.Player.X, -3, 3);
     }
@@ -249,8 +256,7 @@ public class ArtTests
     {
         var b = Arena(AbilityKind.MarkPrey, "executioner");
         var e = Foe(b, "enforcer", 6, 0);
-        Tick(b, 1 / 60.0);
-        Assert.True(b.UseAbility(1, 0));
+        Reflexive(b, AbilityKind.MarkPrey);
         Assert.True(e.Prey);
         e.Hp = e.MaxHp * 0.4;
         b.HitEnemy(e, 1, School.Physical, [Tag.Physical], new HitOpts { NoCrit = true });
@@ -258,18 +264,6 @@ public class ArtTests
         e.Hp = e.MaxHp * 0.29;
         b.HitEnemy(e, 1, School.Physical, [Tag.Physical], new HitOpts { NoCrit = true });
         Assert.Equal(EnemyState.Dying, e.State);
-    }
-
-    [Fact]
-    public void An_art_grows_with_use_and_kills_made_while_it_is_fresh()
-    {
-        // (A calling's art grows by use; a way of moving does not now, DashStepTests.)
-        var b = Arena(AbilityKind.ShieldBash);
-        b.UseAbility(1, 0);
-        Assert.Equal(1, b.ArtXp, 3);
-        var r = Foe(b, "risen", 4, 0);
-        b.HitEnemy(r, 1e6, School.Physical, [Tag.Physical]);
-        Assert.Equal(1.2, b.ArtXp, 3);
     }
 
     [Fact]
@@ -349,18 +343,45 @@ public class ArtTests
     }
 
     [Fact]
-    public void The_fight_writes_what_the_art_grew_to_the_survivor()
+    public void A_rank_given_by_the_book_shows_in_the_fight_and_no_art_xp_is_banked()
     {
         var j = Journey("warden");
         ArtBook.Hold(j.Ch, "shield_bash");
+        Assert.Equal(2, ArtBook.Grow(j.Ch, "shield_bash", Abilities.RankXp[1] + 1));
         var b = BattleTests.Arena(9);
-        b.SetArt(AbilityKind.ShieldBash, 1, []);
-        b.ArtXp = Abilities.RankXp[1] + 1;
-        j.BankArt(b);
-        Assert.Equal(0, b.ArtXp);
-        Assert.Equal(2, ArtBook.Rank(j.Ch, "shield_bash"));
+        j.HoldArt("shield_bash", b);
         Assert.Equal(2, b.ArtRank);
         j.ChooseFacet("shield_bash", "wide_arc", true, b);
         Assert.True(b.Has("wide_arc"));
+    }
+
+    [Fact]
+    public void Art_xp_by_use_is_retired_from_the_fight_and_the_journey()
+    {
+        Assert.Null(typeof(Battle).GetField("ArtXp"));
+        Assert.Null(typeof(Battle).GetMethod("UseAbility"));
+        Assert.Null(typeof(Play.Journey).GetMethod("BankArt"));
+    }
+
+    [Fact]
+    public void Reflexes_earn_no_art_xp_by_use()
+    {
+        var j = Journey("warden");
+        ArtBook.Hold(j.Ch, "shield_bash");
+        double xp0 = j.Ch.Arts.TryGetValue("shield_bash", out var s0) ? s0.Xp : 0;
+        var b = j.StartBattle(true, new CollisionWorld(80), (_, _) => 0, 0, 0, 0, 7);
+        var l = new LampLoadout();
+        l.Reflexes.Add(new ReflexDef("shield_bash", "every", 0, null));
+        b.SetLamps(l);
+        for (int i = 0; i < 20; i++)
+        {
+            var e = Foe(b, "risen", 1.5, 0);
+            Tick(b, 0.2);
+            b.HitEnemy(e, 1e6, School.Physical, [Tag.Physical]);
+        }
+        j.Capture(b);
+        double xp1 = j.Ch.Arts.TryGetValue("shield_bash", out var s1) ? s1.Xp : 0;
+        Assert.Equal(xp0, xp1);
+        Assert.Equal(1, ArtBook.Rank(j.Ch, "shield_bash"));
     }
 }

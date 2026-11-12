@@ -83,8 +83,7 @@ public partial class Game
     {
         var b = Battle;
         var w = World;
-        LampBook.Bench = world => world == w && b != null && b == Battle && b.Player.Alive && PostMenu.Calm(b, p)
-            && Math.Pow(b.Player.X - p.X, 2) + Math.Pow(b.Player.Z - p.Z, 2) <= Math.Pow(Zones.LampRise.Reach + 1, 2) ? p.Id : null;
+        LampBook.Bench = world => world == w && b != null && b == Battle && PostMenu.AtBench(world, b, p) ? p.Id : null;
         CloseOverlay();
         Open(LampsScreen.On ? "lamps" : "arts");
     }

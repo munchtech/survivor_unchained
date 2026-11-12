@@ -166,11 +166,12 @@ public class CheckpointTests
             [Stat.MaxHealth] = 200, [Stat.MoveSpeed] = 5, [Stat.PickupRadius] = 2.4, [Stat.CritChance] = 0, [Stat.CritDamage] = 1.5, [Stat.Luck] = 1,
         });
         var b = new Battle(new BattleSetup { Seed = 5, Collision = new CollisionWorld(120), Combat = true, Stats = s, Weapons = [], Ability = AbilityKind.MirrorStep, Facets = ["fighting_reflections"] });
+        b.Rules.DashForms = true;
         var wolf = b.SpawnEnemy("wolf", -6, 0)!;
         wolf.AttackT = wolf.RangedT = 99;
         b.Tick(1 / 60.0, 0, 0);
         var at = b.Snapshot();
-        Assert.True(b.UseAbility(1, 0));
+        Assert.True(b.Dash(1, 0));
         Assert.Equal(2, b.Decoys.Count);
         var slots = b.Decoys.Select(d => d.Id).ToHashSet();
         Assert.Contains(wolf.Target, slots);

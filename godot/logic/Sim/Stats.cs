@@ -132,6 +132,14 @@ public sealed class StatBlock
         if (n > 0) Invalidate();
     }
 
+    /// <summary>Each of these mods taken out once (a loadout's own, replaced: Battle.ReplaceLamps).</summary>
+    public void RemoveEach(IEnumerable<StatMod> ms)
+    {
+        bool any = false;
+        foreach (var m in ms) any |= mods.Remove(m);
+        if (any) Invalidate();
+    }
+
     public bool HasSource(string source) => mods.Exists(m => m.Source == source);
 
     public IReadOnlyList<StatMod> List() => mods;

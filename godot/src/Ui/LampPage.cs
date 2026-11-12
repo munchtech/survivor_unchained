@@ -48,7 +48,7 @@ public partial class LampPage : Control
     /// <summary>A: the field's top and bottom.</summary>
     public const float FieldTop = 84, FieldBottom = 960;
 
-    public LampPage(CharacterData ch, WorldState? w, string? zone, LampSession? visit = null, bool safe = true, bool wide = false, Rect2 wickRect = default, List<Vector2>? seats = null)
+    public LampPage(CharacterData ch, WorldState? w, string? zone, LampSession? visit = null, Func<bool>? safe = null, bool wide = false, Rect2 wickRect = default, List<Vector2>? seats = null)
     {
         this.ch = ch; this.w = w; this.zone = zone;
         Wide = wide; WickRect = wickRect;
@@ -64,9 +64,10 @@ public partial class LampPage : Control
         if (wide) Board.Fe = new Vector4(0, 40, 0, FieldBottom - 900);
         Board.Visit = visit ?? new LampSession(ch);
         Board.ReadOnly = readOnly;
-        Board.Safe = safe;
-        Board.AtPost = !readOnly && LampBook.LayoutsOpen(w, zone);
-        AddChild(Wick = new LampWick(ch) { Visible = false, Safe = safe });
+        // (asked as each act runs: SU-043)
+        Board.SafeNow = safe ?? (() => true);
+        Board.AtPostNow = () => !readOnly && LampBook.LayoutsOpen(w, zone);
+        AddChild(Wick = new LampWick(ch) { Visible = false, Night = readOnly, SafeNow = safe ?? (() => true) });
         AddChild(Tabs = new WickTabs(ch));
         if (wide) { Wick.SetWide(wickRect.Size); Tabs.SetSeats(seats ?? new()); }
         AddChild(find = new LampFind(ch) { Visible = false });

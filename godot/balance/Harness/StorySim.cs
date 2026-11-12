@@ -245,7 +245,6 @@ public static class StorySim
                 if (trace && ev is Ev.Announce an) Console.Error.WriteLine($"{t / 60:0.000} {zone.Now,-7} ** {an.Title} {an.Subtitle}");
             }
             host.Pass(ArenaSim.Dt);
-            j.BankArt(b);
             ArenaSim.Drafts(b, pick, rng, drafts, null);
             if (r.CardsAtBoss < 0 && zone.Now == StoryNight.Stage.Boss) { r.CardsAtBoss = drafts.Cards; r.MaxHpAtBoss = b.MaxHp; r.ReachAtBoss = Pilot.Reach(b); }
             // Her choice at his side, by the run's own; and the crates, fired or left, by the run's own.
