@@ -70,6 +70,7 @@ public sealed class SoundBridge
                 case Ev.PlayerHit ph:
                     if (ph.Dodged) Sfx.Dodge(); else if (ph.Blocked) Sfx.Blocked(); else Sfx.Hurt(ph.Dot ? ph.Amount * 0.4 : ph.Amount);
                     break;
+                case Ev.Immune im: Sfx.Blocked(At(im.X, im.Z)); break;
                 case Ev.ShieldHit sh: Sfx.Blocked(); if (sh.Broke) Sfx.Shatter(); break;
                 case Ev.PlayerHeal hl when hl.Amount > 8: Sfx.Heal(); break;
                 case Ev.PlayerDeath: Sfx.Death(); break;

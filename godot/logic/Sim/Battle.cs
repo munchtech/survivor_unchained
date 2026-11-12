@@ -924,6 +924,17 @@ public sealed partial class Battle
         // and swings that happen to reach a neutral pass it by. Picking a
         // fight is a choice, not a stray spark.
         if (e.Disposition == Disposition.Ally || (e.Disposition == Disposition.Neutral && !e.Provoked && !o.Provoke)) return 0;
+        // (SU-060) A protected creature takes nothing: no chip, no events or accounting, no statuses. It shows it is
+        // immune; a mechanic that opts in by name still hears the hit.
+        if (e.TakenMul <= 0)
+        {
+            if (!o.Dot) Events.Emit(new Ev.Immune { X = e.X, Z = e.Z, Target = e.Id, School = school });
+            if (e.Boss && e.HearsWhileProtected != null && !o.Dot)
+            {
+                double hw = HitW; HitW = o.W ?? o.Weapon?.CutW ?? 1; Hooks.OnBossHit?.Invoke(e, school, 0); HitW = hw;
+            }
+            return 0;
+        }
         FightAt = Time;
         // (M3 MR 3) A chained cut is a share of the written blow (WeaponInst.CutW, set only inside its cast; a tick of
         // damage over time and everything unchained read 1). dmg arrives as the share already (WeaponInst.Damage): the
@@ -1282,7 +1293,7 @@ public sealed partial class Battle
     /// for a written number (a proc's flat base, an art's power).</param>
     public void ApplyStatus(Enemy e, StatusPayload p, double hitDamage, int depth = 0, string? from = null, bool resolved = true)
     {
-        if (!e.Alive || e.State == EnemyState.Dying) return;
+        if (!e.Alive || e.State == EnemyState.Dying || e.TakenMul <= 0) return;
         double chance = p.Chance * (1 + Stats.Get(Stat.StatusChance));
         // (M3 MR 3) riding a chained cut (statusW < 1) a status keeps its per-SECOND rates. Hard control is counted: its
         // chance is the cut's share of the blow's (as many stuns a minute; what lands is whole). Every other kind is kept by
@@ -1969,6 +1980,7 @@ public sealed partial class Battle
         e.HomeX = o.Home?.X ?? x; e.HomeZ = o.Home?.Z ?? z; e.Leash = o.Home?.Leash ?? 0;
         e.LastWeapon = null;
         e.TakenMul = 1;
+        e.HearsWhileProtected = null;
         e.SunderUntil = e.Sunder = 0;
         e.AirUntil = e.AirMore = 0;
         e.SlowUntil = e.SlowBy = 0;
@@ -2868,8 +2880,9 @@ public sealed partial class Battle
         // The campaign sets it off by its press record (ARPG.md 3.1); everywhere else as "cast" says.
         if (Campaign) w.Press = w.Def.Press;
         if (SkillMods.TryGetValue(id, out var sm)) Marks.Fold(w.Mods, sm);
-        Relight(w, false);
         Weapons.Add(w);
+        // (SU-063) Lit once it is carried, so its lit lamps' rules join the fight's (SyncWickRules walks Weapons).
+        Relight(w, false);
         foreach (var t in w.Def.Triggers) AddTrigger(t, $"weapon:{id}", 1, id);
         CheckDiscoveries();
         return w;

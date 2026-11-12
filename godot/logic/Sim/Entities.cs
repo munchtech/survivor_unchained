@@ -158,6 +158,9 @@ public sealed class Enemy : Pooled
     public double HomeX, HomeZ, Leash;
     /// <summary>Multiplier on damage taken (a ward, a vulnerable moment).</summary>
     public double TakenMul = 1;
+    /// <summary>(SU-060) While protected (TakenMul 0) nothing lands; the mechanic named here still hears each hit (its boss
+    /// script's OnBossHit, with no damage): the Barrow Lord's laying hastened by holy. Null: none (the default).</summary>
+    public string? HearsWhileProtected;
     /// <summary>Sundered (the Long Cut's cleave): until this time (the battle's clock) it takes Sunder more from her side.</summary>
     public double SunderUntil, Sunder;
     /// <summary>Thrown up (Groundbreaker's upheaval): until this time it can't move or strike (a stun holds it) and

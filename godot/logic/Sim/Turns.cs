@@ -238,10 +238,20 @@ public sealed partial class Battle
     /// relight that lit it replays it.</summary>
     void WickEvolve(WeaponInst w)
     {
+        // (SU-062) Reconciled both ways: a Turn's evolution goes (its triggers with it) when the Turn is no longer lit,
+        // and one earned (Battle.Evolve, the ember's or a chest's) is never touched.
+        if (w.WickGranted && w.Evolution is { } had && w.Wick?.Evolve != had.Id)
+        {
+            RemoveTriggers($"evo:{had.Id}");
+            w.Evolution = null;
+            var lamps = w.Wick?.Lit ?? Array.Empty<string>();
+            w.Wick = Turns.Build(w, lamps.Select(x => Wicks.Lamp(w.Id, x)).Where(l => l != null).Select(l => l!.Value), lamps);
+        }
         if (w.Wick?.Evolve is not { } id || w.Evolution != null) return;
         var evo = Array.Find(w.Def.Evolutions, e => e.Id == id);
         if (evo == null) return;
         w.Evolution = evo;
+        w.WickGranted = true;
         w.Wick = Turns.Build(w, w.Wick.Lit.Select(x => Wicks.Lamp(w.Id, x)).Where(l => l != null).Select(l => l!.Value), w.Wick.Lit);
         foreach (var t in evo.Triggers) AddTrigger(t, $"evo:{evo.Id}", 1, w.Id);
         Events.Emit(new Ev.Evolve { Weapon = w.Id, Into = evo.Id, Chest = true });

@@ -177,8 +177,10 @@ public sealed class WeaponInst
     public Evolution? Evolution
     {
         get => evolution;
-        set { evolution = value; tags = null; }
+        set { evolution = value; tags = null; WickGranted = false; }
     }
+    /// <summary>(SU-062) The evolution is a lit Turn's (Battle.WickEvolve), not earned: it goes when the Turn does.</summary>
+    public bool WickGranted;
 
     public WeaponBehavior Behavior => evolution?.Behavior ?? Def.Behavior;
     /// <summary>How it is set off: the evolution's own, else its skill's (a union's weapon is its own skill).</summary>
