@@ -678,7 +678,7 @@ public partial class LampBoard : Control
     bool RingGliding => ringT >= 0 && ringFrom >= 0 && focus >= 0 && ringFrom < n && slot.Length == n && slot[focus] >= 0;
     /// <summary>The card's cross-fade (0.08 s; -1 none), and the lamp it shows.</summary>
     double cardT = -1;
-    int cardLamp = -1, revealN, lmwN;
+    int cardLamp = -1, revealN;
     float inkA = -1, cardA = -1;
 
     /// <summary>The open (§11): the lamps fade in from her hearth outward (0.25 s), the halos bloom last; the labels and the
@@ -1041,6 +1041,12 @@ public partial class LampBoard : Control
             string pn = pick != null && Weapons.All.TryGetValue(pick, out var pw) ? pw.Name : "Light my way’s pick";
             fires = night ? $"Fires: {pn}" : $"Fires: {pn} (change: {(pad ? "A" : "Click")})";   // (read-only: a click only denies)
         }
+        else if (state[i] == 0 && LampBook.FlareOf(ch, nd.Id) is { } fl && LampBook.Learned(ch).Contains(fl))
+        {
+            // (SU-049) the Flare it teaches: carried, or carry it here
+            string fn = Lamps.Flare(fl)?.Name ?? fl;
+            fires = LampBook.Carried(ch) == fl ? $"Carried: {fn}" : night ? $"Teaches {fn}" : $"Teaches {fn} (carry it: {(pad ? "A" : "Click")})";
+        }
         // (a small lamp or an attribute has no name: the card's title row collapses, the place line leads)
         return new LampCardText(d != null ? d.Name : nd.Id, chip, chipC, place, d?.Text ?? "", feeds, feedsText,
             nd.Kind == "blue" ? d?.Price : null, stateLine, stateC, fires, prompts);
@@ -1148,7 +1154,11 @@ public partial class LampBoard : Control
     public LampSession Visit = null!;
     /// <summary>In the arena the board is read-only; in a fight nothing is lit; AtPost: not in the arena, where
     /// layouts are open (LampBook.LayoutsOpen: in a town, or at a lit lamp-post she stands at out of a fight).</summary>
-    public bool ReadOnly, Safe = true, AtPost;
+    public bool ReadOnly;
+    /// <summary>Asked as each act runs (SU-043): edits open now (PostMenu.EditsOpen), and a lamp may go out here (LayoutsOpen).</summary>
+    public Func<bool> SafeNow = () => true, AtPostNow = () => false;
+    public bool Safe => SafeNow();
+    public bool AtPost => AtPostNow();
     /// <summary>The lamps lit changed (the header's count, the tabs after a switch).</summary>
     public event Action? LampsChanged;
     /// <summary>The last refusal's words (null: none).</summary>
@@ -1165,8 +1175,6 @@ public partial class LampBoard : Control
     // the reveal: lit or put out in logic at once, shown one by one (a path 0.09 s apart, a branch from its tips, a switch)
     readonly Queue<(int I, bool On, double Wait)> reveal = new();
     double revealT;
-    bool lighting;
-    double lightT;
     bool holding;
     double holdT, holdDur;
     List<string> holdOrder = new();
@@ -1178,7 +1186,7 @@ public partial class LampBoard : Control
 
     double MinS => valleyS * 0.92;
     static double MaxS => LampBoardModel.LampScale * 1.12;
-    bool Busy => reveal.Count > 0 || lighting;
+    bool Busy => reveal.Count > 0;
     static double Ms(long t0) => (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
     /// <summary>The slowest focus change this visit (ms).</summary>
     public double WorstFocusMs { get; private set; }
@@ -1350,7 +1358,33 @@ public partial class LampBoard : Control
         if (focus < 0) return false;
         if (Refusal() is { } r) { if (r != "") Deny(r); return false; }
         var id = M.Nodes[focus].Id;
-        if (state[focus] == 0) { Deny(); return false; }
+        if (state[focus] == 0)
+        {
+            // (SU-048) a lit link: the chooser steps to the next skill it may fire (LampBook.NextLinkPick), kept and live
+            if (M.Nodes[focus].Kind == "link" && LampBook.NextLinkPick(ch, id) is { } pick)
+            {
+                Sound.Sfx.Pick();
+                Said = null;
+                Restate();
+                LampsChanged?.Invoke();
+                GD.Print($"LAMPBOARD link {id} fires {pick} (of {LampBook.LinkChoices(ch, id).Count})");
+                return true;
+            }
+            // (SU-049) a lit Flare lamp: carry its Flare (LampBook.Carry), into the fight by the reconcile
+            if (LampBook.FlareOf(ch, id) is { } fl && LampBook.Learned(ch).Contains(fl))
+            {
+                if (LampBook.Carried(ch) == fl) { Deny("Her Flare already"); return false; }
+                if (!Visit.Carry(fl)) { Deny(); return false; }
+                Sound.Sfx.Lamps("light_notable");
+                Said = null;
+                Restate();
+                LampsChanged?.Invoke();
+                GD.Print($"LAMPBOARD carry flare {fl}");
+                return true;
+            }
+            Deny();
+            return false;
+        }
         var why = LampBook.CanLight(ch, w, id);
         List<string>? got = why == LampNo.None ? (Visit.Light(w, id) ? [id] : null) : why == LampNo.Dark ? Visit.LightPath(w, id) : null;
         if (got == null)
@@ -1368,10 +1402,12 @@ public partial class LampBoard : Control
     public void LightMyWay()
     {
         if (Refusal() is { } r) { if (r != "") Deny(r); return; }
-        if (LampBook.Suggest(ch, w) == null) { Deny(LampBook.Spare(ch, w) <= 0 ? "No lamps left to light" : "Nothing to light next to her lamps"); return; }
-        lighting = true;
-        lightT = 0;
-        lmwN = 0;
+        if (!LampBook.LightMyWayWaits(ch, w)) { Deny(LampBook.Spare(ch, w) <= 0 ? "No lamps left to light" : "Nothing to light next to her lamps"); return; }
+        // (SU-047) the shared command (its lamps and the held wick points), then the lamps played in 0.09 s apart
+        var (got, burned) = Visit.LightMyWay(w);
+        Sound.Sfx.Lamps("light");
+        Show(got.Where(M.Index.ContainsKey).Select(x => (M.Index[x], true)), 0.09);
+        GD.Print($"LAMPBOARD light my way: {got.Count} lit, {burned} held points burned (spare {LampBook.Spare(ch, w)})");
     }
 
     /// <summary>X held or the right button held on the focus: put it out (0.35 s; 0.9 s and its branch, tips first, for a
@@ -1470,23 +1506,6 @@ public partial class LampBoard : Control
             }
             if (reveal.Count == 0) { lit.Clear(); foreach (var id in LampBook.Now(ch).Lit) if (M.Index.TryGetValue(id, out var j)) lit.Add(j); }
             if (any) Restate();
-        }
-        if (lighting && reveal.Count == 0)
-        {
-            lightT -= dt;
-            if (lightT <= 0)
-            {
-                lightT = 0.09;
-                if (LampBook.Suggest(ch, w) is { } id && Visit.Light(w, id))
-                {
-                    MarkLit(M.Index[id], LampMotion.Now);
-                    lit.Add(M.Index[id]);
-                    Sound.Sfx.Lamps(lmwN++ == 0 ? "light" : "path_tick");
-                    Restate();
-                    LampsChanged?.Invoke();
-                }
-                else lighting = false;
-            }
         }
         if (holding)
         {

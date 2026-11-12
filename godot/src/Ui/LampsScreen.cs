@@ -136,7 +136,15 @@ public partial class LampsScreen : Overlay
         return r;
     }
 
-    bool Safe => G.Battle is not { Combat: true };
+    /// <summary>The edits are open now (PostMenu.EditsOpen: out of a fight, or at the post's bench), asked as each act runs.</summary>
+    bool Safe() => PostMenu.EditsOpen(G.Journey.World, G.Zone?.Id, G.Battle);
+
+    /// <summary>A lamp, a wick or a layout committed: into the running fight at once (Journey.RefreshKit, installment 7).</summary>
+    void Live(LampPage p)
+    {
+        p.Board.LampsChanged += () => G.Journey.RefreshKit(G.Battle);
+        p.Wick.Changed += () => G.Journey.RefreshKit(G.Battle);
+    }
 
     public override bool Key(Act a) => Closing || (page != null && IsInstanceValid(page) && page.Key(a));
 
@@ -153,6 +161,7 @@ public partial class LampsScreen : Overlay
         page = new LampPage(ch, G.Journey.World, G.Zone?.Id, visit, Safe) { CustomMinimumSize = new Vector2(0, LampPage.Height) };
         visit = page.Visit;
         page.OpenWide += ToggleWide;
+        Live(page);
         v.AddChild(page);
     }
 
@@ -178,6 +187,7 @@ public partial class LampsScreen : Overlay
         page = new LampPage(ch, G.Journey.World, G.Zone?.Id, visit, Safe, true, WickRect(), seats) { Position = Vector2.Zero, Size = new Vector2(1920, 1080) };
         visit = page.Visit;
         page.OpenWide += ToggleWide;
+        Live(page);
         var board = page.Board;
         var vf = vp / new Vector2(1920, 1080);
         board.Knock(LampKnock.Hud, her?.Texture, vp);

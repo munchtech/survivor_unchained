@@ -219,6 +219,23 @@ public static class WickBook
         return Held(ch, skill) > 0 ? path.Take(Burning(ch, skill)).ToArray() : path;
     }
 
+    /// <summary>SU-046: what the wick panel shows, as the fight takes the skill. By day: lit = the lamps the day fight
+    /// lights (DayPath to DayRank, as Battle.Relight does), held = the lamps her held points would light next, apart;
+    /// rank = DayRank. By night (an arena): the night build (Path to the night's starting rank, RankIn), read-only.</summary>
+    public static WickPanel Panel(CharacterData ch, string skill, bool night)
+    {
+        var path = Path(ch, skill);
+        if (night)
+        {
+            int nr = RankIn(ch, skill, true);
+            return new WickPanel(path, path.Take(System.Math.Max(0, nr)).ToArray(), [], nr, true);
+        }
+        int rank = DayRank(ch, skill);
+        var lit = DayPath(ch, skill).Take(System.Math.Max(0, rank)).ToArray();
+        var held = path.Skip(lit.Length).Take(Held(ch, skill)).ToArray();
+        return new WickPanel(path, lit, held, rank, false);
+    }
+
     /// <summary>The lamp the next held point would light (Path[Burning]), or null: nothing held, or the path ends.</summary>
     public static string? NextLamp(CharacterData ch, string skill)
     {
@@ -366,3 +383,7 @@ public static class WickBook
         return w.Damage;
     }
 }
+
+/// <summary>The wick panel's reading of one skill (WickBook.Panel): its path, the lamps lit, the lamps held points would
+/// light (apart from the lit), the rank shown, and whether it is read-only (the arena's night build).</summary>
+public sealed record WickPanel(string[] Path, string[] Lit, string[] Held, int Rank, bool ReadOnly);

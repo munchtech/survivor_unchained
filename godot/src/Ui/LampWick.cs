@@ -71,7 +71,11 @@ public partial class LampWick : Control
     public string? Skill { get; private set; }
     /// <summary>All learned: the list of her learned skills she doesn't carry.</summary>
     public bool Listing { get; private set; }
-    public bool Safe = true;
+    /// <summary>Asked as each act runs (SU-043: PostMenu.EditsOpen).</summary>
+    public Func<bool> SafeNow = () => true;
+    /// <summary>The arena: the panel shows the night build (WickBook.Panel), read-only.</summary>
+    public bool Night;
+    public bool Safe => !Night && SafeNow();
     /// <summary>The chosen tab's center and the first tab's x, in this control (the stem rises from it).</summary>
     public Vector2 TabAt;
     int fr, fc, listI;
@@ -79,7 +83,7 @@ public partial class LampWick : Control
     List<StrandDef> strands = new();
     List<string> learned = new();
     IReadOnlyList<string> plan = Array.Empty<string>();
-    string[] path = [], litIds = [];
+    string[] path = [], litIds = [], heldIds = [];
     int rank;
     /// <summary>A skill was picked from All learned (its wick opens).</summary>
     public event Action<string>? Picked;
@@ -182,14 +186,19 @@ public partial class LampWick : Control
         deltaOf.Clear();
         if (Skill == null) return;
         plan = WickBook.PlanOf(ch, Skill).ToList();
-        path = WickBook.Path(ch, Skill);
-        rank = SkillBook.Rank(ch);
-        litIds = path.Take(Math.Max(0, rank)).ToArray();
+        // (SU-046) as the fight takes it: by day the burning lamps lit and the held points apart; the arena's night build
+        var v = WickBook.Panel(ch, Skill, Night);
+        path = v.Path;
+        rank = v.Rank;
+        litIds = v.Lit;
+        heldIds = v.Held;
     }
 
+    string Held => !Night && Skill != null && WickBook.Held(ch, Skill) is > 0 and var h ? $" · {h} held" : "";
     string Id(int r, int c) => r < strands.Count ? strands[r].LampId(c + 1) : "";
     bool Lit(int r, int c) => litIds.Contains(Id(r, c));
     bool Planned(int r, int c) => plan.Contains(Id(r, c));
+    bool HeldAt(int r, int c) => heldIds.Contains(Id(r, c));
     bool TurnTaken => Skill != null && (plan.Any(id => Wicks.IsTurn(Skill, id)) || litIds.Any(id => Wicks.IsTurn(Skill, id)));
     bool Crossed(int r) => TurnTaken && !Planned(r, 3) && !Lit(r, 3);
     Vector2 At(int r, int c) => new(c < 3 ? Lx0 + c * PitchX : Tx, Row0 + r * PitchY);
@@ -253,7 +262,7 @@ public partial class LampWick : Control
             return true;
         }
         if (Skill == null || strands.Count == 0) return false;
-        if (!Safe) return Deny("Change the plan somewhere safe");
+        if (!Safe) return Deny(Night ? "In the arena the wick is read-only" : "Change the plan somewhere safe");
         var id = Id(fr, fc);
         if (Planned(fr, fc))
         {
@@ -279,7 +288,7 @@ public partial class LampWick : Control
     public bool LightMyWay()
     {
         if (Skill == null || Wicks.Of(Skill) is not { } wk) return false;
-        if (!Safe) return Deny("Change the plan somewhere safe");
+        if (!Safe) return Deny(Night ? "In the arena the wick is read-only" : "Change the plan somewhere safe");
         var s = Wicks.StrandsOf(Skill).FirstOrDefault(x => x.Id == wk.Suggested);
         if (s == null) return Deny("Light my way has no strand here");
         int added = 0;
@@ -359,6 +368,7 @@ public partial class LampWick : Control
         var id = Id(r, c);
         int pi = plan.ToList().IndexOf(id), at = Array.IndexOf(path, id);
         bool pad = Play.Controls.Instance?.UsingPad == true;
+        if (HeldAt(r, c)) return "Held · a point waits to light it (Light my way, a lamp-post)";
         if (Lit(r, c)) return pi >= 0 ? $"Lit · {Ord(pi + 1)} in the plan · day rank {Roman(at + 1)}" : $"Lit · day rank {Roman(at + 1)}";
         if (pi >= 0) return at >= 0 ? $"Planned · {Ord(pi + 1)} · lights at day rank {Roman(at + 1)}" : $"Planned · {Ord(pi + 1)} in the plan";
         if (c == 3 && Crossed(r)) return "One Turn a skill";
@@ -382,13 +392,13 @@ public partial class LampWick : Control
         // (A: the left block fitted to LeftW so the stem and the braid pass clear of it; the counts on two lines)
         if (Wide) while (nmPx > 15 && LampInk.W(fnm, nm, nmPx) > LeftW) nmPx--;
         LampInk.Text(ci, fnm, nmPx, X0 + Pad, Y0 + 118, nm, LampInk.Ink);
-        LampInk.Text(ci, LampInk.F("alegreya-sans-700", 2), 13, X0 + Pad, Y0 + 140, $"DAY RANK {Roman(Math.Max(1, rank))}", LampInk.Gold);
+        LampInk.Text(ci, LampInk.F("alegreya-sans-700", 2), 13, X0 + Pad, Y0 + 140, $"{(Night ? "NIGHT" : "DAY")} RANK {Roman(Math.Max(1, rank))}", LampInk.Gold);
         if (Wide)
         {
             LampInk.Text(ci, fs, 14, X0 + Pad, Y0 + 160, $"{litIds.Length} of {Wicks.LampCount} lit", LampInk.Dim);
-            LampInk.Text(ci, fs, 14, X0 + Pad, Y0 + 177, $"{plan.Count} planned", LampInk.Dim);
+            LampInk.Text(ci, fs, 14, X0 + Pad, Y0 + 177, $"{plan.Count} planned" + Held, LampInk.Dim);
         }
-        else LampInk.Text(ci, fs, 14, X0 + Pad, Y0 + 160, $"{litIds.Length} of {Wicks.LampCount} lit · {plan.Count} planned", LampInk.Dim);
+        else LampInk.Text(ci, fs, 14, X0 + Pad, Y0 + 160, $"{litIds.Length} of {Wicks.LampCount} lit · {plan.Count} planned" + Held, LampInk.Dim);
         // the stem: up from the chosen tab, a 20 px bend, into the braid's knot
         var knot = new Vector2(Kx, Row0 + PitchY);
         DrawStem(ci, knot);

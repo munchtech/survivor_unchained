@@ -168,6 +168,9 @@ public partial class Game
     public void Gear(Action<Journey, Battle?> change)
     {
         change(Journey, Battle);
+        // Whatever the change (gear, lamps, a wick, a layout), the running fight takes the build at once (one reconcile,
+        // idempotent: CODEX_audit.md installment 7).
+        Journey.RefreshKit(Battle);
         scene?.SetLoadout(Loadouts.Of(Journey.Ch));
         screens.Current?.Refresh();
     }

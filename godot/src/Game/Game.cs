@@ -1253,7 +1253,6 @@ public partial class Game : Node, IZoneHost
 
     void OnEvents(List<CombatEvent> evs)
     {
-        Journey.BankArt(Battle);
         Journey.BankGold(Battle);
         sound.Events(evs, Battle);
         zone?.Events(evs);

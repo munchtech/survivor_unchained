@@ -135,7 +135,6 @@ public class DashStepTests
         var b = Arena(AbilityKind.BullRush);
         Assert.True(b.Dash(1, 0));
         Tick(b, 1);
-        Assert.Equal(0, b.ArtXp);
         Assert.Equal(1, b.ArtRank);
         // A step is kept on her, in the kit, in the fight.
         Assert.True(j.GrantDashStep("hard_landing", null));
