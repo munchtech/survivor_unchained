@@ -376,9 +376,13 @@ class Modes:
 _W = {}
 
 
-def _init(p1):
-    rig = json.loads((Path(p1) / "rig.json").read_text())
-    p = make_poser("lbs", str(Path(p1) / "body.glb"), rig)
+TIER_FILES = {"close": ("body.glb", "rig.json"), "play": ("play.glb", "play_rig.json")}
+
+
+def _init(p1, tier="close"):
+    g, rj = TIER_FILES[tier]
+    rig = json.loads((Path(p1) / rj).read_text())
+    p = make_poser("lbs", str(Path(p1) / g), rig)
     _W.update(p=p, sk=Skin(p), md=Modes(p, rig))
 
 
@@ -398,16 +402,18 @@ def main(argv=None):
     ap.add_argument("--step", type=int, default=2, help="game clips: every Nth key")
     ap.add_argument("--whole-x", action="store_true", help="whole-body self-crossing per pose (slower)")
     ap.add_argument("--dump", default=str(DUMP))
-    ap.add_argument("--jobs", type=int, default=12)
+    ap.add_argument("--jobs", type=int, default=4, help="12 ran out of 32 GB with --whole-x")
+    ap.add_argument("--tier", default="close", choices=sorted(TIER_FILES), help="close (body.glb) or play (play.glb)")
     ap.add_argument("--out", default=str(HERE / "out/foldcheck.json"))
     a = ap.parse_args(argv)
     t0 = time.time()
-    rig = json.loads((Path(a.p1) / "rig.json").read_text())
-    p = make_poser("lbs", str(Path(a.p1) / "body.glb"), rig)
+    g, rj = TIER_FILES[a.tier]
+    rig = json.loads((Path(a.p1) / rj).read_text())
+    p = make_poser("lbs", str(Path(a.p1) / g), rig)
     sk = Skin(p)
     modes = a.modes.split(",")
     rest = sk.measure(p.P0, a.whole_x)
-    out = {"p1": str(a.p1), "rest": rest, "poses": {}}
+    out = {"p1": str(a.p1), "tier": a.tier, "rest": rest, "poses": {}}
     sets = a.sets.split(",")
     src = []
     if "rom" in sets:
@@ -420,7 +426,7 @@ def main(argv=None):
         src += [("game", "full", x) for x in game_poses(p, clips, a.step, a.dump)]
     from multiprocessing import Pool
     jobs = [(st, mode, lab, G, keyed, a.whole_x) for st, mode, (lab, G, keyed) in src]
-    with Pool(a.jobs, initializer=_init, initargs=(a.p1,)) as pool:
+    with Pool(a.jobs, initializer=_init, initargs=(a.p1, a.tier)) as pool:
         res = pool.map(_one, jobs, chunksize=4)
     for (st, mode, lab, _, _, _), r in zip(jobs, res):
         out["poses"].setdefault(f"{st}:{lab}", {})[mode] = r
