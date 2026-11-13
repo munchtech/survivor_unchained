@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 using SurvivorUnchained.Play;
 using SurvivorUnchained.Rpg;
@@ -16,17 +17,22 @@ namespace SurvivorUnchained.Ui;
 /// </summary>
 public partial class LookThumbs : Node
 {
-    const int Version = 7;
+    const int Version = 8;
     static LookThumbs? studio;
     static readonly Dictionary<string, ImageTexture> done = new();
     static readonly Dictionary<string, List<TextureRect>> waiting = new();
-    static readonly Queue<(string Key, string Def, string Slot, int Size)> queue = new();
+    static readonly Queue<(string Key, string Def, string Slot, int Size, string Dyes)> queue = new();
     static readonly HashSet<string> queued = new();
 
     /// <summary>Whose looks are pictured (her); null = the running game's character.</summary>
     public static CharacterData? Her;
 
-    static string Key(string def, string slot, int size, bool own = false) => own ? $"own:{def}:{slot}.{size}" : $"{def}.{slot}.{size}";
+    static string Key(string def, string slot, int size, bool own = false, string dyes = "") =>
+        (own ? $"own:{def}:{slot}.{size}" : $"{def}.{slot}.{size}") + (dyes == "" ? "" : ".d_" + dyes.Replace('=', '-').Replace(',', '+'));
+
+    /// <summary>The wardrobe's dyes on a place as a signature for a tile's cache key ("metal=gilt,cloth=crimson", zones in order); "" for none.</summary>
+    public static string DyeSig(CharacterData ch, string slot) =>
+        ch.Dyes != null && ch.Dyes.TryGetValue(slot, out var z) && z.Count > 0 ? string.Join(",", z.OrderBy(kv => kv.Key, System.StringComparer.Ordinal).Select(kv => kv.Key + "=" + kv.Value)) : "";
     static readonly Color Dark = new("#141010");
 
     /// <summary>Asks for every look photograph of her cut now (each slot's looks and her own piece), so none waits for its first draw.</summary>
@@ -43,12 +49,12 @@ public partial class LookThumbs : Node
     static void Ask(string key, string def, string slot, int size)
     {
         if (done.ContainsKey(key) || FileAccess.FileExists(PathOf(key))) return;
-        Request(key, def, slot, size);
+        Request(key, def, slot, size, "");
     }
     static string PathOf(string key) => $"user://icons/look_{key.Replace(':', '_').Replace('/', '_')}.v{Version}.png";
 
     /// <summary>The look's thumbnail as a size x size control. Locked: 15% brightness, desaturated, an 18 px lock at 80% bottom-right.</summary>
-    public static Control For(string defId, string slot, int size, bool locked, bool own = false)
+    public static Control For(string defId, string slot, int size, bool locked, bool own = false, string dyes = "")
     {
         var box = new Control { CustomMinimumSize = new Vector2(size, size), MouseFilter = Control.MouseFilterEnum.Ignore, ClipContents = true };
         var r = new TextureRect
@@ -58,14 +64,14 @@ public partial class LookThumbs : Node
         };
         box.AddChild(new ColorRect { Color = Dark, AnchorRight = 1, AnchorBottom = 1, MouseFilter = Control.MouseFilterEnum.Ignore });
         box.AddChild(r);
-        var key = Key(defId, slot, size, own);
+        var key = Key(defId, slot, size, own, dyes);
         if (Get(key) is { } t) r.Texture = t;
         else
         {
             // (a dark tile until she is photographed, then the photograph fades in over 120 ms)
             if (!waiting.TryGetValue(key, out var l)) waiting[key] = l = new();
             l.Add(r);
-            Request(key, defId, slot, size);
+            Request(key, defId, slot, size, dyes);
         }
         if (locked)
         {
@@ -82,7 +88,8 @@ public partial class LookThumbs : Node
 
     static readonly Shader Dim = new()
     {
-        Code = "shader_type canvas_item; void fragment() { vec4 c = texture(TEXTURE, UV); float g = dot(c.rgb, vec3(0.299, 0.587, 0.114)); COLOR = vec4(vec3(g * 0.15), c.a); }",
+        // (locked: 28% brightness, 40% of its saturation kept, so the looks still differ from one another)
+        Code = "shader_type canvas_item; void fragment() { vec4 c = texture(TEXTURE, UV); float g = dot(c.rgb, vec3(0.299, 0.587, 0.114)); COLOR = vec4(mix(vec3(g), c.rgb, 0.4) * 0.28, c.a); }",
     };
 
     static Texture2D? Get(string key)
@@ -96,10 +103,10 @@ public partial class LookThumbs : Node
         return done[key] = ImageTexture.CreateFromImage(img);
     }
 
-    static void Request(string key, string def, string slot, int size)
+    static void Request(string key, string def, string slot, int size, string dyes)
     {
         if (!queued.Add(key)) return;
-        queue.Enqueue((key, def, slot, size));
+        queue.Enqueue((key, def, slot, size, dyes));
         if (studio != null && GodotObject.IsInstanceValid(studio)) return;
         if (Engine.GetMainLoop() is not SceneTree tree) return;
         DirAccess.MakeDirRecursiveAbsolute("user://icons");
@@ -148,18 +155,28 @@ public partial class LookThumbs : Node
         // (the head tile is framed from the look's meshes, not the bones: the highest point of anything drawn, so a tall hat fits;
         // body tiles start 0.06 m under the head bone, so no tile shows half a face)
         float tip = head.Y + 0.3f;
+        // (the head's width: the meshes that start up near the head, a brim among them; the tile is centred on it, 12% to spare each side)
+        float minX = head.X - 0.15f, maxX = head.X + 0.15f;
+        bool widened = false;
         if (framing == "head")
             foreach (var n in stage.FindChildren("*", "MeshInstance3D", true, false))
                 if (n is MeshInstance3D { Visible: true, Mesh: not null } mi && mi.IsVisibleInTree())
-                    tip = Mathf.Max(tip, (mi.GlobalTransform * mi.GetAabb()).End.Y);
+                {
+                    var box = mi.GlobalTransform * mi.GetAabb();
+                    tip = Mathf.Max(tip, box.End.Y);
+                    if (box.Position.Y < head.Y - 0.12f) continue;
+                    if (!widened) { minX = box.Position.X; maxX = box.End.X; widened = true; }
+                    else { minX = Mathf.Min(minX, box.Position.X); maxX = Mathf.Max(maxX, box.End.X); }
+                }
         var (top, bottom) = framing switch
         {
             "head" => (tip, head.Y - 0.2f),
             "feet" => (knee + 0.04f, foot.Y - 0.05f),
             _ => (head.Y - 0.06f, knee),
         };
-        float h = (top - bottom) * (framing == "head" ? 1.12f : 1.1f);
-        var at = new Vector3(head.X, (top + bottom) / 2, 0);
+        float h = (top - bottom) * (framing == "head" ? 1.24f : 1.1f);
+        if (framing == "head") h = Mathf.Max(h, (maxX - minX) * 1.24f);
+        var at = new Vector3(framing == "head" ? (minX + maxX) / 2 : head.X, (top + bottom) / 2, 0);
         float dist = h / 2 / Mathf.Tan(Mathf.DegToRad(cam.Fov / 2));
         var from = at + new Vector3(0, 0.02f, dist);
         cam.Transform = new Transform3D(Basis.LookingAt(at - from, Vector3.Up), from);
@@ -201,7 +218,7 @@ public partial class LookThumbs : Node
     };
 
     /// <summary>Her with only this look shown: her own equipment off, no dyes, the look collected.</summary>
-    static CharacterData? Wearing(string key, string defId, string slot)
+    static CharacterData? Wearing(string key, string defId, string slot, string dyes)
     {
         var src = Her ?? (Engine.GetMainLoop() is SceneTree t ? FindGame(t.Root)?.Journey.Ch : null);
         if (src == null) return null;
@@ -212,14 +229,25 @@ public partial class LookThumbs : Node
         {
             // her own piece of this place alone (nothing in it: the calling's fill), no look shown, no wardrobe dyes
             if (own != null && own.Def == defId) ch.Equipment[Wardrobe.EquipOf(slot)] = own;
-            ch.Shown = new(); ch.Dyes = new(); ch.Headgear = true;
+            ch.Shown = new(); ch.Dyes = DyesOf(slot, dyes); ch.Headgear = true;
             return ch;
         }
         ch.Looks ??= new(); ch.Looks.Add(defId);
         ch.Shown = new() { [slot] = defId };
-        ch.Dyes = new();
+        ch.Dyes = DyesOf(slot, dyes);
         ch.Headgear = true;
         return ch;
+    }
+
+    /// <summary>The wardrobe dyes of a tile's signature ("metal=gilt,cloth=crimson") on a place.</summary>
+    static Dictionary<string, Dictionary<string, string>> DyesOf(string slot, string sig)
+    {
+        var r = new Dictionary<string, Dictionary<string, string>>();
+        if (sig == "") return r;
+        var z = new Dictionary<string, string>();
+        foreach (var part in sig.Split(',')) if (part.Split('=') is [var zone, var id]) z[zone] = id;
+        r[slot] = z;
+        return r;
     }
 
     static Game? FindGame(Node n)
@@ -240,8 +268,8 @@ public partial class LookThumbs : Node
         }
         while (queue.Count > 0)
         {
-            var (key, def, slot, size) = queue.Dequeue();
-            if (!Stage(key, def, slot, size)) { queued.Remove(key); continue; }
+            var (key, def, slot, size, dyes) = queue.Dequeue();
+            if (!Stage(key, def, slot, size, dyes)) { queued.Remove(key); continue; }
             taking = (key, slot, size);
             wait = 6;
             view.RenderTargetUpdateMode = SubViewport.UpdateMode.Always;
@@ -249,10 +277,10 @@ public partial class LookThumbs : Node
         }
     }
 
-    bool Stage(string key, string defId, string slot, int size)
+    bool Stage(string key, string defId, string slot, int size, string dyes)
     {
         foreach (var c in stage.GetChildren()) if (c is PersonView) { stage.RemoveChild(c); c.QueueFree(); }
-        if (Wearing(key, defId, slot) is not { } ch) return false;
+        if (Wearing(key, defId, slot, dyes) is not { } ch) return false;
         var lo = Loadouts.Of(ch);
         var v = new PersonView(lo.Person, null, 0.8);
         EraseNoMore(v);

@@ -168,4 +168,19 @@ public class WardrobeTests
             Assert.Equal(keys.Count, keys.Distinct().Count());
         }
     }
+
+    [Fact]
+    public void A_piece_with_no_wear_draws_the_callings_kit_and_is_one_tile_with_the_look_that_draws_the_same()
+    {
+        var ch = Her();
+        ch.Equipment.Body = Own(ch, "padded_jerkin");
+        Assert.False(Wardrobe.OwnHasLook(ch, "body"));
+        Wardrobe.BackFill(ch);
+        // nothing found draws what her own does yet: no merged tile
+        Assert.Null(Wardrobe.OwnLook(ch, "body"));
+        Assert.True(Wardrobe.Collect(ch, "warden_plate"));
+        var same = Wardrobe.OwnLook(ch, "body");
+        Assert.NotNull(same);
+        Assert.Equal(Wardrobe.OwnDrawn(ch, "body"), Wardrobe.LookDrawn(ch, same!, "body"));
+    }
 }

@@ -83,6 +83,40 @@ public static class Wardrobe
 
     public static List<ItemDef> Found(CharacterData ch, string slot) => All(ch, slot).Where(d => ch.Looks?.Contains(d.Id) == true).ToList();
 
+    static string Calling(CharacterData ch) => ch.Archetype == "stalker" ? "ranger" : ch.Archetype;
+
+    /// <summary>What a place draws for a set of worn pieces: the calling's own pieces fill what they leave, as HerWear lays them
+    /// (a piece with no `wear` list leaves the whole group to the calling's kit). A sorted "slot=piece" key for the group.</summary>
+    static string DrawnKey(CharacterData ch, Dictionary<string, string> worn, string slot)
+    {
+        var group = Wear.Group(EquipOf(slot));
+        var look = Wear.Look(worn, Calling(ch), ArmorIndex.Shared);
+        return string.Join("|", look.Where(kv => group.Contains(kv.Key)).OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => kv.Key + "=" + kv.Value));
+    }
+
+    /// <summary>The pieces "Your own" draws for a place (her equipped item's, else her calling's kit), as a key.</summary>
+    public static string OwnDrawn(CharacterData ch, string slot) => DrawnKey(ch, Wear.Of(ch.Equipment), slot);
+
+    /// <summary>The pieces a look draws for its place (over the calling's kit where it leaves gaps), as a key.</summary>
+    public static string LookDrawn(CharacterData ch, ItemDef def, string slot)
+    {
+        var group = Wear.Group(EquipOf(slot));
+        var w = new Dictionary<string, string>();
+        foreach (var p in def.Wear ?? new()) if (group.Contains(Wear.SlotOf(p))) w[Wear.SlotOf(p)] = p;
+        return DrawnKey(ch, w, slot);
+    }
+
+    /// <summary>A found look that draws exactly what "Your own" draws for this place: the two are one picture, so the screen shows one tile.</summary>
+    public static ItemDef? OwnLook(CharacterData ch, string slot)
+    {
+        var key = OwnDrawn(ch, slot);
+        return Found(ch, slot).FirstOrDefault(d => LookDrawn(ch, d, slot) == key);
+    }
+
+    /// <summary>Does her own piece of this place have a look of its own (a `wear` list)? False for none worn too.</summary>
+    public static bool OwnHasLook(CharacterData ch, string slot) =>
+        ch.Equipment[EquipOf(slot)] is { } w && Items.Find(w.Def)?.Wear is { Count: > 0 };
+
     public static (int Found, int Total) Count(CharacterData ch)
     {
         int f = 0, t = 0;

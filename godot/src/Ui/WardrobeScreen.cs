@@ -18,17 +18,22 @@ public partial class WardrobeScreen : Overlay
     public override string Kind => "wardrobe";
     public override bool Dismissable => false;
     // One her: the world's, framed low and tall beside the panel (W22). --ward-frame P,D,H,SHIFT tries another.
-    public override float CameraShift => WardFrame.Shift;
+    // (the head tab leans on a little more: its hat and head are centred in x 0-967 by what the camera sees, HeadTarget)
+    public override float CameraShift => slot == 0 && headShift is float hs ? hs : WardFrame.Shift;
+    float? headShift;
     public override float CameraNear => 0.56f;
     // Head has its own frame (a tall hat keeps its tip in view, her chin near the middle); Body and Feet keep WardFrame. The screen
     // re-applies it when the tab changes (Game.Reframe).
-    public override (float Pitch, float Distance, float Height)? CameraFrame => slot == 0 ? HeadFrame : (WardFrame.Pitch, WardFrame.Distance, WardFrame.Height);
+    public override (float Pitch, float Distance, float Height)? CameraFrame => slot == 0 ? headNow ?? HeadFrame : (WardFrame.Pitch, WardFrame.Distance, WardFrame.Height);
+    // The head tab's frame, worked out from what she wears (HeadTarget) and eased to (250 ms): the hat's bounds plus head to collarbone fill 62% of the
+    // height, the brim no wider than 860 px; headgear off, head to collarbone by the same rule.
+    (float Pitch, float Distance, float Height)? headNow;
     static (float Pitch, float Distance, float Height) HeadFrame => Args.Get("head-frame") is string f && f.Split(',') is [var p, var d, var h]
-        ? (Pf(p), Pf(d), Pf(h)) : (8, 2.0f, 1.75f);
+        ? (Pf(p), Pf(d), Pf(h)) : (8, 1.5f, 1.65f);
     protected override string CloseWord => "Back";
 
     static (float Pitch, float Distance, float Height, float Shift) WardFrame => Args.Get("ward-frame") is string f && f.Split(',') is [var p, var d, var h, var sh]
-        ? (Pf(p), Pf(d), Pf(h), Pf(sh)) : (12, 3.9f, 0.95f, -460);
+        ? (Pf(p), Pf(d), Pf(h), Pf(sh)) : (12, 3.9f, 0.95f, -477);
     static float Pf(string s) => float.Parse(s, System.Globalization.CultureInfo.InvariantCulture);
 
     const int Tile = 112, Cols = 7, Swatch = 34;
@@ -80,6 +85,15 @@ public partial class WardrobeScreen : Overlay
 
     public override void _Process(double delta)
     {
+        if (slot == 0 && HeadTarget() is { } tg)
+        {
+            var cur = headNow ?? HeadFrame;
+            float k = 1 - Mathf.Exp(-(float)delta * 12f);
+            var next = (Mathf.Lerp(cur.Pitch, tg.Pitch, k), Mathf.Lerp(cur.Distance, tg.Distance, k), Mathf.Lerp(cur.Height, tg.Height, k));
+            headShift = Mathf.Lerp(headShift ?? WardFrame.Shift, tg.Shift, k);
+            if (headNow == null || Mathf.Abs(next.Item2 - cur.Distance) > 0.0005f || Mathf.Abs(next.Item3 - cur.Height) > 0.0005f) { headNow = next; G.Reframe(this); }
+            else if (Mathf.Abs(tg.Shift - (headShift ?? 0)) > 0.5f) G.Reframe(this);
+        }
         if (!wantDirty) return;
         rest += delta;
         if (rest < 0.12) return;
@@ -105,6 +119,55 @@ void fragment() {
 }",
     };
 
+    /// <summary>The head frame for what she wears now, from the world's her: the highest mesh (hat tip, else hair) to her collarbone is 62% of the frame's
+    /// height, and the widest of what sits at the head (a brim) is at most 860 px of it; the aim is the middle of that span. Null until she stands in the world.</summary>
+    (float Pitch, float Distance, float Height, float Shift)? HeadTarget()
+    {
+        if (G.Scene?.Player is not { } pv || !IsInstanceValid(pv) || !pv.IsInsideTree() || GetViewport()?.GetCamera3D() is not { } cam) return null;
+        var sk = pv.Person.Skeleton;
+        if (sk == null) return null;
+        int hi = sk.FindBone("Head"), ci = sk.FindBone("clavicle_l"), ni = sk.FindBone("Neck");
+        if (hi < 0) return null;
+        float Y(int i) => (sk.GlobalTransform * sk.GetBoneGlobalPose(i).Origin).Y;
+        float headY = Y(hi);
+        // (her collarbone: the neck's root; the clavicle bone's own origin sits down at the shoulder)
+        float collar = ci >= 0 ? Y(ci) + 0.12f : ni >= 0 ? Y(ni) - 0.02f : headY - 0.25f;
+        float tip = headY + 0.15f, lo = float.MaxValue, hiX = float.MinValue, sx0 = float.MaxValue, sx1 = float.MinValue;
+        Aabb? group = null;
+        var right = cam.GlobalBasis.X;
+        foreach (var n in pv.FindChildren("*", "MeshInstance3D", true, false))
+        {
+            if (n is not MeshInstance3D { Mesh: not null } mi || !mi.IsVisibleInTree()) continue;
+            var box = mi.GlobalTransform * mi.GetAabb();
+            tip = Mathf.Max(tip, box.End.Y);
+            if (box.Position.Y < headY - 0.12f) continue;
+            group = group is { } g ? g.Merge(box) : box;
+            for (int c = 0; c < 8; c++)
+            {
+                float x = box.GetEndpoint(c).Dot(right);
+                lo = Mathf.Min(lo, x); hiX = Mathf.Max(hiX, x);
+            }
+        }
+        float span = tip - collar, width = hiX > lo ? hiX - lo : 0.3f;
+        float tan = Mathf.Tan(Mathf.DegToRad(cam.Fov) / 2);
+        float visible = Mathf.Max(span / 0.62f, width * 1080f / 835f);
+        float d = visible / 2 / tan;
+        float centre = (tip + collar) / 2 - pv.GlobalPosition.Y;
+        // (the shift that puts the head's middle at x 483.5, the middle of the free ground: where it is on screen now, less the camera's own
+        // sideways offset, tells where it would be with none; no feedback on the camera's easing)
+        float shift = WardFrame.Shift;
+        if (group is { } gb)
+        {
+            var mid = gb.GetCenter();
+            float rows = GetViewport().GetVisibleRect().Size.Y / 1080f;
+            float depth = -(cam.GlobalTransform.AffineInverse() * mid).Z;
+            float perPx = 2 * depth * Mathf.Tan(Mathf.DegToRad(cam.Fov) / 2) / GetViewport().GetVisibleRect().Size.Y;
+            float zeroX = (cam.UnprojectPosition(mid).X + cam.HOffset / perPx) / rows;
+            shift = 483.5f - zeroX;
+        }
+        return (8, d, centre, shift);
+    }
+
     CharacterData Ch => G.Journey.Ch;
     string Slot => Wardrobe.LookSlots[slot];
 
@@ -119,7 +182,7 @@ void fragment() {
         var ch = Ch;
         Wardrobe.BackFill(ch);
         LookThumbs.Prefetch(ch, Tile - 4);
-        var v = BookPanel(null, () => G.Open("inventory"));
+        var v = Page();
         Dof();
         // A 6 px blur of what is behind the page, under the panel.
         if (v.GetParent() is Control panel)
@@ -140,31 +203,77 @@ void fragment() {
         var own = ch.Equipment[Wardrobe.EquipOf(Slot)];
         var ownName = own != null ? Items.Get(own.Def).Name : null;
         v.AddChild(Style.Label((shownDef?.Name ?? ownName ?? "Nothing worn").ToUpperInvariant(), Style.Display, 28, shownDef != null ? Style.EmberHi : Kit.Ink, false, HorizontalAlignment.Left, false));
-        v.AddChild(Style.Label(shownDef == null ? "your own piece, as it is" : ownName != null ? $"over: {ownName}" : "over nothing", Style.TextItalic, 14, Kit.Dim, false, HorizontalAlignment.Left, false));
+        bool ownLook = Wardrobe.OwnHasLook(ch, Slot);
+        v.AddChild(Style.Label(shownDef == null
+            ? (ownName == null || ownLook ? "your own piece, as it is" : "your own piece (no look of its own)")
+            : ownName == null ? "over nothing" : ownLook ? $"over: {ownName}" : "over: your own (no look of its own)", Style.TextItalic, 14, Kit.Dim, false, HorizontalAlignment.Left, false));
         status = Style.Label("", Style.TextItalic, 15, Kit.Ink2, false, HorizontalAlignment.Left, false);
         status.CustomMinimumSize = new Vector2(0, 22);
         v.AddChild(status);
-        v.AddChild(Looks(ch));
+        // (two rows of tiles and the tick's row are always kept, so the dyes begin at the same y on every tab)
+        var tiles = Style.V(0);
+        tiles.CustomMinimumSize = new Vector2(0, Tile * 2 + 10);
+        tiles.AddChild(Looks(ch));
+        v.AddChild(tiles);
+        var tick = Style.V(0);
+        tick.CustomMinimumSize = new Vector2(0, 28);
         if (Slot == "head")
         {
             bool on = ch.Headgear != false;
-            v.AddChild(Nav.Skip(TickRow("Show headgear", on, () => { ch.Headgear = !on; Sound.Sfx.Page(); G.Gear((j, b) => { }); })));
+            tick.AddChild(Nav.Skip(TickRow("Show headgear", on, () => { ch.Headgear = !on; Sound.Sfx.Page(); G.Gear((j, b) => { }); })));
         }
+        v.AddChild(tick);
         v.AddChild(Style.Gap(8));
         v.AddChild(Kit.Head("Dyes"));
         v.AddChild(DyeRows(ch));
-        v.AddChild(Style.Gap(6));
+        // (the footer is pinned to the foot of the panel)
+        v.AddChild(new Control { SizeFlagsVertical = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
         v.AddChild(Style.Label("Every piece you find adds its look here. Looks change how you look, never what your gear does.", Style.TextItalic, 15, Kit.Dim, true, HorizontalAlignment.Center));
         bool pad = Controls.Instance.UsingPad;
         var p = pad ? Kit.Prompts(Kit.Prompt(Act.Confirm, "Choose"), Kit.Prompt(Act.Cancel, "Back"))
             : Kit.Prompts(Kit.Prompt("Click", "Choose"), Kit.Prompt("Hover", "Preview"), Kit.Prompt("Esc", "Back"));
         p.CustomMinimumSize = new Vector2(0, 30);
+        v.AddChild(Style.Gap(6));
         v.AddChild(p);
+        v.AddChild(Style.Gap(PanelFoot - Margin));
         Describe(null);
         // On open her sword and shield go away at once (a swap dressed over frames would leave them in view for a while).
         ApplyWorld(null, !opened);
         opened = true;
     }
+
+    /// <summary>The one panel, the same rect on every tab and look (x967-1872, y136-943), and behind it a black gradient from nothing at x900 to half
+    /// at the right edge, so the panel sits on calm ground. Returns its column.</summary>
+    VBoxContainer Page()
+    {
+        HideHud();
+        var shade = new TextureRect
+        {
+            Texture = new GradientTexture2D
+            {
+                Gradient = new Gradient { Colors = new[] { new Color(0, 0, 0, 0), new Color(0, 0, 0, 0.5f) }, Offsets = new[] { 0f, 1f } },
+                Width = 256, Height = 4,
+            },
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore,
+            Position = new Vector2(900, 0), Size = new Vector2(1020, 1080),
+        };
+        AddChild(shade);
+        var panel = Style.Panel(Kit.Window(Margin, Margin, Margin));
+        panel.Position = new Vector2(PanelX, PanelY);
+        panel.CustomMinimumSize = new Vector2(PanelW, PanelH);
+        panel.Size = new Vector2(PanelW, PanelH);
+        panel.MouseFilter = MouseFilterEnum.Stop;
+        panel.SelfModulate = Colors.White with { A = GroundAlpha };
+        AddChild(panel);
+        var v = Style.V(Style.Gap3);
+        panel.AddChild(v);
+        if (Args.Get("ward-log") != null) panel.Resized += () => GD.Print($"WARD panel rect {panel.GlobalPosition.X},{panel.GlobalPosition.Y} {panel.Size.X}x{panel.Size.Y}");
+        return v;
+    }
+
+    const float PanelX = 967, PanelY = 136, PanelW = 905, PanelH = 807;
+    // The footer's foot is this far above the panel's bottom (the margin inside it, and the rest).
+    const float PanelFoot = 45;
 
     /* ---------------------------------------------------------- her, world -- */
 
@@ -207,28 +316,37 @@ void fragment() {
         grid.AddThemeConstantOverride("v_separation", 10);
         var shownDef = Wardrobe.ShownDef(ch, Slot);
         bool hidden = Slot == "head" && ch.Headgear == false;
-        // Your own first: what is equipped, or an empty place. A look has no level and no rarity.
+        // Your own first: what is equipped, or an empty place. A look has no level and no rarity. When a found look draws exactly what her own does
+        // (a piece with no look of its own draws her calling's kit, the same as a look of that kit), the two are one tile: the look's, with the band.
         var worn = ch.Equipment[Wardrobe.EquipOf(Slot)];
         var ownDef = worn != null ? Items.Get(worn.Def) : null;
-        grid.AddChild(LookTile(ownDef, Slot, worn != null ? "Your own" : "Nothing worn", shownDef == null, true, hidden && shownDef == null, true,
-            () => Set(null), over => { if (over) { Preview(c => Wardrobe.SetShown(c, Slot, null)); Describe(worn != null ? $"Your own: {ownDef!.Name}" : "Nothing worn"); } else { Preview(null); Describe(null); } },
-            "look:own", worn != null ? "Your own" : "Nothing worn"));
+        var merged = Wardrobe.OwnLook(ch, Slot);
+        var sig = LookThumbs.DyeSig(ch, Slot);
+        void OwnHover(bool over) { if (over) { Preview(c => Wardrobe.SetShown(c, Slot, null)); Describe(worn != null ? $"Your own: {ownDef!.Name}" : "Nothing worn"); } else { Preview(null); Describe(null); } }
+        if (merged != null)
+        {
+            bool sel = shownDef == null || shownDef.Id == merged.Id;
+            grid.AddChild(LookTile(merged, Slot, "Your own", sel, true, hidden && sel, false, () => Set(null), OwnHover, "look:own", ownDef?.Name ?? "Your own", sel ? sig : ""));
+        }
+        else
+            grid.AddChild(LookTile(ownDef, Slot, worn != null ? "Your own" : "Nothing worn", shownDef == null, true, hidden && shownDef == null, true,
+                () => Set(null), OwnHover, "look:own", worn != null ? "Your own" : "Nothing worn", shownDef == null ? sig : ""));
         // Then the found looks, then the ones not yet found.
-        foreach (var def in Wardrobe.All(ch, Slot).OrderBy(d => ch.Looks.Contains(d.Id) ? 0 : 1))
+        foreach (var def in Wardrobe.All(ch, Slot).Where(d => d.Id != merged?.Id).OrderBy(d => ch.Looks.Contains(d.Id) ? 0 : 1))
         {
             bool have = ch.Looks.Contains(def.Id);
             var id = def.Id;
             bool sel = have && shownDef?.Id == id;
             grid.AddChild(LookTile(def, Slot, null, sel, have, hidden && sel, false, have ? () => Set(id) : null,
                 have ? over => { if (over) { Preview(c => Wardrobe.SetShown(c, Slot, id)); Describe(def.Name); } else { Preview(null); Describe(null); } } : null,
-                have ? $"look:{id}" : null, have ? def.Name : null));
+                have ? $"look:{id}" : null, have ? def.Name : $"{def.Name}: not found yet", sel ? sig : ""));
         }
         return grid;
     }
 
     /// <summary>A look's tile, 96 px: a dark neutral fill, a 1 px quiet line, the look worn (LookThumbs); no level, rarity, badge or
     /// count. Selected is an ember frame, hover a 6% white fill; not found is the same picture dim and desaturated with a lock.</summary>
-    static Control LookTile(ItemDef? def, string slot, string? caption, bool selected, bool found, bool crossed, bool own, Action? press, Action<bool>? hover, string? navId, string? tip)
+    static Control LookTile(ItemDef? def, string slot, string? caption, bool selected, bool found, bool crossed, bool own, Action? press, Action<bool>? hover, string? navId, string? tip, string dyes = "")
     {
         var box = new Panel { CustomMinimumSize = new Vector2(Tile, Tile), MouseFilter = Control.MouseFilterEnum.Stop };
         var sb = new StyleBoxFlat { BgColor = Kit.Tile };
@@ -238,7 +356,7 @@ void fragment() {
         box.AddThemeStyleboxOverride("panel", sb);
         if (def != null || own)
         {
-            Control pic = own ? LookThumbs.For(def?.Id ?? "none", slot, Tile - 4, false, true) : LookThumbs.For(def!.Id, slot, Tile - 4, !found);
+            Control pic = own ? LookThumbs.For(def?.Id ?? "none", slot, Tile - 4, false, true, dyes) : LookThumbs.For(def!.Id, slot, Tile - 4, !found, false, dyes);
             pic.Position = new Vector2(2, 2);
             pic.Size = new Vector2(Tile - 4, Tile - 4);
             pic.MouseFilter = Control.MouseFilterEnum.Ignore;
@@ -257,15 +375,7 @@ void fragment() {
             l.MouseFilter = Control.MouseFilterEnum.Ignore;
             box.AddChild(l);
         }
-        if (!found)
-        {
-            var lk = Glyphs.Icon("lock", 18, Kit.Ink2);
-            lk.Modulate = new Color(1, 1, 1, 0.8f);
-            lk.Position = new Vector2(Tile - 18 - 5, Tile - 18 - 5);
-            lk.Size = new Vector2(18, 18);
-            lk.MouseFilter = Control.MouseFilterEnum.Ignore;
-            box.AddChild(lk);
-        }
+        // (a not-found look's lock is drawn by its picture)
         if (crossed)
         {
             var eye = new EyeBadge { Position = new Vector2(Tile - 20 - 5, 5), Size = new Vector2(20, 20), MouseFilter = Control.MouseFilterEnum.Ignore };
@@ -314,6 +424,8 @@ void fragment() {
     Control DyeRows(CharacterData ch)
     {
         var v = Style.V(10);
+        // (three rows of swatches high on every tab and look, so the block never changes the page)
+        v.CustomMinimumSize = new Vector2(0, Swatch * 3 + 20);
         var zones = Wardrobe.ZonesOfSlot(ch, Slot);
         if (zones.Count == 0) { v.AddChild(Style.Label("Nothing here takes a dye.", Style.TextItalic, 15, Kit.Dim)); return v; }
         var offered = Wardrobe.Offered(ch);
@@ -325,11 +437,12 @@ void fragment() {
             string? now = set != null && set.TryGetValue(z, out var cur) ? cur : null;
             var row = Style.H(16);
             if (hiddenHat) row.Modulate = new Color(1, 1, 1, 0.45f);
-            var name = Style.Label(ZoneNames.GetValueOrDefault(z, z) + (hiddenHat ? " (hidden)" : ""), Style.Ui, 16, Kit.Ink2, false, HorizontalAlignment.Left, false);
-            name.CustomMinimumSize = new Vector2(hiddenHat ? 150 : 70, 0);
+            // (a fixed label column: the swatches begin at the same x on every row and in every state)
+            var name = Style.Label(ZoneNames.GetValueOrDefault(z, z), Style.Ui, 16, Kit.Ink2, false, HorizontalAlignment.Left, false);
+            name.CustomMinimumSize = new Vector2(70, 0);
             name.SizeFlagsVertical = SizeFlags.ShrinkCenter;
             row.AddChild(name);
-            var sw = new HFlowContainer { CustomMinimumSize = new Vector2(202, 0), SizeFlagsVertical = SizeFlags.ShrinkCenter, MouseFilter = MouseFilterEnum.Ignore };
+            var sw = new HFlowContainer { CustomMinimumSize = new Vector2(450, 0), SizeFlagsVertical = SizeFlags.ShrinkCenter, MouseFilter = MouseFilterEnum.Ignore };
             sw.AddThemeConstantOverride("h_separation", 8);
             sw.AddThemeConstantOverride("v_separation", 8);
             sw.AddChild(MakeSwatch(MadeColour(ch, z), false, "As made", now == null, true, () => { Wardrobe.SetDye(ch, Slot, z, null); Changed(); }, over => Hover(over, "As made", c => Wardrobe.SetDye(c, Slot, z, null))));
@@ -340,7 +453,7 @@ void fragment() {
                 sw.AddChild(MakeSwatch(new Color(fin.Hex), fin.Metal, d.Name, now == d.Id, false, () => { Wardrobe.SetDye(ch, Slot, z, dd.Id); Changed(); }, over => Hover(over, dd.Name, c => Wardrobe.SetDye(c, Slot, z, dd.Id))));
             }
             row.AddChild(sw);
-            var chosen = now == null ? "As made" : Wardrobe.Dye(now)?.Name ?? now;
+            var chosen = (now == null ? "As made" : Wardrobe.Dye(now)?.Name ?? now) + (hiddenHat ? " (hidden)" : "");
             var cn = Style.Label(chosen, Style.Ui, 16, Kit.Ink2, false, HorizontalAlignment.Left, false);
             cn.SizeFlagsVertical = SizeFlags.ShrinkCenter;
             row.AddChild(cn);
