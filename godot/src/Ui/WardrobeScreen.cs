@@ -132,9 +132,12 @@ void fragment() {
         float headY = Y(hi);
         // (her collarbone: the neck's root; the clavicle bone's own origin sits down at the shoulder)
         float collar = ci >= 0 ? Y(ci) + 0.12f : ni >= 0 ? Y(ni) - 0.02f : headY - 0.25f;
-        float tip = headY + 0.15f, lo = float.MaxValue, hiX = float.MinValue, sx0 = float.MaxValue, sx1 = float.MinValue;
+        // (measured on the screen as the camera sees it now, and the distance scaled by how far off it is: the size on screen goes
+        // as one over the distance, so this settles where the larger of the two is exactly at its mark; a prediction from the
+        // meshes' sizes alone put the brim at 910 px, the hat nearer the lens than the aim)
+        float rows = GetViewport().GetVisibleRect().Size.Y / 1080f;
+        float tip = headY + 0.15f, top = float.MaxValue, x0 = float.MaxValue, x1 = float.MinValue;
         Aabb? group = null;
-        var right = cam.GlobalBasis.X;
         foreach (var n in pv.FindChildren("*", "MeshInstance3D", true, false))
         {
             if (n is not MeshInstance3D { Mesh: not null } mi || !mi.IsVisibleInTree()) continue;
@@ -144,14 +147,18 @@ void fragment() {
             group = group is { } g ? g.Merge(box) : box;
             for (int c = 0; c < 8; c++)
             {
-                float x = box.GetEndpoint(c).Dot(right);
-                lo = Mathf.Min(lo, x); hiX = Mathf.Max(hiX, x);
+                var q = box.GetEndpoint(c);
+                if (cam.IsPositionBehind(q)) continue;
+                var sp = cam.UnprojectPosition(q) / rows;
+                top = Mathf.Min(top, sp.Y); x0 = Mathf.Min(x0, sp.X); x1 = Mathf.Max(x1, sp.X);
             }
         }
-        float span = tip - collar, width = hiX > lo ? hiX - lo : 0.3f;
-        float tan = Mathf.Tan(Mathf.DegToRad(cam.Fov) / 2);
-        float visible = Mathf.Max(span / 0.62f, width * 1080f / 835f);
-        float d = visible / 2 / tan;
+        var headP = sk.GlobalTransform * sk.GetBoneGlobalPose(hi).Origin;
+        float bottom = cam.UnprojectPosition(new Vector3(headP.X, collar, headP.Z)).Y / rows;
+        float cur = (headNow ?? HeadFrame).Distance;
+        float off = top < bottom && x1 > x0 ? Mathf.Max((bottom - top) / ((group is { } hg && hg.End.Y > headY + 0.3f ? 0.62f : 0.45f) * 1080f), (x1 - x0) / 835f) : 1f;
+        // (bare-headed, head to collarbone at 62% was a face filling the frame: 45%, her shoulders in)
+        float d = Mathf.Clamp(cur * off, 0.8f, 4.5f);
         float centre = (tip + collar) / 2 - pv.GlobalPosition.Y;
         // (the shift that puts the head's middle at x 483.5, the middle of the free ground: where it is on screen now, less the camera's own
         // sideways offset, tells where it would be with none; no feedback on the camera's easing)
@@ -159,7 +166,6 @@ void fragment() {
         if (group is { } gb)
         {
             var mid = gb.GetCenter();
-            float rows = GetViewport().GetVisibleRect().Size.Y / 1080f;
             float depth = -(cam.GlobalTransform.AffineInverse() * mid).Z;
             float perPx = 2 * depth * Mathf.Tan(Mathf.DegToRad(cam.Fov) / 2) / GetViewport().GetVisibleRect().Size.Y;
             float zeroX = (cam.UnprojectPosition(mid).X + cam.HOffset / perPx) / rows;
@@ -206,7 +212,7 @@ void fragment() {
         bool ownLook = Wardrobe.OwnHasLook(ch, Slot);
         v.AddChild(Style.Label(shownDef == null
             ? (ownName == null || ownLook ? "your own piece, as it is" : "your own piece (no look of its own)")
-            : ownName == null ? "over nothing" : ownLook ? $"over: {ownName}" : "over: your own (no look of its own)", Style.TextItalic, 14, Kit.Dim, false, HorizontalAlignment.Left, false));
+            : ownName == null ? "over nothing" : ownLook ? $"over: {ownName}" : $"over: {ownName} (no look of its own)", Style.TextItalic, 14, Kit.Dim, false, HorizontalAlignment.Left, false));
         status = Style.Label("", Style.TextItalic, 15, Kit.Ink2, false, HorizontalAlignment.Left, false);
         status.CustomMinimumSize = new Vector2(0, 22);
         v.AddChild(status);
@@ -442,7 +448,7 @@ void fragment() {
             name.CustomMinimumSize = new Vector2(70, 0);
             name.SizeFlagsVertical = SizeFlags.ShrinkCenter;
             row.AddChild(name);
-            var sw = new HFlowContainer { CustomMinimumSize = new Vector2(450, 0), SizeFlagsVertical = SizeFlags.ShrinkCenter, MouseFilter = MouseFilterEnum.Ignore };
+            var sw = new HFlowContainer { CustomMinimumSize = new Vector2(202, 0), SizeFlagsVertical = SizeFlags.ShrinkCenter, MouseFilter = MouseFilterEnum.Ignore };
             sw.AddThemeConstantOverride("h_separation", 8);
             sw.AddThemeConstantOverride("v_separation", 8);
             sw.AddChild(MakeSwatch(MadeColour(ch, z), false, "As made", now == null, true, () => { Wardrobe.SetDye(ch, Slot, z, null); Changed(); }, over => Hover(over, "As made", c => Wardrobe.SetDye(c, Slot, z, null))));
