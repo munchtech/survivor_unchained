@@ -17,10 +17,12 @@ public partial class StanceBlock : Control
 {
     static readonly Color Glass = new(0.03f, 0.06f, 0.065f), Bronze = new("#d3a464"), Veil = new(0.02f, 0.015f, 0.01f, 0.62f);
     static readonly FontVariation NameFont = new() { BaseFont = Style.UiBold, SpacingGlyph = 1 };
-    public const double NameHold = 0.9, NameFade = 0.5;
-    public const int NameSize = 15;
-    public const float R = 19, BackScale = 0.70f, BackDim = 0.55f, EaseLen = 0.18f, NameLen = 1.4f, GlyphPx = 20;
-    static readonly Vector2 Back = new(22 * 19 / 17f, -6 * 19 / 17f);
+    /// <summary>bd-ui W8: the swap name rises 10 px over 400 ms, holds to 1.0 s, fades over 300 ms.</summary>
+    public const double NameRise = 0.4, NameHold = 1.0, NameFade = 0.3, ReadyFlash = 0.15;
+    public const int NameSize = 16;
+    public const float R = AutoRowModel.StanceR, BackScale = AutoRowModel.StanceBackR / AutoRowModel.StanceR, BackDim = 0.65f, EaseLen = 0.18f, NameLen = 1.3f, GlyphPx = AutoRowModel.StanceGlyph, RingW = 3.5f;
+    static readonly Color Cream = new("#F2E6C8"), FieldIn = new("#6a5236"), FieldRim = new("#3b2c1d");
+    static readonly Vector2 Back = new(AutoRowModel.StanceBack.X, AutoRowModel.StanceBack.Y);
     /// <summary>The front disc's middle: on the tile row's line (the row's centre; AutoRow.RowTop).</summary>
     public static Vector2 FrontAt => new(AutoRowModel.StanceLeft + R, AutoRow.RowTop + AutoRowModel.Tile / 2);
     static Vector2 Front => FrontAt;
@@ -28,7 +30,7 @@ public partial class StanceBlock : Control
     /// <summary>A stance's color: set II's bezel and tint (set I: the plate's bronze).</summary>
     public static Color ColorOf(string? stanceId) => stanceId switch
     {
-        "shield" => new Color("#8fb4d8"), "twin_blades" => new Color("#d4434e"), "mace" => new Color("#ff8a3a"), _ => Bronze,
+        "shield" => new Color("#7FA7D6"), "twin_blades" => new Color("#d4434e"), "mace" => new Color("#ff8a3a"), _ => Bronze,
     };
 
     readonly KeyTag swapKey = new(Act.Swap) { Chip = true };
@@ -39,10 +41,9 @@ public partial class StanceBlock : Control
     string nameText = "";
     Color nameColor = Bronze;
     readonly float[] share = [1, 1];
+    readonly double[] readyAt = [-1, -1];
     readonly Texture2D?[] glyphs = new Texture2D?[2];
     string glyphFor = "";
-    readonly string?[] iconKey = new string?[2];
-    readonly Texture2D?[] icons = new Texture2D?[2], iconFallback = new Texture2D?[2];
     double openedAt = -1;
     bool dirty = true;
 
@@ -63,9 +64,12 @@ public partial class StanceBlock : Control
     public float SwapRight { get { var b = swapKey.ChipBox(); return swapKey.Position.X + b.Position.X + b.Size.X; } }
 
     /// <summary>The front disc's global rect (the level card folds into it).</summary>
-    public Rect2 DiscRect()
+    public Rect2 DiscRect() => DiscRect(active);
+
+    /// <summary>bd-ui W8: a set's disc as a global rect (the stance card's tail and fold go to set II).</summary>
+    public Rect2 DiscRect(int set)
     {
-        var (c, sc, _) = Disc(active);
+        var (c, sc, _) = Disc(set);
         return GetGlobalTransform() * new Rect2(c - Vector2.One * R * sc, Vector2.One * 2 * R * sc);
     }
 
@@ -99,19 +103,13 @@ public partial class StanceBlock : Control
         if (glyphFor != st.Id)
         {
             glyphFor = st.Id;
-            glyphs[0] = Glyphs.Texture(StanceText.Glyph(null), (int)GlyphPx, Bronze);
-            glyphs[1] = Glyphs.Texture(StanceText.Glyph(st.Id), (int)GlyphPx, ColorOf(st.Id));
-        }
-        // (bd-ui W4: the discs wear what she wears: set I her main hand's icon, set II the off hand's, which picks the stance)
-        for (int s = 0; s < 2; s++)
-        {
-            var (key, tex) = DiscIcon.Of(ch, s == 0 ? SurvivorUnchained.Rpg.EquipSlot.Weapon : SurvivorUnchained.Rpg.EquipSlot.Offhand);
-            if (key != iconKey[s]) { iconKey[s] = key; iconFallback[s] = key == null ? null : Glyphs.Texture(key, 36, s == 1 ? ColorOf(st.Id) : Bronze); icons[s] = tex; dirty = true; }
-            else if (key != null && icons[s] == null && tex != null) { icons[s] = tex; dirty = true; }
+            glyphs[0] = Glyphs.Texture(StanceText.Glyph(null), (int)GlyphPx, Cream, 2.4f, line: true);
+            glyphs[1] = Glyphs.Texture(StanceText.Glyph(st.Id), (int)GlyphPx, Cream, 2.4f, line: true);
         }
         for (int s = 0; s < 2; s++)
         {
             float v = AutoRowModel.StrikeShare(b.StrikeReadyIn(s), b.StrikeOf(s)?.Cooldown ?? 6);
+            if (share[s] < 0.996f && v >= 0.996f) readyAt[s] = now;
             if (Math.Abs(v - share[s]) > 0.004f) { share[s] = v; dirty = true; }
         }
     }
@@ -121,6 +119,7 @@ public partial class StanceBlock : Control
         now += delta;
         if (swapT < EaseLen) { swapT += delta; dirty = true; }
         if (nameT < NameLen) { nameT += delta; dirty = true; }
+        if (readyAt[0] >= 0 || readyAt[1] >= 0) dirty = true;
         if (openedAt >= 0) { dirty = true; if (now - openedAt >= 0.6) openedAt = -1; }
         if (dirty && Visible) { dirty = false; QueueRedraw(); }
     }
@@ -181,14 +180,18 @@ public partial class StanceBlock : Control
         int back = active == 0 ? 1 : 0;
         // (the one behind first; during the swap the two trade over the middle)
         int first = Disc(0).S < Disc(1).S ? 0 : 1;
-        foreach (int s in new[] { first, 1 - first }) DrawOne(s, s == back && swapT >= EaseLen);
+        foreach (int s in new[] { first, 1 - first }) DrawOne(s, s == back);
         if (nameT < NameLen && nameText != "")
         {
-            // (bd-ui W6: 15 px bold, tracked, rising 10 px over its first 0.4 s, holding 0.9 s, fading over 0.5 s)
-            float rise = 10 * (1 - (1 - Math.Min(1f, (float)nameT / 0.4f)) * (1 - Math.Min(1f, (float)nameT / 0.4f)));
+            // (bd-ui W8: 16 px bold caps in the stance's color, a 2 px dark outline and a soft shadow, rising 10 px over 400 ms,
+            // holding to 1.0 s, fading over 300 ms)
+            float k = Math.Min(1f, (float)(nameT / NameRise));
+            float rise = 10 * (1 - (1 - k) * (1 - k));
             float fade = nameT <= NameHold ? 1 : (float)Math.Max(0, 1 - (nameT - NameHold) / NameFade);
             var at = new Vector2(Front.X - 95, Front.Y - R - 6 - rise);
-            DrawStringOutline(NameFont, at, nameText, HorizontalAlignment.Center, 190, NameSize, 4, new Color(0.02f, 0.015f, 0.01f, 0.9f * fade));
+            var dark = new Color(0.02f, 0.015f, 0.01f, 0.9f * fade);
+            DrawStringOutline(NameFont, at + new Vector2(0, 2), nameText, HorizontalAlignment.Center, 190, NameSize, 4, new Color(0, 0, 0, 0.5f * fade));
+            DrawStringOutline(NameFont, at, nameText, HorizontalAlignment.Center, 190, NameSize, 2, dark);
             DrawString(NameFont, at, nameText, HorizontalAlignment.Center, 190, NameSize, nameColor with { A = fade });
         }
     }
@@ -199,15 +202,27 @@ public partial class StanceBlock : Control
         float r = R * sc;
         var col = set == 1 ? ColorOf(stance!.Id) : Bronze;
         float a = dim;
-        DrawCircle(c, r, Glass with { A = a }, true, -1, true);
-        if ((icons[set] ?? iconFallback[set]) is { } ic) DiscIcon.Draw(this, c, r - 1.5f, ic, new Color(1, 1, 1, a), icons[set] != null ? 1 - 0.94f / 1.35f : -0.25f);
-        else if (glyphs[set] is { } g) DrawTextureRect(g, new Rect2(c - Vector2.One * GlyphPx * sc / 2, Vector2.One * GlyphPx * sc), false, new Color(1, 1, 1, a));
-        float sh = share[set];
-        if (sh < 0.996f) DrawColoredPolygon(CirclePie(c, r - 1, 1 - sh), Veil with { A = Veil.A * a });
-        DrawArc(c, r, 0, Mathf.Tau, 48, col with { A = a }, 1.5f, true);
-        if (openedAt >= 0 && set == active) DrawCircle(c, r, new Color(1f, 0.80f, 0.45f, 0.5f * (float)Math.Max(0, 1 - (now - openedAt) / 0.6)), true, -1, true);
-        // (the back disc's strike ready: a thin bright rim, the swap would fire it)
-        if (isBack && sh >= 0.996f) DrawArc(c, r + 2, 0, Mathf.Tau, 48, col.Lightened(0.35f) with { A = 0.9f }, 1, true);
+        // (a mid-tone field, lighter at the middle: radial, in steps; never near-black)
+        const int N = 10;
+        for (int i = 0; i < N; i++)
+        {
+            float t = i / (float)(N - 1);
+            DrawCircle(c, r * (1 - 0.85f * i / N), FieldRim.Lerp(FieldIn, t) with { A = a }, true, -1, true);
+        }
+        if (glyphs[set] is { } g) DrawTextureRect(g, new Rect2(c - Vector2.One * GlyphPx * sc / 2, Vector2.One * GlyphPx * sc), false, new Color(1, 1, 1, a));
+        DrawArc(c, r - 0.75f, 0, Mathf.Tau, 48, col with { A = a }, 1.5f, true);
+        if (openedAt >= 0 && set == AutoRowModel.CardSet) DrawCircle(c, r, new Color(1f, 0.80f, 0.45f, 0.5f * (float)Math.Max(0, 1 - (now - openedAt) / 0.6)), true, -1, true);
+        // (the back disc: the strike a swap fires now, a 3.5 px ring filled clockwise from 12 as it comes ready; a white flash when it does)
+        if (isBack)
+        {
+            float rr = r + 1 + RingW / 2;
+            DrawArc(c, rr, 0, Mathf.Tau, 48, new Color(0, 0, 0, 0.5f * a), RingW, true);
+            float sh = share[set];
+            if (sh > 0.004f) DrawArc(c, rr, -Mathf.Pi / 2, -Mathf.Pi / 2 + sh * Mathf.Tau, Math.Max(3, (int)(sh * 48)), Cream with { A = a }, RingW, true);
+            double since = now - readyAt[set];
+            if (readyAt[set] >= 0 && since < ReadyFlash) DrawArc(c, rr, 0, Mathf.Tau, 48, Colors.White with { A = (float)(1 - since / ReadyFlash) }, RingW, true);
+            else if (readyAt[set] >= 0) readyAt[set] = -1;
+        }
     }
 
     /// <summary>A circle's wedge from 12 o'clock clockwise, share (0..1) of the turn.</summary>

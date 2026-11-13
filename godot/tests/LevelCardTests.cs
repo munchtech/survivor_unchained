@@ -57,7 +57,7 @@ public sealed class LevelCardTests
         var none = LevelCards.ForCampaignLevel(3, Warden, _ => 1, 1);
         Assert.Equal(LevelCardKind.Plain, none.Kind);
         Assert.Equal("LEVEL 3", LevelCards.Header(none));
-        Assert.Equal("A new trait can be chosen", none.PromptText);
+        Assert.Equal("Choose a new trait", none.PromptText);
         var notCarried = LevelCards.ForCampaignLevel(4, Warden, _ => -1, 0);
         Assert.Equal(LevelCardKind.Plain, notCarried.Kind);
         Assert.Equal(LevelCardKind.Plain, LevelCards.ForCampaignLevel(4, null, _ => 0, 0).Kind);
@@ -196,24 +196,49 @@ public sealed class LevelCardTests
 public sealed class LevelCardPlaceTests
 {
     [Fact]
-    public void The_card_stays_six_above_the_tile_row_in_the_campaign_and_is_unchanged_in_the_arena()
+    public void The_card_stays_eight_above_the_status_shelf_in_the_campaign_and_is_unchanged_in_the_arena()
     {
         var camp = LevelCardPlace.Compute(247, 86, 978, 959, null);
-        Assert.True(camp.Y + 86 <= 959 - 6);
+        Assert.True(camp.Y + 86 <= 959 - 8);
         var arena = LevelCardPlace.Compute(247, 86, 978, null, null);
         Assert.Equal(978.0 - 86, arena.Y);
         Assert.InRange(arena.X, 836f, 837f);
     }
 
     [Theory]
-    [InlineData(700f)] [InlineData(820f)] [InlineData(960f)] [InlineData(1100f)] [InlineData(1200f)]
-    public void The_tail_is_vertical_inside_the_card_with_24_to_spare_and_the_card_stays_in_640_to_1280(float tx)
+    [InlineData(760f)] [InlineData(820f)] [InlineData(960f)] [InlineData(1100f)] [InlineData(1200f)]
+    public void The_tail_is_vertical_inside_the_card_with_24_to_spare_and_the_card_stays_in_696_to_1244(float tx)
     {
         var p = LevelCardPlace.Compute(247, 86, 978, 959, (tx, 1010f));
-        Assert.InRange(p.X, 640, 1280 - 247);
+        Assert.InRange(p.X, 696, 1244 - 247);
         Assert.InRange(tx - p.X, p.TailX - 0.6f, p.TailX + 0.6f);
         Assert.InRange(p.TailX, 24, 247 - 24);
         Assert.Equal(1010.0 - (p.Y + 86), p.Stem, 1);
+    }
+
+    [Fact]
+    public void A_target_by_the_left_statue_pins_the_card_at_696()
+    {
+        var p = LevelCardPlace.Compute(470, 86, 978, 959, (700f, 1010f));
+        Assert.Equal(696, p.X);
+        Assert.Equal(24, p.TailX);
+        Assert.Equal(470f, LevelCardPlace.MaxW);
+        Assert.Equal(Math.Round(960 - 235f), LevelCardPlace.Compute(470, 86, 978, 959, null).X);
+    }
+
+    [Fact]
+    public void The_stance_card_goes_to_set_II_and_wears_the_new_words()
+    {
+        Assert.Equal(1, AutoRowModel.CardSet);
+        Assert.Equal(AutoRowModel.CardSet, 1);
+        // set II stands behind set I while set I is up, in front once it is
+        var front = (1000f, 500f);
+        Assert.NotEqual(front, AutoRowModel.DiscCentre(front, 1, 0));
+        Assert.Equal(front, AutoRowModel.DiscCentre(front, 1, 1));
+        Assert.Equal("Choose a new trait", LevelCards.PromptFor(2));
+        var c = LevelCards.StanceCard(8, "shield")!;
+        Assert.StartsWith("Your blows", c.Line);
+        Assert.EndsWith(", and each swap strikes", c.Line);
     }
 
     [Fact]

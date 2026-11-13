@@ -75,23 +75,44 @@ public class AutoRowTests
     }
 
     [Fact]
-    public void The_row_bottom_stands_3_px_above_the_key_caps_top_edge()
+    public void The_row_bottom_stands_12_px_above_the_key_caps_top_edge()
     {
         float capTop = AutoRowModel.CapTop(TopY, SeatY, SeatR, Chip);
         float top = AutoRowModel.RowTop(TopY, SeatY, SeatR, Chip);
         Assert.True(top + AutoRowModel.Tile < capTop);
-        Assert.Equal(capTop - 3, top + AutoRowModel.Tile, 0.001f);
+        Assert.Equal(capTop - 12, top + AutoRowModel.Tile, 0.001f);
         // (the shorter key chips (16 tall) are cleared too)
         Assert.True(top + AutoRowModel.Tile < AutoRowModel.CapTop(TopY, SeatY, SeatR, 16));
     }
 
     [Fact]
-    public void The_status_shelf_rises_to_5_px_over_the_tiles()
+    public void The_status_shelf_rises_to_6_px_over_the_tiles()
     {
         float top = AutoRowModel.RowTop(TopY, SeatY, SeatR, Chip);
         float raise = AutoRowModel.ShelfRaise(top);
         Assert.True(raise > 0);
-        Assert.Equal(top - 5, AutoRowModel.ShelfBottom - raise, 0.001f);
+        Assert.Equal(top - 6, AutoRowModel.ShelfBottom - raise, 0.001f);
         Assert.Equal(0, AutoRowModel.ShelfRaise(2000));   // (a row far below: nothing to clear)
+    }
+
+    [Fact]
+    public void The_tiers_stack_cap_row_shelf_card_with_their_gaps()
+    {
+        float top = AutoRowModel.RowTop(TopY, SeatY, SeatR, Chip);
+        Assert.Equal(top - 6 - 30, AutoRowModel.ShelfTop(top), 0.001f);
+        Assert.Equal(AutoRowModel.ShelfTop(top) - 8, AutoRowModel.CardBottom(top), 0.001f);
+        Assert.Equal(8, SurvivorUnchained.Ui.LevelCardPlace.Clear);
+    }
+
+    [Fact]
+    public void The_tile_timer_bar_fills_with_the_ready_share_and_the_fire_cue_is_120_ms()
+    {
+        Assert.Equal(0f, AutoRowModel.BarFill(0));
+        Assert.Equal(14f, AutoRowModel.BarFill(0.5), 0.001f);
+        Assert.Equal(28f, AutoRowModel.BarFill(2), 0.001f);
+        Assert.Equal(1.6f, AutoRowModel.FireModulate(0), 0.001f);
+        Assert.Equal(1.15f, AutoRowModel.FireScale(0), 0.001f);
+        Assert.Equal(1f, AutoRowModel.FireScale(0.12));
+        Assert.Equal(1f, AutoRowModel.FireModulate(-1));
     }
 }

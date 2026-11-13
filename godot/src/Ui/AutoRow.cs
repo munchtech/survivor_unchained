@@ -15,7 +15,8 @@ namespace SurvivorUnchained.Ui;
 public partial class AutoRow : Control
 {
     static readonly Color Glass = new(0.03f, 0.06f, 0.065f), Bronze = new("#d3a464"), Veil = new(0.02f, 0.015f, 0.01f, 0.62f);
-    const float GlyphPx = 28;
+    const float GlyphPx = 26;
+    static readonly Color Cream = new("#F2E6C8");
 
     sealed class Tile
     {
@@ -93,7 +94,9 @@ public partial class AutoRow : Control
                 {
                     t.Id = w.Id; t.Slot = w.Slot;
                     t.School = ItemViews.SchoolColors[w.School];
-                    t.Glyph = Glyphs.Texture(Glyphs.ForSkill(w.Id, w.Art), (int)GlyphPx, t.School);
+                    // (bd-ui W8: the seats' own icon source, Instrument.Socket.Show: the skill's painting, else its drawn line glyph)
+                    string gk = Glyphs.ForSkill(w.Id, w.Art);
+                    t.Glyph = UiArt.Icon("glyph_color", Glyphs.IconKey(gk)) ?? Glyphs.Texture(gk, 78, t.School, line: true);
                     t.Rarity = p.Kind == AutoRowModel.Kind.Item ? itemRarity.GetValueOrDefault(w.Id, 4) : -1;
                     if (old.TryGetValue(w.Id, out var o)) { t.Ready = o.Ready; t.Last = o.Last; t.Fired = o.Fired; }
                 }
@@ -116,7 +119,7 @@ public partial class AutoRow : Control
     {
         now += delta;
         bool flashing = false;
-        foreach (var t in tiles) if ((t.Fired >= 0 && AutoRowModel.Flash(now - t.Fired) > 0) || (t.Opened >= 0 && now - t.Opened < 0.6)) flashing = true;
+        foreach (var t in tiles) if ((t.Fired >= 0 && now - t.Fired < AutoRowModel.FireLen) || (t.Opened >= 0 && now - t.Opened < 0.6)) flashing = true;
         if (flashing || dirty) { dirty = false; QueueRedraw(); }
     }
 
@@ -166,16 +169,23 @@ public partial class AutoRow : Control
             Color bez = t.Rarity >= 0 ? Style.RarityOf(t.Rarity) : more ? Style.RarityOf(4) : Bronze;
             if (t.Id != "")
             {
-                // (always live: the icon at full brightness; the timer is the 2 px bar; a fire brightens the whole tile 1.35 -> 1.0)
-                float lit = 1 + 0.35f * AutoRowModel.Flash(now - t.Fired);
+                // (always live: the icon full bright; the timer is a 3.5 px bar; a fire is a 120 ms flash and a 1.15x pop)
+                float since = (float)(now - t.Fired);
+                float lit = t.Fired >= 0 ? AutoRowModel.FireModulate(since) : 1;
+                float pop = t.Fired >= 0 ? AutoRowModel.FireScale(since) : 1;
+                var c0 = r.GetCenter();
+                DrawSetTransform(c0 - c0 * pop, 0, new Vector2(pop, pop));
                 DrawRect(r.Grow(-1), (t.School with { A = 0.16f }) * new Color(lit, lit, lit, 1), true);
                 if (t.Glyph != null)
                 {
-                    var g = new Rect2(r.GetCenter() - Vector2.One * GlyphPx / 2, Vector2.One * GlyphPx);
+                    var g = new Rect2(c0 - Vector2.One * GlyphPx / 2, Vector2.One * GlyphPx);
                     DrawTextureRect(t.Glyph, g, false, new Color(lit, lit, lit));
                 }
-                float ready = 1 - AutoRowModel.NotReady(t.Ready);
-                if (ready > 0.004f) DrawRect(new Rect2(r.Position.X + 3, r.End.Y - 4, (r.Size.X - 6) * ready, 2), bez with { A = 0.85f }, true);
+                var track = new Rect2(r.Position.X + AutoRowModel.BarInset, r.End.Y - AutoRowModel.BarInset - AutoRowModel.BarH, AutoRowModel.Tile - 2 * AutoRowModel.BarInset, AutoRowModel.BarH);
+                DrawRect(track, new Color(0, 0, 0, 0.4f), true);
+                float fill = AutoRowModel.BarFill(t.Ready);
+                if (fill > 0.2f) DrawRect(new Rect2(track.Position, new Vector2(fill, track.Size.Y)), Cream with { A = 0.95f }, true);
+                DrawSetTransform(Vector2.Zero, 0, Vector2.One);
             }
             else if (more)
                 DrawString(Style.UiBold, new Vector2(r.Position.X, r.Position.Y + 21), $"+{t.At.Index}", HorizontalAlignment.Center, r.Size.X, 15, Style.RarityOf(4));

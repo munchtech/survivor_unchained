@@ -11,12 +11,12 @@ namespace SurvivorUnchained.Ui;
 public enum LevelCardKind : byte { NewKey, LampLit, Plain, NewSkill, NewAuto, NewStance }
 
 /// <summary>bd-ui W6: where a card stands and where its tail ends, pure (the tests compile it). The card's bottom (its frame
-/// included) stays at least Clear above the auto-tile row's top in the campaign; the tail is vertical, ending on the top of
+/// included) stays at least Clear above the status shelf's top in the campaign; the tail is vertical, ending on the top of
 /// what opened (a key seat's cap, an auto tile, the front stance disc), so the card shifts sideways until that x lies at
-/// least Spare inside its span, then stays inside 640..1280.</summary>
+/// least Spare inside its span, then stays inside 696..1244 (28 px clear of the statues). bd-ui W8: rowTop is the status shelf's top, Clear above it.</summary>
 public static class LevelCardPlace
 {
-    public const float Clear = 6, Spare = 24, MinX = 640, MaxX = 1280;
+    public const float Clear = AutoRowModel.CardGap, Spare = 24, MinX = 696, MaxX = 1244, MaxW = 470;
 
     /// <summary>The key a NewKey card's chip shows: the same act the bar's seat of that slot wears (Instrument builds its caps
     /// from this too, so card and seat cannot drift).</summary>
@@ -61,7 +61,7 @@ public sealed class LevelCardSpec
     /// <summary>LampLit: the measure and its before/after ("a blow 42 -> 47").</summary>
     public string Measure = "a blow";
     public double Before, After;
-    /// <summary>The prompt row (optional): its key and words ("C", "A new trait can be chosen"); the card holds 3 s.</summary>
+    /// <summary>The prompt row (optional): its key and words ("C", "Choose a new trait"); the card holds 3 s.</summary>
     public Act? PromptKey;
     public string? PromptText;
     /// <summary>M7a: a lamp offer (a held point waits for her: Act.Lamps lights it); false once lit. Kind LampLit.</summary>
@@ -115,7 +115,7 @@ public static class LevelCards
     }
 
     /// <summary>The campaign's level-up prompt row (the trait or attribute line Journey's banner used to carry).</summary>
-    public static string PromptFor(int traitPicks) => traitPicks > 0 ? "A new trait can be chosen" : "Attribute points to spend";
+    public static string PromptFor(int traitPicks) => traitPicks > 0 ? "Choose a new trait" : "Attribute points to spend";
 
     /// <summary>The card a campaign level makes: a new key when the taught build teaches a skill at that level and the
     /// fight carries it on a slot (slotOf: its slot, -1 when not carried), else plain; with the trait/attribute prompt.</summary>
@@ -156,6 +156,7 @@ public static class LevelCards
         if (Content.Stances.Find(id) is not { } d) return null;
         string line = Line(d.Flavor);
         if (line == "") line = d.Strike.Name != "" ? "Swap strike: " + d.Strike.Name : "";
+        else line += ", and each swap strikes";
         return new LevelCardSpec { Kind = LevelCardKind.NewStance, Level = level, Skill = d.Name, StanceId = d.Id, Line = line, PromptKey = Act.Character };
     }
 

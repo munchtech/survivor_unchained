@@ -19,11 +19,31 @@ public static class AutoRowModel
     public const float Floor = 716;
     public const int HerSlots = 3;
 
-    /// <summary>The gap between the tile row's bottom and the key caps' top edge, and between the status shelf's bottom and the
-    /// tiles' top (design px).</summary>
-    public const float CapGap = 3, ShelfGap = 5;
+    /// <summary>bd-ui W8, the HUD's tiers above the key caps, bottom up (design px, one place): the tile + stance row's bottom
+    /// CapGap above the caps' top edge; the status shelf (marks ShelfH tall) with its bottom ShelfGap above the row's top; the
+    /// level cards' bottom CardGap above the shelf's top.</summary>
+    public const float CapGap = 12, ShelfGap = 6, ShelfH = 30, CardGap = 8;
     /// <summary>The status shelf's marks are 30 px round centred on y 950: its bottom edge.</summary>
     public const float ShelfBottom = 950 + 15;
+
+    /// <summary>The status shelf's top edge (campaign, raised) for a row top.</summary>
+    public static float ShelfTop(float rowTop) => rowTop - ShelfGap - ShelfH;
+
+    /// <summary>The level card's bottom edge for a row top: CardGap above the shelf's top.</summary>
+    public static float CardBottom(float rowTop) => ShelfTop(rowTop) - CardGap;
+
+    /// <summary>The auto tile's timer bar (inside the tile's bottom edge): height, inset from the sides and the bottom.</summary>
+    public const float BarH = 3.5f, BarInset = 3;
+
+    /// <summary>The timer bar's fill width for a ready share.</summary>
+    public static float BarFill(double ready) => (Tile - 2 * BarInset) * (float)Math.Clamp(ready, 0, 1);
+
+    /// <summary>The fire cue: 120 ms, a gold-white flash (modulate 1.6 back to 1) and a 1.15x pop, both easing out.</summary>
+    public const double FireLen = 0.12;
+    public const float FireLight = 1.6f, FirePop = 1.15f;
+    static float FireK(double since) => since < 0 || since >= FireLen ? 0 : (float)Math.Pow(1 - since / FireLen, 2);
+    public static float FireModulate(double since) => 1 + (FireLight - 1) * FireK(since);
+    public static float FireScale(double since) => 1 + (FirePop - 1) * FireK(since);
 
     /// <summary>The key caps' top edge: each cap's chip is centred on the seat's 12 o'clock, midway between the plate's top
     /// line and the ring's top (SeatKeys.Socket.SetCap), chipH tall (the tallest chip drawn: the mouse glyph's).</summary>
@@ -34,6 +54,17 @@ public static class AutoRowModel
 
     /// <summary>How far the status shelf rises (campaign, tiles shown) so its bottom is ShelfGap above the tiles' top.</summary>
     public static float ShelfRaise(float rowTop) => Math.Max(0, ShelfBottom - (rowTop - ShelfGap));
+
+    /// <summary>bd-ui W8, the stance block: the front disc (r 20) stands on the row's middle line; the back one (r 14) up and right.</summary>
+    public const float StanceR = 20, StanceBackR = 14, StanceGlyph = 26, StanceBackGlyph = 18;
+    public static readonly (float X, float Y) StanceBack = (27, -7);
+
+    /// <summary>A set's disc middle once settled, from the front disc's middle: the active set in front, the other behind.</summary>
+    public static (float X, float Y) DiscCentre((float X, float Y) front, int set, int active) =>
+        set == active ? front : (front.X + StanceBack.X, front.Y + StanceBack.Y);
+
+    /// <summary>The set a NewStance card's tail goes to: set II (index 1), the back disc while set I is up.</summary>
+    public const int CardSet = 1;
 
     public enum Kind { Her, Item, More }
 
@@ -68,8 +99,8 @@ public static class AutoRowModel
     /// <summary>It fired this frame: it was ready and the ready share fell (the seats' rule).</summary>
     public static bool Fired(double was, double now) => was >= 0.98 && now < was - 0.4;
 
-    /// <summary>The 0.25 s brightening after it fires: 1 at once, 0 after.</summary>
-    public const double FlashLen = 0.25;
+    /// <summary>The brightening after it fires: 1 at once, 0 after.</summary>
+    public const double FlashLen = FireLen;
     public static float Flash(double sinceFire) => sinceFire < 0 || sinceFire >= FlashLen ? 0 : (float)(1 - sinceFire / FlashLen);
 
     /// <summary>A swap strike's ready share: 1 - readyIn / cooldown.</summary>
