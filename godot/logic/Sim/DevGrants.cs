@@ -64,7 +64,8 @@ public static class DevGrants
         {
             string id = raw.Split(':')[0];
             keep.Add(id);
-            if (Content.Weapons.All.ContainsKey(id) && !b.Weapons.Exists(w => w.Id == id)) need += Content.Weapons.SlotCost(id);
+            // (bd-wire) One that runs itself takes an auto slot, never a key (the campaign's are uncapped).
+            if (Content.Weapons.All.ContainsKey(id) && !b.Weapons.Exists(w => w.Id == id) && !b.RunsItself(id)) need += Content.Weapons.SlotCost(id);
         }
         if (union is { Length: > 0 } un && Content.Unions.Find(un.Trim()) is { } u && !b.Weapons.Exists(w => w.Id == u.Into))
         {
