@@ -2121,14 +2121,16 @@ public static class People
 
     /// <summary>How much of NpcCelTone's warmth an NPC's albedo takes (0 to 1) by its paint's lightness against hers
     /// (NpcLumRatio): all of it from NpcCelWarmAt.Y of her paint's luminance up (her own paint, the fair NPCs), none at
-    /// NpcCelWarmAt.X and under (where NpcDeep's deep treatment begins), linear between. NpcCelTone was fitted to her fair
+    /// NpcCelWarmAt.X and under, linear between. NpcCelTone was fitted to her fair
     /// paint; on the x18 V3 smith (her paint's chroma, 0.65 of its luminance) it read saturated orange on every lit part
     /// (neck Oklab C 0.164 h 44.5 at the chest close-up, her fair NPC 0.118; the player's warm and olive swatches, as dark,
     /// read the same: 0.142, 0.163), as a darker skin's lit side is not compressed by the grade as a pale one's is.
+    /// (V3 at 0.65 takes none: lit chest C 0.136 at warm 0.26 (judge: still apricot), 0.117 at 0, its face 0.108; its shade
+    /// warm through cel_fill_tone, hue as before within 1 deg.)
     /// Unknown lightness (no paint): all of it.</summary>
     public static float NpcCelWarm(float ratio) => ratio < 0f ? 1f : Mathf.Clamp((ratio - NpcCelWarmAt.X) / (NpcCelWarmAt.Y - NpcCelWarmAt.X), 0f, 1f);
 
-    static readonly Vector2 NpcCelWarmAt = new(0.55f, 0.95f);
+    static readonly Vector2 NpcCelWarmAt = new(0.7f, 0.95f);
 
     /// <summary>NpcCelTone split for an NPC by warm (NpcCelWarm, or the manifest's "cel_warm"): the albedo's factor is
     /// NpcCelTone's luminance times its colour to the power warm, and the key's fill takes the rest (the skin shader's
